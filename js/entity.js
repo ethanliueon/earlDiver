@@ -55,9 +55,10 @@ export class Entity {
     const prot = g.protection; // {x,y} or null
     // --- perception ---
     const per = this.perception(g);
-    if (d < per && !prot) {
+    const lured = this.lureT > 0;
+    if (d < per && !prot && (!lured || d < 8)) {
       this.lastX = e.x; this.lastY = e.y; this.knows = Math.min(1, this.knows + dt * 2);
-      if (this.state !== 'lured') this.state = 'hunt';
+      if (!lured) this.state = 'hunt';
     } else this.knows = Math.max(0, this.knows - dt * 0.15);
 
     // the sense: every so often a vague fix on Earl, so it always comes back

@@ -256,7 +256,7 @@ function update(dt) {
       if (g.items.lure > 0 && !g.lure) {
         g.items.lure--;
         const dir = e.inSub ? g.sub.facing : e.facing;
-        g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 9, vy: -1.5 };
+        g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1.0 };
         ent.throwLure(g.lure.x, g.lure.y);
         hud.toast('The lure drifts away, glowing');
       } else if (g.items.lure === 0) hud.toast('No lures', 'warn');
@@ -291,7 +291,8 @@ function update(dt) {
     // lure physics
     if (g.lure) {
       const L = g.lure;
-      L.vx *= Math.exp(-dt * 1.5); L.vy = lerp(L.vy, 0.4, dt);
+      L.vx *= Math.exp(-dt * 0.85); L.vy = lerp(L.vy, 0.35, dt);
+      if (ent.lure) { ent.lure.x = L.x; ent.lure.y = L.y; }
       L.x += L.vx * dt; L.y += L.vy * dt;
       if (L.y > W.floorAt(L.x) - 0.3) { L.y = W.floorAt(L.x) - 0.3; L.vy = 0; }
       if (ent.lureT <= 0) g.lure = null;
