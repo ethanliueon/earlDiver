@@ -18,7 +18,13 @@
   import { SPECIES } from '../js/species.js';
   import { drawSpecies } from '../js/creatures_draw.js';
   const grid = document.getElementById('g');
+  // ?ids=1,2,3&big=1 shows a subset at a larger size
+  const q = new URLSearchParams(location.search);
+  const ids = q.get('ids') ? q.get('ids').split(',').map(Number) : null;
+  const big = q.has('big');
+  if (big) { document.querySelector('style').textContent += '.grid{grid-template-columns:repeat(auto-fill,410px)} canvas{width:400px;height:225px}'; }
   for (const sp of SPECIES) {
+    if (ids && !ids.includes(sp.id)) continue;
     const d = document.createElement('div'); d.className = 'cell';
     const c = document.createElement('canvas'); c.width = 384; c.height = 216;
     const ctx = c.getContext('2d');
