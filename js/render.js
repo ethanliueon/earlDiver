@@ -58,7 +58,7 @@ export class Renderer {
 
   updateCamera(g, dt) {
     const e = g.earl;
-    const targetView = g.mode === 'menu' ? 40 : e.inSub ? 46 : 30;
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : e.inSub ? 46 : 30);
     this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
@@ -224,7 +224,7 @@ export class Renderer {
       ctx.restore();
       // head position in screen space (for the beam)
       const ca = Math.cos(e.angle), sa = Math.sin(e.angle);
-      head = { x: S(e.x) + (h.headX * ca - h.headY * sa) * e.facing, y: Sy(e.y) + (h.headX * sa + h.headY * ca) };
+      head = { x: S(e.x) + (h.headX * ca - h.headY * sa) * e.facing, y: Sy(e.y) + (h.headX * sa + h.headY * ca), beamA: h.beamA };
     }
     // ---- front kelp ----
     this.drawKelp(g, S, Sy, ppm, 1, x0, x1);
@@ -749,7 +749,7 @@ export class Renderer {
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
     const flick = fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1;
     if (head && e.lampOn) {
-      const ang = e.facing > 0 ? e.angle : Math.PI - e.angle;
+      const ang = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
       cone(head.x, head.y, ang, 19 * ppm, 0.36, beamCol, 1.0 * flick);
       cone(head.x, head.y, ang, 9 * ppm, 0.6, beamCol, 0.5 * flick);
       radial(head.x, head.y, 4 * ppm, beamCol, 0.45 * flick);
@@ -824,7 +824,7 @@ export class Renderer {
     };
     const e = g.earl;
     if (head && e.lampOn && haze > 0) {
-      const ang = e.facing > 0 ? e.angle : Math.PI - e.angle;
+      const ang = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
       coneHaze(head.x, head.y, ang, 16 * ppm, 0.3, beamCol, 0.09 * haze);
     }
     if (subLamps && haze > 0) {

@@ -1,114 +1,200 @@
 // Earl, the submersible and the boat. All drawn in local pixel space.
 import { TAU, clamp } from './util.js';
 
-const SUIT = '#121417', SUIT_HI = '#262b31', SUIT_SEAM = '#1d2126';
+const SUIT = '#141619', SUIT_HI = '#2a2f35', SUIT_PANEL = '#24282d', SUIT_SEAM = '#33383e';
+const GLOVE = '#0d0e10', BCD = '#1b1d20', WEBBING = '#3a3d41';
 
-function limb(ctx, x0, y0, a0, l0, a1, l1, w0, w1, col) {
-  const kx = x0 + Math.cos(a0) * l0, ky = y0 + Math.sin(a0) * l0;
-  const ex = kx + Math.cos(a1) * l1, ey = ky + Math.sin(a1) * l1;
-  ctx.strokeStyle = col; ctx.lineCap = 'round';
-  ctx.lineWidth = w0; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(kx, ky); ctx.stroke();
-  ctx.lineWidth = w1; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(ex, ey); ctx.stroke();
-  return [ex, ey, a1];
+// A tapered limb segment with rounded ends (reads as flesh in a wetsuit, not a stick).
+function seg(ctx, x0, y0, x1, y1, w0, w1, col) {
+  const a = Math.atan2(y1 - y0, x1 - x0), nx = -Math.sin(a), ny = Math.cos(a);
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(x0 + nx * w0 / 2, y0 + ny * w0 / 2);
+  ctx.lineTo(x1 + nx * w1 / 2, y1 + ny * w1 / 2);
+  ctx.arc(x1, y1, w1 / 2, a + Math.PI / 2, a - Math.PI / 2, true);
+  ctx.lineTo(x0 - nx * w0 / 2, y0 - ny * w0 / 2);
+  ctx.arc(x0, y0, w0 / 2, a - Math.PI / 2, a + Math.PI / 2, true);
+  ctx.closePath(); ctx.fill();
 }
+const at = (x, y, a, l) => [x + Math.cos(a) * l, y + Math.sin(a) * l];
 
-// Earl lies along +x (head at +x). L = his height in pixels (2 m).
-// pose: kick phase, moving 0..1, lamp colour (null = off), rim = rim light strength (from surface light)
+// Earl lies along +x (head at +x); his back (tank side) is -y, his front is +y.
+// L = his height in pixels. moving 0..1 blends an upright idle pose into a swimming pose.
 export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
-  const u = L / 100; // 1 unit = 1% of height
-  const s1 = Math.sin(kick), s2 = Math.sin(kick + Math.PI);
-  const kickAmp = 0.1 + moving * 0.2;
-  const hipX = -8 * u, hipY = 1.5 * u;
-  const drawLeg = (s, col, finCol, far) => {
-    // flutter kick: thigh swings, knee bends on the down-stroke
-    const a0 = Math.PI + s * kickAmp + (far ? 0.05 : -0.03);
-    const bend = 0.1 + Math.max(0, s) * 0.45 * (0.4 + moving);
-    const a1 = a0 - bend * (far ? 1 : 1);
-    const [fx, fy, fa] = limb(ctx, hipX, hipY + (far ? -2 * u : 2 * u), a0, 24 * u, a1, 22 * u, 9.5 * u, 7.2 * u, col);
-    // fin blade: long, slightly flexing, a little translucent at the tip
-    const flex = s * 0.35 * (0.3 + moving);
-    ctx.save(); ctx.translate(fx, fy); ctx.rotate(fa + Math.PI * 0.5 - 0.15 - flex * 0.4);
-    ctx.rotate(-Math.PI * 0.5);
-    const fg = ctx.createLinearGradient(0, 0, 30 * u, 0);
-    fg.addColorStop(0, finCol); fg.addColorStop(0.7, finCol); fg.addColorStop(1, 'rgba(30,34,40,0.55)');
-    ctx.fillStyle = fg;
-    ctx.beginPath(); ctx.moveTo(-2 * u, -3.4 * u);
-    ctx.quadraticCurveTo(14 * u, -5.5 * u + flex * 3 * u, 31 * u, -4 * u + flex * 7 * u);
-    ctx.lineTo(32 * u, 3.2 * u + flex * 7 * u);
-    ctx.quadraticCurveTo(14 * u, 4.6 * u + flex * 3 * u, -2 * u, 3.4 * u); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 0.6 * u;
-    ctx.beginPath(); ctx.moveTo(6 * u, -3.8 * u); ctx.quadraticCurveTo(18 * u, -4.4 * u + flex * 3 * u, 30 * u, -3.6 * u + flex * 7 * u); ctx.stroke();
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.ellipse(1 * u, 0, 6 * u, 3.6 * u, 0, 0, TAU); ctx.fill(); // foot pocket
+  const u = L / 100;
+  const m = moving;
+  const s1 = Math.sin(kick);
+
+  // ---------- legs (drawn far leg first) ----------
+  // Knees only ever bend backwards (towards -y), and the legs stay close to the line of the body.
+  const hipX = -7 * u;
+  const leg = (phase, near) => {
+    const s = Math.sin(kick + phase);
+    const thighA = Math.PI - 0.04 + s * (0.05 + 0.17 * m) + (1 - m) * 0.1;   // idle: thigh slightly forward
+    const bend = (1 - m) * 0.32 + m * (0.06 + Math.max(0, s) * 0.32);       // knee flexion
+    const shinA = thighA - bend;                                               // -> foot goes towards the back
+    const hx = hipX, hy = near ? 1.6 * u : -1.2 * u;
+    const [kx, ky] = at(hx, hy, thighA, 25 * u);
+    const [ax, ay] = at(kx, ky, shinA, 23 * u);
+    const col = near ? SUIT : '#0d0e11';
+    seg(ctx, hx, hy, kx, ky, 11 * u, 8 * u, col);
+    seg(ctx, kx, ky, ax, ay, 8 * u, 5 * u, col);
+    // calf muscle
+    const [cx, cy] = at(kx, ky, shinA, 7 * u);
+    ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(cx, cy - 1.2 * u, 6 * u, 4.3 * u, shinA, 0, Math.PI * 2); ctx.fill();
+    if (near) {
+      // knee pad + side seam, visible when lit
+      ctx.fillStyle = SUIT_PANEL; ctx.beginPath(); ctx.ellipse(kx, ky + 1.5 * u, 4 * u, 3 * u, thighA, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = SUIT_SEAM; ctx.lineWidth = 0.6 * u;
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(kx, ky); ctx.lineTo(ax, ay); ctx.stroke();
+      // dive knife strapped to the inside of the calf
+      const [k1x, k1y] = at(kx, ky, shinA, 9 * u), [k2x, k2y] = at(kx, ky, shinA, 17 * u);
+      ctx.strokeStyle = '#3c4044'; ctx.lineWidth = 2 * u; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(k1x, k1y + 2.2 * u); ctx.lineTo(k2x, k2y + 1.4 * u); ctx.stroke();
+      ctx.strokeStyle = '#1c1e20'; ctx.lineWidth = 0.9 * u;
+      for (const t of [11, 15]) { const [bx, by] = at(kx, ky, shinA, t * u); ctx.beginPath(); ctx.moveTo(bx, by - 2.6 * u); ctx.lineTo(bx, by + 3 * u); ctx.stroke(); }
+    }
+    // fin: foot pocket + long blade continuing the line of the shin, flexing with the kick
+    const flex = -s * (0.15 + 0.35 * m);
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(shinA - 0.08);
+    ctx.fillStyle = near ? '#1d2024' : '#101215';
+    ctx.beginPath(); ctx.ellipse(3 * u, -0.6 * u, 6 * u, 3.4 * u, 0, 0, Math.PI * 2); ctx.fill(); // foot pocket
+    ctx.fillStyle = WEBBING; ctx.fillRect(-1 * u, -2.9 * u, 1.4 * u, 5.4 * u); // heel strap
+    const bg = ctx.createLinearGradient(6 * u, 0, 34 * u, 0);
+    bg.addColorStop(0, near ? '#1a1d21' : '#0f1114'); bg.addColorStop(1, near ? 'rgba(34,40,48,0.65)' : 'rgba(20,24,30,0.6)');
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.moveTo(6 * u, -3.4 * u);
+    ctx.quadraticCurveTo(20 * u, -4.4 * u + flex * 4 * u, 33 * u, -3.8 * u + flex * 9 * u);
+    ctx.lineTo(34 * u, 3.4 * u + flex * 9 * u);
+    ctx.quadraticCurveTo(20 * u, 3.6 * u + flex * 4 * u, 6 * u, 2.6 * u);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 0.7 * u;
+    ctx.beginPath(); ctx.moveTo(8 * u, -3.2 * u); ctx.quadraticCurveTo(20 * u, -4 * u + flex * 4 * u, 32 * u, -3.4 * u + flex * 9 * u); ctx.stroke();
     ctx.restore();
   };
-  drawLeg(s2, '#0b0c0f', 'rgba(12,14,18,0.95)', true);
-  // far arm, tucked under the chest
-  limb(ctx, 24 * u, 1 * u, Math.PI * 0.55 - moving * 0.3, 12 * u, Math.PI * 0.05 + moving * 0.1, 11 * u, 6 * u, 5 * u, '#0b0c0f');
-  // tank on his back (negative y)
-  const tg = ctx.createLinearGradient(0, -16 * u, 0, -5 * u);
-  tg.addColorStop(0, '#4c5257'); tg.addColorStop(0.3, '#8c949a'); tg.addColorStop(0.55, '#5e666c'); tg.addColorStop(1, '#22272a');
+
+  // ---------- arms ----------
+  // Idle: hanging forward of the body, gently sculling at waist height.
+  // Swimming: tucked under the chest, hands together - never up at the face.
+  const arm = (phase, near) => {
+    const sc = Math.sin(kick * 0.7 + phase);
+    const shX = 27 * u, shY = near ? 2 * u : -0.5 * u;
+    const upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12) + m * (Math.PI * 0.7);
+    const foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25) + m * (Math.PI * 0.12);
+    const [ex, ey] = at(shX, shY, upA, 15 * u);
+    const [wx, wy] = at(ex, ey, foreA, 13 * u);
+    const col = near ? SUIT : '#0d0e11';
+    seg(ctx, shX, shY, ex, ey, 7.2 * u, 6 * u, col);
+    seg(ctx, ex, ey, wx, wy, 6 * u, 4.6 * u, col);
+    // glove
+    const [hx, hy] = at(wx, wy, foreA, 3 * u);
+    ctx.fillStyle = near ? GLOVE : '#08090a';
+    ctx.beginPath(); ctx.ellipse(hx, hy, 3.6 * u, 2.6 * u, foreA, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hx - Math.sin(foreA) * 1.5 * u, hy + Math.cos(foreA) * 1.5 * u, 1.8 * u, 1.1 * u, foreA + 0.6, 0, Math.PI * 2); ctx.fill(); // thumb
+    if (near) {
+      ctx.fillStyle = SUIT_PANEL; ctx.beginPath(); ctx.ellipse(shX - 1 * u, shY, 4.6 * u, 4 * u, upA, 0, Math.PI * 2); ctx.fill(); // shoulder panel
+      ctx.fillStyle = '#2a2d31'; ctx.fillRect(wx - 1.6 * u, wy - 1.6 * u, 3.2 * u, 3.2 * u); // dive computer on the wrist
+    }
+  };
+
+  leg(Math.PI, false);
+  arm(Math.PI, false);
+
+  // ---------- tank on his back ----------
+  const tg = ctx.createLinearGradient(0, -17.5 * u, 0, -6 * u);
+  tg.addColorStop(0, '#4c5257'); tg.addColorStop(0.3, '#9aa2a8'); tg.addColorStop(0.55, '#646c72'); tg.addColorStop(1, '#25292c');
   ctx.fillStyle = tg;
-  ctx.beginPath(); ctx.roundRect(-5 * u, -16 * u, 34 * u, 11 * u, 5.5 * u); ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(8 * u, -16 * u, 2 * u, 11 * u); ctx.fillRect(20 * u, -16 * u, 2 * u, 11 * u); // cam bands
-  ctx.fillStyle = '#16181a'; ctx.beginPath(); ctx.roundRect(28 * u, -13.5 * u, 5 * u, 6 * u, 1 * u); ctx.fill(); // valve
-  // hoses
-  ctx.strokeStyle = '#08090a'; ctx.lineWidth = 1.7 * u; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(32 * u, -11 * u); ctx.quadraticCurveTo(42 * u, -14 * u, 44 * u, -3 * u); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(30 * u, -8 * u); ctx.quadraticCurveTo(30 * u, 6 * u, 18 * u, 8 * u); ctx.stroke();
-  // torso
-  const bg = ctx.createLinearGradient(0, -9 * u, 0, 9 * u);
-  bg.addColorStop(0, SUIT_HI); bg.addColorStop(0.4, SUIT); bg.addColorStop(1, '#060708');
+  ctx.beginPath(); ctx.roundRect(-2 * u, -17.5 * u, 32 * u, 11.5 * u, 5.7 * u); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(8 * u, -17.5 * u, 1.8 * u, 11.5 * u); ctx.fillRect(19 * u, -17.5 * u, 1.8 * u, 11.5 * u); // cam bands
+  ctx.fillStyle = '#17191b'; ctx.beginPath(); ctx.roundRect(29 * u, -15 * u, 4.5 * u, 6.5 * u, 1 * u); ctx.fill(); // valve
+  ctx.fillStyle = '#3e4347'; ctx.beginPath(); ctx.arc(33.5 * u, -11.5 * u, 1.8 * u, 0, Math.PI * 2); ctx.fill(); // first stage
+
+  // ---------- torso: chest wider than the waist, hips, backside ----------
+  const bg = ctx.createLinearGradient(0, -8 * u, 0, 8 * u);
+  bg.addColorStop(0, SUIT_HI); bg.addColorStop(0.35, SUIT); bg.addColorStop(1, '#070809');
   ctx.fillStyle = bg;
   ctx.beginPath();
-  ctx.moveTo(-14 * u, -1 * u);
-  ctx.bezierCurveTo(-13 * u, -8 * u, 4 * u, -9 * u, 25 * u, -8.5 * u);
-  ctx.bezierCurveTo(33 * u, -8 * u, 36 * u, -2 * u, 34 * u, 4.5 * u);
-  ctx.bezierCurveTo(26 * u, 10 * u, 6 * u, 9 * u, -12 * u, 7 * u);
-  ctx.bezierCurveTo(-16 * u, 6 * u, -16 * u, 2 * u, -14 * u, -1 * u);
+  ctx.moveTo(-10 * u, -3.5 * u);
+  ctx.bezierCurveTo(-8 * u, -7.5 * u, -2 * u, -7.2 * u, 3 * u, -6 * u);        // backside -> small of the back
+  ctx.bezierCurveTo(10 * u, -5.4 * u, 18 * u, -7.4 * u, 27 * u, -7.6 * u);     // back -> shoulder blades
+  ctx.bezierCurveTo(32 * u, -7.4 * u, 34 * u, -4 * u, 34 * u, -1.5 * u);       // shoulders -> neck
+  ctx.bezierCurveTo(33 * u, 4 * u, 29 * u, 8 * u, 23 * u, 8 * u);             // chest
+  ctx.bezierCurveTo(16 * u, 7.8 * u, 11 * u, 6 * u, 6 * u, 6.2 * u);            // belly
+  ctx.bezierCurveTo(0 * u, 6.6 * u, -6 * u, 6.4 * u, -10 * u, 3.5 * u);        // hips -> crotch
   ctx.closePath(); ctx.fill();
-  // BCD jacket, weight belt
-  ctx.fillStyle = '#0a0b0d';
-  ctx.beginPath(); ctx.roundRect(3 * u, -8 * u, 25 * u, 15.5 * u, 4 * u); ctx.fill();
-  ctx.strokeStyle = SUIT_SEAM; ctx.lineWidth = 1.1 * u;
-  ctx.beginPath(); ctx.moveTo(7 * u, -7 * u); ctx.lineTo(7 * u, 7 * u); ctx.moveTo(22 * u, -7 * u); ctx.lineTo(22 * u, 7 * u); ctx.stroke();
-  ctx.fillStyle = '#1c1e21'; ctx.fillRect(-4 * u, -7.5 * u, 3 * u, 15 * u);
-  ctx.fillStyle = '#3e4246'; ctx.fillRect(-3.6 * u, 5 * u, 2.2 * u, 2.2 * u);
-  // near leg
-  drawLeg(s1, SUIT, 'rgba(18,20,25,0.97)', false);
-  // head: hood + full-face mask
-  const hx = 40 * u, hy = -1.5 * u;
-  ctx.fillStyle = SUIT;
-  ctx.fillRect(32 * u, hy - 4.5 * u, 6 * u, 9 * u); // neck
+  // BCD jacket over the torso
+  ctx.fillStyle = BCD;
+  ctx.beginPath();
+  ctx.moveTo(4 * u, -6.2 * u); ctx.lineTo(28 * u, -7.4 * u); ctx.quadraticCurveTo(31 * u, 0, 28 * u, 7.4 * u);
+  ctx.lineTo(9 * u, 6.4 * u); ctx.quadraticCurveTo(3 * u, 0, 4 * u, -6.2 * u); ctx.closePath(); ctx.fill();
+  // pocket bulge, shoulder strap, chest strap + buckle
+  ctx.fillStyle = '#16181a'; ctx.beginPath(); ctx.roundRect(8 * u, 1.5 * u, 9 * u, 6 * u, 2 * u); ctx.fill();
+  ctx.strokeStyle = WEBBING; ctx.lineWidth = 1.3 * u; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(27 * u, -7 * u); ctx.quadraticCurveTo(25 * u, 0, 26 * u, 7 * u); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(22 * u, 6.5 * u); ctx.lineTo(22 * u, 3 * u); ctx.stroke();
+  ctx.fillStyle = '#55595d'; ctx.fillRect(20.8 * u, 5.6 * u, 2.6 * u, 1.8 * u);
+  // weight belt
+  ctx.fillStyle = '#0b0c0d'; ctx.beginPath(); ctx.roundRect(-1 * u, -6.8 * u, 3.6 * u, 13.6 * u, 1 * u); ctx.fill();
+  ctx.fillStyle = '#6a6e72'; ctx.fillRect(-0.4 * u, 4.4 * u, 2.4 * u, 2.2 * u);
+  // low-pressure inflator hose from the left shoulder down the front
+  ctx.strokeStyle = '#0a0b0c'; ctx.lineWidth = 1.8 * u;
+  ctx.beginPath(); ctx.moveTo(31 * u, -4 * u); ctx.quadraticCurveTo(30 * u, 9 * u, 21 * u, 9.5 * u); ctx.stroke();
+  // yellow backup regulator clipped at the chest + pressure gauge console at the hip
+  ctx.strokeStyle = '#7a6a1e'; ctx.lineWidth = 1.2 * u;
+  ctx.beginPath(); ctx.moveTo(33 * u, -11 * u); ctx.quadraticCurveTo(36 * u, 2 * u, 29 * u, 6.5 * u); ctx.stroke();
+  ctx.fillStyle = '#b8a02a'; ctx.beginPath(); ctx.ellipse(29 * u, 7 * u, 2 * u, 1.5 * u, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#0a0b0c'; ctx.lineWidth = 1.2 * u;
+  ctx.beginPath(); ctx.moveTo(30 * u, -10 * u); ctx.quadraticCurveTo(18 * u, -4 * u, 6 * u, 8 * u); ctx.stroke();
+  ctx.fillStyle = '#26292c'; ctx.beginPath(); ctx.arc(6 * u, 8.6 * u, 2.6 * u, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(210,220,215,0.55)'; ctx.beginPath(); ctx.arc(6 * u, 8.6 * u, 1.6 * u, 0, Math.PI * 2); ctx.fill();
+
+  leg(0, true);
+
+  // ---------- head: neoprene hood, full-face mask, nothing visible inside ----------
+  const hx = 41 * u, hy = -0.5 * u;
+  seg(ctx, 32 * u, -0.5 * u, 37 * u, -0.5 * u, 8 * u, 7.6 * u, SUIT); // neck
   const hg = ctx.createRadialGradient(hx - 2 * u, hy - 3 * u, 1, hx, hy, 8 * u);
-  hg.addColorStop(0, '#2a2f35'); hg.addColorStop(1, '#0c0d10');
+  hg.addColorStop(0, '#2e333a'); hg.addColorStop(1, '#0d0e11');
   ctx.fillStyle = hg;
-  ctx.beginPath(); ctx.ellipse(hx, hy, 8 * u, 7.4 * u, 0, 0, TAU); ctx.fill();
-  // visor: dark and reflective - no face
-  const vg = ctx.createLinearGradient(hx, hy - 6 * u, hx + 6 * u, hy + 6 * u);
-  vg.addColorStop(0, '#36505c'); vg.addColorStop(0.35, '#0d1a20'); vg.addColorStop(1, '#020507');
+  ctx.beginPath(); ctx.ellipse(hx, hy, 7.6 * u, 6.9 * u, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = SUIT_SEAM; ctx.lineWidth = 0.6 * u;
+  ctx.beginPath(); ctx.arc(hx - 1 * u, hy, 6 * u, 2.2, 4.1); ctx.stroke(); // hood seam
+  ctx.beginPath(); ctx.moveTo(35 * u, -5 * u); ctx.quadraticCurveTo(33.5 * u, -0.5 * u, 35 * u, 4.5 * u); ctx.stroke(); // neck seal
+  // mask strap
+  ctx.strokeStyle = '#08090a'; ctx.lineWidth = 1.6 * u;
+  ctx.beginPath(); ctx.moveTo(hx + 1 * u, hy - 6 * u); ctx.lineTo(hx - 6 * u, hy - 1 * u); ctx.stroke();
+  // mask frame and lens (front of the face is +y)
+  ctx.fillStyle = '#25282c';
+  ctx.beginPath(); ctx.ellipse(hx + 1.8 * u, hy + 3.8 * u, 5 * u, 4.6 * u, 0.3, 0, Math.PI * 2); ctx.fill();
+  const vg = ctx.createLinearGradient(hx - 2 * u, hy, hx + 6 * u, hy + 8 * u);
+  vg.addColorStop(0, '#3a5866'); vg.addColorStop(0.4, '#0c1a20'); vg.addColorStop(1, '#020507');
   ctx.fillStyle = vg;
-  ctx.beginPath(); ctx.ellipse(hx + 3.8 * u, hy + 0.8 * u, 5.2 * u, 6.2 * u, 0.12, -1.45, 1.8); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = '#30353a'; ctx.lineWidth = 1.2 * u; ctx.stroke();
-  ctx.strokeStyle = 'rgba(210,235,245,0.4)'; ctx.lineWidth = 0.9 * u;
-  ctx.beginPath(); ctx.arc(hx + 3.6 * u, hy + 0.2 * u, 4 * u, -1.15, -0.4); ctx.stroke();
-  ctx.fillStyle = '#1a1c1f'; ctx.beginPath(); ctx.ellipse(hx + 6.5 * u, hy + 5 * u, 2.2 * u, 2 * u, 0, 0, TAU); ctx.fill(); // regulator
-  // headlamp
-  ctx.fillStyle = '#2c3034'; ctx.beginPath(); ctx.roundRect(hx - 1 * u, hy - 9.2 * u, 5.5 * u, 3.2 * u, 1 * u); ctx.fill();
-  if (lampCol) { ctx.fillStyle = lampCol; ctx.fillRect(hx + 4 * u, hy - 8.8 * u, 1.3 * u, 2.4 * u); }
-  // near arm: forearm forward along the body, hand torch in front
-  const [hx2, hy2] = limb(ctx, 27 * u, 2 * u, Math.PI * 0.5 - moving * 0.35, 11 * u, -0.05 - moving * 0.05, 12 * u, 6.4 * u, 5.4 * u, SUIT);
-  ctx.save(); ctx.translate(hx2, hy2); ctx.rotate(-0.08);
-  ctx.fillStyle = '#1d2024'; ctx.beginPath(); ctx.roundRect(-1 * u, -1.8 * u, 9 * u, 3.6 * u, 1.2 * u); ctx.fill();
-  ctx.fillStyle = '#3a3f44'; ctx.fillRect(7 * u, -2.2 * u, 1.4 * u, 4.4 * u);
+  ctx.beginPath(); ctx.ellipse(hx + 2.2 * u, hy + 3.6 * u, 3.9 * u, 3.6 * u, 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(215,235,245,0.45)'; ctx.lineWidth = 0.7 * u;
+  ctx.beginPath(); ctx.arc(hx + 2.4 * u, hy + 3.4 * u, 2.6 * u, 3.6, 4.6); ctx.stroke(); // reflection
+  // integrated regulator below the lens
+  ctx.fillStyle = '#16181b'; ctx.beginPath(); ctx.roundRect(hx - 2 * u, hy + 5.6 * u, 4.6 * u, 3.4 * u, 1.2 * u); ctx.fill();
+  ctx.strokeStyle = '#0a0b0c'; ctx.lineWidth = 1.6 * u;
+  ctx.beginPath(); ctx.moveTo(hx - 1 * u, hy + 8 * u); ctx.quadraticCurveTo(hx - 8 * u, hy + 10 * u, 33 * u, -11 * u); ctx.stroke(); // hose to the tank
+  // headlamp on the forehead, above the mask, pointing where he looks
+  const beamA = 0.35 + (1 - m) * (Math.PI / 2 - 0.45);
+  const lx = hx + 5.4 * u, ly = hy + 0.6 * u;
+  ctx.save(); ctx.translate(lx, ly); ctx.rotate(beamA);
+  ctx.fillStyle = '#2c3034'; ctx.beginPath(); ctx.roundRect(-2.4 * u, -1.8 * u, 3.6 * u, 3.6 * u, 1 * u); ctx.fill();
+  if (lampCol) { ctx.fillStyle = lampCol; ctx.fillRect(1 * u, -1.4 * u, 0.9 * u, 2.8 * u); }
   ctx.restore();
-  // rim light from above
+
+  arm(0, true);
+
+  // ---------- rim light from the surface (strongest near the top) ----------
   if (rim > 0.02) {
-    ctx.strokeStyle = `rgba(170,215,235,${(0.38 * rim).toFixed(3)})`; ctx.lineWidth = 1.2 * u;
-    ctx.beginPath(); ctx.moveTo(-4 * u, -16 * u); ctx.lineTo(26 * u, -16 * u); ctx.stroke();
-    ctx.beginPath(); ctx.arc(hx, hy, 7.6 * u, -2.7, -1.0); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-14 * u, -2 * u); ctx.quadraticCurveTo(-10 * u, -8 * u, -5 * u, -8.5 * u); ctx.stroke();
+    ctx.strokeStyle = `rgba(175,215,235,${(0.4 * rim).toFixed(3)})`; ctx.lineWidth = 1.1 * u; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, -17.3 * u); ctx.lineTo(27 * u, -17.3 * u); ctx.stroke();
+    ctx.beginPath(); ctx.arc(hx, hy, 7.3 * u, -2.5, -0.6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-9 * u, -4.5 * u); ctx.quadraticCurveTo(-6 * u, -7.4 * u, 0, -6.8 * u); ctx.stroke();
   }
-  return { headX: hx + 4 * u, headY: hy - 8 * u, torchX: hx2 + 8 * u, torchY: hy2 };
+  return { headX: lx, headY: ly, beamA };
 }
 
 // Old riveted bathyscaphe. Local origin centre; length ~9 m => Lp pixels. Faces +x.
