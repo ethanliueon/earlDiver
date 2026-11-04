@@ -210,6 +210,16 @@ export class Hud {
     }
     this.toasts = this.toasts.filter((tt) => tt.t < 4.5);
 
+    // ---------- death: everything but the red timer fades to black ----------
+    if (dying) {
+      ctx.fillStyle = `rgba(0,0,0,${clamp(g.deathT / 2.2, 0, 1).toFixed(3)})`;
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.font = `500 ${40 * s}px ${MONO}`;
+      ctx.fillStyle = '#d8241e'; ctx.fillText(formatTime(g.survival + g.deathT), W - pad, pad);
+      ctx.font = `${13 * s}px ${MONO}`; ctx.fillStyle = `rgba(216,36,30,${clamp(g.deathT - 0.5, 0, 0.8).toFixed(3)})`;
+      ctx.fillText(g.deathCause || '', W - pad, pad + 50 * s);
+    }
     // ---------- death countdown ----------
     if (dying && g.deathT > 0) {
       const left = Math.max(0, 3 - Math.floor(g.deathT - g.deathDelay));

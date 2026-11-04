@@ -18,7 +18,7 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('upgrade-btn').addEventListener('click', () => { h.onUpgrade(); this.renderWorkshop(); });
     $('resume').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); });
-    $('quit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); g.earl.o2 = 0; g.mode = 'play'; });
+    $('quit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); });
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
     this.renderRuns();
   }

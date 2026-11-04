@@ -38,7 +38,7 @@ export class Earl {
 
 export class Sub {
   constructor() {
-    this.level = 0; this.x = BOAT_X - 7; this.y = 2.2; this.vx = 0; this.vy = 0;
+    this.level = 0; this.x = BOAT_X + 8.5; this.y = 2.6; this.vx = 0; this.vy = 0;
     this.facing = -1; this.o2 = SUB_LEVELS[0].o2; this.stress = 0; this.imploded = false;
     this.tilt = 0; this.lightsOn = true;
   }

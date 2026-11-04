@@ -45,8 +45,7 @@ export class Entity {
     if (!e.inSub && e.y > 500) {
       if (this.teleportArmed) {
         this.teleportArmed = false;
-        this.x = e.x; this.y = Math.min(e.y + 500, g.world.floorAt(e.x) + 30);
-        if (this.y < e.y + 500) this.y = e.y + 500; // straight below, even inside the rock
+        this.x = e.x; this.y = e.y + 500; // straight below - inside the rock if need be
         this.state = 'hunt'; this.lastX = e.x; this.lastY = e.y; this.knows = 1;
         g.events.push('teleport');
       }

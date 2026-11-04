@@ -137,7 +137,7 @@ export function generateWorld(seed) {
 
   // ---- Wrecks ----
   W.wrecks = [
-    { x: 688, y: W.floorAt(688), len: 46, tilt: -0.08, kind: 'ship' },
+    { x: 688, y: W.floorAt(688), len: 36, tilt: -0.08, kind: 'ship' },
     { x: 452, y: W.floorAt(452), len: 70, tilt: 0.16, kind: 'ship' },
   ];
   // ---- Hydrothermal vents in the abyss ----

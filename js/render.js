@@ -58,7 +58,7 @@ export class Renderer {
 
   updateCamera(g, dt) {
     const e = g.earl;
-    const targetView = e.inSub ? 46 : 30;
+    const targetView = g.mode === 'menu' ? 40 : e.inSub ? 46 : 30;
     this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
@@ -66,7 +66,7 @@ export class Renderer {
     const lookX = e.vx * 0.9, lookY = e.vy * 0.6;
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
-    if (g.mode === 'menu') { tx = 503 + Math.sin(g.time * 0.05) * 4; ty = 4.5; }
+    if (g.mode === 'menu') { tx = 505 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
     cam.x = lerp(cam.x, tx, k); cam.y = lerp(cam.y, ty, k);
     cam.x = clamp(cam.x, cam.w / 2 - 20, WORLD_W - cam.w / 2 + 25);
@@ -159,13 +159,24 @@ export class Renderer {
     }
 
     // ---- boat + sub ----
-    const boatX = S(BOAT_X), boatY = Sy(surfY(BOAT_X) * 0.5);
+    const boatX = S(BOAT_X), boatY = Sy(surfY(BOAT_X) * 0.8);
     let crane = null;
     if (Math.abs(BOAT_X - cam.x) < cam.w) {
-      ctx.save(); ctx.translate(boatX, boatY);
+      const roll = Math.atan2(surfY(BOAT_X + 4) - surfY(BOAT_X - 4), 8) * 0.7;
+      ctx.save(); ctx.translate(boatX, boatY); ctx.rotate(roll);
+      ctx.filter = `brightness(${(0.22 + 0.78 * Math.sqrt(dayEff)).toFixed(2)})`;
       crane = drawBoat(ctx, 14 * ppm, t, g.sub);
+      ctx.filter = 'none';
+      if (dayEff < 0.5) {
+        // the cabin light stays on at night
+        const a = (0.5 - dayEff) * 1.6;
+        ctx.fillStyle = `rgba(255,196,120,${(0.85 * a).toFixed(3)})`;
+        const u = 14 * ppm / 100;
+        for (let k = 0; k < 3; k++) ctx.fillRect(-3 * u + k * 8 * u, -26 * u, 5 * u, 5 * u);
+        this.boatLight = { x: boatX + 6 * u, y: boatY - 24 * u, a };
+      } else this.boatLight = null;
       ctx.restore();
-    }
+    } else this.boatLight = null;
     const sub = g.sub;
     let subLamps = null;
     if (!sub.imploded && inView(sub.x, sub.y, 10)) {
@@ -180,6 +191,15 @@ export class Renderer {
       if (lights) subLamps = r;
     }
 
+    // ---- implosion debris ----
+    for (const d of g.debris) {
+      if (!inView(d.x, d.y)) continue;
+      ctx.save(); ctx.translate(S(d.x), Sy(d.y)); ctx.rotate(d.rot);
+      ctx.fillStyle = '#2e332b';
+      const r = d.size * ppm;
+      ctx.beginPath(); ctx.moveTo(-r, -r * 0.3); ctx.lineTo(r * 0.2, -r * 0.5); ctx.lineTo(r, r * 0.1); ctx.lineTo(-r * 0.3, r * 0.4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
     // ---- Earl ----
     const e = g.earl;
     let head = null;
@@ -233,14 +253,34 @@ export class Renderer {
       ctx.restore();
       if (ent.eyeOpen > 0.02 && ent.blink <= 0) {
         const ex = S(ent.x) - dir * 15 * ppm, ey = Sy(ent.y) - 1.2 * ppm;
-        ctx.globalCompositeOperation = 'lighter';
-        for (const off of [-1.4, 1.4]) {
-          const px = ex + off * ppm * 0.9, py = ey + off * ppm * 0.25;
-          const gg = ctx.createRadialGradient(px, py, 0, px, py, ppm * 1.4);
-          gg.addColorStop(0, `rgba(235,240,210,${(0.85 * ent.eyeOpen).toFixed(3)})`);
-          gg.addColorStop(0.15, `rgba(200,210,150,${(0.45 * ent.eyeOpen).toFixed(3)})`);
+        const o = ent.eyeOpen;
+        for (const off of [-1, 1]) {
+          const px = ex + off * ppm * 0.55, py = ey + off * ppm * 0.08;
+          ctx.globalCompositeOperation = 'lighter';
+          const gg = ctx.createRadialGradient(px, py, 0, px, py, ppm * 0.9);
+          gg.addColorStop(0, `rgba(190,200,150,${(0.5 * o).toFixed(3)})`);
+          gg.addColorStop(0.25, `rgba(120,130,80,${(0.18 * o).toFixed(3)})`);
           gg.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(px, py, ppm * 1.4, 0, TAU); ctx.fill();
+          ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(px, py, ppm * 0.9, 0, TAU); ctx.fill();
+          const ig = ctx.createRadialGradient(px, py, 0, px, py, ppm * 0.16);
+          ig.addColorStop(0, `rgba(214,222,170,${(0.75 * o).toFixed(3)})`);
+          ig.addColorStop(1, `rgba(150,160,100,0)`);
+          ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.17, ppm * 0.1, 0, 0, TAU); ctx.fill();
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.fillStyle = `rgba(0,0,0,${(0.55 * o).toFixed(3)})`;
+          ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.022, ppm * 0.085, 0, 0, TAU); ctx.fill();
+        }
+      }
+      // a few faint photophores trace part of its outline when it is very close
+      if (d < 30) {
+        ctx.globalCompositeOperation = 'lighter';
+        const a2 = (30 - d) / 30 * 0.25;
+        for (let k = 0; k < 14; k++) {
+          const u = k / 13;
+          const px = S(ent.x) + dir * (-15 + u * 30) * ppm * 1.1, py = Sy(ent.y) + (Math.sin(u * Math.PI) * -5.5 + 0.5) * ppm + Math.sin(t * 0.6 + k) * ppm * 0.2;
+          const tw = 0.5 + 0.5 * Math.sin(t * 1.7 + k * 2.3);
+          ctx.fillStyle = `rgba(150,170,190,${(a2 * tw).toFixed(3)})`;
+          ctx.beginPath(); ctx.arc(px, py, ppm * 0.07, 0, TAU); ctx.fill();
         }
         ctx.globalCompositeOperation = 'source-over';
       }
@@ -273,7 +313,7 @@ export class Renderer {
     const bot = mixRgb(mixRgb([12, 22, 36], [176, 204, 218], dayEff), [226, 140, 92], sunset * 0.8);
     const sg = ctx.createLinearGradient(0, horizon - this.H, 0, horizon);
     sg.addColorStop(0, rgbStr(top)); sg.addColorStop(1, rgbStr(bot));
-    ctx.fillStyle = sg; ctx.fillRect(-20, -20, W + 40, horizon + 22);
+    ctx.fillStyle = sg; ctx.fillRect(-20, -20, W + 40, horizon + 22 + (0.2 + g.waveBoost * 2.5) * this.cam.ppm);
     // stars
     if (dayEff < 0.4) {
       ctx.fillStyle = `rgba(230,235,255,${((0.4 - dayEff) * 1.6).toFixed(3)})`;
@@ -428,30 +468,62 @@ export class Renderer {
   }
 
   drawWreck(ctx, w, S, Sy, ppm) {
-    ctx.save(); ctx.translate(S(w.x), Sy(w.y)); ctx.rotate(w.tilt);
-    const L = w.len * ppm, Hh = w.len * 0.2 * ppm;
-    const g = ctx.createLinearGradient(0, -Hh * 1.4, 0, Hh * 0.3);
-    g.addColorStop(0, '#5a4636'); g.addColorStop(0.5, '#3a2c22'); g.addColorStop(1, '#1a1410');
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(-L / 2, -Hh * 0.9); ctx.lineTo(L * 0.18, -Hh * 0.95); ctx.lineTo(L * 0.22, -Hh * 0.7); ctx.lineTo(L * 0.28, -Hh * 1.0);
-    ctx.lineTo(L / 2, -Hh * 1.1); ctx.quadraticCurveTo(L * 0.42, Hh * 0.2, L * 0.3, Hh * 0.35);
-    ctx.lineTo(-L * 0.42, Hh * 0.35); ctx.quadraticCurveTo(-L * 0.5, 0, -L / 2, -Hh * 0.9); ctx.closePath(); ctx.fill();
-    // cabin, broken
-    ctx.fillStyle = '#2e241c';
-    ctx.beginPath(); ctx.moveTo(-L * 0.15, -Hh * 0.92); ctx.lineTo(-L * 0.14, -Hh * 1.6); ctx.lineTo(L * 0.02, -Hh * 1.5); ctx.lineTo(L * 0.05, -Hh * 1.2); ctx.lineTo(L * 0.08, -Hh * 0.93); ctx.fill();
-    // mast snapped
-    ctx.strokeStyle = '#2a201a'; ctx.lineWidth = Math.max(2, ppm * 0.25);
-    ctx.beginPath(); ctx.moveTo(L * 0.3, -Hh * 1.0); ctx.lineTo(L * 0.34, -Hh * 2.4); ctx.lineTo(L * 0.5, -Hh * 2.0); ctx.stroke();
-    // portholes, holes, plating seams
-    ctx.fillStyle = '#0c0a08';
-    for (let k = 0; k < 8; k++) { ctx.beginPath(); ctx.arc(-L * 0.38 + k * L * 0.09, -Hh * 0.45, Math.max(1.5, ppm * 0.25), 0, TAU); ctx.fill(); }
-    ctx.beginPath(); ctx.ellipse(L * 0.05, -Hh * 0.1, L * 0.06, Hh * 0.3, 0.3, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1;
-    for (let k = 0; k < 14; k++) { ctx.beginPath(); ctx.moveTo(-L * 0.45 + k * L * 0.065, -Hh * 0.9); ctx.lineTo(-L * 0.45 + k * L * 0.065, Hh * 0.3); ctx.stroke(); }
-    // rust bloom
-    ctx.fillStyle = 'rgba(150,80,40,0.18)';
-    for (let k = 0; k < 18; k++) { ctx.beginPath(); ctx.arc(-L * 0.45 + ((k * 37) % 90) / 100 * L, -Hh * (((k * 53) % 100) / 100), ppm * 0.6, 0, TAU); ctx.fill(); }
+    // A small steel freighter, sunk upright with a list, settled into the sediment.
+    ctx.save(); ctx.translate(S(w.x), Sy(w.y + w.len * 0.03)); ctx.rotate(w.tilt);
+    const L = w.len * ppm, H = w.len * 0.13 * ppm;
+    const hull = new Path2D();
+    hull.moveTo(-L * 0.5, -H * 1.18);
+    hull.quadraticCurveTo(-L * 0.47, -H * 0.3, -L * 0.4, H * 0.15);
+    hull.lineTo(L * 0.42, H * 0.15);
+    hull.quadraticCurveTo(L * 0.5, -H * 0.1, L * 0.5, -H * 0.95);
+    hull.lineTo(L * 0.2, -H * 0.98);
+    hull.quadraticCurveTo(-L * 0.2, -H * 0.98, -L * 0.5, -H * 1.18);
+    const hg = ctx.createLinearGradient(0, -H * 1.2, 0, H * 0.2);
+    hg.addColorStop(0, '#4a3e34'); hg.addColorStop(0.3, '#33291f'); hg.addColorStop(1, '#130f0c');
+    ctx.fillStyle = hg; ctx.fill(hull);
+    ctx.save(); ctx.clip(hull);
+    // plating seams + rust streaks running down from the deck
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
+    for (let k = 1; k < 4; k++) { ctx.beginPath(); ctx.moveTo(-L / 2, -H * 1.0 + k * H * 0.3); ctx.lineTo(L / 2, -H * 1.0 + k * H * 0.3); ctx.stroke(); }
+    for (let k = 0; k < 22; k++) { const x = -L * 0.48 + k * L * 0.045; ctx.beginPath(); ctx.moveTo(x, -H * 1.2); ctx.lineTo(x, H * 0.2); ctx.stroke(); }
+    for (let k = 0; k < 26; k++) {
+      const x = -L * 0.47 + ((k * 37) % 100) / 100 * L * 0.94, len = H * (0.3 + ((k * 13) % 7) / 10);
+      const rg = ctx.createLinearGradient(0, -H, 0, -H + len);
+      rg.addColorStop(0, 'rgba(140,70,34,0.55)'); rg.addColorStop(1, 'rgba(140,70,34,0)');
+      ctx.fillStyle = rg; ctx.fillRect(x, -H * 1.1, Math.max(1.5, ppm * (0.15 + (k % 3) * 0.1)), len);
+    }
+    // breach in the hull
+    ctx.fillStyle = '#050403';
+    ctx.beginPath(); ctx.moveTo(-L * 0.08, -H * 0.55); ctx.lineTo(-L * 0.02, -H * 0.72); ctx.lineTo(L * 0.03, -H * 0.5);
+    ctx.lineTo(L * 0.06, -H * 0.2); ctx.lineTo(L * 0.0, -H * 0.05); ctx.lineTo(-L * 0.06, -H * 0.18); ctx.closePath(); ctx.fill();
+    // portholes
+    for (let k = 0; k < 6; k++) { ctx.fillStyle = '#0a0806'; ctx.beginPath(); ctx.arc(L * (0.14 + k * 0.045), -H * 0.72, Math.max(1.5, ppm * 0.22), 0, TAU); ctx.fill(); }
+    ctx.restore();
+    // superstructure aft
+    const sx0 = L * 0.18, sx1 = L * 0.4, top = -H * 2.0;
+    ctx.fillStyle = '#2c241d';
+    ctx.beginPath(); ctx.moveTo(sx0, -H * 0.97); ctx.lineTo(sx0 + L * 0.01, top); ctx.lineTo(sx1, top); ctx.lineTo(sx1, -H * 0.95); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#251e18'; ctx.fillRect(sx0 + L * 0.04, top - H * 0.5, L * 0.13, H * 0.52);
+    ctx.fillStyle = '#060504';
+    for (let k = 0; k < 6; k++) ctx.fillRect(sx0 + L * 0.02 + k * L * 0.033, top + H * 0.2, L * 0.018, H * 0.22);
+    for (let k = 0; k < 4; k++) ctx.fillRect(sx0 + L * 0.055 + k * L * 0.03, top - H * 0.32, L * 0.015, H * 0.16);
+    // funnel, leaning
+    ctx.save(); ctx.translate(L * 0.33, top - H * 0.45); ctx.rotate(0.12);
+    ctx.fillStyle = '#2a201a'; ctx.fillRect(-L * 0.02, -H * 0.8, L * 0.04, H * 0.85);
+    ctx.fillStyle = 'rgba(120,40,30,0.35)'; ctx.fillRect(-L * 0.02, -H * 0.7, L * 0.04, H * 0.12);
+    ctx.restore();
+    // forward mast, snapped
+    ctx.strokeStyle = '#211a14'; ctx.lineWidth = Math.max(2, ppm * 0.22); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-L * 0.22, -H * 1.02); ctx.lineTo(-L * 0.215, -H * 2.6); ctx.lineTo(-L * 0.12, -H * 3.0); ctx.stroke();
+    ctx.lineWidth = Math.max(1, ppm * 0.08);
+    ctx.beginPath(); ctx.moveTo(-L * 0.215, -H * 2.4); ctx.lineTo(-L * 0.32, -H * 1.05); ctx.moveTo(-L * 0.215, -H * 2.0); ctx.lineTo(-L * 0.08, -H * 1.0); ctx.stroke();
+    // deck rail
+    ctx.strokeStyle = 'rgba(40,32,26,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
+    ctx.beginPath(); ctx.moveTo(-L * 0.48, -H * 1.42); ctx.quadraticCurveTo(-L * 0.2, -H * 1.2, L * 0.17, -H * 1.22); ctx.stroke();
+    for (let k = 0; k < 18; k++) { const x = -L * 0.47 + k * L * 0.037; const yTop = -H * (1.42 - (k / 18) * 0.2); ctx.beginPath(); ctx.moveTo(x, yTop); ctx.lineTo(x, yTop + H * 0.24); ctx.stroke(); }
+    // growth along the deck edge
+    ctx.fillStyle = 'rgba(170,150,120,0.22)';
+    for (let k = 0; k < 30; k++) { ctx.beginPath(); ctx.arc(-L * 0.48 + k * L * 0.032, -H * (1.16 - (k / 30) * 0.2) + Math.sin(k) * ppm * 0.1, ppm * (0.15 + (k % 4) * 0.08), 0, TAU); ctx.fill(); }
     ctx.restore();
   }
 
@@ -536,25 +608,48 @@ export class Renderer {
   drawLanternBody(ctx, l, S, Sy, ppm, t) {
     const x = S(l.x), y = Sy(l.y);
     if (l.tether) {
-      ctx.strokeStyle = 'rgba(60,70,60,0.6)'; ctx.lineWidth = Math.max(1, ppm * 0.04);
+      ctx.strokeStyle = 'rgba(50,60,56,0.7)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
       ctx.beginPath(); ctx.moveTo(x, y + ppm * 0.4);
       ctx.quadraticCurveTo(x + Math.sin(t * 0.5 + l.phase) * ppm, y + l.tether * ppm * 0.5, x, y + l.tether * ppm); ctx.stroke();
     }
     const r = ppm * 0.5;
-    const br = 0.35 + 0.65 * l.charge;
-    ctx.beginPath();
-    for (let k = 0; k < 12; k++) {
-      const a = (k / 12) * TAU;
-      const rr = r * (1 + 0.18 * Math.sin(a * 3 + t * 1.3 + l.phase) + 0.1 * Math.sin(a * 5 - t * 0.9));
-      ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.85);
+    const br = 0.3 + 0.7 * l.charge;
+    // trailing tendrils with glowing tips
+    ctx.lineWidth = Math.max(1, ppm * 0.03);
+    for (let k = 0; k < 7; k++) {
+      const bx = x + (k - 3) * r * 0.22;
+      const len = r * (1.4 + (k % 3) * 0.6);
+      const ex = bx + Math.sin(t * 0.8 + k + l.phase) * r * 0.4, ey = y + r * 0.5 + len;
+      ctx.strokeStyle = `hsla(${l.hue + 10},35%,45%,0.5)`;
+      ctx.beginPath(); ctx.moveTo(bx, y + r * 0.4); ctx.quadraticCurveTo(bx + Math.sin(t + k) * r * 0.3, y + r * 0.5 + len * 0.5, ex, ey); ctx.stroke();
+      ctx.fillStyle = `hsla(${l.hue},80%,${(50 + 30 * br) | 0}%,${(0.5 + 0.5 * br).toFixed(2)})`;
+      ctx.beginPath(); ctx.arc(ex, ey, Math.max(1, ppm * 0.045), 0, TAU); ctx.fill();
     }
-    ctx.closePath();
-    const g = ctx.createRadialGradient(x, y - r * 0.2, 0, x, y, r * 1.2);
-    g.addColorStop(0, `hsla(${l.hue},70%,${(55 + 30 * br) | 0}%,0.95)`);
-    g.addColorStop(0.6, `hsla(${l.hue + 20},55%,${(30 + 20 * br) | 0}%,0.7)`);
-    g.addColorStop(1, `hsla(${l.hue + 30},40%,20%,0.35)`);
-    ctx.fillStyle = g; ctx.fill();
-    ctx.strokeStyle = `hsla(${l.hue},40%,70%,0.35)`; ctx.lineWidth = 1; ctx.stroke();
+    // membrane
+    const blob = new Path2D();
+    for (let k = 0; k <= 16; k++) {
+      const a = (k / 16) * TAU;
+      const rr = r * (1 + 0.16 * Math.sin(a * 3 + t * 1.1 + l.phase) + 0.08 * Math.sin(a * 5 - t * 0.7));
+      const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr * 0.8;
+      if (k === 0) blob.moveTo(px, py); else blob.lineTo(px, py);
+    }
+    const g = ctx.createRadialGradient(x, y - r * 0.2, 0, x, y, r * 1.15);
+    g.addColorStop(0, `hsla(${l.hue},55%,${(40 + 25 * br) | 0}%,0.55)`);
+    g.addColorStop(0.7, `hsla(${l.hue + 25},45%,22%,0.45)`);
+    g.addColorStop(1, `hsla(${l.hue + 30},40%,12%,0.25)`);
+    ctx.fillStyle = g; ctx.fill(blob);
+    ctx.strokeStyle = `hsla(${l.hue},40%,75%,0.3)`; ctx.lineWidth = 1; ctx.stroke(blob);
+    // veins
+    ctx.save(); ctx.clip(blob);
+    ctx.strokeStyle = `hsla(${l.hue + 15},50%,60%,0.22)`;
+    for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.cos(k * 1.3) * r * 0.6, y + Math.sin(k * 2.1) * r * 0.3, x + Math.cos(k * 1.3 + 0.4) * r, y + Math.sin(k * 1.3 + 0.4) * r * 0.8); ctx.stroke(); }
+    ctx.restore();
+    // nucleus, pulsing
+    const p = 0.75 + 0.25 * Math.sin(t * 1.6 + l.phase);
+    const ng = ctx.createRadialGradient(x, y, 0, x, y, r * 0.45 * p);
+    ng.addColorStop(0, `hsla(${l.hue - 10},90%,${(70 + 25 * br) | 0}%,${(0.95 * br).toFixed(2)})`);
+    ng.addColorStop(1, `hsla(${l.hue},80%,50%,0)`);
+    ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(x, y, r * 0.45 * p, 0, TAU); ctx.fill();
   }
 
   drawLure(ctx, x, y, ppm, t) {
@@ -720,6 +815,7 @@ export class Renderer {
       halo(x, y - ppm * 0.2, ppm * 0.5, p.type === 'lure' ? [190, 240, 255] : [90, 140, 255], 0.35 * haze + 0.1);
     }
     if (g.protection && g.protection.necklace) halo(S(e.x), Sy(e.y), ppm * 3, [255, 220, 170], 0.18);
+    if (this.boatLight) halo(this.boatLight.x, this.boatLight.y, ppm * 4, [255, 190, 110], 0.25 * this.boatLight.a);
   }
 }
 

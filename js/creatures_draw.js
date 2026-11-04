@@ -231,9 +231,11 @@ function drawFish(ctx, L, v, t, swim) {
   // far pectoral / pelvic fins
   ctx.fillStyle = rgba(v.f, 0.45);
   finPath(ctx, [[-L * 0.12, H * 0.3], [-L * 0.02, H * 0.62], [L * 0.02, H * 0.34]]); ctx.fill();
-  // dorsal + anal fins
+  // dorsal + anal fins (squashed toward the body on deep-bodied fish so they never look blocky)
   ctx.fillStyle = finc;
   const dTop = -H * 0.47;
+  const fk = Math.min(1, 0.42 / v.h);
+  ctx.save(); ctx.translate(0, dTop); ctx.scale(1, fk); ctx.translate(0, -dTop);
   switch (v.d) {
     case 'spiny':
       finPath(ctx, [[-L * 0.2, dTop * 0.9], [-L * 0.16, dTop * 1.35], [-L * 0.1, dTop * 1.12], [-L * 0.05, dTop * 1.4], [L * 0.02, dTop * 1.15], [L * 0.12, dTop * 1.3], [L * 0.24, dTop * 0.75]]); ctx.fill(); break;
@@ -265,6 +267,7 @@ function drawFish(ctx, L, v, t, swim) {
     default:
       finPath(ctx, [[-L * 0.12, dTop * 0.85], [-L * 0.02, dTop * 1.32], [L * 0.16, dTop * 1.1], [L * 0.24, dTop * 0.6]]); ctx.fill();
   }
+  ctx.restore();
   if (v.sail) { /* handled in billfish */ }
   if (v.longfin) {
     ctx.fillStyle = rgba(v.f, 0.85);
@@ -273,7 +276,9 @@ function drawFish(ctx, L, v, t, swim) {
   }
   // anal fin
   ctx.fillStyle = finc;
+  ctx.save(); ctx.translate(0, H * 0.42); ctx.scale(1, fk); ctx.translate(0, -H * 0.42);
   finPath(ctx, [[L * 0.05, H * 0.42], [L * 0.14, H * 0.66], [L * 0.27, H * 0.5], [L * 0.27, H * 0.28]]); ctx.fill();
+  ctx.restore();
   if (v.adipose) { ctx.beginPath(); ctx.ellipse(L * 0.25, -H * 0.32, L * 0.03, H * 0.06, 0, 0, TAU); ctx.fill(); }
 
   // body
@@ -331,7 +336,7 @@ function drawFish(ctx, L, v, t, swim) {
     ctx.beginPath(); for (let k = 0; k < 14; k++) { const a = (k / 14) * TAU; ctx.moveTo(Math.cos(a) * H * 0.3 - L * 0.05, Math.sin(a) * H * 0.3); ctx.lineTo(Math.cos(a) * H * 0.48 - L * 0.05, Math.sin(a) * H * 0.48); } ctx.stroke();
   }
   if (v.eyespot) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(L * 0.12, -H * 0.25, H * 0.07, 0, TAU); ctx.fill(); }
-  const er = Math.max(1.2, H * (v.bigeye ? 0.16 : 0.1));
+  const er = Math.max(1.2, Math.min(H * (v.bigeye ? 0.16 : 0.1), L * (v.bigeye ? 0.055 : 0.036)));
   eye(ctx, nx + L * (v.h > 0.6 ? 0.12 : 0.1), -H * 0.12, er, v.eyec || '#cfc6a4');
   if (v.photo) {
     // photophore row drawn here for lit view; glow handled separately
@@ -410,36 +415,41 @@ function drawShark(ctx, L, v, t, swim) {
 
 // ---------- rays (seen slightly from above) ----------
 function drawRay(ctx, L, v, t) {
-  const flap = Math.sin(t * (v.manta ? 1.6 : 2.4));
-  const W = L * (v.manta ? 1.6 : 1.1);
+  // Seen from above at a shallow angle: a flattened diamond whose wingtips rise and fall.
+  const flap = Math.sin(t * (v.manta ? 1.5 : 2.3));
+  const W = L * (v.manta ? 1.25 : v.round ? 0.75 : 0.95); // wingspan
   const c0 = v.c[0];
-  ctx.save();
+  const sq = 0.38; // perspective squash
+  const tipY = (s) => (-flap * s * W * 0.22);
   // tail
-  ctx.strokeStyle = shade(c0, -0.1); ctx.lineWidth = Math.max(1, L * 0.012);
-  ctx.beginPath(); ctx.moveTo(L * 0.15, 0); ctx.quadraticCurveTo(L * 0.6, Math.sin(t) * L * 0.04, L * (v.eagle ? 1.1 : 0.7), Math.sin(t * 1.3) * L * 0.06); ctx.stroke();
-  // far wing
-  ctx.fillStyle = shade(c0, -0.2);
-  ctx.beginPath(); ctx.moveTo(-L * 0.3, 0);
-  ctx.quadraticCurveTo(-L * 0.05, -W * 0.25 * (0.4 + flap * 0.6) - L * 0.05, L * 0.05, -W * 0.38 * (0.3 + 0.7 * flap) - L * 0.04);
-  ctx.quadraticCurveTo(L * 0.1, -L * 0.02, L * 0.2, 0); ctx.fill();
-  // body
-  const g = ctx.createLinearGradient(0, -L * 0.1, 0, L * 0.1);
-  g.addColorStop(0, shade(c0, 0.05)); g.addColorStop(1, shade(c0, -0.2));
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(-L * 0.05, 0, L * 0.3, L * 0.07, 0, 0, TAU); ctx.fill();
-  // near wing
-  ctx.beginPath(); ctx.moveTo(-L * 0.32, 0);
-  ctx.quadraticCurveTo(-L * 0.05, W * 0.18 * (0.5 - flap * 0.6) + L * 0.05, L * 0.08, W * 0.36 * (0.3 - 0.7 * flap) + L * 0.06);
-  ctx.quadraticCurveTo(L * 0.12, L * 0.03, L * 0.2, 0); ctx.closePath();
-  ctx.fillStyle = shade(c0, 0.0); ctx.fill();
-  if (v.p) { ctx.save(); ctx.clip(); ctx.fillStyle = v.pc; for (let k = 0; k < 20; k++) { ctx.beginPath(); ctx.arc(-L * 0.25 + (k * 37 % 40) / 100 * L, ((k * 53) % 30 - 15) / 100 * L, L * 0.012, 0, TAU); ctx.fill(); } ctx.restore(); }
+  ctx.strokeStyle = shade(c0, -0.15); ctx.lineWidth = Math.max(1, L * 0.012);
+  ctx.beginPath(); ctx.moveTo(L * 0.2, 0); ctx.quadraticCurveTo(L * 0.55, Math.sin(t) * L * 0.03, L * (v.eagle || v.manta ? 1.0 : 0.65), Math.sin(t * 1.3) * L * 0.05); ctx.stroke();
+  if (v.sting) { ctx.lineWidth = Math.max(1, L * 0.006); ctx.beginPath(); ctx.moveTo(L * 0.4, 0); ctx.lineTo(L * 0.48, -L * 0.02); ctx.stroke(); }
+  const body = new Path2D();
+  const nose = v.round ? -L * 0.32 : -L * 0.36;
+  body.moveTo(nose, 0);
+  body.quadraticCurveTo(-L * 0.12, -W * sq * 0.2 + tipY(0.4), L * 0.0, -W * sq * 0.5 + tipY(1)); // far wingtip
+  body.quadraticCurveTo(L * 0.1, -W * sq * 0.15 + tipY(0.4), L * 0.22, 0);
+  body.quadraticCurveTo(L * 0.1, W * sq * 0.15 - tipY(0.4) * 0.6, L * 0.0, W * sq * 0.5 - tipY(1) * 0.6); // near wingtip
+  body.quadraticCurveTo(-L * 0.12, W * sq * 0.2 - tipY(0.4) * 0.6, nose, 0);
+  const g = ctx.createLinearGradient(0, -W * sq * 0.5, 0, W * sq * 0.5);
+  g.addColorStop(0, shade(c0, -0.25)); g.addColorStop(0.45, c0); g.addColorStop(1, shade(c0, -0.1));
+  ctx.fillStyle = g; ctx.fill(body);
+  ctx.save(); ctx.clip(body);
+  if (v.p) { ctx.fillStyle = v.pc; for (let k = 0; k < 24; k++) { ctx.beginPath(); ctx.arc(-L * 0.3 + ((k * 37) % 50) / 100 * L, ((k * 53) % 60 - 30) / 100 * W * sq, Math.max(0.8, L * 0.012), 0, TAU); ctx.fill(); } }
+  if (v.manta) { ctx.fillStyle = 'rgba(230,230,225,0.35)'; ctx.beginPath(); ctx.ellipse(-L * 0.12, -W * sq * 0.08, L * 0.1, W * sq * 0.1, 0.4, 0, TAU); ctx.fill(); }
+  // ridge highlight down the back
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = Math.max(1, L * 0.01);
+  ctx.beginPath(); ctx.moveTo(nose + L * 0.05, 0); ctx.lineTo(L * 0.18, 0); ctx.stroke();
+  ctx.restore();
   if (v.manta) {
     ctx.fillStyle = shade(c0, -0.1);
-    ctx.beginPath(); ctx.ellipse(-L * 0.36, -L * 0.03, L * 0.06, L * 0.018, 0.4, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(-L * 0.36, L * 0.03, L * 0.06, L * 0.018, -0.4, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(nose - L * 0.02, -L * 0.03, L * 0.05, L * 0.015, 0.5, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(nose - L * 0.02, L * 0.03, L * 0.05, L * 0.015, -0.5, 0, TAU); ctx.fill();
   }
-  eye(ctx, -L * 0.25, -L * 0.04, Math.max(1, L * 0.012), '#222', false);
-  ctx.restore();
+  if (v.eagle) { ctx.fillStyle = shade(c0, -0.05); ctx.beginPath(); ctx.ellipse(nose - L * 0.03, 0, L * 0.05, L * 0.025, 0, 0, TAU); ctx.fill(); }
+  eye(ctx, nose + L * 0.08, -L * 0.03, Math.max(1, L * 0.012), '#2a2a24', false);
+  eye(ctx, nose + L * 0.08, L * 0.03, Math.max(1, L * 0.012), '#2a2a24', false);
 }
 
 // ---------- eels ----------
@@ -548,7 +558,7 @@ function drawHatchet(ctx, L, v, t, swim) {
   g.addColorStop(0, '#3a4a56'); g.addColorStop(0.3, '#c8d4dc'); g.addColorStop(0.7, '#eef4f8'); g.addColorStop(1, '#8a9aa6');
   ctx.fillStyle = g; ctx.fill();
   ctx.fillStyle = 'rgba(200,210,220,0.5)'; finPath(ctx, [[L * 0.3, 0], [L * 0.5, -H * 0.2], [L * 0.5, H * 0.2]]); ctx.fill();
-  eye(ctx, -L * 0.3, -H * 0.15, Math.max(1, H * 0.12), '#a8c0d0');
+  eye(ctx, -L * 0.3, -H * 0.15, Math.max(1, L * 0.06), '#a8c0d0');
 }
 function drawBlob(ctx, L, v) {
   const H = L * v.h;
@@ -1101,13 +1111,18 @@ function drawGlassSponge(ctx, L, v) {
   ctx.restore();
 }
 function drawBarrelSponge(ctx, L, v) {
-  const g = ctx.createLinearGradient(-L * 0.4, 0, L * 0.4, 0);
-  g.addColorStop(0, shade(v.c[0], -0.3)); g.addColorStop(0.4, v.c[1]); g.addColorStop(1, shade(v.c[0], -0.35));
+  // squat, ridged, slightly asymmetric barrel with a dark osculum
+  const g = ctx.createLinearGradient(-L * 0.45, 0, L * 0.45, 0);
+  g.addColorStop(0, shade(v.c[0], -0.45)); g.addColorStop(0.35, v.c[1]); g.addColorStop(0.7, v.c[0]); g.addColorStop(1, shade(v.c[0], -0.5));
   ctx.fillStyle = g;
-  ctx.beginPath(); ctx.moveTo(-L * 0.25, 0); ctx.lineTo(-L * 0.42, -L * 0.7); ctx.quadraticCurveTo(0, -L * 0.6, L * 0.42, -L * 0.7); ctx.lineTo(L * 0.25, 0); ctx.fill();
-  ctx.fillStyle = '#1a0e0a'; ctx.beginPath(); ctx.ellipse(0, -L * 0.69, L * 0.36, L * 0.06, 0, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(40,20,10,0.4)'; ctx.lineWidth = Math.max(1, L * 0.012);
-  for (let k = 0; k < 8; k++) { ctx.beginPath(); ctx.moveTo(-L * 0.3, -L * 0.08 * k); ctx.quadraticCurveTo(0, -L * 0.08 * k + L * 0.04, L * 0.3, -L * 0.08 * k); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(-L * 0.28, 0);
+  ctx.bezierCurveTo(-L * 0.45, -L * 0.2, -L * 0.5, -L * 0.45, -L * 0.42, -L * 0.62);
+  for (let k = 0; k <= 8; k++) ctx.lineTo(-L * 0.42 + k * L * 0.105, -L * 0.62 - Math.sin(k * 1.9) * L * 0.025 + (k % 2) * L * 0.02);
+  ctx.bezierCurveTo(L * 0.5, -L * 0.42, L * 0.44, -L * 0.18, L * 0.3, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(12,6,4,0.9)'; ctx.beginPath(); ctx.ellipse(0, -L * 0.6, L * 0.32, L * 0.045, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(40,20,12,0.35)'; ctx.lineWidth = Math.max(1, L * 0.02);
+  for (let k = 0; k < 9; k++) { ctx.beginPath(); ctx.moveTo(-L * 0.36 + k * L * 0.09, -L * 0.04); ctx.quadraticCurveTo(-L * 0.4 + k * L * 0.1, -L * 0.35, -L * 0.38 + k * L * 0.095, -L * 0.58); ctx.stroke(); }
 }
 function drawClam(ctx, L, v, t) {
   const W = L * 0.5, H = L * 0.22;

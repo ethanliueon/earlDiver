@@ -32,7 +32,7 @@ function newGame(mode) {
     earl: new Earl(), sub: new Sub(),
     entity: new Entity(rng),
     fauna: new Fauna(world, rng),
-    bubbles: [], events: [],
+    bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0 },
     items: { lure: 0, necklace: 0 }, inv: {},
     journal: new Map(), notes: '', sapphires: 0,
@@ -55,13 +55,13 @@ const ui = new UI({
   getGame: () => g,
   onUpgrade: () => tryUpgrade(),
   onCloseWorkshop: () => {},
+  onQuit: () => die('Ended the dive'),
 });
 
 function startRun() {
   audio.init(); audio.resume(); audio.playMusic();
   g = newGame('play');
   hud.toasts = [];
-  hud.toast('Earl', 'big');
   ui.showGame();
   canvas.focus();
 }
@@ -198,7 +198,7 @@ function tryUpgrade() {
 }
 
 function die(cause) {
-  if (g.mode !== 'play') return;
+  if (g.mode !== 'play' || g.noDeath) return;
   g.mode = 'dying'; g.deathT = 0; g.deathCause = cause;
   ui.closeAll();
   const log = {
@@ -272,6 +272,11 @@ function update(dt) {
       g.sub.imploded = true; g.imploded = true; g.implodeDepth = g.sub.y;
       e.inSub = false; e.o2 = Math.min(e.o2, e.o2Max);
       g.fx.flash = 0.9; g.fx.shake = 2.5;
+      for (let i = 0; i < 26; i++) {
+        const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 9;
+        g.debris.push({ x: g.sub.x + (Math.random() - 0.5) * 6, y: g.sub.y + (Math.random() - 0.5) * 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 6, size: 0.2 + Math.random() * 1.1 });
+      }
+      for (let i = 0; i < 120; i++) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 8, y: g.sub.y + (Math.random() - 0.5) * 4, r: 0.05 + Math.random() * 0.25, w: Math.random() * 6, t: -Math.random() * 0.5 });
       audio.ready && audio.implosion();
       hud.toast('The hull gives way', 'warn');
     } else if (res === 'o2') die(causeText('o2'));
@@ -361,6 +366,15 @@ function update(dt) {
   if (e.atSurface && !e.inSub && e.o2 < e.o2Max && Math.random() < dt * 25) g.bubbles.push({ x: e.x + (Math.random() - 0.5) * 1.6, y: e.y + 0.8, r: 0.04 + Math.random() * 0.06, w: Math.random() * 6, t: 0 });
   if (e.inSub && e.speedNow > 0.8 && Math.random() < dt * 20) g.bubbles.push({ x: g.sub.x - g.sub.facing * 5, y: g.sub.y - 0.5 + Math.random(), r: 0.05 + Math.random() * 0.1, w: Math.random() * 6, t: 0 });
   updateBubbles(dt);
+  updateDebris(dt);
+}
+function updateDebris(dt) {
+  for (const d of g.debris) {
+    d.vx *= Math.exp(-dt * 1.8); d.vy = d.vy * Math.exp(-dt * 1.8) + 1.2 * dt;
+    d.x += d.vx * dt; d.y += d.vy * dt; d.rot += d.vr * dt;
+    const fl = g.world.floorAt(d.x);
+    if (d.y > fl - d.size * 0.3) { d.y = fl - d.size * 0.3; d.vx = 0; d.vy = 0; d.vr = 0; }
+  }
 }
 function smoothSky(v) { return v * v * (3 - 2 * v); }
 function updateBubbles(dt) {
@@ -406,4 +420,4 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // debug hooks for automated testing
-window.__earl = { get g() { return g; }, startRun, renderer };
+window.__earl = { get g() { return g; }, startRun, renderer, step: (dt) => update(dt), keys };

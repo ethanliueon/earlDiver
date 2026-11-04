@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Species Gallery</title>
+<style>
+  body { margin: 0; background: #0f2a3a; color: #dde; font: 11px ui-monospace, Menlo, monospace; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, 200px); gap: 6px; padding: 10px; }
+  .cell { background: linear-gradient(#2a6c8e, #134058); border-radius: 3px; padding: 4px; }
+  canvas { display: block; width: 192px; height: 108px; }
+  .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+<div class="grid" id="g"></div>
+<script type="module">
+  import { SPECIES } from '../js/species.js';
+  import { drawSpecies } from '../js/creatures_draw.js';
+  const grid = document.getElementById('g');
+  for (const sp of SPECIES) {
+    const d = document.createElement('div'); d.className = 'cell';
+    const c = document.createElement('canvas'); c.width = 384; c.height = 216;
+    const ctx = c.getContext('2d');
+    const flat = ['plant', 'floor'].includes(sp.v.hab);
+    ctx.translate(192, flat ? 190 : 108);
+    const L = flat ? 150 : 250;
+    try { drawSpecies(ctx, sp, L, 1.0, 1, 0); } catch (e) { ctx.fillStyle = 'red'; ctx.fillText(e.message, -180, 0); }
+    const n = document.createElement('div'); n.className = 'n';
+    n.textContent = `${sp.id} ${sp.name} [${sp.v.s}]`;
+    d.append(c, n); grid.append(d);
+  }
+</script>
+</body>
+</html>
