@@ -2,7 +2,7 @@
 // survival timer + oxygen bar (top right), the right-hand dive monitor
 // (depth, radar, heart rate, journal), item slots and prompts.
 import { clamp, lerp, formatTime, TAU } from './util.js';
-import { SUB_LEVELS } from './player.js';
+import { SUB_LEVELS, diverDrainMult } from './player.js';
 import { RESOURCES } from './world.js';
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
@@ -62,7 +62,15 @@ export class Hud {
     if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText((g.noAirRate || 1) > 1.3 ? 'under pressure — seconds left — surface!' : 'holding your breath — surface!', W - pad, by + bh + 5 * s); }
     else ctx.fillText(e.atSurface ? (o2 < 0.999 ? 'refilling…' : 'tank full') : leftTxt, W - pad, by + bh + 5 * s);
     if (!e.atSurface && o2 < 0.25 && o2 >= 0.1) { ctx.fillStyle = '#e8b040'; ctx.textAlign = 'left'; ctx.fillText('RESERVE', bx, by + bh + 5 * s); ctx.textAlign = 'right'; }
-    if (g.diverDrain > 1.5 && !e.inSub && !e.atSurface) { ctx.fillStyle = '#e8a040'; ctx.fillText(`pressure: air going ${g.diverDrain.toFixed(1)}× faster`, W - pad, by + bh + 20 * s); }
+    if (!e.atSurface && (g.diverDrain > 1.05 || g.subDrain > 1.05)) {
+      // name each cause separately: sprinting doubles use, depth adds pressure
+      const sprinting = e.sprint && e.speedNow > 1;
+      const press = e.inSub ? 1 : diverDrainMult(e.y);
+      const parts = [];
+      if (sprinting) parts.push('sprinting: air use ×2');
+      if (press > 1.05) parts.push(`pressure: air use ×${press.toFixed(1)}`);
+      if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.fillText(parts.join('  ·  '), W - pad, by + bh + 20 * s); }
+    }
 
     // ---------- dive monitor (right) ----------
     const mw = 188 * s, mh = 470 * s, mx = W - pad - mw, my = by + 50 * s;
