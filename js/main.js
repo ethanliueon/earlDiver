@@ -302,7 +302,7 @@ function update(dt) {
     if (g.necklaceT > 0) g.protection = { x: e.x, y: e.y, necklace: true };
     for (const l of W.lanterns) {
       const d = dist(e.x, e.y, l.x, l.y);
-      const inside = d < LANTERN_RADIUS && l.charge > 0.05 && !e.inSub;
+      const inside = d < (e.inSub ? LANTERN_RADIUS + 3 : LANTERN_RADIUS) && l.charge > 0.05;
       l.active = lerp(l.active, inside ? 1 : 0, dt * 3);
       if (inside) {
         l.charge = Math.max(0, l.charge - dt / 45);

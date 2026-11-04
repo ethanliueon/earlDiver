@@ -163,8 +163,8 @@ export function generateWorld(seed) {
       for (let i = 0; i < k; i++) {
         const x = cx + rng.range(10, 240);
         const fl = W.floorAt(x);
-        let y = cy + rng.range(10, 240);
-        if (y > fl - 2) y = fl - rng.range(3, 40);
+        const y = cy + rng.range(10, 240);
+        if (y > fl - 3) continue; // this part of the cell is solid ground
         addLantern(x, y);
       }
     }
