@@ -14,7 +14,8 @@ export const ENTITY_SPEED = DIVE_SPEED * 1.5;
 export const LANTERN_RADIUS = 3;
 export const SAFE_DEPTH = 120;   // above this it can never reach Earl
 export const REST_CEILING = 200; // when not chasing it keeps below this
-const FORGET_TIME = 60;          // seconds above SAFE_DEPTH before a mark fades
+const FORGET_TIME = 180;         // seconds above SAFE_DEPTH before a mark fades on its own
+export const CALM_NEEDED = 60;   // about a minute of good deeds lifts a mark
 
 export class Entity {
   constructor(rng, world) {
@@ -38,6 +39,14 @@ export class Entity {
   }
 
   // add to the attention meter (amount is a fraction of a full mark)
+  // good deeds for the ocean: they calm it. Marked: build toward lifting the mark.
+  // Not marked: they lower its attention.
+  appease(g, amount) {
+    if (this.marked) {
+      this.calm = (this.calm || 0) + amount;
+      if (this.calm >= CALM_NEEDED) { this.marked = false; this.calm = 0; this.attn = 0.2; this.state = 'roam'; g.events.push('appeased'); }
+    } else this.attn = Math.max(0, this.attn - amount / 100);
+  }
   disturb(g, amount) {
     if (this.marked) return;
     this.attn = Math.min(1, this.attn + amount);
@@ -45,7 +54,7 @@ export class Entity {
   }
   mark(g) {
     if (this.marked) return;
-    this.marked = true; this.attn = 1; this.shallowT = 0;
+    this.marked = true; this.attn = 1; this.shallowT = 0; this.calm = 0;
     this.lastX = g.earl.x; this.lastY = g.earl.y;
     this.state = 'search'; this.searchT = 0; this.senseT = this.rng.range(6, 12);
     g.events.push('marked');

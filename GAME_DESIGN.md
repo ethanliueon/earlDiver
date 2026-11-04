@@ -109,7 +109,11 @@ pearls (rare, in clams), glass sponge shards (deep). They are spent on sub upgra
   and every so often gets a vague fix on him.
 - Depth limits: while actively chasing it can push up toward ~120 m, slowing as it rises (no hard
   line); otherwise it keeps below ~200 m. Above ~120 m Earl cannot be taken.
-- The mark fades after ~60 s above 120 m.
+- Good deeds calm it. Marked, about a minute's worth lifts the mark ("The water feels lighter"):
+  freeing an animal caught in a lost net (hold F 12 s, +25), planting a coral fragment on bare
+  shallow seabed (hold F 8 s, +15), offering a lure or necklace back to the deep below 100 m
+  (G, +30); 60 lifts it. Unmarked, deeds lower its attention. Staying above 120 m for ~3 minutes
+  also lets a mark fade.
 - It is never fully seen: eyes, a faint outline, a body that shows only where a lamp falls.
 - Within 200 m it shows on sonar; the dread effects (darkness, ink, torch shift, disorientation)
   belong to the deep and fade out above ~100 m.

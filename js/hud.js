@@ -88,7 +88,7 @@ export class Hud {
     ctx.fillText(`${Math.max(0, e.y).toFixed(0)} m`, ix, yy + 14 * s);
     ctx.font = `${10 * s}px ${MONO}`; ctx.fillStyle = 'rgba(180,210,205,0.55)';
     ctx.fillText(`max ${e.maxDepth.toFixed(0)} m`, ix + 110 * s, yy + 30 * s);
-    if (g.entity && g.entity.marked) { ctx.fillStyle = `rgba(230,90,80,${(0.6 + 0.3 * Math.sin(g.time * 2)).toFixed(2)})`; ctx.fillText('MARKED', ix + 110 * s, yy + 2 * s); }
+    if (g.entity && g.entity.marked) { ctx.fillStyle = `rgba(230,90,80,${(0.6 + 0.3 * Math.sin(g.time * 2)).toFixed(2)})`; ctx.fillText(g.entity.calm > 0 ? `MARKED ${Math.round(g.entity.calm / 60 * 100)}%` : 'MARKED', ix + 110 * s, yy + 2 * s); }
     else if (g.concealed) { ctx.fillStyle = 'rgba(150,200,170,0.75)'; ctx.fillText('CONCEALED', ix + 110 * s, yy + 2 * s); }
     yy += 56 * s;
     if (e.inSub) {

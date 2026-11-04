@@ -20,6 +20,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | L | Lights on/off. Light carries a long way in the dark. Flash it at a charging animal to make it swerve |
 | Q | Throw an anglerfish lure |
 | E | Wear a fangtooth necklace |
+| G | Offer a lure or necklace back to the deep (below 100 m) - calms the entity |
 | U | Boat workshop (at the surface, by the boat) |
 | Mouse | Hold left button to swim toward the cursor; the lamp follows the cursor; right-click to interact; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause |

@@ -43,6 +43,7 @@ export const RESOURCES = {
   ink: { name: 'Ink', desc: 'An ink sac, intact.' },
   pearl: { name: 'Pearl', desc: 'Found inside a clam.' },
   glass: { name: 'Glass sponge shard', desc: 'Silica lattice from a deep glass sponge.' },
+  coral: { name: 'Coral fragment', desc: 'A living piece of broken coral. It could be planted.' },
 };
 
 export function generateWorld(seed) {
@@ -218,6 +219,9 @@ export function generateWorld(seed) {
   // Usable items, found on the deeper seafloor
   for (let i = 0; i < 26; i++) { const x = rng.range(300, 640); const fl = W.floorAt(x); if (fl > 150 && fl < 1800) addPickup('lure', x, fl - 0.4); }
   for (let i = 0; i < 18; i++) { const x = rng.range(250, 620); const fl = W.floorAt(x); if (fl > 250 && fl < 2200) addPickup('necklace', x, fl - 0.3); }
+  // Good deeds: animals caught in lost fishing nets (fixed places), and broken coral to replant
+  for (const [x, an] of [[938, 'turtle'], [905, 'fish'], [872, 'turtle'], [826, 'fish'], [778, 'turtle'], [736, 'fish']]) addPickup('net', x, W.floorAt(x) - 0.7, { animal: an });
+  for (let i = 0; i < 12; i++) { const x = rng.range(880, 968); addPickup('coral', x, onFloor(x)); }
   // Sapphires at fixed places
   W.sapphires = SAPPHIRES.map((sp, i) => {
     const x = sp.x, fl = W.floorAt(x);

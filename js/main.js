@@ -20,6 +20,10 @@ const audio = new Audio();
 const keys = new Set();
 const PRY = new Set(['clam', 'mussel', 'rock', 'iron']);
 const PRY_TIME = 1.5;
+// how long each hold-F job takes, and how much calm a good deed gives
+const HOLD_TIME = { clam: 1.5, mussel: 1.5, rock: 1.5, iron: 1.5, net: 12 };
+const DEED_CALM = { net: 25, plant: 15, offer: 30 };
+const PLANT_TIME = 8;
 const pressed = new Set();
 let fHeld = 0;
 let fDown = 0;
@@ -203,21 +207,45 @@ function promptFor(t) {
   let p = null;
   if (t) {
     if (t.kind === 'pickup') {
-      const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'fangtooth necklace' : t.p.type === 'sapphire' ? 'deep sapphire' : RESOURCES[t.p.type].name.toLowerCase();
-      p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
+      const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'fangtooth necklace' : t.p.type === 'sapphire' ? 'deep sapphire' : (RESOURCES[t.p.type] ? RESOURCES[t.p.type].name.toLowerCase() : t.p.type);
+      if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? `Cutting the net… ${Math.round(g.pry.t / HOLD_TIME.net * 100)} %` : `Hold F  Cut the ${t.p.animal} free`;
+      else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') p = 'F  Board the submersible';
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
+  if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
+  if (!e.inSub && e.y > 100 && (g.items.lure || g.items.necklace)) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep';
   if (e.inSub) p = p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible';
   if (nearBoat) p = (p ? p + '   ·   ' : '') + 'U  Boat workshop';
   return p;
 }
 
+function canPlant(t) {
+  const e = g.earl;
+  if (t && t.kind === 'pickup' && Math.hypot(t.p.x - e.x, t.p.y - e.y) < 1.2) return false; // right on top of something else
+  return !e.inSub && (g.inv.coral || 0) > 0 && e.y < 80 && g.world.floorAt(e.x) - e.y < 2.5;
+}
+function deed(calm, text) {
+  const ent = g.entity, was = ent.marked;
+  ent.appease(g, calm);
+  hud.toast(text, 'note');
+  if (was && ent.marked) hud.toast(`The water feels a little calmer (${Math.round(ent.calm / 60 * 100)} %)`);
+  audio.ready && audio.note();
+}
 function interact(t, exitSub) {
   const e = g.earl, sub = g.sub;
   if (exitSub && e.inSub) return leaveSub();
   if (!t) { if (e.inSub) leaveSub(); return; }
+  if (t.kind === 'pickup' && t.p.type === 'net') {
+    // freed: the animal swims off, the net comes away
+    t.p.taken = true;
+    const sp = SPECIES_BY_ID[t.p.animal === 'turtle' ? 183 : 30];
+    const c = g.fauna.makeFish(sp, t.p.x, t.p.y - 0.5, e.facing, g.fauna.groupId++, true);
+    c.vy = -0.8; g.fauna.list.push(c);
+    deed(DEED_CALM.net, t.p.animal === 'turtle' ? 'The turtle swims free.' : 'The fish swims free.');
+    return;
+  }
   if (t.kind === 'pickup') {
     const p = t.p;
     // taking things from the deep draws its attention
@@ -330,12 +358,29 @@ function update(dt) {
     g.prompt = promptFor(target);
     // seabed materials have to be worked loose: hold F (or the right mouse button), one at a time
     const holding = keys.has('f') || mouse.rdown;
-    if (target && target.kind === 'pickup' && PRY.has(target.p.type) && holding) {
+    const planting = canPlant(target);
+    const holdJob = !planting && target && target.kind === 'pickup' && HOLD_TIME[target.p.type];
+    if (holdJob && holding) {
       if (!g.pry || g.pry.p !== target.p) g.pry = { p: target.p, t: 0 };
       g.pry.t += dt;
-      if (g.pry.t >= PRY_TIME) { g.pry = null; interact(target, false); }
+      if (g.pry.t >= HOLD_TIME[target.p.type]) { g.pry = null; interact(target, false); }
     } else g.pry = null;
-    if (pressed.has('f-tap') && !(target && target.kind === 'pickup' && PRY.has(target.p.type))) interact(target, false);
+    // planting a coral fragment on bare shallow seabed
+    if (planting && holding) {
+      g.plant = (g.plant || 0) + dt;
+      if (g.plant >= PLANT_TIME) {
+        g.plant = 0; g.inv.coral--;
+        const sp = SPECIES_BY_ID[[126, 127, 128, 179][Math.floor(Math.random() * 4)]];
+        g.world.statics.push({ sp, x: e.x, y: g.world.floorAt(e.x), scale: 0.5, phase: Math.random() * 6, flip: 1 });
+        deed(DEED_CALM.plant, 'The coral takes hold.');
+      }
+    } else g.plant = 0;
+    // giving something back: release a lure or a necklace into the deep
+    if (pressed.has('g') && !e.inSub && e.y > 100) {
+      const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
+      if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); }
+    }
+    if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
     if (pressed.has('l')) { g.lampFlashT = g.time; e.lampWanted = !e.lampWanted; g.sub.lightsOn = e.lampWanted; hud.toast(e.lampWanted ? 'Lights on' : 'Lights off'); }
     if (pressed.has('u') && Math.abs(e.x - BOAT_X) < 14 && e.y < 4) ui.toggleWorkshop();
@@ -441,6 +486,10 @@ function update(dt) {
         audio.ready && (audio.tone(38, 4, 0.7, 'sine', 0, 24), audio.groan(0.18));
         hud.toast('Something noticed you.', 'note');
         g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}, ${Math.round(e.y)} m] Something noticed me.`;
+        const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
+      } else if (ev === 'appeased') {
+        hud.toast('The water feels lighter.', 'big');
+        g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}] The water feels lighter.`;
         const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
       } else if (ev === 'unmarked') {
         hud.toast('The feeling of being watched fades.', 'note');

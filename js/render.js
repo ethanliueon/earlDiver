@@ -1012,6 +1012,31 @@ export class Renderer {
         ctx.fillStyle = '#e8e2d0';
         for (let k = 0; k < 7; k++) { const a = Math.PI * 0.15 + k * 0.12 * Math.PI; const px = Math.cos(a) * u * 0.3, py = -u * 0.08 + Math.sin(a) * u * 0.08; ctx.beginPath(); ctx.moveTo(px - u * 0.02, py); ctx.lineTo(px, py + u * 0.14); ctx.lineTo(px + u * 0.02, py); ctx.fill(); }
         break;
+      case 'coral': {
+        ctx.strokeStyle = '#d88a6a'; ctx.lineWidth = Math.max(1, u * 0.05); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-u * 0.15, 0); ctx.lineTo(0, -u * 0.25); ctx.lineTo(u * 0.12, -u * 0.4); ctx.moveTo(0, -u * 0.25); ctx.lineTo(-u * 0.1, -u * 0.4); ctx.stroke(); ctx.lineCap = 'butt';
+        break;
+      }
+      case 'net': {
+        // a lost fishing net snagged on the bottom, an animal struggling in it
+        const st = Math.sin(t * 3 + p.phase) * 0.15;
+        ctx.save(); ctx.rotate(st * 0.3);
+        if (p.animal === 'turtle') {
+          ctx.fillStyle = '#4e5a36'; ctx.beginPath(); ctx.ellipse(0, -u * 0.25, u * 0.5, u * 0.28, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = '#6e6a4c'; ctx.beginPath(); ctx.ellipse(-u * 0.55, -u * 0.22, u * 0.14, u * 0.1, 0, 0, TAU); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(-u * 0.2, -u * 0.05, u * 0.32, u * 0.07, 0.6 + st * 2, 0, TAU); ctx.fill();
+        } else {
+          ctx.fillStyle = '#c45a5a'; ctx.beginPath(); ctx.ellipse(0, -u * 0.25, u * 0.45, u * 0.17, 0, 0, TAU); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(u * 0.4, -u * 0.25); ctx.lineTo(u * 0.65, -u * 0.42 + st * u); ctx.lineTo(u * 0.65, -u * 0.08 + st * u); ctx.fill();
+        }
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(70,110,90,0.85)'; ctx.lineWidth = Math.max(1, u * 0.025);
+        ctx.beginPath();
+        for (let k = -6; k <= 6; k++) { ctx.moveTo(k * u * 0.12, u * 0.05); ctx.lineTo(k * u * 0.12 + u * 0.3, -u * 0.7); ctx.moveTo(k * u * 0.12, u * 0.05); ctx.lineTo(k * u * 0.12 - u * 0.3, -u * 0.7); }
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(200,120,50,0.9)'; ctx.beginPath(); ctx.arc(u * 0.6, -u * 0.7, u * 0.08, 0, TAU); ctx.fill(); // float
+        break;
+      }
       case 'sapphire': {
         const s = 0.5 + 0.5 * Math.sin(t * 2 + p.phase);
         ctx.fillStyle = '#0c2a8a';
