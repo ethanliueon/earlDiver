@@ -9,7 +9,7 @@ import { BOAT_X, WORLD_W } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 
 const WATER_ALBEDO = [
-  [0, [78, 172, 196]], [30, [44, 134, 176]], [120, [22, 86, 138]], [300, [12, 52, 98]], [1000, [6, 30, 64]], [3000, [4, 20, 44]],
+  [0, [78, 172, 196]], [30, [44, 134, 176]], [120, [22, 86, 138]], [250, [12, 50, 88]], [500, [8, 32, 56]], [1000, [5, 20, 36]], [3000, [3, 13, 24]],
 ];
 const LIGHT_TINT = [
   [0, [1.0, 1.0, 1.0]], [10, [0.82, 0.97, 1.0]], [40, [0.55, 0.88, 1.0]], [150, [0.38, 0.72, 1.0]], [600, [0.25, 0.55, 0.95]],
@@ -19,6 +19,7 @@ const FLOOR_COL = [
 ];
 const BEAM_CALM = [214, 232, 255];
 const BEAM_DREAD = [255, 96, 46];
+const WATER_LIT = [60, 150, 180]; // what's left of a beam after a few metres of seawater
 
 export function dayCycle(t) {
   // 10 minute day: 5 day, 1 sunset, 3 night, 1 sunrise
@@ -154,9 +155,31 @@ export class Renderer {
     if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
     // ---- fauna ----
+    const baseM = ctx.getTransform();
+    let glowSkip = 0;
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
       const Ld = (c.len + 0.25 * Math.exp(-c.len * 2)) * ppm;
+      const shape = c.sp.v.s;
+      if (Ld < 20 && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
+        // small fish: a cheap silhouette, with the silver flash of a turning school fish
+        const tilt = clamp(Math.atan2(c.vy, Math.abs(c.vx) + 0.2), -0.5, 0.5);
+        ctx.setTransform(baseM); ctx.translate(S(c.x), Sy(c.y));
+        if (c.dir < 0) ctx.scale(-1, 1);
+        ctx.rotate(tilt);
+        const hh = Ld * Math.min(0.32, c.sp.v.h * 0.6 + 0.06), sw = Math.sin(c.phase * 6) * hh * 0.35;
+        ctx.fillStyle = c.sp.v.c[0];
+        ctx.beginPath(); ctx.ellipse(-Ld * 0.04, 0, Ld * 0.42, hh, 0, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(Ld * 0.3, 0); ctx.lineTo(Ld * 0.52, -hh * 1.1 + sw); ctx.lineTo(Ld * 0.5, hh * 1.1 + sw); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = c.sp.v.c[1];
+        ctx.beginPath(); ctx.ellipse(-Ld * 0.06, hh * 0.35, Ld * 0.34, hh * 0.55, 0, 0, TAU); ctx.fill();
+        const flash = Math.pow(Math.max(0, Math.sin(c.phase * 0.6 + c.wob)), 10);
+        if (flash > 0.05) { ctx.fillStyle = `rgba(235,245,250,${(0.85 * flash).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(-Ld * 0.05, 0, Ld * 0.36, hh * 0.7, 0, 0, TAU); ctx.fill(); }
+        if (Ld > 9) { ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.arc(-Ld * 0.33, -hh * 0.2, Math.max(0.7, hh * 0.3), 0, TAU); ctx.fill(); }
+        if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([S(c.x), Sy(c.y), c.sp.v.glow, Math.max(2, Ld * 0.3)]);
+        continue;
+      }
+      ctx.setTransform(baseM);
       ctx.save(); ctx.translate(S(c.x), Sy(c.y));
       const tilt = clamp(Math.atan2(c.vy, Math.abs(c.vx) + 0.2), -0.5, 0.5);
       if (c.dir < 0) ctx.scale(-1, 1);
@@ -166,6 +189,18 @@ export class Renderer {
       if (c.sp.v.glow) {
         if (r) for (const [lx, ly] of r) glowPts.push([S(c.x) + lx * c.dir, Sy(c.y) + ly, c.sp.v.glow, Ld * 0.25]);
         else glowPts.push([S(c.x), Sy(c.y), c.sp.v.glow, Ld * 0.3]);
+      }
+    }
+    ctx.setTransform(baseM);
+    // scales drifting where something was eaten
+    for (const pf of g.fauna.puffs) {
+      if (!inView(pf.x, pf.y)) continue;
+      const k = pf.t / 2.5;
+      for (let i = 0; i < pf.n; i++) {
+        const a = pf.seed + i * 2.4, r = (0.2 + k * 1.4) * (0.5 + (i % 3) * 0.3);
+        const tw = 0.5 + 0.5 * Math.sin(g.time * 9 + i * 3 + pf.seed);
+        ctx.fillStyle = `rgba(225,235,240,${((1 - k) * 0.8 * tw).toFixed(3)})`;
+        ctx.beginPath(); ctx.ellipse(S(pf.x + Math.cos(a) * r), Sy(pf.y + Math.sin(a) * r * 0.7 + k * 0.6), Math.max(1, ppm * 0.04), Math.max(0.6, ppm * 0.025), a, 0, TAU); ctx.fill();
       }
     }
 
@@ -195,10 +230,27 @@ export class Renderer {
         ctx.strokeStyle = 'rgba(30,30,28,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
         ctx.beginPath(); ctx.moveTo(boatX + crane.craneTip[0], boatY + crane.craneTip[1]); ctx.lineTo(S(sub.x), Sy(sub.y) - 2.6 * ppm); ctx.stroke();
       }
-      ctx.save(); ctx.translate(S(sub.x), Sy(sub.y)); ctx.rotate(sub.tilt * sub.facing); ctx.scale(sub.facing, 1);
+      const cy = Math.cos(sub.yaw), sxs = (cy >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy));
+      ctx.save(); ctx.translate(S(sub.x), Sy(sub.y)); ctx.rotate(sub.tilt * Math.sign(sxs)); ctx.scale(sxs, 1);
       const lights = g.earl.inSub && sub.lightsOn;
       const r = drawSub(ctx, 9 * ppm, t, sub.stress, lights);
       ctx.restore();
+      // mid-turn the hull is seen nearly bow-on: draw its round cross-section over the squashed side view
+      const bow = clamp(1 - Math.abs(cy) / 0.5, 0, 1);
+      if (bow > 0) {
+        const u2 = 9 * ppm / 100, bx = S(sub.x), by = Sy(sub.y);
+        ctx.save(); ctx.globalAlpha = bow;
+        const hg = ctx.createRadialGradient(bx - 4 * u2, by - 14 * u2, 1, bx, by - 9 * u2, 13 * u2);
+        hg.addColorStop(0, '#727a6c'); hg.addColorStop(1, '#262a24');
+        ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(bx, by - 9 * u2, 11 * u2, 11.5 * u2, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#3e443b'; ctx.fillRect(bx - 4 * u2, by - 27 * u2, 8 * u2, 8 * u2);
+        const sg = ctx.createRadialGradient(bx - 4 * u2, by + 6 * u2, 1, bx, by + 10 * u2, 13 * u2);
+        sg.addColorStop(0, '#7a8070'); sg.addColorStop(1, '#1e211c');
+        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(bx, by + 10 * u2, 13 * u2, 0, TAU); ctx.fill();
+        ctx.fillStyle = lights ? '#f0cf96' : '#2a261e'; ctx.beginPath(); ctx.arc(bx, by + 8 * u2, 3.4 * u2, 0, TAU); ctx.fill();
+        if (lights) { ctx.fillStyle = '#f4f8ff'; ctx.beginPath(); ctx.arc(bx + 6 * u2, by - 6 * u2, 1.6 * u2, 0, TAU); ctx.fill(); }
+        ctx.restore();
+      }
       if (lights) subLamps = r;
     }
 
@@ -738,32 +790,46 @@ export class Renderer {
       gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(1, rgbStr(col, 0));
       l.fillStyle = gg; l.beginPath(); l.arc(x * k, y * k, r * k, 0, TAU); l.fill();
     };
+    // A lamp in seawater: three nested cones give a soft edge instead of a hard wedge, and the
+    // light falls off fast and turns blue-green with distance as the water absorbs the red.
     const cone = (x, y, ang, range, spread, col, a) => {
-      const gg = l.createRadialGradient(x * k, y * k, 0, x * k, y * k, range * k);
-      gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(0.35, rgbStr(col, a * 0.7)); gg.addColorStop(1, rgbStr(col, 0));
-      l.fillStyle = gg;
-      l.beginPath(); l.moveTo(x * k, y * k);
-      l.arc(x * k, y * k, range * k, ang - spread, ang + spread); l.closePath(); l.fill();
+      const far = mixRgb(col, WATER_LIT, 0.65);
+      for (const [sm, am] of [[1.3, 0.2], [0.85, 0.32], [0.5, 0.48]]) {
+        const gg = l.createRadialGradient(x * k, y * k, 0, x * k, y * k, range * k);
+        gg.addColorStop(0, rgbStr(col, a * am)); gg.addColorStop(0.12, rgbStr(col, a * am * 0.85));
+        gg.addColorStop(0.4, rgbStr(far, a * am * 0.4)); gg.addColorStop(0.75, rgbStr(WATER_LIT, a * am * 0.1));
+        gg.addColorStop(1, rgbStr(WATER_LIT, 0));
+        l.fillStyle = gg;
+        l.beginPath(); l.moveTo(x * k, y * k);
+        l.arc(x * k, y * k, range * k, ang - spread * sm, ang + spread * sm); l.closePath(); l.fill();
+      }
     };
     const e = g.earl;
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
-    const flick = fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1;
+    const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse;
     if (head && e.lampOn) {
       const ang = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
-      cone(head.x, head.y, ang, 19 * ppm, 0.36, beamCol, 1.0 * flick);
-      cone(head.x, head.y, ang, 9 * ppm, 0.6, beamCol, 0.5 * flick);
-      radial(head.x, head.y, 4 * ppm, beamCol, 0.45 * flick);
+      cone(head.x, head.y, ang, 17 * ppm, 0.32, beamCol, 0.95 * flick);
+      radial(head.x, head.y, 2.6 * ppm, beamCol, 0.3 * flick);
     }
     if (g.protection && g.protection.necklace) radial(S(e.x), Sy(e.y), 9 * ppm, [255, 230, 190], 0.65);
     if (subLamps) {
       const sub = g.sub;
       const sx = S(sub.x), sy = Sy(sub.y);
-      const ang = sub.facing > 0 ? sub.tilt : Math.PI - sub.tilt;
-      const lp = (p) => [sx + p[0] * sub.facing, sy + p[1]];
+      const cy = Math.cos(sub.yaw), sxs = (cy >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy));
+      const vis = Math.pow(Math.abs(cy), 0.7); // beams swing towards/away from us while turning
+      const ang = sxs > 0 ? sub.tilt : Math.PI - sub.tilt;
+      const lp = (p) => [sx + p[0] * sxs, sy + p[1]];
       const [ax, ay] = lp(subLamps.lampA), [bx, by] = lp(subLamps.lampB);
-      cone(ax, ay, ang, 30 * ppm, 0.3, mixRgb([235, 240, 255], BEAM_DREAD, fx.torchShift), 1.0 * flick);
-      cone(bx, by, ang + 0.35 * (sub.facing > 0 ? 1 : -1), 18 * ppm, 0.4, mixRgb([235, 240, 255], BEAM_DREAD, fx.torchShift), 0.8 * flick);
-      radial(sx, sy, 6 * ppm, [255, 200, 140], 0.35);
+      const lc = mixRgb([235, 238, 245], BEAM_DREAD, fx.torchShift);
+      cone(ax, ay, ang, 32 * ppm, 0.34, lc, 1.15 * flick * vis);
+      cone(ax, ay, ang, 15 * ppm, 0.95, lc, 0.4 * flick * vis); // diffuse flood around the main beam
+      cone(bx, by, ang + 0.35 * Math.sign(sxs), 18 * ppm, 0.45, lc, 0.75 * flick * vis);
+      // light spilling around the hull: a soft neutral fill, the warm portholes, a dim stern lamp
+      radial(sx, sy, 14 * ppm, [140, 165, 175], 0.2 * fx.lightPulse);
+      radial(sx + 0.5 * sxs * ppm, sy + 0.9 * ppm, 5 * ppm, [255, 190, 120], 0.4 * fx.lightPulse);
+      radial(sx - 4.8 * sxs * ppm, sy - 0.4 * ppm, 7 * ppm, [220, 160, 110], 0.15 * fx.lightPulse);
+      if (vis < 0.6) radial(ax, ay, 6 * ppm, lc, (0.6 - vis) * 1.2 * flick); // the lamps face us mid-turn
     }
     for (const lt of g.world.lanterns) {
       const x = S(lt.x), y = Sy(lt.y);
@@ -785,7 +851,7 @@ export class Renderer {
       if (x < -500 || x > this.W + 500 || y < -500 || y > this.H + 500) continue;
       radial(x, y, 9 * ppm, [255, 120, 60], 0.22 + 0.06 * Math.sin(g.time * 3 + v.phase));
     }
-    for (const [x, y, col, r] of glowPts) radial(x, y, Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7);
+    for (const [x, y, col, r] of glowPts) radial(x, y, Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7 * fx.bioPulse);
     // caustic dapples near the surface by day
     if (g.dayEff > 0.3 && cam.y < 40) {
       const a = 0.12 * g.dayEff;
@@ -824,26 +890,74 @@ export class Renderer {
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
     const amb = ambientAt(g.earl.y, g.dayEff);
     const haze = clamp(1 - amb * 1.6, 0, 1);
+    // faint scattered light inside the beam (soft-edged), plus the particles it catches
     const coneHaze = (x, y, ang, range, spread, col, a) => {
-      const gg = ctx.createRadialGradient(x, y, 0, x, y, range);
-      gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(1, rgbStr(col, 0));
-      ctx.fillStyle = gg; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, range, ang - spread, ang + spread); ctx.closePath(); ctx.fill();
+      const far = mixRgb(col, WATER_LIT, 0.7);
+      for (const [sm, am] of [[1.2, 0.35], [0.7, 0.65]]) {
+        const gg = ctx.createRadialGradient(x, y, 0, x, y, range);
+        gg.addColorStop(0, rgbStr(col, a * am)); gg.addColorStop(0.3, rgbStr(far, a * am * 0.45)); gg.addColorStop(1, rgbStr(WATER_LIT, 0));
+        ctx.fillStyle = gg; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, range, ang - spread * sm, ang + spread * sm); ctx.closePath(); ctx.fill();
+      }
     };
-    const e = g.earl;
-    if (head && e.lampOn && haze > 0) {
-      const ang = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
-      coneHaze(head.x, head.y, ang, 16 * ppm, 0.3, beamCol, 0.09 * haze);
-    }
-    if (subLamps && haze > 0) {
-      const sub = g.sub;
-      const ang = sub.facing > 0 ? sub.tilt : Math.PI - sub.tilt;
-      coneHaze(S(sub.x) + subLamps.lampA[0] * sub.facing, Sy(sub.y) + subLamps.lampA[1], ang, 26 * ppm, 0.26, beamCol, 0.08 * haze);
-    }
+    const motes = (x, y, ang, range, spread, col, a) => {
+      // the same deterministic particle field as the marine snow, but finer, lit only inside the cone
+      const rm = range / ppm, cell = 0.9;
+      const wx = cam.x + (x - this.W / 2) / ppm, wy = cam.y + (y - this.H / 2) / ppm;
+      const i0 = Math.floor((wx - rm) / cell), i1 = Math.ceil((wx + rm) / cell);
+      const j0 = Math.floor(Math.max(0.5, wy - rm) / cell), j1 = Math.ceil((wy + rm) / cell);
+      const ca = Math.cos(ang), sa = Math.sin(ang), cosS = Math.cos(spread);
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const h = Math.abs(Math.sin(i * 91.7 + j * 47.3) * 24634.6345) % 1;
+        if (h > 0.5) continue;
+        const h2 = Math.abs(Math.sin(i * 12.9 + j * 78.2) * 43758.5453) % 1;
+        const px = i * cell + h * cell + Math.sin(t * 0.4 + h * 20) * 0.25;
+        const py = j * cell + ((h2 * cell + t * 0.04 * (0.4 + h)) % cell);
+        const dx = (px - wx), dy = (py - wy), d = Math.hypot(dx, dy);
+        if (d > rm || d < 0.3) continue;
+        const c = (dx * ca + dy * sa) / d;
+        if (c < cosS) continue;
+        const edge = (c - cosS) / (1 - cosS);
+        const fall = (1 - d / rm); 
+        const tw = 0.55 + 0.45 * Math.sin(t * (1.5 + h * 3) + h2 * 30);
+        const al = a * fall * fall * Math.min(1, edge * 2.5) * tw;
+        if (al < 0.02) continue;
+        ctx.fillStyle = rgbStr(d < rm * 0.35 ? col : mixRgb(col, WATER_LIT, 0.5), al);
+        const sz = Math.max(1, ppm * (0.025 + h2 * 0.035));
+        ctx.fillRect(S(px), Sy(py), sz, sz);
+      }
+    };
     const halo = (x, y, r, col, a) => {
       const gg = ctx.createRadialGradient(x, y, 0, x, y, r);
       gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(1, rgbStr(col, 0));
       ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
     };
+    const glare = (x, y, col, a) => {
+      const gg = ctx.createRadialGradient(x, y, 0, x, y, ppm * 0.5);
+      gg.addColorStop(0, rgbStr([255, 255, 255], a)); gg.addColorStop(0.25, rgbStr(col, a * 0.5)); gg.addColorStop(1, rgbStr(col, 0));
+      ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, y, ppm * 0.5, 0, TAU); ctx.fill();
+    };
+    const e = g.earl;
+    const lp = fx.lightPulse;
+    if (head && e.lampOn && haze > 0) {
+      const ang = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
+      coneHaze(head.x, head.y, ang, 15 * ppm, 0.28, beamCol, 0.06 * haze * lp);
+      motes(head.x, head.y, ang, 15 * ppm, 0.3, beamCol, 0.8 * haze * lp);
+      glare(head.x, head.y, beamCol, 0.5 * lp);
+    }
+    if (subLamps && haze > 0) {
+      const sub = g.sub;
+      const cy = Math.cos(sub.yaw), sxs = (cy >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy));
+      const vis = Math.pow(Math.abs(cy), 0.7);
+      const ang = sxs > 0 ? sub.tilt : Math.PI - sub.tilt;
+      const lx = S(sub.x) + subLamps.lampA[0] * sxs, ly = Sy(sub.y) + subLamps.lampA[1];
+      // soft volumetric glow around the whole sub, and the little stern lamp itself
+      halo(S(sub.x), Sy(sub.y), ppm * 9, [150, 175, 185], 0.06 * haze * lp);
+      halo(S(sub.x) - 4.8 * sxs * ppm, Sy(sub.y) - 0.4 * ppm, ppm * 0.7, [255, 175, 110], 0.22 * lp);
+      coneHaze(lx, ly, ang, 28 * ppm, 0.32, beamCol, 0.07 * haze * lp * vis);
+      coneHaze(lx, ly, ang, 14 * ppm, 0.9, beamCol, 0.035 * haze * lp * vis);
+      motes(lx, ly, ang, 28 * ppm, 0.34, beamCol, 0.8 * haze * lp * vis);
+      glare(lx, ly, beamCol, (0.6 + (1 - vis) * 0.8) * lp);
+    }
     for (const lt of g.world.lanterns) {
       const x = S(lt.x), y = Sy(lt.y);
       if (x < -200 || x > this.W + 200 || y < -200 || y > this.H + 200) continue;
@@ -853,7 +967,7 @@ export class Renderer {
         ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, LANTERN_RADIUS * ppm, 0, TAU); ctx.stroke();
       }
     }
-    for (const [x, y, col, r] of glowPts) halo(x, y, Math.max(r, ppm * 0.4), hexToRgb(col), 0.5 * haze);
+    for (const [x, y, col, r] of glowPts) halo(x, y, Math.max(r, ppm * 0.4), hexToRgb(col), 0.5 * haze * fx.bioPulse);
     if (g.lure) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
     for (const p of g.world.pickups) {
       if (p.taken || (p.type !== 'sapphire' && p.type !== 'lure')) continue;

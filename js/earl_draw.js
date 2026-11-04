@@ -30,9 +30,11 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
   const hipX = -7 * u;
   const leg = (phase, near) => {
     const s = Math.sin(kick + phase);
-    const thighA = Math.PI - 0.04 + s * (0.05 + 0.17 * m) + (1 - m) * 0.1;   // idle: thigh slightly forward
-    const bend = (1 - m) * 0.32 + m * (0.06 + Math.max(0, s) * 0.32);       // knee flexion
-    const shinA = thighA - bend;                                               // -> foot goes towards the back
+    // Local frame: +y is his front, -y his back. A thigh angle just under PI swings the knee
+    // slightly forward; the shin then bends back from the knee (angle increases), like a real leg.
+    const thighA = Math.PI - (1 - m) * 0.14 - 0.02 + s * (0.04 + 0.15 * m);
+    const bend = (1 - m) * 0.26 + m * (0.04 + Math.max(0, -s) * 0.26);      // knee flexion, on the up-stroke
+    const shinA = thighA + bend;
     const hx = hipX, hy = near ? 1.6 * u : -1.2 * u;
     const [kx, ky] = at(hx, hy, thighA, 25 * u);
     const [ax, ay] = at(kx, ky, shinA, 23 * u);
@@ -41,7 +43,8 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
     seg(ctx, kx, ky, ax, ay, 8 * u, 5 * u, col);
     // calf muscle
     const [cx, cy] = at(kx, ky, shinA, 7 * u);
-    ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(cx, cy - 1.2 * u, 6 * u, 4.3 * u, shinA, 0, Math.PI * 2); ctx.fill();
+    // calf muscle bulges on the back of the shin
+    ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(cx - Math.sin(shinA) * 1.1 * u, cy + Math.cos(shinA) * 1.1 * u, 6 * u, 4.2 * u, shinA, 0, Math.PI * 2); ctx.fill();
     if (near) {
       // knee pad + side seam, visible when lit
       ctx.fillStyle = SUIT_PANEL; ctx.beginPath(); ctx.ellipse(kx, ky + 1.5 * u, 4 * u, 3 * u, thighA, 0, Math.PI * 2); ctx.fill();
@@ -55,10 +58,11 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
       for (const t of [11, 15]) { const [bx, by] = at(kx, ky, shinA, t * u); ctx.beginPath(); ctx.moveTo(bx, by - 2.6 * u); ctx.lineTo(bx, by + 3 * u); ctx.stroke(); }
     }
     // fin: foot pocket + long blade continuing the line of the shin, flexing with the kick
-    const flex = -s * (0.15 + 0.35 * m);
-    ctx.save(); ctx.translate(ax, ay); ctx.rotate(shinA - 0.08);
+    const flex = -s * (0.12 + 0.3 * m);
+    // pointed foot: the fin carries straight on from the shin, so the leg reads as one long line
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(shinA + 0.04);
     ctx.fillStyle = near ? '#1d2024' : '#101215';
-    ctx.beginPath(); ctx.ellipse(3 * u, -0.6 * u, 6 * u, 3.4 * u, 0, 0, Math.PI * 2); ctx.fill(); // foot pocket
+    ctx.beginPath(); ctx.ellipse(3 * u, 0, 6 * u, 3.2 * u, 0, 0, Math.PI * 2); ctx.fill(); // foot pocket
     ctx.fillStyle = WEBBING; ctx.fillRect(-1 * u, -2.9 * u, 1.4 * u, 5.4 * u); // heel strap
     const bg = ctx.createLinearGradient(6 * u, 0, 34 * u, 0);
     bg.addColorStop(0, near ? '#1a1d21' : '#0f1114'); bg.addColorStop(1, near ? 'rgba(34,40,48,0.65)' : 'rgba(20,24,30,0.6)');

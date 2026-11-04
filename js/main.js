@@ -33,7 +33,7 @@ function newGame(mode) {
     entity: new Entity(rng),
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
-    fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0 },
+    fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
     items: { lure: 0, necklace: 0 }, inv: {},
     journal: new Map(), notes: '', sapphires: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
@@ -340,8 +340,18 @@ function update(dt) {
   fx.torchShift = clamp(fx.dread * 1.5, 0, 1);
   fx.darken = fx.dread * 0.6;
   fx.vignette = fx.dread;
-  fx.disorient = lerp(fx.disorient, d < 50 ? (50 - d) / 50 : 0, dt * 1.2);
-  fx.ghost = fx.disorient * 0.8;
+  // pressure: the deeper past 300 m (outside the sub), the worse - also a failing hull
+  const pressT = !e.inSub && g.mode !== 'menu' ? clamp(Math.log(Math.max(1, g.diverDrain / (keys.has('shift') ? 2 : 1))) / Math.log(30), 0, 1)
+    : e.inSub ? g.sub.stress * 0.7 : 0;
+  fx.pressure = lerp(fx.pressure || 0, pressT, 1 - Math.exp(-dt * 1.2));
+  const entDis = d < 50 ? (50 - d) / 50 : 0;
+  fx.disorient = lerp(fx.disorient, Math.max(entDis, fx.pressure * 0.85), dt * 1.2);
+  fx.ghost = Math.max(entDis * 0.8, fx.pressure * 0.6);
+  fx.vignette = Math.max(fx.vignette, fx.pressure * 0.75);
+  // lights throb under pressure: the lamps, the sub, and the glowing animals
+  const pulse = 0.5 + 0.5 * Math.sin(g.time * (2.2 + fx.pressure * 1.5));
+  fx.lightPulse = 1 - fx.pressure * 0.45 * pulse - (fx.pressure > 0.6 && Math.random() < 0.03 ? 0.3 : 0);
+  fx.bioPulse = 1 + fx.pressure * 0.9 * (0.5 + 0.5 * Math.sin(g.time * 3.1 + 1.3)) - fx.pressure * 0.3;
   fx.shake = Math.max(fx.disorient * 0.25, fx.shake - dt * 1.5);
   fx.flash = Math.max(0, fx.flash - dt * 1.2);
   // sky darkens and the sea rises when it is close and shallow
@@ -350,9 +360,10 @@ function update(dt) {
   const skyDark = near * shallowness;
   g.waveBoost = lerp(g.waveBoost, near * (0.4 + 0.6 * shallowness), dt * 0.5);
   g.dayEff = g.day.light * (1 - 0.93 * smoothSky(skyDark));
+  e.dark = Math.sqrt(g.dayEff * Math.exp(-Math.max(0, e.y) / 140)) * (1 - fx.darken) < 0.3;
   // heart rate
   const lowO2 = !e.inSub ? clamp(1 - (e.o2 / e.o2Max) / 0.25, 0, 1) : clamp(1 - (g.sub.o2 / g.sub.o2Max) / 0.2, 0, 1);
-  const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + (e.y > 300 && !e.inSub ? 12 : 0);
+  const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + fx.pressure * 45;
   e.hr = lerp(e.hr, hrT, dt * 0.6);
 
   // ----- something far away (not it) -----
@@ -364,7 +375,7 @@ function update(dt) {
     }
   }
   // ----- life -----
-  g.fauna.update(dt, renderer.cam, e, ent, fx.dread, g.time);
+  g.fauna.update(dt, renderer.cam, e, ent, fx.dread, g.time, g.day.light < 0.3);
   // breathing bubbles
   if (!e.inSub && e.y > 1 && g.mode === 'play') {
     g.breathT -= dt;
@@ -413,7 +424,8 @@ function frame(now) {
   ui.update(g, dt);
   // dread colour grading on the scene canvas only
   const fx = g.fx;
-  const f = `saturate(${(1 - fx.dread * 0.65).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${fx.disorient > 0.2 ? ` blur(${(fx.disorient * 1.2).toFixed(1)}px)` : ''}`;
+  const blurPx = Math.max(fx.disorient * 1.2, fx.pressure * 2.4);
+  const f = `saturate(${(1 - fx.dread * 0.65 - fx.pressure * 0.25).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${blurPx > 0.25 ? ` blur(${blurPx.toFixed(1)}px)` : ''}`;
   if (f !== filterKey) { canvas.style.filter = f; filterKey = f; }
   pressed.clear();
   requestAnimationFrame(frame);

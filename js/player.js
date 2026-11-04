@@ -33,7 +33,8 @@ export class Earl {
     this.maxDepth = 0; this.surfacing = 0; this.idle = 0; this.hr = 68;
     this.bubbleT = 0; this.atSurface = false;
   }
-  get lampOn() { return this.lampWanted && this.y > 200; }
+  // switches on by itself below 200 m, or whenever it is too dark to see (night, the entity's darkness)
+  get lampOn() { return this.lampWanted && (this.y > 200 || (this.y > 1 && this.dark)); }
 }
 
 export class Sub {
@@ -41,6 +42,7 @@ export class Sub {
     this.level = 0; this.x = BOAT_X + 8.5; this.y = 2.6; this.vx = 0; this.vy = 0;
     this.facing = -1; this.o2 = SUB_LEVELS[0].o2; this.stress = 0; this.imploded = false;
     this.tilt = 0; this.lightsOn = true;
+    this.yaw = Math.PI; // 0 = bow to the right, PI = bow to the left; turns smoothly between
   }
   get rated() { return SUB_LEVELS[this.level].rated; }
   get o2Max() { return SUB_LEVELS[this.level].o2; }
@@ -63,6 +65,9 @@ export function updateEarl(g, dt, inp) {
     if (c.hit) { sub.x = c.x; sub.y = c.y; sub.vx *= 0.6; sub.vy *= 0.4; }
     sub.x = clamp(sub.x, 4, 984);
     if (Math.abs(sub.vx) > 0.3) sub.facing = sub.vx > 0 ? 1 : -1;
+    // swing round over ~1.5 s rather than flipping (the projection of the turn eases in and out)
+    const yawT = sub.facing > 0 ? 0 : Math.PI, rate = Math.PI / 1.5;
+    sub.yaw += clamp(yawT - sub.yaw, -rate * dt, rate * dt);
     sub.tilt = lerp(sub.tilt, clamp(sub.vy * 0.03, -0.18, 0.18), dt * 2);
     e.x = sub.x; e.y = sub.y; e.vx = sub.vx; e.vy = sub.vy;
     e.speedNow = Math.hypot(sub.vx, sub.vy);
