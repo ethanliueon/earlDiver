@@ -425,7 +425,8 @@ function update(dt) {
   const near = Math.pow(clamp((500 - d) / 500, 0, 1), 0.6); // the surface reacts early
   const skyDark = near * shallowness;
   g.waveBoost = lerp(g.waveBoost, near * (0.4 + 0.6 * shallowness), dt * 0.5);
-  g.dayEff = g.day.light * (1 - 0.93 * smoothSky(skyDark));
+  g.storm = smoothSky(skyDark);
+  g.dayEff = g.day.light * (1 - 0.82 * g.storm);
   e.dark = Math.sqrt(g.dayEff * Math.exp(-Math.max(0, e.y) / 140)) * (1 - fx.darken) < 0.3;
   // heart rate
   const lowO2 = !e.inSub ? clamp(1 - (e.o2 / e.o2Max) / 0.25, 0, 1) : clamp(1 - (g.sub.o2 / g.sub.o2Max) / 0.2, 0, 1);

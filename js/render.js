@@ -278,7 +278,7 @@ export class Renderer {
     const boatX = S(BOAT_X), boatY = Sy(surfY(BOAT_X) * 0.8);
     let crane = null;
     if (Math.abs(BOAT_X - cam.x) < cam.w) {
-      const roll = Math.atan2(surfY(BOAT_X + 4) - surfY(BOAT_X - 4), 8) * 0.7;
+      const roll = Math.atan2(surfY(BOAT_X + 4) - surfY(BOAT_X - 4), 8) * (0.7 + (g.storm || 0) * 0.8);
       ctx.save(); ctx.translate(boatX, boatY); ctx.rotate(roll);
       // draw the boat into a small offscreen canvas and darken it there (canvas filters are slow)
       const bw = Math.ceil(14 * ppm * 1.3), bh = Math.ceil(14 * ppm * 0.75);
@@ -376,6 +376,28 @@ export class Renderer {
     }
     // ---- marine snow ----
     this.drawSnow(g, S, Sy, ppm, x0, x1, y0, y1);
+    // ---- foam on the crests of storm waves ----
+    if (g.waveBoost > 0.12 && horizon > -60 && horizon < H + 40) {
+      const fa = clamp((g.waveBoost - 0.12) * 1.6, 0, 1);
+      ctx.strokeStyle = `rgba(200,210,212,${(0.5 * fa).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.07);
+      ctx.beginPath();
+      let prev = null;
+      for (let sx = -10; sx <= W + 20; sx += 8) {
+        const wx = cam.x + (sx - W / 2) / ppm, y = surfY(wx);
+        const crest = y < -waveAmp * 0.55; // only near the tops of the swell
+        if (crest) { const py = Sy(y); if (prev) ctx.lineTo(sx, py); else ctx.moveTo(sx, py); prev = 1; }
+        else prev = null;
+      }
+      ctx.stroke();
+      // streaks of foam trailing down the backs of the waves
+      ctx.fillStyle = `rgba(190,200,204,${(0.25 * fa).toFixed(3)})`;
+      for (let k = 0; k < 60; k++) {
+        const wx = Math.floor(cam.x / 3) * 3 + (k - 30) * 3 + Math.sin(k * 7.1) * 1.2;
+        const y = surfY(wx);
+        if (y > -waveAmp * 0.2) continue;
+        ctx.fillRect(S(wx), Sy(y) + ppm * (0.15 + Math.abs(Math.sin(k * 3.3)) * 0.6), ppm * (0.6 + Math.abs(Math.sin(k)) * 1.2), Math.max(1, ppm * 0.05));
+      }
+    }
     // ---- surface underside shimmer ----
     if (horizon > -20 && horizon < H + 20) {
       ctx.strokeStyle = `rgba(220,245,255,${(0.25 + 0.35 * dayEff).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.06);
@@ -454,7 +476,7 @@ export class Renderer {
       ctx.globalAlpha = 1;
     }
     // vignette
-    const vs = 0.38 + fx.vignette * 0.55;
+    const vs = 0.38 + fx.vignette * 0.32;
     const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * (0.42 - fx.vignette * 0.2), W / 2, H / 2, Math.max(W, H) * 0.72);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${vs.toFixed(3)})`);
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
@@ -522,6 +544,18 @@ export class Renderer {
     // clouds: generated, lit, parallax layers (see clouds.js)
     const ctint = mixRgb(mixRgb([22, 28, 44], [255, 255, 255], dayEff), [255, 176, 150], sunset * 0.8);
     this.clouds.draw(ctx, W, horizon, this.H * 0.85, t, this.cam.x, this.cam.ppm, ctint, Math.max(0.12, dayEff));
+    // storm: a low, bruised overcast rolls over the sky, heavier toward the horizon, drifting fast
+    const storm = g.storm || 0;
+    if (storm > 0.02) {
+      const og = ctx.createLinearGradient(0, horizon - this.H, 0, horizon);
+      og.addColorStop(0, `rgba(22,22,32,${(0.75 * storm).toFixed(3)})`);
+      og.addColorStop(0.6, `rgba(44,44,56,${(0.7 * storm).toFixed(3)})`);
+      og.addColorStop(1, `rgba(58,60,66,${(0.6 * storm).toFixed(3)})`);
+      ctx.fillStyle = og; ctx.fillRect(-20, -20, W + 40, horizon + 20);
+      // ragged lower cloud edge, scudding past
+      // the cloud deck itself, re-drawn darker and closer: soft, scudding storm cloud
+      this.clouds.draw(ctx, W, horizon, this.H * 0.6, t * 4, this.cam.x * 1.6, this.cam.ppm, [70, 72, 84], 0.12 + 0.2 * storm);
+    }
     // the beach / dunes above water (right side)
     const S = this.S, Sy = this.Sy, ppm = this.cam.ppm;
     if (S(975) < W) {
@@ -983,10 +1017,20 @@ export class Renderer {
     const dTop = cam.y - cam.h / 2, dBot = cam.y + cam.h / 2;
     const gr = l.createLinearGradient(0, 0, 0, LH);
     const dim = 1 - fx.darken;
-    const lit = (d) => { const a = ambientAt(d, g.dayEff) * dim, tint = sampleTable(LIGHT_TINT, d); return rgbStr([255 * a * tint[0], 255 * a * tint[1], 255 * a * tint[2]]); };
-    // the sky is never darkened; the change to underwater light happens exactly at the waterline
-    // full light down to the wave troughs, then a soft blend over the next metre and a half
-    const sw = 0.25 + g.waveBoost * 1.6, sw2 = sw + 1.5;
+    const storm = g.storm || 0;
+    const lit = (d) => {
+      let a = ambientAt(d, g.dayEff) * dim, tint = sampleTable(LIGHT_TINT, d);
+      // the entity's darkness never turns the shallows fully black: it bottoms out at a grey-blue
+      // storm light (the natural light of night and the deep is left alone)
+      const natural = ambientAt(d, g.day.light);
+      const floor = Math.min(natural, 0.36) * clamp(1 - d / 220, 0, 1);
+      if (floor > a) { const k2 = clamp(storm * 1.5, 0, 1); tint = mixRgb(tint, [0.72, 0.8, 0.9], k2); a = floor; }
+      return rgbStr([255 * a * tint[0], 255 * a * tint[1], 255 * a * tint[2]]);
+    };
+    // full light above the highest wave crest, then a blend down through the wave band and the
+    // top metre of water, so tall storm waves darken with everything else
+    const amp = (0.12 + g.waveBoost * 1.6) * 1.4;
+    const sw = g.waveBoost > 0.05 ? -amp : 0.25, sw2 = g.waveBoost > 0.05 ? amp + 1 : sw + 1.5;
     const hf = (sw - dTop) / (dBot - dTop), hf2 = (sw2 - dTop) / (dBot - dTop);
     if (hf > 0 && hf2 < 1) { gr.addColorStop(0, 'rgb(255,255,255)'); gr.addColorStop(hf, 'rgb(255,255,255)'); gr.addColorStop(hf2, lit(sw2)); }
     for (let i = 0; i <= 8; i++) {
@@ -999,10 +1043,27 @@ export class Renderer {
     // the entity swallows light around it
     const ent = g.entity;
     if (ent && g.mode !== 'menu' && ent.dist < 260) {
-      const ex = S(ent.x) * k, ey = Sy(ent.y) * k, r = (30 + 40 * fx.dread) * ppm * k;
-      const eg = l.createRadialGradient(ex, ey, 0, ex, ey, r);
-      eg.addColorStop(0, 'rgba(0,0,0,0.95)'); eg.addColorStop(0.5, 'rgba(0,0,0,0.6)'); eg.addColorStop(1, 'rgba(0,0,0,0)');
-      l.fillStyle = eg; l.beginPath(); l.arc(ex, ey, r, 0, TAU); l.fill();
+      // the dark rolls in like ink from the side it is on, and creeps across as it closes in
+      const dx = ent.x - g.earl.x, dy = ent.y - g.earl.y, dl = Math.hypot(dx, dy) || 1;
+      const ux = dx / dl, uy = dy / dl * 0.6, ul = Math.hypot(ux, uy) || 1;
+      const cx = LW / 2, cy = LH / 2, half = Math.max(LW, LH) * 0.7;
+      const reach = clamp((260 - ent.dist) / 230, 0, 1); // how far across the screen the ink has come
+      const x0 = cx + (ux / ul) * half, y0 = cy + (uy / ul) * half, x1 = cx - (ux / ul) * half, y1 = cy - (uy / ul) * half;
+      const dg = l.createLinearGradient(x0, y0, x1, y1);
+      const a0 = 0.5 * reach, front = 0.15 + reach * 0.5;
+      dg.addColorStop(0, `rgba(0,0,0,${a0.toFixed(3)})`);
+      dg.addColorStop(Math.min(0.95, front * 0.6), `rgba(0,0,0,${(a0 * 0.75).toFixed(3)})`);
+      dg.addColorStop(Math.min(0.99, front), 'rgba(0,0,0,0)');
+      dg.addColorStop(1, 'rgba(0,0,0,0)');
+      l.fillStyle = dg; l.fillRect(0, 0, LW, LH);
+      // far off-screen it still swallows the light where it is; close by it is left to show
+      // as a shape blacker than the water
+      if (ent.dist > 70) {
+        const ex = S(ent.x) * k, ey = Sy(ent.y) * k, r = 40 * ppm * k;
+        const eg = l.createRadialGradient(ex, ey, 0, ex, ey, r);
+        eg.addColorStop(0, 'rgba(0,0,0,0.85)'); eg.addColorStop(1, 'rgba(0,0,0,0)');
+        l.fillStyle = eg; l.beginPath(); l.arc(ex, ey, r, 0, TAU); l.fill();
+      }
     }
     l.globalCompositeOperation = 'lighter';
     const radial = (x, y, r, col, a) => {
@@ -1089,7 +1150,7 @@ export class Renderer {
   drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff) {
     const ctx = this.ctx, cam = this.cam, fx = g.fx, t = g.time;
     // god rays near the surface
-    const rayStrength = dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken);
+    const rayStrength = dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7);
     if (rayStrength > 0.01) {
       // Each ray belongs to a fixed 9 m cell of the surface; its sway, width and brightness come
       // from that cell's index, so rays slide smoothly past instead of snapping when the camera moves.
@@ -1101,10 +1162,14 @@ export class Renderer {
         const top = Sy(0), w = ppm * (1.5 + h), len = ppm * 70;
         const sx = S(wx);
         const a = rayStrength * (0.05 + 0.04 * Math.sin(t * 0.4 + k * 1.3));
-        const gg = ctx.createLinearGradient(0, top, 0, top + len);
-        gg.addColorStop(0, `rgba(210,240,255,${a.toFixed(3)})`); gg.addColorStop(1, 'rgba(210,240,255,0)');
-        ctx.fillStyle = gg;
-        ctx.beginPath(); ctx.moveTo(sx - w, top); ctx.lineTo(sx + w, top); ctx.lineTo(sx + w * 3 + len * 0.18, top + len); ctx.lineTo(sx - w + len * 0.18, top + len); ctx.closePath(); ctx.fill();
+        // three nested strips, widest and faintest outside: soft edges, no hard lines
+        for (const [wm, am] of [[2.2, 0.3], [1.4, 0.35], [0.7, 0.35]]) {
+          const gg = ctx.createLinearGradient(0, top, 0, top + len);
+          gg.addColorStop(0, `rgba(210,240,255,${(a * am).toFixed(3)})`); gg.addColorStop(1, 'rgba(210,240,255,0)');
+          ctx.fillStyle = gg;
+          const ww = w * wm;
+          ctx.beginPath(); ctx.moveTo(sx - ww, top); ctx.lineTo(sx + ww, top); ctx.lineTo(sx + ww * 2 + w + len * 0.18, top + len); ctx.lineTo(sx - ww + len * 0.18, top + len); ctx.closePath(); ctx.fill();
+        }
       }
     }
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);

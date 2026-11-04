@@ -390,7 +390,9 @@ export function drawEntity(ctx, Lp, t, fillA, rimA, onlyRim = false) {
   // the body: almost black, a hint of slick grey-green on the back
   // the skin: dark slate, slick, lighter along the back - only lit where a lamp actually reaches it
   const g = ctx.createLinearGradient(0, -Lp * 0.1, 0, Lp * 0.09);
-  g.addColorStop(0, '#46565a'); g.addColorStop(0.35, '#253034'); g.addColorStop(0.7, '#141a1c'); g.addColorStop(1, '#0a0d0e');
+  // darker than the darkest water, so it reads as a black shape gliding through dim light;
+  // a lamp still picks out the slick slate of its back
+  g.addColorStop(0, '#2c3639'); g.addColorStop(0.35, '#151c1e'); g.addColorStop(0.7, '#080b0c'); g.addColorStop(1, '#030405');
   ctx.fillStyle = g; ctx.fill(body);
   if (!onlyRim) {
     ctx.save(); ctx.clip(body);
