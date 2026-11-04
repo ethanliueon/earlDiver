@@ -7,6 +7,7 @@ import { drawSpecies } from './creatures_draw.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { BOAT_X, WORLD_W } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
+import { Clouds } from './clouds.js';
 
 const WATER_ALBEDO = [
   [0, [78, 172, 196]], [30, [44, 134, 176]], [120, [22, 86, 138]], [250, [12, 50, 88]], [500, [8, 32, 56]], [1000, [5, 20, 36]], [3000, [3, 13, 24]],
@@ -42,6 +43,7 @@ export class Renderer {
     this.c = canvas; this.ctx = canvas.getContext('2d');
     this.lc = document.createElement('canvas'); this.lctx = this.lc.getContext('2d');
     this.gc = document.createElement('canvas'); this.gctx = this.gc.getContext('2d'); // ghost buffer
+    this.clouds = new Clouds();
     this.viewW = 30; this.cam = { x: 500, y: 5, w: 30, h: 17, zoom: 1 };
     this.stars = Array.from({ length: 140 }, (_, i) => [((i * 7919) % 1000) / 1000, ((i * 104729) % 1000) / 1000 * 0.6, ((i * 31) % 10) / 10]);
   }
@@ -476,14 +478,9 @@ export class Renderer {
       const [x, y] = arc(day.moon);
       ctx.fillStyle = 'rgba(220,228,240,0.85)'; ctx.beginPath(); ctx.arc(x, y, this.H * 0.018, 0, TAU); ctx.fill();
     }
-    // clouds
-    for (let k = 0; k < 7; k++) {
-      const cx = ((k * 211 + t * (2 + k * 0.4) - this.cam.x * 3) % (W + 400) + W + 400) % (W + 400) - 200;
-      const cy = horizon - this.H * (0.12 + (k % 4) * 0.08);
-      const a = 0.18 + 0.25 * dayEff;
-      ctx.fillStyle = rgbStr(mixRgb([40, 44, 56], [236, 240, 244], dayEff), a);
-      for (let j = 0; j < 4; j++) { ctx.beginPath(); ctx.ellipse(cx + j * 40, cy + Math.sin(j) * 6, 90 - j * 10, 18, 0, 0, TAU); ctx.fill(); }
-    }
+    // clouds: generated, lit, parallax layers (see clouds.js)
+    const ctint = mixRgb(mixRgb([22, 28, 44], [255, 255, 255], dayEff), [255, 150, 100], sunset * 0.7);
+    this.clouds.draw(ctx, W, horizon, this.H * 0.85, t, this.cam.x, this.cam.ppm, ctint, Math.max(0.12, dayEff));
     // the beach / dunes above water (right side)
     const S = this.S, Sy = this.Sy, ppm = this.cam.ppm;
     if (S(975) < W) {

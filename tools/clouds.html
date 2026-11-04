@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Cloud Layers</title>
+<style>body{margin:0;background:linear-gradient(#4a80b2,#b0ccda);} canvas{display:block;width:100%;margin-bottom:6px}</style></head>
+<body><script type="module">
+import { Clouds } from '../js/clouds.js';
+const c = new Clouds(); c.build();
+for (const L of c.layers) document.body.append(L.img);
+</script></body></html>
