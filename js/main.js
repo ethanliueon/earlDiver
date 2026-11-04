@@ -319,8 +319,9 @@ function update(dt) {
     if (g.injury > 0) { g.healT += dt; if (g.healT >= 15) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
     const lvl = Math.min(4, g.injury);
     e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1); e.o2Mul = INJURY.air[lvl];
-    if (g.noAir && (mv.x || mv.y)) { const k = clamp(g.noAir / 15, 0, 1) * 0.7; mv.x += Math.sin(g.time * 1.9) * k; mv.y += Math.cos(g.time * 1.4) * k; }
-    if (lvl >= 4 && (mv.x || mv.y)) { mv.x += Math.sin(g.time * 1.7) * 0.35; mv.y += Math.cos(g.time * 1.3) * 0.35; } // controls drift
+    // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
+    // facing; that only ever follows the player's own left/right input
+    e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
     const res = updateEarl(g, dt, mv);
     if (res === 'implode') {
       g.sub.imploded = true; g.imploded = true; g.implodeDepth = g.sub.y;

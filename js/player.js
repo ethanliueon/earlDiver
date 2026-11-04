@@ -91,11 +91,13 @@ export function updateEarl(g, dt, inp) {
     let ix = inp.x, iy = inp.y;
     if (mag > 1) { ix /= mag; iy /= mag; }
     const tvx = ix * sp, tvy = iy * sp;
-    const acc = mag > 0.1 ? 2.6 : 1.4;
+    const acc = (mag > 0.1 ? 2.6 : 1.4) * (1 - (e.struggle || 0) * 0.5); // heavy, sluggish response
     e.vx = lerp(e.vx, tvx, 1 - Math.exp(-dt * acc));
     e.vy = lerp(e.vy, tvy, 1 - Math.exp(-dt * acc));
     // slight negative buoyancy when idle at depth, positive near surface
     if (mag < 0.1) e.vy += (e.y < 8 ? -0.12 : 0.05) * dt;
+    // losing his bearings: a slow sideways pull and a sag, applied to his drift, not his steering
+    if (e.struggle) { e.vx += Math.sin(g.time * 0.6) * 0.9 * e.struggle * dt; e.vy += (0.35 + Math.sin(g.time * 0.9) * 0.3) * e.struggle * dt; }
     e.x += e.vx * dt; e.y += e.vy * dt;
     if (e.y < 0.35) { e.y = 0.35; if (e.vy < 0) e.vy = 0; }
     const c = collide(W, e.x, e.y, 0.55);
@@ -105,13 +107,19 @@ export function updateEarl(g, dt, inp) {
     if (W.floorAt(e.x) < 0.9) { e.x -= 0.6; e.vx = Math.min(0, e.vx); }
     e.speedNow = Math.hypot(e.vx, e.vy);
     // orientation: swim horizontally when moving, upright when idle
-    if (Math.abs(e.vx) > 0.25) e.facing = e.vx > 0 ? 1 : -1;
+    // he turns only when the player steers left or right
+    if (inp.x) e.facing = inp.x > 0 ? 1 : -1;
+    else if (Math.abs(e.vx) > 1.2) e.facing = e.vx > 0 ? 1 : -1; // pushed hard (e.g. knocked) - rare
     const moving = e.speedNow > 0.6;
     let target;
     if (moving) target = Math.atan2(e.vy, Math.abs(e.vx) + 0.001) * 0.85;
     else target = e.y < 1 ? -1.25 : -1.15; // upright, a little forward
+    const st = e.struggle || 0;
+    if (st > 0) target += Math.sin(g.time * 1.3) * 0.22 * st + Math.sin(g.time * 3.1) * 0.06 * st; // body rolls and lurches
     e.angle = angleLerp(e.angle, target, 1 - Math.exp(-dt * 3));
-    e.kick += dt * (moving ? 3.2 + e.speedNow * 0.9 : 1.1);
+    // weak, uneven kicks when struggling: bursts of frantic fluttering, then near-stalls
+    const kickRate = st > 0 ? 0.55 + 1.1 * Math.pow(Math.abs(Math.sin(g.time * 2.3)), 2) : 1;
+    e.kick += dt * (moving ? 3.2 + e.speedNow * 0.9 : 1.1) * kickRate;
     // oxygen
     e.atSurface = e.y < 0.9;
     if (e.atSurface) {
