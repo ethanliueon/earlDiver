@@ -412,9 +412,21 @@ function updateBubbles(dt) {
 // ---------------- loop ----------------
 let last = performance.now();
 let filterKey = '';
+let frameEma = 1 / 60, qualityT = 0;
+function adaptQuality(realDt) {
+  frameEma = lerp(frameEma, realDt, 0.05);
+  qualityT += realDt;
+  if (qualityT < 1) return;
+  const q = renderer.quality ?? 1;
+  if (frameEma > 1 / 45 && q > 0.45) { renderer.quality = Math.max(0.45, q - 0.1); qualityT = 0; }
+  else if (frameEma < 1 / 57 && q < 1 && qualityT > 3) { renderer.quality = Math.min(1, q + 0.05); qualityT = 0; }
+  else if (qualityT > 3) qualityT = 1;
+}
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const realDt = (now - last) / 1000;
+  const dt = Math.min(0.05, realDt);
   last = now;
+  if (realDt < 0.25) adaptQuality(realDt);
   renderer.resize(); hud.resize();
   update(dt);
   renderer.updateCamera(g, dt);
@@ -426,7 +438,8 @@ function frame(now) {
   const fx = g.fx;
   const blurPx = Math.max(fx.disorient * 1.2, fx.pressure * 2.4);
   const f = `saturate(${(1 - fx.dread * 0.65 - fx.pressure * 0.25).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${blurPx > 0.25 ? ` blur(${blurPx.toFixed(1)}px)` : ''}`;
-  if (f !== filterKey) { canvas.style.filter = f; filterKey = f; }
+  const f2 = fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 ? 'none' : f;
+  if (f2 !== filterKey) { canvas.style.filter = f2; filterKey = f2; }
   pressed.clear();
   requestAnimationFrame(frame);
 }

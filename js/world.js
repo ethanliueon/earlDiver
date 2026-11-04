@@ -123,7 +123,7 @@ export function generateWorld(seed) {
 
   // ---- Kelp forest (cold-water band) and seagrass meadow near the beach ----
   W.kelp = [];
-  for (let x = 790; x < 905; x += rng.range(0.6, 1.8)) {
+  for (let x = 790; x < 905; x += rng.range(0.9, 2.4)) {
     const d = W.floorAt(x);
     if (d < 6) continue;
     const h = clamp(d - rng.range(0, 3), 4, 36) * rng.range(0.8, 1.02);

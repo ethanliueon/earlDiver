@@ -45,12 +45,15 @@ export class Renderer {
     this.viewW = 30; this.cam = { x: 500, y: 5, w: 30, h: 17, zoom: 1 };
     this.stars = Array.from({ length: 140 }, (_, i) => [((i * 7919) % 1000) / 1000, ((i * 104729) % 1000) / 1000 * 0.6, ((i * 31) % 10) / 10]);
   }
+  // quality (0.5..1) scales the internal resolution; the canvas is stretched to the window by CSS.
+  // It is lowered automatically when frames run slow and raised again when there is headroom.
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    if (this.quality === undefined) this.quality = 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5) * this.quality;
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
     if (this.c.width !== w || this.c.height !== h) {
       this.c.width = w; this.c.height = h;
-      this.lc.width = Math.ceil(w / 2); this.lc.height = Math.ceil(h / 2);
+      this.lc.width = Math.ceil(w / 3); this.lc.height = Math.ceil(h / 3);
       this.gc.width = w; this.gc.height = h;
     }
   }
@@ -126,10 +129,16 @@ export class Renderer {
       const f = g.farShadow;
       const a = Math.sin(Math.PI * clamp(f.t / f.dur, 0, 1)) * 0.1;
       const px = -0.3 * W + (f.t / f.dur) * W * 1.6, py = H * f.y;
-      ctx.save(); ctx.translate(f.dir > 0 ? px : W - px, py); ctx.scale(f.dir, 1);
-      ctx.filter = `blur(${Math.round(W / 220)}px)`;
-      drawEntityShape(ctx, W * 0.32, t * 0.5, a);
-      ctx.filter = 'none';
+      // drawn tiny and scaled up: that is the blur, at almost no cost
+      const sc = this.shadowC || (this.shadowC = document.createElement('canvas'));
+      const sw = Math.ceil(W * 0.06), sh = Math.ceil(W * 0.03);
+      if (sc.width !== sw) { sc.width = sw; sc.height = sh; }
+      const sctx = sc.getContext('2d');
+      sctx.setTransform(1, 0, 0, 1, 0, 0); sctx.clearRect(0, 0, sw, sh);
+      sctx.translate(sw * 0.42, sh * 0.4); sctx.scale(f.dir, 1);
+      drawEntityShape(sctx, sw * 0.62, t * 0.5, 1);
+      ctx.save(); ctx.globalAlpha = a; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(sc, (f.dir > 0 ? px : W - px) - W * 0.25, py - W * 0.125, W * 0.6, W * 0.3);
       ctx.restore();
     }
 
@@ -155,41 +164,63 @@ export class Renderer {
     if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
     // ---- fauna ----
+    // Fish are drawn nose at -x, so a fish heading right (+x) is mirrored, and the tilt is negated
+    // so the nose follows the direction of travel (a fish swimming down points down).
+    // Small fish are batched per species: one path for all their backs, one for all their bellies,
+    // one for the silver flashes - a whole school costs three draw calls.
     const baseM = ctx.getTransform();
+    const batches = new Map();
     let glowSkip = 0;
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
       const Ld = (c.len + 0.25 * Math.exp(-c.len * 2)) * ppm;
       const shape = c.sp.v.s;
+      const tilt = clamp(Math.atan2(c.vy, Math.abs(c.vx) + 0.2), -0.5, 0.5);
       if (Ld < 20 && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
-        // small fish: a cheap silhouette, with the silver flash of a turning school fish
-        const tilt = clamp(Math.atan2(c.vy, Math.abs(c.vx) + 0.2), -0.5, 0.5);
-        ctx.setTransform(baseM); ctx.translate(S(c.x), Sy(c.y));
-        if (c.dir < 0) ctx.scale(-1, 1);
-        ctx.rotate(tilt);
+        let bt = batches.get(c.sp.id);
+        if (!bt) { bt = { sp: c.sp, back: new Path2D(), belly: new Path2D(), flash: new Path2D(), eyes: new Path2D(), nf: 0 }; batches.set(c.sp.id, bt); }
+        const x = S(c.x), y = Sy(c.y);
+        // forward (nose) direction on screen, and the body's "down" (belly) direction
+        const fx2 = c.dir > 0 ? Math.cos(tilt) : -Math.cos(tilt), fy2 = Math.sin(tilt);
+        const rot = Math.atan2(fy2, fx2);
         const hh = Ld * Math.min(0.32, c.sp.v.h * 0.6 + 0.06), sw = Math.sin(c.phase * 6) * hh * 0.35;
-        ctx.fillStyle = c.sp.v.c[0];
-        ctx.beginPath(); ctx.ellipse(-Ld * 0.04, 0, Ld * 0.42, hh, 0, 0, TAU); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(Ld * 0.3, 0); ctx.lineTo(Ld * 0.52, -hh * 1.1 + sw); ctx.lineTo(Ld * 0.5, hh * 1.1 + sw); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = c.sp.v.c[1];
-        ctx.beginPath(); ctx.ellipse(-Ld * 0.06, hh * 0.35, Ld * 0.34, hh * 0.55, 0, 0, TAU); ctx.fill();
+        // body centre sits slightly toward the nose; tail behind
+        const bx = x + fx2 * Ld * 0.04, by = y + fy2 * Ld * 0.04;
+        bt.back.moveTo(bx + fx2 * Ld * 0.42, by + fy2 * Ld * 0.42);
+        bt.back.ellipse(bx, by, Ld * 0.42, hh, rot, 0, TAU);
+        const tx0 = x - fx2 * Ld * 0.3, ty0 = y - fy2 * Ld * 0.3;
+        const tx1 = x - fx2 * Ld * 0.52, ty1 = y - fy2 * Ld * 0.52;
+        const px = -fy2, py = fx2; // perpendicular
+        bt.back.moveTo(tx0, ty0);
+        bt.back.lineTo(tx1 + px * (hh * 1.1 + sw), ty1 + py * (hh * 1.1 + sw));
+        bt.back.lineTo(tx1 - px * (hh * 1.1 - sw), ty1 - py * (hh * 1.1 - sw));
+        bt.back.closePath();
+        // belly: the lower half (screen-down side of the body)
+        const down = (px * 0 + py) >= 0 ? 1 : -1;
+        const ox = px * down * hh * 0.35, oy = py * down * hh * 0.35;
+        bt.belly.moveTo(bx + ox + fx2 * Ld * 0.34, by + oy + fy2 * Ld * 0.34);
+        bt.belly.ellipse(bx + ox, by + oy, Ld * 0.34, hh * 0.55, rot, 0, TAU);
         const flash = Math.pow(Math.max(0, Math.sin(c.phase * 0.6 + c.wob)), 10);
-        if (flash > 0.05) { ctx.fillStyle = `rgba(235,245,250,${(0.85 * flash).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(-Ld * 0.05, 0, Ld * 0.36, hh * 0.7, 0, 0, TAU); ctx.fill(); }
-        if (Ld > 9) { ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.arc(-Ld * 0.33, -hh * 0.2, Math.max(0.7, hh * 0.3), 0, TAU); ctx.fill(); }
-        if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([S(c.x), Sy(c.y), c.sp.v.glow, Math.max(2, Ld * 0.3)]);
+        if (flash > 0.3) { bt.flash.moveTo(bx + fx2 * Ld * 0.36, by + fy2 * Ld * 0.36); bt.flash.ellipse(bx, by, Ld * 0.36, hh * 0.7, rot, 0, TAU); bt.nf++; }
+        if (Ld > 9) { const ex = x + fx2 * Ld * 0.33 - px * down * hh * 0.2, ey = y + fy2 * Ld * 0.33 - py * down * hh * 0.2, er = Math.max(0.7, hh * 0.3); bt.eyes.moveTo(ex + er, ey); bt.eyes.arc(ex, ey, er, 0, TAU); }
+        if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.3)]);
         continue;
       }
-      ctx.setTransform(baseM);
       ctx.save(); ctx.translate(S(c.x), Sy(c.y));
-      const tilt = clamp(Math.atan2(c.vy, Math.abs(c.vx) + 0.2), -0.5, 0.5);
-      if (c.dir < 0) ctx.scale(-1, 1);
-      ctx.rotate(c.sp.v.hab === 'drift' ? 0 : tilt);
+      if (c.dir > 0) ctx.scale(-1, 1);
+      ctx.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
       const r = drawSpecies(ctx, c.sp, Ld, c.phase, 1, c.wob);
       ctx.restore();
       if (c.sp.v.glow) {
-        if (r) for (const [lx, ly] of r) glowPts.push([S(c.x) + lx * c.dir, Sy(c.y) + ly, c.sp.v.glow, Ld * 0.25]);
+        if (r) for (const [lx, ly] of r) glowPts.push([S(c.x) - lx * c.dir, Sy(c.y) + ly, c.sp.v.glow, Ld * 0.25]);
         else glowPts.push([S(c.x), Sy(c.y), c.sp.v.glow, Ld * 0.3]);
       }
+    }
+    for (const bt of batches.values()) {
+      ctx.fillStyle = bt.sp.v.c[0]; ctx.fill(bt.back);
+      ctx.fillStyle = bt.sp.v.c[1]; ctx.fill(bt.belly);
+      if (bt.nf) { ctx.fillStyle = 'rgba(235,245,250,0.7)'; ctx.fill(bt.flash); }
+      ctx.fillStyle = '#0a0a0a'; ctx.fill(bt.eyes);
     }
     ctx.setTransform(baseM);
     // scales drifting where something was eaten
@@ -210,9 +241,18 @@ export class Renderer {
     if (Math.abs(BOAT_X - cam.x) < cam.w) {
       const roll = Math.atan2(surfY(BOAT_X + 4) - surfY(BOAT_X - 4), 8) * 0.7;
       ctx.save(); ctx.translate(boatX, boatY); ctx.rotate(roll);
-      ctx.filter = `brightness(${(0.22 + 0.78 * Math.sqrt(dayEff)).toFixed(2)})`;
-      crane = drawBoat(ctx, 14 * ppm, t, g.sub);
-      ctx.filter = 'none';
+      // draw the boat into a small offscreen canvas and darken it there (canvas filters are slow)
+      const bw = Math.ceil(14 * ppm * 1.3), bh = Math.ceil(14 * ppm * 0.75);
+      const bc = this.boatC || (this.boatC = document.createElement('canvas'));
+      if (bc.width !== bw || bc.height !== bh) { bc.width = bw; bc.height = bh; }
+      const bctx = bc.getContext('2d');
+      bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, bw, bh);
+      bctx.globalCompositeOperation = 'source-over';
+      bctx.translate(bw * 0.45, bh * 0.82);
+      crane = drawBoat(bctx, 14 * ppm, t, g.sub);
+      const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
+      if (dimB > 0.01) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, bw, bh); }
+      ctx.drawImage(bc, -bw * 0.45, -bh * 0.82);
       if (dayEff < 0.5) {
         // the cabin light stays on at night
         const a = (0.5 - dayEff) * 1.6;
@@ -505,46 +545,57 @@ export class Renderer {
   }
 
   drawKelp(g, S, Sy, ppm, layer, x0, x1) {
+    // Batched: every stalk of this layer goes into one path, every blade into another,
+    // every bladder into a third - three draw calls for the whole forest.
     const ctx = this.ctx, t = g.time;
     const surf = g.surfY || (() => 0);
+    const stalks = new Path2D(), blades = new Path2D(), bulbs = new Path2D();
+    const len = 1.1 * ppm, wid = 0.22 * ppm, br = wid * 0.35;
+    let any = false;
     for (let i = 0; i < g.world.kelp.length; i++) {
       const k = g.world.kelp[i];
       if ((i % 3 === 0 ? 1 : 0) !== layer) continue;
       if (k.x < x0 - 8 || k.x > x1 + 8) continue;
       const topY = k.base - k.h;
       if (k.base < this.cam.y - this.cam.h || topY > this.cam.y + this.cam.h) continue;
-      const segs = Math.max(6, Math.floor(k.h / 1.2));
-      const pts = [];
-      for (let s = 0; s <= segs; s++) {
-        const u = s / segs, hh = u * k.h;
+      any = true;
+      const segs = Math.max(6, Math.floor(k.h / 1.45));
+      for (let s2 = 0; s2 <= segs; s2++) {
+        const u = s2 / segs, hh = u * k.h;
         let y = k.base - hh;
         const sway = Math.sin(t * 0.55 + k.phase + hh * 0.12) * hh * 0.07 + Math.sin(t * 1.3 + hh * 0.3) * 0.15 * u + k.lean * hh + g.waveBoost * Math.sin(t * 2 + hh * 0.2) * u * 2;
         if (y < 0.4) y = 0.4 + surf(k.x + sway) * 0.4;
-        pts.push([k.x + sway, y]);
-      }
-      const dark = layer === 1 ? 0.75 : 1;
-      ctx.strokeStyle = rgbStr([70 * dark, 58 * dark, 26 * dark]);
-      ctx.lineWidth = Math.max(1, ppm * 0.07);
-      ctx.beginPath(); for (const [x, y] of pts) ctx.lineTo(S(x), Sy(y)); ctx.stroke();
-      // blades
-      for (let s = 1; s <= segs; s++) {
-        const [x, y] = pts[s];
-        const side = s % 2 ? 1 : -1;
-        const a = -Math.PI / 2 + side * (0.7 + Math.sin(t * 0.8 + s + k.phase) * 0.2);
-        const len = 1.1 * ppm, wid = 0.22 * ppm;
-        ctx.save(); ctx.translate(S(x), Sy(y)); ctx.rotate(a);
-        ctx.fillStyle = `rgba(${(112 * dark) | 0},${(92 * dark) | 0},${(34 * dark) | 0},0.86)`;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(len * 0.5, -wid, len, 0); ctx.quadraticCurveTo(len * 0.5, wid, 0, 0); ctx.fill();
-        // gas bladder
-        ctx.fillStyle = `rgba(${(140 * dark) | 0},${(120 * dark) | 0},${(50 * dark) | 0},0.9)`;
-        ctx.beginPath(); ctx.arc(len * 0.05, 0, wid * 0.35, 0, TAU); ctx.fill();
-        ctx.restore();
+        const px = S(k.x + sway), py = Sy(y);
+        if (s2 === 0) stalks.moveTo(px, py); else stalks.lineTo(px, py);
+        if (s2 === 0) continue;
+        // blade: a leaf shape from (px,py) along angle a
+        const side = s2 % 2 ? 1 : -1;
+        const a = -Math.PI / 2 + side * (0.7 + Math.sin(t * 0.8 + s2 + k.phase) * 0.2);
+        const ca = Math.cos(a), sa = Math.sin(a);
+        // a blade is one short, thick, round-capped stroke: reads as a leaf, rasterizes far faster than a curve fill
+        blades.moveTo(px + ca * len * 0.18, py + sa * len * 0.18);
+        blades.lineTo(px + ca * len * 0.82, py + sa * len * 0.82);
+        if (s2 % 2 === 0) { const bx = px + ca * len * 0.05, by = py + sa * len * 0.05; bulbs.moveTo(bx + br, by); bulbs.arc(bx, by, br, 0, TAU); }
       }
       if (k.species === 119) {
-        const [x, y] = pts[segs];
-        ctx.fillStyle = 'rgb(96,78,34)'; ctx.beginPath(); ctx.arc(S(x), Sy(y), ppm * 0.18, 0, TAU); ctx.fill();
+        const u = 1, hh = k.h;
+        const sway = Math.sin(t * 0.55 + k.phase + hh * 0.12) * hh * 0.07 + Math.sin(t * 1.3 + hh * 0.3) * 0.15 * u + k.lean * hh + g.waveBoost * Math.sin(t * 2 + hh * 0.2) * u * 2;
+        const y = Math.max(0.4, k.base - hh);
+        const px = S(k.x + sway), py = Sy(y);
+        bulbs.moveTo(px + ppm * 0.18, py); bulbs.arc(px, py, ppm * 0.18, 0, TAU);
       }
     }
+    if (!any) return;
+    const dark = layer === 1 ? 0.75 : 1;
+    ctx.strokeStyle = rgbStr([70 * dark, 58 * dark, 26 * dark]);
+    ctx.lineWidth = Math.max(1, ppm * 0.07);
+    ctx.stroke(stalks);
+    ctx.strokeStyle = `rgba(${(112 * dark) | 0},${(92 * dark) | 0},${(34 * dark) | 0},0.86)`;
+    ctx.lineWidth = wid * 1.5; ctx.lineCap = 'round';
+    ctx.stroke(blades);
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = `rgba(${(140 * dark) | 0},${(120 * dark) | 0},${(50 * dark) | 0},0.9)`;
+    ctx.fill(bulbs);
   }
 
   drawWreck(ctx, w, S, Sy, ppm) {
@@ -763,6 +814,7 @@ export class Renderer {
     const l = this.lctx, LW = this.lc.width, LH = this.lc.height;
     const k = LW / this.W;
     const cam = this.cam, fx = g.fx;
+    l.setTransform(1, 0, 0, 1, 0, 0);
     l.globalCompositeOperation = 'source-over';
     // ambient: vertical gradient sampled by depth
     const dTop = cam.y - cam.h / 2, dBot = cam.y + cam.h / 2;

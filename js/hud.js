@@ -14,7 +14,7 @@ export class Hud {
     this.sweep = 0; this.blip = null; this.toasts = []; this.journalHot = null;
   }
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
     if (this.c.width !== w || this.c.height !== h) { this.c.width = w; this.c.height = h; }
     this.s = h / 900; // UI scale
