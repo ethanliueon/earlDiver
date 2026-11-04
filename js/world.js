@@ -72,6 +72,18 @@ export function generateWorld(seed) {
     }
     return poly;
   };
+  const roughen = (poly, seg, amp) => {
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      const nx = -(b.y - a.y), ny = b.x - a.x, nl = Math.hypot(nx, ny) || 1;
+      for (let k = 0; k < seg; k++) {
+        const t = k / seg, j = k === 0 ? 0 : (rng() - 0.5) * 2 * amp;
+        out.push({ x: a.x + (b.x - a.x) * t + (nx / nl) * j, y: a.y + (b.y - a.y) * t + (ny / nl) * j });
+      }
+    }
+    return out;
+  };
   const addRock = (poly, kind) => {
     let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
     for (const p of poly) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
@@ -82,7 +94,7 @@ export function generateWorld(seed) {
     const s = W.slopeAt(x);
     if (x > 940 && rng() < 0.6) continue;
     const size = clamp(0.6 + d * 0.004, 0.6, 6) * rng.range(0.5, 1.8);
-    addRock(blob(x, d + size * 0.25, size * rng.range(1, 2.2), size, rng.range(-0.3, 0.3) + Math.atan(s) * 0.5, 0.45), 'boulder');
+    addRock(roughen(blob(x, d + size * 0.25, size * rng.range(1, 2.2), size, rng.range(-0.3, 0.3) + Math.atan(s) * 0.5, 0.45, 10), 2, size * 0.12), 'boulder');
     // Overhangs on steep walls: a ledge sticking out to the left (towards open water)
     if (Math.abs(s) > 1.6 && rng() < 0.55) {
       const len = rng.range(6, 18) * clamp(d / 300, 0.6, 2.5);
@@ -98,7 +110,7 @@ export function generateWorld(seed) {
         { x: ax + 3, y: ay + th * 0.9 },
       ];
       for (const p of poly) { p.x += (rng() - 0.5) * 1.2; p.y += (rng() - 0.5) * 0.8; }
-      addRock(poly, 'ledge');
+      addRock(roughen(poly, 4, 0.55), 'ledge');
     }
   }
   W.rockAt = (x, y, r = 0) => {

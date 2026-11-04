@@ -398,6 +398,23 @@ export class Renderer {
         ctx.fillRect(S(x + h * 0.3), Sy(yy), Math.max(1, ppm * 0.06), Math.max(1, ppm * 0.04));
       }
     }
+    // strata: faint layered bands that show on steep walls
+    ctx.lineWidth = Math.max(1, ppm * 0.08);
+    const ys0 = Math.floor((this.cam.y - this.cam.h / 2) / 2.2) * 2.2, ys1 = this.cam.y + this.cam.h / 2 + 2;
+    for (let yy = ys0; yy < ys1; yy += 2.2) {
+      const k = Math.abs(Math.sin(yy * 7.13));
+      ctx.strokeStyle = k > 0.5 ? 'rgba(0,0,0,0.16)' : 'rgba(255,245,225,0.05)';
+      ctx.beginPath();
+      for (let x = x0; x <= x1 + step; x += step * 2) ctx.lineTo(S(x), Sy(yy + Math.sin(x * 0.35 + yy) * 0.35 + Math.sin(x * 0.07) * 0.8));
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    for (let i = gx0; i < gx1; i += 2) {
+      const x = i / 3, base = g.world.floorAt(x);
+      const h = Math.abs(Math.sin(i * 3.7) * 9137.13) % 1;
+      if (h > 0.25) continue;
+      ctx.beginPath(); ctx.ellipse(S(x), Sy(base + 1 + h * 10), ppm * (0.2 + h), ppm * (0.1 + h * 0.4), 0, 0, TAU); ctx.fill();
+    }
     ctx.restore();
     // lit edge
     ctx.strokeStyle = 'rgba(255,250,235,0.16)'; ctx.lineWidth = Math.max(1, ppm * 0.06);
@@ -745,6 +762,11 @@ export class Renderer {
       }
     }
     if (g.lure) radial(S(g.lure.x), Sy(g.lure.y), 8 * ppm, [170, 230, 255], 0.9);
+    for (const v of g.world.vents) {
+      const x = S(v.x), y = Sy(v.y - v.h);
+      if (x < -500 || x > this.W + 500 || y < -500 || y > this.H + 500) continue;
+      radial(x, y, 9 * ppm, [255, 120, 60], 0.22 + 0.06 * Math.sin(g.time * 3 + v.phase));
+    }
     for (const [x, y, col, r] of glowPts) radial(x, y, Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7);
     // caustic dapples near the surface by day
     if (g.dayEff > 0.3 && cam.y < 40) {
