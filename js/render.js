@@ -128,7 +128,12 @@ export class Renderer {
       if (ss > 0.03 && horizon > -40 && horizon < H) {
         const rg = ctx.createLinearGradient(0, horizon, 0, horizon + ppm * 12);
         rg.addColorStop(0, `rgba(240,160,120,${(0.6 * ss).toFixed(3)})`); rg.addColorStop(0.3, `rgba(200,120,130,${(0.32 * ss).toFixed(3)})`); rg.addColorStop(1, 'rgba(110,80,120,0)');
-        ctx.fillStyle = rg; ctx.fillRect(0, horizon - ppm, W, ppm * 13);
+        // only the water: follow the wave line so nothing spills into the sky
+        ctx.save(); ctx.beginPath(); ctx.moveTo(-10, horizon + ppm * 14);
+        for (let sx = -10; sx <= W + 20; sx += 16) ctx.lineTo(sx, Sy(surfY(cam.x + (sx - W / 2) / ppm)));
+        ctx.lineTo(W + 20, horizon + ppm * 14); ctx.closePath(); ctx.clip();
+        ctx.fillStyle = rg; ctx.fillRect(0, horizon - ppm * 2, W, ppm * 16);
+        ctx.restore();
         // a path of glitter below the low sun
         if (this.sunX !== undefined) {
           for (let k = 0; k < 40; k++) {
@@ -969,12 +974,17 @@ export class Renderer {
     const dTop = cam.y - cam.h / 2, dBot = cam.y + cam.h / 2;
     const gr = l.createLinearGradient(0, 0, 0, LH);
     const dim = 1 - fx.darken;
+    const lit = (d) => { const a = ambientAt(d, g.dayEff) * dim, tint = sampleTable(LIGHT_TINT, d); return rgbStr([255 * a * tint[0], 255 * a * tint[1], 255 * a * tint[2]]); };
+    // the sky is never darkened; the change to underwater light happens exactly at the waterline
+    // full light down to the wave troughs, then a soft blend over the next metre and a half
+    const sw = 0.25 + g.waveBoost * 1.6, sw2 = sw + 1.5;
+    const hf = (sw - dTop) / (dBot - dTop), hf2 = (sw2 - dTop) / (dBot - dTop);
+    if (hf > 0 && hf2 < 1) { gr.addColorStop(0, 'rgb(255,255,255)'); gr.addColorStop(hf, 'rgb(255,255,255)'); gr.addColorStop(hf2, lit(sw2)); }
     for (let i = 0; i <= 8; i++) {
-      const d = lerp(dTop, dBot, i / 8);
-      if (d < 0) { gr.addColorStop(i / 8, 'rgb(255,255,255)'); continue; }
-      const a = ambientAt(d, g.dayEff) * dim;
-      const tint = sampleTable(LIGHT_TINT, d);
-      gr.addColorStop(i / 8, rgbStr([255 * a * tint[0], 255 * a * tint[1], 255 * a * tint[2]]));
+      const f = i / 8, d = lerp(dTop, dBot, f);
+      if (d < 0) { if (!(hf > 0 && hf2 < 1)) gr.addColorStop(f, 'rgb(255,255,255)'); continue; }
+      if (hf > 0 && hf2 < 1 && f <= hf2) continue;
+      gr.addColorStop(f, lit(d));
     }
     l.fillStyle = gr; l.fillRect(0, 0, LW, LH);
     // the entity swallows light around it
