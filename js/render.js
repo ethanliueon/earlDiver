@@ -455,17 +455,17 @@ export class Renderer {
           const px = ex + ox, py = ey + oy;
           ctx.globalCompositeOperation = 'lighter';
           const gg = ctx.createRadialGradient(px, py, 0, px, py, ppm * 2.4 * sc);
-          gg.addColorStop(0, `rgba(205,215,160,${(0.55 * o).toFixed(3)})`);
-          gg.addColorStop(0.2, `rgba(130,145,90,${(0.2 * o).toFixed(3)})`);
+          gg.addColorStop(0, `rgba(255,60,40,${(0.6 * o).toFixed(3)})`);
+          gg.addColorStop(0.2, `rgba(170,20,15,${(0.25 * o).toFixed(3)})`);
           gg.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(px, py, ppm * 2.4 * sc, 0, TAU); ctx.fill();
           const ig = ctx.createRadialGradient(px, py, 0, px, py, ppm * 0.38 * sc);
-          ig.addColorStop(0, `rgba(235,240,200,${(0.95 * o).toFixed(3)})`); ig.addColorStop(0.7, `rgba(170,180,120,${(0.6 * o).toFixed(3)})`); ig.addColorStop(1, 'rgba(120,130,80,0)');
+          ig.addColorStop(0, `rgba(255,120,80,${(0.98 * o).toFixed(3)})`); ig.addColorStop(0.6, `rgba(225,30,20,${(0.9 * o).toFixed(3)})`); ig.addColorStop(1, 'rgba(120,0,0,0)');
           ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.38 * sc, ppm * 0.27 * sc, 0, 0, TAU); ctx.fill();
           ctx.globalCompositeOperation = 'source-over';
           // a narrow vertical pupil
           ctx.fillStyle = `rgba(0,0,0,${(0.85 * o).toFixed(3)})`;
-          ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.04 * sc, ppm * 0.22 * sc, 0, 0, TAU); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.26 * sc, ppm * 0.045 * sc, 0, 0, TAU); ctx.fill(); // a frog's horizontal slit
         }
       }
     }

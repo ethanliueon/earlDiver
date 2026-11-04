@@ -67,7 +67,7 @@ export class Hud {
       const sprinting = e.sprint && e.speedNow > 1;
       const press = e.inSub ? 1 : diverDrainMult(e.y);
       const parts = [];
-      if (sprinting) parts.push('sprinting: air use ×2');
+      if (sprinting) parts.push(`sprinting: air use ×${e.inSub ? 3 : 2}`);
       if (press > 1.05) parts.push(`pressure: air use ×${press.toFixed(1)}`);
       if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.fillText(parts.join('  ·  '), W - pad, by + bh + 20 * s); }
     }
