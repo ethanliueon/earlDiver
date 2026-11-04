@@ -26,6 +26,9 @@ const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104]);
 // Never flee from Earl: drifters, slow or curious animals, and the things that might attack him.
 const NO_FLEE = new Set([46, 77, 84, 88, 31, 32, 33, 183, 107, 100, 67, 12, 11, 141, 184, 185, 186, 187, 76, 78, 82, 83, 80, 42, 43, 44, 148, 89, 85]);
 const DIVE_SPEED = 4;
+// genuinely fast swimmers: may burst to 1.5x Earl's speed (swordfish, sailfish, marlin, tunas,
+// mako, wahoo, mahi-mahi, dolphins, orca). Everything else is slower than a diver can sprint.
+const FAST = new Set([42, 43, 44, 39, 40, 41, 82, 52, 45, 185, 186, 187]);
 
 // Predators that hunt small fish (ids from the species list).
 const PREDATORS = new Set([35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 52, 53, 76, 78, 79, 82, 83, 148, 30, 31, 32, 34, 68, 102]);
@@ -144,7 +147,7 @@ export class Fauna {
       const a = rng() * Math.PI * 2, rr = Math.pow(rng(), 0.75);
       const c = this.makeFish(sp, x + Math.cos(a) * rr * baseR * 1.8, y + Math.sin(a) * rr * baseR, dir, gid, false);
       c.ox = Math.cos(a) * rr; c.oy = Math.sin(a) * rr;
-      c.speed = clamp(0.8 + sp.len * 4, 0.8, 2.4);
+      c.speed = clamp(0.6 + sp.len * 3, 0.6, 1.8);
       c.hvy = 0; c.flash = 0; c.turnedAt = -99;
       this.list.push(c);
     }
@@ -155,13 +158,13 @@ export class Fauna {
     const sz = rng.range(0.75, 1.15);
     const len = sp.len * sz, hab = sp.v.hab;
     // cruising at roughly one body length a second (bounded), much slower for drifters
-    let cruise = clamp(len * 1.1, 0.4, 2.4);
+    let cruise = clamp(len * 0.8, 0.3, 1.6);
     if (hab === 'drift' || hab === 'drift-low') cruise = 0.12;
-    if (sp.id === 185 || sp.id === 186) cruise = 3; if (sp.id === 187) cruise = 2.6; if (sp.id === 184) cruise = 1.6;
+    if (sp.id === 185 || sp.id === 186) cruise = 2.4; if (sp.id === 187) cruise = 2.2; if (sp.id === 184) cruise = 1.4;
     // escape speed: 0.7-1.3x Earl's swimming speed, small fish fastest; some never flee
     let flee = 0;
     const noFlee = NO_FLEE.has(sp.id) || hab === 'drift' || hab === 'drift-low' || /seahorse|seadragon|pipefish|jelly|comb|siphon|manowar|nautilus/.test(sp.v.s);
-    if (!noFlee) flee = (len < 0.3 ? rng.range(1.1, 1.3) : len < 1 ? rng.range(0.9, 1.15) : rng.range(0.7, 0.95)) * DIVE_SPEED;
+    if (!noFlee) flee = (FAST.has(sp.id) ? rng.range(1.35, 1.5) : len < 0.3 ? rng.range(0.85, 1.05) : len < 1 ? rng.range(0.7, 0.9) : rng.range(0.55, 0.75)) * DIVE_SPEED;
     return {
       sp, x, y, vx: dir * 0.4, vy: 0, dir, len,
       phase: rng() * 100, gid, leader, wob: rng() * 1000, noted: false,
@@ -207,7 +210,8 @@ export class Fauna {
       if (s.y > fl - s.r - 4) ay -= 1.2;
       if (s.y < s.lo + s.r) ay += 0.6;
       if (s.y > s.hi - s.r) ay -= 0.6;
-      if (s.y < 1.5 + s.r) ay += 1;
+      if (s.y < 2 + s.baseR) ay += 2;
+      if (s.y < 1 + s.baseR) s.y = 1 + s.baseR;
       // the whole school moves off from a diver who comes close (faster if he comes fast), and
       // closes up tighter while he is near - instead of individual fish piling up around him
       const de = dist(s.x, s.y, earl.x, earl.y) + 0.01;
@@ -224,7 +228,7 @@ export class Fauna {
         if (dd < hz) { const k = (1 - dd / hz) * 4; ax += dx / dd * k; ay += dy / dd * k * 0.6; }
       }
       s.vx += ax * dt; s.vy += ay * dt;
-      const sp = 0.7 + s.threat * 3.8 + dread * 2; // a scared bait school outswims a diver
+      const sp = 0.6 + s.threat * 2.4 + dread * 0.8; // a scared school moves off together, about as fast as a diver
       const v = Math.hypot(s.vx, s.vy);
       if (v > sp) { s.vx *= sp / v; s.vy *= sp / v; }
       s.x += s.vx * dt; s.y += s.vy * dt;
@@ -271,17 +275,13 @@ export class Fauna {
       const school = this.schools.get(c.gid);
       let tx, ty, sp = c.speed, ax, ay;
       if (school) {
-        // a place in a living shape: stretched along the direction of travel (rounder when it
-        // balls up under threat), with slow waves rippling through it and a gently shifting outline
-        const ballUp = Math.min(1, school.threat);
-        const stretch = (1.9 + 0.3 * Math.sin(time * 0.21 + school.wob)) * (1 - ballUp * 0.4);
-        const ox = c.ox + Math.sin(time * 0.31 + c.wob) * 0.07, oy = c.oy + Math.cos(time * 0.27 + c.wob * 1.7) * 0.07;
-        const wave = Math.sin(ox * 2.2 - time * 0.7 * school.dir + school.wob) * school.r * 0.28 * (1 - ballUp);
-        const thick = 1 + 0.18 * Math.sin(ox * 1.3 + time * 0.4 + school.wob * 2);
-        tx = school.x + ox * school.r * stretch; ty = school.y + oy * school.r * thick + wave;
+        // a fixed place in the school's shape; only the spacing tightens when it is threatened
+        const tight = 1 - 0.3 * Math.min(1, school.threat);
+        const ox = c.ox + Math.sin(time * 0.31 + c.wob) * 0.04, oy = c.oy + Math.cos(time * 0.27 + c.wob * 1.7) * 0.04;
+        tx = school.x + ox * school.baseR * 1.8 * tight; ty = school.y + oy * school.baseR * tight;
         ax = (tx - c.x) * 3 + (school.vx - c.vx) * 2;
         ay = (ty - c.y) * 3 + (school.vy - c.vy) * 2;
-        sp = c.speed * (1 + school.threat);
+        sp = Math.max(c.speed * (1 + school.threat), Math.hypot(school.vx, school.vy) * 1.25); // keep up with the school, no more
       } else {
         const L = leaders[c.gid];
         if (!c.leader && L) {
@@ -338,7 +338,7 @@ export class Fauna {
           if (school) {
             // only the fish right at the strike dart aside (forward, with the school); the rest of
             // the school's response is the whole body veering away and balling up
-            if (d < 1.8) { const k = (1 - d / 1.8) * 14; ax += (dx / d * 0.5 + school.dir * 0.9) * k; ay += dy / d * 0.5 * k; sp *= 2.2; }
+            // (school fish don't scatter on their own: the whole school veers away instead)
           } else if (d < 4) { ax += dx / d * 30; ay += dy / d * 30; sp *= 2.5; }
         }
       }
@@ -346,13 +346,7 @@ export class Fauna {
       // calm approach lets him get close enough to observe
       const de = dist(c.x, c.y, earl.x, earl.y);
       if (school) {
-        // a fish right in his path darts aside - along the school's direction of travel, so the
-        // school parts and flows around him rather than forming a ring
-        const scare = 1.2 + (earl.speedNow > 2.5 ? 0.8 : 0);
-        if (de < scare) {
-          const k = (1 - de / scare) * 10;
-          ax += ((c.x - earl.x) / (de + 0.1) * 0.6 + school.dir * 0.8) * k; ay += (c.y - earl.y) / (de + 0.1) * 0.6 * k; sp *= 2;
-        }
+        // school fish don't break ranks: the whole school moves off (see the school centres)
       } else if (c.flee > 0 && !c.prey && !c.ctrl && !earl.inSub) {
         const closing = ((c.x - earl.x) * earl.vx + (c.y - earl.y) * earl.vy) / (de + 0.01);
         const threat = earl.speedNow < 1.3 ? 1.4 : (3 + c.len * 1.5) * (earl.sprint ? 1.6 : 1) * (closing > 1 ? 1.4 : 1);
@@ -368,12 +362,13 @@ export class Fauna {
         const dx = c.x - entity.x, dy = c.y - entity.y, dd = Math.hypot(dx, dy) + 1;
         const f = dread * 30;
         ax += (dx / dd) * f; ay += (dy / dd) * f * 0.5;
-        sp *= 1 + dread * 2.5;
+        sp = school ? sp : Math.max(sp, c.flee || c.speed);
       }
       // stay in water & habitat band
       const fl = W.floorAt(c.x);
       if (c.y > fl - 1.2) ay -= 8;
-      if (c.y < 0.6) ay += 6;
+      const surf = this.surfY ? this.surfY(c.x) : 0;
+      if (c.y < surf + 0.6) ay += 6;
       if (!school) {
         if (c.sp.v.hab === 'reef' && fl - c.y > 10) ay += 1.5;
         if ((c.sp.v.hab === 'floor-swim' || c.sp.v.hab === 'drift-low') && fl - c.y > 2.5) ay += 1.5;
@@ -386,16 +381,15 @@ export class Fauna {
       if (v > sp) { c.vx *= sp / v; c.vy *= sp / v; }
       c.vy *= 0.97;
       c.x += c.vx * dt; c.y += c.vy * dt;
+      const lim = surf + 0.35 + c.len * 0.15;
+      if (c.y < lim) { c.y = lim; if (c.vy < 0) c.vy = 0; }
       if (!school && W.rockAt(c.x, c.y)) { c.x -= c.vx * dt * 2; c.y -= c.vy * dt * 2; c.vx = -c.vx * 0.5; c.dir = -c.dir; }
       if (school) {
         // all aligned with the school; when it turns, the turn sweeps from the leading edge back,
-        // and each fish flashes silver as its flank swings to the light
         const front = c.ox * school.prevDir; // +1 at the new front
         if (c.dir !== school.dir && time - school.turnTime > (1 - front) * 0.45) { c.dir = school.dir; c.turnedAt = time; }
         c.hvy = lerp(c.hvy || 0, school.vy * 0.8 + (c.vy - school.vy) * 0.25, Math.min(1, dt * 3));
-        const ripple = Math.pow(Math.max(0, Math.sin(time * 0.9 - c.ox * 3 - c.oy * 1.5 + school.wob)), 16) * 0.45;
-        const turn = Math.max(0, 1 - (time - c.turnedAt) / 0.35);
-        c.flash = Math.max(ripple, turn);
+        c.flash = 0;
       } else if (Math.abs(c.vx) > 0.08) c.dir = c.vx > 0 ? 1 : -1;
       if (c.x < 3) { c.dir = 1; c.vx = Math.abs(c.vx); }
       c.phase += dt * (0.6 + Math.min(4, v * 1.4));

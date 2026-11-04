@@ -234,7 +234,7 @@ export class Renderer {
         const ox = px * down * hh * 0.35, oy = py * down * hh * 0.35;
         bt.belly.moveTo(bx + ox + fx2 * Ld * 0.34, by + oy + fy2 * Ld * 0.34);
         bt.belly.ellipse(bx + ox, by + oy, Ld * 0.34, hh * 0.55, rot, 0, TAU);
-        const flash = c.flash !== undefined ? c.flash : Math.pow(Math.max(0, Math.sin(c.phase * 0.6 + c.wob)), 10);
+        const flash = 0; // (no shimmer)
         if (flash > 0.3) { bt.flash.moveTo(bx + fx2 * Ld * 0.36, by + fy2 * Ld * 0.36); bt.flash.ellipse(bx, by, Ld * 0.36, hh * 0.7, rot, 0, TAU); bt.nf++; }
         if (Ld > 9) { const ex = x + fx2 * Ld * 0.33 - px * down * hh * 0.2, ey = y + fy2 * Ld * 0.33 - py * down * hh * 0.2, er = Math.max(0.7, hh * 0.3); bt.eyes.moveTo(ex + er, ey); bt.eyes.arc(ex, ey, er, 0, TAU); }
         if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.3)]);
@@ -264,7 +264,7 @@ export class Renderer {
       entB.face = lerp(entB.face ?? toward, toward, 0.02);
       const flipB = entB.face >= 0 ? -1 : 1;
       ctx.save(); ctx.translate(S(entB.x), Sy(entB.y)); ctx.scale(flipB, 1);
-      drawEntity(ctx, 34 * ppm, t, clamp((90 - entB.dist) / 50, 0, 1), 0.3);
+      drawEntity(ctx, 34 * ppm, t, clamp((90 - entB.dist) / 50, 0, 1) * (entB.fade ?? 1), 0.3 * (entB.fade ?? 1));
       ctx.restore();
     }
     // scales drifting where something was eaten
@@ -426,7 +426,7 @@ export class Renderer {
       const Lp = 34 * ppm;
       // it turns its head toward Earl when close; otherwise it faces the way it moves
       const flip = (ent.face ?? 1) >= 0 ? -1 : 1; // local frame faces -x (face is updated in the scene pass)
-      const fillA = clamp((80 - d) / 60, 0, 1) * 0.95;
+      const fillA = clamp((80 - d) / 60, 0, 1) * 0.95 * (ent.fade ?? 1);
       const lampBoost = g.earl.lampOn || (g.earl.inSub && g.sub.lightsOn) ? 1.6 : 1;
       const rimA = clamp((50 - d) / 45, 0, 1) * 0.22 * lampBoost * (0.75 + 0.25 * Math.sin(t * 0.37));
       ctx.save(); ctx.translate(S(ent.x), Sy(ent.y)); ctx.scale(flip, 1);
@@ -496,6 +496,13 @@ export class Renderer {
       ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
       if (fx.redFlash > 0) { ctx.fillStyle = `rgba(160,0,0,${(0.35 * fx.redFlash).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
       if (fx.redDeath > 0) { ctx.fillStyle = `rgba(40,0,0,${(0.55 * fx.redDeath).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+    }
+    // being marked: a slow dark pulse closing in from the edges
+    if (fx.markPulse > 0) {
+      const mp = Math.sin(Math.min(1, (1 - fx.markPulse) * 1.6) * Math.PI) * fx.markPulse;
+      const mg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.15, W / 2, H / 2, Math.max(W, H) * 0.7);
+      mg.addColorStop(0, 'rgba(0,0,0,0)'); mg.addColorStop(1, `rgba(0,0,8,${(0.75 * mp).toFixed(3)})`);
+      ctx.fillStyle = mg; ctx.fillRect(0, 0, W, H);
     }
     if (fx.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${fx.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     if (fx.black > 0) { ctx.fillStyle = `rgba(0,0,0,${fx.black.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }

@@ -31,7 +31,7 @@ function newGame(mode) {
     time: 25 + Math.random() * 60, // a little after sunrise
     survival: 0,
     earl: new Earl(), sub: new Sub(),
-    entity: new Entity(rng),
+    entity: new Entity(rng, world),
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
@@ -218,6 +218,8 @@ function interact(t, exitSub) {
   if (!t) { if (e.inSub) leaveSub(); return; }
   if (t.kind === 'pickup') {
     const p = t.p;
+    // taking things from the deep draws its attention
+    if (p.y > 200) g.entity.disturb(g, p.type === 'necklace' ? 0.3 : p.type === 'lure' ? 0.2 : p.type === 'sapphire' ? 0.25 : 0.04);
     if (p.type === 'lure' || p.type === 'necklace') {
       if (g.items[p.type] >= 3) { hud.toast('You cannot carry more', 'warn'); return; }
       g.items[p.type]++;
@@ -307,7 +309,8 @@ function update(dt) {
   if (g.mode === 'menu') {
     g.dayEff = g.day.light; g.fx.dread = 0;
     e.x = 500; e.y = 8;
-    g.fauna.update(dt, renderer.cam, { x: -999, y: -999, speedNow: 0 }, null, 0, g.time);
+    g.fauna.surfY = g.surfY;
+  g.fauna.update(dt, renderer.cam, { x: -999, y: -999, speedNow: 0 }, null, 0, g.time);
     updateBubbles(dt);
     return;
   }
@@ -423,7 +426,18 @@ function update(dt) {
     const r = ent.update(g, dt);
     if (r === 'caught') die(causeText('entity'));
     for (const ev of g.events) {
-      if (ev === 'teleport') { g.fx.flash = 0; g.fx.shake = 1.2; audio.ready && audio.tone(40, 2.5, 0.6, 'sine', 0, 25); }
+      if (ev === 'marked') {
+        // something has noticed him: a deep sound, a pulse through the screen, a line in the journal
+        g.fx.shake = Math.max(g.fx.shake, 1.0); g.fx.markPulse = 1;
+        audio.ready && (audio.tone(38, 4, 0.7, 'sine', 0, 24), audio.groan(0.18));
+        hud.toast('Something noticed you.', 'note');
+        g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}, ${Math.round(e.y)} m] Something noticed me.`;
+        const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
+      } else if (ev === 'unmarked') {
+        hud.toast('The feeling of being watched fades.', 'note');
+        g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}] It has lost interest. For now.`;
+        const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
+      }
       else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); hud.toast('Something bumped you', 'warn'); }
       else if (ev === 'charge') { audio.ready && audio.whoosh(); }
       else if (ev === 'swerve') { hud.toast('It turns away from the light'); }
@@ -453,9 +467,9 @@ function update(dt) {
   const targetDread = g.mode === 'dying' ? 1 : dreadFromDistance(d);
   const fx = g.fx;
   fx.dread = lerp(fx.dread, targetDread, 1 - Math.exp(-dt * 1.5));
-  fx.torchShift = clamp(fx.dread * 1.5, 0, 1) * (0.35 + 0.65 * clamp((g.earl.y - 70) / 50, 0, 1));
+  fx.torchShift = clamp(fx.dread * 1.5, 0, 1) * (0.35 + 0.65 * clamp((g.earl.y - 100) / 60, 0, 1));
   // in the safe zone you still hear and sense it (sonar, heartbeat), but the water stays the water
-  const deepK = clamp((e.y - 70) / 50, 0, 1);
+  const deepK = clamp((e.y - 100) / 60, 0, 1);
   fx.safeK = deepK;
   fx.darken = fx.dread * 0.6 * deepK;
   fx.vignette = fx.dread;
@@ -526,6 +540,7 @@ function update(dt) {
     if (b.t > b.life) g.blood.splice(i, 1);
   }
   g.fx.redFlash = Math.max(0, (g.fx.redFlash || 0) - dt * 1.4);
+  g.fx.markPulse = Math.max(0, (g.fx.markPulse || 0) - dt * 0.5);
   updateBubbles(dt);
   updateDebris(dt);
 }
@@ -544,7 +559,9 @@ function updateBubbles(dt) {
     b.t += dt;
     if (b.t < 0) continue;
     b.y -= (0.7 + b.r * 12) * dt; b.x += Math.sin(b.t * 8 + b.w) * 0.25 * dt;
-    if (b.y < 0.25 || b.t > 25) g.bubbles.splice(i, 1);
+    // bubbles burst at the actual wave surface
+    const sy = g.surfY ? g.surfY(b.x) : 0;
+    if (b.y < sy + 0.1 || b.t > 25) g.bubbles.splice(i, 1);
   }
   if (g.bubbles.length > 300) g.bubbles.splice(0, g.bubbles.length - 300);
 }

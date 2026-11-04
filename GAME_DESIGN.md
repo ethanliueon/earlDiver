@@ -99,20 +99,20 @@ pearls (rare, in clams), glass sponge shards (deep). They are spent on sub upgra
 
 ## The entity
 
-- It can never rise above 100 m: the top 100 m are a safe zone. It waits at the boundary, circling
-  below. In the safe zone you still hear and sense it (sonar, heartbeat, a faint swell), but the
-  light is left alone; the darkness, ink and torch shift belong to the deep.
-
-- Never fully seen: at most two glowing eyes and a faint, inhuman outline.
-- 1.5x Earl's swim speed. It never kills in a fight; if it reaches Earl, the run ends.
-- It hunts by sound and light: sprinting, the submersible and lights carry far.
-  Hiding in kelp or under rock overhangs, moving slowly with the light off, makes it lose track.
-  It then searches around the last place it sensed Earl, and every so often gets a vague
-  sense of where he is, so it always comes back.
-- Within 500 m: waves and ripples at the surface; if it is shallow, day turns to night.
-- Within 200 m: it appears on the radar on the right-hand monitor and the dread effects begin.
-- Within 50 m: heavy disorientation.
-- Diving below 500 m without the submersible: it instantly appears 500 m directly below Earl.
+- Home range: 1500-3000 m by day, 500-2000 m at night. At the start of a run it is not hunting.
+- A hidden attention meter fills when Earl disturbs the deep: being below 200 m (more the
+  deeper), noise (sprinting, the sub's engine) and light below 300 m, taking things from its domain
+  (deep sapphires, necklaces, lures), and being noticed by it. Below 500 m without the sub marks
+  him at once. Quiet, shallow water drains the meter.
+- When it fills, Earl is MARKED: a deep sound, a dark pulse, a journal line, MARKED on the monitor.
+  It rises from the deep and hunts him by sound and light; hiding makes it lose him; it searches
+  and every so often gets a vague fix on him.
+- Depth limits: while actively chasing it can push up toward ~120 m, slowing as it rises (no hard
+  line); otherwise it keeps below ~200 m. Above ~120 m Earl cannot be taken.
+- The mark fades after ~60 s above 120 m.
+- It is never fully seen: eyes, a faint outline, a body that shows only where a lamp falls.
+- Within 200 m it shows on sonar; the dread effects (darkness, ink, torch shift, disorientation)
+  belong to the deep and fade out above ~100 m.
 
 ## Items
 
