@@ -50,6 +50,7 @@ tries to stay out of reach of something in the water. When the run ends, it ends
 - Out of air is not instant death: about 15 s of air hunger follow (the view swims, doubles, greys
   and blacks out, controls drift, he slows). Reaching the surface - or the sub's air - in time
   brings him back, gasping. The same applies to a submersible whose cabin runs dry.
+  Under pressure the window shrinks: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m.
 - Shown as a green -> yellow -> red bar under the survival timer (top right).
 - Surfacing refills oxygen quickly (a few seconds, with bubbles).
 

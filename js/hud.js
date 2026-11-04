@@ -59,7 +59,7 @@ export class Hud {
     // how long the air lasts at the current rate of use, in plain words, counting down
     const sec = Math.max(0, Math.floor(left));
     const leftTxt = sec >= 3600 ? 'plenty of air' : sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air left` : `${sec} s of air left`;
-    if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText('holding your breath — surface!', W - pad, by + bh + 5 * s); }
+    if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText((g.noAirRate || 1) > 1.3 ? 'under pressure — seconds left — surface!' : 'holding your breath — surface!', W - pad, by + bh + 5 * s); }
     else ctx.fillText(e.atSurface ? (o2 < 0.999 ? 'refilling…' : 'tank full') : leftTxt, W - pad, by + bh + 5 * s);
     if (!e.atSurface && o2 < 0.25 && o2 >= 0.1) { ctx.fillStyle = '#e8b040'; ctx.textAlign = 'left'; ctx.fillText('RESERVE', bx, by + bh + 5 * s); ctx.textAlign = 'right'; }
     if (g.diverDrain > 1.5 && !e.inSub && !e.atSurface) { ctx.fillStyle = '#e8a040'; ctx.fillText(`pressure: air going ${g.diverDrain.toFixed(1)}× faster`, W - pad, by + bh + 20 * s); }

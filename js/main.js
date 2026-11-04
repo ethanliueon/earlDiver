@@ -339,7 +339,9 @@ function update(dt) {
     // Reaching the surface (or the sub's air) in time brings Earl back, gasping.
     if (res === 'o2' || res === 'sub-o2') {
       if (!g.noAir) { g.noAir = 0.001; g.noAirCause = res; hud.toast(res === 'o2' ? 'Out of air — get to the surface' : 'The cabin is out of air — surface!', 'warn'); }
-      g.noAir += dt;
+      // under pressure air hunger comes on far faster: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m
+      g.noAirRate = e.inSub ? 1 : Math.sqrt(diverDrainMult(e.y));
+      g.noAir += dt * g.noAirRate;
       if (g.noAir >= 15) die(causeText(g.noAirCause));
     } else if (g.noAir) {
       hud.toast('Air.', 'big'); g.noAir = 0; g.fx.flash = 0.3;
