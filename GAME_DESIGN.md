@@ -40,7 +40,11 @@ tries to stay out of reach of something in the water. When the run ends, it ends
 
 - Shown as cylinder pressure in bar, the way divers read it: 200 bar full, 50 bar reserve,
   with a colour bar and an estimate of time left.
-- Diver: 50 s of air, +15 s per deep sapphire (a larger tank; 8 sapphires at fixed locations on the seafloor).
+- Diver: 50 s of air, +15 s per deep sapphire (a larger tank). The 8 sapphires sit in fixed hiding places that form a ladder, each just
+  beyond what the earlier ones let a diver reach: beach shallows (~4 m), seagrass (~14 m), kelp
+  holdfasts (~29 m), a crevice at the kelp edge (~40 m), under a ledge on the shelf (~75 m), under
+  the wreck's stern (~130 m), under the cliff-edge overhang (~200 m) and under a ledge on the cliff
+  wall (~240 m). None deeper: a sapphire you can only reach once you no longer need air is useless.
 - Below 300 m the drain grows exponentially: x30 at 1000 m.
 - Below 10 % oxygen Earl panics: speed x1.5.
 - Shown as a green -> yellow -> red bar under the survival timer (top right).

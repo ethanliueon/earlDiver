@@ -891,6 +891,15 @@ export class Renderer {
         ctx.beginPath(); ctx.moveTo(0, -u * 0.42); ctx.lineTo(u * 0.2, -u * 0.18); ctx.lineTo(u * 0.12, 0); ctx.lineTo(-u * 0.12, 0); ctx.lineTo(-u * 0.2, -u * 0.18); ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#3a6ae8'; ctx.beginPath(); ctx.moveTo(0, -u * 0.42); ctx.lineTo(u * 0.2, -u * 0.18); ctx.lineTo(0, -u * 0.12); ctx.closePath(); ctx.fill();
         ctx.fillStyle = `rgba(220,235,255,${(0.4 + s * 0.5).toFixed(3)})`; ctx.fillRect(-u * 0.04, -u * 0.34, u * 0.04, u * 0.04);
+        // every few seconds a brief four-pointed twinkle gives its hiding place away
+        const tw = Math.pow(Math.max(0, Math.sin(t * 0.9 + p.phase * 2.3)), 40);
+        if (tw > 0.02) {
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.strokeStyle = `rgba(190,215,255,${(0.9 * tw).toFixed(3)})`; ctx.lineWidth = Math.max(1, u * 0.03);
+          const r = u * (0.4 + tw * 0.5);
+          ctx.beginPath(); ctx.moveTo(-r, -u * 0.3); ctx.lineTo(r, -u * 0.3); ctx.moveTo(0, -u * 0.3 - r); ctx.lineTo(0, -u * 0.3 + r); ctx.stroke();
+          ctx.globalCompositeOperation = 'source-over';
+        }
         break;
       }
     }

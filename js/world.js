@@ -17,8 +17,20 @@ const PROFILE = [
   [880, 26], [920, 16], [950, 9], [972, 3], [985, -1], [1000, -3.5],
 ];
 
-// Fixed sapphire locations (x positions; depth is read from the floor).
-const SAPPHIRE_X = [935, 842, 731, 655, 612, 590.5, 548, 487];
+// Fixed sapphire hiding places: a ladder, each just beyond what the previous sapphires let a
+// diver reach on one breath. None below ~260 m - deeper than that a sapphire would be useless.
+// hide: 'boulder' (a rock beside it), 'grass', 'kelp', 'crevice' (rocks either side),
+// 'ledge' (an overhang above it), 'wreck' (in the shadow of the hull)
+const SAPPHIRES = [
+  { x: 966, hide: 'boulder' },  // ~4 m, beach shallows
+  { x: 928, hide: 'grass' },    // ~14 m, seagrass meadow
+  { x: 858, hide: 'kelp' },     // ~25 m, among the kelp holdfasts
+  { x: 808, hide: 'crevice' },  // ~40 m, the deep edge of the kelp
+  { x: 752, hide: 'ledge' },    // ~75 m, the sloping shelf
+  { x: 699, hide: 'wreck' },    // ~130 m, under the wreck's stern
+  { x: 617, hide: 'ledge' },    // ~190 m, the cliff edge
+  { x: 602, hide: 'ledge' },    // ~240 m, the cliff wall
+];
 
 export const RESOURCES = {
   clam: { name: 'Clam', desc: 'A heavy, closed clam.' },
@@ -207,7 +219,23 @@ export function generateWorld(seed) {
   for (let i = 0; i < 26; i++) { const x = rng.range(300, 640); const fl = W.floorAt(x); if (fl > 150 && fl < 1800) addPickup('lure', x, fl - 0.4); }
   for (let i = 0; i < 18; i++) { const x = rng.range(250, 620); const fl = W.floorAt(x); if (fl > 250 && fl < 2200) addPickup('necklace', x, fl - 0.3); }
   // Sapphires at fixed places
-  W.sapphires = SAPPHIRE_X.map((x, i) => ({ type: 'sapphire', x, y: W.floorAt(x) - 0.35, taken: false, phase: i, idx: i }));
+  W.sapphires = SAPPHIRES.map((sp, i) => {
+    const x = sp.x, fl = W.floorAt(x);
+    // keep the spot clear of generated rock, then build the fixed landmark that hides it
+    W.rocks = W.rocks.filter((rk) => !(x > rk.x0 - 1.2 && x < rk.x1 + 1.2 && fl > rk.y0 - 2 && fl - 2.5 < rk.y1));
+    const r2 = makeRng(seed ^ 0x51ab + i * 977); // only shapes vary; the places never do
+    const boulder = (cx, size) => addRock(roughen(blob(cx, W.floorAt(cx) + size * 0.25, size * 1.5, size, 0, 0.35, 10), 2, size * 0.1), 'boulder');
+    if (sp.hide === 'boulder') { boulder(x + 2.2, 1.0); }
+    else if (sp.hide === 'crevice') { boulder(x - 2.4, 1.1); boulder(x + 2.6, 1.3); }
+    else if (sp.hide === 'ledge') {
+      const top = fl - 2.6, len = 5 + r2() * 2;
+      const poly = [{ x: x + 3.5, y: top - 1.2 }, { x: x - len * 0.4, y: top - 1.4 }, { x: x - len, y: top - 0.4 }, { x: x - len * 0.9, y: top + 0.2 }, { x: x - len * 0.3, y: top + 0.3 }, { x: x + 3.5, y: fl + 1 }];
+      addRock(roughen(poly, 3, 0.35), 'ledge');
+    }
+    // never let a landmark swallow it
+    W.rocks = W.rocks.filter((rk) => !(rk.kind === 'boulder' && x > rk.x0 - 0.4 && x < rk.x1 + 0.4 && fl - 0.35 > rk.y0 - 0.4));
+    return { type: 'sapphire', x, y: fl - 0.35, taken: false, phase: i, idx: i, hide: sp.hide };
+  });
   for (const s of W.sapphires) W.pickups.push(s);
 
   // ---- Static seafloor life ----
