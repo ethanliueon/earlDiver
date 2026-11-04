@@ -132,15 +132,21 @@ export class Clouds {
     if (horizon < 4) return;
     this.build();
     const tc = this.tint;
-    if (tc.width !== W || tc.height !== Math.ceil(horizon)) { tc.width = W; tc.height = Math.max(1, Math.ceil(horizon)); }
+    // a fixed-size buffer (re-allocating it as the horizon moved cost time every frame)
+    const th = Math.max(1, Math.ceil(skyH * 1.25));
+    if (tc.width !== W || tc.height < th) { tc.width = W; tc.height = th; }
+    const hz = Math.min(horizon, tc.height);
     const tctx = tc.getContext('2d');
     tctx.globalCompositeOperation = 'source-over';
     tctx.clearRect(0, 0, tc.width, tc.height);
     for (const L of this.layers) {
       const dh = skyH * L.h, dw = Math.round(dh * (L.img.width / L.img.height)); // whole pixels: tiles butt exactly
-      const y = horizon - skyH + skyH * L.y0 - dh * 0.25;
-      // drift with the wind, and slide slowly as Earl moves (far layers move least)
-      let off = Math.round(-(t * L.speed + camX * ppm * L.par) % dw);
+      const y = hz - skyH + skyH * L.y0 - dh * 0.25;
+      // drift with the wind, and slide slowly as Earl moves (far layers move least). Measured in
+      // fractions of the screen width - never the current zoom - so a change of zoom or render
+      // resolution can't make the sky jump.
+      const unit = W / 40;
+      let off = Math.round(-(t * L.speed * (W / 1280) + camX * unit * L.par) % dw);
       if (off > 0) off -= dw;
       tctx.globalAlpha = L.alpha;
       for (let x = off; x < W; x += dw) tctx.drawImage(L.img, x, y, dw, dh);
@@ -151,6 +157,7 @@ export class Clouds {
     tctx.fillStyle = `rgba(${tint[0] | 0},${tint[1] | 0},${tint[2] | 0},${(1 - light * 0.85).toFixed(3)})`;
     tctx.fillRect(0, 0, tc.width, tc.height);
     tctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(tc, 0, 0);
+    // only the part above the horizon is shown (clouds never hang below the sea)
+    if (hz >= 1) ctx.drawImage(tc, 0, 0, W, hz, 0, horizon - hz, W, hz);
   }
 }

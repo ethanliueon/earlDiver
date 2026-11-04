@@ -4,6 +4,7 @@
 // then additive glows are layered on top.
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
+import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { BOAT_X, WORLD_W } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
@@ -208,7 +209,7 @@ export class Renderer {
       if (!inView(c.x, c.y, c.len)) continue;
       const Ld = (c.len + 0.25 * Math.exp(-c.len * 2)) * ppm;
       const shape = c.sp.v.s;
-      const tilt = clamp(Math.atan2(c.vy, Math.abs(c.vx) + 0.2), -0.5, 0.5);
+      const tilt = clamp(Math.atan2(c.hvy !== undefined ? c.hvy : c.vy, Math.max(Math.abs(c.vx), c.hvy !== undefined ? c.speed * 0.8 : 0) + 0.2), -0.5, 0.5);
       if (Ld < 20 && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
         let bt = batches.get(c.sp.id);
         if (!bt) { bt = { sp: c.sp, back: new Path2D(), belly: new Path2D(), flash: new Path2D(), eyes: new Path2D(), nf: 0 }; batches.set(c.sp.id, bt); }
@@ -233,7 +234,7 @@ export class Renderer {
         const ox = px * down * hh * 0.35, oy = py * down * hh * 0.35;
         bt.belly.moveTo(bx + ox + fx2 * Ld * 0.34, by + oy + fy2 * Ld * 0.34);
         bt.belly.ellipse(bx + ox, by + oy, Ld * 0.34, hh * 0.55, rot, 0, TAU);
-        const flash = Math.pow(Math.max(0, Math.sin(c.phase * 0.6 + c.wob)), 10);
+        const flash = c.flash !== undefined ? c.flash : Math.pow(Math.max(0, Math.sin(c.phase * 0.6 + c.wob)), 10);
         if (flash > 0.3) { bt.flash.moveTo(bx + fx2 * Ld * 0.36, by + fy2 * Ld * 0.36); bt.flash.ellipse(bx, by, Ld * 0.36, hh * 0.7, rot, 0, TAU); bt.nf++; }
         if (Ld > 9) { const ex = x + fx2 * Ld * 0.33 - px * down * hh * 0.2, ey = y + fy2 * Ld * 0.33 - py * down * hh * 0.2, er = Math.max(0.7, hh * 0.3); bt.eyes.moveTo(ex + er, ey); bt.eyes.arc(ex, ey, er, 0, TAU); }
         if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.3)]);
@@ -514,9 +515,17 @@ export class Renderer {
       const box = Math.ceil(bl * 2.4);
       e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES) };
       cache.set(key, e);
-      if (cache.size > 400) cache.delete(cache.keys().next().value); // keep memory bounded
+      if (cache.size > 900) cache.delete(cache.keys().next().value); // keep memory bounded
     }
-    const f = Math.floor((((phase % SPRITE_PERIOD) + SPRITE_PERIOD) % SPRITE_PERIOD) / SPRITE_PERIOD * SPRITE_FRAMES) % SPRITE_FRAMES;
+    let f = Math.floor((((phase % SPRITE_PERIOD) + SPRITE_PERIOD) % SPRITE_PERIOD) / SPRITE_PERIOD * SPRITE_FRAMES) % SPRITE_FRAMES;
+    if (!e.frames[f]) {
+      // not built yet: show the nearest frame that is, and let the warm-up queue fill the gap
+      // instead of stalling this frame
+      for (let d = 1; d < SPRITE_FRAMES / 2 && !e.frames[f]; d++) {
+        if (e.frames[(f + d) % SPRITE_FRAMES]) f = (f + d) % SPRITE_FRAMES;
+        else if (e.frames[(f - d + SPRITE_FRAMES) % SPRITE_FRAMES]) f = (f - d + SPRITE_FRAMES) % SPRITE_FRAMES;
+      }
+    }
     if (!e.frames[f]) {
       const c = document.createElement('canvas');
       c.width = c.height = e.box;
@@ -529,6 +538,36 @@ export class Renderer {
     ctx.drawImage(e.frames[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
     const gl = e.glows[f];
     return gl ? gl.map(([gx, gy]) => [gx * k, gy * k]) : null;
+  }
+
+  // Build creature animation frames ahead of time, a little each frame: first every species on
+  // screen, then every swimmer that lives within ~150 m of the camera's depth, at today's scale.
+  warmSprites(g, budgetMs) {
+    const t0 = performance.now(), ppm = this.cam.ppm;
+    if (!ppm) return;
+    const cache = this.spriteCache || (this.spriteCache = new Map());
+    const wanted = [];
+    for (const c of g.fauna.list) wanted.push([c.sp, (c.len + 0.25 * Math.exp(-c.len * 2)) * ppm]);
+    if (!this.nearSpecies || Math.abs(this.nearDepth - this.cam.y) > 25 || this.nearPpm !== Math.round(ppm)) {
+      const d = this.cam.y;
+      this.nearSpecies = SPECIES.filter((sp) => sp.v.hab !== 'plant' && sp.v.hab !== 'floor' && sp.dmin <= d + 150 && sp.dmax >= d - 60);
+      this.nearDepth = d; this.nearPpm = Math.round(ppm);
+    }
+    for (const sp of this.nearSpecies) wanted.push([sp, (sp.len + 0.25 * Math.exp(-sp.len * 2)) * ppm]);
+    for (const [sp, Ld] of wanted) {
+      if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(sp.v.s) || (Ld < 20 && (sp.v.s === 'fish' || sp.v.s === 'shrimp' || sp.v.s === 'hatchet'))) continue;
+      const bucket = Math.round(Math.log(Ld) / Math.log(1.18)), bl = Math.pow(1.18, bucket), key = sp.id + ':' + bucket;
+      let e = cache.get(key);
+      if (!e) { const box = Math.ceil(bl * 2.4); e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES) }; cache.set(key, e); }
+      for (let f = 0; f < SPRITE_FRAMES; f++) {
+        if (e.frames[f]) continue;
+        const c = document.createElement('canvas'); c.width = c.height = e.box;
+        const x = c.getContext('2d'); x.translate(e.box / 2, e.box / 2);
+        e.glows[f] = drawSpecies(x, sp, e.bl, (f / SPRITE_FRAMES) * SPRITE_PERIOD, 1, 0);
+        e.frames[f] = c;
+        if (performance.now() - t0 > budgetMs) return;
+      }
+    }
   }
 
   drawSky(g, horizon, dayEff, day) {

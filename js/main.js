@@ -530,6 +530,8 @@ function frame(now) {
   update(dt);
   renderer.updateCamera(g, dt);
   renderer.render(g);
+  // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
+  renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   hud.draw(g, dt);
   audio.update(g, dt);
   ui.update(g, dt);

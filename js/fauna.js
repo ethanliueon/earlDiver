@@ -134,17 +134,18 @@ export class Fauna {
     const n = rng.int(b.n[0], b.n[1]);
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
-    const baseR = Math.sqrt(n) * sp.len * 0.55 + 0.8; // about a body length between fish
+    const baseR = Math.sqrt(n) * sp.len * 0.42 + 0.35; // about one body length between fish
     this.schools.set(gid, {
-      sp, x, y, vx: dir * 0.6, vy: 0, dir, n, r: baseR, baseR, wob: rng() * 100, threat: 0,
+      sp, x, y, vx: dir * 0.6, vy: 0, dir, n, r: baseR, baseR, wob: rng() * 100, threat: 0, turnTime: -99, turnT: rng.range(15, 40),
       lo: night && b.nightMin !== undefined ? b.nightMin : b.min, hi: night && b.nightMax !== undefined ? b.nightMax : b.max,
     });
     for (let i = 0; i < n; i++) {
-      // even-ish spread inside a disc
-      const a = rng() * Math.PI * 2, rr = Math.sqrt(rng());
+      // denser in the core, thinning toward the edges
+      const a = rng() * Math.PI * 2, rr = Math.pow(rng(), 0.75);
       const c = this.makeFish(sp, x + Math.cos(a) * rr * baseR * 1.8, y + Math.sin(a) * rr * baseR, dir, gid, false);
       c.ox = Math.cos(a) * rr; c.oy = Math.sin(a) * rr;
       c.speed = clamp(0.8 + sp.len * 4, 0.8, 2.4);
+      c.hvy = 0; c.flash = 0; c.turnedAt = -99;
       this.list.push(c);
     }
   }
@@ -228,7 +229,12 @@ export class Fauna {
       if (v > sp) { s.vx *= sp / v; s.vy *= sp / v; }
       s.x += s.vx * dt; s.y += s.vy * dt;
       if (s.x < 10) s.dir = 1; if (s.x > 970) s.dir = -1;
-      if (Math.abs(s.vx) > 0.15) s.dir = s.vx > 0 ? 1 : -1;
+      // now and then the school wheels round on its own
+      s.turnT -= dt;
+      if (s.turnT <= 0) { s.turnT = rng.range(18, 45); s.vx = -s.vx * 0.5; s.dir = -s.dir; }
+      const nd = Math.abs(s.vx) > 0.15 ? (s.vx > 0 ? 1 : -1) : s.dir;
+      if (nd !== s.prevDir) { s.turnTime = time; s.prevDir = nd; }
+      s.dir = nd;
       // tighten into a ball under threat
       const want = s.baseR * (1 - 0.55 * Math.min(1, s.threat));
       s.r = lerp(s.r, want, dt * 1.5);
@@ -265,9 +271,14 @@ export class Fauna {
       const school = this.schools.get(c.gid);
       let tx, ty, sp = c.speed, ax, ay;
       if (school) {
-        // hold a slowly shifting place in the school's body (wider than tall)
-        const ox = c.ox + Math.sin(time * 0.35 + c.wob) * 0.18, oy = c.oy + Math.cos(time * 0.3 + c.wob * 1.7) * 0.18;
-        tx = school.x + ox * school.r * 1.8; ty = school.y + oy * school.r;
+        // a place in a living shape: stretched along the direction of travel (rounder when it
+        // balls up under threat), with slow waves rippling through it and a gently shifting outline
+        const ballUp = Math.min(1, school.threat);
+        const stretch = (1.9 + 0.3 * Math.sin(time * 0.21 + school.wob)) * (1 - ballUp * 0.4);
+        const ox = c.ox + Math.sin(time * 0.31 + c.wob) * 0.07, oy = c.oy + Math.cos(time * 0.27 + c.wob * 1.7) * 0.07;
+        const wave = Math.sin(ox * 2.2 - time * 0.7 * school.dir + school.wob) * school.r * 0.28 * (1 - ballUp);
+        const thick = 1 + 0.18 * Math.sin(ox * 1.3 + time * 0.4 + school.wob * 2);
+        tx = school.x + ox * school.r * stretch; ty = school.y + oy * school.r * thick + wave;
         ax = (tx - c.x) * 3 + (school.vx - c.vx) * 2;
         ay = (ty - c.y) * 3 + (school.vy - c.vy) * 2;
         sp = c.speed * (1 + school.threat);
@@ -376,7 +387,16 @@ export class Fauna {
       c.vy *= 0.97;
       c.x += c.vx * dt; c.y += c.vy * dt;
       if (!school && W.rockAt(c.x, c.y)) { c.x -= c.vx * dt * 2; c.y -= c.vy * dt * 2; c.vx = -c.vx * 0.5; c.dir = -c.dir; }
-      if (Math.abs(c.vx) > 0.08) c.dir = c.vx > 0 ? 1 : -1;
+      if (school) {
+        // all aligned with the school; when it turns, the turn sweeps from the leading edge back,
+        // and each fish flashes silver as its flank swings to the light
+        const front = c.ox * school.prevDir; // +1 at the new front
+        if (c.dir !== school.dir && time - school.turnTime > (1 - front) * 0.45) { c.dir = school.dir; c.turnedAt = time; }
+        c.hvy = lerp(c.hvy || 0, school.vy * 0.8 + (c.vy - school.vy) * 0.25, Math.min(1, dt * 3));
+        const ripple = Math.pow(Math.max(0, Math.sin(time * 0.9 - c.ox * 3 - c.oy * 1.5 + school.wob)), 16) * 0.45;
+        const turn = Math.max(0, 1 - (time - c.turnedAt) / 0.35);
+        c.flash = Math.max(ripple, turn);
+      } else if (Math.abs(c.vx) > 0.08) c.dir = c.vx > 0 ? 1 : -1;
       if (c.x < 3) { c.dir = 1; c.vx = Math.abs(c.vx); }
       c.phase += dt * (0.6 + Math.min(4, v * 1.4));
     }
