@@ -38,7 +38,9 @@ tries to stay out of reach of something in the water. When the run ends, it ends
 
 ## Oxygen
 
-- Diver: 50 s, +15 s per deep sapphire (8 sapphires at fixed locations on the seafloor).
+- Shown as cylinder pressure in bar, the way divers read it: 200 bar full, 50 bar reserve,
+  with a colour bar and an estimate of time left.
+- Diver: 50 s of air, +15 s per deep sapphire (a larger tank; 8 sapphires at fixed locations on the seafloor).
 - Below 300 m the drain grows exponentially: x30 at 1000 m.
 - Below 10 % oxygen Earl panics: speed x1.5.
 - Shown as a green -> yellow -> red bar under the survival timer (top right).
@@ -52,6 +54,35 @@ tries to stay out of reach of something in the water. When the run ends, it ends
 - Rated depth 800 m. Past 1.3x rated depth, critical failure: it implodes and Earl is stranded.
 - Leaving the sub at depth exposes Earl to pressure (the diver's oxygen rules apply).
 - 3 upgrades at the boat: 800 -> 1300 -> 1950 -> 2700 m (each also adds oxygen).
+
+- Hull integrity: rams and bites from large mammals damage the hull (sperm whale -40 %, orca -20 %).
+  A damaged hull leaks: air drains 1 / integrity times faster. Integrity does not recover by
+  surfacing. Patch it at the boat (2 iron + 2 rock, +40 %) or refit (back to 100 %).
+
+## Wildlife
+
+- Every animal roams its real depth range; night migrators (lanternfish, hatchetfish, squid, krill,
+  viperfish, dragonfish...) rise toward the surface after dark.
+- Bait schools (herring, sardine, anchovy, mackerel, pollock, krill, lanternfish) move as one body,
+  part around Earl and ball up under attack. Predators hunt and eat small fish.
+- Most fish flee from a fast or careless diver at 0.7-1.3x Earl's speed; a slow approach lets him
+  get close enough to observe. Slow or curious animals never flee.
+- Marine mammals added for the game: sperm whale, bottlenose and common dolphins, orca.
+
+## Attacks and injury
+
+- No health bar. Hidden injury points: swordfish/marlin/sailfish 1, great white/tiger/mako 3,
+  sperm whale 5; blue and reef sharks, morays, nesting titan triggerfish and Humboldt squid 1 when
+  provoked. One point heals every 15 s; 5 at once is fatal.
+- Attacks are telegraphed: sharks circle, bump, then bite; billfish line up, hold still, then charge
+  in a straight line; sperm whales click in the dark before lunging (below 250 m); orcas ram the sub
+  only. More common in open water, at night, and when Earl is bleeding.
+- Defences: hiding, a sea lantern or the necklace, a dolphin pod nearby (sharks leave), and flashing
+  the lamp (L) at a charging animal at the last moment.
+- Injury levels: 1 grazed, 2 wounded (blood trail draws sharks), 3 badly hurt (pulsing red edges,
+  muffled hearing, more air), 4 critical (vision narrows and greys, ringing, controls drift),
+  5 death: its own ending, red closing in and the heartbeat stopping, no countdown.
+- The submersible protects Earl from everything except the entity and the large mammals' rams.
 
 ## Resources
 

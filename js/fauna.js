@@ -21,6 +21,12 @@ const BAIT = [
   { id: 99, min: 200, max: 600, n: [25, 50] },  // silver hatchetfish
 ];
 
+// Species that migrate up toward the surface at night and back down by day.
+const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104]);
+// Never flee from Earl: drifters, slow or curious animals, and the things that might attack him.
+const NO_FLEE = new Set([46, 77, 84, 88, 31, 32, 33, 183, 107, 100, 67, 12, 11, 141, 184, 185, 186, 187, 76, 78, 82, 83, 80, 42, 43, 44, 148, 89, 85]);
+const DIVE_SPEED = 4;
+
 // Predators that hunt small fish (ids from the species list).
 const PREDATORS = new Set([35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 52, 53, 76, 78, 79, 82, 83, 148, 30, 31, 32, 34, 68, 102]);
 
@@ -84,11 +90,24 @@ export class Fauna {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
     if (x < 2 || x > 985 || y < 0.6) return;
-    const cands = SWIMMERS.filter((s) => y >= s.dmin && y <= s.dmax && habitatOk(s, x, y, W));
+    const cands = SWIMMERS.filter((s) => {
+      if (y < s.dmin || y > s.dmax || !habitatOk(s, x, y, W)) return false;
+      const [lo, hi] = this.depthBand(s, x, this.night);
+      return y >= lo - 15 && y <= hi + 15;
+    });
     if (!cands.length) return;
-    let tot = 0; for (const c of cands) tot += weightOf(c);
+    const wOf = (c) => {
+      let w = weightOf(c);
+      if (this.bleeding && /Shark/.test(c.cat)) w *= 3;           // blood in the water
+      if (this.night && /Shark/.test(c.cat)) w *= 1.6;            // sharks hunt at night
+      if (c.id === 185 || c.id === 186) w *= 2.5;                 // dolphin pods are fairly common near the surface
+      if (c.id === 187) w *= 4;
+      if (c.id === 184) w *= y > 250 ? 14 : 2;                   // sperm whales hunt in the deep
+      return w;
+    };
+    let tot = 0; for (const c of cands) tot += wOf(c);
     let r = rng() * tot, sp = cands[0];
-    for (const c of cands) { r -= weightOf(c); if (r <= 0) { sp = c; break; } }
+    for (const c of cands) { r -= wOf(c); if (r <= 0) { sp = c; break; } }
     const n = Math.max(1, Math.min(24, Math.round((sp.v.sch || 1) * rng.range(0.5, 1.2))));
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
@@ -133,16 +152,38 @@ export class Fauna {
   makeFish(sp, x, y, dir, gid, leader) {
     const rng = this.rng;
     const sz = rng.range(0.75, 1.15);
+    const len = sp.len * sz, hab = sp.v.hab;
+    // cruising at roughly one body length a second (bounded), much slower for drifters
+    let cruise = clamp(len * 1.1, 0.4, 2.4);
+    if (hab === 'drift' || hab === 'drift-low') cruise = 0.12;
+    if (sp.id === 185 || sp.id === 186) cruise = 3; if (sp.id === 187) cruise = 2.6; if (sp.id === 184) cruise = 1.6;
+    // escape speed: 0.7-1.3x Earl's swimming speed, small fish fastest; some never flee
+    let flee = 0;
+    const noFlee = NO_FLEE.has(sp.id) || hab === 'drift' || hab === 'drift-low' || /seahorse|seadragon|pipefish|jelly|comb|siphon|manowar|nautilus/.test(sp.v.s);
+    if (!noFlee) flee = (len < 0.3 ? rng.range(1.1, 1.3) : len < 1 ? rng.range(0.9, 1.15) : rng.range(0.7, 0.95)) * DIVE_SPEED;
     return {
-      sp, x, y, vx: dir * 0.4, vy: 0, dir, len: sp.len * sz,
+      sp, x, y, vx: dir * 0.4, vy: 0, dir, len,
       phase: rng() * 100, gid, leader, wob: rng() * 1000, noted: false,
-      speed: clamp(0.35 + Math.sqrt(sp.len) * 0.7, 0.3, 2.6) * (sp.v.hab === 'drift' || sp.v.hab === 'drift-low' ? 0.12 : 1),
+      speed: cruise, cruise, flee, fleeT: 0,
+      tDepth: y, tDepthT: rng.range(4, 15), turnT: rng.range(25, 70),
       predator: PREDATORS.has(sp.id), prey: null, huntCool: rng.range(2, 10), dead: false,
     };
   }
 
+  // the depth band this animal wants to be in right now (migrators move up at night)
+  depthBand(sp, x, night) {
+    let lo = sp.dmin, hi = Math.min(sp.dmax, this.W.floorAt(x) - 2);
+    if (MIGRATORS.has(sp.id)) {
+      if (night) hi = Math.min(hi, Math.max(lo + 30, 250));
+      else lo = Math.max(lo, Math.min(hi - 30, 280));
+    }
+    if (sp.id === 185 || sp.id === 186 || sp.id === 187) hi = Math.min(hi, 120); // air-breathers stay fairly shallow
+    return [Math.max(0.8, lo), Math.max(lo + 1, hi)];
+  }
+
   update(dt, cam, earl, entity, dread, time, night = false) {
     const W = this.W, rng = this.rng;
+    this.night = night;
     this.spawnT -= dt; this.baitT -= dt;
     if (this.spawnT <= 0) {
       this.spawnT = 0.25;
@@ -206,7 +247,8 @@ export class Fauna {
       const c = this.list[i];
       if (c.dead) { this.list.splice(i, 1); continue; }
       // despawn far away
-      if (Math.abs(c.x - cam.x) > cam.w * 1.7 || Math.abs(c.y - cam.y) > cam.h * 2.4) { this.list.splice(i, 1); continue; }
+      const busy = c.att && c.att.s !== 'idle';
+      if (!busy && (Math.abs(c.x - cam.x) > cam.w * 1.7 || Math.abs(c.y - cam.y) > cam.h * 2.4)) { this.list.splice(i, 1); continue; }
       counts.set(c.gid, (counts.get(c.gid) || 0) + 1);
       const school = this.schools.get(c.gid);
       let tx, ty, sp = c.speed, ax, ay;
@@ -224,11 +266,31 @@ export class Fauna {
           ty = L.y + Math.sin(time * 0.5 + c.wob * 1.3) * 0.9 + ((c.wob % 7) - 3.5) * 0.25;
         } else {
           c.leader = true;
+          const pel = c.sp.v.hab === 'pelagic' || c.sp.v.hab === 'drift' || c.sp.v.hab === 'surface';
+          if (pel) {
+            // roam up and down the species' depth range rather than cruising at one level
+            c.tDepthT -= dt;
+            const [lo, hi] = this.depthBand(c.sp, c.x, night);
+            if (c.tDepthT <= 0 || c.tDepth < lo || c.tDepth > hi) {
+              c.tDepthT = rng.range(8, 22);
+              const span = Math.min(hi - lo, 40 + c.len * 25);
+              c.tDepth = clamp(c.y + rng.range(-span, span), lo, hi);
+              if (c.y < lo - 20 || c.y > hi + 20) c.tDepth = clamp(c.y, lo, hi);
+            }
+          }
+          c.turnT -= dt;
+          if (c.turnT <= 0) { c.turnT = rng.range(25, 80); c.dir = -c.dir; c.vx *= -0.3; }
           const wander = fbm1(time * 0.05 + c.wob, 2, 3) * 1.6;
           tx = c.x + c.dir * 6;
-          ty = c.y + wander * 3;
+          ty = pel ? c.y + clamp(c.tDepth - c.y, -4, 4) + wander : c.y + wander * 3;
         }
         ax = (tx - c.x) * 0.6; ay = (ty - c.y) * 0.6;
+      }
+      // an attacker under hunter control steers straight to its target
+      if (c.ctrl) {
+        const dx = c.ctrl.x - c.x, dy = c.ctrl.y - c.y, d = Math.hypot(dx, dy) + 0.01;
+        ax = dx / d * 25; ay = dy / d * 25; sp = c.ctrl.speed;
+        if (d < 0.3) { ax = -c.vx * 4; ay = -c.vy * 4; }
       }
       // a predator on a hunt: a burst straight at its prey
       if (c.prey) {
@@ -253,11 +315,21 @@ export class Fauna {
           if (d < 4) { ax += dx / d * 30; ay += dy / d * 30; sp *= 2.5; }
         }
       }
-      // startle from Earl: schools part around him
+      // Earl: schools part around him; other fish bolt if he comes at them fast, but a slow,
+      // calm approach lets him get close enough to observe
       const de = dist(c.x, c.y, earl.x, earl.y);
-      const scare = school ? 1.6 + (earl.speedNow > 2.5 ? 1.5 : 0) : earl.speedNow > 3 ? 4 + c.len : 1.8 + c.len * 0.5;
-      if (de < scare && c.sp.v.hab !== 'drift' && !c.prey) {
-        ax += (c.x - earl.x) / (de + 0.1) * 14; ay += (c.y - earl.y) / (de + 0.1) * 14; sp *= 2.4;
+      if (school) {
+        const scare = 1.6 + (earl.speedNow > 2.5 ? 1.5 : 0);
+        if (de < scare) { ax += (c.x - earl.x) / (de + 0.1) * 14; ay += (c.y - earl.y) / (de + 0.1) * 14; sp *= 2.4; }
+      } else if (c.flee > 0 && !c.prey && !c.ctrl && !earl.inSub) {
+        const closing = ((c.x - earl.x) * earl.vx + (c.y - earl.y) * earl.vy) / (de + 0.01);
+        const threat = earl.speedNow < 1.3 ? 1.4 : (3 + c.len * 1.5) * (earl.sprint ? 1.6 : 1) * (closing > 1 ? 1.4 : 1);
+        if (de < threat) c.fleeT = 1.2 + c.len * 0.5;
+      } else if (c.flee > 0 && earl.inSub && de < 10) c.fleeT = 1.5; // the sub is loud
+      if (c.fleeT > 0) {
+        c.fleeT -= dt;
+        ax = (c.x - earl.x) / (de + 0.1) * 30; ay = (c.y - earl.y) / (de + 0.1) * 20;
+        sp = Math.max(sp, c.flee);
       }
       // flee the entity
       if (entity && dread > 0.05) {

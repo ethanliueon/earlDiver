@@ -189,6 +189,10 @@ const V = {
   181: { s: 'bobbit', c: ['#8a6a4a', '#c8a050'], hab: 'floor' },
   182: { s: 'seasquirt', c: ['#6a3a8a', '#e8a02a'], hab: 'plant' },
   183: { s: 'turtle', c: ['#5a5a3a', '#c8b88a'], hab: 'pelagic' },
+  184: { s: 'sperm', c: ['#3b3836', '#5a5654'], hab: 'pelagic' },
+  185: { s: 'dolphin', c: ['#5d666e', '#d8dcde'], hab: 'pelagic', sch: 5 },
+  186: { s: 'dolphin', common: 1, c: ['#2e343c', '#e6e2da'], pc: '#c8a868', hab: 'pelagic', sch: 8 },
+  187: { s: 'orca', c: ['#0d0f12', '#eceae4'], hab: 'pelagic', sch: 4 },
 };
 
 // Convert the reference "max size" text into a typical display length in metres.

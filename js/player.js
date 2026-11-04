@@ -19,6 +19,8 @@ export const SUB_LEVELS = [
 export function diverDrainMult(depth) {
   return depth <= 300 ? 1 : Math.exp(K_PRESS * (depth - 300));
 }
+// a damaged hull leaks: at 40 % integrity the air drains 2.5x as fast
+export function subLeak(sub) { return 1 / Math.max(0.25, sub.hull); }
 export function subDrainMult(depth, rated) {
   const r = depth / rated;
   return r <= 0.5 ? 1 : Math.exp(1.386 * (r - 0.5));
@@ -32,6 +34,7 @@ export class Earl {
     this.sprint = false; this.inSub = false; this.lampWanted = true;
     this.maxDepth = 0; this.surfacing = 0; this.idle = 0; this.hr = 68;
     this.bubbleT = 0; this.atSurface = false;
+    this.speedMul = 1; this.o2Mul = 1; // set from injury each frame
   }
   // switches on by itself below 200 m, or whenever it is too dark to see (night, the entity's darkness)
   get lampOn() { return this.lampWanted && (this.y > 200 || (this.y > 1 && this.dark)); }
@@ -41,7 +44,7 @@ export class Sub {
   constructor() {
     this.level = 0; this.x = BOAT_X + 8.5; this.y = 2.6; this.vx = 0; this.vy = 0;
     this.facing = -1; this.o2 = SUB_LEVELS[0].o2; this.stress = 0; this.imploded = false;
-    this.tilt = 0; this.lightsOn = true;
+    this.tilt = 0; this.lightsOn = true; this.hull = 1; // hull integrity: damage makes the cabin leak air
     this.yaw = Math.PI; // 0 = bow to the right, PI = bow to the left; turns smoothly between
   }
   get rated() { return SUB_LEVELS[this.level].rated; }
@@ -74,7 +77,7 @@ export function updateEarl(g, dt, inp) {
     // oxygen
     const surf = sub.y < 2.2;
     if (surf) sub.o2 = Math.min(sub.o2Max, sub.o2 + (sub.o2Max / 4) * dt);
-    else sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 2 : 1);
+    else sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 2 : 1) * subLeak(sub);
     e.atSurface = surf;
     // hull
     const r = sub.y / sub.rated;
@@ -83,7 +86,7 @@ export function updateEarl(g, dt, inp) {
     if (sub.o2 <= 0) return 'sub-o2';
   } else {
     // ---- diver ----
-    let sp = DIVE_SPEED * (inp.sprint ? 1.5 : 1) * (lowO2 ? 1.5 : 1);
+    let sp = DIVE_SPEED * (inp.sprint ? 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul;
     const mag = Math.hypot(inp.x, inp.y);
     let ix = inp.x, iy = inp.y;
     if (mag > 1) { ix /= mag; iy /= mag; }
@@ -116,7 +119,7 @@ export function updateEarl(g, dt, inp) {
       e.surfacing = Math.min(1, e.surfacing + dt);
     } else {
       e.surfacing = 0;
-      e.o2 -= dt * diverDrainMult(e.y) * (inp.sprint && e.speedNow > 1 ? 2 : 1);
+      e.o2 -= dt * diverDrainMult(e.y) * (inp.sprint && e.speedNow > 1 ? 2 : 1) * e.o2Mul;
     }
     if (e.o2 <= 0) return 'o2';
   }

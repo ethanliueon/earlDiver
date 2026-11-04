@@ -110,6 +110,30 @@ export class Audio {
     o.connect(f); o2.connect(f); f.connect(g).connect(this.master);
     o.start(t0); o2.start(t0); o.stop(t0 + 9.2); o2.stop(t0 + 9.2);
   }
+  hit(dmg) {
+    // a dull blow, a burst of exhaled bubbles, a sharp sting
+    this.burst('lowpass', 260, 0.8, 0.5, 0.55 + dmg * 0.08, this.brown);
+    this.tone(70, 0.4, 0.45, 'sine', 0, 38);
+    this.bubbles(14, 0.06);
+    this.burst('bandpass', 2600, 6, 0.25, 0.08);
+  }
+  thud(vol) { this.tone(55, 0.35, vol, 'sine', 0, 32); this.burst('lowpass', 180, 0.7, 0.4, vol * 0.8, this.brown); }
+  whoosh() { const f = this.burst('bandpass', 400, 1.5, 1.2, 0.18, this.white); f.frequency.exponentialRampToValueAtTime(1600, this.ac.currentTime + 1); }
+  clicks(sec) {
+    // a sperm whale's echolocation: a click train that speeds up as it closes in
+    let t = 0, gap = 0.6;
+    while (t < sec) { this.burst('highpass', 1800, 2, 0.03, 0.22, this.white, t); this.tone(900, 0.03, 0.05, 'square', t); t += gap; gap = Math.max(0.06, gap * 0.86); }
+  }
+  orcaCall() {
+    const ac = this.ac, t0 = ac.currentTime;
+    const o = ac.createOscillator(); o.type = 'sawtooth';
+    o.frequency.setValueAtTime(900, t0); o.frequency.exponentialRampToValueAtTime(1700, t0 + 0.5); o.frequency.exponentialRampToValueAtTime(700, t0 + 1.2);
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 3;
+    const gn = ac.createGain(); gn.gain.setValueAtTime(0, t0); gn.gain.linearRampToValueAtTime(0.05, t0 + 0.2); gn.gain.linearRampToValueAtTime(0, t0 + 1.3);
+    o.connect(bp).connect(gn).connect(this.master); o.start(t0); o.stop(t0 + 1.4);
+  }
+  ram() { this.implosionSmall(); this.creak(0.6); }
+  implosionSmall() { this.burst('lowpass', 500, 0.6, 1.2, 0.8, this.brown); this.tone(45, 1.4, 0.7, 'sine', 0, 28); this.burst('bandpass', 1200, 4, 0.3, 0.2); }
   sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
   click() { this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }
@@ -135,17 +159,25 @@ export class Audio {
     if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
     if (g.paused) mv *= 0.4;
     this.musicGain.gain.setTargetAtTime(mv, now, 0.4);
-    const lp = under ? clamp(1400 * Math.exp(-depth / 500), 280, 1400) * (1 - fx.dread * 0.5) : 16000;
+    const hurtMuffle = g.injury >= 3 ? 0.5 : 1;
+    const lp = (under ? clamp(1400 * Math.exp(-depth / 500), 280, 1400) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle;
     this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
     // beds
     this.amb.g.gain.setTargetAtTime(under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03, now, 0.5);
     this.amb.f.frequency.setTargetAtTime(under ? lerp(260, 120, clamp(depth / 1000, 0, 1)) : 400, now, 0.5);
     this.surf.g.gain.setTargetAtTime((under ? 0.0 : 0.05) + (under ? 0 : g.waveBoost * 0.1), now, 0.3);
     this.drone.gain.setTargetAtTime(fx.dread * 0.11 + (g.mode === 'dying' ? 0.12 : 0), now, 0.8);
-    this.tinG.gain.setTargetAtTime(fx.dread > 0.55 ? (fx.dread - 0.55) * 0.012 : 0, now, 0.5);
+    this.tinG.gain.setTargetAtTime((fx.dread > 0.55 ? (fx.dread - 0.55) * 0.012 : 0) + (g.injury >= 4 ? 0.006 : 0), now, 0.5);
     const subMove = e.inSub ? clamp(e.speedNow / 5, 0.15, 1) : 0;
     this.motorG.gain.setTargetAtTime(subMove * 0.06, now, 0.3);
     this.motor.frequency.setTargetAtTime(44 + subMove * 26, now, 0.3);
+    // bleeding out: the heartbeat slows and stops
+    if (g.mode === 'dying' && g.deathKind === 'injury') {
+      this.beatT -= dt;
+      const rate = Math.max(0, 1 - g.deathT / 3.6);
+      if (rate > 0.05 && this.beatT <= 0) { this.beatT = 0.6 / rate; this.heartbeat(0.35 * rate + 0.05); }
+      return;
+    }
     if (g.mode !== 'play') return;
     // breathing (diver only)
     if (!e.inSub && under) {
@@ -159,7 +191,7 @@ export class Audio {
       }
     }
     // heartbeat
-    if (fx.dread > 0.15 || (!e.inSub && e.o2 / e.o2Max < 0.15)) {
+    if (fx.dread > 0.15 || g.injury >= 2 || g.threat || (!e.inSub && e.o2 / e.o2Max < 0.15)) {
       this.beatT -= dt;
       if (this.beatT <= 0) { this.beatT = 60 / e.hr; this.heartbeat(0.12 + fx.dread * 0.35); }
     }

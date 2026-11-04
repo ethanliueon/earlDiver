@@ -17,7 +17,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | F | Interact: observe a creature, collect, cut kelp, board the submersible |
 | hold F | Leave the submersible |
 | J | Journal (species you have observed, and your own notes) |
-| L | Lights on/off. Light carries a long way in the dark |
+| L | Lights on/off. Light carries a long way in the dark. Flash it at a charging animal to make it swerve |
 | Q | Throw an anglerfish lure |
 | E | Wear a fangtooth necklace |
 | U | Boat workshop (at the surface, by the boat) |
@@ -33,6 +33,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs
   hide you if you are slow and dark. Sea lanterns keep it away, for a while.
 - When it is within 200 m it shows on the sonar. You will feel it before then.
+- Sharks, billfish and sperm whales attack too. There is no health bar: you will see and hear how
+  badly you are hurt. Wounds heal if you survive long enough.
+- Air is shown in bar, like a real cylinder gauge (200 full, 50 reserve).
 
 ## Running locally
 
@@ -59,6 +62,7 @@ js/creatures_draw.js  procedural drawings of every creature
 js/fauna.js         swimming life: spawning, schooling, fleeing
 js/player.js        Earl and the submersible: movement, air, pressure, hull
 js/entity.js        the entity's hunting behaviour
+js/hunters.js       animals that attack Earl or the submersible, and the encounter director
 js/render.js        scene and light model
 js/earl_draw.js     Earl, the submersible, the boat, the entity's shape
 js/hud.js           timer, air, dive monitor (sonar, heart rate, journal)

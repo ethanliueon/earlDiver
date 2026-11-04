@@ -1,5 +1,6 @@
 // DOM overlays: home screen, journal, boat workshop, pause, run log.
-import { SPECIES_BY_ID } from './species.js';
+import { SPECIES_BY_ID, SPECIES } from './species.js';
+const SPECIES_COUNT = SPECIES.length;
 import { speciesIcon } from './creatures_draw.js';
 import { SUB_LEVELS } from './player.js';
 import { RESOURCES } from './world.js';
@@ -17,6 +18,7 @@ export class UI {
     $('journal-close').addEventListener('click', () => this.toggleJournal(false));
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('upgrade-btn').addEventListener('click', () => { h.onUpgrade(); this.renderWorkshop(); });
+    $('repair-btn').addEventListener('click', () => { h.onRepair(); this.renderWorkshop(); });
     $('resume').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); });
     $('quit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); });
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
@@ -56,7 +58,7 @@ export class UI {
 
   renderJournal() {
     const g = this.h.getGame();
-    $('journal-count').textContent = `${g.journal.size} of 183 recorded`;
+    $('journal-count').textContent = `${g.journal.size} of ${SPECIES_COUNT} recorded`;
     const list = $('journal-list');
     list.innerHTML = '';
     if (g.journal.size === 0) {
@@ -87,7 +89,12 @@ export class UI {
     const cur = SUB_LEVELS[sub.level], next = SUB_LEVELS[sub.level + 1];
     $('ws-status').innerHTML = sub.imploded
       ? 'The submersible is gone.'
-      : `Hull rated to <b>${cur.rated} m</b> · air <b>${formatTime(cur.o2)}</b> · refit ${sub.level}/3`;
+      : `Hull rated to <b>${cur.rated} m</b> · integrity <b>${Math.round(sub.hull * 100)} %</b> · refit ${sub.level}/3`;
+    const rb = $('repair-btn');
+    const canRepair = !sub.imploded && sub.hull < 0.999 && (g.inv.iron || 0) >= 2 && (g.inv.rock || 0) >= 2;
+    rb.hidden = sub.imploded || sub.hull >= 0.999;
+    rb.disabled = !canRepair;
+    rb.textContent = canRepair ? 'Patch the hull (+40 %): 2 iron, 2 rock' : 'Patching needs 2 iron and 2 rock';
     const costEl = $('ws-cost');
     costEl.innerHTML = '';
     const btn = $('upgrade-btn');
@@ -97,7 +104,7 @@ export class UI {
     } else {
       let ok = true;
       const head = document.createElement('p');
-      head.innerHTML = `Next refit: rated to <b>${next.rated} m</b>, air <b>${formatTime(next.o2)}</b>`;
+      head.innerHTML = `Next refit: rated to <b>${next.rated} m</b>, a bigger oxygen bank, and a new hull (100 %)`;
       costEl.append(head);
       const ul = document.createElement('ul');
       for (const [k, n] of Object.entries(next.cost)) {

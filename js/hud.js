@@ -43,7 +43,9 @@ export class Hud {
     const bw = 210 * s, bh = 9 * s, bx = W - pad - bw, by = pad + 52 * s;
     ctx.font = `500 ${12 * s}px ${MONO}`;
     ctx.fillStyle = 'rgba(220,230,232,0.75)';
-    ctx.fillText(e.inSub ? 'O₂  SUB' : 'O₂', bx - 8 * s, by - 2 * s);
+    // air shown the way divers read it: cylinder pressure in bar (200 full, 50 reserve)
+    const bar = Math.max(0, Math.round(200 * clamp(o2, 0, 1)));
+    ctx.fillText(e.inSub ? `CABIN O₂  ${bar} bar` : `AIR  ${bar} bar`, bx - 8 * s, by - 2 * s);
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(bx, by, bw, bh);
     const oc = o2 > 0.5 ? [86, 200, 120] : o2 > 0.1 ? [lerp(230, 86, (o2 - 0.1) / 0.4), lerp(190, 200, (o2 - 0.1) / 0.4), 70] : [220, 50, 40];
     const pulse = o2 < 0.1 ? 0.6 + 0.4 * Math.sin(g.time * 10) : 1;
@@ -53,7 +55,8 @@ export class Hud {
     // oxygen time left at current drain
     ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(220,230,232,0.6)';
     const left = e.inSub ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
-    ctx.fillText(e.atSurface ? 'REFILLING' : `${formatTime(left)} left`, W - pad, by + bh + 5 * s);
+    ctx.fillText(e.atSurface ? 'REFILLING' : `≈ ${formatTime(left)}`, W - pad, by + bh + 5 * s);
+    if (!e.atSurface && o2 < 0.25 && o2 >= 0.1) { ctx.fillStyle = '#e8b040'; ctx.textAlign = 'left'; ctx.fillText('RESERVE', bx, by + bh + 5 * s); ctx.textAlign = 'right'; }
     if (g.diverDrain > 1.5 && !e.inSub && !e.atSurface) { ctx.fillStyle = '#e8a040'; ctx.fillText(`PRESSURE ×${g.diverDrain.toFixed(1)}`, W - pad, by + bh + 20 * s); }
 
     // ---------- dive monitor (right) ----------
@@ -85,6 +88,13 @@ export class Hud {
       ctx.fillRect(ix, yy + 30 * s, (mw - 28 * s) * clamp(r / 1.3, 0, 1), 5 * s);
       ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(ix + (mw - 28 * s) / 1.3, yy + 27 * s, 1, 11 * s);
       yy += 46 * s;
+      label('INTEGRITY', ix, yy);
+      const hi = g.sub.hull;
+      ctx.font = `${12 * s}px ${MONO}`; ctx.textAlign = 'right';
+      ctx.fillStyle = hi < 0.5 ? '#ff6a5a' : hi < 0.99 ? '#e8b040' : '#8ad0a0';
+      ctx.fillText(`${Math.round(hi * 100)} %${hi < 0.99 ? '  LEAKING' : ''}`, mx + mw - 14 * s, yy - 1 * s);
+      ctx.textAlign = 'left';
+      yy += 18 * s;
     }
     // radar
     label('SONAR · 200 m', ix, yy);
@@ -212,8 +222,9 @@ export class Hud {
     this.toasts = this.toasts.filter((tt) => tt.t < 4.5);
 
     // ---------- death: everything but the red timer fades to black ----------
+    const bleedOut = dying && g.deathKind === 'injury';
     if (dying) {
-      ctx.fillStyle = `rgba(0,0,0,${clamp(g.deathT / 2.2, 0, 1).toFixed(3)})`;
+      ctx.fillStyle = bleedOut ? `rgba(26,0,0,${clamp(g.deathT / 3, 0, 1).toFixed(3)})` : `rgba(0,0,0,${clamp(g.deathT / 2.2, 0, 1).toFixed(3)})`;
       ctx.fillRect(0, 0, W, H);
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.font = `500 ${40 * s}px ${MONO}`;
@@ -222,7 +233,7 @@ export class Hud {
       ctx.fillText(g.deathCause || '', W - pad, pad + 50 * s);
     }
     // ---------- death countdown ----------
-    if (dying && g.deathT > 0) {
+    if (dying && !bleedOut && g.deathT > 0) {
       const left = Math.max(0, 3 - Math.floor(g.deathT - g.deathDelay));
       if (g.deathT > g.deathDelay) {
         ctx.font = `500 ${120 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

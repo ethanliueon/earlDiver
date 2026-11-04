@@ -142,6 +142,8 @@ export class Renderer {
       ctx.restore();
     }
 
+    // painted kelp forests far behind (baked once, high detail, gently swaying)
+    this.drawKelpBackdrop(g, ppm, t);
     // ================= TERRAIN & STRUCTURES =================
     for (const w of g.world.wrecks) if (Math.abs(w.x - cam.x) < cam.w / 2 + w.len) this.drawWreck(ctx, w, S, Sy, ppm);
     this.drawKelp(g, S, Sy, ppm, 0, x0, x1);
@@ -294,6 +296,15 @@ export class Renderer {
       if (lights) subLamps = r;
     }
 
+    // ---- blood (lit by the same light model, so it reads dark green-black at depth) ----
+    for (const b of g.blood) {
+      if (!inView(b.x, b.y, 3)) continue;
+      const a = 0.45 * (1 - b.t / b.life);
+      const r = b.r * ppm;
+      const bg = ctx.createRadialGradient(S(b.x), Sy(b.y), 0, S(b.x), Sy(b.y), r);
+      bg.addColorStop(0, `rgba(120,8,10,${a.toFixed(3)})`); bg.addColorStop(1, 'rgba(90,6,8,0)');
+      ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(S(b.x), Sy(b.y), r, 0, TAU); ctx.fill();
+    }
     // ---- implosion debris ----
     for (const d of g.debris) {
       if (!inView(d.x, d.y)) continue;
@@ -404,6 +415,18 @@ export class Renderer {
     const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * (0.42 - fx.vignette * 0.2), W / 2, H / 2, Math.max(W, H) * 0.72);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${vs.toFixed(3)})`);
     ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+    // injury: red creeping in from the edges, pulsing with the heartbeat when it's bad
+    const lvl = Math.min(4, g.injury || 0);
+    if (lvl > 0 || fx.redFlash > 0 || fx.redDeath > 0) {
+      const beat = lvl >= 3 ? 0.75 + 0.25 * Math.pow(Math.max(0, Math.sin(t * g.earl.hr / 60 * Math.PI)), 6) : 1;
+      const edge = [0, 0.22, 0.38, 0.55, 0.7][lvl] * beat + (fx.redDeath || 0) * 0.6;
+      const inner = Math.min(W, H) * (0.42 - lvl * 0.07 - (fx.redDeath || 0) * 0.4);
+      const rg = ctx.createRadialGradient(W / 2, H / 2, Math.max(0, inner), W / 2, H / 2, Math.max(W, H) * 0.75);
+      rg.addColorStop(0, 'rgba(90,0,0,0)'); rg.addColorStop(1, `rgba(110,4,6,${Math.min(0.92, edge).toFixed(3)})`);
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+      if (fx.redFlash > 0) { ctx.fillStyle = `rgba(160,0,0,${(0.35 * fx.redFlash).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+      if (fx.redDeath > 0) { ctx.fillStyle = `rgba(40,0,0,${(0.55 * fx.redDeath).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+    }
     if (fx.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${fx.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     if (fx.black > 0) { ctx.fillStyle = `rgba(0,0,0,${fx.black.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
   }
@@ -542,6 +565,83 @@ export class Renderer {
       ctx.beginPath(); ctx.arc(S(p.x) + Math.sin(rk.seed + k) * ppm * 0.4, Sy(p.y) + Math.cos(rk.seed + k) * ppm * 0.4, Math.max(1, ppm * 0.15), 0, TAU); ctx.fill();
     }
     ctx.restore();
+  }
+
+  // ---------- baked kelp backdrop ----------
+  bakeKelpBackdrop(world) {
+    const PX = 22, X0 = 760, X1 = 935, DEP = 46; // pixels per metre, world span, depth span
+    const layers = [];
+    for (const [k, f, seed, tint] of [[0, 0.55, 11, 0.28], [1, 0.75, 29, 0.5]]) {
+      const c = document.createElement('canvas');
+      c.width = Math.ceil((X1 - X0) * PX); c.height = Math.ceil(DEP * PX);
+      const ctx = c.getContext('2d');
+      let sd = seed * 7919;
+      const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+      // distance haze: the further layer fades much more toward the colour of the water
+      const col = (r, g2, b, a = 1) => `rgba(${(r * tint + 34 * (1 - tint)) | 0},${(g2 * tint + 110 * (1 - tint)) | 0},${(b * tint + 150 * (1 - tint)) | 0},${a})`;
+      // reef rock and sand at the foot of the forest
+      ctx.fillStyle = col(70, 66, 52);
+      ctx.beginPath(); ctx.moveTo(0, c.height);
+      for (let x = 0; x <= c.width; x += 20) {
+        const wx = X0 + x / PX, d = Math.max(4, world.floorAt(wx) - 4 - k * 5) * 0.9;
+        ctx.lineTo(x, d * PX + Math.sin(x * 0.03 + seed) * 10 + Math.sin(x * 0.11) * 4);
+      }
+      ctx.lineTo(c.width, c.height); ctx.closePath(); ctx.fill();
+      for (let i = 0; i < 90; i++) {
+        const x = rnd() * c.width, wx = X0 + x / PX, d = Math.max(4, world.floorAt(wx) - 4 - k * 5) * 0.9 * PX;
+        ctx.fillStyle = col(60 + rnd() * 30, 56 + rnd() * 25, 46, 0.9);
+        ctx.beginPath(); ctx.ellipse(x, d, 8 + rnd() * 30, 5 + rnd() * 14, 0, Math.PI, 0); ctx.fill();
+      }
+      // stalks
+      for (let x = rnd() * 30; x < c.width; x += 26 + rnd() * 44) {
+        const wx = X0 + x / PX, base = Math.max(5, world.floorAt(wx) - 4 - k * 5) * 0.9 * PX;
+        const h = base * (0.75 + rnd() * 0.25);
+        const lean = (rnd() - 0.5) * 0.25;
+        const pts = [];
+        for (let i = 0; i <= 24; i++) { const u = i / 24; pts.push([x + Math.sin(u * 3 + x) * 12 * u + lean * h * u, base - h * u]); }
+        const sg = ctx.createLinearGradient(0, base - h, 0, base);
+        sg.addColorStop(0, col(120, 104, 44)); sg.addColorStop(1, col(52, 42, 20));
+        ctx.strokeStyle = sg; ctx.lineWidth = 3 + rnd() * 2; ctx.lineCap = 'round';
+        ctx.beginPath(); pts.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.stroke();
+        // blades: leaf shapes with a midrib, lighter toward the top where the light is
+        for (let i = 2; i <= 24; i++) {
+          const [px, py] = pts[i], u = i / 24, side = i % 2 ? 1 : -1;
+          const a = -Math.PI / 2 + side * (0.6 + rnd() * 0.4);
+          const L = PX * (1.0 + rnd() * 0.5), wd = PX * 0.22;
+          ctx.save(); ctx.translate(px, py); ctx.rotate(a);
+          const bg = ctx.createLinearGradient(0, -wd, 0, wd);
+          bg.addColorStop(0, col(140 + 40 * u, 118 + 30 * u, 48, 0.92)); bg.addColorStop(1, col(84, 70, 28, 0.92));
+          ctx.fillStyle = bg;
+          ctx.beginPath(); ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(L * 0.3, -wd * 1.2, L * 0.75, -wd * 0.8, L, (rnd() - 0.5) * wd);
+          ctx.bezierCurveTo(L * 0.75, wd * 0.8, L * 0.3, wd * 1.1, 0, 0); ctx.fill();
+          ctx.strokeStyle = col(70, 58, 24, 0.6); ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(L * 0.85, 0); ctx.stroke();
+          ctx.fillStyle = col(150, 128, 56); ctx.beginPath(); ctx.arc(1, 0, wd * 0.4, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      }
+      layers.push({ c, f, X0, PX });
+    }
+    this.kelpBack = layers;
+  }
+
+  drawKelpBackdrop(g, ppm, t) {
+    const cam = this.cam;
+    if (cam.x < 700 || cam.x > 1000 || cam.y > 120) return;
+    if (!this.kelpBack || this.kelpBackWorld !== g.world) { this.bakeKelpBackdrop(g.world); this.kelpBackWorld = g.world; }
+    const ctx = this.ctx, W = this.W, H = this.H, surfY = (H / 2) - cam.y * ppm;
+    for (const L of this.kelpBack) {
+      const scale = ppm * L.f / L.PX;               // image pixels -> screen pixels
+      const x0 = W / 2 + (L.X0 - cam.x) * ppm * L.f; // further layers slide slower and look smaller
+      const bands = 14, bh = L.c.height / bands;
+      for (let b = 0; b < bands; b++) {
+        // sway grows toward the tops of the stalks (top bands)
+        const up = 1 - b / bands;
+        const off = Math.sin(t * 0.45 + b * 0.35 + L.f * 5) * 9 * up * up;
+        ctx.drawImage(L.c, 0, b * bh, L.c.width, bh + 1, x0 + off * scale, surfY + b * bh * scale, L.c.width * scale, (bh + 1) * scale);
+      }
+    }
   }
 
   drawKelp(g, S, Sy, ppm, layer, x0, x1) {

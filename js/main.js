@@ -3,7 +3,8 @@ import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { generateWorld, RESOURCES, BOAT_X, WORLD_W } from './world.js';
 import { SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
-import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, SUB_LEVELS, SAPPHIRE_O2 } from './player.js';
+import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS, SAPPHIRE_O2 } from './player.js';
+import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
 import { Hud } from './hud.js';
@@ -40,7 +41,10 @@ function newGame(mode) {
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
     deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio,
     imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2, farShadow: null,
+    injury: 0, healT: 0, blood: [], deathKind: null, lampFlashT: -99, threat: null,
   };
+  g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
+  g.damageSub = (amt, sp) => damageSub(amt, sp);
   g.sub.docked = true;
   // pre-warm the ocean with life around the spawn
   const cam = { x: 500, y: 6, w: 46, h: 26 };
@@ -56,7 +60,49 @@ const ui = new UI({
   onUpgrade: () => tryUpgrade(),
   onCloseWorkshop: () => {},
   onQuit: () => die('Ended the dive'),
+  onRepair: () => tryRepair(),
 });
+
+// ---------------- injuries ----------------
+// Hidden injury points. Each point heals 15 s after the last one; 5 at once is fatal.
+const INJURY = {
+  speed: [1, 1, 0.9, 0.8, 0.65],
+  air: [1, 1, 1, 1.2, 1.35],
+  names: ['', 'Grazed', 'Wounded', 'Badly hurt', 'Critical'],
+};
+function hurt(dmg, sp, how) {
+  if (g.mode !== 'play') return;
+  g.injury += dmg; g.healT = 0;
+  const e = g.earl;
+  g.fx.redFlash = 1; g.fx.shake = Math.max(g.fx.shake, 1 + dmg * 0.4);
+  for (let i = 0; i < 14 + dmg * 6; i++) g.blood.push({ x: e.x + (Math.random() - 0.5) * 0.8, y: e.y + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, r: 0.15 + Math.random() * 0.35, t: 0, life: 6 + Math.random() * 4 });
+  for (let i = 0; i < 20; i++) g.bubbles.push({ x: e.x + (Math.random() - 0.5), y: e.y - 0.3, r: 0.04 + Math.random() * 0.12, w: Math.random() * 6, t: -Math.random() * 0.3 });
+  audio.ready && audio.hit(dmg);
+  if (g.injury >= 5) { dieInjury(sp); return; }
+  const verb = how === 'charge' ? 'Speared by' : how === 'lurk' ? 'Bitten by' : how === 'whale' ? 'Struck by' : 'Bitten by';
+  hud.toast(`${verb} a ${sp.name.toLowerCase()}`, 'warn');
+}
+function damageSub(amt, sp) {
+  const sub = g.sub;
+  sub.hull = Math.max(0.05, sub.hull - amt);
+  g.fx.shake = Math.max(g.fx.shake, 2.2); g.fx.flash = 0.25;
+  for (let i = 0; i < 60; i++) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 6, y: sub.y + (Math.random() - 0.5) * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
+  audio.ready && audio.ram();
+  hud.toast(`Rammed by ${sp.id === 187 ? 'an orca' : 'a ' + sp.name.toLowerCase()} — hull ${Math.round(sub.hull * 100)} %, air leaking`, 'warn');
+}
+function tryRepair() {
+  const sub = g.sub;
+  if (sub.hull >= 0.999 || (g.inv.iron || 0) < 2 || (g.inv.rock || 0) < 2) return;
+  g.inv.iron -= 2; g.inv.rock -= 2;
+  sub.hull = Math.min(1, sub.hull + 0.4);
+  hud.toast(`Hull patched: ${Math.round(sub.hull * 100)} %`);
+  audio.ready && audio.pickup();
+}
+function dieInjury(sp) {
+  const name = sp ? sp.name.toLowerCase() : 'something';
+  const art = /^[aeiou]/.test(name) ? 'an' : 'a';
+  die(`Killed by ${art} ${name} at ${Math.round(g.earl.y)} m`, 'injury');
+}
 
 function startRun() {
   audio.init(); audio.resume(); audio.playMusic();
@@ -152,7 +198,7 @@ function interact(t, exitSub) {
     } else if (p.type === 'sapphire') {
       g.sapphires++;
       e.o2Max += SAPPHIRE_O2; e.o2 = Math.min(e.o2Max, e.o2 + SAPPHIRE_O2);
-      hud.toast(`Deep sapphire ${g.sapphires}/8 — air +15 s`, 'big');
+      hud.toast(`Deep sapphire ${g.sapphires}/8 — a larger tank: +15 s of air`, 'big');
       audio.ready && audio.sapphire();
     } else {
       g.inv[p.type] = (g.inv[p.type] || 0) + 1;
@@ -194,13 +240,14 @@ function tryUpgrade() {
   for (const [k, n] of Object.entries(next.cost)) g.inv[k] -= n;
   sub.level++;
   sub.o2 = sub.o2Max;
+  sub.hull = 1; // a refit includes a new hull
   hud.toast(`Submersible refitted: rated to ${sub.rated} m`, 'big');
   audio.ready && audio.pickup();
 }
 
-function die(cause) {
+function die(cause, kind = 'normal') {
   if (g.mode !== 'play' || g.noDeath) return;
-  g.mode = 'dying'; g.deathT = 0; g.deathCause = cause;
+  g.mode = 'dying'; g.deathT = 0; g.deathCause = cause; g.deathKind = kind;
   ui.closeAll();
   const log = {
     date: new Date().toISOString(),
@@ -251,7 +298,7 @@ function update(dt) {
     g.prompt = promptFor(target);
     if (pressed.has('f-tap')) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
-    if (pressed.has('l')) { e.lampWanted = !e.lampWanted; g.sub.lightsOn = e.lampWanted; hud.toast(e.lampWanted ? 'Lights on' : 'Lights off'); }
+    if (pressed.has('l')) { g.lampFlashT = g.time; e.lampWanted = !e.lampWanted; g.sub.lightsOn = e.lampWanted; hud.toast(e.lampWanted ? 'Lights on' : 'Lights off'); }
     if (pressed.has('u') && Math.abs(e.x - BOAT_X) < 14 && e.y < 4) ui.toggleWorkshop();
     if (pressed.has('q')) {
       if (g.items.lure > 0 && !g.lure) {
@@ -268,6 +315,11 @@ function update(dt) {
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
 
+    // injuries: slower, hungrier for air, heal one point every 15 s
+    if (g.injury > 0) { g.healT += dt; if (g.healT >= 15) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
+    const lvl = Math.min(4, g.injury);
+    e.speedMul = INJURY.speed[lvl]; e.o2Mul = INJURY.air[lvl];
+    if (lvl >= 4 && (mv.x || mv.y)) { mv.x += Math.sin(g.time * 1.7) * 0.35; mv.y += Math.cos(g.time * 1.3) * 0.35; } // controls drift
     const res = updateEarl(g, dt, mv);
     if (res === 'implode') {
       g.sub.imploded = true; g.imploded = true; g.implodeDepth = g.sub.y;
@@ -285,7 +337,8 @@ function update(dt) {
     // diver tank refills from the sub's air
     if (e.inSub && e.o2 < e.o2Max) { const r = Math.min(e.o2Max - e.o2, (e.o2Max / 3.5) * dt); e.o2 += r; }
     g.diverDrain = diverDrainMult(e.y) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
-    g.subDrain = subDrainMult(g.sub.y, g.sub.rated) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
+    g.diverDrain *= e.o2Mul;
+    g.subDrain = subDrainMult(g.sub.y, g.sub.rated) * (mv.sprint && e.speedNow > 1 ? 2 : 1) * subLeak(g.sub);
     if (!e.inSub && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical — surface', 'warn'); }
     if (e.atSurface) g.lowO2Warned = false;
 
@@ -312,17 +365,30 @@ function update(dt) {
       } else l.charge = Math.min(1, l.charge + dt / 150);
     }
 
+    // animals that attack
+    g.fauna.bleeding = g.injury > 0;
+    directEncounters(g, dt, SPECIES_BY_ID);
+    updateHunters(g, dt);
     // entity
     const r = ent.update(g, dt);
     if (r === 'caught') die(causeText('entity'));
     for (const ev of g.events) {
       if (ev === 'teleport') { g.fx.flash = 0; g.fx.shake = 1.2; audio.ready && audio.tone(40, 2.5, 0.6, 'sine', 0, 25); }
+      else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); hud.toast('Something bumped you', 'warn'); }
+      else if (ev === 'charge') { audio.ready && audio.whoosh(); }
+      else if (ev === 'swerve') { hud.toast('It turns away from the light'); }
+      else if (ev === 'clicks') { audio.ready && audio.clicks(6); }
+      else if (ev === 'orca') { audio.ready && audio.orcaCall(); }
+      else if (ev === 'lunge') { audio.ready && audio.thud(0.25); }
     }
     g.events.length = 0;
   } else if (g.mode === 'dying') {
     g.deathT += dt;
-    g.fx.black = clamp(g.deathT / 3, 0, 1);
-    if (g.deathT > 3.6) {
+    const injuryDeath = g.deathKind === 'injury';
+    // bleeding out: the red closes in first, then the dark; no countdown
+    g.fx.black = injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : clamp(g.deathT / 3, 0, 1);
+    g.fx.redDeath = injuryDeath ? clamp(g.deathT / 2.2, 0, 1) : 0;
+    if (g.deathT > (injuryDeath ? 5 : 3.6)) {
       const cause = g.deathCause, survived = g.survival;
       g = newGame('menu');
       ui.showMenu({ cause, survived });
@@ -363,7 +429,7 @@ function update(dt) {
   e.dark = Math.sqrt(g.dayEff * Math.exp(-Math.max(0, e.y) / 140)) * (1 - fx.darken) < 0.3;
   // heart rate
   const lowO2 = !e.inSub ? clamp(1 - (e.o2 / e.o2Max) / 0.25, 0, 1) : clamp(1 - (g.sub.o2 / g.sub.o2Max) / 0.2, 0, 1);
-  const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + fx.pressure * 45;
+  const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + fx.pressure * 45 + g.injury * 14 + (g.threat ? 20 : 0);
   e.hr = lerp(e.hr, hrT, dt * 0.6);
 
   // ----- something far away (not it) -----
@@ -385,7 +451,17 @@ function update(dt) {
     }
   }
   if (e.atSurface && !e.inSub && e.o2 < e.o2Max && Math.random() < dt * 25) g.bubbles.push({ x: e.x + (Math.random() - 0.5) * 1.6, y: e.y + 0.8, r: 0.04 + Math.random() * 0.06, w: Math.random() * 6, t: 0 });
+  if (e.inSub && g.sub.hull < 0.99 && !e.atSurface && Math.random() < dt * (1 - g.sub.hull) * 30) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 6, y: g.sub.y - 1, r: 0.03 + Math.random() * 0.06, w: Math.random() * 6, t: 0 });
   if (e.inSub && e.speedNow > 0.8 && Math.random() < dt * 20) g.bubbles.push({ x: g.sub.x - g.sub.facing * 5, y: g.sub.y - 0.5 + Math.random(), r: 0.05 + Math.random() * 0.1, w: Math.random() * 6, t: 0 });
+  // blood: a trail while injured, clouds when hit
+  if (g.mode === 'play' && g.injury > 0 && !e.inSub && Math.random() < dt * g.injury * 2.5)
+    g.blood.push({ x: e.x + (Math.random() - 0.5) * 0.6, y: e.y + (Math.random() - 0.5) * 0.4, vx: -e.vx * 0.2, vy: -0.05, r: 0.08 + Math.random() * 0.15, t: 0, life: 4 + Math.random() * 3 });
+  for (let i = g.blood.length - 1; i >= 0; i--) {
+    const b = g.blood[i];
+    b.t += dt; b.x += b.vx * dt; b.y += b.vy * dt; b.vx *= Math.exp(-dt * 1.2); b.vy *= Math.exp(-dt * 1.2); b.r += dt * 0.12;
+    if (b.t > b.life) g.blood.splice(i, 1);
+  }
+  g.fx.redFlash = Math.max(0, (g.fx.redFlash || 0) - dt * 1.4);
   updateBubbles(dt);
   updateDebris(dt);
 }
@@ -437,8 +513,8 @@ function frame(now) {
   // dread colour grading on the scene canvas only
   const fx = g.fx;
   const blurPx = Math.max(fx.disorient * 1.2, fx.pressure * 2.4);
-  const f = `saturate(${(1 - fx.dread * 0.65 - fx.pressure * 0.25).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${blurPx > 0.25 ? ` blur(${blurPx.toFixed(1)}px)` : ''}`;
-  const f2 = fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 ? 'none' : f;
+  const f = `saturate(${(1 - fx.dread * 0.65 - fx.pressure * 0.25 - (g.injury >= 4 ? 0.45 : g.injury >= 3 ? 0.15 : 0)).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${blurPx > 0.25 ? ` blur(${blurPx.toFixed(1)}px)` : ''}`;
+  const f2 = fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 && g.injury < 3 ? 'none' : f;
   if (f2 !== filterKey) { canvas.style.filter = f2; filterKey = f2; }
   pressed.clear();
   requestAnimationFrame(frame);
