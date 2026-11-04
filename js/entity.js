@@ -20,6 +20,7 @@ export class Entity {
   // how far away the entity can perceive Earl right now
   perception(g) {
     const e = g.earl;
+    g.concealed = false;
     if (e.inSub) {
       let r = 120 + (e.speedNow > 1 ? 120 : 0) + (e.sprint && e.speedNow > 1 ? 100 : 0);
       if (g.sub.lightsOn && g.ambient < 0.3) r += 60;
@@ -27,6 +28,7 @@ export class Entity {
     }
     const hidden = g.world.inKelp(e.x, e.y) || g.world.underLedge(e.x, e.y);
     const fast = e.sprint && e.speedNow > 1;
+    g.concealed = hidden && !fast && !e.lampOn && e.speedNow < 2.5;
     if (hidden && !fast) return e.lampOn ? 14 : 6;
     let r = 45;
     if (e.speedNow > 2) r += 25;

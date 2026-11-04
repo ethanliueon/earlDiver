@@ -72,6 +72,7 @@ export class Hud {
     ctx.fillText(`${Math.max(0, e.y).toFixed(0)} m`, ix, yy + 14 * s);
     ctx.font = `${10 * s}px ${MONO}`; ctx.fillStyle = 'rgba(180,210,205,0.55)';
     ctx.fillText(`max ${e.maxDepth.toFixed(0)} m`, ix + 110 * s, yy + 30 * s);
+    if (g.concealed) { ctx.fillStyle = 'rgba(150,200,170,0.75)'; ctx.fillText('CONCEALED', ix + 110 * s, yy + 2 * s); }
     yy += 56 * s;
     if (e.inSub) {
       label('HULL', ix, yy);

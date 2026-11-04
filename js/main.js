@@ -70,6 +70,7 @@ function startRun() {
 window.addEventListener('keydown', (ev) => {
   if (ui.typing()) { if (ev.key === 'Escape') ui.blurTyping(); return; }
   const k = ev.key.toLowerCase();
+  if (g.mode === 'menu' && (k === 'enter' || k === ' ')) { ev.preventDefault(); startRun(); return; }
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'tab'].includes(k)) ev.preventDefault();
   if (!keys.has(k)) { pressed.add(k); if (k === 'f') fDown = performance.now(); }
   keys.add(k);
