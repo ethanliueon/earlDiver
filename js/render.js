@@ -120,6 +120,17 @@ export class Renderer {
     }
     // distant parallax silhouettes (slope / cliffs far behind)
     this.drawFar(g, S, Sy, dayEff);
+    // something very large, very far away
+    if (g.farShadow) {
+      const f = g.farShadow;
+      const a = Math.sin(Math.PI * clamp(f.t / f.dur, 0, 1)) * 0.1;
+      const px = -0.3 * W + (f.t / f.dur) * W * 1.6, py = H * f.y;
+      ctx.save(); ctx.translate(f.dir > 0 ? px : W - px, py); ctx.scale(f.dir, 1);
+      ctx.filter = `blur(${Math.round(W / 220)}px)`;
+      drawEntityShape(ctx, W * 0.32, t * 0.5, a);
+      ctx.filter = 'none';
+      ctx.restore();
+    }
 
     // ================= TERRAIN & STRUCTURES =================
     for (const w of g.world.wrecks) if (Math.abs(w.x - cam.x) < cam.w / 2 + w.len) this.drawWreck(ctx, w, S, Sy, ppm);
@@ -567,7 +578,14 @@ export class Renderer {
         ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(k * u * 0.03, -u * 0.08); ctx.lineTo(k * u * 0.07, -u * 0.18); ctx.stroke(); }
         break;
       case 'mussel':
-        ctx.fillStyle = '#1e2638'; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.ellipse((k - 1) * u * 0.14, -u * 0.06, u * 0.1, u * 0.045, -0.4 + k * 0.4, 0, TAU); ctx.fill(); }
+        // a little clump of mussels standing in the sand
+        for (let k = 0; k < 4; k++) {
+          ctx.save(); ctx.translate((k - 1.5) * u * 0.07, 0); ctx.rotate(-0.35 + k * 0.22);
+          ctx.fillStyle = k % 2 ? '#1a2030' : '#252e44';
+          ctx.beginPath(); ctx.ellipse(0, -u * 0.09, u * 0.04, u * 0.1, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = 'rgba(150,170,210,0.2)'; ctx.beginPath(); ctx.ellipse(-u * 0.012, -u * 0.12, u * 0.012, u * 0.05, 0, 0, TAU); ctx.fill();
+          ctx.restore();
+        }
         break;
       case 'rock':
         ctx.fillStyle = '#4a4844'; ctx.beginPath(); ctx.moveTo(-u * 0.2, 0); ctx.lineTo(-u * 0.12, -u * 0.2); ctx.lineTo(u * 0.1, -u * 0.22); ctx.lineTo(u * 0.22, 0); ctx.fill();

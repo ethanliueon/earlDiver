@@ -196,8 +196,10 @@ function parseSize(txt, vis) {
   const m = /([\d.]+)\s*(cm|m)/.exec(txt);
   if (!m) return vis.hab && vis.hab.includes('plant') ? 2.5 : 3;
   let v = parseFloat(m[1]) * (m[2] === 'cm' ? 0.01 : 1);
-  // Typical adults are smaller than record maximums
+  // Typical adults are smaller than record maximums; colonies and sponges are shown young
   if (!/plant/.test(vis.hab)) v *= 0.72;
+  else if (!/kelp/.test(vis.s)) v *= 0.5;
+  if (vis.s === 'barrelsponge') v *= 0.6;
   return v;
 }
 

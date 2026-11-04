@@ -99,6 +99,17 @@ export class Audio {
     const g = ac.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + 1.4); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 5);
     o.connect(bp).connect(g).connect(this.master); o.start(t0); o.stop(t0 + 5.1);
   }
+  whale(vol) {
+    // a long, distant, low call, heavily filtered
+    const ac = this.ac, t0 = ac.currentTime;
+    const o = ac.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(48, t0); o.frequency.linearRampToValueAtTime(70, t0 + 3); o.frequency.linearRampToValueAtTime(40, t0 + 8);
+    const o2 = ac.createOscillator(); o2.type = 'triangle'; o2.frequency.setValueAtTime(96, t0); o2.frequency.linearRampToValueAtTime(141, t0 + 3); o2.frequency.linearRampToValueAtTime(79, t0 + 8);
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 260;
+    const g = ac.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + 2.5); g.gain.linearRampToValueAtTime(vol * 0.6, t0 + 6); g.gain.linearRampToValueAtTime(0, t0 + 9);
+    o.connect(f); o2.connect(f); f.connect(g).connect(this.master);
+    o.start(t0); o2.start(t0); o.stop(t0 + 9.2); o2.stop(t0 + 9.2);
+  }
   sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
   click() { this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }

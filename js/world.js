@@ -213,13 +213,17 @@ export function generateWorld(seed) {
   // ---- Static seafloor life ----
   W.statics = [];
   const statics = SPECIES.filter((s) => isStaticHab(s.v.hab) && s.id !== 118 && s.id !== 119);
-  for (let x = 1; x < 975; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6)) {
+  for (let x = 1; x < 975; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6) * (x > 880 ? 0.6 : 1)) {
     const d = W.floorAt(x);
     if (d < 0.6) continue;
     const cands = statics.filter((s) => d >= s.dmin && d <= s.dmax);
     if (!cands.length) continue;
-    // weight plants/corals higher in the shallows to make the reef read as a reef
-    const sp = rng.pick(cands);
+    // weight corals, anemones, sponges and seagrass higher in the shallows so the reef reads as a reef
+    let sp;
+    if (d < 45 && x > 880 && rng() < 0.6) {
+      const reef = cands.filter((c) => /Coral|Anemone|Sponge|Plants/.test(c.cat) && c.v.s !== 'kelp');
+      sp = reef.length ? rng.pick(reef) : rng.pick(cands);
+    } else sp = rng.pick(cands);
     if (W.rockAt(x, d - 0.3)) continue;
     const scale = rng.range(0.6, 1.15);
     W.statics.push({ sp, x, y: d, scale, phase: rng() * 6, flip: rng() < 0.5 ? -1 : 1 });

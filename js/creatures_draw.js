@@ -849,7 +849,13 @@ function drawOctopus(ctx, L, v, t) {
   ctx.beginPath(); ctx.ellipse(s * 0.05, -s * 0.12, s * 0.16, s * 0.2, 0.5, 0, TAU); ctx.fill();
   if (v.p === 'rings') { ctx.strokeStyle = v.pc; ctx.lineWidth = Math.max(0.8, s * 0.015); for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.arc(s * (-0.05 + (k % 3) * 0.07), -s * (0.05 + Math.floor(k / 3) * 0.12), s * 0.03, 0, TAU); ctx.stroke(); } }
   ctx.fillStyle = shade(c0, 0.05); ctx.beginPath(); ctx.ellipse(-s * 0.06, 0, s * 0.11, s * 0.08, 0, 0, TAU); ctx.fill();
-  eye(ctx, -s * 0.1, -s * 0.03, Math.max(1, s * 0.03), '#d8c890');
+  // skin texture
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  for (let k = 0; k < 12; k++) { ctx.beginPath(); ctx.arc(s * (-0.05 + Math.sin(k * 2.1) * 0.12), -s * (0.12 + Math.cos(k * 1.7) * 0.12), s * 0.012, 0, TAU); ctx.fill(); }
+  // eye: small, with the horizontal bar pupil of an octopus
+  const er = Math.max(1, s * 0.018);
+  ctx.fillStyle = '#c8b070'; ctx.beginPath(); ctx.arc(-s * 0.1, -s * 0.035, er, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(-s * 0.1 - er * 0.8, -s * 0.035 - er * 0.22, er * 1.6, er * 0.44);
 }
 function drawDumbo(ctx, L, v, t) {
   const s = L;

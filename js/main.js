@@ -39,7 +39,7 @@ function newGame(mode) {
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
     deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio,
-    imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2,
+    imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2, farShadow: null,
   };
   g.sub.docked = true;
   // pre-warm the ocean with life around the spawn
@@ -354,6 +354,14 @@ function update(dt) {
   const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + (e.y > 300 && !e.inSub ? 12 : 0);
   e.hr = lerp(e.hr, hrT, dt * 0.6);
 
+  // ----- something far away (not it) -----
+  if (g.mode === 'play') {
+    if (g.farShadow) { g.farShadow.t += dt; if (g.farShadow.t > g.farShadow.dur) g.farShadow = null; }
+    else if (e.y > 120 && e.y < 1600 && fx.dread < 0.05 && Math.random() < dt / 150) {
+      g.farShadow = { t: 0, dur: 40 + Math.random() * 25, y: 0.25 + Math.random() * 0.4, dir: Math.random() < 0.5 ? 1 : -1 };
+      audio.ready && audio.whale(0.05);
+    }
+  }
   // ----- life -----
   g.fauna.update(dt, renderer.cam, e, ent, fx.dread, g.time);
   // breathing bubbles
