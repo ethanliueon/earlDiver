@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Earl Diver</title>
+  <meta name="description" content="A 2D ocean diving and survival horror game. Dive, explore, and stay out of reach of what is in the water.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game" tabindex="0"></canvas>
+  <canvas id="hud"></canvas>
+
+  <section id="menu">
+    <div class="menu-inner">
+      <h1>Earl Diver</h1>
+      <p class="tag">There is no bottom to reach and nothing to win.<br>Dive. Observe. Come back up.</p>
+      <button id="play">Dive</button>
+      <div class="controls">
+        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> swim</span>
+        <span><kbd>Shift</kbd> faster, more air</span>
+        <span><kbd>F</kbd> interact</span>
+        <span><kbd>J</kbd> journal</span>
+        <span><kbd>L</kbd> lights</span>
+        <span><kbd>Q</kbd> lure</span>
+        <span><kbd>E</kbd> necklace</span>
+        <span><kbd>U</kbd> workshop</span>
+        <span><kbd>Esc</kbd> pause</span>
+        <span><kbd>M</kbd> mute</span>
+      </div>
+      <div id="runlog"></div>
+      <p class="hint">Headphones recommended. Desktop browser only.</p>
+    </div>
+  </section>
+
+  <section id="journal" class="book" hidden>
+    <div class="page left">
+      <header><h2>Journal</h2><span id="journal-count"></span></header>
+      <div id="journal-list"></div>
+    </div>
+    <div class="page right">
+      <header><h2>Notes</h2><button id="journal-close" aria-label="Close journal">×</button></header>
+      <textarea id="notes" spellcheck="false" placeholder="Write anything…"></textarea>
+      <p class="small">The water keeps moving while you write.</p>
+    </div>
+  </section>
+
+  <section id="workshop" class="panel" hidden>
+    <header><h2>The boat</h2><button id="workshop-close" aria-label="Close workshop">×</button></header>
+    <p id="ws-status"></p>
+    <div id="ws-cost"></div>
+    <button id="upgrade-btn">Refit</button>
+    <p id="ws-inv" class="small"></p>
+  </section>
+
+  <section id="pause" class="panel" hidden>
+    <h2>Paused</h2>
+    <button id="resume">Resume</button>
+    <button id="quit" class="ghost">End this dive</button>
+  </section>
+
+  <noscript>Earl Diver needs JavaScript.</noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+// Sound: the background music (muffled underwater), generated ambience,
+// breathing, heartbeat, the entity's presence, sonar, hull creaks.
+import { clamp, lerp } from './util.js';
+
+export class Audio {
+  constructor() {
+    this.ready = false; this.muted = false;
+    this.breathT = 0; this.beatT = 0; this.groanT = 8; this.creakT = 0; this.bubbleT = 0;
+  }
+  init() {
+    if (this.ready) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = (this.ac = new AC());
+    this.master = ac.createGain(); this.master.gain.value = 0.9; this.master.connect(ac.destination);
+    // music
+    this.musicEl = new window.Audio('assets/audio/background_music.mp3');
+    this.musicEl.loop = true; this.musicEl.crossOrigin = 'anonymous'; this.musicEl.preload = 'auto';
+    const src = ac.createMediaElementSource(this.musicEl);
+    this.musicLP = ac.createBiquadFilter(); this.musicLP.type = 'lowpass'; this.musicLP.frequency.value = 18000;
+    this.musicGain = ac.createGain(); this.musicGain.gain.value = 0;
+    src.connect(this.musicLP).connect(this.musicGain).connect(this.master);
+    // noise buffer
+    const len = ac.sampleRate * 4;
+    const buf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = buf.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+    this.brown = buf;
+    const wb = ac.createBuffer(1, len, ac.sampleRate), wd = wb.getChannelData(0);
+    for (let i = 0; i < len; i++) wd[i] = Math.random() * 2 - 1;
+    this.white = wb;
+    // ambience bed: deep water rumble
+    this.amb = this.loopNoise(this.brown, 'lowpass', 260, 0);
+    // surface wash
+    this.surf = this.loopNoise(this.white, 'bandpass', 700, 0);
+    this.surf.f.Q.value = 0.4;
+    // entity drone: detuned low oscillators
+    this.drone = ac.createGain(); this.drone.gain.value = 0;
+    const dlp = ac.createBiquadFilter(); dlp.type = 'lowpass'; dlp.frequency.value = 140;
+    for (const f of [36.7, 38.9, 55.1]) { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(dlp); o.start(); }
+    dlp.connect(this.drone).connect(this.master);
+    // tinnitus
+    this.tin = ac.createOscillator(); this.tin.frequency.value = 6900; this.tinG = ac.createGain(); this.tinG.gain.value = 0;
+    this.tin.connect(this.tinG).connect(this.master); this.tin.start();
+    // sub motor
+    this.motor = ac.createOscillator(); this.motor.type = 'sawtooth'; this.motor.frequency.value = 52;
+    const mlp = ac.createBiquadFilter(); mlp.type = 'lowpass'; mlp.frequency.value = 220;
+    this.motorG = ac.createGain(); this.motorG.gain.value = 0;
+    this.motor.connect(mlp).connect(this.motorG).connect(this.master); this.motor.start();
+    this.ready = true;
+  }
+  loopNoise(buf, type, freq, gain) {
+    const ac = this.ac;
+    const s = ac.createBufferSource(); s.buffer = buf; s.loop = true;
+    const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq;
+    const g = ac.createGain(); g.gain.value = gain;
+    s.connect(f).connect(g).connect(this.master); s.start();
+    return { s, f, g };
+  }
+  resume() { if (this.ac && this.ac.state === 'suspended') this.ac.resume(); }
+  playMusic() { if (!this.ready) return; this.musicEl.play().catch(() => {}); }
+  setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ac.currentTime, 0.1); }
+
+  burst(type, freq, q, dur, vol, buf = this.white, when = 0) {
+    const ac = this.ac, t0 = ac.currentTime + when;
+    const s = ac.createBufferSource(); s.buffer = buf;
+    const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + dur * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    s.connect(f).connect(g).connect(this.master);
+    s.start(t0, Math.random() * 3); s.stop(t0 + dur + 0.05);
+    return f;
+  }
+  tone(freq, dur, vol, type = 'sine', when = 0, slideTo = null) {
+    const ac = this.ac, t0 = ac.currentTime + when;
+    const o = ac.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t0);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + Math.min(0.02, dur * 0.2)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(this.master); o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+  bubbles(n, vol = 0.05) {
+    for (let i = 0; i < n; i++) {
+      const f = 500 + Math.random() * 900;
+      this.tone(f, 0.06 + Math.random() * 0.05, vol * (0.5 + Math.random() * 0.5), 'sine', i * 0.04 + Math.random() * 0.05, f * 1.8);
+    }
+  }
+  heartbeat(vol) {
+    this.tone(62, 0.16, vol, 'sine', 0, 40);
+    this.tone(55, 0.2, vol * 0.75, 'sine', 0.24, 36);
+  }
+  groan(vol) {
+    const ac = this.ac, t0 = ac.currentTime;
+    const o = ac.createOscillator(); o.type = 'sawtooth';
+    const f0 = 70 + Math.random() * 30;
+    o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f0 * 0.45, t0 + 4.5);
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 6;
+    bp.frequency.setValueAtTime(320, t0); bp.frequency.exponentialRampToValueAtTime(140, t0 + 4.5);
+    const g = ac.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + 1.4); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 5);
+    o.connect(bp).connect(g).connect(this.master); o.start(t0); o.stop(t0 + 5.1);
+  }
+  sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
+  click() { this.burst('bandpass', 2400, 3, 0.08, 0.12); }
+  pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }
+  note() { this.tone(523, 0.5, 0.04, 'sine'); this.tone(784, 0.7, 0.03, 'sine', 0.12); }
+  creak(vol) { const f = this.burst('bandpass', 180 + Math.random() * 300, 12, 0.6 + Math.random() * 0.8, vol, this.brown); f.frequency.exponentialRampToValueAtTime(90, this.ac.currentTime + 1); }
+  implosion() {
+    this.burst('lowpass', 900, 0.5, 2.8, 1.0);
+    this.tone(48, 3.5, 0.9, 'sine', 0, 22);
+    this.burst('highpass', 3000, 0.5, 0.4, 0.5);
+  }
+  sapphire() { for (let i = 0; i < 4; i++) this.tone(880 * Math.pow(1.26, i), 1.2, 0.03, 'sine', i * 0.09); }
+  lanternHum(vol) { this.tone(220, 1.5, vol, 'sine'); this.tone(330, 1.5, vol * 0.6, 'sine'); }
+
+  // per-frame update
+  update(g, dt) {
+    if (!this.ready) return;
+    const ac = this.ac, now = ac.currentTime, e = g.earl, fx = g.fx;
+    const depth = g.mode === 'menu' ? 0 : e.y;
+    const under = g.mode === 'menu' ? 0 : depth > 0.9 ? 1 : 0;
+    // music: muffled under water, fades with dread, dies on death
+    let mv = g.mode === 'menu' ? 0.55 : 0.42;
+    mv *= 1 - fx.dread * 0.7;
+    if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
+    if (g.paused) mv *= 0.4;
+    this.musicGain.gain.setTargetAtTime(mv, now, 0.4);
+    const lp = under ? clamp(1400 * Math.exp(-depth / 500), 280, 1400) * (1 - fx.dread * 0.5) : 16000;
+    this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
+    // beds
+    this.amb.g.gain.setTargetAtTime(under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03, now, 0.5);
+    this.amb.f.frequency.setTargetAtTime(under ? lerp(260, 120, clamp(depth / 1000, 0, 1)) : 400, now, 0.5);
+    this.surf.g.gain.setTargetAtTime((under ? 0.0 : 0.05) + (under ? 0 : g.waveBoost * 0.1), now, 0.3);
+    this.drone.gain.setTargetAtTime(fx.dread * 0.11 + (g.mode === 'dying' ? 0.12 : 0), now, 0.8);
+    this.tinG.gain.setTargetAtTime(fx.dread > 0.55 ? (fx.dread - 0.55) * 0.012 : 0, now, 0.5);
+    const subMove = e.inSub ? clamp(e.speedNow / 5, 0.15, 1) : 0;
+    this.motorG.gain.setTargetAtTime(subMove * 0.06, now, 0.3);
+    this.motor.frequency.setTargetAtTime(44 + subMove * 26, now, 0.3);
+    if (g.mode !== 'play') return;
+    // breathing (diver only)
+    if (!e.inSub && under) {
+      this.breathT -= dt;
+      const rate = clamp(e.hr / 70, 0.8, 2.6);
+      if (this.breathT <= 0) {
+        this.breathT = 4.2 / rate;
+        this.burst('bandpass', 1500, 1.2, 1.1 / Math.sqrt(rate), 0.035 + fx.dread * 0.02); // inhale through regulator
+        setTimeout(() => { if (this.ready) { this.burst('lowpass', 500, 0.7, 1.0 / Math.sqrt(rate), 0.05); this.bubbles(6, 0.03); } }, (1500 / rate));
+        g.breath = true;
+      }
+    }
+    // heartbeat
+    if (fx.dread > 0.15 || (!e.inSub && e.o2 / e.o2Max < 0.15)) {
+      this.beatT -= dt;
+      if (this.beatT <= 0) { this.beatT = 60 / e.hr; this.heartbeat(0.12 + fx.dread * 0.35); }
+    }
+    // distant groans when it is within range
+    if (g.entity && g.entity.dist < 320) {
+      this.groanT -= dt;
+      if (this.groanT <= 0) { this.groanT = 9 + Math.random() * 12; this.groan(0.05 + fx.dread * 0.12); }
+    }
+    // hull
+    if (e.inSub && g.sub.stress > 0) {
+      this.creakT -= dt;
+      if (this.creakT <= 0) { this.creakT = 2.5 - g.sub.stress * 2 + Math.random(); this.creak(0.25 + g.sub.stress * 0.5); }
+    }
+  }
+}
