@@ -1062,19 +1062,20 @@ export class Renderer {
       if (floor > a) { const k2 = clamp(storm * 1.5, 0, 1); tint = mixRgb(tint, [0.72, 0.8, 0.9], k2); a = floor; }
       return rgbStr([255 * a * tint[0], 255 * a * tint[1], 255 * a * tint[2]]);
     };
-    // full light above the highest wave crest, then a blend down through the wave band and the
-    // top metre of water, so tall storm waves darken with everything else
-    const amp = (0.12 + g.waveBoost * 1.6) * 1.4;
-    const sw = g.waveBoost > 0.05 ? -amp : 0.25, sw2 = g.waveBoost > 0.05 ? amp + 1 : sw + 1.5;
-    const hf = (sw - dTop) / (dBot - dTop), hf2 = (sw2 - dTop) / (dBot - dTop);
-    if (hf > 0 && hf2 < 1) { gr.addColorStop(0, 'rgb(255,255,255)'); gr.addColorStop(hf, 'rgb(255,255,255)'); gr.addColorStop(hf2, lit(sw2)); }
+    // underwater light everywhere (the water above depth 0 - in the wave crests - gets the
+    // surface light), then the sky is painted back to full light exactly above the moving wave line
     for (let i = 0; i <= 8; i++) {
       const f = i / 8, d = lerp(dTop, dBot, f);
-      if (d < 0) { if (!(hf > 0 && hf2 < 1)) gr.addColorStop(f, 'rgb(255,255,255)'); continue; }
-      if (hf > 0 && hf2 < 1 && f <= hf2) continue;
-      gr.addColorStop(f, lit(d));
+      gr.addColorStop(f, lit(Math.max(0, d)));
     }
     l.fillStyle = gr; l.fillRect(0, 0, LW, LH);
+    const horizonY = Sy(0);
+    if (horizonY > -50 && g.surfY) {
+      l.fillStyle = 'rgb(255,255,255)';
+      l.beginPath(); l.moveTo(-10, -10);
+      for (let sx = -16; sx <= this.W + 32; sx += 16) l.lineTo(sx * k, Sy(g.surfY(cam.x + (sx - this.W / 2) / ppm)) * k);
+      l.lineTo(LW + 10, -10); l.closePath(); l.fill();
+    }
     // the entity swallows light around it
     const ent = g.entity;
     if (ent && g.mode !== 'menu' && ent.dist < 260) {
