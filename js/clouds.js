@@ -76,16 +76,16 @@ function bake(W, H, type, seed) {
       if (d <= 0.001) { px[i * 4 + 3] = 0; continue; }
       const sxp = ((x - off) % W + W) % W, syp = Math.max(0, y - off);
       const toward = den[syp * W + sxp];
-      let light = 0.86 + (d - toward) * 1.6;                 // lit edges facing the sun
-      light -= Math.max(0, y / H - 0.4) * (type === 'cumulus' ? 0.42 : 0.1); // greyer bases
-      light += (1 - d) * 0.12;                                // thin parts glow (light passes through)
-      light = Math.max(0.6, Math.min(1.05, light));
+      let light = 0.92 + (d - toward) * 0.9;                 // gentle relief toward the sun
+      light -= Math.max(0, y / H - 0.5) * (type === 'cumulus' ? 0.2 : 0.05); // slightly softer bases
+      light += (1 - d) * 0.1;                                 // thin parts glow (light passes through)
+      light = Math.max(0.78, Math.min(1.04, light));
       const warm = type === 'cirrus' ? 1 : 0.97;
       px[i * 4] = 255 * light;
       px[i * 4 + 1] = 252 * light * warm + 3;
       px[i * 4 + 2] = 250 * light * warm + 8 * (1 - light);
       // soft edges: alpha rises smoothly with density
-      const a = type === 'haze' ? d * 0.55 : Math.min(1, Math.pow(d * 2.2, 1.3)) * (type === 'cirrus' ? 0.7 : 1);
+      const a = type === 'haze' ? d * 0.55 : Math.min(0.82, Math.pow(d * 1.7, 1.4)) * (type === 'cirrus' ? 0.75 : 1);
       px[i * 4 + 3] = 255 * a;
     }
   }
@@ -94,7 +94,7 @@ function bake(W, H, type, seed) {
   const out = document.createElement('canvas');
   out.width = W; out.height = H;
   const octx = out.getContext('2d');
-  octx.filter = `blur(${type === 'cumulus' ? 1.8 : 2.5}px)`;
+  octx.filter = `blur(${type === 'cumulus' ? 3 : 3}px)`;
   octx.drawImage(c, -W, 0); octx.drawImage(c, 0, 0); octx.drawImage(c, W, 0); // wrap so the seam stays clean
   return out;
 }
@@ -137,13 +137,13 @@ export class Clouds {
     tctx.globalCompositeOperation = 'source-over';
     tctx.clearRect(0, 0, tc.width, tc.height);
     for (const L of this.layers) {
-      const dh = skyH * L.h, dw = dh * (L.img.width / L.img.height);
+      const dh = skyH * L.h, dw = Math.round(dh * (L.img.width / L.img.height)); // whole pixels: tiles butt exactly
       const y = horizon - skyH + skyH * L.y0 - dh * 0.25;
       // drift with the wind, and slide slowly as Earl moves (far layers move least)
-      let off = -(t * L.speed + camX * ppm * L.par) % dw;
+      let off = Math.round(-(t * L.speed + camX * ppm * L.par) % dw);
       if (off > 0) off -= dw;
       tctx.globalAlpha = L.alpha;
-      for (let x = off; x < W; x += dw) tctx.drawImage(L.img, x, y, dw + 1, dh);
+      for (let x = off; x < W; x += dw) tctx.drawImage(L.img, x, y, dw, dh);
     }
     tctx.globalAlpha = 1;
     // light the whole cloud deck at once: multiply by the colour of the light, keep the alpha

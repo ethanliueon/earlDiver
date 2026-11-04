@@ -123,6 +123,26 @@ export class Renderer {
       ctx.moveTo(-10, H + 10);
       for (let sx = -10; sx <= W + 20; sx += 16) ctx.lineTo(sx, Sy(surfY(cam.x + (sx - W / 2) / ppm)));
       ctx.lineTo(W + 20, H + 10); ctx.closePath(); ctx.fill();
+      // the surface layer picks up the colour of the sky: rose and gold at sunset
+      const ss = this.sunset || 0;
+      if (ss > 0.03 && horizon > -40 && horizon < H) {
+        const rg = ctx.createLinearGradient(0, horizon, 0, horizon + ppm * 12);
+        rg.addColorStop(0, `rgba(240,160,120,${(0.6 * ss).toFixed(3)})`); rg.addColorStop(0.3, `rgba(200,120,130,${(0.32 * ss).toFixed(3)})`); rg.addColorStop(1, 'rgba(110,80,120,0)');
+        ctx.fillStyle = rg; ctx.fillRect(0, horizon - ppm, W, ppm * 13);
+        // a path of glitter below the low sun
+        if (this.sunX !== undefined) {
+          for (let k = 0; k < 40; k++) {
+            const h1 = Math.abs(Math.sin(k * 12.9898) * 43758.5) % 1, h2 = Math.abs(Math.sin(k * 78.233) * 12345.6) % 1;
+            const tw = Math.max(0, Math.sin(t * (2 + h1 * 3) + k * 1.7));
+            if (tw < 0.3) continue;
+            const yy = horizon + ppm * (0.2 + h2 * h2 * 3.5);
+            const spread = 40 + (yy - horizon) * 0.9;
+            const xx = this.sunX + (h1 - 0.5) * 2 * spread;
+            ctx.fillStyle = `rgba(255,214,160,${(0.6 * tw * ss * (1 - h2 * 0.7)).toFixed(3)})`;
+            ctx.fillRect(xx, yy, ppm * (0.4 + h1 * 0.9), Math.max(1, ppm * 0.05));
+          }
+        }
+      }
     }
     // distant parallax silhouettes (slope / cliffs far behind)
     this.drawFar(g, S, Sy, dayEff);
@@ -453,10 +473,15 @@ export class Renderer {
     const ctx = this.ctx, W = this.W;
     const t = g.time;
     const sunset = day.phase === 'sunset' || day.phase === 'sunrise' ? 1 - Math.abs(dayEff - 0.5) * 2 : 0;
-    const top = mixRgb(mixRgb([4, 7, 16], [74, 128, 178], dayEff), [70, 60, 96], sunset * 0.6);
-    const bot = mixRgb(mixRgb([12, 22, 36], [176, 204, 218], dayEff), [226, 140, 92], sunset * 0.8);
+    // A real sky is several colours deep. At sunset: deep indigo overhead, through violet and
+    // dusky rose, to salmon and gold, with a pale glow right on the horizon.
+    const NIGHT = [[4, 7, 16], [6, 11, 24], [8, 15, 30], [11, 20, 36], [16, 26, 42]];
+    const DAY = [[56, 108, 168], [84, 136, 188], [118, 164, 204], [156, 192, 216], [190, 212, 224]];
+    const DUSK = [[34, 40, 86], [96, 72, 128], [196, 112, 122], [240, 152, 104], [252, 204, 150]];
+    const stops = [0, 0.38, 0.66, 0.86, 1];
     const sg = ctx.createLinearGradient(0, horizon - this.H, 0, horizon);
-    sg.addColorStop(0, rgbStr(top)); sg.addColorStop(1, rgbStr(bot));
+    for (let i = 0; i < 5; i++) sg.addColorStop(stops[i], rgbStr(mixRgb(mixRgb(NIGHT[i], DAY[i], dayEff), DUSK[i], sunset * 0.9)));
+    this.sunset = sunset;
     ctx.fillStyle = sg; ctx.fillRect(-20, -20, W + 40, horizon + 22 + (0.2 + g.waveBoost * 2.5) * this.cam.ppm);
     // stars
     if (dayEff < 0.4) {
@@ -470,16 +495,27 @@ export class Renderer {
     const arc = (p) => [W * (0.1 + p * 0.8), horizon - Math.sin(p * Math.PI) * this.H * 0.45 - 20];
     if (day.sun !== null) {
       const [x, y] = arc(day.sun);
+      const sb = Math.max(dayEff, sunset * 0.9);
+      // low sun: a wide warm bloom spreading along the horizon, a gold disc in the middle
+      if (sunset > 0.05) {
+        const bloom = ctx.createRadialGradient(x, y, 0, x, y, this.H * 0.75);
+        bloom.addColorStop(0, `rgba(255,190,120,${(0.55 * sunset).toFixed(3)})`); bloom.addColorStop(0.35, `rgba(240,130,100,${(0.22 * sunset).toFixed(3)})`); bloom.addColorStop(1, 'rgba(200,100,120,0)');
+        ctx.save(); ctx.translate(x, y); ctx.scale(1.8, 0.7); ctx.translate(-x, -y);
+        ctx.fillStyle = bloom; ctx.fillRect(x - this.H, y - this.H, this.H * 2, this.H * 2);
+        ctx.restore();
+      }
       const gg = ctx.createRadialGradient(x, y, 0, x, y, this.H * 0.18);
-      gg.addColorStop(0, `rgba(255,245,220,${(0.9 * dayEff).toFixed(3)})`); gg.addColorStop(0.08, `rgba(255,236,200,${(0.5 * dayEff).toFixed(3)})`); gg.addColorStop(1, 'rgba(255,220,180,0)');
+      const core = mixRgb([255, 246, 225], [255, 214, 150], sunset);
+      gg.addColorStop(0, rgbStr(core, 0.95 * sb)); gg.addColorStop(0.07, rgbStr(core, 0.55 * sb)); gg.addColorStop(1, 'rgba(255,200,160,0)');
       ctx.fillStyle = gg; ctx.fillRect(x - this.H, y - this.H, this.H * 2, this.H * 2);
+      this.sunX = x;
     }
     if (day.moon !== null) {
       const [x, y] = arc(day.moon);
       ctx.fillStyle = 'rgba(220,228,240,0.85)'; ctx.beginPath(); ctx.arc(x, y, this.H * 0.018, 0, TAU); ctx.fill();
     }
     // clouds: generated, lit, parallax layers (see clouds.js)
-    const ctint = mixRgb(mixRgb([22, 28, 44], [255, 255, 255], dayEff), [255, 150, 100], sunset * 0.7);
+    const ctint = mixRgb(mixRgb([22, 28, 44], [255, 255, 255], dayEff), [255, 176, 150], sunset * 0.8);
     this.clouds.draw(ctx, W, horizon, this.H * 0.85, t, this.cam.x, this.cam.ppm, ctint, Math.max(0.12, dayEff));
     // the beach / dunes above water (right side)
     const S = this.S, Sy = this.Sy, ppm = this.cam.ppm;
