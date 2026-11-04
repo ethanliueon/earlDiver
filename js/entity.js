@@ -11,7 +11,7 @@ export class Entity {
     this.rng = rng;
     this.x = 0; this.y = 0; this.vx = 0; this.vy = 0;
     this.state = 'drift'; // drift | hunt | search | repelled | lured
-    this.lastX = 500; this.lastY = 5; this.searchT = 0; this.senseT = 35;
+    this.lastX = 500; this.lastY = 5; this.searchT = 0; this.senseT = 12;
     this.heading = 0; this.lureT = 0; this.lure = null;
     this.teleportArmed = true; this.repelT = 0;
     this.eyeOpen = 0; this.blink = 0; this.knows = 0;
@@ -106,8 +106,10 @@ export class Entity {
       if (this.searchT > 26) { this.state = 'drift'; }
     } else if (this.state === 'drift') {
       // slow wander toward the last idea it had
-      speed = ENTITY_SPEED * 0.35;
+      speed = ENTITY_SPEED * 0.55;
     }
+    // far away it closes the distance quickly and quietly; it only slows to a creep once it is near
+    if ((this.state === 'search' || this.state === 'drift') && dist(this.x, this.y, this.lastX, this.lastY) > 140) speed = ENTITY_SPEED * 0.85;
     // move (it passes through rock: it is not of the water)
     let dx = tx - this.x, dy = ty - this.y;
     const dl = Math.hypot(dx, dy) || 1;

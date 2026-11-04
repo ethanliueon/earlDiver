@@ -4,7 +4,7 @@
 // then additive glows are layered on top.
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
-import { drawEarl, drawSub, drawBoat, drawEntityShape } from './earl_draw.js';
+import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { BOAT_X, WORLD_W } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 
@@ -225,6 +225,16 @@ export class Renderer {
       ctx.fillStyle = '#0a0a0a'; ctx.fill(bt.eyes);
     }
     ctx.setTransform(baseM);
+    // the entity's body, lit by the same light as everything else (invisible in the dark)
+    const entB = g.entity;
+    if (entB && g.mode !== 'menu' && inView(entB.x, entB.y, 45) && entB.dist < 90) {
+      const toward = entB.dist < 70 ? (g.earl.x >= entB.x ? 1 : -1) : (Math.cos(entB.heading) >= 0 ? 1 : -1);
+      entB.face = lerp(entB.face ?? toward, toward, 0.02);
+      const flipB = entB.face >= 0 ? -1 : 1;
+      ctx.save(); ctx.translate(S(entB.x), Sy(entB.y)); ctx.scale(flipB, 1);
+      drawEntity(ctx, 34 * ppm, t, clamp((90 - entB.dist) / 50, 0, 1), 0.3);
+      ctx.restore();
+    }
     // scales drifting where something was eaten
     for (const pf of g.fauna.puffs) {
       if (!inView(pf.x, pf.y)) continue;
@@ -355,48 +365,54 @@ export class Renderer {
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
     ctx.globalCompositeOperation = 'source-over';
 
-    // ---- the entity: a faint shape and two eyes ----
+    // ---- the entity: a dark mass that blocks the light, a faint rim, dim lights, two eyes ----
     const ent = g.entity;
-    if (ent && g.mode !== 'menu' && inView(ent.x, ent.y, 30)) {
+    if (ent && g.mode !== 'menu' && inView(ent.x, ent.y, 45)) {
       const d = ent.dist;
-      const a = clamp((60 - d) / 60, 0, 1) * 0.22 * (0.6 + 0.4 * Math.sin(t * 0.4));
-      ctx.save(); ctx.translate(S(ent.x), Sy(ent.y));
-      const dir = Math.cos(ent.heading) >= 0 ? -1 : 1;
-      ctx.scale(dir, 1);
-      drawEntityShape(ctx, 34 * ppm, t, a);
+      const Lp = 34 * ppm;
+      // it turns its head toward Earl when close; otherwise it faces the way it moves
+      const flip = (ent.face ?? 1) >= 0 ? -1 : 1; // local frame faces -x (face is updated in the scene pass)
+      const fillA = clamp((80 - d) / 60, 0, 1) * 0.95;
+      const lampBoost = g.earl.lampOn || (g.earl.inSub && g.sub.lightsOn) ? 1.6 : 1;
+      const rimA = clamp((50 - d) / 45, 0, 1) * 0.22 * lampBoost * (0.75 + 0.25 * Math.sin(t * 0.37));
+      ctx.save(); ctx.translate(S(ent.x), Sy(ent.y)); ctx.scale(flip, 1);
+      const info = drawEntity(ctx, Lp, t, fillA, rimA * 0.6, true); // only a faint rim shows in the dark
       ctx.restore();
-      if (ent.eyeOpen > 0.02 && ent.blink <= 0) {
-        const ex = S(ent.x) - dir * 15 * ppm, ey = Sy(ent.y) - 1.2 * ppm;
-        const o = ent.eyeOpen;
-        for (const off of [-1, 1]) {
-          const px = ex + off * ppm * 0.55, py = ey + off * ppm * 0.08;
-          ctx.globalCompositeOperation = 'lighter';
-          const gg = ctx.createRadialGradient(px, py, 0, px, py, ppm * 0.9);
-          gg.addColorStop(0, `rgba(190,200,150,${(0.5 * o).toFixed(3)})`);
-          gg.addColorStop(0.25, `rgba(120,130,80,${(0.18 * o).toFixed(3)})`);
-          gg.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(px, py, ppm * 0.9, 0, TAU); ctx.fill();
-          const ig = ctx.createRadialGradient(px, py, 0, px, py, ppm * 0.16);
-          ig.addColorStop(0, `rgba(214,222,170,${(0.75 * o).toFixed(3)})`);
-          ig.addColorStop(1, `rgba(150,160,100,0)`);
-          ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.17, ppm * 0.1, 0, 0, TAU); ctx.fill();
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.fillStyle = `rgba(0,0,0,${(0.55 * o).toFixed(3)})`;
-          ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.022, ppm * 0.085, 0, 0, TAU); ctx.fill();
-        }
-      }
-      // a few faint photophores trace part of its outline when it is very close
-      if (d < 30) {
+      const wx = (lx) => S(ent.x) + lx * flip;
+      // lights along its flank, slowly pulsing out of step
+      if (d < 60) {
         ctx.globalCompositeOperation = 'lighter';
-        const a2 = (30 - d) / 30 * 0.25;
-        for (let k = 0; k < 14; k++) {
-          const u = k / 13;
-          const px = S(ent.x) + dir * (-15 + u * 30) * ppm * 1.1, py = Sy(ent.y) + (Math.sin(u * Math.PI) * -5.5 + 0.5) * ppm + Math.sin(t * 0.6 + k) * ppm * 0.2;
-          const tw = 0.5 + 0.5 * Math.sin(t * 1.7 + k * 2.3);
-          ctx.fillStyle = `rgba(150,170,190,${(a2 * tw).toFixed(3)})`;
-          ctx.beginPath(); ctx.arc(px, py, ppm * 0.07, 0, TAU); ctx.fill();
-        }
+        const a2 = clamp((60 - d) / 50, 0, 1) * 0.3;
+        info.photophores.forEach(([lx, ly], k) => {
+          const tw = Math.max(0, Math.sin(t * 0.9 - k * 0.5));
+          if (tw < 0.05) return;
+          const px = wx(lx), py = Sy(ent.y) + ly, r = ppm * 0.6;
+          const pg = ctx.createRadialGradient(px, py, 0, px, py, r);
+          pg.addColorStop(0, `rgba(140,175,200,${(a2 * tw).toFixed(3)})`); pg.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, r, 0, TAU); ctx.fill();
+        });
         ctx.globalCompositeOperation = 'source-over';
+      }
+      // the eyes: eyeshine, brighter when a lamp catches them
+      if (ent.eyeOpen > 0.02 && ent.blink <= 0) {
+        const o = ent.eyeOpen * (lampBoost > 1 ? 1 : 0.65);
+        const ex = wx(info.eye[0]), ey = Sy(ent.y) + info.eye[1];
+        for (const [ox, oy, sc] of [[0, 0, 1], [-flip * ppm * 0.9, -ppm * 0.25, 0.8]]) {
+          const px = ex + ox, py = ey + oy;
+          ctx.globalCompositeOperation = 'lighter';
+          const gg = ctx.createRadialGradient(px, py, 0, px, py, ppm * 2.4 * sc);
+          gg.addColorStop(0, `rgba(205,215,160,${(0.55 * o).toFixed(3)})`);
+          gg.addColorStop(0.2, `rgba(130,145,90,${(0.2 * o).toFixed(3)})`);
+          gg.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(px, py, ppm * 2.4 * sc, 0, TAU); ctx.fill();
+          const ig = ctx.createRadialGradient(px, py, 0, px, py, ppm * 0.38 * sc);
+          ig.addColorStop(0, `rgba(235,240,200,${(0.95 * o).toFixed(3)})`); ig.addColorStop(0.7, `rgba(170,180,120,${(0.6 * o).toFixed(3)})`); ig.addColorStop(1, 'rgba(120,130,80,0)');
+          ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.38 * sc, ppm * 0.27 * sc, 0, 0, TAU); ctx.fill();
+          ctx.globalCompositeOperation = 'source-over';
+          // a narrow vertical pupil
+          ctx.fillStyle = `rgba(0,0,0,${(0.85 * o).toFixed(3)})`;
+          ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.04 * sc, ppm * 0.22 * sc, 0, 0, TAU); ctx.fill();
+        }
       }
     }
     ctx.restore();

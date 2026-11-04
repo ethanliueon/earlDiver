@@ -332,3 +332,97 @@ export function drawEntityShape(ctx, Lp, t, alpha) {
   ctx.beginPath(); ctx.moveTo(-50 * u, 3 * u); ctx.lineTo(-30 * u, 9 * u + Math.sin(t * 0.3) * 2 * u); ctx.lineTo(-42 * u, 12 * u); ctx.fill();
   ctx.restore();
 }
+
+// The entity, up close. Local frame: its head (mouth) at the origin, facing -x; the body trails
+// along +x for Lp pixels. Drawn after the lighting pass as a near-black mass, so in the dark it is
+// invisible except where it blocks light (a lamp beam, a lantern, the bright water above) and by
+// its faint pale rim and the dim lights along its flank.
+// Returns the eye position and the photophore positions (local) for the glow pass.
+export function drawEntity(ctx, Lp, t, fillA, rimA, onlyRim = false) {
+  const n = 44, spine = [];
+  const prof = (u) => {
+    if (u < 0.08) return 0.035 + (u / 0.08) * 0.055;          // blunt snout rising to the brow
+    if (u < 0.32) return 0.09 + Math.sin((u - 0.08) / 0.24 * Math.PI) * 0.012; // the massive front
+    return 0.09 * Math.pow(1 - (u - 0.32) / 0.68, 1.35) + 0.006; // a long tapering body
+  };
+  for (let i = 0; i <= n; i++) {
+    const u = i / n;
+    const wave = Math.sin(t * 0.55 - u * 5.5) * Lp * 0.035 * u * u + Math.sin(t * 0.21 + u * 2) * Lp * 0.01 * u;
+    spine.push([u * Lp, wave, prof(u) * Lp]);
+  }
+  const top = spine.map(([x, y, h], i) => [x, y - h * (i < 6 ? 0.9 : 1)]);
+  const bot = spine.map(([x, y, h]) => [x, y + h * 0.85]);
+  // lower jaw: hangs a little open below the head
+  const gape = 0.012 + 0.006 * Math.sin(t * 0.3);
+  const body = new Path2D();
+  body.moveTo(top[0][0], top[0][1]);
+  for (let i = 1; i <= n; i++) body.lineTo(top[i][0], top[i][1]);
+  for (let i = n; i >= 3; i--) body.lineTo(bot[i][0], bot[i][1]);
+  body.lineTo(Lp * 0.06, bot[3][1] + Lp * gape); // jaw hinge, dropped
+  body.lineTo(-Lp * 0.012, bot[0][1] + Lp * gape * 0.6); // jaw tip juts past the snout
+  body.lineTo(top[0][0], top[0][1] + Lp * 0.03);
+  body.closePath();
+  // fins first: long ragged pectoral fins trailing down and back, a torn dorsal ridge, the tail tendrils
+  ctx.save();
+  if (onlyRim) ctx.globalAlpha = 0;
+  ctx.globalAlpha = fillA;
+  ctx.fillStyle = '#020304';
+  for (const [u0, len, drop] of [[0.2, 0.22, 0.11], [0.24, 0.18, 0.08]]) {
+    const [x0, y0] = bot[Math.round(u0 * n)];
+    ctx.beginPath(); ctx.moveTo(x0, y0 - Lp * 0.01);
+    const sw = Math.sin(t * 0.4 + u0 * 9) * Lp * 0.02;
+    ctx.quadraticCurveTo(x0 + len * Lp * 0.5, y0 + drop * Lp * 0.6 + sw, x0 + len * Lp, y0 + drop * Lp + sw);
+    for (let k = 0; k < 5; k++) ctx.lineTo(x0 + len * Lp * (0.95 - k * 0.16), y0 + drop * Lp * (0.7 - k * 0.12) + sw * (1 - k * 0.2) + (k % 2) * Lp * 0.015);
+    ctx.closePath(); ctx.fill();
+  }
+  for (let i = 8; i < n - 4; i += 2) {
+    const [x, y] = top[i], h = Lp * (0.025 + ((i * 7) % 5) * 0.006) * (1 - i / n);
+    ctx.beginPath(); ctx.moveTo(x - Lp * 0.008, y + 1); ctx.lineTo(x + Lp * 0.012 + Math.sin(t * 0.5 + i) * Lp * 0.005, y - h); ctx.lineTo(x + Lp * 0.014, y + 1); ctx.fill();
+  }
+  ctx.strokeStyle = '#020304'; ctx.lineCap = 'round';
+  for (let k = 0; k < 5; k++) {
+    const [x, y] = spine[n];
+    ctx.lineWidth = Math.max(1, Lp * 0.004);
+    ctx.beginPath(); ctx.moveTo(x - Lp * 0.03, y);
+    ctx.quadraticCurveTo(x + Lp * 0.08, y + (k - 2) * Lp * 0.02 + Math.sin(t * 0.7 + k) * Lp * 0.02, x + Lp * (0.16 + (k % 3) * 0.04), y + (k - 2) * Lp * 0.045 + Math.sin(t * 0.5 + k * 1.7) * Lp * 0.03);
+    ctx.stroke();
+  }
+  // the body: almost black, a hint of slick grey-green on the back
+  // the skin: dark slate, slick, lighter along the back - only lit where a lamp actually reaches it
+  const g = ctx.createLinearGradient(0, -Lp * 0.1, 0, Lp * 0.09);
+  g.addColorStop(0, '#46565a'); g.addColorStop(0.35, '#253034'); g.addColorStop(0.7, '#141a1c'); g.addColorStop(1, '#0a0d0e');
+  ctx.fillStyle = g; ctx.fill(body);
+  if (!onlyRim) {
+    ctx.save(); ctx.clip(body);
+    // mottling, old scars, and pale pits along the head
+    for (let k = 0; k < 70; k++) {
+      const u = ((k * 37) % 100) / 100, i = Math.round(u * n);
+      const [x, y, h] = spine[i];
+      ctx.fillStyle = k % 3 ? 'rgba(0,0,0,0.25)' : 'rgba(150,170,170,0.12)';
+      ctx.beginPath(); ctx.ellipse(x, y + (((k * 53) % 100) / 100 - 0.5) * h * 1.5, Lp * (0.004 + (k % 4) * 0.003), Lp * 0.003, k, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(170,185,180,0.18)'; ctx.lineWidth = Math.max(1, Lp * 0.0015);
+    for (let k = 0; k < 6; k++) { const x = Lp * (0.1 + k * 0.05); ctx.beginPath(); ctx.moveTo(x, -Lp * 0.04 + k * Lp * 0.004); ctx.lineTo(x + Lp * 0.05, -Lp * 0.025 + (k % 2) * Lp * 0.02); ctx.stroke(); }
+    ctx.restore();
+  }
+  ctx.restore();
+  // rim light along the back and brow, as if from far above or from a lamp
+  if (rimA > 0.005) {
+    ctx.save();
+    ctx.strokeStyle = `rgba(150,172,180,${rimA.toFixed(3)})`; ctx.lineWidth = Math.max(1, Lp * 0.0025);
+    ctx.beginPath(); ctx.moveTo(top[0][0], top[0][1]); for (let i = 1; i < n - 6; i++) ctx.lineTo(top[i][0], top[i][1]); ctx.stroke();
+    // wrinkled, scarred skin around the head
+    ctx.strokeStyle = `rgba(120,140,145,${(rimA * 0.45).toFixed(3)})`; ctx.lineWidth = 1;
+    for (let k = 0; k < 9; k++) { const x = Lp * (0.04 + k * 0.022); ctx.beginPath(); ctx.moveTo(x, -Lp * 0.06); ctx.quadraticCurveTo(x + Lp * 0.01, -Lp * 0.02, x - Lp * 0.004, Lp * 0.03); ctx.stroke(); }
+    // needle teeth along the hanging jaw
+    ctx.strokeStyle = `rgba(200,205,190,${(rimA * 1.2).toFixed(3)})`; ctx.lineWidth = Math.max(0.6, Lp * 0.0012);
+    for (let k = 0; k < 14; k++) {
+      const x = -Lp * 0.006 + k * Lp * 0.0048, y = bot[0][1] + Lp * gape * 0.6 + k * Lp * 0.0012;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Lp * 0.002, y - Lp * (0.008 + (k % 3) * 0.004)); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  const photophores = [];
+  for (let i = 6; i < n - 6; i += 2) photophores.push([spine[i][0], spine[i][1] + spine[i][2] * 0.35]);
+  return { eye: [Lp * 0.045, -Lp * 0.035], photophores };
+}

@@ -55,9 +55,12 @@ export class Hud {
     // oxygen time left at current drain
     ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(220,230,232,0.6)';
     const left = e.inSub ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
-    ctx.fillText(e.atSurface ? 'REFILLING' : `≈ ${formatTime(left)}`, W - pad, by + bh + 5 * s);
+    // how long the air lasts at the current rate of use, in plain words, counting down
+    const sec = Math.max(0, Math.floor(left));
+    const leftTxt = sec >= 3600 ? 'plenty of air' : sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air left` : `${sec} s of air left`;
+    ctx.fillText(e.atSurface ? (o2 < 0.999 ? 'refilling…' : 'tank full') : leftTxt, W - pad, by + bh + 5 * s);
     if (!e.atSurface && o2 < 0.25 && o2 >= 0.1) { ctx.fillStyle = '#e8b040'; ctx.textAlign = 'left'; ctx.fillText('RESERVE', bx, by + bh + 5 * s); ctx.textAlign = 'right'; }
-    if (g.diverDrain > 1.5 && !e.inSub && !e.atSurface) { ctx.fillStyle = '#e8a040'; ctx.fillText(`PRESSURE ×${g.diverDrain.toFixed(1)}`, W - pad, by + bh + 20 * s); }
+    if (g.diverDrain > 1.5 && !e.inSub && !e.atSurface) { ctx.fillStyle = '#e8a040'; ctx.fillText(`pressure: air going ${g.diverDrain.toFixed(1)}× faster`, W - pad, by + bh + 20 * s); }
 
     // ---------- dive monitor (right) ----------
     const mw = 188 * s, mh = 470 * s, mx = W - pad - mw, my = by + 50 * s;

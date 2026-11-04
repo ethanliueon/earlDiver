@@ -422,7 +422,7 @@ function update(dt) {
   fx.flash = Math.max(0, fx.flash - dt * 1.2);
   // sky darkens and the sea rises when it is close and shallow
   const shallowness = clamp((450 - ent.y) / 450, 0, 1);
-  const near = clamp((500 - d) / 500, 0, 1);
+  const near = Math.pow(clamp((500 - d) / 500, 0, 1), 0.6); // the surface reacts early
   const skyDark = near * shallowness;
   g.waveBoost = lerp(g.waveBoost, near * (0.4 + 0.6 * shallowness), dt * 0.5);
   g.dayEff = g.day.light * (1 - 0.93 * smoothSky(skyDark));
