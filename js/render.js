@@ -789,11 +789,13 @@ export class Renderer {
     // caustic dapples near the surface by day
     if (g.dayEff > 0.3 && cam.y < 40) {
       const a = 0.12 * g.dayEff;
-      for (let i = 0; i < 18; i++) {
-        const wx = Math.floor(cam.x / 4) * 4 + (i - 9) * 4 + Math.sin(g.time * 0.7 + i) * 1.5;
+      // one dapple per 4 m of seafloor, keyed to its world cell so it never jumps as the camera moves
+      const k0 = Math.floor((cam.x - cam.w / 2) / 4) - 2, k1 = Math.ceil((cam.x + cam.w / 2) / 4) + 2;
+      for (let k = k0; k <= k1; k++) {
+        const wx = k * 4 + Math.sin(g.time * 0.7 + k * 1.3) * 1.5;
         const fy = g.world.floorAt(wx);
         if (fy > 40) continue;
-        radial(S(wx), Sy(fy) - ppm * 0.3, ppm * 1.6, [255, 255, 240], a * (0.5 + 0.5 * Math.sin(g.time * 2 + i * 1.7)));
+        radial(S(wx), Sy(fy) - ppm * 0.3, ppm * 1.6, [255, 255, 240], a * (0.5 + 0.5 * Math.sin(g.time * 2 + k * 1.7)));
       }
     }
   }
@@ -803,11 +805,16 @@ export class Renderer {
     // god rays near the surface
     const rayStrength = dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken);
     if (rayStrength > 0.01) {
-      for (let i = 0; i < 9; i++) {
-        const wx = Math.floor(cam.x / 9) * 9 + (i - 4) * 9 + Math.sin(t * 0.13 + i * 2.1) * 3;
-        const top = Sy(0), w = ppm * (1.5 + (i % 3)), len = ppm * 70;
+      // Each ray belongs to a fixed 9 m cell of the surface; its sway, width and brightness come
+      // from that cell's index, so rays slide smoothly past instead of snapping when the camera moves.
+      // Cells start well left of the screen because the rays slant to the right as they go down.
+      const k0 = Math.floor((cam.x - cam.w / 2 - 16) / 9), k1 = Math.ceil((cam.x + cam.w / 2 + 4) / 9);
+      for (let k = k0; k <= k1; k++) {
+        const h = ((k * 7919) % 3 + 3) % 3;
+        const wx = k * 9 + Math.sin(t * 0.13 + k * 2.1) * 3;
+        const top = Sy(0), w = ppm * (1.5 + h), len = ppm * 70;
         const sx = S(wx);
-        const a = rayStrength * (0.05 + 0.04 * Math.sin(t * 0.4 + i * 1.3));
+        const a = rayStrength * (0.05 + 0.04 * Math.sin(t * 0.4 + k * 1.3));
         const gg = ctx.createLinearGradient(0, top, 0, top + len);
         gg.addColorStop(0, `rgba(210,240,255,${a.toFixed(3)})`); gg.addColorStop(1, 'rgba(210,240,255,0)');
         ctx.fillStyle = gg;
