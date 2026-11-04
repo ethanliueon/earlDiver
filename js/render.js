@@ -716,7 +716,7 @@ export class Renderer {
       ctx.stroke();
     }
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    for (let i = gx0; i < gx1; i += 2) {
+    for (let i = gx0 - (((gx0 % 2) + 2) % 2); i < gx1; i += 2) {
       const x = i / 3, base = g.world.floorAt(x);
       const h = Math.abs(Math.sin(i * 3.7) * 9137.13) % 1;
       if (h > 0.25) continue;

@@ -18,6 +18,8 @@ const hud = new Hud(hudCanvas);
 const audio = new Audio();
 
 const keys = new Set();
+const PRY = new Set(['clam', 'mussel', 'rock', 'iron']);
+const PRY_TIME = 1.5;
 const pressed = new Set();
 let fHeld = 0;
 let fDown = 0;
@@ -137,14 +139,14 @@ hudCanvas.addEventListener('mousemove', (ev) => { mouse.x = ev.clientX; mouse.y 
 hudCanvas.addEventListener('mousedown', (ev) => {
   audio.resume();
   if (g.mode !== 'play') return;
-  if (ev.button === 2) { pressed.add('f-tap'); return; }
+  if (ev.button === 2) { pressed.add('f-tap'); mouse.rdown = true; return; }
   if (ev.button !== 0) return;
   if (inRect(hud.journalHot, ev.clientX, ev.clientY)) { ui.toggleJournal(); return; }
   if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
   if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
   mouse.down = true;
 });
-window.addEventListener('mouseup', (ev) => { if (ev.button === 0) mouse.down = false; });
+window.addEventListener('mouseup', (ev) => { if (ev.button === 0) mouse.down = false; if (ev.button === 2) mouse.rdown = false; });
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 hudCanvas.addEventListener('wheel', (ev) => {
   ev.preventDefault();
@@ -202,7 +204,7 @@ function promptFor(t) {
   if (t) {
     if (t.kind === 'pickup') {
       const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'fangtooth necklace' : t.p.type === 'sapphire' ? 'deep sapphire' : RESOURCES[t.p.type].name.toLowerCase();
-      p = `F  Collect ${name}`;
+      p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') p = 'F  Board the submersible';
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
@@ -326,7 +328,14 @@ function update(dt) {
     }
     const target = findTarget();
     g.prompt = promptFor(target);
-    if (pressed.has('f-tap')) interact(target, false);
+    // seabed materials have to be worked loose: hold F (or the right mouse button), one at a time
+    const holding = keys.has('f') || mouse.rdown;
+    if (target && target.kind === 'pickup' && PRY.has(target.p.type) && holding) {
+      if (!g.pry || g.pry.p !== target.p) g.pry = { p: target.p, t: 0 };
+      g.pry.t += dt;
+      if (g.pry.t >= PRY_TIME) { g.pry = null; interact(target, false); }
+    } else g.pry = null;
+    if (pressed.has('f-tap') && !(target && target.kind === 'pickup' && PRY.has(target.p.type))) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
     if (pressed.has('l')) { g.lampFlashT = g.time; e.lampWanted = !e.lampWanted; g.sub.lightsOn = e.lampWanted; hud.toast(e.lampWanted ? 'Lights on' : 'Lights off'); }
     if (pressed.has('u') && Math.abs(e.x - BOAT_X) < 14 && e.y < 4) ui.toggleWorkshop();

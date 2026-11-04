@@ -201,12 +201,12 @@ export function generateWorld(seed) {
   W.pickups = [];
   const addPickup = (type, x, y, extra = {}) => W.pickups.push({ type, x, y, taken: false, phase: rng() * 6, ...extra });
   const onFloor = (x) => W.floorAt(x) - 0.25;
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 22; i++) {
     const x = rng.range(830, 970);
     if (W.floorAt(x) > 2) addPickup('clam', x, onFloor(x), { pearl: rng() < 0.08 });
   }
-  for (let i = 0; i < 45; i++) { const x = rng.range(900, 975); if (W.floorAt(x) > 1) addPickup('mussel', x, onFloor(x)); }
-  for (let i = 0; i < 90; i++) { const x = rng.range(560, 975); addPickup('rock', x, onFloor(x)); }
+  for (let i = 0; i < 14; i++) { const x = rng.range(900, 975); if (W.floorAt(x) > 1) addPickup('mussel', x, onFloor(x)); }
+  for (let i = 0; i < 28; i++) { const x = rng.range(560, 975); addPickup('rock', x, onFloor(x)); }
   for (const w of W.wrecks) {
     const cnt = w.x > 600 ? 16 : 28;
     for (let i = 0; i < cnt; i++) { const x = w.x + rng.range(-w.len * 0.8, w.len * 0.8); addPickup('iron', x, onFloor(x)); }
