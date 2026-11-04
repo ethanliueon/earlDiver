@@ -69,7 +69,7 @@ export class Renderer {
 
   updateCamera(g, dt) {
     const e = g.earl;
-    const targetView = g.debugView || (g.mode === 'menu' ? 40 : e.inSub ? 46 : 30);
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : (e.inSub ? 46 : 30) * (this.zoomMul || 1));
     this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
@@ -568,6 +568,18 @@ export class Renderer {
         if (performance.now() - t0 > budgetMs) return;
       }
     }
+  }
+
+  // where the headlamp points: at the cursor if the mouse is in use (within the half he faces),
+  // otherwise where his head looks
+  lampAngle(g, e, head) {
+    const natural = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
+    if (g.aim == null) return natural;
+    let a = g.aim;
+    const fwd = e.facing > 0 ? 0 : Math.PI;
+    let d = ((a - fwd + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    d = clamp(d, -1.35, 1.35);
+    return fwd + d;
   }
 
   drawSky(g, horizon, dayEff, day) {
@@ -1098,7 +1110,7 @@ export class Renderer {
       // storm light (the natural light of night and the deep is left alone)
       const natural = ambientAt(d, g.day.light);
       const floor = Math.min(natural, 0.36) * clamp(1 - d / 220, 0, 1);
-      if (floor > a) { const k2 = clamp(storm * 1.5, 0, 1); tint = mixRgb(tint, [0.72, 0.8, 0.9], k2); a = floor; }
+      void floor; void storm; // (the shallow storm-light floor is gone: the entity can't reach the shallows)
       return rgbStr([255 * a * tint[0], 255 * a * tint[1], 255 * a * tint[2]]);
     };
     // underwater light everywhere (the water above depth 0 - in the wave crests - gets the
@@ -1117,7 +1129,7 @@ export class Renderer {
     }
     // the entity swallows light around it
     const ent = g.entity;
-    if (ent && g.mode !== 'menu' && ent.dist < 260) {
+    if (ent && g.mode !== 'menu' && ent.dist < 260 && (fx.safeK ?? 1) > 0.01) {
       // the dark rolls in like ink from the side it is on, and creeps across as it closes in
       const dx = ent.x - g.earl.x, dy = ent.y - g.earl.y, dl = Math.hypot(dx, dy) || 1;
       const ux = dx / dl, uy = dy / dl * 0.6, ul = Math.hypot(ux, uy) || 1;
@@ -1125,7 +1137,7 @@ export class Renderer {
       const reach = clamp((260 - ent.dist) / 230, 0, 1); // how far across the screen the ink has come
       const x0 = cx + (ux / ul) * half, y0 = cy + (uy / ul) * half, x1 = cx - (ux / ul) * half, y1 = cy - (uy / ul) * half;
       const dg = l.createLinearGradient(x0, y0, x1, y1);
-      const a0 = 0.5 * reach, front = 0.15 + reach * 0.5;
+      const a0 = 0.5 * reach * (fx.safeK ?? 1), front = 0.15 + reach * 0.5;
       dg.addColorStop(0, `rgba(0,0,0,${a0.toFixed(3)})`);
       dg.addColorStop(Math.min(0.95, front * 0.6), `rgba(0,0,0,${(a0 * 0.75).toFixed(3)})`);
       dg.addColorStop(Math.min(0.99, front), 'rgba(0,0,0,0)');
@@ -1164,7 +1176,7 @@ export class Renderer {
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
     const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse;
     if (head && e.lampOn) {
-      const ang = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
+      const ang = this.lampAngle(g, e, head);
       cone(head.x, head.y, ang, 17 * ppm, 0.32, beamCol, 0.95 * flick);
       radial(head.x, head.y, 2.6 * ppm, beamCol, 0.3 * flick);
     }
@@ -1299,7 +1311,7 @@ export class Renderer {
     const e = g.earl;
     const lp = fx.lightPulse;
     if (head && e.lampOn && haze > 0) {
-      const ang = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
+      const ang = this.lampAngle(g, e, head);
       coneHaze(head.x, head.y, ang, 15 * ppm, 0.28, beamCol, 0.06 * haze * lp);
       motes(head.x, head.y, ang, 15 * ppm, 0.3, beamCol, 0.8 * haze * lp);
       glare(head.x, head.y, beamCol, 0.5 * lp);

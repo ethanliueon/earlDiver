@@ -128,14 +128,41 @@ window.addEventListener('keyup', (ev) => {
   if (k === 'f') { if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
 });
 window.addEventListener('blur', () => keys.clear());
-hudCanvas.addEventListener('click', (ev) => {
-  const j = hud.journalHot;
-  if (g.mode === 'play' && j && ev.clientX >= j.x && ev.clientX <= j.x + j.w && ev.clientY >= j.y && ev.clientY <= j.y + j.h) ui.toggleJournal();
+// ---------------- mouse ----------------
+// left button held: swim toward the cursor · right click: interact (like F)
+// the lamp follows the cursor · wheel: zoom · click the Q/E slots to use an item
+const mouse = { x: 0, y: 0, down: false, movedAt: -1e9, seen: false };
+const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+hudCanvas.addEventListener('mousemove', (ev) => { mouse.x = ev.clientX; mouse.y = ev.clientY; mouse.movedAt = performance.now(); mouse.seen = true; });
+hudCanvas.addEventListener('mousedown', (ev) => {
+  audio.resume();
+  if (g.mode !== 'play') return;
+  if (ev.button === 2) { pressed.add('f-tap'); return; }
+  if (ev.button !== 0) return;
+  if (inRect(hud.journalHot, ev.clientX, ev.clientY)) { ui.toggleJournal(); return; }
+  if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
+  if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
+  mouse.down = true;
 });
+window.addEventListener('mouseup', (ev) => { if (ev.button === 0) mouse.down = false; });
+hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
+hudCanvas.addEventListener('wheel', (ev) => {
+  ev.preventDefault();
+  renderer.zoomMul = clamp((renderer.zoomMul || 1) * (ev.deltaY > 0 ? 1.08 : 1 / 1.08), 0.7, 1.45);
+}, { passive: false });
+// the cursor in screen pixels of the scene canvas
+function mouseScreen() { const k = canvas.width / window.innerWidth; return [mouse.x * k, mouse.y * k]; }
 
 function readMove() {
-  const x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
-  const y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
+  let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
+  let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
+  if (mouse.down && !x && !y && renderer.S) {
+    // swim toward the cursor; full speed beyond a short distance, gentle when close
+    const e = g.earl, [mx, my] = mouseScreen();
+    const dx = mx - renderer.S(e.x), dy = my - renderer.Sy(e.y), d = Math.hypot(dx, dy);
+    const full = renderer.cam.ppm * 3;
+    if (d > renderer.cam.ppm * 0.4) { const k = Math.min(1, d / full) / d; x = dx * k; y = dy * k; }
+  }
   return { x, y, sprint: keys.has('shift') };
 }
 
@@ -323,6 +350,16 @@ function update(dt) {
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
     const res = updateEarl(g, dt, mv);
+    // the lamp follows the cursor (if the mouse has been used); idle, Earl turns to face it
+    g.aim = null;
+    if (mouse.seen && renderer.S) {
+      const [mx, my] = mouseScreen();
+      const ax = mx - renderer.S(e.x), ay = my - renderer.Sy(e.y);
+      if (Math.hypot(ax, ay) > renderer.cam.ppm * 0.6) {
+        g.aim = Math.atan2(ay, ax);
+        if (!mv.x && !mouse.down && performance.now() - mouse.movedAt < 3000 && Math.abs(ax) > renderer.cam.ppm * 1.2) e.facing = ax > 0 ? 1 : -1;
+      }
+    }
     if (res === 'implode') {
       g.sub.imploded = true; g.imploded = true; g.implodeDepth = g.sub.y;
       e.inSub = false; e.o2 = Math.min(e.o2, e.o2Max);
@@ -416,8 +453,11 @@ function update(dt) {
   const targetDread = g.mode === 'dying' ? 1 : dreadFromDistance(d);
   const fx = g.fx;
   fx.dread = lerp(fx.dread, targetDread, 1 - Math.exp(-dt * 1.5));
-  fx.torchShift = clamp(fx.dread * 1.5, 0, 1);
-  fx.darken = fx.dread * 0.6;
+  fx.torchShift = clamp(fx.dread * 1.5, 0, 1) * (0.35 + 0.65 * clamp((g.earl.y - 70) / 50, 0, 1));
+  // in the safe zone you still hear and sense it (sonar, heartbeat), but the water stays the water
+  const deepK = clamp((e.y - 70) / 50, 0, 1);
+  fx.safeK = deepK;
+  fx.darken = fx.dread * 0.6 * deepK;
   fx.vignette = fx.dread;
   // pressure: the deeper past 300 m (outside the sub), the worse - also a failing hull
   const pressT = !e.inSub && g.mode !== 'menu' ? clamp(Math.log(Math.max(1, g.diverDrain / (keys.has('shift') ? 2 : 1))) / Math.log(30), 0, 1)
@@ -446,9 +486,10 @@ function update(dt) {
   const shallowness = clamp((450 - ent.y) / 450, 0, 1);
   const near = Math.pow(clamp((500 - d) / 500, 0, 1), 0.6); // the surface reacts early
   const skyDark = near * shallowness;
-  g.waveBoost = lerp(g.waveBoost, near * (0.4 + 0.6 * shallowness), dt * 0.5);
-  g.storm = smoothSky(skyDark);
-  g.dayEff = g.day.light * (1 - 0.82 * g.storm);
+  // only a faint, uneasy swell at the surface when it is near; the sky is left alone
+  g.waveBoost = lerp(g.waveBoost, near * 0.18, dt * 0.5);
+  g.storm = 0;
+  g.dayEff = g.day.light;
   e.dark = Math.sqrt(g.dayEff * Math.exp(-Math.max(0, e.y) / 140)) * (1 - fx.darken) < 0.3;
   // heart rate
   const lowO2 = !e.inSub ? clamp(1 - (e.o2 / e.o2Max) / 0.25, 0, 1) : clamp(1 - (g.sub.o2 / g.sub.o2Max) / 0.2, 0, 1);

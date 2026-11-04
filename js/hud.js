@@ -200,6 +200,8 @@ export class Hud {
       ctx.textAlign = 'center'; ctx.font = `${9 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.6)'; ctx.fillText(name, x + 37 * s, y + 58 * s);
     };
     const by2 = H - pad - 74 * s;
+    { const kx = window.innerWidth / W, sz = 74 * s * kx;
+      this.slotHot = { q: { x: pad * kx, y: by2 * kx, w: sz, h: sz }, e: { x: (pad + 84 * s) * kx, y: by2 * kx, w: sz, h: sz } }; }
     slot(pad, by2, 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0);
     slot(pad + 84 * s, by2, 'E', 'NECKLACE', g.items.necklace, '#f0dcb0', g.necklaceT > 0 ? g.necklaceT / 15 : 0);
     // resources

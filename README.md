@@ -21,6 +21,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | Q | Throw an anglerfish lure |
 | E | Wear a fangtooth necklace |
 | U | Boat workshop (at the surface, by the boat) |
+| Mouse | Hold left button to swim toward the cursor; the lamp follows the cursor; right-click to interact; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause |
 | M | Mute |
 
@@ -32,6 +33,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
   implodes. Refit it at the boat with what you collect (3 refits, up to 2,700 m).
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs
   hide you if you are slow and dark. Sea lanterns keep it away, for a while.
+- It never comes above 100 m: the top 100 m are safe from it (not from sharks).
 - When it is within 200 m it shows on the sonar. You will feel it before then.
 - Sharks, billfish and sperm whales attack too. There is no health bar: you will see and hear how
   badly you are hurt. Wounds heal if you survive long enough.

@@ -5,6 +5,7 @@ import { DIVE_SPEED } from './player.js';
 
 export const ENTITY_SPEED = DIVE_SPEED * 1.5;
 export const LANTERN_RADIUS = 3;
+export const SAFE_DEPTH = 100; // the entity never rises above this
 
 export class Entity {
   constructor(rng) {
@@ -70,7 +71,7 @@ export class Entity {
       if (this.state === 'drift' || this.state === 'search') {
         const err = clamp(d * 0.12, 8, 70);
         this.lastX = e.x + this.rng.range(-err, err);
-        this.lastY = Math.max(5, e.y + this.rng.range(-err, err));
+        this.lastY = Math.max(SAFE_DEPTH + 5, e.y + this.rng.range(-err, err));
         this.state = 'search'; this.searchT = 0;
       }
     }
@@ -111,6 +112,7 @@ export class Entity {
     // far away it closes the distance quickly and quietly; it only slows to a creep once it is near
     if ((this.state === 'search' || this.state === 'drift') && dist(this.x, this.y, this.lastX, this.lastY) > 140) speed = ENTITY_SPEED * 0.85;
     // move (it passes through rock: it is not of the water)
+    ty = Math.max(ty, SAFE_DEPTH + (e.y < SAFE_DEPTH ? 4 + Math.sin(this.searchT * 0.5) * 3 : 0));
     let dx = tx - this.x, dy = ty - this.y;
     const dl = Math.hypot(dx, dy) || 1;
     const want = Math.min(speed, dl * 1.2);
@@ -118,7 +120,8 @@ export class Entity {
     const k = 1 - Math.exp(-dt * 1.4);
     this.vx = lerp(this.vx, tvx, k); this.vy = lerp(this.vy, tvy, k);
     this.x += this.vx * dt; this.y += this.vy * dt;
-    if (this.y < 2) this.y = 2;
+    // the top 100 m are out of its reach: it holds at the boundary, circling below
+    if (this.y < SAFE_DEPTH) { this.y = SAFE_DEPTH; if (this.vy < 0) this.vy = 0; }
     this.x = clamp(this.x, -40, 1040);
     if (Math.abs(this.vx) > 0.2) this.heading = Math.atan2(this.vy, this.vx);
 
@@ -128,7 +131,7 @@ export class Entity {
     this.blink -= dt;
     if (this.blink < -this.rng.range(3, 7)) this.blink = 0.18;
 
-    return d < 2.6 && !prot ? 'caught' : null;
+    return d < 2.6 && !prot && e.y > SAFE_DEPTH - 3 ? 'caught' : null;
   }
 
   throwLure(x, y) { this.lure = { x, y }; this.lureT = 10; }

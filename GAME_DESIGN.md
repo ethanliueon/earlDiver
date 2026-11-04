@@ -99,6 +99,10 @@ pearls (rare, in clams), glass sponge shards (deep). They are spent on sub upgra
 
 ## The entity
 
+- It can never rise above 100 m: the top 100 m are a safe zone. It waits at the boundary, circling
+  below. In the safe zone you still hear and sense it (sonar, heartbeat, a faint swell), but the
+  light is left alone; the darkness, ink and torch shift belong to the deep.
+
 - Never fully seen: at most two glowing eyes and a faint, inhuman outline.
 - 1.5x Earl's swim speed. It never kills in a fight; if it reaches Earl, the run ends.
 - It hunts by sound and light: sprinting, the submersible and lights carry far.
