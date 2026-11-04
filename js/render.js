@@ -20,7 +20,11 @@ const FLOOR_COL = [
 ];
 const BEAM_CALM = [214, 232, 255];
 const BEAM_DREAD = [255, 96, 46];
-const WATER_LIT = [60, 150, 180]; // what's left of a beam after a few metres of seawater
+const WATER_LIT = [60, 150, 180];
+// sprite cache for full-detail creatures: one swim cycle (2.09 s covers the fish tail beat twice and
+// the shark beat once) in 32 frames
+const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 32;
+const CACHE_SKIP = new Set(['jelly', 'siphonophore', 'manowar', 'oarfish', 'gulper', 'dragon', 'comb', 'eel', 'viper', 'sperm', 'orca', 'dolphin']); // what's left of a beam after a few metres of seawater
 
 export function dayCycle(t) {
   // 10 minute day: 5 day, 1 sunset, 3 night, 1 sunrise
@@ -238,7 +242,7 @@ export class Renderer {
       ctx.save(); ctx.translate(S(c.x), Sy(c.y));
       if (c.dir > 0) ctx.scale(-1, 1);
       ctx.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
-      const r = drawSpecies(ctx, c.sp, Ld, c.phase, 1, c.wob);
+      const r = this.drawCached(ctx, c.sp, Ld, c.phase, c.wob);
       ctx.restore();
       if (c.sp.v.glow) {
         if (r) for (const [lx, ly] of r) glowPts.push([S(c.x) - lx * c.dir, Sy(c.y) + ly, c.sp.v.glow, Ld * 0.25]);
@@ -494,6 +498,37 @@ export class Renderer {
     }
     if (fx.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${fx.flash.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     if (fx.black > 0) { ctx.fillStyle = `rgba(0,0,0,${fx.black.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+  }
+
+  // Full-detail creatures are expensive to draw (gradients, scales, fins), so each species' swim
+  // cycle is rendered once per size into a strip of animation frames and replayed. Same detail,
+  // a fraction of the cost. Long or very large animals are still drawn live.
+  drawCached(ctx, sp, Ld, phase, wob) {
+    const shape = sp.v.s;
+    if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(shape)) return drawSpecies(ctx, sp, Ld, phase, 1, wob);
+    const cache = this.spriteCache || (this.spriteCache = new Map());
+    const bucket = Math.round(Math.log(Ld) / Math.log(1.18)), bl = Math.pow(1.18, bucket);
+    const key = sp.id + ':' + bucket;
+    let e = cache.get(key);
+    if (!e) {
+      const box = Math.ceil(bl * 2.4);
+      e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES) };
+      cache.set(key, e);
+      if (cache.size > 400) cache.delete(cache.keys().next().value); // keep memory bounded
+    }
+    const f = Math.floor((((phase % SPRITE_PERIOD) + SPRITE_PERIOD) % SPRITE_PERIOD) / SPRITE_PERIOD * SPRITE_FRAMES) % SPRITE_FRAMES;
+    if (!e.frames[f]) {
+      const c = document.createElement('canvas');
+      c.width = c.height = e.box;
+      const x = c.getContext('2d');
+      x.translate(e.box / 2, e.box / 2);
+      e.glows[f] = drawSpecies(x, sp, e.bl, (f / SPRITE_FRAMES) * SPRITE_PERIOD, 1, 0);
+      e.frames[f] = c;
+    }
+    const k = Ld / e.bl;
+    ctx.drawImage(e.frames[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
+    const gl = e.glows[f];
+    return gl ? gl.map(([gx, gy]) => [gx * k, gy * k]) : null;
   }
 
   drawSky(g, horizon, dayEff, day) {

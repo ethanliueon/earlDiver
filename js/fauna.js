@@ -195,6 +195,7 @@ export class Fauna {
       if (this.schools.size < this.baitTarget(cam.y, dread)) this.trySpawnBait(cam, night);
     }
 
+    const hunting = this.list.filter((h) => h.prey && !h.dead);
     // ---- bait school centres ----
     for (const [gid, s] of this.schools) {
       // a slowly wandering heading
@@ -206,12 +207,23 @@ export class Fauna {
       if (s.y < s.lo + s.r) ay += 0.6;
       if (s.y > s.hi - s.r) ay -= 0.6;
       if (s.y < 1.5 + s.r) ay += 1;
-      // drift away from a fast-moving diver
-      const de = dist(s.x, s.y, earl.x, earl.y);
-      if (de < s.r * 2 + 6 && earl.speedNow > 2.5) { ax += (s.x - earl.x) / de * 1.5; ay += (s.y - earl.y) / de * 1.2; }
+      // the whole school moves off from a diver who comes close (faster if he comes fast), and
+      // closes up tighter while he is near - instead of individual fish piling up around him
+      const de = dist(s.x, s.y, earl.x, earl.y) + 0.01;
+      const zone = s.r * 1.8 + 5 + (earl.speedNow > 2.5 ? 4 : 0);
+      if (de < zone && !earl.inSub) {
+        const push = (1 - de / zone) * (earl.speedNow > 2.5 ? 5 : 2.5);
+        ax += (s.x - earl.x) / de * push; ay += (s.y - earl.y) / de * push * 0.7;
+        s.threat = Math.min(1.2, s.threat + dt * (1 - de / zone) * 1.5);
+      }
       if (entity && dread > 0.05) { const dx = s.x - entity.x, dy = s.y - entity.y, dd = Math.hypot(dx, dy) + 1; ax += dx / dd * dread * 6; ay += dy / dd * dread * 3; }
+      // a hunter closing in: the whole school veers away from it
+      for (const h of hunting) {
+        const dx = s.x - h.x, dy = s.y - h.y, dd = Math.hypot(dx, dy) + 0.01, hz = s.r * 1.6 + 6;
+        if (dd < hz) { const k = (1 - dd / hz) * 4; ax += dx / dd * k; ay += dy / dd * k * 0.6; }
+      }
       s.vx += ax * dt; s.vy += ay * dt;
-      const sp = 0.7 + s.threat * 1.8 + dread * 2;
+      const sp = 0.7 + s.threat * 3.8 + dread * 2; // a scared bait school outswims a diver
       const v = Math.hypot(s.vx, s.vy);
       if (v > sp) { s.vx *= sp / v; s.vy *= sp / v; }
       s.x += s.vx * dt; s.y += s.vy * dt;
@@ -312,15 +324,24 @@ export class Fauna {
           const dx = c.x - h.x, dy = c.y - h.y;
           if (Math.abs(dx) > 5 || Math.abs(dy) > 5) continue;
           const d = Math.hypot(dx, dy) + 0.1;
-          if (d < 4) { ax += dx / d * 30; ay += dy / d * 30; sp *= 2.5; }
+          if (school) {
+            // only the fish right at the strike dart aside (forward, with the school); the rest of
+            // the school's response is the whole body veering away and balling up
+            if (d < 1.8) { const k = (1 - d / 1.8) * 14; ax += (dx / d * 0.5 + school.dir * 0.9) * k; ay += dy / d * 0.5 * k; sp *= 2.2; }
+          } else if (d < 4) { ax += dx / d * 30; ay += dy / d * 30; sp *= 2.5; }
         }
       }
       // Earl: schools part around him; other fish bolt if he comes at them fast, but a slow,
       // calm approach lets him get close enough to observe
       const de = dist(c.x, c.y, earl.x, earl.y);
       if (school) {
-        const scare = 1.6 + (earl.speedNow > 2.5 ? 1.5 : 0);
-        if (de < scare) { ax += (c.x - earl.x) / (de + 0.1) * 14; ay += (c.y - earl.y) / (de + 0.1) * 14; sp *= 2.4; }
+        // a fish right in his path darts aside - along the school's direction of travel, so the
+        // school parts and flows around him rather than forming a ring
+        const scare = 1.2 + (earl.speedNow > 2.5 ? 0.8 : 0);
+        if (de < scare) {
+          const k = (1 - de / scare) * 10;
+          ax += ((c.x - earl.x) / (de + 0.1) * 0.6 + school.dir * 0.8) * k; ay += (c.y - earl.y) / (de + 0.1) * 0.6 * k; sp *= 2;
+        }
       } else if (c.flee > 0 && !c.prey && !c.ctrl && !earl.inSub) {
         const closing = ((c.x - earl.x) * earl.vx + (c.y - earl.y) * earl.vy) / (de + 0.01);
         const threat = earl.speedNow < 1.3 ? 1.4 : (3 + c.len * 1.5) * (earl.sprint ? 1.6 : 1) * (closing > 1 ? 1.4 : 1);
