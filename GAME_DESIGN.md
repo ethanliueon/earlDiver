@@ -47,6 +47,9 @@ tries to stay out of reach of something in the water. When the run ends, it ends
   wall (~240 m). None deeper: a sapphire you can only reach once you no longer need air is useless.
 - Below 300 m the drain grows exponentially: x30 at 1000 m.
 - Below 10 % oxygen Earl panics: speed x1.5.
+- Out of air is not instant death: about 15 s of air hunger follow (the view swims, doubles, greys
+  and blacks out, controls drift, he slows). Reaching the surface - or the sub's air - in time
+  brings him back, gasping. The same applies to a submersible whose cabin runs dry.
 - Shown as a green -> yellow -> red bar under the survival timer (top right).
 - Surfacing refills oxygen quickly (a few seconds, with bubbles).
 

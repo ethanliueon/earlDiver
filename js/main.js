@@ -318,7 +318,8 @@ function update(dt) {
     // injuries: slower, hungrier for air, heal one point every 15 s
     if (g.injury > 0) { g.healT += dt; if (g.healT >= 15) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
     const lvl = Math.min(4, g.injury);
-    e.speedMul = INJURY.speed[lvl]; e.o2Mul = INJURY.air[lvl];
+    e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1); e.o2Mul = INJURY.air[lvl];
+    if (g.noAir && (mv.x || mv.y)) { const k = clamp(g.noAir / 15, 0, 1) * 0.7; mv.x += Math.sin(g.time * 1.9) * k; mv.y += Math.cos(g.time * 1.4) * k; }
     if (lvl >= 4 && (mv.x || mv.y)) { mv.x += Math.sin(g.time * 1.7) * 0.35; mv.y += Math.cos(g.time * 1.3) * 0.35; } // controls drift
     const res = updateEarl(g, dt, mv);
     if (res === 'implode') {
@@ -332,8 +333,17 @@ function update(dt) {
       for (let i = 0; i < 120; i++) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 8, y: g.sub.y + (Math.random() - 0.5) * 4, r: 0.05 + Math.random() * 0.25, w: Math.random() * 6, t: -Math.random() * 0.5 });
       audio.ready && audio.implosion();
       hud.toast('The hull gives way', 'warn');
-    } else if (res === 'o2') die(causeText('o2'));
-    else if (res === 'sub-o2') die(causeText('sub-o2'));
+    }
+    // out of air: not instant death - about 15 s of air hunger, blacking out, before it is over.
+    // Reaching the surface (or the sub's air) in time brings Earl back, gasping.
+    if (res === 'o2' || res === 'sub-o2') {
+      if (!g.noAir) { g.noAir = 0.001; g.noAirCause = res; hud.toast(res === 'o2' ? 'Out of air — get to the surface' : 'The cabin is out of air — surface!', 'warn'); }
+      g.noAir += dt;
+      if (g.noAir >= 15) die(causeText(g.noAirCause));
+    } else if (g.noAir) {
+      hud.toast('Air.', 'big'); g.noAir = 0; g.fx.flash = 0.3;
+      audio.ready && audio.gasp && audio.gasp();
+    }
     // diver tank refills from the sub's air
     if (e.inSub && e.o2 < e.o2Max) { const r = Math.min(e.o2Max - e.o2, (e.o2Max / 3.5) * dt); e.o2 += r; }
     g.diverDrain = diverDrainMult(e.y) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
@@ -414,6 +424,15 @@ function update(dt) {
   fx.disorient = lerp(fx.disorient, Math.max(entDis, fx.pressure * 0.85), dt * 1.2);
   fx.ghost = Math.max(entDis * 0.8, fx.pressure * 0.6);
   fx.vignette = Math.max(fx.vignette, fx.pressure * 0.75);
+  // suffocation: the world swims, the edges close in, the view greys and blacks out
+  const suff = g.noAir ? clamp(g.noAir / 15, 0, 1) : 0;
+  fx.suffocate = suff;
+  if (suff > 0) {
+    fx.disorient = Math.max(fx.disorient, 0.35 + suff * 0.65);
+    fx.ghost = Math.max(fx.ghost, 0.4 + suff * 0.6);
+    fx.vignette = Math.max(fx.vignette, 0.6 + suff * 0.4);
+    fx.black = Math.max(fx.black, Math.pow(suff, 2.2) * 0.85 * (0.85 + 0.15 * Math.sin(g.time * 2.3)));
+  } else if (g.mode === 'play') fx.black = 0;
   // lights throb under pressure: the lamps, the sub, and the glowing animals
   const pulse = 0.5 + 0.5 * Math.sin(g.time * (2.2 + fx.pressure * 1.5));
   fx.lightPulse = 1 - fx.pressure * 0.45 * pulse - (fx.pressure > 0.6 && Math.random() < 0.03 ? 0.3 : 0);
@@ -430,7 +449,7 @@ function update(dt) {
   e.dark = Math.sqrt(g.dayEff * Math.exp(-Math.max(0, e.y) / 140)) * (1 - fx.darken) < 0.3;
   // heart rate
   const lowO2 = !e.inSub ? clamp(1 - (e.o2 / e.o2Max) / 0.25, 0, 1) : clamp(1 - (g.sub.o2 / g.sub.o2Max) / 0.2, 0, 1);
-  const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + fx.pressure * 45 + g.injury * 14 + (g.threat ? 20 : 0);
+  const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + fx.pressure * 45 + g.injury * 14 + (g.threat ? 20 : 0) + (g.noAir ? 60 : 0);
   e.hr = lerp(e.hr, hrT, dt * 0.6);
 
   // ----- something far away (not it) -----

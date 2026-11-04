@@ -117,6 +117,13 @@ export class Audio {
     this.bubbles(14, 0.06);
     this.burst('bandpass', 2600, 6, 0.25, 0.08);
   }
+  gasp() {
+    // a ragged first breath: a sharp inhale, then two shaky ones
+    this.burst('bandpass', 1300, 1.4, 0.7, 0.16);
+    this.burst('bandpass', 1100, 1.4, 0.5, 0.1, this.white, 0.85);
+    this.burst('bandpass', 1000, 1.4, 0.5, 0.08, this.white, 1.5);
+    this.bubbles(16, 0.05);
+  }
   thud(vol) { this.tone(55, 0.35, vol, 'sine', 0, 32); this.burst('lowpass', 180, 0.7, 0.4, vol * 0.8, this.brown); }
   whoosh() { const f = this.burst('bandpass', 400, 1.5, 1.2, 0.18, this.white); f.frequency.exponentialRampToValueAtTime(1600, this.ac.currentTime + 1); }
   clicks(sec) {
@@ -159,7 +166,7 @@ export class Audio {
     if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
     if (g.paused) mv *= 0.4;
     this.musicGain.gain.setTargetAtTime(mv, now, 0.4);
-    const hurtMuffle = g.injury >= 3 ? 0.5 : 1;
+    const hurtMuffle = (g.injury >= 3 ? 0.5 : 1) * (g.noAir ? 1 - Math.min(1, g.noAir / 15) * 0.8 : 1);
     const lp = (under ? clamp(1400 * Math.exp(-depth / 500), 280, 1400) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle;
     this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
     // beds
@@ -180,7 +187,7 @@ export class Audio {
     }
     if (g.mode !== 'play') return;
     // breathing (diver only)
-    if (!e.inSub && under) {
+    if (!e.inSub && under && !g.noAir) {
       this.breathT -= dt;
       const rate = clamp(e.hr / 70, 0.8, 2.6);
       if (this.breathT <= 0) {
@@ -191,7 +198,7 @@ export class Audio {
       }
     }
     // heartbeat
-    if (fx.dread > 0.15 || g.injury >= 2 || g.threat || (!e.inSub && e.o2 / e.o2Max < 0.15)) {
+    if (fx.dread > 0.15 || g.injury >= 2 || g.threat || g.noAir || (!e.inSub && e.o2 / e.o2Max < 0.15)) {
       this.beatT -= dt;
       if (this.beatT <= 0) { this.beatT = 60 / e.hr; this.heartbeat(0.12 + fx.dread * 0.35); }
     }

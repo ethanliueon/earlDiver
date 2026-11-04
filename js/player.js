@@ -83,7 +83,7 @@ export function updateEarl(g, dt, inp) {
     const r = sub.y / sub.rated;
     sub.stress = clamp((r - 0.85) / 0.45, 0, 1);
     if (sub.y > sub.rated * 1.3 && !sub.imploded) return 'implode';
-    if (sub.o2 <= 0) return 'sub-o2';
+    if (sub.o2 <= 0) { sub.o2 = 0; return 'sub-o2'; }
   } else {
     // ---- diver ----
     let sp = DIVE_SPEED * (inp.sprint ? 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul;
@@ -121,7 +121,7 @@ export function updateEarl(g, dt, inp) {
       e.surfacing = 0;
       e.o2 -= dt * diverDrainMult(e.y) * (inp.sprint && e.speedNow > 1 ? 2 : 1) * e.o2Mul;
     }
-    if (e.o2 <= 0) return 'o2';
+    if (e.o2 <= 0) { e.o2 = 0; return 'o2'; }
   }
   e.maxDepth = Math.max(e.maxDepth, e.y);
   return null;

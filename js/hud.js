@@ -45,7 +45,8 @@ export class Hud {
     ctx.fillStyle = 'rgba(220,230,232,0.75)';
     // air shown the way divers read it: cylinder pressure in bar (200 full, 50 reserve)
     const bar = Math.max(0, Math.round(200 * clamp(o2, 0, 1)));
-    ctx.fillText(e.inSub ? `CABIN O₂  ${bar} bar` : `AIR  ${bar} bar`, bx - 8 * s, by - 2 * s);
+    if (g.noAir) { ctx.fillStyle = Math.sin(g.time * 9) > 0 ? '#ff5040' : '#a02820'; ctx.fillText(e.inSub ? 'CABIN: NO AIR' : 'NO AIR', bx - 8 * s, by - 2 * s); }
+    else ctx.fillText(e.inSub ? `CABIN O₂  ${bar} bar` : `AIR  ${bar} bar`, bx - 8 * s, by - 2 * s);
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(bx, by, bw, bh);
     const oc = o2 > 0.5 ? [86, 200, 120] : o2 > 0.1 ? [lerp(230, 86, (o2 - 0.1) / 0.4), lerp(190, 200, (o2 - 0.1) / 0.4), 70] : [220, 50, 40];
     const pulse = o2 < 0.1 ? 0.6 + 0.4 * Math.sin(g.time * 10) : 1;
@@ -58,7 +59,8 @@ export class Hud {
     // how long the air lasts at the current rate of use, in plain words, counting down
     const sec = Math.max(0, Math.floor(left));
     const leftTxt = sec >= 3600 ? 'plenty of air' : sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air left` : `${sec} s of air left`;
-    ctx.fillText(e.atSurface ? (o2 < 0.999 ? 'refilling…' : 'tank full') : leftTxt, W - pad, by + bh + 5 * s);
+    if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText('holding your breath — surface!', W - pad, by + bh + 5 * s); }
+    else ctx.fillText(e.atSurface ? (o2 < 0.999 ? 'refilling…' : 'tank full') : leftTxt, W - pad, by + bh + 5 * s);
     if (!e.atSurface && o2 < 0.25 && o2 >= 0.1) { ctx.fillStyle = '#e8b040'; ctx.textAlign = 'left'; ctx.fillText('RESERVE', bx, by + bh + 5 * s); ctx.textAlign = 'right'; }
     if (g.diverDrain > 1.5 && !e.inSub && !e.atSurface) { ctx.fillStyle = '#e8a040'; ctx.fillText(`pressure: air going ${g.diverDrain.toFixed(1)}× faster`, W - pad, by + bh + 20 * s); }
 
