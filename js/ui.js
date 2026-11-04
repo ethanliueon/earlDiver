@@ -15,6 +15,12 @@ export class UI {
     this.journalDirty = true;
     this.iconCache = new Map();
     $('play').addEventListener('click', () => h.onPlay());
+    this.tab = 'species';
+    document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
+      this.tab = b.dataset.tab;
+      document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('on', x === b));
+      this.renderJournal();
+    }));
     $('journal-close').addEventListener('click', () => this.toggleJournal(false));
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('upgrade-btn').addEventListener('click', () => { h.onUpgrade(); this.renderWorkshop(); });
@@ -57,6 +63,7 @@ export class UI {
   }
 
   renderJournal() {
+    if ((this.tab || 'species') !== 'species') return this.renderJournalTab(this.tab);
     const g = this.h.getGame();
     $('journal-count').textContent = `${g.journal.size} of ${SPECIES_COUNT} recorded`;
     const list = $('journal-list');
@@ -80,6 +87,30 @@ export class UI {
         <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}</div>`;
       row.append(img, txt);
       list.append(row);
+    }
+  }
+
+  // the details that used to crowd the screen live here
+  renderJournalTab(tab) {
+    const g = this.h.getGame(), list = $('journal-list');
+    const row = (k, v, note = '') => `<div class="stat"><span>${k}${note ? `<br><small>${note}</small>` : ''}</span><b>${v}</b></div>`;
+    if (tab === 'status') {
+      const e = g.earl, ent = g.entity, sub = g.sub;
+      const lvl = ['unhurt', 'grazed', 'wounded', 'badly hurt', 'critical'][Math.min(4, g.injury || 0)];
+      const items = Object.entries(g.inv).filter(([, n]) => n > 0).map(([k, n]) => `${RESOURCES[k].name} ${n}`).join(', ') || 'nothing';
+      $('journal-count').textContent = formatTime(g.survival) + ' into the dive';
+      list.innerHTML =
+        row('Deep sapphires', `${g.sapphires} / 8`, 'each one a larger tank') +
+        row('Deepest so far', `${Math.round(e.maxDepth)} m`) +
+        row('Condition', lvl) +
+        row('The thing in the deep', ent.marked ? 'it has marked me' : 'unaware of me', ent.marked ? `calmed ${Math.round((ent.calm || 0) / 60 * 100)} % - free animals from nets, plant coral, give something back (G)` : '') +
+        row('Submersible', sub.imploded ? 'lost' : `refit ${sub.level}/3 · rated ${sub.rated} m`, sub.imploded ? '' : `hull ${Math.round(sub.hull * 100)} %`) +
+        row('Carrying', items) +
+        row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
+    } else {
+      $('journal-count').textContent = '';
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'boat workshop, at the boat'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
+      list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
 
