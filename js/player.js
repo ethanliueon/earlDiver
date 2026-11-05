@@ -124,7 +124,7 @@ export function updateEarl(g, dt, inp) {
     e.angle = angleLerp(e.angle, target, 1 - Math.exp(-dt * 3));
     // weak, uneven kicks when struggling: bursts of frantic fluttering, then near-stalls
     const kickRate = st > 0 ? 0.55 + 1.1 * Math.pow(Math.abs(Math.sin(g.time * 2.3)), 2) : 1;
-    e.kick += dt * (moving ? 3.2 + e.speedNow * 0.9 : 1.1) * kickRate;
+    e.kick += dt * (moving ? (3.2 + e.speedNow * 0.9) * 1.5 : 1.1) * kickRate; // swimming kicks 1.5x the old pace
     // oxygen
     e.atSurface = e.y < 0.9;
     if (e.atSurface) {
