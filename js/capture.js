@@ -138,7 +138,7 @@ export function updateCapture(g, dt) {
         const spec = { id: tgt.sp.id, len: tgt.len, cond: clamp(1 - harm, 0.05, 1), from: Math.round(Math.max(e.y, tgt.y)), t: g.time };
         if (tgt.variant) { spec.variant = tgt.variant; spec.mult = variantMult(tgt.variant); if (tgt.variant === 'crimson') g.entity.disturb(g, 0.08); }
         if (tgt.c) tgt.c.dead = true;
-        if (tgt.s) g.world.statics.splice(g.world.statics.indexOf(tgt.s), 1);
+        if (tgt.s) { g.world.statics.splice(g.world.statics.indexOf(tgt.s), 1); g.world.staticsVer = (g.world.staticsVer || 0) + 1; }
         g.bag.push(spec);
         g.captureFx.push({ sp: tgt.sp, len: tgt.len, x: tgt.x, y: tgt.y, dir: tgt.c ? tgt.c.dir : 1, t: 0, dur: kind === 'slurp' ? 0.25 : 0.3, kind });
         if (kind === 'net') g.netCatch = { sp: tgt.sp, len: tgt.len, t: 0 };

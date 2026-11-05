@@ -161,7 +161,7 @@ export class Renderer {
 
     // ================= SKY =================
     const horizon = Sy(0);
-    if (horizon > -50) this.drawSky(g, horizon, dayEff, day);
+    if (horizon > -50) this.drawSkyCached(g, horizon, dayEff, day);
     // Earl's aquarium on the far shore, at the horizon (far away: small, and it barely moves)
     if (g.profile && horizon > -20 && horizon < H + 200) {
       const A = aquariumOf(g.profile), sc = ppm * 0.11;
@@ -264,8 +264,12 @@ export class Renderer {
     // eels, the great whales...) goes through a layer, and only when one is on screen.
     let fl = null;
     const layer = () => fl || (fl = this.layerBegin(ctx));
+    // the still seabed life of the lit shallows (corals, sponges, shells: nothing that sways, glows or
+    // is a rare form) is baked into one picture per 16 m stretch and drawn as a handful of images
+    const bakedS = this.drawStaticChunks(g, ctx, S, Sy, ppm, x0, x1, y0, y1);
     for (const s of g.world.statics) {
       if (s.x < x0 - 3 || s.x > x1 + 3 || s.y < y0 - 6 || s.y > y1 + 6) continue;
+      if (bakedS.has(s)) continue;
       if (!s.sp.v.glow && !s.variant && !visible(s.x, s.y, Math.max(0.18, s.sp.len) * s.scale)) continue;
       const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
       const sl = s.variant ? layer() : ctx;
@@ -782,6 +786,49 @@ export class Renderer {
 
   // Seabed life (corals, anemones, sponges, seagrass, crabs...) never goes anywhere, so each kind is
   // drawn once per size into a picture and reused; soft things sway by bending the picture gently.
+  // which statics can be baked: still, unlit by their own light, ordinary, and in the lit shallows
+  staticBakeable(s) { return !s.variant && !s.sp.v.glow && !SWAY.has(s.sp.v.s) && s.y < 160; }
+  drawStaticChunks(g, ctx, S, Sy, ppm, x0, x1, y0, y1) {
+    const CH = 16, W = g.world, ver = W.staticsVer || 0;
+    if (!this.sChunks || this.sChunksWorld !== W || this.sChunksVer !== ver) {
+      // which statics belong to which stretch (made again when one is taken or planted)
+      const m = new Map();
+      for (const s of W.statics) if (this.staticBakeable(s)) { const k = Math.floor(s.x / CH); if (!m.has(k)) m.set(k, []); m.get(k).push(s); }
+      const old = this.sChunks;
+      this.sChunks = new Map([...m].map(([k, list]) => [k, { list, set: new Set(list), c: null, ppm: 0 }]));
+      if (old) for (const v of old.values()) if (v.c) { v.c.width = v.c.height = 0; }
+      this.sChunksWorld = W; this.sChunksVer = ver; this.sBakedSet = null;
+    }
+    const baked = this.sBakedSet || (this.sBakedSet = new Set([...this.sChunks.values()].flatMap((ch) => ch.list)));
+    for (let k = Math.floor((x0 - 3) / CH); k <= Math.floor((x1 + 3) / CH); k++) {
+      const ch = this.sChunks.get(k);
+      if (!ch) continue;
+      if (!ch.c || Math.abs(ppm / ch.ppm - 1) > 0.12) {
+        // bake: every still static of this stretch, at today's scale, tinted for its depth
+        let ya = 1e9, yb = -1e9;
+        for (const s of ch.list) { const L = Math.max(0.18, s.sp.len) * s.scale; ya = Math.min(ya, s.y - L * 2); yb = Math.max(yb, s.y + L * 0.6); }
+        const bx0 = k * CH - 3, bx1 = (k + 1) * CH + 3;
+        ch.x0 = bx0; ch.y0 = ya; ch.ppm = ppm;
+        const cw = Math.ceil((bx1 - bx0) * ppm), chh = Math.max(4, Math.ceil((yb - ya) * ppm));
+        if (cw * chh > 6e6) { ch.c = null; ch.skip = true; continue; } // absurdly zoomed: draw them live instead
+        ch.skip = false;
+        ch.c = ch.c || document.createElement('canvas'); ch.c.width = cw; ch.c.height = chh;
+        const cx = ch.c.getContext('2d');
+        for (const s of ch.list) {
+          const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
+          cx.save(); cx.translate((s.x - bx0) * ppm, (s.y - ya) * ppm); cx.scale(s.flip, 1);
+          this.drawStatic(cx, s, L, 0, this.veilFor(s.y));
+          cx.restore();
+        }
+        ch.w = cw; ch.h = chh;
+      }
+      if (ch.skip || !ch.c) { for (const s of ch.list) baked.delete(s); continue; }
+      const sc = ppm / ch.ppm;
+      ctx.drawImage(ch.c, S(ch.x0), Sy(ch.y0), ch.w * sc, ch.h * sc);
+    }
+    return baked;
+  }
+
   drawStatic(ctx, s, L, t, veil) {
     const sp = s.sp, cache = this.staticCache || (this.staticCache = new Map());
     const bucket = Math.round(Math.log(Math.max(4, L)) / Math.log(1.15)), bl = Math.pow(1.15, bucket), key = sp.id + ':' + bucket + ':' + veil.band;
@@ -839,16 +886,19 @@ export class Renderer {
     const off = clamp(Math.round(0.035 * e.bl / fishDrawLen(sp.len)), 1, 3);
     // a solid outline first (see-through fins would otherwise leave lines across the body)
     // (grown by a pixel and shrunk back, which also closes hairline seams inside a drawing)
-    const mk = () => { const k = document.createElement('canvas'); k.width = k.height = e.box; return k; };
-    const grow = mk(), gx = grow.getContext('2d');
+    // the working canvases are reused from frame to frame: only the frame and its highlight are kept
+    const scratch = this.frameScratch || (this.frameScratch = [0, 1, 2].map(() => document.createElement('canvas')));
+    const mk = (i) => { const k = scratch[i]; if (k.width < e.box || k.height < e.box) { k.width = k.height = Math.max(e.box, k.width); } const kx = k.getContext('2d'); kx.setTransform(1, 0, 0, 1, 0, 0); kx.globalCompositeOperation = 'source-over'; kx.globalAlpha = 1; kx.clearRect(0, 0, k.width, k.height); return k; };
+    const grow = mk(0), gx = grow.getContext('2d');
     for (const [ox, oy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) { gx.drawImage(c, ox, oy); gx.drawImage(c, ox, oy); }
     gx.globalCompositeOperation = 'source-in'; gx.fillStyle = '#fff'; gx.fillRect(0, 0, e.box, e.box);
-    const sil = mk(), sx = sil.getContext('2d');
+    const sil = mk(1), sx = sil.getContext('2d');
     sx.drawImage(grow, 0, 0);
     sx.globalCompositeOperation = 'destination-in';
     for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) sx.drawImage(grow, ox, oy);
-    const edge = (dy, col) => {
-      const m = document.createElement('canvas'); m.width = m.height = e.box;
+    const edge = (dy, col, keep) => {
+      let m;
+      if (keep) { m = document.createElement('canvas'); m.width = m.height = e.box; } else m = mk(2);
       const mx = m.getContext('2d');
       mx.drawImage(sil, 0, 0);
       mx.globalCompositeOperation = 'destination-out'; mx.drawImage(sil, 0, dy);
@@ -856,8 +906,8 @@ export class Renderer {
       return m;
     };
     if (!e.hi) e.hi = new Array(SPRITE_FRAMES);
-    e.hi[f] = edge(off, 'rgb(225,240,245)');
-    const sh = edge(-off, 'rgb(4,10,18)');
+    e.hi[f] = edge(off, 'rgb(225,240,245)', true);
+    const sh = edge(-off, 'rgb(4,10,18)', false);
     x.globalCompositeOperation = 'source-atop'; x.globalAlpha = 0.3; x.drawImage(sh, 0, 0);
     x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
     e.frames[f] = c;
@@ -915,6 +965,25 @@ export class Renderer {
     let d = ((a - fwd + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
     d = clamp(d, -1.35, 1.35);
     return fwd + d;
+  }
+
+  // The sky is all soft gradients and clouds: painted at half resolution, remade every other frame
+  // (shifted to the horizon in between), and laid in as one image.
+  drawSkyCached(g, horizon, dayEff, day) {
+    const W = this.W, H = this.H, main = this.ctx;
+    const C = this.skyC || (this.skyC = document.createElement('canvas'));
+    const sh = Math.max(4, Math.min(H, Math.ceil(horizon + 4 * this.cam.ppm))); // the sky and a little below the surface (the beach)
+    const cw = Math.ceil(W / 2), ch = Math.ceil(sh / 2);
+    this.skyN = (this.skyN || 0) + 1;
+    if (C.width !== cw || C.height !== ch || this.skyN % 2 === 0 || !this.skyAt || Math.abs(this.skyAt.cx - this.cam.x) * this.cam.ppm > 6) {
+      if (C.width !== cw || C.height !== ch) { C.width = cw; C.height = ch; }
+      const x = C.getContext('2d');
+      x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cw, ch); x.setTransform(0.5, 0, 0, 0.5, 0, 0);
+      this.ctx = x;
+      try { this.drawSky(g, horizon, dayEff, day); } finally { this.ctx = main; }
+      this.skyAt = { horizon, cx: this.cam.x };
+    }
+    main.drawImage(C, 0, horizon - this.skyAt.horizon, cw * 2, ch * 2);
   }
 
   drawSky(g, horizon, dayEff, day) {
@@ -1436,12 +1505,34 @@ export class Renderer {
     }
   }
 
+  // a kelp blade, 128 px long along +x from its base, centred on y = 0 of a 64 px tall picture;
+  // v: how far it droops (0 straight .. 2 most); the near layer is a little brighter
+  bladeSprite(layer, v) {
+    const key = layer * 3 + v, arr = this.bladeSprites || (this.bladeSprites = []);
+    if (arr[key]) return arr[key];
+    const c = document.createElement('canvas'); c.width = 128; c.height = 64;
+    const x = c.getContext('2d'), dark = layer === 1 ? 0.75 : 1, droop = [0.05, 0.3, 0.55][v] * 128;
+    const P = (q, e) => [128 * q, 32 + droop * q * q + e + q * q * 128 * 0.08];
+    const left = [], right = [];
+    for (let j = 0; j <= 10; j++) { const q = j / 10, w = 9 * Math.sin(Math.PI * Math.pow(q, 0.6)) * (1 + 0.15 * Math.sin(q * 13)); left.push(P(q, w)); right.push(P(q, -w)); }
+    x.beginPath(); x.moveTo(left[0][0], left[0][1]);
+    for (const p of left) x.lineTo(p[0], p[1]);
+    for (let j = right.length - 1; j >= 0; j--) x.lineTo(right[j][0], right[j][1]);
+    x.closePath();
+    x.fillStyle = `rgba(${(122 * dark) | 0},${(96 * dark) | 0},${(34 * dark) | 0},0.78)`; x.fill();
+    const m0 = P(0.05, 0), m1 = P(0.55, 0), m2 = P(0.92, 0);
+    x.strokeStyle = `rgba(${(70 * dark) | 0},${(54 * dark) | 0},${(20 * dark) | 0},0.5)`; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(m0[0], m0[1]); x.quadraticCurveTo(m1[0], m1[1], m2[0], m2[1]); x.stroke();
+    arr[key] = c;
+    return c;
+  }
+
   drawKelp(g, S, Sy, ppm, layer, x0, x1) {
     // Batched: every stalk of this layer goes into one path, every blade into another,
     // every bladder into a third - three draw calls for the whole forest.
     const ctx = this.ctx, t = g.time;
     const surf = g.surfY || (() => 0);
-    const stalks = new Path2D(), blades = new Path2D(), bulbs = new Path2D(), ribs = new Path2D();
+    const stalks = new Path2D(), bulbs = new Path2D(), blades = [];
     const len = 1.1 * ppm, wid = 0.22 * ppm, br = wid * 0.32;
     let any = false;
     for (let i = 0; i < g.world.kelp.length; i++) {
@@ -1468,19 +1559,9 @@ export class Renderer {
         const bl = len * (0.9 + hsh * 0.8), bw = wid * (0.55 + hsh * 0.35);
         const bx = px + ca * br * 1.4, by = py + sa * br * 1.4;
         bulbs.moveTo(bx + br, by); bulbs.ellipse(bx, by, br, br * 0.8, a, 0, TAU);
-        const droop = (side * 0.35 + Math.sin(t * 0.7 + k.phase + s2) * 0.25) * bl;       // bends downstream as it lengthens
-        const P = (q, e) => { const c = q * q; return [bx + ca * bl * q + pxp * droop * c + pxp * e, by + sa * bl * q + pyp * droop * c + pyp * e + c * bl * 0.15]; };
-        const N = 6, left = [], right = [];
-        for (let j = 0; j <= N; j++) {
-          const q = j / N, w = bw * Math.sin(Math.PI * Math.pow(q, 0.6)) * (1 + 0.18 * Math.sin(q * 13 + t * 2.2 + s2));
-          left.push(P(q, w)); right.push(P(q, -w));
-        }
-        blades.moveTo(left[0][0], left[0][1]);
-        for (let j = 1; j <= N; j++) blades.lineTo(left[j][0], left[j][1]);
-        for (let j = N; j >= 0; j--) blades.lineTo(right[j][0], right[j][1]);
-        blades.closePath();
-        const m0 = P(0.05, 0), m1 = P(0.55, 0), m2 = P(0.92, 0);
-        ribs.moveTo(m0[0], m0[1]); ribs.quadraticCurveTo(m1[0], m1[1], m2[0], m2[1]);
+        // the blade: a stored picture (one of three droops), turned, stretched and flipped into place
+        const droopK = side * 0.35 + Math.sin(t * 0.7 + k.phase + s2) * 0.25;
+        blades.push([bx, by, a, bl, bw, droopK]);
       }
       if (k.species === 119) {
         const u = 1, hh = k.h;
@@ -1495,12 +1576,18 @@ export class Renderer {
     ctx.strokeStyle = rgbStr([70 * dark, 58 * dark, 26 * dark]);
     ctx.lineWidth = Math.max(1, ppm * 0.07);
     ctx.stroke(stalks);
-    // blades: thin and a little see-through, golden-brown; a darker midrib down each
-    ctx.fillStyle = `rgba(${(122 * dark) | 0},${(96 * dark) | 0},${(34 * dark) | 0},0.78)`;
-    ctx.fill(blades);
-    ctx.strokeStyle = `rgba(${(70 * dark) | 0},${(54 * dark) | 0},${(20 * dark) | 0},0.5)`;
-    ctx.lineWidth = Math.max(0.7, ppm * 0.025);
-    ctx.stroke(ribs);
+    // blades: thin and a little see-through, golden-brown, a darker midrib down each (stored pictures)
+    const M = ctx.getTransform();
+    for (const [bx, by, a2, bl, bw, dk] of blades) {
+      const flip = dk < 0 ? -1 : 1, v = Math.min(2, Math.floor(Math.abs(dk) / 0.2));
+      const spr = this.bladeSprite(layer, v);
+      const ca = Math.cos(a2), sa = Math.sin(a2), sx = bl / 128, sy = (bw / 9) * flip;
+      // M x translate(bx,by) x rotate(a2) x scale(sx, sy)
+      const a_ = ca * sx, b_ = sa * sx, c_ = -sa * sy, d_ = ca * sy;
+      ctx.setTransform(M.a * a_ + M.c * b_, M.b * a_ + M.d * b_, M.a * c_ + M.c * d_, M.b * c_ + M.d * d_, M.a * bx + M.c * by + M.e, M.b * bx + M.d * by + M.f);
+      ctx.drawImage(spr, 0, -32);
+    }
+    ctx.setTransform(M);
     ctx.fillStyle = `rgba(${(140 * dark) | 0},${(120 * dark) | 0},${(50 * dark) | 0},0.9)`;
     ctx.fill(bulbs);
   }
@@ -2003,47 +2090,99 @@ export class Renderer {
     }
   }
 
+  // a soft round glow of one colour (kind 0: a halo fading out; kind 1: a glare, white at the heart)
+  glowSprite(col, kind) {
+    const q = (v) => Math.round(v / 8) * 8, key = `${kind}:${q(col[0])},${q(col[1])},${q(col[2])}`;
+    const m = this.glowSprites || (this.glowSprites = new Map());
+    let c = m.get(key);
+    if (!c) {
+      c = document.createElement('canvas'); c.width = c.height = 64;
+      const x = c.getContext('2d'), gg = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      const cc = [q(col[0]), q(col[1]), q(col[2])];
+      if (kind) { gg.addColorStop(0, rgbStr([255, 255, 255], 1)); gg.addColorStop(0.25, rgbStr(cc, 0.5)); gg.addColorStop(1, rgbStr(cc, 0)); }
+      else { gg.addColorStop(0, rgbStr(cc, 1)); gg.addColorStop(1, rgbStr(cc, 0)); }
+      x.fillStyle = gg; x.fillRect(0, 0, 64, 64);
+      m.set(key, c);
+      if (m.size > 200) m.delete(m.keys().next().value);
+    }
+    return c;
+  }
+  // a beam's haze, pointing along +x from the middle of a 512 px square (range 256 px)
+  coneSprite(col, spread) {
+    const q = (v) => Math.round(v / 12) * 12, key = `${spread}:${q(col[0])},${q(col[1])},${q(col[2])}`;
+    const m = this.coneSprites || (this.coneSprites = new Map());
+    let c = m.get(key);
+    if (!c) {
+      c = document.createElement('canvas'); c.width = c.height = 512;
+      const x = c.getContext('2d'), cc = [q(col[0]), q(col[1]), q(col[2])], far = mixRgb(cc, WATER_LIT, 0.7);
+      const gg = x.createRadialGradient(256, 256, 0, 256, 256, 256);
+      gg.addColorStop(0, rgbStr(cc, 1)); gg.addColorStop(0.3, rgbStr(far, 0.45)); gg.addColorStop(1, rgbStr(WATER_LIT, 0));
+      x.fillStyle = gg;
+      const n = FEATHER;
+      for (let i = 0; i < n; i++) {
+        const sm = 0.3 + 1.6 * (i / (n - 1));
+        x.globalAlpha = 1 / n;
+        x.beginPath(); x.moveTo(256, 256); x.arc(256, 256, 256, -spread * sm, spread * sm); x.closePath(); x.fill();
+      }
+      m.set(key, c);
+      if (m.size > 60) m.delete(m.keys().next().value);
+    }
+    return c;
+  }
+
+  drawRays(ctx, S, Sy, ppm, cam, t, rayStrength) {
+    // Each ray belongs to a fixed 9 m cell of the surface; its sway, width and brightness come
+    // from that cell's index, so rays slide smoothly past instead of snapping when the camera moves.
+    // Cells start well left of the screen because the rays slant to the right as they go down.
+    const k0 = Math.floor((cam.x - cam.w / 2 - 16) / 9), k1 = Math.ceil((cam.x + cam.w / 2 + 4) / 9);
+    for (let k = k0; k <= k1; k++) {
+      const h = ((k * 7919) % 3 + 3) % 3;
+      const wx = k * 9 + Math.sin(t * 0.13 + k * 2.1) * 3;
+      const top = Sy(0), w = ppm * (1.5 + h), len = ppm * 70;
+      const sx = S(wx);
+      const a = rayStrength * (0.05 + 0.04 * Math.sin(t * 0.4 + k * 1.3));
+      for (const [wm, am] of [[2.2, 0.3], [1.4, 0.35], [0.7, 0.35]]) {
+        const gg = ctx.createLinearGradient(0, top, 0, top + len);
+        gg.addColorStop(0, `rgba(210,240,255,${(a * am).toFixed(3)})`); gg.addColorStop(1, 'rgba(210,240,255,0)');
+        ctx.fillStyle = gg;
+        const ww = w * wm;
+        ctx.beginPath(); ctx.moveTo(sx - ww, top); ctx.lineTo(sx + ww, top); ctx.lineTo(sx + ww * 2 + w + len * 0.18, top + len); ctx.lineTo(sx - ww + len * 0.18, top + len); ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+
   drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff) {
     const ctx = this.ctx, cam = this.cam, fx = g.fx, t = g.time;
     // god rays near the surface
     const rayStrength = dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7);
     if (rayStrength > 0.01) {
-      // Each ray belongs to a fixed 9 m cell of the surface; its sway, width and brightness come
-      // from that cell's index, so rays slide smoothly past instead of snapping when the camera moves.
-      // Cells start well left of the screen because the rays slant to the right as they go down.
-      const k0 = Math.floor((cam.x - cam.w / 2 - 16) / 9), k1 = Math.ceil((cam.x + cam.w / 2 + 4) / 9);
-      for (let k = k0; k <= k1; k++) {
-        const h = ((k * 7919) % 3 + 3) % 3;
-        const wx = k * 9 + Math.sin(t * 0.13 + k * 2.1) * 3;
-        const top = Sy(0), w = ppm * (1.5 + h), len = ppm * 70;
-        const sx = S(wx);
-        const a = rayStrength * (0.05 + 0.04 * Math.sin(t * 0.4 + k * 1.3));
-        // three nested strips, widest and faintest outside: soft edges, no hard lines
-        for (const [wm, am] of [[2.2, 0.3], [1.4, 0.35], [0.7, 0.35]]) {
-          const gg = ctx.createLinearGradient(0, top, 0, top + len);
-          gg.addColorStop(0, `rgba(210,240,255,${(a * am).toFixed(3)})`); gg.addColorStop(1, 'rgba(210,240,255,0)');
-          ctx.fillStyle = gg;
-          const ww = w * wm;
-          ctx.beginPath(); ctx.moveTo(sx - ww, top); ctx.lineTo(sx + ww, top); ctx.lineTo(sx + ww * 2 + w + len * 0.18, top + len); ctx.lineTo(sx - ww + len * 0.18, top + len); ctx.closePath(); ctx.fill();
-        }
+      // drawn into a quarter-size picture (they are soft: nothing is lost) and laid over the scene
+      // in one go; remade every other frame, shifted with the camera in between
+      const RC = this.rayC || (this.rayC = document.createElement('canvas'));
+      const rw = Math.ceil(this.W / 4), rh = Math.ceil(this.H / 4);
+      this.rayN = (this.rayN || 0) + 1;
+      const remake = RC.width !== rw || RC.height !== rh || this.rayN % 2 === 0 || !this.rayCam || Math.abs(this.rayCam.ppm - ppm) > 0.01;
+      if (remake) {
+        if (RC.width !== rw || RC.height !== rh) { RC.width = rw; RC.height = rh; }
+        const rctx = RC.getContext('2d');
+        rctx.setTransform(1, 0, 0, 1, 0, 0); rctx.globalCompositeOperation = 'source-over'; rctx.clearRect(0, 0, rw, rh); rctx.setTransform(0.25, 0, 0, 0.25, 0, 0); rctx.globalCompositeOperation = 'lighter';
+        this.drawRays(rctx, S, Sy, ppm, cam, t, rayStrength);
+        this.rayCam = { x: cam.x, y: cam.y, ppm };
       }
+      const ox = (this.rayCam.x - cam.x) * ppm, oy = (this.rayCam.y - cam.y) * ppm;
+      ctx.drawImage(RC, ox, oy, rw * 4, rh * 4);
     }
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
     const amb = ambientAt(g.earl.y, g.dayEff);
     const haze = clamp(1 - amb * 1.6, 0, 1);
     // faint scattered light inside the beam (soft-edged), plus the particles it catches
+    // the scattered light in a beam: a feathered cone made once per beam shape and colour, then
+    // turned, scaled and faded per frame (one image instead of a dozen gradient fills)
     const coneHaze = (x, y, ang, range, spread, col, a) => {
-      const far = mixRgb(col, WATER_LIT, 0.7);
-      const gg = ctx.createRadialGradient(x, y, 0, x, y, range);
-      gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(0.3, rgbStr(far, a * 0.45)); gg.addColorStop(1, rgbStr(WATER_LIT, 0));
-      ctx.fillStyle = gg;
-      const n = this.quality < 0.85 ? 6 : FEATHER;
-      for (let i = 0; i < n; i++) {
-        const sm = 0.3 + 1.6 * (i / (n - 1));
-        ctx.globalAlpha = 1 / n;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, range, ang - spread * sm, ang + spread * sm); ctx.closePath(); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
+      if (a <= 0.002) return;
+      const c = this.coneSprite(col, spread);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang); const k = range / 256; ctx.scale(k, k);
+      ctx.globalAlpha = Math.min(1, a); ctx.drawImage(c, -256, -256); ctx.restore();
     };
     const motes = (x, y, ang, range, spread, col, a) => {
       if (this.lite) return;
@@ -2073,15 +2212,15 @@ export class Renderer {
         ctx.fillRect(S(px), Sy(py), sz, sz);
       }
     };
+    // halos and glares: soft round sprites made once per colour, scaled and faded per use
     const halo = (x, y, r, col, a) => {
-      const gg = ctx.createRadialGradient(x, y, 0, x, y, r);
-      gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(1, rgbStr(col, 0));
-      ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+      if (a <= 0.003 || r < 0.5) return;
+      ctx.globalAlpha = Math.min(1, a); ctx.drawImage(this.glowSprite(col, 0), x - r, y - r, r * 2, r * 2); ctx.globalAlpha = 1;
     };
     const glare = (x, y, col, a) => {
-      const gg = ctx.createRadialGradient(x, y, 0, x, y, ppm * 0.5);
-      gg.addColorStop(0, rgbStr([255, 255, 255], a)); gg.addColorStop(0.25, rgbStr(col, a * 0.5)); gg.addColorStop(1, rgbStr(col, 0));
-      ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, y, ppm * 0.5, 0, TAU); ctx.fill();
+      if (a <= 0.003) return;
+      const r = ppm * 0.5;
+      ctx.globalAlpha = Math.min(1, a); ctx.drawImage(this.glowSprite(col, 1), x - r, y - r, r * 2, r * 2); ctx.globalAlpha = 1;
     };
     const e = g.earl;
     const lp = fx.lightPulse;

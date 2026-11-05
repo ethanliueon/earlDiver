@@ -61,7 +61,7 @@ export function updateArm(g, dt, pressSpace) {
       if (res === 'slipped') { if (c) c.fleeT = 2.5; A.phase = 'retract'; A.t = 0; A.empty = true; return { type: 'armMiss', name: A.tgt.name }; }
       // it has it: off the bottom or out of the water column, into the claw
       if (c) c.dead = true;
-      if (A.tgt.s) g.world.statics.splice(g.world.statics.indexOf(A.tgt.s), 1);
+      if (A.tgt.s) { g.world.statics.splice(g.world.statics.indexOf(A.tgt.s), 1); g.world.staticsVer = (g.world.staticsVer || 0) + 1; }
       A.phase = 'retract'; A.t = 0;
     }
   } else if (A.phase === 'retract' && A.t >= A.D.back) {

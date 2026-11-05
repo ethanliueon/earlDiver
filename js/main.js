@@ -738,7 +738,7 @@ function update(dt) {
       if (g.plant >= PLANT_TIME) {
         g.plant = 0; g.inv.coral--;
         const sp = SPECIES_BY_ID[[126, 127, 128, 179][Math.floor(Math.random() * 4)]];
-        g.world.statics.push({ sp, x: e.x, y: g.world.floorAt(e.x), scale: 0.5, phase: Math.random() * 6, flip: 1 });
+        g.world.statics.push({ sp, x: e.x, y: g.world.floorAt(e.x), scale: 0.5, phase: Math.random() * 6, flip: 1 }); g.world.staticsVer = (g.world.staticsVer || 0) + 1;
         deed(DEED_CALM.plant, 'The coral takes hold.');
       }
     } else g.plant = 0;
