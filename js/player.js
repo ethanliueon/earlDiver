@@ -9,7 +9,7 @@ export const SUB_SPEED = 3.36;  // the submersible's
 export const SUB_DIVE = 1.0, SUB_RISE = 1.2;
 export const ballastBoost = (nx, ny) => 1 + ((ny < 0 ? SUB_RISE : SUB_DIVE) - 1) * clamp((Math.abs(ny) - Math.abs(nx)) / (Math.abs(ny) + 1e-6), 0, 1);
 export const DIVER_O2 = 50;
-const K_PRESS = Math.log(30) / 700; // x30 drain at 1000 m, starting at 300 m
+const K_PRESS = Math.log(80) / 700; // x80 drain at 1000 m, starting at 300 m
 
 export const SUB_LEVELS = SUB_TIERS;
 
@@ -45,7 +45,7 @@ export class Sub {
     this.yaw = Math.PI; // 0 = bow to the right, PI = bow to the left; turns smoothly between
   }
   // set from the upgrades (see applySub in main.js)
-  get rated() { return this.ratedV || 400; }
+  get rated() { return this.ratedV || 300; }
   get o2Max() { return this.o2V || 150; }
 }
 
@@ -87,7 +87,6 @@ export function updateEarl(g, dt, inp) {
     // hull
     const r = sub.y / sub.rated;
     sub.stress = clamp((r - 0.85) / 0.45, 0, 1);
-    if (sub.y > sub.rated * 1.3 && !sub.imploded) return 'implode';
     if (sub.o2 <= 0) { sub.o2 = 0; return 'sub-o2'; }
   } else {
     // ---- diver ----

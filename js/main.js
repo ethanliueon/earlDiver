@@ -788,7 +788,7 @@ function update(dt) {
     } else if (res === 'o2') {
       if (!g.noAir) { g.noAir = 0.001; g.noAirCause = res; hud.toast(res === 'o2' ? 'Out of air — get to the surface' : 'The cabin is out of air — surface!', 'warn'); }
       // under pressure air hunger comes on far faster: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m
-      g.noAirRate = e.inSub ? 1 : Math.sqrt(diverDrainMult(e.y));
+      g.noAirRate = e.inSub ? 1 : Math.pow(diverDrainMult(e.y), 0.75); // pressure eats the breath hold fast
       g.noAir += dt * g.noAirRate;
       if (g.noAir >= 15) die(causeText(g.noAirCause));
     } else if (g.noAir) {

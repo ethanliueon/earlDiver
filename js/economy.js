@@ -23,9 +23,9 @@ export const FINS = [
   { name: 'Long-blade fins', speed: 1.15, price: 20, desc: 'Stiffer, longer blades. +15 % speed.' },
   { name: 'Carbon freediving fins', speed: 1.3, price: 150, desc: 'Carbon fibre. +30 % speed.' },
 ];
-// Submersible hull ratings. Past 1.3x rated depth it implodes.
+// Submersible hull ratings. Below rated depth the cabin air leaks away exponentially faster (no implosion).
 export const SUB_TIERS = [
-  { rated: 400, o2: 150, price: 0 },
+  { rated: 300, o2: 150, price: 0 },
   { rated: 700, o2: 200, price: 50 },
   { rated: 1000, o2: 260, price: 400 },
   { rated: 1500, o2: 330, price: 1500 },
@@ -166,7 +166,7 @@ export const UPGRADES = {
   camShots:  { group: 'Camera', needs: 'camera', name: 'Shots a dive', base: 5, step: 1, max: 25, cost: 1, growth: 1.15, fmt: 'n' },
   camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, step: 0.5, max: 10, cost: 1.5, growth: 1.35, fmt: 'm' },
   // the submersible
-  depth:     { group: 'Submersible', name: 'Depth rating', base: 400, step: 50, max: 52, cost: 0.5, growth: 1.12, fmt: 'depth' },
+  depth:     { group: 'Submersible', name: 'Depth rating', base: 300, step: 50, max: 52, cost: 0.5, growth: 1.12, fmt: 'depth' },
   subAir:    { group: 'Submersible', name: 'Cabin air', base: 150, step: 15, max: 34, cost: 1, growth: 1.12, fmt: 's' },
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, step: 0.03, max: 15, cost: 2, growth: 1.3, fmt: 'x' },
   subTank:   { group: 'Submersible', name: 'Specimen tank', base: 4, step: 1, max: 10, cost: 3, growth: 1.5, fmt: 'n' },
