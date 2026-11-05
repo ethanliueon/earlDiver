@@ -184,6 +184,11 @@ the bag, Earl's depth; in the open tank, the sub's; in a pressure chamber, what 
 Up to 150 m short, it lives, more stressed the bigger the gap (its condition sinks toward a ceiling,
 down to 'weak' at 150 m). Past 150 m it is dying, slowly at first and faster the bigger the gap.
 So a shallow animal can never die of the trip up, and a deep one dies unless it is in a chamber.
+Nothing protects an animal in Earl's net: the bag is at his depth. When one starts to feel the climb
+(40 m short) a warning says to get it into one of the sub's chambers; when it starts dying (150 m
+short) a second one says so, and its dot in the bag row pulses red. In the tank room the bag hangs
+on its hook with its animals visible through the mesh and their tags on a cord below it; a rare
+form is written on the tag ("rare form: albino").
 
 T in the sub opens the back of the sub, full screen: two steel compartments joined by a round
 hatch (click it, or the arrow keys). The walls are riveted steel plates with weld seams and rust

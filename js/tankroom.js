@@ -77,8 +77,10 @@ export class TankRoom {
       port: narrow ? null : { x: W * 0.9, y: H * 0.3, r: Math.max(34, Math.min(W, H) * 0.075) },
       hatchR: hatchSide(W * 0.92), hatchL: hatchSide(W * 0.07),
       tank: narrow ? { x: W * 0.05, y: H * 0.13, w: W * 0.9, h: H * 0.3 } : { x: W * 0.17, y: H * 0.14, w: W * 0.6, h: Math.min(H * 0.42, W * 0.3) },
-      hook: narrow ? { x: W * 0.84, y: H * 0.56 } : { x: W * 0.86, y: H * 0.16 },
-      bagTag: narrow ? (i) => [W * 0.42, H * 0.56 + i * 70] : (i) => [W * 0.86, H * 0.16 + 150 + i * 70] };
+      hook: narrow ? { x: W * 0.84, y: H * 0.5 } : { x: W * 0.87, y: H * 0.16 },
+      // the bag grows with what is in it; its tags hang below it on cords
+      bagH: (n) => 84 + Math.min(4, n) * 22,
+      bagTag: narrow ? (i, n) => [W * 0.4, H * 0.5 + i * 104] : (i, n) => [W * 0.87 - 8, H * 0.16 + 8 + 84 + Math.min(4, n) * 22 + 34 + i * 100] };
   }
   signature(g) {
     return [this.room, this.openKey, pressSlots(g), tankSlots(g), g.subTank.map((s) => `${s.id}${s.pressed ? 'p' + s.chamber : 'o'}${s.bleed ? 'b' : ''}`).join(','), g.bag.map((s) => s.id).join(','), window.innerWidth, window.innerHeight].join('|');
@@ -109,7 +111,7 @@ export class TankRoom {
         acts += `<button class="ghost" data-tk="release:${where}:${i}">Let go</button>`;
       }
       return `<div class="btag${open ? ' open' : ''}" data-tag="${key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px${extra}">
-        <b>${s.variant ? `<span class="rare r-${s.variant}">${s.variant}</span> ` : ''}${sp.name}</b><small>found at ${s.from || 0} m</small><i class="st"></i>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
+        <b>${sp.name}</b>${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}<small>found at ${s.from || 0} m</small><i class="st"></i>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
     };
     let html = '';
     if (this.room === 'chambers') {
@@ -127,7 +129,7 @@ export class TankRoom {
       const T = G.tank, n = Math.max(1, tankSlots(g)), step = T.w / n;
       open.forEach(([s, i], k) => { html += tag(s, 'tank', i, T.x + step * (k + 0.5), T.y + T.h + 18); });
       for (let k = open.length; k < tankSlots(g); k++) html += `<div class="btag blank" style="left:${T.x + step * (k + 0.5)}px;top:${T.y + T.h + 18}px"><small>room for one</small></div>`;
-      g.bag.forEach((s, i) => { const [bx, byy] = G.bagTag(i); html += tag(s, 'bag', i, bx, byy); });
+      g.bag.forEach((s, i) => { const [bx, byy] = G.bagTag(i, g.bag.length); html += tag(s, 'bag', i, bx, byy); });
       html += `<button class="hatch-btn" data-go="chambers" style="left:${G.hatchL.x}px;top:${G.hatchL.y}px">← The chamber room</button>`;
     }
     this.over.innerHTML = html;
@@ -414,12 +416,32 @@ export class TankRoom {
     // the catch bag, on its hook
     const hk = G.hook;
     ctx.strokeStyle = '#8a9294'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(hk.x, hk.y - 20); ctx.lineTo(hk.x, hk.y); ctx.arc(hk.x - 8, hk.y, 8, 0, Math.PI); ctx.stroke();
-    const n = g.bag.length, bw = 70, bh = 60 + Math.min(4, n) * 10;
+    const n = g.bag.length, bw = 136, bh = G.bagH(n);
+    // cords from the bag down to each tag
+    ctx.strokeStyle = 'rgba(160,130,80,0.85)'; ctx.lineWidth = 1.5;
+    g.bag.forEach((s, i) => { const [tx, ty] = G.bagTag(i, n); ctx.beginPath(); ctx.moveTo(hk.x - 8, hk.y + 8 + bh + 8); ctx.quadraticCurveTo(tx, (hk.y + bh + ty) / 2 + 10, tx, ty + 6); ctx.stroke(); });
     ctx.save(); ctx.translate(hk.x - 8, hk.y + 8);
-    ctx.fillStyle = 'rgba(30,60,40,0.75)'; ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.quadraticCurveTo(bw * 0.6, bh * 0.4, bw * 0.3, bh); ctx.quadraticCurveTo(0, bh + 14, -bw * 0.3, bh); ctx.quadraticCurveTo(-bw * 0.6, bh * 0.4, -6, 0); ctx.fill();
-    ctx.strokeStyle = 'rgba(120,180,130,0.45)'; ctx.lineWidth = 1;
-    for (let k = -4; k <= 4; k++) { ctx.beginPath(); ctx.moveTo(k * 4, 2); ctx.lineTo(k * 9, bh + 4); ctx.stroke(); }
-    for (let k = 1; k < 6; k++) { const y = k * bh / 6; ctx.beginPath(); ctx.moveTo(-bw * 0.4, y); ctx.quadraticCurveTo(0, y + 6, bw * 0.4, y); ctx.stroke(); }
+    const bag = new Path2D();
+    bag.moveTo(-8, 0); bag.lineTo(8, 0); bag.quadraticCurveTo(bw * 0.62, bh * 0.35, bw * 0.34, bh); bag.quadraticCurveTo(0, bh + 16, -bw * 0.34, bh); bag.quadraticCurveTo(-bw * 0.62, bh * 0.35, -8, 0);
+    ctx.fillStyle = 'rgba(14,30,20,0.85)'; ctx.fill(bag);
+    // what is in it, seen through the mesh: crammed in, twitching (the weak barely, the dead not at all)
+    ctx.save(); ctx.clip(bag);
+    g.bag.forEach((s, i) => {
+      const sp = SPECIES_BY_ID[s.id], L = clamp(tankLen(s.len, 100), 34, bw * 0.8), dead = s.cond <= 0.05;
+      const y = bh * (0.35 + (i % 4) * 0.17) + 6, x = (i % 2 ? 1 : -1) * 6;
+      ctx.save(); ctx.translate(x, y);
+      if (dead) { ctx.rotate(0.25); ctx.scale(i % 2 ? 1 : -1, -1); drawSpecies(ctx, sp, L, 0, 0, 0); }
+      else { const vit = clamp(s.cond, 0, 1), tw = Math.sin(this.t * lerp(2, 9, vit) + i * 2) * lerp(0.02, 0.18, vit); ctx.rotate((i % 2 ? -0.3 : 0.3) + tw); ctx.scale(i % 2 ? -1 : 1, 1); drawSpecies(ctx, sp, L, this.t * lerp(0.2, 1.2, vit) + i, lerp(0.1, 0.6, vit), 0); }
+      ctx.restore();
+    });
+    ctx.restore();
+    // the mesh over them
+    ctx.strokeStyle = 'rgba(120,190,140,0.55)'; ctx.lineWidth = 1;
+    ctx.save(); ctx.clip(bag);
+    for (let k = -8; k <= 8; k++) { ctx.beginPath(); ctx.moveTo(k * 6, 0); ctx.lineTo(k * 12, bh + 16); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-k * 6, 0); ctx.lineTo(k * 12 + 30, bh + 16); ctx.stroke(); }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(160,210,170,0.6)'; ctx.lineWidth = 2; ctx.stroke(bag);
+    ctx.fillStyle = '#6a5a3a'; ctx.fillRect(-12, -3, 24, 6); // the drawstring
     ctx.restore();
     this.drawHatch(ctx, G.hatchL);
   }

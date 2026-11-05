@@ -194,6 +194,9 @@ export function updateSpecimens(g, dt) {
       else if (s.press > target) s.press = target;
     }
     const gap = gapOf(g, s, inBag);
+    // in the net there is nothing to protect it: say so, once as it starts to suffer, once as it dies
+    if (inBag && gap > 40 && !s.warnStress) { s.warnStress = true; events.push({ type: 'bagStress', s }); }
+    if (inBag && gap > SAFE_GAP && !s.warnDying) { s.warnDying = true; events.push({ type: 'bagDying', s }); }
     if (gap > 0) {
       // stress builds toward a ceiling set by the gap; past 150 m it is dying
       const cap = gap <= SAFE_GAP ? 1 - (gap / SAFE_GAP) * 0.55 : 0.45;

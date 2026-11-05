@@ -509,7 +509,6 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
   display: flex; flex-direction: column; gap: 1px; text-align: center; }
 .btag::before { content: ''; position: absolute; left: 50%; top: 5px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: #3a2a0c; }
 .btag b { font: 15px/1.2 var(--serif); font-weight: 400; margin-top: 6px; }
-.btag b .rare { font-size: 10px; text-transform: capitalize; }
 .btag small { font: 10px var(--mono); opacity: 0.8; }
 .btag .st { font: italic 13px var(--serif); display: flex; align-items: center; justify-content: center; gap: 5px; }
 .btag .st span { width: 8px; height: 8px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 1px rgba(0,0,0,0.4); }
@@ -524,3 +523,5 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
   background: rgba(20,22,23,0.8); color: #e8e4d6; box-shadow: 0 0 0 1px rgba(201,166,90,0.6); white-space: nowrap; }
 .hatch-btn:hover { background: rgba(201,166,90,0.9); color: #1a1406; }
 @media (max-width: 700px) { .btag { min-width: 96px; padding: 5px 8px 6px; } .btag b { font-size: 13px; } }
+
+.btag .rarel { font: 10px var(--mono); font-style: normal; color: #f4ecd8; padding: 1px 6px; border-radius: 2px; align-self: center; margin: 2px 0 1px; }

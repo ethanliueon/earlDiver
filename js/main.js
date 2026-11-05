@@ -906,7 +906,12 @@ function update(dt) {
     }
     const dl = updateSpecimens(g, dt);
     for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from the pressure it lives at`, 'warn');
-    for (const ev of dl.events) hud.toast(`The ${SPECIES_BY_ID[ev.s.id].name.toLowerCase()} is acclimated to the surface: worth a quarter more`, 'note');
+    for (const ev of dl.events) {
+      const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
+      if (ev.type === 'acclimated') hud.toast(`The ${nm} is acclimated to the surface: worth a quarter more`, 'note');
+      else if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the climb: get it into one of the sub's chambers`, 'warn');
+      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying: get it to a chamber, or go back down`, 'warn');
+    }
     g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
     if (e.inSub && owns(profile, 'arm') && !g.armGame) {
