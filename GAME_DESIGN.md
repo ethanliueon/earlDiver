@@ -56,6 +56,13 @@ by a hidden calm meter that fills with peaceful catches, sales and photos.
 - The boat (the Margaret) can be driven: B at the boat takes the helm, A / D drive her along the
   surface from 1,000 m off the west wall to the shallows off the beach. A docked sub goes with her.
   Every dive starts with her back over the shelf edge.
+- The water is drawn between the eye and everything in it: animals take on its colour and haze
+  (reds and yellows go first, deeper), get a soft rim of light from above and a shaded belly, and
+  catch the sun's dapples near the surface. Slow clouds of murk drift in the water; far off in the
+  deep, tiny lights come and go. The bottom has a rock and sediment texture pinned to the world and
+  small life by zone: pebbles, shells, urchins and sand ripples in the shallows; burrows, worm tubes
+  and anemones on the shelf; brittle stars, sea pens and glass sponges on the slope; sea pigs,
+  xenophyophores, tracks and stalked crinoids on the abyssal plain. Rocks have cracks.
 - 183 real species, each only in its real depth range and habitat. Fish are drawn at 1.6x life
   size so their sizes read. Bait schools move as one body.
 

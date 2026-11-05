@@ -89,7 +89,7 @@ export class Renderer {
     const lookX = e.vx * 0.9, lookY = e.vy * 0.6;
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
-    if (g.mode === 'menu') { tx = 505 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
+    if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
     cam.x = lerp(cam.x, tx, k); cam.y = lerp(cam.y, ty, k);
     cam.x = clamp(cam.x, cam.w / 2 - 20, WORLD_W - cam.w / 2 + 25);
@@ -183,6 +183,13 @@ export class Renderer {
         }
       }
     }
+    // slow murk: soft clouds of silt and plankton hanging in the water, drifting past slower than
+    // the foreground (they are farther off), so the water is never one flat colour
+    if (topY < H) {
+      ctx.save(); ctx.beginPath(); ctx.rect(0, Math.max(0, topY + ppm), W, H); ctx.clip();
+      this.texture(ctx, 'murk', 70, 0.28 + 0.12 * smoothstep(20, 400, cam.y), 'soft-light', W / 2 - cam.x * ppm * 0.55 + t * ppm * 0.25, H / 2 - cam.y * ppm * 0.55);
+      ctx.restore();
+    }
     // distant parallax silhouettes (slope / cliffs far behind)
     this.drawFar(g, S, Sy, dayEff);
     // something very large, very far away
@@ -210,19 +217,23 @@ export class Renderer {
     this.drawKelp(g, S, Sy, ppm, 0, x0, x1);
     for (const v of g.world.vents) if (inView(v.x, v.y, 30)) this.drawVent(ctx, v, S, Sy, ppm, t);
     this.drawFloor(g, S, Sy, ppm, x0, x1);
+    this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
     for (const rk of g.world.rocks) if (rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1) this.drawRock(ctx, rk, S, Sy, ppm);
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
     const glowPts = [];
+    const sl = this.layerBegin(ctx); // statics: drawn on a layer, then veiled by the water
     for (const s of g.world.statics) {
       if (s.x < x0 - 3 || s.x > x1 + 3 || s.y < y0 - 6 || s.y > y1 + 6) continue;
       const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
-      ctx.save(); ctx.translate(S(s.x), Sy(s.y)); ctx.scale(s.flip, 1);
-      const r = s.variant ? this.drawVariant(ctx, s.sp, s.variant, L, t * 0.3 + s.phase) : drawSpecies(ctx, s.sp, L, t + s.phase, 0.3, s.phase);
-      ctx.restore();
+      this.lgrow(S(s.x), Sy(s.y) - L * 0.5, L * 1.3);
+      sl.save(); sl.translate(S(s.x), Sy(s.y)); sl.scale(s.flip, 1);
+      const r = s.variant ? this.drawVariant(sl, s.sp, s.variant, L, t * 0.3 + s.phase) : drawSpecies(sl, s.sp, L, t + s.phase, 0.3, s.phase);
+      sl.restore();
       if (s.variant === 'crimson') glowPts.push([S(s.x), Sy(s.y) - L * 0.3, '#ff3018', Math.max(ppm * 0.6, L * 0.6), 1]);
       if (r && s.sp.v.glow) glowPts.push([S(s.x), Sy(s.y), s.sp.v.glow, L]);
     }
+    this.layerEnd(ctx, g, sl);
     // ---- pickups + lanterns ----
     for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) this.drawPickup(ctx, p, S(p.x), Sy(p.y), ppm, t);
     for (const l of g.world.lanterns) if (inView(l.x, l.y, 14)) this.drawLanternBody(ctx, l, S, Sy, ppm, t);
@@ -247,12 +258,14 @@ export class Renderer {
     // so the nose follows the direction of travel (a fish swimming down points down).
     // Small fish are batched per species: one path for all their backs, one for all their bellies,
     // one for the silver flashes - a whole school costs three draw calls.
-    const baseM = ctx.getTransform();
+    const fl = this.layerBegin(ctx); // the fauna, on a layer the water veils
+    const baseM = fl.getTransform();
     const batches = new Map();
     let glowSkip = 0;
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
       const Ld = fishDrawLen(c.len) * ppm;
+      this.lgrow(S(c.x), Sy(c.y), Ld * 1.4);
       const shape = c.sp.v.s;
       const tilt = clamp(Math.atan2(c.hvy !== undefined ? c.hvy : c.vy, Math.max(Math.abs(c.vx), c.hvy !== undefined ? c.speed * 0.8 : 0) + 0.2), -0.5, 0.5);
       if (Ld < 20 && !c.variant && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
@@ -286,16 +299,16 @@ export class Renderer {
         if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(1.5, Ld * 0.3), 0.3]);
         continue;
       }
-      ctx.save(); ctx.translate(S(c.x), Sy(c.y));
-      if (c.dir > 0) ctx.scale(-1, 1);
-      ctx.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
-      const r = c.variant ? this.drawVariant(ctx, c.sp, c.variant, Ld, c.phase) : this.drawCached(ctx, c.sp, Ld, c.phase, c.wob);
-      ctx.restore();
+      fl.save(); fl.translate(S(c.x), Sy(c.y));
+      if (c.dir > 0) fl.scale(-1, 1);
+      fl.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
+      const r = c.variant ? this.drawVariant(fl, c.sp, c.variant, Ld, c.phase) : this.drawCached(fl, c.sp, Ld, c.phase, c.wob);
+      fl.restore();
       // a research tag trailing from a tagged animal
       if (c.tagged) {
         const tx = S(c.x) + (c.dir > 0 ? -1 : 1) * Ld * 0.05, ty = Sy(c.y) - Ld * 0.08;
-        ctx.strokeStyle = '#e8b02a'; ctx.lineWidth = Math.max(1, ppm * 0.03); ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.quadraticCurveTo(tx - c.dir * Ld * 0.08, ty - Ld * 0.06 + Math.sin(t * 8 + c.wob) * Ld * 0.02, tx - c.dir * Ld * 0.16, ty - Ld * 0.03); ctx.stroke();
+        fl.strokeStyle = '#e8b02a'; fl.lineWidth = Math.max(1, ppm * 0.03); fl.lineCap = 'round';
+        fl.beginPath(); fl.moveTo(tx, ty); fl.quadraticCurveTo(tx - c.dir * Ld * 0.08, ty - Ld * 0.06 + Math.sin(t * 8 + c.wob) * Ld * 0.02, tx - c.dir * Ld * 0.16, ty - Ld * 0.03); fl.stroke();
       }
       // a crimson animal glows: a red light that carries in the dark
       if (c.variant === 'crimson') glowPts.push([S(c.x), Sy(c.y), '#ff3018', Math.max(ppm * 0.6, Ld * 0.6), 0.9 + 0.3 * Math.sin(t * 1.7 + c.wob)]);
@@ -305,12 +318,13 @@ export class Renderer {
       }
     }
     for (const bt of batches.values()) {
-      ctx.fillStyle = bt.sp.v.c[0]; ctx.fill(bt.back);
-      ctx.fillStyle = bt.sp.v.c[1]; ctx.fill(bt.belly);
-      if (bt.nf) { ctx.fillStyle = 'rgba(235,245,250,0.7)'; ctx.fill(bt.flash); }
-      ctx.fillStyle = '#0a0a0a'; ctx.fill(bt.eyes);
+      fl.fillStyle = bt.sp.v.c[0]; fl.fill(bt.back);
+      fl.fillStyle = bt.sp.v.c[1]; fl.fill(bt.belly);
+      if (bt.nf) { fl.fillStyle = 'rgba(235,245,250,0.7)'; fl.fill(bt.flash); }
+      fl.fillStyle = '#0a0a0a'; fl.fill(bt.eyes);
     }
-    ctx.setTransform(baseM);
+    fl.setTransform(baseM);
+    this.layerEnd(ctx, g, fl, true);
     // brackets around what the net, slurp gun or claw will go for
     const ctg = g.mode === 'play' ? g.catchTarget : null;
     if (ctg) {
@@ -538,6 +552,20 @@ export class Renderer {
     ctx.drawImage(this.lc, 0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
+    // far off in the dark, tiny lights come and go: things the lamp will never reach
+    if (cam.y > 220) {
+      const k = smoothstep(220, 700, cam.y), par = 0.45;
+      for (let n = 0; n < 70; n++) {
+        const hx = Math.abs(Math.sin(n * 91.7) * 1e4) % 1, hy = Math.abs(Math.sin(n * 47.3) * 1e4) % 1, hp = Math.abs(Math.sin(n * 13.1) * 1e4) % 1;
+        const span = cam.w * 1.6, spanY = cam.h * 1.6;
+        const wx = ((hx * span - cam.x * par) % span + span) % span - span * 0.2, wy = ((hy * spanY - cam.y * par) % spanY + spanY) % spanY - spanY * 0.2;
+        const tw = Math.pow(Math.max(0, Math.sin(t * (0.25 + hp * 0.5) + n * 2.1)), 14);
+        if (tw < 0.03) continue;
+        const sx = wx * ppm, sy = wy * ppm;
+        ctx.fillStyle = hp < 0.8 ? `rgba(110,230,215,${(0.55 * tw * k).toFixed(3)})` : `rgba(150,170,255,${(0.55 * tw * k).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(sx, sy, Math.max(1, ppm * 0.05) * (1 + tw), 0, TAU); ctx.fill();
+      }
+    }
     ctx.globalCompositeOperation = 'source-over';
 
     // ---- the entity: a dark mass that blocks the light, a faint rim, dim lights, two eyes ----
@@ -824,6 +852,139 @@ export class Renderer {
     }
   }
 
+  // ---------- water between the eye and everything in it ----------
+  // a layer the size of the screen, with the scene's current transform
+  layerBegin(ctx) {
+    if (!this.fc) { this.fc = document.createElement('canvas'); this.fctx = this.fc.getContext('2d'); }
+    if (this.fc.width !== this.c.width || this.fc.height !== this.c.height) { this.fc.width = this.c.width; this.fc.height = this.c.height; }
+    const f = this.fctx;
+    f.setTransform(1, 0, 0, 1, 0, 0); f.globalCompositeOperation = 'source-over'; f.globalAlpha = 1;
+    // only the part used last time needs clearing; only the part used this time is worked on
+    const lb = this.lastBox;
+    if (lb) f.clearRect(lb[0], lb[1], lb[2] - lb[0], lb[3] - lb[1]); else f.clearRect(0, 0, this.fc.width, this.fc.height);
+    const m = ctx.getTransform();
+    this.lpad = 16 + (m.a === 1 && m.b === 0 && m.c === 0 && m.d === 1 ? 0 : 140);
+    this.lbox = [1e9, 1e9, -1e9, -1e9];
+    f.setTransform(m);
+    return f;
+  }
+  // grow the layer's working box around something drawn at screen (x, y), radius r
+  lgrow(x, y, r) { const b = this.lbox; if (x - r < b[0]) b[0] = x - r; if (y - r < b[1]) b[1] = y - r; if (x + r > b[2]) b[2] = x + r; if (y + r > b[3]) b[3] = y + r; }
+  // veil what was drawn with the colour of the water (it soaks up reds and yellows first, and
+  // softens every edge), add the sun's dapples in the shallows, then lay it onto the scene
+  layerEnd(ctx, g, f, rim = false) {
+    const cam = this.cam, b = this.lbox, pad = this.lpad;
+    f.setTransform(1, 0, 0, 1, 0, 0);
+    if (b[2] < b[0]) { this.lastBox = null; this.lastBox = [0, 0, 0, 0]; return; }
+    const bx = Math.max(0, Math.floor(b[0] - pad)), by = Math.max(0, Math.floor(b[1] - pad));
+    const bw = Math.min(this.W, Math.ceil(b[2] + pad)) - bx, bh = Math.min(this.H, Math.ceil(b[3] + pad)) - by;
+    this.lastBox = [bx, by, bx + Math.max(0, bw), by + Math.max(0, bh)];
+    if (bw <= 0 || bh <= 0) return;
+    const W = this.W, H = this.H;
+    f.save(); f.beginPath(); f.rect(bx, by, bw, bh); f.clip();
+    f.globalCompositeOperation = 'source-atop';
+    const dTop = cam.y - cam.h / 2, dBot = cam.y + cam.h / 2;
+    if (dBot > 0) {
+      const vg = f.createLinearGradient(0, 0, 0, H);
+      for (let i = 0; i <= 4; i++) {
+        const dd = Math.max(0, lerp(dTop, dBot, i / 4));
+        const col = mixRgb(sampleTable(WATER_ALBEDO, dd), [150, 190, 200], 0.15);
+        const a = dd <= 0 ? 0 : 0.1 + 0.24 * smoothstep(0, 90, dd);
+        vg.addColorStop(i / 4, rgbStr(col, a));
+      }
+      f.fillStyle = vg; f.fillRect(bx, by, bw, bh);
+    }
+    // sunlight dapples sliding over the animals near the surface (one tile, made once, slid along)
+    const day = g.dayEff || 0;
+    if (day > 0.2 && dTop < 35) {
+      const ppm = cam.ppm, t = g.time;
+      if (!this.dapT) {
+        const c = document.createElement('canvas'); c.width = c.height = 256;
+        const x = c.getContext('2d');
+        x.strokeStyle = 'rgba(235,250,255,1)'; x.lineCap = 'round';
+        for (let k = 0; k < 9; k++) {
+          x.lineWidth = 5 + (k % 3) * 3;
+          for (const ox of [-256, 0, 256]) {
+            x.beginPath();
+            for (let yy = -8; yy <= 264; yy += 8) x.lineTo(ox + k * 28.4 + Math.sin(yy * 0.05 + k * 1.7) * 9 + yy * 0.3, yy);
+            x.stroke();
+          }
+        }
+        this.dapT = f.createPattern(c, 'repeat');
+      }
+      const sc = ppm * 2.6 * 9 / 256;
+      this.dapT.setTransform(new DOMMatrix([sc, 0, 0, sc, (W / 2 - cam.x * ppm) % (256 * sc) + t * ppm * 0.4, -cam.y * ppm * 0.2]));
+      const a = 0.16 * day;
+      // fades out with depth: full at the surface, gone by 35 m
+      const fg = Math.max(0, 1 - Math.max(0, dTop) / 35);
+      f.globalAlpha = a * fg; f.fillStyle = this.dapT; f.fillRect(bx, by, bw, bh); f.globalAlpha = 1;
+    }
+    f.globalCompositeOperation = 'source-over';
+    // light from above: a soft bright rim along every top edge and a shade along every belly,
+    // found from the layer itself (what has nothing above it, what has nothing below it)
+    if (rim && dBot > 0) {
+      const k = Math.max(1, Math.round(cam.ppm * 0.035));
+      if (!this.rc) { this.rc = document.createElement('canvas'); this.rctx = this.rc.getContext('2d'); }
+      if (this.rc.width !== this.fc.width || this.rc.height !== this.fc.height) { this.rc.width = this.fc.width; this.rc.height = this.fc.height; }
+      const r = this.rctx, sun = clamp(1 - Math.max(0, cam.y) / 260, 0.25, 1) * (0.55 + 0.45 * (g.dayEff || 0));
+      for (const [dy, col, a] of [[k, 'rgb(225,240,245)', 0.32 * sun], [-k, 'rgb(4,10,18)', 0.3]]) {
+        r.setTransform(1, 0, 0, 1, 0, 0); r.globalCompositeOperation = 'source-over'; r.clearRect(bx, by, bw, bh);
+        r.drawImage(this.fc, bx, by, bw, bh, bx, by, bw, bh);
+        r.globalCompositeOperation = 'destination-out'; r.drawImage(this.fc, bx, by, bw, bh, bx, by + dy, bw, bh);
+        r.globalCompositeOperation = 'source-in'; r.fillStyle = col; r.fillRect(bx, by, bw, bh);
+        f.globalCompositeOperation = 'source-atop'; f.globalAlpha = a; f.drawImage(this.rc, bx, by, bw, bh, bx, by, bw, bh);
+        f.globalAlpha = 1; f.globalCompositeOperation = 'source-over';
+      }
+    }
+    f.restore();
+    const m = ctx.getTransform();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(this.fc, bx, by, bw, bh, bx, by, bw, bh); ctx.setTransform(m);
+  }
+  // a seamless grey noise tile (several octaves), made once
+  noiseTile(name, size, seed, octaves, contrast) {
+    this.tiles = this.tiles || {};
+    if (this.tiles[name]) return this.tiles[name];
+    const c = document.createElement('canvas'); c.width = c.height = size;
+    const x = c.getContext('2d'), img = x.createImageData(size, size);
+    const hash = (i, j, o) => { let h = (i * 374761393 + j * 668265263 + o * 974711 + seed * 144665) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
+    // periodic gradient noise: smooth, no blocky cells, and it tiles
+    const vals = new Float32Array(size * size);
+    for (let o = 0; o < octaves; o++) {
+      const cells = 3 << o, amp = Math.pow(0.52, o);
+      const gx = [], gy = [];
+      for (let j = 0; j < cells; j++) for (let i = 0; i < cells; i++) { const a = hash(i, j, o) * TAU; gx.push(Math.cos(a)); gy.push(Math.sin(a)); }
+      const dot = (i, j, dx, dy) => { const k = (j % cells) * cells + (i % cells); return gx[k] * dx + gy[k] * dy; };
+      const fade = (q) => q * q * q * (q * (q * 6 - 15) + 10);
+      for (let py = 0; py < size; py++) for (let px = 0; px < size; px++) {
+        const fx = px / size * cells, fy = py / size * cells;
+        const i0 = Math.floor(fx), j0 = Math.floor(fy), dx = fx - i0, dy = fy - j0;
+        const u2 = fade(dx), v2 = fade(dy);
+        const n = lerp(lerp(dot(i0, j0, dx, dy), dot(i0 + 1, j0, dx - 1, dy), u2), lerp(dot(i0, j0 + 1, dx, dy - 1), dot(i0 + 1, j0 + 1, dx - 1, dy - 1), u2), v2);
+        vals[py * size + px] += n * amp;
+      }
+    }
+    let lo = 1e9, hi = -1e9;
+    for (const v of vals) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    for (let i = 0; i < vals.length; i++) {
+      const v = clamp(128 + ((vals[i] - lo) / (hi - lo) - 0.5) * 255 * contrast, 0, 255);
+      img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v; img.data[i * 4 + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    return (this.tiles[name] = c);
+  }
+  // fill the current clip with a noise tile pinned to the world (ox, oy: where its corner sits)
+  texture(ctx, name, metres, alpha, op = 'soft-light', ox = 0, oy = 0) {
+    const tile = name === 'murk' ? this.noiseTile('murk', 192, 7, 3, 1.3) : name === 'grain' ? this.noiseTile('grain', 192, 3, 4, 1.2) : this.noiseTile('rock', 192, 11, 5, 1.3);
+    this.pats = this.pats || {};
+    const pat = this.pats[name] || (this.pats[name] = ctx.createPattern(tile, 'repeat'));
+    const k = metres * this.cam.ppm / tile.width;
+    pat.setTransform(new DOMMatrix([k, 0, 0, k, ox, oy]));
+    ctx.save();
+    ctx.globalCompositeOperation = op; ctx.globalAlpha = alpha; ctx.fillStyle = pat;
+    ctx.fillRect(-this.W * 0.2, -this.H * 0.2, this.W * 1.4, this.H * 1.4);
+    ctx.restore();
+  }
+
   drawFloor(g, S, Sy, ppm, x0, x1) {
     const ctx = this.ctx, H = this.H, W = this.W;
     const step = Math.max(0.5, 6 / ppm);
@@ -838,6 +999,18 @@ export class Renderer {
     ctx.fillStyle = fg; ctx.fill();
     // grain texture
     ctx.save(); ctx.clip();
+    // rock and sediment: large mottling and a fine grain, pinned to the world so they never swim
+    this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, this.cam.y), 'soft-light', S(0), Sy(0));
+    if (ppm > 14) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61));
+    // a pale skin of settled silt just under the surface line, darkening below
+    {
+      ctx.beginPath();
+      for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)) + ppm * 0.18);
+      ctx.strokeStyle = 'rgba(235,228,205,0.10)'; ctx.lineWidth = ppm * 0.36; ctx.stroke();
+      ctx.beginPath();
+      for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)) + ppm * 0.9);
+      ctx.strokeStyle = 'rgba(0,0,0,0.10)'; ctx.lineWidth = ppm * 0.9; ctx.stroke();
+    }
     ctx.fillStyle = 'rgba(0,0,0,0.12)';
     const gx0 = Math.floor(x0 * 3), gx1 = Math.ceil(x1 * 3);
     for (let i = gx0; i < gx1; i++) {
@@ -871,6 +1044,83 @@ export class Renderer {
     ctx.beginPath(); for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)) + 1); ctx.stroke();
   }
 
+  // the small things on the bottom: pebbles and shells in the shallows, burrows and worm tubes on
+  // the shelf, brittle stars and sea pens on the slope, sea cucumbers, tracks and lumpy
+  // xenophyophores on the abyssal plain. Placed by hash, so they are always in the same place.
+  drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t) {
+    if (ppm < 12) return;
+    const W = g.world, CELL = 0.65, u = ppm;
+    const h = (i, k) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
+    const blob = (x, y, rx, ry, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill(); };
+    const pebbles = (i, tone) => {
+      const n = 1 + Math.floor(h(i, 5) * 3);
+      for (let k = 0; k < n; k++) {
+        const r = u * (0.04 + h(i, 10 + k) * 0.07), ox = (h(i, 20 + k) - 0.5) * u * 0.4;
+        blob(ox, -r * 0.5, r, r * 0.7, `rgb(${tone + Math.round(h(i, 30 + k) * 30)},${tone - 4 + Math.round(h(i, 31 + k) * 26)},${tone - 12 + Math.round(h(i, 32 + k) * 20)})`);
+      }
+    };
+    const burrow = (i) => { blob(0, -u * 0.04, u * 0.22, u * 0.07, 'rgba(225,215,190,0.18)'); blob(0, -u * 0.03, u * 0.06, u * 0.03, 'rgba(0,0,0,0.55)'); };
+    const brittle = (i, col) => {
+      ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, u * 0.018); ctx.lineCap = 'round';
+      for (let k = 0; k < 5; k++) {
+        const a0 = k / 5 * TAU + h(i, 7) * 3, c1 = Math.sin(t * 0.6 + k + i) * 0.4;
+        ctx.beginPath(); ctx.moveTo(0, -u * 0.02);
+        ctx.quadraticCurveTo(Math.cos(a0) * u * 0.1, -u * 0.02 + Math.sin(a0) * u * 0.03, Math.cos(a0 + c1) * u * 0.2, -u * 0.02 + Math.sin(a0 + c1) * u * 0.05);
+        ctx.stroke();
+      }
+      blob(0, -u * 0.025, u * 0.035, u * 0.025, col);
+      ctx.lineCap = 'butt';
+    };
+    const seaPen = (i, col) => {
+      const hgt = u * (0.3 + h(i, 8) * 0.35), sway = Math.sin(t * 0.5 + i * 0.7) * u * 0.06;
+      ctx.strokeStyle = col; ctx.lineWidth = Math.max(1, u * 0.02);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(sway * 0.3, -hgt * 0.5, sway, -hgt); ctx.stroke();
+      ctx.lineWidth = Math.max(1, u * 0.012);
+      for (let k = 0; k < 7; k++) {
+        const f = 0.4 + k * 0.085, px = sway * f * f, py = -hgt * f;
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px - u * 0.05, py + u * 0.03); ctx.moveTo(px, py); ctx.lineTo(px + u * 0.05, py + u * 0.03); ctx.stroke();
+      }
+    };
+    for (let i = Math.floor(x0 / CELL); i <= Math.ceil(x1 / CELL); i++) {
+      const r = h(i, 1), x = (i + h(i, 2)) * CELL, d = W.floorAt(x);
+      if (d < 0.6 || r > 0.62) continue;
+      const sl = W.slopeAt(x);
+      if (Math.abs(sl) > 0.9) continue;
+      ctx.save(); ctx.translate(S(x), Sy(d) + u * 0.03); ctx.rotate(Math.atan(sl) * 0.8);
+      if (d < 45) {
+        if (r < 0.28) pebbles(i, 150);
+        else if (r < 0.38) { ctx.fillStyle = 'rgba(240,230,210,0.75)'; ctx.beginPath(); ctx.arc(0, 0, u * 0.06, Math.PI, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(120,100,80,0.5)'; ctx.lineWidth = 1; ctx.stroke(); }
+        else if (r < 0.43 && x > 2780) { blob(0, -u * 0.06, u * 0.07, u * 0.06, '#241a26'); ctx.strokeStyle = '#2e2232'; ctx.lineWidth = Math.max(1, u * 0.012); for (let k = 0; k < 9; k++) { const a0 = Math.PI + k / 8 * Math.PI; ctx.beginPath(); ctx.moveTo(Math.cos(a0) * u * 0.06, -u * 0.06 + Math.sin(a0) * u * 0.05); ctx.lineTo(Math.cos(a0) * u * 0.14, -u * 0.06 + Math.sin(a0) * u * 0.12); ctx.stroke(); } }
+        else if (r < 0.55) { ctx.strokeStyle = 'rgba(250,240,215,0.16)'; ctx.lineWidth = Math.max(1, u * 0.03); ctx.beginPath(); ctx.moveTo(-u * 0.25, -u * 0.01); ctx.quadraticCurveTo(0, -u * 0.08, u * 0.25, -u * 0.01); ctx.stroke(); }
+        else if (r < 0.58 && x > 2780) { ctx.fillStyle = '#c8603a'; ctx.beginPath(); for (let k = 0; k < 10; k++) { const a0 = -Math.PI / 2 + k / 10 * TAU, rr = k % 2 ? u * 0.035 : u * 0.1; ctx.lineTo(Math.cos(a0) * rr, -u * 0.03 + Math.sin(a0) * rr * 0.4); } ctx.fill(); }
+      } else if (d < 250) {
+        if (r < 0.22) pebbles(i, 105);
+        else if (r < 0.33) burrow(i);
+        else if (r < 0.41) { ctx.strokeStyle = 'rgba(225,215,195,0.6)'; ctx.lineWidth = Math.max(1, u * 0.02); for (let k = 0; k < 4; k++) { const ox = (k - 1.5) * u * 0.04, hh = u * (0.08 + h(i, 40 + k) * 0.12); ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox + Math.sin(t * 0.7 + k) * u * 0.01, -hh); ctx.stroke(); } }
+        else if (r < 0.46) { ctx.strokeStyle = 'rgba(210,190,170,0.7)'; ctx.lineWidth = Math.max(1, u * 0.03); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -u * 0.1); ctx.stroke(); ctx.lineWidth = Math.max(1, u * 0.012); for (let k = 0; k < 7; k++) { const a0 = -Math.PI / 2 + (k - 3) * 0.3 + Math.sin(t + i) * 0.1; ctx.beginPath(); ctx.moveTo(0, -u * 0.1); ctx.lineTo(Math.cos(a0) * u * 0.08, -u * 0.1 + Math.sin(a0) * u * 0.08); ctx.stroke(); } }
+        else if (r < 0.5) seaPen(i, 'rgba(220,170,120,0.75)');
+        else blob(0, -u * 0.02, u * (0.08 + r * 0.1), u * 0.035, 'rgba(200,195,175,0.22)');
+      } else if (d < 1200) {
+        if (r < 0.12) brittle(i, 'rgba(205,175,160,0.8)');
+        else if (r < 0.2) seaPen(i, 'rgba(230,200,160,0.7)');
+        else if (r < 0.3) burrow(i);
+        else if (r < 0.36) { ctx.fillStyle = 'rgba(225,230,220,0.4)'; ctx.beginPath(); ctx.moveTo(-u * 0.05, 0); ctx.quadraticCurveTo(-u * 0.09, -u * 0.25, -u * 0.06, -u * 0.32); ctx.lineTo(u * 0.06, -u * 0.32); ctx.quadraticCurveTo(u * 0.09, -u * 0.25, u * 0.05, 0); ctx.fill(); }
+        else if (r < 0.5) pebbles(i, 80);
+        else if (r < 0.54) { blob(0, -u * 0.06, u * 0.16, u * 0.06, 'rgba(150,110,100,0.85)'); blob(-u * 0.04, -u * 0.09, u * 0.06, u * 0.02, 'rgba(255,230,220,0.15)'); }
+        else blob(0, -u * 0.02, u * (0.06 + r * 0.1), u * 0.03, 'rgba(210,205,190,0.2)');
+      } else {
+        if (r < 0.09) { ctx.fillStyle = 'rgba(205,195,170,0.75)'; ctx.beginPath(); for (let k = 0; k <= 12; k++) { const a0 = Math.PI + k / 12 * Math.PI, rr = u * (0.12 + 0.03 * Math.sin(k * 2.3 + i)); ctx.lineTo(Math.cos(a0) * rr, Math.sin(a0) * rr * 0.8); } ctx.fill(); }
+        else if (r < 0.17) brittle(i, 'rgba(200,190,175,0.75)');
+        else if (r < 0.22) { blob(0, -u * 0.07, u * 0.17, u * 0.07, 'rgba(215,150,160,0.8)'); ctx.fillStyle = 'rgba(215,150,160,0.8)'; for (let k = 0; k < 5; k++) ctx.fillRect(-u * 0.12 + k * u * 0.06, -u * 0.02, Math.max(1, u * 0.015), u * 0.03); for (let k = 0; k < 3; k++) ctx.fillRect(-u * 0.12 + k * u * 0.025, -u * 0.17, Math.max(1, u * 0.012), u * 0.05); }
+        else if (r < 0.34) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; for (let k = 0; k < 8; k++) ctx.fillRect(k * u * 0.07 - u * 0.25, -u * 0.01 + Math.sin(k * 0.9 + i) * u * 0.015, Math.max(1, u * 0.025), Math.max(1, u * 0.015)); }
+        else if (r < 0.44) burrow(i);
+        else if (r < 0.48) { ctx.strokeStyle = 'rgba(200,190,160,0.7)'; ctx.lineWidth = Math.max(1, u * 0.015); const hh = u * (0.4 + h(i, 9) * 0.3), sw = Math.sin(t * 0.3 + i) * u * 0.04; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(0, -hh * 0.6, sw, -hh); ctx.stroke(); for (let k = 0; k < 6; k++) { const a0 = -Math.PI / 2 + (k - 2.5) * 0.35; ctx.beginPath(); ctx.moveTo(sw, -hh); ctx.quadraticCurveTo(sw + Math.cos(a0) * u * 0.08, -hh + Math.sin(a0) * u * 0.1, sw + Math.cos(a0) * u * 0.12, -hh + u * 0.02); ctx.stroke(); } }
+        else blob(0, -u * 0.02, u * (0.06 + r * 0.1), u * 0.03, 'rgba(200,200,190,0.18)');
+      }
+      ctx.restore();
+    }
+  }
+
   drawRock(ctx, rk, S, Sy, ppm) {
     ctx.beginPath();
     for (const p of rk.poly) ctx.lineTo(S(p.x), Sy(p.y));
@@ -883,6 +1133,26 @@ export class Renderer {
     ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = Math.max(1, ppm * 0.04); ctx.stroke();
     // encrusting life specks
     ctx.save(); ctx.clip();
+    this.texture(ctx, 'rock', 11, 0.55, 'soft-light', S(rk.x0 * 0.37), Sy(rk.y0 * 0.61));
+    if (ppm > 14) this.texture(ctx, 'grain', 2.3, 0.3, 'soft-light', S(0), Sy(0));
+    // cracks running in from the edges, made once per rock
+    if (!rk.cracks) {
+      let sd = Math.abs(Math.sin(rk.x0 * 12.9898 + rk.y0 * 78.233) * 43758.5453);
+      const rnd = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+      const cx = (rk.x0 + rk.x1) / 2, cy = (rk.y0 + rk.y1) / 2;
+      rk.cracks = [];
+      const n = 2 + Math.floor(rnd() * 3);
+      for (let k = 0; k < n; k++) {
+        const v = rk.poly[Math.floor(rnd() * rk.poly.length)];
+        const pts = [[v.x, v.y]];
+        let px = v.x, py = v.y;
+        const len = 0.25 + rnd() * 0.45;
+        for (let j = 0; j < 4; j++) { px = lerp(px, cx, len / 2.2) + (rnd() - 0.5) * 0.6; py = lerp(py, cy, len / 2.2) + (rnd() - 0.5) * 0.6; pts.push([px, py]); }
+        rk.cracks.push(pts);
+      }
+    }
+    ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = Math.max(1, ppm * 0.035);
+    for (const cr of rk.cracks) { ctx.beginPath(); for (const [cx2, cy2] of cr) ctx.lineTo(S(cx2), Sy(cy2)); ctx.stroke(); }
     ctx.fillStyle = d < 200 ? 'rgba(160,120,90,0.25)' : 'rgba(200,200,190,0.12)';
     for (let k = 0; k < 10; k++) {
       const p = rk.poly[(k * 3) % rk.poly.length];

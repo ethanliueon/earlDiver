@@ -622,7 +622,7 @@ function update(dt) {
 
   if (g.mode === 'menu') {
     g.dayEff = g.day.light; g.fx.dread = 0;
-    e.x = 500; e.y = 8;
+    e.x = BOAT.x - 12; e.y = 8;
     g.fauna.surfY = g.surfY;
   g.fauna.update(dt, renderer.cam, { x: -999, y: -999, speedNow: 0 }, null, 0, g.time);
     updateBubbles(dt);
@@ -1193,4 +1193,4 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // debug hooks for automated testing
-window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, step: (dt) => update(dt), keys };
+window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, step: (dt) => update(dt), keys };
