@@ -1,11 +1,11 @@
 // Frenzies: short lucky streaks, earned by diving. Every time Earl comes back to the surface from a
 // trip that went deeper than half his sub's rating, with enough time spent underwater since the
 // last frenzy (his air plus the sub's air, in minutes, x0.6), and at least 5 minutes since the last
-// one, there is a 20 % chance of a frenzy. Only one runs at a time; each lasts 3 minutes.
+// one, there is a 20 % chance of a frenzy. Only one runs at a time; each lasts 5 minutes.
 
-export const FRENZY_TIME = 180;
+export const FRENZY_TIME = 300; // 5 minutes; a market frenzy pays once: the first sale ends it
 export const FRENZIES = {
-  market: { name: 'Market frenzy', what: 'Everything sells for double' },
+  market: { name: 'Market frenzy', what: 'Your next sale pays double' },
   breath: { name: 'Deep breath', what: 'Air lasts twice as long, for you and the sub' },
   rare: { name: 'Rare tide', what: 'Rare forms appear three times as often' },
   net: { name: 'Lucky net', what: '+25 % catch odds' },

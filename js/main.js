@@ -182,6 +182,8 @@ function sellAll() {
   const total = lines.reduce((a, l) => a + l.total, 0);
   g.earned += total;
   if (total > 0) audio.cue && audio.cue('sale');
+  // a market frenzy pays out once: this sale was the double one
+  if (total > 0 && frenzyOn(g, 'market')) { g.frenzy = null; hud.toast('Market frenzy: sold at double', 'note'); }
   saveProfile(profile);
   audio.ready && audio.pickup();
   return { lines, total };
@@ -599,7 +601,7 @@ function update(dt) {
     const fzNew = updateFrenzy(g, dt);
     if (fzNew) {
       const F = FRENZIES[fzNew.id];
-      hud.toast(F.name, 'frenzy'); hud.toast(`${F.what} · 3 minutes`, 'note');
+      hud.toast(F.name, 'frenzy'); hud.toast(`${F.what} · 5 minutes`, 'note');
       audio.ready && audio.sapphire(); audio.cue && audio.cue('frenzy');
     }
     g.airMul = frenzyOn(g, 'breath') ? 0.5 : 1;
