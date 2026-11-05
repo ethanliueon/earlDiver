@@ -310,12 +310,14 @@ export class Audio {
       if (this.groanT <= 0) { this.groanT = 9 + Math.random() * 12; this.groan(0.05 + fx.dread * 0.12); }
     }
     // hull
-    if (e.inSub && g.sub.stress > 0 && !g.sub.imploded) {
-      const failing = g.sub.failing != null;
-      this.creakT -= dt;
-      if (this.creakT > 0.6 && failing) this.creakT = 0.2;
+    // only past its rating, and sparingly: every 10-16 s just past it, every 4-7 s deep past it
+    const rr = g.sub.y / g.sub.rated;
+    if (e.inSub && rr > 1 && !g.sub.imploded) {
+      const failing = g.sub.failing != null, k = clamp((rr - 1) / 0.5, 0, 1);
+      this.creakT = (this.creakT ?? 3) - dt;
+      if (this.creakT > 1.2 && failing) this.creakT = 0.4;
       if (this.creakT <= 0) {
-        this.creakT = failing ? 0.25 + Math.random() * 0.35 : 2.5 - g.sub.stress * 2 + Math.random();
+        this.creakT = failing ? 0.7 + Math.random() * 0.5 : lerp(10, 4, k) + Math.random() * lerp(6, 3, k);
         this.creak(failing ? 0.9 + Math.random() * 0.3 : 0.25 + g.sub.stress * 0.5);
       }
     }

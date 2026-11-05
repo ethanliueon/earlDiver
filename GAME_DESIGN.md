@@ -20,7 +20,8 @@ by a hidden calm meter that fills with peaceful catches, sales and photos.
 Recorded effects (CC0, see the README): water lapping, softly, only while air is going in at the
 surface (for as long as the refill takes, fading as the tank fills), now and then
 a gull by day; a plop as an animal goes into a chamber, a splash into the open tank; the hull
-creaking past its rating (faster and louder the deeper, frantic while it fails) and the implosion;
+creaking past its rating (now and then: every 10-16 s just past it, every 4-7 s far past it, about
+once a second while it fails) and the implosion;
 soft clicks and a hover tick for the menus, a soft page turn as the journal opens (the other
 screens open silently), coins for a sale. Nothing of Earl himself
 is recorded.
@@ -119,9 +120,9 @@ Tools change their look as they are levelled (the hand net grows into a pro capt
 - 5 **traps**: set on the bottom, a line to a buoy; they fill with crustaceans, octopus, eels and
   bottom fish. Haul from the buoy or empty underwater. The deep trap's lit bait draws the entity.
 - **Sub arm**: from inside the sub, reach for an animal up to a metre long and time the grip.
-- Inside the sub nothing in the water is offered (no collect, observe, cut or haul prompts): only the
-  sub's own controls and the arm. Its cabin is at surface pressure, so the pressure and the entity's
-  sway, blur and double vision only ever happen in the water.
+- From inside the sub, things within reach in the water are still offered (collect, observe, haul a
+  trap). Its cabin is at surface pressure, so the pressure and the entity's sway, blur and double
+  vision only ever happen in the water.
 - Catches (the net's and the arm's) go in the catch bag (3/5/8). Nothing moves by itself: in the
   tank room (T) drag each one into a chamber or the open tank (4/8/12).
 

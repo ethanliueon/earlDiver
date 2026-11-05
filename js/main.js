@@ -498,7 +498,6 @@ function readMove() {
 // ---------------- interactions ----------------
 function findTarget() {
   const e = g.earl, W = g.world;
-  if (e.inSub) return null; // the sub reaches for nothing but with its arm
   const tn = trapNear(g);
   if (tn) return { kind: 'trap', ...tn };
   const reach = e.inSub ? 7 : 2.4;
