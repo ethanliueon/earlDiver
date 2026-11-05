@@ -46,7 +46,8 @@ export class Hud {
     if (owns(P, 'tagger')) tools.push(['3', 'tag', G('tag').look, G('tag').name]);
     if (owns(P, 'camera')) tools.push(['4', 'cam', G('cam').look, G('cam').name]);
     const tr = P.traps || {};
-    if ((tr.pot || 0) + (tr.deep || 0) > 0) tools.push(['5', 'trap', tr.pot ? 0 : 1, 'Traps']);
+    const ownedTraps = ['pot', 'fish', 'steel', 'cage'].reduce((a, k) => a + (tr[k] || 0), 0);
+    if (ownedTraps > 0) tools.push(['5', 'trap', ['pot', 'fish', 'steel', 'cage'].findIndex((k) => tr[k] > 0), 'Traps']);
     const sw = 84 * s, sh = 46 * s, gap = 8 * s;
     const total = tools.length * sw + (tools.length - 1) * gap;
     let x = W / 2 - total / 2;
@@ -63,7 +64,7 @@ export class Hud {
       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.fillText(key, x + 5 * s, y + 4 * s);
       if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.shots ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${g.shots}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
-      if (kind === 'trap') { const free = (tr.pot || 0) + (tr.deep || 0) - g.traps.length; ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
+      if (kind === 'trap') { const free = ownedTraps - g.traps.length; ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       if (kind === 'tag' && (g.tags.length)) { ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(232,176,42,0.9)'; ctx.fillText(`${g.tags.length}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       // sweep / reload progress along the bottom edge
       if (on && g.capture && g.capture.kind === kind) {
@@ -257,6 +258,13 @@ export class Hud {
     this.sweep = (this.sweep + dt * 1.6) % TAU;
     const sg = ctx.createConicGradient ? ctx.createConicGradient(this.sweep - 0.9, rcx, rcy) : null;
     if (sg) { sg.addColorStop(0, 'rgba(80,220,160,0)'); sg.addColorStop(0.14, 'rgba(80,220,160,0.22)'); sg.addColorStop(0.145, 'rgba(80,220,160,0)'); ctx.fillStyle = sg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
+    // his traps: small amber marks where their lines are
+    for (const tr of g.traps || []) {
+      const dx = tr.x - e.x, dy = tr.y - e.y, d = Math.hypot(dx, dy);
+      if (d > 200) continue;
+      const k = rr * Math.min(1, d / 200);
+      ctx.fillStyle = 'rgba(240,190,90,0.9)'; ctx.beginPath(); ctx.arc(rcx + dx / (d || 1) * k, rcy + dy / (d || 1) * k, 2 * s, 0, TAU); ctx.fill();
+    }
     const ent = g.entity;
     if (ent && ent.dist < 200 && !dying) {
       const a = Math.atan2(ent.y - e.y, ent.x - e.x);

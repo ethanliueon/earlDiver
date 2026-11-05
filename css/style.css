@@ -82,8 +82,8 @@ kbd {
   background-image: repeating-linear-gradient(transparent 0 29px, rgba(70, 90, 120, 0.22) 29px 30px);
 }
 .small { font-size: 12px; color: rgba(43, 35, 24, 0.5); margin: 8px 0 0; font-style: italic; }
-#journal-close, #workshop-close { background: none; border: 0; font-size: 28px; line-height: 1; color: inherit; opacity: 0.6; }
-#journal-close:hover, #workshop-close:hover { opacity: 1; }
+#journal-close, #workshop-close, #trapset-close { background: none; border: 0; font-size: 28px; line-height: 1; color: inherit; opacity: 0.6; }
+#journal-close:hover, #workshop-close:hover, #trapset-close:hover { opacity: 1; }
 
 /* ---------- panels ---------- */
 .panel {
@@ -528,3 +528,18 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .tr-dragnote { position: absolute; left: 50%; bottom: 14%; transform: translateX(-50%); padding: 6px 14px; border-radius: 3px; font: 12px var(--mono); color: #f0dca0; background: rgba(20,22,23,0.75); box-shadow: 0 0 0 1px rgba(201,166,90,0.5); pointer-events: none !important; }
 .btag .hint { display: block; margin-top: 4px; font: 10px var(--mono); opacity: 0.7; }
 .tankroom .tr-canvas { touch-action: none; }
+
+/* ---------- setting a trap: a depth meter ---------- */
+#trapset { min-width: 380px; }
+.ts-types { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.panel .ts-types button { width: auto; flex: 1; margin: 0; padding: 7px 8px; font-size: 12px; background: rgba(255,255,255,0.08); color: var(--ink); border: 1px solid var(--line); }
+.panel .ts-types button.on { background: rgba(230,236,232,0.9); color: #0b1418; }
+.panel .ts-types button:disabled { opacity: 0.35; }
+.ts-meter { display: flex; align-items: center; gap: 6px; justify-content: center; margin: 4px 0 8px; }
+.panel .ts-meter button { width: 46px; margin: 0; padding: 9px 0; background: rgba(255,255,255,0.08); color: var(--ink); border: 1px solid var(--line); }
+.ts-read { min-width: 120px; text-align: center; background: rgba(0,0,0,0.35); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+.ts-read b { display: block; font: 500 34px var(--mono); color: #bfe6ff; }
+.ts-read span { font-size: 11px; color: var(--muted); }
+#ts-slider { width: 100%; accent-color: #8fd0ff; }
+.ts-warn { color: #f0c070 !important; font-size: 13px; }
+.panel #trapset-close { display: inline; width: auto; margin: 0; padding: 0 4px; background: none; color: inherit; }

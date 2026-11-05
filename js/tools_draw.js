@@ -1,5 +1,6 @@
 // Earl's catching gear, drawn in his local frame (u = his height / 100, about 2 cm).
 // Every tool is drawn from its grip (the origin) out along +x; the caller rotates it.
+import { TRAPS } from './economy.js';
 import { TAU, clamp } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 
@@ -345,12 +346,118 @@ export function toolIcon(kind, tier, w, h) {
     ctx.translate(w * (tier === 0 ? 0.12 : 0.2), h * 0.42); ctx.rotate(-0.06);
     drawTagger(ctx, u, tier, 0.4, 0, true);
   } else if (kind === 'trap') {
-    ctx.translate(w / 2, h * 0.86);
-    drawTrap(ctx, h * 1.1, tier ? 'deep' : 'pot', 0.5, []);
+    const type = ['pot', 'fish', 'steel', 'cage'][tier] || 'pot', T = TRAPS[type];
+    const mm = Math.min(w * 0.75 / T.size[0], h * 0.62 / (T.size[1] * 1.4));
+    ctx.translate(w / 2, h * 0.88);
+    drawBoxTrap(ctx, mm, type, 0.5, []);
   } else if (kind === 'cam') {
     const u = h / (tier === 0 ? 14 : 30);
     ctx.translate(w * 0.42, h * 0.5);
     drawCamera(ctx, u, tier, 0, 0);
   }
   return c;
+}
+
+
+// ---------- box traps (set on a line from a buoy) ----------
+// A box trap at m pixels per metre, origin at the middle of its bottom edge. type: pot | fish | steel |
+// cage. inside: what is in it, drawn by drawFish(ctx, sp, lenPx, phase) in the trap's frame. Returns
+// the line's attachment point (top) and, for the deep cage, where its lure glows.
+export function drawBoxTrap(ctx, m, type, t, inside = [], drawFish = null) {
+  const T = TRAPS[type] || TRAPS.pot, W = T.size[0] * m, H = T.size[1] * m;
+  const x0 = -W / 2, y0 = -H, lw = (k) => Math.max(1, k * m);
+  const tall = type === 'cage';
+  const frameCol = type === 'pot' ? '#9aa39a' : type === 'fish' ? '#6c7a6e' : '#3e4448';
+  const meshCol = type === 'pot' ? 'rgba(190,200,190,0.55)' : type === 'fish' ? 'rgba(150,175,160,0.5)' : 'rgba(150,160,165,0.45)';
+  // the back mesh, faint (seen through the box)
+  ctx.strokeStyle = meshCol.replace(/[\d.]+\)$/, '0.22)'); ctx.lineWidth = lw(0.01);
+  const cell = (tall ? 0.09 : type === 'pot' ? 0.06 : 0.08) * m;
+  ctx.beginPath();
+  for (let x = x0 + cell * 0.5; x < -x0; x += cell) { ctx.moveTo(x + cell * 0.3, y0 + H * 0.06); ctx.lineTo(x + cell * 0.3, -H * 0.04); }
+  for (let y = y0 + cell * 0.5; y < 0; y += cell) { ctx.moveTo(x0 + W * 0.05, y - cell * 0.2); ctx.lineTo(-x0 - W * 0.05, y - cell * 0.2); }
+  ctx.stroke();
+  // what is inside: swimming slow circuits, bumping the mesh (crabs on the floor of the box)
+  if (drawFish && inside.length) {
+    ctx.save(); ctx.beginPath(); ctx.rect(x0 + lw(0.02), y0 + lw(0.02), W - lw(0.04), H - lw(0.04)); ctx.clip();
+    inside.forEach((f, i) => {
+      const k = i * 2.39 + (f.seed || 0), sp = f.sp;
+      const onFloor = sp.v.hab === 'floor';
+      const lx = Math.sin(t * 0.55 + k) * W * 0.3, ly = onFloor ? -m * 0.06 : -H * (0.28 + 0.44 * ((i * 0.37 + 0.1) % 1)) + Math.sin(t * 0.9 + k) * H * 0.05;
+      const dir = Math.cos(t * 0.55 + k) >= 0 ? -1 : 1;  // facing the way it swims
+      const L = Math.min(f.len * m * 1.3, W * 0.8, tall ? W * 0.8 : H * 1.4);
+      ctx.save(); ctx.translate(lx, ly); ctx.scale(dir, 1);
+      if (f.dead) ctx.rotate(Math.PI), ctx.globalAlpha = 0.6;
+      drawFish(ctx, sp, L, t * (f.dead ? 0 : 1) + k);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+  // the bait bag hanging from the roof (and the deep cage's lure lantern)
+  const bx = W * 0.06, by = y0 + H * (tall ? 0.18 : 0.32);
+  ctx.strokeStyle = 'rgba(60,50,40,0.9)'; ctx.lineWidth = lw(0.008);
+  ctx.beginPath(); ctx.moveTo(bx, y0); ctx.lineTo(bx, by - m * 0.05); ctx.stroke();
+  let glow = null;
+  if (T.lure) {
+    ctx.fillStyle = '#20282a'; ctx.fillRect(bx - m * 0.06, by - m * 0.05, m * 0.12, m * 0.04);
+    ctx.fillStyle = `rgba(150,255,215,${(0.75 + 0.2 * Math.sin(t * 2.3)).toFixed(2)})`; ctx.beginPath(); ctx.ellipse(bx, by + m * 0.06, m * 0.05, m * 0.08, 0, 0, TAU); ctx.fill();
+    glow = [bx, by + m * 0.06];
+  } else {
+    ctx.fillStyle = '#7a3a2a'; ctx.beginPath(); ctx.ellipse(bx, by + m * 0.04, m * 0.06, m * 0.08, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(210,200,170,0.5)'; ctx.lineWidth = lw(0.006);
+    ctx.beginPath(); for (let k = -2; k <= 2; k++) { ctx.moveTo(bx + k * m * 0.02, by - m * 0.03); ctx.lineTo(bx + k * m * 0.03, by + m * 0.12); } ctx.stroke(); // its mesh
+  }
+  // the front mesh
+  ctx.strokeStyle = meshCol; ctx.lineWidth = lw(0.012);
+  ctx.beginPath();
+  for (let x = x0 + cell; x < -x0 - 1; x += cell) { ctx.moveTo(x, y0); ctx.lineTo(x, 0); }
+  for (let y = y0 + cell; y < -1; y += cell) { ctx.moveTo(x0, y); ctx.lineTo(-x0, y); }
+  ctx.stroke();
+  // funnels: cones of mesh narrowing inward, at one end or both
+  const funnel = (side) => {
+    const ex = side * W / 2, mouth = Math.min(H * 0.42, m * 0.35), inner = mouth * 0.25, depth = W * (type === 'pot' ? 0.32 : 0.24), cy = -H * (tall ? 0.3 : 0.45);
+    ctx.fillStyle = 'rgba(12,16,16,0.35)';
+    ctx.beginPath(); ctx.moveTo(ex, cy - mouth); ctx.lineTo(ex - side * depth, cy - inner); ctx.lineTo(ex - side * depth, cy + inner); ctx.lineTo(ex, cy + mouth); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = meshCol; ctx.lineWidth = lw(0.01);
+    ctx.beginPath(); for (let k = 0; k <= 4; k++) { const f = k / 4; ctx.moveTo(ex, cy - mouth + f * mouth * 2); ctx.lineTo(ex - side * depth, cy - inner + f * inner * 2); } ctx.stroke();
+    ctx.strokeStyle = frameCol; ctx.lineWidth = lw(0.02);
+    ctx.beginPath(); ctx.moveTo(ex - side * depth, cy - inner); ctx.lineTo(ex - side * depth, cy + inner); ctx.stroke(); // its stiff inner ring
+  };
+  funnel(-1); if (T.funnels > 1) funnel(1);
+  // the frame: bars round the box (and the steel pot's divider, the cage's hoops)
+  ctx.strokeStyle = frameCol; ctx.lineWidth = lw(type === 'pot' ? 0.02 : type === 'fish' ? 0.03 : 0.05); ctx.lineJoin = 'round';
+  ctx.strokeRect(x0, y0, W, H);
+  if (type === 'steel') { ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(0, 0); ctx.stroke(); }
+  if (tall) { ctx.lineWidth = lw(0.03); for (let k = 1; k < 4; k++) { const y = y0 + (H * k) / 4; ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(-x0, y); ctx.stroke(); } }
+  if (type === 'steel' || tall) {
+    // ballast bars along the bottom, and rivets at the corners
+    ctx.fillStyle = '#22272a'; ctx.fillRect(x0 - lw(0.02), -lw(0.06), W + lw(0.04), lw(0.06));
+    ctx.fillStyle = 'rgba(200,205,210,0.35)'; for (const [cx, cy] of [[x0, y0], [-x0, y0], [x0, 0], [-x0, 0]]) { ctx.beginPath(); ctx.arc(cx, cy, lw(0.018), 0, TAU); ctx.fill(); }
+    // a little rust and growth on the old steel
+    ctx.fillStyle = 'rgba(140,70,35,0.35)'; for (let k = 0; k < 6; k++) ctx.fillRect(x0 + W * ((k * 0.17 + 0.05) % 1), y0 + H * ((k * 0.29) % 1), lw(0.04), lw(0.1));
+  }
+  // the hatch on the roof, and the bridle up to the ring the line ties to
+  ctx.fillStyle = frameCol; ctx.fillRect(-W * 0.18, y0 - lw(0.015), W * 0.36, lw(0.03));
+  const ringY = y0 - Math.min(W, H) * (tall ? 0.18 : 0.35);
+  ctx.strokeStyle = type === 'pot' ? 'rgba(210,200,170,0.8)' : 'rgba(140,120,90,0.9)'; ctx.lineWidth = lw(type === 'pot' ? 0.01 : 0.025);
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(0, ringY); ctx.lineTo(-x0, y0); ctx.stroke();
+  ctx.strokeStyle = '#8a8f8a'; ctx.lineWidth = lw(0.015); ctx.beginPath(); ctx.arc(0, ringY, lw(0.03), 0, TAU); ctx.stroke();
+  return { top: ringY, glow };
+}
+
+// the float that marks a trap at the surface: a small orange float with a flag for the hand-hauled
+// traps; a big buoy with a radar reflector and a blinking light (at night) for the winch-hauled ones
+export function drawTrapBuoy(ctx, m, t, big, night) {
+  if (!big) return drawBuoy(ctx, m * 0.85, t);
+  const r = 0.38 * m;
+  ctx.strokeStyle = '#2a2a26'; ctx.lineWidth = Math.max(1, 0.04 * m);
+  ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(0, -r - 1.5 * m); ctx.stroke();
+  // radar reflector: a little diamond of plates
+  ctx.fillStyle = '#b8bcc0'; ctx.beginPath(); ctx.moveTo(0, -r - 1.25 * m); ctx.lineTo(0.16 * m, -r - 1.05 * m); ctx.lineTo(0, -r - 0.85 * m); ctx.lineTo(-0.16 * m, -r - 1.05 * m); ctx.closePath(); ctx.fill();
+  const g = ctx.createRadialGradient(-r * 0.4, -r * 0.4, r * 0.1, 0, 0, r);
+  g.addColorStop(0, '#ffcf60'); g.addColorStop(0.55, '#e0a020'); g.addColorStop(1, '#6a4a08');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, r * 1.15, r, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(20,20,20,0.6)'; ctx.fillRect(-r * 1.15, -r * 0.12, r * 2.3, r * 0.24);
+  const on = night && (t % 2) < 0.25;
+  ctx.fillStyle = on ? '#fff7c0' : '#5a5a40'; ctx.beginPath(); ctx.arc(0, -r - 1.55 * m, 0.06 * m, 0, TAU); ctx.fill();
+  return on ? [0, -r - 1.55 * m] : null;
 }

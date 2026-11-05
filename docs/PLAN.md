@@ -148,3 +148,6 @@ percentage on the menu. The abyss tank needs the 3,000 m sub.
   anglerfish buys animals at market -30 %, once a dive, choosing which (paid in old gold coins),
   with one craving a dive that it pays full or 1.5x for; its lure keeps the entity out of the cave.
   A ballast upgrade for faster vertical travel.
+
+(Superseded in v1.19.0: the seabed traps above were replaced by four tiers of box traps on a line
+from a buoy, set at a chosen depth; see GAME_DESIGN.md.)

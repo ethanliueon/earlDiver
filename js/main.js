@@ -9,11 +9,11 @@ import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlot
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
-import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
+import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { fillBoard, fulfil, RADIO } from './contracts.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
@@ -57,6 +57,7 @@ function applySub(sub, P) {
 }
 function newGame(mode) {
   const P = profile || newProfile();
+  convertOldTraps(P); // old seabed traps become the new box traps
   BOAT.x = BOAT_HOME; // every dive starts with the Margaret back over the shelf edge
   const seed = (Math.random() * 1e9) | 0;
   const world = generateWorld(seed);
@@ -116,6 +117,13 @@ const ui = new UI({
   onCaveOffer: () => caveOffer(),
   onWare: (k) => wareBuy(k),
   onTank: (act, where, i, to) => tankAction(act, where, i, to),
+  onSetTrap: (type, depth) => {
+    const why = canSetHere(g); if (why) { hud.toast(why, 'warn'); return true; }
+    if (trapsFree(g, type) <= 0) { hud.toast('None of those left to set', 'warn'); return false; }
+    const d = setTrap(g, type, depth);
+    hud.toast(`The ${TRAPS[type].name.toLowerCase()} goes down on its ${TRAPS[type].line}, to ${d} m`); hud.hint(TRAPS[type].winch ? 'Come back in five minutes: winch it up from the Margaret at its buoy, or empty it down there' : 'Come back in five minutes: F at the buoy hauls it up, or empty it where it hangs');
+    audio.ready && audio.click(); return true;
+  },
   onCaveTrade: (keys) => caveTrade(keys),
   onNewGame: () => { profile = null; g.paused = false; startRun(); },
   getProfile: () => profile,
@@ -379,10 +387,10 @@ function buy(kind) {
   } else if (kind === 'replace' && sub.imploded && spend(P, replacementPrice(P))) {
     g.sub = new Sub(); applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.docked = true; g.imploded = false; ok = true;
     hud.toast(`A new submersible, rated to ${g.sub.rated} m`, 'big');
-  } else if ((kind === 'pot' || kind === 'deeptrap') && spend(P, TRAPS[kind === 'pot' ? 'pot' : 'deep'].price)) {
-    const tk = kind === 'pot' ? 'pot' : 'deep';
-    P.traps = Object.assign({ pot: 0, deep: 0 }, P.traps); P.traps[tk]++; ok = true;
-    hud.toast(`${TRAPS[tk].name} (${P.traps[tk]})`, 'big'); hud.hint('Press 5, then Space on the bottom to set a trap');
+  } else if (kind.startsWith('trap:') && TRAPS[kind.slice(5)] && (convertOldTraps(P), (P.traps[kind.slice(5)] || 0) < TRAPS[kind.slice(5)].max) && spend(P, TRAPS[kind.slice(5)].price)) {
+    const tk = kind.slice(5);
+    P.traps[tk] = (P.traps[tk] || 0) + 1; ok = true;
+    hud.toast(`${TRAPS[tk].name} (${P.traps[tk]})`, 'big'); hud.hint('Press 5, then Space at the surface to set a trap at the depth you choose');
   } else if (kind === 'radio' && !P.radio && spend(P, RADIO.price)) {
     P.radio = true; fillBoard(P, g.contracts); ok = true;
     hud.toast('A better radio: five contracts at a time', 'big');
@@ -479,6 +487,7 @@ function mouseScreen() { const k = canvas.width / window.innerWidth; return [mou
 
 function readMove() {
   if (ui.tankOpen && ui.tankOpen()) return { x: 0, y: 0, sprint: false }; // in the back of the sub, the helm is left alone
+  if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
   if (g.homeRun) return { x: 0, y: 0, sprint: false }; // on autopilot the keys and the mouse leave the helm alone (C hands it back)
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
@@ -536,7 +545,9 @@ function promptFor(t) {
       if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? `Cutting the net… ${Math.round(g.pry.t / HOLD_TIME.net * 100)} %` : `Hold F  Cut the ${t.p.animal} free`;
       else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') p = 'F  Board the submersible';
-    else if (t.kind === 'trap') p = t.how === 'haul' ? `F  Haul up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)` : `F  Empty the trap (${t.t.catch.length} inside)`;
+    else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
+      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (B) and use her winch`
+      : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
@@ -564,7 +575,8 @@ function interact(t, exitSub) {
   if (exitSub && e.inSub) return leaveSub();
   if (!t) { if (e.inSub) leaveSub(); return; }
   if (t.kind === 'trap') {
-    if (t.how === 'haul') { t.t.state = 'hauling'; hud.toast('Hauling the trap up the line'); audio.ready && audio.click(); }
+    if (t.how === 'haul') { t.t.state = 'hauling'; hud.toast(TRAPS[t.t.type].winch ? 'The winch takes up the rope' : 'Hauling the trap up the line'); audio.ready && audio.click(); }
+    else if (t.how === 'needboat') hud.toast('Too heavy to lift by hand: bring the Margaret over it (B) and winch it up', 'warn');
     else { const n = emptyTrap(g, t.t); hud.toast(n ? `${n} from the trap into the bag${t.t.catch.length ? ' — the bag is full' : ''}` : t.t.catch.length ? 'The bag is full' : 'The trap is empty. Leave it a while'); }
     return;
   }
@@ -656,9 +668,8 @@ function die(cause, kind = 'normal') {
   if (g.tags.length) lost.push(`data from ${g.tags.length} tag${g.tags.length > 1 ? 's' : ''}`);
   if (g.photos.length) lost.push(`${g.photos.length} photograph${g.photos.length > 1 ? 's' : ''}`);
   g.tags = []; g.photos = [];
-  const inTraps = g.traps.reduce((a, tr) => a + tr.catch.length, 0);
+  const inTraps = lostTraps(g);
   if (inTraps) lost.push(`${inTraps} animal${inTraps > 1 ? 's' : ''} in the traps`);
-  g.traps = [];
   g.bag = []; g.subTank = [];
   const taken = cause.startsWith('Taken');
   if (taken) { const n = g.items.lure + g.items.necklace; if (n) lost.push(`${n} lure${n > 1 ? 's' : ''} and necklace${n > 1 ? 's' : ''}`); g.items.lure = g.items.necklace = 0; }
@@ -864,12 +875,12 @@ function update(dt) {
     if (pressed.has('1')) { g.toolSel = 'net'; hud.toast(gear(profile, 'net').name); }
     if (pressed.has('2')) { if (owns(profile, 'slurp')) { g.toolSel = 'slurp'; hud.toast(gear(profile, 'slurp').name); } else hud.toast('No slurp gun — the boat sells them', 'warn'); }
     if (pressed.has('3')) { if (owns(profile, 'tagger')) { g.toolSel = 'tag'; hud.toast(gear(profile, 'tag').name); } else hud.toast('No tag gun — the boat sells them', 'warn'); }
-    if (pressed.has('5')) { const tr = profile.traps || {}; if ((tr.pot || 0) + (tr.deep || 0) > 0) { g.toolSel = 'trap'; hud.toast(`Traps: ${trapsFree(g, 'pot')} pot${tr.deep ? `, ${trapsFree(g, 'deep')} deep` : ''} to set`); } else hud.toast('No traps — the boat sells them', 'warn'); }
+    if (pressed.has('5')) { const tr = profile.traps || {}; if (TRAP_ORDER.some((k) => tr[k] > 0)) { g.toolSel = 'trap'; hud.toast(`Traps to set: ${TRAP_ORDER.filter((k) => tr[k] > 0).map((k) => `${trapsFree(g, k)} ${TRAPS[k].name.toLowerCase()}`).join(', ')}`); } else hud.toast('No traps — the boat sells them', 'warn'); }
     if (pressed.has('4')) { if (owns(profile, 'camera')) { g.toolSel = 'cam'; hud.toast(`${gear(profile, 'cam').name} · ${g.shots} shots left`); } else hud.toast('No camera — the boat sells them', 'warn'); }
     const tool = activeTool(g);
     if (pressed.has(' ') && !e.inSub && g.toolSel === 'trap') {
-      const msg = placeTrap(g);
-      if (msg) hud.toast(msg, 'warn'); else { hud.toast('Trap set'); hud.hint('A line runs up to a buoy: F at the buoy hauls it up'); audio.ready && audio.thud && audio.thud(0.2); }
+      // at the surface: open the depth meter (setting happens there; the Space that set it is ignored)
+      if (!ui.trapSetOpen() && performance.now() - (ui.tsClosedAt || 0) > 400) { const msg = canSetHere(g); if (msg) hud.toast(msg, 'warn'); else ui.openTrapSet(); }
     } else if (pressed.has(' ') && !e.inSub) {
       if (tool.kind === 'tag') { if (!g.capture) { fireTag(g); audio.ready && audio.thud && audio.thud(0.15); } }
       else if (tool.kind === 'cam') {
@@ -896,12 +907,15 @@ function update(dt) {
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
     } else if (armEv && armEv.type === 'armMiss') hud.toast(`The ${armEv.name.toLowerCase()} slips out of the claw`);
     if (!e.inSub && g.armGame) g.armGame = null;
-    for (const ev of updateTraps(g, dt)) {
+    for (const ev of updateTraps(g, dt, renderer.cam)) {
       if (ev.type === 'hauled') {
         const tr = ev.trap, n = tr.catch.length;
         tr.y = 0; const moved = emptyTrap(g, tr);
-        hud.toast(n ? `The trap is up: ${n} inside${moved < n ? ` — ${n - moved} would not fit in the bag and went back` : ''}` : 'The trap comes up empty', n ? 'note' : '');
-      }
+        hud.toast(n ? `The ${TRAPS[tr.type].name.toLowerCase()} is up: ${n} inside${moved < n ? ` — ${n - moved} would not fit in the bag and went back` : ''}` : `The ${TRAPS[tr.type].name.toLowerCase()} comes up empty`, n ? 'note' : '');
+        audio.ready && audio.thud && audio.thud(0.25);
+      } else if (ev.type === 'settled') hud.toast(`The ${TRAPS[ev.trap.type].name.toLowerCase()} settles at ${ev.trap.depth} m${ev.trap.onBottom ? ', on the bottom' : ''}`);
+      else if (ev.type === 'spoiling') hud.toast(`A ${TRAPS[ev.trap.type].name.toLowerCase()} has been left too long: what is in it is starting to die`, 'warn');
+      else if (ev.type === 'ghost') hud.toast(`An abandoned ${TRAPS[ev.trap.type].name.toLowerCase()} has torn loose from its buoy: a ghost net now`, 'warn');
     }
     if (g.capture && (g.capture.kind === 'tag' || g.capture.kind === 'cam')) { g.capture.t += dt; if (g.capture.t >= g.capture.dur) g.capture = null; }
     g.camFlash = Math.max(0, g.camFlash - dt * 5);
@@ -953,7 +967,8 @@ function update(dt) {
     } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw — in the green' : null;
     else if (g.toolSel === 'trap') {
       const fl = g.world.floorAt(e.x);
-      g.capPrompt = fl - e.y > 3 ? 'Traps: get down to the bottom' : (trapsFree(g, 'pot') > 0 && fl <= 200) || trapsFree(g, 'deep') > 0 ? `Space  Set a trap here (${Math.round(fl)} m)` : 'No traps free for this depth';
+      const why = canSetHere(g);
+      g.capPrompt = why ? `Traps: ${why.charAt(0).toLowerCase() + why.slice(1)}` : `Space  Set a trap here (the bottom is ${Math.round(fl)} m down)`;
     } else if (!e.inSub && tool.kind === 'tag') {
       const tt = findTagTarget(g);
       g.capPrompt = tt ? (tt.ok ? `Space  Tag the ${tt.name.toLowerCase()} · ~${money(tt.value)}` : `${tt.sp.name}: ${tt.why}`) : null;

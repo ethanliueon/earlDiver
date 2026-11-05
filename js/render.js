@@ -8,7 +8,8 @@ import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { activeTool } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
-import { drawDart, drawTrap, drawBuoy } from './tools_draw.js';
+import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
+import { TRAPS } from './economy.js';
 import { armPose } from './arm.js';
 import { drawAquarium } from './aquarium_draw.js';
 import { aquariumOf, visitors } from './aquarium.js';
@@ -373,19 +374,55 @@ export class Renderer {
     // ---- pickups + lanterns (over the veiled layer, so nothing valuable hides behind the coral) ----
     for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) this.drawPickup(ctx, p, S(p.x), Sy(p.y), ppm, t);
     for (const l of g.world.lanterns) if (inView(l.x, l.y, 14)) this.drawLanternBody(ctx, l, S, Sy, ppm, t);
-    // traps on the bottom, their lines up to the buoys
+    // traps on their lines: a buoy at the surface, a line (a thin string for the small traps, a thick
+    // rope for the big ones) sagging with the current down to the box, the box with what's inside it,
+    // and the bait's scent drifting away downstream
+    this.trapLabels = [];
+    const night = g.day && g.day.light < 0.3;
     for (const tr of g.traps || []) {
-      const by = surfY(tr.x);
-      if (tr.x < x0 - 4 || tr.x > x1 + 4) continue;
-      const list = tr.catch.map((c) => ({ sp: SPECIES_BY_ID[c.id], len: c.len }));
-      ctx.save(); ctx.translate(S(tr.x), Sy(tr.y)); ctx.rotate(Math.sin(t * 0.7 + tr.sway) * (tr.state === 'hauling' ? 0.15 : 0.02));
-      const r = drawTrap(ctx, ppm, tr.type, t, list);
-      ctx.restore();
-      ctx.strokeStyle = 'rgba(200,180,120,0.55)'; ctx.lineWidth = Math.max(1, ppm * 0.02);
-      ctx.beginPath(); ctx.moveTo(S(tr.x), Sy(tr.y) + r.top);
-      ctx.quadraticCurveTo(S(tr.x) + Math.sin(t * 0.4 + tr.sway) * ppm * 1.5, (Sy(tr.y) + r.top + Sy(by)) / 2, S(tr.x), Sy(by)); ctx.stroke();
-      if (Sy(by) > -40 && Sy(by) < this.H + 40) { ctx.save(); ctx.translate(S(tr.x), Sy(by)); drawBuoy(ctx, ppm, t); ctx.restore(); }
-      if (tr.type === 'deep' && r.glow) glowPts.push([S(tr.x) + r.glow[0], Sy(tr.y) + r.glow[1], '#9affd8', ppm * 0.8, 1]);
+      if (tr.x < x0 - 10 || tr.x > x1 + 10) continue;
+      const T = TRAPS[tr.type], by = surfY(tr.x);
+      const bx = S(tr.x), bsy = Sy(by), ty = Sy(tr.y);
+      const drift = Math.sin(t * 0.25 + tr.sway) * Math.min(tr.y * 0.05, 5) + Math.min(tr.y * 0.03, 4); // the current bows the line
+      const tx = S(tr.x + (tr.state === 'set' && !tr.onBottom ? drift * 0.25 : 0)), swing = Math.sin(t * 0.7 + tr.sway) * (tr.state === 'hauling' ? 0.12 : 0.03);
+      // the line first (behind the box)
+      const thick = T.line === 'rope' ? 0.06 : T.line === 'line' ? 0.025 : 0.012;
+      ctx.strokeStyle = T.line === 'rope' ? 'rgba(120,95,60,0.95)' : T.line === 'line' ? 'rgba(200,190,150,0.8)' : 'rgba(220,215,190,0.7)';
+      ctx.lineWidth = Math.max(1, ppm * thick); ctx.lineCap = 'round';
+      const topY = ty - T.size[1] * ppm * 1.3, cx = (bx + tx) / 2 + drift * ppm, cy = (bsy + topY) / 2;
+      ctx.beginPath(); ctx.moveTo(bx, bsy); ctx.quadraticCurveTo(cx, cy, tx, topY); ctx.stroke();
+      if (T.line === 'rope') { // the lay of a braided rope: a darker twist along it
+        ctx.strokeStyle = 'rgba(60,45,25,0.6)'; ctx.lineWidth = Math.max(1, ppm * 0.02); ctx.setLineDash([ppm * 0.08, ppm * 0.1]);
+        ctx.beginPath(); ctx.moveTo(bx, bsy); ctx.quadraticCurveTo(cx, cy, tx, topY); ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.lineCap = 'butt';
+      // the box itself, swaying on its line (still when it rests on the bottom)
+      if (inView(tr.x, tr.y, 4)) {
+        const inside = tr.catch.map((c, i) => ({ sp: SPECIES_BY_ID[c.id], len: c.len, dead: c.cond <= 0.05, seed: i * 1.7 }));
+        ctx.save(); ctx.translate(tx, ty); if (!tr.onBottom || tr.state !== 'set') ctx.rotate(swing);
+        const r = drawBoxTrap(ctx, ppm, tr.type, t, inside, (c2, sp, L, ph) => this.drawCached(c2, sp, L, ph, 0));
+        ctx.restore();
+        if (r.glow) glowPts.push([tx + r.glow[0], ty + r.glow[1], '#9affd8', ppm * 1.0, 1.1]);
+        // the bait's scent: a faint trail of particles drifting off with the current
+        if (tr.state === 'set' && tr.age < 420) {
+          ctx.fillStyle = 'rgba(210,200,170,0.22)';
+          for (let k = 0; k < 10; k++) {
+            const q = ((t * 0.08 + k / 10 + tr.sway) % 1), sx = tx + q * ppm * 9, sy = ty - T.size[1] * ppm * 0.5 + Math.sin(q * 7 + k) * ppm * 0.6 * q;
+            ctx.globalAlpha = 1 - q; ctx.beginPath(); ctx.arc(sx, sy, Math.max(1, ppm * (0.03 + q * 0.05)), 0, TAU); ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
+      }
+      // the buoy riding the waves, and its label
+      if (bsy > -60 && bsy < this.H + 60) {
+        ctx.save(); ctx.translate(bx, bsy); ctx.rotate(Math.sin(t * 1.3 + tr.sway) * 0.12);
+        const lamp = drawTrapBuoy(ctx, ppm, t, !!T.winch, night);
+        ctx.restore();
+        if (lamp) glowPts.push([bx + lamp[0], bsy + lamp[1], '#fff2b0', ppm * 0.8, 1.5]);
+        const n = tr.catch.length, left = Math.max(0, 300 - tr.age);
+        this.trapLabels.push([bx, bsy - ppm * (T.winch ? 2.4 : 1.5), tr.state === 'lowering' ? `going down · ${Math.round(tr.y)} m` : tr.state === 'hauling' ? `coming up · ${Math.round(tr.y)} m`
+          : `${n} inside · ${left > 0 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : tr.age > 420 ? 'left too long!' : 'ready'}`]);
+      }
     }
     if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
@@ -699,6 +736,11 @@ export class Renderer {
           ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.26 * sc, ppm * 0.045 * sc, 0, 0, TAU); ctx.fill(); // a frog's horizontal slit
         }
       }
+    }
+    // the trap buoys' labels: what is in each and how long its bait has left
+    if (this.trapLabels && this.trapLabels.length) {
+      ctx.font = `${Math.max(11, ppm * 0.28).toFixed(0)}px IBM Plex Mono, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      for (const [lx, ly, txt] of this.trapLabels) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(txt, lx + 1, ly + 1); ctx.fillStyle = txt.endsWith('!') ? '#ffb070' : 'rgba(235,240,230,0.9)'; ctx.fillText(txt, lx, ly); }
     }
     ctx.restore();
 

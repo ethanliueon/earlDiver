@@ -12,6 +12,8 @@ import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, da
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom } from './tankroom.js';
+import { TRAP_ORDER } from './economy.js';
+import { trapsFree } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed } from './capture.js';
 import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
@@ -124,10 +126,68 @@ export class UI {
   }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden; }
-  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); }
+  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden; }
+  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
+  // ---------- setting a trap: which one, and how deep (a depth meter in whole metres) ----------
+  trapSetOpen() { return !$('trapset').hidden; }
+  closeTrapSet() { if (!$('trapset').hidden) this.tsClosedAt = performance.now(); $('trapset').hidden = true; }
+  openTrapSet() {
+    const g = this.h.getGame();
+    this.ts = this.ts || { type: null, depth: 10 };
+    if (!this.ts.wired) {
+      this.ts.wired = true;
+      $('trapset-close').addEventListener('click', () => this.closeTrapSet());
+      document.querySelectorAll('#trapset .ts-meter button').forEach((b) => b.addEventListener('click', () => this.tsNudge(+b.dataset.d)));
+      $('ts-slider').addEventListener('input', (e) => { this.ts.depth = +e.target.value; this.tsRender(); });
+      $('ts-bottom').addEventListener('click', () => { this.ts.depth = this.tsMax(); this.tsRender(); });
+      $('ts-set').addEventListener('click', () => this.tsSet());
+      $('trapset').addEventListener('wheel', (e) => { e.preventDefault(); this.tsNudge((e.deltaY > 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
+      window.addEventListener('keydown', (e) => {
+        if (!this.trapSetOpen()) return;
+        const k = e.key;
+        if (k === 'ArrowDown' || k === 's' || k === 'S') { e.preventDefault(); this.tsNudge(e.shiftKey ? 10 : 1); }
+        else if (k === 'ArrowUp' || k === 'w' || k === 'W') { e.preventDefault(); this.tsNudge(e.shiftKey ? -10 : -1); }
+        else if (k === ' ' || k === 'Enter') { e.preventDefault(); this.tsSet(); }
+      }, true);
+    }
+    // the first trap type with one free, unless the last one chosen is still free
+    if (!this.ts.type || trapsFree(g, this.ts.type) <= 0) this.ts.type = TRAP_ORDER.find((k) => trapsFree(g, k) > 0) || 'pot';
+    $('trapset').hidden = false;
+    this.tsRender();
+  }
+  tsFloor() { const g = this.h.getGame(); return Math.floor(g.world.floorAt(g.earl.x)); }
+  tsMax() { return Math.max(2, Math.min(TRAPS[this.ts.type].maxDepth, this.tsFloor())); }
+  tsNudge(d) { this.ts.depth += d; this.tsRender(); }
+  tsRender() {
+    const g = this.h.getGame(), T = TRAPS[this.ts.type], fl = this.tsFloor();
+    const types = $('ts-types'); types.innerHTML = '';
+    for (const k of TRAP_ORDER) {
+      const own = (g.profile.traps || {})[k] || 0; if (!own) continue;
+      const b = document.createElement('button'); const free = trapsFree(g, k);
+      b.textContent = `${TRAPS[k].name} · ${free} free`; b.disabled = free <= 0; b.classList.toggle('on', k === this.ts.type);
+      b.addEventListener('click', () => { this.ts.type = k; this.tsRender(); });
+      types.append(b);
+    }
+    // the meter can go to the trap's rating; past the bottom it simply means: on the bottom
+    const top = Math.min(T.maxDepth, Math.max(fl, 2));
+    this.ts.depth = Math.max(2, Math.min(Math.round(this.ts.depth), T.maxDepth));
+    $('ts-slider').max = T.maxDepth; $('ts-slider').value = this.ts.depth;
+    $('ts-depth').textContent = this.ts.depth;
+    $('ts-bottom').textContent = fl > T.maxDepth ? `Down to its limit (${T.maxDepth} m)` : `Let it down to the bottom (${fl} m)`;
+    $('ts-info').textContent = `The bottom here: ${fl} m · the ${T.name.toLowerCase()} is rated to ${T.maxDepth} m${T.winch ? ' · hauled with the boat\'s winch' : ''}`;
+    const w = $('ts-warn');
+    if (this.ts.depth >= fl) { w.hidden = false; w.textContent = `The bottom here is only ${fl} m: the trap will rest on the bottom at ${fl} m (good for crabs, lobsters and bottom fish).`; }
+    else if (fl > T.maxDepth && this.ts.depth === T.maxDepth) { w.hidden = false; w.textContent = `The ${T.name.toLowerCase()} goes no deeper than ${T.maxDepth} m.`; }
+    else w.hidden = true;
+    void top;
+  }
+  tsSet() {
+    const d = Math.min(this.ts.depth, this.tsFloor());
+    if (this.h.onSetTrap(this.ts.type, d)) this.closeTrapSet();
+  }
+
   toggleTank(force) {
     const el = $('tankroom');
     const open = force === undefined ? el.hidden : force;
@@ -284,7 +344,7 @@ export class UI {
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space on the bottom sets one; F at its buoy hauls it up'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['R (in the sub)', 'open a backup air tank: the cabin air fills to full'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'take the helm and drive the Margaret (A / D)'], ['J', 'this journal'], ['P', 'show frames per second'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['R (in the sub)', 'open a backup air tank: the cabin air fills to full'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'take the helm and drive the Margaret (A / D)'], ['J', 'this journal'], ['P', 'show frames per second'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -376,10 +436,10 @@ export class UI {
       }
     } else if (tab === 'supplies') {
       const tr = P.traps || {};
-      for (const [k, T, act] of [['pot', TRAPS.pot, 'pot'], ['deep', TRAPS.deep, 'deeptrap']]) {
-        const have = tr[k] || 0, full = have >= T.max;
-        html += card(T.name, T.desc + ` Holds ${T.holds}; checks every minute or so.`, `you own ${have} / ${T.max}`, full ? null : T.price, 'buy', act, full ? 'Full' : 'Buy', '', icon('trap', k === 'pot' ? 0 : 1));
-      }
+      TRAP_ORDER.forEach((k, i) => {
+        const T = TRAPS[k], have = tr[k] || 0, full = have >= T.max;
+        html += card(T.name, T.desc + ` Draws ${T.count[0]}-${T.count[1]} fish over five minutes, up to ${T.maxLen} m long.`, `you own ${have} / ${T.max}`, full ? null : T.price, 'buy', 'trap:' + k, full ? 'Full' : 'Buy', '', icon('trap', i));
+      });
       for (const [k, it] of Object.entries(SUPPLIES)) {
         const mx = supplyMax(P, k), have = g.items[k] || 0, full = have >= mx;
         html += card(it.name, it.desc, `carrying ${have} / ${mx}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy');

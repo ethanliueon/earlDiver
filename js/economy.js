@@ -70,12 +70,20 @@ export const CAMERAS = [
   { name: 'Housed camera', price: 100, range: 12, shots: 24, flash: true, desc: 'A real camera in an aluminium housing, with two strobes on arms.' },
   { name: 'Low-light camera', price: 800, range: 12, shots: 24, flash: false, desc: 'A huge sensor that needs no flash. Nothing in the dark sees you take the picture.' },
 ];
-// Traps: set on the bottom, marked by a line to a buoy, hauled up later.
+// Box traps on a line from a buoy, set from the surface at a chosen depth (or let down to rest on the
+// bottom). The bait works for five minutes: count is how many fish come in over that time. size is the
+// box [width, height] in metres; line: how it hangs (a string, a line, a rope); winch: hauled with
+// the boat's winch, not by hand; lure: a light that draws deep animals, and other things.
+export const TRAP_ORDER = ['pot', 'fish', 'steel', 'cage'];
 export const TRAPS = {
-  pot: { name: 'Wire pot trap', price: 1.5, max: 3, maxDepth: 200, holds: 2, every: 45, chance: 0.5, maxLen: 0.6,
-    desc: 'A galvanised wire cage with a funnel and a bait jar. Crabs, lobsters, eels. Rated to 200 m.' },
-  deep: { name: 'Deep trap', price: 25, max: 2, maxDepth: 2000, holds: 4, every: 50, chance: 0.5, maxLen: 0.9,
-    desc: 'A steel cylinder with a lit bait chamber, rated to 2,000 m. The light that draws deep fish draws other things too.' },
+  pot: { name: 'Wire pot', price: 5, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
+    desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float. Down to 40 m. Hauled by hand.' },
+  fish: { name: 'Fish trap', price: 30, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
+    desc: 'A larger mesh box with a funnel at each end, on a stout line. Down to 150 m. Hauled by hand.' },
+  steel: { name: 'Steel pot', price: 140, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
+    desc: 'A heavy steel-framed pot with two chambers, on a thick rope. Down to 500 m. Too heavy to lift by hand: the boat\'s winch hauls it.' },
+  cage: { name: 'Deep cage', price: 600, max: 2, maxDepth: 1500, count: [6, 12], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
+    desc: 'A tall weighted cage with a lit lure, on a heavy rope. Down to 1,500 m. The light draws deep animals, and other things. Winch-hauled.' },
 };
 export const BAGS = [
   { name: 'Mesh goody bag', slots: 3, price: 0, desc: 'Clipped to his belt.' },
@@ -360,7 +368,7 @@ export function gear(P, kind) {
 export function newProfile() {
   return {
     v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
-    lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 0, deep: 0 },
+    lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 0, fish: 0, steel: 0, cage: 0 },
     journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(), coins: 0,
   };
 }

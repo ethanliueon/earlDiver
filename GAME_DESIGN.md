@@ -116,8 +116,16 @@ Tools change their look as they are levelled (the hand net grows into a pro capt
 - 3 **tag gun** (pole tagger, pneumatic, satellite x2 pay) and 4 **camera** (compact, housed with
   strobes, low-light without flash): aim with the mouse. A missed dart can provoke a shark; a flash
   in the deep is seen.
-- 5 **traps**: set on the bottom, a line to a buoy; they fill with crustaceans, octopus, eels and
-  bottom fish. Haul from the buoy or empty underwater. The deep trap's lit bait draws the entity.
+- 5 **traps**: box traps on a line from a buoy, set from the surface at a chosen depth on a depth
+  meter (or let down to rest on the bottom, where crabs, lobsters and octopus walk in). Four tiers:
+  Wire pot ($5, to 40 m, 4-8 fish, thin string), Fish trap ($30, to 150 m, 5-9), Steel pot ($140, to
+  500 m, 5-10, thick rope) and Deep cage ($600, to 1,500 m, 6-12, a lit lure that also draws the
+  entity). Over five minutes the bait draws in real animals that live at that depth and in that kind
+  of place; in sight, you watch them swim to it and in through the funnels. Haul at the buoy (the
+  steel pot and the cage need the Margaret's winch), or empty it where it hangs, as Earl or from the
+  sub. Hauled at about swimming speed (winch faster), never longer than ~45 s; deep catches arrive
+  needing a chamber. Left unhauled two minutes after the bait is spent, the catch starts to die; ten
+  minutes and the trap tears loose from its buoy and drifts as a ghost net (lost).
 - **Sub arm**: from inside the sub, reach for an animal up to a metre long and time the grip.
 - From inside the sub, things within reach in the water are still offered (collect, observe, haul a
   trap). Its cabin is at surface pressure, so the pressure and the entity's sway, blur and double

@@ -27,6 +27,7 @@ const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 9
 // Where an animal actually lives, when the recorded range (the deepest and shallowest it was ever
 // found) is far wider than its everyday one. Day ranges; NIGHT is where night migrators rise to.
 const CORE = {
+  99: [200, 600],     // silver hatchetfish (by day)
   98: [300, 1000], 162: [400, 2140], 110: [1000, 4720], 107: [600, 1200],
   100: [600, 2500],  // humpback anglerfish: adults mostly 1,000-2,000 m, rarely above 500
   101: [500, 2000],  // fangtooth
@@ -51,7 +52,7 @@ const CORE = {
   4: [3, 60], 10: [1, 50], 30: [20, 120], 15: [1, 60],
 };
 // night migrators: where they rise to after dark
-const NIGHT = { 102: [200, 900], 103: [150, 600], 90: [150, 600], 42: [0, 100], 148: [0, 200], 151: [100, 400], 88: [10, 60], 105: [500, 1500] };
+const NIGHT = { 99: [80, 400], 102: [200, 900], 103: [150, 600], 90: [150, 600], 42: [0, 100], 148: [0, 200], 151: [100, 400], 88: [10, 60], 105: [500, 1500] };
 // How likely an animal is to be met at depth y: best through the middle of its everyday range,
 // a little less at its edges, and outside it rare (rarer the further out) - but never impossible
 // within the depths it has really been recorded at.
@@ -122,6 +123,9 @@ export const homeOf = (sp) => HOME[sp.id] || null;
 const TROPICAL = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 31, 32, 33, 34, 35, 36, 37, 38, 80, 92, 93, 94, 96, 140, 183]);
 const COLD = new Set([58, 59, 60, 61, 68, 69, 70, 71, 72, 73, 75, 115, 116]);
 const onTropicalReef = (x) => x > 2900 || x < 34;
+// warm and cold water for anything else that needs it (traps): crabs and lobsters too
+const COLD_BOTTOM = new Set([152, 154, 155, 156]), WARM_BOTTOM = new Set([153, 144, 145, 159, 160]);
+export const climateOk = (id, x) => !((TROPICAL.has(id) || WARM_BOTTOM.has(id)) && !onTropicalReef(x)) && !((COLD.has(id) || COLD_BOTTOM.has(id)) && onTropicalReef(x));
 
 function habitatOk(sp, x, y, W) {
   const fl = W.floorAt(x);
