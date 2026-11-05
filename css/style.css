@@ -264,3 +264,6 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .version { margin-left: 10px; color: rgba(220, 230, 228, 0.45); letter-spacing: 0.06em; }
 .pause-version { position: absolute; right: 12px; bottom: 8px; margin: 0; font-size: 10px; }
 #pause { position: fixed; }
+
+.menu-links { display: flex; gap: 22px; margin-top: 26px; }
+.menu-links #show-controls { margin-top: 0; }

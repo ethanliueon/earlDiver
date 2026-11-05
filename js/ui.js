@@ -49,7 +49,14 @@ export class UI {
       else if (act === 'sellitem') { const sale = h.onSellItem(arg); if (sale) this.showLedger(sale); }
       this.renderWorkshop();
     });
-    $('show-controls').addEventListener('click', () => { const c = document.querySelector('#menu .controls'); c.hidden = !c.hidden; });
+    $('show-controls').addEventListener('click', () => { const c = document.querySelector('#menu .controls'); c.hidden = !c.hidden; if (!c.hidden) $('runlog').hidden = true; });
+    $('show-log').addEventListener('click', () => { const l = $('runlog'); l.hidden = !l.hidden; if (!l.hidden) document.querySelector('#menu .controls').hidden = true; });
+    $('fullscreen').addEventListener('click', () => {
+      const d = document;
+      if (d.fullscreenElement) d.exitFullscreen && d.exitFullscreen();
+      else (d.documentElement.requestFullscreen ? d.documentElement.requestFullscreen() : Promise.reject()).catch(() => { $('fullscreen').textContent = 'Full screen: press F11'; });
+    });
+    document.addEventListener('fullscreenchange', () => { $('fullscreen').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; });
     $('restart').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); });
     $('shop-details').addEventListener('click', () => { const w = $('workshop'); w.classList.toggle('details'); $('shop-details').textContent = w.classList.contains('details') ? 'Less' : 'Details'; });
     $('newgame').addEventListener('click', () => {
@@ -367,6 +374,7 @@ export class UI {
     if (!runs) { try { runs = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch (e) { runs = []; } }
     this.runs = runs;
     const el = $('runlog');
+    $('show-log').hidden = !runs.length; // the log is folded away behind its link
     if (!runs.length) { el.innerHTML = ''; return; }
     const rows = runs.slice(0, 6).map((r, i) => `
       <tr class="${i === 0 && last ? 'latest' : ''}">
