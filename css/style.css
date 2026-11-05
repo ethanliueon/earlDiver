@@ -455,3 +455,16 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .shop.cave .nameplate::before, .shop.cave .nameplate::after { background: radial-gradient(circle at 40% 35%, #b8d8c8, #2a4038 70%); }
 .shop.cave h2 { text-shadow: 0 1px 0 rgba(0,0,0,0.5); }
 .shop.cave .shop-sub { color: rgba(207, 239, 255, 0.7); }
+
+/* shop rows (v1.5.2): a name and one line; tap to open the numbers */
+.shop .up-row { grid-template-columns: 1fr 120px 92px; cursor: pointer; padding: 7px 0; }
+.up-head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.shop .up-name { font: 17px var(--serif); }
+.up-line { font: italic 13px/1.3 var(--serif); color: rgba(220, 225, 205, 0.55); }
+.up-more { display: inline-block; width: 6px; height: 6px; margin-left: 8px; vertical-align: middle; border-right: 1px solid rgba(201,166,90,0.7); border-bottom: 1px solid rgba(201,166,90,0.7); transform: rotate(45deg) translateY(-2px); transition: transform 0.15s; }
+.up-row.open .up-more { transform: rotate(-135deg) translateY(-1px); }
+.up-detail { display: none; grid-column: 1 / -1; padding: 2px 0 6px; }
+.up-row.open .up-detail { display: block; }
+.up-detail p { margin: 6px 0 0; font: 12px/1.45 var(--mono); color: rgba(220, 230, 228, 0.55); }
+.shop .up-detail .up-val { display: inline-block; }
+@media (max-width: 700px) { .shop .up-row { grid-template-columns: 1fr 86px; } .shop .up-row .up-lv { display: none; } }

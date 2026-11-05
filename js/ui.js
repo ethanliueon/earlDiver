@@ -10,7 +10,7 @@ const badge = (sp) => { const r = rarityOf(sp); return `<span class="rbadge" sty
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
-import { loadBest, UPGRADES, UPGRADE_DESC, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
+import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
@@ -44,6 +44,7 @@ export class UI {
       this.renderCave();
     });
     this.shopTab = 'sell';
+    this.openRows = new Set(); // shop rows whose details are open
     document.querySelectorAll('.shop-tabs button').forEach((b) => b.addEventListener('click', () => {
       this.shopTab = b.dataset.shop;
       document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x === b));
@@ -52,7 +53,12 @@ export class UI {
     // one delegated handler for every button in the shop
     $('shop-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('button[data-act]');
-      if (!b || b.disabled) return;
+      if (!b) {
+        const row = ev.target.closest('.up-row[data-row]');
+        if (row) { const k = row.dataset.row; row.classList.toggle('open'); this.openRows[row.classList.contains('open') ? 'add' : 'delete'](k); }
+        return;
+      }
+      if (b.disabled) return;
       const act = b.dataset.act, arg = b.dataset.arg;
       if (act === 'buy') h.onBuy(arg);
       else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
@@ -382,10 +388,18 @@ export class UI {
       if (S.warm) bits.push('warm');
       const label = k === worn ? 'Worn' : have.has(k) ? 'Wear' : money(S.price);
       const dis = k === worn || (!have.has(k) && !can(S.price));
-      html += `<div class="up-row" data-tip="${S.desc}"><span class="up-name">${S.name}</span><span class="up-val">${bits.join(' · ') || 'standard'}</span><span class="up-lv">${have.has(k) ? 'owned' : ''}</span>
-        <button data-act="buy" data-arg="suit:${k}" ${dis ? 'disabled' : ''}>${label}</button></div>`;
+      html += this.row('suit:' + k, S.name, S.line, have.has(k) ? 'owned' : '', `<button data-act="buy" data-arg="suit:${k}" ${dis ? 'disabled' : ''}>${label}</button>`,
+        bits.join(' · ') || 'nothing special', S.desc);
     }
     return html + '</div>';
+  }
+
+  // one shop row: the name and a single line; tap it and the numbers and the full story open below
+  row(key, name, line, lv, button, stats, desc) {
+    const open = this.openRows.has(key);
+    return `<div class="up-row${open ? ' open' : ''}" data-row="${key}"><div class="up-head"><span class="up-name">${name}<i class="up-more" aria-hidden="true"></i></span><span class="up-line">${line}</span></div>
+      <span class="up-lv">${lv}</span>${button}
+      <div class="up-detail"><span class="up-val">${stats}</span><p>${desc}</p></div></div>`;
   }
 
   // a small picture of an animal, cached
@@ -427,11 +441,12 @@ export class UI {
         if (U.group !== grp) continue;
         const l = lv(P, id), maxed = l >= U.max, cost = upgradeCost(P, id);
         const now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statValue(P, id) + U.step);
-        html += `<div class="up-row" data-tip="${UPGRADE_DESC[id] || ''}"><span class="up-name">${U.name}</span><span class="up-val">${now}${maxed ? '' : ` <i>→</i> <b>${next}</b>`}</span>
-          <span class="up-lv"><span class="lamps">${Array.from({ length: 10 }, (_, k) => `<i class="${k < Math.round(l / U.max * 10) ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : `lv ${l}`}</span>
-          <button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}</button></div>`;
+        html += this.row('up:' + id, U.name, UPGRADE_LINE[id] || '',
+          `<span class="lamps">${Array.from({ length: 10 }, (_, k) => `<i class="${k < Math.round(l / U.max * 10) ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : `lv ${l}`}`,
+          `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}</button>`,
+          `${now}${maxed ? ' (the most it can be)' : ` <i>→</i> <b>${next}</b> next level`}`, UPGRADE_DESC[id] || '');
       }
-      if (gk === 'camera' && !owns(P, 'lowlight')) html += `<div class="up-row" data-tip="${GEAR.lowlight.desc}"><span class="up-name">${GEAR.lowlight.name}</span><span class="up-val">no flash</span><span class="up-lv"></span><button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button></div>`;
+      if (gk === 'camera' && !owns(P, 'lowlight')) html += this.row('gear:lowlight', GEAR.lowlight.name, GEAR.lowlight.line, '', `<button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button>`, 'no flash', GEAR.lowlight.desc);
       html += '</div>';
     }
     return html;

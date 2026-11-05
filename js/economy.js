@@ -184,12 +184,12 @@ export const UPGRADES = {
 // bite: injury taken off a shark or billfish bite · quiet: no bubbles (the entity hears less) ·
 // warm: keeps out the cold (deep and upwelling water) · col: how it is drawn
 export const SUITS = {
-  wet: { name: 'Wetsuit', price: 0, press: 300, air: 1, speed: 1, desc: 'Black neoprene. What he started with.' },
-  skin: { name: 'Freediving skin', price: 6, press: 300, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works him harder.' },
-  dry: { name: 'Drysuit', price: 25, press: 400, air: 1, speed: 0.95, warm: true, desc: 'Sealed and dry inside, with a little air in it. Pressure starts to bite 100 m deeper, and it keeps out the cold.' },
-  chain: { name: 'Chain-mail shark suit', price: 40, press: 300, air: 1, speed: 0.88, bite: 1, desc: 'Steel mesh over neoprene, as shark feeders wear. A bite does one less injury. Heavy.' },
-  rebreather: { name: 'Rebreather suit', price: 150, press: 300, air: 0.75, speed: 0.95, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
-  hard: { name: 'Atmospheric hardsuit', price: 400, press: 700, air: 0.9, speed: 0.6, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m. Very slow.' },
+  wet: { line: "Black neoprene, salt-stiff at the seams.", name: 'Wetsuit', price: 0, press: 300, air: 1, speed: 1, desc: 'Black neoprene. What he started with.' },
+  skin: { line: "Thin as a seal's hide: quick, and hungry for breath.", name: 'Freediving skin', price: 6, press: 300, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works him harder.' },
+  dry: { line: "Sealed against the cold that lives below the light.", name: 'Drysuit', price: 25, press: 400, air: 1, speed: 0.95, warm: true, desc: 'Sealed and dry inside, with a little air in it. Pressure starts to bite 100 m deeper, and it keeps out the cold.' },
+  chain: { line: "Steel rings, borrowed from the men who feed sharks.", name: 'Chain-mail shark suit', price: 40, press: 300, air: 1, speed: 0.88, bite: 1, desc: 'Steel mesh over neoprene, as shark feeders wear. A bite does one less injury. Heavy.' },
+  rebreather: { line: "He breathes his air twice, and leaves no bubbles to follow.", name: 'Rebreather suit', price: 150, press: 300, air: 0.75, speed: 0.95, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
+  hard: { line: "A small iron room in the shape of a man.", name: 'Atmospheric hardsuit', price: 400, press: 700, air: 0.9, speed: 0.6, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m. Very slow.' },
 };
 export const suitOf = (P) => SUITS[(P && P.suit) || 'wet'];
 
@@ -226,12 +226,45 @@ export const UPGRADE_DESC = {
   armGrip: 'Finer control: a wider green window on the grip gauge.',
 };
 
+// the shop's one line for each upgrade: what it feels like, not what it does
+export const UPGRADE_LINE = {
+  payFish: 'A better buyer waiting on the quay.',
+  paySalvage: 'Friends in the scrapyard.',
+  air: 'A deeper breath, carried on his back.',
+  sprint: 'Harder kicks, for when something is behind him.',
+  swim: 'Longer fins, easier water.',
+  bag: 'One more pocket for a living thing.',
+  netSize: 'A wider mouth for bigger fish.',
+  netReach: 'A longer handle, a quieter approach.',
+  netSpeed: 'A lighter frame that swings before the fish can think.',
+  netGrip: 'Hands that have done this a thousand times.',
+  netSoft: 'Knotless mesh that leaves no marks.',
+  slurpSize: 'A wider throat.',
+  slurpReach: 'A spring wound tighter.',
+  slurpSpeed: 'A plunger that sighs back faster.',
+  tagReach: 'More breath behind the dart.',
+  tagReload: 'Quicker hands between shots.',
+  tagPay: 'Tags that speak longer from the deep.',
+  tagCalm: 'A clean shot leaves no grudge.',
+  camShots: 'Room for one more face from the dark.',
+  camRange: 'Glass that sees farther into the blue.',
+  ballast: 'Iron lungs: she sinks and climbs like a stone, then a cork.',
+  depth: 'Thicker steel between him and the weight of the sea.',
+  subAir: 'More air in the iron lung.',
+  subSpeed: 'A stronger heart in the engine room.',
+  subTank: 'Another cradle in the specimen tank.',
+  armReach: 'A longer reach into the dark.',
+  armSize: 'Bigger jaws on the old claw.',
+  armSpeed: 'Hydraulics that answer quicker.',
+  armGrip: 'A gentler, surer hand.',
+};
+
 // one-off gear: bought once, then its stats are levelled above
 export const GEAR = {
   slurp: { name: 'Slurp gun', price: 3, desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones. Key 2.' },
   tagger: { name: 'Tag gun', price: 6, desc: 'Puts a research tag in sharks, billfish, whales: anything too big to bring up. Key 3.' },
   camera: { name: 'Camera', price: 2, desc: 'The institute pays for the first photograph of every species and rare form. Key 4.' },
-  lowlight: { name: 'Low-light sensor', price: 60, needs: 'camera', desc: 'No flash any more: nothing in the dark sees you take the picture.' },
+  lowlight: { line: 'See in the dark without being seen.', name: 'Low-light sensor', price: 60, needs: 'camera', desc: 'No flash any more: nothing in the dark sees you take the picture.' },
   arm: { name: 'Claw hydraulics', price: 40, desc: 'Works the old claw under the sub: from inside, Space reaches for an animal; time the grip.' },
 };
 export const lv = (P, id) => (P.lv && P.lv[id]) || 0;
