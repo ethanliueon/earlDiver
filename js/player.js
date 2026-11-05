@@ -4,8 +4,10 @@ import { collide, BOAT_X, SPAWN } from './world.js';
 import { SUB_TIERS } from './economy.js';
 
 export const DIVE_SPEED = 2.8;  // Earl's base swimming speed (m/s)
-export const SUB_SPEED = 4.8;   // the submersible's
-export const SUB_VERTICAL = 2.0; // ballast: vertical speed multiplier for the sub
+export const SUB_SPEED = 3.36;  // the submersible's
+// ballast: diving is no faster than cruising; blowing ballast to rise is a little faster
+export const SUB_DIVE = 1.0, SUB_RISE = 1.2;
+export const ballastBoost = (nx, ny) => 1 + ((ny < 0 ? SUB_RISE : SUB_DIVE) - 1) * clamp((Math.abs(ny) - Math.abs(nx)) / (Math.abs(ny) + 1e-6), 0, 1);
 export const DIVER_O2 = 50;
 const K_PRESS = Math.log(30) / 700; // x30 drain at 1000 m, starting at 300 m
 
@@ -60,7 +62,7 @@ export function updateEarl(g, dt, inp) {
     // diagonal input is normalised, so going right and down at once is no faster than one way
     const im = Math.hypot(inp.x, inp.y), nx = im > 1 ? inp.x / im : inp.x, ny = im > 1 ? inp.y / im : inp.y;
     // the ballast boost only applies to (mostly) straight dives and ascents, never to diagonals
-    const vBoost = 1 + (SUB_VERTICAL - 1) * clamp((Math.abs(ny) - Math.abs(nx)) / (Math.abs(ny) + 1e-6), 0, 1);
+    const vBoost = ballastBoost(nx, ny);
     const tvx = nx * sp, tvy = ny * sp * vBoost;
     sub.vx = lerp(sub.vx, tvx, 1 - Math.exp(-dt * 0.9));
     sub.vy = lerp(sub.vy, tvy, 1 - Math.exp(-dt * 0.7));

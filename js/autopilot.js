@@ -3,7 +3,7 @@
 // It never goes below its rated depth: past that it holds and waits.
 import { clamp, lerp, dist } from './util.js';
 import { collide, BOAT_X } from './world.js';
-import { SUB_SPEED, SUB_VERTICAL } from './player.js';
+import { SUB_SPEED, ballastBoost } from './player.js';
 
 const CELL = 3;            // routing grid, metres
 const STOP = 5;            // how far from Earl it stops (the hull is ~9 m long)
@@ -153,7 +153,7 @@ export class Autopilot {
     let dx = wp.x - sub.x, dy = wp.y - sub.y;
     const dl = Math.hypot(dx, dy) || 1;
     let nx = dx / dl, ny = dy / dl;
-    const vBoost = 1 + (SUB_VERTICAL - 1) * clamp((Math.abs(ny) - Math.abs(nx)) / (Math.abs(ny) + 1e-6), 0, 1);
+    const vBoost = ballastBoost(nx, ny);
     const slow = this.path.length === 1 ? clamp(toGoal / 6, 0.15, 1) : 1; // ease in at the end
     const arrived = toGoal < 1.2;
     const tvx = arrived ? 0 : nx * sp * slow, tvy = arrived ? 0 : ny * sp * vBoost * slow;

@@ -97,7 +97,8 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
 
 ## The submersible
 
-- An old riveted bathyscaphe at the boat (F to board, hold F to leave). Rated 400 m at first,
+- An old riveted bathyscaphe at the boat (F to board, hold F to leave). Cruises at 3.4 m/s
+  (Engine upgrades), dives no faster, rises 1.2x faster. Rated 400 m at first,
   refits to 3,000 m. Past 1.3x its rating it implodes; a replacement can be bought.
 - C calls it: it drives itself to Earl, routing around rock, and stops beside him; never below its
   rating. Hold C to send it home. Its engine is heard in the deep.
