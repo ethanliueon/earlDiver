@@ -420,6 +420,19 @@ export class Hud {
     // ---------- what the tool can reach ----------
     // with hints off the prompts are short and quiet: just the key and the action, no box
     const short = (p) => p.split('  ·  ')[0].split(' · ')[0].replace(/\s*\(.*\)$/, '');
+    // "Space  Net the x" is drawn as "[Space] " then "net the x" in italics, centred as one line
+    const keyLine = (txt, cx, y, px) => {
+      const m = /^Space\s+(.*)$/.exec(txt);
+      if (!m) { ctx.font = `${px}px ${GAME}`; ctx.textAlign = 'center'; ctx.fillText(txt, cx, y); return; }
+      const k = '[Space] ', rest = m[1].charAt(0).toLowerCase() + m[1].slice(1);
+      ctx.font = `${px}px ${GAME}`; const kw = ctx.measureText(k).width;
+      ctx.font = `italic ${px}px ${GAME}`; const rw = ctx.measureText(rest).width;
+      const x0 = cx - (kw + rw) / 2; ctx.textAlign = 'left';
+      ctx.font = `${px}px ${GAME}`; ctx.fillText(k, x0, y);
+      ctx.font = `italic ${px}px ${GAME}`; ctx.fillText(rest, x0 + kw, y);
+      ctx.textAlign = 'center';
+    };
+    const keyWidth = (txt, px) => { ctx.font = `italic ${px}px ${GAME}`; return ctx.measureText(txt.replace(/^Space\s+/, '[Space] ')).width; };
     if (!this.hints && !dying) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `${16 * s}px ${GAME}`;
       const lines = [];
@@ -427,16 +440,18 @@ export class Hud {
       if (g.prompt) lines.push(short(g.prompt));
       const capFirst = g.capPrompt && g.capPrompt.startsWith('Space');
       lines.forEach((ln, i) => {
-        ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(ln, W / 2 + 1, H * 0.74 + i * 18 * s + 1);
-        ctx.fillStyle = i === 0 && capFirst && g.capRarity ? g.capRarity.col : 'rgba(232,238,234,0.78)'; ctx.fillText(ln, W / 2, H * 0.74 + i * 18 * s);
+        const draw = i === 0 && capFirst ? (t, x, y) => keyLine(t, x, y, 16 * s) : (t, x, y) => ctx.fillText(t, x, y);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)'; draw(ln, W / 2 + 1, H * 0.74 + i * 18 * s + 1);
+        ctx.fillStyle = i === 0 && capFirst && g.capRarity ? g.capRarity.col : 'rgba(232,238,234,0.78)'; draw(ln, W / 2, H * 0.74 + i * 18 * s);
+        ctx.font = `${16 * s}px ${GAME}`;
       });
     }
     if (g.capPrompt && !dying && this.hints) {
       ctx.font = `${17 * s}px ${GAME}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      const tw = ctx.measureText(g.capPrompt).width + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
+      const tw = keyWidth(g.capPrompt, 17 * s) + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, py, tw, 28 * s, 6 * s); ctx.fill();
       ctx.fillStyle = g.capPrompt.startsWith('Space') ? (g.capRarity ? g.capRarity.col : 'rgba(214,236,206,0.95)') : 'rgba(240,190,160,0.9)';
-      ctx.fillText(g.capPrompt, W / 2, py + 7 * s);
+      keyLine(g.capPrompt, W / 2, py + 7 * s, 17 * s);
     }
     // ---------- interaction prompt ----------
     if (g.prompt && !dying && this.hints) {
