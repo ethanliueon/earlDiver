@@ -341,6 +341,7 @@ export class Renderer {
       fl.save(); fl.translate(S(c.x), Sy(c.y));
       if (c.dir > 0) fl.scale(-1, 1);
       fl.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
+      if (c.hidden) fl.globalAlpha = 0.55; // tucked in among the tentacles, the coral, the rock
       const r = c.variant ? this.drawVariant(fl, c.sp, c.variant, Ld, c.phase) : this.drawCached(fl, c.sp, Ld, c.phase, c.wob);
       fl.restore();
       if (Ld >= 6 && (c.variant || Ld > 150 || CACHE_SKIP.has(shape))) {

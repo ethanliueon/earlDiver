@@ -340,9 +340,87 @@ export function generateWorld(seed) {
     const x = SEEP.x + rng.range(-8, 8);
     W.statics.push({ sp: SPECIES.find((s) => s.id === 180), x, y: W.floorAt(x), scale: rng.range(0.5, 1), phase: rng() * 6, flip: 1 });
   }
+  // coral heads: a real reef is built of them (the shallow reef by the beach, and the wall's cap)
+  {
+    const heads = [126, 127, 127, 133].map((id) => SPECIES.find((s) => s.id === id));
+    for (const [xa, xb, n] of [[EAST + 905, EAST + 982, 34], [2, 30, 12]]) {
+      for (let i = 0, tries = 0; i < n && tries < 400; tries++) {
+        const x = rng.range(xa, xb), d = W.floorAt(x), sp = rng.pick(heads);
+        if (d < 1.5 || d < sp.dmin || d > sp.dmax || W.rockAt(x, d - 0.3)) continue;
+        W.statics.push({ sp, x, y: d, scale: rng.range(0.75, 1.25), phase: rng() * 6, flip: rng() < 0.5 ? -1 : 1 });
+        i++;
+      }
+    }
+  }
+  // host anemones on the shallow reef: every clownfish needs one to live in
+  {
+    const host = SPECIES.find((s) => s.id === 128);
+    let have = W.statics.filter((s) => s.sp.id === 128 && s.x > EAST + 880).length;
+    for (let tries = 0; have < 9 && tries < 200; tries++) {
+      const x = rng.range(EAST + 905, EAST + 978), d = W.floorAt(x);
+      if (d < 2 || d > 16 || W.rockAt(x, d - 0.3)) continue;
+      W.statics.push({ sp: host, x, y: d, scale: rng.range(0.8, 1.15), phase: rng() * 6, flip: rng() < 0.5 ? -1 : 1 });
+      have++;
+    }
+  }
   W.statics = W.statics.filter((s) => !(s.x > BRINE.x0 && s.x < BRINE.x1));
   W.statics.sort((a, b) => a.x - b.x);
+  buildHabitats(W);
   return W;
+}
+
+// ---- Habitats: the places an animal can call home ----
+// Every kind of place is a list of points sorted by x: a host anemone, a coral head, a sponge, a
+// patch of seagrass, a stand of kelp, a crevice at the foot of a boulder, the shade under a ledge,
+// a wreck, open sand, the top of the seamount, the whale fall. Reef and bottom animals pick one of
+// these as their home when they appear, and stay within their own range of it.
+function buildHabitats(W) {
+  const H = {};
+  // a home must be open water an animal can actually reach: lift it clear of rock and bottom
+  const add = (kind, x, y, extra) => {
+    for (let k = 0; k < 8 && (W.rockAt(x, y, 0.15) || y > W.floorAt(x) - 0.25); k++) y -= 0.4;
+    if (W.rockAt(x, y, 0.15) || y > W.floorAt(x) - 0.25) return;
+    (H[kind] || (H[kind] = [])).push({ kind, x, y, ...extra });
+  };
+  for (const s of W.statics) {
+    const id = s.sp.id, c = s.sp.cat || '';
+    if (id === 128) add('anemone', s.x, s.y - 0.25);
+    else if (id === 126 || id === 127) add('coral', s.x, s.y - 0.5);
+    else if (id === 130 || id === 131) add('deepcoral', s.x, s.y - 0.6);
+    else if (id === 132 || id === 133) add('sponge', s.x, s.y - 0.5);
+    else if (id === 123 || id === 124) add('seagrass', s.x, s.y - 0.3);
+    else if (/Coral|Anemone/.test(c) && s.y < 60) add('coral', s.x, s.y - 0.4);
+  }
+  for (const k of W.kelp) add('kelp', k.x, k.base - k.h * 0.45, { top: k.base - k.h, bottom: k.base });
+  for (const rk of W.rocks) {
+    if (rk.kind === 'ledge') add('ledge', (rk.x0 + rk.x1) / 2, rk.y1 + 0.6);
+    else {
+      // the dark gap where a boulder meets the bottom, on either side
+      add('crevice', rk.x0 - 0.2, Math.min(W.floorAt(rk.x0 - 0.2), rk.y1) - 0.35);
+      add('crevice', rk.x1 + 0.2, Math.min(W.floorAt(rk.x1 + 0.2), rk.y1) - 0.35);
+    }
+  }
+  for (const w of W.wrecks) for (let k = -2; k <= 2; k++) add('wreck', w.x + k * w.len * 0.2, w.y - 2 - Math.abs(k) * 0.5);
+  // open sand and mud: gentle bottom away from the reef and the kelp
+  for (let x = 4; x < WORLD_W - 10; x += 7) {
+    const d = W.floorAt(x);
+    if (d < 2 || Math.abs(W.slopeAt(x)) > 0.7) continue;
+    add('sand', x, d - 0.3);
+  }
+  for (let x = 1112; x < 1240; x += 8) add('seamount', x, W.floorAt(x) - 4);
+  for (let k = -3; k <= 3; k++) add('whalefall', W.whaleFall.x + k * 3, W.whaleFall.y - 1.5);
+  for (const v of W.vents) add('vent', v.x, v.y - 2);
+  for (const kind in H) H[kind].sort((a, b) => a.x - b.x);
+  W.habitats = H;
+  // places of a kind within r metres of (x, y)
+  W.homesNear = (kind, x, y, r) => {
+    const L = H[kind]; if (!L) return [];
+    let lo = 0, hi = L.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (L[m].x < x - r) lo = m + 1; else hi = m; }
+    const out = [];
+    for (let i = lo; i < L.length && L[i].x <= x + r; i++) if (Math.abs(L[i].y - y) <= r) out.push(L[i]);
+    return out;
+  };
 }
 
 // Resolve a circle against the floor and rocks; returns pushed position and contact normal.

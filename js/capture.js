@@ -70,6 +70,7 @@ export function findCatch(g) {
     if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'needs a tag' : null;
     else if (len > def.maxLen) why = isTagOnly(sp) && len > 1.1 ? 'needs a tag' : `too big for the ${kind === 'net' ? def.name.toLowerCase() : def.name.toLowerCase()}`;
     if (why === null && !canTakeLive(sp)) return; // plants, corals: not even worth mentioning
+    if (!why && ref.c && ref.c.hidden) why = 'tucked into its home: wait, it will come out';
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
     if (d < bd) { bd = d; best = { sp, x, y, len, d, ...ref }; }
   };

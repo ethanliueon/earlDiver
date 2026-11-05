@@ -34,13 +34,71 @@ const FAST = new Set([42, 43, 44, 39, 40, 41, 82, 52, 45, 185, 186, 187]);
 // Predators that hunt small fish (ids from the species list).
 const PREDATORS = new Set([35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 52, 53, 76, 78, 79, 82, 83, 148, 30, 31, 32, 34, 68, 102]);
 
+// ---- Where each animal lives ----
+// k: the kinds of place it can call home (see buildHabitats in world.js); r: how far it strays from
+// home (metres); hide: it ducks into its home when frightened, instead of bolting into open water;
+// act: 'day' animals rest in their home at night, 'night' animals by day; ('any' never rests).
+const HOME = {
+  1: { k: ['anemone'], r: 1.2, hide: 1, act: 'day' },               // clownfish: never far from its anemone
+  2: { k: ['coral'], r: 14, hide: 1, act: 'day' }, 3: { k: ['coral'], r: 12, hide: 1, act: 'day' }, // tangs graze the reef
+  4: { k: ['coral'], r: 10, hide: 1, act: 'day' },                  // moorish idol
+  5: { k: ['coral', 'sponge'], r: 10, hide: 1, act: 'day' }, 6: { k: ['coral', 'sponge'], r: 10, hide: 1, act: 'day' }, // angelfish
+  7: { k: ['coral'], r: 7, hide: 1, act: 'day' }, 8: { k: ['coral'], r: 8, hide: 1, act: 'day' },  // butterflyfish
+  9: { k: ['coral'], r: 1.5, hide: 1, act: 'night' },               // mandarinfish: out at dusk, in the rubble
+  10: { k: ['ledge', 'crevice', 'coral', 'wreck'], r: 5, hide: 0, act: 'night' }, // lionfish hunt at night, hang under ledges by day
+  13: { k: ['coral'], r: 18, hide: 1, act: 'day' }, 14: { k: ['coral'], r: 30, hide: 1, act: 'day' }, // parrotfish (sleep in crevices)
+  15: { k: ['coral'], r: 30, hide: 0, act: 'day' },                 // humphead wrasse
+  16: { k: ['coral'], r: 2.5, hide: 1, act: 'day' },                // cleaner wrasse at its cleaning station
+  17: { k: ['ledge', 'crevice', 'coral'], r: 1.5, hide: 1, act: 'any' }, // royal gramma, under its overhang
+  18: { k: ['coral'], r: 6, hide: 1, act: 'day' }, 19: { k: ['crevice', 'ledge', 'coral'], r: 8, hide: 1, act: 'night' },
+  20: { k: ['seagrass', 'coral', 'sand'], r: 8, hide: 1, act: 'day' }, 21: { k: ['coral', 'sand'], r: 14, hide: 0, act: 'day' },
+  22: { k: ['coral'], r: 10, hide: 1, act: 'day' },
+  23: { k: ['crevice', 'ledge', 'coral'], r: 1.2, hide: 1, act: 'night', night: 8 }, // morays: head out of a hole by day, hunt at night
+  24: { k: ['crevice', 'ledge', 'coral'], r: 1.4, hide: 1, act: 'night', night: 10 },
+  25: { k: ['crevice', 'sand'], r: 0.8, hide: 1, act: 'any' },      // ribbon eel in its burrow
+  27: { k: ['coral', 'wreck'], r: 6, hide: 1, act: 'day' }, 28: { k: ['coral'], r: 3.5, hide: 1, act: 'day' }, // chromis hover over one coral head
+  29: { k: ['ledge', 'coral', 'wreck'], r: 6, hide: 0, act: 'night', night: 20 }, // grunts school under ledges by day, forage at night
+  30: { k: ['wreck', 'ledge', 'crevice'], r: 25, hide: 0, act: 'any' },
+  31: { k: ['crevice', 'ledge', 'coral', 'wreck'], r: 7, hide: 1, act: 'any' }, 32: { k: ['wreck', 'ledge', 'crevice'], r: 10, hide: 1, act: 'any' },
+  33: { k: ['wreck', 'ledge'], r: 10, hide: 1, act: 'any' }, 34: { k: ['coral', 'crevice'], r: 9, hide: 1, act: 'day' },
+  35: { k: ['coral', 'wreck'], r: 45, hide: 0, act: 'any' },        // barracuda patrol the reef edge
+  36: { k: ['coral', 'wreck', 'ledge'], r: 70, hide: 0, act: 'any' }, 37: { k: ['coral', 'wreck'], r: 60, hide: 0, act: 'any' },
+  38: { k: ['wreck', 'seagrass', 'coral'], r: 40, hide: 0, act: 'any' },
+  58: { k: ['kelp', 'crevice'], r: 30, hide: 0, act: 'any' }, 59: { k: ['sand', 'wreck', 'kelp'], r: 20, hide: 0, act: 'any' },
+  60: { k: ['sand', 'crevice', 'wreck'], r: 35, hide: 0, act: 'any' }, 61: { k: ['sand'], r: 35, hide: 0, act: 'any' },
+  68: { k: ['crevice', 'ledge', 'kelp'], r: 8, hide: 1, act: 'any' }, 69: { k: ['crevice', 'ledge'], r: 5, hide: 1, act: 'any' },
+  70: { k: ['crevice', 'ledge'], r: 3, hide: 1, act: 'any' },       // wolffish in its den
+  71: { k: ['kelp', 'crevice'], r: 20, hide: 1, act: 'day' }, 72: { k: ['kelp', 'crevice'], r: 3, hide: 1, act: 'day' }, // garibaldi guard a patch
+  74: { k: ['seamount', 'deepcoral'], r: 60, hide: 0, act: 'any' }, // orange roughy gather over seamounts
+  80: { k: ['coral', 'seagrass'], r: 60, hide: 0, act: 'any' },    // blacktip reef shark
+  81: { k: ['ledge', 'crevice', 'wreck'], r: 8, hide: 0, act: 'night', night: 40 }, // nurse sharks rest under ledges by day
+  92: { k: ['sand', 'seagrass', 'coral'], r: 40, hide: 0, act: 'any' }, 93: { k: ['sand'], r: 15, hide: 0, act: 'any' },
+  94: { k: ['coral', 'sand'], r: 4, hide: 1, act: 'any' }, 95: { k: ['sand'], r: 6, hide: 0, act: 'night' }, 96: { k: ['sand', 'seagrass'], r: 30, hide: 0, act: 'any' },
+  108: { k: ['ledge', 'crevice'], r: 6, hide: 1, act: 'night', night: 30 }, // coelacanths: caves on steep walls by day
+  111: { k: ['whalefall', 'sand'], r: 15, hide: 0, act: 'any' },  // hagfish at the whale fall
+  89: { k: ['whalefall', 'ledge'], r: 60, hide: 0, act: 'night', night: 120 },
+  115: { k: ['kelp', 'seagrass'], r: 2, hide: 0, act: 'any' }, 116: { k: ['kelp', 'seagrass'], r: 2, hide: 0, act: 'any' }, // seadragons
+  117: { k: ['seagrass', 'coral'], r: 2, hide: 1, act: 'any' }, 140: { k: ['coral'], r: 5, hide: 0, act: 'night' },
+  141: { k: ['ledge', 'crevice'], r: 40, hide: 0, act: 'any' },     // nautilus on the steep wall
+  147: { k: ['seagrass', 'sand', 'coral'], r: 8, hide: 1, act: 'any' },
+  183: { k: ['seagrass', 'coral'], r: 45, hide: 0, act: 'any' },   // green turtles graze seagrass, rest under ledges
+};
+// Open-ocean animals: they turn up only over deep water, away from the beach and the reef.
+const OFFSHORE = new Set([39, 40, 41, 42, 43, 44, 45, 46, 52, 53, 54, 76, 77, 78, 79, 82, 83, 84, 88, 90, 91, 148, 149, 184, 187]);
+export const homeOf = (sp) => HOME[sp.id] || null;
+// Warm-water reef animals live only on the tropical reefs (the reef by the beach, the wall's cap);
+// cold-water animals keep to the kelp, the shelf and the deep, never the coral reef.
+const TROPICAL = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 31, 32, 33, 34, 35, 36, 37, 38, 80, 92, 93, 94, 96, 140, 183]);
+const COLD = new Set([58, 59, 60, 61, 68, 69, 70, 71, 72, 73, 75, 115, 116]);
+const onTropicalReef = (x) => x > 2900 || x < 34;
+
 function habitatOk(sp, x, y, W) {
   const fl = W.floorAt(x);
   const above = fl - y;
   if (above < 0.5) return false;
   if (W.rockAt(x, y, 1)) return false;
   switch (sp.v.hab) {
-    case 'reef': return above < 12 && (x > 2840 || x < 40 || (x > 1100 && x < 1250)); // the reef, the wall's cap, the seamount's top
+    case 'reef': return false; // reef animals appear only around a home of their own (see HOME)
     case 'floor-swim': return above < 3;
     case 'demersal': return above < 25;
     case 'drift-low': return above < 4;
@@ -72,13 +130,65 @@ export class Fauna {
     return Math.round(base * (1 - dread * 0.95));
   }
   baitTarget(depth, dread) {
-    const base = depth < 150 ? 2 : depth < 600 ? 2 : depth < 1000 ? 1 : 0;
+    const base = depth < 150 ? (this.reefy ? 1 : 2) : depth < 600 ? 2 : depth < 1000 ? 1 : 0;
     return Math.round(base * (1 - dread));
   }
   groupCount() {
     const s = new Set();
-    for (const c of this.list) if (!this.schools.has(c.gid)) s.add(c.gid);
+    for (const c of this.list) if (!this.schools.has(c.gid) && !c.home) s.add(c.gid);
     return s.size;
+  }
+
+  // Residents: every home near the camera is looked at once. It is taken by a species that lives in
+  // that kind of place (or left empty), and keeps the same tenant every time you come back. Homes
+  // ahead are filled while they are still out of sight; on arriving somewhere new, what's in view too.
+  settle(cam) {
+    const W = this.W, rng = this.rng, H = W.habitats;
+    if (!H) return;
+    const jumped = !this.lastCam || Math.abs(cam.x - this.lastCam.x) > cam.w || Math.abs(cam.y - this.lastCam.y) > cam.h;
+    this.lastCam = { x: cam.x, y: cam.y };
+    const live = new Set(); let residents = 0;
+    for (const c of this.list) { live.add(c.gid); if (c.home) residents++; }
+    this.reefy = residents > 40; // a crowded reef: one bait school instead of two
+    const FILL = { anemone: 0.95, coral: 0.75, sponge: 0.45, seagrass: 0.35, kelp: 0.12, crevice: 0.22, ledge: 0.35, wreck: 0.85, sand: 0.12, seamount: 0.35, deepcoral: 0.2, whalefall: 0.9, vent: 0 };
+    const rx = cam.w * 1.4, ry = cam.h * 1.4;
+    for (const kind in H) {
+      const p = FILL[kind] || 0;
+      if (!p) continue;
+      for (const h of W.homesNear(kind, cam.x, cam.y, Math.max(rx, ry))) {
+        if (Math.abs(h.x - cam.x) > rx || Math.abs(h.y - cam.y) > ry) continue;
+        if (h.occ && live.has(h.occ)) continue;
+        const inView = Math.abs(h.x - cam.x) < cam.w / 2 + 2 && Math.abs(h.y - cam.y) < cam.h / 2 + 2;
+        if (inView && !jumped) continue;            // never pop into sight
+        if (h.res === undefined) {
+          h.res = 0;
+          if (rng() < p) {
+            const cands = SWIMMERS.filter((s) => { const R = HOME[s.id];
+              return R && R.k.includes(kind) && h.y >= s.dmin && h.y <= s.dmax && !(TROPICAL.has(s.id) && !onTropicalReef(h.x)) && !(COLD.has(s.id) && onTropicalReef(h.x)); });
+            if (cands.length) { let tot = 0; for (const c of cands) tot += weightOf(c); let r = rng() * tot; for (const c of cands) { r -= weightOf(c); if (r <= 0) { h.res = c.id; break; } } if (!h.res) h.res = cands[0].id; }
+          }
+        }
+        if (!h.res || residents > 90) continue;
+        this.reefy = true;
+        residents += this.house(SPECIES_BY_ID[h.res], h);
+      }
+    }
+  }
+  house(sp, home) {
+    const rng = this.rng, W = this.W, H = HOME[sp.id];
+    const n = Math.max(1, Math.min(12, Math.round((sp.v.sch || 1) * rng.range(0.5, 1.1))));
+    const gid = this.groupId++;
+    home.occ = gid;
+    const spread = Math.min(1, H.r / 6);
+    for (let i = 0; i < n; i++) {
+      const k = Math.max(1, sp.len * 0.7);
+      const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12) * k * spread, oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06) * k * spread;
+      const x = home.x + ox;
+      const f = this.makeFish(sp, x, Math.max(0.5, Math.min(home.y + oy, W.floorAt(x) - 0.4)), rng() < 0.5 ? 1 : -1, gid, i === 0);
+      f.home = home; f.homeR = H.r; f.hide = !!H.hide; f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = rng.range(0, 3);
+      this.list.push(f);
+    }
+    return n;
   }
 
   pickSpawnPoint(cam) {
@@ -94,7 +204,28 @@ export class Fauna {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
     if (x < 2 || x > 2985 || y < 0.6) return;
+    // which homes are free: one group to a home (an anemone holds one family of clownfish)
+    const live = new Set(); for (const c of this.list) live.add(c.gid);
+    const homes = new Map();
+    const homeFor = (s) => {
+      const H = HOME[s.id];
+      let best = null, bd = 1e9;
+      for (const kind of H.k) for (const h of W.homesNear(kind, x, y, 40)) {
+        if (h.y < s.dmin || h.y > s.dmax) continue;
+        if (h.occ && live.has(h.occ)) continue;
+        if (TROPICAL.has(s.id) && !onTropicalReef(h.x)) continue;
+        if (COLD.has(s.id) && onTropicalReef(h.x)) continue;
+        // appear out of sight, never in front of the player
+        if (Math.abs(h.x - cam.x) < cam.w / 2 + 2 && Math.abs(h.y - cam.y) < cam.h / 2 + 2) continue;
+        const d = Math.abs(h.x - x) + Math.abs(h.y - y);
+        if (d < bd) { bd = d; best = h; }
+      }
+      return best;
+    };
+    const floorHere = W.floorAt(x);
     const cands = SWIMMERS.filter((s) => {
+      if (HOME[s.id]) return false; // reef and bottom animals are residents of their homes (see settle)
+      if (OFFSHORE.has(s.id) && floorHere < 90) return false;           // open-ocean animals: only over deep water
       if (y < s.dmin || y > s.dmax || !habitatOk(s, x, y, W)) return false;
       const [lo, hi] = this.depthBand(s, x, this.night);
       return y >= lo - 15 && y <= hi + 15;
@@ -115,10 +246,16 @@ export class Fauna {
     const n = Math.max(1, Math.min(24, Math.round((sp.v.sch || 1) * rng.range(0.5, 1.2))));
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
+    const home = homes.get(sp.id) || null, H = HOME[sp.id];
+    if (home) home.occ = gid;
+    // a homebound group starts around its home, spread no wider than its range
+    const cx = home ? home.x : x, cy = home ? home.y : y, spread = home ? Math.min(1, H.r / 6) : 1;
     for (let i = 0; i < n; i++) {
       const k = Math.max(1, sp.len * 0.7); // big animals spawn a body-length or so apart
-      const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12) * k, oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06) * k;
-      this.list.push(this.makeFish(sp, x + ox, Math.max(0.5, y + oy), dir, gid, i === 0));
+      const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12) * k * spread, oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06) * k * spread;
+      const f = this.makeFish(sp, cx + ox, Math.max(0.5, Math.min(cy + oy, W.floorAt(cx + ox) - 0.4)), dir, gid, i === 0);
+      if (home) { f.home = home; f.homeR = H.r; f.hide = !!H.hide; f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = 0; }
+      this.list.push(f);
     }
   }
 
@@ -202,10 +339,15 @@ export class Fauna {
     const W = this.W, rng = this.rng;
     this.night = night;
     this.spawnT -= dt; this.baitT -= dt;
+    this.settleT = (this.settleT || 0) - dt;
+    if (this.settleT <= 0) { this.settleT = 0.4; this.settle(cam); }
     if (this.spawnT <= 0) {
       this.spawnT = 0.25;
       const open = W.floorAt(cam.x) - cam.y > 60;
-      if (this.groupCount() < this.targetCount(cam.y, dread, open)) this.trySpawn(cam, dread);
+      // where the residents are many (a reef), fewer passing visitors are needed
+      let resGroups = 0; const seenG = new Set(); for (const c of this.list) if (c.home && !seenG.has(c.gid)) { seenG.add(c.gid); resGroups++; }
+      const target = Math.max(2, this.targetCount(cam.y, dread, open) - Math.floor(resGroups / 3));
+      if (this.groupCount() < target) this.trySpawn(cam, dread);
     }
     if (this.baitT <= 0) {
       this.baitT = 0.6;
@@ -262,11 +404,14 @@ export class Fauna {
       if (!c.predator || c.dead) continue;
       c.huntCool -= dt;
       if (c.prey && (c.prey.dead || dist(c.x, c.y, c.prey.x, c.prey.y) > 30)) c.prey = null;
+      // an ambush hunter with a home strikes only at what passes near its den, and gives up a chase that leads away
+      if (c.prey && c.home && dist(c.x, c.y, c.home.x, c.home.y) > c.homeR * 2 + 5) c.prey = null;
       if (!c.prey && c.huntCool <= 0 && rng() < dt * 2) {
         let best = null, bd = 22;
         for (const p of this.list) {
           if (p === c || p.dead || p.predator || p.len > c.len * 0.3 || p.len > 0.6) continue;
           if (p.sp.v.hab === 'drift' || p.sp.v.hab === 'floor' ) continue;
+          if (c.home && dist(p.x, p.y, c.home.x, c.home.y) > c.homeR * 1.5 + 4) continue;
           const d = Math.abs(p.x - c.x) + Math.abs(p.y - c.y);
           if (d < bd) { bd = d; best = p; }
         }
@@ -297,6 +442,26 @@ export class Fauna {
         ax = (tx - c.x) * 3 + (school.vx - c.vx) * 2;
         ay = (ty - c.y) * 3 + (school.vy - c.vy) * 2;
         sp = Math.max(c.speed * (1 + school.threat), Math.hypot(school.vx, school.vy) * 1.25); // keep up with the school, no more
+      } else if (c.home) {
+        // a homebound animal potters about its home: a new spot within its range every few
+        // seconds, back home if it strays, and tucked in to rest at its own time of day
+        const h = c.home;
+        const resting = (c.act === 'day' && night) || (c.act === 'night' && !night);
+        const R = resting ? Math.min(c.homeR, 0.7) : (c.act === 'night' && night ? c.nightR : c.homeR);
+        c.tT -= dt;
+        if (c.tT <= 0 || c.tx === undefined || Math.hypot(c.tx - c.x, c.ty - c.y) < 0.3) {
+          c.tT = rng.range(2.5, 8);
+          const nx = h.x + rng.range(-R, R);
+          const up = Math.min(R, 6) * (h.kind === 'kelp' ? 1.4 : 0.8);
+          let ny = h.y + rng.range(-up, Math.min(0.3, R * 0.2));
+          if (h.kind === 'kelp') ny = clamp(ny, h.top + 1, h.bottom - 0.6);
+          c.tx = nx; c.ty = Math.min(ny, W.floorAt(nx) - 0.4 - c.len * 0.3);
+        }
+        const away = Math.hypot(c.x - h.x, c.y - h.y);
+        tx = c.tx; ty = c.ty;
+        if (away > R * 1.5 + 1) { tx = h.x; ty = h.y; }
+        sp = c.speed * (resting ? 0.35 : away > R * 1.5 + 1 ? 1 : 0.6);
+        ax = (tx - c.x) * 0.8 - c.vx * 0.3; ay = (ty - c.y) * 0.8 - c.vy * 0.3;
       } else {
         const L = leaders[c.gid];
         if (!c.leader && L) {
@@ -360,7 +525,8 @@ export class Fauna {
             // only the fish right at the strike dart aside (forward, with the school); the rest of
             // the school's response is the whole body veering away and balling up
             // (school fish don't scatter on their own: the whole school veers away instead)
-          } else if (d < 4) { ax += dx / d * 30; ay += dy / d * 30; sp *= 2.5; }
+          } else if (d < 4 && c.home && c.hide) c.fleeT = Math.max(c.fleeT, 1.5); // into its hole
+          else if (d < 4) { ax += dx / d * 30; ay += dy / d * 30; sp *= 2.5; }
         }
       }
       // Earl: schools part around him; other fish bolt if he comes at them fast, but a slow,
@@ -376,11 +542,28 @@ export class Fauna {
       } else if (c.flee > 0 && earl.inSub && de < 10) c.fleeT = 1.5; // the sub is loud
       if (c.fleeT > 0) {
         c.fleeT -= dt;
-        ax = (c.x - earl.x) / (de + 0.1) * 30; ay = (c.y - earl.y) / (de + 0.1) * 20;
-        sp = Math.max(sp, c.flee);
+        if (c.home && c.hide) {
+          // a reef animal doesn't bolt into open water: it darts back into its home and stays there
+          const hx = c.home.x - c.x, hy = c.home.y - c.y, hd = Math.hypot(hx, hy) + 0.01;
+          ax = hx / hd * 30; ay = hy / hd * 30; sp = Math.max(sp, c.flee || c.speed * 2);
+          if (hd < 0.5) c.hideT = Math.max(c.hideT || 0, rng.range(4, 9));
+        } else {
+          ax = (c.x - earl.x) / (de + 0.1) * 30; ay = (c.y - earl.y) / (de + 0.1) * 20;
+          sp = Math.max(sp, c.flee);
+        }
       }
-      // flee the entity
-      if (entity && dread > 0.05) {
+      // tucked into its home: it waits there while the diver is close, then creeps back out
+      if (c.hideT > 0) {
+        c.hideT -= dt;
+        if (de < 3 && earl.speedNow > 0.4) c.hideT = Math.max(c.hideT, 1.5);
+        const h = c.home;
+        ax = (h.x + Math.sin(time * 1.7 + c.wob) * 0.12 - c.x) * 5 - c.vx * 2; ay = (h.y - c.y) * 5 - c.vy * 2;
+        sp = Math.max(0.25, c.speed * 0.4);
+        c.hidden = true;
+      } else c.hidden = false;
+      // flee the entity (reef animals hide from it instead)
+      if (entity && dread > 0.05 && c.home && c.hide) c.hideT = Math.max(c.hideT || 0, 3);
+      else if (entity && dread > 0.05) {
         const dx = c.x - entity.x, dy = c.y - entity.y, dd = Math.hypot(dx, dy) + 1;
         const f = dread * 30;
         ax += (dx / dd) * f; ay += (dy / dd) * f * 0.5;
@@ -391,7 +574,7 @@ export class Fauna {
       if (c.y > fl - 1.2) ay -= 8;
       const surf = this.surfY ? this.surfY(c.x) : 0;
       if (c.y < surf + 0.6) ay += 6;
-      if (!school) {
+      if (!school && !c.home) {
         if (c.sp.v.hab === 'reef' && fl - c.y > 10) ay += 1.5;
         if ((c.sp.v.hab === 'floor-swim' || c.sp.v.hab === 'drift-low') && fl - c.y > 2.5) ay += 1.5;
         if (c.sp.v.hab === 'demersal' && fl - c.y > 20) ay += 1;
