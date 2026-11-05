@@ -15,7 +15,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | Key | Action |
 | --- | --- |
 | W A S D / arrow keys | Swim (or steer the submersible) |
-| Shift | Sprint (1.3x, upgradable), but uses air twice as fast |
+| Shift | Sprint (1.5x, upgradable), but uses air twice as fast |
 | F | Interact: observe a creature, collect, cut kelp, board the submersible |
 | hold F | Leave the submersible |
 | C | Call the submersible: it drives itself to you (never below its rated depth). C again stops it |

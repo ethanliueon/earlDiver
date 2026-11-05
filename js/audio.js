@@ -58,25 +58,59 @@ export class Audio {
     return { s, f, g };
   }
   resume() { if (this.ac && this.ac.state === 'suspended') this.ac.resume(); }
-  playMusic() { if (!this.ready) return; this.musicEl.play().catch(() => {}); this.mus = { on: true, t: 0, len: 150 + Math.random() * 60, wait: 0, level: 0 }; }
-  // a good moment: if it is calm and nothing is playing, a piece starts
-  cue() { const m = this.mus; if (m && !m.on && this.calm) { m.on = true; m.t = 0; m.len = 120 + Math.random() * 60; try { this.musicEl.currentTime = 0; } catch (e) { /* not loaded */ } } }
+  // ---------------- music: short pieces, when things are calm ----------------
+  // A piece plays 30-60 s, then fades out very slowly. It always starts at the start of a dive and
+  // on getting back to the boat, and on good moments (cue), but never restarts one already playing.
+  // Stress (the thing near, marked, an attack, no air, hurt, deep outside the sub) stops it, and
+  // nothing starts it until 15 s after the stress has passed. In the quiet that follows a piece,
+  // after a minute it rolls every 30 s: 10 %, 20 %, 35 %, 45 %, then 50 %; a hidden calm meter
+  // (peaceful catches, sales, photos, quiet swimming) raises those odds.
+  playMusic() {
+    if (!this.ready) return;
+    this.musicEl.play().catch(() => {});
+    this.startPiece(true);
+  }
+  // a good moment (or the boat, or a new dive): start a piece if none is playing
+  cue(kind) {
+    const m = this.musState();
+    if (kind === 'home' || kind === 'start') return this.startPiece(true);
+    if (m.on || m.sinceStress < 15 || !this.calm) { m.meter = Math.min(1, m.meter + 0.15); return; }
+    this.startPiece(false);
+  }
+  calmBoost(x) { const m = this.musState(); m.meter = Math.min(1, m.meter + x); }
+  musState() { return this.mus || (this.mus = { on: false, t: 0, len: 0, level: 0, quiet: 0, rolls: 0, sinceStress: 99, meter: 0 }); }
+  startPiece(always) {
+    const m = this.musState();
+    if (m.on) return;                                      // already playing: carry on
+    if (!always && (!this.calm || m.sinceStress < 15)) return;
+    if (m.level < 0.02) { try { this.musicEl.currentTime = 0; } catch (e) { /* not loaded */ } } // fresh, unless still fading
+    m.on = true; m.t = 0; m.len = 30 + Math.random() * 30; m.meter = 0;
+  }
   // returns the music level 0..1 for this frame
   musicSession(g, dt) {
-    const m = this.mus || (this.mus = { on: false, t: 0, len: 0, wait: 60, level: 0 });
-    const ent = g.entity;
-    this.calm = g.fx.dread < 0.02 && !(ent && ent.marked) && !g.threat && !g.noAir && (g.injury || 0) === 0 && !g.reveal;
+    const m = this.musState();
+    const ent = g.entity, e = g.earl;
+    const stress = g.fx.dread > 0.02 || (ent && ent.marked) || !!g.threat || !!g.noAir || (g.injury || 0) > 0 || !!g.reveal || (!e.inSub && e.y > 300);
+    this.calm = !stress;
+    if (stress) { m.sinceStress = 0; m.quiet = 0; m.rolls = 0; } else m.sinceStress += dt;
+    let fade = 0.15; // fading in: about 7 s
     if (m.on) {
       m.t += dt;
-      if (!this.calm) { m.on = false; m.wait = 60 + Math.random() * 60; }          // something is wrong: it stops
-      else if (m.t > m.len) { m.on = false; m.wait = 120 + Math.random() * 120; }  // the piece ends: quiet for a while
-    } else {
-      m.wait -= dt;
-      if (m.wait <= 0 && this.calm) { m.on = true; m.t = 0; m.len = 120 + Math.random() * 60; try { this.musicEl.currentTime = 0; } catch (e) { /* not loaded */ } }
+      if (stress) { m.on = false; }                                   // stress: it stops
+      else if (m.t > m.len) { m.on = false; m.quiet = 0; m.rolls = 0; } // the piece ends
+    } else if (!stress) {
+      m.quiet += dt;
+      m.meter = Math.min(1, m.meter + dt * 0.0015);                   // quiet, calm swimming
+      // after a minute of quiet, a roll every 30 s
+      if (m.quiet >= 60 + m.rolls * 30) {
+        const base = [0.10, 0.20, 0.35, 0.45, 0.50][Math.min(4, m.rolls)];
+        m.rolls++;
+        if (Math.random() < Math.min(0.9, base + m.meter * 0.4)) this.startPiece(false);
+      }
     }
-    // fade in over a few seconds, out over a few more (fast when it is fear that stops it)
-    const target = m.on ? 1 : 0, rate = m.on ? 0.25 : this.calm ? 0.2 : 1.2;
-    m.level += clamp(target - m.level, -rate * dt, rate * dt);
+    if (!m.on) fade = stress ? 0.35 : 0.033;                          // stress: a few seconds; a piece ending: ~30 s
+    const target = m.on ? 1 : 0;
+    m.level += clamp(target - m.level, -fade * dt, fade * dt);
     return m.level;
   }
   setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ac.currentTime, 0.1); }

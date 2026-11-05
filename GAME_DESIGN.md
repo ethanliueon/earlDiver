@@ -10,9 +10,12 @@ There is no end: the long goal is an aquarium on the shore with one of everythin
 
 ## Sound
 
-The music is not always on. In a dive it comes in now and then when things are calm (a quiet spell,
-a good sale, a rare catch, a new aquarium wing), plays a few minutes and fades; anything
-frightening (the entity near, being marked, an attack, no air) stops it at once.
+The music comes in short pieces (30-60 s, then a very slow fade). It always plays at the start of
+a dive and on getting back to the boat, and on good moments (a sale, a rare catch, a new wing), but
+never restarts a piece already playing. Stress (the entity near, marked, an attack, no air, hurt,
+below 300 m outside the sub) stops it, and nothing starts it for 15 s after. In the quiet after a
+piece, from one minute on, it has a chance every 30 s (10 %, 20 %, 35 %, 45 %, then 50 %), raised
+by a hidden calm meter that fills with peaceful catches, sales and photos.
 
 ## Tone
 
@@ -34,7 +37,7 @@ frightening (the entity near, being marked, an attack, no air) stops it at once.
 
 ## Earl
 
-- A faceless modern diver, about 1 m from head to fin-tips. Swims at 2.8 m/s; Shift is 1.3x (upgradable) for
+- A faceless modern diver, about 1 m from head to fin-tips. Swims at 1.7 m/s; Shift is 1.5x (upgradable) for
   twice the air. Headlamp on below 200 m or in the dark (L).
 - Air is the main limit: 50 s at first, bigger tanks at the boat (up to a 300 s rebreather that
   makes no bubbles). Below 300 m the drain grows exponentially (x30 at 1,000 m). Out of air is a

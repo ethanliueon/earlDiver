@@ -3,7 +3,7 @@ import { clamp, lerp, angleLerp } from './util.js';
 import { collide, BOAT_X, SPAWN } from './world.js';
 import { SUB_TIERS } from './economy.js';
 
-export const DIVE_SPEED = 2.8;  // Earl's base swimming speed (m/s)
+export const DIVE_SPEED = 1.68; // Earl's base swimming speed (m/s)
 export const SUB_SPEED = 3.36;  // the submersible's
 // ballast: diving is no faster than cruising; blowing ballast to rise is a little faster
 export const SUB_DIVE = 1.0, SUB_RISE = 1.2;
@@ -91,7 +91,7 @@ export function updateEarl(g, dt, inp) {
     if (sub.o2 <= 0) { sub.o2 = 0; return 'sub-o2'; }
   } else {
     // ---- diver ----
-    let sp = DIVE_SPEED * (inp.sprint ? e.sprintMul || 1.3 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed;
+    let sp = DIVE_SPEED * (inp.sprint ? e.sprintMul || 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed;
     const mag = Math.hypot(inp.x, inp.y);
     let ix = inp.x, iy = inp.y;
     if (mag > 1) { ix /= mag; iy /= mag; }

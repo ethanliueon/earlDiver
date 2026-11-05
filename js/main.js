@@ -180,7 +180,7 @@ function sellAll() {
   if (!lines.length) return null;
   const total = lines.reduce((a, l) => a + l.total, 0);
   g.earned += total;
-  if (total >= 5) audio.cue && audio.cue('sale');
+  if (total > 0) audio.cue && audio.cue('sale');
   saveProfile(profile);
   audio.ready && audio.pickup();
   return { lines, total };
@@ -594,6 +594,9 @@ function update(dt) {
       else if (g.items.necklace === 0) hud.toast('No necklaces', 'warn');
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
+    // back at the boat after being out on a dive: music
+    if (e.y > 30) g.awayFromBoat = true;
+    if (g.awayFromBoat && Math.abs(e.x - BOAT_X) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
     const day = tickAquarium(profile, dt);
@@ -653,7 +656,7 @@ function update(dt) {
           if (r.type === 'noShots') hud.toast('No shots left — the boat has a fresh card', 'warn');
           else if (r.empty) hud.toast(`Nothing in the frame · ${g.shots} shots left`);
           else if (r.old) hud.toast(`${r.name}: you already have this one · ${g.shots} left`);
-          else { hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
+          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
         }
       } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame) {
@@ -701,6 +704,7 @@ function update(dt) {
           if (!(profile.variants || []).includes(vk)) profile.variants = [...(profile.variants || []), vk];
         }
         const rr = rarityOf(sp);
+        audio.calmBoost && audio.calmBoost(0.12);
         hud.toast(`${rr.name}: ${ev.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec) * statValue(profile, 'payFish'))}  (${g.bag.length}/${bagSlots(g)})`, 'rar:' + rr.col);
         audio.ready && audio.pickup();
         if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
