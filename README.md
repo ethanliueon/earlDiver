@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.20.1 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.21.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -60,6 +60,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
   rating: around 470 m for a 300 m sub, rarely above 400 m or past 540 m); nearing it the chance of
   failing rises fast, and when the hull gives it implodes in half a second.
   Refits at the boat take it down to 3,000 m.
+- A damaged hull leaks cabin air. Repairs during a dive use supplies bought at the boat: a leak
+  sealant kit (K, inside: +20 %, but only up to 85 %, since a seal is not steel) or a hull patch
+  plate (hold F outside at the hatch: 10 s of wet welding, +40 %; the arc's light is seen below 200 m).
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs
   hide you if you are slow and dark. Sea lanterns keep it away, for a while.
 - It never comes above 100 m: the top 100 m are safe from it (not from sharks).

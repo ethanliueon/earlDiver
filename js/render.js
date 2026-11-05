@@ -607,6 +607,8 @@ export class Renderer {
         ctx.restore();
       }
       // the camera's flash lights the water for a moment
+      // a wet-welding arc: blue-white, flickering, lighting the hull and the water around it
+      if (g.welding) { const fl = 0.55 + 0.45 * Math.random(), hx = g.earl.x + Math.sign(g.sub.x - g.earl.x) * 0.55; glowPts.push([S(hx), Sy(g.earl.y + 0.1), '#d4e6ff', ppm * (5 + 4 * fl), 1.7 * fl]); }
       if (g.camFlash > 0 && g.toolTip) glowPts.push([S(g.toolTip.x), Sy(g.toolTip.y), '#f4f8ff', ppm * 3 * g.camFlash, 1.5 * g.camFlash]);
       // animals on their way into the net or up the slurp gun's barrel
       for (const f of g.captureFx || []) {
@@ -765,6 +767,19 @@ export class Renderer {
           }
         }
       }
+    }
+    // the arc itself, white-hot, and sparks quenched almost as soon as they leave it
+    if (g.welding) {
+      const hx = S(g.earl.x + Math.sign(g.sub.x - g.earl.x) * 0.55), hy = Sy(g.earl.y + 0.1);
+      ctx.globalCompositeOperation = 'lighter';
+      const cg = ctx.createRadialGradient(hx, hy, 0, hx, hy, ppm * 0.5);
+      cg.addColorStop(0, 'rgba(255,255,255,0.95)'); cg.addColorStop(0.25, 'rgba(170,205,255,0.6)'); cg.addColorStop(1, 'rgba(60,100,200,0)');
+      ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(hx, hy, ppm * 0.5 * (0.7 + 0.3 * Math.random()), 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,220,160,0.8)'; ctx.lineWidth = Math.max(1, ppm * 0.02);
+      ctx.beginPath();
+      for (let k = 0; k < 6; k++) { const a = Math.random() * TAU, l = ppm * (0.1 + Math.random() * 0.35); ctx.moveTo(hx, hy); ctx.lineTo(hx + Math.cos(a) * l, hy + Math.sin(a) * l + l * 0.3); }
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
     }
     // the trap buoys' labels: what is in each and how long its bait has left
     if (this.trapLabels && this.trapLabels.length) {

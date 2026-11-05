@@ -120,6 +120,8 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 8, max: 3, desc: 'Thrown (Q). The thing in the deep follows its light for a while.' },
   necklace: { name: 'Fangtooth necklace', price: 12, max: 3, desc: 'Worn (E). Keeps it away for 15 s.' },
+  sealant: { name: 'Leak sealant kit', price: 10, max: 3, desc: 'Fast-setting underwater epoxy, rubber wedges and pipe clamps. From inside the cabin (K), Earl stops the worst of the leaks: it seals, but it is not steel.' },
+  plate: { name: 'Hull patch plate', price: 30, max: 2, desc: 'A curved steel plate, studs and a wet-welding rod. Outside, beside the sub, hold F: an arc burning blue in the dark welds it over the damage. The light carries a long way.' },
   airTank: { name: 'Backup air tank', price: 20, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
