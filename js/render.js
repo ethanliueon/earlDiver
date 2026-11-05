@@ -7,7 +7,8 @@ import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { activeTool } from './capture.js';
-import { drawDart } from './tools_draw.js';
+import { drawDart, drawTrap, drawBuoy } from './tools_draw.js';
+import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { BOAT_X, WORLD_W } from './world.js';
@@ -200,6 +201,20 @@ export class Renderer {
     // ---- pickups + lanterns ----
     for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) this.drawPickup(ctx, p, S(p.x), Sy(p.y), ppm, t);
     for (const l of g.world.lanterns) if (inView(l.x, l.y, 14)) this.drawLanternBody(ctx, l, S, Sy, ppm, t);
+    // traps on the bottom, their lines up to the buoys
+    for (const tr of g.traps || []) {
+      const by = surfY(tr.x);
+      if (tr.x < x0 - 4 || tr.x > x1 + 4) continue;
+      const list = tr.catch.map((c) => ({ sp: SPECIES_BY_ID[c.id], len: c.len }));
+      ctx.save(); ctx.translate(S(tr.x), Sy(tr.y)); ctx.rotate(Math.sin(t * 0.7 + tr.sway) * (tr.state === 'hauling' ? 0.15 : 0.02));
+      const r = drawTrap(ctx, ppm, tr.type, t, list);
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(200,180,120,0.55)'; ctx.lineWidth = Math.max(1, ppm * 0.02);
+      ctx.beginPath(); ctx.moveTo(S(tr.x), Sy(tr.y) + r.top);
+      ctx.quadraticCurveTo(S(tr.x) + Math.sin(t * 0.4 + tr.sway) * ppm * 1.5, (Sy(tr.y) + r.top + Sy(by)) / 2, S(tr.x), Sy(by)); ctx.stroke();
+      if (Sy(by) > -40 && Sy(by) < this.H + 40) { ctx.save(); ctx.translate(S(tr.x), Sy(by)); drawBuoy(ctx, ppm, t); ctx.restore(); }
+      if (tr.type === 'deep' && r.glow) glowPts.push([S(tr.x) + r.glow[0], Sy(tr.y) + r.glow[1], '#9affd8', ppm * 0.8, 1]);
+    }
     if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
     // ---- fauna ----
@@ -332,7 +347,15 @@ export class Renderer {
       ctx.save(); ctx.translate(S(sub.x), Sy(sub.y)); ctx.rotate(sub.tilt * Math.sign(sxs)); ctx.scale(sxs, 1);
       // running lights on while the autopilot is driving it, so it can be seen coming
       const lights = (g.earl.inSub && sub.lightsOn) || (g.autopilot && g.autopilot.state !== 'idle' && !sub.docked);
-      const r = drawSub(ctx, 9 * ppm, t, sub.stress, lights);
+      // the arm reaching: its target, in the sub's own (flipped, tilted) frame
+      let armArg = null;
+      const ap = armPose(g);
+      if (ap) {
+        const cy0 = Math.cos(sub.yaw), sx0 = (cy0 >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy0)), rr = -sub.tilt * Math.sign(sx0);
+        const dx = (ap.tx - sub.x) * ppm, dy = (ap.ty - sub.y) * ppm;
+        armArg = { ext: ap.ext, closed: ap.closed, sp: ap.sp, len: ap.len, lx: (dx * Math.cos(rr) - dy * Math.sin(rr)) / sx0, ly: dx * Math.sin(rr) + dy * Math.cos(rr) };
+      }
+      const r = drawSub(ctx, 9 * ppm, t, sub.stress, lights, armArg);
       ctx.restore();
       // mid-turn the hull is seen nearly bow-on: draw its round cross-section over the squashed side view
       const bow = clamp(1 - Math.abs(cy) / 0.5, 0, 1);
@@ -392,7 +415,7 @@ export class Renderer {
           aimLocal = Math.atan2(Math.sin(wa), Math.cos(wa) * e.facing) - e.angle;
           aimLocal = Math.atan2(Math.sin(aimLocal), Math.cos(aimLocal));
         }
-        gear = { kind: tool.kind, tier: tool.tier, t, sweep: g.capture && g.capture.kind === tool.kind ? clamp(g.capture.t / g.capture.dur, 0, 1) : null,
+        gear = { kind: tool.kind === 'trap' ? 'none' : tool.kind, tier: tool.tier, t, sweep: g.capture && g.capture.kind === tool.kind ? clamp(g.capture.t / g.capture.dur, 0, 1) : null,
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
           aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0 };
       }

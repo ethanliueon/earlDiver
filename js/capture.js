@@ -12,6 +12,7 @@ export const tankSlots = (g) => SUB_TANKS[g.profile.subTank || 0].slots;
 export function activeTool(g) {
   const P = g.profile;
   if (g.toolSel === 'slurp' && P.slurp >= 0) return { kind: 'slurp', def: SLURPS[P.slurp], tier: P.slurp };
+  if (g.toolSel === 'trap') return { kind: 'trap', def: null, tier: 0 };
   if (g.toolSel === 'tag' && P.tagger >= 0) return { kind: 'tag', def: TAGGERS[P.tagger], tier: P.tagger };
   if (g.toolSel === 'cam' && P.camera >= 0) return { kind: 'cam', def: CAMERAS[P.camera], tier: P.camera };
   return { kind: 'net', def: NETS[P.net || 0], tier: P.net || 0 };

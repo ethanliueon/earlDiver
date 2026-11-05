@@ -245,6 +245,65 @@ export function drawCamera(ctx, u, tier, t, flash) {
   return { tipX: lensX, tipY: 0 };
 }
 
+// A trap on the seabed. m = pixels per metre; origin on the bottom, centred. catchList: what is in it.
+export function drawTrap(ctx, m, type, t, catchList, sp) {
+  if (type === 'pot') {
+    // a galvanised wire cage: frame, mesh, a funnel entrance on the side, a bait jar inside
+    const w = 0.95 * m, h = 0.5 * m;
+    ctx.fillStyle = 'rgba(40,46,44,0.25)'; ctx.fillRect(-w / 2, -h, w, h);
+    ctx.save(); ctx.beginPath(); ctx.rect(-w / 2, -h, w, h); ctx.clip();
+    (catchList || []).forEach((c, i) => {
+      ctx.save(); ctx.translate(-w * 0.2 + i * w * 0.35, -h * 0.35); ctx.rotate(Math.sin(t * 3 + i) * 0.1);
+      drawSpecies(ctx, c.sp, Math.min(w * 0.45, Math.max(0.15 * m, c.len * m)), t * 2 + i, 0.5, 0);
+      ctx.restore();
+    });
+    mesh(ctx, -w / 2, -h, w / 2, 0, 0.07 * m, 'rgba(150,158,150,0.7)', Math.max(0.5, 0.008 * m));
+    ctx.restore();
+    // bait jar
+    ctx.fillStyle = 'rgba(200,190,150,0.7)'; ctx.beginPath(); ctx.roundRect(w * 0.18, -h * 0.55, 0.12 * m, 0.18 * m, 0.02 * m); ctx.fill();
+    ctx.strokeStyle = '#8a928c'; ctx.lineWidth = Math.max(1, 0.025 * m);
+    ctx.strokeRect(-w / 2, -h, w, h);
+    ctx.beginPath(); ctx.moveTo(0, -h); ctx.lineTo(0, 0); ctx.stroke();
+    // the funnel: a cone of mesh leading in from the left end
+    ctx.strokeStyle = 'rgba(160,168,160,0.8)'; ctx.lineWidth = Math.max(0.6, 0.012 * m);
+    ctx.beginPath(); ctx.moveTo(-w / 2, -h * 0.85); ctx.lineTo(-w * 0.28, -h * 0.55); ctx.lineTo(-w * 0.28, -h * 0.35); ctx.lineTo(-w / 2, -h * 0.12); ctx.stroke();
+    // the bridle the line ties to
+    ctx.strokeStyle = '#c8b070'; ctx.lineWidth = Math.max(0.8, 0.015 * m);
+    ctx.beginPath(); ctx.moveTo(-w * 0.4, -h); ctx.lineTo(0, -h - 0.18 * m); ctx.lineTo(w * 0.4, -h); ctx.stroke();
+    return { top: -h - 0.18 * m };
+  }
+  // the deep trap: a steel cylinder on its side, a lit bait chamber in a window, a lifting eye
+  const w = 1.1 * m, h = 0.62 * m;
+  const g = ctx.createLinearGradient(0, -h, 0, 0);
+  g.addColorStop(0, '#6a726e'); g.addColorStop(0.4, '#3a403c'); g.addColorStop(1, '#16191a');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(-w / 2, -h, w, h, 0.12 * m); ctx.fill();
+  ctx.fillStyle = '#121414'; ctx.beginPath(); ctx.ellipse(-w / 2 + 0.04 * m, -h / 2, 0.08 * m, h * 0.46, 0, 0, TAU); ctx.fill(); // the funnel mouth
+  for (const k of [-0.25, 0.25]) { ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(k * w - 0.02 * m, -h, 0.04 * m, h); }        // bands
+  // the window into the bait chamber, glowing
+  const pulse = 0.7 + 0.3 * Math.sin(t * 2.3);
+  const wg = ctx.createRadialGradient(w * 0.15, -h * 0.5, 0, w * 0.15, -h * 0.5, 0.2 * m);
+  wg.addColorStop(0, `rgba(170,255,220,${(0.95 * pulse).toFixed(3)})`); wg.addColorStop(1, 'rgba(60,140,120,0.3)');
+  ctx.fillStyle = wg; ctx.beginPath(); ctx.roundRect(w * 0.02, -h * 0.68, 0.26 * m, h * 0.36, 0.04 * m); ctx.fill();
+  (catchList || []).slice(0, 2).forEach((c, i) => {
+    ctx.save(); ctx.translate(-w * 0.2 + i * 0.12 * m, -h * 0.45); ctx.globalAlpha = 0.85;
+    drawSpecies(ctx, c.sp, Math.min(w * 0.3, Math.max(0.12 * m, c.len * m * 0.6)), t * 2 + i, 0.4, 0); ctx.restore();
+  });
+  ctx.strokeStyle = '#8a908a'; ctx.lineWidth = Math.max(1, 0.03 * m); ctx.beginPath(); ctx.arc(0, -h - 0.08 * m, 0.07 * m, 0, TAU); ctx.stroke();
+  ctx.fillStyle = '#2a2e2c'; ctx.fillRect(-w * 0.42, -0.05 * m, 0.12 * m, 0.05 * m); ctx.fillRect(w * 0.3, -0.05 * m, 0.12 * m, 0.05 * m); // skids
+  return { top: -h - 0.15 * m, glow: [w * 0.15, -h * 0.5] };
+}
+// the marker buoy at the surface: an orange float with a short flag pole
+export function drawBuoy(ctx, m, t) {
+  const r = 0.22 * m;
+  ctx.strokeStyle = '#2a2a26'; ctx.lineWidth = Math.max(1, 0.025 * m);
+  ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(0, -r - 0.9 * m); ctx.stroke();
+  ctx.fillStyle = '#d23a22'; ctx.beginPath(); ctx.moveTo(0, -r - 0.9 * m); ctx.lineTo(0.32 * m, -r - 0.8 * m + Math.sin(t * 4) * 0.03 * m); ctx.lineTo(0, -r - 0.68 * m); ctx.closePath(); ctx.fill();
+  const g = ctx.createRadialGradient(-r * 0.4, -r * 0.4, r * 0.1, 0, 0, r);
+  g.addColorStop(0, '#ffb070'); g.addColorStop(0.5, '#e8641e'); g.addColorStop(1, '#8a3410');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillRect(-r, -r * 0.12, r * 2, r * 0.24);
+}
+
 // the mesh goody bag clipped to his belt, bulging with what is in it
 export function drawBeltBag(ctx, u, items, t) {
   if (!items.length) return;
@@ -285,6 +344,9 @@ export function toolIcon(kind, tier, w, h) {
     const u = w / (tier === 0 ? 86 : tier === 2 ? 72 : 64);
     ctx.translate(w * (tier === 0 ? 0.12 : 0.2), h * 0.42); ctx.rotate(-0.06);
     drawTagger(ctx, u, tier, 0.4, 0, true);
+  } else if (kind === 'trap') {
+    ctx.translate(w / 2, h * 0.86);
+    drawTrap(ctx, h * 1.1, tier ? 'deep' : 'pot', 0.5, []);
   } else if (kind === 'cam') {
     const u = h / (tier === 0 ? 14 : 30);
     ctx.translate(w * 0.42, h * 0.5);

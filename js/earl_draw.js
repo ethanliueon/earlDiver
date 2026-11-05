@@ -1,6 +1,7 @@
 // Earl, the submersible and the boat. All drawn in local pixel space.
 import { TAU, clamp, lerp } from './util.js';
 import { drawNet, drawSlurp, drawBeltBag, drawTagger, drawCamera } from './tools_draw.js';
+import { drawSpecies } from './creatures_draw.js';
 
 const SUIT = '#141619', SUIT_HI = '#2a2f35', SUIT_PANEL = '#24282d', SUIT_SEAM = '#33383e';
 const GLOVE = '#0d0e10', BCD = '#1b1d20', WEBBING = '#3a3d41';
@@ -224,9 +225,10 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
       pull = sw < 0.12 ? sw / 0.12 : 1 - (sw - 0.12) / 0.88;
     }
   }
+  if (gear && gear.kind === 'none') { pose = null; }
   const hand = arm(0, true, pose);
   let tip = null;
-  if (gear) {
+  if (gear && gear.kind !== 'none') {
     if (toolA === null) toolA = gear.kind === 'net' ? lerp(hand.foreA - 0.5, Math.PI * 0.94, m) : hand.foreA;
     ctx.save(); ctx.translate(hand.hx, hand.hy); ctx.rotate(toolA);
     const r = gear.kind === 'net'
@@ -251,7 +253,8 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
 }
 
 // Old riveted bathyscaphe. Local origin centre; length ~9 m => Lp pixels. Faces +x.
-export function drawSub(ctx, Lp, t, stress, lights) {
+// arm (optional): { ext 0..1, lx, ly: the target in this local frame (px), closed, sp, len }
+export function drawSub(ctx, Lp, t, stress, lights, arm) {
   // An old riveted bathyscaphe: a long float hull (bow to the right) with a rounded bow and a
   // tapering stern, cruciform tail fins and a ducted propeller; a conning tower with a hatch wheel;
   // the steel crew sphere slung underneath with its viewports, lamps and a jointed manipulator arm.
@@ -364,14 +367,47 @@ export function drawSub(ctx, Lp, t, stress, lights) {
   ctx.fillStyle = lights ? '#ff4030' : '#502420'; ctx.beginPath(); ctx.arc(-30 * u, -21 * u, 0.6 * u, 0, TAU); ctx.fill();
   ctx.fillStyle = lights ? '#40ff70' : '#205030'; ctx.beginPath(); ctx.arc(44 * u, -15 * u, 0.6 * u, 0, TAU); ctx.fill();
   // manipulator arm: shoulder, two segments, a two-fingered claw that opens and closes
-  const sx = 14 * u, sy = 17 * u, open = 0.25 + 0.15 * Math.sin(t * 0.6);
-  const ex = sx + 8 * u, ey = sy + 4 * u, wx = ex + 7 * u, wy = ey - 2.5 * u;
+  const sx = 14 * u, sy = 17 * u;
+  let open = 0.25 + 0.15 * Math.sin(t * 0.6);
+  let ex = sx + 8 * u, ey = sy + 4 * u, wx = ex + 7 * u, wy = ey - 2.5 * u;
+  if (arm && arm.ext > 0) {
+    // reaching: the wrist goes out to the animal; the two segments telescope and the elbow bends
+    // below the line between shoulder and wrist (two-bone reach)
+    const k = arm.ext * arm.ext * (3 - 2 * arm.ext);
+    wx = wx + (arm.lx - wx) * k; wy = wy + (arm.ly - wy) * k;
+    const D = Math.hypot(wx - sx, wy - sy), l = Math.max(8 * u, D * 0.56);
+    const mx = (sx + wx) / 2, my = (sy + wy) / 2, h = Math.sqrt(Math.max(0, l * l - (D / 2) * (D / 2)));
+    const nx = -(wy - sy) / (D || 1), ny = (wx - sx) / (D || 1);
+    ex = mx + nx * h; ey = my + ny * h;
+    open = arm.closed ? 0.04 : 0.5;
+  }
+  const fa = Math.atan2(wy - ey, wx - ex);
   ctx.strokeStyle = '#3e4338'; ctx.lineCap = 'round';
   ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
   ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(wx, wy); ctx.stroke();
+  // hydraulic rams along each segment: a bright chrome rod sliding out of a dark cylinder
+  for (const [ax, ay, bx, by] of [[sx, sy, ex, ey], [ex, ey, wx, wy]]) {
+    const a = Math.atan2(by - ay, bx - ax), off = 1.3 * u, px = -Math.sin(a) * off, py = Math.cos(a) * off;
+    ctx.strokeStyle = '#1e211b'; ctx.lineWidth = 0.9 * u;
+    ctx.beginPath(); ctx.moveTo(ax + px, ay + py); ctx.lineTo(ax + px + (bx - ax) * 0.5, ay + py + (by - ay) * 0.5); ctx.stroke();
+    ctx.strokeStyle = '#a8aea4'; ctx.lineWidth = 0.45 * u;
+    ctx.beginPath(); ctx.moveTo(ax + px + (bx - ax) * 0.5, ay + py + (by - ay) * 0.5); ctx.lineTo(ax + px + (bx - ax) * 0.85, ay + py + (by - ay) * 0.85); ctx.stroke();
+  }
   ctx.fillStyle = '#2a2e26'; for (const [jx, jy] of [[sx, sy], [ex, ey]]) { ctx.beginPath(); ctx.arc(jx, jy, 1.4 * u, 0, TAU); ctx.fill(); }
+  // what the claw is holding
+  if (arm && arm.sp) {
+    const fl = Math.max(3 * u, Math.min(arm.len / 0.09, 14) * u);
+    ctx.save(); ctx.translate(wx + Math.cos(fa) * 3 * u, wy + Math.sin(fa) * 3 * u); ctx.rotate(fa + Math.PI / 2 + Math.sin(t * 20) * 0.25);
+    drawSpecies(ctx, arm.sp, fl, t * 3, 1, 0);
+    ctx.restore();
+  }
+  // the claw: two jointed fingers along the forearm's line
   ctx.strokeStyle = '#555a4c'; ctx.lineWidth = 0.8 * u;
-  for (const sgn of [-1, 1]) { ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx + 2.5 * u, wy + sgn * open * 6 * u); ctx.lineTo(wx + 4 * u, wy + sgn * open * 3 * u); ctx.stroke(); }
+  for (const sgn of [-1, 1]) {
+    const a1 = fa + sgn * open * 1.1, a2 = fa - sgn * open * 0.5;
+    const kx = wx + Math.cos(a1) * 3 * u, ky = wy + Math.sin(a1) * 3 * u;
+    ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(kx, ky); ctx.lineTo(kx + Math.cos(a2) * 2.4 * u, ky + Math.sin(a2) * 2.4 * u); ctx.stroke();
+  }
   ctx.lineCap = 'butt';
   // sacrificial anodes on the sphere frame
   ctx.fillStyle = '#7a7c74'; ctx.fillRect(-5 * u, 6 * u, 2 * u, 1.2 * u); ctx.fillRect(16 * u, 4 * u, 2 * u, 1.2 * u);

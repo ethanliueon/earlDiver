@@ -40,11 +40,13 @@ export class Hud {
     if ((P.slurp ?? -1) >= 0) tools.push(['2', 'slurp', P.slurp, SLURPS[P.slurp].name]);
     if ((P.tagger ?? -1) >= 0) tools.push(['3', 'tag', P.tagger, TAGGERS[P.tagger].name]);
     if ((P.camera ?? -1) >= 0) tools.push(['4', 'cam', P.camera, CAMERAS[P.camera].name]);
+    const tr = P.traps || {};
+    if ((tr.pot || 0) + (tr.deep || 0) > 0) tools.push(['5', 'trap', tr.pot ? 0 : 1, 'Traps']);
     const sw = 84 * s, sh = 46 * s, gap = 8 * s;
     const total = tools.length * sw + (tools.length - 1) * gap;
     let x = W / 2 - total / 2;
     const y = H - sh - 22 * s;
-    const sel = g.toolSel === 'slurp' && (P.slurp ?? -1) >= 0 ? 'slurp' : g.toolSel === 'tag' && (P.tagger ?? -1) >= 0 ? 'tag' : g.toolSel === 'cam' && (P.camera ?? -1) >= 0 ? 'cam' : 'net';
+    const sel = g.toolSel === 'trap' ? 'trap' : g.toolSel === 'slurp' && (P.slurp ?? -1) >= 0 ? 'slurp' : g.toolSel === 'tag' && (P.tagger ?? -1) >= 0 ? 'tag' : g.toolSel === 'cam' && (P.camera ?? -1) >= 0 ? 'cam' : 'net';
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
       ctx.fillStyle = on ? 'rgba(14,26,28,0.72)' : 'rgba(6,12,14,0.5)';
@@ -56,6 +58,7 @@ export class Hud {
       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.fillText(key, x + 5 * s, y + 4 * s);
       if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.shots ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${g.shots}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
+      if (kind === 'trap') { const free = (tr.pot || 0) + (tr.deep || 0) - g.traps.length; ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       if (kind === 'tag' && (g.tags.length)) { ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(232,176,42,0.9)'; ctx.fillText(`${g.tags.length}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       // sweep / reload progress along the bottom edge
       if (on && g.capture && g.capture.kind === kind) {
@@ -85,6 +88,18 @@ export class Hud {
         ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.stroke();
       } else { ctx.strokeStyle = 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1; ctx.stroke(); }
     }
+    // the arm's grip gauge: a marker sweeping a bar; close the claw in the green
+    const A = g.armGame;
+    if (A && A.phase === 'grip') {
+      const bw = 260 * s, bh = 14 * s, bx = W / 2 - bw / 2, by = H * 0.62;
+      ctx.fillStyle = 'rgba(6,12,14,0.7)'; ctx.beginPath(); ctx.roundRect(bx - 6 * s, by - 6 * s, bw + 12 * s, bh + 12 * s, 6 * s); ctx.fill();
+      ctx.fillStyle = 'rgba(200,80,60,0.55)'; ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillRect(bx + bw * 0.3, by, bw * 0.4, bh);
+      ctx.fillStyle = 'rgba(120,220,140,0.9)'; ctx.fillRect(bx + bw * 0.42, by, bw * 0.16, bh);
+      ctx.fillStyle = '#f4f4ee'; ctx.fillRect(bx + bw * A.marker - 1.5 * s, by - 4 * s, 3 * s, bh + 8 * s);
+      ctx.font = `${10 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(220,236,230,0.7)'; ctx.textBaseline = 'top';
+      ctx.fillText('GRIP', W / 2, by + bh + 8 * s);
+    }
     // the last photograph: a print in the corner, with the animal on it
     const pc = this.photoCard;
     if (pc) {
@@ -105,7 +120,7 @@ export class Hud {
       }
     }
     // a second row inside the sub: what is still in the bag outside the tank
-    if (e.inSub && g.bag.length) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillText(`+${g.bag.length} in the bag (tank full)`, W / 2 + rowW / 2 + 8 * s, sy); }
+    if (e.inSub && g.bag.length) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillText(`+${g.bag.length} in the bag${g.subTank.length >= slots ? ' (tank full)' : ''}`, W / 2 + rowW / 2 + 8 * s, sy); }
     ctx.textBaseline = 'top';
   }
 

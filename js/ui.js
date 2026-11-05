@@ -3,7 +3,7 @@ import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
 import { speciesIcon } from './creatures_draw.js';
 import { RESOURCES } from './world.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS } from './economy.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName } from './specimens.js';
 import { VARIANTS, VARIANT_KEYS, variantLabel } from './variants.js';
@@ -163,7 +163,7 @@ export class UI {
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space on the bottom sets one; F at its buoy hauls it up'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -278,6 +278,11 @@ export class UI {
         if (sub.hull < 0.999) html += card('Patch the hull', 'Weld plates over the worst of it. A damaged hull leaks air.', `integrity ${Math.round(sub.hull * 100)} % → <b>${Math.round(Math.min(1, sub.hull + 0.4) * 100)} %</b>`, PATCH_PRICE, 'buy', 'patch', 'Patch');
       }
     } else if (tab === 'supplies') {
+      const tr = P.traps || {};
+      for (const [k, T, act] of [['pot', TRAPS.pot, 'pot'], ['deep', TRAPS.deep, 'deeptrap']]) {
+        const have = tr[k] || 0, full = have >= T.max;
+        html += card(T.name, T.desc + ` Holds ${T.holds}; checks every minute or so.`, `you own ${have} / ${T.max}`, full ? null : T.price, 'buy', act, full ? 'Full' : 'Buy', '', icon('trap', k === 'pot' ? 0 : 1));
+      }
       for (const [k, it] of Object.entries(SUPPLIES)) {
         const full = g.items[k] >= it.max;
         html += card(it.name, it.desc, `carrying ${g.items[k]} / ${it.max}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy');

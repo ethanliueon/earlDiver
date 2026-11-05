@@ -33,6 +33,7 @@ export const SUB_TIERS = [
 // add-ons for the submersible (bought once)
 export const SUB_ADDONS = {
   recall: { name: 'Recall unit', price: 2500, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
+  arm: { name: 'Manipulator arm', price: 6000, desc: 'Hydraulics for the old claw under the sphere. From inside the sub, Space reaches for an animal up to a metre long; time the grip.' },
   quiet: { name: 'Quiet engine', price: 4000, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
 };
 // ---------------- catching gear ----------------
@@ -67,6 +68,13 @@ export const CAMERAS = [
   { name: 'Housed camera', price: 1500, range: 12, shots: 24, flash: true, desc: 'A real camera in an aluminium housing, with two strobes on arms.' },
   { name: 'Low-light camera', price: 9000, range: 12, shots: 24, flash: false, desc: 'A huge sensor that needs no flash. Nothing in the dark sees you take the picture.' },
 ];
+// Traps: set on the bottom, marked by a line to a buoy, hauled up later.
+export const TRAPS = {
+  pot: { name: 'Wire pot trap', price: 150, max: 3, maxDepth: 200, holds: 2, every: 45, chance: 0.5, maxLen: 0.6,
+    desc: 'A galvanised wire cage with a funnel and a bait jar. Crabs, lobsters, eels. Rated to 200 m.' },
+  deep: { name: 'Deep trap', price: 3000, max: 2, maxDepth: 2000, holds: 4, every: 50, chance: 0.5, maxLen: 0.9,
+    desc: 'A steel cylinder with a lit bait chamber, rated to 2,000 m. The light that draws deep fish draws other things too.' },
+};
 export const BAGS = [
   { name: 'Mesh goody bag', slots: 3, price: 0, desc: 'Clipped to his belt.' },
   { name: 'Large catch bag', slots: 5, price: 600, desc: 'A bigger mesh bag with a spring-loaded mouth.' },
@@ -113,7 +121,7 @@ const RECOVER_PER_SEC = 0.004;      // the market forgets: ~4 minutes to recover
 export function newProfile() {
   return {
     v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
-    net: 0, slurp: -1, bag: 0, subTank: 0, caught: [], tagger: -1, camera: -1, photos: [],
+    net: 0, slurp: -1, bag: 0, subTank: 0, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 0, deep: 0 },
     journal: [], notes: '', seasons: 1, deaths: 0, deepest: 0, market: {}, created: Date.now(),
   };
 }

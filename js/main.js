@@ -9,7 +9,9 @@ import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transfe
 import { specimenValue, conditionName } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS } from './economy.js';
+import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
+import { startArm, updateArm, findArmTarget } from './arm.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
@@ -63,6 +65,7 @@ function newGame(mode) {
     autopilot: new Autopilot(), addons: P.addons || {},
     bag: [], subTank: [], captureFx: [], capture: null, toolSel: 'net', capPrompt: null,
     darts: [], tags: [], photos: [], shots: P.camera >= 0 ? CAMERAS[P.camera].shots : 0, camFlash: 0,
+    traps: [], armGame: null,
   };
   g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
   g.damageSub = (amt, sp) => damageSub(amt, sp);
@@ -222,6 +225,10 @@ function buy(kind) {
   } else if (kind === 'camera' && CAMERAS[(P.camera ?? -1) + 1] && spend(P, CAMERAS[(P.camera ?? -1) + 1].price)) {
     P.camera = (P.camera ?? -1) + 1; g.toolSel = 'cam'; g.shots = CAMERAS[P.camera].shots; ok = true;
     hud.toast(`${CAMERAS[P.camera].name}. Press 4`, 'big');
+  } else if ((kind === 'pot' || kind === 'deeptrap') && spend(P, TRAPS[kind === 'pot' ? 'pot' : 'deep'].price)) {
+    const tk = kind === 'pot' ? 'pot' : 'deep';
+    P.traps = Object.assign({ pot: 0, deep: 0 }, P.traps); P.traps[tk]++; ok = true;
+    hud.toast(`${TRAPS[tk].name} (${P.traps[tk]}). Press 5 at the bottom to set it`, 'big');
   } else if (kind === 'canisters' && !(P.addons || {}).canisters && spend(P, CANISTERS.price)) {
     P.addons = Object.assign({}, P.addons, { canisters: true }); g.addons = P.addons; ok = true;
     hud.toast('Pressure canisters: deep animals survive the trip up', 'big');
@@ -237,6 +244,9 @@ function buy(kind) {
 }
 // End the season: sell what is aboard, then a fresh ocean. Nothing is lost.
 function endSeason() {
+  // the crew pulls every trap at the end of the season; what is in them is sold with the rest
+  for (const tr of g.traps) g.bag.push(...tr.catch);
+  g.traps = [];
   const sale = sellAll();
   syncProfile();
   profile.seasons = (profile.seasons || 1) + 1;
@@ -325,6 +335,8 @@ function readMove() {
 // ---------------- interactions ----------------
 function findTarget() {
   const e = g.earl, W = g.world;
+  const tn = trapNear(g);
+  if (tn) return { kind: 'trap', ...tn };
   const reach = e.inSub ? 7 : 2.4;
   // pickups
   let best = null, bd = reach;
@@ -361,6 +373,7 @@ function promptFor(t) {
       if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? `Cutting the net… ${Math.round(g.pry.t / HOLD_TIME.net * 100)} %` : `Hold F  Cut the ${t.p.animal} free`;
       else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') p = 'F  Board the submersible';
+    else if (t.kind === 'trap') p = t.how === 'haul' ? `F  Haul up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)` : `F  Empty the trap (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
@@ -387,6 +400,11 @@ function interact(t, exitSub) {
   const e = g.earl, sub = g.sub;
   if (exitSub && e.inSub) return leaveSub();
   if (!t) { if (e.inSub) leaveSub(); return; }
+  if (t.kind === 'trap') {
+    if (t.how === 'haul') { t.t.state = 'hauling'; hud.toast('Hauling the trap up the line'); audio.ready && audio.click(); }
+    else { const n = emptyTrap(g, t.t); hud.toast(n ? `${n} from the trap into the bag${t.t.catch.length ? ' — the bag is full' : ''}` : t.t.catch.length ? 'The bag is full' : 'The trap is empty. Leave it a while'); }
+    return;
+  }
   if (t.kind === 'pickup' && t.p.type === 'net') {
     // freed: the animal swims off, the net comes away
     t.p.taken = true;
@@ -453,6 +471,9 @@ function die(cause, kind = 'normal') {
   if (g.tags.length) lost.push(`data from ${g.tags.length} tag${g.tags.length > 1 ? 's' : ''}`);
   if (g.photos.length) lost.push(`${g.photos.length} photograph${g.photos.length > 1 ? 's' : ''}`);
   g.tags = []; g.photos = [];
+  const inTraps = g.traps.reduce((a, tr) => a + tr.catch.length, 0);
+  if (inTraps) lost.push(`${inTraps} animal${inTraps > 1 ? 's' : ''} in the traps`);
+  g.traps = [];
   g.bag = []; g.subTank = [];
   const taken = cause.startsWith('Taken');
   if (taken) { const n = g.items.lure + g.items.necklace; if (n) lost.push(`${n} lure${n > 1 ? 's' : ''} and necklace${n > 1 ? 's' : ''}`); g.items.lure = g.items.necklace = 0; }
@@ -569,9 +590,13 @@ function update(dt) {
     if (pressed.has('1')) { g.toolSel = 'net'; hud.toast(NETS[profile.net || 0].name); }
     if (pressed.has('2')) { if ((profile.slurp ?? -1) >= 0) { g.toolSel = 'slurp'; hud.toast(SLURPS[profile.slurp].name); } else hud.toast('No slurp gun — the boat sells them', 'warn'); }
     if (pressed.has('3')) { if ((profile.tagger ?? -1) >= 0) { g.toolSel = 'tag'; hud.toast(TAGGERS[profile.tagger].name); } else hud.toast('No tag gun — the boat sells them', 'warn'); }
+    if (pressed.has('5')) { const tr = profile.traps || {}; if ((tr.pot || 0) + (tr.deep || 0) > 0) { g.toolSel = 'trap'; hud.toast(`Traps: ${trapsFree(g, 'pot')} pot${tr.deep ? `, ${trapsFree(g, 'deep')} deep` : ''} to set`); } else hud.toast('No traps — the boat sells them', 'warn'); }
     if (pressed.has('4')) { if ((profile.camera ?? -1) >= 0) { g.toolSel = 'cam'; hud.toast(`${CAMERAS[profile.camera].name} · ${g.shots} shots left`); } else hud.toast('No camera — the boat sells them', 'warn'); }
     const tool = activeTool(g);
-    if (pressed.has(' ') && !e.inSub) {
+    if (pressed.has(' ') && !e.inSub && g.toolSel === 'trap') {
+      const msg = placeTrap(g);
+      if (msg) hud.toast(msg, 'warn'); else { hud.toast('Trap set. A line runs up to a buoy at the surface'); audio.ready && audio.thud && audio.thud(0.2); }
+    } else if (pressed.has(' ') && !e.inSub) {
       if (tool.kind === 'tag') { if (!g.capture) { fireTag(g); audio.ready && audio.thud && audio.thud(0.15); } }
       else if (tool.kind === 'cam') {
         if (!g.capture) {
@@ -583,7 +608,27 @@ function update(dt) {
           else { hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
         }
       } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
-    } else if (pressed.has(' ') && e.inSub) hud.toast('Not from inside the submersible', 'warn');
+    } else if (pressed.has(' ') && e.inSub && !g.armGame) {
+      if (!g.addons.arm) hud.toast('The claw has no hydraulics — fit them at the boat', 'warn');
+      else { const msg = startArm(g); if (msg) hud.toast(msg, 'warn'); else audio.ready && audio.ram && audio.click(); }
+    }
+    // the arm: Space again closes the claw
+    const armEv = updateArm(g, dt, pressed.has(' ') && g.armGame && g.armGame.phase === 'grip' && g.armGame.t > 0.05);
+    if (armEv && armEv.type === 'armCatch') {
+      hud.toast(armEv.crushed ? `The ${armEv.name.toLowerCase()} is in the tank — gripped too hard` : `${armEv.name} — into the tank (${g.subTank.length}/${tankSlots(g)})`, armEv.crushed ? 'warn' : 'note');
+      const sp = armEv.sp;
+      if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
+      if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
+      profile.journal = [...g.journal.entries()]; saveProfile(profile);
+    } else if (armEv && armEv.type === 'armMiss') hud.toast(`The ${armEv.name.toLowerCase()} slips out of the claw`);
+    if (!e.inSub && g.armGame) g.armGame = null;
+    for (const ev of updateTraps(g, dt)) {
+      if (ev.type === 'hauled') {
+        const tr = ev.trap, n = tr.catch.length;
+        tr.y = 0; const moved = emptyTrap(g, tr);
+        hud.toast(n ? `The trap is up: ${n} inside${moved < n ? ` — ${n - moved} would not fit in the bag and went back` : ''}` : 'The trap comes up empty', n ? 'note' : '');
+      }
+    }
     if (g.capture && (g.capture.kind === 'tag' || g.capture.kind === 'cam')) { g.capture.t += dt; if (g.capture.t >= g.capture.dur) g.capture = null; }
     g.camFlash = Math.max(0, g.camFlash - dt * 5);
     for (const ev of updateDarts(g, dt)) {
@@ -617,7 +662,14 @@ function update(dt) {
     }
     for (const s of updateSpecimens(g, dt)) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died — it came up too fast`, 'warn');
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
-    if (!e.inSub && tool.kind === 'tag') {
+    if (e.inSub && g.addons.arm && !g.armGame) {
+      const at = findArmTarget(g);
+      g.capPrompt = at ? `Space  Reach for the ${at.name.toLowerCase()} · ~${money(at.value)}` : null;
+    } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw — in the green' : null;
+    else if (g.toolSel === 'trap') {
+      const fl = g.world.floorAt(e.x);
+      g.capPrompt = fl - e.y > 3 ? 'Traps: get down to the bottom' : (trapsFree(g, 'pot') > 0 && fl <= 200) || trapsFree(g, 'deep') > 0 ? `Space  Set a trap here (${Math.round(fl)} m)` : 'No traps free for this depth';
+    } else if (!e.inSub && tool.kind === 'tag') {
       const tt = findTagTarget(g);
       g.capPrompt = tt ? (tt.ok ? `Space  Tag the ${tt.name.toLowerCase()} · ~${money(tt.value)}` : `${tt.sp.name}: ${tt.why}`) : null;
     } else if (!e.inSub && tool.kind === 'cam') {
