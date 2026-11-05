@@ -275,3 +275,141 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
   border: 1px solid rgba(160, 200, 200, 0.25); border-radius: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 .up-row:hover, .card:hover { background: rgba(255, 255, 255, 0.03); }
+
+/* =====================================================================
+   The boat as the submersible's control panel (v1.1.0): riveted olive steel, a brass nameplate,
+   a mechanical cash counter, stencilled labels, amber lamps, brass push-buttons.
+   ===================================================================== */
+:root {
+  --steel: #4f574c; --steel-hi: #6f7866; --steel-lo: #2b3029; --steel-deep: #1d211b;
+  --brass: #c9a65a; --brass-hi: #ecd28e; --brass-lo: #7a5a22;
+  --paint: #ddd6bc; --paint-dim: rgba(221, 214, 188, 0.55);
+  --amber: #ffb648; --phosphor: #b9e69a;
+  --stencil: "Allerta Stencil", "IBM Plex Mono", monospace;
+}
+.shop .shop-main {
+  position: relative; padding: 26px 30px 28px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.10), transparent 60%),
+    linear-gradient(180deg, var(--steel) 0%, #444c41 55%, #3a4138 100%);
+  border: 2px solid var(--steel-deep); border-radius: 10px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.35), inset 0 0 0 7px rgba(0,0,0,0.12);
+  backdrop-filter: none;
+}
+/* rivets all the way round */
+.shop .shop-main::before {
+  content: ''; position: absolute; inset: 0; border-radius: 10px; pointer-events: none;
+  --r: radial-gradient(circle at 50% 45%, #b8bea9 0 1.2px, #7c8470 1.8px, #2a2f27 3px, transparent 3.6px);
+  background: var(--r) 0 4px / 24px 10px repeat-x, var(--r) 0 calc(100% - 4px) / 24px 10px repeat-x,
+    var(--r) 4px 0 / 10px 24px repeat-y, var(--r) calc(100% - 4px) 0 / 10px 24px repeat-y;
+}
+.shop header { border-bottom: 0; padding-bottom: 14px; align-items: center; }
+/* the brass nameplate */
+.shop .nameplate {
+  position: relative; flex: 0 1 auto !important; padding: 8px 22px 9px; border-radius: 4px;
+  background: linear-gradient(180deg, var(--brass-hi) 0%, var(--brass) 38%, #a8873e 62%, var(--brass-lo) 100%);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,250,220,0.7), inset 0 -1px 0 rgba(60,40,10,0.6);
+}
+.shop .nameplate::before, .shop .nameplate::after {
+  content: ''; position: absolute; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #f4e2a8, #7a5a22 70%); box-shadow: inset 0 0 0 1px rgba(60,40,10,0.5);
+}
+.shop .nameplate::before { left: 7px; } .shop .nameplate::after { right: 7px; }
+.shop h2 { color: #3a2a0e; text-shadow: 0 1px 0 rgba(255,245,210,0.55); font-size: 28px; }
+.shop .shop-sub { color: rgba(58,42,14,0.75); font-size: 10px; letter-spacing: 0.06em; }
+.shop header > .nameplate { flex: none; margin-right: auto; }
+/* the cash counter */
+.shop .shop-cash span { color: var(--paint-dim); font-family: var(--stencil); letter-spacing: 0.25em; }
+.shop .counter {
+  display: inline-flex; gap: 2px; padding: 4px 6px; margin-top: 3px; border-radius: 4px;
+  background: #0f1210; box-shadow: inset 0 2px 6px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.12);
+}
+.shop .counter .drum {
+  display: inline-block; width: 0.7em; text-align: center; font: 500 22px/1.25 var(--mono); color: #1d1a14;
+  background: linear-gradient(180deg, #6b665a 0%, #e9e2cc 22%, #f6f0dc 50%, #e2dac2 78%, #6b665a 100%);
+  border-radius: 2px; overflow: hidden;
+}
+.shop .counter .drum.roll { animation: drum-roll 0.45s cubic-bezier(.3,1.4,.5,1); }
+@keyframes drum-roll { from { transform: translateY(-60%); opacity: 0.2; } to { transform: none; opacity: 1; } }
+.shop .counter .sep { font: 500 20px/1.3 var(--mono); color: var(--paint); padding: 0 1px; }
+#workshop-close {
+  width: 30px; height: 30px; border-radius: 50%; font-size: 18px; opacity: 1; color: #3a2a0e;
+  background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo));
+  box-shadow: 0 2px 0 rgba(0,0,0,0.5), inset 0 -1px 0 rgba(60,40,10,0.5);
+}
+/* stencilled tabs, with a lamp on the one that is on */
+.shop .shop-tabs { gap: 6px; margin: 4px 0 12px; }
+.shop .shop-tabs button {
+  position: relative; font: 13px var(--stencil); letter-spacing: 0.12em; text-transform: uppercase; color: var(--paint-dim);
+  padding: 7px 12px 7px 22px; border: 1px solid rgba(0,0,0,0.35); border-radius: 3px; border-bottom: 1px solid rgba(0,0,0,0.35);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.12)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.shop .shop-tabs button::before {
+  content: ''; position: absolute; left: 8px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+  background: #3b2d16; box-shadow: inset 0 0 2px rgba(0,0,0,0.8);
+}
+.shop .shop-tabs button.on { color: var(--paint); background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.12)); border-bottom-color: rgba(0,0,0,0.35); }
+.shop .shop-tabs button.on::before { background: radial-gradient(circle at 40% 35%, #ffe2a0, var(--amber) 60%, #a85a10); box-shadow: 0 0 8px var(--amber); }
+/* the recessed instrument well */
+.shop #shop-body {
+  background: linear-gradient(180deg, #262b23, #20251e); border-radius: 6px; padding: 12px 16px;
+  box-shadow: inset 0 3px 10px rgba(0,0,0,0.75), inset 0 0 0 1px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.1);
+}
+.shop .up-group h4, .shop .wing-h b, .shop .owned span {
+  font-family: var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; color: var(--paint); font-size: 14px;
+}
+.shop .up-group h4 { border-bottom: 1px solid rgba(201,166,90,0.35); padding-bottom: 6px; }
+.shop .up-row { border-bottom: 1px solid rgba(255,255,255,0.035); grid-template-columns: 1fr 1.25fr 120px 92px; }
+.shop .up-name { color: var(--paint); }
+/* the value: a little gauge window */
+.shop .up-val {
+  justify-self: start; padding: 3px 9px; border-radius: 3px; background: #0c100d; color: rgba(185,230,154,0.6);
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.9); font-size: 11px;
+}
+.shop .up-val b { color: var(--phosphor); text-shadow: 0 0 6px rgba(185,230,154,0.45); }
+/* level lamps */
+.shop .up-lv { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.shop .lamps { display: inline-flex; gap: 2px; }
+.shop .lamps i { width: 5px; height: 5px; border-radius: 50%; background: #3a2c14; box-shadow: inset 0 0 1px rgba(0,0,0,0.9); }
+.shop .lamps i.lit { background: radial-gradient(circle at 40% 35%, #ffe2a0, var(--amber) 60%, #a85a10); box-shadow: 0 0 4px rgba(255,182,72,0.8); }
+/* brass push-buttons */
+.shop button[data-act] {
+  border-radius: 999px !important; color: #2e220a !important; font-weight: 500;
+  background: radial-gradient(ellipse at 50% 25%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%) !important;
+  box-shadow: 0 2px 0 #4a3510, 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,250,220,0.75) !important;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.shop button[data-act]:hover:not(:disabled) { filter: brightness(1.08); }
+.shop button[data-act]:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 #4a3510, inset 0 1px 3px rgba(0,0,0,0.4) !important; }
+.shop button[data-act]:disabled {
+  color: rgba(221,214,188,0.35) !important; background: radial-gradient(ellipse at 50% 25%, #4a4f45, #2f342c) !important;
+  box-shadow: 0 2px 0 #151813, inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+.shop button.primary, .shop button.warn { border-radius: 6px !important; }
+/* cards and contracts: steel plates with corner screws */
+.shop .card, .shop .contract, .shop .tank-cell:not(.empty) {
+  position: relative; background: linear-gradient(180deg, #3d4439, #333a31); border: 1px solid rgba(0,0,0,0.45);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.35);
+}
+.shop .card::before, .shop .contract::before {
+  content: ''; position: absolute; inset: 4px; pointer-events: none;
+  --s: radial-gradient(circle, #9ea590 0 1px, #474d42 1.6px, transparent 2.4px);
+  background: var(--s) 0 0 / 6px 6px no-repeat, var(--s) 100% 0 / 6px 6px no-repeat, var(--s) 0 100% / 6px 6px no-repeat, var(--s) 100% 100% / 6px 6px no-repeat;
+}
+.shop .card h3, .shop .contract b { color: var(--paint); }
+.shop .contract span { font-family: var(--stencil); letter-spacing: 0.14em; color: var(--paint-dim); }
+.shop .contract .pay { color: var(--phosphor); }
+.shop .manifest th { font-family: var(--stencil); color: var(--paint-dim); }
+.shop .manifest td { color: var(--paint); }
+.shop .shop-note, .shop .shop-empty { color: var(--paint-dim); }
+.shop .owned b { color: var(--paint); }
+.shop .ladder i.on { background: var(--amber); box-shadow: 0 0 4px rgba(255,182,72,0.6); }
+.shop .aq-head b { color: var(--phosphor); }
+.shop .aq-head span { color: var(--paint-dim); }
+/* tooltip in the same livery: a small paper tag */
+#tip { background: #ece4cf; color: #2b2620; border: 0; font-size: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.5); }
+@media (max-width: 700px) { .shop .up-row { grid-template-columns: 1fr 1fr 80px; } .shop .lamps { display: none; } }
+.shop .shop-tabs { flex-wrap: nowrap; gap: 5px; }
+.shop .shop-tabs button { font-size: 11px; letter-spacing: 0.08em; padding: 6px 9px 6px 19px; white-space: nowrap; }
+.shop .shop-tabs button::before { left: 7px; width: 6px; height: 6px; margin-top: -3px; }

@@ -199,7 +199,7 @@ export class UI {
     const g = this.h.getGame(), P = this.h.getProfile(), sub = g.sub;
     if (!P) return;
     marketTick(P);
-    $('shop-cash').textContent = money(P.cash);
+    this.renderCounter($('shop-cash'), money(P.cash));
     $('shop-sub').textContent = sub.imploded ? 'No submersible' : `Submersible rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %`;
     const can = (price) => P.cash + 1e-6 >= price;
     // a card: name, what it is, what it changes, and a price button
@@ -322,6 +322,17 @@ export class UI {
     $('shop-body').innerHTML = html;
   }
 
+  // A mechanical counter: each digit on its own drum; drums whose digit changed roll into place.
+  renderCounter(el, text) {
+    const prev = el.dataset.v || '';
+    if (prev === text && el.children.length) return;
+    el.dataset.v = text;
+    const pad = prev.padStart(text.length, ' ');
+    el.innerHTML = [...text].map((ch, i) => /\d/.test(ch)
+      ? `<span class="drum${pad[i] !== ch && prev ? ' roll' : ''}">${ch}</span>`
+      : `<span class="sep">${ch}</span>`).join('');
+  }
+
   // Upgrade rows, grouped: each stat on one line with what it is now, what the next level makes it,
   // its level and the price. Gear not yet owned shows as a card to buy it first.
   upgradeGroups(P, groups, icon, can) {
@@ -342,7 +353,7 @@ export class UI {
         const l = lv(P, id), maxed = l >= U.max, cost = upgradeCost(P, id);
         const now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statValue(P, id) + U.step);
         html += `<div class="up-row" data-tip="${UPGRADE_DESC[id] || ''}"><span class="up-name">${U.name}</span><span class="up-val">${now}${maxed ? '' : ` <i>→</i> <b>${next}</b>`}</span>
-          <span class="up-lv">${maxed ? 'max' : `lv ${l}`}</span>
+          <span class="up-lv"><span class="lamps">${Array.from({ length: 10 }, (_, k) => `<i class="${k < Math.round(l / U.max * 10) ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : `lv ${l}`}</span>
           <button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}</button></div>`;
       }
       if (gk === 'camera' && !owns(P, 'lowlight')) html += `<div class="up-row" data-tip="${GEAR.lowlight.desc}"><span class="up-name">${GEAR.lowlight.name}</span><span class="up-val">no flash</span><span class="up-lv"></span><button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button></div>`;
