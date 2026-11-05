@@ -10,6 +10,7 @@ import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlot
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
+import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { fillBoard, fulfil, RADIO } from './contracts.js';
@@ -76,6 +77,8 @@ function devMaxAll() {
   syncProfile(); saveProfile(P);
   hud.toast('Developer: everything maxed out', 'big'); audio.ready && audio.click();
 }
+// the 'reduce flashing' setting (pause menu): kept in this browser
+function readReduceFlash() { try { return localStorage.getItem('earl.reduceFlash') === '1'; } catch (e) { return false; } }
 function newGame(mode) {
   audio.ready && audio.restore(1.2); // after a death by the thing below, the sound comes back
   const P = profile || newProfile();
@@ -97,7 +100,7 @@ function newGame(mode) {
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
-    deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio,
+    deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio, reduceFlash: readReduceFlash(),
     imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2, farShadow: null,
     injury: 0, healT: 0, blood: [], deathKind: null, lampFlashT: -99, threat: null,
     autopilot: new Autopilot(), addons: P.addons || {},
@@ -678,7 +681,7 @@ function startKill() {
   const e = g.earl, ent = g.entity, inSub = e.inSub && !g.sub.imploded;
   const T = inSub ? g.sub : e;
   const s = Math.sign(ent.x - T.x) || 1;
-  ent.x = T.x + s * (inSub ? 9 : 7); ent.y = T.y - 0.4; ent.vx = ent.vy = 0; ent.faceLock = -s; ent.eyeOpen = 1; ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
+  ent.x = T.x + s * (inSub ? 9 : 7); ent.y = T.y - 2.2; // its mouth level with him ent.vx = ent.vy = 0; ent.faceLock = -s; ent.eyeOpen = 1; ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
   g.kill = { t: 0, inSub, s, esc: false, escT: 0, jaw: 0, window: [KILL_REACH * 0.5, KILL_JAWS] };
   ui.closeAll && ui.closeAll();
   audio.ready && audio.drop();
@@ -697,7 +700,7 @@ function killUpdate(dt) {
   }
   // in its grip: drawn toward the mouth
   if (K.t > KILL_REACH) {
-    const mx = ent.x - K.s * 2.5, my = ent.y + 0.4, k = 1 - Math.exp(-dt * 0.9);
+    const mx = ent.x - K.s * 1.5, my = ent.y + 2.6, k = 1 - Math.exp(-dt * 0.9); // to the front of the mouth
     T.x += (mx - T.x) * k; T.y += (my - T.y) * k;
     if (K.inSub) { e.x = g.sub.x; e.y = g.sub.y; }
   }
@@ -718,7 +721,7 @@ function killUpdate(dt) {
     K.jaw = K.t - KILL_JAWS;
     const j = K.jaw;
     K.open = j < 0.1 ? 0.3 + 0.7 * (1 - Math.pow(1 - j / 0.1, 3)) : j < 0.42 ? 1 : Math.max(0, 1 - (j - 0.42) / 0.2);
-    if (j > 0.18) { const k = 1 - Math.exp(-dt * 10); ent.x += (T.x - K.s * 3.4 - ent.x) * k; ent.y += (T.y - 2 - ent.y) * k; }
+    if (j > 0.18) { const k = 1 - Math.exp(-dt * 10); ent.x += (T.x - K.s * 14 - ent.x) * k; ent.y += (T.y - 3.5 - ent.y) * k; }
     if (K.jaw > KILL_CLOSE && !K.done) { K.done = true; die(causeText('entity'), 'devoured'); }
   }
 }
@@ -1329,6 +1332,8 @@ function update(dt) {
   const fx = g.fx;
   fx.dread = lerp(fx.dread, targetDread, 1 - Math.exp(-dt * 1.5));
   // it is close and hunting: the lights in the water go out and the sea goes quiet
+  // its red, creeping into the water round him as its eyes come up (see entity.lights)
+  fx.redTint = lerp(fx.redTint || 0, g.mode === 'menu' ? 0 : (ent.lit ? ent.lit.tint : 0) * clamp((150 - (ent.dist ?? 999)) / 100, 0, 1), 1 - Math.exp(-dt * 2));
   fx.hush = lerp(fx.hush || 0, g.kill || (ent.marked && ent.hunt) ? 1 : ent.marked && d < 120 ? 0.45 : 0, 1 - Math.exp(-dt * 0.8));
   fx.torchShift = clamp(fx.dread * 1.5, 0, 1) * (0.35 + 0.65 * clamp((g.earl.y - 100) / 60, 0, 1));
   // in the safe zone you still hear and sense it (sonar, heartbeat), but the water stays the water
@@ -1497,6 +1502,8 @@ function frame(now) {
   pressed.clear();
   requestAnimationFrame(frame);
 }
+// the monster's hide is painted once, while the menu is up, not the first time it is seen
+setTimeout(() => { try { prepareMonster(); } catch (e) { /* drawn on first sight instead */ } }, 1500);
 requestAnimationFrame(frame);
 
 // Escape toggles pause; closing overlays first.

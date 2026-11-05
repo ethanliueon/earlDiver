@@ -146,6 +146,10 @@ export class UI {
       this.confirmNew = false; h.onNewGame();
     });
     $('resume').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); });
+    // reduce flashing: the monster's lights stutter slowly and its blue flash is softened
+    const fl = $('flashing'), flSet = (on) => { fl.textContent = `Reduce flashing: ${on ? 'on' : 'off'}`; };
+    try { flSet(localStorage.getItem('earl.reduceFlash') === '1'); } catch (e) { flSet(false); }
+    fl.addEventListener('click', () => { const g = h.getGame(); g.reduceFlash = !g.reduceFlash; flSet(g.reduceFlash); try { localStorage.setItem('earl.reduceFlash', g.reduceFlash ? '1' : '0'); } catch (e) { /* not saved */ } });
     $('quit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); });
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
     this.renderRuns();

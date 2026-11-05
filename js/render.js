@@ -5,7 +5,8 @@
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
-import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity, markOf, SUB_MARKS, drawArm } from './earl_draw.js';
+import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, drawArm } from './earl_draw.js';
+import { drawMonster, drawMonsterLights, drawMonsterShape, MONSTER_LEN } from './monster_draw.js';
 import { activeTool } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
@@ -118,6 +119,7 @@ export class Renderer {
     const ppm = this.W / this.viewW;
     const cam = this.cam;
     cam.w = this.viewW; cam.h = this.H / ppm; cam.ppm = ppm;
+    g.viewBox = [cam.x - cam.w / 2, cam.x + cam.w / 2, cam.y - cam.h / 2, cam.y + cam.h / 2]; // what is on screen, in metres (the monster only reacts to a lamp it can be seen in)
     const lookX = e.vx * 0.9, lookY = e.vy * 0.6;
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
@@ -251,7 +253,7 @@ export class Renderer {
     if (g.farShadow && g.farShadow.fade > 0) {
       // a real place in the water: drawn where it is, about 30 m long, dim and soft
       const f = g.farShadow;
-      const len = 30 * ppm, a = 0.26 * f.fade;
+      const len = 70 * ppm, a = 0.26 * f.fade;
       // drawn small and scaled up: that is the blur, at almost no cost
       const sc = this.shadowC || (this.shadowC = document.createElement('canvas'));
       const sw = 64, sh = 32;
@@ -259,7 +261,7 @@ export class Renderer {
       const sctx = sc.getContext('2d');
       sctx.setTransform(1, 0, 0, 1, 0, 0); sctx.clearRect(0, 0, sw, sh);
       sctx.translate(sw * 0.42, sh * 0.45); sctx.scale(f.dir, 1);
-      drawEntityShape(sctx, sw * 0.62, t * 0.5, 1);
+      drawMonsterShape(sctx, sw * 0.5, t * 0.5, 1);
       ctx.save(); ctx.globalAlpha = a; ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(sc, S(f.x) - len * 0.68, Sy(f.y) - len * 0.36, len * 1.6, len * 0.8);
       ctx.restore();
@@ -459,17 +461,19 @@ export class Renderer {
     }
     // the entity's body, lit by the same light as everything else (invisible in the dark)
     const entB = g.entity;
-    if (entB && g.mode !== 'menu' && inView(entB.x, entB.y, 45) && entB.dist < 90) {
+    this.entInfo = null;
+    if (entB && g.mode !== 'menu' && inView(entB.x, entB.y, MONSTER_LEN * 1.35) && entB.dist < 170) {
       const toward = entB.faceLock ?? (entB.dist < 70 ? (g.earl.x >= entB.x ? 1 : -1) : (Math.cos(entB.heading) >= 0 ? 1 : -1));
       entB.face = entB.faceLock ?? lerp(entB.face ?? toward, toward, 0.02);
       const flipB = entB.face >= 0 ? -1 : 1;
       ctx.save(); ctx.translate(S(entB.x), Sy(entB.y)); ctx.scale(flipB, 1);
-      drawEntity(ctx, 34 * ppm, t, g.reveal ? 1 : clamp((90 - entB.dist) / 50, 0, 1) * (entB.fade ?? 1), g.reveal ? 0.9 : 0.3 * (entB.fade ?? 1), false, g.kill ? g.kill.open || 0 : 0);
+      const info = drawMonster(ctx, MONSTER_LEN * ppm, t, g.reveal ? 1 : clamp((170 - entB.dist) / 60, 0, 1) * (entB.fade ?? 1), g.kill ? g.kill.open || 0 : 0);
       ctx.restore();
+      this.entInfo = { info, x: S(entB.x), y: Sy(entB.y), flip: flipB };
       // at the bottom it shows itself: a faint light of its own along the whole length
       if (g.reveal) {
         const k = clamp(Math.min(g.reveal.t / 4, (26 - g.reveal.t) / 4), 0, 1);
-        for (let i = -3; i <= 3; i++) glowPts.push([S(entB.x) + i * ppm * 4.5, Sy(entB.y) + Math.sin(i + t) * ppm, '#4a6a78', ppm * 9, 0.8 * k]);
+        for (let i = 0; i <= 8; i++) glowPts.push([S(entB.x) - flipB * -i * ppm * 12, Sy(entB.y) + Math.sin(i + t) * ppm, '#781410', ppm * 14, 0.8 * k]);
       }
     }
     // scales drifting where something was eaten
@@ -695,85 +699,13 @@ export class Renderer {
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
     ctx.globalCompositeOperation = 'source-over';
 
-    // ---- the entity: a dark mass that blocks the light, a faint rim, dim lights, two eyes ----
+    // ---- the entity's own light: red along its length, its eyes, the blue flash (see entity.lights) ----
     const ent = g.entity;
-    if (ent && g.mode !== 'menu' && inView(ent.x, ent.y, 45)) {
-      const d = ent.dist;
-      const Lp = 34 * ppm;
-      // it turns its head toward Earl when close; otherwise it faces the way it moves
-      const flip = (ent.face ?? 1) >= 0 ? -1 : 1; // local frame faces -x (face is updated in the scene pass)
-      const fillA = clamp((80 - d) / 60, 0, 1) * 0.95 * (ent.fade ?? 1);
-      const lampBoost = g.earl.lampOn || (g.earl.inSub && g.sub.lightsOn) ? 1.6 : 1;
-      const rimA = clamp((50 - d) / 45, 0, 1) * 0.22 * lampBoost * (0.75 + 0.25 * Math.sin(t * 0.37));
-      ctx.save(); ctx.translate(S(ent.x), Sy(ent.y)); ctx.scale(flip, 1);
-      const info = drawEntity(ctx, Lp, t, fillA, rimA * 0.6, true, g.kill ? g.kill.open || 0 : 0); // only a faint rim shows in the dark
-      ctx.restore();
-      const wx = (lx) => S(ent.x) + lx * flip;
-      // lights along its flank, slowly pulsing out of step
-      if (d < 60) {
-        ctx.globalCompositeOperation = 'lighter';
-        const a2 = clamp((60 - d) / 50, 0, 1) * 0.3;
-        info.photophores.forEach(([lx, ly], k) => {
-          const tw = Math.max(0, Math.sin(t * 0.9 - k * 0.5));
-          if (tw < 0.05) return;
-          const px = wx(lx), py = Sy(ent.y) + ly, r = ppm * 0.6;
-          const pg = ctx.createRadialGradient(px, py, 0, px, py, r);
-          pg.addColorStop(0, `rgba(140,175,200,${(a2 * tw).toFixed(3)})`); pg.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, r, 0, TAU); ctx.fill();
-        });
-        ctx.globalCompositeOperation = 'source-over';
-      }
-      // the eyes: dark wet globes set in the same gloom as the body. These are drawn after the
-      // lighting, so they are kept as dark as the flesh around them: a dull bronze iris, a slit pupil
-      // that narrows in a lamp's beam, a heavy lid, a pinpoint of wet glint, and only a faint
-      // green-gold eyeshine (the reflecting layer behind the retina) when a light is on it.
-      if (ent.eyeOpen > 0.02) {
-        const staring = ent.hunt && ent.hunt.phase === 'stare';
-        const vis = staring ? 1 : clamp(fillA, 0, 1), lit = Math.max(lampBoost > 1 ? clamp((45 - d) / 35, 0, 1) : 0, staring ? 0.5 : 0);
-        const o = vis * (0.6 + 0.4 * lit);
-        const lidOpen = ent.blink > 0 ? 0.08 : ent.eyeOpen;
-        const ex = wx(info.eye[0]), ey = Sy(ent.y) + info.eye[1];
-        for (const [ox, oy, sc, far] of [[-flip * ppm * 0.9, -ppm * 0.25, 0.8, 0.45], [0, 0, 1, 1]]) {
-          const px = ex + ox, py = ey + oy, R = ppm * 0.42 * sc, a = o * far;
-          if (a < 0.01) continue;
-          // the socket: a shadowed hollow around the globe
-          const sg = ctx.createRadialGradient(px, py, R * 0.8, px, py, R * 1.7);
-          sg.addColorStop(0, `rgba(0,0,0,${(0.55 * a).toFixed(3)})`); sg.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(px, py, R * 1.7, 0, TAU); ctx.fill();
-          ctx.save();
-          ctx.beginPath(); ctx.ellipse(px, py, R, R * 0.82, 0, 0, TAU); ctx.clip();
-          // the globe and its iris: murky bronze going black at the rim
-          const ig = ctx.createRadialGradient(px - R * 0.15, py - R * 0.2, R * 0.05, px, py, R);
-          ig.addColorStop(0, `rgba(${88 + 40 * lit},${66 + 30 * lit},${40 + 14 * lit},${a.toFixed(3)})`);
-          ig.addColorStop(0.65, `rgba(38,28,18,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(8,6,5,${a.toFixed(3)})`);
-          ctx.fillStyle = ig; ctx.fillRect(px - R, py - R, R * 2, R * 2);
-          // fine radial striations in the iris
-          ctx.strokeStyle = `rgba(0,0,0,${(0.35 * a).toFixed(3)})`; ctx.lineWidth = Math.max(0.5, R * 0.04);
-          ctx.beginPath(); for (let k = 0; k < 14; k++) { const an = k / 14 * TAU; ctx.moveTo(px + Math.cos(an) * R * 0.3, py + Math.sin(an) * R * 0.25); ctx.lineTo(px + Math.cos(an) * R * 0.9, py + Math.sin(an) * R * 0.75); } ctx.stroke();
-          // the pupil: a horizontal slit that opens wide in the dark and pinches in a beam
-          const ph = R * (0.12 + 0.38 * (1 - lit));
-          ctx.fillStyle = `rgba(0,0,0,${(0.95 * a).toFixed(3)})`;
-          ctx.beginPath(); ctx.ellipse(px, py, R * 0.62, ph, 0, 0, TAU); ctx.fill();
-          // eyeshine: faint, and only inside the pupil
-          if (lit > 0.02) {
-            ctx.globalCompositeOperation = 'lighter';
-            const eg = ctx.createRadialGradient(px, py, 0, px, py, R * 0.6);
-            eg.addColorStop(0, `rgba(120,140,70,${(0.32 * lit * a).toFixed(3)})`); eg.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = eg; ctx.beginPath(); ctx.ellipse(px, py, R * 0.62, ph, 0, 0, TAU); ctx.fill();
-            ctx.globalCompositeOperation = 'source-over';
-          }
-          // the upper lid: thick, the colour of the body, closing over it
-          const lidY = py - R * 0.82 + R * 1.64 * (1 - lidOpen) + R * 0.28;
-          ctx.fillStyle = `rgba(14,15,16,${Math.min(1, a * 1.2).toFixed(3)})`;
-          ctx.beginPath(); ctx.moveTo(px - R * 1.1, py - R); ctx.lineTo(px + R * 1.1, py - R); ctx.lineTo(px + R * 1.1, lidY - R * 0.12); ctx.quadraticCurveTo(px, lidY + R * 0.18, px - R * 1.1, lidY - R * 0.12); ctx.closePath(); ctx.fill();
-          ctx.restore();
-          // a pinpoint of wet glint, the brightest thing about it, and still small
-          if (lidOpen > 0.35) {
-            ctx.fillStyle = `rgba(230,235,225,${((0.18 + 0.5 * lit) * a).toFixed(3)})`;
-            ctx.beginPath(); ctx.arc(px - flip * R * 0.32, py - R * 0.18, Math.max(0.6, R * 0.09), 0, TAU); ctx.fill();
-          }
-        }
-      }
+    if (ent && this.entInfo && !g.kill && g.mode !== 'menu') {
+      const I = this.entInfo, Lt = ent.lit || { body: 1, eye: 0.3, flash: 0 }, fade = ent.fade ?? 1;
+      const lidOpen = ent.blink > 0 ? 0.1 : 1;
+      drawMonsterLights(ctx, I.info, (lx, ly) => [I.x + lx * I.flip, I.y + ly], ppm, t,
+        { body: Lt.body * fade, eye: Lt.eye * fade * lidOpen, flash: Lt.flash * fade, reduce: !!g.reduceFlash });
     }
     // the stare: in the faint glow of the cabin's instruments, its pale face pressed to the glass
     if (!g.kill && g.entity && g.entity.hunt && g.entity.hunt.phase === 'stare' && g.entity.hunt.near) {
@@ -786,7 +718,7 @@ export class Renderer {
       // only what the glow reaches, fading out from the window in three soft steps
       for (const [rad, al] of [[10, 0.16], [7, 0.16], [4.5, 0.2]]) {
         ctx.save(); ctx.beginPath(); ctx.arc((px - S(en.x)) * fl, py - Sy(en.y), ppm * rad, 0, TAU); ctx.clip();
-        drawEntity(ctx, 34 * ppm, t, al * k, 0.25 * k, false, 0, 0.32);
+        drawMonster(ctx, MONSTER_LEN * ppm, t, al * k, 0, 0.4);
         ctx.restore();
       }
       ctx.restore();
@@ -795,11 +727,12 @@ export class Renderer {
     // the lit scene (the flash of the hit, the lamps on it) so it cannot be lost in the dark.
     if (g.kill && g.entity) {
       const K = g.kill, en = g.entity, T = K.inSub ? g.sub : g.earl;
-      const flipK = (en.face ?? 1) >= 0 ? -1 : 1, Lk = 34 * ppm;
+      const flipK = (en.face ?? 1) >= 0 ? -1 : 1, Lk = MONSTER_LEN * ppm;
       const lightK = K.opened ? 0.6 + 0.35 * clamp(1 - K.jaw / 0.3, 0, 1) : 0.42;
       ctx.save(); ctx.translate(S(en.x), Sy(en.y)); ctx.scale(flipK, 1);
-      const info = drawEntity(ctx, Lk, t, K.opened ? 1 : clamp(K.t / 0.25, 0, 1) * 0.8, 0.6, false, K.open || 0, lightK);
+      const info = drawMonster(ctx, Lk, t, K.opened ? 1 : clamp(K.t / 0.25, 0, 1) * 0.8, K.open || 0, lightK);
       ctx.restore();
+      drawMonsterLights(ctx, info, (lx, ly) => [S(en.x) + lx * flipK, Sy(en.y) + ly], ppm, t, { body: 0, eye: 1, flash: 0, reduce: !!g.reduceFlash });
       const mx = S(en.x) + info.mouth[0] * flipK, my = Sy(en.y) + info.mouth[1];
       const tx = S(T.x + (K.inSub ? -K.s * 0.2 : 0)), ty = Sy(T.y + (K.inSub ? 0.8 : 0));
       const ext = K.esc ? Math.max(0, 1 - K.escT / 0.45) : clamp(K.t / 0.4, 0, 1);
@@ -827,6 +760,14 @@ export class Renderer {
     ctx.restore();
 
     // ================= POST =================
+    // its red, crept into the water round him: the black of the deep turns a black-red
+    if ((fx.redTint || 0) > 0.01) {
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen';
+      const rg = ctx.createRadialGradient(this.W / 2, this.H / 2, Math.min(this.W, this.H) * 0.1, this.W / 2, this.H / 2, Math.max(this.W, this.H) * 0.75);
+      rg.addColorStop(0, `rgba(110,4,10,${(0.42 * fx.redTint).toFixed(3)})`); rg.addColorStop(1, `rgba(150,6,12,${(0.62 * fx.redTint).toFixed(3)})`);
+      ctx.fillStyle = rg; ctx.fillRect(0, 0, this.W, this.H);
+      ctx.restore();
+    }
     if (fx.ghost > 0.01) {
       // double vision
       // the second image is copied at half resolution: a quarter of the work, and it is a ghost anyway

@@ -264,6 +264,23 @@ come into her cave.
 
 ## The entity
 
+- What it is: a gulper (after the pelican eel) about 100 m long, with a 30 m whip of a tail behind
+  that: nearly all head and mouth, velvet-black, loose wrinkled skin with a violet sheen and pale
+  scars, tiny eyes at the tip of the snout, fine needle teeth. Its lower jaw is a long thin bone with
+  a sack of skin slung under it that balloons when it opens. Nothing is drawn between its jaws: you
+  see the water, and yourself, through its open mouth. In the normal view you only ever see part of it.
+- Its light is red (almost nothing in the deep can see red: the dragonfish hunt the same way). Roaming,
+  rows of red lights along its flanks, jaw and tail stutter fast and unevenly, with a dim red haze
+  along the whole body; the eyes flicker with them. Hunting, its body goes dark and only the eyes show.
+- Caught in Earl's lamp or the sub's lights (only while its head is on screen): every light goes out
+  at once; 0.9 s of black; one blue flash over the whole animal (it has seen him: he is marked); 0.8 s
+  of black; then it hangs off at the edge of the view and its eyes come up over 6 s while its red
+  seeps into the water round him (the screen's black turns a black-red). Then it draws back and
+  strikes. Dark and still for 3.5 s, or hidden, and it loses him; running brings it at once. It will
+  not react to a lamp again for 20 s after that.
+- "Reduce flashing" (pause menu): its lights stutter slowly and the blue flash is softened. The fast
+  flicker is only ever on the animal, never the whole screen.
+
 - Lives at 2,200-4,000 m by day (the trench and the plain), rising to 900-2,800 m at night. A hidden attention meter fills when Earl
   disturbs the deep: depth, noise (sprinting, engines, the empty sub on autopilot), light, flashes,
   taking things from its domain, crimson animals, deep traps. Below 500 m without the sub marks him
