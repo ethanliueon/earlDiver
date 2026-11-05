@@ -93,20 +93,26 @@
 
   <section id="tankroom" class="tankroom" hidden></section>
 
-  <section id="trapset" class="panel" hidden>
-    <header><h2>Set a trap</h2><button id="trapset-close" aria-label="Close">×</button></header>
-    <div id="ts-types" class="ts-types"></div>
-    <div class="ts-meter">
-      <button data-d="-10">−10</button><button data-d="-1">−1</button>
-      <div class="ts-read"><b id="ts-depth">10</b><span>m down</span></div>
-      <button data-d="1">+1</button><button data-d="10">+10</button>
+  <section id="trapset" class="shop" hidden>
+    <div class="shop-main ts-main">
+      <header>
+        <div class="nameplate"><h2>Set a trap</h2><div class="shop-sub">line &amp; depth meter</div></div>
+        <button id="trapset-close" aria-label="Close">×</button>
+      </header>
+      <nav id="ts-types" class="shop-tabs"></nav>
+      <div class="ts-well">
+        <div class="ts-meter">
+          <button data-d="-10">−10</button><button data-d="-1">−1</button>
+          <div class="ts-read"><b id="ts-depth">10</b><span>metres down</span></div>
+          <button data-d="1">+1</button><button data-d="10">+10</button>
+        </div>
+        <input id="ts-slider" type="range" min="2" max="40" step="1" value="10">
+        <p id="ts-info" class="ts-info"></p>
+        <p id="ts-warn" class="ts-warn" hidden></p>
+      </div>
+      <div class="ts-actions"><button id="ts-bottom" class="ts-btn">Let it down to the bottom</button><button id="ts-set" class="ts-btn primary">Set it <span>Space</span></button></div>
+      <p class="ts-help">↑ ↓ or the wheel: 1 m · with Shift: 10 m · Esc to cancel</p>
     </div>
-    <input id="ts-slider" type="range" min="2" max="40" step="1" value="10">
-    <p id="ts-info" class="small"></p>
-    <p id="ts-warn" class="ts-warn" hidden></p>
-    <button id="ts-bottom" class="ghost">Let it down to the bottom</button>
-    <button id="ts-set">Set it <span class="small">(Space)</span></button>
-    <p class="small">↑ ↓ or the wheel: 1 m · with Shift: 10 m · Esc to cancel</p>
   </section>
 
   <section id="pause" class="panel" hidden>

@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.19.1 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.19.2 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 

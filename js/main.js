@@ -55,6 +55,26 @@ function applySub(sub, P) {
   sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = statValue(P, 'subAir'); sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
   sub.level = lv(P, 'depth');
 }
+// X (a developer's key): everything at its best - every upgrade maxed, every piece of gear and every
+// suit owned (the deepest-rated one put on), every add-on, full trap racks and supplies, and money
+function devMaxAll() {
+  const P = profile, e = g.earl;
+  P.lv = Object.fromEntries(Object.entries(UPGRADES).map(([id, U]) => [id, U.max]));
+  P.gear = Object.fromEntries(Object.keys(GEAR).map((k) => [k, true]));
+  P.suits = Object.keys(SUITS);
+  P.suit = Object.entries(SUITS).sort((a, b) => b[1].press - a[1].press)[0][0];
+  P.addons = Object.assign({}, Object.fromEntries(Object.keys(SUB_ADDONS).map((k) => [k, true])), { canisters: true });
+  if (!P.radio) { P.radio = true; fillBoard(P, g.contracts); }
+  P.traps = Object.fromEntries(TRAP_ORDER.map((k) => [k, TRAPS[k].max]));
+  for (const k of Object.keys(SUPPLIES)) g.items[k] = supplyMax(P, k);
+  P.cash = Math.max(P.cash || 0, 100000); P.coins = Math.max(P.coins || 0, 500);
+  g.addons = P.addons; applySuit(e, P);
+  if (g.sub.imploded) { g.sub = new Sub(); g.sub.docked = true; g.imploded = false; }
+  applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = 1; g.sub.crushR = null;
+  e.o2Max = Math.max(e.o2Max, statValue(P, 'air')); e.o2 = e.o2Max; g.shots = gear(P, 'cam').shots;
+  syncProfile(); saveProfile(P);
+  hud.toast('Developer: everything maxed out', 'big'); audio.ready && audio.click();
+}
 function newGame(mode) {
   const P = profile || newProfile();
   convertOldTraps(P); // old seabed traps become the new box traps
@@ -836,6 +856,7 @@ function update(dt) {
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
     if (pressed.has('p')) { hud.showFps = !hud.showFps; }
+    if (pressed.has('x')) devMaxAll();
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
     const day = tickAquarium(profile, dt);

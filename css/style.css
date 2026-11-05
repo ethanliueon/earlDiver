@@ -82,8 +82,8 @@ kbd {
   background-image: repeating-linear-gradient(transparent 0 29px, rgba(70, 90, 120, 0.22) 29px 30px);
 }
 .small { font-size: 12px; color: rgba(43, 35, 24, 0.5); margin: 8px 0 0; font-style: italic; }
-#journal-close, #workshop-close, #trapset-close { background: none; border: 0; font-size: 28px; line-height: 1; color: inherit; opacity: 0.6; }
-#journal-close:hover, #workshop-close:hover, #trapset-close:hover { opacity: 1; }
+#journal-close, #workshop-close { background: none; border: 0; font-size: 28px; line-height: 1; color: inherit; opacity: 0.6; }
+#journal-close:hover, #workshop-close:hover { opacity: 1; }
 
 /* ---------- panels ---------- */
 .panel {
@@ -529,17 +529,39 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .btag .hint { display: block; margin-top: 4px; font: 10px var(--mono); opacity: 0.7; }
 .tankroom .tr-canvas { touch-action: none; }
 
-/* ---------- setting a trap: a depth meter ---------- */
-#trapset { min-width: 380px; }
-.ts-types { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.panel .ts-types button { width: auto; flex: 1; margin: 0; padding: 7px 8px; font-size: 12px; background: rgba(255,255,255,0.08); color: var(--ink); border: 1px solid var(--line); }
-.panel .ts-types button.on { background: rgba(230,236,232,0.9); color: #0b1418; }
-.panel .ts-types button:disabled { opacity: 0.35; }
-.ts-meter { display: flex; align-items: center; gap: 6px; justify-content: center; margin: 4px 0 8px; }
-.panel .ts-meter button { width: 46px; margin: 0; padding: 9px 0; background: rgba(255,255,255,0.08); color: var(--ink); border: 1px solid var(--line); }
-.ts-read { min-width: 120px; text-align: center; background: rgba(0,0,0,0.35); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
-.ts-read b { display: block; font: 500 34px var(--mono); color: #bfe6ff; }
-.ts-read span { font-size: 11px; color: var(--muted); }
-#ts-slider { width: 100%; accent-color: #8fd0ff; }
-.ts-warn { color: #f0c070 !important; font-size: 13px; }
-.panel #trapset-close { display: inline; width: auto; margin: 0; padding: 0 4px; background: none; color: inherit; }
+/* ---------- setting a trap: the same riveted panel as the boat, with a depth meter ---------- */
+#trapset .ts-main { width: min(470px, 94vw); }
+#trapset-close {
+  width: 30px; height: 30px; border-radius: 50%; border: 0; font-size: 18px; line-height: 1; color: #3a2a0e; cursor: pointer;
+  background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo));
+  box-shadow: 0 2px 0 rgba(0,0,0,0.5), inset 0 -1px 0 rgba(60,40,10,0.5);
+}
+#trapset .shop-tabs button:disabled { opacity: 0.35; cursor: default; }
+#trapset .shop-tabs { flex-wrap: wrap; }
+/* the recessed instrument well, with the depth in a phosphor gauge window */
+#trapset .ts-well {
+  background: linear-gradient(180deg, #262b23, #20251e); border-radius: 6px; padding: 14px 16px 10px;
+  box-shadow: inset 0 3px 10px rgba(0,0,0,0.75), inset 0 0 0 1px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.1);
+}
+#trapset .ts-meter { display: flex; align-items: center; gap: 8px; justify-content: center; margin: 2px 0 12px; }
+#trapset .ts-read {
+  min-width: 130px; text-align: center; padding: 6px 12px 4px; border-radius: 4px; background: #0c100d;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.95), 0 0 0 2px #1a1e18, 0 0 0 3px rgba(201,166,90,0.45);
+}
+#trapset .ts-read b { display: block; font: 500 36px/1.1 var(--mono); color: var(--phosphor); text-shadow: 0 0 8px rgba(185,230,154,0.5); }
+#trapset .ts-read span { font: 10px var(--stencil); letter-spacing: 0.2em; text-transform: uppercase; color: rgba(185,230,154,0.5); }
+#trapset .ts-meter button, #trapset .ts-btn {
+  border: 0; cursor: pointer; border-radius: 999px; color: #2e220a; font: 500 14px var(--mono);
+  background: radial-gradient(ellipse at 50% 25%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%);
+  box-shadow: 0 2px 0 #4a3510, 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,250,220,0.75);
+}
+#trapset .ts-meter button { width: 48px; height: 34px; }
+#trapset .ts-meter button:active, #trapset .ts-btn:active { transform: translateY(2px); box-shadow: 0 0 0 #4a3510, inset 0 1px 0 rgba(255,250,220,0.5); }
+#ts-slider { width: 100%; accent-color: var(--brass); }
+#trapset .ts-info { font: 11px var(--mono); color: var(--paint-dim); margin: 8px 0 2px; }
+#trapset .ts-warn { font: 13px var(--mono); color: var(--amber); margin: 6px 0 2px; text-shadow: 0 0 6px rgba(255,182,72,0.35); }
+#trapset .ts-actions { display: flex; gap: 10px; margin-top: 14px; }
+#trapset .ts-btn { flex: 1; padding: 11px 14px; border-radius: 6px !important; }
+#trapset .ts-btn.primary { flex: 1.2; display: flex; justify-content: space-between; align-items: center; }
+#trapset .ts-btn span { font-size: 11px; opacity: 0.65; }
+#trapset .ts-help { font: 10px var(--stencil); letter-spacing: 0.12em; text-transform: uppercase; color: var(--paint-dim); margin: 12px 0 0; text-align: center; }
