@@ -225,7 +225,7 @@ export class Hud {
       const r = g.sub.y / g.sub.rated, hi = g.sub.hull;
       ctx.font = `${11 * s}px ${MONO}`;
       ctx.fillStyle = r > 1 || hi < 0.5 ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : r > 0.85 || hi < 0.99 ? '#e8b040' : 'rgba(150,210,180,0.8)';
-      ctx.fillText(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ' leaking' : ''}${g.sub.failing != null ? ' · FAILING' : r > 1.5 ? ' · crush depth' : ''} · ${Math.round(g.sub.y)}/${g.sub.rated} m`, rx0, yy);
+      ctx.fillText(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ' leaking' : ''}${g.sub.failing != null ? ' · FAILING' : ''} · ${Math.round(g.sub.y)}/${g.sub.rated} m`, rx0, yy);
       yy += 18 * s;
     }
     // the sub on autopilot: where it is and how long it will be

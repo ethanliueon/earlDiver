@@ -629,10 +629,6 @@ function leaveSub() {
 const FAIL_WINDOW = 3.5, FAIL_CLIMB = 6;
 function crushDepth(dt) {
   const sub = g.sub, r = sub.y / sub.rated;
-  if (r > 1.2 && !g.groanWarned) { g.groanWarned = true; hud.toast('The hull groans: it was never built for this depth', 'warn'); }
-  if (r < 1.1) g.groanWarned = false;
-  if (r > 1.5 && !g.crushWarned) { g.crushWarned = true; hud.toast('Past crush depth', 'warn'); }
-  if (r < 1.4) g.crushWarned = false;
   if (sub.failing != null) {
     sub.failing += dt;
     g.fx.shake = Math.max(g.fx.shake, 0.5 + sub.failing * 0.4);

@@ -136,7 +136,7 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
 
 - An old riveted bathyscaphe at the boat (F to board, hold F to leave). Cruises at 3.4 m/s
   (Engine upgrades), dives no faster, rises 1.2x faster. Rated 300 m at first,
-  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. Past 1.2x its rating the hull groans (and creaks ever faster); past 1.5x it can
+  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. Past its rating the hull creaks now and then (no messages, only the sound); past 1.5x it can
   give at any moment (1 in 20 a second at 1.5x, about 1 in 3 at 1.75x). When it starts to go there are
   3.5 s of loud creaking and shaking: climb 6 m (or back above 1.45x) and it holds. If not, it
   implodes with Earl inside: the hull folds in for a fifth of a second, a white flash, the gas
