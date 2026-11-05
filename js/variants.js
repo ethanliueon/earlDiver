@@ -25,8 +25,8 @@ export function canBeRare(sp) {
 
 // pick a variant for a new animal (or null): depth decides whether crimson is possible, and the
 // entity being close makes it three times likelier
-export function rollVariant(rng, depth, entityNear) {
-  if (rng() >= VARIANT_CHANCE) return null;
+export function rollVariant(rng, depth, entityNear, mult = 1) {
+  if (rng() >= VARIANT_CHANCE * mult) return null;
   const w = {};
   let tot = 0;
   for (const k of VARIANT_KEYS) {

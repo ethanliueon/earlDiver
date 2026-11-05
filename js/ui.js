@@ -213,6 +213,7 @@ export class UI {
     let html = '';
     const tab = this.shopTab;
     const icon = (k, t) => { const key = k + t; if (!this.toolImgs) this.toolImgs = new Map(); if (!this.toolImgs.has(key)) this.toolImgs.set(key, toolIcon(k, t, 240, 120).toDataURL()); return this.toolImgs.get(key); };
+    if (tab === 'sell' && g.frenzy && g.frenzy.id === 'market') html += `<p class="frenzy-note">Market frenzy: everything sells for double for ${Math.ceil(g.frenzy.t)} more seconds</p>`;
     if (tab === 'sell') {
       const rows = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]);
       const atBoat = !sub.imploded && Math.hypot(sub.x - 520.5, sub.y - 2.6) < 20;
@@ -246,7 +247,7 @@ export class UI {
           const best = list.reduce((a, x) => (x.cond > a.cond ? x : a), list[0]);
           const why = displayRefusal(P, best);
           const disp = why ? `<em class="disp-no">${why}</em>` : `<button class="disp" data-act="display" data-arg="${gk.replace(/:$/, '')}">Keep for the aquarium</button>`;
-          specRows += `<tr><td>${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${badge(SPECIES_BY_ID[id])} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr><tr class="sub"><td colspan="4">${disp}</td></tr>`;
+          specRows += `<tr><td>${this.mini(SPECIES_BY_ID[id])}${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${badge(SPECIES_BY_ID[id])} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr><tr class="sub"><td colspan="4">${disp}</td></tr>`;
         }
         // survey work: tags (each species' tags pay less each time) and first photographs
         const tg = new Map();
@@ -293,7 +294,7 @@ export class UI {
       if (!g.contracts.length) html += '<p class="shop-empty">Static. Nobody is calling.</p>';
       for (const c of g.contracts) {
         const r = contractReady(g, c, lists);
-        html += `<div class="contract${r ? ' ready' : ''}"><div><span>${c.who} wants</span><b>${c.text}</b></div><div class="pay">${money(c.pay)}${r ? '<em>aboard: paid when you sell</em>' : ''}</div></div>`;
+        html += `<div class="contract${r ? ' ready' : ''}">${c.id ? this.mini(SPECIES_BY_ID[c.id]) : ''}<div><span>${c.who} wants</span><b>${c.text}</b></div><div class="pay">${money(c.pay)}${r ? '<em>aboard: paid when you sell</em>' : ''}</div></div>`;
       }
       if (!P.radio) html += card(RADIO.name, RADIO.desc, '5 contracts at a time', RADIO.price, 'buy', 'radio', 'Buy');
       html += '<p class="shop-note">Contracts are filled when you sell (Sell, then Load the basket). A new dive brings new calls.</p>';
@@ -320,6 +321,15 @@ export class UI {
       if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets, ${money(A.lastDay.cost, false)} upkeep. Earned so far: ${money(A.earned, false)}.</p>`;
     }
     $('shop-body').innerHTML = html;
+  }
+
+  // a small picture of an animal, cached
+  mini(sp) {
+    if (!sp) return '';
+    if (!this.toolImgs) this.toolImgs = new Map();
+    const key = 'mini' + sp.id;
+    if (!this.toolImgs.has(key)) this.toolImgs.set(key, speciesIcon(sp, 140, 78).toDataURL());
+    return `<img class="mini" src="${this.toolImgs.get(key)}" alt="">`;
   }
 
   // A mechanical counter: each digit on its own drum; drums whose digit changed roll into place.

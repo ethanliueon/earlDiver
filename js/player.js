@@ -82,7 +82,7 @@ export function updateEarl(g, dt, inp) {
     // oxygen
     const surf = sub.y < 2.2;
     if (surf) sub.o2 = Math.min(sub.o2Max, sub.o2 + (sub.o2Max / 4) * dt);
-    else sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(sub) * (g.homeRun ? 0.8 : 1); // a steady autopilot is thriftier
+    else sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(sub) * (g.homeRun ? 0.8 : 1) * (g.airMul || 1); // a steady autopilot is thriftier
     e.atSurface = surf;
     // hull
     const r = sub.y / sub.rated;
@@ -131,7 +131,7 @@ export function updateEarl(g, dt, inp) {
       e.surfacing = Math.min(1, e.surfacing + dt);
     } else {
       e.surfacing = 0;
-      e.o2 -= dt * diverDrainMult(e.y) * (inp.sprint && e.speedNow > 1 ? 2 : 1) * e.o2Mul;
+      e.o2 -= dt * diverDrainMult(e.y) * (inp.sprint && e.speedNow > 1 ? 2 : 1) * e.o2Mul * (g.airMul || 1);
     }
     if (e.o2 <= 0) { e.o2 = 0; return 'o2'; }
   }

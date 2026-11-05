@@ -104,6 +104,7 @@ export class Entity {
     const ap = g.autopilot;
     if (ap && ap.active && !e.inSub && g.sub.y > 200 && ap.speed > 0.5) rate += 0.008 * (1 + (g.sub.y - 200) / 400) * (g.addons && g.addons.quiet ? 0.5 : 1);
     if (d < per) rate += 0.35;                                       // it has noticed him
+    if (rate > 0) rate *= g.stillMul || 1; // still water: it is slow to notice
     this.attn = clamp(this.attn + rate * dt, 0, 1);
     if (this.attn >= 1) this.mark(g);
   }

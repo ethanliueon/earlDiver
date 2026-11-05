@@ -55,17 +55,17 @@ export function findCatch(g) {
   }
   if (best) {
     best.value = liveValue(best.sp, best.len) * variantMult(best.variant); best.name = variantName(best.sp, best.variant);
-    best.chance = catchChance(def, kind, best);
+    best.chance = catchChance(def, kind, best, g.luck || 0);
   }
   return best ? { ok: true, ...best } : blocked ? { ok: false, ...blocked } : null;
 }
 
 // the odds of a catch: the tool, and whether the animal is already bolting
-export function catchChance(def, kind, tgt) {
+export function catchChance(def, kind, tgt, luck = 0) {
   const fleeing = tgt.c && tgt.c.fleeT > 0;
   let chance = def.success * (fleeing ? (kind === 'slurp' ? 0.9 : 0.8) : 1);
   if (tgt.s) chance = Math.min(0.97, chance + 0.2); // things on the bottom don't swim off
-  return chance;
+  return Math.min(0.98, chance + luck);
 }
 
 // Start a sweep / a shot. Returns a message for the player, or null when it starts.
@@ -107,7 +107,7 @@ export function updateCapture(g, dt) {
     if (!tgt || !tgt.ok) ev.push({ type: 'miss', why: tgt ? tgt.why : null, sp: tgt && tgt.sp });
     else {
       const { def, kind } = cap;
-      if (Math.random() < catchChance(def, kind, tgt)) {
+      if (Math.random() < catchChance(def, kind, tgt, g.luck || 0)) {
         const harm = def.harm * (fragile(tgt.sp) ? 2 : 1) + Math.random() * 0.05;
         const spec = { id: tgt.sp.id, len: tgt.len, cond: clamp(1 - harm, 0.05, 1), from: Math.round(Math.max(e.y, tgt.y)), t: g.time };
         if (tgt.variant) { spec.variant = tgt.variant; spec.mult = variantMult(tgt.variant); if (tgt.variant === 'crimson') g.entity.disturb(g, 0.08); }

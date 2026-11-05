@@ -116,6 +116,15 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
 - The claw: three arms (claw arm 3 m / 1 m / slow, hydraulic 4.5 m / 1.4 m, heavy-lift 6 m / 2 m /
   fast), each with a wider grip window. Add-ons: recall unit, quiet engine, bigger specimen tanks.
 
+## Frenzies
+
+Short lucky streaks earned by diving. On surfacing from a trip that went deeper than half the sub's
+rating, with enough time underwater since the last frenzy ((diver air + sub air) in minutes x0.6)
+and at least 5 minutes since the last one, there is a 20 % chance of a frenzy, for 3 minutes:
+Market frenzy (everything sells x2, contracts too), Deep breath (air lasts x2, diver and sub), Rare
+tide (rare forms x3), Lucky net (+25 % catch odds), Still water (sharks and the entity slow to
+notice). A brass-and-glass timer shows above the tool slots.
+
 ## The aquarium
 
 - Built from the boat, seen on the far shore. Six wings in order: reef hall, kelp tower,

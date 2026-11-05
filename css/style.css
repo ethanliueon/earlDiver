@@ -413,3 +413,27 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .shop .shop-tabs { flex-wrap: nowrap; gap: 5px; }
 .shop .shop-tabs button { font-size: 11px; letter-spacing: 0.08em; padding: 6px 9px 6px 19px; white-space: nowrap; }
 .shop .shop-tabs button::before { left: 7px; width: 6px; height: 6px; margin-top: -3px; }
+
+/* =====================================================================
+   v1.2.0: the game's own type. IM Fell English (an old ship's-log print) for names, labels,
+   tooltips and messages; the stencil for painted labels; numbers stay on the instrument mono.
+   ===================================================================== */
+:root { --game: "IM Fell English", "EB Garamond", Georgia, serif; --game-sc: "IM Fell English SC", "IM Fell English", Georgia, serif; }
+.shop .up-name, .shop .card h3, .shop .card p, .shop .manifest td:first-child, .shop .contract b,
+.shop .shop-empty, .shop .shop-note, .shop .wing-h b, .shop .owned b, .shop .season p { font-family: var(--game); letter-spacing: 0.01em; }
+.shop .up-name { font-size: 16px; }
+.shop .up-group h4 { font-family: var(--game-sc); letter-spacing: 0.12em; font-size: 17px; text-transform: none; }
+#tip { font-family: var(--game); font-size: 15px; line-height: 1.35; }
+.menu-links button.link, #newgame, .hint, .controls span, .save-line span { font-family: var(--game); font-size: 15px; letter-spacing: 0.02em; }
+#play { font-family: var(--game-sc); letter-spacing: 0.3em; font-size: 22px; }
+#pause button { font-family: var(--game-sc); letter-spacing: 0.12em; font-size: 17px; }
+#pause .small { font-family: var(--game); font-size: 15px; }
+#runlog table { font-family: var(--game); font-size: 14px; }
+/* a small picture of the animal beside its name */
+.shop img.mini { width: 54px; height: 30px; object-fit: contain; vertical-align: middle; margin-right: 8px;
+  background: radial-gradient(ellipse at center, rgba(70,120,140,0.35), transparent 70%); border-radius: 3px; }
+.shop .contract { justify-content: flex-start; }
+.shop .contract .pay { margin-left: auto; }
+.shop .contract img.mini { width: 72px; height: 40px; }
+.shop .frenzy-note { margin: 0 0 10px; padding: 7px 12px; border-radius: 4px; font: 15px var(--game); color: #2e220a;
+  background: linear-gradient(180deg, #ecd28e, #c9a65a); box-shadow: 0 0 12px rgba(255,182,72,0.35); }

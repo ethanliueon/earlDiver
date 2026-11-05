@@ -12,6 +12,7 @@ import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from
 import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { fillBoard, fulfil, RADIO } from './contracts.js';
+import { updateFrenzy, frenzyOn, FRENZIES } from './frenzy.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
@@ -150,7 +151,7 @@ function sellSpecimens(list, lines) {
     const key = 'sp' + id + (v ? ':' + v : ''), base = specs.reduce((a, s) => a + specimenValue(s), 0) / specs.length;
     const worst = specs.reduce((a, s) => Math.min(a, s.cond), 1);
     const name = variantLabel(SPECIES_BY_ID[id], v || null) + (worst <= 0.05 ? ' (dead)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
-    lines.push(sell(profile, key, specs.length, base * statValue(profile, 'payFish'), name));
+    lines.push(sell(profile, key, specs.length, base * statValue(profile, 'payFish') * (frenzyOn(g, 'market') ? 2 : 1), name));
   }
 }
 function sellAll() {
@@ -162,11 +163,11 @@ function sellAll() {
   // the research program: one line per species tagged, each tag a little less than the last
   const tg = new Map();
   for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
-  for (const [k, list] of tg) lines.push(sell(profile, k, list.length, list[0].value * statValue(profile, 'payFish'), `Tag data: ${list[0].name}`));
+  for (const [k, list] of tg) lines.push(sell(profile, k, list.length, list[0].value * statValue(profile, 'payFish') * (frenzyOn(g, 'market') ? 2 : 1), `Tag data: ${list[0].name}`));
   g.tags = [];
   // the institute: first photographs
   for (const ph of g.photos) {
-    const pv = Math.round(ph.value * statValue(profile, 'payFish') * 100) / 100;
+    const pv = Math.round(ph.value * statValue(profile, 'payFish') * (frenzyOn(g, 'market') ? 2 : 1) * 100) / 100;
     profile.cash = Math.round((profile.cash + pv) * 100) / 100; profile.lifetime = Math.round((profile.lifetime + pv) * 100) / 100;
     lines.push({ label: `Photograph: ${ph.name}`, n: 1, total: pv });
     profile.photos = [...(profile.photos || []), ph.key];
@@ -174,7 +175,7 @@ function sellAll() {
   g.photos = [];
   for (const [k, n] of Object.entries(g.inv)) {
     if (!n || !GOODS[k] || k === 'coral') continue;
-    lines.push(sell(profile, k, n, GOODS[k].price * statValue(profile, 'paySalvage'), GOODS[k].name));
+    lines.push(sell(profile, k, n, GOODS[k].price * statValue(profile, 'paySalvage') * (frenzyOn(g, 'market') ? 2 : 1), GOODS[k].name));
     g.inv[k] = 0;
   }
   if (!lines.length) return null;
@@ -594,6 +595,17 @@ function update(dt) {
       else if (g.items.necklace === 0) hud.toast('No necklaces', 'warn');
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
+    // frenzies: rolled on surfacing after a deep enough, long enough trip
+    const fzNew = updateFrenzy(g, dt);
+    if (fzNew) {
+      const F = FRENZIES[fzNew.id];
+      hud.toast(F.name, 'frenzy'); hud.toast(`${F.what} · 3 minutes`, 'note');
+      audio.ready && audio.sapphire(); audio.cue && audio.cue('frenzy');
+    }
+    g.airMul = frenzyOn(g, 'breath') ? 0.5 : 1;
+    g.luck = frenzyOn(g, 'net') ? 0.25 : 0;
+    g.fauna.rareMult = frenzyOn(g, 'rare') ? 3 : 1;
+    g.stillMul = frenzyOn(g, 'still') ? 0.35 : 1;
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT_X) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }

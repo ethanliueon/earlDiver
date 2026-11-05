@@ -178,7 +178,7 @@ export class Fauna {
     };
     // rare variants, once Earl has caught a normal one of this species
     if (this.caught && this.caught.has(sp.id) && canBeRare(sp) && !this.schools.has(gid)) {
-      const v = rollVariant(rng, y, this.entityNear);
+      const v = rollVariant(rng, y, this.entityNear, this.rareMult || 1);
       if (v) {
         c.variant = v;
         if (v === 'giant') { const k = rng.range(1.6, 2.0); c.len *= k; c.flee *= 0.75; c.cruise = c.speed = Math.min(c.cruise * 1.2, 2); }
