@@ -158,10 +158,14 @@ export function updateCapture(g, dt) {
 // Specimens between the catch and the sale. Every animal has a home depth (where it was caught,
 // or where it has been slowly brought up to). What hurts is the gap between that and the pressure it
 // is under now: in the bag, Earl's depth; in the open tank, the sub's; in a pressure chamber, what
-// the chamber holds (pumped up to the animal's home, but never past the chamber's rating).
+// the chamber holds. A chamber's rating is how much more than the water outside it can hold: so it
+// keeps an animal at its own pressure anywhere from its home depth up to (home - rating), and above
+// that the animal feels the rest.
 // Up to 150 m of gap, it lives, more stressed the bigger the gap; past that, it dies.
 export const SAFE_GAP = 150, PUMP = 30, BLEED = 3;
 export const chamberRating = (g) => Math.round(statValue(g.profile, 'pressRating'));
+// the most a chamber can hold right now: the water outside, plus its rating
+export const chamberMax = (g) => Math.max(0, g.sub.y) + chamberRating(g);
 export const homeOf = (s) => (s.home ?? s.from ?? 0);
 export function gapOf(g, s, inBag) {
   const felt = s.pressed ? (s.press || 0) : Math.max(0, inBag ? g.earl.y : g.sub.y);
@@ -169,7 +173,7 @@ export function gapOf(g, s, inBag) {
 }
 export function updateSpecimens(g, dt) {
   const deaths = [], events = [];
-  const rating = chamberRating(g);
+  const cmax = chamberMax(g);
   const tick = (s, inBag) => {
     if (s.home === undefined) s.home = s.from || 0;
     if (s.cond <= 0.05) return;
@@ -177,7 +181,8 @@ export function updateSpecimens(g, dt) {
     if (inBag) s.cond -= dt * 0.0005;
     if (s.pressed) {
       if (s.press === undefined) s.press = Math.max(0, g.sub.y);
-      const target = Math.min(s.home, rating);
+      const target = Math.min(s.home, cmax);
+      if (s.press > cmax) s.press = cmax; // more than the walls can hold over the outside: it vents
       if (s.bleed) {
         // the red valve open a crack: the pressure eases off slowly, and an animal held at its
         // own pressure eases with it (acclimates); one already short of it only feels the gap grow

@@ -185,19 +185,35 @@ Up to 150 m short, it lives, more stressed the bigger the gap (its condition sin
 down to 'weak' at 150 m). Past 150 m it is dying, slowly at first and faster the bigger the gap.
 So a shallow animal can never die of the trip up, and a deep one dies unless it is in a chamber.
 
-T in the sub opens the tank room, full screen. Pressure chambers stand in a row, drawn after the
-SubCAS chambers fisheries scientists use: a clear blue acrylic cylinder under a black head, a gauge
-(red past the chamber's rating) and a read-out, a ball valve, a bleed tap, a wrench handle, hose
-clamps and a little logger inside, with the animal swimming in it. You start with one chamber and
-buy up to four more (Pressure chambers); every chamber is rated 400 m at first, 200 m more per
-level of Chamber rating (to 3,800 m). Sealing an animal in pumps the chamber up to its home depth
-(30 m/s, as far as the rating goes: a deeper animal still feels the rest of the gap). Held at its
-own pressure it recovers. Easing it up (the valve open a crack) lowers the chamber 3 m/s toward the
-surface, and an animal held at its own pressure eases with it: it arrives acclimated, safe in the
-open and worth a quarter more. Below the chambers, the open tank (a long glass tank with gravel,
-weed and an airstone, every animal in it swimming) and the catch bag. Animals move between them or
-are let go back into the water. Animals from below 100 m go into a free chamber by themselves when
-they come aboard.
+T in the sub opens the back of the sub, full screen: two steel compartments joined by a round
+hatch (click it, or the arrow keys). The walls are riveted steel plates with weld seams and rust
+weeping from the rivets, a deck grating underfoot and a caged lamp overhead; nothing is a UI panel.
+
+The chamber room: pressure chambers strapped to the bulkhead, drawn after the SubCAS chambers
+fisheries scientists use (a clear blue acrylic cylinder under a black head, a gauge, a ball valve, a
+bleed tap, a wrench handle, hose clamps and a little logger inside), a pipe run feeding them, empty
+brackets where more will go, and a porthole onto the water outside (darker the deeper). You start
+with one chamber and buy up to four more (Pressure chambers). A chamber's rating (Chamber rating:
+400 m, 150 m more per level) is how much more than the water outside it can hold: it keeps an
+animal at its own pressure from its home depth until the sub climbs above that depth less the
+rating, and above that the animal feels the rest of the gap. A grenadier from 805 m in a 400 m
+chamber is safe to about 405 m, then dying by the surface. The gauge's green band shows what the
+chamber can hold where the sub is; the needle turns amber when the animal needs more. Sealing an
+animal in pumps the chamber up to its home depth (30 m/s); held there it recovers. Easing it up (the
+valve open a crack) lowers the chamber 3 m/s toward the surface, and an animal held at its own
+pressure eases with it: it arrives acclimated, safe in the open and worth a quarter more.
+
+The tank room: the open tank set into the wall (gravel, weed, an airstone; room for 2 animals at
+first, up to 8 with the Open tank upgrade) and the catch bag hanging on its hook.
+
+Each animal has a small brass tag: its name, where it was found, and how it is in a word (healthy,
+stressed, weak, dying, dead, acclimated). Tap the tag, the chamber or the fish to open its choices
+(ease it up / close the valve, into a chamber, into the open tank, let go). A ? in the corner
+explains the rules. How an animal swims shows how it is: a healthy one quick and alert, darting
+and turning fast; a stressed one slower; a weak one lethargic, sinking to the bottom, tilted, its
+tail barely moving; a dying one listing, now and then rolling over before it rights itself; a dead
+one belly up at the top. Animals from below 100 m go into a free chamber by themselves when they
+come aboard.
 
 Dead animals sell for half the plain market price of their kind: no rare-form bonus, no market
 frenzy, no contract pay. An aquarium's contract wants one alive and well; the museum's contracts

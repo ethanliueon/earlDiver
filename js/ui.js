@@ -38,9 +38,8 @@ export class UI {
     $('journal-close').addEventListener('click', () => this.toggleJournal(false));
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
-    $('tank-close').addEventListener('click', () => this.toggleTank(false));
     this.caveTab = 'trade';
-    this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i) => h.onTank(a2, w, i), getGame: () => h.getGame(), mini: (sp) => this.mini(sp) });
+    this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i) => h.onTank(a2, w, i), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
@@ -114,6 +113,7 @@ export class UI {
   anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden; }
   closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
+  tankOpen() { return !$('tankroom').hidden; }
   toggleTank(force) {
     const el = $('tankroom');
     const open = force === undefined ? el.hidden : force;
