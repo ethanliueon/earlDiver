@@ -5,6 +5,9 @@ import { SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir } from './capture.js';
+import { specimenValue, conditionName } from './specimens.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
@@ -56,6 +59,7 @@ function newGame(mode) {
     imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2, farShadow: null,
     injury: 0, healT: 0, blood: [], deathKind: null, lampFlashT: -99, threat: null,
     autopilot: new Autopilot(), addons: P.addons || {},
+    bag: [], subTank: [], captureFx: [], capture: null, toolSel: 'net', capPrompt: null,
   };
   g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
   g.damageSub = (amt, sp) => damageSub(amt, sp);
@@ -114,9 +118,23 @@ function damageSub(amt, sp) {
 }
 // ---------------- the boat: selling and buying ----------------
 // Everything Earl carries (except lures and necklaces, which he keeps for use) goes in the basket.
+// the sub's tank can only be emptied when the sub is at the boat
+const subAtBoat = () => !g.sub.imploded && Math.hypot(g.sub.x - (BOAT_X + 8.5), g.sub.y - 2.6) < 20;
+function sellSpecimens(list, lines) {
+  const groups = new Map();
+  for (const sp of list) { const k = sp.id; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
+  for (const [id, specs] of groups) {
+    const key = 'sp' + id, base = specs.reduce((a, s) => a + specimenValue(s), 0) / specs.length;
+    const worst = specs.reduce((a, s) => Math.min(a, s.cond), 1);
+    const name = SPECIES_BY_ID[id].name + (worst <= 0.05 ? ' (dead)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
+    lines.push(sell(profile, key, specs.length, base, name));
+  }
+}
 function sellAll() {
   marketTick(profile);
   const lines = [];
+  if (g.bag.length) { sellSpecimens(g.bag, lines); g.bag = []; }
+  if (g.subTank.length && subAtBoat()) { sellSpecimens(g.subTank, lines); g.subTank = []; }
   for (const [k, n] of Object.entries(g.inv)) {
     if (!n || !GOODS[k] || k === 'coral') continue;
     lines.push(sell(profile, k, n, GOODS[k].price, GOODS[k].name));
@@ -165,6 +183,21 @@ function buy(kind) {
     const lvl = sub.level;
     g.sub = new Sub(); g.sub.level = lvl; g.sub.o2 = g.sub.o2Max; g.sub.docked = true; g.imploded = false; ok = true;
     hud.toast(`A new submersible, rated to ${g.sub.rated} m`, 'big');
+  } else if (kind === 'net' && NETS[(P.net || 0) + 1] && spend(P, NETS[(P.net || 0) + 1].price)) {
+    P.net = (P.net || 0) + 1; g.toolSel = 'net'; ok = true;
+    hud.toast(`New net: ${NETS[P.net].name.toLowerCase()}`, 'big');
+  } else if (kind === 'slurp' && SLURPS[(P.slurp ?? -1) + 1] && spend(P, SLURPS[(P.slurp ?? -1) + 1].price)) {
+    P.slurp = (P.slurp ?? -1) + 1; g.toolSel = 'slurp'; ok = true;
+    hud.toast(`${SLURPS[P.slurp].name}. Press 2 to use it`, 'big');
+  } else if (kind === 'bag' && BAGS[(P.bag || 0) + 1] && spend(P, BAGS[(P.bag || 0) + 1].price)) {
+    P.bag = (P.bag || 0) + 1; ok = true;
+    hud.toast(`${BAGS[P.bag].name}: ${BAGS[P.bag].slots} specimens`, 'big');
+  } else if (kind === 'subtank' && SUB_TANKS[(P.subTank || 0) + 1] && spend(P, SUB_TANKS[(P.subTank || 0) + 1].price)) {
+    P.subTank = (P.subTank || 0) + 1; ok = true;
+    hud.toast(`The sub's specimen tank now holds ${SUB_TANKS[P.subTank].slots}`, 'big');
+  } else if (kind === 'canisters' && !(P.addons || {}).canisters && spend(P, CANISTERS.price)) {
+    P.addons = Object.assign({}, P.addons, { canisters: true }); g.addons = P.addons; ok = true;
+    hud.toast('Pressure canisters: deep animals survive the trip up', 'big');
   } else if (SUB_ADDONS[kind] && !(P.addons || {})[kind] && spend(P, SUB_ADDONS[kind].price)) {
     P.addons = Object.assign({}, P.addons, { [kind]: true }); g.addons = P.addons; ok = true;
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
@@ -357,7 +390,8 @@ function interact(t, exitSub) {
     audio.ready && audio.pickup();
   } else if (t.kind === 'board') {
     e.inSub = true; sub.docked = false;
-    hud.toast('Inside the submersible');
+    const moved = transferToTank(g);
+    hud.toast(moved ? `Inside the submersible · ${moved} specimen${moved > 1 ? 's' : ''} into the tank (${g.subTank.length}/${tankSlots(g)})` : 'Inside the submersible');
     audio.ready && audio.click();
   } else if (t.kind === 'kelp') {
     t.k.harvested = true; g.inv.kelp = (g.inv.kelp || 0) + 1; hud.toast('+1 Kelp'); audio.ready && audio.pickup();
@@ -387,6 +421,9 @@ function die(cause, kind = 'normal') {
   ui.closeAll();
   // what death costs: everything unsold, a hospital bill, and (if it took him) what he carried for it
   const lost = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]).map(([k, n]) => `${n} ${GOODS[k].name.toLowerCase()}`);
+  const nSpec = g.bag.length + g.subTank.length;
+  if (nSpec) lost.unshift(`${nSpec} live specimen${nSpec > 1 ? 's' : ''}`);
+  g.bag = []; g.subTank = [];
   const taken = cause.startsWith('Taken');
   if (taken) { const n = g.items.lure + g.items.necklace; if (n) lost.push(`${n} lure${n > 1 ? 's' : ''} and necklace${n > 1 ? 's' : ''}`); g.items.lure = g.items.necklace = 0; }
   const bill = kind === 'quit' ? 0 : Math.round(profile.cash * HOSPITAL_SHARE * 100) / 100;
@@ -498,6 +535,24 @@ function update(dt) {
       else { ap.call(g); hud.toast(`Calling the sub — ${Math.round(dist(e.x, e.y, g.sub.x, g.sub.y))} m away`); audio.ready && audio.sonar(0.05); }
     }
     if (e.inSub && ap.state !== 'idle') ap.cancel();
+    // catching: 1 / 2 pick the net or the slurp gun, Space uses it
+    if (pressed.has('1')) { g.toolSel = 'net'; hud.toast(NETS[profile.net || 0].name); }
+    if (pressed.has('2')) { if ((profile.slurp ?? -1) >= 0) { g.toolSel = 'slurp'; hud.toast(SLURPS[profile.slurp].name); } else hud.toast('No slurp gun — the boat sells them', 'warn'); }
+    if (pressed.has(' ')) { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
+    for (const ev of updateCapture(g, dt)) {
+      if (ev.type === 'caught') {
+        const sp = ev.sp;
+        hud.toast(`${sp.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec))}  (${g.bag.length}/${bagSlots(g)})`, 'note');
+        audio.ready && audio.pickup();
+        if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
+        if (!(profile.caught || []).includes(sp.id)) profile.caught = [...(profile.caught || []), sp.id];
+        profile.journal = [...g.journal.entries()]; saveProfile(profile);
+      } else if (ev.type === 'missed') hud.toast(`The ${ev.sp.name.toLowerCase()} got away`);
+      else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
+    }
+    for (const s of updateSpecimens(g, dt)) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died — it came up too fast`, 'warn');
+    const ct = !e.inSub ? findCatch(g) : null;
+    g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.sp.name.toLowerCase()} · ~${money(ct.value)}` : `${ct.sp.name}: ${ct.why}`) : null;
     if (!e.inSub) {
       const r = ap.update(g, dt, g.addons.recall ? 1.5 : 1);
       if (r === 'arrived') { hud.toast('The sub is here'); audio.ready && audio.sonar(0.06); }
@@ -508,7 +563,8 @@ function update(dt) {
     // injuries: slower, hungrier for air, heal one point every 15 s
     if (g.injury > 0) { g.healT += dt; if (g.healT >= 15) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
     const lvl = Math.min(4, g.injury);
-    e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1); e.o2Mul = INJURY.air[lvl];
+    const kg = loadKg(g); g.loadKg = kg;
+    e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg); e.o2Mul = INJURY.air[lvl] * loadAir(kg);
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);

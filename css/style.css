@@ -176,7 +176,7 @@ button.link:hover { color: #f1efe6; }
 
 /* ---------- the ledger slip: a receipt from the buyers ---------- */
 .slip {
-  width: 250px; padding: 18px 18px 22px; color: #2b2620; font: 12px/1.5 var(--mono);
+  width: 250px; padding: 18px 18px 54px; color: #2b2620; font: 12px/1.5 var(--mono);
   background:
     radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.35), transparent 60%),
     linear-gradient(180deg, #ece4cf, #e2d8bf);
@@ -195,10 +195,14 @@ button.link:hover { color: #f1efe6; }
 .typed { animation: type-in 0.14s steps(6); }
 @keyframes type-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 .slip-stamp {
-  position: absolute; right: 16px; bottom: 34px; padding: 2px 10px; border: 2px solid rgba(160, 40, 30, 0.75); color: rgba(160, 40, 30, 0.75);
+  position: absolute; left: 18px; bottom: 12px; padding: 2px 10px; border: 2px solid rgba(160, 40, 30, 0.75); color: rgba(160, 40, 30, 0.75);
   font: 600 18px var(--mono); letter-spacing: 0.2em; transform: rotate(-14deg); opacity: 0;
 }
 .slip.done .slip-stamp { animation: stamp 0.25s ease-out forwards; }
 @keyframes stamp { from { opacity: 0; transform: rotate(-14deg) scale(1.8); } to { opacity: 1; transform: rotate(-14deg) scale(1); } }
 @media (max-width: 900px) { .shop { flex-direction: column; align-items: center; } .slip { width: min(320px, 90vw); } }
 .shop-note { font-size: 12px; color: var(--muted); margin: -4px 0 14px; }
+.card.with-img { grid-template-columns: 96px 1fr auto; }
+.card img { width: 96px; height: 48px; object-fit: contain; }
+.cond { font-style: normal; font-size: 10px; letter-spacing: 0.06em; margin-left: 4px; font-family: var(--mono); }
+.c-healthy { color: #8fd4a0; } .c-stressed { color: #e8b040; } .c-weak { color: #e86a50; } .c-dead { color: #9a9a9a; }

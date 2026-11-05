@@ -6,6 +6,8 @@ import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToR
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
+import { activeTool } from './capture.js';
+import { SPECIES_BY_ID } from './species.js';
 import { BOAT_X, WORLD_W } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
@@ -367,8 +369,30 @@ export class Renderer {
       ctx.scale(e.facing, 1); ctx.rotate(e.angle);
       const moving = clamp(e.speedNow / 3, 0, 1);
       const lampCol = e.lampOn ? rgbStr(mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift)) : null;
-      const h = drawEarl(ctx, 2 * ppm, e.kick, moving, lampCol, amb);
+      // what he is holding, and what is in his bag
+      let gear = null;
+      if (g.mode === 'play' && g.profile) {
+        const tool = activeTool(g);
+        gear = { kind: tool.kind, tier: tool.tier, t, sweep: g.capture && g.capture.kind === tool.kind ? clamp(g.capture.t / g.capture.dur, 0, 1) : null,
+          catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })) };
+      }
+      const h = drawEarl(ctx, 2 * ppm, e.kick, moving, lampCol, amb, gear);
       ctx.restore();
+      if (h.tip) {
+        const ca2 = Math.cos(e.angle), sa2 = Math.sin(e.angle);
+        g.toolTip = { x: e.x + e.facing * (h.tip.x * ca2 - h.tip.y * sa2) / ppm, y: e.y + (h.tip.x * sa2 + h.tip.y * ca2) / ppm };
+      }
+      // animals on their way into the net or up the slurp gun's barrel
+      for (const f of g.captureFx || []) {
+        if (!g.toolTip) break;
+        const k = clamp(f.t / f.dur, 0, 1), ek = k * k;
+        const fx2 = f.x + (g.toolTip.x - f.x) * ek, fy2 = f.y + (g.toolTip.y - f.y) * ek;
+        const Lf = Math.max(4, f.len * ppm * (1 - 0.4 * k));
+        ctx.save(); ctx.translate(S(fx2), Sy(fy2)); if (f.dir > 0) ctx.scale(-1, 1);
+        ctx.rotate(Math.sin(t * 30) * 0.4 * k); ctx.globalAlpha = 1 - k * 0.6;
+        drawSpecies(ctx, f.sp, Lf, t * 4, 1, 0);
+        ctx.restore();
+      }
       // head position in screen space (for the beam)
       const ca = Math.cos(e.angle), sa = Math.sin(e.angle);
       head = { x: S(e.x) + (h.headX * ca - h.headY * sa) * e.facing, y: Sy(e.y) + (h.headX * sa + h.headY * ca), beamA: h.beamA };

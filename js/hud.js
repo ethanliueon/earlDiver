@@ -4,7 +4,10 @@
 import { clamp, lerp, formatTime, TAU } from './util.js';
 import { SUB_LEVELS, diverDrainMult } from './player.js';
 import { RESOURCES } from './world.js';
-import { GOODS, money } from './economy.js';
+import { GOODS, money, NETS, SLURPS } from './economy.js';
+import { toolIcon } from './tools_draw.js';
+import { bagSlots, tankSlots } from './capture.js';
+import { SPECIES_BY_ID } from './species.js';
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
 
@@ -21,6 +24,65 @@ export class Hud {
     this.s = h / 900; // UI scale
   }
   toast(text, kind = '') { this.toasts.push({ text, kind, t: 0 }); if (this.toasts.length > 4) this.toasts.shift(); }
+
+  // The hotbar (1 net, 2 slurp gun) and a row of specimen slots above it.
+  drawGear(g, W, H, s, dt) {
+    const ctx = this.ctx, P = g.profile, e = g.earl;
+    this.icons = this.icons || new Map();
+    const icon = (kind, tier) => {
+      const k = kind + tier;
+      if (!this.icons.has(k)) this.icons.set(k, toolIcon(kind, tier, 120, 60));
+      return this.icons.get(k);
+    };
+    const tools = [['1', 'net', P.net || 0, NETS[P.net || 0].name]];
+    if ((P.slurp ?? -1) >= 0) tools.push(['2', 'slurp', P.slurp, SLURPS[P.slurp].name]);
+    const sw = 84 * s, sh = 46 * s, gap = 8 * s;
+    const total = tools.length * sw + (tools.length - 1) * gap;
+    let x = W / 2 - total / 2;
+    const y = H - sh - 22 * s;
+    const sel = g.toolSel === 'slurp' && (P.slurp ?? -1) >= 0 ? 'slurp' : 'net';
+    for (const [key, kind, tier, name] of tools) {
+      const on = kind === sel && !e.inSub;
+      ctx.fillStyle = on ? 'rgba(14,26,28,0.72)' : 'rgba(6,12,14,0.5)';
+      ctx.strokeStyle = on ? 'rgba(200,230,215,0.55)' : 'rgba(160,200,200,0.14)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.roundRect(x, y, sw, sh, 6 * s); ctx.fill(); ctx.stroke();
+      ctx.globalAlpha = e.inSub ? 0.35 : on ? 1 : 0.55;
+      ctx.drawImage(icon(kind, tier), x + 6 * s, y + 4 * s, sw - 12 * s, sh - 12 * s);
+      ctx.globalAlpha = 1;
+      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.fillText(key, x + 5 * s, y + 4 * s);
+      // sweep / reload progress along the bottom edge
+      if (on && g.capture && g.capture.kind === kind) {
+        ctx.fillStyle = 'rgba(200,230,215,0.7)';
+        ctx.fillRect(x + 4 * s, y + sh - 4 * s, (sw - 8 * s) * clamp(g.capture.t / g.capture.dur, 0, 1), 2 * s);
+      }
+      if (on) { ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name.toUpperCase(), x + sw / 2, y + sh + 4 * s); }
+      x += sw + gap;
+    }
+    // specimen slots: the bag (or, in the sub, its tank). Each dot shows the animal's colour,
+    // ringed by its condition: green healthy, amber stressed, red weak, grey dead.
+    const list = e.inSub ? g.subTank : g.bag, slots = e.inSub ? tankSlots(g) : bagSlots(g);
+    const r = 6 * s, step = 17 * s, rowW = slots * step;
+    let sx = W / 2 - rowW / 2 + step / 2;
+    const sy = y - 16 * s;
+    ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(200,220,215,0.5)'; ctx.fillText(e.inSub ? 'TANK' : 'BAG', sx - step * 0.6 - 2 * s, sy);
+    for (let i = 0; i < slots; i++, sx += step) {
+      const sp = list[i];
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU);
+      ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.fill();
+      if (sp) {
+        const c = sp.cond;
+        ctx.fillStyle = SPECIES_BY_ID[sp.id].v.c[0];
+        ctx.beginPath(); ctx.arc(sx, sy, r * 0.62, 0, TAU); ctx.fill();
+        ctx.strokeStyle = c <= 0.05 ? 'rgba(140,140,140,0.9)' : c >= 0.8 ? 'rgba(120,220,140,0.9)' : c >= 0.5 ? 'rgba(232,176,64,0.95)' : 'rgba(230,80,60,0.95)';
+        ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.stroke();
+      } else { ctx.strokeStyle = 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1; ctx.stroke(); }
+    }
+    // a second row inside the sub: what is still in the bag outside the tank
+    if (e.inSub && g.bag.length) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillText(`+${g.bag.length} in the bag (tank full)`, W / 2 + rowW / 2 + 8 * s, sy); }
+    ctx.textBaseline = 'top';
+  }
 
   draw(g, dt) {
     const ctx = this.ctx, W = this.c.width, H = this.c.height, s = this.s;
@@ -185,7 +247,15 @@ export class Hud {
         ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.6)';
         ctx.fillText(`+ about ${money(carried, carried < 100)} unsold`, pad, pad + 27 * s);
       }
+      if ((g.loadKg || 0) > 5 && !e.inSub) {
+        ctx.font = `${11 * s}px ${MONO}`;
+        ctx.fillStyle = g.loadKg > 10 ? '#e8b040' : 'rgba(200,220,215,0.6)';
+        ctx.fillText(`load ${Math.round(g.loadKg)} kg${g.loadKg > 10 ? ' · heavy' : ''}`, pad, pad + (carried > 0 ? 43 : 27) * s);
+      }
     }
+
+    // ---------- tools and specimens, bottom centre ----------
+    if (g.profile && g.mode === 'play' && !dying) this.drawGear(g, W, H, s, dt);
 
     // ---------- marked: a symbol, the red eye, bottom left ----------
     // A pointed almond in flat orange-red with a vertical black slit and a soft glow. The slit slowly
@@ -214,6 +284,14 @@ export class Hud {
       ctx.closePath(); ctx.fill();
     }
 
+    // ---------- what the tool can reach ----------
+    if (g.capPrompt && !dying) {
+      ctx.font = `${14 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      const tw = ctx.measureText(g.capPrompt).width + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, py, tw, 28 * s, 6 * s); ctx.fill();
+      ctx.fillStyle = g.capPrompt.startsWith('Space') ? 'rgba(214,236,206,0.95)' : 'rgba(240,190,160,0.9)';
+      ctx.fillText(g.capPrompt, W / 2, py + 7 * s);
+    }
     // ---------- interaction prompt ----------
     if (g.prompt && !dying) {
       ctx.font = `${15 * s}px ${MONO}`; ctx.textAlign = 'center';

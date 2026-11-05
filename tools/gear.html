@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>Gear</title>
+<style>body{margin:0;background:#0d3346;display:flex;flex-wrap:wrap;gap:10px;padding:10px;font:12px monospace;color:#cde}div{background:#1a4a60;padding:6px}</style>
+<script type="module">
+import { toolIcon, drawNet, drawSlurp, drawBeltBag } from '../js/tools_draw.js';
+import { SPECIES_BY_ID } from '../js/species.js';
+for (const [k, t] of [['net',0],['net',1],['net',2],['net',3],['slurp',0],['slurp',1]]) {
+  const d = document.createElement('div'); d.append(toolIcon(k, t, 320, 160)); d.append(document.createElement('br')); d.append(`${k} ${t}`); document.body.append(d);
+}
+// big: a net with a catch, a slurp gun holding a fish, a bag
+const c = document.createElement('canvas'); c.width = 900; c.height = 300; document.body.append(c);
+const x = c.getContext('2d');
+x.save(); x.translate(40, 90); drawNet(x, 6, 1, 1.2, 0.3, { sp: SPECIES_BY_ID[2], len: 0.22, t: 0.3 }); x.restore();
+x.save(); x.translate(520, 120); drawSlurp(x, 7, 1, 1, 0.6, { sp: SPECIES_BY_ID[1], len: 0.08 }); x.restore();
+x.save(); x.translate(760, 60); drawBeltBag(x, 10, [{col:'#e06a2a'},{col:'#2a5ae0'},{col:'#e0d02a'},{col:'#aa3333'}], 0); x.restore();
+</script>

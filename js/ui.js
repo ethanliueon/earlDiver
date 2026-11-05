@@ -3,6 +3,9 @@ import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
 import { speciesIcon } from './creatures_draw.js';
 import { RESOURCES } from './world.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS } from './economy.js';
+import { toolIcon } from './tools_draw.js';
+import { specimenValue, conditionName } from './specimens.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 
@@ -148,7 +151,7 @@ export class UI {
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -162,21 +165,25 @@ export class UI {
     $('shop-sub').textContent = sub.imploded ? 'No submersible' : `Submersible rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %`;
     const can = (price) => P.cash + 1e-6 >= price;
     // a card: name, what it is, what it changes, and a price button
-    const card = (name, desc, stat, price, act, arg, label, owned = '') => `
-      <div class="card">
+    const card = (name, desc, stat, price, act, arg, label, owned = '', img = '') => `
+      <div class="card${img ? ' with-img' : ''}">
+        ${img ? `<img src="${img}" alt="">` : ''}
         <div class="card-txt"><h3>${name}</h3><p>${desc}</p>${stat ? `<div class="card-stat">${stat}</div>` : ''}${owned}</div>
         <button data-act="${act}" data-arg="${arg}" ${price !== null && !can(price) ? 'disabled' : ''}>${label}${price !== null ? `<span>${money(price, false)}</span>` : ''}</button>
       </div>`;
     const ladder = (n, i) => `<div class="ladder">${Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>`;
     let html = '';
     const tab = this.shopTab;
+    const icon = (k, t) => { const key = k + t; if (!this.toolImgs) this.toolImgs = new Map(); if (!this.toolImgs.has(key)) this.toolImgs.set(key, toolIcon(k, t, 240, 120).toDataURL()); return this.toolImgs.get(key); };
     if (tab === 'sell') {
       const rows = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]);
-      if (!rows.length && !g.items.lure && !g.items.necklace) {
-        html = `<p class="shop-empty">Nothing aboard to sell.<br>Clams and mussels in the shallows, scrap on the wrecks, ink and glass sponge further down — and in the deep, sapphires.</p>`;
+      const atBoat = !sub.imploded && Math.hypot(sub.x - 520.5, sub.y - 2.6) < 20;
+      const specs = g.bag.concat(atBoat ? g.subTank : []);
+      if (!rows.length && !specs.length && !g.items.lure && !g.items.necklace) {
+        html = `<p class="shop-empty">Nothing aboard to sell.<br>The aquarium buyer pays for live animals (1 · 2 · Space). Clams and mussels in the shallows, scrap on the wrecks, ink and glass sponge further down — and in the deep, sapphires.</p>`;
       } else {
         let total = 0;
-        const lines = rows.map(([k, n]) => {
+        let lines = rows.map(([k, n]) => {
           const base = GOODS[k].price, now = priceOf(P, k, base);
           // what n of them fetch, each a little less than the last
           let sum = 0, glut = P.market[k] || 0;
@@ -185,7 +192,22 @@ export class UI {
           const flooded = now < base * 0.97 ? `<em>market flooded −${Math.round((1 - now / base) * 100)} %</em>` : '';
           return `<tr><td>${GOODS[k].name}</td><td>${n}</td><td>${money(now)} ${flooded}</td><td>${money(sum)}</td></tr>`;
         }).join('');
-        if (rows.length) html += `<table class="manifest"><thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Total</th></tr></thead><tbody>${lines}</tbody></table>
+        // live animals, grouped by species
+        const groups = new Map();
+        for (const sp of specs) { if (!groups.has(sp.id)) groups.set(sp.id, []); groups.get(sp.id).push(sp); }
+        let specRows = '';
+        for (const [id, list] of groups) {
+          const each = list.reduce((a, x) => a + specimenValue(x), 0) / list.length;
+          let sum = 0, glut = P.market['sp' + id] || 0;
+          for (let i = 0; i < list.length; i++) { sum += each * Math.pow(0.85, glut / 0.15); glut += 0.15; }
+          total += sum;
+          const worst = list.reduce((a, x) => Math.min(a, x.cond), 1);
+          const cond = `<em class="cond c-${conditionName(worst)}">${conditionName(worst)}</em>`;
+          specRows += `<tr><td>${SPECIES_BY_ID[id].name} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, 'sp' + id, each))}</td><td>${money(sum)}</td></tr>`;
+        }
+        lines = specRows + lines;
+        if (!atBoat && g.subTank.length) html += `<p class="shop-note">${g.subTank.length} animal${g.subTank.length > 1 ? 's' : ''} in the sub's tank. Bring the sub to the boat to sell them.</p>`;
+        if (rows.length || specs.length) html += `<table class="manifest"><thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Total</th></tr></thead><tbody>${lines}</tbody></table>
           <button class="primary" data-act="sellall">Load the basket and sell<span>${money(total)}</span></button>`;
         for (const k of ['lure', 'necklace']) if (g.items[k]) html += card(GOODS[k].name, `You are carrying ${g.items[k]}. Someone on the radio collects these.`, '', null, 'sellitem', k, `Sell one · ${money(priceOf(P, k, GOODS[k].price), false)}`);
       }
@@ -193,6 +215,18 @@ export class UI {
       const t = TANKS[P.tank], tn = TANKS[P.tank + 1];
       html += `<div class="owned"><span>Tank</span><b>${t.name}</b><em>${t.air} s of air</em>${ladder(TANKS.length, P.tank)}</div>`;
       html += tn ? card(tn.name, tn.desc, `${t.air} s → <b>${tn.air} s</b> of air`, tn.price, 'buy', 'tank', 'Buy') : '<p class="shop-empty">The best tank there is.</p>';
+      // catching gear
+      const nt = NETS[P.net || 0], nn = NETS[(P.net || 0) + 1];
+      const st = (d) => `reach ${d.range} m · ${d.time} s · up to ${Math.round(d.maxLen * 100)} cm · ${Math.round(d.success * 100)} % · harm −${Math.round(d.harm * 100)} %`;
+      html += `<div class="owned"><span>Net</span><b>${nt.name}</b><em>${st(nt)}</em>${ladder(NETS.length, P.net || 0)}</div>`;
+      if (nn) html += card(nn.name, nn.desc, st(nn), nn.price, 'buy', 'net', 'Buy', '', icon('net', P.net + 1));
+      const sl = (P.slurp ?? -1), sn = SLURPS[sl + 1];
+      if (sl >= 0) html += `<div class="owned"><span>Slurp</span><b>${SLURPS[sl].name}</b><em>${st(SLURPS[sl])}</em>${ladder(SLURPS.length, sl)}</div>`;
+      if (sn) html += card(sn.name, sn.desc, st(sn), sn.price, 'buy', 'slurp', 'Buy', '', icon('slurp', sl + 1));
+      const bg = BAGS[P.bag || 0], bn = BAGS[(P.bag || 0) + 1];
+      html += `<div class="owned"><span>Bag</span><b>${bg.name}</b><em>${bg.slots} animals</em>${ladder(BAGS.length, P.bag || 0)}</div>`;
+      if (bn) html += card(bn.name, bn.desc, `${bg.slots} → <b>${bn.slots}</b> animals`, bn.price, 'buy', 'bag', 'Buy');
+      if (!(P.addons || {}).canisters) html += card(CANISTERS.name, CANISTERS.desc, 'for the bag and the sub tank', CANISTERS.price, 'buy', 'canisters', 'Buy');
       const f = FINS[P.fins], fnx = FINS[P.fins + 1];
       html += `<div class="owned"><span>Fins</span><b>${f.name}</b><em>×${f.speed.toFixed(2)} speed</em>${ladder(FINS.length, P.fins)}</div>`;
       html += fnx ? card(fnx.name, fnx.desc, `×${f.speed.toFixed(2)} → <b>×${fnx.speed.toFixed(2)}</b> swimming speed`, fnx.price, 'buy', 'fins', 'Buy') : '<p class="shop-empty">No faster fins exist.</p>';
@@ -203,6 +237,9 @@ export class UI {
         const next = SUB_TIERS[sub.level + 1];
         html += `<div class="owned"><span>Hull</span><b>Rated ${sub.rated} m</b><em>implodes past ${Math.round(sub.rated * 1.3)} m · ${sub.o2Max} s cabin air</em>${ladder(SUB_TIERS.length, sub.level)}</div>`;
         html += next ? card(`Refit: rated ${next.rated} m`, 'A thicker pressure sphere, new seals and a bigger air bank. Includes a new hull.', `${sub.rated} m → <b>${next.rated} m</b> · air ${sub.o2Max} s → <b>${next.o2} s</b>`, next.price, 'buy', 'sub', 'Refit') : '<p class="shop-empty">Rated to the bottom of this ocean. Nothing more can be done for her.</p>';
+        const tk = SUB_TANKS[P.subTank || 0], tn2 = SUB_TANKS[(P.subTank || 0) + 1];
+        html += `<div class="owned"><span>Tank</span><b>Specimen tank</b><em>${tk.slots} animals · no stress</em>${ladder(SUB_TANKS.length, P.subTank || 0)}</div>`;
+        if (tn2) html += card('Bigger specimen tank', 'A larger aerated tank behind the pilot. Animals keep in it without losing condition.', `${tk.slots} → <b>${tn2.slots}</b> animals`, tn2.price, 'buy', 'subtank', 'Buy');
         for (const [k, a] of Object.entries(SUB_ADDONS)) if (!(P.addons || {})[k]) html += card(a.name, a.desc, '', a.price, 'buy', k, 'Fit');
         const fitted = Object.entries(SUB_ADDONS).filter(([k]) => (P.addons || {})[k]).map(([, a]) => a.name.toLowerCase());
         if (fitted.length) html += `<p class="shop-note">Fitted: ${fitted.join(', ')}.</p>`;

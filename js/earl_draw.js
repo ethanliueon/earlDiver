@@ -1,5 +1,6 @@
 // Earl, the submersible and the boat. All drawn in local pixel space.
-import { TAU, clamp } from './util.js';
+import { TAU, clamp, lerp } from './util.js';
+import { drawNet, drawSlurp, drawBeltBag } from './tools_draw.js';
 
 const SUIT = '#141619', SUIT_HI = '#2a2f35', SUIT_PANEL = '#24282d', SUIT_SEAM = '#33383e';
 const GLOVE = '#0d0e10', BCD = '#1b1d20', WEBBING = '#3a3d41';
@@ -20,7 +21,9 @@ const at = (x, y, a, l) => [x + Math.cos(a) * l, y + Math.sin(a) * l];
 
 // Earl lies along +x (head at +x); his back (tank side) is -y, his front is +y.
 // L = his height in pixels. moving 0..1 blends an upright idle pose into a swimming pose.
-export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
+// gear (optional): { kind: 'net'|'slurp', tier, sweep: 0..1 while in use (else null), t,
+//   catchSp: a fish in the net, held: a fish in the slurp gun, bag: [{col}] for the belt bag }
+export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   const u = L / 100;
   const m = moving;
   const s1 = Math.sin(kick);
@@ -81,11 +84,12 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
   // ---------- arms ----------
   // Idle: hanging forward of the body, gently sculling at waist height.
   // Swimming: tucked under the chest, hands together - never up at the face.
-  const arm = (phase, near) => {
+  const arm = (phase, near, pose) => {
     const sc = Math.sin(kick * 0.7 + phase);
     const shX = 27 * u, shY = near ? 2 * u : -0.5 * u;
-    const upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12) + m * (Math.PI * 0.7);
-    const foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25) + m * (Math.PI * 0.12);
+    let upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12) + m * (Math.PI * 0.7);
+    let foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25) + m * (Math.PI * 0.12);
+    if (pose) { upA = pose.upA; foreA = pose.foreA; }
     const [ex, ey] = at(shX, shY, upA, 15 * u);
     const [wx, wy] = at(ex, ey, foreA, 13 * u);
     const col = near ? SUIT : '#0d0e11';
@@ -100,6 +104,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
       ctx.fillStyle = SUIT_PANEL; ctx.beginPath(); ctx.ellipse(shX - 1 * u, shY, 4.6 * u, 4 * u, upA, 0, Math.PI * 2); ctx.fill(); // shoulder panel
       ctx.fillStyle = '#2a2d31'; ctx.fillRect(wx - 1.6 * u, wy - 1.6 * u, 3.2 * u, 3.2 * u); // dive computer on the wrist
     }
+    return { hx, hy, foreA };
   };
 
   leg(Math.PI, false);
@@ -153,6 +158,9 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
   ctx.fillStyle = '#26292c'; ctx.beginPath(); ctx.arc(6 * u, 8.6 * u, 2.6 * u, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = 'rgba(210,220,215,0.55)'; ctx.beginPath(); ctx.arc(6 * u, 8.6 * u, 1.6 * u, 0, Math.PI * 2); ctx.fill();
 
+  // the specimen bag on his belt
+  if (gear && gear.bag && gear.bag.length) drawBeltBag(ctx, u, gear.bag, gear.t);
+
   leg(0, true);
 
   // ---------- head: neoprene hood, full-face mask, nothing visible inside ----------
@@ -189,7 +197,40 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
   if (lampCol) { ctx.fillStyle = lampCol; ctx.fillRect(1 * u, -1.4 * u, 0.9 * u, 2.8 * u); }
   ctx.restore();
 
-  arm(0, true);
+  // ---------- the tool in his near hand ----------
+  // net: wind up over his head, sweep down through the water in front of him, recover.
+  // slurp gun: arm straight out in front while it fires and reloads.
+  let pose = null, toolA = null, pull = 0;
+  if (gear) {
+    const sw = gear.sweep;
+    const carryUp = (1 - m) * (Math.PI - 0.32) + m * (Math.PI * 0.7);
+    const ease = (x) => x * x * (3 - 2 * x);
+    if (sw !== null && sw !== undefined && gear.kind === 'net') {
+      let a;
+      if (sw < 0.25) a = lerp(carryUp, -0.75, ease(sw / 0.25));
+      else if (sw < 0.62) a = lerp(-0.75, 1.55, ease((sw - 0.25) / 0.37));
+      else a = lerp(1.55, carryUp, ease((sw - 0.62) / 0.38));
+      pose = { upA: a, foreA: a - 0.18 };
+      toolA = a - 0.22;
+    } else if (sw !== null && sw !== undefined) {
+      pose = { upA: 0.32, foreA: 0.12 };
+      toolA = 0.1;
+      pull = sw < 0.12 ? sw / 0.12 : 1 - (sw - 0.12) / 0.88;
+    }
+  }
+  const hand = arm(0, true, pose);
+  let tip = null;
+  if (gear) {
+    if (toolA === null) toolA = gear.kind === 'net' ? lerp(hand.foreA - 0.5, Math.PI * 0.94, m) : hand.foreA;
+    ctx.save(); ctx.translate(hand.hx, hand.hy); ctx.rotate(toolA);
+    const r = gear.kind === 'net'
+      ? drawNet(ctx, u, gear.tier, gear.t, gear.sweep !== null && gear.sweep !== undefined ? Math.sin(gear.sweep * Math.PI) : 0, gear.catchSp)
+      : drawSlurp(ctx, u, gear.tier, gear.t, pull, gear.held);
+    ctx.restore();
+    tip = { x: hand.hx + Math.cos(toolA) * r.tipX, y: hand.hy + Math.sin(toolA) * r.tipX };
+    // redraw the glove over the grip so the hand holds it
+    ctx.fillStyle = GLOVE; ctx.beginPath(); ctx.ellipse(hand.hx, hand.hy, 3.4 * u, 2.5 * u, toolA, 0, Math.PI * 2); ctx.fill();
+  }
 
   // ---------- rim light from the surface (strongest near the top) ----------
   if (rim > 0.02) {
@@ -198,7 +239,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim) {
     ctx.beginPath(); ctx.arc(hx, hy, 7.3 * u, -2.5, -0.6); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-9 * u, -4.5 * u); ctx.quadraticCurveTo(-6 * u, -7.4 * u, 0, -6.8 * u); ctx.stroke();
   }
-  return { headX: lx, headY: ly, beamA };
+  return { headX: lx, headY: ly, beamA, tip };
 }
 
 // Old riveted bathyscaphe. Local origin centre; length ~9 m => Lp pixels. Faces +x.
