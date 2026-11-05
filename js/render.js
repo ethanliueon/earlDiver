@@ -237,7 +237,8 @@ export class Renderer {
         const flash = 0; // (no shimmer)
         if (flash > 0.3) { bt.flash.moveTo(bx + fx2 * Ld * 0.36, by + fy2 * Ld * 0.36); bt.flash.ellipse(bx, by, Ld * 0.36, hh * 0.7, rot, 0, TAU); bt.nf++; }
         if (Ld > 9) { const ex = x + fx2 * Ld * 0.33 - px * down * hh * 0.2, ey = y + fy2 * Ld * 0.33 - py * down * hh * 0.2, er = Math.max(0.7, hh * 0.3); bt.eyes.moveTo(ex + er, ey); bt.eyes.arc(ex, ey, er, 0, TAU); }
-        if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.3)]);
+        // school fish carry faint belly photophores, not lamps: small, dim, and they never sum to a blaze
+        if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(1.5, Ld * 0.3), 0.3]);
         continue;
       }
       ctx.save(); ctx.translate(S(c.x), Sy(c.y));
@@ -1251,7 +1252,7 @@ export class Renderer {
       if (x < -500 || x > this.W + 500 || y < -500 || y > this.H + 500) continue;
       radial(x, y, 9 * ppm, [255, 120, 60], 0.22 + 0.06 * Math.sin(g.time * 3 + v.phase));
     }
-    for (const [x, y, col, r] of glowPts) radial(x, y, Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7 * fx.bioPulse);
+    for (const [x, y, col, r, k = 1] of glowPts) radial(x, y, k < 1 ? r * 2.5 : Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7 * fx.bioPulse * k);
     // caustic dapples near the surface by day
     if (g.dayEff > 0.3 && cam.y < 40) {
       const a = 0.12 * g.dayEff;
@@ -1371,7 +1372,7 @@ export class Renderer {
         ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, LANTERN_RADIUS * ppm, 0, TAU); ctx.stroke();
       }
     }
-    for (const [x, y, col, r] of glowPts) halo(x, y, Math.max(r, ppm * 0.4), hexToRgb(col), 0.5 * haze * fx.bioPulse);
+    for (const [x, y, col, r, k = 1] of glowPts) halo(x, y, k < 1 ? r * 1.4 : Math.max(r, ppm * 0.4), hexToRgb(col), 0.5 * haze * fx.bioPulse * k);
     if (g.lure) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
     for (const p of g.world.pickups) {
       if (p.taken || (p.type !== 'sapphire' && p.type !== 'lure')) continue;
