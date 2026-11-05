@@ -147,38 +147,31 @@ export class Hud {
       ctx.font = `${8 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name, x - 6 * s, y + sz / 2 - 4 * s);
     });
 
-    // ---------- marked: the monster's own eye, big, bottom left ----------
+    // ---------- marked: a symbol, the red eye, bottom left ----------
+    // A pointed almond in flat orange-red with a vertical black slit and a soft glow. The slit slowly
+    // narrows and widens; each good deed fades it a step.
     if (g.entity && g.entity.marked && !dying) {
       const calm = clamp((g.entity.calm || 0) / 60, 0, 1);
-      const ex = pad + 56 * s, ey = H - pad - 40 * s, ew = 54 * s, eh = 34 * s;
-      const breathe = 0.85 + 0.15 * Math.sin(g.time * 0.9);              // it slowly opens and narrows
-      const a = (1 - calm * 0.65);                                        // each good deed dims it a step
-      const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.6);
-      og.addColorStop(0, `rgba(255,40,30,${(0.35 * a).toFixed(3)})`); og.addColorStop(1, 'rgba(255,40,30,0)');
-      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ex, ey, ew * 1.6, 0, TAU); ctx.fill();
-      // an almond-shaped eye with pointed corners and a dark lid rim
-      const lid = eh * breathe;
-      const almond = new Path2D();
-      almond.moveTo(ex - ew, ey);
-      almond.bezierCurveTo(ex - ew * 0.5, ey - lid * 1.25, ex + ew * 0.5, ey - lid * 1.25, ex + ew, ey);
-      almond.bezierCurveTo(ex + ew * 0.5, ey + lid * 1.25, ex - ew * 0.5, ey + lid * 1.25, ex - ew, ey);
-      ctx.fillStyle = `rgba(20,4,4,${(0.9 * a).toFixed(3)})`; ctx.fill(almond);
-      ctx.save(); ctx.clip(almond);
-      // the iris fills most of the eye: bright red, hotter at the centre
-      const ir = eh * 0.95;
-      const ig = ctx.createRadialGradient(ex, ey, 0, ex, ey, ir);
-      ig.addColorStop(0, `rgba(255,140,90,${a.toFixed(3)})`); ig.addColorStop(0.5, `rgba(235,35,25,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(110,0,0,${a.toFixed(3)})`);
-      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex, ey, ir, 0, TAU); ctx.fill();
-      // fine radial texture in the iris
-      ctx.strokeStyle = `rgba(80,0,0,${(0.35 * a).toFixed(3)})`; ctx.lineWidth = 1;
-      ctx.beginPath(); for (let k = 0; k < 18; k++) { const an = k / 18 * TAU; ctx.moveTo(ex + Math.cos(an) * ir * 0.3, ey + Math.sin(an) * ir * 0.3); ctx.lineTo(ex + Math.cos(an) * ir, ey + Math.sin(an) * ir); } ctx.stroke();
-      // the horizontal slit pupil, narrowing and widening
-      ctx.fillStyle = `rgba(6,0,0,${(0.97 * a).toFixed(3)})`;
-      ctx.beginPath(); ctx.ellipse(ex, ey, ir * 0.9, eh * 0.1 * (1.4 - breathe * 0.5), 0, 0, TAU); ctx.fill();
-      // a wet highlight
-      ctx.fillStyle = `rgba(255,225,205,${(0.55 * a).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(ex - ir * 0.35, ey - lid * 0.45, ir * 0.18, lid * 0.12, -0.3, 0, TAU); ctx.fill();
-      ctx.restore();
-      ctx.strokeStyle = `rgba(40,0,0,${(0.9 * a).toFixed(3)})`; ctx.lineWidth = 2.5 * s; ctx.stroke(almond);
+      const a = 1 - calm * 0.65;
+      const ex = pad + 52 * s, ey = H - pad - 34 * s, ew = 48 * s, eh = 30 * s;
+      const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.5);
+      og.addColorStop(0, `rgba(255,60,30,${(0.28 * a).toFixed(3)})`); og.addColorStop(1, 'rgba(255,60,30,0)');
+      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ex, ey, ew * 1.5, 0, TAU); ctx.fill();
+      // the almond: two arcs meeting in sharp points at either side
+      ctx.fillStyle = `rgba(240,52,28,${a.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.moveTo(ex - ew, ey);
+      ctx.quadraticCurveTo(ex, ey - eh * 1.4, ex + ew, ey);
+      ctx.quadraticCurveTo(ex, ey + eh * 1.4, ex - ew, ey);
+      ctx.closePath(); ctx.fill();
+      // the vertical slit, pointed at top and bottom
+      const sw = eh * (0.22 + 0.08 * Math.sin(g.time * 0.9));
+      ctx.fillStyle = `rgba(8,2,2,${(0.97 * a).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey - eh * 0.6);
+      ctx.quadraticCurveTo(ex + sw, ey, ex, ey + eh * 0.6);
+      ctx.quadraticCurveTo(ex - sw, ey, ex, ey - eh * 0.6);
+      ctx.closePath(); ctx.fill();
     }
 
     // ---------- interaction prompt ----------
