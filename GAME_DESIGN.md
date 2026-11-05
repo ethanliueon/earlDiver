@@ -93,10 +93,10 @@ All of it is paid at the boat (U at the surface by the *Margaret*), on a typed r
 ## Suits
 
 Bought once at the boat, one worn at a time (changed at the boat): wetsuit (start); freediving skin
-(+15 % speed, +10 % air use); drysuit (pressure from 400 m, -5 % speed, warm); chain-mail shark suit
-(bites do one less injury, -12 % speed); rebreather suit (-25 % air use, no bubbles so the entity
-hears less, -5 % speed); atmospheric hardsuit (no pressure to 700 m, -10 % air use, turns bites,
--40 % speed). Each is drawn on Earl.
+(+15 % speed, +10 % air use); drysuit (pressure from 400 m, +6 % speed, warm); chain-mail shark suit
+(bites do one less injury, +4 % speed); rebreather suit (-25 % air use, no bubbles so the entity
+hears less, +10 % speed); atmospheric hardsuit (no pressure to 700 m, -10 % air use, turns bites,
++2 % speed (thrusters)). Each is drawn on Earl.
 
 ## Upgrades
 
