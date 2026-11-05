@@ -38,6 +38,8 @@ export const fishDrawLen = (len) => len * 1.6 + 0.08 * Math.exp(-len * 4);
 // Earl's height in metres
 export const EARL_H = 1.0;
 const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 32;
+// seabed life that bends with the water (the rest is stone, shell or stiff)
+const SWAY = new Set(['anemone', 'plumose', 'seagrass', 'sealettuce', 'sugarkelp', 'oarweed', 'tubeworm', 'xmastree', 'basketstar', 'seasquirt']);
 const CACHE_SKIP = new Set(['jelly', 'siphonophore', 'manowar', 'oarfish', 'gulper', 'dragon', 'comb', 'eel', 'viper', 'sperm', 'orca', 'dolphin']); // what's left of a beam after a few metres of seawater
 
 export function dayCycle(t) {
@@ -81,7 +83,7 @@ export class Renderer {
   // It is lowered automatically when frames run slow and raised again when there is headroom.
   resize() {
     if (this.quality === undefined) this.quality = 1;
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5) * this.quality;
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25) * this.quality; // at most 1.25x the screen: sharp, without drawing 1.5x the pixels
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
     if (this.c.width !== w || this.c.height !== h) {
       this.c.width = w; this.c.height = h;
@@ -257,44 +259,24 @@ export class Renderer {
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
     const glowPts = [];
-    const sl = this.layerBegin(ctx); // statics: drawn on a layer, then veiled by the water
+    // the seabed life and the animals share one layer, veiled by the water in one pass
+    const fl = this.layerBegin(ctx), sl = fl;
     for (const s of g.world.statics) {
       if (s.x < x0 - 3 || s.x > x1 + 3 || s.y < y0 - 6 || s.y > y1 + 6) continue;
       if (!s.sp.v.glow && !s.variant && !visible(s.x, s.y, Math.max(0.18, s.sp.len) * s.scale)) continue;
       const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
       this.lgrow(S(s.x), Sy(s.y) - L * 0.5, L * 1.3);
       sl.save(); sl.translate(S(s.x), Sy(s.y)); sl.scale(s.flip, 1);
-      const r = s.variant ? this.drawVariant(sl, s.sp, s.variant, L, t * 0.3 + s.phase) : drawSpecies(sl, s.sp, L, t + s.phase, 0.3, s.phase);
+      const r = s.variant ? this.drawVariant(sl, s.sp, s.variant, L, t * 0.3 + s.phase) : this.drawStatic(sl, s, L, t);
       sl.restore();
       if (s.variant === 'crimson') glowPts.push([S(s.x), Sy(s.y) - L * 0.3, '#ff3018', Math.max(ppm * 0.6, L * 0.6), 1]);
       if (r && s.sp.v.glow) glowPts.push([S(s.x), Sy(s.y), s.sp.v.glow, L]);
     }
-    this.layerEnd(ctx, g, sl);
-    // ---- pickups + lanterns ----
-    for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) this.drawPickup(ctx, p, S(p.x), Sy(p.y), ppm, t);
-    for (const l of g.world.lanterns) if (inView(l.x, l.y, 14)) this.drawLanternBody(ctx, l, S, Sy, ppm, t);
-    // traps on the bottom, their lines up to the buoys
-    for (const tr of g.traps || []) {
-      const by = surfY(tr.x);
-      if (tr.x < x0 - 4 || tr.x > x1 + 4) continue;
-      const list = tr.catch.map((c) => ({ sp: SPECIES_BY_ID[c.id], len: c.len }));
-      ctx.save(); ctx.translate(S(tr.x), Sy(tr.y)); ctx.rotate(Math.sin(t * 0.7 + tr.sway) * (tr.state === 'hauling' ? 0.15 : 0.02));
-      const r = drawTrap(ctx, ppm, tr.type, t, list);
-      ctx.restore();
-      ctx.strokeStyle = 'rgba(200,180,120,0.55)'; ctx.lineWidth = Math.max(1, ppm * 0.02);
-      ctx.beginPath(); ctx.moveTo(S(tr.x), Sy(tr.y) + r.top);
-      ctx.quadraticCurveTo(S(tr.x) + Math.sin(t * 0.4 + tr.sway) * ppm * 1.5, (Sy(tr.y) + r.top + Sy(by)) / 2, S(tr.x), Sy(by)); ctx.stroke();
-      if (Sy(by) > -40 && Sy(by) < this.H + 40) { ctx.save(); ctx.translate(S(tr.x), Sy(by)); drawBuoy(ctx, ppm, t); ctx.restore(); }
-      if (tr.type === 'deep' && r.glow) glowPts.push([S(tr.x) + r.glow[0], Sy(tr.y) + r.glow[1], '#9affd8', ppm * 0.8, 1]);
-    }
-    if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
-
     // ---- fauna ----
     // Fish are drawn nose at -x, so a fish heading right (+x) is mirrored, and the tilt is negated
     // so the nose follows the direction of travel (a fish swimming down points down).
     // Small fish are batched per species: one path for all their backs, one for all their bellies,
     // one for the silver flashes - a whole school costs three draw calls.
-    const fl = this.layerBegin(ctx); // the fauna, on a layer the water veils
     const baseM = fl.getTransform();
     this.rimSun = this.lite || cam.y + cam.h / 2 <= 0 ? 0 : clamp(1 - Math.max(0, cam.y) / 260, 0.25, 1) * (0.55 + 0.45 * (g.dayEff || 0));
     const rbox = [1e9, 1e9, -1e9, -1e9]; // animals drawn live (not from baked frames) get the rim the old way
@@ -375,6 +357,25 @@ export class Renderer {
     }
     fl.setTransform(baseM);
     this.layerEnd(ctx, g, fl, !this.lite && rbox[2] > rbox[0] ? rbox : null);
+    // ---- pickups + lanterns (over the veiled layer, so nothing valuable hides behind the coral) ----
+    for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) this.drawPickup(ctx, p, S(p.x), Sy(p.y), ppm, t);
+    for (const l of g.world.lanterns) if (inView(l.x, l.y, 14)) this.drawLanternBody(ctx, l, S, Sy, ppm, t);
+    // traps on the bottom, their lines up to the buoys
+    for (const tr of g.traps || []) {
+      const by = surfY(tr.x);
+      if (tr.x < x0 - 4 || tr.x > x1 + 4) continue;
+      const list = tr.catch.map((c) => ({ sp: SPECIES_BY_ID[c.id], len: c.len }));
+      ctx.save(); ctx.translate(S(tr.x), Sy(tr.y)); ctx.rotate(Math.sin(t * 0.7 + tr.sway) * (tr.state === 'hauling' ? 0.15 : 0.02));
+      const r = drawTrap(ctx, ppm, tr.type, t, list);
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(200,180,120,0.55)'; ctx.lineWidth = Math.max(1, ppm * 0.02);
+      ctx.beginPath(); ctx.moveTo(S(tr.x), Sy(tr.y) + r.top);
+      ctx.quadraticCurveTo(S(tr.x) + Math.sin(t * 0.4 + tr.sway) * ppm * 1.5, (Sy(tr.y) + r.top + Sy(by)) / 2, S(tr.x), Sy(by)); ctx.stroke();
+      if (Sy(by) > -40 && Sy(by) < this.H + 40) { ctx.save(); ctx.translate(S(tr.x), Sy(by)); drawBuoy(ctx, ppm, t); ctx.restore(); }
+      if (tr.type === 'deep' && r.glow) glowPts.push([S(tr.x) + r.glow[0], Sy(tr.y) + r.glow[1], '#9affd8', ppm * 0.8, 1]);
+    }
+    if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
+
     // brackets around what the net, slurp gun or claw will go for
     const ctg = g.mode === 'play' ? g.catchTarget : null;
     if (ctg) {
@@ -601,6 +602,7 @@ export class Renderer {
     ctx.globalCompositeOperation = 'multiply';
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(this.lc, 0, 0, W, H);
+    ctx.imageSmoothingQuality = 'low'; // (only the light needs the careful scaling; everything else uses the fast kind)
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
     // far off in the dark, tiny lights come and go: things the lamp will never reach
@@ -767,6 +769,27 @@ export class Renderer {
     if (this.rimSun > 0 && Ld >= 24 && e.hi[f]) { ctx.globalAlpha = 0.32 * this.rimSun; ctx.drawImage(e.hi[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k); ctx.globalAlpha = 1; }
     const gl = e.glows[f];
     return gl ? gl.map(([gx, gy, sz]) => [gx * k, gy * k, sz]) : null;
+  }
+
+  // Seabed life (corals, anemones, sponges, seagrass, crabs...) never goes anywhere, so each kind is
+  // drawn once per size into a picture and reused; soft things sway by bending the picture gently.
+  drawStatic(ctx, s, L, t) {
+    const sp = s.sp, cache = this.staticCache || (this.staticCache = new Map());
+    const bucket = Math.round(Math.log(Math.max(4, L)) / Math.log(1.15)), bl = Math.pow(1.15, bucket), key = sp.id + ':' + bucket;
+    let e = cache.get(key);
+    if (!e) {
+      const bw = Math.ceil(bl * 2.4), bh = Math.ceil(bl * 2.4), oy = Math.ceil(bh * 0.82);
+      const c = document.createElement('canvas'); c.width = bw; c.height = bh;
+      const x = c.getContext('2d'); x.translate(bw / 2, oy);
+      const glow = drawSpecies(x, sp, bl, 1.3, 0.3, 0);
+      e = { c, bw, bh, oy, bl, glow };
+      cache.set(key, e);
+      if (cache.size > 500) cache.delete(cache.keys().next().value);
+    }
+    const k = L / e.bl;
+    if (SWAY.has(sp.v.s)) ctx.transform(1, 0, Math.sin(t * 0.8 + s.phase) * 0.07, 1, 0, 0); // the top leans with the swell
+    ctx.drawImage(e.c, -e.bw / 2 * k, -e.oy * k, e.bw * k, e.bh * k);
+    return e.glow ? e.glow.map(([gx, gy, sz]) => [gx * k, gy * k, sz]) : null;
   }
 
   // One animation frame of a species, with the light from above worked in once instead of every
@@ -994,7 +1017,7 @@ export class Renderer {
     }
     // sunlight dapples sliding over the animals near the surface (one tile, made once, slid along)
     const day = g.dayEff || 0;
-    if (day > 0.2 && dTop < 35) {
+    if (day > 0.2 && dTop < 35 && !this.lite) {
       const ppm = cam.ppm, t = g.time;
       if (!this.dapT) {
         const c = document.createElement('canvas'); c.width = c.height = 256;
@@ -1359,15 +1382,20 @@ export class Renderer {
     if (cam.x < EAST + 700 || cam.x > WORLD_W || cam.y > 120) return;
     if (!this.kelpBack || this.kelpBackWorld !== g.world) { this.bakeKelpBackdrop(g.world); this.kelpBackWorld = g.world; }
     const ctx = this.ctx, W = this.W, H = this.H, surfY = (H / 2) - cam.y * ppm;
-    for (const L of this.kelpBack) {
+    for (const L of this.lite ? this.kelpBack.slice(1) : this.kelpBack) { // lite: only the nearer layer
       const scale = ppm * L.f / L.PX;               // image pixels -> screen pixels
       const x0 = W / 2 + (L.X0 - cam.x) * ppm * L.f; // further layers slide slower and look smaller
-      const bands = 14, bh = L.c.height / bands;
+      const bands = 8, bh = L.c.height / bands;
       for (let b = 0; b < bands; b++) {
         // sway grows toward the tops of the stalks (top bands)
         const up = 1 - b / bands;
-        const off = Math.sin(t * 0.45 + b * 0.35 + L.f * 5) * 9 * up * up;
-        ctx.drawImage(L.c, 0, b * bh, L.c.width, bh + 1, x0 + off * scale, surfY + b * bh * scale, L.c.width * scale, (bh + 1) * scale);
+        const off = Math.sin(t * 0.45 + b * 0.6 + L.f * 5) * 9 * up * up;
+        const dy = surfY + b * bh * scale, dh = (bh + 1) * scale;
+        if (dy > H || dy + dh < 0) continue;
+        // copy only the part of the painting that is on screen
+        const dx = x0 + off * scale, sx0 = Math.max(0, -dx / scale), sx1 = Math.min(L.c.width, (W - dx) / scale);
+        if (sx1 <= sx0) continue;
+        ctx.drawImage(L.c, sx0, b * bh, sx1 - sx0, bh + 1, dx + sx0 * scale, dy, (sx1 - sx0) * scale, dh);
       }
     }
   }

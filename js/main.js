@@ -1236,11 +1236,13 @@ function adaptQuality(realDt) {
   const q = renderer.quality ?? 1;
   // the floor is set by the real screen: never below ~90 % of a screen pixel (75 % on plain screens), so
   // the picture never turns soft or pixelated; on sharp (high-DPI) screens that leaves room to drop further
-  const floor = Math.min(0.75, 0.9 / Math.min(window.devicePixelRatio || 1, 1.5));
+  const floor = Math.min(0.75, 0.9 / Math.min(window.devicePixelRatio || 1, 1.25));
   if (frameEma > 1 / 45 && q > floor) { renderer.quality = Math.max(floor, q - 0.05); qualityT = 0; }
   // still slow at the floor: lite mode drops the costliest extras (the rim light on animals, the water
   // textures, the specks in the beams) instead of sharpness; they come back as soon as there is room
   else if (frameEma > 1 / 45 && !renderer.lite) { renderer.lite = true; qualityT = 0; }
+  // lite mode comes on first when frames are well under 40 a second, before any sharpness goes
+  if (frameEma > 1 / 38 && !renderer.lite) { renderer.lite = true; qualityT = 0; }
   else if (frameEma < 1 / 57 && renderer.lite && qualityT > 4) { renderer.lite = false; qualityT = 0; }
   else if (frameEma < 1 / 57 && q < 1 && qualityT > 3) { renderer.quality = Math.min(1, q + 0.05); qualityT = 0; }
   else if (qualityT > 3) qualityT = 1;

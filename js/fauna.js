@@ -301,7 +301,7 @@ export class Fauna {
     if (!opts.length) return;
     const b = rng.pick(opts);
     const sp = SPECIES_BY_ID[b.id];
-    const n = rng.int(b.n[0], b.n[1]);
+    const n = Math.round(rng.int(b.n[0], b.n[1]) * 0.65); // a third fewer fish than the table: still a big school, much cheaper
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
     // spacing: about a body length and a half between fish, never tighter than ~15 cm (tiny

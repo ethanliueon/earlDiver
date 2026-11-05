@@ -352,7 +352,7 @@ export class Hud {
     if (this.showFps) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.font = `${11 * s}px ${MONO}`;
       ctx.fillStyle = 'rgba(200,225,215,0.75)';
-      ctx.fillText(`${Math.round(this.fps || 0)} fps · ${Math.round(Math.min(1, (this.quality ?? 1) * Math.min(window.devicePixelRatio || 1, 1.5)) * 100)} % sharp${this.lite ? ' · lite' : ''}`, pad, H - pad * 0.4);
+      ctx.fillText(`${Math.round(this.fps || 0)} fps · ${Math.round(Math.min(1, (this.quality ?? 1) * Math.min(window.devicePixelRatio || 1, 1.25)) * 100)} % sharp${this.lite ? ' · lite' : ''}`, pad, H - pad * 0.4);
     }
     // ---------- cash, top left: what is safe at the boat, and what is in the bag ----------
     if (g.profile && !dying) {
