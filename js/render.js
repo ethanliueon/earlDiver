@@ -55,6 +55,8 @@ export function ambientAt(depth, dayLight) {
   return Math.sqrt(dayLight * Math.exp(-depth / 140));
 }
 
+// base brightness of every creature's living light (halo, the light it casts, and the organ itself)
+const BIO_BRIGHT = 0.6;
 // a creature's own light: a slow breathing pulse at its own rhythm, flaring when it is startled
 function bioPulse(c, t) {
   const rate = 0.45 + (c.wob % 1) * 0.6;
@@ -1824,7 +1826,7 @@ export class Renderer {
       if (core === undefined) { radial(x, y, gk < 1 ? r * 2.5 : Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7 * fx.bioPulse * gk); continue; }
       // a living light washes out under a lamp: the body's own colours and detail show instead
       const dim = p[6] = 1 - 0.8 * this.litAt(x, y);
-      const a = 0.4 * fx.bioPulse * gk * dim;
+      const a = 0.4 * BIO_BRIGHT * fx.bioPulse * gk * dim;
       if (a < 0.01) continue;
       if (r * 1.8 * k < 3) { l.fillStyle = rgbStr(hexToRgb(col), a * 0.4); l.beginPath(); l.arc(x * k, y * k, Math.max(1, r * 1.8 * k), 0, TAU); l.fill(); }
       else radial(x, y, r * 1.8, hexToRgb(col), a); // just enough to hint at the body around it
@@ -1951,11 +1953,11 @@ export class Renderer {
     for (const [x, y, col, r, k = 1, core, dim = 1] of glowPts) {
       if (core === undefined) { halo(x, y, k < 1 ? r * 1.4 : Math.max(r, ppm * 0.4), hexToRgb(col), 0.5 * haze * fx.bioPulse * k); continue; }
       const c = hexToRgb(col);
-      const ha = 0.5 * Math.max(haze, 0.4) * fx.bioPulse * k * dim;
+      const ha = 0.5 * BIO_BRIGHT * Math.max(haze, 0.4) * fx.bioPulse * k * dim;
       if (r < 5) { ctx.fillStyle = rgbStr(c, ha * 0.35); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); } // tiny halos: no gradient needed
       else halo(x, y, r, c, ha);
       // the organ itself: a small, sharp point; under a lamp only a faint coloured dot on the skin
-      ctx.fillStyle = rgbStr(mixRgb(c, [255, 255, 255], 0.45), Math.min(1, 0.85 * k * fx.bioPulse) * (0.3 + 0.7 * dim));
+      ctx.fillStyle = rgbStr(mixRgb(c, [255, 255, 255], 0.45), Math.min(1, 0.85 * k * fx.bioPulse) * BIO_BRIGHT * (0.3 + 0.7 * dim));
       ctx.beginPath(); ctx.arc(x, y, core, 0, TAU); ctx.fill();
     }
     if (g.lure) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
