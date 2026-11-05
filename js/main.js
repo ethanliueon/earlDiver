@@ -1137,7 +1137,7 @@ function update(dt) {
   const pulse = 0.5 + 0.5 * Math.sin(g.time * (2.2 + fx.pressure * 1.5));
   fx.lightPulse = 1 - fx.pressure * 0.45 * pulse - (fx.pressure > 0.6 && Math.random() < 0.03 ? 0.3 : 0);
   fx.bioPulse = 1 + fx.pressure * 0.9 * (0.5 + 0.5 * Math.sin(g.time * 3.1 + 1.3)) - fx.pressure * 0.3;
-  fx.shake = Math.max(fx.disorient * 0.25, fx.shake - dt * 1.5);
+  fx.shake = Math.max(fx.disorient * 0.45, fx.shake - dt * 1.5);
   fx.flash = Math.max(0, fx.flash - dt * 1.2);
   // sky darkens and the sea rises when it is close and shallow
   const shallowness = clamp((450 - ent.y) / 450, 0, 1);
@@ -1254,7 +1254,9 @@ function frame(now) {
   ui.update(g, dt);
   // dread colour grading on the scene canvas only
   const fx = g.fx;
-  const blurPx = Math.max(fx.disorient * 1.2, fx.pressure * 2.4);
+  // no steady blur: it comes in slow pulses, a swell of fog every few seconds that clears again
+  const blurAmp = Math.max(fx.disorient * 1.2, fx.pressure * 2.4);
+  const blurPx = Math.round(blurAmp * Math.pow(Math.max(0, Math.sin(g.time * 1.3)), 3) * 4) / 4;
   const f = `saturate(${(1 - fx.dread * 0.65 - fx.pressure * 0.25 - (g.injury >= 4 ? 0.45 : g.injury >= 3 ? 0.15 : 0)).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${blurPx > 0.25 ? ` blur(${blurPx.toFixed(1)}px)` : ''}`;
   const f2 = fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 && g.injury < 3 ? 'none' : f;
   if (f2 !== filterKey) { canvas.style.filter = f2; filterKey = f2; }

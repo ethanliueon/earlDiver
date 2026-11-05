@@ -127,7 +127,9 @@ export class Renderer {
       ctx.rotate(Math.sin(t * 0.7) * 0.03 * dis + Math.sin(t * 1.9) * 0.012 * dis);
       const z = 1 + Math.sin(t * 0.9) * 0.025 * dis;
       ctx.scale(z, z);
-      ctx.translate(-W / 2 + (Math.random() - 0.5) * fx.shake * ppm * 0.4, -H / 2 + (Math.random() - 0.5) * fx.shake * ppm * 0.4);
+      // a jolt (random jitter) plus, when disoriented, a slow uneasy lurch of the whole view
+      const lx = fbm1(t * 1.4, 2, 7) * dis * ppm * 0.5, ly = fbm1(t * 1.1 + 40, 2, 11) * dis * ppm * 0.35;
+      ctx.translate(-W / 2 + lx + (Math.random() - 0.5) * fx.shake * ppm * 0.4, -H / 2 + ly + (Math.random() - 0.5) * fx.shake * ppm * 0.4);
     }
 
     // ================= SKY =================
@@ -639,8 +641,10 @@ export class Renderer {
       // double vision
       this.gctx.clearRect(0, 0, W, H);
       this.gctx.drawImage(this.c, 0, 0);
-      ctx.globalAlpha = fx.ghost * 0.35;
-      ctx.drawImage(this.gc, Math.sin(t * 1.3) * ppm * 0.6 * fx.ghost, Math.cos(t * 1.1) * ppm * 0.3 * fx.ghost);
+      // the second image drifts apart and back together
+      const sep = fx.ghost * (0.6 + 0.4 * Math.sin(t * 0.8));
+      ctx.globalAlpha = fx.ghost * 0.45;
+      ctx.drawImage(this.gc, Math.sin(t * 1.3) * ppm * 0.9 * sep, Math.cos(t * 1.1) * ppm * 0.4 * sep);
       ctx.globalAlpha = 1;
     }
     // vignette
