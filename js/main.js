@@ -502,6 +502,7 @@ function readMove() {
 // ---------------- interactions ----------------
 function findTarget() {
   const e = g.earl, W = g.world;
+  if (e.inSub) return null; // the sub reaches for nothing but with its arm
   const tn = trapNear(g);
   if (tn) return { kind: 'trap', ...tn };
   const reach = e.inSub ? 7 : 2.4;
@@ -1156,9 +1157,9 @@ function update(dt) {
   fx.safeK = deepK;
   fx.darken = fx.dread * 0.6 * deepK;
   fx.vignette = fx.dread;
-  // pressure: the deeper past 300 m (outside the sub), the worse - also a failing hull
-  const pressT = !e.inSub && g.mode !== 'menu' ? clamp(Math.log(Math.max(1, g.diverDrain / (keys.has('shift') ? 2 : 1))) / Math.log(30), 0, 1)
-    : e.inSub ? g.sub.stress * 0.7 : 0;
+  // pressure: the deeper past 300 m, the worse. Only in the water: the sub's cabin is at surface
+  // pressure, and nothing in it sways, blurs or doubles the view (its hull warns by sound instead)
+  const pressT = !e.inSub && g.mode !== 'menu' ? clamp(Math.log(Math.max(1, g.diverDrain / (keys.has('shift') ? 2 : 1))) / Math.log(30), 0, 1) : 0;
   fx.pressure = lerp(fx.pressure || 0, pressT, 1 - Math.exp(-dt * 1.2));
   const entDis = d < 50 ? (50 - d) / 50 : 0;
   fx.disorient = lerp(fx.disorient, Math.max(entDis, fx.pressure * 0.85), dt * 1.2);
@@ -1173,6 +1174,7 @@ function update(dt) {
     fx.vignette = Math.max(fx.vignette, 0.6 + suff * 0.4);
     fx.black = Math.max(fx.black, Math.pow(suff, 2.2) * 0.85 * (0.85 + 0.15 * Math.sin(g.time * 2.3)));
   } else if (g.mode === 'play') fx.black = 0;
+  if (e.inSub) { fx.pressure = 0; fx.disorient = 0; fx.ghost = 0; }
   // lights throb under pressure: the lamps, the sub, and the glowing animals
   const pulse = 0.5 + 0.5 * Math.sin(g.time * (2.2 + fx.pressure * 1.5));
   fx.lightPulse = 1 - fx.pressure * 0.45 * pulse - (fx.pressure > 0.6 && Math.random() < 0.03 ? 0.3 : 0);
