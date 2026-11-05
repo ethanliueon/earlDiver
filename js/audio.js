@@ -310,16 +310,17 @@ export class Audio {
       if (this.groanT <= 0) { this.groanT = 9 + Math.random() * 12; this.groan(0.05 + fx.dread * 0.12); }
     }
     // hull
-    // only past its rating, and sparingly: every 10-16 s just past it, every 4-7 s deep past it
-    const rr = g.sub.y / g.sub.rated;
-    if (e.inSub && rr > 1 && !g.sub.imploded) {
-      const failing = g.sub.failing != null, k = clamp((rr - 1) / 0.5, 0, 1);
-      this.creakT = (this.creakT ?? 3) - dt;
-      if (this.creakT > 1.2 && failing) this.creakT = 0.4;
-      if (this.creakT <= 0) {
-        this.creakT = failing ? 0.7 + Math.random() * 0.5 : lerp(10, 4, k) + Math.random() * lerp(6, 3, k);
-        this.creak(failing ? 0.9 + Math.random() * 0.3 : 0.25 + g.sub.stress * 0.5);
-      }
-    }
+    // only at the moments that matter: going past its rating, going past crush depth (1.5x), and
+    // while the hull is failing; nothing in between (hits creak it too, see ram)
+    const rr = g.sub.y / g.sub.rated, zone = !e.inSub || g.sub.imploded ? 0 : rr > 1.5 ? 2 : rr > 1 ? 1 : 0;
+    if (zone > (this.hullZone || 0)) this.creak(zone === 2 ? 0.9 : 0.6);
+    // back up out of a zone (with a little room, so hovering at the line does not repeat it)
+    if (zone < (this.hullZone || 0) && rr < (this.hullZone === 2 ? 1.45 : 0.97)) this.hullZone = zone;
+    else if (zone > (this.hullZone || 0)) this.hullZone = zone;
+    if (!e.inSub) this.hullZone = 0;
+    if (e.inSub && g.sub.failing != null && !g.sub.imploded) {
+      this.creakT = (this.creakT ?? 0) - dt;
+      if (this.creakT <= 0) { this.creakT = 0.9 + Math.random() * 0.6; this.creak(0.9 + Math.random() * 0.3); }
+    } else this.creakT = 0.3;
   }
 }

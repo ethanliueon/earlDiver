@@ -27,6 +27,7 @@ const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 9
 // Where an animal actually lives, when the recorded range (the deepest and shallowest it was ever
 // found) is far wider than its everyday one. Day ranges; NIGHT is where night migrators rise to.
 const CORE = {
+  98: [300, 1000], 162: [400, 2140], 110: [1000, 4720], 107: [600, 1200],
   100: [600, 2500],  // humpback anglerfish: adults mostly 1,000-2,000 m, rarely above 500
   101: [500, 2000],  // fangtooth
   102: [500, 1500],  // Sloane's viperfish (by day)
@@ -50,7 +51,7 @@ const CORE = {
   4: [3, 60], 10: [1, 50], 30: [20, 120], 15: [1, 60],
 };
 // night migrators: where they rise to after dark
-const NIGHT = { 102: [200, 900], 103: [50, 600], 90: [0, 300], 42: [0, 100], 148: [0, 200], 151: [0, 100], 88: [10, 60], 105: [500, 1500] };
+const NIGHT = { 102: [200, 900], 103: [150, 600], 90: [150, 600], 42: [0, 100], 148: [0, 200], 151: [100, 400], 88: [10, 60], 105: [500, 1500] };
 // How likely an animal is to be met at depth y: best through the middle of its everyday range,
 // a little less at its edges, and outside it rare (rarer the further out) - but never impossible
 // within the depths it has really been recorded at.
@@ -242,6 +243,7 @@ export class Fauna {
       let best = null, bd = 1e9;
       for (const kind of H.k) for (const h of W.homesNear(kind, x, y, 40)) {
         if (h.y < s.dmin || h.y > s.dmax) continue;
+        if (this.depthPref(s, h.x, h.y, this.night) <= 0) continue;
         if (h.occ && live.has(h.occ)) continue;
         if (TROPICAL.has(s.id) && !onTropicalReef(h.x)) continue;
         if (COLD.has(s.id) && onTropicalReef(h.x)) continue;
@@ -256,7 +258,7 @@ export class Fauna {
     const cands = SWIMMERS.filter((s) => {
       if (HOME[s.id]) return false; // reef and bottom animals are residents of their homes (see settle)
       if (OFFSHORE.has(s.id) && floorHere < 90) return false;           // open-ocean animals: only over deep water
-      return y >= s.dmin && y <= s.dmax && habitatOk(s, x, y, W); // within what has ever been recorded (how likely: depthPref)
+      return y >= s.dmin && y <= s.dmax && habitatOk(s, x, y, W) && this.depthPref(s, x, y, this.night) > 0; // within what has ever been recorded (how likely: depthPref)
     });
     if (!cands.length) return;
     const wOf = (c) => {
@@ -354,6 +356,9 @@ export class Fauna {
 
   depthPref(sp, x, y, night) {
     const [lo, hi] = this.depthBand(sp, x, night);
+    // a deep animal (one that lives from 150 m down) is never met far above its band: none of the
+    // rare strays into the shallows the records allow (no anglerfish at 130 m)
+    if (lo >= 150 && y < lo - Math.max(50, lo * 0.25)) return 0;
     if (y >= lo && y <= hi) { const half = Math.max(1, (hi - lo) / 2); return 0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half); }
     const d = y < lo ? lo - y : y - hi, scale = Math.max(30, (hi - lo) * 0.3);
     return 0.07 * Math.exp(-d / scale);

@@ -20,8 +20,8 @@ by a hidden calm meter that fills with peaceful catches, sales and photos.
 Recorded effects (CC0, see the README): water lapping, softly, only while air is going in at the
 surface (for as long as the refill takes, fading as the tank fills), now and then
 a gull by day; a plop as an animal goes into a chamber, a splash into the open tank; the hull
-creaking past its rating (now and then: every 10-16 s just past it, every 4-7 s far past it, about
-once a second while it fails) and the implosion;
+creaking once past its rating, once past crush depth, when hit, and about once a second while it
+fails and the implosion;
 soft clicks and a hover tick for the menus, a soft page turn as the journal opens (the other
 screens open silently), coins for a sale. Nothing of Earl himself
 is recorded.
@@ -123,7 +123,7 @@ Tools change their look as they are levelled (the hand net grows into a pro capt
 - From inside the sub, things within reach in the water are still offered (collect, observe, haul a
   trap). Its cabin is at surface pressure, so the pressure and the entity's sway, blur and double
   vision only ever happen in the water.
-- Catches (the net's and the arm's) go in the catch bag (3/5/8). Nothing moves by itself: in the
+- Catches (the net's and the arm's) go in the catch bag (5 to start, one more a level). Nothing moves by itself: in the
   tank room (T) drag each one into a chamber or the open tank (4/8/12).
 
 ## Rare forms
@@ -136,7 +136,8 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
 
 - An old riveted bathyscaphe at the boat (F to board, hold F to leave). Cruises at 3.4 m/s
   (Engine upgrades), dives no faster, rises 1.2x faster. Rated 300 m at first,
-  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. Past its rating the hull creaks now and then (no messages, only the sound); past 1.5x it can
+  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. The hull creaks once going past its rating and once past crush depth (1.5x), and
+  when hit; no messages, and no creaking in between. Past 1.5x it can
   give at any moment (1 in 20 a second at 1.5x, about 1 in 3 at 1.75x). When it starts to go there are
   3.5 s of loud creaking and shaking: climb 6 m (or back above 1.45x) and it holds. If not, it
   implodes with Earl inside: the hull folds in for a fifth of a second, a white flash, the gas
@@ -218,8 +219,8 @@ chamber can hold where the sub is; the needle turns amber when the animal needs 
 animal in pumps the chamber up to its home depth (30 m/s); held there it recovers. There is no
 valve to work: a chamber simply holds what it can.
 
-The tank room: the open tank set into the wall (gravel, weed, an airstone; room for 2 animals at
-first, up to 8 with the Open tank upgrade) and the catch bag hanging on its hook.
+The tank room: the open tank set into the wall (gravel, weed, an airstone; room for 3 animals at
+first, up to 9 with the Open tank upgrade) and the catch bag hanging on its hook.
 
 Each animal has a small brass tag: its name, where it was found, and how it is in a word (healthy,
 stressed, weak, dying, dead). Animals are moved by hand: drag one from the bag into a

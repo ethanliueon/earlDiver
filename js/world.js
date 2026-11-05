@@ -2,6 +2,8 @@
 // sea lanterns, pickups, sapphires and the static (seafloor) creatures.
 import { makeRng, fbm1, clamp, lerp, smoothstep, pointInPoly, closestOnSeg } from './util.js';
 import { SPECIES, isStaticHab } from './species.js';
+// the shallowest the game puts these deep-sea bottom animals (their recorded minimums are rare outliers)
+const DEEP_FLOOR = { 130: 250, 131: 250, 132: 400, 162: 300, 170: 1000, 163: 2000, 180: 1600 };
 
 // 3,000 m wide, 4,000 m deep. The shore is on the right (east); the deep ocean and a sheer wall
 // with a trench at its foot are on the left (west). The shallow half (shelf, wreck, kelp, reef,
@@ -313,12 +315,13 @@ export function generateWorld(seed) {
   for (const s of W.sapphires) W.pickups.push(s);
 
   // ---- Static seafloor life ----
+  // deep bottom life is never set out in the shallows, whatever the records' shallowest find
   W.statics = [];
   const statics = SPECIES.filter((s) => isStaticHab(s.v.hab) && s.id !== 118 && s.id !== 119);
   for (let x = 1; x < WORLD_W - 25; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6) * (x > EAST + 880 ? 0.6 : 1)) {
     const d = W.floorAt(x);
     if (d < 0.6) continue;
-    const cands = statics.filter((s) => d >= s.dmin && d <= s.dmax);
+    const cands = statics.filter((s) => d >= Math.max(s.dmin, DEEP_FLOOR[s.id] || 0) && d <= s.dmax);
     if (!cands.length) continue;
     // weight corals, anemones, sponges and seagrass higher in the shallows so the reef reads as a reef
     let sp;

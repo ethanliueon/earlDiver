@@ -151,7 +151,7 @@ export const UPGRADES = {
   air:       { group: 'Diver', name: 'Air', base: 50, step: 5, max: 50, cost: 0.5, growth: 1.12, fmt: 's' },
   sprint:    { group: 'Diver', name: 'Sprint', base: 1.5, step: 0.03, max: 15, cost: 0.75, growth: 1.25, fmt: 'x' },
   swim:      { group: 'Diver', name: 'Swim speed', base: 1, step: 0.02, max: 20, cost: 1, growth: 1.25, fmt: 'x' },
-  bag:       { group: 'Diver', name: 'Bag space', base: 3, step: 1, max: 6, cost: 2, growth: 1.9, fmt: 'n' },
+  bag:       { group: 'Diver', name: 'Bag space', base: 5, step: 1, max: 6, cost: 2, growth: 1.9, fmt: 'n' },
   // the net
   netSize:   { group: 'Net', name: 'Net size', base: 0.45, step: 0.05, max: 15, cost: 0.5, growth: 1.4, fmt: 'cm' },
   netReach:  { group: 'Net', name: 'Net reach', base: 1.2, step: 0.1, max: 14, cost: 0.75, growth: 1.4, fmt: 'm' },
@@ -178,7 +178,7 @@ export const UPGRADES = {
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, step: 1, max: 2, cost: 25, growth: 2, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, step: 1, max: 4, cost: 5, growth: 1.9, fmt: 'n' },
   pressRating: { group: 'Submersible', name: 'Chamber rating', base: 400, step: 150, max: 18, cost: 1.5, growth: 1.22, fmt: 'depth' },
-  subTank:   { group: 'Submersible', name: 'Open tank', base: 2, step: 1, max: 6, cost: 1.5, growth: 1.6, fmt: 'n' },
+  subTank:   { group: 'Submersible', name: 'Open tank', base: 3, step: 1, max: 6, cost: 1.5, growth: 1.6, fmt: 'n' },
   // the claw
   armReach:  { group: 'Claw', needs: 'arm', name: 'Reach', base: 3, step: 0.25, max: 12, cost: 3, growth: 1.3, fmt: 'm' },
   armSize:   { group: 'Claw', needs: 'arm', name: 'Jaw size', base: 1.0, step: 0.1, max: 10, cost: 3, growth: 1.3, fmt: 'cm' },
@@ -225,7 +225,7 @@ export const UPGRADE_DESC = {
   depth: 'A stronger pressure hull: the sub is rated 75 m deeper. Past its rating, the cabin leaks air faster and faster.',
   subAir: 'A bigger air bank in the cabin: more time below.',
   subSpeed: 'A stronger motor: faster everywhere.',
-  subTank: 'Room for one more animal in the open tank, in the back of the sub (you start with two).',
+  subTank: 'Room for one more animal in the open tank, in the back of the sub (you start with three).',
   airTanks: 'Room in the sub for one more backup air tank (you start with room for one, up to three).',
   pressTanks: 'One more pressure chamber in the tank room (you start with one). An animal sealed in one is pumped back up to the pressure it was caught at, takes no harm on the way up, and slowly recovers. T in the sub.',
   pressRating: 'Thicker acrylic and stronger seals: every chamber holds 150 m more over the water outside. A chamber keeps an animal at its own pressure until the sub climbs above its home depth less the rating.',
