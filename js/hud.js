@@ -179,7 +179,8 @@ export class Hud {
       ctx.fillStyle = 'rgba(236,240,240,0.94)'; ctx.fillText(dtxt, rx0, pad);
     }
     // ---------- air: a short, thick, blue tank gauge under it ----------
-    const o2 = e.inSub ? g.sub.o2 / g.sub.o2Max : e.o2 / e.o2Max;
+    const onTank = e.inSub && g.sub.o2 <= 0; // an empty cabin: the gauge shows his own tank
+    const o2 = e.inSub && !onTank ? g.sub.o2 / g.sub.o2Max : e.o2 / e.o2Max;
     const bw = 96 * s, bh = 12 * s, bx = rx0 - bw, by = pad + 58 * s;
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.fill();
     const oc = o2 > 0.25 ? [80, 170, 240] : o2 > 0.1 ? [230, 170, 60] : [225, 55, 45];
@@ -191,11 +192,12 @@ export class Hud {
     ctx.restore();
     ctx.strokeStyle = 'rgba(180,215,240,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.stroke();
     ctx.font = `500 ${11 * s}px ${MONO}`; ctx.textAlign = 'right';
-    if (g.noAir) { ctx.fillStyle = Math.sin(g.time * 9) > 0 ? '#ff5040' : '#a02820'; ctx.fillText(e.inSub ? 'CABIN: NO AIR' : 'NO AIR', bx - 8 * s, by); }
+    if (g.noAir) { ctx.fillStyle = Math.sin(g.time * 9) > 0 ? '#ff5040' : '#a02820'; ctx.fillText('NO AIR', bx - 8 * s, by); }
+    else if (onTank) { ctx.fillStyle = '#e8b040'; ctx.fillText('CABIN EMPTY · O₂', bx - 8 * s, by); }
     else { ctx.fillStyle = 'rgba(180,215,240,0.75)'; ctx.fillText(e.inSub ? 'CABIN O₂' : 'O₂', bx - 8 * s, by); }
     let ly = by + bh + 6 * s;
     ctx.font = `${11 * s}px ${MONO}`;
-    const left = e.inSub ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
+    const left = e.inSub && !onTank ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
     const sec = Math.max(0, Math.floor(left));
     if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText((g.noAirRate || 1) > 1.3 ? 'under pressure — surface!' : 'holding your breath — surface!', rx0, ly); ly += 15 * s; }
     else if (e.atSurface && o2 < 0.999) { ctx.fillStyle = 'rgba(180,215,240,0.65)'; ctx.fillText('refilling…', rx0, ly); ly += 15 * s; }

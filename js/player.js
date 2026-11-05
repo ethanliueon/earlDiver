@@ -83,12 +83,19 @@ export function updateEarl(g, dt, inp) {
     // oxygen
     const surf = sub.y < 2.2;
     if (surf) sub.o2 = Math.min(sub.o2Max, sub.o2 + (sub.o2Max / 4) * dt);
-    else sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(sub) * (g.homeRun ? 0.8 : 1) * (g.airMul || 1); // a steady autopilot is thriftier
+    else if (sub.o2 > 0) sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(sub) * (g.homeRun ? 0.8 : 1) * (g.airMul || 1); // a steady autopilot is thriftier
     e.atSurface = surf;
     // hull
     const r = sub.y / sub.rated;
     sub.stress = clamp((r - 0.85) / 0.45, 0, 1);
-    if (sub.o2 <= 0) { sub.o2 = 0; return 'sub-o2'; }
+    if (sub.o2 <= 0) {
+      // the cabin is empty: he stays at the controls on his own tank. The cabin is still at surface
+      // pressure, so depth doesn't make his air go faster (only injury does)
+      sub.o2 = 0;
+      if (!surf) e.o2 -= dt * e.o2Mul * (g.airMul || 1);
+      if (e.o2 <= 0) { e.o2 = 0; return 'o2'; }
+      return 'cabin-empty';
+    }
   } else {
     // ---- diver ----
     let sp = DIVE_SPEED * (inp.sprint ? e.sprintMul || 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed;

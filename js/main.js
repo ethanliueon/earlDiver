@@ -29,10 +29,6 @@ const hudCanvas = document.getElementById('hud');
 const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
 const audio = new Audio();
-// the home screen's music switch: your track, or music the game makes itself (N in a dive)
-const musicBtn = document.getElementById('music-mode');
-const musicLabel = () => { if (musicBtn) musicBtn.textContent = audio.musicMode === 'gen' ? 'Music: generated' : 'Music: your track'; };
-if (musicBtn) { musicLabel(); musicBtn.addEventListener('click', () => { audio.setMusicMode(audio.musicMode === 'gen' ? 'track' : 'gen'); musicLabel(); }); }
 
 const keys = new Set();
 const PRY = new Set(['clam', 'mussel', 'rock', 'iron']);
@@ -593,8 +589,8 @@ function interact(t, exitSub) {
     p.taken = true;
     audio.ready && audio.pickup();
   } else if (t.kind === 'board') {
-    if (sub.o2 < 1 && sub.y > 2.2) { hud.toast('The cabin has no air left — send her up first (hold C)', 'warn'); return; }
     e.inSub = true; sub.docked = false;
+    if (sub.o2 < 1 && sub.y > 2.2) hud.toast('The cabin has no air: you breathe from your own tank in here', 'warn');
     const moved = transferToTank(g);
     hud.toast(moved ? `Inside the submersible · ${moved} specimen${moved > 1 ? 's' : ''} into the tanks (T: the tank room)` : 'Inside the submersible');
     audio.ready && audio.click();
@@ -685,7 +681,7 @@ function causeText(kind) {
   switch (kind) {
     case 'entity': return `Taken at ${d} m`;
     case 'o2': return g.imploded ? `The submersible imploded at ${Math.round(g.implodeDepth)} m` : d > 300 ? `Ran out of air under pressure at ${d} m` : `Ran out of air at ${d} m`;
-    case 'sub-o2': return `The submersible ran out of air at ${d} m`;
+    case 'sub-o2': return `Ran out of air in the submersible at ${d} m`;
     default: return kind;
   }
 }
@@ -793,7 +789,6 @@ function update(dt) {
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
     if (pressed.has('p')) { hud.showFps = !hud.showFps; }
-    if (pressed.has('n')) { audio.setMusicMode(audio.musicMode === 'gen' ? 'track' : 'gen'); musicLabel(); hud.toast(audio.musicMode === 'gen' ? 'Music: generated' : 'Music: your track'); }
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
     const day = tickAquarium(profile, dt);
@@ -1005,13 +1000,11 @@ function update(dt) {
     }
     // out of air: not instant death - about 15 s of air hunger, blacking out, before it is over.
     // Reaching the surface (or the sub's air) in time brings Earl back, gasping.
-    // the cabin is out of air: the first thing that happens is he gets out, onto his own tank
-    if (res === 'sub-o2' && e.inSub) {
-      g.homeRun = false; g.autopilot.cancel();
-      leaveSub();
-      hud.toast('The cabin is out of air — you bail out', 'warn');
-    } else if (res === 'o2') {
-      if (!g.noAir) { g.noAir = 0.001; g.noAirCause = res; hud.toast(res === 'o2' ? 'Out of air — get to the surface' : 'The cabin is out of air — surface!', 'warn'); }
+    // the cabin is out of air: he stays in, breathing from his own tank (no depth effect in the cabin)
+    if (res === 'cabin-empty' && !g.cabinWarned) { g.cabinWarned = true; hud.toast('The cabin is out of air: you breathe from your own tank', 'warn'); }
+    if (g.sub.o2 > 1) g.cabinWarned = false;
+    if (res === 'o2') {
+      if (!g.noAir) { g.noAir = 0.001; g.noAirCause = e.inSub ? 'sub-o2' : 'o2'; hud.toast(e.inSub ? 'Your tank is empty too: surface, or open a backup tank (R)' : 'Out of air — get to the surface', 'warn'); }
       // under pressure air hunger comes on far faster: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m
       g.noAirRate = e.inSub ? 1 : Math.pow(diverDrainMult(e.y, e.pressStart || 300), 0.75); // pressure eats the breath hold fast
       g.noAir += dt * g.noAirRate;
@@ -1023,11 +1016,11 @@ function update(dt) {
     // an empty sub at the surface (or docked) airs out its cabin
     if (!e.inSub && !g.sub.imploded && g.sub.y < 2.2 && g.sub.o2 < g.sub.o2Max) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max / 4 * dt);
     // diver tank refills from the sub's air
-    if (e.inSub && e.o2 < e.o2Max) { const r = Math.min(e.o2Max - e.o2, (e.o2Max / 3.5) * dt); e.o2 += r; }
-    g.diverDrain = diverDrainMult(e.y, e.pressStart || 300) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
+    if (e.inSub && g.sub.o2 > 0 && e.o2 < e.o2Max) { const r = Math.min(e.o2Max - e.o2, (e.o2Max / 3.5) * dt); e.o2 += r; } // (only while the cabin has air to give)
+    g.diverDrain = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
     g.diverDrain *= e.o2Mul;
     g.subDrain = subDrainMult(g.sub.y, g.sub.rated) * (mv.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(g.sub);
-    if (!e.inSub && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical — surface', 'warn'); }
+    if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical — surface', 'warn'); }
     if (e.atSurface) g.lowO2Warned = false;
 
     // lure physics

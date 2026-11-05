@@ -23,7 +23,7 @@ const BAIT = [
 ];
 
 // Species that migrate up toward the surface at night and back down by day.
-const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90]);
+const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90, 42]);
 // Where an animal actually lives, when the recorded range (the deepest and shallowest it was ever
 // found) is far wider than its everyday one. Day ranges; NIGHT is where night migrators rise to.
 const CORE = {
@@ -37,8 +37,23 @@ const CORE = {
   89: [180, 1100],   // bluntnose sixgill
   75: [300, 2500],   // Patagonian toothfish
   54: [200, 1000],   // giant oarfish
+  // the rest of the deep: where each is usually met, not the extremes ever recorded
+  104: [600, 800], 105: [700, 2000], 106: [900, 2500], 108: [150, 300], 109: [500, 2500], 111: [100, 900],
+  73: [300, 1500], 74: [500, 1500], 85: [200, 1500], 88: [100, 500], 97: [50, 500], 141: [200, 700],
+  146: [1500, 4000], 149: [400, 1000], 150: [600, 1000], 151: [200, 400], 148: [200, 700], 176: [500, 1500], 178: [300, 1000],
+  // open-ocean giants: they can dive deep, but they are mostly met near the top
+  39: [0, 500], 40: [0, 150], 41: [0, 200], 42: [300, 600], 43: [0, 100], 44: [0, 200], 46: [0, 400], 53: [50, 400],
+  76: [0, 250], 77: [0, 300], 78: [0, 150], 79: [0, 300], 82: [0, 500], 83: [0, 350], 84: [0, 200], 91: [0, 120],
+  // cold-water bottom fish
+  60: [20, 300], 61: [40, 300], 62: [30, 300], 68: [10, 300], 69: [50, 400], 70: [20, 500], 59: [20, 200],
+  // reef fish recorded deep but at home in the shallows
+  4: [3, 60], 10: [1, 50], 30: [20, 120], 15: [1, 60],
 };
-const NIGHT = { 102: [200, 900], 103: [50, 600], 90: [0, 300] };
+// night migrators: where they rise to after dark
+const NIGHT = { 102: [200, 900], 103: [50, 600], 90: [0, 300], 42: [0, 100], 148: [0, 200], 151: [0, 100], 88: [10, 60], 105: [500, 1500] };
+// How likely an animal is to be met at depth y: best through the middle of its everyday range,
+// a little less at its edges, and outside it rare (rarer the further out) - but never impossible
+// within the depths it has really been recorded at.
 // Never flee from Earl: drifters, slow or curious animals, and the things that might attack him.
 const NO_FLEE = new Set([46, 77, 84, 88, 31, 32, 33, 183, 107, 100, 67, 12, 11, 141, 184, 185, 186, 187, 76, 78, 82, 83, 80, 42, 43, 44, 148, 89, 85]);
 const DIVE_SPEED = 1.68; // Earl's speed: fish escape at 0.55-1.5x it
@@ -180,7 +195,7 @@ export class Fauna {
           if (rng() < p) {
             const cands = SWIMMERS.filter((s) => { const R = HOME[s.id];
               return R && R.k.includes(kind) && h.y >= s.dmin && h.y <= s.dmax && !(TROPICAL.has(s.id) && !onTropicalReef(h.x)) && !(COLD.has(s.id) && onTropicalReef(h.x)); });
-            if (cands.length) { let tot = 0; for (const c of cands) tot += weightOf(c); let r = rng() * tot; for (const c of cands) { r -= weightOf(c); if (r <= 0) { h.res = c.id; break; } } if (!h.res) h.res = cands[0].id; }
+            if (cands.length) { const wt = (c) => weightOf(c) * this.depthPref(c, h.x, h.y, this.night); let tot = 0; for (const c of cands) tot += wt(c); let r = rng() * tot; for (const c of cands) { r -= wt(c); if (r <= 0) { h.res = c.id; break; } } if (!h.res) h.res = cands[0].id; }
           }
         }
         if (!h.res || residents > 60) continue;
@@ -241,13 +256,11 @@ export class Fauna {
     const cands = SWIMMERS.filter((s) => {
       if (HOME[s.id]) return false; // reef and bottom animals are residents of their homes (see settle)
       if (OFFSHORE.has(s.id) && floorHere < 90) return false;           // open-ocean animals: only over deep water
-      if (y < s.dmin || y > s.dmax || !habitatOk(s, x, y, W)) return false;
-      const [lo, hi] = this.depthBand(s, x, this.night);
-      return y >= lo - 15 && y <= hi + 15;
+      return y >= s.dmin && y <= s.dmax && habitatOk(s, x, y, W); // within what has ever been recorded (how likely: depthPref)
     });
     if (!cands.length) return;
     const wOf = (c) => {
-      let w = weightOf(c);
+      let w = weightOf(c) * this.depthPref(c, x, y, this.night);
       if (this.bleeding && /Shark/.test(c.cat)) w *= 3;           // blood in the water
       if (this.night && /Shark/.test(c.cat)) w *= 1.6;            // sharks hunt at night
       if (c.id === 185 || c.id === 186) w *= 2.5;                 // dolphin pods are fairly common near the surface
@@ -339,6 +352,12 @@ export class Fauna {
     return c;
   }
 
+  depthPref(sp, x, y, night) {
+    const [lo, hi] = this.depthBand(sp, x, night);
+    if (y >= lo && y <= hi) { const half = Math.max(1, (hi - lo) / 2); return 0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half); }
+    const d = y < lo ? lo - y : y - hi, scale = Math.max(30, (hi - lo) * 0.3);
+    return 0.07 * Math.exp(-d / scale);
+  }
   // the depth band this animal wants to be in right now (migrators move up at night)
   depthBand(sp, x, night) {
     const core = (night && NIGHT[sp.id]) || CORE[sp.id];
