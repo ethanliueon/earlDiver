@@ -160,7 +160,7 @@ export const UPGRADES = {
   // the diver
   air:       { group: 'Diver', name: 'Air', base: 50, step: 5, max: 50, cost: 0.5, growth: 1.12, fmt: 's' },
   sprint:    { group: 'Diver', name: 'Sprint', base: 1.5, step: 0.03, max: 15, cost: 0.75, growth: 1.25, fmt: 'x' },
-  swim:      { group: 'Diver', name: 'Swim speed', base: 1, step: 0.02, max: 20, cost: 1, growth: 1.25, fmt: 'x' },
+  swim:      { group: 'Diver', name: 'Swim speed', base: 1, step: 0.15, max: 10, cost: 3, growth: 1.45, fmt: 'x' }, // 2.5x at level 10
   bag:       { group: 'Diver', name: 'Bag space', base: 5, step: 1, max: 6, cost: 2, growth: 1.9, fmt: 'n' },
   // the net
   netSize:   { group: 'Net', name: 'Net size', base: 0.45, step: 0.05, max: 15, cost: 0.5, growth: 1.4, fmt: 'cm' },
@@ -215,7 +215,7 @@ export const UPGRADE_DESC = {
   paySalvage: 'Contacts in the scrap trade. Clams, iron, ink, pearls and sapphires sell for 5 % more per level.',
   air: 'A bigger cylinder: 5 more seconds of air per level.',
   sprint: 'Stronger kicks when you sprint (Shift). Sprinting still uses air twice as fast.',
-  swim: 'Better fins and technique: faster everyday swimming, at no extra air.',
+  swim: 'Better fins and technique: +15 % everyday swimming speed per level, at no extra air. 2.5x at level 10.',
   bag: 'One more pocket in the catch bag for a live animal.',
   netSize: 'A wider hoop and a deeper bag: the net takes bigger fish.',
   netReach: 'A longer handle: sweep from further away, before a fish notices you.',
@@ -312,7 +312,8 @@ export const WARES = {
   eye: { name: 'A sapphire eye', coins: 8, once: true, line: 'A blue stone that turns toward its own kind.', desc: 'Deep sapphires within 150 m show on the sonar as blue points. Kept for good.' },
   relic: { name: 'A pressure relic', coins: 5, max: 4, line: 'An iron ring from a hull that went deeper than it should have.', desc: 'Bolted inside the sub: its rating goes 100 m deeper. Up to four.' },
 };
-export const lv = (P, id) => (P.lv && P.lv[id]) || 0;
+// (never past the top level: an old save may hold more levels than an upgrade now has)
+export const lv = (P, id) => Math.min((P.lv && P.lv[id]) || 0, UPGRADES[id] ? UPGRADES[id].max : Infinity);
 export const statValue = (P, id) => { const U = UPGRADES[id]; return U.base + U.step * lv(P, id); };
 export function upgradeCost(P, id) {
   const U = UPGRADES[id], c = U.cost * Math.pow(U.growth, lv(P, id));

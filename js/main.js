@@ -68,7 +68,7 @@ function devMaxAll() {
   P.traps = Object.fromEntries(TRAP_ORDER.map((k) => [k, TRAPS[k].max]));
   for (const k of Object.keys(SUPPLIES)) g.items[k] = supplyMax(P, k);
   P.cash = Math.max(P.cash || 0, 100000); P.coins = Math.max(P.coins || 0, 500);
-  g.addons = P.addons; applySuit(e, P);
+  g.addons = P.addons; applySuit(e, P); e.finSpeed = statValue(P, 'swim'); e.sprintMul = statValue(P, 'sprint');
   if (g.sub.imploded) { g.sub = new Sub(); g.sub.docked = true; g.imploded = false; }
   applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = 1; g.sub.crushR = null;
   e.o2Max = Math.max(e.o2Max, statValue(P, 'air')); e.o2 = e.o2Max; g.shots = gear(P, 'cam').shots;
