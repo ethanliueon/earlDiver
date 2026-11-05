@@ -7,7 +7,7 @@ import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { activeTool } from './capture.js';
-import { drawShipwreck, drawVentChimney } from './scenery_draw.js';
+import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawTrap, drawBuoy } from './tools_draw.js';
 import { armPose } from './arm.js';
 import { drawAquarium } from './aquarium_draw.js';
@@ -1258,47 +1258,28 @@ export class Renderer {
     }
   }
 
+  // Rocks and ledges are drawn once into a picture (see drawRockArt) and reused; the ones that have
+  // not been seen for a while are let go, so memory stays small however far Earl wanders.
   drawRock(ctx, rk, S, Sy, ppm) {
-    ctx.beginPath();
-    for (const p of rk.poly) ctx.lineTo(S(p.x), Sy(p.y));
-    ctx.closePath();
-    const d = (rk.y0 + rk.y1) / 2;
-    const base = mixRgb(sampleTable(FLOOR_COL, d), [50, 48, 46], 0.6);
-    const gr = ctx.createLinearGradient(0, Sy(rk.y0), 0, Sy(rk.y1));
-    gr.addColorStop(0, rgbStr(mixRgb(base, [200, 200, 190], 0.15))); gr.addColorStop(0.5, rgbStr(base)); gr.addColorStop(1, rgbStr(mixRgb(base, [0, 0, 0], 0.6)));
-    ctx.fillStyle = gr; ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = Math.max(1, ppm * 0.04); ctx.stroke();
-    // encrusting life specks
-    ctx.save(); ctx.clip();
-    this.texture(ctx, 'rock', 11, 0.55, 'soft-light', S(rk.x0 * 0.37), Sy(rk.y0 * 0.61));
-    if (ppm > 14) this.texture(ctx, 'grain', 2.3, 0.3, 'soft-light', S(0), Sy(0));
-    // cracks running in from the edges, made once per rock
-    if (!rk.cracks) {
-      let sd = Math.abs(Math.sin(rk.x0 * 12.9898 + rk.y0 * 78.233) * 43758.5453);
-      const rnd = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
-      const cx = (rk.x0 + rk.x1) / 2, cy = (rk.y0 + rk.y1) / 2;
-      rk.cracks = [];
-      const n = 2 + Math.floor(rnd() * 3);
-      for (let k = 0; k < n; k++) {
-        const v = rk.poly[Math.floor(rnd() * rk.poly.length)];
-        const pts = [[v.x, v.y]];
-        let px = v.x, py = v.y;
-        const len = 0.25 + rnd() * 0.45;
-        for (let j = 0; j < 4; j++) { px = lerp(px, cx, len / 2.2) + (rnd() - 0.5) * 0.6; py = lerp(py, cy, len / 2.2) + (rnd() - 0.5) * 0.6; pts.push([px, py]); }
-        rk.cracks.push(pts);
-      }
+    let C = rk._spr;
+    if (!C || ppm > C.bp * 1.3) {
+      const bp = Math.min(Math.max(ppm, 24) * 1.2, 72, 3600 / Math.max(1, rk.x1 - rk.x0 + 3));
+      const mg = 1.4; // room above for growth
+      const ox = rk.x0 - mg, oy = rk.y0 - mg * 2, cw = Math.ceil((rk.x1 - rk.x0 + mg * 2) * bp), ch = Math.ceil((rk.y1 - rk.y0 + mg * 3) * bp);
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      const x = c.getContext('2d');
+      const d = (rk.y0 + rk.y1) / 2;
+      const base = mixRgb(sampleTable(FLOOR_COL, d), [50, 48, 46], 0.55);
+      const tile = x.createPattern(this.noiseTile('rock', 192, 11, 5, 1.3), 'repeat');
+      drawRockArt(x, rk.poly.map((p) => [(p.x - ox) * bp, (p.y - oy) * bp]), rk.kind, d, rk.seed, bp, tile, base);
+      C = rk._spr = { c, bp, ox, oy, cw, ch };
+      const keep = this.rockSprites || (this.rockSprites = []);
+      keep.push(rk); if (keep.length > 120) { const old = keep.shift(); if (old !== rk) old._spr = null; }
     }
-    ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = Math.max(1, ppm * 0.035);
-    for (const cr of rk.cracks) { ctx.beginPath(); for (const [cx2, cy2] of cr) ctx.lineTo(S(cx2), Sy(cy2)); ctx.stroke(); }
-    ctx.fillStyle = d < 200 ? 'rgba(160,120,90,0.25)' : 'rgba(200,200,190,0.12)';
-    for (let k = 0; k < 10; k++) {
-      const p = rk.poly[(k * 3) % rk.poly.length];
-      ctx.beginPath(); ctx.arc(S(p.x) + Math.sin(rk.seed + k) * ppm * 0.4, Sy(p.y) + Math.cos(rk.seed + k) * ppm * 0.4, Math.max(1, ppm * 0.15), 0, TAU); ctx.fill();
-    }
-    ctx.restore();
+    const k = ppm / C.bp;
+    ctx.drawImage(C.c, S(C.ox), Sy(C.oy), C.cw * k, C.ch * k);
   }
 
-  // ---------- baked kelp backdrop ----------
   bakeKelpBackdrop(world) {
     const PX = 22, X0 = EAST + 760, X1 = EAST + 935, DEP = 46; // pixels per metre, world span, depth span
     const layers = [];
@@ -1396,8 +1377,8 @@ export class Renderer {
     // every bladder into a third - three draw calls for the whole forest.
     const ctx = this.ctx, t = g.time;
     const surf = g.surfY || (() => 0);
-    const stalks = new Path2D(), blades = new Path2D(), bulbs = new Path2D();
-    const len = 1.1 * ppm, wid = 0.22 * ppm, br = wid * 0.35;
+    const stalks = new Path2D(), blades = new Path2D(), bulbs = new Path2D(), ribs = new Path2D();
+    const len = 1.1 * ppm, wid = 0.22 * ppm, br = wid * 0.32;
     let any = false;
     for (let i = 0; i < g.world.kelp.length; i++) {
       const k = g.world.kelp[i];
@@ -1415,14 +1396,27 @@ export class Renderer {
         const px = S(k.x + sway), py = Sy(y);
         if (s2 === 0) stalks.moveTo(px, py); else stalks.lineTo(px, py);
         if (s2 === 0) continue;
-        // blade: a leaf shape from (px,py) along angle a
-        const side = s2 % 2 ? 1 : -1;
-        const a = -Math.PI / 2 + side * (0.7 + Math.sin(t * 0.8 + s2 + k.phase) * 0.2);
-        const ca = Math.cos(a), sa = Math.sin(a);
-        // a blade is one short, thick, round-capped stroke: reads as a leaf, rasterizes far faster than a curve fill
-        blades.moveTo(px + ca * len * 0.18, py + sa * len * 0.18);
-        blades.lineTo(px + ca * len * 0.82, py + sa * len * 0.82);
-        if (s2 % 2 === 0) { const bx = px + ca * len * 0.05, by = py + sa * len * 0.05; bulbs.moveTo(bx + br, by); bulbs.arc(bx, by, br, 0, TAU); }
+        // a giant-kelp blade: a gas bladder on the stipe, and from it a long, narrow, wavy blade
+        // that angles up and then droops away with the current, its edges rippling
+        const side = s2 % 2 ? 1 : -1, hsh = Math.abs(Math.sin(s2 * 12.9898 + k.phase * 78.233));
+        const a = -Math.PI / 2 + side * (0.5 + hsh * 0.35 + Math.sin(t * 0.8 + s2 + k.phase) * 0.18);
+        const ca = Math.cos(a), sa = Math.sin(a), pxp = -sa, pyp = ca;
+        const bl = len * (0.9 + hsh * 0.8), bw = wid * (0.55 + hsh * 0.35);
+        const bx = px + ca * br * 1.4, by = py + sa * br * 1.4;
+        bulbs.moveTo(bx + br, by); bulbs.ellipse(bx, by, br, br * 0.8, a, 0, TAU);
+        const droop = (side * 0.35 + Math.sin(t * 0.7 + k.phase + s2) * 0.25) * bl;       // bends downstream as it lengthens
+        const P = (q, e) => { const c = q * q; return [bx + ca * bl * q + pxp * droop * c + pxp * e, by + sa * bl * q + pyp * droop * c + pyp * e + c * bl * 0.15]; };
+        const N = 6, left = [], right = [];
+        for (let j = 0; j <= N; j++) {
+          const q = j / N, w = bw * Math.sin(Math.PI * Math.pow(q, 0.6)) * (1 + 0.18 * Math.sin(q * 13 + t * 2.2 + s2));
+          left.push(P(q, w)); right.push(P(q, -w));
+        }
+        blades.moveTo(left[0][0], left[0][1]);
+        for (let j = 1; j <= N; j++) blades.lineTo(left[j][0], left[j][1]);
+        for (let j = N; j >= 0; j--) blades.lineTo(right[j][0], right[j][1]);
+        blades.closePath();
+        const m0 = P(0.05, 0), m1 = P(0.55, 0), m2 = P(0.92, 0);
+        ribs.moveTo(m0[0], m0[1]); ribs.quadraticCurveTo(m1[0], m1[1], m2[0], m2[1]);
       }
       if (k.species === 119) {
         const u = 1, hh = k.h;
@@ -1437,10 +1431,12 @@ export class Renderer {
     ctx.strokeStyle = rgbStr([70 * dark, 58 * dark, 26 * dark]);
     ctx.lineWidth = Math.max(1, ppm * 0.07);
     ctx.stroke(stalks);
-    ctx.strokeStyle = `rgba(${(112 * dark) | 0},${(92 * dark) | 0},${(34 * dark) | 0},0.86)`;
-    ctx.lineWidth = wid * 1.5; ctx.lineCap = 'round';
-    ctx.stroke(blades);
-    ctx.lineCap = 'butt';
+    // blades: thin and a little see-through, golden-brown; a darker midrib down each
+    ctx.fillStyle = `rgba(${(122 * dark) | 0},${(96 * dark) | 0},${(34 * dark) | 0},0.78)`;
+    ctx.fill(blades);
+    ctx.strokeStyle = `rgba(${(70 * dark) | 0},${(54 * dark) | 0},${(20 * dark) | 0},0.5)`;
+    ctx.lineWidth = Math.max(0.7, ppm * 0.025);
+    ctx.stroke(ribs);
     ctx.fillStyle = `rgba(${(140 * dark) | 0},${(120 * dark) | 0},${(50 * dark) | 0},0.9)`;
     ctx.fill(bulbs);
   }
@@ -1483,6 +1479,21 @@ export class Renderer {
       ctx.stroke();
       ctx.fillStyle = 'rgba(200,190,160,0.35)';
       for (let k = 0; k < 14; k++) { const x = B.x0 + ((k * 37.3) % (B.x1 - B.x0)); ctx.beginPath(); ctx.ellipse(S(x), Sy(B.y) - ppm * 0.05, ppm * 0.18, ppm * 0.05, 0, 0, TAU); ctx.fill(); }
+      // slow ripples just under the surface, and the shimmering haze where brine meets seawater
+      ctx.strokeStyle = 'rgba(150,175,200,0.14)'; ctx.lineWidth = Math.max(1, ppm * 0.03);
+      for (let r = 1; r <= 3; r++) { ctx.beginPath(); for (let x = B.x0; x <= B.x1; x += 0.5) { const y = Sy(B.y + r * 0.35) + Math.sin(x * 0.6 - t * 0.4 + r) * ppm * 0.06; x === B.x0 ? ctx.moveTo(S(x), y) : ctx.lineTo(S(x), y); } ctx.stroke(); }
+      const hz = ctx.createLinearGradient(0, Sy(B.y - 1.2), 0, Sy(B.y));
+      hz.addColorStop(0, 'rgba(140,165,190,0)'); hz.addColorStop(1, `rgba(140,165,190,${(0.12 + 0.04 * Math.sin(t * 0.7)).toFixed(3)})`);
+      ctx.fillStyle = hz; ctx.fillRect(S(B.x0), Sy(B.y - 1.2), (B.x1 - B.x0) * ppm, ppm * 1.2);
+      // the shore: a thick ring of mussels living off the seep, and white bacterial mats
+      for (let k = 0; k < 110; k++) {
+        const end = k % 2, x = end ? B.x1 - 1.5 + ((k * 0.731) % 4) : B.x0 - 2.5 + ((k * 0.613) % 4), y = Math.min(W.floorAt(x), B.y + 0.1) - ((k * 0.37) % 0.5);
+        ctx.fillStyle = k % 4 ? '#17151b' : '#2b2a35';
+        ctx.beginPath(); ctx.ellipse(S(x), Sy(y), ppm * 0.08, ppm * 0.15, -0.6 + (k % 7) * 0.2, 0, TAU); ctx.fill();
+        if (k % 3 === 0) { ctx.fillStyle = 'rgba(160,170,190,0.35)'; ctx.beginPath(); ctx.arc(S(x) - ppm * 0.02, Sy(y) - ppm * 0.06, ppm * 0.03, 0, TAU); ctx.fill(); }
+      }
+      ctx.fillStyle = 'rgba(232,232,222,0.4)';
+      for (const xs of [B.x0 - 4, B.x0 - 3.2, B.x1 + 2.4, B.x1 + 3.4]) { ctx.beginPath(); ctx.ellipse(S(xs), Sy(W.floorAt(xs)) - ppm * 0.04, ppm * 0.9, ppm * 0.12, 0, 0, TAU); ctx.fill(); }
       ctx.restore();
     }
     const F = W.whaleFall;
@@ -1519,10 +1530,12 @@ export class Renderer {
         ctx.fillStyle = k % 2 ? 'rgba(235,235,225,0.55)' : 'rgba(250,200,120,0.4)';
         ctx.beginPath(); ctx.ellipse(S(x), Sy(W.floorAt(x)) - ppm * 0.05, ppm * 1.2, ppm * 0.18, 0, 0, TAU); ctx.fill();
       }
-      for (let k = 0; k < 40; k++) {
-        const x = P.x - 6 + ((k * 7.31) % 12), y = W.floorAt(x);
+      for (let k = 0; k < 90; k++) {
+        // mussels in clumps, stacked on one another, a glint on some shells
+        const clump = Math.floor(k / 15), x = P.x - 6 + clump * 2.1 + ((k * 0.731) % 1.4), y = W.floorAt(x) - ((k * 0.37) % 0.45);
         ctx.fillStyle = k % 3 ? '#16141a' : '#2a2836';
         ctx.beginPath(); ctx.ellipse(S(x), Sy(y) - ppm * 0.08, ppm * 0.09, ppm * 0.16, -0.4 + (k % 5) * 0.2, 0, TAU); ctx.fill();
+        if (k % 4 === 0) { ctx.fillStyle = 'rgba(150,160,185,0.35)'; ctx.beginPath(); ctx.arc(S(x) - ppm * 0.02, Sy(y) - ppm * 0.14, ppm * 0.03, 0, TAU); ctx.fill(); }
       }
       ctx.fillStyle = 'rgba(200,220,235,0.5)';
       for (let k = 0; k < 18; k++) {

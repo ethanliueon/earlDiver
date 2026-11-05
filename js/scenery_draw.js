@@ -301,3 +301,83 @@ export function drawVentChimney(ctx, h, w, seed) {
   ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(0, oy + w * 0.08, w * 0.3, 0, TAU); ctx.fill();
   return { x0: -w * 1.8, x1: w * 1.8, y0: -h * 1.35, y1: w * 0.6 };
 }
+
+// A rock or a ledge: faceted stone lit from above, darker beneath, layered where it is a ledge,
+// cracked, and grown over along its upper edges with whatever lives at its depth.
+// poly: the outline in local pixels; bp: pixels per metre; tile: a CanvasPattern of rock noise.
+export function drawRockArt(ctx, poly, kind, depth, seed, bp, tile, base) {
+  const rnd = seeded(seed + 0.77);
+  let cx = 0, cy = 0, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const [x, y] of poly) { cx += x; cy += y; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  cx /= poly.length; cy /= poly.length;
+  const path = new Path2D(); poly.forEach(([x, y], i) => (i ? path.lineTo(x, y) : path.moveTo(x, y))); path.closePath();
+  const m = bp; // one metre
+  const mix = (c, d, k) => c.map((v, i) => v + (d[i] - v) * k);
+  const rgb = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+  const gr = ctx.createLinearGradient(0, y0, 0, y1);
+  gr.addColorStop(0, rgb(mix(base, [205, 200, 188], 0.2))); gr.addColorStop(0.45, rgb(base)); gr.addColorStop(1, rgb(mix(base, [0, 0, 0], 0.62)));
+  ctx.fillStyle = gr; ctx.fill(path);
+  ctx.save(); ctx.clip(path);
+  // grain of the stone
+  if (tile) { const k = (11 * bp) / 192; tile.setTransform(new DOMMatrix([k, 0, 0, k, seed * 37 % 192, seed * 53 % 192])); ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 0.6; ctx.fillStyle = tile; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+  // facets: broken planes, those facing up a little lighter, those facing down darker
+  for (let i = 0; i < 7; i++) {
+    const a = poly[Math.floor(rnd() * poly.length)], b = poly[Math.floor(rnd() * poly.length)];
+    const fx = cx + (rnd() - 0.5) * (x1 - x0) * 0.4, fy = cy + (rnd() - 0.5) * (y1 - y0) * 0.4;
+    const up = (a[1] + b[1]) / 2 < cy;
+    ctx.fillStyle = up ? `rgba(225,220,205,${(0.05 + rnd() * 0.08).toFixed(3)})` : `rgba(0,0,0,${(0.06 + rnd() * 0.1).toFixed(3)})`;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(fx, fy); ctx.closePath(); ctx.fill();
+  }
+  // light from above, shadow pooling underneath
+  const tl = ctx.createRadialGradient(cx, y0, 0, cx, y0, Math.max(x1 - x0, y1 - y0) * 0.7);
+  tl.addColorStop(0, 'rgba(235,240,235,0.18)'); tl.addColorStop(1, 'rgba(235,240,235,0)');
+  ctx.fillStyle = tl; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  const ao = ctx.createLinearGradient(0, cy, 0, y1); ao.addColorStop(0, 'rgba(0,0,0,0)'); ao.addColorStop(1, 'rgba(0,0,0,0.35)');
+  ctx.fillStyle = ao; ctx.fillRect(x0, cy, x1 - x0, y1 - cy);
+  // strata: a ledge is layered rock, and the layers show as uneven bands
+  if (kind === 'ledge' || (y1 - y0) > m * 4) {
+    for (let y = y0 + m * rnd.range(0.4, 0.9); y < y1; y += m * rnd.range(0.5, 1.3)) {
+      const light = rnd() < 0.4;
+      ctx.strokeStyle = light ? 'rgba(220,210,190,0.1)' : 'rgba(0,0,0,0.22)'; ctx.lineWidth = Math.max(1, m * rnd.range(0.05, 0.16));
+      ctx.beginPath(); const ph = rnd() * 9;
+      for (let x = x0; x <= x1; x += m * 0.5) ctx.lineTo(x, y + Math.sin(x / m * 0.6 + ph) * m * 0.15 + (x - x0) * 0.02);
+      ctx.stroke();
+    }
+  }
+  // cracks running in from the edges
+  ctx.strokeStyle = 'rgba(0,0,0,0.38)'; ctx.lineWidth = Math.max(1, m * 0.04);
+  for (let i = 0; i < 2 + Math.floor((x1 - x0) / m / 3); i++) {
+    const v = poly[Math.floor(rnd() * poly.length)];
+    let px = v[0], py = v[1]; ctx.beginPath(); ctx.moveTo(px, py);
+    for (let j = 0; j < 5; j++) { px += (cx - px) * 0.22 + (rnd() - 0.5) * m * 0.5; py += (cy - py) * 0.22 + (rnd() - 0.5) * m * 0.5; ctx.lineTo(px, py); }
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,0,0,0.42)'; ctx.lineWidth = Math.max(1, m * 0.035); ctx.stroke(path);
+  // the upper edges: a rim of light, and the life that settles there
+  for (let i = 0; i < poly.length; i++) {
+    const [ax, ay] = poly[i], [bx, by] = poly[(i + 1) % poly.length];
+    const mx = (ax + bx) / 2, my = (ay + by) / 2;
+    let nx = -(by - ay), ny = bx - ax; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+    if ((mx - cx) * nx + (my - cy) * ny < 0) { nx = -nx; ny = -ny; }
+    if (ny > -0.45) continue; // faces sideways or down
+    ctx.strokeStyle = 'rgba(230,232,220,0.22)'; ctx.lineWidth = Math.max(1, m * 0.06);
+    ctx.beginPath(); ctx.moveTo(ax - nx * m * 0.05, ay - ny * m * 0.05); ctx.lineTo(bx - nx * m * 0.05, by - ny * m * 0.05); ctx.stroke();
+    const len = Math.hypot(bx - ax, by - ay);
+    for (let s = rnd() * m * 0.6; s < len; s += m * rnd.range(0.3, 0.9)) {
+      const t = s / len, gx = ax + (bx - ax) * t, gy = ay + (by - ay) * t, r = m * rnd.range(0.08, 0.22), pick = rnd();
+      if (depth < 60) {
+        if (pick < 0.35) { ctx.fillStyle = `rgba(200,110,130,${(0.35 + rnd() * 0.2).toFixed(2)})`; ctx.beginPath(); ctx.ellipse(gx, gy, r * 1.6, r * 0.6, 0, 0, TAU); ctx.fill(); } // coralline crust
+        else if (pick < 0.7) { ctx.strokeStyle = 'rgba(90,120,50,0.55)'; ctx.lineWidth = Math.max(1, m * 0.03); for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(gx, gy); ctx.quadraticCurveTo(gx + (rnd() - 0.5) * r * 2, gy - r * 1.5, gx + (rnd() - 0.5) * r * 3, gy - r * rnd.range(2, 3.5)); ctx.stroke(); } } // algae tuft
+        else if (pick < 0.82) { ctx.fillStyle = '#2a1830'; ctx.beginPath(); ctx.arc(gx, gy - r * 0.5, r * 0.7, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(40,24,48,0.9)'; ctx.lineWidth = 1; for (let k = 0; k < 8; k++) { const a = (k / 8) * TAU; ctx.beginPath(); ctx.moveTo(gx, gy - r * 0.5); ctx.lineTo(gx + Math.cos(a) * r * 1.5, gy - r * 0.5 + Math.sin(a) * r * 1.2); ctx.stroke(); } } // urchin
+      } else if (depth < 500) {
+        if (pick < 0.4) { ctx.fillStyle = `rgba(215,175,90,${(0.4 + rnd() * 0.2).toFixed(2)})`; ctx.beginPath(); ctx.ellipse(gx, gy - r * 0.5, r * 0.9, r * 1.1, 0, 0, TAU); ctx.fill(); } // sponge
+        else if (pick < 0.65) { ctx.fillStyle = 'rgba(235,228,215,0.5)'; ctx.fillRect(gx - r * 0.25, gy - r * 1.4, r * 0.5, r * 1.4); ctx.beginPath(); ctx.ellipse(gx, gy - r * 1.5, r * 0.9, r * 0.35, 0, 0, TAU); ctx.fill(); } // anemone
+        else if (pick < 0.8) { ctx.fillStyle = 'rgba(190,120,170,0.35)'; ctx.beginPath(); ctx.arc(gx, gy, r * 0.8, Math.PI, 0); ctx.fill(); }
+      } else {
+        if (pick < 0.5) { ctx.fillStyle = 'rgba(225,225,215,0.35)'; ctx.beginPath(); ctx.arc(gx, gy - r * 0.2, r * 0.35, 0, TAU); ctx.fill(); } // pale specks: forams, small sponges
+        else if (pick < 0.62) { ctx.strokeStyle = 'rgba(220,215,200,0.45)'; ctx.lineWidth = Math.max(1, m * 0.025); ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + r * 0.3, gy - r * 4); ctx.stroke(); for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(gx + r * 0.3, gy - r * 4); ctx.quadraticCurveTo(gx + r * 0.3 + k * r * 0.5, gy - r * 5, gx + r * 0.3 + k * r * 0.9, gy - r * 4.4); ctx.stroke(); } } // sea lily
+      }
+    }
+  }
+}
