@@ -69,7 +69,7 @@ export class Renderer {
     this.lc = document.createElement('canvas'); this.lctx = this.lc.getContext('2d');
     this.gc = document.createElement('canvas'); this.gctx = this.gc.getContext('2d'); // ghost buffer
     this.clouds = new Clouds();
-    this.viewW = 30; this.cam = { x: 500, y: 5, w: 30, h: 17, zoom: 1 };
+    this.viewW = 30; this.cam = { x: BOAT.x - 7, y: 5.5, w: 30, h: 17, zoom: 1 }; // start on the boat, not panning in from afar
     this.stars = Array.from({ length: 140 }, (_, i) => [((i * 7919) % 1000) / 1000, ((i * 104729) % 1000) / 1000 * 0.6, ((i * 31) % 10) / 10]);
   }
   // quality (0.5..1) scales the internal resolution; the canvas is stretched to the window by CSS.
@@ -98,6 +98,8 @@ export class Renderer {
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
+    // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
+    if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
     cam.x = lerp(cam.x, tx, k); cam.y = lerp(cam.y, ty, k);
     cam.x = clamp(cam.x, cam.w / 2 - 20, WORLD_W - cam.w / 2 + 25);
