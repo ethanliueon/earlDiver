@@ -55,6 +55,10 @@ export function ambientAt(depth, dayLight) {
   return Math.sqrt(dayLight * Math.exp(-depth / 140));
 }
 
+// how many soft layers a lamp beam is built from (more = smoother edge)
+const FEATHER = 10;
+// Earl's hand torch is a small dive light: well below the submersible's floodlights
+const TORCH = 0.62;
 // base brightness of every creature's living light (halo, the light it casts, and the organ itself)
 const BIO_BRIGHT = 0.6;
 // a creature's own light: a slow breathing pulse at its own rhythm, flaring when it is startled
@@ -80,7 +84,7 @@ export class Renderer {
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
     if (this.c.width !== w || this.c.height !== h) {
       this.c.width = w; this.c.height = h;
-      this.lc.width = Math.ceil(w / 3); this.lc.height = Math.ceil(h / 3);
+      this.lc.width = Math.ceil(w / 2); this.lc.height = Math.ceil(h / 2); // light at half resolution, smoothed when stretched
       this.gc.width = w; this.gc.height = h;
     }
   }
@@ -567,6 +571,7 @@ export class Renderer {
     // ================= LIGHTING =================
     this.buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY);
     ctx.globalCompositeOperation = 'multiply';
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(this.lc, 0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
@@ -1769,23 +1774,28 @@ export class Renderer {
     const cone = (x, y, ang, range, spread, col, a) => {
       lamps.push({ x, y, ang, range, spread, a });
       const far = mixRgb(col, WATER_LIT, 0.65);
-      for (const [sm, am] of [[1.3, 0.2], [0.85, 0.32], [0.5, 0.48]]) {
-        const gg = l.createRadialGradient(x * k, y * k, 0, x * k, y * k, range * k);
-        gg.addColorStop(0, rgbStr(col, a * am)); gg.addColorStop(0.12, rgbStr(col, a * am * 0.85));
-        gg.addColorStop(0.4, rgbStr(far, a * am * 0.4)); gg.addColorStop(0.75, rgbStr(WATER_LIT, a * am * 0.1));
-        gg.addColorStop(1, rgbStr(WATER_LIT, 0));
-        l.fillStyle = gg;
+      // one gradient, fanned out in many thin layers from narrow to wide: the light fades smoothly
+      // and widely toward the edges (diffused), with no visible wedge edges or streaks
+      const gg = l.createRadialGradient(x * k, y * k, 0, x * k, y * k, range * k);
+      gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(0.12, rgbStr(col, a * 0.85));
+      gg.addColorStop(0.4, rgbStr(far, a * 0.4)); gg.addColorStop(0.75, rgbStr(WATER_LIT, a * 0.1));
+      gg.addColorStop(1, rgbStr(WATER_LIT, 0));
+      l.fillStyle = gg;
+      for (let i = 0; i < FEATHER; i++) {
+        const sm = 0.3 + 1.7 * (i / (FEATHER - 1));
+        l.globalAlpha = 1 / FEATHER;
         l.beginPath(); l.moveTo(x * k, y * k);
         l.arc(x * k, y * k, range * k, ang - spread * sm, ang + spread * sm); l.closePath(); l.fill();
       }
+      l.globalAlpha = 1;
     };
     const e = g.earl;
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
     const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse;
     if (head && e.lampOn) {
       const ang = this.lampAngle(g, e, head);
-      cone(head.x, head.y, ang, 17 * ppm, 0.32, beamCol, 0.95 * flick);
-      radial(head.x, head.y, 2.6 * ppm, beamCol, 0.3 * flick); lamps.push({ x: head.x, y: head.y, r: 2.6 * ppm, a: 0.3 * flick });
+      cone(head.x, head.y, ang, 17 * ppm, 0.32, beamCol, 0.95 * TORCH * flick);
+      radial(head.x, head.y, 3.2 * ppm, beamCol, 0.3 * TORCH * flick); lamps.push({ x: head.x, y: head.y, r: 3.2 * ppm, a: 0.3 * TORCH * flick });
     }
     if (g.protection && g.protection.necklace) radial(S(e.x), Sy(e.y), 9 * ppm, [255, 230, 190], 0.65);
     if (subLamps) {
@@ -1882,11 +1892,16 @@ export class Renderer {
     // faint scattered light inside the beam (soft-edged), plus the particles it catches
     const coneHaze = (x, y, ang, range, spread, col, a) => {
       const far = mixRgb(col, WATER_LIT, 0.7);
-      for (const [sm, am] of [[1.2, 0.35], [0.7, 0.65]]) {
-        const gg = ctx.createRadialGradient(x, y, 0, x, y, range);
-        gg.addColorStop(0, rgbStr(col, a * am)); gg.addColorStop(0.3, rgbStr(far, a * am * 0.45)); gg.addColorStop(1, rgbStr(WATER_LIT, 0));
-        ctx.fillStyle = gg; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, range, ang - spread * sm, ang + spread * sm); ctx.closePath(); ctx.fill();
+      const gg = ctx.createRadialGradient(x, y, 0, x, y, range);
+      gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(0.3, rgbStr(far, a * 0.45)); gg.addColorStop(1, rgbStr(WATER_LIT, 0));
+      ctx.fillStyle = gg;
+      const n = this.quality < 0.85 ? 6 : FEATHER;
+      for (let i = 0; i < n; i++) {
+        const sm = 0.3 + 1.6 * (i / (n - 1));
+        ctx.globalAlpha = 1 / n;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, range, ang - spread * sm, ang + spread * sm); ctx.closePath(); ctx.fill();
       }
+      ctx.globalAlpha = 1;
     };
     const motes = (x, y, ang, range, spread, col, a) => {
       // the same deterministic particle field as the marine snow, but finer, lit only inside the cone
@@ -1897,7 +1912,7 @@ export class Renderer {
       const ca = Math.cos(ang), sa = Math.sin(ang), cosS = Math.cos(spread);
       for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
         const h = Math.abs(Math.sin(i * 91.7 + j * 47.3) * 24634.6345) % 1;
-        if (h > 0.5) continue;
+        if (h > (this.quality < 0.85 ? 0.3 : 0.5)) continue; // fewer specks when frames run slow
         const h2 = Math.abs(Math.sin(i * 12.9 + j * 78.2) * 43758.5453) % 1;
         const px = i * cell + h * cell + Math.sin(t * 0.4 + h * 20) * 0.25;
         const py = j * cell + ((h2 * cell + t * 0.04 * (0.4 + h)) % cell);
@@ -1929,9 +1944,9 @@ export class Renderer {
     const lp = fx.lightPulse;
     if (head && e.lampOn && haze > 0) {
       const ang = this.lampAngle(g, e, head);
-      coneHaze(head.x, head.y, ang, 15 * ppm, 0.28, beamCol, 0.06 * haze * lp);
-      motes(head.x, head.y, ang, 15 * ppm, 0.3, beamCol, 0.8 * haze * lp);
-      glare(head.x, head.y, beamCol, 0.5 * lp);
+      coneHaze(head.x, head.y, ang, 15 * ppm, 0.28, beamCol, 0.06 * TORCH * haze * lp);
+      motes(head.x, head.y, ang, 15 * ppm, 0.3, beamCol, 0.8 * TORCH * haze * lp);
+      glare(head.x, head.y, beamCol, 0.5 * TORCH * lp);
     }
     if (subLamps && haze > 0) {
       const sub = g.sub;

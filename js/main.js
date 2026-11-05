@@ -459,6 +459,7 @@ hudCanvas.addEventListener('mousedown', (ev) => {
   if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
   if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
   if (inRect(hud.slotHot && hud.slotHot.r, ev.clientX, ev.clientY)) { pressed.add('r'); return; }
+  if (g.homeRun) return; // on autopilot a click does nothing (only the buttons above)
   mouse.down = true;
   pressed.add(' '); // a click swings the net (or uses whatever is in hand)
 });
@@ -473,6 +474,7 @@ function mouseScreen() { const k = canvas.width / window.innerWidth; return [mou
 
 function readMove() {
   if (ui.tankOpen && ui.tankOpen()) return { x: 0, y: 0, sprint: false }; // in the back of the sub, the helm is left alone
+  if (g.homeRun) return { x: 0, y: 0, sprint: false }; // on autopilot the keys and the mouse leave the helm alone (C hands it back)
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
   const now = performance.now();
@@ -818,7 +820,7 @@ function update(dt) {
     if (pressed.has('c-tap')) {
       if (e.inSub && g.homeRun) { g.homeRun = false; ap.cancel(); hud.toast('Autopilot off'); }
       else if (e.inSub && g.sub.docked) hud.toast('Already at the boat');
-      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: taking her home'); hud.hint('It steers itself to the boat using less air. Steer, get hit, or meet something, and it lets go'); audio.ready && audio.sonar(0.05); }
+      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: taking her home'); hud.hint('It steers itself to the boat using less air. Press C to take the helm back; if something hits or comes near, it lets go'); audio.ready && audio.sonar(0.05); }
       else if (g.sub.imploded) hud.toast('The submersible is gone', 'warn');
       else if (ap.state === 'coming') { ap.cancel(); g.sub.vx *= 0.5; hud.toast('Sub stopped'); }
       else { ap.call(g); hud.toast(`Calling the sub — ${Math.round(dist(e.x, e.y, g.sub.x, g.sub.y))} m away`); audio.ready && audio.sonar(0.05); }
@@ -827,8 +829,8 @@ function update(dt) {
     if (!e.inSub) g.homeRun = false;
     // the way home: the autopilot steers; anything that needs a pilot hands her back
     if (g.homeRun) {
-      const steer = mv.x || mv.y;
-      const why = steer ? 'Autopilot off' : g.subHit ? 'Something hit the hull — autopilot off' : g.threat ? 'Something is coming — autopilot off'
+      const steer = false; // steering no longer takes over: only C does
+      const why = g.subHit ? 'Something hit the hull — autopilot off' : g.threat ? 'Something is coming — autopilot off'
         : (g.fx.dread > 0.05 || (ent.marked && (ent.dist ?? 999) < 220)) ? 'Something is near — autopilot off' : null;
       if (why) { g.homeRun = false; ap.cancel(); hud.toast(why, steer ? '' : 'warn'); }
       else {
@@ -859,7 +861,7 @@ function update(dt) {
           else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
         }
       } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
-    } else if (pressed.has(' ') && e.inSub && !g.armGame) {
+    } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
       if (!owns(profile, 'arm')) hud.toast('The claw has no hydraulics — fit them at the boat', 'warn');
       else { const msg = startArm(g); if (msg) hud.toast(msg, 'warn'); else audio.ready && audio.ram && audio.click(); }
     }
@@ -1243,7 +1245,8 @@ function adaptQuality(realDt) {
   qualityT += realDt;
   if (qualityT < 1) return;
   const q = renderer.quality ?? 1;
-  if (frameEma > 1 / 45 && q > 0.45) { renderer.quality = Math.max(0.45, q - 0.1); qualityT = 0; }
+  // never below 75 %: under that the whole picture turns soft and pixelated (cheaper detail goes first)
+  if (frameEma > 1 / 45 && q > 0.75) { renderer.quality = Math.max(0.75, q - 0.05); qualityT = 0; }
   else if (frameEma < 1 / 57 && q < 1 && qualityT > 3) { renderer.quality = Math.min(1, q + 0.05); qualityT = 0; }
   else if (qualityT > 3) qualityT = 1;
 }
