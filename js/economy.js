@@ -89,7 +89,7 @@ export const SUB_TANKS = [
 ];
 export const CANISTERS = { name: 'Pressure canisters', price: 25, desc: 'Sealed steel canisters that keep a deep animal at the pressure it lives at. No barotrauma on the way up.' };
 // what things weigh (kg) - a heavy load slows him and costs air
-export const WEIGHT = { iron: 4, rock: 3, clam: 0.8, mussel: 0.3, kelp: 0.5, glass: 1, tentacle: 0.5, ink: 0.2, scale: 0, pearl: 0, sapphire: 0.5, coral: 0.3 };
+export const WEIGHT = { iron: 4, rock: 3, clam: 0.8, mussel: 0.3, kelp: 0.5, glass: 1, tentacle: 0.5, ink: 0.2, scale: 0, pearl: 0, sapphire: 0.5, coral: 0.3, nodule: 1.5, bone: 2 };
 
 // The sub's claw, in three steps. reach: how far from the claw (m) · maxLen: biggest animal (m) ·
 // out/back: seconds to reach and to fold back · green/amber: half-widths of the grip zones ·
@@ -128,6 +128,8 @@ export const GOODS = {
   pearl: { name: 'Pearl', price: 12 },
   glass: { name: 'Glass sponge', price: 6 },
   sapphire: { name: 'Deep sapphire', price: 40 },
+  nodule: { name: 'Manganese nodule', price: 3 },
+  bone: { name: 'Whalebone', price: 5 },
   lure: { name: 'Anglerfish lure', price: 5 },
   necklace: { name: 'Fangtooth necklace', price: 8 },
 };

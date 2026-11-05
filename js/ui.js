@@ -33,6 +33,16 @@ export class UI {
     }));
     $('journal-close').addEventListener('click', () => this.toggleJournal(false));
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
+    $('cave-close').addEventListener('click', () => this.toggleCave(false));
+    this.caveSel = new Set();
+    $('cave-body').addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-cave]');
+      if (!b || b.disabled) return;
+      const k = b.dataset.cave;
+      if (k === '!trade') { h.onCaveTrade([...this.caveSel]); this.caveSel.clear(); }
+      else if (this.caveSel.has(k)) this.caveSel.delete(k); else this.caveSel.add(k);
+      this.renderCave();
+    });
     this.shopTab = 'sell';
     document.querySelectorAll('.shop-tabs button').forEach((b) => b.addEventListener('click', () => {
       this.shopTab = b.dataset.shop;
@@ -85,8 +95,40 @@ export class UI {
   }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return !$('journal').hidden || !$('workshop').hidden; }
-  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); }
+  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden; }
+  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); }
+  // the old one's cave: choose which fish she takes (once a dive)
+  toggleCave(force) {
+    const el = $('cave');
+    const open = force === undefined ? el.hidden : force;
+    el.hidden = !open;
+    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.caveSel.clear(); this.renderCave(); }
+  }
+  renderCave() {
+    const P = this.h.getProfile(), off = this.h.onCaveOffer();
+    if (!P || !off) return;
+    this.renderCounter($('cave-cash'), money(P.cash));
+    $('cave-sub').textContent = `A giant anglerfish, older than the boat · this dive she craves: ${off.craving.name.toLowerCase()}`;
+    let html = '';
+    if (off.traded) {
+      html += `<p class="shop-empty">She has eaten. The lure dims a little, and a scatter of old gold coins lies in the silt: ${money(off.traded.total)}. Come back next dive.</p>`;
+      html += `<table class="manifest"><tbody>${off.traded.lines.map((l) => `<tr><td>${l.label}</td><td>${l.n}</td><td>${money(l.total)}</td></tr>`).join('')}</tbody></table>`;
+    } else if (!off.groups.length) {
+      html += '<p class="shop-empty">The great jaw opens a little and closes again. You have nothing she wants. She takes live fish: bring them in the bag or the sub\'s tank.</p>';
+    } else {
+      html += '<p class="shop-note">Once a dive she takes fish for old gold coins: 30 % under the market, but half as much again for what she craves. Choose what to give her.</p>';
+      let total = 0;
+      const rows = off.groups.map((gr) => {
+        const on = this.caveSel.has(gr.key);
+        if (on) total += gr.total;
+        const sp = SPECIES_BY_ID[gr.id];
+        return `<tr class="pick${on ? ' on' : ''}" data-cave="${gr.key}"><td><i class="tick">${on ? '✓' : ''}</i>${this.mini(sp)}${gr.variant ? `<span class="rare r-${gr.variant}">${VARIANTS[gr.variant].name}</span> ` : ''}${sp.name}${gr.craving ? ' <em class="crave">craved</em>' : ''}</td><td>${gr.n}</td><td>${money(gr.total)}</td></tr>`;
+      }).join('');
+      html += `<table class="manifest"><thead><tr><th>Fish</th><th>Qty</th><th>She pays</th></tr></thead><tbody>${rows}</tbody></table>`;
+      html += `<button class="primary" data-cave="!trade" ${this.caveSel.size ? '' : 'disabled'}>Feed her<span>${money(total)}</span></button>`;
+    }
+    $('cave-body').innerHTML = html;
+  }
 
   showGame() {
     $('menu').classList.add('gone');
@@ -445,5 +487,6 @@ export class UI {
       const e = g.earl;
       if (Math.abs(e.x - BOAT.x) > 16 || e.y > 5) this.toggleWorkshop(false);
     }
+    if (!$('cave').hidden && Math.hypot(g.earl.x - 66, g.earl.y - 1800) > 20) this.toggleCave(false);
   }
 }

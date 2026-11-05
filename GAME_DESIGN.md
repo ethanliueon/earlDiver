@@ -139,6 +139,29 @@ Market frenzy (the next sale pays x2, contracts too; the sale ends it), Deep bre
 tide (rare forms x3), Lucky net (+25 % catch odds), Still water (sharks and the entity slow to
 notice). A brass-and-glass timer shows above the tool slots.
 
+## The deep places
+
+- Cold: below 200 m the water is near freezing. Without a warm suit (drysuit or hardsuit) Earl uses
+  up to 35 % more air, growing with depth (full at 1,000 m).
+- The canyon: below its rim (~1,000 m) a current pours down the canyon toward the deep, pushing
+  Earl (and the sub, half as hard). It can be swum against.
+- The vent field (~3,300 m): the water over a chimney scalds Earl (one injury every 2 s, armour
+  does not help) and slowly cooks the sub's hull.
+- The brine pool (~3,250 m): a lake under the sea, heavier than seawater. The sub floats on it; Earl
+  drowns in it within 3 seconds.
+- Manganese nodules lie all over the abyssal plain ($3 each, heavy). The whale fall on the plain
+  has whalebone to take ($5) and three times the chance of rare forms around it; the cold seep on
+  the rise (a terrace of mussels, bacterial mats and methane bubbles) has clams that often hold
+  pearls, and twice the chance of rare forms.
+
+## The old one
+
+A cave in the west wall at 1,800 m, where an ancient giant anglerfish lives, her lure lighting the
+mouth. F beside her opens the trade: once a dive she takes live fish (from the bag, or the sub's
+tank if the sub is there) for old gold coins at 30 % under the market, except the one species she
+craves that dive, which she pays 1.5x for. Earl chooses which fish to give her. The entity will not
+come into her cave.
+
 ## The aquarium
 
 - Built from the boat, seen on the far shore. Six wings in order: reef hall, kelp tower,

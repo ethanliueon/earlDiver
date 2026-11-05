@@ -1,12 +1,12 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
-import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W } from './world.js';
-import { SPECIES_BY_ID } from './species.js';
+import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP } from './world.js';
+import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir } from './capture.js';
-import { specimenValue, conditionName, rarityOf } from './specimens.js';
+import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
 import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
@@ -114,6 +114,8 @@ const ui = new UI({
   onSellAll: () => sellAll(),
   onSellItem: (k) => sellItem(k),
   onDisplay: (k) => displaySpecimen(k),
+  onCaveOffer: () => caveOffer(),
+  onCaveTrade: (keys) => caveTrade(keys),
   onNewGame: () => { profile = null; g.paused = false; startRun(); },
   getProfile: () => profile,
 });
@@ -128,7 +130,7 @@ const INJURY = {
 function hurt(dmg, sp, how) {
   if (g.mode !== 'play') return;
   const suit = suitOf(profile);
-  if (suit.bite && how !== 'whale') { dmg = Math.max(0, dmg - suit.bite); if (!dmg) { g.fx.shake = Math.max(g.fx.shake, 0.8); hud.toast(`The ${suitOf(profile).name.toLowerCase()} turns the bite`, 'note'); audio.ready && audio.thud(0.3); return; } }
+  if (suit.bite && how !== 'whale' && how !== 'heat') { dmg = Math.max(0, dmg - suit.bite); if (!dmg) { g.fx.shake = Math.max(g.fx.shake, 0.8); hud.toast(`The ${suitOf(profile).name.toLowerCase()} turns the bite`, 'note'); audio.ready && audio.thud(0.3); return; } }
   g.injury += dmg; g.healT = 0;
   const e = g.earl;
   g.fx.redFlash = 1; g.fx.shake = Math.max(g.fx.shake, 1 + dmg * 0.4);
@@ -136,7 +138,7 @@ function hurt(dmg, sp, how) {
   for (let i = 0; i < 20; i++) g.bubbles.push({ x: e.x + (Math.random() - 0.5), y: e.y - 0.3, r: 0.04 + Math.random() * 0.12, w: Math.random() * 6, t: -Math.random() * 0.3 });
   audio.ready && audio.hit(dmg);
   if (g.injury >= 5) { dieInjury(sp); return; }
-  const verb = how === 'charge' ? 'Speared by' : how === 'lurk' ? 'Bitten by' : how === 'whale' ? 'Struck by' : 'Bitten by';
+  const verb = how === 'charge' ? 'Speared by' : how === 'lurk' ? 'Bitten by' : how === 'whale' ? 'Struck by' : how === 'heat' ? 'Scalded by' : 'Bitten by';
   const nm = sp.name.toLowerCase();
   hud.toast(`${verb} ${/^[aeiou]/.test(nm) ? 'an' : 'a'} ${nm}`, 'warn');
 }
@@ -221,6 +223,49 @@ function displaySpecimen(key) {
   hud.toast(`On display in the ${WING_BY_ID[zoneOf(best)].name.toLowerCase()}`, 'big');
   audio.ready && audio.note();
   return true;
+}
+// ---------------- the old one: a giant anglerfish in the west wall's cave ----------------
+// Once a dive she takes fish for old gold coins: 30 % under the market, except the one she
+// craves this dive, which she pays half as much again for.
+const ANGLER_RATE = 0.7, CRAVE_RATE = 1.5;
+const nearAngler = () => dist(g.earl.x, g.earl.y, CAVE.x + 14, CAVE.y) < 16;
+const inCave = (x, y) => x < CAVE.x + 32 && Math.abs(y - CAVE.y) < 14;
+function cravingOf() {
+  if (!g.craving) {
+    const pool = SPECIES.filter((s) => canTakeLive(s) && s.dmin >= 150 && s.dmin <= 2500);
+    g.craving = pool[Math.floor(Math.random() * pool.length)].id;
+  }
+  return g.craving;
+}
+function cavePools() { return [g.bag].concat(!g.sub.imploded && dist(g.sub.x, g.sub.y, g.earl.x, g.earl.y) < 30 ? [g.subTank] : []); }
+function caveOffer() {
+  const crave = cravingOf(), pay = statValue(profile, 'payFish');
+  const groups = new Map();
+  for (const L of cavePools()) for (const s of L) {
+    const k = s.id + ':' + (s.variant || '');
+    if (!groups.has(k)) groups.set(k, { key: k, id: s.id, variant: s.variant || null, n: 0, total: 0, craving: s.id === crave });
+    const gr = groups.get(k);
+    gr.n++; gr.total += specimenValue(s) * pay * (s.id === crave ? CRAVE_RATE : ANGLER_RATE);
+  }
+  for (const gr of groups.values()) gr.total = Math.round(gr.total * 100) / 100;
+  return { groups: [...groups.values()], craving: SPECIES_BY_ID[crave], traded: g.caveTraded || null };
+}
+function caveTrade(keys) {
+  if (g.caveTraded || !keys.length) return null;
+  const off = caveOffer(), want = new Set(keys);
+  const lines = [];
+  for (const gr of off.groups) if (want.has(gr.key)) lines.push({ label: variantLabel(SPECIES_BY_ID[gr.id], gr.variant) + (gr.craving ? ' (craved)' : ''), n: gr.n, total: gr.total });
+  if (!lines.length) return null;
+  for (const L of cavePools()) for (let i = L.length - 1; i >= 0; i--) if (want.has(L[i].id + ':' + (L[i].variant || ''))) L.splice(i, 1);
+  const total = Math.round(lines.reduce((a, l) => a + l.total, 0) * 100) / 100;
+  profile.cash = Math.round((profile.cash + total) * 100) / 100;
+  profile.lifetime = Math.round((profile.lifetime + total) * 100) / 100;
+  g.earned += total;
+  g.caveTraded = { lines, total };
+  saveProfile(profile);
+  audio.ready && audio.pickup();
+  hud.toast(`She takes them. ${money(total)} in old gold`, 'big');
+  return g.caveTraded;
 }
 function syncProfile() {
   const P = profile;
@@ -526,6 +571,39 @@ function die(cause, kind = 'normal') {
   ui.saveRun(Object.assign(runLog(cause), { bill }));
 }
 
+// the floor's dangers: vent water hot enough to scald, the airless brine pool
+function zoneHazards(dt) {
+  const e = g.earl, sub = g.sub, W = g.world;
+  let scald = false, cook = false;
+  for (const v of W.vents) {
+    const top = v.y - v.h;
+    const inPlume = (x, y, w) => y < v.y + 0.5 && y > top - 16 && Math.abs(x - v.x) < w + Math.max(0, top - y) * 0.12;
+    if (!e.inSub && inPlume(e.x, e.y, 1.6)) scald = true;
+    if (!sub.imploded && inPlume(sub.x, sub.y, 4)) cook = true;
+  }
+  g.ventT = Math.max(0, (g.ventT || 0) - dt);
+  if (scald && g.ventT <= 0) { g.ventT = 2; hurt(1, { name: 'hydrothermal vent' }, 'heat'); }
+  if (cook) {
+    sub.hull = Math.max(0.05, sub.hull - dt * 0.015);
+    g.cookT = (g.cookT || 0) - dt;
+    if (g.cookT <= 0) { g.cookT = 5; hud.toast(`The vent water is 350 °C: the hull is cooking (${Math.round(sub.hull * 100)} %)`, 'warn'); }
+  }
+  const B = W.brine;
+  const inBrine = (x, y) => B && x > B.x0 && x < B.x1 && y > B.y - 0.2;
+  // brine is far denser than seawater: the sub floats on it like a boat on a lake
+  if (!sub.imploded && sub.x > B.x0 - 3 && sub.x < B.x1 + 3 && sub.y > B.y - 1.4) {
+    sub.y = B.y - 1.4; sub.vy = Math.min(0, sub.vy);
+    if (e.inSub) e.y = sub.y;
+    if (!g.brineTold) { g.brineTold = true; hud.toast('The sub settles on a lake of brine, a lake under the sea', 'note'); }
+  }
+  if (!e.inSub && inBrine(e.x, e.y)) {
+    if (!g.brineT) hud.toast('Brine: no air in it at all. Get out!', 'warn');
+    g.brineT = (g.brineT || 0) + dt;
+    g.fx.redFlash = Math.max(g.fx.redFlash || 0, 0.3);
+    if (g.brineT > 3) die(`Drowned in the brine pool at ${Math.round(e.y)} m`);
+  } else g.brineT = 0;
+}
+
 function causeText(kind) {
   const d = Math.round(g.earl.y);
   switch (kind) {
@@ -562,6 +640,9 @@ function update(dt) {
     }
     const target = findTarget();
     g.prompt = promptFor(target);
+    const atAngler = nearAngler();
+    if (atAngler) g.prompt = (g.caveTraded ? 'The old one has eaten this dive' : 'F  Trade with the old one') + (e.inSub ? '   ·   hold F  Leave sub' : '');
+    if (atAngler && !g.caveMet) { g.caveMet = true; hud.toast('Something vast breathes in the dark of the cave', 'note'); }
     // in the submersible the prompt stays out of the way: hidden while moving, and gone after
     // 5 s of the same text (it comes back when something new is in reach or the sub stops again)
     if (e.inSub) {
@@ -594,7 +675,8 @@ function update(dt) {
       const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
       if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); }
     }
-    if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
+    if (pressed.has('f-tap') && atAngler) ui.toggleCave();
+    else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
     if (pressed.has('l')) {
       g.lampFlashT = g.time; e.lampWanted = !e.lampWanted;
@@ -628,7 +710,7 @@ function update(dt) {
     }
     g.airMul = frenzyOn(g, 'breath') ? 0.5 : 1;
     g.luck = frenzyOn(g, 'net') ? 0.25 : 0;
-    g.fauna.rareMult = frenzyOn(g, 'rare') ? 3 : 1;
+    g.fauna.rareMult = (frenzyOn(g, 'rare') ? 3 : 1) * (Math.abs(e.x - WHALE_FALL.x) < 60 && e.y > 2900 ? 3 : Math.abs(e.x - SEEP.x) < 50 && e.y > 2300 ? 2 : 1);
     g.stillMul = frenzyOn(g, 'still') ? 0.35 : 1;
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
@@ -788,7 +870,9 @@ function update(dt) {
     const lvl = Math.min(4, g.injury);
     const kg = loadKg(g); g.loadKg = kg;
     e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg) * (e.suitSpeed || 1);
-    e.o2Mul = INJURY.air[lvl] * loadAir(kg) * (e.suitAir || 1);
+    const cold = !e.inSub && !suitOf(profile).warm && e.y > 200 ? 1 + clamp((e.y - 200) / 800, 0, 1) * 0.35 : 1;
+    if (cold > 1.05 && !g.coldTold) { g.coldTold = true; hud.toast('The cold bites: without a drysuit he burns air faster', 'note'); }
+    e.o2Mul = INJURY.air[lvl] * loadAir(kg) * (e.suitAir || 1) * cold;
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
@@ -804,7 +888,13 @@ function update(dt) {
     }
     // a docked sub sits in the boat's cradle wherever she goes
     if (g.sub.docked && !g.sub.imploded && !(g.autopilot && g.autopilot.active)) { g.sub.x = BOAT.x + 8.5; g.sub.y = 2.6; g.sub.vx = g.sub.vy = 0; }
+    if (e.x > CANYON.x0 && e.x < CANYON.x1 && e.y > CANYON.top && !g.helm) {
+      const k = 0.7 + 0.3 * Math.sin(g.time * 0.25), cvx = -1.1 * k, cvy = 0.35 * k;
+      if (e.inSub) { g.sub.x += cvx * dt * 0.5; g.sub.y += cvy * dt * 0.5; } else { e.x += cvx * dt; e.y += cvy * dt; }
+      if (!g.currentTold) { g.currentTold = true; hud.toast('A current pours down the canyon', 'note'); }
+    }
     const res = updateEarl(g, dt, mv);
+    zoneHazards(dt);
     // the lamp follows the cursor (if the mouse has been used); idle, Earl turns to face it
     g.aim = null;
     if (mouse.seen && renderer.S) {
@@ -876,6 +966,8 @@ function update(dt) {
         if (!g.protection) g.protection = { x: l.x, y: l.y, lantern: l };
       } else l.charge = Math.min(1, l.charge + dt / 150);
     }
+    // the deep will not go into the old one's cave
+    if (!g.protection && inCave(e.x, e.y)) g.protection = { x: CAVE.x + 10, y: CAVE.y, cave: true };
 
     // animals that attack
     g.fauna.bleeding = g.injury > 0;

@@ -13,7 +13,7 @@ import { drawAquarium } from './aquarium_draw.js';
 import { aquariumOf, visitors } from './aquarium.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
-import { BOAT, WORLD_W, EAST, CAVE } from './world.js';
+import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
 
@@ -211,6 +211,7 @@ export class Renderer {
     for (const v of g.world.vents) if (inView(v.x, v.y, 30)) this.drawVent(ctx, v, S, Sy, ppm, t);
     this.drawFloor(g, S, Sy, ppm, x0, x1);
     for (const rk of g.world.rocks) if (rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1) this.drawRock(ctx, rk, S, Sy, ppm);
+    this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
     const glowPts = [];
     for (const s of g.world.statics) {
@@ -1097,6 +1098,96 @@ export class Renderer {
     ctx.restore();
   }
 
+  // the brine pool, the whale fall, the cold seep, the canyon's current and the old one in her cave
+  drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView) {
+    const W = g.world;
+    this.escaW = null;
+    const B = W.brine;
+    if (B && inView((B.x0 + B.x1) / 2, B.y, 40)) {
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(S(B.x0 - 2), Sy(B.y));
+      for (let x = B.x0 - 2; x <= B.x1 + 2; x += 0.5) ctx.lineTo(S(x), Sy(Math.max(B.y, W.floorAt(x))));
+      ctx.lineTo(S(B.x1 + 2), Sy(B.y)); ctx.closePath();
+      const gr = ctx.createLinearGradient(0, Sy(B.y), 0, Sy(B.y + 8));
+      gr.addColorStop(0, 'rgba(40,52,66,0.96)'); gr.addColorStop(1, 'rgba(10,14,20,0.98)');
+      ctx.fillStyle = gr; ctx.fill();
+      // its surface: a still, mirror-like line with slow ripples, and a rim of dead things
+      ctx.strokeStyle = 'rgba(170,195,220,0.45)'; ctx.lineWidth = Math.max(1, ppm * 0.06);
+      ctx.beginPath();
+      for (let x = B.x0 - 1; x <= B.x1 + 1; x += 0.5) { const y = Sy(B.y) + Math.sin(x * 0.9 + t * 0.6) * ppm * 0.04; x === B.x0 - 1 ? ctx.moveTo(S(x), y) : ctx.lineTo(S(x), y); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(200,190,160,0.35)';
+      for (let k = 0; k < 14; k++) { const x = B.x0 + ((k * 37.3) % (B.x1 - B.x0)); ctx.beginPath(); ctx.ellipse(S(x), Sy(B.y) - ppm * 0.05, ppm * 0.18, ppm * 0.05, 0, 0, TAU); ctx.fill(); }
+      ctx.restore();
+    }
+    const F = W.whaleFall;
+    if (F && inView(F.x, F.y, 30)) {
+      // a whale skeleton half sunk in the ooze: skull, a long spine, ribs, a carpet of bacteria
+      const fy = (x) => W.floorAt(x);
+      ctx.save();
+      ctx.fillStyle = 'rgba(230,200,150,0.35)';
+      ctx.beginPath(); ctx.ellipse(S(F.x), Sy(fy(F.x)) - ppm * 0.1, ppm * 11, ppm * 0.5, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#cfc6b0'; ctx.lineCap = 'round';
+      ctx.lineWidth = Math.max(2, ppm * 0.35);
+      ctx.beginPath(); ctx.moveTo(S(F.x - 7), Sy(fy(F.x - 7)) - ppm * 0.6);
+      for (let x = F.x - 7; x <= F.x + 9; x += 1) ctx.lineTo(S(x), Sy(fy(x)) - ppm * (0.6 + 0.25 * Math.sin((x - F.x) * 0.25)));
+      ctx.stroke();
+      for (let k = 0; k < 11; k++) {
+        const x = F.x - 5 + k * 1.15, by = Sy(fy(x)) - ppm * 0.6, h = ppm * (2.4 - Math.abs(k - 4) * 0.18);
+        ctx.lineWidth = Math.max(1.5, ppm * 0.16);
+        ctx.beginPath(); ctx.moveTo(S(x), by); ctx.quadraticCurveTo(S(x) + ppm * 1.2, by - h, S(x) + ppm * 0.4, by - h * 1.3); ctx.stroke();
+      }
+      // the skull: a long flat jaw and the cranium
+      const sx = S(F.x - 7.5), sy = Sy(fy(F.x - 7.5));
+      ctx.fillStyle = '#c8bea6';
+      ctx.beginPath(); ctx.moveTo(sx + ppm * 1.2, sy - ppm * 0.4); ctx.quadraticCurveTo(sx - ppm * 1, sy - ppm * 2.2, sx - ppm * 4.5, sy - ppm * 0.6); ctx.lineTo(sx - ppm * 4.4, sy - ppm * 0.1); ctx.quadraticCurveTo(sx - ppm * 1, sy - ppm * 0.6, sx + ppm * 1.2, sy); ctx.fill();
+      ctx.fillStyle = 'rgba(40,30,20,0.6)'; ctx.beginPath(); ctx.ellipse(sx - ppm * 0.4, sy - ppm * 0.9, ppm * 0.35, ppm * 0.25, 0, 0, TAU); ctx.fill();
+      ctx.lineCap = 'butt';
+      ctx.restore();
+    }
+    const P = W.seep;
+    if (P && inView(P.x, P.y, 30)) {
+      // a cold seep: white bacterial mats, a black bed of mussels, methane bubbling out of the mud
+      ctx.save();
+      for (let k = 0; k < 7; k++) {
+        const x = P.x + (k - 3) * 2.2 + Math.sin(k * 3.1) * 0.8;
+        ctx.fillStyle = k % 2 ? 'rgba(235,235,225,0.55)' : 'rgba(250,200,120,0.4)';
+        ctx.beginPath(); ctx.ellipse(S(x), Sy(W.floorAt(x)) - ppm * 0.05, ppm * 1.2, ppm * 0.18, 0, 0, TAU); ctx.fill();
+      }
+      for (let k = 0; k < 40; k++) {
+        const x = P.x - 6 + ((k * 7.31) % 12), y = W.floorAt(x);
+        ctx.fillStyle = k % 3 ? '#16141a' : '#2a2836';
+        ctx.beginPath(); ctx.ellipse(S(x), Sy(y) - ppm * 0.08, ppm * 0.09, ppm * 0.16, -0.4 + (k % 5) * 0.2, 0, TAU); ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(200,220,235,0.5)';
+      for (let k = 0; k < 18; k++) {
+        const q = (t * 0.12 + k / 18 + P.phase) % 1, x = P.x + Math.sin(k * 5.3) * 4 + Math.sin(q * 9 + k) * 0.4;
+        ctx.beginPath(); ctx.arc(S(x), Sy(W.floorAt(P.x + Math.sin(k * 5.3) * 4) - q * 30), Math.max(1, ppm * (0.05 + q * 0.06)), 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+    }
+    // the canyon's current: silt streaming down and out toward the deep
+    const cx = (CANYON.x0 + CANYON.x1) / 2;
+    if (inView(cx, this.cam.y, 80) && this.cam.y > CANYON.top - 40) {
+      ctx.save(); ctx.strokeStyle = 'rgba(170,160,130,0.16)'; ctx.lineWidth = 1;
+      for (let k = 0; k < 70; k++) {
+        const q = (t * 0.05 + k * 0.6180339) % 1;
+        const x = CANYON.x1 - q * (CANYON.x1 - CANYON.x0), y = this.cam.y - this.cam.h / 2 + ((k * 0.381966 + q * 0.12) % 1) * this.cam.h;
+        if (y < CANYON.top || y > W.floorAt(x) - 1) continue;
+        ctx.beginPath(); ctx.moveTo(S(x), Sy(y)); ctx.lineTo(S(x + 1.4), Sy(y - 0.4)); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // the old one: a giant anglerfish filling the back of the cave, her lure hanging at its mouth
+    if (inView(ANGLER.x, ANGLER.y, 30)) {
+      const sp = SPECIES_BY_ID[100], L = ANGLER.len * ppm, bob = Math.sin(t * 0.35) * 0.3;
+      ctx.save(); ctx.translate(S(ANGLER.x), Sy(ANGLER.y + bob)); ctx.scale(-1, 1);
+      const r = drawSpecies(ctx, sp, L, t * 0.25, 0.1, 0);
+      ctx.restore();
+      if (r && r[0]) this.escaW = { x: ANGLER.x - r[0][0] / ppm, y: ANGLER.y + bob + r[0][1] / ppm };
+    }
+  }
+
   drawVent(ctx, v, S, Sy, ppm, t) {
     const x = S(v.x), y = Sy(v.y), h = v.h * ppm;
     ctx.fillStyle = '#2a2420';
@@ -1193,6 +1284,25 @@ export class Renderer {
         for (let k = -6; k <= 6; k++) { ctx.moveTo(k * u * 0.12, u * 0.05); ctx.lineTo(k * u * 0.12 + u * 0.3, -u * 0.7); ctx.moveTo(k * u * 0.12, u * 0.05); ctx.lineTo(k * u * 0.12 - u * 0.3, -u * 0.7); }
         ctx.stroke();
         ctx.fillStyle = 'rgba(200,120,50,0.9)'; ctx.beginPath(); ctx.arc(u * 0.6, -u * 0.7, u * 0.08, 0, TAU); ctx.fill(); // float
+        break;
+      }
+      case 'nodule': {
+        // a knobbly black-brown lump, half sunk in the ooze
+        ctx.fillStyle = '#1c1612';
+        ctx.beginPath();
+        for (let k = 0; k <= 10; k++) { const a = Math.PI + (k / 10) * Math.PI, r = u * (0.16 + 0.03 * Math.sin(k * 2.7 + p.phase * 3)); ctx.lineTo(Math.cos(a) * r * 1.2, Math.sin(a) * r * 0.9); }
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(120,96,70,0.35)';
+        for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc((k - 1.5) * u * 0.07, -u * (0.06 + (k % 2) * 0.05), u * 0.025, 0, TAU); ctx.fill(); }
+        break;
+      }
+      case 'bone': {
+        // a curved white rib lying on the bottom
+        ctx.strokeStyle = '#d8d0bc'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1.5, u * 0.09);
+        ctx.beginPath(); ctx.moveTo(-u * 0.45, -u * 0.04); ctx.quadraticCurveTo(0, -u * (0.35 + 0.1 * Math.sin(p.phase)), u * 0.45, -u * 0.05); ctx.stroke();
+        ctx.strokeStyle = 'rgba(90,80,60,0.4)'; ctx.lineWidth = Math.max(1, u * 0.03);
+        ctx.beginPath(); ctx.moveTo(-u * 0.2, -u * 0.2); ctx.quadraticCurveTo(0, -u * 0.27, u * 0.2, -u * 0.2); ctx.stroke();
+        ctx.lineCap = 'butt';
         break;
       }
       case 'sapphire': {
@@ -1404,6 +1514,7 @@ export class Renderer {
       }
     }
     if (g.lure) radial(S(g.lure.x), Sy(g.lure.y), 8 * ppm, [170, 230, 255], 0.9);
+    if (this.escaW) radial(S(this.escaW.x), Sy(this.escaW.y), 16 * ppm, [150, 220, 255], 0.75 + 0.15 * Math.sin(g.time * 1.7));
     for (const v of g.world.vents) {
       const x = S(v.x), y = Sy(v.y - v.h);
       if (x < -500 || x > this.W + 500 || y < -500 || y > this.H + 500) continue;
@@ -1531,6 +1642,7 @@ export class Renderer {
     }
     for (const [x, y, col, r, k = 1] of glowPts) halo(x, y, k < 1 ? r * 1.4 : Math.max(r, ppm * 0.4), hexToRgb(col), 0.5 * haze * fx.bioPulse * k);
     if (g.lure) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
+    if (this.escaW) halo(S(this.escaW.x), Sy(this.escaW.y), ppm * 2.2, [170, 230, 255], 0.7 * haze);
     for (const p of g.world.pickups) {
       if (p.taken || (p.type !== 'sapphire' && p.type !== 'lure')) continue;
       const x = S(p.x), y = Sy(p.y);

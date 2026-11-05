@@ -437,3 +437,21 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .shop .contract img.mini { width: 72px; height: 40px; }
 .shop .frenzy-note { margin: 0 0 10px; padding: 7px 12px; border-radius: 4px; font: 15px var(--game); color: #2e220a;
   background: linear-gradient(180deg, #ecd28e, #c9a65a); box-shadow: 0 0 12px rgba(255,182,72,0.35); }
+
+/* the old one's cave: the shop panel, darker and lit blue by her lure */
+.shop.cave .shop-main { background: radial-gradient(ellipse at 15% 0%, rgba(120, 200, 255, 0.16), transparent 55%), rgba(6, 10, 16, 0.96); border-color: rgba(140, 210, 255, 0.25); }
+.shop.cave h2 { color: #cfefff; }
+#cave-close { background: none; border: 0; font-size: 28px; line-height: 1; color: var(--ink); opacity: 0.55; padding: 0; }
+.shop.cave tr.pick { cursor: pointer; }
+.shop.cave tr.pick:hover td { background: rgba(140, 210, 255, 0.06); }
+.shop.cave tr.pick.on td { background: rgba(140, 210, 255, 0.12); }
+.shop.cave .tick { display: inline-block; width: 16px; height: 16px; margin-right: 8px; border: 1px solid rgba(207, 239, 255, 0.5); border-radius: 3px; font-style: normal; text-align: center; line-height: 15px; font-size: 12px; vertical-align: middle; }
+.shop.cave .crave { font-style: normal; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #ffd27a; margin-left: 6px; }
+.shop.cave button.primary { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 13px 18px; margin-top: 6px; background: #cfefff; color: #08121c; border: 0; border-radius: 4px; font-size: 14px; }
+.shop.cave button.primary:disabled { background: rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.35); }
+#cave-body { overflow-y: auto; min-height: 0; }
+/* her nameplate: old bronze gone green in the deep */
+.shop.cave .nameplate { background: linear-gradient(180deg, #5d7468 0%, #3b5048 45%, #26352f 100%); box-shadow: 0 2px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(200,240,220,0.35), inset 0 -1px 0 rgba(0,0,0,0.5); }
+.shop.cave .nameplate::before, .shop.cave .nameplate::after { background: radial-gradient(circle at 40% 35%, #b8d8c8, #2a4038 70%); }
+.shop.cave h2 { text-shadow: 0 1px 0 rgba(0,0,0,0.5); }
+.shop.cave .shop-sub { color: rgba(207, 239, 255, 0.7); }

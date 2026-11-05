@@ -18,6 +18,8 @@ export const BOAT_X = BOAT_HOME; // (where she starts)
 export const SPAWN = { x: BOAT_HOME - 12, y: 5 };
 // the anglerfish's cave: a hollow in the west wall
 export const CAVE = { x: 52, y: 1800 };
+// the old one who lives in it: a giant anglerfish, head to the mouth of the cave
+export const ANGLER = { x: 46, y: 1802.5, len: 14 };
 
 // Fixed overall profile (x -> seafloor depth). Beach on the right, deep on the left.
 const PROFILE = [
@@ -57,7 +59,14 @@ export const RESOURCES = {
   sapphire: { name: 'Deep sapphire', desc: 'A raw blue stone from the deep. Worth a fortune.' },
   glass: { name: 'Glass sponge shard', desc: 'Silica lattice from a deep glass sponge.' },
   coral: { name: 'Coral fragment', desc: 'A living piece of broken coral. It could be planted.' },
+  nodule: { name: 'Manganese nodule', desc: 'A black lump of metal that grew a millimetre in a million years.' },
+  bone: { name: 'Whalebone', desc: 'A rib from the whale fall, picked clean and white.' },
 };
+// places on the deep floor (x ranges in metres)
+export const BRINE = { x0: 1730, x1: 1788 };     // a lake of brine on the abyssal plain: heavy, airless, deadly
+export const WHALE_FALL = { x: 770 };            // a dead whale on the plain, and everything that feeds on it
+export const SEEP = { x: 1960 };                 // a cold seep on the rise: methane, mussels, tube worms
+export const CANYON = { x0: 2385, x1: 2495, top: 1000 }; // the canyon below its rim, where the current runs
 
 export function generateWorld(seed) {
   const rng = makeRng(seed);
@@ -78,6 +87,26 @@ export function generateWorld(seed) {
     if (x > WORLD_W - 25) d = Math.min(d, lerp(-1, -3.5, (x - (WORLD_W - 25)) / 25)); // beach above the waterline
     if (x < 30) d = Math.min(d, 25 + x * 0.5);                                         // the wall's reef cap stays shallow
     floor[i] = d;
+  }
+  // the brine pool: a basin with a flat, still surface a little below its lower rim
+  {
+    const i0 = Math.round(BRINE.x0 / FLOOR_RES), i1 = Math.round(BRINE.x1 / FLOOR_RES);
+    const surf = Math.max(floor[i0], floor[i1]) + 0.6;
+    for (let i = i0; i <= i1; i++) {
+      const t = (i - i0) / (i1 - i0);
+      floor[i] = Math.max(floor[i], surf + 1 + Math.sin(Math.PI * t) * 7 + fbm1(i * FLOOR_RES / 5, 2, seed + 9) * 0.6);
+    }
+    W.brine = { x0: BRINE.x0 + 1.5, x1: BRINE.x1 - 1.5, y: surf };
+  }
+  // level beds for the whale fall (on the plain) and the seep (a terrace cut into the rise)
+  for (const [cx, half] of [[WHALE_FALL.x, 16], [SEEP.x, 13]]) {
+    const ic = Math.round(cx / FLOOR_RES), h = Math.round(half / FLOOR_RES), edge = Math.round(8 / FLOOR_RES);
+    const level = floor[ic];
+    for (let i = ic - h - edge; i <= ic + h + edge; i++) {
+      const out = Math.max(0, Math.abs(i - ic) - h) / edge;          // 0 on the bed, 1 at the end of the blend
+      const k = out >= 1 ? 0 : 1 - out * out * (3 - 2 * out);
+      floor[i] = lerp(floor[i], level + fbm1(i * FLOOR_RES / 4, 2, seed + 13) * 0.25, k);
+    }
   }
   W.floor = floor;
   W.floorAt = (x) => {
@@ -140,6 +169,8 @@ export function generateWorld(seed) {
       addRock(roughen(poly, 4, 0.55), 'ledge');
     }
   }
+  // nothing sticks out of the brine pool
+  W.rocks = W.rocks.filter((rk) => !(rk.x1 > BRINE.x0 - 2 && rk.x0 < BRINE.x1 + 2 && rk.y1 > W.brine.y - 4));
   // the anglerfish's cave mouth: an upper and a lower lip of rock jutting from the west wall
   {
     const cx = CAVE.x, cy = CAVE.y;
@@ -193,6 +224,8 @@ export function generateWorld(seed) {
   }
   // the anglerfish's cave: two great lips of rock jutting from the wall make a hollow between them
   W.cave = { x: CAVE.x, y: CAVE.y };
+  W.whaleFall = { x: WHALE_FALL.x, y: W.floorAt(WHALE_FALL.x) };
+  W.seep = { x: SEEP.x, y: W.floorAt(SEEP.x), phase: rng() * 6 };
 
   // ---- Sea lanterns: 1-2 per 500x500 m cell in open water; extra deeper ----
   W.lanterns = [];
@@ -237,6 +270,15 @@ export function generateWorld(seed) {
   for (let i = 0; i < 60; i++) { const x = rng.range(1000, 2610); const fl = W.floorAt(x); if (fl > 200 && fl < 1000) addPickup('tentacle', x, onFloor(x)); }
   for (let i = 0; i < 90; i++) { const x = rng.range(900, 2700); const y = rng.range(100, 1000); if (y < W.floorAt(x) - 4) addPickup('ink', x, y); }
   for (let i = 0; i < 70; i++) { const x = rng.range(EAST + 450, EAST + 900); const y = rng.range(8, 300); if (y < W.floorAt(x) - 3) addPickup('scale', x, y); }
+  // manganese nodules strewn over the abyssal plain (not in the brine)
+  for (let i = 0; i < 70; i++) {
+    const x = rng.pick([rng.range(560, 900), rng.range(1460, 1860)]);
+    if (W.floorAt(x) < 3000 || (x > BRINE.x0 - 3 && x < BRINE.x1 + 3)) continue;
+    addPickup('nodule', x, onFloor(x));
+  }
+  // the whale fall: ribs to take; the seep: clams that often hold pearls
+  for (let i = 0; i < 9; i++) { const x = WHALE_FALL.x + rng.range(-9, 9); addPickup('bone', x, onFloor(x)); }
+  for (let i = 0; i < 12; i++) { const x = SEEP.x + rng.range(-10, 10); addPickup('clam', x, onFloor(x), { pearl: rng() < 0.25 }); }
   for (let i = 0; i < 60; i++) { const x = rng.range(950, 2600); const fl = W.floorAt(x); if (fl > 300 && fl < 1300) addPickup('glass', x, onFloor(x)); }
   // Usable items, found on the deeper seafloor
   for (let i = 0; i < 40; i++) { const x = rng.range(950, 2640); const fl = W.floorAt(x); if (fl > 150 && fl < 2400) addPickup('lure', x, fl - 0.4); }
@@ -293,6 +335,12 @@ export function generateWorld(seed) {
     const x = v.x + rng.range(-6, 6);
     W.statics.push({ sp: SPECIES.find((s) => s.id === 180), x, y: W.floorAt(x), scale: rng.range(0.6, 1.2), phase: rng() * 6, flip: 1 });
   }
+  // and at the seep
+  for (let i = 0; i < 10; i++) {
+    const x = SEEP.x + rng.range(-8, 8);
+    W.statics.push({ sp: SPECIES.find((s) => s.id === 180), x, y: W.floorAt(x), scale: rng.range(0.5, 1), phase: rng() * 6, flip: 1 });
+  }
+  W.statics = W.statics.filter((s) => !(s.x > BRINE.x0 && s.x < BRINE.x1));
   W.statics.sort((a, b) => a.x - b.x);
   return W;
 }
