@@ -176,15 +176,32 @@ blessing (2 coins, this dive: the entity notices you half as fast); a sapphire e
 sapphires within 150 m show on the sonar); a pressure relic (5 coins, up to 4: the sub is rated
 100 m deeper each).
 
-## The tank room
+## Pressure, and the tank room
 
-T in the sub opens the tank room: every place an animal can be kept, each a porthole with the
-animal swimming in it, its condition and the depth it was caught at. Pressure tanks (a Submersible
-upgrade, up to 4, replacing the old canisters) are sealed bottles: an animal inside is held at the
-pressure it was caught at, takes no harm on the way up and slowly recovers. In the tank room,
-animals move between the bag, the open tank and the pressure tanks, or are let go back into the
-water. Deep animals (from below 150 m) go into a free pressure tank by themselves when they come
-aboard. In the HUD the pressure tanks are brass-ringed dots after the open tank's.
+Every animal has the pressure it lives at (its home depth: where it was caught, or where it has
+been slowly brought up to). What hurts it is the gap between that and the pressure it is under: in
+the bag, Earl's depth; in the open tank, the sub's; in a pressure chamber, what the chamber holds.
+Up to 150 m short, it lives, more stressed the bigger the gap (its condition sinks toward a ceiling,
+down to 'weak' at 150 m). Past 150 m it is dying, slowly at first and faster the bigger the gap.
+So a shallow animal can never die of the trip up, and a deep one dies unless it is in a chamber.
+
+T in the sub opens the tank room, full screen. Pressure chambers stand in a row, drawn after the
+SubCAS chambers fisheries scientists use: a clear blue acrylic cylinder under a black head, a gauge
+(red past the chamber's rating) and a read-out, a ball valve, a bleed tap, a wrench handle, hose
+clamps and a little logger inside, with the animal swimming in it. You start with one chamber and
+buy up to four more (Pressure chambers); every chamber is rated 400 m at first, 200 m more per
+level of Chamber rating (to 3,800 m). Sealing an animal in pumps the chamber up to its home depth
+(30 m/s, as far as the rating goes: a deeper animal still feels the rest of the gap). Held at its
+own pressure it recovers. Easing it up (the valve open a crack) lowers the chamber 3 m/s toward the
+surface, and an animal held at its own pressure eases with it: it arrives acclimated, safe in the
+open and worth a quarter more. Below the chambers, the open tank (a long glass tank with gravel,
+weed and an airstone, every animal in it swimming) and the catch bag. Animals move between them or
+are let go back into the water. Animals from below 100 m go into a free chamber by themselves when
+they come aboard.
+
+Dead animals sell for half the plain market price of their kind: no rare-form bonus, no market
+frenzy, no contract pay. An aquarium's contract wants one alive and well; the museum's contracts
+(about a third of them) take one 'alive or dead', but a dead one only fetches the dead price.
 
 ## The old one
 

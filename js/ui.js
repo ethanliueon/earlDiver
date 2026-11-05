@@ -11,6 +11,7 @@ import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
+import { TankRoom } from './tankroom.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed } from './capture.js';
 import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
@@ -39,13 +40,7 @@ export class UI {
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     $('tank-close').addEventListener('click', () => this.toggleTank(false));
     this.caveTab = 'trade';
-    $('tank-body').addEventListener('click', (ev) => {
-      const b = ev.target.closest('button[data-tk]');
-      if (!b || b.disabled) return;
-      const [act, where, i] = b.dataset.tk.split(':');
-      h.onTank(act, where, +i);
-      this.renderTank();
-    });
+    this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i) => h.onTank(a2, w, i), getGame: () => h.getGame(), mini: (sp) => this.mini(sp) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
@@ -123,43 +118,7 @@ export class UI {
     const el = $('tankroom');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
-    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.renderTank(); this.tankT = 0; }
-  }
-  renderTank() {
-    const g = this.h.getGame(), P = this.h.getProfile();
-    if (!g || !P) return;
-    const e = g.earl, depth = Math.max(0, Math.round(e.y)), rising = -(g.sub.vy || 0) > 1;
-    const ps = pressSlots(g), ts = tankSlots(g);
-    $('tank-sub').textContent = `open tank ${tankUsed(g)}/${ts} · pressure tanks ${pressUsed(g)}/${ps} · outside ${depth} m`;
-    const img = (sp) => { const key = 'aq' + sp.id; if (!this.toolImgs) this.toolImgs = new Map(); if (!this.toolImgs.has(key)) this.toolImgs.set(key, speciesIcon(sp, 120, 68).toDataURL()); return this.toolImgs.get(key); };
-    const cell = (s, where, i, pressed) => {
-      const sp = SPECIES_BY_ID[s.id], c = s.cond, cn = conditionName(c);
-      const hurting = !pressed && rising && depth < (s.from || 0) - 5 && (s.from || 0) > 40 && c > 0.05;
-      const col = c <= 0.05 ? '#8a8a8a' : c >= 0.8 ? '#78dc8c' : c >= 0.5 ? '#e8b040' : '#e6503c';
-      const btns = where === 'bag'
-        ? `<button data-tk="open:bag:${i}" ${tankUsed(g) >= ts ? 'disabled' : ''}>Open tank</button><button data-tk="press:bag:${i}" ${pressUsed(g) >= ps ? 'disabled' : ''}>Pressure tank</button>`
-        : pressed ? `<button data-tk="open:tank:${i}" ${tankUsed(g) >= ts ? 'disabled' : ''}>Unseal</button>` : `<button data-tk="press:tank:${i}" ${pressUsed(g) >= ps ? 'disabled' : ''}>Seal in pressure</button>`;
-      return `<div class="tk-cell${pressed ? ' pressed' : ''}${hurting ? ' hurting' : ''}">
-        <div class="port"><img src="${img(sp)}" alt="" style="animation-delay:-${(i * 1.3).toFixed(1)}s"><span class="bub"></span>${pressed ? `<em class="gauge">${s.from} m</em>` : ''}</div>
-        <div class="tk-txt"><b>${s.variant ? `<span class="rare r-${s.variant}">${VARIANTS[s.variant].name}</span> ` : ''}${sp.name}</b>
-          <span class="tk-cond"><i style="width:${Math.round(c * 100)}%;background:${col}"></i></span>
-          <small>${cn} · caught at ${s.from || 0} m${hurting ? ' · <em>the pressure is falling on it</em>' : pressed ? ' · held at depth, recovering' : ''}</small></div>
-        <div class="tk-act">${btns}<button class="ghost" data-tk="release:${where}:${i}">Let go</button></div></div>`;
-    };
-    const empty = (label) => `<div class="tk-cell empty"><div class="port"></div><div class="tk-txt"><small>${label}</small></div></div>`;
-    let html = '';
-    html += `<h4>Pressure tanks</h4>`;
-    if (!ps) html += '<p class="shop-note">No pressure tanks fitted yet. The boat fits them (Submersible): sealed bottles that keep a deep animal at the pressure it was caught at.</p>';
-    else {
-      const list = g.subTank.map((s, i) => [s, i]).filter(([s]) => s.pressed);
-      html += `<div class="tk-grid">${list.map(([s, i]) => cell(s, 'tank', i, true)).join('')}${Array.from({ length: ps - list.length }, () => empty('sealed, empty')).join('')}</div>`;
-    }
-    html += `<h4>Open tank</h4>`;
-    const open = g.subTank.map((s, i) => [s, i]).filter(([s]) => !s.pressed);
-    html += `<div class="tk-grid">${open.map(([s, i]) => cell(s, 'tank', i, false)).join('')}${Array.from({ length: Math.max(0, ts - open.length) }, () => empty('empty')).join('')}</div>`;
-    if (g.bag.length) html += `<h4>Still in the bag</h4><div class="tk-grid">${g.bag.map((s, i) => cell(s, 'bag', i, false)).join('')}</div>`;
-    html += '<p class="shop-note">Animals from deep water are hurt as the sub climbs, unless they are sealed in a pressure tank. In one, they take no harm and slowly recover.</p>';
-    $('tank-body').innerHTML = html;
+    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.tankRoom.open(); }
   }
   // the old one's cave: choose which fish she takes (once a dive)
   toggleCave(force) {
@@ -579,7 +538,7 @@ export class UI {
     }
     if (!$('tankroom').hidden) {
       if (!g.earl.inSub) this.toggleTank(false);
-      else { this.tankT = (this.tankT || 0) + dt; if (this.tankT > 1) { this.tankT = 0; this.renderTank(); } }
+      else this.tankRoom.update(dt);
     }
     if (!$('cave').hidden && Math.hypot(g.earl.x - 66, g.earl.y - 1800) > 20) this.toggleCave(false);
   }

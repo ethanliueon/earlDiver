@@ -5,7 +5,7 @@ import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
-import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots } from './capture.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
@@ -159,13 +159,16 @@ function damageSub(amt, sp) {
 const subAtBoat = () => !g.sub.imploded && Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) < 20;
 function sellSpecimens(list, lines) {
   const groups = new Map();
-  for (const sp of list) { const k = sp.id + ':' + (sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
+  // the dead go in their own lot: half the plain market price, no frenzy and no rare-form bonus
+  for (const sp of list) { const k = sp.id + ':' + (sp.cond <= 0.05 ? 'dead' : sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
   for (const [gk, specs] of groups) {
     const [id, v] = gk.split(':');
-    const key = 'sp' + id + (v ? ':' + v : ''), base = specs.reduce((a, s) => a + specimenValue(s), 0) / specs.length;
+    const dead = v === 'dead';
+    const key = 'sp' + id + (v && !dead ? ':' + v : ''), base = specs.reduce((a, s) => a + specimenValue(s), 0) / specs.length;
     const worst = specs.reduce((a, s) => Math.min(a, s.cond), 1);
-    const name = variantLabel(SPECIES_BY_ID[id], v || null) + (worst <= 0.05 ? ' (dead)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
-    lines.push(sell(profile, key, specs.length, base * statValue(profile, 'payFish') * (frenzyOn(g, 'market') ? 2 : 1), name));
+    const acc = !dead && specs.every((s) => s.acc);
+    const name = dead ? `${SPECIES_BY_ID[id].name} (dead, half price)` : variantLabel(SPECIES_BY_ID[id], v || null) + (acc ? ' (acclimated)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
+    lines.push(sell(profile, key, specs.length, base * statValue(profile, 'payFish') * (!dead && frenzyOn(g, 'market') ? 2 : 1), name));
   }
 }
 function sellAll() {
@@ -252,7 +255,7 @@ function caveOffer() {
     const k = s.id + ':' + (s.variant || '');
     if (!groups.has(k)) groups.set(k, { key: k, id: s.id, variant: s.variant || null, n: 0, total: 0, craving: s.id === crave });
     const gr = groups.get(k);
-    gr.n++; gr.total += specimenValue(s) * pay * (s.id === crave ? CRAVE_RATE : ANGLER_RATE);
+    gr.n++; gr.total += specimenValue(s) * pay * (s.id === crave && s.cond > 0.05 ? CRAVE_RATE : ANGLER_RATE);
   }
   for (const gr of groups.values()) gr.total = Math.round(gr.total * 100) / 100;
   return { groups: [...groups.values()], craving: SPECIES_BY_ID[crave], traded: g.caveTraded || null };
@@ -295,13 +298,19 @@ function tankAction(act, where, i) {
   const L = where === 'bag' ? g.bag : g.subTank, s = L[i];
   if (!s) return false;
   if (act === 'press') {
-    if (pressUsed(g) >= pressSlots(g)) { hud.toast(pressSlots(g) ? 'Every pressure tank is full' : 'No pressure tanks yet: the boat fits them', 'warn'); return false; }
+    if (s.pressed) return false;
+    if (!seal(g, s)) { hud.toast('Every chamber is in use: the boat fits more', 'warn'); return false; }
     if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
-    s.pressed = true; hud.toast(`${SPECIES_BY_ID[s.id].name}: sealed in at ${s.from} m`);
+    const home = s.home ?? s.from ?? 0, rating = chamberRating(g);
+    hud.toast(home > rating ? `${SPECIES_BY_ID[s.id].name}: sealed in, but the chamber only holds ${rating} m of its ${home} m` : `${SPECIES_BY_ID[s.id].name}: sealed in, pumping to ${home} m`);
   } else if (act === 'open') {
     if (tankUsed(g) >= tankSlots(g)) { hud.toast('The open tank is full', 'warn'); return false; }
     if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
-    s.pressed = false;
+    s.pressed = false; s.bleed = false; delete s.chamber;
+  } else if (act === 'bleed') {
+    if (!s.pressed || s.acc) return false;
+    s.bleed = !s.bleed;
+    hud.toast(s.bleed ? 'The valve open a crack: the chamber eases toward the surface' : 'Valve closed');
   } else if (act === 'release') {
     L.splice(i, 1);
     if (s.cond > 0.05) {
@@ -894,7 +903,9 @@ function update(dt) {
       } else if (ev.type === 'missed') hud.toast(`The ${ev.name.toLowerCase()} got away`);
       else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
     }
-    for (const s of updateSpecimens(g, dt)) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died — it came up too fast`, 'warn');
+    const dl = updateSpecimens(g, dt);
+    for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from the pressure it lives at`, 'warn');
+    for (const ev of dl.events) hud.toast(`The ${SPECIES_BY_ID[ev.s.id].name.toLowerCase()} is acclimated to the surface: worth a quarter more`, 'note');
     g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
     if (e.inSub && owns(profile, 'arm') && !g.armGame) {

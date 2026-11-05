@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.7.1 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.8.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -31,7 +31,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | E | Wear a fangtooth necklace |
 | G | Offer a lure or necklace back to the deep (below 100 m) - calms the entity |
 | B | At the boat: take the helm and drive the Margaret along the surface (A / D) |
-| T | In the sub: the tank room (move animals into pressure tanks, or let them go) |
+| T | In the sub: the tank room (pressure chambers, the open tank, the bag) |
 | U | The boat (at the surface): sell your haul, buy gear, radio contracts, the aquarium |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause |

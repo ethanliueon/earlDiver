@@ -12,10 +12,23 @@ export const pressSlots = (g) => Math.round(statValue(g.profile, 'pressTanks'));
 export const tankUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed ? 0 : 1), 0);
 export const pressUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed ? 1 : 0), 0);
 // put a specimen in the sub: deep animals into a pressure tank if one is free, else the open tank
+// the first free chamber, or -1
+export function freeChamber(g) {
+  const used = new Set(g.subTank.filter((s) => s.pressed).map((s) => s.chamber));
+  for (let i = 0; i < pressSlots(g); i++) if (!used.has(i)) return i;
+  return -1;
+}
+export function seal(g, spec) {
+  const c = freeChamber(g);
+  if (c < 0) return false;
+  spec.pressed = true; spec.chamber = c; spec.bleed = false;
+  spec.press = Math.max(0, g.sub.y); // sealed at the pressure outside, then pumped up to its home
+  return true;
+}
 export function stow(g, spec) {
-  if ((spec.from || 0) > 150 && pressUsed(g) < pressSlots(g)) { spec.pressed = true; g.subTank.push(spec); return 'press'; }
+  if ((spec.from || 0) > 100 && freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
   if (tankUsed(g) < tankSlots(g)) { spec.pressed = false; g.subTank.push(spec); return 'tank'; }
-  if (pressUsed(g) < pressSlots(g)) { spec.pressed = true; g.subTank.push(spec); return 'press'; }
+  if (freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
   return null;
 }
 export const subFull = (g) => tankUsed(g) >= tankSlots(g) && pressUsed(g) >= pressSlots(g);
@@ -142,25 +155,54 @@ export function updateCapture(g, dt) {
   return ev;
 }
 
-// Specimens between the catch and the sale. A bag is rougher than the sub's tank; and an animal
-// from deep water, brought up fast, is hurt by the pressure change (unless in a pressure tank,
-// where it is held at the pressure it was caught at, and slowly recovers).
+// Specimens between the catch and the sale. Every animal has a home depth (where it was caught,
+// or where it has been slowly brought up to). What hurts is the gap between that and the pressure it
+// is under now: in the bag, Earl's depth; in the open tank, the sub's; in a pressure chamber, what
+// the chamber holds (pumped up to the animal's home, but never past the chamber's rating).
+// Up to 150 m of gap, it lives, more stressed the bigger the gap; past that, it dies.
+export const SAFE_GAP = 150, PUMP = 30, BLEED = 3;
+export const chamberRating = (g) => Math.round(statValue(g.profile, 'pressRating'));
+export const homeOf = (s) => (s.home ?? s.from ?? 0);
+export function gapOf(g, s, inBag) {
+  const felt = s.pressed ? (s.press || 0) : Math.max(0, inBag ? g.earl.y : g.sub.y);
+  return Math.max(0, homeOf(s) - felt);
+}
 export function updateSpecimens(g, dt) {
-  const e = g.earl, deaths = [];
-  const rise = -(e.inSub ? g.sub.vy : e.vy); // m/s upward
+  const deaths = [], events = [];
+  const rating = chamberRating(g);
   const tick = (s, inBag) => {
+    if (s.home === undefined) s.home = s.from || 0;
     if (s.cond <= 0.05) return;
     const before = s.cond;
     if (inBag) s.cond -= dt * 0.0005;
-    if (s.pressed) { s.cond = Math.min(1, s.cond + dt * 0.003); return; }
-    // per metre climbed above where it was caught: worse the faster he rises, and the deeper it lived.
-    // From 300 m at full sub speed it arrives stressed; from 1,000 m it does not survive.
-    if (rise > 1 && e.y < s.from - 5 && s.from > 40) s.cond -= rise * dt * 0.001 * clamp((rise - 1) / 4, 0, 1.5) * clamp(s.from / 300, 0.3, 1.5);
+    if (s.pressed) {
+      if (s.press === undefined) s.press = Math.max(0, g.sub.y);
+      const target = Math.min(s.home, rating);
+      if (s.bleed) {
+        // the red valve open a crack: the pressure eases off slowly, and an animal held at its
+        // own pressure eases with it (acclimates); one already short of it only feels the gap grow
+        const atHome = s.home - s.press <= 5;
+        s.press = Math.max(0, s.press - BLEED * dt);
+        if (atHome) s.home = Math.min(s.home, s.press);
+        if (s.press <= 0.5) { s.bleed = false; s.press = 0; if (atHome) { s.home = 0; s.acc = true; events.push({ type: 'acclimated', s }); } }
+      } else if (s.press < target) s.press = Math.min(target, s.press + PUMP * dt);
+      else if (s.press > target) s.press = target;
+    }
+    const gap = gapOf(g, s, inBag);
+    if (gap > 0) {
+      // stress builds toward a ceiling set by the gap; past 150 m it is dying
+      const cap = gap <= SAFE_GAP ? 1 - (gap / SAFE_GAP) * 0.55 : 0.45;
+      if (s.cond > cap) s.cond -= Math.min(s.cond - cap, 0.03 * dt);
+      if (gap > SAFE_GAP) s.cond -= ((gap - SAFE_GAP) / 300) * 0.02 * dt; // slow at first: there is time to get it into a chamber
+    }
+    // held at its own pressure in a chamber, it recovers
+    if (s.pressed && gap <= 5) s.cond += 0.003 * dt;
     s.cond = clamp(s.cond, 0, 1);
     if (before > 0.05 && s.cond <= 0.05) deaths.push(s);
   };
   for (const s of g.bag) tick(s, true);
   for (const s of g.subTank) tick(s, false);
+  deaths.events = events;
   return deaths;
 }
 // boarding the sub: specimens move from the bag into the tank (as many as fit)

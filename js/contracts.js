@@ -2,7 +2,7 @@
 // fit what Earl's gear can actually do. They pay well over the market and fill themselves when he
 // sells at the boat with the right thing aboard. A filled contract is replaced by a new one.
 import { SPECIES, SPECIES_BY_ID } from './species.js';
-import { canTakeLive, liveValue, tagPrice, isTagOnly } from './specimens.js';
+import { canTakeLive, liveValue, tagPrice, isTagOnly, isDead } from './specimens.js';
 import { GOODS, gear, owns, statValue } from './economy.js';
 import { photoValue } from './survey.js';
 
@@ -32,6 +32,9 @@ export function newContract(P, taken, rnd = Math.random) {
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('live' + sp.id)) continue;
       const pay = Math.round((liveValue(sp) * (5 + rnd() * 1.5) + 0.25) * 100) / 100; // at least 5x the market
+      // a museum will take a specimen in any state (a dead one only fetches the dead price);
+      // an aquarium wants it alive and well
+      if (rnd() < 0.3) return { kind, id: sp.id, key: 'live' + sp.id, pay: Math.round(pay * 0.8 * 100) / 100, who: 'The museum', anyState: true, text: `${an(sp.name)} for the collection, alive or dead` };
       return { kind, id: sp.id, key: 'live' + sp.id, pay, who: 'An aquarium', text: `${an('live ' + sp.name)}, in good condition` };
     }
     if (kind === 'tag') {
@@ -77,13 +80,18 @@ export function fulfil(g, P, lists) {
   for (let i = g.contracts.length - 1; i >= 0; i--) {
     const c = g.contracts[i];
     let ok = false;
-    let bonus = 1, rareName = '';
+    let bonus = 1, rareName = '', deadPay = null;
     if (c.kind === 'live') {
       for (const L of lists) {
         // the best one aboard: a rare form, if there is one, pays its multiplier on top
         let j = -1;
         L.forEach((s, k) => { if (s.id === c.id && s.cond >= 0.5 && (j < 0 || (s.mult || 1) > (L[j].mult || 1))) j = k; });
         if (j >= 0) { const sp = L.splice(j, 1)[0]; bonus = sp.mult || 1; rareName = sp.variant ? sp.variant : ''; ok = true; break; }
+      }
+      // the museum takes a dead one if that is all there is, at the dead price and no more
+      if (!ok && c.anyState) for (const L of lists) {
+        const j = L.findIndex((s) => s.id === c.id && isDead(s));
+        if (j >= 0) { const sp = L.splice(j, 1)[0]; deadPay = Math.round(liveValue(SPECIES_BY_ID[sp.id], sp.len) * 0.5 * statValue(P, 'payFish') * 100) / 100; ok = true; break; }
       }
     } else if (c.kind === 'tag') {
       const j = g.tags.findIndex((t) => t.key === 'tag' + c.id || t.key.startsWith('tag' + c.id + ':'));
@@ -95,10 +103,10 @@ export function fulfil(g, P, lists) {
       if ((g.inv[c.item] || 0) >= c.n) { g.inv[c.item] -= c.n; ok = true; }
     }
     if (ok) {
-      const pay = Math.round(c.pay * bonus * (g.frenzy && g.frenzy.id === 'market' ? 2 : 1) * 100) / 100;
+      const pay = deadPay !== null ? deadPay : Math.round(c.pay * bonus * (g.frenzy && g.frenzy.id === 'market' ? 2 : 1) * 100) / 100;
       P.cash = Math.round((P.cash + pay) * 100) / 100;
       P.lifetime = Math.round((P.lifetime + pay) * 100) / 100;
-      lines.push({ label: `Contract: ${c.text}${rareName ? ` (${rareName}, x${bonus})` : ''}`, n: 1, total: pay });
+      lines.push({ label: `Contract: ${c.text}${deadPay !== null ? ' (dead: half the market price)' : rareName ? ` (${rareName}, x${bonus})` : ''}`, n: 1, total: pay });
       g.contracts.splice(i, 1);
     }
   }
@@ -107,7 +115,7 @@ export function fulfil(g, P, lists) {
 }
 // is a contract's goods aboard right now? (for the radio list)
 export function ready(g, c, lists) {
-  if (c.kind === 'live') return lists.some((L) => L.some((s) => s.id === c.id && s.cond >= 0.5));
+  if (c.kind === 'live') return lists.some((L) => L.some((s) => s.id === c.id && (s.cond >= 0.5 || (c.anyState && isDead(s)))));
   if (c.kind === 'tag') return g.tags.some((t) => t.key === 'tag' + c.id || t.key.startsWith('tag' + c.id + ':'));
   if (c.kind === 'photo') return g.photos.some((p) => p.id === c.id);
   return (g.inv[c.item] || 0) >= c.n;

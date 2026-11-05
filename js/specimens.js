@@ -99,9 +99,13 @@ export function conditionMult(c) {
 export function conditionName(c) {
   return c <= 0.05 ? 'dead' : c >= 0.8 ? 'healthy' : c >= 0.5 ? 'stressed' : 'weak';
 }
+// a dead animal is worth half the plain market price of its kind: no rare-form, frenzy or contract
+// bonus. One brought slowly up to surface pressure in a chamber (acclimated) is worth a quarter more.
+export const isDead = (s) => s.cond <= 0.05;
 export function specimenValue(s) {
   const sp = SPECIES_BY_ID[s.id];
-  return liveValue(sp, s.len) * conditionMult(s.cond) * (s.mult || 1);
+  if (isDead(s)) return liveValue(sp, s.len) * 0.5;
+  return liveValue(sp, s.len) * conditionMult(s.cond) * (s.mult || 1) * (s.acc ? 1.25 : 1);
 }
 // fragile animals (jellies, comb jellies) take more harm from a net
 export const fragile = (sp) => sp.cat === 'Jellyfish & Drifters';
