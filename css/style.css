@@ -106,3 +106,98 @@ kbd {
 .panel button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
 .panel .small { color: rgba(220, 230, 228, 0.45); font-style: normal; }
 #pause { text-align: center; }
+
+/* ---------- home: the save ---------- */
+.menu-save { margin: -14px 0 22px; min-height: 1px; }
+.save-line { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; font-size: 12px; color: var(--muted); }
+.save-line b { font: 500 22px var(--mono); color: #f1efe6; letter-spacing: 0.02em; }
+.save-death { margin-top: 10px; font-family: var(--serif); font-style: italic; font-size: 16px; color: #e8b8a8; max-width: 520px; line-height: 1.35; }
+.menu-buttons { display: flex; align-items: center; gap: 22px; }
+button.link { background: none; border: 0; padding: 4px 0; color: rgba(220, 230, 228, 0.45); font-size: 12px; letter-spacing: 0.08em; border-bottom: 1px solid rgba(220, 230, 228, 0.2); }
+button.link:hover { color: #f1efe6; }
+
+/* ---------- the boat ---------- */
+.shop {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: flex; align-items: flex-start; gap: 18px; max-width: 94vw;
+}
+.shop-main {
+  width: min(620px, 94vw); max-height: min(640px, 86vh); display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(14, 22, 24, 0.94), rgba(8, 13, 15, 0.94));
+  border: 1px solid var(--line); border-radius: 6px; padding: 22px 26px 24px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6); backdrop-filter: blur(6px);
+}
+.shop header { display: flex; align-items: flex-start; gap: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.shop header > div:first-child { flex: 1; }
+.shop h2 { font: 400 30px var(--serif); margin: 0; color: #f1efe6; }
+.shop-sub { font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: 0.04em; }
+.shop-cash { text-align: right; }
+.shop-cash span { display: block; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(220, 230, 228, 0.4); }
+.shop-cash b { font: 500 24px var(--mono); color: #d8e8c8; }
+#workshop-close { background: none; border: 0; font-size: 28px; line-height: 1; color: var(--ink); opacity: 0.55; padding: 0; }
+.shop-tabs { display: flex; gap: 22px; margin: 12px 0 14px; flex-wrap: wrap; }
+.shop-tabs button { background: none; border: 0; padding: 4px 0; font: 16px var(--serif); color: rgba(220, 230, 228, 0.45); border-bottom: 1px solid transparent; }
+.shop-tabs button.on { color: #f1efe6; border-bottom-color: rgba(241, 239, 230, 0.6); }
+#shop-body { overflow-y: auto; padding-right: 6px; }
+.shop-empty { font: italic 17px/1.45 var(--serif); color: var(--muted); margin: 18px 0; }
+.owned { display: grid; grid-template-columns: 70px 1fr auto; align-items: baseline; gap: 2px 12px; padding: 10px 0 8px; }
+.owned span { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(220, 230, 228, 0.4); }
+.owned b { font: 400 19px var(--serif); color: #f1efe6; }
+.owned em { font-style: normal; font-size: 11px; color: var(--muted); text-align: right; }
+.ladder { grid-column: 2 / 4; display: flex; gap: 4px; margin-top: 4px; }
+.ladder i { flex: 1; height: 3px; background: rgba(255, 255, 255, 0.09); border-radius: 2px; }
+.ladder i.on { background: rgba(150, 210, 190, 0.75); }
+.card {
+  display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+  padding: 14px 16px; margin: 4px 0 14px; border: 1px solid rgba(160, 200, 200, 0.12); border-radius: 4px;
+  background: rgba(255, 255, 255, 0.025);
+}
+.card h3 { font: 500 17px var(--serif); margin: 0 0 3px; color: #f1efe6; }
+.card p { font-size: 12px; line-height: 1.45; color: var(--muted); margin: 0; }
+.card-stat { font-size: 12px; color: rgba(200, 220, 215, 0.75); margin-top: 6px; }
+.card-stat b { color: #bfe8d0; font-weight: 500; }
+.shop button[data-act] {
+  min-width: 118px; padding: 9px 14px; background: rgba(230, 236, 232, 0.92); color: #0b1418; border: 0; border-radius: 3px;
+  letter-spacing: 0.05em; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.shop button[data-act] span { font-size: 12px; opacity: 0.7; }
+.shop button[data-act]:hover:not(:disabled) { background: #fff; }
+.shop button[data-act]:disabled { background: rgba(255, 255, 255, 0.07); color: rgba(255, 255, 255, 0.35); cursor: default; }
+.shop button.primary, .shop button.warn { width: 100%; flex-direction: row; justify-content: space-between; padding: 13px 18px; font-size: 14px; margin-top: 6px; }
+.shop button.primary span { font: 500 15px var(--mono); opacity: 1; }
+.shop button.warn { background: #e8b8a0; }
+.manifest { width: 100%; border-collapse: collapse; font-size: 13px; margin: 2px 0 14px; }
+.manifest th { text-align: left; font-weight: 400; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(220, 230, 228, 0.4); padding: 4px 8px 6px 0; }
+.manifest td { padding: 7px 8px 7px 0; border-top: 1px solid rgba(255, 255, 255, 0.06); color: var(--ink); }
+.manifest td:first-child { font: 16px var(--serif); }
+.manifest td:last-child, .manifest th:last-child { text-align: right; padding-right: 0; }
+.manifest em { display: block; font-style: normal; font-size: 10px; color: #e8a080; }
+.season p { font: 16px/1.5 var(--serif); color: rgba(230, 232, 226, 0.8); margin: 6px 0 12px; }
+
+/* ---------- the ledger slip: a receipt from the buyers ---------- */
+.slip {
+  width: 250px; padding: 18px 18px 22px; color: #2b2620; font: 12px/1.5 var(--mono);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.35), transparent 60%),
+    linear-gradient(180deg, #ece4cf, #e2d8bf);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55); transform: rotate(1.6deg); position: relative;
+  /* a torn bottom edge */
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% calc(100% - 8px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 12px 8px repeat-x;
+  mask: linear-gradient(#000 0 0) top / 100% calc(100% - 8px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 12px 8px repeat-x;
+  animation: slip-in 0.35s ease-out;
+}
+@keyframes slip-in { from { transform: translateY(-14px) rotate(1.6deg); opacity: 0; } }
+.slip-head { text-align: center; letter-spacing: 0.12em; border-bottom: 1px dashed rgba(43, 38, 32, 0.45); padding-bottom: 8px; margin-bottom: 8px; font-weight: 500; }
+.slip-head small { letter-spacing: 0.04em; font-weight: 400; color: rgba(43, 38, 32, 0.6); }
+.slip-line, .slip-total { display: flex; justify-content: space-between; gap: 10px; }
+.slip-line b, .slip-total b { font-weight: 500; white-space: nowrap; }
+.slip-total { border-top: 1px dashed rgba(43, 38, 32, 0.45); margin-top: 8px; padding-top: 8px; font-size: 14px; font-weight: 500; }
+.typed { animation: type-in 0.14s steps(6); }
+@keyframes type-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.slip-stamp {
+  position: absolute; right: 16px; bottom: 34px; padding: 2px 10px; border: 2px solid rgba(160, 40, 30, 0.75); color: rgba(160, 40, 30, 0.75);
+  font: 600 18px var(--mono); letter-spacing: 0.2em; transform: rotate(-14deg); opacity: 0;
+}
+.slip.done .slip-stamp { animation: stamp 0.25s ease-out forwards; }
+@keyframes stamp { from { opacity: 0; transform: rotate(-14deg) scale(1.8); } to { opacity: 1; transform: rotate(-14deg) scale(1); } }
+@media (max-width: 900px) { .shop { flex-direction: column; align-items: center; } .slip { width: min(320px, 90vw); } }

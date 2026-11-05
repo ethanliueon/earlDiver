@@ -2,8 +2,8 @@
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
 import { speciesIcon } from './creatures_draw.js';
-import { SUB_LEVELS } from './player.js';
 import { RESOURCES } from './world.js';
+import { TANKS, FINS, SUB_TIERS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 
 const $ = (id) => document.getElementById(id);
@@ -23,12 +23,35 @@ export class UI {
     }));
     $('journal-close').addEventListener('click', () => this.toggleJournal(false));
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
-    $('upgrade-btn').addEventListener('click', () => { h.onUpgrade(); this.renderWorkshop(); });
-    $('repair-btn').addEventListener('click', () => { h.onRepair(); this.renderWorkshop(); });
+    this.shopTab = 'sell';
+    document.querySelectorAll('.shop-tabs button').forEach((b) => b.addEventListener('click', () => {
+      this.shopTab = b.dataset.shop; this.confirmSeason = false;
+      document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x === b));
+      this.renderWorkshop();
+    }));
+    // one delegated handler for every button in the shop
+    $('shop-body').addEventListener('click', (ev) => {
+      const b = ev.target.closest('button[data-act]');
+      if (!b || b.disabled) return;
+      const act = b.dataset.act, arg = b.dataset.arg;
+      if (act === 'buy') h.onBuy(arg);
+      else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
+      else if (act === 'sellitem') { const sale = h.onSellItem(arg); if (sale) this.showLedger(sale); }
+      else if (act === 'season') {
+        if (!this.confirmSeason) { this.confirmSeason = true; }
+        else { this.confirmSeason = false; const sale = h.onEndSeason(); this.toggleWorkshop(false); if (sale) { this.toggleWorkshop(true); this.showLedger(sale); } }
+      }
+      this.renderWorkshop();
+    });
+    $('newgame').addEventListener('click', () => {
+      if (!this.confirmNew) { this.confirmNew = true; $('newgame').textContent = 'Erase the save and start over?'; return; }
+      this.confirmNew = false; h.onNewGame();
+    });
     $('resume').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); });
     $('quit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); });
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
     this.renderRuns();
+    this.renderSave();
   }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
@@ -45,6 +68,21 @@ export class UI {
     $('menu').classList.remove('gone');
     this.setPaused(false);
     this.renderRuns(last);
+    this.renderSave(last);
+  }
+  // the home screen: what is saved, and what the last death cost
+  renderSave(last) {
+    const p = this.h.getProfile && this.h.getProfile();
+    const el = $('menu-save');
+    $('play').textContent = p ? 'Continue' : 'Dive';
+    $('newgame').hidden = !p; $('newgame').textContent = 'New game'; this.confirmNew = false;
+    if (!p) { el.innerHTML = ''; return; }
+    let html = `<div class="save-line"><b>${money(p.cash, false)}</b><span>season ${p.seasons || 1}</span><span>deepest ${p.deepest || 0} m</span><span>${(p.journal || []).length} species recorded</span></div>`;
+    if (last && last.bill !== undefined) {
+      const lost = last.lost && last.lost.length ? `Lost: ${last.lost.join(', ')}.` : '';
+      html += `<div class="save-death">${last.cause}. ${last.bill > 0 ? `Hospital bill ${money(last.bill)}.` : ''} ${lost}</div>`;
+    }
+    el.innerHTML = html;
   }
   setPaused(p) { $('pause').hidden = !p; }
 
@@ -100,58 +138,106 @@ export class UI {
       const items = Object.entries(g.inv).filter(([, n]) => n > 0).map(([k, n]) => `${RESOURCES[k].name} ${n}`).join(', ') || 'nothing';
       $('journal-count').textContent = formatTime(g.survival) + ' into the dive';
       list.innerHTML =
-        row('Deep sapphires', `${g.sapphires} / 8`, 'each one a larger tank') +
+        row('Cash', money(this.h.getProfile().cash), 'safe at the boat') +
+        row('Deep sapphires found', `${g.sapphires}`, 'this season') +
         row('Deepest so far', `${Math.round(e.maxDepth)} m`) +
         row('Condition', lvl) +
         row('The thing in the deep', ent.marked ? 'it has marked me' : 'unaware of me', ent.marked ? `calmed ${Math.round((ent.calm || 0) / 60 * 100)} % - free animals from nets, plant coral, give something back (G)` : '') +
-        row('Submersible', sub.imploded ? 'lost' : `refit ${sub.level}/3 · rated ${sub.rated} m`, sub.imploded ? '' : `hull ${Math.round(sub.hull * 100)} %`) +
+        row('Submersible', sub.imploded ? 'lost' : `rated ${sub.rated} m`, sub.imploded ? 'a replacement can be bought at the boat' : `hull ${Math.round(sub.hull * 100)} %`) +
         row('Carrying', items) +
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'boat workshop, at the boat'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
 
+  // ---------------- the boat ----------------
   renderWorkshop() {
-    const g = this.h.getGame();
-    const sub = g.sub;
-    const cur = SUB_LEVELS[sub.level], next = SUB_LEVELS[sub.level + 1];
-    $('ws-status').innerHTML = sub.imploded
-      ? 'The submersible is gone.'
-      : `Hull rated to <b>${cur.rated} m</b> · integrity <b>${Math.round(sub.hull * 100)} %</b> · refit ${sub.level}/3`;
-    const rb = $('repair-btn');
-    const canRepair = !sub.imploded && sub.hull < 0.999 && (g.inv.iron || 0) >= 2 && (g.inv.rock || 0) >= 2;
-    rb.hidden = sub.imploded || sub.hull >= 0.999;
-    rb.disabled = !canRepair;
-    rb.textContent = canRepair ? 'Patch the hull (+40 %): 2 iron, 2 rock' : 'Patching needs 2 iron and 2 rock';
-    const costEl = $('ws-cost');
-    costEl.innerHTML = '';
-    const btn = $('upgrade-btn');
-    if (!next || sub.imploded) {
-      costEl.innerHTML = sub.imploded ? '' : '<p>Fully refitted. Nothing more can be done for her.</p>';
-      btn.disabled = true; btn.textContent = 'Refit';
-    } else {
-      let ok = true;
-      const head = document.createElement('p');
-      head.innerHTML = `Next refit: rated to <b>${next.rated} m</b>, a bigger oxygen bank, and a new hull (100 %)`;
-      costEl.append(head);
-      const ul = document.createElement('ul');
-      for (const [k, n] of Object.entries(next.cost)) {
-        const have = g.inv[k] || 0;
-        if (have < n) ok = false;
-        const li = document.createElement('li');
-        li.className = have >= n ? 'ok' : '';
-        li.textContent = `${RESOURCES[k].name}  ${Math.min(have, n)}/${n}`;
-        ul.append(li);
+    const g = this.h.getGame(), P = this.h.getProfile(), sub = g.sub;
+    if (!P) return;
+    marketTick(P);
+    $('shop-cash').textContent = money(P.cash);
+    $('shop-sub').textContent = sub.imploded ? 'No submersible' : `Submersible rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %`;
+    const can = (price) => P.cash + 1e-6 >= price;
+    // a card: name, what it is, what it changes, and a price button
+    const card = (name, desc, stat, price, act, arg, label, owned = '') => `
+      <div class="card">
+        <div class="card-txt"><h3>${name}</h3><p>${desc}</p>${stat ? `<div class="card-stat">${stat}</div>` : ''}${owned}</div>
+        <button data-act="${act}" data-arg="${arg}" ${price !== null && !can(price) ? 'disabled' : ''}>${label}${price !== null ? `<span>${money(price, false)}</span>` : ''}</button>
+      </div>`;
+    const ladder = (n, i) => `<div class="ladder">${Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>`;
+    let html = '';
+    const tab = this.shopTab;
+    if (tab === 'sell') {
+      const rows = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]);
+      if (!rows.length && !g.items.lure && !g.items.necklace) {
+        html = `<p class="shop-empty">Nothing aboard to sell.<br>Clams and mussels in the shallows, scrap on the wrecks, ink and glass sponge further down — and in the deep, sapphires.</p>`;
+      } else {
+        let total = 0;
+        const lines = rows.map(([k, n]) => {
+          const base = GOODS[k].price, now = priceOf(P, k, base);
+          // what n of them fetch, each a little less than the last
+          let sum = 0, glut = P.market[k] || 0;
+          for (let i = 0; i < n; i++) { sum += base * Math.pow(0.85, glut / 0.15); glut += 0.15; }
+          total += sum;
+          const flooded = now < base * 0.97 ? `<em>market flooded −${Math.round((1 - now / base) * 100)} %</em>` : '';
+          return `<tr><td>${GOODS[k].name}</td><td>${n}</td><td>${money(now)} ${flooded}</td><td>${money(sum)}</td></tr>`;
+        }).join('');
+        if (rows.length) html += `<table class="manifest"><thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Total</th></tr></thead><tbody>${lines}</tbody></table>
+          <button class="primary" data-act="sellall">Load the basket and sell<span>${money(total)}</span></button>`;
+        for (const k of ['lure', 'necklace']) if (g.items[k]) html += card(GOODS[k].name, `You are carrying ${g.items[k]}. Someone on the radio collects these.`, '', null, 'sellitem', k, `Sell one · ${money(priceOf(P, k, GOODS[k].price), false)}`);
       }
-      costEl.append(ul);
-      btn.disabled = !ok; btn.textContent = ok ? 'Refit the submersible' : 'Not enough materials';
+    } else if (tab === 'diver') {
+      const t = TANKS[P.tank], tn = TANKS[P.tank + 1];
+      html += `<div class="owned"><span>Tank</span><b>${t.name}</b><em>${t.air} s of air</em>${ladder(TANKS.length, P.tank)}</div>`;
+      html += tn ? card(tn.name, tn.desc, `${t.air} s → <b>${tn.air} s</b> of air`, tn.price, 'buy', 'tank', 'Buy') : '<p class="shop-empty">The best tank there is.</p>';
+      const f = FINS[P.fins], fnx = FINS[P.fins + 1];
+      html += `<div class="owned"><span>Fins</span><b>${f.name}</b><em>×${f.speed.toFixed(2)} speed</em>${ladder(FINS.length, P.fins)}</div>`;
+      html += fnx ? card(fnx.name, fnx.desc, `×${f.speed.toFixed(2)} → <b>×${fnx.speed.toFixed(2)}</b> swimming speed`, fnx.price, 'buy', 'fins', 'Buy') : '<p class="shop-empty">No faster fins exist.</p>';
+    } else if (tab === 'sub') {
+      if (sub.imploded) {
+        html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, rated the same.', `rated ${sub.rated} m`, replacementPrice(sub.level), 'buy', 'replace', 'Buy');
+      } else {
+        const next = SUB_TIERS[sub.level + 1];
+        html += `<div class="owned"><span>Hull</span><b>Rated ${sub.rated} m</b><em>implodes past ${Math.round(sub.rated * 1.3)} m · ${sub.o2Max} s cabin air</em>${ladder(SUB_TIERS.length, sub.level)}</div>`;
+        html += next ? card(`Refit: rated ${next.rated} m`, 'A thicker pressure sphere, new seals and a bigger air bank. Includes a new hull.', `${sub.rated} m → <b>${next.rated} m</b> · air ${sub.o2Max} s → <b>${next.o2} s</b>`, next.price, 'buy', 'sub', 'Refit') : '<p class="shop-empty">Rated to the bottom of this ocean. Nothing more can be done for her.</p>';
+        if (sub.hull < 0.999) html += card('Patch the hull', 'Weld plates over the worst of it. A damaged hull leaks air.', `integrity ${Math.round(sub.hull * 100)} % → <b>${Math.round(Math.min(1, sub.hull + 0.4) * 100)} %</b>`, PATCH_PRICE, 'buy', 'patch', 'Patch');
+      }
+    } else if (tab === 'supplies') {
+      for (const [k, it] of Object.entries(SUPPLIES)) {
+        const full = g.items[k] >= it.max;
+        html += card(it.name, it.desc, `carrying ${g.items[k]} / ${it.max}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy');
+      }
+    } else if (tab === 'season') {
+      html += `<div class="season"><p>Every season the sea is new: fresh wrecks to strip, clams and pearls, sapphires in new places. What you take in a season does not come back until the next one.</p>
+        <p>Ending the season sells what is aboard and starts a new one. Nothing is lost.</p>
+        <button class="${this.confirmSeason ? 'warn' : 'primary'}" data-act="season">${this.confirmSeason ? 'Sure? Click again to end the season' : `End season ${P.seasons || 1}`}</button></div>`;
     }
-    const inv = $('ws-inv');
-    const items = Object.entries(g.inv).filter(([, n]) => n > 0);
-    inv.textContent = items.length ? 'Carrying: ' + items.map(([k, n]) => `${RESOURCES[k].name} ${n}`).join(' · ') : 'Carrying nothing.';
+    $('shop-body').innerHTML = html;
+  }
+
+  // The ledger slip: the sale typed out line by line, then the total.
+  showLedger(sale) {
+    const el = $('ledger');
+    clearInterval(this.ledgerTimer);
+    el.hidden = false; el.classList.remove('done');
+    const d = new Date();
+    const head = `<div class="slip-head">BAYSIDE MARINE BUYERS<br><small>receipt · ${d.toLocaleDateString()} ${d.toTimeString().slice(0, 5)}</small></div>`;
+    const lines = sale.lines.map((l) => `<div class="slip-line"><span>${l.n > 1 ? l.n + ' × ' : ''}${l.label}</span><b>${money(l.total)}</b></div>`);
+    lines.push(`<div class="slip-total"><span>Total</span><b>${money(sale.total)}</b></div><div class="slip-stamp">PAID</div>`);
+    el.innerHTML = head;
+    let i = 0;
+    const g = this.h.getGame();
+    this.ledgerTimer = setInterval(() => {
+      if (i >= lines.length) { clearInterval(this.ledgerTimer); el.classList.add('done'); return; }
+      el.insertAdjacentHTML('beforeend', lines[i++]);
+      el.lastElementChild.classList.add('typed');
+      g.audio && g.audio.ready && g.audio.click && g.audio.click();
+    }, 140);
+    clearTimeout(this.ledgerHide);
+    this.ledgerHide = setTimeout(() => { el.hidden = true; }, 6000 + lines.length * 140);
   }
 
   saveRun(log) {
@@ -170,9 +256,9 @@ export class UI {
     if (!runs.length) { el.innerHTML = ''; return; }
     const rows = runs.slice(0, 6).map((r, i) => `
       <tr class="${i === 0 && last ? 'latest' : ''}">
-        <td>${formatTime(r.survived)}</td><td>${r.cause}</td><td>${r.maxDepth} m</td><td>${r.species}</td><td>${r.sapphires}/8</td>
+        <td>${formatTime(r.survived)}</td><td>${r.cause}</td><td>${r.maxDepth} m</td><td>${r.earned !== undefined ? money(r.earned) : '—'}</td>
       </tr>`).join('');
-    el.innerHTML = `<h2>Dive log</h2><table><thead><tr><th>Survived</th><th>Ended</th><th>Deepest</th><th>Species</th><th>Sapphires</th></tr></thead><tbody>${rows}</tbody></table>`;
+    el.innerHTML = `<h2>Dive log</h2><table><thead><tr><th>Lasted</th><th>Ended</th><th>Deepest</th><th>Sold</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
   update(g, dt) {

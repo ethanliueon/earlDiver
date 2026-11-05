@@ -1,20 +1,15 @@
 // Earl (diver) and his submersible: movement, oxygen, pressure, hull.
 import { clamp, lerp, angleLerp } from './util.js';
 import { collide, BOAT_X, SPAWN } from './world.js';
+import { SUB_TIERS } from './economy.js';
 
 export const DIVE_SPEED = 4;
 export const SUB_SPEED = DIVE_SPEED * 1.2;
 export const SUB_VERTICAL = 2.0; // ballast: vertical speed multiplier for the sub
 export const DIVER_O2 = 50;
-export const SAPPHIRE_O2 = 15;
 const K_PRESS = Math.log(30) / 700; // x30 drain at 1000 m, starting at 300 m
 
-export const SUB_LEVELS = [
-  { rated: 800, o2: 180 },
-  { rated: 1300, o2: 300, cost: { clam: 3, mussel: 2, kelp: 2, iron: 1 } },
-  { rated: 1950, o2: 450, cost: { iron: 4, tentacle: 3, ink: 2, rock: 4 } },
-  { rated: 2700, o2: 720, cost: { iron: 6, glass: 2, ink: 3, scale: 4, pearl: 1 } },
-];
+export const SUB_LEVELS = SUB_TIERS;
 
 export function diverDrainMult(depth) {
   return depth <= 300 ? 1 : Math.exp(K_PRESS * (depth - 300));
@@ -31,7 +26,7 @@ export class Earl {
     this.x = SPAWN.x; this.y = SPAWN.y; this.vx = 0; this.vy = 0;
     this.facing = 1; this.angle = 0; this.kick = 0; this.speedNow = 0;
     this.o2Max = DIVER_O2; this.o2 = DIVER_O2;
-    this.sprint = false; this.inSub = false; this.lampWanted = true;
+    this.sprint = false; this.inSub = false; this.lampWanted = true; this.finSpeed = 1;
     this.maxDepth = 0; this.surfacing = 0; this.idle = 0; this.hr = 68;
     this.bubbleT = 0; this.atSurface = false;
     this.speedMul = 1; this.o2Mul = 1; // set from injury each frame
@@ -90,7 +85,7 @@ export function updateEarl(g, dt, inp) {
     if (sub.o2 <= 0) { sub.o2 = 0; return 'sub-o2'; }
   } else {
     // ---- diver ----
-    let sp = DIVE_SPEED * (inp.sprint ? 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul;
+    let sp = DIVE_SPEED * (inp.sprint ? 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed;
     const mag = Math.hypot(inp.x, inp.y);
     let ix = inp.x, iy = inp.y;
     if (mag > 1) { ix /= mag; iy /= mag; }

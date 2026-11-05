@@ -4,6 +4,7 @@
 import { clamp, lerp, formatTime, TAU } from './util.js';
 import { SUB_LEVELS, diverDrainMult } from './player.js';
 import { RESOURCES } from './world.js';
+import { GOODS, money } from './economy.js';
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
 
@@ -146,6 +147,21 @@ export class Hud {
       ctx.textAlign = 'right'; ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
       ctx.font = `${8 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name, x - 6 * s, y + sz / 2 - 4 * s);
     });
+
+    // ---------- cash, top left: what is safe at the boat, and what is in the bag ----------
+    if (g.profile && !dying) {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.font = `500 ${20 * s}px ${MONO}`;
+      const ctxt = money(g.profile.cash, false);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(ctxt, pad + 1.5 * s, pad + 1.5 * s);
+      ctx.fillStyle = 'rgba(220,236,214,0.9)'; ctx.fillText(ctxt, pad, pad);
+      let carried = 0;
+      for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k]) carried += GOODS[k].price * n;
+      if (carried > 0) {
+        ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.6)';
+        ctx.fillText(`+ about ${money(carried, carried < 100)} unsold`, pad, pad + 27 * s);
+      }
+    }
 
     // ---------- marked: a symbol, the red eye, bottom left ----------
     // A pointed almond in flat orange-red with a vertical black slit and a soft glow. The slit slowly

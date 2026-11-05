@@ -17,8 +17,9 @@
   <section id="menu">
     <div class="menu-inner">
       <h1>Earl Diver</h1>
-      <p class="tag">There is no bottom to reach and nothing to win.<br>Dive. Observe. Come back up.</p>
-      <button id="play">Dive</button>
+      <p class="tag">The sea pays, if you go deep enough.<br>Dive. Take what you can. Come back up.</p>
+      <div id="menu-save" class="menu-save"></div>
+      <div class="menu-buttons"><button id="play">Dive</button><button id="newgame" class="link" hidden>New game</button></div>
       <div class="controls">
         <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> swim</span>
         <span><kbd>Shift</kbd> faster, more air</span>
@@ -27,7 +28,7 @@
         <span><kbd>L</kbd> lights</span>
         <span><kbd>Q</kbd> lure</span>
         <span><kbd>E</kbd> necklace</span>
-        <span><kbd>U</kbd> workshop</span>
+        <span><kbd>U</kbd> the boat: sell, buy</span>
         <span><kbd>Mouse</kbd> hold to swim, lamp follows, right-click interact, wheel zoom</span>
         <span><kbd>G</kbd> offer to the deep</span>
         <span><kbd>Esc</kbd> pause</span>
@@ -51,13 +52,23 @@
     </div>
   </section>
 
-  <section id="workshop" class="panel" hidden>
-    <header><h2>The boat</h2><button id="workshop-close" aria-label="Close workshop">×</button></header>
-    <p id="ws-status"></p>
-    <div id="ws-cost"></div>
-    <button id="upgrade-btn">Refit</button>
-    <button id="repair-btn" class="ghost" hidden>Patch the hull</button>
-    <p id="ws-inv" class="small"></p>
+  <section id="workshop" class="shop" hidden>
+    <div class="shop-main">
+      <header>
+        <div><h2>The <i>Margaret</i></h2><div id="shop-sub" class="shop-sub"></div></div>
+        <div class="shop-cash"><span>cash</span><b id="shop-cash"></b></div>
+        <button id="workshop-close" aria-label="Close">×</button>
+      </header>
+      <nav class="shop-tabs">
+        <button data-shop="sell" class="on">Sell</button>
+        <button data-shop="diver">Diving gear</button>
+        <button data-shop="sub">Submersible</button>
+        <button data-shop="supplies">Supplies</button>
+        <button data-shop="season">Season</button>
+      </nav>
+      <div id="shop-body"></div>
+    </div>
+    <aside id="ledger" class="slip" hidden></aside>
   </section>
 
   <section id="pause" class="panel" hidden>

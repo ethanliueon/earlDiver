@@ -3,7 +3,8 @@ import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { generateWorld, RESOURCES, BOAT_X, WORLD_W } from './world.js';
 import { SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
-import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS, SAPPHIRE_O2 } from './player.js';
+import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
+import { TANKS, FINS, SUB_TIERS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
@@ -28,12 +29,16 @@ const pressed = new Set();
 let fHeld = 0;
 let fDown = 0;
 
+// what survives death: cash, upgrades, the journal, the market (see economy.js)
+let profile = loadProfile();
+
 function newGame(mode) {
+  const P = profile || newProfile();
   const seed = (Math.random() * 1e9) | 0;
   const world = generateWorld(seed);
   const rng = makeRng(seed ^ 0x5bd1e995);
   const g = {
-    mode, seed, world, rng,
+    mode, seed, world, rng, profile,
     time: 25 + Math.random() * 60, // a little after sunrise
     survival: 0,
     earl: new Earl(), sub: new Sub(),
@@ -41,8 +46,8 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: 0, necklace: 0 }, inv: {},
-    journal: new Map(), notes: '', sapphires: 0,
+    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0 }, inv: {},
+    journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
     deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio,
@@ -52,6 +57,11 @@ function newGame(mode) {
   g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
   g.damageSub = (amt, sp) => damageSub(amt, sp);
   g.sub.docked = true;
+  // upgrades bought in earlier seasons
+  g.earl.o2Max = g.earl.o2 = TANKS[P.tank].air;
+  g.earl.finSpeed = FINS[P.fins].speed;
+  g.sub.level = P.subTier; g.sub.o2 = g.sub.o2Max; g.sub.hull = P.hull;
+  if (P.subLost) { g.sub.imploded = true; g.sub.docked = false; }
   // pre-warm the ocean with life around the spawn
   const cam = { x: 500, y: 6, w: 46, h: 26 };
   for (let i = 0; i < 8; i++) g.fauna.trySpawn(cam, 0);
@@ -63,10 +73,13 @@ let g = newGame('menu');
 const ui = new UI({
   onPlay: () => startRun(),
   getGame: () => g,
-  onUpgrade: () => tryUpgrade(),
-  onCloseWorkshop: () => {},
-  onQuit: () => die('Ended the dive'),
-  onRepair: () => tryRepair(),
+  onQuit: () => die('Ended the dive', 'quit'),
+  onBuy: (k) => buy(k),
+  onSellAll: () => sellAll(),
+  onSellItem: (k) => sellItem(k),
+  onEndSeason: () => endSeason(),
+  onNewGame: () => { clearProfile(); profile = null; startRun(); },
+  getProfile: () => profile,
 });
 
 // ---------------- injuries ----------------
@@ -96,13 +109,82 @@ function damageSub(amt, sp) {
   audio.ready && audio.ram();
   hud.toast(`Rammed by ${sp.id === 187 ? 'an orca' : 'a ' + sp.name.toLowerCase()} — hull ${Math.round(sub.hull * 100)} %, air leaking`, 'warn');
 }
-function tryRepair() {
-  const sub = g.sub;
-  if (sub.hull >= 0.999 || (g.inv.iron || 0) < 2 || (g.inv.rock || 0) < 2) return;
-  g.inv.iron -= 2; g.inv.rock -= 2;
-  sub.hull = Math.min(1, sub.hull + 0.4);
-  hud.toast(`Hull patched: ${Math.round(sub.hull * 100)} %`);
+// ---------------- the boat: selling and buying ----------------
+// Everything Earl carries (except lures and necklaces, which he keeps for use) goes in the basket.
+function sellAll() {
+  marketTick(profile);
+  const lines = [];
+  for (const [k, n] of Object.entries(g.inv)) {
+    if (!n || !GOODS[k] || k === 'coral') continue;
+    lines.push(sell(profile, k, n, GOODS[k].price, GOODS[k].name));
+    g.inv[k] = 0;
+  }
+  if (!lines.length) return null;
+  const total = lines.reduce((a, l) => a + l.total, 0);
+  g.earned += total;
+  saveProfile(profile);
   audio.ready && audio.pickup();
+  return { lines, total };
+}
+function sellItem(kind) {
+  if (!g.items[kind]) return null;
+  marketTick(profile);
+  g.items[kind]--;
+  const line = sell(profile, kind, 1, GOODS[kind].price, GOODS[kind].name);
+  g.earned += line.total;
+  syncProfile(); saveProfile(profile);
+  return { lines: [line], total: line.total };
+}
+function syncProfile() {
+  const P = profile;
+  P.hull = g.sub.hull; P.subTier = g.sub.level; P.subLost = !!g.sub.imploded;
+  P.items = { lure: g.items.lure, necklace: g.items.necklace };
+  P.journal = [...g.journal.entries()]; P.notes = g.notes;
+  P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
+}
+// buy(kind): 'tank' | 'fins' | 'sub' | 'patch' | 'replace' | 'lure' | 'necklace'
+function buy(kind) {
+  const P = profile, sub = g.sub, e = g.earl;
+  let ok = false;
+  if (kind === 'tank' && TANKS[P.tank + 1] && spend(P, TANKS[P.tank + 1].price)) {
+    P.tank++; e.o2Max = e.o2 = TANKS[P.tank].air; ok = true;
+    hud.toast(`New tank: ${TANKS[P.tank].name}, ${TANKS[P.tank].air} s of air`, 'big');
+  } else if (kind === 'fins' && FINS[P.fins + 1] && spend(P, FINS[P.fins + 1].price)) {
+    P.fins++; e.finSpeed = FINS[P.fins].speed; ok = true;
+    hud.toast(`New fins: ${FINS[P.fins].name}`, 'big');
+  } else if (kind === 'sub' && !sub.imploded && SUB_TIERS[sub.level + 1] && spend(P, SUB_TIERS[sub.level + 1].price)) {
+    sub.level++; sub.o2 = sub.o2Max; sub.hull = 1; ok = true;
+    hud.toast(`Submersible refitted: rated to ${sub.rated} m`, 'big');
+  } else if (kind === 'patch' && !sub.imploded && sub.hull < 0.999 && spend(P, PATCH_PRICE)) {
+    sub.hull = Math.min(1, sub.hull + 0.4); ok = true;
+    hud.toast(`Hull patched: ${Math.round(sub.hull * 100)} %`);
+  } else if (kind === 'replace' && sub.imploded && spend(P, replacementPrice(sub.level))) {
+    const lvl = sub.level;
+    g.sub = new Sub(); g.sub.level = lvl; g.sub.o2 = g.sub.o2Max; g.sub.docked = true; g.imploded = false; ok = true;
+    hud.toast(`A new submersible, rated to ${g.sub.rated} m`, 'big');
+  } else if (SUPPLIES[kind] && g.items[kind] < SUPPLIES[kind].max && spend(P, SUPPLIES[kind].price)) {
+    g.items[kind]++; ok = true;
+    hud.toast(`Bought: ${SUPPLIES[kind].name.toLowerCase()}`);
+  }
+  if (ok) { syncProfile(); saveProfile(P); audio.ready && audio.pickup(); }
+  return ok;
+}
+// End the season: sell what is aboard, then a fresh ocean. Nothing is lost.
+function endSeason() {
+  const sale = sellAll();
+  syncProfile();
+  profile.seasons = (profile.seasons || 1) + 1;
+  ui.saveRun(runLog('A new season'));
+  saveProfile(profile);
+  const t = g.time;
+  g = newGame('play');
+  g.time = t; // the same day goes on
+  hud.toasts = [];
+  hud.toast(`Season ${profile.seasons}. The sea has changed.`, 'big');
+  return sale;
+}
+function runLog(cause) {
+  return { date: new Date().toISOString(), survived: g.survival, cause, maxDepth: Math.round(g.earl.maxDepth), species: g.journal.size, earned: Math.round(g.earned * 100) / 100, sapphires: g.sapphires, subLevel: g.sub.level };
 }
 function dieInjury(sp) {
   const name = sp ? sp.name.toLowerCase() : 'something';
@@ -112,6 +194,7 @@ function dieInjury(sp) {
 
 function startRun() {
   audio.init(); audio.resume(); audio.playMusic();
+  if (!profile) { profile = newProfile(); saveProfile(profile); }
   g = newGame('play');
   hud.toasts = [];
   ui.showGame();
@@ -217,7 +300,7 @@ function promptFor(t) {
   if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
   if (!e.inSub && e.y > 100 && (g.items.lure || g.items.necklace)) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep';
   if (e.inSub) p = p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible';
-  if (nearBoat) p = (p ? p + '   ·   ' : '') + 'U  Boat workshop';
+  if (nearBoat) p = (p ? p + '   ·   ' : '') + 'U  The boat: sell, buy';
   return p;
 }
 
@@ -255,9 +338,8 @@ function interact(t, exitSub) {
       g.items[p.type]++;
       hud.toast(p.type === 'lure' ? 'Anglerfish lure — still glowing  [Q]' : 'Fangtooth necklace  [E]');
     } else if (p.type === 'sapphire') {
-      g.sapphires++;
-      e.o2Max += SAPPHIRE_O2; e.o2 = Math.min(e.o2Max, e.o2 + SAPPHIRE_O2);
-      hud.toast(`Deep sapphire ${g.sapphires}/8 — a larger tank: +15 s of air`, 'big');
+      g.sapphires++; g.inv.sapphire = (g.inv.sapphire || 0) + 1;
+      hud.toast(`A deep sapphire — worth around ${money(priceOf(profile, 'sapphire', GOODS.sapphire.price))} at the boat`, 'big');
       audio.ready && audio.sapphire();
     } else {
       g.inv[p.type] = (g.inv[p.type] || 0) + 1;
@@ -275,6 +357,7 @@ function interact(t, exitSub) {
   } else if (t.kind === 'creature') {
     if (!g.journal.has(t.sp.id)) {
       g.journal.set(t.sp.id, { depth: Math.round(e.y), time: g.survival });
+      profile.journal = [...g.journal.entries()]; saveProfile(profile);
       hud.toast(`${t.sp.name} — ${t.sp.sci}`, 'note');
       audio.ready && audio.note();
       ui.journalDirty = true;
@@ -291,33 +374,22 @@ function leaveSub() {
   audio.ready && audio.click();
 }
 
-function tryUpgrade() {
-  const sub = g.sub;
-  const next = SUB_LEVELS[sub.level + 1];
-  if (!next) return;
-  for (const [k, n] of Object.entries(next.cost)) if ((g.inv[k] || 0) < n) return;
-  for (const [k, n] of Object.entries(next.cost)) g.inv[k] -= n;
-  sub.level++;
-  sub.o2 = sub.o2Max;
-  sub.hull = 1; // a refit includes a new hull
-  hud.toast(`Submersible refitted: rated to ${sub.rated} m`, 'big');
-  audio.ready && audio.pickup();
-}
-
 function die(cause, kind = 'normal') {
   if (g.mode !== 'play' || g.noDeath) return;
   g.mode = 'dying'; g.deathT = 0; g.deathCause = cause; g.deathKind = kind;
   ui.closeAll();
-  const log = {
-    date: new Date().toISOString(),
-    survived: g.survival,
-    cause,
-    maxDepth: Math.round(g.earl.maxDepth),
-    species: g.journal.size,
-    sapphires: g.sapphires,
-    subLevel: g.sub.level,
-  };
-  ui.saveRun(log);
+  // what death costs: everything unsold, a hospital bill, and (if it took him) what he carried for it
+  const lost = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]).map(([k, n]) => `${n} ${GOODS[k].name.toLowerCase()}`);
+  const taken = cause.startsWith('Taken');
+  if (taken) { const n = g.items.lure + g.items.necklace; if (n) lost.push(`${n} lure${n > 1 ? 's' : ''} and necklace${n > 1 ? 's' : ''}`); g.items.lure = g.items.necklace = 0; }
+  const bill = kind === 'quit' ? 0 : Math.round(profile.cash * HOSPITAL_SHARE * 100) / 100;
+  g.inv = {};
+  syncProfile();
+  profile.cash = Math.round((profile.cash - bill) * 100) / 100;
+  profile.deaths = (profile.deaths || 0) + (kind === 'quit' ? 0 : 1);
+  saveProfile(profile);
+  g.deathBill = bill; g.deathLost = lost;
+  ui.saveRun(Object.assign(runLog(cause), { bill }));
 }
 
 function causeText(kind) {
@@ -519,9 +591,9 @@ function update(dt) {
     g.fx.black = injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : clamp(g.deathT / 3, 0, 1);
     g.fx.redDeath = injuryDeath ? clamp(g.deathT / 2.2, 0, 1) : 0;
     if (g.deathT > (injuryDeath ? 5 : 3.6)) {
-      const cause = g.deathCause, survived = g.survival;
+      const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
       g = newGame('menu');
-      ui.showMenu({ cause, survived });
+      ui.showMenu({ cause, survived, bill, lost });
       return;
     }
     // the entity keeps closing in during the fade

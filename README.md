@@ -2,8 +2,10 @@
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
-There is no goal and nothing to win. Earl dives, explores, writes down what he sees,
-and tries to stay out of reach of something in the water. When the run ends, it ends.
+Earl makes his living from the sea: he dives, brings things up, sells them at his boat and spends
+the money on better gear to go deeper. The valuable things are deep, and so is something else.
+Cash and upgrades survive death; whatever he has not sold does not. See `docs/PLAN.md` for the
+update in progress.
 
 **Play:** https://ethanliueon.github.io/earlDiver/ (once GitHub Pages is switched on for this repo:
 Settings → Pages → Deploy from a branch → `main` / root).
@@ -21,17 +23,22 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | Q | Throw an anglerfish lure |
 | E | Wear a fangtooth necklace |
 | G | Offer a lure or necklace back to the deep (below 100 m) - calms the entity |
-| U | Boat workshop (at the surface, by the boat) |
+| U | The boat (at the surface): sell your haul, buy gear, end the season |
 | Mouse | Hold left button to swim toward the cursor; the lamp follows the cursor; right-click to interact; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause |
 | M | Mute |
 
 ## What to know
 
-- Air is the bar under the timer. Surface to refill. Below 300 m the pressure makes it drain
-  much faster. Each of the 8 deep sapphires adds 15 s of air.
-- The submersible is docked at the boat. It is rated to 800 m. Past 1.3× its rated depth it
-  implodes. Refit it at the boat with what you collect (3 refits, up to 2,700 m).
+- Air is the bar under the depth. Surface to refill. Below 300 m the pressure makes it drain
+  much faster. Bigger tanks are bought at the boat.
+- Everything you collect sells at the boat. Prices drop if you flood the market, and recover.
+  Deep sapphires (below 500 m) are the most valuable thing in the sea.
+- Dying costs whatever you have not sold and a hospital bill (10 % of your cash).
+  Cash, upgrades and the journal are kept (saved in the browser).
+- What you take does not come back in the same season. End the season at the boat for a new sea.
+- The submersible is docked at the boat. It starts rated to 400 m. Past 1.3× its rated depth it
+  implodes. Refits at the boat take it down to 3,000 m.
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs
   hide you if you are slow and dark. Sea lanterns keep it away, for a while.
 - It never comes above 100 m: the top 100 m are safe from it (not from sharks).
@@ -70,7 +77,8 @@ js/render.js        scene and light model
 js/earl_draw.js     Earl, the submersible, the boat, the entity's shape
 js/hud.js           timer, air, dive monitor (sonar, heart rate, journal)
 js/audio.js         music and generated sound
-js/ui.js            home screen, journal, workshop, dive log
+js/ui.js            home screen, journal, the boat (shop and ledger), dive log
+js/economy.js       the save, prices, the market, what is for sale
 data/species_data.js  183 species (from Ocean_Species_Reference.pdf)
 GAME_DESIGN.md      the design this is built from
 ```

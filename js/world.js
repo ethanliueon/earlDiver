@@ -17,20 +17,10 @@ const PROFILE = [
   [880, 26], [920, 16], [950, 9], [972, 3], [985, -1], [1000, -3.5],
 ];
 
-// Fixed sapphire hiding places: a ladder, each just beyond what the previous sapphires let a
-// diver reach on one breath. None below ~260 m - deeper than that a sapphire would be useless.
-// hide: 'boulder' (a rock beside it), 'grass', 'kelp', 'crevice' (rocks either side),
-// 'ledge' (an overhang above it), 'wreck' (in the shadow of the hull)
-const SAPPHIRES = [
-  { x: 966, hide: 'boulder' },  // ~4 m, beach shallows
-  { x: 928, hide: 'grass' },    // ~14 m, seagrass meadow
-  { x: 858, hide: 'kelp' },     // ~25 m, among the kelp holdfasts
-  { x: 808, hide: 'crevice' },  // ~40 m, the deep edge of the kelp
-  { x: 752, hide: 'ledge' },    // ~75 m, the sloping shelf
-  { x: 699, hide: 'wreck' },    // ~130 m, under the wreck's stern
-  { x: 617, hide: 'ledge' },    // ~190 m, the cliff edge
-  { x: 602, hide: 'ledge' },    // ~240 m, the cliff wall
-];
+// Deep sapphires: rare valuables, only below 500 m, a few per ocean at random, each tucked under a
+// ledge, between boulders or beside one. They are worth a great deal and the deep notices them go.
+const SAPPHIRE_COUNT = 6;
+const SAPPHIRE_HIDES = ['ledge', 'crevice', 'boulder', 'ledge'];
 
 export const RESOURCES = {
   clam: { name: 'Clam', desc: 'A heavy, closed clam.' },
@@ -42,6 +32,7 @@ export const RESOURCES = {
   tentacle: { name: 'Squid tentacle', desc: 'Something took the rest of the squid.' },
   ink: { name: 'Ink', desc: 'An ink sac, intact.' },
   pearl: { name: 'Pearl', desc: 'Found inside a clam.' },
+  sapphire: { name: 'Deep sapphire', desc: 'A raw blue stone from the deep. Worth a fortune.' },
   glass: { name: 'Glass sponge shard', desc: 'Silica lattice from a deep glass sponge.' },
   coral: { name: 'Coral fragment', desc: 'A living piece of broken coral. It could be planted.' },
 };
@@ -222,8 +213,14 @@ export function generateWorld(seed) {
   // Good deeds: animals caught in lost fishing nets (fixed places), and broken coral to replant
   for (const [x, an] of [[938, 'turtle'], [905, 'fish'], [872, 'turtle'], [826, 'fish'], [778, 'turtle'], [736, 'fish']]) addPickup('net', x, W.floorAt(x) - 0.7, { animal: an });
   for (let i = 0; i < 12; i++) { const x = rng.range(880, 968); addPickup('coral', x, onFloor(x)); }
-  // Sapphires at fixed places
-  W.sapphires = SAPPHIRES.map((sp, i) => {
+  // Sapphires: random deep spots, spread apart
+  const spots = [];
+  for (let tries = 0; spots.length < SAPPHIRE_COUNT && tries < 400; tries++) {
+    const x = rng.range(25, 578);
+    if (W.floorAt(x) < 520 || spots.some((q) => Math.abs(q.x - x) < 45)) continue;
+    spots.push({ x, hide: SAPPHIRE_HIDES[spots.length % SAPPHIRE_HIDES.length] });
+  }
+  W.sapphires = spots.map((sp, i) => {
     const x = sp.x, fl = W.floorAt(x);
     // keep the spot clear of generated rock, then build the fixed landmark that hides it
     W.rocks = W.rocks.filter((rk) => !(x > rk.x0 - 1.2 && x < rk.x1 + 1.2 && fl > rk.y0 - 2 && fl - 2.5 < rk.y1));
