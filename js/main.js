@@ -226,8 +226,8 @@ function displaySpecimen(key) {
 }
 // ---------------- the old one: a giant anglerfish in the west wall's cave ----------------
 // Once a dive she takes fish for old gold coins: 30 % under the market, except the one she
-// craves this dive, which she pays half as much again for.
-const ANGLER_RATE = 0.7, CRAVE_RATE = 1.5;
+// craves this dive, which she pays three times the market for.
+const ANGLER_RATE = 0.7, CRAVE_RATE = 3;
 const nearAngler = () => dist(g.earl.x, g.earl.y, CAVE.x + 14, CAVE.y) < 16;
 const inCave = (x, y) => x < CAVE.x + 32 && Math.abs(y - CAVE.y) < 14;
 function cravingOf() {

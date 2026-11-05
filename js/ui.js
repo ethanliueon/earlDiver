@@ -116,7 +116,7 @@ export class UI {
     } else if (!off.groups.length) {
       html += '<p class="shop-empty">The great jaw opens a little and closes again. You have nothing she wants. She takes live fish: bring them in the bag or the sub\'s tank.</p>';
     } else {
-      html += '<p class="shop-note">Once a dive she takes fish for old gold coins: 30 % under the market, but half as much again for what she craves. Choose what to give her.</p>';
+      html += '<p class="shop-note">Once a dive she takes fish for old gold coins: 30 % under the market, but three times the market for what she craves. Choose what to give her.</p>';
       let total = 0;
       const rows = off.groups.map((gr) => {
         const on = this.caveSel.has(gr.key);

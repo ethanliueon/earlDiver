@@ -159,7 +159,7 @@ notice). A brass-and-glass timer shows above the tool slots.
 A cave in the west wall at 1,800 m, where an ancient giant anglerfish lives, her lure lighting the
 mouth. F beside her opens the trade: once a dive she takes live fish (from the bag, or the sub's
 tank if the sub is there) for old gold coins at 30 % under the market, except the one species she
-craves that dive, which she pays 1.5x for. Earl chooses which fish to give her. The entity will not
+craves that dive, which she pays 3x the market for. Earl chooses which fish to give her. The entity will not
 come into her cave.
 
 ## The aquarium
@@ -179,7 +179,10 @@ come into her cave.
   at once.
 - Marked, it hunts by sound and light; hiding in kelp or under overhangs loses it. It cannot reach
   him above ~120 m. Good deeds calm it: freeing animals from nets, planting coral, offering a lure
-  or necklace back to the deep (G). Sea lanterns and the necklace keep it away; a lure distracts it.
+  or necklace back to the deep (G). Sea lanterns, the necklace and the old one's cave keep it away; a
+  lure distracts it. Whenever one of these keeps it out or draws it off, it gives up and goes far
+  away (350-500 m, and deeper) for 1.5-2.5 minutes before it starts looking again, so it is not
+  waiting for him the moment he leaves.
 - It is never fully seen, except once: the first time Earl reaches the bottom of the ocean.
 
 ## Other animals

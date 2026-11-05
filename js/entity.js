@@ -21,7 +21,8 @@ export class Entity {
     this.world = world;
     this.x = rng.range(80, 500); this.y = rng.range(2600, 3400);
     this.vx = 0; this.vy = 0;
-    this.state = 'roam'; // roam | hunt | search | drift | repelled | lured
+    this.state = 'roam'; // roam | hunt | search | drift | lured | away
+    this.awayT = 0; this.awayX = 0; this.awayY = 0;
     this.lastX = 500; this.lastY = 5; this.searchT = 0; this.senseT = 12;
     this.heading = 0; this.lureT = 0; this.lure = null; this.repelT = 0;
     this.eyeOpen = 0; this.blink = 0; this.knows = 0;
@@ -139,7 +140,8 @@ export class Entity {
     } else {
       // ---------- marked: the hunt ----------
       const lured = this.lureT > 0;
-      if (d < per && !prot && (!lured || d < 8) && e.y > SAFE_DEPTH - 20) {
+      const away = this.awayT > 0;
+      if (d < per && !prot && !away && (!lured || d < 8) && e.y > SAFE_DEPTH - 20) {
         this.lastX = e.x; this.lastY = e.y; this.knows = Math.min(1, this.knows + dt * 2);
         if (!lured) this.state = 'hunt';
       } else this.knows = Math.max(0, this.knows - dt * 0.15);
@@ -161,18 +163,18 @@ export class Entity {
         this.lureT -= dt;
         this.state = 'lured';
         tx = this.lure.x; ty = this.lure.y; speed = ENTITY_SPEED * 0.9;
-        if (this.lureT <= 0) { this.state = 'search'; this.lastX = this.lure.x; this.lastY = this.lure.y; this.searchT = 0; this.lure = null; }
+        // the lure burns out: it has lost him, and wanders off a long way before it looks again
+        if (this.lureT <= 0) { this.goAway(this.lure.x, this.lure.y, bandLo); this.lure = null; }
+      } else if (away) {
+        // gone off: it does not wait outside a safe place for him, it leaves for a while
+        this.awayT -= dt;
+        this.state = 'away';
+        tx = this.awayX; ty = this.awayY; speed = ENTITY_SPEED * 0.8;
+        if (this.awayT <= 0) { this.state = 'drift'; this.senseT = this.rng.range(20, 40); }
       } else if (prot && d < 70) {
-        // it will not come near: retreat and circle at a distance, waiting
-        this.state = 'repelled';
-        const ang = Math.atan2(this.y - prot.y, this.x - prot.x) + dt * 0.15;
-        tx = prot.x + Math.cos(ang) * 55; ty = prot.y + Math.sin(ang) * 55;
-        speed = d < 25 ? ENTITY_SPEED * 1.6 : ENTITY_SPEED * 0.5;
-        this.repelT = 4;
-      } else if (this.state === 'repelled') {
-        this.repelT -= dt;
-        if (this.repelT <= 0) { this.state = 'search'; this.searchT = 0; }
-        tx = this.x; ty = this.y; speed = 0.5;
+        // it will not come near a lantern, the necklace or the old one's cave: it turns and goes
+        this.goAway(prot.x, prot.y, bandLo);
+        tx = this.awayX; ty = this.awayY; speed = ENTITY_SPEED * 0.8;
       } else if (this.state === 'hunt') {
         if (d < per) { tx = e.x; ty = e.y; }
         else if (dist(this.x, this.y, this.lastX, this.lastY) < 6) { this.state = 'search'; this.searchT = 0; }
@@ -216,6 +218,18 @@ export class Entity {
     if (this.blink < -this.rng.range(3, 7)) this.blink = 0.18;
 
     return this.marked && d < 2.6 && !prot && e.y > SAFE_DEPTH - 4 ? 'caught' : null;
+  }
+
+  // give up on him for a while: head far off, away from (fx, fy), and deeper
+  goAway(fx, fy, bandLo) {
+    const side = Math.sign(this.x - fx) || (this.rng() < 0.5 ? -1 : 1);
+    let ax = this.x + side * this.rng.range(350, 500);
+    if (ax < 20 || ax > 2980) ax = this.x - side * this.rng.range(350, 500);
+    ax = clamp(ax, 20, 2980);
+    const fl = this.world ? this.world.floorAt(ax) - 15 : 3900;
+    this.awayX = ax; this.awayY = Math.min(fl, Math.max(bandLo, this.y, fy) + this.rng.range(150, 350));
+    this.awayT = this.rng.range(90, 150);
+    this.state = 'away'; this.knows = 0; this.searchT = 0;
   }
 
   throwLure(x, y) { this.lure = { x, y }; this.lureT = 10; }
