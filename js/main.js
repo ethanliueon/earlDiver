@@ -356,6 +356,14 @@ function update(dt) {
     }
     const target = findTarget();
     g.prompt = promptFor(target);
+    // in the submersible the prompt stays out of the way: hidden while moving, and gone after
+    // 5 s of the same text (it comes back when something new is in reach or the sub stops again)
+    if (e.inSub) {
+      if (g.prompt !== g.promptText || (g.subMoving && e.speedNow < 0.5)) { g.promptText = g.prompt; g.promptT = 0; }
+      g.subMoving = e.speedNow >= 0.5;
+      g.promptT = (g.promptT || 0) + dt;
+      if (g.subMoving || g.promptT > 5) g.prompt = null;
+    } else { g.promptText = null; g.promptT = 0; }
     // seabed materials have to be worked loose: hold F (or the right mouse button), one at a time
     const holding = keys.has('f') || mouse.rdown;
     const planting = canPlant(target);
