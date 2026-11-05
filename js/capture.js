@@ -7,6 +7,18 @@ import { variantMult, variantName } from './variants.js';
 
 export const bagSlots = (g) => Math.round(statValue(g.profile, 'bag'));
 export const tankSlots = (g) => Math.round(statValue(g.profile, 'subTank'));
+// the sealed pressure tanks: separate places in the sub (specimens in them carry pressed: true)
+export const pressSlots = (g) => Math.round(statValue(g.profile, 'pressTanks'));
+export const tankUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed ? 0 : 1), 0);
+export const pressUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed ? 1 : 0), 0);
+// put a specimen in the sub: deep animals into a pressure tank if one is free, else the open tank
+export function stow(g, spec) {
+  if ((spec.from || 0) > 150 && pressUsed(g) < pressSlots(g)) { spec.pressed = true; g.subTank.push(spec); return 'press'; }
+  if (tankUsed(g) < tankSlots(g)) { spec.pressed = false; g.subTank.push(spec); return 'tank'; }
+  if (pressUsed(g) < pressSlots(g)) { spec.pressed = true; g.subTank.push(spec); return 'press'; }
+  return null;
+}
+export const subFull = (g) => tankUsed(g) >= tankSlots(g) && pressUsed(g) >= pressSlots(g);
 
 // the tool in his hand: 'net' or 'slurp' (if he owns one)
 export function activeTool(g) {
@@ -131,18 +143,19 @@ export function updateCapture(g, dt) {
 }
 
 // Specimens between the catch and the sale. A bag is rougher than the sub's tank; and an animal
-// from deep water, brought up fast, is hurt by the pressure change (unless in a canister).
+// from deep water, brought up fast, is hurt by the pressure change (unless in a pressure tank,
+// where it is held at the pressure it was caught at, and slowly recovers).
 export function updateSpecimens(g, dt) {
   const e = g.earl, deaths = [];
-  const canisters = g.addons && g.addons.canisters;
   const rise = -(e.inSub ? g.sub.vy : e.vy); // m/s upward
   const tick = (s, inBag) => {
     if (s.cond <= 0.05) return;
     const before = s.cond;
     if (inBag) s.cond -= dt * 0.0005;
+    if (s.pressed) { s.cond = Math.min(1, s.cond + dt * 0.003); return; }
     // per metre climbed above where it was caught: worse the faster he rises, and the deeper it lived.
     // From 300 m at full sub speed it arrives stressed; from 1,000 m it does not survive.
-    if (!canisters && rise > 1 && e.y < s.from - 5 && s.from > 40) s.cond -= rise * dt * 0.001 * clamp((rise - 1) / 4, 0, 1.5) * clamp(s.from / 300, 0.3, 1.5);
+    if (rise > 1 && e.y < s.from - 5 && s.from > 40) s.cond -= rise * dt * 0.001 * clamp((rise - 1) / 4, 0, 1.5) * clamp(s.from / 300, 0.3, 1.5);
     s.cond = clamp(s.cond, 0, 1);
     if (before > 0.05 && s.cond <= 0.05) deaths.push(s);
   };
@@ -153,7 +166,7 @@ export function updateSpecimens(g, dt) {
 // boarding the sub: specimens move from the bag into the tank (as many as fit)
 export function transferToTank(g) {
   let n = 0;
-  while (g.bag.length && g.subTank.length < tankSlots(g)) { g.subTank.push(g.bag.shift()); n++; }
+  while (g.bag.length && stow(g, g.bag[0])) { g.bag.shift(); n++; }
   return n;
 }
 

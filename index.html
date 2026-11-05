@@ -32,6 +32,7 @@
         <span><kbd>U</kbd> the boat: sell, buy</span>
         <span><kbd>C</kbd> call the sub</span>
         <span><kbd>B</kbd> the helm: drive the boat</span>
+        <span><kbd>T</kbd> in the sub: the tank room</span>
         <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd> net · slurp gun · tag gun · camera · traps</span>
         <span><kbd>Space</kbd> catch</span>
         <span><kbd>Mouse</kbd> hold to swim, lamp follows, right-click interact, wheel zoom</span>
@@ -62,7 +63,7 @@
     <div class="shop-main">
       <header>
         <div class="nameplate"><h2>The <i>Margaret</i></h2><div id="shop-sub" class="shop-sub"></div></div>
-        <div class="shop-cash"><span>cash</span><b id="shop-cash" class="counter"></b></div>
+        <div class="shop-cash"><span>cash</span><b id="shop-cash" class="counter"></b><em id="shop-coins" class="coins"></em></div>
         <button id="workshop-close" aria-label="Close">×</button>
       </header>
       <nav class="shop-tabs">
@@ -82,10 +83,20 @@
     <div class="shop-main">
       <header>
         <div class="nameplate"><h2>The old one</h2><div id="cave-sub" class="shop-sub"></div></div>
-        <div class="shop-cash"><span>cash</span><b id="cave-cash" class="counter"></b></div>
+        <div class="shop-cash"><span>cash</span><b id="cave-cash" class="counter"></b><em id="cave-coins" class="coins"></em></div>
         <button id="cave-close" aria-label="Close">×</button>
       </header>
       <div id="cave-body"></div>
+    </div>
+  </section>
+
+  <section id="tankroom" class="shop tankroom" hidden>
+    <div class="shop-main">
+      <header>
+        <div class="nameplate"><h2>The tank room</h2><div id="tank-sub" class="shop-sub"></div></div>
+        <button id="tank-close" aria-label="Close">×</button>
+      </header>
+      <div id="tank-body"></div>
     </div>
   </section>
 

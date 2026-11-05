@@ -161,6 +161,31 @@ notice). A brass-and-glass timer shows above the tool slots.
   the rise (a terrace of mussels, bacterial mats and methane bubbles) has clams that often hold
   pearls, and twice the chance of rare forms.
 
+## Old gold coins
+
+A second currency, only from the deep, never turned into cash. Every live animal caught below
+500 m pays coins when it is sold or handed to a contract (1 a head, 2 below 1,500 m, 3 below
+2,500 m, one more for a rare form); every deep sapphire sold pays 1; the old one pays some in every
+trade (the same, plus 1 for her craving). Coins are kept through death. They buy her wares, the
+sub's depth refits past 2,000 m (1 coin each to 2,600 m, 2 to 3,200 m, 3 to 3,800 m, then 4, on top
+of the cash) and the abyss tank (10 coins). Shown as a small stack at the end of the slot row, and
+beside the cash at the boat and in the cave.
+
+Her wares: an old lure (2 coins, up to 3: burns 25 s instead of 10, thrown first with Q); her
+blessing (2 coins, this dive: the entity notices you half as fast); a sapphire eye (8 coins, kept:
+sapphires within 150 m show on the sonar); a pressure relic (5 coins, up to 4: the sub is rated
+100 m deeper each).
+
+## The tank room
+
+T in the sub opens the tank room: every place an animal can be kept, each a porthole with the
+animal swimming in it, its condition and the depth it was caught at. Pressure tanks (a Submersible
+upgrade, up to 4, replacing the old canisters) are sealed bottles: an animal inside is held at the
+pressure it was caught at, takes no harm on the way up and slowly recovers. In the tank room,
+animals move between the bag, the open tank and the pressure tanks, or are let go back into the
+water. Deep animals (from below 150 m) go into a free pressure tank by themselves when they come
+aboard. In the HUD the pressure tanks are brass-ringed dots after the open tank's.
+
 ## The old one
 
 A cave in the west wall at 1,800 m, where an ancient giant anglerfish lives, her lure lighting the
@@ -208,6 +233,7 @@ charging animal makes it swerve.
 | 1-5, Space | Net, slurp gun, tag gun, camera, traps; Space uses it (in the sub: the arm) |
 | C / hold C | Call the sub / send it home |
 | B | At the boat: take the helm, A / D drive her |
+| T | In the sub: the tank room |
 | U | The boat: sell, buy, radio, aquarium |
 | J | Journal |
 | L, Q, E, G | Lights, throw a lure, wear a necklace, offer something to the deep |

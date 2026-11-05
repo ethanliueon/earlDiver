@@ -172,6 +172,7 @@ export const UPGRADES = {
   depth:     { group: 'Submersible', name: 'Depth rating', base: 300, step: 75, max: 50, cost: 0.6, growth: 1.11, fmt: 'depth' },
   subAir:    { group: 'Submersible', name: 'Cabin air', base: 150, step: 15, max: 34, cost: 1, growth: 1.12, fmt: 's' },
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, step: 0.03, max: 15, cost: 2, growth: 1.3, fmt: 'x' },
+  pressTanks: { group: 'Submersible', name: 'Pressure tanks', base: 0, step: 1, max: 4, cost: 4, growth: 1.8, fmt: 'n' },
   subTank:   { group: 'Submersible', name: 'Specimen tank', base: 4, step: 1, max: 10, cost: 3, growth: 1.5, fmt: 'n' },
   // the claw
   armReach:  { group: 'Claw', needs: 'arm', name: 'Reach', base: 3, step: 0.25, max: 12, cost: 3, growth: 1.3, fmt: 'm' },
@@ -220,6 +221,7 @@ export const UPGRADE_DESC = {
   subAir: 'A bigger air bank in the cabin: more time below.',
   subSpeed: 'A stronger motor: faster everywhere.',
   subTank: 'One more place in the specimen tank, where animals keep without losing condition.',
+  pressTanks: 'One more sealed pressure tank in the sub. An animal inside is kept at the pressure it was caught at: no harm on the way up, and it slowly recovers. Move animals in the tank room (T, in the sub).',
   armReach: 'A longer arm: grab from further off.',
   armSize: 'Bigger jaws: the claw takes bigger animals.',
   armSpeed: 'Better hydraulics: the arm reaches out and back faster.',
@@ -253,6 +255,7 @@ export const UPGRADE_LINE = {
   subAir: 'More air in the iron lung.',
   subSpeed: 'A stronger heart in the engine room.',
   subTank: 'Another cradle in the specimen tank.',
+  pressTanks: "Steel bottles that keep the deep's own weight on what you bring up.",
   armReach: 'A longer reach into the dark.',
   armSize: 'Bigger jaws on the old claw.',
   armSpeed: 'Hydraulics that answer quicker.',
@@ -266,6 +269,29 @@ export const GEAR = {
   camera: { name: 'Camera', price: 2, desc: 'The institute pays for the first photograph of every species and rare form. Key 4.' },
   lowlight: { line: 'See in the dark without being seen.', name: 'Low-light sensor', price: 60, needs: 'camera', desc: 'No flash any more: nothing in the dark sees you take the picture.' },
   arm: { name: 'Claw hydraulics', price: 40, desc: 'Works the old claw under the sub: from inside, Space reaches for an animal; time the grip.' },
+};
+// ---------------- old gold coins ----------------
+// A second currency, only from the deep: animals caught below 500 m when they are sold (1 a head,
+// 2 below 1,500 m, 3 below 2,500 m, one more for a rare form), the old one's trades, and sapphires.
+// They are never turned into cash: they buy her wares, the deepest refits and the abyss tank.
+export function coinsFor(spec) {
+  if (!spec || spec.cond <= 0.05) return 0;
+  const f = spec.from || 0;
+  const base = f >= 2500 ? 3 : f >= 1500 ? 2 : f >= 500 ? 1 : 0;
+  return base ? base + (spec.variant ? 1 : 0) : 0;
+}
+// the deepest refits also cost coins: 1 each to 2,600 m, 2 to 3,200 m, 3 to 3,800 m, then 4
+export function upgradeCoins(P, id) {
+  if (id !== 'depth') return 0;
+  const next = statValue(P, 'depth') + UPGRADES.depth.step;
+  return next > 2000 ? Math.ceil((next - 2000) / 600) : 0;
+}
+// what the old one keeps in her cave, for coins
+export const WARES = {
+  oldlure: { name: 'An old lure', coins: 2, max: 3, line: 'A lure that has hung in the dark longer than the boat has floated.', desc: 'Burns two and a half times as long as a common lure (25 s), and the deep follows it farther. Thrown first with Q.' },
+  blessing: { name: 'Her blessing', coins: 2, line: 'She breathes on you. The deep looks away, for a while.', desc: 'For the rest of this dive, the entity notices you half as fast.' },
+  eye: { name: 'A sapphire eye', coins: 8, once: true, line: 'A blue stone that turns toward its own kind.', desc: 'Deep sapphires within 150 m show on the sonar as blue points. Kept for good.' },
+  relic: { name: 'A pressure relic', coins: 5, max: 4, line: 'An iron ring from a hull that went deeper than it should have.', desc: 'Bolted inside the sub: its rating goes 100 m deeper. Up to four.' },
 };
 export const lv = (P, id) => (P.lv && P.lv[id]) || 0;
 export const statValue = (P, id) => { const U = UPGRADES[id]; return U.base + U.step * lv(P, id); };
@@ -326,7 +352,7 @@ export function newProfile() {
   return {
     v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
     lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 0, deep: 0 },
-    journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(),
+    journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(), coins: 0,
   };
 }
 export function loadProfile() { return null; }

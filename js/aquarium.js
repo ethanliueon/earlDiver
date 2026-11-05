@@ -13,7 +13,7 @@ export const WINGS = [
   { id: 'open', name: 'Open ocean dome', price: 150, slots: 8, upkeep: 1.5, desc: 'One enormous round tank for open-water swimmers and drifting jellies.' },
   { id: 'twilight', name: 'Twilight gallery', price: 400, slots: 10, upkeep: 3, desc: 'Dim, chilled tanks for animals from 150 to 500 m.' },
   { id: 'deep', name: 'Deep-sea gallery', price: 900, slots: 8, upkeep: 6, desc: 'Pressurised black tanks behind portholes, for animals from below 500 m.' },
-  { id: 'abyss', name: 'Abyss tank', price: 2000, slots: 6, upkeep: 12, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 3,500 m.' },
+  { id: 'abyss', name: 'Abyss tank', price: 2000, coins: 10, slots: 6, upkeep: 12, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 3,500 m.' },
 ];
 export const WING_BY_ID = Object.fromEntries(WINGS.map((w) => [w.id, w]));
 

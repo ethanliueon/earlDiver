@@ -4,7 +4,7 @@
 import { clamp, dist } from './util.js';
 import { canTakeLive, liveValue } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
-import { tankSlots } from './capture.js';
+import { tankSlots, subFull, stow } from './capture.js';
 import { gear, owns } from './economy.js';
 
 const GRIP_TIMEOUT = 4;
@@ -33,7 +33,7 @@ export function findArmTarget(g) {
 }
 
 export function startArm(g) {
-  if (g.subTank.length >= tankSlots(g)) return 'The specimen tank is full';
+  if (subFull(g)) return 'The specimen tank is full';
   const tgt = findArmTarget(g);
   if (!tgt) return 'Nothing in reach of the arm';
   const D = armDef(g);
@@ -70,7 +70,7 @@ export function updateArm(g, dt, pressSpace) {
     const tg = A.tgt;
     const spec = { id: tg.sp.id, len: tg.len, cond: A.result === 'clean' ? 0.95 : 0.35, from: Math.round(g.sub.y), t: g.time };
     if (tg.variant) { spec.variant = tg.variant; spec.mult = variantMult(tg.variant); }
-    g.subTank.push(spec);
+    stow(g, spec);
     return { type: 'armCatch', spec, sp: tg.sp, name: tg.name, crushed: A.result === 'crushed' };
   }
   return null;

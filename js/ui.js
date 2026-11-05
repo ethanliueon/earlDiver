@@ -10,6 +10,8 @@ const badge = (sp) => { const r = rarityOf(sp); return `<span class="rbadge" sty
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
+import { WARES, upgradeCoins } from './economy.js';
+import { tankSlots, pressSlots, tankUsed, pressUsed } from './capture.js';
 import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
@@ -17,6 +19,7 @@ import { formatTime } from './util.js';
 
 import { VERSION } from './version.js';
 const $ = (id) => document.getElementById(id);
+const COIN = '<i class="coin"></i>';
 const RUNLOG_KEY = 'earlDiver.runs.v1';
 
 export class UI {
@@ -34,12 +37,24 @@ export class UI {
     $('journal-close').addEventListener('click', () => this.toggleJournal(false));
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
+    $('tank-close').addEventListener('click', () => this.toggleTank(false));
+    this.caveTab = 'trade';
+    $('tank-body').addEventListener('click', (ev) => {
+      const b = ev.target.closest('button[data-tk]');
+      if (!b || b.disabled) return;
+      const [act, where, i] = b.dataset.tk.split(':');
+      h.onTank(act, where, +i);
+      this.renderTank();
+    });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
-      if (!b || b.disabled) return;
+      if (!b) { const row = ev.target.closest('.up-row[data-row]'); if (row) { row.classList.toggle('open'); this.openRows[row.classList.contains('open') ? 'add' : 'delete'](row.dataset.row); } return; }
+      if (b.disabled) return;
       const k = b.dataset.cave;
-      if (k === '!trade') { h.onCaveTrade([...this.caveSel]); this.caveSel.clear(); }
+      if (k.startsWith('tab:')) this.caveTab = k.slice(4);
+      else if (k.startsWith('ware:')) h.onWare(k.slice(5));
+      else if (k === '!trade') { h.onCaveTrade([...this.caveSel]); this.caveSel.clear(); }
       else if (this.caveSel.has(k)) this.caveSel.delete(k); else this.caveSel.add(k);
       this.renderCave();
     });
@@ -101,8 +116,51 @@ export class UI {
   }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden; }
-  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); }
+  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden; }
+  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); }
+  // the tank room, inside the sub: every place an animal can be kept, and what is in it
+  toggleTank(force) {
+    const el = $('tankroom');
+    const open = force === undefined ? el.hidden : force;
+    el.hidden = !open;
+    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.renderTank(); this.tankT = 0; }
+  }
+  renderTank() {
+    const g = this.h.getGame(), P = this.h.getProfile();
+    if (!g || !P) return;
+    const e = g.earl, depth = Math.max(0, Math.round(e.y)), rising = -(g.sub.vy || 0) > 1;
+    const ps = pressSlots(g), ts = tankSlots(g);
+    $('tank-sub').textContent = `open tank ${tankUsed(g)}/${ts} · pressure tanks ${pressUsed(g)}/${ps} · outside ${depth} m`;
+    const img = (sp) => { const key = 'aq' + sp.id; if (!this.toolImgs) this.toolImgs = new Map(); if (!this.toolImgs.has(key)) this.toolImgs.set(key, speciesIcon(sp, 120, 68).toDataURL()); return this.toolImgs.get(key); };
+    const cell = (s, where, i, pressed) => {
+      const sp = SPECIES_BY_ID[s.id], c = s.cond, cn = conditionName(c);
+      const hurting = !pressed && rising && depth < (s.from || 0) - 5 && (s.from || 0) > 40 && c > 0.05;
+      const col = c <= 0.05 ? '#8a8a8a' : c >= 0.8 ? '#78dc8c' : c >= 0.5 ? '#e8b040' : '#e6503c';
+      const btns = where === 'bag'
+        ? `<button data-tk="open:bag:${i}" ${tankUsed(g) >= ts ? 'disabled' : ''}>Open tank</button><button data-tk="press:bag:${i}" ${pressUsed(g) >= ps ? 'disabled' : ''}>Pressure tank</button>`
+        : pressed ? `<button data-tk="open:tank:${i}" ${tankUsed(g) >= ts ? 'disabled' : ''}>Unseal</button>` : `<button data-tk="press:tank:${i}" ${pressUsed(g) >= ps ? 'disabled' : ''}>Seal in pressure</button>`;
+      return `<div class="tk-cell${pressed ? ' pressed' : ''}${hurting ? ' hurting' : ''}">
+        <div class="port"><img src="${img(sp)}" alt="" style="animation-delay:-${(i * 1.3).toFixed(1)}s"><span class="bub"></span>${pressed ? `<em class="gauge">${s.from} m</em>` : ''}</div>
+        <div class="tk-txt"><b>${s.variant ? `<span class="rare r-${s.variant}">${VARIANTS[s.variant].name}</span> ` : ''}${sp.name}</b>
+          <span class="tk-cond"><i style="width:${Math.round(c * 100)}%;background:${col}"></i></span>
+          <small>${cn} · caught at ${s.from || 0} m${hurting ? ' · <em>the pressure is falling on it</em>' : pressed ? ' · held at depth, recovering' : ''}</small></div>
+        <div class="tk-act">${btns}<button class="ghost" data-tk="release:${where}:${i}">Let go</button></div></div>`;
+    };
+    const empty = (label) => `<div class="tk-cell empty"><div class="port"></div><div class="tk-txt"><small>${label}</small></div></div>`;
+    let html = '';
+    html += `<h4>Pressure tanks</h4>`;
+    if (!ps) html += '<p class="shop-note">No pressure tanks fitted yet. The boat fits them (Submersible): sealed bottles that keep a deep animal at the pressure it was caught at.</p>';
+    else {
+      const list = g.subTank.map((s, i) => [s, i]).filter(([s]) => s.pressed);
+      html += `<div class="tk-grid">${list.map(([s, i]) => cell(s, 'tank', i, true)).join('')}${Array.from({ length: ps - list.length }, () => empty('sealed, empty')).join('')}</div>`;
+    }
+    html += `<h4>Open tank</h4>`;
+    const open = g.subTank.map((s, i) => [s, i]).filter(([s]) => !s.pressed);
+    html += `<div class="tk-grid">${open.map(([s, i]) => cell(s, 'tank', i, false)).join('')}${Array.from({ length: Math.max(0, ts - open.length) }, () => empty('empty')).join('')}</div>`;
+    if (g.bag.length) html += `<h4>Still in the bag</h4><div class="tk-grid">${g.bag.map((s, i) => cell(s, 'bag', i, false)).join('')}</div>`;
+    html += '<p class="shop-note">Animals from deep water are hurt as the sub climbs, unless they are sealed in a pressure tank. In one, they take no harm and slowly recover.</p>';
+    $('tank-body').innerHTML = html;
+  }
   // the old one's cave: choose which fish she takes (once a dive)
   toggleCave(force) {
     const el = $('cave');
@@ -114,10 +172,23 @@ export class UI {
     const P = this.h.getProfile(), off = this.h.onCaveOffer();
     if (!P || !off) return;
     this.renderCounter($('cave-cash'), money(P.cash));
+    $('cave-coins').innerHTML = `${COIN}${P.coins || 0}`;
     $('cave-sub').textContent = `A giant anglerfish, older than the boat · this dive she craves: ${off.craving.name.toLowerCase()}`;
-    let html = '';
+    let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">Her wares</button></nav>`;
+    if (this.caveTab === 'wares') {
+      for (const [k, W] of Object.entries(WARES)) {
+        const g = this.h.getGame();
+        const have = k === 'oldlure' ? (P.oldLures || 0) : k === 'relic' ? (P.relics || 0) : k === 'eye' ? (P.eye ? 1 : 0) : (g.blessed ? 1 : 0);
+        const done = (W.max && have >= W.max) || (W.once && have) || (k === 'blessing' && have);
+        const owned = W.max ? `${have} / ${W.max}` : done ? (k === 'blessing' ? 'on you this dive' : 'yours') : '';
+        html += this.row('ware:' + k, W.name, W.line, owned, `<button data-cave="ware:${k}" class="coinbtn" ${done || (P.coins || 0) < W.coins ? 'disabled' : ''}>${COIN}${W.coins}</button>`, `${W.coins} old gold coin${W.coins > 1 ? 's' : ''}`, W.desc);
+      }
+      html += '<p class="shop-note">Old gold comes from the deep: every live animal caught below 500 m pays coins when it is sold (more the deeper it lived), she pays some in every trade, and so does every sapphire.</p>';
+      $('cave-body').innerHTML = html;
+      return;
+    }
     if (off.traded) {
-      html += `<p class="shop-empty">She has eaten. The lure dims a little, and a scatter of old gold coins lies in the silt: ${money(off.traded.total)}. Come back next dive.</p>`;
+      html += `<p class="shop-empty">She has eaten. The lure dims a little, and a scatter of old gold lies in the silt: ${money(off.traded.total)}${off.traded.coins ? ` and ${off.traded.coins} coin${off.traded.coins > 1 ? 's' : ''}` : ''}. Come back next dive.</p>`;
       html += `<table class="manifest"><tbody>${off.traded.lines.map((l) => `<tr><td>${l.label}</td><td>${l.n}</td><td>${money(l.total)}</td></tr>`).join('')}</tbody></table>`;
     } else if (!off.groups.length) {
       html += '<p class="shop-empty">The great jaw opens a little and closes again. You have nothing she wants. She takes live fish: bring them in the bag or the sub\'s tank.</p>';
@@ -249,6 +320,7 @@ export class UI {
     if (!P) return;
     marketTick(P);
     this.renderCounter($('shop-cash'), money(P.cash));
+    $('shop-coins').innerHTML = P.coins ? `${COIN}${P.coins}` : '';
     $('shop-sub').textContent = sub.imploded ? 'No submersible' : `Submersible rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %`;
     const can = (price) => P.cash + 1e-6 >= price;
     // a card: name, what it is, what it changes, and a price button
@@ -317,7 +389,6 @@ export class UI {
     } else if (tab === 'diver') {
       html += this.suitRows(P, can);
       html += this.upgradeGroups(P, ['Diver', 'Net', 'Slurp gun', 'Tag gun', 'Camera'], icon, can);
-      if (!(P.addons || {}).canisters) html += card(CANISTERS.name, CANISTERS.desc, 'for the bag and the sub tank', CANISTERS.price, 'buy', 'canisters', 'Buy');
     } else if (tab === 'sub') {
       if (sub.imploded) {
         html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', `rated ${sub.rated} m`, replacementPrice(P), 'buy', 'replace', 'Buy');
@@ -366,7 +437,11 @@ export class UI {
         }).join('') + Array.from({ length: w.slots - shown.length }, () => '<div class="tank-cell empty"></div>').join('');
         html += `<div class="wing"><div class="wing-h"><b>${w.name}</b><em>${shown.length}/${w.slots} · upkeep ${money(w.upkeep, false)}/day</em></div><div class="tanks">${cells}</div></div>`;
       }
-      if (next) html += card(`Build: ${next.name}`, next.desc, `${next.slots} tanks · upkeep ${money(next.upkeep, false)} a day`, next.price, 'buy', 'wing:' + next.id, 'Build');
+      if (next) {
+        let c = card(`Build: ${next.name}`, next.desc, `${next.slots} tanks · upkeep ${money(next.upkeep, false)} a day${next.coins ? ` · and ${next.coins} old gold coins` : ''}`, next.price, 'buy', 'wing:' + next.id, 'Build');
+        if (next.coins && (P.coins || 0) < next.coins) c = c.replace('<button ', '<button disabled ');
+        html += c;
+      }
       else html += '<p class="shop-note">Every wing is built.</p>';
       if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets, ${money(A.lastDay.cost, false)} upkeep. Earned so far: ${money(A.earned, false)}.</p>`;
     }
@@ -443,7 +518,7 @@ export class UI {
         const now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statValue(P, id) + U.step);
         html += this.row('up:' + id, U.name, UPGRADE_LINE[id] || '',
           `<span class="lamps">${Array.from({ length: 10 }, (_, k) => `<i class="${k < Math.round(l / U.max * 10) ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : `lv ${l}`}`,
-          `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}</button>`,
+          `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < upgradeCoins(P, id) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && upgradeCoins(P, id) ? ` <em class="pluscoin">+${COIN}${upgradeCoins(P, id)}</em>` : ''}</button>`,
           `${now}${maxed ? ' (the most it can be)' : ` <i>→</i> <b>${next}</b> next level`}`, UPGRADE_DESC[id] || '');
       }
       if (gk === 'camera' && !owns(P, 'lowlight')) html += this.row('gear:lowlight', GEAR.lowlight.name, GEAR.lowlight.line, '', `<button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button>`, 'no flash', GEAR.lowlight.desc);
@@ -459,7 +534,7 @@ export class UI {
     el.hidden = false; el.classList.remove('done');
     const d = new Date();
     const head = `<div class="slip-head">BAYSIDE MARINE BUYERS<br><small>receipt · ${d.toLocaleDateString()} ${d.toTimeString().slice(0, 5)}</small></div>`;
-    const lines = sale.lines.map((l) => `<div class="slip-line"><span>${l.n > 1 ? l.n + ' × ' : ''}${l.label}</span><b>${money(l.total)}</b></div>`);
+    const lines = sale.lines.map((l) => `<div class="slip-line${l.coins ? ' coins' : ''}"><span>${l.n > 1 ? l.n + ' × ' : ''}${l.label}</span><b>${l.coins ? `${COIN}${l.coins}` : money(l.total)}</b></div>`);
     lines.push(`<div class="slip-total"><span>Total</span><b>${money(sale.total)}</b></div><div class="slip-stamp">PAID</div>`);
     el.innerHTML = head;
     let i = 0;
@@ -501,6 +576,10 @@ export class UI {
     if (!$('workshop').hidden) {
       const e = g.earl;
       if (Math.abs(e.x - BOAT.x) > 16 || e.y > 5) this.toggleWorkshop(false);
+    }
+    if (!$('tankroom').hidden) {
+      if (!g.earl.inSub) this.toggleTank(false);
+      else { this.tankT = (this.tankT || 0) + dt; if (this.tankT > 1) { this.tankT = 0; this.renderTank(); } }
     }
     if (!$('cave').hidden && Math.hypot(g.earl.x - 66, g.earl.y - 1800) > 20) this.toggleCave(false);
   }

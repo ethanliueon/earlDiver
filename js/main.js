@@ -5,7 +5,7 @@ import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
-import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir } from './capture.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
@@ -16,7 +16,7 @@ import { updateFrenzy, frenzyOn, FRENZIES } from './frenzy.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
-import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
+import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
@@ -53,7 +53,7 @@ function applySuit(e, P) {
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
-  sub.ratedV = statValue(P, 'depth'); sub.o2V = statValue(P, 'subAir'); sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
+  sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = statValue(P, 'subAir'); sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
   sub.level = lv(P, 'depth');
 }
 function newGame(mode) {
@@ -115,6 +115,8 @@ const ui = new UI({
   onSellItem: (k) => sellItem(k),
   onDisplay: (k) => displaySpecimen(k),
   onCaveOffer: () => caveOffer(),
+  onWare: (k) => wareBuy(k),
+  onTank: (act, where, i) => tankAction(act, where, i),
   onCaveTrade: (keys) => caveTrade(keys),
   onNewGame: () => { profile = null; g.paused = false; startRun(); },
   getProfile: () => profile,
@@ -168,6 +170,10 @@ function sellSpecimens(list, lines) {
 }
 function sellAll() {
   marketTick(profile);
+  // old gold coins for every live animal from the deep that leaves the boat today
+  let coins = 0;
+  for (const L of [g.bag].concat(subAtBoat() ? [g.subTank] : [])) for (const s of L) coins += coinsFor(s);
+  coins += g.inv.sapphire || 0;
   // contracts first: they pay more than the market
   const lines = fulfil(g, profile, [g.bag].concat(subAtBoat() ? [g.subTank] : []));
   if (g.bag.length) { sellSpecimens(g.bag, lines); g.bag = []; }
@@ -190,6 +196,7 @@ function sellAll() {
     lines.push(sell(profile, k, n, GOODS[k].price * statValue(profile, 'paySalvage') * (frenzyOn(g, 'market') ? 2 : 1), GOODS[k].name));
     g.inv[k] = 0;
   }
+  if (coins) { profile.coins = (profile.coins || 0) + coins; lines.push({ label: 'Old gold, for what came up from the deep', n: 1, total: 0, coins }); }
   if (!lines.length) return null;
   const total = lines.reduce((a, l) => a + l.total, 0);
   g.earned += total;
@@ -254,6 +261,8 @@ function caveTrade(keys) {
   if (g.caveTraded || !keys.length) return null;
   const off = caveOffer(), want = new Set(keys);
   const lines = [];
+  let coins = 0;
+  for (const L of cavePools()) for (const s of L) if (want.has(s.id + ':' + (s.variant || ''))) coins += coinsFor(s) + (s.id === off.craving.id ? 1 : 0);
   for (const gr of off.groups) if (want.has(gr.key)) lines.push({ label: variantLabel(SPECIES_BY_ID[gr.id], gr.variant) + (gr.craving ? ' (craved)' : ''), n: gr.n, total: gr.total });
   if (!lines.length) return null;
   for (const L of cavePools()) for (let i = L.length - 1; i >= 0; i--) if (want.has(L[i].id + ':' + (L[i].variant || ''))) L.splice(i, 1);
@@ -261,11 +270,49 @@ function caveTrade(keys) {
   profile.cash = Math.round((profile.cash + total) * 100) / 100;
   profile.lifetime = Math.round((profile.lifetime + total) * 100) / 100;
   g.earned += total;
-  g.caveTraded = { lines, total };
+  profile.coins = (profile.coins || 0) + coins;
+  g.caveTraded = { lines, total, coins };
   saveProfile(profile);
   audio.ready && audio.pickup();
-  hud.toast(`She takes them. ${money(total)} in old gold`, 'big');
+  hud.toast(`She takes them. ${money(total)}${coins ? ` and ${coins} old gold coin${coins > 1 ? 's' : ''}` : ''}`, 'big');
   return g.caveTraded;
+}
+function wareBuy(k) {
+  const P = profile, W = WARES[k];
+  if (!W || (P.coins || 0) < W.coins) return false;
+  if (k === 'oldlure') { if ((P.oldLures || 0) >= W.max) return false; P.oldLures = (P.oldLures || 0) + 1; hud.toast('An old lure, cold and faintly glowing  [Q]', 'big'); }
+  else if (k === 'blessing') { if (g.blessed) return false; g.blessed = true; hud.toast('Her breath is warm. The deep looks away', 'big'); }
+  else if (k === 'eye') { if (P.eye) return false; P.eye = true; hud.toast('The sapphire eye turns in your hand: sapphires show on the sonar', 'big'); }
+  else if (k === 'relic') { if ((P.relics || 0) >= W.max) return false; P.relics = (P.relics || 0) + 1; applySub(g.sub, P); hud.toast(`A pressure relic: the sub is rated ${g.sub.rated} m`, 'big'); }
+  P.coins -= W.coins;
+  saveProfile(P); audio.ready && audio.pickup();
+  return true;
+}
+// the tank room: move animals between the bag, the open tank and the pressure tanks, or let one go
+function tankAction(act, where, i) {
+  const e = g.earl;
+  if (!e.inSub) return false;
+  const L = where === 'bag' ? g.bag : g.subTank, s = L[i];
+  if (!s) return false;
+  if (act === 'press') {
+    if (pressUsed(g) >= pressSlots(g)) { hud.toast(pressSlots(g) ? 'Every pressure tank is full' : 'No pressure tanks yet: the boat fits them', 'warn'); return false; }
+    if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
+    s.pressed = true; hud.toast(`${SPECIES_BY_ID[s.id].name}: sealed in at ${s.from} m`);
+  } else if (act === 'open') {
+    if (tankUsed(g) >= tankSlots(g)) { hud.toast('The open tank is full', 'warn'); return false; }
+    if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
+    s.pressed = false;
+  } else if (act === 'release') {
+    L.splice(i, 1);
+    if (s.cond > 0.05) {
+      const c = g.fauna.makeFish(SPECIES_BY_ID[s.id], g.sub.x + g.sub.facing * 3, g.sub.y + 1, g.sub.facing, g.fauna.groupId++, true);
+      if (s.variant) c.variant = s.variant;
+      g.fauna.list.push(c);
+      hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} goes back into the dark`);
+    } else hud.toast('It sinks away');
+  } else return false;
+  audio.ready && audio.click();
+  return true;
 }
 function syncProfile() {
   const P = profile;
@@ -281,7 +328,9 @@ function buy(kind) {
   if (kind.startsWith('up:')) {
     // one more level of a stat
     const id = kind.slice(3), U = UPGRADES[id];
-    if (U && (!U.needs || owns(P, U.needs)) && lv(P, id) < U.max && spend(P, upgradeCost(P, id))) {
+    const cc = U ? upgradeCoins(P, id) : 0;
+    if (U && (!U.needs || owns(P, U.needs)) && lv(P, id) < U.max && (P.coins || 0) >= cc && spend(P, upgradeCost(P, id))) {
+      P.coins = (P.coins || 0) - cc;
       P.lv = Object.assign({}, P.lv, { [id]: lv(P, id) + 1 }); ok = true;
       if (id === 'air') { e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + U.step); }
       if (id === 'swim') e.finSpeed = statValue(P, 'swim');
@@ -326,7 +375,7 @@ function buy(kind) {
   } else if (kind.startsWith('wing:')) {
     const w = WING_BY_ID[kind.slice(5)], A = aquariumOf(P);
     const next = WINGS.find((x) => !A.wings.includes(x.id));
-    if (w && next && next.id === w.id && spend(P, w.price)) { A.wings.push(w.id); ok = true; hud.toast(`Built: the ${w.name.toLowerCase()}`, 'big'); audio.cue && audio.cue('wing'); }
+    if (w && next && next.id === w.id && (P.coins || 0) >= (w.coins || 0) && spend(P, w.price)) { P.coins = (P.coins || 0) - (w.coins || 0); A.wings.push(w.id); ok = true; hud.toast(`Built: the ${w.name.toLowerCase()}`, 'big'); audio.cue && audio.cue('wing'); }
   } else if (kind === 'canisters' && !(P.addons || {}).canisters && spend(P, CANISTERS.price)) {
     P.addons = Object.assign({}, P.addons, { canisters: true }); g.addons = P.addons; ok = true;
     hud.toast('Pressure canisters: deep animals survive the trip up', 'big');
@@ -462,7 +511,7 @@ function promptFor(t) {
   }
   if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
   if (!e.inSub && e.y > 100 && (g.items.lure || g.items.necklace)) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep';
-  if (e.inSub) p = p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible';
+  if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room';
   if (nearBoat || (e.inSub && g.sub.docked)) p = (p ? p + '   ·   ' : '') + (g.helm ? 'A / D  Drive the Margaret   ·   B  Leave the helm' : 'U  The boat   ·   B  Take the helm');
   return p;
 }
@@ -520,7 +569,7 @@ function interact(t, exitSub) {
     if (sub.o2 < 1 && sub.y > 2.2) { hud.toast('The cabin has no air left — send her up first (hold C)', 'warn'); return; }
     e.inSub = true; sub.docked = false;
     const moved = transferToTank(g);
-    hud.toast(moved ? `Inside the submersible · ${moved} specimen${moved > 1 ? 's' : ''} into the tank (${g.subTank.length}/${tankSlots(g)})` : 'Inside the submersible');
+    hud.toast(moved ? `Inside the submersible · ${moved} specimen${moved > 1 ? 's' : ''} into the tanks (T: the tank room)` : 'Inside the submersible');
     audio.ready && audio.click();
   } else if (t.kind === 'kelp') {
     t.k.harvested = true; g.inv.kelp = (g.inv.kelp || 0) + 1; hud.toast('+1 Kelp'); audio.ready && audio.pickup();
@@ -684,17 +733,19 @@ function update(dt) {
       hud.toast(e.inSub ? (e.lampWanted ? 'Lights on' : 'Lights off') : (e.lampWanted ? 'Headlamp on' : 'Headlamp off'));
     }
     if (pressed.has('u') && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) ui.toggleWorkshop();
+    if (pressed.has('t')) { if (e.inSub && !g.sub.imploded) ui.toggleTank(); else hud.toast('The tank room is in the sub', 'warn'); }
     // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
     if (pressed.has('b') && (g.helm || atBoat)) { g.helm = !g.helm; g.boatV = 0; hud.toast(g.helm ? 'At the helm' : 'Left the helm'); audio.ready && audio.click(); }
     if (pressed.has('q')) {
-      if (g.items.lure > 0 && !g.lure) {
-        g.items.lure--;
+      const old = (profile.oldLures || 0) > 0;
+      if ((old || g.items.lure > 0) && !g.lure) {
+        if (old) profile.oldLures--; else g.items.lure--;
         const dir = e.inSub ? g.sub.facing : e.facing;
-        g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1.0 };
-        ent.throwLure(g.lure.x, g.lure.y);
-        hud.toast('The lure drifts away, glowing');
-      } else if (g.items.lure === 0) hud.toast('No lures', 'warn');
+        g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1.0, old };
+        ent.throwLure(g.lure.x, g.lure.y, old ? 25 : 10);
+        hud.toast(old ? 'The old lure drifts away, burning cold and blue' : 'The lure drifts away, glowing');
+      } else if (!g.lure) hud.toast('No lures', 'warn');
     }
     if (pressed.has('e')) {
       if (g.items.necklace > 0 && g.necklaceT <= 0) { g.items.necklace--; g.necklaceT = 15; hud.toast('The necklace warms against your chest'); audio.ready && audio.lanternHum(0.05); }
@@ -784,7 +835,7 @@ function update(dt) {
     // the arm: Space again closes the claw
     const armEv = updateArm(g, dt, pressed.has(' ') && g.armGame && g.armGame.phase === 'grip' && g.armGame.t > 0.05);
     if (armEv && armEv.type === 'armCatch') {
-      hud.toast(armEv.crushed ? `The ${armEv.name.toLowerCase()} is in the tank — gripped too hard` : `${armEv.name} — into the tank (${g.subTank.length}/${tankSlots(g)})`, armEv.crushed ? 'warn' : 'note');
+      hud.toast(armEv.crushed ? `The ${armEv.name.toLowerCase()} is in the tank — gripped too hard` : `${armEv.name} — into ${armEv.spec.pressed ? 'a pressure tank' : `the tank (${tankUsed(g)}/${tankSlots(g)})`}`, armEv.crushed ? 'warn' : 'note');
       const sp = armEv.sp;
       if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
       if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
@@ -1193,4 +1244,4 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // debug hooks for automated testing
-window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, step: (dt) => update(dt), keys };
+window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys };

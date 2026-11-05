@@ -106,7 +106,7 @@ export class Entity {
     const ap = g.autopilot;
     if (ap && ap.active && !e.inSub && g.sub.y > 200 && ap.speed > 0.5) rate += 0.008 * (1 + (g.sub.y - 200) / 400) * (g.addons && g.addons.quiet ? 0.5 : 1);
     if (d < per) rate += 0.35;                                       // it has noticed him
-    if (rate > 0) rate *= g.stillMul || 1; // still water: it is slow to notice
+    if (rate > 0) rate *= (g.stillMul || 1) * (g.blessed ? 0.5 : 1); // still water, or her blessing: it is slow to notice
     this.attn = clamp(this.attn + rate * dt, 0, 1);
     if (this.attn >= 1) this.mark(g);
   }
@@ -232,7 +232,7 @@ export class Entity {
     this.state = 'away'; this.knows = 0; this.searchT = 0;
   }
 
-  throwLure(x, y) { this.lure = { x, y }; this.lureT = 10; }
+  throwLure(x, y, T = 10) { this.lure = { x, y }; this.lureT = T; }
 }
 
 // "Dread" 0..1 from distance: begins at 200 m, heavy inside 50 m.

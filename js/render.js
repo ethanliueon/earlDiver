@@ -1783,7 +1783,7 @@ export class Renderer {
         radial(x, y, (p.type === 'lure' ? 2.5 : 1.6) * ppm, p.type === 'lure' ? [170, 230, 255] : [80, 120, 255], 0.5);
       }
     }
-    if (g.lure) radial(S(g.lure.x), Sy(g.lure.y), 8 * ppm, [170, 230, 255], 0.9);
+    if (g.lure) radial(S(g.lure.x), Sy(g.lure.y), (g.lure.old ? 12 : 8) * ppm, g.lure.old ? [120, 170, 255] : [170, 230, 255], 0.9);
     if (this.escaW) radial(S(this.escaW.x), Sy(this.escaW.y), 16 * ppm, [150, 220, 255], 0.75 + 0.15 * Math.sin(g.time * 1.7));
     for (const v of g.world.vents) {
       const x = S(v.x), y = Sy(v.y - v.h);

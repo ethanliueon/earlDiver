@@ -10,7 +10,7 @@ import { VARIANTS } from './variants.js';
 import { FRENZIES } from './frenzy.js';
 import { speciesIcon } from './creatures_draw.js';
 import { toolIcon } from './tools_draw.js';
-import { bagSlots, tankSlots } from './capture.js';
+import { bagSlots, tankSlots, pressSlots } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
@@ -97,8 +97,9 @@ export class Hud {
     }
     // specimen slots: the bag (or, in the sub, its tank). Each dot shows the animal's colour,
     // ringed by its condition: green healthy, amber stressed, red weak, grey dead.
-    const list = e.inSub ? g.subTank : g.bag, slots = e.inSub ? tankSlots(g) : bagSlots(g);
-    const r = 6 * s, step = 17 * s, rowW = slots * step;
+    const list = e.inSub ? g.subTank.filter((q) => !q.pressed) : g.bag, slots = e.inSub ? tankSlots(g) : bagSlots(g);
+    const pList = e.inSub ? g.subTank.filter((q) => q.pressed) : [], pSlots = e.inSub ? pressSlots(g) : 0;
+    const r = 6 * s, step = 17 * s, rowW = (slots + (pSlots ? pSlots + 0.6 : 0)) * step;
     let sx = W / 2 - rowW / 2 + step / 2;
     const sy = y - 16 * s;
     ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
@@ -115,6 +116,30 @@ export class Hud {
         ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.stroke();
       } else { ctx.strokeStyle = 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1; ctx.stroke(); }
     }
+    // the pressure tanks: brass-ringed, after a small gap
+    if (pSlots) sx += step * 0.6;
+    for (let i = 0; i < pSlots; i++, sx += step) {
+      const sp = pList[i];
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.fill();
+      if (sp) { ctx.fillStyle = SPECIES_BY_ID[sp.id].v.c[0]; ctx.beginPath(); ctx.arc(sx, sy, r * 0.62, 0, TAU); ctx.fill(); }
+      ctx.strokeStyle = sp ? 'rgba(224,180,90,0.95)' : 'rgba(224,180,90,0.35)'; ctx.lineWidth = 1.8 * s;
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.stroke();
+    }
+    // old gold coins: a little stack and the count, at the end of the row
+    const coins = (g.profile && g.profile.coins) || 0;
+    if (coins) {
+      const cx0 = W / 2 + rowW / 2 + 12 * s;
+      for (let k = 2; k >= 0; k--) {
+        const cy0 = sy + 3 * s - k * 2.6 * s;
+        const cg = ctx.createLinearGradient(cx0 - 6 * s, cy0 - 3 * s, cx0 + 6 * s, cy0 + 3 * s);
+        cg.addColorStop(0, '#fff0b0'); cg.addColorStop(0.5, '#e0aa44'); cg.addColorStop(1, '#8a5a16');
+        ctx.fillStyle = '#6a400c'; ctx.beginPath(); ctx.ellipse(cx0, cy0 + 1.2 * s, 6 * s, 3 * s, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = cg; ctx.beginPath(); ctx.ellipse(cx0, cy0, 6 * s, 3 * s, 0, 0, TAU); ctx.fill();
+      }
+      ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(240,212,138,0.9)'; ctx.font = `${10 * s}px ${MONO}`;
+      ctx.fillText(String(coins), cx0 + 9 * s, sy);
+      this.coinW = 30 * s + ctx.measureText(String(coins)).width;
+    } else this.coinW = 0;
     // the arm's grip gauge: a marker sweeping a bar; close the claw in the green
     const A = g.armGame;
     if (A && A.phase === 'grip') {
@@ -147,7 +172,7 @@ export class Hud {
       }
     }
     // a second row inside the sub: what is still in the bag outside the tank
-    if (e.inSub && g.bag.length) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillText(`+${g.bag.length} in the bag${g.subTank.length >= slots ? ' (tank full)' : ''}`, W / 2 + rowW / 2 + 8 * s, sy); }
+    if (e.inSub && g.bag.length) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillText(`+${g.bag.length} in the bag${list.length >= slots ? ' (tank full)' : ''}`, W / 2 + rowW / 2 + 8 * s + (this.coinW || 0), sy); }
     ctx.textBaseline = 'top';
   }
 
@@ -261,6 +286,17 @@ export class Hud {
         const bg2 = ctx.createRadialGradient(bxp, byp, 0, bxp, byp, 6 * s);
         bg2.addColorStop(0, `rgba(255,90,70,${this.blip.life})`); bg2.addColorStop(1, 'rgba(255,90,70,0)');
         ctx.fillStyle = bg2; ctx.beginPath(); ctx.arc(bxp, byp, 6 * s, 0, TAU); ctx.fill();
+      }
+    }
+    // the sapphire eye: sapphires within 150 m are blue points
+    if (g.profile && g.profile.eye && !dying) {
+      for (const p of g.world.pickups) {
+        if (p.taken || p.type !== 'sapphire') continue;
+        const ds = Math.hypot(p.x - e.x, p.y - e.y);
+        if (ds > 150) continue;
+        const as = Math.atan2(p.y - e.y, p.x - e.x), k = ds / 200;
+        ctx.fillStyle = `rgba(110,150,255,${(0.6 + 0.3 * Math.sin(g.time * 3 + p.phase)).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(rcx + Math.cos(as) * k * rr, rcy + Math.sin(as) * k * rr, 2 * s, 0, TAU); ctx.fill();
       }
     }
     // the sub's transponder: a steady pale square inside 200 m, a tick on the rim beyond
