@@ -144,6 +144,7 @@ export const UPGRADES = {
   paySalvage:{ group: 'Diver', name: 'Salvage prices', base: 1, step: 0.05, max: 20, cost: 1, growth: 1.2, fmt: 'pay' },
   // the diver
   air:       { group: 'Diver', name: 'Air', base: 50, step: 5, max: 50, cost: 0.5, growth: 1.12, fmt: 's' },
+  sprint:    { group: 'Diver', name: 'Sprint', base: 1.3, step: 0.03, max: 15, cost: 0.75, growth: 1.25, fmt: 'x' },
   swim:      { group: 'Diver', name: 'Swim speed', base: 1, step: 0.02, max: 20, cost: 1, growth: 1.25, fmt: 'x' },
   bag:       { group: 'Diver', name: 'Bag space', base: 3, step: 1, max: 6, cost: 2, growth: 1.9, fmt: 'n' },
   // the net

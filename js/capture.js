@@ -24,7 +24,7 @@ export function activeTool(g) {
 export function handPos(g) {
   const e = g.earl;
   const swim = Math.abs(Math.cos(e.angle)); // 1 swimming flat, ~0.4 upright
-  return { x: e.x + e.facing * (0.26 + 0.26 * swim), y: e.y + 0.04, fx: e.facing };
+  return { x: e.x + e.facing * (0.17 + 0.17 * swim), y: e.y + 0.03, fx: e.facing };
 }
 
 // What is in reach of the tool right now: the best animal it can take, or why it can't.

@@ -26,7 +26,7 @@ const BAIT = [
 const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104]);
 // Never flee from Earl: drifters, slow or curious animals, and the things that might attack him.
 const NO_FLEE = new Set([46, 77, 84, 88, 31, 32, 33, 183, 107, 100, 67, 12, 11, 141, 184, 185, 186, 187, 76, 78, 82, 83, 80, 42, 43, 44, 148, 89, 85]);
-const DIVE_SPEED = 4;
+const DIVE_SPEED = 2.8; // Earl's speed: fish escape at 0.55-1.5x it
 // genuinely fast swimmers: may burst to 1.5x Earl's speed (swordfish, sailfish, marlin, tunas,
 // mako, wahoo, mahi-mahi, dolphins, orca). Everything else is slower than a diver can sprint.
 const FAST = new Set([42, 43, 44, 39, 40, 41, 82, 52, 45, 185, 186, 187]);

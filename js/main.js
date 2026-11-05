@@ -86,7 +86,7 @@ function newGame(mode) {
   }
   // upgrades bought on earlier dives
   g.earl.o2Max = g.earl.o2 = statValue(P, 'air');
-  g.earl.finSpeed = statValue(P, 'swim');
+  g.earl.finSpeed = statValue(P, 'swim'); g.earl.sprintMul = statValue(P, 'sprint');
   applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = P.hull;
   if (P.subLost) { g.sub.imploded = true; g.sub.docked = false; }
   // pre-warm the ocean with life around the spawn
@@ -227,6 +227,7 @@ function buy(kind) {
       P.lv = Object.assign({}, P.lv, { [id]: lv(P, id) + 1 }); ok = true;
       if (id === 'air') { e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + U.step); }
       if (id === 'swim') e.finSpeed = statValue(P, 'swim');
+      if (id === 'sprint') e.sprintMul = statValue(P, 'sprint');
       if (id === 'depth' || id === 'subAir' || id === 'subSpeed') applySub(sub, P);
       if (id === 'camShots') g.shots = gear(P, 'cam').shots;
       hud.toast(`${U.name}: ${fmtStat(id, statValue(P, id))}`);

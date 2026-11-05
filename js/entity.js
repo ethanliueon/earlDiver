@@ -8,9 +8,7 @@
 // toward ~120 m (slowing and fading as it rises - no hard line); otherwise it stays below ~200 m.
 // Staying shallow long enough makes it lose interest, and the mark fades.
 import { clamp, lerp, dist, TAU } from './util.js';
-import { DIVE_SPEED } from './player.js';
-
-export const ENTITY_SPEED = DIVE_SPEED * 1.5;
+export const ENTITY_SPEED = 6; // m/s: faster than Earl, and than the sub
 export const LANTERN_RADIUS = 3;
 export const SAFE_DEPTH = 120;   // above this it can never reach Earl
 export const REST_CEILING = 200; // when not chasing it keeps below this

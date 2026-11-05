@@ -34,7 +34,7 @@ frightening (the entity near, being marked, an attack, no air) stops it at once.
 
 ## Earl
 
-- A faceless modern diver, about 1.5 m from head to fin-tips. Swims at 4 m/s; Shift is 1.5x for
+- A faceless modern diver, about 1 m from head to fin-tips. Swims at 2.8 m/s; Shift is 1.3x (upgradable) for
   twice the air. Headlamp on below 200 m or in the dark (L).
 - Air is the main limit: 50 s at first, bigger tanks at the boat (up to a 300 s rebreather that
   makes no bubbles). Below 300 m the drain grows exponentially (x30 at 1,000 m). Out of air is a
@@ -70,7 +70,7 @@ All of it is paid at the boat (U at the surface by the *Margaret*), on a typed r
 
 An upgrades game: every stat is levelled one small step at a time, each step a little dearer than
 the last (about x1.3-1.4 per level, starting from 50 cents to a few dollars). Diver: air, swim
-speed, bag space, fish prices, salvage prices. Net: size (from 45 cm), reach, swing speed, catch odds, gentle mesh. Slurp gun,
+speed, sprint, bag space, fish prices, salvage prices. Net: size (from 45 cm), reach, swing speed, catch odds, gentle mesh. Slurp gun,
 tag gun, camera and claw: their own stats once bought. Submersible: depth rating (+50 m a level,
 400 m to 3,000 m), cabin air, engine, specimen tank. Gear itself (slurp gun, tag gun, camera,
 claw, low-light sensor, canisters, traps, radio, sub add-ons, aquarium wings) is bought once.

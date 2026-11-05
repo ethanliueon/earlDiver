@@ -65,7 +65,7 @@ export function drawNet(ctx, u, tier, t, flutter, catchSp) {
   if (catchSp) {
     // the catch thrashing in the mesh
     const k = clamp(catchSp.t / 1.1, 0, 1);
-    const fl = Math.max(5 * u, Math.min(r * 1.8, catchSp.len * 1.6 * 66.7 * u));
+    const fl = Math.max(5 * u, Math.min(r * 1.8, catchSp.len * 1.6 * 100 * u));
     ctx.save(); ctx.translate(hx * 0.5 + tipX * 0.5, tipY * 0.55);
     ctx.rotate(Math.sin(catchSp.t * 24) * 0.5 * (1 - k * 0.6) + 0.3);
     ctx.globalAlpha = 0.95;
@@ -114,7 +114,7 @@ export function drawSlurp(ctx, u, tier, t, pull, held) {
   }
   // the fish inside, if it has one
   if (held) {
-    const fl = Math.min(len * 0.45, Math.max(4 * u, held.len * 1.6 * 66.7 * u));
+    const fl = Math.min(len * 0.45, Math.max(4 * u, held.len * 1.6 * 100 * u));
     ctx.save(); ctx.beginPath(); ctx.rect(x0 + 2 * u, -r * 0.9, len - 6 * u, r * 1.8); ctx.clip();
     ctx.translate(x0 + len * 0.62, Math.sin(t * 9) * r * 0.2); ctx.rotate(Math.sin(t * 13) * 0.15);
     drawSpecies(ctx, held.sp, fl, t * 3, 1, 0);

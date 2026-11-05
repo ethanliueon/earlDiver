@@ -35,7 +35,7 @@ const WATER_LIT = [60, 150, 180];
 // with only a small boost for the tiniest so herring and mackerel still look different
 export const fishDrawLen = (len) => len * 1.6 + 0.08 * Math.exp(-len * 4);
 // Earl's height in metres
-export const EARL_H = 1.5;
+export const EARL_H = 1.0;
 const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 32;
 const CACHE_SKIP = new Set(['jelly', 'siphonophore', 'manowar', 'oarfish', 'gulper', 'dragon', 'comb', 'eel', 'viper', 'sperm', 'orca', 'dolphin']); // what's left of a beam after a few metres of seawater
 

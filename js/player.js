@@ -3,8 +3,8 @@ import { clamp, lerp, angleLerp } from './util.js';
 import { collide, BOAT_X, SPAWN } from './world.js';
 import { SUB_TIERS } from './economy.js';
 
-export const DIVE_SPEED = 4;
-export const SUB_SPEED = DIVE_SPEED * 1.2;
+export const DIVE_SPEED = 2.8;  // Earl's base swimming speed (m/s)
+export const SUB_SPEED = 4.8;   // the submersible's
 export const SUB_VERTICAL = 2.0; // ballast: vertical speed multiplier for the sub
 export const DIVER_O2 = 50;
 const K_PRESS = Math.log(30) / 700; // x30 drain at 1000 m, starting at 300 m
@@ -89,7 +89,7 @@ export function updateEarl(g, dt, inp) {
     if (sub.o2 <= 0) { sub.o2 = 0; return 'sub-o2'; }
   } else {
     // ---- diver ----
-    let sp = DIVE_SPEED * (inp.sprint ? 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed;
+    let sp = DIVE_SPEED * (inp.sprint ? e.sprintMul || 1.3 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed;
     const mag = Math.hypot(inp.x, inp.y);
     let ix = inp.x, iy = inp.y;
     if (mag > 1) { ix /= mag; iy /= mag; }
@@ -103,7 +103,7 @@ export function updateEarl(g, dt, inp) {
     if (e.struggle) { e.vx += Math.sin(g.time * 0.6) * 0.9 * e.struggle * dt; e.vy += (0.35 + Math.sin(g.time * 0.9) * 0.3) * e.struggle * dt; }
     e.x += e.vx * dt; e.y += e.vy * dt;
     if (e.y < 0.35) { e.y = 0.35; if (e.vy < 0) e.vy = 0; }
-    const c = collide(W, e.x, e.y, 0.42);
+    const c = collide(W, e.x, e.y, 0.28);
     if (c.hit) { e.x = c.x; e.y = c.y; e.vx *= 0.7; e.vy *= 0.5; }
     e.x = clamp(e.x, 2, 980);
     // never onto the beach
