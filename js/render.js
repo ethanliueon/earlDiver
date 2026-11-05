@@ -186,20 +186,20 @@ export class Renderer {
     // distant parallax silhouettes (slope / cliffs far behind)
     this.drawFar(g, S, Sy, dayEff);
     // something very large, very far away
-    if (g.farShadow) {
+    if (g.farShadow && g.farShadow.fade > 0) {
+      // a real place in the water: drawn where it is, about 30 m long, dim and soft
       const f = g.farShadow;
-      const a = Math.sin(Math.PI * clamp(f.t / f.dur, 0, 1)) * 0.1;
-      const px = -0.3 * W + (f.t / f.dur) * W * 1.6, py = H * f.y;
-      // drawn tiny and scaled up: that is the blur, at almost no cost
+      const len = 30 * ppm, a = 0.26 * f.fade;
+      // drawn small and scaled up: that is the blur, at almost no cost
       const sc = this.shadowC || (this.shadowC = document.createElement('canvas'));
-      const sw = Math.ceil(W * 0.06), sh = Math.ceil(W * 0.03);
+      const sw = 64, sh = 32;
       if (sc.width !== sw) { sc.width = sw; sc.height = sh; }
       const sctx = sc.getContext('2d');
       sctx.setTransform(1, 0, 0, 1, 0, 0); sctx.clearRect(0, 0, sw, sh);
-      sctx.translate(sw * 0.42, sh * 0.4); sctx.scale(f.dir, 1);
+      sctx.translate(sw * 0.42, sh * 0.45); sctx.scale(f.dir, 1);
       drawEntityShape(sctx, sw * 0.62, t * 0.5, 1);
       ctx.save(); ctx.globalAlpha = a; ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(sc, (f.dir > 0 ? px : W - px) - W * 0.25, py - W * 0.125, W * 0.6, W * 0.3);
+      ctx.drawImage(sc, S(f.x) - len * 0.68, Sy(f.y) - len * 0.36, len * 1.6, len * 0.8);
       ctx.restore();
     }
 

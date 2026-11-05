@@ -108,8 +108,8 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
   Earl bails out at once onto his own tank; an empty sub can't be boarded below the surface, and
   airs out again at the surface or the boat.
 - A button under the journal icon shows what C does right now (call the sub, or the autopilot home).
-- Far off, between 120 and 1,600 m, a vast blurred shape sometimes drifts across the background
-  with a distant call: the thing in the deep, long before it notices him.
+- Rarely, between 120 and 1,600 m, a vast dim shape hangs in the water 20-30 m off, drifting, with
+  a distant call: the thing in the deep, long before it notices him. Swim toward it and it is gone.
 - The claw: three arms (claw arm 3 m / 1 m / slow, hydraulic 4.5 m / 1.4 m, heavy-lift 6 m / 2 m /
   fast), each with a wider grip window. Add-ons: recall unit, quiet engine, bigger specimen tanks.
 

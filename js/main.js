@@ -928,12 +928,26 @@ function update(dt) {
   const hrT = 68 + clamp(e.speedNow / 6, 0, 1) * (e.sprint ? 30 : 14) + fx.dread * 105 + lowO2 * 35 + fx.pressure * 45 + g.injury * 14 + (g.threat ? 20 : 0) + (g.noAir ? 60 : 0);
   e.hr = lerp(e.hr, hrT, dt * 0.6);
 
-  // ----- something far away (not it) -----
+  // ----- a shape in the distance -----
+  // Now and then (rarely) a vast dim shape hangs in the water some way off, drifting. It is a real
+  // place in the water, not a backdrop: swim toward it and it is gone before you get close.
   if (g.mode === 'play') {
-    if (g.farShadow) { g.farShadow.t += dt; if (g.farShadow.t > g.farShadow.dur) g.farShadow = null; }
-    else if (e.y > 120 && e.y < 1600 && fx.dread < 0.05 && Math.random() < dt / 150) {
-      g.farShadow = { t: 0, dur: 40 + Math.random() * 25, y: 0.25 + Math.random() * 0.4, dir: Math.random() < 0.5 ? 1 : -1 };
-      audio.ready && audio.whale(0.05);
+    const f = g.farShadow;
+    if (f) {
+      f.t += dt; f.x += f.vx * dt; f.y += Math.sin(f.t * 0.2) * 0.15 * dt;
+      const near = Math.hypot(f.x - e.x, f.y - e.y) < 13; // about touching its edge (it is ~30 m long)
+      if (near) f.gone = true;
+      if (f.gone || f.t > f.dur) f.fade = Math.max(0, f.fade - dt * (f.gone ? 1.2 : 0.2));
+      else f.fade = Math.min(1, f.fade + dt / 8);
+      if (f.fade <= 0 && (f.gone || f.t > f.dur)) g.farShadow = null;
+    } else if (e.y > 120 && e.y < 1600 && fx.dread < 0.02 && !ent.marked && Math.random() < dt / 420) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const x = clamp(e.x + side * (20 + Math.random() * 10), 10, 990);
+      const y = Math.min(e.y + (Math.random() - 0.4) * 16, W.floorAt(x) - 15);
+      if (y > 60) {
+        g.farShadow = { x, y, vx: -side * (0.3 + Math.random() * 0.4), dir: -side, t: 0, dur: 50 + Math.random() * 30, fade: 0, gone: false };
+        audio.ready && audio.whale(0.04);
+      }
     }
   }
   // ----- life -----
