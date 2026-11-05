@@ -1,6 +1,8 @@
 // Sound: the background music (muffled underwater), generated ambience,
 // breathing, heartbeat, the entity's presence, sonar, hull creaks.
 import { clamp, lerp } from './util.js';
+import { GenMusic } from './music_gen.js';
+const MUSIC_KEY = 'earlDiver.music';
 
 export class Audio {
   constructor() {
@@ -19,6 +21,8 @@ export class Audio {
     this.musicLP = ac.createBiquadFilter(); this.musicLP.type = 'lowpass'; this.musicLP.frequency.value = 18000;
     this.musicGain = ac.createGain(); this.musicGain.gain.value = 0;
     src.connect(this.musicLP).connect(this.musicGain).connect(this.master);
+    // or music the game makes itself, through the same fades and filter
+    this.gen = new GenMusic(ac, this.musicLP);
     // noise buffer
     const len = ac.sampleRate * 4;
     const buf = ac.createBuffer(1, len, ac.sampleRate);
@@ -65,9 +69,17 @@ export class Audio {
   // nothing starts it until 15 s after the stress has passed. In the quiet that follows a piece,
   // after a minute it rolls every 30 s: 10 %, 20 %, 35 %, 45 %, then 50 %; a hidden calm meter
   // (peaceful catches, sales, photos, quiet swimming) raises those odds.
+  // which music: 'track' (the mp3) or 'gen' (made by the game)
+  get musicMode() { if (!this._mm) { try { this._mm = localStorage.getItem(MUSIC_KEY) || 'track'; } catch (e) { this._mm = 'track'; } } return this._mm; }
+  setMusicMode(mode) {
+    this._mm = mode; try { localStorage.setItem(MUSIC_KEY, mode); } catch (e) { /* storage unavailable */ }
+    if (!this.ready || !this.musicStarted) return;
+    if (mode === 'gen') { this.musicEl.pause(); this.gen.start(); } else { this.gen.stop(); this.musicEl.play().catch(() => {}); }
+  }
   playMusic() {
     if (!this.ready) return;
-    this.musicEl.play().catch(() => {});
+    this.musicStarted = true;
+    if (this.musicMode === 'gen') this.gen.start(); else this.musicEl.play().catch(() => {});
     this.startPiece(true);
   }
   // a good moment (or the boat, or a new dive): start a piece if none is playing

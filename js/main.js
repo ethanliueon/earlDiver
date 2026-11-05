@@ -30,6 +30,10 @@ const hudCanvas = document.getElementById('hud');
 const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
 const audio = new Audio();
+// the home screen's music switch: your track, or music the game makes itself (N in a dive)
+const musicBtn = document.getElementById('music-mode');
+const musicLabel = () => { if (musicBtn) musicBtn.textContent = audio.musicMode === 'gen' ? 'Music: generated' : 'Music: your track'; };
+if (musicBtn) { musicLabel(); musicBtn.addEventListener('click', () => { audio.setMusicMode(audio.musicMode === 'gen' ? 'track' : 'gen'); musicLabel(); }); }
 
 const keys = new Set();
 const PRY = new Set(['clam', 'mussel', 'rock', 'iron']);
@@ -800,6 +804,7 @@ function update(dt) {
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
     if (pressed.has('p')) { hud.showFps = !hud.showFps; }
+    if (pressed.has('n')) { audio.setMusicMode(audio.musicMode === 'gen' ? 'track' : 'gen'); musicLabel(); hud.toast(audio.musicMode === 'gen' ? 'Music: generated' : 'Music: your track'); }
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
     const day = tickAquarium(profile, dt);
