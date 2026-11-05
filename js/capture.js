@@ -39,6 +39,7 @@ export const subFull = (g) => tankUsed(g) >= tankSlots(g) && pressUsed(g) >= pre
 export function activeTool(g) {
   const P = g.profile;
   const T = (kind, k) => { const def = gear(P, k); return { kind, def, tier: def.look }; };
+  if (g.toolSel === 'none') return { kind: 'none', def: null, tier: 0 }; // hands free
   if (g.toolSel === 'slurp' && owns(P, 'slurp')) return T('slurp', 'slurp');
   if (g.toolSel === 'trap') return { kind: 'trap', def: null, tier: 0 };
   if (g.toolSel === 'tag' && owns(P, 'tagger')) return T('tag', 'tag');

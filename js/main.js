@@ -951,11 +951,13 @@ function update(dt) {
     }
     g.subHit = false;
     // catching: 1 / 2 pick the net or the slurp gun, Space uses it
-    if (pressed.has('1')) { g.toolSel = 'net'; hud.toast(gear(profile, 'net').name); }
-    if (pressed.has('2')) { if (owns(profile, 'slurp')) { g.toolSel = 'slurp'; hud.toast(gear(profile, 'slurp').name); } else hud.toast('No slurp gun — the boat sells them', 'warn'); }
-    if (pressed.has('3')) { if (owns(profile, 'tagger')) { g.toolSel = 'tag'; hud.toast(gear(profile, 'tag').name); } else hud.toast('No tag gun — the boat sells them', 'warn'); }
-    if (pressed.has('5')) { const tr = profile.traps || {}; if (TRAP_ORDER.some((k) => tr[k] > 0)) { g.toolSel = 'trap'; hud.toast(`Traps to set: ${TRAP_ORDER.filter((k) => tr[k] > 0).map((k) => `${trapsFree(g, k)} ${TRAPS[k].name.toLowerCase()}`).join(', ')}`); } else hud.toast('No traps — the boat sells them', 'warn'); }
-    if (pressed.has('4')) { if (owns(profile, 'camera')) { g.toolSel = 'cam'; hud.toast(`${gear(profile, 'cam').name} · ${g.shots} shots left`); } else hud.toast('No camera — the boat sells them', 'warn'); }
+    // a number picks up that tool; the same number again puts it away (hands free)
+    const pick = (sel, msg) => { if (g.toolSel === sel) { g.toolSel = 'none'; g.capture = null; hud.toast('Hands free'); } else { g.toolSel = sel; hud.toast(msg); } };
+    if (pressed.has('1')) pick('net', gear(profile, 'net').name);
+    if (pressed.has('2')) { if (owns(profile, 'slurp')) pick('slurp', gear(profile, 'slurp').name); else hud.toast('No slurp gun — the boat sells them', 'warn'); }
+    if (pressed.has('3')) { if (owns(profile, 'tagger')) pick('tag', gear(profile, 'tag').name); else hud.toast('No tag gun — the boat sells them', 'warn'); }
+    if (pressed.has('5')) { const tr = profile.traps || {}; if (TRAP_ORDER.some((k) => tr[k] > 0)) pick('trap', `Traps to set: ${TRAP_ORDER.filter((k) => tr[k] > 0).map((k) => `${trapsFree(g, k)} ${TRAPS[k].name.toLowerCase()}`).join(', ')}`); else hud.toast('No traps — the boat sells them', 'warn'); }
+    if (pressed.has('4')) { if (owns(profile, 'camera')) pick('cam', `${gear(profile, 'cam').name} · ${g.shots} shots left`); else hud.toast('No camera — the boat sells them', 'warn'); }
     const tool = activeTool(g);
     if (pressed.has(' ') && !e.inSub && g.toolSel === 'trap') {
       // at the surface: open the depth meter (setting happens there; the Space that set it is ignored)
@@ -971,7 +973,7 @@ function update(dt) {
           else if (r.old) hud.toast(`${r.name}: you already have this one · ${g.shots} left`);
           else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
         }
-      } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
+      } else if (tool.kind === 'none') { /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
       if (!owns(profile, 'arm')) hud.toast('The claw has no hydraulics — fit them at the boat', 'warn');
       else { const msg = startArm(g); if (msg) hud.toast(msg, 'warn'); else audio.ready && audio.ram && audio.click(); }

@@ -52,7 +52,7 @@ export class Hud {
     const total = tools.length * sw + (tools.length - 1) * gap;
     let x = W / 2 - total / 2;
     const y = H - sh - 22 * s;
-    const sel = g.toolSel === 'trap' ? 'trap' : g.toolSel === 'slurp' && owns(P, 'slurp') ? 'slurp' : g.toolSel === 'tag' && owns(P, 'tagger') ? 'tag' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
+    const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'slurp' && owns(P, 'slurp') ? 'slurp' : g.toolSel === 'tag' && owns(P, 'tagger') ? 'tag' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
       ctx.fillStyle = on ? 'rgba(14,26,28,0.72)' : 'rgba(6,12,14,0.5)';
