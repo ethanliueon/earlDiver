@@ -465,13 +465,38 @@ export function drawSub(ctx, Lp, t, stress, lights, arm) {
   ctx.lineCap = 'butt';
   // sacrificial anodes on the sphere frame
   ctx.fillStyle = '#7a7c74'; ctx.fillRect(-5 * u, 6 * u, 2 * u, 1.2 * u); ctx.fillRect(16 * u, 4 * u, 2 * u, 1.2 * u);
-  // stress cracks in the sphere when pushed past its rating
-  if (stress > 0.05) {
-    ctx.strokeStyle = `rgba(220,230,235,${0.15 + stress * 0.5})`; ctx.lineWidth = 0.6 * u;
-    const n = Math.floor(stress * 9);
-    for (let k = 0; k < n; k++) {
-      const cx = gx + Math.cos(k * 2.4) * gr * 0.6, cy = gy + Math.sin(k * 2.4) * gr * 0.6;
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(k) * 4 * u, cy + Math.sin(k * 1.7) * 4 * u); ctx.lineTo(cx + Math.cos(k + 1) * 6 * u, cy + Math.sin(k) * 7 * u); ctx.stroke();
+  // past its rating the hull shows the strain: the viewports fog as the cold steel sweats and fine
+  // crazing spreads in the acrylic; seawater weeps from the sphere's seams in thin jets of mist; small
+  // streams of bubbles work out of the joints. All of it grows toward crush depth.
+  if (stress > 0.03) {
+    for (const [px, py, pr] of ports) {
+      ctx.fillStyle = `rgba(205,215,220,${(0.1 + stress * 0.32).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(px, py, pr * 0.82, 0, TAU); ctx.fill();
+      if (stress > 0.35) {
+        ctx.strokeStyle = `rgba(18,22,24,${((stress - 0.35) * 0.9).toFixed(3)})`; ctx.lineWidth = Math.max(0.5, 0.18 * u);
+        const nn = 2 + Math.floor(stress * 5);
+        for (let k = 0; k < nn; k++) {
+          const a = k * 2.3 + 0.4, r0 = pr * 0.8, r1 = pr * (0.25 + 0.3 * ((k * 0.37) % 1));
+          ctx.beginPath(); ctx.moveTo(px + Math.cos(a) * r0, py + Math.sin(a) * r0);
+          ctx.lineTo(px + Math.cos(a + 0.25) * (r0 + r1) / 2, py + Math.sin(a + 0.25) * (r0 + r1) / 2); ctx.lineTo(px + Math.cos(a - 0.1) * r1, py + Math.sin(a - 0.1) * r1); ctx.stroke();
+        }
+      }
+    }
+    const leaks = [[gx - gr * 0.97, gy - 2 * u, -1, 0.2], [gx + gr * 0.93, gy + 3 * u, 1, -0.1], [gx - 3 * u, gy + gr * 0.97, -0.3, 1], [gx + 4 * u, gy - gr * 0.95, 0.4, -1]];
+    const nLeak = Math.min(leaks.length, Math.ceil(stress * leaks.length));
+    for (let k = 0; k < nLeak; k++) {
+      const [lx, ly, dx, dy] = leaks[k], nl = Math.hypot(dx, dy), ux = dx / nl, uy = dy / nl;
+      const len = (2 + stress * 5) * u * (0.8 + 0.2 * Math.sin(t * 17 + k * 3)), w = (0.4 + stress * 1.2) * u;
+      const jg = ctx.createLinearGradient(lx, ly, lx + ux * len, ly + uy * len);
+      jg.addColorStop(0, `rgba(215,228,235,${(0.35 * stress + 0.1).toFixed(3)})`); jg.addColorStop(1, 'rgba(215,228,235,0)');
+      ctx.fillStyle = jg; ctx.beginPath(); ctx.moveTo(lx - uy * w * 0.15, ly + ux * w * 0.15);
+      ctx.lineTo(lx + ux * len - uy * w, ly + uy * len + ux * w); ctx.lineTo(lx + ux * len + uy * w, ly + uy * len - ux * w); ctx.lineTo(lx + uy * w * 0.15, ly - ux * w * 0.15); ctx.closePath(); ctx.fill();
+      // the bubbles it carries off, rising
+      ctx.strokeStyle = `rgba(210,230,240,${(0.25 + stress * 0.35).toFixed(3)})`; ctx.lineWidth = Math.max(0.5, 0.15 * u);
+      for (let b = 0; b < 3; b++) {
+        const q = (t * 0.9 + b / 3 + k * 0.31) % 1;
+        ctx.beginPath(); ctx.arc(lx + ux * len * 0.6 + Math.sin(q * 9 + b) * u, ly + uy * len * 0.6 - q * 9 * u, (0.25 + q * 0.4) * u, 0, TAU); ctx.stroke();
+      }
     }
   }
   return { lampA: [49 * u, -4 * u], lampB: [21 * u, 13.5 * u], ports };

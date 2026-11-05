@@ -636,9 +636,11 @@ function leaveSub() {
   audio.ready && audio.click();
 }
 
-// crush depth. Past 1.5x its rating the hull can give at any moment, the deeper the sooner. When it
-// goes, it goes: one loud crack, half a second, and it is over. (The creaks past the rating and past
-// crush depth are the only warning.)
+// crush depth. No hull fails at an exact number: each dive the sub has its own hidden crush depth,
+// on average about 1.62x its rating (about 470 m for a 300 m sub), rarely above 1.33x (400 m) or
+// past 1.8x (540 m). Within about a quarter of its rating of that depth the chance of failing rises
+// exponentially, so creeping deeper is a gamble that worsens fast. When it goes, it goes: one loud
+// crack, half a second, and it is over.
 const FAIL_WINDOW = 0.5;
 function crushDepth(dt) {
   const sub = g.sub, r = sub.y / sub.rated;
@@ -648,8 +650,11 @@ function crushDepth(dt) {
     if (sub.failing > FAIL_WINDOW) g.implodeNow = true;
     return;
   }
-  // 1 in 20 a second at 1.5x, about 1 in 3 at 1.75x
-  if (r > 1.5 && Math.random() < dt * 0.05 * Math.exp((r - 1.5) * 8)) {
+  // a new hidden crush depth each dive (drawn whenever she is at the surface)
+  if (sub.crushR == null || sub.y < 2.2) { let n = 0; for (let i = 0; i < 6; i++) n += Math.random(); sub.crushR = clamp(1.62 + (n - 3) * 0.105 * Math.SQRT2, 1.25, 1.95); }
+  const c = sub.crushR;
+  // half a chance a second right at it, rising exponentially as she nears it; sure past it
+  if (r > c - 0.25 && (r >= c + 0.03 || Math.random() < dt * 0.5 * Math.exp((r - c) * 30))) {
     sub.failing = 0;
     g.fx.shake = Math.max(g.fx.shake, 1.4);
     audio.ready && audio.creak(1.3);

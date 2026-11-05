@@ -143,9 +143,12 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
 
 - An old riveted bathyscaphe at the boat (F to board, hold F to leave). Cruises at 3.4 m/s
   (Engine upgrades), dives no faster, rises 1.2x faster. Rated 300 m at first,
-  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. The hull creaks once going past its rating and once past crush depth (1.5x), and
-  when hit; no messages, and no creaking in between. Past 1.5x it can
-  give at any moment (1 in 20 a second at 1.5x, about 1 in 3 at 1.75x). When it goes there is no time:
+  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. The hull creaks once going past its rating and once nearing its crush depth, and
+  when hit; no messages. Past the rating the viewports fog and craze and the sphere's seams weep jets
+  of mist and bubbles, growing toward crush depth. Each dive the sub has its own hidden crush depth:
+  1.62x its rating on average (sd 0.105x; for a 300 m sub about 470 m, ~2 % above 400 m, ~2 % past
+  540 m). Within 0.25x of it the chance of failing is 0.5/s x e^(30 (r - crush)), and certain just
+  past it. When it goes there is no time:
   one loud crack and a jolt, and half a second later it implodes with Earl inside: the hull folds in for a fifth of a second, a white flash, the gas
   crushed to a point and thrown out as a cloud with a shock front, wreckage scattering, then the dark
   and, in silence, the cause. The sub is lost; a replacement can be bought.

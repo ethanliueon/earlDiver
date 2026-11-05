@@ -87,7 +87,7 @@ export function updateEarl(g, dt, inp) {
     e.atSurface = surf;
     // hull
     const r = sub.y / sub.rated;
-    sub.stress = clamp((r - 0.85) / 0.45, 0, 1);
+    sub.stress = clamp((r - 1) / Math.max(0.2, (sub.crushR || 1.62) - 1), 0, 1); // 0 at its rating .. 1 at its crush depth
     if (sub.o2 <= 0) {
       // the cabin is empty: he stays at the controls on his own tank. The cabin is still at surface
       // pressure, so depth doesn't make his air go faster (only injury does)

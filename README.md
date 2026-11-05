@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.19.0 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.19.1 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -55,8 +55,10 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - H turns detailed hints on and off.
 - What you take (salvage, clams, sapphires) does not come back during a dive. A new dive is a new
   sea: die, or end the dive from the pause menu (unsold catch is lost either way).
-- The submersible is docked at the boat. Past its rated depth the hull creaks; past 1.5×
-  it can give at any moment, and then it implodes in half a second.
+- The submersible is docked at the boat. Past its rated depth the hull creaks, the viewports fog
+  and the seams weep. Each dive it has its own hidden crush depth (on average about 1.6× its
+  rating: around 470 m for a 300 m sub, rarely above 400 m or past 540 m); nearing it the chance of
+  failing rises fast, and when the hull gives it implodes in half a second.
   Refits at the boat take it down to 3,000 m.
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs
   hide you if you are slow and dark. Sea lanterns keep it away, for a while.
