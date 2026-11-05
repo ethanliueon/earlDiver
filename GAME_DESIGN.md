@@ -69,6 +69,14 @@ All of it is paid at the boat (U at the surface by the *Margaret*), on a typed r
 - **Radio contracts**: three (five with a better radio) jobs per dive that pay well over market.
 - Each kind of thing floods its market as it is sold; prices recover over a few minutes.
 
+## Suits
+
+Bought once at the boat, one worn at a time (changed at the boat): wetsuit (start); freediving skin
+(+15 % speed, +10 % air use); drysuit (pressure from 400 m, -5 % speed, warm); chain-mail shark suit
+(bites do one less injury, -12 % speed); rebreather suit (-25 % air use, no bubbles so the entity
+hears less, -5 % speed); atmospheric hardsuit (no pressure to 700 m, -10 % air use, turns bites,
+-40 % speed). Each is drawn on Earl.
+
 ## Upgrades
 
 An upgrades game: every stat is levelled one small step at a time, each step a little dearer than

@@ -9,6 +9,7 @@ import { specimenValue, conditionName, rarityOf } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; };
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
+import { SUITS } from './economy.js';
 import { loadBest, UPGRADES, UPGRADE_DESC, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
@@ -266,6 +267,7 @@ export class UI {
         for (const k of ['lure', 'necklace']) if (g.items[k]) html += card(GOODS[k].name, `You are carrying ${g.items[k]}. Someone on the radio collects these.`, '', null, 'sellitem', k, `Sell one · ${money(priceOf(P, k, GOODS[k].price), false)}`);
       }
     } else if (tab === 'diver') {
+      html += this.suitRows(P, can);
       html += this.upgradeGroups(P, ['Diver', 'Net', 'Slurp gun', 'Tag gun', 'Camera'], icon, can);
       if (!(P.addons || {}).canisters) html += card(CANISTERS.name, CANISTERS.desc, 'for the bag and the sub tank', CANISTERS.price, 'buy', 'canisters', 'Buy');
     } else if (tab === 'sub') {
@@ -321,6 +323,27 @@ export class UI {
       if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets, ${money(A.lastDay.cost, false)} upkeep. Earned so far: ${money(A.earned, false)}.</p>`;
     }
     $('shop-body').innerHTML = html;
+  }
+
+  // Suits: one line each, what it does, and buy / wear / worn
+  suitRows(P, can) {
+    const have = new Set(P.suits || ['wet']), worn = P.suit || 'wet';
+    const pct = (v) => `${v > 1 ? '+' : ''}${Math.round((v - 1) * 100)} %`;
+    let html = '<div class="up-group"><h4>Suit</h4>';
+    for (const [k, S] of Object.entries(SUITS)) {
+      const bits = [];
+      if (S.press !== 300) bits.push(`pressure from ${S.press} m`);
+      if (S.air !== 1) bits.push(`air ${pct(S.air)}`);
+      if (S.speed !== 1) bits.push(`speed ${pct(S.speed)}`);
+      if (S.bite) bits.push('turns bites');
+      if (S.quiet) bits.push('no bubbles');
+      if (S.warm) bits.push('warm');
+      const label = k === worn ? 'Worn' : have.has(k) ? 'Wear' : money(S.price);
+      const dis = k === worn || (!have.has(k) && !can(S.price));
+      html += `<div class="up-row" data-tip="${S.desc}"><span class="up-name">${S.name}</span><span class="up-val">${bits.join(' · ') || 'standard'}</span><span class="up-lv">${have.has(k) ? 'owned' : ''}</span>
+        <button data-act="buy" data-arg="suit:${k}" ${dis ? 'disabled' : ''}>${label}</button></div>`;
+    }
+    return html + '</div>';
   }
 
   // a small picture of an animal, cached

@@ -3,8 +3,17 @@ import { TAU, clamp, lerp } from './util.js';
 import { drawNet, drawSlurp, drawBeltBag, drawTagger, drawCamera } from './tools_draw.js';
 import { drawSpecies } from './creatures_draw.js';
 
-const SUIT = '#141619', SUIT_HI = '#2a2f35', SUIT_PANEL = '#24282d', SUIT_SEAM = '#33383e';
-const GLOVE = '#0d0e10', BCD = '#1b1d20', WEBBING = '#3a3d41';
+let SUIT = '#141619', SUIT_HI = '#2a2f35', SUIT_PANEL = '#24282d', SUIT_SEAM = '#33383e';
+let GLOVE = '#0d0e10', BCD = '#1b1d20', WEBBING = '#3a3d41';
+// each suit's colours: [suit, highlight, panel, seam, glove]
+const SUIT_LOOK = {
+  wet: ['#141619', '#2a2f35', '#24282d', '#33383e', '#0d0e10'],
+  skin: ['#10223a', '#2a4a6e', '#163050', '#3a5a80', '#0b1626'],
+  dry: ['#1a1b1d', '#34363a', '#b8501e', '#c86a30', '#121314'],
+  chain: ['#1a1c1f', '#4a4e54', '#2a2d31', '#3a3e44', '#121315'],
+  rebreather: ['#16191a', '#2c3236', '#2e3a2a', '#42503a', '#0e1011'],
+  hard: ['#c8a23a', '#ecd27a', '#8a6a1e', '#6a5014', '#3a3a3a'],
+};
 
 // A tapered limb segment with rounded ends (reads as flesh in a wetsuit, not a stick).
 function seg(ctx, x0, y0, x1, y1, w0, w1, col) {
@@ -26,6 +35,8 @@ const at = (x, y, a, l) => [x + Math.cos(a) * l, y + Math.sin(a) * l];
 //   catchSp: a fish in the net, held: a fish in the slurp gun, bag: [{col}] for the belt bag }
 export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   const u = L / 100;
+  const look = SUIT_LOOK[(gear && gear.suit) || 'wet'] || SUIT_LOOK.wet;
+  [SUIT, SUIT_HI, SUIT_PANEL, SUIT_SEAM, GLOVE] = look;
   const m = moving;
   const s1 = Math.sin(kick);
 
@@ -240,6 +251,31 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     tip = { x: hand.hx + Math.cos(toolA) * r.tipX, y: hand.hy + Math.sin(toolA) * r.tipX };
     // redraw the glove over the grip so the hand holds it
     ctx.fillStyle = GLOVE; ctx.beginPath(); ctx.ellipse(hand.hx, hand.hy, 3.4 * u, 2.5 * u, toolA, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // ---------- what the suit adds ----------
+  const suitK = gear && gear.suit;
+  if (suitK === 'chain') {
+    // steel mesh: a fine crosshatch of bright links over the torso
+    ctx.save(); ctx.beginPath(); ctx.ellipse(16 * u, 0, 18 * u, 7.5 * u, 0, 0, Math.PI * 2); ctx.clip();
+    ctx.strokeStyle = 'rgba(190,198,206,0.45)'; ctx.lineWidth = 0.35 * u;
+    for (let k = -30; k < 40; k += 1.4) { ctx.beginPath(); ctx.moveTo(k * u, -8 * u); ctx.lineTo((k + 8) * u, 8 * u); ctx.moveTo(k * u, 8 * u); ctx.lineTo((k + 8) * u, -8 * u); ctx.stroke(); }
+    ctx.restore();
+  } else if (suitK === 'rebreather') {
+    // the counterlung: a breathing bag on his chest, and the scrubber canister on his back
+    ctx.fillStyle = '#26301f'; ctx.beginPath(); ctx.roundRect(12 * u, 3.5 * u, 12 * u, 5 * u, 2 * u); ctx.fill();
+    ctx.strokeStyle = '#4a5a3a'; ctx.lineWidth = 0.5 * u; ctx.stroke();
+    ctx.fillStyle = '#d0b030'; ctx.fillRect(14 * u, 5 * u, 2 * u, 1.2 * u);
+  } else if (suitK === 'hard') {
+    // a walking pressure vessel: ringed joints and a domed viewport
+    ctx.strokeStyle = 'rgba(60,44,10,0.75)'; ctx.lineWidth = 1 * u;
+    for (const [x, y] of [[4, -6], [4, 6], [12, -6.5], [12, 6.5], [20, -7], [20, 7], [28, -6], [28, 6]]) { ctx.beginPath(); ctx.moveTo(x * u, y * u); ctx.lineTo(x * u, 0); ctx.stroke(); }
+    const dg = ctx.createRadialGradient(43 * u, 1 * u, 1 * u, 42 * u, 0, 9 * u);
+    dg.addColorStop(0, '#f0d27a'); dg.addColorStop(1, '#7a5a18');
+    ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(42 * u, -0.5 * u, 8.6 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0e1a20'; ctx.beginPath(); ctx.arc(45 * u, 2.5 * u, 4.6 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(220,240,250,0.45)'; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.arc(45 * u, 2 * u, 3.4 * u, 3.6, 4.6); ctx.stroke();
+    ctx.strokeStyle = '#5a4210'; ctx.lineWidth = 1 * u; ctx.beginPath(); ctx.arc(45 * u, 2.5 * u, 4.8 * u, 0, Math.PI * 2); ctx.stroke();
   }
 
   // ---------- rim light from the surface (strongest near the top) ----------

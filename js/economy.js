@@ -176,6 +176,20 @@ export const UPGRADES = {
   armSpeed:  { group: 'Claw', needs: 'arm', name: 'Hydraulics', base: 1.1, step: -0.06, max: 10, cost: 3, growth: 1.3, fmt: 'sec' },
   armGrip:   { group: 'Claw', needs: 'arm', name: 'Grip window', base: 0.06, step: 0.008, max: 10, cost: 3, growth: 1.3, fmt: 'win' },
 };
+// Suits: bought once at the boat, one worn at a time (changed at the boat).
+// press: depth at which the pressure starts to eat his air · air: air use · speed: swimming speed ·
+// bite: injury taken off a shark or billfish bite · quiet: no bubbles (the entity hears less) ·
+// warm: keeps out the cold (deep and upwelling water) · col: how it is drawn
+export const SUITS = {
+  wet: { name: 'Wetsuit', price: 0, press: 300, air: 1, speed: 1, desc: 'Black neoprene. What he started with.' },
+  skin: { name: 'Freediving skin', price: 6, press: 300, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works him harder.' },
+  dry: { name: 'Drysuit', price: 25, press: 400, air: 1, speed: 0.95, warm: true, desc: 'Sealed and dry inside, with a little air in it. Pressure starts to bite 100 m deeper, and it keeps out the cold.' },
+  chain: { name: 'Chain-mail shark suit', price: 40, press: 300, air: 1, speed: 0.88, bite: 1, desc: 'Steel mesh over neoprene, as shark feeders wear. A bite does one less injury. Heavy.' },
+  rebreather: { name: 'Rebreather suit', price: 150, press: 300, air: 0.75, speed: 0.95, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
+  hard: { name: 'Atmospheric hardsuit', price: 400, press: 700, air: 0.9, speed: 0.6, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m. Very slow.' },
+};
+export const suitOf = (P) => SUITS[(P && P.suit) || 'wet'];
+
 // what each upgrade is, in a sentence (the shop shows it when you hover the row)
 export const UPGRADE_DESC = {
   payFish: 'Better buyers. Every live animal, tag and photograph sells for 5 % more per level.',

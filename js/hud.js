@@ -196,7 +196,7 @@ export class Hud {
     if (!e.atSurface) {
       const parts = [];
       if (e.sprint && e.speedNow > 1) parts.push(`sprinting ×${e.inSub ? 3 : 2}`);
-      const press = e.inSub ? 1 : diverDrainMult(e.y);
+      const press = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300);
       if (press > 1.05) parts.push(`pressure ×${press.toFixed(1)}`);
       if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.fillText(parts.join(' · '), rx0, ly); ly += 15 * s; }
     }

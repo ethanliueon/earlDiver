@@ -460,7 +460,7 @@ export class Renderer {
         }
         gear = { kind: tool.kind === 'trap' ? 'none' : tool.kind, tier: tool.tier, t, sweep: g.capture && g.capture.kind === tool.kind ? clamp(g.capture.t / g.capture.dur, 0, 1) : null,
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
-          aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0 };
+          aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0, suit: e.suit };
       }
       const h = drawEarl(ctx, EARL_H * ppm, e.kick, moving, lampCol, amb, gear);
       ctx.restore();

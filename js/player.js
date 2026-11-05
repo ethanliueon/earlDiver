@@ -13,8 +13,9 @@ const K_PRESS = Math.log(80) / 700; // x80 drain at 1000 m, starting at 300 m
 
 export const SUB_LEVELS = SUB_TIERS;
 
-export function diverDrainMult(depth) {
-  return depth <= 300 ? 1 : Math.exp(K_PRESS * (depth - 300));
+// start: the depth at which his suit stops protecting him from the pressure (300 m in a wetsuit)
+export function diverDrainMult(depth, start = 300) {
+  return depth <= start ? 1 : Math.exp(K_PRESS * (depth - start));
 }
 // a damaged hull leaks: at 40 % integrity the air drains 2.5x as fast
 export function subLeak(sub) { return 1 / Math.max(0.25, sub.hull); }
@@ -131,7 +132,7 @@ export function updateEarl(g, dt, inp) {
       e.surfacing = Math.min(1, e.surfacing + dt);
     } else {
       e.surfacing = 0;
-      e.o2 -= dt * diverDrainMult(e.y) * (inp.sprint && e.speedNow > 1 ? 2 : 1) * e.o2Mul * (g.airMul || 1);
+      e.o2 -= dt * diverDrainMult(e.y, e.pressStart || 300) * (inp.sprint && e.speedNow > 1 ? 2 : 1) * e.o2Mul * (g.airMul || 1);
     }
     if (e.o2 <= 0) { e.o2 = 0; return 'o2'; }
   }

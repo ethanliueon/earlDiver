@@ -15,6 +15,7 @@ import { fillBoard, fulfil, RADIO } from './contracts.js';
 import { updateFrenzy, frenzyOn, FRENZIES } from './frenzy.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
+import { SUITS, suitOf } from './economy.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
@@ -45,6 +46,11 @@ let cHeld = 0, cDown = 0;
 // what survives death: cash, upgrades, the journal, the market (see economy.js)
 let profile = loadProfile();
 
+// what his suit does: pressure, air, speed (see SUITS)
+function applySuit(e, P) {
+  const S = suitOf(P);
+  e.pressStart = S.press; e.suitAir = S.air; e.suitSpeed = S.speed; e.suitQuiet = !!S.quiet; e.suit = (P && P.suit) || 'wet';
+}
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
   sub.ratedV = statValue(P, 'depth'); sub.o2V = statValue(P, 'subAir'); sub.speedMul = statValue(P, 'subSpeed');
@@ -88,6 +94,7 @@ function newGame(mode) {
   // upgrades bought on earlier dives
   g.earl.o2Max = g.earl.o2 = statValue(P, 'air');
   g.earl.finSpeed = statValue(P, 'swim'); g.earl.sprintMul = statValue(P, 'sprint');
+  applySuit(g.earl, P);
   applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = P.hull;
   if (P.subLost) { g.sub.imploded = true; g.sub.docked = false; }
   // pre-warm the ocean with life around the spawn
@@ -119,6 +126,8 @@ const INJURY = {
 };
 function hurt(dmg, sp, how) {
   if (g.mode !== 'play') return;
+  const suit = suitOf(profile);
+  if (suit.bite && how !== 'whale') { dmg = Math.max(0, dmg - suit.bite); if (!dmg) { g.fx.shake = Math.max(g.fx.shake, 0.8); hud.toast(`The ${suitOf(profile).name.toLowerCase()} turns the bite`, 'note'); audio.ready && audio.thud(0.3); return; } }
   g.injury += dmg; g.healT = 0;
   const e = g.earl;
   g.fx.redFlash = 1; g.fx.shake = Math.max(g.fx.shake, 1 + dmg * 0.4);
@@ -234,6 +243,15 @@ function buy(kind) {
       if (id === 'depth' || id === 'subAir' || id === 'subSpeed') applySub(sub, P);
       if (id === 'camShots') g.shots = gear(P, 'cam').shots;
       hud.toast(`${U.name}: ${fmtStat(id, statValue(P, id))}`);
+    }
+  } else if (kind.startsWith('suit:')) {
+    // buy it (if new) and put it on
+    const k = kind.slice(5), S = SUITS[k];
+    const have = (P.suits || ['wet']).includes(k);
+    if (S && (have || spend(P, S.price))) {
+      if (!have) P.suits = [...(P.suits || ['wet']), k];
+      P.suit = k; applySuit(e, P); ok = true;
+      hud.toast(have ? `Wearing the ${S.name.toLowerCase()}` : `${S.name}: bought and on`, 'big');
     }
   } else if (kind.startsWith('gear:')) {
     // a new piece of gear, bought once
@@ -765,7 +783,8 @@ function update(dt) {
     if (g.injury > 0) { g.healT += dt; if (g.healT >= 15) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
     const lvl = Math.min(4, g.injury);
     const kg = loadKg(g); g.loadKg = kg;
-    e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg); e.o2Mul = INJURY.air[lvl] * loadAir(kg);
+    e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg) * (e.suitSpeed || 1);
+    e.o2Mul = INJURY.air[lvl] * loadAir(kg) * (e.suitAir || 1);
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
@@ -802,7 +821,7 @@ function update(dt) {
     } else if (res === 'o2') {
       if (!g.noAir) { g.noAir = 0.001; g.noAirCause = res; hud.toast(res === 'o2' ? 'Out of air — get to the surface' : 'The cabin is out of air — surface!', 'warn'); }
       // under pressure air hunger comes on far faster: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m
-      g.noAirRate = e.inSub ? 1 : Math.pow(diverDrainMult(e.y), 0.75); // pressure eats the breath hold fast
+      g.noAirRate = e.inSub ? 1 : Math.pow(diverDrainMult(e.y, e.pressStart || 300), 0.75); // pressure eats the breath hold fast
       g.noAir += dt * g.noAirRate;
       if (g.noAir >= 15) die(causeText(g.noAirCause));
     } else if (g.noAir) {
@@ -813,7 +832,7 @@ function update(dt) {
     if (!e.inSub && !g.sub.imploded && g.sub.y < 2.2 && g.sub.o2 < g.sub.o2Max) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max / 4 * dt);
     // diver tank refills from the sub's air
     if (e.inSub && e.o2 < e.o2Max) { const r = Math.min(e.o2Max - e.o2, (e.o2Max / 3.5) * dt); e.o2 += r; }
-    g.diverDrain = diverDrainMult(e.y) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
+    g.diverDrain = diverDrainMult(e.y, e.pressStart || 300) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
     g.diverDrain *= e.o2Mul;
     g.subDrain = subDrainMult(g.sub.y, g.sub.rated) * (mv.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(g.sub);
     if (!e.inSub && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical — surface', 'warn'); }
@@ -972,7 +991,7 @@ function update(dt) {
   g.fauna.entityNear = ent.marked || (ent.dist ?? 999) < 300;
   g.fauna.update(dt, renderer.cam, e, ent, fx.dread, g.time, g.day.light < 0.3);
   // breathing bubbles
-  if (!e.inSub && e.y > 1 && g.mode === 'play') {
+  if (!e.inSub && e.y > 1 && g.mode === 'play' && !e.suitQuiet) {
     g.breathT -= dt;
     if (g.breathT <= 0) {
       g.breathT = 4.2 / clamp(e.hr / 70, 0.8, 2.6);
