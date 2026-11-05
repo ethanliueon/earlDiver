@@ -1,6 +1,7 @@
 // Sound: the background music (muffled underwater), generated ambience,
 // breathing, heartbeat, the entity's presence, sonar, hull creaks.
 import { clamp, lerp } from './util.js';
+const MUSIC_LOOP = 128 * 60 / 88 / 0.94; // seconds: Polaroid II's loop
 
 export class Audio {
   constructor() {
@@ -13,12 +14,13 @@ export class Audio {
     const ac = (this.ac = new AC());
     this.master = ac.createGain(); this.master.gain.value = 0.9; this.master.connect(ac.destination);
     // music
-    this.musicEl = new window.Audio('assets/audio/polaroid_ii.mp3');
-    this.musicEl.loop = true; this.musicEl.crossOrigin = 'anonymous'; this.musicEl.preload = 'auto';
-    const src = ac.createMediaElementSource(this.musicEl);
+    // decoded whole and looped by the audio clock, sample for sample (an <audio> element's loop
+    // leaves a gap at the seam). The loop is exactly 128 beats at 88 bpm, slowed to 0.94.
     this.musicLP = ac.createBiquadFilter(); this.musicLP.type = 'lowpass'; this.musicLP.frequency.value = 18000;
     this.musicGain = ac.createGain(); this.musicGain.gain.value = 0;
-    src.connect(this.musicLP).connect(this.musicGain).connect(this.master);
+    this.musicLP.connect(this.musicGain).connect(this.master);
+    fetch('assets/audio/polaroid_ii.mp3').then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => ac.decodeAudioData(b, res, rej)))
+      .then((buf) => { this.musicBuf = buf; if (this.musicWanted) this.musicFrom(0); }).catch(() => {});
     // noise buffer
     const len = ac.sampleRate * 4;
     const buf = ac.createBuffer(1, len, ac.sampleRate);
@@ -102,8 +104,17 @@ export class Audio {
   // (peaceful catches, sales, photos, quiet swimming) raises those odds.
   playMusic() {
     if (!this.ready) return;
-    this.musicEl.play().catch(() => {});
+    this.musicWanted = true;
+    if (this.musicBuf && !this.musicSrc) this.musicFrom(0);
     this.startPiece(true);
+  }
+  // (re)start the music loop from a point in it
+  musicFrom(offset) {
+    if (!this.musicBuf) return;
+    if (this.musicSrc) { try { this.musicSrc.stop(); } catch (e) { /* already stopped */ } }
+    const s = this.ac.createBufferSource(); s.buffer = this.musicBuf; s.loop = true;
+    s.loopStart = 0; s.loopEnd = Math.min(this.musicBuf.duration, MUSIC_LOOP);
+    s.connect(this.musicLP); s.start(0, offset); this.musicSrc = s;
   }
   // a good moment (or the boat, or a new dive): start a piece if none is playing
   cue(kind) {
@@ -118,7 +129,7 @@ export class Audio {
     const m = this.musState();
     if (m.on) return;                                      // already playing: carry on
     if (!always && (!this.calm || m.sinceStress < 15)) return;
-    if (m.level < 0.02) { try { this.musicEl.currentTime = 0; } catch (e) { /* not loaded */ } } // fresh, unless still fading
+    if (m.level < 0.02) this.musicFrom(0); // fresh, unless still fading
     m.on = true; m.t = 0; m.len = 30 + Math.random() * 30; m.meter = 0;
   }
   // returns the music level 0..1 for this frame

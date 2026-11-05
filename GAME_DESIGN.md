@@ -20,8 +20,7 @@ by a hidden calm meter that fills with peaceful catches, sales and photos.
 Recorded effects (CC0, see the README): water lapping, softly, only while air is going in at the
 surface (for as long as the refill takes, fading as the tank fills), now and then
 a gull by day; a plop as an animal goes into a chamber, a splash into the open tank; the hull
-creaking once past its rating, once past crush depth, when hit, and about once a second while it
-fails and the implosion;
+creaking once past its rating, once past crush depth, when hit, and the crack as it gives and the implosion;
 soft clicks and a hover tick for the menus, a soft page turn as the journal opens (the other
 screens open silently), coins for a sale. Nothing of Earl himself
 is recorded.
@@ -138,9 +137,8 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
   (Engine upgrades), dives no faster, rises 1.2x faster. Rated 300 m at first,
   refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. The hull creaks once going past its rating and once past crush depth (1.5x), and
   when hit; no messages, and no creaking in between. Past 1.5x it can
-  give at any moment (1 in 20 a second at 1.5x, about 1 in 3 at 1.75x). When it starts to go there are
-  3.5 s of loud creaking and shaking: climb 6 m (or back above 1.45x) and it holds. If not, it
-  implodes with Earl inside: the hull folds in for a fifth of a second, a white flash, the gas
+  give at any moment (1 in 20 a second at 1.5x, about 1 in 3 at 1.75x). When it goes there is no time:
+  one loud crack and a jolt, and half a second later it implodes with Earl inside: the hull folds in for a fifth of a second, a white flash, the gas
   crushed to a point and thrown out as a cloud with a shock front, wreckage scattering, then the dark
   and, in silence, the cause. The sub is lost; a replacement can be bought.
 - C calls it: it drives itself to Earl, routing around rock, and stops beside him; never below its

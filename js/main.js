@@ -624,24 +624,23 @@ function leaveSub() {
   audio.ready && audio.click();
 }
 
-// crush depth. Past 1.2x its rating the hull groans; past 1.5x it can give at any moment, the deeper
-// the sooner. When it starts to go there are a few seconds of warning: climb and it may hold.
-const FAIL_WINDOW = 3.5, FAIL_CLIMB = 6;
+// crush depth. Past 1.5x its rating the hull can give at any moment, the deeper the sooner. When it
+// goes, it goes: one loud crack, half a second, and it is over. (The creaks past the rating and past
+// crush depth are the only warning.)
+const FAIL_WINDOW = 0.5;
 function crushDepth(dt) {
   const sub = g.sub, r = sub.y / sub.rated;
   if (sub.failing != null) {
     sub.failing += dt;
-    g.fx.shake = Math.max(g.fx.shake, 0.5 + sub.failing * 0.4);
-    if (sub.y < sub.failY - FAIL_CLIMB || r < 1.45) { sub.failing = null; hud.toast('The hull holds', 'note'); return; }
+    g.fx.shake = Math.max(g.fx.shake, 1 + sub.failing * 3);
     if (sub.failing > FAIL_WINDOW) g.implodeNow = true;
     return;
   }
   // 1 in 20 a second at 1.5x, about 1 in 3 at 1.75x
   if (r > 1.5 && Math.random() < dt * 0.05 * Math.exp((r - 1.5) * 8)) {
-    sub.failing = 0; sub.failY = sub.y;
+    sub.failing = 0;
     g.fx.shake = Math.max(g.fx.shake, 1.4);
-    audio.ready && audio.creak(1.2);
-    hud.toast('Something gives in the hull. Climb!', 'warn');
+    audio.ready && audio.creak(1.3);
   }
 }
 
@@ -747,11 +746,13 @@ function update(dt) {
     if (atAngler && !g.caveMet) { g.caveMet = true; hud.toast('Something vast breathes in the dark of the cave', 'note'); }
     // in the submersible the prompt stays out of the way: hidden while moving, and gone after
     // 5 s of the same text (it comes back when something new is in reach or the sub stops again)
+    // (only the sub's own reminder, F to leave / T for the tank room, hides like that: something in
+    // reach, to collect or observe, is always shown)
     if (e.inSub) {
       if (g.prompt !== g.promptText || (g.subMoving && e.speedNow < 0.5)) { g.promptText = g.prompt; g.promptT = 0; }
       g.subMoving = e.speedNow >= 0.5;
       g.promptT = (g.promptT || 0) + dt;
-      if (g.subMoving || g.promptT > 5) g.prompt = null;
+      if (!target && !atAngler && (g.subMoving || g.promptT > 5)) g.prompt = null;
     } else { g.promptText = null; g.promptT = 0; }
     // seabed materials have to be worked loose: hold F (or the right mouse button), one at a time
     const holding = keys.has('f');
