@@ -276,6 +276,8 @@ export class Renderer {
     // one for the silver flashes - a whole school costs three draw calls.
     const fl = this.layerBegin(ctx); // the fauna, on a layer the water veils
     const baseM = fl.getTransform();
+    this.rimSun = this.lite || cam.y + cam.h / 2 <= 0 ? 0 : clamp(1 - Math.max(0, cam.y) / 260, 0.25, 1) * (0.55 + 0.45 * (g.dayEff || 0));
+    const rbox = [1e9, 1e9, -1e9, -1e9]; // animals drawn live (not from baked frames) get the rim the old way
     const batches = new Map();
     let glowSkip = 0;
     for (const c of g.fauna.list) {
@@ -321,6 +323,10 @@ export class Renderer {
       fl.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
       const r = c.variant ? this.drawVariant(fl, c.sp, c.variant, Ld, c.phase) : this.drawCached(fl, c.sp, Ld, c.phase, c.wob);
       fl.restore();
+      if (Ld >= 6 && (c.variant || Ld > 150 || CACHE_SKIP.has(shape))) {
+        const sx = S(c.x), sy = Sy(c.y), rr = Ld * 1.4;
+        rbox[0] = Math.min(rbox[0], sx - rr); rbox[1] = Math.min(rbox[1], sy - rr); rbox[2] = Math.max(rbox[2], sx + rr); rbox[3] = Math.max(rbox[3], sy + rr);
+      }
       // a research tag trailing from a tagged animal
       if (c.tagged) {
         const tx = S(c.x) + (c.dir > 0 ? -1 : 1) * Ld * 0.05, ty = Sy(c.y) - Ld * 0.08;
@@ -346,7 +352,7 @@ export class Renderer {
       fl.fillStyle = '#0a0a0a'; fl.fill(bt.eyes);
     }
     fl.setTransform(baseM);
-    this.layerEnd(ctx, g, fl, !this.lite);
+    this.layerEnd(ctx, g, fl, !this.lite && rbox[2] > rbox[0] ? rbox : null);
     // brackets around what the net, slurp gun or claw will go for
     const ctg = g.mode === 'play' ? g.catchTarget : null;
     if (ctg) {
@@ -732,18 +738,48 @@ export class Renderer {
         else if (e.frames[(f - d + SPRITE_FRAMES) % SPRITE_FRAMES]) f = (f - d + SPRITE_FRAMES) % SPRITE_FRAMES;
       }
     }
-    if (!e.frames[f]) {
-      const c = document.createElement('canvas');
-      c.width = c.height = e.box;
-      const x = c.getContext('2d');
-      x.translate(e.box / 2, e.box / 2);
-      e.glows[f] = drawSpecies(x, sp, e.bl, (f / SPRITE_FRAMES) * SPRITE_PERIOD, 1, 0);
-      e.frames[f] = c;
-    }
+    if (!e.frames[f]) this.buildFrame(e, sp, f);
     const k = Ld / e.bl;
     ctx.drawImage(e.frames[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
+    // the light from above along its back, baked with the frame and laid on at today's strength
+    if (this.rimSun > 0 && e.hi[f]) { ctx.globalAlpha = 0.32 * this.rimSun; ctx.drawImage(e.hi[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k); ctx.globalAlpha = 1; }
     const gl = e.glows[f];
     return gl ? gl.map(([gx, gy, sz]) => [gx * k, gy * k, sz]) : null;
+  }
+
+  // One animation frame of a species, with the light from above worked in once instead of every
+  // frame on screen: a shade along every belly (baked in), and a bright rim along every back (kept
+  // as its own mask, laid on at the strength the depth and the daylight give).
+  buildFrame(e, sp, f) {
+    const c = document.createElement('canvas'); c.width = c.height = e.box;
+    const x = c.getContext('2d'); x.translate(e.box / 2, e.box / 2);
+    e.glows[f] = drawSpecies(x, sp, e.bl, (f / SPRITE_FRAMES) * SPRITE_PERIOD, 1, 0);
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    const off = clamp(Math.round(0.035 * e.bl / fishDrawLen(sp.len)), 1, 3);
+    // a solid outline first (see-through fins would otherwise leave lines across the body)
+    // (grown by a pixel and shrunk back, which also closes hairline seams inside a drawing)
+    const mk = () => { const k = document.createElement('canvas'); k.width = k.height = e.box; return k; };
+    const grow = mk(), gx = grow.getContext('2d');
+    for (const [ox, oy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) { gx.drawImage(c, ox, oy); gx.drawImage(c, ox, oy); }
+    gx.globalCompositeOperation = 'source-in'; gx.fillStyle = '#fff'; gx.fillRect(0, 0, e.box, e.box);
+    const sil = mk(), sx = sil.getContext('2d');
+    sx.drawImage(grow, 0, 0);
+    sx.globalCompositeOperation = 'destination-in';
+    for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) sx.drawImage(grow, ox, oy);
+    const edge = (dy, col) => {
+      const m = document.createElement('canvas'); m.width = m.height = e.box;
+      const mx = m.getContext('2d');
+      mx.drawImage(sil, 0, 0);
+      mx.globalCompositeOperation = 'destination-out'; mx.drawImage(sil, 0, dy);
+      mx.globalCompositeOperation = 'source-in'; mx.fillStyle = col; mx.fillRect(0, 0, e.box, e.box);
+      return m;
+    };
+    if (!e.hi) e.hi = new Array(SPRITE_FRAMES);
+    e.hi[f] = edge(off, 'rgb(225,240,245)');
+    const sh = edge(-off, 'rgb(4,10,18)');
+    x.globalCompositeOperation = 'source-atop'; x.globalAlpha = 0.3; x.drawImage(sh, 0, 0);
+    x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+    e.frames[f] = c;
   }
 
   // Build creature animation frames ahead of time, a little each frame: first every species on
@@ -767,10 +803,7 @@ export class Renderer {
       if (!e) { const box = Math.ceil(bl * 2.4); e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES) }; cache.set(key, e); }
       for (let f = 0; f < SPRITE_FRAMES; f++) {
         if (e.frames[f]) continue;
-        const c = document.createElement('canvas'); c.width = c.height = e.box;
-        const x = c.getContext('2d'); x.translate(e.box / 2, e.box / 2);
-        e.glows[f] = drawSpecies(x, sp, e.bl, (f / SPRITE_FRAMES) * SPRITE_PERIOD, 1, 0);
-        e.frames[f] = c;
+        this.buildFrame(e, sp, f);
         if (performance.now() - t0 > budgetMs) return;
       }
     }
@@ -966,6 +999,11 @@ export class Renderer {
     // light from above: a soft bright rim along every top edge and a shade along every belly,
     // found from the layer itself (what has nothing above it, what has nothing below it)
     if (rim && dBot > 0) {
+      // only around the animals that were drawn live; everything else has the rim baked in
+      const rp = this.lpad;
+      const bx = Math.max(0, Math.floor(rim[0] - rp)), by = Math.max(0, Math.floor(rim[1] - rp));
+      const bw = Math.min(this.W, Math.ceil(rim[2] + rp)) - bx, bh = Math.min(this.H, Math.ceil(rim[3] + rp)) - by;
+      if (bw > 0 && bh > 0) {
       // worked out at half resolution (a quarter of the pixels): the rim is a soft edge anyway
       const k = Math.max(1, Math.round(cam.ppm * 0.035 / 2));
       if (!this.rc) { this.rc = document.createElement('canvas'); this.rctx = this.rc.getContext('2d'); }
@@ -974,12 +1012,15 @@ export class Renderer {
       const r = this.rctx, sun = clamp(1 - Math.max(0, cam.y) / 260, 0.25, 1) * (0.55 + 0.45 * (g.dayEff || 0));
       const hx = Math.floor(bx / 2), hy = Math.floor(by / 2), hw = Math.ceil(bw / 2) + 1, hh = Math.ceil(bh / 2) + 1;
       for (const [dy, col, a] of [[k, 'rgb(225,240,245)', 0.32 * sun], [-k, 'rgb(4,10,18)', 0.3]]) {
-        r.setTransform(1, 0, 0, 1, 0, 0); r.globalCompositeOperation = 'source-over'; r.clearRect(hx, hy, hw, hh);
-        r.drawImage(this.fc, hx * 2, hy * 2, hw * 2, hh * 2, hx, hy, hw, hh);
-        r.globalCompositeOperation = 'destination-out'; r.drawImage(this.fc, hx * 2, hy * 2, hw * 2, hh * 2, hx, hy + dy, hw, hh);
-        r.globalCompositeOperation = 'source-in'; r.fillStyle = col; r.fillRect(hx, hy, hw, hh);
+        // worked out a few rows beyond the box, so the box's own edge is never taken for an outline
+        const m = k + 2, ey = Math.max(0, hy - m), eh = hh + 2 * m;
+        r.setTransform(1, 0, 0, 1, 0, 0); r.globalCompositeOperation = 'source-over'; r.clearRect(hx, ey, hw, eh);
+        r.drawImage(this.fc, hx * 2, ey * 2, hw * 2, eh * 2, hx, ey, hw, eh);
+        r.globalCompositeOperation = 'destination-out'; r.drawImage(this.fc, hx * 2, ey * 2, hw * 2, eh * 2, hx, ey + dy, hw, eh);
+        r.globalCompositeOperation = 'source-in'; r.fillStyle = col; r.fillRect(hx, ey, hw, eh);
         f.globalCompositeOperation = 'source-atop'; f.globalAlpha = a; f.drawImage(this.rc, hx, hy, hw, hh, hx * 2, hy * 2, hw * 2, hh * 2);
         f.globalAlpha = 1; f.globalCompositeOperation = 'source-over';
+      }
       }
     }
     f.restore();
