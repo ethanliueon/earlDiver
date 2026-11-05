@@ -17,7 +17,8 @@ below 300 m outside the sub) stops it, and nothing starts it for 15 s after. In 
 piece, from one minute on, it has a chance every 30 s (10 %, 20 %, 35 %, 45 %, then 50 %), raised
 by a hidden calm meter that fills with peaceful catches, sales and photos.
 
-Recorded effects (CC0, see the README): water lapping at the hull while at the surface, now and then
+Recorded effects (CC0, see the README): water lapping, softly, only while air is going in at the
+surface (for as long as the refill takes, fading as the tank fills), now and then
 a gull by day; a plop as an animal goes into a chamber, a splash into the open tank; the hull
 creaking past its rating (faster and louder the deeper, frantic while it fails) and the implosion;
 soft clicks, a hover tick and a page sound for the menus, coins for a sale. Nothing of Earl himself

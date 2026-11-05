@@ -267,8 +267,10 @@ export class Audio {
     this.amb.g.gain.setTargetAtTime(under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03, now, 0.5);
     this.amb.f.frequency.setTargetAtTime(under ? lerp(260, 120, clamp(depth / 1000, 0, 1)) : 400, now, 0.5);
     const atSurface = g.mode === 'play' && (e.inSub ? g.sub.y < 2.2 && !g.sub.imploded : e.y < 1.0);
-    this.surf.g.gain.setTargetAtTime(this.lapping ? 0 : under ? 0 : 0.016 + g.waveBoost * 0.05, now, 0.3);
-    if (this.lapping) this.lapping.g.gain.setTargetAtTime(atSurface ? 0.55 : 0, now, atSurface ? 0.5 : 0.9);
+    // the lapping plays only while air is going in (his tank, or the sub's cabin), and stops as it fills
+    const sub = g.sub, refilling = atSurface && (e.inSub ? sub.o2 < sub.o2Max - 0.05 || e.o2 < e.o2Max - 0.05 : e.o2 < e.o2Max - 0.05);
+    this.surf.g.gain.setTargetAtTime(under || (this.lapping && refilling) ? 0 : 0.016 + g.waveBoost * 0.05, now, 0.3);
+    if (this.lapping) this.lapping.g.gain.setTargetAtTime(refilling ? 0.22 : 0, now, refilling ? 0.25 : 0.2);
     if (atSurface && (g.dayEff || 0) > 0.3) {
       this.gullT = (this.gullT ?? 6 + Math.random() * 10) - dt;
       if (this.gullT <= 0) { this.gullT = 14 + Math.random() * 26; this.sfx('seagull', 0.35 + Math.random() * 0.15, 0.92 + Math.random() * 0.16); }
