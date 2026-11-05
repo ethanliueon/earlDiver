@@ -13,7 +13,7 @@ export class Audio {
     const ac = (this.ac = new AC());
     this.master = ac.createGain(); this.master.gain.value = 0.9; this.master.connect(ac.destination);
     // music
-    this.musicEl = new window.Audio('assets/audio/background_music.mp3');
+    this.musicEl = new window.Audio('assets/audio/polaroid_ii.mp3');
     this.musicEl.loop = true; this.musicEl.crossOrigin = 'anonymous'; this.musicEl.preload = 'auto';
     const src = ac.createMediaElementSource(this.musicEl);
     this.musicLP = ac.createBiquadFilter(); this.musicLP.type = 'lowpass'; this.musicLP.frequency.value = 18000;

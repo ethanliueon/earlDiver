@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.16.3 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.16.4 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -104,7 +104,7 @@ GAME_DESIGN.md      the design this is built from
 
 ## Credits
 
-- Music: `assets/audio/background_music.mp3`, supplied by the project owner.
+- Music: "Polaroid II" (`assets/audio/polaroid_ii.mp3`), an original piece composed for the game.
 - Species facts (names, depth ranges, sizes, descriptions) from the project's
   Ocean Species Reference. All creature art is drawn in code; no photos are used.
 - Fonts: EB Garamond and IBM Plex Mono (Google Fonts, SIL Open Font License).
