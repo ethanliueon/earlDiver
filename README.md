@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.22.1 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.23.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -65,6 +65,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
   plate (hold F outside at the hatch: 10 s of wet welding, +40 %; the arc's light is seen below 200 m).
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs
   hide you if you are slow and dark. Sea lanterns keep it away, for a while.
+- An offering to the deep (G, a lure or necklace let go below 100 m) ends its hunt, and for three
+  minutes it will not notice you at all. Good deeds that calm it fully do the same.
 - It never comes above 100 m: the top 100 m are safe from it (not from sharks).
 - When it is within 200 m it shows on the sonar. You will feel it before then.
 - Sharks, billfish and sperm whales attack too. There is no health bar: you will see and hear how

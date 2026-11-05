@@ -6,7 +6,7 @@
 //  - everything flees the entity
 import { rollVariant, canBeRare } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
-import { clamp, lerp, fbm1, dist } from './util.js';
+import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
 
 const SWIMMERS = SPECIES.filter((s) => isSwimHab(s.v.hab));
 
@@ -170,7 +170,7 @@ export class Fauna {
   }
   groupCount() {
     const s = new Set();
-    for (const c of this.list) if (!this.schools.has(c.gid) && !c.home) s.add(c.gid);
+    for (const c of this.list) if (!this.schools.has(c.gid) && !c.home && !c.glimmer) s.add(c.gid);
     return s.size;
   }
 
@@ -358,6 +358,35 @@ export class Fauna {
     return c;
   }
 
+  // keep about a dozen lone glowing animals around the view in the deep (fewer just below 220 m)
+  spawnGlimmer(cam, night) {
+    const k = smoothstep(220, 700, cam.y);
+    if (k <= 0) return;
+    const want = Math.round(14 * k);
+    let have = 0; for (const c of this.list) if (c.glimmer && !c.dead) have++;
+    if (have >= want) return;
+    // anywhere about the view, but out in the dark, well away from him and his lamps (a deep fish
+    // in the dark is only ever its light, so one turning up there is simply one coming into sight)
+    const rng = this.rng, side = rng() < 0.5 ? -1 : 1;
+    const x = clamp(cam.x + rng.range(-0.75, 0.75) * cam.w, 5, 2995);
+    const fl = this.W.floorAt(x);
+    const y = clamp(cam.y + rng.range(-0.7, 0.7) * cam.h, 200, fl - 3);
+    if (fl - 3 < 200 || dist(x, y, cam.x, cam.y) < 12) return;
+    const pool = [];
+    for (const sp of SPECIES) {
+      if (!sp.v.glow || sp.v.hab !== 'pelagic' || sp.len > 1 || y < sp.dmin || y > sp.dmax) continue;
+      const w = this.depthPref(sp, x, y, night);
+      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len)]); // the small and common first
+    }
+    if (!pool.length) return;
+    let tot = 0; for (const [, w] of pool) tot += w;
+    let r = rng() * tot, pick = pool[0][0];
+    for (const [sp, w] of pool) { r -= w; if (r <= 0) { pick = sp; break; } }
+    const c = this.makeFish(pick, x, y, -side, this.groupId++, true);
+    c.glimmer = true;
+    this.list.push(c);
+  }
+
   depthPref(sp, x, y, night) {
     const [lo, hi] = this.depthBand(sp, x, night);
     // a deep animal (one that lives from 150 m down) is never met far above its band: none of the
@@ -393,6 +422,10 @@ export class Fauna {
       const target = Math.max(2, this.targetCount(cam.y, dread, open) - Math.floor(resGroups / 3));
       if (this.groupCount() < target) this.trySpawn(cam, dread);
     }
+    // the deep's living lights: below about 220 m there are always small glowing animals about
+    // (lanternfish, hatchetfish, firefly squid, dragonfish, viperfish...), each one real and catchable
+    this.glimT = (this.glimT || 0) - dt;
+    if (this.glimT <= 0) { this.glimT = 0.4; this.spawnGlimmer(cam, night); }
     if (this.baitT <= 0) {
       this.baitT = 0.6;
       if (this.schools.size < this.baitTarget(cam.y, dread)) this.trySpawnBait(cam, night);

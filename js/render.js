@@ -68,6 +68,8 @@ const BIO_BRIGHT = 0.6;
 // a creature's own light: a slow breathing pulse at its own rhythm, flaring when it is startled
 function bioPulse(c, t) {
   const rate = 0.45 + (c.wob % 1) * 0.6;
+  // a lone deep fish flashes: a dim glow, now and then a bright blink (as lanternfish signal)
+  if (c.glimmer) return (0.45 + 1.2 * Math.pow(Math.max(0, Math.sin(t * rate * 0.7 + c.wob)), 10)) * (c.fleeT > 0 ? 1.7 : 1);
   return (0.8 + 0.2 * Math.sin(t * rate + c.wob)) * (c.fleeT > 0 ? 1.7 : 1);
 }
 
@@ -326,7 +328,8 @@ export class Renderer {
         if (Ld > 9) { const ex = x + fx2 * Ld * 0.33 - px * down * hh * 0.2, ey = y + fy2 * Ld * 0.33 - py * down * hh * 0.2, er = Math.max(0.7, hh * 0.3); bt.eyes.moveTo(ex + er, ey); bt.eyes.arc(ex, ey, er, 0, TAU); }
         // school fish carry faint belly photophores, not lamps: small, dim, and they never sum to a blaze
         // (6th field: the radius of a sharp light-organ core; marks a living light the torch can wash out)
-        if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(1.5, Ld * 0.3), 0.3 * bioPulse(c, t), 0.6]);
+        if (c.sp.v.glow && c.glimmer) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.4 + ppm * 0.08), 0.55 * bioPulse(c, t), Math.max(0.8, ppm * 0.05)]); // a lone one: its own light, flashing
+        else if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(1.5, Ld * 0.3), 0.3 * bioPulse(c, t), 0.6]);
         continue;
       }
       const isLive = c.variant || Ld > 150 || CACHE_SKIP.has(shape);
@@ -673,20 +676,6 @@ export class Renderer {
     ctx.imageSmoothingQuality = 'low'; // (only the light needs the careful scaling; everything else uses the fast kind)
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
-    // far off in the dark, tiny lights come and go: things the lamp will never reach
-    if (cam.y > 220) {
-      const k = smoothstep(220, 700, cam.y), par = 0.45;
-      for (let n = 0; n < 70; n++) {
-        const hx = Math.abs(Math.sin(n * 91.7) * 1e4) % 1, hy = Math.abs(Math.sin(n * 47.3) * 1e4) % 1, hp = Math.abs(Math.sin(n * 13.1) * 1e4) % 1;
-        const span = cam.w * 1.6, spanY = cam.h * 1.6;
-        const wx = ((hx * span - cam.x * par) % span + span) % span - span * 0.2, wy = ((hy * spanY - cam.y * par) % spanY + spanY) % spanY - spanY * 0.2;
-        const tw = Math.pow(Math.max(0, Math.sin(t * (0.25 + hp * 0.5) + n * 2.1)), 14);
-        if (tw < 0.03) continue;
-        const sx = wx * ppm, sy = wy * ppm;
-        ctx.fillStyle = hp < 0.8 ? `rgba(110,230,215,${(0.55 * tw * k).toFixed(3)})` : `rgba(150,170,255,${(0.55 * tw * k).toFixed(3)})`;
-        ctx.beginPath(); ctx.arc(sx, sy, Math.max(1, ppm * 0.05) * (1 + tw), 0, TAU); ctx.fill();
-      }
-    }
     ctx.globalCompositeOperation = 'source-over';
 
     // ---- the entity: a dark mass that blocks the light, a faint rim, dim lights, two eyes ----

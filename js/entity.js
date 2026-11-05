@@ -14,6 +14,7 @@ export const SAFE_DEPTH = 120;   // above this it can never reach Earl
 export const REST_CEILING = 200; // when not chasing it keeps below this
 const FORGET_TIME = 180;         // seconds above SAFE_DEPTH before a mark fades on its own
 export const CALM_NEEDED = 60;   // about a minute of good deeds lifts a mark
+export const GRACE_TIME = 180;   // after an offering (or a deed that pleases it) it will not notice him for three minutes
 
 export class Entity {
   constructor(rng, world) {
@@ -29,6 +30,7 @@ export class Entity {
     this.marked = false; this.attn = 0; this.shallowT = 0; this.fade = 1;
     this.roamX = this.x; this.roamY = this.y; this.roamT = 0;
     this.deepMarkArmed = true;
+    this.graceT = 0; // pleased: for this long nothing he does draws its attention
   }
 
   // its home range right now (night lifts it toward the surface)
@@ -43,11 +45,18 @@ export class Entity {
   appease(g, amount) {
     if (this.marked) {
       this.calm = (this.calm || 0) + amount;
-      if (this.calm >= CALM_NEEDED) { this.marked = false; this.calm = 0; this.attn = 0.2; this.state = 'roam'; g.events.push('appeased'); }
-    } else this.attn = Math.max(0, this.attn - amount / 100);
+      if (this.calm >= CALM_NEEDED) { this.marked = false; this.calm = 0; this.attn = 0.2; this.state = 'roam'; this.graceT = GRACE_TIME; g.events.push('appeased'); }
+    } else { this.attn = Math.max(0, this.attn - amount / 100); this.graceT = Math.max(this.graceT, GRACE_TIME); }
+  }
+  // an offering to the deep: whatever it wanted, it is satisfied. The hunt ends, and for three
+  // minutes it does not look for him at all.
+  soothe(g) {
+    const was = this.marked;
+    this.marked = false; this.calm = 0; this.attn = 0; this.graceT = GRACE_TIME;
+    if (was) { this.state = 'roam'; g.events.push('appeased'); }
   }
   disturb(g, amount) {
-    if (this.marked) return;
+    if (this.marked || this.graceT > 0) return;
     this.attn = Math.min(1, this.attn + amount);
     if (this.attn >= 1) this.mark(g);
   }
@@ -89,6 +98,12 @@ export class Entity {
       // a mark fades if he stays above its reach long enough
       if (e.y < SAFE_DEPTH) { this.shallowT += dt; if (this.shallowT > FORGET_TIME) { this.marked = false; this.attn = 0.35; this.state = 'roam'; g.events.push('unmarked'); } }
       else this.shallowT = 0;
+      return;
+    }
+    // pleased: for a while it pays him no mind (whatever traps, lamps, engines or welding arcs say)
+    if (this.graceT > 0) {
+      this.graceT = Math.max(0, this.graceT - dt);
+      this.attn = Math.max(0, Math.min(this.attn, 0.5) - dt * 0.004);
       return;
     }
     // going below 500 m without the submersible marks him outright

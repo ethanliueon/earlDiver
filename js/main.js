@@ -856,7 +856,7 @@ function update(dt) {
     // giving something back: release a lure or a necklace into the deep
     if (pressed.has('g') && !e.inSub && e.y > 100) {
       const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
-      if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); }
+      if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('Something far below accepts it. For a while, it will not look for you.', 'note'); }
     }
     if (pressed.has('f-tap') && atAngler) ui.toggleCave();
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
