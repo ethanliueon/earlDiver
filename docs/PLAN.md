@@ -47,6 +47,14 @@ species has a 5 % chance to be rare, split as:
 
 Each is a visual layer over the species drawing. The journal gets 6 variant slots per species.
 
+## Prices (revised)
+
+At the owner's request the economy starts at cents and climbs in steps: small fish pay cents to a
+couple of dollars, a swordfish tag $100. Gear ladders start at $5-$10 (fine-mesh net $5, first tank
+$10, 700 m refit $50) and climb roughly x4-x8 per step to $15,000 for the 3,000 m sub. The prices
+in the tables below are the original reference figures; `js/economy.js` and `js/specimens.js` hold
+the live ones. Rare variants come only on bigger solitary fish (`canBeRare` in `js/variants.js`).
+
 ## Tools
 
 Stats: speed (sweep / reload), effectiveness (catch chance, size limit), harm (condition lost),

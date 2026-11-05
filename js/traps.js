@@ -5,7 +5,7 @@ import { clamp, dist } from './util.js';
 import { TRAPS } from './economy.js';
 import { SPECIES } from './species.js';
 import { canTakeLive } from './specimens.js';
-import { rollVariant, variantMult } from './variants.js';
+import { rollVariant, variantMult, canBeRare } from './variants.js';
 import { bagSlots } from './capture.js';
 
 const BOTTOM = new Set(['floor', 'floor-swim', 'demersal']);
@@ -44,7 +44,7 @@ export function updateTraps(g, dt) {
           if (c.length) {
             const sp = c[Math.floor(Math.random() * c.length)];
             const spec = { id: sp.id, len: sp.len * (0.75 + Math.random() * 0.4), cond: 0.9 + Math.random() * 0.08, from: t.depth, t: g.time };
-            if (g.fauna.caught && g.fauna.caught.has(sp.id)) {
+            if (g.fauna.caught && g.fauna.caught.has(sp.id) && canBeRare(sp)) {
               const v = rollVariant(Math.random, t.depth, g.fauna.entityNear);
               if (v) { spec.variant = v; spec.mult = variantMult(v); if (v === 'giant') spec.len *= 1.7; }
             }

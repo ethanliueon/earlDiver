@@ -14,6 +14,15 @@ export const VARIANTS = {
 };
 export const VARIANT_KEYS = Object.keys(VARIANTS);
 
+// Only bigger, solitary fish come in rare forms: no schooling fish, nothing small, no crabs,
+// starfish, jellies or other invertebrates. Deep-sea fish keep theirs even when small.
+const FISH = new Set(['Reef Fish', 'Cold Water Fish', 'Open Ocean Fish', 'Deep Sea Fish', 'Sharks & Rays']);
+const SCHOOLING = new Set([48, 49, 50, 51, 62, 161, 98, 99, 41, 28, 29, 27]);
+export function canBeRare(sp) {
+  if (!FISH.has(sp.cat) || SCHOOLING.has(sp.id) || (sp.v.sch || 1) > 2) return false;
+  return sp.len >= 0.2 || sp.cat === 'Deep Sea Fish';
+}
+
 // pick a variant for a new animal (or null): depth decides whether crimson is possible, and the
 // entity being close makes it three times likelier
 export function rollVariant(rng, depth, entityNear) {

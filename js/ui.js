@@ -6,7 +6,7 @@ import { RESOURCES } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName } from './specimens.js';
-import { VARIANTS, VARIANT_KEYS, variantLabel } from './variants.js';
+import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { loadBest } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
@@ -139,7 +139,7 @@ export class UI {
   // six slots for the rare variants of a species: locked until a normal one is caught
   variantRow(sp) {
     const P = this.h.getProfile && this.h.getProfile();
-    if (!P || !sp || sp.v.hab === 'plant') return '';
+    if (!P || !sp || !canBeRare(sp)) return '';
     const caught = (P.caught || []).includes(sp.id);
     const found = new Set(P.variants || []);
     if (!caught) return '<div class="variants locked">Rare forms: catch one first</div>';

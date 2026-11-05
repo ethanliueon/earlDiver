@@ -7,7 +7,7 @@ import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVEL
 import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir } from './capture.js';
 import { specimenValue, conditionName } from './specimens.js';
-import { VARIANTS, variantLabel, rollVariant } from './variants.js';
+import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
 import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
@@ -75,7 +75,7 @@ function newGame(mode) {
   // rare variants: unlocked per species by catching a normal one first
   g.fauna.caught = new Set(P.caught || []);
   for (const st of world.statics) {
-    if (g.fauna.caught.has(st.sp.id) && st.sp.v.hab !== 'plant') { const v = rollVariant(rng, st.y, false); if (v) { st.variant = v; if (v === 'giant') st.scale *= 1.7; } }
+    if (g.fauna.caught.has(st.sp.id) && canBeRare(st.sp)) { const v = rollVariant(rng, st.y, false); if (v) { st.variant = v; if (v === 'giant') st.scale *= 1.7; } }
   }
   // upgrades bought on earlier dives
   g.earl.o2Max = g.earl.o2 = TANKS[P.tank].air;

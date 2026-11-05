@@ -27,6 +27,8 @@ const CAT_BASE = {
   'Starfish & Urchins': 8, 'Shellfish & Snails': 10, 'Worms & Others': 15,
 };
 // Research program: what a tag on each big animal pays (milestone 5).
+// (These are the reference figures; liveValue and tagValue scale them so the game starts at cents.)
+export const PRICE_SCALE = 0.08, TAG_SCALE = 0.4;
 export const TAG = {
   14: 80, 15: 150, 23: 90, 24: 120, 25: 60, 32: 140, 33: 160, 35: 60, 36: 50, 38: 70,
   39: 400, 40: 120, 42: 100, 43: 90, 44: 140, 45: 40, 46: 300, 52: 60, 53: 250, 54: 4000,
@@ -48,13 +50,15 @@ export function canTakeLive(sp) {
 }
 // swimming animals too big for any net can be tagged instead
 export function isTagOnly(sp) { return TAG[sp.id] !== undefined && TAG[sp.id] > 0; }
+// what the research program pays for a tag (the swordfish is the benchmark: $100)
+export function tagPrice(id) { return id === 42 ? 100 : (TAG[id] || 0) * TAG_SCALE; }
 
 // a healthy specimen of normal size; len is this individual's length
 export function liveValue(sp, len = sp.len) {
   let v = LIVE[sp.id];
   if (v === undefined) v = (CAT_BASE[sp.cat] || 10) * (1 + Math.max(0, sp.dmin) / 150);
   const size = Math.min(1.4, Math.max(0.7, len / Math.max(0.01, sp.len)));
-  return v * size;
+  return v * size * PRICE_SCALE;
 }
 // condition: 1 healthy .. 0 dead. Stressed animals sell for less; dead ones for almost nothing.
 export function conditionMult(c) {

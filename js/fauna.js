@@ -4,7 +4,7 @@
 //    around Earl and pull into a tight ball when a predator comes
 //  - predators hunt nearby small fish and eat them
 //  - everything flees the entity
-import { rollVariant } from './variants.js';
+import { rollVariant, canBeRare } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { clamp, lerp, fbm1, dist } from './util.js';
 
@@ -176,7 +176,7 @@ export class Fauna {
       predator: PREDATORS.has(sp.id), prey: null, huntCool: rng.range(2, 10), dead: false,
     };
     // rare variants, once Earl has caught a normal one of this species
-    if (this.caught && this.caught.has(sp.id)) {
+    if (this.caught && this.caught.has(sp.id) && canBeRare(sp) && !this.schools.has(gid)) {
       const v = rollVariant(rng, y, this.entityNear);
       if (v) {
         c.variant = v;

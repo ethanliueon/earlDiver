@@ -280,7 +280,7 @@ export class Hud {
     if (g.profile && !dying) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.font = `500 ${20 * s}px ${MONO}`;
-      const ctxt = money(g.profile.cash, false);
+      const ctxt = money(g.profile.cash);
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(ctxt, pad + 1.5 * s, pad + 1.5 * s);
       ctx.fillStyle = 'rgba(220,236,214,0.9)'; ctx.fillText(ctxt, pad, pad);
       let carried = 0;

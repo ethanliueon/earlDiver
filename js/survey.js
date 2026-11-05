@@ -4,21 +4,21 @@
 // each rare form. Both are paid at the boat; neither survives his death (the data dies with him).
 import { clamp, dist } from './util.js';
 import { TAGGERS, CAMERAS } from './economy.js';
-import { TAG, liveValue } from './specimens.js';
+import { TAG, liveValue, tagPrice } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 import { AGGRO } from './hunters.js';
 
 export const canTag = (sp) => (TAG[sp.id] || 0) > 0;
 export function tagValue(sp, variant, tier) {
-  return (TAG[sp.id] || 0) * variantMult(variant) * TAGGERS[tier].pay;
+  return tagPrice(sp.id) * variantMult(variant) * TAGGERS[tier].pay;
 }
 // what the institute pays for a first photograph
 export function photoValue(sp, variant) {
   let v;
-  if (TAG[sp.id]) v = TAG[sp.id] * 0.35;
-  else if (sp.cat === 'Kelp & Plants' || sp.cat === 'Corals, Anemones & Sponges') v = 12 + sp.dmin * 0.4;
+  if (TAG[sp.id]) v = tagPrice(sp.id) * 0.35;
+  else if (sp.cat === 'Kelp & Plants' || sp.cat === 'Corals, Anemones & Sponges') v = 0.5 + sp.dmin * 0.03;
   else v = liveValue(sp) * 0.3;
-  return clamp(v, 4, 6000) * variantMult(variant);
+  return clamp(v, 0.25, 2000) * variantMult(variant);
 }
 export const photoKey = (sp, variant) => sp.id + (variant ? ':' + variant : '');
 

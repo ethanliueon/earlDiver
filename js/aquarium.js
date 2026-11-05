@@ -4,16 +4,16 @@
 // wing costs a little to run. The last wing needs animals from the very bottom.
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { liveValue, canTakeLive } from './specimens.js';
-import { VARIANTS, variantMult } from './variants.js';
+import { VARIANTS, variantMult, canBeRare } from './variants.js';
 
 export const DAY = 600; // seconds of play per paid day
 export const WINGS = [
-  { id: 'reef', name: 'Reef hall', price: 2000, slots: 12, upkeep: 40, desc: 'Warm shallow tanks under a glass roof: reef fish, seahorses, crabs, starfish.' },
-  { id: 'kelp', name: 'Kelp tower', price: 6000, slots: 10, upkeep: 80, desc: 'A tall cold-water cylinder with a living kelp forest for the cold-water fish.' },
-  { id: 'open', name: 'Open ocean dome', price: 15000, slots: 8, upkeep: 150, desc: 'One enormous round tank for open-water swimmers and drifting jellies.' },
-  { id: 'twilight', name: 'Twilight gallery', price: 30000, slots: 10, upkeep: 250, desc: 'Dim, chilled tanks for animals from 150 to 500 m.' },
-  { id: 'deep', name: 'Deep-sea gallery', price: 60000, slots: 8, upkeep: 500, desc: 'Pressurised black tanks behind portholes, for animals from below 500 m.' },
-  { id: 'abyss', name: 'Abyss tank', price: 120000, slots: 6, upkeep: 900, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 2,500 m.' },
+  { id: 'reef', name: 'Reef hall', price: 100, slots: 12, upkeep: 2, desc: 'Warm shallow tanks under a glass roof: reef fish, seahorses, crabs, starfish.' },
+  { id: 'kelp', name: 'Kelp tower', price: 400, slots: 10, upkeep: 5, desc: 'A tall cold-water cylinder with a living kelp forest for the cold-water fish.' },
+  { id: 'open', name: 'Open ocean dome', price: 1200, slots: 8, upkeep: 12, desc: 'One enormous round tank for open-water swimmers and drifting jellies.' },
+  { id: 'twilight', name: 'Twilight gallery', price: 3000, slots: 10, upkeep: 25, desc: 'Dim, chilled tanks for animals from 150 to 500 m.' },
+  { id: 'deep', name: 'Deep-sea gallery', price: 7000, slots: 8, upkeep: 50, desc: 'Pressurised black tanks behind portholes, for animals from below 500 m.' },
+  { id: 'abyss', name: 'Abyss tank', price: 15000, slots: 6, upkeep: 90, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 2,500 m.' },
 ];
 export const WING_BY_ID = Object.fromEntries(WINGS.map((w) => [w.id, w]));
 
@@ -54,7 +54,7 @@ export function display(P, spec) {
 // how much a displayed animal draws visitors: rarer, deeper and stranger is better
 export function drawOf(d) {
   const sp = SPECIES_BY_ID[d.id];
-  return Math.sqrt(liveValue(sp) * variantMult(d.variant)) * 2;
+  return liveValue(sp) * variantMult(d.variant) * 0.5;
 }
 export function reputation(P) {
   const A = aquariumOf(P);
@@ -66,8 +66,8 @@ export function reputation(P) {
 }
 // only wings with animals in them cost anything to run
 export function upkeep(P) { return aquariumOf(P).wings.reduce((a, w) => a + (wingUsed(P, w) ? WING_BY_ID[w].upkeep : 0), 0); }
-export function dailyIncome(P) { return Math.round(reputation(P) * 3); }
-export function visitors(P) { return Math.round(reputation(P) * 1.6); }
+export function dailyIncome(P) { return Math.round(reputation(P) * 100) / 100; }
+export function visitors(P) { return Math.round(4 + reputation(P) * 3); }
 
 // advance the aquarium's clock; returns the day's result when a day ends
 export function tickAquarium(P, dt) {
@@ -92,5 +92,5 @@ export function completion(P) {
   const list = Object.values(A.display);
   const species = new Set(list.map((d) => d.id)).size;
   const rare = list.filter((d) => d.variant).length;
-  return { species, of: KEEPABLE, rare, rareOf: KEEPABLE * Object.keys(VARIANTS).length };
+  return { species, of: KEEPABLE, rare, rareOf: SPECIES.filter(canBeRare).length * Object.keys(VARIANTS).length };
 }
