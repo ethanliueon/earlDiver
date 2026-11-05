@@ -43,19 +43,19 @@ export const SUB_ADDONS = {
 // range: reach beyond his hand (m) · time: sweep / reload (s) · maxLen: biggest animal (m)
 // success: chance on a calm animal · harm: condition it costs the animal · noise: attention below 200 m
 export const NETS = [
-  { name: 'Hand net', price: 0, range: 1.2, time: 1.0, maxLen: 0.30, success: 0.55, harm: 0.15, noise: 0.01,
+  { name: 'Hand net', price: 0, range: 1.2, time: 1.0, maxLen: 0.45, success: 0.55, harm: 0.15, noise: 0.01,
     desc: 'A small green nylon net on a short aluminium handle.' },
-  { name: 'Fine-mesh net', price: 5, range: 1.5, time: 0.8, maxLen: 0.40, success: 0.70, harm: 0.08, noise: 0.01,
+  { name: 'Fine-mesh net', price: 5, range: 1.5, time: 0.8, maxLen: 0.60, success: 0.70, harm: 0.08, noise: 0.01,
     desc: 'Soft knotless mesh that does not split fins. Lighter, quicker.' },
-  { name: 'Long-handle net', price: 40, range: 2.4, time: 1.1, maxLen: 0.60, success: 0.75, harm: 0.10, noise: 0.015,
+  { name: 'Long-handle net', price: 40, range: 2.4, time: 1.1, maxLen: 0.85, success: 0.75, harm: 0.10, noise: 0.015,
     desc: 'A telescopic pole and a deep bag. Reach animals before they bolt.' },
-  { name: 'Pro capture net', price: 300, range: 2.4, time: 0.6, maxLen: 0.90, success: 0.90, harm: 0.04, noise: 0.008,
+  { name: 'Pro capture net', price: 300, range: 2.4, time: 0.6, maxLen: 1.10, success: 0.90, harm: 0.04, noise: 0.008,
     desc: 'D-frame with a padded rim and a clear rubber bag, as public aquaria use.' },
 ];
 export const SLURPS = [
-  { name: 'Slurp gun', price: 15, range: 1.8, time: 2.0, maxLen: 0.15, success: 0.85, harm: 0.05, noise: 0.005,
+  { name: 'Slurp gun', price: 15, range: 1.8, time: 2.0, maxLen: 0.20, success: 0.85, harm: 0.05, noise: 0.005,
     desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones.' },
-  { name: 'Pro slurp gun', price: 120, range: 2.5, time: 1.2, maxLen: 0.20, success: 0.95, harm: 0.03, noise: 0.004,
+  { name: 'Pro slurp gun', price: 120, range: 2.5, time: 1.2, maxLen: 0.28, success: 0.95, harm: 0.03, noise: 0.004,
     desc: 'Longer barrel, stronger spring, a one-way valve and a pistol grip.' },
 ];
 // Tag guns: put a research tag on an animal too big to bring up. provoke: chance a miss (or a

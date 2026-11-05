@@ -31,6 +31,11 @@ const BEAM_DREAD = [255, 96, 46];
 const WATER_LIT = [60, 150, 180];
 // sprite cache for full-detail creatures: one swim cycle (2.09 s covers the fish tail beat twice and
 // the shark beat once) in 32 frames
+// how long a fish of length len (m) is drawn: larger than life (x1.6) so they read on screen,
+// with only a small boost for the tiniest so herring and mackerel still look different
+export const fishDrawLen = (len) => len * 1.6 + 0.08 * Math.exp(-len * 4);
+// Earl's height in metres
+export const EARL_H = 1.5;
 const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 32;
 const CACHE_SKIP = new Set(['jelly', 'siphonophore', 'manowar', 'oarfish', 'gulper', 'dragon', 'comb', 'eel', 'viper', 'sperm', 'orca', 'dolphin']); // what's left of a beam after a few metres of seawater
 
@@ -76,7 +81,7 @@ export class Renderer {
 
   updateCamera(g, dt) {
     const e = g.earl;
-    const targetView = g.debugView || (g.mode === 'menu' ? 40 : (e.inSub ? 46 : 30) * (this.zoomMul || 1));
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : (e.inSub ? 46 : 26) * (this.zoomMul || 1));
     this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
@@ -246,7 +251,7 @@ export class Renderer {
     let glowSkip = 0;
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
-      const Ld = (c.len + 0.25 * Math.exp(-c.len * 2)) * ppm;
+      const Ld = fishDrawLen(c.len) * ppm;
       const shape = c.sp.v.s;
       const tilt = clamp(Math.atan2(c.hvy !== undefined ? c.hvy : c.vy, Math.max(Math.abs(c.vx), c.hvy !== undefined ? c.speed * 0.8 : 0) + 0.2), -0.5, 0.5);
       if (Ld < 20 && !c.variant && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
@@ -443,7 +448,7 @@ export class Renderer {
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
           aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0 };
       }
-      const h = drawEarl(ctx, 2 * ppm, e.kick, moving, lampCol, amb, gear);
+      const h = drawEarl(ctx, EARL_H * ppm, e.kick, moving, lampCol, amb, gear);
       ctx.restore();
       if (h.tip) {
         const ca2 = Math.cos(e.angle), sa2 = Math.sin(e.angle);
@@ -452,7 +457,7 @@ export class Renderer {
       // tag darts in flight
       for (const d of g.darts || []) {
         ctx.save(); ctx.translate(S(d.x), Sy(d.y)); ctx.rotate(Math.atan2(d.vy, d.vx));
-        drawDart(ctx, 2 * ppm / 100, d.tier, -12 * 2 * ppm / 100, t);
+        drawDart(ctx, EARL_H * ppm / 100, d.tier, -12 * EARL_H * ppm / 100, t);
         ctx.restore();
       }
       // the camera's flash lights the water for a moment
@@ -462,7 +467,7 @@ export class Renderer {
         if (!g.toolTip) break;
         const k = clamp(f.t / f.dur, 0, 1), ek = k * k;
         const fx2 = f.x + (g.toolTip.x - f.x) * ek, fy2 = f.y + (g.toolTip.y - f.y) * ek;
-        const Lf = Math.max(4, f.len * ppm * (1 - 0.4 * k));
+        const Lf = Math.max(4, fishDrawLen(f.len) * ppm * (1 - 0.4 * k));
         ctx.save(); ctx.translate(S(fx2), Sy(fy2)); if (f.dir > 0) ctx.scale(-1, 1);
         ctx.rotate(Math.sin(t * 30) * 0.4 * k); ctx.globalAlpha = 1 - k * 0.6;
         drawSpecies(ctx, f.sp, Lf, t * 4, 1, 0);
@@ -677,13 +682,13 @@ export class Renderer {
     if (!ppm) return;
     const cache = this.spriteCache || (this.spriteCache = new Map());
     const wanted = [];
-    for (const c of g.fauna.list) wanted.push([c.sp, (c.len + 0.25 * Math.exp(-c.len * 2)) * ppm]);
+    for (const c of g.fauna.list) wanted.push([c.sp, fishDrawLen(c.len) * ppm]);
     if (!this.nearSpecies || Math.abs(this.nearDepth - this.cam.y) > 25 || this.nearPpm !== Math.round(ppm)) {
       const d = this.cam.y;
       this.nearSpecies = SPECIES.filter((sp) => sp.v.hab !== 'plant' && sp.v.hab !== 'floor' && sp.dmin <= d + 150 && sp.dmax >= d - 60);
       this.nearDepth = d; this.nearPpm = Math.round(ppm);
     }
-    for (const sp of this.nearSpecies) wanted.push([sp, (sp.len + 0.25 * Math.exp(-sp.len * 2)) * ppm]);
+    for (const sp of this.nearSpecies) wanted.push([sp, fishDrawLen(sp.len) * ppm]);
     for (const [sp, Ld] of wanted) {
       if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(sp.v.s) || (Ld < 20 && (sp.v.s === 'fish' || sp.v.s === 'shrimp' || sp.v.s === 'hatchet'))) continue;
       const bucket = Math.round(Math.log(Ld) / Math.log(1.18)), bl = Math.pow(1.18, bucket), key = sp.id + ':' + bucket;

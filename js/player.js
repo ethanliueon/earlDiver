@@ -99,7 +99,7 @@ export function updateEarl(g, dt, inp) {
     if (e.struggle) { e.vx += Math.sin(g.time * 0.6) * 0.9 * e.struggle * dt; e.vy += (0.35 + Math.sin(g.time * 0.9) * 0.3) * e.struggle * dt; }
     e.x += e.vx * dt; e.y += e.vy * dt;
     if (e.y < 0.35) { e.y = 0.35; if (e.vy < 0) e.vy = 0; }
-    const c = collide(W, e.x, e.y, 0.55);
+    const c = collide(W, e.x, e.y, 0.42);
     if (c.hit) { e.x = c.x; e.y = c.y; e.vx *= 0.7; e.vy *= 0.5; }
     e.x = clamp(e.x, 2, 980);
     // never onto the beach

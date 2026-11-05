@@ -23,7 +23,7 @@ export function activeTool(g) {
 export function handPos(g) {
   const e = g.earl;
   const swim = Math.abs(Math.cos(e.angle)); // 1 swimming flat, ~0.4 upright
-  return { x: e.x + e.facing * (0.35 + 0.35 * swim), y: e.y + 0.05, fx: e.facing };
+  return { x: e.x + e.facing * (0.26 + 0.26 * swim), y: e.y + 0.04, fx: e.facing };
 }
 
 // What is in reach of the tool right now: the best animal it can take, or why it can't.
@@ -41,7 +41,7 @@ export function findCatch(g) {
     if (d > reach) return;
     let why = null;
     if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'needs a tag' : null;
-    else if (len > def.maxLen) why = isTagOnly(sp) && len > 0.9 ? 'needs a tag' : `too big for the ${kind === 'net' ? def.name.toLowerCase() : def.name.toLowerCase()}`;
+    else if (len > def.maxLen) why = isTagOnly(sp) && len > 1.1 ? 'needs a tag' : `too big for the ${kind === 'net' ? def.name.toLowerCase() : def.name.toLowerCase()}`;
     if (why === null && !canTakeLive(sp)) return; // plants, corals: not even worth mentioning
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
     if (d < bd) { bd = d; best = { sp, x, y, len, d, ...ref }; }

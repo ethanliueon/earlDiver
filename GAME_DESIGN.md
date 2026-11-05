@@ -16,7 +16,7 @@ tries to stay out of reach of something in the water. When the run ends, it ends
 ## Earl
 
 - A faceless modern diver: black wetsuit and hood, full-face mask with a dark
-  reflective visor, single tank, long fins. About 2 m tall.
+  reflective visor, single tank, long fins. About 1.5 m from head to fin-tips.
 - Swim speed 4 m/s. Shift = 1.5x speed for 2x oxygen use.
 - Headlamp switches on automatically below 200 m (L toggles it; light attracts the entity).
 - Cannot leave the water onto the beach.
