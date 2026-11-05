@@ -3,10 +3,12 @@
 // to a riveted bulkhead, a pipe run feeding them, a caged lamp and a porthole onto the water outside.
 // The tank room: the open tank set into the wall, and the catch bag hanging on its hook.
 // Each animal has a small brass tag (its name, where it was found, how it is); tap a tag, a chamber
-// or a fish to open its choices. How it swims shows how it is doing.
+// or a fish to open its choices. How it swims shows how it is doing. Animals are moved by hand: the
+// catch bag hangs in both rooms, and a fish is dragged from the bag, the tank or a chamber and dropped
+// on a chamber, the open tank or the bag.
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
-import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed } from './capture.js';
+import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots } from './capture.js';
 import { UPGRADES } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
 
@@ -38,6 +40,7 @@ export class TankRoom {
     root.querySelector('.tr-help').innerHTML = `<p>Every animal has the pressure it lives at. Up to ${SAFE_GAP} m short of it, it lives, stressed; further, it starts to die.</p>
       <p>A chamber pumps an animal back up to its own pressure and it recovers there. Its rating is how much more than the water outside it can hold: it keeps an animal safe until the sub climbs above the animal's depth less the rating. The gauge's green band is what it can hold where you are.</p>
       <p>Ease it up (the valve open a crack) and the chamber sinks slowly toward the surface; an animal held at its own pressure eases with it and arrives acclimated: worth a quarter more.</p>
+      <p>Nothing moves on its own: drag a fish from the catch bag (it hangs in both rooms) onto a chamber or into the open tank, or back into the bag to carry it through the hatch.</p>
       <p>Dead animals sell for half the plain market price.</p>`;
     this.over.addEventListener('click', (ev) => {
       const b = ev.target.closest('button[data-tk]');
@@ -47,12 +50,37 @@ export class TankRoom {
       const go = ev.target.closest('[data-go]');
       if (go) { this.room = go.dataset.go; this.openKey = null; this.layout(true); }
     });
-    // tap a chamber or a fish to open its tag; tap nothing to close it
-    this.c.addEventListener('click', (ev) => {
+    // press on a fish and drag it somewhere; a tap (no drag) opens its tag, or closes an open one
+    this.c.addEventListener('pointerdown', (ev) => {
+      const item = this.grabAt(ev.clientX, ev.clientY);
+      this.press = { x: ev.clientX, y: ev.clientY, item };
+      if (item) this.c.setPointerCapture(ev.pointerId);
+    });
+    this.c.addEventListener('pointermove', (ev) => {
+      this.pointer = { x: ev.clientX, y: ev.clientY };
+      if (this.press && this.press.item && !this.drag && Math.hypot(ev.clientX - this.press.x, ev.clientY - this.press.y) > 6) {
+        this.drag = { ...this.press.item }; this.openKey = null;
+      }
+      this.c.style.cursor = this.drag ? 'grabbing' : this.grabAt(ev.clientX, ev.clientY) ? 'grab' : 'default';
+    });
+    this.c.addEventListener('pointerup', (ev) => {
+      const press = this.press; this.press = null;
+      if (this.drag) {
+        const d = this.drag, tgt = this.dropAt(ev.clientX, ev.clientY); this.drag = null;
+        if (tgt) {
+          if (tgt.kind === 'chamber') this.h.act('press', d.where, d.i, tgt.n);
+          else if (tgt.kind === 'tank') this.h.act('open', d.where, d.i);
+          else if (tgt.kind === 'bag') this.h.act('tobag', d.where, d.i);
+        }
+        this.layout(true);
+        return;
+      }
+      if (!press) return;
       const hit = this.hitTest(ev.clientX, ev.clientY);
       this.openKey = hit && hit !== this.openKey ? hit : null;
       this.layout(true);
     });
+    this.c.addEventListener('pointercancel', () => { this.press = null; this.drag = null; });
     this.onKey = (ev) => {
       if (this.root.hidden) return;
       if (ev.key === 'ArrowRight' && this.room === 'chambers') { this.room = 'tank'; this.openKey = null; this.layout(true); }
@@ -67,7 +95,7 @@ export class TankRoom {
     const W = window.innerWidth, H = window.innerHeight, narrow = W < 700;
     const g = this.h.getGame(), ps = g ? pressSlots(g) : 1;
     // on a narrow screen: only the fitted chambers and one empty bracket, the hatch at the bottom
-    const n = narrow ? Math.min(MAX_CHAMBERS, ps + 1) : MAX_CHAMBERS, areaW = narrow ? W * 0.92 : W * 0.74, x0 = narrow ? W * 0.04 : W * 0.05;
+    const n = narrow ? Math.min(MAX_CHAMBERS, ps + 1) : MAX_CHAMBERS, areaW = narrow ? W * 0.72 : W * 0.62, x0 = narrow ? W * 0.02 : W * 0.17;
     const k = Math.min((H * (narrow ? 0.45 : 0.6)) / CH, (areaW / n) / (CW + 24));
     const gap = (areaW - n * CW * k) / n;
     const top = H * 0.14;
@@ -77,10 +105,12 @@ export class TankRoom {
       port: narrow ? null : { x: W * 0.9, y: H * 0.3, r: Math.max(34, Math.min(W, H) * 0.075) },
       hatchR: hatchSide(W * 0.92), hatchL: hatchSide(W * 0.07),
       tank: narrow ? { x: W * 0.05, y: H * 0.13, w: W * 0.9, h: H * 0.3 } : { x: W * 0.17, y: H * 0.14, w: W * 0.6, h: Math.min(H * 0.42, W * 0.3) },
-      hook: narrow ? { x: W * 0.84, y: H * 0.5 } : { x: W * 0.87, y: H * 0.16 },
-      // the bag grows with what is in it; its tags hang below it on cords
+      // the catch bag hangs on a hook in each room (on the left of the chamber room, the right of the
+      // tank room); it grows with what is in it, and its tags hang below it on cords
+      hook: this.room === 'chambers' ? (narrow ? { x: W * 0.87, y: H * 0.16 } : { x: W * 0.085, y: H * 0.16 }) : (narrow ? { x: W * 0.84, y: H * 0.5 } : { x: W * 0.87, y: H * 0.16 }),
+      bagTags: !(narrow && this.room === 'chambers'),
       bagH: (n) => 84 + Math.min(4, n) * 22,
-      bagTag: narrow ? (i, n) => [W * 0.4, H * 0.5 + i * 104] : (i, n) => [W * 0.87 - 8, H * 0.16 + 8 + 84 + Math.min(4, n) * 22 + 34 + i * 100] };
+      bagTag(i, n) { return narrow ? [W * 0.4, H * 0.5 + i * 104] : [this.hook.x - 8, this.hook.y + 8 + 84 + Math.min(4, n) * 22 + 34 + i * 100]; } };
   }
   signature(g) {
     return [this.room, this.openKey, pressSlots(g), tankSlots(g), g.subTank.map((s) => `${s.id}${s.pressed ? 'p' + s.chamber : 'o'}${s.bleed ? 'b' : ''}`).join(','), g.bag.map((s) => s.id).join(','), window.innerWidth, window.innerHeight].join('|');
@@ -100,15 +130,9 @@ export class TankRoom {
       const key = this.keyOf(s), open = this.openKey === key, sp = SPECIES_BY_ID[s.id];
       let acts = '';
       if (open) {
-        const freeC = freeChamber(g) >= 0 && s.cond > 0.05, freeT = tankUsed(g) < tankSlots(g);
-        if (s.pressed) {
-          if (!s.acc && s.cond > 0.05) acts += `<button data-tk="bleed:tank:${i}">${s.bleed ? 'Close the valve' : 'Ease it up'}</button>`;
-          acts += `<button data-tk="open:tank:${i}" ${freeT ? '' : 'disabled'}>To the open tank</button>`;
-        } else {
-          if (where === 'bag') acts += `<button data-tk="open:bag:${i}" ${freeT ? '' : 'disabled'}>Into the open tank</button>`;
-          acts += `<button data-tk="press:${where}:${i}" ${freeC ? '' : 'disabled'}>Into a chamber</button>`;
-        }
+        if (s.pressed && !s.acc && s.cond > 0.05) acts += `<button data-tk="bleed:tank:${i}">${s.bleed ? 'Close the valve' : 'Ease it up'}</button>`;
         acts += `<button class="ghost" data-tk="release:${where}:${i}">Let go</button>`;
+        acts += `<small class="hint">drag the fish to move it</small>`;
       }
       return `<div class="btag${open ? ' open' : ''}" data-tag="${key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px${extra}">
         <b>${sp.name}</b>${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}<small>found at ${s.from || 0} m</small><i class="st"></i>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
@@ -123,15 +147,17 @@ export class TankRoom {
         else if (by.has(n)) { const [s, i] = by.get(n); html += tag(s, 'tank', i, x, G.tagY); }
         else html += `<div class="btag blank" style="left:${x}px;top:${G.tagY}px"><small>chamber ${n + 1} · empty</small></div>`;
       });
+      if (G.bagTags) g.bag.forEach((s, i) => { const [bx, byy] = G.bagTag(i, g.bag.length); html += tag(s, 'bag', i, bx, byy); });
       html += `<button class="hatch-btn" data-go="tank" style="left:${G.hatchR.x}px;top:${G.hatchR.y}px">The tank room →</button>`;
     } else {
       const open = g.subTank.map((s, i) => [s, i]).filter(([s]) => !s.pressed);
       const T = G.tank, n = Math.max(1, tankSlots(g)), step = T.w / n;
       open.forEach(([s, i], k) => { html += tag(s, 'tank', i, T.x + step * (k + 0.5), T.y + T.h + 18); });
       for (let k = open.length; k < tankSlots(g); k++) html += `<div class="btag blank" style="left:${T.x + step * (k + 0.5)}px;top:${T.y + T.h + 18}px"><small>room for one</small></div>`;
-      g.bag.forEach((s, i) => { const [bx, byy] = G.bagTag(i, g.bag.length); html += tag(s, 'bag', i, bx, byy); });
+      if (G.bagTags) g.bag.forEach((s, i) => { const [bx, byy] = G.bagTag(i, g.bag.length); html += tag(s, 'bag', i, bx, byy); });
       html += `<button class="hatch-btn" data-go="chambers" style="left:${G.hatchL.x}px;top:${G.hatchL.y}px">← The chamber room</button>`;
     }
+    if (g.bag.length && !this.drag) html += `<div class="tr-dragnote">${g.bag.length} in the bag · drag ${g.bag.length > 1 ? 'them' : 'it'} into ${this.room === 'chambers' ? 'a chamber' : 'the tank'}${this.room === 'chambers' ? ', or into the tank next door (→)' : ''}</div>`;
     this.over.innerHTML = html;
     this.states(g);
   }
@@ -146,9 +172,48 @@ export class TankRoom {
       if (st.innerHTML !== txt) st.innerHTML = txt;
     });
   }
-  hitTest(cx, cy) {
+  // a fish that can be picked up here: { s, where, i }
+  grabAt(cx, cy) {
+    const g = this.h.getGame();
+    if (!g) return null;
+    const b = this.bagFishAt(cx, cy);
+    if (b >= 0) return { s: g.bag[b], where: 'bag', i: b };
+    const key = this.hitTest(cx, cy, true);
+    if (!key) return null;
+    const i = g.subTank.findIndex((q) => q._k === key);
+    return i >= 0 ? { s: g.subTank[i], where: 'tank', i } : null;
+  }
+  bagFishAt(cx, cy) {
+    for (const f of this.bagFish || []) if (Math.hypot(f.x - cx, f.y - cy) < Math.max(22, f.L * 0.5)) return f.i;
+    const r = this.bagBox;
+    if (r && cx > r.x0 && cx < r.x1 && cy > r.y0 && cy < r.y1 && (this.bagFish || []).length) return this.bagFish[0].i;
+    return -1;
+  }
+  // where a dragged fish would go if dropped here
+  dropAt(cx, cy) {
+    const g = this.h.getGame(), G = this.geometry();
+    if (!g || !this.drag) return null;
+    const r = this.bagBox;
+    if (r && cx > r.x0 - 20 && cx < r.x1 + 20 && cy > r.y0 - 20 && cy < r.y1 + 20 && this.drag.where !== 'bag' && g.bag.length < bagSlots(g)) return { kind: 'bag' };
+    if (this.room === 'chambers') {
+      const ps = pressSlots(g);
+      for (const [n, c] of G.chambers.entries()) {
+        if (n >= ps) continue;
+        if (cx >= c.x - 10 && cx <= c.x + CW * c.k + 10 && cy >= c.y - 10 && cy <= c.y + CH * c.k + 10) {
+          const occ = g.subTank.find((q) => q.pressed && q.chamber === n);
+          return !occ || occ === this.drag.s ? { kind: 'chamber', n, c } : null;
+        }
+      }
+      return null;
+    }
+    const T = G.tank;
+    if (cx > T.x && cx < T.x + T.w && cy > T.y && cy < T.y + T.h && (this.drag.where === 'bag' || this.drag.s.pressed) && tankUsed(g) < tankSlots(g)) return { kind: 'tank' };
+    return null;
+  }
+  hitTest(cx, cy, fishOnly = false) {
     const g = this.h.getGame(), G = this.geometry();
     if (!g) return null;
+    if (!fishOnly) { const b = this.bagFishAt(cx, cy); if (b >= 0) return this.keyOf(g.bag[b]); }
     if (this.room === 'chambers') {
       for (const [n, c] of G.chambers.entries()) {
         if (cx >= c.x && cx <= c.x + CW * c.k && cy >= c.y && cy <= c.y + CH * c.k) {
@@ -183,7 +248,27 @@ export class TankRoom {
     this.drawWall(ctx, G, dpr);
     if (this.room === 'chambers') this.drawChamberRoom(ctx, G, g, dt);
     else this.drawTankRoom(ctx, G, g, dt);
+    this.drawBag(ctx, G, g);
     this.drawLamp(ctx, G);
+    this.drawDragged(ctx, G, g);
+  }
+  // the fish in hand follows the pointer, wriggling; where it would land glows
+  drawDragged(ctx, G, g) {
+    const d = this.drag, p = this.pointer;
+    if (!d || !p) return;
+    const tgt = this.dropAt(p.x, p.y);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(240,212,138,0.85)'; ctx.lineWidth = 3; ctx.shadowColor = 'rgba(240,212,138,0.8)'; ctx.shadowBlur = 16;
+    if (tgt && tgt.kind === 'chamber') { const c = tgt.c; ctx.strokeRect(c.x - 6, c.y - 6, CW * c.k + 12, CH * c.k + 12); }
+    else if (tgt && tgt.kind === 'tank') ctx.strokeRect(G.tank.x - 4, G.tank.y - 4, G.tank.w + 8, G.tank.h + 8);
+    else if (tgt && tgt.kind === 'bag' && this.bagBox) { const r = this.bagBox; ctx.strokeRect(r.x0 - 8, r.y0 - 8, r.x1 - r.x0 + 16, r.y1 - r.y0 + 16); }
+    ctx.restore();
+    const sp = SPECIES_BY_ID[d.s.id], L = clamp(tankLen(d.s.len, 110), 40, 110);
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.sin(this.t * 9) * 0.12);
+    if (d.s.cond <= 0.05) ctx.scale(1, -1);
+    ctx.globalAlpha = tgt ? 1 : 0.85;
+    drawSpecies(ctx, sp, L, this.t * 2, d.s.cond > 0.05 ? 1 : 0, 0);
+    ctx.restore();
   }
 
   // ---------------- the steel ----------------
@@ -329,7 +414,7 @@ export class TankRoom {
     ctx.strokeStyle = 'rgba(150,150,170,0.55)'; ctx.lineWidth = 1.2; ctx.beginPath();
     for (let k = 0; k <= 12; k++) ctx.lineTo(cx - 12 + k * 2, 258 + (k % 2 ? -4 : 4)); ctx.stroke();
     const home = s ? homeOf(s) : 0, pumping = s && !s.bleed && (s.press || 0) < Math.min(home, cmax) - 1;
-    if (s) {
+    if (s && !(this.drag && this.drag.s === s)) {
       const L = tankLen(s.len, 62);
       const a = this.swim(g, s, false, { x0: X0 + 4, x1: X1 - 4, y0: TOP + 26, y1: BOT - 14 }, L, dt, 0.6);
       this.drawFish(ctx, g, s, a, L, false);
@@ -406,29 +491,37 @@ export class TankRoom {
     for (let k = 0; k < 16; k++) { const q = (t * 0.35 + k / 16) % 1; ctx.strokeStyle = `rgba(220,240,255,${(0.6 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(w - 40 + Math.sin(q * 12 + k) * 4, bot - 12 - q * (bot - top - 16), 1.5 + (k % 3), 0, TAU); ctx.stroke(); }
     const maxL = clamp(h * 0.45, 40, 140);
     for (const s of g.subTank) {
-      if (s.pressed) continue;
+      if (s.pressed || (this.drag && this.drag.s === s)) continue;
       const L = tankLen(s.len, maxL) * clamp(h / 220, 0.8, 1.6);
       const a = this.swim(g, s, false, { x0: 10, x1: w - 10, y0: top + 14, y1: bot - 18 }, L, dt);
       this.drawFish(ctx, g, s, a, L, false);
     }
     ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, 0, w, 8);
     ctx.restore();
-    // the catch bag, on its hook
+    this.drawHatch(ctx, G.hatchL);
+  }
+
+  // the catch bag, on its hook: its fish seen through the mesh, its tags on cords below
+  drawBag(ctx, G, g) {
     const hk = G.hook;
     ctx.strokeStyle = '#8a9294'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(hk.x, hk.y - 20); ctx.lineTo(hk.x, hk.y); ctx.arc(hk.x - 8, hk.y, 8, 0, Math.PI); ctx.stroke();
     const n = g.bag.length, bw = 136, bh = G.bagH(n);
     // cords from the bag down to each tag
     ctx.strokeStyle = 'rgba(160,130,80,0.85)'; ctx.lineWidth = 1.5;
-    g.bag.forEach((s, i) => { const [tx, ty] = G.bagTag(i, n); ctx.beginPath(); ctx.moveTo(hk.x - 8, hk.y + 8 + bh + 8); ctx.quadraticCurveTo(tx, (hk.y + bh + ty) / 2 + 10, tx, ty + 6); ctx.stroke(); });
+    if (G.bagTags) g.bag.forEach((s, i) => { const [tx, ty] = G.bagTag(i, n); ctx.beginPath(); ctx.moveTo(hk.x - 8, hk.y + 8 + bh + 8); ctx.quadraticCurveTo(tx, (hk.y + bh + ty) / 2 + 10, tx, ty + 6); ctx.stroke(); });
     ctx.save(); ctx.translate(hk.x - 8, hk.y + 8);
     const bag = new Path2D();
     bag.moveTo(-8, 0); bag.lineTo(8, 0); bag.quadraticCurveTo(bw * 0.62, bh * 0.35, bw * 0.34, bh); bag.quadraticCurveTo(0, bh + 16, -bw * 0.34, bh); bag.quadraticCurveTo(-bw * 0.62, bh * 0.35, -8, 0);
     ctx.fillStyle = 'rgba(14,30,20,0.85)'; ctx.fill(bag);
     // what is in it, seen through the mesh: crammed in, twitching (the weak barely, the dead not at all)
     ctx.save(); ctx.clip(bag);
+    this.bagFish = [];
+    this.bagBox = { x0: hk.x - 8 - bw * 0.62, x1: hk.x - 8 + bw * 0.62, y0: hk.y + 8, y1: hk.y + 8 + bh + 16 };
     g.bag.forEach((s, i) => {
       const sp = SPECIES_BY_ID[s.id], L = clamp(tankLen(s.len, 100), 34, bw * 0.8), dead = s.cond <= 0.05;
       const y = bh * (0.35 + (i % 4) * 0.17) + 6, x = (i % 2 ? 1 : -1) * 6;
+      this.bagFish.push({ i, x: hk.x - 8 + x, y: hk.y + 8 + y, L });
+      if (this.drag && this.drag.s === s) return; // in hand
       ctx.save(); ctx.translate(x, y);
       if (dead) { ctx.rotate(0.25); ctx.scale(i % 2 ? 1 : -1, -1); drawSpecies(ctx, sp, L, 0, 0, 0); }
       else { const vit = clamp(s.cond, 0, 1), tw = Math.sin(this.t * lerp(2, 9, vit) + i * 2) * lerp(0.02, 0.18, vit); ctx.rotate((i % 2 ? -0.3 : 0.3) + tw); ctx.scale(i % 2 ? -1 : 1, 1); drawSpecies(ctx, sp, L, this.t * lerp(0.2, 1.2, vit) + i, lerp(0.1, 0.6, vit), 0); }
@@ -443,7 +536,6 @@ export class TankRoom {
     ctx.strokeStyle = 'rgba(160,210,170,0.6)'; ctx.lineWidth = 2; ctx.stroke(bag);
     ctx.fillStyle = '#6a5a3a'; ctx.fillRect(-12, -3, 24, 6); // the drawstring
     ctx.restore();
-    this.drawHatch(ctx, G.hatchL);
   }
 
   // ---------------- a fish, swimming as well as it can ----------------

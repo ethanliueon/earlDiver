@@ -18,8 +18,10 @@ export function freeChamber(g) {
   for (let i = 0; i < pressSlots(g); i++) if (!used.has(i)) return i;
   return -1;
 }
-export function seal(g, spec) {
-  const c = freeChamber(g);
+// seal a specimen into a chamber: the one asked for (if it is fitted and empty), or the first free one
+export function seal(g, spec, want = -1) {
+  const used = new Set(g.subTank.filter((s) => s.pressed && s !== spec).map((s) => s.chamber));
+  const c = want >= 0 ? (want < pressSlots(g) && !used.has(want) ? want : -1) : freeChamber(g);
   if (c < 0) return false;
   spec.pressed = true; spec.chamber = c; spec.bleed = false;
   spec.press = Math.max(0, g.sub.y); // sealed at the pressure outside, then pumped up to its home

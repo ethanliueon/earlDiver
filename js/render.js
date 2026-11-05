@@ -459,13 +459,16 @@ export class Renderer {
     } else this.boatLight = null;
     const sub = g.sub;
     let subLamps = null;
-    if (!sub.imploded && inView(sub.x, sub.y, 10)) {
+    // imploding: for a fraction of a second the hull folds in on itself, then it is gone
+    const crumple = sub.imploded && g.implodeT != null && g.implodeT < 0.22 ? g.implodeT / 0.22 : -1;
+    if ((!sub.imploded || crumple >= 0) && inView(sub.x, sub.y, 10)) {
       if (crane && sub.docked) {
         ctx.strokeStyle = 'rgba(30,30,28,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
         ctx.beginPath(); ctx.moveTo(boatX + crane.craneTip[0], boatY + crane.craneTip[1]); ctx.lineTo(S(sub.x), Sy(sub.y) - 2.6 * ppm); ctx.stroke();
       }
       const cy = Math.cos(sub.yaw), sxs = (cy >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy));
       ctx.save(); ctx.translate(S(sub.x), Sy(sub.y)); ctx.rotate(sub.tilt * Math.sign(sxs)); ctx.scale(sxs, 1);
+      if (crumple >= 0) { const k = crumple * crumple; ctx.translate(0, -9 * ppm * 0.09); ctx.scale(1 - k * 0.55, 1 - k * 0.8); ctx.rotate((Math.random() - 0.5) * 0.2 * crumple); ctx.translate(0, 9 * ppm * 0.09); }
       // running lights on while the autopilot is driving it, so it can be seen coming
       // its lamps stay as he left them when he climbs out (off while docked at the boat)
       const lights = (sub.lightsOn && !sub.docked) || (g.autopilot && g.autopilot.state !== 'idle' && !sub.docked);
@@ -506,6 +509,19 @@ export class Renderer {
       const bg = ctx.createRadialGradient(S(b.x), Sy(b.y), 0, S(b.x), Sy(b.y), r);
       bg.addColorStop(0, `rgba(120,8,10,${a.toFixed(3)})`); bg.addColorStop(1, 'rgba(90,6,8,0)');
       ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(S(b.x), Sy(b.y), r, 0, TAU); ctx.fill();
+    }
+    // ---- implosion: the gas in the hull crushed to a point, then the cloud it throws out ----
+    if (g.implodeT != null && g.implodeT < 2.5 && inView(sub.x, sub.y, 20)) {
+      const t0 = g.implodeT, cx = S(sub.x), cy = Sy(sub.y) - 0.8 * ppm;
+      const R = t0 < 0.22 ? 5 * (1 - t0 / 0.22) + 0.3 : 0.3 + 7 * Math.sqrt((t0 - 0.22) / 2.3);
+      const a = t0 < 0.22 ? 0.25 + t0 * 2 : 0.7 * (1 - (t0 - 0.22) / 2.3);
+      const ig = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * ppm);
+      ig.addColorStop(0, `rgba(235,245,240,${(a * 0.9).toFixed(3)})`); ig.addColorStop(0.6, `rgba(160,190,185,${(a * 0.35).toFixed(3)})`); ig.addColorStop(1, 'rgba(120,150,150,0)');
+      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(cx, cy, R * ppm, 0, TAU); ctx.fill();
+      if (t0 > 0.22) { // the shock front
+        ctx.strokeStyle = `rgba(220,235,230,${(0.5 * (1 - (t0 - 0.22) / 0.8)).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.12);
+        if (t0 < 1.02) { ctx.beginPath(); ctx.arc(cx, cy, (t0 - 0.22) * 30 * ppm, 0, TAU); ctx.stroke(); }
+      }
     }
     // ---- implosion debris ----
     for (const d of g.debris) {

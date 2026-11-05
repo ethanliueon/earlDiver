@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.16.4 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.17.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -55,8 +55,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - H turns detailed hints on and off.
 - What you take (salvage, clams, sapphires) does not come back during a dive. A new dive is a new
   sea: die, or end the dive from the pause menu (unsold catch is lost either way).
-- The submersible is docked at the boat. It starts rated to 400 m. Past 1.3× its rated depth it
-  implodes. Refits at the boat take it down to 3,000 m.
+- The submersible is docked at the boat. Past 1.2× its rated depth the hull groans; past 1.5×
+  it can give at any moment, with a few seconds' warning to climb before it implodes.
+  Refits at the boat take it deeper. Refits at the boat take it down to 3,000 m.
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs
   hide you if you are slow and dark. Sea lanterns keep it away, for a while.
 - It never comes above 100 m: the top 100 m are safe from it (not from sharks).
@@ -105,6 +106,16 @@ GAME_DESIGN.md      the design this is built from
 ## Credits
 
 - Music: "Polaroid II" (`assets/audio/polaroid_ii.mp3`), an original piece composed for the game.
+- Sound effects (`assets/audio/sfx/`), all CC0 (public domain), trimmed, levelled and processed here:
+  - chamber_plop, tank_plop, surface_lapping: OpenGameArt "Bubble Sound Effects" and
+    "40 CC0 water / splash / slime SFX"
+  - seagull: OpenGameArt "Solo Seagull Sound Effects"
+  - hull_creak_1-3: made here from Kenney "Impact Sounds" metal hits
+  - sub_implosion: made here from OpenGameArt "Battle at sea", Kenney "Impact Sounds" and
+    synthesised rush and rumble
+  - ui_click, ui_open: Kenney "Interface Sounds"; ui_click_soft, ui_rollover: OpenGameArt
+    "51 UI sound effects (buttons, switches and clicks)"; ui_sale_coins: made here from Kenney
+    "Impact Sounds" and "Interface Sounds"
 - Species facts (names, depth ranges, sizes, descriptions) from the project's
   Ocean Species Reference. All creature art is drawn in code; no photos are used.
 - Fonts: EB Garamond and IBM Plex Mono (Google Fonts, SIL Open Font License).

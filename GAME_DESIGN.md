@@ -17,6 +17,12 @@ below 300 m outside the sub) stops it, and nothing starts it for 15 s after. In 
 piece, from one minute on, it has a chance every 30 s (10 %, 20 %, 35 %, 45 %, then 50 %), raised
 by a hidden calm meter that fills with peaceful catches, sales and photos.
 
+Recorded effects (CC0, see the README): water lapping at the hull while at the surface, now and then
+a gull by day; a plop as an animal goes into a chamber, a splash into the open tank; the hull
+creaking past its rating (faster and louder the deeper, frantic while it fails) and the implosion;
+soft clicks, a hover tick and a page sound for the menus, coins for a sale. Nothing of Earl himself
+is recorded.
+
 ## Tone
 
 - Realistic, intentional, never cartoonish. Muted natural colours, real light attenuation
@@ -111,7 +117,8 @@ Tools change their look as they are levelled (the hand net grows into a pro capt
 - 5 **traps**: set on the bottom, a line to a buoy; they fill with crustaceans, octopus, eels and
   bottom fish. Haul from the buoy or empty underwater. The deep trap's lit bait draws the entity.
 - **Sub arm**: from inside the sub, reach for an animal up to a metre long and time the grip.
-- Catches go in a belt bag (3/5/8) and move into the sub's tank when he boards (4/8/12).
+- Catches (the net's and the arm's) go in the catch bag (3/5/8). Nothing moves by itself: in the
+  tank room (T) drag each one into a chamber or the open tank (4/8/12).
 
 ## Rare forms
 
@@ -123,7 +130,12 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
 
 - An old riveted bathyscaphe at the boat (F to board, hold F to leave). Cruises at 3.4 m/s
   (Engine upgrades), dives no faster, rises 1.2x faster. Rated 300 m at first,
-  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. Past 1.3x its rating it implodes; a replacement can be bought.
+  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. Past 1.2x its rating the hull groans (and creaks ever faster); past 1.5x it can
+  give at any moment (1 in 20 a second at 1.5x, about 1 in 3 at 1.75x). When it starts to go there are
+  3.5 s of loud creaking and shaking: climb 6 m (or back above 1.45x) and it holds. If not, it
+  implodes with Earl inside: the hull folds in for a fifth of a second, a white flash, the gas
+  crushed to a point and thrown out as a cloud with a shock front, wreckage scattering, then the dark
+  and, in silence, the cause. The sub is lost; a replacement can be bought.
 - C calls it: it drives itself to Earl, routing around rock, and stops beside him; never below its
   rating. Hold C to send it home. Its engine is heard in the deep.
 - C from inside: autopilot home, on 0.8x air. Steering, a hit to the hull, an attack starting or
@@ -205,13 +217,15 @@ The tank room: the open tank set into the wall (gravel, weed, an airstone; room 
 first, up to 8 with the Open tank upgrade) and the catch bag hanging on its hook.
 
 Each animal has a small brass tag: its name, where it was found, and how it is in a word (healthy,
-stressed, weak, dying, dead, acclimated). Tap the tag, the chamber or the fish to open its choices
-(ease it up / close the valve, into a chamber, into the open tank, let go). A ? in the corner
+stressed, weak, dying, dead, acclimated). Animals are moved by hand: drag one from the bag into a
+chamber or the tank, from chamber to chamber, or back into the bag (the target lights up under it).
+Tap the tag, the chamber or the fish to open what is left to choose (ease it up / close the valve,
+let go). A ? in the corner
 explains the rules. How an animal swims shows how it is: a healthy one quick and alert, darting
 and turning fast; a stressed one slower; a weak one lethargic, sinking to the bottom, tilted, its
 tail barely moving; a dying one listing, now and then rolling over before it rights itself; a dead
-one belly up at the top. Animals from below 100 m go into a free chamber by themselves when they
-come aboard.
+one belly up at the top. Nothing goes into a chamber or the tank by itself: boarding leaves the
+catch in the bag, to be dragged in.
 
 Dead animals sell for half the plain market price of their kind: no rare-form bonus, no contract
 pay. An aquarium's contract wants one alive and well; the museum's contracts

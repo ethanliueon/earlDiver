@@ -39,7 +39,7 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     this.caveTab = 'trade';
-    this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i) => h.onTank(a2, w, i), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
+    this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
@@ -86,6 +86,20 @@ export class UI {
     $('restart').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); });
     // a tooltip for anything with a data-tip: what an upgrade or a piece of gear does
     const tip = $('tip');
+    // a soft rollover when the pointer comes onto a button in a panel; a click for tabs, hatches and
+    // close buttons (buying and selling play their own coins)
+    let hovered = null;
+    document.addEventListener('mouseover', (ev) => {
+      const b = ev.target.closest && ev.target.closest('.shop button, .book button, .tankroom button, .btag, #pause button, #menu button');
+      if (b && b !== hovered) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiHover(); }
+      hovered = b;
+    });
+    document.addEventListener('click', (ev) => {
+      const g0 = this.h.getGame(), au = g0 && g0.audio;
+      if (!au || !au.ready || !ev.target.closest) return;
+      if (ev.target.closest('.btag')) au.uiSoft();
+      else if (ev.target.closest('[data-shop], .tabs button, .cave-tabs button, .hatch-btn, .tr-help-btn, #workshop-close, #journal-close, #cave-close, .tr-close, #resume, #quit')) au.click();
+    });
     document.addEventListener('mouseover', (ev) => {
       const el = ev.target.closest && ev.target.closest('[data-tip]');
       if (!el) { tip.hidden = true; return; }
@@ -118,6 +132,8 @@ export class UI {
     const el = $('tankroom');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
+    if (open && el.hidden === false && !this['_was_' + 'toggleTank']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiOpen(); }
+    this['_was_' + 'toggleTank'] = open;
     if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.tankRoom.open(); }
   }
   // the old one's cave: choose which fish she takes (once a dive)
@@ -125,6 +141,8 @@ export class UI {
     const el = $('cave');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
+    if (open && el.hidden === false && !this['_was_' + 'toggleCave']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiOpen(); }
+    this['_was_' + 'toggleCave'] = open;
     if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.caveSel.clear(); this.renderCave(); }
   }
   renderCave() {
@@ -199,6 +217,8 @@ export class UI {
     const el = $('journal');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
+    if (open && el.hidden === false && !this['_was_' + 'toggleJournal']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiOpen(); }
+    this['_was_' + 'toggleJournal'] = open;
     if (open) { this.toggleWorkshop(false); this.renderJournal(); }
     else this.blurTyping();
   }
@@ -206,6 +226,8 @@ export class UI {
     const el = $('workshop');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
+    if (open && el.hidden === false && !this['_was_' + 'toggleWorkshop']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiOpen(); }
+    this['_was_' + 'toggleWorkshop'] = open;
     if (open) { this.toggleJournal(false); this.renderWorkshop(); }
   }
 

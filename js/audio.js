@@ -48,7 +48,42 @@ export class Audio {
     this.motorG = ac.createGain(); this.motorG.gain.value = 0;
     this.motor.connect(mlp).connect(this.motorG).connect(this.master); this.motor.start();
     this.ready = true;
+    this.loadSfx();
   }
+  // ---------------- recorded sound effects (CC0, see README) ----------------
+  // loaded in the background; until one has arrived, the old generated sound stands in for it
+  loadSfx() {
+    this.sfxBuf = {};
+    const names = ['chamber_plop', 'tank_plop', 'seagull', 'hull_creak_1', 'hull_creak_2', 'hull_creak_3', 'sub_implosion',
+      'ui_click', 'ui_click_soft', 'ui_open', 'ui_rollover', 'ui_sale_coins'];
+    const get = (name, file) => fetch(file).then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => this.ac.decodeAudioData(b, res, rej)))
+      .then((buf) => { this.sfxBuf[name] = buf; if (name === 'surface_lapping') this.startLapping(); }).catch(() => {});
+    for (const n of names) get(n, `assets/audio/sfx/${n}.mp3`);
+    get('surface_lapping', 'assets/audio/sfx/surface_lapping.wav');
+  }
+  // play one; returns false if it has not loaded yet
+  sfx(name, vol = 1, rate = 1) {
+    const buf = this.sfxBuf && this.sfxBuf[name];
+    if (!this.ready || !buf) return false;
+    const s = this.ac.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate;
+    const g = this.ac.createGain(); g.gain.value = vol;
+    s.connect(g).connect(this.master); s.start();
+    return true;
+  }
+  // water lapping against the hull and the diver at the surface: a loop, faded in and out
+  startLapping() {
+    if (this.lapping) return;
+    const s = this.ac.createBufferSource(); s.buffer = this.sfxBuf.surface_lapping; s.loop = true;
+    const g = this.ac.createGain(); g.gain.value = 0;
+    s.connect(g).connect(this.master); s.start();
+    this.lapping = { s, g };
+  }
+  uiOpen() { this.sfx('ui_open', 0.5); }
+  uiSoft() { this.sfx('ui_click_soft', 0.6); }
+  uiHover() { const now = performance.now(); if (now - (this.hoverAt || 0) < 70) return; this.hoverAt = now; this.sfx('ui_rollover', 0.35); }
+  sale() { this.sfx('ui_sale_coins', 0.7); }
+  chamberPlop() { this.sfx('chamber_plop', 0.8, 0.95 + Math.random() * 0.1) || this.bubbles(5, 0.05); }
+  tankPlop() { this.sfx('tank_plop', 0.8, 0.95 + Math.random() * 0.1) || this.bubbles(5, 0.05); }
   loopNoise(buf, type, freq, gain) {
     const ac = this.ac;
     const s = ac.createBufferSource(); s.buffer = buf; s.loop = true;
@@ -196,11 +231,14 @@ export class Audio {
   ram() { this.implosionSmall(); this.creak(0.6); }
   implosionSmall() { this.burst('lowpass', 500, 0.6, 1.2, 0.8, this.brown); this.tone(45, 1.4, 0.7, 'sine', 0, 28); this.burst('bandpass', 1200, 4, 0.3, 0.2); }
   sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
-  click() { this.burst('bandpass', 2400, 3, 0.08, 0.12); }
+  click() { if (!this.sfx('ui_click', 0.55)) this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }
   note() { this.tone(523, 0.5, 0.04, 'sine'); this.tone(784, 0.7, 0.03, 'sine', 0.12); }
-  creak(vol) { const f = this.burst('bandpass', 180 + Math.random() * 300, 12, 0.6 + Math.random() * 0.8, vol, this.brown); f.frequency.exponentialRampToValueAtTime(90, this.ac.currentTime + 1); }
+  creak(vol) {
+    if (this.sfx('hull_creak_' + (1 + Math.floor(Math.random() * 3)), Math.min(1, vol * 1.3), 0.85 + Math.random() * 0.3)) return;
+    const f = this.burst('bandpass', 180 + Math.random() * 300, 12, 0.6 + Math.random() * 0.8, vol, this.brown); f.frequency.exponentialRampToValueAtTime(90, this.ac.currentTime + 1); }
   implosion() {
+    if (this.sfx('sub_implosion', 1)) return;
     this.burst('lowpass', 900, 0.5, 2.8, 1.0);
     this.tone(48, 3.5, 0.9, 'sine', 0, 22);
     this.burst('highpass', 3000, 0.5, 0.4, 0.5);
@@ -228,7 +266,13 @@ export class Audio {
     // beds
     this.amb.g.gain.setTargetAtTime(under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03, now, 0.5);
     this.amb.f.frequency.setTargetAtTime(under ? lerp(260, 120, clamp(depth / 1000, 0, 1)) : 400, now, 0.5);
-    this.surf.g.gain.setTargetAtTime(under ? 0 : 0.016 + g.waveBoost * 0.05, now, 0.3);
+    const atSurface = g.mode === 'play' && (e.inSub ? g.sub.y < 2.2 && !g.sub.imploded : e.y < 1.0);
+    this.surf.g.gain.setTargetAtTime(this.lapping ? 0 : under ? 0 : 0.016 + g.waveBoost * 0.05, now, 0.3);
+    if (this.lapping) this.lapping.g.gain.setTargetAtTime(atSurface ? 0.55 : 0, now, atSurface ? 0.5 : 0.9);
+    if (atSurface && (g.dayEff || 0) > 0.3) {
+      this.gullT = (this.gullT ?? 6 + Math.random() * 10) - dt;
+      if (this.gullT <= 0) { this.gullT = 14 + Math.random() * 26; this.sfx('seagull', 0.35 + Math.random() * 0.15, 0.92 + Math.random() * 0.16); }
+    }
     this.drone.gain.setTargetAtTime(fx.dread * 0.11 + (g.mode === 'dying' ? 0.12 : 0), now, 0.8);
     this.tinG.gain.setTargetAtTime((fx.dread > 0.55 ? (fx.dread - 0.55) * 0.012 : 0) + (g.injury >= 4 ? 0.006 : 0), now, 0.5);
     const subMove = e.inSub ? clamp(e.speedNow / 5, 0.15, 1) : 0;
@@ -264,9 +308,14 @@ export class Audio {
       if (this.groanT <= 0) { this.groanT = 9 + Math.random() * 12; this.groan(0.05 + fx.dread * 0.12); }
     }
     // hull
-    if (e.inSub && g.sub.stress > 0) {
+    if (e.inSub && g.sub.stress > 0 && !g.sub.imploded) {
+      const failing = g.sub.failing != null;
       this.creakT -= dt;
-      if (this.creakT <= 0) { this.creakT = 2.5 - g.sub.stress * 2 + Math.random(); this.creak(0.25 + g.sub.stress * 0.5); }
+      if (this.creakT > 0.6 && failing) this.creakT = 0.2;
+      if (this.creakT <= 0) {
+        this.creakT = failing ? 0.25 + Math.random() * 0.35 : 2.5 - g.sub.stress * 2 + Math.random();
+        this.creak(failing ? 0.9 + Math.random() * 0.3 : 0.25 + g.sub.stress * 0.5);
+      }
     }
   }
 }

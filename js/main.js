@@ -5,7 +5,7 @@ import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
-import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating } from './capture.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
@@ -115,7 +115,7 @@ const ui = new UI({
   onDisplay: (k) => displaySpecimen(k),
   onCaveOffer: () => caveOffer(),
   onWare: (k) => wareBuy(k),
-  onTank: (act, where, i) => tankAction(act, where, i),
+  onTank: (act, where, i, to) => tankAction(act, where, i, to),
   onCaveTrade: (keys) => caveTrade(keys),
   onNewGame: () => { profile = null; g.paused = false; startRun(); },
   getProfile: () => profile,
@@ -204,7 +204,7 @@ function sellAll() {
   g.earned += total;
   if (total > 0) audio.cue && audio.cue('sale');
   saveProfile(profile);
-  audio.ready && audio.pickup();
+  audio.ready && audio.sale();
   return { lines, total };
 }
 function sellItem(kind) {
@@ -273,7 +273,7 @@ function caveTrade(keys) {
   profile.coins = (profile.coins || 0) + coins;
   g.caveTraded = { lines, total, coins };
   saveProfile(profile);
-  audio.ready && audio.pickup();
+  audio.ready && audio.sale();
   hud.toast(`She takes them. ${money(total)}${coins ? ` and ${coins} old gold coin${coins > 1 ? 's' : ''}` : ''}`, 'big');
   return g.caveTraded;
 }
@@ -285,25 +285,37 @@ function wareBuy(k) {
   else if (k === 'eye') { if (P.eye) return false; P.eye = true; hud.toast('The sapphire eye turns in your hand: sapphires show on the sonar', 'big'); }
   else if (k === 'relic') { if ((P.relics || 0) >= W.max) return false; P.relics = (P.relics || 0) + 1; applySub(g.sub, P); hud.toast(`A pressure relic: the sub is rated ${g.sub.rated} m`, 'big'); }
   P.coins -= W.coins;
-  saveProfile(P); audio.ready && audio.pickup();
+  saveProfile(P); audio.ready && audio.sale();
   return true;
 }
 // the tank room: move animals between the bag, the open tank and the pressure tanks, or let one go
-function tankAction(act, where, i) {
+function tankAction(act, where, i, to = -1) {
   const e = g.earl;
   if (!e.inSub) return false;
   const L = where === 'bag' ? g.bag : g.subTank, s = L[i];
   if (!s) return false;
   if (act === 'press') {
-    if (s.pressed) return false;
-    if (!seal(g, s)) { hud.toast('Every chamber is in use: the boat fits more', 'warn'); return false; }
+    // into a chamber (the one it was dropped on): from the bag, the open tank, or another chamber
+    if (s.pressed && s.chamber === to) return false;
+    const was = s.chamber;
+    if (s.pressed) { s.pressed = false; }
+    if (!seal(g, s, to)) { if (was !== undefined && where !== 'bag') { s.pressed = true; s.chamber = was; } hud.toast(to >= 0 ? 'That chamber is in use' : 'Every chamber is in use: the boat fits more', 'warn'); return false; }
     if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
+    audio.ready && audio.chamberPlop();
     const home = s.home ?? s.from ?? 0, rating = chamberRating(g);
     hud.toast(home > rating ? `${SPECIES_BY_ID[s.id].name}: sealed in, but the chamber only holds ${rating} m of its ${home} m` : `${SPECIES_BY_ID[s.id].name}: sealed in, pumping to ${home} m`);
   } else if (act === 'open') {
+    if (where === 'tank' && !s.pressed) return false;
     if (tankUsed(g) >= tankSlots(g)) { hud.toast('The open tank is full', 'warn'); return false; }
     if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
     s.pressed = false; s.bleed = false; delete s.chamber;
+    audio.ready && audio.tankPlop();
+  } else if (act === 'tobag') {
+    // back into the catch bag (to carry it to the other room, or out)
+    if (where === 'bag') return false;
+    if (g.bag.length >= bagSlots(g)) { hud.toast('The catch bag is full', 'warn'); return false; }
+    L.splice(i, 1); s.pressed = false; s.bleed = false; delete s.chamber; g.bag.push(s);
+    audio.ready && audio.uiSoft();
   } else if (act === 'bleed') {
     if (!s.pressed || s.acc) return false;
     s.bleed = !s.bleed;
@@ -317,7 +329,7 @@ function tankAction(act, where, i) {
       hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} goes back into the dark`);
     } else hud.toast('It sinks away');
   } else return false;
-  audio.ready && audio.click();
+  if (act === 'bleed' || act === 'release') audio.ready && audio.click();
   return true;
 }
 function syncProfile() {
@@ -393,7 +405,7 @@ function buy(kind) {
     g.items[kind]++; ok = true;
     hud.toast(`Bought: ${SUPPLIES[kind].name.toLowerCase()}`);
   }
-  if (ok) { syncProfile(); saveProfile(P); audio.ready && audio.pickup(); }
+  if (ok) { syncProfile(); saveProfile(P); audio.ready && audio.sale(); }
   return ok;
 }
 function runLog(cause) {
@@ -591,8 +603,8 @@ function interact(t, exitSub) {
   } else if (t.kind === 'board') {
     e.inSub = true; sub.docked = false;
     if (sub.o2 < 1 && sub.y > 2.2) hud.toast('The cabin has no air: you breathe from your own tank in here', 'warn');
-    const moved = transferToTank(g);
-    hud.toast(moved ? `Inside the submersible · ${moved} specimen${moved > 1 ? 's' : ''} into the tanks (T: the tank room)` : 'Inside the submersible');
+    // nothing is moved for him: his catch stays in the bag until he drags it to a chamber or the tank
+    hud.toast(g.bag.length ? `Inside the submersible · ${g.bag.length} in the bag: T, then drag ${g.bag.length > 1 ? 'them' : 'it'} into a chamber or the tank` : 'Inside the submersible');
     audio.ready && audio.click();
   } else if (t.kind === 'kelp') {
     t.k.harvested = true; g.inv.kelp = (g.inv.kelp || 0) + 1; hud.toast('+1 Kelp'); audio.ready && audio.pickup();
@@ -616,6 +628,31 @@ function leaveSub() {
   audio.ready && audio.click();
 }
 
+// crush depth. Past 1.2x its rating the hull groans; past 1.5x it can give at any moment, the deeper
+// the sooner. When it starts to go there are a few seconds of warning: climb and it may hold.
+const FAIL_WINDOW = 3.5, FAIL_CLIMB = 6;
+function crushDepth(dt) {
+  const sub = g.sub, r = sub.y / sub.rated;
+  if (r > 1.2 && !g.groanWarned) { g.groanWarned = true; hud.toast('The hull groans: it was never built for this depth', 'warn'); }
+  if (r < 1.1) g.groanWarned = false;
+  if (r > 1.5 && !g.crushWarned) { g.crushWarned = true; hud.toast('Past crush depth', 'warn'); }
+  if (r < 1.4) g.crushWarned = false;
+  if (sub.failing != null) {
+    sub.failing += dt;
+    g.fx.shake = Math.max(g.fx.shake, 0.5 + sub.failing * 0.4);
+    if (sub.y < sub.failY - FAIL_CLIMB || r < 1.45) { sub.failing = null; hud.toast('The hull holds', 'note'); return; }
+    if (sub.failing > FAIL_WINDOW) g.implodeNow = true;
+    return;
+  }
+  // 1 in 20 a second at 1.5x, about 1 in 3 at 1.75x
+  if (r > 1.5 && Math.random() < dt * 0.05 * Math.exp((r - 1.5) * 8)) {
+    sub.failing = 0; sub.failY = sub.y;
+    g.fx.shake = Math.max(g.fx.shake, 1.4);
+    audio.ready && audio.creak(1.2);
+    hud.toast('Something gives in the hull. Climb!', 'warn');
+  }
+}
+
 function die(cause, kind = 'normal') {
   if (g.mode !== 'play' || g.noDeath) return;
   g.mode = 'dying'; g.deathT = 0; g.deathCause = cause; g.deathKind = kind;
@@ -624,6 +661,7 @@ function die(cause, kind = 'normal') {
   const lost = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]).map(([k, n]) => `${n} ${GOODS[k].name.toLowerCase()}`);
   const nSpec = g.bag.length + g.subTank.length;
   if (nSpec) lost.unshift(`${nSpec} live specimen${nSpec > 1 ? 's' : ''}`);
+  if (kind === 'implode') lost.unshift('the submersible');
   if (g.tags.length) lost.push(`data from ${g.tags.length} tag${g.tags.length > 1 ? 's' : ''}`);
   if (g.photos.length) lost.push(`${g.photos.length} photograph${g.photos.length > 1 ? 's' : ''}`);
   g.tags = []; g.photos = [];
@@ -858,7 +896,7 @@ function update(dt) {
     // the arm: Space again closes the claw
     const armEv = updateArm(g, dt, pressed.has(' ') && g.armGame && g.armGame.phase === 'grip' && g.armGame.t > 0.05);
     if (armEv && armEv.type === 'armCatch') {
-      hud.toast(armEv.crushed ? `The ${armEv.name.toLowerCase()} is in the tank — gripped too hard` : `${armEv.name} — into ${armEv.spec.pressed ? 'a pressure tank' : `the tank (${tankUsed(g)}/${tankSlots(g)})`}`, armEv.crushed ? 'warn' : 'note');
+      hud.toast(armEv.crushed ? `The ${armEv.name.toLowerCase()} is in the bag — gripped too hard` : `${armEv.name} — into the catch bag (T: the tank room)`, armEv.crushed ? 'warn' : 'note');
       const sp = armEv.sp;
       if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
       if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
@@ -986,17 +1024,19 @@ function update(dt) {
         if (!mv.x && !mouse.down && performance.now() - mouse.movedAt < 3000 && Math.abs(ax) > renderer.cam.ppm * 1.2) e.facing = ax > 0 ? 1 : -1;
       }
     }
-    if (res === 'implode') {
-      g.sub.imploded = true; g.imploded = true; g.implodeDepth = g.sub.y;
-      e.inSub = false; e.o2 = Math.min(e.o2, e.o2Max);
-      g.fx.flash = 0.9; g.fx.shake = 2.5;
+    if (e.inSub && !g.sub.imploded && g.mode === 'play') crushDepth(dt);
+    if (res === 'implode' || g.implodeNow) {
+      g.implodeNow = false;
+      g.sub.imploded = true; g.imploded = true; g.implodeDepth = g.sub.y; g.implodeT = 0; g.sub.failing = null;
+      g.fx.flash = 1; g.fx.shake = 3.2;
       for (let i = 0; i < 26; i++) {
         const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 9;
         g.debris.push({ x: g.sub.x + (Math.random() - 0.5) * 6, y: g.sub.y + (Math.random() - 0.5) * 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 6, size: 0.2 + Math.random() * 1.1 });
       }
       for (let i = 0; i < 120; i++) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 8, y: g.sub.y + (Math.random() - 0.5) * 4, r: 0.05 + Math.random() * 0.25, w: Math.random() * 6, t: -Math.random() * 0.5 });
       audio.ready && audio.implosion();
-      hud.toast('The hull gives way', 'warn');
+      // he was inside: there is nothing to be done
+      die(`Crushed at ${Math.round(g.implodeDepth)} m when the submersible imploded`, 'implode');
     }
     // out of air: not instant death - about 15 s of air hunger, blacking out, before it is over.
     // Reaching the surface (or the sub's air) in time brings Earl back, gasping.
@@ -1090,11 +1130,12 @@ function update(dt) {
     g.events.length = 0;
   } else if (g.mode === 'dying') {
     g.deathT += dt;
-    const injuryDeath = g.deathKind === 'injury';
+    const injuryDeath = g.deathKind === 'injury', crushed = g.deathKind === 'implode';
     // bleeding out: the red closes in first, then the dark; no countdown
-    g.fx.black = injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : clamp(g.deathT / 3, 0, 1);
+    // crushed: the flash, the wreck scattering in the bubble cloud, then the dark, then quiet
+    g.fx.black = injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : crushed ? clamp((g.deathT - 1.6) / 1.6, 0, 1) : clamp(g.deathT / 3, 0, 1);
     g.fx.redDeath = injuryDeath ? clamp(g.deathT / 2.2, 0, 1) : 0;
-    if (g.deathT > (injuryDeath ? 5 : 3.6)) {
+    if (g.deathT > (injuryDeath ? 5 : crushed ? 6 : 3.6)) {
       const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
       g = newGame('menu');
       ui.showMenu({ cause, survived, bill, lost });
@@ -1201,6 +1242,7 @@ function update(dt) {
   g.fx.markPulse = Math.max(0, (g.fx.markPulse || 0) - dt * 0.5);
   updateBubbles(dt);
   updateDebris(dt);
+  if (g.implodeT != null) g.implodeT += dt;
 }
 function updateDebris(dt) {
   for (const d of g.debris) {

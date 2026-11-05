@@ -225,7 +225,7 @@ export class Hud {
       const r = g.sub.y / g.sub.rated, hi = g.sub.hull;
       ctx.font = `${11 * s}px ${MONO}`;
       ctx.fillStyle = r > 1 || hi < 0.5 ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : r > 0.85 || hi < 0.99 ? '#e8b040' : 'rgba(150,210,180,0.8)';
-      ctx.fillText(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ' leaking' : ''} · ${Math.round(g.sub.y)}/${g.sub.rated} m`, rx0, yy);
+      ctx.fillText(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ' leaking' : ''}${g.sub.failing != null ? ' · FAILING' : r > 1.5 ? ' · crush depth' : ''} · ${Math.round(g.sub.y)}/${g.sub.rated} m`, rx0, yy);
       yy += 18 * s;
     }
     // the sub on autopilot: where it is and how long it will be
@@ -462,18 +462,18 @@ export class Hud {
     this.toasts = this.toasts.filter((tt) => tt.t < 4.5);
 
     // ---------- death: everything but the red timer fades to black ----------
-    const bleedOut = dying && g.deathKind === 'injury';
+    const bleedOut = dying && g.deathKind === 'injury', crushed = dying && g.deathKind === 'implode';
     if (dying) {
-      ctx.fillStyle = bleedOut ? `rgba(26,0,0,${clamp(g.deathT / 3, 0, 1).toFixed(3)})` : `rgba(0,0,0,${clamp(g.deathT / 2.2, 0, 1).toFixed(3)})`;
+      ctx.fillStyle = bleedOut ? `rgba(26,0,0,${clamp(g.deathT / 3, 0, 1).toFixed(3)})` : `rgba(0,0,0,${clamp(crushed ? (g.deathT - 1.6) / 1.6 : g.deathT / 2.2, 0, 1).toFixed(3)})`;
       ctx.fillRect(0, 0, W, H);
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.font = `500 ${40 * s}px ${MONO}`;
       ctx.fillStyle = '#d8241e'; ctx.fillText(formatTime(g.survival + g.deathT), W - pad, pad);
-      ctx.font = `${13 * s}px ${MONO}`; ctx.fillStyle = `rgba(216,36,30,${clamp(g.deathT - 0.5, 0, 0.8).toFixed(3)})`;
+      ctx.font = `${13 * s}px ${MONO}`; ctx.fillStyle = `rgba(216,36,30,${clamp(g.deathT - (crushed ? 3.4 : 0.5), 0, 0.8).toFixed(3)})`;
       ctx.fillText(g.deathCause || '', W - pad, pad + 50 * s);
     }
     // ---------- death countdown ----------
-    if (dying && !bleedOut && g.deathT > 0) {
+    if (dying && !bleedOut && !crushed && g.deathT > 0) {
       const left = Math.max(0, 3 - Math.floor(g.deathT - g.deathDelay));
       if (g.deathT > g.deathDelay) {
         ctx.font = `500 ${120 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

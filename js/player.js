@@ -131,7 +131,13 @@ export function updateEarl(g, dt, inp) {
     e.angle = angleLerp(e.angle, target, 1 - Math.exp(-dt * 3));
     // weak, uneven kicks when struggling: bursts of frantic fluttering, then near-stalls
     const kickRate = st > 0 ? 0.55 + 1.1 * Math.pow(Math.abs(Math.sin(g.time * 2.3)), 2) : 1;
-    e.kick += dt * (moving ? (3.2 + e.speedNow * 0.9) * 1.5 : 1.1) * kickRate; // swimming kicks 1.5x the old pace
+    // the kick: 1.5x the old pace. Sprinting scales it by the sprint's own factor. Faster fins and speed
+    // upgrades quicken it too, but never past 1.5x the base kick (before the sprint)
+    const sprintK = inp.sprint ? (e.sprintMul || 1.5) : 1;
+    const baseKick = (3.2 + DIVE_SPEED * 0.9) * 2.25;                  // plain swimming, no upgrades, no sprint
+    const nowKick = (3.2 + (e.speedNow / sprintK) * 0.9) * 2.25;      // from his actual speed, sprint taken out
+    const kickNow = Math.min(nowKick, baseKick * 1.5) * sprintK;
+    e.kick += dt * (moving ? kickNow : 1.65) * kickRate;
     // oxygen
     e.atSurface = e.y < 0.9;
     if (e.atSurface) {
