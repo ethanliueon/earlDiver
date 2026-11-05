@@ -267,3 +267,11 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 
 .menu-links { display: flex; gap: 22px; margin-top: 26px; }
 .menu-links #show-controls { margin-top: 0; }
+
+/* hover tooltips: what an upgrade or a piece of gear does */
+#tip {
+  position: fixed; z-index: 50; max-width: 300px; padding: 8px 11px; pointer-events: none;
+  font: 12px/1.45 var(--mono); color: #e8ece6; background: rgba(8, 14, 16, 0.96);
+  border: 1px solid rgba(160, 200, 200, 0.25); border-radius: 4px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.up-row:hover, .card:hover { background: rgba(255, 255, 255, 0.03); }

@@ -9,7 +9,7 @@ import { specimenValue, conditionName, rarityOf } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; };
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
-import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
+import { loadBest, UPGRADES, UPGRADE_DESC, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
@@ -58,7 +58,19 @@ export class UI {
     });
     document.addEventListener('fullscreenchange', () => { $('fullscreen').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; });
     $('restart').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); });
-    $('shop-details').addEventListener('click', () => { const w = $('workshop'); w.classList.toggle('details'); $('shop-details').textContent = w.classList.contains('details') ? 'Less' : 'Details'; });
+    // a tooltip for anything with a data-tip: what an upgrade or a piece of gear does
+    const tip = $('tip');
+    document.addEventListener('mouseover', (ev) => {
+      const el = ev.target.closest && ev.target.closest('[data-tip]');
+      if (!el) { tip.hidden = true; return; }
+      tip.textContent = el.dataset.tip; tip.hidden = false;
+    });
+    document.addEventListener('mousemove', (ev) => {
+      if (tip.hidden) return;
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      tip.style.left = Math.min(window.innerWidth - w - 8, ev.clientX + 14) + 'px';
+      tip.style.top = (ev.clientY + 18 + h > window.innerHeight ? ev.clientY - h - 10 : ev.clientY + 18) + 'px';
+    });
     $('newgame').addEventListener('click', () => {
       if (!this.confirmNew) { this.confirmNew = true; $('newgame').textContent = 'Start over with nothing?'; return; }
       this.confirmNew = false; h.onNewGame();
@@ -192,7 +204,7 @@ export class UI {
     const can = (price) => P.cash + 1e-6 >= price;
     // a card: name, what it is, what it changes, and a price button
     const card = (name, desc, stat, price, act, arg, label, owned = '', img = '') => `
-      <div class="card${img ? ' with-img' : ''}">
+      <div class="card${img ? ' with-img' : ''}" data-tip="${String(desc).replace(/"/g, '&quot;')}">
         ${img ? `<img src="${img}" alt="">` : ''}
         <div class="card-txt"><h3>${name}</h3><p>${desc}</p>${stat ? `<div class="card-stat">${stat}</div>` : ''}${owned}</div>
         <button data-act="${act}" data-arg="${arg}" ${price !== null && !can(price) ? 'disabled' : ''}>${label}${price !== null ? `<span>${money(price, false)}</span>` : ''}</button>
@@ -321,7 +333,7 @@ export class UI {
       html += `<div class="up-group"><h4>${grp}</h4>`;
       if (gk && !owns(P, gk)) {
         const G = GEAR[gk], ic = ICON_OF[grp];
-        html += `<div class="card${ic ? ' with-img' : ''}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}</h3><p>${G.desc}</p></div>
+        html += `<div class="card${ic ? ' with-img' : ''}" data-tip="${G.desc}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}</h3><p>${G.desc}</p></div>
           <button data-act="buy" data-arg="gear:${gk}" ${can(G.price) ? '' : 'disabled'}>Buy<span>${money(G.price)}</span></button></div></div>`;
         continue;
       }
@@ -329,11 +341,11 @@ export class UI {
         if (U.group !== grp) continue;
         const l = lv(P, id), maxed = l >= U.max, cost = upgradeCost(P, id);
         const now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statValue(P, id) + U.step);
-        html += `<div class="up-row"><span class="up-name">${U.name}</span><span class="up-val">${now}${maxed ? '' : ` <i>→</i> <b>${next}</b>`}</span>
+        html += `<div class="up-row" data-tip="${UPGRADE_DESC[id] || ''}"><span class="up-name">${U.name}</span><span class="up-val">${now}${maxed ? '' : ` <i>→</i> <b>${next}</b>`}</span>
           <span class="up-lv">${maxed ? 'max' : `lv ${l}`}</span>
           <button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}</button></div>`;
       }
-      if (gk === 'camera' && !owns(P, 'lowlight')) html += `<div class="up-row"><span class="up-name">${GEAR.lowlight.name}</span><span class="up-val">no flash</span><span class="up-lv"></span><button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button></div>`;
+      if (gk === 'camera' && !owns(P, 'lowlight')) html += `<div class="up-row" data-tip="${GEAR.lowlight.desc}"><span class="up-name">${GEAR.lowlight.name}</span><span class="up-val">no flash</span><span class="up-lv"></span><button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button></div>`;
       html += '</div>';
     }
     return html;

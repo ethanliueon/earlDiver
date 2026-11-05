@@ -176,6 +176,38 @@ export const UPGRADES = {
   armSpeed:  { group: 'Claw', needs: 'arm', name: 'Hydraulics', base: 1.1, step: -0.06, max: 10, cost: 3, growth: 1.3, fmt: 'sec' },
   armGrip:   { group: 'Claw', needs: 'arm', name: 'Grip window', base: 0.06, step: 0.008, max: 10, cost: 3, growth: 1.3, fmt: 'win' },
 };
+// what each upgrade is, in a sentence (the shop shows it when you hover the row)
+export const UPGRADE_DESC = {
+  payFish: 'Better buyers. Every live animal, tag and photograph sells for 5 % more per level.',
+  paySalvage: 'Contacts in the scrap trade. Clams, iron, ink, pearls and sapphires sell for 5 % more per level.',
+  air: 'A bigger cylinder: 5 more seconds of air per level.',
+  sprint: 'Stronger kicks when you sprint (Shift). Sprinting still uses air twice as fast.',
+  swim: 'Better fins and technique: faster everyday swimming, at no extra air.',
+  bag: 'One more pocket in the catch bag for a live animal.',
+  netSize: 'A wider hoop and a deeper bag: the net takes bigger fish.',
+  netReach: 'A longer handle: sweep from further away, before a fish notices you.',
+  netSpeed: 'A lighter frame: the swing is quicker, so less time for the fish to slip away.',
+  netGrip: 'Practice. A better chance that a sweep actually lands the fish.',
+  netSoft: 'Softer, knotless mesh: netted fish are less harmed, so they sell for more.',
+  slurpSize: 'A wider barrel: the slurp gun takes slightly bigger fish.',
+  slurpReach: 'A stronger spring: it pulls fish in from further away.',
+  slurpSpeed: 'A smoother plunger: reloads faster between shots.',
+  tagReach: 'More pressure behind the dart: tag from further off.',
+  tagReload: 'Reloads faster after a shot.',
+  tagPay: 'Better tags that send more data. The research program pays 8 % more per level.',
+  tagCalm: 'A cleaner shot. A miss is less likely to turn a shark on you.',
+  camShots: 'A bigger memory card: one more picture per dive.',
+  camRange: 'A better lens: photograph animals from further away.',
+  depth: 'A stronger pressure hull: the sub is rated 50 m deeper. Past its rating, the cabin leaks air faster and faster.',
+  subAir: 'A bigger air bank in the cabin: more time below.',
+  subSpeed: 'A stronger motor: faster everywhere.',
+  subTank: 'One more place in the specimen tank, where animals keep without losing condition.',
+  armReach: 'A longer arm: grab from further off.',
+  armSize: 'Bigger jaws: the claw takes bigger animals.',
+  armSpeed: 'Better hydraulics: the arm reaches out and back faster.',
+  armGrip: 'Finer control: a wider green window on the grip gauge.',
+};
+
 // one-off gear: bought once, then its stats are levelled above
 export const GEAR = {
   slurp: { name: 'Slurp gun', price: 3, desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones. Key 2.' },
