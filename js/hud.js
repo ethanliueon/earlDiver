@@ -262,8 +262,27 @@ export class Hud {
     ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 8 * s, jy + 5.5 * s, 10 * s, 11 * s);
     ctx.font = `${10 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,220,192,0.5)'; ctx.textAlign = 'right'; ctx.fillText('J', jx - 5 * s, jy + 6 * s);
 
+    // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
+    yy = jy + jh + 10 * s;
+    this.subHot = null;
+    if (!g.sub.imploded && !dying) {
+      const ap = g.autopilot;
+      const label = e.inSub ? (g.homeRun ? 'autopilot off' : g.sub.docked ? null : 'autopilot home') : (ap && ap.state === 'coming' ? 'stop sub' : 'call sub');
+      if (label) {
+        ctx.font = `${11 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        const bw = ctx.measureText(label).width + 36 * s, bh = 22 * s, bx = rx0 - bw;
+        this.subHot = { x: bx * kx, y: yy * kx, w: bw * kx, h: bh * kx };
+        const on = g.homeRun || (ap && ap.state === 'coming');
+        ctx.fillStyle = on ? 'rgba(60,52,24,0.7)' : 'rgba(6,12,14,0.55)'; ctx.strokeStyle = on ? 'rgba(232,214,160,0.5)' : 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(bx, yy, bw, bh, 5 * s); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(232,214,160,0.9)'; ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillText('C', bx + 8 * s, yy + bh / 2);
+        ctx.fillStyle = 'rgba(220,236,230,0.85)'; ctx.font = `${11 * s}px ${MONO}`; ctx.fillText(label, bx + 24 * s, yy + bh / 2);
+        ctx.textBaseline = 'top';
+        yy += bh + 10 * s;
+      }
+    }
+
     // ---------- Q / E items: in the right-hand column, only when carried ----------
-    yy = jy + jh + 12 * s;
     const glass = (x, y, w, h) => { ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.strokeStyle = 'rgba(160,200,200,0.14)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8 * s); ctx.fill(); ctx.stroke(); };
     const sz = 46 * s;
     const slots = [];

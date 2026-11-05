@@ -321,6 +321,7 @@ hudCanvas.addEventListener('mousedown', (ev) => {
   if (ev.button === 2) { pressed.add('f-tap'); mouse.rdown = true; return; }
   if (ev.button !== 0) return;
   if (inRect(hud.journalHot, ev.clientX, ev.clientY)) { ui.toggleJournal(); return; }
+  if (inRect(hud.subHot, ev.clientX, ev.clientY)) { pressed.add('c-tap'); return; }
   if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
   if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
   mouse.down = true;
@@ -449,6 +450,7 @@ function interact(t, exitSub) {
     p.taken = true;
     audio.ready && audio.pickup();
   } else if (t.kind === 'board') {
+    if (sub.o2 < 1 && sub.y > 2.2) { hud.toast('The cabin has no air left — send her up first (hold C)', 'warn'); return; }
     e.inSub = true; sub.docked = false;
     const moved = transferToTank(g);
     hud.toast(moved ? `Inside the submersible · ${moved} specimen${moved > 1 ? 's' : ''} into the tank (${g.subTank.length}/${tankSlots(g)})` : 'Inside the submersible');
@@ -774,7 +776,12 @@ function update(dt) {
     }
     // out of air: not instant death - about 15 s of air hunger, blacking out, before it is over.
     // Reaching the surface (or the sub's air) in time brings Earl back, gasping.
-    if (res === 'o2' || res === 'sub-o2') {
+    // the cabin is out of air: the first thing that happens is he gets out, onto his own tank
+    if (res === 'sub-o2' && e.inSub) {
+      g.homeRun = false; g.autopilot.cancel();
+      leaveSub();
+      hud.toast('The cabin is out of air — you bail out', 'warn');
+    } else if (res === 'o2') {
       if (!g.noAir) { g.noAir = 0.001; g.noAirCause = res; hud.toast(res === 'o2' ? 'Out of air — get to the surface' : 'The cabin is out of air — surface!', 'warn'); }
       // under pressure air hunger comes on far faster: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m
       g.noAirRate = e.inSub ? 1 : Math.sqrt(diverDrainMult(e.y));
@@ -784,6 +791,8 @@ function update(dt) {
       hud.toast('Air.', 'big'); g.noAir = 0; g.fx.flash = 0.3;
       audio.ready && audio.gasp && audio.gasp();
     }
+    // an empty sub at the surface (or docked) airs out its cabin
+    if (!e.inSub && !g.sub.imploded && g.sub.y < 2.2 && g.sub.o2 < g.sub.o2Max) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max / 4 * dt);
     // diver tank refills from the sub's air
     if (e.inSub && e.o2 < e.o2Max) { const r = Math.min(e.o2Max - e.o2, (e.o2Max / 3.5) * dt); e.o2 += r; }
     g.diverDrain = diverDrainMult(e.y) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
