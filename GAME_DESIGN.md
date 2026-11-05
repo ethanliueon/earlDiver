@@ -8,6 +8,12 @@ There is no end: the long goal is an aquarium on the shore with one of everythin
 
 `docs/PLAN.md` is the plan this was built from; `docs/DEV_NOTES.md` covers testing.
 
+## Sound
+
+The music is not always on. In a dive it comes in now and then when things are calm (a quiet spell,
+a good sale, a rare catch, a new aquarium wing), plays a few minutes and fades; anything
+frightening (the entity near, being marked, an attack, no air) stops it at once.
+
 ## Tone
 
 - Realistic, intentional, never cartoonish. Muted natural colours, real light attenuation
@@ -82,8 +88,11 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
   refits to 3,000 m. Past 1.3x its rating it implodes; a replacement can be bought.
 - C calls it: it drives itself to Earl, routing around rock, and stops beside him; never below its
   rating. Hold C to send it home. Its engine is heard in the deep.
+- C from inside: autopilot home, on 0.8x air. Steering, a hit to the hull, an attack starting or
+  the entity coming near drop it out of autopilot.
 - Hull damage from whales and orcas leaks air; patch it at the boat.
-- Add-ons: recall unit, quiet engine, manipulator arm, bigger specimen tanks.
+- The claw: three arms (claw arm 3 m / 1 m / slow, hydraulic 4.5 m / 1.4 m, heavy-lift 6 m / 2 m /
+  fast), each with a wider grip window. Add-ons: recall unit, quiet engine, bigger specimen tanks.
 
 ## The aquarium
 

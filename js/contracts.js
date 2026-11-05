@@ -3,7 +3,7 @@
 // sells at the boat with the right thing aboard. A filled contract is replaced by a new one.
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { canTakeLive, liveValue, tagPrice, isTagOnly } from './specimens.js';
-import { GOODS, NETS, SUB_TIERS, TAGGERS, CAMERAS } from './economy.js';
+import { GOODS, NETS, SUB_TIERS, TAGGERS, CAMERAS, ARMS } from './economy.js';
 import { photoValue } from './survey.js';
 
 export const RADIO = { name: 'Better radio', price: 150, desc: 'A long-range set and a tall whip antenna. Five contracts at a time instead of three.' };
@@ -14,7 +14,7 @@ export const contractSlots = (P) => (P.radio ? 5 : 3);
 // how deep he can work, and how big an animal he can take
 function reach(P) {
   const net = NETS[P.net || 0].maxLen;
-  const arm = P.addons && P.addons.arm ? 1.0 : 0;
+  const arm = (P.armTier ?? -1) >= 0 ? ARMS[P.armTier].maxLen : 0;
   const deep = P.subLost ? 60 : SUB_TIERS[P.subTier || 0].rated;
   return { maxLen: Math.max(net, arm), deep };
 }

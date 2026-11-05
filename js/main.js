@@ -14,7 +14,7 @@ import { startArm, updateArm, findArmTarget } from './arm.js';
 import { fillBoard, fulfil, RADIO } from './contracts.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
-import { loadBest } from './economy.js';
+import { loadBest, ARMS } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
@@ -126,6 +126,7 @@ function hurt(dmg, sp, how) {
 }
 function damageSub(amt, sp) {
   const sub = g.sub;
+  g.subHit = true;
   sub.hull = Math.max(0.05, sub.hull - amt);
   g.fx.shake = Math.max(g.fx.shake, 2.2); g.fx.flash = 0.25;
   for (let i = 0; i < 60; i++) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 6, y: sub.y + (Math.random() - 0.5) * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
@@ -173,6 +174,7 @@ function sellAll() {
   if (!lines.length) return null;
   const total = lines.reduce((a, l) => a + l.total, 0);
   g.earned += total;
+  if (total >= 5) audio.cue && audio.cue('sale');
   saveProfile(profile);
   audio.ready && audio.pickup();
   return { lines, total };
@@ -250,13 +252,16 @@ function buy(kind) {
     const tk = kind === 'pot' ? 'pot' : 'deep';
     P.traps = Object.assign({ pot: 0, deep: 0 }, P.traps); P.traps[tk]++; ok = true;
     hud.toast(`${TRAPS[tk].name} (${P.traps[tk]})`, 'big'); hud.hint('Press 5, then Space on the bottom to set a trap');
+  } else if (kind === 'arm' && ARMS[(P.armTier ?? -1) + 1] && spend(P, ARMS[(P.armTier ?? -1) + 1].price)) {
+    P.armTier = (P.armTier ?? -1) + 1; ok = true;
+    hud.toast(`Fitted: ${ARMS[P.armTier].name.toLowerCase()}`, 'big'); hud.hint('In the sub, Space reaches for an animal; Space again in the green closes the claw');
   } else if (kind === 'radio' && !P.radio && spend(P, RADIO.price)) {
     P.radio = true; fillBoard(P, g.contracts); ok = true;
     hud.toast('A better radio: five contracts at a time', 'big');
   } else if (kind.startsWith('wing:')) {
     const w = WING_BY_ID[kind.slice(5)], A = aquariumOf(P);
     const next = WINGS.find((x) => !A.wings.includes(x.id));
-    if (w && next && next.id === w.id && spend(P, w.price)) { A.wings.push(w.id); ok = true; hud.toast(`Built: the ${w.name.toLowerCase()}`, 'big'); }
+    if (w && next && next.id === w.id && spend(P, w.price)) { A.wings.push(w.id); ok = true; hud.toast(`Built: the ${w.name.toLowerCase()}`, 'big'); audio.cue && audio.cue('wing'); }
   } else if (kind === 'canisters' && !(P.addons || {}).canisters && spend(P, CANISTERS.price)) {
     P.addons = Object.assign({}, P.addons, { canisters: true }); g.addons = P.addons; ok = true;
     hud.toast('Pressure canisters: deep animals survive the trip up', 'big');
@@ -604,12 +609,27 @@ function update(dt) {
       if (cHeld > 0.6 && cHeld - dt <= 0.6 && !e.inSub && !g.sub.imploded && !g.sub.docked) { ap.sendHome(g); hud.toast('The sub turns for home'); audio.ready && audio.click(); }
     }
     if (pressed.has('c-tap')) {
-      if (e.inSub) hud.toast('You are in it');
+      if (e.inSub && g.homeRun) { g.homeRun = false; ap.cancel(); hud.toast('Autopilot off'); }
+      else if (e.inSub && g.sub.docked) hud.toast('Already at the boat');
+      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: taking her home'); hud.hint('It steers itself to the boat using less air. Steer, get hit, or meet something, and it lets go'); audio.ready && audio.sonar(0.05); }
       else if (g.sub.imploded) hud.toast('The submersible is gone', 'warn');
       else if (ap.state === 'coming') { ap.cancel(); g.sub.vx *= 0.5; hud.toast('Sub stopped'); }
       else { ap.call(g); hud.toast(`Calling the sub — ${Math.round(dist(e.x, e.y, g.sub.x, g.sub.y))} m away`); audio.ready && audio.sonar(0.05); }
     }
-    if (e.inSub && ap.state !== 'idle') ap.cancel();
+    if (e.inSub && ap.state !== 'idle' && !g.homeRun) ap.cancel();
+    if (!e.inSub) g.homeRun = false;
+    // the way home: the autopilot steers; anything that needs a pilot hands her back
+    if (g.homeRun) {
+      const steer = mv.x || mv.y;
+      const why = steer ? 'Autopilot off' : g.subHit ? 'Something hit the hull — autopilot off' : g.threat ? 'Something is coming — autopilot off'
+        : (g.fx.dread > 0.05 || (ent.marked && (ent.dist ?? 999) < 220)) ? 'Something is near — autopilot off' : null;
+      if (why) { g.homeRun = false; ap.cancel(); hud.toast(why, steer ? '' : 'warn'); }
+      else {
+        const r2 = ap.update(g, dt, 1);
+        if (r2 === 'docked') { g.homeRun = false; hud.toast('Home. The sub is at the boat'); audio.cue && audio.cue('home'); }
+      }
+    }
+    g.subHit = false;
     // catching: 1 / 2 pick the net or the slurp gun, Space uses it
     if (pressed.has('1')) { g.toolSel = 'net'; hud.toast(NETS[profile.net || 0].name); }
     if (pressed.has('2')) { if ((profile.slurp ?? -1) >= 0) { g.toolSel = 'slurp'; hud.toast(SLURPS[profile.slurp].name); } else hud.toast('No slurp gun — the boat sells them', 'warn'); }
@@ -633,7 +653,7 @@ function update(dt) {
         }
       } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame) {
-      if (!g.addons.arm) hud.toast('The claw has no hydraulics — fit them at the boat', 'warn');
+      if ((profile.armTier ?? -1) < 0) hud.toast('The claw has no hydraulics — fit them at the boat', 'warn');
       else { const msg = startArm(g); if (msg) hud.toast(msg, 'warn'); else audio.ready && audio.ram && audio.click(); }
     }
     // the arm: Space again closes the claw
@@ -672,7 +692,7 @@ function update(dt) {
         const sp = ev.sp, v = ev.spec.variant;
         if (v) {
           hud.toast(`${ev.name}!`, 'big');
-          audio.ready && audio.sapphire();
+          audio.ready && audio.sapphire(); audio.cue && audio.cue('rare');
           const vk = sp.id + ':' + v;
           if (!(profile.variants || []).includes(vk)) profile.variants = [...(profile.variants || []), vk];
         }
@@ -685,10 +705,12 @@ function update(dt) {
       else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
     }
     for (const s of updateSpecimens(g, dt)) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died — it came up too fast`, 'warn');
+    g.catchTarget = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
-    if (e.inSub && g.addons.arm && !g.armGame) {
+    if (e.inSub && (profile.armTier ?? -1) >= 0 && !g.armGame) {
       const at = findArmTarget(g);
       g.capPrompt = at ? `Space  Reach for the ${at.name.toLowerCase()} · ~${money(at.value)}` : null;
+      g.catchTarget = at ? { c: at.c, x: at.x, y: at.y, len: at.len } : null;
     } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw — in the green' : null;
     else if (g.toolSel === 'trap') {
       const fl = g.world.floorAt(e.x);
@@ -701,7 +723,9 @@ function update(dt) {
       g.capPrompt = ps ? (ps.ok ? `Space  Photograph the ${ps.name.toLowerCase()} · new · ~${money(ps.value)}` : `${ps.name}: ${ps.why}`) : null;
     } else {
     const ct = !e.inSub ? findCatch(g) : null;
-    g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.name.toLowerCase()} · ~${money(ct.value)}` : `${ct.sp.name}: ${ct.why}`) : null;
+    g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.name.toLowerCase()} · ${Math.round(ct.chance * 100)} % · ~${money(ct.value)}` : `${ct.sp.name}: ${ct.why}`) : null;
+    // what the net or slurp gun will go for: marked on screen
+    g.catchTarget = ct && ct.ok ? { c: ct.c, x: ct.x, y: ct.y, len: ct.len } : null;
     }
     // a fresh memory card and charged strobes at the boat
     if (profile.camera >= 0 && Math.abs(e.x - BOAT_X) < 14 && e.y < 4) g.shots = CAMERAS[profile.camera].shots;

@@ -20,6 +20,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | hold F | Leave the submersible |
 | C | Call the submersible: it drives itself to you (never below its rated depth). C again stops it |
 | hold C | Send the submersible back to the boat |
+| C (inside the sub) | Autopilot home: it steers to the boat on 0.8x air; steering, a hit or danger hands it back |
 | 1 / 2 / 3 / 4 / 5 | Net / slurp gun / tag gun / camera / traps (once bought) |
 | Space | Use it: sweep the net, fire the slurp gun or a tag dart, take a picture, set a trap. In the sub (with the arm fitted): reach, then Space again to close the claw |
 | J | Journal (species you have observed, and your own notes) |

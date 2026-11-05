@@ -33,11 +33,12 @@ export function findCatch(g) {
   const { def, kind } = activeTool(g);
   if (kind !== 'net' && kind !== 'slurp') return null;
   const h = handPos(g);
-  const reach = def.range + 0.4;
+  const reach = def.range + 0.7;
   let best = null, bd = 1e9, blocked = null, bbd = 1e9;
   const consider = (sp, x, y, len, ref) => {
-    if ((x - h.x) * h.fx < -0.5) return; // behind him
-    const d = dist(h.x, h.y, x, y) - len * 0.35;
+    if ((x - h.x) * h.fx < -0.8) return; // behind him
+    // to the edge of the animal, and the sweep covers a little more height than length
+    const d = Math.hypot(x - h.x, (y - h.y) * 0.75) - len * 0.5;
     if (d > reach) return;
     let why = null;
     if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'needs a tag' : null;
@@ -51,8 +52,19 @@ export function findCatch(g) {
     if (Math.abs(s.x - h.x) > reach + 3) continue;
     consider(s.sp, s.x, s.y - Math.min(0.5, s.sp.len * s.scale * 0.3), s.sp.len * s.scale, { s, variant: s.variant });
   }
-  if (best) { best.value = liveValue(best.sp, best.len) * variantMult(best.variant); best.name = variantName(best.sp, best.variant); }
+  if (best) {
+    best.value = liveValue(best.sp, best.len) * variantMult(best.variant); best.name = variantName(best.sp, best.variant);
+    best.chance = catchChance(def, kind, best);
+  }
   return best ? { ok: true, ...best } : blocked ? { ok: false, ...blocked } : null;
+}
+
+// the odds of a catch: the tool, and whether the animal is already bolting
+export function catchChance(def, kind, tgt) {
+  const fleeing = tgt.c && tgt.c.fleeT > 0;
+  let chance = def.success * (fleeing ? (kind === 'slurp' ? 0.9 : 0.8) : 1);
+  if (tgt.s) chance = Math.min(0.97, chance + 0.2); // things on the bottom don't swim off
+  return chance;
 }
 
 // Start a sweep / a shot. Returns a message for the player, or null when it starts.
@@ -63,7 +75,8 @@ export function useTool(g) {
   if ((g.toolCool || 0) > 0) return null;
   if (g.bag.length >= bagSlots(g)) return 'Bag full — get to the sub or the boat';
   const { kind, def, tier } = activeTool(g);
-  g.capture = { kind, def, tier, t: 0, dur: def.time, resolveAt: kind === 'net' ? 0.5 : 0.12, done: false };
+  const lock = findCatch(g);
+  g.capture = { kind, def, tier, t: 0, dur: def.time, resolveAt: kind === 'net' ? 0.35 : 0.12, done: false, lock: lock && lock.ok ? lock : null };
   if (e.y > 200) g.entity.disturb(g, def.noise);
   return null;
 }
@@ -80,15 +93,20 @@ export function updateCapture(g, dt) {
   cap.t += dt;
   if (!cap.done && cap.t >= cap.dur * cap.resolveAt) {
     cap.done = true;
-    const tgt = findCatch(g);
+    // the animal he swung at, if it is still within reach (with some slack for the swing);
+    // otherwise whatever is in reach now
+    let tgt = null;
+    const L = cap.lock;
+    if (L && !(L.c && L.c.dead) && !(L.s && !g.world.statics.includes(L.s))) {
+      const h = handPos(g), x = L.c ? L.c.x : L.x, y = L.c ? L.c.y : L.y;
+      if (Math.hypot(x - h.x, (y - h.y) * 0.75) - L.len * 0.5 < cap.def.range + 1.3) tgt = Object.assign({}, L, { x, y });
+    }
+    if (!tgt) tgt = findCatch(g);
     const e = g.earl;
     if (!tgt || !tgt.ok) ev.push({ type: 'miss', why: tgt ? tgt.why : null, sp: tgt && tgt.sp });
     else {
       const { def, kind } = cap;
-      const fleeing = tgt.c && tgt.c.fleeT > 0;
-      let chance = def.success * (fleeing ? (kind === 'slurp' ? 0.9 : 0.45) : 1);
-      if (tgt.s) chance = Math.min(0.97, chance + 0.2); // things on the bottom don't swim off
-      if (Math.random() < chance) {
+      if (Math.random() < catchChance(def, kind, tgt)) {
         const harm = def.harm * (fragile(tgt.sp) ? 2 : 1) + Math.random() * 0.05;
         const spec = { id: tgt.sp.id, len: tgt.len, cond: clamp(1 - harm, 0.05, 1), from: Math.round(Math.max(e.y, tgt.y)), t: g.time };
         if (tgt.variant) { spec.variant = tgt.variant; spec.mult = variantMult(tgt.variant); if (tgt.variant === 'crimson') g.entity.disturb(g, 0.08); }

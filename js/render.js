@@ -310,6 +310,19 @@ export class Renderer {
       ctx.fillStyle = '#0a0a0a'; ctx.fill(bt.eyes);
     }
     ctx.setTransform(baseM);
+    // brackets around what the net, slurp gun or claw will go for
+    const ctg = g.mode === 'play' ? g.catchTarget : null;
+    if (ctg) {
+      const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y;
+      const r = Math.max(ppm * 0.35, fishDrawLen(ctg.len) * ppm * 0.6), rh = Math.max(ppm * 0.28, r * 0.6), k = r * 0.3;
+      const cx = S(tx), cy = Sy(ty), a = 0.45 + 0.25 * Math.sin(t * 5);
+      ctx.strokeStyle = `rgba(200,240,210,${a.toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.03);
+      ctx.beginPath();
+      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        ctx.moveTo(cx + sx * r, cy + sy * rh - sy * k); ctx.lineTo(cx + sx * r, cy + sy * rh); ctx.lineTo(cx + sx * r - sx * k, cy + sy * rh);
+      }
+      ctx.stroke();
+    }
     // the entity's body, lit by the same light as everything else (invisible in the dark)
     const entB = g.entity;
     if (entB && g.mode !== 'menu' && inView(entB.x, entB.y, 45) && entB.dist < 90) {
@@ -901,8 +914,10 @@ export class Renderer {
         ctx.fillStyle = col(60 + rnd() * 30, 56 + rnd() * 25, 46, 0.9);
         ctx.beginPath(); ctx.ellipse(x, d, 8 + rnd() * 30, 5 + rnd() * 14, 0, Math.PI, 0); ctx.fill();
       }
-      // stalks
+      // stalks: sparse at the two ends of the forest, dense in the middle
       for (let x = rnd() * 30; x < c.width; x += 26 + rnd() * 44) {
+        const edge = Math.min(x, c.width - x) / (c.width * 0.22);
+        if (edge < 1 && rnd() > edge * 0.85 + 0.1) continue;
         const wx = X0 + x / PX, base = Math.max(5, world.floorAt(wx) - 4 - k * 5) * 0.9 * PX;
         const h = base * (0.75 + rnd() * 0.25);
         const lean = (rnd() - 0.5) * 0.25;
@@ -930,6 +945,20 @@ export class Renderer {
           ctx.restore();
         }
       }
+      // feather the edges into the water: the forest thins out at both ends and fades into the
+      // depths at the bottom, so it never ends in a straight line
+      ctx.globalCompositeOperation = 'destination-out';
+      const fadeX = c.width * 0.2;
+      let fg = ctx.createLinearGradient(0, 0, fadeX, 0);
+      fg.addColorStop(0, 'rgba(0,0,0,1)'); fg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = fg; ctx.fillRect(0, 0, fadeX, c.height);
+      fg = ctx.createLinearGradient(c.width - fadeX, 0, c.width, 0);
+      fg.addColorStop(0, 'rgba(0,0,0,0)'); fg.addColorStop(1, 'rgba(0,0,0,1)');
+      ctx.fillStyle = fg; ctx.fillRect(c.width - fadeX, 0, fadeX, c.height);
+      fg = ctx.createLinearGradient(0, c.height * 0.62, 0, c.height);
+      fg.addColorStop(0, 'rgba(0,0,0,0)'); fg.addColorStop(1, 'rgba(0,0,0,1)');
+      ctx.fillStyle = fg; ctx.fillRect(0, c.height * 0.62, c.width, c.height * 0.38);
+      ctx.globalCompositeOperation = 'source-over';
       layers.push({ c, f, X0, PX });
     }
     this.kelpBack = layers;

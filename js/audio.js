@@ -58,7 +58,27 @@ export class Audio {
     return { s, f, g };
   }
   resume() { if (this.ac && this.ac.state === 'suspended') this.ac.resume(); }
-  playMusic() { if (!this.ready) return; this.musicEl.play().catch(() => {}); }
+  playMusic() { if (!this.ready) return; this.musicEl.play().catch(() => {}); this.mus = { on: true, t: 0, len: 150 + Math.random() * 60, wait: 0, level: 0 }; }
+  // a good moment: if it is calm and nothing is playing, a piece starts
+  cue() { const m = this.mus; if (m && !m.on && this.calm) { m.on = true; m.t = 0; m.len = 120 + Math.random() * 60; try { this.musicEl.currentTime = 0; } catch (e) { /* not loaded */ } } }
+  // returns the music level 0..1 for this frame
+  musicSession(g, dt) {
+    const m = this.mus || (this.mus = { on: false, t: 0, len: 0, wait: 60, level: 0 });
+    const ent = g.entity;
+    this.calm = g.fx.dread < 0.02 && !(ent && ent.marked) && !g.threat && !g.noAir && (g.injury || 0) === 0 && !g.reveal;
+    if (m.on) {
+      m.t += dt;
+      if (!this.calm) { m.on = false; m.wait = 60 + Math.random() * 60; }          // something is wrong: it stops
+      else if (m.t > m.len) { m.on = false; m.wait = 120 + Math.random() * 120; }  // the piece ends: quiet for a while
+    } else {
+      m.wait -= dt;
+      if (m.wait <= 0 && this.calm) { m.on = true; m.t = 0; m.len = 120 + Math.random() * 60; try { this.musicEl.currentTime = 0; } catch (e) { /* not loaded */ } }
+    }
+    // fade in over a few seconds, out over a few more (fast when it is fear that stops it)
+    const target = m.on ? 1 : 0, rate = m.on ? 0.25 : this.calm ? 0.2 : 1.2;
+    m.level += clamp(target - m.level, -rate * dt, rate * dt);
+    return m.level;
+  }
   setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ac.currentTime, 0.1); }
 
   burst(type, freq, q, dur, vol, buf = this.white, when = 0) {
@@ -160,8 +180,10 @@ export class Audio {
     const ac = this.ac, now = ac.currentTime, e = g.earl, fx = g.fx;
     const depth = g.mode === 'menu' ? 0 : e.y;
     const under = g.mode === 'menu' ? 0 : depth > 0.9 ? 1 : 0;
-    // music: muffled under water, fades with dread, dies on death
+    // music: not always playing. In a dive it comes now and then when things are calm (and on some
+    // good moments), plays a while, and fades; anything frightening stops it at once.
     let mv = g.mode === 'menu' ? 0.55 : 0.42;
+    if (g.mode === 'play') mv *= this.musicSession(g, dt);
     mv *= 1 - fx.dread * 0.7;
     if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
     if (g.paused) mv *= 0.4;

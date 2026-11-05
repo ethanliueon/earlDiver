@@ -96,8 +96,8 @@ export class Hud {
       const bw = 260 * s, bh = 14 * s, bx = W / 2 - bw / 2, by = H * 0.62;
       ctx.fillStyle = 'rgba(6,12,14,0.7)'; ctx.beginPath(); ctx.roundRect(bx - 6 * s, by - 6 * s, bw + 12 * s, bh + 12 * s, 6 * s); ctx.fill();
       ctx.fillStyle = 'rgba(200,80,60,0.55)'; ctx.fillRect(bx, by, bw, bh);
-      ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillRect(bx + bw * 0.3, by, bw * 0.4, bh);
-      ctx.fillStyle = 'rgba(120,220,140,0.9)'; ctx.fillRect(bx + bw * 0.42, by, bw * 0.16, bh);
+      ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillRect(bx + bw * A.amber[0], by, bw * (A.amber[1] - A.amber[0]), bh);
+      ctx.fillStyle = 'rgba(120,220,140,0.9)'; ctx.fillRect(bx + bw * A.green[0], by, bw * (A.green[1] - A.green[0]), bh);
       ctx.fillStyle = '#f4f4ee'; ctx.fillRect(bx + bw * A.marker - 1.5 * s, by - 4 * s, 3 * s, bh + 8 * s);
       ctx.font = `${10 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(220,236,230,0.7)'; ctx.textBaseline = 'top';
       ctx.fillText('GRIP', W / 2, by + bh + 8 * s);
@@ -194,6 +194,11 @@ export class Hud {
     }
     // the sub on autopilot: where it is and how long it will be
     const ap = g.autopilot;
+    if (ap && e.inSub && g.homeRun) {
+      ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,214,160,0.85)';
+      ctx.fillText(`autopilot home · ${Math.round(ap.remaining || 0)} m · ${Math.ceil(ap.eta || 0)} s · air ×0.8`, rx0, yy);
+      yy += 18 * s;
+    }
     if (ap && !e.inSub && !g.sub.imploded && (ap.active || ap.state === 'waiting')) {
       const dsub = Math.hypot(g.sub.x - e.x, g.sub.y - e.y);
       let txt;

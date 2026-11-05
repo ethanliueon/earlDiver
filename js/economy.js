@@ -36,20 +36,19 @@ export const SUB_TIERS = [
 // add-ons for the submersible (bought once)
 export const SUB_ADDONS = {
   recall: { name: 'Recall unit', price: 100, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
-  arm: { name: 'Manipulator arm', price: 600, desc: 'Hydraulics for the old claw under the sphere. From inside the sub, Space reaches for an animal up to a metre long; time the grip.' },
   quiet: { name: 'Quiet engine', price: 400, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
 };
 // ---------------- catching gear ----------------
 // range: reach beyond his hand (m) · time: sweep / reload (s) · maxLen: biggest animal (m)
 // success: chance on a calm animal · harm: condition it costs the animal · noise: attention below 200 m
 export const NETS = [
-  { name: 'Hand net', price: 0, range: 1.2, time: 1.0, maxLen: 0.45, success: 0.55, harm: 0.15, noise: 0.01,
+  { name: 'Hand net', price: 0, range: 1.2, time: 1.0, maxLen: 0.45, success: 0.65, harm: 0.15, noise: 0.01,
     desc: 'A small green nylon net on a short aluminium handle.' },
-  { name: 'Fine-mesh net', price: 5, range: 1.5, time: 0.8, maxLen: 0.60, success: 0.70, harm: 0.08, noise: 0.01,
+  { name: 'Fine-mesh net', price: 5, range: 1.5, time: 0.8, maxLen: 0.60, success: 0.78, harm: 0.08, noise: 0.01,
     desc: 'Soft knotless mesh that does not split fins. Lighter, quicker.' },
-  { name: 'Long-handle net', price: 40, range: 2.4, time: 1.1, maxLen: 0.85, success: 0.75, harm: 0.10, noise: 0.015,
+  { name: 'Long-handle net', price: 40, range: 2.4, time: 1.1, maxLen: 0.85, success: 0.82, harm: 0.10, noise: 0.015,
     desc: 'A telescopic pole and a deep bag. Reach animals before they bolt.' },
-  { name: 'Pro capture net', price: 300, range: 2.4, time: 0.6, maxLen: 1.10, success: 0.90, harm: 0.04, noise: 0.008,
+  { name: 'Pro capture net', price: 300, range: 2.4, time: 0.6, maxLen: 1.10, success: 0.93, harm: 0.04, noise: 0.008,
     desc: 'D-frame with a padded rim and a clear rubber bag, as public aquaria use.' },
 ];
 export const SLURPS = [
@@ -92,6 +91,17 @@ export const CANISTERS = { name: 'Pressure canisters', price: 250, desc: 'Sealed
 // what things weigh (kg) - a heavy load slows him and costs air
 export const WEIGHT = { iron: 4, rock: 3, clam: 0.8, mussel: 0.3, kelp: 0.5, glass: 1, tentacle: 0.5, ink: 0.2, scale: 0, pearl: 0, sapphire: 0.5, coral: 0.3 };
 
+// The sub's claw, in three steps. reach: how far from the claw (m) · maxLen: biggest animal (m) ·
+// out/back: seconds to reach and to fold back · green/amber: half-widths of the grip zones ·
+// sweep: how fast the gauge marker moves (slower is easier)
+export const ARMS = [
+  { name: 'Claw arm', price: 600, reach: 3, maxLen: 1.0, out: 1.1, back: 1.1, green: 0.06, amber: 0.18, sweep: 1.4,
+    desc: 'Hydraulics for the old claw under the sphere. Slow, short, and the grip needs care.' },
+  { name: 'Hydraulic arm', price: 1500, reach: 4.5, maxLen: 1.4, out: 0.7, back: 0.8, green: 0.09, amber: 0.22, sweep: 1.1,
+    desc: 'New rams and a telescoping forearm: further, quicker, and a surer grip.' },
+  { name: 'Heavy-lift arm', price: 5000, reach: 6, maxLen: 2.0, out: 0.45, back: 0.6, green: 0.12, amber: 0.26, sweep: 0.85,
+    desc: 'A three-jointed work-class arm with padded jaws. Takes animals up to two metres.' },
+];
 export const PATCH_PRICE = 5;      // +40 % hull integrity
 export const HOSPITAL_SHARE = 0.10;  // a death costs this share of cash
 export const replacementPrice = (tier) => Math.max(25, Math.round(SUB_TIERS[tier].price * 0.3 + 20));
@@ -124,7 +134,7 @@ const RECOVER_PER_SEC = 0.004;      // the market forgets: ~4 minutes to recover
 export function newProfile() {
   return {
     v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
-    net: 0, slurp: -1, bag: 0, subTank: 0, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 0, deep: 0 },
+    net: 0, slurp: -1, bag: 0, subTank: 0, armTier: -1, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 0, deep: 0 },
     journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(),
   };
 }

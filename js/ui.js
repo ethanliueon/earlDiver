@@ -8,7 +8,7 @@ import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName } from './specimens.js';
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
-import { loadBest } from './economy.js';
+import { loadBest, ARMS } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
@@ -276,6 +276,11 @@ export class UI {
         const next = SUB_TIERS[sub.level + 1];
         html += `<div class="owned"><span>Hull</span><b>Rated ${sub.rated} m</b><em>implodes past ${Math.round(sub.rated * 1.3)} m · ${sub.o2Max} s cabin air</em>${ladder(SUB_TIERS.length, sub.level)}</div>`;
         html += next ? card(`Refit: rated ${next.rated} m`, 'A thicker pressure sphere, new seals and a bigger air bank. Includes a new hull.', `${sub.rated} m → <b>${next.rated} m</b> · air ${sub.o2Max} s → <b>${next.o2} s</b>`, next.price, 'buy', 'sub', 'Refit') : '<p class="shop-empty">Rated to the bottom of this ocean. Nothing more can be done for her.</p>';
+        // the claw: a ladder of arms
+        const ai = P.armTier ?? -1, an = ARMS[ai + 1];
+        const ast = (d) => `reach ${d.reach} m · up to ${Math.round(d.maxLen * 100)} cm · ${d.out < 0.6 ? 'fast' : d.out < 1 ? 'quick' : 'slow'} · grip window ${Math.round(d.green * 200)} %`;
+        if (ai >= 0) html += `<div class="owned"><span>Arm</span><b>${ARMS[ai].name}</b><em>${ast(ARMS[ai])}</em>${ladder(ARMS.length, ai)}</div>`;
+        if (an) html += card(an.name, an.desc, ast(an), an.price, 'buy', 'arm', ai < 0 ? 'Fit' : 'Upgrade');
         const tk = SUB_TANKS[P.subTank || 0], tn2 = SUB_TANKS[(P.subTank || 0) + 1];
         html += `<div class="owned"><span>Tank</span><b>Specimen tank</b><em>${tk.slots} animals · no stress</em>${ladder(SUB_TANKS.length, P.subTank || 0)}</div>`;
         if (tn2) html += card('Bigger specimen tank', 'A larger aerated tank behind the pilot. Animals keep in it without losing condition.', `${tk.slots} → <b>${tn2.slots}</b> animals`, tn2.price, 'buy', 'subtank', 'Buy');

@@ -53,6 +53,8 @@ export function updateEarl(g, dt, inp) {
   const lowO2 = !e.inSub && e.o2 / e.o2Max < 0.1;
   if (e.inSub) {
     // ---- submersible ----
+    // (on the way home under autopilot the autopilot moves the sub; nothing here steers it)
+    if (!g.homeRun) {
     const sp = SUB_SPEED * (inp.sprint ? 1.5 : 1);
     // diagonal input is normalised, so going right and down at once is no faster than one way
     const im = Math.hypot(inp.x, inp.y), nx = im > 1 ? inp.x / im : inp.x, ny = im > 1 ? inp.y / im : inp.y;
@@ -71,12 +73,13 @@ export function updateEarl(g, dt, inp) {
     const yawT = sub.facing > 0 ? 0 : Math.PI, rate = Math.PI / 1.5;
     sub.yaw += clamp(yawT - sub.yaw, -rate * dt, rate * dt);
     sub.tilt = lerp(sub.tilt, clamp(sub.vy * 0.03, -0.18, 0.18), dt * 2);
+    }
     e.x = sub.x; e.y = sub.y; e.vx = sub.vx; e.vy = sub.vy;
     e.speedNow = Math.hypot(sub.vx, sub.vy);
     // oxygen
     const surf = sub.y < 2.2;
     if (surf) sub.o2 = Math.min(sub.o2Max, sub.o2 + (sub.o2Max / 4) * dt);
-    else sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(sub);
+    else sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(sub) * (g.homeRun ? 0.8 : 1); // a steady autopilot is thriftier
     e.atSurface = surf;
     // hull
     const r = sub.y / sub.rated;
