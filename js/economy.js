@@ -77,13 +77,13 @@ export const CAMERAS = [
 export const TRAP_ORDER = ['pot', 'fish', 'steel', 'cage'];
 export const TRAPS = {
   pot: { name: 'Wire pot', price: 5, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
-    desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float. Down to 40 m. Hauled by hand.' },
+    desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float..' },
   fish: { name: 'Fish trap', price: 30, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
-    desc: 'A larger mesh box with a funnel at each end, on a stout line. Down to 150 m. Hauled by hand.' },
+    desc: 'A larger mesh box with a funnel at each end, on a stout line..' },
   steel: { name: 'Steel pot', price: 140, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
-    desc: 'A heavy steel-framed pot with two chambers, on a thick rope. Down to 500 m. Too heavy to lift by hand: the boat\'s winch hauls it.' },
+    desc: 'A heavy steel-framed pot with two chambers, on a thick rope.. Too heavy to lift by hand.' },
   cage: { name: 'Deep cage', price: 600, max: 2, maxDepth: 1500, count: [6, 12], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
-    desc: 'A tall weighted cage with a lit lure, on a heavy rope. Down to 1,500 m. The light draws deep animals, and other things. Winch-hauled.' },
+    desc: 'A tall weighted cage with a lit lure, on a heavy rope.. The light draws deep animals, and other things.' },
 };
 export const BAGS = [
   { name: 'Mesh goody bag', slots: 3, price: 0, desc: 'Clipped to his belt.' },
@@ -179,7 +179,7 @@ export const UPGRADES = {
   camShots:  { group: 'Camera', needs: 'camera', name: 'Shots a dive', base: 5, step: 1, max: 25, cost: 1, growth: 1.15, fmt: 'n' },
   camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, step: 0.5, max: 10, cost: 1.5, growth: 1.35, fmt: 'm' },
   // the submersible
-  ballast:   { group: 'Submersible', name: 'Ballast', base: 0, step: 0.12, max: 12, cost: 2, growth: 1.3, fmt: 'pay' },
+  ballast:   { group: 'Submersible', name: 'Ballast', base: 0, step: 0.12, max: 12, cost: 2, growth: 1.3, fmt: 'bonus' },
   depth:     { group: 'Submersible', name: 'Depth rating', base: 300, step: 75, max: 50, cost: 0.6, growth: 1.11, fmt: 'depth' },
   subAir:    { group: 'Submersible', name: 'Cabin air', base: 150, step: 15, max: 34, cost: 1, growth: 1.12, fmt: 's' },
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, step: 0.03, max: 15, cost: 2, growth: 1.3, fmt: 'x' },
@@ -332,6 +332,7 @@ export function fmtStat(id, v) {
   if (f === 'win') return `${Math.round(v * 200)} % window`;
   if (f === 'depth') return `${Math.round(v)} m`;
   if (f === 'pay') return `+${Math.round((v - 1) * 100)} %`;
+  if (f === 'bonus') return `+${Math.round(v * 100)} %`;
   return String(v);
 }
 const sumLv = (P, ids) => ids.reduce((a, id) => a + lv(P, id), 0);

@@ -715,25 +715,54 @@ export class Renderer {
         });
         ctx.globalCompositeOperation = 'source-over';
       }
-      // the eyes: eyeshine, brighter when a lamp catches them
-      if (ent.eyeOpen > 0.02 && ent.blink <= 0) {
-        const o = ent.eyeOpen * (lampBoost > 1 ? 1 : 0.65);
+      // the eyes: dark wet globes set in the same gloom as the body. These are drawn after the
+      // lighting, so they are kept as dark as the flesh around them: a dull bronze iris, a slit pupil
+      // that narrows in a lamp's beam, a heavy lid, a pinpoint of wet glint, and only a faint
+      // green-gold eyeshine (the reflecting layer behind the retina) when a light is on it.
+      if (ent.eyeOpen > 0.02) {
+        const vis = clamp(fillA, 0, 1), lit = lampBoost > 1 ? clamp((45 - d) / 35, 0, 1) : 0;
+        const o = vis * (0.6 + 0.4 * lit);
+        const lidOpen = ent.blink > 0 ? 0.08 : ent.eyeOpen;
         const ex = wx(info.eye[0]), ey = Sy(ent.y) + info.eye[1];
-        for (const [ox, oy, sc] of [[0, 0, 1], [-flip * ppm * 0.9, -ppm * 0.25, 0.8]]) {
-          const px = ex + ox, py = ey + oy;
-          ctx.globalCompositeOperation = 'lighter';
-          const gg = ctx.createRadialGradient(px, py, 0, px, py, ppm * 2.4 * sc);
-          gg.addColorStop(0, `rgba(255,60,40,${(0.6 * o).toFixed(3)})`);
-          gg.addColorStop(0.2, `rgba(170,20,15,${(0.25 * o).toFixed(3)})`);
-          gg.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(px, py, ppm * 2.4 * sc, 0, TAU); ctx.fill();
-          const ig = ctx.createRadialGradient(px, py, 0, px, py, ppm * 0.38 * sc);
-          ig.addColorStop(0, `rgba(255,120,80,${(0.98 * o).toFixed(3)})`); ig.addColorStop(0.6, `rgba(225,30,20,${(0.9 * o).toFixed(3)})`); ig.addColorStop(1, 'rgba(120,0,0,0)');
-          ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.38 * sc, ppm * 0.27 * sc, 0, 0, TAU); ctx.fill();
-          ctx.globalCompositeOperation = 'source-over';
-          // a narrow vertical pupil
-          ctx.fillStyle = `rgba(0,0,0,${(0.85 * o).toFixed(3)})`;
-          ctx.beginPath(); ctx.ellipse(px, py, ppm * 0.26 * sc, ppm * 0.045 * sc, 0, 0, TAU); ctx.fill(); // a frog's horizontal slit
+        for (const [ox, oy, sc, far] of [[-flip * ppm * 0.9, -ppm * 0.25, 0.8, 0.45], [0, 0, 1, 1]]) {
+          const px = ex + ox, py = ey + oy, R = ppm * 0.42 * sc, a = o * far;
+          if (a < 0.01) continue;
+          // the socket: a shadowed hollow around the globe
+          const sg = ctx.createRadialGradient(px, py, R * 0.8, px, py, R * 1.7);
+          sg.addColorStop(0, `rgba(0,0,0,${(0.55 * a).toFixed(3)})`); sg.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(px, py, R * 1.7, 0, TAU); ctx.fill();
+          ctx.save();
+          ctx.beginPath(); ctx.ellipse(px, py, R, R * 0.82, 0, 0, TAU); ctx.clip();
+          // the globe and its iris: murky bronze going black at the rim
+          const ig = ctx.createRadialGradient(px - R * 0.15, py - R * 0.2, R * 0.05, px, py, R);
+          ig.addColorStop(0, `rgba(${88 + 40 * lit},${66 + 30 * lit},${40 + 14 * lit},${a.toFixed(3)})`);
+          ig.addColorStop(0.65, `rgba(38,28,18,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(8,6,5,${a.toFixed(3)})`);
+          ctx.fillStyle = ig; ctx.fillRect(px - R, py - R, R * 2, R * 2);
+          // fine radial striations in the iris
+          ctx.strokeStyle = `rgba(0,0,0,${(0.35 * a).toFixed(3)})`; ctx.lineWidth = Math.max(0.5, R * 0.04);
+          ctx.beginPath(); for (let k = 0; k < 14; k++) { const an = k / 14 * TAU; ctx.moveTo(px + Math.cos(an) * R * 0.3, py + Math.sin(an) * R * 0.25); ctx.lineTo(px + Math.cos(an) * R * 0.9, py + Math.sin(an) * R * 0.75); } ctx.stroke();
+          // the pupil: a horizontal slit that opens wide in the dark and pinches in a beam
+          const ph = R * (0.12 + 0.38 * (1 - lit));
+          ctx.fillStyle = `rgba(0,0,0,${(0.95 * a).toFixed(3)})`;
+          ctx.beginPath(); ctx.ellipse(px, py, R * 0.62, ph, 0, 0, TAU); ctx.fill();
+          // eyeshine: faint, and only inside the pupil
+          if (lit > 0.02) {
+            ctx.globalCompositeOperation = 'lighter';
+            const eg = ctx.createRadialGradient(px, py, 0, px, py, R * 0.6);
+            eg.addColorStop(0, `rgba(120,140,70,${(0.32 * lit * a).toFixed(3)})`); eg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = eg; ctx.beginPath(); ctx.ellipse(px, py, R * 0.62, ph, 0, 0, TAU); ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+          }
+          // the upper lid: thick, the colour of the body, closing over it
+          const lidY = py - R * 0.82 + R * 1.64 * (1 - lidOpen) + R * 0.28;
+          ctx.fillStyle = `rgba(14,15,16,${Math.min(1, a * 1.2).toFixed(3)})`;
+          ctx.beginPath(); ctx.moveTo(px - R * 1.1, py - R); ctx.lineTo(px + R * 1.1, py - R); ctx.lineTo(px + R * 1.1, lidY - R * 0.12); ctx.quadraticCurveTo(px, lidY + R * 0.18, px - R * 1.1, lidY - R * 0.12); ctx.closePath(); ctx.fill();
+          ctx.restore();
+          // a pinpoint of wet glint, the brightest thing about it, and still small
+          if (lidOpen > 0.35) {
+            ctx.fillStyle = `rgba(230,235,225,${((0.18 + 0.5 * lit) * a).toFixed(3)})`;
+            ctx.beginPath(); ctx.arc(px - flip * R * 0.32, py - R * 0.18, Math.max(0.6, R * 0.09), 0, TAU); ctx.fill();
+          }
         }
       }
     }

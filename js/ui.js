@@ -19,8 +19,25 @@ import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, up
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
-
 import { VERSION } from './version.js';
+
+
+// the figures for the shop's cards, as dot points
+const ADDON_SPECS = {
+  recall: [['use', 'C calls the sub'], ['sub comes', '1.5× faster', 'good']],
+  quiet: [['sub noise', '−50 %', 'good'], ['the deep', 'hears it less', 'good']],
+};
+const SUPPLY_SPECS = {
+  lure: [['use', 'Q throws it'], ['effect', 'the deep thing follows its light', 'good'], ['lasts', 'a while']],
+  necklace: [['use', 'E wears it'], ['effect', 'keeps it away', 'good'], ['lasts', '15 s']],
+  airTank: [['use', 'R, in the sub'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
+};
+const GEAR_SPECS = {
+  slurp: [['key', '2'], ['catches', 'small fish, even fast ones', 'good']],
+  tagger: [['key', '3'], ['tags', 'sharks, billfish, whales'], ['pays', 'per tag, less each time']],
+  camera: [['key', '4'], ['pays', 'first photo of each species and rare form', 'good']],
+  arm: [['use', 'Space, from inside the sub'], ['catches', 'time the grip']],
+};
 const $ = (id) => document.getElementById(id);
 const COIN = '<i class="coin"></i>';
 const RUNLOG_KEY = 'earlDiver.runs.v1';
@@ -367,10 +384,12 @@ export class UI {
     $('shop-sub').textContent = sub.imploded ? 'No submersible' : `Submersible rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %`;
     const can = (price) => P.cash + 1e-6 >= price;
     // a card: name, what it is, what it changes, and a price button
-    const card = (name, desc, stat, price, act, arg, label, owned = '', img = '') => `
+    // a card: name, a dot-point list of its figures (always in view), and the story behind the i
+    const bullets = (specs) => specs && specs.length ? `<ul class="bullets">${specs.map(([l, v, k]) => `<li${k ? ` class="p-${k}"` : ''}>${l ? `<em>${l}</em>` : ''}<b>${v}</b></li>`).join('')}</ul>` : '';
+    const card = (name, desc, stat, price, act, arg, label, owned = '', img = '', specs = null) => `
       <div class="card${img ? ' with-img' : ''}${this.openRows.has('card:' + arg) ? ' open' : ''}" data-row="card:${arg}">
         ${img ? `<img src="${img}" alt="">` : ''}
-        <div class="card-txt"><h3>${name}<button class="info" data-info="card:${arg}" title="More about it (I)" aria-label="More information">i</button></h3><p class="story">${desc}</p>${stat ? `<div class="card-stat">${stat}</div>` : ''}${owned}</div>
+        <div class="card-txt"><h3>${name}<button class="info" data-info="card:${arg}" title="More about it (I)" aria-label="More information">i</button></h3>${stat ? `<div class="card-stat">${stat}</div>` : ''}${bullets(specs)}<p class="story">${desc}</p>${owned}</div>
         <button data-act="${act}" data-arg="${arg}" ${price !== null && !can(price) ? 'disabled' : ''}>${label}${price !== null ? `<span>${money(price, false)}</span>` : ''}</button>
       </div>`;
     const ladder = (n, i) => `<div class="ladder">${Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -433,12 +452,12 @@ export class UI {
       html += this.upgradeGroups(P, ['Diver', 'Net', 'Slurp gun', 'Tag gun', 'Camera'], icon, can);
     } else if (tab === 'sub') {
       if (sub.imploded) {
-        html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', `rated ${sub.rated} m`, replacementPrice(P), 'buy', 'replace', 'Buy');
+        html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['upgrades', 'all kept', 'good']]);
       } else {
         html += `<p class="shop-note">Rated ${sub.rated} m: deeper, the cabin air leaks away faster and faster · hull ${Math.round(sub.hull * 100)} %</p>`;
-        if (sub.hull < 0.999) html += card('Patch the hull', 'Weld plates over the worst of it. A damaged hull leaks air.', `integrity ${Math.round(sub.hull * 100)} % → <b>${Math.round(Math.min(1, sub.hull + 0.4) * 100)} %</b>`, PATCH_PRICE, 'buy', 'patch', 'Patch');
+        if (sub.hull < 0.999) html += card('Patch the hull', 'Weld plates over the worst of it.', '', PATCH_PRICE, 'buy', 'patch', 'Patch', '', '', [['hull', `${Math.round(sub.hull * 100)} % → ${Math.round(Math.min(1, sub.hull + 0.4) * 100)} %`, 'good'], ['damaged hull', 'leaks cabin air', 'bad']]);
         html += this.upgradeGroups(P, ['Submersible', 'Claw'], icon, can);
-        for (const [k, a] of Object.entries(SUB_ADDONS)) if (!(P.addons || {})[k]) html += card(a.name, a.desc, '', a.price, 'buy', k, 'Fit');
+        for (const [k, a] of Object.entries(SUB_ADDONS)) if (!(P.addons || {})[k]) html += card(a.name, a.desc, '', a.price, 'buy', k, 'Fit', '', '', ADDON_SPECS[k]);
         const fitted = Object.entries(SUB_ADDONS).filter(([k]) => (P.addons || {})[k]).map(([, a]) => a.name.toLowerCase());
         if (fitted.length) html += `<p class="shop-note">Fitted: ${fitted.join(', ')}.</p>`;
       }
@@ -446,11 +465,14 @@ export class UI {
       const tr = P.traps || {};
       TRAP_ORDER.forEach((k, i) => {
         const T = TRAPS[k], have = tr[k] || 0, full = have >= T.max;
-        html += card(T.name, T.desc + ` Draws ${T.count[0]}-${T.count[1]} fish over five minutes, up to ${T.maxLen} m long.`, `you own ${have} / ${T.max}`, full ? null : T.price, 'buy', 'trap:' + k, full ? 'Full' : 'Buy', '', icon('trap', i));
+        html += card(T.name, T.desc, `you own ${have} / ${T.max}`, full ? null : T.price, 'buy', 'trap:' + k, full ? 'Full' : 'Buy', '', icon('trap', i), [
+          ['depth', `down to ${T.maxDepth.toLocaleString()} m`, 'press'], ['catch', `${T.count[0]}–${T.count[1]} fish in 5 min`], ['fish up to', `${T.maxLen} m long`],
+          ['holds', `${T.holds}`], ['line', { string: 'thin string', line: 'stout line', rope: 'thick rope' }[T.line]], ['funnels', `${T.funnels}`],
+          ['hauled', T.winch ? "by the boat's winch" : 'by hand', T.winch ? 'bad' : 'good']].concat(T.lure ? [['lure', 'lit: draws deep animals and it', 'bad']] : []));
       });
       for (const [k, it] of Object.entries(SUPPLIES)) {
         const mx = supplyMax(P, k), have = g.items[k] || 0, full = have >= mx;
-        html += card(it.name, it.desc, `carrying ${have} / ${mx}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy');
+        html += card(it.name, it.desc, `carrying ${have} / ${mx}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy', '', '', SUPPLY_SPECS[k]);
       }
     } else if (tab === 'radio') {
       const lists = [g.bag].concat(!sub.imploded && Math.hypot(sub.x - (BOAT.x + 8.5), sub.y - 2.6) < 20 ? [g.subTank] : []);
@@ -459,7 +481,7 @@ export class UI {
         const r = contractReady(g, c, lists);
         html += `<div class="contract${r ? ' ready' : ''}">${c.id ? this.mini(SPECIES_BY_ID[c.id]) : ''}<div><span>${c.who} wants</span><b>${c.text}</b></div><div class="pay">${money(c.pay)}${r ? '<em>aboard: paid when you sell</em>' : ''}</div></div>`;
       }
-      if (!P.radio) html += card(RADIO.name, RADIO.desc, '5 contracts at a time', RADIO.price, 'buy', 'radio', 'Buy');
+      if (!P.radio) html += card(RADIO.name, RADIO.desc, '', RADIO.price, 'buy', 'radio', 'Buy', '', '', [['contracts', '5 at a time'], ['paid', 'when you sell', 'good']]);
       html += '<p class="shop-note">Contracts are filled when you sell (Sell, then Load the basket). A new dive brings new calls.</p>';
     } else if (tab === 'aquarium') {
       const A = aquariumOf(P), C = completion(P);
@@ -480,7 +502,7 @@ export class UI {
         html += `<div class="wing"><div class="wing-h"><b>${w.name}</b><em>${shown.length}/${w.slots} · upkeep ${money(w.upkeep, false)}/day</em></div><div class="tanks">${cells}</div></div>`;
       }
       if (next) {
-        let c = card(`Build: ${next.name}`, next.desc, `${next.slots} tanks · upkeep ${money(next.upkeep, false)} a day${next.coins ? ` · and ${next.coins} old gold coins` : ''}`, next.price, 'buy', 'wing:' + next.id, 'Build');
+        let c = card(`Build: ${next.name}`, next.desc, '', next.price, 'buy', 'wing:' + next.id, 'Build', '', '', [['tanks', `${next.slots}`, 'good'], ['upkeep', `${money(next.upkeep, false)} a day`, 'bad']].concat(next.coins ? [['also costs', `${next.coins} old gold coins`]] : []));
         if (next.coins && (P.coins || 0) < next.coins) c = c.replace('<button ', '<button disabled ');
         html += c;
       }
@@ -506,7 +528,8 @@ export class UI {
       if (specs.length === 1) specs.push(['', 'nothing else special', 'sheet']);
       const label = k === worn ? 'Worn' : have.has(k) ? 'Wear' : money(S.price);
       const dis = k === worn || (!have.has(k) && !can(S.price));
-      const story = `${S.desc} <span class="note">Below ${S.press} m the water starts to squeeze him: his air goes faster the deeper he is, and so does each held breath.</span>`;
+      specs.push(['below rating', 'air and held breath drain faster', 'sheet']);
+      const story = S.desc;
       html += this.row('suit:' + k, S.name, S.line, have.has(k) ? 'owned' : '', `<button data-act="buy" data-arg="suit:${k}" ${dis ? 'disabled' : ''}>${label}</button>`,
         '', story, specs);
     }
@@ -570,7 +593,7 @@ export class UI {
       html += `<div class="up-group"><h4>${grp}</h4>`;
       if (gk && !owns(P, gk)) {
         const G = GEAR[gk], ic = ICON_OF[grp];
-        html += `<div class="card${ic ? ' with-img' : ''}${this.openRows.has('card:gear:' + gk) ? ' open' : ''}" data-row="card:gear:${gk}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}<button class="info" data-info="card:gear:${gk}" title="More about it (I)" aria-label="More information">i</button></h3>${G.line ? `<div class="card-stat">${G.line}</div>` : ''}<p class="story">${G.desc}</p></div>
+        html += `<div class="card${ic ? ' with-img' : ''}${this.openRows.has('card:gear:' + gk) ? ' open' : ''}" data-row="card:gear:${gk}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}<button class="info" data-info="card:gear:${gk}" title="More about it (I)" aria-label="More information">i</button></h3>${GEAR_SPECS[gk] ? `<ul class="bullets">${GEAR_SPECS[gk].map(([l, v, k]) => `<li${k ? ` class="p-${k}"` : ''}><em>${l}</em><b>${v}</b></li>`).join('')}</ul>` : ''}<p class="story">${G.desc}</p></div>
           <button data-act="buy" data-arg="gear:${gk}" ${can(G.price) ? '' : 'disabled'}>Buy<span>${money(G.price)}</span></button></div></div>`;
         continue;
       }
