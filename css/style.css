@@ -238,3 +238,9 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #shop-details { align-self: center; }
 #show-controls { margin-top: 26px; display: block; }
 #pause .small { color: rgba(220, 230, 228, 0.45); font-style: normal; max-width: 340px; margin: 14px auto 0; line-height: 1.5; }
+.contract { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 12px 14px; margin-bottom: 8px; border: 1px solid rgba(160, 200, 200, 0.12); border-radius: 4px; background: rgba(255, 255, 255, 0.025); }
+.contract span { display: block; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(220, 230, 228, 0.4); }
+.contract b { font: 400 17px var(--serif); color: #f1efe6; }
+.contract .pay { text-align: right; font: 500 16px var(--mono); color: #d8e8c8; white-space: nowrap; }
+.contract .pay em { display: block; font: normal 10px var(--mono); color: #8fd4a0; }
+.contract.ready { border-color: rgba(143, 212, 160, 0.45); }

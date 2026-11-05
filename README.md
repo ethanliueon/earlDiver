@@ -27,7 +27,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | Q | Throw an anglerfish lure |
 | E | Wear a fangtooth necklace |
 | G | Offer a lure or necklace back to the deep (below 100 m) - calms the entity |
-| U | The boat (at the surface): sell your haul, buy gear, run the aquarium |
+| U | The boat (at the surface): sell your haul, buy gear, radio contracts, the aquarium |
 | Mouse | Hold left button to swim toward the cursor; the lamp follows the cursor; right-click to interact; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause |
 | M | Mute |
@@ -46,6 +46,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
   refresh the page: every visit is a new game. Only your deepest depth is remembered.
 - The aquarium (built from the boat, seen on the far shore): keep live animals instead of selling
   them; visitors pay every 10 minutes of play.
+- The radio at the boat has a few contracts each dive that pay well over the market.
 - H turns detailed hints on and off.
 - What you take (salvage, clams, sapphires) does not come back during a dive. A new dive is a new
   sea: die, or end the dive from the pause menu (unsold catch is lost either way).

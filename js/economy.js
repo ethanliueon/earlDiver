@@ -27,11 +27,11 @@ export const FINS = [
 export const SUB_TIERS = [
   { rated: 400, o2: 150, price: 0 },
   { rated: 700, o2: 200, price: 50 },
-  { rated: 1000, o2: 260, price: 200 },
-  { rated: 1500, o2: 330, price: 800 },
-  { rated: 2000, o2: 420, price: 2500 },
-  { rated: 2700, o2: 540, price: 7000 },
-  { rated: 3000, o2: 660, price: 15000 },
+  { rated: 1000, o2: 260, price: 400 },
+  { rated: 1500, o2: 330, price: 1500 },
+  { rated: 2000, o2: 420, price: 3500 },
+  { rated: 2700, o2: 540, price: 6000 },
+  { rated: 3000, o2: 660, price: 10000 },
 ];
 // add-ons for the submersible (bought once)
 export const SUB_ADDONS = {
@@ -113,7 +113,7 @@ export const GOODS = {
   ink: { name: 'Ink sac', price: 5 },
   pearl: { name: 'Pearl', price: 40 },
   glass: { name: 'Glass sponge', price: 20 },
-  sapphire: { name: 'Deep sapphire', price: 1500 },
+  sapphire: { name: 'Deep sapphire', price: 150 },
   lure: { name: 'Anglerfish lure', price: 50 },
   necklace: { name: 'Fangtooth necklace', price: 80 },
 };

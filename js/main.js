@@ -11,6 +11,7 @@ import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
 import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
+import { fillBoard, fulfil, RADIO } from './contracts.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { loadBest } from './economy.js';
@@ -67,8 +68,9 @@ function newGame(mode) {
     autopilot: new Autopilot(), addons: P.addons || {},
     bag: [], subTank: [], captureFx: [], capture: null, toolSel: 'net', capPrompt: null,
     darts: [], tags: [], photos: [], shots: P.camera >= 0 ? CAMERAS[P.camera].shots : 0, camFlash: 0,
-    traps: [], armGame: null,
+    traps: [], armGame: null, contracts: [],
   };
+  if (mode === 'play') fillBoard(P, g.contracts); // the radio's jobs for this dive
   g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
   g.damageSub = (amt, sp) => damageSub(amt, sp);
   g.sub.docked = true;
@@ -147,7 +149,8 @@ function sellSpecimens(list, lines) {
 }
 function sellAll() {
   marketTick(profile);
-  const lines = [];
+  // contracts first: they pay more than the market
+  const lines = fulfil(g, profile, [g.bag].concat(subAtBoat() ? [g.subTank] : []));
   if (g.bag.length) { sellSpecimens(g.bag, lines); g.bag = []; }
   if (g.subTank.length && subAtBoat()) { sellSpecimens(g.subTank, lines); g.subTank = []; }
   // the research program: one line per species tagged, each tag a little less than the last
@@ -247,6 +250,9 @@ function buy(kind) {
     const tk = kind === 'pot' ? 'pot' : 'deep';
     P.traps = Object.assign({ pot: 0, deep: 0 }, P.traps); P.traps[tk]++; ok = true;
     hud.toast(`${TRAPS[tk].name} (${P.traps[tk]})`, 'big'); hud.hint('Press 5, then Space on the bottom to set a trap');
+  } else if (kind === 'radio' && !P.radio && spend(P, RADIO.price)) {
+    P.radio = true; fillBoard(P, g.contracts); ok = true;
+    hud.toast('A better radio: five contracts at a time', 'big');
   } else if (kind.startsWith('wing:')) {
     const w = WING_BY_ID[kind.slice(5)], A = aquariumOf(P);
     const next = WINGS.find((x) => !A.wings.includes(x.id));

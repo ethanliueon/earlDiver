@@ -9,6 +9,7 @@ import { specimenValue, conditionName } from './specimens.js';
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { loadBest } from './economy.js';
+import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 
@@ -293,6 +294,15 @@ export class UI {
         const full = g.items[k] >= it.max;
         html += card(it.name, it.desc, `carrying ${g.items[k]} / ${it.max}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy');
       }
+    } else if (tab === 'radio') {
+      const lists = [g.bag].concat(!sub.imploded && Math.hypot(sub.x - 520.5, sub.y - 2.6) < 20 ? [g.subTank] : []);
+      if (!g.contracts.length) html += '<p class="shop-empty">Static. Nobody is calling.</p>';
+      for (const c of g.contracts) {
+        const r = contractReady(g, c, lists);
+        html += `<div class="contract${r ? ' ready' : ''}"><div><span>${c.who} wants</span><b>${c.text}</b></div><div class="pay">${money(c.pay)}${r ? '<em>aboard: paid when you sell</em>' : ''}</div></div>`;
+      }
+      if (!P.radio) html += card(RADIO.name, RADIO.desc, '5 contracts at a time', RADIO.price, 'buy', 'radio', 'Buy');
+      html += '<p class="shop-note">Contracts are filled when you sell (Sell, then Load the basket). A new dive brings new calls.</p>';
     } else if (tab === 'aquarium') {
       const A = aquariumOf(P), C = completion(P);
       const net = dailyIncome(P) - upkeep(P);

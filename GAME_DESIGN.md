@@ -1,147 +1,127 @@
 # Earl Diver — Game Design
 
-A 2D, side-on ocean **exploration and survival horror** game for the browser (desktop only).
-There is no goal and no win state. Earl dives, explores, catalogues what he finds, and
-tries to stay out of reach of something in the water. When the run ends, it ends.
+A 2D, side-on ocean **diving, collecting and survival horror** game for the desktop browser.
+Earl makes a living from the sea: he catches live animals, tags and photographs the big ones,
+salvages wrecks, sells it all at his boat, and spends the money on gear that takes him deeper.
+The valuable things are deep, and going deep wakes something that lives there.
+There is no end: the long goal is an aquarium on the shore with one of everything in it.
+
+`docs/PLAN.md` is the plan this was built from; `docs/DEV_NOTES.md` covers testing.
 
 ## Tone
 
-- Realistic, intentional, never cartoonish or clip-art. Muted natural colours,
-  real light attenuation (reds vanish first, the water goes blue, then black).
-- Dread instead of gore or jump scares. The threat is communicated by the
-  environment: the sky dimming, waves rising, fish fleeing, the water darkening,
-  the torch shifting from crisp blue-white to a sick orange-red, Earl's heart rate
-  climbing, the camera losing its footing.
+- Realistic, intentional, never cartoonish. Muted natural colours, real light attenuation
+  (reds vanish first, the water goes blue, then black). Gear is drawn as real gear.
+- Dread instead of gore or jump scares: the water darkening, the torch turning orange-red,
+  fish fleeing, Earl's heart rate climbing, the camera losing its footing.
+
+## A game, a dive
+
+- **Nothing is saved between visits.** Every page load is a new game; only the deepest depth
+  ever reached is remembered.
+- A **dive** is one life in one generated ocean. Pickups (salvage, clams, pearls, sapphires,
+  lanterns, lures, necklaces) do not come back during a dive; fish keep coming.
+- **Death** costs everything not yet sold (bag, sub tank, traps, tag data, photos) and a hospital
+  bill of 10 % of cash; if the entity took him, his lures and necklaces too. Within the same game,
+  cash, gear, the journal and the aquarium carry on to the next dive, in a new ocean.
+- The pause menu ends a dive (unsold catch lost, no bill) or starts a new game.
 
 ## Earl
 
-- A faceless modern diver: black wetsuit and hood, full-face mask with a dark
-  reflective visor, single tank, long fins. About 1.5 m from head to fin-tips.
-- Swim speed 4 m/s. Shift = 1.5x speed for 2x oxygen use.
-- Headlamp switches on automatically below 200 m (L toggles it; light attracts the entity).
-- Cannot leave the water onto the beach.
+- A faceless modern diver, about 1.5 m from head to fin-tips. Swims at 4 m/s; Shift is 1.5x for
+  twice the air. Headlamp on below 200 m or in the dark (L).
+- Air is the main limit: 50 s at first, bigger tanks at the boat (up to a 300 s rebreather that
+  makes no bubbles). Below 300 m the drain grows exponentially (x30 at 1,000 m). Out of air is a
+  few seconds of air hunger, shorter under pressure, then death.
+- Salvage has weight: past 10 kg he slows down and breathes harder.
+- No health bar: hidden injury points (bites, rams, charges), shown through the screen and sound.
 
 ## The ocean
 
-- 1000 m wide, 3000 m deep. Beach on the far right; the seafloor slopes down to the left.
-- Generated each run (terrain detail, kelp, rocks, creatures, lanterns, pickups),
-  around a fixed overall profile: beach -> seagrass -> reef -> kelp forest -> shelf
-  with a shipwreck -> a sheer cliff with overhangs -> continental slope with a deep
-  wreck -> abyssal plain with hydrothermal vents.
-- Light: bright near the surface, deep blue by 200 m, pitch black below ~1000 m.
-- Day/night cycle: 5 min day, 1 min sunset, 3 min night, 1 min sunrise.
-- 183 real species (see `data/species_data.js`), each placed only in its real depth range.
+- 1,000 m wide, 3,000 m deep, generated each dive around a fixed profile: beach, seagrass and reef,
+  kelp forest, a shelf wreck, a cliff with overhangs, a slope with a deep wreck, an abyssal plain
+  with vents. A 10-minute day/night cycle.
+- 183 real species, each only in its real depth range and habitat. Fish are drawn at 1.6x life
+  size so their sizes read. Bait schools move as one body.
 
-## Spawn
+## Earning money
 
-- Earl spawns at (x 500, depth 5) beside the boat. The entity starts at (0, 0).
+All of it is paid at the boat (U at the surface by the *Margaret*), on a typed receipt.
 
-## Oxygen
+- **Live animals** for the aquarium buyer. Prices start at cents (a sardine) and a couple of
+  dollars (a clownfish) and climb with rarity and depth (deep animals pay hundreds).
+  Condition matters: handling, time in the bag and coming up too fast (barotrauma) all cost.
+- **Tags** for the research program on animals too big to bring up (a swordfish pays $100).
+- **Photographs** for the institute: the first picture of each species and each rare form.
+- **Salvage and valuables**: clams, mussels, scrap iron, ink, glass sponge, pearls, deep sapphires.
+- **Radio contracts**: three (five with a better radio) jobs per dive that pay well over market.
+- Each kind of thing floods its market as it is sold; prices recover over a few minutes.
 
-- Shown as cylinder pressure in bar, the way divers read it: 200 bar full, 50 bar reserve,
-  with a colour bar and an estimate of time left.
-- Diver: 50 s of air, +15 s per deep sapphire (a larger tank). The 8 sapphires sit in fixed hiding places that form a ladder, each just
-  beyond what the earlier ones let a diver reach: beach shallows (~4 m), seagrass (~14 m), kelp
-  holdfasts (~29 m), a crevice at the kelp edge (~40 m), under a ledge on the shelf (~75 m), under
-  the wreck's stern (~130 m), under the cliff-edge overhang (~200 m) and under a ledge on the cliff
-  wall (~240 m). None deeper: a sapphire you can only reach once you no longer need air is useless.
-- Below 300 m the drain grows exponentially: x30 at 1000 m.
-- Below 10 % oxygen Earl panics: speed x1.5.
-- Out of air is not instant death: about 15 s of air hunger follow (the view swims, doubles, greys
-  and blacks out, controls drift, he slows). Reaching the surface - or the sub's air - in time
-  brings him back, gasping. The same applies to a submersible whose cabin runs dry.
-  Under pressure the window shrinks: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m.
-- Shown as a green -> yellow -> red bar under the survival timer (top right).
-- Surfacing refills oxygen quickly (a few seconds, with bubbles).
+## Catching
 
-## Submersible
+- 1 **net** (four, from a hand net for fish up to 45 cm to a 1.1 m pro capture net) and
+  2 **slurp gun**: stats are reach, speed, the biggest animal, catch chance and harm. A slow approach
+  lets him sweep from just outside a fish's comfort zone.
+- 3 **tag gun** (pole tagger, pneumatic, satellite x2 pay) and 4 **camera** (compact, housed with
+  strobes, low-light without flash): aim with the mouse. A missed dart can provoke a shark; a flash
+  in the deep is seen.
+- 5 **traps**: set on the bottom, a line to a buoy; they fill with crustaceans, octopus, eels and
+  bottom fish. Haul from the buoy or empty underwater. The deep trap's lit bait draws the entity.
+- **Sub arm**: from inside the sub, reach for an animal up to a metre long and time the grip.
+- Catches go in a belt bag (3/5/8) and move into the sub's tank when he boards (4/8/12).
 
-- An old riveted bathyscaphe docked at the boat. F to enter/exit.
-- Speed 1.2x Earl's. Its ballast lets it descend/ascend faster than it moves sideways.
-- Oxygen 3:00 at first. Drain rises with depth relative to its rated depth.
-- Rated depth 800 m. Past 1.3x rated depth, critical failure: it implodes and Earl is stranded.
-- Leaving the sub at depth exposes Earl to pressure (the diver's oxygen rules apply).
-- 3 upgrades at the boat: 800 -> 1300 -> 1950 -> 2700 m (each also adds oxygen).
+## Rare forms
 
-- Hull integrity: rams and bites from large mammals damage the hull (sperm whale -40 %, orca -20 %).
-  A damaged hull leaks: air drains 1 / integrity times faster. Integrity does not recover by
-  surfacing. Patch it at the boat (2 iron + 2 rock, +40 %) or refit (back to 100 %).
+Once a species has been caught or tagged, 1 in 20 of its kind are rare: giant (x2), albino (x2.5),
+golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows red, only below
+200 m and likelier near the entity). Only bigger, solitary fish have rare forms.
 
-## Wildlife
+## The submersible
 
-- Every animal roams its real depth range; night migrators (lanternfish, hatchetfish, squid, krill,
-  viperfish, dragonfish...) rise toward the surface after dark.
-- Bait schools (herring, sardine, anchovy, mackerel, pollock, krill, lanternfish) move as one body,
-  part around Earl and ball up under attack. Predators hunt and eat small fish.
-- Most fish flee from a fast or careless diver at 0.7-1.3x Earl's speed; a slow approach lets him
-  get close enough to observe. Slow or curious animals never flee.
-- Marine mammals added for the game: sperm whale, bottlenose and common dolphins, orca.
+- An old riveted bathyscaphe at the boat (F to board, hold F to leave). Rated 400 m at first,
+  refits to 3,000 m. Past 1.3x its rating it implodes; a replacement can be bought.
+- C calls it: it drives itself to Earl, routing around rock, and stops beside him; never below its
+  rating. Hold C to send it home. Its engine is heard in the deep.
+- Hull damage from whales and orcas leaks air; patch it at the boat.
+- Add-ons: recall unit, quiet engine, manipulator arm, bigger specimen tanks.
 
-## Attacks and injury
+## The aquarium
 
-- No health bar. Hidden injury points: swordfish/marlin/sailfish 1, great white/tiger/mako 3,
-  sperm whale 5; blue and reef sharks, morays, nesting titan triggerfish and Humboldt squid 1 when
-  provoked. One point heals every 15 s; 5 at once is fatal.
-- Attacks are telegraphed: sharks circle, bump, then bite; billfish line up, hold still, then charge
-  in a straight line; sperm whales click in the dark before lunging (below 250 m); orcas ram the sub
-  only. More common in open water, at night, and when Earl is bleeding.
-- Defences: hiding, a sea lantern or the necklace, a dolphin pod nearby (sharks leave), and flashing
-  the lamp (L) at a charging animal at the last moment.
-- Injury levels: 1 grazed, 2 wounded (blood trail draws sharks), 3 badly hurt (pulsing red edges,
-  muffled hearing, more air), 4 critical (vision narrows and greys, ringing, controls drift),
-  5 death: its own ending, red closing in and the heartbeat stopping, no countdown.
-- The submersible protects Earl from everything except the entity and the large mammals' rams.
-
-## Resources
-
-Clams, mussels, rocks, kelp, iron (wreck debris), fish scales, squid tentacles, ink,
-pearls (rare, in clams), glass sponge shards (deep). They are spent on sub upgrades.
+- Built from the boat, seen on the far shore. Six wings in order: reef hall, kelp tower,
+  open ocean dome, twilight gallery, deep-sea gallery, and an abyss tank only for animals caught
+  below 2,500 m.
+- Live animals can be kept for display instead of sold; each species and each rare form is a slot.
+  Visitors pay every 10 minutes of play by the value of the collection; wings in use cost a
+  little to run.
 
 ## The entity
 
-- Home range: 1500-3000 m by day, 500-2000 m at night. At the start of a run it is not hunting.
-- A hidden attention meter fills when Earl disturbs the deep: being below 200 m (more the
-  deeper), noise (sprinting, the sub's engine) and light below 300 m, taking things from its domain
-  (deep sapphires, necklaces, lures), and being noticed by it. Below 500 m without the sub marks
-  him at once. Quiet, shallow water drains the meter.
-- When it fills, Earl is MARKED: a deep sound, a dark pulse, a journal line, MARKED on the monitor.
-  It rises from the deep and hunts him by sound and light; hiding makes it lose him; it searches
-  and every so often gets a vague fix on him.
-- Depth limits: while actively chasing it can push up toward ~120 m, slowing as it rises (no hard
-  line); otherwise it keeps below ~200 m. Above ~120 m Earl cannot be taken.
-- Good deeds calm it. Marked, about a minute's worth lifts the mark ("The water feels lighter"):
-  freeing an animal caught in a lost net (hold F 12 s, +25), planting a coral fragment on bare
-  shallow seabed (hold F 8 s, +15), offering a lure or necklace back to the deep below 100 m
-  (G, +30); 60 lifts it. Unmarked, deeds lower its attention. Staying above 120 m for ~3 minutes
-  also lets a mark fade.
-- It is never fully seen: eyes, a faint outline, a body that shows only where a lamp falls.
-- Within 200 m it shows on sonar; the dread effects (darkness, ink, torch shift, disorientation)
-  belong to the deep and fade out above ~100 m.
+- Lives at 1,500-3,000 m by day, 500-2,000 m at night. A hidden attention meter fills when Earl
+  disturbs the deep: depth, noise (sprinting, engines, the empty sub on autopilot), light, flashes,
+  taking things from its domain, crimson animals, deep traps. Below 500 m without the sub marks him
+  at once.
+- Marked, it hunts by sound and light; hiding in kelp or under overhangs loses it. It cannot reach
+  him above ~120 m. Good deeds calm it: freeing animals from nets, planting coral, offering a lure
+  or necklace back to the deep (G). Sea lanterns and the necklace keep it away; a lure distracts it.
+- It is never fully seen, except once: the first time Earl reaches the bottom of the ocean.
 
-## Items
+## Other animals
 
-- Sea lanterns: odd bioluminescent blobs (~1 m), procedurally placed, more common deeper.
-  Within 3 m of one, the entity will not approach. They dim with use and slowly recover.
-- Fangtooth necklace (E): the same protection as a lantern, carried with Earl, for a short time.
-- Anglerfish lure (Q): thrown; the entity goes after its light for a while.
-- Up to 3 of each.
-
-## Ending a run
-
-Run out of oxygen, the submersible implodes, or the entity reaches Earl:
-the survival timer turns red, the screen fades to black, the last 3 seconds count
-down in red, the music fades, and the game returns to the home screen.
-Nothing carries over except a run log (time survived, cause, deepest depth, species found, ...).
+Sharks circle and bite, billfish line up and charge, sperm whales click then lunge in the deep,
+orcas ram the sub. All are telegraphed; dolphins nearby make sharks leave; flashing the lamp at a
+charging animal makes it swerve.
 
 ## Controls
 
 | Key | Action |
 | --- | --- |
-| WASD / arrows | Swim / steer |
-| Shift | Faster (2x oxygen) |
-| F | Interact: note a creature, collect, enter/exit sub, boat workshop |
+| WASD / arrows, mouse | Swim / steer; the lamp follows the cursor |
+| Shift | Faster (2x air) |
+| F / hold F | Interact (observe, collect, board, haul a trap) / leave the sub |
+| 1-5, Space | Net, slurp gun, tag gun, camera, traps; Space uses it (in the sub: the arm) |
+| C / hold C | Call the sub / send it home |
+| U | The boat: sell, buy, radio, aquarium |
 | J | Journal |
-| L | Headlamp on/off |
-| Q | Throw anglerfish lure |
-| E | Activate fangtooth necklace |
-| Esc | Pause |
+| L, Q, E, G | Lights, throw a lure, wear a necklace, offer something to the deep |
+| H | Hints on / off |
+| Esc, M | Pause, mute |
