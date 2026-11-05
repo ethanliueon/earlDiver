@@ -1,5 +1,6 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
+import { markOf, SUB_MARKS } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
@@ -373,7 +374,10 @@ function buy(kind) {
     const cc = U ? upgradeCoins(P, id) : 0;
     if (U && (!U.needs || owns(P, U.needs)) && lv(P, id) < U.max && (P.coins || 0) >= cc && spend(P, upgradeCost(P, id))) {
       P.coins = (P.coins || 0) - cc;
+      const mk0 = markOf(statValue(P, 'depth'));
       P.lv = Object.assign({}, P.lv, { [id]: lv(P, id) + 1 }); ok = true;
+      const mk1 = markOf(statValue(P, 'depth'));
+      if (mk1 > mk0) hud.toast(`The yard rebuilds her: ${SUB_MARKS[mk1].label}, the ${SUB_MARKS[mk1].name}`, 'big');
       if (id === 'air') { e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + U.step); }
       if (id === 'swim') e.finSpeed = statValue(P, 'swim');
       if (id === 'sprint') e.sprintMul = statValue(P, 'sprint');

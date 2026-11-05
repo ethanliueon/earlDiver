@@ -20,6 +20,7 @@ import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 import { VERSION } from './version.js';
+import { markOf, SUB_MARKS } from './earl_draw.js';
 
 
 // the figures for the shop's cards, as dot points
@@ -383,7 +384,7 @@ export class UI {
     marketTick(P);
     this.renderCounter($('shop-cash'), money(P.cash));
     $('shop-coins').innerHTML = P.coins ? `${COIN}${P.coins}` : '';
-    $('shop-sub').textContent = sub.imploded ? 'No submersible' : `Submersible rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %`;
+    $('shop-sub').textContent = sub.imploded ? 'No submersible' : `${SUB_MARKS[markOf(statValue(P, 'depth'))].label} ${SUB_MARKS[markOf(statValue(P, 'depth'))].name} · rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %`;
     const can = (price) => P.cash + 1e-6 >= price;
     // a card: name, what it is, what it changes, and a price button
     // a card: name, a dot-point list of its figures (always in view), and the story behind the i

@@ -1,5 +1,5 @@
 // Earl, the submersible and the boat. All drawn in local pixel space.
-import { TAU, clamp, lerp } from './util.js';
+import { TAU, clamp, lerp, shade } from './util.js';
 import { drawNet, drawSlurp, drawBeltBag, drawTagger, drawCamera } from './tools_draw.js';
 import { drawSpecies } from './creatures_draw.js';
 
@@ -306,127 +306,331 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   return { headX: lx, headY: ly, beamA, tip };
 }
 
-// Old riveted bathyscaphe. Local origin centre; length ~9 m => Lp pixels. Faces +x.
-// arm (optional): { ext 0..1, lx, ly: the target in this local frame (px), closed, sp, len }
-export function drawSub(ctx, Lp, t, stress, lights, arm) {
-  // An old riveted bathyscaphe: a long float hull (bow to the right) with a rounded bow and a
-  // tapering stern, cruciform tail fins and a ducted propeller; a conning tower with a hatch wheel;
-  // the steel crew sphere slung underneath with its viewports, lamps and a jointed manipulator arm.
+// The submersible. Local origin centre; length ~9 m => Lp pixels. Faces +x.
+// look: what the yard has done to her (see subLook): the hull mark from her depth rating, and the
+// fittings each upgrade bolts on. arm (optional): { ext 0..1, lx, ly: the target in this local
+// frame (px), closed, sp, len }
+//
+// Five hulls, as her rating goes deeper:
+//   Mk I   (to 675 m)    the old riveted Soviet bathyscaphe Б-7: green steel, rust, a conning tower
+//   Mk II  (to 1,200 m)  the yard's refit: welded plates, grey paint, bigger ports, a shrouded prop
+//   Mk III (to 1,950 m)  a research sub: white hull under an orange float of syntactic foam, a
+//                        forged-steel sphere, a low sail, skids
+//   Mk IV  (to 2,925 m)  titanium: a pale titanium sphere, yellow foam, side thrusters, LED lamp bars
+//   Mk V   (beyond)      full ocean depth: charcoal and white, the sphere faired into the hull, a
+//                        teal stripe, vectored thrusters
+export const SUB_MARKS = [
+  { name: 'Б-7', label: 'Mk I', upTo: 675, number: 'Б-7', top: null, body: ['#79826f', '#5f6858', '#4f574c', '#22261f'], fin: '#30352c', sphere: ['#8a9280', '#4e5548', '#1a1d17'], rivets: 1, rust: 1, rail: true, tower: 'old', ports: [3.1, 2.1] },
+  { name: 'Б-7М', label: 'Mk II', upTo: 1200, number: 'Б-7М', top: null, body: ['#7e8a94', '#5c6872', '#47525c', '#1c2227'], fin: '#2c333a', sphere: ['#8e979e', '#4c555c', '#181c20'], rivets: 0.5, rust: 0.35, rail: true, tower: 'old', ports: [3.4, 2.3] },
+  { name: 'Margaret Deep', label: 'Mk III', upTo: 1950, number: 'DSV-3', top: ['#e8823a', '#c8642a'], band: -16, body: ['#f0eee6', '#d9d6cc', '#bdb9ae', '#4a4842'], fin: '#c8642a', sphere: ['#9a9e9e', '#5e6264', '#202426'], rivets: 0, rust: 0.12, rail: false, tower: 'sail', ports: [2.7, 1.9], skids: true },
+  { name: 'Margaret Ti', label: 'Mk IV', upTo: 2925, number: 'DSV-4', top: ['#f2c43a', '#d8a020'], band: -16, body: ['#f4f4f0', '#dfe0dc', '#c4c6c2', '#4a4c4a'], fin: '#d8a020', sphere: ['#e0e4e6', '#a8aeb2', '#4a5054'], rivets: 0, rust: 0, rail: false, tower: 'sail', ports: [2.3, 1.7], skids: true, thrusters: true, ledBars: true },
+  { name: 'Earl', label: 'Mk V', upTo: Infinity, number: 'EARL', top: ['#f6f7f5', '#dfe2e0'], body: ['#4a5258', '#363c42', '#2a2f34', '#111416'], fin: '#2a2f34', sphere: ['#e0e4e6', '#a8aeb2', '#4a5054'], rivets: 0, rust: 0, rail: false, tower: 'hatch', ports: [2.0, 1.5], skids: true, thrusters: true, ledBars: true, faired: true, stripe: '#2fb5a8' },
+];
+export const markOf = (rated) => SUB_MARKS.findIndex((m) => rated < m.upTo);
+
+export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
   const u = Lp / 100;
-  const steel = '#4f574c', steelHi = '#79826f', steelLo = '#22261f';
-  // ---------- stern: fins and ducted propeller (behind the hull) ----------
-  const fin = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(pts[0][0] * u, pts[0][1] * u); for (const [x, y] of pts.slice(1)) ctx.lineTo(x * u, y * u); ctx.closePath(); ctx.fill(); };
-  fin([[-40, -12], [-52, -22], [-57, -21], [-54, -11]], '#30352c'); // upper vertical fin
-  fin([[-40, -4], [-52, 5], [-57, 4], [-54, -5]], '#2a2e26');      // lower vertical fin
-  // propeller blades spinning inside the duct
-  const spin = t * 14;
-  ctx.fillStyle = '#5a5e52';
-  for (let k = 0; k < 3; k++) { const a = spin + k * 2.09; const h = Math.sin(a) * 6.5; ctx.fillRect(-60 * u, (-8.5 + Math.min(0, h)) * u, 1.6 * u, Math.abs(h) * u + 0.5); }
+  const mk = clamp(look.mark | 0, 0, SUB_MARKS.length - 1), M = SUB_MARKS[mk];
+  const sleek = mk >= 2;
+  const [cHi, cMid, cBody, cLo] = M.body;
+  const P = (x, y) => [x * u, y * u];
+  const poly = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(pts[0][0] * u, pts[0][1] * u); for (const [x, y] of pts.slice(1)) ctx.lineTo(x * u, y * u); ctx.closePath(); ctx.fill(); };
+  const eng = look.engine || 0;
+  // ---------- stern: fins and the propeller in its duct ----------
+  if (mk === 4) { // swept X-tail
+    poly([[-42, -12], [-55, -24], [-59, -23], [-55, -11]], M.fin);
+    poly([[-42, -4], [-55, 8], [-59, 7], [-55, -5]], M.fin);
+  } else {
+    poly([[-40, -12], [-52, -22], [-57, -21], [-54, -11]], M.fin);
+    poly([[-40, -4], [-52, 5], [-57, 4], [-54, -5]], shade(M.fin, -0.12));
+  }
+  // the propeller: more blades and a bigger disc with each engine refit, spinning faster
+  const nBlade = eng >= 10 ? 5 : eng >= 5 ? 4 : 3, pr = 6.5 * (1 + eng * 0.015);
+  const spin = t * 14 * (1 + eng * 0.04);
+  ctx.fillStyle = sleek ? '#3a3e40' : '#5a5e52';
+  for (let k = 0; k < nBlade; k++) { const a = spin + k * TAU / nBlade; const h = Math.sin(a) * pr; ctx.fillRect(-60 * u, (-8.5 + Math.min(0, h)) * u, 1.6 * u, Math.abs(h) * u + 0.5); }
   ctx.fillStyle = '#3c4036'; ctx.beginPath(); ctx.ellipse(-61.5 * u, -8.5 * u, 1.6 * u, 1.6 * u, 0, 0, TAU); ctx.fill(); // hub
-  // the duct (ring seen side-on)
-  const dg = ctx.createLinearGradient(0, -16 * u, 0, -1 * u);
-  dg.addColorStop(0, '#6a7262'); dg.addColorStop(0.5, '#3e443a'); dg.addColorStop(1, '#1e211b');
-  ctx.fillStyle = dg;
-  ctx.beginPath(); ctx.roundRect(-64 * u, -16.5 * u, 8 * u, 2.4 * u, 1 * u); ctx.fill();
-  ctx.beginPath(); ctx.roundRect(-64 * u, -2.6 * u, 8 * u, 2.4 * u, 1 * u); ctx.fill();
-  ctx.fillStyle = 'rgba(20,22,18,0.55)'; ctx.fillRect(-63.5 * u, -14.2 * u, 7 * u, 11.6 * u);
+  if (look.quiet) {
+    // the quiet engine: a thick rubber-lined shroud, ribbed, the prop deep inside it
+    ctx.fillStyle = '#16181a';
+    ctx.beginPath(); ctx.roundRect(-66 * u, -18.5 * u, 12 * u, 4 * u, 2 * u); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(-66 * u, -2.5 * u, 12 * u, 4 * u, 2 * u); ctx.fill();
+    ctx.strokeStyle = 'rgba(70,74,76,0.6)'; ctx.lineWidth = Math.max(0.5, 0.25 * u);
+    for (let x = -65; x <= -55; x += 2.5) { ctx.beginPath(); ctx.moveTo(x * u, -18.3 * u); ctx.lineTo(x * u, -14.7 * u); ctx.moveTo(x * u, -2.3 * u); ctx.lineTo(x * u, 1.3 * u); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(12,13,14,0.6)'; ctx.fillRect(-65.5 * u, -14.5 * u, 11 * u, 12 * u);
+  } else {
+    const dg = ctx.createLinearGradient(0, -16 * u, 0, -1 * u);
+    dg.addColorStop(0, sleek ? shade(M.fin, 0.15) : '#6a7262'); dg.addColorStop(0.5, sleek ? M.fin : '#3e443a'); dg.addColorStop(1, '#1e211b');
+    ctx.fillStyle = dg;
+    const dl = mk >= 1 ? 10 : 8; // the refit lengthened the duct into a proper nozzle
+    ctx.beginPath(); ctx.roundRect(-(56 + dl) * u, -16.5 * u, dl * u, 2.4 * u, 1 * u); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(-(56 + dl) * u, -2.6 * u, dl * u, 2.4 * u, 1 * u); ctx.fill();
+    ctx.fillStyle = 'rgba(20,22,18,0.55)'; ctx.fillRect(-(55.5 + dl) * u, -14.2 * u, (dl - 1) * u, 11.6 * u);
+  }
   // ---------- the float hull ----------
   const hull = new Path2D();
-  hull.moveTo(-50 * u, -12 * u);
-  hull.bezierCurveTo(-40 * u, -20 * u, -20 * u, -22 * u, 10 * u, -22 * u);     // back
-  hull.bezierCurveTo(36 * u, -22 * u, 50 * u, -18 * u, 52 * u, -10 * u);       // rounded bow
-  hull.bezierCurveTo(53 * u, -3 * u, 46 * u, 2 * u, 36 * u, 2.5 * u);
-  hull.lineTo(-20 * u, 2.5 * u);
-  hull.bezierCurveTo(-36 * u, 2.5 * u, -46 * u, -2 * u, -50 * u, -6 * u);      // stern taper
+  if (!sleek) {
+    hull.moveTo(-50 * u, -12 * u);
+    hull.bezierCurveTo(-40 * u, -20 * u, -20 * u, -22 * u, 10 * u, -22 * u);
+    hull.bezierCurveTo(36 * u, -22 * u, 50 * u, -18 * u, 52 * u, -10 * u);
+    hull.bezierCurveTo(53 * u, -3 * u, 46 * u, 2 * u, 36 * u, 2.5 * u);
+    hull.lineTo(-20 * u, 2.5 * u);
+    hull.bezierCurveTo(-36 * u, 2.5 * u, -46 * u, -2 * u, -50 * u, -6 * u);
+  } else {
+    // a smoother, fuller fairing with a blunt rounded bow
+    hull.moveTo(-53 * u, -10 * u);
+    hull.bezierCurveTo(-44 * u, -21 * u, -20 * u, -23.5 * u, 8 * u, -23.5 * u);
+    hull.bezierCurveTo(38 * u, -23.5 * u, 54 * u, -18 * u, 54.5 * u, -9 * u);
+    hull.bezierCurveTo(55 * u, -1.5 * u, 47 * u, 3 * u, 36 * u, 3 * u);
+    hull.lineTo(-22 * u, 3 * u);
+    hull.bezierCurveTo(-38 * u, 3 * u, -49 * u, -1.5 * u, -53 * u, -6 * u);
+  }
   hull.closePath();
-  const hg = ctx.createLinearGradient(0, -22 * u, 0, 3 * u);
-  hg.addColorStop(0, steelHi); hg.addColorStop(0.18, '#5f6858'); hg.addColorStop(0.55, steel); hg.addColorStop(1, steelLo);
+  const hg = ctx.createLinearGradient(0, -23 * u, 0, 3 * u);
+  hg.addColorStop(0, cHi); hg.addColorStop(0.18, cMid); hg.addColorStop(0.55, cBody); hg.addColorStop(1, cLo);
   ctx.fillStyle = hg; ctx.fill(hull);
   ctx.save(); ctx.clip(hull);
-  // plate seams and rivet rows
-  ctx.strokeStyle = 'rgba(15,17,13,0.45)'; ctx.lineWidth = Math.max(0.6, 0.35 * u);
-  for (const x of [-34, -18, -2, 14, 30]) { ctx.beginPath(); ctx.moveTo(x * u, -23 * u); ctx.quadraticCurveTo((x + 1) * u, -10 * u, x * u, 3 * u); ctx.stroke(); }
-  ctx.beginPath(); ctx.moveTo(-52 * u, -9 * u); ctx.bezierCurveTo(-20 * u, -11 * u, 30 * u, -11 * u, 54 * u, -8 * u); ctx.stroke();
-  ctx.fillStyle = 'rgba(12,14,10,0.7)';
-  for (const x of [-34, -18, -2, 14, 30]) for (let j = 0; j < 9; j++) { ctx.beginPath(); ctx.arc((x + 1.2) * u, (-19.5 + j * 2.4) * u, 0.32 * u, 0, TAU); ctx.fill(); }
-  // rust streaks from the rivets, a band of grime along the waterline of the float
-  for (let k = 0; k < 18; k++) {
+  if (M.top) {
+    // the float: a thick band of syntactic foam along the top, its own colour, shaded round
+    const fg = ctx.createLinearGradient(0, -24 * u, 0, -12 * u);
+    fg.addColorStop(0, shade(M.top[0], 0.12)); fg.addColorStop(0.5, M.top[0]); fg.addColorStop(1, M.top[1]);
+    ctx.fillStyle = fg;
+    const bb = M.band || -12; // where the foam meets the hull below
+    ctx.beginPath(); ctx.moveTo(-60 * u, -24 * u); ctx.lineTo(60 * u, -24 * u); ctx.lineTo(60 * u, (bb - 0.5) * u);
+    ctx.bezierCurveTo(30 * u, (bb - 1.5) * u, -20 * u, (bb - 1) * u, -60 * u, (bb + 1) * u); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = Math.max(0.5, 0.3 * u);
+    ctx.beginPath(); ctx.moveTo(-60 * u, (bb + 1) * u); ctx.bezierCurveTo(-20 * u, (bb - 1) * u, 30 * u, (bb - 1.5) * u, 60 * u, (bb - 0.5) * u); ctx.stroke();
+    // the shading of a round body over the flat colours
+    const vg = ctx.createLinearGradient(0, -24 * u, 0, 3 * u);
+    vg.addColorStop(0, 'rgba(255,255,255,0.12)'); vg.addColorStop(0.35, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ctx.fillStyle = vg; ctx.fillRect(-60 * u, -24 * u, 120 * u, 28 * u);
+  }
+  if (M.stripe) { ctx.fillStyle = M.stripe; ctx.fillRect(-60 * u, -9.5 * u, 120 * u, 1.3 * u); }
+  // plating: riveted seams (Mk I), welded seams with some rivets left (Mk II), panel lines after
+  ctx.strokeStyle = sleek ? 'rgba(20,22,22,0.22)' : 'rgba(15,17,13,0.45)'; ctx.lineWidth = Math.max(0.6, (sleek ? 0.22 : 0.35) * u);
+  const seams = sleek ? [-30, -6, 22] : [-34, -18, -2, 14, 30];
+  for (const x of seams) { ctx.beginPath(); ctx.moveTo(x * u, -24 * u); ctx.quadraticCurveTo((x + 1) * u, -10 * u, x * u, 3 * u); ctx.stroke(); }
+  if (!sleek) { ctx.beginPath(); ctx.moveTo(-52 * u, -9 * u); ctx.bezierCurveTo(-20 * u, -11 * u, 30 * u, -11 * u, 54 * u, -8 * u); ctx.stroke(); }
+  if (M.rivets) {
+    ctx.fillStyle = 'rgba(12,14,10,0.7)';
+    for (const [i, x] of seams.entries()) { if (M.rivets < 1 && i % 2) continue; for (let j = 0; j < 9; j++) { ctx.beginPath(); ctx.arc((x + 1.2) * u, (-19.5 + j * 2.4) * u, 0.32 * u, 0, TAU); ctx.fill(); } }
+  }
+  if (mk === 1) {
+    // the refit's new plates, a shade fresher than the old steel around them, with weld beads
+    ctx.fillStyle = 'rgba(140,155,165,0.16)';
+    for (const [x, y, w, h] of [[-12, -21, 12, 9], [18, -18, 10, 8], [-40, -12, 9, 7]]) { ctx.fillRect(x * u, y * u, w * u, h * u); ctx.strokeStyle = 'rgba(30,34,38,0.5)'; ctx.lineWidth = Math.max(0.5, 0.25 * u); ctx.strokeRect(x * u, y * u, w * u, h * u); }
+  }
+  if (sleek) {
+    // access hatches and lifting points in the fairing
+    ctx.strokeStyle = 'rgba(30,32,32,0.3)'; ctx.lineWidth = Math.max(0.5, 0.2 * u);
+    for (const [x, y, w, h] of [[-26, -8, 8, 5], [30, -7, 6, 4]]) { ctx.beginPath(); ctx.roundRect(x * u, y * u, w * u, h * u, 0.8 * u); ctx.stroke(); }
+  }
+  // rust streaks and grime, less with every refit
+  const nRust = Math.round(18 * M.rust);
+  for (let k = 0; k < nRust; k++) {
     const x = -44 + ((k * 37) % 92), len = 4 + (k % 5) * 2.2;
     const rg = ctx.createLinearGradient(0, -20 * u, 0, (-20 + len) * u);
-    rg.addColorStop(0, `rgba(${118 + (k % 3) * 12},62,30,0.35)`); rg.addColorStop(1, 'rgba(118,62,30,0)');
+    rg.addColorStop(0, `rgba(${118 + (k % 3) * 12},62,30,${(0.35 * Math.min(1, M.rust * 1.6)).toFixed(3)})`); rg.addColorStop(1, 'rgba(118,62,30,0)');
     ctx.fillStyle = rg; ctx.fillRect(x * u, -20 * u, (0.5 + (k % 3) * 0.35) * u, len * u);
   }
-  ctx.fillStyle = 'rgba(10,12,8,0.35)'; ctx.fillRect(-60 * u, -3 * u, 120 * u, 6 * u);
-  // specular line along the top of the hull
-  ctx.strokeStyle = 'rgba(220,230,210,0.22)'; ctx.lineWidth = 1.2 * u;
-  ctx.beginPath(); ctx.moveTo(-36 * u, -18.5 * u); ctx.bezierCurveTo(-10 * u, -21 * u, 30 * u, -21 * u, 46 * u, -16 * u); ctx.stroke();
+  ctx.fillStyle = `rgba(10,12,8,${(0.12 + 0.23 * M.rust).toFixed(3)})`; ctx.fillRect(-60 * u, -3 * u, 120 * u, 6 * u);
+  ctx.strokeStyle = 'rgba(230,235,225,0.22)'; ctx.lineWidth = 1.2 * u;
+  ctx.beginPath(); ctx.moveTo(-36 * u, -19 * u); ctx.bezierCurveTo(-10 * u, -21.5 * u, 30 * u, -21.5 * u, 46 * u, -16.5 * u); ctx.stroke();
   ctx.restore();
   ctx.strokeStyle = 'rgba(10,12,8,0.6)'; ctx.lineWidth = Math.max(0.6, 0.3 * u); ctx.stroke(hull);
   // horizontal stern plane, seen edge-on
-  fin([[-44, -9.5], [-58, -9.2], [-58, -7.6], [-44, -7.4]], '#262a22');
-  // faded hull number
-  { // painted number: never mirrored, whichever way the sub faces
+  poly([[-44, -9.5], [-58, -9.2], [-58, -7.6], [-44, -7.4]], shade(M.fin, -0.15));
+  // the hull number: never mirrored, whichever way she faces
+  {
     const m = ctx.getTransform(), flip = m.a < 0;
-    ctx.save(); ctx.translate(28 * u, -14 * u); if (flip) ctx.scale(-1, 1);
-    ctx.fillStyle = 'rgba(205,195,165,0.32)'; ctx.font = `bold ${5.5 * u}px monospace`; ctx.textAlign = 'center'; ctx.fillText('Б-7', 0, 2 * u);
+    ctx.save(); ctx.translate(28 * u, (M.top ? -5 : -14) * u); if (flip) ctx.scale(-1, 1);
+    ctx.fillStyle = M.faired ? 'rgba(225,232,232,0.55)' : M.top ? 'rgba(40,40,38,0.55)' : 'rgba(205,195,165,0.32)'; ctx.font = `bold ${5.5 * u}px monospace`; ctx.textAlign = 'center'; ctx.fillText(M.number, 0, 2 * u);
     ctx.restore();
   }
-  // deck railing along the top
-  ctx.strokeStyle = 'rgba(30,33,27,0.95)'; ctx.lineWidth = Math.max(0.6, 0.35 * u);
-  ctx.beginPath(); ctx.moveTo(-26 * u, -25 * u); ctx.lineTo(30 * u, -25 * u); ctx.stroke();
-  for (let x = -26; x <= 30; x += 4) { ctx.beginPath(); ctx.moveTo(x * u, -25 * u); ctx.lineTo(x * u, -21.8 * u); ctx.stroke(); }
-  // conning tower: portholes, hatch wheel, a mast light
-  const tg = ctx.createLinearGradient(-9 * u, 0, 9 * u, 0);
-  tg.addColorStop(0, '#363b31'); tg.addColorStop(0.4, '#5f6858'); tg.addColorStop(1, '#2c3028');
-  ctx.fillStyle = tg;
-  ctx.beginPath(); ctx.moveTo(-9 * u, -21.5 * u); ctx.lineTo(-7 * u, -30 * u); ctx.lineTo(7 * u, -30 * u); ctx.lineTo(10 * u, -21.5 * u); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = 'rgba(10,12,8,0.55)'; ctx.lineWidth = Math.max(0.5, 0.3 * u); ctx.stroke();
-  for (const x of [-3.5, 2.5]) { ctx.fillStyle = '#14160f'; ctx.beginPath(); ctx.arc(x * u, -26 * u, 1.2 * u, 0, TAU); ctx.fill(); ctx.fillStyle = lights ? 'rgba(240,200,140,0.8)' : 'rgba(60,70,60,0.8)'; ctx.beginPath(); ctx.arc(x * u, -26 * u, 0.75 * u, 0, TAU); ctx.fill(); }
-  ctx.strokeStyle = '#4a4f44'; ctx.lineWidth = 0.5 * u;
-  ctx.beginPath(); ctx.ellipse(0, -31 * u, 3.4 * u, 0.9 * u, 0, 0, TAU); ctx.stroke(); // hatch wheel, edge-on
-  ctx.beginPath(); ctx.moveTo(0, -30 * u); ctx.lineTo(0, -31.8 * u); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(5 * u, -30 * u); ctx.lineTo(5 * u, -36 * u); ctx.stroke(); // mast
-  ctx.fillStyle = lights ? '#ffe8b0' : '#4a4436'; ctx.beginPath(); ctx.arc(5 * u, -36.4 * u, 0.6 * u, 0, TAU); ctx.fill();
+  // ---------- on deck ----------
+  if (M.rail) {
+    ctx.strokeStyle = 'rgba(30,33,27,0.95)'; ctx.lineWidth = Math.max(0.6, 0.35 * u);
+    ctx.beginPath(); ctx.moveTo(-26 * u, -25 * u); ctx.lineTo(30 * u, -25 * u); ctx.stroke();
+    for (let x = -26; x <= 30; x += 4) { ctx.beginPath(); ctx.moveTo(x * u, -25 * u); ctx.lineTo(x * u, -21.8 * u); ctx.stroke(); }
+  } else {
+    // a lifting eye for the crane, and a strobe
+    ctx.strokeStyle = '#3a3e40'; ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.arc(-18 * u, -23.4 * u, 1.3 * u, Math.PI, TAU); ctx.stroke();
+    ctx.fillStyle = lights && (t * 1.2) % 1 < 0.08 ? '#ffffff' : '#5a6064'; ctx.beginPath(); ctx.arc(36 * u, -22.5 * u, 0.6 * u, 0, TAU); ctx.fill();
+  }
+  // side thrusters (deep marks, or a big engine refit): small ducted pods on the deck
+  if (M.thrusters || eng >= 10) {
+    for (const x of [-34, 28]) {
+      ctx.fillStyle = sleek ? '#2e3236' : '#30352c';
+      ctx.fillRect((x - 0.7) * u, -23.5 * u, 1.4 * u, 4 * u); // its pylon down into the hull
+      ctx.beginPath(); ctx.roundRect((x - 2.5) * u, -27 * u, 5 * u, 4.2 * u, 1.2 * u); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect((x - 1.8) * u, -26.5 * u, 3.6 * u, 0.8 * u);
+      const s2 = Math.sin(t * 30 + x) * 1.6;
+      ctx.fillStyle = '#6a6e70'; ctx.fillRect((x - Math.abs(s2)) * u, -25.4 * u, Math.abs(s2) * 2 * u + 0.5, 0.5 * u);
+    }
+  }
+  // ---------- the tower ----------
+  if (M.tower === 'old') {
+    const tg = ctx.createLinearGradient(-9 * u, 0, 9 * u, 0);
+    tg.addColorStop(0, shade(cBody, -0.25)); tg.addColorStop(0.4, cMid); tg.addColorStop(1, shade(cBody, -0.35));
+    ctx.fillStyle = tg;
+    ctx.beginPath(); ctx.moveTo(-9 * u, -21.5 * u); ctx.lineTo(-7 * u, -30 * u); ctx.lineTo(7 * u, -30 * u); ctx.lineTo(10 * u, -21.5 * u); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(10,12,8,0.55)'; ctx.lineWidth = Math.max(0.5, 0.3 * u); ctx.stroke();
+    for (const x of [-3.5, 2.5]) { ctx.fillStyle = '#14160f'; ctx.beginPath(); ctx.arc(x * u, -26 * u, 1.2 * u, 0, TAU); ctx.fill(); ctx.fillStyle = lights ? 'rgba(240,200,140,0.8)' : 'rgba(60,70,60,0.8)'; ctx.beginPath(); ctx.arc(x * u, -26 * u, 0.75 * u, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = '#4a4f44'; ctx.lineWidth = 0.5 * u;
+    ctx.beginPath(); ctx.ellipse(0, -31 * u, 3.4 * u, 0.9 * u, 0, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -30 * u); ctx.lineTo(0, -31.8 * u); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(5 * u, -30 * u); ctx.lineTo(5 * u, -36 * u); ctx.stroke(); // mast
+    ctx.fillStyle = lights ? '#ffe8b0' : '#4a4436'; ctx.beginPath(); ctx.arc(5 * u, -36.4 * u, 0.6 * u, 0, TAU); ctx.fill();
+  } else {
+    // a low faired sail (or, on the last hull, just a raised hatch), in the float's colour
+    const h = M.tower === 'hatch' ? 3.2 : 6;
+    const sg2 = ctx.createLinearGradient(0, (-23 - h) * u, 0, -22 * u);
+    const tc = M.top ? M.top[0] : cMid;
+    sg2.addColorStop(0, shade(tc, 0.1)); sg2.addColorStop(1, shade(tc, -0.2));
+    ctx.fillStyle = sg2;
+    ctx.beginPath(); ctx.moveTo(-10 * u, -22.5 * u); ctx.bezierCurveTo(-8 * u, (-23 - h) * u, 6 * u, (-23.5 - h) * u, 11 * u, -22.5 * u); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = Math.max(0.5, 0.25 * u); ctx.stroke();
+    ctx.fillStyle = '#2a2e30'; ctx.beginPath(); ctx.ellipse(0, (-22.8 - h) * u, 3 * u, 0.7 * u, 0, 0, TAU); ctx.fill(); // the hatch
+    if (M.tower === 'sail') { ctx.fillStyle = lights ? 'rgba(240,210,160,0.85)' : '#2a3034'; ctx.beginPath(); ctx.roundRect(3 * u, (-21.5 - h * 0.7) * u, 3.5 * u, 1.5 * u, 0.6 * u); ctx.fill(); }
+    ctx.strokeStyle = '#3a3e40'; ctx.lineWidth = 0.5 * u; ctx.beginPath(); ctx.moveTo(6 * u, (-22.5 - h * 0.6) * u); ctx.lineTo(6 * u, (-29 - h * 0.4) * u); ctx.stroke(); // radio whip
+    ctx.fillStyle = lights ? '#ffe8b0' : '#4a4436'; ctx.beginPath(); ctx.arc(6 * u, (-29.3 - h * 0.4) * u, 0.55 * u, 0, TAU); ctx.fill();
+  }
+  // the recall unit: an acoustic transponder on the deck, its green light blinking when it pings
+  if (look.recall) {
+    const x = -10, top = M.tower === 'old' ? -24 : -23.5;
+    ctx.fillStyle = '#d8b030'; ctx.beginPath(); ctx.roundRect((x - 1.2) * u, (top - 5) * u, 2.4 * u, 5 * u, 0.8 * u); ctx.fill();
+    ctx.fillStyle = '#2a2e30'; ctx.fillRect((x - 1.3) * u, (top - 3.2) * u, 2.6 * u, 0.6 * u);
+    const ping = (t * 0.5) % 1 < 0.06;
+    ctx.fillStyle = ping ? '#7aff9a' : '#2a5034'; ctx.beginPath(); ctx.arc(x * u, (top - 5.4) * u, 0.55 * u, 0, TAU); ctx.fill();
+  }
+  // ---------- under the hull: ballast, bottles, sample basket ----------
+  // shot-ballast hoppers: iron shot held by an electromagnet, dropped to rise. More with each refit.
+  const nHop = 1 + Math.min(3, Math.floor((look.ballast || 0) / 4));
+  for (let i = 0; i < nHop; i++) {
+    const x = -24 - i * 7.5, w = 5.5;
+    poly([[x - w / 2, 2], [x + w / 2, 2], [x + w * 0.3, 7.5], [x - w * 0.3, 7.5]], sleek ? '#3a3e40' : '#33382f');
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect((x - w * 0.3) * u, 6.8 * u, w * 0.6 * u, 0.7 * u);
+    ctx.fillStyle = '#7a3a2a'; ctx.fillRect((x - 0.6) * u, 7.5 * u, 1.2 * u, 0.8 * u); // the magnet's release
+  }
+  // the cabin's breathing gas: high-pressure bottles strapped along the hull, one more for each few refits
+  const nBot = 1 + Math.min(4, Math.floor((look.air || 0) / 7));
+  const botCol = sleek ? '#d8dcd8' : '#5a7a4a';
+  for (let i = 0; i < nBot; i++) {
+    const x = -46 + i * 7.2, y = i % 2 ? -4.2 : -6.4;
+    const bg = ctx.createLinearGradient(0, (y - 1.3) * u, 0, (y + 1.3) * u);
+    bg.addColorStop(0, shade(botCol, 0.25)); bg.addColorStop(0.5, botCol); bg.addColorStop(1, shade(botCol, -0.45));
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(x * u, (y - 1.3) * u, 6.4 * u, 2.6 * u, 1.3 * u); ctx.fill();
+    ctx.fillStyle = '#2a2c2a'; ctx.fillRect((x + 1.6) * u, (y - 1.4) * u, 0.5 * u, 2.8 * u); ctx.fillRect((x + 4.4) * u, (y - 1.4) * u, 0.5 * u, 2.8 * u); // straps
+    ctx.fillStyle = '#8a8c88'; ctx.fillRect((x + 6.2) * u, (y - 0.4) * u, 0.8 * u, 0.8 * u); // valve
+  }
   // ---------- the crew sphere and its frame ----------
   const gx = 6 * u, gy = 10 * u, gr = 13 * u;
+  // the backup air tanks: yellow bottles racked upright behind the sphere
+  const nRack = Math.max(1, look.rack || 1);
+  for (let i = 0; i < nRack; i++) {
+    const x = -9.5 - i * 3.2;
+    const yg = ctx.createLinearGradient(x * u, 0, (x + 2.6) * u, 0);
+    yg.addColorStop(0, '#f0c040'); yg.addColorStop(0.6, '#c8961e'); yg.addColorStop(1, '#6a4e10');
+    ctx.fillStyle = yg; ctx.beginPath(); ctx.roundRect(x * u, 3.5 * u, 2.6 * u, 9 * u, 1.3 * u); ctx.fill();
+    ctx.fillStyle = '#3a3a36'; ctx.fillRect((x + 0.9) * u, 2.6 * u, 0.8 * u, 1 * u);
+  }
+  if (nRack) { ctx.fillStyle = '#2a2e26'; ctx.fillRect((-10 - (nRack - 1) * 3.2) * u, 7 * u, (nRack * 3.2 + 1) * u, 0.7 * u); } // the rack's strap
+  // landing skids (research hulls)
+  if (M.skids) {
+    ctx.strokeStyle = '#2e3236'; ctx.lineWidth = 1.1 * u; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-14 * u, 2 * u); ctx.lineTo(-17 * u, 25 * u); ctx.moveTo(30 * u, 2 * u); ctx.lineTo(28 * u, 25 * u); ctx.stroke();
+    ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.moveTo(-22 * u, 25.5 * u); ctx.lineTo(33 * u, 25.5 * u); ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
   ctx.fillStyle = '#2a2e26';
   ctx.beginPath(); ctx.moveTo(-6 * u, 2 * u); ctx.lineTo(-2 * u, 2 * u); ctx.lineTo(1 * u, 0 * u); ctx.lineTo(-4 * u, 0); ctx.fill();
   ctx.beginPath(); ctx.moveTo(14 * u, 0); ctx.lineTo(18 * u, 0); ctx.lineTo(15 * u, 2.5 * u); ctx.lineTo(11 * u, 2.5 * u); ctx.fill();
   ctx.fillRect(-2 * u, 1 * u, 16 * u, 2.4 * u); // trunk joining sphere to hull
-  const sg = ctx.createRadialGradient(gx - 5 * u, gy - 6 * u, 1, gx, gy, gr);
-  sg.addColorStop(0, '#8a9280'); sg.addColorStop(0.45, '#4e5548'); sg.addColorStop(1, '#1a1d17');
-  ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, TAU); ctx.fill();
-  // bolted equator flange and bolts
-  ctx.strokeStyle = '#1c1f19'; ctx.lineWidth = 1.2 * u;
-  ctx.beginPath(); ctx.ellipse(gx, gy, gr, gr * 0.16, 0, 0, Math.PI); ctx.stroke();
-  ctx.fillStyle = 'rgba(160,165,145,0.5)';
-  for (let k = 1; k < 12; k++) { const a = (k / 12) * Math.PI; ctx.beginPath(); ctx.arc(gx + Math.cos(a) * gr, gy + Math.sin(a) * gr * 0.16, 0.35 * u, 0, TAU); ctx.fill(); }
-  // viewports: thick bevelled rims, warm light inside
-  const ports = [[gx + 7.5 * u, gy - 2.5 * u, 3.1 * u], [gx - 3 * u, gy + 5.5 * u, 2.1 * u]];
-  for (const [px, py, pr] of ports) {
-    const rim = ctx.createRadialGradient(px - pr * 0.4, py - pr * 0.4, 0, px, py, pr * 1.5);
-    rim.addColorStop(0, '#9aa08c'); rim.addColorStop(1, '#22251e');
-    ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(px, py, pr * 1.45, 0, TAU); ctx.fill();
-    const pg = ctx.createRadialGradient(px - pr * 0.3, py - pr * 0.3, 0, px, py, pr);
-    pg.addColorStop(0, lights ? '#ffe2a8' : '#3a3428'); pg.addColorStop(1, lights ? '#9a6a34' : '#141210');
-    ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, pr, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.arc(px, py, pr * 0.7, 3.6, 4.6); ctx.stroke();
+  if (M.faired) {
+    // the last hull wraps the sphere in a smooth fairing: charcoal below, white above
+    const fp = new Path2D();
+    fp.moveTo(-9 * u, 1 * u); fp.bezierCurveTo(-11 * u, 14 * u, -4 * u, 25 * u, 7 * u, 25 * u);
+    fp.bezierCurveTo(19 * u, 25 * u, 23 * u, 14 * u, 21 * u, 1 * u); fp.closePath();
+    const fg2 = ctx.createLinearGradient(0, 0, 0, 25 * u);
+    fg2.addColorStop(0, '#4a5258'); fg2.addColorStop(0.6, '#2a2f34'); fg2.addColorStop(1, '#111416');
+    ctx.fillStyle = fg2; ctx.fill(fp);
+    ctx.save(); ctx.clip(fp); ctx.fillStyle = M.stripe; ctx.fillRect(-12 * u, 15 * u, 36 * u, 1.2 * u); ctx.restore();
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(0.5, 0.3 * u); ctx.stroke(fp);
+    // the titanium sphere shows only round its viewport
+    const sg = ctx.createRadialGradient(gx + 5 * u, gy - 4 * u, 1, gx + 6 * u, gy - 2 * u, 7 * u);
+    sg.addColorStop(0, M.sphere[0]); sg.addColorStop(0.6, M.sphere[1]); sg.addColorStop(1, M.sphere[2]);
+    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(gx + 6.5 * u, gy - 2.5 * u, 5.5 * u, 0, TAU); ctx.fill();
+  } else {
+    const sg = ctx.createRadialGradient(gx - 5 * u, gy - 6 * u, 1, gx, gy, gr);
+    sg.addColorStop(0, M.sphere[0]); sg.addColorStop(0.45, M.sphere[1]); sg.addColorStop(1, M.sphere[2]);
+    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, TAU); ctx.fill();
+    if (mk <= 1) {
+      // bolted equator flange (cast hemispheres)
+      ctx.strokeStyle = '#1c1f19'; ctx.lineWidth = 1.2 * u;
+      ctx.beginPath(); ctx.ellipse(gx, gy, gr, gr * 0.16, 0, 0, Math.PI); ctx.stroke();
+      ctx.fillStyle = 'rgba(160,165,145,0.5)';
+      const nb = mk ? 18 : 12;
+      for (let k = 1; k < nb; k++) { const a = (k / nb) * Math.PI; ctx.beginPath(); ctx.arc(gx + Math.cos(a) * gr, gy + Math.sin(a) * gr * 0.16, 0.35 * u, 0, TAU); ctx.fill(); }
+    } else {
+      // forged or titanium: a single fine equator weld, and the hatch ring on top
+      ctx.strokeStyle = 'rgba(20,22,24,0.45)'; ctx.lineWidth = 0.5 * u;
+      ctx.beginPath(); ctx.ellipse(gx, gy, gr, gr * 0.16, 0, 0, Math.PI); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.8 * u;
+      ctx.beginPath(); ctx.arc(gx, gy, gr * 0.92, 3.5, 4.4); ctx.stroke();
+    }
   }
-  // lamp housings: bow lamp and sphere lamp
-  for (const [lx, ly] of [[48, -4], [20, 13.5]]) {
-    ctx.fillStyle = '#1c1f19'; ctx.beginPath(); ctx.roundRect((lx - 3.5) * u, (ly - 2.2) * u, 4.5 * u, 4.4 * u, 1 * u); ctx.fill();
-    ctx.fillStyle = lights ? '#f4f7ff' : '#3a3e38'; ctx.beginPath(); ctx.ellipse((lx + 1) * u, ly * u, 0.7 * u, 1.8 * u, 0, 0, TAU); ctx.fill();
+  // viewports: thick bevelled rims, warm light inside. Deeper hulls have smaller, thicker windows.
+  const [p1, p2] = M.ports;
+  const ports = M.faired ? [[gx + 6.5 * u, gy - 2.5 * u, p1 * u]] : [[gx + 7.5 * u, gy - 2.5 * u, p1 * u], [gx - 3 * u, gy + 5.5 * u, p2 * u]];
+  for (const [px, py, pr2] of ports) {
+    const rim = ctx.createRadialGradient(px - pr2 * 0.4, py - pr2 * 0.4, 0, px, py, pr2 * 1.5);
+    rim.addColorStop(0, mk >= 3 ? '#e4e8ea' : '#9aa08c'); rim.addColorStop(1, '#22251e');
+    ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(px, py, pr2 * (mk >= 2 ? 1.6 : 1.45), 0, TAU); ctx.fill();
+    const pg = ctx.createRadialGradient(px - pr2 * 0.3, py - pr2 * 0.3, 0, px, py, pr2);
+    pg.addColorStop(0, lights ? '#ffe2a8' : '#3a3428'); pg.addColorStop(1, lights ? '#9a6a34' : '#141210');
+    ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, pr2, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.arc(px, py, pr2 * 0.7, 3.6, 4.6); ctx.stroke();
+  }
+  // ---------- the sample basket at the bow: the open tank, and the pressure chambers in it ----------
+  {
+    const tl = look.tank || 0, x0 = 21, w = 9 + tl * 1.6, y0 = 3.5, h = 5.5;
+    ctx.fillStyle = 'rgba(30,34,30,0.35)'; ctx.fillRect(x0 * u, y0 * u, w * u, h * u);
+    ctx.strokeStyle = sleek ? '#3a3e40' : '#3a3f34'; ctx.lineWidth = Math.max(0.5, 0.3 * u);
+    ctx.strokeRect(x0 * u, y0 * u, w * u, h * u);
+    ctx.lineWidth = Math.max(0.4, 0.15 * u); ctx.strokeStyle = 'rgba(70,76,70,0.7)';
+    ctx.beginPath(); for (let x = x0 + 1.2; x < x0 + w; x += 1.2) { ctx.moveTo(x * u, y0 * u); ctx.lineTo(x * u, (y0 + h) * u); } for (let y = y0 + 1.2; y < y0 + h; y += 1.2) { ctx.moveTo(x0 * u, y * u); ctx.lineTo((x0 + w) * u, y * u); } ctx.stroke();
+    // pressure chambers: clear blue cylinders, thicker-capped as their rating rises
+    const nc = Math.max(1, look.chambers || 1), cap = 0.5 + Math.min(1, (look.chamberLv || 0) / 12) * 0.8;
+    for (let i = 0; i < nc; i++) {
+      const cx = x0 + 1 + i * 2.6; if (cx + 2 > x0 + w) break;
+      const cg = ctx.createLinearGradient(cx * u, 0, (cx + 2) * u, 0);
+      cg.addColorStop(0, 'rgba(120,190,230,0.75)'); cg.addColorStop(0.5, 'rgba(190,230,250,0.85)'); cg.addColorStop(1, 'rgba(60,120,170,0.75)');
+      ctx.fillStyle = cg; ctx.fillRect(cx * u, (y0 + 0.6) * u, 2 * u, (h - 1.2) * u);
+      ctx.fillStyle = '#3a3e40'; ctx.fillRect((cx - 0.1) * u, (y0 + 0.4) * u, 2.2 * u, cap * u); ctx.fillRect((cx - 0.1) * u, (y0 + h - 0.4 - cap) * u, 2.2 * u, cap * u);
+    }
+  }
+  // ---------- lamps ----------
+  if (M.ledBars) {
+    for (const [lx, ly] of [[47, -5], [19, 13.5]]) {
+      ctx.fillStyle = '#1a1c1e'; ctx.beginPath(); ctx.roundRect((lx - 3) * u, (ly - 3) * u, 4.5 * u, 6 * u, 0.8 * u); ctx.fill();
+      ctx.fillStyle = lights ? '#f4f8ff' : '#3a3e40';
+      for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc((lx + 0.6) * u, (ly - 2.1 + k * 1.4) * u, 0.45 * u, 0, TAU); ctx.fill(); }
+    }
+  } else {
+    for (const [lx, ly] of [[48, -4], [20, 13.5]]) {
+      ctx.fillStyle = '#1c1f19'; ctx.beginPath(); ctx.roundRect((lx - 3.5) * u, (ly - 2.2) * u, 4.5 * u, 4.4 * u, 1 * u); ctx.fill();
+      ctx.fillStyle = lights ? '#f4f7ff' : '#3a3e38'; ctx.beginPath(); ctx.ellipse((lx + 1) * u, ly * u, 0.7 * u, 1.8 * u, 0, 0, TAU); ctx.fill();
+    }
   }
   // navigation lights: red to port (we see the near side), a green glint at the bow
   ctx.fillStyle = lights ? '#ff4030' : '#502420'; ctx.beginPath(); ctx.arc(-30 * u, -21 * u, 0.6 * u, 0, TAU); ctx.fill();
   ctx.fillStyle = lights ? '#40ff70' : '#205030'; ctx.beginPath(); ctx.arc(44 * u, -15 * u, 0.6 * u, 0, TAU); ctx.fill();
-  // manipulator arm: shoulder, two segments, a two-fingered claw that opens and closes
+  // ---------- the manipulator arm: heavier, longer-jawed and with bigger rams as it is upgraded ----------
+  const reach = look.reach || 0, jaw = look.jaw || 0, hyd = look.hyd || 0;
   const sx = 14 * u, sy = 17 * u;
   let open = 0.25 + 0.15 * Math.sin(t * 0.6);
   let ex = sx + 8 * u, ey = sy + 4 * u, wx = ex + 7 * u, wy = ey - 2.5 * u;
   if (arm && arm.ext > 0) {
-    // reaching: the wrist goes out to the animal; the two segments telescope and the elbow bends
-    // below the line between shoulder and wrist (two-bone reach)
     const k = arm.ext * arm.ext * (3 - 2 * arm.ext);
     wx = wx + (arm.lx - wx) * k; wy = wy + (arm.ly - wy) * k;
     const D = Math.hypot(wx - sx, wy - sy), l = Math.max(8 * u, D * 0.56);
@@ -436,34 +640,34 @@ export function drawSub(ctx, Lp, t, stress, lights, arm) {
     open = arm.closed ? 0.04 : 0.5;
   }
   const fa = Math.atan2(wy - ey, wx - ex);
-  ctx.strokeStyle = '#3e4338'; ctx.lineCap = 'round';
-  ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
-  ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(wx, wy); ctx.stroke();
-  // hydraulic rams along each segment: a bright chrome rod sliding out of a dark cylinder
+  const armCol = sleek ? (mk >= 3 ? '#c8ccd0' : '#e0e2dc') : '#3e4338';
+  ctx.strokeStyle = armCol; ctx.lineCap = 'round';
+  ctx.lineWidth = (2.2 + reach * 0.06) * u; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.lineWidth = (1.6 + reach * 0.05) * u; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(wx, wy); ctx.stroke();
   for (const [ax, ay, bx, by] of [[sx, sy, ex, ey], [ex, ey, wx, wy]]) {
-    const a = Math.atan2(by - ay, bx - ax), off = 1.3 * u, px = -Math.sin(a) * off, py = Math.cos(a) * off;
-    ctx.strokeStyle = '#1e211b'; ctx.lineWidth = 0.9 * u;
+    const a = Math.atan2(by - ay, bx - ax), off = (1.3 + hyd * 0.05) * u, px = -Math.sin(a) * off, py = Math.cos(a) * off;
+    ctx.strokeStyle = '#1e211b'; ctx.lineWidth = (0.9 + hyd * 0.06) * u;
     ctx.beginPath(); ctx.moveTo(ax + px, ay + py); ctx.lineTo(ax + px + (bx - ax) * 0.5, ay + py + (by - ay) * 0.5); ctx.stroke();
-    ctx.strokeStyle = '#a8aea4'; ctx.lineWidth = 0.45 * u;
+    ctx.strokeStyle = hyd >= 5 ? '#e4eaf0' : '#a8aea4'; ctx.lineWidth = (0.45 + hyd * 0.03) * u;
     ctx.beginPath(); ctx.moveTo(ax + px + (bx - ax) * 0.5, ay + py + (by - ay) * 0.5); ctx.lineTo(ax + px + (bx - ax) * 0.85, ay + py + (by - ay) * 0.85); ctx.stroke();
   }
-  ctx.fillStyle = '#2a2e26'; for (const [jx, jy] of [[sx, sy], [ex, ey]]) { ctx.beginPath(); ctx.arc(jx, jy, 1.4 * u, 0, TAU); ctx.fill(); }
-  // what the claw is holding
+  ctx.fillStyle = sleek ? '#2e3236' : '#2a2e26'; for (const [jx, jy] of [[sx, sy], [ex, ey]]) { ctx.beginPath(); ctx.arc(jx, jy, (1.4 + reach * 0.04) * u, 0, TAU); ctx.fill(); }
   if (arm && arm.sp) {
     const fl = Math.max(3 * u, Math.min(arm.len / 0.09, 14) * u);
     ctx.save(); ctx.translate(wx + Math.cos(fa) * 3 * u, wy + Math.sin(fa) * 3 * u); ctx.rotate(fa + Math.PI / 2 + Math.sin(t * 20) * 0.25);
     drawSpecies(ctx, arm.sp, fl, t * 3, 1, 0);
     ctx.restore();
   }
-  // the claw: two jointed fingers along the forearm's line
-  ctx.strokeStyle = '#555a4c'; ctx.lineWidth = 0.8 * u;
+  // the claw: two jointed fingers, longer with each jaw upgrade
+  const f1 = 3 * (1 + jaw * 0.05), f2 = 2.4 * (1 + jaw * 0.05);
+  ctx.strokeStyle = sleek ? '#7a7e82' : '#555a4c'; ctx.lineWidth = (0.8 + jaw * 0.04) * u;
   for (const sgn of [-1, 1]) {
     const a1 = fa + sgn * open * 1.1, a2 = fa - sgn * open * 0.5;
-    const kx = wx + Math.cos(a1) * 3 * u, ky = wy + Math.sin(a1) * 3 * u;
-    ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(kx, ky); ctx.lineTo(kx + Math.cos(a2) * 2.4 * u, ky + Math.sin(a2) * 2.4 * u); ctx.stroke();
+    const kx = wx + Math.cos(a1) * f1 * u, ky = wy + Math.sin(a1) * f1 * u;
+    ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(kx, ky); ctx.lineTo(kx + Math.cos(a2) * f2 * u, ky + Math.sin(a2) * f2 * u); ctx.stroke();
   }
   ctx.lineCap = 'butt';
-  // sacrificial anodes on the sphere frame
+  // sacrificial anodes on the frame
   ctx.fillStyle = '#7a7c74'; ctx.fillRect(-5 * u, 6 * u, 2 * u, 1.2 * u); ctx.fillRect(16 * u, 4 * u, 2 * u, 1.2 * u);
   // past its rating the hull shows the strain: the viewports fog as the cold steel sweats and fine
   // crazing spreads in the acrylic; seawater weeps from the sphere's seams in thin jets of mist; small

@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.23.1 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.24.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -60,6 +60,12 @@ Settings → Pages → Deploy from a branch → `main` / root).
   rating: around 470 m for a 300 m sub, rarely above 400 m or past 540 m); nearing it the chance of
   failing rises fast, and when the hull gives it implodes in half a second.
   Refits at the boat take it down to 3,000 m.
+- The sub changes as she is refitted. Her depth rating sets the hull: Mk I, the old riveted Б-7;
+  Mk II, the yard's welded refit (from 675 m); Mk III, a research sub with an orange foam float and
+  skids (from 1,200 m); Mk IV, titanium (from 1,950 m); Mk V, full ocean depth (from 2,925 m). Every
+  other upgrade shows on her: more prop blades and side thrusters, air bottles, ballast hoppers, the
+  backup tank rack, the sample basket and its pressure chambers, a heavier claw, the quiet engine's
+  shroud and the recall transponder.
 - A damaged hull leaks cabin air. Repairs during a dive use supplies bought at the boat: a leak
   sealant kit (K, inside: +20 %, but only up to 85 %, since a seal is not steel) or a hull patch
   plate (hold F outside at the hatch: 10 s of wet welding, +40 %; the arc's light is seen below 200 m).

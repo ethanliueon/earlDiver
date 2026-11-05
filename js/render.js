@@ -5,11 +5,11 @@
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
-import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
+import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity, markOf, SUB_MARKS } from './earl_draw.js';
 import { activeTool } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
-import { TRAPS } from './economy.js';
+import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
 import { drawAquarium } from './aquarium_draw.js';
 import { aquariumOf, visitors } from './aquarium.js';
@@ -71,6 +71,19 @@ function bioPulse(c, t) {
   // a lone deep fish flashes: a dim glow, now and then a bright blink (as lanternfish signal)
   if (c.glimmer) return (0.45 + 1.2 * Math.pow(Math.max(0, Math.sin(t * rate * 0.7 + c.wob)), 10)) * (c.fleeT > 0 ? 1.7 : 1);
   return (0.8 + 0.2 * Math.sin(t * rate + c.wob)) * (c.fleeT > 0 ? 1.7 : 1);
+}
+
+// what the yard has done to the sub, from the profile: the hull mark (from her depth rating) and
+// each upgrade's fittings, for drawSub
+export function subLook(P, addons) {
+  if (!P) return { mark: 0 };
+  return {
+    mark: markOf(statValue(P, 'depth')),
+    engine: lv(P, 'subSpeed'), air: lv(P, 'subAir'), ballast: lv(P, 'ballast'), rack: statValue(P, 'airTanks'),
+    chambers: statValue(P, 'pressTanks'), chamberLv: lv(P, 'pressRating'), tank: lv(P, 'subTank'),
+    reach: lv(P, 'armReach'), jaw: lv(P, 'armSize'), hyd: lv(P, 'armSpeed'),
+    quiet: !!(addons || P.addons || {}).quiet, recall: !!(addons || P.addons || {}).recall,
+  };
 }
 
 export class Renderer {
@@ -520,7 +533,8 @@ export class Renderer {
         const dx = (ap.tx - sub.x) * ppm, dy = (ap.ty - sub.y) * ppm;
         armArg = { ext: ap.ext, closed: ap.closed, sp: ap.sp, len: ap.len, lx: (dx * Math.cos(rr) - dy * Math.sin(rr)) / sx0, ly: dx * Math.sin(rr) + dy * Math.cos(rr) };
       }
-      const r = drawSub(ctx, 9 * ppm, t, sub.stress, lights, armArg);
+      const look = subLook(g.profile, g.addons);
+      const r = drawSub(ctx, 9 * ppm, t, sub.stress, lights, armArg, look);
       ctx.restore();
       // mid-turn the hull is seen nearly bow-on: draw its round cross-section over the squashed side view
       const bow = clamp(1 - Math.abs(cy) / 0.5, 0, 1);
@@ -528,11 +542,12 @@ export class Renderer {
         const u2 = 9 * ppm / 100, bx = S(sub.x), by = Sy(sub.y);
         ctx.save(); ctx.globalAlpha = bow;
         const hg = ctx.createRadialGradient(bx - 4 * u2, by - 14 * u2, 1, bx, by - 9 * u2, 13 * u2);
-        hg.addColorStop(0, '#727a6c'); hg.addColorStop(1, '#262a24');
+        const Mk = SUB_MARKS[look.mark];
+        hg.addColorStop(0, Mk.top ? Mk.top[0] : Mk.body[1]); hg.addColorStop(1, Mk.body[3]);
         ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(bx, by - 9 * u2, 11 * u2, 11.5 * u2, 0, 0, TAU); ctx.fill();
         ctx.fillStyle = '#3e443b'; ctx.fillRect(bx - 4 * u2, by - 27 * u2, 8 * u2, 8 * u2);
         const sg = ctx.createRadialGradient(bx - 4 * u2, by + 6 * u2, 1, bx, by + 10 * u2, 13 * u2);
-        sg.addColorStop(0, '#7a8070'); sg.addColorStop(1, '#1e211c');
+        sg.addColorStop(0, Mk.sphere[0]); sg.addColorStop(1, Mk.sphere[2]);
         ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(bx, by + 10 * u2, 13 * u2, 0, TAU); ctx.fill();
         ctx.fillStyle = lights ? '#f0cf96' : '#2a261e'; ctx.beginPath(); ctx.arc(bx, by + 8 * u2, 3.4 * u2, 0, TAU); ctx.fill();
         if (lights) { ctx.fillStyle = '#f4f8ff'; ctx.beginPath(); ctx.arc(bx + 6 * u2, by - 6 * u2, 1.6 * u2, 0, TAU); ctx.fill(); }
