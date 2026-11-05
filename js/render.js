@@ -121,6 +121,24 @@ export class Renderer {
     const x0 = cam.x - cam.w / 2 - 2, x1 = cam.x + cam.w / 2 + 2;
     const y0 = cam.y - cam.h / 2 - 2, y1 = cam.y + cam.h / 2 + 2;
     const inView = (x, y, r = 3) => x > x0 - r && x < x1 + r && y > y0 - r && y < y1 + r;
+    // In the deep, what no light reaches is black: it is not drawn at all. The lights are last
+    // frame's (lamps, glows, lanterns...), with a margin for anything that moved since.
+    const darkAmb = 0.015 / Math.max(0.05, 1 - (fx.darken || 0));
+    const pLamps = this.lamps || [], pR = this.visR || [];
+    const visible = (wx, wy, R) => {
+      if (ambientAt(wy, dayEff) > darkAmb) return true;
+      const sx = S(wx), sy = Sy(wy), Rp = (R + 3) * ppm;
+      for (let i = 0; i < pR.length; i += 3) { const dx = sx - pR[i], dy = sy - pR[i + 1]; if (dx * dx + dy * dy < (pR[i + 2] + Rp) ** 2) return true; }
+      for (const L of pLamps) {
+        const dx = sx - L.x, dy = sy - L.y, d = Math.hypot(dx, dy);
+        if (L.r) { if (d < L.r + Rp) return true; continue; }
+        if (d > L.range + Rp) continue;
+        if (d < Rp) return true;
+        let da = Math.abs(Math.atan2(dy, dx) - L.ang) % TAU; if (da > Math.PI) da = TAU - da;
+        if (da < L.spread * 2 + Math.asin(Math.min(1, Rp / d))) return true;
+      }
+      return false;
+    };
     const waveAmp = 0.12 + g.waveBoost * 1.6;
     const surfY = (x) => Math.sin(x * 0.21 + t * 1.25) * waveAmp * 0.6 + Math.sin(x * 0.53 - t * 1.9) * waveAmp * 0.3 + Math.sin(x * 0.07 + t * 0.6) * waveAmp * 0.5;
     g.surfY = surfY;
@@ -229,18 +247,19 @@ export class Renderer {
     // painted kelp forests far behind (baked once, high detail, gently swaying)
     this.drawKelpBackdrop(g, ppm, t);
     // ================= TERRAIN & STRUCTURES =================
-    for (const w of g.world.wrecks) if (Math.abs(w.x - cam.x) < cam.w / 2 + w.len) this.drawWreck(ctx, w, S, Sy, ppm);
+    for (const w of g.world.wrecks) if (Math.abs(w.x - cam.x) < cam.w / 2 + w.len && visible(w.x, w.y, w.len * 0.6)) this.drawWreck(ctx, w, S, Sy, ppm);
     this.drawKelp(g, S, Sy, ppm, 0, x0, x1);
     for (const v of g.world.vents) if (inView(v.x, v.y, 30)) this.drawVent(ctx, v, S, Sy, ppm, t);
-    this.drawFloor(g, S, Sy, ppm, x0, x1);
+    this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
-    for (const rk of g.world.rocks) if (rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1) this.drawRock(ctx, rk, S, Sy, ppm);
+    for (const rk of g.world.rocks) if (rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
     const glowPts = [];
     const sl = this.layerBegin(ctx); // statics: drawn on a layer, then veiled by the water
     for (const s of g.world.statics) {
       if (s.x < x0 - 3 || s.x > x1 + 3 || s.y < y0 - 6 || s.y > y1 + 6) continue;
+      if (!s.sp.v.glow && !s.variant && !visible(s.x, s.y, Math.max(0.18, s.sp.len) * s.scale)) continue;
       const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
       this.lgrow(S(s.x), Sy(s.y) - L * 0.5, L * 1.3);
       sl.save(); sl.translate(S(s.x), Sy(s.y)); sl.scale(s.flip, 1);
@@ -282,6 +301,7 @@ export class Renderer {
     let glowSkip = 0;
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
+      if (!c.sp.v.glow && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
       const Ld = fishDrawLen(c.len) * ppm;
       this.lgrow(S(c.x), Sy(c.y), Ld * 1.4);
       const shape = c.sp.v.s;
@@ -742,7 +762,7 @@ export class Renderer {
     const k = Ld / e.bl;
     ctx.drawImage(e.frames[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
     // the light from above along its back, baked with the frame and laid on at today's strength
-    if (this.rimSun > 0 && e.hi[f]) { ctx.globalAlpha = 0.32 * this.rimSun; ctx.drawImage(e.hi[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k); ctx.globalAlpha = 1; }
+    if (this.rimSun > 0 && Ld >= 24 && e.hi[f]) { ctx.globalAlpha = 0.32 * this.rimSun; ctx.drawImage(e.hi[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k); ctx.globalAlpha = 1; }
     const gl = e.glows[f];
     return gl ? gl.map(([gx, gy, sz]) => [gx * k, gy * k, sz]) : null;
   }
@@ -1060,8 +1080,8 @@ export class Renderer {
     return (this.tiles[name] = c);
   }
   // fill the current clip with a noise tile pinned to the world (ox, oy: where its corner sits)
-  texture(ctx, name, metres, alpha, op = 'soft-light', ox = 0, oy = 0) {
-    if (this.lite) return;
+  texture(ctx, name, metres, alpha, op = 'soft-light', ox = 0, oy = 0, area = null) {
+    if (this.lite && !area) return;
     const tile = name === 'murk' ? this.noiseTile('murk', 192, 7, 3, 1.3) : name === 'grain' ? this.noiseTile('grain', 192, 3, 4, 1.2) : this.noiseTile('rock', 192, 11, 5, 1.3);
     this.pats = this.pats || {};
     const pat = this.pats[name] || (this.pats[name] = ctx.createPattern(tile, 'repeat'));
@@ -1069,18 +1089,45 @@ export class Renderer {
     pat.setTransform(new DOMMatrix([k, 0, 0, k, ox, oy]));
     ctx.save();
     ctx.globalCompositeOperation = op; ctx.globalAlpha = alpha; ctx.fillStyle = pat;
-    ctx.fillRect(-this.W * 0.2, -this.H * 0.2, this.W * 1.4, this.H * 1.4);
+    if (area) ctx.fillRect(area[0], area[1], area[2], area[3]); else ctx.fillRect(-this.W * 0.2, -this.H * 0.2, this.W * 1.4, this.H * 1.4);
     ctx.restore();
   }
 
-  drawFloor(g, S, Sy, ppm, x0, x1) {
-    const ctx = this.ctx, H = this.H, W = this.W;
+  // The seabed never moves, so it is drawn once into a picture about 1.5 screens across and reused
+  // while the camera moves inside it; it is redrawn only near its edge or after a change of zoom.
+  drawFloorCached(g, S, Sy, ppm) {
+    const cam = this.cam, F = this.floorCache || (this.floorCache = { c: document.createElement('canvas') });
+    const pad = 0.12 + (g.fx.disorient > 0 || g.fx.shake > 0 ? 0.12 : 0); // room for the view to sway
+    const vx0 = cam.x - cam.w * (0.5 + pad), vx1 = cam.x + cam.w * (0.5 + pad), vy0 = cam.y - cam.h * (0.5 + pad), vy1 = cam.y + cam.h * (0.5 + pad);
+    const ratio = F.ppm ? ppm / F.ppm : 0;
+    const inside = F.ppm && vx0 >= F.x0 && vx1 <= F.x1 && vy0 >= F.y0 && vy1 <= F.y1;
+    const zoomOff = Math.abs(ratio - 1) > 0.03;
+    if (!inside || (zoomOff && g.time - (F.t || 0) > 0.25)) {
+      // bake: the view and a quarter-screen margin all round
+      const mx = cam.w * 0.3, my = cam.h * 0.3;
+      F.x0 = cam.x - cam.w / 2 - mx; F.x1 = cam.x + cam.w / 2 + mx; F.y0 = cam.y - cam.h / 2 - my; F.y1 = cam.y + cam.h / 2 + my;
+      F.ppm = ppm; F.t = g.time;
+      const cw = Math.ceil((F.x1 - F.x0) * ppm), ch = Math.ceil((F.y1 - F.y0) * ppm);
+      if (F.c.width !== cw || F.c.height !== ch) { F.c.width = cw; F.c.height = ch; } else F.c.getContext('2d').clearRect(0, 0, cw, ch);
+      const fctx = F.c.getContext('2d');
+      const bS = (x) => (x - F.x0) * ppm, bSy = (y) => (y - F.y0) * ppm;
+      // the floor's colour follows the bottom over a wide stretch, so a new bake never jumps
+      let mid = 0; for (let k = -4; k <= 4; k++) mid += g.world.floorAt(cam.x + k * 12); mid /= 9;
+      this.drawFloor(g, bS, bSy, ppm, F.x0, F.x1, { ctx: fctx, W: cw, H: ch, midD: mid, camY: cam.y, y0: F.y0, y1: F.y1 });
+    }
+    const k = ppm / F.ppm;
+    this.ctx.drawImage(F.c, S(F.x0), Sy(F.y0), (F.x1 - F.x0) * F.ppm * k, (F.y1 - F.y0) * F.ppm * k);
+  }
+
+  drawFloor(g, S, Sy, ppm, x0, x1, V = null) {
+    const ctx = V ? V.ctx : this.ctx, H = V ? V.H : this.H, W = V ? V.W : this.W;
+    const camY = V ? V.camY : this.cam.y, area = V ? [0, 0, W, H] : null;
     const step = Math.max(0.5, 6 / ppm);
     ctx.beginPath();
     ctx.moveTo(S(x0), H + 20);
     for (let x = x0; x <= x1 + step; x += step) ctx.lineTo(S(x), Sy(g.world.floorAt(x)));
     ctx.lineTo(S(x1 + step), H + 20); ctx.closePath();
-    const midD = g.world.floorAt(this.cam.x);
+    const midD = V ? V.midD : g.world.floorAt(this.cam.x);
     const fg = ctx.createLinearGradient(0, Sy(midD - 6), 0, Sy(midD + 30));
     const c = sampleTable(FLOOR_COL, midD);
     fg.addColorStop(0, rgbStr(c)); fg.addColorStop(0.15, rgbStr(mixRgb(c, [40, 36, 30], 0.35))); fg.addColorStop(1, rgbStr(mixRgb(c, [10, 10, 10], 0.75)));
@@ -1088,8 +1135,8 @@ export class Renderer {
     // grain texture
     ctx.save(); ctx.clip();
     // rock and sediment: large mottling and a fine grain, pinned to the world so they never swim
-    this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, this.cam.y), 'soft-light', S(0), Sy(0));
-    if (ppm > 14) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61));
+    this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, camY), 'soft-light', S(0), Sy(0), area);
+    if (ppm > 14) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61), area);
     // a pale skin of settled silt just under the surface line, darkening below
     {
       ctx.beginPath();
@@ -1111,7 +1158,7 @@ export class Renderer {
     }
     // strata: faint layered bands that show on steep walls
     ctx.lineWidth = Math.max(1, ppm * 0.08);
-    const ys0 = Math.floor((this.cam.y - this.cam.h / 2) / 2.2) * 2.2, ys1 = this.cam.y + this.cam.h / 2 + 2;
+    const ys0 = Math.floor((V ? V.y0 : this.cam.y - this.cam.h / 2) / 2.2) * 2.2, ys1 = (V ? V.y1 : this.cam.y + this.cam.h / 2) + 2;
     for (let yy = ys0; yy < ys1; yy += 2.2) {
       const k = Math.abs(Math.sin(yy * 7.13));
       ctx.strokeStyle = k > 0.5 ? 'rgba(0,0,0,0.16)' : 'rgba(255,245,225,0.05)';
@@ -1811,7 +1858,9 @@ export class Renderer {
       }
     }
     l.globalCompositeOperation = 'lighter';
+    const visR = this.visR = []; // every pool of light this frame (screen space), for next frame's darkness test
     const radial = (x, y, r, col, a) => {
+      if (a > 0.02) visR.push(x, y, r);
       const gg = l.createRadialGradient(x * k, y * k, 0, x * k, y * k, r * k);
       gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(1, rgbStr(col, 0));
       l.fillStyle = gg; l.beginPath(); l.arc(x * k, y * k, r * k, 0, TAU); l.fill();
