@@ -213,18 +213,16 @@ animal at its own pressure from its home depth until the sub climbs above that d
 rating, and above that the animal feels the rest of the gap. A grenadier from 805 m in a 400 m
 chamber is safe to about 405 m, then dying by the surface. The gauge's green band shows what the
 chamber can hold where the sub is; the needle turns amber when the animal needs more. Sealing an
-animal in pumps the chamber up to its home depth (30 m/s); held there it recovers. Easing it up (the
-valve open a crack) lowers the chamber 3 m/s toward the surface, and an animal held at its own
-pressure eases with it: it arrives acclimated, safe in the open and worth a quarter more.
+animal in pumps the chamber up to its home depth (30 m/s); held there it recovers. There is no
+valve to work: a chamber simply holds what it can.
 
 The tank room: the open tank set into the wall (gravel, weed, an airstone; room for 2 animals at
 first, up to 8 with the Open tank upgrade) and the catch bag hanging on its hook.
 
 Each animal has a small brass tag: its name, where it was found, and how it is in a word (healthy,
-stressed, weak, dying, dead, acclimated). Animals are moved by hand: drag one from the bag into a
+stressed, weak, dying, dead). Animals are moved by hand: drag one from the bag into a
 chamber or the tank, from chamber to chamber, or back into the bag (the target lights up under it).
-Tap the tag, the chamber or the fish to open what is left to choose (ease it up / close the valve,
-let go). A ? in the corner
+Tap the tag, the chamber or the fish to open its one choice: let go. A ? in the corner
 explains the rules. How an animal swims shows how it is: a healthy one quick and alert, darting
 and turning fast; a stressed one slower; a weak one lethargic, sinking to the bottom, tilted, its
 tail barely moving; a dying one listing, now and then rolling over before it rights itself; a dead

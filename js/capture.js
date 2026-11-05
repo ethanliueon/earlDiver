@@ -23,7 +23,7 @@ export function seal(g, spec, want = -1) {
   const used = new Set(g.subTank.filter((s) => s.pressed && s !== spec).map((s) => s.chamber));
   const c = want >= 0 ? (want < pressSlots(g) && !used.has(want) ? want : -1) : freeChamber(g);
   if (c < 0) return false;
-  spec.pressed = true; spec.chamber = c; spec.bleed = false;
+  spec.pressed = true; spec.chamber = c;
   spec.press = Math.max(0, g.sub.y); // sealed at the pressure outside, then pumped up to its home
   return true;
 }
@@ -165,7 +165,7 @@ export function updateCapture(g, dt) {
 // keeps an animal at its own pressure anywhere from its home depth up to (home - rating), and above
 // that the animal feels the rest.
 // Up to 150 m of gap, it lives, more stressed the bigger the gap; past that, it dies.
-export const SAFE_GAP = 150, PUMP = 30, BLEED = 3;
+export const SAFE_GAP = 150, PUMP = 30;
 export const chamberRating = (g) => Math.round(statValue(g.profile, 'pressRating'));
 // the most a chamber can hold right now: the water outside, plus its rating
 export const chamberMax = (g) => Math.max(0, g.sub.y) + chamberRating(g);
@@ -186,14 +186,7 @@ export function updateSpecimens(g, dt) {
       if (s.press === undefined) s.press = Math.max(0, g.sub.y);
       const target = Math.min(s.home, cmax);
       if (s.press > cmax) s.press = cmax; // more than the walls can hold over the outside: it vents
-      if (s.bleed) {
-        // the red valve open a crack: the pressure eases off slowly, and an animal held at its
-        // own pressure eases with it (acclimates); one already short of it only feels the gap grow
-        const atHome = s.home - s.press <= 5;
-        s.press = Math.max(0, s.press - BLEED * dt);
-        if (atHome) s.home = Math.min(s.home, s.press);
-        if (s.press <= 0.5) { s.bleed = false; s.press = 0; if (atHome) { s.home = 0; s.acc = true; events.push({ type: 'acclimated', s }); } }
-      } else if (s.press < target) s.press = Math.min(target, s.press + PUMP * dt);
+      if (s.press < target) s.press = Math.min(target, s.press + PUMP * dt);
       else if (s.press > target) s.press = target;
     }
     const gap = gapOf(g, s, inBag);

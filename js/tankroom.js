@@ -39,7 +39,6 @@ export class TankRoom {
     root.querySelector('.tr-help-btn').addEventListener('click', () => { const hp = root.querySelector('.tr-help'); hp.hidden = !hp.hidden; });
     root.querySelector('.tr-help').innerHTML = `<p>Every animal has the pressure it lives at. Up to ${SAFE_GAP} m short of it, it lives, stressed; further, it starts to die.</p>
       <p>A chamber pumps an animal back up to its own pressure and it recovers there. Its rating is how much more than the water outside it can hold: it keeps an animal safe until the sub climbs above the animal's depth less the rating. The gauge's green band is what it can hold where you are.</p>
-      <p>Ease it up (the valve open a crack) and the chamber sinks slowly toward the surface; an animal held at its own pressure eases with it and arrives acclimated: worth a quarter more.</p>
       <p>Nothing moves on its own: drag a fish from the catch bag (it hangs in both rooms) onto a chamber or into the open tank, or back into the bag to carry it through the hatch.</p>
       <p>Dead animals sell for half the plain market price.</p>`;
     this.over.addEventListener('click', (ev) => {
@@ -113,7 +112,7 @@ export class TankRoom {
       bagTag(i, n) { return narrow ? [W * 0.4, H * 0.5 + i * 104] : [this.hook.x - 8, this.hook.y + 8 + 84 + Math.min(4, n) * 22 + 34 + i * 100]; } };
   }
   signature(g) {
-    return [this.room, this.openKey, pressSlots(g), tankSlots(g), g.subTank.map((s) => `${s.id}${s.pressed ? 'p' + s.chamber : 'o'}${s.bleed ? 'b' : ''}`).join(','), g.bag.map((s) => s.id).join(','), window.innerWidth, window.innerHeight].join('|');
+    return [this.room, this.openKey, pressSlots(g), tankSlots(g), g.subTank.map((s) => `${s.id}${s.pressed ? 'p' + s.chamber : 'o'}`).join(','), g.bag.map((s) => s.id).join(','), window.innerWidth, window.innerHeight].join('|');
   }
   keyOf(s) { if (!s._k) s._k = 'k' + Math.random().toString(36).slice(2, 9); return s._k; }
 
@@ -130,7 +129,6 @@ export class TankRoom {
       const key = this.keyOf(s), open = this.openKey === key, sp = SPECIES_BY_ID[s.id];
       let acts = '';
       if (open) {
-        if (s.pressed && !s.acc && s.cond > 0.05) acts += `<button data-tk="bleed:tank:${i}">${s.bleed ? 'Close the valve' : 'Ease it up'}</button>`;
         acts += `<button class="ghost" data-tk="release:${where}:${i}">Let go</button>`;
         acts += `<small class="hint">drag the fish to move it</small>`;
       }
@@ -168,7 +166,7 @@ export class TankRoom {
       if (!s) return;
       const [w, col] = stateOf(g, s, where === 'bag');
       const st = el.querySelector('.st');
-      const txt = `<span style="background:${col}"></span>${w}${s.bleed ? ' · easing up' : ''}`;
+      const txt = `<span style="background:${col}"></span>${w}`;
       if (st.innerHTML !== txt) st.innerHTML = txt;
     });
   }
@@ -413,13 +411,13 @@ export class TankRoom {
     ctx.fillStyle = 'rgba(190,40,40,0.75)'; ctx.beginPath(); ctx.arc(cx - 3, 233, 6, Math.PI * 0.8, Math.PI * 1.8); ctx.fill();
     ctx.strokeStyle = 'rgba(150,150,170,0.55)'; ctx.lineWidth = 1.2; ctx.beginPath();
     for (let k = 0; k <= 12; k++) ctx.lineTo(cx - 12 + k * 2, 258 + (k % 2 ? -4 : 4)); ctx.stroke();
-    const home = s ? homeOf(s) : 0, pumping = s && !s.bleed && (s.press || 0) < Math.min(home, cmax) - 1;
+    const home = s ? homeOf(s) : 0, pumping = s && (s.press || 0) < Math.min(home, cmax) - 1;
     if (s && !(this.drag && this.drag.s === s)) {
       const L = tankLen(s.len, 62);
       const a = this.swim(g, s, false, { x0: X0 + 4, x1: X1 - 4, y0: TOP + 26, y1: BOT - 14 }, L, dt, 0.6);
       this.drawFish(ctx, g, s, a, L, false);
     }
-    const n = pumping ? 14 : s && s.bleed ? 6 : 3;
+    const n = pumping ? 14 : 3;
     for (let k = 0; k < n; k++) {
       const q = (t * (pumping ? 0.6 : 0.15) + k / n + idx * 0.37) % 1, bx = cx + Math.sin(k * 7.1 + idx) * 22 + Math.sin(q * 9 + k) * 3;
       ctx.strokeStyle = `rgba(210,230,255,${(0.5 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1;
@@ -444,11 +442,10 @@ export class TankRoom {
     ctx.fillStyle = '#121214'; ctx.fillRect(32, 84, 86, 10);
     ctx.fillStyle = '#3d4c5c'; ctx.beginPath(); ctx.roundRect(2, 54, 30, 16, 4); ctx.fill();
     ctx.fillStyle = '#58b3d8'; ctx.fillRect(0, 57, 4, 10);
-    ctx.fillStyle = s && s.bleed ? '#ff5a3a' : '#c8321f';
-    ctx.save(); ctx.translate(16, 52); ctx.rotate(s && s.bleed ? -0.6 : 0); ctx.beginPath(); ctx.roundRect(-8, -9, 16, 10, 3); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#c8321f';
+    ctx.save(); ctx.translate(16, 52); ctx.beginPath(); ctx.roundRect(-8, -9, 16, 10, 3); ctx.fill(); ctx.restore();
     ctx.fillStyle = '#111'; ctx.fillRect(92, 24, 6, 16);
-    ctx.fillStyle = '#3a9ee0'; ctx.save(); ctx.translate(95, 22); ctx.rotate(s && s.bleed ? 0.9 : 0); ctx.fillRect(-9, -3, 18, 6); ctx.restore();
-    if (s && s.bleed) for (let k = 0; k < 3; k++) { const q = (t * 0.8 + k / 3) % 1; ctx.fillStyle = `rgba(220,235,255,${(0.6 * (1 - q)).toFixed(3)})`; ctx.beginPath(); ctx.arc(100 + q * 10, 18 - q * 14, 1.5, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#3a9ee0'; ctx.save(); ctx.translate(95, 22); ctx.fillRect(-9, -3, 18, 6); ctx.restore();
     // the gauge: 0-4,000 m; a green band for what the chamber can hold here (outside to outside +
     // rating); the needle turns amber when the animal needs more than that
     const gx = cx - 8, gy = 66, gr = 15, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, ang = (m) => a0 + (a1 - a0) * clamp(m / 4000, 0, 1);

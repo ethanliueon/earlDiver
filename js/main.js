@@ -308,18 +308,14 @@ function tankAction(act, where, i, to = -1) {
     if (where === 'tank' && !s.pressed) return false;
     if (tankUsed(g) >= tankSlots(g)) { hud.toast('The open tank is full', 'warn'); return false; }
     if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
-    s.pressed = false; s.bleed = false; delete s.chamber;
+    s.pressed = false; delete s.chamber;
     audio.ready && audio.tankPlop();
   } else if (act === 'tobag') {
     // back into the catch bag (to carry it to the other room, or out)
     if (where === 'bag') return false;
     if (g.bag.length >= bagSlots(g)) { hud.toast('The catch bag is full', 'warn'); return false; }
-    L.splice(i, 1); s.pressed = false; s.bleed = false; delete s.chamber; g.bag.push(s);
+    L.splice(i, 1); s.pressed = false; delete s.chamber; g.bag.push(s);
     audio.ready && audio.uiSoft();
-  } else if (act === 'bleed') {
-    if (!s.pressed || s.acc) return false;
-    s.bleed = !s.bleed;
-    hud.toast(s.bleed ? 'The valve open a crack: the chamber eases toward the surface' : 'Valve closed');
   } else if (act === 'release') {
     L.splice(i, 1);
     if (s.cond > 0.05) {
@@ -329,7 +325,7 @@ function tankAction(act, where, i, to = -1) {
       hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} goes back into the dark`);
     } else hud.toast('It sinks away');
   } else return false;
-  if (act === 'bleed' || act === 'release') audio.ready && audio.click();
+  if (act === 'release') audio.ready && audio.click();
   return true;
 }
 function syncProfile() {
@@ -948,8 +944,7 @@ function update(dt) {
     for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from the pressure it lives at`, 'warn');
     for (const ev of dl.events) {
       const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
-      if (ev.type === 'acclimated') hud.toast(`The ${nm} is acclimated to the surface: worth a quarter more`, 'note');
-      else if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the climb: get it into one of the sub's chambers`, 'warn');
+      if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the climb: get it into one of the sub's chambers`, 'warn');
       else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying: get it to a chamber, or go back down`, 'warn');
     }
     g.catchTarget = null; g.capRarity = null;
