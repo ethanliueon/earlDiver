@@ -138,7 +138,9 @@ export class Fauna {
     const n = rng.int(b.n[0], b.n[1]);
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
-    const baseR = Math.sqrt(n) * sp.len * 0.42 + 0.35; // about one body length between fish
+    // spacing: about a body length and a half between fish, never tighter than ~15 cm (tiny
+    // krill and lanternfish otherwise merge into one solid blob)
+    const baseR = Math.sqrt(n) * Math.max(sp.len, 0.1) * 0.75 + 0.6;
     this.schools.set(gid, {
       sp, x, y, vx: dir * 0.6, vy: 0, dir, n, r: baseR, baseR, wob: rng() * 100, threat: 0, turnTime: -99, turnT: rng.range(15, 40),
       lo: night && b.nightMin !== undefined ? b.nightMin : b.min, hi: night && b.nightMax !== undefined ? b.nightMax : b.max,
@@ -250,7 +252,7 @@ export class Fauna {
       if (nd !== s.prevDir) { s.turnTime = time; s.prevDir = nd; }
       s.dir = nd;
       // tighten into a ball under threat
-      const want = s.baseR * (1 - 0.55 * Math.min(1, s.threat));
+      const want = s.baseR * (1 - 0.3 * Math.min(1, s.threat));
       s.r = lerp(s.r, want, dt * 1.5);
     }
 
@@ -286,7 +288,7 @@ export class Fauna {
       let tx, ty, sp = c.speed, ax, ay;
       if (school) {
         // a fixed place in the school's shape; only the spacing tightens when it is threatened
-        const tight = 1 - 0.3 * Math.min(1, school.threat);
+        const tight = 1 - 0.15 * Math.min(1, school.threat);
         const ox = c.ox + Math.sin(time * 0.31 + c.wob) * 0.04, oy = c.oy + Math.cos(time * 0.27 + c.wob * 1.7) * 0.04;
         tx = school.x + ox * school.baseR * 1.8 * tight; ty = school.y + oy * school.baseR * tight;
         ax = (tx - c.x) * 3 + (school.vx - c.vx) * 2;

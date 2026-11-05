@@ -32,8 +32,8 @@ export class Audio {
     // ambience bed: deep water rumble
     this.amb = this.loopNoise(this.brown, 'lowpass', 260, 0);
     // surface wash
-    this.surf = this.loopNoise(this.white, 'bandpass', 700, 0);
-    this.surf.f.Q.value = 0.4;
+    // surface wash: a soft low hiss of water lapping, not a roar
+    this.surf = this.loopNoise(this.white, 'lowpass', 520, 0);
     // entity drone: detuned low oscillators
     this.drone = ac.createGain(); this.drone.gain.value = 0;
     const dlp = ac.createBiquadFilter(); dlp.type = 'lowpass'; dlp.frequency.value = 140;
@@ -117,12 +117,12 @@ export class Audio {
     this.bubbles(14, 0.06);
     this.burst('bandpass', 2600, 6, 0.25, 0.08);
   }
-  gasp() {
+  gasp() { // (quieter bubbles than before: they were too loud on surfacing)
     // a ragged first breath: a sharp inhale, then two shaky ones
     this.burst('bandpass', 1300, 1.4, 0.7, 0.16);
     this.burst('bandpass', 1100, 1.4, 0.5, 0.1, this.white, 0.85);
     this.burst('bandpass', 1000, 1.4, 0.5, 0.08, this.white, 1.5);
-    this.bubbles(16, 0.05);
+    this.bubbles(10, 0.02);
   }
   thud(vol) { this.tone(55, 0.35, vol, 'sine', 0, 32); this.burst('lowpass', 180, 0.7, 0.4, vol * 0.8, this.brown); }
   whoosh() { const f = this.burst('bandpass', 400, 1.5, 1.2, 0.18, this.white); f.frequency.exponentialRampToValueAtTime(1600, this.ac.currentTime + 1); }
@@ -172,7 +172,7 @@ export class Audio {
     // beds
     this.amb.g.gain.setTargetAtTime(under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03, now, 0.5);
     this.amb.f.frequency.setTargetAtTime(under ? lerp(260, 120, clamp(depth / 1000, 0, 1)) : 400, now, 0.5);
-    this.surf.g.gain.setTargetAtTime((under ? 0.0 : 0.05) + (under ? 0 : g.waveBoost * 0.1), now, 0.3);
+    this.surf.g.gain.setTargetAtTime(under ? 0 : 0.016 + g.waveBoost * 0.05, now, 0.3);
     this.drone.gain.setTargetAtTime(fx.dread * 0.11 + (g.mode === 'dying' ? 0.12 : 0), now, 0.8);
     this.tinG.gain.setTargetAtTime((fx.dread > 0.55 ? (fx.dread - 0.55) * 0.012 : 0) + (g.injury >= 4 ? 0.006 : 0), now, 0.5);
     const subMove = e.inSub ? clamp(e.speedNow / 5, 0.15, 1) : 0;
