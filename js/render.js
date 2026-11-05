@@ -259,15 +259,19 @@ export class Renderer {
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
     const glowPts = [];
-    // the seabed life and the animals share one layer, veiled by the water in one pass
-    const fl = this.layerBegin(ctx), sl = fl;
+    // Seabed life and animals are drawn straight onto the scene with the water's tint built into
+    // their stored pictures (one per depth band). Only what is still drawn live (rare forms, jellies,
+    // eels, the great whales...) goes through a layer, and only when one is on screen.
+    let fl = null;
+    const layer = () => fl || (fl = this.layerBegin(ctx));
     for (const s of g.world.statics) {
       if (s.x < x0 - 3 || s.x > x1 + 3 || s.y < y0 - 6 || s.y > y1 + 6) continue;
       if (!s.sp.v.glow && !s.variant && !visible(s.x, s.y, Math.max(0.18, s.sp.len) * s.scale)) continue;
       const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
-      this.lgrow(S(s.x), Sy(s.y) - L * 0.5, L * 1.3);
+      const sl = s.variant ? layer() : ctx;
+      if (s.variant) this.lgrow(S(s.x), Sy(s.y) - L * 0.5, L * 1.3);
       sl.save(); sl.translate(S(s.x), Sy(s.y)); sl.scale(s.flip, 1);
-      const r = s.variant ? this.drawVariant(sl, s.sp, s.variant, L, t * 0.3 + s.phase) : this.drawStatic(sl, s, L, t);
+      const r = s.variant ? this.drawVariant(sl, s.sp, s.variant, L, t * 0.3 + s.phase) : this.drawStatic(sl, s, L, t, this.veilFor(s.y));
       sl.restore();
       if (s.variant === 'crimson') glowPts.push([S(s.x), Sy(s.y) - L * 0.3, '#ff3018', Math.max(ppm * 0.6, L * 0.6), 1]);
       if (r && s.sp.v.glow) glowPts.push([S(s.x), Sy(s.y), s.sp.v.glow, L]);
@@ -277,7 +281,7 @@ export class Renderer {
     // so the nose follows the direction of travel (a fish swimming down points down).
     // Small fish are batched per species: one path for all their backs, one for all their bellies,
     // one for the silver flashes - a whole school costs three draw calls.
-    const baseM = fl.getTransform();
+    const baseM = ctx.getTransform();
     this.rimSun = this.lite || cam.y + cam.h / 2 <= 0 ? 0 : clamp(1 - Math.max(0, cam.y) / 260, 0.25, 1) * (0.55 + 0.45 * (g.dayEff || 0));
     const rbox = [1e9, 1e9, -1e9, -1e9]; // animals drawn live (not from baked frames) get the rim the old way
     const batches = new Map();
@@ -286,7 +290,6 @@ export class Renderer {
       if (!inView(c.x, c.y, c.len)) continue;
       if (!c.sp.v.glow && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
       const Ld = fishDrawLen(c.len) * ppm;
-      this.lgrow(S(c.x), Sy(c.y), Ld * 1.4);
       const shape = c.sp.v.s;
       const tilt = clamp(Math.atan2(c.hvy !== undefined ? c.hvy : c.vy, Math.max(Math.abs(c.vx), c.hvy !== undefined ? c.speed * 0.8 : 0) + 0.2), -0.5, 0.5);
       if (Ld < 20 && !c.variant && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
@@ -321,12 +324,15 @@ export class Renderer {
         if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(1.5, Ld * 0.3), 0.3 * bioPulse(c, t), 0.6]);
         continue;
       }
-      fl.save(); fl.translate(S(c.x), Sy(c.y));
-      if (c.dir > 0) fl.scale(-1, 1);
-      fl.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
-      if (c.hidden) fl.globalAlpha = 0.55; // tucked in among the tentacles, the coral, the rock
-      const r = c.variant ? this.drawVariant(fl, c.sp, c.variant, Ld, c.phase) : this.drawCached(fl, c.sp, Ld, c.phase, c.wob);
-      fl.restore();
+      const isLive = c.variant || Ld > 150 || CACHE_SKIP.has(shape);
+      const tg = isLive && Ld >= 6 ? layer() : ctx;
+      if (tg !== ctx) this.lgrow(S(c.x), Sy(c.y), Ld * 1.4);
+      tg.save(); tg.translate(S(c.x), Sy(c.y));
+      if (c.dir > 0) tg.scale(-1, 1);
+      tg.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
+      if (c.hidden) tg.globalAlpha = 0.55; // tucked in among the tentacles, the coral, the rock
+      const r = c.variant ? this.drawVariant(tg, c.sp, c.variant, Ld, c.phase) : this.drawCached(tg, c.sp, Ld, c.phase, c.wob, isLive ? null : this.veilFor(c.y));
+      tg.restore();
       if (Ld >= 6 && (c.variant || Ld > 150 || CACHE_SKIP.has(shape))) {
         const sx = S(c.x), sy = Sy(c.y), rr = Ld * 1.4;
         rbox[0] = Math.min(rbox[0], sx - rr); rbox[1] = Math.min(rbox[1], sy - rr); rbox[2] = Math.max(rbox[2], sx + rr); rbox[3] = Math.max(rbox[3], sy + rr);
@@ -334,8 +340,8 @@ export class Renderer {
       // a research tag trailing from a tagged animal
       if (c.tagged) {
         const tx = S(c.x) + (c.dir > 0 ? -1 : 1) * Ld * 0.05, ty = Sy(c.y) - Ld * 0.08;
-        fl.strokeStyle = '#e8b02a'; fl.lineWidth = Math.max(1, ppm * 0.03); fl.lineCap = 'round';
-        fl.beginPath(); fl.moveTo(tx, ty); fl.quadraticCurveTo(tx - c.dir * Ld * 0.08, ty - Ld * 0.06 + Math.sin(t * 8 + c.wob) * Ld * 0.02, tx - c.dir * Ld * 0.16, ty - Ld * 0.03); fl.stroke();
+        ctx.strokeStyle = '#e8b02a'; ctx.lineWidth = Math.max(1, ppm * 0.03); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.quadraticCurveTo(tx - c.dir * Ld * 0.08, ty - Ld * 0.06 + Math.sin(t * 8 + c.wob) * Ld * 0.02, tx - c.dir * Ld * 0.16, ty - Ld * 0.03); ctx.stroke(); ctx.lineCap = 'butt';
       }
       // a crimson animal glows: a red light that carries in the dark
       if (c.variant === 'crimson') glowPts.push([S(c.x), Sy(c.y), '#ff3018', Math.max(ppm * 0.6, Ld * 0.6), 0.9 + 0.3 * Math.sin(t * 1.7 + c.wob)]);
@@ -349,14 +355,17 @@ export class Renderer {
         }
       }
     }
+    // the small fish, batched: their colours mixed with the water's, as the veil would have done
+    const bv = this.veilFor(cam.y);
+    const vmix = (hex) => rgbStr(mixRgb(hexToRgb(hex), bv.col, bv.a));
     for (const bt of batches.values()) {
-      fl.fillStyle = bt.sp.v.c[0]; fl.fill(bt.back);
-      fl.fillStyle = bt.sp.v.c[1]; fl.fill(bt.belly);
-      if (bt.nf) { fl.fillStyle = 'rgba(235,245,250,0.7)'; fl.fill(bt.flash); }
-      fl.fillStyle = '#0a0a0a'; fl.fill(bt.eyes);
+      ctx.fillStyle = vmix(bt.sp.v.c[0]); ctx.fill(bt.back);
+      ctx.fillStyle = vmix(bt.sp.v.c[1]); ctx.fill(bt.belly);
+      if (bt.nf) { ctx.fillStyle = 'rgba(235,245,250,0.7)'; ctx.fill(bt.flash); }
+      ctx.fillStyle = vmix('#0a0a0a'); ctx.fill(bt.eyes);
     }
-    fl.setTransform(baseM);
-    this.layerEnd(ctx, g, fl, !this.lite && rbox[2] > rbox[0] ? rbox : null);
+    ctx.setTransform(baseM);
+    if (fl) { fl.setTransform(baseM); this.layerEnd(ctx, g, fl, !this.lite && rbox[2] > rbox[0] ? rbox : null); }
     // ---- pickups + lanterns (over the veiled layer, so nothing valuable hides behind the coral) ----
     for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) this.drawPickup(ctx, p, S(p.x), Sy(p.y), ppm, t);
     for (const l of g.world.lanterns) if (inView(l.x, l.y, 14)) this.drawLanternBody(ctx, l, S, Sy, ppm, t);
@@ -740,7 +749,7 @@ export class Renderer {
     return null;
   }
 
-  drawCached(ctx, sp, Ld, phase, wob) {
+  drawCached(ctx, sp, Ld, phase, wob, veil = null) {
     const shape = sp.v.s;
     if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(shape)) return drawSpecies(ctx, sp, Ld, phase, 1, wob);
     const cache = this.spriteCache || (this.spriteCache = new Map());
@@ -764,7 +773,7 @@ export class Renderer {
     }
     if (!e.frames[f]) this.buildFrame(e, sp, f);
     const k = Ld / e.bl;
-    ctx.drawImage(e.frames[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
+    ctx.drawImage(veil ? this.veiled(e, f, veil) : e.frames[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
     // the light from above along its back, baked with the frame and laid on at today's strength
     if (this.rimSun > 0 && Ld >= 24 && e.hi[f]) { ctx.globalAlpha = 0.32 * this.rimSun; ctx.drawImage(e.hi[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k); ctx.globalAlpha = 1; }
     const gl = e.glows[f];
@@ -773,15 +782,16 @@ export class Renderer {
 
   // Seabed life (corals, anemones, sponges, seagrass, crabs...) never goes anywhere, so each kind is
   // drawn once per size into a picture and reused; soft things sway by bending the picture gently.
-  drawStatic(ctx, s, L, t) {
+  drawStatic(ctx, s, L, t, veil) {
     const sp = s.sp, cache = this.staticCache || (this.staticCache = new Map());
-    const bucket = Math.round(Math.log(Math.max(4, L)) / Math.log(1.15)), bl = Math.pow(1.15, bucket), key = sp.id + ':' + bucket;
+    const bucket = Math.round(Math.log(Math.max(4, L)) / Math.log(1.15)), bl = Math.pow(1.15, bucket), key = sp.id + ':' + bucket + ':' + veil.band;
     let e = cache.get(key);
     if (!e) {
       const bw = Math.ceil(bl * 2.4), bh = Math.ceil(bl * 2.4), oy = Math.ceil(bh * 0.82);
       const c = document.createElement('canvas'); c.width = bw; c.height = bh;
       const x = c.getContext('2d'); x.translate(bw / 2, oy);
       const glow = drawSpecies(x, sp, bl, 1.3, 0.3, 0);
+      x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'source-atop'; x.fillStyle = rgbStr(veil.col, veil.a); x.fillRect(0, 0, bw, bh);
       e = { c, bw, bh, oy, bl, glow };
       cache.set(key, e);
       if (cache.size > 500) cache.delete(cache.keys().next().value);
@@ -790,6 +800,32 @@ export class Renderer {
     if (SWAY.has(sp.v.s)) ctx.transform(1, 0, Math.sin(t * 0.8 + s.phase) * 0.07, 1, 0, 0); // the top leans with the swell
     ctx.drawImage(e.c, -e.bw / 2 * k, -e.oy * k, e.bw * k, e.bh * k);
     return e.glow ? e.glow.map(([gx, gy, sz]) => [gx * k, gy * k, sz]) : null;
+  }
+
+  // The water between the eye and an animal at depth d: its colour and how thick it is. Quantised
+  // into bands (finer near the surface), so each stored picture is tinted once per band.
+  veilFor(d) {
+    const band = d <= 0 ? 0 : Math.round(Math.log2(1 + d / 4) * 3);
+    const cache = this.veilCache || (this.veilCache = []);
+    if (!cache[band]) {
+      const dd = band === 0 ? 0 : 4 * (Math.pow(2, band / 3) - 1);
+      cache[band] = { band, col: mixRgb(sampleTable(WATER_ALBEDO, dd), [150, 190, 200], 0.15), a: dd <= 0 ? 0 : 0.1 + 0.24 * smoothstep(0, 90, dd) };
+    }
+    return cache[band];
+  }
+  // an animation frame with the water's tint laid over it (made on first use, kept with the frame)
+  veiled(e, f, veil) {
+    if (!veil.a) return e.frames[f];
+    const v = e.veil || (e.veil = {});
+    let arr = v[veil.band];
+    if (!arr) { arr = v[veil.band] = new Array(SPRITE_FRAMES); const ks = Object.keys(v); if (ks.length > 2) delete v[ks[0] === String(veil.band) ? ks[1] : ks[0]]; } // keep the last two bands
+    if (!arr[f]) {
+      const c = document.createElement('canvas'); c.width = c.height = e.box;
+      const x = c.getContext('2d'); x.drawImage(e.frames[f], 0, 0);
+      x.globalCompositeOperation = 'source-atop'; x.fillStyle = rgbStr(veil.col, veil.a); x.fillRect(0, 0, e.box, e.box);
+      arr[f] = c;
+    }
+    return arr[f];
   }
 
   // One animation frame of a species, with the light from above worked in once instead of every
