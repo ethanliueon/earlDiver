@@ -29,81 +29,56 @@ export class Hud {
     const dying = g.mode === 'dying';
     const red = dying || false;
 
-    // ---------- survival timer + oxygen (top right) ----------
+    // ---------- depth: the main number, big, top right ----------
     const pad = 26 * s;
-    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-    ctx.font = `500 ${40 * s}px ${MONO}`;
-    let shown = g.survival;
-    let col = 'rgba(236,240,240,0.92)';
-    if (dying) { col = '#d8241e'; shown = g.survival + g.deathT; }
-    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(formatTime(shown), W - pad + 2 * s, pad + 2 * s);
-    ctx.fillStyle = col; ctx.fillText(formatTime(shown), W - pad, pad);
-    // ---------- air: a slim bar; details only when they matter ----------
+    ctx.textBaseline = 'top'; ctx.textAlign = 'right';
+    const rx0 = W - pad;
+    if (!dying) {
+      ctx.font = `500 ${46 * s}px ${MONO}`;
+      const dtxt = `${Math.max(0, e.y).toFixed(0)} m`;
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(dtxt, rx0 + 2 * s, pad + 2 * s);
+      ctx.fillStyle = 'rgba(236,240,240,0.94)'; ctx.fillText(dtxt, rx0, pad);
+    }
+    // ---------- air: a short, thick, blue tank gauge under it ----------
     const o2 = e.inSub ? g.sub.o2 / g.sub.o2Max : e.o2 / e.o2Max;
-    const bw = 150 * s, bh = 5 * s, bx = W - pad - bw, by = pad + 50 * s;
-    const bar = Math.max(0, Math.round(200 * clamp(o2, 0, 1)));
-    ctx.font = `500 ${11 * s}px ${MONO}`; ctx.textAlign = 'right';
-    if (g.noAir) { ctx.fillStyle = Math.sin(g.time * 9) > 0 ? '#ff5040' : '#a02820'; ctx.fillText(e.inSub ? 'CABIN: NO AIR' : 'NO AIR', bx - 8 * s, by - 3 * s); }
-    else { ctx.fillStyle = 'rgba(220,230,232,0.7)'; ctx.fillText(`${e.inSub ? 'CABIN' : 'AIR'} ${bar}`, bx - 8 * s, by - 3 * s); }
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(bx, by, bw, bh);
-    const oc = o2 > 0.5 ? [86, 200, 120] : o2 > 0.1 ? [lerp(230, 86, (o2 - 0.1) / 0.4), lerp(190, 200, (o2 - 0.1) / 0.4), 70] : [220, 50, 40];
+    const bw = 96 * s, bh = 12 * s, bx = rx0 - bw, by = pad + 58 * s;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.fill();
+    const oc = o2 > 0.25 ? [80, 170, 240] : o2 > 0.1 ? [230, 170, 60] : [225, 55, 45];
     const pulse = o2 < 0.1 ? 0.6 + 0.4 * Math.sin(g.time * 10) : 1;
-    ctx.fillStyle = `rgba(${oc[0] | 0},${oc[1] | 0},${oc[2] | 0},${pulse})`;
+    ctx.fillStyle = `rgba(${oc[0]},${oc[1]},${oc[2]},${pulse})`;
+    ctx.save(); ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.clip();
     ctx.fillRect(bx, by, bw * clamp(o2, 0, 1), bh);
-    let ly = by + bh + 5 * s;
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(bx, by + 1.5 * s, bw * clamp(o2, 0, 1), 3 * s); // a glint along the top
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(180,215,240,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.stroke();
+    ctx.font = `500 ${11 * s}px ${MONO}`; ctx.textAlign = 'right';
+    if (g.noAir) { ctx.fillStyle = Math.sin(g.time * 9) > 0 ? '#ff5040' : '#a02820'; ctx.fillText(e.inSub ? 'CABIN: NO AIR' : 'NO AIR', bx - 8 * s, by); }
+    else { ctx.fillStyle = 'rgba(180,215,240,0.75)'; ctx.fillText(e.inSub ? 'CABIN O₂' : 'O₂', bx - 8 * s, by); }
+    let ly = by + bh + 6 * s;
     ctx.font = `${11 * s}px ${MONO}`;
     const left = e.inSub ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
     const sec = Math.max(0, Math.floor(left));
-    if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText((g.noAirRate || 1) > 1.3 ? 'under pressure — surface!' : 'holding your breath — surface!', W - pad, ly); ly += 15 * s; }
-    else if (e.atSurface && o2 < 0.999) { ctx.fillStyle = 'rgba(220,230,232,0.6)'; ctx.fillText('refilling…', W - pad, ly); ly += 15 * s; }
+    if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText((g.noAirRate || 1) > 1.3 ? 'under pressure — surface!' : 'holding your breath — surface!', rx0, ly); ly += 15 * s; }
+    else if (e.atSurface && o2 < 0.999) { ctx.fillStyle = 'rgba(180,215,240,0.65)'; ctx.fillText('refilling…', rx0, ly); ly += 15 * s; }
     else if (!e.atSurface && o2 < 0.5) {
-      ctx.fillStyle = o2 < 0.25 ? '#e8b040' : 'rgba(220,230,232,0.6)';
-      ctx.fillText(sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air left` : `${sec} s of air left`, W - pad, ly); ly += 15 * s;
+      ctx.fillStyle = o2 < 0.25 ? '#e8b040' : 'rgba(180,215,240,0.65)';
+      ctx.fillText(sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air left` : `${sec} s of air left`, rx0, ly); ly += 15 * s;
     }
     if (!e.atSurface) {
       const parts = [];
       if (e.sprint && e.speedNow > 1) parts.push(`sprinting ×${e.inSub ? 3 : 2}`);
       const press = e.inSub ? 1 : diverDrainMult(e.y);
       if (press > 1.05) parts.push(`pressure ×${press.toFixed(1)}`);
-      if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.fillText(parts.join(' · '), W - pad, ly); ly += 15 * s; }
+      if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.fillText(parts.join(' · '), rx0, ly); ly += 15 * s; }
     }
-
-    // ---------- a compact strip down the right edge ----------
-    const rx0 = W - pad;
-    let yy = Math.max(ly + 10 * s, by + 34 * s);
-    // depth, with small status icons beside it
-    ctx.textAlign = 'right'; ctx.font = `500 ${22 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6';
-    ctx.fillText(`${Math.max(0, e.y).toFixed(0)} m`, rx0, yy);
-    const dw = ctx.measureText(`${Math.max(0, e.y).toFixed(0)} m`).width;
-    let icx = rx0 - dw - 18 * s;
-    const icy = yy + 12 * s;
-    if (g.entity && g.entity.marked) {
-      // an eye: dims a step with each good deed
-      const calm = clamp((g.entity.calm || 0) / 60, 0, 1);
-      const a = (0.95 - calm * 0.6) * (0.75 + 0.25 * Math.sin(g.time * 2));
-      ctx.fillStyle = `rgba(230,70,60,${a.toFixed(2)})`;
-      ctx.beginPath(); ctx.ellipse(icx, icy, 9 * s, 5 * s, 0, 0, TAU); ctx.fill();
-      ctx.fillStyle = 'rgba(10,0,0,0.9)'; ctx.beginPath(); ctx.ellipse(icx, icy, 6 * s, 1.4 * s, 0, 0, TAU); ctx.fill();
-      icx -= 24 * s;
-    } else if (g.concealed) {
-      // a leaf: hidden
+    let yy = ly + 8 * s;
+    // hidden: a small leaf
+    if (g.concealed) {
+      const icx = rx0 - 8 * s, icy = yy + 6 * s;
       ctx.fillStyle = 'rgba(150,200,170,0.8)';
       ctx.beginPath(); ctx.moveTo(icx - 7 * s, icy + 5 * s); ctx.quadraticCurveTo(icx - 6 * s, icy - 7 * s, icx + 7 * s, icy - 6 * s); ctx.quadraticCurveTo(icx + 5 * s, icy + 5 * s, icx - 7 * s, icy + 5 * s); ctx.fill();
-      icx -= 24 * s;
+      yy += 20 * s;
     }
-    yy += 32 * s;
-    // heart: a small icon that beats at the heart rate, and the number
-    this.beatPhase += dt * e.hr / 60;
-    const ph = this.beatPhase % 1, beat = ph < 0.12 ? 1 + 0.25 * Math.sin(ph / 0.12 * Math.PI) : 1;
-    const hcol = e.hr > 140 ? '#ff6a5a' : e.hr > 100 ? '#e8b060' : 'rgba(220,120,120,0.85)';
-    ctx.font = `500 ${13 * s}px ${MONO}`; ctx.fillStyle = e.hr > 100 ? hcol : 'rgba(216,236,230,0.85)';
-    ctx.fillText(`${Math.round(e.hr)}`, rx0, yy + 2 * s);
-    const hx = rx0 - ctx.measureText(`${Math.round(e.hr)}`).width - 13 * s, hy = yy + 9 * s, hs = 5 * s * beat;
-    ctx.fillStyle = hcol;
-    ctx.beginPath(); ctx.moveTo(hx, hy + hs * 1.1);
-    ctx.bezierCurveTo(hx - hs * 1.6, hy, hx - hs * 1.1, hy - hs * 1.2, hx, hy - hs * 0.4);
-    ctx.bezierCurveTo(hx + hs * 1.1, hy - hs * 1.2, hx + hs * 1.6, hy, hx, hy + hs * 1.1); ctx.fill();
-    yy += 26 * s;
     // the sub: one line, only inside it
     if (e.inSub) {
       const r = g.sub.y / g.sub.rated, hi = g.sub.hull;
@@ -152,24 +127,59 @@ export class Hud {
     ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 8 * s, jy + 5.5 * s, 10 * s, 11 * s);
     ctx.font = `${10 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,220,192,0.5)'; ctx.textAlign = 'right'; ctx.fillText('J', jx - 5 * s, jy + 6 * s);
 
-    // ---------- items (bottom left): only what you are carrying or using ----------
+    // ---------- Q / E items: in the right-hand column, only when carried ----------
+    yy = jy + jh + 12 * s;
     const glass = (x, y, w, h) => { ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.strokeStyle = 'rgba(160,200,200,0.14)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8 * s); ctx.fill(); ctx.stroke(); };
-    const sz = 56 * s, by2 = H - pad - sz;
+    const sz = 46 * s;
     const slots = [];
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
     if (g.items.necklace > 0 || g.necklaceT > 0) slots.push(['e', 'E', 'NECKLACE', g.items.necklace, '#f0dcb0', g.necklaceT > 0 ? g.necklaceT / 15 : 0]);
     this.slotHot = {};
     slots.forEach(([id, key, name, n, col, active], i) => {
-      const x = pad + i * (sz + 8 * s), y = by2;
+      const x = rx0 - sz, y = yy + i * (sz + 8 * s);
       this.slotHot[id] = { x: x * kx, y: y * kx, w: sz * kx, h: sz * kx };
       glass(x, y, sz, sz);
       ctx.fillStyle = col; ctx.globalAlpha = n > 0 ? 1 : 0.3;
-      ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.48, 9 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
-      if (active > 0) { ctx.strokeStyle = col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.48, 14 * s, -Math.PI / 2, -Math.PI / 2 + TAU * active); ctx.stroke(); }
-      ctx.font = `500 ${11 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; ctx.fillText(key, x + 6 * s, y + 5 * s);
-      ctx.textAlign = 'right'; ctx.fillText(`×${n}`, x + sz - 6 * s, y + 5 * s);
-      ctx.textAlign = 'center'; ctx.font = `${8 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name, x + sz / 2, y + sz - 13 * s);
+      ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 8 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+      if (active > 0) { ctx.strokeStyle = col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 13 * s, -Math.PI / 2, -Math.PI / 2 + TAU * active); ctx.stroke(); }
+      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; ctx.fillText(key, x + 5 * s, y + 4 * s);
+      ctx.textAlign = 'right'; ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
+      ctx.font = `${8 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name, x - 6 * s, y + sz / 2 - 4 * s);
     });
+
+    // ---------- marked: the monster's own eye, big, bottom left ----------
+    if (g.entity && g.entity.marked && !dying) {
+      const calm = clamp((g.entity.calm || 0) / 60, 0, 1);
+      const ex = pad + 56 * s, ey = H - pad - 40 * s, ew = 54 * s, eh = 34 * s;
+      const breathe = 0.85 + 0.15 * Math.sin(g.time * 0.9);              // it slowly opens and narrows
+      const a = (1 - calm * 0.65);                                        // each good deed dims it a step
+      const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.6);
+      og.addColorStop(0, `rgba(255,40,30,${(0.35 * a).toFixed(3)})`); og.addColorStop(1, 'rgba(255,40,30,0)');
+      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ex, ey, ew * 1.6, 0, TAU); ctx.fill();
+      // an almond-shaped eye with pointed corners and a dark lid rim
+      const lid = eh * breathe;
+      const almond = new Path2D();
+      almond.moveTo(ex - ew, ey);
+      almond.bezierCurveTo(ex - ew * 0.5, ey - lid * 1.25, ex + ew * 0.5, ey - lid * 1.25, ex + ew, ey);
+      almond.bezierCurveTo(ex + ew * 0.5, ey + lid * 1.25, ex - ew * 0.5, ey + lid * 1.25, ex - ew, ey);
+      ctx.fillStyle = `rgba(20,4,4,${(0.9 * a).toFixed(3)})`; ctx.fill(almond);
+      ctx.save(); ctx.clip(almond);
+      // the iris fills most of the eye: bright red, hotter at the centre
+      const ir = eh * 0.95;
+      const ig = ctx.createRadialGradient(ex, ey, 0, ex, ey, ir);
+      ig.addColorStop(0, `rgba(255,140,90,${a.toFixed(3)})`); ig.addColorStop(0.5, `rgba(235,35,25,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(110,0,0,${a.toFixed(3)})`);
+      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex, ey, ir, 0, TAU); ctx.fill();
+      // fine radial texture in the iris
+      ctx.strokeStyle = `rgba(80,0,0,${(0.35 * a).toFixed(3)})`; ctx.lineWidth = 1;
+      ctx.beginPath(); for (let k = 0; k < 18; k++) { const an = k / 18 * TAU; ctx.moveTo(ex + Math.cos(an) * ir * 0.3, ey + Math.sin(an) * ir * 0.3); ctx.lineTo(ex + Math.cos(an) * ir, ey + Math.sin(an) * ir); } ctx.stroke();
+      // the horizontal slit pupil, narrowing and widening
+      ctx.fillStyle = `rgba(6,0,0,${(0.97 * a).toFixed(3)})`;
+      ctx.beginPath(); ctx.ellipse(ex, ey, ir * 0.9, eh * 0.1 * (1.4 - breathe * 0.5), 0, 0, TAU); ctx.fill();
+      // a wet highlight
+      ctx.fillStyle = `rgba(255,225,205,${(0.55 * a).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(ex - ir * 0.35, ey - lid * 0.45, ir * 0.18, lid * 0.12, -0.3, 0, TAU); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = `rgba(40,0,0,${(0.9 * a).toFixed(3)})`; ctx.lineWidth = 2.5 * s; ctx.stroke(almond);
+    }
 
     // ---------- interaction prompt ----------
     if (g.prompt && !dying) {

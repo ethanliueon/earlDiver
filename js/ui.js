@@ -65,7 +65,7 @@ export class UI {
   renderJournal() {
     if ((this.tab || 'species') !== 'species') return this.renderJournalTab(this.tab);
     const g = this.h.getGame();
-    $('journal-count').textContent = `${g.journal.size} of ${SPECIES_COUNT} recorded`;
+    $('journal-count').textContent = `${formatTime(g.survival)} into the dive · ${g.journal.size} of ${SPECIES_COUNT} recorded`;
     const list = $('journal-list');
     list.innerHTML = '';
     if (g.journal.size === 0) {
@@ -108,7 +108,7 @@ export class UI {
         row('Carrying', items) +
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
-      $('journal-count').textContent = '';
+      $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
       const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'boat workshop, at the boat'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
