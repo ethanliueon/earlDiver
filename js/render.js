@@ -55,6 +55,12 @@ export function ambientAt(depth, dayLight) {
   return Math.sqrt(dayLight * Math.exp(-depth / 140));
 }
 
+// a creature's own light: a slow breathing pulse at its own rhythm, flaring when it is startled
+function bioPulse(c, t) {
+  const rate = 0.45 + (c.wob % 1) * 0.6;
+  return (0.8 + 0.2 * Math.sin(t * rate + c.wob)) * (c.fleeT > 0 ? 1.7 : 1);
+}
+
 export class Renderer {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
@@ -296,7 +302,8 @@ export class Renderer {
         if (flash > 0.3) { bt.flash.moveTo(bx + fx2 * Ld * 0.36, by + fy2 * Ld * 0.36); bt.flash.ellipse(bx, by, Ld * 0.36, hh * 0.7, rot, 0, TAU); bt.nf++; }
         if (Ld > 9) { const ex = x + fx2 * Ld * 0.33 - px * down * hh * 0.2, ey = y + fy2 * Ld * 0.33 - py * down * hh * 0.2, er = Math.max(0.7, hh * 0.3); bt.eyes.moveTo(ex + er, ey); bt.eyes.arc(ex, ey, er, 0, TAU); }
         // school fish carry faint belly photophores, not lamps: small, dim, and they never sum to a blaze
-        if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(1.5, Ld * 0.3), 0.3]);
+        // (6th field: the radius of a sharp light-organ core; marks a living light the torch can wash out)
+        if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(1.5, Ld * 0.3), 0.3 * bioPulse(c, t), 0.6]);
         continue;
       }
       fl.save(); fl.translate(S(c.x), Sy(c.y));
@@ -313,8 +320,13 @@ export class Renderer {
       // a crimson animal glows: a red light that carries in the dark
       if (c.variant === 'crimson') glowPts.push([S(c.x), Sy(c.y), '#ff3018', Math.max(ppm * 0.6, Ld * 0.6), 0.9 + 0.3 * Math.sin(t * 1.7 + c.wob)]);
       if (c.sp.v.glow) {
-        if (r) for (const [lx, ly] of r) glowPts.push([S(c.x) - lx * c.dir, Sy(c.y) + ly, c.sp.v.glow, Ld * 0.25]);
-        else glowPts.push([S(c.x), Sy(c.y), c.sp.v.glow, Ld * 0.3]);
+        // living light from the real organs: a sharp core and a small halo, slowly pulsing, flaring when startled
+        const pk = bioPulse(c, t), rot = c.sp.v.hab === 'drift' ? 0 : -tilt, cr = Math.cos(rot), sr = Math.sin(rot);
+        const pts = r || [[0, 0, 1]];
+        for (const [lx, ly, sz = 1] of pts) {
+          const rx = lx * cr - ly * sr, ry = lx * sr + ly * cr;
+          glowPts.push([S(c.x) - rx * c.dir, Sy(c.y) + ry, c.sp.v.glow, Math.max(2, (Ld * 0.06 + ppm * 0.1) * sz), pk, Math.max(0.7, (Ld * 0.012 + 0.4) * sz)]);
+        }
       }
     }
     for (const bt of batches.values()) {
@@ -715,7 +727,7 @@ export class Renderer {
     const k = Ld / e.bl;
     ctx.drawImage(e.frames[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
     const gl = e.glows[f];
-    return gl ? gl.map(([gx, gy]) => [gx * k, gy * k]) : null;
+    return gl ? gl.map(([gx, gy, sz]) => [gx * k, gy * k, sz]) : null;
   }
 
   // Build creature animation frames ahead of time, a little each frame: first every species on
@@ -750,6 +762,21 @@ export class Renderer {
 
   // where the headlamp points: at the cursor if the mouse is in use (within the half he faces),
   // otherwise where his head looks
+  // how strongly the lamps (Earl's torch, the sub's) light a screen point this frame: 0 dark .. 1 full beam
+  litAt(x, y) {
+    let s = 0;
+    for (const L of this.lamps || []) {
+      const dx = x - L.x, dy = y - L.y, d = Math.hypot(dx, dy);
+      if (L.r) { if (d < L.r) s += L.a * (1 - d / L.r) * 2.5; continue; }
+      if (d > L.range * 0.75) continue;
+      let da = Math.abs(Math.atan2(dy, dx) - L.ang) % TAU; if (da > Math.PI) da = TAU - da;
+      const w = L.spread * 1.3; if (da > w && d > L.range * 0.04) continue;
+      const angF = d < L.range * 0.04 ? 1 : 1 - clamp((da - L.spread * 0.5) / (w - L.spread * 0.5), 0, 1);
+      s += L.a * angF * clamp(1 - d / (L.range * 0.75), 0, 1) * 1.8;
+    }
+    return clamp(s, 0, 1);
+  }
+
   lampAngle(g, e, head) {
     const natural = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
     if (g.aim == null) return natural;
@@ -1730,7 +1757,9 @@ export class Renderer {
     };
     // A lamp in seawater: three nested cones give a soft edge instead of a hard wedge, and the
     // light falls off fast and turns blue-green with distance as the water absorbs the red.
+    const lamps = this.lamps = []; // every lamp this frame, so living lights can tell how lit they are
     const cone = (x, y, ang, range, spread, col, a) => {
+      lamps.push({ x, y, ang, range, spread, a });
       const far = mixRgb(col, WATER_LIT, 0.65);
       for (const [sm, am] of [[1.3, 0.2], [0.85, 0.32], [0.5, 0.48]]) {
         const gg = l.createRadialGradient(x * k, y * k, 0, x * k, y * k, range * k);
@@ -1748,7 +1777,7 @@ export class Renderer {
     if (head && e.lampOn) {
       const ang = this.lampAngle(g, e, head);
       cone(head.x, head.y, ang, 17 * ppm, 0.32, beamCol, 0.95 * flick);
-      radial(head.x, head.y, 2.6 * ppm, beamCol, 0.3 * flick);
+      radial(head.x, head.y, 2.6 * ppm, beamCol, 0.3 * flick); lamps.push({ x: head.x, y: head.y, r: 2.6 * ppm, a: 0.3 * flick });
     }
     if (g.protection && g.protection.necklace) radial(S(e.x), Sy(e.y), 9 * ppm, [255, 230, 190], 0.65);
     if (subLamps) {
@@ -1764,7 +1793,7 @@ export class Renderer {
       cone(ax, ay, ang, 15 * ppm, 0.95, lc, 0.4 * flick * vis); // diffuse flood around the main beam
       cone(bx, by, ang + 0.35 * Math.sign(sxs), 18 * ppm, 0.45, lc, 0.75 * flick * vis);
       // light spilling around the hull: a soft neutral fill, the warm portholes, a dim stern lamp
-      radial(sx, sy, 14 * ppm, [140, 165, 175], 0.2 * fx.lightPulse);
+      radial(sx, sy, 14 * ppm, [140, 165, 175], 0.2 * fx.lightPulse); lamps.push({ x: sx, y: sy, r: 14 * ppm, a: 0.2 * fx.lightPulse });
       radial(sx + 0.5 * sxs * ppm, sy + 0.9 * ppm, 5 * ppm, [255, 190, 120], 0.4 * fx.lightPulse);
       radial(sx - 4.8 * sxs * ppm, sy - 0.4 * ppm, 7 * ppm, [220, 160, 110], 0.15 * fx.lightPulse);
       if (vis < 0.6) radial(ax, ay, 6 * ppm, lc, (0.6 - vis) * 1.2 * flick); // the lamps face us mid-turn
@@ -1790,7 +1819,16 @@ export class Renderer {
       if (x < -500 || x > this.W + 500 || y < -500 || y > this.H + 500) continue;
       radial(x, y, 9 * ppm, [255, 120, 60], 0.22 + 0.06 * Math.sin(g.time * 3 + v.phase));
     }
-    for (const [x, y, col, r, k = 1] of glowPts) radial(x, y, k < 1 ? r * 2.5 : Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7 * fx.bioPulse * k);
+    for (const p of glowPts) {
+      const [x, y, col, r, gk = 1, core] = p;
+      if (core === undefined) { radial(x, y, gk < 1 ? r * 2.5 : Math.max(r * 2.5, ppm * 0.8), hexToRgb(col), 0.7 * fx.bioPulse * gk); continue; }
+      // a living light washes out under a lamp: the body's own colours and detail show instead
+      const dim = p[6] = 1 - 0.8 * this.litAt(x, y);
+      const a = 0.4 * fx.bioPulse * gk * dim;
+      if (a < 0.01) continue;
+      if (r * 1.8 * k < 3) { l.fillStyle = rgbStr(hexToRgb(col), a * 0.4); l.beginPath(); l.arc(x * k, y * k, Math.max(1, r * 1.8 * k), 0, TAU); l.fill(); }
+      else radial(x, y, r * 1.8, hexToRgb(col), a); // just enough to hint at the body around it
+    }
     // caustic dapples near the surface by day
     if (g.dayEff > 0.3 && cam.y < 40) {
       const a = 0.12 * g.dayEff;
@@ -1910,7 +1948,16 @@ export class Renderer {
         ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x, y, LANTERN_RADIUS * ppm, 0, TAU); ctx.stroke();
       }
     }
-    for (const [x, y, col, r, k = 1] of glowPts) halo(x, y, k < 1 ? r * 1.4 : Math.max(r, ppm * 0.4), hexToRgb(col), 0.5 * haze * fx.bioPulse * k);
+    for (const [x, y, col, r, k = 1, core, dim = 1] of glowPts) {
+      if (core === undefined) { halo(x, y, k < 1 ? r * 1.4 : Math.max(r, ppm * 0.4), hexToRgb(col), 0.5 * haze * fx.bioPulse * k); continue; }
+      const c = hexToRgb(col);
+      const ha = 0.5 * Math.max(haze, 0.4) * fx.bioPulse * k * dim;
+      if (r < 5) { ctx.fillStyle = rgbStr(c, ha * 0.35); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); } // tiny halos: no gradient needed
+      else halo(x, y, r, c, ha);
+      // the organ itself: a small, sharp point; under a lamp only a faint coloured dot on the skin
+      ctx.fillStyle = rgbStr(mixRgb(c, [255, 255, 255], 0.45), Math.min(1, 0.85 * k * fx.bioPulse) * (0.3 + 0.7 * dim));
+      ctx.beginPath(); ctx.arc(x, y, core, 0, TAU); ctx.fill();
+    }
     if (g.lure) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
     if (this.escaW) halo(S(this.escaW.x), Sy(this.escaW.y), ppm * 2.2, [170, 230, 255], 0.7 * haze);
     for (const p of g.world.pickups) {

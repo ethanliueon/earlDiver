@@ -396,6 +396,12 @@ function drawFish(ctx, L, v, t, swim) {
     ctx.fillStyle = 'rgba(160,220,255,0.6)';
     for (let k = 0; k < 9; k++) { ctx.beginPath(); ctx.arc(o.x0 + L * (0.15 + k * 0.07), H * 0.32, Math.max(0.7, H * 0.035), 0, TAU); ctx.fill(); }
   }
+  // light organs (glow points: [x, y, size]): the belly photophore row, and one by the eye
+  if (v.glow) {
+    const P = [[nx + L * 0.1, H * 0.12, 0.7]];
+    for (let k = 0; k < 9; k += 2) P.push([o.x0 + L * (0.15 + k * 0.07), H * 0.32, 0.45]);
+    return P;
+  }
 }
 
 // ---------- sharks ----------
@@ -464,6 +470,8 @@ function drawShark(ctx, L, v, t, swim) {
     ctx.fillStyle = '#e8e4d8'; for (let k = 0; k < 14; k++) { const x = nose - L * 0.21 + k * L * 0.016; ctx.fillRect(x, -H * 0.12, L * 0.004, H * 0.24); }
   }
   if (v.nurse) { ctx.strokeStyle = shade(c0, -0.3); ctx.beginPath(); ctx.moveTo(nose + L * 0.01, H * 0.1); ctx.lineTo(nose - L * 0.01, H * 0.28); ctx.stroke(); }
+  // a glowing belly (cookiecutter): a row along the underside
+  if (v.glow) { const P = []; for (let k = 0; k < 5; k++) P.push([-L * 0.15 + k * L * 0.11, H * 0.3, 0.5]); return P; }
 }
 
 // ---------- rays (seen slightly from above) ----------
@@ -571,7 +579,7 @@ function drawAngler(ctx, L, v, t) {
   ctx.fillStyle = v.glow ? '#cfefff' : shade(c0, 0.2);
   ctx.beginPath(); ctx.arc(lx, ly, Math.max(1.5, L * 0.03), 0, TAU); ctx.fill();
   eye(ctx, -L * 0.25, -H * 0.25, Math.max(1, H * 0.05), '#6a8aa0');
-  return [[lx, ly]];
+  return [[lx, ly, 1.6]];
 }
 function drawFangtooth(ctx, L, v, t, swim) {
   const H = L * v.h;
@@ -584,7 +592,9 @@ function drawViper(ctx, L, v, t, swim) {
   drawEel(ctx, L, { ...v, h: v.h * 0.9, f: '#24343a' }, t, swim * 0.5);
   ctx.fillStyle = 'rgba(230,230,220,0.85)';
   for (let k = 0; k < 3; k++) { const x = -L * 0.5 + L * 0.015 + k * L * 0.02; finPath(ctx, [[x, -H * 0.4], [x + L * 0.006, H * 0.9], [x + L * 0.012, -H * 0.4]]); ctx.fill(); }
-  return [[-L * 0.3, -H * 1.6]];
+  const P = [[-L * 0.3, -H * 1.6, 1.3]]; // the lure at the tip of its long dorsal ray
+  for (let k = 0; k < 5; k++) P.push([-L * 0.4 + k * L * 0.16, H * 0.35, 0.4]);
+  return P;
 }
 function drawBarreleye(ctx, L, v, t, swim) {
   drawFish(ctx, L, { ...v, t: 'fork', f: '#4a3a30' }, t, swim);
@@ -612,6 +622,9 @@ function drawHatchet(ctx, L, v, t, swim) {
   ctx.fillStyle = g; ctx.fill();
   ctx.fillStyle = 'rgba(200,210,220,0.5)'; finPath(ctx, [[L * 0.3, 0], [L * 0.5, -H * 0.2], [L * 0.5, H * 0.2]]); ctx.fill();
   eye(ctx, -L * 0.3, -H * 0.15, Math.max(1, L * 0.06), '#a8c0d0');
+  // the belly photophores that hide its silhouette from below
+  const P = []; for (let k = 0; k < 4; k++) P.push([-L * 0.3 + k * L * 0.15, H * (0.22 + 0.04 * Math.sin(k)), 0.4]);
+  return P;
 }
 function drawBlob(ctx, L, v) {
   const H = L * v.h;
@@ -1028,6 +1041,11 @@ function drawSquid(ctx, L, v, t, swim) {
   ctx.beginPath(); ctx.ellipse(-L * 0.11, 0, L * 0.06, H * 0.42, 0, 0, TAU); ctx.fill();
   eye(ctx, -L * 0.1, -H * 0.05, Math.max(1, H * (v.giant ? 0.32 : 0.2)), '#c8c0a0');
   if (v.photo) { ctx.fillStyle = 'rgba(120,200,255,0.75)'; for (let k = 0; k < 10; k++) { ctx.beginPath(); ctx.arc(L * (-0.02 + k * 0.045), H * ((k % 2) - 0.5) * 0.4, Math.max(0.6, H * 0.06), 0, TAU); ctx.fill(); } }
+  if (v.glow) {
+    const P = [[-L * 0.42, -H * 0.15, 0.9], [-L * 0.42, H * 0.15, 0.9]];
+    for (let k = 0; k < 10; k += 3) P.push([L * (-0.02 + k * 0.045), H * ((k % 2) - 0.5) * 0.4, 0.4]);
+    return P;
+  }
 }
 
 function drawCuttle(ctx, L, v, t) {
@@ -2069,7 +2087,7 @@ function drawDragon(ctx, L, v, t, swim) {
   const H = L * v.h;
   ctx.strokeStyle = 'rgba(40,30,30,0.9)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(-L * 0.47, H * 0.4); ctx.quadraticCurveTo(-L * 0.45, H * 4, -L * 0.42, H * 5); ctx.stroke();
-  return [[-L * 0.42, H * 5]];
+  return [[-L * 0.42, H * 5, 1.3], [-L * 0.41, H * 0.1, 0.8]]; // chin barbel lure, and the light under the eye
 }
 function drawCoral(ctx, L, v) { drawLophelia(ctx, L, v); }
 
