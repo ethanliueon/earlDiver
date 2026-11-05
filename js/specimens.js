@@ -99,7 +99,7 @@ export function conditionMult(c) {
 export function conditionName(c) {
   return c <= 0.05 ? 'dead' : c >= 0.8 ? 'healthy' : c >= 0.5 ? 'stressed' : 'weak';
 }
-// a dead animal is worth half the plain market price of its kind: no rare-form, frenzy or contract
+// a dead animal is worth half the plain market price of its kind: no rare-form or contract
 // bonus. One brought slowly up to surface pressure in a chamber (acclimated) is worth a quarter more.
 export const isDead = (s) => s.cond <= 0.05;
 export function specimenValue(s) {

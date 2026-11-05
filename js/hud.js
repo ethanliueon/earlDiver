@@ -7,7 +7,6 @@ import { RESOURCES } from './world.js';
 import { GOODS, money, gear, owns } from './economy.js';
 import { BOAT } from './world.js';
 import { VARIANTS } from './variants.js';
-import { FRENZIES } from './frenzy.js';
 import { speciesIcon } from './creatures_draw.js';
 import { toolIcon } from './tools_draw.js';
 import { bagSlots, tankSlots, pressSlots } from './capture.js';
@@ -73,27 +72,6 @@ export class Hud {
       }
       if (on) { ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name.toUpperCase(), x + sw / 2, y + sh + 4 * s); }
       x += sw + gap;
-    }
-    // a frenzy: a brass-framed glass tube above the tools, the amber draining as time runs out
-    if (g.frenzy) {
-      const F = g.frenzy, k = Math.max(0, F.t / F.dur), bw2 = 320 * s, bh2 = 20 * s, bx2 = W / 2 - bw2 / 2, by2 = y - 58 * s;
-      const pulse = F.t < 10 ? 0.55 + 0.45 * Math.sin(g.time * 8) : 1;
-      const fr = ctx.createLinearGradient(0, by2 - 3 * s, 0, by2 + bh2 + 3 * s);
-      fr.addColorStop(0, '#ecd28e'); fr.addColorStop(0.45, '#c9a65a'); fr.addColorStop(1, '#6e5020');
-      ctx.fillStyle = fr; ctx.beginPath(); ctx.roundRect(bx2 - 4 * s, by2 - 4 * s, bw2 + 8 * s, bh2 + 8 * s, (bh2 + 8 * s) / 2); ctx.fill();
-      ctx.fillStyle = '#0d110e'; ctx.beginPath(); ctx.roundRect(bx2, by2, bw2, bh2, bh2 / 2); ctx.fill();
-      ctx.save(); ctx.beginPath(); ctx.roundRect(bx2, by2, bw2, bh2, bh2 / 2); ctx.clip();
-      const am = ctx.createLinearGradient(0, by2, 0, by2 + bh2);
-      am.addColorStop(0, `rgba(255,226,150,${pulse})`); am.addColorStop(0.5, `rgba(255,170,60,${pulse})`); am.addColorStop(1, `rgba(170,90,20,${pulse})`);
-      ctx.fillStyle = am; ctx.fillRect(bx2, by2, bw2 * k, bh2);
-      ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(bx2, by2 + 2 * s, bw2, 2 * s); // the glass's glint
-      ctx.restore();
-      for (const sx of [bx2 - 1 * s, bx2 + bw2 + 1 * s]) { ctx.fillStyle = '#5a4214'; ctx.beginPath(); ctx.arc(sx, by2 + bh2 / 2, 2 * s, 0, TAU); ctx.fill(); }
-      ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `${15 * s}px ${GAME}`;
-      ctx.fillStyle = k > 0.25 ? '#2b1d06' : '#ffd890'; ctx.fillText(FRENZIES[F.id].name, bx2 + 12 * s, by2 + bh2 / 2 + 1 * s);
-      ctx.textAlign = 'right'; ctx.font = `500 ${11 * s}px ${MONO}`; ctx.fillStyle = '#ffd890';
-      const sec = Math.ceil(F.t); ctx.fillText(`${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`, bx2 + bw2 - 10 * s, by2 + bh2 / 2 + 1 * s);
-      ctx.textBaseline = 'top';
     }
     // specimen slots: the bag (or, in the sub, its tank). Each dot shows the animal's colour,
     // ringed by its condition: green healthy, amber stressed, red weak, grey dead.
@@ -473,9 +451,8 @@ export class Hud {
       const tt = this.toasts[i];
       tt.t += dt;
       const a = clamp(Math.min(tt.t * 3, (4.5 - tt.t) * 1.5), 0, 1);
-      ctx.font = `${(tt.kind === 'frenzy' ? 34 : tt.kind === 'big' ? 24 : 18) * s}px ${GAME}`;
-      if (tt.kind === 'frenzy') { ctx.globalAlpha = a; ctx.fillStyle = '#ffc860'; ctx.shadowColor = 'rgba(255,170,60,0.8)'; ctx.shadowBlur = 14 * s; }
-      else if (tt.kind.startsWith('rar:')) { ctx.globalAlpha = a; ctx.fillStyle = tt.kind.slice(4); }
+      ctx.font = `${(tt.kind === 'big' ? 24 : 18) * s}px ${GAME}`;
+      if (tt.kind.startsWith('rar:')) { ctx.globalAlpha = a; ctx.fillStyle = tt.kind.slice(4); }
       else ctx.fillStyle = tt.kind === 'warn' ? `rgba(255,150,110,${a})` : tt.kind === 'note' ? `rgba(240,226,190,${a})` : `rgba(230,238,236,${a})`;
       ctx.fillText(tt.text, W / 2, pad + 6 * s + i * 26 * s); ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;

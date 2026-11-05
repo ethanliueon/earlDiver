@@ -435,7 +435,6 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .shop .contract { justify-content: flex-start; }
 .shop .contract .pay { margin-left: auto; }
 .shop .contract img.mini { width: 72px; height: 40px; }
-.shop .frenzy-note { margin: 0 0 10px; padding: 7px 12px; border-radius: 4px; font: 15px var(--game); color: #2e220a;
   background: linear-gradient(180deg, #ecd28e, #c9a65a); box-shadow: 0 0 12px rgba(255,182,72,0.35); }
 
 /* the old one's cave: the shop panel, darker and lit blue by her lure */

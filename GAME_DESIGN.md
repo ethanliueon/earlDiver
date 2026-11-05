@@ -137,14 +137,7 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
 - The claw: three arms (claw arm 3 m / 1 m / slow, hydraulic 4.5 m / 1.4 m, heavy-lift 6 m / 2 m /
   fast), each with a wider grip window. Add-ons: recall unit, quiet engine, bigger specimen tanks.
 
-## Frenzies
-
-Short lucky streaks earned by diving. On surfacing from a trip that went deeper than half the sub's
-rating, with enough time underwater since the last frenzy ((diver air + sub air) in minutes x0.6)
-and at least 5 minutes since the last one, there is a 20 % chance of a frenzy, for 5 minutes:
-Market frenzy (the next sale pays x2, contracts too; the sale ends it), Deep breath (air lasts x2, diver and sub), Rare
-tide (rare forms x3), Lucky net (+25 % catch odds), Still water (sharks and the entity slow to
-notice). A brass-and-glass timer shows above the tool slots.
+(Frenzies, timed lucky streaks, were removed in v1.15.1.)
 
 ## The deep places
 
@@ -220,8 +213,8 @@ tail barely moving; a dying one listing, now and then rolling over before it rig
 one belly up at the top. Animals from below 100 m go into a free chamber by themselves when they
 come aboard.
 
-Dead animals sell for half the plain market price of their kind: no rare-form bonus, no market
-frenzy, no contract pay. An aquarium's contract wants one alive and well; the museum's contracts
+Dead animals sell for half the plain market price of their kind: no rare-form bonus, no contract
+pay. An aquarium's contract wants one alive and well; the museum's contracts
 (about a third of them) take one 'alive or dead', but a dead one only fetches the dead price.
 
 ## The old one

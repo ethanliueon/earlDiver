@@ -12,7 +12,6 @@ import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from
 import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { fillBoard, fulfil, RADIO } from './contracts.js';
-import { updateFrenzy, frenzyOn, FRENZIES } from './frenzy.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
@@ -163,7 +162,7 @@ function damageSub(amt, sp) {
 const subAtBoat = () => !g.sub.imploded && Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) < 20;
 function sellSpecimens(list, lines) {
   const groups = new Map();
-  // the dead go in their own lot: half the plain market price, no frenzy and no rare-form bonus
+  // the dead go in their own lot: half the plain market price and no rare-form bonus
   for (const sp of list) { const k = sp.id + ':' + (sp.cond <= 0.05 ? 'dead' : sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
   for (const [gk, specs] of groups) {
     const [id, v] = gk.split(':');
@@ -172,7 +171,7 @@ function sellSpecimens(list, lines) {
     const worst = specs.reduce((a, s) => Math.min(a, s.cond), 1);
     const acc = !dead && specs.every((s) => s.acc);
     const name = dead ? `${SPECIES_BY_ID[id].name} (dead, half price)` : variantLabel(SPECIES_BY_ID[id], v || null) + (acc ? ' (acclimated)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
-    lines.push(sell(profile, key, specs.length, base * statValue(profile, 'payFish') * (!dead && frenzyOn(g, 'market') ? 2 : 1), name));
+    lines.push(sell(profile, key, specs.length, base * statValue(profile, 'payFish'), name));
   }
 }
 function sellAll() {
@@ -188,11 +187,11 @@ function sellAll() {
   // the research program: one line per species tagged, each tag a little less than the last
   const tg = new Map();
   for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
-  for (const [k, list] of tg) lines.push(sell(profile, k, list.length, list[0].value * statValue(profile, 'payFish') * (frenzyOn(g, 'market') ? 2 : 1), `Tag data: ${list[0].name}`));
+  for (const [k, list] of tg) lines.push(sell(profile, k, list.length, list[0].value * statValue(profile, 'payFish'), `Tag data: ${list[0].name}`));
   g.tags = [];
   // the institute: first photographs
   for (const ph of g.photos) {
-    const pv = Math.round(ph.value * statValue(profile, 'payFish') * (frenzyOn(g, 'market') ? 2 : 1) * 100) / 100;
+    const pv = Math.round(ph.value * statValue(profile, 'payFish') * 100) / 100;
     profile.cash = Math.round((profile.cash + pv) * 100) / 100; profile.lifetime = Math.round((profile.lifetime + pv) * 100) / 100;
     lines.push({ label: `Photograph: ${ph.name}`, n: 1, total: pv });
     profile.photos = [...(profile.photos || []), ph.key];
@@ -200,7 +199,7 @@ function sellAll() {
   g.photos = [];
   for (const [k, n] of Object.entries(g.inv)) {
     if (!n || !GOODS[k] || k === 'coral') continue;
-    lines.push(sell(profile, k, n, GOODS[k].price * statValue(profile, 'paySalvage') * (frenzyOn(g, 'market') ? 2 : 1), GOODS[k].name));
+    lines.push(sell(profile, k, n, GOODS[k].price * statValue(profile, 'paySalvage'), GOODS[k].name));
     g.inv[k] = 0;
   }
   if (coins) { profile.coins = (profile.coins || 0) + coins; lines.push({ label: 'Old gold, for what came up from the deep', n: 1, total: 0, coins }); }
@@ -208,8 +207,6 @@ function sellAll() {
   const total = lines.reduce((a, l) => a + l.total, 0);
   g.earned += total;
   if (total > 0) audio.cue && audio.cue('sale');
-  // a market frenzy pays out once: this sale was the double one
-  if (total > 0 && frenzyOn(g, 'market')) { g.frenzy = null; hud.toast('Market frenzy: sold at double', 'note'); }
   saveProfile(profile);
   audio.ready && audio.pickup();
   return { lines, total };
@@ -789,17 +786,9 @@ function update(dt) {
       else if (g.items.necklace === 0) hud.toast('No necklaces', 'warn');
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
-    // frenzies: rolled on surfacing after a deep enough, long enough trip
-    const fzNew = updateFrenzy(g, dt);
-    if (fzNew) {
-      const F = FRENZIES[fzNew.id];
-      hud.toast(F.name, 'frenzy'); hud.toast(`${F.what} · 5 minutes`, 'note');
-      audio.ready && audio.sapphire(); audio.cue && audio.cue('frenzy');
-    }
-    g.airMul = frenzyOn(g, 'breath') ? 0.5 : 1;
-    g.luck = frenzyOn(g, 'net') ? 0.25 : 0;
-    g.fauna.rareMult = (frenzyOn(g, 'rare') ? 3 : 1) * (Math.abs(e.x - WHALE_FALL.x) < 60 && e.y > 2900 ? 3 : Math.abs(e.x - SEEP.x) < 50 && e.y > 2300 ? 2 : 1);
-    g.stillMul = frenzyOn(g, 'still') ? 0.35 : 1;
+    g.airMul = 1; g.luck = 0; g.stillMul = 1;
+    // rare forms turn up more at the whale fall and the seep
+    g.fauna.rareMult = Math.abs(e.x - WHALE_FALL.x) < 60 && e.y > 2900 ? 3 : Math.abs(e.x - SEEP.x) < 50 && e.y > 2300 ? 2 : 1;
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }

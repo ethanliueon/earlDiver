@@ -23,7 +23,22 @@ const BAIT = [
 ];
 
 // Species that migrate up toward the surface at night and back down by day.
-const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104]);
+const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90]);
+// Where an animal actually lives, when the recorded range (the deepest and shallowest it was ever
+// found) is far wider than its everyday one. Day ranges; NIGHT is where night migrators rise to.
+const CORE = {
+  100: [600, 2500],  // humpback anglerfish: adults mostly 1,000-2,000 m, rarely above 500
+  101: [500, 2000],  // fangtooth
+  102: [500, 1500],  // Sloane's viperfish (by day)
+  103: [500, 1500],  // black dragonfish (by day)
+  90: [600, 1200],   // cookiecutter shark (by day)
+  86: [270, 1300],   // goblin shark
+  87: [500, 1000],   // frilled shark
+  89: [180, 1100],   // bluntnose sixgill
+  75: [300, 2500],   // Patagonian toothfish
+  54: [200, 1000],   // giant oarfish
+};
+const NIGHT = { 102: [200, 900], 103: [50, 600], 90: [0, 300] };
 // Never flee from Earl: drifters, slow or curious animals, and the things that might attack him.
 const NO_FLEE = new Set([46, 77, 84, 88, 31, 32, 33, 183, 107, 100, 67, 12, 11, 141, 184, 185, 186, 187, 76, 78, 82, 83, 80, 42, 43, 44, 148, 89, 85]);
 const DIVE_SPEED = 1.68; // Earl's speed: fish escape at 0.55-1.5x it
@@ -326,8 +341,9 @@ export class Fauna {
 
   // the depth band this animal wants to be in right now (migrators move up at night)
   depthBand(sp, x, night) {
-    let lo = sp.dmin, hi = Math.min(sp.dmax, this.W.floorAt(x) - 2);
-    if (MIGRATORS.has(sp.id)) {
+    const core = (night && NIGHT[sp.id]) || CORE[sp.id];
+    let lo = core ? core[0] : sp.dmin, hi = Math.min(core ? core[1] : sp.dmax, this.W.floorAt(x) - 2);
+    if (MIGRATORS.has(sp.id) && !core) {
       if (night) hi = Math.min(hi, Math.max(lo + 30, 250));
       else lo = Math.max(lo, Math.min(hi - 30, 280));
     }
@@ -578,8 +594,9 @@ export class Fauna {
         if (c.sp.v.hab === 'reef' && fl - c.y > 10) ay += 1.5;
         if ((c.sp.v.hab === 'floor-swim' || c.sp.v.hab === 'drift-low') && fl - c.y > 2.5) ay += 1.5;
         if (c.sp.v.hab === 'demersal' && fl - c.y > 20) ay += 1;
-        if (c.y < c.sp.dmin) ay += 2;
-        if (c.y > c.sp.dmax) ay -= 2;
+        const band = (night && NIGHT[c.sp.id]) || CORE[c.sp.id] || [c.sp.dmin, c.sp.dmax];
+        if (c.y < band[0] - 20) ay += 2;
+        if (c.y > band[1] + 20) ay -= 2;
       }
       if (c.variant === 'abnormal') { ay += Math.sin(time * 2.7 + c.wob) * 2.5; ax += Math.sin(time * 1.9 + c.wob * 2) * 0.8; } // it swims wrong
       c.vx += ax * dt; c.vy += ay * dt;

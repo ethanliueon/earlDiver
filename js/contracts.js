@@ -103,7 +103,7 @@ export function fulfil(g, P, lists) {
       if ((g.inv[c.item] || 0) >= c.n) { g.inv[c.item] -= c.n; ok = true; }
     }
     if (ok) {
-      const pay = deadPay !== null ? deadPay : Math.round(c.pay * bonus * (g.frenzy && g.frenzy.id === 'market' ? 2 : 1) * 100) / 100;
+      const pay = deadPay !== null ? deadPay : Math.round(c.pay * bonus * 100) / 100;
       P.cash = Math.round((P.cash + pay) * 100) / 100;
       P.lifetime = Math.round((P.lifetime + pay) * 100) / 100;
       lines.push({ label: `Contract: ${c.text}${deadPay !== null ? ' (dead: half the market price)' : rareName ? ` (${rareName}, x${bonus})` : ''}`, n: 1, total: pay });

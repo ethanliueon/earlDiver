@@ -293,7 +293,6 @@ export class UI {
     let html = '';
     const tab = this.shopTab;
     const icon = (k, t) => { const key = k + t; if (!this.toolImgs) this.toolImgs = new Map(); if (!this.toolImgs.has(key)) this.toolImgs.set(key, toolIcon(k, t, 240, 120).toDataURL()); return this.toolImgs.get(key); };
-    if (tab === 'sell' && g.frenzy && g.frenzy.id === 'market') html += `<p class="frenzy-note">Market frenzy: this sale pays double (${Math.floor(g.frenzy.t / 60)}:${String(Math.ceil(g.frenzy.t % 60)).padStart(2, '0')} left)</p>`;
     if (tab === 'sell') {
       const rows = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]);
       const atBoat = !sub.imploded && Math.hypot(sub.x - (BOAT.x + 8.5), sub.y - 2.6) < 20;
