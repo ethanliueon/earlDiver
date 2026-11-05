@@ -17,7 +17,7 @@ import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, d
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
-import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
+import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
@@ -71,7 +71,7 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0 }, inv: {},
+    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 1 }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
@@ -326,7 +326,7 @@ function tankAction(act, where, i) {
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subLost = !!g.sub.imploded;
-  P.items = { lure: g.items.lure, necklace: g.items.necklace };
+  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank };
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
 }
@@ -391,7 +391,8 @@ function buy(kind) {
   } else if (SUB_ADDONS[kind] && !(P.addons || {})[kind] && spend(P, SUB_ADDONS[kind].price)) {
     P.addons = Object.assign({}, P.addons, { [kind]: true }); g.addons = P.addons; ok = true;
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
-  } else if (SUPPLIES[kind] && g.items[kind] < SUPPLIES[kind].max && spend(P, SUPPLIES[kind].price)) {
+  } else if (SUPPLIES[kind] && (g.items[kind] || 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) {
+    g.items[kind] = g.items[kind] || 0;
     g.items[kind]++; ok = true;
     hud.toast(`Bought: ${SUPPLIES[kind].name.toLowerCase()}`);
   }
@@ -457,6 +458,7 @@ hudCanvas.addEventListener('mousedown', (ev) => {
   if (inRect(hud.subHot, ev.clientX, ev.clientY)) { pressed.add('c-tap'); return; }
   if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
   if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
+  if (inRect(hud.slotHot && hud.slotHot.r, ev.clientX, ev.clientY)) { pressed.add('r'); return; }
   mouse.down = true;
   pressed.add(' '); // a click swings the net (or uses whatever is in hand)
 });
@@ -768,6 +770,13 @@ function update(dt) {
         ent.throwLure(g.lure.x, g.lure.y, old ? 25 : 10);
         hud.toast(old ? 'The old lure drifts away, burning cold and blue' : 'The lure drifts away, glowing');
       } else if (!g.lure) hud.toast('No lures', 'warn');
+    }
+    if (pressed.has('r')) {
+      // a backup air tank, plumbed into the cabin: the air bank fills to full
+      if (!e.inSub || g.sub.imploded) hud.toast('The backup tanks are in the sub', 'warn');
+      else if (!g.items.airTank) hud.toast('No backup air tanks', 'warn');
+      else if (g.sub.o2 >= g.sub.o2Max - 1) hud.toast('The cabin air is full');
+      else { g.items.airTank--; g.sub.o2 = g.sub.o2Max; hud.toast(`A backup tank hisses into the cabin: air full (${g.items.airTank} left)`); audio.ready && audio.click(); }
     }
     if (pressed.has('e')) {
       if (g.items.necklace > 0 && g.necklaceT <= 0) { g.items.necklace--; g.necklaceT = 15; hud.toast('The necklace warms against your chest'); audio.ready && audio.lanternHum(0.05); }

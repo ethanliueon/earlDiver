@@ -353,6 +353,7 @@ export class Hud {
     const sz = 46 * s;
     const slots = [];
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
+    if (e.inSub && g.items.airTank > 0) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', 0]);
     if (g.items.necklace > 0 || g.necklaceT > 0) slots.push(['e', 'E', 'NECKLACE', g.items.necklace, '#f0dcb0', g.necklaceT > 0 ? g.necklaceT / 15 : 0]);
     this.slotHot = {};
     slots.forEach(([id, key, name, n, col, active], i) => {

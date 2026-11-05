@@ -112,7 +112,10 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 8, max: 3, desc: 'Thrown (Q). The thing in the deep follows its light for a while.' },
   necklace: { name: 'Fangtooth necklace', price: 12, max: 3, desc: 'Worn (E). Keeps it away for 15 s.' },
+  airTank: { name: 'Backup air tank', price: 20, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
 };
+// how many of a supply can be carried (some depend on an upgrade)
+export const supplyMax = (P, k) => SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max;
 
 // ---------------- prices ----------------
 // What the buyers on the radio pay for each kind of thing, before the market moves.
@@ -172,6 +175,7 @@ export const UPGRADES = {
   depth:     { group: 'Submersible', name: 'Depth rating', base: 300, step: 75, max: 50, cost: 0.6, growth: 1.11, fmt: 'depth' },
   subAir:    { group: 'Submersible', name: 'Cabin air', base: 150, step: 15, max: 34, cost: 1, growth: 1.12, fmt: 's' },
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, step: 0.03, max: 15, cost: 2, growth: 1.3, fmt: 'x' },
+  airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, step: 1, max: 2, cost: 25, growth: 2, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, step: 1, max: 4, cost: 5, growth: 1.9, fmt: 'n' },
   pressRating: { group: 'Submersible', name: 'Chamber rating', base: 400, step: 150, max: 18, cost: 1.5, growth: 1.22, fmt: 'depth' },
   subTank:   { group: 'Submersible', name: 'Open tank', base: 2, step: 1, max: 6, cost: 1.5, growth: 1.6, fmt: 'n' },
@@ -222,6 +226,7 @@ export const UPGRADE_DESC = {
   subAir: 'A bigger air bank in the cabin: more time below.',
   subSpeed: 'A stronger motor: faster everywhere.',
   subTank: 'Room for one more animal in the open tank, in the back of the sub (you start with two).',
+  airTanks: 'Room in the sub for one more backup air tank (you start with room for one, up to three).',
   pressTanks: 'One more pressure chamber in the tank room (you start with one). An animal sealed in one is pumped back up to the pressure it was caught at, takes no harm on the way up, and slowly recovers. T in the sub.',
   pressRating: 'Thicker acrylic and stronger seals: every chamber holds 150 m more over the water outside. A chamber keeps an animal at its own pressure until the sub climbs above its home depth less the rating.',
   armReach: 'A longer arm: grab from further off.',
@@ -257,6 +262,7 @@ export const UPGRADE_LINE = {
   subAir: 'More air in the iron lung.',
   subSpeed: 'A stronger heart in the engine room.',
   subTank: 'A longer tank, and room for one more.',
+  airTanks: 'Another steel bottle strapped behind the seat.',
   pressTanks: "Clear blue cylinders that keep the deep's own weight on what you bring up.",
   pressRating: 'Walls that hold back a little more of the sea.',
   armReach: 'A longer reach into the dark.',
