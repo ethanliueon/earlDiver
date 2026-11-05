@@ -5,6 +5,7 @@ import { clamp, lerp, formatTime, TAU } from './util.js';
 import { SUB_LEVELS, diverDrainMult } from './player.js';
 import { RESOURCES } from './world.js';
 import { GOODS, money, gear, owns } from './economy.js';
+import { BOAT } from './world.js';
 import { VARIANTS } from './variants.js';
 import { FRENZIES } from './frenzy.js';
 import { speciesIcon } from './creatures_draw.js';
@@ -226,7 +227,7 @@ export class Hud {
     if (ap && !e.inSub && !g.sub.imploded && (ap.active || ap.state === 'waiting')) {
       const dsub = Math.hypot(g.sub.x - e.x, g.sub.y - e.y);
       let txt;
-      if (ap.state === 'home') txt = `sub returning · ${Math.round(Math.hypot(g.sub.x - 520.5, g.sub.y - 2.6))} m`;
+      if (ap.state === 'home') txt = `sub returning · ${Math.round(Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6))} m`;
       else if (ap.holding && ap.remaining < 3) txt = `sub holding at ${Math.round(g.sub.y)} m · rated depth`;
       else if (ap.state === 'waiting') txt = `sub waiting · ${Math.round(dsub)} m`;
       else txt = `sub coming · ${Math.round(dsub)} m · ${Math.ceil(ap.eta || 0)} s`;

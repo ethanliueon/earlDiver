@@ -2,7 +2,7 @@
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
 import { speciesIcon } from './creatures_draw.js';
-import { RESOURCES } from './world.js';
+import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName, rarityOf } from './specimens.js';
@@ -190,7 +190,7 @@ export class UI {
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space on the bottom sets one; F at its buoy hauls it up'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space on the bottom sets one; F at its buoy hauls it up'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'take the helm and drive the Margaret (A / D)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -217,7 +217,7 @@ export class UI {
     if (tab === 'sell' && g.frenzy && g.frenzy.id === 'market') html += `<p class="frenzy-note">Market frenzy: this sale pays double (${Math.floor(g.frenzy.t / 60)}:${String(Math.ceil(g.frenzy.t % 60)).padStart(2, '0')} left)</p>`;
     if (tab === 'sell') {
       const rows = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]);
-      const atBoat = !sub.imploded && Math.hypot(sub.x - 520.5, sub.y - 2.6) < 20;
+      const atBoat = !sub.imploded && Math.hypot(sub.x - (BOAT.x + 8.5), sub.y - 2.6) < 20;
       const specs = g.bag.concat(atBoat ? g.subTank : []);
       if (!rows.length && !specs.length && !g.tags.length && !g.photos.length && !g.items.lure && !g.items.necklace) {
         html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
@@ -292,7 +292,7 @@ export class UI {
         html += card(it.name, it.desc, `carrying ${g.items[k]} / ${it.max}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy');
       }
     } else if (tab === 'radio') {
-      const lists = [g.bag].concat(!sub.imploded && Math.hypot(sub.x - 520.5, sub.y - 2.6) < 20 ? [g.subTank] : []);
+      const lists = [g.bag].concat(!sub.imploded && Math.hypot(sub.x - (BOAT.x + 8.5), sub.y - 2.6) < 20 ? [g.subTank] : []);
       if (!g.contracts.length) html += '<p class="shop-empty">Static. Nobody is calling.</p>';
       for (const c of g.contracts) {
         const r = contractReady(g, c, lists);
@@ -443,7 +443,7 @@ export class UI {
     if (!$('journal').hidden && this.journalDirty) { this.journalDirty = false; this.renderJournal(); }
     if (!$('workshop').hidden) {
       const e = g.earl;
-      if (Math.abs(e.x - 512) > 16 || e.y > 5) this.toggleWorkshop(false);
+      if (Math.abs(e.x - BOAT.x) > 16 || e.y > 5) this.toggleWorkshop(false);
     }
   }
 }

@@ -1,6 +1,6 @@
 // Earl (diver) and his submersible: movement, oxygen, pressure, hull.
 import { clamp, lerp, angleLerp } from './util.js';
-import { collide, BOAT_X, SPAWN } from './world.js';
+import { collide, BOAT, SPAWN, WORLD_W } from './world.js';
 import { SUB_TIERS } from './economy.js';
 
 export const DIVE_SPEED = 1.68; // Earl's base swimming speed (m/s)
@@ -40,7 +40,7 @@ export class Earl {
 
 export class Sub {
   constructor() {
-    this.level = 0; this.x = BOAT_X + 8.5; this.y = 2.6; this.vx = 0; this.vy = 0;
+    this.level = 0; this.x = BOAT.x + 8.5; this.y = 2.6; this.vx = 0; this.vy = 0;
     this.facing = -1; this.o2 = SUB_LEVELS[0].o2; this.stress = 0; this.imploded = false;
     this.tilt = 0; this.lightsOn = true; this.hull = 1; // hull integrity: damage makes the cabin leak air
     this.yaw = Math.PI; // 0 = bow to the right, PI = bow to the left; turns smoothly between
@@ -63,7 +63,7 @@ export function updateEarl(g, dt, inp) {
     // diagonal input is normalised, so going right and down at once is no faster than one way
     const im = Math.hypot(inp.x, inp.y), nx = im > 1 ? inp.x / im : inp.x, ny = im > 1 ? inp.y / im : inp.y;
     // the ballast boost only applies to (mostly) straight dives and ascents, never to diagonals
-    const vBoost = ballastBoost(nx, ny);
+    const vBoost = ballastBoost(nx, ny) * (1 + (sub.ballast || 0) * Math.min(1, Math.abs(ny)));
     const tvx = nx * sp, tvy = ny * sp * vBoost;
     sub.vx = lerp(sub.vx, tvx, 1 - Math.exp(-dt * 0.9));
     sub.vy = lerp(sub.vy, tvy, 1 - Math.exp(-dt * 0.7));
@@ -71,7 +71,7 @@ export function updateEarl(g, dt, inp) {
     if (sub.y < 1.6) { sub.y = 1.6; sub.vy = Math.max(0, sub.vy); }
     const c = collide(W, sub.x, sub.y, 2.2);
     if (c.hit) { sub.x = c.x; sub.y = c.y; sub.vx *= 0.6; sub.vy *= 0.4; }
-    sub.x = clamp(sub.x, 4, 984);
+    sub.x = clamp(sub.x, 4, WORLD_W - 16);
     if (Math.abs(sub.vx) > 0.3) sub.facing = sub.vx > 0 ? 1 : -1;
     // swing round over ~1.5 s rather than flipping (the projection of the turn eases in and out)
     const yawT = sub.facing > 0 ? 0 : Math.PI, rate = Math.PI / 1.5;
@@ -107,7 +107,7 @@ export function updateEarl(g, dt, inp) {
     if (e.y < 0.35) { e.y = 0.35; if (e.vy < 0) e.vy = 0; }
     const c = collide(W, e.x, e.y, 0.28);
     if (c.hit) { e.x = c.x; e.y = c.y; e.vx *= 0.7; e.vy *= 0.5; }
-    e.x = clamp(e.x, 2, 980);
+    e.x = clamp(e.x, 2, WORLD_W - 20);
     // never onto the beach
     if (W.floorAt(e.x) < 0.9) { e.x -= 0.6; e.vx = Math.min(0, e.vx); }
     e.speedNow = Math.hypot(e.vx, e.vy);

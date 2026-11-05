@@ -1,6 +1,6 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
-import { generateWorld, RESOURCES, BOAT_X, WORLD_W } from './world.js';
+import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W } from './world.js';
 import { SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
@@ -53,11 +53,12 @@ function applySuit(e, P) {
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
-  sub.ratedV = statValue(P, 'depth'); sub.o2V = statValue(P, 'subAir'); sub.speedMul = statValue(P, 'subSpeed');
+  sub.ratedV = statValue(P, 'depth'); sub.o2V = statValue(P, 'subAir'); sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
   sub.level = lv(P, 'depth');
 }
 function newGame(mode) {
   const P = profile || newProfile();
+  BOAT.x = BOAT_HOME; // every dive starts with the Margaret back over the shelf edge
   const seed = (Math.random() * 1e9) | 0;
   const world = generateWorld(seed);
   const rng = makeRng(seed ^ 0x5bd1e995);
@@ -151,7 +152,7 @@ function damageSub(amt, sp) {
 // ---------------- the boat: selling and buying ----------------
 // Everything Earl carries (except lures and necklaces, which he keeps for use) goes in the basket.
 // the sub's tank can only be emptied when the sub is at the boat
-const subAtBoat = () => !g.sub.imploded && Math.hypot(g.sub.x - (BOAT_X + 8.5), g.sub.y - 2.6) < 20;
+const subAtBoat = () => !g.sub.imploded && Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) < 20;
 function sellSpecimens(list, lines) {
   const groups = new Map();
   for (const sp of list) { const k = sp.id + ':' + (sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
@@ -240,7 +241,7 @@ function buy(kind) {
       if (id === 'air') { e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + U.step); }
       if (id === 'swim') e.finSpeed = statValue(P, 'swim');
       if (id === 'sprint') e.sprintMul = statValue(P, 'sprint');
-      if (id === 'depth' || id === 'subAir' || id === 'subSpeed') applySub(sub, P);
+      if (id === 'depth' || id === 'subAir' || id === 'subSpeed' || id === 'ballast') applySub(sub, P);
       if (id === 'camShots') g.shots = gear(P, 'cam').shots;
       hud.toast(`${U.name}: ${fmtStat(id, statValue(P, id))}`);
     }
@@ -402,7 +403,7 @@ function findTarget() {
 
 function promptFor(t) {
   const e = g.earl;
-  const nearBoat = Math.abs(e.x - BOAT_X) < 14 && e.y < 4;
+  const nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   let p = null;
   if (t) {
     if (t.kind === 'pickup') {
@@ -417,7 +418,7 @@ function promptFor(t) {
   if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
   if (!e.inSub && e.y > 100 && (g.items.lure || g.items.necklace)) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep';
   if (e.inSub) p = p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible';
-  if (nearBoat) p = (p ? p + '   ·   ' : '') + 'U  The boat: sell, buy';
+  if (nearBoat || (e.inSub && g.sub.docked)) p = (p ? p + '   ·   ' : '') + (g.helm ? 'A / D  Drive the Margaret   ·   B  Leave the helm' : 'U  The boat   ·   B  Take the helm');
   return p;
 }
 
@@ -493,7 +494,7 @@ function leaveSub() {
   const e = g.earl, sub = g.sub;
   e.inSub = false;
   e.x = sub.x - sub.facing * 1.5; e.y = Math.max(0.4, sub.y + 2.6); e.vx = 0; e.vy = 0;
-  if (Math.abs(sub.x - BOAT_X) < 14 && sub.y < 3) sub.docked = true;
+  if (Math.abs(sub.x - BOAT.x) < 14 && sub.y < 3) sub.docked = true;
   hud.toast(e.y > 300 ? 'Outside. The pressure is immense.' : 'Outside the submersible', e.y > 300 ? 'warn' : '');
   audio.ready && audio.click();
 }
@@ -600,7 +601,10 @@ function update(dt) {
       if (e.inSub) g.sub.lightsOn = e.lampWanted; // outside, only his own lamp: the sub keeps its lights as they were
       hud.toast(e.inSub ? (e.lampWanted ? 'Lights on' : 'Lights off') : (e.lampWanted ? 'Headlamp on' : 'Headlamp off'));
     }
-    if (pressed.has('u') && Math.abs(e.x - BOAT_X) < 14 && e.y < 4) ui.toggleWorkshop();
+    if (pressed.has('u') && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) ui.toggleWorkshop();
+    // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
+    const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
+    if (pressed.has('b') && (g.helm || atBoat)) { g.helm = !g.helm; g.boatV = 0; hud.toast(g.helm ? 'At the helm' : 'Left the helm'); audio.ready && audio.click(); }
     if (pressed.has('q')) {
       if (g.items.lure > 0 && !g.lure) {
         g.items.lure--;
@@ -628,13 +632,13 @@ function update(dt) {
     g.stillMul = frenzyOn(g, 'still') ? 0.35 : 1;
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
-    if (g.awayFromBoat && Math.abs(e.x - BOAT_X) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
+    if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
     const day = tickAquarium(profile, dt);
     if (day) { saveProfile(profile); hud.toast(`The aquarium: ${day.visitors} visitors today · ${day.net >= 0 ? '+' : ''}${money(day.net, false)} after upkeep`, 'note'); }
     // the very bottom, the first time: it shows itself, and lets him go
-    if (!profile.met && e.y > 2850 && W.floorAt(e.x) - e.y < 40 && !g.reveal) {
+    if (!profile.met && e.y > 3850 && W.floorAt(e.x) - e.y < 40 && !g.reveal) {
       g.reveal = { t: 0 }; profile.met = true; saveProfile(profile);
       ent.marked = false; ent.attn = 0; ent.state = 'roam';
       audio.ready && (audio.tone(30, 9, 0.6, 'sine', 0, 22), audio.groan(0.25));
@@ -771,7 +775,7 @@ function update(dt) {
     g.capRarity = ct && ct.ok ? rarityOf(ct.sp) : null;
     }
     // a fresh memory card and charged strobes at the boat
-    if (owns(profile, 'camera') && Math.abs(e.x - BOAT_X) < 14 && e.y < 4) g.shots = gear(profile, 'cam').shots;
+    if (owns(profile, 'camera') && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) g.shots = gear(profile, 'cam').shots;
     if (!e.inSub) {
       const r = ap.update(g, dt, g.addons.recall ? 1.5 : 1);
       if (r === 'arrived') { hud.toast('The sub is here'); audio.ready && audio.sonar(0.06); }
@@ -788,6 +792,18 @@ function update(dt) {
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
+    if (g.helm) {
+      if (mv.y) { g.helm = false; hud.toast('Left the helm'); }
+      else {
+        g.boatV = lerp(g.boatV || 0, mv.x * 9, 1 - Math.exp(-dt * 1.0)); // a heavy boat: slow to speed up and to stop
+        BOAT.x = clamp(BOAT.x + g.boatV * dt, BOAT_MIN, BOAT_MAX);
+        if (BOAT.x === BOAT_MIN || BOAT.x === BOAT_MAX) g.boatV = 0;
+        mv.x = 0; mv.y = 0;
+        if (!e.inSub) { e.x = BOAT.x - 3; e.y = 0.5; e.vx = e.vy = 0; }
+      }
+    }
+    // a docked sub sits in the boat's cradle wherever she goes
+    if (g.sub.docked && !g.sub.imploded && !(g.autopilot && g.autopilot.active)) { g.sub.x = BOAT.x + 8.5; g.sub.y = 2.6; g.sub.vx = g.sub.vy = 0; }
     const res = updateEarl(g, dt, mv);
     // the lamp follows the cursor (if the mouse has been used); idle, Earl turns to face it
     g.aim = null;
@@ -979,7 +995,7 @@ function update(dt) {
       if (f.fade <= 0 && (f.gone || f.t > f.dur)) g.farShadow = null;
     } else if (e.y > 120 && e.y < 1600 && fx.dread < 0.02 && !ent.marked && Math.random() < dt / 420) {
       const side = Math.random() < 0.5 ? -1 : 1;
-      const x = clamp(e.x + side * (20 + Math.random() * 10), 10, 990);
+      const x = clamp(e.x + side * (20 + Math.random() * 10), 10, WORLD_W - 10);
       const y = Math.min(e.y + (Math.random() - 0.4) * 16, W.floorAt(x) - 15);
       if (y > 60) {
         g.farShadow = { x, y, vx: -side * (0.3 + Math.random() * 0.4), dir: -side, t: 0, dur: 50 + Math.random() * 30, fade: 0, gone: false };

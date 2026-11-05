@@ -40,7 +40,7 @@ function habitatOk(sp, x, y, W) {
   if (above < 0.5) return false;
   if (W.rockAt(x, y, 1)) return false;
   switch (sp.v.hab) {
-    case 'reef': return above < 12 && x > 840;
+    case 'reef': return above < 12 && (x > 2840 || x < 40 || (x > 1100 && x < 1250)); // the reef, the wall's cap, the seamount's top
     case 'floor-swim': return above < 3;
     case 'demersal': return above < 25;
     case 'drift-low': return above < 4;
@@ -93,7 +93,7 @@ export class Fauna {
   trySpawn(cam, dread) {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
-    if (x < 2 || x > 985 || y < 0.6) return;
+    if (x < 2 || x > 2985 || y < 0.6) return;
     const cands = SWIMMERS.filter((s) => {
       if (y < s.dmin || y > s.dmax || !habitatOk(s, x, y, W)) return false;
       const [lo, hi] = this.depthBand(s, x, this.night);
@@ -125,7 +125,7 @@ export class Fauna {
   trySpawnBait(cam, night) {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
-    if (x < 5 || x > 975 || y < 2) return;
+    if (x < 5 || x > 2975 || y < 2) return;
     const fl = W.floorAt(x);
     if (fl - y < 8) return;
     const opts = BAIT.filter((b) => {
@@ -245,7 +245,7 @@ export class Fauna {
       const v = Math.hypot(s.vx, s.vy);
       if (v > sp) { s.vx *= sp / v; s.vy *= sp / v; }
       s.x += s.vx * dt; s.y += s.vy * dt;
-      if (s.x < 10) s.dir = 1; if (s.x > 970) s.dir = -1;
+      if (s.x < 10) s.dir = 1; if (s.x > 2970) s.dir = -1;
       // now and then the school wheels round on its own
       s.turnT -= dt;
       if (s.turnT <= 0) { s.turnT = rng.range(18, 45); s.vx = -s.vx * 0.5; s.dir = -s.dir; }

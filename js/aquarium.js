@@ -13,14 +13,14 @@ export const WINGS = [
   { id: 'open', name: 'Open ocean dome', price: 150, slots: 8, upkeep: 1.5, desc: 'One enormous round tank for open-water swimmers and drifting jellies.' },
   { id: 'twilight', name: 'Twilight gallery', price: 400, slots: 10, upkeep: 3, desc: 'Dim, chilled tanks for animals from 150 to 500 m.' },
   { id: 'deep', name: 'Deep-sea gallery', price: 900, slots: 8, upkeep: 6, desc: 'Pressurised black tanks behind portholes, for animals from below 500 m.' },
-  { id: 'abyss', name: 'Abyss tank', price: 2000, slots: 6, upkeep: 12, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 2,500 m.' },
+  { id: 'abyss', name: 'Abyss tank', price: 2000, slots: 6, upkeep: 12, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 3,500 m.' },
 ];
 export const WING_BY_ID = Object.fromEntries(WINGS.map((w) => [w.id, w]));
 
 // which wing an animal belongs in (where it lives, and where it was caught)
 export function zoneOf(spec) {
   const sp = SPECIES_BY_ID[spec.id];
-  if ((spec.from || 0) >= 2500) return 'abyss';
+  if ((spec.from || 0) >= 3500) return 'abyss';
   if (sp.dmin >= 500) return 'deep';
   if (sp.dmin >= 150 || sp.cat === 'Deep Sea Fish') return 'twilight';
   if (sp.cat === 'Open Ocean Fish' || sp.cat === 'Sharks & Rays' || sp.cat === 'Jellyfish & Drifters' || sp.v.hab === 'pelagic') return 'open';

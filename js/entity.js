@@ -1,6 +1,6 @@
 // The entity.
 //
-// It lives in the deep: 1500-3000 m by day, rising to 500-2000 m at night. It is not hunting Earl
+// It lives in the deep: 2,200-4,000 m by day (the trench and the plain), rising to 900-2,800 m at night. It is not hunting Earl
 // at the start of a run; it roams its range. A hidden attention meter fills when Earl disturbs the
 // deep (being below 200 m, noise and light down there, taking things from its domain, coming near
 // it). When the meter fills, Earl is MARKED and it hunts him: by sound and light, losing him when
@@ -19,7 +19,7 @@ export class Entity {
   constructor(rng, world) {
     this.rng = rng;
     this.world = world;
-    this.x = rng.range(80, 400); this.y = rng.range(1700, 2300);
+    this.x = rng.range(80, 500); this.y = rng.range(2600, 3400);
     this.vx = 0; this.vy = 0;
     this.state = 'roam'; // roam | hunt | search | drift | repelled | lured
     this.lastX = 500; this.lastY = 5; this.searchT = 0; this.senseT = 12;
@@ -33,7 +33,7 @@ export class Entity {
   // its home range right now (night lifts it toward the surface)
   band(g) {
     const n = clamp(1 - g.day.light, 0, 1); // 0 day .. 1 night
-    return [lerp(1500, 500, n), lerp(3000, 2000, n)];
+    return [lerp(2200, 900, n), lerp(4000, 2800, n)]; // day: the trench and the plain; night: it rises
   }
 
   // add to the attention meter (amount is a fraction of a full mark)
@@ -118,7 +118,7 @@ export class Entity {
     const per = this.perception(g);
     this.attend(g, dt, d, per);
     const [bandLo, bandHi] = this.band(g);
-    const floorY = this.world ? this.world.floorAt(clamp(this.x, 0, 1000)) - 10 : 2900;
+    const floorY = this.world ? this.world.floorAt(clamp(this.x, 0, 3000)) - 10 : 3900;
 
     let tx = this.x, ty = this.y, speed = ENTITY_SPEED * 0.35;
 
@@ -127,10 +127,10 @@ export class Entity {
       this.roamT -= dt;
       if (this.roamT <= 0 || dist(this.x, this.y, this.roamX, this.roamY) < 15) {
         this.roamT = this.rng.range(40, 90);
-        this.roamX = this.rng.range(20, 980);
+        this.roamX = this.rng.range(20, 2980);
         this.roamY = this.rng.range(bandLo, bandHi);
       }
-      const fl = this.world ? this.world.floorAt(clamp(this.roamX, 0, 1000)) - 15 : 2900;
+      const fl = this.world ? this.world.floorAt(clamp(this.roamX, 0, 3000)) - 15 : 3900;
       tx = this.roamX; ty = Math.min(this.roamY, fl);
       // the band moves with the day: drift with it
       if (this.y < bandLo - 30 || this.y > bandHi + 30) ty = clamp(this.y, bandLo, Math.min(bandHi, fl));
@@ -205,7 +205,7 @@ export class Entity {
     this.vx = lerp(this.vx, tvx, k); this.vy = lerp(this.vy, tvy, k);
     this.x += this.vx * dt; this.y += this.vy * dt;
     if (this.y < SAFE_DEPTH) { this.y = lerp(this.y, SAFE_DEPTH, dt * 2); this.vy = Math.max(0, this.vy); }
-    this.x = clamp(this.x, -40, 1040);
+    this.x = clamp(this.x, -40, 3040);
     if (Math.abs(this.vx) > 0.2) this.heading = Math.atan2(this.vy, this.vx);
     // it fades as it rises toward the light
     this.fade = clamp((this.y - SAFE_DEPTH + 10) / 70, 0.25, 1);

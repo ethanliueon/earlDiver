@@ -3,23 +3,45 @@
 import { makeRng, fbm1, clamp, lerp, smoothstep, pointInPoly, closestOnSeg } from './util.js';
 import { SPECIES, isStaticHab } from './species.js';
 
-export const WORLD_W = 1000;
-export const WORLD_D = 3000;
+// 3,000 m wide, 4,000 m deep. The shore is on the right (east); the deep ocean and a sheer wall
+// with a trench at its foot are on the left (west). The shallow half (shelf, wreck, kelp, reef,
+// beach) is the original map moved 2,000 m east (EAST); everything west of the shelf edge is new.
+export const WORLD_W = 3000;
+export const WORLD_D = 4000;
+export const EAST = 2000;
 export const FLOOR_RES = 0.5; // metres per floor sample
-export const BOAT_X = 512;
-export const SPAWN = { x: 500, y: 5 };
+// the Margaret: she starts over the shelf edge and can be driven along the surface between
+// BOAT_MIN and BOAT_MAX (1,000 m from the west wall, to the shallows off the beach)
+export const BOAT_HOME = 2512, BOAT_MIN = 1000, BOAT_MAX = 2945;
+export const BOAT = { x: BOAT_HOME };
+export const BOAT_X = BOAT_HOME; // (where she starts)
+export const SPAWN = { x: BOAT_HOME - 12, y: 5 };
+// the anglerfish's cave: a hollow in the west wall
+export const CAVE = { x: 52, y: 1800 };
 
 // Fixed overall profile (x -> seafloor depth). Beach on the right, deep on the left.
 const PROFILE = [
-  [0, 2960], [60, 2930], [150, 2820], [230, 2450], [300, 2050], [340, 1700],
-  [380, 1400], [430, 1180], [470, 1060], [520, 860], [560, 640], [585, 470],
-  [596, 330], [604, 215], [640, 175], [700, 132], [760, 72], [800, 42],
-  [880, 26], [920, 16], [950, 9], [972, 3], [985, -1], [1000, -3.5],
+  // the west wall: a reef cap near the surface, then a sheer drop to the trench
+  [0, 25], [22, 40], [34, 900], [40, 2600], [46, 3880],
+  // the trench at its foot, rising to the abyssal plain
+  [90, 3990], [190, 4000], [330, 3960], [450, 3800], [560, 3560], [700, 3380], [840, 3320],
+  // a seamount: an underwater mountain rising from the plain to ~300 m
+  [930, 3150], [1000, 2400], [1060, 1300], [1110, 520], [1150, 310], [1200, 320], [1240, 600],
+  [1300, 1500], [1370, 2700], [1450, 3250],
+  // the abyssal plain: vents, a brine pool, nodules, a whale fall
+  [1550, 3330], [1700, 3300], [1820, 3200],
+  // the continental rise and slope, with a cold seep and coral mounds
+  [1900, 2950], [1980, 2600], [2060, 2250], [2150, 1950], [2250, 1600], [2330, 1250],
+  // a submarine canyon cut into the shelf edge
+  [2380, 1150], [2420, 1500], [2450, 1560], [2475, 1250], [2500, 950],
+  // the original map from here, moved 2,000 m east: the drop, the shelf, kelp, reef, beach
+  [2520, 860], [2560, 640], [2585, 470], [2596, 330], [2604, 215], [2640, 175], [2700, 132],
+  [2760, 72], [2800, 42], [2880, 26], [2920, 16], [2950, 9], [2972, 3], [2985, -1], [3000, -3.5],
 ];
 
 // Deep sapphires: rare valuables, only below 500 m, a few per ocean at random, each tucked under a
 // ledge, between boulders or beside one. They are worth a great deal and the deep notices them go.
-const SAPPHIRE_COUNT = 6;
+const SAPPHIRE_COUNT = 10;
 const SAPPHIRE_HIDES = ['ledge', 'crevice', 'boulder', 'ledge'];
 
 export const RESOURCES = {
@@ -53,7 +75,8 @@ export function generateWorld(seed) {
     const big = fbm1(x / 70, 4, seed) * clamp(d * 0.05, 1.5, 60);
     const fine = fbm1(x / 6, 3, seed + 5) * clamp(d * 0.006, 0.25, 4);
     d += big + fine;
-    if (x > 975) d = Math.min(d, lerp(-1, -3.5, (x - 975) / 25)); // beach above the waterline
+    if (x > WORLD_W - 25) d = Math.min(d, lerp(-1, -3.5, (x - (WORLD_W - 25)) / 25)); // beach above the waterline
+    if (x < 30) d = Math.min(d, 25 + x * 0.5);                                         // the wall's reef cap stays shallow
     floor[i] = d;
   }
   W.floor = floor;
@@ -93,10 +116,10 @@ export function generateWorld(seed) {
     for (const p of poly) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
     W.rocks.push({ poly, kind, x0, x1, y0, y1, seed: rng() * 1000 });
   };
-  for (let x = 2; x < 972; x += rng.range(5, 22)) {
+  for (let x = 2; x < WORLD_W - 28; x += rng.range(5, 22)) {
     const d = W.floorAt(x);
     const s = W.slopeAt(x);
-    if (x > 940 && rng() < 0.6) continue;
+    if (x > EAST + 940 && rng() < 0.6) continue;
     const size = clamp(0.6 + d * 0.004, 0.6, 6) * rng.range(0.5, 1.8);
     addRock(roughen(blob(x, d + size * 0.25, size * rng.range(1, 2.2), size, rng.range(-0.3, 0.3) + Math.atan(s) * 0.5, 0.45, 10), 2, size * 0.12), 'boulder');
     // Overhangs on steep walls: a ledge sticking out to the left (towards open water)
@@ -117,6 +140,12 @@ export function generateWorld(seed) {
       addRock(roughen(poly, 4, 0.55), 'ledge');
     }
   }
+  // the anglerfish's cave mouth: an upper and a lower lip of rock jutting from the west wall
+  {
+    const cx = CAVE.x, cy = CAVE.y;
+    addRock(roughen([{ x: 30, y: cy - 34 }, { x: cx + 26, y: cy - 22 }, { x: cx + 30, y: cy - 15 }, { x: cx + 8, y: cy - 11 }, { x: 30, y: cy - 12 }], 4, 1.2), 'ledge');
+    addRock(roughen([{ x: 30, y: cy + 12 }, { x: cx + 6, y: cy + 10 }, { x: cx + 28, y: cy + 15 }, { x: cx + 24, y: cy + 26 }, { x: 30, y: cy + 36 }], 4, 1.2), 'boulder');
+  }
   W.rockAt = (x, y, r = 0) => {
     for (const rk of W.rocks) {
       if (x < rk.x0 - r || x > rk.x1 + r || y < rk.y0 - r || y > rk.y1 + r) continue;
@@ -127,14 +156,14 @@ export function generateWorld(seed) {
 
   // ---- Kelp forest (cold-water band) and seagrass meadow near the beach ----
   W.kelp = [];
-  for (let x = 790; x < 905; x += rng.range(0.9, 2.4)) {
+  for (let x = EAST + 790; x < EAST + 905; x += rng.range(0.9, 2.4)) {
     const d = W.floorAt(x);
     if (d < 6) continue;
     const h = clamp(d - rng.range(0, 3), 4, 36) * rng.range(0.8, 1.02);
     W.kelp.push({ x, base: d, h, phase: rng() * 6.28, sp: 1, harvested: false, lean: rng.range(-0.15, 0.15), species: rng() < 0.85 ? 118 : 119 });
   }
   W.inKelp = (x, y) => {
-    if (x < 788 || x > 907) return false;
+    if (x < EAST + 788 || x > EAST + 907) return false;
     // count stalks near the point that are tall enough to reach this depth
     let c = 0;
     for (const k of W.kelp) {
@@ -153,15 +182,17 @@ export function generateWorld(seed) {
 
   // ---- Wrecks ----
   W.wrecks = [
-    { x: 688, y: W.floorAt(688), len: 36, tilt: -0.08, kind: 'ship' },
-    { x: 452, y: W.floorAt(452), len: 70, tilt: 0.16, kind: 'ship' },
+    { x: EAST + 688, y: W.floorAt(EAST + 688), len: 36, tilt: -0.08, kind: 'ship' },
+    { x: 2110, y: W.floorAt(2110), len: 70, tilt: 0.12, kind: 'ship' },   // on the slope, ~1,800 m
   ];
   // ---- Hydrothermal vents in the abyss ----
   W.vents = [];
-  for (let i = 0; i < 6; i++) {
-    const x = rng.range(70, 210);
+  for (let i = 0; i < 7; i++) {
+    const x = rng.range(1520, 1690);   // a vent field on the abyssal plain
     W.vents.push({ x, y: W.floorAt(x), h: rng.range(4, 14), phase: rng() * 6 });
   }
+  // the anglerfish's cave: two great lips of rock jutting from the wall make a hollow between them
+  W.cave = { x: CAVE.x, y: CAVE.y };
 
   // ---- Sea lanterns: 1-2 per 500x500 m cell in open water; extra deeper ----
   W.lanterns = [];
@@ -186,37 +217,37 @@ export function generateWorld(seed) {
     }
   }
   // Guarantee a lantern near the first cliff and in the kelp shadows
-  addLantern(575, 300);
-  addLantern(640, 120);
+  addLantern(EAST + 575, 300);
+  addLantern(EAST + 640, 120);
 
   // ---- Pickups ----
   W.pickups = [];
   const addPickup = (type, x, y, extra = {}) => W.pickups.push({ type, x, y, taken: false, phase: rng() * 6, ...extra });
   const onFloor = (x) => W.floorAt(x) - 0.25;
   for (let i = 0; i < 22; i++) {
-    const x = rng.range(830, 970);
+    const x = rng.range(EAST + 830, EAST + 970);
     if (W.floorAt(x) > 2) addPickup('clam', x, onFloor(x), { pearl: rng() < 0.08 });
   }
-  for (let i = 0; i < 14; i++) { const x = rng.range(900, 975); if (W.floorAt(x) > 1) addPickup('mussel', x, onFloor(x)); }
-  for (let i = 0; i < 28; i++) { const x = rng.range(560, 975); addPickup('rock', x, onFloor(x)); }
+  for (let i = 0; i < 14; i++) { const x = rng.range(EAST + 900, EAST + 975); if (W.floorAt(x) > 1) addPickup('mussel', x, onFloor(x)); }
+  for (let i = 0; i < 28; i++) { const x = rng.range(EAST + 560, EAST + 975); addPickup('rock', x, onFloor(x)); }
   for (const w of W.wrecks) {
-    const cnt = w.x > 600 ? 16 : 28;
+    const cnt = w.x > EAST + 600 ? 16 : 28;
     for (let i = 0; i < cnt; i++) { const x = w.x + rng.range(-w.len * 0.8, w.len * 0.8); addPickup('iron', x, onFloor(x)); }
   }
-  for (let i = 0; i < 40; i++) { const x = rng.range(440, 610); const fl = W.floorAt(x); if (fl > 200 && fl < 1000) addPickup('tentacle', x, onFloor(x)); }
-  for (let i = 0; i < 45; i++) { const x = rng.range(380, 700); const y = rng.range(100, 1000); if (y < W.floorAt(x) - 4) addPickup('ink', x, y); }
-  for (let i = 0; i < 60; i++) { const x = rng.range(500, 900); const y = rng.range(8, 300); if (y < W.floorAt(x) - 3) addPickup('scale', x, y); }
-  for (let i = 0; i < 30; i++) { const x = rng.range(330, 600); const fl = W.floorAt(x); if (fl > 300 && fl < 1300) addPickup('glass', x, onFloor(x)); }
+  for (let i = 0; i < 60; i++) { const x = rng.range(1000, 2610); const fl = W.floorAt(x); if (fl > 200 && fl < 1000) addPickup('tentacle', x, onFloor(x)); }
+  for (let i = 0; i < 90; i++) { const x = rng.range(900, 2700); const y = rng.range(100, 1000); if (y < W.floorAt(x) - 4) addPickup('ink', x, y); }
+  for (let i = 0; i < 70; i++) { const x = rng.range(EAST + 450, EAST + 900); const y = rng.range(8, 300); if (y < W.floorAt(x) - 3) addPickup('scale', x, y); }
+  for (let i = 0; i < 60; i++) { const x = rng.range(950, 2600); const fl = W.floorAt(x); if (fl > 300 && fl < 1300) addPickup('glass', x, onFloor(x)); }
   // Usable items, found on the deeper seafloor
-  for (let i = 0; i < 26; i++) { const x = rng.range(300, 640); const fl = W.floorAt(x); if (fl > 150 && fl < 1800) addPickup('lure', x, fl - 0.4); }
-  for (let i = 0; i < 18; i++) { const x = rng.range(250, 620); const fl = W.floorAt(x); if (fl > 250 && fl < 2200) addPickup('necklace', x, fl - 0.3); }
+  for (let i = 0; i < 40; i++) { const x = rng.range(950, 2640); const fl = W.floorAt(x); if (fl > 150 && fl < 2400) addPickup('lure', x, fl - 0.4); }
+  for (let i = 0; i < 30; i++) { const x = rng.range(200, 2620); const fl = W.floorAt(x); if (fl > 250 && fl < 3600) addPickup('necklace', x, fl - 0.3); }
   // Good deeds: animals caught in lost fishing nets (fixed places), and broken coral to replant
-  for (const [x, an] of [[938, 'turtle'], [905, 'fish'], [872, 'turtle'], [826, 'fish'], [778, 'turtle'], [736, 'fish']]) addPickup('net', x, W.floorAt(x) - 0.7, { animal: an });
-  for (let i = 0; i < 12; i++) { const x = rng.range(880, 968); addPickup('coral', x, onFloor(x)); }
+  for (const [x, an] of [[EAST + 938, 'turtle'], [EAST + 905, 'fish'], [EAST + 872, 'turtle'], [EAST + 826, 'fish'], [EAST + 778, 'turtle'], [EAST + 736, 'fish']]) addPickup('net', x, W.floorAt(x) - 0.7, { animal: an });
+  for (let i = 0; i < 12; i++) { const x = rng.range(EAST + 880, EAST + 968); addPickup('coral', x, onFloor(x)); }
   // Sapphires: random deep spots, spread apart
   const spots = [];
   for (let tries = 0; spots.length < SAPPHIRE_COUNT && tries < 400; tries++) {
-    const x = rng.range(25, 578);
+    const x = rng.range(60, EAST + 578);
     if (W.floorAt(x) < 520 || spots.some((q) => Math.abs(q.x - x) < 45)) continue;
     spots.push({ x, hide: SAPPHIRE_HIDES[spots.length % SAPPHIRE_HIDES.length] });
   }
@@ -242,14 +273,14 @@ export function generateWorld(seed) {
   // ---- Static seafloor life ----
   W.statics = [];
   const statics = SPECIES.filter((s) => isStaticHab(s.v.hab) && s.id !== 118 && s.id !== 119);
-  for (let x = 1; x < 975; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6) * (x > 880 ? 0.6 : 1)) {
+  for (let x = 1; x < WORLD_W - 25; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6) * (x > EAST + 880 ? 0.6 : 1)) {
     const d = W.floorAt(x);
     if (d < 0.6) continue;
     const cands = statics.filter((s) => d >= s.dmin && d <= s.dmax);
     if (!cands.length) continue;
     // weight corals, anemones, sponges and seagrass higher in the shallows so the reef reads as a reef
     let sp;
-    if (d < 45 && x > 880 && rng() < 0.6) {
+    if (d < 45 && x > EAST + 880 && rng() < 0.6) {
       const reef = cands.filter((c) => /Coral|Anemone|Sponge|Plants/.test(c.cat) && c.v.s !== 'kelp');
       sp = reef.length ? rng.pick(reef) : rng.pick(cands);
     } else sp = rng.pick(cands);

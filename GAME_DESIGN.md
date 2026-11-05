@@ -47,9 +47,15 @@ by a hidden calm meter that fills with peaceful catches, sales and photos.
 
 ## The ocean
 
-- 1,000 m wide, 3,000 m deep, generated each dive around a fixed profile: beach, seagrass and reef,
-  kelp forest, a shelf wreck, a cliff with overhangs, a slope with a deep wreck, an abyssal plain
-  with vents. A 10-minute day/night cycle.
+- 3,000 m wide, 4,000 m deep, generated each dive around a fixed profile. East to west: the beach,
+  seagrass and reef, kelp forest, a shelf wreck, the shelf edge (where the boat starts), a submarine
+  canyon cut into it, the continental slope with a deep wreck at ~1,800 m, the abyssal plain with a
+  vent field, a seamount rising from the plain to ~300 m (reef life on its top), the trench at
+  4,000 m, and a sheer west wall with a reef cap at the surface and a cave hollowed into it at
+  ~1,800 m. A 10-minute day/night cycle.
+- The boat (the Margaret) can be driven: B at the boat takes the helm, A / D drive her along the
+  surface from 1,000 m off the west wall to the shallows off the beach. A docked sub goes with her.
+  Every dive starts with her back over the shelf edge.
 - 183 real species, each only in its real depth range and habitat. Fish are drawn at 1.6x life
   size so their sizes read. Bait schools move as one body.
 
@@ -109,8 +115,8 @@ golden (x3), melanistic (x3), abnormal (x3, swims wrong) and crimson (x5, glows 
 ## The submersible
 
 - An old riveted bathyscaphe at the boat (F to board, hold F to leave). Cruises at 3.4 m/s
-  (Engine upgrades), dives no faster, rises 1.2x faster. Rated 400 m at first,
-  refits to 3,000 m. Past 1.3x its rating it implodes; a replacement can be bought.
+  (Engine upgrades), dives no faster, rises 1.2x faster. Rated 300 m at first,
+  refits to 4,050 m, 75 m at a time. Ballast upgrades make it dive and rise faster. Past 1.3x its rating it implodes; a replacement can be bought.
 - C calls it: it drives itself to Earl, routing around rock, and stops beside him; never below its
   rating. Hold C to send it home. Its engine is heard in the deep.
 - C from inside: autopilot home, on 0.8x air. Steering, a hit to the hull, an attack starting or
@@ -137,14 +143,14 @@ notice). A brass-and-glass timer shows above the tool slots.
 
 - Built from the boat, seen on the far shore. Six wings in order: reef hall, kelp tower,
   open ocean dome, twilight gallery, deep-sea gallery, and an abyss tank only for animals caught
-  below 2,500 m.
+  below 3,500 m.
 - Live animals can be kept for display instead of sold; each species and each rare form is a slot.
   Visitors pay every 10 minutes of play by the value of the collection; wings in use cost a
   little to run.
 
 ## The entity
 
-- Lives at 1,500-3,000 m by day, 500-2,000 m at night. A hidden attention meter fills when Earl
+- Lives at 2,200-4,000 m by day (the trench and the plain), rising to 900-2,800 m at night. A hidden attention meter fills when Earl
   disturbs the deep: depth, noise (sprinting, engines, the empty sub on autopilot), light, flashes,
   taking things from its domain, crimson animals, deep traps. Below 500 m without the sub marks him
   at once.
@@ -168,6 +174,7 @@ charging animal makes it swerve.
 | F / hold F | Interact (observe, collect, board, haul a trap) / leave the sub |
 | 1-5, Space | Net, slurp gun, tag gun, camera, traps; Space uses it (in the sub: the arm) |
 | C / hold C | Call the sub / send it home |
+| B | At the boat: take the helm, A / D drive her |
 | U | The boat: sell, buy, radio, aquarium |
 | J | Journal |
 | L, Q, E, G | Lights, throw a lure, wear a necklace, offer something to the deep |

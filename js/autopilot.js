@@ -2,12 +2,12 @@
 // routing around rock, and stops a few metres away. Hold C to send it back to the dock.
 // It never goes below its rated depth: past that it holds and waits.
 import { clamp, lerp, dist } from './util.js';
-import { collide, BOAT_X } from './world.js';
+import { collide, BOAT, WORLD_W } from './world.js';
 import { SUB_SPEED, ballastBoost } from './player.js';
 
 const CELL = 3;            // routing grid, metres
 const STOP = 5;            // how far from Earl it stops (the hull is ~9 m long)
-const DOCK = { x: BOAT_X + 8.5, y: 2.6 };
+const DOCK = { get x() { return BOAT.x + 8.5; }, y: 2.6 };
 const MAX_EXPAND = 60000;  // A* budget per plan
 
 // is a grid cell open water the sub fits through?
@@ -16,7 +16,7 @@ function openCell(W, cx, cy, maxY, cache) {
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
   const x = cx * CELL + CELL / 2, y = cy * CELL + CELL / 2;
-  let ok = x > 4 && x < 984 && y <= maxY && W.floorAt(x) - y > 3;
+  let ok = x > 4 && x < WORLD_W - 16 && y <= maxY && W.floorAt(x) - y > 3;
   if (ok) for (const [ox, oy] of [[0, 0], [2.4, 0], [-2.4, 0], [0, 2], [0, -2]]) if (W.rockAt(x + ox, y + oy)) { ok = false; break; }
   cache.set(key, ok);
   return ok;
@@ -153,7 +153,7 @@ export class Autopilot {
     let dx = wp.x - sub.x, dy = wp.y - sub.y;
     const dl = Math.hypot(dx, dy) || 1;
     let nx = dx / dl, ny = dy / dl;
-    const vBoost = ballastBoost(nx, ny);
+    const vBoost = ballastBoost(nx, ny) * (1 + (sub.ballast || 0) * Math.min(1, Math.abs(ny)));
     const slow = this.path.length === 1 ? clamp(toGoal / 6, 0.15, 1) : 1; // ease in at the end
     const arrived = toGoal < 1.2;
     const tvx = arrived ? 0 : nx * sp * slow, tvy = arrived ? 0 : ny * sp * vBoost * slow;
@@ -163,7 +163,7 @@ export class Autopilot {
     if (sub.y < 1.6) { sub.y = 1.6; sub.vy = Math.max(0, sub.vy); }
     const c = collide(W, sub.x, sub.y, 2.2);
     if (c.hit) { sub.x = c.x; sub.y = c.y; sub.vx *= 0.6; sub.vy *= 0.4; }
-    sub.x = clamp(sub.x, 4, 984);
+    sub.x = clamp(sub.x, 4, WORLD_W - 16);
     if (Math.abs(sub.vx) > 0.3) sub.facing = sub.vx > 0 ? 1 : -1;
     const yawT = sub.facing > 0 ? 0 : Math.PI, rate = Math.PI / 1.5;
     sub.yaw += clamp(yawT - sub.yaw, -rate * dt, rate * dt);

@@ -13,7 +13,7 @@ import { drawAquarium } from './aquarium_draw.js';
 import { aquariumOf, visitors } from './aquarium.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
-import { BOAT_X, WORLD_W } from './world.js';
+import { BOAT, WORLD_W, EAST, CAVE } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
 
@@ -128,7 +128,7 @@ export class Renderer {
     // Earl's aquarium on the far shore, at the horizon (far away: small, and it barely moves)
     if (g.profile && horizon > -20 && horizon < H + 200) {
       const A = aquariumOf(g.profile), sc = ppm * 0.11;
-      const ax = W / 2 + (1100 - cam.x) * ppm * 0.035;
+      const ax = W / 2 + (WORLD_W + 100 - cam.x) * ppm * 0.035;
       if (ax > -80 * sc && ax < W + 80 * sc) {
         const cw = Math.ceil(130 * sc), ch = Math.ceil(36 * sc);
         const ac = this.aqC || (this.aqC = document.createElement('canvas'));
@@ -351,10 +351,10 @@ export class Renderer {
     }
 
     // ---- boat + sub ----
-    const boatX = S(BOAT_X), boatY = Sy(surfY(BOAT_X) * 0.8);
+    const boatX = S(BOAT.x), boatY = Sy(surfY(BOAT.x) * 0.8);
     let crane = null;
-    if (Math.abs(BOAT_X - cam.x) < cam.w) {
-      const roll = Math.atan2(surfY(BOAT_X + 4) - surfY(BOAT_X - 4), 8) * (0.7 + (g.storm || 0) * 0.8);
+    if (Math.abs(BOAT.x - cam.x) < cam.w) {
+      const roll = Math.atan2(surfY(BOAT.x + 4) - surfY(BOAT.x - 4), 8) * (0.7 + (g.storm || 0) * 0.8);
       ctx.save(); ctx.translate(boatX, boatY); ctx.rotate(roll);
       // draw the boat into a small offscreen canvas and darken it there (canvas filters are slow)
       const bw = Math.ceil(14 * ppm * 1.3), bh = Math.ceil(14 * ppm * 0.75);
@@ -440,7 +440,7 @@ export class Renderer {
     // ---- Earl ----
     const e = g.earl;
     let head = null;
-    if (!e.inSub && g.mode !== 'menu') {
+    if (!e.inSub && !g.helm && g.mode !== 'menu') { // at the helm he is inside the wheelhouse
       const amb = ambientAt(e.y, dayEff);
       ctx.save(); ctx.translate(S(e.x), Sy(e.y));
       ctx.scale(e.facing, 1); ctx.rotate(e.angle);
@@ -793,15 +793,15 @@ export class Renderer {
     }
     // the beach / dunes above water (right side)
     const S = this.S, Sy = this.Sy, ppm = this.cam.ppm;
-    if (S(975) < W) {
+    if (S(WORLD_W - 25) < W) {
       ctx.fillStyle = rgbStr(mixRgb([30, 28, 24], [196, 180, 146], Math.max(0.15, dayEff)));
-      ctx.beginPath(); ctx.moveTo(S(972), Sy(0.2));
-      for (let x = 972; x <= 1060; x += 2) ctx.lineTo(S(x), Sy(Math.min(0.2, g.world.floorAt(Math.min(x, 1000)) - (x > 1000 ? (x - 1000) * 0.05 : 0)) + Math.sin(x * 0.3) * 0.1));
-      ctx.lineTo(S(1060), Sy(1)); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(S(WORLD_W - 28), Sy(0.2));
+      for (let x = WORLD_W - 28; x <= WORLD_W + 60; x += 2) ctx.lineTo(S(x), Sy(Math.min(0.2, g.world.floorAt(Math.min(x, WORLD_W)) - (x > WORLD_W ? (x - WORLD_W) * 0.05 : 0)) + Math.sin(x * 0.3) * 0.1));
+      ctx.lineTo(S(WORLD_W + 60), Sy(1)); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = rgbStr(mixRgb([20, 24, 18], [80, 96, 56], Math.max(0.15, dayEff)));
       ctx.lineWidth = Math.max(1, ppm * 0.03);
       for (let k = 0; k < 30; k++) {
-        const x = 985 + k * 2.3, y = g.world.floorAt(Math.min(x, 1000)) - (x > 1000 ? (x - 1000) * 0.05 : 0);
+        const x = WORLD_W - 15 + k * 2.3, y = g.world.floorAt(Math.min(x, WORLD_W)) - (x > WORLD_W ? (x - WORLD_W) * 0.05 : 0);
         ctx.beginPath(); ctx.moveTo(S(x), Sy(y)); ctx.quadraticCurveTo(S(x + 0.2), Sy(y - 0.4), S(x + 0.4 + Math.sin(t + k) * 0.1), Sy(y - 0.7)); ctx.stroke();
       }
     }
@@ -815,7 +815,7 @@ export class Renderer {
       for (let sx = -10; sx <= W + 20; sx += 20) {
         const wx = cam.x + (sx - W / 2) / ppm;
         const fx = cam.x + (wx - cam.x) / par; // parallax-scaled world x
-        const d = g.world.floorAt(clamp(fx, 0, 1000)) - off + fbm1(fx / 40, 3, 99) * 25;
+        const d = g.world.floorAt(clamp(fx, 0, WORLD_W)) - off + fbm1(fx / 40, 3, 99) * 25;
         const sy = H / 2 + (d - cam.y) * ppm * par;
         ctx.lineTo(sx, Math.max(Sy(0) + 4, sy));
       }
@@ -892,7 +892,7 @@ export class Renderer {
 
   // ---------- baked kelp backdrop ----------
   bakeKelpBackdrop(world) {
-    const PX = 22, X0 = 760, X1 = 935, DEP = 46; // pixels per metre, world span, depth span
+    const PX = 22, X0 = EAST + 760, X1 = EAST + 935, DEP = 46; // pixels per metre, world span, depth span
     const layers = [];
     for (const [k, f, seed, tint] of [[0, 0.55, 11, 0.28], [1, 0.75, 29, 0.5]]) {
       const c = document.createElement('canvas');
@@ -967,7 +967,7 @@ export class Renderer {
 
   drawKelpBackdrop(g, ppm, t) {
     const cam = this.cam;
-    if (cam.x < 700 || cam.x > 1000 || cam.y > 120) return;
+    if (cam.x < EAST + 700 || cam.x > WORLD_W || cam.y > 120) return;
     if (!this.kelpBack || this.kelpBackWorld !== g.world) { this.bakeKelpBackdrop(g.world); this.kelpBackWorld = g.world; }
     const ctx = this.ctx, W = this.W, H = this.H, surfY = (H / 2) - cam.y * ppm;
     for (const L of this.kelpBack) {
