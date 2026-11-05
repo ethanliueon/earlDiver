@@ -85,7 +85,7 @@ export class Renderer {
     if (this.c.width !== w || this.c.height !== h) {
       this.c.width = w; this.c.height = h;
       this.lc.width = Math.ceil(w / 2); this.lc.height = Math.ceil(h / 2); // light at half resolution, smoothed when stretched
-      this.gc.width = w; this.gc.height = h;
+      this.gc.width = Math.ceil(w / 2); this.gc.height = Math.ceil(h / 2);
     }
   }
   get W() { return this.c.width; }
@@ -346,7 +346,7 @@ export class Renderer {
       fl.fillStyle = '#0a0a0a'; fl.fill(bt.eyes);
     }
     fl.setTransform(baseM);
-    this.layerEnd(ctx, g, fl, true);
+    this.layerEnd(ctx, g, fl, !this.lite);
     // brackets around what the net, slurp gun or claw will go for
     const ctg = g.mode === 'play' ? g.catchTarget : null;
     if (ctg) {
@@ -646,12 +646,15 @@ export class Renderer {
     // ================= POST =================
     if (fx.ghost > 0.01) {
       // double vision
-      this.gctx.clearRect(0, 0, W, H);
-      this.gctx.drawImage(this.c, 0, 0);
+      // the second image is copied at half resolution: a quarter of the work, and it is a ghost anyway
+      const gw = Math.ceil(W / 2), gh = Math.ceil(H / 2);
+      if (this.gc.width !== gw || this.gc.height !== gh) { this.gc.width = gw; this.gc.height = gh; }
+      this.gctx.clearRect(0, 0, gw, gh);
+      this.gctx.drawImage(this.c, 0, 0, gw, gh);
       // the second image drifts apart and back together
       const sep = fx.ghost * (0.6 + 0.4 * Math.sin(t * 0.8));
       ctx.globalAlpha = fx.ghost * 0.45;
-      ctx.drawImage(this.gc, Math.sin(t * 1.3) * ppm * 0.9 * sep, Math.cos(t * 1.1) * ppm * 0.4 * sep);
+      ctx.drawImage(this.gc, Math.sin(t * 1.3) * ppm * 0.9 * sep, Math.cos(t * 1.1) * ppm * 0.4 * sep, W, H);
       ctx.globalAlpha = 1;
     }
     // vignette
@@ -963,16 +966,19 @@ export class Renderer {
     // light from above: a soft bright rim along every top edge and a shade along every belly,
     // found from the layer itself (what has nothing above it, what has nothing below it)
     if (rim && dBot > 0) {
-      const k = Math.max(1, Math.round(cam.ppm * 0.035));
+      // worked out at half resolution (a quarter of the pixels): the rim is a soft edge anyway
+      const k = Math.max(1, Math.round(cam.ppm * 0.035 / 2));
       if (!this.rc) { this.rc = document.createElement('canvas'); this.rctx = this.rc.getContext('2d'); }
-      if (this.rc.width !== this.fc.width || this.rc.height !== this.fc.height) { this.rc.width = this.fc.width; this.rc.height = this.fc.height; }
+      const rw = Math.ceil(this.fc.width / 2), rh = Math.ceil(this.fc.height / 2);
+      if (this.rc.width !== rw || this.rc.height !== rh) { this.rc.width = rw; this.rc.height = rh; }
       const r = this.rctx, sun = clamp(1 - Math.max(0, cam.y) / 260, 0.25, 1) * (0.55 + 0.45 * (g.dayEff || 0));
+      const hx = Math.floor(bx / 2), hy = Math.floor(by / 2), hw = Math.ceil(bw / 2) + 1, hh = Math.ceil(bh / 2) + 1;
       for (const [dy, col, a] of [[k, 'rgb(225,240,245)', 0.32 * sun], [-k, 'rgb(4,10,18)', 0.3]]) {
-        r.setTransform(1, 0, 0, 1, 0, 0); r.globalCompositeOperation = 'source-over'; r.clearRect(bx, by, bw, bh);
-        r.drawImage(this.fc, bx, by, bw, bh, bx, by, bw, bh);
-        r.globalCompositeOperation = 'destination-out'; r.drawImage(this.fc, bx, by, bw, bh, bx, by + dy, bw, bh);
-        r.globalCompositeOperation = 'source-in'; r.fillStyle = col; r.fillRect(bx, by, bw, bh);
-        f.globalCompositeOperation = 'source-atop'; f.globalAlpha = a; f.drawImage(this.rc, bx, by, bw, bh, bx, by, bw, bh);
+        r.setTransform(1, 0, 0, 1, 0, 0); r.globalCompositeOperation = 'source-over'; r.clearRect(hx, hy, hw, hh);
+        r.drawImage(this.fc, hx * 2, hy * 2, hw * 2, hh * 2, hx, hy, hw, hh);
+        r.globalCompositeOperation = 'destination-out'; r.drawImage(this.fc, hx * 2, hy * 2, hw * 2, hh * 2, hx, hy + dy, hw, hh);
+        r.globalCompositeOperation = 'source-in'; r.fillStyle = col; r.fillRect(hx, hy, hw, hh);
+        f.globalCompositeOperation = 'source-atop'; f.globalAlpha = a; f.drawImage(this.rc, hx, hy, hw, hh, hx * 2, hy * 2, hw * 2, hh * 2);
         f.globalAlpha = 1; f.globalCompositeOperation = 'source-over';
       }
     }
@@ -1014,6 +1020,7 @@ export class Renderer {
   }
   // fill the current clip with a noise tile pinned to the world (ox, oy: where its corner sits)
   texture(ctx, name, metres, alpha, op = 'soft-light', ox = 0, oy = 0) {
+    if (this.lite) return;
     const tile = name === 'murk' ? this.noiseTile('murk', 192, 7, 3, 1.3) : name === 'grain' ? this.noiseTile('grain', 192, 3, 4, 1.2) : this.noiseTile('rock', 192, 11, 5, 1.3);
     this.pats = this.pats || {};
     const pat = this.pats[name] || (this.pats[name] = ctx.createPattern(tile, 'repeat'));
@@ -1904,6 +1911,7 @@ export class Renderer {
       ctx.globalAlpha = 1;
     };
     const motes = (x, y, ang, range, spread, col, a) => {
+      if (this.lite) return;
       // the same deterministic particle field as the marine snow, but finer, lit only inside the cone
       const rm = range / ppm, cell = 0.9;
       const wx = cam.x + (x - this.W / 2) / ppm, wy = cam.y + (y - this.H / 2) / ppm;

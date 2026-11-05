@@ -799,6 +799,7 @@ function update(dt) {
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
+    if (pressed.has('p')) { hud.showFps = !hud.showFps; }
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
     const day = tickAquarium(profile, dt);
@@ -1242,11 +1243,18 @@ let filterKey = '';
 let frameEma = 1 / 60, qualityT = 0;
 function adaptQuality(realDt) {
   frameEma = lerp(frameEma, realDt, 0.05);
+  hud.fps = 1 / Math.max(1e-3, frameEma); hud.quality = renderer.quality; hud.lite = renderer.lite;
   qualityT += realDt;
   if (qualityT < 1) return;
   const q = renderer.quality ?? 1;
-  // never below 75 %: under that the whole picture turns soft and pixelated (cheaper detail goes first)
-  if (frameEma > 1 / 45 && q > 0.75) { renderer.quality = Math.max(0.75, q - 0.05); qualityT = 0; }
+  // the floor is set by the real screen: never below ~90 % of a screen pixel (75 % on plain screens), so
+  // the picture never turns soft or pixelated; on sharp (high-DPI) screens that leaves room to drop further
+  const floor = Math.min(0.75, 0.9 / Math.min(window.devicePixelRatio || 1, 1.5));
+  if (frameEma > 1 / 45 && q > floor) { renderer.quality = Math.max(floor, q - 0.05); qualityT = 0; }
+  // still slow at the floor: lite mode drops the costliest extras (the rim light on animals, the water
+  // textures, the specks in the beams) instead of sharpness; they come back as soon as there is room
+  else if (frameEma > 1 / 45 && !renderer.lite) { renderer.lite = true; qualityT = 0; }
+  else if (frameEma < 1 / 57 && renderer.lite && qualityT > 4) { renderer.lite = false; qualityT = 0; }
   else if (frameEma < 1 / 57 && q < 1 && qualityT > 3) { renderer.quality = Math.min(1, q + 0.05); qualityT = 0; }
   else if (qualityT > 3) qualityT = 1;
 }
