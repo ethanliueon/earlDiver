@@ -335,16 +335,16 @@ export class Hud {
       const ap = g.autopilot;
       const label = e.inSub ? (g.homeRun ? 'autopilot off' : g.sub.docked ? null : 'autopilot home') : (ap && ap.state === 'coming' ? 'stop sub' : 'call sub');
       if (label) {
-        ctx.font = `${11 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        const bw = ctx.measureText(label).width + 36 * s, bh = 22 * s, bx = rx0 - bw;
-        this.subHot = { x: bx * kx, y: yy * kx, w: bw * kx, h: bh * kx };
+        // bottom-right corner, a little larger
+        ctx.font = `${15 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        const bw = ctx.measureText(label).width + 50 * s, bh = 31 * s, bx = rx0 - bw, by = H - pad - bh;
+        this.subHot = { x: bx * kx, y: by * kx, w: bw * kx, h: bh * kx };
         const on = g.homeRun || (ap && ap.state === 'coming');
         ctx.fillStyle = on ? 'rgba(60,52,24,0.7)' : 'rgba(6,12,14,0.55)'; ctx.strokeStyle = on ? 'rgba(232,214,160,0.5)' : 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.roundRect(bx, yy, bw, bh, 5 * s); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = 'rgba(232,214,160,0.9)'; ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillText('C', bx + 8 * s, yy + bh / 2);
-        ctx.fillStyle = 'rgba(220,236,230,0.85)'; ctx.font = `${11 * s}px ${MONO}`; ctx.fillText(label, bx + 24 * s, yy + bh / 2);
+        ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 7 * s); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(232,214,160,0.9)'; ctx.font = `500 ${14 * s}px ${MONO}`; ctx.fillText('C', bx + 11 * s, by + bh / 2);
+        ctx.fillStyle = 'rgba(220,236,230,0.85)'; ctx.font = `${15 * s}px ${MONO}`; ctx.fillText(label, bx + 33 * s, by + bh / 2);
         ctx.textBaseline = 'top';
-        yy += bh + 10 * s;
       }
     }
 
