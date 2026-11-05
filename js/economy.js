@@ -4,7 +4,10 @@
 // What persists between runs lives in the *profile*: cash, upgrades, the journal, notes, the
 // market. A run (one life, one generated ocean) holds only what Earl is carrying and has not sold.
 
-const SAVE_KEY = 'earlDiver.save.v1';
+// Nothing about a game is saved: every page load is a fresh start. Within one sitting, cash and
+// gear carry over from one dive to the next (and through death). Only the deepest depth ever
+// reached is remembered between visits.
+const BEST_KEY = 'earlDiver.best.v1';
 
 // ---------------- upgrades ----------------
 // Diver tanks: seconds of air at the surface rate.
@@ -122,21 +125,19 @@ export function newProfile() {
   return {
     v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
     net: 0, slurp: -1, bag: 0, subTank: 0, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 0, deep: 0 },
-    journal: [], notes: '', seasons: 1, deaths: 0, deepest: 0, market: {}, created: Date.now(),
+    journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(),
   };
 }
-export function loadProfile() {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw);
-    return p && p.v === 1 ? Object.assign(newProfile(), p) : null;
-  } catch (e) { return null; }
-}
+export function loadProfile() { return null; }
+// keeps only the deepest depth ever reached
 export function saveProfile(p) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(p)); return true; } catch (e) { return false; }
+  if (!p) return false;
+  const best = loadBest();
+  if ((p.deepest || 0) > best) { try { localStorage.setItem(BEST_KEY, String(Math.round(p.deepest))); } catch (e) { /* storage unavailable */ } }
+  return true;
 }
-export function clearProfile() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* storage unavailable */ } }
+export function loadBest() { try { return +(localStorage.getItem(BEST_KEY) || 0) || 0; } catch (e) { return 0; } }
+export function clearProfile() { /* nothing is stored */ }
 
 // ---------------- the market ----------------
 // market[kind] = how flooded it is (0 = fresh). It decays back toward 0 in real time.

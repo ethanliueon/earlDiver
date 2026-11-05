@@ -7,6 +7,8 @@ import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } fro
 import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName } from './specimens.js';
 import { VARIANTS, VARIANT_KEYS, variantLabel } from './variants.js';
+import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
+import { loadBest } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 
@@ -29,7 +31,7 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     this.shopTab = 'sell';
     document.querySelectorAll('.shop-tabs button').forEach((b) => b.addEventListener('click', () => {
-      this.shopTab = b.dataset.shop; this.confirmSeason = false;
+      this.shopTab = b.dataset.shop;
       document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x === b));
       this.renderWorkshop();
     }));
@@ -40,15 +42,15 @@ export class UI {
       const act = b.dataset.act, arg = b.dataset.arg;
       if (act === 'buy') h.onBuy(arg);
       else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
+      else if (act === 'display') h.onDisplay(arg);
       else if (act === 'sellitem') { const sale = h.onSellItem(arg); if (sale) this.showLedger(sale); }
-      else if (act === 'season') {
-        if (!this.confirmSeason) { this.confirmSeason = true; }
-        else { this.confirmSeason = false; const sale = h.onEndSeason(); this.toggleWorkshop(false); if (sale) { this.toggleWorkshop(true); this.showLedger(sale); } }
-      }
       this.renderWorkshop();
     });
+    $('show-controls').addEventListener('click', () => { const c = document.querySelector('#menu .controls'); c.hidden = !c.hidden; });
+    $('restart').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); });
+    $('shop-details').addEventListener('click', () => { const w = $('workshop'); w.classList.toggle('details'); $('shop-details').textContent = w.classList.contains('details') ? 'Less' : 'Details'; });
     $('newgame').addEventListener('click', () => {
-      if (!this.confirmNew) { this.confirmNew = true; $('newgame').textContent = 'Erase the save and start over?'; return; }
+      if (!this.confirmNew) { this.confirmNew = true; $('newgame').textContent = 'Start over with nothing?'; return; }
       this.confirmNew = false; h.onNewGame();
     });
     $('resume').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); });
@@ -78,10 +80,11 @@ export class UI {
   renderSave(last) {
     const p = this.h.getProfile && this.h.getProfile();
     const el = $('menu-save');
-    $('play').textContent = p ? 'Continue' : 'Dive';
+    $('play').textContent = p ? 'Dive again' : 'Dive';
     $('newgame').hidden = !p; $('newgame').textContent = 'New game'; this.confirmNew = false;
-    if (!p) { el.innerHTML = ''; return; }
-    let html = `<div class="save-line"><b>${money(p.cash, false)}</b><span>season ${p.seasons || 1}</span><span>deepest ${p.deepest || 0} m</span><span>${(p.journal || []).length} species recorded</span></div>`;
+    const best = loadBest();
+    if (!p) { el.innerHTML = best ? `<div class="save-line"><span>deepest ever ${best} m</span></div>` : ''; return; }
+    let html = `<div class="save-line"><b>${money(p.cash, false)}</b><span>${p.runs || 1} dive${(p.runs || 1) > 1 ? 's' : ''}</span><span>deepest ${p.deepest || 0} m${best > (p.deepest || 0) ? ` (ever ${best} m)` : ''}</span><span>${(p.journal || []).length} species recorded</span>${p.aquarium && p.aquarium.wings.length ? `<span>aquarium ${completion(p).species}/${completion(p).of} species, ${completion(p).rare} rare</span>` : ''}</div>`;
     if (last && last.bill !== undefined) {
       const lost = last.lost && last.lost.length ? `Lost: ${last.lost.join(', ')}.` : '';
       html += `<div class="save-death">${last.cause}. ${last.bill > 0 ? `Hospital bill ${money(last.bill)}.` : ''} ${lost}</div>`;
@@ -154,7 +157,7 @@ export class UI {
       $('journal-count').textContent = formatTime(g.survival) + ' into the dive';
       list.innerHTML =
         row('Cash', money(this.h.getProfile().cash), 'safe at the boat') +
-        row('Deep sapphires found', `${g.sapphires}`, 'this season') +
+        row('Deep sapphires found', `${g.sapphires}`, 'this dive') +
         row('Deepest so far', `${Math.round(e.maxDepth)} m`) +
         row('Condition', lvl) +
         row('The thing in the deep', ent.marked ? 'it has marked me' : 'unaware of me', ent.marked ? `calmed ${Math.round((ent.calm || 0) / 60 * 100)} % - free animals from nets, plant coral, give something back (G)` : '') +
@@ -192,7 +195,7 @@ export class UI {
       const atBoat = !sub.imploded && Math.hypot(sub.x - 520.5, sub.y - 2.6) < 20;
       const specs = g.bag.concat(atBoat ? g.subTank : []);
       if (!rows.length && !specs.length && !g.tags.length && !g.photos.length && !g.items.lure && !g.items.necklace) {
-        html = `<p class="shop-empty">Nothing aboard to sell.<br>The aquarium buyer pays for live animals (1 · 2 · Space). Clams and mussels in the shallows, scrap on the wrecks, ink and glass sponge further down — and in the deep, sapphires.</p>`;
+        html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
       } else {
         let total = 0;
         let lines = rows.map(([k, n]) => {
@@ -217,7 +220,10 @@ export class UI {
           total += sum;
           const worst = list.reduce((a, x) => Math.min(a, x.cond), 1);
           const cond = `<em class="cond c-${conditionName(worst)}">${conditionName(worst)}</em>`;
-          specRows += `<tr><td>${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr>`;
+          const best = list.reduce((a, x) => (x.cond > a.cond ? x : a), list[0]);
+          const why = displayRefusal(P, best);
+          const disp = why ? `<em class="disp-no">${why}</em>` : `<button class="disp" data-act="display" data-arg="${gk.replace(/:$/, '')}">Keep for the aquarium</button>`;
+          specRows += `<tr><td>${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr><tr class="sub"><td colspan="4">${disp}</td></tr>`;
         }
         // survey work: tags (each species' tags pay less each time) and first photographs
         const tg = new Map();
@@ -287,10 +293,27 @@ export class UI {
         const full = g.items[k] >= it.max;
         html += card(it.name, it.desc, `carrying ${g.items[k]} / ${it.max}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy');
       }
-    } else if (tab === 'season') {
-      html += `<div class="season"><p>Every season the sea is new: fresh wrecks to strip, clams and pearls, sapphires in new places. What you take in a season does not come back until the next one.</p>
-        <p>Ending the season sells what is aboard and starts a new one. Nothing is lost.</p>
-        <button class="${this.confirmSeason ? 'warn' : 'primary'}" data-act="season">${this.confirmSeason ? 'Sure? Click again to end the season' : `End season ${P.seasons || 1}`}</button></div>`;
+    } else if (tab === 'aquarium') {
+      const A = aquariumOf(P), C = completion(P);
+      const net = dailyIncome(P) - upkeep(P);
+      html += `<div class="aq-head"><div><b>${C.species}</b><span>of ${C.of} species</span></div><div><b>${C.rare}</b><span>rare forms</span></div><div><b>${A.wings.length ? visitors(P) : 0}</b><span>visitors a day</span></div><div><b class="${net < 0 ? 'neg' : ''}">${A.wings.length ? money(net, false) : '—'}</b><span>a day after upkeep</span></div></div>`;
+      if (!A.wings.length) html += `<p class="shop-empty">An empty plot on the shore. Build the first wing, then keep live animals here instead of selling them: one of every species, and every rare form. Visitors pay every day (every ${DAY / 60} minutes of diving).</p>`;
+      const next = WINGS.find((w) => !A.wings.includes(w.id));
+      for (const w of WINGS) {
+        if (!A.wings.includes(w.id)) continue;
+        const shown = Object.entries(A.display).filter(([, d]) => d.wing === w.id);
+        const cells = shown.map(([, d]) => {
+          const sp = SPECIES_BY_ID[d.id];
+          const key = 'aq' + d.id;
+          if (!this.toolImgs) this.toolImgs = new Map();
+          if (!this.toolImgs.has(key)) this.toolImgs.set(key, speciesIcon(sp, 120, 68).toDataURL());
+          return `<div class="tank-cell" title="${variantLabel(sp, d.variant)} · draws ${Math.round(drawOf(d))}"><img src="${this.toolImgs.get(key)}" alt="">${d.variant ? `<i class="r-${d.variant}">${VARIANTS[d.variant].name}</i>` : ''}<span>${sp.name}</span></div>`;
+        }).join('') + Array.from({ length: w.slots - shown.length }, () => '<div class="tank-cell empty"></div>').join('');
+        html += `<div class="wing"><div class="wing-h"><b>${w.name}</b><em>${shown.length}/${w.slots} · upkeep ${money(w.upkeep, false)}/day</em></div><div class="tanks">${cells}</div></div>`;
+      }
+      if (next) html += card(`Build: ${next.name}`, next.desc, `${next.slots} tanks · upkeep ${money(next.upkeep, false)} a day`, next.price, 'buy', 'wing:' + next.id, 'Build');
+      else html += '<p class="shop-note">Every wing is built.</p>';
+      if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets, ${money(A.lastDay.cost, false)} upkeep. Earned so far: ${money(A.earned, false)}.</p>`;
     }
     $('shop-body').innerHTML = html;
   }

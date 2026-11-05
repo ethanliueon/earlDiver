@@ -11,7 +11,9 @@ import { VARIANTS, variantLabel, rollVariant } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
 import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
+import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
+import { loadBest } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
@@ -75,7 +77,7 @@ function newGame(mode) {
   for (const st of world.statics) {
     if (g.fauna.caught.has(st.sp.id) && st.sp.v.hab !== 'plant') { const v = rollVariant(rng, st.y, false); if (v) { st.variant = v; if (v === 'giant') st.scale *= 1.7; } }
   }
-  // upgrades bought in earlier seasons
+  // upgrades bought on earlier dives
   g.earl.o2Max = g.earl.o2 = TANKS[P.tank].air;
   g.earl.finSpeed = FINS[P.fins].speed;
   g.sub.level = P.subTier; g.sub.o2 = g.sub.o2Max; g.sub.hull = P.hull;
@@ -95,8 +97,8 @@ const ui = new UI({
   onBuy: (k) => buy(k),
   onSellAll: () => sellAll(),
   onSellItem: (k) => sellItem(k),
-  onEndSeason: () => endSeason(),
-  onNewGame: () => { clearProfile(); profile = null; startRun(); },
+  onDisplay: (k) => displaySpecimen(k),
+  onNewGame: () => { profile = null; g.paused = false; startRun(); },
   getProfile: () => profile,
 });
 
@@ -117,7 +119,8 @@ function hurt(dmg, sp, how) {
   audio.ready && audio.hit(dmg);
   if (g.injury >= 5) { dieInjury(sp); return; }
   const verb = how === 'charge' ? 'Speared by' : how === 'lurk' ? 'Bitten by' : how === 'whale' ? 'Struck by' : 'Bitten by';
-  hud.toast(`${verb} a ${sp.name.toLowerCase()}`, 'warn');
+  const nm = sp.name.toLowerCase();
+  hud.toast(`${verb} ${/^[aeiou]/.test(nm) ? 'an' : 'a'} ${nm}`, 'warn');
 }
 function damageSub(amt, sp) {
   const sub = g.sub;
@@ -180,6 +183,21 @@ function sellItem(kind) {
   syncProfile(); saveProfile(profile);
   return { lines: [line], total: line.total };
 }
+// keep a live animal for the aquarium instead of selling it (the healthiest one of its kind)
+function displaySpecimen(key) {
+  const pools = [g.bag].concat(subAtBoat() ? [g.subTank] : []);
+  let best = null, pool = null;
+  for (const L of pools) for (const s of L) if (displayKey(s) === key && (!best || s.cond > best.cond)) { best = s; pool = L; }
+  if (!best) return false;
+  const why = displayRefusal(profile, best);
+  if (why) { hud.toast(why, 'warn'); return false; }
+  pool.splice(pool.indexOf(best), 1);
+  display(profile, best);
+  saveProfile(profile);
+  hud.toast(`On display in the ${WING_BY_ID[zoneOf(best)].name.toLowerCase()}`, 'big');
+  audio.ready && audio.note();
+  return true;
+}
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subTier = g.sub.level; P.subLost = !!g.sub.imploded;
@@ -212,7 +230,7 @@ function buy(kind) {
     hud.toast(`New net: ${NETS[P.net].name.toLowerCase()}`, 'big');
   } else if (kind === 'slurp' && SLURPS[(P.slurp ?? -1) + 1] && spend(P, SLURPS[(P.slurp ?? -1) + 1].price)) {
     P.slurp = (P.slurp ?? -1) + 1; g.toolSel = 'slurp'; ok = true;
-    hud.toast(`${SLURPS[P.slurp].name}. Press 2 to use it`, 'big');
+    hud.toast(SLURPS[P.slurp].name, 'big'); hud.hint('Press 2 for the slurp gun');
   } else if (kind === 'bag' && BAGS[(P.bag || 0) + 1] && spend(P, BAGS[(P.bag || 0) + 1].price)) {
     P.bag = (P.bag || 0) + 1; ok = true;
     hud.toast(`${BAGS[P.bag].name}: ${BAGS[P.bag].slots} specimens`, 'big');
@@ -221,14 +239,18 @@ function buy(kind) {
     hud.toast(`The sub's specimen tank now holds ${SUB_TANKS[P.subTank].slots}`, 'big');
   } else if (kind === 'tagger' && TAGGERS[(P.tagger ?? -1) + 1] && spend(P, TAGGERS[(P.tagger ?? -1) + 1].price)) {
     P.tagger = (P.tagger ?? -1) + 1; g.toolSel = 'tag'; ok = true;
-    hud.toast(`${TAGGERS[P.tagger].name}. Press 3; aim with the mouse`, 'big');
+    hud.toast(TAGGERS[P.tagger].name, 'big'); hud.hint('Press 3 for the tag gun; aim with the mouse, Space to fire');
   } else if (kind === 'camera' && CAMERAS[(P.camera ?? -1) + 1] && spend(P, CAMERAS[(P.camera ?? -1) + 1].price)) {
     P.camera = (P.camera ?? -1) + 1; g.toolSel = 'cam'; g.shots = CAMERAS[P.camera].shots; ok = true;
-    hud.toast(`${CAMERAS[P.camera].name}. Press 4`, 'big');
+    hud.toast(CAMERAS[P.camera].name, 'big'); hud.hint('Press 4 for the camera, Space to take a picture');
   } else if ((kind === 'pot' || kind === 'deeptrap') && spend(P, TRAPS[kind === 'pot' ? 'pot' : 'deep'].price)) {
     const tk = kind === 'pot' ? 'pot' : 'deep';
     P.traps = Object.assign({ pot: 0, deep: 0 }, P.traps); P.traps[tk]++; ok = true;
-    hud.toast(`${TRAPS[tk].name} (${P.traps[tk]}). Press 5 at the bottom to set it`, 'big');
+    hud.toast(`${TRAPS[tk].name} (${P.traps[tk]})`, 'big'); hud.hint('Press 5, then Space on the bottom to set a trap');
+  } else if (kind.startsWith('wing:')) {
+    const w = WING_BY_ID[kind.slice(5)], A = aquariumOf(P);
+    const next = WINGS.find((x) => !A.wings.includes(x.id));
+    if (w && next && next.id === w.id && spend(P, w.price)) { A.wings.push(w.id); ok = true; hud.toast(`Built: the ${w.name.toLowerCase()}`, 'big'); }
   } else if (kind === 'canisters' && !(P.addons || {}).canisters && spend(P, CANISTERS.price)) {
     P.addons = Object.assign({}, P.addons, { canisters: true }); g.addons = P.addons; ok = true;
     hud.toast('Pressure canisters: deep animals survive the trip up', 'big');
@@ -242,23 +264,6 @@ function buy(kind) {
   if (ok) { syncProfile(); saveProfile(P); audio.ready && audio.pickup(); }
   return ok;
 }
-// End the season: sell what is aboard, then a fresh ocean. Nothing is lost.
-function endSeason() {
-  // the crew pulls every trap at the end of the season; what is in them is sold with the rest
-  for (const tr of g.traps) g.bag.push(...tr.catch);
-  g.traps = [];
-  const sale = sellAll();
-  syncProfile();
-  profile.seasons = (profile.seasons || 1) + 1;
-  ui.saveRun(runLog('A new season'));
-  saveProfile(profile);
-  const t = g.time;
-  g = newGame('play');
-  g.time = t; // the same day goes on
-  hud.toasts = [];
-  hud.toast(`Season ${profile.seasons}. The sea has changed.`, 'big');
-  return sale;
-}
 function runLog(cause) {
   return { date: new Date().toISOString(), survived: g.survival, cause, maxDepth: Math.round(g.earl.maxDepth), species: g.journal.size, earned: Math.round(g.earned * 100) / 100, sapphires: g.sapphires, subLevel: g.sub.level };
 }
@@ -271,6 +276,7 @@ function dieInjury(sp) {
 function startRun() {
   audio.init(); audio.resume(); audio.playMusic();
   if (!profile) { profile = newProfile(); saveProfile(profile); }
+  profile.runs = (profile.runs || 0) + 1; saveProfile(profile);
   g = newGame('play');
   hud.toasts = [];
   ui.showGame();
@@ -483,7 +489,7 @@ function die(cause, kind = 'normal') {
   profile.cash = Math.round((profile.cash - bill) * 100) / 100;
   profile.deaths = (profile.deaths || 0) + (kind === 'quit' ? 0 : 1);
   saveProfile(profile);
-  g.deathBill = bill; g.deathLost = lost;
+  g.deathBill = bill; g.deathLost = lost; profile.best = Math.max(loadBest(), profile.deepest || 0);
   ui.saveRun(Object.assign(runLog(cause), { bill }));
 }
 
@@ -573,6 +579,18 @@ function update(dt) {
       else if (g.items.necklace === 0) hud.toast('No necklaces', 'warn');
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
+    if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
+    // the aquarium's day: tickets in, upkeep out
+    const day = tickAquarium(profile, dt);
+    if (day) { saveProfile(profile); hud.toast(`The aquarium: ${day.visitors} visitors today · ${day.net >= 0 ? '+' : ''}${money(day.net, false)} after upkeep`, 'note'); }
+    // the very bottom, the first time: it shows itself, and lets him go
+    if (!profile.met && e.y > 2850 && W.floorAt(e.x) - e.y < 40 && !g.reveal) {
+      g.reveal = { t: 0 }; profile.met = true; saveProfile(profile);
+      ent.marked = false; ent.attn = 0; ent.state = 'roam';
+      audio.ready && (audio.tone(30, 9, 0.6, 'sine', 0, 22), audio.groan(0.25));
+      g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}, ${Math.round(e.y)} m] I saw it. All of it. It let me go.`;
+      const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
+    }
     // calling the submersible: tap C to call (or stop) it, hold C to send it back to the dock
     const ap = g.autopilot;
     if (keys.has('c')) {
@@ -595,7 +613,7 @@ function update(dt) {
     const tool = activeTool(g);
     if (pressed.has(' ') && !e.inSub && g.toolSel === 'trap') {
       const msg = placeTrap(g);
-      if (msg) hud.toast(msg, 'warn'); else { hud.toast('Trap set. A line runs up to a buoy at the surface'); audio.ready && audio.thud && audio.thud(0.2); }
+      if (msg) hud.toast(msg, 'warn'); else { hud.toast('Trap set'); hud.hint('A line runs up to a buoy: F at the buoy hauls it up'); audio.ready && audio.thud && audio.thud(0.2); }
     } else if (pressed.has(' ') && !e.inSub) {
       if (tool.kind === 'tag') { if (!g.capture) { fireTag(g); audio.ready && audio.thud && audio.thud(0.15); } }
       else if (tool.kind === 'cam') {
@@ -766,8 +784,16 @@ function update(dt) {
     g.fauna.bleeding = g.injury > 0;
     directEncounters(g, dt, SPECIES_BY_ID);
     updateHunters(g, dt);
-    // entity
-    const r = ent.update(g, dt);
+    // entity (during the reveal it hangs in front of him, then sinks away; it does not take him)
+    let r = null;
+    if (g.reveal) {
+      const R = g.reveal; R.t += dt;
+      const dir = e.facing || 1;
+      const tx = e.x + dir * (R.t < 16 ? 11 : 11 + (R.t - 16) * 3), ty = e.y + (R.t < 16 ? -3 : -3 + (R.t - 16) * 6);
+      ent.x = lerp(ent.x, tx, dt * (R.t < 2 ? 0.6 : 1.5)); ent.y = lerp(ent.y, ty, dt * 1.5);
+      ent.dist = dist(ent.x, ent.y, e.x, e.y); ent.eyeOpen = 1; ent.fade = 1; ent.heading = Math.PI;
+      if (R.t > 26) { g.reveal = null; ent.y = Math.max(ent.y, e.y + 200); }
+    } else r = ent.update(g, dt);
     if (r === 'caught') die(causeText('entity'));
     for (const ev of g.events) {
       if (ev === 'marked') {
@@ -964,4 +990,4 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // debug hooks for automated testing
-window.__earl = { get g() { return g; }, startRun, renderer, step: (dt) => update(dt), keys };
+window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, step: (dt) => update(dt), keys };

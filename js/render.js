@@ -9,6 +9,8 @@ import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl
 import { activeTool } from './capture.js';
 import { drawDart, drawTrap, drawBuoy } from './tools_draw.js';
 import { armPose } from './arm.js';
+import { drawAquarium } from './aquarium_draw.js';
+import { aquariumOf, visitors } from './aquarium.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { BOAT_X, WORLD_W } from './world.js';
@@ -118,6 +120,23 @@ export class Renderer {
     // ================= SKY =================
     const horizon = Sy(0);
     if (horizon > -50) this.drawSky(g, horizon, dayEff, day);
+    // Earl's aquarium on the far shore, at the horizon (far away: small, and it barely moves)
+    if (g.profile && horizon > -20 && horizon < H + 200) {
+      const A = aquariumOf(g.profile), sc = ppm * 0.11;
+      const ax = W / 2 + (1100 - cam.x) * ppm * 0.035;
+      if (ax > -80 * sc && ax < W + 80 * sc) {
+        const cw = Math.ceil(130 * sc), ch = Math.ceil(36 * sc);
+        const ac = this.aqC || (this.aqC = document.createElement('canvas'));
+        if (ac.width !== cw || ac.height !== ch) { ac.width = cw; ac.height = ch; }
+        const x2 = ac.getContext('2d');
+        x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = 'source-over'; x2.clearRect(0, 0, cw, ch);
+        x2.translate(cw / 2, ch - 2 * sc);
+        drawAquarium(x2, sc, A.wings, t, dayEff, Math.round(visitors(g.profile) / 40));
+        const dim = 1 - (0.25 + 0.75 * Math.sqrt(dayEff));
+        if (dim > 0.01) { x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = 'source-atop'; x2.fillStyle = `rgba(6,8,14,${(dim * 0.85).toFixed(3)})`; x2.fillRect(0, 0, cw, ch); }
+        ctx.drawImage(ac, ax - cw / 2, horizon - ch + 3 * sc);
+      }
+    }
 
     // ================= WATER =================
     const topY = Math.max(0, horizon - waveAmp * ppm * 1.5);
@@ -293,8 +312,13 @@ export class Renderer {
       entB.face = lerp(entB.face ?? toward, toward, 0.02);
       const flipB = entB.face >= 0 ? -1 : 1;
       ctx.save(); ctx.translate(S(entB.x), Sy(entB.y)); ctx.scale(flipB, 1);
-      drawEntity(ctx, 34 * ppm, t, clamp((90 - entB.dist) / 50, 0, 1) * (entB.fade ?? 1), 0.3 * (entB.fade ?? 1));
+      drawEntity(ctx, 34 * ppm, t, g.reveal ? 1 : clamp((90 - entB.dist) / 50, 0, 1) * (entB.fade ?? 1), g.reveal ? 0.9 : 0.3 * (entB.fade ?? 1));
       ctx.restore();
+      // at the bottom it shows itself: a faint light of its own along the whole length
+      if (g.reveal) {
+        const k = clamp(Math.min(g.reveal.t / 4, (26 - g.reveal.t) / 4), 0, 1);
+        for (let i = -3; i <= 3; i++) glowPts.push([S(entB.x) + i * ppm * 4.5, Sy(entB.y) + Math.sin(i + t) * ppm, '#4a6a78', ppm * 9, 0.8 * k]);
+      }
     }
     // scales drifting where something was eaten
     for (const pf of g.fauna.puffs) {

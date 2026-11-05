@@ -27,10 +27,11 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | Q | Throw an anglerfish lure |
 | E | Wear a fangtooth necklace |
 | G | Offer a lure or necklace back to the deep (below 100 m) - calms the entity |
-| U | The boat (at the surface): sell your haul, buy gear, end the season |
+| U | The boat (at the surface): sell your haul, buy gear, run the aquarium |
 | Mouse | Hold left button to swim toward the cursor; the lamp follows the cursor; right-click to interact; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause |
 | M | Mute |
+| H | Hints on / off |
 
 ## What to know
 
@@ -40,9 +41,14 @@ Settings → Pages → Deploy from a branch → `main` / root).
   Deep sapphires (below 500 m) are the most valuable thing in the sea.
 - Once you have caught a species, 1 in 20 of its kind are rare: giant, albino, golden,
   melanistic, abnormal, or (deep, and near the thing in the deep) crimson. They pay 2-5×.
-- Dying costs whatever you have not sold and a hospital bill (10 % of your cash).
-  Cash, upgrades and the journal are kept (saved in the browser).
-- What you take does not come back in the same season. End the season at the boat for a new sea.
+- Dying costs whatever you have not sold and a hospital bill (10 % of your cash). Cash, upgrades,
+  the journal and the aquarium carry on to your next dive, but nothing is saved when you leave or
+  refresh the page: every visit is a new game. Only your deepest depth is remembered.
+- The aquarium (built from the boat, seen on the far shore): keep live animals instead of selling
+  them; visitors pay every 10 minutes of play.
+- H turns detailed hints on and off.
+- What you take (salvage, clams, sapphires) does not come back during a dive. A new dive is a new
+  sea: die, or end the dive from the pause menu (unsold catch is lost either way).
 - The submersible is docked at the boat. It starts rated to 400 m. Past 1.3× its rated depth it
   implodes. Refits at the boat take it down to 3,000 m.
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs

@@ -8,11 +8,13 @@ The horror stays the same: the valuable things are deep, and going deep is what 
 
 - **Money.** Earl earns from live specimens (aquarium buyer), tags on big animals (research
   program), first photos of each species (institute), salvage, and valuables. He never kills anything.
-- **Persistence.** Cash, upgrades, the journal and the aquarium survive death. Unsold cargo is lost.
+- **Persistence.** Within one sitting, cash, upgrades, the journal and the aquarium survive death.
+  Nothing is saved between page loads (owner's request): every refresh is a new game; only the
+  deepest depth ever reached is remembered. Unsold cargo is lost.
   Death costs a hospital bill (10 % of cash). Taken by the entity: carried lures and necklaces go too.
 - **Runs.** Fish regenerate all the time, rare ones included. Pickups (salvage, clams, pearls,
   sapphires, lanterns, lures, necklaces) are finite in a run. A fresh ocean comes from a new run:
-  dying, or **End the season** at the boat (no penalty).
+  dying, or ending the dive from the pause menu. (Seasons were dropped at the owner's request.)
 - **Sapphires** are rare valuables below 500 m. They no longer add air; air comes only from tanks.
 - **Goal: endless.** Earl's aquarium on the beach grows as he displays species and rare variants.
   Reaching 3,000 m for the first time is a hidden moment (the entity shows itself), not an ending.
@@ -89,7 +91,7 @@ Salvage has weight: heavy loads slow Earl and cost air. Deep animals brought up 
 Price = base x depth x size x rarity x variant x condition, with set prices for key animals
 (sardine $0.20, clownfish $25, moray $90, swordfish tag $100, great white tag $800, live
 anglerfish $2,500, giant squid tag $25,000). Each sale of a kind lowers its price ~15 %, recovering
-over a few minutes. Radio contracts: 3 at a time, refreshed each season. Selling: a basket winches
+over a few minutes. Radio contracts: 3 at a time, refreshed each dive. Selling: a basket winches
 down, and a ledger slip types out the sale. Core upgrades in about 5-7 hours.
 
 ## The aquarium
@@ -101,7 +103,7 @@ percentage on the menu. The abyss tank needs the 3,000 m sub.
 
 ## Build order
 
-1. Economy core: cash, saves, boat shop, sub tiers, tanks, sapphires, finite pickups and seasons,
+1. Economy core: cash, saves, boat shop, sub tiers, tanks, sapphires, finite pickups per dive,
    death penalties, selling, HUD cash.
 2. Calling the sub.
 3. Live capture: nets, slurp guns, specimens, condition, weight, barotrauma, ledger, saturation.

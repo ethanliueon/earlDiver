@@ -25,6 +25,8 @@ export class Hud {
     if (this.c.width !== w || this.c.height !== h) { this.c.width = w; this.c.height = h; }
     this.s = h / 900; // UI scale
   }
+  // explanations: only when hints are on (H)
+  hint(text) { if (this.hints) this.toast(text, 'note'); }
   toast(text, kind = '') { this.toasts.push({ text, kind, t: 0 }); if (this.toasts.length > 4) this.toasts.shift(); }
 
   // The hotbar (1 net, 2 slurp gun) and a row of specimen slots above it.
@@ -325,7 +327,19 @@ export class Hud {
     }
 
     // ---------- what the tool can reach ----------
-    if (g.capPrompt && !dying) {
+    // with hints off the prompts are short and quiet: just the key and the action, no box
+    const short = (p) => p.split('  ·  ')[0].split(' · ')[0].replace(/\s*\(.*\)$/, '');
+    if (!this.hints && !dying) {
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `${12 * s}px ${MONO}`;
+      const lines = [];
+      if (g.capPrompt && g.capPrompt.startsWith('Space')) lines.push(short(g.capPrompt));
+      if (g.prompt) lines.push(short(g.prompt));
+      lines.forEach((ln, i) => {
+        ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(ln, W / 2 + 1, H * 0.74 + i * 18 * s + 1);
+        ctx.fillStyle = 'rgba(232,238,234,0.78)'; ctx.fillText(ln, W / 2, H * 0.74 + i * 18 * s);
+      });
+    }
+    if (g.capPrompt && !dying && this.hints) {
       ctx.font = `${14 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       const tw = ctx.measureText(g.capPrompt).width + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, py, tw, 28 * s, 6 * s); ctx.fill();
@@ -333,7 +347,7 @@ export class Hud {
       ctx.fillText(g.capPrompt, W / 2, py + 7 * s);
     }
     // ---------- interaction prompt ----------
-    if (g.prompt && !dying) {
+    if (g.prompt && !dying && this.hints) {
       ctx.font = `${15 * s}px ${MONO}`; ctx.textAlign = 'center';
       const tw = ctx.measureText(g.prompt).width + 30 * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, H * 0.72, tw, 30 * s, 6 * s); ctx.fill();
