@@ -6,7 +6,7 @@ import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir } from './capture.js';
-import { specimenValue, conditionName } from './specimens.js';
+import { specimenValue, conditionName, rarityOf } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
 import { placeTrap, updateTraps, trapNear, emptyTrap, trapsFree } from './traps.js';
@@ -150,7 +150,7 @@ function sellSpecimens(list, lines) {
     const key = 'sp' + id + (v ? ':' + v : ''), base = specs.reduce((a, s) => a + specimenValue(s), 0) / specs.length;
     const worst = specs.reduce((a, s) => Math.min(a, s.cond), 1);
     const name = variantLabel(SPECIES_BY_ID[id], v || null) + (worst <= 0.05 ? ' (dead)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
-    lines.push(sell(profile, key, specs.length, base, name));
+    lines.push(sell(profile, key, specs.length, base * statValue(profile, 'payFish'), name));
   }
 }
 function sellAll() {
@@ -162,18 +162,19 @@ function sellAll() {
   // the research program: one line per species tagged, each tag a little less than the last
   const tg = new Map();
   for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
-  for (const [k, list] of tg) lines.push(sell(profile, k, list.length, list[0].value, `Tag data: ${list[0].name}`));
+  for (const [k, list] of tg) lines.push(sell(profile, k, list.length, list[0].value * statValue(profile, 'payFish'), `Tag data: ${list[0].name}`));
   g.tags = [];
   // the institute: first photographs
   for (const ph of g.photos) {
-    profile.cash = Math.round((profile.cash + ph.value) * 100) / 100; profile.lifetime = Math.round((profile.lifetime + ph.value) * 100) / 100;
-    lines.push({ label: `Photograph: ${ph.name}`, n: 1, total: Math.round(ph.value * 100) / 100 });
+    const pv = Math.round(ph.value * statValue(profile, 'payFish') * 100) / 100;
+    profile.cash = Math.round((profile.cash + pv) * 100) / 100; profile.lifetime = Math.round((profile.lifetime + pv) * 100) / 100;
+    lines.push({ label: `Photograph: ${ph.name}`, n: 1, total: pv });
     profile.photos = [...(profile.photos || []), ph.key];
   }
   g.photos = [];
   for (const [k, n] of Object.entries(g.inv)) {
     if (!n || !GOODS[k] || k === 'coral') continue;
-    lines.push(sell(profile, k, n, GOODS[k].price, GOODS[k].name));
+    lines.push(sell(profile, k, n, GOODS[k].price * statValue(profile, 'paySalvage'), GOODS[k].name));
     g.inv[k] = 0;
   }
   if (!lines.length) return null;
@@ -696,7 +697,8 @@ function update(dt) {
           const vk = sp.id + ':' + v;
           if (!(profile.variants || []).includes(vk)) profile.variants = [...(profile.variants || []), vk];
         }
-        hud.toast(`${ev.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec))}  (${g.bag.length}/${bagSlots(g)})`, 'note');
+        const rr = rarityOf(sp);
+        hud.toast(`${rr.name}: ${ev.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec) * statValue(profile, 'payFish'))}  (${g.bag.length}/${bagSlots(g)})`, 'rar:' + rr.col);
         audio.ready && audio.pickup();
         if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
         if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
@@ -705,12 +707,13 @@ function update(dt) {
       else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
     }
     for (const s of updateSpecimens(g, dt)) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died — it came up too fast`, 'warn');
-    g.catchTarget = null;
+    g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
     if (e.inSub && owns(profile, 'arm') && !g.armGame) {
       const at = findArmTarget(g);
       g.capPrompt = at ? `Space  Reach for the ${at.name.toLowerCase()} · ~${money(at.value)}` : null;
-      g.catchTarget = at ? { c: at.c, x: at.x, y: at.y, len: at.len } : null;
+      g.catchTarget = at ? { c: at.c, x: at.x, y: at.y, len: at.len, col: rarityOf(at.sp).col } : null;
+      g.capRarity = at ? rarityOf(at.sp) : null;
     } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw — in the green' : null;
     else if (g.toolSel === 'trap') {
       const fl = g.world.floorAt(e.x);
@@ -723,9 +726,10 @@ function update(dt) {
       g.capPrompt = ps ? (ps.ok ? `Space  Photograph the ${ps.name.toLowerCase()} · new · ~${money(ps.value)}` : `${ps.name}: ${ps.why}`) : null;
     } else {
     const ct = !e.inSub ? findCatch(g) : null;
-    g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.name.toLowerCase()} · ${Math.round(ct.chance * 100)} % · ~${money(ct.value)}` : `${ct.sp.name}: ${ct.why}`) : null;
+    g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.name.toLowerCase()} · ${rarityOf(ct.sp).name.toLowerCase()} · ${Math.round(ct.chance * 100)} % · ~${money(ct.value * statValue(profile, 'payFish'))}` : `${ct.sp.name}: ${ct.why}`) : null;
     // what the net or slurp gun will go for: marked on screen
-    g.catchTarget = ct && ct.ok ? { c: ct.c, x: ct.x, y: ct.y, len: ct.len } : null;
+    g.catchTarget = ct && ct.ok ? { c: ct.c, x: ct.x, y: ct.y, len: ct.len, col: rarityOf(ct.sp).col } : null;
+    g.capRarity = ct && ct.ok ? rarityOf(ct.sp) : null;
     }
     // a fresh memory card and charged strobes at the boat
     if (owns(profile, 'camera') && Math.abs(e.x - BOAT_X) < 14 && e.y < 4) g.shots = gear(profile, 'cam').shots;

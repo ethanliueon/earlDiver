@@ -28,17 +28,17 @@ export function newContract(P, taken, rnd = Math.random) {
   for (let tries = 0; tries < 30; tries++) {
     const kind = kinds[Math.floor(rnd() * kinds.length)];
     if (kind === 'live') {
-      const pool = SPECIES.filter((s) => canTakeLive(s) && s.len <= R.maxLen && s.dmin <= R.deep * 0.9 && liveValue(s) >= 0.5);
+      const pool = SPECIES.filter((s) => canTakeLive(s) && s.len <= R.maxLen && s.dmin <= R.deep * 0.9 && liveValue(s) >= 0.1);
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('live' + sp.id)) continue;
-      const pay = Math.round(liveValue(sp) * (2.5 + rnd()) + 3);
+      const pay = Math.round((liveValue(sp) * (2.5 + rnd()) + 0.2) * 100) / 100;
       return { kind, id: sp.id, key: 'live' + sp.id, pay, who: 'An aquarium', text: `${an('live ' + sp.name)}, in good condition` };
     }
     if (kind === 'tag') {
       const pool = SPECIES.filter((s) => isTagOnly(s) && s.dmin <= R.deep * 0.9 && tagPrice(s.id) > 0);
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('tag' + sp.id)) continue;
-      const pay = Math.round(tagPrice(sp.id) * (1.8 + rnd() * 0.8) * gear(P, 'tag').pay);
+      const pay = Math.round(tagPrice(sp.id) * (1.8 + rnd() * 0.8) * gear(P, 'tag').pay * 100) / 100;
       return { kind, id: sp.id, key: 'tag' + sp.id, pay, who: 'The research program', text: `a tag on ${an(sp.name)}` };
     }
     if (kind === 'photo') {
@@ -46,7 +46,7 @@ export function newContract(P, taken, rnd = Math.random) {
       const pool = SPECIES.filter((s) => s.dmin <= R.deep * 0.9 && !have.has(String(s.id)));
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('photo' + sp.id)) continue;
-      const pay = Math.round(photoValue(sp) * (2.5 + rnd()) + 2);
+      const pay = Math.round((photoValue(sp) * (2.5 + rnd()) + 0.1) * 100) / 100;
       return { kind, id: sp.id, key: 'photo' + sp.id, pay, who: 'The institute', text: `a photograph of ${an(sp.name)}` };
     }
     // salvage: a quantity of something from the bottom
@@ -54,7 +54,7 @@ export function newContract(P, taken, rnd = Math.random) {
     const [k, n0] = opts[Math.floor(rnd() * opts.length)];
     const n = Math.max(1, Math.round(n0 * (0.7 + rnd() * 0.6)));
     if (taken.has('salvage' + k)) continue;
-    const pay = Math.round(GOODS[k].price * n * (2.5 + rnd()) * 100) / 100 + 1;
+    const pay = Math.round((GOODS[k].price * n * (2.5 + rnd()) + 0.1) * 100) / 100;
     return { kind: 'salvage', item: k, n, key: 'salvage' + k, pay, who: 'A buyer', text: `${n} ${n > 1 ? PLURAL[k] : GOODS[k].name.toLowerCase()}` };
   }
   return null;

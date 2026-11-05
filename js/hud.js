@@ -340,16 +340,17 @@ export class Hud {
       const lines = [];
       if (g.capPrompt && g.capPrompt.startsWith('Space')) lines.push(short(g.capPrompt));
       if (g.prompt) lines.push(short(g.prompt));
+      const capFirst = g.capPrompt && g.capPrompt.startsWith('Space');
       lines.forEach((ln, i) => {
         ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(ln, W / 2 + 1, H * 0.74 + i * 18 * s + 1);
-        ctx.fillStyle = 'rgba(232,238,234,0.78)'; ctx.fillText(ln, W / 2, H * 0.74 + i * 18 * s);
+        ctx.fillStyle = i === 0 && capFirst && g.capRarity ? g.capRarity.col : 'rgba(232,238,234,0.78)'; ctx.fillText(ln, W / 2, H * 0.74 + i * 18 * s);
       });
     }
     if (g.capPrompt && !dying && this.hints) {
       ctx.font = `${14 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       const tw = ctx.measureText(g.capPrompt).width + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, py, tw, 28 * s, 6 * s); ctx.fill();
-      ctx.fillStyle = g.capPrompt.startsWith('Space') ? 'rgba(214,236,206,0.95)' : 'rgba(240,190,160,0.9)';
+      ctx.fillStyle = g.capPrompt.startsWith('Space') ? (g.capRarity ? g.capRarity.col : 'rgba(214,236,206,0.95)') : 'rgba(240,190,160,0.9)';
       ctx.fillText(g.capPrompt, W / 2, py + 7 * s);
     }
     // ---------- interaction prompt ----------
@@ -366,8 +367,10 @@ export class Hud {
       tt.t += dt;
       const a = clamp(Math.min(tt.t * 3, (4.5 - tt.t) * 1.5), 0, 1);
       ctx.font = `${(tt.kind === 'big' ? 22 : 15) * s}px ${tt.kind === 'note' ? '"EB Garamond", Georgia, serif' : MONO}`;
-      ctx.fillStyle = tt.kind === 'warn' ? `rgba(255,150,110,${a})` : tt.kind === 'note' ? `rgba(240,226,190,${a})` : `rgba(230,238,236,${a})`;
+      if (tt.kind.startsWith('rar:')) { ctx.globalAlpha = a; ctx.fillStyle = tt.kind.slice(4); }
+      else ctx.fillStyle = tt.kind === 'warn' ? `rgba(255,150,110,${a})` : tt.kind === 'note' ? `rgba(240,226,190,${a})` : `rgba(230,238,236,${a})`;
       ctx.fillText(tt.text, W / 2, pad + 6 * s + i * 26 * s);
+      ctx.globalAlpha = 1;
     }
     this.toasts = this.toasts.filter((tt) => tt.t < 4.5);
 

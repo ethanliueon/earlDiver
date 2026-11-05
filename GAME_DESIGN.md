@@ -54,8 +54,11 @@ frightening (the entity near, being marked, an attack, no air) stops it at once.
 
 All of it is paid at the boat (U at the surface by the *Margaret*), on a typed receipt.
 
-- **Live animals** for the aquarium buyer. Prices start at cents (a sardine) and a couple of
-  dollars (a clownfish) and climb with rarity and depth (deep animals pay hundreds).
+- **Rarity.** Every species is common (grey), uncommon (green), rare (blue), exotic (purple) or
+  legendary (orange-gold), from how scarce and remarkable it is, and pays by its rarity: about
+  3-25 cents, 30 cents-$1.20, $1.50-5, $6-20 and $30-80. Size, condition and rare forms adjust it;
+  the Fish prices upgrade (+5 % a level) raises everything live, tagged or photographed.
+- **Live animals** for the aquarium buyer.
   Condition matters: handling, time in the bag and coming up too fast (barotrauma) all cost.
 - **Tags** for the research program on animals too big to bring up (a swordfish pays $100).
 - **Photographs** for the institute: the first picture of each species and each rare form.
@@ -67,7 +70,7 @@ All of it is paid at the boat (U at the surface by the *Margaret*), on a typed r
 
 An upgrades game: every stat is levelled one small step at a time, each step a little dearer than
 the last (about x1.3-1.4 per level, starting from 50 cents to a few dollars). Diver: air, swim
-speed, bag space. Net: size (from 45 cm), reach, swing speed, catch odds, gentle mesh. Slurp gun,
+speed, bag space, fish prices, salvage prices. Net: size (from 45 cm), reach, swing speed, catch odds, gentle mesh. Slurp gun,
 tag gun, camera and claw: their own stats once bought. Submersible: depth rating (+50 m a level,
 400 m to 3,000 m), cabin air, engine, specimen tank. Gear itself (slurp gun, tag gun, camera,
 claw, low-light sensor, canisters, traps, radio, sub add-ons, aquarium wings) is bought once.

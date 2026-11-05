@@ -255,3 +255,8 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .up-lv { font-size: 10px; color: rgba(220, 230, 228, 0.4); text-align: right; }
 .shop .up-row button[data-act] { min-width: 0; padding: 6px 8px; font-size: 12px; }
 @media (max-width: 600px) { .up-row { grid-template-columns: 1fr 1fr 70px; } .up-lv { display: none; } }
+
+/* rarity tags: common grey, uncommon green, rare blue, exotic purple, legendary orange-gold */
+.rbadge { display: inline-block; vertical-align: middle; font: 500 9px var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 1px 5px; border-radius: 2px; color: #fff; background: var(--rc); margin-left: 4px; }
+.entry .rbadge { font-size: 9px; }

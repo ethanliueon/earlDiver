@@ -5,7 +5,8 @@ import { speciesIcon } from './creatures_draw.js';
 import { RESOURCES } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { toolIcon } from './tools_draw.js';
-import { specimenValue, conditionName } from './specimens.js';
+import { specimenValue, conditionName, rarityOf } from './specimens.js';
+const badge = (sp) => { const r = rarityOf(sp); return `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; };
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
@@ -128,7 +129,7 @@ export class UI {
       const img = document.createElement('img');
       img.src = icon.toDataURL(); img.alt = sp.name;
       const txt = document.createElement('div');
-      txt.innerHTML = `<h3>${sp.name}</h3><div class="sci">${sp.sci}</div>
+      txt.innerHTML = `<h3>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.sci}</div>
         <p>${sp.desc}</p>
         <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}</div>
         ${this.variantRow(sp)}`;
@@ -224,7 +225,7 @@ export class UI {
           const best = list.reduce((a, x) => (x.cond > a.cond ? x : a), list[0]);
           const why = displayRefusal(P, best);
           const disp = why ? `<em class="disp-no">${why}</em>` : `<button class="disp" data-act="display" data-arg="${gk.replace(/:$/, '')}">Keep for the aquarium</button>`;
-          specRows += `<tr><td>${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr><tr class="sub"><td colspan="4">${disp}</td></tr>`;
+          specRows += `<tr><td>${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${badge(SPECIES_BY_ID[id])} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr><tr class="sub"><td colspan="4">${disp}</td></tr>`;
         }
         // survey work: tags (each species' tags pay less each time) and first photographs
         const tg = new Map();
@@ -289,7 +290,7 @@ export class UI {
           const key = 'aq' + d.id;
           if (!this.toolImgs) this.toolImgs = new Map();
           if (!this.toolImgs.has(key)) this.toolImgs.set(key, speciesIcon(sp, 120, 68).toDataURL());
-          return `<div class="tank-cell" title="${variantLabel(sp, d.variant)} · draws ${Math.round(drawOf(d))}"><img src="${this.toolImgs.get(key)}" alt="">${d.variant ? `<i class="r-${d.variant}">${VARIANTS[d.variant].name}</i>` : ''}<span>${sp.name}</span></div>`;
+          return `<div class="tank-cell" style="border-color:${rarityOf(sp).col}" title="${variantLabel(sp, d.variant)} · draws ${Math.round(drawOf(d))}"><img src="${this.toolImgs.get(key)}" alt="">${d.variant ? `<i class="r-${d.variant}">${VARIANTS[d.variant].name}</i>` : ''}<span>${sp.name}</span></div>`;
         }).join('') + Array.from({ length: w.slots - shown.length }, () => '<div class="tank-cell empty"></div>').join('');
         html += `<div class="wing"><div class="wing-h"><b>${w.name}</b><em>${shown.length}/${w.slots} · upkeep ${money(w.upkeep, false)}/day</em></div><div class="tanks">${cells}</div></div>`;
       }

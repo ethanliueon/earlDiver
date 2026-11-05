@@ -316,12 +316,12 @@ export class Renderer {
       const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y;
       const r = Math.max(ppm * 0.35, fishDrawLen(ctg.len) * ppm * 0.6), rh = Math.max(ppm * 0.28, r * 0.6), k = r * 0.3;
       const cx = S(tx), cy = Sy(ty), a = 0.45 + 0.25 * Math.sin(t * 5);
-      ctx.strokeStyle = `rgba(200,240,210,${a.toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.03);
+      ctx.strokeStyle = ctg.col || 'rgb(200,240,210)'; ctx.globalAlpha = a; ctx.lineWidth = Math.max(1, ppm * 0.03);
       ctx.beginPath();
       for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
         ctx.moveTo(cx + sx * r, cy + sy * rh - sy * k); ctx.lineTo(cx + sx * r, cy + sy * rh); ctx.lineTo(cx + sx * r - sx * k, cy + sy * rh);
       }
-      ctx.stroke();
+      ctx.stroke(); ctx.globalAlpha = 1;
     }
     // the entity's body, lit by the same light as everything else (invisible in the dark)
     const entB = g.entity;

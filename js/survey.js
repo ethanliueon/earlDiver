@@ -16,9 +16,9 @@ export function tagValue(sp, variant, pay) {
 export function photoValue(sp, variant) {
   let v;
   if (TAG[sp.id]) v = tagPrice(sp.id) * 0.35;
-  else if (sp.cat === 'Kelp & Plants' || sp.cat === 'Corals, Anemones & Sponges') v = 0.5 + sp.dmin * 0.03;
+  else if (sp.cat === 'Kelp & Plants' || sp.cat === 'Corals, Anemones & Sponges') v = 0.05 + sp.dmin * 0.002;
   else v = liveValue(sp) * 0.3;
-  return clamp(v, 0.25, 2000) * variantMult(variant);
+  return clamp(v, 0.02, 100) * variantMult(variant);
 }
 export const photoKey = (sp, variant) => sp.id + (variant ? ':' + variant : '');
 

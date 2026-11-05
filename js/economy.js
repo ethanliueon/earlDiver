@@ -35,8 +35,8 @@ export const SUB_TIERS = [
 ];
 // add-ons for the submersible (bought once)
 export const SUB_ADDONS = {
-  recall: { name: 'Recall unit', price: 100, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
-  quiet: { name: 'Quiet engine', price: 400, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
+  recall: { name: 'Recall unit', price: 10, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
+  quiet: { name: 'Quiet engine', price: 30, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
 };
 // ---------------- catching gear ----------------
 // range: reach beyond his hand (m) · time: sweep / reload (s) · maxLen: biggest animal (m)
@@ -72,9 +72,9 @@ export const CAMERAS = [
 ];
 // Traps: set on the bottom, marked by a line to a buoy, hauled up later.
 export const TRAPS = {
-  pot: { name: 'Wire pot trap', price: 6, max: 3, maxDepth: 200, holds: 2, every: 45, chance: 0.5, maxLen: 0.6,
+  pot: { name: 'Wire pot trap', price: 1.5, max: 3, maxDepth: 200, holds: 2, every: 45, chance: 0.5, maxLen: 0.6,
     desc: 'A galvanised wire cage with a funnel and a bait jar. Crabs, lobsters, eels. Rated to 200 m.' },
-  deep: { name: 'Deep trap', price: 300, max: 2, maxDepth: 2000, holds: 4, every: 50, chance: 0.5, maxLen: 0.9,
+  deep: { name: 'Deep trap', price: 25, max: 2, maxDepth: 2000, holds: 4, every: 50, chance: 0.5, maxLen: 0.9,
     desc: 'A steel cylinder with a lit bait chamber, rated to 2,000 m. The light that draws deep fish draws other things too.' },
 };
 export const BAGS = [
@@ -87,7 +87,7 @@ export const SUB_TANKS = [
   { slots: 8, price: 40 },
   { slots: 12, price: 300 },
 ];
-export const CANISTERS = { name: 'Pressure canisters', price: 250, desc: 'Sealed steel canisters that keep a deep animal at the pressure it lives at. No barotrauma on the way up.' };
+export const CANISTERS = { name: 'Pressure canisters', price: 25, desc: 'Sealed steel canisters that keep a deep animal at the pressure it lives at. No barotrauma on the way up.' };
 // what things weigh (kg) - a heavy load slows him and costs air
 export const WEIGHT = { iron: 4, rock: 3, clam: 0.8, mussel: 0.3, kelp: 0.5, glass: 1, tentacle: 0.5, ink: 0.2, scale: 0, pearl: 0, sapphire: 0.5, coral: 0.3 };
 
@@ -102,7 +102,7 @@ export const ARMS = [
   { name: 'Heavy-lift arm', price: 5000, reach: 6, maxLen: 2.0, out: 0.45, back: 0.6, green: 0.12, amber: 0.26, sweep: 0.85,
     desc: 'A three-jointed work-class arm with padded jaws. Takes animals up to two metres.' },
 ];
-export const PATCH_PRICE = 5;      // +40 % hull integrity
+export const PATCH_PRICE = 1;      // +40 % hull integrity
 export const HOSPITAL_SHARE = 0.10;  // a death costs this share of cash
 // a replacement sub after an implosion: built to the same rating, a share of what it cost
 export function replacementPrice(P) {
@@ -110,26 +110,26 @@ export function replacementPrice(P) {
   return Math.max(10, Math.round(c * 0.3 + 10));
 }
 export const SUPPLIES = {
-  lure: { name: 'Anglerfish lure', price: 80, max: 3, desc: 'Thrown (Q). The thing in the deep follows its light for a while.' },
-  necklace: { name: 'Fangtooth necklace', price: 120, max: 3, desc: 'Worn (E). Keeps it away for 15 s.' },
+  lure: { name: 'Anglerfish lure', price: 8, max: 3, desc: 'Thrown (Q). The thing in the deep follows its light for a while.' },
+  necklace: { name: 'Fangtooth necklace', price: 12, max: 3, desc: 'Worn (E). Keeps it away for 15 s.' },
 };
 
 // ---------------- prices ----------------
 // What the buyers on the radio pay for each kind of thing, before the market moves.
 export const GOODS = {
-  clam: { name: 'Clam', price: 0.3 },
-  mussel: { name: 'Mussels', price: 0.15 },
-  rock: { name: 'Rock', price: 0.05 },
-  kelp: { name: 'Kelp', price: 0.1 },
-  iron: { name: 'Scrap iron', price: 1.5 },
-  scale: { name: 'Fish scales', price: 0.2 },
-  tentacle: { name: 'Squid tentacle', price: 3 },
-  ink: { name: 'Ink sac', price: 5 },
-  pearl: { name: 'Pearl', price: 40 },
-  glass: { name: 'Glass sponge', price: 20 },
-  sapphire: { name: 'Deep sapphire', price: 150 },
-  lure: { name: 'Anglerfish lure', price: 50 },
-  necklace: { name: 'Fangtooth necklace', price: 80 },
+  clam: { name: 'Clam', price: 0.1 },
+  mussel: { name: 'Mussels', price: 0.05 },
+  rock: { name: 'Rock', price: 0.02 },
+  kelp: { name: 'Kelp', price: 0.03 },
+  iron: { name: 'Scrap iron', price: 0.5 },
+  scale: { name: 'Fish scales', price: 0.05 },
+  tentacle: { name: 'Squid tentacle', price: 1 },
+  ink: { name: 'Ink sac', price: 1.5 },
+  pearl: { name: 'Pearl', price: 12 },
+  glass: { name: 'Glass sponge', price: 6 },
+  sapphire: { name: 'Deep sapphire', price: 40 },
+  lure: { name: 'Anglerfish lure', price: 5 },
+  necklace: { name: 'Fangtooth necklace', price: 8 },
 };
 export const SATURATE = 0.15;       // each sale knocks this much off the next one
 const RECOVER_PER_SEC = 0.004;      // the market forgets: ~4 minutes to recover from a glut
@@ -139,9 +139,12 @@ const RECOVER_PER_SEC = 0.004;      // the market forgets: ~4 minutes to recover
 // (cost x growth^level). value = base + step x level. needs: the gear it belongs to.
 // fmt: how to show the value.
 export const UPGRADES = {
+  // trade: better buyers for what he brings up
+  payFish:   { group: 'Diver', name: 'Fish prices', base: 1, step: 0.05, max: 40, cost: 1, growth: 1.13, fmt: 'pay' },
+  paySalvage:{ group: 'Diver', name: 'Salvage prices', base: 1, step: 0.05, max: 20, cost: 1, growth: 1.2, fmt: 'pay' },
   // the diver
-  air:       { group: 'Diver', name: 'Air', base: 50, step: 5, max: 50, cost: 0.5, growth: 1.3, fmt: 's' },
-  swim:      { group: 'Diver', name: 'Swim speed', base: 1, step: 0.02, max: 20, cost: 1, growth: 1.35, fmt: 'x' },
+  air:       { group: 'Diver', name: 'Air', base: 50, step: 5, max: 50, cost: 0.5, growth: 1.12, fmt: 's' },
+  swim:      { group: 'Diver', name: 'Swim speed', base: 1, step: 0.02, max: 20, cost: 1, growth: 1.25, fmt: 'x' },
   bag:       { group: 'Diver', name: 'Bag space', base: 3, step: 1, max: 6, cost: 2, growth: 1.9, fmt: 'n' },
   // the net
   netSize:   { group: 'Net', name: 'Net size', base: 0.45, step: 0.05, max: 15, cost: 0.5, growth: 1.4, fmt: 'cm' },
@@ -150,35 +153,35 @@ export const UPGRADES = {
   netGrip:   { group: 'Net', name: 'Catch odds', base: 0.65, step: 0.02, max: 15, cost: 1, growth: 1.4, fmt: '%' },
   netSoft:   { group: 'Net', name: 'Gentle mesh', base: 0.15, step: -0.01, max: 12, cost: 1, growth: 1.45, fmt: 'harm' },
   // the slurp gun
-  slurpSize: { group: 'Slurp gun', needs: 'slurp', name: 'Barrel size', base: 0.2, step: 0.02, max: 8, cost: 2, growth: 1.45, fmt: 'cm' },
-  slurpReach:{ group: 'Slurp gun', needs: 'slurp', name: 'Suction reach', base: 1.8, step: 0.1, max: 10, cost: 2, growth: 1.4, fmt: 'm' },
-  slurpSpeed:{ group: 'Slurp gun', needs: 'slurp', name: 'Reload', base: 2.0, step: -0.1, max: 10, cost: 2, growth: 1.4, fmt: 'sec' },
+  slurpSize: { group: 'Slurp gun', needs: 'slurp', name: 'Barrel size', base: 0.2, step: 0.02, max: 8, cost: 1, growth: 1.4, fmt: 'cm' },
+  slurpReach:{ group: 'Slurp gun', needs: 'slurp', name: 'Suction reach', base: 1.8, step: 0.1, max: 10, cost: 1, growth: 1.4, fmt: 'm' },
+  slurpSpeed:{ group: 'Slurp gun', needs: 'slurp', name: 'Reload', base: 2.0, step: -0.1, max: 10, cost: 1, growth: 1.4, fmt: 'sec' },
   // the tag gun
-  tagReach:  { group: 'Tag gun', needs: 'tagger', name: 'Range', base: 2.5, step: 0.5, max: 15, cost: 5, growth: 1.35, fmt: 'm' },
-  tagReload: { group: 'Tag gun', needs: 'tagger', name: 'Reload', base: 4, step: -0.2, max: 12, cost: 5, growth: 1.35, fmt: 'sec' },
-  tagPay:    { group: 'Tag gun', needs: 'tagger', name: 'Better tags', base: 1, step: 0.08, max: 15, cost: 10, growth: 1.4, fmt: 'x' },
-  tagCalm:   { group: 'Tag gun', needs: 'tagger', name: 'Clean shots', base: 0.5, step: -0.03, max: 12, cost: 5, growth: 1.35, fmt: 'provoke' },
+  tagReach:  { group: 'Tag gun', needs: 'tagger', name: 'Range', base: 2.5, step: 0.5, max: 15, cost: 2, growth: 1.3, fmt: 'm' },
+  tagReload: { group: 'Tag gun', needs: 'tagger', name: 'Reload', base: 4, step: -0.2, max: 12, cost: 2, growth: 1.3, fmt: 'sec' },
+  tagPay:    { group: 'Tag gun', needs: 'tagger', name: 'Better tags', base: 1, step: 0.08, max: 15, cost: 3, growth: 1.3, fmt: 'x' },
+  tagCalm:   { group: 'Tag gun', needs: 'tagger', name: 'Clean shots', base: 0.5, step: -0.03, max: 12, cost: 2, growth: 1.3, fmt: 'provoke' },
   // the camera
-  camShots:  { group: 'Camera', needs: 'camera', name: 'Shots a dive', base: 5, step: 1, max: 25, cost: 1, growth: 1.3, fmt: 'n' },
-  camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, step: 0.5, max: 10, cost: 2, growth: 1.35, fmt: 'm' },
+  camShots:  { group: 'Camera', needs: 'camera', name: 'Shots a dive', base: 5, step: 1, max: 25, cost: 1, growth: 1.15, fmt: 'n' },
+  camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, step: 0.5, max: 10, cost: 1.5, growth: 1.35, fmt: 'm' },
   // the submersible
-  depth:     { group: 'Submersible', name: 'Depth rating', base: 400, step: 50, max: 52, cost: 2, growth: 1.16, fmt: 'depth' },
-  subAir:    { group: 'Submersible', name: 'Cabin air', base: 150, step: 15, max: 34, cost: 1, growth: 1.25, fmt: 's' },
-  subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, step: 0.03, max: 15, cost: 3, growth: 1.4, fmt: 'x' },
+  depth:     { group: 'Submersible', name: 'Depth rating', base: 400, step: 50, max: 52, cost: 0.5, growth: 1.12, fmt: 'depth' },
+  subAir:    { group: 'Submersible', name: 'Cabin air', base: 150, step: 15, max: 34, cost: 1, growth: 1.12, fmt: 's' },
+  subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, step: 0.03, max: 15, cost: 2, growth: 1.3, fmt: 'x' },
   subTank:   { group: 'Submersible', name: 'Specimen tank', base: 4, step: 1, max: 10, cost: 3, growth: 1.5, fmt: 'n' },
   // the claw
-  armReach:  { group: 'Claw', needs: 'arm', name: 'Reach', base: 3, step: 0.25, max: 12, cost: 10, growth: 1.35, fmt: 'm' },
-  armSize:   { group: 'Claw', needs: 'arm', name: 'Jaw size', base: 1.0, step: 0.1, max: 10, cost: 10, growth: 1.35, fmt: 'cm' },
-  armSpeed:  { group: 'Claw', needs: 'arm', name: 'Hydraulics', base: 1.1, step: -0.06, max: 10, cost: 8, growth: 1.35, fmt: 'sec' },
-  armGrip:   { group: 'Claw', needs: 'arm', name: 'Grip window', base: 0.06, step: 0.008, max: 10, cost: 8, growth: 1.35, fmt: 'win' },
+  armReach:  { group: 'Claw', needs: 'arm', name: 'Reach', base: 3, step: 0.25, max: 12, cost: 3, growth: 1.3, fmt: 'm' },
+  armSize:   { group: 'Claw', needs: 'arm', name: 'Jaw size', base: 1.0, step: 0.1, max: 10, cost: 3, growth: 1.3, fmt: 'cm' },
+  armSpeed:  { group: 'Claw', needs: 'arm', name: 'Hydraulics', base: 1.1, step: -0.06, max: 10, cost: 3, growth: 1.3, fmt: 'sec' },
+  armGrip:   { group: 'Claw', needs: 'arm', name: 'Grip window', base: 0.06, step: 0.008, max: 10, cost: 3, growth: 1.3, fmt: 'win' },
 };
 // one-off gear: bought once, then its stats are levelled above
 export const GEAR = {
-  slurp: { name: 'Slurp gun', price: 15, desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones. Key 2.' },
-  tagger: { name: 'Tag gun', price: 30, desc: 'Puts a research tag in sharks, billfish, whales: anything too big to bring up. Key 3.' },
-  camera: { name: 'Camera', price: 10, desc: 'The institute pays for the first photograph of every species and rare form. Key 4.' },
-  lowlight: { name: 'Low-light sensor', price: 800, needs: 'camera', desc: 'No flash any more: nothing in the dark sees you take the picture.' },
-  arm: { name: 'Claw hydraulics', price: 600, desc: 'Works the old claw under the sub: from inside, Space reaches for an animal; time the grip.' },
+  slurp: { name: 'Slurp gun', price: 3, desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones. Key 2.' },
+  tagger: { name: 'Tag gun', price: 6, desc: 'Puts a research tag in sharks, billfish, whales: anything too big to bring up. Key 3.' },
+  camera: { name: 'Camera', price: 2, desc: 'The institute pays for the first photograph of every species and rare form. Key 4.' },
+  lowlight: { name: 'Low-light sensor', price: 60, needs: 'camera', desc: 'No flash any more: nothing in the dark sees you take the picture.' },
+  arm: { name: 'Claw hydraulics', price: 40, desc: 'Works the old claw under the sub: from inside, Space reaches for an animal; time the grip.' },
 };
 export const lv = (P, id) => (P.lv && P.lv[id]) || 0;
 export const statValue = (P, id) => { const U = UPGRADES[id]; return U.base + U.step * lv(P, id); };
@@ -201,6 +204,7 @@ export function fmtStat(id, v) {
   if (f === 'provoke') return `${Math.round(v * 100)} % provoke`;
   if (f === 'win') return `${Math.round(v * 200)} % window`;
   if (f === 'depth') return `${Math.round(v)} m`;
+  if (f === 'pay') return `+${Math.round((v - 1) * 100)} %`;
   return String(v);
 }
 const sumLv = (P, ids) => ids.reduce((a, id) => a + lv(P, id), 0);
