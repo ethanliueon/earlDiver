@@ -4,7 +4,7 @@
 import { clamp, lerp, formatTime, TAU } from './util.js';
 import { SUB_LEVELS, diverDrainMult } from './player.js';
 import { RESOURCES } from './world.js';
-import { GOODS, money, NETS, SLURPS, TAGGERS, CAMERAS } from './economy.js';
+import { GOODS, money, gear, owns } from './economy.js';
 import { VARIANTS } from './variants.js';
 import { speciesIcon } from './creatures_draw.js';
 import { toolIcon } from './tools_draw.js';
@@ -38,17 +38,18 @@ export class Hud {
       if (!this.icons.has(k)) this.icons.set(k, toolIcon(kind, tier, 120, 60));
       return this.icons.get(k);
     };
-    const tools = [['1', 'net', P.net || 0, NETS[P.net || 0].name]];
-    if ((P.slurp ?? -1) >= 0) tools.push(['2', 'slurp', P.slurp, SLURPS[P.slurp].name]);
-    if ((P.tagger ?? -1) >= 0) tools.push(['3', 'tag', P.tagger, TAGGERS[P.tagger].name]);
-    if ((P.camera ?? -1) >= 0) tools.push(['4', 'cam', P.camera, CAMERAS[P.camera].name]);
+    const G = (k) => gear(P, k);
+    const tools = [['1', 'net', G('net').look, G('net').name]];
+    if (owns(P, 'slurp')) tools.push(['2', 'slurp', G('slurp').look, G('slurp').name]);
+    if (owns(P, 'tagger')) tools.push(['3', 'tag', G('tag').look, G('tag').name]);
+    if (owns(P, 'camera')) tools.push(['4', 'cam', G('cam').look, G('cam').name]);
     const tr = P.traps || {};
     if ((tr.pot || 0) + (tr.deep || 0) > 0) tools.push(['5', 'trap', tr.pot ? 0 : 1, 'Traps']);
     const sw = 84 * s, sh = 46 * s, gap = 8 * s;
     const total = tools.length * sw + (tools.length - 1) * gap;
     let x = W / 2 - total / 2;
     const y = H - sh - 22 * s;
-    const sel = g.toolSel === 'trap' ? 'trap' : g.toolSel === 'slurp' && (P.slurp ?? -1) >= 0 ? 'slurp' : g.toolSel === 'tag' && (P.tagger ?? -1) >= 0 ? 'tag' : g.toolSel === 'cam' && (P.camera ?? -1) >= 0 ? 'cam' : 'net';
+    const sel = g.toolSel === 'trap' ? 'trap' : g.toolSel === 'slurp' && owns(P, 'slurp') ? 'slurp' : g.toolSel === 'tag' && owns(P, 'tagger') ? 'tag' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
       ctx.fillStyle = on ? 'rgba(14,26,28,0.72)' : 'rgba(6,12,14,0.5)';

@@ -42,8 +42,9 @@ export class Sub {
     this.tilt = 0; this.lightsOn = true; this.hull = 1; // hull integrity: damage makes the cabin leak air
     this.yaw = Math.PI; // 0 = bow to the right, PI = bow to the left; turns smoothly between
   }
-  get rated() { return SUB_LEVELS[this.level].rated; }
-  get o2Max() { return SUB_LEVELS[this.level].o2; }
+  // set from the upgrades (see applySub in main.js)
+  get rated() { return this.ratedV || 400; }
+  get o2Max() { return this.o2V || 150; }
 }
 
 // Input: {x,y} move vector -1..1, sprint bool
@@ -55,7 +56,7 @@ export function updateEarl(g, dt, inp) {
     // ---- submersible ----
     // (on the way home under autopilot the autopilot moves the sub; nothing here steers it)
     if (!g.homeRun) {
-    const sp = SUB_SPEED * (inp.sprint ? 1.5 : 1);
+    const sp = SUB_SPEED * (inp.sprint ? 1.5 : 1) * (sub.speedMul || 1);
     // diagonal input is normalised, so going right and down at once is no faster than one way
     const im = Math.hypot(inp.x, inp.y), nx = im > 1 ? inp.x / im : inp.x, ny = im > 1 ? inp.y / im : inp.y;
     // the ballast boost only applies to (mostly) straight dives and ascents, never to diagonals

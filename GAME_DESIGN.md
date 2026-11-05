@@ -63,6 +63,16 @@ All of it is paid at the boat (U at the surface by the *Margaret*), on a typed r
 - **Radio contracts**: three (five with a better radio) jobs per dive that pay well over market.
 - Each kind of thing floods its market as it is sold; prices recover over a few minutes.
 
+## Upgrades
+
+An upgrades game: every stat is levelled one small step at a time, each step a little dearer than
+the last (about x1.3-1.4 per level, starting from 50 cents to a few dollars). Diver: air, swim
+speed, bag space. Net: size (from 45 cm), reach, swing speed, catch odds, gentle mesh. Slurp gun,
+tag gun, camera and claw: their own stats once bought. Submersible: depth rating (+50 m a level,
+400 m to 3,000 m), cabin air, engine, specimen tank. Gear itself (slurp gun, tag gun, camera,
+claw, low-light sensor, canisters, traps, radio, sub add-ons, aquarium wings) is bought once.
+Tools change their look as they are levelled (the hand net grows into a pro capture net).
+
 ## Catching
 
 - 1 **net** (four, from a hand net for fish up to 45 cm to a 1.1 m pro capture net) and

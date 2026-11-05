@@ -244,3 +244,14 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .contract .pay { text-align: right; font: 500 16px var(--mono); color: #d8e8c8; white-space: nowrap; }
 .contract .pay em { display: block; font: normal 10px var(--mono); color: #8fd4a0; }
 .contract.ready { border-color: rgba(143, 212, 160, 0.45); }
+/* upgrade rows: small steps, always another one */
+.up-group { margin: 2px 0 18px; }
+.up-group h4 { font: 400 18px var(--serif); color: #f1efe6; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.up-row { display: grid; grid-template-columns: 1fr 1.3fr 48px 92px; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); font-size: 12px; }
+.up-name { color: var(--ink); }
+.up-val { color: var(--muted); }
+.up-val i { font-style: normal; opacity: 0.5; }
+.up-val b { color: #bfe8d0; font-weight: 500; }
+.up-lv { font-size: 10px; color: rgba(220, 230, 228, 0.4); text-align: right; }
+.shop .up-row button[data-act] { min-width: 0; padding: 6px 8px; font-size: 12px; }
+@media (max-width: 600px) { .up-row { grid-template-columns: 1fr 1fr 70px; } .up-lv { display: none; } }

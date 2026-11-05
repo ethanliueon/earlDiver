@@ -3,14 +3,14 @@
 // the same species). Photos: the institute pays once for the first picture of each species and
 // each rare form. Both are paid at the boat; neither survives his death (the data dies with him).
 import { clamp, dist } from './util.js';
-import { TAGGERS, CAMERAS } from './economy.js';
+import { gear, owns } from './economy.js';
 import { TAG, liveValue, tagPrice } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 import { AGGRO } from './hunters.js';
 
 export const canTag = (sp) => (TAG[sp.id] || 0) > 0;
-export function tagValue(sp, variant, tier) {
-  return tagPrice(sp.id) * variantMult(variant) * TAGGERS[tier].pay;
+export function tagValue(sp, variant, pay) {
+  return tagPrice(sp.id) * variantMult(variant) * pay;
 }
 // what the institute pays for a first photograph
 export function photoValue(sp, variant) {
@@ -46,18 +46,16 @@ function inCone(g, range, cone, pick) {
 }
 
 export function findTagTarget(g) {
-  const tier = g.profile.tagger;
-  if (tier < 0) return null;
-  const def = TAGGERS[tier];
+  if (!owns(g.profile, 'tagger')) return null;
+  const def = gear(g.profile, 'tag');
   const t = inCone(g, def.range, 0.3, (sp, ref, d, da) => (ref.c && canTag(sp) ? d + da * 6 + (ref.c.tagged ? 50 : 0) : null));
   if (!t) return null;
   if (t.c.tagged) return { ...t, ok: false, why: 'already tagged' };
-  return { ...t, ok: true, value: tagValue(t.sp, t.variant, tier), name: variantName(t.sp, t.variant) };
+  return { ...t, ok: true, value: tagValue(t.sp, t.variant, def.pay), name: variantName(t.sp, t.variant) };
 }
 export function findPhotoSubject(g) {
-  const tier = g.profile.camera;
-  if (tier < 0) return null;
-  const def = CAMERAS[tier], have = new Set(g.profile.photos || []), pending = new Set(g.photos.map((p) => p.key));
+  if (!owns(g.profile, 'camera')) return null;
+  const def = gear(g.profile, 'cam'), have = new Set(g.profile.photos || []), pending = new Set(g.photos.map((p) => p.key));
   // prefer something not yet photographed
   const t = inCone(g, def.range, 0.35, (sp, ref, d, da) => {
     const k = photoKey(sp, ref.variant), old = have.has(k) || pending.has(k);
@@ -71,9 +69,9 @@ export function findPhotoSubject(g) {
 
 // fire a tag dart along the aim
 export function fireTag(g) {
-  const tier = g.profile.tagger, def = TAGGERS[tier], e = g.earl, a = aimAngle(g);
+  const def = gear(g.profile, 'tag'), e = g.earl, a = aimAngle(g);
   const tip = g.toolTip || { x: e.x + Math.cos(a), y: e.y + Math.sin(a) };
-  g.darts.push({ x: tip.x, y: tip.y, vx: Math.cos(a) * 22, vy: Math.sin(a) * 22, travelled: 0, max: def.range + 0.6, tier });
+  g.darts.push({ x: tip.x, y: tip.y, vx: Math.cos(a) * 22, vy: Math.sin(a) * 22, travelled: 0, max: def.range + 0.6, tier: def.look, def });
   g.capture = { kind: 'tag', t: 0, dur: def.time, resolveAt: 1, done: true };
   if (e.y > 200) g.entity.disturb(g, 0.01);
 }
@@ -91,15 +89,15 @@ export function updateDarts(g, dt) {
     }
     if (hit) {
       hit.tagged = true; hit.tagT = g.time;
-      const def = TAGGERS[d.tier];
-      ev.push({ type: 'tagged', sp: hit.sp, variant: hit.variant, value: tagValue(hit.sp, hit.variant, d.tier), name: variantName(hit.sp, hit.variant), key: 'tag' + hit.sp.id + (hit.variant ? ':' + hit.variant : '') });
+      const def = d.def;
+      ev.push({ type: 'tagged', sp: hit.sp, variant: hit.variant, value: tagValue(hit.sp, hit.variant, def.pay), name: variantName(hit.sp, hit.variant), key: 'tag' + hit.sp.id + (hit.variant ? ':' + hit.variant : '') });
       // the sting of it: it bolts; an aggressive animal may come back for him
       hit.fleeT = 3;
       if (AGGRO[hit.sp.id] && Math.random() < def.provoke * 0.5) provoke(hit);
       g.darts.splice(i, 1);
     } else if (d.travelled > d.max || g.world.floorAt(d.x) < d.y || g.world.rockAt(d.x, d.y)) {
       // a miss: anything aggressive close by takes it badly
-      const def = TAGGERS[d.tier];
+      const def = d.def;
       for (const c of g.fauna.list) if (AGGRO[c.sp.id] && AGGRO[c.sp.id].kind !== 'lurk' && dist(c.x, c.y, d.x, d.y) < 6 && Math.random() < def.provoke) { provoke(c); ev.push({ type: 'provoked', sp: c.sp }); break; }
       ev.push({ type: 'dartMiss' });
       g.darts.splice(i, 1);
@@ -111,7 +109,7 @@ function provoke(c) { c.hunting = true; if (c.att) c.att.cool = 0; }
 
 // take a picture of the best subject in front of him
 export function takePhoto(g) {
-  const tier = g.profile.camera, def = CAMERAS[tier], e = g.earl;
+  const def = gear(g.profile, 'cam'), e = g.earl;
   if (g.shots <= 0) return { type: 'noShots' };
   g.shots--;
   g.capture = { kind: 'cam', t: 0, dur: 0.9, resolveAt: 1, done: true };

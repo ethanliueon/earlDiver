@@ -47,6 +47,12 @@ species has a 5 % chance to be rare, split as:
 
 Each is a visual layer over the species drawing. The journal gets 6 variant slots per species.
 
+## Upgrades (revised again)
+
+At the owner's request the tiers became an incremental upgrades system: every stat has its own
+level, each step a little more expensive (UPGRADES in `js/economy.js`); only gear is bought once
+(GEAR). The tables below are the original tier design, kept for reference.
+
 ## Prices (revised)
 
 At the owner's request the economy starts at cents and climbs in steps: small fish pay cents to a

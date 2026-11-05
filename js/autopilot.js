@@ -149,7 +149,7 @@ export class Autopilot {
     const toGoal = dist(sub.x, sub.y, G.x, G.y);
     this.remaining = toGoal;
     // steer like a pilot would: same speed, same ballast boost on straight dives and ascents
-    const sp = SUB_SPEED * speedMul;
+    const sp = SUB_SPEED * speedMul * (sub.speedMul || 1);
     let dx = wp.x - sub.x, dy = wp.y - sub.y;
     const dl = Math.hypot(dx, dy) || 1;
     let nx = dx / dl, ny = dy / dl;

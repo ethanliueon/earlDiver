@@ -5,11 +5,11 @@ import { clamp, dist } from './util.js';
 import { canTakeLive, liveValue } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 import { tankSlots } from './capture.js';
-import { ARMS } from './economy.js';
+import { gear, owns } from './economy.js';
 
 const GRIP_TIMEOUT = 4;
 // the fitted arm (or null)
-export function armDef(g) { const t = g.profile.armTier ?? -1; return t >= 0 ? ARMS[t] : null; }
+export function armDef(g) { return owns(g.profile, 'arm') ? gear(g.profile, 'arm') : null; }
 
 // where the claw's shoulder is (world): under the sphere, toward the bow
 export function armBase(g) {

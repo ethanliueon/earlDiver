@@ -8,7 +8,7 @@ import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName } from './specimens.js';
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
-import { loadBest, ARMS } from './economy.js';
+import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
@@ -243,51 +243,18 @@ export class UI {
         for (const k of ['lure', 'necklace']) if (g.items[k]) html += card(GOODS[k].name, `You are carrying ${g.items[k]}. Someone on the radio collects these.`, '', null, 'sellitem', k, `Sell one · ${money(priceOf(P, k, GOODS[k].price), false)}`);
       }
     } else if (tab === 'diver') {
-      const t = TANKS[P.tank], tn = TANKS[P.tank + 1];
-      html += `<div class="owned"><span>Tank</span><b>${t.name}</b><em>${t.air} s of air</em>${ladder(TANKS.length, P.tank)}</div>`;
-      html += tn ? card(tn.name, tn.desc, `${t.air} s → <b>${tn.air} s</b> of air`, tn.price, 'buy', 'tank', 'Buy') : '<p class="shop-empty">The best tank there is.</p>';
-      // catching gear
-      const nt = NETS[P.net || 0], nn = NETS[(P.net || 0) + 1];
-      const st = (d) => `reach ${d.range} m · ${d.time} s · up to ${Math.round(d.maxLen * 100)} cm · ${Math.round(d.success * 100)} % · harm −${Math.round(d.harm * 100)} %`;
-      html += `<div class="owned"><span>Net</span><b>${nt.name}</b><em>${st(nt)}</em>${ladder(NETS.length, P.net || 0)}</div>`;
-      if (nn) html += card(nn.name, nn.desc, st(nn), nn.price, 'buy', 'net', 'Buy', '', icon('net', P.net + 1));
-      const sl = (P.slurp ?? -1), sn = SLURPS[sl + 1];
-      if (sl >= 0) html += `<div class="owned"><span>Slurp</span><b>${SLURPS[sl].name}</b><em>${st(SLURPS[sl])}</em>${ladder(SLURPS.length, sl)}</div>`;
-      if (sn) html += card(sn.name, sn.desc, st(sn), sn.price, 'buy', 'slurp', 'Buy', '', icon('slurp', sl + 1));
-      const tgi = P.tagger ?? -1, tgn = TAGGERS[tgi + 1];
-      const tst = (d) => `reach ${d.range} m · reload ${d.time} s · a miss provokes ${Math.round(d.provoke * 100)} %${d.pay > 1 ? ' · pays ×' + d.pay : ''}`;
-      if (tgi >= 0) html += `<div class="owned"><span>Tags</span><b>${TAGGERS[tgi].name}</b><em>${tst(TAGGERS[tgi])}</em>${ladder(TAGGERS.length, tgi)}</div>`;
-      if (tgn) html += card(tgn.name, tgn.desc + ' For sharks, billfish, whales and anything too big for a net.', tst(tgn), tgn.price, 'buy', 'tagger', 'Buy', '', icon('tag', tgi + 1));
-      const cmi = P.camera ?? -1, cmn = CAMERAS[cmi + 1];
-      const cst = (d) => `${d.range} m · ${d.shots} shots a dive · ${d.flash ? 'flash (seen in the deep)' : 'no flash'}`;
-      if (cmi >= 0) html += `<div class="owned"><span>Camera</span><b>${CAMERAS[cmi].name}</b><em>${cst(CAMERAS[cmi])}</em>${ladder(CAMERAS.length, cmi)}</div>`;
-      if (cmn) html += card(cmn.name, cmn.desc + ' The institute pays for the first photograph of every species and every rare form.', cst(cmn), cmn.price, 'buy', 'camera', 'Buy', '', icon('cam', cmi + 1));
-      const bg = BAGS[P.bag || 0], bn = BAGS[(P.bag || 0) + 1];
-      html += `<div class="owned"><span>Bag</span><b>${bg.name}</b><em>${bg.slots} animals</em>${ladder(BAGS.length, P.bag || 0)}</div>`;
-      if (bn) html += card(bn.name, bn.desc, `${bg.slots} → <b>${bn.slots}</b> animals`, bn.price, 'buy', 'bag', 'Buy');
+      html += this.upgradeGroups(P, ['Diver', 'Net', 'Slurp gun', 'Tag gun', 'Camera'], icon, can);
       if (!(P.addons || {}).canisters) html += card(CANISTERS.name, CANISTERS.desc, 'for the bag and the sub tank', CANISTERS.price, 'buy', 'canisters', 'Buy');
-      const f = FINS[P.fins], fnx = FINS[P.fins + 1];
-      html += `<div class="owned"><span>Fins</span><b>${f.name}</b><em>×${f.speed.toFixed(2)} speed</em>${ladder(FINS.length, P.fins)}</div>`;
-      html += fnx ? card(fnx.name, fnx.desc, `×${f.speed.toFixed(2)} → <b>×${fnx.speed.toFixed(2)}</b> swimming speed`, fnx.price, 'buy', 'fins', 'Buy') : '<p class="shop-empty">No faster fins exist.</p>';
     } else if (tab === 'sub') {
       if (sub.imploded) {
-        html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, rated the same.', `rated ${sub.rated} m`, replacementPrice(sub.level), 'buy', 'replace', 'Buy');
+        html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', `rated ${sub.rated} m`, replacementPrice(P), 'buy', 'replace', 'Buy');
       } else {
-        const next = SUB_TIERS[sub.level + 1];
-        html += `<div class="owned"><span>Hull</span><b>Rated ${sub.rated} m</b><em>implodes past ${Math.round(sub.rated * 1.3)} m · ${sub.o2Max} s cabin air</em>${ladder(SUB_TIERS.length, sub.level)}</div>`;
-        html += next ? card(`Refit: rated ${next.rated} m`, 'A thicker pressure sphere, new seals and a bigger air bank. Includes a new hull.', `${sub.rated} m → <b>${next.rated} m</b> · air ${sub.o2Max} s → <b>${next.o2} s</b>`, next.price, 'buy', 'sub', 'Refit') : '<p class="shop-empty">Rated to the bottom of this ocean. Nothing more can be done for her.</p>';
-        // the claw: a ladder of arms
-        const ai = P.armTier ?? -1, an = ARMS[ai + 1];
-        const ast = (d) => `reach ${d.reach} m · up to ${Math.round(d.maxLen * 100)} cm · ${d.out < 0.6 ? 'fast' : d.out < 1 ? 'quick' : 'slow'} · grip window ${Math.round(d.green * 200)} %`;
-        if (ai >= 0) html += `<div class="owned"><span>Arm</span><b>${ARMS[ai].name}</b><em>${ast(ARMS[ai])}</em>${ladder(ARMS.length, ai)}</div>`;
-        if (an) html += card(an.name, an.desc, ast(an), an.price, 'buy', 'arm', ai < 0 ? 'Fit' : 'Upgrade');
-        const tk = SUB_TANKS[P.subTank || 0], tn2 = SUB_TANKS[(P.subTank || 0) + 1];
-        html += `<div class="owned"><span>Tank</span><b>Specimen tank</b><em>${tk.slots} animals · no stress</em>${ladder(SUB_TANKS.length, P.subTank || 0)}</div>`;
-        if (tn2) html += card('Bigger specimen tank', 'A larger aerated tank behind the pilot. Animals keep in it without losing condition.', `${tk.slots} → <b>${tn2.slots}</b> animals`, tn2.price, 'buy', 'subtank', 'Buy');
+        html += `<p class="shop-note">Implodes past ${Math.round(sub.rated * 1.3)} m · hull ${Math.round(sub.hull * 100)} %</p>`;
+        if (sub.hull < 0.999) html += card('Patch the hull', 'Weld plates over the worst of it. A damaged hull leaks air.', `integrity ${Math.round(sub.hull * 100)} % → <b>${Math.round(Math.min(1, sub.hull + 0.4) * 100)} %</b>`, PATCH_PRICE, 'buy', 'patch', 'Patch');
+        html += this.upgradeGroups(P, ['Submersible', 'Claw'], icon, can);
         for (const [k, a] of Object.entries(SUB_ADDONS)) if (!(P.addons || {})[k]) html += card(a.name, a.desc, '', a.price, 'buy', k, 'Fit');
         const fitted = Object.entries(SUB_ADDONS).filter(([k]) => (P.addons || {})[k]).map(([, a]) => a.name.toLowerCase());
         if (fitted.length) html += `<p class="shop-note">Fitted: ${fitted.join(', ')}.</p>`;
-        if (sub.hull < 0.999) html += card('Patch the hull', 'Weld plates over the worst of it. A damaged hull leaks air.', `integrity ${Math.round(sub.hull * 100)} % → <b>${Math.round(Math.min(1, sub.hull + 0.4) * 100)} %</b>`, PATCH_PRICE, 'buy', 'patch', 'Patch');
       }
     } else if (tab === 'supplies') {
       const tr = P.traps || {};
@@ -331,6 +298,35 @@ export class UI {
       if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets, ${money(A.lastDay.cost, false)} upkeep. Earned so far: ${money(A.earned, false)}.</p>`;
     }
     $('shop-body').innerHTML = html;
+  }
+
+  // Upgrade rows, grouped: each stat on one line with what it is now, what the next level makes it,
+  // its level and the price. Gear not yet owned shows as a card to buy it first.
+  upgradeGroups(P, groups, icon, can) {
+    const GEAR_OF = { 'Slurp gun': 'slurp', 'Tag gun': 'tagger', 'Camera': 'camera', 'Claw': 'arm' };
+    const ICON_OF = { 'Net': ['net', gear(P, 'net').look], 'Slurp gun': ['slurp', 0], 'Tag gun': ['tag', 0], 'Camera': ['cam', 0] };
+    let html = '';
+    for (const grp of groups) {
+      const gk = GEAR_OF[grp];
+      html += `<div class="up-group"><h4>${grp}</h4>`;
+      if (gk && !owns(P, gk)) {
+        const G = GEAR[gk], ic = ICON_OF[grp];
+        html += `<div class="card${ic ? ' with-img' : ''}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}</h3><p>${G.desc}</p></div>
+          <button data-act="buy" data-arg="gear:${gk}" ${can(G.price) ? '' : 'disabled'}>Buy<span>${money(G.price)}</span></button></div></div>`;
+        continue;
+      }
+      for (const [id, U] of Object.entries(UPGRADES)) {
+        if (U.group !== grp) continue;
+        const l = lv(P, id), maxed = l >= U.max, cost = upgradeCost(P, id);
+        const now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statValue(P, id) + U.step);
+        html += `<div class="up-row"><span class="up-name">${U.name}</span><span class="up-val">${now}${maxed ? '' : ` <i>→</i> <b>${next}</b>`}</span>
+          <span class="up-lv">${maxed ? 'max' : `lv ${l}`}</span>
+          <button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}</button></div>`;
+      }
+      if (gk === 'camera' && !owns(P, 'lowlight')) html += `<div class="up-row"><span class="up-name">${GEAR.lowlight.name}</span><span class="up-val">no flash</span><span class="up-lv"></span><button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button></div>`;
+      html += '</div>';
+    }
+    return html;
   }
 
   // The ledger slip: the sale typed out line by line, then the total.

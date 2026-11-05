@@ -1,21 +1,22 @@
 // Catching animals alive: the net and the slurp gun, the specimen bag, the sub's tank, and what
 // happens to an animal between the catch and the sale (handling, time, coming up too fast).
 import { clamp, dist } from './util.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, WEIGHT, TAGGERS, CAMERAS } from './economy.js';
+import { WEIGHT, gear, owns, statValue } from './economy.js';
 import { canTakeLive, isTagOnly, liveValue, fragile, conditionName } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 
-export const bagSlots = (g) => BAGS[g.profile.bag || 0].slots;
-export const tankSlots = (g) => SUB_TANKS[g.profile.subTank || 0].slots;
+export const bagSlots = (g) => Math.round(statValue(g.profile, 'bag'));
+export const tankSlots = (g) => Math.round(statValue(g.profile, 'subTank'));
 
 // the tool in his hand: 'net' or 'slurp' (if he owns one)
 export function activeTool(g) {
   const P = g.profile;
-  if (g.toolSel === 'slurp' && P.slurp >= 0) return { kind: 'slurp', def: SLURPS[P.slurp], tier: P.slurp };
+  const T = (kind, k) => { const def = gear(P, k); return { kind, def, tier: def.look }; };
+  if (g.toolSel === 'slurp' && owns(P, 'slurp')) return T('slurp', 'slurp');
   if (g.toolSel === 'trap') return { kind: 'trap', def: null, tier: 0 };
-  if (g.toolSel === 'tag' && P.tagger >= 0) return { kind: 'tag', def: TAGGERS[P.tagger], tier: P.tagger };
-  if (g.toolSel === 'cam' && P.camera >= 0) return { kind: 'cam', def: CAMERAS[P.camera], tier: P.camera };
-  return { kind: 'net', def: NETS[P.net || 0], tier: P.net || 0 };
+  if (g.toolSel === 'tag' && owns(P, 'tagger')) return T('tag', 'tag');
+  if (g.toolSel === 'cam' && owns(P, 'camera')) return T('cam', 'cam');
+  return T('net', 'net');
 }
 
 // where his hand is, and which way he faces (world metres)
