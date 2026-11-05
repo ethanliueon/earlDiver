@@ -3,7 +3,7 @@ import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
 import { speciesIcon } from './creatures_draw.js';
 import { RESOURCES } from './world.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS } from './economy.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName } from './specimens.js';
 import { VARIANTS, VARIANT_KEYS, variantLabel } from './variants.js';
@@ -163,7 +163,7 @@ export class UI {
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'hold left to swim to the cursor; the lamp follows it; right-click interacts; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep)'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['Q / E', 'throw a lure / wear a necklace'], ['G', 'offer something back to the deep'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['J', 'this journal'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -191,7 +191,7 @@ export class UI {
       const rows = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]);
       const atBoat = !sub.imploded && Math.hypot(sub.x - 520.5, sub.y - 2.6) < 20;
       const specs = g.bag.concat(atBoat ? g.subTank : []);
-      if (!rows.length && !specs.length && !g.items.lure && !g.items.necklace) {
+      if (!rows.length && !specs.length && !g.tags.length && !g.photos.length && !g.items.lure && !g.items.necklace) {
         html = `<p class="shop-empty">Nothing aboard to sell.<br>The aquarium buyer pays for live animals (1 · 2 · Space). Clams and mussels in the shallows, scrap on the wrecks, ink and glass sponge further down — and in the deep, sapphires.</p>`;
       } else {
         let total = 0;
@@ -219,9 +219,19 @@ export class UI {
           const cond = `<em class="cond c-${conditionName(worst)}">${conditionName(worst)}</em>`;
           specRows += `<tr><td>${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr>`;
         }
+        // survey work: tags (each species' tags pay less each time) and first photographs
+        const tg = new Map();
+        for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
+        for (const [k, list] of tg) {
+          let sum = 0, glut = P.market[k] || 0;
+          for (let i = 0; i < list.length; i++) { sum += list[0].value * Math.pow(0.85, glut / 0.15); glut += 0.15; }
+          total += sum;
+          specRows += `<tr><td>Tag data: ${list[0].name}</td><td>${list.length}</td><td>${money(priceOf(P, k, list[0].value))}</td><td>${money(sum)}</td></tr>`;
+        }
+        for (const ph of g.photos) { total += ph.value; specRows += `<tr><td>Photograph: ${ph.name}</td><td>1</td><td>${money(ph.value)}</td><td>${money(ph.value)}</td></tr>`; }
         lines = specRows + lines;
         if (!atBoat && g.subTank.length) html += `<p class="shop-note">${g.subTank.length} animal${g.subTank.length > 1 ? 's' : ''} in the sub's tank. Bring the sub to the boat to sell them.</p>`;
-        if (rows.length || specs.length) html += `<table class="manifest"><thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Total</th></tr></thead><tbody>${lines}</tbody></table>
+        if (rows.length || specs.length || g.tags.length || g.photos.length) html += `<table class="manifest"><thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Total</th></tr></thead><tbody>${lines}</tbody></table>
           <button class="primary" data-act="sellall">Load the basket and sell<span>${money(total)}</span></button>`;
         for (const k of ['lure', 'necklace']) if (g.items[k]) html += card(GOODS[k].name, `You are carrying ${g.items[k]}. Someone on the radio collects these.`, '', null, 'sellitem', k, `Sell one · ${money(priceOf(P, k, GOODS[k].price), false)}`);
       }
@@ -237,6 +247,14 @@ export class UI {
       const sl = (P.slurp ?? -1), sn = SLURPS[sl + 1];
       if (sl >= 0) html += `<div class="owned"><span>Slurp</span><b>${SLURPS[sl].name}</b><em>${st(SLURPS[sl])}</em>${ladder(SLURPS.length, sl)}</div>`;
       if (sn) html += card(sn.name, sn.desc, st(sn), sn.price, 'buy', 'slurp', 'Buy', '', icon('slurp', sl + 1));
+      const tgi = P.tagger ?? -1, tgn = TAGGERS[tgi + 1];
+      const tst = (d) => `reach ${d.range} m · reload ${d.time} s · a miss provokes ${Math.round(d.provoke * 100)} %${d.pay > 1 ? ' · pays ×' + d.pay : ''}`;
+      if (tgi >= 0) html += `<div class="owned"><span>Tags</span><b>${TAGGERS[tgi].name}</b><em>${tst(TAGGERS[tgi])}</em>${ladder(TAGGERS.length, tgi)}</div>`;
+      if (tgn) html += card(tgn.name, tgn.desc + ' For sharks, billfish, whales and anything too big for a net.', tst(tgn), tgn.price, 'buy', 'tagger', 'Buy', '', icon('tag', tgi + 1));
+      const cmi = P.camera ?? -1, cmn = CAMERAS[cmi + 1];
+      const cst = (d) => `${d.range} m · ${d.shots} shots a dive · ${d.flash ? 'flash (seen in the deep)' : 'no flash'}`;
+      if (cmi >= 0) html += `<div class="owned"><span>Camera</span><b>${CAMERAS[cmi].name}</b><em>${cst(CAMERAS[cmi])}</em>${ladder(CAMERAS.length, cmi)}</div>`;
+      if (cmn) html += card(cmn.name, cmn.desc + ' The institute pays for the first photograph of every species and every rare form.', cst(cmn), cmn.price, 'buy', 'camera', 'Buy', '', icon('cam', cmi + 1));
       const bg = BAGS[P.bag || 0], bn = BAGS[(P.bag || 0) + 1];
       html += `<div class="owned"><span>Bag</span><b>${bg.name}</b><em>${bg.slots} animals</em>${ladder(BAGS.length, P.bag || 0)}</div>`;
       if (bn) html += card(bn.name, bn.desc, `${bg.slots} → <b>${bn.slots}</b> animals`, bn.price, 'buy', 'bag', 'Buy');

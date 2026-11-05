@@ -20,8 +20,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | hold F | Leave the submersible |
 | C | Call the submersible: it drives itself to you (never below its rated depth). C again stops it |
 | hold C | Send the submersible back to the boat |
-| 1 / 2 | Net / slurp gun (when bought) |
-| Space | Use the net or slurp gun: approach slowly, then sweep |
+| 1 / 2 / 3 / 4 | Net / slurp gun / tag gun / camera (once bought) |
+| Space | Use it: sweep the net, fire the slurp gun or a tag dart, take a picture |
 | J | Journal (species you have observed, and your own notes) |
 | L | Lights on/off. Light carries a long way in the dark. Flash it at a charging animal to make it swerve |
 | Q | Throw an anglerfish lure |

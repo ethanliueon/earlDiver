@@ -4,7 +4,9 @@
 import { clamp, lerp, formatTime, TAU } from './util.js';
 import { SUB_LEVELS, diverDrainMult } from './player.js';
 import { RESOURCES } from './world.js';
-import { GOODS, money, NETS, SLURPS } from './economy.js';
+import { GOODS, money, NETS, SLURPS, TAGGERS, CAMERAS } from './economy.js';
+import { VARIANTS } from './variants.js';
+import { speciesIcon } from './creatures_draw.js';
 import { toolIcon } from './tools_draw.js';
 import { bagSlots, tankSlots } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
@@ -36,11 +38,13 @@ export class Hud {
     };
     const tools = [['1', 'net', P.net || 0, NETS[P.net || 0].name]];
     if ((P.slurp ?? -1) >= 0) tools.push(['2', 'slurp', P.slurp, SLURPS[P.slurp].name]);
+    if ((P.tagger ?? -1) >= 0) tools.push(['3', 'tag', P.tagger, TAGGERS[P.tagger].name]);
+    if ((P.camera ?? -1) >= 0) tools.push(['4', 'cam', P.camera, CAMERAS[P.camera].name]);
     const sw = 84 * s, sh = 46 * s, gap = 8 * s;
     const total = tools.length * sw + (tools.length - 1) * gap;
     let x = W / 2 - total / 2;
     const y = H - sh - 22 * s;
-    const sel = g.toolSel === 'slurp' && (P.slurp ?? -1) >= 0 ? 'slurp' : 'net';
+    const sel = g.toolSel === 'slurp' && (P.slurp ?? -1) >= 0 ? 'slurp' : g.toolSel === 'tag' && (P.tagger ?? -1) >= 0 ? 'tag' : g.toolSel === 'cam' && (P.camera ?? -1) >= 0 ? 'cam' : 'net';
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
       ctx.fillStyle = on ? 'rgba(14,26,28,0.72)' : 'rgba(6,12,14,0.5)';
@@ -51,6 +55,8 @@ export class Hud {
       ctx.globalAlpha = 1;
       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.fillText(key, x + 5 * s, y + 4 * s);
+      if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.shots ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${g.shots}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
+      if (kind === 'tag' && (g.tags.length)) { ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(232,176,42,0.9)'; ctx.fillText(`${g.tags.length}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       // sweep / reload progress along the bottom edge
       if (on && g.capture && g.capture.kind === kind) {
         ctx.fillStyle = 'rgba(200,230,215,0.7)';
@@ -78,6 +84,25 @@ export class Hud {
         ctx.strokeStyle = c <= 0.05 ? 'rgba(140,140,140,0.9)' : c >= 0.8 ? 'rgba(120,220,140,0.9)' : c >= 0.5 ? 'rgba(232,176,64,0.95)' : 'rgba(230,80,60,0.95)';
         ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.stroke();
       } else { ctx.strokeStyle = 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1; ctx.stroke(); }
+    }
+    // the last photograph: a print in the corner, with the animal on it
+    const pc = this.photoCard;
+    if (pc) {
+      pc.t += dt;
+      if (pc.t > 3.5) this.photoCard = null;
+      else {
+        if (!pc.img) pc.img = speciesIcon(pc.sp, 200, 120);
+        const a = clamp(Math.min(pc.t * 4, (3.5 - pc.t) * 2), 0, 1);
+        const cw = 150 * s, ch = 118 * s, px = W - cw - 26 * s, py = H - ch - 26 * s;
+        ctx.save(); ctx.globalAlpha = a; ctx.translate(px + cw / 2, py + ch / 2); ctx.rotate(-0.04);
+        ctx.fillStyle = '#ece6d6'; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 14 * s;
+        ctx.fillRect(-cw / 2, -ch / 2, cw, ch); ctx.shadowBlur = 0;
+        ctx.fillStyle = '#163a4a'; ctx.fillRect(-cw / 2 + 8 * s, -ch / 2 + 8 * s, cw - 16 * s, ch - 34 * s);
+        ctx.drawImage(pc.img, -cw / 2 + 10 * s, -ch / 2 + 10 * s, cw - 20 * s, ch - 38 * s);
+        ctx.fillStyle = '#2b2620'; ctx.font = `italic ${12 * s}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText((pc.variant ? VARIANTS[pc.variant].name + ' ' : '') + pc.sp.name, 0, ch / 2 - 13 * s);
+        ctx.restore();
+      }
     }
     // a second row inside the sub: what is still in the bag outside the tank
     if (e.inSub && g.bag.length) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillText(`+${g.bag.length} in the bag (tank full)`, W / 2 + rowW / 2 + 8 * s, sy); }

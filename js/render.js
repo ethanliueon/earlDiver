@@ -7,6 +7,7 @@ import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { activeTool } from './capture.js';
+import { drawDart } from './tools_draw.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { BOAT_X, WORLD_W } from './world.js';
@@ -250,6 +251,12 @@ export class Renderer {
       ctx.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
       const r = c.variant ? this.drawVariant(ctx, c.sp, c.variant, Ld, c.phase) : this.drawCached(ctx, c.sp, Ld, c.phase, c.wob);
       ctx.restore();
+      // a research tag trailing from a tagged animal
+      if (c.tagged) {
+        const tx = S(c.x) + (c.dir > 0 ? -1 : 1) * Ld * 0.05, ty = Sy(c.y) - Ld * 0.08;
+        ctx.strokeStyle = '#e8b02a'; ctx.lineWidth = Math.max(1, ppm * 0.03); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.quadraticCurveTo(tx - c.dir * Ld * 0.08, ty - Ld * 0.06 + Math.sin(t * 8 + c.wob) * Ld * 0.02, tx - c.dir * Ld * 0.16, ty - Ld * 0.03); ctx.stroke();
+      }
       // a crimson animal glows: a red light that carries in the dark
       if (c.variant === 'crimson') glowPts.push([S(c.x), Sy(c.y), '#ff3018', Math.max(ppm * 0.6, Ld * 0.6), 0.9 + 0.3 * Math.sin(t * 1.7 + c.wob)]);
       if (c.sp.v.glow) {
@@ -377,8 +384,17 @@ export class Renderer {
       let gear = null;
       if (g.mode === 'play' && g.profile) {
         const tool = activeTool(g);
+        // the aim, in his own frame (he is drawn flipped by facing, then rotated by his angle)
+        let aimLocal = null;
+        if (tool.kind === 'tag' || tool.kind === 'cam') {
+          // the cursor if he uses the mouse, otherwise straight ahead (as the dart flies)
+          const wa = g.aim !== null && g.aim !== undefined ? g.aim : (e.facing > 0 ? 0 : Math.PI);
+          aimLocal = Math.atan2(Math.sin(wa), Math.cos(wa) * e.facing) - e.angle;
+          aimLocal = Math.atan2(Math.sin(aimLocal), Math.cos(aimLocal));
+        }
         gear = { kind: tool.kind, tier: tool.tier, t, sweep: g.capture && g.capture.kind === tool.kind ? clamp(g.capture.t / g.capture.dur, 0, 1) : null,
-          catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })) };
+          catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
+          aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0 };
       }
       const h = drawEarl(ctx, 2 * ppm, e.kick, moving, lampCol, amb, gear);
       ctx.restore();
@@ -386,6 +402,14 @@ export class Renderer {
         const ca2 = Math.cos(e.angle), sa2 = Math.sin(e.angle);
         g.toolTip = { x: e.x + e.facing * (h.tip.x * ca2 - h.tip.y * sa2) / ppm, y: e.y + (h.tip.x * sa2 + h.tip.y * ca2) / ppm };
       }
+      // tag darts in flight
+      for (const d of g.darts || []) {
+        ctx.save(); ctx.translate(S(d.x), Sy(d.y)); ctx.rotate(Math.atan2(d.vy, d.vx));
+        drawDart(ctx, 2 * ppm / 100, d.tier, -12 * 2 * ppm / 100, t);
+        ctx.restore();
+      }
+      // the camera's flash lights the water for a moment
+      if (g.camFlash > 0 && g.toolTip) glowPts.push([S(g.toolTip.x), Sy(g.toolTip.y), '#f4f8ff', ppm * 3 * g.camFlash, 1.5 * g.camFlash]);
       // animals on their way into the net or up the slurp gun's barrel
       for (const f of g.captureFx || []) {
         if (!g.toolTip) break;

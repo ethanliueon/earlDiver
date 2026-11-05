@@ -1,6 +1,6 @@
 // Earl, the submersible and the boat. All drawn in local pixel space.
 import { TAU, clamp, lerp } from './util.js';
-import { drawNet, drawSlurp, drawBeltBag } from './tools_draw.js';
+import { drawNet, drawSlurp, drawBeltBag, drawTagger, drawCamera } from './tools_draw.js';
 
 const SUIT = '#141619', SUIT_HI = '#2a2f35', SUIT_PANEL = '#24282d', SUIT_SEAM = '#33383e';
 const GLOVE = '#0d0e10', BCD = '#1b1d20', WEBBING = '#3a3d41';
@@ -212,6 +212,12 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
       else a = lerp(1.55, carryUp, ease((sw - 0.62) / 0.38));
       pose = { upA: a, foreA: a - 0.18 };
       toolA = a - 0.22;
+    } else if ((gear.kind === 'tag' || gear.kind === 'cam') && (gear.aimLocal !== null || (sw !== null && sw !== undefined))) {
+      // tag gun and camera: the arm points where he aims
+      const a = gear.aimLocal !== null ? gear.aimLocal : 0.1;
+      pose = { upA: a + 0.22, foreA: a + 0.02 };
+      toolA = a;
+      pull = sw !== null && sw !== undefined ? clamp(1 - sw * 3, 0, 1) : 0;
     } else if (sw !== null && sw !== undefined) {
       pose = { upA: 0.32, foreA: 0.12 };
       toolA = 0.1;
@@ -225,6 +231,8 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     ctx.save(); ctx.translate(hand.hx, hand.hy); ctx.rotate(toolA);
     const r = gear.kind === 'net'
       ? drawNet(ctx, u, gear.tier, gear.t, gear.sweep !== null && gear.sweep !== undefined ? Math.sin(gear.sweep * Math.PI) : 0, gear.catchSp)
+      : gear.kind === 'tag' ? drawTagger(ctx, u, gear.tier, gear.t, pull, gear.loaded)
+      : gear.kind === 'cam' ? drawCamera(ctx, u, gear.tier, gear.t, gear.flash || 0)
       : drawSlurp(ctx, u, gear.tier, gear.t, pull, gear.held);
     ctx.restore();
     tip = { x: hand.hx + Math.cos(toolA) * r.tipX, y: hand.hy + Math.sin(toolA) * r.tipX };

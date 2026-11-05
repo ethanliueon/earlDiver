@@ -1,7 +1,7 @@
 // Catching animals alive: the net and the slurp gun, the specimen bag, the sub's tank, and what
 // happens to an animal between the catch and the sale (handling, time, coming up too fast).
 import { clamp, dist } from './util.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, WEIGHT } from './economy.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, WEIGHT, TAGGERS, CAMERAS } from './economy.js';
 import { canTakeLive, isTagOnly, liveValue, fragile, conditionName } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 
@@ -12,6 +12,8 @@ export const tankSlots = (g) => SUB_TANKS[g.profile.subTank || 0].slots;
 export function activeTool(g) {
   const P = g.profile;
   if (g.toolSel === 'slurp' && P.slurp >= 0) return { kind: 'slurp', def: SLURPS[P.slurp], tier: P.slurp };
+  if (g.toolSel === 'tag' && P.tagger >= 0) return { kind: 'tag', def: TAGGERS[P.tagger], tier: P.tagger };
+  if (g.toolSel === 'cam' && P.camera >= 0) return { kind: 'cam', def: CAMERAS[P.camera], tier: P.camera };
   return { kind: 'net', def: NETS[P.net || 0], tier: P.net || 0 };
 }
 
@@ -28,6 +30,7 @@ export function findCatch(g) {
   const e = g.earl, W = g.world;
   if (e.inSub || g.mode !== 'play') return null;
   const { def, kind } = activeTool(g);
+  if (kind !== 'net' && kind !== 'slurp') return null;
   const h = handPos(g);
   const reach = def.range + 0.4;
   let best = null, bd = 1e9, blocked = null, bbd = 1e9;
@@ -72,7 +75,7 @@ export function updateCapture(g, dt) {
   if (g.slurpHeld) { g.slurpHeld.t += dt; if (g.slurpHeld.t > 1.6) g.slurpHeld = null; }
   for (let i = g.captureFx.length - 1; i >= 0; i--) { const f = g.captureFx[i]; f.t += dt; if (f.t > f.dur) g.captureFx.splice(i, 1); }
   const cap = g.capture;
-  if (!cap) return ev;
+  if (!cap || cap.kind === 'tag' || cap.kind === 'cam') return ev;
   cap.t += dt;
   if (!cap.done && cap.t >= cap.dur * cap.resolveAt) {
     cap.done = true;

@@ -3,7 +3,7 @@
 <script type="module">
 import { toolIcon, drawNet, drawSlurp, drawBeltBag } from '../js/tools_draw.js';
 import { SPECIES_BY_ID } from '../js/species.js';
-for (const [k, t] of [['net',0],['net',1],['net',2],['net',3],['slurp',0],['slurp',1]]) {
+for (const [k, t] of [['net',0],['net',1],['net',2],['net',3],['slurp',0],['slurp',1],['tag',0],['tag',1],['tag',2],['cam',0],['cam',1],['cam',2]]) {
   const d = document.createElement('div'); d.append(toolIcon(k, t, 320, 160)); d.append(document.createElement('br')); d.append(`${k} ${t}`); document.body.append(d);
 }
 // big: a net with a catch, a slurp gun holding a fish, a bag

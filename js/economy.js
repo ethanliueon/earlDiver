@@ -54,6 +54,19 @@ export const SLURPS = [
   { name: 'Pro slurp gun', price: 2000, range: 2.5, time: 1.2, maxLen: 0.20, success: 0.95, harm: 0.03, noise: 0.004,
     desc: 'Longer barrel, stronger spring, a one-way valve and a pistol grip.' },
 ];
+// Tag guns: put a research tag on an animal too big to bring up. provoke: chance a miss (or a
+// clumsy hit) turns an aggressive animal on him. pay: multiplier on what the program pays.
+export const TAGGERS = [
+  { name: 'Pole tagger', price: 600, range: 2.5, time: 4, provoke: 0.5, pay: 1, desc: 'A tag dart on the end of a pole, driven by a rubber sling. You have to get close.' },
+  { name: 'Pneumatic tag gun', price: 4000, range: 6, time: 3, provoke: 0.25, pay: 1, desc: 'Air-powered, accurate to six metres. Big animals barely notice.' },
+  { name: 'Satellite tag gun', price: 15000, range: 10, time: 3, provoke: 0.15, pay: 2, desc: 'Fires pop-up satellite tags that report for months. The program pays double.' },
+];
+// Cameras: the institute pays for the first photograph of each species (and each rare form).
+export const CAMERAS = [
+  { name: 'Waterproof compact', price: 150, range: 8, shots: 5, flash: true, desc: 'A yellow plastic compact. Five pictures a dive, and a flash.' },
+  { name: 'Housed camera', price: 1500, range: 12, shots: 24, flash: true, desc: 'A real camera in an aluminium housing, with two strobes on arms.' },
+  { name: 'Low-light camera', price: 9000, range: 12, shots: 24, flash: false, desc: 'A huge sensor that needs no flash. Nothing in the dark sees you take the picture.' },
+];
 export const BAGS = [
   { name: 'Mesh goody bag', slots: 3, price: 0, desc: 'Clipped to his belt.' },
   { name: 'Large catch bag', slots: 5, price: 600, desc: 'A bigger mesh bag with a spring-loaded mouth.' },
@@ -100,7 +113,7 @@ const RECOVER_PER_SEC = 0.004;      // the market forgets: ~4 minutes to recover
 export function newProfile() {
   return {
     v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
-    net: 0, slurp: -1, bag: 0, subTank: 0, caught: [],
+    net: 0, slurp: -1, bag: 0, subTank: 0, caught: [], tagger: -1, camera: -1, photos: [],
     journal: [], notes: '', seasons: 1, deaths: 0, deepest: 0, market: {}, created: Date.now(),
   };
 }

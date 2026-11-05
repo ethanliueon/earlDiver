@@ -145,6 +145,106 @@ export function drawSlurp(ctx, u, tier, t, pull, held) {
   return { tipX: x1 + 5 * u, tipY: 0 };
 }
 
+// Tag guns. pull 0..1 is the shot (recoil, the sling stretched); loaded shows the dart.
+export function drawTagger(ctx, u, tier, t, pull, loaded = true) {
+  const kick = -Math.sin(Math.min(1, pull) * Math.PI) * 2.5 * u;
+  ctx.save(); ctx.translate(kick, 0);
+  let tipX;
+  if (tier === 0) {
+    // pole tagger: an aluminium pole, an orange rubber sling looped at the back, a steel dart
+    const len = 62 * u;
+    // the sling: a loop of surgical tubing from the back of the pole to his hand
+    ctx.strokeStyle = '#d0702c'; ctx.lineWidth = 1.1 * u; ctx.lineCap = 'round';
+    const st = -6 * u - pull * 6 * u;
+    ctx.beginPath(); ctx.moveTo(-2 * u, -1 * u); ctx.quadraticCurveTo(st, -2.6 * u, st - 2 * u, 0); ctx.quadraticCurveTo(st, 2.6 * u, -2 * u, 1 * u); ctx.stroke();
+    tube(ctx, -2 * u, len, 0.95 * u, '#c4cacb', '#8a9294', '#4a5254');
+    ctx.fillStyle = '#1e2124'; ctx.beginPath(); ctx.roundRect(4 * u, -1.25 * u, 10 * u, 2.5 * u, 0.8 * u); ctx.fill(); // grip
+    tipX = len;
+  } else {
+    // pneumatic / satellite: a barrel with a pistol grip and a muzzle, like a short speargun
+    const sat = tier === 2, len = (sat ? 44 : 38) * u, r = (sat ? 2.2 : 1.8) * u;
+    ctx.fillStyle = '#16181a';
+    ctx.beginPath(); ctx.moveTo(-2 * u, r); ctx.lineTo(3 * u, r); ctx.lineTo(1.6 * u, r + 7 * u); ctx.lineTo(-3 * u, r + 6.4 * u); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#2a2d30'; ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.moveTo(4 * u, r); ctx.quadraticCurveTo(6 * u, r + 3 * u, 3 * u, r + 3.6 * u); ctx.stroke(); // trigger guard
+    tube(ctx, -8 * u, len, r, sat ? '#8a9094' : '#3a3e42', sat ? '#5a6064' : '#1e2124', '#0c0d0e');
+    ctx.fillStyle = sat ? '#d8b42a' : '#c8641e'; ctx.fillRect(-6 * u, -r, 2.4 * u, r * 2); // band
+    ctx.fillStyle = '#2a2d30'; ctx.beginPath(); ctx.roundRect(-11 * u, -r * 1.1, 3.5 * u, r * 2.2, 0.8 * u); ctx.fill(); // air reservoir cap
+    ctx.fillStyle = '#0c0d0e'; ctx.beginPath(); ctx.roundRect(len - 1 * u, -r * 1.15, 2.6 * u, r * 2.3, 0.6 * u); ctx.fill(); // muzzle
+    tipX = len + 1.6 * u;
+  }
+  if (loaded) tipX = drawDart(ctx, u, tier, tipX, t);
+  ctx.restore();
+  return { tipX: tipX + kick, tipY: 0 };
+}
+// the tag dart (or a satellite tag) sitting in the muzzle; also used for darts in flight
+export function drawDart(ctx, u, tier, x0, t) {
+  ctx.fillStyle = '#b8bec2'; ctx.fillRect(x0, -0.35 * u, 9 * u, 0.7 * u);                  // steel shaft
+  ctx.beginPath(); ctx.moveTo(x0 + 9 * u, -0.9 * u); ctx.lineTo(x0 + 12 * u, 0); ctx.lineTo(x0 + 9 * u, 0.9 * u); ctx.closePath(); ctx.fill(); // barb
+  if (tier === 2) {
+    // a pop-up satellite tag: a yellow torpedo float with a stub antenna
+    ctx.fillStyle = '#e0b82a'; ctx.beginPath(); ctx.ellipse(x0 + 3 * u, -2.2 * u, 4.4 * u, 1.5 * u, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#1a1c1e'; ctx.fillRect(x0 - 1.4 * u, -2.7 * u, 1 * u, 1 * u);
+    ctx.strokeStyle = '#1a1c1e'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.moveTo(x0 - 1.2 * u, -2.2 * u); ctx.lineTo(x0 - 5 * u, -3.4 * u); ctx.stroke();
+  } else {
+    // a spaghetti tag: a short streamer of yellow-orange plastic
+    ctx.strokeStyle = tier === 1 ? '#e8902a' : '#e8d02a'; ctx.lineWidth = 0.8 * u; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0 + 2 * u, 0); ctx.quadraticCurveTo(x0 - 1 * u, -1.6 * u + Math.sin(t * 9) * 0.6 * u, x0 - 4 * u, -0.8 * u); ctx.stroke();
+  }
+  return x0 + 12 * u;
+}
+
+// Cameras. flash 0..1 is the strobe firing.
+export function drawCamera(ctx, u, tier, t, flash) {
+  let lensX;
+  if (tier === 0) {
+    // a yellow plastic waterproof compact
+    ctx.fillStyle = '#d8b02a'; ctx.beginPath(); ctx.roundRect(-3 * u, -4.5 * u, 12 * u, 8 * u, 1.6 * u); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(-2 * u, -4 * u, 10 * u, 1 * u);
+    ctx.fillStyle = '#1a1c1e'; ctx.beginPath(); ctx.roundRect(9 * u, -2.4 * u, 2 * u, 4.6 * u, 0.6 * u); ctx.fill();
+    ctx.fillStyle = '#28333a'; ctx.beginPath(); ctx.arc(10.6 * u, -0.2 * u, 1.7 * u, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#e8eef0'; ctx.fillRect(5 * u, -6 * u, 2.4 * u, 1.6 * u); // flash window
+    ctx.fillStyle = '#1a1c1e'; ctx.fillRect(0, -5.6 * u, 2.2 * u, 1.2 * u);                // shutter button
+    ctx.fillStyle = '#2a2a26'; ctx.beginPath(); ctx.roundRect(-3 * u, -3.6 * u, 2.4 * u, 6.2 * u, 0.8 * u); ctx.fill(); // rubber grip
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 0.3 * u;
+    for (let k = -3; k < 2.6; k += 1) { ctx.beginPath(); ctx.moveTo(-2.8 * u, k * u); ctx.lineTo(-0.8 * u, k * u); ctx.stroke(); }
+    ctx.strokeStyle = '#8a8e90'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.arc(10.6 * u, -0.2 * u, 2.1 * u, 0, TAU); ctx.stroke(); // lens bezel
+    ctx.fillStyle = 'rgba(220,240,250,0.6)'; ctx.beginPath(); ctx.arc(10.1 * u, -0.8 * u, 0.5 * u, 0, TAU); ctx.fill();     // glint
+    lensX = 12 * u;
+  } else {
+    // an aluminium (or black, red-trimmed) housing with a port; strobes on jointed arms
+    const big = tier === 2;
+    const w = (big ? 15 : 13) * u, h = (big ? 11 : 9) * u;
+    if (!big) for (const sgn of [-1, 1]) {
+      ctx.strokeStyle = '#2a2d30'; ctx.lineWidth = 1.1 * u;
+      ctx.beginPath(); ctx.moveTo(2 * u, sgn * h * 0.45); ctx.lineTo(-1 * u, sgn * (h * 0.45 + 5 * u)); ctx.lineTo(6 * u, sgn * (h * 0.45 + 8 * u)); ctx.stroke();
+      ctx.fillStyle = '#1a1c1e'; ctx.beginPath(); ctx.roundRect(5 * u, sgn * (h * 0.45 + 8 * u) - 2 * u, 5 * u, 4 * u, 1 * u); ctx.fill();
+      ctx.fillStyle = flash > 0 ? '#ffffff' : '#c8d2d6'; ctx.fillRect(9.6 * u, sgn * (h * 0.45 + 8 * u) - 1.6 * u, 0.9 * u, 3.2 * u);
+    }
+    const hg = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+    hg.addColorStop(0, big ? '#3a3e42' : '#a8b0b4'); hg.addColorStop(0.4, big ? '#1e2124' : '#6a7276'); hg.addColorStop(1, '#16181a');
+    ctx.fillStyle = hg; ctx.beginPath(); ctx.roundRect(-4 * u, -h / 2, w, h, 2 * u); ctx.fill();
+    if (big) { ctx.fillStyle = '#a02a20'; ctx.fillRect(-4 * u, -h / 2 + 1.2 * u, w, 0.9 * u); }
+    // handles on either side
+    ctx.fillStyle = '#121416'; ctx.beginPath(); ctx.roundRect(-6.5 * u, -h * 0.4, 2.6 * u, h * 0.8, 1 * u); ctx.fill();
+    // the port: a glass dome (flat for the low-light camera)
+    ctx.fillStyle = '#0c0d0e'; ctx.fillRect(w - 4 * u, -h * 0.34, 2 * u, h * 0.68);
+    const pg = ctx.createRadialGradient(w - 1 * u, -1 * u, 0.5 * u, w - 2 * u, 0, h * 0.4);
+    pg.addColorStop(0, 'rgba(200,225,235,0.75)'); pg.addColorStop(0.5, 'rgba(40,60,70,0.85)'); pg.addColorStop(1, 'rgba(10,14,16,0.95)');
+    ctx.fillStyle = pg; ctx.beginPath();
+    if (big) ctx.roundRect(w - 2 * u, -h * 0.36, 2.2 * u, h * 0.72, 0.6 * u); else ctx.ellipse(w - 2 * u, 0, 3.4 * u, h * 0.34, 0, -Math.PI / 2, Math.PI / 2);
+    ctx.fill();
+    lensX = w + 1.5 * u;
+  }
+  if (flash > 0) {
+    ctx.globalCompositeOperation = 'lighter';
+    const fg = ctx.createRadialGradient(lensX, 0, 0, lensX, 0, 30 * u);
+    fg.addColorStop(0, `rgba(255,255,255,${(0.9 * flash).toFixed(3)})`); fg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(lensX, 0, 30 * u, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  return { tipX: lensX, tipY: 0 };
+}
+
 // the mesh goody bag clipped to his belt, bulging with what is in it
 export function drawBeltBag(ctx, u, items, t) {
   if (!items.length) return;
@@ -177,10 +277,18 @@ export function toolIcon(kind, tier, w, h) {
     const u = w / (L.len + L.r * 2 + 14);
     ctx.translate(6 * u, h * 0.42); ctx.rotate(-0.12);
     drawNet(ctx, u, tier, 0.6, 0, null);
-  } else {
+  } else if (kind === 'slurp') {
     const u = w / (tier ? 56 : 48);
     ctx.translate(w * 0.32, h * 0.45); ctx.rotate(-0.08);
     drawSlurp(ctx, u, tier, 0, 0, null);
+  } else if (kind === 'tag') {
+    const u = w / (tier === 0 ? 86 : tier === 2 ? 72 : 64);
+    ctx.translate(w * (tier === 0 ? 0.12 : 0.2), h * 0.42); ctx.rotate(-0.06);
+    drawTagger(ctx, u, tier, 0.4, 0, true);
+  } else if (kind === 'cam') {
+    const u = h / (tier === 0 ? 14 : 30);
+    ctx.translate(w * 0.42, h * 0.5);
+    drawCamera(ctx, u, tier, 0, 0);
   }
   return c;
 }

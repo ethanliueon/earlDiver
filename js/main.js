@@ -8,7 +8,8 @@ import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir } from './capture.js';
 import { specimenValue, conditionName } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant } from './variants.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS } from './economy.js';
+import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
@@ -61,6 +62,7 @@ function newGame(mode) {
     injury: 0, healT: 0, blood: [], deathKind: null, lampFlashT: -99, threat: null,
     autopilot: new Autopilot(), addons: P.addons || {},
     bag: [], subTank: [], captureFx: [], capture: null, toolSel: 'net', capPrompt: null,
+    darts: [], tags: [], photos: [], shots: P.camera >= 0 ? CAMERAS[P.camera].shots : 0, camFlash: 0,
   };
   g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
   g.damageSub = (amt, sp) => damageSub(amt, sp);
@@ -142,6 +144,18 @@ function sellAll() {
   const lines = [];
   if (g.bag.length) { sellSpecimens(g.bag, lines); g.bag = []; }
   if (g.subTank.length && subAtBoat()) { sellSpecimens(g.subTank, lines); g.subTank = []; }
+  // the research program: one line per species tagged, each tag a little less than the last
+  const tg = new Map();
+  for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
+  for (const [k, list] of tg) lines.push(sell(profile, k, list.length, list[0].value, `Tag data: ${list[0].name}`));
+  g.tags = [];
+  // the institute: first photographs
+  for (const ph of g.photos) {
+    profile.cash = Math.round((profile.cash + ph.value) * 100) / 100; profile.lifetime = Math.round((profile.lifetime + ph.value) * 100) / 100;
+    lines.push({ label: `Photograph: ${ph.name}`, n: 1, total: Math.round(ph.value * 100) / 100 });
+    profile.photos = [...(profile.photos || []), ph.key];
+  }
+  g.photos = [];
   for (const [k, n] of Object.entries(g.inv)) {
     if (!n || !GOODS[k] || k === 'coral') continue;
     lines.push(sell(profile, k, n, GOODS[k].price, GOODS[k].name));
@@ -202,6 +216,12 @@ function buy(kind) {
   } else if (kind === 'subtank' && SUB_TANKS[(P.subTank || 0) + 1] && spend(P, SUB_TANKS[(P.subTank || 0) + 1].price)) {
     P.subTank = (P.subTank || 0) + 1; ok = true;
     hud.toast(`The sub's specimen tank now holds ${SUB_TANKS[P.subTank].slots}`, 'big');
+  } else if (kind === 'tagger' && TAGGERS[(P.tagger ?? -1) + 1] && spend(P, TAGGERS[(P.tagger ?? -1) + 1].price)) {
+    P.tagger = (P.tagger ?? -1) + 1; g.toolSel = 'tag'; ok = true;
+    hud.toast(`${TAGGERS[P.tagger].name}. Press 3; aim with the mouse`, 'big');
+  } else if (kind === 'camera' && CAMERAS[(P.camera ?? -1) + 1] && spend(P, CAMERAS[(P.camera ?? -1) + 1].price)) {
+    P.camera = (P.camera ?? -1) + 1; g.toolSel = 'cam'; g.shots = CAMERAS[P.camera].shots; ok = true;
+    hud.toast(`${CAMERAS[P.camera].name}. Press 4`, 'big');
   } else if (kind === 'canisters' && !(P.addons || {}).canisters && spend(P, CANISTERS.price)) {
     P.addons = Object.assign({}, P.addons, { canisters: true }); g.addons = P.addons; ok = true;
     hud.toast('Pressure canisters: deep animals survive the trip up', 'big');
@@ -430,6 +450,9 @@ function die(cause, kind = 'normal') {
   const lost = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]).map(([k, n]) => `${n} ${GOODS[k].name.toLowerCase()}`);
   const nSpec = g.bag.length + g.subTank.length;
   if (nSpec) lost.unshift(`${nSpec} live specimen${nSpec > 1 ? 's' : ''}`);
+  if (g.tags.length) lost.push(`data from ${g.tags.length} tag${g.tags.length > 1 ? 's' : ''}`);
+  if (g.photos.length) lost.push(`${g.photos.length} photograph${g.photos.length > 1 ? 's' : ''}`);
+  g.tags = []; g.photos = [];
   g.bag = []; g.subTank = [];
   const taken = cause.startsWith('Taken');
   if (taken) { const n = g.items.lure + g.items.necklace; if (n) lost.push(`${n} lure${n > 1 ? 's' : ''} and necklace${n > 1 ? 's' : ''}`); g.items.lure = g.items.necklace = 0; }
@@ -545,7 +568,36 @@ function update(dt) {
     // catching: 1 / 2 pick the net or the slurp gun, Space uses it
     if (pressed.has('1')) { g.toolSel = 'net'; hud.toast(NETS[profile.net || 0].name); }
     if (pressed.has('2')) { if ((profile.slurp ?? -1) >= 0) { g.toolSel = 'slurp'; hud.toast(SLURPS[profile.slurp].name); } else hud.toast('No slurp gun — the boat sells them', 'warn'); }
-    if (pressed.has(' ')) { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
+    if (pressed.has('3')) { if ((profile.tagger ?? -1) >= 0) { g.toolSel = 'tag'; hud.toast(TAGGERS[profile.tagger].name); } else hud.toast('No tag gun — the boat sells them', 'warn'); }
+    if (pressed.has('4')) { if ((profile.camera ?? -1) >= 0) { g.toolSel = 'cam'; hud.toast(`${CAMERAS[profile.camera].name} · ${g.shots} shots left`); } else hud.toast('No camera — the boat sells them', 'warn'); }
+    const tool = activeTool(g);
+    if (pressed.has(' ') && !e.inSub) {
+      if (tool.kind === 'tag') { if (!g.capture) { fireTag(g); audio.ready && audio.thud && audio.thud(0.15); } }
+      else if (tool.kind === 'cam') {
+        if (!g.capture) {
+          const r = takePhoto(g);
+          audio.ready && audio.click();
+          if (r.type === 'noShots') hud.toast('No shots left — the boat has a fresh card', 'warn');
+          else if (r.empty) hud.toast(`Nothing in the frame · ${g.shots} shots left`);
+          else if (r.old) hud.toast(`${r.name}: you already have this one · ${g.shots} left`);
+          else { hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
+        }
+      } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
+    } else if (pressed.has(' ') && e.inSub) hud.toast('Not from inside the submersible', 'warn');
+    if (g.capture && (g.capture.kind === 'tag' || g.capture.kind === 'cam')) { g.capture.t += dt; if (g.capture.t >= g.capture.dur) g.capture = null; }
+    g.camFlash = Math.max(0, g.camFlash - dt * 5);
+    for (const ev of updateDarts(g, dt)) {
+      if (ev.type === 'tagged') {
+        g.tags.push({ key: ev.key, value: ev.value, name: ev.name });
+        hud.toast(`Tagged: ${ev.name} · about ${money(ev.value)} from the program`, 'note');
+        audio.ready && audio.note();
+        if (!g.journal.has(ev.sp.id)) { g.journal.set(ev.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
+        if (!(profile.caught || []).includes(ev.sp.id)) { profile.caught = [...(profile.caught || []), ev.sp.id]; g.fauna.caught.add(ev.sp.id); }
+        if (ev.variant) { const vk = ev.sp.id + ':' + ev.variant; if (!(profile.variants || []).includes(vk)) profile.variants = [...(profile.variants || []), vk]; }
+        profile.journal = [...g.journal.entries()]; saveProfile(profile);
+      } else if (ev.type === 'provoked') hud.toast(`The ${ev.sp.name.toLowerCase()} turns toward you`, 'warn');
+      else if (ev.type === 'dartMiss') hud.toast('Missed');
+    }
     for (const ev of updateCapture(g, dt)) {
       if (ev.type === 'caught') {
         const sp = ev.sp, v = ev.spec.variant;
@@ -558,14 +610,25 @@ function update(dt) {
         hud.toast(`${ev.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec))}  (${g.bag.length}/${bagSlots(g)})`, 'note');
         audio.ready && audio.pickup();
         if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
-        if (!(profile.caught || []).includes(sp.id)) profile.caught = [...(profile.caught || []), sp.id];
+        if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       } else if (ev.type === 'missed') hud.toast(`The ${ev.name.toLowerCase()} got away`);
       else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
     }
     for (const s of updateSpecimens(g, dt)) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died — it came up too fast`, 'warn');
+    // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
+    if (!e.inSub && tool.kind === 'tag') {
+      const tt = findTagTarget(g);
+      g.capPrompt = tt ? (tt.ok ? `Space  Tag the ${tt.name.toLowerCase()} · ~${money(tt.value)}` : `${tt.sp.name}: ${tt.why}`) : null;
+    } else if (!e.inSub && tool.kind === 'cam') {
+      const ps = findPhotoSubject(g);
+      g.capPrompt = ps ? (ps.ok ? `Space  Photograph the ${ps.name.toLowerCase()} · new · ~${money(ps.value)}` : `${ps.name}: ${ps.why}`) : null;
+    } else {
     const ct = !e.inSub ? findCatch(g) : null;
     g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.name.toLowerCase()} · ~${money(ct.value)}` : `${ct.sp.name}: ${ct.why}`) : null;
+    }
+    // a fresh memory card and charged strobes at the boat
+    if (profile.camera >= 0 && Math.abs(e.x - BOAT_X) < 14 && e.y < 4) g.shots = CAMERAS[profile.camera].shots;
     if (!e.inSub) {
       const r = ap.update(g, dt, g.addons.recall ? 1.5 : 1);
       if (r === 'arrived') { hud.toast('The sub is here'); audio.ready && audio.sonar(0.06); }
