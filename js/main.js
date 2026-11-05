@@ -4,7 +4,8 @@ import { generateWorld, RESOURCES, BOAT_X, WORLD_W } from './world.js';
 import { SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
-import { TANKS, FINS, SUB_TIERS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
+import { Autopilot } from './autopilot.js';
+import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
@@ -28,6 +29,7 @@ const PLANT_TIME = 8;
 const pressed = new Set();
 let fHeld = 0;
 let fDown = 0;
+let cHeld = 0, cDown = 0;
 
 // what survives death: cash, upgrades, the journal, the market (see economy.js)
 let profile = loadProfile();
@@ -53,6 +55,7 @@ function newGame(mode) {
     deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio,
     imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2, farShadow: null,
     injury: 0, healT: 0, blood: [], deathKind: null, lampFlashT: -99, threat: null,
+    autopilot: new Autopilot(), addons: P.addons || {},
   };
   g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
   g.damageSub = (amt, sp) => damageSub(amt, sp);
@@ -162,6 +165,9 @@ function buy(kind) {
     const lvl = sub.level;
     g.sub = new Sub(); g.sub.level = lvl; g.sub.o2 = g.sub.o2Max; g.sub.docked = true; g.imploded = false; ok = true;
     hud.toast(`A new submersible, rated to ${g.sub.rated} m`, 'big');
+  } else if (SUB_ADDONS[kind] && !(P.addons || {})[kind] && spend(P, SUB_ADDONS[kind].price)) {
+    P.addons = Object.assign({}, P.addons, { [kind]: true }); g.addons = P.addons; ok = true;
+    hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
   } else if (SUPPLIES[kind] && g.items[kind] < SUPPLIES[kind].max && spend(P, SUPPLIES[kind].price)) {
     g.items[kind]++; ok = true;
     hud.toast(`Bought: ${SUPPLIES[kind].name.toLowerCase()}`);
@@ -207,7 +213,7 @@ window.addEventListener('keydown', (ev) => {
   const k = ev.key.toLowerCase();
   if (g.mode === 'menu' && (k === 'enter' || k === ' ')) { ev.preventDefault(); startRun(); return; }
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'tab'].includes(k)) ev.preventDefault();
-  if (!keys.has(k)) { pressed.add(k); if (k === 'f') fDown = performance.now(); }
+  if (!keys.has(k)) { pressed.add(k); if (k === 'f') fDown = performance.now(); if (k === 'c') { cDown = performance.now(); cHeld = 0; } }
   keys.add(k);
   audio.resume();
 });
@@ -215,6 +221,7 @@ window.addEventListener('keyup', (ev) => {
   const k = ev.key.toLowerCase();
   keys.delete(k);
   if (k === 'f') { if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
+  if (k === 'c') { if (performance.now() - cDown < 600) pressed.add('c-tap'); cHeld = 0; }
 });
 window.addEventListener('blur', () => keys.clear());
 // ---------------- mouse ----------------
@@ -478,6 +485,25 @@ function update(dt) {
       else if (g.items.necklace === 0) hud.toast('No necklaces', 'warn');
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
+    // calling the submersible: tap C to call (or stop) it, hold C to send it back to the dock
+    const ap = g.autopilot;
+    if (keys.has('c')) {
+      cHeld += dt;
+      if (cHeld > 0.6 && cHeld - dt <= 0.6 && !e.inSub && !g.sub.imploded && !g.sub.docked) { ap.sendHome(g); hud.toast('The sub turns for home'); audio.ready && audio.click(); }
+    }
+    if (pressed.has('c-tap')) {
+      if (e.inSub) hud.toast('You are in it');
+      else if (g.sub.imploded) hud.toast('The submersible is gone', 'warn');
+      else if (ap.state === 'coming') { ap.cancel(); g.sub.vx *= 0.5; hud.toast('Sub stopped'); }
+      else { ap.call(g); hud.toast(`Calling the sub — ${Math.round(dist(e.x, e.y, g.sub.x, g.sub.y))} m away`); audio.ready && audio.sonar(0.05); }
+    }
+    if (e.inSub && ap.state !== 'idle') ap.cancel();
+    if (!e.inSub) {
+      const r = ap.update(g, dt, g.addons.recall ? 1.5 : 1);
+      if (r === 'arrived') { hud.toast('The sub is here'); audio.ready && audio.sonar(0.06); }
+      else if (r === 'holding') hud.toast(`Sub holding at ${Math.round(g.sub.y)} m: its rated depth`, 'warn');
+      else if (r === 'docked') hud.toast('The sub is back at the boat');
+    }
 
     // injuries: slower, hungrier for air, heal one point every 15 s
     if (g.injury > 0) { g.healT += dt; if (g.healT >= 15) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }

@@ -65,7 +65,8 @@ export class Entity {
     const e = g.earl;
     g.concealed = false;
     if (e.inSub) {
-      let r = 120 + (e.speedNow > 1 ? 120 : 0) + (e.sprint && e.speedNow > 1 ? 100 : 0);
+      const q = g.addons && g.addons.quiet ? 0.5 : 1;
+      let r = 120 + ((e.speedNow > 1 ? 120 : 0) + (e.sprint && e.speedNow > 1 ? 100 : 0)) * q;
       if (g.sub.lightsOn && g.ambient < 0.3) r += 60;
       return r;
     }
@@ -96,10 +97,14 @@ export class Entity {
     let rate = 0;
     if (e.y > 200) {
       rate += 0.002 + 0.002 * (e.y - 200) / 100;                    // just being down here
-      const noisy = e.inSub ? (e.speedNow > 1 ? 1 : 0.3) : (e.sprint && e.speedNow > 1 ? 1 : 0);
+      let noisy = e.inSub ? (e.speedNow > 1 ? 1 : 0.3) : (e.sprint && e.speedNow > 1 ? 1 : 0);
+      if (e.inSub && g.addons && g.addons.quiet) noisy *= 0.5;
       rate += noisy * 0.01 * (1 + (e.y - 200) / 400);               // engines, thrashing
       if ((e.inSub ? g.sub.lightsOn : e.lampOn) && e.y > 300) rate += 0.006; // light
     } else rate -= e.y < SAFE_DEPTH ? 0.012 : 0.006;                 // quiet water calms it
+    // the empty sub driving itself in the deep: engine noise travels
+    const ap = g.autopilot;
+    if (ap && ap.active && !e.inSub && g.sub.y > 200 && ap.speed > 0.5) rate += 0.008 * (1 + (g.sub.y - 200) / 400) * (g.addons && g.addons.quiet ? 0.5 : 1);
     if (d < per) rate += 0.35;                                       // it has noticed him
     this.attn = clamp(this.attn + rate * dt, 0, 1);
     if (this.attn >= 1) this.mark(g);

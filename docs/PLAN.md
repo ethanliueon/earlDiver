@@ -26,7 +26,7 @@ The horror stays the same: the valuable things are deep, and going deep is what 
   routing around rock on a coarse grid, and stops ~4 m from him. C again cancels. Hold C: back to dock.
 - Never below its rated depth: it holds there ("Sub holding at 400 m: rated depth").
 - Its engine is noisy to the entity below 200 m (quiet engine upgrade halves it). Whales and orcas can
-  ram it on the way. No air is used while it is empty.
+  ram it on the way (not built yet: animals only target the sub with Earl inside). No air is used while it is empty.
 - Sonar marker with distance and ETA. Recall unit upgrade ($2,500): 1.5x faster when called.
 
 ## Rare variants

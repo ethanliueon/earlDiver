@@ -18,6 +18,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | Shift | Faster, but uses air twice as fast |
 | F | Interact: observe a creature, collect, cut kelp, board the submersible |
 | hold F | Leave the submersible |
+| C | Call the submersible: it drives itself to you (never below its rated depth). C again stops it |
+| hold C | Send the submersible back to the boat |
 | J | Journal (species you have observed, and your own notes) |
 | L | Lights on/off. Light carries a long way in the dark. Flash it at a charging animal to make it swerve |
 | Q | Throw an anglerfish lure |

@@ -317,7 +317,8 @@ export class Renderer {
       }
       const cy = Math.cos(sub.yaw), sxs = (cy >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy));
       ctx.save(); ctx.translate(S(sub.x), Sy(sub.y)); ctx.rotate(sub.tilt * Math.sign(sxs)); ctx.scale(sxs, 1);
-      const lights = g.earl.inSub && sub.lightsOn;
+      // running lights on while the autopilot is driving it, so it can be seen coming
+      const lights = (g.earl.inSub && sub.lightsOn) || (g.autopilot && g.autopilot.state !== 'idle' && !sub.docked);
       const r = drawSub(ctx, 9 * ppm, t, sub.stress, lights);
       ctx.restore();
       // mid-turn the hull is seen nearly bow-on: draw its round cross-section over the squashed side view

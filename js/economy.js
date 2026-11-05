@@ -30,6 +30,11 @@ export const SUB_TIERS = [
   { rated: 2700, o2: 540, price: 35000 },
   { rated: 3000, o2: 660, price: 50000 },
 ];
+// add-ons for the submersible (bought once)
+export const SUB_ADDONS = {
+  recall: { name: 'Recall unit', price: 2500, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
+  quiet: { name: 'Quiet engine', price: 4000, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
+};
 export const PATCH_PRICE = 200;      // +40 % hull integrity
 export const HOSPITAL_SHARE = 0.10;  // a death costs this share of cash
 export const replacementPrice = (tier) => Math.max(600, Math.round(SUB_TIERS[tier].price * 0.3 + 400));
@@ -61,7 +66,7 @@ const RECOVER_PER_SEC = 0.004;      // the market forgets: ~4 minutes to recover
 // ---------------- the profile ----------------
 export function newProfile() {
   return {
-    v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1,
+    v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
     journal: [], notes: '', seasons: 1, deaths: 0, deepest: 0, market: {}, created: Date.now(),
   };
 }

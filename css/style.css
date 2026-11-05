@@ -201,3 +201,4 @@ button.link:hover { color: #f1efe6; }
 .slip.done .slip-stamp { animation: stamp 0.25s ease-out forwards; }
 @keyframes stamp { from { opacity: 0; transform: rotate(-14deg) scale(1.8); } to { opacity: 1; transform: rotate(-14deg) scale(1); } }
 @media (max-width: 900px) { .shop { flex-direction: column; align-items: center; } .slip { width: min(320px, 90vw); } }
+.shop-note { font-size: 12px; color: var(--muted); margin: -4px 0 14px; }

@@ -88,6 +88,20 @@ export class Hud {
       ctx.fillText(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ' leaking' : ''} · ${Math.round(g.sub.y)}/${g.sub.rated} m`, rx0, yy);
       yy += 18 * s;
     }
+    // the sub on autopilot: where it is and how long it will be
+    const ap = g.autopilot;
+    if (ap && !e.inSub && !g.sub.imploded && (ap.active || ap.state === 'waiting')) {
+      const dsub = Math.hypot(g.sub.x - e.x, g.sub.y - e.y);
+      let txt;
+      if (ap.state === 'home') txt = `sub returning · ${Math.round(Math.hypot(g.sub.x - 520.5, g.sub.y - 2.6))} m`;
+      else if (ap.holding && ap.remaining < 3) txt = `sub holding at ${Math.round(g.sub.y)} m · rated depth`;
+      else if (ap.state === 'waiting') txt = `sub waiting · ${Math.round(dsub)} m`;
+      else txt = `sub coming · ${Math.round(dsub)} m · ${Math.ceil(ap.eta || 0)} s`;
+      ctx.font = `${11 * s}px ${MONO}`;
+      ctx.fillStyle = ap.holding ? '#e8b040' : 'rgba(232,214,160,0.85)';
+      ctx.fillText(txt, rx0, yy);
+      yy += 18 * s;
+    }
     // sonar: small, always there
     const rr = 36 * s, rcx = rx0 - rr, rcy = yy + rr;
     ctx.save();
@@ -114,6 +128,16 @@ export class Hud {
         bg2.addColorStop(0, `rgba(255,90,70,${this.blip.life})`); bg2.addColorStop(1, 'rgba(255,90,70,0)');
         ctx.fillStyle = bg2; ctx.beginPath(); ctx.arc(bxp, byp, 6 * s, 0, TAU); ctx.fill();
       }
+    }
+    // the sub's transponder: a steady pale square inside 200 m, a tick on the rim beyond
+    if (!e.inSub && !g.sub.imploded && !dying) {
+      const ds = Math.hypot(g.sub.x - e.x, g.sub.y - e.y), as = Math.atan2(g.sub.y - e.y, g.sub.x - e.x);
+      const k = Math.min(1, ds / 200) * (ds > 200 ? 0.92 : 1);
+      const sxp = rcx + Math.cos(as) * k * rr, syp = rcy + Math.sin(as) * k * rr;
+      const on = ap && ap.active ? 0.55 + 0.45 * Math.sin(g.time * 5) : 0.75;
+      ctx.fillStyle = `rgba(240,220,160,${on.toFixed(3)})`;
+      const q = (ds > 200 ? 1.6 : 2.2) * s;
+      ctx.fillRect(sxp - q, syp - q, q * 2, q * 2);
     }
     ctx.restore();
     ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.beginPath(); ctx.arc(rcx, rcy, 1.6 * s, 0, TAU); ctx.fill();
