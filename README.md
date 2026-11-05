@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.17.3 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.17.4 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -113,7 +113,8 @@ GAME_DESIGN.md      the design this is built from
   - hull_creak_1-3: made here from Kenney "Impact Sounds" metal hits
   - sub_implosion: made here from OpenGameArt "Battle at sea", Kenney "Impact Sounds" and
     synthesised rush and rumble
-  - ui_click, ui_open: Kenney "Interface Sounds"; ui_click_soft, ui_rollover: OpenGameArt
+  - journal_page: Kenney "RPG Audio" (a page turn, softened)
+  - ui_click: Kenney "Interface Sounds"; ui_click_soft, ui_rollover: OpenGameArt
     "51 UI sound effects (buttons, switches and clicks)"; ui_sale_coins: made here from Kenney
     "Impact Sounds" and "Interface Sounds"
 - Species facts (names, depth ranges, sizes, descriptions) from the project's

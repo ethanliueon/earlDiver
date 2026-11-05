@@ -55,7 +55,7 @@ export class Audio {
   loadSfx() {
     this.sfxBuf = {};
     const names = ['chamber_plop', 'tank_plop', 'seagull', 'hull_creak_1', 'hull_creak_2', 'hull_creak_3', 'sub_implosion',
-      'ui_click', 'ui_click_soft', 'ui_open', 'ui_rollover', 'ui_sale_coins'];
+      'ui_click', 'ui_click_soft', 'ui_rollover', 'ui_sale_coins', 'journal_page'];
     const get = (name, file) => fetch(file).then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => this.ac.decodeAudioData(b, res, rej)))
       .then((buf) => { this.sfxBuf[name] = buf; if (name === 'surface_lapping') this.startLapping(); }).catch(() => {});
     for (const n of names) get(n, `assets/audio/sfx/${n}.mp3`);
@@ -78,7 +78,7 @@ export class Audio {
     s.connect(g).connect(this.master); s.start();
     this.lapping = { s, g };
   }
-  uiOpen() { this.sfx('ui_open', 0.5); }
+  journalPage() { this.sfx('journal_page', 0.7, 0.96 + Math.random() * 0.08); }
   uiSoft() { this.sfx('ui_click_soft', 0.6); }
   uiHover() { const now = performance.now(); if (now - (this.hoverAt || 0) < 70) return; this.hoverAt = now; this.sfx('ui_rollover', 0.35); }
   sale() { this.sfx('ui_sale_coins', 0.7); }

@@ -132,8 +132,6 @@ export class UI {
     const el = $('tankroom');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
-    if (open && el.hidden === false && !this['_was_' + 'toggleTank']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiOpen(); }
-    this['_was_' + 'toggleTank'] = open;
     if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.tankRoom.open(); }
   }
   // the old one's cave: choose which fish she takes (once a dive)
@@ -141,8 +139,6 @@ export class UI {
     const el = $('cave');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
-    if (open && el.hidden === false && !this['_was_' + 'toggleCave']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiOpen(); }
-    this['_was_' + 'toggleCave'] = open;
     if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.caveSel.clear(); this.renderCave(); }
   }
   renderCave() {
@@ -217,7 +213,7 @@ export class UI {
     const el = $('journal');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
-    if (open && el.hidden === false && !this['_was_' + 'toggleJournal']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiOpen(); }
+    if (open && el.hidden === false && !this['_was_' + 'toggleJournal']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.journalPage(); }
     this['_was_' + 'toggleJournal'] = open;
     if (open) { this.toggleWorkshop(false); this.renderJournal(); }
     else this.blurTyping();
@@ -226,8 +222,6 @@ export class UI {
     const el = $('workshop');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
-    if (open && el.hidden === false && !this['_was_' + 'toggleWorkshop']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.uiOpen(); }
-    this['_was_' + 'toggleWorkshop'] = open;
     if (open) { this.toggleJournal(false); this.renderWorkshop(); }
   }
 

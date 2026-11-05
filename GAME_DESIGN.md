@@ -21,7 +21,8 @@ Recorded effects (CC0, see the README): water lapping, softly, only while air is
 surface (for as long as the refill takes, fading as the tank fills), now and then
 a gull by day; a plop as an animal goes into a chamber, a splash into the open tank; the hull
 creaking past its rating (faster and louder the deeper, frantic while it fails) and the implosion;
-soft clicks, a hover tick and a page sound for the menus, coins for a sale. Nothing of Earl himself
+soft clicks and a hover tick for the menus, a soft page turn as the journal opens (the other
+screens open silently), coins for a sale. Nothing of Earl himself
 is recorded.
 
 ## Tone
