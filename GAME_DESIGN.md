@@ -227,8 +227,8 @@ charging animal makes it swerve.
 
 | Key | Action |
 | --- | --- |
-| WASD / arrows, mouse | Swim / steer; the lamp follows the cursor |
-| Shift | Faster (2x air) |
+| WASD / arrows, or the mouse | Swim / steer; with the mouse Earl swims toward the cursor by himself (the keys take over while used); a left click swings the net; the lamp follows the cursor |
+| Shift, or hold the right mouse button | Faster (2x air) |
 | F / hold F | Interact (observe, collect, board, haul a trap) / leave the sub |
 | 1-5, Space | Net, slurp gun, tag gun, camera, traps; Space uses it (in the sub: the arm) |
 | C / hold C | Call the sub / send it home |

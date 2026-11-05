@@ -424,23 +424,32 @@ window.addEventListener('keyup', (ev) => {
   if (k === 'f') { if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
   if (k === 'c') { if (performance.now() - cDown < 600) pressed.add('c-tap'); cHeld = 0; }
 });
-window.addEventListener('blur', () => keys.clear());
+window.addEventListener('blur', () => { keys.clear(); mouse.rdown = false; mouse.down = false; });
 // ---------------- mouse ----------------
-// left button held: swim toward the cursor · right click: interact (like F)
+// Earl swims toward the cursor by himself (once the mouse has moved, and until the keys take over)
+// left click: swing the net (or use the tool in hand; in the sub, the arm) · right button held: sprint
 // the lamp follows the cursor · wheel: zoom · click the Q/E slots to use an item
-const mouse = { x: 0, y: 0, down: false, movedAt: -1e9, seen: false };
+const mouse = { x: 0, y: 0, down: false, movedAt: -1e9, seen: false, inside: false };
+let keyMoveAt = -1e9; // when the movement keys were last used
 const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
-hudCanvas.addEventListener('mousemove', (ev) => { mouse.x = ev.clientX; mouse.y = ev.clientY; mouse.movedAt = performance.now(); mouse.seen = true; });
+hudCanvas.addEventListener('mousemove', (ev) => {
+  // a real move, not the browser repeating the last position
+  if (Math.abs(ev.clientX - mouse.x) + Math.abs(ev.clientY - mouse.y) > 1) mouse.movedAt = performance.now();
+  mouse.x = ev.clientX; mouse.y = ev.clientY; mouse.seen = true; mouse.inside = true;
+});
+hudCanvas.addEventListener('mouseleave', () => { mouse.inside = false; });
+hudCanvas.addEventListener('mouseenter', () => { mouse.inside = true; });
 hudCanvas.addEventListener('mousedown', (ev) => {
   audio.resume();
   if (g.mode !== 'play') return;
-  if (ev.button === 2) { pressed.add('f-tap'); mouse.rdown = true; return; }
+  if (ev.button === 2) { mouse.rdown = true; return; } // held: sprint
   if (ev.button !== 0) return;
   if (inRect(hud.journalHot, ev.clientX, ev.clientY)) { ui.toggleJournal(); return; }
   if (inRect(hud.subHot, ev.clientX, ev.clientY)) { pressed.add('c-tap'); return; }
   if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
   if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
   mouse.down = true;
+  pressed.add(' '); // a click swings the net (or uses whatever is in hand)
 });
 window.addEventListener('mouseup', (ev) => { if (ev.button === 0) mouse.down = false; if (ev.button === 2) mouse.rdown = false; });
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
@@ -454,14 +463,17 @@ function mouseScreen() { const k = canvas.width / window.innerWidth; return [mou
 function readMove() {
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
-  if (mouse.down && !x && !y && renderer.S) {
-    // swim toward the cursor; full speed beyond a short distance, gentle when close
+  const now = performance.now();
+  if (x || y) keyMoveAt = now;
+  // the mouse steers when it has been moved since the keys were last used, and is over the game
+  if (!x && !y && mouse.seen && mouse.inside && mouse.movedAt > keyMoveAt && renderer.S && !ui.anyOpen()) {
+    // swim toward the cursor; full speed beyond a few metres, easing in, and still when he is there
     const e = g.earl, [mx, my] = mouseScreen();
     const dx = mx - renderer.S(e.x), dy = my - renderer.Sy(e.y), d = Math.hypot(dx, dy);
-    const full = renderer.cam.ppm * 3;
-    if (d > renderer.cam.ppm * 0.4) { const k = Math.min(1, d / full) / d; x = dx * k; y = dy * k; }
+    const ppm = renderer.cam.ppm, full = ppm * 3, dead = ppm * (e.inSub ? 2.5 : 0.6);
+    if (d > dead) { const k = Math.min(1, (d - dead) / full) / d; x = dx * k; y = dy * k; }
   }
-  return { x, y, sprint: keys.has('shift') };
+  return { x, y, sprint: keys.has('shift') || !!mouse.rdown };
 }
 
 // ---------------- interactions ----------------
@@ -701,7 +713,7 @@ function update(dt) {
       if (g.subMoving || g.promptT > 5) g.prompt = null;
     } else { g.promptText = null; g.promptT = 0; }
     // seabed materials have to be worked loose: hold F (or the right mouse button), one at a time
-    const holding = keys.has('f') || mouse.rdown;
+    const holding = keys.has('f');
     const planting = canPlant(target);
     const holdJob = !planting && target && target.kind === 'pickup' && HOLD_TIME[target.p.type];
     if (holdJob && holding) {
