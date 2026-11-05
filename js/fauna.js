@@ -4,6 +4,7 @@
 //    around Earl and pull into a tight ball when a predator comes
 //  - predators hunt nearby small fish and eat them
 //  - everything flees the entity
+import { rollVariant } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { clamp, lerp, fbm1, dist } from './util.js';
 
@@ -165,13 +166,22 @@ export class Fauna {
     let flee = 0;
     const noFlee = NO_FLEE.has(sp.id) || hab === 'drift' || hab === 'drift-low' || /seahorse|seadragon|pipefish|jelly|comb|siphon|manowar|nautilus/.test(sp.v.s);
     if (!noFlee) flee = (FAST.has(sp.id) ? rng.range(1.35, 1.5) : len < 0.3 ? rng.range(0.85, 1.05) : len < 1 ? rng.range(0.7, 0.9) : rng.range(0.55, 0.75)) * DIVE_SPEED;
-    return {
+    const c = {
       sp, x, y, vx: dir * 0.4, vy: 0, dir, len,
       phase: rng() * 100, gid, leader, wob: rng() * 1000, noted: false,
       speed: cruise, cruise, flee, fleeT: 0,
       tDepth: y, tDepthT: rng.range(4, 15), turnT: rng.range(25, 70),
       predator: PREDATORS.has(sp.id), prey: null, huntCool: rng.range(2, 10), dead: false,
     };
+    // rare variants, once Earl has caught a normal one of this species
+    if (this.caught && this.caught.has(sp.id)) {
+      const v = rollVariant(rng, y, this.entityNear);
+      if (v) {
+        c.variant = v;
+        if (v === 'giant') { const k = rng.range(1.6, 2.0); c.len *= k; c.flee *= 0.75; c.cruise = c.speed = Math.min(c.cruise * 1.2, 2); }
+      }
+    }
+    return c;
   }
 
   // the depth band this animal wants to be in right now (migrators move up at night)
@@ -376,6 +386,7 @@ export class Fauna {
         if (c.y < c.sp.dmin) ay += 2;
         if (c.y > c.sp.dmax) ay -= 2;
       }
+      if (c.variant === 'abnormal') { ay += Math.sin(time * 2.7 + c.wob) * 2.5; ax += Math.sin(time * 1.9 + c.wob * 2) * 0.8; } // it swims wrong
       c.vx += ax * dt; c.vy += ay * dt;
       const v = Math.hypot(c.vx, c.vy);
       if (v > sp) { c.vx *= sp / v; c.vy *= sp / v; }

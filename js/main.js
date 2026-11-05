@@ -7,6 +7,7 @@ import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVEL
 import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, transferToTank, bagSlots, tankSlots, loadKg, loadSpeed, loadAir } from './capture.js';
 import { specimenValue, conditionName } from './specimens.js';
+import { VARIANTS, variantLabel, rollVariant } from './variants.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
@@ -64,6 +65,11 @@ function newGame(mode) {
   g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
   g.damageSub = (amt, sp) => damageSub(amt, sp);
   g.sub.docked = true;
+  // rare variants: unlocked per species by catching a normal one first
+  g.fauna.caught = new Set(P.caught || []);
+  for (const st of world.statics) {
+    if (g.fauna.caught.has(st.sp.id) && st.sp.v.hab !== 'plant') { const v = rollVariant(rng, st.y, false); if (v) { st.variant = v; if (v === 'giant') st.scale *= 1.7; } }
+  }
   // upgrades bought in earlier seasons
   g.earl.o2Max = g.earl.o2 = TANKS[P.tank].air;
   g.earl.finSpeed = FINS[P.fins].speed;
@@ -122,11 +128,12 @@ function damageSub(amt, sp) {
 const subAtBoat = () => !g.sub.imploded && Math.hypot(g.sub.x - (BOAT_X + 8.5), g.sub.y - 2.6) < 20;
 function sellSpecimens(list, lines) {
   const groups = new Map();
-  for (const sp of list) { const k = sp.id; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
-  for (const [id, specs] of groups) {
-    const key = 'sp' + id, base = specs.reduce((a, s) => a + specimenValue(s), 0) / specs.length;
+  for (const sp of list) { const k = sp.id + ':' + (sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
+  for (const [gk, specs] of groups) {
+    const [id, v] = gk.split(':');
+    const key = 'sp' + id + (v ? ':' + v : ''), base = specs.reduce((a, s) => a + specimenValue(s), 0) / specs.length;
     const worst = specs.reduce((a, s) => Math.min(a, s.cond), 1);
-    const name = SPECIES_BY_ID[id].name + (worst <= 0.05 ? ' (dead)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
+    const name = variantLabel(SPECIES_BY_ID[id], v || null) + (worst <= 0.05 ? ' (dead)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
     lines.push(sell(profile, key, specs.length, base, name));
   }
 }
@@ -541,18 +548,24 @@ function update(dt) {
     if (pressed.has(' ')) { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     for (const ev of updateCapture(g, dt)) {
       if (ev.type === 'caught') {
-        const sp = ev.sp;
-        hud.toast(`${sp.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec))}  (${g.bag.length}/${bagSlots(g)})`, 'note');
+        const sp = ev.sp, v = ev.spec.variant;
+        if (v) {
+          hud.toast(`${ev.name}!`, 'big');
+          audio.ready && audio.sapphire();
+          const vk = sp.id + ':' + v;
+          if (!(profile.variants || []).includes(vk)) profile.variants = [...(profile.variants || []), vk];
+        }
+        hud.toast(`${ev.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec))}  (${g.bag.length}/${bagSlots(g)})`, 'note');
         audio.ready && audio.pickup();
         if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
         if (!(profile.caught || []).includes(sp.id)) profile.caught = [...(profile.caught || []), sp.id];
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
-      } else if (ev.type === 'missed') hud.toast(`The ${ev.sp.name.toLowerCase()} got away`);
+      } else if (ev.type === 'missed') hud.toast(`The ${ev.name.toLowerCase()} got away`);
       else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
     }
     for (const s of updateSpecimens(g, dt)) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died — it came up too fast`, 'warn');
     const ct = !e.inSub ? findCatch(g) : null;
-    g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.sp.name.toLowerCase()} · ~${money(ct.value)}` : `${ct.sp.name}: ${ct.why}`) : null;
+    g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.name.toLowerCase()} · ~${money(ct.value)}` : `${ct.sp.name}: ${ct.why}`) : null;
     if (!e.inSub) {
       const r = ap.update(g, dt, g.addons.recall ? 1.5 : 1);
       if (r === 'arrived') { hud.toast('The sub is here'); audio.ready && audio.sonar(0.06); }
@@ -739,6 +752,7 @@ function update(dt) {
     }
   }
   // ----- life -----
+  g.fauna.entityNear = ent.marked || (ent.dist ?? 999) < 300;
   g.fauna.update(dt, renderer.cam, e, ent, fx.dread, g.time, g.day.light < 0.3);
   // breathing bubbles
   if (!e.inSub && e.y > 1 && g.mode === 'play') {

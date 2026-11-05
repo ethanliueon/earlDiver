@@ -38,6 +38,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
   much faster. Bigger tanks are bought at the boat.
 - Everything you collect sells at the boat. Prices drop if you flood the market, and recover.
   Deep sapphires (below 500 m) are the most valuable thing in the sea.
+- Once you have caught a species, 1 in 20 of its kind are rare: giant, albino, golden,
+  melanistic, abnormal, or (deep, and near the thing in the deep) crimson. They pay 2-5×.
 - Dying costs whatever you have not sold and a hospital bill (10 % of your cash).
   Cash, upgrades and the journal are kept (saved in the browser).
 - What you take does not come back in the same season. End the season at the boat for a new sea.
@@ -62,7 +64,8 @@ python3 -m http.server 8000
 then open http://localhost:8000. (Opening `index.html` directly from disk will not work,
 because browsers block ES modules on `file://`.)
 
-`tools/gallery.html` shows every species drawing on one page.
+`tools/gallery.html` shows every species drawing on one page, `tools/variants.html` the rare
+variants (add `?ids=1,2,3` for other species) and `tools/gear.html` the catching gear.
 
 ## Project layout
 

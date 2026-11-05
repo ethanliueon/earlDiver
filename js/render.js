@@ -7,6 +7,7 @@ import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { activeTool } from './capture.js';
+import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { BOAT_X, WORLD_W } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
@@ -190,8 +191,9 @@ export class Renderer {
       if (s.x < x0 - 3 || s.x > x1 + 3 || s.y < y0 - 6 || s.y > y1 + 6) continue;
       const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
       ctx.save(); ctx.translate(S(s.x), Sy(s.y)); ctx.scale(s.flip, 1);
-      const r = drawSpecies(ctx, s.sp, L, t + s.phase, 0.3, s.phase);
+      const r = s.variant ? this.drawVariant(ctx, s.sp, s.variant, L, t * 0.3 + s.phase) : drawSpecies(ctx, s.sp, L, t + s.phase, 0.3, s.phase);
       ctx.restore();
+      if (s.variant === 'crimson') glowPts.push([S(s.x), Sy(s.y) - L * 0.3, '#ff3018', Math.max(ppm * 0.6, L * 0.6), 1]);
       if (r && s.sp.v.glow) glowPts.push([S(s.x), Sy(s.y), s.sp.v.glow, L]);
     }
     // ---- pickups + lanterns ----
@@ -212,7 +214,7 @@ export class Renderer {
       const Ld = (c.len + 0.25 * Math.exp(-c.len * 2)) * ppm;
       const shape = c.sp.v.s;
       const tilt = clamp(Math.atan2(c.hvy !== undefined ? c.hvy : c.vy, Math.max(Math.abs(c.vx), c.hvy !== undefined ? c.speed * 0.8 : 0) + 0.2), -0.5, 0.5);
-      if (Ld < 20 && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
+      if (Ld < 20 && !c.variant && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
         let bt = batches.get(c.sp.id);
         if (!bt) { bt = { sp: c.sp, back: new Path2D(), belly: new Path2D(), flash: new Path2D(), eyes: new Path2D(), nf: 0 }; batches.set(c.sp.id, bt); }
         const x = S(c.x), y = Sy(c.y);
@@ -246,8 +248,10 @@ export class Renderer {
       ctx.save(); ctx.translate(S(c.x), Sy(c.y));
       if (c.dir > 0) ctx.scale(-1, 1);
       ctx.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
-      const r = this.drawCached(ctx, c.sp, Ld, c.phase, c.wob);
+      const r = c.variant ? this.drawVariant(ctx, c.sp, c.variant, Ld, c.phase) : this.drawCached(ctx, c.sp, Ld, c.phase, c.wob);
       ctx.restore();
+      // a crimson animal glows: a red light that carries in the dark
+      if (c.variant === 'crimson') glowPts.push([S(c.x), Sy(c.y), '#ff3018', Math.max(ppm * 0.6, Ld * 0.6), 0.9 + 0.3 * Math.sin(t * 1.7 + c.wob)]);
       if (c.sp.v.glow) {
         if (r) for (const [lx, ly] of r) glowPts.push([S(c.x) - lx * c.dir, Sy(c.y) + ly, c.sp.v.glow, Ld * 0.25]);
         else glowPts.push([S(c.x), Sy(c.y), c.sp.v.glow, Ld * 0.3]);
@@ -537,6 +541,28 @@ export class Renderer {
   // Full-detail creatures are expensive to draw (gradients, scales, fins), so each species' swim
   // cycle is rendered once per size into a strip of animation frames and replayed. Same detail,
   // a fraction of the cost. Long or very large animals are still drawn live.
+  // A rare variant: the species' frame, with the variant worked into it, cached per size and frame.
+  drawVariant(ctx, sp, v, Ld, phase) {
+    const cache = this.variantCache || (this.variantCache = new Map());
+    const Lc = Math.min(Ld, 220);
+    const bucket = Math.round(Math.log(Math.max(4, Lc)) / Math.log(1.18)), bl = Math.pow(1.18, bucket);
+    const f = Math.floor((((phase % SPRITE_PERIOD) + SPRITE_PERIOD) % SPRITE_PERIOD) / SPRITE_PERIOD * 16) % 16;
+    const key = sp.id + v + ':' + bucket + ':' + f;
+    let e = cache.get(key);
+    if (!e) {
+      const box = Math.ceil(bl * 2.4);
+      const base = document.createElement('canvas'); base.width = base.height = box;
+      const bx = base.getContext('2d'); bx.translate(box / 2, box / 2);
+      drawSpecies(bx, sp, bl, (f / 16) * SPRITE_PERIOD, 1, 0);
+      e = { c: makeVariantSprite(base, v, bl, sp), box, bl };
+      cache.set(key, e);
+      if (cache.size > 400) cache.delete(cache.keys().next().value);
+    }
+    const k = Ld / e.bl;
+    ctx.drawImage(e.c, -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
+    return null;
+  }
+
   drawCached(ctx, sp, Ld, phase, wob) {
     const shape = sp.v.s;
     if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(shape)) return drawSpecies(ctx, sp, Ld, phase, 1, wob);

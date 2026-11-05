@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><title>Variants</title>
+<style>body{margin:0;background:#123a4e;font:11px monospace;color:#cde;padding:8px}table{border-collapse:collapse}td{padding:2px;text-align:center}th{font-weight:400;padding:4px}</style>
+<table id="t"></table>
+<script type="module">
+// every rare variant of a few species, drawn the way the game draws them
+import { drawSpecies } from '../js/creatures_draw.js';
+import { SPECIES_BY_ID } from '../js/species.js';
+import { VARIANT_KEYS, VARIANTS, makeVariantSprite } from '../js/variants.js';
+const ids = (new URLSearchParams(location.search).get('ids') || '1,2,5,10,23,112,142,154,100,80,21,147').split(',').map(Number);
+const L = 64, box = Math.ceil(L * 2.4);
+const t = document.getElementById('t');
+t.innerHTML = '<tr><th></th><th>normal</th>' + VARIANT_KEYS.map(k => `<th>${VARIANTS[k].name}</th>`).join('') + '</tr>';
+for (const id of ids) {
+  const sp = SPECIES_BY_ID[id];
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${sp.name}</td>`;
+  const base = document.createElement('canvas'); base.width = base.height = box;
+  const bx = base.getContext('2d'); bx.translate(box / 2, box / 2); drawSpecies(bx, sp, L, 0.6, 1, 0);
+  for (const v of [null, ...VARIANT_KEYS]) {
+    const td = document.createElement('td');
+    let c = base;
+    if (v === 'giant') {
+      // giants are drawn bigger
+      const big = document.createElement('canvas'); big.width = big.height = box;
+      const g2 = big.getContext('2d'); g2.translate(box / 2, box / 2); drawSpecies(g2, sp, L * 1.35, 0.6, 1, 0);
+      c = makeVariantSprite(big, v, L * 1.35, sp);
+    } else if (v) c = makeVariantSprite(base, v, L, sp);
+    td.append(c); tr.append(td);
+  }
+  t.append(tr);
+}
+</script>

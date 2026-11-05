@@ -6,6 +6,7 @@ import { RESOURCES } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName } from './specimens.js';
+import { VARIANTS, VARIANT_KEYS, variantLabel } from './variants.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 
@@ -125,10 +126,21 @@ export class UI {
       const txt = document.createElement('div');
       txt.innerHTML = `<h3>${sp.name}</h3><div class="sci">${sp.sci}</div>
         <p>${sp.desc}</p>
-        <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}</div>`;
+        <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}</div>
+        ${this.variantRow(sp)}`;
       row.append(img, txt);
       list.append(row);
     }
+  }
+
+  // six slots for the rare variants of a species: locked until a normal one is caught
+  variantRow(sp) {
+    const P = this.h.getProfile && this.h.getProfile();
+    if (!P || !sp || sp.v.hab === 'plant') return '';
+    const caught = (P.caught || []).includes(sp.id);
+    const found = new Set(P.variants || []);
+    if (!caught) return '<div class="variants locked">Rare forms: catch one first</div>';
+    return `<div class="variants">${VARIANT_KEYS.map((k) => `<span class="${found.has(sp.id + ':' + k) ? 'got r-' + k : ''}" title="${VARIANTS[k].desc}">${VARIANTS[k].name}</span>`).join('')}</div>`;
   }
 
   // the details that used to crowd the screen live here
@@ -194,16 +206,18 @@ export class UI {
         }).join('');
         // live animals, grouped by species
         const groups = new Map();
-        for (const sp of specs) { if (!groups.has(sp.id)) groups.set(sp.id, []); groups.get(sp.id).push(sp); }
+        for (const sp of specs) { const k = sp.id + ':' + (sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
         let specRows = '';
-        for (const [id, list] of groups) {
+        for (const [gk, list] of groups) {
+          const [id, v] = gk.split(':');
+          const mkey = 'sp' + id + (v ? ':' + v : '');
           const each = list.reduce((a, x) => a + specimenValue(x), 0) / list.length;
-          let sum = 0, glut = P.market['sp' + id] || 0;
+          let sum = 0, glut = P.market[mkey] || 0;
           for (let i = 0; i < list.length; i++) { sum += each * Math.pow(0.85, glut / 0.15); glut += 0.15; }
           total += sum;
           const worst = list.reduce((a, x) => Math.min(a, x.cond), 1);
           const cond = `<em class="cond c-${conditionName(worst)}">${conditionName(worst)}</em>`;
-          specRows += `<tr><td>${SPECIES_BY_ID[id].name} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, 'sp' + id, each))}</td><td>${money(sum)}</td></tr>`;
+          specRows += `<tr><td>${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr>`;
         }
         lines = specRows + lines;
         if (!atBoat && g.subTank.length) html += `<p class="shop-note">${g.subTank.length} animal${g.subTank.length > 1 ? 's' : ''} in the sub's tank. Bring the sub to the boat to sell them.</p>`;

@@ -3,6 +3,7 @@
 import { clamp, dist } from './util.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, WEIGHT } from './economy.js';
 import { canTakeLive, isTagOnly, liveValue, fragile, conditionName } from './specimens.js';
+import { variantMult, variantName } from './variants.js';
 
 export const bagSlots = (g) => BAGS[g.profile.bag || 0].slots;
 export const tankSlots = (g) => SUB_TANKS[g.profile.subTank || 0].slots;
@@ -41,12 +42,12 @@ export function findCatch(g) {
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
     if (d < bd) { bd = d; best = { sp, x, y, len, d, ...ref }; }
   };
-  for (const c of g.fauna.list) if (!c.dead && !(c.att && c.att.s !== 'idle')) consider(c.sp, c.x, c.y, c.len, { c });
+  for (const c of g.fauna.list) if (!c.dead && !(c.att && c.att.s !== 'idle')) consider(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
   for (const s of W.statics) {
     if (Math.abs(s.x - h.x) > reach + 3) continue;
-    consider(s.sp, s.x, s.y - Math.min(0.5, s.sp.len * s.scale * 0.3), s.sp.len * s.scale, { s });
+    consider(s.sp, s.x, s.y - Math.min(0.5, s.sp.len * s.scale * 0.3), s.sp.len * s.scale, { s, variant: s.variant });
   }
-  if (best) best.value = liveValue(best.sp, best.len);
+  if (best) { best.value = liveValue(best.sp, best.len) * variantMult(best.variant); best.name = variantName(best.sp, best.variant); }
   return best ? { ok: true, ...best } : blocked ? { ok: false, ...blocked } : null;
 }
 
@@ -86,15 +87,16 @@ export function updateCapture(g, dt) {
       if (Math.random() < chance) {
         const harm = def.harm * (fragile(tgt.sp) ? 2 : 1) + Math.random() * 0.05;
         const spec = { id: tgt.sp.id, len: tgt.len, cond: clamp(1 - harm, 0.05, 1), from: Math.round(Math.max(e.y, tgt.y)), t: g.time };
+        if (tgt.variant) { spec.variant = tgt.variant; spec.mult = variantMult(tgt.variant); if (tgt.variant === 'crimson') g.entity.disturb(g, 0.08); }
         if (tgt.c) tgt.c.dead = true;
         if (tgt.s) g.world.statics.splice(g.world.statics.indexOf(tgt.s), 1);
         g.bag.push(spec);
         g.captureFx.push({ sp: tgt.sp, len: tgt.len, x: tgt.x, y: tgt.y, dir: tgt.c ? tgt.c.dir : 1, t: 0, dur: kind === 'slurp' ? 0.25 : 0.3, kind });
         if (kind === 'net') g.netCatch = { sp: tgt.sp, len: tgt.len, t: 0 };
         else g.slurpHeld = { sp: tgt.sp, len: tgt.len, t: 0 };
-        ev.push({ type: 'caught', sp: tgt.sp, spec });
+        ev.push({ type: 'caught', sp: tgt.sp, spec, name: variantName(tgt.sp, tgt.variant) });
       } else {
-        ev.push({ type: 'missed', sp: tgt.sp });
+        ev.push({ type: 'missed', sp: tgt.sp, name: variantName(tgt.sp, tgt.variant) });
         if (tgt.c) tgt.c.fleeT = 2.2;
       }
       // the commotion scares off whatever else is close

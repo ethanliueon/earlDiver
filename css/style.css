@@ -206,3 +206,10 @@ button.link:hover { color: #f1efe6; }
 .card img { width: 96px; height: 48px; object-fit: contain; }
 .cond { font-style: normal; font-size: 10px; letter-spacing: 0.06em; margin-left: 4px; font-family: var(--mono); }
 .c-healthy { color: #8fd4a0; } .c-stressed { color: #e8b040; } .c-weak { color: #e86a50; } .c-dead { color: #9a9a9a; }
+.variants { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; font: 10px var(--mono); }
+.variants span { padding: 1px 6px; border: 1px dashed rgba(60, 40, 20, 0.3); border-radius: 2px; color: rgba(43, 35, 24, 0.35); }
+.variants span.got { border-style: solid; color: #f4ecd8; border-color: transparent; }
+.variants.locked { color: rgba(43, 35, 24, 0.4); font-style: italic; }
+.r-giant { background: #5a4a36; } .r-albino { background: #a8a29a; } .r-golden { background: #b8861c; }
+.r-melanistic { background: #1c1d20; } .r-abnormal { background: #5a6a4a; } .r-crimson { background: #9a1c14; }
+.rare { font: 10px var(--mono); padding: 1px 5px; border-radius: 2px; color: #f4ecd8; }
