@@ -126,3 +126,25 @@ percentage on the menu. The abyss tank needs the 3,000 m sub.
 6. Traps and the sub arm.
 7. The aquarium and the 3,000 m moment.
 8. Radio contracts, balance pass, docs.
+
+## Map v2 (agreed 2026-11-05, from the owner's sketch)
+
+- **v1.3.0 Suits.** Bought once at the boat, one worn at a time: wetsuit (start), freediving skin
+  (+15 % speed, x1.1 air), drysuit (pressure starts 100 m deeper, -5 % speed, keeps out the cold),
+  chain-mail shark suit (bites one injury less, -12 % speed), rebreather suit (x0.75 air, no
+  bubbles, quieter to the entity, -5 % speed), atmospheric hardsuit (no pressure to 700 m, x0.9 air,
+  -40 % speed).
+- **v1.4.0 The new map, 3,000 m wide x 4,000 m deep.** Shore and home on the right (east); the
+  Margaret can be driven along the surface from the shore out to 1,000 m from the west wall, with
+  the sub docked on board (it travels with the boat). East to west: beach, seagrass and reef, kelp
+  on cold upwelling water, the shelf with its wreck, a submarine canyon through the shelf break,
+  the continental slope (cold-water coral mounds, a cold seep), the abyssal plain (~3,200-3,600 m:
+  manganese nodules, a whale fall, a vent field, a brine pool), a seamount rising to ~300 m, and a
+  trench along the foot of the west wall down to 4,000 m. The entity's range moves deeper to match
+  (it lives in the trench).
+- **v1.5.0 The zones' mechanics.** Cold water costs air without a drysuit; vent water damages the
+  hull and Earl; canyon currents push; the brine pool kills; nodules are collected; the whale fall
+  is rich in rare life. The anglerfish's cave on the west wall (~1,800 m): an ancient giant
+  anglerfish buys animals at market -30 %, once a dive, choosing which (paid in old gold coins),
+  with one craving a dive that it pays full or 1.5x for; its lure keeps the entity out of the cave.
+  A ballast upgrade for faster vertical travel.
