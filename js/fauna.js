@@ -150,7 +150,7 @@ export class Fauna {
     const live = new Set(); let residents = 0;
     for (const c of this.list) { live.add(c.gid); if (c.home) residents++; }
     this.reefy = residents > 40; // a crowded reef: one bait school instead of two
-    const FILL = { anemone: 0.95, coral: 0.75, sponge: 0.45, seagrass: 0.35, kelp: 0.12, crevice: 0.22, ledge: 0.35, wreck: 0.85, sand: 0.12, seamount: 0.35, deepcoral: 0.2, whalefall: 0.9, vent: 0 };
+    const FILL = { anemone: 0.9, coral: 0.45, sponge: 0.3, seagrass: 0.3, kelp: 0.1, crevice: 0.15, ledge: 0.3, wreck: 0.8, sand: 0.1, seamount: 0.35, deepcoral: 0.2, whalefall: 0.9, vent: 0 };
     const rx = cam.w * 1.4, ry = cam.h * 1.4;
     for (const kind in H) {
       const p = FILL[kind] || 0;
@@ -168,7 +168,7 @@ export class Fauna {
             if (cands.length) { let tot = 0; for (const c of cands) tot += weightOf(c); let r = rng() * tot; for (const c of cands) { r -= weightOf(c); if (r <= 0) { h.res = c.id; break; } } if (!h.res) h.res = cands[0].id; }
           }
         }
-        if (!h.res || residents > 90) continue;
+        if (!h.res || residents > 60) continue;
         this.reefy = true;
         residents += this.house(SPECIES_BY_ID[h.res], h);
       }
@@ -185,7 +185,7 @@ export class Fauna {
       const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12) * k * spread, oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06) * k * spread;
       const x = home.x + ox;
       const f = this.makeFish(sp, x, Math.max(0.5, Math.min(home.y + oy, W.floorAt(x) - 0.4)), rng() < 0.5 ? 1 : -1, gid, i === 0);
-      f.home = home; f.homeR = H.r; f.hide = !!H.hide; f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = rng.range(0, 3);
+      f.home = home; f.homeR = H.r <= 2 ? H.r : H.r * 1.6; f.hide = !!H.hide; // roamers range wider than the bare minimum f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = rng.range(0, 3);
       this.list.push(f);
     }
     return n;

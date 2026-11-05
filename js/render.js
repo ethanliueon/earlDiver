@@ -7,6 +7,7 @@ import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity } from './earl_draw.js';
 import { activeTool } from './capture.js';
+import { drawShipwreck, drawVentChimney } from './scenery_draw.js';
 import { drawDart, drawTrap, drawBuoy } from './tools_draw.js';
 import { armPose } from './arm.js';
 import { drawAquarium } from './aquarium_draw.js';
@@ -1444,67 +1445,25 @@ export class Renderer {
     ctx.fill(bulbs);
   }
 
+  // The wrecks are detailed paintings (see scenery_draw.js), made once at a generous resolution and
+  // reused; made again only if the camera zooms in well past it.
   drawWreck(ctx, w, S, Sy, ppm) {
-    // A small steel freighter, sunk upright with a list, settled into the sediment.
-    ctx.save(); ctx.translate(S(w.x), Sy(w.y + w.len * 0.03)); ctx.rotate(w.tilt);
-    const L = w.len * ppm, H = w.len * 0.13 * ppm;
-    const hull = new Path2D();
-    hull.moveTo(-L * 0.5, -H * 1.18);
-    hull.quadraticCurveTo(-L * 0.47, -H * 0.3, -L * 0.4, H * 0.15);
-    hull.lineTo(L * 0.42, H * 0.15);
-    hull.quadraticCurveTo(L * 0.5, -H * 0.1, L * 0.5, -H * 0.95);
-    hull.lineTo(L * 0.2, -H * 0.98);
-    hull.quadraticCurveTo(-L * 0.2, -H * 0.98, -L * 0.5, -H * 1.18);
-    const hg = ctx.createLinearGradient(0, -H * 1.2, 0, H * 0.2);
-    hg.addColorStop(0, '#4a3e34'); hg.addColorStop(0.3, '#33291f'); hg.addColorStop(1, '#130f0c');
-    ctx.fillStyle = hg; ctx.fill(hull);
-    ctx.save(); ctx.clip(hull);
-    // plating seams + rust streaks running down from the deck
-    ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
-    for (let k = 1; k < 4; k++) { ctx.beginPath(); ctx.moveTo(-L / 2, -H * 1.0 + k * H * 0.3); ctx.lineTo(L / 2, -H * 1.0 + k * H * 0.3); ctx.stroke(); }
-    for (let k = 0; k < 22; k++) { const x = -L * 0.48 + k * L * 0.045; ctx.beginPath(); ctx.moveTo(x, -H * 1.2); ctx.lineTo(x, H * 0.2); ctx.stroke(); }
-    for (let k = 0; k < 26; k++) {
-      const x = -L * 0.47 + ((k * 37) % 100) / 100 * L * 0.94, len = H * (0.3 + ((k * 13) % 7) / 10);
-      const rg = ctx.createLinearGradient(0, -H, 0, -H + len);
-      rg.addColorStop(0, 'rgba(140,70,34,0.55)'); rg.addColorStop(1, 'rgba(140,70,34,0)');
-      ctx.fillStyle = rg; ctx.fillRect(x, -H * 1.1, Math.max(1.5, ppm * (0.15 + (k % 3) * 0.1)), len);
+    let C = w._spr;
+    if (!C || ppm > C.bp * 1.3) {
+      const bp = Math.min(Math.max(ppm, 24) * 1.2, 72, 4096 / (1.3 * w.len));
+      const L = w.len * bp, H = L * 0.13;
+      const ox = -L * 0.7, oy = -H * 4.4, cw = Math.ceil(L * 1.3), ch = Math.ceil(H * 4.9);
+      const c = C && C.c.width === cw && C.c.height === ch ? C.c : document.createElement('canvas');
+      c.width = cw; c.height = ch;
+      const x = c.getContext('2d'); x.clearRect(0, 0, cw, ch); x.translate(-ox, -oy);
+      drawShipwreck(x, L, w.x * 0.37 + w.len, sampleTable(FLOOR_COL, w.y));
+      C = w._spr = { c, bp, ox, oy, cw, ch };
     }
-    // breach in the hull
-    ctx.fillStyle = '#050403';
-    ctx.beginPath(); ctx.moveTo(-L * 0.08, -H * 0.55); ctx.lineTo(-L * 0.02, -H * 0.72); ctx.lineTo(L * 0.03, -H * 0.5);
-    ctx.lineTo(L * 0.06, -H * 0.2); ctx.lineTo(L * 0.0, -H * 0.05); ctx.lineTo(-L * 0.06, -H * 0.18); ctx.closePath(); ctx.fill();
-    // portholes
-    for (let k = 0; k < 6; k++) { ctx.fillStyle = '#0a0806'; ctx.beginPath(); ctx.arc(L * (0.14 + k * 0.045), -H * 0.72, Math.max(1.5, ppm * 0.22), 0, TAU); ctx.fill(); }
-    ctx.restore();
-    // superstructure aft
-    const sx0 = L * 0.18, sx1 = L * 0.4, top = -H * 2.0;
-    ctx.fillStyle = '#2c241d';
-    ctx.beginPath(); ctx.moveTo(sx0, -H * 0.97); ctx.lineTo(sx0 + L * 0.01, top); ctx.lineTo(sx1, top); ctx.lineTo(sx1, -H * 0.95); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#251e18'; ctx.fillRect(sx0 + L * 0.04, top - H * 0.5, L * 0.13, H * 0.52);
-    ctx.fillStyle = '#060504';
-    for (let k = 0; k < 6; k++) ctx.fillRect(sx0 + L * 0.02 + k * L * 0.033, top + H * 0.2, L * 0.018, H * 0.22);
-    for (let k = 0; k < 4; k++) ctx.fillRect(sx0 + L * 0.055 + k * L * 0.03, top - H * 0.32, L * 0.015, H * 0.16);
-    // funnel, leaning
-    ctx.save(); ctx.translate(L * 0.33, top - H * 0.45); ctx.rotate(0.12);
-    ctx.fillStyle = '#2a201a'; ctx.fillRect(-L * 0.02, -H * 0.8, L * 0.04, H * 0.85);
-    ctx.fillStyle = 'rgba(120,40,30,0.35)'; ctx.fillRect(-L * 0.02, -H * 0.7, L * 0.04, H * 0.12);
-    ctx.restore();
-    // forward mast, snapped
-    ctx.strokeStyle = '#211a14'; ctx.lineWidth = Math.max(2, ppm * 0.22); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-L * 0.22, -H * 1.02); ctx.lineTo(-L * 0.215, -H * 2.6); ctx.lineTo(-L * 0.12, -H * 3.0); ctx.stroke();
-    ctx.lineWidth = Math.max(1, ppm * 0.08);
-    ctx.beginPath(); ctx.moveTo(-L * 0.215, -H * 2.4); ctx.lineTo(-L * 0.32, -H * 1.05); ctx.moveTo(-L * 0.215, -H * 2.0); ctx.lineTo(-L * 0.08, -H * 1.0); ctx.stroke();
-    // deck rail
-    ctx.strokeStyle = 'rgba(40,32,26,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
-    ctx.beginPath(); ctx.moveTo(-L * 0.48, -H * 1.42); ctx.quadraticCurveTo(-L * 0.2, -H * 1.2, L * 0.17, -H * 1.22); ctx.stroke();
-    for (let k = 0; k < 18; k++) { const x = -L * 0.47 + k * L * 0.037; const yTop = -H * (1.42 - (k / 18) * 0.2); ctx.beginPath(); ctx.moveTo(x, yTop); ctx.lineTo(x, yTop + H * 0.24); ctx.stroke(); }
-    // growth along the deck edge
-    ctx.fillStyle = 'rgba(170,150,120,0.22)';
-    for (let k = 0; k < 30; k++) { ctx.beginPath(); ctx.arc(-L * 0.48 + k * L * 0.032, -H * (1.16 - (k / 30) * 0.2) + Math.sin(k) * ppm * 0.1, ppm * (0.15 + (k % 4) * 0.08), 0, TAU); ctx.fill(); }
+    const k = ppm / C.bp;
+    ctx.save(); ctx.translate(S(w.x), Sy(w.y + w.len * 0.03)); ctx.rotate(w.tilt);
+    ctx.drawImage(C.c, C.ox * k, C.oy * k, C.cw * k, C.ch * k);
     ctx.restore();
   }
-
-  // the brine pool, the whale fall, the cold seep, the canyon's current and the old one in her cave
   drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView) {
     const W = g.world;
     this.escaW = null;
@@ -1596,9 +1555,17 @@ export class Renderer {
 
   drawVent(ctx, v, S, Sy, ppm, t) {
     const x = S(v.x), y = Sy(v.y), h = v.h * ppm;
-    ctx.fillStyle = '#2a2420';
-    ctx.beginPath(); ctx.moveTo(x - ppm * 1.4, y); ctx.lineTo(x - ppm * 0.5, y - h); ctx.lineTo(x + ppm * 0.5, y - h); ctx.lineTo(x + ppm * 1.6, y); ctx.fill();
-    ctx.fillStyle = 'rgba(160,110,60,0.3)'; ctx.fillRect(x - ppm * 0.4, y - h, ppm * 0.8, h * 0.3);
+    let C = v._spr;
+    if (!C || ppm > C.bp * 1.3) {
+      const bp = Math.min(Math.max(ppm, 24) * 1.2, 80);
+      const hh = v.h * bp, ww = bp * 1.1, ox = -ww * 2, oy = -hh * 1.4, cw = Math.ceil(ww * 4), ch = Math.ceil(hh * 1.4 + ww * 0.7);
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      const g2 = c.getContext('2d'); g2.translate(-ox, -oy);
+      drawVentChimney(g2, hh, ww, v.x);
+      C = v._spr = { c, bp, ox, oy, cw, ch };
+    }
+    const k = ppm / C.bp;
+    ctx.drawImage(C.c, x + C.ox * k, y + C.oy * k, C.cw * k, C.ch * k);
     for (let k = 0; k < 14; k++) {
       const p = ((t * 0.25 + k / 14 + v.phase) % 1);
       const px = x + Math.sin(p * 7 + k) * ppm * (0.3 + p * 2), py = y - h - p * ppm * 14;

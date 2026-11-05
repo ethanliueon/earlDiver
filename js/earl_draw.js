@@ -4,10 +4,10 @@ import { drawNet, drawSlurp, drawBeltBag, drawTagger, drawCamera } from './tools
 import { drawSpecies } from './creatures_draw.js';
 
 let SUIT = '#141619', SUIT_HI = '#2a2f35', SUIT_PANEL = '#24282d', SUIT_SEAM = '#33383e';
-let GLOVE = '#0d0e10', BCD = '#1b1d20', WEBBING = '#3a3d41';
+let GLOVE = '#0d0e10', BCD = '#23272c', WEBBING = '#3a3d41';
 // each suit's colours: [suit, highlight, panel, seam, glove]
 const SUIT_LOOK = {
-  wet: ['#141619', '#2a2f35', '#24282d', '#33383e', '#0d0e10'],
+  wet: ['#1a1d21', '#3c434b', '#2d3339', '#2f7480', '#0f1012'], // charcoal neoprene, grey panels, a teal trim
   skin: ['#10223a', '#2a4a6e', '#163050', '#3a5a80', '#0b1626'],
   dry: ['#1a1b1d', '#34363a', '#b8501e', '#c86a30', '#121314'],
   chain: ['#1a1c1f', '#4a4e54', '#2a2d31', '#3a3e44', '#121315'],
@@ -16,9 +16,15 @@ const SUIT_LOOK = {
 };
 
 // A tapered limb segment with rounded ends (reads as flesh in a wetsuit, not a stick).
-function seg(ctx, x0, y0, x1, y1, w0, w1, col) {
+// Shaded across its width (lit from his back, shadowed on his front), so it reads round.
+function seg(ctx, x0, y0, x1, y1, w0, w1, col, shade = true) {
   const a = Math.atan2(y1 - y0, x1 - x0), nx = -Math.sin(a), ny = Math.cos(a);
-  ctx.fillStyle = col;
+  if (shade) {
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, w = Math.max(w0, w1) / 2;
+    const g = ctx.createLinearGradient(mx - nx * w, my - ny * w, mx + nx * w, my + ny * w);
+    g.addColorStop(0, col === SUIT ? SUIT_HI : col); g.addColorStop(0.45, col); g.addColorStop(1, '#050607');
+    ctx.fillStyle = g;
+  } else ctx.fillStyle = col;
   ctx.beginPath();
   ctx.moveTo(x0 + nx * w0 / 2, y0 + ny * w0 / 2);
   ctx.lineTo(x1 + nx * w1 / 2, y1 + ny * w1 / 2);
@@ -80,7 +86,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     ctx.beginPath(); ctx.ellipse(3 * u, 0, 6 * u, 3.2 * u, 0, 0, Math.PI * 2); ctx.fill(); // foot pocket
     ctx.fillStyle = WEBBING; ctx.fillRect(-1 * u, -2.9 * u, 1.4 * u, 5.4 * u); // heel strap
     const bg = ctx.createLinearGradient(6 * u, 0, 34 * u, 0);
-    bg.addColorStop(0, near ? '#1a1d21' : '#0f1114'); bg.addColorStop(1, near ? 'rgba(34,40,48,0.65)' : 'rgba(20,24,30,0.6)');
+    bg.addColorStop(0, near ? '#1d3346' : '#101b25'); bg.addColorStop(0.6, near ? '#24506a' : '#152a38'); bg.addColorStop(1, near ? 'rgba(60,120,150,0.55)' : 'rgba(30,60,80,0.5)');
     ctx.fillStyle = bg;
     ctx.beginPath();
     ctx.moveTo(6 * u, -3.4 * u);
@@ -88,8 +94,14 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     ctx.lineTo(34 * u, 3.4 * u + flex * 9 * u);
     ctx.quadraticCurveTo(20 * u, 3.6 * u + flex * 4 * u, 6 * u, 2.6 * u);
     ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 0.7 * u;
-    ctx.beginPath(); ctx.moveTo(8 * u, -3.2 * u); ctx.quadraticCurveTo(20 * u, -4 * u + flex * 4 * u, 32 * u, -3.4 * u + flex * 9 * u); ctx.stroke();
+    // stiff side rails and the channels moulded into the blade
+    ctx.strokeStyle = near ? '#14181c' : '#0b0d10'; ctx.lineWidth = 1.1 * u;
+    ctx.beginPath(); ctx.moveTo(6 * u, -3.4 * u); ctx.quadraticCurveTo(20 * u, -4.4 * u + flex * 4 * u, 33 * u, -3.8 * u + flex * 9 * u); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6 * u, 2.6 * u); ctx.quadraticCurveTo(20 * u, 3.6 * u + flex * 4 * u, 34 * u, 3.4 * u + flex * 9 * u); ctx.stroke();
+    if (near) {
+      ctx.strokeStyle = 'rgba(140,200,220,0.16)'; ctx.lineWidth = 0.5 * u;
+      for (const k of [-1.6, 0, 1.6]) { ctx.beginPath(); ctx.moveTo(9 * u, k * 0.8 * u); ctx.quadraticCurveTo(21 * u, k * u + flex * 4 * u, 31 * u, k * 1.1 * u + flex * 9 * u); ctx.stroke(); }
+    }
     ctx.restore();
   };
 
@@ -128,6 +140,8 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   ctx.fillStyle = tg;
   ctx.beginPath(); ctx.roundRect(-2 * u, -17.5 * u, 32 * u, 11.5 * u, 5.7 * u); ctx.fill();
   ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(8 * u, -17.5 * u, 1.8 * u, 11.5 * u); ctx.fillRect(19 * u, -17.5 * u, 1.8 * u, 11.5 * u); // cam bands
+  ctx.fillStyle = 'rgba(225,215,170,0.55)'; ctx.fillRect(24 * u, -17.5 * u, 2.4 * u, 11.5 * u); // inspection band
+  ctx.fillStyle = '#121416'; ctx.beginPath(); ctx.roundRect(-2.4 * u, -17.6 * u, 5 * u, 11.7 * u, 2.2 * u); ctx.fill(); // rubber boot
   ctx.fillStyle = '#17191b'; ctx.beginPath(); ctx.roundRect(29 * u, -15 * u, 4.5 * u, 6.5 * u, 1 * u); ctx.fill(); // valve
   ctx.fillStyle = '#3e4347'; ctx.beginPath(); ctx.arc(33.5 * u, -11.5 * u, 1.8 * u, 0, Math.PI * 2); ctx.fill(); // first stage
 
@@ -149,6 +163,10 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   ctx.beginPath();
   ctx.moveTo(4 * u, -6.2 * u); ctx.lineTo(28 * u, -7.4 * u); ctx.quadraticCurveTo(31 * u, 0, 28 * u, 7.4 * u);
   ctx.lineTo(9 * u, 6.4 * u); ctx.quadraticCurveTo(3 * u, 0, 4 * u, -6.2 * u); ctx.closePath(); ctx.fill();
+  // the jacket's piping in the suit's trim colour
+  ctx.strokeStyle = SUIT_SEAM; ctx.lineWidth = 0.6 * u;
+  ctx.beginPath(); ctx.moveTo(4.5 * u, -5.8 * u); ctx.lineTo(27.5 * u, -6.9 * u); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9.5 * u, 6 * u); ctx.lineTo(27.5 * u, 6.9 * u); ctx.stroke();
   // pocket bulge, shoulder strap, chest strap + buckle
   ctx.fillStyle = '#16181a'; ctx.beginPath(); ctx.roundRect(8 * u, 1.5 * u, 9 * u, 6 * u, 2 * u); ctx.fill();
   ctx.strokeStyle = WEBBING; ctx.lineWidth = 1.3 * u; ctx.lineCap = 'round';
