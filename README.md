@@ -57,7 +57,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
   sea: die, or end the dive from the pause menu (unsold catch is lost either way).
 - The submersible is docked at the boat. Past its rated depth the hull creaks; past 1.5×
   it can give at any moment, with a few seconds' warning to climb before it implodes.
-  Refits at the boat take it deeper. Refits at the boat take it down to 3,000 m.
+  Refits at the boat take it down to 3,000 m.
 - Something is out there. It hears speed and engines, and it sees light. Kelp and rock overhangs
   hide you if you are slow and dark. Sea lanterns keep it away, for a while.
 - It never comes above 100 m: the top 100 m are safe from it (not from sharks).
