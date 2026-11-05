@@ -1,6 +1,6 @@
 # Plan: the money update
 
-Agreed with the project owner on 2026-11-05. This turns Earl Diver from a pure survival dive into an
+Agreed with the project owner on 2026-11-05. This turns Earl the Diver from a pure survival dive into an
 endless diving business: earn money from the sea, spend it on gear, build an aquarium on the beach.
 The horror stays the same: the valuable things are deep, and going deep is what wakes the entity.
 

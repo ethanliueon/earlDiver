@@ -1,4 +1,4 @@
-# Earl Diver — Game Design
+# Earl the Diver — Game Design
 
 A 2D, side-on ocean **diving, collecting and survival horror** game for the desktop browser.
 Earl makes a living from the sea: he catches live animals, tags and photographs the big ones,

@@ -1,4 +1,4 @@
-# Earl Diver
+# Earl the Diver
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 

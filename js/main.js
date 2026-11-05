@@ -1,4 +1,4 @@
-// Earl Diver — game loop, state, interactions and UI glue.
+// Earl the Diver — game loop, state, interactions and UI glue.
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { generateWorld, RESOURCES, BOAT_X, WORLD_W } from './world.js';
 import { SPECIES_BY_ID } from './species.js';
