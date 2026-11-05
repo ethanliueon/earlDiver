@@ -5,7 +5,7 @@
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
-import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity, markOf, SUB_MARKS } from './earl_draw.js';
+import { drawEarl, drawSub, drawBoat, drawEntityShape, drawEntity, markOf, SUB_MARKS, drawArm } from './earl_draw.js';
 import { activeTool } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
@@ -66,11 +66,12 @@ const TORCH = 0.62;
 // base brightness of every creature's living light (halo, the light it casts, and the organ itself)
 const BIO_BRIGHT = 0.6;
 // a creature's own light: a slow breathing pulse at its own rhythm, flaring when it is startled
+let HUSH = 0; // 0..1: the thing below is close and hunting, and the living lights go out
 function bioPulse(c, t) {
-  const rate = 0.45 + (c.wob % 1) * 0.6;
+  const rate = 0.45 + (c.wob % 1) * 0.6, hush = 1 - 0.88 * HUSH;
   // a lone deep fish flashes: a dim glow, now and then a bright blink (as lanternfish signal)
-  if (c.glimmer) return (0.45 + 1.2 * Math.pow(Math.max(0, Math.sin(t * rate * 0.7 + c.wob)), 10)) * (c.fleeT > 0 ? 1.7 : 1);
-  return (0.8 + 0.2 * Math.sin(t * rate + c.wob)) * (c.fleeT > 0 ? 1.7 : 1);
+  if (c.glimmer) return hush * (0.45 + 1.2 * Math.pow(Math.max(0, Math.sin(t * rate * 0.7 + c.wob)), 10)) * (c.fleeT > 0 ? 1.7 : 1);
+  return hush * (0.8 + 0.2 * Math.sin(t * rate + c.wob)) * (c.fleeT > 0 ? 1.7 : 1);
 }
 
 // what the yard has done to the sub, from the profile: the hull mark (from her depth rating) and
@@ -129,6 +130,7 @@ export class Renderer {
   }
 
   render(g) {
+    HUSH = (g.fx && g.fx.hush) || 0;
     const ctx = this.ctx, W = this.W, H = this.H, cam = this.cam, ppm = cam.ppm;
     const t = g.time;
     const fx = g.fx; // dread/disorientation state
@@ -458,11 +460,11 @@ export class Renderer {
     // the entity's body, lit by the same light as everything else (invisible in the dark)
     const entB = g.entity;
     if (entB && g.mode !== 'menu' && inView(entB.x, entB.y, 45) && entB.dist < 90) {
-      const toward = entB.dist < 70 ? (g.earl.x >= entB.x ? 1 : -1) : (Math.cos(entB.heading) >= 0 ? 1 : -1);
-      entB.face = lerp(entB.face ?? toward, toward, 0.02);
+      const toward = entB.faceLock ?? (entB.dist < 70 ? (g.earl.x >= entB.x ? 1 : -1) : (Math.cos(entB.heading) >= 0 ? 1 : -1));
+      entB.face = entB.faceLock ?? lerp(entB.face ?? toward, toward, 0.02);
       const flipB = entB.face >= 0 ? -1 : 1;
       ctx.save(); ctx.translate(S(entB.x), Sy(entB.y)); ctx.scale(flipB, 1);
-      drawEntity(ctx, 34 * ppm, t, g.reveal ? 1 : clamp((90 - entB.dist) / 50, 0, 1) * (entB.fade ?? 1), g.reveal ? 0.9 : 0.3 * (entB.fade ?? 1));
+      drawEntity(ctx, 34 * ppm, t, g.reveal ? 1 : clamp((90 - entB.dist) / 50, 0, 1) * (entB.fade ?? 1), g.reveal ? 0.9 : 0.3 * (entB.fade ?? 1), false, g.kill ? g.kill.open || 0 : 0);
       ctx.restore();
       // at the bottom it shows itself: a faint light of its own along the whole length
       if (g.reveal) {
@@ -704,7 +706,7 @@ export class Renderer {
       const lampBoost = g.earl.lampOn || (g.earl.inSub && g.sub.lightsOn) ? 1.6 : 1;
       const rimA = clamp((50 - d) / 45, 0, 1) * 0.22 * lampBoost * (0.75 + 0.25 * Math.sin(t * 0.37));
       ctx.save(); ctx.translate(S(ent.x), Sy(ent.y)); ctx.scale(flip, 1);
-      const info = drawEntity(ctx, Lp, t, fillA, rimA * 0.6, true); // only a faint rim shows in the dark
+      const info = drawEntity(ctx, Lp, t, fillA, rimA * 0.6, true, g.kill ? g.kill.open || 0 : 0); // only a faint rim shows in the dark
       ctx.restore();
       const wx = (lx) => S(ent.x) + lx * flip;
       // lights along its flank, slowly pulsing out of step
@@ -726,7 +728,8 @@ export class Renderer {
       // that narrows in a lamp's beam, a heavy lid, a pinpoint of wet glint, and only a faint
       // green-gold eyeshine (the reflecting layer behind the retina) when a light is on it.
       if (ent.eyeOpen > 0.02) {
-        const vis = clamp(fillA, 0, 1), lit = lampBoost > 1 ? clamp((45 - d) / 35, 0, 1) : 0;
+        const staring = ent.hunt && ent.hunt.phase === 'stare';
+        const vis = staring ? 1 : clamp(fillA, 0, 1), lit = Math.max(lampBoost > 1 ? clamp((45 - d) / 35, 0, 1) : 0, staring ? 0.5 : 0);
         const o = vis * (0.6 + 0.4 * lit);
         const lidOpen = ent.blink > 0 ? 0.08 : ent.eyeOpen;
         const ex = wx(info.eye[0]), ey = Sy(ent.y) + info.eye[1];
@@ -771,6 +774,37 @@ export class Renderer {
           }
         }
       }
+    }
+    // the stare: in the faint glow of the cabin's instruments, its pale face pressed to the glass
+    if (!g.kill && g.entity && g.entity.hunt && g.entity.hunt.phase === 'stare' && g.entity.hunt.near) {
+      const en = g.entity, fl = (en.face ?? 1) >= 0 ? -1 : 1, k = clamp(en.hunt.stareT / 1.5, 0, 1);
+      const px = S(g.sub.x + (g.sub.facing || 1) * 1.2), py = Sy(g.sub.y + 0.7);
+      const gl = ctx.createRadialGradient(px, py, 0, px, py, ppm * 6);
+      gl.addColorStop(0, `rgba(120,190,150,${(0.16 * k).toFixed(3)})`); gl.addColorStop(1, 'rgba(120,190,150,0)');
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px, py, ppm * 6, 0, TAU); ctx.fill();
+      ctx.save(); ctx.translate(S(en.x), Sy(en.y)); ctx.scale(fl, 1);
+      // only what the glow reaches, fading out from the window in three soft steps
+      for (const [rad, al] of [[10, 0.16], [7, 0.16], [4.5, 0.2]]) {
+        ctx.save(); ctx.beginPath(); ctx.arc((px - S(en.x)) * fl, py - Sy(en.y), ppm * rad, 0, TAU); ctx.clip();
+        drawEntity(ctx, 34 * ppm, t, al * k, 0.25 * k, false, 0, 0.32);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+    // taken: the arm reaching out of its mouth, then the jaws dropping open beside him. Drawn again over
+    // the lit scene (the flash of the hit, the lamps on it) so it cannot be lost in the dark.
+    if (g.kill && g.entity) {
+      const K = g.kill, en = g.entity, T = K.inSub ? g.sub : g.earl;
+      const flipK = (en.face ?? 1) >= 0 ? -1 : 1, Lk = 34 * ppm;
+      const lightK = K.opened ? 0.6 + 0.35 * clamp(1 - K.jaw / 0.3, 0, 1) : 0.42;
+      ctx.save(); ctx.translate(S(en.x), Sy(en.y)); ctx.scale(flipK, 1);
+      const info = drawEntity(ctx, Lk, t, K.opened ? 1 : clamp(K.t / 0.25, 0, 1) * 0.8, 0.6, false, K.open || 0, lightK);
+      ctx.restore();
+      const mx = S(en.x) + info.mouth[0] * flipK, my = Sy(en.y) + info.mouth[1];
+      const tx = S(T.x + (K.inSub ? -K.s * 0.2 : 0)), ty = Sy(T.y + (K.inSub ? 0.8 : 0));
+      const ext = K.esc ? Math.max(0, 1 - K.escT / 0.45) : clamp(K.t / 0.4, 0, 1);
+      const grip = K.esc ? Math.max(0, 1 - K.escT * 4) : clamp((K.t - 0.3) / 0.2, 0, 1);
+      if (!K.opened || K.jaw < 0.3) drawArm(ctx, mx, my, tx, ty, ext, grip, ppm, t);
     }
     // the arc itself, white-hot, and sparks quenched almost as soon as they leave it
     if (g.welding) {

@@ -471,10 +471,29 @@ export class Hud {
     }
     this.toasts = this.toasts.filter((tt) => tt.t < 4.5);
 
+    // ---------- in its grip: what can still get him free, and how little time is left ----------
+    const K = g.kill;
+    if (K && !K.esc && K.t > K.window[0] && K.t < K.window[1] && g.mode === 'play') {
+      const opts = [];
+      if (!g.entity.flashed) opts.push(['L', 'FLASH IT']);
+      if (g.items.lure > 0 || (g.profile.oldLures || 0) > 0) opts.push(['Q', 'LURE']);
+      if (g.items.necklace > 0) opts.push(['E', 'NECKLACE']);
+      const left = 1 - (K.t - K.window[0]) / (K.window[1] - K.window[0]);
+      const pulse = 0.75 + 0.25 * Math.sin(K.t * 22);
+      ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `600 ${30 * s}px ${MONO}`; ctx.fillStyle = `rgba(255,236,220,${pulse.toFixed(3)})`;
+      ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 12 * s;
+      ctx.fillText(opts.length ? opts.map(([k, n]) => `${k}  ${n}`).join('     ') : 'NOTHING LEFT TO GIVE IT', W / 2, H * 0.72);
+      ctx.shadowBlur = 0;
+      const bw = 360 * s, bx = W / 2 - bw / 2, by = H * 0.72 + 30 * s;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(bx, by, bw, 5 * s);
+      ctx.fillStyle = 'rgba(255,90,70,0.95)'; ctx.fillRect(bx, by, bw * left, 5 * s);
+      ctx.restore();
+    }
     // ---------- death: everything but the red timer fades to black ----------
     const bleedOut = dying && g.deathKind === 'injury', crushed = dying && g.deathKind === 'implode';
     if (dying) {
-      ctx.fillStyle = bleedOut ? `rgba(26,0,0,${clamp(g.deathT / 3, 0, 1).toFixed(3)})` : `rgba(0,0,0,${clamp(crushed ? (g.deathT - 1.6) / 1.6 : g.deathT / 2.2, 0, 1).toFixed(3)})`;
+      ctx.fillStyle = bleedOut ? `rgba(26,0,0,${clamp(g.deathT / 3, 0, 1).toFixed(3)})` : `rgba(0,0,0,${(g.deathKind === 'devoured' ? 1 : clamp(crushed ? (g.deathT - 1.6) / 1.6 : g.deathT / 2.2, 0, 1)).toFixed(3)})`;
       ctx.fillRect(0, 0, W, H);
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.font = `500 ${40 * s}px ${MONO}`;

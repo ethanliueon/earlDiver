@@ -829,127 +829,207 @@ export function drawBoat(ctx, Lp, t, sub) {
 
 // The entity: never shown fully. A huge, wrong silhouette, barely darker than the water.
 export function drawEntityShape(ctx, Lp, t, alpha) {
+  // far off: the same animal, a black shape (the caller centres it; the body is drawn from its snout)
   if (alpha <= 0.002) return;
-  const u = Lp / 100;
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.moveTo(-50 * u, 2 * u);
-  ctx.bezierCurveTo(-46 * u, -12 * u, -20 * u, -19 * u, 6 * u, -16 * u);
-  ctx.bezierCurveTo(22 * u, -14 * u, 34 * u, -7 * u, 40 * u, -3 * u + Math.sin(t * 0.7) * 2 * u);
-  ctx.lineTo(62 * u, -14 * u + Math.sin(t * 0.5) * 5 * u);
-  ctx.lineTo(56 * u, 1 * u);
-  ctx.lineTo(66 * u, 12 * u + Math.sin(t * 0.5) * 5 * u);
-  ctx.lineTo(40 * u, 5 * u);
-  ctx.bezierCurveTo(30 * u, 10 * u, 6 * u, 18 * u, -18 * u, 14 * u);
-  ctx.bezierCurveTo(-34 * u, 12 * u, -46 * u, 10 * u, -50 * u, 2 * u);
-  ctx.fill();
-  // too many trailing fins
-  for (let k = 0; k < 6; k++) {
-    ctx.beginPath();
-    const x = -14 * u + k * 9 * u;
-    ctx.moveTo(x, 12 * u);
-    ctx.quadraticCurveTo(x + 4 * u, 26 * u + Math.sin(t * 0.6 + k) * 4 * u, x + 10 * u, 34 * u + Math.sin(t * 0.4 + k) * 6 * u);
-    ctx.lineTo(x + 5 * u, 13 * u); ctx.fill();
-  }
-  // lower jaw, hanging slightly open
-  ctx.beginPath(); ctx.moveTo(-50 * u, 3 * u); ctx.lineTo(-30 * u, 9 * u + Math.sin(t * 0.3) * 2 * u); ctx.lineTo(-42 * u, 12 * u); ctx.fill();
+  ctx.save(); ctx.translate(-Lp * 0.52, 0);
+  drawEntity(ctx, Lp, t, alpha, 0, false, 0, 0);
   ctx.restore();
 }
 
-// The entity, up close. Local frame: its head (mouth) at the origin, facing -x; the body trails
-// along +x for Lp pixels. Drawn after the lighting pass as a near-black mass, so in the dark it is
-// invisible except where it blocks light (a lamp beam, a lantern, the bright water above) and by
-// its faint pale rim and the dim lights along its flank.
-// Returns the eye position and the photophore positions (local) for the glow pass.
-export function drawEntity(ctx, Lp, t, fillA, rimA, onlyRim = false) {
-  const n = 44, spine = [];
-  const prof = (u) => {
-    if (u < 0.08) return 0.035 + (u / 0.08) * 0.055;          // blunt snout rising to the brow
-    if (u < 0.32) return 0.09 + Math.sin((u - 0.08) / 0.24 * Math.PI) * 0.012; // the massive front
-    return 0.09 * Math.pow(1 - (u - 0.32) / 0.68, 1.35) + 0.006; // a long tapering body
-  };
-  for (let i = 0; i <= n; i++) {
-    const u = i / n;
-    const wave = Math.sin(t * 0.55 - u * 5.5) * Lp * 0.035 * u * u + Math.sin(t * 0.21 + u * 2) * Lp * 0.01 * u;
-    spine.push([u * Lp, wave, prof(u) * Lp]);
-  }
-  const top = spine.map(([x, y, h], i) => [x, y - h * (i < 6 ? 0.9 : 1)]);
-  const bot = spine.map(([x, y, h]) => [x, y + h * 0.85]);
-  // lower jaw: hangs a little open below the head
-  const gape = 0.012 + 0.006 * Math.sin(t * 0.3);
-  const body = new Path2D();
-  body.moveTo(top[0][0], top[0][1]);
-  for (let i = 1; i <= n; i++) body.lineTo(top[i][0], top[i][1]);
-  for (let i = n; i >= 3; i--) body.lineTo(bot[i][0], bot[i][1]);
-  body.lineTo(Lp * 0.06, bot[3][1] + Lp * gape); // jaw hinge, dropped
-  body.lineTo(-Lp * 0.012, bot[0][1] + Lp * gape * 0.6); // jaw tip juts past the snout
-  body.lineTo(top[0][0], top[0][1] + Lp * 0.03);
-  body.closePath();
-  // fins first: long ragged pectoral fins trailing down and back, a torn dorsal ridge, the tail tendrils
+// The thing in the deep, up close: a whale-sized, whale-and-shark-shaped animal with a great domed
+// head, a long gape lined with teeth, a small black eye above the corner of the mouth, pale
+// grey-green skin crazed with white scars, long pectoral fins and a crescent tail.
+// Local frame: the snout at the origin, the body trailing along +x for Lp pixels (the caller flips
+// it to face its prey). jaw 0..1: the lower jaw swings down and distends, the head tips back, until
+// the open mouth is taller than the body is deep. dim 0..1 darkens it (1 when drawn before the
+// lighting pass, which does the darkening; less when it is drawn over the lit scene).
+// Returns the eye and the mouth (local px) and no photophores: it makes no light of its own.
+export function drawEntity(ctx, Lp, t, fillA, rimA, onlyRim = false, jaw = 0, dim = 1) {
+  const L = Lp;
+  const wave = (u) => Math.sin(t * 0.55 - u * 5.5) * L * 0.03 * u * u + Math.sin(t * 0.21 + u * 2) * L * 0.008 * u;
+  const idle = 0.03 + 0.015 * Math.sin(t * 0.3);
+  const open = Math.max(idle, clamp(jaw, 0, 1));
+  const H = [0.3 * L, 0.035 * L + wave(0.3)];          // the jaw hinge
+  const crane = -open * 0.2, theta = open * 1.25, stretch = 1 + open * 0.25;
+  const rot = (p, a, c = H) => { const dx = p[0] - c[0], dy = p[1] - c[1], ca = Math.cos(a), sa = Math.sin(a); return [c[0] + dx * ca - dy * sa, c[1] + dx * sa + dy * ca]; };
+  // a body point (u along, v across, in body lengths); the head ahead of the hinge tips back with the crane
+  const B = (u, v) => { const p = [u * L, v * L + wave(u)]; const k = u <= 0.3 ? 1 : u >= 0.45 ? 0 : 1 - (u - 0.3) / 0.15; return k ? rot(p, crane * k) : p; };
+  // a jaw point: stretched forward from the hinge, then swung down
+  const J = (u, v) => { const p = [H[0] + (u * L - H[0]) * stretch, v * L + wave(u)]; return rot(p, -theta); };
+  const col = (hex) => shade(hex, -(1 - dim));
+  const top = [[0, 0.012], [0.01, -0.03], [0.035, -0.066], [0.08, -0.092], [0.15, -0.106], [0.25, -0.113], [0.38, -0.106], [0.55, -0.08], [0.72, -0.05], [0.86, -0.025], [0.93, -0.012]].map(([u, v]) => B(u, v));
+  const tailSw = Math.sin(t * 0.55 - 5.5) * L * 0.02;
+  const tail = [[1.05, -0.095], [1.0, -0.004], [1.06, 0.075]].map(([u, v]) => [u * L, v * L + wave(0.95) + tailSw * (v < 0 ? 1 : 0.6)]);
+  const belly = [[0.93, 0.012], [0.86, 0.03], [0.72, 0.056], [0.55, 0.082], [0.42, 0.092], [0.33, 0.088]].map(([u, v]) => B(u, v));
+  // the lips bow apart as it gapes (the upper arching, the lower sagging), so the mouth opens round
+  const bow = (u) => Math.sin(clamp(u / 0.3, 0, 1) * Math.PI) * open;
+  const lip = [[0.3, 0.035], [0.25, 0.034], [0.2, 0.031], [0.15, 0.029], [0.1, 0.026], [0.05, 0.022], [0.02, 0.018], [0, 0.012]].map(([u, v]) => B(u, v - bow(u) * 0.012));
+  const jawLip = [[0.3, 0.035], [0.25, 0.035], [0.2, 0.033], [0.15, 0.031], [0.1, 0.029], [0.05, 0.026], [0.02, 0.025], [0.006, 0.028]].map(([u, v]) => J(u, v + bow(u) * 0.03));
+  const chin = [[0.012, 0.05], [0.06, 0.078], [0.15, 0.094], [0.25, 0.097], [0.33, 0.09]].map(([u, v]) => J(u, v));
+  const path = (pts, close = true) => { const p = new Path2D(); p.moveTo(pts[0][0], pts[0][1]); for (const q of pts.slice(1)) p.lineTo(q[0], q[1]); if (close) p.closePath(); return p; };
   ctx.save();
-  if (onlyRim) ctx.globalAlpha = 0;
-  ctx.globalAlpha = fillA;
-  ctx.fillStyle = '#020304';
-  for (const [u0, len, drop] of [[0.2, 0.22, 0.11], [0.24, 0.18, 0.08]]) {
-    const [x0, y0] = bot[Math.round(u0 * n)];
-    ctx.beginPath(); ctx.moveTo(x0, y0 - Lp * 0.01);
-    const sw = Math.sin(t * 0.4 + u0 * 9) * Lp * 0.02;
-    ctx.quadraticCurveTo(x0 + len * Lp * 0.5, y0 + drop * Lp * 0.6 + sw, x0 + len * Lp, y0 + drop * Lp + sw);
-    for (let k = 0; k < 5; k++) ctx.lineTo(x0 + len * Lp * (0.95 - k * 0.16), y0 + drop * Lp * (0.7 - k * 0.12) + sw * (1 - k * 0.2) + (k % 2) * Lp * 0.015);
-    ctx.closePath(); ctx.fill();
-  }
-  for (let i = 8; i < n - 4; i += 2) {
-    const [x, y] = top[i], h = Lp * (0.025 + ((i * 7) % 5) * 0.006) * (1 - i / n);
-    ctx.beginPath(); ctx.moveTo(x - Lp * 0.008, y + 1); ctx.lineTo(x + Lp * 0.012 + Math.sin(t * 0.5 + i) * Lp * 0.005, y - h); ctx.lineTo(x + Lp * 0.014, y + 1); ctx.fill();
-  }
-  ctx.strokeStyle = '#020304'; ctx.lineCap = 'round';
-  for (let k = 0; k < 5; k++) {
-    const [x, y] = spine[n];
-    ctx.lineWidth = Math.max(1, Lp * 0.004);
-    ctx.beginPath(); ctx.moveTo(x - Lp * 0.03, y);
-    ctx.quadraticCurveTo(x + Lp * 0.08, y + (k - 2) * Lp * 0.02 + Math.sin(t * 0.7 + k) * Lp * 0.02, x + Lp * (0.16 + (k % 3) * 0.04), y + (k - 2) * Lp * 0.045 + Math.sin(t * 0.5 + k * 1.7) * Lp * 0.03);
+  ctx.globalAlpha = onlyRim ? 0 : fillA;
+  ctx.lineJoin = 'round';
+  // ---- the mouth: a black throat, dark red gums, between the lips ----
+  const mouth = path(lip.concat(jawLip.slice().reverse()));
+  const mg = ctx.createRadialGradient(H[0] - L * 0.05, H[1] + L * 0.02, L * 0.01, H[0] - L * 0.08, H[1], L * 0.32 * stretch);
+  mg.addColorStop(0, '#000000'); mg.addColorStop(0.45, col('#1e0505')); mg.addColorStop(0.8, col('#4a1210')); mg.addColorStop(1, col('#6e1c18')); // the gums and the wet red throat show round the dark
+  ctx.fillStyle = mg; ctx.fill(mouth);
+  // ---- the long pectoral fin on the far side, then the body ----
+  const flap = Math.sin(t * 0.5) * 0.02;
+  const finFar = path([B(0.37, 0.06), B(0.52, 0.17 + flap), B(0.5, 0.15 + flap), B(0.44, 0.085)]);
+  ctx.fillStyle = col('#4c5a55'); ctx.fill(finFar);
+  const body = path(top.concat(tail, belly, lip));
+  const bg = ctx.createLinearGradient(0, -0.11 * L, 0, 0.095 * L);
+  bg.addColorStop(0, col('#5a6a64')); bg.addColorStop(0.3, col('#7d8d86')); bg.addColorStop(0.65, col('#9aa8a1')); bg.addColorStop(1, col('#c4ccc5'));
+  ctx.fillStyle = bg; ctx.fill(body);
+  ctx.save(); ctx.clip(body);
+  // the white scars: a crazed network of old healed wounds over the head and flanks
+  ctx.strokeStyle = col('#dce6e0'); ctx.globalAlpha = (onlyRim ? 0 : fillA) * 0.42; ctx.lineWidth = Math.max(1, L * 0.0013);
+  for (let k = 0; k < 46; k++) {
+    let u = 0.02 + ((k * 0.6180339) % 1) * 0.62, v = -0.1 + ((k * 0.381966 * 3.7) % 1) * 0.18;
+    let p = B(u, v);
+    ctx.beginPath(); ctx.moveTo(p[0], p[1]);
+    for (let j = 0; j < 5; j++) {
+      u += 0.012 + ((k * 7 + j * 3) % 5) * 0.004; v += (((k * 13 + j * 7) % 9) - 4) * 0.004;
+      p = B(u, v); ctx.lineTo(p[0], p[1]);
+    }
     ctx.stroke();
   }
-  // the body: almost black, a hint of slick grey-green on the back
-  // the skin: dark slate, slick, lighter along the back - only lit where a lamp actually reaches it
-  const g = ctx.createLinearGradient(0, -Lp * 0.1, 0, Lp * 0.09);
-  // darker than the darkest water, so it reads as a black shape gliding through dim light;
-  // a lamp still picks out the slick slate of its back
-  g.addColorStop(0, '#2c3639'); g.addColorStop(0.35, '#151c1e'); g.addColorStop(0.7, '#080b0c'); g.addColorStop(1, '#030405');
-  ctx.fillStyle = g; ctx.fill(body);
-  if (!onlyRim) {
-    ctx.save(); ctx.clip(body);
-    // mottling, old scars, and pale pits along the head
-    for (let k = 0; k < 70; k++) {
-      const u = ((k * 37) % 100) / 100, i = Math.round(u * n);
-      const [x, y, h] = spine[i];
-      ctx.fillStyle = k % 3 ? 'rgba(0,0,0,0.25)' : 'rgba(150,170,170,0.12)';
-      ctx.beginPath(); ctx.ellipse(x, y + (((k * 53) % 100) / 100 - 0.5) * h * 1.5, Lp * (0.004 + (k % 4) * 0.003), Lp * 0.003, k, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.strokeStyle = 'rgba(170,185,180,0.18)'; ctx.lineWidth = Math.max(1, Lp * 0.0015);
-    for (let k = 0; k < 6; k++) { const x = Lp * (0.1 + k * 0.05); ctx.beginPath(); ctx.moveTo(x, -Lp * 0.04 + k * Lp * 0.004); ctx.lineTo(x + Lp * 0.05, -Lp * 0.025 + (k % 2) * Lp * 0.02); ctx.stroke(); }
-    ctx.restore();
-  }
+  // shading: the round of the body, darker toward the tail and in the shadow under the head
+  ctx.globalAlpha = onlyRim ? 0 : fillA;
+  const sh = ctx.createLinearGradient(0, 0, L, 0);
+  sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(0.5, 'rgba(0,0,0,0.12)'); sh.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = sh; ctx.fillRect(-L * 0.1, -L * 0.2, L * 1.3, L * 0.4);
+  // gill slits behind the head
+  ctx.strokeStyle = col('#3a4642'); ctx.lineWidth = Math.max(1, L * 0.0028);
+  for (let k = 0; k < 5; k++) { const a = B(0.34 + k * 0.022, -0.03), b = B(0.355 + k * 0.022, 0.05); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo((a[0] + b[0]) / 2 + L * 0.006, (a[1] + b[1]) / 2, b[0], b[1]); ctx.stroke(); }
   ctx.restore();
-  // rim light along the back and brow, as if from far above or from a lamp
+  // ---- the throat skin, stretched from under the head to the back of the dropped jaw ----
+  if (open > 0.06) {
+    const back = chin[chin.length - 1], b1 = B(0.42, 0.092), b2 = B(0.36, 0.07);
+    const cheek = new Path2D(); cheek.moveTo(H[0], H[1]); cheek.lineTo(b2[0], b2[1]); cheek.lineTo(b1[0], b1[1]);
+    cheek.quadraticCurveTo(b1[0] - L * 0.02, back[1] + L * 0.02 * open, back[0], back[1]); cheek.lineTo(chin[chin.length - 2][0], chin[chin.length - 2][1]); cheek.closePath();
+    const cg = ctx.createLinearGradient(H[0], H[1], back[0], back[1]);
+    cg.addColorStop(0, col('#6e7e78')); cg.addColorStop(1, col('#a9b5ae'));
+    ctx.fillStyle = cg; ctx.fill(cheek);
+    // the folds of stretched skin
+    ctx.strokeStyle = col('#4a5852'); ctx.lineWidth = Math.max(1, L * 0.0016);
+    for (let k = 1; k <= 3; k++) { const f = k / 4; ctx.beginPath(); ctx.moveTo(H[0] + (b1[0] - H[0]) * f, H[1] + (b1[1] - H[1]) * f); ctx.lineTo(H[0] + (back[0] - H[0]) * f, H[1] + (back[1] - H[1]) * f); ctx.stroke(); }
+  }
+  // ---- the lower jaw, swung down: the same pale skin as the belly ----
+  const jawP = path(jawLip.concat(chin));
+  const jg = ctx.createLinearGradient(jawLip[3][0], jawLip[3][1], chin[2][0], chin[2][1]);
+  jg.addColorStop(0, col('#7d8d86')); jg.addColorStop(0.6, col('#a5b1aa')); jg.addColorStop(1, col('#c4ccc5'));
+  ctx.fillStyle = jg; ctx.fill(jawP);
+  ctx.save(); ctx.clip(jawP);
+  ctx.strokeStyle = col('#dce6e0'); ctx.globalAlpha = (onlyRim ? 0 : fillA) * 0.35; ctx.lineWidth = Math.max(1, L * 0.0013);
+  for (let k = 0; k < 10; k++) { let u = 0.03 + k * 0.026, v = 0.05 + (k % 3) * 0.012, q = J(u, v); ctx.beginPath(); ctx.moveTo(q[0], q[1]); for (let j = 0; j < 3; j++) { u += 0.015; v += ((k + j) % 3 - 1) * 0.006; q = J(u, v); ctx.lineTo(q[0], q[1]); } ctx.stroke(); }
+  ctx.restore();
+  ctx.strokeStyle = col('#3a4642'); ctx.lineWidth = Math.max(1, L * 0.0016); ctx.stroke(jawP);
+  // ---- teeth: rows of triangles along both lips, pointing into the mouth; gums behind them ----
+  const teeth = (edge, dir, n, big) => {
+    ctx.fillStyle = col('#5a1a18');
+    for (let i = 0; i < edge.length - 1; i++) { const a = edge[i], b = edge[i + 1]; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(b[0] + dir[0] * L * 0.006, b[1] + dir[1] * L * 0.006); ctx.lineTo(a[0] + dir[0] * L * 0.006, a[1] + dir[1] * L * 0.006); ctx.fill(); }
+    ctx.fillStyle = col('#e6e0cc');
+    for (let i = 0; i < n; i++) {
+      const s = i / (n - 1) * (edge.length - 1.001), k = Math.floor(s), f = s - k, a = edge[k], b = edge[k + 1];
+      const x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f;
+      const tx = b[0] - a[0], ty = b[1] - a[1], tl = Math.hypot(tx, ty) || 1, ux = tx / tl, uy = ty / tl;
+      const h = L * big * (0.6 + 0.4 * Math.sin((i / n) * Math.PI)) * (0.85 + ((i * 7) % 3) * 0.1), w = h * 0.38;
+      const nx = dir[0], ny = dir[1];
+      ctx.beginPath(); ctx.moveTo(x - ux * w, y - uy * w); ctx.lineTo(x + nx * h + ux * w * 0.3, y + ny * h + uy * w * 0.3); ctx.lineTo(x + ux * w, y + uy * w); ctx.closePath(); ctx.fill();
+    }
+  };
+  const down = [Math.sin(-crane), Math.cos(crane)];
+  teeth(lip.slice().reverse(), down, 26, 0.011 + open * 0.004);
+  teeth(jawLip.slice().reverse(), [-Math.sin(theta), -Math.cos(theta)], 24, 0.01 + open * 0.004);
+  // ---- the near pectoral fin ----
+  const fin = path([B(0.36, 0.07), B(0.47, 0.2 + flap * 1.3), B(0.45, 0.17 + flap), B(0.42, 0.09)]);
+  ctx.fillStyle = col('#7a8a84'); ctx.fill(fin);
+  ctx.strokeStyle = col('#3a4642'); ctx.lineWidth = Math.max(1, L * 0.0016); ctx.stroke(fin);
+  // ---- the eye: small, black, glossy, set above the corner of the mouth ----
+  const eye = B(0.13, -0.06);
+  ctx.fillStyle = col('#3a4440'); ctx.beginPath(); ctx.ellipse(eye[0], eye[1], L * 0.011, L * 0.008, crane, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#030303'; ctx.beginPath(); ctx.ellipse(eye[0], eye[1], L * 0.007, L * 0.0055, crane, 0, TAU); ctx.fill();
+  ctx.restore();
+  // ---- rim light along the back and brow ----
   if (rimA > 0.005) {
     ctx.save();
-    ctx.strokeStyle = `rgba(150,172,180,${rimA.toFixed(3)})`; ctx.lineWidth = Math.max(1, Lp * 0.0025);
-    ctx.beginPath(); ctx.moveTo(top[0][0], top[0][1]); for (let i = 1; i < n - 6; i++) ctx.lineTo(top[i][0], top[i][1]); ctx.stroke();
-    // wrinkled, scarred skin around the head
-    ctx.strokeStyle = `rgba(120,140,145,${(rimA * 0.45).toFixed(3)})`; ctx.lineWidth = 1;
-    for (let k = 0; k < 9; k++) { const x = Lp * (0.04 + k * 0.022); ctx.beginPath(); ctx.moveTo(x, -Lp * 0.06); ctx.quadraticCurveTo(x + Lp * 0.01, -Lp * 0.02, x - Lp * 0.004, Lp * 0.03); ctx.stroke(); }
-    // needle teeth along the hanging jaw
-    ctx.strokeStyle = `rgba(200,205,190,${(rimA * 1.2).toFixed(3)})`; ctx.lineWidth = Math.max(0.6, Lp * 0.0012);
-    for (let k = 0; k < 14; k++) {
-      const x = -Lp * 0.006 + k * Lp * 0.0048, y = bot[0][1] + Lp * gape * 0.6 + k * Lp * 0.0012;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Lp * 0.002, y - Lp * (0.008 + (k % 3) * 0.004)); ctx.stroke();
-    }
+    ctx.strokeStyle = `rgba(170,195,190,${rimA.toFixed(3)})`; ctx.lineWidth = Math.max(1, L * 0.0025); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(top[0][0], top[0][1]); for (const p of top.slice(1, -2)) ctx.lineTo(p[0], p[1]); ctx.stroke();
+    ctx.strokeStyle = `rgba(220,215,195,${(rimA * 0.9).toFixed(3)})`; ctx.lineWidth = Math.max(1, L * 0.0015);
+    ctx.beginPath(); ctx.moveTo(lip[0][0], lip[0][1]); for (const p of lip.slice(1)) ctx.lineTo(p[0], p[1]); ctx.stroke(); // the teeth catch the light
     ctx.restore();
   }
-  const photophores = [];
-  for (let i = 6; i < n - 6; i += 2) photophores.push([spine[i][0], spine[i][1] + spine[i][2] * 0.35]);
-  return { eye: [Lp * 0.045, -Lp * 0.035], photophores };
+  const m = [(lip[2][0] + jawLip[2][0]) / 2, (lip[2][1] + jawLip[2][1]) / 2];
+  return { eye, mouth: m, photophores: [] };
+}
+
+// ---------------- the kill: a human arm out of its mouth, and the jaws ----------------
+// Screen-space (px). A limb from a polyline of points, each with a half-width: a smooth tapered body.
+function limb(ctx, pts, widths, fill, edge) {
+  const L = [], R = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l, w = widths[i];
+    L.push([pts[i][0] + nx * w, pts[i][1] + ny * w]); R.push([pts[i][0] - nx * w, pts[i][1] - ny * w]);
+  }
+  ctx.beginPath(); ctx.moveTo(L[0][0], L[0][1]);
+  for (let i = 1; i < L.length; i++) ctx.lineTo(L[i][0], L[i][1]);
+  const e = pts[pts.length - 1], we = widths[widths.length - 1];
+  ctx.arc(e[0], e[1], we, Math.atan2(L[L.length - 1][1] - e[1], L[L.length - 1][0] - e[0]), Math.atan2(R[R.length - 1][1] - e[1], R[R.length - 1][0] - e[0]));
+  for (let i = R.length - 1; i >= 0; i--) ctx.lineTo(R[i][0], R[i][1]);
+  ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+  if (edge) { ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, widths[0] * 0.08); ctx.stroke(); }
+  return L;
+}
+// The arm: far too long, grey-pale, wet; it reaches from the mouth (x0, y0) toward (x1, y1) by ext
+// (0..1), and its hand closes by grip (0..1). ppm: pixels a metre.
+export function drawArm(ctx, x0, y0, x1, y1, ext, grip, ppm, t) {
+  if (ext <= 0.01) return;
+  const wx = x0 + (x1 - x0) * ext, wy = y0 + (y1 - y0) * ext;
+  const D = Math.hypot(wx - x0, wy - y0); if (D < 2) return;
+  const ang = Math.atan2(wy - y0, wx - x0), nx = -Math.sin(ang), ny = Math.cos(ang);
+  // the elbow bends up and out, straightening as it reaches
+  const bend = D * 0.14 + ppm * 0.6 + Math.sin(t * 9) * ppm * 0.06; // never quite straight: a long arm with a joint too many
+  const ex = (x0 + wx) / 2 + nx * -bend, ey = (y0 + wy) / 2 + ny * -bend;
+  const mid = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  const P0 = [x0, y0], E = [ex, ey], Wr = [wx, wy];
+  const pts = [P0, mid(P0, E, 0.5), E, mid(E, Wr, 0.5), Wr];
+  const w = [0.5, 0.56, 0.36, 0.4, 0.26].map((k) => k * ppm); // the swell of the upper arm and the forearm's muscle
+  const sk = ctx.createLinearGradient(ex + nx * ppm, ey + ny * ppm, ex - nx * ppm, ey - ny * ppm);
+  sk.addColorStop(0, '#bdb5a8'); sk.addColorStop(0.45, '#857e73'); sk.addColorStop(1, '#3a3631');
+  ctx.save();
+  // where it comes out of the throat: wet, dark
+  const tg = ctx.createRadialGradient(x0, y0, 0, x0, y0, ppm * 0.8);
+  tg.addColorStop(0, 'rgba(40,6,8,0.9)'); tg.addColorStop(1, 'rgba(40,6,8,0)');
+  ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(x0, y0, ppm * 0.8, 0, TAU); ctx.fill();
+  const top = limb(ctx, pts, w, sk, 'rgba(30,26,24,0.5)');
+  // wet highlight along the top, the knob of the elbow, the tendons and a few dark veins
+  ctx.strokeStyle = 'rgba(245,240,230,0.35)'; ctx.lineWidth = Math.max(1, ppm * 0.04); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(top[0][0], top[0][1]); for (const p of top.slice(1)) ctx.lineTo(p[0] * 0.92 + 0.08 * pts[top.indexOf(p)][0], p[1] * 0.92 + 0.08 * pts[top.indexOf(p)][1]); ctx.stroke();
+  ctx.fillStyle = 'rgba(80,72,64,0.6)'; ctx.beginPath(); ctx.ellipse(ex, ey, ppm * 0.22, ppm * 0.16, ang, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(60,70,80,0.45)'; ctx.lineWidth = Math.max(1, ppm * 0.025);
+  for (const k of [0.25, 0.6]) { const a = mid(E, Wr, k), b = mid(E, Wr, k + 0.25); ctx.beginPath(); ctx.moveTo(a[0] + nx * ppm * 0.05, a[1] + ny * ppm * 0.05); ctx.quadraticCurveTo((a[0] + b[0]) / 2 - nx * ppm * 0.08, (a[1] + b[1]) / 2 - ny * ppm * 0.08, b[0], b[1]); ctx.stroke(); }
+  // the hand: a broad palm, four long fingers and a thumb that close round what it has caught
+  const fa = Math.atan2(wy - ey, wx - ex), fx = Math.cos(fa), fy = Math.sin(fa), px = -fy, py = fx;
+  const palm = [wx + fx * ppm * 0.35, wy + fy * ppm * 0.35];
+  ctx.fillStyle = sk; ctx.beginPath(); ctx.ellipse(palm[0], palm[1], ppm * 0.42, ppm * 0.32, fa, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,26,24,0.45)'; ctx.lineWidth = Math.max(1, ppm * 0.03); ctx.stroke();
+  for (let i = 0; i < 5; i++) {
+    const thumb = i === 0, off = thumb ? -0.3 : -0.18 + (i - 1) * 0.13;
+    const base = [palm[0] + fx * ppm * (thumb ? 0.05 : 0.32) + px * ppm * off * 1.6, palm[1] + fy * ppm * (thumb ? 0.05 : 0.32) + py * ppm * off * 1.6];
+    let a = fa + (thumb ? -0.9 : -0.1 + (i - 1) * 0.08) * (1 - grip * 0.4);
+    const curl = (thumb ? 0.75 : -0.55) * grip; // the fingers fold one way, the thumb the other
+    const segs = thumb ? [0.45, 0.35] : [0.6, 0.45, 0.35];
+    const fp = [base];
+    for (const L of segs) { a += curl; const q = fp[fp.length - 1]; fp.push([q[0] + Math.cos(a) * L * ppm * 1.3, q[1] + Math.sin(a) * L * ppm * 1.3]); }
+    const fw = fp.map((_, k) => ppm * (0.11 - k * 0.018));
+    limb(ctx, fp, fw, sk, 'rgba(30,26,24,0.4)');
+    const tip = fp[fp.length - 1];
+    ctx.fillStyle = 'rgba(200,190,150,0.85)'; ctx.beginPath(); ctx.ellipse(tip[0], tip[1], ppm * 0.06, ppm * 0.04, a, 0, TAU); ctx.fill(); // a yellowed nail
+    for (const kn of fp.slice(1, -1)) { ctx.fillStyle = 'rgba(70,64,58,0.5)'; ctx.beginPath(); ctx.arc(kn[0], kn[1], ppm * 0.045, 0, TAU); ctx.fill(); } // knuckles
+  }
+  ctx.restore();
 }

@@ -159,6 +159,53 @@ export class Audio {
     m.level += clamp(target - m.level, -fade * dt, fade * dt);
     return m.level;
   }
+  // ---------------- the kill: the sound drops out, then the hit ----------------
+  // drop: everything (ambience, music, the motor, the drone) falls silent in a twentieth of a second
+  drop() {
+    if (!this.ready) return;
+    const t = this.ac.currentTime, gn = this.master.gain;
+    gn.cancelScheduledValues(t); gn.setValueAtTime(gn.value, t); gn.linearRampToValueAtTime(0, t + 0.05);
+    this.dropped = true;
+  }
+  // restore: the world's sound comes back up
+  restore(sec = 0.8) {
+    if (!this.ready || !this.dropped) return;
+    const t = this.ac.currentTime, gn = this.master.gain;
+    gn.cancelScheduledValues(t); gn.setValueAtTime(gn.value, t); gn.linearRampToValueAtTime(this.muted ? 0 : 0.9, t + sec);
+    this.dropped = false;
+  }
+  // the hit, on its own bus (the world stays silent around it): a sub-bass slam, a wet tearing
+  // crunch, a shriek that falls away, and a long low tail
+  scare() {
+    if (!this.ready || this.muted) return;
+    const ac = this.ac, t0 = ac.currentTime;
+    const bus = ac.createGain(); bus.gain.value = 1;
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 4;
+    bus.connect(comp).connect(ac.destination);
+    const env = (node, a, peak, dur) => { const gn = ac.createGain(); gn.gain.setValueAtTime(0, t0); gn.gain.linearRampToValueAtTime(peak, t0 + a); gn.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); node.connect(gn).connect(bus); return gn; };
+    // the slam: a sine falling from 70 Hz to 24 Hz
+    const o = ac.createOscillator(); o.frequency.setValueAtTime(70, t0); o.frequency.exponentialRampToValueAtTime(24, t0 + 1.4);
+    env(o, 0.008, 1.0, 1.8); o.start(t0); o.stop(t0 + 1.9);
+    // the crunch and the wet roar: noise through a lowpass and a bandpass
+    for (const [buf, type, f, q, peak, dur] of [[this.brown, 'lowpass', 600, 0.7, 1.0, 1.4], [this.white, 'bandpass', 900, 1.2, 0.55, 0.6], [this.white, 'highpass', 2500, 0.7, 0.4, 0.22]]) {
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const fl = ac.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+      src.connect(fl); env(fl, 0.01, peak, dur); src.start(t0, Math.random() * 2); src.stop(t0 + dur + 0.05);
+    }
+    // the shriek: two detuned saws falling, through a distortion and a bandpass
+    const ws = ac.createWaveShaper(), curve = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) { const x = i / 512 - 1; curve[i] = Math.tanh(x * 6); }
+    ws.curve = curve;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.setValueAtTime(2200, t0); bp.frequency.exponentialRampToValueAtTime(500, t0 + 0.9); bp.Q.value = 1.5;
+    for (const f of [1300, 1385]) { const sw = ac.createOscillator(); sw.type = 'sawtooth'; sw.frequency.setValueAtTime(f, t0); sw.frequency.exponentialRampToValueAtTime(f * 0.22, t0 + 0.9); sw.connect(ws); sw.start(t0); sw.stop(t0 + 1); }
+    ws.connect(bp); env(bp, 0.02, 0.28, 0.95);
+  }
+  // it draws back to strike: a low swell rising under everything
+  swell() {
+    if (!this.ready) return;
+    this.tone(28, 1.3, 0.55, 'sine', 0, 58);
+    this.burst('lowpass', 200, 0.8, 1.2, 0.35, this.brown);
+  }
   setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ac.currentTime, 0.1); }
 
   burst(type, freq, q, dur, vol, buf = this.white, when = 0) {
@@ -270,12 +317,13 @@ export class Audio {
     mv *= 1 - fx.dread * 0.7;
     if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
     if (g.paused) mv *= 0.4;
-    this.musicGain.gain.setTargetAtTime(mv, now, 0.4);
+    const hush = 1 - 0.85 * ((g.fx && g.fx.hush) || 0); // it is near: the sea goes quiet
+    this.musicGain.gain.setTargetAtTime(mv * hush, now, 0.4);
     const hurtMuffle = (g.injury >= 3 ? 0.5 : 1) * (g.noAir ? 1 - Math.min(1, g.noAir / 15) * 0.8 : 1);
     const lp = (under ? clamp(1400 * Math.exp(-depth / 500), 280, 1400) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle;
     this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
     // beds
-    this.amb.g.gain.setTargetAtTime(under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03, now, 0.5);
+    this.amb.g.gain.setTargetAtTime((under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03) * hush, now, 0.5);
     this.amb.f.frequency.setTargetAtTime(under ? lerp(260, 120, clamp(depth / 1000, 0, 1)) : 400, now, 0.5);
     const atSurface = g.mode === 'play' && (e.inSub ? g.sub.y < 2.2 && !g.sub.imploded : e.y < 1.0);
     // the lapping plays only while air is going in (his tank, or the sub's cabin), and stops as it fills

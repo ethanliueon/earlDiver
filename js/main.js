@@ -77,6 +77,7 @@ function devMaxAll() {
   hud.toast('Developer: everything maxed out', 'big'); audio.ready && audio.click();
 }
 function newGame(mode) {
+  audio.ready && audio.restore(1.2); // after a death by the thing below, the sound comes back
   const P = profile || newProfile();
   convertOldTraps(P); // old seabed traps become the new box traps
   BOAT.x = BOAT_HOME; // every dive starts with the Margaret back over the shelf edge
@@ -511,6 +512,7 @@ hudCanvas.addEventListener('wheel', (ev) => {
 function mouseScreen() { const k = canvas.width / window.innerWidth; return [mouse.x * k, mouse.y * k]; }
 
 function readMove() {
+  if (g.kill) return { x: 0, y: 0, sprint: false }; // in its grip, nothing he does moves him
   if (ui.tankOpen && ui.tankOpen()) return { x: 0, y: 0, sprint: false }; // in the back of the sub, the helm is left alone
   if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
   if (g.homeRun) return { x: 0, y: 0, sprint: false }; // on autopilot the keys and the mouse leave the helm alone (C hands it back)
@@ -666,6 +668,80 @@ function leaveSub() {
   audio.ready && audio.click();
 }
 
+// ---------------- taken: the arm, then the jaws ----------------
+// The strike reaches him and everything goes silent. A long pale human arm reaches out of its mouth
+// and closes round him (or round the sub's sphere) and draws him in. For a second and a half he can
+// still get free: flash it with the lights (once: it learns), throw it a lure, or the necklace. Then
+// the jaws open, three great lobes peeling back wider than the sub is long, with the hit, and close.
+const KILL_REACH = 0.4, KILL_JAWS = 1.75, KILL_CLOSE = 0.62;
+function startKill() {
+  const e = g.earl, ent = g.entity, inSub = e.inSub && !g.sub.imploded;
+  const T = inSub ? g.sub : e;
+  const s = Math.sign(ent.x - T.x) || 1;
+  ent.x = T.x + s * (inSub ? 9 : 7); ent.y = T.y - 0.4; ent.vx = ent.vy = 0; ent.faceLock = -s; ent.eyeOpen = 1; ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
+  g.kill = { t: 0, inSub, s, esc: false, escT: 0, jaw: 0, window: [KILL_REACH * 0.5, KILL_JAWS] };
+  ui.closeAll && ui.closeAll();
+  audio.ready && audio.drop();
+  g.fx.shake = Math.max(g.fx.shake, 1.2);
+}
+function killUpdate(dt) {
+  const K = g.kill, e = g.earl, ent = g.entity, T = K.inSub ? g.sub : e;
+  K.t += dt;
+  e.vx = e.vy = 0; if (K.inSub) g.sub.vx = g.sub.vy = 0;
+  ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
+  if (K.esc) {
+    K.escT += dt;
+    if (K.escT > 0.6) { g.kill = null; ent.faceLock = null; }
+    for (const k of ['l', 'q', 'e']) pressed.delete(k);
+    return;
+  }
+  // in its grip: drawn toward the mouth
+  if (K.t > KILL_REACH) {
+    const mx = ent.x - K.s * 2.5, my = ent.y + 0.4, k = 1 - Math.exp(-dt * 0.9);
+    T.x += (mx - T.x) * k; T.y += (my - T.y) * k;
+    if (K.inSub) { e.x = g.sub.x; e.y = g.sub.y; }
+  }
+  // the moment to get free
+  if (K.t > K.window[0] && K.t < K.window[1]) {
+    let how = null;
+    if (pressed.has('l')) { if (!ent.flashed) { how = 'flash'; ent.flashed = true; } else hud.toast('It no longer flinches from the light', 'warn'); }
+    if (!how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { if ((profile.oldLures || 0) > 0) profile.oldLures--; else g.items.lure--; how = 'lure'; }
+    if (!how && pressed.has('e') && g.items.necklace > 0) { g.items.necklace--; g.necklaceT = 15; how = 'necklace'; }
+    if (how) { escapeKill(how); for (const k of ['l', 'q', 'e']) pressed.delete(k); return; }
+  }
+  for (const k of ['l', 'q', 'e']) pressed.delete(k);
+  // its mouth a crack open while the arm is out
+  if (!K.opened) K.open = clamp(K.t / 0.35, 0, 1) * 0.3;
+  // the jaws: the lower jaw drops wide in a tenth of a second, held a breath, and it lunges and shuts
+  if (K.t >= KILL_JAWS) {
+    if (!K.opened) { K.opened = true; audio.ready && audio.scare(); g.fx.shake = Math.max(g.fx.shake, 3.2); g.fx.flash = 0.45; }
+    K.jaw = K.t - KILL_JAWS;
+    const j = K.jaw;
+    K.open = j < 0.1 ? 0.3 + 0.7 * (1 - Math.pow(1 - j / 0.1, 3)) : j < 0.42 ? 1 : Math.max(0, 1 - (j - 0.42) / 0.2);
+    if (j > 0.18) { const k = 1 - Math.exp(-dt * 10); ent.x += (T.x - K.s * 3.4 - ent.x) * k; ent.y += (T.y - 2 - ent.y) * k; }
+    if (K.jaw > KILL_CLOSE && !K.done) { K.done = true; die(causeText('entity'), 'devoured'); }
+  }
+}
+function escapeKill(how) {
+  const K = g.kill, ent = g.entity, e = g.earl;
+  K.esc = true; K.escT = 0;
+  audio.ready && audio.restore(0.25);
+  if (how === 'flash') { g.fx.flash = 0.7; g.lampFlashT = g.time; }
+  if (how === 'lure') { const dir = -K.s; g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1, old: false }; ent.throwLure(g.lure.x, g.lure.y, 10); }
+  // it lets go, but not before it has done its damage (never enough, on its own, to kill)
+  if (K.inSub) {
+    g.sub.hull = Math.max(0.05, g.sub.hull - 0.35); audio.ready && audio.ram();
+    hud.toast(`${how === 'flash' ? 'The light burns it' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it lets go. The hull is torn (${Math.round(g.sub.hull * 100)} %)`, 'warn');
+  } else {
+    g.injury = Math.min(4, g.injury + 2); g.healT = 0; g.fx.redFlash = 1;
+    for (let i = 0; i < 30; i++) g.blood.push({ x: e.x + (Math.random() - 0.5) * 0.8, y: e.y + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, r: 0.3 + Math.random() * 0.5, t: 0, life: 6 });
+    hud.toast(`${how === 'flash' ? 'The light burns it' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it lets go. Its fingers broke something.`, 'warn');
+  }
+  g.fx.shake = Math.max(g.fx.shake, 2);
+  ent.hunt = null;
+  if (how !== 'lure') ent.goAway(e.x, e.y, ent.band(g)[0]);
+}
+
 // ---------------- repairs during a dive ----------------
 // Sealant (K, inside): six seconds of work along the seams, +20 % hull, but only up to 85 %: a seal
 // stops water, it does not give back the steel's strength. A patch plate (hold F outside, by the
@@ -816,6 +892,7 @@ function update(dt) {
 
   if (g.mode === 'play') {
     g.survival += dt;
+    if (g.kill) killUpdate(dt);
     // input
     const mv = readMove();
     if (keys.has('f')) {
@@ -866,9 +943,10 @@ function update(dt) {
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
     if (pressed.has('l')) {
-      g.lampFlashT = g.time; e.lampWanted = !e.lampWanted;
-      if (e.inSub) g.sub.lightsOn = e.lampWanted; // outside, only his own lamp: the sub keeps its lights as they were
-      hud.toast(e.inSub ? (e.lampWanted ? 'Lights on' : 'Lights off') : (e.lampWanted ? 'Headlamp on' : 'Headlamp off'));
+      g.lampFlashT = g.time;
+      if (e.inSub) { g.sub.lightsOn = !g.sub.lightsOn; e.lampWanted = g.sub.lightsOn; } // outside, only his own lamp: the sub keeps its lights as they were
+      else { const was = e.lampOn || (e.y <= 1 && !e.lampAuto && e.lampWanted); e.lampAuto = false; e.lampWanted = !was; }
+      hud.toast(e.inSub ? (g.sub.lightsOn ? 'Lights on' : 'Lights off') : (e.lampWanted ? 'Headlamp on' : 'Headlamp off'));
     }
     if (pressed.has('u') && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) ui.toggleWorkshop();
     if (pressed.has('t')) { if (e.inSub && !g.sub.imploded) ui.toggleTank(); else hud.toast('The tank room is in the sub', 'warn'); }
@@ -1193,8 +1271,8 @@ function update(dt) {
       ent.x = lerp(ent.x, tx, dt * (R.t < 2 ? 0.6 : 1.5)); ent.y = lerp(ent.y, ty, dt * 1.5);
       ent.dist = dist(ent.x, ent.y, e.x, e.y); ent.eyeOpen = 1; ent.fade = 1; ent.heading = Math.PI;
       if (R.t > 26) { g.reveal = null; ent.y = Math.max(ent.y, e.y + 200); }
-    } else r = ent.update(g, dt);
-    if (r === 'caught') die(causeText('entity'));
+    } else if (!g.kill) r = ent.update(g, dt);
+    if (r === 'grab') startKill();
     for (const ev of g.events) {
       if (ev === 'marked') {
         // something has noticed him: a deep sound, a pulse through the screen, a line in the journal
@@ -1212,6 +1290,14 @@ function update(dt) {
         g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}] It has lost interest. For now.`;
         const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
       }
+      else if (ev === 'pass') {
+        // it sweeps by, close: the water shoves the sub, a long low rush
+        g.fx.shake = Math.max(g.fx.shake, 1.4); audio.ready && (audio.whoosh(), audio.thud(0.45));
+        if (e.inSub) { g.sub.vx += (Math.random() - 0.5) * 3; g.sub.vy += 1.2; }
+      } else if (ev === 'windup') { g.fx.markPulse = 1; audio.ready && audio.swell(); }
+      else if (ev === 'strike') { audio.ready && (audio.whoosh(), audio.heartbeat(0.6)); }
+      else if (ev === 'stare') { hud.toast('Something is looking in through the glass. Keep still.', 'note'); audio.ready && audio.heartbeat(0.5); }
+      else if (ev === 'lost') hud.toast('It has lost you in the dark.', 'note');
       else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); hud.toast('Something bumped you', 'warn'); }
       else if (ev === 'charge') { audio.ready && audio.whoosh(); }
       else if (ev === 'swerve') { hud.toast('It turns away from the light'); }
@@ -1225,7 +1311,7 @@ function update(dt) {
     const injuryDeath = g.deathKind === 'injury', crushed = g.deathKind === 'implode';
     // bleeding out: the red closes in first, then the dark; no countdown
     // crushed: the flash, the wreck scattering in the bubble cloud, then the dark, then quiet
-    g.fx.black = injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : crushed ? clamp((g.deathT - 1.6) / 1.6, 0, 1) : clamp(g.deathT / 3, 0, 1);
+    g.fx.black = g.deathKind === 'devoured' ? 1 : injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : crushed ? clamp((g.deathT - 1.6) / 1.6, 0, 1) : clamp(g.deathT / 3, 0, 1);
     g.fx.redDeath = injuryDeath ? clamp(g.deathT / 2.2, 0, 1) : 0;
     if (g.deathT > (injuryDeath ? 5 : crushed ? 6 : 3.6)) {
       const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
@@ -1242,6 +1328,8 @@ function update(dt) {
   const targetDread = g.mode === 'dying' ? 1 : dreadFromDistance(d);
   const fx = g.fx;
   fx.dread = lerp(fx.dread, targetDread, 1 - Math.exp(-dt * 1.5));
+  // it is close and hunting: the lights in the water go out and the sea goes quiet
+  fx.hush = lerp(fx.hush || 0, g.kill || (ent.marked && ent.hunt) ? 1 : ent.marked && d < 120 ? 0.45 : 0, 1 - Math.exp(-dt * 0.8));
   fx.torchShift = clamp(fx.dread * 1.5, 0, 1) * (0.35 + 0.65 * clamp((g.earl.y - 100) / 60, 0, 1));
   // in the safe zone you still hear and sense it (sonar, heartbeat), but the water stays the water
   const deepK = clamp((e.y - 100) / 60, 0, 1);
@@ -1280,6 +1368,8 @@ function update(dt) {
   g.waveBoost = lerp(g.waveBoost, near * 0.18, dt * 0.5);
   g.storm = 0;
   g.dayEff = g.day.light;
+  if (!e.inSub && e.y > 200 && (e.prevLampY ?? 0) <= 200 && !e.lampAuto) { e.lampAuto = true; hud.toast('Headlamp on (200 m)'); }
+  e.prevLampY = e.y;
   e.dark = Math.sqrt(g.dayEff * Math.exp(-Math.max(0, e.y) / 140)) * (1 - fx.darken) < 0.3;
   // heart rate
   const lowO2 = !e.inSub ? clamp(1 - (e.o2 / e.o2Max) / 0.25, 0, 1) : clamp(1 - (g.sub.o2 / g.sub.o2Max) / 0.2, 0, 1);

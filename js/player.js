@@ -29,13 +29,18 @@ export class Earl {
     this.x = SPAWN.x; this.y = SPAWN.y; this.vx = 0; this.vy = 0;
     this.facing = 1; this.angle = 0; this.kick = 0; this.speedNow = 0;
     this.o2Max = DIVER_O2; this.o2 = DIVER_O2;
-    this.sprint = false; this.inSub = false; this.lampWanted = true; this.finSpeed = 1;
+    this.sprint = false; this.inSub = false; this.lampWanted = true; this.lampAuto = true; this.finSpeed = 1;
     this.maxDepth = 0; this.surfacing = 0; this.idle = 0; this.hr = 68;
     this.bubbleT = 0; this.atSurface = false;
     this.speedMul = 1; this.o2Mul = 1; // set from injury each frame
   }
   // switches on by itself below 200 m, or whenever it is too dark to see (night, the entity's darkness)
-  get lampOn() { return this.lampWanted && (this.y > 200 || (this.y > 1 && this.dark)); }
+  // the headlamp: on its own it comes on in the dark (below 200 m, or at night); L switches it
+  // either way at any depth, and going down past 200 m hands it back to automatic (on)
+  get lampOn() {
+    if (this.y <= 1) return false;
+    return this.lampAuto ? (this.y > 200 || this.dark) : this.lampWanted;
+  }
 }
 
 export class Sub {
