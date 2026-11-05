@@ -116,7 +116,8 @@ export class Fauna {
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
     for (let i = 0; i < n; i++) {
-      const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12), oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06);
+      const k = Math.max(1, sp.len * 0.7); // big animals spawn a body-length or so apart
+      const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12) * k, oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06) * k;
       this.list.push(this.makeFish(sp, x + ox, Math.max(0.5, y + oy), dir, gid, i === 0));
     }
   }
@@ -276,6 +277,8 @@ export class Fauna {
     const leaders = {};
     for (const c of this.list) if (c.leader && !this.schools.has(c.gid)) leaders[c.gid] = c;
     const hunters = this.list.filter((h) => h.prey && !h.dead);
+    // large animals in a group (dolphins, orca, sharks...) keep their own space instead of overlapping
+    const bigs = this.list.filter((b) => b.len > 1 && !this.schools.has(b.gid));
     const counts = new Map();
     for (let i = this.list.length - 1; i >= 0; i--) {
       const c = this.list[i];
@@ -297,8 +300,9 @@ export class Fauna {
       } else {
         const L = leaders[c.gid];
         if (!c.leader && L) {
-          tx = L.x - L.dir * (0.5 + (c.wob % 3)) + Math.sin(time * 0.7 + c.wob) * 1.2;
-          ty = L.y + Math.sin(time * 0.5 + c.wob * 1.3) * 0.9 + ((c.wob % 7) - 3.5) * 0.25;
+          const k = Math.max(1, c.len * 0.7); // slots scale with body size
+          tx = L.x - L.dir * (0.5 + (c.wob % 3)) * k + Math.sin(time * 0.7 + c.wob) * 1.2 * Math.min(k, 2);
+          ty = L.y + Math.sin(time * 0.5 + c.wob * 1.3) * 0.9 + ((c.wob % 7) - 3.5) * 0.25 * k;
         } else {
           c.leader = true;
           const pel = c.sp.v.hab === 'pelagic' || c.sp.v.hab === 'drift' || c.sp.v.hab === 'surface';
@@ -320,6 +324,11 @@ export class Fauna {
           ty = pel ? c.y + clamp(c.tDepth - c.y, -4, 4) + wander : c.y + wander * 3;
         }
         ax = (tx - c.x) * 0.6; ay = (ty - c.y) * 0.6;
+        if (c.len > 1) for (const o of bigs) {
+          if (o === c || o.gid !== c.gid) continue;
+          const dx = c.x - o.x, dy = (c.y - o.y) * 2.5, need = (c.len + o.len) * 0.55, d = Math.hypot(dx, dy);
+          if (d < need) { const f = (need - d) / need * 4 / (d + 0.05); ax += dx * f * 1.5; ay += dy * f; }
+        }
       }
       // an attacker under hunter control steers straight to its target
       if (c.ctrl) {
