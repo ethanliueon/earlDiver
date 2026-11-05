@@ -1,5 +1,7 @@
 # Earl the Diver
 
+Version 1.0.0 (shown on the home screen and in the pause menu; see `js/version.js`).
+
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
 Earl makes his living from the sea: he dives, brings things up, sells them at his boat and spends

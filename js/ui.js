@@ -14,6 +14,7 @@ import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 
+import { VERSION } from './version.js';
 const $ = (id) => document.getElementById(id);
 const RUNLOG_KEY = 'earlDiver.runs.v1';
 
@@ -60,6 +61,7 @@ export class UI {
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
     this.renderRuns();
     this.renderSave();
+    document.querySelectorAll('.version').forEach((el) => { el.textContent = 'v' + VERSION; });
   }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }

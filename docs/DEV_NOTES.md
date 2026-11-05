@@ -42,6 +42,13 @@ taken at ~3 min; hiding in kelp roughly doubles that.
 - Gamepad support.
 - Settings: volume sliders, reduced motion (turn off disorientation effects).
 
+## Versioning
+
+`js/version.js` holds the version, shown on the home screen and in the pause menu, so the owner can
+tell when a change has been published. Bump it with every change: the last number for small fixes
+and tweaks, the middle one for new features or bigger changes, the first for a major overhaul.
+Say the new number when reporting the change.
+
 ## Testing
 
 Serve the folder (`python3 -m http.server`) and open it in a browser. `window.__earl` exposes
