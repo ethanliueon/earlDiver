@@ -45,7 +45,7 @@ export class UI {
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
-      if (!b) { const row = ev.target.closest('.up-row[data-row]'); if (row) { row.classList.toggle('open'); this.openRows[row.classList.contains('open') ? 'add' : 'delete'](row.dataset.row); } return; }
+      if (!b) { const i = ev.target.closest('button.info'); if (i) this.toggleInfo(i.closest('[data-row]')); return; }
       if (b.disabled) return;
       const k = b.dataset.cave;
       if (k.startsWith('tab:')) this.caveTab = k.slice(4);
@@ -56,6 +56,18 @@ export class UI {
     });
     this.shopTab = 'sell';
     this.openRows = new Set(); // shop rows whose details are open
+    // I: the spec sheet of the row under the pointer (or, with none, every row on the page)
+    this.hoverRow = null;
+    document.addEventListener('mouseover', (ev) => { this.hoverRow = ev.target.closest ? ev.target.closest('.shop [data-row]') : null; });
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== 'i' && e.key !== 'I') return;
+      if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+      const box = [$('shop-body'), $('cave-body')].find((el) => el && !el.closest('section').hidden);
+      if (!box) return;
+      if (this.hoverRow && box.contains(this.hoverRow)) { this.toggleInfo(this.hoverRow); return; }
+      const rows = [...box.querySelectorAll('[data-row]')], anyClosed = rows.some((r) => !r.classList.contains('open'));
+      for (const r of rows) if (r.classList.contains('open') !== anyClosed) this.toggleInfo(r);
+    });
     document.querySelectorAll('.shop-tabs button').forEach((b) => b.addEventListener('click', () => {
       this.shopTab = b.dataset.shop;
       document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x === b));
@@ -64,11 +76,7 @@ export class UI {
     // one delegated handler for every button in the shop
     $('shop-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('button[data-act]');
-      if (!b) {
-        const row = ev.target.closest('.up-row[data-row]');
-        if (row) { const k = row.dataset.row; row.classList.toggle('open'); this.openRows[row.classList.contains('open') ? 'add' : 'delete'](k); }
-        return;
-      }
+      if (!b) { const i = ev.target.closest('button.info'); if (i) this.toggleInfo(i.closest('[data-row]')); return; }
       if (b.disabled) return;
       const act = b.dataset.act, arg = b.dataset.arg;
       if (act === 'buy') h.onBuy(arg);
@@ -214,7 +222,7 @@ export class UI {
         const have = k === 'oldlure' ? (P.oldLures || 0) : k === 'relic' ? (P.relics || 0) : k === 'eye' ? (P.eye ? 1 : 0) : (g.blessed ? 1 : 0);
         const done = (W.max && have >= W.max) || (W.once && have) || (k === 'blessing' && have);
         const owned = W.max ? `${have} / ${W.max}` : done ? (k === 'blessing' ? 'on you this dive' : 'yours') : '';
-        html += this.row('ware:' + k, W.name, W.line, owned, `<button data-cave="ware:${k}" class="coinbtn" ${done || (P.coins || 0) < W.coins ? 'disabled' : ''}>${COIN}${W.coins}</button>`, `${W.coins} old gold coin${W.coins > 1 ? 's' : ''}`, W.desc);
+        html += this.row('ware:' + k, W.name, W.line, owned, `<button data-cave="ware:${k}" class="coinbtn" ${done || (P.coins || 0) < W.coins ? 'disabled' : ''}>${COIN}${W.coins}</button>`, '', W.desc, [['price', `${W.coins} old gold coin${W.coins > 1 ? 's' : ''}`, 'sheet']]);
       }
       html += '<p class="shop-note">Old gold comes from the deep: every live animal caught below 500 m pays coins when it is sold (more the deeper it lived), she pays some in every trade, and so does every sapphire.</p>';
       $('cave-body').innerHTML = html;
@@ -360,9 +368,9 @@ export class UI {
     const can = (price) => P.cash + 1e-6 >= price;
     // a card: name, what it is, what it changes, and a price button
     const card = (name, desc, stat, price, act, arg, label, owned = '', img = '') => `
-      <div class="card${img ? ' with-img' : ''}" data-tip="${String(desc).replace(/"/g, '&quot;')}">
+      <div class="card${img ? ' with-img' : ''}${this.openRows.has('card:' + arg) ? ' open' : ''}" data-row="card:${arg}">
         ${img ? `<img src="${img}" alt="">` : ''}
-        <div class="card-txt"><h3>${name}</h3><p>${desc}</p>${stat ? `<div class="card-stat">${stat}</div>` : ''}${owned}</div>
+        <div class="card-txt"><h3>${name}<button class="info" data-info="card:${arg}" title="More about it (I)" aria-label="More information">i</button></h3><p class="story">${desc}</p>${stat ? `<div class="card-stat">${stat}</div>` : ''}${owned}</div>
         <button data-act="${act}" data-arg="${arg}" ${price !== null && !can(price) ? 'disabled' : ''}>${label}${price !== null ? `<span>${money(price, false)}</span>` : ''}</button>
       </div>`;
     const ladder = (n, i) => `<div class="ladder">${Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -488,27 +496,47 @@ export class UI {
     const pct = (v) => `${v > 1 ? '+' : ''}${Math.round((v - 1) * 100)} %`;
     let html = '<div class="up-group"><h4>Suit</h4>';
     for (const [k, S] of Object.entries(SUITS)) {
-      const bits = [];
-      if (S.press !== 300) bits.push(`pressure from ${S.press} m`);
-      if (S.air !== 1) bits.push(`air ${pct(S.air)}`);
-      if (S.speed !== 1) bits.push(`speed ${pct(S.speed)}`);
-      if (S.bite) bits.push('turns bites');
-      if (S.quiet) bits.push('no bubbles');
-      if (S.warm) bits.push('warm');
+      // what it does, plate by plate: the pressure rating first, always
+      const specs = [['rated', `${S.press} m`, 'press']];
+      if (S.air !== 1) specs.push(['air use', pct(S.air), S.air < 1 ? 'good' : 'bad']);
+      if (S.speed !== 1) specs.push(['speed', pct(S.speed), S.speed > 1 ? 'good' : 'bad']);
+      if (S.bite) specs.push(['bites', `−${S.bite} injury`, 'good']);
+      if (S.quiet) specs.push(['', 'no bubbles', 'good']);
+      if (S.warm) specs.push(['', 'keeps out the cold', 'good']);
+      if (specs.length === 1) specs.push(['', 'nothing else special', 'sheet']);
       const label = k === worn ? 'Worn' : have.has(k) ? 'Wear' : money(S.price);
       const dis = k === worn || (!have.has(k) && !can(S.price));
+      const story = `${S.desc} <span class="note">Below ${S.press} m the water starts to squeeze him: his air goes faster the deeper he is, and so does each held breath.</span>`;
       html += this.row('suit:' + k, S.name, S.line, have.has(k) ? 'owned' : '', `<button data-act="buy" data-arg="suit:${k}" ${dis ? 'disabled' : ''}>${label}</button>`,
-        bits.join(' · ') || 'nothing special', S.desc);
+        '', story, specs);
     }
     return html + '</div>';
   }
 
-  // one shop row: the name and a single line; tap it and the numbers and the full story open below
-  row(key, name, line, lv, button, stats, desc) {
+  // one shop row: the name, a single line and its key numbers on small plates; the brass "i" (or the
+  // I key over it) opens a spec sheet below: every figure, with gauges, and the full story.
+  // specs: [label, value, kind] where kind 'press' draws a pressure gauge and 'good'/'bad' tint it
+  row(key, name, line, lv, button, stats, desc, specs = null) {
     const open = this.openRows.has(key);
-    return `<div class="up-row${open ? ' open' : ''}" data-row="${key}"><div class="up-head"><span class="up-name">${name}<i class="up-more" aria-hidden="true"></i></span><span class="up-line">${line}</span></div>
+    const sp = specs || (stats ? [['', stats]] : []);
+    const plates = sp.filter((x) => x[2] !== 'sheet').map(([l, v, k]) => `<span class="plate${k ? ' p-' + k : ''}">${l ? `<em>${l}</em>` : ''}${v}</span>`).join('');
+    const sheet = sp.map(([l, v, k]) => {
+      if (k === 'press') {
+        const m = parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0, f = Math.min(1, m / 1000);
+        return `<div class="sheet-row press"><span>Pressure rating</span><b>${v}</b><i class="gauge"><i style="width:${(f * 100).toFixed(1)}%"></i>${[200, 400, 600, 800].map((t) => `<u style="left:${t / 10}%"></u>`).join('')}</i></div>`;
+      }
+      return `<div class="sheet-row${k ? ' p-' + k : ''}"><span>${l || 'Also'}</span><b>${v}</b></div>`;
+    }).join('');
+    return `<div class="up-row${open ? ' open' : ''}" data-row="${key}"><div class="up-head"><span class="up-name">${name}<button class="info" data-info="${key}" title="More about it (I)" aria-label="More information">i</button></span><span class="up-line">${line}</span>${plates ? `<span class="plates">${plates}</span>` : ''}</div>
       <span class="up-lv">${lv}</span>${button}
-      <div class="up-detail"><span class="up-val">${stats}</span><p>${desc}</p></div></div>`;
+      <div class="up-detail"><div class="sheet">${sheet}</div>${desc ? `<p class="story">${desc}</p>` : ''}</div></div>`;
+  }
+
+  toggleInfo(row) {
+    if (!row) return;
+    row.classList.toggle('open');
+    this.openRows[row.classList.contains('open') ? 'add' : 'delete'](row.dataset.row);
+    const g = this.h.getGame && this.h.getGame(); if (g && g.audio && g.audio.ready && g.audio.click) g.audio.click();
   }
 
   // a small picture of an animal, cached
@@ -542,7 +570,7 @@ export class UI {
       html += `<div class="up-group"><h4>${grp}</h4>`;
       if (gk && !owns(P, gk)) {
         const G = GEAR[gk], ic = ICON_OF[grp];
-        html += `<div class="card${ic ? ' with-img' : ''}" data-tip="${G.desc}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}</h3><p>${G.desc}</p></div>
+        html += `<div class="card${ic ? ' with-img' : ''}${this.openRows.has('card:gear:' + gk) ? ' open' : ''}" data-row="card:gear:${gk}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}<button class="info" data-info="card:gear:${gk}" title="More about it (I)" aria-label="More information">i</button></h3>${G.line ? `<div class="card-stat">${G.line}</div>` : ''}<p class="story">${G.desc}</p></div>
           <button data-act="buy" data-arg="gear:${gk}" ${can(G.price) ? '' : 'disabled'}>Buy<span>${money(G.price)}</span></button></div></div>`;
         continue;
       }
@@ -553,9 +581,9 @@ export class UI {
         html += this.row('up:' + id, U.name, UPGRADE_LINE[id] || '',
           `<span class="lamps">${Array.from({ length: 10 }, (_, k) => `<i class="${k < Math.round(l / U.max * 10) ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : `lv ${l}`}`,
           `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < upgradeCoins(P, id) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && upgradeCoins(P, id) ? ` <em class="pluscoin">+${COIN}${upgradeCoins(P, id)}</em>` : ''}</button>`,
-          `${now}${maxed ? ' (the most it can be)' : ` <i>→</i> <b>${next}</b> next level`}`, UPGRADE_DESC[id] || '');
+          '', UPGRADE_DESC[id] || '', maxed ? [['now', now], ['', 'the most it can be', 'sheet']] : [['now', now], ['next', next, 'good'], ['level', `${l} of ${U.max}`, 'sheet']]);
       }
-      if (gk === 'camera' && !owns(P, 'lowlight')) html += this.row('gear:lowlight', GEAR.lowlight.name, GEAR.lowlight.line, '', `<button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button>`, 'no flash', GEAR.lowlight.desc);
+      if (gk === 'camera' && !owns(P, 'lowlight')) html += this.row('gear:lowlight', GEAR.lowlight.name, GEAR.lowlight.line, '', `<button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button>`, '', GEAR.lowlight.desc, [['', 'no flash', 'good']]);
       html += '</div>';
     }
     return html;
