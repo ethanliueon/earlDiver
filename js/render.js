@@ -17,6 +17,7 @@ import { drawAquarium } from './aquarium_draw.js';
 import { aquariumOf, visitors } from './aquarium.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
+import { SETTINGS } from './settings.js';
 import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
@@ -470,7 +471,19 @@ export class Renderer {
     }
     if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
-    // (no brackets round what a tool will go for: the prompt names it, the scene stays clean)
+    // brackets around what the net, slurp gun or claw will go for (a setting: pause menu)
+    const ctg = g.mode === 'play' && SETTINGS.brackets ? g.catchTarget : null;
+    if (ctg) {
+      const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y;
+      const r = Math.max(ppm * 0.35, fishDrawLen(ctg.len) * ppm * 0.6), rh = Math.max(ppm * 0.28, r * 0.6), k = r * 0.3;
+      const cx = S(tx), cy = Sy(ty), a = 0.45 + 0.25 * Math.sin(t * 5);
+      ctx.strokeStyle = ctg.col || 'rgb(200,240,210)'; ctx.globalAlpha = Math.min(1, a + 0.15); ctx.lineWidth = Math.max(1.6, ppm * 0.05);
+      ctx.beginPath();
+      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        ctx.moveTo(cx + sx * r, cy + sy * rh - sy * k); ctx.lineTo(cx + sx * r, cy + sy * rh); ctx.lineTo(cx + sx * r - sx * k, cy + sy * rh);
+      }
+      ctx.stroke(); ctx.globalAlpha = 1;
+    }
     // the entity's body, lit by the same light as everything else (invisible in the dark)
     const entB = g.entity;
     this.entInfo = null;

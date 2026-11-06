@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.0.2 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.0.3 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -34,7 +34,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
 | U | The boat (at the surface): sell, buy gear and supplies, the radio, the aquarium and its gallery |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
-| Esc | Pause (save and quit to the title from there) |
+| Esc | Pause (save and quit to the title from there; also the display settings: target brackets, catch tags, reduce flashing) |
 | M | Mute |
 | H | Hints on / off |
 
@@ -59,7 +59,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
   chambers (and the large pressure tank) hold animals at their own pressure.
 - **Dying** costs whatever you have not sold and a hospital bill (10 % of your cash, never more than
   $1,500). Cash, upgrades, the journal and the aquarium carry on.
-- **The ocean** is 5,000 m wide: the beach, reef, kelp and wreck in the east; the shelf edge, a
+- **The ocean** (see `docs/ocean_profile.png` for a side section) is 5,000 m wide: the beach, reef, kelp and wreck in the east; the shelf edge, a
   canyon, the slope with its cold seep, the abyssal plain with vents, a brine pool and a whale fall,
   a seamount; and in the west, under the wall with the old one's cave, the hadal trench: a wide
   floor at 4,800-5,000 m with one pit to 5,100 m, the deepest place there is.

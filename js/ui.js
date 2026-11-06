@@ -9,6 +9,7 @@ import { specimenValue, conditionName, rarityOf } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
+import { SETTINGS, setSetting } from './settings.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
@@ -177,6 +178,11 @@ export class UI {
     const fl = $('flashing'), flSet = (on) => { fl.textContent = `Reduce flashing: ${on ? 'on' : 'off'}`; };
     try { flSet(localStorage.getItem('earl.reduceFlash') === '1'); } catch (e) { flSet(false); }
     fl.addEventListener('click', () => { const g = h.getGame(); g.reduceFlash = !g.reduceFlash; flSet(g.reduceFlash); try { localStorage.setItem('earl.reduceFlash', g.reduceFlash ? '1' : '0'); } catch (e) { /* not saved */ } });
+    // display settings: the brackets round a target, and the "[Space] Net the …" catch tags
+    for (const [id, key, label] of [['set-brackets', 'brackets', 'Target brackets'], ['set-catchtags', 'catchTags', 'Catch tags']]) {
+      const el = $(id), show = () => { el.textContent = `${label}: ${SETTINGS[key] ? 'on' : 'off'}`; };
+      show(); el.addEventListener('click', () => { setSetting(key, !SETTINGS[key]); show(); });
+    }
     $('quit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); });
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
     this.renderRuns();

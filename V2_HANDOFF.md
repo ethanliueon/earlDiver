@@ -380,3 +380,9 @@ Docs, screenshots, the handoff's checks, merge to main.
 ## 2.0.2 — detail pass on the shared fish drawing (157 species use it)
 - drawFish: a darker head, light catching the upper scale rows, a silver sheen low on the flank, a fine darker outline, a shaded operculum with a light rim and a fainter preopercle, an eye socket, a curved mouth. `spiny` is now a single gill-cover spine (the old radial ring of spikes looked like a halo). All of it is baked into the cached sprites: no per-frame cost.
 - Squirrelfish: long pale stripes (it was using the 'lines' pattern, which carries a black flank patch meant for another fish).
+
+## 2.0.3 — the brackets are back (as a setting), the Margaret starts near the beach, an ocean map
+- js/settings.js (new): `SETTINGS.brackets` and `SETTINGS.catchTags`, both on by default, kept in localStorage (`earl.brackets`, `earl.catchTags`). Pause menu buttons "Target brackets: on/off" and "Catch tags: on/off".
+- render.js: the brackets round `g.catchTarget` restored (from before alpha.1), a little bolder (line ≥ 1.6 px), drawn only with `SETTINGS.brackets`. hud.js: the "[Space] Net the …" tag is hidden when catch tags are off and there is a catch target; other Space prompts (claw, traps) stay.
+- world.js `BOAT_HOME` 4512 → 4850: the Margaret and the sub start 150 m from the east edge, over ~32 m of water at the kelp. (A save with an anchored spot still starts there.)
+- docs/ocean_profile.png: a side section of the whole ocean drawn from the generator (zones, every landmark, sub ratings, the 5,080 m crush ceiling, the Margaret), with an inset of the eastern shallows.

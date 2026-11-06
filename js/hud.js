@@ -8,6 +8,7 @@ import { GOODS, money, gear, owns } from './economy.js';
 import { BOAT } from './world.js';
 import { VARIANTS } from './variants.js';
 import { speciesIcon } from './creatures_draw.js';
+import { SETTINGS } from './settings.js';
 import { toolIcon } from './tools_draw.js';
 import { bagSlots, tankSlots, pressSlots } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
@@ -471,12 +472,13 @@ export class Hud {
       ctx.textAlign = 'center';
     };
     const keyWidth = (txt, px) => { ctx.font = `italic ${px}px ${GAME}`; return ctx.measureText(txt.replace(/^Space\s+/, '[Space] ')).width; };
+    const capHidden = !SETTINGS.catchTags && !!g.catchTarget; // the catch tag is a setting (pause menu); other Space prompts stay
     if (!this.hints && !dying && !g.kill) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `${16 * s}px ${GAME}`;
       const lines = [];
-      if (g.capPrompt && g.capPrompt.startsWith('Space')) lines.push(short(g.capPrompt));
+      if (g.capPrompt && g.capPrompt.startsWith('Space') && !capHidden) lines.push(short(g.capPrompt));
       if (g.prompt) lines.push(short(g.prompt));
-      const capFirst = g.capPrompt && g.capPrompt.startsWith('Space');
+      const capFirst = g.capPrompt && g.capPrompt.startsWith('Space') && !capHidden;
       lines.forEach((ln, i) => {
         const draw = i === 0 && capFirst ? (t, x, y) => keyLine(t, x, y, 16 * s) : (t, x, y) => ctx.fillText(t, x, y);
         ctx.fillStyle = 'rgba(0,0,0,0.35)'; draw(ln, W / 2 + 1, H * 0.74 + i * 18 * s + 1);
@@ -484,7 +486,7 @@ export class Hud {
         ctx.font = `${16 * s}px ${GAME}`;
       });
     }
-    if (g.capPrompt && !dying && !g.kill && this.hints) {
+    if (g.capPrompt && !capHidden && !dying && !g.kill && this.hints) {
       ctx.font = `${17 * s}px ${GAME}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       const tw = keyWidth(g.capPrompt, 17 * s) + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, py, tw, 28 * s, 6 * s); ctx.fill();
