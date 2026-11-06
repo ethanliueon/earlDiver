@@ -8,6 +8,29 @@ There is no end: the long goal is an aquarium on the shore with one of everythin
 
 `docs/PLAN.md` is the plan this was built from; `docs/DEV_NOTES.md` covers testing.
 
+## Version 2.0 (what changed; the sections below predate it where they disagree)
+
+- **Saves**: three slots, a title screen, autosave (economy.js). The aquarium, named and released
+  fish, and where the Margaret is anchored all persist.
+- **Economy**: upgrades in the Cat Goes Fishing style (each level ~1.5× the last, steep prices);
+  no market glut; a price board; hospital bill capped at $1,500. Tag ammo ($5 basic, $200
+  advanced), tiny fish too small to tag. Ink, scales, iron, rock, kelp and tentacles are gone; the
+  lure and the necklace (now only a light) can't be sold.
+- **Pressure comfort zones** of 50/150/250/350 m around an animal's home depth, scaled by its
+  tolerance (jellies ×3, daily migrators ×2, no swim bladder ×1.5; deep bonus below 1,000/2,500 m).
+- **The map** is 5,000 m wide: a 2,000 m hadal trench under the west wall (floor 4,800-5,000 m, a
+  pit to 5,100 m), the monster's lair. Everything else moved 2,000 m east.
+- **Eight submersibles** (300-4,000 m), hidden crush depth from ×1.6 to ×1.25 of the rating, never
+  past 5,080 m. Naming from the third hull.
+- **Species**: 63 more (509 in all): the deep and trench crowd, and the Undocumented tier. Each zone
+  has an everyday crowd; exotics are occasional, the seven legends an event (the legendary moment).
+- **The trawl net** (N), big animals taking more of the open tank, the large pressure tank.
+- **The Margaret**: 5 m/s, anchor, anywhere; winching traps from the helm.
+- **The gallery** aboard: pet, feed, name, light; Happy (×1.2) and Famous (×2); release a Happy fish
+  at home and it stays there for good; the tag tracker.
+
+The full log, with the reasoning and the measurements, is in `V2_HANDOFF.md`.
+
 ## Sound
 
 The music comes in short pieces (30-60 s, then a very slow fade). It always plays at the start of

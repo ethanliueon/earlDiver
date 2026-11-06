@@ -1,13 +1,12 @@
 # Earl the Diver
 
-Version 2.0.0-alpha.6 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.0.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
 Earl makes his living from the sea: he dives, brings things up, sells them at his boat and spends
 the money on better gear to go deeper. The valuable things are deep, and so is something else.
-Cash and upgrades survive death; whatever he has not sold does not. See `docs/PLAN.md` for the
-update in progress.
+Cash and upgrades survive death; whatever he has not sold does not.
 
 **Play:** https://ethanliueon.github.io/earlDiver/ (once GitHub Pages is switched on for this repo:
 Settings → Pages → Deploy from a branch → `main` / root).
@@ -18,88 +17,85 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | --- | --- |
 | W A S D / arrow keys | Swim (or steer the submersible) |
 | Shift | Sprint (1.5x, upgradable), but uses air twice as fast |
-| F | Interact: observe a creature, collect, cut kelp, board the submersible |
+| F | Interact: observe a creature, collect, board the submersible, haul or empty a trap |
 | hold F | Leave the submersible |
 | C | Call the submersible: it drives itself to you (never below its rated depth). C again stops it |
 | hold C | Send the submersible back to the boat |
 | C (inside the sub) | Autopilot home: it steers to the boat on 0.8x air; steering, a hit or danger hands it back |
 | 1 / 2 / 3 / 4 / 5 | Net / slurp gun / tag gun / camera / traps (once bought) |
 | Space | Use it: sweep the net, fire the slurp gun or a tag dart, take a picture; with a trap, at the surface: choose its depth and set it. In the sub (with the arm fitted): reach, then Space again to close the claw |
+| N | In the sub (with the trawl net fitted): let the net out ahead of the bow, once a dive |
 | J | Journal (species you have observed, and your own notes) |
 | L | Lights on/off. Light carries a long way in the dark. Flash it at a charging animal to make it swerve |
 | Q | Throw an anglerfish lure |
-| E | Wear a fangtooth necklace |
-| G | Offer a lure or necklace back to the deep (below 100 m, only while it hunts you and is within 1,000 m) - ends its hunt |
-| B | At the boat: take the helm and drive the Margaret along the surface (A / D) |
+| E | The fangtooth necklace: a soft green light, like a glowstick |
+| G | Offer a lure or necklace back to the deep (below 100 m, only while it hunts you and is within 1,000 m) - ends its hunt. At the helm: drop or raise the Margaret's anchor |
+| B | At the boat: take the helm and drive the Margaret (A / D) |
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
-| U | The boat (at the surface): sell your haul, buy gear, radio contracts, the aquarium |
+| U | The boat (at the surface): sell, buy gear and supplies, the radio, the aquarium and its gallery |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
-| Esc | Pause |
+| Esc | Pause (save and quit to the title from there) |
 | M | Mute |
 | H | Hints on / off |
 
 ## What to know
 
-- Air is the bar under the depth. Surface to refill. Below 300 m the pressure makes it drain
-  much faster. Bigger tanks are bought at the boat.
-- Everything you collect sells at the boat. Prices drop if you flood the market, and recover.
-  Deep sapphires (below 500 m) are the most valuable thing in the sea.
-- Once you have caught a species, 1 in 20 of its kind are rare: giant, albino, golden,
-  melanistic, abnormal, or (deep, and near the thing in the deep) crimson. They pay 2-5×.
-- Dying costs whatever you have not sold and a hospital bill (10 % of your cash). Cash, upgrades,
-  the journal and the aquarium carry on to your next dive, but nothing is saved when you leave or
-  refresh the page: every visit is a new game. Only your deepest depth is remembered.
-- The aquarium (built from the boat, seen on the far shore): keep live animals instead of selling
-  them; visitors pay every 10 minutes of play.
+- **Saves.** Three save slots on the title screen; the game saves as you play (cash, gear, the
+  journal, the aquarium, named and released fish, where the Margaret is anchored). Continue picks up
+  the last one.
+- **Air** is the bar under the depth. Surface to refill. Earl's tank goes up to 200 s with upgrades;
+  the cabin air comes with each submersible (150 s in the first, 300 s in the best).
+- **Selling.** Everything sells at the boat; the price board shows what the last sales fetched.
+  Tiny fish are "too small" to tag; medium ones pay a dollar or two in tags. Upgrades grow like
+  Cat Goes Fishing: each level worth more than the last, and dearer.
+- **Rarity.** Common, uncommon, rare, exotic, legendary, and the Undocumented: twelve animals with
+  no scientific record, from the deepest and strangest places. The seven legends (humpback
+  anglerfish, fangtooth, pelican gulper eel, barreleye, blobfish, coelacanth, oarfish) are giants
+  here, and meeting one is an event. Once you have caught a species, 1 in 20 of its kind are rare
+  forms (giant, albino, golden, melanistic, abnormal, crimson) that pay 2-5×.
+- **Pressure.** Every animal has the depth it lives at. Within 50 m of it, it is fine; 150, stressed;
+  250, dying; 350, dying fast; beyond, dead. Jellies take three times that, daily migrators twice,
+  fish without a swim bladder 1.5×, and the deeper an animal lives the more it tolerates. The sub's
+  chambers (and the large pressure tank) hold animals at their own pressure.
+- **Dying** costs whatever you have not sold and a hospital bill (10 % of your cash, never more than
+  $1,500). Cash, upgrades, the journal and the aquarium carry on.
+- **The ocean** is 5,000 m wide: the beach, reef, kelp and wreck in the east; the shelf edge, a
+  canyon, the slope with its cold seep, the abyssal plain with vents, a brine pool and a whale fall,
+  a seamount; and in the west, under the wall with the old one's cave, the hadal trench: a wide
+  floor at 4,800-5,000 m with one pit to 5,100 m, the deepest place there is.
+- **Eight submersibles**, each a deeper one from the yard: the Б-7 bathyscaphe (300 m), its refit
+  (500 m), a yellow 1960s work sub with an acrylic dome (900 m), a white oilfield work sub (1,300 m),
+  a research sub (1,900 m), an Alvin-type deep research sub (2,500 m), a titanium one (3,300 m) and
+  a full-ocean-depth sub (4,000 m). From the third, you name her; the name is painted on every hull
+  after. Pressure relics add 100 m each. Past her rating the hull creaks and the seams weep; each
+  dive she has a hidden crush depth (about 1.6× the rating for the first, 1.25× for the last, a
+  narrower window on deeper hulls). Nothing survives the bottom of the pit.
+- **The trawl net** (a sub add-on): N lets it out once a dive; it takes up to ten animals, sharks to
+  2.5 m, even legends, and dumps the haul on the tank-room floor. It is loud below 200 m. Big
+  animals take two or three places in the open tank; the large pressure tank holds three animals,
+  or one big one.
+- **The Margaret** goes anywhere on the surface, slowly (5 m/s flat out). Drop the anchor (G at
+  the helm) and she stays, and the next dive starts there. Heavy traps are winched up from her helm
+  over their buoys.
+- **The aquarium** (built from the boat): keep live animals instead of selling them. Walk the
+  gallery to pet, feed, name and light them. A healthy animal becomes Happy after five minutes
+  (sells for ×1.2), then Famous fifteen minutes later (×2, for good). Take a Happy one down in the
+  sub to its own depth and let it go: it stays there under its name, every dive. The tag tracker
+  shows the way back to it.
 - The radio at the boat has a few contracts each dive that pay well over the market.
-- H turns detailed hints on and off.
-- What you take (salvage, clams, sapphires) does not come back during a dive. A new dive is a new
-  sea: die, or end the dive from the pause menu (unsold catch is lost either way).
-- The submersible is docked at the boat. Past its rated depth the hull creaks, the viewports fog
-  and the seams weep. Each dive it has its own hidden crush depth (on average about 1.6× its
-  rating: around 470 m for a 300 m sub, rarely above 400 m or past 540 m); nearing it the chance of
-  failing rises fast, and when the hull gives it implodes in half a second.
-  Refits at the boat take it down to 3,000 m.
-- The sub changes as she is refitted. Her depth rating sets the hull: Mk I, the old riveted Б-7;
-  Mk II, the yard's welded refit (from 675 m); Mk III, a research sub with an orange foam float and
-  skids (from 1,200 m); Mk IV, titanium (from 1,950 m); Mk V, full ocean depth (from 2,925 m). Every
-  other upgrade shows on her: more prop blades and side thrusters, air bottles, ballast hoppers, the
-  backup tank rack, the sample basket and its pressure chambers, a heavier claw, the quiet engine's
-  shroud and the recall transponder.
-- A damaged hull leaks cabin air. Repairs during a dive use supplies bought at the boat: a leak
-  sealant kit (K, inside: +20 %, but only up to 85 %, since a seal is not steel) or a hull patch
-  plate (hold Z outside at the hatch: 10 s of wet welding, +40 %; the arc's light is seen below 200 m).
 - Something is out there: a gulper some 60 m long, nearly all head and mouth, with red lights
-  flickering fast and unevenly along its length and red eyes. It hears speed and engines, and it
-  sees light. Kelp and rock overhangs hide you if you are slow and dark. Sea lanterns keep it away,
-  for a while.
-- Catch it in your lamp and every light on it goes out. A second of black, one blue flash (it has
-  seen you), black again; then only its eyes, brightening, while its red seeps into the water
-  around you. Go dark and still, or hide, before the red peaks and it may lose you; run and it comes.
-  The pause menu has a "Reduce flashing" setting that slows and softens its lights.
-- At the sub, in open water (well clear of rock and the bottom), it comes three times, with a pause between: first only its tail, curling up out of the
-  dark below to strike the hull; then its head, nosing in at the edge of the screen to look at you
-  (the lights go out, the blue flash, its eyes come up); then it comes in from the side with its
-  mouth already opening and swallows the sub whole. Nothing saves you from the third: get away (up
-  past 120 m, to a lantern, the old one's cave) or calm it (G) before then.
-- Anywhere else (swimming, or the sub in close quarters) it comes once, from whichever way is open
-  (the side, up from below, down from above), its jaws opening as it comes. Swimming, in that last
-  moment: flash the lights (L, once: it learns), throw a lure (Q) or wear a necklace (E).
-- Every animal you carry suffers a pressure change either way: taking a shallow fish deep hurts it
-  as much as bringing a deep one up.
-- It travels at about 12 m/s, bursting to 15 m/s only on screen, and only when you flee.
-- Between 2,500 and 3,000 m lives the Abyssal Sleeper Shark: slow, ancient, nearly blind, the
-  biggest predator at its depth. It rises at you from the dark below, then lunges, at Earl or the
-  sub. Flash the lamp as it comes, or move. It flees from the thing in the deep.
-- The headlamp (L) works at any depth; it comes on by itself below 200 m and at night.
-- An offering to the deep (G, a lure or necklace let go below 100 m, only while it hunts you and is
-  within 1,000 m; the prompt shows for 10 s) ends its hunt, and for three
-  minutes it will not notice you at all. Good deeds that calm it fully do the same.
-- It never comes above 100 m: the top 100 m are safe from it (not from sharks).
-- When it is within 200 m it shows on the sonar. You will feel it before then.
-- Sharks, billfish and sperm whales attack too. There is no health bar: you will see and hear how
-  badly you are hurt. Wounds heal if you survive long enough.
-- Air is shown in bar, like a real cylinder gauge (200 full, 50 reserve).
+  flickering along its length and red eyes. Its lair is the hadal trench; by night it rises. It
+  hears speed and engines, and it sees light. Kelp and rock overhangs hide you if you are slow and
+  dark. Sea lanterns keep it away, for a while. It travels at about 7 m/s.
+- Catch it in your lamp and every light on it goes out; then only its eyes, brightening. Go dark
+  and still, or hide, before the red peaks and it may lose you; run and it comes. The pause menu
+  has a "Reduce flashing" setting.
+- At the sub, in open water, it comes three times: its tail, then its head, then its open mouth.
+  Get away (up past 120 m, to a lantern, the old one's cave) or calm it (G) before the third.
+  Swimming, in the last moment: flash the lights (L, once: it learns) or throw a lure (Q).
+- It never comes above 100 m. When it is within 200 m it shows on the sonar.
+- Between 2,500 and 3,000 m lives the Abyssal Sleeper Shark. Sharks, billfish and sperm whales
+  attack too. There is no health bar: you will see and hear how badly you are hurt.
 
 ## Running locally
 
@@ -132,12 +128,17 @@ js/render.js        scene and light model
 js/earl_draw.js     Earl, the submersible, the boat
 js/monster_draw.js  the entity itself: its body (painted once into sprites), its lights
 js/sleeper_draw.js  the abyssal sleeper shark
+js/undocumented_draw.js  the twelve Undocumented animals
+js/capture.js       catching alive, the bag, the sub's tanks and chambers, the trawl net
+js/tankroom.js      the back of the sub: chambers, the open tank, the large pressure tank, the net's haul
+js/aquarium.js      the aquarium: wings, days, Happy and Famous
+js/gallery.js       the gallery aboard: tanks, the brass tags, lighting, release
 js/hud.js           timer, air, dive monitor (sonar, heart rate, journal)
 js/audio.js         music and generated sound
 js/ui.js            home screen, journal, the boat (shop and ledger), dive log
-js/economy.js       the save, prices, the market, what is for sale
+js/economy.js       save slots, prices, upgrades, the submersibles, what is for sale
 data/species_data.js  the first 188 species (183 from Ocean_Species_Reference.pdf, then mammals and the sleeper)
-data/species_more.js  258 more (ids 189-446), each with its look and how it lives (reef home, climate, depth band)
+data/species_more.js  321 more (ids 189-509), each with its look and how it lives (reef home, climate, depth band); 447+ are the v2 deep, trench and Undocumented animals
 GAME_DESIGN.md      the design this is built from
 ```
 

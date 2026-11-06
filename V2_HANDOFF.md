@@ -365,3 +365,8 @@ Docs, screenshots, the handoff's checks, merge to main.
 - aquarium.js: display records now carry len/cond/from/name/happyT/famT/famous; `tickGallery` (Happy after 300 s healthy, Famous 900 s later, permanent; Happy lapses below 0.7); `gallerySale` (×1.2 Happy × 2 Famous, dead 10 %). Opened from the shop's Aquarium tab ("Walk the gallery").
 - Release: "To the sub" seals it into a chamber (or the large tank if ≥ 1.2 m) with `spec.aq`; in the tank room, releasing a Happy one works only within 60 m of its home depth → saved in `profile.released` and re-spawned at its spot every dive (`spawnReleased`, kept near home, `c.pet`), can't be netted/slurped/clawed/tagged, its name shown when close.
 - Tag tracker (sub add-on, $900): a dotted trail to the nearest released fish with its name and distance.
+
+## 2.0.0 (merged to main)
+- README controls and "What to know" rewritten for 2.0; GAME_DESIGN.md has a "Version 2.0" summary at the top; README project layout lists the new files.
+- Checks before the merge: smoke (reef, sub deep, monster hunting, X), saves (8 cases), walls (0 animals in rock at 8 places incl. trench + pit), spawn rates, sub net, helm, gallery + release, and a keyboard playthrough (title → net reef fish → sell → shop → board → dive → autopilot → pause → save & quit → continue). No errors.
+- Next (queued): the title/loading screen restyle and the asset detail pass, on `v2-wip`, merged as 2.0.x.
