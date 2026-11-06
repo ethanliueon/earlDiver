@@ -9,6 +9,7 @@
 // Staying shallow long enough makes it lose interest, and the mark fades.
 import { clamp, lerp, dist, TAU } from './util.js';
 import { MONSTER_LEN, MONSTER_EYE } from './monster_draw.js';
+import { TRENCH } from './world.js';
 export const ENTITY_SPEED = 12; // m/s: its travelling speed, far faster than Earl, and than the sub
 export const ENTITY_BURST = 15; // m/s: a burst, only once it is in sight of him and only if he is getting away
 // every speed above and in the approaches below is scaled by this at the moment it moves (the owner
@@ -26,7 +27,7 @@ export class Entity {
   constructor(rng, world) {
     this.rng = rng;
     this.world = world;
-    this.x = rng.range(80, 500); this.y = rng.range(2600, 3400);
+    this.x = rng.range(TRENCH.x0 + 100, TRENCH.x1 - 100); this.y = rng.range(4300, 4700);
     this.vx = 0; this.vy = 0;
     this.state = 'roam'; // roam | hunt | search | drift | lured | away
     this.awayT = 0; this.awayX = 0; this.awayY = 0;
@@ -107,7 +108,7 @@ export class Entity {
   // its home range right now (night lifts it toward the surface)
   band(g) {
     const n = clamp(1 - g.day.light, 0, 1); // 0 day .. 1 night
-    return [lerp(2200, 900, n), lerp(4000, 2800, n)]; // day: the trench and the plain; night: it rises
+    return [lerp(2200, 900, n), lerp(4950, 2800, n)]; // day: its lair in the trench, and the plain; night: it rises
   }
 
   // add to the attention meter (amount is a fraction of a full mark)
@@ -206,7 +207,7 @@ export class Entity {
     const per = this.perception(g);
     this.attend(g, dt, d, per);
     const [bandLo, bandHi] = this.band(g);
-    const floorY = this.world ? this.world.floorAt(clamp(this.x, 0, 3000)) - 10 : 3900;
+    const floorY = this.world ? this.world.floorAt(clamp(this.x, 0, 5000)) - 10 : 3900;
 
     let tx = this.x, ty = this.y, speed = ENTITY_SPEED * 0.35;
 
@@ -215,10 +216,12 @@ export class Entity {
       this.roamT -= dt;
       if (this.roamT <= 0 || dist(this.x, this.y, this.roamX, this.roamY) < 15) {
         this.roamT = this.rng.range(40, 90);
-        this.roamX = this.rng.range(20, 2980);
+        this.roamX = this.rng.range(20, 4980);
         this.roamY = this.rng.range(bandLo, bandHi);
+        // its lair is the hadal trench: by day it mostly keeps to the trench floor
+        if (g.day.light > 0.5 && this.rng() < 0.65) { this.roamX = this.rng.range(TRENCH.x0 + 40, TRENCH.x1 - 40); this.roamY = this.rng.range(4500, 4900); }
       }
-      const fl = this.world ? this.world.floorAt(clamp(this.roamX, 0, 3000)) - 15 : 3900;
+      const fl = this.world ? this.world.floorAt(clamp(this.roamX, 0, 5000)) - 15 : 3900;
       tx = this.roamX; ty = Math.min(this.roamY, fl);
       // the band moves with the day: drift with it
       if (this.y < bandLo - 30 || this.y > bandHi + 30) ty = clamp(this.y, bandLo, Math.min(bandHi, fl));
@@ -328,7 +331,7 @@ export class Entity {
     this.vx = lerp(this.vx, tvx, k); this.vy = lerp(this.vy, tvy, k);
     this.x += this.vx * dt; this.y += this.vy * dt;
     if (this.y < SAFE_DEPTH) { this.y = lerp(this.y, SAFE_DEPTH, dt * 2); this.vy = Math.max(0, this.vy); }
-    this.x = clamp(this.x, -40, 3040);
+    this.x = clamp(this.x, -40, 5040);
     if (Math.abs(this.vx) > 0.2) this.heading = Math.atan2(this.vy, this.vx);
     // it fades as it rises toward the light
     this.fade = clamp((this.y - SAFE_DEPTH + 10) / 70, 0.25, 1);
@@ -353,7 +356,7 @@ export class Entity {
     if (this.openT && g.time - this.openT < 1 && Math.abs(this.openX - e.x) < 8 && Math.abs(this.openY - e.y) < 8) return this.openOk;
     let ok = e.y > 25;
     for (let dx = -50; ok && dx <= 50; dx += 5) {
-      const x = clamp(e.x + dx, 0, 2999);
+      const x = clamp(e.x + dx, 0, 4999);
       if (W.floorAt(x) < e.y + 32) ok = false;
       for (let dy = -20; ok && dy <= 30; dy += 5) if (W.rockAt(x, e.y + dy, 1)) ok = false;
     }
@@ -433,8 +436,8 @@ export class Entity {
     if (this.ap) this.ap.phase = null;
     const side = Math.sign(this.x - fx) || (this.rng() < 0.5 ? -1 : 1);
     let ax = this.x + side * this.rng.range(350, 500);
-    if (ax < 20 || ax > 2980) ax = this.x - side * this.rng.range(350, 500);
-    ax = clamp(ax, 20, 2980);
+    if (ax < 20 || ax > 4980) ax = this.x - side * this.rng.range(350, 500);
+    ax = clamp(ax, 20, 4980);
     const fl = this.world ? this.world.floorAt(ax) - 15 : 3900;
     this.awayX = ax; this.awayY = Math.min(fl, Math.max(bandLo, this.y, fy) + this.rng.range(150, 350));
     this.awayT = this.rng.range(90, 150);

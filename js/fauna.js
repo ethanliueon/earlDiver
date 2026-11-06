@@ -125,7 +125,7 @@ export const homeOf = (sp) => HOME[sp.id] || null;
 // cold-water animals keep to the kelp, the shelf and the deep, never the coral reef.
 const TROPICAL = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 31, 32, 33, 34, 35, 36, 37, 38, 80, 92, 93, 94, 96, 140, 183]);
 const COLD = new Set([58, 59, 60, 61, 68, 69, 70, 71, 72, 73, 75, 115, 116]);
-const onTropicalReef = (x) => x > 2900 || x < 34;
+const onTropicalReef = (x) => x > 4900 || x < 34;
 // warm and cold water for anything else that needs it (traps): crabs and lobsters too
 const COLD_BOTTOM = new Set([152, 154, 155, 156]), WARM_BOTTOM = new Set([153, 144, 145, 159, 160]);
 // the species added since (data/species_more.js) say for themselves where and how they live
@@ -260,7 +260,7 @@ export class Fauna {
   trySpawn(cam, dread) {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
-    if (x < 2 || x > 2985 || y < 0.6) return;
+    if (x < 2 || x > 4985 || y < 0.6) return;
     // which homes are free: one group to a home (an anemone holds one family of clownfish)
     const live = new Set(); for (const c of this.list) live.add(c.gid);
     const homes = new Map();
@@ -318,7 +318,7 @@ export class Fauna {
   trySpawnBait(cam, night) {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
-    if (x < 5 || x > 2975 || y < 2) return;
+    if (x < 5 || x > 4975 || y < 2) return;
     const fl = W.floorAt(x);
     if (fl - y < 8) return;
     const opts = BAIT.filter((b) => {
@@ -390,7 +390,7 @@ export class Fauna {
     // anywhere about the view, but out in the dark, well away from him and his lamps (a deep fish
     // in the dark is only ever its light, so one turning up there is simply one coming into sight)
     const rng = this.rng, side = rng() < 0.5 ? -1 : 1;
-    const x = clamp(cam.x + rng.range(-0.75, 0.75) * cam.w, 5, 2995);
+    const x = clamp(cam.x + rng.range(-0.75, 0.75) * cam.w, 5, 4995);
     const fl = this.W.floorAt(x);
     const y = clamp(cam.y + rng.range(-0.7, 0.7) * cam.h, 200, fl - 3);
     if (fl - 3 < 200 || dist(x, y, cam.x, cam.y) < 12) return;
@@ -495,7 +495,7 @@ export class Fauna {
       const v = Math.hypot(s.vx, s.vy);
       if (v > sp) { s.vx *= sp / v; s.vy *= sp / v; }
       s.x += s.vx * dt; s.y += s.vy * dt;
-      if (s.x < 10) s.dir = 1; if (s.x > 2970) s.dir = -1;
+      if (s.x < 10) s.dir = 1; if (s.x > 4970) s.dir = -1;
       // now and then the school wheels round on its own
       s.turnT -= dt;
       if (s.turnT <= 0) { s.turnT = rng.range(18, 45); s.vx = -s.vx * 0.5; s.dir = -s.dir; }

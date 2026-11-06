@@ -1,7 +1,7 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS } from './earl_draw.js';
-import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP } from './world.js';
+import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
@@ -126,9 +126,9 @@ function newGame(mode) {
   applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = P.hull;
   if (P.subLost) { g.sub.imploded = true; g.sub.docked = false; }
   // pre-warm the ocean with life around the spawn
-  const cam = { x: 500, y: 6, w: 46, h: 26 };
+  const cam = { x: BOAT_HOME, y: 6, w: 46, h: 26 };
   for (let i = 0; i < 8; i++) g.fauna.trySpawn(cam, 0);
-  for (const c of g.fauna.list) { c.x += (500 - c.x) * 0.6; }
+  for (const c of g.fauna.list) { c.x += (BOAT_HOME - c.x) * 0.6; }
   return g;
 }
 
@@ -1066,6 +1066,15 @@ function update(dt) {
     g.airMul = 1; g.luck = 0; g.stillMul = 1;
     // rare forms turn up more at the whale fall and the seep
     g.fauna.rareMult = Math.abs(e.x - WHALE_FALL.x) < 60 && e.y > 2900 ? 3 : Math.abs(e.x - SEEP.x) < 50 && e.y > 2300 ? 2 : 1;
+    // a quiet milestone: the first time down on the floor of the hadal trench
+    if (e.y > 4600 && e.x > TRENCH.x0 && e.x < TRENCH.x1 && !(g.profile.marks || {}).trench) {
+      g.profile.marks = Object.assign(g.profile.marks || {}, { trench: true }); saveProfile(g.profile);
+      hud.toast(`The floor of the hadal trench, ${Math.round(e.y)} m. Few have ever been this deep.`, 'big');
+    }
+    if (e.y > 5050 && !(g.profile.marks || {}).pit) {
+      g.profile.marks = Object.assign(g.profile.marks || {}, { pit: true }); saveProfile(g.profile);
+      hud.toast('The bottom of the pit: the deepest place in this ocean.', 'big');
+    }
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }

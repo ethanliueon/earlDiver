@@ -318,3 +318,14 @@ Docs, screenshots, the handoff's checks, merge to main.
 ### 2.0.0-alpha.3.1 — seabed follows the slope
 - `seabedPose()` in render.js: things that lie on the floor (brain coral, shells, stars, urchins, crabs, octopus, cucumbers, flatfish...) rotate to the local slope; things that grow up (kelp, seagrass, staghorn, sea fans, sponges, anemones) stay upright and sink in a little on the downhill side.
 - Applied to baked static chunks, live statics, pickups resting on the floor, and floor-walking animals near the seabed. Pose is computed once per static (cached on it) — no per-frame cost.
+
+### Queued for the very end (after 2.0.0 works)
+- Restyle the title + loading screens so they feel like the Margaret / sub tank UI (brass, rivets, gauges), not a generic menu.
+- A detail pass on game assets (fish, subs, scenery) — design only, no extra per-frame cost.
+
+### 2.0.0-alpha.3.2 — the map is 5,000 m wide (alpha.4, part 1)
+- world.js: WORLD_W 5000, WORLD_D 5200, EAST 4000, new `SH = 2000`. The west wall (x < 46) is unchanged; a 2,000 m hadal trench (`TRENCH` x 70–2220, floor ~4,800–4,990 m, swells + dropstone boulders) was inserted, and everything east of the old trench moved +2,000 (seamount ~3,150, plain/vents/brine ~3,500–3,800, seep 3,960, wreck 4,110, canyon 4,385–4,495, shelf/kelp/reef/beach 4,500–5,000, the Margaret 4,512).
+- `PIT` x 1180: one bowl to 5,100 m, the deepest place (beyond the best sub + relics: still implodable).
+- All hard-coded x literals in fauna/entity/hud/hunters/traps/render shifted. Test scripts: reef is now x≈4945.
+- The monster's lair: by day it mostly roams the trench floor (65 % of roam picks), band down to 4,950 m; it starts there.
+- Quiet milestones (saved in `profile.marks`): first time on the trench floor, and the bottom of the pit.

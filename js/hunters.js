@@ -65,7 +65,7 @@ export function directEncounters(g, dt, SPECIES_BY_ID) {
   const sp = rng.pick(cands);
   // arrive from the dark, beyond the edge of the screen
   const side = rng() < 0.5 ? -1 : 1;
-  const x = clamp(e.x + side * rng.range(32, 40), 5, 2975);
+  const x = clamp(e.x + side * rng.range(32, 40), 5, 4975);
   let y = clamp(e.y + rng.range(-10, 10), 2, W.floorAt(x) - 3);
   if ((sp.id === 184 && !e.inSub) || sp.id === 188) y = Math.min(W.floorAt(x) - 5, e.y + rng.range(5, 30)); // from below
   const n = sp.id === 187 ? 3 : sp.id === 148 ? 4 : 1;
