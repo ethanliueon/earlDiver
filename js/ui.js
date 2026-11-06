@@ -138,7 +138,6 @@ export class UI {
       if (card.classList.contains('damaged') && !card.classList.contains('sure')) { card.classList.add('sure'); card.querySelector('.info span').textContent = 'click again to start a new game here'; return; }
       h.onSlot(n);
     });
-    $('title-controls').addEventListener('click', () => { const c = document.querySelector('#title .controls'); if (!c.innerHTML) c.innerHTML = document.querySelector('#menu .controls').innerHTML; c.hidden = !c.hidden; });
     $('title-fullscreen').addEventListener('click', () => $('fullscreen').click());
     $('to-title').addEventListener('click', () => h.onTitle());
     $('savequit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onTitle(true); });
@@ -175,14 +174,18 @@ export class UI {
     });
     $('resume').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); });
     // reduce flashing: the monster's lights stutter slowly and its blue flash is softened
-    const fl = $('flashing'), flSet = (on) => { fl.textContent = `Reduce flashing: ${on ? 'on' : 'off'}`; };
-    try { flSet(localStorage.getItem('earl.reduceFlash') === '1'); } catch (e) { flSet(false); }
-    fl.addEventListener('click', () => { const g = h.getGame(); g.reduceFlash = !g.reduceFlash; flSet(g.reduceFlash); try { localStorage.setItem('earl.reduceFlash', g.reduceFlash ? '1' : '0'); } catch (e) { /* not saved */ } });
+    $('flashing').addEventListener('click', () => { const g = h.getGame(); g.reduceFlash = !g.reduceFlash; try { localStorage.setItem('earl.reduceFlash', g.reduceFlash ? '1' : '0'); } catch (e) { /* not saved */ } this.renderSettings(); });
     // display settings: the brackets round a target, and the "[Space] Net the …" catch tags
-    for (const [id, key, label] of [['set-brackets', 'brackets', 'Target brackets'], ['set-catchtags', 'catchTags', 'Catch tags']]) {
-      const el = $(id), show = () => { el.textContent = `${label}: ${SETTINGS[key] ? 'on' : 'off'}`; };
-      show(); el.addEventListener('click', () => { setSetting(key, !SETTINGS[key]); show(); });
-    }
+    $('set-brackets').addEventListener('click', () => { setSetting('brackets', !SETTINGS.brackets); this.renderSettings(); });
+    $('set-catchtags').addEventListener('click', () => { setSetting('catchTags', !SETTINGS.catchTags); this.renderSettings(); });
+    $('set-hints').addEventListener('click', () => { h.onHints && h.onHints(); this.renderSettings(); });
+    $('set-sound').addEventListener('click', () => { h.onMute && h.onMute(); this.renderSettings(); });
+    // the gear (title screen, journal, pause menu) opens the settings and controls
+    document.addEventListener('click', (ev) => { if (ev.target.closest('[data-settings]')) this.toggleSettings(true); });
+    document.querySelector('#settings .set-close').addEventListener('click', () => this.toggleSettings(false));
+    $('settings').addEventListener('click', (ev) => { if (ev.target === $('settings')) this.toggleSettings(false); });
+    document.querySelector('#settings .set-controls').innerHTML = document.querySelector('#menu .controls').innerHTML;
+    this.renderSettings();
     $('quit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); });
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
     this.renderRuns();
@@ -205,10 +208,20 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden; }
+  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('settings').hidden; }
   closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
+  settingsOpen() { return !$('settings').hidden; }
+  toggleSettings(force) { const el = $('settings'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderSettings(); }
+  renderSettings() {
+    const g = this.h.getGame(), row = (id, label, on, note) => { $(id).innerHTML = `<span>${label}${note ? `<em>${note}</em>` : ''}</span><b class="${on ? 'on' : ''}">${on ? 'on' : 'off'}</b>`; };
+    row('flashing', 'Reduce flashing', !!(g && g.reduceFlash), 'the thing in the deep: slower, softer lights');
+    row('set-brackets', 'Target brackets', SETTINGS.brackets, 'corners round what the net will go for');
+    row('set-catchtags', 'Catch tags', SETTINGS.catchTags, '"[Space] net the …" under a target');
+    row('set-hints', 'Hints', this.h.getHints ? this.h.getHints() : true, 'H');
+    row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, 'M');
+  }
   galleryOpen() { return !$('gallery').hidden; }
   toggleGallery(force) {
     const el = $('gallery'), open = force === undefined ? el.hidden : force;

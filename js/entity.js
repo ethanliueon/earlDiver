@@ -9,7 +9,6 @@
 // Staying shallow long enough makes it lose interest, and the mark fades.
 import { clamp, lerp, dist, TAU } from './util.js';
 import { MONSTER_LEN, MONSTER_EYE } from './monster_draw.js';
-import { TRENCH } from './world.js';
 export const ENTITY_SPEED = 12; // m/s: its travelling speed, far faster than Earl, and than the sub
 export const ENTITY_BURST = 15; // m/s: a burst, only once it is in sight of him and only if he is getting away
 // every speed above and in the approaches below is scaled by this at the moment it moves (the owner
@@ -27,7 +26,13 @@ export class Entity {
   constructor(rng, world) {
     this.rng = rng;
     this.world = world;
-    this.x = rng.range(TRENCH.x0 + 100, TRENCH.x1 - 100); this.y = rng.range(4300, 4700);
+    // a new place every run: anywhere across the ocean, between 1,500 and 3,500 m, in open water
+    this.x = rng.range(60, 4900); this.y = rng.range(1500, 3500);
+    if (world) for (let k = 0; k < 60; k++) {
+      const x = rng.range(60, 4900), y = rng.range(1500, 3500);
+      if (world.floorAt(x) - y > 40) { this.x = x; this.y = y; break; }
+    }
+    this.teleported = false; // it may close the distance once a run (see closeIn)
     this.vx = 0; this.vy = 0;
     this.state = 'roam'; // roam | hunt | search | drift | lured | away
     this.awayT = 0; this.awayX = 0; this.awayY = 0;
@@ -105,10 +110,25 @@ export class Entity {
     this.hunt = { phase: 'glare', t: 0, ang: Math.atan2(this.y - e.y, this.x - e.x), passes: 1, still: 0, run: 0, dir: this.rng() < 0.5 ? -1 : 1 };
   }
 
+  // Once a run, when Earl is down in its water (below 100 m) and it is far off, it is suddenly 500 m
+  // nearer: only if that still leaves it more than 1,000 m away, and never into rock or above 100 m.
+  closeIn(g) {
+    if (this.teleported || this.marked || g.earl.y < 100) return false;
+    const dx = g.earl.x - this.x, dy = g.earl.y - this.y, d = Math.hypot(dx, dy);
+    if (d - 500 <= 1000) return false;
+    let x = clamp(this.x + dx / d * 500, 20, 4980), y = this.y + dy / d * 500;
+    if (this.world) y = Math.min(y, this.world.floorAt(x) - 25);
+    y = Math.max(150, y);
+    if (this.world && this.world.rockAt && this.world.rockAt(x, y, 10)) return false;
+    this.x = x; this.y = y; this.vx = this.vy = 0; this.roamX = x; this.roamY = y; this.roamT = 0;
+    this.teleported = true;
+    return true;
+  }
+
   // its home range right now (night lifts it toward the surface)
   band(g) {
     const n = clamp(1 - g.day.light, 0, 1); // 0 day .. 1 night
-    return [lerp(2200, 900, n), lerp(4950, 2800, n)]; // day: its lair in the trench, and the plain; night: it rises
+    return [lerp(1500, 900, n), lerp(3500, 2800, n)]; // day: 1,500-3,500 m, anywhere; night: it rises
   }
 
   // add to the attention meter (amount is a fraction of a full mark)
@@ -200,6 +220,7 @@ export class Entity {
   }
 
   update(g, dt) {
+    this.closeIn(g);
     const e = g.earl;
     const d = dist(this.x, this.y, e.x, e.y);
     this.dist = d;
@@ -218,8 +239,6 @@ export class Entity {
         this.roamT = this.rng.range(40, 90);
         this.roamX = this.rng.range(20, 4980);
         this.roamY = this.rng.range(bandLo, bandHi);
-        // its lair is the hadal trench: by day it mostly keeps to the trench floor
-        if (g.day.light > 0.5 && this.rng() < 0.65) { this.roamX = this.rng.range(TRENCH.x0 + 40, TRENCH.x1 - 40); this.roamY = this.rng.range(4500, 4900); }
       }
       const fl = this.world ? this.world.floorAt(clamp(this.roamX, 0, 5000)) - 15 : 3900;
       tx = this.roamX; ty = Math.min(this.roamY, fl);

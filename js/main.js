@@ -142,6 +142,10 @@ const ui = new UI({
   onBuy: (k) => buy(k),
   onSellAll: () => sellAll(),
   onGallery: (act, key, v) => galleryAction(act, key, v),
+  onHints: () => { hud.hints = !hud.hints; },
+  getHints: () => hud.hints,
+  onMute: () => { audio.setMuted(!audio.muted); },
+  getMuted: () => !!audio.muted,
   payMul: () => statValue(profile, 'payFish'),
   onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on her hull`); },
   onSellItem: (k) => sellItem(k),
@@ -689,7 +693,6 @@ function deed(calm, text) {
   const ent = g.entity, was = ent.marked;
   ent.appease(g, calm);
   hud.toast(text, 'note');
-  if (was && ent.marked) hud.toast(`The water feels a little calmer (${Math.round(ent.calm / 60 * 100)} %)`);
   audio.ready && audio.note();
 }
 function interact(t, exitSub) {
@@ -754,7 +757,7 @@ function leaveSub() {
   e.inSub = false;
   e.x = sub.x - sub.facing * 1.5; e.y = Math.max(0.4, sub.y + 2.6); e.vx = 0; e.vy = 0;
   if (Math.abs(sub.x - BOAT.x) < 14 && sub.y < 3) sub.docked = true;
-  hud.toast(e.y > 300 ? 'Outside. The pressure is immense.' : 'Outside the submersible', e.y > 300 ? 'warn' : '');
+  
   audio.ready && audio.click();
 }
 
@@ -977,7 +980,6 @@ function zoneHazards(dt) {
   if (cook) {
     sub.hull = Math.max(0.05, sub.hull - dt * 0.015);
     g.cookT = (g.cookT || 0) - dt;
-    if (g.cookT <= 0) { g.cookT = 5; hud.toast(`The vent water is 350 °C: the hull is cooking (${Math.round(sub.hull * 100)} %)`, 'warn'); }
   }
   const B = W.brine;
   const inBrine = (x, y) => B && x > B.x0 && x < B.x1 && y > B.y - 0.2;
@@ -985,10 +987,8 @@ function zoneHazards(dt) {
   if (!sub.imploded && sub.x > B.x0 - 3 && sub.x < B.x1 + 3 && sub.y > B.y - 1.4) {
     sub.y = B.y - 1.4; sub.vy = Math.min(0, sub.vy);
     if (e.inSub) e.y = sub.y;
-    if (!g.brineTold) { g.brineTold = true; hud.toast('The sub settles on a lake of brine, a lake under the sea', 'note'); }
   }
   if (!e.inSub && inBrine(e.x, e.y)) {
-    if (!g.brineT) hud.toast('Brine: no air in it at all. Get out!', 'warn');
     g.brineT = (g.brineT || 0) + dt;
     g.fx.redFlash = Math.max(g.fx.redFlash || 0, 0.3);
     if (g.brineT > 3) die(`Drowned in the brine pool at ${Math.round(e.y)} m`);
@@ -1035,7 +1035,7 @@ function update(dt) {
     g.prompt = promptFor(target);
     const atAngler = nearAngler();
     if (atAngler) g.prompt = (g.caveTraded ? 'The old one has eaten this dive' : 'F  Trade with the old one') + (e.inSub ? '   ·   hold F  Leave sub' : '');
-    if (atAngler && !g.caveMet) { g.caveMet = true; hud.toast('Something vast breathes in the dark of the cave', 'note'); }
+    if (atAngler && !g.caveMet) g.caveMet = true;
     // in the submersible the prompt stays out of the way: hidden while moving, and gone after
     // 5 s of the same text (it comes back when something new is in reach or the sub stops again)
     // (only the sub's own reminder, F to leave / T for the tank room, hides like that: something in
@@ -1139,11 +1139,9 @@ function update(dt) {
     // a quiet milestone: the first time down on the floor of the hadal trench
     if (e.y > 4600 && e.x > TRENCH.x0 && e.x < TRENCH.x1 && !(g.profile.marks || {}).trench) {
       g.profile.marks = Object.assign(g.profile.marks || {}, { trench: true }); saveProfile(g.profile);
-      hud.toast(`The floor of the hadal trench, ${Math.round(e.y)} m. Few have ever been this deep.`, 'big');
     }
     if (e.y > 5050 && !(g.profile.marks || {}).pit) {
       g.profile.marks = Object.assign(g.profile.marks || {}, { pit: true }); saveProfile(g.profile);
-      hud.toast('The bottom of the pit: the deepest place in this ocean.', 'big');
     }
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
@@ -1170,8 +1168,6 @@ function update(dt) {
       g.reveal = { t: 0 }; profile.met = true; saveProfile(profile);
       ent.marked = false; ent.attn = 0; ent.state = 'roam';
       audio.ready && (audio.tone(30, 9, 0.6, 'sine', 0, 22), audio.groan(0.25));
-      g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}, ${Math.round(e.y)} m] I saw it. All of it. It let me go.`;
-      const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
     }
     // calling the submersible: tap C to call (or stop) it, hold C to send it back to the dock
     const ap = g.autopilot;
@@ -1346,7 +1342,6 @@ function update(dt) {
     const kg = loadKg(g); g.loadKg = kg;
     e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg) * (e.suitSpeed || 1);
     const cold = !e.inSub && !suitOf(profile).warm && e.y > 200 ? 1 + clamp((e.y - 200) / 800, 0, 1) * 0.35 : 1;
-    if (cold > 1.05 && !g.coldTold) { g.coldTold = true; hud.toast('The cold bites: without a drysuit he burns air faster', 'note'); }
     e.o2Mul = INJURY.air[lvl] * loadAir(kg) * (e.suitAir || 1) * cold;
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
@@ -1380,7 +1375,6 @@ function update(dt) {
     if (e.x > CANYON.x0 && e.x < CANYON.x1 && e.y > CANYON.top && !g.helm) {
       const k = 0.7 + 0.3 * Math.sin(g.time * 0.25), cvx = -1.1 * k, cvy = 0.35 * k;
       if (e.inSub) { g.sub.x += cvx * dt * 0.5; g.sub.y += cvy * dt * 0.5; } else { e.x += cvx * dt; e.y += cvy * dt; }
-      if (!g.currentTold) { g.currentTold = true; hud.toast('A current pours down the canyon', 'note'); }
     }
     const res = updateEarl(g, dt, mv);
     zoneHazards(dt);
@@ -1420,7 +1414,7 @@ function update(dt) {
       g.noAir += dt * g.noAirRate;
       if (g.noAir >= 15) die(causeText(g.noAirCause));
     } else if (g.noAir) {
-      hud.toast('Air.', 'big'); g.noAir = 0; g.fx.flash = 0.3;
+      g.noAir = 0; g.fx.flash = 0.3;
       audio.ready && audio.gasp && audio.gasp();
     }
     // an empty sub at the surface (or docked) airs out its cabin
@@ -1477,17 +1471,8 @@ function update(dt) {
         // something has noticed him: a deep sound, a pulse through the screen, a line in the journal
         g.fx.shake = Math.max(g.fx.shake, 1.0); g.fx.markPulse = 1;
         audio.ready && (audio.tone(38, 4, 0.7, 'sine', 0, 24), audio.groan(0.18));
-        hud.toast('Something noticed you.', 'note');
-        g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}, ${Math.round(e.y)} m] Something noticed me.`;
-        const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
       } else if (ev === 'appeased') {
-        hud.toast('The water feels lighter.', 'big');
-        g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}] The water feels lighter.`;
-        const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
       } else if (ev === 'unmarked') {
-        hud.toast('The feeling of being watched fades.', 'note');
-        g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}] It has lost interest. For now.`;
-        const ta = document.getElementById('notes'); if (ta) ta.value = g.notes;
       }
       else if (ev === 'pass') {
         // it sweeps by, close: the water shoves the sub, a long low rush
@@ -1500,10 +1485,8 @@ function update(dt) {
         g.fx.shake = Math.max(g.fx.shake, 2.6); audio.ready && audio.ram();
         for (let i = 0; i < 40; i++) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 6, y: g.sub.y + 1 + Math.random() * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
       }
-      else if (ev === 'lost') hud.toast('It has lost you in the dark.', 'note');
-      else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); hud.toast('Something bumped you', 'warn'); }
+      else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); }
       else if (ev === 'charge') { audio.ready && audio.whoosh(); }
-      else if (ev === 'swerve') { hud.toast('It turns away from the light'); }
       else if (ev === 'clicks') { audio.ready && audio.clicks(6); }
       else if (ev === 'orca') { audio.ready && audio.orcaCall(); }
       else if (ev === 'lunge') { audio.ready && audio.thud(0.25); }
@@ -1574,7 +1557,7 @@ function update(dt) {
   g.waveBoost = lerp(g.waveBoost, near * 0.18, dt * 0.5);
   g.storm = 0;
   g.dayEff = g.day.light;
-  if (!e.inSub && e.y > 200 && (e.prevLampY ?? 0) <= 200 && !e.lampAuto) { e.lampAuto = true; hud.toast('Headlamp on (200 m)'); }
+  if (!e.inSub && e.y > 200 && (e.prevLampY ?? 0) <= 200 && !e.lampAuto) { e.lampAuto = true; }
   e.prevLampY = e.y;
   e.dark = Math.sqrt(g.dayEff * Math.exp(-Math.max(0, e.y) / 140)) * (1 - fx.darken) < 0.3;
   // heart rate
@@ -1710,6 +1693,7 @@ requestAnimationFrame(frame);
 // Escape toggles pause; closing overlays first.
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape' || ui.typing()) return;
+  if (ui.settingsOpen && ui.settingsOpen()) { ui.toggleSettings(false); return; }
   if (g.mode !== 'play') return;
   if (ui.anyOpen()) { ui.closeAll(); return; }
   g.paused = !g.paused;

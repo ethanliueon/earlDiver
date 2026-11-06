@@ -793,3 +793,28 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #pause #resume { color: #2e220a; background: radial-gradient(ellipse at 50% 25%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%); box-shadow: 0 2px 0 #4a3510, 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,250,220,0.75); }
 #pause .small { color: var(--paint-dim); }
 #pause .pause-version { right: 24px; bottom: 16px; color: var(--paint-dim); }
+
+/* ---------- settings and controls (the gear) ---------- */
+.gear-btn { width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer; font-size: 19px; line-height: 34px; padding: 0; color: #2e220a;
+  background: radial-gradient(ellipse at 50% 30%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%); box-shadow: 0 2px 0 #4a3510, 0 3px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,250,220,0.75); }
+.gear-btn:hover { filter: brightness(1.08); }
+#title .t-gear { position: absolute; top: 18px; right: 18px; z-index: 2; }
+#journal header .j-gear { margin-left: auto; width: 28px; height: 28px; font-size: 16px; line-height: 28px; }
+#settings { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(2, 6, 9, 0.6); }
+#settings .set-panel { position: relative; width: min(640px, 94vw); max-height: 88vh; overflow: auto; padding: 26px 30px 26px; border-radius: 10px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.10), transparent 60%), linear-gradient(180deg, var(--steel) 0%, #444c41 55%, #3a4138 100%);
+  border: 2px solid var(--steel-deep); box-shadow: 0 30px 80px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 0 0 7px rgba(0,0,0,0.12); }
+#settings .set-plate { display: inline-block; padding: 6px 26px 8px; border-radius: 4px; font: 26px var(--serif); color: #3a2a0e; text-shadow: 0 1px 0 rgba(255,245,210,0.55); margin-bottom: 16px;
+  background: linear-gradient(180deg, var(--brass-hi) 0%, var(--brass) 38%, #a8873e 62%, var(--brass-lo) 100%); box-shadow: 0 2px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,250,220,0.7); }
+#settings .set-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; border: 0; font: 20px var(--serif); color: #2e220a; cursor: pointer;
+  background: radial-gradient(ellipse at 50% 30%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%); box-shadow: 0 2px 0 #4a3510; }
+#settings h4 { margin: 4px 0 8px; font: 11px var(--stencil); letter-spacing: 0.28em; text-transform: uppercase; color: var(--paint-dim); }
+#settings .set-group { margin-bottom: 16px; }
+#settings .set-row { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 6px; padding: 9px 14px; border: 1px solid rgba(0,0,0,0.6); border-radius: 4px; cursor: pointer; text-align: left;
+  background: linear-gradient(180deg, #2c3229, #22271f); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.07); color: var(--paint); font: 15px var(--serif); }
+#settings .set-row em { display: block; font: 11px var(--mono); font-style: normal; color: var(--paint-dim); margin-top: 1px; }
+#settings .set-row b { min-width: 46px; text-align: center; padding: 3px 8px; border-radius: 999px; font: 600 11px var(--stencil); letter-spacing: 0.15em; text-transform: uppercase; color: rgba(221,214,188,0.5); background: #1a1e17; box-shadow: inset 0 1px 3px rgba(0,0,0,0.7); }
+#settings .set-row b.on { color: #2e220a; background: radial-gradient(ellipse at 50% 30%, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
+#settings .set-row:hover { filter: brightness(1.1); }
+#settings .set-controls { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px 18px; font: 12px var(--mono); color: var(--paint); }
+#settings .set-controls kbd { display: inline-block; min-width: 18px; padding: 1px 5px; margin-right: 3px; border-radius: 3px; text-align: center; font: 600 11px var(--mono); color: #2e220a; background: linear-gradient(180deg, var(--brass-hi), var(--brass)); box-shadow: 0 1px 0 #4a3510; }

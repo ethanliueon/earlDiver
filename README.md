@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.0.3 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.0.4 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -34,7 +34,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
 | U | The boat (at the surface): sell, buy gear and supplies, the radio, the aquarium and its gallery |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
-| Esc | Pause (save and quit to the title from there; also the display settings: target brackets, catch tags, reduce flashing) |
+| Esc | Pause (save and quit to the title from there) |
+| ⚙ | Settings and controls (on the title screen, in the journal and the pause menu): target brackets, catch tags, reduce flashing, hints, sound |
 | M | Mute |
 | H | Hints on / off |
 
@@ -62,7 +63,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - **The ocean** (see `docs/ocean_profile.png` for a side section) is 5,000 m wide: the beach, reef, kelp and wreck in the east; the shelf edge, a
   canyon, the slope with its cold seep, the abyssal plain with vents, a brine pool and a whale fall,
   a seamount; and in the west, under the wall with the old one's cave, the hadal trench: a wide
-  floor at 4,800-5,000 m with one pit to 5,100 m, the deepest place there is.
+  floor at 4,800-5,000 m with one pit to 5,100 m, the deepest place there is. Nothing tells you
+  where you are: explore.
 - **Eight submersibles**, each a deeper one from the yard: the Б-7 bathyscaphe (300 m), its refit
   (500 m), a yellow 1960s work sub with an acrylic dome (900 m), a white oilfield work sub (1,300 m),
   a research sub (1,900 m), an Alvin-type deep research sub (2,500 m), a titanium one (3,300 m) and
@@ -84,7 +86,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
   shows the way back to it.
 - The radio at the boat has a few contracts each dive that pay well over the market.
 - Something is out there: a gulper some 60 m long, nearly all head and mouth, with red lights
-  flickering along its length and red eyes. Its lair is the hadal trench; by night it rises. It
+  flickering along its length and red eyes. Each run it starts somewhere new, between 1,500 and 3,500 m, and roams the whole ocean; by night
+  it rises. Once a run, if it is far off while you are down in its water, it is suddenly 500 m nearer. It
   hears speed and engines, and it sees light. Kelp and rock overhangs hide you if you are slow and
   dark. Sea lanterns keep it away, for a while. It travels at about 7 m/s.
 - Catch it in your lamp and every light on it goes out; then only its eyes, brightening. Go dark
