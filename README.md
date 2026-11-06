@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.0.11 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.0.12 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -75,7 +75,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
   narrower window on deeper hulls). Nothing survives the bottom of the pit.
 - **Hull damage** shows on the sub as patches: dents in the plating, cracked and leaking (each about
   15 % of her hull; the cabin air leaks faster the more there are). Get out, swim to a patch and hold
-  F: five seconds mends it. The boat can still patch her up for money.
+  R: five seconds mends it. The boat can still patch her up for money.
 - **The trawl net** (a sub add-on): N lets it out once a dive; it takes up to ten animals, sharks to
   2.5 m, even legends, and dumps the haul on the tank-room floor. It is loud below 200 m. Big
   animals take two or three places in the open tank; the large pressure tank holds three animals,

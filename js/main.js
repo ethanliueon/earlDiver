@@ -628,7 +628,6 @@ function findTarget() {
     if (d < bd) { bd = d; best = { kind: 'pickup', p }; }
   }
   if (best) return best;
-  if (!e.inSub && !g.sub.imploded) { const pi = patchNear(); if (pi >= 0) return { kind: 'repair', i: pi }; }
   if (!e.inSub && !g.sub.imploded && dist(e.x, e.y, g.sub.x, g.sub.y) < 4.5) return { kind: 'board' };
   if (!e.inSub && W.inKelp(e.x, e.y)) {
     // (v2: kelp blades are no longer cut and sold)
@@ -660,11 +659,9 @@ function promptFor(t) {
       const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'fangtooth necklace' : t.p.type === 'sapphire' ? 'deep sapphire' : (RESOURCES[t.p.type] ? RESOURCES[t.p.type].name.toLowerCase() : t.p.type);
       if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? `Cutting the net… ${Math.round(g.pry.t / HOLD_TIME.net * 100)} %` : `Hold F  Cut the ${t.p.animal} free`;
       else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
-    } else if (t.kind === 'repair') {
-      p = g.repair && g.repair.i === t.i ? `Repairing the hull… ${Math.round(g.repair.t / REPAIR_TIME * 100)} %` : `Hold F  Repair this damage (hull ${Math.round(g.sub.hull * 100)} %, ${(g.sub.patches || []).length} to mend)`;
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
-      if ((g.sub.patches || []).length) p += `   ·   hull ${Math.round(g.sub.hull * 100)} %: ${g.sub.patches.length} damaged patch${g.sub.patches.length > 1 ? 'es' : ''} to mend from outside`;
+      if ((g.sub.patches || []).length && patchNear() < 0) p += `   ·   hull ${Math.round(g.sub.hull * 100)} %: ${g.sub.patches.length} damaged patch${g.sub.patches.length > 1 ? 'es' : ''} (hold R at one to mend it)`;
     }
     else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
       : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use her winch`
@@ -673,6 +670,8 @@ function promptFor(t) {
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your gallery`;
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
+  { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; // a damaged patch within reach: hold R
+    if (pi >= 0) p = g.repair && g.repair.i === pi ? `Repairing the hull… ${Math.round(g.repair.t / REPAIR_TIME * 100)} %` : (p ? p + '   ·   ' : '') + `Hold R  Repair this damage (hull ${Math.round(g.sub.hull * 100)} %, ${g.sub.patches.length} to mend)`; }
   if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
   if (canOffer() && (g.offerT || 0) < 10) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep'; // offered for 10 s, then left unsaid
   if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room';
@@ -882,7 +881,7 @@ function repairs(dt, target, holding) {
   // the hull's damage as patches: each 15 % lost is a dented, cracked place on her side, leaking.
   // Outside, at a patch, hold F: five seconds of work mends it (no kit needed)
   syncPatches(sub);
-  const near = target && target.kind === 'repair' ? target.i : -1;
+  const near = !e.inSub && !sub.imploded ? patchNear() : -1;
   if (near >= 0 && holding && !e.inSub) {
     if (!g.repair || g.repair.i !== near) g.repair = { i: near, t: 0 };
     g.repair.t += dt;
@@ -1060,7 +1059,7 @@ function update(dt) {
       g.pry.t += dt;
       if (g.pry.t >= HOLD_TIME[target.p.type]) { g.pry = null; interact(target, false); }
     } else g.pry = null;
-    repairs(dt, target, holding); // mending the hull: hold F at a damaged patch
+    repairs(dt, target, keys.has('r')); // mending the hull: hold R at a damaged patch (outside)
     // planting a coral fragment on bare shallow seabed
     if (planting && holding) {
       g.plant = (g.plant || 0) + dt;
@@ -1103,7 +1102,7 @@ function update(dt) {
     }
     if (pressed.has('r')) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
-      if (!e.inSub || g.sub.imploded) hud.toast('The backup tanks are in the sub', 'warn');
+      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast('Swim to a damaged patch on her hull, then hold R', 'warn'); }
       else if (!g.items.airTank) hud.toast('No backup air tanks', 'warn');
       else if (g.tankFit) { /* already being connected */ }
       else if (g.sub.o2 >= g.sub.o2Max - 1) hud.toast('The cabin air is full');

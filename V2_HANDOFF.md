@@ -427,3 +427,6 @@ Docs, screenshots, the handoff's checks, merge to main.
 - Mending: outside the sub, within 1.5 m of a patch (`patchNear`, `patchWorld` — mirrored by the sub's yaw as the renderer draws her), the target is `repair`: hold F for 5 s → the patch is gone and the hull +15 % (sound when the last goes). Near a patch, F mends rather than boards. The boat's paid patch still works.
 - Inventory: the lure, necklace, clams and pearls are no longer listed (they show on screen already); rows with nothing in them, and empty sections, are hidden.
 - The journal's controls list updated (F mending, N net, B inventory, V helm, X = +$500,000).
+
+## 2.0.12
+- Mending the hull is hold R at a damaged patch (outside the sub), not F: F always boards. R inside the sub still connects a backup air tank. Prompts, controls lists and README updated.
