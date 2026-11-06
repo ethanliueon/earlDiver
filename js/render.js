@@ -128,7 +128,11 @@ export class Renderer {
 
   updateCamera(g, dt) {
     const e = g.earl;
-    const targetView = g.debugView || (g.mode === 'menu' ? 40 : (e.inSub ? 46 : 26) * (this.zoomMul || 1));
+    // (2.3.1) a little closer in the shallows, where Earl works by hand (22 m across above 40 m, 26 m by
+    // 120 m), and in the sub in the deep, where the animals are small lights (46 m across near the surface,
+    // 38 m below 400 m)
+    const dv = clamp((e.y - 40) / 80, 0, 1), ds = clamp((e.y - 150) / 250, 0, 1);
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1));
     this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
@@ -345,7 +349,7 @@ export class Renderer {
         // school fish carry faint belly photophores, not lamps: small, dim, and they never sum to a blaze
         // (6th field: the radius of a sharp light-organ core; marks a living light the torch can wash out)
         if (c.sp.v.glow && c.glimmer) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.4 + ppm * 0.08), 0.55 * bioPulse(c, t), Math.max(0.8, ppm * 0.05)]); // a lone one: its own light, flashing
-        else if (c.sp.v.glow && (glowSkip++ % 3 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(1.5, Ld * 0.3), 0.3 * bioPulse(c, t), 0.6]);
+        else if (c.sp.v.glow && (glowSkip++ % 2 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.35), 0.45 * bioPulse(c, t), 0.7]); // (2.3.1: every second fish, a little brighter: a school reads as a drift of blue points)
         continue;
       }
       const isLive = c.variant || Ld > 150 || CACHE_SKIP.has(shape);

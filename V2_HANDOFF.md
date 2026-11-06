@@ -513,3 +513,12 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   Beside it: name, line, figures and the buy button (copied from the row). Click any row to show it there; the
   recommended item is shown first.
 - The shop panel is wider (760 px) to fit it.
+
+## 2.3.1 — a livelier deep, a closer camera
+- fauna.js: more groups in the deep (6 at 200-600 m, 5 to 1,200, 4 to 2,500, 3 below; open water thins only the
+  shallows); bait schools down to 1,600 m; in the deep (camera below 300 m) groups start 3-14 m off the edge of the view
+  and within its middle height, so they drift through the lights. Measured with the sub still at 1,400 m: 7-8 animals
+  in view after a few seconds (was 3-4).
+- render.js: school photophores on every second fish (was every third), a little brighter and larger.
+- Camera: the diver view is 22 m across above 40 m (26 m by 120 m; was 26 everywhere); the sub view 46 m near the
+  surface to 38 m below 400 m (was 46).

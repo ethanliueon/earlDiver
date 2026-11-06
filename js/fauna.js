@@ -193,12 +193,14 @@ export class Fauna {
   }
   // target number of ordinary groups near the camera (less life the deeper you go)
   targetCount(depth, dread, openWater) {
-    let base = depth < 60 ? 9 : depth < 200 ? 7 : depth < 600 ? 5 : depth < 1200 ? 4 : 3;
-    if (openWater) base = Math.max(2, base - 1);
+    // (2.3.1: the deep a little livelier - every animal there is small and dark, so a few more groups are
+    // needed for any to pass through the lights; open water only thins the shallows)
+    let base = depth < 60 ? 9 : depth < 200 ? 7 : depth < 600 ? 6 : depth < 1200 ? 5 : depth < 2500 ? 4 : 3;
+    if (openWater && depth < 200) base = Math.max(2, base - 1);
     return Math.round(base * (1 - dread * 0.95));
   }
   baitTarget(depth, dread) {
-    const base = depth < 150 ? (this.reefy ? 1 : 2) : depth < 600 ? 2 : depth < 1000 ? 1 : 0;
+    const base = depth < 150 ? (this.reefy ? 1 : 2) : depth < 600 ? 2 : depth < 1600 ? 1 : 0;
     return Math.round(base * (1 - dread));
   }
   groupCount() {
@@ -265,8 +267,11 @@ export class Fauna {
   pickSpawnPoint(cam) {
     const rng = this.rng;
     const side = rng() < 0.5 ? -1 : 1;
-    let x = cam.x + side * (cam.w / 2 + rng.range(4, 30));
-    let y = cam.y + rng.range(-cam.h * 0.9, cam.h * 0.9);
+    // (2.3.1) in the deep, where everything is slow and small, groups start nearer the edge of the view and
+    // nearer its middle height, so they drift through the lights instead of passing unseen above or below
+    const deep = cam.y > 300;
+    let x = cam.x + side * (cam.w / 2 + (deep ? rng.range(3, 14) : rng.range(4, 30)));
+    let y = cam.y + (deep ? rng.range(-cam.h * 0.5, cam.h * 0.5) : rng.range(-cam.h * 0.9, cam.h * 0.9));
     if (rng() < 0.3) { x = cam.x + rng.range(-cam.w, cam.w); y = cam.y + (rng() < 0.5 ? -1 : 1) * (cam.h / 2 + rng.range(4, 18)); }
     return { x, y, side };
   }
