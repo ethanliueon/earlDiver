@@ -537,6 +537,7 @@ function startRun() {
 // ---------------- input ----------------
 window.addEventListener('keydown', (ev) => {
   if (ui.typing()) { if (ev.key === 'Escape') ui.blurTyping(); return; }
+  if (ui.confirmOpen && ui.confirmOpen()) return; // an "are you sure?" is up: its own buttons only
   const k = ev.key.toLowerCase();
   if (g.mode === 'menu' && (k === 'enter' || k === ' ')) {
     ev.preventDefault();

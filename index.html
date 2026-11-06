@@ -144,14 +144,19 @@
   <section id="pause" class="panel" hidden>
     <span class="version pause-version"></span>
     <h2>Paused</h2>
+    <button class="gear-btn p-gear" data-settings aria-label="Settings and controls" title="Settings and controls"></button>
     <button id="resume">Resume</button>
-    <button id="quit" class="ghost">End this dive</button>
     <button id="savequit" class="ghost">Save and quit to the title</button>
-    <button id="restart" class="ghost">Start a new game</button>
-    <button class="ghost" data-settings>⚙ Settings and controls</button>
-    <p class="small">Ending a dive loses what you have not sold; the next dive is a new sea. A new game starts over with nothing. Progress saves itself to its slot as you play (what you have not sold is lost if you leave mid-dive). H toggles hints.</p>
+    <div class="p-links"><button id="quit" class="link">End this dive</button><button id="restart" class="link">Start a new game</button></div>
   </section>
 
+  <section id="confirm" hidden>
+    <div class="cf-plate">
+      <h3 class="cf-title"></h3>
+      <p class="cf-body"></p>
+      <div class="cf-acts"><button class="cf-no"></button><button class="cf-yes"></button></div>
+    </div>
+  </section>
   <section id="inventory" hidden>
     <div class="set-panel inv-panel">
       <button class="set-close inv-close" aria-label="Close">×</button>

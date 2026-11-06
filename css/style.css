@@ -843,3 +843,27 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .inv-empty { font: italic 13px var(--serif); color: var(--paint-dim); padding: 4px 2px; }
 #inventory .inv-cash { display: flex; gap: 18px; font: 600 20px var(--mono); color: var(--paint); }
 #inventory .inv-cash span { font: 11px var(--stencil); letter-spacing: 0.2em; color: var(--paint-dim); display: block; }
+
+/* a brass "are you sure?" plate */
+#confirm { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(2, 6, 9, 0.62); }
+#confirm .cf-plate { position: relative; width: min(400px, 88vw); padding: 22px 28px 20px; border-radius: 6px; text-align: center;
+  background: linear-gradient(180deg, var(--brass-hi) 0%, var(--brass) 38%, #a8873e 62%, var(--brass-lo) 100%);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,250,220,0.7), inset 0 -2px 0 rgba(60,40,10,0.6); }
+#confirm .cf-plate::before, #confirm .cf-plate::after { content: ''; position: absolute; top: 10px; width: 8px; height: 8px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f4e2a8, #7a5a22 70%); }
+#confirm .cf-plate::before { left: 10px; } #confirm .cf-plate::after { right: 10px; }
+#confirm h3 { margin: 0 0 6px; font: 24px var(--serif); color: #3a2a0e; text-shadow: 0 1px 0 rgba(255,245,210,0.55); }
+#confirm p { margin: 0 0 16px; font: 13px var(--mono); color: rgba(58,42,14,0.85); line-height: 1.5; }
+#confirm .cf-acts { display: flex; gap: 10px; justify-content: center; }
+#confirm button { padding: 8px 18px; border-radius: 999px; border: 0; cursor: pointer; font: 600 12px var(--stencil); letter-spacing: 0.14em; text-transform: uppercase; }
+#confirm .cf-no { color: #f0dca0; background: #2a2418; box-shadow: 0 2px 0 #120e08; }
+#confirm .cf-yes { color: #fff2ea; background: linear-gradient(180deg, #b0402a, #7e2414); box-shadow: 0 2px 0 #4a1408; }
+#confirm button:hover { filter: brightness(1.12); }
+#title .slot .del { padding: 4px 12px; border-radius: 999px; font: 600 10px var(--stencil); letter-spacing: 0.14em; text-transform: uppercase; color: #f0dca0; background: #3a2418; box-shadow: 0 1px 0 #120e08, inset 0 1px 0 rgba(255,255,255,0.08); }
+#title .slot .del:hover { background: #7e2414; color: #fff2ea; }
+
+/* the pause menu, pared down: Resume, Save and quit, the gear; the two drastic choices as quiet links */
+#pause .p-gear { position: absolute; top: 18px; right: 18px; width: 38px; height: 38px; padding: 0; }
+#pause .p-links { display: flex; justify-content: center; gap: 22px; margin-top: 16px; }
+#pause .p-links .link { width: auto; padding: 2px 0; border: 0; border-radius: 0; background: none; box-shadow: none; font: 11px var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; color: var(--paint-dim); border-bottom: 1px solid rgba(221,214,188,0.25); }
+#pause .p-links .link:hover { color: #f0a080; border-bottom-color: #f0a080; filter: none; }
+#pause .p-gear { background: radial-gradient(ellipse at 50% 30%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%); box-shadow: 0 2px 0 #4a3510, 0 3px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,250,220,0.75); border-radius: 50%; }

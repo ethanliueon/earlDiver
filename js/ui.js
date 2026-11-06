@@ -121,7 +121,7 @@ export class UI {
       else (d.documentElement.requestFullscreen ? d.documentElement.requestFullscreen() : Promise.reject()).catch(() => { $('fullscreen').textContent = 'Full screen: press F11'; });
     });
     document.addEventListener('fullscreenchange', () => { $('fullscreen').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; });
-    $('restart').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); });
+    $('restart').addEventListener('click', () => this.confirm('Start a new game?', 'A new diver, from nothing: no cash, no gear, an empty journal. This save is replaced.', 'Start over', 'Keep playing', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); }));
     // the title screen: Continue, the three slots, controls, full screen
     $('continue').addEventListener('click', () => { const n = lastSlot(); if (n) h.onSlot(n); });
     $('slots').addEventListener('click', (ev) => {
@@ -130,8 +130,9 @@ export class UI {
       const n = +card.dataset.n;
       if (del) {
         ev.stopPropagation();
-        if (!del.classList.contains('sure')) { del.classList.add('sure'); del.textContent = 'delete it?'; return; }
-        deleteSlot(n); this.showTitle(); return;
+        const info = card.querySelector('.info'), what = info ? `${info.querySelector('b').textContent} · ${info.querySelector('span').textContent}` : '';
+        this.confirm(`Delete diver ${n}?`, `${what}\n\nEverything in this save is lost for good: cash, gear, the journal, the aquarium.`, 'Delete for good', 'Keep it', () => { deleteSlot(n); this.showTitle(); });
+        return;
       }
       if (card.classList.contains('damaged') && !card.classList.contains('sure')) { card.classList.add('sure'); card.querySelector('.info span').textContent = 'click again to start a new game here'; return; }
       h.onSlot(n);
@@ -187,7 +188,7 @@ export class UI {
     $('settings').addEventListener('click', (ev) => { if (ev.target === $('settings')) this.toggleSettings(false); });
     document.querySelector('#settings .set-controls').innerHTML = document.querySelector('#menu .controls').innerHTML;
     this.renderSettings();
-    $('quit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); });
+    $('quit').addEventListener('click', () => this.confirm('End this dive?', 'Whatever you have not sold is lost, and the next dive is a new sea. Your cash, gear and journal are kept.', 'End the dive', 'Keep diving', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); }));
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
     this.renderRuns();
     this.renderSave();
@@ -213,6 +214,20 @@ export class UI {
   closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
+  // a brass "are you sure?" plate: yes runs onYes; no, Esc or a click outside just closes it
+  confirm(title, body, yes, no, onYes) {
+    const el = $('confirm'), close = () => { el.hidden = true; window.removeEventListener('keydown', key, true); };
+    const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
+    el.querySelector('.cf-title').textContent = title;
+    el.querySelector('.cf-body').innerHTML = esc(body).replace(/\n/g, '<br>');
+    el.querySelector('.cf-yes').textContent = yes; el.querySelector('.cf-no').textContent = no;
+    el.querySelector('.cf-yes').onclick = () => { close(); onYes(); };
+    el.querySelector('.cf-no').onclick = close;
+    el.onclick = (e) => { if (e.target === el) close(); };
+    window.addEventListener('keydown', key, true);
+    el.hidden = false; el.querySelector('.cf-no').focus();
+  }
+  confirmOpen() { return !$('confirm').hidden; }
   inventoryOpen() { return !$('inventory').hidden; }
   toggleInventory(force) { const el = $('inventory'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderInventory(); }
   // B: what Earl has on him, what is in the sub, his gear
@@ -382,9 +397,9 @@ export class UI {
       const r = readSlot(n);
       if (r.state === 'ok') {
         const p = r.profile;
-        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? ` · ${p.subName}` : ''}</b><span>${p.runs || 0} dive${p.runs === 1 ? '' : 's'} · deepest ${p.deepest || 0} m · ${(p.journal || []).length} species · ${r.saved ? ago(r.saved) : ''}</span></div><button class="del" title="Delete this save">delete</button></div>`;
+        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? ` · ${p.subName}` : ''}</b><span>${p.runs || 0} dive${p.runs === 1 ? '' : 's'} · deepest ${p.deepest || 0} m · ${(p.journal || []).length} species · ${r.saved ? ago(r.saved) : ''}</span></div><button class="del" title="Delete this save">Delete</button></div>`;
       } else if (r.state === 'damaged') {
-        html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">delete</button></div>`;
+        html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">Delete</button></div>`;
       } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>Empty: new game</b><span>start a new diver here</span></div><span></span></div>`;
     }
     $('slots').innerHTML = html;

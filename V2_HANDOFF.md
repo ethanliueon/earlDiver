@@ -430,3 +430,8 @@ Docs, screenshots, the handoff's checks, merge to main.
 
 ## 2.0.12
 - Mending the hull is hold R at a damaged patch (outside the sub), not F: F always boards. R inside the sub still connects a backup air tank. Prompts, controls lists and README updated.
+
+## 2.0.13 — "are you sure?" plates; a pared-down pause menu
+- `ui.confirm(title, body, yes, no, onYes)`: a brass plate (`#confirm`) with Keep (focused, so Enter keeps) and a red button for the drastic choice; Esc or a click outside closes it; game keys are ignored while it is up.
+- Title screen: each save slot has a Delete button that asks "Delete diver N?" with the save's details before deleting (was a two-click text link).
+- Pause menu: Resume, Save and quit, and the brass gear in the corner; "End this dive" and "Start a new game" are quiet links that each ask first (their warnings moved into the plates, the paragraph is gone).
