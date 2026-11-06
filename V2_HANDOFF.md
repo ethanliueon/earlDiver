@@ -126,3 +126,12 @@ lapses if the fish becomes stressed/dying again).
   (species, rare form, Famous tag, name, home x/depth), in localStorage. Decide whether the rest of the
   profile becomes saved too.
 - Open question: what interacting with a released fish gives the player (just fun? a small buff? journal page?).
+**Decided:**
+- **How to release:** an aquarium fish has to be moved into the **sub's pressure tank** (small chamber or the large
+  pressure tank, depending on its size), driven down to **its habitat / habitat depth**, and released there.
+  (Pressure-tank rules still apply: it has to be kept at its own pressure on the way down.)
+- **Saving: yes, a full persistent save.** The user plans to **publish the game**, so cash, gear, upgrades,
+  journal, aquarium, named and released fish, etc. all persist (localStorage; versioned save format so later
+  updates can migrate it; consider several save slots and a "new game" option).
+- **New title/loading screen**, separate from the death/respawn screen: e.g. Continue / New game / save slots,
+  and a short loading moment while the world generates. The death screen stays its own thing.
