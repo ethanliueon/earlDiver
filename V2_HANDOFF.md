@@ -712,3 +712,8 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   reports progress (`window.__boot(k, label)`), waits for the fonts, paints the monster's hide (the one slow
   drawing, which used to run 1.5 s into the title and could hitch), lets the first frames settle, then
   fades the screen out over 0.9 s (`window.__bootDone`) onto the title.
+
+## 2.6.5 — no "her" or "she" on screen
+- Every on-screen "her" or "she" for the boat, the sub or the old one is gone: "near the sub's rated depth",
+  "Name the sub", "the Margaret's cradle", "the old one's wares", "Feed the old one", "it craves" and so on.
+  (Code comments still say "her"; only what the player reads changed.)

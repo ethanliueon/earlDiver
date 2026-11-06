@@ -275,7 +275,7 @@ export class Hud {
       ctx.fillStyle = hi < 0.4 ? '#e0503a' : hi < 0.75 ? '#e8b040' : 'rgba(150,210,180,0.85)'; ctx.beginPath(); ctx.roundRect(hx, yy, Math.max(hh, hw * hi), hh, 3 * s); ctx.fill();
       ctx.font = `${9 * s}px ${MONO}`; ctx.fillStyle = 'rgba(180,215,240,0.6)'; ctx.fillText('HULL', hx - 6 * s, yy - 2 * s);
       yy += 14 * s;
-      const warn = g.sub.failing != null ? 'the hull is failing' : r > 1 ? 'past her rated depth' : r > 0.9 ? 'near her rated depth' : '';
+      const warn = g.sub.failing != null ? 'the hull is failing' : r > 1 ? 'past the sub\'s rated depth' : r > 0.9 ? 'near the sub\'s rated depth' : '';
       if (warn) { ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = r > 1 || g.sub.failing != null ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : '#e8b040'; ctx.fillText(warn, rx0, yy); yy += 18 * s; }
     }
     // the sub on autopilot: where it is and how long it will be

@@ -225,7 +225,7 @@ export class UI {
   // "Name her": the brass plate. done(name) is called with what was stamped (EARL if left empty).
   askSubName(current, done, line) {
     const box = $('namebox'), inp = $('subname');
-    $('namebox-line').textContent = line || 'The yard will paint it on her hull, and on every hull after her.';
+    $('namebox-line').textContent = line || 'The yard will paint it on the sub\'s hull, and on every hull after it.';
     inp.value = (current || 'EARL').toUpperCase(); box.hidden = false;
     setTimeout(() => { inp.focus(); inp.select(); }, 30);
     const finish = () => {
@@ -297,7 +297,7 @@ export class UI {
       const where = (s) => (s.pile ? 'the heap from the net' : s.pressed ? (s.chamber === 100 ? 'the large pressure tank' : `chamber ${s.chamber + 1}`) : 'the open tank');
       const groups = {};
       for (const s of g.subTank) (groups[where(s)] = groups[where(s)] || []).push(s);
-      const inner = Object.keys(groups).length ? Object.entries(groups).map(([w, L]) => `<div class="inv-empty" style="font-style:normal">${w}</div>` + L.map(fish).join('')).join('') : '<p class="inv-empty">Nothing in her tanks.</p>';
+      const inner = Object.keys(groups).length ? Object.entries(groups).map(([w, L]) => `<div class="inv-empty" style="font-style:normal">${w}</div>` + L.map(fish).join('')).join('') : '<p class="inv-empty">Nothing in the sub\'s tanks.</p>';
       html += sec('In the submersible', inner, true);
     }
     // supplies and finds: only what he actually has (the lure and the necklace are on the screen already; clams and pearls too)
@@ -460,8 +460,8 @@ export class UI {
     if (!P || !off) return;
     this.renderCounter($('cave-cash'), money(P.cash));
     $('cave-coins').innerHTML = `${COIN}${P.coins || 0}`;
-    $('cave-sub').textContent = `A giant anglerfish, older than the boat · this dive she craves: ${off.craving.name.toLowerCase()}`;
-    let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">Her wares</button></nav>`;
+    $('cave-sub').textContent = `A giant anglerfish, older than the boat · this dive it craves: ${off.craving.name.toLowerCase()}`;
+    let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">The old one's wares</button></nav>`;
     if (this.caveTab === 'wares') {
       for (const [k, W] of Object.entries(WARES)) {
         const g = this.h.getGame();
@@ -470,17 +470,17 @@ export class UI {
         const owned = W.max ? `${have} / ${W.max}` : done ? (k === 'blessing' ? 'on you this dive' : 'yours') : '';
         html += this.row('ware:' + k, W.name, W.line, owned, `<button data-cave="ware:${k}" class="coinbtn" ${done || (P.coins || 0) < W.coins ? 'disabled' : ''}>${COIN}${W.coins}</button>`, '', W.desc, [['price', `${W.coins} old gold coin${W.coins > 1 ? 's' : ''}`, 'sheet']]);
       }
-      html += '<p class="shop-note">Old gold comes from the deep: every live animal caught below 500 m pays coins when it is sold (more the deeper it lived), she pays some in every trade, and so does every sapphire.</p>';
+      html += '<p class="shop-note">Old gold comes from the deep: every live animal caught below 500 m pays coins when it is sold (more the deeper it lived), the old one pays some in every trade, and so does every sapphire.</p>';
       $('cave-body').innerHTML = html;
       return;
     }
     if (off.traded) {
-      html += `<p class="shop-empty">She has eaten. The lure dims a little, and a scatter of old gold lies in the silt: ${money(off.traded.total)}${off.traded.coins ? ` and ${off.traded.coins} coin${off.traded.coins > 1 ? 's' : ''}` : ''}. Come back next dive.</p>`;
+      html += `<p class="shop-empty">The old one has eaten. The lure dims a little, and a scatter of old gold lies in the silt: ${money(off.traded.total)}${off.traded.coins ? ` and ${off.traded.coins} coin${off.traded.coins > 1 ? 's' : ''}` : ''}. Come back next dive.</p>`;
       html += `<table class="manifest"><tbody>${off.traded.lines.map((l) => `<tr><td>${l.label}</td><td>${l.n}</td><td>${money(l.total)}</td></tr>`).join('')}</tbody></table>`;
     } else if (!off.groups.length) {
-      html += '<p class="shop-empty">The great jaw opens a little and closes again. You have nothing she wants. She takes live fish: bring them in the bag or the sub\'s tank.</p>';
+      html += '<p class="shop-empty">The great jaw opens a little and closes again. You have nothing it wants. It takes live fish: bring them in the bag or the sub\'s tank.</p>';
     } else {
-      html += '<p class="shop-note">Once a dive she takes fish for old gold coins: 30 % under the market, but three times the market for what she craves. Choose what to give her.</p>';
+      html += '<p class="shop-note">Once a dive the old one takes fish for old gold coins: 30 % under the market, but three times the market for what it craves. Choose what to give it.</p>';
       let total = 0;
       const rows = off.groups.map((gr) => {
         const on = this.caveSel.has(gr.key);
@@ -488,8 +488,8 @@ export class UI {
         const sp = SPECIES_BY_ID[gr.id];
         return `<tr class="pick${on ? ' on' : ''}" data-cave="${gr.key}"><td><i class="tick">${on ? '✓' : ''}</i>${this.mini(sp)}${gr.variant ? `<span class="rare r-${gr.variant}">${VARIANTS[gr.variant].name}</span> ` : ''}${sp.name}${gr.craving ? ' <em class="crave">craved</em>' : ''}</td><td>${gr.n}</td><td>${money(gr.total)}</td></tr>`;
       }).join('');
-      html += `<table class="manifest"><thead><tr><th>Fish</th><th>Qty</th><th>She pays</th></tr></thead><tbody>${rows}</tbody></table>`;
-      html += `<button class="primary" data-cave="!trade" ${this.caveSel.size ? '' : 'disabled'}>Feed her<span>${money(total)}</span></button>`;
+      html += `<table class="manifest"><thead><tr><th>Fish</th><th>Qty</th><th>It pays</th></tr></thead><tbody>${rows}</tbody></table>`;
+      html += `<button class="primary" data-cave="!trade" ${this.caveSel.size ? '' : 'disabled'}>Feed the old one<span>${money(total)}</span></button>`;
     }
     $('cave-body').innerHTML = html;
   }

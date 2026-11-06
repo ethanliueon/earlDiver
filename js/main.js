@@ -158,7 +158,7 @@ const ui = new UI({
   onFootstep: (v) => audio.ready && audio.footstep && audio.footstep(v),
   onRefreshContracts: () => { if (refreshIn(profile) > 0) return false; g.contracts = g.contracts.filter((q) => q.taken); fillBoard(profile, g.contracts); profile.refreshAt = Date.now(); saveProfile(profile); audio.ready && audio.click(); return true; },
   onTakeContract: (key) => { const c = g.contracts.find((q) => q.key === key); if (!c || c.taken) return false; c.taken = true; profile.taken = g.contracts.filter((q) => q.taken); saveProfile(profile); audio.ready && audio.click(); return true; },
-  onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on her hull`); },
+  onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on the sub's hull`); },
   onSellItem: (k) => sellItem(k),
   onDisplay: (k) => displaySpecimen(k),
   onCaveOffer: () => caveOffer(),
@@ -361,14 +361,14 @@ function caveTrade(keys) {
   g.caveTraded = { lines, total, coins };
   saveProfile(profile);
   audio.ready && audio.sale();
-  hud.toast(`She takes them. ${money(total)}${coins ? ` and ${coins} old gold coin${coins > 1 ? 's' : ''}` : ''}`, 'big');
+  hud.toast(`The old one takes them. ${money(total)}${coins ? ` and ${coins} old gold coin${coins > 1 ? 's' : ''}` : ''}`, 'big');
   return g.caveTraded;
 }
 function wareBuy(k) {
   const P = profile, W = WARES[k];
   if (!W || (P.coins || 0) < W.coins) return false;
   if (k === 'oldlure') { if ((P.oldLures || 0) >= W.max) return false; P.oldLures = (P.oldLures || 0) + 1; hud.toast('An old lure, cold and faintly glowing  [Q]', 'big'); }
-  else if (k === 'blessing') { if (g.blessed) return false; g.blessed = true; hud.toast('Her breath is warm. The deep looks away', 'big'); }
+  else if (k === 'blessing') { if (g.blessed) return false; g.blessed = true; hud.toast('The old one\'s breath is warm. The deep looks away', 'big'); }
   else if (k === 'eye') { if (P.eye) return false; P.eye = true; hud.toast('The sapphire eye turns in your hand: sapphires show on the sonar', 'big'); }
   else if (k === 'relic') { if ((P.relics || 0) >= W.max) return false; P.relics = (P.relics || 0) + 1; applySub(g.sub, P); hud.toast(`A pressure relic: the sub is rated ${g.sub.rated} m`, 'big'); }
   P.coins -= W.coins;
@@ -500,7 +500,7 @@ function buy(kind) {
       const mk1 = markOf(statValue(P, 'depth'));
       if (mk1 > mk0) {
         hud.toast(`A new submersible: ${SUBS[lv(P, 'depth')].name}, rated ${SUBS[lv(P, 'depth')].rated.toLocaleString()} m`, 'big');
-        if (SUB_MARKS[mk1].named && !P.subNamed) ui.askSubName(P.subName || 'EARL', (v) => { P.subName = v; P.subNamed = true; saveProfile(P); ui.renderWorkshop(); hud.toast(`${v} is painted on her hull`); }, 'She is the first hull that is truly yours. The yard will paint her name on, and on every hull after her.');
+        if (SUB_MARKS[mk1].named && !P.subNamed) ui.askSubName(P.subName || 'EARL', (v) => { P.subName = v; P.subNamed = true; saveProfile(P); ui.renderWorkshop(); hud.toast(`${v} is painted on the sub's hull`); }, 'The first hull that is truly yours. The yard will paint its name on, and on every hull after it.');
       }
       const has = (sid) => T.stats.includes(sid);
       if (has('air')) { const was = e.o2Max; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + (e.o2Max - was)); }
@@ -1047,7 +1047,7 @@ const PATCH_SHARE = 0.3, REPAIR_TIME = 5;
 function syncPatches(sub) {
   if (!sub.patches) sub.patches = [];
   const n = sub.imploded ? 0 : Math.min(3, Math.max(0, Math.ceil((1 - sub.hull) / PATCH_SHARE - 0.02)));
-  if (n > (g.patchCount || 0) && !sub.imploded) { hud.toast('The sub needs repairs', 'warn'); if (!g.repairHinted) { g.repairHinted = true; hud.hint('Swim to a hole in her hull and hold R to repair it'); } }
+  if (n > (g.patchCount || 0) && !sub.imploded) { hud.toast('The sub needs repairs', 'warn'); if (!g.repairHinted) { g.repairHinted = true; hud.hint('Swim to a hole in the sub\'s hull and hold R to repair it'); } }
   g.patchCount = n;
   while (sub.patches.length > n) sub.patches.pop();
   for (let tries = 0; sub.patches.length < n && tries < 40; tries++) {
@@ -1252,7 +1252,7 @@ function update(dt) {
     }
     if (pressed.has('r')) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
-      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast('Swim to a hole in her hull, then hold R', 'warn'); }
+      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast('Swim to a hole in the sub\'s hull, then hold R', 'warn'); }
       else if (!g.items.airTank) hud.toast('No backup air tanks', 'warn');
       else if (g.tankFit) { /* already being connected */ }
       else if (g.sub.o2 >= g.sub.o2Max - 1) hud.toast('The cabin air is full');
@@ -1322,7 +1322,7 @@ function update(dt) {
     if (pressed.has('c-tap')) {
       if (e.inSub && g.homeRun) { g.homeRun = false; ap.cancel(); hud.toast('Autopilot off'); }
       else if (e.inSub && g.sub.docked) hud.toast('Already at the boat');
-      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: taking her home'); hud.hint('It steers itself to the boat using less air. Press C to take the helm back; if something hits or comes near, it lets go'); audio.ready && audio.sonar(0.05); }
+      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: taking the sub home'); hud.hint('It steers itself to the boat using less air. Press C to take the helm back; if something hits or comes near, it lets go'); audio.ready && audio.sonar(0.05); }
       else if (g.sub.imploded) hud.toast('The submersible is gone', 'warn');
       else if (ap.state === 'coming') { ap.cancel(); g.sub.vx *= 0.5; hud.toast('Sub stopped'); }
       else { ap.call(g); hud.toast(`Calling the sub — ${Math.round(dist(e.x, e.y, g.sub.x, g.sub.y))} m away`); audio.ready && audio.sonar(0.05); }
@@ -1507,7 +1507,7 @@ function update(dt) {
         // getting under way: a sub alongside is lifted into her cradle; one still out holds her here
         if (mv.x && !g.sub.docked && !g.sub.imploded) {
           const alongside = Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) < 16 && !(g.autopilot && g.autopilot.active);
-          if (alongside) { g.sub.docked = true; hud.toast('The sub is lifted into her cradle'); audio.ready && audio.thud(0.2); }
+          if (alongside) { g.sub.docked = true; hud.toast('The sub is lifted into the Margaret\'s cradle'); audio.ready && audio.thud(0.2); }
           else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast('The sub is still out: bring it alongside first (hold C to send it home)', 'warn'); } }
         }
         if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast('The anchor is down: G to raise it', 'warn'); } }
@@ -1521,7 +1521,7 @@ function update(dt) {
     // nobody at the wheel, she drifts on the current
     if (pressed.has('g') && g.helm) {
       g.anchored = !g.anchored;
-      if (g.anchored) { profile.boatX = Math.round(BOAT.x); saveProfile(profile); hud.toast(`Anchor down, ${Math.round(Math.max(0, g.world.floorAt(BOAT.x)))} m of water under her`); audio.ready && audio.thud(0.25); }
+      if (g.anchored) { profile.boatX = Math.round(BOAT.x); saveProfile(profile); hud.toast(`Anchor down, ${Math.round(Math.max(0, g.world.floorAt(BOAT.x)))} m of water under the Margaret`); audio.ready && audio.thud(0.25); }
       else { hud.toast('Anchor up'); audio.ready && audio.click(); }
     }
     if (!g.helm && !g.anchored) g.boatV = lerp(g.boatV || 0, 0.25 * Math.sin(g.time * 0.003 + 1), 1 - Math.exp(-dt * 0.1)); // adrift

@@ -300,7 +300,7 @@ export const UPGRADE_LINE = {
   tagCalm: 'A clean shot leaves no grudge.',
   camShots: 'Room for one more face from the dark.',
   camRange: 'Glass that sees farther into the blue.',
-  ballast: 'Iron lungs: she sinks and climbs like a stone, then a cork.',
+  ballast: 'Iron lungs: the sub sinks and climbs like a stone, then a cork.',
   depth: 'Thicker steel between him and the weight of the sea.',
   subSpeed: 'A stronger heart in the engine room.',
   subTank: 'A longer tank, and room for one more.',
@@ -340,7 +340,7 @@ export function upgradeCoins(P, id) {
 // what the old one keeps in her cave, for coins
 export const WARES = {
   oldlure: { name: 'An old lure', coins: 2, max: 3, line: 'A lure that has hung in the dark longer than the boat has floated.', desc: 'Burns two and a half times as long as a common lure (25 s), and the deep follows it farther. Thrown first with Q.' },
-  blessing: { name: 'Her blessing', coins: 2, line: 'She breathes on you. The deep looks away, for a while.', desc: 'For the rest of this dive, the entity notices you half as fast.' },
+  blessing: { name: 'The old one\'s blessing', coins: 2, line: 'The old one breathes on you. The deep looks away, for a while.', desc: 'For the rest of this dive, the entity notices you half as fast.' },
   eye: { name: 'A sapphire eye', coins: 8, once: true, line: 'A blue stone that turns toward its own kind.', desc: 'Deep sapphires within 150 m show on the sonar as blue points. Kept for good.' },
   relic: { name: 'A pressure relic', coins: 5, max: 4, line: 'An iron ring from a hull that went deeper than it should have.', desc: 'Bolted inside the sub: its rating goes 100 m deeper. Up to four.' },
 };
