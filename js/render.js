@@ -527,9 +527,22 @@ export class Renderer {
         ctx.strokeStyle = 'rgba(30,30,28,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
         ctx.beginPath(); ctx.moveTo(boatX + crane.craneTip[0], boatY + crane.craneTip[1]); ctx.lineTo(S(sub.x), Sy(sub.y) - 2.6 * ppm); ctx.stroke();
       }
+      // at night, the part of her above the water must be as dark as the night (the light map only
+      // darkens below the surface; the boat is dimmed the same way): she is drawn on her own layer,
+      // and everything above the wave line on it is dimmed
+      const nightDim = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
+      const awash = nightDim > 0.01 && sub.y - 4 < surfY(sub.x) + 1;
+      let dctx = ctx, oc = null, ox = 0, oy = 0;
+      if (awash) {
+        oc = this.subNightC || (this.subNightC = document.createElement('canvas'));
+        const ow = Math.ceil(18 * ppm), oh = Math.ceil(14 * ppm);
+        if (oc.width !== ow || oc.height !== oh) { oc.width = ow; oc.height = oh; }
+        dctx = oc.getContext('2d'); dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalCompositeOperation = 'source-over'; dctx.clearRect(0, 0, ow, oh);
+        ox = S(sub.x) - ow / 2; oy = Sy(sub.y) - oh / 2; dctx.translate(-ox, -oy);
+      }
       const cy = Math.cos(sub.yaw), sxs = (cy >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(cy));
-      ctx.save(); ctx.translate(S(sub.x), Sy(sub.y)); ctx.rotate(sub.tilt * Math.sign(sxs)); ctx.scale(sxs, 1);
-      if (crumple >= 0) { const k = crumple * crumple; ctx.translate(0, -9 * ppm * 0.09); ctx.scale(1 - k * 0.55, 1 - k * 0.8); ctx.rotate((Math.random() - 0.5) * 0.2 * crumple); ctx.translate(0, 9 * ppm * 0.09); }
+      dctx.save(); dctx.translate(S(sub.x), Sy(sub.y)); dctx.rotate(sub.tilt * Math.sign(sxs)); dctx.scale(sxs, 1);
+      if (crumple >= 0) { const k = crumple * crumple; dctx.translate(0, -9 * ppm * 0.09); dctx.scale(1 - k * 0.55, 1 - k * 0.8); dctx.rotate((Math.random() - 0.5) * 0.2 * crumple); dctx.translate(0, 9 * ppm * 0.09); }
       // running lights on while the autopilot is driving it, so it can be seen coming
       // its lamps stay as he left them when he climbs out (off while docked at the boat)
       const lights = (sub.lightsOn && !sub.docked) || (g.autopilot && g.autopilot.state !== 'idle' && !sub.docked);
@@ -542,24 +555,33 @@ export class Renderer {
         armArg = { ext: ap.ext, closed: ap.closed, sp: ap.sp, len: ap.len, lx: (dx * Math.cos(rr) - dy * Math.sin(rr)) / sx0, ly: dx * Math.sin(rr) + dy * Math.cos(rr) };
       }
       const look = subLook(g.profile, g.addons);
-      const r = drawSub(ctx, 9 * ppm, t, sub.stress, lights, armArg, look);
-      ctx.restore();
+      const r = drawSub(dctx, 9 * ppm, t, sub.stress, lights, armArg, look);
+      dctx.restore();
       // mid-turn the hull is seen nearly bow-on: draw its round cross-section over the squashed side view
       const bow = clamp(1 - Math.abs(cy) / 0.5, 0, 1);
       if (bow > 0) {
         const u2 = 9 * ppm / 100, bx = S(sub.x), by = Sy(sub.y);
-        ctx.save(); ctx.globalAlpha = bow;
-        const hg = ctx.createRadialGradient(bx - 4 * u2, by - 14 * u2, 1, bx, by - 9 * u2, 13 * u2);
+        dctx.save(); dctx.globalAlpha = bow;
+        const hg = dctx.createRadialGradient(bx - 4 * u2, by - 14 * u2, 1, bx, by - 9 * u2, 13 * u2);
         const Mk = SUB_MARKS[look.mark];
         hg.addColorStop(0, Mk.top ? Mk.top[0] : Mk.body[1]); hg.addColorStop(1, Mk.body[3]);
-        ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(bx, by - 9 * u2, 11 * u2, 11.5 * u2, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#3e443b'; ctx.fillRect(bx - 4 * u2, by - 27 * u2, 8 * u2, 8 * u2);
-        const sg = ctx.createRadialGradient(bx - 4 * u2, by + 6 * u2, 1, bx, by + 10 * u2, 13 * u2);
+        dctx.fillStyle = hg; dctx.beginPath(); dctx.ellipse(bx, by - 9 * u2, 11 * u2, 11.5 * u2, 0, 0, TAU); dctx.fill();
+        dctx.fillStyle = '#3e443b'; dctx.fillRect(bx - 4 * u2, by - 27 * u2, 8 * u2, 8 * u2);
+        const sg = dctx.createRadialGradient(bx - 4 * u2, by + 6 * u2, 1, bx, by + 10 * u2, 13 * u2);
         sg.addColorStop(0, Mk.sphere[0]); sg.addColorStop(1, Mk.sphere[2]);
-        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(bx, by + 10 * u2, 13 * u2, 0, TAU); ctx.fill();
-        ctx.fillStyle = lights ? '#f0cf96' : '#2a261e'; ctx.beginPath(); ctx.arc(bx, by + 8 * u2, 3.4 * u2, 0, TAU); ctx.fill();
-        if (lights) { ctx.fillStyle = '#f4f8ff'; ctx.beginPath(); ctx.arc(bx + 6 * u2, by - 6 * u2, 1.6 * u2, 0, TAU); ctx.fill(); }
-        ctx.restore();
+        dctx.fillStyle = sg; dctx.beginPath(); dctx.arc(bx, by + 10 * u2, 13 * u2, 0, TAU); dctx.fill();
+        dctx.fillStyle = lights ? '#f0cf96' : '#2a261e'; dctx.beginPath(); dctx.arc(bx, by + 8 * u2, 3.4 * u2, 0, TAU); dctx.fill();
+        if (lights) { dctx.fillStyle = '#f4f8ff'; dctx.beginPath(); dctx.arc(bx + 6 * u2, by - 6 * u2, 1.6 * u2, 0, TAU); dctx.fill(); }
+        dctx.restore();
+      }
+      if (oc) {
+        dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalCompositeOperation = 'source-atop';
+        dctx.fillStyle = `rgba(4,6,10,${nightDim.toFixed(3)})`;
+        dctx.beginPath(); dctx.moveTo(0, 0); dctx.lineTo(oc.width, 0);
+        for (let px = oc.width; px >= -4; px -= 4) { const wx = sub.x + (px + ox - S(sub.x)) / ppm; dctx.lineTo(px, Sy(surfY(wx)) - oy); }
+        dctx.closePath(); dctx.fill();
+        dctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(oc, ox, oy);
       }
       if (lights) subLamps = r;
     }
