@@ -111,3 +111,18 @@ Earl is diving (yes, if "gameplay time" means any time playing)? Does feeding/pe
 status** like Happy; it's a **tag like the rare forms (albino, etc.)**: permanent once earned, shown the way rare
 forms are shown (js/variants.js), and it stays with the fish when sold or moved. Happy is the status (it presumably
 lapses if the fish becomes stressed/dying again).
+
+## Released aquarium fish become part of the world (user's request)
+- Fish in the aquarium can be **named** by the player.
+- Releasing a **Happy** (or Happy + Famous) aquarium fish back into the ocean:
+  - it **can't be recaptured**;
+  - it **keeps its name**;
+  - it's **saved permanently** and **always spawns** in its habitat (near its home depth/area) on every dive;
+  - it becomes part of the background, but the player can still **interact with it in its habitat**
+    (e.g. pet/feed it, see its name);
+  - a shop item, the **tag tracker**, draws a **trail leading to your released fish**.
+- **Important:** right now nothing is saved between visits except the deepest depth (economy.js
+  `saveProfile`/`loadProfile`). This feature needs a real persistent save, at least for the released fish
+  (species, rare form, Famous tag, name, home x/depth), in localStorage. Decide whether the rest of the
+  profile becomes saved too.
+- Open question: what interacting with a released fish gives the player (just fun? a small buff? journal page?).
