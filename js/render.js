@@ -377,7 +377,6 @@ export class Renderer {
         const a = seabedPose(g.world, c.x, Math.max(0.1, c.len * 0.5), true).rot;
         tg.rotate(c.dir > 0 ? -a : a);
       } else tg.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
-      if (c.hidden) tg.globalAlpha = 0.55; // tucked in among the tentacles, the coral, the rock
       const r = c.variant ? this.drawVariant(tg, c.sp, c.variant, Ld, c.phase) : this.drawCached(tg, c.sp, Ld, c.phase, c.wob, isLive ? null : this.veilFor(c.y));
       tg.restore();
       if (Ld >= 6 && (c.variant || Ld > 150 || CACHE_SKIP.has(shape))) {

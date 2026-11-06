@@ -435,3 +435,7 @@ Docs, screenshots, the handoff's checks, merge to main.
 - `ui.confirm(title, body, yes, no, onYes)`: a brass plate (`#confirm`) with Keep (focused, so Enter keeps) and a red button for the drastic choice; Esc or a click outside closes it; game keys are ignored while it is up.
 - Title screen: each save slot has a Delete button that asks "Delete diver N?" with the save's details before deleting (was a two-click text link).
 - Pause menu: Resume, Save and quit, and the brass gear in the corner; "End this dive" and "Start a new game" are quiet links that each ask first (their warnings moved into the plates, the paragraph is gone).
+
+## 2.0.14 — contracts that scale; nothing hides out of reach
+- contracts.js `payFor`: market value + a premium (30-100 % of the market, plus ~15 cents a metre of the depth the job needs), the premium capped at the next submersible's price — so a reef pearl is ~$520 (was ~$2,000 at 5-6.5× the market), while deep work pays thousands. Live jobs lean (65 %) to the deeper part of his reach. Salvage jobs: clams, mussels, pearls, glass sponge, sapphires, whalebone, nodules (the removed scrap iron / ink / tentacles are gone — those jobs could never be filled).
+- No animal tucks itself into its home any more (`f.hide = false` for every resident; the "tucked into its home: wait" message and the dimmed drawing are gone). A frightened reef fish darts off like any other. Measured: 0 hidden animals while chasing across the reef.

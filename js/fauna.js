@@ -71,7 +71,8 @@ const PREDATORS = new Set([35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 52, 53, 76, 7
 
 // ---- Where each animal lives ----
 // k: the kinds of place it can call home (see buildHabitats in world.js); r: how far it strays from
-// home (metres); hide: it ducks into its home when frightened, instead of bolting into open water;
+// home (metres); hide: (v2.0.14: no longer used: nothing tucks itself away out of reach; a frightened
+// reef fish darts off like any other);
 // act: 'day' animals rest in their home at night, 'night' animals by day; ('any' never rests).
 const HOME = {
   1: { k: ['anemone'], r: 1.2, hide: 1, act: 'day' },               // clownfish: never far from its anemone
@@ -254,7 +255,7 @@ export class Fauna {
       // day-active reef fish are met out in the water, 3-15 m above the seabed; the rest at home
       const yHome = sp.v.hab === 'reef' && H.act !== 'night' ? Math.max(1.2, W.floorAt(x) - rng.range(3, 15)) : home.y + oy;
       const f = this.makeFish(sp, x, Math.max(0.5, Math.min(yHome, W.floorAt(x) - 0.4)), rng() < 0.5 ? 1 : -1, gid, i === 0);
-      f.home = home; f.homeR = H.r <= 2 ? H.r : H.r * 1.6; f.hide = !!H.hide; // (roamers range wider than the bare minimum)
+      f.home = home; f.homeR = H.r <= 2 ? H.r : H.r * 1.6; f.hide = false; // (roamers range wider than the bare minimum)
       f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = rng.range(0, 3);
       this.list.push(f);
     }
@@ -323,7 +324,7 @@ export class Fauna {
       const k = Math.max(1, sp.len * 0.7); // big animals spawn a body-length or so apart
       const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12) * k * spread, oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06) * k * spread;
       const f = this.makeFish(sp, cx + ox, Math.max(0.5, Math.min(cy + oy, W.floorAt(cx + ox) - 0.4)), dir, gid, i === 0);
-      if (home) { f.home = home; f.homeR = H.r; f.hide = !!H.hide; f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = 0; }
+      if (home) { f.home = home; f.homeR = H.r; f.hide = false; f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = 0; }
       this.list.push(f);
     }
   }

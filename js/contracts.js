@@ -3,11 +3,11 @@
 // sells at the boat with the right thing aboard. A filled contract is replaced by a new one.
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { canTakeLive, liveValue, tagPrice, isTagOnly, isDead } from './specimens.js';
-import { GOODS, gear, owns, statValue } from './economy.js';
+import { GOODS, gear, owns, statValue, upgradeCost, lv, UPGRADES } from './economy.js';
 import { photoValue } from './survey.js';
 
 export const RADIO = { name: 'Better radio', price: 530, desc: 'A long-range set and a tall whip antenna. Five contracts at a time instead of three.' };
-const PLURAL = { clam: 'clams', mussel: 'mussels', iron: 'pieces of scrap iron', ink: 'ink sacs', tentacle: 'squid tentacles', glass: 'pieces of glass sponge', pearl: 'pearls' };
+const PLURAL = { clam: 'clams', mussel: 'mussels', glass: 'pieces of glass sponge', pearl: 'pearls', nodule: 'manganese nodules', bone: 'whale ribs', sapphire: 'deep sapphires' };
 const an = (name) => (/^[aeiou]/i.test(name) ? 'an ' : 'a ') + name.toLowerCase();
 export const contractSlots = (P) => (P.radio ? 5 : 3);
 
@@ -19,6 +19,15 @@ function reach(P) {
   return { maxLen: Math.max(net, arm), deep };
 }
 
+// What a job pays: the market price, plus a premium for the trip — 30-100 % of the market value and
+// about 15 cents for every metre of depth the job takes him to — the premium never more than his next
+// submersible costs, so no single job can skip him a tier of gear. (It was 5-6.5x the market, which made
+// a reef pearl worth $2,000.)
+function payFor(P, market, depth, rnd) {
+  const nextSub = lv(P, 'depth') < UPGRADES.depth.max ? upgradeCost(P, 'depth') : 100000;
+  const premium = Math.min(market * (0.3 + rnd() * 0.7) + Math.max(0, depth) * 0.15, Math.max(60, nextSub));
+  return Math.round((market + premium) * 100) / 100;
+}
 // one new contract that does not repeat what is already on the board
 export function newContract(P, taken, rnd = Math.random) {
   const R = reach(P);
@@ -28,10 +37,13 @@ export function newContract(P, taken, rnd = Math.random) {
   for (let tries = 0; tries < 30; tries++) {
     const kind = kinds[Math.floor(rnd() * kinds.length)];
     if (kind === 'live') {
-      const pool = SPECIES.filter((s) => canTakeLive(s) && s.len <= R.maxLen && s.dmin <= R.deep * 0.9 && liveValue(s) >= 0.1);
+      const all = SPECIES.filter((s) => canTakeLive(s) && s.len <= R.maxLen && s.dmin <= R.deep * 0.9 && liveValue(s) >= 0.1);
+      // most jobs reach for the edge of what his gear can do: the deeper half of his range
+      const edge = all.filter((s) => s.dmin >= R.deep * 0.35);
+      const pool = edge.length && rnd() < 0.65 ? edge : all;
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('live' + sp.id)) continue;
-      const pay = Math.round((liveValue(sp) * (5 + rnd() * 1.5) + 0.25) * 100) / 100; // at least 5x the market
+      const pay = payFor(P, liveValue(sp), sp.dmin, rnd);
       // a museum will take a specimen in any state (a dead one only fetches the dead price);
       // an aquarium wants it alive and well
       if (rnd() < 0.3) return { kind, id: sp.id, key: 'live' + sp.id, pay: Math.round(pay * 0.8 * 100) / 100, who: 'The museum', anyState: true, text: `${an(sp.name)} for the collection, alive or dead` };
@@ -41,7 +53,7 @@ export function newContract(P, taken, rnd = Math.random) {
       const pool = SPECIES.filter((s) => isTagOnly(s) && s.dmin <= R.deep * 0.9 && tagPrice(s.id) > 0);
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('tag' + sp.id)) continue;
-      const pay = Math.round(tagPrice(sp.id) * (5 + rnd() * 1.5) * gear(P, 'tag').pay * 100) / 100;
+      const pay = payFor(P, tagPrice(sp.id) * gear(P, 'tag').pay, sp.dmin, rnd);
       return { kind, id: sp.id, key: 'tag' + sp.id, pay, who: 'The research program', text: `a tag on ${an(sp.name)}` };
     }
     if (kind === 'photo') {
@@ -49,15 +61,16 @@ export function newContract(P, taken, rnd = Math.random) {
       const pool = SPECIES.filter((s) => s.dmin <= R.deep * 0.9 && !have.has(String(s.id)));
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('photo' + sp.id)) continue;
-      const pay = Math.round((photoValue(sp) * (5 + rnd() * 1.5) + 0.1) * 100) / 100;
+      const pay = payFor(P, photoValue(sp), sp.dmin, rnd);
       return { kind, id: sp.id, key: 'photo' + sp.id, pay, who: 'The institute', text: `a photograph of ${an(sp.name)}` };
     }
     // salvage: a quantity of something from the bottom
-    const opts = [['clam', 6, 0], ['mussel', 10, 0], ['iron', 5, 0], ['ink', 3, 200], ['tentacle', 3, 200], ['glass', 2, 300], ['pearl', 1, 0]].filter(([, , d]) => d <= R.deep);
-    const [k, n0] = opts[Math.floor(rnd() * opts.length)];
+    // [what, how many, how deep it is found]
+    const opts = [['clam', 6, 5], ['mussel', 10, 5], ['pearl', 1, 5], ['glass', 2, 300], ['sapphire', 1, 520], ['bone', 2, 3300], ['nodule', 3, 3000]].filter(([, , d]) => d <= R.deep);
+    const [k, n0, dk] = opts[Math.floor(rnd() * opts.length)];
     const n = Math.max(1, Math.round(n0 * (0.7 + rnd() * 0.6)));
     if (taken.has('salvage' + k)) continue;
-    const pay = Math.round((GOODS[k].price * n * (5 + rnd() * 1.5) + 0.1) * 100) / 100;
+    const pay = payFor(P, GOODS[k].price * n, dk, rnd);
     return { kind: 'salvage', item: k, n, key: 'salvage' + k, pay, who: 'A buyer', text: `${n} ${n > 1 ? PLURAL[k] : GOODS[k].name.toLowerCase()}` };
   }
   return null;
