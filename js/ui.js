@@ -34,7 +34,6 @@ import { previewOf, drawShowcase } from './showcase.js';
 const ADDON_SPECS = {
   recall: [['use', 'C calls the sub'], ['sub comes', '1.5× faster', 'good']],
   quiet: [['sub noise', '−50 %', 'good'], ['the deep', 'hears it less', 'good']],
-  mast: [['light', 'a second, wide flood', 'good'], ['lights', 'with L, as the others', '']],
 };
 const SUPPLY_SPECS = {
   lure: [['use', 'Q throws it'], ['effect', 'the deep thing follows its light', 'good'], ['lasts', 'a while']],

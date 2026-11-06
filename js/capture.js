@@ -274,15 +274,15 @@ export { conditionName };
 // the winch hauls the bag up into the hatch; the haul lands in a heap on the tank-room floor. An animal
 // too big for the net may tear it: the net is lost, and everything in it swims free. Loud below 200 m.
 export const NETS_SUB = {
-  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 1.0, mouth: 1.0, tear: 0.7, slip: 0.15,
+  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 1.0, mouth: 1.6, tear: 0.7, slip: 0.15,
     desc: 'A light trawl for the hatch under the sub. A small mouth, room for six, fish up to a metre; a few slip out before it closes, and anything bigger may tear it. Used up in one haul.' },
-  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 2.5, mouth: 1.75, tear: 0.3, slip: 0.03,
+  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 2.5, mouth: 2.6, tear: 0.3, slip: 0.03,
     desc: 'A heavy-twine trawl with a wide mouth: room for ten, sharks to 2.5 m and the great legends; almost nothing slips out, and it seldom tears. Used up in one haul.' },
 };
 export const NET_DROP = 1.5, TOW_MAX = 8, NET_PURSE = 1.0, NET_HAUL = 1.5;
 // where the hatch is under the hull, and where the net's mouth hangs behind it, for a sub facing dir
 export const hatchAt = (g) => ({ x: g.sub.x - (g.sub.facing || 1) * 1.2, y: g.sub.y + 1.3 });
-const towTarget = (g) => { const d = g.sub.facing || 1; return { x: g.sub.x - d * 8.5, y: g.sub.y + 3.2 }; };
+const towTarget = (g) => { const d = g.sub.facing || 1, k = g.subNet ? g.subNet.T.mouth : 1.6; return { x: g.sub.x - d * (7.5 + k * 1.5), y: g.sub.y + 2.4 + k }; };
 export function fireSubNet(g) {
   const n = g.subNet;
   if (n) { if (n.phase === 'tow') { n.phase = 'purse'; n.pt = 0; return 'closing'; } return 'busy'; }
@@ -317,7 +317,7 @@ export function updateSubNet(g, dt, canTake) {
       const r = T.mouth * n.open;
       for (const c of g.fauna.list) {
         if (c.dead || c.hidden || c.pet || n.got.includes(c)) continue;
-        if (Math.abs(c.x - n.mx) > 2.2 || Math.abs(c.y - n.my) > r) continue;
+        if (Math.abs(c.x - n.mx) > 3 || Math.abs(c.y - n.my) > r) continue;
         if (!canTake(c.sp)) continue;
         if (c.len > T.maxLen) {
           // too big: it hits the net; it may tear straight through, losing the net and everything in it

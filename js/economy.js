@@ -60,7 +60,6 @@ export const SUB_ADDONS = {
   quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
   tracker: { name: 'Tag tracker', price: 900, desc: 'A receiver for the tags on the fish you released from your gallery: a faint trail leads from the sub (or from Earl) to the nearest one, with its name and how far.' },
   bigTank: { name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
-  mast: { name: 'Light mast', price: 1500, desc: 'A pole raised aft of the tower with a floodlight on top. With the lights on (L), it throws a wide flood forward and down: far more of the dark around the sub can be seen.' },
   sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
 };
 // ---------------- catching gear ----------------

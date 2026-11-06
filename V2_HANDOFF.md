@@ -547,3 +547,8 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - HUD: an "N" slot in the sub showing NET / BIG NET / OUT · N CLOSES / HAULING / TORN / NO NET.
 - A light mast (sub add-on, $1,500, `addons.mast`): a pole aft of the tower with a floodlight, a wide flood forward
   and down with the lights on.
+
+## 2.3.6 — bigger nets; the light mast on every sub
+- Trawl mouths 3.2 m (beginner) and 5.2 m (advanced) tall, catching 3 m either side of the mouth; the net trails a
+  little further back for the bigger one.
+- The light mast is part of every sub (no longer an add-on): `subLook().mast` is always true.

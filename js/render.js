@@ -98,7 +98,7 @@ export function subLook(P, addons) {
     name: P.subName || 'EARL',
     chambers: statValue(P, 'pressTanks'), chamberLv: lv(P, 'pressRating'), tank: lv(P, 'subTank'),
     reach: lv(P, 'armReach'), jaw: lv(P, 'armSize'), hyd: lv(P, 'armSpeed'),
-    quiet: !!(addons || P.addons || {}).quiet, recall: !!(addons || P.addons || {}).recall, mast: !!(addons || P.addons || {}).mast,
+    quiet: !!(addons || P.addons || {}).quiet, recall: !!(addons || P.addons || {}).recall, mast: true, // (2.3.6: every sub has the light mast)
   };
 }
 
@@ -2224,7 +2224,7 @@ export class Renderer {
       radial(sx + 0.5 * sxs * ppm, sy + 0.9 * ppm, 5 * ppm, [255, 190, 120], 0.4 * fx.lightPulse);
       radial(sx - 4.8 * sxs * ppm, sy - 0.4 * ppm, 7 * ppm, [220, 160, 110], 0.15 * fx.lightPulse);
       if (vis < 0.6) radial(ax, ay, 6 * ppm, lc, (0.6 - vis) * 1.2 * flick); // the lamps face us mid-turn
-      if (subLamps.lampC) { // the light mast: a wide flood angled forward and down, and a glow all round it
+      if (subLamps.lampC) { // the light mast (built into every sub): a wide flood angled forward and down, and a glow all round it
         const [mx2, my2] = lp(subLamps.lampC);
         cone(mx2, my2, ang - 0.45 * Math.sign(sxs), 28 * ppm, 0.85, lc, 0.85 * flick * vis);
         radial(mx2, my2, 10 * ppm, lc, 0.28 * flick); lamps.push({ x: mx2, y: my2, r: 10 * ppm, a: 0.28 * flick });
