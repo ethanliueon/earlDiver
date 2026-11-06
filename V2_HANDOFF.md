@@ -522,3 +522,8 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - render.js: school photophores on every second fish (was every third), a little brighter and larger.
 - Camera: the diver view is 22 m across above 40 m (26 m by 120 m; was 26 everywhere); the sub view 46 m near the
   surface to 38 m below 400 m (was 46).
+
+## 2.3.2 — no light-from-above shading on the animals
+- render.js: removed the rim-and-belly shading (the live pass in `layerEnd`, the baked rim overlay in `drawCached`,
+  the baked belly shade in `buildFrame`). It popped in and out around whatever was drawn live, and as fish crossed
+  the size where schools stop being simple shapes. The water-colour veil stays.

@@ -397,7 +397,7 @@ export class Renderer {
       ctx.fillStyle = vmix('#0a0a0a'); ctx.fill(bt.eyes);
     }
     ctx.setTransform(baseM);
-    if (fl) { fl.setTransform(baseM); this.layerEnd(ctx, g, fl, !this.lite && rbox[2] > rbox[0] ? rbox : null); }
+    if (fl) { fl.setTransform(baseM); this.layerEnd(ctx, g, fl, null); } // (2.3.2: no rim-and-belly shading on the animals: it popped in and out around whatever was drawn live)
     // ---- pickups + lanterns (over the veiled layer, so nothing valuable hides behind the coral) ----
     for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) {
       if (p.rot === undefined) p.rot = p.y > g.world.floorAt(p.x) - 0.6 ? seabedPose(g.world, p.x, 0.25, true).rot : 0; // lying on the slope
@@ -914,8 +914,6 @@ export class Renderer {
     if (!e.frames[f]) this.buildFrame(e, sp, f);
     const k = Ld / e.bl;
     ctx.drawImage(veil ? this.veiled(e, f, veil) : e.frames[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k);
-    // the light from above along its back, baked with the frame and laid on at today's strength
-    if (this.rimSun > 0 && Ld >= 24 && e.hi[f]) { ctx.globalAlpha = 0.32 * this.rimSun; ctx.drawImage(e.hi[f], -e.box / 2 * k, -e.box / 2 * k, e.box * k, e.box * k); ctx.globalAlpha = 1; }
     const gl = e.glows[f];
     return gl ? gl.map(([gx, gy, sz]) => [gx * k, gy * k, sz]) : null;
   }
@@ -1046,8 +1044,8 @@ export class Renderer {
     if (!e.hi) e.hi = new Array(SPRITE_FRAMES);
     e.hi[f] = edge(off, 'rgb(225,240,245)', true);
     const sh = edge(-off, 'rgb(4,10,18)', false);
-    x.globalCompositeOperation = 'source-atop'; x.globalAlpha = 0.3; x.drawImage(sh, 0, 0);
-    x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+    void sh; // (2.3.2: the belly shade is no longer laid on: the animals look better plain, and it switched on
+    // and off as they crossed the size where they stop being drawn as simple school shapes)
     e.frames[f] = c;
   }
 
