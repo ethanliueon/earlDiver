@@ -133,7 +133,7 @@ export class Renderer {
     // 120 m), and in the sub in the deep, where the animals are small lights (46 m across near the surface,
     // 38 m below 400 m)
     const dv = clamp((e.y - 40) / 80, 0, 1), ds = clamp((e.y - 150) / 250, 0, 1);
-    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.aboard ? 15 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1)); // aboard the Margaret: close, the deck fills the view
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : g.aboard ? 15 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1)); // aboard the Margaret: close, the deck fills the view
     this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
@@ -144,6 +144,7 @@ export class Renderer {
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
     if (g.aboard) { tx = BOAT.x + 0.3 + clamp(g.aboard.lx ?? g.aboard.x ?? 0, -6, 6) * 0.35; ty = -2.3; } // close on the deck, drifting a little after him
+    if (g.helm) { tx = BOAT.x + 3 + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
     if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
@@ -2222,6 +2223,7 @@ export class Renderer {
       const c = g.legend.c, k = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
       radial(S(c.x), Sy(c.y), Math.max(7, c.len * 4) * ppm, [215, 232, 240], 0.95 * k); radial(S(c.x), Sy(c.y), Math.max(3, c.len * 1.6) * ppm, [235, 242, 246], 0.6 * k); lamps.push({ x: S(c.x), y: Sy(c.y), r: Math.max(7, c.len * 4) * ppm, a: 0.95 * k });
     }
+    this.netLamp = null;
     if (subLamps) {
       const sub = g.sub;
       const sx = S(sub.x), sy = Sy(sub.y);
@@ -2244,6 +2246,16 @@ export class Renderer {
         cone(mx2, my2, ang - 0.45 * Math.sign(sxs), 28 * ppm, 0.85, lc, 0.85 * flick * vis);
         radial(mx2, my2, 10 * ppm, lc, 0.28 * flick); lamps.push({ x: mx2, y: my2, r: 10 * ppm, a: 0.28 * flick });
       }
+      // the net light (2.5.1): a work lamp low on her stern, aimed back down the trawl, lit only while the
+      // net is out (and the lights are on)
+      const tn = g.subNet;
+      if (tn && tn.phase !== 'torn') {
+        const nx = sx - 4.6 * sxs * ppm, ny = sy + 0.7 * ppm, mx3 = S(tn.mx), my3 = Sy(tn.my);
+        const na = Math.atan2(my3 - ny, mx3 - nx), nd = Math.hypot(mx3 - nx, my3 - ny);
+        cone(nx, ny, na, nd + 9 * ppm, 0.42, [235, 232, 215], 0.85 * flick);
+        radial(mx3, my3, 6 * ppm, [235, 232, 215], 0.35 * flick); lamps.push({ x: mx3, y: my3, r: 6 * ppm, a: 0.35 * flick });
+        this.netLamp = [nx, ny, na, nd + 9 * ppm];
+      } else this.netLamp = null;
     }
     for (const lt of g.world.lanterns) {
       const x = S(lt.x), y = Sy(lt.y);
@@ -2443,6 +2455,7 @@ export class Renderer {
       coneHaze(lx, ly, ang, 14 * ppm, 0.9, beamCol, 0.035 * haze * lp * vis);
       motes(lx, ly, ang, 28 * ppm, 0.34, beamCol, 0.8 * haze * lp * vis);
       glare(lx, ly, beamCol, (0.6 + (1 - vis) * 0.8) * lp);
+      if (this.netLamp && g.subNet) { const [nx, ny, na, nl] = this.netLamp; coneHaze(nx, ny, na, nl, 0.4, beamCol, 0.06 * haze * lp); motes(nx, ny, na, nl, 0.42, beamCol, 0.6 * haze * lp); glare(nx, ny, beamCol, 0.45 * lp); }
     }
     for (const lt of g.world.lanterns) {
       const x = S(lt.x), y = Sy(lt.y);

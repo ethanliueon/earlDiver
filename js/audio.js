@@ -272,6 +272,9 @@ export class Audio {
     this.burst('bandpass', 1000, 1.4, 0.5, 0.08, this.white, 1.5);
     this.bubbles(10, 0.02);
   }
+  // a boot on deck planking: a dull knock, a scuff (2.5.0); a hand or boot on a steel rung: a ring
+  footstep(vol = 0.07) { this.tone(110 + Math.random() * 30, 0.09, vol, 'triangle', 0, 70); this.burst('lowpass', 600 + Math.random() * 300, 0.9, 0.08, vol * 0.9, this.brown); this.burst('bandpass', 2400, 1.2, 0.05, vol * 0.25); }
+  rung(vol = 0.05) { this.tone(820 + Math.random() * 120, 0.18, vol * 0.5, 'sine'); this.burst('bandpass', 2600, 5, 0.08, vol); }
   thud(vol) { this.tone(55, 0.35, vol, 'sine', 0, 32); this.burst('lowpass', 180, 0.7, 0.4, vol * 0.8, this.brown); }
   whoosh() { const f = this.burst('bandpass', 400, 1.5, 1.2, 0.18, this.white); f.frequency.exponentialRampToValueAtTime(1600, this.ac.currentTime + 1); }
   clicks(sec) {

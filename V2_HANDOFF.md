@@ -624,3 +624,11 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - Leaving the sub no longer docks it. When the Margaret gets under way at the wheel, a sub alongside
   (within 16 m of the cradle) is lifted into it; one still out keeps her where she is ("bring it alongside
   first (hold C to send it home)"). Moving a gallery animal to the sub needs it alongside, not docked.
+
+## 2.5.2 — footsteps, the view from the wheel, the net light
+- Footsteps on deck (`audio.footstep`, each foot as the stride's phase passes π) and a ring on each rung of
+  the ladder (`audio.rung`).
+- At the wheel the camera pulls back to 36 m across, framing the whole Margaret and the sub in her cradle,
+  and leads a little the way she is going.
+- The trawl's work lamp: low on the sub's stern, aimed down the cables at the net's mouth; it shines only
+  while the net is out and the sub's lights are on (L). Drawn in the light map, with haze and motes.

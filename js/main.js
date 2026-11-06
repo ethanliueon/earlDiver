@@ -672,7 +672,10 @@ function deckInput(dt, mv) {
   if (walk) { e.facing = walk > 0 ? 1 : -1; A.walkT += dt; } else A.walkT = 0;
   // the stride: the legs keep going a moment as he stops, and settle
   A.walk = lerp(A.walk || 0, walk ? 1 : 0, 1 - Math.exp(-dt * (walk ? 8 : 6)));
-  if (walk || A.walk > 0.05) A.step = (A.step || 0) + dt * WALK * 4.6;
+  if (walk || A.walk > 0.05) {
+    const s0 = A.step || 0; A.step = s0 + dt * WALK * 4.6;
+    if (Math.floor(A.step / Math.PI) !== Math.floor(s0 / Math.PI) && A.walk > 0.35) audio.ready && audio.footstep && audio.footstep(0.06 * A.walk); // each foot coming down
+  }
   const atDoor = Math.abs(A.x - DOOR_M) < 0.5;
   A.near = atDoor ? 'door' : null;
   g.prompt = atDoor ? 'F  Enter' : null;
@@ -696,8 +699,8 @@ function placeOnDeck(dt) {
     A.climb = Math.max(0, A.climb - dt); const k = 1 - A.climb / CLIMB;
     const y0 = 0.35, yTop = standY(LADDER_M) + 0.25, kg = 0.14, kc = 0.84;
     if (k < kg) { const q = k / kg, qq = q * q * (3 - 2 * q); A.lx = A.from[0] + (LADDER_M - A.from[0]) * qq; A.ly = A.from[1] + (y0 - A.from[1]) * qq; A.pose = 'grab'; }
-    else if (k < kc) { const q = (k - kg) / (kc - kg); A.lx = LADDER_M; A.ly = y0 + (yTop - y0) * q; A.pose = 'climb'; A.rung = q * 7 * Math.PI; }
-    else { const q = (k - kc) / (1 - kc), qq = q * q * (3 - 2 * q); A.lx = LADDER_M; A.ly = yTop + (standY(LADDER_M) - yTop) * qq - Math.sin(q * Math.PI) * 0.18; A.pose = q < 0.5 ? 'climb' : 'deck'; A.rung = 7 * Math.PI + q * Math.PI; }
+    else if (k < kc) { const q = (k - kg) / (kc - kg), r0 = A.rung || 0; A.lx = LADDER_M; A.ly = y0 + (yTop - y0) * q; A.pose = 'climb'; A.rung = q * 7 * Math.PI; if (Math.floor(A.rung / Math.PI) !== Math.floor(r0 / Math.PI)) audio.ready && audio.rung && audio.rung(); }
+    else { const q = (k - kc) / (1 - kc), qq = q * q * (3 - 2 * q); if (A.pose === 'climb' && q >= 0.5) audio.ready && audio.footstep && audio.footstep(0.08); A.lx = LADDER_M; A.ly = yTop + (standY(LADDER_M) - yTop) * qq - Math.sin(q * Math.PI) * 0.18; A.pose = q < 0.5 ? 'climb' : 'deck'; A.rung = 7 * Math.PI + q * Math.PI; }
     A.x = LADDER_M; e.facing = -1;
   } else {
     A.lx = A.x; A.ly = standY(A.x) - Math.abs(Math.sin(A.step || 0)) * 0.03 * (A.walk || 0); A.pose = 'deck';
