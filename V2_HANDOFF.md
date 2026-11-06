@@ -420,3 +420,10 @@ Docs, screenshots, the handoff's checks, merge to main.
 
 ## 2.0.10
 - Inventory order: cash, the catch bag, what is in the submersible; then carried supplies, finds and equipment at the bottom.
+
+## 2.0.11 — hull damage as patches, mended by hand; a leaner inventory
+- Removed: leak sealant kits (K) and hull patch plates / wet welding (hold Z) — supplies, keys, HUD slots, shop specs, prompts.
+- Hull damage (main.js `syncPatches`): every 15 % of lost hull is one patch (up to 6) at a random spot along her side, stored in `sub.patches` (sub-local units). earl_draw.js draws each: a dark dent with a dull rim, cracks, a rust streak, and a thread of bubbles leaking up.
+- Mending: outside the sub, within 1.5 m of a patch (`patchNear`, `patchWorld` — mirrored by the sub's yaw as the renderer draws her), the target is `repair`: hold F for 5 s → the patch is gone and the hull +15 % (sound when the last goes). Near a patch, F mends rather than boards. The boat's paid patch still works.
+- Inventory: the lure, necklace, clams and pearls are no longer listed (they show on screen already); rows with nothing in them, and empty sections, are hidden.
+- The journal's controls list updated (F mending, N net, B inventory, V helm, X = +$500,000).

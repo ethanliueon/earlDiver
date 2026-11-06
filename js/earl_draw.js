@@ -749,6 +749,30 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
       }
     }
   }
+  // ---------- damage: each patch a dent stove into the plating, cracked, rust-edged, leaking ----------
+  for (const q of look.patches || []) {
+    const cx = q.u * u, cy = q.v * u, r = q.r * u;
+    let sd = q.seed; const rnd = () => ((sd = (sd * 16807 + 11) % 2147483647) / 2147483647);
+    ctx.save();
+    // the dent: a dark, uneven hollow with a dull rim of bent plate
+    ctx.beginPath();
+    for (let k = 0; k < 9; k++) { const a = k / 9 * TAU, rr = r * (0.7 + rnd() * 0.45); k ? ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.75) : ctx.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.75); }
+    ctx.closePath();
+    const dg = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.2, 0, cx, cy, r);
+    dg.addColorStop(0, 'rgba(8,10,10,0.85)'); dg.addColorStop(0.65, 'rgba(40,36,30,0.75)'); dg.addColorStop(1, 'rgba(110,70,40,0.35)');
+    ctx.fillStyle = dg; ctx.fill();
+    ctx.strokeStyle = 'rgba(200,190,170,0.35)'; ctx.lineWidth = Math.max(0.5, 0.35 * u); ctx.stroke();
+    // cracks running out from it
+    ctx.strokeStyle = 'rgba(10,10,10,0.75)'; ctx.lineWidth = Math.max(0.5, 0.25 * u); ctx.beginPath();
+    for (let k = 0; k < 4; k++) { const a = rnd() * TAU; let x = cx + Math.cos(a) * r * 0.8, y = cy + Math.sin(a) * r * 0.6; ctx.moveTo(x, y); for (let j = 0; j < 3; j++) { x += Math.cos(a + (rnd() - 0.5) * 1.2) * r * 0.5; y += Math.sin(a + (rnd() - 0.5) * 1.2) * r * 0.4; ctx.lineTo(x, y); } }
+    ctx.stroke();
+    // rust bleeding down from it
+    ctx.fillStyle = 'rgba(140,72,34,0.35)'; ctx.beginPath(); ctx.ellipse(cx + r * 0.2, cy + r * 0.9, r * 0.35, r * 0.7, 0.1, 0, TAU); ctx.fill();
+    // a thin thread of bubbles leaking out and up
+    ctx.fillStyle = 'rgba(210,235,245,0.7)';
+    for (let k = 0; k < 4; k++) { const ph = ((t * 0.9 + k / 4 + q.seed) % 1); ctx.beginPath(); ctx.arc(cx + Math.sin(ph * 9 + k) * u * 0.8, cy - r * 0.6 - ph * 14 * u, (0.35 + 0.35 * (1 - ph)) * u, 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
   return { lampA: [49 * u, -4 * u], lampB: [21 * u, 13.5 * u], ports };
 }
 

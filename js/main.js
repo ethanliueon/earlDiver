@@ -429,7 +429,7 @@ function spawnReleased(r) {
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subLost = !!g.sub.imploded;
-  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, sealant: g.items.sealant, plate: g.items.plate, tag: g.items.tag, tagAdv: g.items.tagAdv };
+  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, tag: g.items.tag, tagAdv: g.items.tagAdv };
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
 }
@@ -628,6 +628,7 @@ function findTarget() {
     if (d < bd) { bd = d; best = { kind: 'pickup', p }; }
   }
   if (best) return best;
+  if (!e.inSub && !g.sub.imploded) { const pi = patchNear(); if (pi >= 0) return { kind: 'repair', i: pi }; }
   if (!e.inSub && !g.sub.imploded && dist(e.x, e.y, g.sub.x, g.sub.y) < 4.5) return { kind: 'board' };
   if (!e.inSub && W.inKelp(e.x, e.y)) {
     // (v2: kelp blades are no longer cut and sold)
@@ -659,10 +660,11 @@ function promptFor(t) {
       const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'fangtooth necklace' : t.p.type === 'sapphire' ? 'deep sapphire' : (RESOURCES[t.p.type] ? RESOURCES[t.p.type].name.toLowerCase() : t.p.type);
       if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? `Cutting the net… ${Math.round(g.pry.t / HOLD_TIME.net * 100)} %` : `Hold F  Cut the ${t.p.animal} free`;
       else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
+    } else if (t.kind === 'repair') {
+      p = g.repair && g.repair.i === t.i ? `Repairing the hull… ${Math.round(g.repair.t / REPAIR_TIME * 100)} %` : `Hold F  Repair this damage (hull ${Math.round(g.sub.hull * 100)} %, ${(g.sub.patches || []).length} to mend)`;
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
-      if (g.sub.hull < 0.995) p += g.weld ? `   ·   Welding the plate on… ${Math.round(g.weld / WELD_TIME * 100)} %`
-        : g.items.plate > 0 ? `   ·   hold Z  Weld a patch plate over the damage (hull ${Math.round(g.sub.hull * 100)} %)` : `   ·   hull ${Math.round(g.sub.hull * 100)} % (no patch plates)`;
+      if ((g.sub.patches || []).length) p += `   ·   hull ${Math.round(g.sub.hull * 100)} %: ${g.sub.patches.length} damaged patch${g.sub.patches.length > 1 ? 'es' : ''} to mend from outside`;
     }
     else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
       : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use her winch`
@@ -673,8 +675,7 @@ function promptFor(t) {
   }
   if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
   if (canOffer() && (g.offerT || 0) < 10) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep'; // offered for 10 s, then left unsaid
-  if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room'
-    + (g.seal ? `   ·   Sealing the leaks… ${Math.round(g.seal / SEAL_TIME * 100)} %` : g.sub.hull < SEAL_CAP - 0.01 && g.items.sealant > 0 ? '   ·   K  Seal the leaks' : '');
+  if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room';
   if (nearBoat || (e.inSub && g.sub.docked)) p = (p ? p + '   ·   ' : '') + (g.helm ? `A / D  Drive the Margaret   ·   G  ${g.anchored ? 'Raise' : 'Drop'} the anchor   ·   V  Leave the helm` : 'U  The boat   ·   V  Take the helm');
   return p;
 }
@@ -857,7 +858,6 @@ function escapeKill(how) {
 // stops water, it does not give back the steel's strength. A patch plate (hold F outside, by the
 // hatch): ten seconds of wet welding, +40 % hull, all the way to sound. The arc is the brightest
 // thing in the deep, and below 200 m something notices it. Either job stops if he is interrupted.
-const SEAL_TIME = 6, SEAL_GAIN = 0.2, SEAL_CAP = 0.85, WELD_TIME = 10, WELD_GAIN = 0.4;
 function repairs(dt, target, holding) {
   const e = g.earl, sub = g.sub;
   // a backup air tank being connected: two clanks of the fittings and a thin leak of gas, then the
@@ -879,33 +879,43 @@ function repairs(dt, target, holding) {
       }
     }
   }
-  if (g.seal) {
-    if (!e.inSub || sub.imploded) { g.seal = 0; hud.toast('Sealing stopped', 'warn'); }
-    else {
-      g.seal += dt;
-      if (Math.random() < dt * 3) audio.ready && audio.burst('bandpass', 1800 + Math.random() * 1200, 2, 0.12, 0.05);
-      if (g.seal >= SEAL_TIME) {
-        g.seal = 0; g.items.sealant--;
-        sub.hull = Math.max(sub.hull, Math.min(SEAL_CAP, sub.hull + SEAL_GAIN));
-        hud.toast(`The leaks are sealed: hull ${Math.round(sub.hull * 100)} % (${g.items.sealant} kit${g.items.sealant === 1 ? '' : 's'} left)`);
-      }
-    }
-  }
-  const canWeld = target && target.kind === 'board' && !sub.imploded && sub.hull < 0.995 && g.items.plate > 0;
-  if (canWeld && holding) {
-    g.weld = (g.weld || 0) + dt;
-    g.welding = true;
-    // the arc: crackle, a stream of bubbles off the rod, and attention from below
-    if (Math.random() < dt * 14) audio.ready && audio.burst('highpass', 3000 + Math.random() * 3000, 1, 0.04 + Math.random() * 0.05, 0.07);
-    if (Math.random() < dt * 25) g.bubbles.push({ x: e.x + e.facing * 0.5, y: e.y, r: 0.02 + Math.random() * 0.05, w: Math.random() * 6, t: 0 });
-    if (e.y > 200 && !g.entity.marked) g.entity.attn = Math.min(1, g.entity.attn + dt * 0.006);
-    if (g.weld >= WELD_TIME) {
-      g.weld = 0; g.items.plate--;
-      sub.hull = Math.min(1, sub.hull + WELD_GAIN);
-      hud.toast(`The plate is welded on: hull ${Math.round(sub.hull * 100)} % (${g.items.plate} plate${g.items.plate === 1 ? '' : 's'} left)`);
+  // the hull's damage as patches: each 15 % lost is a dented, cracked place on her side, leaking.
+  // Outside, at a patch, hold F: five seconds of work mends it (no kit needed)
+  syncPatches(sub);
+  const near = target && target.kind === 'repair' ? target.i : -1;
+  if (near >= 0 && holding && !e.inSub) {
+    if (!g.repair || g.repair.i !== near) g.repair = { i: near, t: 0 };
+    g.repair.t += dt;
+    if (Math.random() < dt * 6) audio.ready && audio.thud && audio.thud(0.05); // the clank of the tools on steel
+    if (Math.random() < dt * 12) { const q = patchWorld(sub, sub.patches[near]); g.bubbles.push({ x: q.x, y: q.y, r: 0.02 + Math.random() * 0.04, w: Math.random() * 6, t: 0 }); }
+    if (g.repair.t >= REPAIR_TIME) {
+      sub.patches.splice(near, 1);
+      sub.hull = sub.patches.length ? Math.min(1, sub.hull + PATCH_SHARE) : 1;
+      g.repair = null;
+      hud.toast(sub.patches.length ? `Mended: hull ${Math.round(sub.hull * 100)} %, ${sub.patches.length} left` : 'The hull is sound');
       audio.ready && audio.click();
     }
-  } else { if (g.weld > 0.3 && g.weld < WELD_TIME) hud.toast('The weld is unfinished: hold Z to keep going'); g.weld = 0; g.welding = false; }
+  } else g.repair = null;
+}
+// each 15 % of lost hull shows as one patch, somewhere along her side (sub-local units, 100 = her length)
+const PATCH_SHARE = 0.15, REPAIR_TIME = 5;
+function syncPatches(sub) {
+  if (!sub.patches) sub.patches = [];
+  const n = sub.imploded ? 0 : Math.min(6, Math.max(0, Math.ceil((1 - sub.hull) / PATCH_SHARE - 0.02)));
+  while (sub.patches.length > n) sub.patches.pop();
+  for (let tries = 0; sub.patches.length < n && tries < 40; tries++) {
+    const u = -44 + Math.random() * 88, v = -18 + Math.random() * 16;
+    if (sub.patches.some((q) => Math.abs(q.u - u) < 12)) continue;
+    sub.patches.push({ u, v, seed: Math.random() * 1000, r: 3 + Math.random() * 2 });
+  }
+}
+function patchWorld(sub, q) { const k = 0.09, c = Math.cos(sub.yaw || 0), f = (c >= 0 ? 1 : -1) * Math.max(0.14, Math.abs(c)); return { x: sub.x + f * q.u * k, y: sub.y + q.v * k }; } // (as the renderer draws her: mirrored and squashed by her turn)
+function patchNear() {
+  const sub = g.sub, e = g.earl;
+  if (!sub.patches || !sub.patches.length || dist(e.x, e.y, sub.x, sub.y) > 7) return -1;
+  let best = -1, bd = 1.5;
+  sub.patches.forEach((q, i) => { const w = patchWorld(sub, q), d = dist(e.x, e.y, w.x, w.y); if (d < bd) { bd = d; best = i; } });
+  return best;
 }
 
 // crush depth. No hull fails at an exact number: each dive the sub has its own hidden crush depth,
@@ -1050,7 +1060,7 @@ function update(dt) {
       g.pry.t += dt;
       if (g.pry.t >= HOLD_TIME[target.p.type]) { g.pry = null; interact(target, false); }
     } else g.pry = null;
-    repairs(dt, target, keys.has('z')); // welding: hold Z at the hatch
+    repairs(dt, target, holding); // mending the hull: hold F at a damaged patch
     // planting a coral fragment on bare shallow seabed
     if (planting && holding) {
       g.plant = (g.plant || 0) + dt;
@@ -1103,15 +1113,6 @@ function update(dt) {
       // the necklace is only a light now: on and off, never used up
       if (g.items.necklace > 0) { g.necklaceOn = !g.necklaceOn; hud.toast(g.necklaceOn ? 'The necklace glows green against your chest' : 'You tuck the necklace away'); audio.ready && audio.click(); }
       else hud.toast('No necklace', 'warn');
-    }
-    if (pressed.has('k')) {
-      // the sealant kit: from inside, Earl works along the seams with epoxy and clamps
-      const sub = g.sub;
-      if (!e.inSub || sub.imploded) hud.toast('The sealant works from inside the cabin', 'warn');
-      else if (g.seal) hud.toast('Already sealing');
-      else if (!g.items.sealant) hud.toast('No sealant kits (buy them at the boat)', 'warn');
-      else if (sub.hull >= SEAL_CAP - 0.01) hud.toast(sub.hull >= 0.995 ? 'The hull is sound' : `Sealant can't do more: the hull needs a welded plate (${Math.round(sub.hull * 100)} %)`, 'warn');
-      else { g.seal = 0.001; hud.toast('Earl works the epoxy into the weeping seams…'); }
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
     g.airMul = 1; g.luck = 0; g.stillMul = 1;

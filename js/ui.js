@@ -36,8 +36,6 @@ const ADDON_SPECS = {
 const SUPPLY_SPECS = {
   lure: [['use', 'Q throws it'], ['effect', 'the deep thing follows its light', 'good'], ['lasts', 'a while']],
   necklace: [['use', 'E puts it on / takes it off'], ['effect', 'a soft green light round Earl', 'good'], ['but', 'a light can be seen', 'bad']],
-  sealant: [['use', 'K, inside the sub'], ['work', '6 s'], ['hull', '+20 %', 'good'], ['only up to', '85 %', 'bad']],
-  plate: [['use', 'hold Z outside, at the hatch'], ['work', '10 s of welding'], ['hull', '+40 %, to full', 'good'], ['the arc', 'draws attention below 200 m', 'bad']],
   tag: [['use', 'the tag gun (3)'], ['for', 'common to rare, tag-only under 2 m'], ['pays', '$0.50-2 a fish, more for big animals', 'good']],
   tagAdv: [['use', 'the tag gun (3)'], ['for', 'exotic, legendary, undocumented, big animals', 'good'], ['dart', 'wider spread, faint glow']],
   airTank: [['use', 'R, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
@@ -235,10 +233,12 @@ export class UI {
       const inner = Object.keys(groups).length ? Object.entries(groups).map(([w, L]) => `<div class="inv-empty" style="font-style:normal">${w}</div>` + L.map(fish).join('')).join('') : '<p class="inv-empty">Nothing in her tanks.</p>';
       html += sec('In the submersible', inner, true);
     }
-    const it = g.items || {};
-    html += sec('Carried', Object.entries(SUPPLIES).filter(([k, S]) => !S.needs || owns(P, S.needs)).map(([k, S]) => row(S.name, it[k] || 0, `of ${supplyMax(P, k)}`)).join('') + ((P.oldLures || 0) ? row('Old lure', P.oldLures, 'from the old one') : ''));
-    const finds = Object.entries(g.inv || {}).filter(([, n]) => n > 0);
-    html += sec('Finds, to sell at the boat', finds.length ? finds.map(([k, n]) => row(k === 'pearl' ? 'Pearl' : (RESOURCES[k] ? RESOURCES[k].name : k), n)).join('') : '<p class="inv-empty">Nothing picked up this dive.</p>');
+    // supplies and finds: only what he actually has (the lure and the necklace are on the screen already; clams and pearls too)
+    const it = g.items || {}, SHOWN_ELSEWHERE = new Set(['lure', 'necklace', 'clam', 'pearl']);
+    const carried = Object.entries(SUPPLIES).filter(([k]) => !SHOWN_ELSEWHERE.has(k) && (it[k] || 0) > 0);
+    if (carried.length) html += sec('Carried', carried.map(([k, S]) => row(S.name, it[k], `of ${supplyMax(P, k)}`)).join(''));
+    const finds = Object.entries(g.inv || {}).filter(([k, n]) => n > 0 && !SHOWN_ELSEWHERE.has(k));
+    if (finds.length) html += sec('Finds, to sell at the boat', finds.map(([k, n]) => row(RESOURCES[k] ? RESOURCES[k].name : k, n)).join(''));
     const tools = ['net'].concat(Object.keys(GEAR).filter((k) => owns(P, k))).map((k) => k === 'net' ? 'Hand net' : GEAR[k].name);
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
     html += sec('Equipment', row('Tools', '', tools.join(' · ')) + row('Suit', '', (SUITS[P.suit] || {}).name || 'Wetsuit') + row('Submersible', '', g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}, rated ${g.sub.rated} m`), true);
@@ -499,7 +499,7 @@ export class UI {
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['K (in the sub)', 'seal the leaks with a sealant kit: hull +20 %, up to 85 %'], ['hold Z (at the hatch)', 'weld a patch plate over hull damage: +40 %'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'take the helm and drive the Margaret (A / D)'], ['J', 'this journal'], ['P', 'show frames per second'], ['X', 'developer: max out everything'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold F (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out the trawl net (once a dive)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G drops the anchor'], ['J', 'this journal'], ['P', 'show frames per second'], ['X', 'developer: +$500,000'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }

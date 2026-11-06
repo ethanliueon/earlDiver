@@ -147,8 +147,6 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 220, max: 1, desc: 'Thrown (Q). The thing in the deep follows its light for a while. You carry one.' },
   necklace: { name: 'Fangtooth necklace', price: 370, max: 1, desc: 'A string of fangtooth teeth set round a glowing bead: worn (E), a soft green light around Earl, like a glowstick. It does not keep anything away, and a light can be seen. You carry one.' },
-  sealant: { name: 'Leak sealant kit', price: 280, max: 3, desc: 'Fast-setting underwater epoxy, rubber wedges and pipe clamps. From inside the cabin (K), Earl stops the worst of the leaks: it seals, but it is not steel.' },
-  plate: { name: 'Hull patch plate', price: 1600, max: 2, desc: 'A curved steel plate, studs and a wet-welding rod. Outside, beside the sub, hold Z: an arc burning blue in the dark welds it over the damage. The light carries a long way.' },
   tag: { name: 'Basic tags', price: 5, max: 3, needs: 'tagger', desc: 'Research darts for the tag gun: for common, uncommon and rare animals, and big tag-only animals under two metres.' },
   tagAdv: { name: 'Advanced tags', price: 200, max: 3, needs: 'tagger', desc: 'Satellite tags with a wider spread and a faint glow: needed for exotic, legendary and undocumented animals, and anything tag-only two metres long or more.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },

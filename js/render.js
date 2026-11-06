@@ -578,6 +578,7 @@ export class Renderer {
         armArg = { ext: ap.ext, closed: ap.closed, sp: ap.sp, len: ap.len, lx: (dx * Math.cos(rr) - dy * Math.sin(rr)) / sx0, ly: dx * Math.sin(rr) + dy * Math.cos(rr) };
       }
       const look = subLook(g.profile, g.addons);
+      look.patches = sub.patches;
       const r = drawSub(dctx, 9 * ppm, t, sub.stress, lights, armArg, look);
       dctx.restore();
       // mid-turn the hull is seen nearly bow-on: draw its round cross-section over the squashed side view
