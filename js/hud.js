@@ -254,11 +254,10 @@ export class Hud {
       ctx.fillText(sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air left` : `${sec} s of air left`, rx0, ly); ly += 15 * s;
     }
     if (!e.atSurface) {
-      const parts = [];
-      if (e.sprint && e.speedNow > 1) parts.push(`sprinting ×${e.inSub ? 3 : 2}`);
-      const press = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300);
-      if (press > 1.05) parts.push(`pressure ×${press.toFixed(1)}`);
-      if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.fillText(parts.join(' · '), rx0, ly); ly += 15 * s; }
+      // (2.6.1) air going faster (sprinting, or pressure on him past his suit's depth): the gauge's rim
+      // glows amber, brighter the faster, instead of "sprinting ×2 · pressure ×1.4" in words
+      const press = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300), fast = Math.max(press - 1, e.sprint && e.speedNow > 1 ? 0.6 : 0);
+      if (fast > 0.05) { ctx.strokeStyle = `rgba(232,160,64,${Math.min(0.95, 0.35 + fast * 0.5) * (0.75 + 0.25 * Math.sin(g.time * 6))})`; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.roundRect(bx - 2 * s, by - 2 * s, bw + 4 * s, bh + 4 * s, 7 * s); ctx.stroke(); }
     }
     let yy = ly + 8 * s;
     // hidden: a small leaf
@@ -270,26 +269,29 @@ export class Hud {
     }
     // the sub: one line, only inside it
     if (e.inSub) {
-      const r = g.sub.y / g.sub.rated, hi = g.sub.hull;
-      ctx.font = `${11 * s}px ${MONO}`;
-      ctx.fillStyle = r > 1 || hi < 0.5 ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : r > 0.85 || hi < 0.99 ? '#e8b040' : 'rgba(150,210,180,0.8)';
-      ctx.fillText(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ' leaking' : ''}${g.sub.failing != null ? ' · FAILING' : ''} · ${Math.round(g.sub.y)}/${g.sub.rated} m`, rx0, yy);
-      yy += 18 * s;
+      // (2.6.1) the hull as a small gauge under the air; a word only when something is wrong
+      const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1), hw = 96 * s, hh = 5 * s, hx = rx0 - hw;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(hx, yy, hw, hh, 3 * s); ctx.fill();
+      ctx.fillStyle = hi < 0.4 ? '#e0503a' : hi < 0.75 ? '#e8b040' : 'rgba(150,210,180,0.85)'; ctx.beginPath(); ctx.roundRect(hx, yy, Math.max(hh, hw * hi), hh, 3 * s); ctx.fill();
+      ctx.font = `${9 * s}px ${MONO}`; ctx.fillStyle = 'rgba(180,215,240,0.6)'; ctx.fillText('HULL', hx - 6 * s, yy - 2 * s);
+      yy += 14 * s;
+      const warn = g.sub.failing != null ? 'the hull is failing' : r > 1 ? 'past her rated depth' : r > 0.9 ? 'near her rated depth' : '';
+      if (warn) { ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = r > 1 || g.sub.failing != null ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : '#e8b040'; ctx.fillText(warn, rx0, yy); yy += 18 * s; }
     }
     // the sub on autopilot: where it is and how long it will be
     const ap = g.autopilot;
     if (ap && e.inSub && g.homeRun) {
       ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,214,160,0.85)';
-      ctx.fillText(`autopilot home · ${Math.round(ap.remaining || 0)} m · ${Math.ceil(ap.eta || 0)} s · air ×0.8`, rx0, yy);
+      ctx.fillText('autopilot: heading home', rx0, yy);
       yy += 18 * s;
     }
     if (ap && !e.inSub && !g.sub.imploded && (ap.active || ap.state === 'waiting')) {
       const dsub = Math.hypot(g.sub.x - e.x, g.sub.y - e.y);
       let txt;
-      if (ap.state === 'home') txt = `sub returning · ${Math.round(Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6))} m`;
-      else if (ap.holding && ap.remaining < 3) txt = `sub holding at ${Math.round(g.sub.y)} m · rated depth`;
-      else if (ap.state === 'waiting') txt = `sub waiting · ${Math.round(dsub)} m`;
-      else txt = `sub coming · ${Math.round(dsub)} m · ${Math.ceil(ap.eta || 0)} s`;
+      if (ap.state === 'home') txt = 'the sub is going home';
+      else if (ap.holding && ap.remaining < 3) txt = 'the sub can come no deeper';
+      else if (ap.state === 'waiting') txt = 'the sub is waiting';
+      else txt = 'the sub is coming';
       ctx.font = `${11 * s}px ${MONO}`;
       ctx.fillStyle = ap.holding ? '#e8b040' : 'rgba(232,214,160,0.85)';
       ctx.fillText(txt, rx0, yy);
@@ -425,17 +427,7 @@ export class Hud {
       const ctxt = money(g.profile.cash);
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(ctxt, pad + 1.5 * s, pad + 1.5 * s);
       ctx.fillStyle = 'rgba(220,236,214,0.9)'; ctx.fillText(ctxt, pad, pad);
-      let carried = 0;
-      for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k]) carried += GOODS[k].price * n;
-      if (carried > 0) {
-        ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.6)';
-        ctx.fillText(`+ about ${money(carried, carried < 100)} unsold`, pad, pad + 27 * s);
-      }
-      if ((g.loadKg || 0) > 5 && !e.inSub) {
-        ctx.font = `${11 * s}px ${MONO}`;
-        ctx.fillStyle = g.loadKg > 10 ? '#e8b040' : 'rgba(200,220,215,0.6)';
-        ctx.fillText(`load ${Math.round(g.loadKg)} kg${g.loadKg > 10 ? ' · heavy' : ''}`, pad, pad + (carried > 0 ? 43 : 27) * s);
-      }
+      if ((g.loadKg || 0) > 10 && !e.inSub) { ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = '#e8b040'; ctx.fillText('heavy: slower, more air', pad, pad + 27 * s); } // (2.6.1: no kg, no unsold estimate)
     }
 
     if (!aboard) {

@@ -678,3 +678,14 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - Inventory (B): Earl and his eight slots, everything owned beside him; drag onto him or a slot, or click;
   drag a tool (2-4) off to take it off. Locked in the water (`canChangeGear`: deck, cabin or sub).
 - Better buyers (tBuyers) moved to the radio. The tool, fins, tank and bag ladders are no longer sold.
+
+## 2.6.1 — less technical text on screen
+- Photographs: just the animal's name (the shots left are on the camera's slot).
+- The air gauge no longer spells out "sprinting ×2 · pressure ×1.4": its rim glows amber while the air goes
+  faster. In the sub, the hull is a small gauge (HULL) under the cabin air; words only when something is
+  wrong ("near her rated depth", "past her rated depth", "the hull is failing"). The autopilot lines are
+  plain ("the sub is coming", "autopilot: heading home").
+- Traps: "F  Haul up the trap", "F  Empty the trap", "Trap set, 30 m down", "A trap has been left too long";
+  the "settles at" toast is gone (the buoy's label says it).
+- Under the cash: no "+ about $x unsold"; "heavy: slower, more air" only when he is. The sapphire and
+  ramming toasts no longer quote prices or hull percentages.

@@ -167,7 +167,7 @@ const ui = new UI({
     const why = canSetHere(g); if (why) { hud.toast(why, 'warn'); return true; }
     if (trapsFree(g, type) <= 0) { hud.toast('None of those left to set', 'warn'); return false; }
     const d = setTrap(g, type, depth);
-    hud.toast(`The ${TRAPS[type].name.toLowerCase()} goes down on its ${TRAPS[type].line}, to ${d} m`); hud.hint(TRAPS[type].winch ? 'Come back in five minutes: winch it up from the Margaret at its buoy, or empty it down there' : 'Come back in five minutes: F at the buoy hauls it up, or empty it where it hangs');
+    hud.toast(`Trap set, ${d} m down`); hud.hint(TRAPS[type].winch ? 'Come back in five minutes: winch it up from the Margaret at its buoy, or empty it down there' : 'Come back in five minutes: F at the buoy hauls it up, or empty it where it hangs');
     audio.ready && audio.click(); return true;
   },
   onCaveTrade: (keys) => caveTrade(keys),
@@ -221,7 +221,7 @@ function damageSub(amt, sp) {
   g.fx.shake = Math.max(g.fx.shake, 2.2); g.fx.flash = 0.25;
   for (let i = 0; i < 60; i++) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 6, y: sub.y + (Math.random() - 0.5) * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
   audio.ready && audio.ram();
-  hud.toast(`Rammed by ${sp.id === 187 ? 'an orca' : 'a ' + sp.name.toLowerCase()} — hull ${Math.round(sub.hull * 100)} %, air leaking`, 'warn');
+  hud.toast(`Rammed by ${sp.id === 187 ? 'an orca' : 'a ' + sp.name.toLowerCase()}`, 'warn');
 }
 // ---------------- the boat: selling and buying ----------------
 // Everything Earl carries (except lures and necklaces, which he keeps for use) goes in the basket.
@@ -800,9 +800,7 @@ function promptFor(t) {
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
     }
-    else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
-      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use her winch`
-      : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
+    else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the trap` : t.how === 'needboat' ? 'Too heavy to haul by hand: bring the Margaret here' : 'F  Empty the trap'; // (2.6.1: short)
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your gallery`;
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
@@ -857,7 +855,7 @@ function interact(t, exitSub) {
       hud.toast(p.type === 'lure' ? 'Anglerfish lure — still glowing  [Q]' : 'Fangtooth necklace  [E]');
     } else if (p.type === 'sapphire') {
       g.sapphires++; g.inv.sapphire = (g.inv.sapphire || 0) + 1;
-      hud.toast(`A deep sapphire — worth around ${money(priceOf(profile, 'sapphire', GOODS.sapphire.price))} at the boat`, 'big');
+      hud.toast('A deep sapphire', 'big');
       audio.ready && audio.sapphire();
     } else {
       g.inv[p.type] = (g.inv[p.type] || 0) + 1;
@@ -1357,9 +1355,9 @@ function update(dt) {
           const r = takePhoto(g);
           audio.ready && audio.click();
           if (r.type === 'noShots') hud.toast('No shots left — the boat has a fresh card', 'warn');
-          else if (r.empty) hud.toast(`Nothing in the frame · ${g.shots} shots left`);
-          else if (r.old) hud.toast(`${r.name}: you already have this one · ${g.shots} left`);
-          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
+          else if (r.empty) hud.toast('Nothing in the frame');
+          else if (r.old) hud.toast(`${r.name}: photographed before`);
+          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`${r.name}`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
         }
       } else if (tool.kind === 'none') { /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
@@ -1382,8 +1380,8 @@ function update(dt) {
         tr.y = 0; const moved = emptyTrap(g, tr);
         hud.toast(n ? `The ${TRAPS[tr.type].name.toLowerCase()} is up: ${n} inside${moved < n ? ` — ${n - moved} would not fit in the bag and went back` : ''}` : `The ${TRAPS[tr.type].name.toLowerCase()} comes up empty`, n ? 'note' : '');
         audio.ready && audio.thud && audio.thud(0.25);
-      } else if (ev.type === 'settled') hud.toast(`The ${TRAPS[ev.trap.type].name.toLowerCase()} settles at ${ev.trap.depth} m${ev.trap.onBottom ? ', on the bottom' : ''}`);
-      else if (ev.type === 'spoiling') hud.toast(`A ${TRAPS[ev.trap.type].name.toLowerCase()} has been left too long: what is in it is starting to die`, 'warn');
+      } else if (ev.type === 'settled') { /* (2.6.1: the buoy's label says it) */ }
+      else if (ev.type === 'spoiling') hud.toast('A trap has been left too long', 'warn');
       else if (ev.type === 'ghost') hud.toast(`An abandoned ${TRAPS[ev.trap.type].name.toLowerCase()} has torn loose from its buoy: a ghost net now`, 'warn');
     }
     if (g.capture && (g.capture.kind === 'tag' || g.capture.kind === 'cam')) { g.capture.t += dt; if (g.capture.t >= g.capture.dur) g.capture = null; }
