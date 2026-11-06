@@ -75,3 +75,22 @@ Drawn in the tank room (js/tankroom.js).
      - **dead**: earns nothing; dead fish can be taken out and sold (at the dead price, half).
    - Fish must be put in alive. Dying and stressed fish can be added; dead ones can't.
    - **Dead fish are drawn with X eyes** (everywhere dead fish appear: gallery, tanks, bag, haul pile).
+
+## Ideas to decide on (proposals, NOT agreed yet; the user and Claude will pick)
+Design note from the user: the game is meant to be **fun**. It is not about saving the ocean or teaching a
+lesson, so don't frame features as moral "good deeds".
+- **Cap aquarium idle income** so one legendary on display doesn't beat diving: e.g. 2-5 % of the fish's value
+  per in-game day (earns its sale price back over 20-50 days), or pay only while the player is out at sea/diving.
+- **Show a stressed fish recovering:** colour coming back, calmer swimming, so keeping it feels like a choice.
+- **Deep fish need pressure slots in the gallery** (an upgrade, like the sub's chambers): mirrors the sub and
+  stops the gallery filling up with only legendaries.
+- **Legendary moment:** when one appears, the music quietens, a subtle lit glimpse/camera beat, and a full-page
+  journal entry. Something worth a screenshot.
+- **Collection sets:** bonuses for completing groups (e.g. all the deep's common rare species, every anglerfish),
+  so players chase more than legendaries.
+- **Net aim preview:** a faint cone while aiming the once-per-dive sub net, so the one shot feels deliberate.
+- **Released catch:** throwing back a fish from the haul could give something small and fun (e.g. a tiny
+  reputation boost that raises visitor numbers), not a moral reward. Or simply nothing.
+- **Price board on the Margaret:** a chalkboard listing what's been caught and what each sold for, to help
+  players learn the new economy.
+- **Hospital bill:** 10 % of cash may be huge late game with the new prices; consider a cap.
