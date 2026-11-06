@@ -85,7 +85,7 @@ import { drawEarl } from '../js/earl_draw.js';
 
 const CATS = ['Home', '', 'Hand nets', 'Slurp guns', 'Tag guns', 'Cameras', 'Trawl nets', 'Traps', '', 'Suits', 'Fins', 'Air', 'Bags', '', 'Supplies'];
 const NETS = [
-  { n: 'Hand net', p: 'Free', tag: 'In your locker', own: true, pic: ['net', 0] },
+  { n: 'Hand net', p: 'Free', tag: 'Owned', own: true, pic: ['net', 0] },
   { n: 'Aquarium dip net', p: '$35', tag: 'Gentle', pic: ['net', 1] },
   { n: 'Bait-ball net', p: '$120', tag: 'Three at once', pic: ['net', 1] },
   { n: 'Long-handle net', p: '$260', tag: 'Long reach', pic: ['net', 2] },
@@ -97,7 +97,7 @@ document.getElementById('nav').innerHTML = CATS.map((c) => c ? `<a class="${c ==
 const card = (it, i) => `<div class="card"><canvas data-pic="${it.pic.join(',')}"></canvas><div class="t"><b>${it.n}</b><span>${it.p}</span></div><div class="tag ${it.own ? 'own' : ''}">${it.tag}</div></div>`;
 const main = document.getElementById('main');
 if (page === 'cat') {
-  main.innerHTML = `<h2>Hand nets</h2><p class="lede">Key 1 under water. You carry one; swap them in the dive locker on deck.</p><div class="grid">${NETS.map(card).join('')}</div>`;
+  main.innerHTML = `<h2>Hand nets</h2><p class="lede">Key 1 under water. You carry one; change it in your inventory (B) on deck or in the sub.</p><div class="grid">${NETS.map(card).join('')}</div>`;
 } else if (page === 'item') {
   main.innerHTML = `<div class="crumbs"><a>Hand nets</a> ›</div><div class="item"><canvas data-pic="net,2" data-big="1"></canvas><div>
     <h2>Long-handle net</h2><div class="price">$260</div>

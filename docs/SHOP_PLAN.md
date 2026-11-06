@@ -7,7 +7,7 @@ is described. Mockups of the catalog are in `docs/catalog_mockup.html` (open it 
 
 1. **One screen, one decision.** A list of things, or one thing. Never a list *and* a page of numbers.
 2. **A card says three things:** the picture, the name, the price. At most one small tag under it
-   ("Gentle", "Big fish", "In your locker"). No descriptions on cards.
+   ("Gentle", "Big fish", "Owned"). No descriptions on cards.
 3. **An item page says five things, always in the same order:**
    1. the picture, large;
    2. the name and price;
@@ -51,7 +51,7 @@ on its flank at 1,200 m → the old one's cave at 1,800 m.
 - **Home:** what you're saving for (one item, with a bar: "$340 of $900"), and three cards: "New in".
 - **A category:** a title, one line about the category, then the cards (2 to 5 per category).
 - **An item:** as in rule 3.
-- No basket and no checkout. Buy is instant, and the item goes to the dive locker on deck.
+- No basket and no checkout. Buy is instant; the item is yours at once, ready to put on in the inventory (B).
 
 ### Categories and items
 
@@ -131,11 +131,33 @@ compared on the same three things.
 **Supplies** (bought by the number; a small "you have 2 of 3" under each). Basic tags, a backup air
 tank, trap bait (two more animals in a trap), an anglerfish lure, the fangtooth necklace.
 
-## The dive locker (on deck)
+## Equipping: in the inventory (B)
 
-- A short rack, one row per kind: net, slurp gun, tag gun, camera, suit, fins, tank, bag.
-- Each row shows what you own as small pictures. The one you carry is lit. Click another to swap.
-- No text but the names. Changing gear works on deck only, so choosing what to carry is part of the dive.
+Gear is changed in the inventory screen, B, which already shows the cash, the catch and the finds.
+There is no separate locker screen and no storage to manage: everything you own is always there.
+
+**The layout**, top to bottom:
+1. **Earl** in the middle, drawn in what he wears now (suit, fins, tank, bag). Eight slots round him:
+   - left: suit, fins, air tank, catch bag;
+   - right: the four tools, labelled 1–4 (net, slurp gun, tag gun, camera).
+2. **Your gear**, beside him: everything you own, as small pictures in rows by kind (nets, suits, ...).
+   What he wears is marked. Hovering over one shows its name and its Good for / Not for lines, nothing else.
+3. Below, as now: the catch bag, what is in the sub, supplies and finds.
+
+**Changing gear**
+- Drag an item onto Earl or onto its slot. While dragging, the slot it fits lights up.
+- Or just click an item: it goes into its own slot. (Tap on a phone.)
+- What was in the slot goes back to Your gear. Nothing is ever lost, and there's no confirm box.
+- Dropped in the wrong place, it slides back. A net can't go in the suit slot, so a wrong move does nothing.
+- The tool slots 2–4 can be left empty (drag the tool back to Your gear). The net, suit, fins, tank and
+  bag always have one in (the free ones if nothing else).
+
+**When it's locked**
+- **Unlocked** on deck, in the cabin and in the sub.
+- **Locked in the water.** The screen still opens and shows everything, but the slots show a small
+  padlock and one line: "Change gear on deck or in the sub." Nothing can be dragged.
+
+The dive locker on deck stays as a place to walk to: F there just opens this screen.
 
 ## Dave's Haul (1,200 m)
 
@@ -179,7 +201,7 @@ tank, trap bait (two more animals in a trap), an anglerfish lure, the fangtooth 
 
 ## Building order
 
-1. The catalog screen (home, category, item pages) with the items above, and the dive locker.
+1. The catalog screen (home, category, item pages) with the items above, and equipping in the inventory (B).
 2. The item rules: size windows (min and max), the bait-ball net's three fish, the macro camera's bonus,
    the crab pot's catch, the fins' cruise and sprint, the tanks' weight.
 3. Retiring the ladders, and converting old saves.
