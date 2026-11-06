@@ -88,7 +88,13 @@ export const TAG = {
 const NEVER = new Set(['Kelp & Plants', 'Corals, Anemones & Sponges', 'Marine Mammals']);
 const PROTECTED = new Set([183]); // sea turtles: tag only, never taken
 // the species added since: their tag values, and which are protected
-for (const m of MORE_SPECIES) { if (m.x.tag) TAG[m.id] = m.x.tag; if (m.x.protect) PROTECTED.add(m.id); }
+// v2: the everyday crowd of each deep zone is the deep's "common": rare at most, never exotic
+Object.assign(PRICE, {
+  352: 120, 176: 90, 407: 70, 334: 110, 338: 60, 383: 150, 332: 160, 110: 180, 170: 170,
+  449: 45, 450: 35, 484: 35, 472: 60, 459: 90, 460: 70, 485: 50, 489: 120, 490: 140, 491: 170, 493: 160,
+  469: 650, 483: 40, 494: 60, 495: 45, 478: 120, 479: 50, 480: 45,
+});
+for (const m of MORE_SPECIES) { if (m.x.tag) TAG[m.id] = m.x.tag; if (m.x.protect) PROTECTED.add(m.id); if (m.x.price) PRICE[m.id] = m.x.price; }
 
 // can a net / slurp gun take it at all (ignoring tool size limits)?
 export function canTakeLive(sp) {
@@ -136,7 +142,7 @@ export function rarityOf(sp) {
   let r = RAR_CACHE.get(sp.id);
   if (r) return r;
   if (sp.undoc) { r = { ...UNDOCUMENTED, pos: 0.5 }; RAR_CACHE.set(sp.id, r); return r; }
-  const w = rarityPrice(sp);
+  const w = isTagOnly(sp) ? Math.max(rarityPrice(sp), TAG[sp.id]) : rarityPrice(sp); // (a giant you can only tag is as rare as its tag is worth)
   let i = RARITY.findIndex((t) => w < t.upTo);
   if (LEGENDARY.has(sp.id)) i = 4; else if (i === 4 && !isTagOnly(sp)) i = 3; // (a hidden tier may stay legendary: it only sets how often it is met)
   const lo = i ? RARITY[i - 1].upTo : 0.2, hi = RARITY[i].upTo === Infinity ? 50000 : RARITY[i].upTo;

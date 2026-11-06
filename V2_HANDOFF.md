@@ -336,3 +336,10 @@ Docs, screenshots, the handoff's checks, merge to main.
 - earl_draw.js SUB_MARKS is now eight hulls keyed by the depth level; index checks became flags (sleek, nozzle, refit, oldSphere, tiRim, xtail). New designs: 3 yellow 1960s work sub (acrylic pilot dome), 4 white oilfield sub (red sail, tool frame), 6 Alvin-type (tall orange sail, sample basket).
 - Naming: from sub 3 a brass "Name her" plate (shop overlay, `ui.askSubName`) — default EARL, saved as `profile.subName`, painted on every later hull; "rename" in the shop header is free. Subs 1–2 keep Б-7 / Б-7М.
 - Fixed: subLook's ballast/rack had been swallowed by a comment (alpha.3 regression).
+
+### 2.0.0-alpha.3.4 — 63 new species, the deep's everyday crowd (alpha.4, part 3)
+- data/species_more.js ids 447–509: 43 real deep animals (handoff list + a few: lovely hatchetfish, crested bigscale, shining tubeshoulder, highfin dragonfish, snaggletooth, rattail cusk, giant scavenging amphipod, abyssal red prawn), 6 trench animals (abyssal grenadier, abyssal snailfish, highfin lizardfish, supergiant amphipod, abyssal sea pen, xenophyophore), and the 12 Undocumented (x.undoc → `sp.undoc`, own tier, price from x.price, ~$1,000–4,800).
+- js/undocumented_draw.js (from the scratch designs) merged into RENDERERS. Convention reminder: creatures are drawn head toward -x (the creatures_draw header comment saying +x is wrong).
+- fauna.js `CROWD` (and x.crowd): spawn multipliers for each zone's everyday animals. Crowd animals priced into Rare (specimens.js Object.assign(PRICE, …)); hidden tag-only giants now take their spawn tier from their tag value (the phantom jelly/bigfin squid had flooded the trench).
+- Measured (scratchpad rates.js, groups met): twilight 83 % rare / 7 % exotic / 0.5 % undocumented / 0.1 % legendary; midnight 75 / 11 / 2 / 0.1; abyss 97 / 1.2 / 1.7; trench water and floor ~all rare (amphipods, prawns, cusk-eels, grenadiers, snailfish).
+- Bristlemouth range to 2,500 m. drawHatchet redrawn (keeled silver body, tube eye, belly lights) — used by the silver hatchetfish too.

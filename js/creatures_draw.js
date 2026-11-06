@@ -4,6 +4,7 @@
 // soft specular light from above - never flat clip-art fills.
 import { hexToRgb, rgbStr, mixRgb, shade, rgba, TAU, clamp } from './util.js';
 import { drawSleeper } from './sleeper_draw.js';
+import { UNDOCUMENTED_RENDERERS } from './undocumented_draw.js';
 
 const PI = Math.PI;
 
@@ -615,16 +616,46 @@ function drawGulper(ctx, L, v, t, swim) {
   return [[L * 0.5, 0]];
 }
 function drawHatchet(ctx, L, v, t, swim) {
-  const H = L * v.h;
-  ctx.beginPath(); ctx.moveTo(-L * 0.45, -H * 0.35); ctx.lineTo(L * 0.1, -H * 0.4); ctx.lineTo(L * 0.3, -H * 0.1);
-  ctx.lineTo(L * 0.3, H * 0.05); ctx.quadraticCurveTo(-L * 0.1, H * 0.55, -L * 0.4, H * 0.1); ctx.closePath();
-  const g = ctx.createLinearGradient(0, -H / 2, 0, H / 2);
-  g.addColorStop(0, '#3a4a56'); g.addColorStop(0.3, '#c8d4dc'); g.addColorStop(0.7, '#eef4f8'); g.addColorStop(1, '#8a9aa6');
-  ctx.fillStyle = g; ctx.fill();
-  ctx.fillStyle = 'rgba(200,210,220,0.5)'; finPath(ctx, [[L * 0.3, 0], [L * 0.5, -H * 0.2], [L * 0.5, H * 0.2]]); ctx.fill();
-  eye(ctx, -L * 0.3, -H * 0.15, Math.max(1, L * 0.06), '#a8c0d0');
-  // the belly photophores that hide its silhouette from below
-  const P = []; for (let k = 0; k < 4; k++) P.push([-L * 0.3 + k * L * 0.15, H * (0.22 + 0.04 * Math.sin(k)), 0.4]);
+  // A marine hatchetfish (head toward -x): a deep, knife-thin silver body that drops into a keel of
+  // belly lights, a short tail stalk, big tubular eyes tilted upward, a mouth that points straight up.
+  const H = L * v.h, w = Math.sin(t * 6) * swim * L * 0.02;
+  const back = v.c[0], belly = v.c[1];
+  // tail fin and stalk first
+  ctx.fillStyle = rgba(belly, 0.55);
+  finPath(ctx, [[L * 0.3, -H * 0.04], [L * 0.5, -H * 0.22 + w], [L * 0.44, w * 0.5], [L * 0.5, H * 0.18 + w], [L * 0.3, H * 0.05]]); ctx.fill();
+  ctx.strokeStyle = rgba(shade(belly, -0.3), 0.5); ctx.lineWidth = Math.max(0.4, L * 0.006);
+  for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(L * 0.31, k * H * 0.02); ctx.lineTo(L * 0.48, k * H * 0.09 + w); ctx.stroke(); }
+  // the body: flat back, a deep breast that falls to the keel, then the narrow stalk
+  const body = new Path2D();
+  body.moveTo(-L * 0.44, -H * 0.12);
+  body.quadraticCurveTo(-L * 0.4, -H * 0.36, -L * 0.18, -H * 0.38);
+  body.lineTo(L * 0.12, -H * 0.3); body.quadraticCurveTo(L * 0.25, -H * 0.16, L * 0.32, -H * 0.06);
+  body.lineTo(L * 0.32, H * 0.06);
+  body.quadraticCurveTo(L * 0.18, H * 0.12, L * 0.06, H * 0.3);
+  body.quadraticCurveTo(-L * 0.12, H * 0.56, -L * 0.3, H * 0.42);
+  body.quadraticCurveTo(-L * 0.46, H * 0.2, -L * 0.44, -H * 0.12);
+  const g = ctx.createLinearGradient(0, -H * 0.4, 0, H * 0.5);
+  g.addColorStop(0, shade(back, -0.35)); g.addColorStop(0.18, back); g.addColorStop(0.4, shade(belly, 0.1)); g.addColorStop(0.7, belly); g.addColorStop(1, shade(belly, -0.25));
+  ctx.fillStyle = g; ctx.fill(body);
+  // mirror sheen: soft vertical bands of light on the silver flank
+  ctx.save(); ctx.clip(body);
+  for (let k = 0; k < 4; k++) { const x = -L * 0.3 + k * L * 0.13; const sg = ctx.createLinearGradient(x, 0, x + L * 0.08, 0); sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(255,255,255,0.28)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = sg; ctx.fillRect(x, -H * 0.3, L * 0.08, H * 0.8); }
+  // the dark back line and the armour-like scutes along the keel
+  ctx.fillStyle = rgba(shade(back, -0.5), 0.8); ctx.fillRect(-L * 0.42, -H * 0.42, L * 0.76, H * 0.07);
+  ctx.strokeStyle = rgba(shade(belly, -0.4), 0.45); ctx.lineWidth = Math.max(0.4, L * 0.005);
+  for (let k = 0; k < 7; k++) { const x = -L * 0.32 + k * L * 0.06; ctx.beginPath(); ctx.moveTo(x, H * 0.18); ctx.lineTo(x + L * 0.02, H * 0.36 - Math.abs(k - 2.5) * H * 0.03); ctx.stroke(); }
+  ctx.restore();
+  // the gill cover, the dorsal spine and its little blade of fin
+  ctx.strokeStyle = rgba(shade(belly, -0.45), 0.6); ctx.lineWidth = Math.max(0.5, L * 0.007);
+  ctx.beginPath(); ctx.moveTo(-L * 0.24, -H * 0.3); ctx.quadraticCurveTo(-L * 0.16, H * 0.02, -L * 0.26, H * 0.3); ctx.stroke();
+  ctx.fillStyle = rgba(belly, 0.5); finPath(ctx, [[-L * 0.02, -H * 0.34], [L * 0.06, -H * 0.5], [L * 0.12, -H * 0.3]]); ctx.fill();
+  // the big tubular eye, tilted up, and the upturned mouth
+  const ex = -L * 0.32, ey = -H * 0.2, er = Math.max(1, L * 0.065);
+  ctx.fillStyle = shade(back, -0.4); ctx.beginPath(); ctx.ellipse(ex, ey - er * 0.2, er * 1.2, er * 1.35, 0, 0, TAU); ctx.fill();
+  eye(ctx, ex, ey - er * 0.3, er, '#a8c8d8');
+  ctx.strokeStyle = shade(back, -0.5); ctx.lineWidth = Math.max(0.6, L * 0.01); ctx.beginPath(); ctx.moveTo(-L * 0.45, -H * 0.18); ctx.lineTo(-L * 0.4, -H * 0.02); ctx.stroke();
+  // the belly lights in a row along the keel, pointing down
+  const P = []; for (let k = 0; k < 6; k++) { const x = -L * 0.3 + k * L * 0.07, y = H * (0.36 + 0.08 * Math.sin((k + 0.5) / 6 * Math.PI)); P.push([x, y, 0.35]); ctx.fillStyle = 'rgba(30,40,50,0.7)'; ctx.beginPath(); ctx.arc(x, y, Math.max(0.6, L * 0.012), 0, TAU); ctx.fill(); }
   return P;
 }
 function drawBlob(ctx, L, v) {
@@ -2273,6 +2304,7 @@ export const RENDERERS = {
   nudibranch: drawNudi, gardeneel: drawGardenEel, tubeworm: drawTubeworm, xmastree: drawXmasTree,
   bobbit: drawBobbit, seasquirt: drawSeasquirt, turtle: drawTurtle, swallower: drawSwallower, dragon: drawDragon,
   coral: drawCoral, sperm: drawSperm, dolphin: drawDolphin, orca: drawOrca, sleeper: drawSleeper,
+  ...UNDOCUMENTED_RENDERERS,
 };
 
 // Draws a species. Returns local glow points (or null) for the bioluminescence pass.

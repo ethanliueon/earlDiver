@@ -226,7 +226,7 @@ export const SPECIES = SPECIES_DATA.concat(MORE_SPECIES).map((d) => {
   const v = Object.assign({ s: 'fish', h: 0.3, t: 'fork', c: ['#555', '#999'], f: null, hab: 'pelagic', sch: 1 }, V[d.id] || d.v || {});
   v.f = v.f || v.c[0];
   const len = GIANT_FORMS[d.id] || parseSize(d.size, v);
-  return { ...d, v, len, giant: !!GIANT_FORMS[d.id] };
+  return { ...d, v, len, giant: !!GIANT_FORMS[d.id], undoc: !!(d.x && d.x.undoc) };
 });
 export const SPECIES_BY_ID = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 

@@ -128,6 +128,14 @@ const COLD = new Set([58, 59, 60, 61, 68, 69, 70, 71, 72, 73, 75, 115, 116]);
 const onTropicalReef = (x) => x > 4900 || x < 34;
 // warm and cold water for anything else that needs it (traps): crabs and lobsters too
 const COLD_BOTTOM = new Set([152, 154, 155, 156]), WARM_BOTTOM = new Set([153, 144, 145, 159, 160]);
+// The everyday crowd of each deep zone: met five to ten times as often as the other deep animals, so
+// the twilight is lanternfish and hatchetfish, the midnight zone red shrimp, jellies and grenadiers, the
+// abyss and the trench grenadiers, cusk-eels, tripod fish and sea pigs, and an exotic stays an event.
+const CROWD = {
+  98: 7, 99: 5, 327: 8, 151: 5, 370: 6, 352: 3,          // twilight: lanternfish, hatchetfish, bristlemouth, firefly squid, red shrimp, strawberry squid
+  176: 4, 407: 5, 109: 4, 333: 5, 334: 5, 338: 4, 383: 3, // midnight: Atolla and helmet jellies, grenadiers, slickhead, swimming sea cucumber
+  332: 5, 110: 5, 170: 4,                                  // abyss and trench: cusk-eel, tripod fish, sea pig
+};
 // the species added since (data/species_more.js) say for themselves where and how they live
 for (const m of MORE_SPECIES) {
   const x = m.x;
@@ -138,6 +146,7 @@ for (const m of MORE_SPECIES) {
   if (x.off) OFFSHORE.add(m.id);
   if (x.mig) MIGRATORS.add(m.id);
   if (x.aggro || x.protect) NO_FLEE.add(m.id);
+  if (x.crowd) CROWD[m.id] = x.crowd;
 }
 export const climateOk = (id, x) => !((TROPICAL.has(id) || WARM_BOTTOM.has(id)) && !onTropicalReef(x)) && !((COLD.has(id) || COLD_BOTTOM.has(id)) && onTropicalReef(x));
 
@@ -169,6 +178,7 @@ function weightOf(sp) {
   if (sp.v.sch > 4) w *= 1.6;
   if (/Shark/.test(sp.cat)) w *= 0.6;
   w *= rarityOf(sp).spawn;
+  w *= CROWD[sp.id] || 1;
   if (PREDATORS.has(sp.id)) w *= 1.4; // keep some hunters around the bait
   WEIGHT.set(sp.id, w);
   return w;
