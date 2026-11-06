@@ -478,20 +478,8 @@ export class Hud {
     };
     const keyWidth = (txt, px) => { ctx.font = `italic ${px}px ${GAME}`; return ctx.measureText(txt.replace(/^Space\s+/, '[Space] ')).width; };
     const capHidden = !SETTINGS.catchTags && !!g.catchTarget; // the catch tag is a setting (pause menu); other Space prompts stay
-    if (!this.hints && !dying && !g.kill) {
-      ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `${16 * s}px ${GAME}`;
-      const lines = [];
-      if (g.capPrompt && g.capPrompt.startsWith('Space') && !capHidden) lines.push(short(g.capPrompt));
-      if (g.prompt) lines.push(short(g.prompt));
-      const capFirst = g.capPrompt && g.capPrompt.startsWith('Space') && !capHidden;
-      lines.forEach((ln, i) => {
-        const draw = i === 0 && capFirst ? (t, x, y) => keyLine(t, x, y, 16 * s) : (t, x, y) => ctx.fillText(t, x, y);
-        ctx.fillStyle = 'rgba(0,0,0,0.35)'; draw(ln, W / 2 + 1, H * 0.74 + i * 18 * s + 1);
-        ctx.fillStyle = i === 0 && capFirst && g.capRarity ? g.capRarity.col : 'rgba(232,238,234,0.78)'; draw(ln, W / 2, H * 0.74 + i * 18 * s);
-        ctx.font = `${16 * s}px ${GAME}`;
-      });
-    }
-    if (g.capPrompt && !capHidden && !dying && !g.kill && this.hints) {
+    // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
+    if (g.capPrompt && !capHidden && !dying && !g.kill) {
       ctx.font = `${17 * s}px ${GAME}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       const tw = keyWidth(g.capPrompt, 17 * s) + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, py, tw, 28 * s, 6 * s); ctx.fill();

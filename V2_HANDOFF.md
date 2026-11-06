@@ -698,3 +698,10 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   jumps (`A.hop`, a thump on landing).
 - The cabin: the deck's walk (stride, arms, footsteps through `onFootstep`), Shift runs, and the mouse:
   click to walk there, click a thing to walk to it and use it.
+
+## 2.6.3 — prompts with Hints off, and fresh scripts after an update
+- Hints (H) now hides only the tips (`hud.hint`). What F or Space does is always shown in its box (with
+  Hints off it used to be drawn a second, smaller way, and before 2.6.2 the boxed one was hidden).
+- A player on 2.6.0 found F worked only on the cabin's computer and door: that is the cabin script from
+  2.4, kept in the browser's cache next to newer files. index.html now carries an import map that loads
+  every module as `js/name.js?v=<version>`. **After every version bump run `python3 tools/stamp.py`.**

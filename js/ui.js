@@ -364,7 +364,7 @@ export class UI {
     row('flashing', 'Reduce flashing', !!(g && g.reduceFlash), 'the thing in the deep: slower, softer lights');
     row('set-brackets', 'Target brackets', SETTINGS.brackets, 'corners round what the net will go for');
     row('set-catchtags', 'Catch tags', SETTINGS.catchTags, '"[Space] net the …" under a target');
-    row('set-hints', 'Hints', this.h.getHints ? this.h.getHints() : true, 'H');
+    row('set-hints', 'Hints', this.h.getHints ? this.h.getHints() : true, 'tips now and then (H); what F does always shows');
     row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, 'M');
     $('set-fullscreen').innerHTML = `<span>Full screen<em>the game fills the whole screen (Esc leaves it)</em></span><b class="${document.fullscreenElement ? 'on' : ''}">${document.fullscreenElement ? 'on' : 'off'}</b>`;
     $('set-graphics').innerHTML = `<span>Graphics<em>Fast: softer picture and fewer extras, for smoother play on slower computers</em></span><b class="on">${SETTINGS.fast ? 'fast' : 'auto'}</b>`;
