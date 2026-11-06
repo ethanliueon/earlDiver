@@ -226,10 +226,7 @@ export class UI {
     const fish = (s) => { const sp = SPECIES_BY_ID[s.id]; return `<div class="inv-row"><img src="${ic(sp)}" alt=""><span>${sp.name}${s.variant ? ` <em>${s.variant}</em>` : ''}<br><em>${s.cond <= 0.05 ? 'dead' : conditionName(s.cond)} · from ${s.from || 0} m · about ${money(specimenValue(s) * statValue(P, 'payFish'))}</em></span></div>`; };
     const sec = (title, inner, wide = false) => `<div class="inv-sec${wide ? ' wide' : ''}"><h4>${title}</h4><div class="inv-list">${inner}</div></div>`;
     let html = `<div class="inv-sec wide"><div class="inv-cash"><div><span>CASH</span>${money(P.cash)}</div>${P.coins ? `<div><span>OLD GOLD COINS</span>${P.coins}</div>` : ''}</div></div>`;
-    const it = g.items || {};
-    html += sec('Carried', Object.entries(SUPPLIES).filter(([k, S]) => !S.needs || owns(P, S.needs)).map(([k, S]) => row(S.name, it[k] || 0, `of ${supplyMax(P, k)}`)).join('') + ((P.oldLures || 0) ? row('Old lure', P.oldLures, 'from the old one') : ''));
-    const finds = Object.entries(g.inv || {}).filter(([, n]) => n > 0);
-    html += sec('Finds, to sell at the boat', finds.length ? finds.map(([k, n]) => row(k === 'pearl' ? 'Pearl' : (RESOURCES[k] ? RESOURCES[k].name : k), n)).join('') : '<p class="inv-empty">Nothing picked up this dive.</p>');
+    // the animals first (the bag, then the sub's tanks); supplies, finds and gear below
     html += sec(`The catch bag · ${g.bag.length} of ${Math.round(statValue(P, 'bag'))}`, g.bag.length ? g.bag.map(fish).join('') : '<p class="inv-empty">Empty.</p>', true);
     if (!g.sub.imploded) {
       const where = (s) => (s.pile ? 'the heap from the net' : s.pressed ? (s.chamber === 100 ? 'the large pressure tank' : `chamber ${s.chamber + 1}`) : 'the open tank');
@@ -238,6 +235,10 @@ export class UI {
       const inner = Object.keys(groups).length ? Object.entries(groups).map(([w, L]) => `<div class="inv-empty" style="font-style:normal">${w}</div>` + L.map(fish).join('')).join('') : '<p class="inv-empty">Nothing in her tanks.</p>';
       html += sec('In the submersible', inner, true);
     }
+    const it = g.items || {};
+    html += sec('Carried', Object.entries(SUPPLIES).filter(([k, S]) => !S.needs || owns(P, S.needs)).map(([k, S]) => row(S.name, it[k] || 0, `of ${supplyMax(P, k)}`)).join('') + ((P.oldLures || 0) ? row('Old lure', P.oldLures, 'from the old one') : ''));
+    const finds = Object.entries(g.inv || {}).filter(([, n]) => n > 0);
+    html += sec('Finds, to sell at the boat', finds.length ? finds.map(([k, n]) => row(k === 'pearl' ? 'Pearl' : (RESOURCES[k] ? RESOURCES[k].name : k), n)).join('') : '<p class="inv-empty">Nothing picked up this dive.</p>');
     const tools = ['net'].concat(Object.keys(GEAR).filter((k) => owns(P, k))).map((k) => k === 'net' ? 'Hand net' : GEAR[k].name);
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
     html += sec('Equipment', row('Tools', '', tools.join(' · ')) + row('Suit', '', (SUITS[P.suit] || {}).name || 'Wetsuit') + row('Submersible', '', g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}, rated ${g.sub.rated} m`), true);
