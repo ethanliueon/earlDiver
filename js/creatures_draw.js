@@ -352,16 +352,48 @@ function drawFish(ctx, L, v, t, swim) {
   }
   ctx.fillStyle = overlayShading(ctx, -H / 2, H / 2);
   ctx.fillRect(-L, -H, L * 2, H * 2);
+  // the head reads darker and denser than the flank: bone under thin skin
+  {
+    const hx = o.x0 + L * 0.1, hg = ctx.createRadialGradient(hx, -H * 0.05, 0, hx, -H * 0.05, L * 0.26);
+    hg.addColorStop(0, 'rgba(0,0,0,0)'); hg.addColorStop(0.55, 'rgba(0,0,0,0.05)'); hg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = hg; ctx.fillRect(o.x0 - L * 0.1, -H, L * 0.6, H * 2);
+  }
+  // light catching the scale rows of the upper flank
+  if (L > 40) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = Math.max(0.5, L * 0.003);
+    const sc = v.bigscale ? L * 0.04 : L * 0.024;
+    ctx.beginPath();
+    for (let x = o.x0 + L * 0.24; x < o.tailX - L * 0.04; x += sc) for (let y = -H * 0.4; y < -H * 0.02; y += sc) {
+      const yy = y + (Math.floor(x / sc) % 2) * sc * 0.5; ctx.moveTo(x - sc * 0.35, yy - sc * 0.32); ctx.arc(x, yy, sc * 0.48, -2.4, -1.2);
+    }
+    ctx.stroke();
+  }
+  // a silver sheen low on the flank (strongest on pale-bellied fish)
+  {
+    const sh = ctx.createLinearGradient(0, H * 0.02, 0, H * 0.34);
+    sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.5, 'rgba(255,255,255,0.08)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sh; ctx.fillRect(o.x0 + L * 0.15, H * 0.02, L * 0.55, H * 0.32);
+  }
   // lateral line
   ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = Math.max(0.5, H * 0.015);
   ctx.beginPath(); ctx.moveTo(o.x0 + L * 0.18, -H * 0.12); ctx.quadraticCurveTo(0, -H * 0.2, o.tailX, 0); ctx.stroke();
   ctx.restore();
 
   drawTail(ctx, o, L, v, t, swim, v.tailc || rgba(v.f, 0.82));
-  // gill cover
+  // a fine darker edge round the body, so it holds its shape against the water
+  ctx.save(); fishOutline(ctx, L, v, t, swim); ctx.strokeStyle = rgba(shade(v.c[0], -0.45), 0.35); ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.stroke(); ctx.restore();
+  // gill cover: the bony operculum, a shadow under its free edge and a thin light on its rim
   const gx = o.x0 + L * (v.h > 0.6 ? 0.22 : 0.2);
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = Math.max(0.6, L * 0.008);
+  ctx.save(); fishOutline(ctx, L, v, t, swim); ctx.clip();
+  ctx.fillStyle = 'rgba(0,0,0,0.07)'; ctx.beginPath(); ctx.arc(gx - H * 0.3, 0, H * 0.38, -0.9, 0.9); ctx.arc(gx - H * 0.3 + L * 0.02, 0, H * 0.4, 0.9, -0.9, true); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = Math.max(0.6, L * 0.008);
   ctx.beginPath(); ctx.arc(gx - H * 0.3, 0, H * 0.38, -0.9, 0.9); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = Math.max(0.4, L * 0.004);
+  ctx.beginPath(); ctx.arc(gx - H * 0.3 - L * 0.006, 0, H * 0.38, -0.85, 0.2); ctx.stroke();
+  // the preopercle, a fainter curve in front of it
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = Math.max(0.4, L * 0.005);
+  ctx.beginPath(); ctx.arc(gx - H * 0.3 - L * 0.035, H * 0.02, H * 0.3, -0.5, 1.0); ctx.stroke();
   // near pectoral fin
   {
     const pl = v.wings ? L * 0.5 : L * 0.13, pw = v.wings ? H * 0.5 : H * 0.17, beat = Math.sin(t * (v.wings ? 3 : 5)) * 0.18;
@@ -381,18 +413,20 @@ function drawFish(ctx, L, v, t, swim) {
     ctx.fillStyle = shade(v.c[0], -0.05);
     ctx.beginPath(); ctx.moveTo(nx + L * 0.06, -H * 0.12); ctx.lineTo(nx - L * 0.08 * v.snout, -H * 0.02); ctx.lineTo(nx - L * 0.08 * v.snout, H * 0.02); ctx.lineTo(nx + L * 0.06, H * 0.06); ctx.fill();
   }
-  ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = Math.max(0.6, L * 0.008);
-  ctx.beginPath(); ctx.moveTo(nx + L * 0.005, H * 0.06); ctx.lineTo(nx + L * (v.jaw ? 0.1 : 0.05), H * (v.jaw ? 0.1 : 0.08)); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = Math.max(0.6, L * 0.008); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(nx + L * 0.005, H * 0.05); ctx.quadraticCurveTo(nx + L * (v.jaw ? 0.05 : 0.025), H * (v.jaw ? 0.11 : 0.09), nx + L * (v.jaw ? 0.1 : 0.055), H * (v.jaw ? 0.09 : 0.07)); ctx.stroke(); ctx.lineCap = 'butt';
   if (v.lips) { ctx.fillStyle = shade(v.c[1], -0.2); ctx.beginPath(); ctx.ellipse(nx + L * 0.015, H * 0.06, L * 0.025, H * 0.07, 0, 0, TAU); ctx.fill(); }
   if (v.beak) { ctx.fillStyle = '#e8e4d4'; ctx.beginPath(); ctx.ellipse(nx + L * 0.015, H * 0.04, L * 0.02, H * 0.06, 0, 0, TAU); ctx.fill(); }
   if (v.barbel) { ctx.beginPath(); ctx.moveTo(nx + L * 0.05, H * 0.15); ctx.lineTo(nx + L * 0.04, H * 0.3); ctx.stroke(); }
-  if (v.spiny) {
-    ctx.strokeStyle = 'rgba(40,30,20,0.6)';
-    ctx.beginPath(); for (let k = 0; k < 14; k++) { const a = (k / 14) * TAU; ctx.moveTo(Math.cos(a) * H * 0.3 - L * 0.05, Math.sin(a) * H * 0.3); ctx.lineTo(Math.cos(a) * H * 0.48 - L * 0.05, Math.sin(a) * H * 0.48); } ctx.stroke();
+  if (v.spiny) { // a sharp spine on the gill cover, pointing back (squirrelfish, soldierfish, scorpionfish)
+    ctx.fillStyle = rgba(shade(v.c[1], 0.2), 0.9);
+    ctx.beginPath(); ctx.moveTo(gx - L * 0.01, H * 0.02); ctx.lineTo(gx + L * 0.07, H * 0.08); ctx.lineTo(gx - L * 0.005, H * 0.08); ctx.fill();
   }
   if (v.eyespot) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(L * 0.12, -H * 0.25, H * 0.07, 0, TAU); ctx.fill(); }
   const er = Math.max(1.2, Math.min(H * (v.bigeye ? 0.16 : 0.1), L * (v.bigeye ? 0.055 : 0.036)));
-  eye(ctx, nx + L * (v.h > 0.6 ? 0.12 : 0.1), -H * 0.12, er, v.eyec || '#cfc6a4');
+  const ex = nx + L * (v.h > 0.6 ? 0.12 : 0.1), ey = -H * 0.12;
+  ctx.fillStyle = rgba(shade(v.c[0], -0.4), 0.35); ctx.beginPath(); ctx.arc(ex, ey, er * 1.45, 0, TAU); ctx.fill(); // the eye socket
+  eye(ctx, ex, ey, er, v.eyec || '#cfc6a4');
   if (v.photo) {
     // photophore row drawn here for lit view; glow handled separately
     ctx.fillStyle = 'rgba(160,220,255,0.6)';

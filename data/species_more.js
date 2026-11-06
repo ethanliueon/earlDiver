@@ -100,7 +100,7 @@ const L = [
   ['Coney', 'Cephalopholis fulva', R, 1, 150, WA, '41 cm', 'A small grouper in red, brown or bright yellow, freckled with blue.',
     { s: 'fish', h: 0.38, t: 'round', c: ['#c84a3a', '#e07a5a'], p: 'dots', pc: '#5ab0e8', f: '#c84a3a', hab: 'reef' }, { home: { k: ['crevice', 'ledge', 'coral'], r: 6, hide: 1, act: 'any' }, warm: 1 }],
   ['Squirrelfish', 'Holocentrus adscensionis', R, 0, 180, 'Atlantic', '61 cm', 'Red-striped night hunter with huge eyes; hides in crevices by day.',
-    { s: 'fish', h: 0.4, t: 'fork', spiny: 1, bigeye: 1, c: ['#c83a2a', '#e8a090'], p: 'lines', pc: '#ecd8d0', f: '#c83a2a', hab: 'reef' }, { home: cave(6, 10), warm: 1 }],
+    { s: 'fish', h: 0.4, t: 'fork', spiny: 1, bigeye: 1, c: ['#c83a2a', '#e8a090'], p: 'stripes', n: 7, pc: '#ecd0c4', f: '#c83a2a', hab: 'reef' }, { home: cave(6, 10), warm: 1 }],
   ['Glassy Sweeper', 'Pempheris schomburgkii', R, 1, 30, WA, '16 cm', 'Coppery, almost see-through fish that schools in caves by day.',
     { s: 'fish', h: 0.5, t: 'fork', bigeye: 1, c: ['#c87a4a', '#e8b88a'], f: '#c87a4a', hab: 'reef', sch: 12 }, { home: cave(3, 15), warm: 1 }],
   ['Bigeye', 'Priacanthus arenatus', R, 5, 200, 'Atlantic', '50 cm', 'A deep red fish with enormous eyes, hunting the reef at night.',

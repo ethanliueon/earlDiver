@@ -376,3 +376,7 @@ Docs, screenshots, the handoff's checks, merge to main.
 - Loading: a brass porthole with a depth gauge whose needle sweeps while the sea is charted.
 - Pause: the same steel panel, "Paused" on a brass plate, Resume brass, the rest steel push-buttons.
 - CSS only (+ small markup changes in index.html); no per-frame cost.
+
+## 2.0.2 — detail pass on the shared fish drawing (157 species use it)
+- drawFish: a darker head, light catching the upper scale rows, a silver sheen low on the flank, a fine darker outline, a shaded operculum with a light rim and a fainter preopercle, an eye socket, a curved mouth. `spiny` is now a single gill-cover spine (the old radial ring of spikes looked like a halo). All of it is baked into the cached sprites: no per-frame cost.
+- Squirrelfish: long pale stripes (it was using the 'lines' pattern, which carries a black flank patch meant for another fish).
