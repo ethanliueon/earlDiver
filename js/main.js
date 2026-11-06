@@ -17,7 +17,7 @@ import { fillBoard, fulfil, RADIO } from './contracts.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
-import { pressureTolerance } from './specimens.js';
+import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
@@ -1070,6 +1070,21 @@ function update(dt) {
     g.airMul = 1; g.luck = 0; g.stillMul = 1;
     // rare forms turn up more at the whale fall and the seep
     g.fauna.rareMult = Math.abs(e.x - WHALE_FALL.x) < 60 && e.y > 2900 ? 3 : Math.abs(e.x - SEEP.x) < 50 && e.y > 2300 ? 2 : 1;
+    // the legendary moment: the first sight of a legend on this dive. The music falls away, a pale
+    // light comes up on it for a few seconds, and its name: something to remember.
+    if (g.legend) { g.legend.t += dt; if (g.legend.t > 8 || g.legend.c.dead) g.legend = null; }
+    else {
+      for (const c of g.fauna.list) {
+        if (c.legendSeen || c.dead || !LEGENDARY.has(c.sp.id)) continue;
+        if (Math.hypot(c.x - e.x, c.y - e.y) > 16) continue;
+        c.legendSeen = true; g.legend = { c, t: 0 };
+        const P = g.profile, met = (P.legends = P.legends || {}); const first = !met[c.sp.id]; met[c.sp.id] = (met[c.sp.id] || 0) + 1; saveProfile(P);
+        hud.toast(`${first ? 'A legend of the deep' : 'A legend again'}: the ${c.sp.name.toLowerCase()}`, 'big');
+        hud.hint(`${c.len.toFixed(1)} m long. In the record books it is ${c.sp.size}. F to observe it`);
+        audio.ready && audio.legend && audio.legend();
+        break;
+      }
+    }
     // a quiet milestone: the first time down on the floor of the hadal trench
     if (e.y > 4600 && e.x > TRENCH.x0 && e.x < TRENCH.x1 && !(g.profile.marks || {}).trench) {
       g.profile.marks = Object.assign(g.profile.marks || {}, { trench: true }); saveProfile(g.profile);

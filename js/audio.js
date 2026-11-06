@@ -140,6 +140,7 @@ export class Audio {
     this.calm = !stress;
     if (stress) { m.sinceStress = 0; m.quiet = 0; m.rolls = 0; } else m.sinceStress += dt;
     let fade = 0.15; // fading in: about 7 s
+    if (g.legend) { m.on = false; m.quiet = 0; }                          // a legend: the music falls away
     if (m.on) {
       m.t += dt;
       if (stress) { m.on = false; }                                   // stress: it stops
@@ -301,6 +302,8 @@ export class Audio {
     this.tone(48, 3.5, 0.9, 'sine', 0, 22);
     this.burst('highpass', 3000, 0.5, 0.4, 0.5);
   }
+  // a legend: a low, slow chord, like a held breath
+  legend() { if (this.muted) return; const f = [110, 164.8, 220, 277.2]; f.forEach((x, i) => this.tone(x, 4.5, 0.025, 'sine', i * 0.35)); this.tone(55, 5, 0.04, 'sine', 0.2); }
   sapphire() { for (let i = 0; i < 4; i++) this.tone(880 * Math.pow(1.26, i), 1.2, 0.03, 'sine', i * 0.09); }
   lanternHum(vol) { this.tone(220, 1.5, vol, 'sine'); this.tone(330, 1.5, vol * 0.6, 'sine'); }
 

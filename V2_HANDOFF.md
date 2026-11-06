@@ -343,3 +343,9 @@ Docs, screenshots, the handoff's checks, merge to main.
 - fauna.js `CROWD` (and x.crowd): spawn multipliers for each zone's everyday animals. Crowd animals priced into Rare (specimens.js Object.assign(PRICE, …)); hidden tag-only giants now take their spawn tier from their tag value (the phantom jelly/bigfin squid had flooded the trench).
 - Measured (scratchpad rates.js, groups met): twilight 83 % rare / 7 % exotic / 0.5 % undocumented / 0.1 % legendary; midnight 75 / 11 / 2 / 0.1; abyss 97 / 1.2 / 1.7; trench water and floor ~all rare (amphipods, prawns, cusk-eels, grenadiers, snailfish).
 - Bristlemouth range to 2,500 m. drawHatchet redrawn (keeled silver body, tube eye, belly lights) — used by the silver hatchetfish too.
+
+## 2.0.0-alpha.4: the deep (tested) — map, subs, species above, plus:
+- The legendary moment (main.js, render.js, audio.js): the first legend within 16 m on a dive → the music falls away (musicSession stops the piece), a pale light comes up on it for ~8 s, a big toast + a hint with its real record size, a low chord (`audio.legend`). Met legends are counted in `profile.legends`.
+- Size audit: fishDrawLen 1.6 → 2.0 (everything drawn 1.25× larger; real lengths still set value, slots and what a tool can hold). Line-up sheets (scratchpad lineup.js) show no outliers worth a special case. Tanks already shrink a fish to fit (`tankLen` clamps to the tank).
+- Test harness note: `sub.rated` is a getter; tests must set `sub.ratedV`, and `sub.crushFor = sub.ratedV` with `crushR`, or the crush depth is re-rolled.
+- Still open from alpha.4: the shared fish drawing realism pass — moved to the final asset pass.

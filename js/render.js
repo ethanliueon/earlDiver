@@ -49,7 +49,8 @@ export function seabedPose(W, x, halfW, lies) {
   return lies ? { rot: a, sink: 0 } : { rot: 0, sink: Math.min(h, Math.abs(Math.tan(a)) * h * 0.9) };
 }
 const staticPose = (W, st) => st.pose || (st.pose = seabedPose(W, st.x, Math.max(0.18, st.sp.len) * st.scale * 0.45, LIES.has(st.sp.v.s) || st.sp.v.hab === 'floor'));
-export const fishDrawLen = (len) => len * 1.6 + 0.08 * Math.exp(-len * 4);
+// (v2 size audit: everything drawn 1.25x larger than before, 1.6 -> 2.0; real lengths still set value and slots)
+export const fishDrawLen = (len) => len * 2.0 + 0.1 * Math.exp(-len * 4);
 // Earl's height in metres
 export const EARL_H = 1.0;
 const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 32;
@@ -2123,6 +2124,10 @@ export class Renderer {
       radial(head.x, head.y, 3.2 * ppm, beamCol, 0.3 * TORCH * flick); lamps.push({ x: head.x, y: head.y, r: 3.2 * ppm, a: 0.3 * TORCH * flick });
     }
     if (g.necklaceOn && !e.inSub) radial(S(e.x), Sy(e.y), 6 * ppm, [170, 255, 190], 0.5); // the necklace: a glowstick's soft green light
+    if (g.legend) { // the legendary moment: a pale light comes up on it, and fades
+      const c = g.legend.c, k = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
+      radial(S(c.x), Sy(c.y), Math.max(7, c.len * 4) * ppm, [215, 232, 240], 0.95 * k); radial(S(c.x), Sy(c.y), Math.max(3, c.len * 1.6) * ppm, [235, 242, 246], 0.6 * k); lamps.push({ x: S(c.x), y: Sy(c.y), r: Math.max(7, c.len * 4) * ppm, a: 0.95 * k });
+    }
     if (subLamps) {
       const sub = g.sub;
       const sx = S(sub.x), sy = Sy(sub.y);
