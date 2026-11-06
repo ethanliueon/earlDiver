@@ -58,7 +58,6 @@ export function rollCrush(rated, rnd = Math.random) {
 export const SUB_ADDONS = {
   recall: { name: 'Recall unit', price: 280, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
   quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
-  subNet: { name: 'Trawl net', price: 1800, desc: 'A net in a canister under the bow. N lets it out once a dive: it sweeps the water ahead for a few seconds and takes up to ten animals, sharks to 2.5 m, even legends. Loud: below 200 m the deep hears it. Repacked at the boat.' },
   tracker: { name: 'Tag tracker', price: 900, desc: 'A receiver for the tags on the fish you released from your gallery: a faint trail leads from the sub (or from Earl) to the nearest one, with its name and how far.' },
   bigTank: { name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
   sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
@@ -149,6 +148,7 @@ export const SUPPLIES = {
   necklace: { name: 'Fangtooth necklace', price: 370, max: 1, desc: 'A string of fangtooth teeth set round a glowing bead: worn (E), a soft green light around Earl, like a glowstick. It does not keep anything away, and a light can be seen. You carry one.' },
   tag: { name: 'Basic tags', price: 5, max: 3, needs: 'tagger', desc: 'Research darts for the tag gun: for common, uncommon and rare animals, and big tag-only animals under two metres.' },
   tagAdv: { name: 'Advanced tags', price: 200, max: 3, needs: 'tagger', desc: 'Satellite tags with a wider spread and a faint glow: needed for exotic, legendary and undocumented animals, and anything tag-only two metres long or more.' },
+  trawl: { name: 'Trawl net', price: 300, max: 1, desc: 'Every submersible carries a trawl net in a canister under the bow. N lets it out: it sweeps the water ahead for a few seconds and takes up to ten animals, sharks to 2.5 m, even legends. It comes back torn: one use. Loud below 200 m.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
@@ -333,7 +333,7 @@ export function coinsFor(spec) {
 }
 // the deepest refits also cost coins: 1 each to 2,600 m, 2 to 3,200 m, 3 to 3,800 m, then 4
 export function upgradeCoins(P, id) {
-  if (id !== 'depth') return 0;
+  if (id !== 'depth' && id !== 'tHull') return 0;
   const next = statAt('depth', lv(P, 'depth') + 1);
   return next > 2000 ? Math.ceil((next - 2000) / 600) : 0;
 }
@@ -345,7 +345,44 @@ export const WARES = {
   relic: { name: 'A pressure relic', coins: 5, max: 4, line: 'An iron ring from a hull that went deeper than it should have.', desc: 'Bolted inside the sub: its rating goes 100 m deeper. Up to four.' },
 };
 // (never past the top level: an old save may hold more levels than an upgrade now has)
-export const lv = (P, id) => Math.min((P.lv && P.lv[id]) || 0, UPGRADES[id] ? UPGRADES[id].max : Infinity);
+// ---------------- upgrade tracks (v2.0.15) ----------------
+// The shop sells 14 tracks instead of 39 separate stats: one ladder per tool or part, and each step
+// on a ladder improves every stat it covers together. A stat's level follows from its track's
+// (stat level = track level / track max × stat max, rounded); a step costs what the stat steps it
+// covers used to cost, so the whole ladder costs what the separate stats did.
+export const TRACKS = {
+  tTank:     { group: 'Diver', name: 'Air tank', stats: ['air'], max: 9, line: 'More air for every dive' },
+  tFins:     { group: 'Diver', name: 'Fins', stats: ['swim', 'sprint'], max: 10, line: 'He swims and sprints faster' },
+  tBag:      { group: 'Diver', name: 'Catch bag', stats: ['bag'], max: 6, line: 'Room for more animals' },
+  tBuyers:   { group: 'Diver', name: 'Buyers', stats: ['payFish', 'paySalvage'], max: 10, line: 'Better prices for everything he sells' },
+  tNet:      { group: 'Net', name: 'Hand net', stats: ['netSize', 'netReach', 'netSpeed', 'netGrip', 'netSoft'], max: 8, line: 'Bigger, longer, quicker, surer, gentler' },
+  tSlurp:    { group: 'Slurp gun', needs: 'slurp', name: 'Slurp gun', stats: ['slurpSize', 'slurpReach', 'slurpSpeed'], max: 8, line: 'Bigger catches, longer reach, faster reload' },
+  tTag:      { group: 'Tag gun', needs: 'tagger', name: 'Tag gun', stats: ['tagReach', 'tagReload', 'tagPay', 'tagCalm'], max: 8, line: 'Range, reload, better-paying tags, cleaner shots' },
+  tCam:      { group: 'Camera', needs: 'camera', name: 'Camera', stats: ['camShots', 'camRange'], max: 8, line: 'More shots a dive, longer range' },
+  tHull:     { group: 'Submersible', name: 'A deeper submersible', stats: ['depth'], max: 7, line: 'The next hull: deeper, more cabin air' },
+  tEngine:   { group: 'Submersible', name: 'Engine', stats: ['subSpeed', 'ballast'], max: 10, line: 'Faster, and quicker to sink and rise' },
+  tChambers: { group: 'Submersible', name: 'Pressure chambers', stats: ['pressTanks', 'pressRating'], max: 8, line: 'More chambers, holding more pressure' },
+  tOpen:     { group: 'Submersible', name: 'Open tank', stats: ['subTank'], max: 6, line: 'Room for more animals in the sub' },
+  tRack:     { group: 'Submersible', name: 'Backup air rack', stats: ['airTanks'], max: 2, line: 'Racks for more backup air tanks' },
+  tClaw:     { group: 'Claw', needs: 'arm', name: 'Claw', stats: ['armReach', 'armSize', 'armSpeed', 'armGrip'], max: 8, line: 'Reach, jaw size, hydraulics, grip' },
+};
+export const TRACK_OF = Object.fromEntries(Object.entries(TRACKS).flatMap(([t, T]) => T.stats.map((sid) => [sid, t])));
+const mapLevel = (sid, t, l) => Math.round(l / TRACKS[t].max * UPGRADES[sid].max);
+// an old save's separate stat levels become track levels: the average progress of the stats on it
+function migrateTracks(P) {
+  P.tlv = {};
+  for (const [t, T] of Object.entries(TRACKS)) {
+    const f = T.stats.reduce((a, sid) => a + Math.min(1, ((P.lv && P.lv[sid]) || 0) / UPGRADES[sid].max), 0) / T.stats.length;
+    P.tlv[t] = Math.round(f * T.max);
+  }
+}
+export const tlv = (P, t) => { if (!P.tlv) migrateTracks(P); return Math.min(P.tlv[t] || 0, TRACKS[t].max); };
+export const lv = (P, id) => {
+  if (TRACKS[id]) return tlv(P, id);
+  const t = TRACK_OF[id];
+  if (t) return Math.min(mapLevel(id, t, tlv(P, t)), UPGRADES[id].max);
+  return Math.min((P.lv && P.lv[id]) || 0, UPGRADES[id] ? UPGRADES[id].max : Infinity);
+};
 // a stat at a level: from vals, +1 a level (lin), or base to top with gains growing 1.5x a level
 const GAIN = 1.5;
 export function statAt(id, l) {
@@ -355,9 +392,17 @@ export function statAt(id, l) {
   return U.base + (U.top - U.base) * (Math.pow(GAIN, l) - 1) / (Math.pow(GAIN, U.max) - 1);
 }
 export const statValue = (P, id) => statAt(id, lv(P, id));
+const roundCost = (c) => (c < 10 ? Math.round(c * 100) / 100 : c < 100 ? Math.round(c * 4) / 4 : Math.round(c));
+const statStepCost = (id, l) => { const U = UPGRADES[id]; return U.costs ? U.costs[Math.min(l, U.costs.length - 1)] : U.cost * Math.pow(U.growth, l); };
+// the next step's price: of a track (every stat step it covers), or of a single stat
 export function upgradeCost(P, id) {
-  const U = UPGRADES[id], l = lv(P, id), c = U.costs ? U.costs[Math.min(l, U.costs.length - 1)] : U.cost * Math.pow(U.growth, l);
-  return c < 10 ? Math.round(c * 100) / 100 : c < 100 ? Math.round(c * 4) / 4 : Math.round(c);
+  if (TRACKS[id]) {
+    const T = TRACKS[id], l = tlv(P, id);
+    let c = 0;
+    for (const sid of T.stats) for (let k = mapLevel(sid, id, l); k < mapLevel(sid, id, l + 1); k++) c += statStepCost(sid, k);
+    return roundCost(Math.max(c, 1));
+  }
+  return roundCost(statStepCost(id, lv(P, id)));
 }
 export const owns = (P, k) => !!(P.gear && P.gear[k]);
 const trim = (t) => t.replace(/\.?0+$/, '');

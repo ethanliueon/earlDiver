@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.0.14 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.0.15 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -47,6 +47,11 @@ Settings → Pages → Deploy from a branch → `main` / root).
   the last one.
 - **Air** is the bar under the depth. Surface to refill. Earl's tank goes up to 200 s with upgrades;
   the cabin air comes with each submersible (150 s in the first, 300 s in the best).
+- **The shop** sells one ladder per thing: air tank, fins, catch bag, buyers; the net, slurp gun, tag
+  gun, camera and traps (Tools); the hull, engine, chambers, open tank, air rack and claw (Sub).
+  Each step improves everything on that ladder at once. One step at a time is marked Recommended.
+- **Contracts** on the radio pay the market price plus a premium for the trip (more for deeper work),
+  never more extra than your next submersible costs.
 - **Selling.** Everything sells at the boat; the price board shows what the last sales fetched.
   Tiny fish are "too small" to tag; medium ones pay a dollar or two in tags. Upgrades grow like
   Cat Goes Fishing: each level worth more than the last, and dearer.
@@ -76,8 +81,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - **Hull damage** shows on the sub as patches: dents in the plating, cracked and leaking (each about
   15 % of her hull; the cabin air leaks faster the more there are). Get out, swim to a patch and hold
   R: five seconds mends it. The boat can still patch her up for money.
-- **The trawl net** (a sub add-on): N lets it out once a dive; it takes up to ten animals, sharks to
-  2.5 m, even legends, and dumps the haul on the tank-room floor. It is loud below 200 m. Big
+- **The trawl net** is built into every sub: N lets it out; it takes up to ten animals, sharks to
+  2.5 m, even legends, and dumps the haul on the tank-room floor. It comes back torn: one net is
+  carried at a time (the first is free, then $300 at the boat). It is loud below 200 m. Big
   animals take two or three places in the open tank; the large pressure tank holds three animals,
   or one big one.
 - **The Margaret** goes anywhere on the surface, slowly (5 m/s flat out). Drop the anchor (G at

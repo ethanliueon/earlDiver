@@ -20,7 +20,7 @@ import { tankSlots, pressSlots, tankUsed, pressUsed } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
-import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
+import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
@@ -514,7 +514,7 @@ export class UI {
         row('Lures · necklaces', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out the trawl net (once a dive)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G drops the anchor'], ['J', 'this journal'], ['P', 'show frames per second'], ['X', 'developer: +$500,000'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / wear a necklace'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out the trawl net (one carried; $300 a new one at the boat)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G drops the anchor'], ['J', 'this journal'], ['P', 'show frames per second'], ['X', 'developer: +$500,000'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -533,6 +533,9 @@ export class UI {
       if (rn) rn.onclick = () => this.askSubName(P.subName, (v) => { this.h.onRename(v); this.renderWorkshop(); }, 'A fresh coat of paint, free of charge.');
     }
     const can = (price) => P.cash + 1e-6 >= price;
+    this.rec = this.recommend(P, g);
+    const TAB_OF = { Diver: 'diver', Net: 'tools', 'Slurp gun': 'tools', 'Tag gun': 'tools', Camera: 'tools', Submersible: 'sub', Claw: 'sub' };
+    document.querySelectorAll('.shop-tabs button[data-shop]').forEach((b) => b.classList.toggle('rec', !!this.rec && TAB_OF[TRACKS[this.rec].group] === b.dataset.shop));
     // a card: name, what it is, what it changes, and a price button
     // a card: name, a dot-point list of its figures (always in view), and the story behind the i
     const bullets = (specs) => specs && specs.length ? `<ul class="bullets">${specs.map(([l, v, k]) => `<li${k ? ` class="p-${k}"` : ''}>${l ? `<em>${l}</em>` : ''}<b>${v}</b></li>`).join('')}</ul>` : '';
@@ -601,8 +604,19 @@ export class UI {
       const board = P.board || [];
       if (board.length) html += `<div class="priceboard"><h4>Price board</h4>${board.map((r) => `<div><span>${r.label}</span><b>${money(r.each)}</b></div>`).join('')}</div>`;
     } else if (tab === 'diver') {
+      html += this.upgradeGroups(P, ['Diver'], icon, can);
       html += this.suitRows(P, can);
-      html += this.upgradeGroups(P, ['Diver', 'Net', 'Slurp gun', 'Tag gun', 'Camera'], icon, can);
+    } else if (tab === 'tools') {
+      html += this.upgradeGroups(P, ['Net', 'Slurp gun', 'Tag gun', 'Camera'], icon, can);
+      html += '<div class="up-group"><h4>Traps</h4>';
+      const tr = P.traps || {};
+      TRAP_ORDER.forEach((k, i) => {
+        const T = TRAPS[k], have = tr[k] || 0, full = have >= T.max;
+        html += card(T.name, T.desc, `you own ${have} / ${T.max}`, full ? null : T.price, 'buy', 'trap:' + k, full ? 'Full' : 'Buy', '', icon('trap', i), [
+          ['depth', `down to ${T.maxDepth.toLocaleString()} m`, 'press'], ['catch', `${T.count[0]}–${T.count[1]} fish in 5 min`], ['fish up to', `${T.maxLen} m long`],
+          ['holds', `${T.holds}`], ['hauled', T.winch ? "by the boat's winch" : 'by hand', T.winch ? 'bad' : 'good']].concat(T.lure ? [['lure', 'lit: draws deep animals and it', 'bad']] : []));
+      });
+      html += '</div>';
     } else if (tab === 'sub') {
       if (sub.imploded) {
         html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['upgrades', 'all kept', 'good']]);
@@ -615,14 +629,6 @@ export class UI {
         if (fitted.length) html += `<p class="shop-note">Fitted: ${fitted.join(', ')}.</p>`;
       }
     } else if (tab === 'supplies') {
-      const tr = P.traps || {};
-      TRAP_ORDER.forEach((k, i) => {
-        const T = TRAPS[k], have = tr[k] || 0, full = have >= T.max;
-        html += card(T.name, T.desc, `you own ${have} / ${T.max}`, full ? null : T.price, 'buy', 'trap:' + k, full ? 'Full' : 'Buy', '', icon('trap', i), [
-          ['depth', `down to ${T.maxDepth.toLocaleString()} m`, 'press'], ['catch', `${T.count[0]}–${T.count[1]} fish in 5 min`], ['fish up to', `${T.maxLen} m long`],
-          ['holds', `${T.holds}`], ['line', { string: 'thin string', line: 'stout line', rope: 'thick rope' }[T.line]], ['funnels', `${T.funnels}`],
-          ['hauled', T.winch ? "by the boat's winch" : 'by hand', T.winch ? 'bad' : 'good']].concat(T.lure ? [['lure', 'lit: draws deep animals and it', 'bad']] : []));
-      });
       for (const [k, it] of Object.entries(SUPPLIES)) {
         if (it.needs && !owns(P, it.needs)) continue; // tags only once he has the tag gun
         const mx = supplyMax(P, k), have = g.items[k] || 0, full = have >= mx;
@@ -737,6 +743,17 @@ export class UI {
       : `<span class="sep">${ch}</span>`).join('');
   }
 
+  // The one track the shop recommends right now: a deeper sub when his dives reach the sub's rating,
+  // else air or the bag while they are still basic, else the cheapest step he can afford
+  recommend(P, g) {
+    const open = (t) => TRACKS[t] && lv(P, t) < TRACKS[t].max && (!TRACKS[t].needs || owns(P, TRACKS[t].needs));
+    if (open('tHull') && !g.sub.imploded && (P.deepest || 0) >= g.sub.rated * 0.85) return 'tHull';
+    if (open('tTank') && lv(P, 'tTank') < 2) return 'tTank';
+    if (open('tBag') && lv(P, 'tBag') < 1 && (P.runs || 0) >= 2) return 'tBag';
+    let best = null, bc = Infinity;
+    for (const t of Object.keys(TRACKS)) { if (!open(t)) continue; const c = upgradeCost(P, t); if (c <= P.cash && c < bc) { bc = c; best = t; } }
+    return best;
+  }
   // Upgrade rows, grouped: each stat on one line with what it is now, what the next level makes it,
   // its level and the price. Gear not yet owned shows as a card to buy it first.
   upgradeGroups(P, groups, icon, can) {
@@ -752,15 +769,25 @@ export class UI {
           <button data-act="buy" data-arg="gear:${gk}" ${can(G.price) ? '' : 'disabled'}>Buy<span>${money(G.price)}</span></button></div></div>`;
         continue;
       }
-      for (const [id, U] of Object.entries(UPGRADES)) {
-        if (U.group !== grp) continue;
-        const l = lv(P, id), maxed = l >= U.max, cost = upgradeCost(P, id);
-        let now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statAt(id, l + 1));
-        if (id === 'depth') { now = `${SUBS[l].name}, ${now}`; if (!maxed) next = `${SUBS[l + 1].name}, ${next} · air ${SUBS[l + 1].o2} s`; }
-        html += this.row('up:' + id, U.name, UPGRADE_LINE[id] || '',
-          `<span class="lamps">${Array.from({ length: 10 }, (_, k) => `<i class="${k < Math.round(l / U.max * 10) ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : `lv ${l}`}`,
-          `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < upgradeCoins(P, id) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && upgradeCoins(P, id) ? ` <em class="pluscoin">+${COIN}${upgradeCoins(P, id)}</em>` : ''}</button>`,
-          '', UPGRADE_DESC[id] || '', maxed ? [['now', now], ['', 'the most it can be', 'sheet']] : [['now', now], ['next', next, 'good'], ['level', `${l} of ${U.max}`, 'sheet']]);
+      // one row per track: its level, the price of the next step, and in its sheet every stat it moves
+      for (const [id, T] of Object.entries(TRACKS)) {
+        if (T.group !== grp) continue;
+        const l = lv(P, id), maxed = l >= T.max, cost = upgradeCost(P, id), coins = upgradeCoins(P, id);
+        const specs = [];
+        if (id === 'tHull') {
+          const d = lv(P, 'depth');
+          specs.push(['now', `${SUBS[d].name}, ${SUBS[d].rated} m`]);
+          if (!maxed) specs.push(['next', `${SUBS[d + 1].name}, ${SUBS[d + 1].rated} m · cabin air ${SUBS[d + 1].o2} s`, 'good']);
+        } else for (const sid of T.stats) {
+          const sl = lv(P, sid), U = UPGRADES[sid], nl = Math.min(U.max, Math.round((l + 1) / T.max * U.max));
+          const now = fmtStat(sid, statAt(sid, sl)), next = fmtStat(sid, statAt(sid, nl));
+          specs.push([U.name.toLowerCase(), maxed || nl === sl ? now : `${now} → ${next}`, maxed || nl === sl ? '' : 'good']);
+        }
+        specs.push(['level', maxed ? 'the most it can be' : `${l} of ${T.max}`, 'sheet']);
+        html += this.row('up:' + id, T.name + (id === this.rec ? ' <em class="rec-badge">Recommended</em>' : ''), T.line || '',
+          `<span class="lamps">${Array.from({ length: T.max }, (_, k) => `<i class="${k < l ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : ''}`,
+          `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < coins ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && coins ? ` <em class="pluscoin">+${COIN}${coins}</em>` : ''}</button>`,
+          '', '', specs);
       }
       if (gk === 'camera' && !owns(P, 'lowlight')) html += this.row('gear:lowlight', GEAR.lowlight.name, GEAR.lowlight.line, '', `<button data-act="buy" data-arg="gear:lowlight" ${can(GEAR.lowlight.price) ? '' : 'disabled'}>${money(GEAR.lowlight.price)}</button>`, '', GEAR.lowlight.desc, [['', 'no flash', 'good']]);
       html += '</div>';

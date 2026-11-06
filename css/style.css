@@ -867,3 +867,8 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #pause .p-links .link { width: auto; padding: 2px 0; border: 0; border-radius: 0; background: none; box-shadow: none; font: 11px var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; color: var(--paint-dim); border-bottom: 1px solid rgba(221,214,188,0.25); }
 #pause .p-links .link:hover { color: #f0a080; border-bottom-color: #f0a080; filter: none; }
 #pause .p-gear { background: radial-gradient(ellipse at 50% 30%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%); box-shadow: 0 2px 0 #4a3510, 0 3px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,250,220,0.75); border-radius: 50%; }
+
+/* the shop's one recommendation */
+.rec-badge { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; vertical-align: middle; font: normal 600 9px var(--stencil); letter-spacing: 0.14em; text-transform: uppercase; color: #2e220a; background: radial-gradient(ellipse at 50% 30%, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
+.shop-tabs button.rec { position: relative; }
+.shop-tabs button.rec::after { content: ''; position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 5px rgba(255,182,72,0.9); }

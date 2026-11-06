@@ -267,7 +267,7 @@ export const loadAir = (kg) => 1 + Math.max(0, kg - 10) / 80;
 export { conditionName };
 
 // ---------------- the sub's net ----------------
-// A trawl net in a canister under the bow (an add-on). N lets it out once a dive: it opens ahead of
+// A trawl net in a canister under the bow (built into every sub; one carried, $300 a net). N lets it out: it opens ahead of
 // the sub and sweeps a long box of water for a few seconds, then closes on whatever it took (up to
 // ten animals, sharks to 2.5 m, legends too). The haul lands in a heap on the tank-room floor, to be
 // sorted into the tank and the chambers. It is loud: below 200 m it draws the deep's attention.
@@ -278,11 +278,10 @@ export function netBox(g) {
   return { x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: n.y - 4.5 * k - 0.5, y1: n.y + 4.5 * k + 0.5 };
 }
 export function fireSubNet(g) {
-  if (!(g.addons || {}).subNet) return 'The sub has no net (the boat sells one)';
-  if (g.subNetUsed) return 'The net is already used this dive: the yard repacks it at the boat';
+  if (!(g.items.trawl > 0)) return 'No trawl net aboard (the boat sells them, $300)';
   if (g.sub.docked || !g.earl.inSub) return 'Only from the sub, under way';
   if (g.sub.y < 4) return 'Too shallow to trawl';
-  g.subNetUsed = true;
+  g.items.trawl--;
   g.subNet = { t: 0, x: g.sub.x, y: g.sub.y, dir: g.sub.facing || 1, got: [] };
   if (g.sub.y > 200) g.entity.disturb(g, 0.35);
   return null;

@@ -20,7 +20,7 @@ import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP
 import { SUITS, suitOf } from './economy.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
-import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
+import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
@@ -87,7 +87,7 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 1, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, tag: P.items ? P.items.tag || 0 : 0, tagAdv: P.items ? P.items.tagAdv || 0 : 0 }, inv: {}, // a new diver starts with one backup air tank
+    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 1, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, tag: P.items ? P.items.tag || 0 : 0, tagAdv: P.items ? P.items.tagAdv || 0 : 0, trawl: P.items && P.items.trawl !== undefined ? P.items.trawl : 1 }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
@@ -429,7 +429,7 @@ function spawnReleased(r) {
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subLost = !!g.sub.imploded;
-  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, tag: g.items.tag, tagAdv: g.items.tagAdv };
+  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, trawl: g.items.trawl, tag: g.items.tag, tagAdv: g.items.tagAdv };
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
 }
@@ -438,24 +438,25 @@ function buy(kind) {
   const P = profile, sub = g.sub, e = g.earl;
   let ok = false;
   if (kind.startsWith('up:')) {
-    // one more level of a stat
-    const id = kind.slice(3), U = UPGRADES[id];
-    const cc = U ? upgradeCoins(P, id) : 0;
-    if (U && (!U.needs || owns(P, U.needs)) && lv(P, id) < U.max && (P.coins || 0) >= cc && spend(P, upgradeCost(P, id))) {
+    // one more step on a track: every stat it covers improves together
+    const id = kind.slice(3), T = TRACKS[id];
+    const cc = T ? upgradeCoins(P, id) : 0;
+    if (T && (!T.needs || owns(P, T.needs)) && lv(P, id) < T.max && (P.coins || 0) >= cc && spend(P, upgradeCost(P, id))) {
       P.coins = (P.coins || 0) - cc;
       const mk0 = markOf(statValue(P, 'depth'));
-      P.lv = Object.assign({}, P.lv, { [id]: lv(P, id) + 1 }); ok = true;
+      tlv(P, id); P.tlv = Object.assign({}, P.tlv, { [id]: lv(P, id) + 1 }); ok = true;
       const mk1 = markOf(statValue(P, 'depth'));
       if (mk1 > mk0) {
         hud.toast(`A new submersible: ${SUBS[lv(P, 'depth')].name}, rated ${SUBS[lv(P, 'depth')].rated.toLocaleString()} m`, 'big');
         if (SUB_MARKS[mk1].named && !P.subNamed) ui.askSubName(P.subName || 'EARL', (v) => { P.subName = v; P.subNamed = true; saveProfile(P); ui.renderWorkshop(); hud.toast(`${v} is painted on her hull`); }, 'She is the first hull that is truly yours. The yard will paint her name on, and on every hull after her.');
       }
-      if (id === 'air') { const was = e.o2Max; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + (e.o2Max - was)); }
-      if (id === 'swim') e.finSpeed = statValue(P, 'swim');
-      if (id === 'sprint') e.sprintMul = statValue(P, 'sprint');
-      if (id === 'depth' || id === 'subSpeed' || id === 'ballast') applySub(sub, P);
-      if (id === 'camShots') g.shots = gear(P, 'cam').shots;
-      hud.toast(`${U.name}: ${fmtStat(id, statValue(P, id))}`);
+      const has = (sid) => T.stats.includes(sid);
+      if (has('air')) { const was = e.o2Max; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + (e.o2Max - was)); }
+      if (has('swim')) e.finSpeed = statValue(P, 'swim');
+      if (has('sprint')) e.sprintMul = statValue(P, 'sprint');
+      if (has('depth') || has('subSpeed') || has('ballast')) applySub(sub, P);
+      if (has('camShots')) g.shots = gear(P, 'cam').shots;
+      if (!has('depth')) hud.toast(`${T.name}: level ${lv(P, id)} of ${T.max}`);
     }
   } else if (kind.startsWith('suit:')) {
     // buy it (if new) and put it on
@@ -1277,7 +1278,6 @@ function update(dt) {
     }
     // the sub's net: out with N (once a dive), in a few seconds later with whatever it swept up
     if (pressed.has('n') && e.inSub) { const why = fireSubNet(g); if (why) hud.toast(why, 'warn'); else { hud.toast('The net pays out ahead of the bow…'); audio.ready && audio.whoosh(); } }
-    if (g.sub.docked) g.subNetUsed = false; // the yard repacks it at the boat
     const haul = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
     if (haul) {
       if (!haul.length) hud.toast('The net comes in empty');
