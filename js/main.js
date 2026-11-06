@@ -136,6 +136,7 @@ const ui = new UI({
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
   onSellAll: () => sellAll(),
+  onSellSome: (keys) => sellSome(keys),
   onGallery: (act, key, v) => galleryAction(act, key, v),
   onHints: () => { hud.hints = !hud.hints; },
   getHints: () => hud.hints,
@@ -262,6 +263,21 @@ function sellAll() {
   saveProfile(profile);
   audio.ready && audio.sale();
   return { lines, total };
+}
+// sell only what is in the basket (2.5.2): the rest is set aside, everything left is sold as usual, and
+// what was set aside goes back. Keys as the sell screen makes them: sp:id:variant, tag:key, photo:key, good:k
+function sellSome(keys) {
+  const sel = new Set(keys); if (!sel.size) return null;
+  const ak = (s) => 'sp:' + s.id + ':' + (s.variant || '');
+  const keep = { bag: g.bag.filter((s) => !sel.has(ak(s))), sub: g.subTank.filter((s) => !sel.has(ak(s))), tags: g.tags.filter((t) => !sel.has('tag:' + t.key)), photos: g.photos.filter((p) => !sel.has('photo:' + p.key)), inv: {} };
+  g.bag = g.bag.filter((s) => sel.has(ak(s))); g.subTank = g.subTank.filter((s) => sel.has(ak(s)));
+  g.tags = g.tags.filter((t) => sel.has('tag:' + t.key)); g.photos = g.photos.filter((p) => sel.has('photo:' + p.key));
+  for (const k of Object.keys(g.inv)) if (GOODS[k] && !sel.has('good:' + k) && g.inv[k]) { keep.inv[k] = g.inv[k]; g.inv[k] = 0; }
+  const r = sellAll();
+  g.bag = g.bag.concat(keep.bag); g.subTank = g.subTank.concat(keep.sub); g.tags = g.tags.concat(keep.tags); g.photos = g.photos.concat(keep.photos);
+  for (const [k, n] of Object.entries(keep.inv)) g.inv[k] = (g.inv[k] || 0) + n;
+  saveProfile(profile);
+  return r;
 }
 function sellItem(kind) {
   if (!g.items[kind]) return null;

@@ -632,3 +632,9 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   and leads a little the way she is going.
 - The trawl's work lamp: low on the sub's stern, aimed down the cables at the net's mouth; it shines only
   while the net is out and the sub's lights are on (L). Drawn in the light map, with haze and motes.
+
+## 2.5.3 — the sell screen
+- "Sell all" at the top. Below, two compartments: Your catch (each kind one row, ×n, its value; "Keep" puts
+  it in the gallery) and To sell. Click a row to move it across; "Sell these" sells only the basket
+  (`sellSome` in main.js sets the rest aside, runs `sellAll`, and puts it back). Rows use `data-sell`, not
+  `data-act`, so they are not drawn as the shop's tag buttons.

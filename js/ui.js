@@ -107,7 +107,7 @@ export class UI {
     }));
     // one delegated handler for every button in the shop
     $('shop-body').addEventListener('click', (ev) => {
-      const b = ev.target.closest('button[data-act]');
+      const b = ev.target.closest('button[data-act], button[data-sell]');
       if (!b) {
         const i = ev.target.closest('button.info'); if (i) { this.toggleInfo(i.closest('[data-row]')); return; }
         // anywhere else on a row: show it in the showcase window
@@ -116,7 +116,7 @@ export class UI {
         return;
       }
       if (b.disabled) return;
-      const act = b.dataset.act, arg = b.dataset.arg;
+      const act = b.dataset.act || b.dataset.sell, arg = b.dataset.arg;
       if (act === 'buy' && arg.startsWith('subnet:')) {
         const g0 = h.getGame(), k = arg.slice(7), cur = g0 && g0.items.net;
         if (cur && cur !== k) { this.confirm('Replace the net?', `The hatch holds one net. Buying the ${NETS_SUB[k].name.toLowerCase()} replaces your ${NETS_SUB[cur].name.toLowerCase()}, which is lost.`, 'Replace it', 'Keep mine', () => { h.onBuy(arg); this.renderWorkshop(); }); return; }
@@ -126,6 +126,9 @@ export class UI {
       else if (act === 'take') { h.onTakeContract(arg); }
       else if (act === 'refresh') { h.onRefreshContracts(); }
       else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
+      else if (act === 'tobasket') { (this.sellPick || (this.sellPick = new Set())).add(arg); }
+      else if (act === 'frombasket') { this.sellPick && this.sellPick.delete(arg); }
+      else if (act === 'sellpick') { const sale = h.onSellSome([...(this.sellPick || [])]); this.sellPick = new Set(); if (sale) this.showLedger(sale); }
       else if (act === 'display') h.onDisplay(arg);
       else if (act === 'gallery') { this.toggleGallery(true); return; }
       else if (act === 'sellitem') { const sale = h.onSellItem(arg); if (sale) this.showLedger(sale); }
@@ -604,55 +607,36 @@ export class UI {
     const tab = this.shopTab;
     const icon = (k, t) => { const key = k + t; if (!this.toolImgs) this.toolImgs = new Map(); if (!this.toolImgs.has(key)) this.toolImgs.set(key, toolIcon(k, t, 240, 120).toDataURL()); return this.toolImgs.get(key); };
     if (tab === 'sell') {
-      const rows = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]);
+      // (2.5.2) two compartments: what he brought up, and a basket of what to sell. Click a thing to move
+      // it across; "Sell these" sells the basket, "Sell all" everything. Each kind is one row (×n).
       const atBoat = !sub.imploded && Math.hypot(sub.x - (BOAT.x + 8.5), sub.y - 2.6) < 20;
-      const specs = g.bag.concat(atBoat ? g.subTank : []);
-      if (!rows.length && !specs.length && !g.tags.length && !g.photos.length) {
-        html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
-      } else {
-        let total = 0;
-        let lines = rows.map(([k, n]) => {
-          const base = GOODS[k].price, now = priceOf(P, k, base);
-          // what n of them fetch, each a little less than the last
-          let sum = 0, glut = P.market[k] || 0;
-          for (let i = 0; i < n; i++) { sum += base * 1; glut += 0.15; }
-          total += sum;
-          const flooded = '';
-          return `<tr><td>${GOODS[k].name}</td><td>${n}</td><td>${money(now)} ${flooded}</td><td>${money(sum)}</td></tr>`;
-        }).join('');
-        // live animals, grouped by species
-        const groups = new Map();
-        for (const sp of specs) { const k = sp.id + ':' + (sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
-        let specRows = '';
-        for (const [gk, list] of groups) {
-          const [id, v] = gk.split(':');
-          const mkey = 'sp' + id + (v ? ':' + v : '');
-          const each = list.reduce((a, x) => a + specimenValue(x), 0) / list.length;
-          let sum = 0, glut = P.market[mkey] || 0;
-          for (let i = 0; i < list.length; i++) { sum += each * 1; glut += 0.15; }
-          total += sum;
-          const worst = list.reduce((a, x) => Math.min(a, x.cond), 1);
-          const cond = `<em class="cond c-${conditionName(worst)}">${conditionName(worst)}</em>`;
-          const best = list.reduce((a, x) => (x.cond > a.cond ? x : a), list[0]);
-          const why = displayRefusal(P, best);
-          const disp = why ? (why === 'the gallery is full' ? `<em class="disp-no">${why}</em>` : '') : `<button class="disp" data-act="display" data-arg="${gk.replace(/:$/, '')}">Keep in the gallery</button>`;
-          specRows += `<tr><td>${this.mini(SPECIES_BY_ID[id])}${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${badge(SPECIES_BY_ID[id])} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr><tr class="sub"><td colspan="4">${disp}</td></tr>`;
-        }
-        // survey work: tags (each species' tags pay less each time) and first photographs
-        const tg = new Map();
-        for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
-        for (const [k, list] of tg) {
-          let sum = 0, glut = P.market[k] || 0;
-          for (let i = 0; i < list.length; i++) { sum += list[0].value * 1; glut += 0.15; }
-          total += sum;
-          specRows += `<tr><td>Tag data: ${list[0].name}</td><td>${list.length}</td><td>${money(priceOf(P, k, list[0].value))}</td><td>${money(sum)}</td></tr>`;
-        }
-        for (const ph of g.photos) { total += ph.value; specRows += `<tr><td>Photograph: ${ph.name}</td><td>1</td><td>${money(ph.value)}</td><td>${money(ph.value)}</td></tr>`; }
-        lines = specRows + lines;
-        if (!atBoat && g.subTank.length) html += `<p class="shop-note">${g.subTank.length} animal${g.subTank.length > 1 ? 's' : ''} in the sub's tank. Bring the sub to the boat to sell them.</p>`;
-        if (rows.length || specs.length || g.tags.length || g.photos.length) html += `<table class="manifest"><thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Total</th></tr></thead><tbody>${lines}</tbody></table>
-          <button class="primary" data-act="sellall">Load the basket and sell<span>${money(total)}</span></button>`;
-        // (lures and necklaces are not sold: he keeps them)
+      const pick = this.sellPick || (this.sellPick = new Set());
+      const items = []; // { key, html, value, keep }
+      const groups = new Map();
+      for (const sp of g.bag.concat(atBoat ? g.subTank : [])) { const k = sp.id + ':' + (sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
+      for (const [gk, list] of groups) {
+        const [id, v] = gk.split(':'), spc = SPECIES_BY_ID[id];
+        const value = list.reduce((a, x) => a + specimenValue(x), 0) * statValue(P, 'payFish');
+        const worst = list.reduce((a, x) => Math.min(a, x.cond), 1), cn = conditionName(worst);
+        const best = list.reduce((a, x) => (x.cond > a.cond ? x : a), list[0]);
+        const keep = displayRefusal(P, best) ? '' : `<button class="sell-keep" data-sell="display" data-arg="${gk.replace(/:$/, '')}" title="Keep it in the gallery instead of selling it">Keep</button>`;
+        items.push({ key: 'sp:' + gk, value, keep, html: `${this.mini(spc)}<span class="sell-name">${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${spc.name}${worst < 0.7 ? ` <em class="cond c-${cn}">${cn}</em>` : ''}</span>` + (list.length > 1 ? `<span class="sell-n">×${list.length}</span>` : '') });
+      }
+      const tg = new Map();
+      for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
+      for (const [k, list] of tg) items.push({ key: 'tag:' + k, value: list[0].value * list.length * statValue(P, 'payFish'), html: `<span class="sell-name">Tag data: ${list[0].name}</span>` + (list.length > 1 ? `<span class="sell-n">×${list.length}</span>` : '') });
+      for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, value: ph.value * statValue(P, 'payFish'), html: `<span class="sell-name">Photograph: ${ph.name}</span>` });
+      for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k] && k !== 'coral') items.push({ key: 'good:' + k, value: GOODS[k].price * n * statValue(P, 'paySalvage'), html: `<span class="sell-name">${GOODS[k].name}</span>` + (n > 1 ? `<span class="sell-n">×${n}</span>` : '') });
+      for (const k of [...pick]) if (!items.some((it) => it.key === k)) pick.delete(k);
+      if (!items.length) html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
+      else {
+        const total = items.reduce((a, it) => a + it.value, 0), inB = items.filter((it) => pick.has(it.key)), bTotal = inB.reduce((a, it) => a + it.value, 0);
+        const row = (it, act) => `<div class="sell-row"><button class="sell-item" data-sell="${act}" data-arg="${it.key}">${it.html}<b>${money(it.value)}</b></button>${act === 'tobasket' ? it.keep || '' : ''}</div>`;
+        html += `<button class="primary" data-act="sellall">Sell all<span>${money(total)}</span></button>`;
+        html += `<div class="sell-cols"><div class="sell-col"><h4>Your catch</h4>${items.filter((it) => !pick.has(it.key)).map((it) => row(it, 'tobasket')).join('') || '<p class="shop-empty">All in the basket.</p>'}</div>`;
+        html += `<div class="sell-col basket"><h4>To sell</h4>${inB.map((it) => row(it, 'frombasket')).join('') || '<p class="shop-empty">Click something to put it here.</p>'}`;
+        html += `<button class="sell-these" data-act="sellpick" ${inB.length ? '' : 'disabled'}>Sell these<span>${money(bTotal)}</span></button></div></div>`;
+        if (!atBoat && g.subTank.length) html += `<p class="shop-note">${g.subTank.length} animal${g.subTank.length > 1 ? 's' : ''} in the sub's tank: bring the sub alongside to sell them.</p>`;
       }
       // the price board on the Margaret: chalked up after every sale, the newest first
       const board = P.board || [];

@@ -996,3 +996,20 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .shop:not(.cave) .nameplate .shop-sub { color: rgba(30,20,8,0.85) !important; text-shadow: 0 1px 0 rgba(255,232,170,0.3); }
 /* the radio's free refresh (2.4.3): a quiet line under the contracts */
 .radio-refresh { display: flex; align-items: center; gap: 12px; margin: 4px 0 6px; font: 11px var(--mono); color: var(--paint-dim, rgba(220,230,228,0.55)); }
+/* the sell screen (2.5.2): what he brought up, and a basket of what to sell */
+.sell-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+.sell-col { min-width: 0; padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.18); box-shadow: inset 0 1px 3px rgba(0,0,0,0.4); }
+.sell-col.basket { background: rgba(60,48,20,0.25); }
+.sell-col h4 { margin: 0 0 8px; font: 11px var(--stencil, var(--mono)); letter-spacing: 0.14em; text-transform: uppercase; color: var(--paint-dim, rgba(220,230,228,0.55)); font-weight: normal; }
+.sell-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.sell-item { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 5px 8px; text-align: left; background: rgba(255,255,255,0.035); border: 1px solid rgba(160,200,200,0.1); border-radius: 3px; color: var(--paint, #e8e4d4); font: 15px var(--serif); cursor: pointer; }
+.sell-item:hover { background: rgba(255,255,255,0.08); border-color: rgba(220,200,140,0.35); }
+.sell-item img, .sell-item canvas { width: 46px; height: 26px; object-fit: contain; flex: none; }
+.sell-item .sell-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sell-item .sell-n { font: 12px var(--mono); opacity: 0.7; }
+.sell-item b { font: 500 13px var(--mono); color: #d8e8c8; }
+.sell-keep { flex: none; font: italic 13px var(--serif); padding: 4px 6px; background: none; border: 0; color: var(--paint-dim, rgba(220,230,228,0.6)); text-decoration: underline; cursor: pointer; }
+.sell-keep:hover { color: var(--paint, #e8e4d4); }
+.sell-these { width: 100%; margin-top: 8px; display: flex; justify-content: space-between; }
+.sell-these[disabled] { opacity: 0.4; }
+@media (max-width: 640px) { .sell-cols { grid-template-columns: 1fr; } }
