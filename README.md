@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.4.2 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.4.3 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -33,9 +33,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | B | Inventory: cash, supplies, finds, the catch bag, what is in the sub, your gear |
 | V | At the boat: take the helm and drive the Margaret (A / D) |
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
-| F by her side | Climb aboard the Margaret (a dive starts on her deck); on deck, A / D walk and F uses a station: the sub cradle (upgrades), the helm, the cabin door, the radio (take contracts), the gallery hatch, the dive locker. Walk off either end of the deck to jump in |
+| F by her side | Climb aboard the Margaret (a dive starts on her deck); on deck, A / D walk and F uses a station: the sub cradle (upgrades), the helm, the cabin door, the radio (accept contracts; new ones free every 3 hours), the gallery hatch, the dive locker. Walk off either end of the deck to jump in |
 | F (in the cabin) | Use the computer: the catalog. Esc or the door goes back out on deck |
-| U (in the water by the boat) | Sell the catch, without going aboard. Contracts you took at the radio are paid here when the goods are aboard |
+| U (in the water by the boat) | Sell the catch, without going aboard. Contracts you accepted at the radio are paid here when the goods are aboard |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause (save and quit to the title from there) |
 | ⚙ | Settings and controls (on the title screen, in the journal and the pause menu): target brackets, catch tags, reduce flashing, hints, sound, graphics (Auto / Fast) |

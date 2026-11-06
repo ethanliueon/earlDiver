@@ -23,7 +23,7 @@ import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
 import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
-import { RADIO, ready as contractReady } from './contracts.js';
+import { refreshIn, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 import { VERSION } from './version.js';
@@ -124,6 +124,7 @@ export class UI {
       }
       else if (act === 'buy') h.onBuy(arg);
       else if (act === 'take') { h.onTakeContract(arg); }
+      else if (act === 'refresh') { h.onRefreshContracts(); }
       else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
       else if (act === 'display') h.onDisplay(arg);
       else if (act === 'gallery') { this.toggleGallery(true); return; }
@@ -698,10 +699,11 @@ export class UI {
       if (!g.contracts.length) html += '<p class="shop-empty">Static. Nobody is calling.</p>';
       for (const c of g.contracts) {
         const r = contractReady(g, c, lists);
-        html += `<div class="contract${r && c.taken ? ' ready' : ''}${c.taken ? ' taken' : ''}">${c.id ? this.mini(SPECIES_BY_ID[c.id]) : ''}<div><span>${c.who} wants</span><b>${c.text}</b></div><div class="pay">${money(c.pay)}${c.taken ? (r ? '<em>aboard: paid when you sell</em>' : '<em>taken</em>') : `<button data-act="take" data-arg="${c.key}">Take it</button>`}</div></div>`;
+        html += `<div class="contract${r && c.taken ? ' ready' : ''}${c.taken ? ' taken' : ''}">${c.id ? this.mini(SPECIES_BY_ID[c.id]) : ''}<div><span>${c.who} wants</span><b>${c.text}</b></div><div class="pay">${money(c.pay)}${c.taken ? (r ? '<em>aboard: paid when you sell</em>' : '<em>accepted</em>') : `<button data-act="take" data-arg="${c.key}">Accept contract</button>`}</div></div>`;
       }
-      if (!P.radio) html += card(RADIO.name, RADIO.desc, '', RADIO.price, 'buy', 'radio', 'Buy', '', '', [['contracts', '5 at a time'], ['paid', 'when you sell', 'good']]);
-      html += '<p class="shop-note">Take a job and it shows on the right while you dive. It is paid when you sell with the goods aboard.</p>';
+      const wait = refreshIn(P), left = Math.ceil(wait / 60000), hrs = Math.floor(left / 60), mins = left % 60;
+      html += `<div class="radio-refresh">${wait ? `<span>New contracts in ${hrs ? hrs + ' h' : ''}${hrs && mins ? ' ' : ''}${mins || !hrs ? mins + ' min' : ''}</span>` : '<button data-act="refresh" data-arg="">New contracts</button><span>free every 3 hours; the ones you accepted stay</span>'}</div>`;
+      html += '<p class="shop-note">Accept a contract and it shows on the right while you dive. It is paid when you sell with the goods aboard.</p>';
     } else if (tab === 'aquarium') {
       const A = aquariumOf(P), C = completion(P), list = Object.entries(A.display), slots = gallerySlots(P);
       html += `<div class="aq-head"><div><b>${list.length}<small>/${slots}</small></b><span>in the gallery</span></div><div><b>${C.species}</b><span>of ${C.of} species kept</span></div><div><b>${visitors(P)}</b><span>visitors a day</span></div><div><b>${list.length ? money(dailyIncome(P), false) : '—'}</b><span>a day in tickets</span></div></div>`;

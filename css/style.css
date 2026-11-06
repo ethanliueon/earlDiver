@@ -994,3 +994,5 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 }
 .shop:not(.cave) .nameplate h2, #title .t-plate h1 { color: #24180a !important; text-shadow: 0 1px 0 rgba(255,232,170,0.45), 0 -1px 0 rgba(0,0,0,0.35) !important; }
 .shop:not(.cave) .nameplate .shop-sub { color: rgba(30,20,8,0.85) !important; text-shadow: 0 1px 0 rgba(255,232,170,0.3); }
+/* the radio's free refresh (2.4.3): a quiet line under the contracts */
+.radio-refresh { display: flex; align-items: center; gap: 12px; margin: 4px 0 6px; font: 11px var(--mono); color: var(--paint-dim, rgba(220,230,228,0.55)); }

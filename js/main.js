@@ -14,7 +14,7 @@ import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from
 import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
-import { fillBoard, fulfil, RADIO, ready as contractReady } from './contracts.js';
+import { fillBoard, fulfil, refreshIn, ready as contractReady } from './contracts.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
@@ -142,6 +142,7 @@ const ui = new UI({
   onMute: () => { audio.setMuted(!audio.muted); },
   getMuted: () => !!audio.muted,
   payMul: () => statValue(profile, 'payFish'),
+  onRefreshContracts: () => { if (refreshIn(profile) > 0) return false; g.contracts = g.contracts.filter((q) => q.taken); fillBoard(profile, g.contracts); profile.refreshAt = Date.now(); saveProfile(profile); audio.ready && audio.click(); return true; },
   onTakeContract: (key) => { const c = g.contracts.find((q) => q.key === key); if (!c || c.taken) return false; c.taken = true; profile.taken = g.contracts.filter((q) => q.taken); saveProfile(profile); audio.ready && audio.click(); return true; },
   onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on her hull`); },
   onSellItem: (k) => sellItem(k),
@@ -495,9 +496,6 @@ function buy(kind) {
   } else if (kind.startsWith('subnet:') && NETS_SUB[kind.slice(7)] && g.items.net !== kind.slice(7) && spend(P, NETS_SUB[kind.slice(7)].price)) {
     g.items.net = kind.slice(7); ok = true;
     hud.toast(`${NETS_SUB[g.items.net].name} in the hatch  [N in the sub]`, 'big');
-  } else if (kind === 'radio' && !P.radio && spend(P, RADIO.price)) {
-    P.radio = true; fillBoard(P, g.contracts); ok = true;
-    hud.toast('A better radio: five contracts at a time', 'big');
   } else if (kind === 'gallery') {
     const lvG = P.galleryLv || 0;
     if (lvG < GALLERY_STEPS.length && spend(P, GALLERY_STEPS[lvG])) { P.galleryLv = lvG + 1; ok = true; hud.toast(`The gallery: room for ${gallerySlots(P)}`, 'big'); audio.cue && audio.cue('wing'); }

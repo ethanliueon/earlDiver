@@ -592,3 +592,10 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   from this environment, so the grain is drawn, in the boat's own colours. A light map multiplies over the
   room: the swinging lamp's pool, porthole and door daylight (by time of day), the screen and desk lamp; soft
   shadows cast away from the lamp, contact shadows, corner shading, brass glints, a kettle with a spout.
+
+## 2.4.3 — the radio: accept a contract, new contracts every three hours
+- The radio's button reads "Accept contract" (was "Take it"); an accepted one is marked "accepted".
+- The Better radio is no longer sold. Everyone has four contracts (a save that bought it keeps five).
+- "New contracts" under the list: free once every three hours of real time (`profile.refreshAt`,
+  `REFRESH_MS` in contracts.js). It replaces the contracts not accepted; the accepted ones stay. While it
+  waits, the line reads "New contracts in 2 h 14 min".

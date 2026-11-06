@@ -6,10 +6,13 @@ import { canTakeLive, liveValue, tagPrice, isTagOnly, isDead } from './specimens
 import { GOODS, gear, owns, statValue, upgradeCost, lv, UPGRADES } from './economy.js';
 import { photoValue } from './survey.js';
 
-export const RADIO = { name: 'Better radio', price: 530, desc: 'A long-range set and a tall whip antenna. Five contracts at a time instead of three.' };
+// (2.4.3: the Better radio is no longer sold. Everyone has four contracts; a save that bought it keeps five.)
+// New contracts on the radio: free, once every three hours of real time. The ones he accepted stay.
+export const REFRESH_MS = 3 * 60 * 60 * 1000;
+export const refreshIn = (P, now = Date.now()) => Math.max(0, (P.refreshAt || 0) + REFRESH_MS - now);
 const PLURAL = { clam: 'clams', mussel: 'mussels', glass: 'pieces of glass sponge', pearl: 'pearls', nodule: 'manganese nodules', bone: 'whale ribs', sapphire: 'deep sapphires' };
 const an = (name) => (/^[aeiou]/i.test(name) ? 'an ' : 'a ') + name.toLowerCase();
-export const contractSlots = (P) => (P.radio ? 5 : 3);
+export const contractSlots = (P) => (P.radio ? 5 : 4);
 
 // how deep he can work, and how big an animal he can take
 function reach(P) {
