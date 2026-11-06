@@ -287,9 +287,10 @@ export function drawMonsterLights(ctx, info, at, ppm, t, L) {
     const [ex, ey] = at(info.eye[0], info.eye[1]);
     const far = at(info.eye[0] + ppm * 0.9, info.eye[1] - ppm * 0.4);
     for (const [x, y, s] of [[far[0], far[1], 0.6], [ex, ey, 1]]) {
-      const k = L.eye * pulse * s, r = ppm * (0.9 + 3.2 * L.eye) * s;
-      ctx.globalAlpha = Math.min(1, k * 0.7); ctx.drawImage(glowSprite(EYE), x - r * 2.2, y - r * 2.2, r * 4.4, r * 4.4); // the haze round it
-      ctx.globalAlpha = Math.min(1, k); ctx.drawImage(glowSprite(EYE), x - r, y - r, r * 2, r * 2);
+      // (softer since v2: a smaller, fainter haze; the eye reads by its hot centre, not a wash of red)
+      const k = L.eye * pulse * s, r = ppm * (0.6 + 1.9 * L.eye) * s;
+      ctx.globalAlpha = Math.min(1, k * 0.3); ctx.drawImage(glowSprite(EYE), x - r * 1.7, y - r * 1.7, r * 3.4, r * 3.4); // the haze round it
+      ctx.globalAlpha = Math.min(1, k * 0.65); ctx.drawImage(glowSprite(EYE), x - r, y - r, r * 2, r * 2);
       ctx.globalAlpha = Math.min(1, k); const rc = ppm * (0.18 + 0.25 * L.eye) * s; ctx.drawImage(core, x - rc, y - rc, rc * 2, rc * 2); // the hot centre
     }
   }

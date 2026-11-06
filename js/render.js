@@ -448,19 +448,7 @@ export class Renderer {
     }
     if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
-    // brackets around what the net, slurp gun or claw will go for
-    const ctg = g.mode === 'play' ? g.catchTarget : null;
-    if (ctg) {
-      const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y;
-      const r = Math.max(ppm * 0.35, fishDrawLen(ctg.len) * ppm * 0.6), rh = Math.max(ppm * 0.28, r * 0.6), k = r * 0.3;
-      const cx = S(tx), cy = Sy(ty), a = 0.45 + 0.25 * Math.sin(t * 5);
-      ctx.strokeStyle = ctg.col || 'rgb(200,240,210)'; ctx.globalAlpha = a; ctx.lineWidth = Math.max(1, ppm * 0.03);
-      ctx.beginPath();
-      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-        ctx.moveTo(cx + sx * r, cy + sy * rh - sy * k); ctx.lineTo(cx + sx * r, cy + sy * rh); ctx.lineTo(cx + sx * r - sx * k, cy + sy * rh);
-      }
-      ctx.stroke(); ctx.globalAlpha = 1;
-    }
+    // (no brackets round what a tool will go for: the prompt names it, the scene stays clean)
     // the entity's body, lit by the same light as everything else (invisible in the dark)
     const entB = g.entity;
     this.entInfo = null;
@@ -545,7 +533,7 @@ export class Renderer {
       if (crumple >= 0) { const k = crumple * crumple; dctx.translate(0, -9 * ppm * 0.09); dctx.scale(1 - k * 0.55, 1 - k * 0.8); dctx.rotate((Math.random() - 0.5) * 0.2 * crumple); dctx.translate(0, 9 * ppm * 0.09); }
       // running lights on while the autopilot is driving it, so it can be seen coming
       // its lamps stay as he left them when he climbs out (off while docked at the boat)
-      const lights = (sub.lightsOn && !sub.docked) || (g.autopilot && g.autopilot.state !== 'idle' && !sub.docked);
+      const lights = !sub.docked && (sub.lightsOn || (g.autopilot && g.autopilot.state !== 'idle' && !g.earl.inSub)); // running lights only while she drives herself empty; with Earl aboard, L decides
       // the arm reaching: its target, in the sub's own (flipped, tilted) frame
       let armArg = null;
       const ap = armPose(g);
@@ -1058,7 +1046,9 @@ export class Renderer {
     const sh = Math.max(4, Math.min(H, Math.ceil(horizon + 4 * this.cam.ppm))); // the sky and a little below the surface (the beach)
     const cw = Math.ceil(W / 2), ch = Math.ceil(sh / 2);
     this.skyN = (this.skyN || 0) + 1;
-    if (C.width !== cw || C.height !== ch || this.skyN % 2 === 0 || !this.skyAt || Math.abs(this.skyAt.cx - this.cam.x) * this.cam.ppm > 6) {
+    // redrawn every other frame, or at once if the view has moved more than a couple of pixels
+    const moved = !this.skyAt || Math.abs(this.skyAt.cx - this.cam.x) * this.cam.ppm > 2;
+    if (C.width !== cw || C.height !== ch || this.skyN % 2 === 0 || moved) {
       if (C.width !== cw || C.height !== ch) { C.width = cw; C.height = ch; }
       const x = C.getContext('2d');
       x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, cw, ch); x.setTransform(0.5, 0, 0, 0.5, 0, 0);

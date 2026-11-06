@@ -252,3 +252,23 @@ Docs, screenshots, the handoff's checks, merge to main.
 - No other new fish beyond the lists above.
 
 # Progress log
+
+## 2.0.0-alpha.1: quick fixes (tested)
+- No target brackets round what a tool will go for (render.js); the prompt still names it.
+- Autopilot: the running lights are forced on only while the sub drives itself empty; with Earl aboard,
+  L decides (render.js `lights`).
+- The monster at 0.6x pace: one `ENTITY_PACE = 0.6` applied where it moves (entity.js), so every speed
+  (travel, burst, the approaches) scales; measured 7.2 m/s hunting. Its eye glow softer (monster_draw.js:
+  smaller, fainter haze; same hot centre).
+- Clouds: the 20-40 px jumps were the adaptive render resolution. The cloud offset was camX x screen
+  width, wrapped by a tile width that follows the screen height; 0.85 - 0.05 = 0.7999.. rounds the canvas
+  to 1023 x 575 (not 1024 x 576), a tiny aspect change that, multiplied by camX in the thousands, moved
+  the clouds ~19 px at 1280 wide (~28 at 1920) in one frame, a few times a second while moving.
+  Now the phase is a fraction of a tile in fixed reference units (clouds.js); measured worst move 2 px
+  (normal drift). Also drawn as a sub-pixel repeating pattern, and the cached sky redraws when the view
+  has moved more than 2 px (was 6). No extra per-frame cost of note.
+- Animals never inside rock (fauna.js): a step into the seabed, a wall or a boulder is undone and the
+  animal turns; if inside anyway it is lifted out; newcomers spawned in rock are lifted or dropped;
+  schools get the rock check too; hidden residents in their crevice are left alone. Measured over
+  30 s at six steep places: before, 96 samples inside the canyon wall (one 938 m deep in the seabed);
+  after, 0 of ~63,000.

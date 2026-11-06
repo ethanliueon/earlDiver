@@ -140,16 +140,24 @@ export class Clouds {
     tctx.globalCompositeOperation = 'source-over';
     tctx.clearRect(0, 0, tc.width, tc.height);
     for (const L of this.layers) {
-      const dh = skyH * L.h, dw = Math.round(dh * (L.img.width / L.img.height)); // whole pixels: tiles butt exactly
+      const dh = skyH * L.h, dw = dh * (L.img.width / L.img.height);
       const y = hz - skyH + skyH * L.y0 - dh * 0.25;
-      // drift with the wind, and slide slowly as Earl moves (far layers move least). Measured in
-      // fractions of the screen width - never the current zoom - so a change of zoom or render
-      // resolution can't make the sky jump.
-      const unit = W / 40;
-      let off = Math.round(-(t * L.speed * (W / 1280) + camX * unit * L.par) % dw);
-      if (off > 0) off -= dw;
+      // drift with the wind, and slide slowly as Earl moves (far layers move least). The position is
+      // worked out as a fraction of one tile, in fixed reference units (a 1280 x 720 screen) that
+      // never depend on the current render size, and only then turned into pixels. (It used to be
+      // camX x screen width, wrapped by a tile width that follows the screen height: camX is in the
+      // thousands, so each small change of render resolution - the adaptive quality steps it a few
+      // times a second while moving - shifted the clouds by tens of pixels at once.)
+      // Drawn as one seamless repeating pattern at the exact (sub-pixel) offset.
+      const refTile = 612 * L.h * (L.img.width / L.img.height);
+      const phase = (((t * L.speed + camX * 32 * L.par) / refTile) % 1 + 1) % 1;
+      const off = -phase * dw;
+      if (!L.pat || L.patImg !== L.img) { L.pat = tctx.createPattern(L.img, 'repeat-x'); L.patImg = L.img; }
       tctx.globalAlpha = L.alpha;
-      for (let x = off; x < W; x += dw) tctx.drawImage(L.img, x, y, dw, dh);
+      tctx.save();
+      tctx.translate(off, y); tctx.scale(dw / L.img.width, dh / L.img.height);
+      tctx.fillStyle = L.pat; tctx.fillRect(-off * L.img.width / dw - L.img.width, 0, (W + dw * 2) * L.img.width / dw, L.img.height);
+      tctx.restore();
     }
     tctx.globalAlpha = 1;
     // light the whole cloud deck at once: multiply by the colour of the light, keep the alpha

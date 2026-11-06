@@ -409,6 +409,15 @@ export class Fauna {
     this.list.push(c);
   }
 
+  // how close to the seabed an animal's middle may come: bottom walkers right down on it, swimmers
+  // a little clear by their size
+  skin(c) {
+    const h = c.sp.v.hab;
+    if (h === 'floor') return 0.05;
+    if (h === 'floor-swim' || h === 'drift-low' || h === 'demersal') return 0.15 + c.len * 0.1;
+    return 0.3 + c.len * 0.2;
+  }
+
   depthPref(sp, x, y, night) {
     const [lo, hi] = this.depthBand(sp, x, night);
     // a deep animal (one that lives from 150 m down) is never met far above its band: none of the
@@ -530,6 +539,13 @@ export class Fauna {
       // despawn far away
       const busy = c.att && c.att.s !== 'idle';
       if (!busy && (Math.abs(c.x - cam.x) > cam.w * 1.7 || Math.abs(c.y - cam.y) > cam.h * 2.4)) { this.list.splice(i, 1); continue; }
+      // a newcomer that would start inside rock is lifted clear of the seabed, or not spawned at all
+      if (!c.placed) {
+        c.placed = true;
+        const sk = this.skin(c);
+        if (c.y > W.floorAt(c.x) - sk) c.y = Math.max(0.5, W.floorAt(c.x) - sk);
+        if (!c.home && W.rockAt(c.x, c.y, c.len * 0.3)) { this.list.splice(i, 1); continue; }
+      }
       counts.set(c.gid, (counts.get(c.gid) || 0) + 1);
       const school = this.schools.get(c.gid);
       let tx, ty, sp = c.speed, ax, ay;
@@ -686,10 +702,24 @@ export class Fauna {
       const v = Math.hypot(c.vx, c.vy);
       if (v > sp) { c.vx *= sp / v; c.vy *= sp / v; }
       c.vy *= 0.97;
+      const ox = c.x, oy = c.y;
       c.x += c.vx * dt; c.y += c.vy * dt;
       const lim = surf + 0.35 + c.len * 0.15;
       if (c.y < lim) { c.y = lim; if (c.vy < 0) c.vy = 0; }
-      if (!school && W.rockAt(c.x, c.y)) { c.x -= c.vx * dt * 2; c.y -= c.vy * dt * 2; c.vx = -c.vx * 0.5; c.dir = -c.dir; }
+      // never inside rock: a step into the seabed, a wall or a boulder is undone and the animal turns
+      // away; if it is in anyway (pushed, or the floor rose under it), it is lifted straight out.
+      // (Before, only a gentle push kept fish off the floor: on a steep wall one sideways step could
+      // put a fish metres inside it.) Residents tucked into their crevice are left there while hidden.
+      if (!c.hidden) {
+        const sk = this.skin(c);
+        if (c.y > W.floorAt(c.x) - sk || W.rockAt(c.x, c.y, c.len * 0.25)) {
+          c.x = ox; c.y = oy; c.vx = -c.vx * 0.5; c.vy = Math.min(c.vy, 0) - 0.2;
+          if (!school) c.dir = -c.dir;
+          if (c.home) { c.tx = c.home.x; c.ty = c.home.y; }
+        }
+        const fl = W.floorAt(c.x);
+        if (c.y > fl - sk) { c.y = fl - sk; if (c.vy > 0) c.vy = 0; }
+      }
       if (school) {
         // all aligned with the school; when it turns, the turn sweeps from the leading edge back,
         const front = c.ox * school.prevDir; // +1 at the new front

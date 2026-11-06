@@ -11,6 +11,9 @@ import { clamp, lerp, dist, TAU } from './util.js';
 import { MONSTER_LEN, MONSTER_EYE } from './monster_draw.js';
 export const ENTITY_SPEED = 12; // m/s: its travelling speed, far faster than Earl, and than the sub
 export const ENTITY_BURST = 15; // m/s: a burst, only once it is in sight of him and only if he is getting away
+// every speed above and in the approaches below is scaled by this at the moment it moves (the owner
+// asked for it 0.6x as fast as v1.30: 7.2 m/s travelling, a 9 m/s burst)
+export const ENTITY_PACE = 0.6;
 export const LANTERN_RADIUS = 3;
 export const SAFE_DEPTH = 120;   // above this it can never reach Earl
 export const REST_CEILING = 200; // when not chasing it keeps below this
@@ -316,7 +319,7 @@ export class Entity {
     ty = Math.min(ty, floorY);
     let dx = tx - this.x, dy = ty - this.y;
     const dl = Math.hypot(dx, dy) || 1;
-    const want = Math.min(speed, dl * 1.2);
+    const want = Math.min(speed * ENTITY_PACE, dl * 1.2);
     let tvx = (dx / dl) * want, tvy = (dy / dl) * want;
     // rising into shallower water it slows down: no sharp ceiling, a growing reluctance
     if (tvy < 0 && this.y < 170) tvy *= clamp((this.y - SAFE_DEPTH) / 50, 0.12, 1);
