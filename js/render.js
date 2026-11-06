@@ -8,7 +8,7 @@ import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS } from './earl_draw.js';
 import { drawMonster, drawMonsterLights, drawMonsterShape, MONSTER_LEN } from './monster_draw.js';
 import { sleeperState } from './sleeper_draw.js';
-import { activeTool } from './capture.js';
+import { activeTool, netBox, NET_TIME } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
 import { TRAPS, lv, statValue } from './economy.js';
@@ -630,6 +630,23 @@ export class Renderer {
     // ---- Earl ----
     const e = g.earl;
     let head = null;
+    // the sub's trawl net, streaming out ahead of the bow: a mouth on two warps, a mesh bag, its catch
+    if (g.subNet) {
+      const B = netBox(g), n = g.subNet, dir = n.dir, close = clamp((n.t - (NET_TIME - 0.7)) / 0.7, 0, 1);
+      const mx = dir > 0 ? B.x1 : B.x0, bx = dir > 0 ? B.x0 : B.x1, cy = (B.y0 + B.y1) / 2, hh = (B.y1 - B.y0) / 2 * (1 - close * 0.8);
+      ctx.save(); ctx.strokeStyle = 'rgba(190,200,180,0.7)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
+      ctx.beginPath(); ctx.moveTo(S(n.x + dir * 2), Sy(n.y + 0.6)); ctx.lineTo(S(mx), Sy(cy - hh)); ctx.moveTo(S(n.x + dir * 2), Sy(n.y + 0.6)); ctx.lineTo(S(mx), Sy(cy + hh)); ctx.stroke(); // the warps
+      ctx.strokeStyle = 'rgba(220,180,90,0.9)'; ctx.lineWidth = Math.max(1.5, ppm * 0.09); ctx.beginPath(); ctx.moveTo(S(mx), Sy(cy - hh)); ctx.lineTo(S(mx), Sy(cy + hh)); ctx.stroke(); // the mouth's frame
+      const bag = new Path2D(); bag.moveTo(S(mx), Sy(cy - hh)); bag.quadraticCurveTo(S((mx + bx) / 2), Sy(cy - hh * 0.9), S(bx), Sy(cy)); bag.quadraticCurveTo(S((mx + bx) / 2), Sy(cy + hh * 0.9), S(mx), Sy(cy + hh)); bag.closePath();
+      ctx.fillStyle = 'rgba(160,175,160,0.08)'; ctx.fill(bag);
+      ctx.save(); ctx.clip(bag); ctx.strokeStyle = 'rgba(190,205,190,0.32)'; ctx.lineWidth = 1; const st = Math.max(5, ppm * 0.35);
+      const x0 = Math.min(S(mx), S(bx)), x1 = Math.max(S(mx), S(bx)), y0 = Sy(cy - hh) - 2, y1 = Sy(cy + hh) + 2, wv = Math.sin(t * 3) * st * 0.2;
+      ctx.beginPath(); for (let x = x0 - (y1 - y0); x < x1; x += st) { ctx.moveTo(x + wv, y0); ctx.lineTo(x + (y1 - y0) + wv, y1); ctx.moveTo(x + (y1 - y0) - wv, y0); ctx.lineTo(x - wv, y1); } ctx.stroke(); ctx.restore();
+      ctx.restore();
+      for (const c of n.got) { // what it holds, bunched in the cod end
+        ctx.save(); ctx.translate(S(bx - dir * 1.2 + Math.sin(c.wob || 0) * 0.6), Sy(cy + Math.cos((c.wob || 0) * 1.3) * hh * 0.4)); if (dir > 0) ctx.scale(-1, 1); ctx.globalAlpha = 0.85; drawSpecies(ctx, c.sp, Math.max(4, fishDrawLen(c.len) * ppm * 0.8), t * 6, 1, 0); ctx.restore();
+      }
+    }
     if (!e.inSub && !g.helm && g.mode !== 'menu' && !(g.kill && g.kill.swallowed)) { // at the helm he is inside the wheelhouse
       const amb = ambientAt(e.y, dayEff);
       ctx.save(); ctx.translate(S(e.x), Sy(e.y));

@@ -11,7 +11,21 @@ export const bagSlots = (g) => Math.round(statValue(g.profile, 'bag'));
 export const tankSlots = (g) => Math.round(statValue(g.profile, 'subTank'));
 // the sealed pressure tanks: separate places in the sub (specimens in them carry pressed: true)
 export const pressSlots = (g) => Math.round(statValue(g.profile, 'pressTanks'));
-export const tankUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed ? 0 : 1), 0);
+// a big animal takes more of the open tank: one place to 60 cm, two to 1.2 m, three beyond
+export const slotsOf = (s) => (s.len < 0.6 ? 1 : s.len < 1.2 ? 2 : 3);
+export const tankUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed || s.pile ? 0 : slotsOf(s)), 0);
+export const tankFits = (g, s) => tankUsed(g) + slotsOf(s) <= tankSlots(g);
+// the large pressure tank (an add-on): a long steel cylinder in the tank room, one more pressure
+// chamber that holds three animals, or one big one (1.2 m and up). Its specimens have chamber BIG.
+export const BIG = 100;
+export const hasBigTank = (g) => !!(g.addons || {}).bigTank;
+export const bigIn = (g) => g.subTank.filter((s) => s.pressed && s.chamber === BIG);
+export function bigFits(g, spec) {
+  if (!hasBigTank(g)) return false;
+  const inn = bigIn(g).filter((s) => s !== spec);
+  if (!inn.length) return true;
+  return spec.len < 1.2 && inn.length < 3 && !inn.some((s) => s.len >= 1.2);
+}
 export const pressUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed ? 1 : 0), 0);
 // put a specimen in the sub: deep animals into a pressure tank if one is free, else the open tank
 // the first free chamber, or -1
@@ -22,16 +36,21 @@ export function freeChamber(g) {
 }
 // seal a specimen into a chamber: the one asked for (if it is fitted and empty), or the first free one
 export function seal(g, spec, want = -1) {
+  if (want === BIG) {
+    if (!bigFits(g, spec)) return false;
+    spec.pressed = true; spec.chamber = BIG; delete spec.pile; spec.press = Math.max(0, g.sub.y);
+    return true;
+  }
   const used = new Set(g.subTank.filter((s) => s.pressed && s !== spec).map((s) => s.chamber));
   const c = want >= 0 ? (want < pressSlots(g) && !used.has(want) ? want : -1) : freeChamber(g);
   if (c < 0) return false;
-  spec.pressed = true; spec.chamber = c;
+  spec.pressed = true; spec.chamber = c; delete spec.pile;
   spec.press = Math.max(0, g.sub.y); // sealed at the pressure outside, then pumped up to its home
   return true;
 }
 export function stow(g, spec) {
   if ((spec.from || 0) > 100 && freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
-  if (tankUsed(g) < tankSlots(g)) { spec.pressed = false; g.subTank.push(spec); return 'tank'; }
+  if (tankFits(g, spec)) { spec.pressed = false; g.subTank.push(spec); return 'tank'; }
   if (freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
   return null;
 }
@@ -191,6 +210,7 @@ export function updateSpecimens(g, dt) {
     if (s.cond <= 0.05) return;
     const before = s.cond;
     if (inBag) s.cond -= dt * 0.0005;
+    if (s.pile) s.cond -= dt * 0.002; // heaped on the floor of the tank room, out of the water's support
     if (s.pressed) {
       if (s.press === undefined) s.press = Math.max(0, g.sub.y);
       // the chamber holds its rating either way: above the water outside, or (a shallow animal taken
@@ -246,3 +266,47 @@ export const loadSpeed = (kg) => 1 - clamp((kg - 10) / 60, 0, 0.4);
 export const loadAir = (kg) => 1 + Math.max(0, kg - 10) / 80;
 
 export { conditionName };
+
+// ---------------- the sub's net ----------------
+// A trawl net in a canister under the bow (an add-on). N lets it out once a dive: it opens ahead of
+// the sub and sweeps a long box of water for a few seconds, then closes on whatever it took (up to
+// ten animals, sharks to 2.5 m, legends too). The haul lands in a heap on the tank-room floor, to be
+// sorted into the tank and the chambers. It is loud: below 200 m it draws the deep's attention.
+export const NET_MAX = 10, NET_LEN = 2.5, NET_TIME = 3.2;
+export function netBox(g) {
+  const n = g.subNet, k = Math.min(1, n.t / 1.2); // it pays out over the first second
+  const x0 = n.x + n.dir * 4, x1 = n.x + n.dir * (4 + 20 * k);
+  return { x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: n.y - 4.5 * k - 0.5, y1: n.y + 4.5 * k + 0.5 };
+}
+export function fireSubNet(g) {
+  if (!(g.addons || {}).subNet) return 'The sub has no net (the boat sells one)';
+  if (g.subNetUsed) return 'The net is already used this dive: the yard repacks it at the boat';
+  if (g.sub.docked || !g.earl.inSub) return 'Only from the sub, under way';
+  if (g.sub.y < 4) return 'Too shallow to trawl';
+  g.subNetUsed = true;
+  g.subNet = { t: 0, x: g.sub.x, y: g.sub.y, dir: g.sub.facing || 1, got: [] };
+  if (g.sub.y > 200) g.entity.disturb(g, 0.35);
+  return null;
+}
+export function updateSubNet(g, dt, canTake) {
+  const n = g.subNet;
+  if (!n) return null;
+  n.t += dt; n.x = g.sub.x; n.y = g.sub.y; // it is towed behind the sub's bow as she moves
+  const B = netBox(g);
+  for (const c of g.fauna.list) {
+    if (n.got.length >= NET_MAX) break;
+    if (c.dead || c.hidden || c.len > NET_LEN || n.got.includes(c)) continue;
+    if (c.x < B.x0 || c.x > B.x1 || c.y < B.y0 || c.y > B.y1) continue;
+    if (!canTake(c.sp)) continue;
+    n.got.push(c); c.dead = true; c.netted = true;
+  }
+  if (n.t < NET_TIME) return null;
+  g.subNet = null;
+  const haul = n.got.map((c) => {
+    const spec = { id: c.sp.id, len: c.len, cond: clamp(0.85 + Math.random() * 0.1, 0, 1), from: Math.round(c.y), t: g.time, pile: true };
+    if (c.variant) { spec.variant = c.variant; spec.mult = variantMult(c.variant); }
+    return spec;
+  });
+  for (const s of haul) g.subTank.push(s);
+  return haul;
+}

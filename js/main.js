@@ -6,7 +6,7 @@ import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
-import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating } from './capture.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, updateSubNet, tankFits, BIG } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
@@ -354,22 +354,22 @@ function tankAction(act, where, i, to = -1) {
     if (s.pressed && s.chamber === to) return false;
     const was = s.chamber;
     if (s.pressed) { s.pressed = false; }
-    if (!seal(g, s, to)) { if (was !== undefined && where !== 'bag') { s.pressed = true; s.chamber = was; } hud.toast(to >= 0 ? 'That chamber is in use' : 'Every chamber is in use: the boat fits more', 'warn'); return false; }
+    if (!seal(g, s, to)) { if (was !== undefined && where !== 'bag') { s.pressed = true; s.chamber = was; } hud.toast(to === BIG ? 'The large tank holds three, or one big animal' : to >= 0 ? 'That chamber is in use' : 'Every chamber is in use: the boat fits more', 'warn'); return false; }
     if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
     audio.ready && audio.chamberPlop();
     const home = s.home ?? s.from ?? 0, rating = chamberRating(g);
     hud.toast(home > rating ? `${SPECIES_BY_ID[s.id].name}: sealed in, but the chamber only holds ${rating} m of its ${home} m` : `${SPECIES_BY_ID[s.id].name}: sealed in, pumping to ${home} m`);
   } else if (act === 'open') {
-    if (where === 'tank' && !s.pressed) return false;
-    if (tankUsed(g) >= tankSlots(g)) { hud.toast('The open tank is full', 'warn'); return false; }
+    if (where === 'tank' && !s.pressed && !s.pile) return false;
+    if (!tankFits(g, { ...s, pressed: false, pile: false })) { hud.toast(s.len >= 0.6 ? `The open tank has no room for a fish that size (${s.len >= 1.2 ? 3 : 2} places)` : 'The open tank is full', 'warn'); return false; }
     if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); }
-    s.pressed = false; delete s.chamber;
+    s.pressed = false; delete s.chamber; delete s.pile;
     audio.ready && audio.tankPlop();
   } else if (act === 'tobag') {
     // back into the catch bag (to carry it to the other room, or out)
     if (where === 'bag') return false;
     if (g.bag.length >= bagSlots(g)) { hud.toast('The catch bag is full', 'warn'); return false; }
-    L.splice(i, 1); s.pressed = false; delete s.chamber; g.bag.push(s);
+    L.splice(i, 1); s.pressed = false; delete s.chamber; delete s.pile; g.bag.push(s);
     audio.ready && audio.uiSoft();
   } else if (act === 'release') {
     L.splice(i, 1);
@@ -1221,6 +1221,20 @@ function update(dt) {
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       } else if (ev.type === 'missed') hud.toast(`The ${ev.name.toLowerCase()} got away`);
       else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
+    }
+    // the sub's net: out with N (once a dive), in a few seconds later with whatever it swept up
+    if (pressed.has('n') && e.inSub) { const why = fireSubNet(g); if (why) hud.toast(why, 'warn'); else { hud.toast('The net pays out ahead of the bow…'); audio.ready && audio.whoosh(); } }
+    if (g.sub.docked) g.subNetUsed = false; // the yard repacks it at the boat
+    const haul = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
+    if (haul) {
+      if (!haul.length) hud.toast('The net comes in empty');
+      else {
+        hud.toast(`The net comes in: ${haul.length} animal${haul.length > 1 ? 's' : ''} in a heap on the tank-room floor`, 'big');
+        hud.hint('T: the tank room. Drag them into the tank or the chambers before they suffer');
+        for (const s of haul) { const sp = SPECIES_BY_ID[s.id]; if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(s.from), time: g.survival }); ui.journalDirty = true; } if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); } }
+        profile.journal = [...g.journal.entries()]; saveProfile(profile);
+      }
+      audio.ready && audio.thud(0.3);
     }
     const dl = updateSpecimens(g, dt);
     for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from the pressure it lives at`, 'warn');

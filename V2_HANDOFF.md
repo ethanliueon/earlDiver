@@ -349,3 +349,11 @@ Docs, screenshots, the handoff's checks, merge to main.
 - Size audit: fishDrawLen 1.6 → 2.0 (everything drawn 1.25× larger; real lengths still set value, slots and what a tool can hold). Line-up sheets (scratchpad lineup.js) show no outliers worth a special case. Tanks already shrink a fish to fit (`tankLen` clamps to the tank).
 - Test harness note: `sub.rated` is a getter; tests must set `sub.ratedV`, and `sub.crushFor = sub.ratedV` with `crushR`, or the crush depth is re-rolled.
 - Still open from alpha.4: the shared fish drawing realism pass — moved to the final asset pass.
+
+## 2.0.0-alpha.5: the sub's net and the large pressure tank (tested)
+- Add-ons (economy.js SUB_ADDONS): `subNet` "Trawl net" $1,800 and `bigTank` "Large pressure tank" $4,500.
+- capture.js: `fireSubNet` (N, in the sub, once a dive; `g.subNetUsed` resets when docked), `updateSubNet` — the net pays out ahead of the bow over ~1 s into a 20 m × 9 m box that moves with the sub, takes up to 10 animals ≤ 2.5 m that can be taken alive or are legends, closes at 3.2 s. Below 200 m it disturbs the entity (0.35). The haul is pushed to `g.subTank` with `pile: true` (on the tank-room floor, out of water: −0.002 cond/s, not counted in tank places), and logged in the journal.
+- Big animals take more of the open tank: `slotsOf` 1 (<0.6 m) / 2 (<1.2 m) / 3; `tankUsed` sums places, `tankFits` checks.
+- Large pressure tank = chamber `BIG` (100): `bigFits` — three animals, or one ≥ 1.2 m alone. Same pressure logic as the chambers.
+- tankroom.js: the heap (`drawPile`, mesh over the animals, grabbable), the steel cylinder with a window (`drawBigTank`, its fish swim, grabbable, tags below), drop targets/highlights for both, tag line "room for N more places".
+- render.js: the trawl drawn in the water (warps, a brass mouth frame, mesh bag, the catch bunched in the cod end).
