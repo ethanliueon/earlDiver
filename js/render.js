@@ -7,6 +7,7 @@ import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, drawArm } from './earl_draw.js';
 import { drawMonster, drawMonsterLights, drawMonsterShape, MONSTER_LEN } from './monster_draw.js';
+import { sleeperState } from './sleeper_draw.js';
 import { activeTool } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
@@ -42,7 +43,7 @@ export const EARL_H = 1.0;
 const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 32;
 // seabed life that bends with the water (the rest is stone, shell or stiff)
 const SWAY = new Set(['anemone', 'plumose', 'seagrass', 'sealettuce', 'sugarkelp', 'oarweed', 'tubeworm', 'xmastree', 'basketstar', 'seasquirt']);
-const CACHE_SKIP = new Set(['jelly', 'siphonophore', 'manowar', 'oarfish', 'gulper', 'dragon', 'comb', 'eel', 'viper', 'sperm', 'orca', 'dolphin']); // what's left of a beam after a few metres of seawater
+const CACHE_SKIP = new Set(['jelly', 'siphonophore', 'manowar', 'oarfish', 'gulper', 'dragon', 'comb', 'eel', 'viper', 'sperm', 'orca', 'dolphin', 'sleeper']); // what's left of a beam after a few metres of seawater
 
 export function dayCycle(t) {
   // 10 minute day: 5 day, 1 sunset, 3 night, 1 sunrise
@@ -350,6 +351,7 @@ export class Renderer {
         continue;
       }
       const isLive = c.variant || Ld > 150 || CACHE_SKIP.has(shape);
+      if (shape === 'sleeper') sleeperState.jaw = c.jaw || 0; // how far its jaw is open (see hunters.js)
       const tg = isLive && Ld >= 6 ? layer() : ctx;
       if (tg !== ctx) this.lgrow(S(c.x), Sy(c.y), Ld * 1.4);
       tg.save(); tg.translate(S(c.x), Sy(c.y));

@@ -27,6 +27,7 @@ const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 9
 // Where an animal actually lives, when the recorded range (the deepest and shallowest it was ever
 // found) is far wider than its everyday one. Day ranges; NIGHT is where night migrators rise to.
 const CORE = {
+  188: [2500, 3000], // abyssal sleeper shark: never above 2,500 m
   99: [200, 600],     // silver hatchetfish (by day)
   98: [300, 1000], 162: [400, 2140], 110: [1000, 4720], 107: [600, 1200],
   100: [600, 2500],  // humpback anglerfish: adults mostly 1,000-2,000 m, rarely above 500
@@ -57,7 +58,7 @@ const NIGHT = { 99: [80, 400], 102: [200, 900], 103: [150, 600], 90: [150, 600],
 // a little less at its edges, and outside it rare (rarer the further out) - but never impossible
 // within the depths it has really been recorded at.
 // Never flee from Earl: drifters, slow or curious animals, and the things that might attack him.
-const NO_FLEE = new Set([46, 77, 84, 88, 31, 32, 33, 183, 107, 100, 67, 12, 11, 141, 184, 185, 186, 187, 76, 78, 82, 83, 80, 42, 43, 44, 148, 89, 85]);
+const NO_FLEE = new Set([46, 77, 84, 88, 31, 32, 33, 183, 107, 100, 67, 12, 11, 141, 184, 185, 186, 187, 76, 78, 82, 83, 80, 42, 43, 44, 148, 89, 85, 188]);
 const DIVE_SPEED = 1.68; // Earl's speed: fish escape at 0.55-1.5x it
 // genuinely fast swimmers: may burst to 1.5x Earl's speed (swordfish, sailfish, marlin, tunas,
 // mako, wahoo, mahi-mahi, dolphins, orca). Everything else is slower than a diver can sprint.

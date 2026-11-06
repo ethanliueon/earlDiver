@@ -193,6 +193,7 @@ const V = {
   185: { s: 'dolphin', c: ['#5d666e', '#d8dcde'], hab: 'pelagic', sch: 5 },
   186: { s: 'dolphin', common: 1, c: ['#2e343c', '#e6e2da'], pc: '#c8a868', hab: 'pelagic', sch: 8 },
   187: { s: 'orca', c: ['#0d0f12', '#eceae4'], hab: 'pelagic', sch: 4 },
+  188: { s: 'sleeper', c: ['#45413a', '#7a7264'], hab: 'demersal' },
 };
 
 // Convert the reference "max size" text into a typical display length in metres.

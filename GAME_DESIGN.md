@@ -296,7 +296,14 @@ come into her cave.
 ## Other animals
 
 Sharks circle and bite, billfish line up and charge, sperm whales click then lunge in the deep,
-orcas ram the sub. All are telegraphed; dolphins nearby make sharks leave; flashing the lamp at a
+orcas ram the sub. Between 2,500 and 3,000 m the apex predator is the Abyssal Sleeper Shark
+(*Somniosus abyssalis*, about 9 m; made for the game after the real sleeper sharks): ancient, slow and
+nearly blind, a lumpy mottled hide with cookiecutter craters and old scars, torn fins, a milky eye with
+a parasite trailing from it, a saw of blade teeth below. It sinks away below and behind Earl or the
+sub, out of the light, then rises slowly straight at him, and lunges with its jaw dropping open (the
+water shows through the open mouth): 4 injury points to Earl, 30 % of the sub's hull. Move, hide, or
+flash the lamp as it comes, and it turns away. It keeps clear of the thing in the deep, leaving
+whenever it is within 160 m. Too big for any net or arm; it can be tagged ($12,000 base) and photographed. All are telegraphed; dolphins nearby make sharks leave; flashing the lamp at a
 charging animal makes it swerve.
 
 ## Controls

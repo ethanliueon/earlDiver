@@ -3,6 +3,7 @@
 // Style goal: natural, layered, slightly translucent fins, countershading,
 // soft specular light from above - never flat clip-art fills.
 import { hexToRgb, rgbStr, mixRgb, shade, rgba, TAU, clamp } from './util.js';
+import { drawSleeper } from './sleeper_draw.js';
 
 const PI = Math.PI;
 
@@ -2271,7 +2272,7 @@ export const RENDERERS = {
   mussel: drawMussel, oyster: drawOyster, scallop: drawScallop, conch: drawConch, abalone: drawAbalone,
   nudibranch: drawNudi, gardeneel: drawGardenEel, tubeworm: drawTubeworm, xmastree: drawXmasTree,
   bobbit: drawBobbit, seasquirt: drawSeasquirt, turtle: drawTurtle, swallower: drawSwallower, dragon: drawDragon,
-  coral: drawCoral, sperm: drawSperm, dolphin: drawDolphin, orca: drawOrca,
+  coral: drawCoral, sperm: drawSperm, dolphin: drawDolphin, orca: drawOrca, sleeper: drawSleeper,
 };
 
 // Draws a species. Returns local glow points (or null) for the bioluminescence pass.

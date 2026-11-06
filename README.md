@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.26.0 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.27.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -83,6 +83,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
   and a long pale arm reaches out of its mouth: flash the lights (L, once: it learns), throw a lure
   (Q) or wear a necklace (E) to make it let go. Otherwise the jaws open.
 - It travels at about 12 m/s, bursting to 15 m/s only on screen, and only when you flee.
+- Between 2,500 and 3,000 m lives the Abyssal Sleeper Shark: slow, ancient, nearly blind, the
+  biggest predator at its depth. It rises at you from the dark below, then lunges, at Earl or the
+  sub. Flash the lamp as it comes, or move. It flees from the thing in the deep.
 - The headlamp (L) works at any depth; it comes on by itself below 200 m and at night.
 - An offering to the deep (G, a lure or necklace let go below 100 m) ends its hunt, and for three
   minutes it will not notice you at all. Good deeds that calm it fully do the same.
@@ -122,6 +125,7 @@ js/hunters.js       animals that attack Earl or the submersible, and the encount
 js/render.js        scene and light model
 js/earl_draw.js     Earl, the submersible, the boat, the arm from the entity's mouth
 js/monster_draw.js  the entity itself: its body (painted once into sprites), its lights
+js/sleeper_draw.js  the abyssal sleeper shark
 js/hud.js           timer, air, dive monitor (sonar, heart rate, journal)
 js/audio.js         music and generated sound
 js/ui.js            home screen, journal, the boat (shop and ledger), dive log
