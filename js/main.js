@@ -155,6 +155,7 @@ const ui = new UI({
   getMuted: () => !!audio.muted,
   payMul: () => statValue(profile, 'payFish'),
   onStation: (id) => useStation(id),
+  onFootstep: (v) => audio.ready && audio.footstep && audio.footstep(v),
   onRefreshContracts: () => { if (refreshIn(profile) > 0) return false; g.contracts = g.contracts.filter((q) => q.taken); fillBoard(profile, g.contracts); profile.refreshAt = Date.now(); saveProfile(profile); audio.ready && audio.click(); return true; },
   onTakeContract: (key) => { const c = g.contracts.find((q) => q.key === key); if (!c || c.taken) return false; c.taken = true; profile.taken = g.contracts.filter((q) => q.taken); saveProfile(profile); audio.ready && audio.click(); return true; },
   onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on her hull`); },
@@ -674,7 +675,7 @@ function readMove() {
 // deck is the wheelhouse door: F goes in, and the helm, the radio, the computer and the hatch down to the
 // gallery are all in the cabin. Positions are metres from the boat's centre, + toward the stern.
 export const DECK_STATIONS = [{ id: 'door', x: BOAT_DOOR * BOAT_U, name: 'Cabin', label: 'Enter' }];
-const DECK_MIN = -6.4, DECK_MAX = 6.1, WALK = 1.35, CLIMB = 2.4, JUMP = 0.75;
+const DECK_MIN = -6.4, DECK_MAX = 6.1, WALK = 2.0, RUN = 3.4, HOP = 0.55, CLIMB = 2.4, JUMP = 0.75; // (2.6.2: his own pace on deck, whatever fins he owns; Shift runs, Space or W jumps)
 const LADDER_M = BOAT_LADDER * BOAT_U, DOOR_M = BOAT_DOOR * BOAT_U;
 const deckSurf = () => (g.surfY ? g.surfY(BOAT.x) * 0.8 : 0);
 const standY = (x) => deckLine(x / BOAT_U) * BOAT_U + 0.05 - 0.85; // his middle, standing on the deck at x (boat frame, metres)
@@ -710,20 +711,23 @@ function deckInput(dt, mv) {
   if (g.helm) { g.prompt = 'A / D  steer   ·   G  anchor   ·   W  leave the wheel'; return; }
   const A = g.aboard;
   if (A.climb > 0 || A.jump > 0) { g.prompt = null; pressed.delete('f-tap'); return; }
-  const walk = ui.anyOpen() ? 0 : (mv.x || 0);
+  const walk = ui.anyOpen() ? 0 : Math.sign(mv.x || 0), run = walk && (keys.has('shift') || mv.sprint), pace = run ? RUN : WALK;
   // walking off either end of the deck: over the rail and into the sea
   if ((walk < 0 && A.x <= DECK_MIN + 0.01) || (walk > 0 && A.x >= DECK_MAX - 0.01)) { leaveDeck(walk > 0 ? 1 : -1); return; }
-  A.x = clamp(A.x + walk * WALK * dt, DECK_MIN, DECK_MAX);
+  A.x = clamp(A.x + walk * pace * dt, DECK_MIN, DECK_MAX);
+  // a jump: up and down on the spot (or along, if he is moving), and a thump as he lands
+  if (!ui.anyOpen() && !A.hop && (pressed.has(' ') || pressed.has('w'))) { A.hop = HOP; pressed.delete(' '); }
+  if (A.hop) { A.hop = Math.max(0, A.hop - dt); if (!A.hop) audio.ready && audio.footstep && audio.footstep(0.1); }
   if (walk) { e.facing = walk > 0 ? 1 : -1; A.walkT += dt; } else A.walkT = 0;
   // the stride: the legs keep going a moment as he stops, and settle
   A.walk = lerp(A.walk || 0, walk ? 1 : 0, 1 - Math.exp(-dt * (walk ? 8 : 6)));
   if (walk || A.walk > 0.05) {
-    const s0 = A.step || 0; A.step = s0 + dt * WALK * 4.6;
+    const s0 = A.step || 0; A.step = s0 + dt * pace * 3.4; // (the stride lengthens a little when he runs)
     if (Math.floor(A.step / Math.PI) !== Math.floor(s0 / Math.PI) && A.walk > 0.35) audio.ready && audio.footstep && audio.footstep(0.06 * A.walk); // each foot coming down
   }
   const atDoor = Math.abs(A.x - DOOR_M) < 0.5;
   A.near = atDoor ? 'door' : null;
-  g.prompt = atDoor ? 'F  Enter' : null;
+  g.prompt = atDoor ? 'F  Enter the cabin' : null;
   if (pressed.has('f-tap')) { pressed.delete('f-tap'); if (atDoor && !ui.anyOpen()) useStation('door'); }
 }
 // where he is in the boat's frame (A.lx, A.ly, metres), and in the world (for the camera and the rest)
@@ -748,7 +752,8 @@ function placeOnDeck(dt) {
     else { const q = (k - kc) / (1 - kc), qq = q * q * (3 - 2 * q); if (A.pose === 'climb' && q >= 0.5) audio.ready && audio.footstep && audio.footstep(0.08); A.lx = LADDER_M; A.ly = yTop + (standY(LADDER_M) - yTop) * qq - Math.sin(q * Math.PI) * 0.18; A.pose = q < 0.5 ? 'climb' : 'deck'; A.rung = 7 * Math.PI + q * Math.PI; }
     A.x = LADDER_M; e.facing = -1;
   } else {
-    A.lx = A.x; A.ly = standY(A.x) - Math.abs(Math.sin(A.step || 0)) * 0.03 * (A.walk || 0); A.pose = 'deck';
+    const hk = A.hop ? 1 - A.hop / HOP : 0;
+    A.lx = A.x; A.ly = standY(A.x) - Math.abs(Math.sin(A.step || 0)) * 0.03 * (A.walk || 0) - Math.sin(hk * Math.PI) * 0.5; A.pose = 'deck';
   }
   e.x = BOAT.x + A.lx; e.y = sy + A.ly; e.kick = A.step || 0;
 }

@@ -97,23 +97,38 @@ export class Cabin {
       if (ev.type === 'keydown') {
         if (k === 'escape') { ev.preventDefault(); ev.stopImmediatePropagation(); this.h.close(); return; }
         if (k === 'e' || k === 'f') { ev.preventDefault(); ev.stopImmediatePropagation(); this.use(); return; }
-        if (['a', 'd', 'arrowleft', 'arrowright'].includes(k)) { ev.preventDefault(); ev.stopImmediatePropagation(); this.keys.add(k); }
+        if (['a', 'd', 'arrowleft', 'arrowright', 'shift'].includes(k)) { ev.preventDefault(); ev.stopImmediatePropagation(); this.keys.add(k); this.goal = null; }
       } else this.keys.delete(k);
     };
+    // (2.6.2) the mouse: click to walk there; click on a thing (or where he stands at it) to use it
+    this.c.addEventListener('mousedown', (ev) => {
+      if (this.root.hidden || this.h.blocked() || ev.button !== 0) return;
+      const W = window.innerWidth, camX = this.camX || 0, fx = (ev.clientX + camX) / W;
+      const st = STATIONS.find((q) => Math.abs(fx - q.x) < 0.06 || (q.id === 'desk' && Math.abs(fx - ROOM.desk) < 0.09) || (q.id === 'wheel' && Math.abs(fx - ROOM.wheel) < 0.06));
+      if (st && this.near() === st.id) { this.use(); return; }
+      this.goal = clamp(st ? st.x : fx, ROOM.min, ROOM.max); this.goalUse = !!st;
+    });
+    this.c.style.cursor = 'pointer';
     window.addEventListener('keydown', this.onKey, true);
     window.addEventListener('keyup', this.onKey, true);
   }
-  show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); }
+  show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); this.goal = null; }
   near() { const st = STATIONS.find((q) => Math.abs(this.x - q.x) < 0.045); return st ? st.id : null; }
   use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'hatch' ? 'gallery' : n); }
   atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; this.keys.clear(); }
   update(dt) {
     this.t += dt;
-    const dir = (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0);
+    let dir = (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0);
+    if (!dir && this.goal != null) { const d = this.goal - this.x; if (Math.abs(d) < 0.006) { this.x = this.goal; this.goal = null; if (this.goalUse) { this.goalUse = false; if (this.near()) this.use(); } } else dir = Math.sign(d); }
+    // (2.6.2) the same walk as on deck: the stride, footsteps; Shift runs
+    const run = this.keys.has('shift'), pace = run ? 0.32 : 0.2;
     if (!this.h.blocked()) {
-      this.x = clamp(this.x + dir * 0.2 * dt, ROOM.min, ROOM.max);
+      const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
+      this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);
       if (dir) { this.face = dir; this.walkT += dt; } else this.walkT = 0;
-    }
+    } else dir = 0;
+    this.walk = (this.walk || 0) + ((dir ? 1 : 0) - (this.walk || 0)) * Math.min(1, dt * (dir ? 8 : 6));
+    if (dir || this.walk > 0.05) { const s0 = this.step || 0; this.step = s0 + dt * (run ? 11.5 : 7.5); if (Math.floor(this.step / Math.PI) !== Math.floor(s0 / Math.PI) && this.walk > 0.35) this.h.footstep && this.h.footstep(0.05 * this.walk); }
     const n = this.near();
     this.prompt.textContent = n ? STATIONS.find((q) => q.id === n).label : '';
     this.prompt.hidden = !n;
@@ -128,7 +143,7 @@ export class Cabin {
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, c = this.c;
     if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
     const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const camX = clamp(W * this.x - W * 0.5, 0, W * (ROOM.width - 1)); // the view follows him along the room
+    const camX = this.camX = clamp(W * this.x - W * 0.5, 0, W * (ROOM.width - 1)); // the view follows him along the room
     const t = this.t, floor = H * 0.8, ceil = H * 0.12, X = (f) => W * f - camX, RH = floor - ceil, k = Math.min(W / 1400, H / 820) * 1.05; // k: the room's furniture scale
     const roll = Math.sin(t * 0.55) * 0.012; // the boat's slow roll: things that hang swing with it
     const dayK = this.h.daylight ? this.h.daylight() : 1;
@@ -442,7 +457,7 @@ export class Cabin {
     const ex = X(this.x), eh = RH * 0.5;
     contact(ex + (ex - lx) / W * 30 * k, floor + 6 * k, 34 * k, 6 * k, 0.65);
     ctx.save(); ctx.translate(ex, floor - eh * 0.5); ctx.scale(this.face, 1); ctx.rotate(-Math.PI / 2);
-    drawEarl(ctx, eh, this.walkT * 7, this.walkT > 0 ? 0.35 : 0, null, null, { kind: 'none', tier: 0, t, suit: this.h.suit(), bag: [], land: true, noTank: true, noMask: true });
+    drawEarl(ctx, eh, this.step || 0, 0, null, null, { kind: 'none', tier: 0, t, suit: this.h.suit(), bag: [], land: true, noTank: true, noMask: true, walk: this.walk || 0 });
     ctx.restore();
     // ---------- the light: dim everywhere, warm under the lamp, cool by the porthole and door, green at the screen ----------
     const q = 0.5, lw = Math.ceil(W * q), lh = Math.ceil(H * q), lc = this.lc;

@@ -361,7 +361,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   // ---------- rim light from the surface (strongest near the top) ----------
   if (rim > 0.02) {
     ctx.strokeStyle = `rgba(175,215,235,${(0.4 * rim).toFixed(3)})`; ctx.lineWidth = 1.1 * u; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(0, -17.3 * u); ctx.lineTo(27 * u, -17.3 * u); ctx.stroke();
+    if (!(gear && gear.noTank)) { ctx.beginPath(); ctx.moveTo(0, -17.3 * u); ctx.lineTo(27 * u, -17.3 * u); ctx.stroke(); }
     ctx.beginPath(); ctx.arc(hx, hy, 7.3 * u, -2.5, -0.6); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-9 * u, -4.5 * u); ctx.quadraticCurveTo(-6 * u, -7.4 * u, 0, -6.8 * u); ctx.stroke();
   }

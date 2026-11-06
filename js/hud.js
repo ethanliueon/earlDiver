@@ -500,7 +500,7 @@ export class Hud {
     }
     }
     // ---------- interaction prompt ----------
-    if (g.prompt && !dying && !g.kill && this.hints) {
+    if (g.prompt && !dying && !g.kill) { // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
       ctx.font = `${18 * s}px ${GAME}`; ctx.textAlign = 'center';
       const tw = ctx.measureText(g.prompt).width + 30 * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, H * 0.72, tw, 30 * s, 6 * s); ctx.fill();

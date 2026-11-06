@@ -689,3 +689,12 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   the "settles at" toast is gone (the buoy's label says it).
 - Under the cash: no "+ about $x unsold"; "heavy: slower, more air" only when he is. The sapphire and
   ramming toasts no longer quote prices or hull percentages.
+
+## 2.6.2 — the deck and cabin walk
+- The faint line that followed Earl on deck was drawEarl's rim light along the top of his tank, drawn with
+  no tank on: skipped when `noTank`.
+- The F prompt always shows (Hints off had hidden it, so the cabin door said nothing). "F  Enter the cabin".
+- On deck he has his own pace, whatever he owns: walk 2 m/s (1.5× before), Shift runs 3.4 m/s, Space or W
+  jumps (`A.hop`, a thump on landing).
+- The cabin: the deck's walk (stride, arms, footsteps through `onFootstep`), Shift runs, and the mouse:
+  click to walk there, click a thing to walk to it and use it.
