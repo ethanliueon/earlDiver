@@ -1852,9 +1852,23 @@ function frame(now) {
   pressed.clear();
   requestAnimationFrame(frame);
 }
-// the monster's hide is painted once, while the menu is up, not the first time it is seen
-setTimeout(() => { try { prepareMonster(); } catch (e) { /* drawn on first sight instead */ } }, 1500);
 requestAnimationFrame(frame);
+// (2.6.4) the loading screen: the sea is built by now; wait for the fonts, paint the monster's hide (the one
+// slow drawing, done here so it never hitches later), let the first frames settle, then fade into the title
+(async () => {
+  const B = window.__boot || (() => {}), frames = (n) => new Promise((r) => { let i = 0; const f = () => (++i >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+  B(0.6, 'Filling the sea');
+  await frames(2);
+  try { await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 3000))]); } catch (e) { /* the fallback fonts will do */ }
+  B(0.78, 'Waking the deep');
+  await frames(1);
+  try { prepareMonster(); } catch (e) { /* drawn on first sight instead */ }
+  B(0.92, 'Setting out the boat');
+  await frames(14);
+  B(1, 'Ready');
+  await frames(4);
+  if (window.__bootDone) window.__bootDone();
+})();
 
 // Escape toggles pause; closing overlays first.
 window.addEventListener('keydown', (ev) => {

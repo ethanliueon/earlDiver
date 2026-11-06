@@ -705,3 +705,10 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - A player on 2.6.0 found F worked only on the cabin's computer and door: that is the cabin script from
   2.4, kept in the browser's cache next to newer files. index.html now carries an import map that loads
   every module as `js/name.js?v=<version>`. **After every version bump run `python3 tools/stamp.py`.**
+
+## 2.6.4 — a loading screen
+- `#boot` in index.html (its own inline style, drawn before any script): a brass porthole with the Margaret
+  rocking on the horizon, the title, a thin brass progress bar and one word of what is happening. main.js
+  reports progress (`window.__boot(k, label)`), waits for the fonts, paints the monster's hide (the one slow
+  drawing, which used to run 1.5 s into the title and could hitch), lets the first frames settle, then
+  fades the screen out over 0.9 s (`window.__bootDone`) onto the title.
