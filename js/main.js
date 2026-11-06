@@ -565,6 +565,11 @@ function findTarget() {
   return null;
 }
 
+// an offering to the deep only means something when it is hunting him, and near (within 1,000 m)
+function canOffer() {
+  const e = g.earl, ent = g.entity;
+  return !e.inSub && e.y > 100 && (g.items.lure > 0 || g.items.necklace > 0) && ent && ent.marked && (ent.dist ?? Infinity) < 1000;
+}
 function promptFor(t) {
   const e = g.earl;
   const nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
@@ -586,7 +591,7 @@ function promptFor(t) {
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
   if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
-  if (!e.inSub && e.y > 100 && (g.items.lure || g.items.necklace)) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep';
+  if (canOffer() && (g.offerT || 0) < 10) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep'; // offered for 10 s, then left unsaid
   if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room'
     + (g.seal ? `   ·   Sealing the leaks… ${Math.round(g.seal / SEAL_TIME * 100)} %` : g.sub.hull < SEAL_CAP - 0.01 && g.items.sealant > 0 ? '   ·   K  Seal the leaks' : '');
   if (nearBoat || (e.inSub && g.sub.docked)) p = (p ? p + '   ·   ' : '') + (g.helm ? 'A / D  Drive the Margaret   ·   B  Leave the helm' : 'U  The boat   ·   B  Take the helm');
@@ -926,6 +931,7 @@ function update(dt) {
       if (e.inSub && fHeld > 0.6 && fHeld - dt <= 0.6) interact(null, true);
     }
     const target = findTarget();
+    g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);
     const atAngler = nearAngler();
     if (atAngler) g.prompt = (g.caveTraded ? 'The old one has eaten this dive' : 'F  Trade with the old one') + (e.inSub ? '   ·   hold F  Leave sub' : '');
@@ -961,7 +967,7 @@ function update(dt) {
       }
     } else g.plant = 0;
     // giving something back: release a lure or a necklace into the deep
-    if (pressed.has('g') && !e.inSub && e.y > 100) {
+    if (pressed.has('g') && canOffer()) {
       const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
       if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('Something far below accepts it. For a while, it will not look for you.', 'note'); }
     }

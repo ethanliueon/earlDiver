@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.29.0 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.29.1 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -29,7 +29,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | L | Lights on/off. Light carries a long way in the dark. Flash it at a charging animal to make it swerve |
 | Q | Throw an anglerfish lure |
 | E | Wear a fangtooth necklace |
-| G | Offer a lure or necklace back to the deep (below 100 m) - calms the entity |
+| G | Offer a lure or necklace back to the deep (below 100 m, only while it hunts you and is within 1,000 m) - ends its hunt |
 | B | At the boat: take the helm and drive the Margaret along the surface (A / D) |
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
 | U | The boat (at the surface): sell your haul, buy gear, radio contracts, the aquarium |
@@ -92,7 +92,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
   biggest predator at its depth. It rises at you from the dark below, then lunges, at Earl or the
   sub. Flash the lamp as it comes, or move. It flees from the thing in the deep.
 - The headlamp (L) works at any depth; it comes on by itself below 200 m and at night.
-- An offering to the deep (G, a lure or necklace let go below 100 m) ends its hunt, and for three
+- An offering to the deep (G, a lure or necklace let go below 100 m, only while it hunts you and is
+  within 1,000 m; the prompt shows for 10 s) ends its hunt, and for three
   minutes it will not notice you at all. Good deeds that calm it fully do the same.
 - It never comes above 100 m: the top 100 m are safe from it (not from sharks).
 - When it is within 200 m it shows on the sonar. You will feel it before then.
