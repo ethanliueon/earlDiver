@@ -6,7 +6,7 @@
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
 import { WINGS, WING_BY_ID, aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale } from './aquarium.js';
-import { VARIANTS } from './variants.js';
+import { VARIANTS, makeVariantSprite } from './variants.js';
 import { clamp, lerp, TAU } from './util.js';
 
 const LIGHTS = { day: { name: 'Daylight', water: ['#2a7a90', '#0c3644'], tint: null }, dim: { name: 'Dim', water: ['#123844', '#061a22'], tint: 'rgba(0,10,20,0.35)' }, red: { name: 'Red', water: ['#3a1416', '#12080a'], tint: 'rgba(120,10,10,0.28)' } };
@@ -19,6 +19,22 @@ export function xEyes(ctx, L, sp) {
   ctx.save(); ctx.strokeStyle = 'rgba(20,20,20,0.9)'; ctx.lineWidth = Math.max(1, L * 0.012); ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(x - r, y - r); ctx.lineTo(x + r, y + r); ctx.moveTo(x + r, y - r); ctx.lineTo(x - r, y + r); ctx.stroke();
   ctx.restore();
+}
+
+// a rare form (albino, melanistic...) drawn as the sea draws it: the species drawn plain into a square,
+// then the variant applied (cached by species, form, size and one of 12 swim frames)
+const VCACHE = new Map();
+function drawVariantFish(ctx, sp, v, L, ph) {
+  const PER = TAU / 3, f = Math.floor(((ph % PER) + PER) % PER / PER * 12) % 12, Lb = Math.round(L / 4) * 4 || 4;
+  const key = sp.id + v + ':' + Lb + ':' + f;
+  let c = VCACHE.get(key);
+  if (!c) {
+    const box = Math.ceil(Lb * 2.4), base = document.createElement('canvas'); base.width = base.height = box;
+    const bx = base.getContext('2d'); bx.translate(box / 2, box / 2); drawSpecies(bx, sp, Lb, f / 12 * PER, 0.6, 0);
+    c = makeVariantSprite(base, v, Lb, sp); VCACHE.set(key, c);
+    if (VCACHE.size > 300) VCACHE.delete(VCACHE.keys().next().value);
+  }
+  const k = L / Lb; ctx.drawImage(c, -c.width * k / 2, -c.height * k / 2, c.width * k, c.height * k);
 }
 
 export class Gallery {
@@ -133,8 +149,8 @@ export class Gallery {
         a.sx = r.x + clamp(a.x, mx, 1 - mx) * r.w; a.sy = r.y + clamp(a.y, 0.15, 0.85) * r.h;
         ctx.save(); ctx.translate(a.sx, a.sy);
         if (k === this.open) { ctx.strokeStyle = 'rgba(240,212,138,0.5)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 0, L * 0.62, L * 0.32, 0, 0, TAU); ctx.stroke(); }
-        if (dead) { ctx.scale(1, -1); ctx.globalAlpha = 0.85; drawSpecies(ctx, sp, L, 0, 0, 0); xEyes(ctx, L, sp); }
-        else { const f = Math.abs(a.face) < 0.1 ? 0.1 * Math.sign(a.face || 1) : a.face; ctx.scale(-f, 1); drawSpecies(ctx, sp, L, a.ph, 0.6, 0); }
+        if (dead) { ctx.scale(1, -1); ctx.globalAlpha = 0.85; if (d.variant) drawVariantFish(ctx, sp, d.variant, L, 0); else drawSpecies(ctx, sp, L, 0, 0, 0); xEyes(ctx, L, sp); }
+        else { const f = Math.abs(a.face) < 0.1 ? 0.1 * Math.sign(a.face || 1) : a.face; ctx.scale(-f, 1); if (d.variant) drawVariantFish(ctx, sp, d.variant, L, a.ph); else drawSpecies(ctx, sp, L, a.ph, 0.6, 0); }
         ctx.restore();
         if (d.famous && !dead) { ctx.fillStyle = '#f0d070'; ctx.font = '10px serif'; ctx.textAlign = 'center'; ctx.fillText('★', a.sx, a.sy - L * 0.32 - 4); }
         if (d.name) { ctx.fillStyle = 'rgba(240,230,200,0.7)'; ctx.font = '11px serif'; ctx.textAlign = 'center'; ctx.fillText(d.name, a.sx, a.sy + L * 0.32 + 12); }

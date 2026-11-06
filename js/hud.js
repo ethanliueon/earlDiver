@@ -30,7 +30,12 @@ export class Hud {
   }
   // explanations: only when hints are on (H)
   hint(text) { if (this.hints) this.toast(text, 'note'); }
-  toast(text, kind = '') { this.toasts.push({ text, kind, t: 0 }); if (this.toasts.length > 4) this.toasts.shift(); }
+  toast(text, kind = '') {
+    // the same line again while it is still up: count it ("x2") instead of stacking a copy
+    const same = this.toasts.find((tt) => tt.text === text && tt.kind === kind && tt.t < 3.5);
+    if (same) { same.n = (same.n || 1) + 1; same.t = Math.min(same.t, 0.4); return; }
+    this.toasts.push({ text, kind, t: 0 }); if (this.toasts.length > 4) this.toasts.shift();
+  }
 
   // The hotbar (1 net, 2 slurp gun) and a row of specimen slots above it.
   drawGear(g, W, H, s, dt) {
@@ -500,14 +505,18 @@ export class Hud {
     }
     // ---------- toasts ----------
     ctx.textAlign = 'center';
+    let ty = pad + 6 * s; // each line below the last, spaced by its own size, so big and small lines never overlap
     for (let i = 0; i < this.toasts.length; i++) {
       const tt = this.toasts[i];
       tt.t += dt;
       const a = clamp(Math.min(tt.t * 3, (4.5 - tt.t) * 1.5), 0, 1);
-      ctx.font = `${(tt.kind === 'big' ? 24 : 18) * s}px ${GAME}`;
+      const fs = (tt.kind === 'big' ? 24 : 18) * s;
+      ctx.font = `${fs}px ${GAME}`;
+      ctx.shadowColor = `rgba(0,0,0,${0.7 * a})`; ctx.shadowBlur = 6 * s;
       if (tt.kind.startsWith('rar:')) { ctx.globalAlpha = a; ctx.fillStyle = tt.kind.slice(4); }
       else ctx.fillStyle = tt.kind === 'warn' ? `rgba(255,150,110,${a})` : tt.kind === 'note' ? `rgba(240,226,190,${a})` : `rgba(230,238,236,${a})`;
-      ctx.fillText(tt.text, W / 2, pad + 6 * s + i * 26 * s); ctx.shadowBlur = 0;
+      ctx.fillText(tt.n > 1 ? `${tt.text}  ×${tt.n}` : tt.text, W / 2, ty); ctx.shadowBlur = 0;
+      ty += fs * 1.45;
       ctx.globalAlpha = 1;
     }
     this.toasts = this.toasts.filter((tt) => tt.t < 4.5);

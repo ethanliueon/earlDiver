@@ -117,7 +117,7 @@ export const RARITY = [
 ];
 // Undocumented: the game's own invented animals (no scientific record), valued like exotics, each only
 // in its own place. Not on the price ladder: species carry it explicitly (x.undoc in species_more.js).
-export const UNDOCUMENTED = { id: 'undocumented', name: 'Undocumented', col: '#bfe8f0', upTo: 5000, spawn: 0.05, i: 3.5 };
+export const UNDOCUMENTED = { id: 'undocumented', name: 'Undocumented', col: '#bfe8f0', upTo: 5000, spawn: 0.015, i: 3.5 };
 // Legendary is not a price but a short list: exactly these species (the owner's choice) and no others.
 // humpback anglerfish, common fangtooth, barreleye, pelican gulper eel, blobfish, coelacanth, giant oarfish
 export const LEGENDARY = new Set([100, 101, 104, 105, 107, 108, 54]);

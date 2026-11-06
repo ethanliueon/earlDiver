@@ -479,3 +479,11 @@ figure/mannequin, the net/slurp gun/tag gun/camera as they look at their current
 chambers and tanks. Keep the Margaret's brass-and-steel style; e.g. a large preview pane for the selected item
 with its drawing, stats now -> next and the buy button, and a list of items on the side. Reuse the existing
 canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art where possible.
+
+## 2.0.17 — quick fixes from the play-test
+- Gallery draws rare forms (albino, melanistic...) with the variant sprite, as the sea does (gallery.js `drawVariantFish`).
+- Toasts: each line spaced by its own size, with a soft shadow; the same line again while up counts "×N" instead of stacking.
+- Target brackets off by default (settings.js); still a setting.
+- Undocumented species spawn at 0.015 (was 0.05, the same as exotics). Measured at random open-water spots:
+  600 m lanternfish 79 %, hatchetfish 12 %, bristlemouth 6 %; 1,400 m bristlemouth 77 %; 2,600 m amphipods 73 %,
+  abyssal red prawn 18 %, undocumented ~5 %.
