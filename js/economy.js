@@ -349,22 +349,23 @@ export const WARES = {
 // The shop sells 14 tracks instead of 39 separate stats: one ladder per tool or part, and each step
 // on a ladder improves every stat it covers together. A stat's level follows from its track's
 // (stat level = track level / track max × stat max, rounded); a step costs what the stat steps it
-// covers used to cost, so the whole ladder costs what the separate stats did.
+// covers used to cost, so the whole ladder costs what the separate stats did. Since 2.2.0 the ladders
+// are short (4-6 steps): each step moves its stats about two levels, so every purchase is felt.
 export const TRACKS = {
-  tTank:     { group: 'Diver', name: 'Air tank', stats: ['air'], max: 9, line: 'More air for every dive' },
-  tFins:     { group: 'Diver', name: 'Fins', stats: ['swim', 'sprint'], max: 10, line: 'He swims and sprints faster' },
+  tTank:     { group: 'Diver', name: 'Air tank', stats: ['air'], max: 5, line: 'More air for every dive' },
+  tFins:     { group: 'Diver', name: 'Fins', stats: ['swim', 'sprint'], max: 5, line: 'He swims and sprints faster' },
   tBag:      { group: 'Diver', name: 'Catch bag', stats: ['bag'], max: 6, line: 'Room for more animals' },
-  tBuyers:   { group: 'Diver', name: 'Buyers', stats: ['payFish', 'paySalvage'], max: 10, line: 'Better prices for everything he sells' },
-  tNet:      { group: 'Net', name: 'Hand net', stats: ['netSize', 'netReach', 'netSpeed', 'netGrip', 'netSoft'], max: 8, line: 'Bigger, longer, quicker, surer, gentler' },
-  tSlurp:    { group: 'Slurp gun', needs: 'slurp', name: 'Slurp gun', stats: ['slurpSize', 'slurpReach', 'slurpSpeed'], max: 8, line: 'Bigger catches, longer reach, faster reload' },
-  tTag:      { group: 'Tag gun', needs: 'tagger', name: 'Tag gun', stats: ['tagReach', 'tagReload', 'tagPay', 'tagCalm'], max: 8, line: 'Range, reload, better-paying tags, cleaner shots' },
-  tCam:      { group: 'Camera', needs: 'camera', name: 'Camera', stats: ['camShots', 'camRange'], max: 8, line: 'More shots a dive, longer range' },
+  tBuyers:   { group: 'Diver', name: 'Buyers', stats: ['payFish', 'paySalvage'], max: 5, line: 'Better prices for everything he sells' },
+  tNet:      { group: 'Net', name: 'Hand net', stats: ['netSize', 'netReach', 'netSpeed', 'netGrip', 'netSoft'], max: 5, line: 'Bigger, longer, quicker, surer, gentler' },
+  tSlurp:    { group: 'Slurp gun', needs: 'slurp', name: 'Slurp gun', stats: ['slurpSize', 'slurpReach', 'slurpSpeed'], max: 4, line: 'Bigger catches, longer reach, faster reload' },
+  tTag:      { group: 'Tag gun', needs: 'tagger', name: 'Tag gun', stats: ['tagReach', 'tagReload', 'tagPay', 'tagCalm'], max: 5, line: 'Range, reload, better-paying tags, cleaner shots' },
+  tCam:      { group: 'Camera', needs: 'camera', name: 'Camera', stats: ['camShots', 'camRange'], max: 5, line: 'More shots a dive, longer range' },
   tHull:     { group: 'Submersible', name: 'A deeper submersible', stats: ['depth'], max: 7, line: 'The next hull: deeper, more cabin air' },
-  tEngine:   { group: 'Submersible', name: 'Engine', stats: ['subSpeed', 'ballast'], max: 10, line: 'Faster, and quicker to sink and rise' },
-  tChambers: { group: 'Submersible', name: 'Pressure chambers', stats: ['pressTanks', 'pressRating'], max: 8, line: 'More chambers, holding more pressure' },
+  tEngine:   { group: 'Submersible', name: 'Engine', stats: ['subSpeed', 'ballast'], max: 5, line: 'Faster, and quicker to sink and rise' },
+  tChambers: { group: 'Submersible', name: 'Pressure chambers', stats: ['pressTanks', 'pressRating'], max: 4, line: 'More chambers, holding more pressure' },
   tOpen:     { group: 'Submersible', name: 'Open tank', stats: ['subTank'], max: 6, line: 'Room for more animals in the sub' },
   tRack:     { group: 'Submersible', name: 'Backup air rack', stats: ['airTanks'], max: 2, line: 'Racks for more backup air tanks' },
-  tClaw:     { group: 'Claw', needs: 'arm', name: 'Claw', stats: ['armReach', 'armSize', 'armSpeed', 'armGrip'], max: 8, line: 'Reach, jaw size, hydraulics, grip' },
+  tClaw:     { group: 'Claw', needs: 'arm', name: 'Claw', stats: ['armReach', 'armSize', 'armSpeed', 'armGrip'], max: 5, line: 'Reach, jaw size, hydraulics, grip' },
 };
 export const TRACK_OF = Object.fromEntries(Object.entries(TRACKS).flatMap(([t, T]) => T.stats.map((sid) => [sid, t])));
 const mapLevel = (sid, t, l) => Math.round(l / TRACKS[t].max * UPGRADES[sid].max);
@@ -376,15 +377,22 @@ function migrateTracks(P) {
     P.tlv[t] = Math.round(f * T.max);
   }
 }
-export const tlv = (P, t) => { if (!P.tlv) migrateTracks(P); return Math.min(P.tlv[t] || 0, TRACKS[t].max); };
+// 2.2.0 halved most ladders (each step now covers about two of the old ones, at their summed price):
+// a save from before keeps its progress along each ladder
+const OLD_TRACK_MAX = { tTank: 9, tFins: 10, tBag: 6, tBuyers: 10, tNet: 8, tSlurp: 8, tTag: 8, tCam: 8, tHull: 7, tEngine: 10, tChambers: 8, tOpen: 6, tRack: 2, tClaw: 8 };
+function rescaleTracks(P) {
+  for (const [t, m] of Object.entries(OLD_TRACK_MAX)) if (P.tlv[t]) P.tlv[t] = Math.min(TRACKS[t].max, Math.round(P.tlv[t] / m * TRACKS[t].max));
+  P.tlvV = 2;
+}
+export const tlv = (P, t) => { if (!P.tlv) { migrateTracks(P); P.tlvV = 2; } else if (P.tlvV !== 2) rescaleTracks(P); return Math.min(P.tlv[t] || 0, TRACKS[t].max); };
 export const lv = (P, id) => {
   if (TRACKS[id]) return tlv(P, id);
   const t = TRACK_OF[id];
   if (t) return Math.min(mapLevel(id, t, tlv(P, t)), UPGRADES[id].max);
   return Math.min((P.lv && P.lv[id]) || 0, UPGRADES[id] ? UPGRADES[id].max : Infinity);
 };
-// a stat at a level: from vals, +1 a level (lin), or base to top with gains growing 1.5x a level
-const GAIN = 1.5;
+// a stat at a level: from vals, +1 a level (lin), or base to top with gains growing 1.12x a level
+const GAIN = 1.12; // (2.2.0: was 1.5, whose first steps were too small to feel)
 export function statAt(id, l) {
   const U = UPGRADES[id];
   if (U.vals) return U.vals[Math.min(l, U.vals.length - 1)];

@@ -497,3 +497,10 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - Income: `earnsOf` = 2 % of value x Happy/Famous a day, x0.5 stressed, x0.25 dying, 0 dead; visitors cosmetic.
 - ui.js Aquarium tab: summary, Walk the gallery, one grid of who's aboard with their state, "More room" card.
 - gallery.js: all four tanks always shown, each with its own water and furniture (coral, kelp, bubbles, dark motes).
+
+## 2.2.0 — shorter ladders, bigger steps
+- economy.js: most tracks halved (Air tank 9→5, Fins 10→5, Buyers 10→5, Net 8→5, Slurp 8→4, Tag 8→5, Camera 8→5,
+  Engine 10→5, Chambers 8→4, Claw 8→5; Bag, Open tank, Rack, Hull unchanged). Each step covers ~2 stat levels at their
+  summed price, so a full ladder costs the same. GAIN 1.5 → 1.12, so the first steps are felt too
+  (air 50 → 72 → 99 → 114 → 152 → 200 s; fish prices +24 % → +55 % → +93 % → +140 % → +200 %).
+- Saves from before: `rescaleTracks` keeps each ladder's progress (OLD_TRACK_MAX), marked by `P.tlvV = 2`.
