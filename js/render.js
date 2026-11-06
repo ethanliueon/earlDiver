@@ -37,6 +37,18 @@ const WATER_LIT = [60, 150, 180];
 // the shark beat once) in 32 frames
 // how long a fish of length len (m) is drawn: larger than life (x1.6) so they read on screen,
 // with only a small boost for the tiniest so herring and mackerel still look different
+// How a thing sits on the seabed. What lies on the floor (shells, mussels, starfish, urchins, sea
+// cucumbers, crabs, octopus, flatfish, coral mounds...) follows the slope under it; what grows up
+// (kelp, seagrass, branching corals, sea fans, sponges, tube worms) stays upright, as it does in life,
+// and is set a little into the uphill side so neither edge of its base floats. The slope is taken
+// across the thing's own width, so small bumps don't make it wobble.
+const LIES = new Set(['abalone', 'angler', 'basketstar', 'blob', 'bobbit', 'clam', 'conch', 'crab', 'cucumber', 'fish', 'flat', 'frog', 'isopod',
+  'lobster', 'mussel', 'octopus', 'oyster', 'scallop', 'seapig', 'shrimp', 'star', 'stone', 'tripod', 'urchin', 'brain', 'dumbo', 'nudibranch']);
+export function seabedPose(W, x, halfW, lies) {
+  const h = Math.max(0.1, halfW), a = clamp(Math.atan2(W.floorAt(x + h) - W.floorAt(x - h), 2 * h), -1.0, 1.0);
+  return lies ? { rot: a, sink: 0 } : { rot: 0, sink: Math.min(h, Math.abs(Math.tan(a)) * h * 0.9) };
+}
+const staticPose = (W, st) => st.pose || (st.pose = seabedPose(W, st.x, Math.max(0.18, st.sp.len) * st.scale * 0.45, LIES.has(st.sp.v.s) || st.sp.v.hab === 'floor'));
 export const fishDrawLen = (len) => len * 1.6 + 0.08 * Math.exp(-len * 4);
 // Earl's height in metres
 export const EARL_H = 1.0;
@@ -295,7 +307,8 @@ export class Renderer {
       const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
       const sl = s.variant ? layer() : ctx;
       if (s.variant) this.lgrow(S(s.x), Sy(s.y) - L * 0.5, L * 1.3);
-      sl.save(); sl.translate(S(s.x), Sy(s.y)); sl.scale(s.flip, 1);
+      const pose = staticPose(g.world, s);
+      sl.save(); sl.translate(S(s.x), Sy(s.y) + pose.sink * ppm); sl.rotate(pose.rot); sl.scale(s.flip, 1);
       const r = s.variant ? this.drawVariant(sl, s.sp, s.variant, L, t * 0.3 + s.phase) : this.drawStatic(sl, s, L, t, this.veilFor(s.y));
       sl.restore();
       if (s.variant === 'crimson') glowPts.push([S(s.x), Sy(s.y) - L * 0.3, '#ff3018', Math.max(ppm * 0.6, L * 0.6), 1]);
@@ -356,7 +369,11 @@ export class Renderer {
       if (tg !== ctx) this.lgrow(S(c.x), Sy(c.y), Ld * 1.4);
       tg.save(); tg.translate(S(c.x), Sy(c.y));
       if (c.dir > 0) tg.scale(-1, 1);
-      tg.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
+      if (c.sp.v.hab === 'floor' && c.y > g.world.floorAt(c.x) - 0.6) {
+        // a crab, an octopus, a starfish on the bottom: along the slope under it, not level
+        const a = seabedPose(g.world, c.x, Math.max(0.1, c.len * 0.5), true).rot;
+        tg.rotate(c.dir > 0 ? -a : a);
+      } else tg.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
       if (c.hidden) tg.globalAlpha = 0.55; // tucked in among the tentacles, the coral, the rock
       const r = c.variant ? this.drawVariant(tg, c.sp, c.variant, Ld, c.phase) : this.drawCached(tg, c.sp, Ld, c.phase, c.wob, isLive ? null : this.veilFor(c.y));
       tg.restore();
@@ -394,7 +411,10 @@ export class Renderer {
     ctx.setTransform(baseM);
     if (fl) { fl.setTransform(baseM); this.layerEnd(ctx, g, fl, !this.lite && rbox[2] > rbox[0] ? rbox : null); }
     // ---- pickups + lanterns (over the veiled layer, so nothing valuable hides behind the coral) ----
-    for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) this.drawPickup(ctx, p, S(p.x), Sy(p.y), ppm, t);
+    for (const p of g.world.pickups) if (!p.taken && inView(p.x, p.y)) {
+      if (p.rot === undefined) p.rot = p.y > g.world.floorAt(p.x) - 0.6 ? seabedPose(g.world, p.x, 0.25, true).rot : 0; // lying on the slope
+      this.drawPickup(ctx, p, S(p.x), Sy(p.y), ppm, t);
+    }
     for (const l of g.world.lanterns) if (inView(l.x, l.y, 14)) this.drawLanternBody(ctx, l, S, Sy, ppm, t);
     // traps on their lines: a buoy at the surface, a line (a thin string for the small traps, a thick
     // rope for the big ones) sagging with the current down to the box, the box with what's inside it,
@@ -888,7 +908,8 @@ export class Renderer {
         const cx = ch.c.getContext('2d');
         for (const s of ch.list) {
           const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
-          cx.save(); cx.translate((s.x - bx0) * ppm, (s.y - ya) * ppm); cx.scale(s.flip, 1);
+          const pose = staticPose(W, s);
+          cx.save(); cx.translate((s.x - bx0) * ppm, (s.y - ya + pose.sink) * ppm); cx.rotate(pose.rot); cx.scale(s.flip, 1);
           this.drawStatic(cx, s, L, 0, this.veilFor(s.y));
           cx.restore();
         }
@@ -1814,7 +1835,7 @@ export class Renderer {
 
   drawPickup(ctx, p, x, y, ppm, t) {
     const u = ppm;
-    ctx.save(); ctx.translate(x, y);
+    ctx.save(); ctx.translate(x, y); if (p.rot) ctx.rotate(p.rot);
     switch (p.type) {
       case 'clam':
         ctx.fillStyle = '#8a8270'; ctx.beginPath(); ctx.ellipse(0, -u * 0.08, u * 0.2, u * 0.12, 0, Math.PI, TAU); ctx.fill();

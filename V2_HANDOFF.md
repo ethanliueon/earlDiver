@@ -314,3 +314,7 @@ Docs, screenshots, the handoff's checks, merge to main.
 - Pressure (capture.js, specimens.js): comfort zones ZONE 50/150/250/350 m times pressureTolerance
   (x3 gelatinous, x2 daily migrators and most squid, x1.5 no swim bladder, x1 swim-bladder fish; x1.5
   caught below 1,000 m, x2 below 2,500 m; the higher). Shown on the catch toast and the journal page.
+
+### 2.0.0-alpha.3.1 — seabed follows the slope
+- `seabedPose()` in render.js: things that lie on the floor (brain coral, shells, stars, urchins, crabs, octopus, cucumbers, flatfish...) rotate to the local slope; things that grow up (kelp, seagrass, staghorn, sea fans, sponges, anemones) stay upright and sink in a little on the downhill side.
+- Applied to baked static chunks, live statics, pickups resting on the floor, and floor-walking animals near the seabed. Pose is computed once per static (cached on it) — no per-frame cost.
