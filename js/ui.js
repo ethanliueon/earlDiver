@@ -173,7 +173,7 @@ export class UI {
       $('trapset-close').addEventListener('click', () => this.closeTrapSet());
       document.querySelectorAll('#trapset .ts-meter button').forEach((b) => b.addEventListener('click', () => this.tsNudge(+b.dataset.d)));
       $('ts-slider').addEventListener('input', (e) => { this.ts.depth = +e.target.value; this.tsRender(); });
-      $('ts-bottom').addEventListener('click', () => { this.ts.depth = this.tsMax(); this.tsRender(); });
+      $('ts-bottom').addEventListener('click', () => { this.ts.depth = TRAPS[this.ts.type].maxDepth; this.tsRender(); });
       $('ts-set').addEventListener('click', () => this.tsSet());
       $('trapset').addEventListener('wheel', (e) => { e.preventDefault(); this.tsNudge((e.deltaY > 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
       window.addEventListener('keydown', (e) => {
@@ -198,7 +198,7 @@ export class UI {
     for (const k of TRAP_ORDER) {
       const own = (g.profile.traps || {})[k] || 0; if (!own) continue;
       const b = document.createElement('button'); const free = trapsFree(g, k);
-      b.textContent = `${TRAPS[k].name} · ${free} free`; b.disabled = free <= 0; b.classList.toggle('on', k === this.ts.type);
+      b.textContent = `${TRAPS[k].name} · ${free} ready`; b.disabled = free <= 0; b.classList.toggle('on', k === this.ts.type);
       b.addEventListener('click', () => { this.ts.type = k; this.tsRender(); });
       types.append(b);
     }
@@ -207,11 +207,12 @@ export class UI {
     this.ts.depth = Math.max(2, Math.min(Math.round(this.ts.depth), T.maxDepth));
     $('ts-slider').max = T.maxDepth; $('ts-slider').value = this.ts.depth;
     $('ts-depth').textContent = this.ts.depth;
-    $('ts-bottom').textContent = fl > T.maxDepth ? `Down to its limit (${T.maxDepth} m)` : `Let it down to the bottom (${fl} m)`;
-    $('ts-info').textContent = `The bottom here: ${fl} m · the ${T.name.toLowerCase()} is rated to ${T.maxDepth} m${T.winch ? ' · hauled with the boat\'s winch' : ''}`;
+    // the depth of the bottom is not told: only that the line has reached it, once it has
+    $('ts-bottom').textContent = `All the way (${T.maxDepth} m)`;
+    $('ts-info').textContent = `The ${T.name.toLowerCase()} is rated to ${T.maxDepth} m${T.winch ? ' · hauled with the boat\'s winch' : ''}`;
     const w = $('ts-warn');
     if (this.ts.depth >= fl) { w.hidden = false; w.textContent = `The bottom here is only ${fl} m: the trap will rest on the bottom at ${fl} m (good for crabs, lobsters and bottom fish).`; }
-    else if (fl > T.maxDepth && this.ts.depth === T.maxDepth) { w.hidden = false; w.textContent = `The ${T.name.toLowerCase()} goes no deeper than ${T.maxDepth} m.`; }
+    else if (this.ts.depth === T.maxDepth) { w.hidden = false; w.textContent = `The ${T.name.toLowerCase()} goes no deeper than ${T.maxDepth} m.`; }
     else w.hidden = true;
     void top;
   }

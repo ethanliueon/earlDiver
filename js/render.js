@@ -5,7 +5,7 @@
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
-import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, drawArm } from './earl_draw.js';
+import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS } from './earl_draw.js';
 import { drawMonster, drawMonsterLights, drawMonsterShape, MONSTER_LEN } from './monster_draw.js';
 import { sleeperState } from './sleeper_draw.js';
 import { activeTool } from './capture.js';
@@ -469,7 +469,7 @@ export class Renderer {
       entB.face = entB.faceLock ?? lerp(entB.face ?? toward, toward, 0.02);
       const flipB = entB.face >= 0 ? -1 : 1;
       ctx.save(); ctx.translate(S(entB.x), Sy(entB.y)); ctx.scale(flipB, 1);
-      const info = drawMonster(ctx, MONSTER_LEN * ppm, t, g.reveal ? 1 : clamp((170 - entB.dist) / 60, 0, 1) * (entB.fade ?? 1), g.kill ? g.kill.open || 0 : 0);
+      const info = drawMonster(ctx, MONSTER_LEN * ppm, t, g.reveal ? 1 : clamp((170 - entB.dist) / 60, 0, 1) * (entB.fade ?? 1), g.kill ? g.kill.open || 0 : 0, 1, entB.flick || 0);
       ctx.restore();
       this.entInfo = { info, x: S(entB.x), y: Sy(entB.y), flip: flipB };
       // at the bottom it shows itself: a faint light of its own along the whole length
@@ -522,7 +522,7 @@ export class Renderer {
     let subLamps = null;
     // imploding: for a fraction of a second the hull folds in on itself, then it is gone
     const crumple = sub.imploded && g.implodeT != null && g.implodeT < 0.22 ? g.implodeT / 0.22 : -1;
-    if ((!sub.imploded || crumple >= 0) && inView(sub.x, sub.y, 10)) {
+    if ((!sub.imploded || crumple >= 0) && !(g.kill && g.kill.swallowed && g.kill.inSub) && inView(sub.x, sub.y, 10)) {
       if (crane && sub.docked) {
         ctx.strokeStyle = 'rgba(30,30,28,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
         ctx.beginPath(); ctx.moveTo(boatX + crane.craneTip[0], boatY + crane.craneTip[1]); ctx.lineTo(S(sub.x), Sy(sub.y) - 2.6 * ppm); ctx.stroke();
@@ -598,7 +598,7 @@ export class Renderer {
     // ---- Earl ----
     const e = g.earl;
     let head = null;
-    if (!e.inSub && !g.helm && g.mode !== 'menu') { // at the helm he is inside the wheelhouse
+    if (!e.inSub && !g.helm && g.mode !== 'menu' && !(g.kill && g.kill.swallowed)) { // at the helm he is inside the wheelhouse
       const amb = ambientAt(e.y, dayEff);
       ctx.save(); ctx.translate(S(e.x), Sy(e.y));
       ctx.scale(e.facing, 1); ctx.rotate(e.angle);
@@ -709,37 +709,15 @@ export class Renderer {
       drawMonsterLights(ctx, I.info, (lx, ly) => [I.x + lx * I.flip, I.y + ly], ppm, t,
         { body: Lt.body * fade, eye: Lt.eye * fade * lidOpen, flash: Lt.flash * fade, reduce: !!g.reduceFlash });
     }
-    // the stare: in the faint glow of the cabin's instruments, its pale face pressed to the glass
-    if (!g.kill && g.entity && g.entity.hunt && g.entity.hunt.phase === 'stare' && g.entity.hunt.near) {
-      const en = g.entity, fl = (en.face ?? 1) >= 0 ? -1 : 1, k = clamp(en.hunt.stareT / 1.5, 0, 1);
-      const px = S(g.sub.x + (g.sub.facing || 1) * 1.2), py = Sy(g.sub.y + 0.7);
-      const gl = ctx.createRadialGradient(px, py, 0, px, py, ppm * 6);
-      gl.addColorStop(0, `rgba(120,190,150,${(0.16 * k).toFixed(3)})`); gl.addColorStop(1, 'rgba(120,190,150,0)');
-      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(px, py, ppm * 6, 0, TAU); ctx.fill();
-      ctx.save(); ctx.translate(S(en.x), Sy(en.y)); ctx.scale(fl, 1);
-      // only what the glow reaches, fading out from the window in three soft steps
-      for (const [rad, al] of [[10, 0.16], [7, 0.16], [4.5, 0.2]]) {
-        ctx.save(); ctx.beginPath(); ctx.arc((px - S(en.x)) * fl, py - Sy(en.y), ppm * rad, 0, TAU); ctx.clip();
-        drawMonster(ctx, MONSTER_LEN * ppm, t, al * k, 0, 0.4);
-        ctx.restore();
-      }
-      ctx.restore();
-    }
-    // taken: the arm reaching out of its mouth, then the jaws dropping open beside him. Drawn again over
-    // the lit scene (the flash of the hit, the lamps on it) so it cannot be lost in the dark.
+    // taken: it comes in from the side, jaws opening, and he is in its open mouth; then they shut.
+    // Drawn again over the lit scene (the lamps on it) so it cannot be lost in the dark.
     if (g.kill && g.entity) {
-      const K = g.kill, en = g.entity, T = K.inSub ? g.sub : g.earl;
+      const K = g.kill, en = g.entity;
       const flipK = (en.face ?? 1) >= 0 ? -1 : 1, Lk = MONSTER_LEN * ppm;
-      const lightK = K.opened ? 0.6 + 0.35 * clamp(1 - K.jaw / 0.3, 0, 1) : 0.42;
       ctx.save(); ctx.translate(S(en.x), Sy(en.y)); ctx.scale(flipK, 1);
-      const info = drawMonster(ctx, Lk, t, K.opened ? 1 : clamp(K.t / 0.25, 0, 1) * 0.8, K.open || 0, lightK);
+      const info = drawMonster(ctx, Lk, t, 1, K.open || 0, 0.55);
       ctx.restore();
       drawMonsterLights(ctx, info, (lx, ly) => [S(en.x) + lx * flipK, Sy(en.y) + ly], ppm, t, { body: 0, eye: 1, flash: 0, reduce: !!g.reduceFlash });
-      const mx = S(en.x) + info.mouth[0] * flipK, my = Sy(en.y) + info.mouth[1];
-      const tx = S(T.x + (K.inSub ? -K.s * 0.2 : 0)), ty = Sy(T.y + (K.inSub ? 0.8 : 0));
-      const ext = K.esc ? Math.max(0, 1 - K.escT / 0.45) : clamp(K.t / 0.4, 0, 1);
-      const grip = K.esc ? Math.max(0, 1 - K.escT * 4) : clamp((K.t - 0.3) / 0.2, 0, 1);
-      if (!K.opened || K.jaw < 0.3) drawArm(ctx, mx, my, tx, ty, ext, grip, ppm, t);
     }
     // the arc itself, white-hot, and sparks quenched almost as soon as they leave it
     if (g.welding) {

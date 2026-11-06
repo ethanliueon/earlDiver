@@ -161,6 +161,45 @@ export class Hud {
     ctx.textBaseline = 'top';
   }
 
+  // A strip of sonar: the seabed profile 80 m each side of the sub, scaled to fit, with the sub at the
+  // top and a sounding straight down. Refreshed with each ping (twice a second), not every frame.
+  drawSonar(ctx, g, rx0, y0, s) {
+    const w = 150 * s, h = 70 * s, x0 = rx0 - w, sub = g.sub, W = g.world, now = g.time;
+    const P = this.sonarP;
+    if (!P || now - P.t > 0.5 || Math.abs(P.x - sub.x) > 4 || Math.abs(P.y - sub.y) > 4) {
+      const xs = [], N = 64;
+      for (let i = 0; i <= N; i++) { const x = sub.x - 80 + 160 * i / N; xs.push(W.floorAt(Math.max(0, Math.min(2999, x)))); }
+      this.sonarP = { t: now, x: sub.x, y: sub.y, fl: xs, below: W.floorAt(sub.x) - sub.y };
+    }
+    const S = this.sonarP, top = sub.y - 8, span = Math.max(40, Math.min(1500, Math.max(...S.fl) - top + 10));
+    const Y = (d) => y0 + 12 * s + (d - top) / span * (h - 14 * s);
+    ctx.save();
+    ctx.fillStyle = 'rgba(4,20,16,0.6)'; ctx.beginPath(); ctx.roundRect(x0, y0, w, h, 5 * s); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(x0, y0, w, h, 5 * s); ctx.clip();
+    // the seabed: a filled profile, brighter along its edge where the echo comes back
+    ctx.beginPath(); ctx.moveTo(x0, y0 + h);
+    S.fl.forEach((d, i) => ctx.lineTo(x0 + w * i / (S.fl.length - 1), Y(d)));
+    ctx.lineTo(x0 + w, y0 + h); ctx.closePath();
+    ctx.fillStyle = 'rgba(60,170,120,0.22)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(110,230,170,0.75)'; ctx.lineWidth = 1.2 * s; ctx.beginPath();
+    S.fl.forEach((d, i) => { const x = x0 + w * i / (S.fl.length - 1), y = Y(d); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke();
+    // the ping: a ring going out from the sub, fading
+    const ph = ((now % 0.5) / 0.5), sx = x0 + w / 2, sy = Y(sub.y);
+    ctx.strokeStyle = `rgba(110,230,170,${(0.35 * (1 - ph)).toFixed(3)})`; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(sx, sy, ph * w * 0.6, 0, Math.PI); ctx.stroke();
+    // the sounding straight down, and the sub
+    const by = Y(sub.y + S.below);
+    ctx.setLineDash([3 * s, 3 * s]); ctx.strokeStyle = 'rgba(216,236,230,0.5)'; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, by); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#e8d8a8'; ctx.beginPath(); ctx.ellipse(sx, sy, 4 * s, 2 * s, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.font = `${10 * s}px ${MONO}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(150,220,180,0.85)';
+    ctx.fillText(`bottom ${Math.max(0, Math.round(S.below))} m below`, x0 + 5 * s, y0 + 3 * s);
+    ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(150,220,180,0.6)';
+    ctx.fillText(`${Math.round(sub.y + S.below)} m`, x0 + w - 5 * s, y0 + h - 13 * s);
+    ctx.restore();
+  }
+
   draw(g, dt) {
     const ctx = this.ctx, W = this.c.width, H = this.c.height, s = this.s;
     ctx.clearRect(0, 0, W, H);
@@ -307,6 +346,8 @@ export class Hud {
     ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.beginPath(); ctx.arc(rcx, rcy, 1.6 * s, 0, TAU); ctx.fill();
     ctx.strokeStyle = 'rgba(160,200,200,0.2)'; ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.stroke();
     yy = rcy + rr + 10 * s;
+    // the seafloor sonar (a fitted extra): the bottom below and around the sub, 160 m across
+    if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy, s); yy += 82 * s; }
     // journal: a small book button
     const jw = 26 * s, jh = 22 * s, jx = rx0 - jw, jy = yy;
     const kx = window.innerWidth / W;
@@ -430,7 +471,7 @@ export class Hud {
       ctx.textAlign = 'center';
     };
     const keyWidth = (txt, px) => { ctx.font = `italic ${px}px ${GAME}`; return ctx.measureText(txt.replace(/^Space\s+/, '[Space] ')).width; };
-    if (!this.hints && !dying) {
+    if (!this.hints && !dying && !g.kill) {
       ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `${16 * s}px ${GAME}`;
       const lines = [];
       if (g.capPrompt && g.capPrompt.startsWith('Space')) lines.push(short(g.capPrompt));
@@ -443,7 +484,7 @@ export class Hud {
         ctx.font = `${16 * s}px ${GAME}`;
       });
     }
-    if (g.capPrompt && !dying && this.hints) {
+    if (g.capPrompt && !dying && !g.kill && this.hints) {
       ctx.font = `${17 * s}px ${GAME}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       const tw = keyWidth(g.capPrompt, 17 * s) + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, py, tw, 28 * s, 6 * s); ctx.fill();
@@ -451,7 +492,7 @@ export class Hud {
       keyLine(g.capPrompt, W / 2, py + 7 * s, 17 * s);
     }
     // ---------- interaction prompt ----------
-    if (g.prompt && !dying && this.hints) {
+    if (g.prompt && !dying && !g.kill && this.hints) {
       ctx.font = `${18 * s}px ${GAME}`; ctx.textAlign = 'center';
       const tw = ctx.measureText(g.prompt).width + 30 * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, H * 0.72, tw, 30 * s, 6 * s); ctx.fill();
@@ -473,7 +514,7 @@ export class Hud {
 
     // ---------- in its grip: what can still get him free, and how little time is left ----------
     const K = g.kill;
-    if (K && !K.esc && K.t > K.window[0] && K.t < K.window[1] && g.mode === 'play') {
+    if (K && K.window && !K.esc && K.t > K.window[0] && K.t < K.window[1] && g.mode === 'play') {
       const opts = [];
       if (!g.entity.flashed) opts.push(['L', 'FLASH IT']);
       if (g.items.lure > 0 || (g.profile.oldLures || 0) > 0) opts.push(['Q', 'LURE']);

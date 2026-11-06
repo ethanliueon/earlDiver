@@ -8,6 +8,7 @@
 // toward ~120 m (slowing and fading as it rises - no hard line); otherwise it stays below ~200 m.
 // Staying shallow long enough makes it lose interest, and the mark fades.
 import { clamp, lerp, dist, TAU } from './util.js';
+import { MONSTER_LEN, MONSTER_EYE } from './monster_draw.js';
 export const ENTITY_SPEED = 12; // m/s: its travelling speed, far faster than Earl, and than the sub
 export const ENTITY_BURST = 15; // m/s: a burst, only once it is in sight of him and only if he is getting away
 export const LANTERN_RADIUS = 3;
@@ -46,7 +47,7 @@ export class Entity {
     else if (e.lampOn) s = { x: e.x, y: e.y, a: g.aim ?? (e.facing > 0 ? 0 : Math.PI), range: 40, cone: 0.42 };
     if (!s) return false;
     const back = (this.face ?? 1) >= 0 ? -1 : 1; // the way its body runs from the snout
-    const V = g.viewBox, ex = this.x + back * 2.6, ey = this.y - 1.6; // its eye
+    const V = g.viewBox, ex = this.x + back * MONSTER_EYE[0] * MONSTER_LEN, ey = this.y + MONSTER_EYE[1] * MONSTER_LEN; // its eye
     if (V && (ex < V[0] + 1 || ex > V[1] - 1 || ey < V[2] + 1 || ey > V[3] - 1)) return false; // only where he can see it go dark
     for (const [px, py] of [[this.x, this.y], [this.x + back * 6, this.y - 1], [this.x + back * 14, this.y]]) {
       const dx = px - s.x, dy = py - s.y, d = Math.hypot(dx, dy);
@@ -67,7 +68,7 @@ export class Entity {
     if (g.kill) { body = 0; eye = 1; tint = 1; L.mode = 'pulse'; }
     else if (L.mode === 'pulse') {
       if (H) { body = 0; eye = H.phase === 'windup' || H.phase === 'strike' ? 1 : H.phase === 'stare' ? 0.9 : 0.55; tint = H.phase === 'windup' || H.phase === 'strike' ? 1 : 0.35; }
-      if (L.cool <= 0 && !g.kill && this.dist < 60 && this.graceT <= 0 && !(H && H.phase !== 'stalk') && this.litBy(g)) { L.mode = 'dark'; L.t = 0; g.events.push('lit'); }
+      if (L.cool <= 0 && !g.kill && this.dist < 60 && this.graceT <= 0 && !(H && H.phase !== 'stalk') && !(this.ap && this.ap.phase && this.ap.phase !== 'look') && this.litBy(g)) { L.mode = 'dark'; L.t = 0; g.events.push('lit'); }
     }
     if (L.mode === 'dark') { body = 0; eye = 0; snap = true; if (L.t > 0.9) { L.mode = 'flash'; L.t = 0; this.seen(g); } }
     else if (L.mode === 'flash') { body = 0; eye = 0; snap = true; flash = Math.max(0, 1 - L.t / 0.3); if (L.t > 0.3) { L.mode = 'dark2'; L.t = 0; } }
@@ -76,6 +77,8 @@ export class Entity {
       body = 0;
       if (H && (H.phase === 'windup' || H.phase === 'strike')) { eye = 1; tint = 1; }
       else if (H && H.phase === 'glare') { eye = 0.12 + 0.88 * clamp(H.t / GLARE_TIME, 0, 1); tint = eye; }
+      else if (this.ap && this.ap.phase === 'stare2') { eye = 0.12 + 0.88 * clamp(this.ap.t / GLARE_TIME, 0, 1); tint = eye; }
+      else if (this.ap && this.ap.n === 2 && this.marked && g.earl.inSub) { eye = 1; tint = 0.85; } // it is coming back for him
       else { L.mode = 'fade'; L.t = 0; }
     } else if (L.mode === 'fade') { body = 0; eye = 0; if (L.t > 3) { L.mode = 'pulse'; L.t = 0; L.cool = 20; } }
     const k = (r) => 1 - Math.exp(-dt * r);
@@ -88,6 +91,12 @@ export class Entity {
   seen(g) {
     const e = g.earl;
     if (!this.marked) this.mark(g);
+    if (e.inSub) {
+      const A = this.ap || (this.ap = { n: 0, phase: null, t: 0, wait: 0, side: 1, still: 0 });
+      A.phase = 'stare2'; A.t = 0; A.side = Math.sign(this.x - e.x) || 1; A.n = Math.max(A.n, 1); A.wait = 0;
+      this.state = 'hunt'; this.lastX = e.x; this.lastY = e.y; this.knows = 1;
+      return;
+    }
     this.state = 'hunt'; this.lastX = e.x; this.lastY = e.y; this.knows = 1;
     this.hunt = { phase: 'glare', t: 0, ang: Math.atan2(this.y - e.y, this.x - e.x), passes: 1, still: 0, run: 0, dir: this.rng() < 0.5 ? -1 : 1 };
   }
@@ -104,14 +113,14 @@ export class Entity {
   appease(g, amount) {
     if (this.marked) {
       this.calm = (this.calm || 0) + amount;
-      if (this.calm >= CALM_NEEDED) { this.marked = false; this.calm = 0; this.attn = 0.2; this.state = 'roam'; this.graceT = GRACE_TIME; g.events.push('appeased'); }
+      if (this.calm >= CALM_NEEDED) { this.marked = false; this.ap = null; this.flick = 0; this.calm = 0; this.attn = 0.2; this.state = 'roam'; this.graceT = GRACE_TIME; g.events.push('appeased'); }
     } else { this.attn = Math.max(0, this.attn - amount / 100); this.graceT = Math.max(this.graceT, GRACE_TIME); }
   }
   // an offering to the deep: whatever it wanted, it is satisfied. The hunt ends, and for three
   // minutes it does not look for him at all.
   soothe(g) {
     const was = this.marked;
-    this.marked = false; this.calm = 0; this.attn = 0; this.graceT = GRACE_TIME;
+    this.marked = false; this.ap = null; this.flick = 0; this.calm = 0; this.attn = 0; this.graceT = GRACE_TIME;
     if (was) { this.state = 'roam'; g.events.push('appeased'); }
   }
   disturb(g, amount) {
@@ -155,7 +164,7 @@ export class Entity {
     const e = g.earl;
     if (this.marked) {
       // a mark fades if he stays above its reach long enough
-      if (e.y < SAFE_DEPTH) { this.shallowT += dt; if (this.shallowT > FORGET_TIME) { this.marked = false; this.attn = 0.35; this.state = 'roam'; g.events.push('unmarked'); } }
+      if (e.y < SAFE_DEPTH) { this.shallowT += dt; if (this.shallowT > FORGET_TIME) { this.marked = false; this.ap = null; this.flick = 0; this.attn = 0.35; this.state = 'roam'; g.events.push('unmarked'); } }
       else this.shallowT = 0;
       return;
     }
@@ -268,9 +277,17 @@ export class Entity {
       // Every step has its warning, so a death can always be seen coming. Keep still and dark and it
       // may lose him (or, at the sub, come and look in through the viewport, and then leave); run,
       // or light up while it is looking, and it comes.
-      if (!this.hunt || this.hunt.phase !== 'stare') this.faceLock = null;
-      if (this.state !== 'hunt') this.hunt = null;
-      else if (d < 75) {
+      this.faceLock = null;
+      if (e.inSub) {
+        // ---------- at the sub: three approaches (see approach) ----------
+        this.hunt = null;
+        const r = (this.state === 'hunt' || (this.ap && (this.ap.phase || this.ap.wait > 0))) && !lured && !away && !(prot && d < 70) ? this.approach(g, dt, d, bandLo) : null;
+        if (r) { tx = r.tx; ty = r.ty; speed = r.speed; if (r.swallow) this.swallowNow = true; }
+      } else {
+        if (this.ap) { this.ap.phase = null; this.flick = 0; }
+      }
+      if (this.state !== 'hunt' || e.inSub) this.hunt = e.inSub ? null : this.state === 'hunt' ? this.hunt : null;
+      if (!e.inSub && this.state === 'hunt' && d < 75) {
         const H = this.hunt || (this.hunt = { phase: 'stalk', t: 0, ang: Math.atan2(this.y - e.y, this.x - e.x), passes: 0, still: 0, run: 0, dir: this.rng() < 0.5 ? -1 : 1 });
         H.t += dt;
         const dark = e.inSub ? !g.sub.lightsOn : !e.lampOn, still = (e.speedNow || 0) < 0.4;
@@ -282,8 +299,7 @@ export class Entity {
           H.ang += H.dir * dt * 2.4 / R;
           tx = e.x + Math.cos(H.ang) * R; ty = e.y + Math.sin(H.ang) * R * 0.55;
           speed = d > R + 15 ? ENTITY_SPEED * 0.6 : 3;
-          if (e.inSub && H.still > 2.5) { H.phase = 'stare'; H.t = 0; H.stareT = 0; g.events.push('stare'); }
-          else if (!e.inSub && H.still > 8) { this.goAway(e.x, e.y, bandLo); this.hunt = null; g.events.push('lost'); }
+          if (H.still > 8) { this.goAway(e.x, e.y, bandLo); this.hunt = null; g.events.push('lost'); }
           else if (H.run > 2) { H.phase = 'windup'; H.t = 0; g.events.push('windup'); } // he bolts: prey that runs is chased
           else if (H.t > (H.passes ? 5 : 8) * (still && dark ? 1.8 : 1)) {
             H.t = 0;
@@ -316,23 +332,6 @@ export class Entity {
           tx = e.x; ty = e.y; speed = d < 30 && (e.speedNow || 0) > 1.5 ? ENTITY_BURST : ENTITY_SPEED;
           if (d < 7) { this.hunt = null; this.grab = true; }
           else if (H.t > 6) { H.phase = 'stalk'; H.t = 0; }
-        } else if (H.phase === 'stare') {
-          // it comes to the viewport and looks in. Still and dark, and it leaves; otherwise it comes.
-          // its eye (2.6 m behind the snout, 1.6 m up) brought to the sphere's viewport, looking in
-          if (!H.s0) H.s0 = Math.sign(this.x - e.x) || 1;
-          this.faceLock = -H.s0;
-          const portX = g.sub.x + (g.sub.facing || 1) * 1.2, portY = g.sub.y + 0.7;
-          tx = portX + H.s0 * 0.4 - H.s0 * 2.6; ty = portY + 1.6;
-          const off = dist(this.x, this.y, tx, ty);
-          speed = off > 4 ? 7 : 1.5; // it comes in fast through the dark, and the last few metres slowly
-          H.near = off < 2.5;
-          if (H.near) H.stareT += dt; // the long look starts when its face is at the glass
-          if (!(still && dark)) { H.phase = 'windup'; H.t = 0.6; g.events.push('windup'); }
-          else if (H.stareT > 8) {
-            this.marked = false; this.calm = 0; this.attn = 0.3; this.hunt = null; this.faceLock = null;
-            this.goAway(e.x, e.y, bandLo); this.roamX = this.awayX; this.roamY = this.awayY; this.roamT = 90;
-            g.events.push('unmarked');
-          }
         }
       }
       // how high it will come: up toward 120 m only in a live chase, otherwise it keeps below 200 m
@@ -363,13 +362,83 @@ export class Entity {
     if (this.blink < -this.rng.range(3, 7)) this.blink = 0.18;
 
     this.lights(g, dt);
-    // the strike reached him: the grab (see main.js: the arm, then the jaws)
+    if (this.swallowNow) { this.swallowNow = false; if (this.marked && e.inSub && !prot) { this.ap = null; this.flick = 0; return 'swallow'; } }
+    // the strike reached him: the grab (see main.js: the jaws)
     if (this.grab) { this.grab = false; if (this.marked && !prot && e.y > SAFE_DEPTH - 4) return 'grab'; }
+    return null;
+  }
+
+  // The sub, three times. Each approach is its own pass out of the dark, with a pause between:
+  //  1. only its tail: it passes beneath, out of sight, and its tail curls up into view and strikes the hull
+  //  2. its head: it noses in at the edge of the screen and sees him (lights out, the blue flash, its
+  //     eyes coming up, the red in the water). Dark and still, and it may lose him here.
+  //  3. it comes in from the side with its mouth already opening and swallows the sub whole.
+  approach(g, dt, d, bandLo) {
+    const e = g.earl, L = MONSTER_LEN, A = this.ap || (this.ap = { n: 0, phase: null, t: 0, wait: 0, side: 1, still: 0 });
+    A.t += dt;
+    const V = g.viewBox, half = V ? (V[1] - V[0]) / 2 : 23;
+    if (!A.phase) {
+      if (A.wait > 0) {
+        // between approaches it turns away into the dark below, and comes round again
+        A.wait -= dt; this.flick = Math.max(0, (this.flick || 0) - dt * 2);
+        return { tx: e.x + A.side * 150, ty: e.y + 70, speed: ENTITY_SPEED * 0.6 };
+      }
+      if (d > 170) return null;                      // still closing on him: the ordinary hunt
+      A.side = Math.sign(this.x - e.x) || 1; A.t = 0; A.bumped = false; A.still = 0;
+      A.phase = A.n === 0 ? 'tailIn' : A.n === 1 ? 'look' : 'swallowIn';
+    }
+    switch (A.phase) {
+      case 'tailIn': {
+        // out of sight below him and off to one side
+        const px = e.x + A.side * 55, py = e.y + 22;
+        this.faceLock = -A.side;
+        if (dist(this.x, this.y, px, py) < 6 || A.t > 14) { A.phase = 'tail'; A.t = 0; A.dir = -A.side; }
+        return { tx: px, ty: py, speed: ENTITY_SPEED };
+      }
+      case 'tail': {
+        // beneath him, steady; as the tail comes under the sub it curls up into view and strikes the hull
+        this.faceLock = A.dir;
+        const tailX = this.x - A.dir * 1.15 * L, tipX = this.x - A.dir * 1.27 * L;
+        const want = Math.abs(tailX - e.x) < 22 ? 1 : 0;
+        this.flick = clamp((this.flick || 0) + (want - (this.flick || 0)) * (1 - Math.exp(-dt * 3)), 0, 1);
+        if (!A.bumped && this.flick > 0.7 && Math.abs(tipX - e.x) < 6) { A.bumped = true; g.events.push('tailbump'); }
+        if ((tailX - e.x) * A.dir > 45 || A.t > 30) { A.phase = null; A.n = 1; A.wait = this.rng.range(16, 26); }
+        return { tx: e.x + A.dir * 160, ty: e.y + 22, speed: 9 };
+      }
+      case 'look': {
+        // its head comes in at the edge of the screen, level with him
+        const px = e.x + A.side * (half - 3), py = e.y + 1;
+        this.faceLock = -A.side;
+        const off = dist(this.x, this.y, px, py);
+        if (off < 2.5) { A.phase = 'looking'; A.t = 0; if (this.lit.mode === 'pulse') { this.lit.mode = 'dark'; this.lit.t = 0; } }
+        return { tx: px, ty: py, speed: off > 12 ? ENTITY_SPEED * 0.8 : 3 };
+      }
+      case 'looking': case 'stare2': {
+        // it holds there, looking at him (the lights do the rest: see lights)
+        const px = e.x + A.side * (half - 3), py = e.y + 1;
+        this.faceLock = -A.side;
+        const dark = !g.sub.lightsOn, still = (e.speedNow || 0) < 0.4;
+        A.still = dark && still ? A.still + dt : 0;
+        if (A.phase === 'stare2') {
+          if (A.still > 3.5) { A.phase = null; this.goAway(e.x, e.y, bandLo); g.events.push('lost'); return null; }
+          if (A.t > GLARE_TIME) { A.phase = null; A.n = 2; A.wait = this.rng.range(10, 16); }
+        } else if (A.t > 6) { A.phase = 'stare2'; A.t = 0; } // (if the lights never went through the sequence)
+        return { tx: px, ty: py, speed: 1.5 };
+      }
+      case 'swallowIn': {
+        // from off the side of the screen, its mouth level with him, fast
+        const px = e.x + A.side * Math.max(half + 8, 30), py = e.y - 2.5;
+        this.faceLock = -A.side;
+        if (dist(this.x, this.y, px, py) < 5 || A.t > 12) return { tx: px, ty: py, speed: 14, swallow: true };
+        return { tx: px, ty: py, speed: 14 };
+      }
+    }
     return null;
   }
 
   // give up on him for a while: head far off, away from (fx, fy), and deeper
   goAway(fx, fy, bandLo) {
+    if (this.ap) this.ap.phase = null;
     const side = Math.sign(this.x - fx) || (this.rng() < 0.5 ? -1 : 1);
     let ax = this.x + side * this.rng.range(350, 500);
     if (ax < 20 || ax > 2980) ax = this.x - side * this.rng.range(350, 500);

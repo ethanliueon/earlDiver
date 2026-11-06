@@ -117,7 +117,9 @@ Tools change their look as they are levelled (the hand net grows into a pro capt
   strobes, low-light without flash): aim with the mouse. A missed dart can provoke a shark; a flash
   in the deep is seen.
 - 5 **traps**: box traps on a line from a buoy, set from the surface at a chosen depth on a depth
-  meter (or let down to rest on the bottom, where crabs, lobsters and octopus walk in). Four tiers:
+  meter (or let down to rest on the bottom, where crabs, lobsters and octopus walk in). The panel
+  never says how deep the bottom is, unless the chosen depth goes past it. A new game starts with one
+  Wire pot; the rest are bought at the boat ("ready" counts the ones owned and not yet set). Four tiers:
   Wire pot ($5, to 40 m, 4-8 fish, thin string), Fish trap ($30, to 150 m, 5-9), Steel pot ($140, to
   500 m, 5-10, thick rope) and Deep cage ($600, to 1,500 m, 6-12, a lit lure that also draws the
   entity). Over five minutes the bait draws in real animals that live at that depth and in that kind
@@ -262,9 +264,25 @@ come into her cave.
   Visitors pay every 10 minutes of play by the value of the collection; wings in use cost a
   little to run.
 
+- Seafloor sonar (a sub add-on, $40): in the cabin, a strip under the radar draws the seabed 80 m each
+  side of the sub, scaled to fit, with a sounding straight down and the bottom's depth.
+
 ## The entity
 
-- What it is: a gulper (after the pelican eel) about 100 m long, with a 30 m whip of a tail behind
+- At the sub it comes three times (each its own pass out of the dark, 10-26 s apart):
+  1. Its tail: it passes 22 m below, out of sight, and as its tail comes under the sub it curls up
+     into view and strikes the hull (a jolt, 6 % of the hull).
+  2. Its head: it noses in at the edge of the screen, level with the sub, and sees him: the lights go
+     out, the blue flash, its eyes come up over 6 s and its red seeps into the water. Lights off and
+     still for 3.5 s and it may lose him here (it will come back for this approach, not the third).
+  3. The swallow: from just off the side of the screen, its mouth level with the sub and already
+     opening, it crosses in under a second; the sub is seen inside the open mouth, and it shuts. No
+     escape: the counters are earlier (getting above 120 m, lanterns, the necklace, the cave, an
+     offering, good deeds).
+- Swimming, Earl gets the old hunt (stalk, one pass, the draw-back, the strike), ending the same way,
+  jaws opening as it comes, with 0.7 s to flash it, throw a lure or wear the necklace.
+
+- What it is: a gulper (after the pelican eel) about 60 m long, with an 18 m whip of a tail behind
   that: nearly all head and mouth, velvet-black, loose wrinkled skin with a violet sheen and pale
   scars, tiny eyes at the tip of the snout, fine needle teeth. Its lower jaw is a long thin bone with
   a sack of skin slung under it that balloons when it opens. Nothing is drawn between its jaws: you

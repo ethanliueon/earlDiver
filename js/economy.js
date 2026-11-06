@@ -37,6 +37,7 @@ export const SUB_TIERS = [
 export const SUB_ADDONS = {
   recall: { name: 'Recall unit', price: 10, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
   quiet: { name: 'Quiet engine', price: 30, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
+  sonar: { name: 'Seafloor sonar', price: 40, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
 };
 // ---------------- catching gear ----------------
 // range: reach beyond his hand (m) · time: sweep / reload (s) · maxLen: biggest animal (m)
@@ -372,7 +373,7 @@ export function gear(P, kind) {
 export function newProfile() {
   return {
     v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
-    lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 0, fish: 0, steel: 0, cage: 0 },
+    lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 1, fish: 0, steel: 0, cage: 0 }, // one beginner's wire pot
     journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(), coins: 0,
   };
 }

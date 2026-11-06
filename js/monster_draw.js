@@ -14,10 +14,10 @@
 // coarse one for the whole length, a fine one for the head) and drawn in strips so the tail can whip.
 import { TAU, clamp } from './util.js';
 
-export const MONSTER_LEN = 100;          // metres, snout to the root of the tail (the tail goes on 30 m)
+export const MONSTER_LEN = 60;           // metres, snout to the root of the tail (the tail goes on 18 m)
 export const MONSTER_EYE = [0.026, -0.016]; // where its eye is, in body lengths from the snout
 const HEAD_U = 0.46;                     // the head sprite covers the snout to here
-const BODY_PPM = 14, HEAD_PPM = 40;      // sprite resolution, pixels per metre
+const BODY_PPM = 22, HEAD_PPM = 60;      // sprite resolution, pixels per metre
 const V0 = -0.11, V1 = 0.075;            // the sprites' vertical extent, body lengths
 
 function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -46,7 +46,9 @@ const JAW_UNDER = [[0.012, 0.024], [0.05, 0.027], [0.1, 0.031], [0.16, 0.035], [
 const HINGE = [0.33, 0.034];
 const SACK_BASE = [0.43, 0.056];
 // the tail whips; the head and the front of the body hold still
-const wave = (u, t) => u < 0.45 ? 0 : Math.sin(u * 7 - 2.6 - t * 0.9) * 0.035 * (u - 0.45) * 1.6 + Math.sin(u * 3 - t * 0.4) * 0.006 * (u - 0.45);
+// flick 0..1 curls the tail up (body lengths), as when it strikes something above it
+let FLICK = 0;
+const wave = (u, t) => (u < 0.45 ? 0 : Math.sin(u * 7 - 2.6 - t * 0.9) * 0.035 * (u - 0.45) * 1.6 + Math.sin(u * 3 - t * 0.4) * 0.006 * (u - 0.45)) - (u > 0.8 ? FLICK * 0.42 * Math.pow((u - 0.8) / 0.5, 2) : 0);
 
 // ---- painting the hide (once) ----
 function paintHide(ctx, L, r, detail) {
@@ -164,8 +166,9 @@ export function flicker(k, t, rate) {
 // Draws the animal. alpha: how much of it shows; jaw 0..1 open; dim 0..1 brightness (1 = as painted;
 // less darkens it, for when it is drawn over an already lit scene). Returns, in local pixels: eye,
 // the mouth (where something reaching out of it starts), and its lights [x, y, kind].
-export function drawMonster(ctx, Lp, t, alpha, jaw = 0, dim = 1) {
+export function drawMonster(ctx, Lp, t, alpha, jaw = 0, dim = 1, flick = 0) {
   const S = sprites();
+  FLICK = clamp(flick, 0, 1);
   const open = Math.max(0.025 + 0.012 * Math.sin(t * 0.3), clamp(jaw, 0, 1));
   const L = Lp, P = (u, v) => [u * L, v * L + wave(u, t) * L];
   const H = P(...HINGE), th = -open * 1.15, J = (u, v) => rot(P(u, v), th, H);

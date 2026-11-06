@@ -671,18 +671,22 @@ function leaveSub() {
   audio.ready && audio.click();
 }
 
-// ---------------- taken: the arm, then the jaws ----------------
-// The strike reaches him and everything goes silent. A long pale human arm reaches out of its mouth
-// and closes round him (or round the sub's sphere) and draws him in. For a second and a half he can
-// still get free: flash it with the lights (once: it learns), throw it a lure, or the necklace. Then
-// the jaws open, three great lobes peeling back wider than the sub is long, with the hit, and close.
-const KILL_REACH = 0.4, KILL_JAWS = 1.75, KILL_CLOSE = 0.62;
+// ---------------- taken: the jaws ----------------
+// The strike reaches him and everything goes silent. It comes in from the side of the screen with its
+// mouth already opening, the lower jaw dropping and the sack ballooning; he is in the open mouth (the
+// water shows through it, and him in it), and it shuts. In the sub there is nothing to be done: that is
+// the third approach. Swimming, there is one last moment as the jaws open: flash the lamp (once: it
+// learns), throw a lure or wear the necklace.
+const KILL_LUNGE = 0.95, KILL_CLOSE = 0.16, KILL_WINDOW = 0.7;
 function startKill() {
   const e = g.earl, ent = g.entity, inSub = e.inSub && !g.sub.imploded;
   const T = inSub ? g.sub : e;
   const s = Math.sign(ent.x - T.x) || 1;
-  ent.x = T.x + s * (inSub ? 9 : 7); ent.y = T.y - 2.2; // its mouth level with him ent.vx = ent.vy = 0; ent.faceLock = -s; ent.eyeOpen = 1; ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
-  g.kill = { t: 0, inSub, s, esc: false, escT: 0, jaw: 0, window: [KILL_REACH * 0.5, KILL_JAWS] };
+  const V = g.viewBox, half = V ? (V[1] - V[0]) / 2 : 20;
+  // off the edge of the screen, its mouth level with him
+  ent.x = T.x + s * (half + 6); ent.y = T.y - 2.5; ent.vx = ent.vy = 0; ent.faceLock = -s; ent.eyeOpen = 1;
+  ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
+  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0: ent.x, window: inSub ? null : [0, KILL_WINDOW] };
   ui.closeAll && ui.closeAll();
   audio.ready && audio.drop();
   g.fx.shake = Math.max(g.fx.shake, 1.2);
@@ -694,18 +698,14 @@ function killUpdate(dt) {
   ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
   if (K.esc) {
     K.escT += dt;
+    // it veers off the way it came
+    ent.x += K.s * dt * 20; K.open = Math.max(0, K.open - dt * 3);
     if (K.escT > 0.6) { g.kill = null; ent.faceLock = null; }
     for (const k of ['l', 'q', 'e']) pressed.delete(k);
     return;
   }
-  // in its grip: drawn toward the mouth
-  if (K.t > KILL_REACH) {
-    const mx = ent.x - K.s * 1.5, my = ent.y + 2.6, k = 1 - Math.exp(-dt * 0.9); // to the front of the mouth
-    T.x += (mx - T.x) * k; T.y += (my - T.y) * k;
-    if (K.inSub) { e.x = g.sub.x; e.y = g.sub.y; }
-  }
-  // the moment to get free
-  if (K.t > K.window[0] && K.t < K.window[1]) {
+  // the moment to get free (swimming only)
+  if (K.window && K.t > K.window[0] && K.t < K.window[1]) {
     let how = null;
     if (pressed.has('l')) { if (!ent.flashed) { how = 'flash'; ent.flashed = true; } else hud.toast('It no longer flinches from the light', 'warn'); }
     if (!how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { if ((profile.oldLures || 0) > 0) profile.oldLures--; else g.items.lure--; how = 'lure'; }
@@ -713,16 +713,18 @@ function killUpdate(dt) {
     if (how) { escapeKill(how); for (const k of ['l', 'q', 'e']) pressed.delete(k); return; }
   }
   for (const k of ['l', 'q', 'e']) pressed.delete(k);
-  // its mouth a crack open while the arm is out
-  if (!K.opened) K.open = clamp(K.t / 0.35, 0, 1) * 0.3;
-  // the jaws: the lower jaw drops wide in a tenth of a second, held a breath, and it lunges and shuts
-  if (K.t >= KILL_JAWS) {
-    if (!K.opened) { K.opened = true; audio.ready && audio.scare(); g.fx.shake = Math.max(g.fx.shake, 3.2); g.fx.flash = 0.45; }
-    K.jaw = K.t - KILL_JAWS;
-    const j = K.jaw;
-    K.open = j < 0.1 ? 0.3 + 0.7 * (1 - Math.pow(1 - j / 0.1, 3)) : j < 0.42 ? 1 : Math.max(0, 1 - (j - 0.42) / 0.2);
-    if (j > 0.18) { const k = 1 - Math.exp(-dt * 10); ent.x += (T.x - K.s * 14 - ent.x) * k; ent.y += (T.y - 3.5 - ent.y) * k; }
-    if (K.jaw > KILL_CLOSE && !K.done) { K.done = true; die(causeText('entity'), 'devoured'); }
+  // the lunge: it comes across the screen, the jaw dropping as it comes, until he is well inside the
+  // gape (about 10 m behind its snout); then the jaws shut
+  const k = clamp(K.t / KILL_LUNGE, 0, 1), ease = 1 - Math.pow(1 - k, 2.2);
+  const endX = T.x - K.s * 10;
+  ent.x = K.x0 + (endX - K.x0) * ease; ent.y = T.y - 2.5;
+  if (!K.opened && K.t > 0.05) { K.opened = true; audio.ready && audio.scare(); g.fx.shake = Math.max(g.fx.shake, 2.5); }
+  if (K.t < KILL_LUNGE) K.open = clamp(K.t / 0.45, 0, 1);
+  else {
+    const c = (K.t - KILL_LUNGE) / KILL_CLOSE;
+    K.open = Math.max(0, 1 - c);
+    if (c >= 1 && !K.swallowed) { K.swallowed = true; g.fx.shake = Math.max(g.fx.shake, 3.2); }
+    if (c >= 1.6 && !K.done) { K.done = true; die(causeText('entity'), 'devoured'); }
   }
 }
 function escapeKill(how) {
@@ -736,9 +738,9 @@ function escapeKill(how) {
     g.sub.hull = Math.max(0.05, g.sub.hull - 0.35); audio.ready && audio.ram();
     hud.toast(`${how === 'flash' ? 'The light burns it' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it lets go. The hull is torn (${Math.round(g.sub.hull * 100)} %)`, 'warn');
   } else {
-    g.injury = Math.min(4, g.injury + 2); g.healT = 0; g.fx.redFlash = 1;
+    g.injury = Math.min(4, g.injury + 2); g.healT = 0; g.fx.redFlash = 1; // its teeth caught him as it turned
     for (let i = 0; i < 30; i++) g.blood.push({ x: e.x + (Math.random() - 0.5) * 0.8, y: e.y + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, r: 0.3 + Math.random() * 0.5, t: 0, life: 6 });
-    hud.toast(`${how === 'flash' ? 'The light burns it' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it lets go. Its fingers broke something.`, 'warn');
+    hud.toast(`${how === 'flash' ? 'The light burns it' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it turns away, but its teeth caught you.`, 'warn');
   }
   g.fx.shake = Math.max(g.fx.shake, 2);
   ent.hunt = null;
@@ -1134,7 +1136,7 @@ function update(dt) {
     else if (g.toolSel === 'trap') {
       const fl = g.world.floorAt(e.x);
       const why = canSetHere(g);
-      g.capPrompt = why ? `Traps: ${why.charAt(0).toLowerCase() + why.slice(1)}` : `Space  Set a trap here (the bottom is ${Math.round(fl)} m down)`;
+      g.capPrompt = why ? `Traps: ${why.charAt(0).toLowerCase() + why.slice(1)}` : 'Space  Set a trap here';
     } else if (!e.inSub && tool.kind === 'tag') {
       const tt = findTagTarget(g);
       g.capPrompt = tt ? (tt.ok ? `Space  Tag the ${tt.name.toLowerCase()} · ~${money(tt.value)}` : `${tt.sp.name}: ${tt.why}`) : null;
@@ -1275,7 +1277,7 @@ function update(dt) {
       ent.dist = dist(ent.x, ent.y, e.x, e.y); ent.eyeOpen = 1; ent.fade = 1; ent.heading = Math.PI;
       if (R.t > 26) { g.reveal = null; ent.y = Math.max(ent.y, e.y + 200); }
     } else if (!g.kill) r = ent.update(g, dt);
-    if (r === 'grab') startKill();
+    if (r === 'grab' || r === 'swallow') startKill();
     for (const ev of g.events) {
       if (ev === 'marked') {
         // something has noticed him: a deep sound, a pulse through the screen, a line in the journal
@@ -1299,7 +1301,11 @@ function update(dt) {
         if (e.inSub) { g.sub.vx += (Math.random() - 0.5) * 3; g.sub.vy += 1.2; }
       } else if (ev === 'windup') { g.fx.markPulse = 1; audio.ready && audio.swell(); }
       else if (ev === 'strike') { audio.ready && (audio.whoosh(), audio.heartbeat(0.6)); }
-      else if (ev === 'stare') { hud.toast('Something is looking in through the glass. Keep still.', 'note'); audio.ready && audio.heartbeat(0.5); }
+      else if (ev === 'tailbump') { // the first approach: its tail strikes the hull out of the dark
+        if (e.inSub) { g.sub.hull = Math.max(0.05, g.sub.hull - 0.06); g.subHit = true; }
+        g.fx.shake = Math.max(g.fx.shake, 2.6); audio.ready && audio.ram();
+        for (let i = 0; i < 40; i++) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 6, y: g.sub.y + 1 + Math.random() * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
+      }
       else if (ev === 'lost') hud.toast('It has lost you in the dark.', 'note');
       else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); hud.toast('Something bumped you', 'warn'); }
       else if (ev === 'charge') { audio.ready && audio.whoosh(); }

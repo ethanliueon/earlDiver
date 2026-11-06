@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.27.0 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.28.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -69,7 +69,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - A damaged hull leaks cabin air. Repairs during a dive use supplies bought at the boat: a leak
   sealant kit (K, inside: +20 %, but only up to 85 %, since a seal is not steel) or a hull patch
   plate (hold F outside at the hatch: 10 s of wet welding, +40 %; the arc's light is seen below 200 m).
-- Something is out there: a gulper some 100 m long, nearly all head and mouth, with red lights
+- Something is out there: a gulper some 60 m long, nearly all head and mouth, with red lights
   flickering fast and unevenly along its length and red eyes. It hears speed and engines, and it
   sees light. Kelp and rock overhangs hide you if you are slow and dark. Sea lanterns keep it away,
   for a while.
@@ -77,11 +77,14 @@ Settings → Pages → Deploy from a branch → `main` / root).
   seen you), black again; then only its eyes, brightening, while its red seeps into the water
   around you. Go dark and still, or hide, before the red peaks and it may lose you; run and it comes.
   The pause menu has a "Reduce flashing" setting that slows and softens its lights.
-- It hunts in stages you can read: it stalks at the edge of your light, sweeps past you once, draws
-  back (a low swell) and strikes. Keep still and dark and it may lose you; in the sub, it may come and
-  look in at the viewport, and leave if you do not move. When it takes you, everything goes silent
-  and a long pale arm reaches out of its mouth: flash the lights (L, once: it learns), throw a lure
-  (Q) or wear a necklace (E) to make it let go. Otherwise the jaws open.
+- At the sub it comes three times, with a pause between: first only its tail, curling up out of the
+  dark below to strike the hull; then its head, nosing in at the edge of the screen to look at you
+  (the lights go out, the blue flash, its eyes come up); then it comes in from the side with its
+  mouth already opening and swallows the sub whole. Nothing saves you from the third: get away (up
+  past 120 m, to a lantern, the old one's cave) or calm it (G) before then.
+- Swimming, it stalks at the edge of your light, sweeps past once, draws back and strikes, its jaws
+  opening as it comes. In that last moment: flash the lights (L, once: it learns), throw a lure (Q)
+  or wear a necklace (E), and it turns away.
 - It travels at about 12 m/s, bursting to 15 m/s only on screen, and only when you flee.
 - Between 2,500 and 3,000 m lives the Abyssal Sleeper Shark: slow, ancient, nearly blind, the
   biggest predator at its depth. It rises at you from the dark below, then lunges, at Earl or the
@@ -123,7 +126,7 @@ js/player.js        Earl and the submersible: movement, air, pressure, hull
 js/entity.js        the entity's hunting behaviour
 js/hunters.js       animals that attack Earl or the submersible, and the encounter director
 js/render.js        scene and light model
-js/earl_draw.js     Earl, the submersible, the boat, the arm from the entity's mouth
+js/earl_draw.js     Earl, the submersible, the boat
 js/monster_draw.js  the entity itself: its body (painted once into sprites), its lights
 js/sleeper_draw.js  the abyssal sleeper shark
 js/hud.js           timer, air, dive monitor (sonar, heart rate, journal)
