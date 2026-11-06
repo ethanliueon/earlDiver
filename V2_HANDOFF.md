@@ -284,3 +284,33 @@ Docs, screenshots, the handoff's checks, merge to main.
   own (#menu) with a "Title screen" link; the pause menu has "Save and quit to the title". The dive log
   is kept per slot.
 - Tested: new slot, buy, reload, Continue (kept), save & quit, a damaged slot, delete, an old partial save.
+
+## 2.0.0-alpha.3: the economy (tested)
+- Rarity (specimens.js): the price ladder sets the tier, except: Legendary is exactly LEGENDARY (humpback
+  anglerfish 100, fangtooth 101, barreleye 104, gulper 105, blobfish 107, coelacanth 108, giant oarfish 54),
+  each priced at least $5,000; any other capturable animal is capped at $4,800 (exotic); tag-only animals
+  (not legendary) get a hidden tier (`hidden: true`, badge not shown) that only sets their spawn rate
+  (the colossal squid is a hidden legendary). `UNDOCUMENTED` tier ready for alpha.4 (species carry `undoc`).
+  Counts: 90 common, 120 uncommon, 92 rare, 46 exotic, 7 legendary, 91 hidden.
+- GIANT_FORMS (species.js) only for the legendaries, each >= 1.5 m (coelacanth 2 m); the dragonfish,
+  dumbo, vampire squid and yeti crab back to real size.
+- Upgrades (economy.js): `statAt(id, level)`: base -> top with gains growing x1.5 a level (or `lin` +1, or
+  `vals`); price `cost x growth^level` (~x1.7), or `costs`. Earl's air 50 -> 200 s in 9 levels
+  (52, 55, 60, 66, 76, 92, 114, 149, 200) for $8 ... $704. The depth upgrade is the next submersible:
+  300/500/900/1,300/1,900/2,500/3,300/4,000 m for $150 ... $80,000. The cabin air upgrade is gone:
+  SUB_AIR by sub, 150 ... 300 s. Multipliers shown to three places so the small first levels show.
+  A bag of five common reef fish ~ $90, so the first upgrades ($8-20) come after one shallow dive.
+- No market softening (priceOf = base); the price board on the Margaret (P.board, the Sell tab).
+  Low-light sensor $2,400. Tag share 0.25. Hospital bill capped at $1,500. Replacement sub: 30 % of the
+  subs it replaces + $40.
+- Tags (survey.js): ammunition, basic $5 / advanced $200, 3 of each (SUPPLIES, shown once he owns the
+  tag gun). canTag: tag-only animals, and anything that swims and is 12 cm or more; smaller is "too small
+  to tag" (prompt, and a dart through one says so). needsAdvanced: exotic, legendary, undocumented, or
+  tag-only >= 2 m. A tag on a fish he could catch pays 25 % of its value kept to $0.50-2. Advanced
+  darts: 1.8x hit radius, a faint glow. The prompt shows the tags left.
+- Lure and necklace: carry 1 each, not sold. The necklace is only a light now (E on/off, a soft green
+  glow; it counts as a dim light to the monster): no protection, not an escape.
+- Removed pickups: rock, scrap iron, squid tentacles, ink sacs, fish scales; kelp is no longer cut.
+- Pressure (capture.js, specimens.js): comfort zones ZONE 50/150/250/350 m times pressureTolerance
+  (x3 gelatinous, x2 daily migrators and most squid, x1.5 no swim bladder, x1 swim-bladder fish; x1.5
+  caught below 1,000 m, x2 below 2,500 m; the higher). Shown on the catch toast and the journal page.

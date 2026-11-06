@@ -209,18 +209,16 @@ function parseSize(txt, vis) {
   return v;
 }
 
-// The famous animals of the deep grow far past their textbook size here: legends, and drawn as such.
-// (length in metres; their price and rarity are in specimens.js)
+// The legendaries grow far past their textbook size here, so that meeting one is unmistakable: each at
+// least 1.5 m (length in metres; their price and rarity are in specimens.js, their journal pages give
+// the real size). Every other animal keeps a realistic size.
 export const GIANT_FORMS = {
-  100: 1.8,  // humpback anglerfish
-  101: 0.9,  // fangtooth
-  103: 1.3,  // black dragonfish
-  104: 0.7,  // barreleye
-  105: 2.2,  // pelican gulper eel
-  107: 0.8,  // blobfish
-  146: 1.2,  // dumbo octopus
-  150: 0.9,  // vampire squid
-  163: 0.5,  // yeti crab
+  100: 1.8,  // humpback anglerfish (in life about 18 cm)
+  101: 1.5,  // common fangtooth (about 16 cm)
+  104: 1.5,  // barreleye (about 15 cm)
+  105: 2.2,  // pelican gulper eel (about 75 cm)
+  107: 1.5,  // blobfish (about 30 cm)
+  108: 2.0,  // coelacanth (up to about 2 m: its real size)
 };
 
 // the reference list and the species added since (data/species_more.js, which carry their own look)

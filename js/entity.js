@@ -157,6 +157,7 @@ export class Entity {
     if (e.speedNow > 2) r += 25;
     if (fast) r += 90;
     if (e.lampOn) r += 70;
+    if (g.necklaceOn) r += 25; // the necklace's glow is a light too, if a dim one
     if (e.suitQuiet) r *= 0.7; // no bubbles: much less to hear
     if (e.atSurface) r += 30; // splashing
     return r;

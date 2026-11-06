@@ -82,7 +82,7 @@ export function subLook(P, addons) {
   if (!P) return { mark: 0 };
   return {
     mark: markOf(statValue(P, 'depth')),
-    engine: lv(P, 'subSpeed'), air: lv(P, 'subAir'), ballast: lv(P, 'ballast'), rack: statValue(P, 'airTanks'),
+    engine: lv(P, 'subSpeed'), air: lv(P, 'depth') * 5, // (the air bottles on her hull come with each new sub) ballast: lv(P, 'ballast'), rack: statValue(P, 'airTanks'),
     chambers: statValue(P, 'pressTanks'), chamberLv: lv(P, 'pressRating'), tank: lv(P, 'subTank'),
     reach: lv(P, 'armReach'), jaw: lv(P, 'armSize'), hyd: lv(P, 'armSpeed'),
     quiet: !!(addons || P.addons || {}).quiet, recall: !!(addons || P.addons || {}).recall,
@@ -641,6 +641,7 @@ export class Renderer {
         ctx.save(); ctx.translate(S(d.x), Sy(d.y)); ctx.rotate(Math.atan2(d.vy, d.vx));
         drawDart(ctx, EARL_H * ppm / 100, d.tier, -12 * EARL_H * ppm / 100, t);
         ctx.restore();
+        if (d.adv) glowPts.push([S(d.x), Sy(d.y), '#9fe8ff', ppm * 0.9, 0.9]); // an advanced tag glows faintly
       }
       // the camera's flash lights the water for a moment
       // a wet-welding arc: blue-white, flickering, lighting the hull and the water around it
@@ -2099,7 +2100,7 @@ export class Renderer {
       cone(head.x, head.y, ang, 17 * ppm, 0.32, beamCol, 0.95 * TORCH * flick);
       radial(head.x, head.y, 3.2 * ppm, beamCol, 0.3 * TORCH * flick); lamps.push({ x: head.x, y: head.y, r: 3.2 * ppm, a: 0.3 * TORCH * flick });
     }
-    if (g.protection && g.protection.necklace) radial(S(e.x), Sy(e.y), 9 * ppm, [255, 230, 190], 0.65);
+    if (g.necklaceOn && !e.inSub) radial(S(e.x), Sy(e.y), 6 * ppm, [170, 255, 190], 0.5); // the necklace: a glowstick's soft green light
     if (subLamps) {
       const sub = g.sub;
       const sx = S(sub.x), sy = Sy(sub.y);
@@ -2344,7 +2345,7 @@ export class Renderer {
       if (x < -50 || x > this.W + 50 || y < -50 || y > this.H + 50) continue;
       halo(x, y - ppm * 0.2, ppm * 0.5, p.type === 'lure' ? [190, 240, 255] : [90, 140, 255], 0.35 * haze + 0.1);
     }
-    if (g.protection && g.protection.necklace) halo(S(e.x), Sy(e.y), ppm * 3, [255, 220, 170], 0.18);
+    if (g.necklaceOn && !e.inSub) halo(S(e.x), Sy(e.y), ppm * 2.2, [170, 255, 190], 0.2);
     if (this.boatLight) halo(this.boatLight.x, this.boatLight.y, ppm * 4, [255, 190, 110], 0.25 * this.boatLight.a);
   }
 }

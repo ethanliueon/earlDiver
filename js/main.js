@@ -17,9 +17,10 @@ import { fillBoard, fulfil, RADIO } from './contracts.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
-import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS } from './economy.js';
+import { pressureTolerance } from './specimens.js';
+import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
-import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
+import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
@@ -34,7 +35,7 @@ const hud = new Hud(hudCanvas);
 const audio = new Audio();
 
 const keys = new Set();
-const PRY = new Set(['clam', 'mussel', 'rock', 'iron']);
+const PRY = new Set(['clam', 'mussel']);
 const PRY_TIME = 1.5;
 // how long each hold-F job takes, and how much calm a good deed gives
 const HOLD_TIME = { clam: 1.5, mussel: 1.5, rock: 1.5, iron: 1.5, net: 12 };
@@ -55,7 +56,7 @@ function applySuit(e, P) {
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
-  sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = statValue(P, 'subAir'); sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
+  sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
   sub.level = lv(P, 'depth');
 }
 // X (a developer's key): everything at its best - every upgrade maxed, every piece of gear and every
@@ -97,7 +98,7 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 1, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0 }, inv: {}, // a new diver starts with one backup air tank
+    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 1, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, tag: P.items ? P.items.tag || 0 : 0, tagAdv: P.items ? P.items.tagAdv || 0 : 0 }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
@@ -384,7 +385,7 @@ function tankAction(act, where, i, to = -1) {
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subLost = !!g.sub.imploded;
-  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, sealant: g.items.sealant, plate: g.items.plate };
+  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, sealant: g.items.sealant, plate: g.items.plate, tag: g.items.tag, tagAdv: g.items.tagAdv };
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
 }
@@ -402,10 +403,10 @@ function buy(kind) {
       P.lv = Object.assign({}, P.lv, { [id]: lv(P, id) + 1 }); ok = true;
       const mk1 = markOf(statValue(P, 'depth'));
       if (mk1 > mk0) hud.toast(`The yard rebuilds her: ${SUB_MARKS[mk1].label}, the ${SUB_MARKS[mk1].name}`, 'big');
-      if (id === 'air') { e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + U.step); }
+      if (id === 'air') { const was = e.o2Max; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + (e.o2Max - was)); }
       if (id === 'swim') e.finSpeed = statValue(P, 'swim');
       if (id === 'sprint') e.sprintMul = statValue(P, 'sprint');
-      if (id === 'depth' || id === 'subAir' || id === 'subSpeed' || id === 'ballast') applySub(sub, P);
+      if (id === 'depth' || id === 'subSpeed' || id === 'ballast') applySub(sub, P);
       if (id === 'camShots') g.shots = gear(P, 'cam').shots;
       hud.toast(`${U.name}: ${fmtStat(id, statValue(P, id))}`);
     }
@@ -576,7 +577,7 @@ function findTarget() {
   if (best) return best;
   if (!e.inSub && !g.sub.imploded && dist(e.x, e.y, g.sub.x, g.sub.y) < 4.5) return { kind: 'board' };
   if (!e.inSub && W.inKelp(e.x, e.y)) {
-    for (const k of W.kelp) if (!k.harvested && Math.abs(k.x - e.x) < 1.6 && e.y > k.base - k.h && e.y < k.base) return { kind: 'kelp', k };
+    // (v2: kelp blades are no longer cut and sold)
   }
   // creatures (moving, then on the floor)
   const cr = g.fauna.nearest(e.x, e.y, e.inSub ? 9 : 3.5);
@@ -660,7 +661,7 @@ function interact(t, exitSub) {
     // taking things from the deep draws its attention
     if (p.y > 200) g.entity.disturb(g, p.type === 'necklace' ? 0.3 : p.type === 'lure' ? 0.2 : p.type === 'sapphire' ? 0.25 : 0.04);
     if (p.type === 'lure' || p.type === 'necklace') {
-      if (g.items[p.type] >= 3) { hud.toast('You cannot carry more', 'warn'); return; }
+      if (g.items[p.type] >= 1) { hud.toast(p.type === 'lure' ? 'You already carry a lure: you leave this one' : 'You already carry a necklace: you leave this one', 'warn'); return; }
       g.items[p.type]++;
       hud.toast(p.type === 'lure' ? 'Anglerfish lure — still glowing  [Q]' : 'Fangtooth necklace  [E]');
     } else if (p.type === 'sapphire') {
@@ -762,7 +763,6 @@ function killUpdate(dt) {
     let how = null;
     if (pressed.has('l')) { if (!ent.flashed) { how = 'flash'; ent.flashed = true; } else hud.toast('It no longer flinches from the light', 'warn'); }
     if (!how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { if ((profile.oldLures || 0) > 0) profile.oldLures--; else g.items.lure--; how = 'lure'; }
-    if (!how && pressed.has('e') && g.items.necklace > 0) { g.items.necklace--; g.necklaceT = 15; how = 'necklace'; }
     if (how) { escapeKill(how); for (const k of ['l', 'q', 'e']) pressed.delete(k); return; }
   }
   for (const k of ['l', 'q', 'e']) pressed.delete(k);
@@ -897,7 +897,7 @@ function die(cause, kind = 'normal') {
   g.bag = []; g.subTank = [];
   const taken = cause.startsWith('Taken');
   if (taken) { const n = g.items.lure + g.items.necklace; if (n) lost.push(`${n} lure${n > 1 ? 's' : ''} and necklace${n > 1 ? 's' : ''}`); g.items.lure = g.items.necklace = 0; }
-  const bill = kind === 'quit' ? 0 : Math.round(profile.cash * HOSPITAL_SHARE * 100) / 100;
+  const bill = kind === 'quit' ? 0 : Math.min(HOSPITAL_CAP, Math.round(profile.cash * HOSPITAL_SHARE * 100) / 100); // capped: late in the game 10 % would be ruinous
   g.inv = {};
   syncProfile();
   profile.cash = Math.round((profile.cash - bill) * 100) / 100;
@@ -1049,8 +1049,9 @@ function update(dt) {
       else { g.tankFit = 0.001; g.tankClank = 0; audio.ready && audio.click(); } // three seconds to connect it (see repairs)
     }
     if (pressed.has('e')) {
-      if (g.items.necklace > 0 && g.necklaceT <= 0) { g.items.necklace--; g.necklaceT = 15; hud.toast('The necklace warms against your chest'); audio.ready && audio.lanternHum(0.05); }
-      else if (g.items.necklace === 0) hud.toast('No necklaces', 'warn');
+      // the necklace is only a light now: on and off, never used up
+      if (g.items.necklace > 0) { g.necklaceOn = !g.necklaceOn; hud.toast(g.necklaceOn ? 'The necklace glows green against your chest' : 'You tuck the necklace away'); audio.ready && audio.click(); }
+      else hud.toast('No necklace', 'warn');
     }
     if (pressed.has('k')) {
       // the sealant kit: from inside, Earl works along the seams with epoxy and clamps
@@ -1123,7 +1124,7 @@ function update(dt) {
       // at the surface: open the depth meter (setting happens there; the Space that set it is ignored)
       if (!ui.trapSetOpen() && performance.now() - (ui.tsClosedAt || 0) > 400) { const msg = canSetHere(g); if (msg) hud.toast(msg, 'warn'); else ui.openTrapSet(); }
     } else if (pressed.has(' ') && !e.inSub) {
-      if (tool.kind === 'tag') { if (!g.capture) { fireTag(g); audio.ready && audio.thud && audio.thud(0.15); } }
+      if (tool.kind === 'tag') { if (!g.capture) { const why = fireTag(g); if (why) hud.toast(why.charAt(0).toUpperCase() + why.slice(1), 'warn'); else audio.ready && audio.thud && audio.thud(0.15); } }
       else if (tool.kind === 'cam') {
         if (!g.capture) {
           const r = takePhoto(g);
@@ -1171,6 +1172,7 @@ function update(dt) {
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       } else if (ev.type === 'provoked') hud.toast(`The ${ev.sp.name.toLowerCase()} turns toward you`, 'warn');
       else if (ev.type === 'dartMiss') hud.toast('Missed');
+      else if (ev.type === 'tooSmall') hud.toast(`The ${ev.sp.name.toLowerCase()} is too small to tag`);
     }
     for (const ev of updateCapture(g, dt)) {
       if (ev.type === 'caught') {
@@ -1183,7 +1185,8 @@ function update(dt) {
         }
         const rr = rarityOf(sp);
         audio.calmBoost && audio.calmBoost(0.12);
-        hud.toast(`${rr.name}: ${ev.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec) * statValue(profile, 'payFish'))}  (${g.bag.length}/${bagSlots(g)})`, 'rar:' + rr.col);
+        const tol = pressureTolerance(sp, ev.spec.from || 0);
+        hud.toast(`${rr.name}: ${ev.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec) * statValue(profile, 'payFish'))} · pressure x${tol.k} (${tol.why})  (${g.bag.length}/${bagSlots(g)})`, 'rar:' + rr.col);
         audio.ready && audio.pickup();
         if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
         if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
@@ -1212,7 +1215,8 @@ function update(dt) {
       g.capPrompt = why ? `Traps: ${why.charAt(0).toLowerCase() + why.slice(1)}` : 'Space  Set a trap here';
     } else if (!e.inSub && tool.kind === 'tag') {
       const tt = findTagTarget(g);
-      g.capPrompt = tt ? (tt.ok ? `Space  Tag the ${tt.name.toLowerCase()} · ~${money(tt.value)}` : `${tt.sp.name}: ${tt.why}`) : null;
+      const ammo = `tags ${g.items.tag || 0} basic · ${g.items.tagAdv || 0} advanced`;
+      g.capPrompt = tt ? (tt.ok ? `Space  Tag the ${tt.name.toLowerCase()} · ~${money(tt.value)}${tt.adv ? ' · advanced tag' : ''} · ${ammo}` : `${tt.sp.name}: ${tt.why} · ${ammo}`) : ammo;
     } else if (!e.inSub && tool.kind === 'cam') {
       const ps = findPhotoSubject(g);
       g.capPrompt = ps ? (ps.ok ? `Space  Photograph the ${ps.name.toLowerCase()} · new · ~${money(ps.value)}` : `${ps.name}: ${ps.why}`) : null;
@@ -1321,9 +1325,8 @@ function update(dt) {
       if (ent.lureT <= 0) g.lure = null;
     }
     // protection: necklace or a nearby lantern
-    g.necklaceT = Math.max(0, g.necklaceT - dt);
+    if (!g.items.necklace) g.necklaceOn = false;
     g.protection = null;
-    if (g.necklaceT > 0) g.protection = { x: e.x, y: e.y, necklace: true };
     for (const l of W.lanterns) {
       const d = dist(e.x, e.y, l.x, l.y);
       const inside = d < (e.inSub ? LANTERN_RADIUS + 3 : LANTERN_RADIUS) && l.charge > 0.05;

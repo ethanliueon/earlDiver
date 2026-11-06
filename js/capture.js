@@ -1,6 +1,8 @@
 // Catching animals alive: the net and the slurp gun, the specimen bag, the sub's tank, and what
 // happens to an animal between the catch and the sale (handling, time, coming up too fast).
 import { clamp, dist } from './util.js';
+import { pressureTolerance } from './specimens.js';
+import { SPECIES_BY_ID } from './species.js';
 import { WEIGHT, gear, owns, statValue } from './economy.js';
 import { canTakeLive, isTagOnly, liveValue, fragile, conditionName } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
@@ -167,6 +169,7 @@ export function updateCapture(g, dt) {
 // that the animal feels the rest.
 // Up to 150 m of gap, it lives, more stressed the bigger the gap; past that, it dies.
 export const SAFE_GAP = 150, PUMP = 30;
+export const ZONE = { ok: 50, stressed: 150, dying: 250, dead: 350 }; // metres from its own depth, times its tolerance
 export const chamberRating = (g) => Math.round(statValue(g.profile, 'pressRating'));
 // the most a chamber can hold right now: the water outside, plus its rating
 export const chamberMax = (g) => Math.max(0, g.sub.y) + chamberRating(g);
@@ -199,16 +202,21 @@ export function updateSpecimens(g, dt) {
       if (s.press < target) s.press = Math.min(target, s.press + PUMP * dt);
       else if (s.press > target) s.press = target;
     }
-    const gap = gapOf(g, s, inBag);
+    // the comfort zones, measured from the depth it lives at and scaled by what it can take
+    // (pressureTolerance): within 50 m healthy; to 150 m stressed; to 250 m dying; to 350 m dying
+    // fast; beyond, dead
+    if (!s.tol) { const sp = SPECIES_BY_ID[s.id]; s.tol = sp ? pressureTolerance(sp, homeOf(s)).k : 1; }
+    const gap = gapOf(g, s, inBag) / s.tol;
     // in the net there is nothing to protect it: say so, once as it starts to suffer, once as it dies
     const deeper = gapSigned(g, s, inBag) < 0;
-    if (inBag && gap > 40 && !s.warnStress) { s.warnStress = true; events.push({ type: 'bagStress', s, deeper }); }
-    if (inBag && gap > SAFE_GAP && !s.warnDying) { s.warnDying = true; events.push({ type: 'bagDying', s, deeper }); }
-    if (gap > 0) {
-      // stress builds toward a ceiling set by the gap; past 150 m it is dying
-      const cap = gap <= SAFE_GAP ? 1 - (gap / SAFE_GAP) * 0.55 : 0.45;
+    if (inBag && gap > ZONE.ok && !s.warnStress) { s.warnStress = true; events.push({ type: 'bagStress', s, deeper }); }
+    if (inBag && gap > ZONE.stressed && !s.warnDying) { s.warnDying = true; events.push({ type: 'bagDying', s, deeper }); }
+    if (gap > ZONE.ok) {
+      const cap = gap <= ZONE.stressed ? 1 - ((gap - ZONE.ok) / (ZONE.stressed - ZONE.ok)) * 0.45 : 0.5;
       if (s.cond > cap) s.cond -= Math.min(s.cond - cap, 0.03 * dt);
-      if (gap > SAFE_GAP) s.cond -= ((gap - SAFE_GAP) / 300) * 0.02 * dt; // slow at first: there is time to get it into a chamber
+      if (gap > ZONE.dead) s.cond -= 0.25 * dt;                                                            // dead in seconds
+      else if (gap > ZONE.dying) s.cond -= (0.02 + 0.04 * (gap - ZONE.dying) / (ZONE.dead - ZONE.dying)) * dt; // dying fast
+      else if (gap > ZONE.stressed) s.cond -= 0.004 * dt;                                                  // dying slowly: time to get it into a chamber
     }
     // held at its own pressure in a chamber, it recovers
     if (s.pressed && gap <= 5) s.cond += 0.003 * dt;

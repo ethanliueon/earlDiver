@@ -265,14 +265,8 @@ export function generateWorld(seed) {
     if (W.floorAt(x) > 2) addPickup('clam', x, onFloor(x), { pearl: rng() < 0.08 });
   }
   for (let i = 0; i < 14; i++) { const x = rng.range(EAST + 900, EAST + 975); if (W.floorAt(x) > 1) addPickup('mussel', x, onFloor(x)); }
-  for (let i = 0; i < 28; i++) { const x = rng.range(EAST + 560, EAST + 975); addPickup('rock', x, onFloor(x)); }
-  for (const w of W.wrecks) {
-    const cnt = w.x > EAST + 600 ? 16 : 28;
-    for (let i = 0; i < cnt; i++) { const x = w.x + rng.range(-w.len * 0.8, w.len * 0.8); addPickup('iron', x, onFloor(x)); }
-  }
-  for (let i = 0; i < 60; i++) { const x = rng.range(1000, 2610); const fl = W.floorAt(x); if (fl > 200 && fl < 1000) addPickup('tentacle', x, onFloor(x)); }
-  for (let i = 0; i < 90; i++) { const x = rng.range(900, 2700); const y = rng.range(100, 1000); if (y < W.floorAt(x) - 4) addPickup('ink', x, y); }
-  for (let i = 0; i < 70; i++) { const x = rng.range(EAST + 450, EAST + 900); const y = rng.range(8, 300); if (y < W.floorAt(x) - 3) addPickup('scale', x, y); }
+  // (v2: no more rocks, scrap iron, squid tentacles, ink sacs or fish scales to pick up: they had no use
+  // but a few cents at the boat)
   // manganese nodules strewn over the abyssal plain (not in the brine)
   for (let i = 0; i < 70; i++) {
     const x = rng.pick([rng.range(560, 900), rng.range(1460, 1860)]);

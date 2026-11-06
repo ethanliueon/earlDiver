@@ -4,13 +4,23 @@
 // each rare form. Both are paid at the boat; neither survives his death (the data dies with him).
 import { clamp, dist } from './util.js';
 import { gear, owns } from './economy.js';
-import { TAG, liveValue, tagPrice } from './specimens.js';
+import { TAG, liveValue, tagPrice, rarityOf, rarityPrice } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 import { AGGRO } from './hunters.js';
 
-export const canTag = (sp) => (TAG[sp.id] || 0) > 0;
+// What can carry a tag: the big tag-only animals, and any other fish or animal that swims and is not
+// too small for a dart (12 cm and up). Tiny things (krill, shrimp, lanternfish) are "too small".
+export const TOO_SMALL = 0.12;
+const isTagOnlyId = (sp) => (TAG[sp.id] || 0) > 0;
+export const canTag = (sp) => isTagOnlyId(sp) || (sp.len >= TOO_SMALL && !/floor|plant|surface-plant/.test(sp.v.hab || ''));
+export const tooSmall = (sp) => !isTagOnlyId(sp) && sp.len < TOO_SMALL && !/floor|plant|surface-plant/.test(sp.v.hab || '');
+// which dart it needs: an advanced tag for the exotic, legendary and undocumented, and for any
+// tag-only animal 2 m long or more; a basic tag for everything else
+export const needsAdvanced = (sp) => { const r = rarityOf(sp); return r.id === 'exotic' || r.id === 'legendary' || r.id === 'undocumented' || (isTagOnlyId(sp) && sp.len >= 2); };
+// a tag on a tag-only animal pays a share of its worth; on a fish he could also catch, a little ($0.50-2)
 export function tagValue(sp, variant, pay) {
-  return tagPrice(sp.id) * variantMult(variant) * pay;
+  const base = isTagOnlyId(sp) ? tagPrice(sp.id) : Math.min(2, Math.max(0.5, rarityPrice(sp) * 0.25));
+  return base * variantMult(variant) * pay;
 }
 // what the institute pays for a first photograph
 export function photoValue(sp, variant) {
@@ -48,10 +58,14 @@ function inCone(g, range, cone, pick) {
 export function findTagTarget(g) {
   if (!owns(g.profile, 'tagger')) return null;
   const def = gear(g.profile, 'tag');
-  const t = inCone(g, def.range, 0.3, (sp, ref, d, da) => (ref.c && canTag(sp) ? d + da * 6 + (ref.c.tagged ? 50 : 0) : null));
+  const t = inCone(g, def.range, 0.3, (sp, ref, d, da) => (ref.c && (canTag(sp) || tooSmall(sp)) ? d + da * 6 + (ref.c.tagged ? 50 : 0) + (tooSmall(sp) ? 8 : 0) : null));
   if (!t) return null;
+  if (tooSmall(t.sp)) return { ...t, ok: false, why: 'too small to tag', small: true };
   if (t.c.tagged) return { ...t, ok: false, why: 'already tagged' };
-  return { ...t, ok: true, value: tagValue(t.sp, t.variant, def.pay), name: variantName(t.sp, t.variant) };
+  const adv = needsAdvanced(t.sp), it = g.items || {};
+  if (adv && !(it.tagAdv > 0)) return { ...t, ok: false, why: 'needs an advanced tag', adv };
+  if (!adv && !(it.tag > 0) && !(it.tagAdv > 0)) return { ...t, ok: false, why: 'no tags left', adv };
+  return { ...t, ok: true, adv: adv || !(it.tag > 0), value: tagValue(t.sp, t.variant, def.pay), name: variantName(t.sp, t.variant) };
 }
 export function findPhotoSubject(g) {
   if (!owns(g.profile, 'camera')) return null;
@@ -68,12 +82,21 @@ export function findPhotoSubject(g) {
 }
 
 // fire a tag dart along the aim
+// Tags are ammunition (bought at the boat): the gun loads whichever the target needs (a basic tag
+// when either will do). Returns a reason it did not fire, or null.
 export function fireTag(g) {
-  const def = gear(g.profile, 'tag'), e = g.earl, a = aimAngle(g);
+  const def = gear(g.profile, 'tag'), e = g.earl, a = aimAngle(g), it = g.items;
+  const t = findTagTarget(g);
+  if (t && !t.ok && (t.small || t.why === 'already tagged' || t.why === 'needs an advanced tag')) return t.why;
+  let adv = t ? !!t.adv : false;
+  if (!adv && !(it.tag > 0)) adv = true;
+  if (adv && !(it.tagAdv > 0)) return 'no tags left: the boat sells them';
+  if (adv) it.tagAdv--; else it.tag--;
   const tip = g.toolTip || { x: e.x + Math.cos(a), y: e.y + Math.sin(a) };
-  g.darts.push({ x: tip.x, y: tip.y, vx: Math.cos(a) * 22, vy: Math.sin(a) * 22, travelled: 0, max: def.range + 0.6, tier: def.look, def });
+  g.darts.push({ x: tip.x, y: tip.y, vx: Math.cos(a) * 22, vy: Math.sin(a) * 22, travelled: 0, max: def.range + 0.6, tier: def.look, def, adv });
   g.capture = { kind: 'tag', t: 0, dur: def.time, resolveAt: 1, done: true };
   if (e.y > 200) g.entity.disturb(g, 0.01);
+  return null;
 }
 // darts in flight: a hit tags the animal; a miss may turn something aggressive on him
 export function updateDarts(g, dt) {
@@ -83,10 +106,16 @@ export function updateDarts(g, dt) {
     const step = Math.hypot(d.vx, d.vy) * dt;
     d.x += d.vx * dt; d.y += d.vy * dt; d.travelled += step;
     let hit = null;
+    let small = null;
     for (const c of g.fauna.list) {
-      if (c.dead || c.tagged || !canTag(c.sp)) continue;
-      if (dist(d.x, d.y, c.x, c.y) < Math.max(0.5, c.len * 0.32)) { hit = c; break; }
+      if (c.dead || c.tagged) continue;
+      const r = Math.max(0.5, c.len * 0.32) * (d.adv ? 1.8 : 1); // an advanced dart has a wider spread
+      if (dist(d.x, d.y, c.x, c.y) >= r) continue;
+      if (!canTag(c.sp)) { if (tooSmall(c.sp)) small = c; continue; }
+      if (needsAdvanced(c.sp) && !d.adv) continue; // a basic dart glances off what it can't hold
+      hit = c; break;
     }
+    if (!hit && small) { ev.push({ type: 'tooSmall', sp: small.sp }); g.darts.splice(i, 1); continue; }
     if (hit) {
       hit.tagged = true; hit.tagT = g.time;
       const def = d.def;

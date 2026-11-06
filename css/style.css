@@ -664,3 +664,10 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .sheet-row span { position: relative; padding-left: 13px; }
 .sheet-row span::before { content: ''; position: absolute; left: 0; top: 50%; width: 5px; height: 5px; margin-top: -3px; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, var(--brass-hi), var(--brass) 60%, var(--brass-lo)); }
+
+/* the price board on the Margaret: chalk on slate */
+.priceboard { margin-top: 16px; padding: 12px 16px 14px; border-radius: 3px; background: linear-gradient(180deg, #23282a, #1b1f20); border: 6px solid #5a4630;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4); columns: 2; column-gap: 26px; }
+.priceboard h4 { column-span: all; margin: 0 0 8px; font: 18px var(--game, Georgia); color: rgba(240, 240, 232, 0.85); letter-spacing: 0.04em; }
+.priceboard div { display: flex; justify-content: space-between; gap: 12px; font: 13px var(--game, Georgia); color: rgba(235, 235, 225, 0.75); padding: 2px 0; break-inside: avoid; }
+.priceboard b { font: 400 13px var(--mono); color: rgba(240, 240, 230, 0.9); }

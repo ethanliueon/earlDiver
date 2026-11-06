@@ -385,7 +385,7 @@ export class Hud {
     if (e.inSub && (g.items.airTank > 0 || g.tankFit)) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', g.tankFit ? g.tankFit / 3 : 0]);
     if (e.inSub && (g.items.sealant > 0 || g.seal)) slots.push(['k', 'K', 'SEALANT', g.items.sealant, '#e8c070', g.seal ? g.seal / 6 : 0]);
     if (!e.inSub && g.items.plate > 0 && g.sub.hull < 0.995) slots.push(['z', 'Z', 'PATCH PLATE', g.items.plate, '#b8c4cc', g.weld ? g.weld / 10 : 0]);
-    if (g.items.necklace > 0 || g.necklaceT > 0) slots.push(['e', 'E', 'NECKLACE', g.items.necklace, '#f0dcb0', g.necklaceT > 0 ? g.necklaceT / 15 : 0]);
+    if (g.items.necklace > 0) slots.push(['e', 'E', 'NECKLACE', g.items.necklace, '#b8f0c0', g.necklaceOn ? 1 : 0]);
     this.slotHot = {};
     slots.forEach(([id, key, name, n, col, active], i) => {
       const x = rx0 - sz, y = yy + i * (sz + 8 * s);
@@ -518,7 +518,6 @@ export class Hud {
       const opts = [];
       if (!g.entity.flashed) opts.push(['L', 'FLASH IT']);
       if (g.items.lure > 0 || (g.profile.oldLures || 0) > 0) opts.push(['Q', 'LURE']);
-      if (g.items.necklace > 0) opts.push(['E', 'NECKLACE']);
       const left = 1 - (K.t - K.window[0]) / (K.window[1] - K.window[0]);
       const pulse = 0.75 + 0.25 * Math.sin(K.t * 22);
       ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

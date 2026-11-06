@@ -6,7 +6,7 @@ import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName, rarityOf } from './specimens.js';
-const badge = (sp) => { const r = rarityOf(sp); return `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; };
+const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
@@ -16,6 +16,8 @@ import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
+import { statAt } from './economy.js';
+import { pressureKind, pressureTolerance } from './specimens.js';
 import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
@@ -31,9 +33,11 @@ const ADDON_SPECS = {
 };
 const SUPPLY_SPECS = {
   lure: [['use', 'Q throws it'], ['effect', 'the deep thing follows its light', 'good'], ['lasts', 'a while']],
-  necklace: [['use', 'E wears it'], ['effect', 'keeps it away', 'good'], ['lasts', '15 s']],
+  necklace: [['use', 'E puts it on / takes it off'], ['effect', 'a soft green light round Earl', 'good'], ['but', 'a light can be seen', 'bad']],
   sealant: [['use', 'K, inside the sub'], ['work', '6 s'], ['hull', '+20 %', 'good'], ['only up to', '85 %', 'bad']],
   plate: [['use', 'hold Z outside, at the hatch'], ['work', '10 s of welding'], ['hull', '+40 %, to full', 'good'], ['the arc', 'draws attention below 200 m', 'bad']],
+  tag: [['use', 'the tag gun (3)'], ['for', 'common to rare, tag-only under 2 m'], ['pays', '$0.50-2 a fish, more for big animals', 'good']],
+  tagAdv: [['use', 'the tag gun (3)'], ['for', 'exotic, legendary, undocumented, big animals', 'good'], ['dart', 'wider spread, faint glow']],
   airTank: [['use', 'R, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
 };
 const GEAR_SPECS = {
@@ -382,7 +386,7 @@ export class UI {
       const txt = document.createElement('div');
       txt.innerHTML = `<h3>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.sci}</div>
         <p>${sp.desc}</p>
-        <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}</div>
+        <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''} · pressure tolerance x${pressureKind(sp).k} (${pressureKind(sp).why})</div>
         ${this.variantRow(sp)}`;
       row.append(img, txt);
       list.append(row);
@@ -450,7 +454,7 @@ export class UI {
       const rows = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]);
       const atBoat = !sub.imploded && Math.hypot(sub.x - (BOAT.x + 8.5), sub.y - 2.6) < 20;
       const specs = g.bag.concat(atBoat ? g.subTank : []);
-      if (!rows.length && !specs.length && !g.tags.length && !g.photos.length && !g.items.lure && !g.items.necklace) {
+      if (!rows.length && !specs.length && !g.tags.length && !g.photos.length) {
         html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
       } else {
         let total = 0;
@@ -458,9 +462,9 @@ export class UI {
           const base = GOODS[k].price, now = priceOf(P, k, base);
           // what n of them fetch, each a little less than the last
           let sum = 0, glut = P.market[k] || 0;
-          for (let i = 0; i < n; i++) { sum += base * Math.pow(0.85, glut / 0.15); glut += 0.15; }
+          for (let i = 0; i < n; i++) { sum += base * 1; glut += 0.15; }
           total += sum;
-          const flooded = now < base * 0.97 ? `<em>market flooded −${Math.round((1 - now / base) * 100)} %</em>` : '';
+          const flooded = '';
           return `<tr><td>${GOODS[k].name}</td><td>${n}</td><td>${money(now)} ${flooded}</td><td>${money(sum)}</td></tr>`;
         }).join('');
         // live animals, grouped by species
@@ -472,7 +476,7 @@ export class UI {
           const mkey = 'sp' + id + (v ? ':' + v : '');
           const each = list.reduce((a, x) => a + specimenValue(x), 0) / list.length;
           let sum = 0, glut = P.market[mkey] || 0;
-          for (let i = 0; i < list.length; i++) { sum += each * Math.pow(0.85, glut / 0.15); glut += 0.15; }
+          for (let i = 0; i < list.length; i++) { sum += each * 1; glut += 0.15; }
           total += sum;
           const worst = list.reduce((a, x) => Math.min(a, x.cond), 1);
           const cond = `<em class="cond c-${conditionName(worst)}">${conditionName(worst)}</em>`;
@@ -486,7 +490,7 @@ export class UI {
         for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
         for (const [k, list] of tg) {
           let sum = 0, glut = P.market[k] || 0;
-          for (let i = 0; i < list.length; i++) { sum += list[0].value * Math.pow(0.85, glut / 0.15); glut += 0.15; }
+          for (let i = 0; i < list.length; i++) { sum += list[0].value * 1; glut += 0.15; }
           total += sum;
           specRows += `<tr><td>Tag data: ${list[0].name}</td><td>${list.length}</td><td>${money(priceOf(P, k, list[0].value))}</td><td>${money(sum)}</td></tr>`;
         }
@@ -495,8 +499,11 @@ export class UI {
         if (!atBoat && g.subTank.length) html += `<p class="shop-note">${g.subTank.length} animal${g.subTank.length > 1 ? 's' : ''} in the sub's tank. Bring the sub to the boat to sell them.</p>`;
         if (rows.length || specs.length || g.tags.length || g.photos.length) html += `<table class="manifest"><thead><tr><th>Item</th><th>Qty</th><th>Each</th><th>Total</th></tr></thead><tbody>${lines}</tbody></table>
           <button class="primary" data-act="sellall">Load the basket and sell<span>${money(total)}</span></button>`;
-        for (const k of ['lure', 'necklace']) if (g.items[k]) html += card(GOODS[k].name, `You are carrying ${g.items[k]}. Someone on the radio collects these.`, '', null, 'sellitem', k, `Sell one · ${money(priceOf(P, k, GOODS[k].price), false)}`);
+        // (lures and necklaces are not sold: he keeps them)
       }
+      // the price board on the Margaret: chalked up after every sale, the newest first
+      const board = P.board || [];
+      if (board.length) html += `<div class="priceboard"><h4>Price board</h4>${board.map((r) => `<div><span>${r.label}</span><b>${money(r.each)}</b></div>`).join('')}</div>`;
     } else if (tab === 'diver') {
       html += this.suitRows(P, can);
       html += this.upgradeGroups(P, ['Diver', 'Net', 'Slurp gun', 'Tag gun', 'Camera'], icon, can);
@@ -521,6 +528,7 @@ export class UI {
           ['hauled', T.winch ? "by the boat's winch" : 'by hand', T.winch ? 'bad' : 'good']].concat(T.lure ? [['lure', 'lit: draws deep animals and it', 'bad']] : []));
       });
       for (const [k, it] of Object.entries(SUPPLIES)) {
+        if (it.needs && !owns(P, it.needs)) continue; // tags only once he has the tag gun
         const mx = supplyMax(P, k), have = g.items[k] || 0, full = have >= mx;
         html += card(it.name, it.desc, `carrying ${have} / ${mx}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy', '', '', SUPPLY_SPECS[k]);
       }
@@ -650,7 +658,7 @@ export class UI {
       for (const [id, U] of Object.entries(UPGRADES)) {
         if (U.group !== grp) continue;
         const l = lv(P, id), maxed = l >= U.max, cost = upgradeCost(P, id);
-        const now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statValue(P, id) + U.step);
+        const now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statAt(id, l + 1));
         html += this.row('up:' + id, U.name, UPGRADE_LINE[id] || '',
           `<span class="lamps">${Array.from({ length: 10 }, (_, k) => `<i class="${k < Math.round(l / U.max * 10) ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : `lv ${l}`}`,
           `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < upgradeCoins(P, id) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && upgradeCoins(P, id) ? ` <em class="pluscoin">+${COIN}${upgradeCoins(P, id)}</em>` : ''}</button>`,

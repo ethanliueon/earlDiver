@@ -109,6 +109,14 @@ export const RARITY = [
   { id: 'exotic', name: 'Exotic', col: '#a35be0', upTo: 5000, spawn: 0.05 },
   { id: 'legendary', name: 'Legendary', col: '#f0a020', upTo: Infinity, spawn: 0.012 },
 ];
+// Undocumented: the game's own invented animals (no scientific record), valued like exotics, each only
+// in its own place. Not on the price ladder: species carry it explicitly (x.undoc in species_more.js).
+export const UNDOCUMENTED = { id: 'undocumented', name: 'Undocumented', col: '#bfe8f0', upTo: 5000, spawn: 0.05, i: 3.5 };
+// Legendary is not a price but a short list: exactly these species (the owner's choice) and no others.
+// humpback anglerfish, common fangtooth, barreleye, pelican gulper eel, blobfish, coelacanth, giant oarfish
+export const LEGENDARY = new Set([100, 101, 104, 105, 107, 108, 54]);
+// a capturable animal that is not legendary stays inside the exotic band, however much it would fetch
+const EXOTIC_CAP = 4800;
 const PRICE_CACHE = new Map();
 // what one of this species pays (before size, condition, rare form, upgrades)
 export function rarityPrice(sp) {
@@ -116,24 +124,29 @@ export function rarityPrice(sp) {
   if (p !== undefined) return p;
   p = PRICE[sp.id] !== undefined ? PRICE[sp.id] : formulaPrice(sp);
   if (isDeep(sp)) p = Math.max(30, p); // nothing from the deep is common
+  if (LEGENDARY.has(sp.id)) p = Math.max(5000, p);
+  else if (!isTagOnly(sp)) p = Math.min(EXOTIC_CAP, p);
   PRICE_CACHE.set(sp.id, p);
   return p;
 }
 const RAR_CACHE = new Map();
-// { tier index, rarity entry, position 0..1 within the tier }
+// { tier index, rarity entry, position 0..1 within the tier, hidden }. Animals that can't be captured
+// (tag-only, apart from the legendaries) have a tier only for how often they turn up: hidden, never shown.
 export function rarityOf(sp) {
   let r = RAR_CACHE.get(sp.id);
   if (r) return r;
+  if (sp.undoc) { r = { ...UNDOCUMENTED, pos: 0.5 }; RAR_CACHE.set(sp.id, r); return r; }
   const w = rarityPrice(sp);
-  const i = RARITY.findIndex((t) => w < t.upTo);
+  let i = RARITY.findIndex((t) => w < t.upTo);
+  if (LEGENDARY.has(sp.id)) i = 4; else if (i === 4 && !isTagOnly(sp)) i = 3; // (a hidden tier may stay legendary: it only sets how often it is met)
   const lo = i ? RARITY[i - 1].upTo : 0.2, hi = RARITY[i].upTo === Infinity ? 50000 : RARITY[i].upTo;
   const pos = Math.min(1, Math.max(0, Math.log(w / lo) / Math.log(hi / lo)));
-  r = { i, ...RARITY[i], pos };
+  r = { i, ...RARITY[i], pos, hidden: isTagOnly(sp) && !LEGENDARY.has(sp.id) };
   RAR_CACHE.set(sp.id, r);
   return r;
 }
 // a tag pays a share of what the animal is worth
-export function tagPrice(id) { return TAG[id] ? rarityPrice(SPECIES_BY_ID[id]) * 0.4 : 0; }
+export function tagPrice(id) { return TAG[id] ? rarityPrice(SPECIES_BY_ID[id]) * 0.25 : 0; }
 
 // a healthy specimen of normal size; len is this individual's length
 export function liveValue(sp, len = sp.len) {
@@ -158,3 +171,26 @@ export function specimenValue(s) {
 }
 // fragile animals (jellies, comb jellies) take more harm from a net
 export const fragile = (sp) => sp.cat === 'Jellyfish & Drifters';
+
+// ---------------- pressure tolerance ----------------
+// Pressure harms an animal mostly through the gas in its body (a swim bladder swells or is crushed),
+// so how far it can be moved from the depth it was caught at depends on what it is:
+//   x3  jellyfish, comb jellies, siphonophores and other gelatinous drifters (no gas spaces at all)
+//   x2  daily migrators (lanternfish, hatchetfish, firefly squid, krill, red shrimp, most squid):
+//       they travel hundreds of metres up and down every night
+//   x1.5 no swim bladder: sharks and rays, octopus, crabs, lobsters and shrimp, starfish and urchins,
+//       sea cucumbers, shellfish
+//   x1  fish with a gas swim bladder (reef fish, cod, snapper, salmon: the most fragile)
+// and anything caught deep is built for crushing pressure: x1.5 below 1,000 m, x2 below 2,500 m. It
+// takes whichever is higher. The comfort zones (capture.js) are 50 / 150 / 250 / 350 m times this.
+const DAILY_MIGRATORS = new Set([98, 99, 151, 161, 327, 370, 371, 102, 103, 148, 150, 104, 42]);
+export function pressureKind(sp) {
+  if (sp.cat === 'Jellyfish & Drifters') return { k: 3, why: 'no gas in its body' };
+  if (DAILY_MIGRATORS.has(sp.id) || (sp.cat === 'Octopus & Squid' && /squid/i.test(sp.name))) return { k: 2, why: 'migrates daily' };
+  if (/Sharks & Rays|Octopus & Squid|Crabs, Lobsters & Shrimp|Starfish & Urchins|Shellfish & Snails|Worms & Others/.test(sp.cat)) return { k: 1.5, why: 'no swim bladder' };
+  return { k: 1, why: 'a swim bladder' };
+}
+export function pressureTolerance(sp, home = 0) {
+  const kind = pressureKind(sp), deep = home >= 2500 ? 2 : home >= 1000 ? 1.5 : 1;
+  return deep > kind.k ? { k: deep, why: 'built for the deep' } : kind;
+}
