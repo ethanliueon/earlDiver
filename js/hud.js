@@ -213,17 +213,19 @@ export class Hud {
     const e = g.earl, fx = g.fx;
     const dying = g.mode === 'dying';
     const red = dying || false;
+    const aboard = !!g.aboard && !dying; // on the Margaret's deck or in her cabin: only cash, the prompt and the contracts
 
     // ---------- depth: the main number, big, top right ----------
     const pad = 26 * s;
     ctx.textBaseline = 'top'; ctx.textAlign = 'right';
     const rx0 = W - pad;
-    if (!dying) {
+    if (!dying && !aboard) {
       ctx.font = `500 ${46 * s}px ${MONO}`;
       const dtxt = `${Math.max(0, e.y).toFixed(0)} m`;
       ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(dtxt, rx0 + 2 * s, pad + 2 * s);
       ctx.fillStyle = 'rgba(236,240,240,0.94)'; ctx.fillText(dtxt, rx0, pad);
     }
+    if (!aboard) {
     // ---------- air: a short, thick, blue tank gauge under it ----------
     const onTank = e.inSub && g.sub.o2 <= 0; // an empty cabin: the gauge shows his own tank
     const o2 = e.inSub && !onTank ? g.sub.o2 / g.sub.o2Max : e.o2 / e.o2Max;
@@ -415,6 +417,7 @@ export class Hud {
       ctx.fillStyle = 'rgba(200,225,215,0.75)';
       ctx.fillText(`${Math.round(this.fps || 0)} fps · ${Math.round(Math.min(1, (this.quality ?? 1) * Math.min(window.devicePixelRatio || 1, 1.25)) * 100)} % sharp${this.lite ? ' · lite' : ''}`, pad, H - pad * 0.4);
     }
+    }
     // ---------- cash, top left: what is safe at the boat, and what is in the bag ----------
     if (g.profile && !dying) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -435,6 +438,7 @@ export class Hud {
       }
     }
 
+    if (!aboard) {
     // ---------- tools and specimens, bottom centre ----------
     if (g.profile && g.mode === 'play' && !dying) this.drawGear(g, W, H, s, dt);
 
@@ -502,12 +506,30 @@ export class Hud {
       ctx.fillStyle = g.capPrompt.startsWith('Space') ? (g.capRarity ? g.capRarity.col : 'rgba(214,236,206,0.95)') : 'rgba(240,190,160,0.9)';
       keyLine(g.capPrompt, W / 2, py + 7 * s, 17 * s);
     }
+    }
     // ---------- interaction prompt ----------
     if (g.prompt && !dying && !g.kill && this.hints) {
       ctx.font = `${18 * s}px ${GAME}`; ctx.textAlign = 'center';
       const tw = ctx.measureText(g.prompt).width + 30 * s;
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, H * 0.72, tw, 30 * s, 6 * s); ctx.fill();
       ctx.fillStyle = 'rgba(236,240,236,0.92)'; ctx.fillText(g.prompt, W / 2, H * 0.72 + 7 * s);
+    }
+    // ---------- the contracts taken at the radio: a short list on the right, ticked when the goods are aboard ----------
+    const taken = (g.contracts || []).filter((c) => c.taken);
+    if (taken.length && !dying && !g.kill) {
+      const tx = W - pad, lh = 19 * s;
+      let ty0 = aboard ? pad : H * 0.42;
+      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.font = `600 ${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,220,180,0.6)'; ctx.fillText('CONTRACTS', tx, ty0); ty0 += 17 * s;
+      for (const c of taken) {
+        const ok = this.contractReady ? this.contractReady(g, c) : false;
+        ctx.font = `${15 * s}px ${GAME}`;
+        const line = `${ok ? '✓ ' : ''}${c.text.length > 34 ? c.text.slice(0, 33) + '…' : c.text}`;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(line, tx + 1, ty0 + 1);
+        ctx.fillStyle = ok ? 'rgba(170,230,150,0.95)' : 'rgba(236,232,220,0.85)'; ctx.fillText(line, tx, ty0);
+        ctx.font = `${12 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,210,150,0.75)'; ctx.fillText(money(c.pay), tx, ty0 + lh * 0.95);
+        ty0 += lh * 2.1;
+      }
     }
     // ---------- toasts ----------
     ctx.textAlign = 'center';

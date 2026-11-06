@@ -575,3 +575,20 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   fuse panel, a life jacket and a fire extinguisher. Hanging things swing with the boat's roll.
 - css (end of style.css): buy buttons are manila cargo tags with a brass eyelet; big actions are oxblood enamel signs;
   rarity and "Recommended" are embossed label-maker tape; name plates (shop, title, rooms) are aged brushed brass.
+
+## 2.4.2 — a tidier deck, a lit cabin
+- Aboard, the HUD shows only cash and the contracts list: no depth, air or tool bar. The floating station
+  names are gone; the one prompt at the bottom says what F does.
+- Off the boat: walk past either end of the deck and Earl jumps in (an arc out, a splash). On: F by her side
+  ("F  Climb aboard"); the ladder station and the sorting table are gone.
+- U in the water by the boat opens the sell screen alone (its tab bar hidden). Stations open only their own
+  tab: the cradle the sub, the radio the radio, the locker the diver; the cabin computer the catalog tabs.
+- Contracts: the radio lists jobs with a "Take it" button. Taken jobs (saved in `profile.taken`) show on the
+  right of the screen, ticked when the goods are aboard, and only taken jobs are paid on selling.
+- Earl's boots faced backwards on deck (the shin frame is flipped): fixed. Aboard he has no hood, mask or tank:
+  a bare head, greying, the hood rolled at his neck.
+- The cabin: the brass instruction plate is gone (the F prompt alone). A procedural wood grain (boards, knots,
+  bevels; floor boards with butt joints) is baked once per window size; the free texture sites were blocked
+  from this environment, so the grain is drawn, in the boat's own colours. A light map multiplies over the
+  room: the swinging lamp's pool, porthole and door daylight (by time of day), the screen and desk lamp; soft
+  shadows cast away from the lamp, contact shadows, corner shading, brass glints, a kettle with a spout.

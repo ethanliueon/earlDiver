@@ -916,7 +916,7 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .cabin .cb-plate { position: absolute; left: 18px; top: 14px; padding: 8px 14px; border-radius: 3px; background: linear-gradient(180deg, #d8b860, #a8852e); color: #3a2a0e; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
 .cabin .cb-plate b { display: block; font: 20px var(--serif); font-weight: normal; }
 .cabin .cb-plate span { font: 10px var(--mono); opacity: 0.8; }
-.cabin .cb-prompt { position: absolute; left: 50%; top: 84%; transform: translateX(-50%); padding: 6px 14px; border-radius: 4px; background: rgba(0,0,0,0.5); color: #f0e2be; font: 16px var(--serif); }
+.cabin .cb-prompt { position: absolute; left: 50%; top: 72%; transform: translateX(-50%); padding: 6px 14px; border-radius: 4px; background: rgba(0,0,0,0.5); color: #f0e2be; font: 16px var(--serif); }
 .cabin .cb-prompt[hidden] { display: none; }
 /* the catalog opens over the cabin it is used from */
 #workshop { z-index: 40; }

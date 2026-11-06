@@ -728,15 +728,7 @@ export class Renderer {
         ctx.save(); ctx.translate(S(X(f)), Sy(fy)); if (dir > 0) ctx.scale(-1, 1); ctx.globalAlpha = 0.85; drawSpecies(ctx, c.sp, Math.max(4, Math.min(fishDrawLen(c.len), bagLen * 0.5) * ppm), t * 3 + (c.wob || 0), 1, 0); ctx.restore();
       }
     }
-    if (g.aboard && g.mode === 'play' && !g.helm) { // the stations' names along the deck, the nearest brighter
-      ctx.save(); ctx.textAlign = 'center'; ctx.font = `${Math.max(10, ppm * 0.26)}px ${'"EB Garamond", Georgia, serif'}`;
-      const by = Sy(deckSurfAt(g) - 3.65);
-      for (const st of g.deckStations || []) { // only the ones close by, fading with distance
-        if (g.aboard.near !== st.id) continue; // only the one he stands at
-        ctx.fillStyle = 'rgba(250,232,180,0.95)'; ctx.fillText(st.name, S(BOAT.x + st.x), by);
-      }
-      ctx.restore();
-    }
+    // (no names floating over the deck: the prompt at the bottom says what F does)
     if (!e.inSub && !g.helm && g.mode !== 'menu' && !(g.kill && g.kill.swallowed)) { // at the helm he is inside the wheelhouse
       const amb = ambientAt(e.y, dayEff);
       ctx.save(); ctx.translate(S(e.x), Sy(e.y));
@@ -759,7 +751,7 @@ export class Renderer {
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
           aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0, suit: e.suit };
       }
-      if (g.aboard) gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: !(g.aboard.climb > 0 || g.aboard.down > 0) }; // on deck: tools stowed, boots on (fins only on the ladder)
+      if (g.aboard) { const onDeck = !(g.aboard.climb > 0 || g.aboard.down > 0 || g.aboard.jump > 0); gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: onDeck, noTank: onDeck, noMask: onDeck }; } // on deck: tools stowed, boots on (fins only on the ladder)
       const h = drawEarl(ctx, (g.aboard ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       ctx.restore();
       if (h.tip) {

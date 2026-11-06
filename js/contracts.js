@@ -92,6 +92,7 @@ export function fulfil(g, P, lists) {
   const lines = [];
   for (let i = g.contracts.length - 1; i >= 0; i--) {
     const c = g.contracts[i];
+    if (!c.taken) continue; // only the jobs he took at the radio
     let ok = false;
     let bonus = 1, rareName = '', deadPay = null;
     if (c.kind === 'live') {
@@ -123,7 +124,7 @@ export function fulfil(g, P, lists) {
       g.contracts.splice(i, 1);
     }
   }
-  if (lines.length) fillBoard(P, g.contracts);
+  if (lines.length) { P.taken = g.contracts.filter((q) => q.taken); fillBoard(P, g.contracts); }
   return lines;
 }
 // is a contract's goods aboard right now? (for the radio list)

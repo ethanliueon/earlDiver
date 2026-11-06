@@ -81,7 +81,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     if (gear && gear.land) {
       // on deck or in the cabin: rubber deck boots instead of fins - a shaft to mid-calf, a heel, a toe
       // pointing to his front, a thick dark sole
-      ctx.save(); ctx.translate(ax, ay); ctx.rotate(shinA);
+      ctx.save(); ctx.translate(ax, ay); ctx.rotate(shinA); ctx.scale(1, -1); // (the shin points back down his body: mirrored, so the toe is to his front)
       const bc = near ? '#4a5a3a' : '#26301e', bs = near ? '#1c1d1a' : '#111210';
       ctx.fillStyle = bc; ctx.beginPath(); ctx.roundRect(-11 * u, -4.6 * u, 14 * u, 9.2 * u, 2 * u); ctx.fill(); // the shaft
       ctx.beginPath(); ctx.moveTo(-1 * u, -4.6 * u); ctx.quadraticCurveTo(2 * u, -5 * u, 3 * u, -3 * u); ctx.lineTo(3.4 * u, 9.5 * u); ctx.quadraticCurveTo(1 * u, 11 * u, -1.5 * u, 10.5 * u); ctx.lineTo(-1.5 * u, -4.6 * u); ctx.fill(); // the foot, toward his front
@@ -210,8 +210,39 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
 
   leg(0, true);
 
-  // ---------- head: neoprene hood, full-face mask, nothing visible inside ----------
+  // ---------- head ----------
   const hx = 41 * u, hy = -0.5 * u;
+  const beamA = 0.35 + (1 - m) * (Math.PI / 2 - 0.45);
+  const lx = hx + 5.4 * u, ly = hy + 0.6 * u;
+  if (gear && gear.noMask) {
+    // aboard, between dives: the hood rolled down round his neck, mask and lamp off. A weathered
+    // man in profile (his front is +y, the top of his head +x): short greying hair, stubble, an ear
+    seg(ctx, 32 * u, -0.5 * u, 37 * u, -0.5 * u, 7 * u, 6.4 * u, '#b78a6c'); // neck
+    ctx.fillStyle = SUIT; ctx.beginPath(); ctx.ellipse(34 * u, -0.5 * u, 3.4 * u, 7.6 * u, 0, 0, Math.PI * 2); ctx.fill(); // the hood, rolled down
+    ctx.strokeStyle = SUIT_SEAM; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.ellipse(34 * u, -0.5 * u, 2.2 * u, 6.6 * u, 0, -1.2, 1.2); ctx.stroke();
+    const sk = ctx.createRadialGradient(hx + 1 * u, hy + 3 * u, 1, hx, hy, 8 * u);
+    sk.addColorStop(0, '#d2a284'); sk.addColorStop(0.7, '#b0805f'); sk.addColorStop(1, '#8a5e44');
+    ctx.fillStyle = sk;
+    // (local: +x is up toward the crown, +y is his front)
+    ctx.beginPath(); // the skull, the brow, the nose, the jaw
+    ctx.moveTo(hx - 6.6 * u, hy - 1 * u);                                           // the nape
+    ctx.quadraticCurveTo(hx - 1 * u, hy - 7.6 * u, hx + 5.6 * u, hy - 4 * u);       // the back of the skull
+    ctx.quadraticCurveTo(hx + 8 * u, hy + 0.5 * u, hx + 5.6 * u, hy + 5.4 * u);    // the crown, the forehead
+    ctx.quadraticCurveTo(hx + 3.8 * u, hy + 6.6 * u, hx + 2.6 * u, hy + 6.2 * u);  // the brow
+    ctx.lineTo(hx + 0.4 * u, hy + 8.6 * u);                                         // the nose
+    ctx.lineTo(hx - 0.8 * u, hy + 7.2 * u);
+    ctx.quadraticCurveTo(hx - 2 * u, hy + 7.4 * u, hx - 2.8 * u, hy + 6.8 * u);    // the lips
+    ctx.quadraticCurveTo(hx - 4.6 * u, hy + 7 * u, hx - 5.6 * u, hy + 5.2 * u);    // the chin
+    ctx.quadraticCurveTo(hx - 7 * u, hy + 2 * u, hx - 6.6 * u, hy - 1 * u);        // the jaw back to the nape
+    ctx.fill();
+    ctx.fillStyle = 'rgba(70,60,52,0.5)'; // stubble on the chin and along the jaw
+    ctx.beginPath(); ctx.moveTo(hx - 2.6 * u, hy + 6.9 * u); ctx.quadraticCurveTo(hx - 4.6 * u, hy + 7 * u, hx - 5.6 * u, hy + 5.2 * u); ctx.quadraticCurveTo(hx - 6.6 * u, hy + 2.4 * u, hx - 6.2 * u, hy + 0.4 * u); ctx.quadraticCurveTo(hx - 4 * u, hy + 2.6 * u, hx - 3.2 * u, hy + 5 * u); ctx.quadraticCurveTo(hx - 2.4 * u, hy + 6 * u, hx - 2.6 * u, hy + 6.9 * u); ctx.fill();
+    ctx.fillStyle = '#6b6560'; // short greying hair over the crown and the back of the head
+    ctx.beginPath(); ctx.moveTo(hx - 3.2 * u, hy - 6.6 * u); ctx.quadraticCurveTo(hx + 2.4 * u, hy - 7 * u, hx + 5.8 * u, hy - 4 * u); ctx.quadraticCurveTo(hx + 8.2 * u, hy + 0.5 * u, hx + 5.9 * u, hy + 4.8 * u); ctx.quadraticCurveTo(hx + 5 * u, hy + 1.4 * u, hx + 2.4 * u, hy - 1.6 * u); ctx.quadraticCurveTo(hx - 0.6 * u, hy - 4.2 * u, hx - 3.2 * u, hy - 6.6 * u); ctx.fill();
+    ctx.fillStyle = '#9e7258'; ctx.beginPath(); ctx.ellipse(hx + 0.6 * u, hy - 1.4 * u, 1.9 * u, 1.4 * u, 0, 0, Math.PI * 2); ctx.fill(); // ear
+    ctx.fillStyle = '#1c1a18'; ctx.beginPath(); ctx.arc(hx + 2 * u, hy + 4.6 * u, 0.55 * u, 0, Math.PI * 2); ctx.fill(); // eye
+    ctx.strokeStyle = 'rgba(60,44,34,0.65)'; ctx.lineWidth = 0.55 * u; ctx.beginPath(); ctx.moveTo(hx + 3.1 * u, hy + 3.6 * u); ctx.lineTo(hx + 3 * u, hy + 5.9 * u); ctx.stroke(); // the brow
+  } else {
   seg(ctx, 32 * u, -0.5 * u, 37 * u, -0.5 * u, 8 * u, 7.6 * u, SUIT); // neck
   const hg = ctx.createRadialGradient(hx - 2 * u, hy - 3 * u, 1, hx, hy, 8 * u);
   hg.addColorStop(0, '#2e333a'); hg.addColorStop(1, '#0d0e11');
@@ -237,12 +268,12 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   ctx.strokeStyle = '#0a0b0c'; ctx.lineWidth = 1.6 * u;
   ctx.beginPath(); ctx.moveTo(hx - 1 * u, hy + 8 * u); ctx.quadraticCurveTo(hx - 8 * u, hy + 10 * u, 33 * u, -11 * u); ctx.stroke(); // hose to the tank
   // headlamp on the forehead, above the mask, pointing where he looks
-  const beamA = 0.35 + (1 - m) * (Math.PI / 2 - 0.45);
-  const lx = hx + 5.4 * u, ly = hy + 0.6 * u;
   ctx.save(); ctx.translate(lx, ly); ctx.rotate(beamA);
   ctx.fillStyle = '#2c3034'; ctx.beginPath(); ctx.roundRect(-2.4 * u, -1.8 * u, 3.6 * u, 3.6 * u, 1 * u); ctx.fill();
   if (lampCol) { ctx.fillStyle = lampCol; ctx.fillRect(1 * u, -1.4 * u, 0.9 * u, 2.8 * u); }
   ctx.restore();
+
+  }
 
   // ---------- the tool in his near hand ----------
   // net: wind up over his head, sweep down through the water in front of him, recover.

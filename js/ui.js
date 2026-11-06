@@ -70,7 +70,7 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     this.caveTab = 'trade';
-    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.openShop('tools'), blocked: () => !$('workshop').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
+    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.openShop('tools', ['tools', 'diver', 'supplies']), blocked: () => !$('workshop').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
     this.gallery = new Gallery($('gallery'), { act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
@@ -123,6 +123,7 @@ export class UI {
         h.onBuy(arg);
       }
       else if (act === 'buy') h.onBuy(arg);
+      else if (act === 'take') { h.onTakeContract(arg); }
       else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
       else if (act === 'display') h.onDisplay(arg);
       else if (act === 'gallery') { this.toggleGallery(true); return; }
@@ -245,10 +246,10 @@ export class UI {
   }
   confirmOpen() { return !$('confirm').hidden; }
   // the shop, opened on one tab (a station aboard the Margaret)
-  openShop(tab) {
+  openShop(tab, allowed = null) {
     this.shopTab = tab;
     document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x.dataset.shop === tab));
-    this.toggleWorkshop(true);
+    this.toggleWorkshop(true, allowed);
   }
   // Tab aboard: the stations, as a list (for anyone who'd rather not walk the deck)
   stationMenu(list, onPick) {
@@ -493,11 +494,18 @@ export class UI {
     if (open) { this.toggleWorkshop(false); this.renderJournal(); }
     else this.blurTyping();
   }
-  toggleWorkshop(force) {
+  // allowed: the tabs this place offers (selling from the water: Sell only; a station aboard: its own); null for all
+  toggleWorkshop(force, allowed = null) {
     const el = $('workshop');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
-    if (open) { this.toggleJournal(false); this.renderWorkshop(); }
+    if (open) {
+      this.shopAllowed = allowed;
+      document.querySelectorAll('.shop-tabs button[data-shop]').forEach((b) => { b.hidden = !!allowed && !allowed.includes(b.dataset.shop); });
+      const nav = document.querySelector('#workshop .shop-tabs'); if (nav) nav.hidden = !!allowed && allowed.length < 2;
+      if (allowed && !allowed.includes(this.shopTab)) { this.shopTab = allowed[0]; document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x.dataset.shop === this.shopTab)); }
+      this.toggleJournal(false); this.renderWorkshop();
+    }
   }
 
   renderJournal() {
@@ -690,10 +698,10 @@ export class UI {
       if (!g.contracts.length) html += '<p class="shop-empty">Static. Nobody is calling.</p>';
       for (const c of g.contracts) {
         const r = contractReady(g, c, lists);
-        html += `<div class="contract${r ? ' ready' : ''}">${c.id ? this.mini(SPECIES_BY_ID[c.id]) : ''}<div><span>${c.who} wants</span><b>${c.text}</b></div><div class="pay">${money(c.pay)}${r ? '<em>aboard: paid when you sell</em>' : ''}</div></div>`;
+        html += `<div class="contract${r && c.taken ? ' ready' : ''}${c.taken ? ' taken' : ''}">${c.id ? this.mini(SPECIES_BY_ID[c.id]) : ''}<div><span>${c.who} wants</span><b>${c.text}</b></div><div class="pay">${money(c.pay)}${c.taken ? (r ? '<em>aboard: paid when you sell</em>' : '<em>taken</em>') : `<button data-act="take" data-arg="${c.key}">Take it</button>`}</div></div>`;
       }
       if (!P.radio) html += card(RADIO.name, RADIO.desc, '', RADIO.price, 'buy', 'radio', 'Buy', '', '', [['contracts', '5 at a time'], ['paid', 'when you sell', 'good']]);
-      html += '<p class="shop-note">Contracts are filled when you sell (Sell, then Load the basket). A new dive brings new calls.</p>';
+      html += '<p class="shop-note">Take a job and it shows on the right while you dive. It is paid when you sell with the goods aboard.</p>';
     } else if (tab === 'aquarium') {
       const A = aquariumOf(P), C = completion(P), list = Object.entries(A.display), slots = gallerySlots(P);
       html += `<div class="aq-head"><div><b>${list.length}<small>/${slots}</small></b><span>in the gallery</span></div><div><b>${C.species}</b><span>of ${C.of} species kept</span></div><div><b>${visitors(P)}</b><span>visitors a day</span></div><div><b>${list.length ? money(dailyIncome(P), false) : '—'}</b><span>a day in tickets</span></div></div>`;
