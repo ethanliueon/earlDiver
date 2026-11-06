@@ -90,6 +90,7 @@ function bioPulse(c, t) {
 
 // what the yard has done to the sub, from the profile: the hull mark (from her depth rating) and
 // each upgrade's fittings, for drawSub
+export const deckSurfAt = (g) => (g.surfY ? g.surfY(BOAT.x) * 0.8 : 0);
 export function subLook(P, addons) {
   if (!P) return { mark: 0 };
   return {
@@ -132,7 +133,7 @@ export class Renderer {
     // 120 m), and in the sub in the deep, where the animals are small lights (46 m across near the surface,
     // 38 m below 400 m)
     const dv = clamp((e.y - 40) / 80, 0, 1), ds = clamp((e.y - 150) / 250, 0, 1);
-    const targetView = g.debugView || (g.mode === 'menu' ? 40 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1));
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.aboard ? 15 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1)); // aboard the Margaret: close, the deck fills the view
     this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
@@ -142,6 +143,7 @@ export class Renderer {
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
+    if (g.aboard) { tx = BOAT.x + 0.3; ty = -2.3; }
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
     if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
@@ -516,6 +518,29 @@ export class Renderer {
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
       if (dimB > 0.01) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, bw, bh); }
       ctx.drawImage(bc, -bw * 0.45, -bh * 0.82);
+      // the deck's stations (2.4.0): the helm stand aft, the sorting table, the radio on the cabin wall
+      // by the door, the gallery hatch in the deck, the dive locker forward
+      {
+        const u = 14 * ppm / 100, lit = 0.35 + 0.65 * Math.sqrt(dayEff);
+        const shade = (c) => { const r = hexToRgb(c); return `rgb(${Math.round(r[0] * lit)},${Math.round(r[1] * lit)},${Math.round(r[2] * lit)})`; };
+        // the helm: a pedestal and a spoked wheel, out on the after deck
+        ctx.fillStyle = shade('#5a5850'); ctx.fillRect(29.4 * u, -18 * u, 1.4 * u, 7 * u);
+        ctx.strokeStyle = shade('#8a6a44'); ctx.lineWidth = 0.55 * u; const wa = (g.boatV || 0) * t * 0.3;
+        ctx.beginPath(); ctx.arc(30.1 * u, -19.6 * u, 2.1 * u, 0, TAU); ctx.stroke();
+        for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + wa; ctx.beginPath(); ctx.moveTo(30.1 * u, -19.6 * u); ctx.lineTo(30.1 * u + Math.cos(a) * 2.8 * u, -19.6 * u + Math.sin(a) * 2.8 * u); ctx.stroke(); }
+        // the sorting table, a tub and a crate on it
+        ctx.fillStyle = shade('#8a6a44'); ctx.fillRect(21.2 * u, -16.6 * u, 6.2 * u, 1.1 * u); ctx.fillRect(21.7 * u, -15.6 * u, 0.8 * u, 4.6 * u); ctx.fillRect(26.2 * u, -15.6 * u, 0.8 * u, 4.6 * u);
+        ctx.fillStyle = shade('#9aa2a6'); ctx.fillRect(21.8 * u, -18 * u, 2.6 * u, 1.4 * u); ctx.fillStyle = shade('#6a8a9a'); ctx.fillRect(24.7 * u, -17.6 * u, 2.2 * u, 1 * u);
+        // the radio on the cabin wall beside the door, a whip antenna up the wall
+        ctx.fillStyle = shade('#3c4446'); ctx.fillRect(10 * u, -21 * u, 3.6 * u, 2.8 * u); ctx.fillStyle = shade('#c8a050'); ctx.beginPath(); ctx.arc(11.1 * u, -19.6 * u, 0.55 * u, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#7ad890'; ctx.fillRect(12 * u, -20.3 * u, 1.1 * u, 0.4 * u);
+        ctx.strokeStyle = shade('#2a2c2a'); ctx.lineWidth = 0.25 * u; ctx.beginPath(); ctx.moveTo(13.2 * u, -21 * u); ctx.lineTo(13.6 * u, -29 * u); ctx.stroke();
+        // the gallery hatch in the deck, forward of the cabin
+        ctx.fillStyle = shade('#3a3c38'); ctx.fillRect(-23 * u, -12.2 * u, 6.5 * u, 1.4 * u); ctx.fillStyle = shade('#c8a050'); ctx.fillRect(-20.2 * u, -12.8 * u, 0.9 * u, 0.6 * u);
+        // the dive locker, forward
+        ctx.fillStyle = shade('#4a5a64'); ctx.fillRect(-38 * u, -22 * u, 5.5 * u, 11 * u); ctx.fillStyle = shade('#5f707a'); ctx.fillRect(-37.5 * u, -21.5 * u, 2.2 * u, 10 * u); ctx.fillRect(-35.1 * u, -21.5 * u, 2.2 * u, 10 * u);
+        ctx.fillStyle = shade('#c8a050'); ctx.fillRect(-35.6 * u, -17 * u, 0.4 * u, 1.4 * u);
+      }
       if (dayEff < 0.5) {
         // the cabin light stays on at night
         const a = (0.5 - dayEff) * 1.6;
@@ -703,11 +728,20 @@ export class Renderer {
         ctx.save(); ctx.translate(S(X(f)), Sy(fy)); if (dir > 0) ctx.scale(-1, 1); ctx.globalAlpha = 0.85; drawSpecies(ctx, c.sp, Math.max(4, Math.min(fishDrawLen(c.len), bagLen * 0.5) * ppm), t * 3 + (c.wob || 0), 1, 0); ctx.restore();
       }
     }
+    if (g.aboard && g.mode === 'play' && !g.helm) { // the stations' names along the deck, the nearest brighter
+      ctx.save(); ctx.textAlign = 'center'; ctx.font = `${Math.max(10, ppm * 0.26)}px ${'"EB Garamond", Georgia, serif'}`;
+      const by = Sy(deckSurfAt(g) - 3.65);
+      for (const st of g.deckStations || []) { // only the ones close by, fading with distance
+        if (g.aboard.near !== st.id) continue; // only the one he stands at
+        ctx.fillStyle = 'rgba(250,232,180,0.95)'; ctx.fillText(st.name, S(BOAT.x + st.x), by);
+      }
+      ctx.restore();
+    }
     if (!e.inSub && !g.helm && g.mode !== 'menu' && !(g.kill && g.kill.swallowed)) { // at the helm he is inside the wheelhouse
       const amb = ambientAt(e.y, dayEff);
       ctx.save(); ctx.translate(S(e.x), Sy(e.y));
       ctx.scale(e.facing, 1); ctx.rotate(e.angle);
-      const moving = clamp(e.speedNow / 3, 0, 1);
+      const moving = g.aboard ? (e.deckWalk ? 0.35 : 0) : clamp(e.speedNow / 3, 0, 1);
       const lampCol = e.lampOn ? rgbStr(mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift)) : null;
       // what he is holding, and what is in his bag
       let gear = null;
@@ -725,7 +759,8 @@ export class Renderer {
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
           aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0, suit: e.suit };
       }
-      const h = drawEarl(ctx, EARL_H * ppm, e.kick, moving, lampCol, amb, gear);
+      if (g.aboard) gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [] }; // on deck: tools stowed
+      const h = drawEarl(ctx, (g.aboard ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       ctx.restore();
       if (h.tip) {
         const ca2 = Math.cos(e.angle), sa2 = Math.sin(e.angle);

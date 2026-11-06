@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.3.7 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.4.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -33,7 +33,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | B | Inventory: cash, supplies, finds, the catch bag, what is in the sub, your gear |
 | V | At the boat: take the helm and drive the Margaret (A / D) |
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
-| U | The boat (at the surface): sell, buy gear and supplies, the radio, the aquarium and its gallery |
+| F at the stern ladder | Climb aboard the Margaret (a dive starts on her deck); on deck, A / D walk and F uses a station: the ladder, the sub cradle (upgrades), the helm, the sorting table (sell), the cabin door, the radio, the gallery hatch, the dive locker |
+| E (in the cabin) | Use the computer: the catalog. Esc or the door goes back out on deck |
+| Tab / U (aboard) | A list of the deck's stations, to go straight to one |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause (save and quit to the title from there) |
 | ⚙ | Settings and controls (on the title screen, in the journal and the pause menu): target brackets, catch tags, reduce flashing, hints, sound, graphics (Auto / Fast) |

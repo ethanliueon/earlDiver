@@ -899,3 +899,24 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .shop [data-row].sel { background: rgba(240,212,138,0.07); box-shadow: inset 3px 0 0 var(--amber); }
 .shop .up-row, .shop .card { cursor: pointer; }
 @media (max-width: 700px) { .shop .showcase { grid-template-columns: 1fr; } .shop .showcase .sc-win { height: 150px; } }
+
+/* Tab aboard the Margaret: the stations as a brass list (2.4.0) */
+#stations { position: fixed; inset: 0; z-index: 55; display: grid; place-items: center; background: rgba(2, 6, 9, 0.55); }
+#stations[hidden] { display: none; }
+#stations .st-plate { width: min(420px, 90vw); padding: 20px 22px 14px; border-radius: 8px; background: linear-gradient(180deg, #3a3f36, #2a2e27); box-shadow: 0 0 0 2px #6e5424, 0 0 0 4px #b8954a, 0 12px 30px rgba(0,0,0,0.6); }
+#stations h3 { margin: 0 0 10px; font: 24px var(--serif); color: var(--paint, #f0d48a); text-align: center; }
+#stations .st-list { display: grid; gap: 6px; }
+#stations button { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 12px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.4); background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(0,0,0,0.12)); color: #e8dcc0; cursor: pointer; text-align: left; }
+#stations button:hover { background: linear-gradient(180deg, rgba(240,212,138,0.18), rgba(0,0,0,0.1)); }
+#stations button b { font: 15px var(--serif); font-weight: normal; }
+#stations button span { font: 11px var(--mono); color: rgba(220,236,230,0.6); }
+#stations .st-hint { margin: 10px 0 0; text-align: center; font: 10px var(--mono); color: rgba(220,236,230,0.4); }
+/* the Margaret's cabin (2.4.0): its own screen, the room drawn on a canvas */
+.cabin .cb-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cabin .cb-plate { position: absolute; left: 18px; top: 14px; padding: 8px 14px; border-radius: 3px; background: linear-gradient(180deg, #d8b860, #a8852e); color: #3a2a0e; box-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+.cabin .cb-plate b { display: block; font: 20px var(--serif); font-weight: normal; }
+.cabin .cb-plate span { font: 10px var(--mono); opacity: 0.8; }
+.cabin .cb-prompt { position: absolute; left: 50%; top: 84%; transform: translateX(-50%); padding: 6px 14px; border-radius: 4px; background: rgba(0,0,0,0.5); color: #f0e2be; font: 16px var(--serif); }
+.cabin .cb-prompt[hidden] { display: none; }
+/* the catalog opens over the cabin it is used from */
+#workshop { z-index: 40; }

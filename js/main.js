@@ -533,7 +533,9 @@ function startRun() {
   if (!profile) { profile = newProfile(); saveProfile(profile); }
   profile.runs = (profile.runs || 0) + 1; saveProfile(profile);
   g = newGame('play');
+  boardDeck(false, true); // a dive starts on deck, at the top of the stern ladder
   hud.toasts = [];
+  hud.toast('Aboard the Margaret  ·  F at the ladder to dive  ·  A / D walk the deck', 'note');
   ui.showGame();
   canvas.focus();
 }
@@ -620,6 +622,83 @@ function readMove() {
 }
 
 // ---------------- interactions ----------------
+// ---------------- aboard the Margaret (2.4.0) ----------------
+// F at the stern ladder climbs aboard; A/D walk the deck; each station is a spot on it, F uses it. Tab
+// (or U) opens a list of the stations, for anyone who'd rather not walk. Positions are metres from the
+// boat's centre, + toward the stern.
+export const DECK_STATIONS = [
+  { id: 'ladder', x: 6.0, name: 'Stern ladder', label: 'Climb down into the water' },
+  { id: 'cradle', x: 5.1, name: 'Sub cradle', label: "The sub's upgrades" },
+  { id: 'helm', x: 4.2, name: 'Helm', label: 'Take the helm' },
+  { id: 'table', x: 3.3, name: 'Sorting table', label: 'Sell the catch' },
+  { id: 'door', x: 2.55, name: 'Cabin door', label: 'Go inside (the computer)' },
+  { id: 'radio', x: 1.6, name: 'Radio', label: 'The radio' },
+  { id: 'gallery', x: -2.8, name: 'Gallery hatch', label: 'Down to the gallery' },
+  { id: 'locker', x: -5.0, name: 'Dive locker', label: 'Gear and suits' },
+];
+const DECK_MIN = -6.4, DECK_MAX = 6.1, DECK_FEET = -1.55, WALK = 1.8, CLIMB = 1.1;
+const LADDER_X = 6.6; // where he climbs out of the water, beside the stern
+const deckSurf = () => (g.surfY ? g.surfY(BOAT.x) * 0.8 : 0);
+const nearLadder = () => { const e = g.earl; return !e.inSub && !g.aboard && !g.kill && e.y < 1.8 && e.y > -0.5 && Math.abs(e.x - (BOAT.x + LADDER_X)) < 1.3; }; // (tight, so the docked sub alongside can still be boarded)
+// aboard, standing at the top of the ladder (a new dive starts here); climb: up the rungs first
+function boardDeck(climb = true, quiet = false) {
+  const e = g.earl;
+  g.aboard = { x: 5.9, walkT: 0, climb: climb ? CLIMB : 0, down: 0 }; g.helm = false; g.deckStations = DECK_STATIONS;
+  e.vx = e.vy = 0; e.facing = -1;
+  if (!quiet) hud.toast('Aboard the Margaret  ·  A / D walk  ·  F use  ·  Tab stations');
+  audio.ready && audio.click();
+}
+function leaveDeck() { if (g.aboard) { g.aboard.x = 5.9; g.aboard.down = 0.8; } } // down the ladder, then into the water
+export function useStation(id) {
+  if (!g.aboard) return;
+  if (id === 'ladder') return leaveDeck();
+  if (id === 'helm') { g.helm = true; g.boatV = 0; hud.toast('At the helm  ·  A / D drive  ·  G anchor  ·  W or S to step away'); return; }
+  if (id === 'gallery') { ui.toggleGallery(true); return; }
+  if (id === 'door' || id === 'computer') { ui.toggleCabin(true); return; }
+  const tab = { cradle: 'sub', table: 'sell', radio: 'radio', locker: 'diver' }[id];
+  if (tab) ui.openShop(tab);
+}
+function deckInput(dt, mv) {
+  const e = g.earl;
+  if (!g.aboard) {
+    if (nearLadder()) {
+      g.prompt = 'F  Climb aboard the Margaret';
+      if (pressed.has('f-tap')) { pressed.delete('f-tap'); boardDeck(); }
+    }
+    return;
+  }
+  if (g.helm) { g.prompt = null; return; }
+  const A = g.aboard;
+  if (A.climb > 0 || A.down > 0) { g.prompt = null; pressed.delete('f-tap'); return; }
+  const walk = mv.x || 0;
+  if (!ui.anyOpen()) {
+    A.x = clamp(A.x + walk * WALK * dt, DECK_MIN, DECK_MAX);
+    if (walk) { e.facing = walk > 0 ? 1 : -1; A.walkT += dt; } else A.walkT = 0;
+  }
+  let near = null, nd = 0.45;
+  for (const st of DECK_STATIONS) { const d = Math.abs(st.x - A.x); if (d < nd) { nd = d; near = st; } }
+  A.near = near ? near.id : null;
+  g.prompt = near ? `F  ${near.label}` : null;
+  if (pressed.has('f-tap')) { pressed.delete('f-tap'); if (near && !ui.anyOpen()) useStation(near.id); }
+  if ((pressed.has('tab') || pressed.has('u')) && !ui.anyOpen()) { pressed.delete('u'); ui.stationMenu(DECK_STATIONS.map((s0) => s0.id === 'door' ? { ...s0, name: 'Computer', label: 'The catalog, in the cabin' } : s0), (id) => useStation(id)); }
+}
+function placeOnDeck(dt) {
+  const e = g.earl, A = g.aboard, deckY = deckSurf() + DECK_FEET - 0.82;
+  e.vx = e.vy = 0; e.angle = -Math.PI / 2; e.o2 = e.o2Max; e.speedNow = 0;
+  if (A.climb > 0) { // up the ladder: from the water to the deck, rung by rung
+    A.climb = Math.max(0, A.climb - dt); const k = 1 - A.climb / CLIMB;
+    e.x = BOAT.x + LADDER_X - 0.25 * k; e.y = 0.9 + (deckY - 0.9) * k; e.facing = -1; e.kick = k * 18; e.deckWalk = true;
+    return;
+  }
+  if (A.down > 0) { // down the ladder and into the water
+    A.down = Math.max(0, A.down - dt); const k = 1 - A.down / 0.8;
+    e.x = BOAT.x + LADDER_X - 0.25 * (1 - k); e.y = deckY + (0.9 - deckY) * k; e.facing = 1; e.kick = k * 18; e.deckWalk = true;
+    if (A.down <= 0) { g.aboard = null; e.angle = 0; e.y = 1.0; audio.ready && audio.splash && audio.splash(); }
+    return;
+  }
+  e.x = BOAT.x + A.x; e.y = deckY; e.kick = A.walkT * 7; e.deckWalk = A.walkT > 0;
+}
+
 function findTarget() {
   const e = g.earl, W = g.world;
   const tn = trapNear(g);
@@ -1055,6 +1134,8 @@ function update(dt) {
       g.promptT = (g.promptT || 0) + dt;
       if (!target && !atAngler && (g.subMoving || g.promptT > 5)) g.prompt = null;
     } else { g.promptText = null; g.promptT = 0; }
+    // aboard the Margaret (2.4.0): the stern ladder, walking the deck, the stations
+    deckInput(dt, mv);
     // seabed materials have to be worked loose: hold F (or the right mouse button), one at a time
     const holding = keys.has('f');
     const planting = canPlant(target);
@@ -1089,7 +1170,7 @@ function update(dt) {
       else { const was = e.lampOn || (e.y <= 1 && !e.lampAuto && e.lampWanted); e.lampAuto = false; e.lampWanted = !was; }
       hud.toast(e.inSub ? (g.sub.lightsOn ? 'Lights on' : 'Lights off') : (e.lampWanted ? 'Headlamp on' : 'Headlamp off'));
     }
-    if (pressed.has('u') && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) ui.toggleWorkshop();
+    if (pressed.has('u') && !g.aboard && ((e.inSub && g.sub.docked) || (Math.abs(e.x - BOAT.x) < 14 && e.y < 4))) { if (e.inSub) ui.toggleWorkshop(); else hud.toast('Climb aboard at the stern ladder (F)', 'note'); }
     if (pressed.has('t')) { if (e.inSub && !g.sub.imploded) ui.toggleTank(); else hud.toast('The tank room is in the sub', 'warn'); }
     // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
@@ -1381,7 +1462,9 @@ function update(dt) {
       const k = 0.7 + 0.3 * Math.sin(g.time * 0.25), cvx = -1.1 * k, cvy = 0.35 * k;
       if (e.inSub) { g.sub.x += cvx * dt * 0.5; g.sub.y += cvy * dt * 0.5; } else { e.x += cvx * dt; e.y += cvy * dt; }
     }
+    if (g.aboard && !g.helm) { mv.x = 0; mv.y = 0; mv.sprint = false; }
     const res = updateEarl(g, dt, mv);
+    if (g.aboard) placeOnDeck(dt);
     zoneHazards(dt);
     // the lamp follows the cursor (if the mouse has been used); idle, Earl turns to face it
     g.aim = null;

@@ -552,3 +552,15 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - Trawl mouths 3.2 m (beginner) and 5.2 m (advanced) tall, catching 3 m either side of the mouth; the net trails a
   little further back for the bigger one.
 - The light mast is part of every sub (no longer an add-on): `subLook().mast` is always true.
+
+## 2.4.0 — aboard the Margaret
+- main.js (`DECK_STATIONS`, `boardDeck`, `deckInput`, `placeOnDeck`, `useStation`): a dive starts on deck at the top of
+  the stern ladder. F at the ladder climbs down (a short animation) into the water; swimming back, F beside the stern
+  climbs up. On deck A / D walk; the nearest station's name shows, F uses it: stern ladder · sub cradle (Sub tab) · helm
+  (outside, steer; W/S steps away) · sorting table (Sell tab) · cabin door · radio (Radio tab) · gallery hatch
+  (gallery) · dive locker (Diver tab). Tab or U: a list of stations (ui.stationMenu). Earl drawn standing (1.7 m)
+  with his tools stowed; the camera eases in to 15 m across.
+- js/cabin.js: the cabin, its own screen (#cabin): wood panelling, a porthole on the rocking sea, a lamp, a chart, the
+  old green-screen computer on a desk. A / D walk, E at the desk opens the catalog (the shop's Tools tab for now),
+  E at the door / Esc goes back out. The shop draws over the cabin (#workshop z-index 40).
+- The U shop popup only works from the docked sub now; swimming by the boat, U says to climb aboard.

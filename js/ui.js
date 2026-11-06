@@ -10,6 +10,7 @@ import { specimenValue, conditionName, rarityOf } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
+import { Cabin } from './cabin.js';
 import { SETTINGS, setSetting } from './settings.js';
 import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
@@ -69,6 +70,7 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     this.caveTab = 'trade';
+    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.openShop('tools'), blocked: () => !$('workshop').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; } });
     this.gallery = new Gallery($('gallery'), { act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
@@ -224,7 +226,7 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  anyOpen() { return this.stationsOpen() || !$('cabin').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('settings').hidden || !$('inventory').hidden; }
   closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
@@ -242,6 +244,29 @@ export class UI {
     el.hidden = false; el.querySelector('.cf-no').focus();
   }
   confirmOpen() { return !$('confirm').hidden; }
+  // the shop, opened on one tab (a station aboard the Margaret)
+  openShop(tab) {
+    this.shopTab = tab;
+    document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x.dataset.shop === tab));
+    this.toggleWorkshop(true);
+  }
+  // Tab aboard: the stations, as a list (for anyone who'd rather not walk the deck)
+  stationMenu(list, onPick) {
+    let el = document.getElementById('stations');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'stations'; el.hidden = true;
+      el.innerHTML = '<div class="st-plate"><h3>The Margaret</h3><div class="st-list"></div><p class="st-hint">Tab or Esc to close</p></div>';
+      document.body.appendChild(el);
+    }
+    const close = () => { el.hidden = true; window.removeEventListener('keydown', key, true); };
+    const key = (e) => { if (e.key === 'Escape' || e.key === 'Tab') { e.stopPropagation(); e.preventDefault(); close(); } };
+    el.querySelector('.st-list').innerHTML = list.map((st) => `<button data-st="${st.id}"><b>${st.name}</b><span>${st.label}</span></button>`).join('');
+    el.querySelector('.st-list').onclick = (e) => { const b = e.target.closest('button[data-st]'); if (b) { close(); onPick(b.dataset.st); } };
+    el.onclick = (e) => { if (e.target === el) close(); };
+    window.addEventListener('keydown', key, true);
+    el.hidden = false;
+  }
+  stationsOpen() { const el = document.getElementById('stations'); return !!el && !el.hidden; }
   inventoryOpen() { return !$('inventory').hidden; }
   toggleInventory(force) { const el = $('inventory'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderInventory(); }
   // B: what Earl has on him, what is in the sub, his gear
@@ -285,6 +310,12 @@ export class UI {
     $('set-graphics').innerHTML = `<span>Graphics<em>Fast: softer picture and fewer extras, for smoother play on slower computers</em></span><b class="on">${SETTINGS.fast ? 'fast' : 'auto'}</b>`;
   }
   galleryOpen() { return !$('gallery').hidden; }
+  cabinOpen() { return !$('cabin').hidden; }
+  toggleCabin(force) {
+    const el = $('cabin'), open = force === undefined ? el.hidden : force;
+    el.hidden = !open;
+    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.cabin.show(); }
+  }
   toggleGallery(force) {
     const el = $('gallery'), open = force === undefined ? el.hidden : force;
     el.hidden = !open;
@@ -892,6 +923,7 @@ export class UI {
       else this.tankRoom.update(dt);
     }
     if (!$('cave').hidden && Math.hypot(g.earl.x - 66, g.earl.y - 1800) > 20) this.toggleCave(false);
+    if (!$('cabin').hidden) { if (!g.aboard) this.toggleCabin(false); else this.cabin.update(dt); }
     if (!$('gallery').hidden) {
       const e = g.earl, aboard = (Math.abs(e.x - BOAT.x) < 16 && e.y < 5) || (e.inSub && g.sub.docked);
       if (!aboard) this.toggleGallery(false); else this.gallery.update(dt);
