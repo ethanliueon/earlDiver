@@ -7,7 +7,7 @@
   <meta name="description" content="A 2D ocean diving and survival horror game. Dive, explore, and stay out of reach of what is in the water.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&family=Allerta+Stencil&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&family=Allerta+Stencil&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
     /* the loading screen (2.6.4): drawn before anything else loads, faded out once the game is ready */
@@ -167,6 +167,7 @@
     </div>
   </section>
 
+  <section id="dave" class="dave" hidden></section>
   <section id="tankroom" class="tankroom" hidden></section>
   <section id="gallery" class="tankroom gallery" hidden></section>
   <section id="cabin" class="tankroom cabin" hidden></section>
@@ -240,48 +241,49 @@
   <!-- stamp:start (tools/stamp.py) -->
   <script type="importmap">
   { "imports": {
-    "./js/aquarium.js": "./js/aquarium.js?v=2.6.10",
-    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=2.6.10",
-    "./js/arm.js": "./js/arm.js?v=2.6.10",
-    "./js/audio.js": "./js/audio.js?v=2.6.10",
-    "./js/autopilot.js": "./js/autopilot.js?v=2.6.10",
-    "./js/cabin.js": "./js/cabin.js?v=2.6.10",
-    "./js/capture.js": "./js/capture.js?v=2.6.10",
-    "./js/catalog.js": "./js/catalog.js?v=2.6.10",
-    "./js/clouds.js": "./js/clouds.js?v=2.6.10",
-    "./js/contracts.js": "./js/contracts.js?v=2.6.10",
-    "./js/creatures_draw.js": "./js/creatures_draw.js?v=2.6.10",
-    "./js/earl_draw.js": "./js/earl_draw.js?v=2.6.10",
-    "./js/economy.js": "./js/economy.js?v=2.6.10",
-    "./js/entity.js": "./js/entity.js?v=2.6.10",
-    "./js/fauna.js": "./js/fauna.js?v=2.6.10",
-    "./js/gallery.js": "./js/gallery.js?v=2.6.10",
-    "./js/hud.js": "./js/hud.js?v=2.6.10",
-    "./js/hunters.js": "./js/hunters.js?v=2.6.10",
-    "./js/items.js": "./js/items.js?v=2.6.10",
-    "./js/main.js": "./js/main.js?v=2.6.10",
-    "./js/monster_draw.js": "./js/monster_draw.js?v=2.6.10",
-    "./js/player.js": "./js/player.js?v=2.6.10",
-    "./js/render.js": "./js/render.js?v=2.6.10",
-    "./js/scenery_draw.js": "./js/scenery_draw.js?v=2.6.10",
-    "./js/settings.js": "./js/settings.js?v=2.6.10",
-    "./js/showcase.js": "./js/showcase.js?v=2.6.10",
-    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=2.6.10",
-    "./js/species.js": "./js/species.js?v=2.6.10",
-    "./js/specimens.js": "./js/specimens.js?v=2.6.10",
-    "./js/survey.js": "./js/survey.js?v=2.6.10",
-    "./js/tankroom.js": "./js/tankroom.js?v=2.6.10",
-    "./js/tools_draw.js": "./js/tools_draw.js?v=2.6.10",
-    "./js/traps.js": "./js/traps.js?v=2.6.10",
-    "./js/ui.js": "./js/ui.js?v=2.6.10",
-    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=2.6.10",
-    "./js/util.js": "./js/util.js?v=2.6.10",
-    "./js/variants.js": "./js/variants.js?v=2.6.10",
-    "./js/version.js": "./js/version.js?v=2.6.10",
-    "./js/world.js": "./js/world.js?v=2.6.10"
+    "./js/aquarium.js": "./js/aquarium.js?v=2.7.0",
+    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=2.7.0",
+    "./js/arm.js": "./js/arm.js?v=2.7.0",
+    "./js/audio.js": "./js/audio.js?v=2.7.0",
+    "./js/autopilot.js": "./js/autopilot.js?v=2.7.0",
+    "./js/cabin.js": "./js/cabin.js?v=2.7.0",
+    "./js/capture.js": "./js/capture.js?v=2.7.0",
+    "./js/catalog.js": "./js/catalog.js?v=2.7.0",
+    "./js/clouds.js": "./js/clouds.js?v=2.7.0",
+    "./js/contracts.js": "./js/contracts.js?v=2.7.0",
+    "./js/creatures_draw.js": "./js/creatures_draw.js?v=2.7.0",
+    "./js/dave.js": "./js/dave.js?v=2.7.0",
+    "./js/earl_draw.js": "./js/earl_draw.js?v=2.7.0",
+    "./js/economy.js": "./js/economy.js?v=2.7.0",
+    "./js/entity.js": "./js/entity.js?v=2.7.0",
+    "./js/fauna.js": "./js/fauna.js?v=2.7.0",
+    "./js/gallery.js": "./js/gallery.js?v=2.7.0",
+    "./js/hud.js": "./js/hud.js?v=2.7.0",
+    "./js/hunters.js": "./js/hunters.js?v=2.7.0",
+    "./js/items.js": "./js/items.js?v=2.7.0",
+    "./js/main.js": "./js/main.js?v=2.7.0",
+    "./js/monster_draw.js": "./js/monster_draw.js?v=2.7.0",
+    "./js/player.js": "./js/player.js?v=2.7.0",
+    "./js/render.js": "./js/render.js?v=2.7.0",
+    "./js/scenery_draw.js": "./js/scenery_draw.js?v=2.7.0",
+    "./js/settings.js": "./js/settings.js?v=2.7.0",
+    "./js/showcase.js": "./js/showcase.js?v=2.7.0",
+    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=2.7.0",
+    "./js/species.js": "./js/species.js?v=2.7.0",
+    "./js/specimens.js": "./js/specimens.js?v=2.7.0",
+    "./js/survey.js": "./js/survey.js?v=2.7.0",
+    "./js/tankroom.js": "./js/tankroom.js?v=2.7.0",
+    "./js/tools_draw.js": "./js/tools_draw.js?v=2.7.0",
+    "./js/traps.js": "./js/traps.js?v=2.7.0",
+    "./js/ui.js": "./js/ui.js?v=2.7.0",
+    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=2.7.0",
+    "./js/util.js": "./js/util.js?v=2.7.0",
+    "./js/variants.js": "./js/variants.js?v=2.7.0",
+    "./js/version.js": "./js/version.js?v=2.7.0",
+    "./js/world.js": "./js/world.js?v=2.7.0"
   } }
   </script>
-  <script type="module" src="js/main.js?v=2.6.10"></script>
+  <script type="module" src="js/main.js?v=2.7.0"></script>
   <!-- stamp:end -->
 </body>
 </html>

@@ -74,7 +74,9 @@ export const RESOURCES = {
 // places on the deep floor (x ranges in metres)
 export const BRINE = { x0: 3730, x1: 3788 };     // a lake of brine on the abyssal plain: heavy, airless, deadly
 export const WHALE_FALL = { x: 2770 };            // a dead whale on the plain, and everything that feeds on it
-export const SEEP = { x: 3960 };                 // a cold seep on the rise: methane, mussels, tube worms
+export const SEEP = { x: 3960 };
+// (2.7.0) Dave's Haul: a diver's habitat on a terrace cut into the seamount's east flank, about 1,200 m down
+export const DAVE = { x: 3278, half: 11 };                 // a cold seep on the rise: methane, mussels, tube worms
 export const PIT = { x: 1180, half: 38, y: 5100 };       // the deepest point: a pit in the hadal trench floor
 export const TRENCH = { x0: 70, x1: 2220 };              // the hadal trench floor (the monster's lair is down here)
 export const CANYON = { x0: 4385, x1: 4495, top: 1000 }; // the canyon below its rim, where the current runs
@@ -121,7 +123,7 @@ export function generateWorld(seed) {
     W.brine = { x0: BRINE.x0 + 1.5, x1: BRINE.x1 - 1.5, y: surf };
   }
   // level beds for the whale fall (on the plain) and the seep (a terrace cut into the rise)
-  for (const [cx, half] of [[WHALE_FALL.x, 16], [SEEP.x, 13]]) {
+  for (const [cx, half] of [[WHALE_FALL.x, 16], [SEEP.x, 13], [DAVE.x, DAVE.half]]) {
     const ic = Math.round(cx / FLOOR_RES), h = Math.round(half / FLOOR_RES), edge = Math.round(8 / FLOOR_RES);
     const level = floor[ic];
     for (let i = ic - h - edge; i <= ic + h + edge; i++) {
@@ -193,6 +195,7 @@ export function generateWorld(seed) {
   }
   // nothing sticks out of the brine pool
   W.rocks = W.rocks.filter((rk) => !(rk.x1 > BRINE.x0 - 2 && rk.x0 < BRINE.x1 + 2 && rk.y1 > W.brine.y - 4));
+  { const dy = W.floorAt(DAVE.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > DAVE.x - DAVE.half - 4 && rk.x0 < DAVE.x + DAVE.half + 4 && rk.y1 > dy - 14)); } // (2.7.0) Dave's terrace kept clear of rock
   // the anglerfish's cave mouth: an upper and a lower lip of rock jutting from the west wall
   {
     const cx = CAVE.x, cy = CAVE.y;
@@ -248,6 +251,7 @@ export function generateWorld(seed) {
   W.cave = { x: CAVE.x, y: CAVE.y };
   W.whaleFall = { x: WHALE_FALL.x, y: W.floorAt(WHALE_FALL.x) };
   W.seep = { x: SEEP.x, y: W.floorAt(SEEP.x), phase: rng() * 6 };
+  W.dave = { x: DAVE.x, y: W.floorAt(DAVE.x) }; // Dave's hut stands on its terrace; its airlock faces east, toward the boat
 
   // ---- Sea lanterns: 1-2 per 500x500 m cell in open water; extra deeper ----
   W.lanterns = [];
@@ -392,6 +396,7 @@ export function generateWorld(seed) {
     }
   }
   W.statics = W.statics.filter((s) => !(s.x > BRINE.x0 && s.x < BRINE.x1));
+  W.statics = W.statics.filter((s) => !(s.x > DAVE.x - DAVE.half - 3 && s.x < DAVE.x + DAVE.half + 3)); // (2.7.0) nothing grows on Dave's terrace
   W.statics.sort((a, b) => a.x - b.x);
   buildHabitats(W);
   return W;

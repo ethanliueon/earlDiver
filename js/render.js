@@ -1887,6 +1887,78 @@ export class Renderer {
       }
       ctx.restore();
     }
+    // (2.7.0) Dave's Haul: a diver's habitat on its terrace, ~1,200 m down the seamount. A yellow pressure
+    // cylinder on four legs, lit portholes (Dave passes behind one now and then), the airlock and its docking
+    // collar at the east end, a hand-painted sign on the roof, a mast with a red beacon, and the junk of a
+    // man who lives down here: a net strung out to dry, glass floats, crates, a drum, an anchor, a tyre.
+    const Dv = W.dave;
+    if (Dv && inView(Dv.x, Dv.y - 4, 26)) {
+      const X = (dx) => S(Dv.x + dx), Y = (dy) => Sy(Dv.y + dy), m = ppm;
+      const cy = -3.1, R = 1.8, x0 = -5, x1 = 5; // the hull: its axis 3.1 m above the terrace
+      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      // the cable up the slope, and the mooring chain
+      ctx.strokeStyle = '#141414'; ctx.lineWidth = Math.max(1.5, m * 0.08);
+      ctx.beginPath(); ctx.moveTo(X(x0), Y(cy + 0.5)); ctx.quadraticCurveTo(X(-9), Y(-0.2), X(-14), Sy(W.floorAt(Dv.x - 14)) - m * 0.1); ctx.lineTo(X(-26), Sy(W.floorAt(Dv.x - 26)) - m * 0.1); ctx.stroke();
+      // the legs and their feet
+      ctx.strokeStyle = '#3a3a36'; ctx.lineWidth = Math.max(2, m * 0.22);
+      for (const lx of [-3.8, -1.6, 1.6, 3.8]) { ctx.beginPath(); ctx.moveTo(X(lx), Y(cy + R * 0.7)); ctx.lineTo(X(lx + Math.sign(lx) * 0.5), Y(0)); ctx.stroke(); ctx.fillStyle = '#2a2a26'; ctx.fillRect(X(lx + Math.sign(lx) * 0.5) - m * 0.35, Y(0) - m * 0.12, m * 0.7, m * 0.18); }
+      // the mast, and its beacon
+      ctx.strokeStyle = '#2e2e2a'; ctx.lineWidth = Math.max(1.5, m * 0.1); ctx.beginPath(); ctx.moveTo(X(-3.2), Y(cy - R)); ctx.lineTo(X(-3.2), Y(cy - R - 4.2)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X(-3.9), Y(cy - R - 3.3)); ctx.lineTo(X(-2.5), Y(cy - R - 3.3)); ctx.stroke();
+      const blink = (t % 2.4) < 0.25;
+      ctx.fillStyle = blink ? '#ff5040' : '#5a1a14'; ctx.beginPath(); ctx.arc(X(-3.2), Y(cy - R - 4.3), Math.max(2, m * 0.16), 0, TAU); ctx.fill();
+      // the hull: a yellow cylinder, rounded ends, rust run down from every seam
+      const hg = ctx.createLinearGradient(0, Y(cy - R), 0, Y(cy + R));
+      hg.addColorStop(0, '#d8a83c'); hg.addColorStop(0.35, '#c08e2a'); hg.addColorStop(1, '#5e4210');
+      ctx.fillStyle = hg; ctx.beginPath(); ctx.roundRect(X(x0), Y(cy - R), (x1 - x0) * m, R * 2 * m, R * m); ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.roundRect(X(x0), Y(cy - R), (x1 - x0) * m, R * 2 * m, R * m); ctx.clip();
+      ctx.fillStyle = 'rgba(110,52,16,0.35)';
+      for (let k = 0; k < 14; k++) { const rx = x0 + 0.5 + ((k * 2.37) % (x1 - x0 - 1)), len = 0.6 + ((k * 0.73) % 1.6); ctx.fillRect(X(rx), Y(cy - R + 0.2 + (k % 3) * 0.6), Math.max(1, m * 0.07), len * m); }
+      ctx.strokeStyle = 'rgba(40,24,6,0.55)'; ctx.lineWidth = Math.max(1, m * 0.07);
+      for (const rx of [-2.6, 0, 2.6]) { ctx.beginPath(); ctx.moveTo(X(rx), Y(cy - R)); ctx.lineTo(X(rx), Y(cy + R)); ctx.stroke(); } // the ring seams
+      ctx.fillStyle = 'rgba(255,240,200,0.18)'; ctx.fillRect(X(x0), Y(cy - R * 0.72), (x1 - x0) * m, m * 0.22); // the shine along its top
+      ctx.restore();
+      // the portholes: warm light from inside, and now and then his head going past
+      const dave = Math.sin(t * 0.21) * 0.5 + 0.5; // where he is in his hut (0 west .. 1 east)
+      for (const px of [-2.0, 0.8]) {
+        const pr = 0.62, wx = X(px), wy = Y(cy - 0.25);
+        ctx.fillStyle = '#ffd890'; ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.fill();
+        const hx = -3 + dave * 6.2; // his head and shoulders, when he passes this window
+        if (Math.abs(hx - px) < 0.9) { ctx.save(); ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.clip(); ctx.fillStyle = 'rgba(60,34,14,0.85)'; ctx.beginPath(); ctx.arc(X(hx), wy + m * 0.05, m * 0.26, 0, TAU); ctx.fill(); ctx.fillRect(X(hx) - m * 0.45, wy + m * 0.28, m * 0.9, m * 0.5); ctx.restore(); }
+        ctx.strokeStyle = '#5a5a52'; ctx.lineWidth = Math.max(1.5, m * 0.13); ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.stroke();
+      }
+      // the airlock: a short trunk at the east end, its hatch and the docking collar
+      ctx.fillStyle = '#9a7424'; ctx.fillRect(X(x1 - 0.6), Y(cy - 1.1), m * 1.6, m * 2.2);
+      ctx.fillStyle = '#4a4a44'; ctx.fillRect(X(x1 + 0.9), Y(cy - 1.4), m * 0.35, m * 2.8); // the collar
+      ctx.fillStyle = '#6e6e66'; ctx.beginPath(); ctx.ellipse(X(x1 + 1.07), Y(cy), m * 0.14, m * 1.05, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,214,140,0.9)'; ctx.beginPath(); ctx.arc(X(x1 + 0.35), Y(cy - 1.45), Math.max(1.5, m * 0.13), 0, TAU); ctx.fill(); // the lamp over the hatch
+      // the sign on the roof: a plank on two posts, hand-painted
+      const sx0 = X(-1.6), sy0 = Y(cy - R - 1.9), sw = 4.6 * m, sh = 1.15 * m;
+      ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = Math.max(1.5, m * 0.1);
+      for (const q of [0.15, 0.85]) { ctx.beginPath(); ctx.moveTo(sx0 + sw * q, sy0 + sh); ctx.lineTo(sx0 + sw * q, Y(cy - R + 0.1)); ctx.stroke(); }
+      ctx.fillStyle = '#6e4e2c'; ctx.beginPath(); ctx.moveTo(sx0, sy0 + m * 0.05); ctx.lineTo(sx0 + sw, sy0 - m * 0.08); ctx.lineTo(sx0 + sw, sy0 + sh - m * 0.04); ctx.lineTo(sx0, sy0 + sh); ctx.fill();
+      if (m > 5) {
+        ctx.fillStyle = '#f0e2b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `700 ${Math.round(m * 0.52)}px Georgia, serif`; ctx.fillText("DAVE'S HAUL", sx0 + sw / 2, sy0 + sh * 0.42);
+        ctx.fillStyle = '#e8584a'; ctx.font = `700 ${Math.round(m * 0.3)}px Georgia, serif`; ctx.fillText('· OPEN ·', sx0 + sw / 2, sy0 + sh * 0.84);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      }
+      // the junk: a net strung from the mast to a post, glass floats, crates, a drum, an anchor, a tyre
+      ctx.strokeStyle = 'rgba(150,150,120,0.55)'; ctx.lineWidth = 1;
+      const nx0 = -3.2, ny0 = cy - R - 2.8, nx1 = -8.5, ny1 = -2.6;
+      for (let k = 0; k <= 8; k++) { const q = k / 8; ctx.beginPath(); ctx.moveTo(X(nx0 + (nx1 - nx0) * q), Y(ny0 + (ny1 - ny0) * q)); ctx.lineTo(X(nx0 + (nx1 - nx0) * q - 0.3), Y(ny0 + (ny1 - ny0) * q + 1.6 + Math.sin(q * Math.PI) * 0.8 + Math.sin(t * 0.6 + k) * 0.08)); ctx.stroke(); }
+      ctx.beginPath(); for (let k = 0; k <= 8; k++) { const q = k / 8; const xx = X(nx0 + (nx1 - nx0) * q - 0.3), yy = Y(ny0 + (ny1 - ny0) * q + 1.6 + Math.sin(q * Math.PI) * 0.8); k ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.stroke();
+      ctx.strokeStyle = '#2e2e2a'; ctx.lineWidth = Math.max(1.5, m * 0.12); ctx.beginPath(); ctx.moveTo(X(nx1), Y(0)); ctx.lineTo(X(nx1), Y(ny1 - 0.2)); ctx.stroke();
+      ctx.strokeStyle = 'rgba(40,40,36,0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(nx0), Y(ny0)); ctx.lineTo(X(nx1), Y(ny1)); ctx.stroke();
+      for (const [fx, fy, c] of [[-4.6, ny0 + 0.9, '#e0702a'], [-6.2, ny0 + 1.6, '#3a8a7a'], [-7.6, ny1 - 0.1, '#e0702a']]) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(X(fx), Y(fy + 0.5), m * 0.32, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.arc(X(fx) - m * 0.1, Y(fy + 0.4), m * 0.1, 0, TAU); ctx.fill(); }
+      ctx.fillStyle = '#5a4026'; ctx.fillRect(X(6.8), Y(-0.9), m * 1.1, m * 0.9); ctx.fillStyle = '#4a3420'; ctx.fillRect(X(7.2), Y(-1.6), m * 0.9, m * 0.7); // crates
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(X(6.8), Y(-0.9), m * 1.1, m * 0.9); ctx.strokeRect(X(7.2), Y(-1.6), m * 0.9, m * 0.7);
+      ctx.fillStyle = '#2a4a6a'; ctx.fillRect(X(-6.4), Y(-1.2), m * 0.8, m * 1.2); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(X(-6.4), Y(-0.8), m * 0.8, m * 0.1); // a drum
+      ctx.strokeStyle = '#3a342c'; ctx.lineWidth = Math.max(1.5, m * 0.14); // the anchor, on its side
+      ctx.beginPath(); ctx.moveTo(X(8.6), Y(-0.15)); ctx.lineTo(X(10.4), Y(-0.15)); ctx.moveTo(X(8.6), Y(-0.15)); ctx.quadraticCurveTo(X(8.2), Y(-0.9), X(8.8), Y(-1.2)); ctx.moveTo(X(10.4), Y(-0.15)); ctx.lineTo(X(10.6), Y(-0.8)); ctx.stroke();
+      ctx.strokeStyle = '#161616'; ctx.lineWidth = Math.max(2, m * 0.2); ctx.beginPath(); ctx.ellipse(X(-1.2), Y(-0.25), m * 0.7, m * 0.22, 0, 0, TAU); ctx.stroke(); // a tyre
+      ctx.restore();
+    }
     // the canyon's current: silt streaming down and out toward the deep
     const cx = (CANYON.x0 + CANYON.x1) / 2;
     if (inView(cx, this.cam.y, 80) && this.cam.y > CANYON.top - 40) {
@@ -2247,6 +2319,15 @@ export class Renderer {
         this.netLamp = [nx, ny, na, nd + 9 * ppm];
       } else this.netLamp = null;
     }
+    // (2.7.0) Dave's hut: warm portholes, the lamp over the hatch, the sign's lamp, the mast's red beacon
+    const Dh = g.world.dave;
+    if (Dh) { const hx = S(Dh.x), hy = Sy(Dh.y - 3.3);
+      if (hx > -600 && hx < this.W + 600 && hy > -600 && hy < this.H + 600) {
+        radial(S(Dh.x - 2), hy, 7 * ppm, [255, 200, 120], 0.75); radial(S(Dh.x + 0.8), hy, 7 * ppm, [255, 200, 120], 0.75); lamps.push({ x: S(Dh.x - 0.6), y: hy, r: 8 * ppm, a: 0.5 });
+        radial(S(Dh.x + 5.35), Sy(Dh.y - 4.5), 5 * ppm, [255, 214, 140], 0.6);
+        radial(S(Dh.x + 0.7), Sy(Dh.y - 8.5), 4.5 * ppm, [255, 230, 180], 0.45);
+        if ((g.time || 0) % 2.4 < 0.25) radial(S(Dh.x - 3.2), Sy(Dh.y - 9.2), 4 * ppm, [255, 70, 50], 0.6);
+      } }
     for (const lt of g.world.lanterns) {
       const x = S(lt.x), y = Sy(lt.y);
       if (x < -400 || x > this.W + 400 || y < -400 || y > this.H + 400) continue;

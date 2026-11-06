@@ -10,6 +10,7 @@ import { specimenValue, conditionName, rarityOf } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
+import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
 import { Catalog, pictureOf } from './catalog.js';
 import { ITEMS, kitOf, KINDS } from './items.js';
@@ -75,6 +76,7 @@ export class UI {
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     this.caveTab = 'trade';
     this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.toggleCatalog(true), station: (id) => h.onStation && h.onStation(id), footstep: (v) => h.onFootstep && h.onFootstep(v), tankFish: () => { const P0 = h.getProfile && h.getProfile(); return P0 ? Object.values(aquariumOf(P0).display) : []; }, light: () => { const P0 = h.getProfile && h.getProfile(); return P0 ? aquariumOf(P0).light || 'day' : 'day'; }, blocked: () => !$('workshop').hidden || !$('catalog').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
+    this.dave = new DaveShop($('dave'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => { h.onBuy(k); }, sellFind: (k) => h.onDaveSell(k), payFinds: () => (h.payFinds ? h.payFinds() : 1), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleDave(false) });
     this.gallery = new Gallery($('gallery'), { catch: () => (h.aquariumCatch ? h.aquariumCatch() : []), act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
     this.catalog = new Catalog($('catalog'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
@@ -242,8 +244,8 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return this.stationsOpen() || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('settings').hidden || !$('inventory').hidden; }
-  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
+  anyOpen() { return this.stationsOpen() || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  closeAll() { this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
   // a brass "are you sure?" plate: yes runs onYes; no, Esc or a click outside just closes it
@@ -457,6 +459,14 @@ export class UI {
     if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.tankRoom.open(); }
   }
   // the old one's cave: choose which fish she takes (once a dive)
+  // (2.7.0) Dave's Haul
+  daveOpen() { return !$('dave').hidden; }
+  toggleDave(force) {
+    const el = $('dave'), open = force === undefined ? el.hidden : force;
+    if (open === !el.hidden) return;
+    el.hidden = !open;
+    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.dave.open(); }
+  }
   toggleCave(force) {
     const el = $('cave');
     const open = force === undefined ? el.hidden : force;
@@ -987,6 +997,7 @@ export class UI {
       else this.tankRoom.update(dt);
     }
     if (!$('cave').hidden && Math.hypot(g.earl.x - 66, g.earl.y - 1800) > 20) this.toggleCave(false);
+    if (!$('dave').hidden && g.world.dave && Math.hypot(g.earl.x - (g.world.dave.x + 6.5), g.earl.y - (g.world.dave.y - 3.1)) > 18) this.toggleDave(false);
     if (!$('cabin').hidden) { if (!g.aboard) this.toggleCabin(false); else this.cabin.update(dt); }
     if (!$('gallery').hidden) {
       const e = g.earl, aboard = (Math.abs(e.x - BOAT.x) < 16 && e.y < 5) || (e.inSub && g.sub.docked);

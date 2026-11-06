@@ -18,6 +18,7 @@ import { fillBoard, fulfil, refreshIn, ready as contractReady } from './contract
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf, kit, worn } from './economy.js';
+import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
@@ -162,6 +163,8 @@ const ui = new UI({
   onTakeContract: (key) => { const c = g.contracts.find((q) => q.key === key); if (!c || c.taken) return false; c.taken = true; profile.taken = g.contracts.filter((q) => q.taken); saveProfile(profile); audio.ready && audio.click(); return true; },
   onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on the sub's hull`); },
   onSellItem: (k) => sellItem(k),
+  onDaveSell: (k) => daveSell(k),
+  payFinds: () => statValue(profile, 'paySalvage'),
   onDisplay: (k) => displaySpecimen(k),
   onCaveOffer: () => caveOffer(),
   onWare: (k) => wareBuy(k),
@@ -349,6 +352,23 @@ function displaySpecimen(key) {
 // Once a dive she takes fish for old gold coins: 30 % under the market, except the one she
 // craves this dive, which she pays three times the market for.
 const ANGLER_RATE = 0.7, CRAVE_RATE = 3;
+// (2.7.0) Dave's Haul: at his airlock (docked in the sub, or swimming), F opens his shop
+const nearDave = () => { const D = g.world.dave; return !!D && dist(g.earl.x, g.earl.y, D.x + 6.5, D.y - 3.1) < 10; };
+// he buys odd finds for a quarter more than the Margaret pays: one kind, or 'all' of them
+function daveSell(k) {
+  const keys = k === 'all' ? DAVE_FINDS.filter((q) => (g.inv[q] || 0) > 0) : [k];
+  let total = 0;
+  for (const q of keys) {
+    const n = g.inv[q] || 0; if (!n || !DAVE_FINDS.includes(q)) continue;
+    const line = sell(profile, q, n, GOODS[q].price * DAVE_RATE * statValue(profile, 'paySalvage'), GOODS[q].name);
+    g.inv[q] = 0;
+    total += line.total;
+  }
+  if (!total) return null;
+  g.earned += total; saveProfile(profile);
+  hud.toast(`Dave pays ${money(total)}`, 'big'); audio.ready && audio.sale();
+  return total;
+}
 const nearAngler = () => dist(g.earl.x, g.earl.y, CAVE.x + 14, CAVE.y) < 16;
 const inCave = (x, y) => x < CAVE.x + 32 && Math.abs(y - CAVE.y) < 14;
 function cravingOf() {
@@ -1224,7 +1244,8 @@ function update(dt) {
     const target = findTarget();
     g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);
-    const atAngler = nearAngler();
+    const atAngler = nearAngler(), atDave = !atAngler && nearDave();
+    if (atDave) g.prompt = "F  Dave's Haul" + (e.inSub ? '   ·   hold F  Leave sub' : '');
     if (atAngler) g.prompt = (g.caveTraded ? 'The old one has eaten this dive' : 'F  Trade with the old one') + (e.inSub ? '   ·   hold F  Leave sub' : '');
     if (atAngler && !g.caveMet) g.caveMet = true;
     // in the submersible the prompt stays out of the way: hidden while moving, and gone after
@@ -1235,7 +1256,7 @@ function update(dt) {
       if (g.prompt !== g.promptText || (g.subMoving && e.speedNow < 0.5)) { g.promptText = g.prompt; g.promptT = 0; }
       g.subMoving = e.speedNow >= 0.5;
       g.promptT = (g.promptT || 0) + dt;
-      if (!target && !atAngler && (g.subMoving || g.promptT > 5)) g.prompt = null;
+      if (!target && !atAngler && !atDave && (g.subMoving || g.promptT > 5)) g.prompt = null;
     } else { g.promptText = null; g.promptT = 0; }
     // aboard the Margaret (2.4.0): the stern ladder, walking the deck, the stations
     deckInput(dt, mv);
@@ -1265,6 +1286,7 @@ function update(dt) {
       if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('Something far below accepts it. For a while, it will not look for you.', 'note'); }
     }
     if (pressed.has('f-tap') && atAngler) ui.toggleCave();
+    else if (pressed.has('f-tap') && atDave) ui.toggleDave();
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
     if (pressed.has('l')) {

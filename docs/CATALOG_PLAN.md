@@ -64,7 +64,7 @@ A shopping site on an old CRT screen, "Bayside Marine Supply" (the game's own in
 | Air | Aluminium 80 (free) · Steel 100 $25 · Steel 130 $80 · Twin set $300 · Sidemount pair $900 |
 | Supplies | Backup air tank · tag darts · trap bait (+2 animals in a trap) |
 
-### 3b. Dave's Haul: mid-game, found by exploring
+### 3b. Dave's Haul: mid-game, found by exploring (built in 2.7.0)
 
 - **Dave** is a real human diver who lives in an underwater hut on the seamount, about 1,200 m down: a pressurised
   habitat with a round porthole lit from inside, a hand-painted sign ("DAVE'S HAUL · OPEN"), nets, buoys and

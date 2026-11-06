@@ -779,3 +779,20 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   280 Hz), so each theme is heard as it is.
 - Fixed: the 2.6.9 rewrite had dropped `cue()` and `calmBoost()` (so good moments no longer brought the
   music back); both are back.
+
+## 2.7.0 — Dave's Haul
+- `world.js` `DAVE = { x: 3278, half: 11 }`: a level terrace cut into the seamount's east flank (~1,186 m),
+  kept clear of rock and seafloor growth; `W.dave` holds its spot. `render.js` draws the habitat there (a
+  yellow pressure cylinder on legs, two lit portholes with Dave passing behind one, the airlock and docking
+  collar facing east, the hand-painted "DAVE'S HAUL · OPEN" sign, a mast with a blinking red beacon, a net,
+  glass floats, crates, a drum, an anchor and a tyre) and lights it in `buildLightmap`.
+- `main.js` `nearDave()`: within 10 m of the airlock (in the sub or swimming), "F  Dave's Haul" opens his
+  shop (`ui.toggleDave`; it closes if he moves 18 m off).
+- `js/dave.js` `DaveShop`: a chalkboard in a wooden frame (font: Caveat). For sale: every item in
+  `items.js` with `shop: 'dave'` (pro capture net, pro slurp gun, pneumatic tag gun, housed and low-light
+  cameras, carbon fins, closed-circuit rebreather, expedition bag) and the rebreather suit; bought through the
+  same `buy('item:...')` / `buy('suit:...')` as the catalog. Dave buys pearls, sapphires, whalebone, glass
+  sponge and nodules at ×1.25 the Margaret's price (`DAVE_RATE`, × the salvage buyers upgrade); `daveSell`.
+- He says a line on each visit: his hello the first time (`P.daveVisits`), then one of ten (one hints at a
+  light out west along the wall: the old one).
+- Still to do from the shop plan: the old one as a cash shop (coins removed), radio quests, clues.
