@@ -55,3 +55,23 @@ Drawn in the tank room (js/tankroom.js).
    - up to 250 m either way: dying;
    - more than 350 m either way: dead.
    (250-350 m: still dying, getting worse fast.)
+
+## More requests from the user (not started)
+3. **What the deep feels like.** Deep species are mostly *rare*, and by volume the deep is dominated by
+   a small core of about 3-10 rare species (lanternfish, hatchetfish, bristlemouth, firefly squid, deep red shrimp,
+   and a few like them). These should make up most of what you see down there. Exotics turn up here and there;
+   finding a legendary should be a big, exciting moment (consider a special toast/sound/photo card).
+   Tuning: give that rare core a much higher spawn weight than other rare deep species (e.g. a `DEEP_CORE`
+   set with x5-10 weight in fauna.js `weightOf`), keep exotic ~0.05 and legendary ~0.012 or lower.
+4. **Aquarium revamp: replace the current wings/visitors aquarium (js/aquarium.js, aquarium_draw.js, ui.js
+   aquarium tab).** It's too complicated and doesn't add much. New design:
+   - An **aquarium gallery aboard the ship, the Margaret**, built like the sub's tank room (drag and drop, same
+     look and feel as js/tankroom.js).
+   - It still draws visitors, but the **main payout is idle income from the fish on display**.
+   - Fish keep their condition in the gallery:
+     - **healthy**: full idle income;
+     - **stressed**: earns less until it recovers (it recovers over time);
+     - **dying**: earns a little for a while, then dies;
+     - **dead**: earns nothing; dead fish can be taken out and sold (at the dead price, half).
+   - Fish must be put in alive. Dying and stressed fish can be added; dead ones can't.
+   - **Dead fish are drawn with X eyes** (everywhere dead fish appear: gallery, tanks, bag, haul pile).
