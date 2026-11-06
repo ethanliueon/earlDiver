@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.3.3 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.3.4 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -89,8 +89,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - **The Margaret** goes anywhere on the surface, slowly (5 m/s flat out). Drop the anchor (G at
   the helm; V takes the helm) and she stays, and the next dive starts there. Heavy traps are winched up from her helm
   over their buoys.
-- **The aquarium** is a gallery aboard the Margaret, for the fun of it: four tanks (warm reef, cold
-  water, open water, and the dark tank for the deep), room for 4 animals to start (more from the
+- **The aquarium** is a gallery aboard the Margaret, for the fun of it: one big tank where every
+  animal lives together (a deep one does fine if it came up healthy), room for 4 animals to start (more from the
   shop's Aquarium tab, up to 20). Keep live animals instead of selling them; walk the gallery to pet,
   feed, name and light them. Visitors leave a little money each day (about 2 % of the animals' worth):
   pleasant, never a living. Stressed animals earn half until they recover; a dying one fades within

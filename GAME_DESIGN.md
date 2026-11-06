@@ -282,8 +282,8 @@ come into her cave.
 
 ## The aquarium
 
-- A gallery aboard the Margaret, for fun rather than money. Four tanks in the bulkhead: warm reef,
-  cold water, open water, and a dark tank for anything from 150 m down. Room for 4 animals, +2 for each
+- A gallery aboard the Margaret, for fun rather than money. One big lit tank: every animal in it
+  together (deep ones live well enough if they came up healthy); daylight, dim or red light. Room for 4 animals, +2 for each
   refit bought on the Aquarium tab ($200 ... $150,000), up to 20. Each species and rare form once.
 - Live animals only (a dead one is refused). Healthy (0.7+) animals become Happy after 5 minutes
   (×1.2) and earn the Famous tag 15 minutes after that (×2, kept for good). Stressed ones (0.3-0.7)

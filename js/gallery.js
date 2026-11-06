@@ -1,15 +1,15 @@
-// The aquarium gallery, walked aboard the Margaret: four long lit tanks set into the bulkhead (warm reef,
-// cold water, open water, and the dark tank for the deep), the animals swimming in them. Tap one for its brass tag: its name, how it is doing (Happy after five
+// The aquarium gallery, walked aboard the Margaret: one big lit tank, every animal in it together (a deep
+// one lives here well enough if it came up healthy). Tap one for its brass tag: its name, how it is doing (Happy after five
 // minutes healthy, Famous fifteen minutes after that), and what can be done: pet it, feed it, sell
 // it, or send it down to the sub's pressure tank to be released at home. The lighting can be set
 // for the whole gallery: daylight, dim, or the red light deep animals can't see.
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
-import { WINGS, aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale, gallerySlots, tankOf } from './aquarium.js';
+import { aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale, gallerySlots } from './aquarium.js';
 import { VARIANTS, makeVariantSprite } from './variants.js';
 import { clamp, lerp, TAU } from './util.js';
 
-const LIGHTS = { day: { name: 'Daylight', water: ['#2a7a90', '#0c3644'], tint: null }, dim: { name: 'Dim', water: ['#123844', '#061a22'], tint: 'rgba(0,10,20,0.35)' }, red: { name: 'Red', water: ['#3a1416', '#12080a'], tint: 'rgba(120,10,10,0.28)' } };
+const LIGHTS = { day: { name: 'Daylight', water: ['#3a9ab4', '#17566a'], tint: null }, dim: { name: 'Dim', water: ['#123844', '#061a22'], tint: 'rgba(0,10,20,0.35)' }, red: { name: 'Red', water: ['#3a1416', '#12080a'], tint: 'rgba(120,10,10,0.28)' } };
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 // two small crosses where its eye is: a dead fish in a tank (head toward -x, as every creature is drawn)
@@ -64,9 +64,8 @@ export class Gallery {
 
   geometry(P) {
     const W = window.innerWidth, H = window.innerHeight, A = aquariumOf(P);
-    const wings = WINGS, n = wings.length, top = H * 0.12, gap = 18, rowH = Math.min(190, (H * 0.85 - gap * (n - 1)) / n);
-    const x0 = W * 0.06, w = W * 0.88;
-    return { W, H, rows: wings.map((wing, i) => ({ wing, x: x0, y: top + i * (rowH + gap), w, h: rowH })) };
+    // one big tank (2.3.4): every animal together, in ordinary lit water
+    return { W, H, rows: [{ wing: { id: 'all', name: 'The tank' }, x: W * 0.05, y: H * 0.12, w: W * 0.9, h: H * 0.8 }] };
   }
   fishAt(cx, cy) {
     let best = null, bd = 50;
@@ -82,8 +81,7 @@ export class Gallery {
     const nShown = Object.keys(A.display).length;
     this.root.querySelector('.gl-sub').textContent = `${nShown} of ${gallerySlots(P)} places · aboard the Margaret`;
     let html = '';
-    if (!nShown) html += `<div class="gl-empty">The tanks are empty. Keep a live animal from the Sell tab and it swims in here.</div>`;
-    for (const r of G.rows) { const n = Object.values(A.display).filter((d) => tankOf(d) === r.wing.id).length; html += `<div class="gl-wing" style="left:${r.x + 10}px;top:${r.y + 6}px">${r.wing.name}${n ? ` · ${n}` : ''}</div>`; }
+    if (!nShown) html += `<div class="gl-empty">The tank is empty. Keep a live animal from the Sell tab and it swims in here.</div>`;
     const d = this.open && A.display[this.open], a = this.open && this.anim.get(this.open);
     if (d && a) {
       const sp = SPECIES_BY_ID[d.id], dead = d.cond <= 0.05;
@@ -104,34 +102,19 @@ export class Gallery {
     }
     this.over.innerHTML = html;
   }
-  // each tank's furniture, drawn behind the animals: coral heads, kelp, open blue with bubbles, or the dark
-  // with a few drifting motes
+  // the tank's few things: a sand floor, a rock, a tuft of seagrass in one corner, rising bubbles
   decor(ctx, r) {
-    const id = r.wing.id, base = r.y + r.h, t = this.t;
+    const base = r.y + r.h, t = this.t;
     ctx.save();
-    if (id === 'reef') {
-      const cols = ['#c86a5a', '#d8a050', '#a86ab0', '#e0c8a0', '#5aa890'];
-      for (let k = 0; k < 9; k++) {
-        const x = r.x + r.w * (0.05 + k * 0.11 + (k % 3) * 0.013), h = r.h * (0.12 + ((k * 37) % 10) / 60);
-        ctx.fillStyle = cols[k % cols.length]; ctx.globalAlpha = 0.75;
-        ctx.beginPath(); ctx.ellipse(x, base - 8, h * 0.7, h, 0, Math.PI, 0); ctx.fill();
-        if (k % 2) { ctx.strokeStyle = cols[(k + 2) % cols.length]; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + h, base - 8); ctx.quadraticCurveTo(x + h * 1.2, base - h * 1.6, x + h * 0.8 + Math.sin(t + k) * 3, base - h * 2.1); ctx.stroke(); }
-      }
-    } else if (id === 'kelp') {
-      ctx.strokeStyle = '#6a7a30'; ctx.globalAlpha = 0.7;
-      for (let k = 0; k < 12; k++) {
-        const x = r.x + r.w * (0.04 + k * 0.085), h = r.h * (0.55 + ((k * 13) % 7) / 20), sw = Math.sin(t * 0.7 + k) * 8;
-        ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, base - 6); ctx.quadraticCurveTo(x + sw, base - h * 0.5, x + sw * 1.6, base - h); ctx.stroke();
-        ctx.fillStyle = '#7a8a38'; for (let j = 1; j < 5; j++) { const f = j / 5, lx = x + sw * 1.6 * f * f, ly = base - h * f; ctx.beginPath(); ctx.ellipse(lx + 6, ly, 7, 2.5, -0.5, 0, TAU); ctx.fill(); }
-      }
-    } else if (id === 'open') {
-      ctx.fillStyle = 'rgba(220,240,255,0.25)';
-      for (let k = 0; k < 14; k++) { const x = r.x + r.w * ((k * 0.137) % 1), y = base - ((t * 18 + k * 47) % r.h); ctx.beginPath(); ctx.arc(x + Math.sin(t + k) * 3, y, 1.5 + (k % 3), 0, TAU); ctx.fill(); }
-    } else {
-      for (let k = 0; k < 22; k++) { const x = r.x + r.w * ((k * 0.0731 + t * 0.004) % 1), y = r.y + r.h * ((k * 0.191 + Math.sin(t * 0.2 + k) * 0.02) % 1); ctx.fillStyle = k % 4 ? 'rgba(160,200,220,0.25)' : 'rgba(90,200,255,0.55)'; ctx.beginPath(); ctx.arc(x, y, k % 4 ? 1 : 1.6, 0, TAU); ctx.fill(); }
-      ctx.fillStyle = '#1a1814'; ctx.globalAlpha = 0.9;
-      for (let k = 0; k < 4; k++) { const x = r.x + r.w * (0.12 + k * 0.25); ctx.beginPath(); ctx.ellipse(x, base - 6, r.h * 0.18, r.h * 0.09, 0, Math.PI, 0); ctx.fill(); }
+    ctx.fillStyle = '#5a5040'; ctx.beginPath(); ctx.moveTo(r.x + r.w * 0.62, base - 6);
+    ctx.quadraticCurveTo(r.x + r.w * 0.66, base - r.h * 0.13, r.x + r.w * 0.72, base - r.h * 0.1); ctx.quadraticCurveTo(r.x + r.w * 0.77, base - r.h * 0.08, r.x + r.w * 0.79, base - 6); ctx.fill();
+    ctx.strokeStyle = '#5f8a3a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    for (let k = 0; k < 9; k++) {
+      const x = r.x + r.w * 0.04 + k * 7, h = r.h * (0.16 + ((k * 7) % 5) * 0.025), sw = Math.sin(t * 0.8 + k * 0.7) * 6;
+      ctx.beginPath(); ctx.moveTo(x, base - 6); ctx.quadraticCurveTo(x + sw * 0.5, base - h * 0.5, x + sw, base - h); ctx.stroke();
     }
+    ctx.fillStyle = 'rgba(220,240,255,0.3)';
+    for (let k = 0; k < 10; k++) { const x = r.x + r.w * 0.9 + Math.sin(t * 2 + k) * 3, y = base - ((t * 40 + k * 37) % r.h); ctx.beginPath(); ctx.arc(x, y, 1.5 + (k % 3), 0, TAU); ctx.fill(); }
     ctx.restore();
   }
   update(dt) {
@@ -154,30 +137,32 @@ export class Gallery {
       ctx.fillStyle = '#6e5424'; ctx.fillRect(r.x - 8, r.y - 8, r.w + 16, r.h + 16);
       ctx.fillStyle = '#b8954a'; ctx.fillRect(r.x - 5, r.y - 5, r.w + 10, r.h + 10);
       ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
-      const water = (A.light || 'day') === 'day' ? r.wing.water : light.water;
+      const water = light.water;
       const wg = ctx.createLinearGradient(0, r.y, 0, r.y + r.h); wg.addColorStop(0, water[0]); wg.addColorStop(1, water[1]);
       ctx.fillStyle = wg; ctx.fillRect(r.x, r.y, r.w, r.h);
       if (A.light !== 'red') { ctx.globalAlpha = A.light === 'dim' ? 0.03 : 0.07; ctx.fillStyle = '#e8f8ff'; for (let k = 0; k < 6; k++) { const x = r.x + r.w * (0.08 + k * 0.17) + Math.sin(this.t * 0.4 + k) * 10; ctx.beginPath(); ctx.moveTo(x, r.y); ctx.lineTo(x + 24, r.y); ctx.lineTo(x + 60, r.y + r.h); ctx.lineTo(x + 16, r.y + r.h); ctx.fill(); } ctx.globalAlpha = 1; }
       ctx.fillStyle = '#4a4236'; ctx.beginPath(); ctx.moveTo(r.x, r.y + r.h); for (let x = 0; x <= r.w; x += 10) ctx.lineTo(r.x + x, r.y + r.h - 8 - Math.sin(x * 0.07) * 3); ctx.lineTo(r.x + r.w, r.y + r.h); ctx.fill();
       this.decor(ctx, r);
-      const shown = Object.entries(A.display).filter(([, d]) => tankOf(d) === r.wing.id);
-      const maxL = clamp(r.h * 0.75, 40, 220);
+      const shown = Object.entries(A.display);
+      const maxL = clamp(r.h * 0.4, 40, 240);
       shown.forEach(([k, d], i) => {
         const sp = SPECIES_BY_ID[d.id], dead = d.cond <= 0.05;
         const L = clamp(36 + Math.sqrt(d.len || sp.len) * 120, 36, maxL); // small ones still readable; big ones shrunk to fit the tank
         let a = this.anim.get(k);
-        if (!a) { a = { x: lerp(0.1, 0.9, Math.random()), y: lerp(0.25, 0.75, Math.random()), tx: Math.random(), ty: 0.5, face: Math.random() < 0.5 ? -1 : 1, ph: Math.random() * 6, rt: 0 }; this.anim.set(k, a); }
+        const onSand = /floor/.test(sp.v.hab) && !/swim/.test(sp.v.hab);
+        if (!a) { a = { x: lerp(0.1, 0.9, Math.random()), y: onSand ? 0.91 : lerp(0.25, 0.75, Math.random()), tx: Math.random(), ty: 0.5, face: Math.random() < 0.5 ? -1 : 1, ph: Math.random() * 6, rt: 0 }; this.anim.set(k, a); }
         a.alive = true; a.L = L;
         if (dead) { a.y = lerp(a.y, 0.12, dt * 0.3); }
         else {
-          a.rt -= dt; if (a.rt <= 0 || Math.abs(a.tx - a.x) < 0.02) { a.tx = Math.random(); a.ty = lerp(0.2, 0.8, Math.random()); a.rt = 3 + Math.random() * 5; }
-          const sp2 = 0.03 + 0.05 * (d.cond || 1);
+          const low = /floor/.test(sp.v.hab); // crabs, starfish, flatfish, eels in the sand: on or just above it
+          a.rt -= dt; if (a.rt <= 0 || Math.abs(a.tx - a.x) < 0.02) { a.tx = Math.random(); a.ty = onSand ? 0.91 : low ? lerp(0.8, 0.9, Math.random()) : lerp(0.15, 0.82, Math.random()); a.rt = 3 + Math.random() * 5; }
+          const sp2 = (0.03 + 0.05 * (d.cond || 1)) * (onSand ? 0.3 : 1); // things on the sand creep
           a.x += clamp(a.tx - a.x, -sp2 * dt, sp2 * dt); a.y += clamp(a.ty - a.y, -sp2 * dt * 0.5, sp2 * dt * 0.5);
           if (Math.abs(a.tx - a.x) > 0.01) a.face = lerp(a.face, a.tx > a.x ? 1 : -1, dt * 3);
           a.ph += dt * (0.6 + d.cond);
         }
         const mx = L / r.w * 0.5;
-        a.sx = r.x + clamp(a.x, mx, 1 - mx) * r.w; a.sy = r.y + clamp(a.y, 0.15, 0.85) * r.h;
+        a.sx = r.x + clamp(a.x, mx, 1 - mx) * r.w; a.sy = r.y + clamp(a.y, 0.1, 0.93) * r.h;
         ctx.save(); ctx.translate(a.sx, a.sy);
         if (k === this.open) { ctx.strokeStyle = 'rgba(240,212,138,0.5)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 0, L * 0.62, L * 0.32, 0, 0, TAU); ctx.stroke(); }
         if (dead) { ctx.scale(1, -1); ctx.globalAlpha = 0.85; if (d.variant) drawVariantFish(ctx, sp, d.variant, L, 0); else drawSpecies(ctx, sp, L, 0, 0, 0); xEyes(ctx, L, sp); }

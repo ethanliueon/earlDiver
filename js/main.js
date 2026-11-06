@@ -278,7 +278,7 @@ function displaySpecimen(key) {
   pool.splice(pool.indexOf(best), 1);
   display(profile, best);
   saveProfile(profile);
-  hud.toast(`Into the gallery's ${WING_BY_ID[zoneOf(best)].name.toLowerCase()}`, 'big');
+  hud.toast('Into the gallery', 'big');
   audio.ready && audio.note();
   return true;
 }

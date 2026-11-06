@@ -527,3 +527,9 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - render.js: removed the rim-and-belly shading (the live pass in `layerEnd`, the baked rim overlay in `drawCached`,
   the baked belly shade in `buildFrame`). It popped in and out around whatever was drawn live, and as fish crossed
   the size where schools stop being simple shapes. The water-colour veil stays.
+
+## 2.3.4 — the gallery is one big tank
+- gallery.js: a single large tank in ordinary light (Daylight / Dim / Red still change it): every animal together,
+  no temperature or depth zones; a sand floor, a rock, a tuft of seagrass in one corner, bubbles. Animals of the sand
+  (crabs, lobsters, starfish) stay on it and creep; floor-swimmers keep low; the rest swim anywhere.
+  (aquarium.js still files each animal under a zone, but nothing shows it now.)
