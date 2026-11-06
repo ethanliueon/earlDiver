@@ -488,8 +488,11 @@ export class Fauna {
       const wander = fbm1(time * 0.04 + s.wob, 2, 7);
       let ax = s.dir * 0.35, ay = wander * 0.5;
       s.threat = Math.max(0, s.threat - dt * 0.25);
-      const fl = W.floorAt(s.x);
-      if (s.y > fl - s.r - 4) ay -= 1.2;
+      // (2.5.4) the floor under the whole school, not just its middle: on a slope the highest point
+      // under it is what it must clear, or half the fish are pressed flat against the bottom
+      const sw = s.baseR * 1.9, fl = Math.min(W.floorAt(s.x - sw), W.floorAt(s.x), W.floorAt(s.x + sw));
+      const clear = fl - s.y - s.r;
+      if (clear < 4) ay -= 1.2 + (4 - clear) * 0.9;
       if (s.y < s.lo + s.r) ay += 0.6;
       if (s.y > s.hi - s.r) ay -= 0.6;
       if (s.y < 2 + s.baseR) ay += 2;
@@ -514,6 +517,7 @@ export class Fauna {
       const v = Math.hypot(s.vx, s.vy);
       if (v > sp) { s.vx *= sp / v; s.vy *= sp / v; }
       s.x += s.vx * dt; s.y += s.vy * dt;
+      { const fl2 = Math.min(W.floorAt(s.x - sw), W.floorAt(s.x), W.floorAt(s.x + sw)); if (s.y > fl2 - s.r - 0.8) { s.y = fl2 - s.r - 0.8; if (s.vy > 0) s.vy = 0; } }
       if (s.x < 10) s.dir = 1; if (s.x > 4970) s.dir = -1;
       // now and then the school wheels round on its own
       s.turnT -= dt;
@@ -573,6 +577,7 @@ export class Fauna {
         const tight = 1 - 0.15 * Math.min(1, school.threat);
         const ox = c.ox + Math.sin(time * 0.31 + c.wob) * 0.04, oy = c.oy + Math.cos(time * 0.27 + c.wob * 1.7) * 0.04;
         tx = school.x + ox * school.baseR * 1.8 * tight; ty = school.y + oy * school.baseR * tight;
+        ty = Math.min(ty, W.floorAt(tx) - this.skin(c) - 0.4); // a place below the bottom is taken just above it, so the school follows a slope instead of piling into it
         ax = (tx - c.x) * 3 + (school.vx - c.vx) * 2;
         ay = (ty - c.y) * 3 + (school.vy - c.vy) * 2;
         sp = Math.max(c.speed * (1 + school.threat), Math.hypot(school.vx, school.vy) * 1.25); // keep up with the school, no more

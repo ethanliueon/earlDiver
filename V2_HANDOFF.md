@@ -647,3 +647,9 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - The sub's lights rebalanced: the main beam a little longer and softer, the wide fill wider, the second
   lamp dimmer; the mast flood dimmer and shorter (18 m, was 28); more light round the hull (17 m) and a
   warmer, brighter glow from the cabin's ports.
+
+## 2.5.5 — schools on a slope
+- A bait school's centre now clears the highest floor under its whole width (three samples, ±1.9 × its
+  radius), with a firmer push the closer it gets and a hard limit; each fish's place in the school is
+  lifted above the floor at its own x. Before, on a slope half a school was pressed flat on the bottom,
+  bouncing off it every frame (it looked like lag; the fauna update itself costs under 1 ms).
