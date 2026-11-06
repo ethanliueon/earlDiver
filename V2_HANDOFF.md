@@ -135,3 +135,26 @@ lapses if the fish becomes stressed/dying again).
   updates can migrate it; consider several save slots and a "new game" option).
 - **New title/loading screen**, separate from the death/respawn screen: e.g. Continue / New game / save slots,
   and a short loading moment while the world generates. The death screen stays its own thing.
+
+## Suggested plan for the overnight session (from the previous Claude, the user agreed)
+This is several releases' worth of work. Do it **in order**, testing in the browser (Playwright, screenshots)
+and committing + pushing to `v2-wip` after each step, so a partial night still leaves a working game.
+Bump the version in js/version.js + README at each step (2.0.0-alpha.1, -alpha.2, ...; final is 2.0.0).
+1. **Saves + title screen**: versioned persistent save (localStorage, save slots, New game), new
+   title/loading screen separate from the death screen. Everything later depends on this.
+2. **Economy**: finish task 24 (upgrade costs, lowlight price, replacement sub, no market softening at all,
+   tag share), pressure comfort zones (50 / 150 / 250 / 350 m), check contracts/photos.
+3. **The deep**: rare core dominates by volume, exotics occasional, legendaries an event; ~45 new species.
+4. **Sub net + large pressure tank** (tasks 26, 27), big fish taking more open-tank slots.
+5. **Aquarium gallery on the Margaret**: pet/feed/lighting, Happy (x1.2) and Famous tag (x2, stacks), X eyes on
+   dead fish, naming, releasing via the sub's pressure tank, saved released fish, tag tracker.
+6. **Polish**: no target boxes anywhere, README + GAME_DESIGN.md, screenshots, then merge to main as **v2.0.0**
+   only if everything works. If the night runs out, leave `main` alone and summarise where you stopped.
+
+**Checks before calling it done:**
+- Early game: the first dive is still fun and the first upgrades are affordable after about one shallow dive ($20-60).
+- Legendaries are rare but findable (a player should meet one within a reasonable number of deep dives; measure
+  spawn odds with a script rather than guessing).
+- Saves survive a page reload; New game really resets; an old/missing save never crashes the game.
+- Performance: the extra species and giant forms don't bring back the reef/school lag (see v1.16.2).
+- Ask the user before any design choice not covered in these notes; open questions are marked above.
