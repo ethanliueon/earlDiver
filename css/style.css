@@ -1136,3 +1136,22 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .eq.locked .eq-slot { opacity: 0.75; }
 #inventory .eq-lock::before { content: '🔒 '; font-style: normal; }
 @media (max-width: 640px) { #inventory .eq-grid { grid-template-columns: 1fr 1fr; } #inventory .eq-earl { display: none; } }
+
+/* (2.6.7) Sell all: a green enamel sign, not a red one */
+.shop button.primary.go {
+  background:
+    radial-gradient(circle at 6px 6px, #0c1a10 0 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 6px) 6px, #0c1a10 0 2px, transparent 2.5px),
+    radial-gradient(circle at 6px calc(100% - 6px), #0c1a10 0 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), #0c1a10 0 2px, transparent 2.5px),
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, #2f6a3a, #1a4424) !important;
+  box-shadow: inset 0 0 0 3px #1a4424, inset 0 0 0 5px #e6d8b8, inset 0 0 0 7px #1e4e2a, 0 3px 0 #0a1e0e, 0 5px 10px rgba(0,0,0,0.5) !important;
+}
+.shop button.primary.go:active:not(:disabled) { box-shadow: inset 0 0 0 3px #1a4424, inset 0 0 0 5px #e6d8b8, inset 0 0 0 7px #1e4e2a, 0 1px 0 #0a1e0e !important; }
+/* (2.6.7) a kept animal: still listed, darkened and crossed out, until Keep is pressed again */
+.sell-row.kept .sell-item { cursor: default; opacity: 0.42; filter: grayscale(0.7); background: rgba(0,0,0,0.18); }
+.sell-row.kept .sell-item:hover { background: rgba(0,0,0,0.18); border-color: rgba(160,200,200,0.1); }
+.sell-row.kept .sell-name, .sell-row.kept .sell-item b { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.sell-keep.on { color: #cfe8b8; text-decoration: none; font-style: normal; }
+.sell-keep.on::before { content: '✓ '; }

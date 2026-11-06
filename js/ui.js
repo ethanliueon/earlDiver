@@ -130,11 +130,14 @@ export class UI {
       else if (act === 'buy') h.onBuy(arg);
       else if (act === 'take') { h.onTakeContract(arg); }
       else if (act === 'refresh') { h.onRefreshContracts(); }
-      else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
+      else if (act === 'sellall') { const sale = h.onSellAll([...this.keptSet()]); if (sale) this.showLedger(sale); }
       else if (act === 'tobasket') { (this.sellPick || (this.sellPick = new Set())).add(arg); }
       else if (act === 'frombasket') { this.sellPick && this.sellPick.delete(arg); }
-      else if (act === 'sellpick') { const sale = h.onSellSome([...(this.sellPick || [])]); this.sellPick = new Set(); if (sale) this.showLedger(sale); }
-      else if (act === 'display') h.onDisplay(arg);
+      else if (act === 'sellpick') { const sale = h.onSellSome([...(this.sellPick || [])], [...this.keptSet()]); this.sellPick = new Set(); if (sale) this.showLedger(sale); }
+      // (2.6.7) Keep only marks it: it stays in the list, darkened and crossed out, and is left out of every
+      // sale; pressed again, it is back. The kept animals go to the gallery when the window is closed.
+      else if (act === 'keep') this.keptSet().add(arg);
+      else if (act === 'unkeep') this.keptSet().delete(arg);
       else if (act === 'gallery') { this.toggleGallery(true); return; }
       else if (act === 'sellitem') { const sale = h.onSellItem(arg); if (sale) this.showLedger(sale); }
       this.renderWorkshop();
@@ -556,10 +559,12 @@ export class UI {
     else this.blurTyping();
   }
   // allowed: the tabs this place offers (selling from the water: Sell only; a station aboard: its own); null for all
+  keptSet() { return this.sellKeep || (this.sellKeep = new Set()); }
   toggleWorkshop(force, allowed = null) {
     const el = $('workshop');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
+    if (!open && this.sellKeep && this.sellKeep.size) { const ks = [...this.sellKeep]; this.sellKeep = new Set(); for (const k of ks) this.h.onDisplay(k); }
     if (open) {
       this.shopAllowed = allowed;
       document.querySelectorAll('.shop-tabs button[data-shop]').forEach((b) => { b.hidden = !!allowed && !allowed.includes(b.dataset.shop); });
@@ -671,25 +676,35 @@ export class UI {
       const items = []; // { key, html, value, keep }
       const groups = new Map();
       for (const sp of g.bag.concat(atBoat ? g.subTank : [])) { const k = sp.id + ':' + (sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
+      const kept = this.keptSet();
+      const A = aquariumOf(P), freeSlots = gallerySlots(P) - Object.keys(A.display).length;
+      for (const k of [...kept]) if (!groups.has(k.includes(':') ? k : k + ':')) kept.delete(k); // sold or gone
       for (const [gk, list] of groups) {
-        const [id, v] = gk.split(':'), spc = SPECIES_BY_ID[id];
-        const value = list.reduce((a, x) => a + specimenValue(x), 0) * statValue(P, 'payFish');
-        const worst = list.reduce((a, x) => Math.min(a, x.cond), 1), cn = conditionName(worst);
+        const [id, v] = gk.split(':'), spc = SPECIES_BY_ID[id], dk = gk.replace(/:$/, '');
         const best = list.reduce((a, x) => (x.cond > a.cond ? x : a), list[0]);
-        const keep = displayRefusal(P, best) ? '' : `<button class="sell-keep" data-sell="display" data-arg="${gk.replace(/:$/, '')}" title="Keep it in the gallery instead of selling it">Keep</button>`;
-        items.push({ key: 'sp:' + gk, value, keep, html: `${this.mini(spc)}<span class="sell-name">${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${spc.name}${worst < 0.7 ? ` <em class="cond c-${cn}">${cn}</em>` : ''}</span>` + (list.length > 1 ? `<span class="sell-n">×${list.length}</span>` : '') });
+        const isKept = kept.has(dk);
+        const rest = isKept ? list.filter((x) => x !== best) : list; // what is left to sell
+        const pay = statValue(P, 'payFish');
+        const name = (L) => { const worst = L.reduce((a, x) => Math.min(a, x.cond), 1), cn = conditionName(worst); return `${this.mini(spc)}<span class="sell-name">${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${spc.name}${worst < 0.7 ? ` <em class="cond c-${cn}">${cn}</em>` : ''}</span>` + (L.length > 1 ? `<span class="sell-n">×${L.length}</span>` : ''); };
+        // the Keep button: only for an animal the gallery can take (counting the ones already marked)
+        const canKeep = !displayRefusal(P, best) && freeSlots - kept.size > 0;
+        const keepBtn = isKept ? `<button class="sell-keep on" data-sell="unkeep" data-arg="${dk}" title="Sell it after all">Keep</button>`
+          : canKeep ? `<button class="sell-keep" data-sell="keep" data-arg="${dk}" title="Keep it for the gallery instead of selling it">Keep</button>` : '';
+        if (rest.length) items.push({ key: 'sp:' + gk, value: rest.reduce((a, x) => a + specimenValue(x), 0) * pay, keep: isKept ? '' : keepBtn, html: name(rest) });
+        if (isKept) items.push({ key: 'kept:' + dk, value: specimenValue(best) * pay, keep: keepBtn, kept: true, html: name([best]) });
       }
       const tg = new Map();
       for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
       for (const [k, list] of tg) items.push({ key: 'tag:' + k, value: list[0].value * list.length * statValue(P, 'payFish'), html: `<span class="sell-name">Tag data: ${list[0].name}</span>` + (list.length > 1 ? `<span class="sell-n">×${list.length}</span>` : '') });
       for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, value: ph.value * statValue(P, 'payFish'), html: `<span class="sell-name">Photograph: ${ph.name}</span>` });
       for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k] && k !== 'coral') items.push({ key: 'good:' + k, value: GOODS[k].price * n * statValue(P, 'paySalvage'), html: `<span class="sell-name">${GOODS[k].name}</span>` + (n > 1 ? `<span class="sell-n">×${n}</span>` : '') });
-      for (const k of [...pick]) if (!items.some((it) => it.key === k)) pick.delete(k);
+      for (const k of [...pick]) if (!items.some((it) => it.key === k && !it.kept)) pick.delete(k);
       if (!items.length) html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
       else {
-        const total = items.reduce((a, it) => a + it.value, 0), inB = items.filter((it) => pick.has(it.key)), bTotal = inB.reduce((a, it) => a + it.value, 0);
-        const row = (it, act) => `<div class="sell-row"><button class="sell-item" data-sell="${act}" data-arg="${it.key}">${it.html}<b>${money(it.value)}</b></button>${act === 'tobasket' ? it.keep || '' : ''}</div>`;
-        html += `<button class="primary" data-act="sellall">Sell all<span>${money(total)}</span></button>`;
+        const total = items.reduce((a, it) => a + (it.kept ? 0 : it.value), 0), inB = items.filter((it) => pick.has(it.key)), bTotal = inB.reduce((a, it) => a + it.value, 0);
+        const row = (it, act) => it.kept ? `<div class="sell-row kept"><div class="sell-item" title="Kept for the gallery">${it.html}<b>${money(it.value)}</b></div>${it.keep}</div>`
+          : `<div class="sell-row"><button class="sell-item" data-sell="${act}" data-arg="${it.key}">${it.html}<b>${money(it.value)}</b></button>${act === 'tobasket' ? it.keep || '' : ''}</div>`;
+        html += `<button class="primary go" data-act="sellall" ${total > 0 ? '' : 'disabled'}>Sell all<span>${money(total)}</span></button>`;
         html += `<div class="sell-cols"><div class="sell-col"><h4>Your catch</h4>${items.filter((it) => !pick.has(it.key)).map((it) => row(it, 'tobasket')).join('') || '<p class="shop-empty">All in the basket.</p>'}</div>`;
         html += `<div class="sell-col basket"><h4>To sell</h4>${inB.map((it) => row(it, 'frombasket')).join('') || '<p class="shop-empty">Click something to put it here.</p>'}`;
         html += `<button class="sell-these" data-act="sellpick" ${inB.length ? '' : 'disabled'}>Sell these<span>${money(bTotal)}</span></button></div></div>`;

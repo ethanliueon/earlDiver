@@ -728,3 +728,14 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - The catch label under a target is now `Space  Atlantic Herring`, plain, in the rarity colour: no
   "net the", no rarity word, chance or price (also for the claw, tag and camera). Reasons it can't be
   caught still show. `hud.js` keyLine draws it plainly; `main.js` builds it.
+
+## 2.6.7 — no up or down on the boat; Sell all in green; Keep is a toggle
+- On the boat (deck, cabin, wheel, ladder: whenever `g.aboard`), `readMove` drops every up/down input: the
+  W/S and arrow keys, and the mouse (aboard, it steers by its left/right distance only, so a cursor above or
+  below Earl no longer jitters him). W no longer jumps on deck (Space does); at the wheel only W leaves it
+  (the arrows and S used to throw him off it into the cabin).
+- Sell tab: "Sell all" is a green enamel sign (`.primary.go`), not red.
+- Keep no longer sends the animal off at once: it marks it (`ui.sellKeep`, display keys). The kept one stays
+  listed, darkened and crossed out, and is left out of Sell all / Sell these (`withKept` in main.js holds the
+  healthiest of that kind back during the sale); pressed again it is back. When the shop window closes, the
+  kept animals go into the gallery (`onDisplay`). Only as many can be marked as the gallery has room for.

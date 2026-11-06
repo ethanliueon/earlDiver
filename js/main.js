@@ -146,8 +146,8 @@ const ui = new UI({
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
-  onSellAll: () => sellAll(),
-  onSellSome: (keys) => sellSome(keys),
+  onSellAll: (kept) => withKept(kept, () => sellAll()),
+  onSellSome: (keys, kept) => withKept(kept, () => sellSome(keys)),
   onGallery: (act, key, v) => galleryAction(act, key, v),
   onHints: () => { hud.hints = !hud.hints; },
   getHints: () => hud.hints,
@@ -281,6 +281,18 @@ function sellAll() {
 }
 // sell only what is in the basket (2.5.2): the rest is set aside, everything left is sold as usual, and
 // what was set aside goes back. Keys as the sell screen makes them: sp:id:variant, tag:key, photo:key, good:k
+// (2.6.7) the animals marked Keep on the Sell tab (the healthiest of each kind, the one the gallery would
+// take) are held back from a sale: taken out of the bag and the sub's tank for it, and put back after
+function withKept(kept, fn) {
+  if (!kept || !kept.length) return fn();
+  const held = [];
+  for (const key of kept) {
+    let best = null, pool = null;
+    for (const L of [g.bag].concat(subAtBoat() ? [g.subTank] : [])) for (const s of L) if (displayKey(s) === key && (!best || s.cond > best.cond)) { best = s; pool = L; }
+    if (best) { pool.splice(pool.indexOf(best), 1); held.push([best, pool === g.bag ? 'bag' : 'subTank']); }
+  }
+  try { return fn(); } finally { for (const [s, where] of held) g[where].push(s); }
+}
 function sellSome(keys) {
   const sel = new Set(keys); if (!sel.size) return null;
   const ak = (s) => 'sp:' + s.id + ':' + (s.variant || '');
@@ -663,8 +675,12 @@ function readMove() {
     const e = g.earl, [mx, my] = mouseScreen();
     const dx = mx - renderer.S(e.x), dy = my - renderer.Sy(e.y), d = Math.hypot(dx, dy);
     const ppm = renderer.cam.ppm, full = ppm * 3, dead = ppm * (e.inSub ? 2.5 : 0.6);
-    if (d > dead) { const k = Math.min(1, (d - dead) / full) / d; x = dx * k; y = dy * k; }
+    if (g.aboard) { const ax = Math.abs(dx); if (ax > dead) x = Math.sign(dx) * Math.min(1, (ax - dead) / full); } // (2.6.7) on the boat: left and right only
+    else if (d > dead) { const k = Math.min(1, (d - dead) / full) / d; x = dx * k; y = dy * k; }
   }
+  // (2.6.7) standing on the boat (the deck, the cabin, the wheel, the ladder): up and down mean nothing,
+  // from the keys, the arrows or the mouse, so nothing upward or downward ever reaches the walking
+  if (g.aboard) y = 0;
   return { x, y, sprint: keys.has('shift') || !!mouse.rdown };
 }
 
@@ -716,7 +732,7 @@ function deckInput(dt, mv) {
   if ((walk < 0 && A.x <= DECK_MIN + 0.01) || (walk > 0 && A.x >= DECK_MAX - 0.01)) { leaveDeck(walk > 0 ? 1 : -1); return; }
   A.x = clamp(A.x + walk * pace * dt, DECK_MIN, DECK_MAX);
   // a jump: up and down on the spot (or along, if he is moving), and a thump as he lands
-  if (!ui.anyOpen() && !A.hop && (pressed.has(' ') || pressed.has('w'))) { A.hop = HOP; pressed.delete(' '); }
+  if (!ui.anyOpen() && !A.hop && pressed.has(' ')) { A.hop = HOP; pressed.delete(' '); }
   if (A.hop) { A.hop = Math.max(0, A.hop - dt); if (!A.hop) audio.ready && audio.footstep && audio.footstep(0.1); }
   if (walk) { e.facing = walk > 0 ? 1 : -1; A.walkT += dt; } else A.walkT = 0;
   // the stride: the legs keep going a moment as he stops, and settle
@@ -1502,7 +1518,7 @@ function update(dt) {
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
     if (g.helm) {
-      if (mv.y) { leaveHelm(); }
+      if (pressed.has('w')) { leaveHelm(); } // (2.6.7) only W, as the prompt says: up/down arrows (or S) at the wheel no longer throw him off it into the cabin
       else {
         // a heavy working boat: she takes her time to get under way and longer still to stop; 5 m/s flat out
         // getting under way: a sub alongside is lifted into her cradle; one still out holds her here
