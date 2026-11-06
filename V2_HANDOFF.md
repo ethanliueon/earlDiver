@@ -717,3 +717,14 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - Every on-screen "her" or "she" for the boat, the sub or the old one is gone: "near the sub's rated depth",
   "Name the sub", "the Margaret's cradle", "the old one's wares", "Feed the old one", "it craves" and so on.
   (Code comments still say "her"; only what the player reads changed.)
+
+## 2.6.6 — no flat rows of fish at the surface; the catch label is just the name
+- Fish frightened up into the surface used to be stopped at one hard ceiling, so a whole group ended up in a
+  single flat row along the top of the water (reproduced: 16 of 24 krill pinned at the limit; now none).
+  In `fauna.js`: a fleeing fish driven at the surface or the bottom turns along it (its push into the
+  boundary becomes speed sideways); each loose fish has its own ceiling (`c.wob`), followers take a place
+  under a leader at the surface in the group's own order, and school places and school centres are kept
+  clear of the surface (swell included) by the school's height.
+- The catch label under a target is now `Space  Atlantic Herring`, plain, in the rarity colour: no
+  "net the", no rarity word, chance or price (also for the claw, tag and camera). Reasons it can't be
+  caught still show. `hud.js` keyLine draws it plainly; `main.js` builds it.

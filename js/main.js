@@ -1457,9 +1457,10 @@ function update(dt) {
     }
     g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
+    // (2.6.6) a target is named and nothing more: the colour of the name already says how rare it is
     if (e.inSub && owns(profile, 'arm') && !g.armGame) {
       const at = findArmTarget(g);
-      g.capPrompt = at ? `Space  Reach for the ${at.name.toLowerCase()} · ~${money(at.value)}` : null;
+      g.capPrompt = at ? `Space  ${at.name}` : null;
       g.catchTarget = at ? { c: at.c, x: at.x, y: at.y, len: at.len, col: rarityOf(at.sp).col } : null;
       g.capRarity = at ? rarityOf(at.sp) : null;
     } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw — in the green' : null;
@@ -1470,13 +1471,13 @@ function update(dt) {
     } else if (!e.inSub && tool.kind === 'tag') {
       const tt = findTagTarget(g);
       const ammo = `tags ${g.items.tag || 0} basic · ${g.items.tagAdv || 0} advanced`;
-      g.capPrompt = tt ? (tt.ok ? `Space  Tag the ${tt.name.toLowerCase()} · ~${money(tt.value)}${tt.adv ? ' · advanced tag' : ''} · ${ammo}` : `${tt.sp.name}: ${tt.why} · ${ammo}`) : ammo;
+      g.capPrompt = tt ? (tt.ok ? `Space  ${tt.name}` : `${tt.sp.name}: ${tt.why}`) : ammo;
     } else if (!e.inSub && tool.kind === 'cam') {
       const ps = findPhotoSubject(g);
-      g.capPrompt = ps ? (ps.ok ? `Space  Photograph the ${ps.name.toLowerCase()} · new · ~${money(ps.value)}` : `${ps.name}: ${ps.why}`) : null;
+      g.capPrompt = ps ? (ps.ok ? `Space  ${ps.name}` : `${ps.name}: ${ps.why}`) : null;
     } else {
     const ct = !e.inSub ? findCatch(g) : null;
-    g.capPrompt = ct ? (ct.ok ? `Space  ${activeTool(g).kind === 'net' ? 'Net' : 'Catch'} the ${ct.name.toLowerCase()} · ${rarityOf(ct.sp).name.toLowerCase()} · ${Math.round(ct.chance * 100)} % · ~${money(ct.value * statValue(profile, 'payFish'))}` : `${ct.sp.name}: ${ct.why}`) : null;
+    g.capPrompt = ct ? (ct.ok ? `Space  ${ct.name}` : `${ct.sp.name}: ${ct.why}`) : null;
     // what the net or slurp gun will go for: marked on screen
     g.catchTarget = ct && ct.ok ? { c: ct.c, x: ct.x, y: ct.y, len: ct.len, col: rarityOf(ct.sp).col } : null;
     g.capRarity = ct && ct.ok ? rarityOf(ct.sp) : null;

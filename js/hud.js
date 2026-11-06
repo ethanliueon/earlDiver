@@ -464,19 +464,9 @@ export class Hud {
     // ---------- what the tool can reach ----------
     // with hints off the prompts are short and quiet: just the key and the action, no box
     const short = (p) => p.split('  ·  ')[0].split(' · ')[0].replace(/\s*\(.*\)$/, '');
-    // "Space  Net the x" is drawn as "[Space] " then "net the x" in italics, centred as one line
-    const keyLine = (txt, cx, y, px) => {
-      const m = /^Space\s+(.*)$/.exec(txt);
-      if (!m) { ctx.font = `${px}px ${GAME}`; ctx.textAlign = 'center'; ctx.fillText(txt, cx, y); return; }
-      const k = '[Space] ', rest = m[1].charAt(0).toLowerCase() + m[1].slice(1);
-      ctx.font = `${px}px ${GAME}`; const kw = ctx.measureText(k).width;
-      ctx.font = `italic ${px}px ${GAME}`; const rw = ctx.measureText(rest).width;
-      const x0 = cx - (kw + rw) / 2; ctx.textAlign = 'left';
-      ctx.font = `${px}px ${GAME}`; ctx.fillText(k, x0, y);
-      ctx.font = `italic ${px}px ${GAME}`; ctx.fillText(rest, x0 + kw, y);
-      ctx.textAlign = 'center';
-    };
-    const keyWidth = (txt, px) => { ctx.font = `italic ${px}px ${GAME}`; return ctx.measureText(txt.replace(/^Space\s+/, '[Space] ')).width; };
+    // (2.6.6) "Space  Atlantic herring": the key, then the name, plain, in the name's rarity colour
+    const keyLine = (txt, cx, y, px) => { ctx.font = `${px}px ${GAME}`; ctx.textAlign = 'center'; ctx.fillText(txt, cx, y); };
+    const keyWidth = (txt, px) => { ctx.font = `${px}px ${GAME}`; return ctx.measureText(txt).width; };
     const capHidden = !SETTINGS.catchTags && !!g.catchTarget; // the catch tag is a setting (pause menu); other Space prompts stay
     // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
     if (g.capPrompt && !capHidden && !dying && !g.kill) {

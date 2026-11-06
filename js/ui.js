@@ -363,7 +363,7 @@ export class UI {
     const g = this.h.getGame(), row = (id, label, on, note) => { $(id).innerHTML = `<span>${label}${note ? `<em>${note}</em>` : ''}</span><b class="${on ? 'on' : ''}">${on ? 'on' : 'off'}</b>`; };
     row('flashing', 'Reduce flashing', !!(g && g.reduceFlash), 'the thing in the deep: slower, softer lights');
     row('set-brackets', 'Target brackets', SETTINGS.brackets, 'corners round what the net will go for');
-    row('set-catchtags', 'Catch tags', SETTINGS.catchTags, '"[Space] net the …" under a target');
+    row('set-catchtags', 'Catch tags', SETTINGS.catchTags, 'the name of what you can catch, under it');
     row('set-hints', 'Hints', this.h.getHints ? this.h.getHints() : true, 'tips now and then (H); what F does always shows');
     row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, 'M');
     $('set-fullscreen').innerHTML = `<span>Full screen<em>the game fills the whole screen (Esc leaves it)</em></span><b class="${document.fullscreenElement ? 'on' : ''}">${document.fullscreenElement ? 'on' : 'off'}</b>`;

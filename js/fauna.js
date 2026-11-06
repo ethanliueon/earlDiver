@@ -495,8 +495,11 @@ export class Fauna {
       if (clear < 4) ay -= 1.2 + (4 - clear) * 0.9;
       if (s.y < s.lo + s.r) ay += 0.6;
       if (s.y > s.hi - s.r) ay -= 0.6;
-      if (s.y < 2 + s.baseR) ay += 2;
-      if (s.y < 1 + s.baseR) s.y = 1 + s.baseR;
+      // (2.6.6) kept clear of the surface by its whole height, swell included, so no fish of it is
+      // pressed into a line along the top of the water
+      const sTop = (this.surfY ? Math.max(this.surfY(s.x - sw), this.surfY(s.x), this.surfY(s.x + sw)) : 0) + s.baseR;
+      if (s.y < sTop + 2) ay += 2 + (sTop + 2 - s.y) * 1.5;
+      if (s.y < sTop + 1) s.y = sTop + 1;
       // the whole school moves off from a diver who comes close (faster if he comes fast), and
       // closes up tighter while he is near - instead of individual fish piling up around him
       const de = dist(s.x, s.y, earl.x, earl.y) + 0.01;
@@ -577,6 +580,10 @@ export class Fauna {
         const tight = 1 - 0.15 * Math.min(1, school.threat);
         const ox = c.ox + Math.sin(time * 0.31 + c.wob) * 0.04, oy = c.oy + Math.cos(time * 0.27 + c.wob * 1.7) * 0.04;
         tx = school.x + ox * school.baseR * 1.8 * tight; ty = school.y + oy * school.baseR * tight;
+        // (2.6.6) a place above the surface is taken just under it, still in the school's order
+        // (the higher its place, the nearer the top), so the school squeezes instead of flattening
+        const sf = this.surfY ? this.surfY(tx) : 0;
+        ty = Math.max(ty, sf + 0.5 + c.len * 0.2 + (oy + 1) * 0.45);
         ty = Math.min(ty, W.floorAt(tx) - this.skin(c) - 0.4); // a place below the bottom is taken just above it, so the school follows a slope instead of piling into it
         ax = (tx - c.x) * 3 + (school.vx - c.vx) * 2;
         ay = (ty - c.y) * 3 + (school.vy - c.vy) * 2;
@@ -611,6 +618,10 @@ export class Fauna {
           const k = Math.max(1, c.len * 0.7); // slots scale with body size
           tx = L.x - L.dir * (0.5 + (c.wob % 3)) * k + Math.sin(time * 0.7 + c.wob) * 1.2 * Math.min(k, 2);
           ty = L.y + Math.sin(time * 0.5 + c.wob * 1.3) * 0.9 + ((c.wob % 7) - 3.5) * 0.25 * k;
+          // (2.6.6) with the leader up at the surface, a place above it is taken just under it, each fish at
+          // its own depth (the same order as in the group), so the group never ends up in one flat row
+          const sfL = this.surfY ? this.surfY(tx) : 0;
+          ty = Math.max(ty, sfL + 0.6 + c.len * 0.2 + (c.wob % 7) / 7 * 1.6);
         } else {
           c.leader = true;
           const pel = c.sp.v.hab === 'pelagic' || c.sp.v.hab === 'drift' || c.sp.v.hab === 'surface';
@@ -714,8 +725,20 @@ export class Fauna {
       }
       // stay in water & habitat band
       const fl = W.floorAt(c.x);
-      if (c.y > fl - 1.2) ay -= 8;
       const surf = this.surfY ? this.surfY(c.x) : 0;
+      // (2.6.6) a fish driven at the surface or the bottom turns along it instead of pressing into it:
+      // the part of its push that points into the boundary becomes speed along it, so frightened fish
+      // spread out sideways (each at its own depth) instead of piling up in a flat line
+      if (c.fleeT > 0 || (entity && dread > 0.05)) {
+        const roomUp = c.y - surf, roomDown = fl - c.y;
+        const into = ay < 0 && roomUp < 3 ? -ay * (1 - roomUp / 3) : ay > 0 && roomDown < 3 ? ay * (1 - roomDown / 3) : 0;
+        if (into > 0) {
+          const side = Math.abs(ax) > 0.5 ? Math.sign(ax) : (c.dir || 1);
+          ax += side * into; ay += (ay < 0 ? 1 : -1) * into * 1.3;
+          if (!school) c.dir = side;
+        }
+      }
+      if (c.y > fl - 1.2) ay -= 8;
       if (c.y < surf + 0.6) ay += 6;
       if (!school && !c.home) {
         if (c.sp.v.hab === 'reef' && fl - c.y > 10) ay += 1.5;
@@ -732,7 +755,7 @@ export class Fauna {
       c.vy *= 0.97;
       const ox = c.x, oy = c.y;
       c.x += c.vx * dt; c.y += c.vy * dt;
-      const lim = surf + 0.35 + c.len * 0.15;
+      const lim = surf + 0.35 + c.len * 0.15 + (school ? 0 : (c.wob % 1) * 0.9); // (2.6.6) each its own ceiling: never all in one row
       if (c.y < lim) { c.y = lim; if (c.vy < 0) c.vy = 0; }
       // never inside rock: a step into the seabed, a wall or a boulder is undone and the animal turns
       // away; if it is in anyway (pushed, or the floor rose under it), it is lifted straight out.
