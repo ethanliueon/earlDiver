@@ -158,3 +158,97 @@ Bump the version in js/version.js + README at each step (2.0.0-alpha.1, -alpha.2
 - Saves survive a page reload; New game really resets; an old/missing save never crashes the game.
 - Performance: the extra species and giant forms don't bring back the reef/school lag (see v1.16.2).
 - Ask the user before any design choice not covered in these notes; open questions are marked above.
+
+---
+
+# The agreed overnight plan (Claude session of 2026-11-06, agreed with the owner)
+
+Supersedes anything above where they differ. Work happens on `v2-wip`, 2.0.0-alpha.N per step, merged to
+`main` as 2.0.0 only when everything works. Progress log at the end of this file.
+
+## alpha.1 quick fixes
+No target boxes/brackets anywhere (fish or anything, any tool). Autopilot does not lock the lights (L).
+The monster 0.6x as fast (7.2 m/s travel, 9 m/s burst), its red eye glow softer. Cloud glitches and
+snapping. Animals never spawn inside rock or move into it.
+
+## alpha.2 saves + title screen
+As in the handoff above (versioned localStorage save, slots, New game, migration, title/loading screen
+separate from the death screen). Also saved: the sub's name.
+
+## alpha.3 economy and catching
+- Finish task 24 (upgrade costs in new money, lowlight price, replacement sub, no market softening,
+  contracts/photos/tag share).
+- Upgrades Cat Goes Fishing style: each level costs much more and gives a bigger jump (gains ~x1.5 per
+  level from tiny to big); count upgrades in steps where it makes sense; fish prices upgrade keeps its x3 max.
+- Earl's tank 50 -> 200 s. The sub cabin air upgrade is removed: cabin air comes with each sub (below).
+- Tag ammo: basic $5 (max 3) for common/uncommon/rare and mid-size tag-only animals under ~2 m; advanced
+  $200 (max 3) for exotic, legendary, undocumented and large animals, bigger hit area, faint glow.
+  Tiny animals (krill...) "too small to tag"; medium fish (mackerel, herring) taggable, pay $0.50-2.
+- Animals the player can't capture show no rarity; they get a hidden tier for spawn rates only.
+- Lure and necklace: not sellable, carry 1 each; the necklace only gives light (a glowstick), no
+  protection, no longer an escape when taken.
+- Removed items: ink, fish scales, scrap iron, rock, kelp blades, squid tentacles.
+- Pressure comfort zones from the catch depth: 50 / 150 / 250 / 350 m (healthy / stressed / dying / dead
+  beyond), times a tolerance: x3 gelatinous animals, x2 daily migrators (lanternfish, hatchetfish, firefly
+  squid, krill, red shrimp, most squid), x1.5 no swim bladder (sharks, rays, octopus, crustaceans, sea
+  cucumbers, echinoderms), x1 swim-bladder fish; deep bonus x1.5 below 1,000 m, x2 below 2,500 m; the
+  higher of kind and bonus. Shown on the catch card and journal ("Pressure tolerance x2 - migrates daily").
+- Hospital bill capped. A price board on the Margaret.
+
+## alpha.4 the deep, the trench, the subs
+- Map 3,000 -> 5,000 m wide: the west wall (cave) stays; everything east of the old trench shifts 2,000 m
+  east; the new space is a wide trench floor ~4,800-4,950 m (swells, outcrops, dropstones) with one pit
+  to 5,100 m. All hard-coded x positions moved onto one offset; every zone re-tested.
+- The trench floor is the monster's lair; a quiet first-visit milestone.
+- Eight subs, each depth upgrade buying the next (shop names by type):
+  1 Б-7 bathyscaphe 300 m (crush ~x1.6, 150 s air) · 2 Б-7М refit 500 m (x1.55, 160 s) ·
+  3 Work submersible 900 m (x1.5, 170 s; new design: yellow 1960s work sub, acrylic bow dome) ·
+  4 Heavy work submersible 1,300 m (x1.45, 185 s; new: white oilfield sub, red sail) ·
+  5 Research submersible 1,900 m (x1.38, 200 s; orange foam float, skids) ·
+  6 Deep research submersible 2,500 m (x1.32, 225 s; new: Alvin-type) ·
+  7 Titanium research submersible 3,300 m (x1.28, 260 s) · 8 Full-ocean-depth submersible 4,000 m
+  (x1.25, 300 s). Relics +100 m each (4,400 m, ~x1.2). Risk window narrows on deep subs. The trench floor
+  is a risk even for sub 8; the 5,100 m pit likely implodes it without relics.
+- Naming: subs 1-2 keep Cyrillic lettering; from sub 3 a brass panel asks for a name (default EARL),
+  painted on the hull, carried to later subs, renamable free in the shop, used in messages, kept in saves.
+  "Margaret" is only ever the ship.
+- Common crowd per zone (spawn weight ~5-10x other rare deep species): twilight - lanternfish,
+  hatchetfish, bristlemouth, firefly squid, red shrimp, glass and strawberry squid; midnight - red shrimp,
+  Atolla and helmet jellies, grenadiers, slickheads, sea cucumbers near the floor; abyss and trench -
+  grenadiers, cusk-eels, tripod fish, sea pigs. Exotics occasional, legendaries an event (measure with a script).
+- Legendary: ONLY humpback anglerfish, fangtooth, pelican gulper eel, barreleye, blobfish, coelacanth,
+  oarfish (those exact species), each at least 1.5 m in game (giant forms; journal gives the real size).
+  Everything else at realistic size (dragonfish, dumbo, vampire squid, yeti crab back to real size).
+- New species: the handoff's ~45 real deep species; 5 real trench animals (abyssal grenadier, abyssal
+  snailfish, highfin lizardfish, supergiant amphipod; abyssal sea pens and xenophyophores as seabed life);
+  12 invented ones with a new tier/tag "Undocumented" (like exotic, ~$1,000-5,000, own badge colour,
+  journal "Undocumented: no scientific record"): silvered mirrorfish, banded glow eel, canyon ember-lure
+  angler, glassbone hatchetfish, nodule-armoured crab, vent skate, crowned hagfish, brine-shore cusk-eel,
+  falling-star squid (3 m), silt-walking tripodfish, steadylight dragonfish, great pale snailfish (4 m,
+  only the 5,100 m pit). Their drawings: js/undocumented_draw.js style, real family anatomy.
+- Bristlemouth to 2,500 m. Legendary moment (music quiet, a lit glimpse, special toast/sound/photo card,
+  full journal page). Size audit ~1.25x, outliers fixed. Better shared fish drawing (fins with rays, gill
+  covers, lateral lines, countershading, scales) for most species.
+- A fish longer than its tank is drawn shrunk to fit (tank room, gallery); its real size still sets
+  value, slots and chamber fit.
+
+## alpha.5 sub net + large pressure tank (tasks 26, 27)
+N fires the sub net once per dive: up to 10 animals in a cone, sharks up to ~2.5 m, big fish, octopus,
+legendaries; bigger things tear through. Loud below 200 m. Haul to a pile in the tank room. Big fish
+take more open-tank slots; the large pressure tank holds 3 fish or 1 big.
+
+## alpha.6 the Margaret and her aquarium
+Helm: heavy, 5 m/s top speed, anywhere along the surface; anchor (drop/raise, chain); shop and dock
+wherever she is. Traps winched aboard from the helm over the buoy. The aquarium gallery aboard as in the
+handoff (pet/feed/lighting just for fun; Happy x1.2 -> Famous tag x2 stacking; X eyes; naming; release
+via the sub's pressure tank; saved released fish with name + journal page; tag tracker).
+
+## 2.0.0
+Docs, screenshots, the handoff's checks, merge to main.
+
+## Decided by the owner during planning
+- Ideas taken: legendary moment, price board, hospital bill cap. Not taken: collection sets, net aim
+  preview, release reward. Feeding/petting is just fun; meeting a released fish shows its name + journal page.
+- No other new fish beyond the lists above.
+
+# Progress log
