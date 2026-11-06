@@ -661,3 +661,20 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   grained rows. Scrollbars in brass on steel and sepia on paper (the browser's white one stood out).
 - Settings has a Full screen switch (it uses the title menu's own full-screen button). The controls list
   is brought up to date (the ladder, holes in the sub, the wheel).
+
+## 2.6.0 — the catalog, and changing gear in the inventory
+- js/items.js: every net, slurp gun, tag gun, camera, fins, tank and bag is an item (stats, price, shop:
+  catalog / dave / old, a line, good, bad, tag). The profile keeps `P.kit = { own: {kind: [ids]}, on: {kind: id} }`.
+  economy.js: `kit(P)` (converts an old save once: for each retired ladder, the catalog items its spending
+  would have bought, the dearest plain one on, the rest refunded, `P.kitRefund` toasted), `worn(P, kind)`;
+  `gear()` returns the worn item for net/slurp/tag/cam; `statValue` takes air/swim/sprint/bag from the kit;
+  `owns('slurp'|'tagger'|'camera'|'lowlight')` means "has one on". main.js `applyKit` refreshes Earl.
+- New rules: a minimum size (the coarse net: small fish slip through), several from a school in one sweep
+  (`multi`, the bait-ball net), the macro camera's pay for small animals (`small`).
+- js/catalog.js: Bayside Marine Supply on the cabin computer (`#catalog`): home (saving for, new in), a
+  page per category, a page per thing (Good for / Not for, the numbers that change against what is on).
+  Buy keys: item:id, suit:k, trap:k, subnet:basic, supply keys; on:id puts an owned item on. "The yard"
+  opens the old shop's sub tab. `pictureOf(kind, v, w, h)` draws any thing (the inventory uses it).
+- Inventory (B): Earl and his eight slots, everything owned beside him; drag onto him or a slot, or click;
+  drag a tool (2-4) off to take it off. Locked in the water (`canChangeGear`: deck, cabin or sub).
+- Better buyers (tBuyers) moved to the radio. The tool, fins, tank and bag ladders are no longer sold.

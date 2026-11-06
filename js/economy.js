@@ -1,4 +1,5 @@
 import { VERSION as GAME_VERSION } from './version.js';
+import { ITEMS, ITEMS_OF, kitOf, worn as wornItem, FREE } from './items.js';
 // The money side of the game: the save (what survives death), prices, the market, and the
 // catalogue of things Earl can buy at the boat.
 //
@@ -354,7 +355,7 @@ export const TRACKS = {
   tTank:     { group: 'Diver', name: 'Air tank', stats: ['air'], max: 5, line: 'More air for every dive' },
   tFins:     { group: 'Diver', name: 'Fins', stats: ['swim', 'sprint'], max: 5, line: 'He swims and sprints faster' },
   tBag:      { group: 'Diver', name: 'Catch bag', stats: ['bag'], max: 6, line: 'Room for more animals' },
-  tBuyers:   { group: 'Diver', name: 'Buyers', stats: ['payFish', 'paySalvage'], max: 5, line: 'Better prices for everything he sells' },
+  tBuyers:   { group: 'Buyers', name: 'Buyers', stats: ['payFish', 'paySalvage'], max: 5, line: 'Better prices for everything he sells' },
   tNet:      { group: 'Net', name: 'Hand net', stats: ['netSize', 'netReach', 'netSpeed', 'netGrip', 'netSoft'], max: 5, line: 'Bigger, longer, quicker, surer, gentler' },
   tSlurp:    { group: 'Slurp gun', needs: 'slurp', name: 'Slurp gun', stats: ['slurpSize', 'slurpReach', 'slurpSpeed'], max: 4, line: 'Bigger catches, longer reach, faster reload' },
   tTag:      { group: 'Tag gun', needs: 'tagger', name: 'Tag gun', stats: ['tagReach', 'tagReload', 'tagPay', 'tagCalm'], max: 5, line: 'Range, reload, better-paying tags, cleaner shots' },
@@ -398,7 +399,42 @@ export function statAt(id, l) {
   if (U.lin) return U.base + U.lin * l;
   return U.base + (U.top - U.base) * (Math.pow(GAIN, l) - 1) / (Math.pow(GAIN, U.max) - 1);
 }
-export const statValue = (P, id) => statAt(id, lv(P, id));
+// (2.6.0) air, swimming, sprint and the bag come from what he has on, not a ladder
+export const statValue = (P, id) => { const o = itemStat(P, id); return o != null ? o : statAt(id, lv(P, id)); };
+// ---------------- the kit (2.6.0): items in place of the tool, fins, tank and bag ladders ----------------
+// A save from before gets, for each ladder, every catalog item it could have bought with what it spent
+// climbing it, the dearest of them on, and the rest of the money back.
+const KIT_TRACK = { net: 'tNet', slurp: 'tSlurp', tag: 'tTag', cam: 'tCam', fins: 'tFins', tank: 'tTank', bag: 'tBag' };
+const KIT_GEAR = { slurp: 'slurp', tag: 'tagger', cam: 'camera' };
+function migrateKit(P) {
+  P.kit = { own: {}, on: {} };
+  let refund = 0;
+  for (const [kind, t] of Object.entries(KIT_TRACK)) {
+    if (KIT_GEAR[kind] && !(P.gear && P.gear[KIT_GEAR[kind]])) continue; // a tool he never bought
+    const l = (P.tlv && P.tlv[t]) || 0; let spent = 0;
+    if (l && TRACKS[t]) { const Q = { tlv: Object.assign({}, P.tlv), tlvV: 2 }; for (let k = 0; k < l; k++) { Q.tlv[t] = k; spent += upgradeCost(Q, t); } }
+    const list = ITEMS_OF(kind, 'catalog').sort((a, b) => a.price - b.price);
+    const own = [], base = list.find((it) => it.price === 0) || (KIT_GEAR[kind] ? list[0] : null);
+    if (base) own.push(base.id);
+    let left = spent;
+    for (const it of list) if (!own.includes(it.id) && it.price <= left) { own.push(it.id); left -= it.price; }
+    refund += left;
+    // on: the dearest with no catch to it (the long-handle net for nets, if he has it); the rest are his to choose in B
+    const plain = own.filter((id) => !ITEMS[id].bad);
+    P.kit.own[kind] = own; P.kit.on[kind] = kind === 'net' && own.includes('long') ? 'long' : plain.length ? plain[plain.length - 1] : own.length ? own[own.length - 1] : null;
+  }
+  if (P.gear && P.gear.lowlight) { P.kit.own.cam = [...(P.kit.own.cam || []), 'lowlight']; P.kit.on.cam = 'lowlight'; }
+  if (refund > 0.5) { P.cash = Math.round(((P.cash || 0) + refund) * 100) / 100; P.kitRefund = Math.round(refund); }
+}
+export const kit = (P) => { if (!P.kit) migrateKit(P); return kitOf(P); };
+export const worn = (P, kind) => { kit(P); return wornItem(P, kind); };
+function itemStat(P, id) {
+  if (!P || (id !== 'air' && id !== 'swim' && id !== 'sprint' && id !== 'bag')) return null;
+  if (id === 'air') return worn(P, 'tank').air;
+  if (id === 'swim') return worn(P, 'fins').swim * (worn(P, 'tank').speed || 1);
+  if (id === 'sprint') return worn(P, 'fins').sprint;
+  return worn(P, 'bag').slots;
+}
 const roundCost = (c) => (c < 10 ? Math.round(c * 100) / 100 : c < 100 ? Math.round(c * 4) / 4 : Math.round(c));
 const statStepCost = (id, l) => { const U = UPGRADES[id]; return U.costs ? U.costs[Math.min(l, U.costs.length - 1)] : U.cost * Math.pow(U.growth, l); };
 // the next step's price: of a track (every stat step it covers), or of a single stat
@@ -411,7 +447,13 @@ export function upgradeCost(P, id) {
   }
   return roundCost(statStepCost(id, lv(P, id)));
 }
-export const owns = (P, k) => !!(P.gear && P.gear[k]);
+export const owns = (P, k) => {
+  if (k === 'slurp') return !!worn(P, 'slurp');
+  if (k === 'tagger') return !!worn(P, 'tag');
+  if (k === 'camera') return !!worn(P, 'cam');
+  if (k === 'lowlight') { const c = worn(P, 'cam'); return !!c && c.id === 'lowlight'; }
+  return !!(P.gear && P.gear[k]);
+};
 const trim = (t) => t.replace(/\.?0+$/, '');
 // a stat shown the way people read it
 export function fmtStat(id, v) {
@@ -435,6 +477,10 @@ const sumLv = (P, ids) => ids.reduce((a, id) => a + lv(P, id), 0);
 // what each tool does right now, from its levels (look: which drawing to use as it improves)
 export function gear(P, kind) {
   const v = (id) => statValue(P, id);
+  if (kind === 'net' || kind === 'slurp' || kind === 'tag' || kind === 'cam') {
+    const it = worn(P, kind) || ITEMS[{ net: 'hand', slurp: 'slurp', tag: 'pole', cam: 'compact' }[kind]];
+    return Object.assign({ noise: 0.01, success: 0.9, harm: 0.04 }, it);
+  }
   if (kind === 'net') {
     const n = sumLv(P, ['netSize', 'netReach', 'netSpeed', 'netGrip', 'netSoft']);
     return { name: ['Hand net', 'Fine-mesh net', 'Long-handle net', 'Pro capture net'][Math.min(3, Math.floor(n / 12))], look: Math.min(3, Math.floor(n / 12)),

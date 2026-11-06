@@ -92,7 +92,8 @@ export function findCatch(g) {
     if (d > reach) return;
     let why = null;
     if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'needs a tag' : null;
-    else if (len > def.maxLen) why = isTagOnly(sp) && len > 1.1 ? 'needs a tag' : `too big for the ${kind === 'net' ? def.name.toLowerCase() : def.name.toLowerCase()}`;
+    else if (len > def.maxLen) why = isTagOnly(sp) && len > 1.1 ? 'needs a tag' : `too big for the ${def.name.toLowerCase()}`;
+    else if (def.minLen && len < def.minLen) why = `slips through the ${def.name.toLowerCase()}`;
     if (why === null && !canTakeLive(sp)) return; // plants, corals: not even worth mentioning
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
     if (d < bd) { bd = d; best = { sp, x, y, len, d, ...ref }; }
@@ -167,6 +168,17 @@ export function updateCapture(g, dt) {
         if (kind === 'net') g.netCatch = { sp: tgt.sp, len: tgt.len, t: 0 };
         else g.slurpHeld = { sp: tgt.sp, len: tgt.len, t: 0 };
         ev.push({ type: 'caught', sp: tgt.sp, spec, name: variantName(tgt.sp, tgt.variant) });
+        if (def.multi > 1 && tgt.c && tgt.c.gid != null) {
+          let more = def.multi - 1;
+          for (const c of g.fauna.list) {
+            if (more <= 0 || g.bag.length >= bagSlots(g)) break;
+            if (c === tgt.c || c.dead || c.pet || c.gid !== tgt.c.gid || c.len > def.maxLen || dist(c.x, c.y, tgt.x, tgt.y) > 1.8) continue;
+            c.dead = true; more--;
+            const s2 = { id: c.sp.id, len: c.len, cond: clamp(1 - def.harm * (fragile(c.sp) ? 2 : 1) - Math.random() * 0.05, 0.05, 1), from: Math.round(Math.max(e.y, c.y)), t: g.time };
+            g.bag.push(s2); g.captureFx.push({ sp: c.sp, len: c.len, x: c.x, y: c.y, dir: c.dir, t: 0, dur: 0.3, kind });
+            ev.push({ type: 'caught', sp: c.sp, spec: s2, name: c.sp.name, extra: true });
+          }
+        }
       } else {
         ev.push({ type: 'missed', sp: tgt.sp, name: variantName(tgt.sp, tgt.variant) });
         if (tgt.c) tgt.c.fleeT = 2.2;

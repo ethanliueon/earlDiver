@@ -11,6 +11,10 @@ const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span cl
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
 import { Cabin } from './cabin.js';
+import { Catalog, pictureOf } from './catalog.js';
+import { ITEMS, kitOf, KINDS } from './items.js';
+import { kit as ensureKit } from './economy.js';
+import { drawEarl } from './earl_draw.js';
 import { SETTINGS, setSetting } from './settings.js';
 import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
@@ -70,8 +74,9 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     this.caveTab = 'trade';
-    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.openShop('tools', ['tools', 'diver', 'supplies', 'sub']), station: (id) => h.onStation && h.onStation(id), blocked: () => !$('workshop').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
+    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.toggleCatalog(true), station: (id) => h.onStation && h.onStation(id), blocked: () => !$('workshop').hidden || !$('catalog').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
     this.gallery = new Gallery($('gallery'), { act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
+    this.catalog = new Catalog($('catalog'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
@@ -233,7 +238,7 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return this.stationsOpen() || !$('cabin').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  anyOpen() { return this.stationsOpen() || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('settings').hidden || !$('inventory').hidden; }
   closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
@@ -284,7 +289,8 @@ export class UI {
     const row = (label, n, note = '') => `<div class="inv-row"><span>${label}${note ? ` <em>${note}</em>` : ''}</span>${n === '' ? '' : `<b class="n${n ? '' : ' zero'}">${n}</b>`}</div>`;
     const fish = (s) => { const sp = SPECIES_BY_ID[s.id]; return `<div class="inv-row"><img src="${ic(sp)}" alt=""><span>${sp.name}${s.variant ? ` <em>${s.variant}</em>` : ''}<br><em>${s.cond <= 0.05 ? 'dead' : conditionName(s.cond)} · from ${s.from || 0} m · about ${money(specimenValue(s) * statValue(P, 'payFish'))}</em></span></div>`; };
     const sec = (title, inner, wide = false) => `<div class="inv-sec${wide ? ' wide' : ''}"><h4>${title}</h4><div class="inv-list">${inner}</div></div>`;
-    let html = `<div class="inv-sec wide"><div class="inv-cash"><div><span>CASH</span>${money(P.cash)}</div>${P.coins ? `<div><span>OLD GOLD COINS</span>${P.coins}</div>` : ''}</div></div>`;
+    let html = this.equipHtml(P, g);
+    html += `<div class="inv-sec wide"><div class="inv-cash"><div><span>CASH</span>${money(P.cash)}</div>${P.coins ? `<div><span>OLD GOLD COINS</span>${P.coins}</div>` : ''}</div></div>`;
     // the animals first (the bag, then the sub's tanks); supplies, finds and gear below
     html += sec(`The catch bag · ${g.bag.length} of ${Math.round(statValue(P, 'bag'))}`, g.bag.length ? g.bag.map(fish).join('') : '<p class="inv-empty">Empty.</p>', true);
     if (!g.sub.imploded) {
@@ -302,8 +308,54 @@ export class UI {
     if (finds.length) html += sec('Finds, to sell at the boat', finds.map(([k, n]) => row(RESOURCES[k] ? RESOURCES[k].name : k, n)).join(''));
     const tools = ['net'].concat(Object.keys(GEAR).filter((k) => owns(P, k))).map((k) => k === 'net' ? 'Hand net' : GEAR[k].name);
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
-    html += sec('Equipment', row('Tools', '', tools.join(' · ')) + row('Suit', '', (SUITS[P.suit] || {}).name || 'Wetsuit') + row('Submersible', '', g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}, rated ${g.sub.rated} m`), true);
+    html += sec('Equipment', row('Submersible', '', g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}, rated ${g.sub.rated} m`), true);
     $('inventory').querySelector('.inv-body').innerHTML = html;
+    this.equipWire(P, g);
+  }
+  // ---------- changing gear (2.6.0): Earl and his eight slots, and everything he owns beside him ----------
+  // Drag a thing onto him (or its slot), or click it; what was in the slot goes back. Unlocked on deck,
+  // in the cabin and in the sub; in the water it only shows.
+  equipHtml(P, g) {
+    ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), suitsOwn = P.suits || ['wet'];
+    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp gun'], ['tag', '3  Tag gun'], ['cam', '4  Camera']];
+    const picOf = (kind, id) => (kind === 'suit' ? pictureOf('suit', id, 120, 72, true) : pictureOf(kind, ITEMS[id], 120, 72, true));
+    const nameOf = (kind, id) => (kind === 'suit' ? SUITS[id].name : ITEMS[id].name);
+    const tipOf = (kind, id) => { if (kind === 'suit') return SUITS[id].name; const it = ITEMS[id]; return `${it.name}${it.good ? ' · good for: ' + it.good.toLowerCase() : ''}${it.bad ? ' · not for: ' + it.bad.toLowerCase() : ''}`; };
+    const onOf = (kind) => (kind === 'suit' ? P.suit || 'wet' : K.on[kind]);
+    const slot = ([kind, label]) => { const id = onOf(kind); return `<div class="eq-slot${id ? '' : ' empty'}" data-slot="${kind}" title="${id ? tipOf(kind, id) : 'nothing'}"><span>${label}</span>${id ? `<img src="${picOf(kind, id)}" alt="" draggable="${free && !['suit', 'fins', 'tank', 'bag', 'net'].includes(kind)}" data-kind="${kind}" data-id="${id}"><b>${nameOf(kind, id)}</b>` : '<b>—</b>'}</div>`; };
+    let shelf = '';
+    for (const [kind, label] of SLOTS) {
+      const own = kind === 'suit' ? suitsOwn : K.own[kind] || [];
+      if (own.length < 2 && !(own.length === 1 && !onOf(kind))) continue; // nothing else to choose
+      shelf += `<div class="eq-row"><span>${label.replace(/^\d\s+/, '')}</span>${own.map((id) => `<img class="eq-item${onOf(kind) === id ? ' on' : ''}" src="${picOf(kind, id)}" alt="${nameOf(kind, id)}" title="${tipOf(kind, id)}" draggable="${free}" data-kind="${kind}" data-id="${id}">`).join('')}</div>`;
+    }
+    return `<div class="inv-sec wide eq${free ? '' : ' locked'}"><h4>Gear</h4><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="240" height="300"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
+      + (free ? (shelf ? `<div class="eq-shelf"><p class="eq-note">Drag something onto him, or click it.</p>${shelf}</div>` : '<p class="eq-note">Everything you own is on. The catalog, on the cabin computer, sells more.</p>') : '<p class="eq-note eq-lock">Change gear on deck or in the sub.</p>') + '</div>';
+  }
+  equipWire(P, g) {
+    const root = $('inventory').querySelector('.eq'); if (!root) return;
+    // Earl, in what he has on
+    const cv = root.querySelector('.eq-earl');
+    if (cv) { const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.save(); c.translate(cv.width / 2, cv.height * 0.5); c.rotate(-Math.PI / 2); drawEarl(c, cv.height * 0.84, 0, 0.1, null, null, { kind: 'none', tier: 0, t: 0, suit: P.suit || 'wet', bag: [] }); c.restore(); }
+    if (!this.h.canChangeGear()) return;
+    const put = (kind, id) => { if (kind === 'suit') this.h.onEquip('suit:' + id); else this.h.onEquip('on:' + id); this.renderInventory(); };
+    const off = (kind) => { if (['slurp', 'tag', 'cam'].includes(kind)) { this.h.onEquip('off:' + kind); this.renderInventory(); } };
+    root.querySelectorAll('.eq-item').forEach((el) => {
+      el.addEventListener('click', () => put(el.dataset.kind, el.dataset.id));
+      el.addEventListener('dragstart', (ev) => { this.dragKind = el.dataset.kind; ev.dataTransfer.setData('text/plain', el.dataset.kind + ':' + el.dataset.id); root.querySelectorAll(`[data-slot="${el.dataset.kind}"]`).forEach((s) => s.classList.add('hot')); });
+      el.addEventListener('dragend', () => root.querySelectorAll('.hot').forEach((s) => s.classList.remove('hot')));
+    });
+    root.querySelectorAll('.eq-slot img').forEach((el) => el.addEventListener('dragstart', (ev) => { this.dragKind = 'off:' + el.dataset.kind; ev.dataTransfer.setData('text/plain', 'off:' + el.dataset.kind); }));
+    root.querySelectorAll('.eq-slot').forEach((s) => {
+      s.addEventListener('dragover', (ev) => { if (this.dragKind === s.dataset.slot) ev.preventDefault(); });
+      s.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, id] = ev.dataTransfer.getData('text/plain').split(':'); if (k === s.dataset.slot) put(k, id); });
+    });
+    const earl = root.querySelector('.eq-earl');
+    earl.addEventListener('dragover', (ev) => { if (this.dragKind && !this.dragKind.startsWith('off:')) ev.preventDefault(); });
+    earl.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, id] = ev.dataTransfer.getData('text/plain').split(':'); if (k !== 'off') put(k, id); });
+    const shelf = root.querySelector('.eq-shelf') || root;
+    shelf.addEventListener('dragover', (ev) => { if (this.dragKind && this.dragKind.startsWith('off:')) ev.preventDefault(); });
+    shelf.addEventListener('drop', (ev) => { const d = ev.dataTransfer.getData('text/plain'); if (d.startsWith('off:')) { ev.preventDefault(); off(d.slice(4)); } });
   }
   settingsOpen() { return !$('settings').hidden; }
   toggleSettings(force) { const el = $('settings'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderSettings(); }
@@ -319,6 +371,8 @@ export class UI {
   }
   galleryOpen() { return !$('gallery').hidden; }
   cabinOpen() { return !$('cabin').hidden; }
+  catalogOpen() { return !$('catalog').hidden; }
+  toggleCatalog(force) { const el = $('catalog'), open = force === undefined ? el.hidden : force; el.hidden = !open; if (open) this.catalog.show(); }
   toggleCabin(force) {
     const el = $('cabin'), open = force === undefined ? el.hidden : force;
     el.hidden = !open;
@@ -691,6 +745,7 @@ export class UI {
       const wait = refreshIn(P), left = Math.ceil(wait / 60000), hrs = Math.floor(left / 60), mins = left % 60;
       html += `<div class="radio-refresh">${wait ? `<span>New contracts in ${hrs ? hrs + ' h' : ''}${hrs && mins ? ' ' : ''}${mins || !hrs ? mins + ' min' : ''}</span>` : '<button data-act="refresh" data-arg="">New contracts</button><span>free every 3 hours; the ones you accepted stay</span>'}</div>`;
       html += '<p class="shop-note">Accept a contract and it shows on the right while you dive. It is paid when you sell with the goods aboard.</p>';
+      html += this.upgradeGroups(P, ['Buyers'], icon, can); // (2.6.0) better buyers, found on the radio
     } else if (tab === 'aquarium') {
       const A = aquariumOf(P), C = completion(P), list = Object.entries(A.display), slots = gallerySlots(P);
       html += `<div class="aq-head"><div><b>${list.length}<small>/${slots}</small></b><span>in the gallery</span></div><div><b>${C.species}</b><span>of ${C.of} species kept</span></div><div><b>${visitors(P)}</b><span>visitors a day</span></div><div><b>${list.length ? money(dailyIncome(P), false) : '—'}</b><span>a day in tickets</span></div></div>`;

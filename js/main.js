@@ -17,7 +17,8 @@ import { startArm, updateArm, findArmTarget } from './arm.js';
 import { fillBoard, fulfil, refreshIn, ready as contractReady } from './contracts.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
-import { SUITS, suitOf } from './economy.js';
+import { SUITS, suitOf, kit, worn } from './economy.js';
+import { ITEMS, ownsItem, giveItem, putOn, takeOff } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
@@ -51,6 +52,15 @@ let cHeld = 0, cDown = 0;
 let profile = loadProfile();
 
 // what his suit does: pressure, air, speed (see SUITS)
+// what he has on (2.6.0): the tank's air, the fins (and a heavy tank's drag), the camera's card
+function applyKit(e, P) {
+  kit(P);
+  const was = e.o2Max || 0; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, (e.o2 || 0) + Math.max(0, e.o2Max - was));
+  e.finSpeed = statValue(P, 'swim'); e.sprintMul = statValue(P, 'sprint');
+  e.tankQuiet = !!(worn(P, 'tank') || {}).quiet;
+  if (g && owns(P, 'camera')) g.shots = Math.max(g.shots || 0, gear(P, 'cam').shots);
+  if (g && g.toolSel && g.toolSel !== 'net' && g.toolSel !== 'trap' && g.toolSel !== 'none' && !owns(P, { slurp: 'slurp', tag: 'tagger', cam: 'camera' }[g.toolSel])) g.toolSel = 'net';
+}
 function applySuit(e, P) {
   const S = suitOf(P);
   e.pressStart = S.press; e.suitAir = S.air; e.suitSpeed = S.speed; e.suitQuiet = !!S.quiet; e.suit = (P && P.suit) || 'wet';
@@ -113,6 +123,7 @@ function newGame(mode) {
   // upgrades bought on earlier dives
   g.earl.o2Max = g.earl.o2 = statValue(P, 'air');
   g.earl.finSpeed = statValue(P, 'swim'); g.earl.sprintMul = statValue(P, 'sprint');
+  if (mode === 'play') { applyKit(g.earl, P); g.earl.o2 = g.earl.o2Max; if (P.kitRefund) { const r = P.kitRefund; P.kitRefund = 0; setTimeout(() => hud.toast(`The shop now sells separate items: your upgrades became items, and $${r.toLocaleString()} came back`, 'big'), 2500); } }
   applySuit(g.earl, P);
   applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = P.hull;
   if (P.subLost) { g.sub.imploded = true; g.sub.docked = false; }
@@ -176,6 +187,9 @@ const ui = new UI({
     withLoading(() => { g = newGame('menu'); ui.showTitle(); });
   },
   getProfile: () => profile,
+  onSaveProfile: () => saveProfile(profile),
+  canChangeGear: () => !!(g && g.mode === 'play' && (g.aboard || g.earl.inSub || ui.cabinOpen())),
+  onEquip: (k) => { const ok = buy(k); return ok; },
 });
 
 // ---------------- injuries ----------------
@@ -459,7 +473,22 @@ function syncProfile() {
 function buy(kind) {
   const P = profile, sub = g.sub, e = g.earl;
   let ok = false;
-  if (kind.startsWith('up:')) {
+  if (kind.startsWith('item:')) {
+    // (2.6.0) an item from the catalog: his for good, and on at once (he can change back in B)
+    const it = ITEMS[kind.slice(5)];
+    if (it && !ownsItem(P, it.id) && spend(P, it.price)) {
+      kit(P); giveItem(P, it.id, true); applyKit(e, P); ok = true;
+      hud.toast(`${it.name}: yours, and on`, 'big');
+      const key = { slurp: 2, tag: 3, cam: 4 }[it.kind];
+      if (key) { g.toolSel = it.kind; hud.hint(`Press ${key} for the ${it.name.toLowerCase()}`); }
+      if (P.wish === it.id) P.wish = null;
+    }
+  } else if (kind.startsWith('off:')) {
+    takeOff(P, kind.slice(4)); applyKit(e, P); ok = true;
+  } else if (kind.startsWith('on:')) {
+    const it = ITEMS[kind.slice(3)];
+    if (it && ownsItem(P, it.id)) { putOn(P, it.id); applyKit(e, P); ok = true; hud.toast(`${it.name}: on`); }
+  } else if (kind.startsWith('up:')) {
     // one more step on a track: every stat it covers improves together
     const id = kind.slice(3), T = TRACKS[id];
     const cc = T ? upgradeCoins(P, id) : 0;
@@ -1372,7 +1401,8 @@ function update(dt) {
       else if (ev.type === 'dartMiss') hud.toast('Missed');
       else if (ev.type === 'tooSmall') hud.toast(`The ${ev.sp.name.toLowerCase()} is too small to tag`);
     }
-    for (const ev of updateCapture(g, dt)) {
+    const capEvs = updateCapture(g, dt);
+    for (const ev of capEvs) {
       if (ev.type === 'caught') {
         const sp = ev.sp, v = ev.spec.variant;
         if (v) {
@@ -1386,7 +1416,8 @@ function update(dt) {
         // (2.5.0: just the name, in its rarity's colour; "hurt" only when it is. The price, the pressure
         // tolerance and the bag count were too much: the bag shows on the HUD, the price at the boat)
         const hurt = ev.spec.cond < 0.7 ? ` · ${conditionName(ev.spec.cond)}` : '';
-        if (!v) hud.toast(`${ev.name}${hurt}`, 'rar:' + rr.col);
+        const extra = capEvs.filter((q) => q.type === 'caught' && q.extra).length; // (the bait-ball net: more from the same school)
+        if (!v && !ev.extra) hud.toast(`${ev.name}${extra ? ` ×${extra + 1}` : ''}${hurt}`, 'rar:' + rr.col);
         audio.ready && audio.pickup();
         if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
         if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }

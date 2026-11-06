@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.5.6 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.6.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -48,9 +48,11 @@ Settings → Pages → Deploy from a branch → `main` / root).
   the last one.
 - **Air** is the bar under the depth. Surface to refill. Earl's tank goes up to 200 s with upgrades;
   the cabin air comes with each submersible (150 s in the first, 300 s in the best).
-- **The shop** sells one ladder per thing: air tank, fins, catch bag, buyers; the net, slurp gun, tag
-  gun, camera and traps (Tools); the hull, engine, chambers, open tank, air rack and claw (Sub).
-  Each step improves everything on that ladder at once. One step at a time is marked Recommended.
+- **The catalog** (the computer in the cabin, F) is a small shop website: hand nets, slurp guns, tag
+  guns, cameras, trawl nets, traps, suits, fins, air tanks, bags and supplies, each its own item with
+  what it is good for and not for. Bought items are yours at once and go on; change them in the
+  inventory (B) on deck, in the cabin or in the sub (drag onto Earl, or click). "The yard" sells the
+  sub's parts (hull, engine, chambers, open tank, air rack, claw); better buyers are on the radio.
 - **Contracts** on the radio pay the market price plus a premium for the trip (more for deeper work),
   never more extra than your next submersible costs.
 - **Selling.** Everything sells at the boat; the price board shows what the last sales fetched.

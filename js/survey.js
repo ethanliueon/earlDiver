@@ -151,6 +151,7 @@ export function takePhoto(g) {
   const s = findPhotoSubject(g);
   if (!s) return { type: 'photo', empty: true };
   if (!s.ok) return { type: 'photo', old: true, sp: s.sp, name: s.name, variant: s.variant };
-  g.photos.push({ key: s.key, id: s.sp.id, variant: s.variant || null, value: s.value, name: s.name });
-  return { type: 'photo', sp: s.sp, variant: s.variant, value: s.value, name: s.name };
+  const value = def.small && s.sp.len < 0.15 ? Math.round(s.value * def.small * 100) / 100 : s.value; // (the macro camera: small animals pay more)
+  g.photos.push({ key: s.key, id: s.sp.id, variant: s.variant || null, value, name: s.name });
+  return { type: 'photo', sp: s.sp, variant: s.variant, value, name: s.name };
 }

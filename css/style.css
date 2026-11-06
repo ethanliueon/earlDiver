@@ -1052,3 +1052,87 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 :is(.set-body, #shop-body, .shop)::-webkit-scrollbar-thumb { background: linear-gradient(90deg, var(--brass-hi), var(--brass) 60%, #9a7a34); border-radius: 6px; }
 :is(#journal-list, #notes)::-webkit-scrollbar-track { background: transparent; }
 :is(#journal-list, #notes)::-webkit-scrollbar-thumb { background: rgba(110,75,30,0.45); border-radius: 6px; }
+
+/* ---------- the catalog (2.6.0): Bayside Marine Supply, on the cabin computer's screen ---------- */
+#catalog { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, rgba(40,28,16,0.55), rgba(10,6,2,0.85)); --navy: #23364c; --navy-lo: #182636; --page: #f3efe4; --cink: #2a2620; --cmuted: #6e675a; --rule: #d8d0bd; --link: #1f4f86; --good: #2f6b3a; --bad: #8a3a2a; }
+#catalog[hidden] { display: none; }
+#catalog .cat-bezel { width: min(1180px, 96vw); height: min(680px, 90vh); padding: 20px 24px 32px; border-radius: 24px; position: relative;
+  background: linear-gradient(180deg, #ddd3b6, #c3b792 70%, #a99d78); box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.4), inset 0 -3px 0 rgba(0,0,0,0.2); }
+#catalog .cat-bezel::after { content: ''; position: absolute; left: 50%; bottom: 11px; width: 7px; height: 7px; border-radius: 50%; background: #6ad08a; box-shadow: 0 0 6px #6ad08a; transform: translateX(-50%); }
+#catalog .cat-glass { position: relative; height: 100%; border-radius: 14px; overflow: hidden; background: var(--page); box-shadow: inset 0 0 0 3px #5e553f; color: var(--cink); font-family: var(--serif); display: flex; flex-direction: column; }
+#catalog .cat-glass::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: 14px; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.026) 0 1px, transparent 1px 3px), radial-gradient(ellipse at 50% 50%, transparent 64%, rgba(20,16,8,0.2) 100%); }
+#catalog header { flex: none; display: flex; align-items: baseline; gap: 18px; padding: 11px 22px 9px; background: linear-gradient(180deg, var(--navy), var(--navy-lo)); color: #efe6cf; }
+#catalog header h1 { margin: 0; font-weight: 500; font-size: 25px; }
+#catalog header .sub { font-size: 14px; font-style: italic; opacity: 0.7; }
+#catalog header .right { margin-left: auto; display: flex; gap: 22px; align-items: baseline; font: 13px var(--mono); }
+#catalog header .right a { color: #efe6cf; opacity: 0.8; }
+#catalog .cat-wrap { flex: 1; min-height: 0; display: grid; grid-template-columns: 168px 1fr; }
+#catalog .cat-nav { padding: 16px 0 0 22px; border-right: 1px solid var(--rule); font-size: 17px; overflow-y: auto; }
+#catalog .cat-nav a { display: block; color: var(--link); text-decoration: none; padding: 2px 0; }
+#catalog .cat-nav a:hover { text-decoration: underline; }
+#catalog .cat-nav a.on { color: var(--cink); font-weight: 600; }
+#catalog .cat-nav a.on::before { content: ''; display: inline-block; width: 4px; height: 13px; background: var(--navy); margin: 0 7px 0 -11px; }
+#catalog .cat-nav .gap { height: 10px; }
+#catalog .cat-main { padding: 16px 24px 24px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #9a917c transparent; }
+#catalog h2 { margin: 0 0 2px; font-weight: 500; font-size: 29px; }
+#catalog h4 { margin: 0 0 10px; font-weight: 500; font-size: 20px; }
+#catalog .cat-lede { margin: 0 0 14px; color: var(--cmuted); font-size: 17px; }
+#catalog .crumbs { font-size: 14px; color: var(--cmuted); margin-bottom: 4px; }
+#catalog .crumbs a { color: var(--link); }
+#catalog .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px 16px; }
+#catalog .cat-card { position: relative; display: block; background: #fbf8f0; border: 1px solid var(--rule); text-decoration: none; color: inherit; }
+#catalog .cat-card:hover { border-color: #b9ae94; box-shadow: 0 2px 6px rgba(60,40,10,0.12); }
+#catalog .cat-card img { display: block; width: 100%; height: 112px; object-fit: cover; }
+#catalog .cat-card .t { display: flex; align-items: baseline; gap: 8px; padding: 7px 10px 0; }
+#catalog .cat-card .t b { font-weight: 500; font-size: 18px; color: var(--link); }
+#catalog .cat-card .t span { margin-left: auto; font: 14px var(--mono); }
+#catalog .cat-card .tag { padding: 1px 10px 8px; font-size: 14px; color: var(--cmuted); font-style: italic; min-height: 26px; }
+#catalog .cat-card .tag.own { font: 11px var(--mono); font-style: normal; letter-spacing: 0.06em; color: var(--good); text-transform: uppercase; padding-top: 4px; }
+#catalog .cat-mini { position: absolute; right: 8px; bottom: 7px; font: 500 14px var(--serif); padding: 3px 14px; background: linear-gradient(180deg, #34506e, var(--navy)); color: #f3ead2; border: 1px solid #142030; border-radius: 3px; cursor: pointer; }
+#catalog .cat-mini[disabled], #catalog .cat-btn[disabled] { opacity: 0.45; cursor: default; }
+#catalog .cat-item { display: grid; grid-template-columns: 1.05fr 1fr; gap: 26px; }
+#catalog .cat-item img { width: 100%; aspect-ratio: 16 / 10.5; object-fit: cover; border: 1px solid var(--rule); display: block; }
+#catalog .price { font: 20px var(--mono); margin: 2px 0 12px; }
+#catalog .say { font-size: 19px; margin: 0 0 14px; }
+#catalog .gf { margin: 0 0 14px; font-size: 17px; line-height: 1.45; }
+#catalog .gf div::before { display: inline-block; width: 74px; font: 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
+#catalog .gf .g::before { content: 'Good for'; color: var(--good); }
+#catalog .gf .b::before { content: 'Not for'; color: var(--bad); }
+#catalog .vs { border-top: 1px solid var(--rule); padding-top: 9px; margin-bottom: 16px; }
+#catalog .vs h3 { margin: 0 0 6px; font: 11px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--cmuted); font-weight: 400; }
+#catalog .vs .row { display: grid; grid-template-columns: 120px 1fr; font-size: 17px; padding: 2px 0; }
+#catalog .vs .row span:first-child { color: var(--cmuted); }
+#catalog .up { color: var(--good); } #catalog .down { color: var(--bad); }
+#catalog .buy { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+#catalog .cat-btn { font: 500 17px var(--serif); padding: 7px 22px; background: linear-gradient(180deg, #34506e, var(--navy)); color: #f3ead2; border: 1px solid #142030; border-radius: 3px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.2); cursor: pointer; }
+#catalog .cat-save { color: var(--link); font-size: 16px; }
+#catalog .cat-have { font: 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--good); }
+#catalog .cat-saving { display: flex; align-items: center; gap: 16px; padding: 12px 14px; background: #fbf8f0; border: 1px solid var(--rule); margin-bottom: 20px; text-decoration: none; color: inherit; }
+#catalog .cat-saving img { width: 120px; height: 64px; object-fit: cover; }
+#catalog .cat-saving small { font: 12px var(--mono); color: var(--cmuted); }
+#catalog .cat-saving .nm { font-size: 20px; }
+#catalog .cat-saving .bar { height: 8px; background: #e2dacb; margin-top: 6px; width: 300px; max-width: 40vw; }
+#catalog .cat-saving .bar i { display: block; height: 100%; background: var(--navy); }
+#catalog .cat-saving .amt { margin-left: auto; font: 15px var(--mono); }
+@media (max-width: 760px) { #catalog .cat-wrap { grid-template-columns: 1fr; } #catalog .cat-nav { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 8px 12px; border-right: 0; border-bottom: 1px solid var(--rule); } #catalog .cat-nav .gap { display: none; } #catalog .cat-item { grid-template-columns: 1fr; } }
+/* ---------- changing gear in the inventory (2.6.0) ---------- */
+#inventory .eq h4 { margin: 0 0 8px; font: 11px var(--stencil); letter-spacing: 0.28em; text-transform: uppercase; color: var(--paint-dim); font-weight: normal; }
+#inventory .eq-grid { display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr); gap: 10px; align-items: center; }
+#inventory .eq-earl { position: static; inset: auto; width: 150px; height: 188px; justify-self: center; border-radius: 8px; background: radial-gradient(ellipse at 50% 45%, rgba(120,170,190,0.18), rgba(0,0,0,0) 70%); }
+#inventory .eq-col { display: grid; gap: 6px; }
+#inventory .eq-slot { display: grid; grid-template-columns: 56px 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 8px; padding: 5px 8px; min-height: 44px; border-radius: 4px; background: rgba(0,0,0,0.25); box-shadow: inset 0 1px 3px rgba(0,0,0,0.55); border: 1px solid rgba(0,0,0,0.5); transition: border-color 0.15s, background 0.15s; }
+#inventory .eq-slot span { grid-column: 1 / 3; font: 10px var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; color: var(--paint-dim); white-space: pre; }
+#inventory .eq-slot img { width: 56px; height: 34px; object-fit: contain; }
+#inventory .eq-slot b { font: 400 14px var(--serif); color: var(--paint); }
+#inventory .eq-slot.empty b { color: var(--paint-dim); grid-column: 1 / 3; }
+#inventory .eq-slot.hot { border-color: var(--brass); background: rgba(201,166,90,0.16); }
+#inventory .eq-shelf { margin-top: 10px; display: grid; gap: 6px; }
+#inventory .eq-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,0.15); }
+#inventory .eq-row > span { width: 78px; font: 10px var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; color: var(--paint-dim); }
+#inventory .eq-item { width: 64px; height: 38px; object-fit: contain; padding: 2px; border-radius: 3px; border: 1px solid transparent; cursor: grab; background: rgba(255,255,255,0.04); }
+#inventory .eq-item:hover { border-color: rgba(201,166,90,0.6); background: rgba(255,255,255,0.08); }
+#inventory .eq-item.on { border-color: var(--brass); box-shadow: 0 0 0 1px rgba(201,166,90,0.4) inset; }
+#inventory .eq-note { margin: 8px 0 0; font: italic 14px var(--serif); color: var(--paint-dim); }
+#inventory .eq.locked .eq-slot { opacity: 0.75; }
+#inventory .eq-lock::before { content: '🔒 '; font-style: normal; }
+@media (max-width: 640px) { #inventory .eq-grid { grid-template-columns: 1fr 1fr; } #inventory .eq-earl { display: none; } }
