@@ -920,3 +920,77 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .cabin .cb-prompt[hidden] { display: none; }
 /* the catalog opens over the cabin it is used from */
 #workshop { z-index: 40; }
+
+/* ================= 2.4.1: the game's own furniture instead of generic buttons =================
+   buy buttons are manila cargo tags on a string · the big actions are enamel signs · rarity and
+   "recommended" are embossed label-maker tape · name plates are aged, brushed brass with screws */
+/* --- cargo tags --- */
+.shop button[data-act]:not(.primary):not(.warn) {
+  position: relative; border-radius: 3px !important; padding-left: 26px !important;
+  color: #2b2214 !important; font-family: var(--mono) !important; letter-spacing: 0.02em;
+  background:
+    radial-gradient(circle at 12px 50%, #1d211b 0 3.5px, #b8954a 3.6px 5.6px, transparent 5.8px),
+    repeating-linear-gradient(0deg, rgba(120,90,40,0.05) 0 2px, transparent 2px 4px),
+    linear-gradient(180deg, #e2cd98, #cdb27a) !important;
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px), 0 10px);
+  box-shadow: inset -2px -2px 0 rgba(110,80,30,0.25), inset 1px 1px 0 rgba(255,245,215,0.6) !important;
+  transition: transform 0.12s ease, filter 0.12s;
+}
+.shop button[data-act]:not(.primary):not(.warn) span { color: #3a2c14; opacity: 0.85; }
+.shop button[data-act]:not(.primary):not(.warn):hover:not(:disabled) { transform: rotate(-1.5deg) translateY(-1px); filter: brightness(1.04); }
+.shop button[data-act]:not(.primary):not(.warn):active:not(:disabled) { transform: rotate(0deg) translateY(1px); }
+.shop button[data-act]:not(.primary):not(.warn):disabled {
+  color: rgba(60,50,30,0.55) !important; filter: grayscale(0.7) brightness(0.62);
+  background:
+    radial-gradient(circle at 12px 50%, #1d211b 0 3.5px, #8a7650 3.6px 5.6px, transparent 5.8px),
+    linear-gradient(180deg, #b8a882, #a8966c) !important;
+}
+/* --- enamel signs --- */
+.shop button.primary {
+  position: relative; border: 0 !important; border-radius: 4px !important;
+  color: #f2e6c8 !important; font-family: var(--stencil, var(--mono)) !important; letter-spacing: 0.12em; text-transform: uppercase;
+  background:
+    radial-gradient(circle at 6px 6px, #1a120c 0 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 6px) 6px, #1a120c 0 2px, transparent 2.5px),
+    radial-gradient(circle at 6px calc(100% - 6px), #1a120c 0 2px, transparent 2.5px),
+    radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), #1a120c 0 2px, transparent 2.5px),
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, #8a2a1e, #5e1610) !important;
+  box-shadow: inset 0 0 0 3px #5e1610, inset 0 0 0 5px #e6d8b8, inset 0 0 0 7px #6e1c14, 0 3px 0 #2e0a06, 0 5px 10px rgba(0,0,0,0.5) !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+.shop button.primary span { color: #f2e6c8 !important; font-family: var(--mono) !important; letter-spacing: 0.02em; text-transform: none; }
+.shop button.primary:hover:not(:disabled) { filter: brightness(1.1); }
+.shop button.primary:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 0 0 0 3px #5e1610, inset 0 0 0 5px #e6d8b8, inset 0 0 0 7px #6e1c14, 0 1px 0 #2e0a06 !important; }
+.shop button.primary:disabled { filter: grayscale(0.8) brightness(0.6); }
+/* --- label-maker tape --- */
+.rbadge, .rec-badge {
+  border-radius: 2px !important; padding: 2px 7px 1px !important;
+  font: 700 9px var(--mono) !important; letter-spacing: 0.16em !important; text-transform: uppercase;
+  color: #fbfaf4 !important; text-shadow: 0 1px 0 rgba(0,0,0,0.45), 0 -1px 0 rgba(255,255,255,0.18);
+  background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(0,0,0,0.12)), var(--rc, #2a2a2a) !important;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25), 0 1px 1px rgba(0,0,0,0.4) !important;
+  transform: rotate(-0.8deg);
+}
+.rec-badge { --rc: #b02a1e; }
+/* --- aged brass plates --- */
+.tr-plate, .cabin .cb-plate {
+  border-radius: 2px !important; color: #24180a !important;
+  background:
+    radial-gradient(circle at 7px 50%, #3a2c14 0 2px, #d8bf80 2.2px 3.4px, transparent 3.6px),
+    radial-gradient(circle at calc(100% - 7px) 50%, #3a2c14 0 2px, #d8bf80 2.2px 3.4px, transparent 3.6px),
+    repeating-linear-gradient(90deg, rgba(255,240,200,0.06) 0 1px, rgba(0,0,0,0.03) 1px 3px),
+    linear-gradient(180deg, #b39150, #8a6a30 60%, #6e5222) !important;
+  box-shadow: inset 0 1px 0 rgba(255,235,180,0.45), inset 0 -1px 0 rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.55) !important;
+  padding-left: 22px !important; padding-right: 22px !important;
+}
+.tr-plate b, .cabin .cb-plate b { text-shadow: 0 1px 0 rgba(255,232,170,0.4), 0 -1px 0 rgba(0,0,0,0.3); }
+/* the shop's and the title's nameplates: aged, brushed brass too */
+.shop:not(.cave) .nameplate, #title .t-plate {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,240,200,0.06) 0 1px, rgba(0,0,0,0.035) 1px 3px),
+    linear-gradient(180deg, #c2a05a 0%, #a5843f 40%, #85652a 75%, #6a4e1e 100%) !important;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,235,180,0.5), inset 0 -1px 0 rgba(40,25,5,0.6), inset 0 0 18px rgba(60,40,10,0.25) !important;
+}
+.shop:not(.cave) .nameplate h2, #title .t-plate h1 { color: #24180a !important; text-shadow: 0 1px 0 rgba(255,232,170,0.45), 0 -1px 0 rgba(0,0,0,0.35) !important; }
+.shop:not(.cave) .nameplate .shop-sub { color: rgba(30,20,8,0.85) !important; text-shadow: 0 1px 0 rgba(255,232,170,0.3); }

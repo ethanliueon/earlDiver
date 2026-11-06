@@ -564,3 +564,14 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   old green-screen computer on a desk. A / D walk, E at the desk opens the catalog (the shop's Tools tab for now),
   E at the door / Esc goes back out. The shop draws over the cabin (#workshop z-index 40).
 - The U shop popup only works from the docked sub now; swimming by the boat, U says to climb aboard.
+
+## 2.4.1 — boots aboard, a furnished cabin, the game's own buttons
+- earl_draw.js: `gear.land` draws rubber deck boots instead of fins; `gear.noTank` leaves the tank off. On deck he
+  wears boots (fins only on the ladder); in the cabin, boots and no tank.
+- cabin.js: a working boat's cabin: tongue-and-groove panelling, beams, a pipe and cable run, a rubber mat, the door
+  with daylight round it, oilskins and a sou'wester on a hook, a bunk under the porthole (dark at night), a photo of
+  the Margaret, a brass clock and barometer, a galley (gimballed stove, a steaming kettle, mugs and jars behind a
+  fiddle rail), the fish chart, a swinging lamp, the desk with the green-screen computer, a desk lamp and a mug, a
+  fuse panel, a life jacket and a fire extinguisher. Hanging things swing with the boat's roll.
+- css (end of style.css): buy buttons are manila cargo tags with a brass eyelet; big actions are oxblood enamel signs;
+  rarity and "Recommended" are embossed label-maker tape; name plates (shop, title, rooms) are aged brushed brass.

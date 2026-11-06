@@ -70,7 +70,7 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     this.caveTab = 'trade';
-    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.openShop('tools'), blocked: () => !$('workshop').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; } });
+    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.openShop('tools'), blocked: () => !$('workshop').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
     this.gallery = new Gallery($('gallery'), { act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
@@ -731,7 +731,7 @@ export class UI {
     const body = $('shop-body'), row = body.querySelector(`[data-row="${CSS.escape(sel)}"]`), info = body.querySelector('.sc-info');
     if (!row || !info) return;
     row.classList.add('sel');
-    const nameEl = row.querySelector('.up-name, h3'), name = nameEl ? [...nameEl.childNodes].filter((n) => !(n.classList && n.classList.contains('info'))).map((n) => n.textContent).join('').trim() : '';
+    const nameEl = row.querySelector('.up-name, h3'), name = nameEl ? [...nameEl.childNodes].filter((n) => !(n.classList && n.classList.contains('info'))).map((n) => (n.outerHTML !== undefined ? n.outerHTML : n.textContent)).join('').trim() : ''; // (keeps the Recommended tape)
     const line = (row.querySelector('.up-line') || {}).textContent || '';
     const story = (row.querySelector('.story') || {}).textContent || '';
     const facts = [...row.querySelectorAll('.sheet-row, .bullets li')].slice(0, 6).map((r) => { const a = r.querySelector('span, em'), b = r.querySelector('b'); return `<div class="sc-fact${r.className.match(/p-good/) ? ' good' : r.className.match(/p-bad/) ? ' bad' : ''}"><span>${a ? a.textContent : ''}</span><b>${b ? b.textContent : ''}</b></div>`; }).join('');

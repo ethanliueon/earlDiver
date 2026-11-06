@@ -78,6 +78,18 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
       ctx.strokeStyle = '#1c1e20'; ctx.lineWidth = 0.9 * u;
       for (const t of [11, 15]) { const [bx, by] = at(kx, ky, shinA, t * u); ctx.beginPath(); ctx.moveTo(bx, by - 2.6 * u); ctx.lineTo(bx, by + 3 * u); ctx.stroke(); }
     }
+    if (gear && gear.land) {
+      // on deck or in the cabin: rubber deck boots instead of fins - a shaft to mid-calf, a heel, a toe
+      // pointing to his front, a thick dark sole
+      ctx.save(); ctx.translate(ax, ay); ctx.rotate(shinA);
+      const bc = near ? '#4a5a3a' : '#26301e', bs = near ? '#1c1d1a' : '#111210';
+      ctx.fillStyle = bc; ctx.beginPath(); ctx.roundRect(-11 * u, -4.6 * u, 14 * u, 9.2 * u, 2 * u); ctx.fill(); // the shaft
+      ctx.beginPath(); ctx.moveTo(-1 * u, -4.6 * u); ctx.quadraticCurveTo(2 * u, -5 * u, 3 * u, -3 * u); ctx.lineTo(3.4 * u, 9.5 * u); ctx.quadraticCurveTo(1 * u, 11 * u, -1.5 * u, 10.5 * u); ctx.lineTo(-1.5 * u, -4.6 * u); ctx.fill(); // the foot, toward his front
+      ctx.fillStyle = bs; ctx.fillRect(3 * u, -4.6 * u, 1.8 * u, 15.4 * u); // the sole
+      ctx.fillStyle = near ? 'rgba(220,210,170,0.5)' : 'rgba(120,110,90,0.4)'; ctx.fillRect(-11 * u, -4.6 * u, 1.4 * u, 9.2 * u); // the turned-down top
+      ctx.restore();
+      return;
+    }
     // fin: foot pocket + long blade continuing the line of the shin, flexing with the kick
     const flex = -s * (0.12 + 0.3 * m);
     // pointed foot: the fin carries straight on from the shin, so the leg reads as one long line
@@ -138,6 +150,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   arm(Math.PI, false);
 
   // ---------- tank on his back ----------
+  if (!(gear && gear.noTank)) {
   const tg = ctx.createLinearGradient(0, -17.5 * u, 0, -6 * u);
   tg.addColorStop(0, '#4c5257'); tg.addColorStop(0.3, '#9aa2a8'); tg.addColorStop(0.55, '#646c72'); tg.addColorStop(1, '#25292c');
   ctx.fillStyle = tg;
@@ -148,6 +161,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   ctx.fillStyle = '#17191b'; ctx.beginPath(); ctx.roundRect(29 * u, -15 * u, 4.5 * u, 6.5 * u, 1 * u); ctx.fill(); // valve
   ctx.fillStyle = '#3e4347'; ctx.beginPath(); ctx.arc(33.5 * u, -11.5 * u, 1.8 * u, 0, Math.PI * 2); ctx.fill(); // first stage
 
+  }
   // ---------- torso: chest wider than the waist, hips, backside ----------
   const bg = ctx.createLinearGradient(0, -8 * u, 0, 8 * u);
   bg.addColorStop(0, SUIT_HI); bg.addColorStop(0.35, SUIT); bg.addColorStop(1, '#070809');

@@ -759,7 +759,7 @@ export class Renderer {
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
           aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0, suit: e.suit };
       }
-      if (g.aboard) gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [] }; // on deck: tools stowed
+      if (g.aboard) gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: !(g.aboard.climb > 0 || g.aboard.down > 0) }; // on deck: tools stowed, boots on (fins only on the ladder)
       const h = drawEarl(ctx, (g.aboard ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       ctx.restore();
       if (h.tip) {
