@@ -1,7 +1,7 @@
 // Sound: the background music (muffled underwater), generated ambience,
 // breathing, heartbeat, the entity's presence, sonar, hull creaks.
 import { clamp, lerp } from './util.js';
-const MUSIC_LOOP = 128 * 60 / 88 / 0.94; // seconds: Polaroid II's loop
+const MUSIC_REST = [600, 840]; // (2.6.9) seconds of play between one playing of the track and the next: 10 to 14 minutes
 
 export class Audio {
   constructor() {
@@ -14,13 +14,12 @@ export class Audio {
     const ac = (this.ac = new AC());
     this.master = ac.createGain(); this.master.gain.value = 0.9; this.master.connect(ac.destination);
     // music
-    // decoded whole and looped by the audio clock, sample for sample (an <audio> element's loop
-    // leaves a gap at the seam). The loop is exactly 128 beats at 88 bpm, slowed to 0.94.
+    // (2.6.9) one track, "Polaroid (melodic)", decoded whole and played through from the start each time
     this.musicLP = ac.createBiquadFilter(); this.musicLP.type = 'lowpass'; this.musicLP.frequency.value = 18000;
     this.musicGain = ac.createGain(); this.musicGain.gain.value = 0;
     this.musicLP.connect(this.musicGain).connect(this.master);
-    fetch('assets/audio/polaroid_ii.mp3').then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => ac.decodeAudioData(b, res, rej)))
-      .then((buf) => { this.musicBuf = buf; if (this.musicWanted) this.musicFrom(0); }).catch(() => {});
+    fetch('assets/audio/polaroid_melodic.mp3').then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => ac.decodeAudioData(b, res, rej)))
+      .then((buf) => { this.musicBuf = buf; if (this.musicWanted) { this.musicWanted = false; this.startPiece(); } }).catch(() => {});
     // noise buffer
     const len = ac.sampleRate * 4;
     const buf = ac.createBuffer(1, len, ac.sampleRate);
@@ -95,69 +94,57 @@ export class Audio {
     return { s, f, g };
   }
   resume() { if (this.ac && this.ac.state === 'suspended') this.ac.resume(); }
-  // ---------------- music: short pieces, when things are calm ----------------
-  // A piece plays 30-60 s, then fades out very slowly. It always starts at the start of a dive and
-  // on getting back to the boat, and on good moments (cue), but never restarts one already playing.
-  // Stress (the thing near, marked, an attack, no air, hurt, deep outside the sub) stops it, and
-  // nothing starts it until 15 s after the stress has passed. In the quiet that follows a piece,
-  // after a minute it rolls every 30 s: 10 %, 20 %, 35 %, 45 %, then 50 %; a hidden calm meter
-  // (peaceful catches, sales, photos, quiet swimming) raises those odds.
+  // ---------------- music (2.6.9): one track, played whole, and rarely ----------------
+  // It plays once on the first screen of a fresh session (the title, carrying on into the dive) and is
+  // never restarted by a new dive, by coming back from a death, or by getting home. Once played (or cut
+  // off), it rests for 10-14 minutes of play; after that it comes back on its own at a calm moment: a good
+  // moment (a sale, a rare find, getting home) brings it at once, otherwise a roll every 30 s. Stress (the
+  // thing near, marked, an attack, no air, hurt, deep outside the sub), a death or a legend cuts it off with
+  // a short fade; nothing starts it until 20 s after the stress has passed.
   playMusic() {
-    if (!this.ready) return;
-    this.musicWanted = true;
-    if (this.musicBuf && !this.musicSrc) this.musicFrom(0);
-    this.startPiece(true);
+    if (!this.ready || this.musFirstDone) return;
+    this.musFirstDone = true;
+    if (this.musicBuf) this.startPiece(); else this.musicWanted = true;
   }
-  // (re)start the music loop from a point in it
-  musicFrom(offset) {
-    if (!this.musicBuf) return;
-    if (this.musicSrc) { try { this.musicSrc.stop(); } catch (e) { /* already stopped */ } }
-    const s = this.ac.createBufferSource(); s.buffer = this.musicBuf; s.loop = true;
-    s.loopStart = 0; s.loopEnd = Math.min(this.musicBuf.duration, MUSIC_LOOP);
-    s.connect(this.musicLP); s.start(0, offset); this.musicSrc = s;
-  }
-  // a good moment (or the boat, or a new dive): start a piece if none is playing
-  cue(kind) {
+  musState() { return this.mus || (this.mus = { on: false, level: 0, rest: 0, sinceStress: 99, meter: 0, rollT: 0 }); }
+  restAfter() { const m = this.musState(); m.rest = MUSIC_REST[0] + Math.random() * (MUSIC_REST[1] - MUSIC_REST[0]); m.meter = 0; }
+  startPiece() {
     const m = this.musState();
-    if (kind === 'home' || kind === 'start') return this.startPiece(true);
-    if (m.on || m.sinceStress < 15 || !this.calm) { m.meter = Math.min(1, m.meter + 0.15); return; }
-    this.startPiece(false);
+    if (m.on || !this.musicBuf) return;
+    if (this.musicSrc) { try { this.musicSrc.stop(); } catch (e) { /* already stopped */ } }
+    const s = this.ac.createBufferSource(); s.buffer = this.musicBuf; s.loop = false;
+    s.connect(this.musicLP); s.start(0, 0); this.musicSrc = s;
+    s.onended = () => { if (this.musicSrc === s) { this.musicSrc = null; if (m.on) { m.on = false; this.restAfter(); } } }; // played to the end
+    m.on = true; m.level = Math.max(m.level, 0.3); // (the track has its own quiet start)
+  }
+  stopPiece() { const m = this.musState(); if (!m.on) return; m.on = false; this.restAfter(); } // it fades, then the source is stopped
+  // a good moment: once the rest is over and all is calm, the track comes back now
+  cue() {
+    const m = this.musState();
+    if (!m.on && m.rest <= 0 && this.calm && m.sinceStress >= 20) this.startPiece();
+    else m.meter = Math.min(1, m.meter + 0.15);
   }
   calmBoost(x) { const m = this.musState(); m.meter = Math.min(1, m.meter + x); }
-  musState() { return this.mus || (this.mus = { on: false, t: 0, len: 0, level: 0, quiet: 0, rolls: 0, sinceStress: 99, meter: 0 }); }
-  startPiece(always) {
-    const m = this.musState();
-    if (m.on) return;                                      // already playing: carry on
-    if (!always && (!this.calm || m.sinceStress < 15)) return;
-    if (m.level < 0.02) this.musicFrom(0); // fresh, unless still fading
-    m.on = true; m.t = 0; m.len = 30 + Math.random() * 30; m.meter = 0;
-  }
   // returns the music level 0..1 for this frame
   musicSession(g, dt) {
     const m = this.musState();
+    const playing = g.mode === 'play';
     const ent = g.entity, e = g.earl;
-    const stress = g.fx.dread > 0.02 || (ent && ent.marked) || !!g.threat || !!g.noAir || (g.injury || 0) > 0 || !!g.reveal || (!e.inSub && e.y > 300);
-    this.calm = !stress;
-    if (stress) { m.sinceStress = 0; m.quiet = 0; m.rolls = 0; } else m.sinceStress += dt;
-    let fade = 0.15; // fading in: about 7 s
-    if (g.legend) { m.on = false; m.quiet = 0; }                          // a legend: the music falls away
-    if (m.on) {
-      m.t += dt;
-      if (stress) { m.on = false; }                                   // stress: it stops
-      else if (m.t > m.len) { m.on = false; m.quiet = 0; m.rolls = 0; } // the piece ends
-    } else if (!stress) {
-      m.quiet += dt;
-      m.meter = Math.min(1, m.meter + dt * 0.0015);                   // quiet, calm swimming
-      // after a minute of quiet, a roll every 30 s
-      if (m.quiet >= 60 + m.rolls * 30) {
-        const base = [0.10, 0.20, 0.35, 0.45, 0.50][Math.min(4, m.rolls)];
-        m.rolls++;
-        if (Math.random() < Math.min(0.9, base + m.meter * 0.4)) this.startPiece(false);
+    const stress = playing && (g.fx.dread > 0.02 || (ent && ent.marked) || !!g.threat || !!g.noAir || (g.injury || 0) > 0 || !!g.reveal || (!e.inSub && e.y > 300));
+    this.calm = playing && !stress;
+    if (stress) m.sinceStress = 0; else m.sinceStress += dt;
+    if (stress || g.mode === 'dying' || g.legend) this.stopPiece();
+    if (!m.on && playing && !g.paused) {
+      m.rest = Math.max(0, m.rest - dt);                                // the rest counts only in play
+      m.meter = Math.min(1, m.meter + dt * 0.0015);                      // quiet, calm swimming
+      if (m.rest <= 0 && this.calm && m.sinceStress >= 20) {
+        m.rollT += dt;
+        if (m.rollT >= 30) { m.rollT = 0; if (Math.random() < 0.5 + m.meter * 0.4) this.startPiece(); }
       }
     }
-    if (!m.on) fade = stress ? 0.35 : 0.033;                          // stress: a few seconds; a piece ending: ~30 s
-    const target = m.on ? 1 : 0;
-    m.level += clamp(target - m.level, -fade * dt, fade * dt);
+    const fade = m.on ? 0.5 : g.mode === 'dying' ? 1 : 0.35;           // in: 2 s; cut off: about 3 s
+    m.level += clamp((m.on ? 1 : 0) - m.level, -fade * dt, fade * dt);
+    if (!m.on && m.level <= 0.001 && this.musicSrc) { try { this.musicSrc.stop(); } catch (e) { /* done */ } this.musicSrc = null; }
     return m.level;
   }
   // ---------------- the kill: the sound drops out, then the hit ----------------
@@ -319,7 +306,7 @@ export class Audio {
     // music: not always playing. In a dive it comes now and then when things are calm (and on some
     // good moments), plays a while, and fades; anything frightening stops it at once.
     let mv = g.mode === 'menu' ? 0.55 : 0.42;
-    if (g.mode === 'play') mv *= this.musicSession(g, dt);
+    mv *= this.musicSession(g, dt); // (2.6.9) in every mode: the title only hears it on a fresh start
     mv *= 1 - fx.dread * 0.7;
     if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
     if (g.paused) mv *= 0.4;

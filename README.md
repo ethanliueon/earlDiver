@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.6.8 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.6.9 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -165,7 +165,7 @@ GAME_DESIGN.md      the design this is built from
 
 ## Credits
 
-- Music: "Polaroid II" (`assets/audio/polaroid_ii.mp3`), an original piece composed for the game.
+- Music: "Polaroid (melodic)" (`assets/audio/polaroid_melodic.mp3`), the game's theme. It plays once, whole, on the first screen of a session, then only after a 10-14 minute rest, at a calm moment.
 - Sound effects (`assets/audio/sfx/`), all CC0 (public domain), trimmed, levelled and processed here:
   - chamber_plop, tank_plop, surface_lapping: OpenGameArt "Bubble Sound Effects" and
     "40 CC0 water / splash / slime SFX"

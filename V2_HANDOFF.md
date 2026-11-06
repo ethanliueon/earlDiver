@@ -755,3 +755,13 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   a lit enamel "← DECK" sign over it.
 - Earl no longer flips back and forth when the mouse is straight above or below him (player.js turns him
   only on a real left/right push; readMove gives no sideways flicker there).
+
+## 2.6.9 — the new theme, played whole and rarely
+- `assets/audio/polaroid_melodic.mp3` replaces `polaroid_ii.mp3` (removed). audio.js plays it through once,
+  never looped or cut short by a timer.
+- When: once on the first screen of a fresh session (the first click or key on the title), carrying on
+  into the dive; a new dive, a return from death or getting home never restarts it. After it ends (or is cut
+  off) it rests 10-14 minutes of play (`MUSIC_REST`; the rest only counts in play, not paused or on the
+  title); then a good moment (`cue`: a sale, a rare find, getting home) brings it back at once if all is calm,
+  or a roll every 30 s (50 %, more with the calm meter). Stress, death or a legend cut it off (3 s fade) and
+  start the rest.
