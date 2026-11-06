@@ -5,7 +5,7 @@
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
-import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS } from './earl_draw.js';
+import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, boatRock } from './earl_draw.js';
 import { drawMonster, drawMonsterLights, drawMonsterShape, MONSTER_LEN } from './monster_draw.js';
 import { sleeperState } from './sleeper_draw.js';
 import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
@@ -143,7 +143,7 @@ export class Renderer {
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
-    if (g.aboard) { tx = BOAT.x + 0.3; ty = -2.3; }
+    if (g.aboard) { tx = BOAT.x + 0.3 + clamp(g.aboard.lx ?? g.aboard.x ?? 0, -6, 6) * 0.35; ty = -2.3; } // close on the deck, drifting a little after him
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
     if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
@@ -518,29 +518,7 @@ export class Renderer {
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
       if (dimB > 0.01) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, bw, bh); }
       ctx.drawImage(bc, -bw * 0.45, -bh * 0.82);
-      // the deck's stations (2.4.0): the helm stand aft, the sorting table, the radio on the cabin wall
-      // by the door, the gallery hatch in the deck, the dive locker forward
-      {
-        const u = 14 * ppm / 100, lit = 0.35 + 0.65 * Math.sqrt(dayEff);
-        const shade = (c) => { const r = hexToRgb(c); return `rgb(${Math.round(r[0] * lit)},${Math.round(r[1] * lit)},${Math.round(r[2] * lit)})`; };
-        // the helm: a pedestal and a spoked wheel, out on the after deck
-        ctx.fillStyle = shade('#5a5850'); ctx.fillRect(29.4 * u, -18 * u, 1.4 * u, 7 * u);
-        ctx.strokeStyle = shade('#8a6a44'); ctx.lineWidth = 0.55 * u; const wa = (g.boatV || 0) * t * 0.3;
-        ctx.beginPath(); ctx.arc(30.1 * u, -19.6 * u, 2.1 * u, 0, TAU); ctx.stroke();
-        for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 + wa; ctx.beginPath(); ctx.moveTo(30.1 * u, -19.6 * u); ctx.lineTo(30.1 * u + Math.cos(a) * 2.8 * u, -19.6 * u + Math.sin(a) * 2.8 * u); ctx.stroke(); }
-        // the sorting table, a tub and a crate on it
-        ctx.fillStyle = shade('#8a6a44'); ctx.fillRect(21.2 * u, -16.6 * u, 6.2 * u, 1.1 * u); ctx.fillRect(21.7 * u, -15.6 * u, 0.8 * u, 4.6 * u); ctx.fillRect(26.2 * u, -15.6 * u, 0.8 * u, 4.6 * u);
-        ctx.fillStyle = shade('#9aa2a6'); ctx.fillRect(21.8 * u, -18 * u, 2.6 * u, 1.4 * u); ctx.fillStyle = shade('#6a8a9a'); ctx.fillRect(24.7 * u, -17.6 * u, 2.2 * u, 1 * u);
-        // the radio on the cabin wall beside the door, a whip antenna up the wall
-        ctx.fillStyle = shade('#3c4446'); ctx.fillRect(10 * u, -21 * u, 3.6 * u, 2.8 * u); ctx.fillStyle = shade('#c8a050'); ctx.beginPath(); ctx.arc(11.1 * u, -19.6 * u, 0.55 * u, 0, TAU); ctx.fill();
-        ctx.fillStyle = '#7ad890'; ctx.fillRect(12 * u, -20.3 * u, 1.1 * u, 0.4 * u);
-        ctx.strokeStyle = shade('#2a2c2a'); ctx.lineWidth = 0.25 * u; ctx.beginPath(); ctx.moveTo(13.2 * u, -21 * u); ctx.lineTo(13.6 * u, -29 * u); ctx.stroke();
-        // the gallery hatch in the deck, forward of the cabin
-        ctx.fillStyle = shade('#3a3c38'); ctx.fillRect(-23 * u, -12.2 * u, 6.5 * u, 1.4 * u); ctx.fillStyle = shade('#c8a050'); ctx.fillRect(-20.2 * u, -12.8 * u, 0.9 * u, 0.6 * u);
-        // the dive locker, forward
-        ctx.fillStyle = shade('#4a5a64'); ctx.fillRect(-38 * u, -22 * u, 5.5 * u, 11 * u); ctx.fillStyle = shade('#5f707a'); ctx.fillRect(-37.5 * u, -21.5 * u, 2.2 * u, 10 * u); ctx.fillRect(-35.1 * u, -21.5 * u, 2.2 * u, 10 * u);
-        ctx.fillStyle = shade('#c8a050'); ctx.fillRect(-35.6 * u, -17 * u, 0.4 * u, 1.4 * u);
-      }
+      this.boatFrame = { x: boatX, y: boatY, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
       if (dayEff < 0.5) {
         // the cabin light stays on at night
         const a = (0.5 - dayEff) * 1.6;
@@ -550,7 +528,7 @@ export class Renderer {
         this.boatLight = { x: boatX + 6 * u, y: boatY - 24 * u, a };
       } else this.boatLight = null;
       ctx.restore();
-    } else this.boatLight = null;
+    } else { this.boatLight = null; this.boatFrame = null; }
     const sub = g.sub;
     let subLamps = null;
     // imploding: for a fraction of a second the hull folds in on itself, then it is gone
@@ -731,9 +709,12 @@ export class Renderer {
     // (no names floating over the deck: the prompt at the bottom says what F does)
     if (!e.inSub && !g.helm && g.mode !== 'menu' && !(g.kill && g.kill.swallowed)) { // at the helm he is inside the wheelhouse
       const amb = ambientAt(e.y, dayEff);
-      ctx.save(); ctx.translate(S(e.x), Sy(e.y));
+      ctx.save();
+      const A0 = g.aboard, bf = this.boatFrame;
+      if (A0 && A0.inFrame && bf && A0.lx != null) { ctx.translate(bf.x, bf.y); ctx.rotate(bf.a); ctx.translate(A0.lx * ppm, A0.ly * ppm); } // aboard: in the boat's own frame, rocking with her
+      else ctx.translate(S(e.x), Sy(e.y));
       ctx.scale(e.facing, 1); ctx.rotate(e.angle);
-      const moving = g.aboard ? (e.deckWalk ? 0.35 : 0) : clamp(e.speedNow / 3, 0, 1);
+      const moving = g.aboard ? 0 : clamp(e.speedNow / 3, 0, 1);
       const lampCol = e.lampOn ? rgbStr(mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift)) : null;
       // what he is holding, and what is in his bag
       let gear = null;
@@ -751,7 +732,12 @@ export class Renderer {
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
           aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0, suit: e.suit };
       }
-      if (g.aboard) { const onDeck = !(g.aboard.climb > 0 || g.aboard.down > 0 || g.aboard.jump > 0); gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: onDeck, noTank: onDeck, noMask: onDeck }; } // on deck: tools stowed, boots on (fins only on the ladder)
+      if (g.aboard) { // on deck: tools stowed, boots on, no tank or mask; on the ladder: tank and mask still on, hands on the rungs
+        const P0 = g.aboard.pose, onDeck = P0 === 'deck' && !(g.aboard.jump > 0);
+        gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: true, noTank: onDeck, noMask: onDeck };
+        if (onDeck) gear.walk = g.aboard.walk || 0;
+        else if (P0 === 'climb') gear.climb = g.aboard.rung || 0;
+      }
       const h = drawEarl(ctx, (g.aboard ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       ctx.restore();
       if (h.tip) {

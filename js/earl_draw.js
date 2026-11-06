@@ -53,8 +53,20 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     const s = Math.sin(kick + phase);
     // Local frame: +y is his front, -y his back. A thigh angle just under PI swings the knee
     // slightly forward; the shin then bends back from the knee (angle increases), like a real leg.
-    const thighA = Math.PI - (1 - m) * 0.14 - 0.02 + s * (0.04 + 0.15 * m);
-    const bend = (1 - m) * 0.26 + m * (0.04 + Math.max(0, -s) * 0.26);      // knee flexion, on the up-stroke
+    let thighA = Math.PI - (1 - m) * 0.14 - 0.02 + s * (0.04 + 0.15 * m);
+    let bend = (1 - m) * 0.26 + m * (0.04 + Math.max(0, -s) * 0.26);      // knee flexion, on the up-stroke
+    if (gear && gear.walk != null) {
+      // walking on deck (2.5.0): the thigh swings forward and back; the knee bends as the foot comes
+      // through, and the leg is nearly straight while it carries his weight
+      const w = gear.walk, ph = kick + phase;
+      thighA = Math.PI - 0.01 - Math.sin(ph) * 0.42 * w;
+      bend = 0.05 + w * Math.max(0, Math.cos(ph)) * 0.75;
+    } else if (gear && gear.climb != null) {
+      // on the ladder: one knee comes up to the next rung while the other leg stands on its rung
+      const lift = (Math.sin(gear.climb + phase) * 0.5 + 0.5);
+      thighA = Math.PI - 0.15 - lift * 1.15;
+      bend = 0.2 + lift * 1.35;
+    }
     const shinA = thighA + bend;
     const hx = hipX, hy = near ? 1.6 * u : -1.2 * u;
     const [kx, ky] = at(hx, hy, thighA, 25 * u);
@@ -128,6 +140,8 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     let upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12) + m * (Math.PI * 0.7);
     let foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25) + m * (Math.PI * 0.12);
     if (restArms && !pose) { upA = Math.PI - 0.13 + sc * 0.03; foreA = Math.PI - 0.04 + sc * 0.03; }
+    if (gear && gear.walk != null && !pose) { const sw = Math.sin(kick + phase) * 0.38 * gear.walk; upA = Math.PI - 0.06 + sw; foreA = upA - 0.18 - Math.max(0, -sw) * 0.5; } // swinging against the legs
+    if (gear && gear.climb != null && !pose) { const r = Math.sin(gear.climb + phase + Math.PI) * 0.5 + 0.5; upA = 0.55 - r * 0.5; foreA = upA - 0.35 + r * 0.25; } // reaching up for the rungs, one hand then the other
     if (pose) { upA = pose.upA; foreA = pose.foreA; }
     const [ex, ey] = at(shX, shY, upA, 15 * u);
     const [wx, wy] = at(ex, ey, foreA, 13 * u);
@@ -834,13 +848,27 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
 }
 
 // Small weathered work boat with an A-frame crane. Origin at the waterline centre. Faces -x (bow left).
+// ---------- the Margaret's geometry, shared with the game (2.5.0) ----------
+// The boat is drawn 14 m long in 100 units: BOAT_U metres a unit. x is + toward the stern, y + down,
+// the origin on the waterline at her middle. Things that stand on her (Earl) are drawn in her frame, so
+// they rock with her: the render rotates by the sea's slope and then by boatRock(t), as drawBoat does.
+export const BOAT_U = 0.14;
+export const boatRock = (t) => Math.sin(t * 0.8) * 0.02;
+export const BOAT_LADDER = 9;  // the boarding ladder on her near side (units)
+export const BOAT_DOOR = 19;   // the wheelhouse door (units)
+// the top of her deck at x (units): the sheer curve forward, a gentle fall aft
+export function deckLine(xu) {
+  if (xu >= 20) return -10.5 - Math.min(26, xu - 20) / 26;
+  const x = Math.max(-56, xu), tt = (-72 + Math.sqrt(5184 + 16 * (56 + x))) / 8; // the sheer is a quadratic curve: x(t) = -56 + 72t + 4t²
+  return -16 + 11 * tt - 5.5 * tt * tt;
+}
 export function drawBoat(ctx, Lp, t, sub) {
   // A small, hard-worked dive-support boat, bow to the left: a flared bow and a curved sheer line,
   // a red boot-top at the waterline, rub rail, plating seams and rust; a wheelhouse with framed
   // windows; a mast with radar, antennas and lights; an exhaust stack; deck clutter; and at the
   // stern an A-frame with hydraulic rams, a winch drum and a block that carries the sub's cable.
   const u = Lp / 100;
-  const roll = Math.sin(t * 0.8) * 0.02;
+  const roll = boatRock(t);
   ctx.save(); ctx.rotate(roll);
   // ---------- hull ----------
   const hull = new Path2D();
@@ -885,6 +913,17 @@ export function drawBoat(ctx, Lp, t, sub) {
     ctx.strokeStyle = '#2a2826'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.moveTo(x * u, -10.5 * u); ctx.lineTo(x * u, -8 * u); ctx.stroke();
     ctx.fillStyle = '#141414'; ctx.beginPath(); ctx.ellipse(x * u, -6 * u, 1.4 * u, 2.2 * u, 0, 0, TAU); ctx.fill();
     ctx.fillStyle = '#2c2c2c'; ctx.beginPath(); ctx.ellipse(x * u, -6 * u, 0.6 * u, 1.1 * u, 0, 0, TAU); ctx.fill();
+  }
+  // the boarding ladder over her side: hooked on the rail, its feet in the water
+  {
+    const lx = BOAT_LADDER * u, top = -11.6 * u, bot = 2.6 * u, w = 2.6 * u;
+    ctx.strokeStyle = '#2c2f30'; ctx.lineWidth = 0.55 * u; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(lx - w / 2, top); ctx.lineTo(lx - w / 2, bot); ctx.moveTo(lx + w / 2, top); ctx.lineTo(lx + w / 2, bot); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lx - w / 2, top); ctx.quadraticCurveTo(lx - w / 2, top - 1.4 * u, lx - w / 2 + 0.9 * u, top - 1.2 * u); ctx.moveTo(lx + w / 2, top); ctx.quadraticCurveTo(lx + w / 2, top - 1.4 * u, lx + w / 2 + 0.9 * u, top - 1.2 * u); ctx.stroke(); // the hooks over the rail
+    ctx.strokeStyle = '#5a5e60'; ctx.lineWidth = 0.4 * u;
+    for (let y = top + 1.2 * u; y < bot; y += 1.7 * u) { ctx.beginPath(); ctx.moveTo(lx - w / 2, y); ctx.lineTo(lx + w / 2, y); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.15 * u; ctx.beginPath(); ctx.moveTo(lx - w / 2 - 0.15 * u, top); ctx.lineTo(lx - w / 2 - 0.15 * u, bot); ctx.stroke();
+    ctx.lineCap = 'butt';
   }
   // ---------- deck clutter ----------
   ctx.fillStyle = '#6a5a40'; ctx.fillRect(-42 * u, -15.5 * u, 6 * u, 3.5 * u); ctx.fillRect(-36.5 * u, -14.5 * u, 4 * u, 2.5 * u); // crates

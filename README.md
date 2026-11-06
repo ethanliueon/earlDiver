@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.4.3 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.5.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -31,10 +31,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | E | The fangtooth necklace: a soft green light, like a glowstick |
 | G | Offer a lure or necklace back to the deep (below 100 m, only while it hunts you and is within 1,000 m) - ends its hunt. At the helm: drop or raise the Margaret's anchor |
 | B | Inventory: cash, supplies, finds, the catch bag, what is in the sub, your gear |
-| V | At the boat: take the helm and drive the Margaret (A / D) |
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
-| F by her side | Climb aboard the Margaret (a dive starts on her deck); on deck, A / D walk and F uses a station: the sub cradle (upgrades), the helm, the cabin door, the radio (accept contracts; new ones free every 3 hours), the gallery hatch, the dive locker. Walk off either end of the deck to jump in |
-| F (in the cabin) | Use the computer: the catalog. Esc or the door goes back out on deck |
+| F at her ladder | Climb aboard the Margaret, rung by rung (a dive starts on her deck). On deck, A / D walk; the only thing to use is the wheelhouse door (F, Enter). Walk off either end of the deck to jump in |
+| F (in the cabin) | A / D walk the cabin. F at: the computer (the catalog and the sub's yard), the radio (accept contracts; new ones free every 3 hours), the wheel (A / D steer, G anchor, W leaves the wheel), the hatch in the floor (the gallery). Esc or the door goes back out on deck |
 | U (in the water by the boat) | Sell the catch, without going aboard. Contracts you accepted at the radio are paid here when the goods are aboard |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause (save and quit to the title from there) |

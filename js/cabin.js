@@ -13,7 +13,17 @@
 import { drawEarl } from './earl_draw.js';
 import { clamp, TAU } from './util.js';
 
-const ROOM = { door: 0.075, desk: 0.74, min: 0.07, max: 0.93 }; // positions across the room (0..1)
+// positions across the room, in screen widths: the room is wider than the screen (2.5.0) and the view
+// follows him. Left of 1.0 is the cabin as it was; to the right, the front of the wheelhouse: the radio,
+// the windows and the wheel. Each STATION is where he stands to use something.
+const ROOM = { door: 0.075, desk: 0.74, min: 0.07, max: 1.4, width: 1.45, radio: 1.06, wheel: 1.31, hatch: 0.19 };
+const STATIONS = [
+  { id: 'door', x: ROOM.door, label: 'F  Out on deck' },
+  { id: 'hatch', x: ROOM.hatch, label: 'F  Down to the gallery' },
+  { id: 'desk', x: ROOM.desk - 0.085, label: 'F  The computer' },
+  { id: 'radio', x: ROOM.radio, label: 'F  The radio' },
+  { id: 'wheel', x: ROOM.wheel - 0.075, label: 'F  Take the wheel' },
+];
 
 // a small seeded random, so the grain is the same every time the cabin is drawn
 function rng(seed) { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); }
@@ -94,8 +104,9 @@ export class Cabin {
     window.addEventListener('keyup', this.onKey, true);
   }
   show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); }
-  near() { return Math.abs(this.x - (ROOM.desk - 0.085)) < 0.05 ? 'desk' : Math.abs(this.x - ROOM.door) < 0.05 ? 'door' : null; }
-  use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); }
+  near() { const st = STATIONS.find((q) => Math.abs(this.x - q.x) < 0.045); return st ? st.id : null; }
+  use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'hatch' ? 'gallery' : n); }
+  atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; this.keys.clear(); }
   update(dt) {
     this.t += dt;
     const dir = (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0);
@@ -104,40 +115,43 @@ export class Cabin {
       if (dir) { this.face = dir; this.walkT += dt; } else this.walkT = 0;
     }
     const n = this.near();
-    this.prompt.textContent = n === 'desk' ? 'F  The computer' : n === 'door' ? 'F  Out on deck' : '';
+    this.prompt.textContent = n ? STATIONS.find((q) => q.id === n).label : '';
     this.prompt.hidden = !n;
     this.draw();
   }
   // the baked wood, remade only when the window changes size
   textures(W, H, ceil, floor, k) {
     const key = `${W}x${H}`;
-    if (this.texKey !== key) { this.texKey = key; this.wall = bakeWall(W, floor - ceil, 34 * k, 11); this.floorTex = bakeFloor(W, H - floor, 23); this.beams = bakeWall(W, ceil, 120 * k, 5); }
+    if (this.texKey !== key) { this.texKey = key; const RW = W * ROOM.width; this.wall = bakeWall(RW, floor - ceil, 34 * k, 11); this.floorTex = bakeFloor(RW, H - floor, 23); this.beams = bakeWall(RW, ceil, 120 * k, 5); }
   }
   draw() {
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, c = this.c;
     if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
     const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const t = this.t, floor = H * 0.8, ceil = H * 0.12, X = (f) => W * f, RH = floor - ceil, k = Math.min(W / 1400, H / 820) * 1.05; // k: the room's furniture scale
+    const camX = clamp(W * this.x - W * 0.5, 0, W * (ROOM.width - 1)); // the view follows him along the room
+    const t = this.t, floor = H * 0.8, ceil = H * 0.12, X = (f) => W * f - camX, RH = floor - ceil, k = Math.min(W / 1400, H / 820) * 1.05; // k: the room's furniture scale
     const roll = Math.sin(t * 0.55) * 0.012; // the boat's slow roll: things that hang swing with it
     const dayK = this.h.daylight ? this.h.daylight() : 1;
     this.textures(W, H, ceil, floor, k);
     // the lamp first: everything's shadow is cast away from it
     const lx0 = X(0.56), lx = lx0 + Math.sin(t * 0.55 + 0.5) * 9 * k, ly = ceil + 62 * k;
-    const shadow = (x, y, blur = 10, a = 0.55) => { const dx = x - lx, dy = y - ly, d = Math.hypot(dx, dy) || 1; ctx.shadowColor = `rgba(12,6,0,${a})`; ctx.shadowBlur = blur * k; ctx.shadowOffsetX = dx / d * 9 * k * Math.min(1, d / (W * 0.25)); ctx.shadowOffsetY = Math.max(3 * k, dy / d * 9 * k); };
+    const lx2 = X(1.2) + Math.sin(t * 0.55 + 1.2) * 7 * k; // a second lamp over the wheel
+    const shadow = (x, y, blur = 10, a = 0.55) => { const nl = Math.abs(x - lx2) < Math.abs(x - lx) ? lx2 : lx; const dx = x - nl, dy = y - ly, d = Math.hypot(dx, dy) || 1; ctx.shadowColor = `rgba(12,6,0,${a})`; ctx.shadowBlur = blur * k; ctx.shadowOffsetX = dx / d * 9 * k * Math.min(1, d / (W * 0.25)); ctx.shadowOffsetY = Math.max(3 * k, dy / d * 9 * k); };
     const noShadow = () => { ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; };
     const contact = (cx, cy, rx, ry, a) => { ctx.save(); ctx.translate(cx, cy); ctx.scale(1, ry / rx); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, `rgba(10,5,0,${a})`); g.addColorStop(0.6, `rgba(10,5,0,${a * 0.5})`); g.addColorStop(1, 'rgba(10,5,0,0)'); ctx.fillStyle = g; ctx.fillRect(-rx, -rx, rx * 2, rx * 2); ctx.restore(); };
+    const shg0 = (x) => { const g0 = ctx.createLinearGradient(x - 20 * k, 0, x + 20 * k, 0); g0.addColorStop(0, '#5a6a52'); g0.addColorStop(0.4, '#4a5a44'); g0.addColorStop(1, '#26301f'); return g0; };
     const brass = (x0, y0, x1, y1) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); g.addColorStop(0, '#e8c878'); g.addColorStop(0.45, '#b8913e'); g.addColorStop(1, '#6e5220'); return g; };
     // ---------- the walls: varnished tongue-and-groove, darker below the chair rail ----------
     ctx.fillStyle = '#140d08'; ctx.fillRect(0, 0, W, H);
-    ctx.drawImage(this.wall, 0, ceil);
+    ctx.drawImage(this.wall, -camX, ceil);
     const wg = ctx.createLinearGradient(0, ceil, 0, floor); wg.addColorStop(0, 'rgba(40,20,6,0)'); wg.addColorStop(0.75, 'rgba(20,10,2,0.12)'); wg.addColorStop(0.78, 'rgba(10,5,0,0.3)'); wg.addColorStop(1, 'rgba(10,5,0,0.4)');
     ctx.fillStyle = wg; ctx.fillRect(0, ceil, W, RH);
     const railY = floor - RH * 0.22;
     ctx.fillStyle = '#3a2412'; ctx.fillRect(0, railY - 2, W, 7); ctx.fillStyle = 'rgba(255,222,176,0.12)'; ctx.fillRect(0, railY - 2, W, 1.5); ctx.fillStyle = 'rgba(8,4,0,0.35)'; ctx.fillRect(0, railY + 5, W, 3); // the chair rail
     // ---------- overhead: the deckhead, beams, a pipe and a cable run ----------
-    ctx.drawImage(this.beams, 0, 0); ctx.fillStyle = 'rgba(10,5,0,0.55)'; ctx.fillRect(0, 0, W, ceil);
+    ctx.drawImage(this.beams, -camX, 0); ctx.fillStyle = 'rgba(10,5,0,0.55)'; ctx.fillRect(0, 0, W, ceil);
     ctx.fillStyle = '#2a1b10'; ctx.fillRect(0, ceil - 16, W, 16);
-    for (let x = 30; x < W; x += 210 * k) {
+    for (let x = 30 - camX; x < W; x += 210 * k) {
       const bg = ctx.createLinearGradient(x, 0, x + 26 * k, 0); bg.addColorStop(0, '#2e1e12'); bg.addColorStop(0.3, '#3a2616'); bg.addColorStop(1, '#170e06');
       ctx.fillStyle = bg; ctx.fillRect(x, ceil - 4, 26 * k, 22 * k); ctx.fillStyle = 'rgba(10,5,0,0.4)'; ctx.fillRect(x, ceil + 18 * k, 26 * k, 4 * k);
     }
@@ -146,12 +160,12 @@ export class Cabin {
     const pg = ctx.createLinearGradient(0, ceil + 27 * k, 0, ceil + 33 * k); pg.addColorStop(0, '#a4a8a4'); pg.addColorStop(0.4, '#6a6e6a'); pg.addColorStop(1, '#3a3e3a');
     ctx.strokeStyle = pg; ctx.lineWidth = 6 * k; ctx.beginPath(); ctx.moveTo(0, ceil + 30 * k); ctx.lineTo(W, ceil + 30 * k); ctx.stroke();
     noShadow();
-    ctx.fillStyle = '#4a4e4a'; for (let x = 80; x < W; x += 260 * k) ctx.fillRect(x, ceil + 24 * k, 10 * k, 12 * k); // pipe clips
+    ctx.fillStyle = '#4a4e4a'; for (let x = 80 - camX; x < W; x += 260 * k) ctx.fillRect(x, ceil + 24 * k, 10 * k, 12 * k); // pipe clips
     shadow(W / 2, ceil + 46 * k, 4, 0.4);
-    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2.5 * k; ctx.beginPath(); ctx.moveTo(0, ceil + 44 * k); for (let x = 0; x <= W; x += 120 * k) ctx.quadraticCurveTo(x + 60 * k, ceil + 50 * k, x + 120 * k, ceil + 44 * k); ctx.stroke();
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2.5 * k; ctx.beginPath(); ctx.moveTo(-camX, ceil + 44 * k); for (let x = -camX; x <= W; x += 120 * k) ctx.quadraticCurveTo(x + 60 * k, ceil + 50 * k, x + 120 * k, ceil + 44 * k); ctx.stroke();
     noShadow();
     // ---------- the floor: worn boards, a rubber mat, the wall's shadow along its foot ----------
-    ctx.drawImage(this.floorTex, 0, floor);
+    ctx.drawImage(this.floorTex, -camX, floor);
     const fg = ctx.createLinearGradient(0, floor, 0, H); fg.addColorStop(0, 'rgba(8,4,0,0.55)'); fg.addColorStop(0.18, 'rgba(8,4,0,0.1)'); fg.addColorStop(1, 'rgba(8,4,0,0.35)');
     ctx.fillStyle = fg; ctx.fillRect(0, floor, W, H - floor);
     const mx0 = X(0.3), mw = X(0.36), mh = (H - floor) * 0.5;
@@ -160,6 +174,17 @@ export class Cabin {
     ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(mx0, floor + 6, mw, 1.5); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(mx0, floor + 6 + mh, mw, 3);
     ctx.fillStyle = '#1a120a'; ctx.fillRect(0, floor - 6, W, 6); // the skirting
     const ao2 = ctx.createLinearGradient(0, floor - 40 * k, 0, floor); ao2.addColorStop(0, 'rgba(8,4,0,0)'); ao2.addColorStop(1, 'rgba(8,4,0,0.45)'); ctx.fillStyle = ao2; ctx.fillRect(0, floor - 40 * k, W, 34 * k);
+    // ---------- the hatch in the floor, down to the gallery: a square of planks, a brass ring, two hinges ----------
+    {
+      const hx = X(ROOM.hatch), hw = 120 * k, ht = (H - floor) * 0.42, hy = floor + 10 * k, sk = 22 * k; // drawn as the floor recedes: narrower at the back
+      ctx.fillStyle = 'rgba(8,4,0,0.65)'; ctx.beginPath(); ctx.moveTo(hx - hw / 2 + sk, hy); ctx.lineTo(hx + hw / 2 - sk, hy); ctx.lineTo(hx + hw / 2, hy + ht); ctx.lineTo(hx - hw / 2, hy + ht); ctx.closePath(); ctx.fill();
+      const hg = ctx.createLinearGradient(0, hy, 0, hy + ht); hg.addColorStop(0, '#4a321c'); hg.addColorStop(1, '#5e4228');
+      ctx.fillStyle = hg; ctx.beginPath(); ctx.moveTo(hx - hw / 2 + sk + 3, hy + 3); ctx.lineTo(hx + hw / 2 - sk - 3, hy + 3); ctx.lineTo(hx + hw / 2 - 4, hy + ht - 3); ctx.lineTo(hx - hw / 2 + 4, hy + ht - 3); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(8,4,0,0.45)'; ctx.lineWidth = 1; for (let i = 1; i < 4; i++) { const q = i / 4; ctx.beginPath(); ctx.moveTo(hx - hw / 2 + sk + 3 + q * (hw - 2 * sk - 6), hy + 3); ctx.lineTo(hx - hw / 2 + 4 + q * (hw - 8), hy + ht - 3); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(255,222,176,0.1)'; ctx.fillRect(hx - hw / 2 + sk + 3, hy + 3, hw - 2 * sk - 6, 1.5);
+      ctx.strokeStyle = brass(hx - 10 * k, hy, hx + 10 * k, hy + ht); ctx.lineWidth = 2.6 * k; ctx.beginPath(); ctx.ellipse(hx, hy + ht * 0.55, 9 * k, 4.5 * k, 0, 0, TAU); ctx.stroke(); // the ring
+      ctx.fillStyle = '#2a2a28'; ctx.fillRect(hx - hw / 2 + sk + 8 * k, hy + 1, 14 * k, 4 * k); ctx.fillRect(hx + hw / 2 - sk - 22 * k, hy + 1, 14 * k, 4 * k); // the hinges
+    }
     // ---------- the door, at the left: back out on deck, daylight round its edges ----------
     const dx = X(ROOM.door), dh = RH * 0.82, dw = 92 * k, dTopY = floor - dh;
     ctx.fillStyle = '#0c0805'; ctx.fillRect(dx - dw / 2 - 3, dTopY - 3, dw + 6, dh + 3); // the frame's shadow; the daylight through its gap is added after the light
@@ -343,6 +368,71 @@ export class Cabin {
     ctx.fillStyle = exg; ctx.beginPath(); ctx.roundRect(fx2 - 13 * k, fTop, 26 * k, 96 * k, 9 * k); ctx.fill(); noShadow();
     ctx.fillStyle = '#d8d4ca'; ctx.fillRect(fx2 - 13 * k, fTop + 30 * k, 26 * k, 16 * k); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(fx2 - 6 * k, fTop - 12 * k, 12 * k, 12 * k); ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3 * k; ctx.beginPath(); ctx.moveTo(fx2 + 6 * k, fTop - 6 * k); ctx.quadraticCurveTo(fx2 + 24 * k, fTop, fx2 + 16 * k, fTop + 30 * k); ctx.stroke();
     ctx.fillStyle = '#5a5e62'; ctx.fillRect(fx2 - 16 * k, fTop + 60 * k, 32 * k, 4 * k);
+    // ---------- the front of the wheelhouse (2.5.0): the radio, the windows on the sea, the wheel ----------
+    if (X(1.0) < W + 50) {
+      // the radio on its shelf: a grey-green set, an amber dial, two knobs, a speaker grille, the handset on its hook
+      const rx0 = X(ROOM.radio), ry0 = ceil + RH * 0.4, rw = 112 * k, rh = 58 * k;
+      shadow(rx0, ry0 + rh, 8, 0.55); ctx.fillStyle = '#3a2614'; ctx.fillRect(rx0 - rw / 2 - 14 * k, ry0 + rh, rw + 28 * k, 7 * k); noShadow();
+      ctx.fillStyle = '#2a1a0c'; ctx.beginPath(); ctx.moveTo(rx0 - rw / 2 - 6 * k, ry0 + rh + 7 * k); ctx.lineTo(rx0 - rw / 2 - 6 * k, ry0 + rh + 30 * k); ctx.lineTo(rx0 - rw / 2 + 16 * k, ry0 + rh + 7 * k); ctx.fill(); // its bracket
+      shadow(rx0, ry0 + rh * 0.5, 10, 0.55);
+      const rg = ctx.createLinearGradient(0, ry0, 0, ry0 + rh); rg.addColorStop(0, '#5a6458'); rg.addColorStop(1, '#343c34');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.roundRect(rx0 - rw / 2, ry0, rw, rh, 4 * k); ctx.fill(); noShadow();
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(rx0 - rw / 2 + 2, ry0 + 1, rw - 4, 1.5);
+      ctx.fillStyle = '#1a1408'; ctx.fillRect(rx0 - rw / 2 + 10 * k, ry0 + 10 * k, 48 * k, 18 * k);
+      const dial = ctx.createLinearGradient(0, ry0 + 10 * k, 0, ry0 + 28 * k); dial.addColorStop(0, '#ffcf70'); dial.addColorStop(1, '#c88a2a');
+      ctx.fillStyle = dial; ctx.fillRect(rx0 - rw / 2 + 12 * k, ry0 + 12 * k, 44 * k, 14 * k);
+      ctx.fillStyle = 'rgba(60,30,0,0.6)'; for (let i = 0; i < 9; i++) ctx.fillRect(rx0 - rw / 2 + 14 * k + i * 5 * k, ry0 + 13 * k, 0.8, i % 2 ? 4 * k : 7 * k);
+      ctx.fillStyle = '#b8241a'; ctx.fillRect(rx0 - rw / 2 + 30 * k + Math.sin(t * 0.3) * 3 * k, ry0 + 12 * k, 1.5, 14 * k); // the needle
+      for (const [kx2, kr] of [[rx0 - rw / 2 + 20 * k, 6], [rx0 - rw / 2 + 46 * k, 6]]) { ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(kx2, ry0 + 42 * k, kr * k, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.arc(kx2 - 1.5 * k, ry0 + 40.5 * k, 1.5 * k, 0, TAU); ctx.fill(); }
+      ctx.fillStyle = 'rgba(0,0,0,0.4)'; for (let yy = ry0 + 12 * k; yy < ry0 + rh - 8 * k; yy += 4 * k) ctx.fillRect(rx0 + 10 * k, yy, 34 * k, 2 * k); // the speaker grille
+      ctx.fillStyle = '#7ad890'; ctx.fillRect(rx0 + rw / 2 - 10 * k, ry0 + 8 * k, 4 * k, 4 * k);
+      shadow(rx0 + rw / 2 + 18 * k, ry0 + 20 * k, 6, 0.5);
+      ctx.fillStyle = '#161616'; ctx.beginPath(); ctx.roundRect(rx0 + rw / 2 + 12 * k, ry0 + 4 * k, 12 * k, 34 * k, 5 * k); ctx.fill(); noShadow(); // the handset
+      ctx.strokeStyle = '#161616'; ctx.lineWidth = 1.6 * k; ctx.beginPath(); ctx.moveTo(rx0 + rw / 2 + 18 * k, ry0 + 38 * k); for (let i = 0; i < 8; i++) ctx.quadraticCurveTo(rx0 + rw / 2 + (i % 2 ? 22 : 12) * k, ry0 + (42 + i * 4) * k, rx0 + rw / 2 + 16 * k, ry0 + (44 + i * 4) * k); ctx.lineTo(rx0 + rw / 2 - 2 * k, ry0 + rh - 6 * k); ctx.stroke(); // its coiled cord
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2 * k; ctx.beginPath(); ctx.moveTo(rx0 - rw / 2 + 8 * k, ry0); ctx.lineTo(rx0 - rw / 2 + 8 * k, ceil + 40 * k); ctx.stroke(); // the antenna lead up to the deckhead
+      // the front windows, the sea beyond them rolling with the boat
+      const wx0 = X(1.18), wx1 = X(1.43), wy0 = ceil + RH * 0.1, wy1 = ceil + RH * 0.4, n = 3, gap = 12 * k, ww = (wx1 - wx0 - gap * (n - 1)) / n;
+      for (let i = 0; i < n; i++) {
+        const x0 = wx0 + i * (ww + gap);
+        shadow(x0 + ww / 2, wy0, 6, 0.5); ctx.fillStyle = '#2a2e30'; ctx.beginPath(); ctx.roundRect(x0 - 6 * k, wy0 - 6 * k, ww + 12 * k, wy1 - wy0 + 12 * k, 6 * k); ctx.fill(); noShadow();
+        ctx.save(); ctx.beginPath(); ctx.roundRect(x0, wy0, ww, wy1 - wy0, 4 * k); ctx.clip();
+        const sk2 = ctx.createLinearGradient(0, wy0, 0, wy1); sk2.addColorStop(0, `rgb(${Math.round(20 + 100 * dayK)},${Math.round(30 + 140 * dayK)},${Math.round(50 + 170 * dayK)})`); sk2.addColorStop(1, `rgb(${Math.round(30 + 150 * dayK)},${Math.round(40 + 175 * dayK)},${Math.round(60 + 175 * dayK)})`);
+        ctx.fillStyle = sk2; ctx.fillRect(x0, wy0, ww, wy1 - wy0);
+        const hz = wy0 + (wy1 - wy0) * 0.62 + Math.sin(t * 0.55) * 7 * k + (x0 - wx0) * Math.sin(t * 0.55) * 0.05;
+        ctx.fillStyle = `rgb(${Math.round(18 + 40 * dayK)},${Math.round(40 + 80 * dayK)},${Math.round(60 + 90 * dayK)})`; ctx.fillRect(x0, hz, ww, wy1 - hz + 4);
+        ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.3 * dayK})`; ctx.fillRect(x0, hz, ww, 1.5);
+        ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(x0 + ww * 0.2, wy0); ctx.lineTo(x0 + ww * 0.45, wy0); ctx.lineTo(x0 + ww * 0.1, wy1); ctx.lineTo(x0 - ww * 0.15, wy1); ctx.fill(); // the glass
+        ctx.restore();
+      }
+      ctx.fillStyle = '#3a2614'; ctx.fillRect(wx0 - 14 * k, wy1 + 6 * k, wx1 - wx0 + 28 * k, 9 * k); ctx.fillStyle = 'rgba(255,222,176,0.12)'; ctx.fillRect(wx0 - 14 * k, wy1 + 6 * k, wx1 - wx0 + 28 * k, 1.5); // the sill
+      // the wheel's console: a wooden stand with a brass compass binnacle and the throttle
+      const cx0 = X(ROOM.wheel), cTop = floor - RH * 0.36, cw = 92 * k;
+      shadow(cx0, cTop + 60 * k, 16, 0.5);
+      const cg2 = ctx.createLinearGradient(cx0 - cw / 2, 0, cx0 + cw / 2, 0); cg2.addColorStop(0, '#5a3e26'); cg2.addColorStop(0.5, '#4a3018'); cg2.addColorStop(1, '#2e1c0c');
+      ctx.fillStyle = cg2; ctx.fillRect(cx0 - cw / 2, cTop, cw, floor - cTop); noShadow();
+      ctx.fillStyle = '#6a4a2c'; ctx.fillRect(cx0 - cw / 2 - 6 * k, cTop - 8 * k, cw + 12 * k, 10 * k); ctx.fillStyle = 'rgba(255,222,176,0.14)'; ctx.fillRect(cx0 - cw / 2 - 6 * k, cTop - 8 * k, cw + 12 * k, 1.5);
+      ctx.fillStyle = 'rgba(8,4,0,0.35)'; ctx.fillRect(cx0 - cw / 2 + 10 * k, cTop + 20 * k, cw - 20 * k, floor - cTop - 34 * k); ctx.fillStyle = 'rgba(255,222,176,0.06)'; ctx.fillRect(cx0 - cw / 2 + 10 * k, floor - 15 * k, cw - 20 * k, 1.5);
+      contact(cx0, floor + 4 * k, cw * 0.75, 10 * k, 0.6);
+      ctx.fillStyle = brass(cx0 + 10 * k, cTop - 40 * k, cx0 + 40 * k, cTop - 8 * k); ctx.beginPath(); ctx.ellipse(cx0 + 24 * k, cTop - 8 * k, 16 * k, 22 * k, 0, Math.PI, TAU); ctx.fill(); // the binnacle
+      ctx.fillStyle = 'rgba(200,230,240,0.35)'; ctx.beginPath(); ctx.ellipse(cx0 + 24 * k, cTop - 18 * k, 9 * k, 7 * k, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3 * k; ctx.beginPath(); ctx.moveTo(cx0 - 30 * k, cTop - 6 * k); ctx.lineTo(cx0 - 36 * k, cTop - 34 * k); ctx.stroke(); ctx.fillStyle = '#b8241a'; ctx.beginPath(); ctx.arc(cx0 - 36 * k, cTop - 36 * k, 4.5 * k, 0, TAU); ctx.fill(); // the throttle
+      // the wheel itself, seen nearly edge-on from the side: a rim, its spokes and handles, turning slowly with the sea
+      const wcx = cx0 - cw / 2 - 4 * k, wcy = cTop - 22 * k, wr = 66 * k, sq = 0.3, wa = Math.sin(t * 0.4) * 0.25;
+      ctx.strokeStyle = '#3a2614'; ctx.lineWidth = 8 * k; ctx.beginPath(); ctx.moveTo(wcx, wcy); ctx.lineTo(cx0 - cw / 2 + 6 * k, wcy); ctx.stroke(); // the shaft
+      shadow(wcx, wcy, 10, 0.5);
+      ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 7 * k; ctx.beginPath(); ctx.ellipse(wcx, wcy, wr * sq, wr, 0, 0, TAU); ctx.stroke(); noShadow();
+      ctx.strokeStyle = 'rgba(255,222,176,0.2)'; ctx.lineWidth = 1.5 * k; ctx.beginPath(); ctx.ellipse(wcx, wcy, wr * sq, wr, 0, Math.PI * 0.6, Math.PI * 1.4); ctx.stroke();
+      for (let i = 0; i < 8; i++) {
+        const a = wa + i * TAU / 8, ex2 = wcx + Math.cos(a) * wr * 1.32 * sq, ey2 = wcy + Math.sin(a) * wr * 1.32;
+        ctx.strokeStyle = '#6a4626'; ctx.lineWidth = 4 * k; ctx.beginPath(); ctx.moveTo(wcx, wcy); ctx.lineTo(ex2, ey2); ctx.stroke(); // a spoke, out through the rim to a handle
+        ctx.strokeStyle = '#8a6038'; ctx.lineWidth = 6 * k; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(wcx + Math.cos(a) * wr * 1.08 * sq, wcy + Math.sin(a) * wr * 1.08); ctx.lineTo(ex2, ey2); ctx.stroke(); ctx.lineCap = 'butt';
+      }
+      ctx.fillStyle = brass(wcx - 10 * k, wcy - 10 * k, wcx + 10 * k, wcy + 10 * k); ctx.beginPath(); ctx.ellipse(wcx, wcy, 5 * k, 11 * k, 0, 0, TAU); ctx.fill(); // the brass hub
+      // the second lamp, over the wheel
+      ctx.strokeStyle = '#1a140e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(X(1.2), ceil); ctx.lineTo(lx2, ly - 12 * k); ctx.stroke();
+      ctx.fillStyle = shg0(lx2); ctx.beginPath(); ctx.moveTo(lx2 - 17 * k, ly); ctx.lineTo(lx2 + 17 * k, ly); ctx.lineTo(lx2 + 8 * k, ly - 12 * k); ctx.lineTo(lx2 - 8 * k, ly - 12 * k); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#e8dcc0'; ctx.fillRect(lx2 - 17 * k, ly - 1.5 * k, 34 * k, 1.5 * k);
+    }
     // ---------- the hanging lamp: its flex, a green enamel shade ----------
     ctx.strokeStyle = '#1a140e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx0, ceil); ctx.lineTo(lx, ly - 12 * k); ctx.stroke();
     const shg = ctx.createLinearGradient(lx - 20 * k, 0, lx + 20 * k, 0); shg.addColorStop(0, '#5a6a52'); shg.addColorStop(0.4, '#4a5a44'); shg.addColorStop(1, '#26301f');
@@ -370,10 +460,13 @@ export class Cabin {
     pool(dx, floor - dh * 0.45, dw * 1.6, '150,175,205', dl * 0.75, 1.6);
     pool(kx, dTop - 56 * k, 150 * k, '90,210,130', on ? 0.5 : 0.36); // the screen
     pool(kx + 78 * k, dTop - 10 * k, 120 * k, '255,200,130', 0.55, 0.6); // the desk lamp on the desktop
+    pool(lx2, ly + RH * 0.4, RH * 0.85, '255,190,120', 0.6, 0.8); pool(lx2, ly + 20 * k, RH * 0.25, '255,206,150', 0.4); // the lamp over the wheel
+    pool((X(1.18) + X(1.43)) / 2, ceil + RH * 0.25, RH * 0.75, '150,180,215', dl * 1.1, 0.8); // daylight through the front windows
+    pool(X(ROOM.radio) - 30 * k, ceil + RH * 0.4 + 19 * k, 70 * k, '255,190,90', 0.35); // the radio's dial
     ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(lc, 0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter'; // a little bloom round what glows
     const bloom = (x, y, r, col, a) => { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
-    bloom(lx, ly + 3 * k, 26 * k, '255,220,160', 0.55); bloom(kx, dTop - 56 * k, 70 * k, '80,200,120', on ? 0.16 : 0.1); bloom(kx + 79 * k, dTop - 62 * k, 16 * k, '255,220,160', 0.4);
+    bloom(lx, ly + 3 * k, 26 * k, '255,220,160', 0.55); bloom(lx2, ly + 3 * k, 22 * k, '255,220,160', 0.45); bloom(X(ROOM.radio) - 22 * k, ceil + RH * 0.4 + 19 * k, 30 * k, '255,190,90', 0.3); bloom(kx, dTop - 56 * k, 70 * k, '80,200,120', on ? 0.16 : 0.1); bloom(kx + 79 * k, dTop - 62 * k, 16 * k, '255,220,160', 0.4);
     // daylight: through the gap round the door, and the porthole's glass bright against the dim room
     const dc = `${Math.round(120 + 90 * dayK)},${Math.round(140 + 90 * dayK)},${Math.round(160 + 80 * dayK)}`, da = 0.1 + 0.45 * dayK;
     ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.rect(ex - eh * 0.16, floor - eh * 1.05, eh * 0.32, eh * 1.1); ctx.clip('evenodd'); // Earl stands in front of it
@@ -385,7 +478,7 @@ export class Cabin {
     ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr - 4 * k, 0, TAU); ctx.clip(); ctx.fillStyle = `rgba(140,170,200,${0.05 + 0.3 * dayK})`; ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2); ctx.restore();
     ctx.save(); ctx.beginPath(); ctx.arc(dx, gy0, gr0 - 2 * k, 0, TAU); ctx.clip(); ctx.fillStyle = `rgba(140,170,200,${0.05 + 0.3 * dayK})`; ctx.fillRect(dx - gr0, gy0 - gr0, gr0 * 2, gr0 * 2); ctx.restore();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#fff2d0'; ctx.beginPath(); ctx.arc(lx, ly + 2 * k, 5.5 * k, 0, Math.PI); ctx.fill(); // the bulb
+    ctx.fillStyle = '#fff2d0'; ctx.beginPath(); ctx.arc(lx, ly + 2 * k, 5.5 * k, 0, Math.PI); ctx.arc(lx2, ly + 2 * k, 4.5 * k, 0, Math.PI); ctx.fill(); // the bulbs
     // glints: the brass and glass nearest the lamp catch it
     const glint = (x, y, r) => { const a = clamp(1 - Math.hypot(x - lx, y - ly) / (W * 0.35), 0, 1) * 0.7; if (a <= 0) return; const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(255,240,210,${a})`); g.addColorStop(1, 'rgba(255,240,210,0)'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
     for (const fx of [0.475, 0.53]) glint(X(fx) + 12 * k, ceil + RH * 0.27 - 18 * k, 7 * k);

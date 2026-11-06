@@ -599,3 +599,19 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - "New contracts" under the list: free once every three hours of real time (`profile.refreshAt`,
   `REFRESH_MS` in contracts.js). It replaces the contracts not accepted; the accepted ones stay. While it
   waits, the line reads "New contracts in 2 h 14 min".
+
+## 2.5.0 — a clear deck, a ladder, a walk, and the wheelhouse in the cabin
+- The deck stations are gone (the locker, the radio box, the helm stand, the sorting table, the gallery
+  hatch): they were drawn outside the boat's own rocking (`boatRock`) and did nothing on their own. The deck
+  has one thing to use: the wheelhouse door, "F  Enter".
+- The boat's geometry is shared from earl_draw.js: `BOAT_U` (0.14 m a unit), `deckLine(x)` (the sheer),
+  `BOAT_LADDER`, `BOAT_DOOR`, `boatRock(t)`. render.js keeps `boatFrame` (her screen origin and angle) and
+  draws Earl aboard in it (`g.aboard.lx/ly`), so he rocks with her and stands on her deck line.
+- A boarding ladder hangs over her side (drawn in drawBoat). F near it: he takes hold, climbs hand over
+  hand (`gear.climb` in drawEarl: knees up, hands reaching) and steps onto the deck. On deck he walks
+  (`gear.walk`: thighs swing, knees bend on the swing, arms swing against the legs).
+- The cabin is 1.45 screens wide; the view follows him. To the right: the radio on its shelf, three front
+  windows on the sea, the wheel on its console (with a binnacle and throttle) under a second lamp. A hatch in
+  the floor goes down to the gallery. Stations: door, hatch, computer (catalog + the sub's yard tab), radio,
+  wheel. Leaving the wheel (W) puts him back at it in the cabin.
+- The catch toast is just the animal's name in its rarity's colour (plus "hurt" etc. when it is).

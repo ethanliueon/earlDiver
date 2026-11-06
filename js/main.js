@@ -1,6 +1,6 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
-import { markOf, SUB_MARKS } from './earl_draw.js';
+import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
@@ -142,6 +142,7 @@ const ui = new UI({
   onMute: () => { audio.setMuted(!audio.muted); },
   getMuted: () => !!audio.muted,
   payMul: () => statValue(profile, 'payFish'),
+  onStation: (id) => useStation(id),
   onRefreshContracts: () => { if (refreshIn(profile) > 0) return false; g.contracts = g.contracts.filter((q) => q.taken); fillBoard(profile, g.contracts); profile.refreshAt = Date.now(); saveProfile(profile); audio.ready && audio.click(); return true; },
   onTakeContract: (key) => { const c = g.contracts.find((q) => q.key === key); if (!c || c.taken) return false; c.taken = true; profile.taken = g.contracts.filter((q) => q.taken); saveProfile(profile); audio.ready && audio.click(); return true; },
   onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on her hull`); },
@@ -622,40 +623,35 @@ function readMove() {
 }
 
 // ---------------- interactions ----------------
-// ---------------- aboard the Margaret (2.4.0) ----------------
-// F at the stern ladder climbs aboard; A/D walk the deck; each station is a spot on it, F uses it. Tab
-// (or U) opens a list of the stations, for anyone who'd rather not walk. Positions are metres from the
-// boat's centre, + toward the stern.
-// (v2.4.2: walking off either end of the deck is a jump into the water; selling is from the water, U)
-export const DECK_STATIONS = [
-  { id: 'cradle', x: 5.1, name: 'Sub cradle', label: 'The sub' },
-  { id: 'helm', x: 4.2, name: 'Helm', label: 'The helm' },
-  { id: 'door', x: 2.55, name: 'Cabin', label: 'The cabin' },
-  { id: 'radio', x: 1.6, name: 'Radio', label: 'The radio' },
-  { id: 'gallery', x: -2.8, name: 'Gallery', label: 'The gallery' },
-  { id: 'locker', x: -5.0, name: 'Dive locker', label: 'The dive locker' },
-];
-const DECK_MIN = -6.4, DECK_MAX = 6.1, DECK_FEET = -1.55, WALK = 1.8, CLIMB = 1.1, JUMP = 0.75;
-const LADDER_X = 6.6; // where he climbs out of the water, beside the stern
+// ---------------- aboard the Margaret (2.4.0; the deck cleared and the ladder 2.5.0) ----------------
+// F at the ladder on her side climbs aboard, rung by rung. On deck A / D walk her (he is drawn in her own
+// frame, so he rocks with her); walking off either end is a jump into the sea. The only thing to use on
+// deck is the wheelhouse door: F goes in, and the helm, the radio, the computer and the hatch down to the
+// gallery are all in the cabin. Positions are metres from the boat's centre, + toward the stern.
+export const DECK_STATIONS = [{ id: 'door', x: BOAT_DOOR * BOAT_U, name: 'Cabin', label: 'Enter' }];
+const DECK_MIN = -6.4, DECK_MAX = 6.1, WALK = 1.35, CLIMB = 2.4, JUMP = 0.75;
+const LADDER_M = BOAT_LADDER * BOAT_U, DOOR_M = BOAT_DOOR * BOAT_U;
 const deckSurf = () => (g.surfY ? g.surfY(BOAT.x) * 0.8 : 0);
-const nearLadder = () => { const e = g.earl, rx = e.x - BOAT.x; return !e.inSub && !g.aboard && !g.kill && e.y < 1.8 && e.y > -0.5 && rx > -6.6 && rx < 3.6; }; // anywhere along her side at the surface (clear of the docked sub at her stern)
-// aboard, standing at the top of the ladder (a new dive starts here); climb: up the rungs first
+const standY = (x) => deckLine(x / BOAT_U) * BOAT_U + 0.05 - 0.85; // his middle, standing on the deck at x (boat frame, metres)
+const nearLadder = () => { const e = g.earl, rx = e.x - BOAT.x; return !e.inSub && !g.aboard && !g.kill && e.y < 2.2 && e.y > -0.5 && Math.abs(rx - LADDER_M) < 1.3; };
+// aboard: climb from the water (climb), or standing on deck by the door (a new dive starts there)
 function boardDeck(climb = true, quiet = false) {
   const e = g.earl;
-  const at = climb ? clamp(e.x - BOAT.x, DECK_MIN + 0.4, DECK_MAX - 0.4) : 5.9;
-  g.aboard = { x: at, from: climb ? e.x - BOAT.x : at, walkT: 0, climb: climb ? CLIMB : 0, down: 0, jump: 0 }; g.helm = false; g.deckStations = DECK_STATIONS;
-  e.vx = e.vy = 0; e.facing = climb ? (at > 0 ? -1 : 1) : -1;
-  audio.ready && audio.click();
+  const at = climb ? LADDER_M : DOOR_M - 0.9;
+  g.aboard = { x: at, from: [e.x - BOAT.x, e.y - deckSurf()], walkT: 0, step: 0, walk: 0, climb: climb ? CLIMB : 0, jump: 0 }; g.helm = false; g.deckStations = DECK_STATIONS;
+  e.vx = e.vy = 0; e.facing = climb ? -1 : 1;
+  if (!quiet) audio.ready && audio.click();
 }
 function leaveDeck(dir = 1) { if (g.aboard && !g.aboard.jump) { g.aboard.jump = JUMP; g.aboard.dir = dir; g.earl.facing = dir; } } // over the rail and into the water
+// leaving the wheel: back into the cabin, standing at it
+function leaveHelm() { g.helm = false; g.boatV = g.boatV || 0; if (g.aboard) { g.aboard.x = DOOR_M; ui.toggleCabin(true); ui.cabin.atWheel && ui.cabin.atWheel(); } }
 export function useStation(id) {
   if (!g.aboard) return;
-  if (id === 'ladder') return leaveDeck();
-  if (id === 'helm') { g.helm = true; g.boatV = 0; return; }
+  if (id === 'helm') { ui.toggleCabin(false); g.helm = true; return; }
   if (id === 'gallery') { ui.toggleGallery(true); return; }
   if (id === 'door' || id === 'computer') { ui.toggleCabin(true); return; }
-  const tabs = { cradle: ['sub'], radio: ['radio'], locker: ['diver'] }[id];
-  if (tabs) ui.openShop(tabs[0], tabs);
+  if (id === 'radio') { ui.openShop('radio', ['radio']); return; }
+  if (id === 'yard') { ui.openShop('sub', ['sub']); return; }
 }
 function deckInput(dt, mv) {
   const e = g.earl;
@@ -666,44 +662,47 @@ function deckInput(dt, mv) {
     }
     return;
   }
-  if (g.helm) { g.prompt = 'A / D  steer   ·   G  anchor   ·   W  step away'; return; }
+  if (g.helm) { g.prompt = 'A / D  steer   ·   G  anchor   ·   W  leave the wheel'; return; }
   const A = g.aboard;
-  if (A.climb > 0 || A.down > 0 || A.jump > 0) { g.prompt = null; pressed.delete('f-tap'); return; }
-  const walk = mv.x || 0;
-  if (!ui.anyOpen()) {
-    // walking off either end of the deck: over the rail and into the sea
-    if ((walk < 0 && A.x <= DECK_MIN + 0.01) || (walk > 0 && A.x >= DECK_MAX - 0.01)) { leaveDeck(walk > 0 ? 1 : -1); return; }
-    A.x = clamp(A.x + walk * WALK * dt, DECK_MIN, DECK_MAX);
-    if (walk) { e.facing = walk > 0 ? 1 : -1; A.walkT += dt; } else A.walkT = 0;
-  }
-  let near = null, nd = 0.45;
-  for (const st of DECK_STATIONS) { const d = Math.abs(st.x - A.x); if (d < nd) { nd = d; near = st; } }
-  A.near = near ? near.id : null;
-  g.prompt = near ? `F  ${near.label}` : null;
-  if (pressed.has('f-tap')) { pressed.delete('f-tap'); if (near && !ui.anyOpen()) useStation(near.id); }
-  if (pressed.has('tab') && !ui.anyOpen()) ui.stationMenu(DECK_STATIONS.map((s0) => s0.id === 'door' ? { ...s0, name: 'Computer', label: 'The catalog, in the cabin' } : s0), (id) => useStation(id)); // (a shortcut, never shown on screen)
+  if (A.climb > 0 || A.jump > 0) { g.prompt = null; pressed.delete('f-tap'); return; }
+  const walk = ui.anyOpen() ? 0 : (mv.x || 0);
+  // walking off either end of the deck: over the rail and into the sea
+  if ((walk < 0 && A.x <= DECK_MIN + 0.01) || (walk > 0 && A.x >= DECK_MAX - 0.01)) { leaveDeck(walk > 0 ? 1 : -1); return; }
+  A.x = clamp(A.x + walk * WALK * dt, DECK_MIN, DECK_MAX);
+  if (walk) { e.facing = walk > 0 ? 1 : -1; A.walkT += dt; } else A.walkT = 0;
+  // the stride: the legs keep going a moment as he stops, and settle
+  A.walk = lerp(A.walk || 0, walk ? 1 : 0, 1 - Math.exp(-dt * (walk ? 8 : 6)));
+  if (walk || A.walk > 0.05) A.step = (A.step || 0) + dt * WALK * 4.6;
+  const atDoor = Math.abs(A.x - DOOR_M) < 0.5;
+  A.near = atDoor ? 'door' : null;
+  g.prompt = atDoor ? 'F  Enter' : null;
+  if (pressed.has('f-tap')) { pressed.delete('f-tap'); if (atDoor && !ui.anyOpen()) useStation('door'); }
 }
+// where he is in the boat's frame (A.lx, A.ly, metres), and in the world (for the camera and the rest)
 function placeOnDeck(dt) {
-  const e = g.earl, A = g.aboard, deckY = deckSurf() + DECK_FEET - 0.82;
+  const e = g.earl, A = g.aboard, sy = deckSurf();
   e.vx = e.vy = 0; e.angle = -Math.PI / 2; e.o2 = e.o2Max; e.speedNow = 0;
-  if (A.climb > 0) { // up her side: from the water to the deck, hand over hand
-    A.climb = Math.max(0, A.climb - dt); const k = 1 - A.climb / CLIMB;
-    e.x = BOAT.x + A.from + (A.x - A.from) * k; e.y = 0.9 + (deckY - 0.9) * k; e.kick = k * 18; e.deckWalk = true;
-    return;
-  }
-  if (A.jump > 0) { // a stride, over the rail, and down into the water feet first
+  if (A.jump > 0) { // a stride, over the rail, and down into the water feet first (in the world)
+    if (A.jump === JUMP) { A.jx = BOAT.x + A.x; A.jy = sy + standY(A.x); }
     A.jump = Math.max(0, A.jump - dt); const k = 1 - A.jump / JUMP;
-    e.x = BOAT.x + A.x + A.dir * 1.8 * k; e.y = deckY - Math.sin(k * Math.PI) * 0.6 + (1.0 - deckY) * k * k; e.deckWalk = false; e.kick = 0;
+    A.inFrame = false;
+    e.x = A.jx + A.dir * 1.8 * k; e.y = A.jy - Math.sin(k * Math.PI) * 0.6 + (1.0 - A.jy) * k * k; e.kick = 0;
     if (A.jump <= 0) { g.aboard = null; e.angle = 0; e.y = 1.0; e.vx = A.dir * 0.8; e.vy = 1.4; audio.ready && audio.splash && audio.splash(); for (let i = 0; i < 26; i++) g.bubbles.push({ x: e.x + (Math.random() - 0.5) * 0.8, y: 1.2 + Math.random() * 0.8, r: 0.04 + Math.random() * 0.1, w: Math.random() * 6, t: -Math.random() * 0.3 }); }
     return;
   }
-  if (A.down > 0) { // down the ladder and into the water
-    A.down = Math.max(0, A.down - dt); const k = 1 - A.down / 0.8;
-    e.x = BOAT.x + LADDER_X - 0.25 * (1 - k); e.y = deckY + (0.9 - deckY) * k; e.facing = 1; e.kick = k * 18; e.deckWalk = true;
-    if (A.down <= 0) { g.aboard = null; e.angle = 0; e.y = 1.0; audio.ready && audio.splash && audio.splash(); }
-    return;
+  A.inFrame = true;
+  if (A.climb > 0) {
+    // up the ladder: a moment to reach it and take hold, the rungs hand over hand, then a step over the rail
+    A.climb = Math.max(0, A.climb - dt); const k = 1 - A.climb / CLIMB;
+    const y0 = 0.35, yTop = standY(LADDER_M) + 0.25, kg = 0.14, kc = 0.84;
+    if (k < kg) { const q = k / kg, qq = q * q * (3 - 2 * q); A.lx = A.from[0] + (LADDER_M - A.from[0]) * qq; A.ly = A.from[1] + (y0 - A.from[1]) * qq; A.pose = 'grab'; }
+    else if (k < kc) { const q = (k - kg) / (kc - kg); A.lx = LADDER_M; A.ly = y0 + (yTop - y0) * q; A.pose = 'climb'; A.rung = q * 7 * Math.PI; }
+    else { const q = (k - kc) / (1 - kc), qq = q * q * (3 - 2 * q); A.lx = LADDER_M; A.ly = yTop + (standY(LADDER_M) - yTop) * qq - Math.sin(q * Math.PI) * 0.18; A.pose = q < 0.5 ? 'climb' : 'deck'; A.rung = 7 * Math.PI + q * Math.PI; }
+    A.x = LADDER_M; e.facing = -1;
+  } else {
+    A.lx = A.x; A.ly = standY(A.x) - Math.abs(Math.sin(A.step || 0)) * 0.03 * (A.walk || 0); A.pose = 'deck';
   }
-  e.x = BOAT.x + A.x; e.y = deckY; e.kick = A.walkT * 7; e.deckWalk = A.walkT > 0;
+  e.x = BOAT.x + A.lx; e.y = sy + A.ly; e.kick = A.step || 0;
 }
 
 function findTarget() {
@@ -1182,7 +1181,7 @@ function update(dt) {
     // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
     if (pressed.has('b')) ui.toggleInventory();
-    if (pressed.has('v') && g.helm) { g.helm = false; g.boatV = 0; audio.ready && audio.click(); } // (the helm is taken aboard, at the wheel)
+    if (pressed.has('v') && g.helm) { leaveHelm(); audio.ready && audio.click(); } // (the helm is taken aboard, at the wheel)
     if (pressed.has('q')) {
       const old = (profile.oldLures || 0) > 0;
       if ((old || g.items.lure > 0) && !g.lure) {
@@ -1358,8 +1357,10 @@ function update(dt) {
         }
         const rr = rarityOf(sp);
         audio.calmBoost && audio.calmBoost(0.12);
-        const tol = pressureTolerance(sp, ev.spec.from || 0);
-        hud.toast(`${rr.name}: ${ev.name} — ${conditionName(ev.spec.cond)}, about ${money(specimenValue(ev.spec) * statValue(profile, 'payFish'))} · pressure x${tol.k} (${tol.why})  (${g.bag.length}/${bagSlots(g)})`, 'rar:' + rr.col);
+        // (2.5.0: just the name, in its rarity's colour; "hurt" only when it is. The price, the pressure
+        // tolerance and the bag count were too much: the bag shows on the HUD, the price at the boat)
+        const hurt = ev.spec.cond < 0.7 ? ` · ${conditionName(ev.spec.cond)}` : '';
+        if (!v) hud.toast(`${ev.name}${hurt}`, 'rar:' + rr.col);
         audio.ready && audio.pickup();
         if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
         if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
@@ -1440,7 +1441,7 @@ function update(dt) {
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
     if (g.helm) {
-      if (mv.y) { g.helm = false; }
+      if (mv.y) { leaveHelm(); }
       else {
         // a heavy working boat: she takes her time to get under way and longer still to stop; 5 m/s flat out
         if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast('The anchor is down: G to raise it', 'warn'); } }
