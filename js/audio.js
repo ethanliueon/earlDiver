@@ -371,7 +371,7 @@ export class Audio {
     // hull
     // only at the moments that matter: going past its rating, nearing its hidden crush depth, and
     // while the hull is failing; nothing in between (hits creak it too, see ram)
-    const rr = g.sub.y / g.sub.rated, cz = (g.sub.crushR || 1.62) - 0.12, zone = !e.inSub || g.sub.imploded ? 0 : rr > cz ? 2 : rr > 1 ? 1 : 0; // (2: nearing its crush depth)
+    const rr = g.sub.y / g.sub.rated, cz = (g.sub.crushR || 1.62) - ((g.sub.crushR || 1.62) - 1) * 0.2, zone = !e.inSub || g.sub.imploded ? 0 : rr > cz ? 2 : rr > 1 ? 1 : 0; // (2: nearing its crush depth)
     if (zone > (this.hullZone || 0)) this.creak(zone === 2 ? 0.9 : 0.6);
     // back up out of a zone (with a little room, so hovering at the line does not repeat it)
     if (zone < (this.hullZone || 0) && rr < (this.hullZone === 2 ? cz - 0.05 : 0.97)) this.hullZone = zone;

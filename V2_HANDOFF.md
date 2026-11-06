@@ -329,3 +329,10 @@ Docs, screenshots, the handoff's checks, merge to main.
 - All hard-coded x literals in fauna/entity/hud/hunters/traps/render shifted. Test scripts: reef is now x≈4945.
 - The monster's lair: by day it mostly roams the trench floor (65 % of roam picks), band down to 4,950 m; it starts there.
 - Quiet milestones (saved in `profile.marks`): first time on the trench floor, and the bottom of the pit.
+
+### 2.0.0-alpha.3.3 — eight submersibles (alpha.4, part 2)
+- economy.js `SUBS` (name, rating, mean crush multiple, cabin air) replaces the old `SUB_TIERS` (kept as an alias). `crushMean(rated)` interpolates 1.6 → 1.25 (and 1.2 at 4,400 m with four relics); `rollCrush` draws each dive's hidden crush multiple with a spread proportional to the margin, never past `CRUSH_CEILING` 5,080 m — so the 5,100 m pit kills every hull.
+- main.js crushDepth: the risk window is 40 % of the margin (narrower on deeper hulls). Measured: best sub, no relics, median crush ~5,000 m (trench floor is a gamble); with four relics the trench floor is mostly safe; the pit never.
+- earl_draw.js SUB_MARKS is now eight hulls keyed by the depth level; index checks became flags (sleek, nozzle, refit, oldSphere, tiRim, xtail). New designs: 3 yellow 1960s work sub (acrylic pilot dome), 4 white oilfield sub (red sail, tool frame), 6 Alvin-type (tall orange sail, sample basket).
+- Naming: from sub 3 a brass "Name her" plate (shop overlay, `ui.askSubName`) — default EARL, saved as `profile.subName`, painted on every later hull; "rename" in the shop header is free. Subs 1–2 keep Б-7 / Б-7М.
+- Fixed: subLook's ballast/rack had been swallowed by a comment (alpha.3 regression).

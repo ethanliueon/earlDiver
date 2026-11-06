@@ -20,7 +20,7 @@ import { SUITS, suitOf } from './economy.js';
 import { pressureTolerance } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
-import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
+import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
@@ -141,6 +141,7 @@ const ui = new UI({
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
   onSellAll: () => sellAll(),
+  onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on her hull`); },
   onSellItem: (k) => sellItem(k),
   onDisplay: (k) => displaySpecimen(k),
   onCaveOffer: () => caveOffer(),
@@ -402,7 +403,10 @@ function buy(kind) {
       const mk0 = markOf(statValue(P, 'depth'));
       P.lv = Object.assign({}, P.lv, { [id]: lv(P, id) + 1 }); ok = true;
       const mk1 = markOf(statValue(P, 'depth'));
-      if (mk1 > mk0) hud.toast(`The yard rebuilds her: ${SUB_MARKS[mk1].label}, the ${SUB_MARKS[mk1].name}`, 'big');
+      if (mk1 > mk0) {
+        hud.toast(`A new submersible: ${SUBS[lv(P, 'depth')].name}, rated ${SUBS[lv(P, 'depth')].rated.toLocaleString()} m`, 'big');
+        if (SUB_MARKS[mk1].named && !P.subNamed) ui.askSubName(P.subName || 'EARL', (v) => { P.subName = v; P.subNamed = true; saveProfile(P); ui.renderWorkshop(); hud.toast(`${v} is painted on her hull`); }, 'She is the first hull that is truly yours. The yard will paint her name on, and on every hull after her.');
+      }
       if (id === 'air') { const was = e.o2Max; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + (e.o2Max - was)); }
       if (id === 'swim') e.finSpeed = statValue(P, 'swim');
       if (id === 'sprint') e.sprintMul = statValue(P, 'sprint');
@@ -870,10 +874,10 @@ function crushDepth(dt) {
     return;
   }
   // a new hidden crush depth each dive (drawn whenever she is at the surface)
-  if (sub.crushR == null || sub.y < 2.2) { let n = 0; for (let i = 0; i < 6; i++) n += Math.random(); sub.crushR = clamp(1.62 + (n - 3) * 0.105 * Math.SQRT2, 1.25, 1.95); }
-  const c = sub.crushR;
+  if (sub.crushR == null || sub.y < 2.2 || sub.crushFor !== sub.rated) { sub.crushR = rollCrush(sub.rated); sub.crushFor = sub.rated; }
+  const c = sub.crushR, win = (crushMean(sub.rated) - 1) * 0.4, k = 0.25 / win; // the risk window: narrower on deeper hulls
   // half a chance a second right at it, rising exponentially as she nears it; sure past it
-  if (r > c - 0.25 && (r >= c + 0.03 || Math.random() < dt * 0.5 * Math.exp((r - c) * 30))) {
+  if (r > c - win && (r >= c + 0.03 * win / 0.25 || Math.random() < dt * 0.5 * Math.exp((r - c) * 30 * k))) {
     sub.failing = 0;
     g.fx.shake = Math.max(g.fx.shake, 1.4);
     audio.ready && audio.creak(1.3);

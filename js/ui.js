@@ -20,7 +20,7 @@ import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
 import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
-import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
+import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 import { VERSION } from './version.js';
 import { markOf, SUB_MARKS } from './earl_draw.js';
@@ -50,6 +50,7 @@ const $ = (id) => document.getElementById(id);
 const COIN = '<i class="coin"></i>';
 const RUNLOG = () => `earlDiver.runs.v1${getSlot() ? '.slot' + getSlot() : ''}`; // each save slot keeps its own dive log
 
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 export class UI {
   constructor(h) {
     this.h = h;
@@ -179,6 +180,20 @@ export class UI {
     this.renderSave();
     document.querySelectorAll('.version').forEach((el) => { el.textContent = 'v' + VERSION; });
   }
+  // "Name her": the brass plate. done(name) is called with what was stamped (EARL if left empty).
+  askSubName(current, done, line) {
+    const box = $('namebox'), inp = $('subname');
+    $('namebox-line').textContent = line || 'The yard will paint it on her hull, and on every hull after her.';
+    inp.value = (current || 'EARL').toUpperCase(); box.hidden = false;
+    setTimeout(() => { inp.focus(); inp.select(); }, 30);
+    const finish = () => {
+      const v = inp.value.replace(/[^\p{L}\p{N} .'-]/gu, '').trim().toUpperCase().slice(0, 12) || 'EARL';
+      box.hidden = true; inp.blur(); $('name-ok').onclick = null; inp.onkeydown = null; done(v);
+    };
+    $('name-ok').onclick = finish;
+    inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') finish(); };
+  }
+  nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
   anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden; }
@@ -435,7 +450,12 @@ export class UI {
     marketTick(P);
     this.renderCounter($('shop-cash'), money(P.cash));
     $('shop-coins').innerHTML = P.coins ? `${COIN}${P.coins}` : '';
-    $('shop-sub').textContent = sub.imploded ? 'No submersible' : `${SUB_MARKS[markOf(statValue(P, 'depth'))].label} ${SUB_MARKS[markOf(statValue(P, 'depth'))].name} · rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %`;
+    {
+      const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
+      $('shop-sub').innerHTML = sub.imploded ? 'No submersible' : `${M.named ? `<b>${esc(P.subName || 'EARL')}</b> · ` : ''}${M.name} · rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %${M.named ? '<button class="rename" data-rename="1">rename</button>' : ''}`;
+      const rn = $('shop-sub').querySelector('.rename');
+      if (rn) rn.onclick = () => this.askSubName(P.subName, (v) => { this.h.onRename(v); this.renderWorkshop(); }, 'A fresh coat of paint, free of charge.');
+    }
     const can = (price) => P.cash + 1e-6 >= price;
     // a card: name, what it is, what it changes, and a price button
     // a card: name, a dot-point list of its figures (always in view), and the story behind the i
@@ -658,7 +678,8 @@ export class UI {
       for (const [id, U] of Object.entries(UPGRADES)) {
         if (U.group !== grp) continue;
         const l = lv(P, id), maxed = l >= U.max, cost = upgradeCost(P, id);
-        const now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statAt(id, l + 1));
+        let now = fmtStat(id, statValue(P, id)), next = maxed ? '' : fmtStat(id, statAt(id, l + 1));
+        if (id === 'depth') { now = `${SUBS[l].name}, ${now}`; if (!maxed) next = `${SUBS[l + 1].name}, ${next} · air ${SUBS[l + 1].o2} s`; }
         html += this.row('up:' + id, U.name, UPGRADE_LINE[id] || '',
           `<span class="lamps">${Array.from({ length: 10 }, (_, k) => `<i class="${k < Math.round(l / U.max * 10) ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : `lv ${l}`}`,
           `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < upgradeCoins(P, id) ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && upgradeCoins(P, id) ? ` <em class="pluscoin">+${COIN}${upgradeCoins(P, id)}</em>` : ''}</button>`,

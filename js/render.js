@@ -94,7 +94,8 @@ export function subLook(P, addons) {
   if (!P) return { mark: 0 };
   return {
     mark: markOf(statValue(P, 'depth')),
-    engine: lv(P, 'subSpeed'), air: lv(P, 'depth') * 5, // (the air bottles on her hull come with each new sub) ballast: lv(P, 'ballast'), rack: statValue(P, 'airTanks'),
+    engine: lv(P, 'subSpeed'), air: lv(P, 'depth') * 5, ballast: lv(P, 'ballast'), rack: statValue(P, 'airTanks'), // (the air bottles on her hull come with each new sub)
+    name: P.subName || 'EARL',
     chambers: statValue(P, 'pressTanks'), chamberLv: lv(P, 'pressRating'), tank: lv(P, 'subTank'),
     reach: lv(P, 'armReach'), jaw: lv(P, 'armSize'), hyd: lv(P, 'armSpeed'),
     quiet: !!(addons || P.addons || {}).quiet, recall: !!(addons || P.addons || {}).recall,

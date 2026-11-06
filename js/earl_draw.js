@@ -314,33 +314,40 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
 // fittings each upgrade bolts on. arm (optional): { ext 0..1, lx, ly: the target in this local
 // frame (px), closed, sp, len }
 //
-// Five hulls, as her rating goes deeper:
-//   Mk I   (to 675 m)    the old riveted Soviet bathyscaphe Б-7: green steel, rust, a conning tower
-//   Mk II  (to 1,200 m)  the yard's refit: welded plates, grey paint, bigger ports, a shrouded prop
-//   Mk III (to 1,950 m)  a research sub: white hull under an orange float of syntactic foam, a
-//                        forged-steel sphere, a low sail, skids
-//   Mk IV  (to 2,925 m)  titanium: a pale titanium sphere, yellow foam, side thrusters, LED lamp bars
-//   Mk V   (beyond)      full ocean depth: charcoal and white, the sphere faired into the hull, a
-//                        teal stripe, vectored thrusters
+// Eight hulls, one for each submersible the yard sells (see SUBS in economy.js):
+//   1 Б-7          the old riveted Soviet bathyscaphe: green steel, rust, a conning tower
+//   2 Б-7М         the yard's refit: welded plates, grey paint, bigger ports, a shrouded prop
+//   3 work sub     a yellow 1960s work boat: an acrylic bubble for the pilot on deck, rails, skids
+//   4 heavy work   an oilfield sub: white, a tall red sail, thrusters, a frame of tools
+//   5 research     a white hull under an orange float of syntactic foam, a forged sphere, a low sail
+//   6 deep research an Alvin-type: a stubby white boat, a tall orange-red sail, a sample basket
+//   7 titanium     a pale titanium sphere, yellow foam, side thrusters, LED lamp bars
+//   8 full depth   charcoal and white, the sphere faired into the hull, a teal stripe
+// From the third on, the hull carries the name the player gave her (look.name; EARL by default).
 export const SUB_MARKS = [
-  { name: 'Б-7', label: 'Mk I', upTo: 675, number: 'Б-7', top: null, body: ['#79826f', '#5f6858', '#4f574c', '#22261f'], fin: '#30352c', sphere: ['#8a9280', '#4e5548', '#1a1d17'], rivets: 1, rust: 1, rail: true, tower: 'old', ports: [3.1, 2.1] },
-  { name: 'Б-7М', label: 'Mk II', upTo: 1200, number: 'Б-7М', top: null, body: ['#7e8a94', '#5c6872', '#47525c', '#1c2227'], fin: '#2c333a', sphere: ['#8e979e', '#4c555c', '#181c20'], rivets: 0.5, rust: 0.35, rail: true, tower: 'old', ports: [3.4, 2.3] },
-  { name: 'Margaret Deep', label: 'Mk III', upTo: 1950, number: 'DSV-3', top: ['#e8823a', '#c8642a'], band: -16, body: ['#f0eee6', '#d9d6cc', '#bdb9ae', '#4a4842'], fin: '#c8642a', sphere: ['#9a9e9e', '#5e6264', '#202426'], rivets: 0, rust: 0.12, rail: false, tower: 'sail', ports: [2.7, 1.9], skids: true },
-  { name: 'Margaret Ti', label: 'Mk IV', upTo: 2925, number: 'DSV-4', top: ['#f2c43a', '#d8a020'], band: -16, body: ['#f4f4f0', '#dfe0dc', '#c4c6c2', '#4a4c4a'], fin: '#d8a020', sphere: ['#e0e4e6', '#a8aeb2', '#4a5054'], rivets: 0, rust: 0, rail: false, tower: 'sail', ports: [2.3, 1.7], skids: true, thrusters: true, ledBars: true },
-  { name: 'Earl', label: 'Mk V', upTo: Infinity, number: 'EARL', top: ['#f6f7f5', '#dfe2e0'], body: ['#4a5258', '#363c42', '#2a2f34', '#111416'], fin: '#2a2f34', sphere: ['#e0e4e6', '#a8aeb2', '#4a5054'], rivets: 0, rust: 0, rail: false, tower: 'hatch', ports: [2.0, 1.5], skids: true, thrusters: true, ledBars: true, faired: true, stripe: '#2fb5a8' },
+  { name: 'Б-7', label: 'Mk I', upTo: 500, number: 'Б-7', top: null, body: ['#79826f', '#5f6858', '#4f574c', '#22261f'], fin: '#30352c', sphere: ['#8a9280', '#4e5548', '#1a1d17'], rivets: 1, rust: 1, rail: true, tower: 'old', ports: [3.1, 2.1], oldSphere: true },
+  { name: 'Б-7М', label: 'Mk II', upTo: 900, number: 'Б-7М', top: null, body: ['#7e8a94', '#5c6872', '#47525c', '#1c2227'], fin: '#2c333a', sphere: ['#8e979e', '#4c555c', '#181c20'], rivets: 0.5, rust: 0.35, rail: true, tower: 'old', ports: [3.4, 2.3], oldSphere: true, refit: true, nozzle: true },
+  { name: 'Work submersible', label: 'Mk III', upTo: 1300, named: true, top: null, body: ['#f4c838', '#e0aa1e', '#c08a12', '#3a2e10'], fin: '#2c2c28', sphere: ['#9a9e9a', '#5e625e', '#202422'], rivets: 0.3, rust: 0.22, rail: true, tower: 'dome', ports: [3.0, 2.1], skids: true, sleek: true, nozzle: true, numCol: 'rgba(40,32,10,0.6)' },
+  { name: 'Heavy work submersible', label: 'Mk IV', upTo: 1900, named: true, top: null, body: ['#f2f2ee', '#dcdcd6', '#bebeb8', '#44443f'], fin: '#c8322a', sail: '#d0342a', sailH: 8.5, sphere: ['#a0a4a4', '#62666a', '#202426'], rivets: 0, rust: 0.1, rail: false, tower: 'sail', ports: [2.8, 2.0], skids: true, thrusters: true, toolFrame: true, sleek: true, nozzle: true, numCol: 'rgba(40,40,38,0.6)' },
+  { name: 'Research submersible', label: 'Mk V', upTo: 2500, named: true, top: ['#e8823a', '#c8642a'], band: -16, body: ['#f0eee6', '#d9d6cc', '#bdb9ae', '#4a4842'], fin: '#c8642a', sphere: ['#9a9e9e', '#5e6264', '#202426'], rivets: 0, rust: 0.12, rail: false, tower: 'sail', ports: [2.7, 1.9], skids: true, sleek: true, nozzle: true },
+  { name: 'Deep research submersible', label: 'Mk VI', upTo: 3300, named: true, top: ['#f4f4f0', '#dcdcd6'], band: -14, body: ['#f4f4f0', '#e0e0da', '#c6c6c0', '#4a4a46'], fin: '#e0602a', sail: '#e2622c', sailH: 11, sphere: ['#d6dadc', '#9ea4a8', '#40464a'], rivets: 0, rust: 0.05, rail: false, tower: 'sail', ports: [2.5, 1.8], skids: true, basket: true, thrusters: true, sleek: true, nozzle: true, tiRim: true },
+  { name: 'Titanium research submersible', label: 'Mk VII', upTo: 4000, named: true, top: ['#f2c43a', '#d8a020'], band: -16, body: ['#f4f4f0', '#dfe0dc', '#c4c6c2', '#4a4c4a'], fin: '#d8a020', sphere: ['#e0e4e6', '#a8aeb2', '#4a5054'], rivets: 0, rust: 0, rail: false, tower: 'sail', ports: [2.3, 1.7], skids: true, thrusters: true, ledBars: true, sleek: true, nozzle: true, tiRim: true },
+  { name: 'Full-ocean-depth submersible', label: 'Mk VIII', upTo: Infinity, named: true, top: ['#f6f7f5', '#dfe2e0'], body: ['#4a5258', '#363c42', '#2a2f34', '#111416'], fin: '#2a2f34', sphere: ['#e0e4e6', '#a8aeb2', '#4a5054'], rivets: 0, rust: 0, rail: false, tower: 'hatch', ports: [2.0, 1.5], skids: true, thrusters: true, ledBars: true, faired: true, stripe: '#2fb5a8', xtail: true, sleek: true, nozzle: true, tiRim: true },
 ];
+// what is painted on her hull
+export const hullName = (M, name) => (M.named ? String(name || 'EARL').toUpperCase().slice(0, 12) : M.number);
 export const markOf = (rated) => SUB_MARKS.findIndex((m) => rated < m.upTo);
 
 export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
   const u = Lp / 100;
   const mk = clamp(look.mark | 0, 0, SUB_MARKS.length - 1), M = SUB_MARKS[mk];
-  const sleek = mk >= 2;
+  const sleek = !!M.sleek;
   const [cHi, cMid, cBody, cLo] = M.body;
   const P = (x, y) => [x * u, y * u];
   const poly = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(pts[0][0] * u, pts[0][1] * u); for (const [x, y] of pts.slice(1)) ctx.lineTo(x * u, y * u); ctx.closePath(); ctx.fill(); };
   const eng = look.engine || 0;
   // ---------- stern: fins and the propeller in its duct ----------
-  if (mk === 4) { // swept X-tail
+  if (M.xtail) { // swept X-tail
     poly([[-42, -12], [-55, -24], [-59, -23], [-55, -11]], M.fin);
     poly([[-42, -4], [-55, 8], [-59, 7], [-55, -5]], M.fin);
   } else {
@@ -365,7 +372,7 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     const dg = ctx.createLinearGradient(0, -16 * u, 0, -1 * u);
     dg.addColorStop(0, sleek ? shade(M.fin, 0.15) : '#6a7262'); dg.addColorStop(0.5, sleek ? M.fin : '#3e443a'); dg.addColorStop(1, '#1e211b');
     ctx.fillStyle = dg;
-    const dl = mk >= 1 ? 10 : 8; // the refit lengthened the duct into a proper nozzle
+    const dl = M.nozzle ? 10 : 8; // the refit lengthened the duct into a proper nozzle
     ctx.beginPath(); ctx.roundRect(-(56 + dl) * u, -16.5 * u, dl * u, 2.4 * u, 1 * u); ctx.fill();
     ctx.beginPath(); ctx.roundRect(-(56 + dl) * u, -2.6 * u, dl * u, 2.4 * u, 1 * u); ctx.fill();
     ctx.fillStyle = 'rgba(20,22,18,0.55)'; ctx.fillRect(-(55.5 + dl) * u, -14.2 * u, (dl - 1) * u, 11.6 * u);
@@ -418,7 +425,7 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     ctx.fillStyle = 'rgba(12,14,10,0.7)';
     for (const [i, x] of seams.entries()) { if (M.rivets < 1 && i % 2) continue; for (let j = 0; j < 9; j++) { ctx.beginPath(); ctx.arc((x + 1.2) * u, (-19.5 + j * 2.4) * u, 0.32 * u, 0, TAU); ctx.fill(); } }
   }
-  if (mk === 1) {
+  if (M.refit) {
     // the refit's new plates, a shade fresher than the old steel around them, with weld beads
     ctx.fillStyle = 'rgba(140,155,165,0.16)';
     for (const [x, y, w, h] of [[-12, -21, 12, 9], [18, -18, 10, 8], [-40, -12, 9, 7]]) { ctx.fillRect(x * u, y * u, w * u, h * u); ctx.strokeStyle = 'rgba(30,34,38,0.5)'; ctx.lineWidth = Math.max(0.5, 0.25 * u); ctx.strokeRect(x * u, y * u, w * u, h * u); }
@@ -447,7 +454,7 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
   {
     const m = ctx.getTransform(), flip = m.a < 0;
     ctx.save(); ctx.translate(28 * u, (M.top ? -5 : -14) * u); if (flip) ctx.scale(-1, 1);
-    ctx.fillStyle = M.faired ? 'rgba(225,232,232,0.55)' : M.top ? 'rgba(40,40,38,0.55)' : 'rgba(205,195,165,0.32)'; ctx.font = `bold ${5.5 * u}px monospace`; ctx.textAlign = 'center'; ctx.fillText(M.number, 0, 2 * u);
+    const nm = hullName(M, look.name); ctx.fillStyle = M.faired ? 'rgba(225,232,232,0.55)' : M.numCol || (M.top ? 'rgba(40,40,38,0.55)' : 'rgba(205,195,165,0.32)'); ctx.font = `bold ${(nm.length > 7 ? 5.5 * 7 / nm.length : 5.5) * u}px monospace`; ctx.textAlign = 'center'; ctx.fillText(nm, 0, 2 * u);
     ctx.restore();
   }
   // ---------- on deck ----------
@@ -484,11 +491,27 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     ctx.beginPath(); ctx.moveTo(0, -30 * u); ctx.lineTo(0, -31.8 * u); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(5 * u, -30 * u); ctx.lineTo(5 * u, -36 * u); ctx.stroke(); // mast
     ctx.fillStyle = lights ? '#ffe8b0' : '#4a4436'; ctx.beginPath(); ctx.arc(5 * u, -36.4 * u, 0.6 * u, 0, TAU); ctx.fill();
+  } else if (M.tower === 'dome') {
+    // the 1960s work boat: the pilot sits in an acrylic bubble on the deck, forward, and looks out
+    const dx = 14, dy = -22, dr = 8.5;
+    ctx.fillStyle = shade(cBody, -0.3); ctx.beginPath(); ctx.ellipse(dx * u, dy * u, (dr + 1.6) * u, 1.6 * u, 0, 0, TAU); ctx.fill(); // its seat ring
+    const ag = ctx.createRadialGradient((dx + 2.5) * u, (dy - 6) * u, 0.5 * u, dx * u, (dy - 2) * u, dr * u);
+    ag.addColorStop(0, lights ? 'rgba(255,236,190,0.55)' : 'rgba(200,230,240,0.35)'); ag.addColorStop(0.7, lights ? 'rgba(200,170,120,0.28)' : 'rgba(90,140,160,0.22)'); ag.addColorStop(1, 'rgba(40,70,80,0.35)');
+    ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(dx * u, dy * u, dr * u, Math.PI, TAU); ctx.closePath(); ctx.fill();
+    // the pilot inside, a dark shape behind the acrylic, and the panel lights
+    ctx.fillStyle = 'rgba(20,24,26,0.55)'; ctx.beginPath(); ctx.arc((dx - 1.5) * u, (dy - 4.6) * u, 1.9 * u, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse((dx - 1.8) * u, (dy - 1.2) * u, 3 * u, 2.4 * u, 0, Math.PI, TAU); ctx.fill();
+    ctx.fillStyle = lights ? '#ffcf70' : '#6a5a3a'; for (let k = 0; k < 3; k++) ctx.fillRect((dx + 2.5 + k * 1.3) * u, (dy - 1.6) * u, 0.7 * u, 0.6 * u);
+    ctx.strokeStyle = 'rgba(230,245,250,0.7)'; ctx.lineWidth = 0.5 * u; ctx.beginPath(); ctx.arc(dx * u, dy * u, (dr - 1.4) * u, Math.PI * 1.15, Math.PI * 1.55); ctx.stroke(); // the shine on it
+    ctx.strokeStyle = 'rgba(20,24,26,0.6)'; ctx.lineWidth = 0.35 * u; ctx.beginPath(); ctx.arc(dx * u, dy * u, dr * u, Math.PI, TAU); ctx.stroke();
+    // a stubby mast with its lamp, aft of the bubble
+    ctx.strokeStyle = '#3a3a36'; ctx.lineWidth = 0.5 * u; ctx.beginPath(); ctx.moveTo(-4 * u, -22 * u); ctx.lineTo(-4 * u, -30 * u); ctx.stroke();
+    ctx.fillStyle = lights ? '#ffe8b0' : '#4a4436'; ctx.beginPath(); ctx.arc(-4 * u, -30.3 * u, 0.6 * u, 0, TAU); ctx.fill();
   } else {
     // a low faired sail (or, on the last hull, just a raised hatch), in the float's colour
-    const h = M.tower === 'hatch' ? 3.2 : 6;
+    const h = M.tower === 'hatch' ? 3.2 : M.sailH || 6;
     const sg2 = ctx.createLinearGradient(0, (-23 - h) * u, 0, -22 * u);
-    const tc = M.top ? M.top[0] : cMid;
+    const tc = M.sail || (M.top ? M.top[0] : cMid);
     sg2.addColorStop(0, shade(tc, 0.1)); sg2.addColorStop(1, shade(tc, -0.2));
     ctx.fillStyle = sg2;
     ctx.beginPath(); ctx.moveTo(-10 * u, -22.5 * u); ctx.bezierCurveTo(-8 * u, (-23 - h) * u, 6 * u, (-23.5 - h) * u, 11 * u, -22.5 * u); ctx.closePath(); ctx.fill();
@@ -538,6 +561,26 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     ctx.fillStyle = '#3a3a36'; ctx.fillRect((x + 0.9) * u, 2.6 * u, 0.8 * u, 1 * u);
   }
   if (nRack) { ctx.fillStyle = '#2a2e26'; ctx.fillRect((-10 - (nRack - 1) * 3.2) * u, 7 * u, (nRack * 3.2 + 1) * u, 0.7 * u); } // the rack's strap
+  // the oilfield boat's tool frame under the bow: a cage of tubing with a cutter and a torque tool
+  if (M.toolFrame) {
+    ctx.strokeStyle = '#c8b020'; ctx.lineWidth = 0.9 * u; ctx.lineJoin = 'round';
+    ctx.strokeRect(24 * u, 3 * u, 16 * u, 15 * u);
+    ctx.beginPath(); ctx.moveTo(24 * u, 3 * u); ctx.lineTo(40 * u, 18 * u); ctx.moveTo(24 * u, 10.5 * u); ctx.lineTo(40 * u, 10.5 * u); ctx.stroke();
+    ctx.fillStyle = '#2e3236'; ctx.beginPath(); ctx.roundRect(27 * u, 12 * u, 5 * u, 4 * u, 0.8 * u); ctx.fill();   // torque tool
+    ctx.fillStyle = '#d04a2a'; ctx.fillRect(34 * u, 5 * u, 4 * u, 3.4 * u);                                       // cutter
+    ctx.fillStyle = '#8a8e90'; ctx.beginPath(); ctx.moveTo(38 * u, 5.4 * u); ctx.lineTo(40.5 * u, 6.7 * u); ctx.lineTo(38 * u, 8 * u); ctx.fill();
+  }
+  // the Alvin-type's sample basket, slung out in front: a frame of bars and netting
+  if (M.basket) {
+    ctx.strokeStyle = '#3a3e42'; ctx.lineWidth = 0.8 * u;
+    ctx.beginPath(); ctx.moveTo(30 * u, 4 * u); ctx.lineTo(44 * u, 7 * u); ctx.lineTo(44 * u, 14 * u); ctx.lineTo(30 * u, 14 * u); ctx.stroke();
+    ctx.strokeStyle = 'rgba(70,76,80,0.6)'; ctx.lineWidth = 0.3 * u; ctx.beginPath();
+    for (let x = 32; x < 44; x += 2) { ctx.moveTo(x * u, (4 + (x - 30) * 3 / 14) * u); ctx.lineTo(x * u, 14 * u); }
+    for (let y = 8; y < 14; y += 2) { ctx.moveTo(30 * u, y * u); ctx.lineTo(44 * u, y * u); }
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(150,140,120,0.8)'; ctx.beginPath(); ctx.ellipse(37 * u, 13 * u, 3 * u, 1.2 * u, 0, Math.PI, TAU); ctx.fill(); // a rock sample
+    ctx.fillStyle = '#e8e6e0'; ctx.beginPath(); ctx.roundRect(40 * u, 9.5 * u, 1.6 * u, 4.4 * u, 0.6 * u); ctx.fill(); // a push core
+  }
   // landing skids (research hulls)
   if (M.skids) {
     ctx.strokeStyle = '#2e3236'; ctx.lineWidth = 1.1 * u; ctx.lineCap = 'round';
@@ -567,12 +610,12 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     const sg = ctx.createRadialGradient(gx - 5 * u, gy - 6 * u, 1, gx, gy, gr);
     sg.addColorStop(0, M.sphere[0]); sg.addColorStop(0.45, M.sphere[1]); sg.addColorStop(1, M.sphere[2]);
     ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, TAU); ctx.fill();
-    if (mk <= 1) {
+    if (M.oldSphere) {
       // bolted equator flange (cast hemispheres)
       ctx.strokeStyle = '#1c1f19'; ctx.lineWidth = 1.2 * u;
       ctx.beginPath(); ctx.ellipse(gx, gy, gr, gr * 0.16, 0, 0, Math.PI); ctx.stroke();
       ctx.fillStyle = 'rgba(160,165,145,0.5)';
-      const nb = mk ? 18 : 12;
+      const nb = M.refit ? 18 : 12;
       for (let k = 1; k < nb; k++) { const a = (k / nb) * Math.PI; ctx.beginPath(); ctx.arc(gx + Math.cos(a) * gr, gy + Math.sin(a) * gr * 0.16, 0.35 * u, 0, TAU); ctx.fill(); }
     } else {
       // forged or titanium: a single fine equator weld, and the hatch ring on top
@@ -587,8 +630,8 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
   const ports = M.faired ? [[gx + 6.5 * u, gy - 2.5 * u, p1 * u]] : [[gx + 7.5 * u, gy - 2.5 * u, p1 * u], [gx - 3 * u, gy + 5.5 * u, p2 * u]];
   for (const [px, py, pr2] of ports) {
     const rim = ctx.createRadialGradient(px - pr2 * 0.4, py - pr2 * 0.4, 0, px, py, pr2 * 1.5);
-    rim.addColorStop(0, mk >= 3 ? '#e4e8ea' : '#9aa08c'); rim.addColorStop(1, '#22251e');
-    ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(px, py, pr2 * (mk >= 2 ? 1.6 : 1.45), 0, TAU); ctx.fill();
+    rim.addColorStop(0, M.tiRim ? '#e4e8ea' : '#9aa08c'); rim.addColorStop(1, '#22251e');
+    ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(px, py, pr2 * (sleek ? 1.6 : 1.45), 0, TAU); ctx.fill();
     const pg = ctx.createRadialGradient(px - pr2 * 0.3, py - pr2 * 0.3, 0, px, py, pr2);
     pg.addColorStop(0, lights ? '#ffe2a8' : '#3a3428'); pg.addColorStop(1, lights ? '#9a6a34' : '#141210');
     ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(px, py, pr2, 0, TAU); ctx.fill();
@@ -643,7 +686,7 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     open = arm.closed ? 0.04 : 0.5;
   }
   const fa = Math.atan2(wy - ey, wx - ex);
-  const armCol = sleek ? (mk >= 3 ? '#c8ccd0' : '#e0e2dc') : '#3e4338';
+  const armCol = sleek ? (M.tiRim ? '#c8ccd0' : '#e0e2dc') : '#3e4338';
   ctx.strokeStyle = armCol; ctx.lineCap = 'round';
   ctx.lineWidth = (2.2 + reach * 0.06) * u; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
   ctx.lineWidth = (1.6 + reach * 0.05) * u; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(wx, wy); ctx.stroke();

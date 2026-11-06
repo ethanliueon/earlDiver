@@ -24,16 +24,36 @@ export const FINS = [
   { name: 'Long-blade fins', speed: 1.15, price: 800, desc: 'Stiffer, longer blades. +15 % speed.' },
   { name: 'Carbon freediving fins', speed: 1.3, price: 19000, desc: 'Carbon fibre. +30 % speed.' },
 ];
-// Submersible hull ratings. Below rated depth the cabin air leaks away exponentially faster (no implosion).
-export const SUB_TIERS = [
-  { rated: 300, o2: 150, price: 0 },
-  { rated: 700, o2: 200, price: 3600 },
-  { rated: 1000, o2: 260, price: 59000 },
-  { rated: 1500, o2: 330, price: 225000 },
-  { rated: 2000, o2: 420, price: 525000 },
-  { rated: 2700, o2: 540, price: 900000 },
-  { rated: 3000, o2: 660, price: 1500000 },
+// The eight submersibles the yard sells (one per level of the 'depth' upgrade): rating, the mean depth
+// she gives way at as a multiple of it (hidden, drawn fresh each dive; the window narrows on deeper,
+// better-built hulls), and the cabin air she carries. Relics add 100 m each to the rating.
+export const SUBS = [
+  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 150 },
+  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 160 },
+  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 170 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 185 },
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 200 },
+  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 225 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 260 },
+  { name: 'Full-ocean-depth submersible', rated: 4000, crush: 1.25, o2: 300 },
 ];
+export const SUB_TIERS = SUBS; // (old name)
+// No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
+export const CRUSH_CEILING = 5080;
+// the mean crush multiple for a rating (relics take her past the last sub: ~x1.2 at 4,400 m)
+export function crushMean(rated) {
+  const T = [...SUBS.map((x) => [x.rated, x.crush]), [4400, 1.2]];
+  if (rated <= T[0][0]) return T[0][1];
+  for (let i = 1; i < T.length; i++) if (rated <= T[i][0]) { const [a, ca] = T[i - 1], [b, cb] = T[i]; return ca + (cb - ca) * (rated - a) / (b - a); }
+  return 1.2;
+}
+// one dive's hidden crush multiple: a bell around the mean whose width shrinks with the margin
+export function rollCrush(rated, rnd = Math.random) {
+  const m = crushMean(rated), w = m - 1;
+  let n = 0; for (let i = 0; i < 6; i++) n += rnd();
+  const c = Math.min(Math.max(m + (n - 3) * w * 0.24, 1 + w * 0.5), 1 + w * 1.5);
+  return Math.min(c, CRUSH_CEILING / rated);
+}
 // add-ons for the submersible (bought once)
 export const SUB_ADDONS = {
   recall: { name: 'Recall unit', price: 280, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },

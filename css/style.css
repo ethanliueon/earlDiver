@@ -671,3 +671,29 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .priceboard h4 { column-span: all; margin: 0 0 8px; font: 18px var(--game, Georgia); color: rgba(240, 240, 232, 0.85); letter-spacing: 0.04em; }
 .priceboard div { display: flex; justify-content: space-between; gap: 12px; font: 13px var(--game, Georgia); color: rgba(235, 235, 225, 0.75); padding: 2px 0; break-inside: avoid; }
 .priceboard b { font: 400 13px var(--mono); color: rgba(240, 240, 230, 0.9); }
+
+/* "Name her": a brass plate over the shop, the name stamped into it */
+.shop-main { position: relative; }
+.namebox { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(4, 8, 10, 0.62); z-index: 5; }
+.namebox[hidden] { display: none; }
+.namebox .nb-plate {
+  position: relative; width: min(360px, 86%); padding: 20px 28px 22px; border-radius: 6px; text-align: center;
+  background: linear-gradient(180deg, var(--brass-hi) 0%, var(--brass) 38%, #a8873e 62%, var(--brass-lo) 100%);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,250,220,0.7), inset 0 -2px 0 rgba(60,40,10,0.6);
+}
+.namebox .nb-plate::before, .namebox .nb-plate::after {
+  content: ''; position: absolute; top: 10px; width: 8px; height: 8px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #f4e2a8, #7a5a22 70%); box-shadow: inset 0 0 0 1px rgba(60,40,10,0.5);
+}
+.namebox .nb-plate::before { left: 10px; } .namebox .nb-plate::after { right: 10px; }
+.namebox h3 { margin: 0 0 4px; color: #3a2a0e; font-size: 24px; text-shadow: 0 1px 0 rgba(255,245,210,0.55); }
+.namebox p { margin: 0 0 14px; color: rgba(58,42,14,0.8); font-size: 12px; }
+.namebox input {
+  width: 100%; box-sizing: border-box; padding: 8px 10px; border: 0; border-radius: 3px; text-align: center;
+  font: bold 22px/1 monospace; letter-spacing: 0.18em; text-transform: uppercase; color: #2a1e08;
+  background: linear-gradient(180deg, #8a6a2c, #b8954a); box-shadow: inset 0 2px 4px rgba(40,26,6,0.7), 0 1px 0 rgba(255,245,210,0.5);
+  outline: none; caret-color: #f4e2a8;
+}
+.namebox button { margin-top: 14px; padding: 7px 18px; border: 1px solid #3a2a0e; border-radius: 3px; background: #2a2418; color: #f0dca0; font-family: var(--stencil); letter-spacing: 0.15em; cursor: pointer; }
+.namebox button:hover { background: #3a3220; }
+.shop-sub .rename { margin-left: 8px; padding: 0 6px; border: 0; border-bottom: 1px dotted rgba(58,42,14,0.7); background: none; color: rgba(58,42,14,0.9); font: inherit; cursor: pointer; }
