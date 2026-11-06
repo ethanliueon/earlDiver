@@ -17,7 +17,7 @@ import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom } from './tankroom.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
-import { tankSlots, pressSlots, tankUsed, pressUsed } from './capture.js';
+import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
@@ -34,6 +34,7 @@ import { previewOf, drawShowcase } from './showcase.js';
 const ADDON_SPECS = {
   recall: [['use', 'C calls the sub'], ['sub comes', '1.5× faster', 'good']],
   quiet: [['sub noise', '−50 %', 'good'], ['the deep', 'hears it less', 'good']],
+  mast: [['light', 'a second, wide flood', 'good'], ['lights', 'with L, as the others', '']],
 };
 const SUPPLY_SPECS = {
   lure: [['use', 'Q throws it'], ['effect', 'the deep thing follows its light', 'good'], ['lasts', 'a while']],
@@ -115,7 +116,12 @@ export class UI {
       }
       if (b.disabled) return;
       const act = b.dataset.act, arg = b.dataset.arg;
-      if (act === 'buy') h.onBuy(arg);
+      if (act === 'buy' && arg.startsWith('subnet:')) {
+        const g0 = h.getGame(), k = arg.slice(7), cur = g0 && g0.items.net;
+        if (cur && cur !== k) { this.confirm('Replace the net?', `The hatch holds one net. Buying the ${NETS_SUB[k].name.toLowerCase()} replaces your ${NETS_SUB[cur].name.toLowerCase()}, which is lost.`, 'Replace it', 'Keep mine', () => { h.onBuy(arg); this.renderWorkshop(); }); return; }
+        h.onBuy(arg);
+      }
+      else if (act === 'buy') h.onBuy(arg);
       else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
       else if (act === 'display') h.onDisplay(arg);
       else if (act === 'gallery') { this.toggleGallery(true); return; }
@@ -638,6 +644,12 @@ export class UI {
         if (fitted.length) html += `<p class="shop-note">Fitted: ${fitted.join(', ')}.</p>`;
       }
     } else if (tab === 'supplies') {
+      // the sub's trawl nets: one in the hatch at a time, each used up in one haul
+      for (const [k, N] of Object.entries(NETS_SUB)) {
+        const inHatch = g.items.net === k;
+        html += card(N.name, N.desc, inHatch ? 'in the hatch' : g.items.net ? `replaces your ${NETS_SUB[g.items.net].name.toLowerCase()}` : 'the hatch is empty', inHatch ? null : N.price, 'buy', 'subnet:' + k, inHatch ? 'In the hatch' : 'Buy', '', '',
+          [['holds', `${N.max} animals`], ['fish up to', `${N.maxLen} m`], ['mouth', `${(N.mouth * 2).toFixed(1)} m tall`], ['tears', N.tear > 0.5 ? 'often, on big animals' : 'seldom', N.tear > 0.5 ? 'bad' : 'good'], ['use', 'N in the sub, once', 'sheet']]);
+      }
       for (const [k, it] of Object.entries(SUPPLIES)) {
         if (it.needs && !owns(P, it.needs)) continue; // tags only once he has the tag gun
         const mx = supplyMax(P, k), have = g.items[k] || 0, full = have >= mx;

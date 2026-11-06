@@ -773,7 +773,19 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     for (let k = 0; k < 4; k++) { const ph = ((t * 0.9 + k / 4 + q.seed) % 1); ctx.beginPath(); ctx.arc(cx + Math.sin(ph * 9 + k) * u * 0.8, cy - r * 0.6 - ph * 14 * u, (0.35 + 0.35 * (1 - ph)) * u, 0, TAU); ctx.fill(); }
     ctx.restore();
   }
-  return { lampA: [49 * u, -4 * u], lampB: [21 * u, 13.5 * u], ports };
+  // ---------- the light mast (an add-on, 2.3.5): a pole raised aft of the tower with a floodlight on
+  // top, which lights a wide stretch of the water around and below her ----------
+  let lampC = null;
+  if (look.mast) {
+    const mx = -24, base = -14, topY = -40;
+    ctx.fillStyle = '#3a3f3a'; ctx.fillRect((mx - 1.4) * u, (base - 2) * u, 2.8 * u, 2.5 * u); // its foot on the hull
+    ctx.strokeStyle = '#8a918a'; ctx.lineWidth = 1.3 * u; ctx.beginPath(); ctx.moveTo(mx * u, base * u); ctx.lineTo(mx * u, topY * u); ctx.stroke();
+    ctx.strokeStyle = '#5a605a'; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.moveTo((mx - 3) * u, (base - 1) * u); ctx.lineTo(mx * u, (topY + 8) * u); ctx.moveTo((mx + 3) * u, (base - 1) * u); ctx.lineTo(mx * u, (topY + 8) * u); ctx.stroke(); // stays
+    ctx.fillStyle = '#2c302c'; ctx.beginPath(); ctx.roundRect((mx - 3.2) * u, (topY - 2.6) * u, 6.4 * u, 3.4 * u, 0.8 * u); ctx.fill(); // the lamp housing
+    ctx.fillStyle = lights ? '#fff6dc' : '#6a6e66'; ctx.beginPath(); ctx.roundRect((mx + 0.6) * u, (topY - 2) * u, 2.4 * u, 2.2 * u, 0.6 * u); ctx.fill(); // its glass, forward
+    lampC = [(mx + 2) * u, (topY - 0.9) * u];
+  }
+  return { lampA: [49 * u, -4 * u], lampB: [21 * u, 13.5 * u], lampC, ports };
 }
 
 // Small weathered work boat with an A-frame crane. Origin at the waterline centre. Faces -x (bow left).

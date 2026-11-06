@@ -60,6 +60,7 @@ export const SUB_ADDONS = {
   quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
   tracker: { name: 'Tag tracker', price: 900, desc: 'A receiver for the tags on the fish you released from your gallery: a faint trail leads from the sub (or from Earl) to the nearest one, with its name and how far.' },
   bigTank: { name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
+  mast: { name: 'Light mast', price: 1500, desc: 'A pole raised aft of the tower with a floodlight on top. With the lights on (L), it throws a wide flood forward and down: far more of the dark around the sub can be seen.' },
   sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
 };
 // ---------------- catching gear ----------------
@@ -148,7 +149,6 @@ export const SUPPLIES = {
   necklace: { name: 'Fangtooth necklace', price: 370, max: 1, desc: 'A string of fangtooth teeth set round a glowing bead: worn (E), a soft green light around Earl, like a glowstick. It does not keep anything away, and a light can be seen. You carry one.' },
   tag: { name: 'Basic tags', price: 5, max: 3, needs: 'tagger', desc: 'Research darts for the tag gun: for common, uncommon and rare animals, and big tag-only animals under two metres.' },
   tagAdv: { name: 'Advanced tags', price: 200, max: 3, needs: 'tagger', desc: 'Satellite tags with a wider spread and a faint glow: needed for exotic, legendary and undocumented animals, and anything tag-only two metres long or more.' },
-  trawl: { name: 'Trawl net', price: 300, max: 1, desc: 'Every submersible carries a trawl net in a canister under the bow. N lets it out: it sweeps the water ahead for a few seconds and takes up to ten animals, sharks to 2.5 m, even legends. It comes back torn: one use. Loud below 200 m.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)

@@ -8,7 +8,7 @@ import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS } from './earl_draw.js';
 import { drawMonster, drawMonsterLights, drawMonsterShape, MONSTER_LEN } from './monster_draw.js';
 import { sleeperState } from './sleeper_draw.js';
-import { activeTool, netBox, NET_TIME } from './capture.js';
+import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
 import { TRAPS, lv, statValue } from './economy.js';
@@ -98,7 +98,7 @@ export function subLook(P, addons) {
     name: P.subName || 'EARL',
     chambers: statValue(P, 'pressTanks'), chamberLv: lv(P, 'pressRating'), tank: lv(P, 'subTank'),
     reach: lv(P, 'armReach'), jaw: lv(P, 'armSize'), hyd: lv(P, 'armSpeed'),
-    quiet: !!(addons || P.addons || {}).quiet, recall: !!(addons || P.addons || {}).recall,
+    quiet: !!(addons || P.addons || {}).quiet, recall: !!(addons || P.addons || {}).recall, mast: !!(addons || P.addons || {}).mast,
   };
 }
 
@@ -650,21 +650,57 @@ export class Renderer {
       ctx.save(); ctx.font = `${Math.max(11, ppm * 0.4)}px serif`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(240,226,190,0.8)';
       ctx.fillText((c.pet.famous ? '★ ' : '') + (c.pet.name || c.sp.name), S(c.x), Sy(c.y - c.len * 0.8) - 6); ctx.restore();
     }
-    // the sub's trawl net, streaming out ahead of the bow: a mouth on two warps, a mesh bag, its catch
+    // the sub's trawl (2.3.5): two cables from the belly hatch to the net's mouth (a headrope with orange
+    // floats, a footrope with dark weights), the mesh bag streaming behind it to a tied cod end, the catch
+    // bunched in the end; the drawstring pulls the mouth shut; torn, it hangs in rags as the catch scatters
     if (g.subNet) {
-      const B = netBox(g), n = g.subNet, dir = n.dir, close = clamp((n.t - (NET_TIME - 0.7)) / 0.7, 0, 1);
-      const mx = dir > 0 ? B.x1 : B.x0, bx = dir > 0 ? B.x0 : B.x1, cy = (B.y0 + B.y1) / 2, hh = (B.y1 - B.y0) / 2 * (1 - close * 0.8);
-      ctx.save(); ctx.strokeStyle = 'rgba(190,200,180,0.7)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
-      ctx.beginPath(); ctx.moveTo(S(n.x + dir * 2), Sy(n.y + 0.6)); ctx.lineTo(S(mx), Sy(cy - hh)); ctx.moveTo(S(n.x + dir * 2), Sy(n.y + 0.6)); ctx.lineTo(S(mx), Sy(cy + hh)); ctx.stroke(); // the warps
-      ctx.strokeStyle = 'rgba(220,180,90,0.9)'; ctx.lineWidth = Math.max(1.5, ppm * 0.09); ctx.beginPath(); ctx.moveTo(S(mx), Sy(cy - hh)); ctx.lineTo(S(mx), Sy(cy + hh)); ctx.stroke(); // the mouth's frame
-      const bag = new Path2D(); bag.moveTo(S(mx), Sy(cy - hh)); bag.quadraticCurveTo(S((mx + bx) / 2), Sy(cy - hh * 0.9), S(bx), Sy(cy)); bag.quadraticCurveTo(S((mx + bx) / 2), Sy(cy + hh * 0.9), S(mx), Sy(cy + hh)); bag.closePath();
-      ctx.fillStyle = 'rgba(160,175,160,0.08)'; ctx.fill(bag);
-      ctx.save(); ctx.clip(bag); ctx.strokeStyle = 'rgba(190,205,190,0.32)'; ctx.lineWidth = 1; const st = Math.max(5, ppm * 0.35);
-      const x0 = Math.min(S(mx), S(bx)), x1 = Math.max(S(mx), S(bx)), y0 = Sy(cy - hh) - 2, y1 = Sy(cy + hh) + 2, wv = Math.sin(t * 3) * st * 0.2;
-      ctx.beginPath(); for (let x = x0 - (y1 - y0); x < x1; x += st) { ctx.moveTo(x + wv, y0); ctx.lineTo(x + (y1 - y0) + wv, y1); ctx.moveTo(x + (y1 - y0) - wv, y0); ctx.lineTo(x - wv, y1); } ctx.stroke(); ctx.restore();
+      const n = g.subNet, T = n.T, dir = n.dir, h = hatchAt(g);
+      const torn = n.phase === 'torn', fade = torn ? clamp(1 - n.pt / 1.6, 0, 1) : 1;
+      const r = Math.max(0.12, T.mouth * n.open), mx = n.mx, my = n.my;
+      const hauling = n.phase === 'haul' ? Math.min(1, n.pt / NET_HAUL) : 0;
+      const bagLen = (n.phase === 'drop' ? Math.min(1, n.pt / NET_DROP) : 1) * (1 - hauling * 0.85) * (T.mouth * 3.2 + 2.5);
+      const sway = Math.sin(t * 1.6) * 0.25;
+      const X = (f) => mx - dir * bagLen * f;
+      const half = (f) => Math.max(0.1, r * (1 - f * 0.78)) + Math.sin(f * Math.PI) * 0.12 * n.open;
+      const cyf = (f) => my + sway * f * f + f * 0.35;
+      const lw = Math.max(1, ppm * 0.04);
+      ctx.save(); ctx.globalAlpha = fade; ctx.lineCap = 'round';
+      // the hatch under the belly, open
+      ctx.fillStyle = '#141614'; ctx.fillRect(S(h.x) - ppm * 0.5, Sy(h.y) - ppm * 0.08, ppm, ppm * 0.16);
+      // the cables, from the hatch to the top and bottom of the mouth
+      ctx.strokeStyle = 'rgba(70,74,70,0.95)'; ctx.lineWidth = Math.max(1, ppm * 0.035);
+      ctx.beginPath(); ctx.moveTo(S(h.x), Sy(h.y)); ctx.quadraticCurveTo(S((h.x + mx) / 2), Sy((h.y + my) / 2 + 0.6), S(mx), Sy(my - r));
+      ctx.moveTo(S(h.x), Sy(h.y)); ctx.quadraticCurveTo(S((h.x + mx) / 2), Sy((h.y + my) / 2 + 1.0), S(mx), Sy(my + r)); ctx.stroke();
+      // the bag
+      const bag = new Path2D(); bag.moveTo(S(X(0)), Sy(cyf(0) - half(0)));
+      for (let i = 1; i <= 14; i++) { const f = i / 14; bag.lineTo(S(X(f)), Sy(cyf(f) - half(f))); }
+      for (let i = 14; i >= 0; i--) { const f = i / 14; bag.lineTo(S(X(f)), Sy(cyf(f) + half(f))); }
+      bag.closePath();
+      if (!torn) { ctx.fillStyle = 'rgba(110,125,110,0.14)'; ctx.fill(bag); }
+      ctx.save();
+      if (torn) { // a ragged hole where it burst: the mesh is drawn everywhere but there
+        const cut = new Path2D(bag); cut.ellipse(S(X(0.45)), Sy(cyf(0.45)), ppm * (0.8 + n.pt), ppm * (0.6 + n.pt * 0.6), 0.4, 0, TAU);
+        ctx.clip(cut, 'evenodd');
+      } else ctx.clip(bag);
+      ctx.strokeStyle = 'rgba(200,210,190,0.4)'; ctx.lineWidth = Math.max(0.6, ppm * 0.018);
+      ctx.beginPath();
+      const nl = 8;
+      for (let j = 0; j <= nl; j++) { const v = j / nl * 2 - 1; for (let i = 0; i <= 16; i++) { const f = i / 16, y = cyf(f) + half(f) * v + Math.sin(f * 8 + j + t * 2.5) * 0.04; if (i) ctx.lineTo(S(X(f)), Sy(y)); else ctx.moveTo(S(X(f)), Sy(y)); } }
+      for (let i = 0; i <= 18; i++) { const f = Math.pow(i / 18, 0.85); ctx.moveTo(S(X(f)), Sy(cyf(f) - half(f))); ctx.quadraticCurveTo(S(X(f) + dir * 0.12), Sy(cyf(f)), S(X(f)), Sy(cyf(f) + half(f))); }
+      ctx.stroke();
       ctx.restore();
-      for (const c of n.got) { // what it holds, bunched in the cod end
-        ctx.save(); ctx.translate(S(bx - dir * 1.2 + Math.sin(c.wob || 0) * 0.6), Sy(cy + Math.cos((c.wob || 0) * 1.3) * hh * 0.4)); if (dir > 0) ctx.scale(-1, 1); ctx.globalAlpha = 0.85; drawSpecies(ctx, c.sp, Math.max(4, fishDrawLen(c.len) * ppm * 0.8), t * 6, 1, 0); ctx.restore();
+      if (!torn) { ctx.strokeStyle = 'rgba(205,212,195,0.6)'; ctx.lineWidth = lw; ctx.stroke(bag); }
+      // the cod end, tied off
+      ctx.fillStyle = '#c8a050'; ctx.beginPath(); ctx.arc(S(X(1)), Sy(cyf(1)), Math.max(2, ppm * 0.08), 0, TAU); ctx.fill();
+      // the mouth: headrope with floats, footrope with weights, and the drawstring as it closes
+      ctx.strokeStyle = 'rgba(225,215,180,0.9)'; ctx.lineWidth = Math.max(1.2, ppm * 0.05);
+      ctx.beginPath(); ctx.moveTo(S(mx), Sy(my - r)); ctx.quadraticCurveTo(S(mx + dir * 0.25), Sy(my), S(mx), Sy(my + r)); ctx.stroke();
+      ctx.fillStyle = '#e8762a'; for (const f of [-0.35, 0.35]) { ctx.beginPath(); ctx.arc(S(mx - dir * 0.3 + f * 0.4), Sy(my - r - 0.05), Math.max(1.6, ppm * 0.09), 0, TAU); ctx.fill(); }
+      ctx.fillStyle = '#2a2c2a'; for (const f of [-0.3, 0, 0.3]) { ctx.beginPath(); ctx.arc(S(mx - dir * 0.2 + f * 0.4), Sy(my + r + 0.05), Math.max(1.6, ppm * 0.08), 0, TAU); ctx.fill(); }
+      ctx.restore();
+      if (!torn) for (const c of n.got) { // what it holds, bunched toward the cod end
+        const f = 0.55 + ((c.wob || 0) * 7 % 1) * 0.35, fy = cyf(f) + ((c.wob || 0) * 13 % 1 - 0.5) * half(f) * 1.2;
+        ctx.save(); ctx.translate(S(X(f)), Sy(fy)); if (dir > 0) ctx.scale(-1, 1); ctx.globalAlpha = 0.85; drawSpecies(ctx, c.sp, Math.max(4, Math.min(fishDrawLen(c.len), bagLen * 0.5) * ppm), t * 3 + (c.wob || 0), 1, 0); ctx.restore();
       }
     }
     if (!e.inSub && !g.helm && g.mode !== 'menu' && !(g.kill && g.kill.swallowed)) { // at the helm he is inside the wheelhouse
@@ -2188,6 +2224,11 @@ export class Renderer {
       radial(sx + 0.5 * sxs * ppm, sy + 0.9 * ppm, 5 * ppm, [255, 190, 120], 0.4 * fx.lightPulse);
       radial(sx - 4.8 * sxs * ppm, sy - 0.4 * ppm, 7 * ppm, [220, 160, 110], 0.15 * fx.lightPulse);
       if (vis < 0.6) radial(ax, ay, 6 * ppm, lc, (0.6 - vis) * 1.2 * flick); // the lamps face us mid-turn
+      if (subLamps.lampC) { // the light mast: a wide flood angled forward and down, and a glow all round it
+        const [mx2, my2] = lp(subLamps.lampC);
+        cone(mx2, my2, ang - 0.45 * Math.sign(sxs), 28 * ppm, 0.85, lc, 0.85 * flick * vis);
+        radial(mx2, my2, 10 * ppm, lc, 0.28 * flick); lamps.push({ x: mx2, y: my2, r: 10 * ppm, a: 0.28 * flick });
+      }
     }
     for (const lt of g.world.lanterns) {
       const x = S(lt.x), y = Sy(lt.y);

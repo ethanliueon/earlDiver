@@ -10,7 +10,7 @@ import { VARIANTS } from './variants.js';
 import { speciesIcon } from './creatures_draw.js';
 import { SETTINGS } from './settings.js';
 import { toolIcon } from './tools_draw.js';
-import { bagSlots, tankSlots, pressSlots } from './capture.js';
+import { bagSlots, tankSlots, pressSlots, NETS_SUB, TOW_MAX } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
@@ -390,6 +390,12 @@ export class Hud {
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
     if (e.inSub && (g.items.airTank > 0 || g.tankFit)) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', g.tankFit ? g.tankFit / 3 : 0]);
     if (g.items.necklace > 0) slots.push(['e', 'E', 'NECKLACE', g.items.necklace, '#b8f0c0', g.necklaceOn ? 1 : 0]);
+    // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
+    if (e.inSub) {
+      const n = g.subNet, N = n ? n.T : g.items.net && NETS_SUB[g.items.net];
+      const state = n ? (n.phase === 'tow' ? 'OUT · N CLOSES' : n.phase === 'torn' ? 'TORN' : 'HAULING') : N ? N.short : 'NO NET';
+      slots.push(['n', 'N', state, n || N ? 1 : 0, '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / TOW_MAX) : 0]);
+    }
     this.slotHot = {};
     slots.forEach(([id, key, name, n, col, active], i) => {
       const x = rx0 - sz, y = yy + i * (sz + 8 * s);
@@ -399,7 +405,7 @@ export class Hud {
       ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 8 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
       if (active > 0) { ctx.strokeStyle = col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 13 * s, -Math.PI / 2, -Math.PI / 2 + TAU * active); ctx.stroke(); }
       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; ctx.fillText(key, x + 5 * s, y + 4 * s);
-      ctx.textAlign = 'right'; ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
+      ctx.textAlign = 'right'; if (id !== 'n') ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
       ctx.font = `${8 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name, x - 6 * s, y + sz / 2 - 4 * s);
     });
 

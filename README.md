@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.3.4 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.3.5 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -24,7 +24,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | C (inside the sub) | Autopilot home: it steers to the boat on 0.8x air; steering, a hit or danger hands it back |
 | 1 / 2 / 3 / 4 / 5 | Net / slurp gun / tag gun / camera / traps (once bought) |
 | Space | Use it: sweep the net, fire the slurp gun or a tag dart, take a picture; with a trap, at the surface: choose its depth and set it. In the sub (with the arm fitted): reach, then Space again to close the claw |
-| N | In the sub (with the trawl net fitted): let the net out ahead of the bow, once a dive |
+| N | In the sub: drop the trawl net from the belly hatch; N again closes it and the winch hauls it in (each net is used up in one haul; you start with one beginner net) |
 | J | Journal (species you have observed, and your own notes) |
 | L | Lights on/off. Light carries a long way in the dark. Flash it at a charging animal to make it swerve |
 | Q | Throw an anglerfish lure |

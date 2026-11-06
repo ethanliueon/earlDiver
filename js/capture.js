@@ -266,45 +266,103 @@ export const loadAir = (kg) => 1 + Math.max(0, kg - 10) / 80;
 
 export { conditionName };
 
-// ---------------- the sub's net ----------------
-// A trawl net in a canister under the bow (built into every sub; one carried, $300 a net). N lets it out: it opens ahead of
-// the sub and sweeps a long box of water for a few seconds, then closes on whatever it took (up to
-// ten animals, sharks to 2.5 m, legends too). The haul lands in a heap on the tank-room floor, to be
-// sorted into the tank and the chambers. It is loud: below 200 m it draws the deep's attention.
-export const NET_MAX = 10, NET_LEN = 2.5, NET_TIME = 3.2;
-export function netBox(g) {
-  const n = g.subNet, k = Math.min(1, n.t / 1.2); // it pays out over the first second
-  const x0 = n.x + n.dir * 4, x1 = n.x + n.dir * (4 + 20 * k);
-  return { x0: Math.min(x0, x1), x1: Math.max(x0, x1), y0: n.y - 4.5 * k - 0.5, y1: n.y + 4.5 * k + 0.5 };
-}
+// ---------------- the sub's trawl net (2.3.5) ----------------
+// A trawl carried in a hatch under the sub's belly: one net at a time, used up in one haul. N drops it:
+// weights pull the footrope down, floats hold the headrope up, and the net streams out behind and below
+// the sub on two cables, its mouth facing forward. It only fishes while the sub is moving (stopped, the
+// mouth sags shut): drive through a school. N again (or after TOW_MAX s) pulls the drawstring shut, and
+// the winch hauls the bag up into the hatch; the haul lands in a heap on the tank-room floor. An animal
+// too big for the net may tear it: the net is lost, and everything in it swims free. Loud below 200 m.
+export const NETS_SUB = {
+  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 1.0, mouth: 1.0, tear: 0.7, slip: 0.15,
+    desc: 'A light trawl for the hatch under the sub. A small mouth, room for six, fish up to a metre; a few slip out before it closes, and anything bigger may tear it. Used up in one haul.' },
+  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 2.5, mouth: 1.75, tear: 0.3, slip: 0.03,
+    desc: 'A heavy-twine trawl with a wide mouth: room for ten, sharks to 2.5 m and the great legends; almost nothing slips out, and it seldom tears. Used up in one haul.' },
+};
+export const NET_DROP = 1.5, TOW_MAX = 8, NET_PURSE = 1.0, NET_HAUL = 1.5;
+// where the hatch is under the hull, and where the net's mouth hangs behind it, for a sub facing dir
+export const hatchAt = (g) => ({ x: g.sub.x - (g.sub.facing || 1) * 1.2, y: g.sub.y + 1.3 });
+const towTarget = (g) => { const d = g.sub.facing || 1; return { x: g.sub.x - d * 8.5, y: g.sub.y + 3.2 }; };
 export function fireSubNet(g) {
-  if (!(g.items.trawl > 0)) return 'No trawl net aboard (the boat sells them, $300)';
+  const n = g.subNet;
+  if (n) { if (n.phase === 'tow') { n.phase = 'purse'; n.pt = 0; return 'closing'; } return 'busy'; }
+  const tier = g.items.net;
+  if (!tier || !NETS_SUB[tier]) return 'No net in the hatch: the Margaret sells them';
   if (g.sub.docked || !g.earl.inSub) return 'Only from the sub, under way';
-  if (g.sub.y < 4) return 'Too shallow to trawl';
-  g.items.trawl--;
-  g.subNet = { t: 0, x: g.sub.x, y: g.sub.y, dir: g.sub.facing || 1, got: [] };
+  if (g.sub.y < 6) return 'Too shallow to trawl';
+  g.items.net = null; // used up in this haul, whatever happens
+  const h = hatchAt(g);
+  g.subNet = { tier, T: NETS_SUB[tier], phase: 'drop', t: 0, pt: 0, mx: h.x, my: h.y, open: 0, got: [], dir: g.sub.facing || 1 };
   if (g.sub.y > 200) g.entity.disturb(g, 0.35);
   return null;
 }
+// returns null while working; { haul: [...] } when the net is in; { torn: sp } when it tore
 export function updateSubNet(g, dt, canTake) {
   const n = g.subNet;
   if (!n) return null;
-  n.t += dt; n.x = g.sub.x; n.y = g.sub.y; // it is towed behind the sub's bow as she moves
-  const B = netBox(g);
-  for (const c of g.fauna.list) {
-    if (n.got.length >= NET_MAX) break;
-    if (c.dead || c.hidden || c.pet || c.len > NET_LEN || n.got.includes(c)) continue;
-    if (c.x < B.x0 || c.x > B.x1 || c.y < B.y0 || c.y > B.y1) continue;
-    if (!canTake(c.sp)) continue;
-    n.got.push(c); c.dead = true; c.netted = true;
+  n.t += dt; n.pt += dt;
+  const sub = g.sub, speed = Math.hypot(sub.vx || 0, sub.vy || 0), T = n.T;
+  // the mouth trails behind the sub on its cables, swinging round slowly when she turns
+  const tgt = towTarget(g), h = hatchAt(g);
+  if (n.phase === 'drop') {
+    const k = Math.min(1, n.pt / NET_DROP);
+    n.mx = h.x + (tgt.x - h.x) * k; n.my = h.y + (tgt.y - h.y) * k; n.open = k * 0.7;
+    if (k >= 1) { n.phase = 'tow'; n.pt = 0; }
+  } else if (n.phase === 'tow') {
+    n.mx += (tgt.x - n.mx) * Math.min(1, dt * 1.5); n.my += (tgt.y - n.my) * Math.min(1, dt * 1.5);
+    const want = clamp(speed / 1.2, 0.25, 1); // moving, the mouth stands open; stopped, it sags
+    n.open += (want - n.open) * Math.min(1, dt * 2);
+    n.dir = sub.facing || n.dir;
+    if (n.open > 0.6) {
+      const r = T.mouth * n.open;
+      for (const c of g.fauna.list) {
+        if (c.dead || c.hidden || c.pet || n.got.includes(c)) continue;
+        if (Math.abs(c.x - n.mx) > 2.2 || Math.abs(c.y - n.my) > r) continue;
+        if (!canTake(c.sp)) continue;
+        if (c.len > T.maxLen) {
+          // too big: it hits the net; it may tear straight through, losing the net and everything in it
+          if (Math.random() < T.tear) { tearNet(g, c); return { torn: c.sp }; }
+          continue;
+        }
+        if (n.got.length >= T.max) continue;
+        n.got.push(c); c.dead = true; c.netted = true;
+      }
+    }
+    if (n.pt >= TOW_MAX) { n.phase = 'purse'; n.pt = 0; }
+  } else if (n.phase === 'purse') {
+    n.open = Math.max(0, n.open - dt / NET_PURSE);
+    n.mx += (tgt.x - n.mx) * Math.min(1, dt); n.my += (tgt.y - n.my) * Math.min(1, dt);
+    if (n.pt >= NET_PURSE) {
+      // a few slip out before the drawstring is tight
+      n.lost = 0;
+      n.got = n.got.filter(() => { const out = Math.random() < T.slip; if (out) n.lost++; return !out; });
+      n.phase = 'haul'; n.pt = 0; n.hx = n.mx; n.hy = n.my;
+    }
+  } else if (n.phase === 'haul') {
+    const k = Math.min(1, n.pt / NET_HAUL);
+    n.mx = n.hx + (h.x - n.hx) * k; n.my = n.hy + (h.y - n.hy) * k;
+    if (k >= 1) {
+      g.subNet = null;
+      const haul = n.got.map((c) => {
+        const spec = { id: c.sp.id, len: c.len, cond: clamp(0.85 + Math.random() * 0.1, 0, 1), from: Math.round(c.y), t: g.time, pile: true };
+        if (c.variant) { spec.variant = c.variant; spec.mult = variantMult(c.variant); }
+        return spec;
+      });
+      for (const s of haul) g.subTank.push(s);
+      return { haul, lost: n.lost || 0 };
+    }
+  } else if (n.phase === 'torn') {
+    if (n.pt > 1.6) g.subNet = null;
   }
-  if (n.t < NET_TIME) return null;
-  g.subNet = null;
-  const haul = n.got.map((c) => {
-    const spec = { id: c.sp.id, len: c.len, cond: clamp(0.85 + Math.random() * 0.1, 0, 1), from: Math.round(c.y), t: g.time, pile: true };
-    if (c.variant) { spec.variant = c.variant; spec.mult = variantMult(c.variant); }
-    return spec;
-  });
-  for (const s of haul) g.subTank.push(s);
-  return haul;
+  return null;
+}
+// the net tears: its catch swims free, the net is left in rags for a moment, then gone
+function tearNet(g, big) {
+  const n = g.subNet;
+  for (const c of n.got) {
+    const f = g.fauna.makeFish(c.sp, n.mx + (Math.random() - 0.5) * 2, n.my + (Math.random() - 0.5) * 2, Math.random() < 0.5 ? -1 : 1, g.fauna.groupId++, true);
+    if (c.variant) f.variant = c.variant;
+    g.fauna.list.push(f);
+  }
+  n.got = []; n.phase = 'torn'; n.pt = 0; n.big = big.sp;
 }

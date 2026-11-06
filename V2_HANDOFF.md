@@ -533,3 +533,17 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   no temperature or depth zones; a sand floor, a rock, a tuft of seagrass in one corner, bubbles. Animals of the sand
   (crabs, lobsters, starfish) stay on it and creep; floor-swimmers keep low; the rest swim anywhere.
   (aquarium.js still files each animal under a zone, but nothing shows it now.)
+
+## 2.3.5 — the trawl net under the sub; a light mast
+- capture.js `NETS_SUB`: a beginner trawl ($50: holds 6, fish to 1 m, 2 m mouth, tears 70 % on anything bigger,
+  15 % slip out at closing) and an advanced trawl ($400: holds 10, to 2.5 m, 3.5 m mouth, tears 30 %, 3 % slip).
+  One net in the hatch at a time (`g.items.net`, saved as `P.items.net`; a new diver starts with a beginner net);
+  each is used up in one haul. Buying the other one asks before replacing (ui.confirm). Sold on the Supplies tab.
+- Phases (`g.subNet.phase`): drop (1.5 s, from the belly hatch, the mouth opening as weights and floats pull it
+  apart) → tow (up to 8 s; it trails behind and below; it only fishes while the sub moves, the mouth sagging shut
+  when she stops) → purse (N again or time: the drawstring closes it, a few slip out) → haul (the winch brings it
+  up into the hatch; the catch goes to the tank-room heap). A too-big animal may tear it: the net is lost, its catch
+  swims free, the net shown in rags.
+- HUD: an "N" slot in the sub showing NET / BIG NET / OUT · N CLOSES / HAULING / TORN / NO NET.
+- A light mast (sub add-on, $1,500, `addons.mast`): a pole aft of the tower with a floodlight, a wide flood forward
+  and down with the lights on.
