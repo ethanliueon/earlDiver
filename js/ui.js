@@ -1,6 +1,7 @@
 // DOM overlays: home screen, journal, boat workshop, pause, run log.
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
+const SHOWCASE_TABS = new Set(['diver', 'tools', 'sub']);
 import { speciesIcon } from './creatures_draw.js';
 import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
@@ -26,6 +27,7 @@ import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, P
 import { formatTime } from './util.js';
 import { VERSION } from './version.js';
 import { markOf, SUB_MARKS } from './earl_draw.js';
+import { previewOf, drawShowcase } from './showcase.js';
 
 
 // the figures for the shop's cards, as dot points
@@ -82,6 +84,7 @@ export class UI {
       this.renderCave();
     });
     this.shopTab = 'sell';
+    this.shopSel = {}; // the item each tab's showcase shows
     this.openRows = new Set(); // shop rows whose details are open
     // I: the spec sheet of the row under the pointer (or, with none, every row on the page)
     this.hoverRow = null;
@@ -103,7 +106,13 @@ export class UI {
     // one delegated handler for every button in the shop
     $('shop-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('button[data-act]');
-      if (!b) { const i = ev.target.closest('button.info'); if (i) this.toggleInfo(i.closest('[data-row]')); return; }
+      if (!b) {
+        const i = ev.target.closest('button.info'); if (i) { this.toggleInfo(i.closest('[data-row]')); return; }
+        // anywhere else on a row: show it in the showcase window
+        const r = ev.target.closest('[data-row]');
+        if (r && SHOWCASE_TABS.has(this.shopTab) && previewOf(r.dataset.row, h.getProfile())) { this.shopSel[this.shopTab] = r.dataset.row; this.renderWorkshop(); }
+        return;
+      }
       if (b.disabled) return;
       const act = b.dataset.act, arg = b.dataset.arg;
       if (act === 'buy') h.onBuy(arg);
@@ -663,7 +672,36 @@ export class UI {
       else html += '<p class="shop-note">The gallery is as big as the Margaret can hold.</p>';
       if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets. Earned so far: ${money(A.earned, false)}.</p>`;
     }
+    // the showcase window above the list: the selected item (or the recommended one, or the first),
+    // drawn as it looks, now and next, with its figures and its buy button beside it
+    let sel = null;
+    if (SHOWCASE_TABS.has(tab)) {
+      const keys = [...html.matchAll(/data-row="([^"]+)"/g)].map((m) => m[1]).filter((k) => previewOf(k, P));
+      sel = keys.includes(this.shopSel[tab]) ? this.shopSel[tab] : keys.includes('up:' + this.rec) ? 'up:' + this.rec : keys[0] || null;
+      if (sel) html = `<div class="showcase"><canvas class="sc-win"></canvas><div class="sc-info"></div></div>` + html;
+    }
     $('shop-body').innerHTML = html;
+    if (sel) this.fillShowcase(sel, P);
+  }
+
+  // copy the selected row's name, figures and button into the showcase, and start its drawing
+  fillShowcase(sel, P) {
+    const body = $('shop-body'), row = body.querySelector(`[data-row="${CSS.escape(sel)}"]`), info = body.querySelector('.sc-info');
+    if (!row || !info) return;
+    row.classList.add('sel');
+    const nameEl = row.querySelector('.up-name, h3'), name = nameEl ? [...nameEl.childNodes].filter((n) => !(n.classList && n.classList.contains('info'))).map((n) => n.textContent).join('').trim() : '';
+    const line = (row.querySelector('.up-line') || {}).textContent || '';
+    const story = (row.querySelector('.story') || {}).textContent || '';
+    const facts = [...row.querySelectorAll('.sheet-row, .bullets li')].slice(0, 6).map((r) => { const a = r.querySelector('span, em'), b = r.querySelector('b'); return `<div class="sc-fact${r.className.match(/p-good/) ? ' good' : r.className.match(/p-bad/) ? ' bad' : ''}"><span>${a ? a.textContent : ''}</span><b>${b ? b.textContent : ''}</b></div>`; }).join('');
+    const btn = row.querySelector('button[data-act]');
+    info.innerHTML = `<h3>${name}</h3>${line ? `<p class="sc-line">${line}</p>` : ''}<div class="sc-facts">${facts}</div>${story && !line ? `<p class="sc-story">${story}</p>` : ''}${btn ? btn.outerHTML : ''}`;
+    const pv = previewOf(sel, P), cv = body.querySelector('.sc-win');
+    const t0 = performance.now(), tick = () => {
+      if (!cv.isConnected || $('workshop').hidden) return;
+      drawShowcase(cv, pv, (performance.now() - t0) / 1000);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   }
 
   // Suits: one line each, what it does, and buy / wear / worn

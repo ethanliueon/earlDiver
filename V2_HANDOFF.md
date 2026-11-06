@@ -504,3 +504,12 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   summed price, so a full ladder costs the same. GAIN 1.5 → 1.12, so the first steps are felt too
   (air 50 → 72 → 99 → 114 → 152 → 200 s; fish prices +24 % → +55 % → +93 % → +140 % → +200 %).
 - Saves from before: `rescaleTracks` keeps each ladder's progress (OLD_TRACK_MAX), marked by `P.tlvV = 2`.
+
+## 2.3.0 — the shop's showcase window
+- js/showcase.js: `previewOf(key, P)` / `drawShowcase(canvas, pv, t)`. On the Diver, Tools and Sub tabs a window at the
+  top draws the selected item with the game's own drawings, gently moving: the sub as it is now and as the next step
+  makes it (next hull, more blades on the prop, chambers...; `subLook` of the profile one step up), the net/slurp/tag/
+  camera at their current and next look (`toolIcon`), Earl in the suit he wears and in the one selected, traps.
+  Beside it: name, line, figures and the buy button (copied from the row). Click any row to show it there; the
+  recommended item is shown first.
+- The shop panel is wider (760 px) to fit it.

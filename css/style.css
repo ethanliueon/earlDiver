@@ -155,7 +155,7 @@ button.link:hover { color: #f1efe6; }
   display: flex; align-items: flex-start; gap: 18px; max-width: 94vw;
 }
 .shop-main {
-  width: min(620px, 94vw); max-height: min(640px, 86vh); display: flex; flex-direction: column;
+  width: min(760px, 94vw); max-height: min(700px, 88vh); display: flex; flex-direction: column;
   background: linear-gradient(180deg, rgba(14, 22, 24, 0.94), rgba(8, 13, 15, 0.94));
   border: 1px solid var(--line); border-radius: 6px; padding: 22px 26px 24px;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6); backdrop-filter: blur(6px);
@@ -878,3 +878,24 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .rec-badge { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; vertical-align: middle; font: normal 600 9px var(--stencil); letter-spacing: 0.14em; text-transform: uppercase; color: #2e220a; background: radial-gradient(ellipse at 50% 30%, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
 .shop-tabs button.rec { position: relative; }
 .shop-tabs button.rec::after { content: ''; position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 5px rgba(255,182,72,0.9); }
+
+/* the showcase window (2.3.0): the selected item drawn in water, its figures and buy button beside it */
+.shop .showcase { display: grid; grid-template-columns: 1.35fr 1fr; gap: 14px; margin: 0 0 14px; align-items: stretch; }
+.shop .showcase .sc-win {
+  position: static; inset: auto; width: 100%; height: 190px; display: block; border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6), 0 0 0 3px #6e5424, 0 0 0 5px #b8954a, 0 6px 14px rgba(0,0,0,0.5);
+}
+.shop .showcase .sc-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.shop .showcase h3 { margin: 0; font: 22px var(--serif); color: var(--paint); }
+.shop .showcase h3 .rec-badge { font-size: 10px; vertical-align: middle; }
+.shop .showcase .sc-line, .shop .showcase .sc-story { margin: 0; font: italic 13px var(--serif); color: rgba(230,220,190,0.7); }
+.shop .showcase .sc-facts { display: grid; gap: 3px; margin-top: 2px; }
+.shop .showcase .sc-fact { display: flex; justify-content: space-between; gap: 8px; padding: 3px 8px; border-radius: 3px; background: #0c100d; box-shadow: inset 0 1px 4px rgba(0,0,0,0.9); font: 11px var(--mono); }
+.shop .showcase .sc-fact span { color: rgba(185,230,154,0.55); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
+.shop .showcase .sc-fact b { color: var(--phosphor); font-weight: normal; text-align: right; }
+.shop .showcase .sc-fact.good b { color: #b9f09a; text-shadow: 0 0 6px rgba(185,240,154,0.4); }
+.shop .showcase .sc-fact.bad b { color: #f0a080; }
+.shop .showcase button[data-act] { margin-top: auto; align-self: stretch; padding: 10px 14px; font-size: 15px; }
+.shop [data-row].sel { background: rgba(240,212,138,0.07); box-shadow: inset 3px 0 0 var(--amber); }
+.shop .up-row, .shop .card { cursor: pointer; }
+@media (max-width: 700px) { .shop .showcase { grid-template-columns: 1fr; } .shop .showcase .sc-win { height: 150px; } }

@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.2.0 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.3.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -149,6 +149,7 @@ js/undocumented_draw.js  the twelve Undocumented animals
 js/capture.js       catching alive, the bag, the sub's tanks and chambers, the trawl net
 js/tankroom.js      the back of the sub: chambers, the open tank, the large pressure tank, the net's haul
 js/aquarium.js      the aquarium aboard: tanks, days, Happy and Famous
+js/showcase.js      the shop's showcase window: the selected item drawn now and next
 js/gallery.js       the gallery aboard: tanks, the brass tags, lighting, release
 js/hud.js           timer, air, dive monitor (sonar, heart rate, journal)
 js/audio.js         music and generated sound
