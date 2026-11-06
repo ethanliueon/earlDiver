@@ -444,3 +444,38 @@ Docs, screenshots, the handoff's checks, merge to main.
 - economy.js `TRACKS` (tTank, tFins, tBag, tBuyers · tNet, tSlurp, tTag, tCam · tHull, tEngine, tChambers, tOpen, tRack, tClaw): one ladder per tool or part (was 39 separate stats). Levels live in `profile.tlv`; `lv(P, statId)` derives a stat's level from its track (track level / track max × stat max, rounded), so every reader of stats is unchanged. A step costs the stat steps it covers (`upgradeCost(P, trackId)`), so a full ladder costs what its stats did. Old saves migrate on first read (`migrateTracks`: each track = the average progress of its old stats).
 - ui.js: one row per track (lamps for its level, the price, and a sheet listing every stat it moves now → next; the hull names the next submersible). Tabs: Sell · Diver (tank, fins, bag, buyers, suits) · Tools (net, slurp gun, tag gun, camera, traps) · Sub (hull, engine, chambers, open tank, rack, claw, add-ons) · Supplies · Radio · Aquarium. `recommend()` marks one track Recommended (a deeper sub once his dives near the rating; else air or the bag while basic; else the cheapest affordable step) and puts an amber dot on its tab.
 - The trawl net is no longer an add-on: every sub carries one in its bow canister (supply `trawl`, max 1, a new diver's first is free, $300 a new one); using it uses it up (no "once a dive").
+
+## 2.0.16 — the sub's engine and ballast upgrades work again
+- main.js `applySub`: `sub.speedMul` and `sub.ballast` had been swallowed by the end-of-line comment, so the Engine ladder did nothing. Split onto their own line.
+
+## Play-test of 2.0.15 (other Claude session, new save, Playwright), for the next session to work through
+Screenshots were sent to the user. Bugs:
+1. Aquarium is half old, half new: the shop's Aquarium tab is still the old wings system (build Reef hall on the
+   beach, upkeep, "visitors a day"; 3 fish gave 837 visitors and $271/day). The user wants the gallery aboard the
+   Margaret, for fun, with only a small idle income. Retire the wings/upkeep/visitors-per-wing UI.
+2. Sell screen rows say "needs the open ocean dome" (old wing refusal, ui.js ~583 `displayRefusal`).
+3. A dying fish (cond 0.3) was refused "too weak to display"; the user said dying fish CAN go in (earn a little,
+   then die), stressed earn less until recovered.
+4. Rare forms aren't drawn in the gallery (an albino queen angelfish had the label but normal colours).
+5. Toasts stack into unreadable overlapping lines (e.g. "Built..." + two "On display..." at once).
+6. Target brackets are ON by default (settings.js `read` default true); the user originally asked for none:
+   default it to off.
+Could be better:
+7. Upgrade steps are tiny (air 50 -> 52 s, swim x1 -> x1.013, fish prices +1.8 %): ladders derived from the old
+   small stats. The user wanted Cat Goes Fishing style: fewer, noticeably bigger steps.
+8. The deep looks empty on screen even with hundreds of animals spawned (3 cm bristlemouths are invisible at this
+   zoom). Ideas: clearer photophore glow on the common deep fish, a slightly closer camera in the sub, small
+   schools passing through the sub's lights.
+9. The abyss's most common animal was an invented Undocumented species (Steadylight Dragonfish ~ top of the
+   counts at 2,600 m). Undocumented should stay a rare surprise; a real grenadier/cusk-eel should be the everyday fish.
+10. The gallery is one thin tank with a big empty black area under it: bigger tanks, a floor, gentle sway, room
+    for the pet/feed/name controls.
+11. Earl is ~30 px tall in the shallows: consider a slightly closer camera in shallow water.
+
+## User request: a shop UI revamp (not started)
+The shop should look less generic and more like a polished game shop. Show pictures of what you're buying:
+the submersible (the current and next hull, drawn with the game's own sub drawings), the dive suits on a
+figure/mannequin, the net/slurp gun/tag gun/camera as they look at their current and next level, traps, the
+chambers and tanks. Keep the Margaret's brass-and-steel style; e.g. a large preview pane for the selected item
+with its drawing, stats now -> next and the buy button, and a list of items on the side. Reuse the existing
+canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art where possible.

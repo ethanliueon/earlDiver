@@ -57,7 +57,8 @@ function applySuit(e, P) {
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
-  sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
+  sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible
+  sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
   sub.level = lv(P, 'depth');
 }
 // X (a developer's key): everything at its best - every upgrade maxed, every piece of gear and every
