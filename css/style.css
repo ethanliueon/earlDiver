@@ -708,3 +708,88 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .gl-tag input { width: 100%; box-sizing: border-box; margin: 2px 0 6px; padding: 4px 6px; border: 0; border-radius: 2px; background: rgba(60,40,10,0.18); color: #2a1c06; font: 13px var(--serif); text-align: center; }
 .gl-tag .acts { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
 .gl-famous { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 2px; background: #2a1c06; color: #f0d070; font: normal 10px var(--mono); letter-spacing: 0.1em; }
+
+/* ---------- v2.0.1: the title screen as one of the Margaret's panels ---------- */
+#title .title-panel {
+  position: relative; max-width: 540px; padding: 26px 30px 22px; border-radius: 10px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.10), transparent 60%),
+    linear-gradient(180deg, var(--steel) 0%, #444c41 55%, #3a4138 100%);
+  border: 2px solid var(--steel-deep);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.35), inset 0 0 0 7px rgba(0,0,0,0.12);
+}
+#title .title-panel::before {
+  content: ''; position: absolute; inset: 0; border-radius: 10px; pointer-events: none;
+  --r: radial-gradient(circle at 50% 45%, #b8bea9 0 1.2px, #7c8470 1.8px, #2a2f27 3px, transparent 3.6px);
+  background: var(--r) 0 4px / 24px 10px repeat-x, var(--r) 0 calc(100% - 4px) / 24px 10px repeat-x,
+    var(--r) 4px 0 / 10px 24px repeat-y, var(--r) calc(100% - 4px) 0 / 10px 24px repeat-y;
+}
+#title .t-plate {
+  position: relative; display: inline-block; padding: 10px 28px 12px; border-radius: 5px; margin-bottom: 14px;
+  background: linear-gradient(180deg, var(--brass-hi) 0%, var(--brass) 38%, #a8873e 62%, var(--brass-lo) 100%);
+  box-shadow: 0 3px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,250,220,0.7), inset 0 -1px 0 rgba(60,40,10,0.6);
+}
+#title .t-plate::before, #title .t-plate::after { content: ''; position: absolute; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #f4e2a8, #7a5a22 70%); box-shadow: inset 0 0 0 1px rgba(60,40,10,0.5); }
+#title .t-plate::before { left: 9px; } #title .t-plate::after { right: 9px; }
+#title .t-plate h1 { margin: 0; color: #3a2a0e; text-shadow: 0 1px 0 rgba(255,245,210,0.6); font-size: clamp(38px, 4.6vw, 60px); line-height: 1.05; }
+#title .t-plate span { display: block; font: 10px var(--stencil); letter-spacing: 0.22em; text-transform: uppercase; color: rgba(58,42,14,0.75); margin-top: 2px; }
+#title .tag { font: italic 17px var(--serif); color: var(--paint); opacity: 0.85; margin: 0 0 16px; }
+#title #continue {
+  border-radius: 999px; color: #2e220a; font: 600 15px var(--stencil); letter-spacing: 0.3em; padding: 12px 40px; margin: 0 0 18px;
+  background: radial-gradient(ellipse at 50% 25%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%);
+  box-shadow: 0 3px 0 #4a3510, 0 4px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,250,220,0.75); transition: transform 0.08s, box-shadow 0.08s, filter 0.1s;
+}
+#title #continue:hover { filter: brightness(1.08); background: radial-gradient(ellipse at 50% 25%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%); }
+#title #continue:active { transform: translateY(2px); box-shadow: 0 1px 0 #4a3510, inset 0 1px 3px rgba(0,0,0,0.4); }
+#title .t-label { font: 10px var(--stencil); letter-spacing: 0.3em; text-transform: uppercase; color: var(--paint-dim); margin: 0 0 8px 2px; }
+#title .slot { background: linear-gradient(180deg, #2c3229, #22271f); box-shadow: inset 0 2px 4px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.08); border-color: rgba(0,0,0,0.6); }
+#title .slot .info b { font-family: var(--mono); font-size: 16px; color: var(--paint); }
+#title .slot.empty .info b { font-family: var(--serif); font-size: 17px; }
+#title .menu-links { margin-top: 14px; }
+#title .menu-links .link { font: 11px var(--stencil); letter-spacing: 0.18em; text-transform: uppercase; color: var(--paint-dim); border-bottom-color: rgba(221,214,188,0.25); }
+#title .hint { font: 11px var(--mono); color: var(--paint-dim); margin: 12px 0 0; }
+/* the loading moment: a porthole, its depth gauge sweeping round */
+#loading { flex-direction: column; gap: 22px; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(8,26,36,0.9), rgba(2,6,9,0.96)); }
+#loading .porthole { width: 150px; height: 150px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 45%, var(--brass-lo) 80%);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,250,220,0.6), inset 0 -3px 6px rgba(40,26,6,0.6); position: relative; }
+#loading .porthole::before { content: ''; position: absolute; inset: 6px; border-radius: 50%;
+  --b: radial-gradient(circle, #f4e2a8 0 1.5px, #6a4a1a 2.4px, transparent 3px);
+  background: var(--b) 50% 0 / 8px 8px no-repeat, var(--b) 50% 100% / 8px 8px no-repeat, var(--b) 0 50% / 8px 8px no-repeat, var(--b) 100% 50% / 8px 8px no-repeat,
+    var(--b) 15% 15% / 8px 8px no-repeat, var(--b) 85% 15% / 8px 8px no-repeat, var(--b) 15% 85% / 8px 8px no-repeat, var(--b) 85% 85% / 8px 8px no-repeat; }
+#loading .dial { width: 112px; height: 112px; border-radius: 50%; position: relative; background: radial-gradient(circle at 50% 40%, #f4efe0, #d8d0b8 70%, #b8ae94);
+  box-shadow: inset 0 0 0 3px #2a2418, inset 0 4px 10px rgba(0,0,0,0.35); }
+#loading .dial .tick { position: absolute; inset: 10px; border-radius: 50%;
+  background: repeating-conic-gradient(from -135deg, #2a2418 0 1.2deg, transparent 1.2deg 13.5deg); -webkit-mask: radial-gradient(circle, transparent 38px, #000 39px); mask: radial-gradient(circle, transparent 38px, #000 39px); }
+#loading .dial .needle { position: absolute; left: 50%; top: 50%; width: 3px; height: 44px; margin-left: -1.5px; transform-origin: 50% 0; background: #a02a1a; border-radius: 2px; animation: needle 1.6s ease-in-out infinite alternate; }
+#loading .dial .needle::after { content: ''; position: absolute; left: -4px; top: -5px; width: 11px; height: 11px; border-radius: 50%; background: #2a2418; }
+#loading .dial b { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font: 9px var(--stencil); letter-spacing: 0.2em; color: #4a3e28; }
+@keyframes needle { from { transform: rotate(45deg); } to { transform: rotate(300deg); } }
+#loading > span { font: italic 20px var(--serif); color: var(--paint); }
+/* the pause menu, as a panel off the boat: riveted steel, a brass plate, brass and steel push-buttons */
+#pause {
+  padding: 26px 30px 28px; border-radius: 10px; backdrop-filter: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.10), transparent 60%),
+    linear-gradient(180deg, var(--steel) 0%, #444c41 55%, #3a4138 100%);
+  border: 2px solid var(--steel-deep);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.35), inset 0 0 0 7px rgba(0,0,0,0.12);
+}
+#pause::before {
+  content: ''; position: absolute; inset: 0; border-radius: 10px; pointer-events: none;
+  --r: radial-gradient(circle at 50% 45%, #b8bea9 0 1.2px, #7c8470 1.8px, #2a2f27 3px, transparent 3.6px);
+  background: var(--r) 0 4px / 24px 10px repeat-x, var(--r) 0 calc(100% - 4px) / 24px 10px repeat-x,
+    var(--r) 4px 0 / 10px 24px repeat-y, var(--r) calc(100% - 4px) 0 / 10px 24px repeat-y;
+}
+#pause h2 { display: inline-block; padding: 6px 30px 8px; border-radius: 4px; color: #3a2a0e; text-shadow: 0 1px 0 rgba(255,245,210,0.55);
+  background: linear-gradient(180deg, var(--brass-hi) 0%, var(--brass) 38%, #a8873e 62%, var(--brass-lo) 100%);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,250,220,0.7), inset 0 -1px 0 rgba(60,40,10,0.6); }
+#pause button { border-radius: 999px; border: 0; color: var(--paint);
+  background: radial-gradient(ellipse at 50% 25%, #5a6152, #343a30); box-shadow: 0 2px 0 #151813, 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12); }
+#pause button:hover { filter: brightness(1.12); }
+#pause #resume { color: #2e220a; background: radial-gradient(ellipse at 50% 25%, var(--brass-hi), var(--brass) 55%, #9a7a34 100%); box-shadow: 0 2px 0 #4a3510, 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,250,220,0.75); }
+#pause .small { color: var(--paint-dim); }
+#pause .pause-version { right: 24px; bottom: 16px; color: var(--paint-dim); }

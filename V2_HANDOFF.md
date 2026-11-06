@@ -370,3 +370,9 @@ Docs, screenshots, the handoff's checks, merge to main.
 - README controls and "What to know" rewritten for 2.0; GAME_DESIGN.md has a "Version 2.0" summary at the top; README project layout lists the new files.
 - Checks before the merge: smoke (reef, sub deep, monster hunting, X), saves (8 cases), walls (0 animals in rock at 8 places incl. trench + pit), spawn rates, sub net, helm, gallery + release, and a keyboard playthrough (title → net reef fish → sell → shop → board → dive → autopilot → pause → save & quit → continue). No errors.
 - Next (queued): the title/loading screen restyle and the asset detail pass, on `v2-wip`, merged as 2.0.x.
+
+## 2.0.1 — the title, loading and pause screens in the Margaret's style
+- Title: one riveted steel panel (same recipe as the shop), "Earl the Diver" on a brass nameplate with a stencilled strapline, Continue as a brass push-button, the save slots as recessed "Divers' log" plates, stencilled links.
+- Loading: a brass porthole with a depth gauge whose needle sweeps while the sea is charted.
+- Pause: the same steel panel, "Paused" on a brass plate, Resume brass, the rest steel push-buttons.
+- CSS only (+ small markup changes in index.html); no per-frame cost.
