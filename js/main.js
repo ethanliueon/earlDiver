@@ -577,7 +577,7 @@ function promptFor(t) {
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
       if (g.sub.hull < 0.995) p += g.weld ? `   ·   Welding the plate on… ${Math.round(g.weld / WELD_TIME * 100)} %`
-        : g.items.plate > 0 ? `   ·   hold F  Weld a patch plate over the damage (hull ${Math.round(g.sub.hull * 100)} %)` : `   ·   hull ${Math.round(g.sub.hull * 100)} % (no patch plates)`;
+        : g.items.plate > 0 ? `   ·   hold Z  Weld a patch plate over the damage (hull ${Math.round(g.sub.hull * 100)} %)` : `   ·   hull ${Math.round(g.sub.hull * 100)} % (no patch plates)`;
     }
     else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
       : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (B) and use her winch`
@@ -678,15 +678,37 @@ function leaveSub() {
 // the third approach. Swimming, there is one last moment as the jaws open: flash the lamp (once: it
 // learns), throw a lure or wear the necklace.
 const KILL_LUNGE = 0.95, KILL_CLOSE = 0.16, KILL_WINDOW = 0.7;
+// which way it can come at him from: along a line of open water (no rock, not through the bottom or
+// out of the sea), sideways if it can, else rising at an angle from below, or down from above
+function killDirection(T) {
+  const W = g.world, ent = g.entity;
+  if (ent.killDir) { const d = ent.killDir; ent.killDir = null; return d; }
+  const side = Math.sign(ent.x - T.x) || 1;
+  const cands = [[side, 0, 6], [-side, 0, 5], [side, 0.6, 3], [-side, 0.6, 2.5], [side, 1.1, 1], [-side, 1.1, 0.8], [side, -0.45, 1.5], [-side, -0.45, 1.2]];
+  let best = null, bestS = -1;
+  for (const [sx, a, pref] of cands) {
+    const ux = sx * Math.cos(a), uy = Math.sin(a);
+    let run = 0;
+    for (let k = 3; k <= 75; k += 3) { const px = T.x + ux * k, py = T.y + uy * k; if (py < 3 || W.rockAt(px, py, 1.5) || W.floorAt(px) < py + 2) break; run = k; }
+    const score = Math.min(run, 70) + pref;
+    if (score > bestS) { bestS = score; best = [ux, uy]; }
+  }
+  return best;
+}
 function startKill() {
   const e = g.earl, ent = g.entity, inSub = e.inSub && !g.sub.imploded;
   const T = inSub ? g.sub : e;
-  const s = Math.sign(ent.x - T.x) || 1;
-  const V = g.viewBox, half = V ? (V[1] - V[0]) / 2 : 20;
-  // off the edge of the screen, its mouth level with him
-  ent.x = T.x + s * (half + 6); ent.y = T.y - 2.5; ent.vx = ent.vy = 0; ent.faceLock = -s; ent.eyeOpen = 1;
+  const [dx, dy] = killDirection(T);
+  // its body lies along the way it comes in (belly down), so it is drawn turned to match
+  const flip = dx >= 0 ? 1 : -1, rot = flip > 0 ? Math.atan2(dy, dx) : Math.atan2(-dy, -dx);
+  // the point inside its open mouth he ends up at: 10 m behind the snout, 2.5 m down
+  const ox = flip * 10, oy = 2.5, offX = ox * Math.cos(rot) - oy * Math.sin(rot), offY = ox * Math.sin(rot) + oy * Math.cos(rot);
+  const V = g.viewBox, half = V ? Math.max(V[1] - V[0], V[3] - V[2]) / 2 : 20;
+  const x1 = T.x - offX, y1 = T.y - offY, x0 = x1 + dx * (half + 22), y0 = y1 + dy * (half + 22); // from off the screen
+  ent.x = x0; ent.y = y0; ent.vx = ent.vy = 0; ent.faceLock = -flip; ent.eyeOpen = 1;
   ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
-  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0: ent.x, window: inSub ? null : [0, KILL_WINDOW] };
+  const s = flip;
+  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0, y0, x1, y1, dx, dy, rot, flip, window: inSub ? null : [0, KILL_WINDOW] };
   ui.closeAll && ui.closeAll();
   audio.ready && audio.drop();
   g.fx.shake = Math.max(g.fx.shake, 1.2);
@@ -699,7 +721,7 @@ function killUpdate(dt) {
   if (K.esc) {
     K.escT += dt;
     // it veers off the way it came
-    ent.x += K.s * dt * 20; K.open = Math.max(0, K.open - dt * 3);
+    ent.x += K.dx * dt * 20; ent.y += K.dy * dt * 20; K.open = Math.max(0, K.open - dt * 3);
     if (K.escT > 0.6) { g.kill = null; ent.faceLock = null; }
     for (const k of ['l', 'q', 'e']) pressed.delete(k);
     return;
@@ -716,8 +738,7 @@ function killUpdate(dt) {
   // the lunge: it comes across the screen, the jaw dropping as it comes, until he is well inside the
   // gape (about 10 m behind its snout); then the jaws shut
   const k = clamp(K.t / KILL_LUNGE, 0, 1), ease = 1 - Math.pow(1 - k, 2.2);
-  const endX = T.x - K.s * 10;
-  ent.x = K.x0 + (endX - K.x0) * ease; ent.y = T.y - 2.5;
+  ent.x = K.x0 + (K.x1 - K.x0) * ease; ent.y = K.y0 + (K.y1 - K.y0) * ease;
   if (!K.opened && K.t > 0.05) { K.opened = true; audio.ready && audio.scare(); g.fx.shake = Math.max(g.fx.shake, 2.5); }
   if (K.t < KILL_LUNGE) K.open = clamp(K.t / 0.45, 0, 1);
   else {
@@ -781,7 +802,7 @@ function repairs(dt, target, holding) {
       hud.toast(`The plate is welded on: hull ${Math.round(sub.hull * 100)} % (${g.items.plate} plate${g.items.plate === 1 ? '' : 's'} left)`);
       audio.ready && audio.click();
     }
-  } else { if (g.weld > 0.3 && g.weld < WELD_TIME) hud.toast('The weld is unfinished: hold F to keep going'); g.weld = 0; g.welding = false; }
+  } else { if (g.weld > 0.3 && g.weld < WELD_TIME) hud.toast('The weld is unfinished: hold Z to keep going'); g.weld = 0; g.welding = false; }
 }
 
 // crush depth. No hull fails at an exact number: each dive the sub has its own hidden crush depth,
@@ -928,7 +949,7 @@ function update(dt) {
       g.pry.t += dt;
       if (g.pry.t >= HOLD_TIME[target.p.type]) { g.pry = null; interact(target, false); }
     } else g.pry = null;
-    repairs(dt, target, holding);
+    repairs(dt, target, keys.has('z')); // welding: hold Z at the hatch
     // planting a coral fragment on bare shallow seabed
     if (planting && holding) {
       g.plant = (g.plant || 0) + dt;
@@ -1122,8 +1143,8 @@ function update(dt) {
     for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from the pressure it lives at`, 'warn');
     for (const ev of dl.events) {
       const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
-      if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the climb: get it into one of the sub's chambers`, 'warn');
-      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying: get it to a chamber, or go back down`, 'warn');
+      if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the ${ev.deeper ? 'depth' : 'climb'}: get it into one of the sub's chambers`, 'warn');
+      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying: get it to a chamber, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
     }
     g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here

@@ -278,7 +278,11 @@ export class Entity {
       // may lose him (or, at the sub, come and look in through the viewport, and then leave); run,
       // or light up while it is looking, and it comes.
       this.faceLock = null;
-      if (e.inSub) {
+      // the three approaches need room: the sub well clear of rock and the bottom on every side. In
+      // close quarters (or with Earl swimming) it comes once, from whatever way is open, and eats him.
+      const midApproach = this.ap && (this.ap.phase || this.ap.wait > 0);
+      const cramped = e.inSub && !midApproach && !this.openAround(g);
+      if (e.inSub && !cramped) {
         // ---------- at the sub: three approaches (see approach) ----------
         this.hunt = null;
         const r = (this.state === 'hunt' || (this.ap && (this.ap.phase || this.ap.wait > 0))) && !lured && !away && !(prot && d < 70) ? this.approach(g, dt, d, bandLo) : null;
@@ -286,54 +290,23 @@ export class Entity {
       } else {
         if (this.ap) { this.ap.phase = null; this.flick = 0; }
       }
-      if (this.state !== 'hunt' || e.inSub) this.hunt = e.inSub ? null : this.state === 'hunt' ? this.hunt : null;
-      if (!e.inSub && this.state === 'hunt' && d < 75) {
-        const H = this.hunt || (this.hunt = { phase: 'stalk', t: 0, ang: Math.atan2(this.y - e.y, this.x - e.x), passes: 0, still: 0, run: 0, dir: this.rng() < 0.5 ? -1 : 1 });
-        H.t += dt;
-        const dark = e.inSub ? !g.sub.lightsOn : !e.lampOn, still = (e.speedNow || 0) < 0.4;
-        H.still = still && dark ? H.still + dt : 0;
-        H.run = (e.speedNow || 0) > 2.5 ? H.run + dt : Math.max(0, H.run - dt);
-        const R = e.inSub ? 26 : 18;
-        if (H.phase === 'stalk') {
-          // circling at the edge of his light, slow; seen only in pieces
-          H.ang += H.dir * dt * 2.4 / R;
-          tx = e.x + Math.cos(H.ang) * R; ty = e.y + Math.sin(H.ang) * R * 0.55;
-          speed = d > R + 15 ? ENTITY_SPEED * 0.6 : 3;
-          if (H.still > 8) { this.goAway(e.x, e.y, bandLo); this.hunt = null; g.events.push('lost'); }
-          else if (H.run > 2) { H.phase = 'windup'; H.t = 0; g.events.push('windup'); } // he bolts: prey that runs is chased
-          else if (H.t > (H.passes ? 5 : 8) * (still && dark ? 1.8 : 1)) {
-            H.t = 0;
-            if (H.passes < 1) {
-              const side = Math.sign(this.x - e.x) || 1;
-              H.px = e.x - side * 30; H.py = e.y + (e.inSub ? 7 : 5) * (this.rng() < 0.5 ? -1 : 1);
-              H.phase = 'pass'; H.passed = false;
-            } else { H.phase = 'windup'; g.events.push('windup'); }
-          }
-        } else if (H.phase === 'glare') {
-          // seen: it hangs off in the dark, facing him, its eyes coming up. Go dark and still, or hide,
-          // and it may lose him; run and it comes at once.
+      // ---------- one turn: it comes for him once, jaws opening ----------
+      if ((!e.inSub || cramped) && this.state === 'hunt' && !lured && !away && !(prot && d < 70)) {
+        const H = this.hunt;
+        if (H && H.phase === 'glare') {
+          // seen in his lamp: it hangs off at the edge of what he can see, its eyes coming up. Dark and
+          // still, or hidden, and it may lose him; run and it comes at once.
+          H.t += dt;
+          const dark = e.inSub ? !g.sub.lightsOn : !e.lampOn, still = (e.speedNow || 0) < 0.4;
+          H.still = still && dark ? (H.still || 0) + dt : 0;
+          H.run = (e.speedNow || 0) > 2.5 ? (H.run || 0) + dt : Math.max(0, (H.run || 0) - dt);
           const V = g.viewBox, half = V ? Math.min(V[1] - V[0], (V[3] - V[2]) * 1.6) / 2 : 20;
-          const ux = (this.x - e.x) / (d || 1), uy = (this.y - e.y) / (d || 1), hold = clamp(half - 5, 7, e.inSub ? 17 : 12); // at the edge of what he can see
+          const ux = (this.x - e.x) / (d || 1), uy = (this.y - e.y) / (d || 1), hold = clamp(half - 5, 7, e.inSub ? 17 : 12);
           tx = e.x + ux * hold; ty = e.y + uy * hold * 0.6; speed = 2.5;
           if (H.still > 3.5 || g.concealed) { this.goAway(e.x, e.y, bandLo); this.hunt = null; g.events.push('lost'); }
-          else if (H.run > 2.5 || H.t > GLARE_TIME) { H.phase = 'windup'; H.t = 0; g.events.push('windup'); }
-        } else if (H.phase === 'pass') {
-          // it sweeps past him, close, and does not strike
-          tx = H.px; ty = H.py; speed = 9;
-          if (!H.passed && Math.abs(this.x - e.x) < 4) { H.passed = true; g.events.push('pass'); }
-          if (dist(this.x, this.y, tx, ty) < 6 || H.t > 9) { H.phase = 'stalk'; H.t = 0; H.passes++; H.ang = Math.atan2(this.y - e.y, this.x - e.x); }
-        } else if (H.phase === 'windup') {
-          // the warning: it draws back, a second, then comes
-          const ux = (this.x - e.x) / (d || 1), uy = (this.y - e.y) / (d || 1);
-          tx = this.x + ux * 6; ty = this.y + uy * 6; speed = 3;
-          if (H.t > 1.1) { H.phase = 'strike'; H.t = 0; g.events.push('strike'); }
-        } else if (H.phase === 'strike') {
-          // the strike: at travelling speed, bursting to 15 m/s only when it is on screen and he is fleeing
-          tx = e.x; ty = e.y; speed = d < 30 && (e.speedNow || 0) > 1.5 ? ENTITY_BURST : ENTITY_SPEED;
-          if (d < 7) { this.hunt = null; this.grab = true; }
-          else if (H.t > 6) { H.phase = 'stalk'; H.t = 0; }
-        }
-      }
+          else if (H.run > 2.5 || H.t > GLARE_TIME) { this.hunt = null; this.swallowNow = true; }
+        } else if (d < 80) { this.hunt = null; this.swallowNow = true; }
+      } else if (!e.inSub || cramped) this.hunt = this.hunt && this.hunt.phase === 'glare' && this.state === 'hunt' ? this.hunt : null;
       // how high it will come: up toward 120 m only in a live chase, otherwise it keeps below 200 m
       const chasing = this.state === 'hunt' || this.state === 'lured';
       ty = Math.max(ty, chasing ? SAFE_DEPTH + 2 : REST_CEILING + 10);
@@ -362,12 +335,27 @@ export class Entity {
     if (this.blink < -this.rng.range(3, 7)) this.blink = 0.18;
 
     this.lights(g, dt);
-    if (this.swallowNow) { this.swallowNow = false; if (this.marked && e.inSub && !prot) { this.ap = null; this.flick = 0; return 'swallow'; } }
+    if (this.swallowNow) { this.swallowNow = false; if (this.marked && !prot && e.y > SAFE_DEPTH - 4) { this.ap = null; this.flick = 0; return 'swallow'; } }
     // the strike reached him: the grab (see main.js: the jaws)
     if (this.grab) { this.grab = false; if (this.marked && !prot && e.y > SAFE_DEPTH - 4) return 'grab'; }
     return null;
   }
 
+  // Room for the three approaches: open water round the sub, 50 m each side, 20 m above (and below
+  // the surface) and 30 m below, with no rock and the bottom further down. Checked once a second.
+  openAround(g) {
+    const e = g.earl, W = this.world;
+    if (!W) return true;
+    if (this.openT && g.time - this.openT < 1 && Math.abs(this.openX - e.x) < 8 && Math.abs(this.openY - e.y) < 8) return this.openOk;
+    let ok = e.y > 25;
+    for (let dx = -50; ok && dx <= 50; dx += 5) {
+      const x = clamp(e.x + dx, 0, 2999);
+      if (W.floorAt(x) < e.y + 32) ok = false;
+      for (let dy = -20; ok && dy <= 30; dy += 5) if (W.rockAt(x, e.y + dy, 1)) ok = false;
+    }
+    this.openT = g.time; this.openX = e.x; this.openY = e.y; this.openOk = ok;
+    return ok;
+  }
   // The sub, three times. Each approach is its own pass out of the dark, with a pause between:
   //  1. only its tail: it passes beneath, out of sight, and its tail curls up into view and strikes the hull
   //  2. its head: it noses in at the edge of the screen and sees him (lights out, the blue flash, its
@@ -429,7 +417,7 @@ export class Entity {
         // from off the side of the screen, its mouth level with him, fast
         const px = e.x + A.side * Math.max(half + 8, 30), py = e.y - 2.5;
         this.faceLock = -A.side;
-        if (dist(this.x, this.y, px, py) < 5 || A.t > 12) return { tx: px, ty: py, speed: 14, swallow: true };
+        if (dist(this.x, this.y, px, py) < 5 || A.t > 12) { this.killDir = [A.side, 0]; return { tx: px, ty: py, speed: 14, swallow: true }; }
         return { tx: px, ty: py, speed: 14 };
       }
     }

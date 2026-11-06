@@ -464,7 +464,7 @@ export class Renderer {
     // the entity's body, lit by the same light as everything else (invisible in the dark)
     const entB = g.entity;
     this.entInfo = null;
-    if (entB && g.mode !== 'menu' && inView(entB.x, entB.y, MONSTER_LEN * 1.35) && entB.dist < 170) {
+    if (entB && g.mode !== 'menu' && !g.kill && inView(entB.x, entB.y, MONSTER_LEN * 1.35) && entB.dist < 170) {
       const toward = entB.faceLock ?? (entB.dist < 70 ? (g.earl.x >= entB.x ? 1 : -1) : (Math.cos(entB.heading) >= 0 ? 1 : -1));
       entB.face = entB.faceLock ?? lerp(entB.face ?? toward, toward, 0.02);
       const flipB = entB.face >= 0 ? -1 : 1;
@@ -735,11 +735,11 @@ export class Renderer {
     // Drawn again over the lit scene (the lamps on it) so it cannot be lost in the dark.
     if (g.kill && g.entity) {
       const K = g.kill, en = g.entity;
-      const flipK = (en.face ?? 1) >= 0 ? -1 : 1, Lk = MONSTER_LEN * ppm;
-      ctx.save(); ctx.translate(S(en.x), Sy(en.y)); ctx.scale(flipK, 1);
+      const flipK = K.flip ?? ((en.face ?? 1) >= 0 ? -1 : 1), rotK = K.rot || 0, Lk = MONSTER_LEN * ppm, cr = Math.cos(rotK), sr = Math.sin(rotK);
+      ctx.save(); ctx.translate(S(en.x), Sy(en.y)); ctx.rotate(rotK); ctx.scale(flipK, 1);
       const info = drawMonster(ctx, Lk, t, 1, K.open || 0, 0.55);
       ctx.restore();
-      drawMonsterLights(ctx, info, (lx, ly) => [S(en.x) + lx * flipK, Sy(en.y) + ly], ppm, t, { body: 0, eye: 1, flash: 0, reduce: !!g.reduceFlash });
+      drawMonsterLights(ctx, info, (lx, ly) => { const x = lx * flipK; return [S(en.x) + x * cr - ly * sr, Sy(en.y) + x * sr + ly * cr]; }, ppm, t, { body: 0, eye: 1, flash: 0, reduce: !!g.reduceFlash });
     }
     // the arc itself, white-hot, and sparks quenched almost as soon as they leave it
     if (g.welding) {

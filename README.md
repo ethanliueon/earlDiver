@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.28.1 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.29.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -68,7 +68,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
   shroud and the recall transponder.
 - A damaged hull leaks cabin air. Repairs during a dive use supplies bought at the boat: a leak
   sealant kit (K, inside: +20 %, but only up to 85 %, since a seal is not steel) or a hull patch
-  plate (hold F outside at the hatch: 10 s of wet welding, +40 %; the arc's light is seen below 200 m).
+  plate (hold Z outside at the hatch: 10 s of wet welding, +40 %; the arc's light is seen below 200 m).
 - Something is out there: a gulper some 60 m long, nearly all head and mouth, with red lights
   flickering fast and unevenly along its length and red eyes. It hears speed and engines, and it
   sees light. Kelp and rock overhangs hide you if you are slow and dark. Sea lanterns keep it away,
@@ -77,14 +77,16 @@ Settings → Pages → Deploy from a branch → `main` / root).
   seen you), black again; then only its eyes, brightening, while its red seeps into the water
   around you. Go dark and still, or hide, before the red peaks and it may lose you; run and it comes.
   The pause menu has a "Reduce flashing" setting that slows and softens its lights.
-- At the sub it comes three times, with a pause between: first only its tail, curling up out of the
+- At the sub, in open water (well clear of rock and the bottom), it comes three times, with a pause between: first only its tail, curling up out of the
   dark below to strike the hull; then its head, nosing in at the edge of the screen to look at you
   (the lights go out, the blue flash, its eyes come up); then it comes in from the side with its
   mouth already opening and swallows the sub whole. Nothing saves you from the third: get away (up
   past 120 m, to a lantern, the old one's cave) or calm it (G) before then.
-- Swimming, it stalks at the edge of your light, sweeps past once, draws back and strikes, its jaws
-  opening as it comes. In that last moment: flash the lights (L, once: it learns), throw a lure (Q)
-  or wear a necklace (E), and it turns away.
+- Anywhere else (swimming, or the sub in close quarters) it comes once, from whichever way is open
+  (the side, up from below, down from above), its jaws opening as it comes. Swimming, in that last
+  moment: flash the lights (L, once: it learns), throw a lure (Q) or wear a necklace (E).
+- Every animal you carry suffers a pressure change either way: taking a shallow fish deep hurts it
+  as much as bringing a deep one up.
 - It travels at about 12 m/s, bursting to 15 m/s only on screen, and only when you flee.
 - Between 2,500 and 3,000 m lives the Abyssal Sleeper Shark: slow, ancient, nearly blind, the
   biggest predator at its depth. It rises at you from the dark below, then lunges, at Earl or the

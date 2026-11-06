@@ -204,9 +204,10 @@ sapphires within 150 m show on the sonar); a pressure relic (5 coins, up to 4: t
 Every animal has the pressure it lives at (its home depth: where it was caught, or where it has
 been slowly brought up to). What hurts it is the gap between that and the pressure it is under: in
 the bag, Earl's depth; in the open tank, the sub's; in a pressure chamber, what the chamber holds.
-Up to 150 m short, it lives, more stressed the bigger the gap (its condition sinks toward a ceiling,
+Up to 150 m off it, shallower or deeper, it lives, more stressed the bigger the gap (its condition sinks toward a ceiling,
 down to 'weak' at 150 m). Past 150 m it is dying, slowly at first and faster the bigger the gap.
-So a shallow animal can never die of the trip up, and a deep one dies unless it is in a chamber.
+It works both ways: a deep animal brought up and a shallow one taken deep suffer alike. A
+chamber holds its rating either way (above the water outside, or below it), so it protects both.
 Nothing protects an animal in Earl's net: the bag is at his depth. When one starts to feel the climb
 (40 m short) a warning says to get it into one of the sub's chambers; when it starts dying (150 m
 short) a second one says so, and its dot in the bag row pulses red. In the tank room the bag hangs
@@ -269,7 +270,11 @@ come into her cave.
 
 ## The entity
 
-- At the sub it comes three times (each its own pass out of the dark, 10-26 s apart):
+- At the sub, in open water, it comes three times (each its own pass out of the dark, 10-26 s apart).
+  Open water means: below 25 m, no rock within 50 m to either side, 20 m above or 30 m below, and the
+  bottom at least 32 m down all the way across. Otherwise (and always with Earl swimming) it comes
+  once: from the side if that way is open water, else rising at an angle from below, or down from
+  above, its body turned along the way it comes, jaws opening, and eats him.
   1. Its tail: it passes 22 m below, out of sight, and as its tail comes under the sub it curls up
      into view and strikes the hull (a jolt, 6 % of the hull).
   2. Its head: it noses in at the edge of the screen, level with the sub, and sees him: the lights go
@@ -279,8 +284,8 @@ come into her cave.
      opening, it crosses in under a second; the sub is seen inside the open mouth, and it shuts. No
      escape: the counters are earlier (getting above 120 m, lanterns, the necklace, the cave, an
      offering, good deeds).
-- Swimming, Earl gets the old hunt (stalk, one pass, the draw-back, the strike), ending the same way,
-  jaws opening as it comes, with 0.7 s to flash it, throw a lure or wear the necklace.
+- Swimming, Earl gets 0.7 s as the jaws open to flash it, throw a lure or wear the necklace. Caught in
+  his lamp first, it plays the lit-up sequence (lights out, blue flash, eyes and red) before it comes.
 
 - What it is: a gulper (after the pelican eel) about 60 m long, with an 18 m whip of a tail behind
   that: nearly all head and mouth, velvet-black, loose wrinkled skin with a violet sheen and pale

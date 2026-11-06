@@ -108,11 +108,14 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   // ---------- arms ----------
   // Idle: hanging forward of the body, gently sculling at waist height.
   // Swimming: tucked under the chest, hands together - never up at the face.
+  // With nothing in his hands, both arms lie along his sides, hands by his hips, as divers swim.
+  const restArms = !gear || gear.kind === 'none';
   const arm = (phase, near, pose) => {
     const sc = Math.sin(kick * 0.7 + phase);
     const shX = 27 * u, shY = near ? 2 * u : -0.5 * u;
     let upA = (1 - m) * (Math.PI - 0.32 + sc * 0.12) + m * (Math.PI * 0.7);
     let foreA = (1 - m) * (Math.PI - 0.95 + sc * 0.25) + m * (Math.PI * 0.12);
+    if (restArms && !pose) { upA = Math.PI - 0.13 + sc * 0.03; foreA = Math.PI - 0.04 + sc * 0.03; }
     if (pose) { upA = pose.upA; foreA = pose.foreA; }
     const [ex, ey] = at(shX, shY, upA, 15 * u);
     const [wx, wy] = at(ex, ey, foreA, 13 * u);

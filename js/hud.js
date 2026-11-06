@@ -384,7 +384,7 @@ export class Hud {
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
     if (e.inSub && g.items.airTank > 0) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', 0]);
     if (e.inSub && (g.items.sealant > 0 || g.seal)) slots.push(['k', 'K', 'SEALANT', g.items.sealant, '#e8c070', g.seal ? g.seal / 6 : 0]);
-    if (!e.inSub && g.items.plate > 0 && g.sub.hull < 0.995) slots.push(['f', 'F', 'PATCH PLATE', g.items.plate, '#b8c4cc', g.weld ? g.weld / 10 : 0]);
+    if (!e.inSub && g.items.plate > 0 && g.sub.hull < 0.995) slots.push(['z', 'Z', 'PATCH PLATE', g.items.plate, '#b8c4cc', g.weld ? g.weld / 10 : 0]);
     if (g.items.necklace > 0 || g.necklaceT > 0) slots.push(['e', 'E', 'NECKLACE', g.items.necklace, '#f0dcb0', g.necklaceT > 0 ? g.necklaceT / 15 : 0]);
     this.slotHot = {};
     slots.forEach(([id, key, name, n, col, active], i) => {

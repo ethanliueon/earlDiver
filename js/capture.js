@@ -171,9 +171,14 @@ export const chamberRating = (g) => Math.round(statValue(g.profile, 'pressRating
 // the most a chamber can hold right now: the water outside, plus its rating
 export const chamberMax = (g) => Math.max(0, g.sub.y) + chamberRating(g);
 export const homeOf = (s) => (s.home ?? s.from ?? 0);
-export function gapOf(g, s, inBag) {
+// how far the pressure it is under is from its own, either way: taken deeper than it lives hurts it
+// as surely as being brought up (signed: positive when it is under less pressure than its own)
+export function gapSigned(g, s, inBag) {
   const felt = s.pressed ? (s.press || 0) : Math.max(0, inBag ? g.earl.y : g.sub.y);
-  return Math.max(0, homeOf(s) - felt);
+  return homeOf(s) - felt;
+}
+export function gapOf(g, s, inBag) {
+  return Math.abs(gapSigned(g, s, inBag));
 }
 export function updateSpecimens(g, dt) {
   const deaths = [], events = [];
@@ -185,15 +190,20 @@ export function updateSpecimens(g, dt) {
     if (inBag) s.cond -= dt * 0.0005;
     if (s.pressed) {
       if (s.press === undefined) s.press = Math.max(0, g.sub.y);
-      const target = Math.min(s.home, cmax);
+      // the chamber holds its rating either way: above the water outside, or (a shallow animal taken
+      // deep) below it, as the sub's own sphere does
+      const cmin = Math.max(0, Math.max(0, g.sub.y) - chamberRating(g));
+      const target = clamp(s.home, cmin, cmax);
       if (s.press > cmax) s.press = cmax; // more than the walls can hold over the outside: it vents
+      if (s.press < cmin) s.press = cmin; // the outside presses in past what the walls can keep out
       if (s.press < target) s.press = Math.min(target, s.press + PUMP * dt);
       else if (s.press > target) s.press = target;
     }
     const gap = gapOf(g, s, inBag);
     // in the net there is nothing to protect it: say so, once as it starts to suffer, once as it dies
-    if (inBag && gap > 40 && !s.warnStress) { s.warnStress = true; events.push({ type: 'bagStress', s }); }
-    if (inBag && gap > SAFE_GAP && !s.warnDying) { s.warnDying = true; events.push({ type: 'bagDying', s }); }
+    const deeper = gapSigned(g, s, inBag) < 0;
+    if (inBag && gap > 40 && !s.warnStress) { s.warnStress = true; events.push({ type: 'bagStress', s, deeper }); }
+    if (inBag && gap > SAFE_GAP && !s.warnDying) { s.warnDying = true; events.push({ type: 'bagDying', s, deeper }); }
     if (gap > 0) {
       // stress builds toward a ceiling set by the gap; past 150 m it is dying
       const cap = gap <= SAFE_GAP ? 1 - (gap / SAFE_GAP) * 0.55 : 0.45;
