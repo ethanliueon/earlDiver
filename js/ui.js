@@ -203,6 +203,8 @@ export class UI {
     document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
     $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory')) this.toggleInventory(false); });
     $('set-graphics').addEventListener('click', () => { setSetting('fast', !SETTINGS.fast); this.renderSettings(); });
+    $('set-fullscreen').addEventListener('click', () => { $('fullscreen').click(); setTimeout(() => this.renderSettings(), 250); });
+    document.addEventListener('fullscreenchange', () => { if (this.settingsOpen()) this.renderSettings(); });
     // the gear (title screen, journal, pause menu) opens the settings and controls
     document.addEventListener('click', (ev) => { if (ev.target.closest('[data-settings]')) this.toggleSettings(true); });
     document.querySelector('#settings .set-close').addEventListener('click', () => this.toggleSettings(false));
@@ -312,6 +314,7 @@ export class UI {
     row('set-catchtags', 'Catch tags', SETTINGS.catchTags, '"[Space] net the …" under a target');
     row('set-hints', 'Hints', this.h.getHints ? this.h.getHints() : true, 'H');
     row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, 'M');
+    $('set-fullscreen').innerHTML = `<span>Full screen<em>the game fills the whole screen (Esc leaves it)</em></span><b class="${document.fullscreenElement ? 'on' : ''}">${document.fullscreenElement ? 'on' : 'off'}</b>`;
     $('set-graphics').innerHTML = `<span>Graphics<em>Fast: softer picture and fewer extras, for smoother play on slower computers</em></span><b class="on">${SETTINGS.fast ? 'fast' : 'auto'}</b>`;
   }
   galleryOpen() { return !$('gallery').hidden; }
