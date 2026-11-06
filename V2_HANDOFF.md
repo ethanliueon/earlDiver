@@ -272,3 +272,15 @@ Docs, screenshots, the handoff's checks, merge to main.
   schools get the rock check too; hidden residents in their crevice are left alone. Measured over
   30 s at six steep places: before, 96 samples inside the canyon wall (one 938 m deep in the seabed);
   after, 0 of ~63,000.
+
+## 2.0.0-alpha.2: saves and the title screen (tested)
+- economy.js: three save slots in localStorage (`earl.save.slotN` = { format: 2, game, saved, profile });
+  `migrate` fills anything a save lacks from a new profile (old/partial saves load; unreadable ones show
+  as damaged and can be deleted or started over, never a crash); saving is automatic (`saveProfile`
+  writes within ~0.8 s; `flushSave` at once on death, quitting and leaving the page).
+- A title screen (index.html #title, ui.showTitle): Continue (last slot), the slots on riveted plates
+  (cash, dives, deepest, species, when), delete with a confirm, Controls, Full screen; Enter continues
+  or starts a new diver. "Charting the sea" card while the world is made. The death screen stays its
+  own (#menu) with a "Title screen" link; the pause menu has "Save and quit to the title". The dive log
+  is kept per slot.
+- Tested: new slot, buy, reload, Continue (kept), save & quit, a damaged slot, delete, an old partial save.

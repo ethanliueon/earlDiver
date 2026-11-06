@@ -14,13 +14,26 @@
   <canvas id="game" tabindex="0"></canvas>
   <canvas id="hud"></canvas>
 
-  <section id="menu">
+  <section id="title">
+    <div class="menu-inner">
+      <h1>Earl the Diver</h1>
+      <p class="tag">The sea pays, if you look deep enough.<br>Dive and survive to tell the tale.</p>
+      <div class="menu-buttons"><button id="continue" hidden>Continue</button></div>
+      <div id="slots" class="slots"></div>
+      <div class="menu-links"><button id="title-controls" class="link">Controls</button><button id="title-fullscreen" class="link">Full screen</button></div>
+      <div class="controls title-controls" hidden></div>
+      <p class="hint">Headphones recommended. Desktop browser only. Progress saves itself to its slot. <span class="version"></span></p>
+    </div>
+  </section>
+  <div id="loading" hidden><span>Charting the sea</span></div>
+
+  <section id="menu" class="gone">
     <div class="menu-inner">
       <h1>Earl the Diver</h1>
       <p class="tag">The sea pays, if you look deep enough.<br>Dive and survive to tell the tale.</p>
       <div id="menu-save" class="menu-save"></div>
       <div class="menu-buttons"><button id="play">Dive</button><button id="newgame" class="link" hidden>New game</button></div>
-      <div class="menu-links"><button id="show-controls" class="link">Controls</button><button id="show-log" class="link" hidden>Dive log</button><button id="fullscreen" class="link">Full screen</button></div>
+      <div class="menu-links"><button id="show-controls" class="link">Controls</button><button id="show-log" class="link" hidden>Dive log</button><button id="fullscreen" class="link">Full screen</button><button id="to-title" class="link">Title screen</button></div>
       <div class="controls" hidden>
         <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> swim</span>
         <span><kbd>Shift</kbd> faster, more air</span>
@@ -120,9 +133,10 @@
     <h2>Paused</h2>
     <button id="resume">Resume</button>
     <button id="quit" class="ghost">End this dive</button>
+    <button id="savequit" class="ghost">Save and quit to the title</button>
     <button id="restart" class="ghost">Start a new game</button>
     <button id="flashing" class="ghost">Reduce flashing: off</button>
-    <p class="small">Ending a dive loses what you have not sold; the next dive is a new sea. A new game starts over with nothing. Nothing is saved when you leave the page. H toggles hints.</p>
+    <p class="small">Ending a dive loses what you have not sold; the next dive is a new sea. A new game starts over with nothing. Progress saves itself to its slot as you play (what you have not sold is lost if you leave mid-dive). H toggles hints.</p>
   </section>
 
   <div id="tip" hidden></div>

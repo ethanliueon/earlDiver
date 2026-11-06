@@ -1,3 +1,4 @@
+import { VERSION as GAME_VERSION } from './version.js';
 // The money side of the game: the save (what survives death), prices, the market, and the
 // catalogue of things Earl can buy at the boat.
 //
@@ -377,16 +378,53 @@ export function newProfile() {
     journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(), coins: 0,
   };
 }
-export function loadProfile() { return null; }
-// keeps only the deepest depth ever reached
+// ---------------- saves ----------------
+// Three save slots in the browser's localStorage, each { format, game, saved, profile }. The format
+// number lets later versions convert an older save (migrate); a save that can't be read is reported
+// as damaged, never crashes the game. Saving is automatic: saveProfile marks the profile dirty and it
+// is written within a second (flushSave writes at once: on leaving the page, dying, quitting).
+export const SAVE_FORMAT = 2, SLOTS = 3;
+const SLOT_KEY = (n) => `earl.save.slot${n}`, LAST_KEY = 'earl.save.last';
+let curSlot = null, pending = null, pendingT = null;
+export const getSlot = () => curSlot;
+export function setSlot(n) { curSlot = n; try { localStorage.setItem(LAST_KEY, String(n)); } catch (e) { /* storage unavailable */ } }
+export function lastSlot() { try { const n = +localStorage.getItem(LAST_KEY); return n >= 1 && n <= SLOTS ? n : null; } catch (e) { return null; } }
+// bring any readable save up to the current format: fill in whatever it lacks from a new profile
+export function migrate(data) {
+  if (!data || typeof data !== 'object' || !data.profile || typeof data.profile !== 'object') return null;
+  const fresh = newProfile(), P = Object.assign({}, fresh, data.profile);
+  for (const k of ['lv', 'gear', 'addons', 'market', 'traps']) if (!P[k] || typeof P[k] !== 'object' || Array.isArray(P[k])) P[k] = fresh[k] || {};
+  for (const k of ['caught', 'journal', 'photos']) if (!Array.isArray(P[k])) P[k] = [];
+  for (const k of ['cash', 'coins', 'lifetime', 'runs', 'deaths', 'deepest']) if (typeof P[k] !== 'number' || !isFinite(P[k])) P[k] = fresh[k] || 0;
+  P.format = SAVE_FORMAT;
+  return P;
+}
+// what is in a slot: { state: 'empty' | 'ok' | 'damaged', profile, saved }
+export function readSlot(n) {
+  let raw = null;
+  try { raw = localStorage.getItem(SLOT_KEY(n)); } catch (e) { return { state: 'empty' }; }
+  if (!raw) return { state: 'empty' };
+  try { const data = JSON.parse(raw), P = migrate(data); return P ? { state: 'ok', profile: P, saved: data.saved || 0 } : { state: 'damaged' }; }
+  catch (e) { return { state: 'damaged' }; }
+}
+export function deleteSlot(n) { try { localStorage.removeItem(SLOT_KEY(n)); } catch (e) { /* storage unavailable */ } if (curSlot === n) pending = null; }
+function write(p) {
+  if (!curSlot || !p) return;
+  try { localStorage.setItem(SLOT_KEY(curSlot), JSON.stringify({ format: SAVE_FORMAT, game: GAME_VERSION, saved: Date.now(), profile: p })); }
+  catch (e) { /* storage full or unavailable: the game goes on */ }
+}
+export function flushSave() { if (pendingT) { clearTimeout(pendingT); pendingT = null; } if (pending) { write(pending); pending = null; } }
+export function loadProfile() { return null; } // a profile comes from the title screen's slot (readSlot)
 export function saveProfile(p) {
   if (!p) return false;
   const best = loadBest();
   if ((p.deepest || 0) > best) { try { localStorage.setItem(BEST_KEY, String(Math.round(p.deepest))); } catch (e) { /* storage unavailable */ } }
+  pending = p;
+  if (!pendingT) pendingT = setTimeout(() => { pendingT = null; if (pending) { write(pending); pending = null; } }, 800);
   return true;
 }
 export function loadBest() { try { return +(localStorage.getItem(BEST_KEY) || 0) || 0; } catch (e) { return 0; } }
-export function clearProfile() { /* nothing is stored */ }
+export function clearProfile() { if (curSlot) deleteSlot(curSlot); }
 
 // ---------------- the market ----------------
 // market[kind] = how flooded it is (0 = fresh). It decays back toward 0 in real time.

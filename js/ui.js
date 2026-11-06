@@ -15,6 +15,7 @@ import { TankRoom } from './tankroom.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed } from './capture.js';
+import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { loadBest, UPGRADES, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { RADIO, ready as contractReady } from './contracts.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
@@ -43,7 +44,7 @@ const GEAR_SPECS = {
 };
 const $ = (id) => document.getElementById(id);
 const COIN = '<i class="coin"></i>';
-const RUNLOG_KEY = 'earlDiver.runs.v1';
+const RUNLOG = () => `earlDiver.runs.v1${getSlot() ? '.slot' + getSlot() : ''}`; // each save slot keeps its own dive log
 
 export class UI {
   constructor(h) {
@@ -114,6 +115,24 @@ export class UI {
     });
     document.addEventListener('fullscreenchange', () => { $('fullscreen').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; });
     $('restart').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); });
+    // the title screen: Continue, the three slots, controls, full screen
+    $('continue').addEventListener('click', () => { const n = lastSlot(); if (n) h.onSlot(n); });
+    $('slots').addEventListener('click', (ev) => {
+      const del = ev.target.closest('.del'), card = ev.target.closest('.slot');
+      if (!card) return;
+      const n = +card.dataset.n;
+      if (del) {
+        ev.stopPropagation();
+        if (!del.classList.contains('sure')) { del.classList.add('sure'); del.textContent = 'delete it?'; return; }
+        deleteSlot(n); this.showTitle(); return;
+      }
+      if (card.classList.contains('damaged') && !card.classList.contains('sure')) { card.classList.add('sure'); card.querySelector('.info span').textContent = 'click again to start a new game here'; return; }
+      h.onSlot(n);
+    });
+    $('title-controls').addEventListener('click', () => { const c = document.querySelector('#title .controls'); if (!c.innerHTML) c.innerHTML = document.querySelector('#menu .controls').innerHTML; c.hidden = !c.hidden; });
+    $('title-fullscreen').addEventListener('click', () => $('fullscreen').click());
+    $('to-title').addEventListener('click', () => h.onTitle());
+    $('savequit').addEventListener('click', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onTitle(true); });
     // a tooltip for anything with a data-tip: what an upgrade or a piece of gear does
     const tip = $('tip');
     // a soft rollover when the pointer comes onto a button in a panel; a click for tabs, hatches and
@@ -273,7 +292,30 @@ export class UI {
     $('cave-body').innerHTML = html;
   }
 
+  // the title screen: Continue (the last slot played), and each slot with what it holds
+  showTitle() {
+    this.closeAll(); this.setPaused(false);
+    $('menu').classList.add('gone');
+    const ago = (ms) => { const m = (Date.now() - ms) / 60000; return m < 2 ? 'just now' : m < 60 ? `${Math.round(m)} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
+    let html = '';
+    for (let n = 1; n <= SLOTS; n++) {
+      const r = readSlot(n);
+      if (r.state === 'ok') {
+        const p = r.profile;
+        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? ` · ${p.subName}` : ''}</b><span>${p.runs || 0} dive${p.runs === 1 ? '' : 's'} · deepest ${p.deepest || 0} m · ${(p.journal || []).length} species · ${r.saved ? ago(r.saved) : ''}</span></div><button class="del" title="Delete this save">delete</button></div>`;
+      } else if (r.state === 'damaged') {
+        html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">delete</button></div>`;
+      } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>Empty: new game</b><span>start a new diver here</span></div><span></span></div>`;
+    }
+    $('slots').innerHTML = html;
+    const last = lastSlot();
+    $('continue').hidden = !(last && readSlot(last).state === 'ok');
+    $('title').classList.remove('gone');
+  }
+  titleOpen() { return !$('title').classList.contains('gone'); }
+  showLoading(on) { $('loading').hidden = !on; }
   showGame() {
+    $('title').classList.add('gone');
     $('menu').classList.add('gone');
     $('notes').value = '';
     this.journalDirty = true;
@@ -644,15 +686,15 @@ export class UI {
 
   saveRun(log) {
     let runs = [];
-    try { runs = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch (e) { runs = []; }
+    try { runs = JSON.parse(localStorage.getItem(RUNLOG()) || '[]'); } catch (e) { runs = []; }
     runs.unshift(log);
     runs = runs.slice(0, 12);
-    try { localStorage.setItem(RUNLOG_KEY, JSON.stringify(runs)); } catch (e) { /* storage unavailable */ }
+    try { localStorage.setItem(RUNLOG(), JSON.stringify(runs)); } catch (e) { /* storage unavailable */ }
     this.runs = runs;
   }
   renderRuns(last) {
     let runs = this.runs;
-    if (!runs) { try { runs = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch (e) { runs = []; } }
+    if (!runs) { try { runs = JSON.parse(localStorage.getItem(RUNLOG()) || '[]'); } catch (e) { runs = []; } }
     this.runs = runs;
     const el = $('runlog');
     $('show-log').hidden = !runs.length; // the log is folded away behind its link

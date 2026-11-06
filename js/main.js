@@ -17,6 +17,7 @@ import { fillBoard, fulfil, RADIO } from './contracts.js';
 import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
+import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS } from './economy.js';
 import { loadBest, UPGRADES, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, replacementPrice, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
@@ -131,6 +132,8 @@ function newGame(mode) {
 }
 
 let g = newGame('menu');
+// the slot a fresh "Dive" goes into when none was chosen: the first empty one, else the last played
+function firstFreeSlot() { for (let n = 1; n <= SLOTS; n++) if (readSlot(n).state === 'empty') return n; return lastSlot() || 1; }
 const ui = new UI({
   onPlay: () => startRun(),
   getGame: () => g,
@@ -151,6 +154,23 @@ const ui = new UI({
   },
   onCaveTrade: (keys) => caveTrade(keys),
   onNewGame: () => { profile = null; g.paused = false; startRun(); },
+  // the title screen: play a slot (a new diver in an empty or damaged one), or go back to the title
+  onSlot: (n) => {
+    ui.showLoading(true);
+    setTimeout(() => { // a moment for the "Charting the sea" card to show while the world is made
+      const r = readSlot(n);
+      setSlot(n);
+      profile = r.state === 'ok' ? r.profile : null;
+      startRun();
+      ui.showLoading(false);
+    }, 40);
+  },
+  onTitle: (save) => {
+    if (save && profile && g.mode === 'play') { syncProfile(); saveProfile(profile); }
+    flushSave();
+    g = newGame('menu');
+    ui.showTitle();
+  },
   getProfile: () => profile,
 });
 
@@ -451,6 +471,7 @@ function dieInjury(sp) {
 
 function startRun() {
   audio.init(); audio.resume(); audio.playMusic();
+  if (!getSlot()) setSlot(firstFreeSlot());
   if (!profile) { profile = newProfile(); saveProfile(profile); }
   profile.runs = (profile.runs || 0) + 1; saveProfile(profile);
   g = newGame('play');
@@ -463,7 +484,12 @@ function startRun() {
 window.addEventListener('keydown', (ev) => {
   if (ui.typing()) { if (ev.key === 'Escape') ui.blurTyping(); return; }
   const k = ev.key.toLowerCase();
-  if (g.mode === 'menu' && (k === 'enter' || k === ' ')) { ev.preventDefault(); startRun(); return; }
+  if (g.mode === 'menu' && (k === 'enter' || k === ' ')) {
+    ev.preventDefault();
+    if (ui.titleOpen()) { const n = lastSlot(); ui.h.onSlot(n && readSlot(n).state === 'ok' ? n : firstFreeSlot()); }
+    else startRun();
+    return;
+  }
   if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'tab'].includes(k)) ev.preventDefault();
   if (!keys.has(k)) { pressed.add(k); if (k === 'f') fDown = performance.now(); if (k === 'c') { cDown = performance.now(); cHeld = 0; } }
   keys.add(k);
@@ -1371,6 +1397,7 @@ function update(dt) {
     g.fx.redDeath = injuryDeath ? clamp(g.deathT / 2.2, 0, 1) : 0;
     if (g.deathT > (injuryDeath ? 5 : crushed ? 6 : 3.6)) {
       const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
+      flushSave();
       g = newGame('menu');
       ui.showMenu({ cause, survived, bill, lost });
       return;
@@ -1570,3 +1597,9 @@ window.addEventListener('keydown', (ev) => {
 
 // debug hooks for automated testing
 window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys };
+
+// leaving the page: whatever has changed is written to the slot at once
+function saveNow() { if (!profile) return; if (g.mode === 'play') syncProfile(); saveProfile(profile); flushSave(); }
+window.addEventListener('beforeunload', saveNow);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
+ui.showTitle();
