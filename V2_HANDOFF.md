@@ -487,3 +487,13 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - Undocumented species spawn at 0.015 (was 0.05, the same as exotics). Measured at random open-water spots:
   600 m lanternfish 79 %, hatchetfish 12 %, bristlemouth 6 %; 1,400 m bristlemouth 77 %; 2,600 m amphipods 73 %,
   abyssal red prawn 18 %, undocumented ~5 %.
+
+## 2.1.0 — the aquarium is the gallery aboard the Margaret
+- aquarium.js: no wings to build, no upkeep, nothing on the shore (render.js no longer draws the shore aquarium).
+  Four tanks (`WINGS` = reef / kelp / open / deep; older saves' twilight/deep/abyss animals share the dark tank, `tankOf`).
+  Room `gallerySlots(P)` = 4 + 2 x `P.galleryLv` (steps `GALLERY_STEPS` $200 ... $150,000, max 20).
+- `displayRefusal`: already in / dead / full (no more "needs the open ocean dome"). Dying animals can go in.
+- `tickGallery`: below 0.3 an animal fades (-0.0007/s) and dies; 0.3+ recovers (faster when fed).
+- Income: `earnsOf` = 2 % of value x Happy/Famous a day, x0.5 stressed, x0.25 dying, 0 dead; visitors cosmetic.
+- ui.js Aquarium tab: summary, Walk the gallery, one grid of who's aboard with their state, "More room" card.
+- gallery.js: all four tanks always shown, each with its own water and furniture (coral, kelp, bubbles, dark motes).

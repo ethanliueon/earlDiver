@@ -262,7 +262,13 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .tank-cell { position: relative; height: 62px; border-radius: 3px; background: linear-gradient(180deg, #1d4a5e, #0e2a38); border: 1px solid rgba(160, 210, 220, 0.18); overflow: hidden; }
 .tank-cell.empty { background: rgba(255, 255, 255, 0.02); border-style: dashed; }
 .tank-cell img { width: 100%; height: 44px; object-fit: contain; }
-.tank-cell span { position: absolute; left: 4px; right: 4px; bottom: 2px; font-size: 9px; color: rgba(220, 236, 240, 0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tank-cell span { position: absolute; left: 4px; right: 62px; bottom: 2px; font-size: 9px; color: rgba(220, 236, 240, 0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tank-cell em { position: absolute; bottom: 2px; right: 4px; font: normal 8px var(--mono); color: rgba(220, 236, 240, 0.6); }
+.tank-cell.st-dying em, .tank-cell.st-dead em { color: #f08a6a; }
+.tank-cell.st-stressed em { color: #e8c070; }
+.tank-cell.st-happy em, .tank-cell.st-famous em { color: #9ee0a0; }
+.tank-cell.st-dead img { filter: grayscale(1) brightness(0.6); }
+.aq-head b small { font-size: 0.6em; opacity: 0.6; }
 .tank-cell i { position: absolute; top: 2px; left: 2px; font: normal 8px var(--mono); padding: 0 3px; border-radius: 2px; color: #f4ecd8; }
 @media (max-width: 600px) { .aq-head { grid-template-columns: repeat(2, 1fr); } }
 /* shop descriptions only with Details on */

@@ -10,7 +10,7 @@ const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span cl
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
 import { SETTINGS, setSetting } from './settings.js';
-import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
+import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom } from './tankroom.js';
@@ -430,7 +430,7 @@ export class UI {
     $('newgame').hidden = !p; $('newgame').textContent = 'New game'; this.confirmNew = false;
     const best = loadBest();
     if (!p) { el.innerHTML = best ? `<div class="save-line"><span>deepest ever ${best} m</span></div>` : ''; return; }
-    let html = `<div class="save-line"><b>${money(p.cash, false)}</b><span>${p.runs || 1} dive${(p.runs || 1) > 1 ? 's' : ''}</span><span>deepest ${p.deepest || 0} m${best > (p.deepest || 0) ? ` (ever ${best} m)` : ''}</span><span>${(p.journal || []).length} species recorded</span>${p.aquarium && p.aquarium.wings.length ? `<span>aquarium ${completion(p).species}/${completion(p).of} species, ${completion(p).rare} rare</span>` : ''}</div>`;
+    let html = `<div class="save-line"><b>${money(p.cash, false)}</b><span>${p.runs || 1} dive${(p.runs || 1) > 1 ? 's' : ''}</span><span>deepest ${p.deepest || 0} m${best > (p.deepest || 0) ? ` (ever ${best} m)` : ''}</span><span>${(p.journal || []).length} species recorded</span>${p.aquarium && Object.keys(p.aquarium.display || {}).length ? `<span>gallery: ${completion(p).species} species, ${completion(p).rare} rare</span>` : ''}</div>`;
     if (last && last.bill !== undefined) {
       const lost = last.lost && last.lost.length ? `Lost: ${last.lost.join(', ')}.` : '';
       html += `<div class="save-death">${last.cause}. ${last.bill > 0 ? `Hospital bill ${money(last.bill)}.` : ''} ${lost}</div>`;
@@ -581,7 +581,7 @@ export class UI {
           const cond = `<em class="cond c-${conditionName(worst)}">${conditionName(worst)}</em>`;
           const best = list.reduce((a, x) => (x.cond > a.cond ? x : a), list[0]);
           const why = displayRefusal(P, best);
-          const disp = why ? `<em class="disp-no">${why}</em>` : `<button class="disp" data-act="display" data-arg="${gk.replace(/:$/, '')}">Keep for the aquarium</button>`;
+          const disp = why ? (why === 'the gallery is full' ? `<em class="disp-no">${why}</em>` : '') : `<button class="disp" data-act="display" data-arg="${gk.replace(/:$/, '')}">Keep in the gallery</button>`;
           specRows += `<tr><td>${this.mini(SPECIES_BY_ID[id])}${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${SPECIES_BY_ID[id].name} ${badge(SPECIES_BY_ID[id])} ${cond}</td><td>${list.length}</td><td>${money(priceOf(P, mkey, each))}</td><td>${money(sum)}</td></tr><tr class="sub"><td colspan="4">${disp}</td></tr>`;
         }
         // survey work: tags (each species' tags pay less each time) and first photographs
@@ -644,31 +644,24 @@ export class UI {
       if (!P.radio) html += card(RADIO.name, RADIO.desc, '', RADIO.price, 'buy', 'radio', 'Buy', '', '', [['contracts', '5 at a time'], ['paid', 'when you sell', 'good']]);
       html += '<p class="shop-note">Contracts are filled when you sell (Sell, then Load the basket). A new dive brings new calls.</p>';
     } else if (tab === 'aquarium') {
-      const A = aquariumOf(P), C = completion(P);
-      const net = dailyIncome(P) - upkeep(P);
-      html += `<div class="aq-head"><div><b>${C.species}</b><span>of ${C.of} species</span></div><div><b>${C.rare}</b><span>rare forms</span></div><div><b>${A.wings.length ? visitors(P) : 0}</b><span>visitors a day</span></div><div><b class="${net < 0 ? 'neg' : ''}">${A.wings.length ? money(net, false) : '—'}</b><span>a day after upkeep</span></div></div>`;
-      if (A.wings.length) html += `<button class="primary" data-act="gallery" data-arg="">Walk the gallery<span>pet, feed, name, sell or release them</span></button>`;
-      if (!A.wings.length) html += `<p class="shop-empty">An empty plot on the shore. Build the first wing, then keep live animals here instead of selling them: one of every species, and every rare form. Visitors pay every day (every ${DAY / 60} minutes of diving).</p>`;
-      const next = WINGS.find((w) => !A.wings.includes(w.id));
-      for (const w of WINGS) {
-        if (!A.wings.includes(w.id)) continue;
-        const shown = Object.entries(A.display).filter(([, d]) => d.wing === w.id);
-        const cells = shown.map(([, d]) => {
-          const sp = SPECIES_BY_ID[d.id];
-          const key = 'aq' + d.id;
+      const A = aquariumOf(P), C = completion(P), list = Object.entries(A.display), slots = gallerySlots(P);
+      html += `<div class="aq-head"><div><b>${list.length}<small>/${slots}</small></b><span>in the gallery</span></div><div><b>${C.species}</b><span>of ${C.of} species kept</span></div><div><b>${visitors(P)}</b><span>visitors a day</span></div><div><b>${list.length ? money(dailyIncome(P), false) : '—'}</b><span>a day in tickets</span></div></div>`;
+      html += `<button class="primary" data-act="gallery" data-arg="">Walk the gallery<span>pet, feed, name, sell or release them</span></button>`;
+      if (!list.length) html += `<p class="shop-empty">Four tanks set into the Margaret's bulkhead, waiting. Keep a live animal here instead of selling it (the button under it on the Sell tab): healthy, it becomes Happy after 5 minutes (sells for ×1.2), and 15 minutes later it earns the Famous tag (×2 more). Visitors leave a little money each day.</p>`;
+      else {
+        const cells = list.map(([, d]) => {
+          const sp = SPECIES_BY_ID[d.id], key = 'aq' + d.id;
           if (!this.toolImgs) this.toolImgs = new Map();
           if (!this.toolImgs.has(key)) this.toolImgs.set(key, speciesIcon(sp, 120, 68).toDataURL());
-          return `<div class="tank-cell" style="border-color:${rarityOf(sp).col}" title="${variantLabel(sp, d.variant)} · draws ${Math.round(drawOf(d))}"><img src="${this.toolImgs.get(key)}" alt="">${d.variant ? `<i class="r-${d.variant}">${VARIANTS[d.variant].name}</i>` : ''}<span>${sp.name}</span></div>`;
-        }).join('') + Array.from({ length: w.slots - shown.length }, () => '<div class="tank-cell empty"></div>').join('');
-        html += `<div class="wing"><div class="wing-h"><b>${w.name}</b><em>${shown.length}/${w.slots} · upkeep ${money(w.upkeep, false)}/day</em></div><div class="tanks">${cells}</div></div>`;
+          const st = d.cond <= 0.05 ? 'dead' : d.cond < 0.3 ? 'dying' : d.cond < 0.7 ? 'stressed' : d.famous ? 'famous' : isHappy(d) ? 'happy' : 'settling in';
+          return `<div class="tank-cell st-${st.replace(' ', '-')}" style="border-color:${rarityOf(sp).col}" title="${variantLabel(sp, d.variant)} · ${st} · about ${money(earnsOf(d))} a day"><img src="${this.toolImgs.get(key)}" alt="">${d.variant ? `<i class="r-${d.variant}">${VARIANTS[d.variant].name}</i>` : ''}<span>${d.name ? d.name : sp.name}</span><em>${st}</em></div>`;
+        }).join('') + Array.from({ length: slots - list.length }, () => '<div class="tank-cell empty"></div>').join('');
+        html += `<div class="wing"><div class="wing-h"><b>Aboard</b><em>${list.length}/${slots}</em></div><div class="tanks">${cells}</div></div>`;
       }
-      if (next) {
-        let c = card(`Build: ${next.name}`, next.desc, '', next.price, 'buy', 'wing:' + next.id, 'Build', '', '', [['tanks', `${next.slots}`, 'good'], ['upkeep', `${money(next.upkeep, false)} a day`, 'bad']].concat(next.coins ? [['also costs', `${next.coins} old gold coins`]] : []));
-        if (next.coins && (P.coins || 0) < next.coins) c = c.replace('<button ', '<button disabled ');
-        html += c;
-      }
-      else html += '<p class="shop-note">Every wing is built.</p>';
-      if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets, ${money(A.lastDay.cost, false)} upkeep. Earned so far: ${money(A.earned, false)}.</p>`;
+      const lvG = P.galleryLv || 0;
+      if (lvG < GALLERY_STEPS.length) html += card('More room in the gallery', 'Another pair of places in the tanks: pumps, chillers and glass.', `room for ${slots} now`, GALLERY_STEPS[lvG], 'buy', 'gallery', 'Fit', '', '', [['places', `${slots} → ${slots + 2}`, 'good']]);
+      else html += '<p class="shop-note">The gallery is as big as the Margaret can hold.</p>';
+      if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets. Earned so far: ${money(A.earned, false)}.</p>`;
     }
     $('shop-body').innerHTML = html;
   }

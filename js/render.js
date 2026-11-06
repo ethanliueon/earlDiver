@@ -13,8 +13,6 @@ import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
 import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
-import { drawAquarium } from './aquarium_draw.js';
-import { aquariumOf, visitors } from './aquarium.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { SETTINGS } from './settings.js';
@@ -198,23 +196,7 @@ export class Renderer {
     // ================= SKY =================
     const horizon = Sy(0);
     if (horizon > -50) this.drawSkyCached(g, horizon, dayEff, day);
-    // Earl's aquarium on the far shore, at the horizon (far away: small, and it barely moves)
-    if (g.profile && horizon > -20 && horizon < H + 200) {
-      const A = aquariumOf(g.profile), sc = ppm * 0.11;
-      const ax = W / 2 + (WORLD_W + 100 - cam.x) * ppm * 0.035;
-      if (ax > -80 * sc && ax < W + 80 * sc) {
-        const cw = Math.ceil(130 * sc), ch = Math.ceil(36 * sc);
-        const ac = this.aqC || (this.aqC = document.createElement('canvas'));
-        if (ac.width !== cw || ac.height !== ch) { ac.width = cw; ac.height = ch; }
-        const x2 = ac.getContext('2d');
-        x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = 'source-over'; x2.clearRect(0, 0, cw, ch);
-        x2.translate(cw / 2, ch - 2 * sc);
-        drawAquarium(x2, sc, A.wings, t, dayEff, Math.round(visitors(g.profile) / 40));
-        const dim = 1 - (0.25 + 0.75 * Math.sqrt(dayEff));
-        if (dim > 0.01) { x2.setTransform(1, 0, 0, 1, 0, 0); x2.globalCompositeOperation = 'source-atop'; x2.fillStyle = `rgba(6,8,14,${(dim * 0.85).toFixed(3)})`; x2.fillRect(0, 0, cw, ch); }
-        ctx.drawImage(ac, ax - cw / 2, horizon - ch + 3 * sc);
-      }
-    }
+    // (the aquarium is aboard the Margaret now: nothing on the shore)
 
     // ================= WATER =================
     const topY = Math.max(0, horizon - waveAmp * ppm * 1.5);

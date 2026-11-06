@@ -15,7 +15,7 @@ import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { fillBoard, fulfil, RADIO } from './contracts.js';
-import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy } from './aquarium.js';
+import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
@@ -278,7 +278,7 @@ function displaySpecimen(key) {
   pool.splice(pool.indexOf(best), 1);
   display(profile, best);
   saveProfile(profile);
-  hud.toast(`On display in the ${WING_BY_ID[zoneOf(best)].name.toLowerCase()}`, 'big');
+  hud.toast(`Into the gallery's ${WING_BY_ID[zoneOf(best)].name.toLowerCase()}`, 'big');
   audio.ready && audio.note();
   return true;
 }
@@ -492,10 +492,9 @@ function buy(kind) {
   } else if (kind === 'radio' && !P.radio && spend(P, RADIO.price)) {
     P.radio = true; fillBoard(P, g.contracts); ok = true;
     hud.toast('A better radio: five contracts at a time', 'big');
-  } else if (kind.startsWith('wing:')) {
-    const w = WING_BY_ID[kind.slice(5)], A = aquariumOf(P);
-    const next = WINGS.find((x) => !A.wings.includes(x.id));
-    if (w && next && next.id === w.id && (P.coins || 0) >= (w.coins || 0) && spend(P, w.price)) { P.coins = (P.coins || 0) - (w.coins || 0); A.wings.push(w.id); ok = true; hud.toast(`Built: the ${w.name.toLowerCase()}`, 'big'); audio.cue && audio.cue('wing'); }
+  } else if (kind === 'gallery') {
+    const lvG = P.galleryLv || 0;
+    if (lvG < GALLERY_STEPS.length && spend(P, GALLERY_STEPS[lvG])) { P.galleryLv = lvG + 1; ok = true; hud.toast(`The gallery: room for ${gallerySlots(P)}`, 'big'); audio.cue && audio.cue('wing'); }
   } else if (kind === 'canisters' && !(P.addons || {}).canisters && spend(P, CANISTERS.price)) {
     P.addons = Object.assign({}, P.addons, { canisters: true }); g.addons = P.addons; ok = true;
     hud.toast('Pressure canisters: deep animals survive the trip up', 'big');
@@ -1159,7 +1158,7 @@ function update(dt) {
       }
     }
     const day = tickAquarium(profile, dt);
-    if (day) { saveProfile(profile); hud.toast(`The aquarium: ${day.visitors} visitors today · ${day.net >= 0 ? '+' : ''}${money(day.net, false)} after upkeep`, 'note'); }
+    if (day) { saveProfile(profile); hud.toast(`The gallery: ${day.visitors} visitors today · +${money(day.income, false)}`, 'note'); }
     // the very bottom, the first time: it shows itself, and lets him go
     if (!profile.met && e.y > 3850 && W.floorAt(e.x) - e.y < 40 && !g.reveal) {
       g.reveal = { t: 0 }; profile.met = true; saveProfile(profile);

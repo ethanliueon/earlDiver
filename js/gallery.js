@@ -1,11 +1,11 @@
-// The aquarium gallery, walked aboard: each built wing is a long lit tank set into the bulkhead, its
-// animals swimming in it. Tap one for its brass tag: its name, how it is doing (Happy after five
+// The aquarium gallery, walked aboard the Margaret: four long lit tanks set into the bulkhead (warm reef,
+// cold water, open water, and the dark tank for the deep), the animals swimming in them. Tap one for its brass tag: its name, how it is doing (Happy after five
 // minutes healthy, Famous fifteen minutes after that), and what can be done: pet it, feed it, sell
 // it, or send it down to the sub's pressure tank to be released at home. The lighting can be set
 // for the whole gallery: daylight, dim, or the red light deep animals can't see.
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
-import { WINGS, WING_BY_ID, aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale } from './aquarium.js';
+import { WINGS, aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale, gallerySlots, tankOf } from './aquarium.js';
 import { VARIANTS, makeVariantSprite } from './variants.js';
 import { clamp, lerp, TAU } from './util.js';
 
@@ -64,8 +64,7 @@ export class Gallery {
 
   geometry(P) {
     const W = window.innerWidth, H = window.innerHeight, A = aquariumOf(P);
-    const wings = WINGS.filter((w) => A.wings.includes(w.id));
-    const n = Math.max(1, wings.length), top = H * 0.13, gap = 14, rowH = Math.min(170, (H * 0.84 - gap * (n - 1)) / n);
+    const wings = WINGS, n = wings.length, top = H * 0.12, gap = 18, rowH = Math.min(190, (H * 0.85 - gap * (n - 1)) / n);
     const x0 = W * 0.06, w = W * 0.88;
     return { W, H, rows: wings.map((wing, i) => ({ wing, x: x0, y: top + i * (rowH + gap), w, h: rowH })) };
   }
@@ -81,10 +80,10 @@ export class Gallery {
     this.sig = sig;
     this.root.querySelector('.gl-lights').innerHTML = Object.entries(LIGHTS).map(([k, L]) => `<button data-light="${k}" class="${k === light ? 'on' : ''}">${L.name}</button>`).join('');
     const nShown = Object.keys(A.display).length;
-    this.root.querySelector('.gl-sub').textContent = `${nShown} on display · ${A.wings.length} wing${A.wings.length === 1 ? '' : 's'}`;
+    this.root.querySelector('.gl-sub').textContent = `${nShown} of ${gallerySlots(P)} places · aboard the Margaret`;
     let html = '';
-    if (!A.wings.length) html += `<div class="gl-empty">No wings built yet. The aquarium tab in the shop builds the first one.</div>`;
-    for (const r of G.rows) html += `<div class="gl-wing" style="left:${r.x + 10}px;top:${r.y + 6}px">${r.wing.name}</div>`;
+    if (!nShown) html += `<div class="gl-empty">The tanks are empty. Keep a live animal from the Sell tab and it swims in here.</div>`;
+    for (const r of G.rows) { const n = Object.values(A.display).filter((d) => tankOf(d) === r.wing.id).length; html += `<div class="gl-wing" style="left:${r.x + 10}px;top:${r.y + 6}px">${r.wing.name}${n ? ` · ${n}` : ''}</div>`; }
     const d = this.open && A.display[this.open], a = this.open && this.anim.get(this.open);
     if (d && a) {
       const sp = SPECIES_BY_ID[d.id], dead = d.cond <= 0.05;
@@ -104,6 +103,36 @@ export class Gallery {
         </div></div>`;
     }
     this.over.innerHTML = html;
+  }
+  // each tank's furniture, drawn behind the animals: coral heads, kelp, open blue with bubbles, or the dark
+  // with a few drifting motes
+  decor(ctx, r) {
+    const id = r.wing.id, base = r.y + r.h, t = this.t;
+    ctx.save();
+    if (id === 'reef') {
+      const cols = ['#c86a5a', '#d8a050', '#a86ab0', '#e0c8a0', '#5aa890'];
+      for (let k = 0; k < 9; k++) {
+        const x = r.x + r.w * (0.05 + k * 0.11 + (k % 3) * 0.013), h = r.h * (0.12 + ((k * 37) % 10) / 60);
+        ctx.fillStyle = cols[k % cols.length]; ctx.globalAlpha = 0.75;
+        ctx.beginPath(); ctx.ellipse(x, base - 8, h * 0.7, h, 0, Math.PI, 0); ctx.fill();
+        if (k % 2) { ctx.strokeStyle = cols[(k + 2) % cols.length]; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + h, base - 8); ctx.quadraticCurveTo(x + h * 1.2, base - h * 1.6, x + h * 0.8 + Math.sin(t + k) * 3, base - h * 2.1); ctx.stroke(); }
+      }
+    } else if (id === 'kelp') {
+      ctx.strokeStyle = '#6a7a30'; ctx.globalAlpha = 0.7;
+      for (let k = 0; k < 12; k++) {
+        const x = r.x + r.w * (0.04 + k * 0.085), h = r.h * (0.55 + ((k * 13) % 7) / 20), sw = Math.sin(t * 0.7 + k) * 8;
+        ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, base - 6); ctx.quadraticCurveTo(x + sw, base - h * 0.5, x + sw * 1.6, base - h); ctx.stroke();
+        ctx.fillStyle = '#7a8a38'; for (let j = 1; j < 5; j++) { const f = j / 5, lx = x + sw * 1.6 * f * f, ly = base - h * f; ctx.beginPath(); ctx.ellipse(lx + 6, ly, 7, 2.5, -0.5, 0, TAU); ctx.fill(); }
+      }
+    } else if (id === 'open') {
+      ctx.fillStyle = 'rgba(220,240,255,0.25)';
+      for (let k = 0; k < 14; k++) { const x = r.x + r.w * ((k * 0.137) % 1), y = base - ((t * 18 + k * 47) % r.h); ctx.beginPath(); ctx.arc(x + Math.sin(t + k) * 3, y, 1.5 + (k % 3), 0, TAU); ctx.fill(); }
+    } else {
+      for (let k = 0; k < 22; k++) { const x = r.x + r.w * ((k * 0.0731 + t * 0.004) % 1), y = r.y + r.h * ((k * 0.191 + Math.sin(t * 0.2 + k) * 0.02) % 1); ctx.fillStyle = k % 4 ? 'rgba(160,200,220,0.25)' : 'rgba(90,200,255,0.55)'; ctx.beginPath(); ctx.arc(x, y, k % 4 ? 1 : 1.6, 0, TAU); ctx.fill(); }
+      ctx.fillStyle = '#1a1814'; ctx.globalAlpha = 0.9;
+      for (let k = 0; k < 4; k++) { const x = r.x + r.w * (0.12 + k * 0.25); ctx.beginPath(); ctx.ellipse(x, base - 6, r.h * 0.18, r.h * 0.09, 0, Math.PI, 0); ctx.fill(); }
+    }
+    ctx.restore();
   }
   update(dt) {
     const g = this.h.getGame(), P = g && g.profile;
@@ -125,11 +154,13 @@ export class Gallery {
       ctx.fillStyle = '#6e5424'; ctx.fillRect(r.x - 8, r.y - 8, r.w + 16, r.h + 16);
       ctx.fillStyle = '#b8954a'; ctx.fillRect(r.x - 5, r.y - 5, r.w + 10, r.h + 10);
       ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
-      const wg = ctx.createLinearGradient(0, r.y, 0, r.y + r.h); wg.addColorStop(0, light.water[0]); wg.addColorStop(1, light.water[1]);
+      const water = (A.light || 'day') === 'day' ? r.wing.water : light.water;
+      const wg = ctx.createLinearGradient(0, r.y, 0, r.y + r.h); wg.addColorStop(0, water[0]); wg.addColorStop(1, water[1]);
       ctx.fillStyle = wg; ctx.fillRect(r.x, r.y, r.w, r.h);
       if (A.light !== 'red') { ctx.globalAlpha = A.light === 'dim' ? 0.03 : 0.07; ctx.fillStyle = '#e8f8ff'; for (let k = 0; k < 6; k++) { const x = r.x + r.w * (0.08 + k * 0.17) + Math.sin(this.t * 0.4 + k) * 10; ctx.beginPath(); ctx.moveTo(x, r.y); ctx.lineTo(x + 24, r.y); ctx.lineTo(x + 60, r.y + r.h); ctx.lineTo(x + 16, r.y + r.h); ctx.fill(); } ctx.globalAlpha = 1; }
       ctx.fillStyle = '#4a4236'; ctx.beginPath(); ctx.moveTo(r.x, r.y + r.h); for (let x = 0; x <= r.w; x += 10) ctx.lineTo(r.x + x, r.y + r.h - 8 - Math.sin(x * 0.07) * 3); ctx.lineTo(r.x + r.w, r.y + r.h); ctx.fill();
-      const shown = Object.entries(A.display).filter(([, d]) => d.wing === r.wing.id);
+      this.decor(ctx, r);
+      const shown = Object.entries(A.display).filter(([, d]) => tankOf(d) === r.wing.id);
       const maxL = clamp(r.h * 0.75, 40, 220);
       shown.forEach(([k, d], i) => {
         const sp = SPECIES_BY_ID[d.id], dead = d.cond <= 0.05;

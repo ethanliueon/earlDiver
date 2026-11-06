@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.0.17 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.1.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -89,8 +89,12 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - **The Margaret** goes anywhere on the surface, slowly (5 m/s flat out). Drop the anchor (G at
   the helm; V takes the helm) and she stays, and the next dive starts there. Heavy traps are winched up from her helm
   over their buoys.
-- **The aquarium** (built from the boat): keep live animals instead of selling them. Walk the
-  gallery to pet, feed, name and light them. A healthy animal becomes Happy after five minutes
+- **The aquarium** is a gallery aboard the Margaret, for the fun of it: four tanks (warm reef, cold
+  water, open water, and the dark tank for the deep), room for 4 animals to start (more from the
+  shop's Aquarium tab, up to 20). Keep live animals instead of selling them; walk the gallery to pet,
+  feed, name and light them. Visitors leave a little money each day (about 2 % of the animals' worth):
+  pleasant, never a living. Stressed animals earn half until they recover; a dying one fades within
+  minutes; a dead one (X eyes) can be taken out and sold. A healthy animal becomes Happy after five minutes
   (sells for ×1.2), then Famous fifteen minutes later (×2, for good). Take a Happy one down in the
   sub to its own depth and let it go: it stays there under its name, every dive. The tag tracker
   shows the way back to it.
@@ -144,7 +148,7 @@ js/sleeper_draw.js  the abyssal sleeper shark
 js/undocumented_draw.js  the twelve Undocumented animals
 js/capture.js       catching alive, the bag, the sub's tanks and chambers, the trawl net
 js/tankroom.js      the back of the sub: chambers, the open tank, the large pressure tank, the net's haul
-js/aquarium.js      the aquarium: wings, days, Happy and Famous
+js/aquarium.js      the aquarium aboard: tanks, days, Happy and Famous
 js/gallery.js       the gallery aboard: tanks, the brass tags, lighting, release
 js/hud.js           timer, air, dive monitor (sonar, heart rate, journal)
 js/audio.js         music and generated sound

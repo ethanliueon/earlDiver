@@ -1,28 +1,28 @@
-// Earl's aquarium, on the beach. The endless goal: keep live animals for display instead of
-// selling them, one of each species and each rare form, in wings built one by one. Visitors pay
-// for tickets every day (every 10-minute day/night cycle), more the better the collection; each
-// wing costs a little to run. The last wing needs animals from the very bottom.
+// The aquarium: a gallery aboard the Margaret, for the pleasure of it. Live animals kept here can be
+// watched, petted, fed and named; the longer a healthy one lives here, the more it is worth (Happy,
+// then the Famous tag). Visitors come aboard to see them and leave a little money each day, but not
+// enough to live on: the sea pays, the gallery is for keeping what you love.
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { liveValue, canTakeLive } from './specimens.js';
 import { VARIANTS, variantMult, canBeRare } from './variants.js';
 
-export const DAY = 600; // seconds of play per paid day
+export const DAY = 600; // seconds of play per gallery day
+// the four tanks set into the gallery's bulkhead (an animal goes in the one for its water)
 export const WINGS = [
-  { id: 'reef', name: 'Reef hall', price: 530, slots: 12, upkeep: 7, desc: 'Warm shallow tanks under a glass roof: reef fish, seahorses, crabs, starfish.' },
-  { id: 'kelp', name: 'Kelp tower', price: 3600, slots: 10, upkeep: 35, desc: 'A tall cold-water cylinder with a living kelp forest for the cold-water fish.' },
-  { id: 'open', name: 'Open ocean dome', price: 19000, slots: 8, upkeep: 190, desc: 'One enormous round tank for open-water swimmers and drifting jellies.' },
-  { id: 'twilight', name: 'Twilight gallery', price: 59000, slots: 10, upkeep: 440, desc: 'Dim, chilled tanks for animals from 150 to 500 m.' },
-  { id: 'deep', name: 'Deep-sea gallery', price: 135000, slots: 8, upkeep: 900, desc: 'Pressurised black tanks behind portholes, for animals from below 500 m.' },
-  { id: 'abyss', name: 'Abyss tank', price: 300000, coins: 10, slots: 6, upkeep: 1800, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 3,500 m.' },
+  { id: 'reef', name: 'Warm reef tank', water: ['#2a7a90', '#0c3644'], desc: 'Warm shallow water: reef fish, seahorses, crabs, starfish.' },
+  { id: 'kelp', name: 'Cold water tank', water: ['#2a6a6a', '#0a2a2c'], desc: 'Chilled, green, with a little kelp: the cold-water fish.' },
+  { id: 'open', name: 'Open water tank', water: ['#1f5f8a', '#08243a'], desc: 'Long and blue, for swimmers, sharks and drifting jellies.' },
+  { id: 'deep', name: 'Dark tank', water: ['#0c1a26', '#020608'], desc: 'Black and cold, for the animals of the deep.' },
 ];
 export const WING_BY_ID = Object.fromEntries(WINGS.map((w) => [w.id, w]));
+// room for animals: four to start, two more for each refit, up to twenty
+export const GALLERY_STEPS = [200, 600, 1800, 5000, 12000, 30000, 70000, 150000];
+export const gallerySlots = (P) => 4 + 2 * Math.min(GALLERY_STEPS.length, P.galleryLv || 0);
 
 // which wing an animal belongs in (where it lives, and where it was caught)
 export function zoneOf(spec) {
   const sp = SPECIES_BY_ID[spec.id];
-  if ((spec.from || 0) >= 3500) return 'abyss';
-  if (sp.dmin >= 500) return 'deep';
-  if (sp.dmin >= 150 || sp.cat === 'Deep Sea Fish') return 'twilight';
+  if (sp.dmin >= 150 || sp.cat === 'Deep Sea Fish' || (spec.from || 0) >= 400) return 'deep';
   if (sp.cat === 'Open Ocean Fish' || sp.cat === 'Sharks & Rays' || sp.cat === 'Jellyfish & Drifters' || sp.v.hab === 'pelagic') return 'open';
   if (sp.cat === 'Cold Water Fish' || (sp.dmin >= 20 && sp.cat !== 'Reef Fish')) return 'kelp';
   return 'reef';
@@ -33,17 +33,15 @@ export function aquariumOf(P) {
   if (!P.aquarium) P.aquarium = { wings: [], display: {}, clock: 0, days: 0, earned: 0, lastDay: null };
   return P.aquarium;
 }
-export function wingUsed(P, wing) {
-  const A = aquariumOf(P);
-  return Object.values(A.display).filter((d) => d.wing === wing).length;
-}
+// the tank an animal on display swims in (older saves had more wings: their deep ones share the dark tank)
+export const tankOf = (d) => (WING_BY_ID[d.wing] ? d.wing : 'deep');
+export function wingUsed(P, wing) { return Object.values(aquariumOf(P).display).filter((d) => tankOf(d) === wing).length; }
 // can this specimen go on display? returns null if yes, or the reason it can't
 export function displayRefusal(P, spec) {
-  const A = aquariumOf(P), zone = zoneOf(spec), W = WING_BY_ID[zone];
-  if (A.display[displayKey(spec)]) return 'already on display';
-  if (!A.wings.includes(zone)) return `needs the ${W.name.toLowerCase()}`;
-  if (wingUsed(P, zone) >= W.slots) return `the ${W.name.toLowerCase()} is full`;
-  if (spec.cond < 0.3) return 'too weak to display';
+  const A = aquariumOf(P);
+  if (A.display[displayKey(spec)]) return 'already in the gallery';
+  if (spec.cond <= 0.05) return 'dead: it can only be sold';
+  if (Object.keys(A.display).length >= gallerySlots(P)) return 'the gallery is full';
   return null;
 }
 export function display(P, spec) {
@@ -55,7 +53,8 @@ export function display(P, spec) {
 // ---------------- life in the gallery (v2) ----------------
 // A healthy animal (condition 0.7+) that lives here 5 minutes of play becomes Happy (sells for x1.2);
 // 15 minutes after that it earns the Famous tag (x2, stacking: x2.4). Happy lapses if it sickens;
-// Famous never does. Feeding helps a weak one recover; petting is for the two of you.
+// Famous never does. Feeding helps a stressed one recover faster; a dying one (below 0.3) only fades, and
+// dies within minutes. Petting is for the two of you.
 export const HAPPY_AFTER = 300, FAMOUS_AFTER = 900;
 export const isHappy = (d) => (d.happyT || 0) >= HAPPY_AFTER;
 export function lifeMult(d) { return (isHappy(d) ? 1.2 : 1) * (d.famous ? 2 : 1); }
@@ -64,7 +63,8 @@ export function tickGallery(P, dt) {
   for (const d of Object.values(A.display)) {
     if (d.cond === undefined) d.cond = 1;
     if (d.cond <= 0.05) continue;                                       // dead: X eyes, until it is taken out
-    d.cond = Math.min(1, d.cond + dt * (d.fedT > 0 ? 0.004 : 0.0015));   // clean water, regular meals
+    if (d.cond < 0.3) d.cond = Math.max(0, d.cond - dt * 0.0007);     // dying: a few minutes more, then it is gone
+    else d.cond = Math.min(1, d.cond + dt * (d.fedT > 0 ? 0.004 : 0.0015)); // stressed: clean water and meals bring it back
     if (d.fedT > 0) d.fedT -= dt;
     if (d.cond >= 0.7) {
       d.happyT = (d.happyT || 0) + dt;
@@ -79,38 +79,33 @@ export function gallerySale(d) {
   return d.cond <= 0.05 ? base * 0.1 : base * lifeMult(d);
 }
 
-// how much a displayed animal draws visitors: rarer, deeper and stranger is better
-export function drawOf(d) {
+// the day's takings: a little from every animal, less from a stressed one, a trickle from a dying one,
+// nothing from the dead. About 2 % of what the animal is worth, a day: pleasant, never a living.
+export function earnsOf(d) {
+  if (d.cond <= 0.05) return 0;
   const sp = SPECIES_BY_ID[d.id];
-  return liveValue(sp) * variantMult(d.variant) * 0.8;
+  const k = d.cond >= 0.7 ? 1 : d.cond >= 0.3 ? 0.5 : 0.25;
+  return liveValue(sp, d.len || sp.len) * variantMult(d.variant) * lifeMult(d) * 0.02 * k;
 }
-export function reputation(P) {
-  const A = aquariumOf(P);
-  const list = Object.values(A.display);
-  let r = 0;
-  for (const d of list) r += drawOf(d);
-  const species = new Set(list.map((d) => d.id)).size;
-  return r * (1 + Math.floor(species / 10) * 0.1); // variety: +10 % per ten species
+export function dailyIncome(P) { return Math.round(Object.values(aquariumOf(P).display).reduce((a, d) => a + earnsOf(d), 0) * 100) / 100; }
+export function visitors(P) {
+  const list = Object.values(aquariumOf(P).display).filter((d) => d.cond > 0.05);
+  return list.length ? Math.round(6 + list.length * 4 + list.filter((d) => d.famous).length * 15 + list.filter((d) => d.variant).length * 6) : 0;
 }
-// only wings with animals in them cost anything to run
-export function upkeep(P) { return aquariumOf(P).wings.reduce((a, w) => a + (wingUsed(P, w) ? WING_BY_ID[w].upkeep : 0), 0); }
-export function dailyIncome(P) { return Math.round(reputation(P) * 100) / 100; }
-export function visitors(P) { return Math.round(4 + reputation(P) * 3); }
-
-// advance the aquarium's clock; returns the day's result when a day ends
+// advance the gallery's clock; returns the day's result when a day ends
 export function tickAquarium(P, dt) {
   const A = aquariumOf(P);
-  if (!A.wings.length) return null;
+  if (!Object.keys(A.display).length) return null;
   A.clock += dt;
   if (A.clock < DAY) return null;
   A.clock -= DAY;
   A.days++;
-  const income = dailyIncome(P), cost = Math.min(upkeep(P), income + Math.max(0, P.cash)), net = income - cost; // never into debt
-  P.cash = Math.round((P.cash + net) * 100) / 100;
-  if (net > 0) P.lifetime = Math.round((P.lifetime + net) * 100) / 100;
-  A.earned += net;
-  A.lastDay = { visitors: visitors(P), income, cost, net };
-  return A.lastDay;
+  const income = dailyIncome(P);
+  P.cash = Math.round((P.cash + income) * 100) / 100;
+  P.lifetime = Math.round((P.lifetime + income) * 100) / 100;
+  A.earned += income;
+  A.lastDay = { visitors: visitors(P), income };
+  return income > 0 ? A.lastDay : null;
 }
 
 // completion: species on display out of every species that can be kept, plus rare forms

@@ -4,7 +4,7 @@ A 2D, side-on ocean **diving, collecting and survival horror** game for the desk
 Earl makes a living from the sea: he catches live animals, tags and photographs the big ones,
 salvages wrecks, sells it all at his boat, and spends the money on gear that takes him deeper.
 The valuable things are deep, and going deep wakes something that lives there.
-There is no end: the long goal is an aquarium on the shore with one of everything in it.
+There is no end: the long goal is a gallery aboard the Margaret with the best of everything in it.
 
 `docs/PLAN.md` is the plan this was built from; `docs/DEV_NOTES.md` covers testing.
 
@@ -282,12 +282,15 @@ come into her cave.
 
 ## The aquarium
 
-- Built from the boat, seen on the far shore. Six wings in order: reef hall, kelp tower,
-  open ocean dome, twilight gallery, deep-sea gallery, and an abyss tank only for animals caught
-  below 3,500 m.
-- Live animals can be kept for display instead of sold; each species and each rare form is a slot.
-  Visitors pay every 10 minutes of play by the value of the collection; wings in use cost a
-  little to run.
+- A gallery aboard the Margaret, for fun rather than money. Four tanks in the bulkhead: warm reef,
+  cold water, open water, and a dark tank for anything from 150 m down. Room for 4 animals, +2 for each
+  refit bought on the Aquarium tab ($200 ... $150,000), up to 20. Each species and rare form once.
+- Live animals only (a dead one is refused). Healthy (0.7+) animals become Happy after 5 minutes
+  (×1.2) and earn the Famous tag 15 minutes after that (×2, kept for good). Stressed ones (0.3-0.7)
+  recover, faster when fed; dying ones (below 0.3) fade and die within minutes; the dead float,
+  X-eyed, until taken out and sold.
+- Visitors leave about 2 % of each animal's worth a day (every 10 minutes of play): half for a
+  stressed one, a quarter for a dying one, nothing for the dead. No upkeep.
 
 - Seafloor sonar (a sub add-on, $40): in the cabin, a strip under the radar draws the seabed 80 m each
   side of the sub, scaled to fit, with a sounding straight down and the bottom's depth.
