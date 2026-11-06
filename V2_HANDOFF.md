@@ -94,3 +94,16 @@ lesson, so don't frame features as moral "good deeds".
 - **Price board on the Margaret:** a chalkboard listing what's been caught and what each sold for, to help
   players learn the new economy.
 - **Hospital bill:** 10 % of cash may be huge late game with the new prices; consider a cap.
+
+## Aquarium: the user's latest direction (supersedes "main payout is idle income" and the income-cap idea)
+The aquarium gallery on the Margaret is **for fun, not money**. Idle income stays, but it's small and not really
+worth it on its own, and that's fine. What it's for:
+- **Seeing your fish**, and interacting: **pet them, feed them, adjust the lighting** (e.g. dim/red light for
+  deep-sea fish).
+- **Fish gain value by living there** (timers count **gameplay time**):
+  - a **healthy** fish that spends **5 min** in the aquarium becomes **Happy**: sells for **x1.2**;
+  - **15 min after** becoming happy it earns the **Famous** tag: sells for **x2**;
+  - stressed fish must recover to healthy before the happy timer starts; dying fish never get there.
+- Selling from the aquarium uses these multipliers. Dead fish (X eyes) can be taken out and sold at the dead price.
+Open questions: do the x1.2 and x2 stack (x2.4) or does Famous replace Happy? Does the timer keep running while
+Earl is diving (yes, if "gameplay time" means any time playing)? Does feeding/petting speed up the timers?
