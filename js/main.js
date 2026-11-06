@@ -361,7 +361,7 @@ function galleryAction(act, key, v) {
     P.cash = Math.round((P.cash + pay) * 100) / 100; P.lifetime = Math.round(((P.lifetime || 0) + pay) * 100) / 100; g.earned += pay;
     delete A.display[key]; hud.toast(`Sold ${who} for ${money(pay)}`); audio.ready && audio.sale();
   } else if (act === 'tosub') {
-    if (!g.sub.docked || g.sub.imploded) { hud.toast('The sub has to be in her cradle', 'warn'); return false; }
+    if (g.sub.imploded || Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) > 20) { hud.toast('The sub has to be alongside the boat', 'warn'); return false; }
     const spec = { id: d.id, len: d.len || sp.len, cond: d.cond, from: d.from || Math.round((sp.dmin + sp.dmax) / 2), t: g.time, variant: d.variant || undefined, aq: { name: d.name, happy: isHappy(d), famous: !!d.famous } };
     if (d.variant) spec.mult = variantMult(d.variant);
     if (!seal(g, spec, spec.len >= 1.2 ? BIG : -1) && !seal(g, spec, BIG)) { hud.toast(spec.len >= 1.2 ? 'It needs the large pressure tank, and room in it' : 'No free pressure tank in the sub', 'warn'); return false; }
@@ -751,7 +751,6 @@ function promptFor(t) {
       else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
-      if ((g.sub.patches || []).length && patchNear() < 0) p += `   ·   hull ${Math.round(g.sub.hull * 100)} %: ${g.sub.patches.length} damaged patch${g.sub.patches.length > 1 ? 'es' : ''} (hold R at one to mend it)`;
     }
     else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
       : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use her winch`
@@ -761,7 +760,8 @@ function promptFor(t) {
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
   { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; // a damaged patch within reach: hold R
-    if (pi >= 0) p = g.repair && g.repair.i === pi ? `Repairing the hull… ${Math.round(g.repair.t / REPAIR_TIME * 100)} %` : (p ? p + '   ·   ' : '') + `Hold R  Repair this damage (hull ${Math.round(g.sub.hull * 100)} %, ${g.sub.patches.length} to mend)`; }
+    if (pi >= 0) p = g.repair && g.repair.i === pi ? `Repairing… ${Math.round(g.repair.t / REPAIR_TIME * 100)} %` : (p ? p + '   ·   ' : '') + 'Hold R  Repair';
+    else if (!e.inSub && !g.sub.imploded && (g.sub.patches || []).length && dist(e.x, e.y, g.sub.x, g.sub.y) < 9) p = (p ? p + '   ·   ' : '') + 'The sub needs repairs: swim to a hole'; }
   if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
   if (canOffer() && (g.offerT || 0) < 10) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep'; // offered for 10 s, then left unsaid
   if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room';
@@ -841,8 +841,8 @@ function leaveSub() {
   const e = g.earl, sub = g.sub;
   e.inSub = false;
   e.x = sub.x - sub.facing * 1.5; e.y = Math.max(0.4, sub.y + 2.6); e.vx = 0; e.vy = 0;
-  if (Math.abs(sub.x - BOAT.x) < 14 && sub.y < 3) sub.docked = true;
-  
+  // (2.5.0: leaving the sub no longer puts it in her cradle: it docks when the Margaret gets under way)
+
   audio.ready && audio.click();
 }
 
@@ -975,22 +975,29 @@ function repairs(dt, target, holding) {
   if (near >= 0 && holding && !e.inSub) {
     if (!g.repair || g.repair.i !== near) g.repair = { i: near, t: 0 };
     g.repair.t += dt;
-    if (Math.random() < dt * 6) audio.ready && audio.thud && audio.thud(0.05); // the clank of the tools on steel
-    if (Math.random() < dt * 12) { const q = patchWorld(sub, sub.patches[near]); g.bubbles.push({ x: q.x, y: q.y, r: 0.02 + Math.random() * 0.04, w: Math.random() * 6, t: 0 }); }
+    // wet welding (2.5.0): the arc at the hole, sparks, the crackle and hiss, and a stream of bubbles
+    const q = patchWorld(sub, sub.patches[near]); g.welding = { x: q.x, y: q.y };
+    if (Math.random() < dt * 14) audio.ready && audio.burst('highpass', 3000 + Math.random() * 4000, 0.8, 0.05 + Math.random() * 0.08, 0.05 + Math.random() * 0.05); // the arc's crackle
+    if (Math.random() < dt * 2) audio.ready && audio.burst('bandpass', 1800, 0.6, 0.5, 0.03); // the hiss of boiling water
+    if (Math.random() < dt * 3) audio.ready && audio.thud && audio.thud(0.04); // the rod against steel
+    for (let i = 0; i < 2; i++) if (Math.random() < dt * 20) g.bubbles.push({ x: q.x + (Math.random() - 0.5) * 0.3, y: q.y + (Math.random() - 0.5) * 0.2, r: 0.02 + Math.random() * 0.06, w: Math.random() * 6, t: 0 });
     if (g.repair.t >= REPAIR_TIME) {
       sub.patches.splice(near, 1);
       sub.hull = sub.patches.length ? Math.min(1, sub.hull + PATCH_SHARE) : 1;
-      g.repair = null;
-      hud.toast(sub.patches.length ? `Mended: hull ${Math.round(sub.hull * 100)} %, ${sub.patches.length} left` : 'The hull is sound');
-      audio.ready && audio.click();
+      g.repair = null; g.welding = null; g.patchCount = sub.patches.length;
+      hud.toast(sub.patches.length ? `Hole mended: ${sub.patches.length} left` : 'The sub is repaired');
+      audio.ready && audio.click(); audio.ready && audio.bubbles && audio.bubbles(6, 0.04);
     }
-  } else g.repair = null;
+  } else { g.repair = null; g.welding = null; }
 }
-// each 15 % of lost hull shows as one patch, somewhere along her side (sub-local units, 100 = her length)
-const PATCH_SHARE = 0.15, REPAIR_TIME = 5;
+// each 30 % of lost hull shows as one hole, somewhere along her side, three at most (2.5.0: was 15 %, six)
+// (sub-local units, 100 = her length)
+const PATCH_SHARE = 0.3, REPAIR_TIME = 5;
 function syncPatches(sub) {
   if (!sub.patches) sub.patches = [];
-  const n = sub.imploded ? 0 : Math.min(6, Math.max(0, Math.ceil((1 - sub.hull) / PATCH_SHARE - 0.02)));
+  const n = sub.imploded ? 0 : Math.min(3, Math.max(0, Math.ceil((1 - sub.hull) / PATCH_SHARE - 0.02)));
+  if (n > (g.patchCount || 0) && !sub.imploded) { hud.toast('The sub needs repairs', 'warn'); if (!g.repairHinted) { g.repairHinted = true; hud.hint('Swim to a hole in her hull and hold R to repair it'); } }
+  g.patchCount = n;
   while (sub.patches.length > n) sub.patches.pop();
   for (let tries = 0; sub.patches.length < n && tries < 40; tries++) {
     const u = -44 + Math.random() * 88, v = -18 + Math.random() * 16;
@@ -1002,7 +1009,7 @@ function patchWorld(sub, q) { const k = 0.09, c = Math.cos(sub.yaw || 0), f = (c
 function patchNear() {
   const sub = g.sub, e = g.earl;
   if (!sub.patches || !sub.patches.length || dist(e.x, e.y, sub.x, sub.y) > 7) return -1;
-  let best = -1, bd = 1.5;
+  let best = -1, bd = 2;
   sub.patches.forEach((q, i) => { const w = patchWorld(sub, q), d = dist(e.x, e.y, w.x, w.y); if (d < bd) { bd = d; best = i; } });
   return best;
 }
@@ -1194,7 +1201,7 @@ function update(dt) {
     }
     if (pressed.has('r')) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
-      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast('Swim to a damaged patch on her hull, then hold R', 'warn'); }
+      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast('Swim to a hole in her hull, then hold R', 'warn'); }
       else if (!g.items.airTank) hud.toast('No backup air tanks', 'warn');
       else if (g.tankFit) { /* already being connected */ }
       else if (g.sub.o2 >= g.sub.o2Max - 1) hud.toast('The cabin air is full');
@@ -1444,6 +1451,12 @@ function update(dt) {
       if (mv.y) { leaveHelm(); }
       else {
         // a heavy working boat: she takes her time to get under way and longer still to stop; 5 m/s flat out
+        // getting under way: a sub alongside is lifted into her cradle; one still out holds her here
+        if (mv.x && !g.sub.docked && !g.sub.imploded) {
+          const alongside = Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) < 16 && !(g.autopilot && g.autopilot.active);
+          if (alongside) { g.sub.docked = true; hud.toast('The sub is lifted into her cradle'); audio.ready && audio.thud(0.2); }
+          else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast('The sub is still out: bring it alongside first (hold C to send it home)', 'warn'); } }
+        }
         if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast('The anchor is down: G to raise it', 'warn'); } }
         const want = g.anchored ? 0 : mv.x * 5;
         g.boatV = lerp(g.boatV || 0, want, 1 - Math.exp(-dt * (want ? 0.28 : 0.18)));

@@ -615,3 +615,12 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   the floor goes down to the gallery. Stations: door, hatch, computer (catalog + the sub's yard tab), radio,
   wheel. Leaving the wheel (W) puts him back at it in the cabin.
 - The catch toast is just the animal's name in its rarity's colour (plus "hurt" etc. when it is).
+
+## 2.5.1 — repairs, docking
+- The hull's damage shows as holes of 30 % each, three at most (`PATCH_SHARE` 0.3). A new hole says "The sub
+  needs repairs" (and once, a hint). Near the sub: "The sub needs repairs: swim to a hole"; at one: "Hold R
+  Repair". Repairing is wet welding: the arc and glow at the hole (`g.welding` = its point), falling sparks,
+  a crackle, the hiss, the rod's knocks and a stream of bubbles.
+- Leaving the sub no longer docks it. When the Margaret gets under way at the wheel, a sub alongside
+  (within 16 m of the cradle) is lifted into it; one still out keeps her where she is ("bring it alongside
+  first (hold C to send it home)"). Moving a gallery animal to the sub needs it alongside, not docked.
