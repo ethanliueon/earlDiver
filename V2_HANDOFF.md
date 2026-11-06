@@ -409,3 +409,6 @@ Docs, screenshots, the handoff's checks, merge to main.
   - Settings → Graphics: Auto / Fast (Fast lets the resolution drop to 55 % and keeps lite mode on).
 - Reef fish: day-active reef residents now swim 3-15 m above the seabed (never closer than 1.2 m to the surface), spawn there, and only horizontal distance counts as straying; at rest or hiding they still keep to their home. Measured: 41 of 57 reef fish 3 m+ above the floor (was 6 of 61), none in rock.
 - Fixed: `f.act`, `f.nightR` and `f.tT` for housed animals had been swallowed by a comment (residents never rested by day/night).
+
+## 2.0.8
+- Settings panel: the brass plate and the × stay fixed on the frame; only the list below them scrolls (`.set-body`).
