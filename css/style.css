@@ -521,7 +521,7 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 
 /* the back of the sub (v1.9.0): two steel rooms drawn on one canvas, brass tags over it */
 .tankroom { position: fixed; inset: 0; z-index: 30; overflow: hidden; background: #1b1f20; color: #e8e4d6; }
-.tankroom .tr-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tankroom .tr-canvas, .gallery .tr-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .tr-over { position: absolute; inset: 0; pointer-events: none; }
 .tr-over > * { pointer-events: auto; }
 .tr-plate { position: absolute; left: 18px; top: 14px; padding: 6px 16px 7px; border-radius: 3px; background: linear-gradient(180deg, #c9a65a, #8e6c2c); color: #2a1c06;
@@ -697,3 +697,14 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .namebox button { margin-top: 14px; padding: 7px 18px; border: 1px solid #3a2a0e; border-radius: 3px; background: #2a2418; color: #f0dca0; font-family: var(--stencil); letter-spacing: 0.15em; cursor: pointer; }
 .namebox button:hover { background: #3a3220; }
 .shop-sub .rename { margin-left: 8px; padding: 0 6px; border: 0; border-bottom: 1px dotted rgba(58,42,14,0.7); background: none; color: rgba(58,42,14,0.9); font: inherit; cursor: pointer; }
+
+/* the aquarium gallery (aboard the Margaret): lighting switches, wing plaques, a fish's brass tag */
+.gl-lights { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); display: flex; gap: 6px; }
+.gl-lights button { padding: 5px 12px; border: 1px solid #6e5424; border-radius: 3px; background: #1e1b16; color: #c8b07a; font: 11px var(--mono); letter-spacing: 0.08em; cursor: pointer; }
+.gl-lights button.on { background: linear-gradient(180deg, #c9a65a, #8e6c2c); color: #2a1c06; }
+.gl-wing { position: absolute; padding: 2px 8px; border-radius: 2px; background: rgba(20,16,10,0.6); color: #e0c88a; font: 11px var(--serif); letter-spacing: 0.04em; pointer-events: none !important; }
+.gl-empty { position: absolute; left: 50%; top: 45%; transform: translateX(-50%); color: #c8b07a; font: 14px var(--serif); }
+.gl-tag { transform: translateX(-50%); min-width: 220px; }
+.gl-tag input { width: 100%; box-sizing: border-box; margin: 2px 0 6px; padding: 4px 6px; border: 0; border-radius: 2px; background: rgba(60,40,10,0.18); color: #2a1c06; font: 13px var(--serif); text-align: center; }
+.gl-tag .acts { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.gl-famous { display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 2px; background: #2a1c06; color: #f0d070; font: normal 10px var(--mono); letter-spacing: 0.1em; }

@@ -630,6 +630,27 @@ export class Renderer {
     // ---- Earl ----
     const e = g.earl;
     let head = null;
+    // the tag tracker: a faint dotted trail to the nearest released fish
+    if ((g.addons || {}).tracker && (g.profile.released || []).length && g.mode === 'play') {
+      const me = g.earl.inSub ? g.sub : g.earl;
+      let best = null, bd = 1e9;
+      for (const r of g.profile.released) { const d = Math.hypot(r.x - me.x, r.y - me.y); if (d < bd) { bd = d; best = r; } }
+      if (best && bd > 8) {
+        const ang = Math.atan2(best.y - me.y, best.x - me.x), len = Math.min(bd, 22);
+        ctx.save(); ctx.strokeStyle = 'rgba(150,230,200,0.45)'; ctx.lineWidth = Math.max(1, ppm * 0.06); ctx.setLineDash([ppm * 0.3, ppm * 0.5]); ctx.lineDashOffset = -t * ppm * 1.5;
+        ctx.beginPath(); ctx.moveTo(S(me.x + Math.cos(ang) * 2), Sy(me.y + Math.sin(ang) * 2)); ctx.lineTo(S(me.x + Math.cos(ang) * len), Sy(me.y + Math.sin(ang) * len)); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle = 'rgba(170,240,210,0.75)'; ctx.font = `${Math.max(11, ppm * 0.38)}px monospace`; ctx.textAlign = 'center';
+        const lx = clamp(S(me.x + Math.cos(ang) * len * 0.7), 90, this.W - 90), ly = clamp(Sy(me.y + Math.sin(ang) * len * 0.7) - 10, 30, this.H - 40);
+        ctx.fillText(`${best.name || SPECIES_BY_ID[best.id].name} · ${Math.round(bd)} m`, lx, ly);
+        ctx.restore();
+      }
+    }
+    // released gallery fish: their names, softly, when Earl is close
+    for (const c of g.fauna.list) {
+      if (!c.pet || Math.hypot(c.x - g.earl.x, c.y - g.earl.y) > 14) continue;
+      ctx.save(); ctx.font = `${Math.max(11, ppm * 0.4)}px serif`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(240,226,190,0.8)';
+      ctx.fillText((c.pet.famous ? '★ ' : '') + (c.pet.name || c.sp.name), S(c.x), Sy(c.y - c.len * 0.8) - 6); ctx.restore();
+    }
     // the sub's trawl net, streaming out ahead of the bow: a mouth on two warps, a mesh bag, its catch
     if (g.subNet) {
       const B = netBox(g), n = g.subNet, dir = n.dir, close = clamp((n.t - (NET_TIME - 0.7)) / 0.7, 0, 1);

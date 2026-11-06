@@ -154,6 +154,7 @@ export function trapNear(g) {
   const e = g.earl;
   for (const t of g.traps) {
     if (t.state !== 'set') continue;
+    if (g.helm && Math.abs(BOAT.x - t.x) < 14) return { t, how: 'haul' }; // from the helm: her winch, over the buoy
     if (dist(e.x, e.y, t.x, t.y - 0.5) < (e.inSub ? 5 : 2.6)) return { t, how: 'empty' };
     if (!e.inSub && e.y < 2 && Math.abs(e.x - t.x) < 3) {
       if (TRAPS[t.type].winch && Math.abs(BOAT.x - t.x) > 14) return { t, how: 'needboat' };

@@ -8,13 +8,13 @@ import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVEL
 import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, updateSubNet, tankFits, BIG } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
-import { VARIANTS, variantLabel, rollVariant, canBeRare } from './variants.js';
+import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
 import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { fillBoard, fulfil, RADIO } from './contracts.js';
-import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf } from './aquarium.js';
+import { WINGS, WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf } from './economy.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
@@ -85,7 +85,7 @@ function newGame(mode) {
   audio.ready && audio.restore(1.2); // after a death by the thing below, the sound comes back
   const P = profile || newProfile();
   convertOldTraps(P); // old seabed traps become the new box traps
-  BOAT.x = BOAT_HOME; // every dive starts with the Margaret back over the shelf edge
+  BOAT.x = clamp(P.boatX || BOAT_HOME, BOAT_MIN, BOAT_MAX); // she is where she was anchored (the shelf edge at first)
   const seed = (Math.random() * 1e9) | 0;
   const world = generateWorld(seed);
   const rng = makeRng(seed ^ 0x5bd1e995);
@@ -105,7 +105,7 @@ function newGame(mode) {
     deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio, reduceFlash: readReduceFlash(),
     imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2, farShadow: null,
     injury: 0, healT: 0, blood: [], deathKind: null, lampFlashT: -99, threat: null,
-    autopilot: new Autopilot(), addons: P.addons || {},
+    autopilot: new Autopilot(), addons: P.addons || {}, anchored: true,
     bag: [], subTank: [], captureFx: [], capture: null, toolSel: 'net', capPrompt: null,
     darts: [], tags: [], photos: [], shots: owns(P, 'camera') ? gear(P, 'cam').shots : 0, camFlash: 0,
     traps: [], armGame: null, contracts: [],
@@ -141,6 +141,8 @@ const ui = new UI({
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
   onSellAll: () => sellAll(),
+  onGallery: (act, key, v) => galleryAction(act, key, v),
+  payMul: () => statValue(profile, 'payFish'),
   onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on her hull`); },
   onSellItem: (k) => sellItem(k),
   onDisplay: (k) => displaySpecimen(k),
@@ -343,6 +345,34 @@ function wareBuy(k) {
   saveProfile(P); audio.ready && audio.sale();
   return true;
 }
+// the aquarium gallery aboard: pet, feed, name, sell, or send one to the sub to be released at home
+function galleryAction(act, key, v) {
+  const P = profile, A = aquariumOf(P);
+  if (act === 'light') { A.light = key; saveProfile(P); return true; }
+  const d = A.display[key];
+  if (!d) return false;
+  const sp = SPECIES_BY_ID[d.id], who = d.name || `the ${sp.name.toLowerCase()}`;
+  if (act === 'pet') { audio.ready && audio.uiSoft(); audio.calmBoost && audio.calmBoost(0.05); }
+  else if (act === 'feed') {
+    if (d.fedT > 0) { hud.toast(`${who[0].toUpperCase() + who.slice(1)} isn't hungry yet`); return false; }
+    d.fedT = 90; hud.toast(`${who[0].toUpperCase() + who.slice(1)} takes the food`); audio.ready && audio.tankPlop();
+  } else if (act === 'rename') { d.name = String(v || '').replace(/[<>]/g, '').trim().slice(0, 18); hud.toast(d.name ? `Named ${d.name}` : 'Name taken off its tank'); }
+  else if (act === 'sell') {
+    const pay = Math.round(gallerySale(d) * statValue(P, 'payFish') * 100) / 100;
+    P.cash = Math.round((P.cash + pay) * 100) / 100; P.lifetime = Math.round(((P.lifetime || 0) + pay) * 100) / 100; g.earned += pay;
+    delete A.display[key]; hud.toast(`Sold ${who} for ${money(pay)}`); audio.ready && audio.sale();
+  } else if (act === 'tosub') {
+    if (!g.sub.docked || g.sub.imploded) { hud.toast('The sub has to be in her cradle', 'warn'); return false; }
+    const spec = { id: d.id, len: d.len || sp.len, cond: d.cond, from: d.from || Math.round((sp.dmin + sp.dmax) / 2), t: g.time, variant: d.variant || undefined, aq: { name: d.name, happy: isHappy(d), famous: !!d.famous } };
+    if (d.variant) spec.mult = variantMult(d.variant);
+    if (!seal(g, spec, spec.len >= 1.2 ? BIG : -1) && !seal(g, spec, BIG)) { hud.toast(spec.len >= 1.2 ? 'It needs the large pressure tank, and room in it' : 'No free pressure tank in the sub', 'warn'); return false; }
+    g.subTank.push(spec); delete A.display[key];
+    hud.toast(`${who[0].toUpperCase() + who.slice(1)} is sealed into the sub's ${spec.chamber === BIG ? 'large tank' : 'chamber'}. Take it down to ${spec.from} m to let it go`, 'big');
+    audio.ready && audio.chamberPlop();
+  }
+  saveProfile(P);
+  return true;
+}
 // the tank room: move animals between the bag, the open tank and the pressure tanks, or let one go
 function tankAction(act, where, i, to = -1) {
   const e = g.earl;
@@ -372,6 +402,18 @@ function tankAction(act, where, i, to = -1) {
     L.splice(i, 1); s.pressed = false; delete s.chamber; delete s.pile; g.bag.push(s);
     audio.ready && audio.uiSoft();
   } else if (act === 'release') {
+    // a Happy fish from the gallery, let go in its own water, stays there for good (and can't be caught)
+    if (s.aq && s.aq.happy && s.cond > 0.05) {
+      const home = s.home ?? s.from ?? 0;
+      if (Math.abs(g.sub.y - home) > 60) { hud.toast(`${s.aq.name || 'It'} lives at about ${home} m: take it there to let it go`, 'warn'); return false; }
+      L.splice(i, 1);
+      const r = { id: s.id, variant: s.variant || null, name: s.aq.name || '', famous: !!s.aq.famous, x: Math.round(g.sub.x), y: Math.round(g.sub.y), when: Date.now() };
+      profile.released = [...(profile.released || []), r]; saveProfile(profile);
+      spawnReleased(r);
+      hud.toast(`${r.name || 'The ' + SPECIES_BY_ID[s.id].name.toLowerCase()} swims off into its own water. It will be here, every dive`, 'big');
+      audio.ready && audio.note();
+      return true;
+    }
     L.splice(i, 1);
     if (s.cond > 0.05) {
       const c = g.fauna.makeFish(SPECIES_BY_ID[s.id], g.sub.x + g.sub.facing * 3, g.sub.y + 1, g.sub.facing, g.fauna.groupId++, true);
@@ -382,6 +424,14 @@ function tankAction(act, where, i, to = -1) {
   } else return false;
   if (act === 'release') audio.ready && audio.click();
   return true;
+}
+function spawnReleased(r) {
+  const sp = SPECIES_BY_ID[r.id];
+  if (!sp) return;
+  const c = g.fauna.makeFish(sp, r.x + (Math.random() - 0.5) * 6, r.y + (Math.random() - 0.5) * 3, Math.random() < 0.5 ? -1 : 1, g.fauna.groupId++, true);
+  if (r.variant) c.variant = r.variant;
+  c.pet = r; c.flee = 0; c.placed = true;
+  g.fauna.list.push(c);
 }
 function syncProfile() {
   const P = profile;
@@ -619,13 +669,14 @@ function promptFor(t) {
       : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (B) and use her winch`
       : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
+    else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your gallery`;
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
   if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
   if (canOffer() && (g.offerT || 0) < 10) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep'; // offered for 10 s, then left unsaid
   if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room'
     + (g.seal ? `   ·   Sealing the leaks… ${Math.round(g.seal / SEAL_TIME * 100)} %` : g.sub.hull < SEAL_CAP - 0.01 && g.items.sealant > 0 ? '   ·   K  Seal the leaks' : '');
-  if (nearBoat || (e.inSub && g.sub.docked)) p = (p ? p + '   ·   ' : '') + (g.helm ? 'A / D  Drive the Margaret   ·   B  Leave the helm' : 'U  The boat   ·   B  Take the helm');
+  if (nearBoat || (e.inSub && g.sub.docked)) p = (p ? p + '   ·   ' : '') + (g.helm ? `A / D  Drive the Margaret   ·   G  ${g.anchored ? 'Raise' : 'Drop'} the anchor   ·   B  Leave the helm` : 'U  The boat   ·   B  Take the helm');
   return p;
 }
 
@@ -1016,7 +1067,7 @@ function update(dt) {
       }
     } else g.plant = 0;
     // giving something back: release a lure or a necklace into the deep
-    if (pressed.has('g') && canOffer()) {
+    if (pressed.has('g') && canOffer() && !g.helm) {
       const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
       if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('Something far below accepts it. For a while, it will not look for you.', 'note'); }
     }
@@ -1101,6 +1152,17 @@ function update(dt) {
     if (pressed.has('x')) devMaxAll();
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
+    tickGallery(profile, dt);
+    for (const d of Object.values(aquariumOf(profile).display)) if (d.justFamous) { d.justFamous = false; saveProfile(profile); hud.toast(`${d.name || 'Your ' + SPECIES_BY_ID[d.id].name.toLowerCase()} is Famous now: people come to the gallery to see it`, 'big'); }
+    // released fish: each dive they are found again where they were let go
+    if ((profile.released || []).length && (g.relCheckT = (g.relCheckT || 0) - dt) <= 0) {
+      g.relCheckT = 1;
+      for (const r of profile.released) {
+        const c = g.fauna.list.find((q) => q.pet === r);
+        if (!c && Math.abs(r.x - e.x) < 60 && Math.abs(r.y - e.y) < 40) spawnReleased(r);
+        if (c && Math.hypot(c.x - r.x, c.y - r.y) > 14) { c.vx += Math.sign(r.x - c.x) * 0.4; c.dir = Math.sign(r.x - c.x) || 1; c.tDepth = r.y; }
+      }
+    }
     const day = tickAquarium(profile, dt);
     if (day) { saveProfile(profile); hud.toast(`The aquarium: ${day.visitors} visitors today · ${day.net >= 0 ? '+' : ''}${money(day.net, false)} after upkeep`, 'note'); }
     // the very bottom, the first time: it shows itself, and lets him go
@@ -1292,12 +1354,26 @@ function update(dt) {
     if (g.helm) {
       if (mv.y) { g.helm = false; hud.toast('Left the helm'); }
       else {
-        g.boatV = lerp(g.boatV || 0, mv.x * 9, 1 - Math.exp(-dt * 1.0)); // a heavy boat: slow to speed up and to stop
-        BOAT.x = clamp(BOAT.x + g.boatV * dt, BOAT_MIN, BOAT_MAX);
-        if (BOAT.x === BOAT_MIN || BOAT.x === BOAT_MAX) g.boatV = 0;
+        // a heavy working boat: she takes her time to get under way and longer still to stop; 5 m/s flat out
+        if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast('The anchor is down: G to raise it', 'warn'); } }
+        const want = g.anchored ? 0 : mv.x * 5;
+        g.boatV = lerp(g.boatV || 0, want, 1 - Math.exp(-dt * (want ? 0.28 : 0.18)));
         mv.x = 0; mv.y = 0;
         if (!e.inSub) { e.x = BOAT.x - 3; e.y = 0.5; e.vx = e.vy = 0; }
       }
+    }
+    // the anchor: G at the helm. Down, she holds her place (and the next dive starts there); up and
+    // nobody at the wheel, she drifts on the current
+    if (pressed.has('g') && g.helm) {
+      g.anchored = !g.anchored;
+      if (g.anchored) { profile.boatX = Math.round(BOAT.x); saveProfile(profile); hud.toast(`Anchor down, ${Math.round(Math.max(0, g.world.floorAt(BOAT.x)))} m of water under her`); audio.ready && audio.thud(0.25); }
+      else { hud.toast('Anchor up'); audio.ready && audio.click(); }
+    }
+    if (!g.helm && !g.anchored) g.boatV = lerp(g.boatV || 0, 0.25 * Math.sin(g.time * 0.003 + 1), 1 - Math.exp(-dt * 0.1)); // adrift
+    if (g.anchored) g.boatV *= Math.exp(-dt * 1.5);
+    if (Math.abs(g.boatV || 0) > 0.001) {
+      BOAT.x = clamp(BOAT.x + g.boatV * dt, BOAT_MIN, BOAT_MAX);
+      if (BOAT.x === BOAT_MIN || BOAT.x === BOAT_MAX) g.boatV = 0;
     }
     // a docked sub sits in the boat's cradle wherever she goes
     if (g.sub.docked && !g.sub.imploded && !(g.autopilot && g.autopilot.active)) { g.sub.x = BOAT.x + 8.5; g.sub.y = 2.6; g.sub.vx = g.sub.vy = 0; }

@@ -59,6 +59,7 @@ export const SUB_ADDONS = {
   recall: { name: 'Recall unit', price: 280, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
   quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
   subNet: { name: 'Trawl net', price: 1800, desc: 'A net in a canister under the bow. N lets it out once a dive: it sweeps the water ahead for a few seconds and takes up to ten animals, sharks to 2.5 m, even legends. Loud: below 200 m the deep hears it. Repacked at the boat.' },
+  tracker: { name: 'Tag tracker', price: 900, desc: 'A receiver for the tags on the fish you released from your gallery: a faint trail leads from the sub (or from Earl) to the nearest one, with its name and how far.' },
   bigTank: { name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
   sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
 };

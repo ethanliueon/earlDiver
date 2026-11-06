@@ -50,7 +50,7 @@ function inCone(g, range, cone, pick) {
     const score = pick(sp, ref, d, da);
     if (score !== null && score < bs) { bs = score; best = { sp, x, y, len, d, ...ref }; }
   };
-  for (const c of g.fauna.list) if (!c.dead) test(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
+  for (const c of g.fauna.list) if (!c.dead && !c.pet) test(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
   for (const s of g.world.statics) if (Math.abs(s.x - e.x) < range + 5) test(s.sp, s.x, s.y - s.sp.len * s.scale * 0.3, s.sp.len * s.scale, { s, variant: s.variant });
   return best;
 }

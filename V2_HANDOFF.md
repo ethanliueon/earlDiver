@@ -357,3 +357,11 @@ Docs, screenshots, the handoff's checks, merge to main.
 - Large pressure tank = chamber `BIG` (100): `bigFits` — three animals, or one ≥ 1.2 m alone. Same pressure logic as the chambers.
 - tankroom.js: the heap (`drawPile`, mesh over the animals, grabbable), the steel cylinder with a window (`drawBigTank`, its fish swim, grabbable, tags below), drop targets/highlights for both, tag line "room for N more places".
 - render.js: the trawl drawn in the water (warps, a brass mouth frame, mesh bag, the catch bunched in the cod end).
+
+## 2.0.0-alpha.6: the Margaret and her gallery (tested)
+- Helm (main.js): 5 m/s flat out, slow to get under way (rate 0.28) and slower to stop (0.18); `BOAT_MIN` 60 → she can go anywhere on the surface. Anchor: **G** at the helm (G's offering is skipped while at the helm). Anchored she holds and `profile.boatX` is saved — the next dive starts there; anchor up with nobody at the wheel she drifts slowly. Every dive starts anchored. Shop/dock/cradle already followed `BOAT.x`.
+- Winching from the helm: traps.js `trapNear` — at the helm, a trap within 14 m of the boat can be hauled with F.
+- js/gallery.js (new): the gallery aboard — each built wing a lit tank, animals swimming (sized `36 + √len·120` px, capped to the tank), names under them, ★ for Famous, dead ones belly-up with X eyes (`xEyes`, also used in the tank room). Lighting: Daylight / Dim / Red (`aquarium.light`). A brass tag per animal: name field, state + time to Happy/Famous, sale price, Pet (hearts), Feed (90 s faster recovery), Name, Sell, To the sub.
+- aquarium.js: display records now carry len/cond/from/name/happyT/famT/famous; `tickGallery` (Happy after 300 s healthy, Famous 900 s later, permanent; Happy lapses below 0.7); `gallerySale` (×1.2 Happy × 2 Famous, dead 10 %). Opened from the shop's Aquarium tab ("Walk the gallery").
+- Release: "To the sub" seals it into a chamber (or the large tank if ≥ 1.2 m) with `spec.aq`; in the tank room, releasing a Happy one works only within 60 m of its home depth → saved in `profile.released` and re-spawned at its spot every dive (`spawnReleased`, kept near home, `c.pet`), can't be netted/slurped/clawed/tagged, its name shown when close.
+- Tag tracker (sub add-on, $900): a dotted trail to the nearest released fish with its name and distance.

@@ -98,7 +98,7 @@ export function findCatch(g) {
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
     if (d < bd) { bd = d; best = { sp, x, y, len, d, ...ref }; }
   };
-  for (const c of g.fauna.list) if (!c.dead && !(c.att && c.att.s !== 'idle')) consider(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
+  for (const c of g.fauna.list) if (!c.dead && !c.pet && !(c.att && c.att.s !== 'idle')) consider(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
   for (const s of W.statics) {
     if (Math.abs(s.x - h.x) > reach + 3) continue;
     consider(s.sp, s.x, s.y - Math.min(0.5, s.sp.len * s.scale * 0.3), s.sp.len * s.scale, { s, variant: s.variant });
@@ -295,7 +295,7 @@ export function updateSubNet(g, dt, canTake) {
   const B = netBox(g);
   for (const c of g.fauna.list) {
     if (n.got.length >= NET_MAX) break;
-    if (c.dead || c.hidden || c.len > NET_LEN || n.got.includes(c)) continue;
+    if (c.dead || c.hidden || c.pet || c.len > NET_LEN || n.got.includes(c)) continue;
     if (c.x < B.x0 || c.x > B.x1 || c.y < B.y0 || c.y > B.y1) continue;
     if (!canTake(c.sp)) continue;
     n.got.push(c); c.dead = true; c.netted = true;

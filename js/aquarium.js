@@ -48,7 +48,35 @@ export function displayRefusal(P, spec) {
 }
 export function display(P, spec) {
   const A = aquariumOf(P), zone = zoneOf(spec);
-  A.display[displayKey(spec)] = { id: spec.id, variant: spec.variant || null, wing: zone, since: Date.now() };
+  A.display[displayKey(spec)] = { id: spec.id, variant: spec.variant || null, wing: zone, since: Date.now(),
+    len: spec.len || SPECIES_BY_ID[spec.id].len, cond: spec.cond ?? 1, from: spec.from || 0, name: '', happyT: 0, famT: 0, famous: !!spec.famous };
+}
+
+// ---------------- life in the gallery (v2) ----------------
+// A healthy animal (condition 0.7+) that lives here 5 minutes of play becomes Happy (sells for x1.2);
+// 15 minutes after that it earns the Famous tag (x2, stacking: x2.4). Happy lapses if it sickens;
+// Famous never does. Feeding helps a weak one recover; petting is for the two of you.
+export const HAPPY_AFTER = 300, FAMOUS_AFTER = 900;
+export const isHappy = (d) => (d.happyT || 0) >= HAPPY_AFTER;
+export function lifeMult(d) { return (isHappy(d) ? 1.2 : 1) * (d.famous ? 2 : 1); }
+export function tickGallery(P, dt) {
+  const A = aquariumOf(P);
+  for (const d of Object.values(A.display)) {
+    if (d.cond === undefined) d.cond = 1;
+    if (d.cond <= 0.05) continue;                                       // dead: X eyes, until it is taken out
+    d.cond = Math.min(1, d.cond + dt * (d.fedT > 0 ? 0.004 : 0.0015));   // clean water, regular meals
+    if (d.fedT > 0) d.fedT -= dt;
+    if (d.cond >= 0.7) {
+      d.happyT = (d.happyT || 0) + dt;
+      if (isHappy(d)) { d.famT = (d.famT || 0) + dt; if (d.famT >= FAMOUS_AFTER && !d.famous) { d.famous = true; d.justFamous = true; } }
+    } else d.happyT = 0;
+  }
+}
+// what one on display would fetch at the boat (before the pay upgrade)
+export function gallerySale(d) {
+  const sp = SPECIES_BY_ID[d.id];
+  const base = liveValue(sp, d.len || sp.len) * variantMult(d.variant);
+  return d.cond <= 0.05 ? base * 0.1 : base * lifeMult(d);
 }
 
 // how much a displayed animal draws visitors: rarer, deeper and stranger is better

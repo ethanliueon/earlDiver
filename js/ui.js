@@ -8,6 +8,7 @@ import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName, rarityOf } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
+import { Gallery } from './gallery.js';
 import { WINGS, WING_BY_ID, aquariumOf, wingUsed, displayRefusal, reputation, dailyIncome, upkeep, visitors, completion, drawOf, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
@@ -67,6 +68,7 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     this.caveTab = 'trade';
+    this.gallery = new Gallery($('gallery'), { act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
@@ -108,6 +110,7 @@ export class UI {
       if (act === 'buy') h.onBuy(arg);
       else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
       else if (act === 'display') h.onDisplay(arg);
+      else if (act === 'gallery') { this.toggleGallery(true); return; }
       else if (act === 'sellitem') { const sale = h.onSellItem(arg); if (sale) this.showLedger(sale); }
       this.renderWorkshop();
     });
@@ -196,10 +199,16 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden; }
-  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.closeTrapSet(); }
+  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden; }
+  closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
+  galleryOpen() { return !$('gallery').hidden; }
+  toggleGallery(force) {
+    const el = $('gallery'), open = force === undefined ? el.hidden : force;
+    el.hidden = !open;
+    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.gallery.show(); }
+  }
   // ---------- setting a trap: which one, and how deep (a depth meter in whole metres) ----------
   trapSetOpen() { return !$('trapset').hidden; }
   closeTrapSet() { if (!$('trapset').hidden) this.tsClosedAt = performance.now(); $('trapset').hidden = true; }
@@ -565,6 +574,7 @@ export class UI {
       const A = aquariumOf(P), C = completion(P);
       const net = dailyIncome(P) - upkeep(P);
       html += `<div class="aq-head"><div><b>${C.species}</b><span>of ${C.of} species</span></div><div><b>${C.rare}</b><span>rare forms</span></div><div><b>${A.wings.length ? visitors(P) : 0}</b><span>visitors a day</span></div><div><b class="${net < 0 ? 'neg' : ''}">${A.wings.length ? money(net, false) : '—'}</b><span>a day after upkeep</span></div></div>`;
+      if (A.wings.length) html += `<button class="primary" data-act="gallery" data-arg="">Walk the gallery<span>pet, feed, name, sell or release them</span></button>`;
       if (!A.wings.length) html += `<p class="shop-empty">An empty plot on the shore. Build the first wing, then keep live animals here instead of selling them: one of every species, and every rare form. Visitors pay every day (every ${DAY / 60} minutes of diving).</p>`;
       const next = WINGS.find((w) => !A.wings.includes(w.id));
       for (const w of WINGS) {
@@ -746,5 +756,9 @@ export class UI {
       else this.tankRoom.update(dt);
     }
     if (!$('cave').hidden && Math.hypot(g.earl.x - 66, g.earl.y - 1800) > 20) this.toggleCave(false);
+    if (!$('gallery').hidden) {
+      const e = g.earl, aboard = (Math.abs(e.x - BOAT.x) < 16 && e.y < 5) || (e.inSub && g.sub.docked);
+      if (!aboard) this.toggleGallery(false); else this.gallery.update(dt);
+    }
   }
 }

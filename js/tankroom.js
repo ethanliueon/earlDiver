@@ -8,6 +8,7 @@
 // on a chamber, the open tank or the bag.
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
+import { xEyes } from './gallery.js';
 import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, bigIn, slotsOf} from './capture.js';
 import { UPGRADES } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
@@ -534,7 +535,7 @@ export class TankRoom {
       const x = P.x + P.w * (0.15 + ((i * 0.37) % 0.7)), y = P.y - 10 - (i % 3) * 14 - Math.floor(i / 3) * 6;
       this.pileFish.push({ s, x, y, L });
       ctx.save(); ctx.translate(x, y); ctx.rotate((i % 2 ? -0.18 : 0.22) + (dead ? 0 : Math.sin(t * 6 + i * 3) * 0.06 * (Math.sin(t * 0.7 + i) > 0.6 ? 1 : 0)));
-      ctx.scale(i % 2 ? -1 : 1, dead ? -1 : 1); drawSpecies(ctx, sp, L, 0, 0, 0); ctx.restore();
+      ctx.scale(i % 2 ? -1 : 1, dead ? -1 : 1); drawSpecies(ctx, sp, L, 0, 0, 0); if (dead) xEyes(ctx, L, sp); ctx.restore();
     });
     // the mesh over the top of it all
     ctx.save(); ctx.clip(hp); ctx.strokeStyle = 'rgba(150,170,150,0.45)'; ctx.lineWidth = 1;
@@ -606,7 +607,7 @@ export class TankRoom {
       this.bagFish.push({ i, x: hk.x - 8 + x, y: hk.y + 8 + y, L });
       if (this.drag && this.drag.s === s) return; // in hand
       ctx.save(); ctx.translate(x, y);
-      if (dead) { ctx.rotate(0.25); ctx.scale(i % 2 ? 1 : -1, -1); drawSpecies(ctx, sp, L, 0, 0, 0); }
+      if (dead) { ctx.rotate(0.25); ctx.scale(i % 2 ? 1 : -1, -1); drawSpecies(ctx, sp, L, 0, 0, 0); xEyes(ctx, L, sp); }
       else { const vit = clamp(s.cond, 0, 1), tw = Math.sin(this.t * lerp(2, 9, vit) + i * 2) * lerp(0.02, 0.18, vit); ctx.rotate((i % 2 ? -0.3 : 0.3) + tw); ctx.scale(i % 2 ? -1 : 1, 1); drawSpecies(ctx, sp, L, this.t * lerp(0.2, 1.2, vit) + i, lerp(0.1, 0.6, vit), 0); }
       ctx.restore();
     });
@@ -656,7 +657,7 @@ export class TankRoom {
   drawFish(ctx, g, s, a, L) {
     const sp = SPECIES_BY_ID[s.id], dead = s.cond <= 0.05;
     ctx.save(); ctx.translate(a.x, a.y);
-    if (dead) { ctx.scale(1, -1); ctx.globalAlpha = 0.85; drawSpecies(ctx, sp, L, 0, 0, 0); ctx.restore(); return; }
+    if (dead) { ctx.scale(1, -1); ctx.globalAlpha = 0.85; drawSpecies(ctx, sp, L, 0, 0, 0); xEyes(ctx, L, sp); ctx.restore(); return; }
     const f = Math.abs(a.face) < 0.08 ? 0.08 * Math.sign(a.face || 1) : a.face;
     ctx.rotate((clamp(a.vy * 0.02, -0.3, 0.3) + a.roll) * Math.sign(f));
     // a roll: over onto its back and up again

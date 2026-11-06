@@ -17,7 +17,7 @@ export const SH = 2000;
 export const FLOOR_RES = 0.5; // metres per floor sample
 // the Margaret: she starts over the shelf edge and can be driven along the surface between
 // BOAT_MIN and BOAT_MAX (1,000 m from the west wall, to the shallows off the beach)
-export const BOAT_HOME = 4512, BOAT_MIN = 3000, BOAT_MAX = 4945;
+export const BOAT_HOME = 4512, BOAT_MIN = 60, BOAT_MAX = 4945; // (v2: she can go anywhere on the surface)
 export const BOAT = { x: BOAT_HOME };
 export const BOAT_X = BOAT_HOME; // (where she starts)
 export const SPAWN = { x: BOAT_HOME - 12, y: 5 };
