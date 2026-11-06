@@ -180,6 +180,8 @@ export class UI {
     $('set-catchtags').addEventListener('click', () => { setSetting('catchTags', !SETTINGS.catchTags); this.renderSettings(); });
     $('set-hints').addEventListener('click', () => { h.onHints && h.onHints(); this.renderSettings(); });
     $('set-sound').addEventListener('click', () => { h.onMute && h.onMute(); this.renderSettings(); });
+    document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
+    $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory')) this.toggleInventory(false); });
     $('set-graphics').addEventListener('click', () => { setSetting('fast', !SETTINGS.fast); this.renderSettings(); });
     // the gear (title screen, journal, pause menu) opens the settings and controls
     document.addEventListener('click', (ev) => { if (ev.target.closest('[data-settings]')) this.toggleSettings(true); });
@@ -209,10 +211,38 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('settings').hidden; }
+  anyOpen() { return !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('settings').hidden || !$('inventory').hidden; }
   closeAll() { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
+  inventoryOpen() { return !$('inventory').hidden; }
+  toggleInventory(force) { const el = $('inventory'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderInventory(); }
+  // B: what Earl has on him, what is in the sub, his gear
+  renderInventory() {
+    const g = this.h.getGame(), P = this.h.getProfile();
+    if (!g || !P) { $('inventory').querySelector('.inv-body').innerHTML = '<p class="inv-empty">Nothing yet: start a dive.</p>'; return; }
+    const ic = (sp) => { if (!this.toolImgs) this.toolImgs = new Map(); const k = 'inv' + sp.id; if (!this.toolImgs.has(k)) this.toolImgs.set(k, speciesIcon(sp, 120, 68).toDataURL()); return this.toolImgs.get(k); };
+    const row = (label, n, note = '') => `<div class="inv-row"><span>${label}${note ? ` <em>${note}</em>` : ''}</span>${n === '' ? '' : `<b class="n${n ? '' : ' zero'}">${n}</b>`}</div>`;
+    const fish = (s) => { const sp = SPECIES_BY_ID[s.id]; return `<div class="inv-row"><img src="${ic(sp)}" alt=""><span>${sp.name}${s.variant ? ` <em>${s.variant}</em>` : ''}<br><em>${s.cond <= 0.05 ? 'dead' : conditionName(s.cond)} · from ${s.from || 0} m · about ${money(specimenValue(s) * statValue(P, 'payFish'))}</em></span></div>`; };
+    const sec = (title, inner, wide = false) => `<div class="inv-sec${wide ? ' wide' : ''}"><h4>${title}</h4><div class="inv-list">${inner}</div></div>`;
+    let html = `<div class="inv-sec wide"><div class="inv-cash"><div><span>CASH</span>${money(P.cash)}</div>${P.coins ? `<div><span>OLD GOLD COINS</span>${P.coins}</div>` : ''}</div></div>`;
+    const it = g.items || {};
+    html += sec('Carried', Object.entries(SUPPLIES).filter(([k, S]) => !S.needs || owns(P, S.needs)).map(([k, S]) => row(S.name, it[k] || 0, `of ${supplyMax(P, k)}`)).join('') + ((P.oldLures || 0) ? row('Old lure', P.oldLures, 'from the old one') : ''));
+    const finds = Object.entries(g.inv || {}).filter(([, n]) => n > 0);
+    html += sec('Finds, to sell at the boat', finds.length ? finds.map(([k, n]) => row(k === 'pearl' ? 'Pearl' : (RESOURCES[k] ? RESOURCES[k].name : k), n)).join('') : '<p class="inv-empty">Nothing picked up this dive.</p>');
+    html += sec(`The catch bag · ${g.bag.length} of ${Math.round(statValue(P, 'bag'))}`, g.bag.length ? g.bag.map(fish).join('') : '<p class="inv-empty">Empty.</p>', true);
+    if (!g.sub.imploded) {
+      const where = (s) => (s.pile ? 'the heap from the net' : s.pressed ? (s.chamber === 100 ? 'the large pressure tank' : `chamber ${s.chamber + 1}`) : 'the open tank');
+      const groups = {};
+      for (const s of g.subTank) (groups[where(s)] = groups[where(s)] || []).push(s);
+      const inner = Object.keys(groups).length ? Object.entries(groups).map(([w, L]) => `<div class="inv-empty" style="font-style:normal">${w}</div>` + L.map(fish).join('')).join('') : '<p class="inv-empty">Nothing in her tanks.</p>';
+      html += sec('In the submersible', inner, true);
+    }
+    const tools = ['net'].concat(Object.keys(GEAR).filter((k) => owns(P, k))).map((k) => k === 'net' ? 'Hand net' : GEAR[k].name);
+    const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
+    html += sec('Equipment', row('Tools', '', tools.join(' · ')) + row('Suit', '', (SUITS[P.suit] || {}).name || 'Wetsuit') + row('Submersible', '', g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}, rated ${g.sub.rated} m`), true);
+    $('inventory').querySelector('.inv-body').innerHTML = html;
+  }
   settingsOpen() { return !$('settings').hidden; }
   toggleSettings(force) { const el = $('settings'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderSettings(); }
   renderSettings() {

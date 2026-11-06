@@ -412,3 +412,8 @@ Docs, screenshots, the handoff's checks, merge to main.
 
 ## 2.0.8
 - Settings panel: the brass plate and the × stay fixed on the frame; only the list below them scrolls (`.set-body`).
+
+## 2.0.9 — inventory on B; the helm moves to V; dev X gives money
+- B opens the inventory (`#inventory`, ui.js `renderInventory`, the same steel panel as the settings — those styles are shared with `:is(#settings, #inventory)`): cash and old gold coins; carried supplies (count of max); finds to sell; the catch bag (each animal: condition, depth found, value); what is in the sub (by chamber / open tank / large tank / the net's heap); equipment (tools, suit, the sub). B again, Esc, × or a click outside closes it.
+- The Margaret's helm is now V (prompts, README, controls list updated).
+- Developer key X: +$500,000 cash and nothing else (it used to max every upgrade).

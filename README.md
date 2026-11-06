@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.0.8 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.0.9 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -30,7 +30,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | Q | Throw an anglerfish lure |
 | E | The fangtooth necklace: a soft green light, like a glowstick |
 | G | Offer a lure or necklace back to the deep (below 100 m, only while it hunts you and is within 1,000 m) - ends its hunt. At the helm: drop or raise the Margaret's anchor |
-| B | At the boat: take the helm and drive the Margaret (A / D) |
+| B | Inventory: cash, supplies, finds, the catch bag, what is in the sub, your gear |
+| V | At the boat: take the helm and drive the Margaret (A / D) |
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
 | U | The boat (at the surface): sell, buy gear and supplies, the radio, the aquarium and its gallery |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
@@ -77,7 +78,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
   animals take two or three places in the open tank; the large pressure tank holds three animals,
   or one big one.
 - **The Margaret** goes anywhere on the surface, slowly (5 m/s flat out). Drop the anchor (G at
-  the helm) and she stays, and the next dive starts there. Heavy traps are winched up from her helm
+  the helm; V takes the helm) and she stays, and the next dive starts there. Heavy traps are winched up from her helm
   over their buoys.
 - **The aquarium** (built from the boat): keep live animals instead of selling them. Walk the
   gallery to pet, feed, name and light them. A healthy animal becomes Happy after five minutes

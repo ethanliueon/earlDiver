@@ -62,23 +62,11 @@ function applySub(sub, P) {
 }
 // X (a developer's key): everything at its best - every upgrade maxed, every piece of gear and every
 // suit owned (the deepest-rated one put on), every add-on, full trap racks and supplies, and money
-function devMaxAll() {
-  const P = profile, e = g.earl;
-  P.lv = Object.fromEntries(Object.entries(UPGRADES).map(([id, U]) => [id, U.max]));
-  P.gear = Object.fromEntries(Object.keys(GEAR).map((k) => [k, true]));
-  P.suits = Object.keys(SUITS);
-  P.suit = Object.entries(SUITS).sort((a, b) => b[1].press - a[1].press)[0][0];
-  P.addons = Object.assign({}, Object.fromEntries(Object.keys(SUB_ADDONS).map((k) => [k, true])), { canisters: true });
-  if (!P.radio) { P.radio = true; fillBoard(P, g.contracts); }
-  P.traps = Object.fromEntries(TRAP_ORDER.map((k) => [k, TRAPS[k].max]));
-  for (const k of Object.keys(SUPPLIES)) g.items[k] = supplyMax(P, k);
-  P.cash = Math.max(P.cash || 0, 100000); P.coins = Math.max(P.coins || 0, 500);
-  g.addons = P.addons; applySuit(e, P); e.finSpeed = statValue(P, 'swim'); e.sprintMul = statValue(P, 'sprint');
-  if (g.sub.imploded) { g.sub = new Sub(); g.sub.docked = true; g.imploded = false; }
-  applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = 1; g.sub.crushR = null;
-  e.o2Max = Math.max(e.o2Max, statValue(P, 'air')); e.o2 = e.o2Max; g.shots = gear(P, 'cam').shots;
-  syncProfile(); saveProfile(P);
-  hud.toast('Developer: everything maxed out', 'big'); audio.ready && audio.click();
+function devMaxAll() { // (developer key X: half a million dollars, nothing else)
+  const P = profile;
+  P.cash = Math.round(((P.cash || 0) + 500000) * 100) / 100;
+  saveProfile(P);
+  hud.toast('Developer: +$500,000', 'big'); audio.ready && audio.click();
 }
 // the 'reduce flashing' setting (pause menu): kept in this browser
 function readReduceFlash() { try { return localStorage.getItem('earl.reduceFlash') === '1'; } catch (e) { return false; } }
@@ -677,7 +665,7 @@ function promptFor(t) {
         : g.items.plate > 0 ? `   ·   hold Z  Weld a patch plate over the damage (hull ${Math.round(g.sub.hull * 100)} %)` : `   ·   hull ${Math.round(g.sub.hull * 100)} % (no patch plates)`;
     }
     else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
-      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (B) and use her winch`
+      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use her winch`
       : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your gallery`;
@@ -687,7 +675,7 @@ function promptFor(t) {
   if (canOffer() && (g.offerT || 0) < 10) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep'; // offered for 10 s, then left unsaid
   if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room'
     + (g.seal ? `   ·   Sealing the leaks… ${Math.round(g.seal / SEAL_TIME * 100)} %` : g.sub.hull < SEAL_CAP - 0.01 && g.items.sealant > 0 ? '   ·   K  Seal the leaks' : '');
-  if (nearBoat || (e.inSub && g.sub.docked)) p = (p ? p + '   ·   ' : '') + (g.helm ? `A / D  Drive the Margaret   ·   G  ${g.anchored ? 'Raise' : 'Drop'} the anchor   ·   B  Leave the helm` : 'U  The boat   ·   B  Take the helm');
+  if (nearBoat || (e.inSub && g.sub.docked)) p = (p ? p + '   ·   ' : '') + (g.helm ? `A / D  Drive the Margaret   ·   G  ${g.anchored ? 'Raise' : 'Drop'} the anchor   ·   V  Leave the helm` : 'U  The boat   ·   V  Take the helm');
   return p;
 }
 
@@ -708,7 +696,7 @@ function interact(t, exitSub) {
   if (!t) { if (e.inSub) leaveSub(); return; }
   if (t.kind === 'trap') {
     if (t.how === 'haul') { t.t.state = 'hauling'; hud.toast(TRAPS[t.t.type].winch ? 'The winch takes up the rope' : 'Hauling the trap up the line'); audio.ready && audio.click(); }
-    else if (t.how === 'needboat') hud.toast('Too heavy to lift by hand: bring the Margaret over it (B) and winch it up', 'warn');
+    else if (t.how === 'needboat') hud.toast('Too heavy to lift by hand: bring the Margaret over it (V) and winch it up', 'warn');
     else { const n = emptyTrap(g, t.t); hud.toast(n ? `${n} from the trap into the bag${t.t.catch.length ? ' — the bag is full' : ''}` : t.t.catch.length ? 'The bag is full' : 'The trap is empty. Leave it a while'); }
     return;
   }
@@ -1091,7 +1079,8 @@ function update(dt) {
     if (pressed.has('t')) { if (e.inSub && !g.sub.imploded) ui.toggleTank(); else hud.toast('The tank room is in the sub', 'warn'); }
     // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
-    if (pressed.has('b') && (g.helm || atBoat)) { g.helm = !g.helm; g.boatV = 0; hud.toast(g.helm ? 'At the helm' : 'Left the helm'); audio.ready && audio.click(); }
+    if (pressed.has('b')) ui.toggleInventory();
+    if (pressed.has('v') && (g.helm || atBoat)) { g.helm = !g.helm; g.boatV = 0; hud.toast(g.helm ? 'At the helm' : 'Left the helm'); audio.ready && audio.click(); }
     if (pressed.has('q')) {
       const old = (profile.oldLures || 0) > 0;
       if ((old || g.items.lure > 0) && !g.lure) {
@@ -1703,6 +1692,7 @@ requestAnimationFrame(frame);
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape' || ui.typing()) return;
   if (ui.settingsOpen && ui.settingsOpen()) { ui.toggleSettings(false); return; }
+  if (ui.inventoryOpen && ui.inventoryOpen()) { ui.toggleInventory(false); return; }
   if (g.mode !== 'play') return;
   if (ui.anyOpen()) { ui.closeAll(); return; }
   g.paused = !g.paused;
