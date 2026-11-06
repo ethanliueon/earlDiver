@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 2.0.6 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 2.0.7 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -35,7 +35,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | U | The boat (at the surface): sell, buy gear and supplies, the radio, the aquarium and its gallery |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause (save and quit to the title from there) |
-| ⚙ | Settings and controls (on the title screen, in the journal and the pause menu): target brackets, catch tags, reduce flashing, hints, sound |
+| ⚙ | Settings and controls (on the title screen, in the journal and the pause menu): target brackets, catch tags, reduce flashing, hints, sound, graphics (Auto / Fast) |
 | M | Mute |
 | H | Hints on / off |
 

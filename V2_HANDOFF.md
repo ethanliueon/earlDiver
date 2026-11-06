@@ -398,3 +398,14 @@ Docs, screenshots, the handoff's checks, merge to main.
 ## 2.0.6
 - The legendary moment is wordless now: no toast or hint; the music still falls away, the pale light still comes up, the chord still plays, `profile.legends` still counts it.
 - The settings gear is an SVG shape (CSS mask) filling ~72 % of its brass button, instead of the ⚙ font glyph; title gear 40 px, journal 32 px.
+
+## 2.0.7 — title music, loading card everywhere, smoother frames, reef fish swim higher
+- Music on the title screen: the audio starts with the first key or click (browsers keep a page silent until then).
+- `withLoading` (main.js): the porthole card covers every new sea (a slot, Dive / Dive again, Start a new game, Save and quit, the menu after a death) and stays up while the animals on screen are built into sprites at full speed (`warmSprites(g, 60, true)`, at most 1.5 s), so the first moments don't stutter. Measured ~0.5-1 s.
+- Performance (render.js), measured with a per-method profiler (scratchpad perf.js):
+  - sprite cache keyed on the full-quality scale (`spriteKey`): the adaptive quality stepping no longer throws every sprite away (it had been a feedback loop: slow → lower quality → rebuild everything → slower); same for the baked seabed chunks (`ppmB`);
+  - 16 frames per swim cycle (was 32); coarser size buckets (1.4×), so one sprite set serves a species' big and small individuals; the look-ahead warming only for species within +60/-40 m, and only when frames are quick; when frames are slow, building only every third frame;
+  - kelp: a blade every ~1.9 m (was 1.45), a little longer — a third fewer draws;
+  - Settings → Graphics: Auto / Fast (Fast lets the resolution drop to 55 % and keeps lite mode on).
+- Reef fish: day-active reef residents now swim 3-15 m above the seabed (never closer than 1.2 m to the surface), spawn there, and only horizontal distance counts as straying; at rest or hiding they still keep to their home. Measured: 41 of 57 reef fish 3 m+ above the floor (was 6 of 61), none in rock.
+- Fixed: `f.act`, `f.nightR` and `f.tT` for housed animals had been swallowed by a comment (residents never rested by day/night).

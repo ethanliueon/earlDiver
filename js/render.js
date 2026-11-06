@@ -54,7 +54,7 @@ const staticPose = (W, st) => st.pose || (st.pose = seabedPose(W, st.x, Math.max
 export const fishDrawLen = (len) => len * 2.0 + 0.1 * Math.exp(-len * 4);
 // Earl's height in metres
 export const EARL_H = 1.0;
-const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 32;
+const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 16; // (16 frames a swim cycle: half the building of 32, and it still reads smooth)
 // seabed life that bends with the water (the rest is stone, shell or stiff)
 const SWAY = new Set(['anemone', 'plumose', 'seagrass', 'sealettuce', 'sugarkelp', 'oarweed', 'tubeworm', 'xmastree', 'basketstar', 'seasquirt']);
 const CACHE_SKIP = new Set(['jelly', 'siphonophore', 'manowar', 'oarfish', 'gulper', 'dragon', 'comb', 'eel', 'viper', 'sperm', 'orca', 'dolphin', 'sleeper']); // what's left of a beam after a few metres of seawater
@@ -898,12 +898,17 @@ export class Renderer {
     return null;
   }
 
+  // A cached sprite's size: bucketed on the full-quality scale, so the adaptive quality stepping up or
+  // down never throws the cache away (a smaller canvas just draws the same sprite smaller).
+  spriteKey(sp, Ld) {
+    const Lf = Ld / (this.quality || 1), bucket = Math.round(Math.log(Lf) / Math.log(1.4)); // coarse: one set of frames serves a species' big and small individuals
+    return { Lf, key: sp.id + ':' + bucket, bl: Math.pow(1.4, bucket) };
+  }
   drawCached(ctx, sp, Ld, phase, wob, veil = null) {
     const shape = sp.v.s;
     if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(shape)) return drawSpecies(ctx, sp, Ld, phase, 1, wob);
     const cache = this.spriteCache || (this.spriteCache = new Map());
-    const bucket = Math.round(Math.log(Ld) / Math.log(1.18)), bl = Math.pow(1.18, bucket);
-    const key = sp.id + ':' + bucket;
+    const { key, bl } = this.spriteKey(sp, Ld);
     let e = cache.get(key);
     if (!e) {
       const box = Math.ceil(bl * 2.4);
@@ -935,6 +940,7 @@ export class Renderer {
   staticBakeable(s) { return !s.variant && !s.sp.v.glow && !SWAY.has(s.sp.v.s) && s.y < 160; }
   drawStaticChunks(g, ctx, S, Sy, ppm, x0, x1, y0, y1) {
     const CH = 16, W = g.world, ver = W.staticsVer || 0;
+    const ppmB = ppm / (this.quality || 1); // baked at the full-quality scale: the adaptive quality never forces a rebake
     if (!this.sChunks || this.sChunksWorld !== W || this.sChunksVer !== ver) {
       // which statics belong to which stretch (made again when one is taken or planted)
       const m = new Map();
@@ -948,21 +954,21 @@ export class Renderer {
     for (let k = Math.floor((x0 - 3) / CH); k <= Math.floor((x1 + 3) / CH); k++) {
       const ch = this.sChunks.get(k);
       if (!ch) continue;
-      if (!ch.c || Math.abs(ppm / ch.ppm - 1) > 0.12) {
+      if (!ch.c || Math.abs(ppmB / ch.ppm - 1) > 0.12) {
         // bake: every still static of this stretch, at today's scale, tinted for its depth
         let ya = 1e9, yb = -1e9;
         for (const s of ch.list) { const L = Math.max(0.18, s.sp.len) * s.scale; ya = Math.min(ya, s.y - L * 2); yb = Math.max(yb, s.y + L * 0.6); }
         const bx0 = k * CH - 3, bx1 = (k + 1) * CH + 3;
-        ch.x0 = bx0; ch.y0 = ya; ch.ppm = ppm;
-        const cw = Math.ceil((bx1 - bx0) * ppm), chh = Math.max(4, Math.ceil((yb - ya) * ppm));
+        ch.x0 = bx0; ch.y0 = ya; ch.ppm = ppmB;
+        const cw = Math.ceil((bx1 - bx0) * ppmB), chh = Math.max(4, Math.ceil((yb - ya) * ppmB));
         if (cw * chh > 6e6) { ch.c = null; ch.skip = true; continue; } // absurdly zoomed: draw them live instead
         ch.skip = false;
         ch.c = ch.c || document.createElement('canvas'); ch.c.width = cw; ch.c.height = chh;
         const cx = ch.c.getContext('2d');
         for (const s of ch.list) {
-          const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
+          const L = Math.max(0.18, s.sp.len) * s.scale * ppmB;
           const pose = staticPose(W, s);
-          cx.save(); cx.translate((s.x - bx0) * ppm, (s.y - ya + pose.sink) * ppm); cx.rotate(pose.rot); cx.scale(s.flip, 1);
+          cx.save(); cx.translate((s.x - bx0) * ppmB, (s.y - ya + pose.sink) * ppmB); cx.rotate(pose.rot); cx.scale(s.flip, 1);
           this.drawStatic(cx, s, L, 0, this.veilFor(s.y));
           cx.restore();
         }
@@ -1061,29 +1067,31 @@ export class Renderer {
 
   // Build creature animation frames ahead of time, a little each frame: first every species on
   // screen, then every swimmer that lives within ~150 m of the camera's depth, at today's scale.
-  warmSprites(g, budgetMs) {
+  warmSprites(g, budgetMs, onlyLiving = false) {
     const t0 = performance.now(), ppm = this.cam.ppm;
-    if (!ppm) return;
+    if (!ppm) return false;
+    if (budgetMs < 3 && (this.warmTick = (this.warmTick || 0) + 1) % 3) return false; // frames running slow: build only every third frame
     const cache = this.spriteCache || (this.spriteCache = new Map());
     const wanted = [];
     for (const c of g.fauna.list) wanted.push([c.sp, fishDrawLen(c.len) * ppm]);
-    if (!this.nearSpecies || Math.abs(this.nearDepth - this.cam.y) > 25 || this.nearPpm !== Math.round(ppm)) {
+    if (!this.nearSpecies || Math.abs(this.nearDepth - this.cam.y) > 25) {
       const d = this.cam.y;
-      this.nearSpecies = SPECIES.filter((sp) => sp.v.hab !== 'plant' && sp.v.hab !== 'floor' && sp.dmin <= d + 150 && sp.dmax >= d - 60);
+      this.nearSpecies = SPECIES.filter((sp) => sp.v.hab !== 'plant' && sp.v.hab !== 'floor' && sp.dmin <= d + 60 && sp.dmax >= d - 40);
       this.nearDepth = d; this.nearPpm = Math.round(ppm);
     }
-    for (const sp of this.nearSpecies) wanted.push([sp, fishDrawLen(sp.len) * ppm]);
+    if (budgetMs >= 3 && !onlyLiving) for (const sp of this.nearSpecies) wanted.push([sp, fishDrawLen(sp.len) * ppm]); // the look-ahead only when frames are quick
     for (const [sp, Ld] of wanted) {
       if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(sp.v.s) || (Ld < 20 && (sp.v.s === 'fish' || sp.v.s === 'shrimp' || sp.v.s === 'hatchet'))) continue;
-      const bucket = Math.round(Math.log(Ld) / Math.log(1.18)), bl = Math.pow(1.18, bucket), key = sp.id + ':' + bucket;
+      const { key, bl } = this.spriteKey(sp, Ld);
       let e = cache.get(key);
       if (!e) { const box = Math.ceil(bl * 2.4); e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES) }; cache.set(key, e); }
       for (let f = 0; f < SPRITE_FRAMES; f++) {
         if (e.frames[f]) continue;
         this.buildFrame(e, sp, f);
-        if (performance.now() - t0 > budgetMs) return;
+        if (performance.now() - t0 > budgetMs) return false;
       }
     }
+    return true;
   }
 
   // where the headlamp points: at the cursor if the mouse is in use (within the half he faces),
@@ -1681,7 +1689,7 @@ export class Renderer {
     const ctx = this.ctx, t = g.time;
     const surf = g.surfY || (() => 0);
     const stalks = new Path2D(), bulbs = new Path2D(), blades = [];
-    const len = 1.1 * ppm, wid = 0.22 * ppm, br = wid * 0.32;
+    const len = 1.3 * ppm, wid = 0.24 * ppm, br = wid * 0.32;
     let any = false;
     for (let i = 0; i < g.world.kelp.length; i++) {
       const k = g.world.kelp[i];
@@ -1690,7 +1698,7 @@ export class Renderer {
       const topY = k.base - k.h;
       if (k.base < this.cam.y - this.cam.h || topY > this.cam.y + this.cam.h) continue;
       any = true;
-      const segs = Math.max(6, Math.floor(k.h / 1.45));
+      const segs = Math.max(5, Math.floor(k.h / 1.9)); // (a blade every ~1.9 m: a third fewer draws, each a little longer)
       for (let s2 = 0; s2 <= segs; s2++) {
         const u = s2 / segs, hh = u * k.h;
         let y = k.base - hh;

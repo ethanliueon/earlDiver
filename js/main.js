@@ -9,6 +9,7 @@ import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, updateSubNet, tankFits, BIG } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
+import { SETTINGS } from './settings.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
 import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
@@ -133,10 +134,13 @@ function newGame(mode) {
 }
 
 let g = newGame('menu');
+// the title screen's music starts with the first key or click (browsers keep pages silent until then)
+const wakeAudio = () => { audio.init(); audio.resume(); audio.playMusic(); window.removeEventListener('pointerdown', wakeAudio, true); window.removeEventListener('keydown', wakeAudio, true); };
+window.addEventListener('pointerdown', wakeAudio, true); window.addEventListener('keydown', wakeAudio, true);
 // the slot a fresh "Dive" goes into when none was chosen: the first empty one, else the last played
 function firstFreeSlot() { for (let n = 1; n <= SLOTS; n++) if (readSlot(n).state === 'empty') return n; return lastSlot() || 1; }
 const ui = new UI({
-  onPlay: () => startRun(),
+  onPlay: () => withLoading(() => startRun()),
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
@@ -161,23 +165,20 @@ const ui = new UI({
     audio.ready && audio.click(); return true;
   },
   onCaveTrade: (keys) => caveTrade(keys),
-  onNewGame: () => { profile = null; g.paused = false; startRun(); },
+  onNewGame: () => { profile = null; g.paused = false; withLoading(() => startRun()); },
   // the title screen: play a slot (a new diver in an empty or damaged one), or go back to the title
   onSlot: (n) => {
-    ui.showLoading(true);
-    setTimeout(() => { // a moment for the "Charting the sea" card to show while the world is made
+    withLoading(() => {
       const r = readSlot(n);
       setSlot(n);
       profile = r.state === 'ok' ? r.profile : null;
       startRun();
-      ui.showLoading(false);
-    }, 40);
+    });
   },
   onTitle: (save) => {
     if (save && profile && g.mode === 'play') { syncProfile(); saveProfile(profile); }
     flushSave();
-    g = newGame('menu');
-    ui.showTitle();
+    withLoading(() => { g = newGame('menu'); ui.showTitle(); });
   },
   getProfile: () => profile,
 });
@@ -528,6 +529,12 @@ function dieInjury(sp) {
   die(`Killed by ${art} ${name} at ${Math.round(g.earl.y)} m`, 'injury');
 }
 
+// The porthole card while a new sea is made, and kept up while the animals on screen are drawn into
+// their sprites (at most 1.5 s), so the first moments never stutter or pop
+function withLoading(fn) {
+  ui.showLoading(true);
+  setTimeout(() => { fn(); g.warmUntil = performance.now() + 1500; }, 40);
+}
 function startRun() {
   audio.init(); audio.resume(); audio.playMusic();
   if (!getSlot()) setSlot(firstFreeSlot());
@@ -1500,8 +1507,8 @@ function update(dt) {
     if (g.deathT > (injuryDeath ? 5 : crushed ? 6 : 3.6)) {
       const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
       flushSave();
-      g = newGame('menu');
-      ui.showMenu({ cause, survived, bill, lost });
+      g.mode = 'over';
+      withLoading(() => { g = newGame('menu'); ui.showMenu({ cause, survived, bill, lost }); });
       return;
     }
     // the entity keeps closing in during the fade
@@ -1648,14 +1655,15 @@ function adaptQuality(realDt) {
   const q = renderer.quality ?? 1;
   // the floor is set by the real screen: never below ~90 % of a screen pixel (75 % on plain screens), so
   // the picture never turns soft or pixelated; on sharp (high-DPI) screens that leaves room to drop further
-  const floor = Math.min(0.75, 0.9 / Math.min(window.devicePixelRatio || 1, 1.25));
+  const floor = SETTINGS.fast ? 0.55 : Math.min(0.75, 0.9 / Math.min(window.devicePixelRatio || 1, 1.25));
+  if (SETTINGS.fast && !renderer.lite) renderer.lite = true; // Fast graphics: the extras stay off
   if (frameEma > 1 / 45 && q > floor) { renderer.quality = Math.max(floor, q - 0.05); qualityT = 0; }
   // still slow at the floor: lite mode drops the costliest extras (the rim light on animals, the water
   // textures, the specks in the beams) instead of sharpness; they come back as soon as there is room
   else if (frameEma > 1 / 45 && !renderer.lite) { renderer.lite = true; qualityT = 0; }
   // lite mode comes on first when frames are well under 40 a second, before any sharpness goes
   if (frameEma > 1 / 38 && !renderer.lite) { renderer.lite = true; qualityT = 0; }
-  else if (frameEma < 1 / 57 && renderer.lite && qualityT > 4) { renderer.lite = false; qualityT = 0; }
+  else if (frameEma < 1 / 57 && renderer.lite && qualityT > 4 && !SETTINGS.fast) { renderer.lite = false; qualityT = 0; }
   else if (frameEma < 1 / 57 && q < 1 && qualityT > 3) { renderer.quality = Math.min(1, q + 0.05); qualityT = 0; }
   else if (qualityT > 3) qualityT = 1;
 }
@@ -1669,7 +1677,10 @@ function frame(now) {
   renderer.updateCamera(g, dt);
   renderer.render(g);
   // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
-  renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
+  if (g.warmUntil) { // behind the loading card: build the sprites on screen at full speed, then lift it
+    const done = renderer.warmSprites(g, 60, true);
+    if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.showLoading(false); }
+  } else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   hud.draw(g, dt);
   audio.update(g, dt);
   ui.update(g, dt);

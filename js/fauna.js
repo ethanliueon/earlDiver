@@ -251,8 +251,11 @@ export class Fauna {
       const k = Math.max(1, sp.len * 0.7);
       const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12) * k * spread, oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06) * k * spread;
       const x = home.x + ox;
-      const f = this.makeFish(sp, x, Math.max(0.5, Math.min(home.y + oy, W.floorAt(x) - 0.4)), rng() < 0.5 ? 1 : -1, gid, i === 0);
-      f.home = home; f.homeR = H.r <= 2 ? H.r : H.r * 1.6; f.hide = !!H.hide; // roamers range wider than the bare minimum f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = rng.range(0, 3);
+      // day-active reef fish are met out in the water, 3-15 m above the seabed; the rest at home
+      const yHome = sp.v.hab === 'reef' && H.act !== 'night' ? Math.max(1.2, W.floorAt(x) - rng.range(3, 15)) : home.y + oy;
+      const f = this.makeFish(sp, x, Math.max(0.5, Math.min(yHome, W.floorAt(x) - 0.4)), rng() < 0.5 ? 1 : -1, gid, i === 0);
+      f.home = home; f.homeR = H.r <= 2 ? H.r : H.r * 1.6; f.hide = !!H.hide; // (roamers range wider than the bare minimum)
+      f.act = H.act; f.nightR = H.night || H.r * 1.6; f.tT = rng.range(0, 3);
       this.list.push(f);
     }
     return n;
@@ -580,9 +583,13 @@ export class Fauna {
           const up = Math.min(R, 6) * (h.kind === 'kelp' ? 1.4 : 0.8);
           let ny = h.y + rng.range(-up, Math.min(0.3, R * 0.2));
           if (h.kind === 'kelp') ny = clamp(ny, h.top + 1, h.bottom - 0.6);
+          // open-water reef fish, out and about, swim well clear of the rock: 3-15 m above the seabed
+          // (never right at the surface); at rest, or hiding, they keep to their home
+          if (c.sp.v.hab === 'reef' && !resting && !(c.hideT > 0)) ny = Math.max(1.2, W.floorAt(nx) - rng.range(3, 15));
           c.tx = nx; c.ty = Math.min(ny, W.floorAt(nx) - 0.4 - c.len * 0.3);
         }
-        const away = Math.hypot(c.x - h.x, c.y - h.y);
+        const high = c.sp.v.hab === 'reef' && !resting;
+        const away = high ? Math.abs(c.x - h.x) + Math.max(0, h.y - 16 - c.y) : Math.hypot(c.x - h.x, c.y - h.y); // (the high swimmers: only how far along, and nothing above 16 m over home, counts as away)
         tx = c.tx; ty = c.ty;
         if (away > R * 1.5 + 1) { tx = h.x; ty = h.y; }
         sp = c.speed * (resting ? 0.35 : away > R * 1.5 + 1 ? 1 : 0.6);
