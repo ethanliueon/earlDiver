@@ -13,31 +13,31 @@ const BEST_KEY = 'earlDiver.best.v1';
 // Diver tanks: seconds of air at the surface rate.
 export const TANKS = [
   { name: 'Aluminium 80', air: 50, price: 0, desc: 'The tank he started with. Dented, honest.' },
-  { name: 'Steel 100', air: 90, price: 10, desc: 'Heavier steel cylinder, more gas.' },
-  { name: 'Steel 130', air: 140, price: 60, desc: 'A big high-pressure steel tank.' },
-  { name: 'Twin set', air: 200, price: 400, desc: 'Two cylinders on a manifold.' },
-  { name: 'Closed-circuit rebreather', air: 300, price: 3000, desc: 'Recycles every breath. No bubbles: almost nothing to hear.', quiet: true },
+  { name: 'Steel 100', air: 90, price: 280, desc: 'Heavier steel cylinder, more gas.' },
+  { name: 'Steel 130', air: 140, price: 5000, desc: 'A big high-pressure steel tank.' },
+  { name: 'Twin set', air: 200, price: 59000, desc: 'Two cylinders on a manifold.' },
+  { name: 'Closed-circuit rebreather', air: 300, price: 450000, desc: 'Recycles every breath. No bubbles: almost nothing to hear.', quiet: true },
 ];
 export const FINS = [
   { name: 'Rubber fins', speed: 1, price: 0, desc: 'Standard blades.' },
-  { name: 'Long-blade fins', speed: 1.15, price: 20, desc: 'Stiffer, longer blades. +15 % speed.' },
-  { name: 'Carbon freediving fins', speed: 1.3, price: 150, desc: 'Carbon fibre. +30 % speed.' },
+  { name: 'Long-blade fins', speed: 1.15, price: 800, desc: 'Stiffer, longer blades. +15 % speed.' },
+  { name: 'Carbon freediving fins', speed: 1.3, price: 19000, desc: 'Carbon fibre. +30 % speed.' },
 ];
 // Submersible hull ratings. Below rated depth the cabin air leaks away exponentially faster (no implosion).
 export const SUB_TIERS = [
   { rated: 300, o2: 150, price: 0 },
-  { rated: 700, o2: 200, price: 50 },
-  { rated: 1000, o2: 260, price: 400 },
-  { rated: 1500, o2: 330, price: 1500 },
-  { rated: 2000, o2: 420, price: 3500 },
-  { rated: 2700, o2: 540, price: 6000 },
-  { rated: 3000, o2: 660, price: 10000 },
+  { rated: 700, o2: 200, price: 3600 },
+  { rated: 1000, o2: 260, price: 59000 },
+  { rated: 1500, o2: 330, price: 225000 },
+  { rated: 2000, o2: 420, price: 525000 },
+  { rated: 2700, o2: 540, price: 900000 },
+  { rated: 3000, o2: 660, price: 1500000 },
 ];
 // add-ons for the submersible (bought once)
 export const SUB_ADDONS = {
-  recall: { name: 'Recall unit', price: 10, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
-  quiet: { name: 'Quiet engine', price: 30, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
-  sonar: { name: 'Seafloor sonar', price: 40, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
+  recall: { name: 'Recall unit', price: 280, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
+  quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
+  sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
 };
 // ---------------- catching gear ----------------
 // range: reach beyond his hand (m) · time: sweep / reload (s) · maxLen: biggest animal (m)
@@ -45,31 +45,31 @@ export const SUB_ADDONS = {
 export const NETS = [
   { name: 'Hand net', price: 0, range: 1.2, time: 1.0, maxLen: 0.45, success: 0.65, harm: 0.15, noise: 0.01,
     desc: 'A small green nylon net on a short aluminium handle.' },
-  { name: 'Fine-mesh net', price: 5, range: 1.5, time: 0.8, maxLen: 0.60, success: 0.78, harm: 0.08, noise: 0.01,
+  { name: 'Fine-mesh net', price: 130, range: 1.5, time: 0.8, maxLen: 0.60, success: 0.78, harm: 0.08, noise: 0.01,
     desc: 'Soft knotless mesh that does not split fins. Lighter, quicker.' },
-  { name: 'Long-handle net', price: 40, range: 2.4, time: 1.1, maxLen: 0.85, success: 0.82, harm: 0.10, noise: 0.015,
+  { name: 'Long-handle net', price: 2400, range: 2.4, time: 1.1, maxLen: 0.85, success: 0.82, harm: 0.10, noise: 0.015,
     desc: 'A telescopic pole and a deep bag. Reach animals before they bolt.' },
-  { name: 'Pro capture net', price: 300, range: 2.4, time: 0.6, maxLen: 1.10, success: 0.93, harm: 0.04, noise: 0.008,
+  { name: 'Pro capture net', price: 43500, range: 2.4, time: 0.6, maxLen: 1.10, success: 0.93, harm: 0.04, noise: 0.008,
     desc: 'D-frame with a padded rim and a clear rubber bag, as public aquaria use.' },
 ];
 export const SLURPS = [
-  { name: 'Slurp gun', price: 15, range: 1.8, time: 2.0, maxLen: 0.20, success: 0.85, harm: 0.05, noise: 0.005,
+  { name: 'Slurp gun', price: 530, range: 1.8, time: 2.0, maxLen: 0.20, success: 0.85, harm: 0.05, noise: 0.005,
     desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones.' },
-  { name: 'Pro slurp gun', price: 120, range: 2.5, time: 1.2, maxLen: 0.28, success: 0.95, harm: 0.03, noise: 0.004,
+  { name: 'Pro slurp gun', price: 14000, range: 2.5, time: 1.2, maxLen: 0.28, success: 0.95, harm: 0.03, noise: 0.004,
     desc: 'Longer barrel, stronger spring, a one-way valve and a pistol grip.' },
 ];
 // Tag guns: put a research tag on an animal too big to bring up. provoke: chance a miss (or a
 // clumsy hit) turns an aggressive animal on him. pay: multiplier on what the program pays.
 export const TAGGERS = [
-  { name: 'Pole tagger', price: 30, range: 2.5, time: 4, provoke: 0.5, pay: 1, desc: 'A tag dart on the end of a pole, driven by a rubber sling. You have to get close.' },
-  { name: 'Pneumatic tag gun', price: 250, range: 6, time: 3, provoke: 0.25, pay: 1, desc: 'Air-powered, accurate to six metres. Big animals barely notice.' },
-  { name: 'Satellite tag gun', price: 1500, range: 10, time: 3, provoke: 0.15, pay: 2, desc: 'Fires pop-up satellite tags that report for months. The program pays double.' },
+  { name: 'Pole tagger', price: 1600, range: 2.5, time: 4, provoke: 0.5, pay: 1, desc: 'A tag dart on the end of a pole, driven by a rubber sling. You have to get close.' },
+  { name: 'Pneumatic tag gun', price: 35500, range: 6, time: 3, provoke: 0.25, pay: 1, desc: 'Air-powered, accurate to six metres. Big animals barely notice.' },
+  { name: 'Satellite tag gun', price: 225000, range: 10, time: 3, provoke: 0.15, pay: 2, desc: 'Fires pop-up satellite tags that report for months. The program pays double.' },
 ];
 // Cameras: the institute pays for the first photograph of each species (and each rare form).
 export const CAMERAS = [
-  { name: 'Waterproof compact', price: 10, range: 8, shots: 5, flash: true, desc: 'A yellow plastic compact. Five pictures a dive, and a flash.' },
-  { name: 'Housed camera', price: 100, range: 12, shots: 24, flash: true, desc: 'A real camera in an aluminium housing, with two strobes on arms.' },
-  { name: 'Low-light camera', price: 800, range: 12, shots: 24, flash: false, desc: 'A huge sensor that needs no flash. Nothing in the dark sees you take the picture.' },
+  { name: 'Waterproof compact', price: 280, range: 8, shots: 5, flash: true, desc: 'A yellow plastic compact. Five pictures a dive, and a flash.' },
+  { name: 'Housed camera', price: 11000, range: 12, shots: 24, flash: true, desc: 'A real camera in an aluminium housing, with two strobes on arms.' },
+  { name: 'Low-light camera', price: 120000, range: 12, shots: 24, flash: false, desc: 'A huge sensor that needs no flash. Nothing in the dark sees you take the picture.' },
 ];
 // Box traps on a line from a buoy, set from the surface at a chosen depth (or let down to rest on the
 // bottom). The bait works for five minutes: count is how many fish come in over that time. size is the
@@ -77,26 +77,26 @@ export const CAMERAS = [
 // the boat's winch, not by hand; lure: a light that draws deep animals, and other things.
 export const TRAP_ORDER = ['pot', 'fish', 'steel', 'cage'];
 export const TRAPS = {
-  pot: { name: 'Wire pot', price: 5, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
+  pot: { name: 'Wire pot', price: 130, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
     desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float..' },
-  fish: { name: 'Fish trap', price: 30, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
+  fish: { name: 'Fish trap', price: 1600, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
     desc: 'A larger mesh box with a funnel at each end, on a stout line..' },
-  steel: { name: 'Steel pot', price: 140, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
+  steel: { name: 'Steel pot', price: 17500, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
     desc: 'A heavy steel-framed pot with two chambers, on a thick rope.. Too heavy to lift by hand.' },
-  cage: { name: 'Deep cage', price: 600, max: 2, maxDepth: 1500, count: [6, 12], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
+  cage: { name: 'Deep cage', price: 90000, max: 2, maxDepth: 1500, count: [6, 12], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
     desc: 'A tall weighted cage with a lit lure, on a heavy rope.. The light draws deep animals, and other things.' },
 };
 export const BAGS = [
   { name: 'Mesh goody bag', slots: 3, price: 0, desc: 'Clipped to his belt.' },
-  { name: 'Large catch bag', slots: 5, price: 8, desc: 'A bigger mesh bag with a spring-loaded mouth.' },
-  { name: 'Divided specimen bag', slots: 8, price: 60, desc: 'Separate pockets, so nothing eats anything else.' },
+  { name: 'Large catch bag', slots: 5, price: 220, desc: 'A bigger mesh bag with a spring-loaded mouth.' },
+  { name: 'Divided specimen bag', slots: 8, price: 5000, desc: 'Separate pockets, so nothing eats anything else.' },
 ];
 export const SUB_TANKS = [
   { slots: 4, price: 0 },
-  { slots: 8, price: 40 },
-  { slots: 12, price: 300 },
+  { slots: 8, price: 2400 },
+  { slots: 12, price: 43500 },
 ];
-export const CANISTERS = { name: 'Pressure canisters', price: 25, desc: 'Sealed steel canisters that keep a deep animal at the pressure it lives at. No barotrauma on the way up.' };
+export const CANISTERS = { name: 'Pressure canisters', price: 1200, desc: 'Sealed steel canisters that keep a deep animal at the pressure it lives at. No barotrauma on the way up.' };
 // what things weigh (kg) - a heavy load slows him and costs air
 export const WEIGHT = { iron: 4, rock: 3, clam: 0.8, mussel: 0.3, kelp: 0.5, glass: 1, tentacle: 0.5, ink: 0.2, scale: 0, pearl: 0, sapphire: 0.5, coral: 0.3, nodule: 1.5, bone: 2 };
 
@@ -104,14 +104,14 @@ export const WEIGHT = { iron: 4, rock: 3, clam: 0.8, mussel: 0.3, kelp: 0.5, gla
 // out/back: seconds to reach and to fold back · green/amber: half-widths of the grip zones ·
 // sweep: how fast the gauge marker moves (slower is easier)
 export const ARMS = [
-  { name: 'Claw arm', price: 600, reach: 3, maxLen: 1.0, out: 1.1, back: 1.1, green: 0.06, amber: 0.18, sweep: 1.4,
+  { name: 'Claw arm', price: 90000, reach: 3, maxLen: 1.0, out: 1.1, back: 1.1, green: 0.06, amber: 0.18, sweep: 1.4,
     desc: 'Hydraulics for the old claw under the sphere. Slow, short, and the grip needs care.' },
-  { name: 'Hydraulic arm', price: 1500, reach: 4.5, maxLen: 1.4, out: 0.7, back: 0.8, green: 0.09, amber: 0.22, sweep: 1.1,
+  { name: 'Hydraulic arm', price: 225000, reach: 4.5, maxLen: 1.4, out: 0.7, back: 0.8, green: 0.09, amber: 0.22, sweep: 1.1,
     desc: 'New rams and a telescoping forearm: further, quicker, and a surer grip.' },
-  { name: 'Heavy-lift arm', price: 5000, reach: 6, maxLen: 2.0, out: 0.45, back: 0.6, green: 0.12, amber: 0.26, sweep: 0.85,
+  { name: 'Heavy-lift arm', price: 750000, reach: 6, maxLen: 2.0, out: 0.45, back: 0.6, green: 0.12, amber: 0.26, sweep: 0.85,
     desc: 'A three-jointed work-class arm with padded jaws. Takes animals up to two metres.' },
 ];
-export const PATCH_PRICE = 1;      // +40 % hull integrity
+export const PATCH_PRICE = 25;      // +40 % hull integrity
 export const HOSPITAL_SHARE = 0.10;  // a death costs this share of cash
 // a replacement sub after an implosion: built to the same rating, a share of what it cost
 export function replacementPrice(P) {
@@ -119,11 +119,11 @@ export function replacementPrice(P) {
   return Math.max(10, Math.round(c * 0.3 + 10));
 }
 export const SUPPLIES = {
-  lure: { name: 'Anglerfish lure', price: 8, max: 3, desc: 'Thrown (Q). The thing in the deep follows its light for a while.' },
-  necklace: { name: 'Fangtooth necklace', price: 12, max: 3, desc: 'Worn (E). Keeps it away for 15 s.' },
-  sealant: { name: 'Leak sealant kit', price: 10, max: 3, desc: 'Fast-setting underwater epoxy, rubber wedges and pipe clamps. From inside the cabin (K), Earl stops the worst of the leaks: it seals, but it is not steel.' },
-  plate: { name: 'Hull patch plate', price: 30, max: 2, desc: 'A curved steel plate, studs and a wet-welding rod. Outside, beside the sub, hold Z: an arc burning blue in the dark welds it over the damage. The light carries a long way.' },
-  airTank: { name: 'Backup air tank', price: 20, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
+  lure: { name: 'Anglerfish lure', price: 220, max: 3, desc: 'Thrown (Q). The thing in the deep follows its light for a while.' },
+  necklace: { name: 'Fangtooth necklace', price: 370, max: 3, desc: 'Worn (E). Keeps it away for 15 s.' },
+  sealant: { name: 'Leak sealant kit', price: 280, max: 3, desc: 'Fast-setting underwater epoxy, rubber wedges and pipe clamps. From inside the cabin (K), Earl stops the worst of the leaks: it seals, but it is not steel.' },
+  plate: { name: 'Hull patch plate', price: 1600, max: 2, desc: 'A curved steel plate, studs and a wet-welding rod. Outside, beside the sub, hold Z: an arc burning blue in the dark welds it over the damage. The light carries a long way.' },
+  airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
 export const supplyMax = (P, k) => SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max;
@@ -131,21 +131,21 @@ export const supplyMax = (P, k) => SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].
 // ---------------- prices ----------------
 // What the buyers on the radio pay for each kind of thing, before the market moves.
 export const GOODS = {
-  clam: { name: 'Clam', price: 0.1 },
-  mussel: { name: 'Mussels', price: 0.05 },
-  rock: { name: 'Rock', price: 0.02 },
-  kelp: { name: 'Kelp', price: 0.03 },
-  iron: { name: 'Scrap iron', price: 0.5 },
-  scale: { name: 'Fish scales', price: 0.05 },
-  tentacle: { name: 'Squid tentacle', price: 1 },
-  ink: { name: 'Ink sac', price: 1.5 },
-  pearl: { name: 'Pearl', price: 12 },
-  glass: { name: 'Glass sponge', price: 6 },
-  sapphire: { name: 'Deep sapphire', price: 40 },
-  nodule: { name: 'Manganese nodule', price: 3 },
-  bone: { name: 'Whalebone', price: 5 },
-  lure: { name: 'Anglerfish lure', price: 5 },
-  necklace: { name: 'Fangtooth necklace', price: 8 },
+  clam: { name: 'Clam', price: 2.4 },
+  mussel: { name: 'Mussels', price: 1.2 },
+  rock: { name: 'Rock', price: 0.48 },
+  kelp: { name: 'Kelp', price: 0.72 },
+  iron: { name: 'Scrap iron', price: 12 },
+  scale: { name: 'Fish scales', price: 1.2 },
+  tentacle: { name: 'Squid tentacle', price: 24 },
+  ink: { name: 'Ink sac', price: 36 },
+  pearl: { name: 'Pearl', price: 370 },
+  glass: { name: 'Glass sponge', price: 160 },
+  sapphire: { name: 'Deep sapphire', price: 2400 },
+  nodule: { name: 'Manganese nodule', price: 75 },
+  bone: { name: 'Whalebone', price: 130 },
+  lure: { name: 'Anglerfish lure', price: 130 },
+  necklace: { name: 'Fangtooth necklace', price: 220 },
 };
 export const SATURATE = 0.15;       // each sale knocks this much off the next one
 const RECOVER_PER_SEC = 0.004;      // the market forgets: ~4 minutes to recover from a glut
@@ -202,11 +202,11 @@ export const UPGRADES = {
 // warm: keeps out the cold (deep and upwelling water) · col: how it is drawn
 export const SUITS = {
   wet: { line: "Black neoprene, salt-stiff at the seams.", name: 'Wetsuit', price: 0, press: 300, air: 1, speed: 1, desc: 'Black neoprene. What he started with.' },
-  skin: { line: "Thin as a seal's hide: quick, and hungry for breath.", name: 'Freediving skin', price: 6, press: 300, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works him harder.' },
-  dry: { line: "Sealed against the cold that lives below the light.", name: 'Drysuit', price: 25, press: 400, air: 1, speed: 1.06, warm: true, desc: 'Sealed and dry inside, with a little air in it. Pressure starts to bite 100 m deeper, and it keeps out the cold.' },
-  chain: { line: "Steel rings, borrowed from the men who feed sharks.", name: 'Chain-mail shark suit', price: 40, press: 300, air: 1, speed: 1.04, bite: 1, desc: 'Steel mesh over neoprene, as shark feeders wear. A bite does one less injury, and the weight gives each kick a little more drive.' },
-  rebreather: { line: "He breathes his air twice, and leaves no bubbles to follow.", name: 'Rebreather suit', price: 150, press: 300, air: 0.75, speed: 1.1, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
-  hard: { line: "A small iron room in the shape of a man.", name: 'Atmospheric hardsuit', price: 400, press: 700, air: 0.9, speed: 1.02, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m, and small thrusters on its back push him along.' },
+  skin: { line: "Thin as a seal's hide: quick, and hungry for breath.", name: 'Freediving skin', price: 160, press: 300, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works him harder.' },
+  dry: { line: "Sealed against the cold that lives below the light.", name: 'Drysuit', price: 1200, press: 400, air: 1, speed: 1.06, warm: true, desc: 'Sealed and dry inside, with a little air in it. Pressure starts to bite 100 m deeper, and it keeps out the cold.' },
+  chain: { line: "Steel rings, borrowed from the men who feed sharks.", name: 'Chain-mail shark suit', price: 2400, press: 300, air: 1, speed: 1.04, bite: 1, desc: 'Steel mesh over neoprene, as shark feeders wear. A bite does one less injury, and the weight gives each kick a little more drive.' },
+  rebreather: { line: "He breathes his air twice, and leaves no bubbles to follow.", name: 'Rebreather suit', price: 19000, press: 300, air: 0.75, speed: 1.1, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
+  hard: { line: "A small iron room in the shape of a man.", name: 'Atmospheric hardsuit', price: 59000, press: 700, air: 0.9, speed: 1.02, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m, and small thrusters on its back push him along.' },
 };
 export const suitOf = (P) => SUITS[(P && P.suit) || 'wet'];
 
@@ -284,11 +284,11 @@ export const UPGRADE_LINE = {
 
 // one-off gear: bought once, then its stats are levelled above
 export const GEAR = {
-  slurp: { name: 'Slurp gun', price: 3, desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones. Key 2.' },
-  tagger: { name: 'Tag gun', price: 6, desc: 'Puts a research tag in sharks, billfish, whales: anything too big to bring up. Key 3.' },
-  camera: { name: 'Camera', price: 2, desc: 'The institute pays for the first photograph of every species and rare form. Key 4.' },
+  slurp: { name: 'Slurp gun', price: 75, desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones. Key 2.' },
+  tagger: { name: 'Tag gun', price: 160, desc: 'Puts a research tag in sharks, billfish, whales: anything too big to bring up. Key 3.' },
+  camera: { name: 'Camera', price: 50, desc: 'The institute pays for the first photograph of every species and rare form. Key 4.' },
   lowlight: { line: 'See in the dark without being seen.', name: 'Low-light sensor', price: 60, needs: 'camera', desc: 'No flash any more: nothing in the dark sees you take the picture.' },
-  arm: { name: 'Claw hydraulics', price: 40, desc: 'Works the old claw under the sub: from inside, Space reaches for an animal; time the grip.' },
+  arm: { name: 'Claw hydraulics', price: 2400, desc: 'Works the old claw under the sub: from inside, Space reaches for an animal; time the grip.' },
 };
 // ---------------- old gold coins ----------------
 // A second currency, only from the deep: animals caught below 500 m when they are sold (1 a head,

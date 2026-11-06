@@ -6,7 +6,7 @@ import { canTakeLive, liveValue, tagPrice, isTagOnly, isDead } from './specimens
 import { GOODS, gear, owns, statValue } from './economy.js';
 import { photoValue } from './survey.js';
 
-export const RADIO = { name: 'Better radio', price: 15, desc: 'A long-range set and a tall whip antenna. Five contracts at a time instead of three.' };
+export const RADIO = { name: 'Better radio', price: 530, desc: 'A long-range set and a tall whip antenna. Five contracts at a time instead of three.' };
 const PLURAL = { clam: 'clams', mussel: 'mussels', iron: 'pieces of scrap iron', ink: 'ink sacs', tentacle: 'squid tentacles', glass: 'pieces of glass sponge', pearl: 'pearls' };
 const an = (name) => (/^[aeiou]/i.test(name) ? 'an ' : 'a ') + name.toLowerCase();
 export const contractSlots = (P) => (P.radio ? 5 : 3);

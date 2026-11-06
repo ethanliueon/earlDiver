@@ -8,12 +8,12 @@ import { VARIANTS, variantMult, canBeRare } from './variants.js';
 
 export const DAY = 600; // seconds of play per paid day
 export const WINGS = [
-  { id: 'reef', name: 'Reef hall', price: 15, slots: 12, upkeep: 0.2, desc: 'Warm shallow tanks under a glass roof: reef fish, seahorses, crabs, starfish.' },
-  { id: 'kelp', name: 'Kelp tower', price: 50, slots: 10, upkeep: 0.5, desc: 'A tall cold-water cylinder with a living kelp forest for the cold-water fish.' },
-  { id: 'open', name: 'Open ocean dome', price: 150, slots: 8, upkeep: 1.5, desc: 'One enormous round tank for open-water swimmers and drifting jellies.' },
-  { id: 'twilight', name: 'Twilight gallery', price: 400, slots: 10, upkeep: 3, desc: 'Dim, chilled tanks for animals from 150 to 500 m.' },
-  { id: 'deep', name: 'Deep-sea gallery', price: 900, slots: 8, upkeep: 6, desc: 'Pressurised black tanks behind portholes, for animals from below 500 m.' },
-  { id: 'abyss', name: 'Abyss tank', price: 2000, coins: 10, slots: 6, upkeep: 12, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 3,500 m.' },
+  { id: 'reef', name: 'Reef hall', price: 530, slots: 12, upkeep: 7, desc: 'Warm shallow tanks under a glass roof: reef fish, seahorses, crabs, starfish.' },
+  { id: 'kelp', name: 'Kelp tower', price: 3600, slots: 10, upkeep: 35, desc: 'A tall cold-water cylinder with a living kelp forest for the cold-water fish.' },
+  { id: 'open', name: 'Open ocean dome', price: 19000, slots: 8, upkeep: 190, desc: 'One enormous round tank for open-water swimmers and drifting jellies.' },
+  { id: 'twilight', name: 'Twilight gallery', price: 59000, slots: 10, upkeep: 440, desc: 'Dim, chilled tanks for animals from 150 to 500 m.' },
+  { id: 'deep', name: 'Deep-sea gallery', price: 135000, slots: 8, upkeep: 900, desc: 'Pressurised black tanks behind portholes, for animals from below 500 m.' },
+  { id: 'abyss', name: 'Abyss tank', price: 300000, coins: 10, slots: 6, upkeep: 1800, desc: 'One tank held at the pressure of the very bottom. Only for animals caught below 3,500 m.' },
 ];
 export const WING_BY_ID = Object.fromEntries(WINGS.map((w) => [w.id, w]));
 

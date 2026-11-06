@@ -6,30 +6,75 @@
 import { SPECIES_BY_ID } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
 
-// Aquarium prices (US$, one healthy adult of normal size). Set by hand for the animals that matter;
-// everything else comes from the formula below.
-const LIVE = {
-  1: 25, 2: 40, 3: 35, 4: 30, 5: 120, 6: 150, 7: 45, 8: 30, 9: 60, 10: 40, 11: 90, 12: 180, 13: 70,
-  16: 20, 17: 25, 18: 45, 19: 60, 20: 50, 21: 90, 22: 160, 26: 30, 27: 6, 28: 4, 29: 5, 30: 45,
-  31: 90, 34: 140, 37: 60, 41: 12, 47: 15, 48: 0.3, 49: 0.2, 50: 0.15, 51: 0.6, 57: 15, 59: 50,
-  61: 8, 62: 1, 65: 20, 66: 30, 69: 60, 71: 70, 72: 80, 73: 70, 74: 150,
-  90: 600, 94: 150, 97: 300,
-  98: 5, 99: 60, 100: 2500, 101: 800, 102: 1200, 103: 900, 104: 3500, 105: 4000, 106: 2000, 107: 2500,
-  110: 3000, 111: 40, 112: 60, 113: 80, 114: 400, 115: 1500, 116: 800, 117: 40,
-  135: 0.5, 136: 4, 137: 8, 138: 25, 139: 60, 140: 90, 141: 1800,
-  142: 150, 144: 220, 145: 300, 146: 5000, 147: 120, 150: 4000, 151: 30,
-  152: 45, 153: 60, 154: 15, 156: 20, 158: 10, 159: 120, 160: 20, 161: 0.05, 162: 900, 163: 6000,
-  164: 12, 165: 8, 166: 40, 167: 3, 168: 300, 169: 20, 170: 3000,
-  171: 25, 173: 40, 174: 60, 175: 200, 176: 900, 177: 30,
+// What one healthy adult of normal size sells for, in dollars: roughly what it would fetch in the
+// real world (a sardine is pocket change, a salmon a good day, a coelacanth a lifetime). Set by hand
+// for nearly everything; the rest come from the formula in priceOfSpecies. The rarity tier follows from
+// the price (see RARITY), and rarity also decides how often the animal is met (fauna.js).
+const PRICE = {
+  // reef
+  1: 12, 2: 25, 3: 20, 4: 18, 5: 120, 6: 150, 7: 28, 8: 12, 9: 35, 10: 22, 11: 45, 12: 60, 13: 15, 14: 90, 15: 400,
+  16: 4, 17: 9, 18: 20, 19: 15, 20: 25, 21: 28, 22: 80, 23: 40, 24: 70, 25: 45, 26: 8, 27: 1, 28: 0.8, 29: 1.2,
+  30: 35, 31: 60, 32: 180, 33: 190, 34: 70, 35: 20, 36: 45, 37: 18, 38: 60,
+  // open ocean
+  39: 2500, 40: 180, 41: 12, 42: 300, 43: 250, 44: 600, 45: 70, 46: 350, 47: 1, 48: 0.5, 49: 0.4, 50: 0.3, 51: 3,
+  52: 80, 53: 150, 54: 8000, 55: 50, 56: 60, 57: 35, 58: 25, 59: 20,
+  // cold water
+  60: 15, 61: 8, 62: 4, 63: 150, 64: 120, 65: 4, 66: 25, 67: 30, 68: 18, 69: 20, 70: 45, 71: 15, 72: 18, 73: 30, 74: 60, 75: 180,
+  // sharks and rays
+  76: 4000, 77: 12000, 78: 900, 79: 700, 80: 120, 81: 150, 82: 800, 83: 300, 84: 3000, 85: 4500, 86: 8000, 87: 6000,
+  88: 15000, 89: 1500, 90: 250, 91: 1500, 92: 180, 93: 45, 94: 60, 95: 50, 96: 2500, 97: 90,
+  // the deep
+  98: 35, 99: 40, 100: 25000, 101: 9000, 102: 1200, 103: 6000, 104: 18000, 105: 15000, 106: 2500, 107: 7000, 108: 40000,
+  109: 250, 110: 1800, 111: 12,
+  // seahorses and relatives
+  112: 25, 113: 35, 114: 150, 115: 800, 116: 450, 117: 12,
+  // shellfish, octopus and squid, crabs
+  134: 120, 135: 0.25, 136: 1, 137: 2, 138: 8, 139: 40, 140: 30, 141: 900,
+  142: 40, 143: 900, 144: 120, 145: 180, 146: 20000, 147: 30, 148: 120, 149: 50000, 150: 15000, 151: 30,
+  152: 30, 153: 25, 154: 8, 155: 60, 156: 6, 157: 300, 158: 3, 159: 50, 160: 6, 161: 0.25, 162: 900, 163: 12000,
+  // starfish, jellies, worms, the big tag-only animals
+  164: 3, 165: 2, 166: 15, 167: 0.8, 168: 45, 169: 4, 170: 2000,
+  171: 5, 172: 30, 173: 10, 174: 8, 175: 60, 176: 600, 177: 4, 178: 400,
+  180: 300, 181: 40, 183: 400, 184: 8000, 185: 300, 186: 250, 187: 3000, 188: 45000,
+  // (added in 1.30)
+  189: 80, 190: 90, 191: 40, 192: 25, 193: 90, 194: 15, 195: 18, 196: 8, 197: 6, 198: 12, 199: 35, 200: 150,
+  201: 30, 202: 3, 203: 22, 204: 1, 205: 1.5, 206: 1.2, 207: 10, 208: 9, 209: 14, 210: 15, 211: 6, 212: 1.5,
+  213: 12, 214: 30, 215: 15, 216: 40, 217: 35, 218: 18, 219: 25, 220: 18, 221: 30, 222: 25, 223: 35, 224: 6,
+  225: 10, 226: 25, 227: 20, 228: 4, 229: 3, 230: 1, 231: 3, 232: 20, 233: 6, 234: 10, 235: 5, 236: 4, 237: 2,
+  238: 15, 239: 30, 240: 25, 241: 50, 242: 15, 243: 8, 244: 6, 245: 6, 246: 30, 247: 35,
+  248: 150, 249: 180, 250: 180, 251: 190, 252: 120, 253: 80, 254: 220, 255: 300, 256: 400, 257: 1200, 258: 900,
+  259: 60, 260: 35, 261: 90, 262: 190, 263: 20, 264: 40, 265: 3, 266: 2, 267: 0.6, 268: 6, 269: 400, 270: 700,
+  271: 25, 272: 45, 273: 300, 274: 500, 275: 600, 276: 700, 277: 800, 278: 500, 279: 50,
+  280: 250, 281: 350, 282: 500, 283: 450, 284: 1500,
+  285: 12, 286: 6, 287: 12, 288: 6, 289: 10, 290: 25, 291: 30, 292: 45, 293: 40, 294: 0.3, 295: 1.5, 296: 20,
+  297: 10, 298: 12, 299: 5, 300: 12, 301: 15, 302: 5, 303: 6, 304: 3, 305: 3, 306: 6, 307: 12, 308: 18, 309: 6,
+  310: 30, 311: 40, 312: 20, 313: 400, 314: 450, 315: 2500, 316: 600, 317: 90, 318: 45,
+  319: 600, 320: 1400, 321: 400, 322: 900, 323: 1500, 324: 2200, 325: 3000, 326: 2000, 327: 30, 328: 1200,
+  329: 350, 330: 250, 331: 800, 332: 4500, 333: 120, 334: 200, 335: 90, 336: 900, 337: 150, 338: 220,
+  339: 2500, 340: 300, 341: 700, 342: 450, 343: 1500,
+  344: 45, 345: 60, 346: 250, 347: 4000, 348: 2500, 349: 4000, 350: 50000, 351: 30000, 352: 600, 353: 50, 354: 12,
+  355: 250, 356: 20, 357: 120, 358: 40,
+  359: 25, 360: 4, 361: 10, 362: 4, 363: 6, 364: 3, 365: 2, 366: 30, 367: 3, 368: 40, 369: 4, 370: 40, 371: 0.25,
+  372: 3, 373: 12, 374: 4, 375: 2, 376: 1, 377: 8, 378: 3, 379: 6, 380: 2, 381: 0.5, 382: 25, 383: 1500, 384: 3,
+  385: 60, 386: 8, 387: 4, 388: 25, 389: 40, 390: 20, 391: 1, 392: 1, 393: 35, 394: 6, 395: 8, 396: 25, 397: 10,
+  398: 6, 399: 10, 400: 6, 401: 2, 402: 4, 403: 12, 404: 35, 405: 40, 406: 3000, 407: 250, 408: 600, 409: 1,
+  410: 8, 411: 1, 412: 30, 413: 0.5, 414: 1,
+  434: 2, 437: 8, 438: 200, 440: 800, 441: 30, 442: 30, 443: 28, 444: 45, 445: 10, 446: 12,
 };
+// anything without a hand price: by kind, size and depth (and nothing from the deep is cheap)
 const CAT_BASE = {
-  'Reef Fish': 18, 'Cold Water Fish': 10, 'Open Ocean Fish': 6, 'Deep Sea Fish': 300, 'Sharks & Rays': 120,
-  'Crabs, Lobsters & Shrimp': 20, 'Octopus & Squid': 60, 'Seahorses & Relatives': 70, 'Jellyfish & Drifters': 25,
-  'Starfish & Urchins': 8, 'Shellfish & Snails': 10, 'Worms & Others': 15,
+  'Reef Fish': 6, 'Cold Water Fish': 4, 'Open Ocean Fish': 3, 'Deep Sea Fish': 300, 'Sharks & Rays': 80,
+  'Crabs, Lobsters & Shrimp': 4, 'Octopus & Squid': 30, 'Seahorses & Relatives': 20, 'Jellyfish & Drifters': 6,
+  'Starfish & Urchins': 2, 'Shellfish & Snails': 2.5, 'Worms & Others': 3,
 };
-// Research program: what a tag on each big animal pays (milestone 5).
-// (These are the reference figures; liveValue and tagValue scale them so the game starts at cents.)
-export const PRICE_SCALE = 0.08, TAG_SCALE = 0.4;
+export const isDeep = (sp) => sp.cat === 'Deep Sea Fish' || sp.dmin >= 200;
+function formulaPrice(sp) {
+  let p = (CAT_BASE[sp.cat] || 2) * Math.min(6, Math.max(0.4, Math.pow(sp.len / 0.3, 0.7)));
+  if (sp.dmin >= 1000) p *= 4; else if (sp.dmin >= 500) p *= 2.5; else if (sp.dmin >= 200) p *= 1.5;
+  return p;
+}
+// Research program: the big swimming animals too big to bring up, which are tagged instead. A tag
+// pays a share of what the animal is worth (see tagPrice); 0 means it cannot be tagged at all.
 export const TAG = {
   14: 80, 15: 150, 23: 90, 24: 120, 25: 60, 32: 140, 33: 160, 35: 60, 36: 50, 38: 70,
   39: 400, 40: 120, 42: 100, 43: 90, 44: 140, 45: 40, 46: 300, 52: 60, 53: 250, 54: 4000,
@@ -58,36 +103,37 @@ export function isTagOnly(sp) { return TAG[sp.id] !== undefined && TAG[sp.id] > 
 // Every species has a rarity, from how scarce and remarkable it is (the reference figures above):
 // common, uncommon, rare, exotic, legendary. What it pays comes from its rarity.
 export const RARITY = [
-  { id: 'common', name: 'Common', col: '#9aa0a6', upTo: 22, pay: [0.03, 0.25] },
-  { id: 'uncommon', name: 'Uncommon', col: '#5fbf6a', upTo: 110, pay: [0.3, 1.2] },
-  { id: 'rare', name: 'Rare', col: '#4a8ff0', upTo: 800, pay: [1.5, 5] },
-  { id: 'exotic', name: 'Exotic', col: '#a35be0', upTo: 5000, pay: [6, 20] },
-  { id: 'legendary', name: 'Legendary', col: '#f0a020', upTo: Infinity, pay: [30, 80] },
+  { id: 'common', name: 'Common', col: '#9aa0a6', upTo: 5, spawn: 1 },
+  { id: 'uncommon', name: 'Uncommon', col: '#5fbf6a', upTo: 30, spawn: 0.4 },
+  { id: 'rare', name: 'Rare', col: '#4a8ff0', upTo: 200, spawn: 0.14 },
+  { id: 'exotic', name: 'Exotic', col: '#a35be0', upTo: 5000, spawn: 0.05 },
+  { id: 'legendary', name: 'Legendary', col: '#f0a020', upTo: Infinity, spawn: 0.012 },
 ];
-function rawWorth(sp) {
-  if (LIVE[sp.id] !== undefined) return LIVE[sp.id];
-  if (TAG[sp.id]) return TAG[sp.id];
-  return (CAT_BASE[sp.cat] || 10) * (1 + Math.max(0, sp.dmin) / 150);
+const PRICE_CACHE = new Map();
+// what one of this species pays (before size, condition, rare form, upgrades)
+export function rarityPrice(sp) {
+  let p = PRICE_CACHE.get(sp.id);
+  if (p !== undefined) return p;
+  p = PRICE[sp.id] !== undefined ? PRICE[sp.id] : formulaPrice(sp);
+  if (isDeep(sp)) p = Math.max(30, p); // nothing from the deep is common
+  PRICE_CACHE.set(sp.id, p);
+  return p;
 }
 const RAR_CACHE = new Map();
 // { tier index, rarity entry, position 0..1 within the tier }
 export function rarityOf(sp) {
   let r = RAR_CACHE.get(sp.id);
   if (r) return r;
-  const w = Math.max(0.01, rawWorth(sp));
-  let i = RARITY.findIndex((t) => w < t.upTo);
-  const lo = i ? RARITY[i - 1].upTo : 0.05, hi = RARITY[i].upTo === Infinity ? 30000 : RARITY[i].upTo;
+  const w = rarityPrice(sp);
+  const i = RARITY.findIndex((t) => w < t.upTo);
+  const lo = i ? RARITY[i - 1].upTo : 0.2, hi = RARITY[i].upTo === Infinity ? 50000 : RARITY[i].upTo;
   const pos = Math.min(1, Math.max(0, Math.log(w / lo) / Math.log(hi / lo)));
   r = { i, ...RARITY[i], pos };
   RAR_CACHE.set(sp.id, r);
   return r;
 }
-// what one of this species pays, from its rarity (before size, condition, variant, upgrades)
-export function rarityPrice(sp) {
-  const r = rarityOf(sp), [a, b] = r.pay;
-  return a * Math.pow(b / a, r.pos);
-}
-export function tagPrice(id) { return TAG[id] ? rarityPrice(SPECIES_BY_ID[id]) * 1.2 : 0; }
+// a tag pays a share of what the animal is worth
+export function tagPrice(id) { return TAG[id] ? rarityPrice(SPECIES_BY_ID[id]) * 0.4 : 0; }
 
 // a healthy specimen of normal size; len is this individual's length
 export function liveValue(sp, len = sp.len) {

@@ -209,12 +209,26 @@ function parseSize(txt, vis) {
   return v;
 }
 
+// The famous animals of the deep grow far past their textbook size here: legends, and drawn as such.
+// (length in metres; their price and rarity are in specimens.js)
+export const GIANT_FORMS = {
+  100: 1.8,  // humpback anglerfish
+  101: 0.9,  // fangtooth
+  103: 1.3,  // black dragonfish
+  104: 0.7,  // barreleye
+  105: 2.2,  // pelican gulper eel
+  107: 0.8,  // blobfish
+  146: 1.2,  // dumbo octopus
+  150: 0.9,  // vampire squid
+  163: 0.5,  // yeti crab
+};
+
 // the reference list and the species added since (data/species_more.js, which carry their own look)
 export const SPECIES = SPECIES_DATA.concat(MORE_SPECIES).map((d) => {
   const v = Object.assign({ s: 'fish', h: 0.3, t: 'fork', c: ['#555', '#999'], f: null, hab: 'pelagic', sch: 1 }, V[d.id] || d.v || {});
   v.f = v.f || v.c[0];
-  const len = parseSize(d.size, v);
-  return { ...d, v, len };
+  const len = GIANT_FORMS[d.id] || parseSize(d.size, v);
+  return { ...d, v, len, giant: !!GIANT_FORMS[d.id] };
 });
 export const SPECIES_BY_ID = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 

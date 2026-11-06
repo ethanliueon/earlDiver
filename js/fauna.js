@@ -7,6 +7,7 @@
 import { rollVariant, canBeRare } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
+import { rarityOf } from './specimens.js';
 import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
 
 const SWIMMERS = SPECIES.filter((s) => isSwimHab(s.v.hab));
@@ -154,14 +155,22 @@ function habitatOk(sp, x, y, W) {
     default: return true;
   }
 }
+// how often a species is met: smaller, schooling animals more, and above all the rarer the less
+// (common 1, uncommon 0.4, rare 0.14, exotic 0.05, legendary 0.012: see RARITY in specimens.js).
+// Big animals and sharks are mostly exotic already, so their own penalty is lighter than it was.
+const WEIGHT = new Map();
 function weightOf(sp) {
-  let w = 1 / (0.6 + sp.len * 0.7);
-  if (sp.len > 6) w *= 0.15; // giants are rare encounters
-  else if (sp.len > 2.5) w *= 0.4;
+  let w = WEIGHT.get(sp.id);
+  if (w !== undefined) return w;
+  w = 1 / (0.6 + sp.len * 0.7);
+  if (sp.len > 6 && !sp.giant) w *= 0.4; // giants are rare encounters
+  else if (sp.len > 2.5 && !sp.giant) w *= 0.7;
   if (sp.v.hab === 'reef') w *= 2.2;
   if (sp.v.sch > 4) w *= 1.6;
-  if (/Shark/.test(sp.cat)) w *= 0.3;
+  if (/Shark/.test(sp.cat)) w *= 0.6;
+  w *= rarityOf(sp).spawn;
   if (PREDATORS.has(sp.id)) w *= 1.4; // keep some hunters around the bait
+  WEIGHT.set(sp.id, w);
   return w;
 }
 
