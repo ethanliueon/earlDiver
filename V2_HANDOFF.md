@@ -107,3 +107,7 @@ worth it on its own, and that's fine. What it's for:
 - Selling from the aquarium uses these multipliers. Dead fish (X eyes) can be taken out and sold at the dead price.
 Open questions: do the x1.2 and x2 stack (x2.4) or does Famous replace Happy? Does the timer keep running while
 Earl is diving (yes, if "gameplay time" means any time playing)? Does feeding/petting speed up the timers?
+**Decided:** Famous **stacks on top of** Happy (a happy famous fish sells for x1.2 x2 = x2.4). Famous is **not a
+status** like Happy; it's a **tag like the rare forms (albino, etc.)**: permanent once earned, shown the way rare
+forms are shown (js/variants.js), and it stays with the fish when sold or moved. Happy is the status (it presumably
+lapses if the fish becomes stressed/dying again).
