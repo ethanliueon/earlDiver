@@ -765,3 +765,17 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   title); then a good moment (`cue`: a sale, a rare find, getting home) brings it back at once if all is calm,
   or a roll every 30 s (50 %, more with the calm meter). Stress, death or a legend cut it off (3 s fade) and
   start the rest.
+
+## 2.6.10 — the twilight has its own music; the deep has none
+- `THEMES` in audio.js: sunlit (0-200 m, and the title) "Polaroid (melodic)"; twilight (200-1,000 m)
+  "Polaroid II - deeper (B)" (`polaroid_twilight.mp3`, levelled to the main theme's -13 LUFS); deep
+  (1,000 m and down): no music.
+- The track is chosen once, when the music is due (the first screen, or after the 10-14 min rest at a calm
+  moment), from the zone he is in then (with 25 m of give at each boundary). It is never switched or faded
+  into another as he swims; it plays to its end wherever he goes, except into the deep, where it fades out
+  in ~3 s (and the rest begins). Nothing ever starts in the deep. The twilight file is fetched only when he
+  comes within 50 m of 200 m.
+- The underwater muffle on the music is lighter (a low-pass of 4.2 kHz easing to 1.6 kHz, was 1.4 kHz to
+  280 Hz), so each theme is heard as it is.
+- Fixed: the 2.6.9 rewrite had dropped `cue()` and `calmBoost()` (so good moments no longer brought the
+  music back); both are back.

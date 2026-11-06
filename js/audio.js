@@ -1,7 +1,16 @@
 // Sound: the background music (muffled underwater), generated ambience,
 // breathing, heartbeat, the entity's presence, sonar, hull creaks.
 import { clamp, lerp } from './util.js';
-const MUSIC_REST = [600, 840]; // (2.6.9) seconds of play between one playing of the track and the next: 10 to 14 minutes
+const MUSIC_REST = [600, 840]; // (2.6.9) seconds of play between one playing of the music and the next: 10 to 14 minutes
+// (2.6.10) which music, by depth, when it is due: the sunlit sea (and the title) has the main theme; the
+// twilight zone "Polaroid II - deeper (B)", dark and slow; the deep (below 1,000 m) has none, ever. The track
+// is chosen once, when the music is due, from where he is then: it is never switched or faded into another
+// as he swims, and goes on to its end wherever he goes, except into the deep, where it fades away.
+const THEMES = [
+  { id: 'sunlit', file: 'assets/audio/polaroid_melodic.mp3', to: 200 },
+  { id: 'twilight', file: 'assets/audio/polaroid_twilight.mp3', to: 1000 },
+  { id: 'deep', file: null, to: Infinity },
+];
 
 export class Audio {
   constructor() {
@@ -18,8 +27,7 @@ export class Audio {
     this.musicLP = ac.createBiquadFilter(); this.musicLP.type = 'lowpass'; this.musicLP.frequency.value = 18000;
     this.musicGain = ac.createGain(); this.musicGain.gain.value = 0;
     this.musicLP.connect(this.musicGain).connect(this.master);
-    fetch('assets/audio/polaroid_melodic.mp3').then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => ac.decodeAudioData(b, res, rej)))
-      .then((buf) => { this.musicBuf = buf; if (this.musicWanted) { this.musicWanted = false; this.startPiece(); } }).catch(() => {});
+    this.musicBufs = {}; this.loadTheme('sunlit'); // the others are fetched as he nears their depth
     // noise buffer
     const len = ac.sampleRate * 4;
     const buf = ac.createBuffer(1, len, ac.sampleRate);
@@ -101,30 +109,58 @@ export class Audio {
   // moment (a sale, a rare find, getting home) brings it at once, otherwise a roll every 30 s. Stress (the
   // thing near, marked, an attack, no air, hurt, deep outside the sub), a death or a legend cuts it off with
   // a short fade; nothing starts it until 20 s after the stress has passed.
+  loadTheme(id) {
+    if (this.musicBufs[id] !== undefined || !THEMES.find((q) => q.id === id).file) return;
+    this.musicBufs[id] = null; // loading
+    const T = THEMES.find((q) => q.id === id);
+    fetch(T.file).then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => this.ac.decodeAudioData(b, res, rej)))
+      .then((buf) => { this.musicBufs[id] = buf; if (this.musicWanted === id && ((id === 'sunlit' && !this.musFirstStarted) || (this.calm && this.musState().zone === id))) { this.musicWanted = null; this.startPiece(id); } }).catch(() => { delete this.musicBufs[id]; });
+  }
+  // the theme for a depth, with 25 m of give at each boundary so it does not flicker across one
+  themeAt(depth, cur) {
+    let i = THEMES.findIndex((q) => depth < q.to);
+    const ci = THEMES.findIndex((q) => q.id === cur);
+    if (ci >= 0 && i !== ci && depth > (THEMES[ci - 1] ? THEMES[ci - 1].to - 25 : -1e9) && depth < THEMES[ci].to + 25) i = ci;
+    return THEMES[i].id;
+  }
   playMusic() {
     if (!this.ready || this.musFirstDone) return;
     this.musFirstDone = true;
-    if (this.musicBuf) this.startPiece(); else this.musicWanted = true;
+    this.startPiece('sunlit');
   }
-  musState() { return this.mus || (this.mus = { on: false, level: 0, rest: 0, sinceStress: 99, meter: 0, rollT: 0 }); }
+  musState() { return this.mus || (this.mus = { on: false, level: 0, rest: 0, sinceStress: 99, meter: 0, rollT: 0, zone: 'sunlit' }); }
   restAfter() { const m = this.musState(); m.rest = MUSIC_REST[0] + Math.random() * (MUSIC_REST[1] - MUSIC_REST[0]); m.meter = 0; }
-  startPiece() {
-    const m = this.musState();
-    if (m.on || !this.musicBuf) return;
-    if (this.musicSrc) { try { this.musicSrc.stop(); } catch (e) { /* already stopped */ } }
-    const s = this.ac.createBufferSource(); s.buffer = this.musicBuf; s.loop = false;
-    s.connect(this.musicLP); s.start(0, 0); this.musicSrc = s;
-    s.onended = () => { if (this.musicSrc === s) { this.musicSrc = null; if (m.on) { m.on = false; this.restAfter(); } } }; // played to the end
-    m.on = true; m.level = Math.max(m.level, 0.3); // (the track has its own quiet start)
+  // one source with its own gain (so two can cross-fade), played through from the start
+  playSource(id, fadeIn) {
+    const s = this.ac.createBufferSource(), gn = this.ac.createGain(), now = this.ac.currentTime;
+    s.buffer = this.musicBufs[id]; s.loop = false; s.connect(gn).connect(this.musicLP);
+    gn.gain.setValueAtTime(fadeIn ? 0.0001 : 1, now); if (fadeIn) gn.gain.exponentialRampToValueAtTime(1, now + fadeIn);
+    s.start(0, 0);
+    const src = { s, gn, id };
+    s.onended = () => { if (this.musicSrc === src) { this.musicSrc = null; const m = this.musState(); if (m.on) { m.on = false; this.restAfter(); } } }; // played to the end
+    return src;
   }
-  stopPiece() { const m = this.musState(); if (!m.on) return; m.on = false; this.restAfter(); } // it fades, then the source is stopped
-  // a good moment: once the rest is over and all is calm, the track comes back now
+  fadeAway(src, sec) {
+    if (!src) return;
+    const now = this.ac.currentTime; src.gn.gain.cancelScheduledValues(now); src.gn.gain.setValueAtTime(Math.max(0.0001, src.gn.gain.value), now); src.gn.gain.exponentialRampToValueAtTime(0.0001, now + sec);
+    try { src.s.onended = null; src.s.stop(now + sec + 0.05); } catch (e) { /* already stopped */ }
+  }
+  startPiece(id) {
+    const m = this.musState();
+    id = id || m.zone;
+    if (m.on || id === 'deep') return; // the deep: no music
+    if (!this.musicBufs[id]) { this.loadTheme(id); this.musicWanted = id; return; }
+    if (this.musicSrc) { this.fadeAway(this.musicSrc, 0.05); this.musicSrc = null; }
+    this.musicSrc = this.playSource(id, 0); m.on = true; this.musFirstStarted = true; m.level = Math.max(m.level, 0.3); // (each track has its own quiet start)
+  }
+  // a good moment (a sale, a rare find, getting home): once the rest is over and all is calm, the music comes now
   cue() {
     const m = this.musState();
-    if (!m.on && m.rest <= 0 && this.calm && m.sinceStress >= 20) this.startPiece();
+    if (!m.on && m.rest <= 0 && this.calm && m.sinceStress >= 20 && m.zone !== 'deep') this.startPiece();
     else m.meter = Math.min(1, m.meter + 0.15);
   }
   calmBoost(x) { const m = this.musState(); m.meter = Math.min(1, m.meter + x); }
+  stopPiece() { const m = this.musState(); if (!m.on) return; m.on = false; this.musicWanted = null; this.restAfter(); } // it fades, then the source is stopped
   // returns the music level 0..1 for this frame
   musicSession(g, dt) {
     const m = this.musState();
@@ -133,18 +169,23 @@ export class Audio {
     const stress = playing && (g.fx.dread > 0.02 || (ent && ent.marked) || !!g.threat || !!g.noAir || (g.injury || 0) > 0 || !!g.reveal || (!e.inSub && e.y > 300));
     this.calm = playing && !stress;
     if (stress) m.sinceStress = 0; else m.sinceStress += dt;
-    if (stress || g.mode === 'dying' || g.legend) this.stopPiece();
+    if (stress || g.mode === 'dying' || g.legend) { this.musicWanted = null; this.stopPiece(); }
+    // the zone he is in (the title is the sunlit sea); the next theme down is fetched 50 m before he gets there
+    const depth = playing || g.mode === 'dying' ? Math.max(0, e.y) : 0;
+    m.zone = this.themeAt(depth, m.zone);
+    for (const T of THEMES) if (depth > T.to - 50) { const nx = THEMES[THEMES.indexOf(T) + 1]; if (nx) this.loadTheme(nx.id); }
+    if (m.zone === 'deep') this.stopPiece(); // into the deep: whatever plays fades away (and its rest begins)
     if (!m.on && playing && !g.paused) {
       m.rest = Math.max(0, m.rest - dt);                                // the rest counts only in play
       m.meter = Math.min(1, m.meter + dt * 0.0015);                      // quiet, calm swimming
-      if (m.rest <= 0 && this.calm && m.sinceStress >= 20) {
+      if (m.rest <= 0 && this.calm && m.sinceStress >= 20 && m.zone !== 'deep') {
         m.rollT += dt;
         if (m.rollT >= 30) { m.rollT = 0; if (Math.random() < 0.5 + m.meter * 0.4) this.startPiece(); }
       }
     }
     const fade = m.on ? 0.5 : g.mode === 'dying' ? 1 : 0.35;           // in: 2 s; cut off: about 3 s
     m.level += clamp((m.on ? 1 : 0) - m.level, -fade * dt, fade * dt);
-    if (!m.on && m.level <= 0.001 && this.musicSrc) { try { this.musicSrc.stop(); } catch (e) { /* done */ } this.musicSrc = null; }
+    if (!m.on && m.level <= 0.001 && this.musicSrc) { this.fadeAway(this.musicSrc, 0.05); this.musicSrc = null; }
     return m.level;
   }
   // ---------------- the kill: the sound drops out, then the hit ----------------
@@ -313,7 +354,7 @@ export class Audio {
     const hush = 1 - 0.85 * ((g.fx && g.fx.hush) || 0); // it is near: the sea goes quiet
     this.musicGain.gain.setTargetAtTime(mv * hush, now, 0.4);
     const hurtMuffle = (g.injury >= 3 ? 0.5 : 1) * (g.noAir ? 1 - Math.min(1, g.noAir / 15) * 0.8 : 1);
-    const lp = (under ? clamp(1400 * Math.exp(-depth / 500), 280, 1400) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle;
+    const lp = (under ? clamp(4200 * Math.exp(-depth / 2500), 1600, 4200) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle; // (2.6.10) a lighter muffle: each depth has its own theme now, and it should be heard
     this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
     // beds
     this.amb.g.gain.setTargetAtTime((under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03) * hush, now, 0.5);
