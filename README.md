@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 1.29.2 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 1.30.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -136,7 +136,8 @@ js/hud.js           timer, air, dive monitor (sonar, heart rate, journal)
 js/audio.js         music and generated sound
 js/ui.js            home screen, journal, the boat (shop and ledger), dive log
 js/economy.js       the save, prices, the market, what is for sale
-data/species_data.js  183 species (from Ocean_Species_Reference.pdf)
+data/species_data.js  the first 188 species (183 from Ocean_Species_Reference.pdf, then mammals and the sleeper)
+data/species_more.js  258 more (ids 189-446), each with its look and how it lives (reef home, climate, depth band)
 GAME_DESIGN.md      the design this is built from
 ```
 

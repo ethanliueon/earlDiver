@@ -8,6 +8,7 @@
 // nearby (sharks leave), or flashing the lamp (L) at a charging animal at the last moment.
 import { clamp, dist, lerp } from './util.js';
 import { LANTERN_RADIUS } from './entity.js';
+import { MORE_SPECIES } from '../data/species_more.js';
 
 export const AGGRO = {
   42: { kind: 'charge', dmg: 1, p: 0.05 },   // swordfish
@@ -26,6 +27,8 @@ export const AGGRO = {
   187: { kind: 'ram', hull: 0.2, p: 0.04 },  // orca: rams the sub, leaves divers alone
   188: { kind: 'ambush', dmg: 4, hull: 0.3, p: 0.08, minDepth: 2400 }, // abyssal sleeper shark: from below, Earl or the sub
 };
+// the species added since that attack (data/species_more.js)
+for (const m of MORE_SPECIES) if (m.x.aggro) AGGRO[m.id] = m.x.aggro;
 const DOLPHINS = new Set([185, 186]);
 
 // Encounter director: how many hunting encounters per minute, by where Earl is and when.

@@ -4,6 +4,7 @@
 // up (and swimming), tagged for the research program (built later). Neither: plants, corals,
 // anything rooted, anything too big to carry off the bottom.
 import { SPECIES_BY_ID } from './species.js';
+import { MORE_SPECIES } from '../data/species_more.js';
 
 // Aquarium prices (US$, one healthy adult of normal size). Set by hand for the animals that matter;
 // everything else comes from the formula below.
@@ -41,6 +42,8 @@ export const TAG = {
 
 const NEVER = new Set(['Kelp & Plants', 'Corals, Anemones & Sponges', 'Marine Mammals']);
 const PROTECTED = new Set([183]); // sea turtles: tag only, never taken
+// the species added since: their tag values, and which are protected
+for (const m of MORE_SPECIES) { if (m.x.tag) TAG[m.id] = m.x.tag; if (m.x.protect) PROTECTED.add(m.id); }
 
 // can a net / slurp gun take it at all (ignoring tool size limits)?
 export function canTakeLive(sp) {

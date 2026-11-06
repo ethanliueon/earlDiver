@@ -71,7 +71,8 @@ is recorded.
   small life by zone: pebbles, shells, urchins and sand ripples in the shallows; burrows, worm tubes
   and anemones on the shelf; brittle stars, sea pens and glass sponges on the slope; sea pigs,
   xenophyophores, tracks and stalked crinoids on the abyssal plain. Rocks have cracks.
-- 183 real species, each only in its real depth range and habitat. Fish are drawn at 1.6x life
+- 446 species (445 real, plus the abyssal sleeper shark), each only in its real depth range, habitat and climate:
+  warm-water animals only on the tropical reefs, cold-water ones off them. Fish are drawn at 1.6x life
   size so their sizes read. Bait schools move as one body.
 
 ## Earning money

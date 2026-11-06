@@ -1,6 +1,7 @@
 // Visual + behaviour descriptors for each species. Drawing lives in creatures_draw.js.
 // Colours are chosen from the reference photos: natural, slightly muted.
 import { SPECIES_DATA } from '../data/species_data.js';
+import { MORE_SPECIES } from '../data/species_more.js';
 
 // s = shape renderer, h = body height / length, t = tail type, d = dorsal style,
 // c = [back, belly], p = pattern, pc = pattern colour, f = fin colour,
@@ -208,8 +209,9 @@ function parseSize(txt, vis) {
   return v;
 }
 
-export const SPECIES = SPECIES_DATA.map((d) => {
-  const v = Object.assign({ s: 'fish', h: 0.3, t: 'fork', c: ['#555', '#999'], f: null, hab: 'pelagic', sch: 1 }, V[d.id] || {});
+// the reference list and the species added since (data/species_more.js, which carry their own look)
+export const SPECIES = SPECIES_DATA.concat(MORE_SPECIES).map((d) => {
+  const v = Object.assign({ s: 'fish', h: 0.3, t: 'fork', c: ['#555', '#999'], f: null, hab: 'pelagic', sch: 1 }, V[d.id] || d.v || {});
   v.f = v.f || v.c[0];
   const len = parseSize(d.size, v);
   return { ...d, v, len };

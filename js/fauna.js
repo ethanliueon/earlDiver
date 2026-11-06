@@ -6,6 +6,7 @@
 //  - everything flees the entity
 import { rollVariant, canBeRare } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
+import { MORE_SPECIES } from '../data/species_more.js';
 import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
 
 const SWIMMERS = SPECIES.filter((s) => isSwimHab(s.v.hab));
@@ -126,6 +127,17 @@ const COLD = new Set([58, 59, 60, 61, 68, 69, 70, 71, 72, 73, 75, 115, 116]);
 const onTropicalReef = (x) => x > 2900 || x < 34;
 // warm and cold water for anything else that needs it (traps): crabs and lobsters too
 const COLD_BOTTOM = new Set([152, 154, 155, 156]), WARM_BOTTOM = new Set([153, 144, 145, 159, 160]);
+// the species added since (data/species_more.js) say for themselves where and how they live
+for (const m of MORE_SPECIES) {
+  const x = m.x;
+  if (x.home) HOME[m.id] = x.home;
+  if (x.warm) TROPICAL.add(m.id);
+  if (x.cold) COLD.add(m.id);
+  if (x.core) CORE[m.id] = x.core;
+  if (x.off) OFFSHORE.add(m.id);
+  if (x.mig) MIGRATORS.add(m.id);
+  if (x.aggro || x.protect) NO_FLEE.add(m.id);
+}
 export const climateOk = (id, x) => !((TROPICAL.has(id) || WARM_BOTTOM.has(id)) && !onTropicalReef(x)) && !((COLD.has(id) || COLD_BOTTOM.has(id)) && onTropicalReef(x));
 
 function habitatOk(sp, x, y, W) {
@@ -263,7 +275,7 @@ export class Fauna {
     const cands = SWIMMERS.filter((s) => {
       if (HOME[s.id]) return false; // reef and bottom animals are residents of their homes (see settle)
       if (OFFSHORE.has(s.id) && floorHere < 90) return false;           // open-ocean animals: only over deep water
-      return y >= s.dmin && y <= s.dmax && habitatOk(s, x, y, W) && this.depthPref(s, x, y, this.night) > 0; // within what has ever been recorded (how likely: depthPref)
+      return y >= s.dmin && y <= s.dmax && habitatOk(s, x, y, W) && climateOk(s.id, x) && this.depthPref(s, x, y, this.night) > 0; // (and in its own climate) // within what has ever been recorded (how likely: depthPref)
     });
     if (!cands.length) return;
     const wOf = (c) => {
