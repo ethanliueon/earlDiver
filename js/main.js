@@ -781,6 +781,25 @@ function escapeKill(how) {
 const SEAL_TIME = 6, SEAL_GAIN = 0.2, SEAL_CAP = 0.85, WELD_TIME = 10, WELD_GAIN = 0.4;
 function repairs(dt, target, holding) {
   const e = g.earl, sub = g.sub;
+  // a backup air tank being connected: two clanks of the fittings and a thin leak of gas, then the
+  // valve opens with a hiss and a rush of bubbles from the vent, and the cabin fills
+  if (g.tankFit) {
+    if (!e.inSub || sub.imploded) { g.tankFit = 0; hud.toast('The tank was not connected', 'warn'); }
+    else {
+      g.tankFit += dt;
+      const clank = g.tankFit > 0.7 && g.tankClank < 1 ? 1 : g.tankFit > 1.8 && g.tankClank < 2 ? 2 : 0;
+      if (clank) { g.tankClank = clank; audio.ready && audio.thud && audio.thud(0.12); audio.ready && audio.click(); }
+      if (g.tankFit > 1 && Math.random() < dt * 4) audio.ready && audio.burst('highpass', 4000 + Math.random() * 2000, 1, 0.15, 0.02);
+      if (Math.random() < dt * 10) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 2, y: sub.y - 0.5, r: 0.02 + Math.random() * 0.04, w: Math.random() * 6, t: 0 });
+      if (g.tankFit >= 3) {
+        g.tankFit = 0; g.items.airTank--; sub.o2 = sub.o2Max;
+        audio.ready && audio.burst('bandpass', 2600, 0.8, 0.9, 0.09); // the valve: a hiss
+        audio.ready && audio.bubbles && audio.bubbles(10, 0.03);
+        for (let i = 0; i < 70; i++) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 3, y: sub.y - 0.6 + (Math.random() - 0.5) * 1.5, r: 0.04 + Math.random() * 0.16, w: Math.random() * 6, t: -Math.random() * 0.8 });
+        hud.toast(`A backup tank hisses into the cabin: air full (${g.items.airTank} left)`);
+      }
+    }
+  }
   if (g.seal) {
     if (!e.inSub || sub.imploded) { g.seal = 0; hud.toast('Sealing stopped', 'warn'); }
     else {
@@ -999,8 +1018,9 @@ function update(dt) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
       if (!e.inSub || g.sub.imploded) hud.toast('The backup tanks are in the sub', 'warn');
       else if (!g.items.airTank) hud.toast('No backup air tanks', 'warn');
+      else if (g.tankFit) { /* already being connected */ }
       else if (g.sub.o2 >= g.sub.o2Max - 1) hud.toast('The cabin air is full');
-      else { g.items.airTank--; g.sub.o2 = g.sub.o2Max; hud.toast(`A backup tank hisses into the cabin: air full (${g.items.airTank} left)`); audio.ready && audio.click(); }
+      else { g.tankFit = 0.001; g.tankClank = 0; audio.ready && audio.click(); } // three seconds to connect it (see repairs)
     }
     if (pressed.has('e')) {
       if (g.items.necklace > 0 && g.necklaceT <= 0) { g.items.necklace--; g.necklaceT = 15; hud.toast('The necklace warms against your chest'); audio.ready && audio.lanternHum(0.05); }
