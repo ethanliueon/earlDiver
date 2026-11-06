@@ -297,8 +297,19 @@ export function generateWorld(seed) {
   for (let i = 0; i < 12; i++) { const x = SEEP.x + rng.range(-10, 10); addPickup('clam', x, onFloor(x), { pearl: rng() < 0.25 }); }
   for (let i = 0; i < 60; i++) { const x = rng.range(2950, 4600); const fl = W.floorAt(x); if (fl > 300 && fl < 1300) addPickup('glass', x, onFloor(x)); }
   // Usable items, found on the deeper seafloor
-  for (let i = 0; i < 40; i++) { const x = rng.range(2950, 4640); const fl = W.floorAt(x); if (fl > 150 && fl < 2400) addPickup('lure', x, fl - 0.4); }
-  for (let i = 0; i < 30; i++) { const x = rng.range(200, 4620); const fl = W.floorAt(x); if (fl > 250 && fl < 3600) addPickup('necklace', x, fl - 0.3); }
+  // Rare finds, anywhere across the ocean (rarer than an exotic animal, commoner than a legend): a few
+  // fangtooth necklaces on the seabed between 300 and 3,000 m, and a few anglerfish lures between
+  // 1,500 and 4,000 m, each well apart from the others (a new scatter every run)
+  const scatter = (type, n, d0, d1, lift) => {
+    const placed = [];
+    for (let tries = 0; placed.length < n && tries < 600; tries++) {
+      const x = rng.range(60, 4900), fl = W.floorAt(x);
+      if (fl < d0 || fl > d1 || placed.some((q) => Math.abs(q - x) < 120) || W.rockAt(x, fl - lift, 0.3)) continue;
+      placed.push(x); addPickup(type, x, fl - lift);
+    }
+  };
+  scatter('necklace', 6, 300, 3000, 0.3);
+  scatter('lure', 6, 1500, 4000, 0.4);
   // Good deeds: animals caught in lost fishing nets (fixed places), and broken coral to replant
   for (const [x, an] of [[EAST + 938, 'turtle'], [EAST + 905, 'fish'], [EAST + 872, 'turtle'], [EAST + 826, 'fish'], [EAST + 778, 'turtle'], [EAST + 736, 'fish']]) addPickup('net', x, W.floorAt(x) - 0.7, { animal: an });
   for (let i = 0; i < 12; i++) { const x = rng.range(EAST + 880, EAST + 968); addPickup('coral', x, onFloor(x)); }
