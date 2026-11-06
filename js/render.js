@@ -2194,21 +2194,10 @@ export class Renderer {
     const lamps = this.lamps = []; // every lamp this frame, so living lights can tell how lit they are
     const cone = (x, y, ang, range, spread, col, a) => {
       lamps.push({ x, y, ang, range, spread, a });
-      const far = mixRgb(col, WATER_LIT, 0.65);
-      // one gradient, fanned out in many thin layers from narrow to wide: the light fades smoothly
-      // and widely toward the edges (diffused), with no visible wedge edges or streaks
-      const gg = l.createRadialGradient(x * k, y * k, 0, x * k, y * k, range * k);
-      gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(0.12, rgbStr(col, a * 0.85));
-      gg.addColorStop(0.4, rgbStr(far, a * 0.4)); gg.addColorStop(0.75, rgbStr(WATER_LIT, a * 0.1));
-      gg.addColorStop(1, rgbStr(WATER_LIT, 0));
-      l.fillStyle = gg;
-      for (let i = 0; i < FEATHER; i++) {
-        const sm = 0.3 + 1.7 * (i / (FEATHER - 1));
-        l.globalAlpha = 1 / FEATHER;
-        l.beginPath(); l.moveTo(x * k, y * k);
-        l.arc(x * k, y * k, range * k, ang - spread * sm, ang + spread * sm); l.closePath(); l.fill();
-      }
-      l.globalAlpha = 1;
+      if (a <= 0.002) return;
+      const c = this.coneSprite(col, spread), sc = range * k / 128;
+      l.save(); l.translate(x * k, y * k); l.rotate(ang); l.scale(sc, sc); l.globalAlpha = Math.min(1, a); l.drawImage(c, -128, -128); l.restore();
+      if (a > 1) { l.save(); l.translate(x * k, y * k); l.rotate(ang); l.scale(sc, sc); l.globalAlpha = Math.min(1, a - 1); l.drawImage(c, -128, -128); l.restore(); } // (stronger than one layer: a second)
     };
     const e = g.earl;
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
@@ -2233,18 +2222,19 @@ export class Renderer {
       const lp = (p) => [sx + p[0] * sxs, sy + p[1]];
       const [ax, ay] = lp(subLamps.lampA), [bx, by] = lp(subLamps.lampB);
       const lc = mixRgb([235, 238, 245], BEAM_DREAD, fx.torchShift);
-      cone(ax, ay, ang, 32 * ppm, 0.34, lc, 1.15 * flick * vis);
-      cone(ax, ay, ang, 15 * ppm, 0.95, lc, 0.4 * flick * vis); // diffuse flood around the main beam
-      cone(bx, by, ang + 0.35 * Math.sign(sxs), 18 * ppm, 0.45, lc, 0.75 * flick * vis);
+      // (2.5.3: softer, a little less bright, and wider round the edges, so more is lit without glare)
+      cone(ax, ay, ang, 33 * ppm, 0.36, lc, 1.45 * flick * vis);
+      cone(ax, ay, ang, 18 * ppm, 0.9, lc, 0.45 * flick * vis); // diffuse flood around the main beam
+      cone(bx, by, ang + 0.35 * Math.sign(sxs), 16 * ppm, 0.5, lc, 0.55 * flick * vis);
       // light spilling around the hull: a soft neutral fill, the warm portholes, a dim stern lamp
-      radial(sx, sy, 14 * ppm, [140, 165, 175], 0.2 * fx.lightPulse); lamps.push({ x: sx, y: sy, r: 14 * ppm, a: 0.2 * fx.lightPulse });
-      radial(sx + 0.5 * sxs * ppm, sy + 0.9 * ppm, 5 * ppm, [255, 190, 120], 0.4 * fx.lightPulse);
+      radial(sx, sy, 17 * ppm, [140, 165, 175], 0.3 * fx.lightPulse); lamps.push({ x: sx, y: sy, r: 17 * ppm, a: 0.3 * fx.lightPulse });
+      radial(sx + 0.5 * sxs * ppm, sy + 0.9 * ppm, 8 * ppm, [255, 190, 120], 0.6 * fx.lightPulse); // the cabin's warm glow through the sphere's ports
       radial(sx - 4.8 * sxs * ppm, sy - 0.4 * ppm, 7 * ppm, [220, 160, 110], 0.15 * fx.lightPulse);
       if (vis < 0.6) radial(ax, ay, 6 * ppm, lc, (0.6 - vis) * 1.2 * flick); // the lamps face us mid-turn
       if (subLamps.lampC) { // the light mast (built into every sub): a wide flood angled forward and down, and a glow all round it
         const [mx2, my2] = lp(subLamps.lampC);
-        cone(mx2, my2, ang - 0.45 * Math.sign(sxs), 28 * ppm, 0.85, lc, 0.85 * flick * vis);
-        radial(mx2, my2, 10 * ppm, lc, 0.28 * flick); lamps.push({ x: mx2, y: my2, r: 10 * ppm, a: 0.28 * flick });
+        cone(mx2, my2, ang - 0.45 * Math.sign(sxs), 18 * ppm, 0.7, lc, 0.45 * flick * vis); // (2.5.3: dimmer and shorter)
+        radial(mx2, my2, 6 * ppm, lc, 0.2 * flick); lamps.push({ x: mx2, y: my2, r: 6 * ppm, a: 0.2 * flick });
       }
       // the net light (2.5.1): a work lamp low on her stern, aimed back down the trawl, lit only while the
       // net is out (and the lights are on)
@@ -2320,22 +2310,31 @@ export class Renderer {
     return c;
   }
   // a beam's haze, pointing along +x from the middle of a 512 px square (range 256 px)
+  // A beam of light in water, as one picture (2.5.3): bright at the lamp, fading with distance and turning
+  // the water's colour as the red is absorbed, and fading toward its edges along a smooth bell curve, so
+  // there is no wedge, no steps and no hard edge. A little light spills back behind the lamp too. Made once
+  // per shape and colour (per pixel), then turned, scaled and faded per frame.
   coneSprite(col, spread) {
     const q = (v) => Math.round(v / 12) * 12, key = `${spread}:${q(col[0])},${q(col[1])},${q(col[2])}`;
     const m = this.coneSprites || (this.coneSprites = new Map());
     let c = m.get(key);
     if (!c) {
-      c = document.createElement('canvas'); c.width = c.height = 512;
-      const x = c.getContext('2d'), cc = [q(col[0]), q(col[1]), q(col[2])], far = mixRgb(cc, WATER_LIT, 0.7);
-      const gg = x.createRadialGradient(256, 256, 0, 256, 256, 256);
-      gg.addColorStop(0, rgbStr(cc, 1)); gg.addColorStop(0.3, rgbStr(far, 0.45)); gg.addColorStop(1, rgbStr(WATER_LIT, 0));
-      x.fillStyle = gg;
-      const n = FEATHER;
-      for (let i = 0; i < n; i++) {
-        const sm = 0.3 + 1.6 * (i / (n - 1));
-        x.globalAlpha = 1 / n;
-        x.beginPath(); x.moveTo(256, 256); x.arc(256, 256, 256, -spread * sm, spread * sm); x.closePath(); x.fill();
+      const N = 256, R = N / 2;
+      c = document.createElement('canvas'); c.width = c.height = N;
+      const x = c.getContext('2d'), img = x.createImageData(N, N), d = img.data, cc = [q(col[0]), q(col[1]), q(col[2])];
+      const inv = 1 / (spread * spread);
+      for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+        const dx = (i + 0.5 - R) / R, dy = (j + 0.5 - R) / R, r = Math.hypot(dx, dy);
+        if (r >= 1) continue;
+        const th = Math.atan2(dy, dx);
+        const ang = Math.exp(-th * th * inv * 1.1) + 0.06 * Math.exp(-r * 9); // the bell across the beam, and a soft glow right at the lamp
+        const fall = Math.pow(1 - r, 1.6) * (1 + 1.5 * Math.exp(-r * 14));    // brightest at the lamp, gone by the end of its range
+        const v = Math.min(1, ang * fall);
+        if (v < 0.002) continue;
+        const w = Math.min(1, r * 1.4), o = (j * N + i) * 4; // farther out, the water's own blue-green
+        d[o] = cc[0] + (WATER_LIT[0] - cc[0]) * w; d[o + 1] = cc[1] + (WATER_LIT[1] - cc[1]) * w; d[o + 2] = cc[2] + (WATER_LIT[2] - cc[2]) * w; d[o + 3] = v * 255;
       }
+      x.putImageData(img, 0, 0);
       m.set(key, c);
       if (m.size > 60) m.delete(m.keys().next().value);
     }
@@ -2393,8 +2392,8 @@ export class Renderer {
     const coneHaze = (x, y, ang, range, spread, col, a) => {
       if (a <= 0.002) return;
       const c = this.coneSprite(col, spread);
-      ctx.save(); ctx.translate(x, y); ctx.rotate(ang); const k = range / 256; ctx.scale(k, k);
-      ctx.globalAlpha = Math.min(1, a); ctx.drawImage(c, -256, -256); ctx.restore();
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang); const k = range / 128; ctx.scale(k, k);
+      ctx.globalAlpha = Math.min(1, a); ctx.drawImage(c, -128, -128); ctx.restore();
     };
     const motes = (x, y, ang, range, spread, col, a) => {
       if (this.lite) return;

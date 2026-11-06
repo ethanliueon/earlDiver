@@ -638,3 +638,12 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   it in the gallery) and To sell. Click a row to move it across; "Sell these" sells only the basket
   (`sellSome` in main.js sets the rest aside, runs `sellAll`, and puts it back). Rows use `data-sell`, not
   `data-act`, so they are not drawn as the shop's tag buttons.
+
+## 2.5.4 — softer lights in the deep
+- Beams were ten stacked wedges (`FEATHER`), which showed as steps and hard edges. `coneSprite` is now made
+  per pixel: a bell curve across the beam (no edge), a fall-off with distance, the colour turning to the
+  water's, and a soft glow at the lamp; cached per shape and colour, and used both in the light map
+  (`cone`) and for the haze (`coneHaze`).
+- The sub's lights rebalanced: the main beam a little longer and softer, the wide fill wider, the second
+  lamp dimmer; the mast flood dimmer and shorter (18 m, was 28); more light round the hull (17 m) and a
+  warmer, brighter glow from the cabin's ports.
