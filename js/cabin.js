@@ -12,15 +12,17 @@
 // the free texture sites were out of reach, and this keeps the boat's own colours).
 import { drawEarl } from './earl_draw.js';
 import { clamp, TAU } from './util.js';
+import { drawSpecies } from './creatures_draw.js';
+import { SPECIES_BY_ID } from './species.js';
 
 // positions across the room, in screen widths: the room is wider than the screen (2.5.0) and the view
 // follows him. Left of 1.0 is the cabin as it was; to the right, the front of the wheelhouse: the radio,
 // the windows and the wheel. Each STATION is where he stands to use something.
-const ROOM = { door: 0.075, desk: 0.74, min: 0.07, max: 1.4, width: 1.45, radio: 1.06, wheel: 1.31, hatch: 0.19 };
+const ROOM = { door: 0.075, desk: 0.74, min: 0.07, max: 1.4, width: 1.45, radio: 1.1, wheel: 1.31, tank: 0.965 }; // (2.6.8) the aquarium: a lit tank across the room from the door
 const STATIONS = [
   { id: 'door', x: ROOM.door, label: 'F  Out on deck' },
-  { id: 'hatch', x: ROOM.hatch, label: 'F  Down to the gallery' },
   { id: 'desk', x: ROOM.desk - 0.085, label: 'F  The computer' },
+  { id: 'tank', x: ROOM.tank, label: 'F  The aquarium' },
   { id: 'radio', x: ROOM.radio, label: 'F  The radio' },
   { id: 'wheel', x: ROOM.wheel - 0.075, label: 'F  Take the wheel' },
 ];
@@ -114,7 +116,8 @@ export class Cabin {
   }
   show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); this.goal = null; }
   near() { const st = STATIONS.find((q) => Math.abs(this.x - q.x) < 0.045); return st ? st.id : null; }
-  use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'hatch' ? 'gallery' : n); }
+  use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'tank' ? 'gallery' : n); }
+  atTank() { this.x = ROOM.tank; this.face = 1; this.keys.clear(); this.goal = null; }
   atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; this.keys.clear(); }
   update(dt) {
     this.t += dt;
@@ -189,33 +192,34 @@ export class Cabin {
     ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(mx0, floor + 6, mw, 1.5); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(mx0, floor + 6 + mh, mw, 3);
     ctx.fillStyle = '#1a120a'; ctx.fillRect(0, floor - 6, W, 6); // the skirting
     const ao2 = ctx.createLinearGradient(0, floor - 40 * k, 0, floor); ao2.addColorStop(0, 'rgba(8,4,0,0)'); ao2.addColorStop(1, 'rgba(8,4,0,0.45)'); ctx.fillStyle = ao2; ctx.fillRect(0, floor - 40 * k, W, 34 * k);
-    // ---------- the hatch in the floor, down to the gallery: a square of planks, a brass ring, two hinges ----------
-    {
-      const hx = X(ROOM.hatch), hw = 120 * k, ht = (H - floor) * 0.42, hy = floor + 10 * k, sk = 22 * k; // drawn as the floor recedes: narrower at the back
-      ctx.fillStyle = 'rgba(8,4,0,0.65)'; ctx.beginPath(); ctx.moveTo(hx - hw / 2 + sk, hy); ctx.lineTo(hx + hw / 2 - sk, hy); ctx.lineTo(hx + hw / 2, hy + ht); ctx.lineTo(hx - hw / 2, hy + ht); ctx.closePath(); ctx.fill();
-      const hg = ctx.createLinearGradient(0, hy, 0, hy + ht); hg.addColorStop(0, '#4a321c'); hg.addColorStop(1, '#5e4228');
-      ctx.fillStyle = hg; ctx.beginPath(); ctx.moveTo(hx - hw / 2 + sk + 3, hy + 3); ctx.lineTo(hx + hw / 2 - sk - 3, hy + 3); ctx.lineTo(hx + hw / 2 - 4, hy + ht - 3); ctx.lineTo(hx - hw / 2 + 4, hy + ht - 3); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = 'rgba(8,4,0,0.45)'; ctx.lineWidth = 1; for (let i = 1; i < 4; i++) { const q = i / 4; ctx.beginPath(); ctx.moveTo(hx - hw / 2 + sk + 3 + q * (hw - 2 * sk - 6), hy + 3); ctx.lineTo(hx - hw / 2 + 4 + q * (hw - 8), hy + ht - 3); ctx.stroke(); }
-      ctx.fillStyle = 'rgba(255,222,176,0.1)'; ctx.fillRect(hx - hw / 2 + sk + 3, hy + 3, hw - 2 * sk - 6, 1.5);
-      ctx.strokeStyle = brass(hx - 10 * k, hy, hx + 10 * k, hy + ht); ctx.lineWidth = 2.6 * k; ctx.beginPath(); ctx.ellipse(hx, hy + ht * 0.55, 9 * k, 4.5 * k, 0, 0, TAU); ctx.stroke(); // the ring
-      ctx.fillStyle = '#2a2a28'; ctx.fillRect(hx - hw / 2 + sk + 8 * k, hy + 1, 14 * k, 4 * k); ctx.fillRect(hx + hw / 2 - sk - 22 * k, hy + 1, 14 * k, 4 * k); // the hinges
+    // ---------- the door, at the left (2.6.8: made plain to see): a painted steel weathertight door, its
+    // rounded frame, two dog levers and a brass handle; daylight through its window; "DECK" lit over it ----------
+    const dx = X(ROOM.door), dh = RH * 0.84, dw = 108 * k, dTopY = floor - dh, dr = 16 * k;
+    ctx.fillStyle = '#0a0705'; ctx.beginPath(); ctx.roundRect(dx - dw / 2 - 12 * k, dTopY - 12 * k, dw + 24 * k, dh + 12 * k, [dr + 10 * k, dr + 10 * k, 0, 0]); ctx.fill(); // the opening
+    const fr = ctx.createLinearGradient(dx - dw / 2 - 10 * k, 0, dx + dw / 2 + 10 * k, 0); fr.addColorStop(0, '#6a7a72'); fr.addColorStop(0.5, '#56665e'); fr.addColorStop(1, '#3a4842');
+    ctx.fillStyle = fr; ctx.beginPath(); ctx.roundRect(dx - dw / 2 - 9 * k, dTopY - 9 * k, dw + 18 * k, dh + 9 * k, [dr + 8 * k, dr + 8 * k, 0, 0]); ctx.fill(); // the steel frame
+    ctx.fillStyle = '#0c0805'; ctx.beginPath(); ctx.roundRect(dx - dw / 2 - 2, dTopY - 2, dw + 4, dh + 2, [dr + 2, dr + 2, 0, 0]); ctx.fill();
+    const dg = ctx.createLinearGradient(dx - dw / 2, 0, dx + dw / 2, 0); dg.addColorStop(0, '#5f8a78'); dg.addColorStop(0.45, '#557e6c'); dg.addColorStop(1, '#3c5c4e');
+    ctx.fillStyle = dg; ctx.beginPath(); ctx.roundRect(dx - dw / 2, dTopY, dw, dh, [dr, dr, 0, 0]); ctx.fill(); // the door leaf, ship's green
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2 * k; ctx.beginPath(); ctx.roundRect(dx - dw / 2 + 9 * k, dTopY + 9 * k, dw - 18 * k, dh - 18 * k, [dr - 6 * k, dr - 6 * k, 3 * k, 3 * k]); ctx.stroke(); // the pressed rim
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2 * k; ctx.beginPath(); ctx.roundRect(dx - dw / 2 + 11 * k, dTopY + 11 * k, dw - 22 * k, dh - 22 * k, [dr - 8 * k, dr - 8 * k, 3 * k, 3 * k]); ctx.stroke();
+    ctx.fillStyle = 'rgba(30,20,10,0.25)'; for (let i = 0; i < 9; i++) ctx.fillRect(dx - dw / 2 + ((i * 37) % 90) * k, floor - (8 + (i * 13) % 30) * k, (4 + i % 3) * k, 2 * k); // scuffs at the foot
+    for (const ly of [dTopY + dh * 0.3, dTopY + dh * 0.72]) { // the dogs: two levers on the latch side
+      ctx.fillStyle = '#2a2a28'; ctx.beginPath(); ctx.arc(dx + dw / 2 - 16 * k, ly, 6 * k, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#2e302c'; ctx.lineWidth = 6 * k; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(dx + dw / 2 - 16 * k, ly); ctx.lineTo(dx + dw / 2 - 40 * k, ly + 10 * k); ctx.stroke(); ctx.lineCap = 'butt';
     }
-    // ---------- the door, at the left: back out on deck, daylight round its edges ----------
-    const dx = X(ROOM.door), dh = RH * 0.82, dw = 92 * k, dTopY = floor - dh;
-    ctx.fillStyle = '#0c0805'; ctx.fillRect(dx - dw / 2 - 3, dTopY - 3, dw + 6, dh + 3); // the frame's shadow; the daylight through its gap is added after the light
-    const dg = ctx.createLinearGradient(dx - dw / 2, 0, dx + dw / 2, 0); dg.addColorStop(0, '#7a644c'); dg.addColorStop(0.5, '#6e5a44'); dg.addColorStop(1, '#54442f');
-    ctx.fillStyle = dg; ctx.fillRect(dx - dw / 2, dTopY, dw, dh);
-    for (const [py0, ph0] of [[dTopY + 10 * k, dh * 0.42], [floor - dh * 0.5, dh * 0.42]]) { // two sunk panels, lit from above
-      const px0 = dx - dw / 2 + 8 * k, pw0 = dw - 16 * k;
-      ctx.fillStyle = 'rgba(0,0,0,0.13)'; ctx.fillRect(px0, py0, pw0, ph0);
-      ctx.fillStyle = 'rgba(8,4,0,0.35)'; ctx.fillRect(px0, py0, pw0, 2.5); ctx.fillRect(px0, py0, 2, ph0);
-      ctx.fillStyle = 'rgba(255,230,190,0.1)'; ctx.fillRect(px0, py0 + ph0 - 2, pw0, 2); ctx.fillRect(px0 + pw0 - 2, py0, 2, ph0);
-    }
-    const gy0 = dTopY + dh * 0.26, gr0 = 17 * k; // its little window, the day outside it
-    const gl = ctx.createLinearGradient(0, gy0 - gr0, 0, gy0 + gr0); gl.addColorStop(0, `rgb(${Math.round(60 + 120 * dayK)},${Math.round(80 + 130 * dayK)},${Math.round(100 + 130 * dayK)})`); gl.addColorStop(1, `rgb(${Math.round(30 + 90 * dayK)},${Math.round(50 + 110 * dayK)},${Math.round(70 + 110 * dayK)})`);
+    ctx.fillStyle = brass(0, floor - dh * 0.5, 0, floor - dh * 0.5 + 8 * k); ctx.beginPath(); ctx.roundRect(dx + dw / 2 - 30 * k, floor - dh * 0.5, 22 * k, 8 * k, 3 * k); ctx.fill(); // the handle
+    const gy0 = dTopY + dh * 0.2, gr0 = 21 * k; // its window, the day outside it
+    const gl = ctx.createLinearGradient(0, gy0 - gr0, 0, gy0 + gr0); gl.addColorStop(0, `rgb(${Math.round(70 + 140 * dayK)},${Math.round(90 + 140 * dayK)},${Math.round(110 + 135 * dayK)})`); gl.addColorStop(1, `rgb(${Math.round(40 + 110 * dayK)},${Math.round(60 + 120 * dayK)},${Math.round(80 + 120 * dayK)})`);
     ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(dx, gy0, gr0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = brass(dx - gr0, gy0 - gr0, dx + gr0, gy0 + gr0); ctx.lineWidth = 5 * k; ctx.stroke();
-    ctx.fillStyle = brass(0, floor - dh * 0.48, 0, floor - dh * 0.48 + 5 * k); ctx.fillRect(dx + dw / 2 - 18 * k, floor - dh * 0.48, 10 * k, 5 * k);
+    ctx.strokeStyle = brass(dx - gr0, gy0 - gr0, dx + gr0, gy0 + gr0); ctx.lineWidth = 6 * k; ctx.stroke();
+    // the sign over it: an enamel plate, lit, "DECK" and an arrow out
+    const sgW = 96 * k, sgH = 26 * k, sgY = dTopY - 46 * k;
+    ctx.fillStyle = '#0a0705'; ctx.fillRect(dx - sgW / 2 + 2 * k, sgY + 3 * k, sgW, sgH);
+    ctx.fillStyle = '#1e6a3a'; ctx.beginPath(); ctx.roundRect(dx - sgW / 2, sgY, sgW, sgH, 4 * k); ctx.fill();
+    ctx.strokeStyle = '#e6d8b8'; ctx.lineWidth = 1.6 * k; ctx.beginPath(); ctx.roundRect(dx - sgW / 2 + 3 * k, sgY + 3 * k, sgW - 6 * k, sgH - 6 * k, 3 * k); ctx.stroke();
+    ctx.fillStyle = '#f2e6c8'; ctx.font = `700 ${13 * k}px ui-monospace, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('\u2190 DECK', dx, sgY + sgH / 2 + 1); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    this.doorSign = [dx, sgY + sgH / 2];
     // ---------- oilskins and a sou'wester on a hook by the door ----------
     const ox = X(0.165), oy = ceil + RH * 0.24;
     shadow(ox, oy, 6, 0.5); ctx.fillStyle = '#2a1d10'; ctx.fillRect(ox - 30 * k, oy - 6 * k, 60 * k, 6 * k); noShadow();
@@ -362,7 +366,7 @@ export class Cabin {
     noShadow();
     ctx.fillStyle = '#fff0c8'; ctx.beginPath(); ctx.arc(kx + 79 * k, dTop - 63 * k, 3 * k, 0, Math.PI); ctx.fill();
     // ---------- the right-hand bulkhead: a fuse panel, a life jacket, a fire extinguisher ----------
-    const rx = X(0.885);
+    const rx = X(0.868); // (2.6.8: moved along for the aquarium)
     shadow(rx, ceil + RH * 0.2, 8, 0.55);
     const fpg = ctx.createLinearGradient(rx - 26 * k, 0, rx + 26 * k, 0); fpg.addColorStop(0, '#5a5e62'); fpg.addColorStop(1, '#383c40');
     ctx.fillStyle = fpg; ctx.fillRect(rx - 26 * k, ceil + RH * 0.16, 52 * k, 70 * k); noShadow();
@@ -377,12 +381,55 @@ export class Cabin {
     ctx.fillStyle = '#b8401a'; ctx.fillRect(-2 * k, 4 * k, 4 * k, 66 * k);
     ctx.fillStyle = '#d8d4ca'; ctx.fillRect(-24 * k, 26 * k, 48 * k, 5 * k); ctx.fillRect(-24 * k, 48 * k, 48 * k, 5 * k);
     ctx.restore();
-    const fx2 = X(0.935), fTop = floor - 110 * k;
+    const fx2 = X(0.843), fTop = floor - 110 * k; // (2.6.8: moved along for the aquarium)
     shadow(fx2, fTop + 40 * k, 10, 0.55);
     const exg = ctx.createLinearGradient(fx2 - 13 * k, 0, fx2 + 13 * k, 0); exg.addColorStop(0, '#9a1c14'); exg.addColorStop(0.3, '#d0342a'); exg.addColorStop(0.5, '#b8241a'); exg.addColorStop(1, '#5e100a');
     ctx.fillStyle = exg; ctx.beginPath(); ctx.roundRect(fx2 - 13 * k, fTop, 26 * k, 96 * k, 9 * k); ctx.fill(); noShadow();
     ctx.fillStyle = '#d8d4ca'; ctx.fillRect(fx2 - 13 * k, fTop + 30 * k, 26 * k, 16 * k); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(fx2 - 6 * k, fTop - 12 * k, 12 * k, 12 * k); ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3 * k; ctx.beginPath(); ctx.moveTo(fx2 + 6 * k, fTop - 6 * k); ctx.quadraticCurveTo(fx2 + 24 * k, fTop, fx2 + 16 * k, fTop + 30 * k); ctx.stroke();
     ctx.fillStyle = '#5a5e62'; ctx.fillRect(fx2 - 16 * k, fTop + 60 * k, 32 * k, 4 * k);
+    // ---------- the aquarium (2.6.8): a lit tank on a wooden stand, the animals kept in it swimming ----------
+    {
+      const tx = X(ROOM.tank), tw = 170 * k, sh = RH * 0.27, gh = RH * 0.3, gb = floor - sh, gt = gb - gh;
+      contact(tx, floor + 4 * k, tw * 0.6, 7 * k, 0.6);
+      shadow(tx, floor - sh * 0.5, 10, 0.5);
+      const sg = ctx.createLinearGradient(tx - tw / 2, 0, tx + tw / 2, 0); sg.addColorStop(0, '#4a3018'); sg.addColorStop(0.5, '#3e2812'); sg.addColorStop(1, '#2a1a0a');
+      ctx.fillStyle = sg; ctx.fillRect(tx - tw / 2 - 4 * k, gb + 6 * k, tw + 8 * k, sh - 6 * k); noShadow(); // the stand
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(tx - 1, gb + 14 * k, 2, sh - 20 * k);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5; ctx.strokeRect(tx - tw / 2 + 6 * k, gb + 14 * k, tw / 2 - 10 * k, sh - 20 * k); ctx.strokeRect(tx + 4 * k, gb + 14 * k, tw / 2 - 10 * k, sh - 20 * k);
+      ctx.fillStyle = brass(0, 0, 0, 6 * k); ctx.fillRect(tx - 12 * k, gb + sh * 0.5, 5 * k, 10 * k); ctx.fillRect(tx + 7 * k, gb + sh * 0.5, 5 * k, 10 * k); // knobs
+      ctx.fillStyle = '#1a1a18'; ctx.fillRect(tx - tw / 2 - 2 * k, gb, tw + 4 * k, 7 * k); // the base rim
+      // the water
+      const L0 = this.h.light ? this.h.light() : 'day';
+      const wc = L0 === 'red' ? ['#5a1e20', '#2a0c0e'] : L0 === 'dim' ? ['#1e5464', '#0a2832'] : ['#4ab0c8', '#1a6478'];
+      const wg = ctx.createLinearGradient(0, gt, 0, gb); wg.addColorStop(0, wc[0]); wg.addColorStop(1, wc[1]);
+      ctx.fillStyle = wg; ctx.fillRect(tx - tw / 2, gt, tw, gh);
+      ctx.save(); ctx.beginPath(); ctx.rect(tx - tw / 2, gt, tw, gh); ctx.clip();
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'; for (let i = 0; i < 4; i++) { const bx = tx - tw / 2 + (0.15 + i * 0.24) * tw + Math.sin(t * 0.4 + i) * 6 * k; ctx.beginPath(); ctx.moveTo(bx, gt); ctx.lineTo(bx + 14 * k, gt); ctx.lineTo(bx + 30 * k, gb); ctx.lineTo(bx + 18 * k, gb); ctx.fill(); } // light shafts
+      ctx.fillStyle = '#a89470'; ctx.beginPath(); ctx.moveTo(tx - tw / 2, gb); for (let x = 0; x <= tw; x += 10 * k) ctx.lineTo(tx - tw / 2 + x, gb - 9 * k - Math.sin(x / (30 * k)) * 3 * k); ctx.lineTo(tx + tw / 2, gb); ctx.fill(); // sand
+      ctx.fillStyle = '#5e5446'; ctx.beginPath(); ctx.ellipse(tx + tw * 0.24, gb - 10 * k, 26 * k, 18 * k, 0, Math.PI, TAU); ctx.fill(); // a rock
+      ctx.strokeStyle = '#5f9a3a'; ctx.lineWidth = 2.5 * k; ctx.lineCap = 'round';
+      for (let i = 0; i < 6; i++) { const x = tx - tw * 0.38 + i * 6 * k, h = gh * (0.35 + (i % 3) * 0.12), sw = Math.sin(t * 0.9 + i) * 5 * k; ctx.beginPath(); ctx.moveTo(x, gb - 6 * k); ctx.quadraticCurveTo(x + sw * 0.5, gb - h * 0.5, x + sw, gb - h); ctx.stroke(); }
+      ctx.lineCap = 'butt';
+      // the animals kept in it: each swims slowly back and forth at its own depth
+      const fish = (this.h.tankFish ? this.h.tankFish() : []).slice(0, 10);
+      fish.forEach((d, i) => {
+        const sp = SPECIES_BY_ID[d.id]; if (!sp) return;
+        const L = clamp((d.len || sp.len) * 90 * k, 14 * k, 54 * k), dead = (d.cond ?? 1) <= 0.05;
+        const span = tw / 2 - L * 0.7, ph = t * (0.12 + (i % 4) * 0.03) + i * 1.7, xq = Math.sin(ph), dir = Math.cos(ph) >= 0 ? 1 : -1;
+        const fy = dead ? gt + 10 * k : gt + gh * (0.22 + ((i * 0.37) % 0.6)) + Math.sin(t * 0.7 + i) * 3 * k;
+        ctx.save(); ctx.translate(tx + xq * span, fy); if (dir > 0) ctx.scale(-1, 1); if (dead) ctx.rotate(Math.PI);
+        try { drawSpecies(ctx, sp, L, t * 2 + i, dead ? 0 : 0.8, 0); } catch (e) { /* a shape that cannot be drawn this small */ }
+        ctx.restore();
+      });
+      ctx.fillStyle = 'rgba(230,245,255,0.35)'; for (let i = 0; i < 7; i++) { const bx = tx + tw * 0.4 + Math.sin(t * 2 + i) * 2 * k, by = gb - ((t * 30 * k + i * 23 * k) % gh); ctx.beginPath(); ctx.arc(bx, by, (1.2 + (i % 3) * 0.6) * k, 0, TAU); ctx.fill(); } // the air stone's bubbles
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(tx - tw / 2, gt + 4 * k, tw, 2 * k); // the waterline
+      ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(tx - tw / 2 + 8 * k, gt); ctx.lineTo(tx - tw / 2 + 22 * k, gt); ctx.lineTo(tx - tw / 2 + 4 * k, gb); ctx.lineTo(tx - tw / 2, gb); ctx.fill(); // a glint on the glass
+      ctx.strokeStyle = '#141412'; ctx.lineWidth = 5 * k; ctx.strokeRect(tx - tw / 2, gt, tw, gh); // the frame
+      shadow(tx, gt - 8 * k, 6, 0.5); ctx.fillStyle = '#1e1e1c'; ctx.fillRect(tx - tw / 2 - 5 * k, gt - 14 * k, tw + 10 * k, 14 * k); noShadow(); // the hood, its lamp inside
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(tx - tw / 2 - 5 * k, gt - 14 * k, tw + 10 * k, 1.5);
+      this.tankAt = [tx, gt, tw, gh];
+    }
     // ---------- the front of the wheelhouse (2.5.0): the radio, the windows on the sea, the wheel ----------
     if (X(1.0) < W + 50) {
       // the radio on its shelf: a grey-green set, an amber dial, two knobs, a speaker grille, the handset on its hook
@@ -473,6 +520,8 @@ export class Cabin {
     const dl = 0.08 + 0.4 * dayK;
     pool(px, py, pr * 3.2, '150,180,215', dl); pool(px + 20 * k, floor + 10 * k, pr * 2.4, '150,180,215', dl * 0.5, 0.3); // the porthole, and its light on the floor
     pool(dx, floor - dh * 0.45, dw * 1.6, '150,175,205', dl * 0.75, 1.6);
+    if (this.tankAt) { const [tx, gt, tw, gh] = this.tankAt; pool(tx, gt + gh * 0.5, tw * 1.1, '120,200,230', 0.75, 0.75); pool(tx, gt + gh * 0.5, tw * 0.55, '160,220,240', 0.5, 0.6); } // (2.6.8) the aquarium's own light
+    if (this.doorSign) pool(this.doorSign[0], this.doorSign[1], 70 * k, '140,230,170', 0.45, 0.6); // the lit DECK sign
     pool(kx, dTop - 56 * k, 150 * k, '90,210,130', on ? 0.5 : 0.36); // the screen
     pool(kx + 78 * k, dTop - 10 * k, 120 * k, '255,200,130', 0.55, 0.6); // the desk lamp on the desktop
     pool(lx2, ly + RH * 0.4, RH * 0.85, '255,190,120', 0.6, 0.8); pool(lx2, ly + 20 * k, RH * 0.25, '255,206,150', 0.4); // the lamp over the wheel
@@ -481,6 +530,8 @@ export class Cabin {
     ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(lc, 0, 0, W, H);
     ctx.globalCompositeOperation = 'lighter'; // a little bloom round what glows
     const bloom = (x, y, r, col, a) => { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
+    if (this.tankAt) bloom(this.tankAt[0], this.tankAt[1] + this.tankAt[3] * 0.4, this.tankAt[2] * 0.6, '120,200,230', 0.12);
+    if (this.doorSign) bloom(this.doorSign[0], this.doorSign[1], 60 * k, '120,230,150', 0.14);
     bloom(lx, ly + 3 * k, 26 * k, '255,220,160', 0.55); bloom(lx2, ly + 3 * k, 22 * k, '255,220,160', 0.45); bloom(X(ROOM.radio) - 22 * k, ceil + RH * 0.4 + 19 * k, 30 * k, '255,190,90', 0.3); bloom(kx, dTop - 56 * k, 70 * k, '80,200,120', on ? 0.16 : 0.1); bloom(kx + 79 * k, dTop - 62 * k, 16 * k, '255,220,160', 0.4);
     // daylight: through the gap round the door, and the porthole's glass bright against the dim room
     const dc = `${Math.round(120 + 90 * dayK)},${Math.round(140 + 90 * dayK)},${Math.round(160 + 80 * dayK)}`, da = 0.1 + 0.45 * dayK;

@@ -1155,3 +1155,15 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .sell-row.kept .sell-name, .sell-row.kept .sell-item b { text-decoration: line-through; text-decoration-thickness: 1.5px; }
 .sell-keep.on { color: #cfe8b8; text-decoration: none; font-style: normal; }
 .sell-keep.on::before { content: '✓ '; }
+
+/* (2.6.8) the aquarium's right-hand column: the catch aboard, one button each to put it into the tank */
+.gl-catch { position: absolute; right: 2.5vw; top: 12vh; width: 19vw; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.gl-catch h4 { margin: 0 0 4px; font: 11px var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: #c8b07a; }
+.gl-catch p { margin: 6px 0 0; font: italic 14px var(--serif); color: rgba(220,210,180,0.6); }
+.gl-catch button { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; padding: 8px 10px; text-align: left; background: rgba(255,255,255,0.04); border: 1px solid rgba(200,176,122,0.25); border-radius: 3px; color: #e8e0c8; font: 15px var(--serif); cursor: pointer; }
+.gl-catch button::before { content: '+'; font: 600 14px var(--mono); color: #9ad0e0; }
+.gl-catch button:hover:not(:disabled) { background: rgba(120,190,220,0.12); border-color: rgba(154,208,224,0.6); }
+.gl-catch button:disabled { opacity: 0.4; cursor: default; }
+.gl-catch button:disabled::before { content: '·'; }
+.gl-catch button small { font: 11px var(--mono); color: rgba(220,210,180,0.6); }
+.gl-catch button.kept small:first-of-type { color: #cfe8b8; }

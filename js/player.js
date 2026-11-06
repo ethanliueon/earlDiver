@@ -125,7 +125,7 @@ export function updateEarl(g, dt, inp) {
     e.speedNow = Math.hypot(e.vx, e.vy);
     // orientation: swim horizontally when moving, upright when idle
     // he turns only when the player steers left or right
-    if (inp.x) e.facing = inp.x > 0 ? 1 : -1;
+    if (Math.abs(inp.x) > 0.15) e.facing = inp.x > 0 ? 1 : -1; // (2.6.8) a real push left or right: the mouse straight above or below him gives only a flicker of x, which used to flip him back and forth many times a second
     else if (Math.abs(e.vx) > 1.2) e.facing = e.vx > 0 ? 1 : -1; // pushed hard (e.g. knocked) - rare
     const moving = e.speedNow > 0.6;
     let target;

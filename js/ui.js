@@ -74,8 +74,8 @@ export class UI {
     $('workshop-close').addEventListener('click', () => this.toggleWorkshop(false));
     $('cave-close').addEventListener('click', () => this.toggleCave(false));
     this.caveTab = 'trade';
-    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.toggleCatalog(true), station: (id) => h.onStation && h.onStation(id), footstep: (v) => h.onFootstep && h.onFootstep(v), blocked: () => !$('workshop').hidden || !$('catalog').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
-    this.gallery = new Gallery($('gallery'), { act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
+    this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.toggleCatalog(true), station: (id) => h.onStation && h.onStation(id), footstep: (v) => h.onFootstep && h.onFootstep(v), tankFish: () => { const P0 = h.getProfile && h.getProfile(); return P0 ? Object.values(aquariumOf(P0).display) : []; }, light: () => { const P0 = h.getProfile && h.getProfile(); return P0 ? aquariumOf(P0).light || 'day' : 'day'; }, blocked: () => !$('workshop').hidden || !$('catalog').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
+    this.gallery = new Gallery($('gallery'), { catch: () => (h.aquariumCatch ? h.aquariumCatch() : []), act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
     this.catalog = new Catalog($('catalog'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
@@ -130,14 +130,15 @@ export class UI {
       else if (act === 'buy') h.onBuy(arg);
       else if (act === 'take') { h.onTakeContract(arg); }
       else if (act === 'refresh') { h.onRefreshContracts(); }
-      else if (act === 'sellall') { const sale = h.onSellAll([...this.keptSet()]); if (sale) this.showLedger(sale); }
+      else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
       else if (act === 'tobasket') { (this.sellPick || (this.sellPick = new Set())).add(arg); }
       else if (act === 'frombasket') { this.sellPick && this.sellPick.delete(arg); }
-      else if (act === 'sellpick') { const sale = h.onSellSome([...(this.sellPick || [])], [...this.keptSet()]); this.sellPick = new Set(); if (sale) this.showLedger(sale); }
-      // (2.6.7) Keep only marks it: it stays in the list, darkened and crossed out, and is left out of every
-      // sale; pressed again, it is back. The kept animals go to the gallery when the window is closed.
-      else if (act === 'keep') this.keptSet().add(arg);
-      else if (act === 'unkeep') this.keptSet().delete(arg);
+      else if (act === 'sellpick') { const sale = h.onSellSome([...(this.sellPick || [])]); this.sellPick = new Set(); if (sale) this.showLedger(sale); }
+      // (2.6.8) Keep only marks it (on the animal itself): it stays in the catch and in this list, darkened and
+      // crossed out, and every sale leaves it alone; pressed again, it is back. Into the aquarium it goes only
+      // when the player walks to the aquarium and puts it in.
+      else if (act === 'keep') h.onKeep(arg, true);
+      else if (act === 'unkeep') h.onKeep(arg, false);
       else if (act === 'gallery') { this.toggleGallery(true); return; }
       else if (act === 'sellitem') { const sale = h.onSellItem(arg); if (sale) this.showLedger(sale); }
       this.renderWorkshop();
@@ -383,7 +384,11 @@ export class UI {
   }
   toggleGallery(force) {
     const el = $('gallery'), open = force === undefined ? el.hidden : force;
+    const was = !el.hidden;
     el.hidden = !open;
+    // (2.6.8) from the cabin's aquarium: the cabin steps aside while it is open, and he is back at the tank after
+    if (open && !$('cabin').hidden) { this.galleryFromCabin = true; $('cabin').hidden = true; }
+    if (!open && was && this.galleryFromCabin) { this.galleryFromCabin = false; const g0 = this.h.getGame(); if (g0 && g0.aboard) { $('cabin').hidden = false; this.cabin.atTank && this.cabin.atTank(); } }
     if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.gallery.show(); }
   }
   // ---------- setting a trap: which one, and how deep (a depth meter in whole metres) ----------
@@ -540,7 +545,7 @@ export class UI {
     $('newgame').hidden = !p; $('newgame').textContent = 'New game'; this.confirmNew = false;
     const best = loadBest();
     if (!p) { el.innerHTML = best ? `<div class="save-line"><span>deepest ever ${best} m</span></div>` : ''; return; }
-    let html = `<div class="save-line"><b>${money(p.cash, false)}</b><span>${p.runs || 1} dive${(p.runs || 1) > 1 ? 's' : ''}</span><span>deepest ${p.deepest || 0} m${best > (p.deepest || 0) ? ` (ever ${best} m)` : ''}</span><span>${(p.journal || []).length} species recorded</span>${p.aquarium && Object.keys(p.aquarium.display || {}).length ? `<span>gallery: ${completion(p).species} species, ${completion(p).rare} rare</span>` : ''}</div>`;
+    let html = `<div class="save-line"><b>${money(p.cash, false)}</b><span>${p.runs || 1} dive${(p.runs || 1) > 1 ? 's' : ''}</span><span>deepest ${p.deepest || 0} m${best > (p.deepest || 0) ? ` (ever ${best} m)` : ''}</span><span>${(p.journal || []).length} species recorded</span>${p.aquarium && Object.keys(p.aquarium.display || {}).length ? `<span>aquarium: ${completion(p).species} species, ${completion(p).rare} rare</span>` : ''}</div>`;
     if (last && last.bill !== undefined) {
       const lost = last.lost && last.lost.length ? `Lost: ${last.lost.join(', ')}.` : '';
       html += `<div class="save-death">${last.cause}. ${last.bill > 0 ? `Hospital bill ${money(last.bill)}.` : ''} ${lost}</div>`;
@@ -559,12 +564,10 @@ export class UI {
     else this.blurTyping();
   }
   // allowed: the tabs this place offers (selling from the water: Sell only; a station aboard: its own); null for all
-  keptSet() { return this.sellKeep || (this.sellKeep = new Set()); }
   toggleWorkshop(force, allowed = null) {
     const el = $('workshop');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
-    if (!open && this.sellKeep && this.sellKeep.size) { const ks = [...this.sellKeep]; this.sellKeep = new Set(); for (const k of ks) this.h.onDisplay(k); }
     if (open) {
       this.shopAllowed = allowed;
       document.querySelectorAll('.shop-tabs button[data-shop]').forEach((b) => { b.hidden = !!allowed && !allowed.includes(b.dataset.shop); });
@@ -676,22 +679,16 @@ export class UI {
       const items = []; // { key, html, value, keep }
       const groups = new Map();
       for (const sp of g.bag.concat(atBoat ? g.subTank : [])) { const k = sp.id + ':' + (sp.variant || ''); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sp); }
-      const kept = this.keptSet();
-      const A = aquariumOf(P), freeSlots = gallerySlots(P) - Object.keys(A.display).length;
-      for (const k of [...kept]) if (!groups.has(k.includes(':') ? k : k + ':')) kept.delete(k); // sold or gone
       for (const [gk, list] of groups) {
         const [id, v] = gk.split(':'), spc = SPECIES_BY_ID[id], dk = gk.replace(/:$/, '');
-        const best = list.reduce((a, x) => (x.cond > a.cond ? x : a), list[0]);
-        const isKept = kept.has(dk);
-        const rest = isKept ? list.filter((x) => x !== best) : list; // what is left to sell
+        const keptL = list.filter((x) => x.kept), rest = list.filter((x) => !x.kept); // what is left to sell
         const pay = statValue(P, 'payFish');
         const name = (L) => { const worst = L.reduce((a, x) => Math.min(a, x.cond), 1), cn = conditionName(worst); return `${this.mini(spc)}<span class="sell-name">${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${spc.name}${worst < 0.7 ? ` <em class="cond c-${cn}">${cn}</em>` : ''}</span>` + (L.length > 1 ? `<span class="sell-n">×${L.length}</span>` : ''); };
-        // the Keep button: only for an animal the gallery can take (counting the ones already marked)
-        const canKeep = !displayRefusal(P, best) && freeSlots - kept.size > 0;
-        const keepBtn = isKept ? `<button class="sell-keep on" data-sell="unkeep" data-arg="${dk}" title="Sell it after all">Keep</button>`
-          : canKeep ? `<button class="sell-keep" data-sell="keep" data-arg="${dk}" title="Keep it for the gallery instead of selling it">Keep</button>` : '';
-        if (rest.length) items.push({ key: 'sp:' + gk, value: rest.reduce((a, x) => a + specimenValue(x), 0) * pay, keep: isKept ? '' : keepBtn, html: name(rest) });
-        if (isKept) items.push({ key: 'kept:' + dk, value: specimenValue(best) * pay, keep: keepBtn, kept: true, html: name([best]) });
+        const canKeep = rest.some((x) => x.cond > 0.05); // a live one (the dead can only be sold)
+        const keepBtn = canKeep ? `<button class="sell-keep" data-sell="keep" data-arg="${dk}" title="Hold it back from the sale (put it in the aquarium at the aquarium)">Keep</button>` : '';
+        if (rest.length) items.push({ key: 'sp:' + gk, value: rest.reduce((a, x) => a + specimenValue(x), 0) * pay, keep: keepBtn, html: name(rest) });
+        if (keptL.length) items.push({ key: 'kept:' + dk, value: keptL.reduce((a, x) => a + specimenValue(x), 0) * pay, kept: true, html: name(keptL),
+          keep: `<button class="sell-keep on" data-sell="unkeep" data-arg="${dk}" title="Sell it after all">Keep</button>` });
       }
       const tg = new Map();
       for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
@@ -702,7 +699,7 @@ export class UI {
       if (!items.length) html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
       else {
         const total = items.reduce((a, it) => a + (it.kept ? 0 : it.value), 0), inB = items.filter((it) => pick.has(it.key)), bTotal = inB.reduce((a, it) => a + it.value, 0);
-        const row = (it, act) => it.kept ? `<div class="sell-row kept"><div class="sell-item" title="Kept for the gallery">${it.html}<b>${money(it.value)}</b></div>${it.keep}</div>`
+        const row = (it, act) => it.kept ? `<div class="sell-row kept"><div class="sell-item" title="Kept: not for sale">${it.html}<b>${money(it.value)}</b></div>${it.keep}</div>`
           : `<div class="sell-row"><button class="sell-item" data-sell="${act}" data-arg="${it.key}">${it.html}<b>${money(it.value)}</b></button>${act === 'tobasket' ? it.keep || '' : ''}</div>`;
         html += `<button class="primary go" data-act="sellall" ${total > 0 ? '' : 'disabled'}>Sell all<span>${money(total)}</span></button>`;
         html += `<div class="sell-cols"><div class="sell-col"><h4>Your catch</h4>${items.filter((it) => !pick.has(it.key)).map((it) => row(it, 'tobasket')).join('') || '<p class="shop-empty">All in the basket.</p>'}</div>`;
@@ -763,9 +760,9 @@ export class UI {
       html += this.upgradeGroups(P, ['Buyers'], icon, can); // (2.6.0) better buyers, found on the radio
     } else if (tab === 'aquarium') {
       const A = aquariumOf(P), C = completion(P), list = Object.entries(A.display), slots = gallerySlots(P);
-      html += `<div class="aq-head"><div><b>${list.length}<small>/${slots}</small></b><span>in the gallery</span></div><div><b>${C.species}</b><span>of ${C.of} species kept</span></div><div><b>${visitors(P)}</b><span>visitors a day</span></div><div><b>${list.length ? money(dailyIncome(P), false) : '—'}</b><span>a day in tickets</span></div></div>`;
-      html += `<button class="primary" data-act="gallery" data-arg="">Walk the gallery<span>pet, feed, name, sell or release them</span></button>`;
-      if (!list.length) html += `<p class="shop-empty">Four tanks set into the Margaret's bulkhead, waiting. Keep a live animal here instead of selling it (the button under it on the Sell tab): healthy, it becomes Happy after 5 minutes (sells for ×1.2), and 15 minutes later it earns the Famous tag (×2 more). Visitors leave a little money each day.</p>`;
+      html += `<div class="aq-head"><div><b>${list.length}<small>/${slots}</small></b><span>in the aquarium</span></div><div><b>${C.species}</b><span>of ${C.of} species kept</span></div><div><b>${visitors(P)}</b><span>visitors a day</span></div><div><b>${list.length ? money(dailyIncome(P), false) : '—'}</b><span>a day in tickets</span></div></div>`;
+      html += `<button class="primary" data-act="gallery" data-arg="">Visit the aquarium<span>put animals in, pet, feed, name, sell or release them</span></button>`;
+      if (!list.length) html += `<p class="shop-empty">The aquarium in the Margaret's cabin is empty. Put a live animal in from your catch at the aquarium itself (Keep on the Sell tab holds one back from a sale): healthy, it becomes Happy after 5 minutes (sells for ×1.2), and 15 minutes later it earns the Famous tag (×2 more). Visitors leave a little money each day.</p>`;
       else {
         const cells = list.map(([, d]) => {
           const sp = SPECIES_BY_ID[d.id], key = 'aq' + d.id;
@@ -777,8 +774,8 @@ export class UI {
         html += `<div class="wing"><div class="wing-h"><b>Aboard</b><em>${list.length}/${slots}</em></div><div class="tanks">${cells}</div></div>`;
       }
       const lvG = P.galleryLv || 0;
-      if (lvG < GALLERY_STEPS.length) html += card('More room in the gallery', 'Another pair of places in the tanks: pumps, chillers and glass.', `room for ${slots} now`, GALLERY_STEPS[lvG], 'buy', 'gallery', 'Fit', '', '', [['places', `${slots} → ${slots + 2}`, 'good']]);
-      else html += '<p class="shop-note">The gallery is as big as the Margaret can hold.</p>';
+      if (lvG < GALLERY_STEPS.length) html += card('More room in the aquarium', 'Another pair of places in the tanks: pumps, chillers and glass.', `room for ${slots} now`, GALLERY_STEPS[lvG], 'buy', 'gallery', 'Fit', '', '', [['places', `${slots} → ${slots + 2}`, 'good']]);
+      else html += '<p class="shop-note">The aquarium is as big as the Margaret can hold.</p>';
       if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets. Earned so far: ${money(A.earned, false)}.</p>`;
     }
     // the showcase window above the list: the selected item (or the recommended one, or the first),

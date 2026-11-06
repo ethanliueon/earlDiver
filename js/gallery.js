@@ -41,8 +41,9 @@ export class Gallery {
   constructor(root, hooks) {
     this.root = root; this.h = hooks; this.t = 0; this.anim = new Map(); this.open = null; this.sig = ''; this.hearts = [];
     root.innerHTML = `<canvas class="tr-canvas"></canvas><div class="tr-over"></div>
-      <div class="tr-plate"><b>The gallery</b><span class="gl-sub"></span></div>
+      <div class="tr-plate"><b>The aquarium</b><span class="gl-sub"></span></div>
       <div class="gl-lights"></div>
+      <div class="gl-catch"></div>
       <button class="tr-close" aria-label="Close">×</button>`;
     this.c = root.querySelector('.tr-canvas'); this.over = root.querySelector('.tr-over');
     root.querySelector('.tr-close').addEventListener('click', () => this.h.close());
@@ -58,6 +59,8 @@ export class Gallery {
       if (act === 'sell' || act === 'tosub') this.open = null;
       this.sig = '';
     });
+    // (2.6.8) the catch: put an animal into the tank from here (the only way in)
+    root.querySelector('.gl-catch').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-place]'); if (b && !b.disabled) { this.h.act('place', b.dataset.place); this.sig = ''; } });
     this.over.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter') { const inp = ev.target.closest('input[data-name]'); if (inp) { this.h.act('rename', inp.dataset.name, inp.value); this.sig = ''; } } });
   }
   show() { this.open = null; this.sig = ''; }
@@ -65,7 +68,7 @@ export class Gallery {
   geometry(P) {
     const W = window.innerWidth, H = window.innerHeight, A = aquariumOf(P);
     // one big tank (2.3.4): every animal together, in ordinary lit water
-    return { W, H, rows: [{ wing: { id: 'all', name: 'The tank' }, x: W * 0.05, y: H * 0.12, w: W * 0.9, h: H * 0.8 }] };
+    return { W, H, rows: [{ wing: { id: 'all', name: 'The tank' }, x: W * 0.04, y: H * 0.12, w: W * 0.72, h: H * 0.8 }] }; // (2.6.8) narrower: the right-hand column holds the catch, to put in
   }
   fishAt(cx, cy) {
     let best = null, bd = 50;
@@ -74,14 +77,21 @@ export class Gallery {
   }
   layout(g, P, G) {
     const A = aquariumOf(P), light = A.light || 'day';
-    const sig = [this.open, light, window.innerWidth, window.innerHeight, Object.entries(A.display).map(([k, d]) => `${k}${d.name}${isHappy(d) ? 'h' : ''}${d.famous ? 'f' : ''}${d.cond <= 0.05 ? 'x' : ''}`).join(','), g.sub.docked ? 'd' : ''].join('|');
+    const cand = this.h.catch ? this.h.catch() : [];
+    const sig = [cand.map((c) => c.where + c.i + c.s.id + (c.s.kept ? 'k' : '') + (c.why || '')).join(','), this.open, light, window.innerWidth, window.innerHeight, Object.entries(A.display).map(([k, d]) => `${k}${d.name}${isHappy(d) ? 'h' : ''}${d.famous ? 'f' : ''}${d.cond <= 0.05 ? 'x' : ''}`).join(','), g.sub.docked ? 'd' : ''].join('|');
     if (sig === this.sig) return;
     this.sig = sig;
     this.root.querySelector('.gl-lights').innerHTML = Object.entries(LIGHTS).map(([k, L]) => `<button data-light="${k}" class="${k === light ? 'on' : ''}">${L.name}</button>`).join('');
     const nShown = Object.keys(A.display).length;
     this.root.querySelector('.gl-sub').textContent = `${nShown} of ${gallerySlots(P)} places · aboard the Margaret`;
+    // the catch aboard, the kept ones first: one button each to put it into the tank
+    const full = nShown >= gallerySlots(P);
+    this.root.querySelector('.gl-catch').innerHTML = !cand.length ? '<h4>Your catch</h4><p>Nothing alive aboard to put in. Bring something up, and Keep it on the Sell tab so it is not sold.</p>' : `<h4>Your catch</h4>` + cand.slice(0, 12).map((c) => {
+      const sp = SPECIES_BY_ID[c.s.id], why = c.why;
+      return `<button data-place="${c.where}:${c.i}" ${why ? `disabled title="${esc(why)}"` : 'title="Put it into the tank"'} class="${c.s.kept ? 'kept' : ''}">${c.s.variant ? `<em class="rarel r-${c.s.variant}">${VARIANTS[c.s.variant].name}</em> ` : ''}${esc(sp.name)}${c.s.kept ? '<small>kept</small>' : ''}${why ? `<small>${esc(why)}</small>` : ''}</button>`;
+    }).join('') + (full ? '<p>The tank is full: sell one, or fit more room at the computer.</p>' : '');
     let html = '';
-    if (!nShown) html += `<div class="gl-empty">The tank is empty. Keep a live animal from the Sell tab and it swims in here.</div>`;
+    if (!nShown) html += `<div class="gl-empty">The tank is empty. Put in a live animal from your catch (on the right).</div>`;
     const d = this.open && A.display[this.open], a = this.open && this.anim.get(this.open);
     if (d && a) {
       const sp = SPECIES_BY_ID[d.id], dead = d.cond <= 0.05;

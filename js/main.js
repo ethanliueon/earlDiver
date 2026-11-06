@@ -146,9 +146,11 @@ const ui = new UI({
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
-  onSellAll: (kept) => withKept(kept, () => sellAll()),
-  onSellSome: (keys, kept) => withKept(kept, () => sellSome(keys)),
+  onSellAll: () => withKept(() => sellAll()),
+  onSellSome: (keys) => withKept(() => sellSome(keys)),
+  onKeep: (key, on) => keepMark(key, on),
   onGallery: (act, key, v) => galleryAction(act, key, v),
+  aquariumCatch: () => aquariumCandidates(),
   onHints: () => { hud.hints = !hud.hints; },
   getHints: () => hud.hints,
   onMute: () => { audio.setMuted(!audio.muted); },
@@ -281,17 +283,30 @@ function sellAll() {
 }
 // sell only what is in the basket (2.5.2): the rest is set aside, everything left is sold as usual, and
 // what was set aside goes back. Keys as the sell screen makes them: sp:id:variant, tag:key, photo:key, good:k
-// (2.6.7) the animals marked Keep on the Sell tab (the healthiest of each kind, the one the gallery would
-// take) are held back from a sale: taken out of the bag and the sub's tank for it, and put back after
-function withKept(kept, fn) {
-  if (!kept || !kept.length) return fn();
-  const held = [];
-  for (const key of kept) {
-    let best = null, pool = null;
-    for (const L of [g.bag].concat(subAtBoat() ? [g.subTank] : [])) for (const s of L) if (displayKey(s) === key && (!best || s.cond > best.cond)) { best = s; pool = L; }
-    if (best) { pool.splice(pool.indexOf(best), 1); held.push([best, pool === g.bag ? 'bag' : 'subTank']); }
-  }
-  try { return fn(); } finally { for (const [s, where] of held) g[where].push(s); }
+// (2.6.8) Keep on the Sell tab marks an animal (s.kept): it stays in the catch, every sale leaves it alone,
+// and it goes into the aquarium only when the player puts it there, at the aquarium. Each press marks (or
+// unmarks) one: the healthiest live one of that kind not yet kept (or the weakest kept one, to unmark).
+function keepMark(key, on) {
+  const pool = g.bag.concat(subAtBoat() ? g.subTank : []).filter((s) => displayKey(s) === key && !!s.kept !== on && (!on || s.cond > 0.05));
+  if (!pool.length) return false;
+  const s = pool.reduce((a, x) => ((on ? x.cond > a.cond : x.cond < a.cond) ? x : a), pool[0]);
+  if (on) s.kept = true; else delete s.kept;
+  audio.ready && audio.click();
+  return true;
+}
+function withKept(fn) {
+  const held = { bag: g.bag.filter((s) => s.kept), subTank: g.subTank.filter((s) => s.kept) };
+  if (!held.bag.length && !held.subTank.length) return fn();
+  g.bag = g.bag.filter((s) => !s.kept); g.subTank = g.subTank.filter((s) => !s.kept);
+  try { return fn(); } finally { g.bag = g.bag.concat(held.bag); g.subTank = g.subTank.concat(held.subTank); }
+}
+// (2.6.8) what could go into the aquarium from here: the live animals aboard (the bag, and the sub's tank when
+// the sub is alongside), the kept ones first
+function aquariumCandidates() {
+  const out = [];
+  const add = (L, where) => L.forEach((s, i) => { if (s.cond > 0.05) out.push({ where, i, s, why: displayRefusal(profile, s) }); });
+  add(g.bag, 'bag'); if (subAtBoat()) add(g.subTank, 'subTank');
+  return out.sort((a, b) => (b.s.kept ? 1 : 0) - (a.s.kept ? 1 : 0) || b.s.cond - a.s.cond);
 }
 function sellSome(keys) {
   const sel = new Set(keys); if (!sel.size) return null;
@@ -326,7 +341,7 @@ function displaySpecimen(key) {
   pool.splice(pool.indexOf(best), 1);
   display(profile, best);
   saveProfile(profile);
-  hud.toast('Into the gallery', 'big');
+  hud.toast('Into the aquarium', 'big');
   audio.ready && audio.note();
   return true;
 }
@@ -391,6 +406,14 @@ function wareBuy(k) {
 function galleryAction(act, key, v) {
   const P = profile, A = aquariumOf(P);
   if (act === 'light') { A.light = key; saveProfile(P); return true; }
+  if (act === 'place') { // (2.6.8) from the catch into the tank, at the aquarium
+    const [where, i] = key.split(':'), L = where === 'subTank' ? g.subTank : g.bag, s = L[+i];
+    if (!s || (where === 'subTank' && !subAtBoat())) return false;
+    const why = displayRefusal(P, s); if (why) { hud.toast(why[0].toUpperCase() + why.slice(1), 'warn'); return false; }
+    L.splice(+i, 1); delete s.kept; display(P, s); saveProfile(P);
+    hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} goes into the aquarium`, 'big'); audio.ready && audio.tankPlop ? audio.tankPlop() : audio.ready && audio.note();
+    return true;
+  }
   const d = A.display[key];
   if (!d) return false;
   const sp = SPECIES_BY_ID[d.id], who = d.name || `the ${sp.name.toLowerCase()}`;
@@ -557,7 +580,7 @@ function buy(kind) {
     hud.toast(`${NETS_SUB[g.items.net].name} in the hatch  [N in the sub]`, 'big');
   } else if (kind === 'gallery') {
     const lvG = P.galleryLv || 0;
-    if (lvG < GALLERY_STEPS.length && spend(P, GALLERY_STEPS[lvG])) { P.galleryLv = lvG + 1; ok = true; hud.toast(`The gallery: room for ${gallerySlots(P)}`, 'big'); audio.cue && audio.cue('wing'); }
+    if (lvG < GALLERY_STEPS.length && spend(P, GALLERY_STEPS[lvG])) { P.galleryLv = lvG + 1; ok = true; hud.toast(`The aquarium: room for ${gallerySlots(P)}`, 'big'); audio.cue && audio.cue('wing'); }
   } else if (kind === 'canisters' && !(P.addons || {}).canisters && spend(P, CANISTERS.price)) {
     P.addons = Object.assign({}, P.addons, { canisters: true }); g.addons = P.addons; ok = true;
     hud.toast('Pressure canisters: deep animals survive the trip up', 'big');
@@ -676,7 +699,7 @@ function readMove() {
     const dx = mx - renderer.S(e.x), dy = my - renderer.Sy(e.y), d = Math.hypot(dx, dy);
     const ppm = renderer.cam.ppm, full = ppm * 3, dead = ppm * (e.inSub ? 2.5 : 0.6);
     if (g.aboard) { const ax = Math.abs(dx); if (ax > dead) x = Math.sign(dx) * Math.min(1, (ax - dead) / full); } // (2.6.7) on the boat: left and right only
-    else if (d > dead) { const k = Math.min(1, (d - dead) / full) / d; x = dx * k; y = dy * k; }
+    else if (d > dead) { const k = Math.min(1, (d - dead) / full) / d; x = Math.abs(dx) < ppm * 0.4 ? 0 : dx * k; y = dy * k; } // (2.6.8) nearly straight above or below him: straight up or down, no flicker of sideways
   }
   // (2.6.7) standing on the boat (the deck, the cabin, the wheel, the ladder): up and down mean nothing,
   // from the keys, the arrows or the mouse, so nothing upward or downward ever reaches the walking
@@ -823,7 +846,7 @@ function promptFor(t) {
     }
     else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the trap` : t.how === 'needboat' ? 'Too heavy to haul by hand: bring the Margaret here' : 'F  Empty the trap'; // (2.6.1: short)
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
-    else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your gallery`;
+    else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your aquarium`;
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
   { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; // a damaged patch within reach: hold R
@@ -1311,7 +1334,7 @@ function update(dt) {
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
     tickGallery(profile, dt);
-    for (const d of Object.values(aquariumOf(profile).display)) if (d.justFamous) { d.justFamous = false; saveProfile(profile); hud.toast(`${d.name || 'Your ' + SPECIES_BY_ID[d.id].name.toLowerCase()} is Famous now: people come to the gallery to see it`, 'big'); }
+    for (const d of Object.values(aquariumOf(profile).display)) if (d.justFamous) { d.justFamous = false; saveProfile(profile); hud.toast(`${d.name || 'Your ' + SPECIES_BY_ID[d.id].name.toLowerCase()} is Famous now: people come to the aquarium to see it`, 'big'); }
     // released fish: each dive they are found again where they were let go
     if ((profile.released || []).length && (g.relCheckT = (g.relCheckT || 0) - dt) <= 0) {
       g.relCheckT = 1;
@@ -1322,7 +1345,7 @@ function update(dt) {
       }
     }
     const day = tickAquarium(profile, dt);
-    if (day) { saveProfile(profile); hud.toast(`The gallery: ${day.visitors} visitors today · +${money(day.income, false)}`, 'note'); }
+    if (day) { saveProfile(profile); hud.toast(`The aquarium: ${day.visitors} visitors today · +${money(day.income, false)}`, 'note'); }
     // the very bottom, the first time: it shows itself, and lets him go
     if (!profile.met && e.y > 3850 && W.floorAt(e.x) - e.y < 40 && !g.reveal) {
       g.reveal = { t: 0 }; profile.met = true; saveProfile(profile);

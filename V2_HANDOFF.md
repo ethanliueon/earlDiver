@@ -739,3 +739,19 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
   listed, darkened and crossed out, and is left out of Sell all / Sell these (`withKept` in main.js holds the
   healthiest of that kind back during the sale); pressed again it is back. When the shop window closes, the
   kept animals go into the gallery (`onDisplay`). Only as many can be marked as the gallery has room for.
+
+## 2.6.8 — the aquarium is a tank in the cabin; animals go in only at the aquarium; an obvious door
+- Keep (Sell tab) marks the animal itself (`s.kept`, `keepMark` in main.js): it stays in the catch and the list,
+  darkened and crossed out; sales hold it back (`withKept`); pressed again it is for sale. Nothing moves to
+  the aquarium on its own any more.
+- Putting animals in: only at the aquarium. Its screen (gallery.js, renamed "The aquarium" everywhere the
+  player reads it) has a "Your catch" column: the live animals aboard (bag, and the sub's tank when
+  alongside), kept ones first; a click puts one in (`galleryAction('place', 'bag:i')`).
+- The cabin: the floor hatch by the door is gone. The aquarium is a lit tank on a stand at `ROOM.tank`
+  (0.965), across the room past the desk, with the kept animals swimming in it (`hooks.tankFish`) and its
+  own blue light; F there opens it (the cabin steps aside, and he is back at the tank after). The radio
+  moved to 1.1, the life jacket and extinguisher along a little.
+- The door: a ship's-green steel door with a rounded frame, dog levers, a brass handle and a window, and
+  a lit enamel "← DECK" sign over it.
+- Earl no longer flips back and forth when the mouse is straight above or below him (player.js turns him
+  only on a real left/right push; readMove gives no sideways flicker there).
