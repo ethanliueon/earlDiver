@@ -394,3 +394,7 @@ Docs, screenshots, the handoff's checks, merge to main.
 
 ## 2.0.5 — rare necklaces and lures, anywhere in their depth
 - world.js `scatter`: each run, 6 fangtooth necklaces on the seabed where it lies 300-3,000 m deep, and 6 anglerfish lures where it lies 1,500-4,000 m deep, anywhere across the map, at least 120 m apart, never in rock (was 30 necklaces / 40 lures over a narrower stretch). Rarer than an exotic animal, commoner than a legend. (The 300-3,000 m seabed only exists on the slope and around the seamount, x ~2,950-4,550: the west wall drops straight past it.)
+
+## 2.0.6
+- The legendary moment is wordless now: no toast or hint; the music still falls away, the pale light still comes up, the chord still plays, `profile.legends` still counts it.
+- The settings gear is an SVG shape (CSS mask) filling ~72 % of its brass button, instead of the ⚙ font glyph; title gear 40 px, journal 32 px.

@@ -1130,8 +1130,6 @@ function update(dt) {
         if (Math.hypot(c.x - e.x, c.y - e.y) > 16) continue;
         c.legendSeen = true; g.legend = { c, t: 0 };
         const P = g.profile, met = (P.legends = P.legends || {}); const first = !met[c.sp.id]; met[c.sp.id] = (met[c.sp.id] || 0) + 1; saveProfile(P);
-        hud.toast(`${first ? 'A legend of the deep' : 'A legend again'}: the ${c.sp.name.toLowerCase()}`, 'big');
-        hud.hint(`${c.len.toFixed(1)} m long. In the record books it is ${c.sp.size}. F to observe it`);
         audio.ready && audio.legend && audio.legend();
         break;
       }
