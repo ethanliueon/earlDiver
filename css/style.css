@@ -2240,3 +2240,9 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 #confirm h3 { color: #f0e8d0 !important; font: 500 28px var(--serif) !important; text-shadow: 0 1px 0 rgba(0,0,0,0.8) !important; }
 #confirm p { color: rgba(228,230,218,0.85) !important; font: 500 17px/1.4 var(--serif) !important; }
 #beacon .bc-list { display: none; }
+/* (4.0.5) the catalog's page scrolls inside the screen instead of running off its bottom edge: the grid row is held
+   to the screen's height, and the page keeps a margin under its last row */
+#catalog .cat-wrap { grid-template-rows: minmax(0, 1fr); }
+#catalog .cat-main, #catalog .cat-nav { min-height: 0; }
+#catalog .cat-main { padding-bottom: 40px; }
+#catalog .cat-main::after { content: ''; display: block; height: 1px; }

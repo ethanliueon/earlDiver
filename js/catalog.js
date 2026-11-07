@@ -236,14 +236,20 @@ function drawFins(ctx, w, h, it) {
   }
 }
 function drawTank(ctx, w, h, it) {
-  const n = it.id === 'twin' || it.id === 'sidemount' ? 2 : 1, len = w * (it.air > 90 ? 0.62 : it.air > 60 ? 0.54 : 0.46), r = h * (it.id === 'al80' ? 0.12 : 0.14);
-  const col = it.id === 'al80' ? ['#8a9298', '#c4cacd', '#4a5055'] : ['#4a5257', '#a0a8ae', '#262b2e'];
+  // (4.0.5) by its archetype, so every twin set and sidemount pair shows two cylinders: a twin set stacked on a
+  // manifold, a sidemount pair slung one behind the other, staggered
+  const arch = it.arch || it.id, side = arch === 'side' || it.id === 'sidemount', n = arch === 'twin' || side ? 2 : 1;
+  const len = w * (it.air > 90 ? 0.62 : it.air > 60 ? 0.54 : 0.46), r = h * (arch === 'al80' ? 0.12 : side ? 0.12 : 0.14);
+  const col = arch === 'al80' ? ['#8a9298', '#c4cacd', '#4a5055'] : ['#4a5257', '#a0a8ae', '#262b2e'];
   for (let i = 0; i < n; i++) {
-    const cy = h * (n === 2 ? 0.38 + i * 0.26 : 0.5), x0 = w * 0.18;
+    const cy = h * (side ? 0.42 + i * 0.16 : n === 2 ? 0.38 + i * 0.26 : 0.5), x0 = w * (side ? 0.13 + (1 - i) * 0.07 : 0.18);
+    ctx.globalAlpha = side && i === 0 ? 0.75 : 1; // the far one, a little dimmer
     const g = ctx.createLinearGradient(0, cy - r, 0, cy + r); g.addColorStop(0, col[0]); g.addColorStop(0.35, col[1]); g.addColorStop(1, col[2]);
     ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(x0, cy - r, len, r * 2, r); ctx.fill();
     ctx.fillStyle = 'rgba(225,215,170,0.6)'; ctx.fillRect(x0 + len * 0.7, cy - r, len * 0.05, r * 2);
     ctx.fillStyle = '#17191b'; ctx.fillRect(x0 + len - 2, cy - r * 0.35, w * 0.05, r * 0.7); // the valve
+    if (side) { ctx.fillStyle = '#2a2a26'; ctx.fillRect(x0 + len * 0.18, cy - r * 1.05, len * 0.04, r * 2.1); ctx.fillRect(x0 + len * 0.52, cy - r * 1.05, len * 0.04, r * 2.1); } // the bungee straps
+    ctx.globalAlpha = 1;
   }
 }
 function drawBag(ctx, w, h, it) {
