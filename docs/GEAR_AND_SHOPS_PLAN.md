@@ -116,3 +116,30 @@ up to IV, plus exactly one legendary skill.
 3. Dave reworked onto the shared engine, his chests, more detail round the hut.
 4. The old one: her floor-of-the-cave screen, her wares and chests, coins removed.
 5. Hand-drawn Exotics and Legendaries.
+
+## 7. More decisions (asked one at a time, 7 Nov)
+
+- **Air** stays as planned: Earl starts with **20 s**.
+- **Bought gear** goes into the inventory and is put on by hand ("… is in your inventory (B)").
+- **The cabin radio** stays as decoration; quests live only behind the HUD's Quests button.
+- **Shop specialties** (10+ items in each; 3-4 of every other kind):
+  Bayside Marine Supply: hand nets, fins, bags. The research station: cameras, tag guns, slurp guns, and
+  suits for the cold. Dave's Haul: air (deep tanks, rebreathers), suits for depth, big-game nets.
+  **The old one** sells only ~5 things at a time, of any kind, and they change every ~3 in-game days.
+- **Chest-only items** (the main way to get good gear), per main kind (nets, fins, air, bags, suits):
+  5 Common, 5 Uncommon, 15 Rare, 15 Exotic, a few Legendary. Per side tool (slurp gun, tag gun, camera):
+  about 2 Common, 2 Uncommon, 5 Rare, 5 Exotic, 1-2 Legendary.
+- **The feel of the special items:** Exotics are lost expedition gear (real, storied: a 1930s bathysphere
+  helmet, a navy prototype rebreather); Legendaries are eerie things from the deep (a net of gulper-eel
+  sinew, fins cut from an oarfish's crest, a lamp with a living lure). Real design effort on every Legendary
+  and Exotic, and on the Rares.
+- **On Earl:** Commons and Uncommons use the standard look of their kind; Rares have their own colours;
+  Exotics and Legendaries are drawn individually, in the shops and on Earl underwater.
+- **Opening a chest:** a short reveal (~3 s, skippable): it creaks open, light in the rarity's colour,
+  the item rises out with its name and skills.
+- **The locker:** 40 items, fixed (what is worn counts). When it is full, a chest can't be opened and
+  nothing can be bought or picked up until something is sold.
+- **Sets:** 8 sets of 5 pieces each (suit, fins, air, bag, net), on top of the other items: 4 Rare sets and
+  4 Exotic sets, no Legendary set. Any 3 pieces of one set worn turns on its set trait (stronger at Exotic).
+  All pieces of a set share its rarity. A set piece rolls one skill fewer than a normal item of its rarity.
+  Any chest can give a set piece, at that chest's usual odds.
