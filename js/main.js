@@ -852,11 +852,16 @@ function tutor() {
   const done = S.mainProg >= m.need;
   let text = null, to = null, fish = null;
   if (!done && (m.id === 'swim' || m.id === 'observe' || m.id === 'net')) {
-    // the nearest easy fish: small, slow, not deep
-    let best = null, bd = 1e9;
-    for (const c of g.fauna.list) { if (c.dead || c.pet || !c.sp || c.len > 0.45 || c.y > 40 || c.y < 2 || !canTakeLive(c.sp)) continue; const d = dist(e.x, e.y, c.x, c.y); if (d < bd) { bd = d; best = c; } }
+    // (4.2.2) the tutorial's own fish: a garibaldi (the kelp forest's bright orange fish; a real one guards one
+    // small patch and barely leaves it) hovering just under the Margaret, a few metres down by her ladder
+    const dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), ax = BOAT.x + LADDER_M * dir - 3 * dir, ay = 10.5; // (reaching it also finishes 'swim down to 10 m')
+    let tf = g.tutFish;
+    if (!tf || !g.fauna.list.includes(tf)) { tf = g.fauna.makeFish(SPECIES_BY_ID[72], ax, ay, -dir, g.fauna.groupId++, true); tf.len = 0.22; tf.tutor = true; g.fauna.list.push(tf); g.tutFish = tf; }
+    if (!tf.dead) { const tt = g.time; tf.x += (ax + Math.sin(tt * 0.4) * 0.9 - tf.x) * 0.08; tf.y += (ay + Math.sin(tt * 0.7) * 0.3 - tf.y) * 0.08; tf.vx = Math.cos(tt * 0.4) * 0.2; tf.vy = 0; tf.facing = tf.vx >= 0 ? 1 : -1; }
+    const best = tf.dead ? null : tf, bd = best ? dist(e.x, e.y, best.x, best.y) : 1e9;
     if (best) { to = { x: best.x, y: best.y }; fish = best; }
-    text = m.id === 'swim' || bd > 6 ? 'Follow the trail to your first fish · hold Shift or the right mouse button to sprint' : m.id === 'observe' || !g.journal.has(best.sp.id) ? 'Swim close and press F to observe it' : 'Press Space (or click) to net it';
+    text = g.aboard ? 'Walk off the side of the deck to jump in · then follow the trail to your first fish'
+      : m.id === 'swim' || bd > 6 ? 'Follow the trail to your first fish · hold Shift or the right mouse button to sprint' : m.id === 'observe' || !g.journal.has(best.sp.id) ? 'Swim close and press F to observe it' : 'Press Space (or click) to net it';
   } else if (done && e.y > 2 && !g.aboard) { text = 'Well done. Swim up to the surface and take a breather'; to = { x: e.x, y: 0 }; }
   else if (done) text = g.tutClaimHint ? 'Now claim it: press O, then Claim' : 'Press O for your quests, then Claim';
   else if (m.id === 'sell') {
