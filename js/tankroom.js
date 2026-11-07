@@ -7,7 +7,9 @@
 // catch bag hangs in both rooms, and a fish is dragged from the bag, the tank or a chamber and dropped
 // on a chamber, the open tank or the bag.
 import { SPECIES_BY_ID } from './species.js';
-import { drawSpecies } from './creatures_draw.js';
+import { drawSpecies, speciesIcon } from './creatures_draw.js';
+import { rarityOf, specimenValue } from './specimens.js';
+import { money } from './economy.js';
 import { xEyes } from './gallery.js';
 import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, bigIn, slotsOf} from './capture.js';
 import { UPGRADES } from './economy.js';
@@ -170,8 +172,17 @@ export class TankRoom {
       const occ = g.subTank.filter((q) => q.pressed && q.chamber !== BIG && q !== s).sort((a, b) => a.chamber - b.chamber);
       swaps = `<div class="tr-swaps">${occ.map((o) => btn(`↔ ${SPECIES_BY_ID[o.id].name} <small>chamber ${o.chamber + 1}</small>`, `swap:${where}:${i}:${o.chamber}`)).join('')}</div>`;
     }
-    const x = clamp(C.x + 16, 12, G.W - 260), y = clamp(C.y - 20, 12, G.H - 260);
-    return `<div class="tr-card" data-tag="${C.key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px"><b>${sp.name}</b>${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}<small>found at ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : ''}</small><i class="st"></i><div class="acts">${acts}</div>${swaps}</div>`;
+    // (3.0.8) a small tag: its picture, the name in its rarity's colour, the scientific name, where it lives,
+    // where it was found, what it sells for, how it is; small buttons in a row
+    if (!this.pics) this.pics = new Map();
+    if (!this.pics.has(sp.id)) this.pics.set(sp.id, speciesIcon(sp, 150, 80).toDataURL());
+    const R = rarityOf(sp), price = specimenValue(s);
+    const x = clamp(C.x + 16, 12, G.W - 250), y = clamp(C.y - 20, 12, G.H - 230);
+    return `<div class="tr-card" data-tag="${C.key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px">
+      <div class="tc-top"><img src="${this.pics.get(sp.id)}" alt=""><div><b style="color:${R.col}">${sp.name}</b><i class="sci">${sp.sci || ''}</i></div></div>
+      ${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}
+      <div class="tc-facts"><span>lives ${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m</span><span>found at ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : ''}</span><span>sells for about <b>${money(price)}</b></span></div>
+      <i class="st"></i><div class="acts">${acts}</div>${swaps}</div>`;
   }
   states(g) {
     this.root.querySelector('.tr-depth').textContent = `outside ${Math.max(0, Math.round(g.sub.y))} m`;
