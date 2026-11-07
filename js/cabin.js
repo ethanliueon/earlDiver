@@ -10,6 +10,7 @@
 // corners everywhere else. Things on the walls cast soft shadows away from the lamp, so they swing with
 // it, and furniture sits in contact shadows. The wood grain is baked once into a canvas (a procedural grain:
 // the free texture sites were out of reach, and this keeps the boat's own colours).
+import { promptHtml } from './fittings.js';
 import { drawEarl } from './earl_draw.js';
 import { clamp, TAU } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
@@ -146,7 +147,7 @@ export class Cabin {
     this.walk = (this.walk || 0) + ((dir ? 1 : 0) - (this.walk || 0)) * Math.min(1, dt * (dir ? 8 : 6));
     if (dir || this.walk > 0.05) { const s0 = this.step || 0; this.step = s0 + dt * (run ? 11.5 : 7.5) * 0.6; if (Math.floor(this.step / Math.PI) !== Math.floor(s0 / Math.PI) && this.walk > 0.35) this.h.footstep && this.h.footstep(0.05 * this.walk); }
     const n = this.near();
-    this.prompt.textContent = n ? STATIONS.find((q) => q.id === n).label : '';
+    { const html = n ? promptHtml(STATIONS.find((q) => q.id === n).label) : ''; if (this.promptSrc !== html) { this.promptSrc = html; this.prompt.innerHTML = html; } } // (3.6.0) a brass key-cap and the words
     this.prompt.hidden = !n;
     this.draw();
   }

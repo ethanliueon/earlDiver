@@ -2102,3 +2102,14 @@ body:has(#tankroom:not([hidden])) #beacon canvas { visibility: hidden; }
 #inventory .inv-catch2 .fc.locked i { width: 30px; height: 30px; opacity: 0.22;
   background-image: repeating-linear-gradient(45deg, transparent 0 3px, transparent 3px 4px), linear-gradient(45deg, transparent 48%, #c8c09a 48% 52%, transparent 52%), linear-gradient(-45deg, transparent 48%, #c8c09a 48% 52%, transparent 52%);
   -webkit-mask: repeating-linear-gradient(45deg, #000 0 4px, transparent 4px 6px); mask: repeating-linear-gradient(45deg, #000 0 4px, transparent 4px 6px); }
+/* ===================== (3.6.0) prompts: a brass key-cap and the words, no box ===================== */
+.cabin .cb-prompt { padding: 10px 40px; border-radius: 0; background: radial-gradient(closest-side, rgba(4,8,10,0.5), rgba(4,8,10,0.25) 60%, transparent); display: flex; align-items: center; gap: 22px;
+  font: 500 19px var(--serif); color: #ece6d2; text-shadow: 0 1px 0 rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.8); white-space: nowrap; }
+.pr-part { display: inline-flex; align-items: center; gap: 9px; }
+.pr-hold { font: 600 9.5px var(--mono); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(236,230,210,0.75); }
+.pr-sep { width: 4px; height: 4px; border-radius: 50%; background: rgba(236,230,210,0.45); }
+kbd.keycap { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: 4.5px; box-sizing: border-box;
+  font: 600 14px var(--mono); color: #2a1e06; text-shadow: 0 1px 0 rgba(255,244,210,0.55);
+  background: radial-gradient(ellipse at 50% 42%, rgba(255,240,200,0.18), rgba(60,40,10,0.12) 70%), linear-gradient(180deg, #e4d29e, #b89c5c 55%, #94793e);
+  box-shadow: 0 0 0 1px rgba(30,20,4,0.9), 0 3.5px 0 #4a3a18, 0 3.5px 0 1px rgba(30,20,4,0.9), 0 6px 8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,244,210,0.6); }
+kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }

@@ -1,3 +1,4 @@
+import { drawPrompt } from './fittings.js';
 import { TITLES, LEGEND_OF } from './species.js';
 // (3.0.42) a Legendary's title in a message: never 'the the fangtooth', always 'the Fangtooth'
 const TITLE_RE = Object.values(TITLES).concat(Object.values(LEGEND_OF).map((x) => x[0])).map((t) => [new RegExp(`\\b(?:the |an? )?${t}\\b`, 'gi'), t]);
@@ -492,19 +493,14 @@ export class Hud {
     const capHidden = !SETTINGS.catchTags && !!g.catchTarget; // the catch tag is a setting (pause menu); other Space prompts stay
     // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
     if (g.capPrompt && !capHidden && !dying && !g.kill) {
-      ctx.font = `${17 * s}px ${GAME}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-      const tw = keyWidth(g.capPrompt, 17 * s) + 26 * s, py = H * 0.72 - (g.prompt ? 36 : 0) * s;
-      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, py, tw, 28 * s, 6 * s); ctx.fill();
-      ctx.fillStyle = g.capPrompt.startsWith('Space') ? (g.capRarity ? g.capRarity.col : 'rgba(214,236,206,0.95)') : 'rgba(240,190,160,0.9)';
-      keyLine(g.capPrompt, W / 2, py + 7 * s, 17 * s);
+      // (3.6.0) a brass key-cap and the words, no box; a catch's name in its rarity's colour
+      const py = H * 0.72 - (g.prompt ? 40 : 0) * s;
+      drawPrompt(ctx, g.capPrompt, W / 2, py + 14 * s, s, { col: g.capPrompt.startsWith('Space') ? (g.capRarity ? g.capRarity.col : '#d6ecce') : '#f0c2a6', size: 18 });
     }
     }
     // ---------- interaction prompt ----------
     if (g.prompt && !dying && !g.kill) { // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
-      ctx.font = `${18 * s}px ${GAME}`; ctx.textAlign = 'center';
-      const tw = ctx.measureText(g.prompt).width + 30 * s;
-      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, H * 0.72, tw, 30 * s, 6 * s); ctx.fill();
-      ctx.fillStyle = 'rgba(236,240,236,0.92)'; ctx.fillText(g.prompt, W / 2, H * 0.72 + 7 * s);
+      drawPrompt(ctx, g.prompt, W / 2, H * 0.72 + 15 * s, s); // (3.6.0)
     }
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;

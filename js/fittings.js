@@ -354,3 +354,65 @@ export function brassTag(ctx, x, y, text, rot = 0.2) {
   ctx.restore();
 }
 export { ease, lerp };
+
+// ---------------- prompts ----------------
+// (3.6.0) "F  Out on deck", "Hold F  Plant a coral", "Space  Atlantic herring", or several joined by " · ":
+// each part as { hold, key, label }; a part with no key is plain words
+const KEYS = /^(?:(Hold|Tap)\s+)?(Space|Shift|Enter|Esc|Tab|F\d{1,2}|[A-Z0-9])\s{2,}(.*)$/;
+export function parsePrompt(text) {
+  return String(text).split(/\s+·\s+/).map((part) => { const m = part.trim().match(KEYS); return m ? { hold: m[1] || '', key: m[2], label: m[3] } : { hold: '', key: '', label: part.trim() }; });
+}
+// a key-cap, brass, the key engraved on its top: at (x, y) its top-left, size s; returns its width
+export function keyCap(ctx, x, y, key, s = 1) {
+  const h = 26 * s, w = key.length > 1 ? Math.max(h * 1.9, (key.length * 8 + 18) * s) : h, d = 3.5 * s, r = 4.5 * s;
+  ctx.save();
+  // its side (the depth of the key), then the top face
+  ctx.fillStyle = '#4a3a18'; ctx.beginPath(); ctx.roundRect(x, y + d, w, h, r); ctx.fill();
+  const tg = ctx.createLinearGradient(0, y, 0, y + h); tg.addColorStop(0, '#e4d29e'); tg.addColorStop(0.55, '#b89c5c'); tg.addColorStop(1, '#94793e');
+  ctx.fillStyle = tg; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,20,4,0.9)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h + d - 1, r); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,244,210,0.6)'; ctx.beginPath(); ctx.moveTo(x + r, y + 1.5); ctx.lineTo(x + w - r, y + 1.5); ctx.stroke();
+  // the dished top: a soft hollow
+  const dg = ctx.createRadialGradient(x + w / 2, y + h * 0.42, 1, x + w / 2, y + h * 0.42, Math.max(w, h) * 0.6); dg.addColorStop(0, 'rgba(255,240,200,0.18)'); dg.addColorStop(1, 'rgba(60,40,10,0.12)');
+  ctx.fillStyle = dg; ctx.beginPath(); ctx.roundRect(x + 2.5 * s, y + 2.5 * s, w - 5 * s, h - 5 * s, r * 0.8); ctx.fill();
+  // the engraving
+  ctx.font = `600 ${(key.length > 1 ? 10.5 : 14) * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const lab = key.length > 1 ? key.toUpperCase() : key;
+  ctx.fillStyle = 'rgba(255,244,210,0.55)'; ctx.fillText(lab, x + w / 2, y + h / 2 + 1.6 * s);
+  ctx.fillStyle = '#2a1e06'; ctx.fillText(lab, x + w / 2, y + h / 2 + 0.6 * s);
+  ctx.restore();
+  return w;
+}
+// a whole prompt, centred on cx at y: key-caps and upright words, a soft shadow pooled behind (no box)
+export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19 } = {}) {
+  const parts = parsePrompt(text), gapK = 9 * s, gapP = 26 * s, fs = size * s;
+  ctx.save(); ctx.textBaseline = 'middle';
+  const measure = (p) => {
+    let w = 0;
+    if (p.hold) { ctx.font = `600 ${9.5 * s}px ${MONO}`; w += ctx.measureText(p.hold.toUpperCase()).width + 6 * s; }
+    if (p.key) { const kw = p.key.length > 1 ? Math.max(26 * s * 1.9, (p.key.length * 8 + 18) * s) : 26 * s; w += kw + gapK; }
+    ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; w += ctx.measureText(p.label).width;
+    return w;
+  };
+  const ws = parts.map(measure), total = ws.reduce((a, b) => a + b, 0) + gapP * (parts.length - 1);
+  // the pooled shadow
+  const sh = ctx.createRadialGradient(cx, y, 4, cx, y, total * 0.62 + 30 * s);
+  sh.addColorStop(0, 'rgba(4,8,10,0.55)'); sh.addColorStop(0.6, 'rgba(4,8,10,0.3)'); sh.addColorStop(1, 'rgba(4,8,10,0)');
+  ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.28); ctx.translate(-cx, -y); ctx.fillStyle = sh; ctx.fillRect(cx - total, y - total, total * 2, total * 2); ctx.restore();
+  let x = cx - total / 2;
+  parts.forEach((p, i) => {
+    if (i) { ctx.fillStyle = 'rgba(236,230,210,0.45)'; ctx.beginPath(); ctx.arc(x - gapP / 2, y, 2 * s, 0, TAU); ctx.fill(); }
+    if (p.hold) { ctx.font = `600 ${9.5 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(236,230,210,0.75)'; ctx.fillText(p.hold.toUpperCase(), x, y); x += ctx.measureText(p.hold.toUpperCase()).width + 6 * s; }
+    if (p.key) { x += keyCap(ctx, x, y - 15 * s, p.key, s) + gapK; }
+    ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'left';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1;
+    ctx.fillStyle = col; ctx.fillText(p.label, x, y + 1 * s); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    x += ctx.measureText(p.label).width + gapP;
+  });
+  ctx.restore();
+}
+// the same, as HTML (for the rooms drawn in HTML, such as the cabin)
+export function promptHtml(text) {
+  const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  return parsePrompt(text).map((p) => `<span class="pr-part">${p.hold ? `<i class="pr-hold">${esc(p.hold)}</i>` : ''}${p.key ? `<kbd class="keycap${p.key.length > 1 ? ' wide' : ''}">${esc(p.key)}</kbd>` : ''}<span class="pr-label">${esc(p.label)}</span></span>`).join('<i class="pr-sep"></i>');
+}
