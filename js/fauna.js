@@ -30,6 +30,8 @@ const BAIT = [
 
 // (3.0.22) the twilight's everyday animals: most of the lone fish out there are these
 const FILLER = new Set([98, 99, 327, 151, 370, 484, 450, 161]);
+// (3.7.3) the height of the deep's spawning curve q^1.4 (1-q)^0.55, at its peak (q = 1.4 / 1.95)
+const DEEP_PEAK = Math.pow(1.4 / 1.95, 1.4) * Math.pow(0.55 / 1.95, 0.55);
 const DEEP_HUNTER = (sp) => sp.cat === 'Deep Sea Fish' && /viper|dragon|angler|seadevil|sea devil|football|fangtooth|sabertooth|daggertooth|snaggletooth|gulper|swallower|loosejaw|barbeled|dreamer|wolftrap|fanfin|whipnose/i.test(sp.name);
 // Species that migrate up toward the surface at night and back down by day.
 const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90, 42]);
@@ -452,12 +454,25 @@ export class Fauna {
 
   depthPref(sp, x, y, night) {
     const [lo, hi] = this.depthBand(sp, x, night);
+    // (3.7.3) a deep-living animal (its everyday band starts at 150 m, or it is a deep-sea fish): never met above
+    // its band, and if it is rare or rarer, never above 100 m at all, night migrations included
+    const kin = sp.legendOf || sp.id, day = CORE[kin] || [sp.dmin, sp.dmax], deepKind = day[0] >= 150 || sp.cat === 'Deep Sea Fish';
+    if (deepKind) {
+      const R = rarityOf(sp), floorY = R && R.i >= 2 ? Math.max(100, lo - 10) : lo - Math.min(40, (hi - lo) * 0.1);
+      if (y < floorY) return 0;
+    }
     // a deep animal (one that lives from 150 m down) is never met far above its band: none of the
     // rare strays into the shallows the records allow (no anglerfish at 130 m)
     if (lo >= 150 && y < lo - (DEEP_HUNTER(sp) ? 20 : Math.max(50, lo * 0.25))) return 0; // (3.0.21: the deep's hunters, never above their band)
     // (3.0.21) the deep's hunters grow commoner the deeper it is: a fifth as likely at 500 m, full from ~1,300 m, more below
     const deepK = DEEP_HUNTER(sp) ? clamp(0.2 + (y - 500) / 1000, 0.2, 1.4) : 1;
-    if (y >= lo && y <= hi) { const half = Math.max(1, (hi - lo) / 2); return (0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half)) * deepK; }
+    if (y >= lo && y <= hi) {
+      // (3.7.3) the deep's animals are few at the top of their band, most common about seven tenths of the way
+      // down and still common near its foot; shallow animals stay best through the middle
+      if (deepKind) { const q = (y - lo) / Math.max(1, hi - lo); return (0.08 + 0.92 * Math.pow(q, 1.4) * Math.pow(1 - q, 0.55) / DEEP_PEAK) * deepK; }
+      const half = Math.max(1, (hi - lo) / 2); return (0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half)) * deepK;
+    }
+    if (deepKind && y < lo) return 0;
     const d = y < lo ? lo - y : y - hi, scale = Math.max(30, (hi - lo) * 0.3);
     return 0.07 * Math.exp(-d / scale);
   }
