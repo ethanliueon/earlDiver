@@ -263,12 +263,12 @@ function drawSupply(ctx, w, h, k) {
   const cx = w / 2, cy = h / 2;
   if (k === 'airTank') { drawTank(ctx, w, h, { id: 's100', air: 70 }); return; }
   if (k === 'tag' || k === 'tagAdv') { ctx.strokeStyle = '#3a3e40'; ctx.lineWidth = h * 0.04; ctx.beginPath(); ctx.moveTo(cx - w * 0.25, cy); ctx.lineTo(cx + w * 0.2, cy); ctx.stroke(); ctx.fillStyle = k === 'tagAdv' ? '#9fe8ff' : '#e8c040'; ctx.beginPath(); ctx.moveTo(cx + w * 0.2, cy - h * 0.06); ctx.lineTo(cx + w * 0.3, cy); ctx.lineTo(cx + w * 0.2, cy + h * 0.06); ctx.fill(); ctx.fillRect(cx - w * 0.28, cy - h * 0.08, w * 0.06, h * 0.16); return; }
-  const glow = k === 'necklace' ? '170,255,190' : '170,230,255';
+  const glow = k === 'necklace' ? '255,184,96' : '170,230,255'; // (4.0.0) the glow stick burns warm amber
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, h * 0.35); g.addColorStop(0, `rgba(${glow},0.95)`); g.addColorStop(1, `rgba(${glow},0)`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
   if (k !== 'necklace') { ctx.fillStyle = '#f4fff8'; ctx.beginPath(); ctx.arc(cx, cy, h * 0.07, 0, TAU); ctx.fill(); }
-  if (k === 'necklace') { // (3.0.1) a glow stick: a green tube, its cap and lanyard ring
+  if (k === 'necklace') { // (3.0.1) a glow stick: an amber tube (4.0.0), its cap and lanyard ring
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.5); const L = w * 0.26, r = h * 0.06;
-    const tg = ctx.createLinearGradient(0, -r, 0, r); tg.addColorStop(0, '#e8fff0'); tg.addColorStop(0.5, '#9af0b0'); tg.addColorStop(1, '#58c078'); ctx.fillStyle = tg; ctx.beginPath(); ctx.roundRect(-L, -r, L * 2, r * 2, r); ctx.fill();
-    ctx.fillStyle = '#2a3a30'; ctx.beginPath(); ctx.roundRect(L - r * 0.6, -r * 1.1, r * 1.6, r * 2.2, r * 0.4); ctx.fill(); ctx.strokeStyle = '#2a3a30'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(L + r * 1.4, 0, r * 0.6, 0, TAU); ctx.stroke(); ctx.restore(); }
+    const tg = ctx.createLinearGradient(0, -r, 0, r); tg.addColorStop(0, '#fff2dc'); tg.addColorStop(0.5, '#ffc070'); tg.addColorStop(1, '#d88a30'); ctx.fillStyle = tg; ctx.beginPath(); ctx.roundRect(-L, -r, L * 2, r * 2, r); ctx.fill();
+    ctx.fillStyle = '#3a3026'; ctx.beginPath(); ctx.roundRect(L - r * 0.6, -r * 1.1, r * 1.6, r * 2.2, r * 0.4); ctx.fill(); ctx.strokeStyle = '#2a3a30'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(L + r * 1.4, 0, r * 0.6, 0, TAU); ctx.stroke(); ctx.restore(); }
   else { ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy - h * 0.07); ctx.quadraticCurveTo(cx - w * 0.08, cy - h * 0.35, cx - w * 0.2, cy - h * 0.3); ctx.stroke(); }
 }

@@ -50,7 +50,7 @@ const ADDON_SPECS = {
 };
 const SUPPLY_SPECS = {
   lure: [['use', 'Q throws it'], ['effect', 'the deep thing follows its light', 'good'], ['lasts', 'a while']],
-  necklace: [['use', 'E puts it on / takes it off'], ['effect', 'a soft green light round Earl', 'good'], ['but', 'a light can be seen', 'bad']],
+  necklace: [['use', 'E snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round Earl, or round the sub while he is in her', 'good'], ['but', 'a light can be seen', 'bad']],
   tag: [['use', 'the tag gun (3)'], ['for', 'common to rare, tag-only under 2 m'], ['pays', '$0.50-2 a fish, more for big animals', 'good']],
   tagAdv: [['use', 'the tag gun (3)'], ['for', 'exotic, legendary, undocumented, big animals', 'good'], ['dart', 'wider spread, faint glow']],
   airTank: [['use', 'R, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],

@@ -147,7 +147,7 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
     desc: 'Thrown (Q). The thing in the deep follows its light for a while. You carry one.' },
-  necklace: { name: 'Glow stick', price: 370, max: 1, desc: 'A chemical glow stick on a lanyard, snapped to light: worn (E), a soft green light around Earl. It does not keep anything away, and a light can be seen. You carry one.' },
+  necklace: { name: 'Glow stick', price: 370, max: 1, desc: 'A chemical glow stick on a lanyard, snapped to light (E): 90 s of warm amber light around Earl, and in the sub it lights her and the water round her. It does not keep anything away, and a light can be seen. Used up once snapped.' },
   tag: { name: 'Basic tags', price: 5, max: 3, needs: 'tagger', desc: 'Research darts for the tag gun: for common, uncommon and rare animals, and big tag-only animals under two metres.' },
   tagAdv: { name: 'Advanced tags', price: 200, max: 3, needs: 'tagger', desc: 'Satellite tags with a wider spread and a faint glow: needed for exotic, legendary and undocumented animals, and anything tag-only two metres long or more.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
