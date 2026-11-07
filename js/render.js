@@ -2295,9 +2295,9 @@ export class Renderer {
       const [ax, ay] = lp(subLamps.lampA), [bx, by] = lp(subLamps.lampB);
       const lc = mixRgb([235, 238, 245], BEAM_DREAD, fx.torchShift);
       // (2.5.3: softer, a little less bright, and wider round the edges, so more is lit without glare)
-      cone(ax, ay, ang, 33 * ppm, 0.36, lc, 1.45 * flick * vis);
-      cone(ax, ay, ang, 18 * ppm, 0.9, lc, 0.45 * flick * vis); // diffuse flood around the main beam
-      cone(bx, by, ang + 0.35 * Math.sign(sxs), 16 * ppm, 0.5, lc, 0.55 * flick * vis);
+      cone(ax, ay, ang, 46 * ppm, 0.36, lc, 1.85 * flick * vis); // (2.7.3: brighter, and a third farther)
+      cone(ax, ay, ang, 24 * ppm, 0.9, lc, 0.55 * flick * vis); // diffuse flood around the main beam
+      cone(bx, by, ang + 0.35 * Math.sign(sxs), 22 * ppm, 0.5, lc, 0.75 * flick * vis);
       // light spilling around the hull: a soft neutral fill, the warm portholes, a dim stern lamp
       radial(sx, sy, 17 * ppm, [140, 165, 175], 0.3 * fx.lightPulse); lamps.push({ x: sx, y: sy, r: 17 * ppm, a: 0.3 * fx.lightPulse });
       radial(sx + 0.5 * sxs * ppm, sy + 0.9 * ppm, 8 * ppm, [255, 190, 120], 0.6 * fx.lightPulse); // the cabin's warm glow through the sphere's ports
@@ -2531,9 +2531,9 @@ export class Renderer {
       // soft volumetric glow around the whole sub, and the little stern lamp itself
       halo(S(sub.x), Sy(sub.y), ppm * 9, [150, 175, 185], 0.06 * haze * lp);
       halo(S(sub.x) - 4.8 * sxs * ppm, Sy(sub.y) - 0.4 * ppm, ppm * 0.7, [255, 175, 110], 0.22 * lp);
-      coneHaze(lx, ly, ang, 28 * ppm, 0.32, beamCol, 0.07 * haze * lp * vis);
-      coneHaze(lx, ly, ang, 14 * ppm, 0.9, beamCol, 0.035 * haze * lp * vis);
-      motes(lx, ly, ang, 28 * ppm, 0.34, beamCol, 0.8 * haze * lp * vis);
+      coneHaze(lx, ly, ang, 40 * ppm, 0.32, beamCol, 0.08 * haze * lp * vis);
+      coneHaze(lx, ly, ang, 20 * ppm, 0.9, beamCol, 0.04 * haze * lp * vis);
+      motes(lx, ly, ang, 40 * ppm, 0.34, beamCol, 0.8 * haze * lp * vis);
       glare(lx, ly, beamCol, (0.6 + (1 - vis) * 0.8) * lp);
       if (this.netLamp && g.subNet) { const [nx, ny, na, nl] = this.netLamp; coneHaze(nx, ny, na, nl, 0.4, beamCol, 0.06 * haze * lp); motes(nx, ny, na, nl, 0.42, beamCol, 0.6 * haze * lp); glare(nx, ny, beamCol, 0.45 * lp); }
     }

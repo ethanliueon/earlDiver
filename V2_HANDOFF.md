@@ -796,3 +796,7 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - He says a line on each visit: his hello the first time (`P.daveVisits`), then one of ten (one hints at a
   light out west along the wall: the old one).
 - Still to do from the shop plan: the old one as a cash shop (coins removed), radio quests, clues.
+
+## 2.7.3 — the sub's front lights
+- The main beam reaches 46 m (was 33) and is brighter; the wide fill and the second lamp reach farther too,
+  with the haze and motes in the beam to match. The softer edges and the glow round the hull are as before.
