@@ -419,7 +419,7 @@ export class UI {
     const s2 = this.catchSel; if (!s2 || !(g.subTank || []).includes(s2)) return '';
     const sp = SPECIES_BY_ID[s2.id], P = g.profile;
     const dying = s2.cond > 0.05 && gapOf(g, s2, false) > SAFE_GAP;
-    return `<b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${rarityStars(sp)}${s2.variant ? ` <em>${s2.variant}</em>` : ''} · ${s2.cond <= 0.05 ? 'dead' : dying ? '<strong>dying: wrong pressure</strong>' : conditionName(s2.cond)} · from ${Math.round(s2.from || 0)} m · <span>${money(specimenValue(s2) * statValue(P, 'payFish'))}</span>`;
+    return `<b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${rarityStars(sp)}${sp.species ? ` <i>(${sp.species})</i>` : ''}${s2.variant ? ` <em>${s2.variant}</em>` : ''} · ${s2.cond <= 0.05 ? 'dead' : dying ? '<strong>dying: wrong pressure</strong>' : conditionName(s2.cond)} · from ${Math.round(s2.from || 0)} m · <span>${money(specimenValue(s2) * statValue(P, 'payFish'))}</span>`;
   }
   // (3.0.36) every frame while the Catch page is open: the tank and the chambers, drawn by the tank room's own hand
   drawCatch(g, dt) {
@@ -841,7 +841,7 @@ export class UI {
       const img = document.createElement('img');
       img.src = icon.toDataURL(); img.alt = sp.name;
       const txt = document.createElement('div');
-      txt.innerHTML = `<h3${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.sci}</div>
+      txt.innerHTML = `<h3${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci}</div>
         <p>${sp.desc}</p>
         <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''} · pressure tolerance x${pressureKind(sp).k} (${pressureKind(sp).why})</div>
         ${this.variantRow(sp)}`;

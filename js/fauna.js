@@ -463,12 +463,13 @@ export class Fauna {
   }
   // the depth band this animal wants to be in right now (migrators move up at night)
   depthBand(sp, x, night) {
-    const core = (night && NIGHT[sp.id]) || CORE[sp.id];
+    const kin = sp.legendOf || sp.id; // (3.0.42) a Legendary giant lives where its ordinary kind does
+    const core = (night && NIGHT[kin]) || CORE[kin];
     let lo = core ? core[0] : sp.dmin, hi = Math.min(core ? core[1] : sp.dmax, this.W.floorAt(x) - 2);
     // (3.0.21) the deep's hunters (viperfish, dragonfish, anglers and seadevils, fangtooths, gulpers, swallowers)
     // never come above 500 m, day or night, whatever the records allow
     if (DEEP_HUNTER(sp)) { lo = Math.max(lo, 500); hi = Math.min(Math.max(hi, lo + 100, Math.min(sp.dmax, 3000)), this.W.floorAt(x) - 2); } // (and down as deep as each is ever found, to 3,000 m)
-    if (MIGRATORS.has(sp.id) && !core) {
+    if (MIGRATORS.has(kin) && !core) {
       if (night) hi = Math.min(hi, Math.max(lo + 30, 250));
       else lo = Math.max(lo, Math.min(hi - 30, 280));
     }
@@ -764,7 +765,7 @@ export class Fauna {
         if (c.sp.v.hab === 'reef' && fl - c.y > 10) ay += 1.5;
         if ((c.sp.v.hab === 'floor-swim' || c.sp.v.hab === 'drift-low') && fl - c.y > 2.5) ay += 1.5;
         if (c.sp.v.hab === 'demersal' && fl - c.y > 20) ay += 1;
-        const band = (night && NIGHT[c.sp.id]) || CORE[c.sp.id] || [c.sp.dmin, c.sp.dmax];
+        const kin = c.sp.legendOf || c.sp.id, band = (night && NIGHT[kin]) || CORE[kin] || [c.sp.dmin, c.sp.dmax];
         if (c.y < band[0] - 20) ay += 2;
         if (c.y > band[1] + 20) ay -= 2;
       }

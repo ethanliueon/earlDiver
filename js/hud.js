@@ -1,3 +1,7 @@
+import { TITLES, LEGEND_OF } from './species.js';
+// (3.0.42) a Legendary's title in a message: never 'the the fangtooth', always 'the Fangtooth'
+const TITLE_RE = Object.values(TITLES).concat(Object.values(LEGEND_OF).map((x) => x[0])).map((t) => [new RegExp(`\\b(?:the |an? )?${t}\\b`, 'gi'), t]);
+export function titled(text) { let out = String(text); for (const [re, t] of TITLE_RE) out = out.replace(re, t); return out.charAt(0).toUpperCase() + out.slice(1); }
 // HUD drawn on its own canvas (not affected by the dread filters):
 // survival timer + oxygen bar (top right), the right-hand dive monitor
 // (depth, radar, heart rate, journal), item slots and prompts.
@@ -31,6 +35,7 @@ export class Hud {
   // explanations: only when hints are on (H)
   hint(text) { if (this.hints) this.toast(text, 'note'); }
   toast(text, kind = '') {
+    text = titled(text);
     // the same line again while it is still up: count it ("x2") instead of stacking a copy
     const same = this.toasts.find((tt) => tt.text === text && tt.kind === kind && tt.t < 3.5);
     if (same) { same.n = (same.n || 1) + 1; same.t = Math.min(same.t, 0.4); return; }

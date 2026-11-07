@@ -221,6 +221,12 @@ export const GIANT_FORMS = {
   108: 2.0,  // coelacanth (up to about 2 m: its real size)
 };
 
+// (3.0.42) the Legendaries go by a title ("the Fangtooth"); their species is still shown in their details
+export const TITLES = { 100: 'the Anglerfish', 101: 'the Fangtooth', 104: 'the Barreleye', 105: 'the Gulper Eel', 107: 'the Blobfish', 108: 'the Coelacanth', 54: 'the Oarfish' };
+// (3.0.42) Legendary versions of eight deep animals: the ordinary kind stays; this one is a giant of it, met rarely,
+// with its own id (2000 + the ordinary one's), its title, and the species shown in its details
+export const LEGEND_OF = { 102: ['the Viperfish', 1.6], 103: ['the Dragonfish', 1.8], 106: ['the Swallower', 1.4], 150: ['the Vampire Squid', 1.4], 146: ['the Dumbo', 1.5], 162: ['the Isopod', 1.3], 110: ['the Tripod', 1.6], 109: ['the Grenadier', 2.4] };
+export const LEGEND_IDS = Object.keys(LEGEND_OF).map((id) => 2000 + +id);
 // (3.0.37) undocumented as well: the abyssal sleeper shark, the deep's own monster
 const UNDOC_ALSO = new Set([188]);
 // the reference list and the species added since (data/species_more.js, which carry their own look)
@@ -228,8 +234,9 @@ export const SPECIES = SPECIES_DATA.concat(MORE_SPECIES).map((d) => {
   const v = Object.assign({ s: 'fish', h: 0.3, t: 'fork', c: ['#555', '#999'], f: null, hab: 'pelagic', sch: 1 }, V[d.id] || d.v || {});
   v.f = v.f || v.c[0];
   const len = GIANT_FORMS[d.id] || parseSize(d.size, v);
-  return { ...d, v, len, giant: !!GIANT_FORMS[d.id], undoc: !!(d.x && d.x.undoc) || UNDOC_ALSO.has(d.id) };
+  return { ...d, ...(TITLES[d.id] ? { name: TITLES[d.id], species: d.name } : {}), v, len, giant: !!GIANT_FORMS[d.id], undoc: !!(d.x && d.x.undoc) || UNDOC_ALSO.has(d.id) };
 });
+for (const [id, [title, len]] of Object.entries(LEGEND_OF)) { const o = SPECIES.find((s) => s.id === +id); if (o) SPECIES.push({ ...o, id: 2000 + +id, name: title, species: o.name, len, giant: true, legendOf: o.id }); }
 export const SPECIES_BY_ID = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 
 // Which species can live at a given depth, filtered by habitat class.

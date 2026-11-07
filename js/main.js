@@ -35,7 +35,7 @@ import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_P
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
-import { Hud } from './hud.js';
+import { Hud, titled } from './hud.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
 
@@ -52,6 +52,7 @@ const hud = new Hud(hudCanvas);
     if (g && g.inTankAct) return; // a refusal in the tank room: it says that one itself (3.0.15)
     flashOver(text); }; }
 function flashOver(text) {
+  text = titled(text);
   let el = document.getElementById('overflash');
   if (!el) { el = document.createElement('div'); el.id = 'overflash'; document.body.appendChild(el); }
   // (3.0.40) the same line again while it is still up: count it instead of stacking a copy

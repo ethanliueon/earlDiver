@@ -130,7 +130,7 @@ export const RARITY = [
 export const UNDOCUMENTED = { id: 'undocumented', name: 'Undocumented', col: '#bfe8f0', upTo: 5000, spawn: 0.015, i: 3.5 };
 // Legendary is not a price but a short list: exactly these species (the owner's choice) and no others.
 // humpback anglerfish, common fangtooth, barreleye, pelican gulper eel, blobfish, coelacanth, giant oarfish
-export const LEGENDARY = new Set([100, 101, 104, 105, 107, 108, 54]);
+export const LEGENDARY = new Set([100, 101, 104, 105, 107, 108, 54, 2102, 2103, 2106, 2150, 2146, 2162, 2110, 2109]); // (3.0.42) and the giant versions of the viperfish, dragonfish, swallower, vampire squid, dumbo, isopod, tripod, grenadier
 // a capturable animal that is not legendary stays inside the exotic band, however much it would fetch
 const EXOTIC_CAP = 4800;
 const PRICE_CACHE = new Map();
