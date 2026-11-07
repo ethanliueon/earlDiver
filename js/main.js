@@ -730,8 +730,10 @@ function withLoading(fn) {
 }
 function startRun() {
   mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
-  audio.init(); audio.resume(); audio.playMusic(); audio.cue && audio.cue('start'); // (2.9.2) a new dive, or back after a death
+  audio.init(); audio.resume(); audio.playMusic();
   if (!getSlot()) setSlot(firstFreeSlot());
+  const fresh = !profile || !(profile.runs > 0); // (3.0.5) the first dive of a new game
+  audio.cue && audio.cue(fresh ? 'firstDive' : 'start'); // (2.9.2) a new dive, or back after a death
   if (!profile) { profile = newProfile(); saveProfile(profile); }
   profile.runs = (profile.runs || 0) + 1; saveProfile(profile);
   g = newGame('play');
