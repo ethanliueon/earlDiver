@@ -337,7 +337,7 @@ export class UI {
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
-  anyOpen() { return this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  anyOpen(except) { return this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || (except !== 'cabin' && !$('cabin').hidden) || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
   closeAll() { this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }

@@ -918,7 +918,7 @@ export function deckLine(xu) {
   const x = Math.max(-56, xu), tt = (-72 + Math.sqrt(5184 + 16 * (56 + x))) / 8; // the sheer is a quadratic curve: x(t) = -56 + 72t + 4t²
   return -16 + 11 * tt - 5.5 * tt * tt;
 }
-export function drawBoat(ctx, Lp, t, sub, mirrored = false) {
+export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   // A small, hard-worked dive-support boat, bow to the left: a flared bow and a curved sheer line,
   // a red boot-top at the waterline, rub rail, plating seams and rust; a wheelhouse with framed
   // windows; a mast with radar, antennas and lights; an exhaust stack; deck clutter; and at the
@@ -1009,6 +1009,19 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false) {
   ctx.fillStyle = '#b0aca0'; ctx.fillRect(17 * u, -24 * u, 4 * u, 13 * u);
   ctx.strokeStyle = 'rgba(40,38,32,0.5)'; ctx.lineWidth = 0.3 * u; ctx.strokeRect(17 * u, -24 * u, 4 * u, 13 * u);
   ctx.fillStyle = '#3a4a50'; ctx.beginPath(); ctx.arc(19 * u, -20.5 * u, 1 * u, 0, TAU); ctx.fill();
+  // (4.3.5) the tutorial: the door lit up, a brass glow round it pulsing, so it is plain where the cabin is
+  if (opts.tutDoor) {
+    const p = 0.5 + 0.5 * Math.sin(t * 4);
+    ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.95)'; ctx.shadowBlur = (6 + 8 * p) * u * 0.6;
+    ctx.fillStyle = `rgba(232,208,146,${(0.22 + 0.18 * p).toFixed(3)})`; ctx.fillRect(17 * u, -24 * u, 4 * u, 13 * u);
+    ctx.strokeStyle = `rgba(240,216,150,${(0.8 + 0.2 * p).toFixed(3)})`; ctx.lineWidth = 1.1 * u; ctx.strokeRect(16.4 * u, -24.6 * u, 5.2 * u, 14.2 * u);
+    // a brass arrow beside it, bobbing toward the door (it turns with her, so it always points at the door)
+    const ax = 24.5 * u + Math.sin(t * 5) * 0.9 * u, ay = -17.5 * u;
+    ctx.fillStyle = 'rgba(240,216,150,0.97)'; ctx.shadowBlur = 4 * u * 0.6; ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.beginPath(); ctx.moveTo(ax - 2.4 * u, ay); ctx.lineTo(ax + 0.6 * u, ay - 2.4 * u); ctx.lineTo(ax + 0.6 * u, ay - 0.9 * u); ctx.lineTo(ax + 3.6 * u, ay - 0.9 * u);
+    ctx.lineTo(ax + 3.6 * u, ay + 0.9 * u); ctx.lineTo(ax + 0.6 * u, ay + 0.9 * u); ctx.lineTo(ax + 0.6 * u, ay + 2.4 * u); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
   ctx.strokeStyle = '#e05a2a'; ctx.lineWidth = 1.1 * u; ctx.beginPath(); ctx.arc(-4.5 * u, -15.5 * u, 2.2 * u, 0, TAU); ctx.stroke();
   ctx.strokeStyle = '#f0ece0'; ctx.lineWidth = 1.1 * u;
   for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(-4.5 * u, -15.5 * u, 2.2 * u, k * Math.PI / 2, k * Math.PI / 2 + 0.35); ctx.stroke(); }

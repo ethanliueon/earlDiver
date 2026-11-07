@@ -16,6 +16,7 @@ const ACTIONS = {
   interact:  ['F',       'F',      null],
   use:       [null,      'Space',  null], // with the mouse it is a click: said in words, no key-cap
   net:       ['1',       '1',      null],
+  sprint:    ['RMB',     'Shift',  null], // held; RMB is drawn as a mouse with its right button lit
   quests:    ['O',       'O',      null],
   inventory: ['B',       'B',      null],
   journal:   ['J',       'J',      null],
@@ -61,7 +62,7 @@ export class TutSpot {
     this.el.hidden = false; this.hideParts();
     // a confirm plate is up: point at its yes button when the step expects one (a purchase), else stay out of the way
     const conf = document.getElementById('confirm');
-    if (spot && conf && !conf.hidden) spot = spot.confirm ? { sel: ['#confirm .cf-yes'], say: spot.confirm } : null;
+    if (spot && conf && !conf.hidden) spot = spot.confirm ? { sel: ['#confirm .cf-yes'], say: spot.confirm, below: true } : null; // (4.3.5) the arrow under the button, off the words
     if (!spot) { this.lastTarget = null; return; }
     const t = this.find(spot.sel);
     if (t) {
@@ -72,7 +73,7 @@ export class TutSpot {
       Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
       this.hole.classList.toggle('light', !!spot.light); // over the sea, a lighter shade: he may still be swimming
       // the arrow and the line: above the thing when there is room, otherwise below it
-      const above = y > 100, cx = Math.max(110, Math.min(vw - 110, x + w / 2));
+      const above = !spot.below && y > 100, cx = Math.max(110, Math.min(vw - 110, x + w / 2));
       this.arrow.style.display = 'block';
       this.arrow.className = 'ts-arrow ' + (above ? 'down' : 'up');
       this.arrow.style.left = cx + 'px';
@@ -81,7 +82,12 @@ export class TutSpot {
     } else {
       this.lastTarget = null;
       const k = spot.act ? keyFor(spot.act) : null;
-      if (k) { this.keyBox.style.display = 'flex'; this.kbd.textContent = k; this.keyText.textContent = spot.say || ''; }
+      if (k) {
+        this.keyBox.style.display = 'flex'; this.keyText.textContent = spot.say || '';
+        const mouseKey = k === 'LMB' || k === 'RMB';
+        this.kbd.className = mouseKey ? 'mouse ' + k.toLowerCase() : '';
+        this.kbd.innerHTML = mouseKey ? '<b></b><b></b>' : ''; if (!mouseKey) this.kbd.textContent = k;
+      }
     }
   }
 }

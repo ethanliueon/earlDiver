@@ -220,7 +220,8 @@ const ui = new UI({
   onFootstep: (v) => audio.ready && audio.footstep && audio.footstep(v),
   // (3.0.0) quests: claim one (cash, and on the main line sometimes a thing), or new quests on the board
   onQuestClaim: (which) => {
-    const P = profile, r = claimQuest(P, which); if (!r) return false;
+    const P = profile, tutWas = P.tut === 'on', r = claimQuest(P, which); if (!r) return false;
+    if (which === 'main' && tutWas) setTimeout(() => ui.toggleQuests(false), 250); // (4.3.5) the tutorial goes straight on to the next step
     if (r.pay) { P.cash = Math.round((P.cash + r.pay) * 100) / 100; P.lifetime = Math.round((P.lifetime + r.pay) * 100) / 100; }
     let gift = null; if (r.gift) gift = giveItem(P, r.gift);
     // (4.0.6) a tutorial step gives what it taught him to use: a net, a backup air tank, a trawl net, a trap
@@ -360,7 +361,7 @@ const needsConfirm = (price) => !!profile && price > 0 && price <= profile.cash 
 function guardBuy(price, fn, after) {
   if (guardBuy.ok || !needsConfirm(price)) return fn();
   const pct = Math.round((price / profile.cash) * 100);
-  ui.confirm(`Spend ${money(price)}?`, `That is ${pct} % of the ${money(profile.cash)} you have.`, 'Buy it', 'Not now', () => {
+  ui.confirm(`Spend ${money(price)}?`, `That's quite a bit.`, 'Buy it', 'Not now', () => {
     guardBuy.ok = true; let r; try { r = fn(); } finally { guardBuy.ok = false; }
     if (r && after) after();
     ui.refreshOpen();
@@ -894,20 +895,30 @@ function tutor() {
   const K = (act) => keyFor(act) || '';
   // (4.3.2) a prompt drawn beside the fish: { key, mouse, text, col }. The key (or a mouse) follows the input in use
   const netPrompt = () => (g.toolSel !== 'net' ? { key: K('net'), text: 'Take out your net' } : click ? { mouse: true, text: 'Swing your net' } : { key: K('use'), text: 'Swing your net' });
-  let text = null, to = null, fish = null, prompt = null, toLabel = null, spot = null;
+  let text = null, to = null, fish = null, prompt = null, toLabel = null, spot = null, door = false;
   // the steps that need a fish: the fish to go to, and what to do at it
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
     if (inCabin) { text = 'Leave the cabin: walk to the door'; ui.cabin.tutMark = 'door'; return; } // (4.3.3) arrows to the door
     if (g.aboard) { text = 'Walk off the end of the deck to jump in'; toLabel = 'Jump in'; return; }
     if (e.inSub) { text = 'Leave the sub: hold F'; spot = { act: 'leaveSub', say: 'Hold to leave the sub' }; return; }
-    if (bd > 3.2) { text = 'Swim to the orange fish'; toLabel = 'Swim here'; return; }
+    if (bd > 3.2) {
+      text = 'Swim to the orange fish'; toLabel = 'Swim here';
+      // (4.3.5) how to sprint, until he has: the right mouse button held, or Shift
+      if (!P.tutSprint && bd > 5) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' };
+      return;
+    }
     doWhat(tf);
   };
   if (done) {
     // a step is done: claim it before anything else (the next step only starts counting once this one is claimed)
-    if (qOpen) { text = 'Step done! Claim your reward'; spot = { sel: ['#quests [data-q="claim|main"]'], say: 'Claim your reward' }; }
-    else if (ui.anyOpen()) { text = 'Step done! Close this, then claim it'; spot = { act: 'back', say: 'Close this, then open your quests' }; }
+    if (qOpen) { spot = { sel: ['#quests [data-q="claim|main"]'] }; } // (4.3.5) the quests are open: just the arrow, no words
+    else if (ui.anyOpen()) {
+      // (4.3.5) another screen is up: point at the way out of it (the shop's Log off, a close button), no keys named;
+      // in the cabin (no button to leave by) the quests key still works
+      text = 'Quest complete! Claim it in your quests';
+      spot = { sel: ['#catalog .cat-off', '#workshop-close', '#inventory .inv-close', '#journal-close', '#quests-btn'] }; // (the Quests button shows in the cabin)
+    }
     else { text = 'Quest complete! Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Quest complete! Claim it here', light: true }; }
   } else if (m.id === 'firstfish') {
     // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
@@ -948,20 +959,20 @@ function tutor() {
       const sel = ['#catalog button[data-buy^="item:"]:not([disabled])', '#catalog [data-cart="checkout"]:not([disabled])'];
       if (pick) sel.push(`#catalog .cat-main [data-go="item:${pick.id}"]`, `#catalog .cat-nav [data-go="${pick.kind}"]`);
       text = pick ? `Buy some gear: the ${pick.name.toLowerCase()} is ${money(pick.price, false)}` : 'Not enough cash yet: sell more catch first';
-      spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : { act: 'back', say: 'Not enough cash: close the shop' };
-    } else if (ui.anyOpen() && !inCabin) { text = 'Close this first'; spot = { act: 'back', say: 'Close this' }; }
+      spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
+    }
     else if (inCabin) { text = 'Walk to the computer to shop'; ui.cabin.tutMark = 'desk'; }
-    else if (g.aboard) { text = 'Go into the cabin'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; toLabel = 'Cabin door'; }
+    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; } // (4.3.5) the door itself lit up
     else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; toLabel = 'Ladder'; }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
     if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
-    else if (ui.anyOpen()) { text = 'Close this, then open your inventory'; spot = { act: 'back', say: 'Close this first' }; }
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
   }
-  g.tut = { text, to, fish, prompt, toLabel, spot };
-  if (text && g.tutSaid !== text) { g.tutSaid = text; hud.toast(text, 'note'); } // said once when it changes
+  g.tut = { text, to, fish, prompt, toLabel, spot, door };
+  if (text && g.tutSaid !== text) { g.tutSaid = text; hud.toast(text, 'tut'); } // said once when it changes, straight away (4.3.5)
+  else if (!text && qOpen && g.tutSaid) { g.tutSaid = null; messages.dropTut(); } // (4.3.5) the quests are open: no words over them
 }
 const tutSpot = new TutSpot();
 function startRun() {
@@ -1071,7 +1082,9 @@ function readMove() {
   // (2.6.7) standing on the boat (the deck, the cabin, the wheel, the ladder): up and down mean nothing,
   // from the keys, the arrows or the mouse, so nothing upward or downward ever reaches the walking
   if (g.aboard) y = 0;
-  return { x, y, sprint: keys.has('shift') || !!mouse.rdown };
+  const sprint = keys.has('shift') || !!mouse.rdown;
+  if (sprint && (x || y) && profile && profile.tut === 'on' && !profile.tutSprint) { profile.tutSprint = true; saveProfile(profile); } // (4.3.5) he has sprinted: the hint goes
+  return { x, y, sprint };
 }
 
 // ---------------- interactions ----------------
@@ -2344,7 +2357,7 @@ function frame(now) {
     if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.showLoading(false); }
   } else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   hud.draw(g, dt);
-  ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen()); // (3.0.0) the Quests button
+  ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
   airOver(g);
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)

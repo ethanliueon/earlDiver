@@ -490,7 +490,7 @@ export class Renderer {
       ctx.restore();
       const f = g.tut.fish, cx = S(f ? f.x : tx), cy = Sy(f ? f.y : ty);
       const r = (f ? Math.max(16, ppm * (f.len * 0.8 + 0.45)) : Math.max(14, ppm * 0.5)) * (1 + 0.1 * Math.sin(g.time * 4));
-      ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.8)'; ctx.shadowBlur = 10;
+      ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.8)'; ctx.shadowBlur = 10; if (g.tut.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
       ctx.strokeStyle = 'rgba(232,208,146,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
       ctx.strokeStyle = `rgba(232,208,146,${(0.5 * (1 - ((g.time * 0.8) % 1))).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.8 * ((g.time * 0.8) % 1)), 0, TAU); ctx.stroke(); // a ripple going out
       ctx.restore();
@@ -624,7 +624,7 @@ export class Renderer {
       bctx.globalCompositeOperation = 'source-over';
       bctx.translate(bw * 0.45, bh * 0.82);
       const bcos = Math.cos(BOAT.yaw || 0), bsx = Math.sign(bcos || 1) * Math.max(0.06, Math.abs(bcos));
-      crane = drawBoat(bctx, 14 * ppm, t, g.sub, bsx < 0);
+      crane = drawBoat(bctx, 14 * ppm, t, g.sub, bsx < 0, { tutDoor: !!(g.tut && g.tut.door) });
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
       if (dimB > 0.01) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, bw, bh); }
       ctx.save(); ctx.scale(bsx, 1); ctx.drawImage(bc, -bw * 0.45, -bh * 0.82); ctx.restore(); // (3.0.0) turned with her heading
