@@ -25,17 +25,22 @@ export class Beacon {
   // (4.0.0) rooms: whether he is in the sub's rooms, the only place the beacon and its tags are seen. The
   // alarm sounds once when something new goes wrong (not on a loop), muffled by the water round the hull.
   update(g, dt, rooms = false) {
-    const A = g && !g.paused ? alarmsOf(g) : [], live = A.length > 0;
+    if (g && g.paused) return; // (4.0.2) paused: the alarm holds as it is (it does not end and start again)
+    const A = g ? alarmsOf(g) : [], live = A.length > 0;
     if (g) g.alarm = live ? { rot: this.rot, list: A } : null;
     this.on = clamp(this.on + (live ? dt * 4 : -dt * 3), 0, 1);
     if (live || this.on > 0) this.rot = (this.rot + dt * 5.2) % TAU;
-    const heard = new Set(A.map((a) => a.id)), fresh = A.some((a) => !(this.heard || new Set()).has(a.id));
+    // an alarm is new only if it has been quiet for 4 s: hovering at the rated depth does not sound it over and over
+    const now = performance.now(), last = this.lastOn || (this.lastOn = new Map());
+    const isNew = (id) => !last.has(id) || now - last.get(id) > 4000;
+    const newOnes = A.filter((a) => isNew(a.id)); for (const a of A) last.set(a.id, now);
+    const heard = new Set(A.map((a) => a.id)), fresh = newOnes.length > 0;
     if (fresh && this.audio && this.audio.ready && this.audio.alarm) this.audio.alarm(0.05, rooms ? 2600 : 1100);
     if (!live && this.heard && this.heard.size && this.audio && this.audio.stopAlarm) this.audio.stopAlarm();
     this.heard = heard;
     if (this.audio && this.audio.alarmMuffle) this.audio.alarmMuffle(rooms ? 2600 : 1100);
-    // (4.0.1) what is wrong is said at the top of the screen, as a standing message line, wherever he is in the sub
-    if (this.status) this.status(A.map((a) => ({ id: a.id, text: a.text, kind: a.id === 'contact' ? 'warn' : 'danger' })));
+    // (4.0.2) each alarm, as it starts, is said on the game's one message line at the top (as any other message)
+    if (this.say) for (const a of newOnes) this.say(a.text, a.id === 'contact' ? 'warn' : 'danger');
     this.el.hidden = !rooms || this.on <= 0;
     if (this.el.hidden) return;
     this.list.innerHTML = '';
