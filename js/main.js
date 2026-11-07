@@ -889,7 +889,7 @@ function tutor() {
   // the steps that need a fish: the fish to go to, and what to do at it
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
-    if (inCabin) { text = 'Leave the cabin and go back out on deck'; spot = { act: 'back', say: 'Back out on deck' }; return; }
+    if (inCabin) { text = 'Leave the cabin: walk to the door'; ui.cabin.tutMark = 'door'; return; } // (4.3.3) arrows to the door
     if (g.aboard) { text = 'Walk off the end of the deck to jump in'; toLabel = 'Jump in'; return; }
     if (e.inSub) { text = 'Leave the sub: hold F'; spot = { act: 'leaveSub', say: 'Hold to leave the sub' }; return; }
     if (bd > 3.2) { text = 'Swim to the orange fish'; toLabel = 'Swim here'; return; }
@@ -923,7 +923,7 @@ function tutor() {
       // sold already, or lost it: another fish, then sell that one
       fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); });
     }
-    else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; spot = { act: 'back', say: 'Back out on deck' }; }
+    else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; ui.cabin.tutMark = 'door'; }
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; toLabel = 'Jump in here'; }
     else if (!nearBoat) { text = 'Bring your catch up beside the Margaret'; to = ladder; toLabel = 'Sell here'; }
     else { text = `Sell your catch: press ${K('sell')}`; spot = { act: 'sell', say: 'Sell your catch' }; }
@@ -942,7 +942,7 @@ function tutor() {
       text = pick ? `Buy some gear: the ${pick.name.toLowerCase()} is ${money(pick.price, false)}` : 'Not enough cash yet: sell more catch first';
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : { act: 'back', say: 'Not enough cash: close the shop' };
     } else if (ui.anyOpen() && !inCabin) { text = 'Close this first'; spot = { act: 'back', say: 'Close this' }; }
-    else if (inCabin) { text = 'Walk to the computer to shop'; ui.cabin.tutMark = 'desk'; spot = { act: 'interact', say: 'At the computer: open the shop' }; }
+    else if (inCabin) { text = 'Walk to the computer to shop'; ui.cabin.tutMark = 'desk'; }
     else if (g.aboard) { text = 'Go into the cabin'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; toLabel = 'Cabin door'; }
     else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; toLabel = 'Ladder'; }
   } else if (m.id === 'wear') {
