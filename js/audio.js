@@ -146,6 +146,7 @@ export class Audio {
     try { src.s.onended = null; src.s.stop(now + sec + 0.05); } catch (e) { /* already stopped */ }
   }
   startPiece(id) {
+    if (!this.musicAllowed) return; // (3.0.11) music only in the first sitting of a brand-new game (main.js startRun)
     const m = this.musState();
     id = id || m.zone;
     if (m.on || id === 'deep') return; // the deep: no music
@@ -171,6 +172,7 @@ export class Audio {
   // returns the music level 0..1 for this frame
   musicSession(g, dt) {
     const m = this.musState();
+    if (!this.musicAllowed && m.on) { m.on = false; this.musicWanted = null; } // (3.0.11) not this game's first sitting: none
     const playing = g.mode === 'play';
     // (3.0.3) every time he comes back to a menu (the title, or after a death), the theme swells in, full and slow
     if (g.mode === 'menu' && this.lastMode !== 'menu' && this.musFirstDone) { m.zone = 'sunlit'; m.menuSwell = true; if (!m.on) { m.rest = 0; this.startPiece('sunlit'); } }
@@ -371,18 +373,19 @@ export class Audio {
     const ac = this.ac, now = ac.currentTime, e = g.earl, fx = g.fx;
     const depth = g.mode === 'menu' ? 0 : e.y;
     const under = g.mode === 'menu' ? 0 : depth > 0.9 ? 1 : 0;
+    const muff = under || (g.mode !== 'menu' && e.inSub) ? 1 : 0; // (3.0.11) the music is muffled inside the sub too (the ambience goes by under alone)
     // music: not always playing. In a dive it comes now and then when things are calm (and on some
     // good moments), plays a while, and fades; anything frightening stops it at once.
     let mv = g.mode === 'menu' ? 0.55 : 0.15; // (3.0.3) quieter in play; (3.0.9) 40 % lower again; full at the menus
     mv *= this.musicSession(g, dt); // (2.6.9) in every mode: the title only hears it on a fresh start
     mv *= 1 - fx.dread * 0.7;
-    if (under) mv *= 0.7; // (3.0.9) heard through the water: quieter as well as muffled
+    if (muff) mv *= 0.7; // (3.0.9) heard through the water: quieter as well as muffled
     if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
     if (g.paused) mv *= 0.4;
     const hush = 1 - 0.85 * ((g.fx && g.fx.hush) || 0); // it is near: the sea goes quiet
     this.musicGain.gain.setTargetAtTime(mv * hush, now, 0.4);
     const hurtMuffle = (g.injury >= 3 ? 0.5 : 1) * (g.noAir ? 1 - Math.min(1, g.noAir / 15) * 0.4 : 1);
-    const lp = (under ? clamp(1700 * Math.exp(-depth / 900), 520, 1700) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle; // (3.0.3) under water the music is heard through the water: soft and rounded, as in the first versions
+    const lp = (muff ? clamp(1700 * Math.exp(-Math.max(0, depth) / 900), 520, 1700) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle; // (3.0.3) under water the music is heard through the water: soft and rounded, as in the first versions
     this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
     // beds
     this.amb.g.gain.setTargetAtTime((under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03) * hush, now, 0.5);
