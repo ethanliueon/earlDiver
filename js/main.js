@@ -772,7 +772,7 @@ function startRun() {
   const fresh = !profile || !(profile.runs > 0); // (3.0.5) the first dive of a new game
   // (3.0.11) the music plays only in the first sitting of a brand-new game: from its first dive until the page is
   // closed (deaths included); a save loaded in a later sitting, or another save, gets none; nor does the title before it
-  if (fresh) audio.musicSlot = getSlot(); audio.musicAllowed = !!getSlot() && audio.musicSlot === getSlot();
+  audio.musicAllowed = true; // (3.0.24) music in every sitting again, by its own rules (audio.js pickTrack); a new game's first dive opens with the melodic theme
   audio.cue && audio.cue(fresh ? 'firstDive' : 'start'); // (2.9.2) a new dive, or back after a death
   if (!profile) { profile = newProfile(); saveProfile(profile); }
   profile.runs = (profile.runs || 0) + 1; saveProfile(profile);

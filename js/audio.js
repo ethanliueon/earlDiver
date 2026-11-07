@@ -1,15 +1,19 @@
 // Sound: the background music (muffled underwater), generated ambience,
 // breathing, heartbeat, the entity's presence, sonar, hull creaks.
 import { clamp, lerp } from './util.js';
-const MUSIC_REST = [600, 840]; // (2.6.9) seconds of play between one playing of the music and the next: 10 to 14 minutes
-// (2.6.10) which music, by depth, when it is due: the sunlit sea (and the title) has the main theme; the
-// twilight zone "Polaroid II - deeper (B)", dark and slow; the deep (below 1,000 m) has none, ever. The track
-// is chosen once, when the music is due, from where he is then: it is never switched or faded into another
-// as he swims, and goes on to its end wherever he goes, except into the deep, where it fades away.
+const MUSIC_REST = [300, 540]; // (3.0.24) seconds of play between one piece and the next: 5 to 9 minutes
+const MUSIC_LEN = [75, 90];    // (3.0.24) a piece plays at most ~90 s, then fades
+// (3.0.24) the music, chosen once, when it is due, by where he is then (never switched as he swims):
+//   sunlit    "Polaroid (melodic)": a new game's first dive, and anywhere above 20 m
+//   main      "Polaroid II - deeper (B)": the main theme, everywhere else
+//   bathy / open  "Bathyscaphe" or "Open Water": in the sub, settled below 200 m (to the bottom of the map)
+//   musicbox  "Music box": starts by itself on coming to Dave's Haul
 const THEMES = [
-  { id: 'sunlit', file: 'assets/audio/polaroid_melodic.mp3', to: 200 },
-  { id: 'twilight', file: 'assets/audio/polaroid_twilight.mp3', to: 1000 },
-  { id: 'deep', file: null, to: Infinity },
+  { id: 'sunlit', file: 'assets/audio/polaroid_melodic.mp3' },
+  { id: 'main', file: 'assets/audio/polaroid_twilight.mp3' },
+  { id: 'bathy', file: 'assets/audio/bathyscaphe_dark.mp3' },
+  { id: 'open', file: 'assets/audio/open_water.mp3' },
+  { id: 'musicbox', file: 'assets/audio/music_box.mp3' },
 ];
 
 export class Audio {
@@ -114,7 +118,7 @@ export class Audio {
     this.musicBufs[id] = null; // loading
     const T = THEMES.find((q) => q.id === id);
     fetch(T.file).then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => this.ac.decodeAudioData(b, res, rej)))
-      .then((buf) => { this.musicBufs[id] = buf; if (this.musicWanted === id && !(this.musState().startIn > 0) && ((id === 'sunlit' && !this.musFirstStarted) || (this.calm && this.musState().zone === id))) { this.musicWanted = null; this.startPiece(id); } }).catch(() => { delete this.musicBufs[id]; });
+      .then((buf) => { this.musicBufs[id] = buf; if (this.musicWanted === id && !(this.musState().startIn > 0) && ((id === 'sunlit' && !this.musFirstStarted) || this.calm)) { this.musicWanted = null; this.startPiece(id); } }).catch(() => { delete this.musicBufs[id]; });
   }
   // the theme for a depth, with 25 m of give at each boundary so it does not flicker across one
   themeAt(depth, cur) {
@@ -123,6 +127,16 @@ export class Audio {
     if (ci >= 0 && i !== ci && depth > (THEMES[ci - 1] ? THEMES[ci - 1].to - 25 : -1e9) && depth < THEMES[ci].to + 25) i = ci;
     return THEMES[i].id;
   }
+  pickTrack(g) {
+    const e = g && g.earl, m = this.musState();
+    if (!e || g.mode !== 'play') return 'sunlit';
+    if (this.nearDave(g)) return 'musicbox';
+    const y = Math.max(0, e.y);
+    if (y < 20) return 'sunlit';
+    if (e.inSub && y >= 200) return (m.subDeepT || 0) >= 25 ? (Math.random() < 0.5 ? 'bathy' : 'open') : null; // only once the sub has settled down there
+    return 'main';
+  }
+  nearDave(g) { const D = g.world && g.world.dave, e = g.earl; return !!D && Math.abs(e.x - D.x) < 70 && Math.abs(e.y - (D.y - 4)) < 45; }
   playMusic() {
     if (!this.ready || this.musFirstDone) return;
     this.musFirstDone = true;
@@ -148,12 +162,12 @@ export class Audio {
   startPiece(id) {
     if (!this.musicAllowed) return; // (3.0.11) music only in the first sitting of a brand-new game (main.js startRun)
     const m = this.musState();
-    id = id || m.zone;
-    if (m.on || id === 'deep') return; // the deep: no music
+    id = id || this.pickTrack(this.lastG);
+    if (m.on || !id) return;
     if (!this.musicBufs[id]) { this.loadTheme(id); this.musicWanted = id; return; }
     if (this.musicSrc && this.musicSrc.id === id && m.level > 0.05) { m.on = true; m.playedT = 0; return; } // still fading out: it swells back
     if (this.musicSrc) { this.fadeAway(this.musicSrc, 1.5); this.musicSrc = null; }
-    this.musicSrc = this.playSource(id, 0); m.on = true; m.playLen = 150 + Math.random() * 150; this.musFirstStarted = true; // (3.0.1) 2½ to 5 minutes, then it fades; (3.0.3) it always rises from silence
+    this.musicSrc = this.playSource(id, 0); m.on = true; m.playLen = MUSIC_LEN[0] + Math.random() * (MUSIC_LEN[1] - MUSIC_LEN[0]); this.musFirstStarted = true; // (3.0.1) 2½ to 5 minutes, then it fades; (3.0.3) it always rises from silence
   }
   // a good moment (a sale, a rare find, getting home): once the rest is over and all is calm, the music comes now
   // (2.9.2) as before 2.6.9: a new dive, coming back from a death, and getting home always bring it in
@@ -163,15 +177,14 @@ export class Audio {
     // (3.0.5) a brand-new game's first dive: a few seconds aboard in quiet first, then the theme fades in (even if
     // the click that started the game had just begun it)
     if (kind === 'firstDive') { m.zone = 'sunlit'; if (m.on && (m.playedT || 0) < 1.5) { m.on = false; m.level = 0; } if (!m.on) m.startIn = 3.5; return; }
-    if ((kind === 'start' || kind === 'home') && !m.on && m.zone !== 'deep') { this.startPiece(); return; }
-    if (!m.on && m.rest <= 0 && this.calm && m.sinceStress >= 20 && m.zone !== 'deep') this.startPiece();
+    if (!m.on && m.rest <= 0 && this.calm && m.sinceStress >= 20) this.startPiece(); // (3.0.24) a good moment brings it only once the rest is over
     else m.meter = Math.min(1, m.meter + 0.15);
   }
   calmBoost(x) { const m = this.musState(); m.meter = Math.min(1, m.meter + x); }
   stopPiece() { const m = this.musState(); if (!m.on) return; m.on = false; this.musicWanted = null; this.restAfter(); } // it fades, then the source is stopped
   // returns the music level 0..1 for this frame
   musicSession(g, dt) {
-    const m = this.musState();
+    const m = this.musState(); this.lastG = g;
     if (!this.musicAllowed && m.on) { m.on = false; this.musicWanted = null; } // (3.0.11) not this game's first sitting: none
     const playing = g.mode === 'play';
     // (3.0.3) every time he comes back to a menu (the title, or after a death), the theme swells in, full and slow
@@ -191,7 +204,8 @@ export class Audio {
     if (stress) m.sinceStress = 0; else m.sinceStress += dt;
     if (m.on) m.playedT = (m.playedT || 0) + dt; else m.playedT = 0;
     if (m.on && m.playLen && m.playedT > m.playLen) { m.cutBySerious = false; this.stopPiece(); } // its time is up: a slow fade (about 20 s)
-    if (g.mode === 'dying' || (serious && m.playedT >= 60)) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
+    // (3.0.24) danger fades it at once: the thing noticing him or closing in, the pressure past his limit, death
+    if (g.mode === 'dying' || serious || (playing && !e.inSub && e.y > (e.pressStart || 300))) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
     // (3.0.13) the hull: past the sub's rated depth, or on course to pass it within 10 s at the speed it is diving
     if (playing && e.inSub && g.sub && !g.sub.imploded && (g.sub.y > g.sub.rated || (g.sub.vy > 0 && g.sub.y + g.sub.vy * 10 > g.sub.rated))) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
     if (m.on) m.cutBySerious = false;
@@ -201,15 +215,18 @@ export class Audio {
     m.quietT = stress ? 0 : (m.quietT || 0) + dt;
     m.idleT = sp < 0.4 && !stress ? (m.idleT || 0) + dt : 0;
     const bored = Math.min(1, m.quietT / 240 + m.idleT / 60);
-    // the zone he is in (the title is the sunlit sea); the next theme down is fetched 50 m before he gets there
-    const depth = playing || g.mode === 'dying' ? Math.max(0, e.y) : 0;
-    m.zone = this.themeAt(depth, m.zone);
-    for (const T of THEMES) if (depth > T.to - 50) { const nx = THEMES[THEMES.indexOf(T) + 1]; if (nx) this.loadTheme(nx.id); }
-    if (m.zone === 'deep' && (m.playedT || 0) >= 60) this.stopPiece(); // (2.9.1: not before it has played a minute) into the deep: whatever plays fades away (and its rest begins)
+    // (3.0.24) settled deep in the sub (for Bathyscaphe and Open Water); the deep themes and the music box fetched ahead
+    m.subDeepT = playing && e.inSub && e.y >= 200 && !stress ? (m.subDeepT || 0) + dt : 0;
+    if (playing && e.y > 150) { this.loadTheme('main'); if (e.inSub) { this.loadTheme('bathy'); this.loadTheme('open'); } }
+    // coming to Dave's Haul: the music box starts by itself (once a visit), unless something is already playing
+    const atDave = playing && this.nearDave(g);
+    if (atDave) this.loadTheme('musicbox');
+    if (atDave && !m.atDave && !m.on && !serious) { this.musicWanted = null; this.startPiece('musicbox'); }
+    m.atDave = atDave;
     if (!m.on && playing && !g.paused) {
       m.rest = Math.max(0, m.rest - dt * (1 + 5 * bored));             // the rest counts only in play; faster when nothing is happening
       m.meter = Math.min(1, m.meter + dt * (0.0015 + 0.01 * bored));     // quiet, calm swimming
-      if (m.rest <= 0 && !serious && !g.noAir && m.sinceStress >= (bored > 0.5 ? 8 : 20) && m.zone !== 'deep') {
+      if (m.rest <= 0 && !serious && !g.noAir && m.sinceStress >= (bored > 0.5 ? 8 : 20)) {
         m.rollT += dt;
         if (m.rollT >= (bored > 0.5 ? 12 : 30)) { m.rollT = 0; if (Math.random() < 0.5 + m.meter * 0.4 + bored * 0.3) this.startPiece(); }
       }
