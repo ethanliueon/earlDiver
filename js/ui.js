@@ -450,26 +450,36 @@ export class UI {
     const dying = s2.cond > 0.05 && gapOf(g, s2, at.place === 'bag') > SAFE_GAP;
     const st = s2.cond <= 0.05 ? ['dead', '#8a6a5a'] : dying ? ['dying: barotrauma', '#e8806a'] : [conditionName(s2.cond), s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a'];
     const place = { bag: 'In the net bag', open: 'The open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'The large pressure tank', floor: 'On the floor of the sub' }[at.place];
-    const row = (k, v) => `<tr><th>${k}</th><td>${v}</td></tr>`;
-    const facts = row('Where', place) + row('Condition', `<i class="dot" style="background:${st[1]}"></i>${st[0]}`)
-      + row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m`) + row('Lives at', `${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m`)
-      + row('Length', `${(s2.len || sp.len).toFixed(2)} m${tooBig(s2) ? ' · <em>too big for a chamber</em>' : ''}`) + row('Value', `<b class="val">${money(specimenValue(s2) * statValue(P, 'payFish'))}</b>`);
+    // (3.6.0) a specimen record: an index card, ruled, the photograph clipped to it, the fields typed in, its
+    // condition stamped across it
+    const field = (k, v, cls = '') => `<div class="sr-f${cls}"><span>${k}</span><i></i><b>${v}</b></div>`;
+    const len = (s2.len || sp.len), st2 = s2.cond <= 0.05 ? ['DECEASED', 'dead'] : dying ? ['BAROTRAUMA', 'dying'] : s2.cond < 0.6 ? ['STRESSED', 'weak'] : ['LIVE', 'live'];
+    const where = { bag: 'NET BAG', open: 'OPEN TANK', chamber: `CHAMBER ${(at.n || 0) + 1}`, big: 'LARGE PRESSURE TANK', floor: 'SUB, ON THE FLOOR' }[at.place];
+    const no = `${String(sp.id).padStart(4, '0')}-${String(Math.round((s2.t || 0) * 7) % 1000).padStart(3, '0')}`;
+    const fields = field('Found at', `${Math.round(s2.from || 0).toLocaleString()} m`) + field('Habitat', `${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m`)
+      + field('Length', `${len.toFixed(2)} m${tooBig(s2) ? ' · OVER CHAMBER LIMIT' : ''}`) + field('Condition', `${st[0].toUpperCase()}`) + field('Location', where)
+      + field('Value', money(specimenValue(s2) * statValue(P, 'payFish')), ' val');
     // the moves: the same as dragging, spelled out
     const inSub = this.h.inSub ? this.h.inSub() : false, w = at.where, i = at.i, mv = (label, act, to = -1, on = true) => `<button data-fm="${act}:${w}:${i}:${to}"${on ? '' : ' disabled'}>${label}</button>`;
     let acts = '';
     if (inSub) {
-      if (tooBig(s2)) { if (at.place !== 'big') acts += hasBigTank(g) ? mv('Into the large tank', 'press', BIG_CH, bigFits(g, s2)) : ''; }
-      else if (at.place !== 'chamber') { const f = freeChamber(g); if (pressSlots(g) > 0) acts += mv(f >= 0 ? 'Into a chamber' : 'Into a chamber (all in use)', 'press', f, f >= 0); }
-      if (!tooBig(s2) && hasBigTank(g) && at.place !== 'big') acts += mv('Into the large tank', 'press', BIG_CH, bigFits(g, s2));
-      if (at.place !== 'open') acts += mv('Into the open tank', 'open', -1, tankFits(g, { ...s2, pressed: false, pile: false }));
-      if (at.place !== 'bag') acts += mv('Into the net bag', 'tobag', -1, g.bag.length < bagSlots(g));
-      acts += mv('Let it go', 'release');
+      if (tooBig(s2)) { if (at.place !== 'big') acts += hasBigTank(g) ? mv('Large tank', 'press', BIG_CH, bigFits(g, s2)) : ''; }
+      else if (at.place !== 'chamber') { const f = freeChamber(g); if (pressSlots(g) > 0) acts += mv('Chamber', 'press', f, f >= 0); }
+      if (!tooBig(s2) && hasBigTank(g) && at.place !== 'big') acts += mv('Large tank', 'press', BIG_CH, bigFits(g, s2));
+      if (at.place !== 'open') acts += mv('Open tank', 'open', -1, tankFits(g, { ...s2, pressed: false, pile: false }));
+      if (at.place !== 'bag') acts += mv('Net bag', 'tobag', -1, g.bag.length < bagSlots(g));
+      acts += mv('Release', 'release');
     }
-    const note = inSub ? '' : `<p class="fp-note">${at.place === 'bag' ? 'Animals are moved in the sub: get in (or call it with C), then drag it to a tank.' : `${this.theName(sp)} is in the sub: move it from there (T in the sub, or here once you are aboard).`}</p>`;
-    return `<div class="item-pop fish-pop"><div class="ip-box fp-box${R && R.id === 'legendary' ? ' r-legendary' : ''}" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
-      <div class="fp-top"><div class="fp-pic"><img src="${this.fitPics.get(sp.id)}" alt=""></div><div class="fp-head">${rarityStars(sp)}<b class="nm" style="color:${col}">${sp.name}</b>
-      <span class="rr" style="color:${col}">${R && !R.hidden ? R.name : ''}</span>${sp.species || sp.sci ? `<i class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci || ''}</i>` : ''}${s2.variant ? `<em class="rarel">rare form: ${s2.variant}</em>` : ''}</div></div>
-      <table class="fp-facts">${facts}</table>${acts ? `<div class="fp-acts">${acts}</div>` : ''}${note}</div></div>`;
+    const remark = inSub ? '' : at.place === 'bag' ? 'Specimens are moved in the sub. Board it (or call it, C), then drag to a tank.' : 'Held in the sub. Move it from there (T in the sub).';
+    const R2 = R && !R.hidden ? R : null;
+    return `<div class="item-pop fish-pop"><div class="sr-card${R2 && R2.id === 'legendary' ? ' leg' : ''}" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
+      <div class="sr-head"><span>BAYSIDE MARINE SUPPLY · SPECIMEN RECORD</span><span>No. ${no}</span></div>
+      <div class="sr-top"><div class="sr-photo"><img src="${this.fitPics.get(sp.id)}" alt=""><i class="sr-clip"></i></div>
+        <div class="sr-id">${R2 ? `<em class="sr-rar">${R2.name}${rarityStars(sp)}</em>` : ''}<b class="sr-name">${sp.name}</b>${sp.species ? `<span class="sr-common">${sp.species}</span>` : ''}${sp.sci ? `<i class="sr-sci">${sp.sci}</i>` : ''}${s2.variant ? `<span class="sr-var">Rare form: ${s2.variant}</span>` : ''}</div></div>
+      <div class="sr-fields">${fields}</div>
+      ${remark ? `<div class="sr-f sr-remark"><span>Remarks</span><b>${remark}</b></div>` : ''}
+      <i class="sr-stamp st-${st2[1]}">${st2[0]}</i>
+      ${acts ? `<div class="sr-acts"><span>Move to</span>${acts}</div>` : ''}</div></div>`;
   }
   // a move made from the Catch page; a refusal is said here too (in the sub's rooms the room says it)
   tankDo(act, w, i, to) {
