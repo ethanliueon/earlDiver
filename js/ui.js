@@ -407,7 +407,7 @@ export class UI {
     const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`;
     this.catchShown = Math.max(5, pCap);
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
-      + `<div class="worth-paint" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
+      + `<div class="worth-paint" style="font-size:${Math.min(160, Math.floor(540 / (money(total).length * 0.6)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win"><canvas class="ct-tank"></canvas></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
