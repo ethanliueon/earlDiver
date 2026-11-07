@@ -21,7 +21,7 @@ import { SPECIES_BY_ID } from './species.js';
 const ROOM = { door: 0.075, desk: 0.74, min: 0.07, max: 1.4, width: 1.45, radio: 1.1, wheel: 1.31, tank: 0.965 }; // (2.6.8) the aquarium: a lit tank across the room from the door
 const STATIONS = [
   { id: 'door', x: ROOM.door, label: 'F  Out on deck' },
-  { id: 'desk', x: ROOM.desk - 0.085, label: 'F  The computer' },
+  { id: 'desk', x: ROOM.desk - 0.085, label: 'F  Shop' }, // (3.0.20: the computer is the shop)
   { id: 'tank', x: ROOM.tank, label: 'F  The aquarium' },
   { id: 'wheel', x: ROOM.wheel - 0.075, label: 'F  Take the wheel' },
 ];
@@ -105,7 +105,7 @@ export class Cabin {
     this.c.addEventListener('mousedown', (ev) => {
       if (this.root.hidden || this.h.blocked() || ev.button !== 0) return;
       const W = window.innerWidth, camX = this.camX || 0, fx = (ev.clientX + camX) / W;
-      const st = STATIONS.find((q) => Math.abs(fx - q.x) < 0.06 || (q.id === 'desk' && Math.abs(fx - ROOM.desk) < 0.09) || (q.id === 'wheel' && Math.abs(fx - ROOM.wheel) < 0.06));
+      const st = STATIONS.find((q) => Math.abs(fx - q.x) < 0.09 || (q.id === 'desk' && Math.abs(fx - ROOM.desk) < 0.09) || (q.id === 'wheel' && Math.abs(fx - ROOM.wheel) < 0.06));
       if (st && this.near() === st.id) { this.use(); return; }
       this.goal = clamp(st ? st.x : fx, ROOM.min, ROOM.max); this.goalUse = !!st;
     });
@@ -121,7 +121,8 @@ export class Cabin {
     window.addEventListener('keyup', this.onKey, true);
   }
   show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); this.goal = null; this.mMoved = -1e9; this.mlx = null; }
-  near() { const st = STATIONS.find((q) => Math.abs(this.x - q.x) < 0.045); return st ? st.id : null; }
+  // (3.0.20) wider: each thing answers from 0.09 of a screen either side (twice what it was), the nearest one if two do
+  near() { let best = null, bd = 0.09; for (const q of STATIONS) { const d = Math.abs(this.x - q.x); if (d < bd) { bd = d; best = q; } } return best ? best.id : null; }
   use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'tank' ? 'gallery' : n); }
   atTank() { this.x = ROOM.tank; this.face = 1; this.keys.clear(); this.goal = null; }
   atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; this.keys.clear(); }
@@ -136,14 +137,14 @@ export class Cabin {
       const d = clamp((this.mcx + (this.camX || 0)) / window.innerWidth, ROOM.min, ROOM.max) - this.x;
       if (Math.abs(d) > 0.035) { dir = Math.sign(d); mRun = Math.abs(d) > 0.3; }
     }
-    const run = this.keys.has('shift') || mRun, pace = run ? 0.32 : 0.2;
+    const run = this.keys.has('shift') || mRun, pace = (run ? 0.32 : 0.2) * 0.6; // (3.0.20) a cabin pace: 0.6 of his walk elsewhere
     if (!this.h.blocked()) {
       const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);
       if (dir) { this.face = dir; this.walkT += dt; } else this.walkT = 0;
     } else dir = 0;
     this.walk = (this.walk || 0) + ((dir ? 1 : 0) - (this.walk || 0)) * Math.min(1, dt * (dir ? 8 : 6));
-    if (dir || this.walk > 0.05) { const s0 = this.step || 0; this.step = s0 + dt * (run ? 11.5 : 7.5); if (Math.floor(this.step / Math.PI) !== Math.floor(s0 / Math.PI) && this.walk > 0.35) this.h.footstep && this.h.footstep(0.05 * this.walk); }
+    if (dir || this.walk > 0.05) { const s0 = this.step || 0; this.step = s0 + dt * (run ? 11.5 : 7.5) * 0.6; if (Math.floor(this.step / Math.PI) !== Math.floor(s0 / Math.PI) && this.walk > 0.35) this.h.footstep && this.h.footstep(0.05 * this.walk); }
     const n = this.near();
     this.prompt.textContent = n ? STATIONS.find((q) => q.id === n).label : '';
     this.prompt.hidden = !n;

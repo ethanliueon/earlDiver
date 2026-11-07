@@ -18,7 +18,7 @@ export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { 
 export const MAIN = [
   { id: 'net', text: 'Net a fish', help: 'Swim up to a fish and press Space (key 1 is the net).', need: 1, on: 'catch', pay: 20 },
   { id: 'sell', text: 'Sell your catch', help: 'Climb aboard the Margaret and sell at the stern, or press U at her side.', need: 1, on: 'sell', pay: 30 },
-  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 40 },
+  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The Shop in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 40 },
   { id: 'wear', text: 'Put on something new', help: 'Press B for your inventory and drag it onto Earl, or click it and Put on.', need: 1, on: 'wear', pay: 30 },
   { id: 'sub', text: 'Take the sub down to 60 m', help: 'Climb into the sub at her stern; W and S to dive and rise.', need: 60, on: 'subDepth', pay: 80 },
   { id: 'chamber', text: 'Bring an animal up alive in the sub', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 100 },
