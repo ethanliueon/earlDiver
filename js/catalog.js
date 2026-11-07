@@ -18,17 +18,17 @@ export const WEBSHOPS = {
   bayside: { title: 'Bayside Marine Supply', sub: 'Harbour Road · since 1974', stock: 'catalog', theme: 'bayside',
     lede: 'Diving gear and supplies, sent out to the boat the same day.', newIn: ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'],
     cats: [['home', 'Home'], null, ['net', 'Hand nets'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
-      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['chest', 'Surplus crates'], ['sell', 'Sell your gear'], ['yard', 'The yard']],
+      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['chest', 'Surplus crates'], ['sell', 'Sell your gear']], // (4.0.0: the yard is on the Margaret now, P)
     chestTitle: 'Surplus crates', chestLede: 'Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.' },
   station: { title: 'Station Stores', sub: 'Abyssal Research Station · 280 m · requisitions', stock: 'station', theme: 'station',
     lede: 'Surplus and spare equipment from the station stores, released to visiting divers. Delivered to your locker.', newIn: [],
     cats: [['home', 'Index'], null, ['cam', 'Cameras'], ['tag', 'Tag guns'], ['slurp', 'Slurp guns'], ['suit', 'Cold-water suits'], null,
-      ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['chest', 'Equipment cases'], ['sell', 'Return equipment']],
+      ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['lure', 'Lures'], ['chest', 'Equipment cases'], ['sell', 'Return equipment']],
     chestTitle: 'Equipment cases', chestLede: 'Sealed cases of kit the scientists stopped using. One item in each, unlisted.' },
   dave: { title: "Dave's Haul", sub: '1,200 m down · cash only · no refunds', stock: 'dave', theme: 'dave',
     lede: "Deep gear, second hand and first rate. If it's on here, I've got it. If it isn't, I haven't. — Dave", newIn: [],
     cats: [['home', 'Front page'], null, ['tank', 'Air'], ['suit', 'Deep suits'], ['net', 'Big-game nets'], null,
-      ['fins', 'Fins'], ['bag', 'Bags'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], null, ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
+      ['fins', 'Fins'], ['bag', 'Bags'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], null, ['lure', 'Lures'], ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
     chestTitle: 'Boxes, unopened', chestLede: "Whatever came down on the rope. I haven't looked. I say." },
 };
 const ITEM_CATS = ['net', 'slurp', 'tag', 'cam', 'fins', 'tank', 'bag', 'suit'];
@@ -105,6 +105,9 @@ export class Catalog {
       const tr = P.traps || {};
       return ['pot', 'fish'].map((k, i) => { const T = TRAPS[k], have = tr[k] || 0; return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, price: T.price, line: k === 'pot' ? 'A galvanised box with one funnel.' : 'A mesh box with a funnel at each end.', good: `To ${T.maxDepth} m; up to ${T.holds} animals`, count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', i] }; });
     }
+    // (4.0.0) the anglerfish lure: not at Bayside, only at the station and Dave's, and dear
+    if (cat === 'lure') { const S = SUPPLIES.lure, have = (g && g.items.lure) || 0, mx = supplyMax(P, 'lure');
+      return [{ key: 'lure', id: 'lure', kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you carry ${have} of ${mx}`, full: have >= mx }]; }
     if (cat === 'supply') {
       return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = (g && g.items[k]) || 0, mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
     }

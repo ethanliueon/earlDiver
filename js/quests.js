@@ -6,41 +6,48 @@
 // Progress comes from game events (questEvent: a catch, a sale, a photo, a tag, a trap set) and from a
 // look at the game once a second (questTick: depth, the aquarium, what he has bought and has on).
 import { SPECIES } from './species.js';
-import { canTakeLive, liveValue } from './specimens.js';
+import { canTakeLive, liveValue, rarityOf, LEGENDARY } from './specimens.js';
 import { kitOf, ITEMS } from './items.js';
 
+// (4.0.0) refreshing the board by hand: one free refresh, then a three-hour window in which more refreshes cost
+// $100, $300, $1,000, $2,500 and then $5,000 each; when the window ends, the next is free again. A new game
+// starts with its free refresh ready. (Quests also replace themselves when their own time runs out.)
 export const BOARD_MS = 3 * 60 * 60 * 1000;
-export const boardIn = (P, now = Date.now()) => Math.max(0, (Q(P).boardAt || 0) + BOARD_MS - now);
-export const refreshPrice = (P) => Math.round(100 + 0.02 * Math.min(200000, P.lifetime || 0)); // a little dearer as he earns
+const LADDER = [100, 300, 1000, 2500, 5000];
+const windowOver = (S, now) => now >= (S.freeAt || 0);
+export const boardIn = (P, now = Date.now()) => Math.max(0, (Q(P).freeAt || 0) - now);
+export const refreshPrice = (P) => { const S = Q(P); return LADDER[Math.min(LADDER.length - 1, windowOver(S, Date.now()) ? 0 : S.paidN || 0)]; };
 export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { name: 'Uncommon', odds: 21 }, rare: { name: 'Rare', odds: 6.5 }, exotic: { name: 'Exotic', odds: 0.5 } };
 
 // the main line: [id, what to do, a line of help, the check, the reward]
 export const MAIN = [
-  { id: 'net', text: 'Net a fish', help: 'Swim up to a fish and press Space (key 1 is the net).', need: 1, on: 'catch', pay: 10 },
-  { id: 'sell', text: 'Sell your catch', help: 'Climb aboard the Margaret and sell at the stern, or press U at her side.', need: 1, on: 'sell', pay: 15 },
-  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The Shop in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 20 },
-  { id: 'wear', text: 'Put on something new', help: 'Press B for your inventory and drag it onto Earl, or click it and Put on.', need: 1, on: 'wear', pay: 10 },
-  { id: 'sub', text: 'Take the sub down to 60 m', help: 'Climb into the sub at her stern; W and S to dive and rise.', need: 60, on: 'subDepth', pay: 25 },
-  { id: 'chamber', text: 'Bring an animal up alive in the sub', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 30 },
-  { id: 'aquarium', text: 'Put an animal in the aquarium', help: "The lit tank in the cabin. Mark one to Keep when you sell, then put it in at the tank.", need: 1, on: 'aquarium', pay: 30 },
-  { id: 'trap', text: 'Set a trap', help: 'Buy one from Bayside, then key 5 near the surface to set it at a depth.', need: 1, on: 'trap', pay: 20 },
+  { id: 'net', text: 'Net a fish', help: 'Swim up to a fish and press Space (key 1 is the net).', need: 1, on: 'catch', pay: 20 },
+  { id: 'sell', text: 'Sell your catch', help: 'Climb aboard the Margaret and sell at the stern, or press U at her side.', need: 1, on: 'sell', pay: 30 },
+  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The Shop in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 40 },
+  { id: 'wear', text: 'Put on something new', help: 'Press B for your inventory and drag it onto Earl, or click it and Put on.', need: 1, on: 'wear', pay: 30 },
+  { id: 'sub', text: 'Take the sub down to 60 m', help: 'Climb into the sub at her stern; W and S to dive and rise.', need: 60, on: 'subDepth', pay: 80 },
+  { id: 'chamber', text: 'Bring an animal up alive in the sub', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 100 },
+  { id: 'aquarium', text: 'Put an animal in the aquarium', help: "The lit tank in the cabin. Mark one to Keep when you sell, then put it in at the tank.", need: 1, on: 'aquarium', pay: 120 },
+  { id: 'trap', text: 'Set a trap', help: 'Buy one from Bayside, then key 5 near the surface to set it at a depth.', need: 1, on: 'trap', pay: 80 },
   { id: 'done', text: 'That is the basics', help: 'The rest of the sea is yours to find. Quests on the board pay cash.', need: 0, on: null, pay: 0, gift: 'split' },
 ];
 
 // the board's quests, by kind: what to do at each rarity, and the pay
 const KINDS = {
-  catch: (r) => ({ n: [5, 12, 25, 50][r], pay: [90, 280, 950, 4200][r], text: (q) => `Catch ${q.n} animals` }),
-  deep: (r) => ({ d: [40, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [120, 450, 1600, 6500][r], text: (q) => `Catch ${q.n > 1 ? q.n + ' animals' : 'an animal'} below ${q.d} m` }),
-  sell: (r) => ({ n: [150, 700, 3000, 15000][r], pay: [60, 240, 900, 4000][r], text: (q) => `Sell $${q.n.toLocaleString()} of catch` }),
-  photo: (r) => ({ n: [1, 3, 6, 12][r], pay: [80, 300, 900, 3800][r], text: (q) => `Photograph ${q.n} new species` }),
-  tag: (r) => ({ n: [1, 2, 4, 8][r], pay: [100, 350, 1100, 4500][r], text: (q) => `Tag ${q.n} animal${q.n > 1 ? 's' : ''}` }),
+  catch: (r) => ({ n: [5, 12, 25, 50][r], pay: [135, 420, 1425, 6300][r], text: (q) => `Catch ${q.n} animals` }),
+  deep: (r) => ({ d: [40, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [240, 900, 3200, 13000][r], // (4.0.0) the deep pays most
+    text: (q) => `Catch ${q.n > 1 ? q.n + ' animals' : 'an animal'} below ${q.d} m` }),
+  sell: (r) => ({ n: [150, 700, 3000, 15000][r], pay: [90, 360, 1350, 6000][r], text: (q) => `Sell $${q.n.toLocaleString()} of catch` }),
+  photo: (r) => ({ n: [1, 3, 6, 12][r], pay: [120, 450, 1350, 5700][r], text: (q) => `Photograph ${q.n} new species` }),
+  tag: (r) => ({ n: [1, 2, 4, 8][r], pay: [150, 525, 1650, 6750][r], text: (q) => `Tag ${q.n} animal${q.n > 1 ? 's' : ''}` }),
   species: (r, rnd, P) => {
     const deep = [60, 250, 700, 1600][r];
-    const pool = SPECIES.filter((s) => canTakeLive(s) && s.dmin <= deep && s.dmin >= deep * 0.25 && liveValue(s) > 0.5);
+    // (4.0.0) never a legendary (they are met, not ordered) nor an undocumented one
+    const pool = SPECIES.filter((s) => canTakeLive(s) && !s.undoc && !s.giant && !LEGENDARY.has(s.id) && rarityOf(s).id !== 'legendary' && s.dmin <= deep && s.dmin >= deep * 0.25 && liveValue(s) > 0.5);
     const sp = pool[Math.floor(rnd() * pool.length)]; if (!sp) return null;
-    // (3.7.0) a multiple of its value for the cheap ones; for an exotic or a legendary (worth thousands already)
-    // a quarter more than the market, or the board would pay more than a lifetime of diving
-    const v = liveValue(sp), mult = v >= 1000 ? 1.25 : [2.5, 3, 3.5, 4][r];
+    // (4.0.0) finding one particular animal is hard (you have to know it when you see it): ten times what it
+    // fetches for a common, uncommon or rare one, five times for an exotic
+    const v = liveValue(sp), mult = rarityOf(sp).id === 'exotic' ? 5 : 10;
     return { id: sp.id, n: 1, pay: Math.round(v * mult + [40, 150, 500, 2000][r]), text: () => `Bring up a live ${sp.name.toLowerCase()}` };
   },
 };
@@ -50,7 +57,8 @@ export const QUEST_HOURS = { common: 12, uncommon: 21, rare: 36, exotic: 60 };
 export const questLeft = (q, now = Date.now()) => Math.max(0, (q.until || now) - now);
 
 export function Q(P) {
-  const S = P.quests || (P.quests = { main: 0, mainProg: 0, board: [], boardAt: 0, done: 0 });
+  const S = P.quests || (P.quests = { main: 0, mainProg: 0, board: [], freeAt: 0, paidN: 0, done: 0 });
+  if (S.freeAt === undefined) { S.freeAt = 0; S.paidN = 0; } // (4.0.0) older saves: the free refresh is ready
   // (3.0.40) the main line remembers what he has already done for steps still ahead of it; an older save
   // starts from what can be told (money earned means a fish has been caught and sold)
   if (!S.seen) { S.seen = {}; if ((P.lifetime || 0) > 0) { S.seen.net = 1; S.seen.sell = 1; } }
@@ -68,25 +76,30 @@ export function newQuest(P, rnd = Math.random, taken = new Set()) {
     const kind = kinds[Math.floor(rnd() * kinds.length)];
     const q = KINDS[kind](r, rnd, P); if (!q) continue;
     const key = kind + (q.id || ''); if ([...taken].some((t) => t === key || (kind === 'catch' && t.startsWith('catch')))) continue; // one of each kind on the board
-    return { key, kind, rarity, n: q.n, d: q.d, id: q.id, pay: q.pay, text: q.text(q), prog: 0, until: Date.now() + QUEST_HOURS[rarity] * 3600000 };
+    return { key, kind, rarity, n: q.n, d: q.d, id: q.id, pay: q.pay, text: q.text(q), prog: 0, until: Date.now() + QUEST_HOURS[rarity] * 3600000, fresh: true };
   }
   return null;
 }
 const ownsKind = (P, kind) => kitOf(P).items.some((it) => ITEMS[it.id] && ITEMS[it.id].kind === kind);
-// top the board up to three (a new one replaces a claimed one at once)
+// (4.0.0) keep the board at three: a quest whose time has run out is replaced by a new one (marked NEW), and so is
+// a claimed one, but only when its time runs out; until then it stays on the board, dimmed. A finished quest not
+// yet claimed never runs out.
 export function fillQuests(P) {
-  const now = Date.now(); Q(P).board.forEach((q) => { if (!q.until) q.until = now + QUEST_HOURS[q.rarity || 'common'] * 3600000; });
-  Q(P).board = Q(P).board.filter((q) => q.prog >= q.n || q.until > now); // run out (unless done and waiting to be claimed)
-  const S = Q(P), taken = new Set(S.board.map((q) => q.key.replace(/(common|uncommon|rare|exotic)$/, '')));
+  const now = Date.now(), S = Q(P);
+  S.board.forEach((q) => { if (!q.until) q.until = now + QUEST_HOURS[q.rarity || 'common'] * 3600000; });
+  S.board = S.board.filter((q) => (q.prog >= q.n && !q.claimed) || q.until > now);
+  const taken = new Set(S.board.map((q) => q.key.replace(/(common|uncommon|rare|exotic)$/, '')));
   while (S.board.length < 3) { const q = newQuest(P, Math.random, taken); if (!q) break; S.board.push(q); taken.add(q.key); }
-  if (!S.boardAt) S.boardAt = Date.now();
 }
-// new quests: free when the three hours are up, otherwise for the fee (unclaimed finished ones are kept)
+// new quests by hand: the free one if it is ready, otherwise the next price on the ladder (the caller charges it).
+// Finished quests not yet claimed are kept; everything else is replaced.
 export function refreshBoard(P, paid) {
-  const S = Q(P);
-  if (!paid && boardIn(P) > 0) return false;
-  S.board = S.board.filter((q) => q.prog >= q.n);
-  S.boardAt = Date.now(); fillQuests(P);
+  const S = Q(P), now = Date.now();
+  if (windowOver(S, now)) S.paidN = 0;
+  if (!paid) { if (!windowOver(S, now)) return false; S.freeAt = now + BOARD_MS; }
+  else S.paidN = (S.paidN || 0) + 1;
+  S.board = S.board.filter((q) => q.prog >= q.n && !q.claimed);
+  fillQuests(P);
   return true;
 }
 
@@ -99,7 +112,7 @@ export function questEvent(P, type, data = {}) {
   changed = follow(S) || changed;
   // the board
   for (const q of S.board) {
-    if (q.prog >= q.n) continue;
+    if (q.prog >= q.n || q.claimed) continue;
     let add = 0;
     if (type === 'catch' && q.kind === 'catch') add = 1;
     if (type === 'catch' && q.kind === 'deep' && (data.depth || 0) >= q.d) add = 1;
@@ -135,8 +148,8 @@ export function claim(P, which) {
     return { pay: m.pay, gift: m.gift || null, text: m.text };
   }
   const i = S.board.findIndex((q) => q.key === which); if (i < 0) return null;
-  const q = S.board[i]; if (q.prog < q.n) return null;
-  S.board.splice(i, 1); S.done++; fillQuests(P);
+  const q = S.board[i]; if (q.prog < q.n || q.claimed) return null;
+  q.claimed = true; S.done++; // (4.0.0) it stays, dimmed, until its time runs out or the board is refreshed
   return { pay: q.pay, text: q.text };
 }
-export const readyCount = (P) => { const S = Q(P), m = MAIN[S.main]; return (m && m.on && S.mainProg >= m.need ? 1 : 0) + (m && !m.on ? 1 : 0) + S.board.filter((q) => q.prog >= q.n).length; };
+export const readyCount = (P) => { const S = Q(P), m = MAIN[S.main]; return (m && m.on && S.mainProg >= m.need ? 1 : 0) + (m && !m.on ? 1 : 0) + S.board.filter((q) => q.prog >= q.n && !q.claimed).length; };

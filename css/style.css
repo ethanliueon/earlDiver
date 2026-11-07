@@ -2184,3 +2184,9 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 #inventory .sp-acts button:hover:not(:disabled)::before { transform: translateX(3px); }
 #inventory .sp-acts button:active:not(:disabled) { transform: none; box-shadow: none; }
 #inventory .sp-acts button:disabled { opacity: 0.3; }
+
+/* (4.0.0) quests: new ones marked, finished ones dimmed until their own time runs out */
+#quests .qs-new { display: inline-block; margin-left: 10px; padding: 1px 6px 0; border-radius: 2px; font: 400 9px var(--stencil, monospace); font-style: normal; letter-spacing: 0.16em; text-transform: uppercase; color: #12200f; background: #9cc27a; vertical-align: 2px; }
+#quests .qs-q.claimed { opacity: 0.45; filter: saturate(0.4); }
+#quests .qs-q.claimed .qs-t span { font-style: normal; }
+#quests .qs-paid { font: 400 10px var(--stencil, monospace); letter-spacing: 0.16em; text-transform: uppercase; color: #9cc27a; }

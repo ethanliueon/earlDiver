@@ -188,14 +188,15 @@ const ui = new UI({
   onPlay: () => withLoading(() => startRun()),
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
-  onBuy: (k) => buy(k),
-  onOldBuy: (k) => oldBuy(k),
+  onBuy: (k) => guardBuy(costOf(k), () => buy(k)),
+  onOldBuy: (k) => guardBuy(k.startsWith('chest:') ? costOf(k) : costOf('old:' + k.slice(5)), () => oldBuy(k), () => ui.oldCard(null)),
   questsReady: () => (profile ? questsReady(profile) : 0),
   // (3.0.0) a shop's cart, checked out at once: all of it, or nothing (cash and room in the locker)
   onCheckout: (keys) => {
     const P = profile, its = keys.map((k) => ITEMS[k.slice(5)]).filter(Boolean);
     if (!its.length) return false;
     const total = its.reduce((a, it) => a + it.price, 0);
+    if (!guardBuy.ok && needsConfirm(total)) return guardBuy(total, () => ui.h.onCheckout(keys));
     if (lockerFree(P) < its.length) { hud.toast(`The locker is full (${LOCKER}): sell something first`, 'warn'); return false; }
     if (!spend(P, total)) return false;
     for (const it of its) { giveItem(P, it.id); if (P.wish === it.id) P.wish = null; }
@@ -226,6 +227,7 @@ const ui = new UI({
   },
   onQuestRefresh: (paid) => {
     const P = profile;
+    if (paid && !guardBuy.ok && needsConfirm(refreshPrice(P))) return guardBuy(refreshPrice(P), () => ui.h.onQuestRefresh(true));
     if (paid && !spend(P, refreshPrice(P))) return false;
     if (!refreshBoard(P, paid)) return false;
     saveProfile(P); audio.ready && audio.click(); return true;
@@ -341,6 +343,38 @@ function showOldCard(H) {
   const def = ITEMS[it.id], sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
   ui.oldCard(`<div class="oc-top r-${def.rarity}"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""><div class="oc-t"><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><span>${def.line || ''}</span>${def.good ? `<i>${def.good}</i>` : ''}<div class="oc-sk">${sk}</div></div></div>
     <div class="oc-buy"><small>${daysLeft(P) <= 1 ? 'She takes it all away soon.' : `She keeps these out another ${daysLeft(P)} days.`}</small><em>${money(it.price, false)}</em><button data-oc="item:${H.i}" ${P.cash < it.price ? 'disabled' : ''}>Take it</button></div>`);
+}
+// (4.0.0) anything that costs more than a fifth of the cash on hand is asked about first
+const needsConfirm = (price) => !!profile && price > 0 && price <= profile.cash && price > 0.2 * profile.cash;
+function guardBuy(price, fn, after) {
+  if (guardBuy.ok || !needsConfirm(price)) return fn();
+  const pct = Math.round((price / profile.cash) * 100);
+  ui.confirm(`Spend ${money(price)}?`, `That is ${pct} % of the ${money(profile.cash)} you have.`, 'Buy it', 'Not now', () => {
+    guardBuy.ok = true; let r; try { r = fn(); } finally { guardBuy.ok = false; }
+    if (r && after) after();
+    ui.refreshOpen();
+  });
+  return false;
+}
+// what a buy key costs, for the question above (0: nothing asked)
+function costOf(kind) {
+  const P = profile; if (!P) return 0;
+  const tail = (n) => kind.slice(n);
+  if (kind.startsWith('chest:')) return (CHESTS[tail(6)] || {}).price || 0;
+  if (kind.startsWith('item:')) return (ITEMS[tail(5)] || {}).price || 0;
+  if (kind.startsWith('suit:')) return (ITEMS[tail(5)] || {}).price || 0;
+  if (kind.startsWith('old:')) { const it = oldStock(P).items[+tail(4)]; return it && !it.sold ? it.price : 0; }
+  if (kind.startsWith('up:')) return TRACKS[tail(3)] ? upgradeCost(P, tail(3)) : 0;
+  if (kind.startsWith('gear:')) return (GEAR[tail(5)] || {}).price || 0;
+  if (kind.startsWith('trap:')) return (TRAPS[tail(5)] || {}).price || 0;
+  if (kind.startsWith('subnet:')) return (NETS_SUB[tail(7)] || {}).price || 0;
+  if (kind === 'patch') return PATCH_PRICE;
+  if (kind === 'replace') return replacementPrice(P);
+  if (kind === 'gallery') return GALLERY_STEPS[P.galleryLv || 0] || 0;
+  if (kind === 'canisters') return CANISTERS.price;
+  if (SUB_ADDONS[kind]) return SUB_ADDONS[kind].price;
+  if (SUPPLIES[kind]) return SUPPLIES[kind].price;
+  return 0;
 }
 function oldBuy(what) {
   const P = profile;
@@ -1471,7 +1505,9 @@ function update(dt) {
     else if (pressed.has('f-tap') && atStation) ui.toggleCatalog(undefined, 'station');
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
-    if (pressed.has('l')) {
+    if (pressed.has('o')) ui.toggleQuests(); // (4.0.0) the quest board
+    if (pressed.has('l') && (g.aboard || g.helm)) { g.sub.lightsOn = !g.sub.lightsOn; audio.ready && audio.click(); } // (4.0.0) aboard the Margaret: the sub's lights, quietly
+    else if (pressed.has('l')) {
       g.lampFlashT = g.time;
       if (e.inSub) { g.sub.lightsOn = !g.sub.lightsOn; e.lampWanted = g.sub.lightsOn; } // outside, only his own lamp: the sub keeps its lights as they were
       else { const was = e.lampOn || (e.y <= 1 && !e.lampAuto && e.lampWanted); e.lampAuto = false; e.lampWanted = !was; }
@@ -1482,6 +1518,9 @@ function update(dt) {
     // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
     if (pressed.has('b')) ui.toggleInventory();
+    // (4.0.0) the shipyard: part of the Margaret, opened with P anywhere aboard her (deck, cabin, wheel) or
+    // alongside her (in the water at her side, or in the sub in her cradle)
+    if (pressed.has('p')) { if (g.aboard || g.helm || atBoat) { audio.ready && audio.click(); ui.openShop('sub', ['sub']); } else hud.toast('The yard is aboard the Margaret: P there', 'warn'); }
     if (pressed.has('v') && g.helm) { leaveHelm(); audio.ready && audio.click(); } // (the helm is taken aboard, at the wheel)
     if (pressed.has('q')) {
       const old = (profile.oldLures || 0) > 0;
@@ -1533,7 +1572,7 @@ function update(dt) {
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
-    if (pressed.has('p')) { hud.showFps = !hud.showFps; }
+    if (pressed.has('`')) { hud.showFps = !hud.showFps; } // (4.0.0: P is the shipyard now)
     if (pressed.has('x')) devMaxAll();
     if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out

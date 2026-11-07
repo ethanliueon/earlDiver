@@ -315,16 +315,19 @@ export class UI {
         <div class="qs-pay">${m.gift ? 'a gift' : money(m.pay, false)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
     html += `<h3>The board</h3>`;
+    const hm = (ms) => { const totM = Math.ceil(ms / 60000), h = Math.floor(totM / 60), mi = totM % 60; return h ? `${h} h ${mi} min` : `${mi} min`; };
     for (const q of S.board) {
-      const ok = q.prog >= q.n;
-      const left = questLeft(q), lh = Math.floor(left / 3600000), lm = Math.ceil((left % 3600000) / 60000);
-      const timer = ok ? 'done: claim it' : lh >= 1 ? `${lh} h left` : `${lm} min left`;
-      html += `<div class="qs-q r-${q.rarity}${ok ? ' ready' : ''}"><div class="qs-t"><b>${q.text}</b><small class="qs-time">${timer}</small>${q.n > 1 ? bar(q.prog, q.n) + `<span>(${q.kind === 'sell' ? money(q.prog, false) + '/' + money(q.n, false) : q.prog + '/' + q.n})</span>` : ''}</div>
-        <div class="qs-pay">${money(q.pay, false)}${ok ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div>`;
+      // (4.0.0) a claimed quest stays, dimmed, until its time runs out; a new one is marked NEW until the board is seen
+      const ok = q.prog >= q.n, left = questLeft(q);
+      const timer = q.claimed ? `done · a new quest in ${hm(left)}` : ok ? 'done: claim it' : `${hm(left)} left`;
+      html += `<div class="qs-q r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b><small class="qs-time">${timer}</small>${q.n > 1 && !q.claimed ? bar(q.prog, q.n) + `<span>(${q.kind === 'sell' ? money(q.prog, false) + '/' + money(q.n, false) : q.prog + '/' + q.n})</span>` : ''}</div>
+        <div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : money(q.pay, false)}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div>`;
     }
-    const wait = boardIn(P), totM = Math.ceil(wait / 60000), hrs = Math.floor(totM / 60), mins = totM % 60, price = refreshPrice(P);
-    html += `<div class="qs-refresh">${wait > 0 ? `<span>New quests free in ${hrs ? hrs + ' h ' : ''}${mins} min</span><button data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now · ${money(price, false)}</button>` : '<button data-q="refresh|free">New quests</button>'}</div>`;
+    // (4.0.0) the free refresh, or the next price on the ladder for this three-hour window
+    const wait = boardIn(P), price = refreshPrice(P);
+    html += `<div class="qs-refresh">${wait > 0 ? `<span>Free refresh in ${hm(wait)}</span><button data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now · ${money(price, false)}</button>` : '<button data-q="refresh|free">New quests · free</button>'}</div>`;
     $('quests').querySelector('.qs-body').innerHTML = html;
+    if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
   anyOpen() { return this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
   closeAll() { this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
@@ -344,6 +347,16 @@ export class UI {
     el.hidden = false; el.querySelector('.cf-no').focus();
   }
   confirmOpen() { return !$('confirm').hidden; }
+  // (4.0.0) after a purchase confirmed in the dialog: whatever shop is open shows the new state
+  refreshOpen() {
+    const open = (id) => { const el = $(id); return el && !el.hidden; };
+    if (open('shop')) this.renderWorkshop();
+    if (open('catalog') && this.catalog.render) this.catalog.render();
+    if (open('dave') && this.dave.render) this.dave.render();
+    if (open('cave')) this.renderCave();
+    if (open('quests')) this.renderQuests();
+    if (open('inventory')) this.renderInventory();
+  }
   // the shop, opened on one tab (a station aboard the Margaret)
   openShop(tab, allowed = null) {
     this.shopTab = tab;
