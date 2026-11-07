@@ -1063,7 +1063,7 @@ function leaveSub() {
   e.inSub = false;
   e.x = sub.x - sub.facing * 1.5; e.y = Math.max(0.4, sub.y + 2.6); e.vx = 0; e.vy = 0;
   // (2.5.0: leaving the sub no longer puts it in her cradle: it docks when the Margaret gets under way)
-  if (e.y > (e.pressStart || 300)) { hud.toast('Outside. The pressure is immense.', 'warn'); g.pressWarned = true; } // (3.0.0) back; (3.0.17) from the suit's own limit
+  if (e.y > (e.pressStart || 300)) { hud.toast('Outside, the pressure is immense.', 'warn'); g.pressWarned = true; } // (3.0.0) back; (3.0.17) from the suit's own limit
 
   audio.ready && audio.click();
 }
@@ -1788,7 +1788,7 @@ function update(dt) {
     if (e.inSub && g.sub.o2 > 0 && e.o2 < e.o2Max) { const r = Math.min(e.o2Max - e.o2, (e.o2Max / 3.5) * dt); e.o2 += r; } // (only while the cabin has air to give)
     // (3.0.17) swimming past what the suit can take: said once, and again only after he has come back above it
     { const pS = e.pressStart || 300;
-      if (!e.inSub && !g.aboard && e.y > pS + 2 && !g.pressWarned) { g.pressWarned = true; hud.toast(`Past ${pS} m, more than the suit can take: the pressure is eating your air`, 'warn'); }
+      if (!e.inSub && !g.aboard && e.y > pS + 2 && !g.pressWarned) { g.pressWarned = true; hud.toast(`Diving past ${pS} m: pressure warning`, 'warn'); }
       else if (e.inSub || e.y < pS - 5) g.pressWarned = false; }
     g.diverDrain = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
     g.diverDrain *= e.o2Mul;
