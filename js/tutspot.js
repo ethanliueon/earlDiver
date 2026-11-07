@@ -52,13 +52,23 @@ function visible(el) {
 export class TutSpot {
   constructor() {
     const el = document.createElement('div'); el.id = 'tut-spot'; el.hidden = true;
-    el.innerHTML = '<div class="ts-frame"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-hole"></div><div class="ts-arrow"></div><div class="ts-say"></div><div class="ts-key"><kbd></kbd><span></span></div>';
+    el.innerHTML = '<div class="ts-frame"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-hole"></div><div class="ts-arrow"></div><div class="ts-say"></div><div class="ts-key"><kbd></kbd><span></span></div><div class="ts-line"></div>';
     document.body.appendChild(el);
     this.el = el; this.frame = el.querySelector('.ts-frame'); this.hole = el.querySelector('.ts-hole'); this.arrow = el.querySelector('.ts-arrow');
     this.blocks = [...el.querySelectorAll('.ts-block')];
     this.say = el.querySelector('.ts-say'); this.keyBox = el.querySelector('.ts-key');
     this.kbd = this.keyBox.querySelector('kbd'); this.keyText = this.keyBox.querySelector('span');
     this.lastTarget = null;
+    this.line = el.querySelector('.ts-line'); this.lineText = null;
+  }
+  // (4.3.8) the tutorial's instruction, on its own line at the left under the quest tracker (not in the game's
+  // message line at the top, where it held other messages back). It stays while it is the instruction.
+  setLine(text) {
+    if (text === this.lineText) return;
+    this.lineText = text;
+    if (!text) { this.line.classList.remove('in'); return; }
+    this.line.classList.remove('in'); void this.line.offsetWidth; // restart the fade-in
+    this.line.textContent = text; this.line.classList.add('in');
   }
   find(sels) {
     for (const s of sels || []) {
@@ -69,13 +79,19 @@ export class TutSpot {
   }
   hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
-  update(on, spot) {
-    if (!on) { this.el.hidden = true; this.lastTarget = null; LOCK = null; return; }
-    this.el.hidden = false; this.hideParts();
+  update(on, spot, text = null) {
+    if (!on) { this.el.hidden = true; this.lastTarget = null; LOCK = null; this.setLine(null); return; }
+    this.el.hidden = false; this.hideParts(); this.setLine(text);
     // a confirm plate is up: point at its yes button when the step expects one (a purchase), else stay out of the way
     const conf = document.getElementById('confirm');
     if (spot && conf && !conf.hidden) spot = spot.confirm ? { sel: ['#confirm .cf-yes'], say: spot.confirm, below: true } : null; // (4.3.5) the arrow under the button, off the words
     if (!spot) { this.lastTarget = null; return; }
+    // (4.3.8) a point on screen (the game's own prompt): a bobbing arrow over it, nothing else
+    if (spot.point) {
+      this.arrow.style.display = 'block'; this.arrow.className = 'ts-arrow down';
+      this.arrow.style.left = spot.point.x + 'px'; this.arrow.style.top = (spot.point.y - 40) + 'px';
+      return;
+    }
     const t = this.find(spot.sel);
     if (t) {
       // keep it on screen inside a scrolling panel (the shop, the inventory)

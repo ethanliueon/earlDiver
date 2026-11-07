@@ -977,8 +977,15 @@ function tutor() {
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
   }
   g.tut = { text, to, fish, prompt, toLabel, spot, door };
-  if (text && g.tutSaid !== text) { g.tutSaid = text; hud.toast(text, 'tut'); } // said once when it changes, straight away (4.3.5)
-  else if (!text && qOpen && g.tutSaid) { g.tutSaid = null; messages.dropTut(); } // (4.3.5) the quests are open: no words over them
+  // (4.3.8) the instruction has its own line at the left (tutspot.js), so the game's own messages at the top are
+  // never held back by it. None while the quests are open: the arrow at Claim is enough.
+  if (qOpen) g.tut.text = null;
+  // (4.3.8) the key asked for is already in the game's own prompt (U  Sell, F  Climb aboard): no key-cap of ours,
+  // just an arrow pointing at that prompt
+  if (spot && spot.act && !spot.sel && hud.promptPos) {
+    const k = keyFor(spot.act), pt = hud.promptPos.txt || '';
+    if (k && new RegExp(`(^|·)\\s*(hold\\s+)?${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s{2}`, 'i').test(pt)) g.tut.spot = { point: { x: hud.promptPos.x, y: hud.promptPos.y } };
+  }
 }
 const tutSpot = new TutSpot();
 function startRun() {
@@ -2368,7 +2375,7 @@ function frame(now) {
   airOver(g);
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
-  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && profile.tut === 'on' && !!g.tut; tutSpot.update(on, on ? g.tut.spot : null); } // (4.3.0)
+  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && profile.tut === 'on' && !!g.tut; tutSpot.update(on, on ? g.tut.spot : null, on ? g.tut.text : null); } // (4.3.0)
   // dread colour grading on the scene canvas only
   const fx = g.fx;
   // no steady blur: it comes in slow pulses, a swell of fog every few seconds that clears again

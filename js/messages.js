@@ -18,7 +18,6 @@ export class Messages {
     requestAnimationFrame(tick);
   }
   kindOf(text, kind = '') {
-    if (kind === 'tut') return { cls: 'note' };
     if (kind.startsWith('rar:')) return { cls: 'rar', col: kind.slice(4) };
     if (kind === 'warn') return { cls: DANGER.test(text) ? 'danger' : 'warn' };
     return { cls: kind || 'plain' };
@@ -31,14 +30,6 @@ export class Messages {
     if (same(this.cur) && !this.cur.leaving) { this.cur.n++; this.cur.t = 0; this.paint(this.cur); return; }
     const q = this.queue.find(same); if (q) { q.n++; return; }
     const m = { text, k, n: 1, t: 0, hold: HOLD[k.cls] || 3 };
-    // (4.3.5) the tutorial's next instruction: said now, not after whatever is waiting. It takes the place of any
-    // older instruction (up or waiting) at once, and cuts a plain line short (never a danger)
-    if (kind === 'tut') {
-      m.tut = true; m.hold = 6;
-      this.queue = this.queue.filter((x) => !x.tut); this.queue.unshift(m);
-      if (this.cur && !this.cur.leaving && this.cur.k.cls !== 'danger') this.cur.hold = Math.min(this.cur.hold, this.cur.tut ? this.cur.t : this.cur.t + 0.3);
-      return;
-    }
     // danger goes to the front; the queue stays short (the oldest plain lines give way)
     if (k.cls === 'danger') this.queue.unshift(m); else this.queue.push(m);
     while (this.queue.length > 3) { const i = this.queue.findIndex((x) => x.k.cls !== 'danger'); this.queue.splice(i >= 0 ? i : this.queue.length - 1, 1); }
@@ -46,8 +37,6 @@ export class Messages {
     if (this.cur) this.cur.hold = Math.min(this.cur.hold, Math.max(1.3, this.cur.t + 0.2));
   }
   clear() { this.queue = []; if (this.cur) this.cur.hold = 0; }
-  // (4.3.5) the tutorial has nothing to say now (its arrow is enough): its line goes, at once
-  dropTut() { this.queue = this.queue.filter((x) => !x.tut); if (this.cur && this.cur.tut) this.cur.hold = 0; }
   update(dt) {
     if (this.cur) {
       this.cur.t += dt;
