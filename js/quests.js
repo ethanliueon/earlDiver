@@ -10,6 +10,8 @@ import { canTakeLive, liveValue, rarityOf, LEGENDARY } from './specimens.js';
 import { kitOf, ITEMS, FREE } from './items.js';
 const STARTER = new Set(Object.values(FREE)); // (4.0.6) what he starts with is not bought, nor new to put on
 const bought = (id) => ITEMS[id] && !ITEMS[id].free && !STARTER.has(id);
+// (4.3.0) a thing he paid for (marked when it is bought; a tutorial gift, like the flick net, is not)
+const paidFor = (it) => !!(it && it.paid);
 
 // (4.0.0) refreshing the board by hand: one free refresh, then a three-hour window in which more refreshes cost
 // $100, $300, $1,000, $2,500 and then $5,000 each; when the window ends, the next is free again. A new game
@@ -29,9 +31,9 @@ export const MAIN = [
   { id: 'swim', text: 'Swim down to 10 m', help: 'Earl swims toward the mouse (or use W A S D). Shift is faster, and uses more air.', need: 10, on: 'swimDepth', pay: 10 },
   { id: 'observe', text: 'Observe a fish', help: 'Swim close to a fish and press F: you learn what it is, and it goes in your journal (J).', need: 1, on: 'observe', pay: 20 },
   { id: 'net', text: 'Net a fish', help: 'With the net out (key 1), get close and press Space or click. Small, slow fish are easiest.', need: 1, on: 'catch', pay: 20, kit: [['item', 'flicknet']] },
-  { id: 'sell', text: 'Sell your catch', help: 'Climb aboard the Margaret and sell, or press U at her side.', need: 1, on: 'sell', pay: 30 },
-  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 40 },
-  { id: 'wear', text: 'Put on something new', help: 'Press B for your inventory and drag it onto Earl, or click it and Put on.', need: 1, on: 'wear', pay: 30 },
+  { id: 'sell', text: 'Sell your catch', help: 'Swim up beside the Margaret and press U, then Sell all.', need: 1, on: 'sell', pay: 30 },
+  { id: 'buy', text: 'Buy a piece of gear from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought gear goes into your inventory (supplies don't count).", need: 1, on: 'bought', pay: 40 },
+  { id: 'wear', text: 'Put on the gear you bought', help: 'Press B for your inventory, click it and Put it on (or drag it onto Earl).', need: 1, on: 'wear', pay: 30 },
   { id: 'sub', text: 'Take the sub down to 60 m', help: 'Swim into the sub at her stern (F); W and S to dive and rise.', need: 60, on: 'subDepth', pay: 50 },
   { id: 'air', text: 'Top up the cabin air', help: 'When the cabin air is down, press R in the sub: a backup tank fills it to full.', need: 1, on: 'airTank', pay: 20, kit: [['supply', 'airTank', 1]] },
   { id: 'trawl', text: 'Let out the trawl net', help: 'In the sub, under way below 6 m, press N: the net drops from the hatch. N again closes it. The catch lands on the floor of the sub, out of water: get it into a tank (T) within a minute.', need: 1, on: 'trawl', pay: 30, kit: [['trawl', 'basic']] },
@@ -86,6 +88,14 @@ export function Q(P) {
   if (!S.seen) { S.seen = {}; if ((P.lifetime || 0) > 0) { S.seen.net = 1; S.seen.sell = 1; } }
   // (4.0.6) a save from before the tutorial: the same step, by name, in the new Log; what it has already done counts
   if (!S.v) { S.v = 2; const id = OLD_MAIN[S.main] || 'done', k = MAIN.findIndex((m) => m.id === id); if (S.main > 0 || (P.lifetime || 0) > 0) { S.main = Math.max(0, k); S.seen.swim = 10; S.seen.observe = 1; } }
+  // (4.3.0) the Log counts only the step it is on: progress noted ahead of it by older versions is dropped (it let
+  // one action finish several steps at once). Gear bought before purchases were marked counts as paid for, except
+  // the flick net, which the Log itself gives.
+  if (S.v < 3) {
+    S.v = 3;
+    for (let i = S.main + 1; i < MAIN.length; i++) delete S.seen[MAIN[i].id];
+    for (const it of kitOf(P).items) if (bought(it.id) && it.id !== 'flicknet' && !it.gift) it.paid = true;
+  }
   return S;
 }
 // (3.0.40) note progress on any step of the main line not yet claimed; the active step's counter follows it
@@ -132,10 +142,12 @@ export function refreshBoard(P, paid) {
 export function questEvent(P, type, data = {}) {
   const S = Q(P);
   let changed = false;
-  // the main line: this step and every one still ahead of it
-  for (let i = S.main; i < MAIN.length; i++) { const st = MAIN[i]; if (st.on === type && st.on !== 'subDepth') changed = mark(S, st, (S.seen[st.id] || 0) + (data.n || 1)) || changed; }
+  // (4.3.0) the main line: only the step it is on. One thing done finishes one step, never the ones after it
+  const st = MAIN[S.main];
+  if (st && st.on === type && st.on !== 'subDepth') changed = mark(S, st, (S.seen[st.id] || 0) + (data.n || 1)) || changed;
   changed = follow(S) || changed;
-  // the board
+  // the board (it opens once the tutorial is over)
+  if (tutorialOn(P)) return changed;
   for (const q of S.board) {
     if (q.prog >= q.n || q.claimed) continue;
     let add = 0;
@@ -153,11 +165,10 @@ export function questEvent(P, type, data = {}) {
 export function questTick(g, P) {
   const S = Q(P), e = g.earl, K = kitOf(P);
   let ch = false;
-  // every step not yet claimed, so what he does early still counts when its turn comes
-  for (let i = S.main; i < MAIN.length; i++) {
+  // (4.3.0) only the step the Log is on ('bought' comes as an event, from the purchase itself)
+  for (let i = S.main; i <= S.main && i < MAIN.length; i++) {
     const st = MAIN[i]; if (!st.on || (S.seen[st.id] || 0) >= st.need) continue;
-    if (st.on === 'bought' && K.items.some((it) => bought(it.id))) ch = mark(S, st, 1) || ch;
-    if (st.on === 'wear' && Object.values(K.on).some((u) => { const it = u && K.items.find((q) => q.u === u); return it && bought(it.id); })) ch = mark(S, st, 1) || ch;
+    if (st.on === 'wear' && Object.values(K.on).some((u) => paidFor(u && K.items.find((q) => q.u === u)))) ch = mark(S, st, 1) || ch;
     if (st.on === 'subDepth' && e.inSub) ch = mark(S, st, Math.floor(g.sub.y)) || ch;
     if (st.on === 'subAlive' && (g.subTank.some((s) => s.cond > 0.3) || g.subTank.length && g.sub.y < 3)) ch = mark(S, st, 1) || ch;
     if (st.on === 'swimDepth' && !e.inSub) ch = mark(S, st, Math.floor(e.y)) || ch;
@@ -174,9 +185,13 @@ export function claim(P, which) {
     S.main++; S.mainProg = 0; S.done++; follow(S); // the next step: already done, if he has done it
     return { pay: m.pay, gift: m.gift || null, kit: m.kit || null, text: m.text };
   }
+  if (tutorialOn(P)) return null; // (4.3.0) the board opens after the tutorial
   const i = S.board.findIndex((q) => q.key === which); if (i < 0) return null;
   const q = S.board[i]; if (q.prog < q.n || q.claimed) return null;
   q.claimed = true; S.done++; // (4.0.0) it stays, dimmed, until its time runs out or the board is refreshed
   return { pay: q.pay, text: q.text };
 }
-export const readyCount = (P) => { const S = Q(P), m = MAIN[S.main]; return (m && m.on && S.mainProg >= m.need ? 1 : 0) + (m && !m.on ? 1 : 0) + S.board.filter((q) => q.prog >= q.n && !q.claimed).length; };
+export const readyCount = (P) => { const S = Q(P), m = MAIN[S.main]; return (m && m.on && S.mainProg >= m.need ? 1 : 0) + (m && !m.on ? 1 : 0) + (tutorialOn(P) ? 0 : S.board.filter((q) => q.prog >= q.n && !q.claimed).length); };
+// (4.3.0) the guided tutorial is running (the first six steps of the Log, until it hands over)
+export const TUT_IDS = new Set(['swim', 'observe', 'net', 'sell', 'buy', 'wear']);
+export function tutorialOn(P) { if (!P || P.tut !== 'on') return false; const m = MAIN[Q(P).main]; return !!m && TUT_IDS.has(m.id); }

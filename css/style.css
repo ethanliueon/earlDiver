@@ -2246,3 +2246,27 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 #catalog .cat-main, #catalog .cat-nav { min-height: 0; }
 #catalog .cat-main { padding-bottom: 40px; }
 #catalog .cat-main::after { content: ''; display: block; height: 1px; }
+
+/* (4.3.0) the tutorial's spotlight (js/tutspot.js): shade everything but the next thing to click */
+#tut-spot { position: fixed; inset: 0; z-index: 9400; pointer-events: none; }
+#tut-spot[hidden] { display: none; }
+#tut-spot .ts-hole { position: fixed; border-radius: 8px; border: 3px solid #ffd45a;
+  box-shadow: 0 0 0 200vmax rgba(2, 8, 14, 0.55), 0 0 18px 4px rgba(255, 212, 90, 0.75);
+  animation: ts-pulse 1.1s ease-in-out infinite; transition: left .15s, top .15s, width .15s, height .15s; }
+#tut-spot .ts-arrow { position: fixed; font-size: 38px; line-height: 1; color: #ffd45a; text-shadow: 0 2px 6px rgba(0,0,0,0.8); }
+#tut-spot .ts-arrow.down { transform: translateX(-50%) rotate(90deg); animation: ts-bob-down .8s ease-in-out infinite; }
+#tut-spot .ts-arrow.up { transform: translateX(-50%) rotate(-90deg); animation: ts-bob-up .8s ease-in-out infinite; }
+#tut-spot .ts-say { position: fixed; transform: translateX(-50%); max-width: min(360px, 86vw); padding: 7px 14px; border-radius: 6px;
+  font: 600 15px/1.3 system-ui, sans-serif; color: #1c1404; background: #ffd45a; box-shadow: 0 4px 14px rgba(0,0,0,0.5); text-align: center; white-space: normal; }
+#tut-spot .ts-key { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px;
+  padding: 10px 18px 10px 12px; border-radius: 10px; background: rgba(8, 18, 26, 0.88); box-shadow: 0 0 0 2px #ffd45a, 0 6px 18px rgba(0,0,0,0.6);
+  font: 600 17px/1.3 system-ui, sans-serif; color: #fff4d0; max-width: 90vw; }
+#tut-spot .ts-key kbd { min-width: 46px; height: 46px; padding: 0 10px; display: grid; place-items: center; border-radius: 8px;
+  font: 700 22px/1 system-ui, sans-serif; color: #1c1404; background: linear-gradient(#fff2c0, #ffd45a); border-bottom: 4px solid #b8902a;
+  animation: ts-press 1s ease-in-out infinite; }
+@keyframes ts-pulse { 50% { box-shadow: 0 0 0 200vmax rgba(2, 8, 14, 0.55), 0 0 28px 8px rgba(255, 212, 90, 0.95); } }
+@keyframes ts-bob-down { 50% { margin-top: 10px; } }
+@keyframes ts-bob-up { 50% { margin-top: -10px; } }
+@keyframes ts-press { 50% { transform: translateY(3px); border-bottom-width: 1px; } }
+@media (prefers-reduced-motion: reduce) { #tut-spot * { animation: none !important; } }
+#quests .qs-locked { margin: 6px 4px 10px; padding: 10px 12px; border: 1px dashed rgba(90, 70, 30, 0.5); border-radius: 6px; font-style: italic; opacity: 0.8; }
