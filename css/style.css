@@ -1293,3 +1293,41 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .lk-card.r-legendary .lk-sk.leg { padding: 6px 9px; margin-top: 2px; border-radius: 2px; color: #2e220a;
   background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #8a6a2c); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 1px 0 #2a1e08; }
 #inventory .lk-card.r-legendary .lk-sk.leg b { color: #1e1606; }
+
+/* ---------- chests (2.9.0) ---------- */
+.ch-odds span { display: inline !important; margin: 0 !important; font: inherit !important; }
+.ch-odds { display: block; margin-top: 4px; font: 12px var(--serif); color: var(--paint-dim, #9a9a88); }
+.ch-odds .r-common { color: var(--r-common); } .ch-odds .r-uncommon { color: var(--r-uncommon); } .ch-odds .r-rare { color: var(--r-rare); }
+.ch-odds .r-exotic { color: var(--r-exotic); } .ch-odds .r-legendary { color: var(--r-legendary); }
+.dv-sub { margin: 10px 0 2px; font: 12px var(--stencil, monospace); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; }
+.dv-row.ch img { width: 96px; height: 75px; object-fit: contain; }
+#cave .ch-row { display: grid; grid-template-columns: 110px 1fr auto; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+#cave .ch-row img { width: 110px; height: 86px; object-fit: contain; }
+#cave .ch-row b { display: block; font: 400 18px var(--serif); } #cave .ch-row .ch-txt > span { display: block; font: italic 14px var(--serif); opacity: 0.8; }
+#catalog .cat-chest { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; padding: 14px; background: #fbf8f0; border: 1px solid var(--rule); margin-bottom: 14px; }
+#catalog .cat-chest img { width: 100%; height: auto; display: block; }
+#catalog .cat-chest h3 { margin: 0; font-weight: 500; font-size: 22px; color: var(--link); }
+#catalog .cat-chest .price { font: 15px var(--mono); margin: 4px 0 8px; }
+#catalog .cat-chest .odds { font-size: 14px; }
+#catalog .cat-chest .odds .r-common { color: #6a6a5a; } #catalog .cat-chest .odds .r-uncommon { color: #3a7a3a; } #catalog .cat-chest .odds .r-rare { color: #2a5a9a; } #catalog .cat-chest .odds .r-exotic { color: #7a3a9a; }
+@media (max-width: 700px) { #catalog .cat-chest { grid-template-columns: 1fr; } }
+/* the reveal: the game's steel panel, the chest, the thing rising out of it */
+.chest-reveal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(6,10,10,0.72); }
+.chest-reveal[hidden] { display: none; }
+.cr-box { position: relative; width: min(560px, calc(100vw - 32px)); padding: 18px 20px 16px; border-radius: 6px; cursor: pointer;
+  background: linear-gradient(180deg, var(--steel), var(--steel-lo)); box-shadow: 0 0 0 1px #12150f, 0 0 0 3px var(--steel-hi), 0 0 0 4px #12150f, 0 18px 40px rgba(0,0,0,0.5); }
+.cr-box canvas { position: static; inset: auto; display: block; width: 100%; height: auto; z-index: auto; }
+.cr-item { display: flex; gap: 14px; align-items: flex-start; margin-top: -40px; padding: 10px 12px; border-radius: 4px; background: rgba(0,0,0,0.32); border: 2px solid var(--rc, #888); opacity: 0; position: relative; }
+.cr-item.r-common { --rc: var(--r-common); } .cr-item.r-uncommon { --rc: var(--r-uncommon); } .cr-item.r-rare { --rc: var(--r-rare); } .cr-item.r-exotic { --rc: var(--r-exotic); } .cr-item.r-legendary { --rc: var(--brass); }
+.cr-item img { width: 150px; height: 90px; object-fit: contain; flex: none; background: rgba(0,0,0,0.22); }
+.cr-txt .nm { display: block; font: 400 21px var(--serif); color: var(--paint, #ecead8); }
+.cr-txt .rr { font: 10px var(--stencil, monospace); letter-spacing: 0.16em; text-transform: uppercase; color: var(--rc); }
+.cr-txt p { margin: 4px 0 0; font: italic 14px var(--serif); color: var(--paint-dim, #b8b6a0); }
+.cr-sks { margin-top: 6px; font: 13px var(--serif); color: var(--paint-dim, #b8b6a0); }
+.cr-sks b { font-weight: 500; color: #9ad8ff; margin-right: 4px; } .cr-sks .leg b { color: var(--brass-hi); }
+.cr-acts { display: none; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+.chest-reveal.done .cr-acts { display: flex; } .chest-reveal.done .cr-skip { display: none; } .chest-reveal.done .cr-box { cursor: default; }
+.cr-acts button { font: 15px var(--serif); padding: 6px 16px; border: 0; border-radius: 3px; cursor: pointer; color: #2e220a; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
+.cr-acts .cr-done { background: linear-gradient(180deg, var(--steel-hi), var(--steel)); color: var(--paint, #ecead8); }
+.cr-skip { position: absolute; right: 14px; top: 10px; font: italic 12px var(--serif); color: var(--paint-dim, #9a9a88); opacity: 0.7; }
+@media (max-width: 520px) { .cr-item { flex-direction: column; } .cr-item img { width: 100%; } }

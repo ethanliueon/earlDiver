@@ -81,10 +81,16 @@ up to IV, plus exactly one legendary skill.
 
 | Shop | Chest | Price | Odds lean |
 |---|---|---|---|
-| Dave | Crate | ~$2,000 | mostly Uncommon and Rare |
-| Dave | Strongbox | ~$8,000 | mostly Rare, a chance of Exotic |
-| The old one | Offering | ~$25,000 | Rare and Exotic |
-| The old one | Reliquary | ~$90,000 | Exotic, a small chance of Legendary (the only source) |
+| Bayside Marine Supply | Surplus crate | $900 | C 60 · U 30 · R 9 · X 1 |
+| The research station | Equipment case | $3,000 | C 10 · U 45 · R 43 · X 2 |
+| Dave | Tea chest | $2,000 | C 20 · U 50 · R 25 · X 5 |
+| Dave | Strongbox | $6,000 | U 30 · R 60 · X 10 |
+| Dave | Bosun's footlocker | $15,000 | U 5 · R 79 · X 15 · L 1 |
+| Dave | Expedition trunk | $32,000 | R 78 · X 20 · L 2 |
+| The old one | Offering | $25,000 | R 60 · X 40 |
+| The old one | Reliquary | $90,000 | X 85 · L 15 |
+
+(Built in 2.9.0, `js/chests.js`; odds in %. The station's case waits for the station.)
 
 ## 5. Air, upgrades, the radio, quests, the Margaret (decided after v3's first draft)
 

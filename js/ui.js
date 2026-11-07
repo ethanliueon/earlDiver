@@ -22,6 +22,7 @@ import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, galleryS
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom } from './tankroom.js';
+import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB } from './capture.js';
@@ -79,6 +80,9 @@ export class UI {
     this.cabin = new Cabin($('cabin'), { close: () => this.toggleCabin(false), catalog: () => this.toggleCatalog(true), station: (id) => h.onStation && h.onStation(id), footstep: (v) => h.onFootstep && h.onFootstep(v), tankFish: () => { const P0 = h.getProfile && h.getProfile(); return P0 ? Object.values(aquariumOf(P0).display) : []; }, light: () => { const P0 = h.getProfile && h.getProfile(); return P0 ? aquariumOf(P0).light || 'day' : 'day'; }, blocked: () => !$('workshop').hidden || !$('catalog').hidden || this.confirmOpen(), suit: () => { const g0 = h.getGame(); return g0 && g0.earl ? g0.earl.suit : 'wet'; }, daylight: () => { const g0 = h.getGame(); return g0 && g0.day ? g0.day.light : 1; } });
     this.dave = new DaveShop($('dave'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => { h.onBuy(k); }, sellFind: (k) => h.onDaveSell(k), payFinds: () => (h.payFinds ? h.payFinds() : 1), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleDave(false) });
     this.gallery = new Gallery($('gallery'), { catch: () => (h.aquariumCatch ? h.aquariumCatch() : []), act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
+    // (2.9.0) a chest opening, over whichever shop it was bought in
+    this.chest = new ChestReveal($('chest'), { picture: (def, w, hh) => pictureOf(def.kind, def, w, hh, true), putOn: (u) => h.onEquip('on:' + u),
+      close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
@@ -89,6 +93,7 @@ export class UI {
       const k = b.dataset.cave;
       if (k.startsWith('tab:')) this.caveTab = k.slice(4);
       else if (k.startsWith('ware:')) h.onWare(k.slice(5));
+      else if (k.startsWith('chest:')) h.onBuy(k);
       else if (k === '!trade') { h.onCaveTrade([...this.caveSel]); this.caveSel.clear(); }
       else if (this.caveSel.has(k)) this.caveSel.delete(k); else this.caveSel.add(k);
       this.renderCave();
@@ -245,7 +250,8 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  anyOpen() { return this.stationsOpen() || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  showChest(key, q) { this.chest.open(key, q); }
+  anyOpen() { return this.stationsOpen() || !$('chest').hidden || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
   closeAll() { this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
@@ -527,7 +533,13 @@ export class UI {
     this.renderCounter($('cave-cash'), money(P.cash));
     $('cave-coins').innerHTML = `${COIN}${P.coins || 0}`;
     $('cave-sub').textContent = `A giant anglerfish, older than the boat · this dive it craves: ${off.craving.name.toLowerCase()}`;
-    let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">The old one's wares</button></nav>`;
+    let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">The old one's wares</button><button data-cave="tab:chests" class="${this.caveTab === 'chests' ? 'on' : ''}">What the deep took</button></nav>`;
+    if (this.caveTab === 'chests') {
+      html += '<p class="shop-note">Bundles left in the silt of the cave. The Reliquary is the only place the oldest things come from.</p>';
+      html += chestsOf('oldone').map((c) => `<div class="ch-row"><img src="${chestPicture(c.look, 192, 150)}" alt=""><div class="ch-txt"><b>${c.name}</b><span>${c.line}</span><small class="ch-odds">${oddsText(c.odds)}</small></div><button data-cave="chest:${c.key}" ${P.cash + 1e-6 < c.price ? 'disabled' : ''}>Open · ${money(c.price, false)}</button></div>`).join('');
+      $('cave-body').innerHTML = html;
+      return;
+    }
     if (this.caveTab === 'wares') {
       for (const [k, W] of Object.entries(WARES)) {
         const g = this.h.getGame();

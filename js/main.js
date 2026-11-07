@@ -22,6 +22,7 @@ import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
+import { CHESTS, rollChest } from './chests.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
@@ -559,6 +560,16 @@ function syncProfile() {
 function buy(kind) {
   const P = profile, sub = g.sub, e = g.earl;
   let ok = false;
+  if (kind.startsWith('chest:')) {
+    // (2.9.0) a chest: bought and opened at once, one item into the locker. Not with a full locker.
+    const key = kind.slice(6), C = CHESTS[key];
+    if (C && lockerFree(P) <= 0) hud.toast(`The locker is full (${LOCKER}): sell something first`, 'warn');
+    else if (C && spend(P, C.price)) {
+      const def = rollChest(key), q = def && giveItem(P, def.id);
+      if (q) { ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); }
+    }
+    return ok;
+  }
   if (kind.startsWith('item:')) {
     // (2.8.0) bought: into the locker, put on by hand in the inventory (B). Not if the locker is full.
     const it = ITEMS[kind.slice(5)];

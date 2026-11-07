@@ -6,6 +6,7 @@
 import { ITEMS, ownsItem, worn as wornItem } from './items.js';
 import { SUITS, GOODS, money } from './economy.js';
 import { pictureOf } from './catalog.js';
+import { chestsOf, oddsText, chestPicture } from './chests.js';
 
 export const DAVE_FINDS = ['pearl', 'sapphire', 'bone', 'glass', 'nodule'];
 export const DAVE_RATE = 1.25; // what he pays, against the Margaret's price
@@ -64,7 +65,8 @@ export class DaveShop {
     if (!P || !g) return;
     this.root.querySelector('.dv-cash b').textContent = money(P.cash, false);
     this.root.querySelector('.dv-says').innerHTML = `<b>Dave:</b> “${esc(this.line)}”`;
-    this.root.querySelector('.dv-list').innerHTML = this.wares(P).map((w) => {
+    const chests = chestsOf('dave').map((c) => `<div class="dv-row ch"><img src="${chestPicture(c.look, 192, 150)}" alt=""><div class="dv-txt"><b>${esc(c.name)}</b><span>${esc(c.line)}</span><small class="ch-odds">${oddsText(c.odds)}</small></div><button data-dv="buy|chest:${c.key}" ${P.cash + 1e-6 < c.price ? 'disabled' : ''}>Open ${money(c.price, false)}</button></div>`).join('');
+    this.root.querySelector('.dv-list').innerHTML = `<h4 class="dv-sub">Boxes, unopened</h4>${chests}<h4 class="dv-sub">Gear</h4>` + this.wares(P).map((w) => {
       const btn = w.owned ? `<span class="dv-own">${w.on ? 'on you' : 'yours'}</span>` : `<button data-dv="buy|${w.key}" ${P.cash + 1e-6 < w.price ? 'disabled' : ''}>Buy ${money(w.price, false)}</button>`;
       return `<div class="dv-row${w.owned ? ' owned' : ''}"><img src="${w.pic}" alt=""><div class="dv-txt"><b>${esc(w.name)}</b><span>${esc(w.line)}</span>${w.good ? `<em class="g">+ ${esc(w.good)}</em>` : ''}${w.bad ? `<em class="b">− ${esc(w.bad)}</em>` : ''}</div>${btn}</div>`;
     }).join('');

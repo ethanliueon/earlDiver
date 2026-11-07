@@ -11,12 +11,13 @@ import { toolIcon } from './tools_draw.js';
 import { drawSpecialPicture } from './item_art.js';
 import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
+import { chestsOf, oddsText, chestPicture } from './chests.js';
 
 const CATS = [
   ['home', 'Home'], null,
   ['net', 'Hand nets'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
   ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null,
-  ['supply', 'Supplies'], ['yard', 'The yard'],
+  ['supply', 'Supplies'], ['chest', 'Surplus crates'], ['yard', 'The yard'],
 ];
 const LEDE = {
   net: 'Key 1 under water. You carry one; change it in your inventory (B) on deck or in the sub.',
@@ -93,6 +94,9 @@ export class Catalog {
       } else html += `<p class="cat-lede">Diving gear and supplies, sent out to the boat the same day.</p>`;
       const pick = ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'].map((k) => this.find(k)).filter((q) => q && !q.e.owned).slice(0, 3);
       if (pick.length) html += `<h4>New in</h4><div class="cat-grid">${pick.map((q) => this.card(q.e)).join('')}</div>`;
+    } else if (this.page === 'chest') {
+      html += `<h2>Surplus crates</h2><p class="cat-lede">Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.</p>`;
+      html += chestsOf('bayside').map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)} · not enough cash` : `Buy and open · ${money(c.price, false)}`}</button></div></div>`).join('');
     } else if (this.find(this.page)) {
       html += this.itemPage(this.find(this.page));
     } else {
