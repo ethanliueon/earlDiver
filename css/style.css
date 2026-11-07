@@ -1447,3 +1447,13 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 
 /* (3.0.25) the tank room light switches, beside its nameplate (clear of the ceiling lamp) */
 .tankroom .tr-lights { left: 200px; top: 28px; transform: none; z-index: 6; }
+
+/* (3.0.28) the locker: forty boxes, the empty ones dim; the card's comparison with what he has on */
+.lk-tile.empty { opacity: 0.35; border-style: dashed !important; cursor: default; background: rgba(0,0,0,0.12); }
+.lk-vs { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+.lk-vs h5 { margin: 0 0 4px; font: 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(220,226,224,0.6); }
+.lk-vs .vs-row { display: flex; justify-content: space-between; gap: 12px; font: 14px var(--serif); padding: 2px 0; }
+.lk-vs .vs-row span:first-child { color: rgba(220,226,224,0.65); }
+.lk-vs .vs-row.same { opacity: 0.55; }
+.lk-vs .vs-row.sk span:last-child { text-align: right; }
+.lk-vs b.up { color: #8fe08a; font-weight: 500; } .lk-vs b.down { color: #f08a7a; font-weight: 500; }

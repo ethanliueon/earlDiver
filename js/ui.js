@@ -12,7 +12,7 @@ import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
-import { Catalog, pictureOf } from './catalog.js';
+import { Catalog, pictureOf, MEASURES } from './catalog.js';
 import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue } from './items.js';
 const SIDE_TOOLS = new Set(['slurp', 'tag', 'cam']);
 import { kit as ensureKit } from './economy.js';
@@ -406,7 +406,7 @@ export class UI {
     const card = this.lkSel ? this.lockerCard(P, g, free) : '';
     return `<div class="inv-sec wide eq${free ? '' : ' locked'}"><h4>Gear</h4><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="300" height="380"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
-      + `<div class="lk-head"><h4>Locker</h4><span class="${K.items.length >= LOCKER ? 'full' : ''}">${K.items.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}</div>${card}</div>`;
+      + `<div class="lk-head"><h4>Locker</h4><span class="${K.items.length >= LOCKER ? 'full' : ''}">${K.items.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div>${card}</div>`;
   }
   // one thing's card: name in its rarity's colour, what it does, its skills, its set, and what can be done
   lockerCard(P, g, free) {
@@ -417,6 +417,19 @@ export class UI {
       + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span></div>` : '');
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
     const set = S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b> · ${have >= 3 ? 'on' : `${have} of 3 worn`}<span>${S.trait}</span></div>` : '';
+    // (3.0.28) against what he has on of the same kind: each number, then the skills of both
+    let vs = '';
+    const curQ = !on && K.on[it.kind] ? K.items.find((x) => x.u === K.on[it.kind]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
+    if (cur && M) {
+      const rows = M.map(([label, txt, num, hi]) => {
+        const a = txt(cur), b = txt(it);
+        if (a === b) return `<div class="vs-row same"><span>${label}</span><span>${b}</span></div>`;
+        const d = num(it) - num(cur), up = hi ? d > 0 : d < 0;
+        return `<div class="vs-row"><span>${label}</span><span>${a} → <b class="${up ? 'up' : 'down'}">${b} ${up ? '▲' : '▼'}</b></span></div>`;
+      }).join('');
+      const skl = (x) => ((x.sk || []).map(([k, l]) => `${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + roman[l]}`).concat(x.leg ? ['✦ ' + LEGEND[x.leg].name] : []).join(', ') || 'none');
+      vs = `<div class="lk-vs"><h5>Against your ${cur.name}</h5>${rows}${skl(curQ) === "none" && skl(q) === "none" ? "" : `<div class="vs-row sk"><span>Skills</span><span>${skl(curQ)} → <b>${skl(q)}</b></span></div>`}</div>`;
+    }
     const seller = this.h.canSellGear && this.h.canSellGear();
     let acts = '';
     if (free && !on) acts += `<button data-lk="on:${q.u}">Put on</button>`;
@@ -424,7 +437,7 @@ export class UI {
     if (!on && seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell · ${money(sellValue(q), false)}</button>`;
     else if (!on && !seller) acts += '<small>Sell it on the Margaret, or to Dave.</small>';
     return `<div class="lk-card r-${it.rarity}"${it.glow ? ` style="--glow:${it.glow}"` : ''}><i class="lk-orn tl"></i><i class="lk-orn tr"></i><i class="lk-orn bl"></i><i class="lk-orn br"></i><div class="lk-top"><img src="${pictureOf(it.kind, it, 200, 120, true)}" alt=""><div><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ' · net of legend' : ''}</span><p>${it.line || ''}</p></div></div>
-      <div class="lk-good">${it.good || ''}${it.bad ? `<em>Not for: ${it.bad}</em>` : ''}</div>${skills ? `<div class="lk-sks">${skills}</div>` : ''}${set}<div class="lk-acts">${acts}</div></div>`;
+      <div class="lk-good">${it.good || ''}${it.bad ? `<em>Not for: ${it.bad}</em>` : ''}</div>${skills ? `<div class="lk-sks">${skills}</div>` : ''}${set}${vs}<div class="lk-acts">${acts}</div></div>`;
   }
   equipWire(P, g) {
     const root = $('inventory').querySelector('.eq'); if (!root) return;
@@ -460,7 +473,7 @@ export class UI {
     }
     // a card's buttons, and clicking a tile (or a slot's item) to open its card
     root.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); if (k.startsWith('sellgear:')) this.lkSel = null; this.renderInventory(); }));
-    root.querySelectorAll('.lk-tile, .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = this.lkSel === el.dataset.u ? null : el.dataset.u; this.renderInventory(); }));
+    root.querySelectorAll('.lk-tile:not(.empty), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = this.lkSel === el.dataset.u ? null : el.dataset.u; this.renderInventory(); }));
     if (!this.h.canChangeGear()) return;
     const put = (u) => { this.h.onEquip('on:' + u); this.renderInventory(); };
     const off = (kind) => { if (SIDE_TOOLS.has(kind)) { this.h.onEquip('off:' + kind); this.renderInventory(); } };

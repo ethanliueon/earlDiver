@@ -44,7 +44,7 @@ const sizeOf = (it) => (it.minLen ? `${cm(it.minLen)}–${cm(it.maxLen)}` : `up 
 const secs = (s) => (s >= 60 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.round(s)} s`);
 const x = (v) => `×${(Math.round(v * 100) / 100).toString()}`;
 // the numbers compared, per kind: [label, value as text, a number to compare, higher is better?]
-const MEASURES = {
+export const MEASURES = {
   net: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Swing', (it) => (it.time <= 0.85 ? 'quick' : it.time <= 1.2 ? 'steady' : 'slow'), (it) => -it.time, true]],
   slurp: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   tag: [['Range', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
