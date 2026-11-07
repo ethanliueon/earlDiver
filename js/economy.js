@@ -386,9 +386,13 @@ function rescaleTracks(P) {
   P.tlvV = 2;
 }
 export const tlv = (P, t) => { if (!P.tlv) { migrateTracks(P); P.tlvV = 2; } else if (P.tlvV !== 2) rescaleTracks(P); return Math.min(P.tlv[t] || 0, TRACKS[t].max); };
+// (3.0.0) the diver's, the tools' and the buyers' upgrades are scrapped (the gear is the upgrade): their levels
+// count as nothing, even on an old save. The sub's yard (hull, engine, chambers, tanks, rack) and the claw stay.
+const SCRAPPED = new Set(['Diver', 'Buyers', 'Net', 'Slurp gun', 'Tag gun', 'Camera']);
 export const lv = (P, id) => {
-  if (TRACKS[id]) return tlv(P, id);
+  if (TRACKS[id]) return SCRAPPED.has(TRACKS[id].group) ? 0 : tlv(P, id);
   const t = TRACK_OF[id];
+  if (t && SCRAPPED.has(TRACKS[t].group)) return 0;
   if (t) return Math.min(mapLevel(id, t, tlv(P, t)), UPGRADES[id].max);
   return Math.min((P.lv && P.lv[id]) || 0, UPGRADES[id] ? UPGRADES[id].max : Infinity);
 };

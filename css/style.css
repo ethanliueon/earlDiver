@@ -1331,3 +1331,29 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .cr-acts .cr-done { background: linear-gradient(180deg, var(--steel-hi), var(--steel)); color: var(--paint, #ecead8); }
 .cr-skip { position: absolute; right: 14px; top: 10px; font: italic 12px var(--serif); color: var(--paint-dim, #9a9a88); opacity: 0.7; }
 @media (max-width: 520px) { .cr-item { flex-direction: column; } .cr-item img { width: 100%; } }
+
+/* ---------- 3.0.0: one website engine for every shop with a computer ---------- */
+#catalog .cat-cart { font-weight: 500; }
+#catalog .cat-btn2 { margin-left: 12px; font-size: 16px; color: var(--link); }
+#catalog .buy { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+#catalog .rr { font: 12px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin: 2px 0 4px; }
+#catalog .r-common { color: #6a6a5a; } #catalog .r-uncommon { color: #3a7a3a; } #catalog .r-rare { color: #2a5a9a; } #catalog .r-exotic { color: #7a3a9a; } #catalog .r-legendary { color: #9a7020; }
+#catalog .cat-card .tag.r-common, #catalog .cat-card .tag.r-uncommon, #catalog .cat-card .tag.r-rare, #catalog .cat-card .tag.r-exotic { font-style: normal; font-size: 13px; }
+#catalog .cat-cartlist { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 17px; }
+#catalog .cat-cartlist td { padding: 6px 8px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+#catalog .cat-cartlist img { width: 96px; height: 48px; object-fit: contain; display: block; }
+#catalog .cat-cartlist small { display: block; font: 12px var(--mono); color: var(--cmuted); }
+#catalog .cat-cartlist .pr { font: 15px var(--mono); text-align: right; white-space: nowrap; }
+#catalog .cat-cartlist .tot td { font-weight: 500; border-bottom: 0; }
+#catalog .cat-cartlist .rm { color: var(--bad); font-size: 14px; }
+#catalog .cat-cartlist .cat-mini { position: static; }
+/* the research station's stores terminal: a clean institutional site, white and teal, on a grey terminal */
+#catalog.th-station { --navy: #1e5a5a; --navy-lo: #154444; --page: #f4f6f5; --cink: #1e2624; --cmuted: #5e6a68; --rule: #d3dbd9; --link: #18636a; }
+#catalog.th-station .cat-bezel { background: linear-gradient(180deg, #c9cfcf, #a9b1b1 70%, #8f9898); }
+#catalog.th-station .cat-glass { box-shadow: inset 0 0 0 3px #4a5454; }
+#catalog.th-station header h1 { font-family: var(--mono); font-size: 21px; letter-spacing: 0.04em; text-transform: uppercase; }
+/* Dave's homemade site: an old beige terminal, a green page he chose himself, his own heading */
+#catalog.th-dave { --navy: #3a4a2a; --navy-lo: #2a361e; --page: #eef0e2; --cink: #24281c; --cmuted: #66705a; --rule: #d2d6bf; --link: #4a5e1e; }
+#catalog.th-dave .cat-bezel { background: linear-gradient(180deg, #d6cba8, #b8ab84 70%, #9c8f68); }
+#catalog.th-dave header h1 { font-family: 'Caveat', var(--serif); font-size: 32px; font-weight: 700; }
+#catalog.th-dave .cat-glass { box-shadow: inset 0 0 0 3px #5a5238; }

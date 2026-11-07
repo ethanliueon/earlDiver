@@ -161,6 +161,18 @@ const ui = new UI({
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
+  // (3.0.0) a shop's cart, checked out at once: all of it, or nothing (cash and room in the locker)
+  onCheckout: (keys) => {
+    const P = profile, its = keys.map((k) => ITEMS[k.slice(5)]).filter(Boolean);
+    if (!its.length) return false;
+    const total = its.reduce((a, it) => a + it.price, 0);
+    if (lockerFree(P) < its.length) { hud.toast(`The locker is full (${LOCKER}): sell something first`, 'warn'); return false; }
+    if (!spend(P, total)) return false;
+    for (const it of its) { giveItem(P, it.id); if (P.wish === it.id) P.wish = null; }
+    saveProfile(P); audio.ready && audio.sale();
+    hud.toast(its.length === 1 ? `${its[0].name} is in your inventory (B)` : `${its.length} things are in your inventory (B)`, 'big');
+    return true;
+  },
   onSellAll: () => withKept(() => sellAll()),
   onSellSome: (keys) => withKept(() => sellSome(keys)),
   onKeep: (key, on) => keepMark(key, on),
@@ -991,6 +1003,7 @@ function leaveSub() {
   e.inSub = false;
   e.x = sub.x - sub.facing * 1.5; e.y = Math.max(0.4, sub.y + 2.6); e.vx = 0; e.vy = 0;
   // (2.5.0: leaving the sub no longer puts it in her cradle: it docks when the Margaret gets under way)
+  if (e.y > 300) hud.toast('Outside. The pressure is immense.', 'warn'); // (3.0.0) back
 
   audio.ready && audio.click();
 }

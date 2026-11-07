@@ -1,10 +1,10 @@
-// The catalog (2.6.0): Bayside Marine Supply, a plain old shop website on the cabin computer's screen.
-// Home (what you are saving for, and a few new things), a page per category (cards: a picture, the name,
-// the price, one small tag) and a page per thing (the picture, one sentence, Good for / Not for, and the
-// two or three numbers that change against what he has on). No basket: Buy is instant, and the thing is
-// on at once (he can change back in the inventory, B). The yard (the sub's parts) is a link to the old
-// shop screen. Plain words, real units, nothing else. See docs/SHOP_PLAN.md.
-import { ITEMS, ITEMS_OF, kitOf, ownsItem, worn as wornItem, RARITY } from './items.js';
+// The shops' websites (2.6.0; one engine for every shop with a computer since 3.0.0). Bayside Marine Supply on
+// the Margaret's cabin computer, the research station's stores terminal, and Dave's own homemade site: the
+// same plain old shop website (categories down the side, product cards, a product page with Good for / Not
+// for and what changes against what he has on, a wishlist, a cart and one checkout), each with its own name,
+// colours and stock (its specialties). Bought things go into the locker, to be put on in the inventory (B).
+// Gear can be sold back wherever there is a shop. The old one has no website (see main.js / render.js).
+import { ITEMS, ITEMS_OF, kitOf, ownsItem, worn as wornItem, RARITY, isOn, sellValue, LOCKER, lockerFree } from './items.js';
 import { SUITS, TRAPS, SUPPLIES, supplyMax, money, owns, kit } from './economy.js';
 import { NETS_SUB } from './capture.js';
 import { toolIcon } from './tools_draw.js';
@@ -13,12 +13,25 @@ import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
 
-const CATS = [
-  ['home', 'Home'], null,
-  ['net', 'Hand nets'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
-  ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null,
-  ['supply', 'Supplies'], ['chest', 'Surplus crates'], ['yard', 'The yard'],
-];
+// the shops with a website: their names, look and stock. cats: the categories in the side bar (null: a gap)
+export const WEBSHOPS = {
+  bayside: { title: 'Bayside Marine Supply', sub: 'Harbour Road · since 1974', stock: 'catalog', theme: 'bayside',
+    lede: 'Diving gear and supplies, sent out to the boat the same day.', newIn: ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'],
+    cats: [['home', 'Home'], null, ['net', 'Hand nets'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
+      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['chest', 'Surplus crates'], ['sell', 'Sell your gear'], ['yard', 'The yard']],
+    chestTitle: 'Surplus crates', chestLede: 'Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.' },
+  station: { title: 'Station Stores', sub: 'Abyssal Research Station · 280 m · requisitions', stock: 'station', theme: 'station',
+    lede: 'Surplus and spare equipment from the station stores, released to visiting divers. Delivered to your locker.', newIn: [],
+    cats: [['home', 'Index'], null, ['cam', 'Cameras'], ['tag', 'Tag guns'], ['slurp', 'Slurp guns'], ['suit', 'Cold-water suits'], null,
+      ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['chest', 'Equipment cases'], ['sell', 'Return equipment']],
+    chestTitle: 'Equipment cases', chestLede: 'Sealed cases of kit the scientists stopped using. One item in each, unlisted.' },
+  dave: { title: "Dave's Haul", sub: '1,200 m down · cash only · no refunds', stock: 'dave', theme: 'dave',
+    lede: "Deep gear, second hand and first rate. If it's on here, I've got it. If it isn't, I haven't. — Dave", newIn: [],
+    cats: [['home', 'Front page'], null, ['tank', 'Air'], ['suit', 'Deep suits'], ['net', 'Big-game nets'], null,
+      ['fins', 'Fins'], ['bag', 'Bags'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], null, ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
+    chestTitle: 'Boxes, unopened', chestLede: "Whatever came down on the rope. I haven't looked. I say." },
+};
+const ITEM_CATS = ['net', 'slurp', 'tag', 'cam', 'fins', 'tank', 'bag', 'suit'];
 const LEDE = {
   net: 'Key 1 under water. You carry one; change it in your inventory (B) on deck or in the sub.',
   slurp: 'Key 2. For small, quick animals the net would miss.', tag: 'Key 3. A research tag on anything too big to bring up.',
@@ -44,31 +57,49 @@ const MEASURES = {
 
 export class Catalog {
   constructor(root, hooks) {
-    this.root = root; this.h = hooks; this.page = 'home'; this.pics = new Map();
-    root.innerHTML = `<div class="cat-bezel"><div class="cat-glass"><header><h1>Bayside Marine Supply</h1><span class="sub">Harbour Road · since 1974</span><div class="right"><span class="cat-cash"></span><a class="cat-off" href="#">Log off</a></div></header><div class="cat-wrap"><nav class="cat-nav"></nav><main class="cat-main"></main></div></div></div>`;
+    this.root = root; this.h = hooks; this.page = 'home'; this.pics = new Map(); this.carts = {}; this.id = 'bayside'; this.cfg = WEBSHOPS.bayside;
+    root.innerHTML = `<div class="cat-bezel"><div class="cat-glass"><header><h1></h1><span class="sub"></span><div class="right"><a class="cat-cart" href="#" data-go="cart"></a><span class="cat-cash"></span><a class="cat-off" href="#">Log off</a></div></header><div class="cat-wrap"><nav class="cat-nav"></nav><main class="cat-main"></main></div></div></div>`;
     this.nav = root.querySelector('.cat-nav'); this.main = root.querySelector('.cat-main');
     root.querySelector('.cat-off').addEventListener('click', (ev) => { ev.preventDefault(); this.h.close(); });
     root.addEventListener('click', (ev) => {
-      const a = ev.target.closest('[data-go], [data-buy], [data-wish]');
+      const a = ev.target.closest('[data-go], [data-buy], [data-wish], [data-cart], [data-sellfind]');
       if (!a) { if (ev.target === root) this.h.close(); return; }
       ev.preventDefault();
+      if (a.disabled) return;
       if (a.dataset.go) { if (a.dataset.go === 'yard') { this.h.yard(); return; } this.go(a.dataset.go); }
-      else if (a.dataset.buy) { if (a.disabled) return; this.h.buy(a.dataset.buy); this.render(); }
+      else if (a.dataset.buy) { this.h.buy(a.dataset.buy); this.render(); }
       else if (a.dataset.wish) { const P = this.h.getProfile(); P.wish = P.wish === a.dataset.wish ? null : a.dataset.wish; this.h.save(); this.render(); }
+      else if (a.dataset.sellfind) { this.h.sellFind && this.h.sellFind(a.dataset.sellfind); this.render(); }
+      else if (a.dataset.cart) {
+        const cart = this.cart(), [act, arg] = a.dataset.cart.split('|');
+        if (act === 'add' && !cart.includes(arg)) cart.push(arg);
+        else if (act === 'rm') cart.splice(cart.indexOf(arg), 1);
+        else if (act === 'checkout') { const done = this.h.checkout && this.h.checkout(cart.slice()); if (done) cart.length = 0; }
+        this.render();
+      }
     });
     window.addEventListener('keydown', (ev) => { if (!this.root.hidden && ev.key === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); if (this.page.startsWith('item:')) this.go(this.back || 'home'); else this.h.close(); } }, true);
   }
-  show() { this.go('home'); }
+  // open a shop's website (the cart is kept per shop until checkout)
+  show(id = 'bayside') {
+    this.id = WEBSHOPS[id] ? id : 'bayside'; this.cfg = WEBSHOPS[this.id];
+    this.root.className = 'webshop th-' + this.cfg.theme;
+    this.root.querySelector('h1').textContent = this.cfg.title; this.root.querySelector('.sub').textContent = this.cfg.sub;
+    this.go('home');
+  }
+  cart() { return this.carts[this.id] || (this.carts[this.id] = []); }
+  get cats() { return this.cfg.cats; }
   go(page) { if (page.startsWith('item:') && !this.page.startsWith('item:')) this.back = this.page; this.page = page; this.render(); this.main.scrollTop = 0; }
-  // every thing the catalog sells in a category, in one shape
+  // every thing this shop sells in a category, in one shape
   entries(cat) {
     const P = this.h.getProfile(), g = this.h.getGame(); kit(P);
-    if (['net', 'slurp', 'tag', 'cam', 'fins', 'tank', 'bag', 'suit'].includes(cat)) {
+    if (ITEM_CATS.includes(cat)) {
       // (2.8.0) items, suits included; a bought one goes into the locker, and is put on in the inventory (B)
       const on = wornItem(P, cat);
-      return ITEMS_OF(cat, 'catalog').map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad, tag: RARITY[it.rarity].name, rarity: it.rarity,
+      return ITEMS_OF(cat, this.cfg.stock).map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad, tag: RARITY[it.rarity].name, rarity: it.rarity,
         owned: ownsItem(P, it.id), on: !!on && on.id === it.id, pic: [cat, it] }));
     }
+    if (this.id !== 'bayside') return [];
     if (cat === 'trawl') { const T = NETS_SUB.basic, inHatch = g && g.items && g.items.net === 'basic'; return [{ key: 'subnet:basic', id: 'basic', kind: 'trawl', name: T.name, price: T.price, line: "A light net for the sub's belly hatch.", good: 'A haul of shallow fish while you drive', bad: 'Deep animals tear it', owned: inHatch, on: inHatch, onText: 'In the hatch', pic: ['trawl', 0] }]; }
     if (cat === 'trap') {
       const tr = P.traps || {};
@@ -79,35 +110,62 @@ export class Catalog {
     }
     return [];
   }
-  find(key) { for (const c of CATS) if (c && c[0] !== 'home' && c[0] !== 'yard') { const e = this.entries(c[0]).find((q) => q.key === key); if (e) return { e, cat: c[0] }; } return null; }
+  find(key) { for (const c of this.cats) if (c && !['home', 'yard', 'chest', 'sell', 'finds'].includes(c[0])) { const e = this.entries(c[0]).find((q) => q.key === key); if (e) return { e, cat: c[0] }; } return null; }
+  catName(cat) { return (this.cats.find((c) => c && c[0] === cat) || [, ''])[1]; }
   render() {
     const P = this.h.getProfile(); if (!P) return;
+    const cart = this.cart();
     this.root.querySelector('.cat-cash').textContent = `Cash ${money(P.cash)}`;
-    const cur = this.page.startsWith('item:') || this.page.startsWith('suit:') || this.page.startsWith('trap:') || this.page.startsWith('subnet:') ? (this.find(this.page) || {}).cat : this.page;
-    this.nav.innerHTML = CATS.map((c) => (c ? `<a href="#" data-go="${c[0]}" class="${c[0] === cur ? 'on' : ''}">${c[1]}</a>` : '<div class="gap"></div>')).join('');
+    this.root.querySelector('.cat-cart').textContent = `Cart (${cart.length})`;
+    const cur = this.page.includes(':') ? (this.find(this.page) || {}).cat : this.page;
+    this.nav.innerHTML = this.cats.map((c) => (c ? `<a href="#" data-go="${c[0]}" class="${c[0] === cur ? 'on' : ''}">${c[1]}</a>` : '<div class="gap"></div>')).join('');
     let html = '';
     if (this.page === 'home') {
       const wish = P.wish ? this.find('item:' + P.wish) || this.find(P.wish) : null;
       if (wish) {
         const k = Math.min(1, (P.cash || 0) / Math.max(1, wish.e.price));
         html += `<a href="#" class="cat-saving" data-go="${wish.e.key}"><img src="${this.pic(wish.e, 240, 128)}" alt=""><div><small>SAVING FOR</small><div class="nm">${wish.e.name}</div><div class="bar"><i style="width:${Math.round(k * 100)}%"></i></div></div><div class="amt">${money(Math.min(P.cash, wish.e.price), false)} of ${money(wish.e.price, false)}</div></a>`;
-      } else html += `<p class="cat-lede">Diving gear and supplies, sent out to the boat the same day.</p>`;
-      const pick = ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'].map((k) => this.find(k)).filter((q) => q && !q.e.owned).slice(0, 3);
-      if (pick.length) html += `<h4>New in</h4><div class="cat-grid">${pick.map((q) => this.card(q.e)).join('')}</div>`;
+      } else html += `<p class="cat-lede">${this.cfg.lede}</p>`;
+      let pick = this.cfg.newIn.map((k) => this.find(k)).filter((q) => q && !q.e.owned).slice(0, 3);
+      if (!pick.length) pick = ITEM_CATS.flatMap((c) => this.entries(c)).filter((e) => !e.owned).sort((a2, b2) => b2.price - a2.price).slice(0, 3).map((e) => ({ e }));
+      if (pick.length) html += `<h4>${this.id === 'dave' ? 'Just in' : this.id === 'station' ? 'Recently released' : 'New in'}</h4><div class="cat-grid">${pick.map((q) => this.card(q.e)).join('')}</div>`;
     } else if (this.page === 'chest') {
-      html += `<h2>Surplus crates</h2><p class="cat-lede">Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.</p>`;
-      html += chestsOf('bayside').map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)} · not enough cash` : `Buy and open · ${money(c.price, false)}`}</button></div></div>`).join('');
+      html += `<h2>${this.cfg.chestTitle}</h2><p class="cat-lede">${this.cfg.chestLede}</p>`;
+      html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)} · not enough cash` : `Buy and open · ${money(c.price, false)}`}</button></div></div>`).join('');
+    } else if (this.page === 'cart') {
+      html += this.cartPage(P, cart);
+    } else if (this.page === 'sell') {
+      html += this.sellPage(P);
+    } else if (this.page === 'finds') {
+      html += this.h.findsHtml ? this.h.findsHtml() : '';
     } else if (this.find(this.page)) {
       html += this.itemPage(this.find(this.page));
     } else {
-      const name = (CATS.find((c) => c && c[0] === this.page) || [, ''])[1];
       const list = this.entries(this.page);
-      html += `<h2>${name}</h2><p class="cat-lede">${LEDE[this.page] || ''}</p><div class="cat-grid">${list.map((e) => this.card(e)).join('')}</div>`;
+      html += `<h2>${this.catName(this.page)}</h2><p class="cat-lede">${this.id === 'bayside' ? LEDE[this.page] || '' : ''}</p><div class="cat-grid">${list.map((e) => this.card(e)).join('')}</div>`;
     }
     this.main.innerHTML = html;
   }
+  // the cart: what is in it, the total, room in the locker, one checkout
+  cartPage(P, cart) {
+    const rows = cart.map((k) => this.find(k)).filter(Boolean);
+    if (!rows.length) return `<h2>Your cart</h2><p class="cat-lede">Nothing in it yet.</p>`;
+    const total = rows.reduce((a, q) => a + q.e.price, 0), room = lockerFree(P), short = (P.cash || 0) < total, full = rows.length > room;
+    return `<h2>Your cart</h2><table class="cat-cartlist">${rows.map((q) => `<tr><td><img src="${this.pic(q.e, 120, 60)}" alt=""></td><td><a href="#" data-go="${q.e.key}">${q.e.name}</a><small>${q.e.tag || ''}</small></td><td class="pr">${money(q.e.price, false)}</td><td><a href="#" class="rm" data-cart="rm|${q.e.key}">Remove</a></td></tr>`).join('')}
+      <tr class="tot"><td></td><td>Total</td><td class="pr">${money(total, false)}</td><td></td></tr></table>
+      <p class="cat-lede">${full ? `Your locker has room for ${room} more (${LOCKER} in all). Sell something first.` : `Delivered to your locker: put things on in your inventory (B).`}</p>
+      <button class="cat-btn" data-cart="checkout" ${short || full ? 'disabled' : ''}>${short ? `${money(total, false)} · not enough cash` : `Check out · ${money(total, false)}`}</button>`;
+  }
+  // selling gear back: anything in the locker that isn't on him
+  sellPage(P) {
+    const can = this.h.canSell ? this.h.canSell() : true;
+    const list = kitOf(P).items.filter((q) => !isOn(P, q) && ITEMS[q.id] && !ITEMS[q.id].free);
+    let html = `<h2>${this.catName('sell')}</h2><p class="cat-lede">${this.id === 'dave' ? "I'll take it off your hands. Not for much." : 'About a third of what it is worth. What he has on is not for sale.'}</p>`;
+    if (!list.length) return html + '<p class="cat-lede">Nothing to sell: everything in the locker is on him.</p>';
+    return html + `<table class="cat-cartlist">${list.map((q) => { const it = ITEMS[q.id]; return `<tr><td><img src="${pictureOf(it.kind, it, 120, 60)}" alt=""></td><td>${it.name}<small class="r-${it.rarity}">${RARITY[it.rarity].name}</small></td><td class="pr">${money(sellValue(q), false)}</td><td><button class="cat-mini" data-buy="sellgear:${q.u}" ${can ? '' : 'disabled'}>Sell</button></td></tr>`; }).join('')}</table>`;
+  }
   card(e) {
-    const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag">${e.tag || ''}</div>`;
+    const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag${e.rarity ? ' r-' + e.rarity : ''}">${e.tag || ''}</div>`;
     const go = e.kind === 'supply' ? '' : `data-go="${e.key}"`;
     const buy = e.kind === 'supply' ? `<button class="cat-mini" data-buy="${e.key}" ${e.full || this.h.getProfile().cash < e.price ? 'disabled' : ''}>${e.full ? 'Full' : 'Buy'}</button>` : '';
     return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t"><b>${e.name}</b><span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
@@ -127,13 +185,15 @@ export class Catalog {
       if (rows) vs = `<div class="vs"><h3>${cur ? `Against your ${cur.name.toLowerCase()}` : 'What it does'}</h3>${rows}</div>`;
     }
     let btn;
+    const inCart = this.cart().includes(e.key), item = e.key.startsWith('item:');
     if (e.on) btn = `<span class="cat-have">${e.onText || 'You have it on'}</span>`;
     else if (e.owned && e.kind !== 'trawl') btn = `<span class="cat-have">In your locker (B)</span>`;
     else if (e.full) btn = `<span class="cat-have">${e.count}</span>`;
-    else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)} · not enough cash` : `Buy · ${money(e.price, false)}`}</button>` + (e.price > cash && e.kind !== 'trap' ? `<a href="#" class="cat-save" data-wish="${e.key.startsWith('item:') ? e.id : e.key}">${P.wish === e.id || P.wish === e.key ? 'Saving for this ✓' : 'Save for this'}</a>` : '');
-    const name = (CATS.find((c) => c && c[0] === cat) || [, ''])[1];
-    return `<div class="crumbs"><a href="#" data-go="${cat}">${name}</a> ›</div><div class="cat-item"><img src="${this.pic(e, 640, 420)}" alt=""><div>
-      <h2>${e.name}</h2><div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
+    else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)} · not enough cash` : `Buy now · ${money(e.price, false)}`}</button>`
+      + (item ? (inCart ? `<a href="#" class="cat-save" data-go="cart">In your cart ✓</a>` : `<a href="#" class="cat-btn2" data-cart="add|${e.key}">Add to cart</a>`) : '')
+      + (e.price > cash && e.kind !== 'trap' ? `<a href="#" class="cat-save" data-wish="${item ? e.id : e.key}">${P.wish === e.id || P.wish === e.key ? 'Saving for this ✓' : 'Save for this'}</a>` : '');
+    return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><img src="${this.pic(e, 640, 420)}" alt=""><div>
+      <h2>${e.name}</h2>${e.rarity ? `<div class="rr r-${e.rarity}">${RARITY[e.rarity].name}</div>` : ''}<div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
       <div class="gf">${e.good ? `<div class="g">${e.good}</div>` : ''}${e.bad ? `<div class="b">${e.bad}</div>` : ''}</div>${vs}<div class="buy">${btn}</div></div></div>`;
   }
   // the pictures: the game's own drawings where it has them; simple drawn ones for fins, tanks, bags

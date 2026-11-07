@@ -83,7 +83,7 @@ export class UI {
     // (2.9.0) a chest opening, over whichever shop it was bought in
     this.chest = new ChestReveal($('chest'), { picture: (def, w, hh) => pictureOf(def.kind, def, w, hh, true), putOn: (u) => h.onEquip('on:' + u),
       close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
-    this.catalog = new Catalog($('catalog'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
+    this.catalog = new Catalog($('catalog'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
@@ -432,7 +432,7 @@ export class UI {
   galleryOpen() { return !$('gallery').hidden; }
   cabinOpen() { return !$('cabin').hidden; }
   catalogOpen() { return !$('catalog').hidden; }
-  toggleCatalog(force) { const el = $('catalog'), open = force === undefined ? el.hidden : force; el.hidden = !open; if (open) this.catalog.show(); }
+  toggleCatalog(force, shop = 'bayside') { const el = $('catalog'), open = force === undefined ? el.hidden : force; el.hidden = !open; if (open) this.catalog.show(shop); }
   toggleCabin(force) {
     const el = $('cabin'), open = force === undefined ? el.hidden : force;
     el.hidden = !open;
