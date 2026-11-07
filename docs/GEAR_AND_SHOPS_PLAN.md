@@ -143,3 +143,7 @@ up to IV, plus exactly one legendary skill.
   4 Exotic sets, no Legendary set. Any 3 pieces of one set worn turns on its set trait (stronger at Exotic).
   All pieces of a set share its rarity. A set piece rolls one skill fewer than a normal item of its rarity.
   Any chest can give a set piece, at that chest's usual odds.
+- **Frames:** in the locker every item sits in a frame of its rarity's colour; Exotic and Legendary frames
+  are more detailed.
+- **Legendary items leave a trail** as Earl swims, and **every Legendary has Bioluminescence**: like any
+  item with that skill, it glows only while his light is on.
