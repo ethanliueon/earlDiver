@@ -1702,8 +1702,8 @@ function update(dt) {
     // (3.4.0) gathered for a moment and said once: one animal by name, several as one line ("3 animals are
     // dying from barotrauma"); an animal already dying isn't also said to be stressed
     const FM = g.fishMsgs || (g.fishMsgs = { t: 0, deaths: [], ev: [] });
-    for (const s of dl) FM.deaths.push(s);
-    for (const ev of dl.events) FM.ev.push(ev);
+    for (const s of dl) if (!FM.deaths.includes(s)) FM.deaths.push(s);
+    for (const ev of dl.events) if (!FM.ev.some((e) => e.s === ev.s && e.type === ev.type)) FM.ev.push(ev); // (an animal counted once)
     if (FM.deaths.length || FM.ev.length) FM.t += dt;
     if (FM.t > 0.8) { sayFish(FM, whereOf); g.fishMsgs = null; }
     g.catchTarget = null; g.capRarity = null;

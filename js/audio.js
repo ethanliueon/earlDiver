@@ -368,6 +368,10 @@ export class Audio {
   }
   ram() { this.implosionSmall(); this.creak(0.6); }
   implosionSmall() { this.burst('lowpass', 500, 0.6, 1.2, 0.8, this.brown); this.tone(45, 1.4, 0.7, 'sine', 0, 28); this.burst('bandpass', 1200, 4, 0.3, 0.2); }
+  // (3.5.0) a hatch: the dogs drawn back (a clank), the door's weight swinging (a low thud), a ring in the steel
+  hatch(vol = 0.5) { this.burst('bandpass', 1400, 3, 0.12, vol * 0.25); this.thud(vol * 0.6); this.tone(190, 0.6, vol * 0.05, 'sine', 0.05, 170); this.burst('bandpass', 900, 6, 0.3, vol * 0.08, this.white, 0.18); }
+  // paper: a tag stirring
+  rustle(vol = 0.06) { this.burst('bandpass', 3200, 0.9, 0.22, vol); this.burst('highpass', 5200, 0.7, 0.12, vol * 0.6, this.white, 0.08); }
   // (3.3.0) the sub's klaxon: a rising whoop, twice, a little rough
   alarm(vol = 0.05) {
     if (this.muted) return;

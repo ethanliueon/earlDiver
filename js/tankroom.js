@@ -14,11 +14,15 @@ import { xEyes } from './gallery.js';
 import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf} from './capture.js';
 import { UPGRADES } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
+import { paintedText, depthCounter, hatchRim, paperTag, chalkText, chalkArrow, chalkStroke, toggleSwitch, brassTag, ease } from './fittings.js';
 // (3.0.25) the open tank's lights, as the aquarium's
 const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], tint: null }, dim: { name: 'Dim', water: ['#0f3440', '#04151b'], tint: 'rgba(0,10,20,0.45)', glow: true } }; // (3.0.26: no Red in the sub)
 
 const MAX_CHAMBERS = UPGRADES.pressTanks.base + UPGRADES.pressTanks.max;
 const ROOMS = { chambers: 'The chamber room', tank: 'The tank room', big: 'The large tank' }, ROOM_ORDER = ['chambers', 'tank', 'big'];
+// (3.5.0) painted on each room's bulkhead, as a ship marks its compartments
+const ROOM_SIGN = { chambers: 'CHAMBER ROOM', tank: 'TANK ROOM', big: 'LARGE TANK' };
+const TRANS = 0.62; // going through a hatch: the wheel spins, then a dark wipe across, the next room behind it
 // (3.2.0) a chamber, in its own units (3.2.1: 90 taller, so a tall rectangle), about 2.4 times as wide inside (EX more), so they
 // line up almost side by side across the middle of the wall
 const EX = 104, CW = 150 + EX, CH = 420, PIPE_X = CW / 2 + 22; // where the feed pipe comes in
@@ -75,7 +79,7 @@ export class TankRoom {
       const tag = ev.target.closest('[data-tag]');
       if (tag) { this.openKey = this.openKey === tag.dataset.tag ? null : tag.dataset.tag; this.layout(true); return; }
       const go = ev.target.closest('[data-go]');
-      if (go) { this.room = go.dataset.go; this.openKey = null; this.layout(true); }
+      if (go) this.go(go.dataset.go);
     });
     // press on a fish and drag it somewhere; a tap (no drag) opens its tag, or closes an open one
     this.c.addEventListener('pointerdown', (ev) => {
@@ -88,7 +92,9 @@ export class TankRoom {
       if (this.press && this.press.item && !this.drag && Math.hypot(ev.clientX - this.press.x, ev.clientY - this.press.y) > 6) {
         this.drag = { ...this.press.item }; this.openKey = null;
       }
-      this.c.style.cursor = this.drag ? 'grabbing' : this.grabAt(ev.clientX, ev.clientY) ? 'grab' : 'default';
+      // (3.5.0) the hatches and the light switch are the buttons: they catch the light under the pointer
+      this.hot = this.drag || this.trans ? null : this.hotAt(ev.clientX, ev.clientY);
+      this.c.style.cursor = this.drag ? 'grabbing' : this.grabAt(ev.clientX, ev.clientY) ? 'grab' : this.hot ? 'pointer' : 'default';
     });
     this.c.addEventListener('pointerup', (ev) => {
       const press = this.press; this.press = null;
@@ -105,6 +111,7 @@ export class TankRoom {
         const tgt = this.dropAt(ev.clientX, ev.clientY), why = tgt ? null : this.whyNot(ev.clientX, ev.clientY); this.drag = null;
         if (why && this.h.say) this.h.say(why);
         if (tgt) {
+          const P = this.h.getGame() && this.h.getGame().profile; if (P) { P.tips = P.tips || {}; P.tips.drags = (P.tips.drags || 0) + 1; } // (the chalk hint goes once he has the hang of it)
           if (tgt.kind === 'chamber') this.h.act('press', d.where, d.i, tgt.n);
           else if (tgt.kind === 'tank') this.h.act('open', d.where, d.i);
           else if (tgt.kind === 'bag') this.h.act('tobag', d.where, d.i);
@@ -113,6 +120,7 @@ export class TankRoom {
         return;
       }
       if (!press) return;
+      if (!press.item) { const hot = this.hotAt(ev.clientX, ev.clientY); if (hot) { this.useHot(hot); return; } }
       const hit = this.hitTest(ev.clientX, ev.clientY) || (press.item ? this.keyOf(press.item.s) : null);
       this.openKey = hit && hit !== this.openKey ? hit : null;
       this.card = this.openKey ? { key: this.openKey, x: ev.clientX, y: ev.clientY } : null;
@@ -123,11 +131,38 @@ export class TankRoom {
       if (this.root.hidden) return;
       // (3.2.0) three rooms in a row: the chambers, the open tank, the large tank
       const i = ROOM_ORDER.indexOf(this.room), to = ev.key === 'ArrowRight' ? ROOM_ORDER[i + 1] : ev.key === 'ArrowLeft' ? ROOM_ORDER[i - 1] : null;
-      if (to) { this.room = to; this.openKey = null; this.card = null; this.layout(true); }
+      if (to) this.go(to);
     };
     window.addEventListener('keydown', this.onKey);
   }
-  open() { this.openKey = null; this.sig = ''; this.layout(true); }
+  open() {
+    this.openKey = null; this.sig = ''; this.trans = null; this.layout(true);
+    const g = this.h.getGame(), P = g && g.profile;
+    if (P && g.bag.length) { P.tips = P.tips || {}; P.tips.opens = (P.tips.opens || 0) + 1; }
+  }
+  // (3.5.0) through a hatch: the wheel spins, a clunk, a dark wipe across the screen, and the next room behind it
+  go(to) {
+    if (this.trans || !ROOM_ORDER.includes(to) || to === this.room) return;
+    const dir = ROOM_ORDER.indexOf(to) > ROOM_ORDER.indexOf(this.room) ? 1 : -1;
+    this.trans = { to, dir, t: 0, switched: false }; this.openKey = null; this.card = null; this.hot = null;
+    const g = this.h.getGame(), A = g && g.audio;
+    if (A && A.ready && A.hatch) A.hatch();
+    this.layout(true);
+  }
+  // which hatch leads where, in this room
+  hatchTo(side) { return { chambers: { R: 'tank' }, tank: { L: 'chambers', R: 'big' }, big: { L: 'tank' } }[this.room][side] || null; }
+  // what under the pointer can be operated: a hatch, or (in the tank room) the light switch
+  hotAt(cx, cy) {
+    const G = this.geometry();
+    for (const side of ['L', 'R']) { const h = G['hatch' + side], to = this.hatchTo(side); if (to && Math.hypot(cx - h.x, cy - h.y) < h.r + 12) return { kind: 'hatch', side, to }; }
+    const S = this.switchBox; if (this.room === 'tank' && S && cx > S.x - 4 && cx < S.x + S.w + 4 && cy > S.y - 4 && cy < S.y + S.h + 4) return { kind: 'switch' };
+    return null;
+  }
+  useHot(hot) {
+    const g = this.h.getGame(); if (!g) return;
+    if (hot.kind === 'hatch') this.go(hot.to);
+    else if (hot.kind === 'switch' && g.profile) { g.profile.subTankLight = (g.profile.subTankLight || 'day') === 'day' ? 'dim' : 'day'; if (g.audio && g.audio.ready) g.audio.click(); }
+  }
 
   // ---------------- where things go on screen ----------------
   geometry() {
@@ -172,15 +207,10 @@ export class TankRoom {
     this.sig = sig;
     const G = this.geometry();
     this.root.querySelector('.tr-room').textContent = ROOMS[this.room];
-    let html = '';
-    const go = (to, side, label) => `<button class="hatch-btn" data-go="${to}" style="left:${G[side].x}px;top:${G[side].y}px">${label}</button>`;
-    if (this.room === 'chambers') html += go('tank', 'hatchR', 'The tank room →');
-    else if (this.room === 'tank') html += go('chambers', 'hatchL', '← The chamber room') + go('big', 'hatchR', 'The large tank →');
-    else html += go('tank', 'hatchL', '← The tank room');
-    if (this.room === 'big' && !hasBigTank(g)) html += `<div class="tr-note" style="left:${G.big.x + G.big.w / 2}px;top:${G.big.y + G.big.h / 2}px"><b>Not fitted yet</b><span>The large pressure tank goes on this cradle: three animals, or one big one. The sub's yard sells it (the computer in the cabin).</span></div>`;
+    // (3.5.0) the hatches, the room's name, the notes and hints are drawn into the room itself; only the card is HTML
+    // (and, for a screen reader, a button per hatch, unseen)
+    let html = ['L', 'R'].map((side) => { const to = this.hatchTo(side); return to ? `<button class="sr-only" data-go="${to}">${ROOMS[to]}</button>` : ''; }).join('');
     html += this.cardHtml(g, G);
-    const into = { chambers: 'a chamber, or into the tank next door (→)', tank: 'the tank', big: hasBigTank(g) ? 'the large tank' : 'the tank next door (←)' }[this.room];
-    if (g.bag.length && !this.drag) html += `<div class="tr-dragnote">${g.bag.length} in the bag · drag ${g.bag.length > 1 ? 'them' : 'it'} into ${into}</div>`;
     this.over.innerHTML = html;
     this.states(g);
   }
@@ -346,6 +376,12 @@ export class TankRoom {
     if (!g) return;
     this.t += dt; this.infoT += dt;
     this.lightsHtml(g);
+    // the hatch: halfway through the wipe the room changes behind it
+    const T = this.trans;
+    if (T) { T.t += dt; if (!T.switched && T.t >= TRANS * 0.5) { T.switched = true; this.room = T.to; this.layout(true); if (T.to === 'big' && !hasBigTank(g) && g.audio && g.audio.ready && g.audio.rustle) g.audio.rustle(); } if (T.t >= TRANS) this.trans = null; }
+    this.hoverK = this.hoverK || {};
+    for (const k of ['L', 'R', 'switch']) { const on = this.hot && (this.hot.side === k || (k === 'switch' && this.hot.kind === 'switch')); this.hoverK[k] = clamp((this.hoverK[k] || 0) + (on ? dt * 6 : -dt * 4), 0, 1); }
+    this.shownDepth = this.shownDepth == null ? Math.max(0, g.sub.y) : lerp(this.shownDepth, Math.max(0, g.sub.y), clamp(dt * 4, 0, 1));
     if (this.signature(g) !== this.sig) this.layout(true);
     else if (this.infoT > 0.3) { this.infoT = 0; this.states(g); }
     const G = this.geometry(), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -354,14 +390,59 @@ export class TankRoom {
     const ctx = c.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.drawWall(ctx, G, dpr);
+    this.drawSign(ctx, G);
     this.drawDepthLight(ctx, G, g);
     if (this.room === 'chambers') this.drawChamberRoom(ctx, G, g, dt);
     else if (this.room === 'big') this.drawBigRoom(ctx, G, g, dt);
     else this.drawTankRoom(ctx, G, g, dt);
     this.drawBag(ctx, G, g);
+    this.drawHint(ctx, G, g);
     this.drawLamp(ctx, G, g);
+    this.drawCounter(ctx, G, g);
     this.drawAlarmLight(ctx, G, g);
     this.drawDragged(ctx, G, g);
+    this.drawWipe(ctx, G);
+  }
+  // (3.5.0) the room's name, painted large on the bulkhead (under the room's light, as the steel is)
+  drawSign(ctx, G) {
+    const i = ROOM_ORDER.indexOf(this.room), y = G.narrow ? 30 : 44;
+    const nw = paintedText(ctx, `0${i + 1}`, 22, y, G.narrow ? 30 : 44, { alpha: 0.46, spacing: 0.04 });
+    this.signW = 22 + nw + paintedText(ctx, ROOM_SIGN[this.room], 22 + nw + 6, y + 3, G.narrow ? 18 : 26, { alpha: 0.5 }) + 6;
+  }
+  // the depth counter, screwed to the wall beside the name
+  drawCounter(ctx, G, g) {
+    depthCounter(ctx, (this.signW || 300) + 22, G.narrow ? 12 : 18, this.shownDepth || 0, { warn: g.sub.y > g.sub.rated, t: this.t });
+  }
+  // the dark wipe of a hatch
+  drawWipe(ctx, G) {
+    const T = this.trans; if (!T) return;
+    const h = TRANS / 2, inP = ease(T.t / h), outP = ease((T.t - h) / h), W = G.W, edge = 120;
+    let x0, x1;
+    if (T.t < h) { x0 = T.dir > 0 ? W * (1 - inP) : -edge; x1 = T.dir > 0 ? W + edge : W * inP; }
+    else { x0 = T.dir > 0 ? -edge : W * outP; x1 = T.dir > 0 ? W * (1 - outP) : W + edge; }
+    ctx.save();
+    const gr = ctx.createLinearGradient(x0 - edge, 0, x1 + edge, 0);
+    const a = edge / (x1 - x0 + edge * 2);
+    gr.addColorStop(0, 'rgba(4,6,7,0)'); gr.addColorStop(a, 'rgba(4,6,7,1)'); gr.addColorStop(1 - a, 'rgba(4,6,7,1)'); gr.addColorStop(1, 'rgba(4,6,7,0)');
+    ctx.fillStyle = gr; ctx.fillRect(x0 - edge, 0, x1 - x0 + edge * 2, G.H);
+    ctx.restore();
+  }
+  // (3.5.0) a hint in chalk on the bulkhead by the bag, with an arrow to where its fish go; only until he has
+  // moved a few fish (or seen it a few times)
+  drawHint(ctx, G, g) {
+    const P = g.profile || {}, tips = P.tips || {};
+    if (!g.bag.length || this.drag || this.trans || (tips.drags || 0) >= 3 || (tips.opens || 0) > 6 || G.narrow) return;
+    const hk = G.hook, by = hk.y + 8 + G.bagH(g.bag.length) + 44, a = 0.55;
+    if (this.room === 'chambers') {
+      chalkText(ctx, 'drag a fish', hk.x - 70, by, 24, { alpha: a }); chalkText(ctx, 'into a chamber', hk.x - 70, by + 26, 24, { alpha: a });
+      const c = G.chambers[0]; chalkArrow(ctx, hk.x + 70, by + 18, c.x + 18, by - 10, { alpha: a, bend: 26 });
+    } else {
+      const fitted = hasBigTank(g), right = hk.x + 64;
+      const [l1, l2] = this.room === 'tank' ? ['drag a fish', 'into the tank'] : fitted ? ['drag a big one', 'into the large tank'] : ['the open tank', 'is next door'];
+      chalkText(ctx, l1, right, by, 24, { alpha: a, align: 'right' }); chalkText(ctx, l2, right, by + 26, 24, { alpha: a, align: 'right' });
+      if (this.room === 'tank') { const T = G.tank; chalkArrow(ctx, right - 150, by + 16, T.x + T.w - 26, by + 30, { alpha: a, bend: -20 }); }
+      else if (fitted) { const B = G.big; chalkArrow(ctx, right - 160, by + 16, B.x + B.w - 40, B.y + 16, { alpha: a, bend: -10 }); }
+    }
   }
   // the fish in hand follows the pointer, wriggling; where it would land glows
   drawDragged(ctx, G, g) {
@@ -487,8 +568,12 @@ export class TankRoom {
     ctx.fillStyle = rg; ctx.fillRect(0, 0, G.W, G.H);
     ctx.restore();
   }
-  drawHatch(ctx, h, label) {
-    // a round watertight door in the bulkhead, dogged shut, with its handwheel
+  drawHatch(ctx, h, side) {
+    // a round watertight door in the bulkhead, dogged shut, with its handwheel; (3.5.0) the wheel eases round a
+    // little under the pointer and spins when it is opened, and where it goes is stencilled round its rim
+    const to = side ? this.hatchTo(side) : null, hov = side ? (this.hoverK || {})[side] || 0 : 0;
+    const T = this.trans, spinning = T && !T.switched && side && ((T.dir > 0) === (side === 'R'));
+    const wa = hov * 0.35 + (spinning ? ease(T.t / (TRANS / 2)) * Math.PI * 1.2 : 0);
     ctx.save(); ctx.translate(h.x, h.y);
     ctx.fillStyle = '#1d2122'; ctx.beginPath(); ctx.arc(0, 0, h.r + 10, 0, TAU); ctx.fill();
     const dg = ctx.createRadialGradient(-h.r * 0.3, -h.r * 0.3, 4, 0, 0, h.r);
@@ -497,9 +582,10 @@ export class TankRoom {
     ctx.fillStyle = '#7c8587';
     for (let k = 0; k < 16; k++) { const a = k / 16 * TAU; ctx.beginPath(); ctx.arc(Math.cos(a) * (h.r + 4), Math.sin(a) * (h.r + 4), 2.5, 0, TAU); ctx.fill(); }
     ctx.strokeStyle = '#8a9294'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(0, 0, h.r * 0.42, 0, TAU); ctx.stroke();
-    for (let k = 0; k < 3; k++) { const a = k / 3 * TAU + this.t * 0.0; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * h.r * 0.42, Math.sin(a) * h.r * 0.42); ctx.stroke(); }
+    for (let k = 0; k < 3; k++) { const a = k / 3 * TAU + wa; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * h.r * 0.42, Math.sin(a) * h.r * 0.42); ctx.stroke(); }
     ctx.fillStyle = '#8a9294'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU); ctx.fill();
     ctx.restore();
+    if (to) hatchRim(ctx, h, ROOM_SIGN[to], side === 'R' ? 1 : -1, hov);
   }
 
   // ---------------- the chamber room ----------------
@@ -545,7 +631,7 @@ export class TankRoom {
       else this.drawChamber(ctx, g, by.get(n), rating, cmax, outside, dt, n);
       ctx.restore();
     });
-    this.drawHatch(ctx, G.hatchR);
+    this.drawHatch(ctx, G.hatchR, 'R');
   }
   drawBracket(ctx) {
     // straps and bolt holes on the bulkhead, waiting for a chamber
@@ -637,9 +723,11 @@ export class TankRoom {
     this.drawOpenWater(ctx, g, T.w, T.h, dt);
     ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, 0, T.w, 8);
     ctx.restore();
-    this.drawHatch(ctx, G.hatchL);
-    this.drawHatch(ctx, G.hatchR);
+    this.drawHatch(ctx, G.hatchL, 'L');
+    this.drawHatch(ctx, G.hatchR, 'R');
     this.drawPile(ctx, G, g);
+    // (3.5.0) the tank's light: a toggle switch on a plate beside it
+    if (!G.narrow) this.switchBox = toggleSwitch(ctx, T.x - 92, T.y + 24, ((g.profile && g.profile.subTankLight) || 'day') === 'day', { hover: (this.hoverK || {}).switch || 0, lamp: ((g.profile && g.profile.subTankLight) || 'day') === 'day' ? '#f2dc8a' : '#7ab0e8' });
   }
   // (3.0.36) the open tank's water and what swims in it, at 0,0, w by h: here and on the inventory's Catch page
   drawOpenWater(ctx, g, w, h, dt, hits) {
@@ -752,12 +840,19 @@ export class TankRoom {
     if (fitted) this.bigFish = this.drawBigChamber(ctx, g, B, dt);
     else {
       this.bigFish = [];
-      // a stamped padlock on the bulkhead where it will go
-      const cx = B.x + B.w / 2, cy = B.y + B.h * 0.1;
-      ctx.strokeStyle = 'rgba(200,196,176,0.28)'; ctx.fillStyle = 'rgba(200,196,176,0.28)'; ctx.lineWidth = 7;
-      ctx.beginPath(); ctx.arc(cx, cy - 34, 15, Math.PI, 0); ctx.stroke(); ctx.fillRect(cx - 24, cy - 34, 48, 36);
+      // (3.5.0) where it will go, chalked on the bulkhead: its outline on the cradle, and a work-order tag
+      // hanging from the pipe run
+      const capW = Math.min(B.h * 0.5, B.w * 0.14), r = Math.min(16, B.h * 0.12), X0 = B.x + capW - 4, X1 = B.x + B.w, TOP = B.y, BOT = B.y + B.h;
+      const out = new Path2D();
+      out.roundRect(B.x, TOP - B.h * 0.1, capW, B.h * 1.2, 6);
+      out.moveTo(X0, TOP); out.lineTo(X1 - r, TOP); out.quadraticCurveTo(X1, TOP, X1, TOP + r); out.lineTo(X1, BOT - r); out.quadraticCurveTo(X1, BOT, X1 - r, BOT); out.lineTo(X0, BOT);
+      for (const fx of [0.18, 0.78]) { const x = X0 + (X1 - X0) * fx; out.moveTo(x, TOP - 2); out.lineTo(x, BOT + 2); }
+      chalkStroke(ctx, out, { alpha: 0.42, seed: 11 });
+      chalkText(ctx, '3 · or 1 big', X1 - 20, BOT - 26, 22, { align: 'right', alpha: 0.4 });
+      paperTag(ctx, B.x + B.w * 0.5, B.y + B.h * 0.02, 230, 150, { t: this.t, seed: 3, from: { x: B.x + B.w * 0.5 - 30, y: py + 6 }, stamp: 'WORK ORDER',
+        lines: [{ text: 'Large pressure tank', size: 25 }, { text: '3 animals, or 1 big one', size: 20, col: '#4a3c24' }, { text: "from the sub's yard (cabin computer)", size: 17, col: '#5a4a2c' }] });
     }
-    this.drawHatch(ctx, G.hatchL);
+    this.drawHatch(ctx, G.hatchL, 'L');
   }
   // two steel saddles bolted to the deck, and the straps over the top that hold the tank down
   drawCradle(ctx, G, B) {
@@ -875,6 +970,7 @@ export class TankRoom {
     ctx.restore();
     ctx.strokeStyle = 'rgba(160,210,170,0.6)'; ctx.lineWidth = 2; ctx.stroke(bag);
     ctx.fillStyle = '#6a5a3a'; ctx.fillRect(-12, -3, 24, 6); // the drawstring
+    brassTag(ctx, 13, 1, `${n}/${bagSlots(g)}`, 0.25 + Math.sin(this.t * 1.3) * 0.04); // (3.5.0) how full it is, on a brass tag
     ctx.restore();
   }
 

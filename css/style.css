@@ -1970,3 +1970,20 @@ body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { 
 .tr-note b { display: inline-block; padding: 3px 10px 2px; background: #141614; color: #f2f2ea; font: 600 11px var(--mono); letter-spacing: 0.2em; box-shadow: 0 1px 0 rgba(255,255,255,0.08); }
 .tr-note span { margin-top: 8px; font: 15px/1.4 var(--serif); font-style: normal; color: var(--paint); }
 #msgs .msg.in { transition-delay: 0.22s; } /* the next line comes up as the last one has mostly gone */
+
+/* ===================== (3.5.0) the sub's rooms: fittings, not boxes ===================== */
+/* the room's name is painted on the bulkhead and the depth is a counter on the wall (both drawn); the light is a switch */
+#tankroom .tr-plate, #tankroom .tr-lights { display: none !important; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* ? and x: engraved brass plates, screwed on */
+.tr-close, .tr-help-btn { width: 38px; height: 38px; border-radius: 6px; font: 600 19px var(--serif); color: #2a1e08; text-shadow: 0 1px 0 rgba(255,240,200,0.55), 0 -1px 0 rgba(0,0,0,0.25);
+  background: radial-gradient(circle at 5px 5px, #4a3a1a 0 1.3px, transparent 1.8px), radial-gradient(circle at calc(100% - 5px) 5px, #4a3a1a 0 1.3px, transparent 1.8px),
+    radial-gradient(circle at 5px calc(100% - 5px), #4a3a1a 0 1.3px, transparent 1.8px), radial-gradient(circle at calc(100% - 5px) calc(100% - 5px), #4a3a1a 0 1.3px, transparent 1.8px),
+    linear-gradient(180deg, #dcc890, var(--brass) 55%, #7c6436);
+  box-shadow: 0 0 0 1px #2a1e08, 0 3px 0 #1a1206, 0 6px 12px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,240,200,0.6); transition: transform 0.12s, filter 0.12s; }
+.tr-close:hover, .tr-help-btn:hover { filter: brightness(1.12); }
+.tr-close:active, .tr-help-btn:active { transform: translateY(2px); box-shadow: 0 0 0 1px #2a1e08, 0 1px 0 #1a1206, 0 3px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,240,200,0.6); }
+.tr-close { right: 18px; } .tr-help-btn { right: 64px; }
+/* the help: a page of the manual, pinned up */
+.tr-help { top: 66px; padding: 16px 20px 10px; border-radius: 2px; background: linear-gradient(180deg, #ece2c6, #dccfa8); color: #2b2418; font: 15px/1.45 var(--serif);
+  box-shadow: 0 1px 0 #b8a878, 0 10px 24px rgba(0,0,0,0.5); transform: rotate(-0.6deg); }

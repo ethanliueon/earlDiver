@@ -265,7 +265,7 @@ export function updateSpecimens(g, dt) {
       if (s.cond < 0.6 && !s.warnStress) { s.warnStress = true; events.push({ type: 'stressed', s, inBag, press }); }
       if (s.cond < 0.3 && !s.warnDying) { s.warnDying = true; events.push({ type: 'dying', s, inBag, press }); }
     }
-    if (s.cond > 0.75) s.warnStress = s.warnDying = false; // recovered: it can warn again
+    if (s.cond > 0.75 && gap <= ZONE.ok) s.warnStress = s.warnDying = false; // recovered, and back at a safe pressure: it can warn again (3.5.0: not while the pressure is still wrong, or it warned every frame)
     if (before > 0.05 && s.cond <= 0.05) { s.pressDeath = gap > ZONE.ok; deaths.push(s); }
   };
   for (const s of g.bag) tick(s, true);
