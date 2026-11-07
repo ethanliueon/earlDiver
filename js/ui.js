@@ -303,7 +303,11 @@ export class UI {
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
   }
   questsOpen() { return !$('quests').hidden; }
-  toggleQuests(force) { const el = $('quests'), open = force === undefined ? el.hidden : force; el.hidden = !open; if (open) this.renderQuests(); }
+  toggleQuests(force) {
+    const el = $('quests'), open = force === undefined ? el.hidden : force; el.hidden = !open;
+    clearInterval(this.qTick);
+    if (open) { this.renderQuests(); this.qTick = setInterval(() => { if ($('quests').hidden) { clearInterval(this.qTick); return; } const c = $('quests').querySelector('.qs-clock'), P = this.h.getProfile(); if (c && P) { const w = boardIn(P); if (w <= 0) this.renderQuests(); else { const t = Math.ceil(w / 1000); c.textContent = `${Math.floor(t / 3600)}:${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; } } }, 1000); } // (4.0.1) the clock ticks
+  }
   renderQuests() {
     const P = this.h.getProfile(); if (!P) return;
     fillQuests(P); const S = questsOf(P), m = QUEST_MAIN[S.main];
@@ -325,7 +329,9 @@ export class UI {
     }
     // (4.0.0) the free refresh, or the next price on the ladder for this three-hour window
     const wait = boardIn(P), price = refreshPrice(P);
-    html += `<div class="qs-refresh">${wait > 0 ? `<span>Free refresh in ${hm(wait)}</span><button data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now · ${money(price, false)}</button>` : '<button data-q="refresh|free">New quests · free</button>'}</div>`;
+    // (4.0.1) the countdown is plain words under the board with a ticking green clock; only the button is brass
+    const clock = (ms) => { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sc = t % 60; return `${h}:${String(m).padStart(2, '0')}:${String(sc).padStart(2, '0')}`; };
+    html += `<div class="qs-foot">${wait > 0 ? `<span class="qs-wait">Free refresh in <b class="qs-clock">${clock(wait)}</b></span><button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now · ${money(price, false)}</button>` : '<span class="qs-wait">A free refresh is ready</span><button class="qs-buy" data-q="refresh|free">New quests · free</button>'}</div>`;
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }

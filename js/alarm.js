@@ -7,10 +7,10 @@ import { clamp, TAU } from './util.js';
 export function alarmsOf(g) {
   if (!g || g.mode !== 'play' || !g.earl || !g.earl.inSub || !g.sub || g.sub.imploded) return [];
   const sub = g.sub, out = [], ent = g.entity;
-  if (sub.y > sub.rated * 1.33) out.push({ id: 'crush', text: `Crush depth · ${Math.round(sub.y)} m of ${sub.rated} m: ascend` });
-  else if (sub.y > sub.rated) out.push({ id: 'depth', text: `Past rated depth · ${Math.round(sub.y)} m of ${sub.rated} m` });
-  if (sub.hull < 0.4) out.push({ id: 'hull', text: `Hull ${Math.round(sub.hull * 100)} % · leaking air` });
-  if (ent && (ent.dist ?? Infinity) < 200 && ent.state !== 'away') out.push({ id: 'contact', text: 'Contact on sonar' });
+  if (sub.y > sub.rated * 1.33) out.push({ id: 'crush', text: `Crush depth: ${Math.round(sub.y)} m of ${sub.rated} m. Ascend now` });
+  else if (sub.y > sub.rated) out.push({ id: 'depth', text: `Past her rated depth: ${Math.round(sub.y)} m of ${sub.rated} m` });
+  if (sub.hull < 0.4) out.push({ id: 'hull', text: `Hull at ${Math.round(sub.hull * 100)} %: the cabin is leaking air` });
+  if (ent && (ent.dist ?? Infinity) < 200 && ent.state !== 'away') out.push({ id: 'contact', text: 'Something large on the sonar' });
   return out;
 }
 
@@ -34,11 +34,11 @@ export class Beacon {
     if (!live && this.heard && this.heard.size && this.audio && this.audio.stopAlarm) this.audio.stopAlarm();
     this.heard = heard;
     if (this.audio && this.audio.alarmMuffle) this.audio.alarmMuffle(rooms ? 2600 : 1100);
+    // (4.0.1) what is wrong is said at the top of the screen, as a standing message line, wherever he is in the sub
+    if (this.status) this.status(A.map((a) => ({ id: a.id, text: a.text, kind: a.id === 'contact' ? 'warn' : 'danger' })));
     this.el.hidden = !rooms || this.on <= 0;
-    if (this.el.hidden) { this.ids = ''; return; }
-    // the list, rebuilt when it changes
-    const ids = A.map((a) => a.id + a.text).join('|');
-    if (ids !== this.ids) { this.ids = ids; this.list.innerHTML = A.map((a) => `<li class="bc-${a.id}">${a.text}</li>`).join(''); }
+    if (this.el.hidden) return;
+    this.list.innerHTML = '';
     this.draw(live);
   }
   draw(live) {

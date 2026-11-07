@@ -37,6 +37,25 @@ export class Messages {
     if (this.cur) this.cur.hold = Math.min(this.cur.hold, Math.max(1.3, this.cur.t + 0.2));
   }
   clear() { this.queue = []; if (this.cur) this.cur.hold = 0; }
+  // (4.0.1) standing lines: what is wrong right now (the sub's alarms), in the same style as a message, held
+  // under the message line for as long as it lasts and updated in place (a depth counts as it changes).
+  // items: [{ id, text, kind }]
+  setStatus(items) {
+    if (!this.st) { const el = document.createElement('div'); el.id = 'msgs-status'; document.body.appendChild(el); this.st = { el, lines: new Map() }; }
+    const seen = new Set();
+    for (const it of items) {
+      seen.add(it.id);
+      let L = this.st.lines.get(it.id);
+      if (!L) {
+        const el = document.createElement('div'); el.className = `msg msg-${it.kind || 'danger'}`;
+        el.innerHTML = '<span class="msg-t"></span><i class="msg-rule"></i>'; this.st.el.appendChild(el);
+        L = { el, text: '' }; this.st.lines.set(it.id, L);
+        requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+      }
+      if (L.text !== it.text) { L.text = it.text; L.el.querySelector('.msg-t').textContent = it.text; }
+    }
+    for (const [id, L] of this.st.lines) if (!seen.has(id)) { this.st.lines.delete(id); L.el.classList.remove('in'); L.el.classList.add('out'); setTimeout(() => L.el.remove(), 600); }
+  }
   update(dt) {
     if (this.cur) {
       this.cur.t += dt;

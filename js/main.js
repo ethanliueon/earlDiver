@@ -65,7 +65,7 @@ function airOver(g) {
   el.classList.toggle('on', !!txt);
 }
 const audio = new Audio(); window.__earlAudio = audio; // (for testing)
-const beacon = new Beacon(audio);
+const beacon = new Beacon(audio); beacon.status = (list) => messages.setStatus(list); // (4.0.1)
 
 const keys = new Set();
 const PRY = new Set(['clam', 'mussel']);

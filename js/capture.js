@@ -235,6 +235,9 @@ export function updateSpecimens(g, dt) {
   const deaths = [], events = [];
   const cmax = chamberMax(g);
   surfaceSafety(g);
+  // (4.0.1) never a legendary or a 1.2 m+ animal in an ordinary chamber, however it got there (an old save):
+  // into the large pressure tank if it fits, otherwise out onto the floor of the tank room
+  for (const s of g.subTank) if (s.pressed && s.chamber !== BIG && tooBig(s)) { if (bigFits(g, s)) s.chamber = BIG; else { s.pressed = false; s.chamber = undefined; s.pile = true; } }
   const tick = (s, inBag) => {
     if (s.home === undefined) s.home = s.from || 0;
     if (s.cond <= 0.05) return;

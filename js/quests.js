@@ -84,12 +84,12 @@ const ownsKind = (P, kind) => kitOf(P).items.some((it) => ITEMS[it.id] && ITEMS[
 // (4.0.0) keep the board at three: a quest whose time has run out is replaced by a new one (marked NEW), and so is
 // a claimed one, but only when its time runs out; until then it stays on the board, dimmed. A finished quest not
 // yet claimed never runs out.
-export function fillQuests(P) {
-  const now = Date.now(), S = Q(P);
+export function fillQuests(P, byHand = false) {
+  const now = Date.now(), S = Q(P), starting = !S.board.length; // (4.0.1) NEW only on a quest that replaced one by itself
   S.board.forEach((q) => { if (!q.until) q.until = now + QUEST_HOURS[q.rarity || 'common'] * 3600000; });
   S.board = S.board.filter((q) => (q.prog >= q.n && !q.claimed) || q.until > now);
   const taken = new Set(S.board.map((q) => q.key.replace(/(common|uncommon|rare|exotic)$/, '')));
-  while (S.board.length < 3) { const q = newQuest(P, Math.random, taken); if (!q) break; S.board.push(q); taken.add(q.key); }
+  while (S.board.length < 3) { const q = newQuest(P, Math.random, taken); if (!q) break; q.fresh = !starting && !byHand; S.board.push(q); taken.add(q.key); }
 }
 // new quests by hand: the free one if it is ready, otherwise the next price on the ladder (the caller charges it).
 // Finished quests not yet claimed are kept; everything else is replaced.
@@ -99,7 +99,7 @@ export function refreshBoard(P, paid) {
   if (!paid) { if (!windowOver(S, now)) return false; S.freeAt = now + BOARD_MS; }
   else S.paidN = (S.paidN || 0) + 1;
   S.board = S.board.filter((q) => q.prog >= q.n && !q.claimed);
-  fillQuests(P);
+  fillQuests(P, true);
   return true;
 }
 
