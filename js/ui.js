@@ -26,7 +26,7 @@ import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
-import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf } from './capture.js';
+import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf, BIG as BIG_CH } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
@@ -399,18 +399,43 @@ export class UI {
     const BAG_MAX = 11, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
     const bag = g.bag.map((s2) => card('fc', s2)).join('') + rep2('<div class="fc empty"></div>', cap - g.bag.length) + rep2('<div class="fc locked"><i></i></div>', shown - Math.max(cap, g.bag.length));
     const all = g.bag.concat(g.subTank || []), total = all.reduce((t, s2) => t + worth(s2), 0);
-    // the sub
+    // the sub: the open tank itself, its animals swimming as they do in the sub, and the chambers as they hang there
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))], tank = g.subTank || [];
-    const open = tank.filter((s2) => !s2.pressed && !s2.pile), floor = tank.filter((s2) => s2.pile), pressed = tank.filter((s2) => s2.pressed);
-    const OPEN_MAX = 9, PRESS_MAX = 5, oCap = tankSlots(g), pCap = pressSlots(g), oUsed = open.reduce((t, s2) => t + slotsOf(s2), 0);
-    const openHtml = open.map((s2) => card('tc', s2, Math.min(3, slotsOf(s2)))).join('') + rep2('<div class="tc empty"></div>', oCap - oUsed) + rep2('<div class="tc locked"><i></i></div>', OPEN_MAX - Math.max(oCap, oUsed));
-    const portHtml = pressed.map((s2) => card('pc', s2)).join('') + rep2('<div class="pc empty"></div>', pCap - pressed.length) + rep2('<div class="pc locked"><i></i></div>', PRESS_MAX - Math.max(pCap, pressed.length));
+    const open = tank.filter((s2) => !s2.pressed && !s2.pile), floor = tank.filter((s2) => s2.pile), big = tank.filter((s2) => s2.pressed && s2.chamber === BIG_CH);
+    const chambers = tank.filter((s2) => s2.pressed && s2.chamber !== BIG_CH), oCap = tankSlots(g), pCap = pressSlots(g), oUsed = open.reduce((t, s2) => t + slotsOf(s2), 0);
+    const elsewhere = [floor.length ? `On the floor: ${floor.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')}` : '', big.length ? `In the big tank: ${big.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')}` : ''].filter(Boolean).join(' · ');
     const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`;
+    this.catchShown = Math.max(5, pCap);
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
       + `<div class="cash-plate worth"><span>ALL OF IT, ABOUT</span><b>${money(total)}</b></div></div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
-      + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win">${openHtml}</div>${floor.length ? `<p class="fl-note">On the tank-room floor: ${floor.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')}</p>` : ''}`
-      + `<h4>Pressure chambers <i>(${pressed.length}/${pCap})</i></h4><div class="ports">${portHtml}</div></div></div></div>`;
+      + `<h4>The open tank <i>(${oUsed}/${oCap} spaces)</i></h4><div class="tank-win"><canvas class="ct-tank"></canvas></div>`
+      + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
+      + `<p class="ct-cap">${this.catchCap(g) || (elsewhere || 'Tap an animal to see it.')}</p></div></div></div>`;
+  }
+  // the caption under the sub: the animal last tapped, how it is, where from, what it is worth
+  catchCap(g) {
+    const s2 = this.catchSel; if (!s2 || !(g.subTank || []).includes(s2)) return '';
+    const sp = SPECIES_BY_ID[s2.id], P = g.profile;
+    return `<b>${sp.name}</b>${s2.variant ? ` <em>${s2.variant}</em>` : ''} · ${s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond)} · from ${Math.round(s2.from || 0)} m · <span>${money(specimenValue(s2) * statValue(P, 'payFish'))}</span>`;
+  }
+  // (3.0.36) every frame while the Catch page is open: the tank and the chambers, drawn by the tank room's own hand
+  drawCatch(g, dt) {
+    const root = $('inventory'), tv = root.querySelector('.ct-tank'), cv = root.querySelector('.ct-ch'); if (!tv || !cv) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1) * (this.invScale || 1);
+    const fit = (c) => { const w = c.clientWidth, h = c.clientHeight; if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); } const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h); return [x, w, h]; };
+    if (!this.catchWired || this.catchWired !== tv) {
+      this.catchWired = tv;
+      const tap = (c, which) => c.addEventListener('click', (ev) => {
+        const r = c.getBoundingClientRect(), k = this.invScale || 1, x = (ev.clientX - r.left) / k, y = (ev.clientY - r.top) / k;
+        const hits = (which === 'tank' ? this.tankHits : this.chHits) || [];
+        let best = null, bd = 1e9; for (const h2 of hits) { const d = Math.hypot(h2.x - x, h2.y - y); if (d < h2.r * 1.4 && d < bd) { bd = d; best = h2.s; } }
+        this.catchSel = best; const cap = root.querySelector('.ct-cap'); if (cap) cap.innerHTML = this.catchCap(g) || 'Tap an animal to see it.';
+      });
+      tap(tv, 'tank'); tap(cv, 'ch');
+    }
+    const [a, aw, ah] = fit(tv); this.tankHits = this.tankRoom.drawMiniTank(a, g, aw, ah, dt);
+    const [b, bw, bh] = fit(cv); this.chHits = this.tankRoom.drawMiniChambers(b, g, bw, bh, 0, this.catchShown || 5);
   }
   // ---------- the locker (2.8.0): Earl and his eight slots; everything he owns in rarity frames ----------
   // Drag a thing onto him (or its slot) to put it on, or click it for its card: what it is, its skills, its
@@ -1190,7 +1215,7 @@ export class UI {
     if (!$('tankroom').hidden) {
       if (!g.earl.inSub) this.toggleTank(false);
       else this.tankRoom.update(dt);
-    }
+    } else if (!$('inventory').hidden && this.invTab === 'catch') this.drawCatch(g, dt);
     if (!$('cave').hidden && Math.hypot(g.earl.x - 66, g.earl.y - 1800) > 20) this.toggleCave(false);
     if (!$('dave').hidden && g.world.dave && Math.hypot(g.earl.x - (g.world.dave.x + 6.5), g.earl.y - (g.world.dave.y - 3.1)) > 18) this.toggleDave(false);
     if (!$('cabin').hidden) { if (!g.aboard) this.toggleCabin(false); else this.cabin.update(dt); }

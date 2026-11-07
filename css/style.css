@@ -1767,3 +1767,11 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .pc b { margin-top: 6px; font: 400 12px/1.15 var(--serif); color: var(--paint); }
 #inventory .pc span { display: none; }
 #inventory .pc small { font: 11px var(--mono); color: #c8a050; }
+
+/* ---------- 3.0.36 the sub's own open tank and chambers on the Catch page ---------- */
+#inventory .tank-win { display: block; padding: 10px; }
+#inventory .tank-win canvas { display: block; width: 100%; height: 232px; border-radius: 2px; box-shadow: inset 0 0 0 1px #0a0c0a; cursor: pointer; }
+#inventory canvas.ct-ch { display: block; width: 100%; height: 176px; margin-top: 4px; cursor: pointer; }
+#inventory .ct-cap { min-height: 18px; margin: 8px 0 0; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.5); box-shadow: inset 0 1px 0 rgba(255,255,240,0.05); font: italic 14px var(--serif); color: var(--paint-dim); }
+#inventory .ct-cap b { font-style: normal; font-weight: 400; color: var(--paint); } #inventory .ct-cap em { color: var(--r-rare); } #inventory .ct-cap span { font: 12px var(--mono); font-style: normal; color: #c8a050; }
+#inventory canvas.ct-tank, #inventory canvas.ct-ch { position: static; inset: auto; }

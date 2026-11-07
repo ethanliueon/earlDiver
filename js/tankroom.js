@@ -521,7 +521,16 @@ export class TankRoom {
     ctx.fillStyle = '#9aa29e';
     for (let x = T.x - 4; x < T.x + T.w + 8; x += 24) { ctx.beginPath(); ctx.arc(x, T.y - 6, 2, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(x, T.y + T.h + 6, 2, 0, TAU); ctx.fill(); }
     ctx.save(); ctx.beginPath(); ctx.rect(T.x, T.y, T.w, T.h); ctx.clip(); ctx.translate(T.x, T.y);
-    const w = T.w, h = T.h, top = 6, bot = h - 4;
+    this.drawOpenWater(ctx, g, T.w, T.h, dt);
+    ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, 0, T.w, 8);
+    ctx.restore();
+    this.drawHatch(ctx, G.hatchL);
+    this.drawBigTank(ctx, G, g, dt);
+    this.drawPile(ctx, G, g);
+  }
+  // (3.0.36) the open tank's water and what swims in it, at 0,0, w by h: here and on the inventory's Catch page
+  drawOpenWater(ctx, g, w, h, dt, hits) {
+    const t = this.t, top = 6, bot = h - 4;
     const L0 = TANK_LIGHTS[(g.profile && g.profile.subTankLight) || 'day'] || TANK_LIGHTS.day; // (3.0.25) the tank's light, set like the aquarium's
     const wg = ctx.createLinearGradient(0, top, 0, bot);
     wg.addColorStop(0, L0.water[0]); wg.addColorStop(1, L0.water[1]);
@@ -542,6 +551,7 @@ export class TankRoom {
       const L = tankLen(s.len, maxL) * clamp(h / 220, 0.8, 1.6);
       const a = this.swim(g, s, false, { x0: 10, x1: w - 10, y0: top + 14, y1: bot - 18 }, L, dt);
       this.drawFish(ctx, g, s, a, L, false);
+      if (hits) hits.push({ s, x: a.x, y: a.y, r: Math.max(16, L * 0.6) });
     }
     if (L0.tint) { ctx.fillStyle = L0.tint; ctx.fillRect(0, 0, w, h); }
     // (3.0.26) in the dim, a deep animal's own light shows: a soft glow on each one that has it
@@ -553,11 +563,36 @@ export class TankRoom {
       ctx.globalAlpha = k; ctx.fillStyle = gl; ctx.fillRect(a.x - r, a.y - r, r * 2, r * 2); ctx.globalAlpha = 1;
       ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.7 * k; ctx.beginPath(); ctx.arc(a.x, a.y, 1.6, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
     }
+  }
+  // (3.0.36) for the inventory's Catch page: the same open tank, and the same chambers in a row (a padlocked
+  // bracket where one is not fitted yet). Returns where each animal is, for a tap.
+  drawMiniTank(ctx, g, w, h, dt) {
+    this.t += dt; const hits = [];
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, w, h); ctx.clip();
+    this.drawOpenWater(ctx, g, w, h, dt, hits);
     ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, 0, w, 8);
-    ctx.restore();
-    this.drawHatch(ctx, G.hatchL);
-    this.drawBigTank(ctx, G, g, dt);
-    this.drawPile(ctx, G, g);
+    ctx.restore(); return hits;
+  }
+  drawMiniChambers(ctx, g, w, h, dt, shown) {
+    const rating = chamberRating(g), cmax = chamberMax(g), ps = pressSlots(g), outside = Math.max(0, g.sub.y), hits = [];
+    const by = new Map(g.subTank.filter((s) => s.pressed).map((s) => [s.chamber, s]));
+    const slot = w / shown, k = Math.min(slot / 140, h / 296);
+    for (let n = 0; n < shown; n++) {
+      const x = slot * n + (slot - 150 * k) / 2;
+      ctx.save(); ctx.translate(x, -20 * k); ctx.scale(k, k);
+      if (n >= ps) {
+        this.drawBracket(ctx);
+        // a stamped padlock: not fitted yet
+        ctx.fillStyle = 'rgba(200,196,176,0.32)'; ctx.strokeStyle = 'rgba(200,196,176,0.32)'; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.arc(75, 186, 17, Math.PI, 0); ctx.stroke(); ctx.fillRect(48, 186, 54, 42);
+        ctx.fillStyle = 'rgba(20,22,20,0.6)'; ctx.beginPath(); ctx.arc(75, 202, 6, 0, TAU); ctx.fill(); ctx.fillRect(72, 204, 6, 14);
+      } else {
+        const s = by.get(n); this.drawChamber(ctx, g, s, rating, cmax, outside, dt, n);
+        if (s) hits.push({ s, x: x + 75 * k, y: (200 - 20) * k, r: 60 * k });
+      }
+      ctx.restore();
+    }
+    return hits;
   }
   // the net's haul: a wet heap of netting on the deck plates, the animals in it twitching
   drawPile(ctx, G, g) {
