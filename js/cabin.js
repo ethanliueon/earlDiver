@@ -135,9 +135,9 @@ export class Cabin {
     let mRun = false;
     if (!dir && this.goal == null && this.mcx != null && (this.mMoved || -1e9) > (this.keyAt || -1e9) && !this.h.blocked()) {
       const d = clamp((this.mcx + (this.camX || 0)) / window.innerWidth, ROOM.min, ROOM.max) - this.x;
-      if (Math.abs(d) > 0.035) { dir = Math.sign(d); mRun = Math.abs(d) > 0.3; }
+      if (Math.abs(d) > 0.035) { dir = Math.sign(d); this.ease = clamp((Math.abs(d) - 0.035) / 0.06, 0.35, 1); } // (3.0.27) a steady walk; Shift runs
     }
-    const run = this.keys.has('shift') || mRun, pace = (run ? 0.32 : 0.2) * 0.6; // (3.0.20) a cabin pace: 0.6 of his walk elsewhere
+    const run = this.keys.has('shift') || mRun, pace = (run ? 0.32 : 0.2) * 0.6 * (this.ease || 1); this.ease = 1; // (3.0.20) a cabin pace: 0.6 of his walk elsewhere
     if (!this.h.blocked()) {
       const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);

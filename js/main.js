@@ -2079,7 +2079,9 @@ function frame(now) {
   renderer.resize(); hud.resize();
   update(dt);
   renderer.updateCamera(g, dt);
-  renderer.render(g);
+  // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
+  const covered = !document.getElementById('cabin').hidden || !document.getElementById('tankroom').hidden || !document.getElementById('gallery').hidden;
+  if (!covered) renderer.render(g);
   // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
   if (g.warmUntil) { // behind the loading card: build the sprites on screen at full speed, then lift it
     const done = renderer.warmSprites(g, 60, true);
