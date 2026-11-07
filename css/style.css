@@ -1626,3 +1626,36 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .sub-plate { display: inline-flex; align-items: baseline; gap: 10px; margin-top: 4px; padding: 6px 14px; border-radius: 3px; color: #2e220a;
   background: linear-gradient(180deg, var(--brass-hi), var(--brass) 55%, #9a7a34); box-shadow: 0 1px 0 #4a3510, inset 0 1px 0 rgba(255,250,220,0.6); }
 #inventory .sub-plate span { font: 9px var(--stencil); letter-spacing: 0.22em; } #inventory .sub-plate b { font: 400 16px var(--serif); } #inventory .sub-plate i { font: 12px var(--mono); font-style: normal; opacity: 0.75; }
+
+/* ---------- 3.0.33 the dive locker: a painted steel door, pressed-steel cubbies, dymo tape, big buttons ---------- */
+#inventory .inv-panel { width: min(1240px, 96vw); box-shadow: 0 0 0 1px #0e100c, 0 0 0 4px #2c3128, 0 0 0 5px #0e100c, 0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.03); }
+#inventory .inv-body { display: flex; flex-direction: column; min-height: 0; }
+#inventory .inv-split { flex: 1; min-height: 0; }
+/* the page switch: two big steel push-buttons at the bottom middle (thumb-sized) */
+#inventory .inv-tabs { order: 9; align-self: center; margin: 14px 0 0; gap: 0; padding: 5px; border-radius: 10px; background: rgba(0,0,0,0.35); box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06); }
+#inventory .inv-tabs button { min-width: 150px; min-height: 52px; padding: 0 26px; border-radius: 7px; font: 15px var(--stencil); letter-spacing: 0.22em; color: var(--paint);
+  background: linear-gradient(180deg, #5c6652, #424a3c); box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -3px 0 rgba(0,0,0,0.35), 0 2px 0 #14170f; text-shadow: 0 -1px 0 rgba(0,0,0,0.6); }
+#inventory .inv-tabs button + button { margin-left: 6px; }
+#inventory .inv-tabs button.on { color: #2e220a; text-shadow: 0 1px 0 rgba(255,245,210,0.5); background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34);
+  box-shadow: inset 0 2px 4px rgba(60,40,10,0.45), inset 0 -1px 0 rgba(255,240,200,0.3); transform: translateY(1px); } /* pressed in */
+@media (max-width: 700px) { #inventory .inv-tabs button { min-width: 0; flex: 1; } #inventory .inv-tabs { align-self: stretch; display: flex; } }
+/* the cubbies: pressed into the door; a lit top lip, a deep well; things sit in them, a shadow under */
+#inventory .eq-stage .eq-slot.sq, #inventory .inv-right .lk-tile:not(.empty), #inventory .fc:not(.empty) {
+  background: radial-gradient(ellipse at 50% 30%, rgba(80,90,72,0.25), rgba(0,0,0,0) 70%), linear-gradient(180deg, #1c2019, #2a3025 85%, #343b2e);
+  box-shadow: 0 1px 0 rgba(255,255,240,0.12), 0 -1px 0 rgba(0,0,0,0.55), inset 0 0 0 1px #0c0e0a, inset 0 6px 10px rgba(0,0,0,0.75), inset 0 -2px 0 rgba(255,255,240,0.05), inset 0 0 0 3px var(--rc, transparent); }
+#inventory .eq-stage .eq-slot.sq.empty { background: linear-gradient(180deg, #1c2019, #262b22); }
+#inventory .eq-stage .eq-slot.sq img, #inventory .inv-right .lk-tile img, #inventory .fc img { filter: drop-shadow(0 4px 3px rgba(0,0,0,0.6)) drop-shadow(0 0 1px rgba(0,0,0,0.5)); transition: transform 0.15s; }
+#inventory .inv-right .lk-tile:not(.empty):hover { transform: none; filter: none; }
+#inventory .inv-right .lk-tile:not(.empty):hover img, #inventory .eq-slot.sq:hover img { transform: translateY(-3px) scale(1.04); }
+#inventory .inv-right .lk-tile.empty { background: linear-gradient(180deg, rgba(0,0,0,0.22), rgba(0,0,0,0.08)); box-shadow: 0 1px 0 rgba(255,255,240,0.07), inset 0 3px 5px rgba(0,0,0,0.45); }
+#inventory .inv-right .lk-tile.r-legendary:not(.empty), #inventory .eq-stage .eq-slot.sq.r-legendary { background: radial-gradient(ellipse at 50% 55%, rgba(242,196,96,0.22), rgba(0,0,0,0) 70%), linear-gradient(180deg, #1c2019, #2a3025 85%, #343b2e);
+  box-shadow: 0 1px 0 rgba(255,255,240,0.12), inset 0 0 0 1px #2a1e08, inset 0 6px 10px rgba(0,0,0,0.7), inset 0 0 0 3px #a8873e, inset 0 0 18px rgba(242,196,96,0.22), 0 0 12px rgba(242,196,96,0.12); }
+/* labels as dymo tape: black, raised white letters */
+#inventory .eq-stage .eq-slot .slot-nm, #inventory .eq-stage .eq-slot.sq.empty .slot-nm { padding: 2px 7px 1px; border-radius: 1px; font: 600 9px var(--mono); letter-spacing: 0.14em; color: #f2f2ea;
+  background: linear-gradient(180deg, #2a2a2a, #111); box-shadow: 0 1px 2px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12); text-shadow: 0 1px 0 rgba(0,0,0,0.9), 0 -0.5px 0 rgba(255,255,255,0.3); transform: translateX(-50%) rotate(-0.6deg); }
+#inventory .lk-head h4, #inventory .inv-catch h4 { display: inline-block; padding: 3px 10px 2px; border-radius: 1px; font: 600 11px var(--mono); letter-spacing: 0.2em; color: #f2f2ea;
+  background: linear-gradient(180deg, #2a2a2a, #111); box-shadow: 0 1px 2px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12); text-shadow: 0 1px 0 rgba(0,0,0,0.9); }
+#inventory .inv-catch h4 i, #inventory .lk-head small { color: #b8b8ae; }
+/* the stand: a lamp-lit bay set into the door */
+#inventory .eq-stage { box-shadow: 0 1px 0 rgba(255,255,240,0.1), 0 -1px 0 rgba(0,0,0,0.5), inset 0 0 0 1px #0c0e0a, inset 0 10px 24px rgba(0,0,0,0.6), inset 0 -30px 40px -30px rgba(0,0,0,0.7); }
+#inventory .inv-right { border-left: 0; box-shadow: -1px 0 0 rgba(0,0,0,0.4), -2px 0 0 rgba(255,255,240,0.05); }

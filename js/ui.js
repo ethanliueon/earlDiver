@@ -22,6 +22,7 @@ import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, galleryS
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom } from './tankroom.js';
+import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
@@ -365,7 +366,10 @@ export class UI {
     const tab = this.invTab || 'gear';
     const tabs = `<nav class="inv-tabs"><button data-invtab="gear" class="${tab === 'gear' ? 'on' : ''}">Gear</button><button data-invtab="catch" class="${tab === 'catch' ? 'on' : ''}">Catch <i>(${g.bag.length + g.subTank.length})</i></button></nav>`;
     const body = $('inventory').querySelector('.inv-body');
-    body.innerHTML = tabs + (tab === 'catch' ? this.catchHtml(P, g) : this.equipHtml(P, g));
+    body.innerHTML = (tab === 'catch' ? this.catchHtml(P, g) : this.equipHtml(P, g)) + tabs; // (3.0.33) the page switch: big, at the bottom middle
+    // (3.0.33) the dive locker: a painted steel door, worn (textures.js), once
+    const panel = $('inventory').querySelector('.inv-panel');
+    if (!panel.dataset.tex) { panel.dataset.tex = '1'; panel.style.backgroundImage = `radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.38) 100%), url(${lockerTexture(1200, 800)})`; panel.style.backgroundSize = 'auto, cover'; }
     body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.renderInventory(); }));
     if (tab === 'gear') this.equipWire(P, g);
   }
