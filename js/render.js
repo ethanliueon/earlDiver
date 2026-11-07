@@ -467,20 +467,41 @@ export class Renderer {
     if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
     // brackets around what the net, slurp gun or claw will go for (a setting: pause menu)
-    // (4.2.0) the tutorial: a trail of fading markers from Earl to where to go, and a ring pulsing round the fish
+    // (4.2.0, 4.3.1) the tutorial: a stream of brass chevrons flowing from Earl to where to go, a ring pulsing round
+    // the fish (or the spot), and an arrow at the edge of the screen when it is off screen. No words: the game's own
+    // prompts already say what to press there
     if (g.tut && g.tut.to && g.mode === 'play') {
-      const e = g.earl, tx = g.tut.to.x, ty = g.tut.to.y, d = Math.hypot(tx - e.x, ty - e.y), n = Math.min(40, Math.floor(d / 1.2));
-      for (let i = 1; i < n; i++) {
-        const q = i / n, ph = (q * 6 - g.time * 1.5) % 1, a = (0.25 + 0.55 * (ph < 0 ? ph + 1 : ph)) * Math.min(1, (1 - q) * 4) * Math.min(1, q * 6);
-        ctx.beginPath(); ctx.arc(S(lerp(e.x, tx, q)), Sy(lerp(e.y, ty, q)), Math.max(3.5, ppm * 0.13), 0, TAU); ctx.fillStyle = `rgba(255,214,120,${a.toFixed(3)})`; ctx.fill(); ctx.strokeStyle = `rgba(40,28,8,${(a * 0.7).toFixed(3)})`; ctx.lineWidth = 1.2; ctx.stroke(); // (4.2.1) bigger, edged: readable on sky and water
+      const e = g.earl, tx = g.tut.to.x, ty = g.tut.to.y, d = Math.hypot(tx - e.x, ty - e.y);
+      const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));
+      const sz = clamp(ppm * 0.22, 7, 16), flow = (g.time * 1.6) % 1;
+      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (let i = 1; i <= n; i++) {
+        const m = (i - flow) * gap; if (m < 1.1 || m > d - 1.2) continue; // clear of Earl and of the target
+        const q = m / d, x = S(lerp(e.x, tx, q)), y = Sy(lerp(e.y, ty, q));
+        // a wave of light runs along them towards the target; they fade in from Earl
+        const wave = 0.5 + 0.5 * Math.cos((q * 4 - g.time * 2.2) * TAU * 0.5), a = (0.4 + 0.5 * wave) * Math.min(1, (m - 1.1) / 1.5);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+        ctx.beginPath(); ctx.moveTo(-sz * 0.55, -sz * 0.7); ctx.lineTo(sz * 0.35, 0); ctx.lineTo(-sz * 0.55, sz * 0.7);
+        ctx.strokeStyle = `rgba(20,14,4,${(a * 0.6).toFixed(3)})`; ctx.lineWidth = sz * 0.42 + 2; ctx.stroke(); // a dark edge: readable on sky and water
+        ctx.strokeStyle = `rgba(232,208,146,${a.toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke();
+        ctx.restore();
       }
-      if (g.tut.fish) { const f = g.tut.fish, r = Math.max(14, ppm * (f.len * 0.8 + 0.4)) * (1 + 0.12 * Math.sin(g.time * 4));
-        ctx.strokeStyle = 'rgba(255,226,150,0.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(S(f.x), Sy(f.y), r, 0, TAU); ctx.stroke(); }
-      // off-screen: an arrow at the edge of the screen pointing the way
-      const sx = S(tx), sy = Sy(ty), W2 = this.W, H2 = this.H;
-      if (sx < 0 || sx > W2 || sy < 0 || sy > H2) {
-        const ax = clamp(sx, 40, W2 - 40), ay = clamp(sy, 60, H2 - 60), ang = Math.atan2(sy - H2 / 2, sx - W2 / 2);
-        ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.fillStyle = 'rgba(255,226,150,0.9)'; ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -11); ctx.lineTo(-4, 0); ctx.lineTo(-10, 11); ctx.closePath(); ctx.fill(); ctx.restore();
+      ctx.restore();
+      const f = g.tut.fish, cx = S(f ? f.x : tx), cy = Sy(f ? f.y : ty);
+      const r = (f ? Math.max(16, ppm * (f.len * 0.8 + 0.45)) : Math.max(14, ppm * 0.5)) * (1 + 0.1 * Math.sin(g.time * 4));
+      ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.8)'; ctx.shadowBlur = 10;
+      ctx.strokeStyle = 'rgba(232,208,146,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = `rgba(232,208,146,${(0.5 * (1 - ((g.time * 0.8) % 1))).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.8 * ((g.time * 0.8) % 1)), 0, TAU); ctx.stroke(); // a ripple going out
+      ctx.restore();
+      // off-screen: a bigger arrow at the edge of the screen pointing the way, with how far
+      const W2 = this.W, H2 = this.H;
+      if (cx < 0 || cx > W2 || cy < 0 || cy > H2) {
+        const ax = clamp(cx, 48, W2 - 48), ay = clamp(cy, 70, H2 - 70), a2 = Math.atan2(cy - H2 / 2, cx - W2 / 2), pulse = 1 + 0.12 * Math.sin(g.time * 5);
+        ctx.save(); ctx.translate(ax, ay); ctx.rotate(a2); ctx.scale(pulse, pulse);
+        ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6; ctx.fillStyle = 'rgba(232,208,146,0.95)';
+        ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(-12, -16); ctx.lineTo(-4, 0); ctx.lineTo(-12, 16); ctx.closePath(); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(236,230,210,0.85)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+        ctx.fillText(`${Math.round(d)} m`, ax - Math.cos(a2) * 34, ay - Math.sin(a2) * 34 + 4); ctx.restore();
       }
     }
     const ctg = g.mode === 'play' && SETTINGS.brackets ? g.catchTarget : null;

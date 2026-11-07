@@ -15,7 +15,7 @@ import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS } from './quests.js';
-import { TutSpot } from './tutspot.js';
+import { TutSpot, keyFor, clicks } from './tutspot.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf, kit, worn } from './economy.js';
@@ -846,71 +846,106 @@ function tutorWelcome() {
     () => { P.tut = 'on'; saveProfile(P); g.tutSaid = null; },
     () => ui.confirm('Skip the tutorial?', 'Are you sure? The Margaret\'s Log (O) still lists the basics.', 'Skip it', 'Back', () => { P.tut = 'skip'; saveProfile(P); }, () => tutorWelcome()));
 }
-// (4.3.0) tutor(): one thing at a time. Each frame it works out the single next thing to do and sets g.tut:
-//   text  a line of help (said as a toast when it changes)
-//   to    a point in the sea for the dotted trail;  fish  the fish to ring
-//   spot  for the spotlight (js/tutspot.js): what to click (shaded round it, with an arrow), or which key to press
+// (4.3.0, 4.3.1) tutor(): one thing at a time. Each frame it works out the single next thing to do and sets g.tut:
+//   text    a line of help (said once, as the banner at the top, when it changes)
+//   to      a point in the sea for the trail of arrows;  fish  the fish to ring
+//   prompt  drawn in the sea over the target, like the game's own prompts ('F  Observe'); toLabel: words at the target
+//   spot    for the spotlight (js/tutspot.js): what to click (the rest shaded), or which action's key to press
+// It names actions, not keys (keyFor() turns them into keys for the input in use), and never names keys for moving:
+// the trail shows where to go.
 const shown = (id) => { const el = document.getElementById(id); return !!el && !el.hidden; };
+// the tutorial's own fish: a garibaldi (the kelp forest's bright orange fish; a real one guards one small patch and
+// barely leaves it) hovering just under the Margaret, a few metres down by her ladder.
+// (4.3.1) It is a real fish: caught, it is gone. When a later step needs another, a new one swims in from out of
+// sight (never popping up where the last one was caught), and once the steps with a fish are over it is let go.
+function tutorFish(dir) {
+  const ax = BOAT.x + LADDER_M * dir - 3 * dir, ay = 10.5; // (reaching it also finishes 'swim down to 10 m')
+  let tf = g.tutFish;
+  if (!tf || tf.dead || !g.fauna.list.includes(tf)) {
+    // the first one starts in its place (it is out of sight below the deck); a later one comes from the far side
+    const first = !g.tutFishN, side = Math.sign(ax - g.earl.x) || 1, sx = first ? ax : ax + side * 16;
+    tf = g.fauna.makeFish(SPECIES_BY_ID[72], sx, ay, -side, g.fauna.groupId++, true); tf.len = 0.22; tf.tutor = true;
+    g.fauna.list.push(tf); g.tutFish = tf; g.tutFishN = (g.tutFishN || 0) + 1;
+  }
+  // it swims to its patch at a fish's pace, then hovers there
+  const tt = g.time, hx = ax + Math.sin(tt * 0.4) * 0.9, hy = ay + Math.sin(tt * 0.7) * 0.3, dx = hx - tf.x, dy = hy - tf.y, dd = Math.hypot(dx, dy);
+  const k = dd > 1.5 ? Math.min(1, 0.06 / dd) : 0.08;
+  tf.x += dx * k; tf.y += dy * k;
+  tf.vx = dd > 1.5 ? Math.sign(dx) * 1.2 : Math.cos(tt * 0.4) * 0.2; tf.vy = 0; tf.facing = tf.vx >= 0 ? 1 : -1;
+  return tf;
+}
 function tutor() {
   const P = profile, e = g.earl; g.tut = null; if (ui.cabin) ui.cabin.tutMark = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
   const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the quest board is open (O)', 'big'); } return; }
-  const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1);
+  const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
-  let text = null, to = null, fish = null, spot = null;
+  const K = (act) => keyFor(act) || '', pr = (act, words) => (K(act) ? `${K(act)}  ${words}` : words);
+  let text = null, to = null, fish = null, prompt = null, toLabel = null, spot = null;
+  // the steps that need a fish: the fish to go to, and what to do at it
+  const fishStep = (doWhat) => {
+    const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
+    if (inCabin) { text = 'Leave the cabin and go back out on deck'; spot = { act: 'back', say: 'Back out on deck' }; return; }
+    if (g.aboard) { text = 'Walk off the end of the deck to jump in'; toLabel = 'Jump in'; return; }
+    if (e.inSub) { text = 'Leave the sub: hold F'; spot = { act: 'leaveSub', say: 'Hold to leave the sub' }; return; }
+    if (bd > 3.2) { text = 'Swim to the orange fish'; toLabel = 'Swim here'; return; }
+    doWhat(tf);
+  };
   if (done) {
     // a step is done: claim it before anything else (the next step only starts counting once this one is claimed)
-    if (qOpen) { text = 'Step done! Click Claim'; spot = { sel: ['#quests [data-q="claim|main"]'], say: 'Click Claim to collect your reward' }; }
-    else if (ui.anyOpen()) { text = 'Step done! Close this, then press O to claim it'; spot = { key: 'Esc', say: 'Close this screen, then press O to claim your reward' }; }
-    else { text = 'Step done! Press O to claim it'; spot = { sel: ['#quests-btn'], key: 'O', say: 'Step done! Press O (or click here) to claim it' }; }
-  } else if (m.id === 'swim' || m.id === 'observe' || m.id === 'net') {
-    // (4.2.2) the tutorial's own fish: a garibaldi (the kelp forest's bright orange fish; a real one guards one
-    // small patch and barely leaves it) hovering just under the Margaret, a few metres down by her ladder
-    const ax = BOAT.x + LADDER_M * dir - 3 * dir, ay = 10.5; // (reaching it also finishes 'swim down to 10 m')
-    let tf = g.tutFish;
-    if (!tf || !g.fauna.list.includes(tf)) { tf = g.fauna.makeFish(SPECIES_BY_ID[72], ax, ay, -dir, g.fauna.groupId++, true); tf.len = 0.22; tf.tutor = true; g.fauna.list.push(tf); g.tutFish = tf; }
-    if (!tf.dead) { const tt = g.time; tf.x += (ax + Math.sin(tt * 0.4) * 0.9 - tf.x) * 0.08; tf.y += (ay + Math.sin(tt * 0.7) * 0.3 - tf.y) * 0.08; tf.vx = Math.cos(tt * 0.4) * 0.2; tf.vy = 0; tf.facing = tf.vx >= 0 ? 1 : -1; }
-    const best = tf.dead ? null : tf, bd = best ? dist(e.x, e.y, best.x, best.y) : 1e9;
-    if (best) { to = { x: best.x, y: best.y }; fish = best; }
-    if (inCabin) { text = 'Leave the cabin: walk to the door and press F (or Esc)'; spot = { key: 'Esc', say: 'Go back out on deck' }; }
-    else if (g.aboard) { text = 'Walk off the end of the deck to jump in'; spot = { key: 'A / D', say: 'Walk off the end of the deck to jump in the water' }; }
-    else if (m.id === 'swim') { text = 'Swim down to the orange fish, 10 m under the boat'; spot = { key: 'S', say: 'Swim down to 10 m: follow the dotted trail (or steer with the mouse)' }; }
-    else if (bd > 3) { text = 'Swim close to the orange fish'; spot = { key: 'W A S D', say: 'Follow the trail to the orange fish' }; }
-    else if (m.id === 'observe') { text = 'Press F to observe it'; spot = { key: 'F', say: 'Press F to observe the fish: it goes in your journal' }; }
-    else if (g.toolSel !== 'net') { text = 'Press 1 to take out your net'; spot = { key: '1', say: 'Press 1 to take out your hand net' }; }
-    else { text = 'Press Space (or click) to net it'; spot = { key: 'Space', say: 'Press Space (or left click) to swing the net at the fish' }; }
+    if (qOpen) { text = 'Step done! Claim your reward'; spot = { sel: ['#quests [data-q="claim|main"]'], say: 'Claim your reward' }; }
+    else if (ui.anyOpen()) { text = 'Step done! Close this, then claim it'; spot = { act: 'back', say: 'Close this, then open your quests' }; }
+    else { text = 'Step done! Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Step done! Claim it here', light: true }; }
+  } else if (m.id === 'swim') {
+    fishStep(() => { text = 'Swim down to the orange fish, 10 m under the boat'; toLabel = 'Swim here'; });
+    if (!e.inSub && !g.aboard && !inCabin) { text = 'Swim down to the orange fish, 10 m under the boat'; toLabel = 'Swim down here'; }
+  } else if (m.id === 'observe') {
+    fishStep(() => { text = `Observe it: press ${K('interact')}`; prompt = pr('interact', 'Observe'); });
+  } else if (m.id === 'net') {
+    fishStep(() => {
+      if (g.toolSel !== 'net') { text = `Take out your net: press ${K('net')}`; prompt = pr('net', 'Take out the net'); }
+      else { text = click ? 'Click to swing the net at it' : `Press ${K('use')} to swing the net at it`; prompt = click ? 'Click to net it' : pr('use', 'Net it'); }
+    });
   } else if (m.id === 'sell') {
-    if (!P.tutJournal) { text = 'Press J: your journal keeps every animal you have observed'; spot = jOpen ? null : { key: 'J', say: 'Press J to open your journal' }; }
-    else if (jOpen) { text = 'Close the journal'; spot = { sel: ['#journal-close'], key: 'J', say: 'Close the journal (J)' }; }
-    else if (shopOpen) { text = 'Click Sell all'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-sell="tobasket"]'], say: 'Click Sell all to sell your catch' }; }
-    else if (!g.bag.length) { text = 'Your bag is empty: catch another fish first'; spot = { key: '1', say: 'Your catch bag is empty. Net another fish, then sell it' }; }
-    else if (inCabin) { text = 'Go back out on deck, then jump in by the boat'; spot = { key: 'Esc', say: 'Leave the cabin' }; }
-    else if (g.aboard) { text = 'Jump in beside the Margaret, then press U to sell'; spot = { key: 'A / D', say: 'Walk off the deck into the water: you sell from beside the boat' }; }
-    else if (!nearBoat) { text = 'Bring your catch up beside the Margaret'; to = ladder; spot = { key: 'W', say: 'Swim up to the Margaret (follow the trail)' }; }
-    else { text = 'Press U to sell your catch'; spot = { key: 'U', say: 'Press U to sell your catch to the Margaret' }; }
+    if (!P.tutJournal) { text = 'Open your journal: every animal you observe goes in it'; spot = jOpen ? null : { act: 'journal', say: 'Open your journal' }; }
+    else if (jOpen) { text = 'Close the journal'; spot = { sel: ['#journal-close'], act: 'journal', say: 'Close the journal' }; }
+    else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-sell="tobasket"]'], say: 'Sell all' }; }
+    else if (!g.bag.length && !g.subTank.length) {
+      // sold already, or lost it: another fish, then sell that one
+      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = g.toolSel !== 'net' ? pr('net', 'Take out the net') : click ? 'Click to net it' : pr('use', 'Net it'); });
+    }
+    else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; spot = { act: 'back', say: 'Back out on deck' }; }
+    else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; toLabel = 'Jump in here'; }
+    else if (!nearBoat) { text = 'Bring your catch up beside the Margaret'; to = ladder; toLabel = 'Sell here'; }
+    else { text = `Sell your catch: press ${K('sell')}`; spot = { act: 'sell', say: 'Sell your catch' }; }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
-    if (catOpen) {
+    if (!pick && !catOpen && !g.bag.length) {
+      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = g.toolSel !== 'net' ? pr('net', 'Take out the net') : click ? 'Click to net it' : pr('use', 'Net it'); });
+    } else if (!pick && !catOpen) {
+      if (!nearBoat || g.aboard) { text = 'Not enough cash for gear yet: sell your catch first'; to = ladder; toLabel = 'Sell here'; }
+      else if (shopOpen) spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])'], say: 'Sell all' };
+      else { text = 'Sell your catch first'; spot = { act: 'sell', say: 'Sell your catch' }; }
+    } else if (catOpen) {
       const sel = ['#catalog button[data-buy^="item:"]:not([disabled])', '#catalog [data-cart="checkout"]:not([disabled])'];
       if (pick) sel.push(`#catalog .cat-main [data-go="item:${pick.id}"]`, `#catalog .cat-nav [data-go="${pick.kind}"]`);
-      text = pick ? `Buy some gear: the ${pick.name} is ${money(pick.price, false)}` : 'Not enough cash yet: sell more catch first';
-      spot = { sel, say: pick ? `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})` : 'You need more cash: catch and sell another fish', confirm: 'Click to confirm the purchase' };
-    } else if (inCabin) { text = 'Walk to the computer and press F to shop'; ui.cabin.tutMark = 'desk'; spot = { key: 'F', say: 'Walk to the computer (A / D) and press F' }; }
-    else if (g.aboard) { text = 'Go into the cabin: walk to the door and press F'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; spot = { key: 'F', say: 'Walk to the wheelhouse door and press F' }; }
-    else { text = 'Swim to the Margaret\'s ladder and press F to climb aboard'; to = ladder; spot = { key: 'F', say: 'Swim to the ladder (follow the trail) and press F to climb aboard' }; }
+      text = pick ? `Buy some gear: the ${pick.name.toLowerCase()} is ${money(pick.price, false)}` : 'Not enough cash yet: sell more catch first';
+      spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : { act: 'back', say: 'Not enough cash: close the shop' };
+    } else if (ui.anyOpen() && !inCabin) { text = 'Close this first'; spot = { act: 'back', say: 'Close this' }; }
+    else if (inCabin) { text = 'Walk to the computer to shop'; ui.cabin.tutMark = 'desk'; spot = { act: 'interact', say: 'At the computer: open the shop' }; }
+    else if (g.aboard) { text = 'Go into the cabin'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; toLabel = 'Cabin door'; prompt = Math.abs(e.x - (BOAT.x + DOOR_M * dir)) < 1.5 ? pr('interact', 'Enter the cabin') : null; }
+    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; toLabel = 'Ladder'; prompt = dist(e.x, e.y, ladder.x, ladder.y) < 3 ? pr('interact', 'Climb aboard') : null; }
   } else if (m.id === 'wear') {
-    const K = P.kit || { items: [], on: {} }, worn = new Set(Object.values(K.on || {}));
-    const it = K.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
-    if (invOpen) {
-      text = `Put on ${name}`;
-      spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` };
-    } else if (ui.anyOpen()) { text = 'Close this, then press B'; spot = { key: 'Esc', say: 'Close this screen, then press B for your inventory' }; }
-    else { text = 'Press B for your inventory and put on what you bought'; spot = { key: 'B', say: 'Press B to open your inventory' }; }
+    const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
+    const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
+    if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
+    else if (ui.anyOpen()) { text = 'Close this, then open your inventory'; spot = { act: 'back', say: 'Close this first' }; }
+    else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
   }
-  g.tut = { text, to, fish, spot };
-  if (text && g.tutSaid !== text) { g.tutSaid = text; hud.toast(text, 'note'); } // said once when it changes; the spotlight keeps showing it
+  g.tut = { text, to, fish, prompt, toLabel, spot };
+  if (text && g.tutSaid !== text) { g.tutSaid = text; hud.toast(text, 'note'); } // said once when it changes
 }
 const tutSpot = new TutSpot();
 function startRun() {
@@ -1793,6 +1828,12 @@ function update(dt) {
       if (ev.type === 'caught') {
         const sp = ev.sp, v = ev.spec.variant;
         questEvent(profile, 'catch', { id: sp.id, depth: ev.spec.from || e.y, alive: ev.spec.cond > 0.05 });
+        // (4.3.1) the Log's 'observe' step, and he netted the fish before pressing F: a fish in the net has been
+        // looked at closely enough. It goes in the journal and the step is done (the net step then has a new fish)
+        if ((QUEST_MAIN[questsOf(profile).main] || {}).id === 'observe' && questsOf(profile).mainProg < 1) {
+          if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; }
+          questEvent(profile, 'observe'); saveProfile(profile);
+        }
         if (v) {
           hud.toast(`${ev.name}!`, 'big');
           audio.ready && audio.sapphire(); audio.cue && audio.cue('rare');
@@ -2287,7 +2328,7 @@ function frame(now) {
   airOver(g);
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
-  tutSpot.update(g.mode === 'play' && !g.paused && !g.kill && profile && profile.tut === 'on' && g.tut ? g.tut.spot : null); // (4.3.0)
+  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && profile.tut === 'on' && !!g.tut; tutSpot.update(on, on ? g.tut.spot : null); } // (4.3.0)
   // dread colour grading on the scene canvas only
   const fx = g.fx;
   // no steady blur: it comes in slow pulses, a swell of fog every few seconds that clears again
