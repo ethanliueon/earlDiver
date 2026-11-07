@@ -1762,7 +1762,7 @@ export class Renderer {
         const bx = px + ca * br * 1.4, by = py + sa * br * 1.4;
         bulbs.moveTo(bx + br, by); bulbs.ellipse(bx, by, br, br * 0.8, a, 0, TAU);
         // the blade: a stored picture (one of three droops), turned, stretched and flipped into place
-        const droopK = side * 0.35 + Math.sin(t * 0.7 + k.phase + s2) * 0.25;
+        const droopK = side * (0.05 + Math.floor(hsh * 3) * 0.2); // (3.0.10) each blade keeps its own droop picture and side: picking them by time made blades snap between pictures; the sway of the angle above carries the motion
         blades.push([bx, by, a, bl, bw, droopK]);
       }
       if (k.species === 119) {
