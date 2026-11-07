@@ -86,10 +86,32 @@ up to IV, plus exactly one legendary skill.
 | The old one | Offering | ~$25,000 | Rare and Exotic |
 | The old one | Reliquary | ~$90,000 | Exotic, a small chance of Legendary (the only source) |
 
-## 5. Build order (each step its own version, with screenshots)
+## 5. Air, upgrades, the radio, quests, the Margaret (decided after v3's first draft)
+
+- **Skills stack fully** across everything worn (Rebreathing II on the suit and II on the tank: both count).
+  To balance that, **all air is cut to ×0.4**: Earl starts with 20 s (was 50); Steel 100 28 s, Steel 130
+  38 s, twin set 56 s, sidemount ~66 s, closed-circuit rebreather 80 s; every other air figure matched.
+- **Upgrades are scrapped** for the diver and the tools (air, fins, bag, net, slurp, tag, camera): the gear
+  is the upgrade. **Kept at the Margaret's yard**: the sub (deeper hull, engine, pressure chambers, open tank,
+  backup air rack) and the claw. Old saves don't matter (one player).
+- **The radio and "better buyers" are removed.**
+- **Quests**: an easy-to-find Quests button in the right-hand HUD; rewards are claimed straight from it.
+  - **The main quest line** is a handmade tutorial ("Net 1 fish", sell it, buy from the catalog, the sub, the
+    aquarium...) and can pay gear. It ends once the basics are taught; it never points to the station, Dave
+    or the old one (they are found by exploring).
+  - **Normal quests** pay cash only. The board rolls **3 quests**, mostly Common, with chances of Uncommon and
+    Rare, and very rarely Exotic (the highest). A quest's rarity follows its payout and difficulty. Refreshed
+    free every 3 hours, or at once for money (refresh by watching an ad: later, not built).
+- **The Margaret** keeps: the wheel, the aquarium, the cabin computer (Bayside Marine Supply) and the yard.
+  **Steering**: taking the wheel zooms out to a wide view of the whole boat; she is driven and turns like the
+  sub (facing the way she goes), no up or down.
+
+## 6. Build order (each step its own version, with screenshots)
 
 1. The item system: rarities, fixed stats, skills and their effects in play, the new items and descriptions;
-   the shared shop engine with the cart and inventory delivery; the Margaret's shop on it; selling gear.
+   air ×0.4; diver/tool upgrades, the radio and buyers removed; the shared shop engine with the cart and
+   inventory delivery; the Margaret's shop on it; selling gear.
+1b. Quests (the button, the main quest line, the board) and the new steering view.
 2. The research station at ~280 m: the place, its art, its terminal; the yard unlocks.
 3. Dave reworked onto the shared engine, his chests, more detail round the hut.
 4. The old one: her floor-of-the-cave screen, her wares and chests, coins removed.
