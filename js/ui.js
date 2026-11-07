@@ -35,7 +35,7 @@ import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
 import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { refreshIn, ready as contractReady } from './contracts.js';
-import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice, questLeft, fillQuests, tutorialOn } from './quests.js';
+import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice, questLeft, fillQuests, tutorialOn, stepLabel } from './quests.js';
 import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime, clamp } from './util.js';
 import { VERSION } from './version.js';
@@ -297,7 +297,7 @@ export class UI {
     }
     const wrap = $('quests-hud'); wrap.hidden = !show;
     const P0 = this.h.getProfile && this.h.getProfile(), S0 = P0 && P0.quests, st = S0 && QUEST_MAIN[S0.main];
-    wrap.querySelector('.qh-step').textContent = st && st.on ? ((S0.mainProg >= st.need ? '✓ ' : '') + st.text + (st.need > 1 && S0.mainProg < st.need ? `  (${S0.mainProg}/${st.need})` : '')) : '';
+    wrap.querySelector('.qh-step').textContent = st && st.on ? stepLabel(P0) : ''; // (4.3.4) the first fish shows which part it is on
     const n = this.h.questsReady ? this.h.questsReady() : 0, dot = b.querySelector('i');
     dot.hidden = !n; if (n) dot.textContent = n;
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }

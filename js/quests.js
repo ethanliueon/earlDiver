@@ -28,9 +28,8 @@ export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { 
 // when it is done (kit: ['item', id] into the locker, ['supply', key, n], ['trawl', tier] into the hatch,
 // ['trap', type]). Once the net and trawl steps are done their key hints leave the screen (learned()).
 export const MAIN = [
-  { id: 'swim', text: 'Swim down to 10 m', help: 'Earl swims toward the mouse (or use W A S D). Shift is faster, and uses more air.', need: 10, on: 'swimDepth', pay: 10 },
-  { id: 'observe', text: 'Observe a fish', help: 'Swim close to a fish and press F: you learn what it is, and it goes in your journal (J).', need: 1, on: 'observe', pay: 20 },
-  { id: 'net', text: 'Net a fish and bring it up', help: 'With the net out (key 1), get close and press Space or click. Then swim up to the surface with it.', need: 1, on: 'netUp', pay: 20, kit: [['item', 'flicknet']] },
+  // (4.3.4) the first three steps are one dive now: down to the fish, observe it, catch it, back up (FIRST_FISH)
+  { id: 'firstfish', text: 'Your first fish', help: 'Swim down to the orange fish, observe it (F), catch it with your net, then swim back up to the surface.', need: 1, on: 'firstFish', pay: 50, kit: [['item', 'flicknet']] },
   { id: 'sell', text: 'Sell your catch', help: 'Swim up beside the Margaret and press U, then Sell all.', need: 1, on: 'sell', pay: 30 },
   { id: 'buy', text: 'Buy a piece of gear from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought gear goes into your inventory (supplies don't count).", need: 1, on: 'bought', pay: 40 },
   { id: 'wear', text: 'Put on the gear you bought', help: 'Press B for your inventory, click it and Put it on (or drag it onto Earl).', need: 1, on: 'wear', pay: 30 },
@@ -45,9 +44,21 @@ export const MAIN = [
 ];
 // the Log before 4.0.6, so an older save keeps its place
 const OLD_MAIN = ['net', 'sell', 'buy', 'wear', 'sub', 'chamber', 'aquarium', 'trap', 'done'];
+// the Log from 4.0.6 to 4.3.3, so a save from then keeps its place
+const V3_IDS = ['swim', 'observe', 'net', 'sell', 'buy', 'wear', 'sub', 'air', 'trawl', 'chamber', 'surface', 'aquarium', 'trap', 'done'];
 const MAIN_I = Object.fromEntries(MAIN.map((m, i) => [m.id, i]));
+const ALIAS = { swim: 'firstfish', observe: 'firstfish', net: 'firstfish' }; // (4.3.4) learned('net'): the first-fish step
+// (4.3.4) the first-fish step, part by part: 0 swim down to the fish, 1 observe it, 2 catch it, 3 back to the surface, 4 done
+export const FIRST_FISH = ['Swim down to the fish', 'Observe it', 'Catch it', 'Swim back up to the surface'];
+export function firstFishPart(P) { const S = Q(P), sn = S.seen; if (MAIN[S.main] && MAIN[S.main].id !== 'firstfish') return 4; if (S.mainProg >= 1) return 4; return sn.ff_catch ? 3 : sn.ff_obs ? 2 : sn.ff_reach ? 1 : 0; }
+// the line on the HUD for the step the Log is on (for the first fish: which part, and how far along)
+export function stepLabel(P) {
+  const S = Q(P), m = MAIN[S.main]; if (!m || !m.on) return '';
+  if (m.id === 'firstfish') { const k = firstFishPart(P); return k >= 4 ? '✓ ' + m.text : `${m.text} (${k + 1}/4): ${FIRST_FISH[k].toLowerCase()}`; }
+  return (S.mainProg >= m.need ? '✓ ' : '') + m.text + (m.need > 1 && S.mainProg < m.need ? `  (${S.mainProg}/${m.need})` : '');
+}
 // (4.0.6) has the Log taught this yet? (the step done, or the Log past it)
-export function learned(P, id) { const S = Q(P), i = MAIN_I[id]; return i === undefined || S.main > i || (S.seen[id] || 0) >= MAIN[i].need; }
+export function learned(P, id) { id = ALIAS[id] || id; const S = Q(P), i = MAIN_I[id]; return i === undefined || S.main > i || (S.seen[id] || 0) >= MAIN[i].need; }
 
 // the board's quests, by kind: what to do at each rarity, and the pay
 // (4.2.0) a hidden player level, 1-10, from what he has done: lifetime earnings, deepest dive, the sub's hull.
@@ -87,14 +98,24 @@ export function Q(P) {
   // starts from what can be told (money earned means a fish has been caught and sold)
   if (!S.seen) { S.seen = {}; if ((P.lifetime || 0) > 0) { S.seen.net = 1; S.seen.sell = 1; } }
   // (4.0.6) a save from before the tutorial: the same step, by name, in the new Log; what it has already done counts
-  if (!S.v) { S.v = 2; const id = OLD_MAIN[S.main] || 'done', k = MAIN.findIndex((m) => m.id === id); if (S.main > 0 || (P.lifetime || 0) > 0) { S.main = Math.max(0, k); S.seen.swim = 10; S.seen.observe = 1; } }
+  if (!S.v) { S.v = 2; const id = OLD_MAIN[S.main] || 'done', k = V3_IDS.indexOf(id); if (S.main > 0 || (P.lifetime || 0) > 0) { S.main = Math.max(0, k); S.seen.swim = 10; S.seen.observe = 1; } }
   // (4.3.0) the Log counts only the step it is on: progress noted ahead of it by older versions is dropped (it let
   // one action finish several steps at once). Gear bought before purchases were marked counts as paid for, except
   // the flick net, which the Log itself gives.
   if (S.v < 3) {
     S.v = 3;
-    for (let i = S.main + 1; i < MAIN.length; i++) delete S.seen[MAIN[i].id];
+    for (let i = S.main + 1; i < V3_IDS.length; i++) delete S.seen[V3_IDS[i]];
     for (const it of kitOf(P).items) if (bought(it.id) && it.id !== 'flicknet' && !it.gift) it.paid = true;
+  }
+  // (4.3.4) swim, observe and net are one step: a save on one of them goes to it, with the parts it has done
+  if (S.v < 4) {
+    S.v = 4; const id = V3_IDS[S.main] || 'done';
+    if (id === 'swim' || id === 'observe' || id === 'net') {
+      S.main = 0; S.mainProg = 0;
+      if (id !== 'swim' || (S.seen.swim || 0) >= 10) S.seen.ff_reach = 1;
+      if (id === 'net' || (id === 'observe' && S.seen.observe)) S.seen.ff_obs = 1;
+      if (id === 'net' && S.seen.netCaught) S.seen.ff_catch = 1;
+    } else S.main = Math.max(0, MAIN.findIndex((m) => m.id === id));
   }
   return S;
 }
@@ -145,8 +166,12 @@ export function questEvent(P, type, data = {}) {
   // (4.3.0) the main line: only the step it is on. One thing done finishes one step, never the ones after it
   const st = MAIN[S.main];
   if (st && st.on === type && st.on !== 'subDepth') changed = mark(S, st, (S.seen[st.id] || 0) + (data.n || 1)) || changed;
-  // (4.3.2) the net step: a catch, and then the surface (questTick)
-  if (st && st.on === 'netUp' && type === 'catch' && !S.seen.netCaught) { S.seen.netCaught = 1; changed = true; }
+  // (4.3.4) the first fish: observing it, and catching it (which counts as having looked at it too); the surface
+  // is read in questTick
+  if (st && st.on === 'firstFish' && S.mainProg < 1) {
+    if (type === 'observe' && !S.seen.ff_obs) { S.seen.ff_reach = 1; S.seen.ff_obs = 1; changed = true; }
+    if (type === 'catch' && !S.seen.ff_catch) { S.seen.ff_reach = 1; S.seen.ff_obs = 1; S.seen.ff_catch = 1; changed = true; }
+  }
   changed = follow(S) || changed;
   // the board (it opens once the tutorial is over)
   if (tutorialOn(P)) return changed;
@@ -174,7 +199,10 @@ export function questTick(g, P) {
     if (st.on === 'subDepth' && e.inSub) ch = mark(S, st, Math.floor(g.sub.y)) || ch;
     if (st.on === 'subAlive' && (g.subTank.some((s) => s.cond > 0.3) || g.subTank.length && g.sub.y < 3)) ch = mark(S, st, 1) || ch;
     if (st.on === 'swimDepth' && !e.inSub) ch = mark(S, st, Math.floor(e.y)) || ch;
-    if (st.on === 'netUp' && S.seen.netCaught && !e.inSub && e.y < 1.2) ch = mark(S, st, 1) || ch; // (4.3.2) caught, and up at the surface
+    if (st.on === 'firstFish' && !e.inSub) {
+      if (!S.seen.ff_reach && e.y >= 3.5) { S.seen.ff_reach = 1; ch = true; } // down at the fish
+      if (S.seen.ff_catch && e.y < 1.2) ch = mark(S, st, 1) || ch; // (4.3.2) caught, and up at the surface
+    }
     if (st.on === 'surfaceSafe' && g.subTank.some((s) => s.safe && s.cond > 0.05)) ch = mark(S, st, 1) || ch;
     if (st.on === 'aquarium' && P.aquarium && Object.keys(P.aquarium.display || {}).length) ch = mark(S, st, 1) || ch;
   }
@@ -196,5 +224,5 @@ export function claim(P, which) {
 }
 export const readyCount = (P) => { const S = Q(P), m = MAIN[S.main]; return (m && m.on && S.mainProg >= m.need ? 1 : 0) + (m && !m.on ? 1 : 0) + (tutorialOn(P) ? 0 : S.board.filter((q) => q.prog >= q.n && !q.claimed).length); };
 // (4.3.0) the guided tutorial is running (the first six steps of the Log, until it hands over)
-export const TUT_IDS = new Set(['swim', 'observe', 'net', 'sell', 'buy', 'wear']);
+export const TUT_IDS = new Set(['firstfish', 'sell', 'buy', 'wear']);
 export function tutorialOn(P) { if (!P || P.tut !== 'on') return false; const m = MAIN[Q(P).main]; return !!m && TUT_IDS.has(m.id); }

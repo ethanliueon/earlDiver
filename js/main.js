@@ -14,7 +14,7 @@ import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from
 import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
-import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS } from './quests.js';
+import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS, firstFishPart } from './quests.js';
 import { TutSpot, keyFor, clicks, INPUT } from './tutspot.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
@@ -87,7 +87,7 @@ let profile = loadProfile();
 // what he has on (2.6.0): the tank's air, the fins (and a heavy tank's drag), the camera's card
 function applyKit(e, P) {
   kit(P); applySuit(e, P);
-  const was = e.o2Max || 0; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, (e.o2 || 0) + Math.max(0, e.o2Max - was));
+  const was = e.o2Max || 0; e.o2Max = airMax(P); e.o2 = Math.min(e.o2Max, (e.o2 || 0) + Math.max(0, e.o2Max - was));
   e.finSpeed = statValue(P, 'swim'); e.sprintMul = statValue(P, 'sprint');
   e.tankQuiet = !!(worn(P, 'tank') || {}).quiet;
   // (2.8.0) skills, Legendary skills and set traits, all stacked across what he has on
@@ -166,7 +166,7 @@ function newGame(mode) {
     if (g.fauna.caught.has(st.sp.id) && canBeRare(st.sp)) { const v = rollVariant(rng, st.y, false); if (v) { st.variant = v; if (v === 'giant') st.scale *= 1.7; } }
   }
   // upgrades bought on earlier dives
-  g.earl.o2Max = g.earl.o2 = statValue(P, 'air');
+  g.earl.o2Max = g.earl.o2 = airMax(P);
   g.earl.finSpeed = statValue(P, 'swim'); g.earl.sprintMul = statValue(P, 'sprint');
   if (mode === 'play') { applyKit(g.earl, P); g.earl.o2 = g.earl.o2Max; }
   applySuit(g.earl, P);
@@ -772,7 +772,7 @@ function buy(kind) {
         if (SUB_MARKS[mk1].named && !P.subNamed) ui.askSubName(P.subName || 'EARL', (v) => { P.subName = v; P.subNamed = true; saveProfile(P); ui.renderWorkshop(); hud.toast(`${v} painted on the hull`); }, 'The first hull that is truly yours. The yard will paint its name on, and on every hull after it.');
       }
       const has = (sid) => T.stats.includes(sid);
-      if (has('air')) { const was = e.o2Max; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, e.o2 + (e.o2Max - was)); }
+      if (has('air')) { const was = e.o2Max; e.o2Max = airMax(P); e.o2 = Math.min(e.o2Max, e.o2 + (e.o2Max - was)); }
       if (has('swim')) e.finSpeed = statValue(P, 'swim');
       if (has('sprint')) e.sprintMul = statValue(P, 'sprint');
       if (has('depth') || has('subSpeed') || has('ballast')) applySub(sub, P);
@@ -840,10 +840,14 @@ function withLoading(fn) {
 }
 // (4.2.0) the tutorial: a welcome at the start of a new game, with a skip (asked twice); then tutor() guides the
 // first steps of the Log with a line of text, a fading trail to where to go, and a ring on the fish to catch
+// (4.3.4) the diver's air: half as much again during the tutorial's first dive (30 s of air for the starting tank's 20)
+function firstDive(P) { return !!P && P.tut === 'on' && (QUEST_MAIN[questsOf(P).main] || {}).id === 'firstfish'; }
+function airMax(P) { return statValue(P, 'air') * (firstDive(P) ? 1.5 : 1); }
+function refreshAir() { if (!g || !g.earl || !profile) return; const e = g.earl, was = e.o2Max || 0, now = airMax(profile); if (Math.abs(now - was) < 0.01) return; e.o2Max = now; e.o2 = Math.min(now, (e.o2 || 0) + Math.max(0, now - was)); }
 function tutorWelcome() {
   const P = profile; if (!P || P.tut) return;
   ui.confirm('Welcome to the tutorial', 'This will be quick: just a look around the game.', 'Start', 'Skip tutorial',
-    () => { P.tut = 'on'; saveProfile(P); g.tutSaid = null; },
+    () => { P.tut = 'on'; saveProfile(P); g.tutSaid = null; refreshAir(); },
     () => ui.confirm('Skip the tutorial?', 'Are you sure?', 'Skip it', 'Back', () => { P.tut = 'skip'; saveProfile(P); }, () => tutorWelcome()));
 }
 // (4.3.0, 4.3.1) tutor(): one thing at a time. Each frame it works out the single next thing to do and sets g.tut:
@@ -858,21 +862,26 @@ const shown = (id) => { const el = document.getElementById(id); return !!el && !
 // barely leaves it) hovering just under the Margaret, a few metres down by her ladder.
 // (4.3.1) It is a real fish: caught, it is gone. When a later step needs another, a new one swims in from out of
 // sight (never popping up where the last one was caught), and once the steps with a fish are over it is let go.
+// (4.3.4) the quest garibaldi: a hidden species, never met outside the tutorial. To the game it is a garibaldi (the
+// same id, name, value, journal entry and everything else, so nothing about it is unfair); only where it lives
+// differs: higher up, about 5 m, so the first dive fits in one breath.
+let QUEST_GARIBALDI = null;
+const questGaribaldi = () => QUEST_GARIBALDI || (QUEST_GARIBALDI = Object.freeze({ ...SPECIES_BY_ID[72], dmin: 0, dmax: 8, questKey: 'questGaribaldi' }));
 function tutorFish(dir) {
-  const ax = BOAT.x + LADDER_M * dir - 3 * dir, ay = 10.5; // (reaching it also finishes 'swim down to 10 m')
+  const ax = BOAT.x + LADDER_M * dir - 3 * dir, ay = 5;
   let tf = g.tutFish;
   if (!tf || tf.dead || !g.fauna.list.includes(tf)) {
     // the first one starts in its place (it is out of sight below the deck); a later one comes from the far side
     const first = !g.tutFishN, side = Math.sign(ax - g.earl.x) || 1, sx = first ? ax : ax + side * 16;
-    tf = g.fauna.makeFish(SPECIES_BY_ID[72], sx, ay, -side, g.fauna.groupId++, true); tf.len = 0.22; tf.tutor = true;
+    tf = g.fauna.makeFish(questGaribaldi(), sx, ay, -side, g.fauna.groupId++, true); tf.len = 0.22; tf.tutor = true;
     g.fauna.list.push(tf); g.tutFish = tf; g.tutFishN = (g.tutFishN || 0) + 1;
   }
   // it swims to its patch at a fish's pace, then hovers there
   const tt = g.time, hx = ax + Math.sin(tt * 0.4) * 0.9, hy = ay + Math.sin(tt * 0.7) * 0.3, dx = hx - tf.x, dy = hy - tf.y, dd = Math.hypot(dx, dy);
   if (tf.fleeT > 0) return tf; // (4.3.2) missed: it darts off for a moment, then comes back to its patch
-  const k = dd > 1.5 ? Math.min(1, 0.06 / dd) : 0.08;
+  const k = dd > 1.5 ? Math.min(1, 0.035 / dd) : 0.05; // (4.3.4) unhurried: easy to follow and to catch
   tf.x += dx * k; tf.y += dy * k;
-  tf.vx = dd > 1.5 ? Math.sign(dx) * 1.2 : Math.cos(tt * 0.4) * 0.2; tf.vy = 0; tf.facing = tf.vx >= 0 ? 1 : -1;
+  tf.vx = dd > 1.5 ? Math.sign(dx) * 0.8 : Math.cos(tt * 0.4) * 0.15; tf.vy = 0; tf.facing = tf.vx >= 0 ? 1 : -1;
   return tf;
 }
 function tutor() {
@@ -899,22 +908,21 @@ function tutor() {
     // a step is done: claim it before anything else (the next step only starts counting once this one is claimed)
     if (qOpen) { text = 'Step done! Claim your reward'; spot = { sel: ['#quests [data-q="claim|main"]'], say: 'Claim your reward' }; }
     else if (ui.anyOpen()) { text = 'Step done! Close this, then claim it'; spot = { act: 'back', say: 'Close this, then open your quests' }; }
-    else { text = 'Step done! Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Step done! Claim it here', light: true }; }
-  } else if (m.id === 'swim') {
-    fishStep(() => { text = 'Swim down to the orange fish, 10 m under the boat'; toLabel = 'Swim here'; });
-    if (!e.inSub && !g.aboard && !inCabin) { text = 'Swim down to the orange fish, 10 m under the boat'; toLabel = 'Swim down here'; }
-  } else if (m.id === 'observe') {
-    fishStep(() => { text = `Observe it: press ${K('interact')}`; }); // (the game's own prompt shows the key)
-  } else if (m.id === 'net' && S.seen.netCaught) {
-    // (4.3.2) caught: up to the surface with it, and the step is done there
-    text = 'Nice catch! Now swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 };
-  } else if (m.id === 'net') {
-    // (4.3.2) the first swing misses (it gets away for a moment), the next one catches
-    g.tutForce = P.tutMissed ? 'catch' : 'miss';
-    fishStep(() => {
-      if (g.tutOops && g.time - g.tutOops < 3) { text = 'Oops, it got away! Try again'; prompt = { text: 'Oops, it got away! Try again', col: '#f2c7a0' }; }
-      else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); }
-    });
+    else { text = 'Quest complete! Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Quest complete! Claim it here', light: true }; }
+  } else if (m.id === 'firstfish') {
+    // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
+    // The step is only done at the surface, so the claim is never made underwater.
+    const part = firstFishPart(P);
+    if (part === 3) { text = 'Nice catch! Now swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 }; }
+    else {
+      g.tutForce = P.tutMissed ? 'catch' : 'miss';
+      fishStep(() => {
+        if (part <= 1) text = `Observe it: press ${K('interact')}`; // (the game's own prompt shows the key)
+        else if (g.tutOops && g.time - g.tutOops < 3) { text = 'Oops, it got away! Try again'; prompt = { text: 'Oops, it got away! Try again', col: '#f2c7a0' }; }
+        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); }
+      });
+      if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
+    }
   } else if (m.id === 'sell') {
     if (!P.tutJournal) { text = 'Open your journal: every animal you observe goes in it'; spot = jOpen ? null : { act: 'journal', say: 'Open your journal' }; }
     else if (jOpen) { text = 'Close the journal'; spot = { sel: ['#journal-close'], act: 'journal', say: 'Close the journal' }; }
@@ -1287,7 +1295,7 @@ function interact(t, exitSub) {
       hud.toast(`${t.sp.name} — ${t.sp.sci}`, 'note');
       audio.ready && audio.note();
       ui.journalDirty = true;
-    } else if (!e.inSub && (QUEST_MAIN[questsOf(profile).main] || {}).id === 'observe' && questsOf(profile).mainProg < 1) {
+    } else if (!e.inSub && (QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && firstFishPart(profile) <= 1) {
       // (4.3.0) the Log's 'observe' step, with a fish already in the journal (observed before the step came up)
       questEvent(profile, 'observe'); saveProfile(profile); hud.toast(`${t.sp.name}: observed`, 'note'); audio.ready && audio.note();
     } else if (e.inSub) leaveSub();
@@ -1841,9 +1849,8 @@ function update(dt) {
         questEvent(profile, 'catch', { id: sp.id, depth: ev.spec.from || e.y, alive: ev.spec.cond > 0.05 });
         // (4.3.1) the Log's 'observe' step, and he netted the fish before pressing F: a fish in the net has been
         // looked at closely enough. It goes in the journal and the step is done (the net step then has a new fish)
-        if ((QUEST_MAIN[questsOf(profile).main] || {}).id === 'observe' && questsOf(profile).mainProg < 1) {
-          if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; }
-          questEvent(profile, 'observe'); saveProfile(profile);
+        if ((QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && !g.journal.has(sp.id)) {
+          g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile);
         }
         if (v) {
           hud.toast(`${ev.name}!`, 'big');
@@ -1893,7 +1900,7 @@ function update(dt) {
     profile.playT = (profile.playT || 0) + dt; // (3.0.0) play time: the old one's days
     if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
-    tutor(); // (4.2.0)
+    tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
     const dl = updateSpecimens(g, dt);
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
     const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : s.pile ? ' on the floor of the sub' : ' in the tank') : '');
