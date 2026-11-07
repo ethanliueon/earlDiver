@@ -529,7 +529,7 @@ export class Hud {
       ctx.shadowColor = `rgba(0,0,0,${0.7 * a})`; ctx.shadowBlur = 6 * s;
       if (tt.kind.startsWith('rar:')) { ctx.globalAlpha = a; ctx.fillStyle = tt.kind.slice(4); }
       else ctx.fillStyle = tt.kind === 'warn' ? `rgba(255,150,110,${a})` : tt.kind === 'note' ? `rgba(240,226,190,${a})` : `rgba(230,238,236,${a})`;
-      ctx.fillText(tt.n > 1 ? `${tt.text}  ×${tt.n}` : tt.text, W / 2, ty); ctx.shadowBlur = 0;
+      ctx.fillText(tt.text, W / 2, ty); // (3.0.0: no ×N on a repeated line: it just stays up) ctx.shadowBlur = 0;
       ty += fs * 1.45;
       ctx.globalAlpha = 1;
     }

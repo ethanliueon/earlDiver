@@ -1565,7 +1565,7 @@ function update(dt) {
       audio.ready && audio.thud(0.3);
     }
     const dl = updateSpecimens(g, dt);
-    for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from the pressure it lives at`, 'warn');
+    for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from its depth`, 'warn');
     for (const ev of dl.events) {
       const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
       if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the ${ev.deeper ? 'depth' : 'climb'}: get it into one of the sub's chambers`, 'warn');
