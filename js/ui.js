@@ -13,7 +13,7 @@ import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
 import { Catalog, pictureOf, MEASURES } from './catalog.js';
-import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue } from './items.js';
+import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS } from './items.js';
 const SIDE_TOOLS = new Set(['slurp', 'tag', 'cam']);
 import { kit as ensureKit } from './economy.js';
 import { drawEarl } from './earl_draw.js';
@@ -383,52 +383,61 @@ export class UI {
   // Drag a thing onto him (or its slot) to put it on, or click it for its card: what it is, its skills, its
   // set, Put on / Take off, and Sell when someone is there to buy it (the Margaret, Dave). Changing gear works
   // on deck, in the cabin and in the sub; in the water it only shows.
+  // (3.0.31) the inventory: Earl large in the middle of the left pane with his eight slots either side; the locker
+  // on the right, thirty boxes, always sorted by rarity (Common to Legendary, then by kind), what he has on not in
+  // it, new things marked NEW. Click anything for a pop-up: what it is, and side by side with what he has on.
   equipHtml(P, g, extra = '') {
-    ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear();
+    ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), onSet = new Set(Object.values(K.on));
     const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp gun'], ['tag', '3  Tag gun'], ['cam', '4  Camera']];
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
-    const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id];
-      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${q && this.lkSel === q.u ? ' sel' : ''}" data-slot="${kind}" title="${q ? it.name + ' · ' + label.replace(/^\d\s+/, '') : label.replace(/^\d\s+/, '') + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free && SIDE_TOOLS.has(kind)}" data-kind="${kind}" data-u="${q.u}">` : `<span>${label.replace(/^\d\s+/, '')}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}</div>`; };
-    // the locker: by kind, the rarest first
+    const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
+      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}" title="${q ? it.name : nm + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : `<span>${nm}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}<small class="slot-nm">${nm}</small></div>`; };
     const order = ['net', 'slurp', 'tag', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
-    const list = K.items.slice().sort((a2, b2) => order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || rk(b2) - rk(a2));
-    const tiles = list.map((q) => { const it = ITEMS[q.id], on = K.on[it.kind] === q.u;
-      return `<div class="lk-tile r-${it.rarity}${on ? ' on' : ''}${this.lkSel === q.u ? ' sel' : ''}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${on ? '<i>on</i>' : ''}${q.leg ? '<em>✦</em>' : ''}</div>`; }).join('');
-    const card = this.lkSel ? this.lockerCard(P, g, free) : '';
-    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="inv-cash top"><span>CASH</span>${money(P.cash)}</div><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="300" height="380"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
-      + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
-      + `<div class="inv-rest">${extra || ''}</div></div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><span class="${K.items.length >= LOCKER ? 'full' : ''}">${K.items.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div>${card}</div></div>`;
+    const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
+    const tiles = list.map((q) => { const it = ITEMS[q.id];
+      return `<div class="lk-tile r-${it.rarity}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${q.isNew ? '<i class="new">new</i>' : ''}${q.leg ? '<em>✦</em>' : ''}</div>`; }).join('');
+    const pop = this.lkSel ? this.itemPop(P, g, free) : '';
+    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="inv-cash top"><span>CASH</span>${money(P.cash)}</div>`
+      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
+      + (free ? '<p class="eq-note">Click a slot to take a thing off · drag one in to put it on</p>' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
+      + `<div class="inv-rest">${extra || ''}</div></div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">${list.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
   }
-  // one thing's card: name in its rarity's colour, what it does, its skills, its set, and what can be done
-  lockerCard(P, g, free) {
-    const K = kitOf(P), q = K.items.find((x) => x.u === this.lkSel); if (!q) { this.lkSel = null; return ''; }
-    const it = ITEMS[q.id], R = RARITY[it.rarity], on = K.on[it.kind] === q.u, T = totals(P);
-    const roman = ['', 'I', 'II', 'III', 'IV'];
+  // one thing, as a column of the pop-up: its picture, name, rarity, what it is, its skills and its set
+  itemCol(P, q, head) {
+    const it = ITEMS[q.id], R = RARITY[it.rarity], T = totals(P), roman = ['', 'I', 'II', 'III', 'IV'];
     const skills = (q.sk || []).map(([k, l]) => `<div class="lk-sk"><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + roman[l]}</b><span>${SKILLS[k].what}</span></div>`).join('')
       + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span></div>` : '');
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
-    const set = S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b> · ${have >= 3 ? 'on' : `${have} of 3 worn`}<span>${S.trait}</span></div>` : '';
-    // (3.0.28) against what he has on of the same kind: each number, then the skills of both
-    let vs = '';
+    return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ' · net of legend' : ''}</span><p>${it.line || ''}</p>
+      <div class="ip-sks">${skills || '<span class="none">No skills</span>'}</div>${S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b> · ${have >= 3 ? 'on' : `${have} of 3 worn`}<span>${S.trait}</span></div>` : ''}</div>`;
+  }
+  // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind
+  itemPop(P, g, free) {
+    const K = kitOf(P), q = K.items.find((x) => x.u === this.lkSel); if (!q) { this.lkSel = null; return ''; }
+    if (q.isNew) { delete q.isNew; this.h.onSaveProfile && this.h.onSaveProfile(); }
+    const it = ITEMS[q.id], on = K.on[it.kind] === q.u, seller = this.h.canSellGear && this.h.canSellGear();
     const curQ = !on && K.on[it.kind] ? K.items.find((x) => x.u === K.on[it.kind]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
-    if (cur && M) {
-      const rows = M.map(([label, txt, num, hi]) => {
-        const a = txt(cur), b = txt(it);
-        if (a === b) return `<div class="vs-row same"><span>${label}</span><span>${b}</span></div>`;
+    let body, acts = '';
+    if (on) {
+      body = `<div class="ip-cols one">${this.itemCol(P, q, 'He has it on')}</div>`;
+      const starter = FREE_IDS[it.kind];
+      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${it.kind}">Take off${starter ? ` <small>(the ${ITEMS[starter].name.toLowerCase()} goes back on)</small>` : ''}</button>`;
+    } else {
+      // the numbers, a row each: his now, this one, which is better
+      let rows = '';
+      if (M) rows = M.map(([label, txt, num, hi]) => {
+        const b2 = txt(it); if (!cur) return `<tr><th>${label}</th><td>—</td><td>${b2}</td></tr>`;
+        const a2 = txt(cur); if (a2 === b2) return `<tr class="same"><th>${label}</th><td>${a2}</td><td>${b2}</td></tr>`;
         const d = num(it) - num(cur), up = hi ? d > 0 : d < 0;
-        return `<div class="vs-row"><span>${label}</span><span>${a} → <b class="${up ? 'up' : 'down'}">${b} ${up ? '▲' : '▼'}</b></span></div>`;
+        return `<tr><th>${label}</th><td>${a2}</td><td class="${up ? 'up' : 'down'}">${b2} ${up ? '▲' : '▼'}</td></tr>`;
       }).join('');
-      const skl = (x) => ((x.sk || []).map(([k, l]) => `${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + roman[l]}`).concat(x.leg ? ['✦ ' + LEGEND[x.leg].name] : []).join(', ') || 'none');
-      vs = `<div class="lk-vs"><h5>Against your ${cur.name}</h5>${rows}${skl(curQ) === "none" && skl(q) === "none" ? "" : `<div class="vs-row sk"><span>Skills</span><span>${skl(curQ)} → <b>${skl(q)}</b></span></div>`}</div>`;
+      body = `<div class="ip-cols">${cur ? this.itemCol(P, curQ, 'He has on') : `<div class="ip-col empty"><h5>He has on</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.itemCol(P, q, 'This one')}</div>`
+        + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
+      if (free) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
+      if (seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell · ${money(sellValue(q), false)}</button>`;
+      else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
     }
-    const seller = this.h.canSellGear && this.h.canSellGear();
-    let acts = '';
-    if (free && !on) acts += `<button data-lk="on:${q.u}">Put on</button>`;
-    if (free && on && SIDE_TOOLS.has(it.kind)) acts += `<button data-lk="off:${it.kind}">Take off</button>`;
-    if (!on && seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell · ${money(sellValue(q), false)}</button>`;
-    else if (!on && !seller) acts += '<small>Sell it on the Margaret, or to Dave.</small>';
-    return `<div class="lk-card r-${it.rarity}"${it.glow ? ` style="--glow:${it.glow}"` : ''}><i class="lk-orn tl"></i><i class="lk-orn tr"></i><i class="lk-orn bl"></i><i class="lk-orn br"></i><div class="lk-top"><img src="${pictureOf(it.kind, it, 200, 120, true)}" alt=""><div><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ' · net of legend' : ''}</span><p>${it.line || ''}</p></div></div>
-      <div class="lk-good">${it.good || ''}${it.bad ? `<em>Not for: ${it.bad}</em>` : ''}</div>${skills ? `<div class="lk-sks">${skills}</div>` : ''}${set}${vs}<div class="lk-acts">${acts}</div></div>`;
+    return `<div class="item-pop"><div class="ip-box r-${it.rarity}"><button class="ip-close" aria-label="Close">×</button>${body}<div class="lk-acts">${acts}</div></div></div>`;
   }
   equipWire(P, g) {
     const root = $('inventory').querySelector('.eq'); if (!root) return;
@@ -463,11 +472,14 @@ export class UI {
       cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
     }
     // a card's buttons, and clicking a tile (or a slot's item) to open its card
-    root.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); if (k.startsWith('sellgear:')) this.lkSel = null; this.renderInventory(); }));
-    root.querySelectorAll('.lk-tile:not(.empty), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = this.lkSel === el.dataset.u ? null : el.dataset.u; this.renderInventory(); }));
+    const box = $('inventory').querySelector('.inv-body');
+    box.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); this.lkSel = null; this.renderInventory(); }));
+    root.querySelectorAll('.lk-tile:not(.empty), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
+    const pop = box.querySelector('.item-pop');
+    if (pop) { pop.addEventListener('click', (ev) => { if (ev.target === pop || ev.target.closest('.ip-close')) { this.lkSel = null; this.renderInventory(); } }); }
     if (!this.h.canChangeGear()) return;
     const put = (u) => { this.h.onEquip('on:' + u); this.renderInventory(); };
-    const off = (kind) => { if (SIDE_TOOLS.has(kind)) { this.h.onEquip('off:' + kind); this.renderInventory(); } };
+    const off = (kind) => { this.h.onEquip('off:' + kind); this.renderInventory(); };
     root.querySelectorAll('.lk-tile').forEach((el) => {
       el.addEventListener('dragstart', (ev) => { this.dragKind = el.dataset.kind; ev.dataTransfer.setData('text/plain', el.dataset.kind + ':' + el.dataset.u); root.querySelectorAll(`[data-slot="${el.dataset.kind}"]`).forEach((s2) => s2.classList.add('hot')); });
       el.addEventListener('dragend', () => root.querySelectorAll('.hot').forEach((s2) => s2.classList.remove('hot')));

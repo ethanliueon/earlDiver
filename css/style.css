@@ -1485,3 +1485,58 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .eq-slot.sq .key { position: absolute; left: 5px; top: 3px; font: 600 10px var(--mono); font-style: normal; color: var(--paint-dim); }
 #inventory .eq-slot.sq.sel { box-shadow: 0 0 0 2px #f2e6c8, 0 0 12px rgba(242,230,200,0.35); }
 #inventory .eq-slot.sq:hover { filter: brightness(1.12); }
+
+/* ---------- 3.0.31 the inventory: Earl large and centred, his slots either side; a 30-box locker; the item pop-up ---------- */
+#inventory .inv-left { padding: 4px 10px 4px 6px; }
+#inventory .eq-stage { display: grid; grid-template-columns: 82px minmax(0, 1fr) 82px; gap: 10px; align-items: center; justify-items: center; padding: 10px 6px;
+  border-radius: 6px; background: radial-gradient(ellipse at 50% 55%, rgba(120,150,150,0.16), rgba(0,0,0,0) 65%), linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.28)); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05); }
+#inventory .eq-stage .eq-earl { width: 100%; max-width: 280px; height: auto; aspect-ratio: 360 / 520; background: none; }
+#inventory .eq-stage .eq-col { display: grid; grid-template-rows: repeat(4, auto); gap: 12px; }
+#inventory .eq-stage .eq-slot.sq { width: 76px; height: 76px; border: 2px solid var(--rc, rgba(255,255,255,0.18)); border-radius: 5px; background: rgba(0,0,0,0.32); box-shadow: inset 0 0 10px rgba(0,0,0,0.55); box-sizing: border-box; }
+#inventory .eq-stage .eq-slot.sq.empty { border-style: dashed; border-color: rgba(255,255,255,0.16); }
+#inventory .eq-stage .eq-slot .slot-nm { position: absolute; left: 0; right: 0; bottom: -15px; font: 9px var(--stencil); letter-spacing: 0.14em; text-transform: uppercase; color: var(--paint-dim); text-align: center; pointer-events: none; }
+#inventory .eq-stage .eq-slot.sq.empty .slot-nm { display: none; }
+#inventory .eq-stage .eq-col { row-gap: 20px; }
+#inventory .eq-note { margin: 10px 0 0; font: italic 13px var(--serif); color: var(--paint-dim); text-align: center; }
+#inventory .inv-rest { margin-top: 12px; }
+#inventory .inv-right .lk-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
+#inventory .lk-head { display: flex; align-items: baseline; gap: 10px; }
+#inventory .lk-head small { font: italic 12px var(--serif); color: var(--paint-dim); }
+#inventory .lk-head span { margin-left: auto; }
+#inventory .lk-tile i.new { left: auto; right: 3px; top: 2px; padding: 0 4px; border-radius: 2px; background: #c8a050; color: #2e220a; font: 600 8px var(--stencil); letter-spacing: 0.08em; }
+#inventory .lk-tile em { right: auto; left: 4px; }
+/* the item pop-up, over the inventory */
+#inventory .item-pop { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(4,8,10,0.55); border-radius: 6px; }
+#inventory .ip-box { position: relative; width: min(760px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow-y: auto; padding: 18px 20px 14px; border-radius: 6px;
+  background: linear-gradient(180deg, var(--steel), var(--steel-lo)); box-shadow: 0 0 0 1px #12150f, 0 0 0 3px var(--steel-hi), 0 0 0 4px #12150f, 0 18px 40px rgba(0,0,0,0.55); }
+#inventory .ip-box.r-legendary { box-shadow: 0 0 0 1px #2a1e08, 0 0 0 4px var(--brass), 0 0 0 5px #2a1e08, 0 18px 40px rgba(0,0,0,0.55); }
+#inventory .ip-close { position: absolute; right: 10px; top: 8px; width: 28px; height: 28px; border-radius: 50%; border: 0; cursor: pointer; color: #2e220a; background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); }
+#inventory .ip-cols { display: grid; grid-template-columns: 1fr 26px 1fr; gap: 10px; align-items: start; }
+#inventory .ip-cols.one { grid-template-columns: minmax(0, 420px); justify-content: center; }
+#inventory .ip-arrow { align-self: center; font: 22px var(--serif); color: var(--paint-dim); text-align: center; }
+#inventory .ip-col { padding: 10px 12px; border-radius: 4px; background: rgba(0,0,0,0.28); border: 2px solid var(--rc, rgba(255,255,255,0.15)); }
+#inventory .ip-col.empty { border-style: dashed; color: var(--paint-dim); font: italic 14px var(--serif); }
+#inventory .ip-col.r-common { --rc: var(--r-common); } #inventory .ip-col.r-uncommon { --rc: var(--r-uncommon); } #inventory .ip-col.r-rare { --rc: var(--r-rare); } #inventory .ip-col.r-exotic { --rc: var(--r-exotic); } #inventory .ip-col.r-legendary { --rc: var(--brass); }
+#inventory .ip-col h5 { margin: 0 0 6px; font: 10px var(--stencil); letter-spacing: 0.18em; text-transform: uppercase; color: var(--paint-dim); }
+#inventory .ip-col img { display: block; width: 100%; height: 108px; object-fit: contain; background: rgba(0,0,0,0.2); border-radius: 3px; }
+#inventory .ip-col .nm { display: block; margin-top: 6px; font: 400 19px var(--serif); }
+#inventory .ip-col .rr { font: 10px var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; }
+#inventory .ip-col p { margin: 4px 0 0; font: italic 13px var(--serif); color: var(--paint-dim); }
+#inventory .ip-sks { margin-top: 8px; display: grid; gap: 3px; font: 13px var(--serif); color: var(--paint-dim); }
+#inventory .ip-sks .lk-sk b { color: #9ad8ff; font-weight: 500; margin-right: 5px; } #inventory .ip-sks .lk-sk.leg b { color: var(--brass-hi); }
+#inventory .ip-sks .none { font-style: italic; opacity: 0.7; }
+#inventory .ip-vs { width: 100%; margin-top: 12px; border-collapse: collapse; font: 14px var(--serif); color: var(--paint); }
+#inventory .ip-vs th, #inventory .ip-vs td { padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.07); text-align: left; }
+#inventory .ip-vs thead td { font: 10px var(--stencil); letter-spacing: 0.12em; text-transform: uppercase; color: var(--paint-dim); }
+#inventory .ip-vs th { font-weight: 400; color: var(--paint-dim); width: 28%; }
+#inventory .ip-vs td.up { color: #8ad88a; } #inventory .ip-vs td.down { color: #e09a7a; } #inventory .ip-vs tr.same td { opacity: 0.6; }
+#inventory .ip-box .lk-acts { justify-content: flex-end; margin-top: 12px; }
+#inventory .ip-box .lk-acts button small { font: italic 12px var(--serif); opacity: 0.8; }
+#inventory .inv-split { position: relative; }
+@media (max-width: 700px) { #inventory .ip-cols { grid-template-columns: 1fr; } #inventory .ip-arrow { display: none; } }
+#inventory .inv-body { position: relative; }
+#inventory .inv-left .eq-stage .eq-earl { background: none; box-shadow: none; border: 0; border-radius: 0; width: 100%; max-width: 280px; height: auto; }
+#inventory .ip-close { right: -13px; top: -13px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+#inventory .ip-box { overflow: visible; }
+#inventory .ip-box .ip-inner { max-height: 76vh; overflow-y: auto; }
+#inventory .ip-box .lk-acts button small { color: #4a3812; opacity: 1; font-style: italic; }

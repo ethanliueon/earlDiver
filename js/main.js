@@ -676,7 +676,9 @@ function buy(kind) {
       if (P.wish === it.id) P.wish = null;
     }
   } else if (kind.startsWith('off:')) {
-    takeOff(P, kind.slice(4)); applyKit(e, P); ok = true;
+    const r = takeOff(P, kind.slice(4)); // (3.0.31) back into the locker (a starter goes back on for the five that need one)
+    if (r === 'full') hud.toast(`The locker is full (${LOCKER}): sell something first`, 'warn');
+    else if (r) { applyKit(e, P); ok = true; }
   } else if (kind.startsWith('on:')) {
     // (2.8.0) on:<uid> puts on a thing from the locker
     const q = instOf(P, kind.slice(3));
@@ -2125,7 +2127,7 @@ requestAnimationFrame(frame);
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape' || ui.typing()) return;
   if (ui.settingsOpen && ui.settingsOpen()) { ui.toggleSettings(false); return; }
-  if (ui.inventoryOpen && ui.inventoryOpen()) { ui.toggleInventory(false); return; }
+  if (ui.inventoryOpen && ui.inventoryOpen()) { if (ui.lkSel) { ui.lkSel = null; ui.renderInventory(); return; } ui.toggleInventory(false); return; } // (3.0.31) the item pop-up first
   if (g.mode !== 'play') return;
   if (ui.anyOpen()) { ui.closeAll(); return; }
   g.paused = !g.paused;

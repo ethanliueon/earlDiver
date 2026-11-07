@@ -20,7 +20,7 @@ export const SIDE_KINDS = ['slurp', 'tag', 'cam'];
 export const KIND_NAME = { net: 'Hand nets', slurp: 'Slurp guns', tag: 'Tag guns', cam: 'Cameras', suit: 'Suits', fins: 'Fins', tank: 'Air', bag: 'Bags' };
 export const FREE = { net: 'hand', fins: 'rubber', tank: 'al80', bag: 'mesh', suit: 'wet' }; // what he starts with, all on (the tools 2-4 start empty)
 export const SHOP_OF = { catalog: 'Bayside Marine Supply', dave: "Dave's Haul", station: 'The research station', old: 'The old one' };
-export const LOCKER = 40;
+export const LOCKER = 30; // (3.0.31) thirty things in the locker; what he has on is not in it
 
 // ---------- archetypes: a Common's stats; a rarity scales them by its power p ----------
 const ARCH = {
@@ -183,8 +183,8 @@ export function kitOf(P) {
 }
 function mk(id, rnd) { const def = ITEMS[id]; return { u: newUid(), id, sk: rollSkills(def, rnd), ...(def.legend ? { leg: def.legend } : {}) }; }
 export const rollSkillsFor = (def, rnd) => rollSkills(def, rnd); // (3.0.0) the old one's wares are rolled when laid out
-export function giveRolled(P, q) { if (lockerFree(P) <= 0) return null; const n = { u: newUid(), id: q.id, sk: q.sk || [], ...(q.leg ? { leg: q.leg } : {}) }; kitOf(P).items.push(n); bump(P); return n; }
-export const lockerCount = (P) => kitOf(P).items.length;
+export function giveRolled(P, q) { if (lockerFree(P) <= 0) return null; const n = { u: newUid(), id: q.id, sk: q.sk || [], isNew: true, ...(q.leg ? { leg: q.leg } : {}) }; kitOf(P).items.push(n); bump(P); return n; }
+export const lockerCount = (P) => { const K = kitOf(P), on = new Set(Object.values(K.on)); return K.items.filter((q) => !on.has(q.u)).length; }; // (3.0.31) only what he hasn't on
 export const lockerFree = (P) => LOCKER - lockerCount(P);
 export const instOf = (P, u) => kitOf(P).items.find((q) => q.u === u) || null;
 export const wornInst = (P, kind) => { const u = kitOf(P).on[kind]; return u ? instOf(P, u) : null; };
@@ -193,9 +193,22 @@ export const ownsItem = (P, id) => kitOf(P).items.some((q) => q.id === id);
 export const isOn = (P, q) => kitOf(P).on[ITEMS[q.id].kind] === q.u;
 const bump = (P) => { kitOf(P).rev = (kitOf(P).rev || 0) + 1; };
 // a new thing into the locker (null if it is full)
-export function giveItem(P, id, rnd) { if (!ITEMS[id] || lockerFree(P) <= 0) return null; const q = mk(id, rnd); kitOf(P).items.push(q); bump(P); return q; }
+export function giveItem(P, id, rnd) { if (!ITEMS[id] || lockerFree(P) <= 0) return null; const q = mk(id, rnd); q.isNew = true; kitOf(P).items.push(q); bump(P); return q; }
 export function putOn(P, u) { const q = instOf(P, u); if (!q) return false; kitOf(P).on[ITEMS[q.id].kind] = u; bump(P); return true; }
-export function takeOff(P, kind) { if (FREE[kind]) return false; kitOf(P).on[kind] = null; bump(P); return true; } // net, fins, tank, bag and suit always have one on
+// take a thing off, back into the locker. Net, fins, tank, bag and suit always have one on: taking one off puts his
+// starter one back on (3.0.31). Not when the locker has no room for it; not the starter itself.
+export function takeOff(P, kind) {
+  const K = kitOf(P), cur = K.on[kind] && instOf(P, K.on[kind]);
+  if (!cur) return false;
+  if (lockerFree(P) <= 0) return 'full';
+  if (FREE[kind]) {
+    if (cur.id === FREE[kind]) return false;
+    let base = K.items.find((q) => q.id === FREE[kind]);
+    if (!base) { base = mk(FREE[kind]); K.items.push(base); }
+    K.on[kind] = base.u;
+  } else K.on[kind] = null;
+  bump(P); return true;
+}
 // out of the locker (sold): never the thing he has on
 export function removeItem(P, u) { const K = kitOf(P), i = K.items.findIndex((q) => q.u === u); if (i < 0 || isOn(P, K.items[i])) return false; K.items.splice(i, 1); bump(P); return true; }
 export function valueOf(q) { const def = ITEMS[q.id]; return Math.round(def.price * (1 + 0.05 * (q.sk || []).reduce((a, [, l]) => a + l, 0)) * (q.leg ? 1.2 : 1)); }
