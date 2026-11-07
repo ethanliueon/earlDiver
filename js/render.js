@@ -53,7 +53,10 @@ export function seabedPose(W, x, halfW, lies) {
 }
 const staticPose = (W, st) => st.pose || (st.pose = seabedPose(W, st.x, Math.max(0.18, st.sp.len) * st.scale * 0.45, LIES.has(st.sp.v.s) || st.sp.v.hab === 'floor'));
 // (v2 size audit: everything drawn 1.25x larger than before, 1.6 -> 2.0; real lengths still set value and slots)
-export const fishDrawLen = (len) => len * 2.0 + 0.1 * Math.exp(-len * 4);
+// (3.1.2) how long an animal is drawn in the sea, against Earl (who, fins and all, is drawn about 1.5 m long):
+// 1.2x its length, bigger than life but halfway to it (a great white about 3.5x Earl, a yellowfin about 1.4x),
+// and never under about a quarter of Earl, so the smallest (prawns, firefly squid) are still seen
+export const fishDrawLen = (len) => Math.max(0.46, len * 1.2 + 0.24 * Math.exp(-len * 5));
 // Earl's height in metres
 export const EARL_H = 1.0;
 const SPRITE_PERIOD = (Math.PI * 2) / 3, SPRITE_FRAMES = 16; // (16 frames a swim cycle: half the building of 32, and it still reads smooth)
