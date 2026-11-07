@@ -11,9 +11,9 @@
 const rngOf = (seed) => { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); };
 const CACHE = new Map();
 
-// L: { split (x of the seam), name }
+// L: { split (x of the seam), name, plain (3.1.3: one plate, no locker fittings, for the other screens) }
 export function lockerTexture(w = 1200, h = 800, L = {}) {
-  const split = Math.round(L.split || w * 0.5), key = `locker:${w}x${h}:${split}`;
+  const plain = !!L.plain, split = plain ? w : Math.round(L.split || w * 0.5), key = `locker:${w}x${h}:${split}:${plain ? 'p' : ''}`;
   if (CACHE.has(key)) return CACHE.get(key);
   const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'), R = rngOf(7);
   const plate = (x0, x1, tone, wear) => {
@@ -28,7 +28,7 @@ export function lockerTexture(w = 1200, h = 800, L = {}) {
     x.restore();
   };
   plate(0, split, ['#5a6450', '#4b5541', '#3b4434'], 1.0);
-  plate(split, w, ['#55604c', '#48523f', '#384131'], 1.5); // the right plate: older, more knocked about
+  if (!plain) plate(split, w, ['#55604c', '#48523f', '#384131'], 1.5); // the right plate: older, more knocked about
   // grain over everything
   const img = x.getImageData(0, 0, w, h), d = img.data;
   for (let i = 0; i < d.length; i += 4) { const n = (R() - 0.5) * 13; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
@@ -38,10 +38,19 @@ export function lockerTexture(w = 1200, h = 800, L = {}) {
     const g = x.createRadialGradient(px - r * 0.35, py - r * 0.4, 0, px, py, r); g.addColorStop(0, '#8a927e'); g.addColorStop(1, '#3a4234'); x.fillStyle = g; x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fill();
   };
   // the seam between the plates: a lap joint, its shadow and highlight, a row of rivets
-  x.fillStyle = 'rgba(0,0,0,0.45)'; x.fillRect(split - 1, 0, 2, h); x.fillStyle = 'rgba(255,255,240,0.07)'; x.fillRect(split + 1, 0, 1, h);
-  for (let y = 26; y < h - 70; y += 34) rivet(split + 9, y, 2.8);
+  if (!plain) { x.fillStyle = 'rgba(0,0,0,0.45)'; x.fillRect(split - 1, 0, 2, h); x.fillStyle = 'rgba(255,255,240,0.07)'; x.fillRect(split + 1, 0, 1, h);
+    for (let y = 26; y < h - 70; y += 34) rivet(split + 9, y, 2.8); }
   // rivets round the edge
   for (let px = 40; px < w - 20; px += 46) { rivet(px, 12, 2.6); }
+  if (plain) { // (3.1.3) a plain plate: rivets along the foot too, chips at the edges, faint rust, the lamp; nothing else
+    for (let px = 40; px < w - 20; px += 46) rivet(px, h - 12, 2.6);
+    for (let py = 40; py < h - 30; py += 46) { rivet(12, py, 2.4); rivet(w - 12, py, 2.4); }
+    const chip2 = (px, py, r) => { x.beginPath(); for (let k = 0; k <= 9; k++) { const a = (k / 9) * Math.PI * 2, rr = r * (0.55 + R() * 0.6); const qx = px + Math.cos(a) * rr, qy = py + Math.sin(a) * rr * (0.6 + R() * 0.5); k ? x.lineTo(qx, qy) : x.moveTo(qx, qy); } x.closePath(); x.fillStyle = '#5f625a'; x.fill(); x.strokeStyle = 'rgba(28,30,22,0.55)'; x.lineWidth = 1; x.stroke(); };
+    for (let i = 0; i < 26; i++) { const side = R(); const px = side < 0.25 ? 6 + R() * 30 : side < 0.5 ? w - 6 - R() * 30 : R() * w, py = side < 0.5 ? R() * h : side < 0.75 ? 6 + R() * 24 : h - 6 - R() * 24; chip2(px, py, 1.3 + R() * 3.5); }
+    for (let i = 0; i < 8; i++) { const px = 40 + Math.floor(R() * (w / 46)) * 46, g2 = x.createLinearGradient(0, 14, 0, 14 + 20 + R() * 50); g2.addColorStop(0, 'rgba(92,56,28,0.22)'); g2.addColorStop(1, 'rgba(92,56,28,0)'); x.fillStyle = g2; x.fillRect(px - 1, 14, 1.5 + R() * 2, 70); }
+    const lg = x.createRadialGradient(w * 0.42, -h * 0.1, 0, w * 0.42, -h * 0.1, h * 1.1); lg.addColorStop(0, 'rgba(255,240,210,0.12)'); lg.addColorStop(0.5, 'rgba(255,240,210,0.03)'); lg.addColorStop(1, 'rgba(0,0,0,0.2)'); x.fillStyle = lg; x.fillRect(0, 0, w, h);
+    const url0 = c.toDataURL('image/jpeg', 0.86); CACHE.set(key, url0); return url0;
+  }
   // the hinge strip down the left: a steel strap, three knuckles
   x.fillStyle = '#3e4636'; x.fillRect(0, 0, 16, h); x.fillStyle = 'rgba(255,255,240,0.06)'; x.fillRect(15, 0, 1, h);
   for (const k of [0.16, 0.5, 0.84]) { const ky = h * k, g = x.createLinearGradient(0, 0, 14, 0); g.addColorStop(0, '#2e3428'); g.addColorStop(0.5, '#6a725c'); g.addColorStop(1, '#2a3024');

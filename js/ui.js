@@ -86,6 +86,7 @@ export class UI {
     this.chest = new ChestReveal($('chest'), { picture: (def, w, hh) => pictureOf(def.kind, def, w, hh, true), putOn: (u) => h.onEquip('on:' + u),
       close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), daveSays: () => (this.dave && this.dave.says ? this.dave.says() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
+    try { this.dressPanels(); } catch (err) { /* the plain look stays */ }
     this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
@@ -357,6 +358,18 @@ export class UI {
   }
   stationsOpen() { const el = document.getElementById('stations'); return !!el && !el.hidden; }
   inventoryOpen() { return !$('inventory').hidden; }
+  // (3.1.3) the other screens in the dive locker's style: each one's panel gets the same worn painted steel,
+  // drawn for its size each time it opens (and when the window changes)
+  dressPanels() {
+    const PANELS = [['quests', '.qs-panel'], ['settings', '.set-panel'], ['workshop', '.shop-main'], ['trapset', '.shop-main'], ['pause', null], ['confirm', '.cf-plate']];
+    const dress = (sec, sel) => { const el = sel ? sec.querySelector(sel) : sec; if (!el || sec.hidden) return;
+      requestAnimationFrame(() => { const w = el.offsetWidth, h = el.offsetHeight; if (w < 40 || h < 40) return; const key = w + 'x' + h; if (el.dataset.tex === key) return;
+        el.dataset.tex = key; el.classList.add('plated'); el.style.backgroundImage = `url(${lockerTexture(w, h, { plain: true })})`; el.style.backgroundSize = '100% 100%'; }); };
+    for (const [id, sel] of PANELS) { const sec = $(id); if (!sec) continue;
+      new MutationObserver(() => dress(sec, sel)).observe(sec, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
+      dress(sec, sel); }
+    window.addEventListener('resize', () => { for (const [id, sel] of PANELS) { const sec = $(id); if (sec) dress(sec, sel); } });
+  }
   toggleInventory(force) { const el = $('inventory'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderInventory(); }
   // B: what Earl has on him, what is in the sub, his gear
   renderInventory() {
