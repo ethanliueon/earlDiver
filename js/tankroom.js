@@ -146,7 +146,7 @@ export class TankRoom {
     return { W, H, k, narrow, chambers, tagY: top + CH * k + 10, floor: H * 0.9,
       port: narrow ? null : { x: W * 0.9, y: H * 0.3, r: Math.max(34, Math.min(W, H) * 0.075) },
       hatchR: hatchSide(W * 0.92), hatchL: hatchSide(W * 0.07),
-      tank: narrow ? { x: W * 0.05, y: H * 0.13, w: W * 0.9, h: H * 0.3 } : { x: W * 0.17, y: H * 0.14, w: W * 0.6, h: Math.min(H * 0.42, W * 0.3) },
+      tank: narrow ? { x: W * 0.05, y: H * 0.13, w: W * 0.9, h: H * 0.3 } : { x: W * 0.17, y: H * 0.13, w: W * 0.6, h: Math.min(H * 0.62, W * 0.42) }, // (3.3.1) deeper: centred on the wall, room for a full tank
       // the net's haul heaped on the floor, and the large pressure tank on its saddles beside it
       pile: narrow ? { x: W * 0.06, y: H * 0.66, w: W * 0.42 } : { x: W * 0.2, y: H * 0.88, w: W * 0.25 },
       // (3.2.0) the large pressure tank has a room of its own: one chamber laid on its side, long and wide

@@ -41,10 +41,15 @@ export class Beacon {
     if (live && this.hornT <= 0) { this.hornT = 1.6; if (this.audio && this.audio.ready && this.audio.alarm) this.audio.alarm(); }
     this.draw(live);
   }
-  // after a red rotating beacon: a black base, a ribbed red dome, a mirror turning inside it; facing you, a flare
+  // after a red rotating beacon (hung from the ceiling): a black base, a ribbed red dome, a mirror turning inside
+  // it; facing you, a flare
   draw(live) {
     const c = this.cv, x = c.getContext('2d'), W = c.width, H = c.height, cx = W / 2, r = this.rot;
-    x.clearRect(0, 0, W, H);
+    x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, W, H);
+    // (3.3.1) it hangs from the ceiling: drawn upside down, its base against the top edge
+    x.setTransform(1, 0, 0, -1, 0, H - 4);
+    // the bracket up into the ceiling
+    x.fillStyle = '#1a1b1c'; x.fillRect(cx - 5, 92, 10, 12); x.fillStyle = '#2c2e30'; x.fillRect(cx - 18, 100, 36, 4);
     const face = Math.cos(r), lit = live ? 1 : 0.3;
     // the glow around it, strongest when the mirror faces out
     const gl = x.createRadialGradient(cx, 46, 4, cx, 46, 48);
