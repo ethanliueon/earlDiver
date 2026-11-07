@@ -79,8 +79,8 @@ export class Gallery {
     // column holds the catch, to put in)
     const y = H * 0.14, h = H * 0.68;
     return { W, H, rows: [
-      { wing: { id: 'open', name: 'Open display' }, x: W * 0.04, y, w: W * 0.43, h },
-      { wing: { id: 'press', name: 'Pressure display' }, x: W * 0.52, y: y + h * 0.12, w: W * 0.235, h: h * 0.88 },
+      { wing: { id: 'open', name: 'Open display' }, x: W * 0.04, y, w: W * 0.345, h },
+      { wing: { id: 'press', name: 'Pressure display' }, x: W * 0.415, y, w: W * 0.345, h }, // (4.0.1) the same size as the open tank
     ] };
   }
   fishAt(cx, cy) {
@@ -143,6 +143,54 @@ export class Gallery {
     ctx.fillStyle = 'rgba(220,240,255,0.3)';
     for (let k = 0; k < 10; k++) { const x = r.x + r.w * 0.9 + Math.sin(t * 2 + k) * 3, y = base - ((t * 40 + k * 37) % r.h); ctx.beginPath(); ctx.arc(x, y, 1.5 + (k % 3), 0, TAU); ctx.fill(); }
     ctx.restore();
+  }
+  // (4.0.1) the pressure tank's bottom: the abyssal plain in miniature. Grey ooze, pale with settled marine snow;
+  // black manganese nodules half sunk in it; a rock crusted white with bacterial mat; glass sponges on stalks,
+  // a sea pen, a brittle star, worm tracks and burrows, and marine snow drifting down through the dark
+  deepFloor(ctx, r) {
+    const base = r.y + r.h, t = this.t, X = (f) => r.x + f * r.w;
+    let z = 7; const rnd = () => { z = (z * 16807) % 2147483647; return z / 2147483647; };
+    const top = (x) => base - 30 - Math.sin(x * 0.045) * 5 - Math.sin(x * 0.13 + 1) * 1.5;
+    const og = ctx.createLinearGradient(0, base - 40, 0, base); og.addColorStop(0, '#5c5a52'); og.addColorStop(0.35, '#45433d'); og.addColorStop(1, '#262522');
+    ctx.fillStyle = og; ctx.beginPath(); ctx.moveTo(r.x, base); for (let x = 0; x <= r.w; x += 6) ctx.lineTo(r.x + x, top(x)); ctx.lineTo(r.x + r.w, base); ctx.fill();
+    ctx.fillStyle = 'rgba(200,196,180,0.18)'; ctx.beginPath(); for (let x = 0; x <= r.w; x += 6) ctx.lineTo(r.x + x, top(x)); for (let x = r.w; x >= 0; x -= 6) ctx.lineTo(r.x + x, top(x) + 2.5); ctx.fill(); // the pale skin of settled snow
+    // worm tracks and burrow holes
+    ctx.strokeStyle = 'rgba(20,20,18,0.45)'; ctx.lineWidth = 1;
+    for (let k = 0; k < 3; k++) { const x0 = rnd() * r.w * 0.8; ctx.beginPath(); for (let i = 0; i <= 20; i++) { const xx = x0 + i * 4; ctx.lineTo(r.x + xx, top(xx) + 6 + Math.sin(i * 0.9 + k) * 2); } ctx.stroke(); }
+    ctx.fillStyle = 'rgba(10,10,9,0.7)'; for (let k = 0; k < 6; k++) { const xx = rnd() * r.w; ctx.beginPath(); ctx.ellipse(r.x + xx, top(xx) + 5 + rnd() * 6, 2.2, 1, 0, 0, TAU); ctx.fill(); }
+    // a rock with a white bacterial mat
+    { const rx = X(0.72), ry = top(r.w * 0.72) + 3, rw = r.w * 0.16, rh = r.h * 0.09;
+      const rg = ctx.createRadialGradient(rx - rw * 0.3, ry - rh * 0.6, 2, rx, ry - rh * 0.3, rw); rg.addColorStop(0, '#4c4a46'); rg.addColorStop(1, '#1e1d1b');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.moveTo(rx - rw * 0.55, ry); ctx.quadraticCurveTo(rx - rw * 0.5, ry - rh * 1.1, rx - rw * 0.05, ry - rh); ctx.quadraticCurveTo(rx + rw * 0.45, ry - rh * 0.95, rx + rw * 0.55, ry); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(232,230,214,0.55)'; for (let k = 0; k < 9; k++) { ctx.beginPath(); ctx.ellipse(rx - rw * 0.35 + k * rw * 0.08, ry - rh * (0.82 + Math.sin(k * 1.7) * 0.12), 4 + (k % 3), 1.6, 0, 0, TAU); ctx.fill(); } }
+    // manganese nodules, half sunk
+    for (let k = 0; k < 24; k++) { const xx = rnd() * r.w, rr = 3.5 + rnd() * 6, yy = top(xx) + 4 + rnd() * 14;
+      const ng = ctx.createRadialGradient(r.x + xx - rr * 0.3, yy - rr * 0.4, 0.5, r.x + xx, yy, rr); ng.addColorStop(0, '#5a564e'); ng.addColorStop(1, '#141310');
+      ctx.fillStyle = ng; ctx.beginPath(); ctx.ellipse(r.x + xx, yy, rr * 1.2, rr * 0.75, 0, Math.PI, TAU); ctx.fill(); }
+    // glass sponges on long stalks, swaying a little
+    for (const [f, hh] of [[0.14, 0.2], [0.24, 0.13], [0.9, 0.17]]) {
+      const bx = X(f), by = top(f * r.w) + 4, H2 = r.h * hh, sw = Math.sin(t * 0.5 + f * 9) * 3;
+      ctx.strokeStyle = 'rgba(214,220,210,0.55)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + sw * 0.4, by - H2 * 0.6, bx + sw, by - H2); ctx.stroke();
+      const cx = bx + sw, cy = by - H2 - 12;
+      ctx.fillStyle = 'rgba(226,232,222,0.16)'; ctx.strokeStyle = 'rgba(226,232,222,0.5)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(cx - 5, cy + 12); ctx.quadraticCurveTo(cx - 10, cy - 4, cx - 7, cy - 14); ctx.lineTo(cx + 7, cy - 14); ctx.quadraticCurveTo(cx + 10, cy - 4, cx + 5, cy + 12); ctx.closePath(); ctx.fill(); ctx.stroke();
+      for (let i = 1; i < 5; i++) { ctx.beginPath(); ctx.moveTo(cx - 8, cy + 12 - i * 5.5); ctx.lineTo(cx + 8, cy + 12 - i * 5.5); ctx.stroke(); } // its lattice
+      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(cx + i * 3.5, cy + 12); ctx.lineTo(cx + i * 4.5, cy - 14); ctx.stroke(); }
+    }
+    // a sea pen, a feather of pale polyps
+    { const bx = X(0.5), by = top(r.w * 0.5) + 3, H2 = r.h * 0.12, sw = Math.sin(t * 0.7) * 2.5;
+      ctx.strokeStyle = 'rgba(214,150,120,0.75)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + sw, by - H2); ctx.stroke();
+      ctx.lineWidth = 1; for (let i = 3; i < 14; i++) { const q = i / 14, px = bx + sw * q, py = by - H2 * q, L = 7 * Math.sin(q * Math.PI); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px - L, py - 3); ctx.moveTo(px, py); ctx.lineTo(px + L, py - 3); ctx.stroke(); } }
+    // a brittle star on the ooze
+    { const sx = X(0.36), sy = top(r.w * 0.36) + 5;
+      ctx.strokeStyle = 'rgba(190,140,110,0.85)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+      for (let i = 0; i < 5; i++) { const a = i / 5 * TAU + 0.3 + Math.sin(t * 0.3 + i) * 0.08; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + Math.cos(a) * 9, sy + Math.sin(a) * 3 - 1, sx + Math.cos(a + 0.4) * 16, sy + Math.sin(a + 0.4) * 4); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(200,150,120,0.9)'; ctx.beginPath(); ctx.ellipse(sx, sy, 3.5, 1.6, 0, 0, TAU); ctx.fill(); ctx.lineCap = 'butt'; }
+    // the tank's own dim lamp, down onto the floor so it can be seen
+    { const lg = ctx.createRadialGradient(X(0.5), base - 10, 4, X(0.5), base - 10, r.w * 0.6); lg.addColorStop(0, 'rgba(150,180,190,0.16)'); lg.addColorStop(1, 'rgba(150,180,190,0)'); ctx.fillStyle = lg; ctx.fillRect(r.x, base - r.h * 0.4, r.w, r.h * 0.4); }
+    // marine snow, falling slowly through the whole tank
+    ctx.fillStyle = 'rgba(220,226,220,0.35)';
+    for (let k = 0; k < 40; k++) { const fx = ((k * 0.618) % 1), q = ((t * 0.012 * (0.6 + (k % 5) * 0.1)) + k * 0.137) % 1; ctx.fillRect(r.x + fx * r.w + Math.sin(t * 0.4 + k) * 4, r.y + q * (r.h - 20), 1.4, 1.4); }
   }
   // (4.0.0) the open tank as the specimen tanks are drawn: glass walls with green edges and silicone seams, a
   // steel rim on top, a thick glass floor pane
@@ -217,9 +265,8 @@ export class Gallery {
       ctx.fillStyle = wg; ctx.fillRect(r.x, r.y, r.w, r.h);
       if (!press && A.light !== 'red') { ctx.globalAlpha = A.light === 'dim' ? 0.03 : 0.07; ctx.fillStyle = '#e8f8ff'; for (let k = 0; k < 5; k++) { const x = r.x + r.w * (0.08 + k * 0.2) + Math.sin(this.t * 0.4 + k) * 10; ctx.beginPath(); ctx.moveTo(x, r.y); ctx.lineTo(x + 24, r.y); ctx.lineTo(x + 60, base); ctx.lineTo(x + 30, base); ctx.fill(); } ctx.globalAlpha = 1; }
       // the floor: sand in the open tank; grey ooze and a scatter of pale nodules in the deep one
-      ctx.fillStyle = press ? '#2a2c2c' : '#5e5444'; ctx.beginPath(); ctx.moveTo(r.x, base); for (let x = 0; x <= r.w; x += 10) ctx.lineTo(r.x + x, base - 8 - Math.sin(x * 0.07) * 3); ctx.lineTo(r.x + r.w, base); ctx.fill();
-      if (press) { ctx.fillStyle = 'rgba(160,160,150,0.35)'; for (let k = 0; k < 14; k++) { ctx.beginPath(); ctx.ellipse(r.x + ((k * 53) % r.w), base - 6 - (k % 3) * 2, 2.5 + (k % 2), 1.6, 0, 0, TAU); ctx.fill(); } }
-      else this.decor(ctx, r);
+      if (press) this.deepFloor(ctx, r);
+      else { ctx.fillStyle = '#5e5444'; ctx.beginPath(); ctx.moveTo(r.x, base); for (let x = 0; x <= r.w; x += 10) ctx.lineTo(r.x + x, base - 8 - Math.sin(x * 0.07) * 3); ctx.lineTo(r.x + r.w, base); ctx.fill(); this.decor(ctx, r); }
       const shown = shownAll.filter(([, d]) => { const sp = SPECIES_BY_ID[d.id]; return sp && deepKeeper(sp) === press; });
       const maxL = clamp(Math.min(r.h * 0.4, r.w * 0.38), 40, 240);
       shown.forEach(([k, d]) => {
@@ -249,7 +296,7 @@ export class Gallery {
         if (d.name) { ctx.fillStyle = 'rgba(230,236,230,0.75)'; ctx.font = '12px "EB Garamond", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillText(d.name, a.sx, a.sy + L * 0.32 + 12); }
       });
       if (!press && light.tint) { ctx.fillStyle = light.tint; ctx.fillRect(r.x, r.y, r.w, r.h); }
-      if (press) { const vg = ctx.createRadialGradient(r.x + r.w / 2, r.y + r.h * 0.45, r.w * 0.2, r.x + r.w / 2, r.y + r.h * 0.45, r.w * 0.9); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)'); ctx.fillStyle = vg; ctx.fillRect(r.x, r.y, r.w, r.h); }
+      if (press) { const vg = ctx.createRadialGradient(r.x + r.w / 2, r.y + r.h * 0.45, r.w * 0.2, r.x + r.w / 2, r.y + r.h * 0.45, r.w * 0.9); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.38)'); ctx.fillStyle = vg; ctx.fillRect(r.x, r.y, r.w, r.h); }
       ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(r.x, r.y, r.w, 5);
       ctx.restore();
       if (press) this.pressFrame(ctx, r, shown.length); else this.glassFrame(ctx, r);
