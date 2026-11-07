@@ -1835,7 +1835,7 @@ body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { 
 
 /* ---------- 3.1.0 a Legendary's card: a warm glow behind the animal, the edge lit gold ---------- */
 .leg-card { background: radial-gradient(ellipse 70% 55% at 50% 34%, rgba(255,196,90,0.30), rgba(242,160,50,0.10) 55%, rgba(0,0,0,0) 80%), linear-gradient(180deg, #2a2618, #22251c 60%, #1e2219) !important; }
-#inventory .inv-catch2 .fc.leg-card:not(.trouble) { box-shadow: 0 0 0 1px #2a1e08, 0 0 0 3px #b8954a, 0 0 0 4px #1a1d18, inset 0 0 26px rgba(242,184,74,0.22), 0 0 14px rgba(242,184,74,0.28); animation: leg-card 3.4s ease-in-out infinite; }
+#inventory .inv-catch2 .fc.leg-card { box-shadow: 0 0 0 1px #2a1e08, 0 0 0 3px #b8954a, 0 0 0 4px #1a1d18, inset 0 0 26px rgba(242,184,74,0.22), 0 0 14px rgba(242,184,74,0.28); animation: leg-card 3.4s ease-in-out infinite; }
 @keyframes leg-card { 50% { box-shadow: 0 0 0 1px #2a1e08, 0 0 0 3px #e0b860, 0 0 0 4px #1a1d18, inset 0 0 34px rgba(255,200,100,0.32), 0 0 22px rgba(242,184,74,0.42); } }
 .tr-card.leg-card, .gl-tag.leg-card { box-shadow: 0 0 0 1px rgba(240,184,74,0.7), 0 0 18px rgba(242,184,74,0.35), 0 8px 24px rgba(0,0,0,0.5); }
 .entry.leg-card { box-shadow: inset 3px 0 0 #e0b04a; }
@@ -2113,3 +2113,57 @@ kbd.keycap { display: inline-grid; place-items: center; min-width: 26px; height:
   background: radial-gradient(ellipse at 50% 42%, rgba(255,240,200,0.18), rgba(60,40,10,0.12) 70%), linear-gradient(180deg, #e4d29e, #b89c5c 55%, #94793e);
   box-shadow: 0 0 0 1px rgba(30,20,4,0.9), 0 3.5px 0 #4a3a18, 0 3.5px 0 1px rgba(30,20,4,0.9), 0 6px 8px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,244,210,0.6); }
 kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+/* (3.6.1) stars: of three, the middle one a little larger and brighter */
+.r-stars b:nth-child(2):nth-last-child(2) { font-size: 1.28em; color: #ffd978; text-shadow: 0 1px 1px rgba(0,0,0,0.7), 0 0 6px rgba(255,210,110,0.6); align-self: center; }
+.r-stars { align-items: center; }
+/* (3.6.1) an animal in danger: a red ! in the corner, the card itself left alone */
+#inventory .fc-warn { display: none; }
+#inventory .trouble > .fc-warn { position: absolute; left: 6px; top: 6px; z-index: 4; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%;
+  font: 700 13px/1 Georgia, serif; font-style: normal; color: #fff4ec; background: #c8281c; box-shadow: 0 0 0 1px rgba(0,0,0,0.5), inset 0 0 0 1.5px rgba(255,220,200,0.45), 0 2px 4px rgba(0,0,0,0.5);
+  animation: warn-pulse 1.2s ease-in-out infinite; }
+#inventory .tank-win { position: relative; }
+#inventory .tank-win.trouble > .fc-warn { left: 16px; top: 16px; width: 22px; height: 22px; font-size: 15px; }
+@keyframes warn-pulse { 50% { transform: scale(1.1); } }
+#inventory .inv-catch2 .fc.trouble { animation: none; box-shadow: 0 0 0 1px #1c1f12, 0 3px 6px rgba(0,0,0,0.45), inset 0 -6px 10px rgba(0,0,0,0.25);
+  background: var(--grain), repeating-linear-gradient(0deg, rgba(0,0,0,0.07) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(255,255,220,0.05) 0 1px, transparent 1px 3px), linear-gradient(180deg, #555b3c, #474c31 60%, #3d4229); }
+#inventory .tank-win.trouble { animation: none; box-shadow: 0 0 0 1px #0c0e0a, 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,240,0.15); }
+@media (prefers-reduced-motion: reduce) { #inventory .trouble > .fc-warn { animation: none; } }
+
+/* ---- (3.6.1) the specimen station: a lit aquarium and the animal's record, on dark painted steel ---- */
+#inventory .sp-panel { position: relative; display: grid; grid-template-columns: 300px 1fr; gap: 26px; width: min(760px, calc(100% - 40px)); padding: 22px 26px 22px 22px; border-radius: 3px; color: var(--paint);
+  background: radial-gradient(circle at 10px 10px, #7a8078 0 2px, #1e221c 2.4px, transparent 3.2px), radial-gradient(circle at calc(100% - 10px) 10px, #7a8078 0 2px, #1e221c 2.4px, transparent 3.2px),
+    radial-gradient(circle at 10px calc(100% - 10px), #7a8078 0 2px, #1e221c 2.4px, transparent 3.2px), radial-gradient(circle at calc(100% - 10px) calc(100% - 10px), #7a8078 0 2px, #1e221c 2.4px, transparent 3.2px),
+    var(--grain), linear-gradient(180deg, #2c322a, #23281f 70%, #1d211a);
+  box-shadow: 0 0 0 1px #0a0b08, 0 0 0 5px #394036, 0 0 0 6px #0e100c, 0 20px 44px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,240,0.06); }
+#inventory .sp-panel.leg { box-shadow: 0 0 0 1px #0a0b08, 0 0 0 5px #8a7238, 0 0 0 6px #2a1e08, 0 20px 44px rgba(0,0,0,0.6), inset 0 0 30px rgba(242,184,74,0.08); }
+#inventory .sp-panel .ip-close { right: -14px; top: -14px; }
+#inventory .sp-tank { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#inventory canvas.sp-aq { position: static; inset: auto; display: block; width: 300px; height: 210px; }
+#inventory .sp-plate { padding: 2px 10px 1px; font: 600 9px var(--mono); letter-spacing: 0.16em; color: rgba(42,30,8,0.8); border-radius: 2px;
+  background: linear-gradient(180deg, #b4a070, #8a7444); box-shadow: 0 0 0 1px #2a1e08, inset 0 1px 0 rgba(255,240,200,0.35); }
+#inventory .sp-info { min-width: 0; padding-top: 2px; }
+#inventory .sp-rar { display: inline-flex; align-items: center; gap: 6px; font: 600 9.5px var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--rc); }
+#inventory .sp-rar .r-stars { position: static; display: inline-flex; }
+#inventory .sp-name { display: block; margin-top: 6px; font: 500 30px/1.05 var(--serif); color: var(--rc); text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+#inventory .sp-sci { display: block; margin-top: 6px; font: 500 12.5px var(--serif); color: rgba(221,214,188,0.62); }
+#inventory .sp-sci i { font-style: italic; }
+#inventory .sp-var { display: block; margin-top: 4px; font: 600 10px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: #b48ae0; }
+#inventory .sp-rows { margin: 14px 0 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; }
+#inventory .sp-r { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 6px 0 5px; border-bottom: 1px solid rgba(0,0,0,0.45); box-shadow: 0 1px 0 rgba(255,255,240,0.04); }
+#inventory .sp-r dt { font: 600 9px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(221,214,188,0.48); }
+#inventory .sp-r dd { margin: 0; font: 500 13px var(--mono); color: rgba(232,226,204,0.88); text-align: right; white-space: nowrap; }
+#inventory .sp-r dd small { display: block; font-size: 9.5px; letter-spacing: 0.06em; color: #d9a24a; }
+#inventory .sp-r.val dd { color: #d6b25e; font-weight: 600; }
+#inventory .sp-dot { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; vertical-align: 1px; background: currentColor; }
+#inventory .sp-r.st-live dd { color: #9cc890; } #inventory .sp-r.st-weak dd { color: #d6b25e; } #inventory .sp-r.st-dying dd { color: #e8806a; } #inventory .sp-r.st-dead dd { color: #8a8a82; }
+#inventory .sp-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 16px; }
+#inventory .sp-acts > span { margin-right: 4px; font: 600 9px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(221,214,188,0.48); }
+#inventory .sp-acts button { padding: 5px 12px 4px; border: 0; border-radius: 2px; cursor: pointer; font: 11px var(--stencil); letter-spacing: 0.12em; text-transform: uppercase; color: #2a1e08;
+  background: linear-gradient(180deg, #c8b47e, #9c8452 55%, #6e5a32); box-shadow: 0 0 0 1px #2a1e08, 0 2px 0 #1a1206, inset 0 1px 0 rgba(255,240,200,0.4); }
+#inventory .sp-acts button:hover:not(:disabled) { filter: brightness(1.1); }
+#inventory .sp-acts button:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 0 0 1px #2a1e08, 0 1px 0 #1a1206; }
+#inventory .sp-acts button:disabled { opacity: 0.35; cursor: default; }
+#inventory .sp-remark { margin: 16px 0 0; font: 500 13px/1.45 var(--serif); color: rgba(221,214,188,0.6); }
+@media (max-width: 700px) { #inventory .sp-panel { grid-template-columns: 1fr; } }
+#inventory .sp-rows { grid-template-columns: 1fr; max-width: 360px; }
+.r-stars b:nth-child(2):nth-last-child(2), #inventory .fc .r-stars b:nth-child(2):nth-last-child(2), .tr-card .r-stars b:nth-child(2):nth-last-child(2), .gl-tag .r-stars b:nth-child(2):nth-last-child(2), .entry .r-stars b:nth-child(2):nth-last-child(2) { font-size: 15.5px !important; color: #ffdc80 !important; text-shadow: 0 1px 1px rgba(0,0,0,0.7), 0 0 7px rgba(255,210,110,0.7); }

@@ -31,6 +31,16 @@ const EX = 104, CW = 150 + EX, CH = 420, PIPE_X = CW / 2 + 22; // where the feed
 // smaller in proportion (gently compressed, so a 10 cm fish is still seen): a giant outsizes a tuna, a tuna a frogfish
 export const sizeK = (len) => Math.pow(Math.min(len || 0.1, 2.4) / 2.4, 0.62);
 const tankLen = (len, max) => Math.max(14, max * sizeK(len));
+// (3.6.1) the danger mark: a red disc with a white !, pulsing gently
+export function warnMark(ctx, x, y, r, t = 0) {
+  const k = 1 + 0.06 * Math.sin(t * 5);
+  ctx.save(); ctx.translate(x, y); ctx.scale(k, k);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(0, 1.5, r, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#c8281c'; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,220,200,0.55)'; ctx.lineWidth = r * 0.12; ctx.beginPath(); ctx.arc(0, 0, r * 0.86, 0, TAU); ctx.stroke();
+  ctx.fillStyle = '#fff4ec'; ctx.font = `700 ${r * 1.35}px Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', 0, r * 0.06);
+  ctx.restore();
+}
 // (3.2.0) a fish's real half-height and half-length (as shares of its length), and the box its centre may swim in
 // so that every part of it stays between x0..x1 and y0..y1 (swim keeps the centre half a length from the sides)
 const halfH = (sp) => { const B = speciesBox(sp); return Math.max(0.08, Math.abs(B.y0), Math.abs(B.y1)); };
@@ -41,7 +51,7 @@ function inside(sp, L, x0, x1, y0, y1) {
 }
 // (3.2.1) the colour of the water at a depth, as the porthole shows it
 const SEA = [[0, [90, 190, 200]], [60, [40, 130, 170]], [200, [16, 64, 120]], [500, [6, 24, 58]], [1000, [1, 4, 10]]];
-function seaAt(d) {
+export function seaAt(d) {
   for (let i = 1; i < SEA.length; i++) if (d <= SEA[i][0]) { const [d0, c0] = SEA[i - 1], [d1, c1] = SEA[i], q = (d - d0) / (d1 - d0); return c0.map((v, k) => lerp(v, c1[k], q)); }
   return SEA[SEA.length - 1][1].slice();
 }
@@ -182,7 +192,7 @@ export class TankRoom {
     return { W, H, k, narrow, chambers, tagY: top + CH * k + 10, floor: H * 0.9,
       port: narrow ? null : { x: W * 0.9, y: H * 0.3, r: Math.max(34, Math.min(W, H) * 0.075) },
       hatchR: hatchSide(W * 0.92), hatchL: hatchSide(W * 0.07),
-      tank: narrow ? { x: W * 0.05, y: H * 0.13, w: W * 0.9, h: H * 0.3 } : { x: W * 0.17, y: H * 0.13, w: W * 0.6, h: Math.min(H * 0.62, W * 0.42) }, // (3.3.1) deeper: centred on the wall, room for a full tank
+      tank: narrow ? { x: W * 0.05, y: H * 0.13, w: W * 0.9, h: H * 0.3 } : { x: W * 0.17, y: Math.max(H * 0.22, 178), w: W * 0.6, h: Math.min(H * 0.58, W * 0.4) }, // (3.3.1) deeper, centred on the wall; (3.6.1) below the depth counter
       // the net's haul heaped on the floor, and the large pressure tank on its saddles beside it
       pile: narrow ? { x: W * 0.06, y: H * 0.66, w: W * 0.42 } : { x: W * 0.2, y: H * 0.88, w: W * 0.25 },
       // (3.2.0) the large pressure tank has a room of its own: one chamber laid on its side, long and wide
@@ -409,12 +419,13 @@ export class TankRoom {
   // (3.5.0) the room's name, painted large on the bulkhead (under the room's light, as the steel is)
   drawSign(ctx, G) {
     const i = ROOM_ORDER.indexOf(this.room), y = G.narrow ? 30 : 44;
-    const nw = paintedText(ctx, `0${i + 1}`, 22, y, G.narrow ? 30 : 44, { alpha: 0.46, spacing: 0.04 });
-    this.signW = 22 + nw + paintedText(ctx, ROOM_SIGN[this.room], 22 + nw + 6, y + 3, G.narrow ? 18 : 26, { alpha: 0.5 }) + 6;
+    const nw = paintedText(ctx, `0${i + 1}`, 22, y + 6, G.narrow ? 40 : 64, { alpha: 0.5, spacing: 0.04 }); // (3.6.1) larger
+    this.signW = 22 + nw + paintedText(ctx, ROOM_SIGN[this.room], 22 + nw + 8, y + 10, G.narrow ? 24 : 38, { alpha: 0.55 }) + 6;
   }
   // the depth counter, screwed to the wall beside the name
   drawCounter(ctx, G, g) {
-    depthCounter(ctx, 24, G.narrow ? 60 : 76, this.shownDepth || 0, { warn: g.sub.y > g.sub.rated, t: this.t }); // (3.6.0) under the name, clear of the message line
+    // (3.6.1) top and centre, under the message line
+    depthCounter(ctx, G.W / 2 - 74, G.narrow ? 70 : 84, this.shownDepth || 0, { warn: g.sub.y > g.sub.rated, t: this.t });
   }
   // the dark wipe of a hatch
   drawWipe(ctx, G) {
@@ -785,11 +796,9 @@ export class TankRoom {
         ctx.fillStyle = 'rgba(20,22,20,0.6)'; ctx.beginPath(); ctx.arc(CW / 2, ly + 16, 6, 0, TAU); ctx.fill(); ctx.fillRect(CW / 2 - 3, ly + 18, 6, 14);
       } else {
         const s = by.get(n);
-        if (s && s.cond > 0.05 && (s.cond < 0.3 || gapOf(g, s, false) > SAFE_GAP)) { // in trouble: a faint red glow behind it
-          const pulse = 0.55 + 0.45 * Math.sin(this.t * 3), rg = ctx.createRadialGradient(CW / 2, CH * 0.6, 10, CW / 2, CH * 0.6, 110 + EX / 2);
-          rg.addColorStop(0, `rgba(230,70,50,${(0.38 * pulse).toFixed(3)})`); rg.addColorStop(1, 'rgba(230,70,50,0)'); ctx.fillStyle = rg; ctx.fillRect(-35, 80, CW + 70, CH - 80);
-        }
         this.chamberFish = 1.25; this.drawChamber(ctx, g, s, rating, cmax, outside, dt, n); this.chamberFish = 1;
+        // (3.6.1) in trouble: a red ! on the chamber's head, not a red glow
+        if (s && s.cond > 0.05 && (s.cond < 0.3 || gapOf(g, s, false) > SAFE_GAP)) warnMark(ctx, CW - 30, 112, 22, this.t);
         if (s) hits.push({ s, x: x + CW / 2 * k, y: (CH * 0.6 - 20) * k, r: Math.max(60 * k, 22), n });
       }
       ctx.restore();

@@ -50,10 +50,10 @@ export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'D
   ctx.save(); ctx.translate(x, y);
   // the brass bezel, its screws
   const bz = ctx.createLinearGradient(0, 0, 0, H);
-  bz.addColorStop(0, '#d8c48e'); bz.addColorStop(0.45, '#a88e52'); bz.addColorStop(1, '#6c5630');
+  bz.addColorStop(0, '#b4a070'); bz.addColorStop(0.45, '#8a7444'); bz.addColorStop(1, '#5a4828');
   ctx.fillStyle = '#1a1408'; ctx.beginPath(); ctx.roundRect(-2, -1, W + 4, H + 4, 8); ctx.fill();
   ctx.fillStyle = bz; ctx.beginPath(); ctx.roundRect(0, 0, W, H, 7); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,240,200,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0.5, 0.5, W - 1, H - 1, 7); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,240,200,0.28)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0.5, 0.5, W - 1, H - 1, 7); ctx.stroke();
   for (const [sx, sy] of [[6, 6], [W - 6, 6], [6, H - 6], [W - 6, H - 6]]) {
     ctx.fillStyle = '#5a4620'; ctx.beginPath(); ctx.arc(sx, sy, 2.4, 0, TAU); ctx.fill();
     ctx.strokeStyle = '#2a2008'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(sx - 1.6, sy - 1); ctx.lineTo(sx + 1.6, sy + 1); ctx.stroke();
@@ -70,9 +70,9 @@ export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'D
     const lower = d % unit, roll = p === 0 ? snap(v - Math.floor(v)) : (lower >= unit - 1 ? snap(lower - (unit - 1)) : 0);
     const dx = wx + i * dw;
     const drum = ctx.createLinearGradient(0, wy, 0, wy + dh);
-    drum.addColorStop(0, '#8e8a7e'); drum.addColorStop(0.22, '#e6e0cf'); drum.addColorStop(0.5, '#f2ecdc'); drum.addColorStop(0.78, '#e6e0cf'); drum.addColorStop(1, '#8e8a7e');
+    drum.addColorStop(0, '#6e695c'); drum.addColorStop(0.22, '#b9b19a'); drum.addColorStop(0.5, '#c9c0a6'); drum.addColorStop(0.78, '#b9b19a'); drum.addColorStop(1, '#6e695c'); // (aged ivory, not paper-white)
     ctx.fillStyle = drum; ctx.fillRect(dx + 1, wy, dw - 2, dh);
-    ctx.fillStyle = '#121008'; ctx.font = `600 31px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#1e1a10'; ctx.font = `600 31px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const off = roll * dh;
     ctx.fillText(String(digit), dx + dw / 2, wy + dh / 2 + 1 - off);
     ctx.fillText(String((digit + 1) % 10), dx + dw / 2, wy + dh / 2 + 1 + dh - off);
@@ -83,12 +83,12 @@ export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'D
   sh.addColorStop(0, 'rgba(0,0,0,0.38)'); sh.addColorStop(0.16, 'rgba(0,0,0,0)'); sh.addColorStop(0.84, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.38)');
   ctx.fillStyle = sh; ctx.fillRect(wx, wy, ww, dh);
   if (warn) { ctx.fillStyle = `rgba(255,150,40,${(0.2 + 0.1 * Math.sin(t * 6)).toFixed(3)})`; ctx.fillRect(wx, wy, ww, dh); }
-  ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(wx, wy + 4, ww, 3);
+  ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(wx, wy + 4, ww, 3);
   ctx.restore();
   // engraved on a strip under the bezel
   ctx.font = `600 9px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(label, W / 2 + 0.6, H + 14.6);
-  ctx.fillStyle = 'rgba(232,222,190,0.72)'; ctx.fillText(label, W / 2, H + 14);
+  ctx.fillStyle = 'rgba(214,204,172,0.5)'; ctx.fillText(label, W / 2, H + 14);
   ctx.restore();
   return { w: W, h: H + 16 };
 }

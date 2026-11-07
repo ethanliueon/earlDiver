@@ -2,7 +2,7 @@
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
 const SHOWCASE_TABS = new Set(['diver', 'tools', 'sub']);
-import { speciesIcon, fittedIcon } from './creatures_draw.js';
+import { speciesIcon, fittedIcon, speciesBox, drawSpecies } from './creatures_draw.js';
 import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
@@ -21,7 +21,7 @@ import { SETTINGS, setSetting } from './settings.js';
 import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
-import { TankRoom, sizeK } from './tankroom.js';
+import { TankRoom, sizeK, seaAt } from './tankroom.js';
 import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
@@ -34,7 +34,7 @@ import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statV
 import { refreshIn, ready as contractReady } from './contracts.js';
 import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice, questLeft, fillQuests } from './quests.js';
 import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
-import { formatTime } from './util.js';
+import { formatTime, clamp } from './util.js';
 import { VERSION } from './version.js';
 import { markOf, SUB_MARKS } from './earl_draw.js';
 import { previewOf, drawShowcase } from './showcase.js';
@@ -63,6 +63,12 @@ const COIN = '<i class="coin"></i>';
 const RUNLOG = () => `earlDiver.runs.v1${getSlot() ? '.slot' + getSlot() : ''}`; // each save slot keeps its own dive log
 
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+// (3.6.1) about what an animal weighs: the usual length-weight rule for fish (W = a L^3, a about 0.012 g/cm^3),
+// heavier for a deep body and lighter for a slender one (by its drawn outline)
+function weightOf(sp, len) {
+  const B = speciesBox(sp), shape = clamp((B.h / B.w) / 0.36, 0.35, 2.4), cm = len * 100;
+  return (0.012 * shape * cm * cm * cm) / 1000;
+}
 export class UI {
   constructor(h) {
     this.h = h;
@@ -407,7 +413,7 @@ export class UI {
     const state = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
     const card = (cls, s2, span = 1) => { const sp = SPECIES_BY_ID[s2.id];
       const pct = Math.round(Math.max(36, 100 * sizeK(s2.len || sp.len))); // (3.0.43) the picture at its real size, against a 2.4 m giant
-      return `<div class="${cls}${rarityCls(sp)}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m · ${(s2.len || sp.len).toFixed(2)} m">${rarityStars(sp)}<img src="${ic(sp)}" alt="" style="transform:scale(${Math.min(1.25, pct / 100 * 1.3).toFixed(2)})"><b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
+      return `<div class="${cls}${rarityCls(sp)}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m · ${(s2.len || sp.len).toFixed(2)} m">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${ic(sp)}" alt="" style="transform:scale(${Math.min(1.25, pct / 100 * 1.3).toFixed(2)})"><b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
     // the bag: eleven cubbies, the ones beyond his bag padlocked
     const BAG_MAX = 12, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
@@ -425,7 +431,7 @@ export class UI {
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
       + `<div class="worth-paint" style="font-size:${Math.min(160, Math.floor(540 / (money(total).length * 0.6)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
-      + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas></div>`
+      + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
       + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank <i>not fitted</i></h4>`)
@@ -450,16 +456,15 @@ export class UI {
     const dying = s2.cond > 0.05 && gapOf(g, s2, at.place === 'bag') > SAFE_GAP;
     const st = s2.cond <= 0.05 ? ['dead', '#8a6a5a'] : dying ? ['dying: barotrauma', '#e8806a'] : [conditionName(s2.cond), s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a'];
     const place = { bag: 'In the net bag', open: 'The open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'The large pressure tank', floor: 'On the floor of the sub' }[at.place];
-    // (3.6.0) a specimen record: an index card, ruled, the photograph clipped to it, the fields typed in, its
-    // condition stamped across it
-    const field = (k, v, cls = '') => `<div class="sr-f${cls}"><span>${k}</span><i></i><b>${v}</b></div>`;
-    const len = (s2.len || sp.len), st2 = s2.cond <= 0.05 ? ['DECEASED', 'dead'] : dying ? ['BAROTRAUMA', 'dying'] : s2.cond < 0.6 ? ['STRESSED', 'weak'] : ['LIVE', 'live'];
-    const where = { bag: 'NET BAG', open: 'OPEN TANK', chamber: `CHAMBER ${(at.n || 0) + 1}`, big: 'LARGE PRESSURE TANK', floor: 'SUB, ON THE FLOOR' }[at.place];
-    const no = `${String(sp.id).padStart(4, '0')}-${String(Math.round((s2.t || 0) * 7) % 1000).padStart(3, '0')}`;
-    const fields = field('Found at', `${Math.round(s2.from || 0).toLocaleString()} m`) + field('Habitat', `${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m`)
-      + field('Length', `${len.toFixed(2)} m${tooBig(s2) ? ' · OVER CHAMBER LIMIT' : ''}`) + field('Condition', `${st[0].toUpperCase()}`) + field('Location', where)
-      + field('Value', money(specimenValue(s2) * statValue(P, 'payFish')), ' val');
-    // the moves: the same as dragging, spelled out
+    // (3.6.1) the specimen station: a small lit aquarium on the left, the animal swimming in water the colour of
+    // its own depth (drawCatch keeps it moving); its record on the right
+    const len = (s2.len || sp.len), kg = weightOf(sp, len);
+    const status = s2.cond <= 0.05 ? ['Dead', 'dead'] : dying ? ['Dying · barotrauma', 'dying'] : s2.cond < 0.6 ? [s2.cond < 0.3 ? 'Weak' : 'Stressed', 'weak'] : ['Healthy', 'live'];
+    const where = { bag: 'Net bag', open: 'Open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'Large pressure tank', floor: 'Sub, on the floor' }[at.place];
+    const row = (k, v, cls = '') => `<div class="sp-r${cls}"><dt>${k}</dt><dd>${v}</dd></div>`;
+    const rows = row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m`) + row('Habitat', `${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m`)
+      + row('Length', `${len.toFixed(2)} m${tooBig(s2) ? ' <small>over chamber limit</small>' : ''}`) + row('Weight', kg < 1 ? `${Math.max(1, Math.round(kg * 1000))} g` : kg < 10 ? `${kg.toFixed(1)} kg` : `${Math.round(kg).toLocaleString()} kg`)
+      + row('Location', where) + row('Status', `<i class="sp-dot"></i>${status[0]}`, ` st-${status[1]}`) + row('Value', money(specimenValue(s2) * statValue(P, 'payFish')), ' val');
     const inSub = this.h.inSub ? this.h.inSub() : false, w = at.where, i = at.i, mv = (label, act, to = -1, on = true) => `<button data-fm="${act}:${w}:${i}:${to}"${on ? '' : ' disabled'}>${label}</button>`;
     let acts = '';
     if (inSub) {
@@ -470,21 +475,61 @@ export class UI {
       if (at.place !== 'bag') acts += mv('Net bag', 'tobag', -1, g.bag.length < bagSlots(g));
       acts += mv('Release', 'release');
     }
-    const remark = inSub ? '' : at.place === 'bag' ? 'Specimens are moved in the sub. Board it (or call it, C), then drag to a tank.' : 'Held in the sub. Move it from there (T in the sub).';
+    const remark = inSub ? '' : at.place === 'bag' ? 'Moved in the sub: board it (or call it with C), then drag it to a tank.' : 'Held in the sub: move it from there (T in the sub).';
     const R2 = R && !R.hidden ? R : null;
-    return `<div class="item-pop fish-pop"><div class="sr-card${R2 && R2.id === 'legendary' ? ' leg' : ''}" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
-      <div class="sr-head"><span>BAYSIDE MARINE SUPPLY · SPECIMEN RECORD</span><span>No. ${no}</span></div>
-      <div class="sr-top"><div class="sr-photo"><img src="${this.fitPics.get(sp.id)}" alt=""><i class="sr-clip"></i></div>
-        <div class="sr-id">${R2 ? `<em class="sr-rar">${R2.name}${rarityStars(sp)}</em>` : ''}<b class="sr-name">${sp.name}</b>${sp.species ? `<span class="sr-common">${sp.species}</span>` : ''}${sp.sci ? `<i class="sr-sci">${sp.sci}</i>` : ''}${s2.variant ? `<span class="sr-var">Rare form: ${s2.variant}</span>` : ''}</div></div>
-      <div class="sr-fields">${fields}</div>
-      ${remark ? `<div class="sr-f sr-remark"><span>Remarks</span><b>${remark}</b></div>` : ''}
-      <i class="sr-stamp st-${st2[1]}">${st2[0]}</i>
-      ${acts ? `<div class="sr-acts"><span>Move to</span>${acts}</div>` : ''}</div></div>`;
+    this.aqSel = { s: s2, sp, home: s2.home ?? s2.from ?? (sp.dmin + sp.dmax) / 2 };
+    return `<div class="item-pop fish-pop"><div class="sp-panel${R2 && R2.id === 'legendary' ? ' leg' : ''}" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
+      <div class="sp-tank"><canvas class="sp-aq"></canvas><span class="sp-plate">${(SPECIES_BY_ID[s2.id].cat || '').toUpperCase()}</span></div>
+      <div class="sp-info">${R2 ? `<span class="sp-rar">${R2.name}${rarityStars(sp)}</span>` : ''}<b class="sp-name">${sp.name}</b>
+        ${sp.species || sp.sci ? `<span class="sp-sci">${sp.species ? `${sp.species} · ` : ''}<i>${sp.sci || ''}</i></span>` : ''}${s2.variant ? `<span class="sp-var">Rare form: ${s2.variant}</span>` : ''}
+        <dl class="sp-rows">${rows}</dl>
+        ${acts ? `<div class="sp-acts"><span>Move to</span>${acts}</div>` : `<p class="sp-remark">${remark}</p>`}</div></div></div>`;
   }
   // a move made from the Catch page; a refusal is said here too (in the sub's rooms the room says it)
   tankDo(act, w, i, to) {
     const r = this.h.onTank(act, w, i, to), g = this.h.getGame();
     return r;
+  }
+  // (3.6.1) the specimen station's aquarium: a glass box on a steel base, its water the colour of the animal's
+  // own depth, sand, a stone, rising bubbles; the animal swims slowly back and forth (a dead one floats belly-up)
+  drawSpecimenTank(dt) {
+    const cv = $('inventory').querySelector('canvas.sp-aq'), A = this.aqSel; if (!cv || !A) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1) * (this.invScale || 1), w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
+    const t = (this.aqT = (this.aqT || 0) + dt), sea = seaAt(A.home), dead = A.s.cond <= 0.05;
+    const top = 10, bot = h - 18, glass = { x: 8, y: top, w: w - 16, h: bot - top };
+    // water: its colour at the animal's depth, lifted a little by the tank's lamp
+    const wg = x.createLinearGradient(0, glass.y, 0, glass.y + glass.h), lift = (c, k) => c.map((v) => Math.round(v + (255 - v) * k));
+    wg.addColorStop(0, `rgb(${lift(sea, 0.16).join(',')})`); wg.addColorStop(1, `rgb(${sea.map((v) => Math.round(v * 0.55)).join(',')})`);
+    x.fillStyle = wg; x.fillRect(glass.x, glass.y, glass.w, glass.h);
+    // the lamp's beams
+    x.save(); x.globalAlpha = 0.07; x.fillStyle = '#e8f4f0';
+    for (let k = 0; k < 3; k++) { const bx = glass.x + glass.w * (0.2 + k * 0.28) + Math.sin(t * 0.4 + k) * 6; x.beginPath(); x.moveTo(bx, glass.y); x.lineTo(bx + 22, glass.y); x.lineTo(bx + 48, bot); x.lineTo(bx + 12, bot); x.fill(); }
+    x.restore();
+    // sand and a stone
+    x.fillStyle = '#6a5e48'; x.beginPath(); x.moveTo(glass.x, bot);
+    for (let sx = 0; sx <= glass.w; sx += 10) x.lineTo(glass.x + sx, bot - 10 - Math.sin(sx * 0.06) * 3); x.lineTo(glass.x + glass.w, bot); x.fill();
+    x.fillStyle = '#3e4040'; x.beginPath(); x.ellipse(glass.x + glass.w * 0.78, bot - 12, 18, 9, -0.2, 0, Math.PI * 2); x.fill();
+    // bubbles from the stone
+    for (let k = 0; k < 9; k++) { const q = (t * 0.3 + k / 9) % 1; x.strokeStyle = `rgba(220,240,255,${(0.5 * (1 - q)).toFixed(3)})`; x.lineWidth = 1; x.beginPath(); x.arc(glass.x + glass.w * 0.78 + Math.sin(q * 10 + k) * 3, bot - 18 - q * (glass.h - 24), 1.3 + (k % 3) * 0.6, 0, Math.PI * 2); x.stroke(); }
+    // the animal, fitted to the tank by what shows of it
+    const B = speciesBox(A.sp), L = Math.min((glass.w * 0.62) / B.w, (glass.h * 0.5) / B.h);
+    const span = Math.max(0, glass.w / 2 - (B.w * L) / 2 - 10), ph = t * 0.35, face = Math.cos(ph) >= 0 ? 1 : -1;
+    const fx = glass.x + glass.w / 2 + Math.sin(ph) * span, fy = dead ? glass.y + glass.h * 0.2 : glass.y + glass.h * 0.45 + Math.sin(t * 0.9) * 6;
+    x.save(); x.beginPath(); x.rect(glass.x, glass.y, glass.w, glass.h); x.clip();
+    x.translate(fx - (B.x0 + B.w / 2) * L * -face, fy - (B.y0 + B.h / 2) * L * (dead ? -1 : 1));
+    x.scale(-face, dead ? -1 : 1);
+    try { drawSpecies(x, A.sp, L, dead ? 0 : t * 1.4, dead ? 0 : 0.6, 0); } catch (e) { /* the empty tank, then */ }
+    x.restore();
+    // glass: a sheen down one side, the edges
+    const gl = x.createLinearGradient(glass.x, 0, glass.x + glass.w, 0); gl.addColorStop(0, 'rgba(255,255,255,0.12)'); gl.addColorStop(0.08, 'rgba(255,255,255,0)'); gl.addColorStop(0.92, 'rgba(255,255,255,0)'); gl.addColorStop(1, 'rgba(255,255,255,0.08)');
+    x.fillStyle = gl; x.fillRect(glass.x, glass.y, glass.w, glass.h);
+    x.strokeStyle = 'rgba(200,230,230,0.35)'; x.lineWidth = 1; x.strokeRect(glass.x + 0.5, glass.y + 0.5, glass.w - 1, glass.h - 1);
+    // the steel rim on top, the base below
+    const rim = (y0, hh) => { const rg = x.createLinearGradient(0, y0, 0, y0 + hh); rg.addColorStop(0, '#6a7270'); rg.addColorStop(0.5, '#3a403e'); rg.addColorStop(1, '#1c201f'); x.fillStyle = rg; x.fillRect(2, y0, w - 4, hh); };
+    rim(top - 8, 9); rim(bot, h - bot - 2);
+    x.fillStyle = '#9aa29e'; for (const bx of [10, w - 10]) { x.beginPath(); x.arc(bx, bot + 8, 1.6, 0, Math.PI * 2); x.fill(); }
   }
   theName(sp) { return /^the /i.test(sp.name) ? sp.name.replace(/^the/, 'The') : 'The ' + sp.name.toLowerCase(); }
   // the Catch page's clicks and drags: a click on an animal (a bag pocket, or one in a tank) opens its card; a
@@ -580,6 +625,7 @@ export class UI {
   }
   // (3.0.36) every frame while the Catch page is open: the tank and the chambers, drawn by the tank room's own hand
   drawCatch(g, dt) {
+    this.drawSpecimenTank(dt);
     const root = $('inventory'), tv = root.querySelector('.ct-tank'), cv = root.querySelector('.ct-ch'), bv = root.querySelector('.ct-big'); if (!tv || !cv) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1) * (this.invScale || 1);
     const fit = (c) => { const w = c.clientWidth, h = c.clientHeight; if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); } const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h); return [x, w, h]; };
