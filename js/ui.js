@@ -366,20 +366,11 @@ export class UI {
     const fish = (s) => { const sp = SPECIES_BY_ID[s.id]; return `<div class="inv-row"><img src="${ic(sp)}" alt=""><span>${sp.name}${s.variant ? ` <em>${s.variant}</em>` : ''}<br><em>${s.cond <= 0.05 ? 'dead' : conditionName(s.cond)} · from ${s.from || 0} m · about ${money(specimenValue(s) * statValue(P, 'payFish'))}</em></span></div>`; };
     const sec = (title, inner, wide = false) => `<div class="inv-sec${wide ? ' wide' : ''}"><h4>${title}</h4><div class="inv-list">${inner}</div></div>`;
     let html = '';
-    html += `<div class="inv-sec wide"><div class="inv-cash"><div><span>CASH</span>${money(P.cash)}</div></div></div>`;
     // the animals first (the bag, then the sub's tanks); supplies, finds and gear below
     html += sec(`The catch bag · ${g.bag.length} of ${Math.round(statValue(P, 'bag'))}`, g.bag.length ? g.bag.map(fish).join('') : '<p class="inv-empty">Empty.</p>', true);
-    if (!g.sub.imploded) {
-      const where = (s) => (s.pile ? 'the heap from the net' : s.pressed ? (s.chamber === 100 ? 'the large pressure tank' : `chamber ${s.chamber + 1}`) : 'the open tank');
-      const groups = {};
-      for (const s of g.subTank) (groups[where(s)] = groups[where(s)] || []).push(s);
-      const inner = Object.keys(groups).length ? Object.entries(groups).map(([w, L]) => `<div class="inv-empty" style="font-style:normal">${w}</div>` + L.map(fish).join('')).join('') : '<p class="inv-empty">Nothing in the sub\'s tanks.</p>';
-      html += sec('In the submersible', inner, true);
-    }
     // supplies and finds: only what he actually has (the lure and the necklace are on the screen already; clams and pearls too)
     const it = g.items || {}, SHOWN_ELSEWHERE = new Set(['lure', 'necklace', 'clam', 'pearl']);
     const carried = Object.entries(SUPPLIES).filter(([k]) => !SHOWN_ELSEWHERE.has(k) && (it[k] || 0) > 0);
-    if (carried.length) html += sec('Carried', carried.map(([k, S]) => row(S.name, it[k], `of ${supplyMax(P, k)}`)).join(''));
     const finds = Object.entries(g.inv || {}).filter(([k, n]) => n > 0 && !SHOWN_ELSEWHERE.has(k));
     if (finds.length) html += sec('Finds, to sell at the boat', finds.map(([k, n]) => row(RESOURCES[k] ? RESOURCES[k].name : k, n)).join(''));
     const tools = ['net'].concat(Object.keys(GEAR).filter((k) => owns(P, k))).map((k) => k === 'net' ? 'Hand net' : GEAR[k].name);
@@ -397,14 +388,14 @@ export class UI {
     const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp gun'], ['tag', '3  Tag gun'], ['cam', '4  Camera']];
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
     const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id];
-      return `<div class="eq-slot${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}"><span>${label}</span>${q ? `<img src="${pic(q)}" alt="" draggable="${free && SIDE_TOOLS.has(kind)}" data-kind="${kind}" data-u="${q.u}"><b data-u="${q.u}">${it.name}</b>` : '<b>—</b>'}</div>`; };
+      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${q && this.lkSel === q.u ? ' sel' : ''}" data-slot="${kind}" title="${q ? it.name + ' · ' + label.replace(/^\d\s+/, '') : label.replace(/^\d\s+/, '') + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free && SIDE_TOOLS.has(kind)}" data-kind="${kind}" data-u="${q.u}">` : `<span>${label.replace(/^\d\s+/, '')}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}</div>`; };
     // the locker: by kind, the rarest first
     const order = ['net', 'slurp', 'tag', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
     const list = K.items.slice().sort((a2, b2) => order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || rk(b2) - rk(a2));
     const tiles = list.map((q) => { const it = ITEMS[q.id], on = K.on[it.kind] === q.u;
       return `<div class="lk-tile r-${it.rarity}${on ? ' on' : ''}${this.lkSel === q.u ? ' sel' : ''}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${on ? '<i>on</i>' : ''}${q.leg ? '<em>✦</em>' : ''}</div>`; }).join('');
     const card = this.lkSel ? this.lockerCard(P, g, free) : '';
-    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><h4>Gear</h4><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="300" height="380"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
+    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="inv-cash top"><span>CASH</span>${money(P.cash)}</div><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="300" height="380"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       + `<div class="inv-rest">${extra || ''}</div></div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><span class="${K.items.length >= LOCKER ? 'full' : ''}">${K.items.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div>${card}</div></div>`;
   }
