@@ -162,7 +162,9 @@ export function updateCapture(g, dt) {
     if (!tgt || !tgt.ok) ev.push({ type: 'miss', why: tgt ? tgt.why : null, sp: tgt && tgt.sp });
     else {
       const { def, kind } = cap;
-      if (Math.random() < catchChance(def, kind, tgt, g.luck || 0)) {
+      // (4.3.2) the tutorial's net step: the first swing misses, the next one catches (g.tutForce, set by tutor())
+      const force = g.tutForce;
+      if (force === 'catch' || (force !== 'miss' && Math.random() < catchChance(def, kind, tgt, g.luck || 0))) {
         const harm = def.harm * (fragile(tgt.sp) ? 2 : 1) + Math.random() * 0.05;
         const spec = { id: tgt.sp.id, len: tgt.len, cond: clamp(1 - harm, 0.05, 1), from: Math.round(Math.max(e.y, tgt.y)), t: g.time };
         if (tgt.variant) { spec.variant = tgt.variant; spec.mult = variantMult(tgt.variant); if (tgt.variant === 'crimson') g.entity.disturb(g, 0.08); }

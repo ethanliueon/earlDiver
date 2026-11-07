@@ -15,7 +15,7 @@ import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS } from './quests.js';
-import { TutSpot, keyFor, clicks } from './tutspot.js';
+import { TutSpot, keyFor, clicks, INPUT } from './tutspot.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf, kit, worn } from './economy.js';
@@ -869,19 +869,22 @@ function tutorFish(dir) {
   }
   // it swims to its patch at a fish's pace, then hovers there
   const tt = g.time, hx = ax + Math.sin(tt * 0.4) * 0.9, hy = ay + Math.sin(tt * 0.7) * 0.3, dx = hx - tf.x, dy = hy - tf.y, dd = Math.hypot(dx, dy);
+  if (tf.fleeT > 0) return tf; // (4.3.2) missed: it darts off for a moment, then comes back to its patch
   const k = dd > 1.5 ? Math.min(1, 0.06 / dd) : 0.08;
   tf.x += dx * k; tf.y += dy * k;
   tf.vx = dd > 1.5 ? Math.sign(dx) * 1.2 : Math.cos(tt * 0.4) * 0.2; tf.vy = 0; tf.facing = tf.vx >= 0 ? 1 : -1;
   return tf;
 }
 function tutor() {
-  const P = profile, e = g.earl; g.tut = null; if (ui.cabin) ui.cabin.tutMark = null;
+  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; if (ui.cabin) ui.cabin.tutMark = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
   const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the quest board is open (O)', 'big'); } return; }
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
-  const K = (act) => keyFor(act) || '', pr = (act, words) => (K(act) ? `${K(act)}  ${words}` : words);
+  const K = (act) => keyFor(act) || '';
+  // (4.3.2) a prompt drawn beside the fish: { key, mouse, text, col }. The key (or a mouse) follows the input in use
+  const netPrompt = () => (g.toolSel !== 'net' ? { key: K('net'), text: 'Take out your net' } : click ? { mouse: true, text: 'Swing your net' } : { key: K('use'), text: 'Swing your net' });
   let text = null, to = null, fish = null, prompt = null, toLabel = null, spot = null;
   // the steps that need a fish: the fish to go to, and what to do at it
   const fishStep = (doWhat) => {
@@ -901,11 +904,16 @@ function tutor() {
     fishStep(() => { text = 'Swim down to the orange fish, 10 m under the boat'; toLabel = 'Swim here'; });
     if (!e.inSub && !g.aboard && !inCabin) { text = 'Swim down to the orange fish, 10 m under the boat'; toLabel = 'Swim down here'; }
   } else if (m.id === 'observe') {
-    fishStep(() => { text = `Observe it: press ${K('interact')}`; prompt = pr('interact', 'Observe'); });
+    fishStep(() => { text = `Observe it: press ${K('interact')}`; }); // (the game's own prompt shows the key)
+  } else if (m.id === 'net' && S.seen.netCaught) {
+    // (4.3.2) caught: up to the surface with it, and the step is done there
+    text = 'Nice catch! Now swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 };
   } else if (m.id === 'net') {
+    // (4.3.2) the first swing misses (it gets away for a moment), the next one catches
+    g.tutForce = P.tutMissed ? 'catch' : 'miss';
     fishStep(() => {
-      if (g.toolSel !== 'net') { text = `Take out your net: press ${K('net')}`; prompt = pr('net', 'Take out the net'); }
-      else { text = click ? 'Click to swing the net at it' : `Press ${K('use')} to swing the net at it`; prompt = click ? 'Click to net it' : pr('use', 'Net it'); }
+      if (g.tutOops && g.time - g.tutOops < 3) { text = 'Oops, it got away! Try again'; prompt = { text: 'Oops, it got away! Try again', col: '#f2c7a0' }; }
+      else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); }
     });
   } else if (m.id === 'sell') {
     if (!P.tutJournal) { text = 'Open your journal: every animal you observe goes in it'; spot = jOpen ? null : { act: 'journal', say: 'Open your journal' }; }
@@ -913,7 +921,7 @@ function tutor() {
     else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-sell="tobasket"]'], say: 'Sell all' }; }
     else if (!g.bag.length && !g.subTank.length) {
       // sold already, or lost it: another fish, then sell that one
-      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = g.toolSel !== 'net' ? pr('net', 'Take out the net') : click ? 'Click to net it' : pr('use', 'Net it'); });
+      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); });
     }
     else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; spot = { act: 'back', say: 'Back out on deck' }; }
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; toLabel = 'Jump in here'; }
@@ -923,7 +931,7 @@ function tutor() {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
     if (!pick && !catOpen && !g.bag.length) {
-      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = g.toolSel !== 'net' ? pr('net', 'Take out the net') : click ? 'Click to net it' : pr('use', 'Net it'); });
+      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = netPrompt(); });
     } else if (!pick && !catOpen) {
       if (!nearBoat || g.aboard) { text = 'Not enough cash for gear yet: sell your catch first'; to = ladder; toLabel = 'Sell here'; }
       else if (shopOpen) spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])'], say: 'Sell all' };
@@ -935,8 +943,8 @@ function tutor() {
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : { act: 'back', say: 'Not enough cash: close the shop' };
     } else if (ui.anyOpen() && !inCabin) { text = 'Close this first'; spot = { act: 'back', say: 'Close this' }; }
     else if (inCabin) { text = 'Walk to the computer to shop'; ui.cabin.tutMark = 'desk'; spot = { act: 'interact', say: 'At the computer: open the shop' }; }
-    else if (g.aboard) { text = 'Go into the cabin'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; toLabel = 'Cabin door'; prompt = Math.abs(e.x - (BOAT.x + DOOR_M * dir)) < 1.5 ? pr('interact', 'Enter the cabin') : null; }
-    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; toLabel = 'Ladder'; prompt = dist(e.x, e.y, ladder.x, ladder.y) < 3 ? pr('interact', 'Climb aboard') : null; }
+    else if (g.aboard) { text = 'Go into the cabin'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; toLabel = 'Cabin door'; }
+    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; toLabel = 'Ladder'; }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
@@ -970,6 +978,8 @@ function startRun() {
 // ---------------- input ----------------
 window.addEventListener('keydown', (ev) => {
   if (ui.typing()) { if (ev.key === 'Escape') ui.blurTyping(); return; }
+  // (4.3.2) moving with the keys: the hints are for the keyboard until the mouse is used again
+  if (/^(w|a|s|d|arrowup|arrowdown|arrowleft|arrowright)$/i.test(ev.key)) INPUT.mode = 'keys';
   if (ui.confirmOpen && ui.confirmOpen()) return; // an "are you sure?" is up: its own buttons only
   const k = ev.key.toLowerCase();
   if (g.mode === 'menu' && (k === 'enter' || k === ' ')) {
@@ -1000,12 +1010,13 @@ const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= 
 hudCanvas.addEventListener('mousemove', (ev) => {
   // a real move, not the browser repeating the last position
   if (Math.abs(ev.clientX - mouse.x) + Math.abs(ev.clientY - mouse.y) > 1) mouse.movedAt = performance.now();
+  if (mouse.seen && Math.abs(ev.clientX - mouse.x) + Math.abs(ev.clientY - mouse.y) > 3) INPUT.mode = 'mouse'; // (4.3.2) the hints follow the input in use
   mouse.x = ev.clientX; mouse.y = ev.clientY; mouse.seen = true; mouse.inside = true;
 });
 hudCanvas.addEventListener('mouseleave', () => { mouse.inside = false; });
 hudCanvas.addEventListener('mouseenter', () => { mouse.inside = true; });
 hudCanvas.addEventListener('mousedown', (ev) => {
-  audio.resume();
+  audio.resume(); INPUT.mode = 'mouse'; // (4.3.2)
   if (g.mode !== 'play') return;
   if (ev.button === 2) { mouse.rdown = true; return; } // held: sprint
   if (ev.button !== 0) return;
@@ -1851,7 +1862,10 @@ function update(dt) {
         if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
         if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
-      } else if (ev.type === 'missed') hud.toast(`The ${ev.name.toLowerCase()} got away`);
+      } else if (ev.type === 'missed') {
+        if (g.tutForce === 'miss') { profile.tutMissed = true; saveProfile(profile); g.tutOops = g.time; } // (4.3.2) the tutorial's first swing
+        else hud.toast(`The ${ev.name.toLowerCase()} got away`);
+      }
       else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
     }
     // the sub's trawl: N drops it, N again (or time) closes it; the winch brings it in with what it caught

@@ -14,6 +14,7 @@ import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
 import { drawStation, STATION_TOP } from './station_draw.js';
 import { drawTable, TABLE } from './oldone.js';
 import { pictureOf } from './catalog.js';
+import { drawPrompt } from './fittings.js'; // (4.3.2) the tutorial's prompt beside the fish
 import { Wake } from './trail.js';
 import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
@@ -493,6 +494,27 @@ export class Renderer {
       ctx.strokeStyle = 'rgba(232,208,146,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
       ctx.strokeStyle = `rgba(232,208,146,${(0.5 * (1 - ((g.time * 0.8) % 1))).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.8 * ((g.time * 0.8) % 1)), 0, TAU); ctx.stroke(); // a ripple going out
       ctx.restore();
+      // (4.3.2) a prompt beside the fish, only where the game's own prompts don't already say it (swinging the net,
+      // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words
+      const tp = g.tut.prompt;
+      if (tp && typeof tp === 'object' && cx > -60 && cx < this.W + 60 && cy > -60 && cy < this.H + 60) {
+        ctx.save(); ctx.font = '500 18px "EB Garamond", Georgia, serif';
+        const iw = tp.mouse ? 24 : tp.key ? (tp.key.length > 1 ? 58 : 26) + 9 : 0, total = iw + ctx.measureText(tp.text).width;
+        // on the side away from Earl, so it never sits on him; the other side if it would leave the screen
+        const leftSide = S(g.earl.x) > cx; let x0 = leftSide ? cx - r - 14 - total : cx + r + 14;
+        if (x0 < 12) x0 = cx + r + 14; else if (x0 + total > this.W - 12) x0 = cx - r - 14 - total;
+        ctx.restore();
+        if (tp.mouse) {
+          ctx.save(); ctx.translate(x0 + 8, cy); ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 5;
+          ctx.fillStyle = 'rgba(20,16,8,0.6)'; ctx.strokeStyle = '#ece6d2'; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.roundRect(-8, -12, 16, 24, 8); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+          const on = 0.6 + 0.4 * Math.abs(Math.sin(g.time * 3));
+          ctx.fillStyle = `rgba(216,191,130,${on.toFixed(2)})`; ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(0, -1); ctx.lineTo(-8, -1); ctx.lineTo(-8, -4); ctx.arcTo(-8, -12, 0, -12, 8); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(0, -1); ctx.moveTo(-8, -1); ctx.lineTo(8, -1); ctx.stroke();
+          ctx.restore();
+          drawPrompt(ctx, tp.text, x0 + iw + (total - iw) / 2, cy, 1, { size: 18, shade: false, col: tp.col || '#ece6d2' });
+        } else drawPrompt(ctx, tp.key ? `${tp.key}  ${tp.text}` : tp.text, x0 + total / 2, cy, 1, { size: 18, shade: false, col: tp.col || '#ece6d2' });
+      }
       // off-screen: a bigger arrow at the edge of the screen pointing the way, with how far
       const W2 = this.W, H2 = this.H;
       if (cx < 0 || cx > W2 || cy < 0 || cy > H2) {

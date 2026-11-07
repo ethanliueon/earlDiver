@@ -30,7 +30,7 @@ export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { 
 export const MAIN = [
   { id: 'swim', text: 'Swim down to 10 m', help: 'Earl swims toward the mouse (or use W A S D). Shift is faster, and uses more air.', need: 10, on: 'swimDepth', pay: 10 },
   { id: 'observe', text: 'Observe a fish', help: 'Swim close to a fish and press F: you learn what it is, and it goes in your journal (J).', need: 1, on: 'observe', pay: 20 },
-  { id: 'net', text: 'Net a fish', help: 'With the net out (key 1), get close and press Space or click. Small, slow fish are easiest.', need: 1, on: 'catch', pay: 20, kit: [['item', 'flicknet']] },
+  { id: 'net', text: 'Net a fish and bring it up', help: 'With the net out (key 1), get close and press Space or click. Then swim up to the surface with it.', need: 1, on: 'netUp', pay: 20, kit: [['item', 'flicknet']] },
   { id: 'sell', text: 'Sell your catch', help: 'Swim up beside the Margaret and press U, then Sell all.', need: 1, on: 'sell', pay: 30 },
   { id: 'buy', text: 'Buy a piece of gear from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought gear goes into your inventory (supplies don't count).", need: 1, on: 'bought', pay: 40 },
   { id: 'wear', text: 'Put on the gear you bought', help: 'Press B for your inventory, click it and Put it on (or drag it onto Earl).', need: 1, on: 'wear', pay: 30 },
@@ -145,6 +145,8 @@ export function questEvent(P, type, data = {}) {
   // (4.3.0) the main line: only the step it is on. One thing done finishes one step, never the ones after it
   const st = MAIN[S.main];
   if (st && st.on === type && st.on !== 'subDepth') changed = mark(S, st, (S.seen[st.id] || 0) + (data.n || 1)) || changed;
+  // (4.3.2) the net step: a catch, and then the surface (questTick)
+  if (st && st.on === 'netUp' && type === 'catch' && !S.seen.netCaught) { S.seen.netCaught = 1; changed = true; }
   changed = follow(S) || changed;
   // the board (it opens once the tutorial is over)
   if (tutorialOn(P)) return changed;
@@ -172,6 +174,7 @@ export function questTick(g, P) {
     if (st.on === 'subDepth' && e.inSub) ch = mark(S, st, Math.floor(g.sub.y)) || ch;
     if (st.on === 'subAlive' && (g.subTank.some((s) => s.cond > 0.3) || g.subTank.length && g.sub.y < 3)) ch = mark(S, st, 1) || ch;
     if (st.on === 'swimDepth' && !e.inSub) ch = mark(S, st, Math.floor(e.y)) || ch;
+    if (st.on === 'netUp' && S.seen.netCaught && !e.inSub && e.y < 1.2) ch = mark(S, st, 1) || ch; // (4.3.2) caught, and up at the surface
     if (st.on === 'surfaceSafe' && g.subTank.some((s) => s.safe && s.cond > 0.05)) ch = mark(S, st, 1) || ch;
     if (st.on === 'aquarium' && P.aquarium && Object.keys(P.aquarium.display || {}).length) ch = mark(S, st, 1) || ch;
   }
