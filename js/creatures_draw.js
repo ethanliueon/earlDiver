@@ -788,17 +788,43 @@ function drawViper(ctx, L, v, t, swim = 1) {
   P.push([lx, ly, 1.3]);
   return P;
 }
-function drawBarreleye(ctx, L, v, t, swim) {
-  drawFish(ctx, L, { ...v, t: 'fork', f: '#4a3a30' }, t, swim);
-  const H = L * v.h;
-  // transparent dome head with green tube eyes
-  ctx.fillStyle = 'rgba(200,230,240,0.18)'; ctx.strokeStyle = 'rgba(220,240,255,0.35)';
-  ctx.beginPath(); ctx.ellipse(-L * 0.28, -H * 0.42, L * 0.16, H * 0.42, 0, PI, TAU); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#4ad86a';
-  ctx.beginPath(); ctx.ellipse(-L * 0.3, -H * 0.5, L * 0.03, H * 0.16, 0, 0, TAU); ctx.fill();
+// (3.7.5) the barreleye: a small dark fish whose head is a clear, fluid-filled dome; inside it two green tubular eyes
+// look up, and the two dark spots above the mouth that look like eyes are its nostrils. Big scales, broad flat fins.
+function drawBarreleye(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], fin = shade(c1, 0.2), sw = Math.sin(t * 3) * swim, eyec = v.eyec || '#5ac85a';
+  const tx = L * 0.32, tips = []; for (let k = 0; k <= 8; k++) { const a = -0.6 + k * 0.15; tips.push([tx + L * 0.16 * (1 - 0.3 * Math.cos(a * 5) * (Math.abs(a) < 0.3 ? 1 : 0)), Math.sin(a) * L * 0.16 + sw * H * 0.1]); }
+  rayFin(ctx, [[tx, -H * 0.12], [tx, H * 0.12]], tips, fin, 0.6);
+  rayFin(ctx, [[L * 0.0, H * 0.36], [L * 0.22, H * 0.2]], [[L * 0.05, H * 0.62], [L * 0.15, H * 0.55], [L * 0.24, H * 0.32]], fin, 0.5);
+  const body = new Path2D();
+  body.moveTo(-L * 0.46, H * 0.08); body.bezierCurveTo(-L * 0.45, -H * 0.32, -L * 0.2, -H * 0.44, L * 0.05, -H * 0.4);
+  body.bezierCurveTo(L * 0.2, -H * 0.36, L * 0.3, -H * 0.18, L * 0.33, -H * 0.1); body.lineTo(L * 0.33, H * 0.1);
+  body.bezierCurveTo(L * 0.25, H * 0.3, L * 0.0, H * 0.45, -L * 0.2, H * 0.42); body.bezierCurveTo(-L * 0.36, H * 0.4, -L * 0.46, H * 0.3, -L * 0.46, H * 0.08); body.closePath();
+  const bg = ctx.createLinearGradient(0, -H * 0.45, 0, H * 0.45); bg.addColorStop(0, shade(c0, -0.2)); bg.addColorStop(0.6, c1); bg.addColorStop(1, shade(c0, -0.3)); ctx.fillStyle = bg; ctx.fill(body);
+  ctx.save(); ctx.clip(body);
+  // large scales, each edged lighter
+  ctx.strokeStyle = rgba(shade(c1, 0.35), 0.3); ctx.lineWidth = Math.max(0.4, L * 0.003);
+  for (let r = 0; r < 5; r++) for (let k = 0; k < 9; k++) { const x = -L * 0.12 + k * L * 0.05 + (r % 2) * L * 0.025, y = -H * 0.35 + r * H * 0.17; ctx.beginPath(); ctx.arc(x, y, L * 0.03, -0.4 * PI, 0.4 * PI); ctx.stroke(); }
+  ctx.restore();
+  // the pectoral fin, broad and flat, held out
+  rayFin(ctx, [[-L * 0.14, H * 0.1], [-L * 0.12, H * 0.22]], [[L * 0.05, H * 0.15 + sw * H * 0.03], [L * 0.08, H * 0.32], [-L * 0.02, H * 0.42]], fin, 0.55);
+  // the dome: clear, a little blue, a bright rim; the green eyes and the brain behind them seen through it
+  const dx = -L * 0.27, dy = -H * 0.08, dw = L * 0.17, dh = H * 0.62; // (the dome is the top of the head itself)
+  const dome = new Path2D(); dome.ellipse(dx, dy, dw, dh, 0, PI, TAU); dome.lineTo(dx + dw, dy); dome.closePath();
+  const dg = ctx.createRadialGradient(dx - dw * 0.3, dy - dh * 0.5, 1, dx, dy, dw * 1.1); dg.addColorStop(0, 'rgba(230,248,255,0.28)'); dg.addColorStop(0.7, 'rgba(160,210,230,0.14)'); dg.addColorStop(1, 'rgba(160,210,230,0.24)');
+  ctx.fillStyle = dg; ctx.fill(dome);
+  ctx.fillStyle = 'rgba(190,150,140,0.35)'; ctx.beginPath(); ctx.ellipse(dx + dw * 0.45, dy - dh * 0.12, dw * 0.2, dh * 0.16, 0, 0, TAU); ctx.fill(); // the brain
+  for (const [ox, k] of [[-0.12, 0.85], [0.08, 1]]) { // two tube eyes, the far one behind, each a barrel with a green lens on top
+    const ex = dx + dw * ox, top = dy - dh * 0.72;
+    ctx.fillStyle = rgba(shade(eyec, -0.45), 0.85 * k); ctx.beginPath(); ctx.roundRect(ex - dw * 0.16, top, dw * 0.32, dh * 0.62, dw * 0.12); ctx.fill();
+    const lg = ctx.createRadialGradient(ex, top + dh * 0.04, 0, ex, top + dh * 0.04, dw * 0.2); lg.addColorStop(0, shade(eyec, 0.5)); lg.addColorStop(1, eyec);
+    ctx.fillStyle = lg; ctx.globalAlpha = k; ctx.beginPath(); ctx.ellipse(ex, top + dh * 0.05, dw * 0.17, dh * 0.1, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  ctx.strokeStyle = 'rgba(230,250,255,0.5)'; ctx.lineWidth = Math.max(0.5, L * 0.003); ctx.beginPath(); ctx.ellipse(dx, dy, dw, dh, 0, PI * 1.05, PI * 1.6); ctx.stroke();
+  ctx.strokeStyle = 'rgba(230,250,255,0.25)'; ctx.beginPath(); ctx.ellipse(dx, dy, dw, dh, 0, PI, TAU); ctx.stroke();
+  // the nostrils that look like eyes, and the small mouth at the tip
+  for (const k of [0, 1]) { ctx.fillStyle = '#0c0a0a'; ctx.beginPath(); ctx.arc(-L * 0.4 + k * L * 0.035, H * 0.0, Math.max(0.8, L * 0.011), 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.arc(-L * 0.403 + k * L * 0.035, -H * 0.02, Math.max(0.3, L * 0.003), 0, TAU); ctx.fill(); }
+  ctx.strokeStyle = rgba(shade(c0, -0.5), 0.8); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.beginPath(); ctx.moveTo(-L * 0.46, H * 0.08); ctx.lineTo(-L * 0.42, H * 0.12); ctx.stroke();
 }
-// (3.7.5) the gulper eel: a loose bag of a mouth, its huge lower jaw hung with black membrane, a tiny eye at the very
-// front, a body that thins to a whip, and a pink light at the end of the tail
 function drawGulper(ctx, L, v, t, swim = 1) {
   const H = L * v.h, c0 = v.c[0], c1 = v.c[1], glow = v.glow || '#ff7aa0';
   const B = bendBody(L, t, swim * 0.8, (u) => H * 0.5 * (u < 0.3 ? 1.2 - u : Math.max(0.05, 0.9 - (u - 0.3) * 1.25)), 34, 0.07, 1.9);
@@ -877,28 +903,72 @@ function drawHatchet(ctx, L, v, t, swim) {
   const P = []; for (let k = 0; k < 6; k++) { const x = -L * 0.3 + k * L * 0.07, y = H * (0.36 + 0.08 * Math.sin((k + 0.5) / 6 * Math.PI)); P.push([x, y, 0.35]); ctx.fillStyle = 'rgba(30,40,50,0.7)'; ctx.beginPath(); ctx.arc(x, y, Math.max(0.6, L * 0.012), 0, TAU); ctx.fill(); }
   return P;
 }
-function drawBlob(ctx, L, v) {
-  const H = L * v.h;
-  const g = ctx.createRadialGradient(-L * 0.15, -H * 0.15, 0, 0, 0, L * 0.6);
-  g.addColorStop(0, shade(v.c[1], 0.15)); g.addColorStop(1, shade(v.c[0], -0.2));
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.moveTo(-L * 0.5, H * 0.1);
-  ctx.bezierCurveTo(-L * 0.5, -H * 0.7, L * 0.2, -H * 0.6, L * 0.25, -H * 0.1);
-  ctx.lineTo(L * 0.5, -H * 0.05); ctx.lineTo(L * 0.5, H * 0.1);
-  ctx.bezierCurveTo(L * 0.2, H * 0.5, -L * 0.4, H * 0.5, -L * 0.5, H * 0.1); ctx.fill();
-  ctx.fillStyle = shade(v.c[0], -0.2); ctx.beginPath(); ctx.ellipse(-L * 0.45, H * 0.05, L * 0.06, H * 0.08, 0, 0, TAU); ctx.fill();
-  eye(ctx, -L * 0.25, -H * 0.2, Math.max(1, H * 0.06), '#2a2020');
+// (3.7.5) the blobfish (and the blob sculpin and snailfish that share it): a soft, gelatinous tadpole of a fish,
+// its skin loose and glistening, the nose sagging over a downturned mouth, small dark eyes, little fins, a tapering
+// tail. Its flesh is barely denser than water: it sags as it is drawn.
+function drawBlob(ctx, L, v, t, swim = 1) {
+  const H = L * (v.h || 0.55), c0 = v.c[0], c1 = v.c[1], wob = Math.sin(t * 1.6) * 0.02 * swim;
+  // the tail fin, soft and rounded
+  const tx = L * 0.36; rayFin(ctx, [[tx, -H * 0.06], [tx, H * 0.06]], [[tx + L * 0.12, -H * 0.2 + wob * L], [tx + L * 0.16, wob * L], [tx + L * 0.12, H * 0.2 + wob * L]], shade(c1, 0.05), 0.55);
+  const body = new Path2D();
+  body.moveTo(-L * 0.36, -H * 0.28);
+  body.bezierCurveTo(-L * 0.3, -H * 0.62, L * 0.02, -H * 0.66, L * 0.12, -H * 0.35); // the soft dome of the head
+  body.bezierCurveTo(L * 0.2, -H * 0.18, L * 0.3, -H * 0.08, L * 0.37, -H * 0.06);   // thinning to the tail
+  body.lineTo(L * 0.37, H * 0.06);
+  body.bezierCurveTo(L * 0.25, H * 0.12, L * 0.18, H * 0.5, -L * 0.02, H * 0.56);      // the sagging belly
+  body.bezierCurveTo(-L * 0.22, H * 0.6, -L * 0.36, H * 0.48, -L * 0.42, H * 0.26);
+  body.bezierCurveTo(-L * 0.48, H * 0.1, -L * 0.44, -H * 0.12, -L * 0.36, -H * 0.28); body.closePath();
+  const bg = ctx.createRadialGradient(-L * 0.12, -H * 0.25, L * 0.02, -L * 0.05, H * 0.1, L * 0.5); bg.addColorStop(0, shade(c1, 0.18)); bg.addColorStop(0.6, c1); bg.addColorStop(1, shade(c0, -0.18));
+  ctx.fillStyle = bg; ctx.fill(body);
+  ctx.save(); ctx.clip(body);
+  // the gelatinous look: a glossy highlight, faint veins, loose folds of skin, scattered pores
+  const hl = ctx.createRadialGradient(-L * 0.14, -H * 0.4, 0, -L * 0.14, -H * 0.4, L * 0.16); hl.addColorStop(0, 'rgba(255,255,255,0.35)'); hl.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = hl; ctx.fillRect(-L, -H, 2 * L, 2 * H);
+  ctx.strokeStyle = rgba(shade(c0, -0.25), 0.3); ctx.lineWidth = Math.max(0.5, L * 0.004);
+  for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(-L * 0.08 + k * L * 0.06, -H * 0.2); ctx.quadraticCurveTo(-L * 0.02 + k * L * 0.07, H * 0.2, -L * 0.12 + k * L * 0.07, H * 0.5); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(160,60,70,0.12)'; ctx.lineWidth = Math.max(0.3, L * 0.002);
+  for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.moveTo(-L * 0.2 + hashN(k, 3) * L * 0.4, -H * 0.4 + hashN(k, 4) * H * 0.3); ctx.quadraticCurveTo(-L * 0.1 + hashN(k, 5) * L * 0.3, hashN(k, 6) * H * 0.3, -L * 0.15 + hashN(k, 7) * L * 0.4, H * 0.3); ctx.stroke(); }
+  ctx.fillStyle = rgba(shade(c0, -0.3), 0.25); for (let i = 0; i < 40; i++) { ctx.beginPath(); ctx.arc(-L * 0.4 + hashN(i, 9) * L * 0.7, -H * 0.5 + hashN(i, 10) * H, Math.max(0.4, L * 0.003), 0, TAU); ctx.fill(); }
+  const sh = ctx.createLinearGradient(0, -H * 0.6, 0, H * 0.6); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(60,20,20,0.25)'); ctx.fillStyle = sh; ctx.fillRect(-L, -H, 2 * L, 2 * H);
+  ctx.restore();
+  // the small pectoral fin
+  rayFin(ctx, [[-L * 0.05, H * 0.1], [-L * 0.03, H * 0.22]], [[L * 0.08, H * 0.12], [L * 0.1, H * 0.26], [L * 0.02, H * 0.34]], shade(c1, 0.05), 0.45);
+  // the drooping nose and the downturned mouth beneath it
+  const nose = new Path2D(); nose.moveTo(-L * 0.4, -H * 0.12); nose.bezierCurveTo(-L * 0.52, -H * 0.06, -L * 0.52, H * 0.22, -L * 0.42, H * 0.26); nose.bezierCurveTo(-L * 0.36, H * 0.28, -L * 0.34, H * 0.05, -L * 0.4, -H * 0.12);
+  const ng = ctx.createRadialGradient(-L * 0.46, H * 0.02, 0, -L * 0.44, H * 0.1, L * 0.08); ng.addColorStop(0, shade(c1, 0.12)); ng.addColorStop(1, shade(c0, -0.08)); ctx.fillStyle = ng; ctx.fill(nose);
+  ctx.strokeStyle = rgba(shade(c0, -0.35), 0.35); ctx.lineWidth = Math.max(0.4, L * 0.003); ctx.stroke(nose);
+  ctx.strokeStyle = rgba(shade(c0, -0.55), 0.85); ctx.lineWidth = Math.max(0.7, L * 0.008); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-L * 0.42, H * 0.36); ctx.quadraticCurveTo(-L * 0.33, H * 0.28, -L * 0.22, H * 0.4); ctx.stroke(); ctx.lineCap = 'butt';
+  ctx.strokeStyle = rgba(shade(c1, 0.25), 0.4); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.beginPath(); ctx.moveTo(-L * 0.41, H * 0.4); ctx.quadraticCurveTo(-L * 0.33, H * 0.33, -L * 0.24, H * 0.44); ctx.stroke(); // the lower lip
+  // small, wet, dark eyes
+  for (const [x, y, r] of [[-L * 0.26, -H * 0.2, 0.034], [-L * 0.33, -H * 0.17, 0.026]]) { ctx.fillStyle = rgba(shade(c0, -0.3), 0.5); ctx.beginPath(); ctx.arc(x, y, L * r * 1.5, 0, TAU); ctx.fill(); eye(ctx, x, y, Math.max(1, L * r), '#2a2020'); }
 }
-function drawRattail(ctx, L, v, t, swim) {
-  const H = L * v.h;
-  ctx.beginPath(); ctx.moveTo(-L * 0.5, 0);
-  ctx.bezierCurveTo(-L * 0.45, -H * 0.7, -L * 0.15, -H * 0.6, 0, -H * 0.3);
-  ctx.quadraticCurveTo(L * 0.3, -H * 0.05 + Math.sin(t * 2) * H * 0.1, L * 0.5, Math.sin(t * 2) * H * 0.2);
-  ctx.quadraticCurveTo(L * 0.3, H * 0.1, 0, H * 0.3);
-  ctx.bezierCurveTo(-L * 0.2, H * 0.6, -L * 0.45, H * 0.4, -L * 0.5, 0);
-  ctx.fillStyle = bodyGradient(ctx, -H / 2, H / 2, v.c[0], v.c[1]); ctx.fill();
-  ctx.fillStyle = rgba(v.c[0], 0.6); finPath(ctx, [[-L * 0.25, -H * 0.5], [-L * 0.2, -H * 1.0], [-L * 0.12, -H * 0.45]]); ctx.fill();
-  eye(ctx, -L * 0.38, -H * 0.15, Math.max(1, H * 0.16), '#b8c8c0');
+// (3.7.5) a grenadier (rattail): a big head with a huge eye and a pointed, armoured snout, the mouth slung beneath
+// with a chin barbel, a tall spiny first dorsal fin, and a body that tapers to a long thin point fringed above and
+// below by fin; rough, spiny scales
+function drawRattail(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], fin = shade(c1, 0.15);
+  const B = bendBody(L, t, swim * 0.6, (u) => H * 0.5 * (u < 0.08 ? 0.5 + u * 6 : u < 0.25 ? 1 : Math.max(0.03, 1 - (u - 0.25) * 1.3)), 32, 0.035, 1.2);
+  // the long fringe of fin along back and belly, out to the tip
+  ctx.fillStyle = rgba(fin, 0.45);
+  for (const side of [-1, 1]) { ctx.beginPath(); for (let i = 0; i <= 30; i++) { const u = (side < 0 ? 0.38 : 0.3) + i * (side < 0 ? 0.0207 : 0.0233), [x, y, h] = B.at(Math.min(1, u)); ctx.lineTo(x, y + side * (h + H * 0.1 * (1 - u * 0.7))); } for (let i = 30; i >= 0; i--) { const u = (side < 0 ? 0.38 : 0.3) + i * (side < 0 ? 0.0207 : 0.0233), [x, y, h] = B.at(Math.min(1, u)); ctx.lineTo(x, y + side * h); } ctx.fill(); }
+  // the first dorsal: tall, with a stout leading spine
+  { const [x, y, h] = B.at(0.17); rayFin(ctx, [[x - L * 0.02, y - h], [x + L * 0.07, y - h]], [[x - L * 0.01, y - h - H * 0.85], [x + L * 0.03, y - h - H * 0.6], [x + L * 0.07, y - h - H * 0.2]], fin, 0.6);
+    ctx.strokeStyle = shade(c0, -0.2); ctx.lineWidth = Math.max(0.6, L * 0.005); ctx.beginPath(); ctx.moveTo(x - L * 0.02, y - h); ctx.lineTo(x - L * 0.01, y - h - H * 0.88); ctx.stroke(); }
+  const bg = ctx.createLinearGradient(0, -H * 0.6, 0, H * 0.6); bg.addColorStop(0, shade(c0, -0.15)); bg.addColorStop(0.5, c1); bg.addColorStop(1, shade(c0, -0.25)); ctx.fillStyle = bg; ctx.fill(B.path);
+  ctx.save(); ctx.clip(B.path);
+  ctx.strokeStyle = rgba(shade(c1, 0.35), 0.22); ctx.lineWidth = Math.max(0.4, L * 0.0025); // spiny scales in rows
+  for (let i = 0; i < 24; i++) { const [x, y, h] = B.at(0.1 + i * 0.035); for (let j = -2; j <= 2; j++) { const yy = y + j * h * 0.38; ctx.beginPath(); ctx.arc(x, yy, Math.max(1, h * 0.25), -0.5 * PI, 0.5 * PI); ctx.stroke(); } }
+  ctx.restore();
+  // the head: armoured snout ridge, a huge silver eye, the mouth under the snout, the chin barbel, the gill cover
+  const [hx, hy, hh] = B.at(0.08);
+  ctx.fillStyle = shade(c1, 0.12); ctx.beginPath(); ctx.moveTo(-L * 0.5, hy - hh * 0.1); ctx.quadraticCurveTo(-L * 0.44, hy - hh * 0.9, -L * 0.34, hy - hh * 1.0); ctx.lineTo(-L * 0.38, hy - hh * 0.2); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rgba(shade(c0, -0.45), 0.7); ctx.lineWidth = Math.max(0.6, L * 0.004);
+  ctx.beginPath(); ctx.moveTo(-L * 0.33, hy - hh * 0.95); ctx.quadraticCurveTo(-L * 0.28, hy, -L * 0.33, hy + hh * 0.95); ctx.stroke();
+  ctx.fillStyle = '#0c0a08'; ctx.beginPath(); ctx.moveTo(-L * 0.45, hy + hh * 0.45); ctx.quadraticCurveTo(-L * 0.4, hy + hh * 0.75, -L * 0.36, hy + hh * 0.55); ctx.lineTo(-L * 0.43, hy + hh * 0.4); ctx.fill();
+  ctx.strokeStyle = rgba(shade(c1, 0.3), 0.7); ctx.lineWidth = Math.max(0.4, L * 0.003); ctx.beginPath(); ctx.moveTo(-L * 0.41, hy + hh * 0.7); ctx.quadraticCurveTo(-L * 0.42, hy + hh * 1.3, -L * 0.4 + Math.sin(t) * L * 0.005, hy + hh * 1.6); ctx.stroke();
+  const er = Math.max(1, hh * 0.42); ctx.fillStyle = rgba(shade(c0, -0.4), 0.8); ctx.beginPath(); ctx.arc(-L * 0.4, hy - hh * 0.3, er * 1.3, 0, TAU); ctx.fill();
+  eye(ctx, -L * 0.4, hy - hh * 0.3, er, '#b8c4c4');
+  rayFin(ctx, [[-L * 0.31, hy + hh * 0.1], [-L * 0.3, hy + hh * 0.35]], [[-L * 0.2, hy + hh * 0.2], [-L * 0.2, hy + hh * 0.6], [-L * 0.27, hy + hh * 0.75]], fin, 0.5);
 }
 function drawRatfish(ctx, L, v, t, swim) {
   drawRattail(ctx, L, v, t, swim);
@@ -945,13 +1015,32 @@ function drawBillfish(ctx, L, v, t, swim) {
   ctx.fillStyle = shade(v.c[0], 0.1);
   finPath(ctx, [[-L / 2 + L * v.bill + 2, -H * 0.12], [-L / 2, -H * 0.01], [-L / 2 + L * v.bill + 2, H * 0.06]]); ctx.fill();
 }
-function drawOarfish(ctx, L, v, t, swim) {
-  const H = L * v.h;
-  drawEel(ctx, L, { ...v, h: v.h }, t, swim * 0.35);
-  ctx.strokeStyle = 'rgba(210,50,40,0.75)'; ctx.lineWidth = Math.max(1, H * 0.4);
-  ctx.beginPath(); for (let i = 0; i <= 30; i++) { const u = i / 30; ctx.lineTo(-L / 2 + u * L, Math.sin(t * 4 * swim * 0.35 - u * 9) * H * 1.6 * (0.2 + u) - H * 0.7); } ctx.stroke();
-  ctx.lineWidth = Math.max(1, H * 0.25);
-  for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.moveTo(-L * 0.48, -H * 0.5); ctx.lineTo(-L * 0.46 + k * L * 0.01, -H * (4 + k)); ctx.stroke(); }
+// (3.7.5) the oarfish: a long, flat silver ribbon flecked with dark streaks, a red dorsal fin running its whole
+// length, a crest of long red rays above the head, and long red pelvic rays ending in paddle-shaped tips (the oars)
+function drawOarfish(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], red = v.f || '#d0322a';
+  const B = bendBody(L, t, swim * 0.6, (u) => H * 0.5 * (u < 0.04 ? 0.6 + u * 10 : Math.max(0.08, 1 - Math.pow(u, 1.5) * 0.85)), 60, 0.035, 2.4);
+  // the dorsal fin: a red ribbon of rays, waving along the back
+  ctx.strokeStyle = rgba(red, 0.8); ctx.lineWidth = Math.max(0.5, L * 0.0016);
+  for (let i = 0; i < 90; i++) { const u = 0.03 + i * 0.0107, [x, y, h] = B.at(Math.min(1, u)), fh = H * (0.55 + 0.15 * Math.sin(t * 4 - u * 30)) * (1 - u * 0.5); ctx.beginPath(); ctx.moveTo(x, y - h); ctx.lineTo(x + L * 0.003, y - h - fh); ctx.stroke(); }
+  ctx.fillStyle = rgba(red, 0.25); ctx.beginPath(); for (let i = 0; i <= 90; i++) { const u = 0.03 + i * 0.0107, [x, y, h] = B.at(Math.min(1, u)), fh = H * (0.55 + 0.15 * Math.sin(t * 4 - u * 30)) * (1 - u * 0.5); ctx.lineTo(x + L * 0.003, y - h - fh); } for (let i = 90; i >= 0; i--) { const u = 0.03 + i * 0.0107, [x, y, h] = B.at(Math.min(1, u)); ctx.lineTo(x, y - h); } ctx.fill();
+  // the silver body, bluish along the back, with dark streaks and spots
+  const bg = ctx.createLinearGradient(0, -H, 0, H); bg.addColorStop(0, '#9aa6b4'); bg.addColorStop(0.35, c1); bg.addColorStop(0.7, c0); bg.addColorStop(1, shade(c0, -0.2)); ctx.fillStyle = bg; ctx.fill(B.path);
+  ctx.save(); ctx.clip(B.path);
+  ctx.fillStyle = 'rgba(40,50,70,0.45)';
+  for (let i = 0; i < 70; i++) { const [x, y, h] = B.at(0.05 + hashN(i, 11) * 0.9); ctx.beginPath(); ctx.ellipse(x, y + (hashN(i, 12) - 0.5) * h * 1.2, Math.max(0.6, L * 0.004 + hashN(i, 13) * L * 0.006), Math.max(0.4, h * 0.12), 0, 0, TAU); ctx.fill(); }
+  const sh = ctx.createLinearGradient(0, -H, 0, H); sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.45, 'rgba(255,255,255,0.3)'); sh.addColorStop(0.55, 'rgba(255,255,255,0)'); ctx.fillStyle = sh; ctx.fillRect(-L, -H * 2, 2 * L, 4 * H);
+  ctx.restore();
+  // the head: the crest of long red rays streaming back, a large eye, a small upturned mouth
+  const [hx, hy, hh] = B.at(0.02);
+  ctx.strokeStyle = rgba(red, 0.9); ctx.lineWidth = Math.max(0.6, L * 0.0025);
+  for (let k = 0; k < 7; k++) { const len = H * (2.4 + k * 0.5), a = -1.25 + k * 0.08 + Math.sin(t * 1.3 + k) * 0.05; ctx.beginPath(); ctx.moveTo(hx + k * L * 0.004, hy - hh); ctx.quadraticCurveTo(hx + Math.cos(a) * len * 0.5 + L * 0.02, hy - hh + Math.sin(a) * len * 0.6, hx + Math.cos(a + 0.4) * len + L * 0.03, hy - hh + Math.sin(a + 0.25) * len); ctx.stroke(); }
+  eye(ctx, -L * 0.488, hy - hh * 0.2, Math.max(1, hh * 0.45), '#c0c8d0');
+  ctx.strokeStyle = 'rgba(40,40,50,0.7)'; ctx.lineWidth = Math.max(0.4, L * 0.0025); ctx.beginPath(); ctx.moveTo(-L * 0.5, hy + hh * 0.2); ctx.lineTo(-L * 0.49, hy - hh * 0.05); ctx.stroke();
+  // the pelvic 'oars': two long red rays hanging from under the head, each ending in a small red paddle
+  for (const k of [0, 1]) { const [px, py, ph] = B.at(0.045), sway = Math.sin(t * 1.1 + k) * L * 0.02, ex = px + L * 0.04 + k * L * 0.02 + sway, ey = py + ph + H * (5 + k);
+    ctx.strokeStyle = rgba(red, 0.85); ctx.lineWidth = Math.max(0.5, L * 0.0022); ctx.beginPath(); ctx.moveTo(px, py + ph); ctx.quadraticCurveTo(px + L * 0.01, py + ph + H * 3, ex, ey); ctx.stroke();
+    ctx.fillStyle = rgba(red, 0.9); ctx.beginPath(); ctx.ellipse(ex, ey, Math.max(1, L * 0.006), Math.max(1.6, L * 0.011), 0.3, 0, TAU); ctx.fill(); }
 }
 function drawBox(ctx, L, v, t, swim) {
   const H = L * v.h;
@@ -1368,73 +1457,74 @@ function drawOctopus(ctx, L, v, t) {
   for (let k = 0; k < 8; k++) if (!(k % 2)) arm(k, true);
 }
 
-function drawDumbo(ctx, L, v, t) {
-  // A soft, semi-translucent bell of a body with two ear-like fins that row slowly, the arms
-  // joined by a web that billows like a skirt, and a large, calm eye.
-  const s = L;
-  const flap = Math.sin(t * 1.8);
-  const c0 = hexToRgb(v.c[0]), c1 = hexToRgb(v.c[1]);
-  // webbed arms: a skirt with arm ribs and cirri
-  const web = umbrella(s, s * 0.2, s * (0.3 + flap * 0.02), 8, t * 1.8, 0.04);
-  ctx.fillStyle = rgbStr(mixRgb(c0, [0, 0, 0], 0.1), 0.7); ctx.fill(web);
-  ctx.save(); ctx.clip(web);
-  ctx.strokeStyle = rgbStr(mixRgb(c0, [0, 0, 0], 0.3), 0.6); ctx.lineWidth = Math.max(0.6, s * 0.008);
-  for (let k = 0; k <= 8; k++) { const a = -1.25 + (k / 8) * 2.5; ctx.beginPath(); ctx.moveTo(Math.sin(a) * s * 0.05, -s * 0.02); ctx.lineTo(Math.sin(a) * s * 0.25, Math.cos(a) * s * 0.21 + s * 0.02); ctx.stroke(); }
-  ctx.restore();
-  // fins
-  for (const side of [-1, 1]) {
-    ctx.save(); ctx.translate(side * s * 0.13, -s * 0.28); ctx.rotate(side * (0.7 + flap * 0.45));
-    const fg = ctx.createLinearGradient(0, 0, side * s * 0.18, 0);
-    fg.addColorStop(0, rgbStr(c0, 0.9)); fg.addColorStop(1, rgbStr(mixRgb(c1, [255, 255, 255], 0.2), 0.7));
-    ctx.fillStyle = fg; ctx.beginPath(); ctx.ellipse(side * s * 0.09, 0, s * 0.1, s * 0.055, 0, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
-  // mantle / head
-  const g = ctx.createRadialGradient(-s * 0.06, -s * 0.24, 0, 0, -s * 0.12, s * 0.26);
-  g.addColorStop(0, rgbStr(mixRgb(c1, [255, 255, 255], 0.25), 0.95)); g.addColorStop(0.7, rgbStr(c0, 0.9)); g.addColorStop(1, rgbStr(mixRgb(c0, [0, 0, 0], 0.25), 0.9));
-  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -s * 0.13, s * 0.21, s * 0.24, 0, 0, TAU); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  for (let k = 0; k < 10; k++) { ctx.beginPath(); ctx.arc(Math.sin(k * 2.1) * s * 0.12, -s * 0.2 + Math.cos(k * 1.3) * s * 0.1, s * 0.012, 0, TAU); ctx.fill(); }
-  eye(ctx, -s * 0.09, -s * 0.05, Math.max(1, s * 0.04), v.eyec || '#2a1a1a');
-  eye(ctx, s * 0.11, -s * 0.06, Math.max(1, s * 0.03), v.eyec || '#2a1a1a', false);
-  ctx.strokeStyle = 'rgba(255,240,240,0.3)'; ctx.lineWidth = Math.max(1, s * 0.012);
-  ctx.beginPath(); ctx.ellipse(-s * 0.05, -s * 0.2, s * 0.12, s * 0.14, -0.3, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke();
+// (3.7.5) a dumbo octopus, from the side: a soft, translucent bell of a mantle, a pair of ear-like fins that flap to
+// swim, large eyes, and below them the arms joined by a web into a frilled skirt edged with fine cirri; it hovers,
+// the skirt opening and closing slowly
+function drawDumbo(ctx, L, v, t, swim = 1) {
+  const c0 = v.c[0], c1 = v.c[1], H = L * 0.8, flap = Math.sin(t * 2.2) * swim, puls = 0.5 + 0.5 * Math.sin(t * 1.1);
+  const ear = (x, y, s2, a) => { ctx.save(); ctx.translate(x, y); ctx.rotate(a); const eg = ctx.createLinearGradient(0, 0, L * 0.18 * s2, 0); eg.addColorStop(0, rgba(c1, 0.95)); eg.addColorStop(1, rgba(shade(c1, 0.25), 0.7));
+    ctx.fillStyle = eg; ctx.beginPath(); ctx.moveTo(0, -L * 0.03 * s2); ctx.quadraticCurveTo(L * 0.14 * s2, -L * 0.1 * s2, L * 0.2 * s2, 0); ctx.quadraticCurveTo(L * 0.14 * s2, L * 0.1 * s2, 0, L * 0.03 * s2); ctx.fill();
+    ctx.strokeStyle = rgba(shade(c0, -0.25), 0.3); ctx.lineWidth = Math.max(0.4, L * 0.003); for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.moveTo(L * 0.02 * s2, 0); ctx.lineTo(L * 0.17 * s2, k * L * 0.04 * s2); ctx.stroke(); } ctx.restore(); };
+  ear(-L * 0.02, -H * 0.18, 1.35, -2.5 - flap * 0.35);   // the far ear, sticking out from the far side of the mantle
+  // the skirt: the webbed arms below and forward, scalloped, edged with cirri
+  const top = H * 0.02, sk = []; for (let k = 0; k <= 8; k++) { const u = k / 8, a = PI * (0.12 + u * 0.82); sk.push([Math.cos(a) * L * (0.38 + puls * 0.06), top + Math.sin(a) * H * (0.42 + puls * 0.08)]); }
+  const skirt = new Path2D(); skirt.moveTo(L * 0.3, top);
+  sk.forEach((p, k) => { if (!k) return skirt.lineTo(p[0], p[1]); const q = sk[k - 1]; skirt.quadraticCurveTo((p[0] + q[0]) / 2 * 0.86, (p[1] + q[1]) / 2 * 0.9, p[0], p[1]); });
+  skirt.lineTo(-L * 0.3, top); skirt.closePath();
+  const sg = ctx.createLinearGradient(0, top, 0, top + H * 0.5); sg.addColorStop(0, rgba(c1, 0.95)); sg.addColorStop(1, rgba(shade(c0, -0.12), 0.85)); ctx.fillStyle = sg; ctx.fill(skirt);
+  ctx.strokeStyle = rgba(shade(c0, -0.3), 0.35); ctx.lineWidth = Math.max(0.6, L * 0.006); for (const p of sk) { ctx.beginPath(); ctx.moveTo(0, top + H * 0.05); ctx.lineTo(p[0] * 0.98, p[1] * 0.98); ctx.stroke(); }
+  ctx.strokeStyle = rgba(shade(c1, 0.35), 0.6); ctx.lineWidth = Math.max(0.3, L * 0.002);
+  for (const p of sk) for (let k = 1; k < 5; k++) { const u = k / 5, x = p[0] * u, y = top + (p[1] - top) * u; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + L * 0.012, y + L * 0.006); ctx.stroke(); }
+  // the mantle: a soft dome, a little see-through, veined
+  const mantle = new Path2D(); mantle.moveTo(-L * 0.3, top + H * 0.02); mantle.bezierCurveTo(-L * 0.34, -H * 0.5, L * 0.3, -H * 0.56, L * 0.3, top + H * 0.02); mantle.closePath();
+  const mg = ctx.createRadialGradient(-L * 0.05, -H * 0.3, L * 0.02, 0, -H * 0.1, L * 0.36); mg.addColorStop(0, shade(c1, 0.22)); mg.addColorStop(0.6, c1); mg.addColorStop(1, shade(c0, -0.12)); ctx.fillStyle = mg; ctx.fill(mantle);
+  ctx.save(); ctx.clip(mantle); ctx.strokeStyle = 'rgba(200,90,100,0.15)'; ctx.lineWidth = Math.max(0.3, L * 0.002);
+  for (let k = 0; k < 7; k++) { ctx.beginPath(); ctx.moveTo(-L * 0.25 + k * L * 0.08, top); ctx.quadraticCurveTo(-L * 0.2 + k * L * 0.07 + hashN(k, 31) * L * 0.05, -H * 0.2, -L * 0.1 + k * L * 0.04, -H * 0.42); ctx.stroke(); }
+  const hl = ctx.createRadialGradient(-L * 0.1, -H * 0.36, 0, -L * 0.1, -H * 0.36, L * 0.12); hl.addColorStop(0, 'rgba(255,255,255,0.4)'); hl.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = hl; ctx.fillRect(-L, -H, 2 * L, 2 * H); ctx.restore();
+  ear(L * 0.16, -H * 0.2, 1.6, -0.45 + flap * 0.45);     // the near ear, the one it rows with
+  // the eye, large and dark
+  const er = Math.max(1.4, L * 0.05); ctx.fillStyle = rgba(shade(c0, -0.3), 0.6); ctx.beginPath(); ctx.arc(-L * 0.12, -H * 0.04, er * 1.35, 0, TAU); ctx.fill();
+  eye(ctx, -L * 0.12, -H * 0.04, er, '#1a1214');
+  return v.glow ? sk.map((p) => [p[0], p[1], 0.4]) : null;
 }
-
-function drawVampire(ctx, L, v, t) {
-  // Vampire squid: velvety dark red-black, a cloak of webbing between eight arms lined with soft
-  // spines (cirri), two fins, enormous eyes that look red or blue depending on the light, and
-  // photophores that can light the arm tips.
-  const s = L;
-  const fold = 0.5 + 0.5 * Math.sin(t * 0.5); // the cloak opens and closes slowly
-  const c0 = hexToRgb(v.c[0]), c1 = hexToRgb(v.c[1]);
-  // cloak
-  const cloak = umbrella(s, s * (0.24 + fold * 0.1), s * (0.26 + fold * 0.1), 8, t * 0.8, 0.05);
-  const cg = ctx.createLinearGradient(0, -s * 0.05, 0, s * 0.35);
-  cg.addColorStop(0, rgbStr(c1, 0.95)); cg.addColorStop(1, rgbStr(mixRgb(c0, [0, 0, 0], 0.4), 0.9));
+function drawVampire(ctx, L, v, t, swim = 1) {
+  const c0 = v.c[0], c1 = v.c[1], glow = v.glow || '#5ac8ff', eyec = v.eyec || '#c83a2a';
+  const H = L * 0.5, open = 0.55 + 0.45 * Math.sin(t * 1.4) * swim, P = [];
+  // the far-side fin
+  const fin = (x, y, s2, a) => { ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.fillStyle = rgba(shade(c1, 0.12), 0.85); ctx.beginPath(); ctx.ellipse(0, 0, L * 0.09 * s2, L * 0.05 * s2, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = rgba(shade(c1, 0.3), 0.4); ctx.lineWidth = Math.max(0.4, L * 0.003); for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(-L * 0.07 * s2, 0); ctx.lineTo(L * 0.08 * s2, k * L * 0.018 * s2); ctx.stroke(); } ctx.restore(); };
+  fin(L * 0.3, -H * 0.42, 0.85, -0.9 + Math.sin(t * 2) * 0.15);
+  // the cloak: the webbed arms reaching forward (-x), their outer edge scalloped between the arm tips
+  const cx = -L * 0.08, cy = H * 0.02, reach = L * 0.42, spread = H * (0.45 + open * 0.55);
+  const arms = []; for (let k = 0; k < 6; k++) { const u = k / 5, a = PI + (u - 0.5) * (0.8 + open * 0.9); arms.push([cx + Math.cos(a) * reach * (0.92 + 0.08 * Math.sin(k * 2.1)), cy + Math.sin(a) * reach * 0.9 * (spread / H)]); }
+  const cloak = new Path2D(); cloak.moveTo(cx + L * 0.04, cy - H * 0.28);
+  arms.forEach((p, k) => { if (k) { const q = arms[k - 1], mx = (p[0] + q[0]) / 2 + L * 0.06, my = (p[1] + q[1]) / 2; cloak.quadraticCurveTo(mx, my, p[0], p[1]); } else cloak.lineTo(p[0], p[1]); });
+  cloak.lineTo(cx + L * 0.04, cy + H * 0.28); cloak.closePath();
+  const cg = ctx.createRadialGradient(cx, cy, L * 0.02, cx - reach * 0.4, cy, reach); cg.addColorStop(0, shade(c1, 0.05)); cg.addColorStop(0.6, c0); cg.addColorStop(1, shade(c0, -0.35));
   ctx.fillStyle = cg; ctx.fill(cloak);
-  // cirri: soft fleshy spines along the arms
-  ctx.strokeStyle = rgbStr(mixRgb(c1, [255, 200, 200], 0.2), 0.6); ctx.lineWidth = Math.max(0.5, s * 0.006);
-  for (let k = 0; k < 7; k++) {
-    const u = (k + 0.5) / 7, x = -s * 0.24 + u * s * 0.48;
-    for (let j = 1; j < 5; j++) { const y = j * s * 0.05; ctx.beginPath(); ctx.moveTo(x * (1 + j * 0.15), y); ctx.lineTo(x * (1 + j * 0.15) + s * 0.015, y + s * 0.012); ctx.stroke(); }
+  // inside the web: the arms as darker ribs, each lined with pale cirri
+  for (const [ax, ay] of arms) {
+    ctx.strokeStyle = rgba(shade(c0, -0.45), 0.8); ctx.lineWidth = Math.max(0.8, L * 0.008); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ax, ay); ctx.stroke();
+    ctx.strokeStyle = 'rgba(235,225,215,0.7)'; ctx.lineWidth = Math.max(0.4, L * 0.0028);
+    for (let k = 1; k < 7; k++) { const u = k / 7, x = cx + (ax - cx) * u, y = cy + (ay - cy) * u, nx = -(ay - cy), ny = ax - cx, nl = Math.hypot(nx, ny) || 1, c = L * 0.018 * (1 - u * 0.4); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (nx / nl) * c, y + (ny / nl) * c); ctx.stroke(); }
+    // the arm tip, dark, with its light
+    ctx.fillStyle = '#0a0406'; ctx.beginPath(); ctx.arc(ax, ay, Math.max(0.9, L * 0.01), 0, TAU); ctx.fill();
+    ctx.fillStyle = rgba(glow, 0.5 + 0.4 * Math.sin(t * 3 + ax)); ctx.beginPath(); ctx.arc(ax, ay, Math.max(0.6, L * 0.006), 0, TAU); ctx.fill(); P.push([ax, ay, 0.6]);
   }
-  // fins
-  ctx.fillStyle = rgbStr(c0, 0.85);
-  for (const side of [-1, 1]) { ctx.save(); ctx.translate(side * s * 0.13, -s * 0.3); ctx.rotate(side * (0.9 + Math.sin(t * 1.3) * 0.3)); ctx.beginPath(); ctx.ellipse(side * s * 0.06, 0, s * 0.07, s * 0.035, 0, 0, TAU); ctx.fill(); ctx.restore(); }
-  // mantle
-  const g = ctx.createRadialGradient(-s * 0.06, -s * 0.24, 0, 0, -s * 0.15, s * 0.25);
-  g.addColorStop(0, rgbStr(mixRgb(c1, [255, 255, 255], 0.1), 1)); g.addColorStop(1, rgbStr(mixRgb(c0, [0, 0, 0], 0.3), 1));
-  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -s * 0.16, s * 0.18, s * 0.22, 0, 0, TAU); ctx.fill();
-  // velvet sheen
-  ctx.strokeStyle = 'rgba(255,200,200,0.12)'; ctx.lineWidth = Math.max(1, s * 0.012);
-  ctx.beginPath(); ctx.ellipse(-s * 0.05, -s * 0.22, s * 0.1, s * 0.13, -0.3, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke();
-  // huge eyes
-  eye(ctx, -s * 0.08, -s * 0.06, Math.max(1, s * 0.055), v.eyec);
-  eye(ctx, s * 0.1, -s * 0.07, Math.max(1, s * 0.045), v.eyec, false);
-  return [[-s * 0.25, s * 0.2], [s * 0.25, s * 0.2], [0, -s * 0.36]];
+  ctx.strokeStyle = rgba(shade(c0, -0.5), 0.5); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.stroke(cloak);
+  // the mantle: a soft rounded bag behind the head, velvety, with a near-side fin
+  const mantle = new Path2D(); mantle.moveTo(-L * 0.02, -H * 0.3); mantle.bezierCurveTo(L * 0.12, -H * 0.52, L * 0.38, -H * 0.42, L * 0.44, -H * 0.06); mantle.bezierCurveTo(L * 0.46, H * 0.2, L * 0.2, H * 0.42, -L * 0.02, H * 0.3); mantle.closePath();
+  const mg = ctx.createRadialGradient(L * 0.15, -H * 0.18, L * 0.02, L * 0.2, 0, L * 0.3); mg.addColorStop(0, shade(c1, 0.18)); mg.addColorStop(0.6, c1); mg.addColorStop(1, shade(c0, -0.25)); ctx.fillStyle = mg; ctx.fill(mantle);
+  ctx.save(); ctx.clip(mantle); ctx.fillStyle = rgba(shade(c0, -0.5), 0.25); for (let i = 0; i < 60; i++) { ctx.beginPath(); ctx.arc(-L * 0.02 + hashN(i, 21) * L * 0.46, -H * 0.5 + hashN(i, 22) * H, Math.max(0.4, L * 0.003), 0, TAU); ctx.fill(); }
+  const hl = ctx.createLinearGradient(0, -H * 0.5, 0, H * 0.4); hl.addColorStop(0, 'rgba(255,220,220,0.14)'); hl.addColorStop(0.5, 'rgba(0,0,0,0)'); ctx.fillStyle = hl; ctx.fillRect(-L, -H, 2 * L, 2 * H); ctx.restore();
+  // the light organ behind the fin
+  ctx.fillStyle = rgba(glow, 0.6); ctx.beginPath(); ctx.ellipse(L * 0.34, -H * 0.12, Math.max(0.8, L * 0.012), Math.max(0.6, L * 0.008), 0, 0, TAU); ctx.fill(); P.push([L * 0.34, -H * 0.12, 0.8]);
+  fin(L * 0.32, -H * 0.36, 1, -0.7 + Math.sin(t * 2 + 0.6) * 0.18);
+  // the eye: very large for its size, a dark lens in a red-blue iris
+  const er = Math.max(1.5, L * 0.055); ctx.fillStyle = rgba(shade(c0, -0.4), 0.9); ctx.beginPath(); ctx.arc(L * 0.02, -H * 0.04, er * 1.3, 0, TAU); ctx.fill();
+  eye(ctx, L * 0.02, -H * 0.04, er, shade(eyec, -0.35)); // (deep red in most light; blue in some)
+  return P;
 }
-
 function drawNautilus(ctx, L, v, t) {
   const r = L * 0.42;
   ctx.strokeStyle = 'rgba(200,190,170,0.6)'; ctx.lineWidth = 1;
@@ -1661,14 +1751,55 @@ function drawShrimp(ctx, L, v, t) {
   if (glassy) { ctx.fillStyle = 'rgba(150,220,255,0.8)'; for (let k = 0; k < 6; k++) { const [x, y] = pts[k]; ctx.beginPath(); ctx.arc(x, y + H * 0.3, Math.max(0.6, L * 0.008), 0, TAU); ctx.fill(); } }
 }
 
-function drawIsopod(ctx, L, v, t) {
-  const H = L * 0.3;
-  legs(ctx, 0, 0, 7, L * 0.25, L * 0.1, t * 0.4, shade(v.c[0], -0.2), Math.max(1, L * 0.02));
-  ctx.fillStyle = bodyGradient(ctx, -H, 0, v.c[0], v.c[1]);
-  ctx.beginPath(); ctx.ellipse(0, -H * 0.1, L * 0.5, H * 0.75, 0, PI, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1;
-  for (let k = 1; k < 9; k++) { const x = -L * 0.5 + k * L * 0.11; ctx.beginPath(); ctx.moveTo(x, -H * 0.1); ctx.quadraticCurveTo(x + L * 0.02, -H * 0.6, x, -H * 0.8 * Math.sin((k / 9) * PI)); ctx.stroke(); }
-  eye(ctx, -L * 0.4, -H * 0.4, Math.max(0.8, H * 0.12), '#2a2a2a', true);
+// (3.7.5) a giant isopod, from the side: a domed back of overlapping armour plates (seven, then the tail shield),
+// each with a rolled edge; a head with a large faceted eye and two pairs of antennae, the second long; seven
+// pairs of jointed walking legs ending in hooked claws; swimming legs under the tail
+function drawIsopod(ctx, L, v, t, swim = 1) {
+  const c0 = v.c[0], c1 = v.c[1], H = L * 0.36, walk = t * 3 * swim;
+  // the legs on the far side first, then the body, then the near legs
+  const legs = (side) => {
+    for (let k = 0; k < 7; k++) {
+      const x = -L * 0.26 + k * L * 0.085, ph = walk + k * 0.9 + (side > 0 ? PI : 0), lift = Math.max(0, Math.sin(ph)) * H * 0.08, swing = Math.cos(ph) * L * 0.025;
+      const kx = x + L * 0.02 * (side > 0 ? 1 : 0.6) + swing * 0.5, ky = H * 0.32 - lift, fx = x + L * 0.035 + swing, fy = H * 0.55 - lift * 0.6;
+      ctx.strokeStyle = side > 0 ? shade(c0, -0.05) : shade(c0, -0.3); ctx.lineWidth = Math.max(1, L * (side > 0 ? 0.013 : 0.011)); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, H * 0.1); ctx.lineTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
+      ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.beginPath(); ctx.moveTo(fx, fy); ctx.quadraticCurveTo(fx + L * 0.012, fy + H * 0.02, fx + L * 0.018, fy - H * 0.01); ctx.stroke(); // the claw
+      ctx.fillStyle = side > 0 ? shade(c1, 0.1) : shade(c0, -0.15); ctx.beginPath(); ctx.arc(kx, ky, Math.max(0.6, L * 0.006), 0, TAU); ctx.fill(); // the joint
+    }
+    ctx.lineCap = 'butt';
+  };
+  legs(-1);
+  // the swimming legs and the tail shield's fringe
+  ctx.fillStyle = rgba(shade(c1, 0.1), 0.6); for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.ellipse(L * 0.32 + k * L * 0.03, H * 0.2, L * 0.02, H * 0.12, 0.3, 0, TAU); ctx.fill(); }
+  // the body: the domed back, plate by plate from head to tail
+  const back = (u) => -H * (0.12 + 0.42 * Math.sin(Math.min(1, Math.max(0, u)) * PI) ** 0.7);
+  const body = new Path2D(); body.moveTo(-L * 0.46, H * 0.12);
+  for (let i = 0; i <= 40; i++) { const u = i / 40; body.lineTo(-L * 0.46 + u * L * 0.92, back(u)); }
+  body.lineTo(L * 0.47, H * 0.14); body.quadraticCurveTo(0, H * 0.26, -L * 0.46, H * 0.12); body.closePath();
+  const bg = ctx.createLinearGradient(0, -H * 0.55, 0, H * 0.2); bg.addColorStop(0, shade(c1, 0.18)); bg.addColorStop(0.55, c1); bg.addColorStop(1, shade(c0, -0.2)); ctx.fillStyle = bg; ctx.fill(body);
+  ctx.save(); ctx.clip(body);
+  // the plates: each overlapping the next, a dark seam and a light rolled edge, faint pits across them
+  const seams = [0.16, 0.27, 0.37, 0.47, 0.56, 0.65, 0.74, 0.83];
+  for (const u of seams) { const x = -L * 0.46 + u * L * 0.92;
+    const sg = ctx.createLinearGradient(x - L * 0.03, 0, x + L * 0.01, 0); sg.addColorStop(0, 'rgba(0,0,0,0)'); sg.addColorStop(0.75, rgba(shade(c0, -0.4), 0.45)); sg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sg; ctx.fillRect(x - L * 0.03, -H, L * 0.04, 2 * H);
+    ctx.strokeStyle = rgba(shade(c1, 0.4), 0.55); ctx.lineWidth = Math.max(0.6, L * 0.004); ctx.beginPath(); ctx.moveTo(x + L * 0.004, back(u) + 1); ctx.quadraticCurveTo(x + L * 0.012, 0, x + L * 0.004, H * 0.2); ctx.stroke(); }
+  ctx.fillStyle = rgba(shade(c0, -0.3), 0.22); for (let i = 0; i < 70; i++) { ctx.beginPath(); ctx.arc(-L * 0.4 + hashN(i, 41) * L * 0.85, -H * 0.5 + hashN(i, 42) * H * 0.6, Math.max(0.4, L * 0.003), 0, TAU); ctx.fill(); }
+  // the side flanges (the plates' lower edges), a paler band along the bottom
+  ctx.fillStyle = rgba(shade(c1, 0.25), 0.35); ctx.fillRect(-L, H * 0.04, 2 * L, H * 0.06);
+  ctx.restore();
+  ctx.strokeStyle = rgba(shade(c0, -0.45), 0.6); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.stroke(body);
+  legs(1);
+  // the head: two pairs of antennae, the long second pair sweeping back, a big faceted eye
+  ctx.strokeStyle = shade(c0, -0.1); ctx.lineWidth = Math.max(0.6, L * 0.005);
+  ctx.beginPath(); ctx.moveTo(-L * 0.45, H * 0.0); ctx.quadraticCurveTo(-L * 0.56, -H * 0.15, -L * 0.6, -H * 0.06 + Math.sin(t * 1.3) * H * 0.04); ctx.stroke();
+  ctx.lineWidth = Math.max(0.7, L * 0.006); ctx.beginPath(); ctx.moveTo(-L * 0.44, H * 0.06); ctx.bezierCurveTo(-L * 0.62, H * 0.2, -L * 0.6, H * 0.5, -L * 0.42 + Math.sin(t * 0.9) * L * 0.02, H * 0.6); ctx.stroke();
+  for (let k = 1; k < 8; k++) { const u = k / 8; ctx.fillStyle = shade(c0, -0.25); ctx.beginPath(); ctx.arc(-L * 0.44 - Math.sin(u * PI) * L * 0.15, H * 0.06 + u * H * 0.55, Math.max(0.4, L * 0.003), 0, TAU); ctx.fill(); } // its segments
+  const ex = -L * 0.39, ey = -H * 0.14, er = Math.max(1.4, L * 0.04);
+  ctx.fillStyle = '#16181c'; ctx.beginPath(); ctx.ellipse(ex, ey, er * 1.1, er, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(160,170,180,0.25)'; ctx.lineWidth = Math.max(0.3, L * 0.0015);
+  for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(ex + i * er * 0.3, ey - er); ctx.lineTo(ex + i * er * 0.3 + er * 0.2, ey + er); ctx.stroke(); ctx.beginPath(); ctx.moveTo(ex - er, ey + i * er * 0.3); ctx.lineTo(ex + er, ey + i * er * 0.3 - er * 0.1); ctx.stroke(); }
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(ex - er * 0.35, ey - er * 0.4, er * 0.3, er * 0.18, -0.4, 0, TAU); ctx.fill();
 }
 function drawStar(ctx, L, v, t) {
   // Seen from slightly above where it lies: tapering arms from a central disc, the upper surface
@@ -2571,8 +2702,54 @@ export const RENDERERS = {
 };
 
 // Draws a species. Returns local glow points (or null) for the bioluminescence pass.
+// (3.7.5) the coelacanth: a heavy, deep-blue fish flecked with pale blotches, covered in thick, rough scales; its
+// pectoral, pelvic, second dorsal and anal fins each grow from a fleshy, scaled lobe like a limb; the tail has
+// three lobes, a small paddle sticking out between the upper and lower ones; a large eye that shines
+function drawCoelacanth(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], fin = shade(c1, 0.12), sw = Math.sin(t * 2.5) * swim;
+  // a lobed fin: a fleshy, scaled stalk, then the rayed fan at its end
+  const lobe = (bx, by, ang, len, w, fan, alpha = 0.7) => {
+    const ex = bx + Math.cos(ang) * len, ey = by + Math.sin(ang) * len, nx = -Math.sin(ang) * w, ny = Math.cos(ang) * w;
+    ctx.fillStyle = shade(c1, 0.05); ctx.beginPath(); ctx.moveTo(bx + nx, by + ny); ctx.quadraticCurveTo((bx + ex) / 2 + nx * 1.2, (by + ey) / 2 + ny * 1.2, ex + nx * 0.5, ey + ny * 0.5); ctx.lineTo(ex - nx * 0.5, ey - ny * 0.5); ctx.quadraticCurveTo((bx + ex) / 2 - nx * 1.2, (by + ey) / 2 - ny * 1.2, bx - nx, by - ny); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = rgba(shade(c1, 0.3), 0.3); ctx.lineWidth = Math.max(0.4, L * 0.0025); for (let k = 1; k < 4; k++) { const u = k / 4; ctx.beginPath(); ctx.arc(bx + (ex - bx) * u, by + (ey - by) * u, w * 0.8, ang - 0.9 + PI / 2, ang + 0.9 + PI / 2); ctx.stroke(); }
+    const tips = []; for (let k = 0; k <= 6; k++) { const a = ang - 0.6 + k * 0.2; tips.push([ex + Math.cos(a) * fan, ey + Math.sin(a) * fan]); }
+    rayFin(ctx, [[ex + nx * 0.5, ey + ny * 0.5], [ex - nx * 0.5, ey - ny * 0.5]], tips, fin, alpha);
+  };
+  // the tail: upper and lower lobes, and the little central paddle
+  const tx = L * 0.32, bend = sw * H * 0.15;
+  rayFin(ctx, [[tx, -H * 0.12], [tx, -H * 0.02]], [[tx + L * 0.05, -H * 0.55 + bend], [tx + L * 0.12, -H * 0.42 + bend], [tx + L * 0.15, -H * 0.12 + bend]], fin, 0.7);
+  rayFin(ctx, [[tx, H * 0.02], [tx, H * 0.12]], [[tx + L * 0.15, H * 0.12 + bend], [tx + L * 0.12, H * 0.42 + bend], [tx + L * 0.05, H * 0.55 + bend]], fin, 0.7);
+  ctx.fillStyle = shade(c1, 0.05); ctx.beginPath(); ctx.moveTo(tx + L * 0.1, -H * 0.04 + bend * 0.7); ctx.lineTo(tx + L * 0.2, -H * 0.03 + bend); ctx.lineTo(tx + L * 0.2, H * 0.03 + bend); ctx.lineTo(tx + L * 0.1, H * 0.04 + bend * 0.7); ctx.fill();
+  rayFin(ctx, [[tx + L * 0.2, -H * 0.03 + bend], [tx + L * 0.2, H * 0.03 + bend]], [[tx + L * 0.25, -H * 0.12 + bend], [tx + L * 0.27, bend], [tx + L * 0.25, H * 0.12 + bend]], fin, 0.7);
+  // the lobed fins on the far side, behind the body
+  lobe(L * 0.16, -H * 0.36, -1.25, H * 0.3, H * 0.07, H * 0.32);
+  lobe(L * 0.16, H * 0.36, 1.2, H * 0.3, H * 0.07, H * 0.3);
+  // the first dorsal: an ordinary fan of spines
+  rayFin(ctx, [[-L * 0.08, -H * 0.46], [L * 0.04, -H * 0.48]], [[-L * 0.06, -H * 0.95], [-L * 0.01, -H * 0.92], [L * 0.04, -H * 0.62]], fin, 0.6);
+  const body = new Path2D();
+  body.moveTo(-L * 0.48, -H * 0.02); body.bezierCurveTo(-L * 0.47, -H * 0.42, -L * 0.25, -H * 0.55, -L * 0.02, -H * 0.5);
+  body.bezierCurveTo(L * 0.18, -H * 0.46, L * 0.3, -H * 0.24, L * 0.34, -H * 0.13); body.lineTo(L * 0.34, H * 0.13);
+  body.bezierCurveTo(L * 0.3, H * 0.26, L * 0.18, H * 0.48, -L * 0.02, H * 0.5); body.bezierCurveTo(-L * 0.25, H * 0.52, -L * 0.46, H * 0.4, -L * 0.48, H * 0.12); body.closePath();
+  const bg = ctx.createLinearGradient(0, -H * 0.5, 0, H * 0.5); bg.addColorStop(0, shade(c0, -0.2)); bg.addColorStop(0.5, c1); bg.addColorStop(1, shade(c0, -0.1)); ctx.fillStyle = bg; ctx.fill(body);
+  ctx.save(); ctx.clip(body);
+  // thick, rough scales in overlapping rows, each with a raised spiny edge
+  for (let r = 0; r < 7; r++) for (let k = 0; k < 16; k++) { const x = -L * 0.3 + k * L * 0.042 + (r % 2) * L * 0.021, y = -H * 0.48 + r * H * 0.16;
+    ctx.strokeStyle = rgba(shade(c1, 0.35), 0.28); ctx.lineWidth = Math.max(0.5, L * 0.003); ctx.beginPath(); ctx.arc(x, y, L * 0.026, -0.45 * PI, 0.45 * PI); ctx.stroke();
+    ctx.fillStyle = rgba(shade(c1, 0.4), 0.12); ctx.beginPath(); ctx.arc(x + L * 0.02, y, Math.max(0.4, L * 0.004), 0, TAU); ctx.fill(); }
+  if (v.p) patternFish(ctx, { H, x0: -L / 2, bodyL: L }, L, v);
+  const sh = ctx.createLinearGradient(0, -H * 0.5, 0, H * 0.5); sh.addColorStop(0, 'rgba(255,255,255,0.08)'); sh.addColorStop(0.5, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.3)'); ctx.fillStyle = sh; ctx.fillRect(-L, -H, 2 * L, 2 * H);
+  ctx.restore();
+  // head plates and the jaw, the near side's lobed fins, the eye
+  ctx.strokeStyle = rgba(shade(c0, -0.5), 0.7); ctx.lineWidth = Math.max(0.6, L * 0.005);
+  ctx.beginPath(); ctx.moveTo(-L * 0.24, -H * 0.42); ctx.quadraticCurveTo(-L * 0.16, H * 0.02, -L * 0.26, H * 0.44); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-L * 0.48, H * 0.1); ctx.lineTo(-L * 0.32, H * 0.16); ctx.stroke();
+  lobe(-L * 0.14, H * 0.2, 2.2 + sw * 0.1, H * 0.34, H * 0.08, H * 0.32, 0.75);   // the pectoral, swinging like a limb
+  lobe(L * 0.06, H * 0.44, 1.9 - sw * 0.1, H * 0.28, H * 0.07, H * 0.26, 0.75);   // the pelvic
+  const er = Math.max(1.2, H * 0.1); ctx.fillStyle = rgba(shade(c0, -0.5), 0.8); ctx.beginPath(); ctx.arc(-L * 0.36, -H * 0.12, er * 1.4, 0, TAU); ctx.fill();
+  eye(ctx, -L * 0.36, -H * 0.12, er, '#d8c878'); // (the eye shines yellow-green in a light, from the mirror at its back)
+}
 export function drawSpecies(ctx, sp, L, t, swim = 1, phase = 0) {
-  const fn = RENDERERS[sp.v.s] || drawFish;
+  const fn = sp.v.t === 'coel' ? drawCoelacanth : RENDERERS[sp.v.s] || drawFish; // (3.7.5) the coelacanth has its own
   const r = fn(ctx, L, sp.v, t, swim, phase);
   return r || null;
 }
