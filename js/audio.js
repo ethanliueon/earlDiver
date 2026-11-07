@@ -152,7 +152,7 @@ export class Audio {
     if (!this.musicBufs[id]) { this.loadTheme(id); this.musicWanted = id; return; }
     if (this.musicSrc && this.musicSrc.id === id && m.level > 0.05) { m.on = true; m.playedT = 0; return; } // still fading out: it swells back
     if (this.musicSrc) { this.fadeAway(this.musicSrc, 1.5); this.musicSrc = null; }
-    this.musicSrc = this.playSource(id, 0); m.on = true; m.playLen = 150 + Math.random() * 150; // (3.0.1) 2½ to 5 minutes, then it fades this.musFirstStarted = true; m.level = Math.max(m.level, 0.3); // (each track has its own quiet start)
+    this.musicSrc = this.playSource(id, 0); m.on = true; m.playLen = 150 + Math.random() * 150; this.musFirstStarted = true; // (3.0.1) 2½ to 5 minutes, then it fades; (3.0.3) it always rises from silence
   }
   // a good moment (a sale, a rare find, getting home): once the rest is over and all is calm, the music comes now
   // (2.9.2) as before 2.6.9: a new dive, coming back from a death, and getting home always bring it in
@@ -169,6 +169,10 @@ export class Audio {
   musicSession(g, dt) {
     const m = this.musState();
     const playing = g.mode === 'play';
+    // (3.0.3) every time he comes back to a menu (the title, or after a death), the theme swells in, full and slow
+    if (g.mode === 'menu' && this.lastMode !== 'menu' && this.musFirstDone) { m.zone = 'sunlit'; m.menuSwell = true; if (!m.on) { m.rest = 0; this.startPiece('sunlit'); } }
+    if (g.mode !== 'menu') m.menuSwell = false;
+    this.lastMode = g.mode;
     const ent = g.entity, e = g.earl;
     // (2.9.1) smarter: only something truly serious (the thing in the deep marking him, closing in or
     // attacking, an attack by a hunter, the reveal, a legend, death) cuts the music off, and only once it has
@@ -202,7 +206,7 @@ export class Audio {
         if (m.rollT >= (bored > 0.5 ? 12 : 30)) { m.rollT = 0; if (Math.random() < 0.5 + m.meter * 0.4 + bored * 0.3) this.startPiece(); }
       }
     }
-    const fade = m.on ? 0.5 : g.mode === 'dying' ? 0.6 : (m.cutBySerious ? 0.3 : 0.05); // (2.9.2) in: 2 s; out: always a fade (about 20 s; 3 s for danger)
+    const fade = m.on ? (m.menuSwell ? 0.22 : 0.14) : g.mode === 'dying' ? 0.6 : (m.cutBySerious ? 0.3 : 0.05); // (3.0.3) in: a swell (~4.5 s at a menu, ~7 s in play); out: always a fade (about 20 s; 3 s for danger)
     m.level += clamp((m.on ? 1 : 0) - m.level, -fade * dt, fade * dt);
     if (!m.on && m.level <= 0.001 && this.musicSrc) { this.fadeAway(this.musicSrc, 0.05); this.musicSrc = null; }
     return m.level;
@@ -365,7 +369,7 @@ export class Audio {
     const under = g.mode === 'menu' ? 0 : depth > 0.9 ? 1 : 0;
     // music: not always playing. In a dive it comes now and then when things are calm (and on some
     // good moments), plays a while, and fades; anything frightening stops it at once.
-    let mv = g.mode === 'menu' ? 0.55 : 0.42;
+    let mv = g.mode === 'menu' ? 0.55 : 0.25; // (3.0.3) quieter in play (about 40 % down); full at the menus
     mv *= this.musicSession(g, dt); // (2.6.9) in every mode: the title only hears it on a fresh start
     mv *= 1 - fx.dread * 0.7;
     if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
@@ -373,7 +377,7 @@ export class Audio {
     const hush = 1 - 0.85 * ((g.fx && g.fx.hush) || 0); // it is near: the sea goes quiet
     this.musicGain.gain.setTargetAtTime(mv * hush, now, 0.4);
     const hurtMuffle = (g.injury >= 3 ? 0.5 : 1) * (g.noAir ? 1 - Math.min(1, g.noAir / 15) * 0.4 : 1);
-    const lp = (under ? clamp(2400 * Math.exp(-depth / 900), 700, 2400) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle; // (2.6.10) a lighter muffle: each depth has its own theme now, and it should be heard
+    const lp = (under ? clamp(1700 * Math.exp(-depth / 900), 520, 1700) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle; // (3.0.3) under water the music is heard through the water: soft and rounded, as in the first versions
     this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
     // beds
     this.amb.g.gain.setTargetAtTime((under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03) * hush, now, 0.5);
