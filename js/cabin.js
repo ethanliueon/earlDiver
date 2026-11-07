@@ -137,9 +137,9 @@ export class Cabin {
     let mRun = false;
     if (!dir && this.goal == null && this.mcx != null && (this.mMoved || -1e9) > (this.keyAt || -1e9) && !this.h.blocked()) {
       const d = clamp((this.mcx + (this.camX || 0)) / window.innerWidth, ROOM.min, ROOM.max) - this.x;
-      if (Math.abs(d) > 0.05) { dir = Math.sign(d); this.ease = clamp((Math.abs(d) - 0.05) / 0.06, 0.35, 1); } // (3.0.27) a steady walk; Shift runs
+      if (Math.abs(d) > 0.05) dir = Math.sign(d); // (4.0.4) past the dead zone round him: his full walk at once, however far the cursor is; Shift runs
     }
-    const run = this.keys.has('shift') || mRun, pace = (run ? 0.32 : 0.2) * (this.ease || 1); this.ease = 1; // (4.0.0) his own pace again, and Shift runs
+    const run = this.keys.has('shift') || mRun, pace = run ? 0.32 : 0.2; // (4.0.0) his own pace, and Shift runs
     if (!this.h.blocked()) {
       const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);
