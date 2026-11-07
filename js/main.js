@@ -1554,6 +1554,8 @@ function update(dt) {
       const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
       if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the ${ev.deeper ? 'depth' : 'climb'}: get it into one of the sub's chambers`, 'warn');
       else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying: get it to a chamber, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
+      else if (ev.type === 'stressed') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : "in the sub's tank"} is stressed`, 'warn');
+      else if (ev.type === 'dying') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : "in the sub's tank"} is dying`, 'warn');
     }
     g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
@@ -1737,8 +1739,10 @@ function update(dt) {
         // something has noticed him: a deep sound, a pulse through the screen, a line in the journal
         g.fx.shake = Math.max(g.fx.shake, 1.0); g.fx.markPulse = 1;
         audio.ready && (audio.tone(38, 4, 0.7, 'sine', 0, 24), audio.groan(0.18));
-      } else if (ev === 'appeased') {
-      } else if (ev === 'unmarked') {
+        hud.toast('Something noticed you.', 'note'); // (2.9.1) back
+        g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}, ${Math.round(e.y)} m] Something noticed me.`;
+      } else if (ev === 'appeased') { hud.toast('The water feels lighter.', 'note');
+      } else if (ev === 'unmarked') { hud.toast('The feeling of being watched fades.', 'note');
       }
       else if (ev === 'pass') {
         // it sweeps by, close: the water shoves the sub, a long low rush

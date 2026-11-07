@@ -166,21 +166,34 @@ export class Audio {
     const m = this.musState();
     const playing = g.mode === 'play';
     const ent = g.entity, e = g.earl;
-    const stress = playing && (g.fx.dread > 0.02 || (ent && ent.marked) || !!g.threat || !!g.noAir || (g.injury || 0) > 0 || !!g.reveal || (!e.inSub && e.y > 300));
+    // (2.9.1) smarter: only something truly serious (the thing in the deep marking him, closing in or
+    // attacking, an attack by a hunter, the reveal, a legend, death) cuts the music off, and only once it has
+    // played a minute (a piece just begun plays on through). Lesser trouble (out of air, hurt, deep outside
+    // the sub) never stops it; it only keeps a new piece from starting.
+    const serious = playing && ((ent && ent.marked) || g.fx.dread > 0.35 || !!g.threat || !!g.reveal || !!g.legend);
+    const mild = playing && (g.fx.dread > 0.02 || !!g.noAir || (g.injury || 0) > 0 || (!e.inSub && e.y > 300));
+    const stress = serious || mild;
     this.calm = playing && !stress;
     if (stress) m.sinceStress = 0; else m.sinceStress += dt;
-    if (stress || g.mode === 'dying' || g.legend) { this.musicWanted = null; this.stopPiece(); }
+    if (m.on) m.playedT = (m.playedT || 0) + dt; else m.playedT = 0;
+    if (g.mode === 'dying' || (serious && m.playedT >= 60)) { this.musicWanted = null; this.stopPiece(); }
+    // a long stretch of nothing much (standing about, waiting, swimming back and forth doing the same thing):
+    // the rest before the next piece runs out faster, and the music is likelier to come
+    const sp = Math.hypot(e.vx || 0, e.vy || 0);
+    m.quietT = stress ? 0 : (m.quietT || 0) + dt;
+    m.idleT = sp < 0.4 && !stress ? (m.idleT || 0) + dt : 0;
+    const bored = Math.min(1, m.quietT / 240 + m.idleT / 60);
     // the zone he is in (the title is the sunlit sea); the next theme down is fetched 50 m before he gets there
     const depth = playing || g.mode === 'dying' ? Math.max(0, e.y) : 0;
     m.zone = this.themeAt(depth, m.zone);
     for (const T of THEMES) if (depth > T.to - 50) { const nx = THEMES[THEMES.indexOf(T) + 1]; if (nx) this.loadTheme(nx.id); }
-    if (m.zone === 'deep') this.stopPiece(); // into the deep: whatever plays fades away (and its rest begins)
+    if (m.zone === 'deep' && (m.playedT || 0) >= 60) this.stopPiece(); // (2.9.1: not before it has played a minute) into the deep: whatever plays fades away (and its rest begins)
     if (!m.on && playing && !g.paused) {
-      m.rest = Math.max(0, m.rest - dt);                                // the rest counts only in play
-      m.meter = Math.min(1, m.meter + dt * 0.0015);                      // quiet, calm swimming
-      if (m.rest <= 0 && this.calm && m.sinceStress >= 20 && m.zone !== 'deep') {
+      m.rest = Math.max(0, m.rest - dt * (1 + 5 * bored));             // the rest counts only in play; faster when nothing is happening
+      m.meter = Math.min(1, m.meter + dt * (0.0015 + 0.01 * bored));     // quiet, calm swimming
+      if (m.rest <= 0 && !serious && !g.noAir && m.sinceStress >= (bored > 0.5 ? 8 : 20) && m.zone !== 'deep') {
         m.rollT += dt;
-        if (m.rollT >= 30) { m.rollT = 0; if (Math.random() < 0.5 + m.meter * 0.4) this.startPiece(); }
+        if (m.rollT >= (bored > 0.5 ? 12 : 30)) { m.rollT = 0; if (Math.random() < 0.5 + m.meter * 0.4 + bored * 0.3) this.startPiece(); }
       }
     }
     const fade = m.on ? 0.5 : g.mode === 'dying' ? 1 : 0.35;           // in: 2 s; cut off: about 3 s
@@ -353,7 +366,7 @@ export class Audio {
     if (g.paused) mv *= 0.4;
     const hush = 1 - 0.85 * ((g.fx && g.fx.hush) || 0); // it is near: the sea goes quiet
     this.musicGain.gain.setTargetAtTime(mv * hush, now, 0.4);
-    const hurtMuffle = (g.injury >= 3 ? 0.5 : 1) * (g.noAir ? 1 - Math.min(1, g.noAir / 15) * 0.8 : 1);
+    const hurtMuffle = (g.injury >= 3 ? 0.5 : 1) * (g.noAir ? 1 - Math.min(1, g.noAir / 15) * 0.4 : 1);
     const lp = (under ? clamp(4200 * Math.exp(-depth / 2500), 1600, 4200) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle; // (2.6.10) a lighter muffle: each depth has its own theme now, and it should be heard
     this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
     // beds
