@@ -1,3 +1,3 @@
 // The game's version. Bumped with every change: the last number for small fixes and tweaks,
 // the middle one for new features or bigger changes, the first for a major overhaul.
-export const VERSION = '3.0.28';
+export const VERSION = '3.0.29';

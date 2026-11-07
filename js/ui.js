@@ -365,7 +365,7 @@ export class UI {
     const row = (label, n, note = '') => `<div class="inv-row"><span>${label}${note ? ` <em>${note}</em>` : ''}</span>${n === '' ? '' : `<b class="n${n ? '' : ' zero'}">${n}</b>`}</div>`;
     const fish = (s) => { const sp = SPECIES_BY_ID[s.id]; return `<div class="inv-row"><img src="${ic(sp)}" alt=""><span>${sp.name}${s.variant ? ` <em>${s.variant}</em>` : ''}<br><em>${s.cond <= 0.05 ? 'dead' : conditionName(s.cond)} · from ${s.from || 0} m · about ${money(specimenValue(s) * statValue(P, 'payFish'))}</em></span></div>`; };
     const sec = (title, inner, wide = false) => `<div class="inv-sec${wide ? ' wide' : ''}"><h4>${title}</h4><div class="inv-list">${inner}</div></div>`;
-    let html = this.equipHtml(P, g);
+    let html = '';
     html += `<div class="inv-sec wide"><div class="inv-cash"><div><span>CASH</span>${money(P.cash)}</div></div></div>`;
     // the animals first (the bag, then the sub's tanks); supplies, finds and gear below
     html += sec(`The catch bag · ${g.bag.length} of ${Math.round(statValue(P, 'bag'))}`, g.bag.length ? g.bag.map(fish).join('') : '<p class="inv-empty">Empty.</p>', true);
@@ -385,14 +385,14 @@ export class UI {
     const tools = ['net'].concat(Object.keys(GEAR).filter((k) => owns(P, k))).map((k) => k === 'net' ? 'Hand net' : GEAR[k].name);
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
     html += sec('Equipment', row('Submersible', '', g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}, rated ${g.sub.rated} m`), true);
-    $('inventory').querySelector('.inv-body').innerHTML = html;
+    $('inventory').querySelector('.inv-body').innerHTML = this.equipHtml(P, g, html); // (3.0.29) two panes: Earl and the rest on the left, the locker on the right
     this.equipWire(P, g);
   }
   // ---------- the locker (2.8.0): Earl and his eight slots; everything he owns in rarity frames ----------
   // Drag a thing onto him (or its slot) to put it on, or click it for its card: what it is, its skills, its
   // set, Put on / Take off, and Sell when someone is there to buy it (the Margaret, Dave). Changing gear works
   // on deck, in the cabin and in the sub; in the water it only shows.
-  equipHtml(P, g) {
+  equipHtml(P, g, extra = '') {
     ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear();
     const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp gun'], ['tag', '3  Tag gun'], ['cam', '4  Camera']];
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
@@ -404,9 +404,9 @@ export class UI {
     const tiles = list.map((q) => { const it = ITEMS[q.id], on = K.on[it.kind] === q.u;
       return `<div class="lk-tile r-${it.rarity}${on ? ' on' : ''}${this.lkSel === q.u ? ' sel' : ''}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${on ? '<i>on</i>' : ''}${q.leg ? '<em>✦</em>' : ''}</div>`; }).join('');
     const card = this.lkSel ? this.lockerCard(P, g, free) : '';
-    return `<div class="inv-sec wide eq${free ? '' : ' locked'}"><h4>Gear</h4><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="300" height="380"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
+    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><h4>Gear</h4><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="300" height="380"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
-      + `<div class="lk-head"><h4>Locker</h4><span class="${K.items.length >= LOCKER ? 'full' : ''}">${K.items.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div>${card}</div>`;
+      + `<div class="inv-rest">${extra || ''}</div></div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><span class="${K.items.length >= LOCKER ? 'full' : ''}">${K.items.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div>${card}</div></div>`;
   }
   // one thing's card: name in its rarity's colour, what it does, its skills, its set, and what can be done
   lockerCard(P, g, free) {

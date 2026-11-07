@@ -1457,3 +1457,18 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .lk-vs .vs-row.same { opacity: 0.55; }
 .lk-vs .vs-row.sk span:last-child { text-align: right; }
 .lk-vs b.up { color: #8fe08a; font-weight: 500; } .lk-vs b.down { color: #f08a7a; font-weight: 500; }
+
+/* (3.0.29) the inventory in two panes: the character and what he has on (left), the locker and the item's card (right) */
+#inventory .set-panel { width: min(1240px, 96vw); height: 88vh; max-height: 88vh; }
+#inventory .inv-body { display: block; }
+#inventory .inv-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 0 22px; height: 100%; }
+#inventory .inv-left, #inventory .inv-right { min-height: 0; overflow-y: auto; padding-right: 8px; }
+#inventory .inv-split { max-height: calc(88vh - 110px); }
+#inventory .inv-right { padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.08); }
+#inventory .inv-rest { display: grid; gap: 14px; margin-top: 16px; }
+#inventory .inv-right .lk-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+#inventory .inv-right .lk-tile { aspect-ratio: 1 / 1; height: auto; width: auto; display: grid; place-items: center; }
+#inventory .inv-right .lk-tile img { width: 82%; height: auto; }
+#inventory .inv-right .lk-card { margin-top: 14px; }
+#inventory .inv-right .lk-head { margin-top: 2px; }
+@media (max-width: 860px) { #inventory .inv-split { grid-template-columns: 1fr; max-height: none; } #inventory .inv-right { border-left: 0; padding-left: 0; } }
