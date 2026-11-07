@@ -5,7 +5,7 @@
 // for the whole gallery: daylight, dim, or the red light deep animals can't see.
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
-import { aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale, gallerySlots } from './aquarium.js';
+import { aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { VARIANTS, makeVariantSprite } from './variants.js';
 import { clamp, lerp, TAU } from './util.js';
 
@@ -60,7 +60,8 @@ export class Gallery {
       this.sig = '';
     });
     // (2.6.8) the catch: put an animal into the tank from here (the only way in)
-    root.querySelector('.gl-catch').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-place]'); if (b && !b.disabled) { this.h.act('place', b.dataset.place); this.sig = ''; } });
+    root.querySelector('.gl-catch').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-place]'); if (b && !b.disabled) { this.h.act('place', b.dataset.place); this.sig = ''; }
+      const r = ev.target.closest('button[data-room]'); if (r && !r.disabled) { this.h.act('room'); this.sig = ''; } });
     this.over.addEventListener('keydown', (ev) => { ev.stopPropagation(); if (ev.key === 'Enter') { const inp = ev.target.closest('input[data-name]'); if (inp) { this.h.act('rename', inp.dataset.name, inp.value); this.sig = ''; } } });
   }
   show() { this.open = null; this.sig = ''; }
@@ -86,10 +87,14 @@ export class Gallery {
     this.root.querySelector('.gl-sub').textContent = `${nShown} of ${gallerySlots(P)} places · aboard the Margaret`;
     // the catch aboard, the kept ones first: one button each to put it into the tank
     const full = nShown >= gallerySlots(P);
+    // (3.0.15) more room, bought right here: two more places a time
+    const lvG = P.galleryLv || 0, step = GALLERY_STEPS[lvG];
+    const roomBtn = step !== undefined ? `<button class="gl-room" data-room="1" ${P.cash + 1e-6 < step ? 'disabled' : ''}>More room · ${gallerySlots(P)} → ${gallerySlots(P) + 2} places · $${step.toLocaleString()}</button>` : '<p>The aquarium is as big as the Margaret can hold.</p>';
     this.root.querySelector('.gl-catch').innerHTML = !cand.length ? '<h4>Your catch</h4><p>Nothing alive aboard to put in. Bring something up, and Keep it on the Sell tab so it is not sold.</p>' : `<h4>Your catch</h4>` + cand.slice(0, 12).map((c) => {
       const sp = SPECIES_BY_ID[c.s.id], why = c.why;
       return `<button data-place="${c.where}:${c.i}" ${why ? `disabled title="${esc(why)}"` : 'title="Put it into the tank"'} class="${c.s.kept ? 'kept' : ''}">${c.s.variant ? `<em class="rarel r-${c.s.variant}">${VARIANTS[c.s.variant].name}</em> ` : ''}${esc(sp.name)}${c.s.kept ? '<small>kept</small>' : ''}${why ? `<small>${esc(why)}</small>` : ''}</button>`;
-    }).join('') + (full ? '<p>The tank is full: sell one, or fit more room at the computer.</p>' : '');
+    }).join('') + (full ? '<p>The tank is full: sell one, or buy more room below.</p>' : '');
+    this.root.querySelector('.gl-catch').insertAdjacentHTML('beforeend', roomBtn);
     let html = '';
     if (!nShown) html += `<div class="gl-empty">The tank is empty. Put in a live animal from your catch (on the right).</div>`;
     const d = this.open && A.display[this.open], a = this.open && this.anim.get(this.open);

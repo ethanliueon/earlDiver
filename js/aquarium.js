@@ -17,7 +17,7 @@ export const WINGS = [
 export const WING_BY_ID = Object.fromEntries(WINGS.map((w) => [w.id, w]));
 // room for animals: four to start, two more for each refit, up to twenty
 export const GALLERY_STEPS = [200, 600, 1800, 5000, 12000, 30000, 70000, 150000];
-export const gallerySlots = (P) => 4 + 2 * Math.min(GALLERY_STEPS.length, P.galleryLv || 0);
+export const gallerySlots = (P) => 5 + 2 * Math.min(GALLERY_STEPS.length, P.galleryLv || 0); // (3.0.15) starts at 5
 
 // which wing an animal belongs in (where it lives, and where it was caught)
 export function zoneOf(spec) {

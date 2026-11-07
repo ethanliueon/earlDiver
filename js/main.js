@@ -215,7 +215,12 @@ const ui = new UI({
   onDisplay: (k) => displaySpecimen(k),
   onCaveOffer: () => caveOffer(),
   onWare: (k) => wareBuy(k),
-  onTank: (act, where, i, to) => tankAction(act, where, i, to),
+  onTank: (act, where, i, to) => { // (3.0.15) a refusal is said inside the tank room too (the toasts are under it)
+    const n0 = hud.toasts.length, last0 = hud.toasts[n0 - 1];
+    const r = tankAction(act, where, i, to);
+    if (r === false && act !== 'swaps') { const t = hud.toasts[hud.toasts.length - 1]; g.roomMsg = { text: t && (t !== last0 || hud.toasts.length !== n0) ? t.text : (act === 'press' ? 'The chambers are full' : act === 'tobag' ? 'The bag is full' : 'The tank is full'), t: performance.now() }; }
+    return r;
+  },
   onSetTrap: (type, depth) => {
     const why = canSetHere(g); if (why) { hud.toast(why, 'warn'); return true; }
     if (trapsFree(g, type) <= 0) { hud.toast('None of those left to set', 'warn'); return false; }
@@ -503,6 +508,7 @@ function wareBuy(k) {
 function galleryAction(act, key, v) {
   const P = profile, A = aquariumOf(P);
   if (act === 'light') { A.light = key; saveProfile(P); return true; }
+  if (act === 'room') return buy('gallery'); // (3.0.15) more room, bought at the aquarium itself
   if (act === 'place') { // (2.6.8) from the catch into the tank, at the aquarium
     const [where, i] = key.split(':'), L = where === 'subTank' ? g.subTank : g.bag, s = L[+i];
     if (!s || (where === 'subTank' && !subAtBoat())) return false;

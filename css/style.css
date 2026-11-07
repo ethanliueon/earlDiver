@@ -1430,3 +1430,9 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .tr-card .acts button::before { content: '›'; position: absolute; left: 6px; top: 1px; font-size: 16px; color: var(--paint-dim, rgba(220,226,224,0.55)); }
 .tr-card .acts button:hover:not(:disabled), .tr-card .acts button:focus-visible { border-color: rgba(232,228,212,0.55); outline: none; }
 .tr-card .acts button:hover:not(:disabled)::before { color: var(--paint, #e8e4d4); }
+
+/* (3.0.15) the tank room's refusal: "The tank is full" and the like, for a moment over the room */
+.tr-msg { position: absolute; left: 50%; top: 9%; transform: translate(-50%, -6px); padding: 7px 16px; border-radius: 3px; font: 15px var(--serif); color: #f6d9b0; background: rgba(40,16,10,0.85); box-shadow: 0 0 0 1px rgba(230,120,80,0.55); opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 8; }
+.tr-msg.on { opacity: 1; transform: translate(-50%, 0); }
+.gl-catch .gl-room { margin-top: 10px; justify-content: center; font: 13px var(--mono); color: #f0dca0; border-color: rgba(201,166,90,0.6); }
+.gl-catch .gl-room::before { content: ''; }
