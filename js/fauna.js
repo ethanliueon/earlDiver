@@ -20,16 +20,25 @@ const BAIT = [
   { id: 51, min: 2, max: 150, n: [50, 90] },    // Atlantic mackerel
   { id: 62, min: 40, max: 400, n: [50, 90] },   // Alaska pollock
   { id: 161, min: 5, max: 350, n: [120, 200] }, // Antarctic krill
-  { id: 98, min: 250, max: 900, nightMin: 15, nightMax: 250, n: [60, 130] }, // spotted lanternfish
-  { id: 99, min: 200, max: 600, n: [25, 50] },  // silver hatchetfish
+  { id: 98, min: 250, max: 900, nightMin: 15, nightMax: 250, n: [90, 170] }, // spotted lanternfish
+  { id: 99, min: 200, max: 600, n: [45, 90] },  // silver hatchetfish
+  // (3.0.21) the twilight is the most crowded water in the sea: more of its small animals, in bigger schools
+  { id: 327, min: 250, max: 1000, n: [100, 180] }, // bristlemouth (the most numerous fish there is)
+  { id: 151, min: 200, max: 450, nightMin: 10, nightMax: 120, n: [50, 100] }, // firefly squid
+  { id: 484, min: 300, max: 650, n: [35, 70] },    // lovely hatchetfish
+  { id: 450, min: 300, max: 900, nightMin: 20, nightMax: 220, n: [70, 140] }, // glacier lanternfish
 ];
 
+const DEEP_HUNTER = (sp) => sp.cat === 'Deep Sea Fish' && /viper|dragon|angler|seadevil|sea devil|fangtooth|gulper|swallower|loosejaw|barbeled/i.test(sp.name);
 // Species that migrate up toward the surface at night and back down by day.
 const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90, 42]);
 // Where an animal actually lives, when the recorded range (the deepest and shallowest it was ever
 // found) is far wider than its everyday one. Day ranges; NIGHT is where night migrators rise to.
 const CORE = {
   188: [2500, 3000], // abyssal sleeper shark: never above 2,500 m
+  319: [500, 1500],  // Pacific viperfish (3.0.21)
+  487: [500, 1500],  // highfin dragonfish (3.0.21)
+  67: [30, 200],     // monkfish: a shelf fish on the bottom, not one of the deep anglers (3.0.21)
   99: [200, 600],     // silver hatchetfish (by day)
   98: [300, 1000], 162: [400, 2140], 110: [1000, 4720], 107: [600, 1200],
   100: [600, 2500],  // humpback anglerfish: adults mostly 1,000-2,000 m, rarely above 500
@@ -55,7 +64,7 @@ const CORE = {
   4: [3, 60], 10: [1, 50], 30: [20, 120], 15: [1, 60],
 };
 // night migrators: where they rise to after dark
-const NIGHT = { 99: [80, 400], 102: [200, 900], 103: [150, 600], 90: [150, 600], 42: [0, 100], 148: [0, 200], 151: [100, 400], 88: [10, 60], 105: [500, 1500] };
+const NIGHT = { 99: [80, 400], 102: [350, 900], 103: [350, 800], 90: [150, 600], 42: [0, 100], 148: [0, 200], 151: [100, 400], 88: [10, 60], 105: [500, 1500] };
 // How likely an animal is to be met at depth y: best through the middle of its everyday range,
 // a little less at its edges, and outside it rare (rarer the further out) - but never impossible
 // within the depths it has really been recorded at.
@@ -133,7 +142,7 @@ const COLD_BOTTOM = new Set([152, 154, 155, 156]), WARM_BOTTOM = new Set([153, 1
 // the twilight is lanternfish and hatchetfish, the midnight zone red shrimp, jellies and grenadiers, the
 // abyss and the trench grenadiers, cusk-eels, tripod fish and sea pigs, and an exotic stays an event.
 const CROWD = {
-  98: 7, 99: 5, 327: 8, 151: 5, 370: 6, 352: 3,          // twilight: lanternfish, hatchetfish, bristlemouth, firefly squid, red shrimp, strawberry squid
+  98: 14, 99: 10, 327: 16, 151: 10, 370: 12, 352: 4, 484: 10, 450: 12, // twilight: lanternfish, hatchetfish, bristlemouth, firefly squid, red shrimp, strawberry squid, lovely hatchetfish, glacier lanternfish (3.0.21: twice as common, to fill the water)
   176: 4, 407: 5, 109: 4, 333: 5, 334: 5, 338: 4, 383: 3, // midnight: Atolla and helmet jellies, grenadiers, slickhead, swimming sea cucumber
   332: 5, 110: 5, 170: 4,                                  // abyss and trench: cusk-eel, tripod fish, sea pig
 };
@@ -200,7 +209,7 @@ export class Fauna {
     return Math.round(base * (1 - dread * 0.95));
   }
   baitTarget(depth, dread) {
-    const base = depth < 150 ? (this.reefy ? 1 : 2) : depth < 600 ? 2 : depth < 1600 ? 1 : 0;
+    const base = depth < 150 ? (this.reefy ? 1 : 2) : depth < 1000 ? 4 : depth < 1600 ? 1 : 0; // (3.0.21) up to four schools through the twilight
     return Math.round(base * (1 - dread));
   }
   groupCount() {
@@ -441,8 +450,10 @@ export class Fauna {
     const [lo, hi] = this.depthBand(sp, x, night);
     // a deep animal (one that lives from 150 m down) is never met far above its band: none of the
     // rare strays into the shallows the records allow (no anglerfish at 130 m)
-    if (lo >= 150 && y < lo - Math.max(50, lo * 0.25)) return 0;
-    if (y >= lo && y <= hi) { const half = Math.max(1, (hi - lo) / 2); return 0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half); }
+    if (lo >= 150 && y < lo - (DEEP_HUNTER(sp) ? 20 : Math.max(50, lo * 0.25))) return 0; // (3.0.21: the deep's hunters, never above their band)
+    // (3.0.21) the deep's hunters grow commoner the deeper it is: a fifth as likely at 500 m, full from ~1,300 m, more below
+    const deepK = DEEP_HUNTER(sp) ? clamp(0.2 + (y - 500) / 1000, 0.2, 1.4) : 1;
+    if (y >= lo && y <= hi) { const half = Math.max(1, (hi - lo) / 2); return (0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half)) * deepK; }
     const d = y < lo ? lo - y : y - hi, scale = Math.max(30, (hi - lo) * 0.3);
     return 0.07 * Math.exp(-d / scale);
   }
@@ -450,6 +461,9 @@ export class Fauna {
   depthBand(sp, x, night) {
     const core = (night && NIGHT[sp.id]) || CORE[sp.id];
     let lo = core ? core[0] : sp.dmin, hi = Math.min(core ? core[1] : sp.dmax, this.W.floorAt(x) - 2);
+    // (3.0.21) the deep's hunters (viperfish, dragonfish, anglers and seadevils, fangtooths, gulpers, swallowers)
+    // never come above 500 m by day, or 350 m at night, whatever the records allow
+    if (DEEP_HUNTER(sp)) { lo = Math.max(lo, night ? 350 : 500); hi = Math.min(Math.max(hi, lo + 100, Math.min(sp.dmax, 3000)), this.W.floorAt(x) - 2); } // (and down as deep as each is ever found, to 3,000 m)
     if (MIGRATORS.has(sp.id) && !core) {
       if (night) hi = Math.min(hi, Math.max(lo + 30, 250));
       else lo = Math.max(lo, Math.min(hi - 30, 280));
