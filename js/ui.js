@@ -369,7 +369,16 @@ export class UI {
     body.innerHTML = (tab === 'catch' ? this.catchHtml(P, g) : this.equipHtml(P, g)) + tabs; // (3.0.33) the page switch: big, at the bottom middle
     // (3.0.33) the dive locker: a painted steel door, worn (textures.js), once
     const panel = $('inventory').querySelector('.inv-panel');
-    if (!panel.dataset.tex) { panel.dataset.tex = '1'; panel.style.backgroundImage = `radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.38) 100%), url(${lockerTexture(1200, 800)})`; panel.style.backgroundSize = 'auto, cover'; }
+    // (3.0.34) drawn for this window's size and layout: the seam between the halves, the dive log under his stand
+    requestAnimationFrame(() => {
+      const pr = panel.getBoundingClientRect(), right = panel.querySelector('.inv-right'), stage = panel.querySelector('.eq-stage');
+      if (!right || !stage || pr.width < 50) return;
+      const rr = right.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+      const W2 = Math.round(pr.width), H2 = Math.round(pr.height), split = Math.round(rr.left - pr.left - 12), tag = [Math.round(sr.left - pr.left + 80), Math.round(sr.bottom - pr.top + 52)];
+      const key = [W2, H2, split, tag].join(':'); if (panel.dataset.tex === key) return;
+      panel.dataset.tex = key;
+      panel.style.backgroundImage = `url(${lockerTexture(W2, H2, { split, tag })})`; panel.style.backgroundSize = '100% 100%';
+    });
     body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.renderInventory(); }));
     if (tab === 'gear') this.equipWire(P, g);
   }
