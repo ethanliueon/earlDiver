@@ -15,7 +15,7 @@ import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_G
 import { UPGRADES } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
 // (3.0.25) the open tank's lights, as the aquarium's
-const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], tint: null }, dim: { name: 'Dim', water: ['#0f3440', '#04151b'], tint: 'rgba(0,10,20,0.35)' }, red: { name: 'Red', water: ['#3a1416', '#12080a'], tint: 'rgba(120,10,10,0.28)' } };
+const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], tint: null }, dim: { name: 'Dim', water: ['#0f3440', '#04151b'], tint: 'rgba(0,10,20,0.45)', glow: true } }; // (3.0.26: no Red in the sub)
 
 const MAX_CHAMBERS = UPGRADES.pressTanks.base + UPGRADES.pressTanks.max;
 const CW = 150, CH = 330; // a chamber, in its own units
@@ -544,6 +544,15 @@ export class TankRoom {
       this.drawFish(ctx, g, s, a, L, false);
     }
     if (L0.tint) { ctx.fillStyle = L0.tint; ctx.fillRect(0, 0, w, h); }
+    // (3.0.26) in the dim, a deep animal's own light shows: a soft glow on each one that has it
+    if (L0.glow) for (const s of g.subTank) {
+      const sp = SPECIES_BY_ID[s.id], a = this.anim && this.anim.get(s);
+      if (!sp || !sp.v.glow || s.pressed || s.pile || s.cond <= 0.05 || !a || a.x === undefined) continue;
+      const r = 18 + Math.min(34, (s.len || 0.1) * 90), k = 0.75 + 0.25 * Math.sin(t * 1.6 + (s.len || 0) * 40);
+      const gl = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, r); gl.addColorStop(0, sp.v.glow + 'cc'); gl.addColorStop(0.35, sp.v.glow + '55'); gl.addColorStop(1, sp.v.glow + '00');
+      ctx.globalAlpha = k; ctx.fillStyle = gl; ctx.fillRect(a.x - r, a.y - r, r * 2, r * 2); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.7 * k; ctx.beginPath(); ctx.arc(a.x, a.y, 1.6, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+    }
     ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, 0, w, 8);
     ctx.restore();
     this.drawHatch(ctx, G.hatchL);

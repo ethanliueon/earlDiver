@@ -356,7 +356,7 @@ export class Renderer {
         // school fish carry faint belly photophores, not lamps: small, dim, and they never sum to a blaze
         // (6th field: the radius of a sharp light-organ core; marks a living light the torch can wash out)
         if (c.sp.v.glow && c.glimmer) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.4 + ppm * 0.08), 0.55 * bioPulse(c, t), Math.max(0.8, ppm * 0.05)]); // a lone one: its own light, flashing
-        else if (c.sp.v.glow && (glowSkip++ % 2 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.35), 0.45 * bioPulse(c, t), 0.7]); // (2.3.1: every second fish, a little brighter: a school reads as a drift of blue points)
+        else if (c.sp.v.glow && (glowSkip++ % 4 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.35), 0.45 * bioPulse(c, t), 0.7]); // (2.3.1: every second fish, a little brighter: a school reads as a drift of blue points)
         continue;
       }
       const isLive = c.variant || Ld > 150 || CACHE_SKIP.has(shape);
@@ -822,6 +822,12 @@ export class Renderer {
     }
 
     // ================= LIGHTING =================
+    // (3.0.26) a cap on the living lights a frame: those off screen dropped, and past 90 the small ones thinned
+    // evenly (a swarm of firefly squid could put hundreds here, each drawn twice)
+    { const W0 = this.W, H0 = this.H; let n = 0;
+      for (const p of glowPts) if (p[0] > -80 && p[0] < W0 + 80 && p[1] > -80 && p[1] < H0 + 80) glowPts[n++] = p;
+      glowPts.length = n;
+      if (n > 90) { const keep = [], small = []; for (const p of glowPts) (p[3] > ppm * 0.9 ? keep : small).push(p); const step = small.length / Math.max(1, 90 - keep.length); glowPts.length = 0; glowPts.push(...keep); for (let i = 0; i < small.length && glowPts.length < 90; i += Math.max(1, step)) glowPts.push(small[Math.floor(i)]); } }
     this.buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY);
     ctx.globalCompositeOperation = 'multiply';
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';

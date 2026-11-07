@@ -20,13 +20,12 @@ const BAIT = [
   { id: 51, min: 2, max: 150, n: [50, 90] },    // Atlantic mackerel
   { id: 62, min: 40, max: 400, n: [50, 90] },   // Alaska pollock
   { id: 161, min: 5, max: 350, n: [70, 120] }, // Antarctic krill
-  { id: 98, min: 250, max: 900, nightMin: 15, nightMax: 250, n: [50, 95] }, // spotted lanternfish
-  { id: 99, min: 200, max: 600, n: [35, 65] },  // silver hatchetfish
+  { id: 98, min: 250, max: 900, nightMin: 15, nightMax: 250, n: [30, 55] }, // spotted lanternfish
+  { id: 99, min: 200, max: 600, n: [20, 40] },  // silver hatchetfish
   // (3.0.21) the twilight is the most crowded water in the sea: more kinds of school; (3.0.22) each a little smaller, for smoothness
-  { id: 327, min: 250, max: 1000, n: [55, 100] }, // bristlemouth (the most numerous fish there is)
-  { id: 151, min: 200, max: 450, nightMin: 10, nightMax: 120, n: [35, 65] }, // firefly squid
-  { id: 484, min: 300, max: 650, n: [35, 70] },    // lovely hatchetfish
-  { id: 450, min: 300, max: 900, nightMin: 20, nightMax: 220, n: [40, 75] }, // glacier lanternfish
+  { id: 327, min: 250, max: 1000, n: [30, 55] }, // bristlemouth (the most numerous fish there is)
+  { id: 484, min: 300, max: 650, n: [20, 40] },    // lovely hatchetfish
+  { id: 450, min: 300, max: 900, nightMin: 20, nightMax: 220, n: [25, 45] }, // glacier lanternfish
 ];
 
 // (3.0.22) the twilight's everyday animals: most of the lone fish out there are these
@@ -211,7 +210,7 @@ export class Fauna {
     return Math.round(base * (1 - dread * 0.95));
   }
   baitTarget(depth, dread) {
-    const base = depth < 150 ? (this.reefy ? 1 : 2) : depth < 1000 ? 4 : depth < 1600 ? 1 : 0; // (3.0.21) up to four schools through the twilight
+    const base = depth < 150 ? (this.reefy ? 1 : 2) : depth < 1000 ? 2 : depth < 1600 ? 1 : 0; // (3.0.26) two schools through the twilight; the rest of its life comes singly
     return Math.round(base * (1 - dread));
   }
   groupCount() {
@@ -416,7 +415,7 @@ export class Fauna {
     // and shrimp scattered all through the water (not only in schools), so a rare fish is one among many
     const k = smoothstep(150, 500, cam.y) * (cam.y > 1500 ? 0.6 : 1);
     if (k <= 0) return;
-    const want = Math.round(40 * k);
+    const want = Math.round(60 * k); // (3.0.26: more of them, fewer in schools)
     let have = 0; for (const c of this.list) if (c.glimmer && !c.dead) have++;
     if (have >= want) return;
     // anywhere about the view, but out in the dark, well away from him and his lamps (a deep fish
