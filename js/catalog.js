@@ -126,6 +126,7 @@ export class Catalog {
         const k = Math.min(1, (P.cash || 0) / Math.max(1, wish.e.price));
         html += `<a href="#" class="cat-saving" data-go="${wish.e.key}"><img src="${this.pic(wish.e, 240, 128)}" alt=""><div><small>SAVING FOR</small><div class="nm">${wish.e.name}</div><div class="bar"><i style="width:${Math.round(k * 100)}%"></i></div></div><div class="amt">${money(Math.min(P.cash, wish.e.price), false)} of ${money(wish.e.price, false)}</div></a>`;
       } else html += `<p class="cat-lede">${this.cfg.lede}</p>`;
+      if (this.id === 'dave' && this.h.daveSays && this.h.daveSays()) html = `<div class="cat-says"><b>Dave:</b> “${this.h.daveSays()}”</div>` + html;
       let pick = this.cfg.newIn.map((k) => this.find(k)).filter((q) => q && !q.e.owned).slice(0, 3);
       if (!pick.length) pick = ITEM_CATS.flatMap((c) => this.entries(c)).filter((e) => !e.owned).sort((a2, b2) => b2.price - a2.price).slice(0, 3).map((e) => ({ e }));
       if (pick.length) html += `<h4>${this.id === 'dave' ? 'Just in' : this.id === 'station' ? 'Recently released' : 'New in'}</h4><div class="cat-grid">${pick.map((q) => this.card(q.e)).join('')}</div>`;

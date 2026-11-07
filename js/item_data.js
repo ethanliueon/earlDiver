@@ -188,6 +188,46 @@ export const DAVE_ROWS = [
   ['expedition', 'bag', 'large', 'rare', 1800, "Dave's expedition bag", "Dave's own design, patched twice.", 'Room for plenty', ''],
   ['rebreather', 'suit', 'rebreather', 'rare', 19000, 'Rebreather suit', 'A closed-circuit rig built into the suit.', 'Less air used, and no bubbles', ''],
   ['heated', 'suit', 'dry', 'rare', 6000, 'Heated drysuit', 'A drysuit with a battery and a warm vest under it.', 'Cold and pressure, deeper', '', ['warmth', 1]],
+  // (3.0.0) the rest of Dave's stock: his specialties (air, suits for depth, big-game nets) to 10+ each, and a
+  // few more of the rest. Mostly Rare; some Uncommon; a few Exotics. His own words on most of them.
+  // air
+  ['dv_steel', 'tank', 'steel', 'uncommon', 700, 'Steel 100, refilled', 'Hydro-tested last year. Probably.', 'More air', ''],
+  ['dv_big', 'tank', 'big', 'uncommon', 1500, 'Steel 130', 'Long, heavy and full.', 'Much more air', 'A little slower'],
+  ['dv_side', 'tank', 'side', 'rare', 3600, 'Sidemount pair', 'Two slung under the arms. Narrow profile for the caves.', 'A lot of air', ''],
+  ['dv_bigsteel', 'tank', 'big', 'rare', 2600, 'Deep steel 130', 'Painted black so nobody borrows it.', 'Much more air', 'A little slower', ['rebreathing', 1]],
+  ['dv_twin2', 'tank', 'twin', 'rare', 4600, 'Manifolded twins', 'Two cylinders, one isolator valve. If one fails, you still have half.', 'A lot of air', 'Slower', ['mending', 1]],
+  ['dv_scr', 'tank', 'rebreather', 'rare', 5200, 'Semi-closed rebreather', 'Lets a little go, keeps most of it.', 'Air for ages, no bubbles', ''],
+  ['dv_heliox', 'tank', 'twin', 'rare', 6400, 'Heliox twin set', "Mixed for the deep. Don't talk on it, you'll sound like a duck.", 'A lot of air, deep', 'Slower', ['warmth', 1]],
+  ['dv_bailout', 'tank', 'side', 'uncommon', 1900, 'Bailout pair', 'Two small ones for when the big one goes quiet.', 'More air', ''],
+  ['dv_ccr2', 'tank', 'rebreather', 'exotic', 21000, 'Navy prototype rebreather', 'Came down off a ship that was never there. Serial number filed off.', 'Air for a very long time, no bubbles', 'Costly'],
+  // suits for depth
+  ['dv_hard1', 'suit', 'hard', 'rare', 42000, 'Second-hand hardsuit', "Atmospheric hardsuit. Some dents. They're character.", 'Pressure hardly reaches him', 'Slow'],
+  ['dv_deepdry', 'suit', 'dry', 'uncommon', 2400, 'Deep drysuit', 'A thick trilaminate suit for the cold under the light.', 'Cold and pressure', ''],
+  ['dv_armour', 'suit', 'chain', 'rare', 5400, 'Shark armour', 'Chain-mail and plates. You will hear yourself coming.', 'Bites do little', 'Heavy'],
+  ['dv_crushdry', 'suit', 'dry', 'rare', 7800, 'Crush drysuit', 'Compressed neoprene: it does not get thinner as you go down.', 'Pressure, deeper', '', ['resilience', 1]],
+  ['dv_quietsuit', 'suit', 'rebreather', 'rare', 21000, 'Rebreather drysuit', 'The rebreather and a drysuit, all one. Warm and silent.', 'Less air, no bubbles, warm', ''],
+  ['dv_skin', 'suit', 'skin', 'uncommon', 800, 'Freediver skin', "Thin as anything. Don't go deep in it.", 'Speed', 'Air'],
+  ['dv_hot', 'suit', 'dry', 'rare', 9200, 'Heated deep suit', 'Wires in the lining and a battery on the hip.', 'Cold costs little, pressure deeper', '', ['warmth', 2]],
+  ['dv_iron', 'suit', 'hard', 'exotic', 88000, 'Iron Lung hardsuit', 'An old atmospheric suit from an oil company. It has been deeper than anything I own.', 'Pressure barely matters', 'Slow, and costly'],
+  // big-game nets
+  ['dv_bignet', 'net', 'big', 'uncommon', 1600, 'Big-game net', 'A wide hoop and big mesh.', 'Big fish', 'Small ones slip through'],
+  ['dv_dframe', 'net', 'big', 'rare', 5600, 'Heavy D-frame', 'Steel frame, net like rope.', 'Big fish, surely', 'Small ones slip through', ['performance', 1]],
+  ['dv_longbig', 'net', 'big', 'rare', 6200, 'Long big-game net', 'A long pole on the big hoop.', 'Big fish from further off', 'Slow', ['overreaching', 1]],
+  ['dv_gentlebig', 'net', 'big', 'rare', 5900, 'Soft big net', 'Knotless mesh, big enough for a shark pup.', 'Big fish arrive unmarked', ''],
+  ['dv_quickbig', 'net', 'big', 'rare', 6800, 'Light big-game net', 'Aluminium hoop: big, but it swings.', 'Big fish, and quicker', '', ['quickdraw', 1]],
+  ['dv_sure', 'net', 'sure', 'rare', 3900, "Dave's own hoop", "I made this. Don't tell anyone it's an old bicycle wheel.", 'Fewer misses', ''],
+  ['dv_reach', 'net', 'reach', 'uncommon', 1300, 'Deep pole net', 'A long pole, weighted so it does not float up.', 'Reach', 'Slow'],
+  ['dv_monster', 'net', 'big', 'exotic', 24000, 'Trawl-wing net', 'Cut from the wing of a deep trawl and put on a hoop. Holds anything.', 'The biggest fish', 'Costly, slow'],
+  // a few more of the rest
+  ['dv_slurp2', 'slurp', 'wide', 'rare', 1900, 'Deep slurp gun', 'A wide barrel and a strong spring.', 'Bigger small fish', ''],
+  ['dv_slurp3', 'slurp', 'sipper', 'uncommon', 700, 'Little sipper', 'For the tiny things that live in the sponges.', 'The very small', ''],
+  ['dv_tag2', 'tag', 'sat', 'rare', 3800, 'Satellite tagger', 'Off a research boat that went bust.', 'Tags pay more', ''],
+  ['dv_tag3', 'tag', 'pole', 'uncommon', 600, 'Old pole tagger', 'Works. Mostly.', 'Cheap', ''],
+  ['dv_cam2', 'cam', 'housed', 'uncommon', 1800, 'Second-hand housing', 'A real camera in a housing with one cracked strobe.', 'Range', ''],
+  ['dv_fins2', 'fins', 'jet', 'rare', 2400, 'Deep jet fins', 'Heavy rubber, a big kick.', 'Sprint', ''],
+  ['dv_fins3', 'fins', 'split', 'uncommon', 700, 'Spare fins', 'From the box by the hatch.', 'Easy cruising', ''],
+  ['dv_bag2', 'bag', 'divided', 'rare', 2100, 'Sorting bag', 'Pockets, so the eels and the crabs keep apart.', 'Room, and they keep apart', ''],
+  ['dv_bag3', 'bag', 'light', 'uncommon', 900, 'Light bag', 'Mesh and webbing.', 'It hardly slows him', ''],
 ];
 
 // ---------- chest-only Exotics: lost expedition gear ----------

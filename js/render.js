@@ -1969,6 +1969,37 @@ export class Renderer {
       ctx.strokeStyle = '#3a342c'; ctx.lineWidth = Math.max(1.5, m * 0.14); // the anchor, on its side
       ctx.beginPath(); ctx.moveTo(X(8.6), Y(-0.15)); ctx.lineTo(X(10.4), Y(-0.15)); ctx.moveTo(X(8.6), Y(-0.15)); ctx.quadraticCurveTo(X(8.2), Y(-0.9), X(8.8), Y(-1.2)); ctx.moveTo(X(10.4), Y(-0.15)); ctx.lineTo(X(10.6), Y(-0.8)); ctx.stroke();
       ctx.strokeStyle = '#161616'; ctx.lineWidth = Math.max(2, m * 0.2); ctx.beginPath(); ctx.ellipse(X(-1.2), Y(-0.25), m * 0.7, m * 0.22, 0, 0, TAU); ctx.stroke(); // a tyre
+      // (3.0.0) more of Dave's life: the things a man accumulates living down here alone
+      // a vent pipe off the roof, the heater's warm water trickling up as bubbles
+      ctx.strokeStyle = '#3a3a34'; ctx.lineWidth = Math.max(1.5, m * 0.14); ctx.beginPath(); ctx.moveTo(X(2.4), Y(cy - R + 0.1)); ctx.lineTo(X(2.4), Y(cy - R - 1.1)); ctx.lineTo(X(2.9), Y(cy - R - 1.4)); ctx.stroke();
+      ctx.fillStyle = 'rgba(210,230,235,0.5)';
+      for (let k = 0; k < 5; k++) { const ph = (t * 0.35 + k / 5) % 1; ctx.beginPath(); ctx.arc(X(2.95 + Math.sin(ph * 9 + k) * 0.15), Y(cy - R - 1.5 - ph * 5), Math.max(0.8, m * (0.05 + 0.06 * ph)), 0, TAU); ctx.fill(); }
+      // a TV dish bolted to the roof at the east end, bent, pointing at nothing
+      ctx.save(); ctx.translate(X(3.7), Y(cy - R - 0.5)); ctx.rotate(-0.5);
+      ctx.fillStyle = '#b8b4a6'; ctx.beginPath(); ctx.ellipse(0, 0, m * 0.55, m * 0.2, 0, Math.PI, TAU); ctx.fill();
+      ctx.strokeStyle = '#5a5a52'; ctx.lineWidth = Math.max(1, m * 0.05); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -m * 0.55); ctx.stroke(); ctx.restore();
+      ctx.strokeStyle = '#4a4a44'; ctx.lineWidth = Math.max(1, m * 0.07); ctx.beginPath(); ctx.moveTo(X(3.7), Y(cy - R - 0.3)); ctx.lineTo(X(3.7), Y(cy - R + 0.1)); ctx.stroke();
+      // his spare wetsuit and a towel hung on the net line to "dry"
+      const hang = (hx, hy, w, h, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(X(hx - w / 2), Y(hy)); ctx.lineTo(X(hx + w / 2), Y(hy)); ctx.lineTo(X(hx + w / 2 + Math.sin(t * 0.7 + hx) * 0.08), Y(hy + h)); ctx.lineTo(X(hx - w / 2 + Math.sin(t * 0.7 + hx) * 0.08), Y(hy + h)); ctx.closePath(); ctx.fill(); };
+      const lineY = (x) => ny0 + (ny1 - ny0) * ((x - nx0) / (nx1 - nx0));
+      hang(-5.4, lineY(-5.4), 0.7, 1.7, '#16181a'); ctx.fillStyle = '#16181a'; ctx.fillRect(X(-5.75), Y(lineY(-5.4) + 0.15), m * 0.7 * 0.32, m * 0.9); // the suit, an arm hanging down
+      hang(-7.0, lineY(-7.0), 0.55, 0.9, '#a84a3a'); ctx.fillStyle = 'rgba(240,220,180,0.6)'; ctx.fillRect(X(-7.27), Y(lineY(-7.0) + 0.35), m * 0.55, m * 0.08); // a striped towel
+      // an old brass diving helmet on the crates, and a bucket of kelp he keeps "for the colour"
+      const hx2 = X(7.65), hy2 = Y(-2.05), hr = m * 0.42;
+      const bg2 = ctx.createRadialGradient(hx2 - hr * 0.3, hy2 - hr * 0.3, hr * 0.1, hx2, hy2, hr); bg2.addColorStop(0, '#d8b060'); bg2.addColorStop(1, '#6a4c18');
+      ctx.fillStyle = bg2; ctx.beginPath(); ctx.arc(hx2, hy2, hr, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(40,50,46,0.85)'; ctx.beginPath(); ctx.arc(hx2 + hr * 0.25, hy2, hr * 0.42, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#8a6a2a'; ctx.lineWidth = Math.max(1, m * 0.06); ctx.beginPath(); ctx.arc(hx2 + hr * 0.25, hy2, hr * 0.42, 0, TAU); ctx.stroke();
+      ctx.fillStyle = '#7a5a20'; ctx.fillRect(hx2 - hr * 0.8, hy2 + hr * 0.75, hr * 1.6, hr * 0.3); // its breastplate rim
+      ctx.fillStyle = '#5a6a6a'; ctx.beginPath(); ctx.moveTo(X(5.2), Y(-0.75)); ctx.lineTo(X(5.9), Y(-0.75)); ctx.lineTo(X(5.8), Y(0)); ctx.lineTo(X(5.3), Y(0)); ctx.closePath(); ctx.fill(); // the bucket
+      ctx.strokeStyle = '#5a7a3a'; ctx.lineWidth = Math.max(1, m * 0.07);
+      for (let k = 0; k < 4; k++) { const bx = 5.35 + k * 0.14; ctx.beginPath(); ctx.moveTo(X(bx), Y(-0.75)); ctx.quadraticCurveTo(X(bx + Math.sin(t * 0.8 + k) * 0.3), Y(-1.6), X(bx + Math.sin(t * 0.6 + k * 2) * 0.4), Y(-2.2 - k * 0.15)); ctx.stroke(); }
+      // a lifebuoy on a hook by the hatch, and his name stencilled on a box under it
+      ctx.strokeStyle = '#e06a3a'; ctx.lineWidth = Math.max(1.5, m * 0.16); ctx.beginPath(); ctx.arc(X(4.2), Y(cy + 0.5), m * 0.42, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = '#f0e8d8'; ctx.lineWidth = Math.max(1.5, m * 0.16); for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(X(4.2), Y(cy + 0.5), m * 0.42, k * Math.PI / 2, k * Math.PI / 2 + 0.35); ctx.stroke(); }
+      if (m > 6) { ctx.fillStyle = '#3e3424'; ctx.fillRect(X(3.4), Y(-0.85), m * 1.3, m * 0.85); ctx.fillStyle = '#d8c8a0'; ctx.font = `700 ${Math.round(m * 0.3)}px monospace`; ctx.textAlign = 'center'; ctx.fillText('DAVE', X(4.05), Y(-0.3)); ctx.textAlign = 'left'; }
+      // a string of little bulbs along the hull's belly, one of them dead
+      for (let k = 0; k < 9; k++) { const bx = x0 + 0.8 + k * 1.05, by = cy + R * 0.92 + Math.sin(k * 0.9) * 0.12; ctx.fillStyle = k === 5 ? '#4a4030' : `rgba(255,${200 + (k % 3) * 15},120,${(0.75 + 0.25 * Math.sin(t * 2 + k)).toFixed(2)})`; ctx.beginPath(); ctx.arc(X(bx), Y(by), Math.max(1, m * 0.08), 0, TAU); ctx.fill(); }
       ctx.restore();
     }
     // the canyon's current: silt streaming down and out toward the deep

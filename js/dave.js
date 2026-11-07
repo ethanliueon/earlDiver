@@ -55,6 +55,18 @@ export class DaveShop {
     P.daveVisits = n + 1; this.h.save && this.h.save();
     this.render();
   }
+  // (3.0.0) for his website: what he says as you log on, and the page of what he buys
+  says() { return this.line; }
+  findsHtml() {
+    const g = this.h.getGame(); if (!g) return '';
+    const pay = this.h.payFinds ? this.h.payFinds() : 1;
+    const finds = DAVE_FINDS.filter((k) => (g.inv[k] || 0) > 0);
+    let html = `<h2>Dave buys</h2><p class="cat-lede">Pearls, sapphires, whalebone, glass sponge, nodules. Whatever odd thing you find down here, I pay a quarter more than that boat of yours.</p>`;
+    if (!finds.length) return html + '<p class="cat-lede">Nothing on you he wants, right now.</p>';
+    html += `<table class="cat-cartlist">${finds.map((k) => { const n = g.inv[k], each = GOODS[k].price * DAVE_RATE * pay; return `<tr><td>${esc(GOODS[k].name)}${n > 1 ? ` ×${n}` : ''}<small>${money(each)} each</small></td><td class="pr">${money(each * n, false)}</td><td><button class="cat-mini" data-sellfind="${k}">Sell</button></td></tr>`; }).join('')}</table>`;
+    if (finds.length > 1) { const tot = finds.reduce((a, k) => a + GOODS[k].price * DAVE_RATE * pay * g.inv[k], 0); html += `<button class="cat-btn" data-sellfind="all">Sell him the lot · ${money(tot, false)}</button>`; }
+    return html;
+  }
   wares(P) {
     // (2.8.0) his items, suits included, from items.js (shop: 'dave'); bought ones go into the locker
     return Object.values(ITEMS).filter((it) => it.shop === 'dave').map((it) => { const w = wornItem(P, it.kind); return { key: 'item:' + it.id, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad,
