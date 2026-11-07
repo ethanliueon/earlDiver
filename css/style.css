@@ -1903,3 +1903,13 @@ body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { 
 #inventory .fp-note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.5); font: italic 14px var(--serif); color: var(--paint-dim); }
 /* (3.2.0) a refusal in the sub's rooms: low, above the bag note, clear of the warnings along the top */
 .tr-msg { top: auto; bottom: calc(14% + 46px); }
+/* (3.3.0) the alarm beacon: top right, left of the depth (and of the sub rooms' ? and ×), its alarms listed under it */
+#beacon { position: fixed; top: 6px; right: 236px; z-index: 60; display: flex; flex-direction: column; align-items: center; pointer-events: none; animation: bc-in 0.25s ease-out; }
+#beacon[hidden] { display: none; }
+#beacon canvas { position: static; inset: auto; display: block; width: 72px; height: 78px; }
+#beacon .bc-list { margin: -2px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+#beacon .bc-list li { padding: 3px 10px 2px; white-space: nowrap; border-radius: 2px; font: 600 11px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: #ffd8cc;
+  background: rgba(60,6,4,0.85); box-shadow: 0 0 0 1px rgba(255,80,60,0.6), 0 0 12px rgba(255,40,20,0.35); animation: bc-blink 1.2s steps(2, jump-none) infinite; }
+@keyframes bc-blink { 50% { color: #ff9a86; box-shadow: 0 0 0 1px rgba(255,80,60,0.9), 0 0 18px rgba(255,40,20,0.6); } }
+@keyframes bc-in { from { transform: translateY(-14px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #beacon .bc-list li { animation: none; } }

@@ -368,6 +368,11 @@ export class Audio {
   }
   ram() { this.implosionSmall(); this.creak(0.6); }
   implosionSmall() { this.burst('lowpass', 500, 0.6, 1.2, 0.8, this.brown); this.tone(45, 1.4, 0.7, 'sine', 0, 28); this.burst('bandpass', 1200, 4, 0.3, 0.2); }
+  // (3.3.0) the sub's klaxon: a rising whoop, twice, a little rough
+  alarm(vol = 0.05) {
+    if (this.muted) return;
+    for (const w of [0, 0.62]) { this.tone(420, 0.5, vol, 'sawtooth', w, 840); this.tone(423, 0.5, vol * 0.6, 'square', w, 846); }
+  }
   sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
   click() { if (!this.sfx('ui_click', 0.55)) this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }

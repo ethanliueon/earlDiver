@@ -38,6 +38,7 @@ import { Renderer, dayCycle } from './render.js';
 import { Hud, titled } from './hud.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
+import { Beacon } from './alarm.js';
 
 const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
@@ -79,6 +80,7 @@ function airOver(g) {
   el.classList.toggle('on', !!txt);
 }
 const audio = new Audio(); window.__earlAudio = audio; // (for testing)
+const beacon = new Beacon(audio);
 
 const keys = new Set();
 const PRY = new Set(['clam', 'mussel']);
@@ -2104,6 +2106,7 @@ function frame(now) {
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen()); // (3.0.0) the Quests button
   audio.update(g, dt);
   airOver(g);
+  beacon.update(ui.inventoryOpen && ui.inventoryOpen() ? null : g, dt); // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
   // dread colour grading on the scene canvas only
   const fx = g.fx;

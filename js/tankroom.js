@@ -359,11 +359,13 @@ export class TankRoom {
     const ctx = c.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.drawWall(ctx, G, dpr);
+    this.drawDepthLight(ctx, G, g);
     if (this.room === 'chambers') this.drawChamberRoom(ctx, G, g, dt);
     else if (this.room === 'big') this.drawBigRoom(ctx, G, g, dt);
     else this.drawTankRoom(ctx, G, g, dt);
     this.drawBag(ctx, G, g);
-    this.drawLamp(ctx, G);
+    this.drawLamp(ctx, G, g);
+    this.drawAlarmLight(ctx, G, g);
     this.drawDragged(ctx, G, g);
   }
   // the fish in hand follows the pointer, wriggling; where it would land glows
@@ -432,10 +434,12 @@ export class TankRoom {
     ctx.drawImage(this.wall, 0, 0, G.W, G.H);
   }
   // the caged bulkhead lamp, and its warm pool of light
-  drawLamp(ctx, G) {
-    const lx = G.W * 0.45, ly = 10, flick = 0.92 + 0.08 * Math.sin(this.t * 13) * Math.sin(this.t * 3.1);
+  drawLamp(ctx, G, g) {
+    // (3.3.0) the deeper, the more the room hangs on this lamp: its pool stronger, and it flickers more
+    const deep = clamp(Math.max(0, g ? g.sub.y : 0) / 700, 0, 1);
+    const lx = G.W * 0.45, ly = 10, flick = 1 - (0.08 + 0.1 * deep) * (0.5 - 0.5 * Math.sin(this.t * 13) * Math.sin(this.t * 3.1)) - (deep > 0.5 && Math.sin(this.t * 0.7) * Math.sin(this.t * 2.3) > 0.93 ? 0.35 : 0);
     const lg = ctx.createRadialGradient(lx, ly + 20, 10, lx, ly + G.H * 0.3, G.H * 0.85);
-    lg.addColorStop(0, `rgba(255,214,150,${(0.16 * flick).toFixed(3)})`); lg.addColorStop(1, 'rgba(255,214,150,0)');
+    lg.addColorStop(0, `rgba(255,214,150,${((0.12 + 0.14 * deep) * flick).toFixed(3)})`); lg.addColorStop(1, 'rgba(255,214,150,0)');
     ctx.fillStyle = lg; ctx.fillRect(0, 0, G.W, G.H);
     const vg = ctx.createRadialGradient(G.W / 2, G.H / 2, Math.min(G.W, G.H) * 0.4, G.W / 2, G.H / 2, Math.max(G.W, G.H) * 0.75);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
@@ -445,6 +449,48 @@ export class TankRoom {
     ctx.strokeStyle = '#2a2d2e'; ctx.lineWidth = 2;
     for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(lx + k * 7, ly); ctx.quadraticCurveTo(lx + k * 9, ly + 24, lx + k * 3, ly + 24); ctx.stroke(); }
     ctx.beginPath(); ctx.ellipse(lx, ly + 12, 19, 13, 0, 0, TAU); ctx.stroke();
+  }
+  // (3.3.0) the light in the sub by depth, on the walls and floor (the tanks and chambers are drawn over it, so
+  // they always read): near the surface daylight through the hull's ports, a cool blue-green wash and moving
+  // ripples; through the twilight it fades to deep blue; below, only the lamp, the corners going black
+  drawDepthLight(ctx, G, g) {
+    const d = Math.max(0, g.sub.y), day = Math.pow(clamp(1 - d / 450, 0, 1), 1.4), dark = clamp((d - 30) / 900, 0, 1);
+    const sea = seaAt(d);
+    ctx.save();
+    if (day > 0.01) {
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = `rgba(${sea.map((v) => Math.round(v * 0.55)).join(',')},${(0.5 * day).toFixed(3)})`; ctx.fillRect(0, 0, G.W, G.H);
+      // ripples of sunlight, wandering over the plates
+      ctx.globalAlpha = 0.09 * day; ctx.fillStyle = 'rgb(200,240,235)';
+      for (let k = 0; k < 7; k++) {
+        const y0 = G.H * (0.08 + k * 0.12), t = this.t * (0.35 + k * 0.04) + k * 1.7;
+        ctx.beginPath(); ctx.moveTo(0, y0);
+        for (let x = 0; x <= G.W; x += 40) ctx.lineTo(x, y0 + Math.sin(x * 0.006 + t) * 22 + Math.sin(x * 0.017 - t * 1.3) * 8);
+        for (let x = G.W; x >= 0; x -= 40) ctx.lineTo(x, y0 + 10 + Math.sin(x * 0.006 + t + 0.4) * 22 + Math.sin(x * 0.017 - t * 1.3 + 0.5) * 8);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    // the dark: everything but the lamp's pool, deeper and bluer as she goes down
+    if (dark > 0.01) {
+      ctx.globalCompositeOperation = 'source-over';
+      const lx = G.W * 0.45, dg = ctx.createRadialGradient(lx, 30, G.H * 0.08, lx, G.H * 0.3, Math.max(G.W, G.H) * 0.8);
+      dg.addColorStop(0, `rgba(2,6,14,${(0.15 * dark).toFixed(3)})`); dg.addColorStop(0.45, `rgba(2,6,14,${(0.45 * dark).toFixed(3)})`); dg.addColorStop(1, `rgba(1,3,8,${(0.8 * dark).toFixed(3)})`);
+      ctx.fillStyle = dg; ctx.fillRect(0, 0, G.W, G.H);
+    }
+    ctx.restore();
+  }
+  // (3.3.0) when the alarm is on: the beacon's red light sweeping round the room
+  drawAlarmLight(ctx, G, g) {
+    const A = g.alarm; if (!A) return;
+    const face = Math.max(0, Math.cos(A.rot)), bx = G.W - 272, sweep = Math.sin(A.rot);
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = `rgba(150,10,4,${(0.05 + 0.12 * face).toFixed(3)})`; ctx.fillRect(0, 0, G.W, G.H);
+    // the beam across the wall
+    const x = bx + sweep * G.W * 0.7, rg = ctx.createRadialGradient(x, G.H * 0.35, 10, x, G.H * 0.35, G.H * 0.6);
+    rg.addColorStop(0, `rgba(255,40,20,${(0.22 * (0.4 + 0.6 * face)).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,40,20,0)');
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, G.W, G.H);
+    ctx.restore();
   }
   drawHatch(ctx, h, label) {
     // a round watertight door in the bulkhead, dogged shut, with its handwheel
