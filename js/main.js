@@ -905,7 +905,7 @@ function tutor() {
     if (bd > 3.2) {
       text = 'Swim to the orange fish'; toLabel = 'Swim here';
       // (4.3.5) how to sprint, until he has: the right mouse button held, or Shift
-      if (!P.tutSprint && bd > 5) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' };
+      if (!P.tutSprinted) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; // (4.3.9) the whole swim there
       return;
     }
     doWhat(tf);
@@ -924,7 +924,7 @@ function tutor() {
     // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
     // The step is only done at the surface, so the claim is never made underwater.
     const part = firstFishPart(P);
-    if (part === 3) { text = 'Nice catch! Now swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 }; }
+    if (part === 3) { text = 'Nice catch! Now swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 }; if (!P.tutSprinted && !e.inSub) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; }
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
@@ -1096,7 +1096,11 @@ function readMove() {
   // from the keys, the arrows or the mouse, so nothing upward or downward ever reaches the walking
   if (g.aboard) y = 0;
   const sprint = keys.has('shift') || !!mouse.rdown;
-  if (sprint && (x || y) && profile && profile.tut === 'on' && !profile.tutSprint) { profile.tutSprint = true; saveProfile(profile); } // (4.3.5) he has sprinted: the hint goes
+  // (4.3.9) the sprint hint goes once he has sprinted for about a second while it was showing (a tap doesn't count)
+  if (sprint && (x || y) && profile && profile.tut === 'on' && !profile.tutSprinted && g.tut && g.tut.spot && g.tut.spot.act === 'sprint') {
+    const tNow = performance.now(); g.tutSprintT = (g.tutSprintT || 0) + Math.min(0.1, (tNow - (g.tutSprintAt || tNow)) / 1000); g.tutSprintAt = tNow;
+    if (g.tutSprintT > 1) { profile.tutSprinted = true; saveProfile(profile); }
+  } else g.tutSprintAt = 0;
   return { x, y, sprint };
 }
 
