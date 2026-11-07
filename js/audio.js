@@ -133,7 +133,7 @@ export class Audio {
   // one source with its own gain (so two can cross-fade), played through from the start
   playSource(id, fadeIn) {
     const s = this.ac.createBufferSource(), gn = this.ac.createGain(), now = this.ac.currentTime;
-    s.buffer = this.musicBufs[id]; s.loop = true; // (3.0.1) it loops; a piece ends by fading, never by running out s.connect(gn).connect(this.musicLP);
+    s.buffer = this.musicBufs[id]; s.loop = true; s.connect(gn).connect(this.musicLP); // (3.0.1) it loops; a piece ends by fading, never by running out. (3.0.7) the connect had slipped into this comment: the music played into nothing
     gn.gain.setValueAtTime(fadeIn ? 0.0001 : 1, now); if (fadeIn) gn.gain.exponentialRampToValueAtTime(1, now + fadeIn);
     s.start(0, 0);
     const src = { s, gn, id };
@@ -390,7 +390,7 @@ export class Audio {
     // the lapping plays only while air is going in (his tank, or the sub's cabin), and stops as it fills
     const sub = g.sub, refilling = atSurface && (e.inSub ? sub.o2 < sub.o2Max - 0.05 || e.o2 < e.o2Max - 0.05 : e.o2 < e.o2Max - 0.05);
     this.surf.g.gain.setTargetAtTime(under || (this.lapping && refilling) ? 0 : 0.016 + g.waveBoost * 0.05, now, 0.3);
-    if (this.lapping) this.lapping.g.gain.setTargetAtTime(refilling ? 0.22 : 0, now, refilling ? 0.25 : 0.2);
+    if (this.lapping) this.lapping.g.gain.setTargetAtTime(refilling ? 0.13 : 0, now, refilling ? 0.25 : 0.2);
     if (atSurface && (g.dayEff || 0) > 0.3) {
       this.gullT = (this.gullT ?? 6 + Math.random() * 10) - dt;
       if (this.gullT <= 0) { this.gullT = 14 + Math.random() * 26; this.sfx('seagull', 0.35 + Math.random() * 0.15, 0.92 + Math.random() * 0.16); }
