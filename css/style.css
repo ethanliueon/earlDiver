@@ -1987,3 +1987,5 @@ body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { 
 /* the help: a page of the manual, pinned up */
 .tr-help { top: 66px; padding: 16px 20px 10px; border-radius: 2px; background: linear-gradient(180deg, #ece2c6, #dccfa8); color: #2b2418; font: 15px/1.45 var(--serif);
   box-shadow: 0 1px 0 #b8a878, 0 10px 24px rgba(0,0,0,0.5); transform: rotate(-0.6deg); }
+/* (3.6.0) in the sub's rooms the beacon is part of the room (drawn there); only its alarm tags show over it */
+body:has(#tankroom:not([hidden])) #beacon canvas { visibility: hidden; }

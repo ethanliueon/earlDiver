@@ -14,7 +14,8 @@ import { xEyes } from './gallery.js';
 import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf} from './capture.js';
 import { UPGRADES } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
-import { paintedText, depthCounter, hatchRim, paperTag, chalkText, chalkArrow, chalkStroke, toggleSwitch, brassTag, ease } from './fittings.js';
+import { paintedText, depthCounter, hatchRim, paperTag, instructionPlate, cleanPatch, cappedFlange, hoseCoil, hazardTape, toggleSwitch, brassTag, ease } from './fittings.js';
+import { drawBeacon } from './alarm.js';
 // (3.0.25) the open tank's lights, as the aquarium's
 const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], tint: null }, dim: { name: 'Dim', water: ['#0f3440', '#04151b'], tint: 'rgba(0,10,20,0.45)', glow: true } }; // (3.0.26: no Red in the sub)
 
@@ -188,7 +189,7 @@ export class TankRoom {
       big: narrow ? { x: W * 0.05, y: H * 0.36, w: W * 0.9, h: H * 0.2 } : { x: W * 0.16, y: H * 0.42, w: W * 0.68, h: Math.min(H * 0.3, W * 0.17) }, // (3.2.1) wider, centred
       // the catch bag hangs on a hook in each room (on the left of the chamber room, the right of the
       // tank room); it grows with what is in it, and its tags hang below it on cords
-      hook: this.room === 'chambers' ? (narrow ? { x: W * 0.87, y: H * 0.1 } : { x: W * 0.085, y: H * 0.16 }) : (narrow ? { x: W * 0.84, y: this.room === 'big' ? H * 0.1 : H * 0.5 } : { x: W * 0.87, y: H * 0.16 }),
+      hook: this.room === 'chambers' ? (narrow ? { x: W * 0.87, y: H * 0.1 } : { x: W * 0.085, y: Math.max(H * 0.16, 190) }) : (narrow ? { x: W * 0.84, y: this.room === 'big' ? H * 0.1 : H * 0.5 } : { x: W * 0.87, y: H * 0.16 }),
       bagTags: !(narrow && this.room === 'chambers'),
       bagH: (n) => 84 + Math.min(4, n) * 22,
       bagTag(i, n) { return narrow ? [W * 0.4, H * 0.5 + i * 104] : [this.hook.x - 8, this.hook.y + 8 + 84 + Math.min(4, n) * 22 + 34 + i * 100]; } };
@@ -398,6 +399,8 @@ export class TankRoom {
     this.drawBag(ctx, G, g);
     this.drawHint(ctx, G, g);
     this.drawLamp(ctx, G, g);
+    // (3.6.0) the alarm beacon, a fixture: always hanging from the ceiling, dark until something is wrong
+    drawBeacon(ctx, G.W - 279, 0, 0.9, g.alarm ? g.alarm.rot : 0, !!g.alarm);
     this.drawCounter(ctx, G, g);
     this.drawAlarmLight(ctx, G, g);
     this.drawDragged(ctx, G, g);
@@ -411,7 +414,7 @@ export class TankRoom {
   }
   // the depth counter, screwed to the wall beside the name
   drawCounter(ctx, G, g) {
-    depthCounter(ctx, (this.signW || 300) + 22, G.narrow ? 12 : 18, this.shownDepth || 0, { warn: g.sub.y > g.sub.rated, t: this.t });
+    depthCounter(ctx, 24, G.narrow ? 60 : 76, this.shownDepth || 0, { warn: g.sub.y > g.sub.rated, t: this.t }); // (3.6.0) under the name, clear of the message line
   }
   // the dark wipe of a hatch
   drawWipe(ctx, G) {
@@ -427,22 +430,15 @@ export class TankRoom {
     ctx.fillStyle = gr; ctx.fillRect(x0 - edge, 0, x1 - x0 + edge * 2, G.H);
     ctx.restore();
   }
-  // (3.5.0) a hint in chalk on the bulkhead by the bag, with an arrow to where its fish go; only until he has
-  // moved a few fish (or seen it a few times)
+  // (3.6.0) a hint as an instruction plate riveted to the bulkhead by the bag, engraved, pointing the way; it
+  // fades for good once he has moved a few fish (or seen it a few times)
   drawHint(ctx, G, g) {
     const P = g.profile || {}, tips = P.tips || {};
-    if (!g.bag.length || this.drag || this.trans || (tips.drags || 0) >= 3 || (tips.opens || 0) > 6 || G.narrow) return;
-    const hk = G.hook, by = hk.y + 8 + G.bagH(g.bag.length) + 44, a = 0.55;
-    if (this.room === 'chambers') {
-      chalkText(ctx, 'drag a fish', hk.x - 70, by, 24, { alpha: a }); chalkText(ctx, 'into a chamber', hk.x - 70, by + 26, 24, { alpha: a });
-      const c = G.chambers[0]; chalkArrow(ctx, hk.x + 70, by + 18, c.x + 18, by - 10, { alpha: a, bend: 26 });
-    } else {
-      const fitted = hasBigTank(g), right = hk.x + 64;
-      const [l1, l2] = this.room === 'tank' ? ['drag a fish', 'into the tank'] : fitted ? ['drag a big one', 'into the large tank'] : ['the open tank', 'is next door'];
-      chalkText(ctx, l1, right, by, 24, { alpha: a, align: 'right' }); chalkText(ctx, l2, right, by + 26, 24, { alpha: a, align: 'right' });
-      if (this.room === 'tank') { const T = G.tank; chalkArrow(ctx, right - 150, by + 16, T.x + T.w - 26, by + 30, { alpha: a, bend: -20 }); }
-      else if (fitted) { const B = G.big; chalkArrow(ctx, right - 160, by + 16, B.x + B.w - 40, B.y + 16, { alpha: a, bend: -10 }); }
-    }
+    if (!g.bag.length || this.drag || (tips.drags || 0) >= 3 || (tips.opens || 0) > 6 || G.narrow) return;
+    const hk = G.hook, by = hk.y + 8 + G.bagH(g.bag.length) + 30;
+    const L = this.room === 'chambers' ? ['DRAG SPECIMENS', 'BAG  TO  CHAMBER'] : this.room === 'tank' ? ['DRAG SPECIMENS', 'BAG  TO  OPEN TANK'] : hasBigTank(g) ? ['LARGE SPECIMENS', 'BAG  TO  LARGE TANK'] : ['OPEN TANK', 'NEXT COMPARTMENT'];
+    if (this.room === 'chambers') instructionPlate(ctx, hk.x - 74, by, L, { arrow: 1 });
+    else instructionPlate(ctx, hk.x + 58, by, L, { align: 'right', arrow: -1 });
   }
   // the fish in hand follows the pointer, wriggling; where it would land glows
   drawDragged(ctx, G, g) {
@@ -840,17 +836,15 @@ export class TankRoom {
     if (fitted) this.bigFish = this.drawBigChamber(ctx, g, B, dt);
     else {
       this.bigFish = [];
-      // (3.5.0) where it will go, chalked on the bulkhead: its outline on the cradle, and a work-order tag
-      // hanging from the pipe run
-      const capW = Math.min(B.h * 0.5, B.w * 0.14), r = Math.min(16, B.h * 0.12), X0 = B.x + capW - 4, X1 = B.x + B.w, TOP = B.y, BOT = B.y + B.h;
-      const out = new Path2D();
-      out.roundRect(B.x, TOP - B.h * 0.1, capW, B.h * 1.2, 6);
-      out.moveTo(X0, TOP); out.lineTo(X1 - r, TOP); out.quadraticCurveTo(X1, TOP, X1, TOP + r); out.lineTo(X1, BOT - r); out.quadraticCurveTo(X1, BOT, X1 - r, BOT); out.lineTo(X0, BOT);
-      for (const fx of [0.18, 0.78]) { const x = X0 + (X1 - X0) * fx; out.moveTo(x, TOP - 2); out.lineTo(x, BOT + 2); }
-      chalkStroke(ctx, out, { alpha: 0.42, seed: 11 });
-      chalkText(ctx, '3 · or 1 big', X1 - 20, BOT - 26, 22, { align: 'right', alpha: 0.4 });
-      paperTag(ctx, B.x + B.w * 0.5, B.y + B.h * 0.02, 230, 150, { t: this.t, seed: 3, from: { x: B.x + B.w * 0.5 - 30, y: py + 6 }, stamp: 'WORK ORDER',
-        lines: [{ text: 'Large pressure tank', size: 25 }, { text: '3 animals, or 1 big one', size: 20, col: '#4a3c24' }, { text: "from the sub's yard (cabin computer)", size: 17, col: '#5a4a2c' }] });
+      // (3.6.0) the bay kept clear for it: the bulkhead cleaner there, the feed capped off with a blank, a hose
+      // hung up ready, its footprint taped out on the deck, and the order for it hanging from the capped feed
+      const capW = Math.min(B.h * 0.5, B.w * 0.14);
+      cleanPatch(ctx, B.x - 14, B.y - B.h * 0.2, B.w + 28, B.h * 1.4);
+      const fl = cappedFlange(ctx, B.x + capW * 0.55, py, B.y - B.h * 0.05);
+      hoseCoil(ctx, B.x + B.w * 0.88, B.y + B.h * 0.18, Math.min(40, B.h * 0.18));
+      hazardTape(ctx, B.x - 10, B.x + B.w + 10, G.floor + 3);
+      paperTag(ctx, fl.x + 150, fl.y + 26, 250, 196, { t: this.t, seed: 3, from: { x: fl.x + 10, y: fl.y - 2 }, stamp: 'NOT FITTED',
+        fields: [['ITEM', 'LARGE PRESSURE TANK'], ['HOLDS', '3, OR 1 OVER 1.2 M'], ['SUPPLIER', "THE SUB'S YARD"], ['ORDER AT', 'CABIN COMPUTER']] });
     }
     this.drawHatch(ctx, G.hatchL, 'L');
   }

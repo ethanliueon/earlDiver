@@ -44,18 +44,19 @@ export function paintedText(ctx, text, x, y, size, { col = 'rgba(214,206,172,1)'
 // ---------------- the depth counter ----------------
 // a brass-bezelled window of number drums, rolling as the sub goes down: each drum turns only while the ones to
 // its right roll over from 9, like an odometer. Past the sub's rating the window glows amber.
-export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'DEPTH · M' } = {}) {
-  const N = 4, dw = 22, dh = 32, pad = 8, W = N * dw + pad * 2 + 4, H = dh + pad * 2;
+export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'DEPTH · METRES' } = {}) {
+  // (3.6.0) larger, and the drums lit more evenly so the digits read at a glance
+  const N = 4, dw = 30, dh = 44, pad = 10, W = N * dw + pad * 2 + 4, H = dh + pad * 2;
   ctx.save(); ctx.translate(x, y);
   // the brass bezel, its screws
   const bz = ctx.createLinearGradient(0, 0, 0, H);
   bz.addColorStop(0, '#d8c48e'); bz.addColorStop(0.45, '#a88e52'); bz.addColorStop(1, '#6c5630');
-  ctx.fillStyle = '#1a1408'; ctx.beginPath(); ctx.roundRect(-2, -1, W + 4, H + 4, 7); ctx.fill();
-  ctx.fillStyle = bz; ctx.beginPath(); ctx.roundRect(0, 0, W, H, 6); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,240,200,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0.5, 0.5, W - 1, H - 1, 6); ctx.stroke();
-  for (const [sx, sy] of [[5, 5], [W - 5, 5], [5, H - 5], [W - 5, H - 5]]) {
-    ctx.fillStyle = '#5a4620'; ctx.beginPath(); ctx.arc(sx, sy, 2.2, 0, TAU); ctx.fill();
-    ctx.strokeStyle = '#2a2008'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(sx - 1.5, sy - 1); ctx.lineTo(sx + 1.5, sy + 1); ctx.stroke();
+  ctx.fillStyle = '#1a1408'; ctx.beginPath(); ctx.roundRect(-2, -1, W + 4, H + 4, 8); ctx.fill();
+  ctx.fillStyle = bz; ctx.beginPath(); ctx.roundRect(0, 0, W, H, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,240,200,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0.5, 0.5, W - 1, H - 1, 7); ctx.stroke();
+  for (const [sx, sy] of [[6, 6], [W - 6, 6], [6, H - 6], [W - 6, H - 6]]) {
+    ctx.fillStyle = '#5a4620'; ctx.beginPath(); ctx.arc(sx, sy, 2.4, 0, TAU); ctx.fill();
+    ctx.strokeStyle = '#2a2008'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(sx - 1.6, sy - 1); ctx.lineTo(sx + 1.6, sy + 1); ctx.stroke();
   }
   // the window, recessed
   const wx = pad + 2, wy = pad, ww = N * dw;
@@ -64,33 +65,32 @@ export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'D
   const d = Math.max(0, Math.min(9999.99, depth));
   for (let i = 0; i < N; i++) {
     const p = N - 1 - i, unit = Math.pow(10, p), v = d / unit, digit = Math.floor(v) % 10;
-    // it rolls only when everything to its right is about to turn over
-    // (each drum snaps over in the last fifth of its turn, so a number at rest reads cleanly)
+    // each drum snaps over in the last fifth of its turn, so a number at rest reads cleanly
     const snap = (q) => ease(clamp((q - 0.8) / 0.2, 0, 1));
     const lower = d % unit, roll = p === 0 ? snap(v - Math.floor(v)) : (lower >= unit - 1 ? snap(lower - (unit - 1)) : 0);
     const dx = wx + i * dw;
     const drum = ctx.createLinearGradient(0, wy, 0, wy + dh);
-    drum.addColorStop(0, '#1a1b1c'); drum.addColorStop(0.5, '#e9e4d4'); drum.addColorStop(1, '#1a1b1c');
+    drum.addColorStop(0, '#8e8a7e'); drum.addColorStop(0.22, '#e6e0cf'); drum.addColorStop(0.5, '#f2ecdc'); drum.addColorStop(0.78, '#e6e0cf'); drum.addColorStop(1, '#8e8a7e');
     ctx.fillStyle = drum; ctx.fillRect(dx + 1, wy, dw - 2, dh);
-    ctx.fillStyle = '#16120a'; ctx.font = `600 22px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#121008'; ctx.font = `600 31px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const off = roll * dh;
-    ctx.fillText(String(digit), dx + dw / 2, wy + dh / 2 - off);
-    ctx.fillText(String((digit + 1) % 10), dx + dw / 2, wy + dh / 2 + dh - off);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(dx, wy, 1, dh);
+    ctx.fillText(String(digit), dx + dw / 2, wy + dh / 2 + 1 - off);
+    ctx.fillText(String((digit + 1) % 10), dx + dw / 2, wy + dh / 2 + 1 + dh - off);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(dx, wy, 1.5, dh);
   }
-  // the drum's curve: dark at top and bottom, a glint across the glass
+  // the drum's curve, gently; a glint across the glass
   const sh = ctx.createLinearGradient(0, wy, 0, wy + dh);
-  sh.addColorStop(0, 'rgba(0,0,0,0.75)'); sh.addColorStop(0.3, 'rgba(0,0,0,0)'); sh.addColorStop(0.7, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.75)');
+  sh.addColorStop(0, 'rgba(0,0,0,0.38)'); sh.addColorStop(0.16, 'rgba(0,0,0,0)'); sh.addColorStop(0.84, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.38)');
   ctx.fillStyle = sh; ctx.fillRect(wx, wy, ww, dh);
-  if (warn) { ctx.fillStyle = `rgba(255,150,40,${(0.22 + 0.12 * Math.sin(t * 6)).toFixed(3)})`; ctx.fillRect(wx, wy, ww, dh); }
-  ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(wx, wy + 3, ww, 3);
+  if (warn) { ctx.fillStyle = `rgba(255,150,40,${(0.2 + 0.1 * Math.sin(t * 6)).toFixed(3)})`; ctx.fillRect(wx, wy, ww, dh); }
+  ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(wx, wy + 4, ww, 3);
   ctx.restore();
-  // engraved on the bezel, under the window
-  ctx.font = `600 8px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = 'rgba(255,240,200,0.5)'; ctx.fillText(label, W / 2, H + 12);
-  ctx.fillStyle = 'rgba(40,30,10,0.0)';
+  // engraved on a strip under the bezel
+  ctx.font = `600 9px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(label, W / 2 + 0.6, H + 14.6);
+  ctx.fillStyle = 'rgba(232,222,190,0.72)'; ctx.fillText(label, W / 2, H + 14);
   ctx.restore();
-  return { w: W, h: H + 14 };
+  return { w: W, h: H + 16 };
 }
 
 // ---------------- a hatch's rim ----------------
@@ -121,43 +121,154 @@ export function hatchRim(ctx, h, label, dir, hover = 0) {
 }
 
 // ---------------- paper ----------------
-// a manila work-order tag on string: a reinforced eyelet, a red stamp, handwriting; it sways a little
-export function paperTag(ctx, x, y, w, h, { stamp = 'WORK ORDER', lines = [], t = 0, seed = 1, from = null } = {}) {
-  const sway = Math.sin(t * 0.9 + seed) * 0.035 + Math.sin(t * 2.3 + seed) * 0.008;
-  // the string, from where it is tied down to the eyelet
+// a manila tag on string, printed and typed: the supplier's name, a form number, typed fields with dotted
+// leaders, a rubber stamp across it in red. It sways a little.
+export function paperTag(ctx, x, y, w, h, { title = 'BAYSIDE MARINE SUPPLY', form = 'WORK ORDER  No. 0417', fields = [], stamp = '', t = 0, seed = 1, from = null } = {}) {
+  const sway = Math.sin(t * 0.9 + seed) * 0.03 + Math.sin(t * 2.3 + seed) * 0.006;
   if (from) {
-    ctx.strokeStyle = 'rgba(200,184,140,0.85)'; ctx.lineWidth = 1.3;
-    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.quadraticCurveTo((from.x + x) / 2 + 6, (from.y + y) / 2 + 10, x + Math.sin(sway) * 14, y + 14); ctx.stroke();
+    ctx.strokeStyle = 'rgba(196,182,140,0.9)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.quadraticCurveTo((from.x + x) / 2 + 4, (from.y + y) / 2 + 6, x + Math.sin(sway) * 14, y + 14); ctx.stroke();
   }
-  ctx.save(); ctx.translate(x, y); ctx.rotate(sway - 0.04);
-  // the card: a clipped-corner tag, grain, a soft shadow
-  const tag = new Path2D(); const cc = 16;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(sway - 0.03);
+  const tag = new Path2D(); const cc = 18;
   tag.moveTo(-w / 2 + cc, 0); tag.lineTo(w / 2 - cc, 0); tag.lineTo(w / 2, cc); tag.lineTo(w / 2, h); tag.lineTo(-w / 2, h); tag.lineTo(-w / 2, cc); tag.closePath();
-  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4; ctx.fillStyle = '#d9c597'; ctx.fill(tag); ctx.restore();
-  const pg = ctx.createLinearGradient(0, 0, w * 0.3, h); pg.addColorStop(0, '#e6d4a6'); pg.addColorStop(1, '#c8b17e');
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 12; ctx.shadowOffsetY = 5; ctx.fillStyle = '#cdb98a'; ctx.fill(tag); ctx.restore();
+  const pg = ctx.createLinearGradient(0, 0, w * 0.2, h); pg.addColorStop(0, '#ddc99a'); pg.addColorStop(1, '#bfa874');
   ctx.fillStyle = pg; ctx.fill(tag);
   ctx.save(); ctx.clip(tag);
-  const r = rng(seed * 977); ctx.fillStyle = 'rgba(90,60,20,0.08)';
-  for (let i = 0; i < 160; i++) ctx.fillRect(-w / 2 + r() * w, r() * h, 1 + r() * 2, 1);
-  // a crease, and a damp stain at the bottom
-  ctx.strokeStyle = 'rgba(120,90,40,0.18)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-w / 2, h * 0.62); ctx.lineTo(w / 2, h * 0.58); ctx.stroke();
-  const st = ctx.createRadialGradient(w * 0.28, h, 2, w * 0.28, h, h * 0.5); st.addColorStop(0, 'rgba(110,80,30,0.25)'); st.addColorStop(1, 'rgba(110,80,30,0)'); ctx.fillStyle = st; ctx.fillRect(-w / 2, 0, w, h);
+  // card grain, a fold, a damp edge
+  const r = rng(seed * 977); ctx.fillStyle = 'rgba(80,56,20,0.07)';
+  for (let i = 0; i < 260; i++) ctx.fillRect(-w / 2 + r() * w, r() * h, 1 + r() * 2.5, 1);
+  ctx.strokeStyle = 'rgba(110,84,40,0.16)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-w / 2, h * 0.64); ctx.lineTo(w / 2, h * 0.6); ctx.stroke();
+  const st = ctx.createLinearGradient(0, h * 0.75, 0, h); st.addColorStop(0, 'rgba(90,64,24,0)'); st.addColorStop(1, 'rgba(90,64,24,0.18)'); ctx.fillStyle = st; ctx.fillRect(-w / 2, 0, w, h);
+  // the printed form: a rule, the supplier, the form number
+  const L = -w / 2 + 14, R = w / 2 - 14, ink = 'rgba(38,46,60,0.9)';
+  ctx.fillStyle = ink; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center';
+  ctx.font = `600 9.5px ${MONO}`; ctx.fillText(title, 0, 38);
+  ctx.fillStyle = 'rgba(38,46,60,0.75)'; ctx.fillRect(L, 43, R - L, 1);
+  ctx.font = `500 9px ${MONO}`; ctx.textAlign = 'left'; ctx.fillText(form, L, 56);
+  ctx.fillRect(L, 61, R - L, 0.8);
+  // typed fields: a label in print, dotted leaders, the value in type (a little uneven, as a typewriter is)
+  let fy = 78;
+  for (const [label, val] of fields) {
+    ctx.font = `500 8.5px ${MONO}`; ctx.fillStyle = 'rgba(38,46,60,0.7)'; ctx.fillText(label, L, fy);
+    const lw = ctx.measureText(label).width;
+    ctx.font = `500 11px ${MONO}`; const vw = ctx.measureText(val).width;
+    ctx.fillStyle = 'rgba(38,46,60,0.35)'; for (let dx = L + lw + 4; dx < R - vw - 4; dx += 4) ctx.fillRect(dx, fy - 1, 1, 1);
+    let cx = R - vw; for (const ch of val) { const rr = r(); ctx.fillStyle = `rgba(20,18,16,${(0.78 + rr * 0.2).toFixed(3)})`; ctx.fillText(ch, cx, fy + (rr - 0.5) * 0.8); cx += ctx.measureText(ch).width; }
+    fy += 18;
+  }
   ctx.restore();
-  ctx.strokeStyle = 'rgba(90,64,24,0.45)'; ctx.lineWidth = 1; ctx.stroke(tag);
-  // the eyelet
-  ctx.fillStyle = '#b89a58'; ctx.beginPath(); ctx.arc(0, 14, 7, 0, TAU); ctx.fill();
-  ctx.fillStyle = '#1c1a16'; ctx.beginPath(); ctx.arc(0, 14, 3.4, 0, TAU); ctx.fill();
-  // the stamp: red ink, a box, slightly crooked and uneven
-  ctx.save(); ctx.translate(0, 38); ctx.rotate(-0.05);
-  ctx.font = `15px ${STENCIL}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const sw = ctx.measureText(stamp).width + 18;
-  ctx.strokeStyle = 'rgba(168,40,30,0.75)'; ctx.lineWidth = 2; ctx.strokeRect(-sw / 2, -11, sw, 22);
-  ctx.fillStyle = 'rgba(168,40,30,0.8)'; ctx.fillText(stamp, 0, 1);
+  ctx.strokeStyle = 'rgba(90,64,24,0.5)'; ctx.lineWidth = 1; ctx.stroke(tag);
+  // the eyelet, a brass ring pressed into the card
+  ctx.fillStyle = '#9c8450'; ctx.beginPath(); ctx.arc(0, 14, 7, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,240,200,0.4)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 14, 6, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+  ctx.fillStyle = '#16140f'; ctx.beginPath(); ctx.arc(0, 14, 3.4, 0, TAU); ctx.fill();
+  // the rubber stamp: a double border, red ink that took unevenly
+  if (stamp) {
+    ctx.save(); ctx.translate(-w * 0.12, h - 24); ctx.rotate(-0.07);
+    ctx.font = `17px ${STENCIL}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const sw = ctx.measureText(stamp).width + 22, shh = 28;
+    const sc = document.createElement('canvas'); sc.width = Math.ceil(sw + 8); sc.height = shh + 8;
+    const k = sc.getContext('2d'); k.translate(4, 4);
+    k.strokeStyle = 'rgb(170,34,26)'; k.lineWidth = 2.2; k.strokeRect(0, 0, sw, shh); k.lineWidth = 1; k.strokeRect(3, 3, sw - 6, shh - 6);
+    k.font = `17px ${STENCIL}`; k.fillStyle = 'rgb(170,34,26)'; k.textAlign = 'center'; k.textBaseline = 'middle'; k.fillText(stamp, sw / 2, shh / 2 + 1);
+    const rs = rng(seed * 31 + 7); k.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 160; i++) { k.globalAlpha = 0.3 + rs() * 0.7; k.fillRect(rs() * sw, rs() * shh, 1 + rs() * 2, 1 + rs() * 1.5); }
+    const fade = k.createLinearGradient(0, 0, sw, 0); fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(0.85, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,0.5)');
+    k.globalAlpha = 1; k.fillStyle = fade; k.fillRect(-4, -4, sc.width, sc.height);
+    ctx.globalAlpha = 0.82; ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(sc, -sc.width / 2, -sc.height / 2);
+    ctx.restore();
+  }
   ctx.restore();
-  // the handwriting, in pencil-dark ink
-  ctx.fillStyle = '#2a2418'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  let ly = 72;
-  for (const L of lines) { ctx.font = `${L.size || 21}px ${HAND}`; ctx.fillStyle = L.col || '#2a2418'; ctx.fillText(L.text, -w / 2 + 14, ly); ly += (L.size || 21) * 1.05; }
+}
+
+// ---------------- engraved plates ----------------
+// an instruction plate: brushed aluminium, two rivets, the words engraved and filled black, as the labels on
+// real equipment are. `alpha` fades it (a plate taken down once he knows).
+export function instructionPlate(ctx, x, y, lines, { align = 'left', alpha = 1, arrow = 0 } = {}) {
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.font = `600 10.5px ${MONO}`;
+  const lw = Math.max(...lines.map((l) => ctx.measureText(l).width)), w = lw + 40 + (arrow ? 22 : 0), h = 14 + lines.length * 15;
+  const x0 = align === 'right' ? x - w : x;
+  ctx.translate(x0, y);
+  ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.roundRect(1, 2, w, h, 3); ctx.fill();
+  const al = ctx.createLinearGradient(0, 0, 0, h); al.addColorStop(0, '#c9cbc6'); al.addColorStop(0.5, '#a9aca6'); al.addColorStop(1, '#8c8f8a');
+  ctx.fillStyle = al; ctx.beginPath(); ctx.roundRect(0, 0, w, h, 3); ctx.fill();
+  // brushing
+  const r = rng(hash(lines.join('|'))); ctx.save(); ctx.beginPath(); ctx.roundRect(0, 0, w, h, 3); ctx.clip();
+  for (let i = 0; i < h; i += 1) { ctx.fillStyle = `rgba(255,255,255,${(r() * 0.08).toFixed(3)})`; ctx.fillRect(0, i, w, 1); }
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(3, 0.5); ctx.lineTo(w - 3, 0.5); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.roundRect(0.5, 0.5, w - 1, h - 1, 3); ctx.stroke();
+  for (const rx of [8, w - 8]) { ctx.fillStyle = '#6e716c'; ctx.beginPath(); ctx.arc(rx, h / 2, 2.6, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(rx - 0.7, h / 2 - 0.7, 1, 0, TAU); ctx.fill(); }
+  // the engraving: cut dark, a bright lip under each stroke
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  const tx = 20 + (arrow < 0 ? 22 : 0);
+  lines.forEach((l, i) => { const ly = 7 + 7.5 + i * 15; ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillText(l, tx, ly + 0.8); ctx.fillStyle = '#1c1e1d'; ctx.fillText(l, tx, ly); });
+  if (arrow) { // an engraved arrowhead, pointing the way
+    const ax = arrow > 0 ? w - 22 : 16, ay = h / 2;
+    ctx.fillStyle = '#1c1e1d'; ctx.beginPath();
+    if (arrow > 0) { ctx.moveTo(ax - 4, ay - 6); ctx.lineTo(ax + 5, ay); ctx.lineTo(ax - 4, ay + 6); } else { ctx.moveTo(ax + 4, ay - 6); ctx.lineTo(ax - 5, ay); ctx.lineTo(ax + 4, ay + 6); }
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  return { x: x0, y, w, h };
+}
+
+// ---------------- an empty bay ----------------
+// where equipment will go: the bulkhead there cleaner (no grime or rust collected where it is kept clear), a
+// grime line round the edge of it
+export function cleanPatch(ctx, x, y, w, h) {
+  ctx.save();
+  ctx.filter = 'blur(10px)';
+  ctx.fillStyle = 'rgba(200,210,205,0.07)'; ctx.fillRect(x, y, w, h);
+  ctx.filter = 'blur(3px)';
+  ctx.strokeStyle = 'rgba(14,10,6,0.3)'; ctx.lineWidth = 4; ctx.strokeRect(x, y, w, h);
+  ctx.filter = 'none';
+  ctx.restore();
+}
+// a capped flange at the end of a drop from the pipe run: a blank bolted over the end, a red blanking tag
+export function cappedFlange(ctx, x, top, y) {
+  ctx.save();
+  ctx.fillStyle = '#4b5355'; ctx.fillRect(x - 4, top, 8, y - top);
+  ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x - 3, top, 2, y - top);
+  ctx.fillStyle = '#606a6c'; ctx.fillRect(x - 8, top - 8, 16, 16);
+  // the flange and the blank
+  const fg = ctx.createLinearGradient(x - 18, 0, x + 18, 0); fg.addColorStop(0, '#3e4547'); fg.addColorStop(0.4, '#7a8487'); fg.addColorStop(1, '#2c3233');
+  ctx.fillStyle = fg; ctx.fillRect(x - 18, y, 36, 7);
+  ctx.fillStyle = '#8a3324'; ctx.fillRect(x - 18, y + 7, 36, 5); // the blank, painted red
+  ctx.fillStyle = '#c4c9c6'; for (const bx of [-13, -4.5, 4.5, 13]) { ctx.beginPath(); ctx.arc(x + bx, y + 9.5, 1.6, 0, TAU); ctx.fill(); }
+  ctx.restore();
+  return { x, y: y + 12 };
+}
+// a length of hose, coiled and hung on a wall hook
+export function hoseCoil(ctx, x, y, R = 30) {
+  ctx.save();
+  // a steel bracket bolted to the wall, its arm curled up
+  ctx.fillStyle = '#3a4142'; ctx.fillRect(x - 9, y - R - 20, 18, 14);
+  ctx.fillStyle = '#8a9294'; for (const bx of [-5, 5]) { ctx.beginPath(); ctx.arc(x + bx, y - R - 13, 1.6, 0, TAU); ctx.fill(); }
+  ctx.strokeStyle = '#4b5355'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x, y - R - 8); ctx.lineTo(x, y - R + 4); ctx.quadraticCurveTo(x, y - R + 12, x + 8, y - R + 8); ctx.stroke();
+  for (let i = 0; i < 4; i++) {
+    const dy = i * 3, rx = R * (1 - i * 0.04), ry = R * 0.86;
+    ctx.strokeStyle = '#0e1010'; ctx.lineWidth = 11; ctx.beginPath(); ctx.ellipse(x + i * 1.5, y + dy, rx, ry, 0.08, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = i % 2 ? '#2a2d2e' : '#353a3c'; ctx.lineWidth = 8.5; ctx.beginPath(); ctx.ellipse(x + i * 1.5, y + dy, rx, ry, 0.08, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(x + i * 1.5, y + dy - 2, rx, ry, 0.08, Math.PI * 1.1, Math.PI * 1.7); ctx.stroke();
+  }
+  // its brass coupling hanging down
+  ctx.strokeStyle = '#2a2d2e'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(x + R * 0.7, y + R * 0.5); ctx.quadraticCurveTo(x + R * 0.9, y + R * 1.3, x + R * 0.6, y + R * 1.6); ctx.stroke();
+  ctx.fillStyle = '#a88e52'; ctx.fillRect(x + R * 0.6 - 5, y + R * 1.6, 10, 9);
+  ctx.restore();
+}
+// hazard tape on the deck: worn yellow and black stripes marking out a footprint
+export function hazardTape(ctx, x0, x1, y, h = 9) {
+  ctx.save(); ctx.beginPath(); ctx.rect(x0, y, x1 - x0, h); ctx.clip();
+  ctx.fillStyle = 'rgba(196,160,40,0.75)'; ctx.fillRect(x0, y, x1 - x0, h);
+  ctx.fillStyle = 'rgba(18,16,12,0.85)';
+  for (let sx = x0 - h; sx < x1 + h; sx += 18) { ctx.beginPath(); ctx.moveTo(sx, y + h); ctx.lineTo(sx + 9, y + h); ctx.lineTo(sx + 9 + h, y); ctx.lineTo(sx + h, y); ctx.closePath(); ctx.fill(); }
+  // scuffed where boots go
+  const r = rng(Math.round(x0 * 7 + x1)); ctx.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < (x1 - x0) / 5; i++) { ctx.fillStyle = `rgba(30,30,28,${(0.2 + r() * 0.4).toFixed(3)})`; ctx.fillRect(x0 + r() * (x1 - x0), y + r() * h, 2 + r() * 8, 1 + r() * 2); }
   ctx.restore();
 }
 
