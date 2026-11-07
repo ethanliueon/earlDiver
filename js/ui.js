@@ -26,7 +26,7 @@ import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
-import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB } from './capture.js';
+import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
@@ -369,36 +369,48 @@ export class UI {
     body.innerHTML = (tab === 'catch' ? this.catchHtml(P, g) : this.equipHtml(P, g)) + tabs; // (3.0.33) the page switch: big, at the bottom middle
     // (3.0.33) the dive locker: a painted steel door, worn (textures.js), once
     const panel = $('inventory').querySelector('.inv-panel');
-    // (3.0.34) drawn for this window's size and layout: the seam between the halves, the dive log under his stand
+    this.fitInventory();
+    // (3.0.34) drawn for this window's size and layout: the seam between the halves
     requestAnimationFrame(() => {
-      const pr = panel.getBoundingClientRect(), right = panel.querySelector('.inv-right'), stage = panel.querySelector('.eq-stage');
-      if (!right || !stage || pr.width < 50) return;
-      const rr = right.getBoundingClientRect(), sr = stage.getBoundingClientRect();
-      const W2 = Math.round(pr.width), H2 = Math.round(pr.height), split = Math.round(rr.left - pr.left - 12), tag = [Math.round(sr.left - pr.left + 80), Math.round(sr.bottom - pr.top + 52)];
-      const key = [W2, H2, split, tag].join(':'); if (panel.dataset.tex === key) return;
+      const pr = panel.getBoundingClientRect(), right = panel.querySelector('.inv-right');
+      if (!right || pr.width < 50) return;
+      const rr = right.getBoundingClientRect(), k = this.invScale || 1;
+      const W2 = panel.offsetWidth, H2 = panel.offsetHeight, split = Math.round((rr.left - pr.left) / k - 12);
+      const key = [W2, H2, split].join(':'); if (panel.dataset.tex === key) return;
       panel.dataset.tex = key;
-      panel.style.backgroundImage = `url(${lockerTexture(W2, H2, { split, tag })})`; panel.style.backgroundSize = '100% 100%';
+      panel.style.backgroundImage = `url(${lockerTexture(W2, H2, { split })})`; panel.style.backgroundSize = '100% 100%';
     });
     body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.renderInventory(); }));
     if (tab === 'gear') this.equipWire(P, g);
   }
   // the Catch page: his net bag as pockets, the sub's tank, what he has found, the sub itself
+  // (3.0.35) the Catch page in two fixed halves. Left: the net bag, every pocket a bag can have (the ones his bag
+  // hasn't, padlocked), and what it is all worth, one number. Right: the sub's own hardware: its open tank as a
+  // water window split into compartments (a big animal takes two or three), its pressure chambers as portholes.
   catchHtml(P, g) {
     const ic = (sp) => { if (!this.toolImgs) this.toolImgs = new Map(); const k = 'inv' + sp.id; if (!this.toolImgs.has(k)) this.toolImgs.set(k, speciesIcon(sp, 160, 90).toDataURL()); return this.toolImgs.get(k); };
-    const cond = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
-    const fishCard = (s2) => { const sp = SPECIES_BY_ID[s2.id], col = s2.cond <= 0.05 ? '#8a6a5a' : s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a';
-      return `<div class="fc"><img src="${ic(sp)}" alt=""><b>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${col}"></i>${cond(s2)} · from ${Math.round(s2.from || 0)} m</span><small>about ${money(specimenValue(s2) * statValue(P, 'payFish'))}</small></div>`; };
-    const cap = Math.round(statValue(P, 'bag'));
-    const pockets = g.bag.map(fishCard).join('') + '<div class="fc empty"></div>'.repeat(Math.max(0, cap - g.bag.length));
-    let html = `<div class="inv-catch"><section><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid">${pockets}</div></section>`;
-    const tank = g.subTank || [];
-    html += `<section><h4>The sub's tank <i>(${tank.length})</i></h4>${tank.length ? `<div class="fc-grid">${tank.map(fishCard).join('')}</div>` : '<p class="inv-empty">Nothing in the sub. In the sub, T opens the tank room.</p>'}</section>`;
-    const SHOWN = new Set(['lure', 'necklace', 'clam', 'pearl']);
-    const finds = Object.entries(g.inv || {}).filter(([k, n]) => n > 0 && !SHOWN.has(k));
-    if (finds.length) html += `<section><h4>Finds, to sell</h4><div class="fd-row">${finds.map(([k, n]) => `<span class="fd">${RESOURCES[k] ? RESOURCES[k].name : k} <i>(${n})</i></span>`).join('')}</div></section>`;
-    const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
-    html += `<div class="sub-plate"><span>SUBMERSIBLE</span><b>${g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`}</b><i>rated ${g.sub.rated} m</i></div></div>`;
-    return html;
+    const pay = statValue(P, 'payFish'), worth = (s2) => specimenValue(s2) * pay;
+    const dot = (s2) => (s2.cond <= 0.05 ? '#8a6a5a' : s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a');
+    const state = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
+    const card = (cls, s2, span = 1) => { const sp = SPECIES_BY_ID[s2.id];
+      return `<div class="${cls}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m"><img src="${ic(sp)}" alt=""><b>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
+    const rep2 = (h, n) => h.repeat(Math.max(0, n));
+    // the bag: eleven cubbies, the ones beyond his bag padlocked
+    const BAG_MAX = 11, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
+    const bag = g.bag.map((s2) => card('fc', s2)).join('') + rep2('<div class="fc empty"></div>', cap - g.bag.length) + rep2('<div class="fc locked"><i></i></div>', shown - Math.max(cap, g.bag.length));
+    const all = g.bag.concat(g.subTank || []), total = all.reduce((t, s2) => t + worth(s2), 0);
+    // the sub
+    const M = SUB_MARKS[markOf(statValue(P, 'depth'))], tank = g.subTank || [];
+    const open = tank.filter((s2) => !s2.pressed && !s2.pile), floor = tank.filter((s2) => s2.pile), pressed = tank.filter((s2) => s2.pressed);
+    const OPEN_MAX = 9, PRESS_MAX = 5, oCap = tankSlots(g), pCap = pressSlots(g), oUsed = open.reduce((t, s2) => t + slotsOf(s2), 0);
+    const openHtml = open.map((s2) => card('tc', s2, Math.min(3, slotsOf(s2)))).join('') + rep2('<div class="tc empty"></div>', oCap - oUsed) + rep2('<div class="tc locked"><i></i></div>', OPEN_MAX - Math.max(oCap, oUsed));
+    const portHtml = pressed.map((s2) => card('pc', s2)).join('') + rep2('<div class="pc empty"></div>', pCap - pressed.length) + rep2('<div class="pc locked"><i></i></div>', PRESS_MAX - Math.max(pCap, pressed.length));
+    const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`;
+    return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
+      + `<div class="cash-plate worth"><span>ALL OF IT, ABOUT</span><b>${money(total)}</b></div></div>`
+      + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
+      + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win">${openHtml}</div>${floor.length ? `<p class="fl-note">On the tank-room floor: ${floor.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')}</p>` : ''}`
+      + `<h4>Pressure chambers <i>(${pressed.length}/${pCap})</i></h4><div class="ports">${portHtml}</div></div></div></div>`;
   }
   // ---------- the locker (2.8.0): Earl and his eight slots; everything he owns in rarity frames ----------
   // Drag a thing onto him (or its slot) to put it on, or click it for its card: what it is, its skills, its
@@ -421,7 +433,29 @@ export class UI {
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
       + (free ? '<p class="eq-note">Click a slot to take a thing off · drag one in to put it on</p>' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
+      + this.airHtml(P, g)
       + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
+  }
+  // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled down to fit whatever screen it is on: a
+  // phone sees the same locker as a computer, only smaller
+  fitInventory() {
+    const panel = $('inventory').querySelector('.inv-panel'); if (!panel) return;
+    const k = Math.min(1, (window.innerWidth - 12) / 1240, (window.innerHeight - 12) / 820);
+    this.invScale = k; panel.style.setProperty('--inv-k', k.toFixed(4));
+    if (!this.invFitWired) { this.invFitWired = true; window.addEventListener('resize', () => { if (!$('inventory').hidden) this.fitInventory(); }); }
+  }
+  // (3.0.35) his oxygen tank, large, and its pressure gauge: how much air he has (full aboard), and how long it lasts
+  airHtml(P, g) {
+    const K = kitOf(P), q = K.on.tank && K.items.find((x2) => x2.u === K.on.tank), it = q && ITEMS[q.id]; if (!it) return '';
+    const e = g.earl, max = Math.max(1, Math.round(e.o2Max || it.air || 20)), now = Math.max(0, Math.min(max, e.o2 ?? max)), k = now / max;
+    const ang = -135 + 270 * k, warn = k < 0.25;
+    const dial = `<svg viewBox="0 0 100 100" class="air-dial"><defs><radialGradient id="ad-face" cx="45%" cy="40%" r="70%"><stop offset="0" stop-color="#ece4cc"/><stop offset="1" stop-color="#c8bc9a"/></radialGradient></defs>
+      <circle cx="50" cy="50" r="48" fill="#6e5a38"/><circle cx="50" cy="50" r="44" fill="#2a2418"/><circle cx="50" cy="50" r="41" fill="url(#ad-face)"/>
+      <path d="M 25 75 A 35 35 0 0 1 21 66" stroke="#a83a2a" stroke-width="5" fill="none"/>
+      ${Array.from({ length: 11 }, (_, i) => { const a2 = (-225 + i * 27) * Math.PI / 180; return `<line x1="${50 + 30 * Math.cos(a2)}" y1="${50 + 30 * Math.sin(a2)}" x2="${50 + 36 * Math.cos(a2)}" y2="${50 + 36 * Math.sin(a2)}" stroke="#2a2418" stroke-width="${i % 5 ? 1.2 : 2}"/>`; }).join('')}
+      <text x="50" y="70" text-anchor="middle" font-size="8" font-family="IBM Plex Mono, monospace" fill="#4a3c24">AIR</text>
+      <g transform="rotate(${ang} 50 50)"><path d="M50 50 L50 17" stroke="#1c1a16" stroke-width="2.2" stroke-linecap="round"/></g><circle cx="50" cy="50" r="4" fill="#8a7448"/></svg>`;
+    return `<div class="air-rig${warn ? ' warn' : ''}"><img src="${pictureOf(it.kind, it, 320, 120, true)}" alt="">${dial}<div class="air-txt"><span class="tape">${it.name.toUpperCase()}</span><b>${Math.round(now)} s</b><i>of ${max} s of air</i></div></div>`;
   }
   // one thing, as a column of the pop-up: its picture, name, rarity, what it is, its skills and its set
   itemCol(P, q, head) {

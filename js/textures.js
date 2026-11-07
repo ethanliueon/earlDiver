@@ -4,17 +4,16 @@
 //    riveted seam that runs exactly between the two halves of the window;
 //  - a hinge strip down the left edge with its knuckles; a vent louvre high on the right plate; a diamond-tread
 //    kick plate along the bottom, scuffed bright by boots;
-//  - an engraved maker's plate, a faded decal, a dymo-tape name, and a dive-log tag on a bulldog clip with a
-//    pencilled checklist, hung below Earl's stand;
+//  - an engraved maker's plate, a faded decal and a dymo-tape name;
 //  - chips to bare metal, faint rust at the rivets and along the bottom, a stencilled 07, and the light of a lamp
 //    above falling unevenly across it all.
 // Seeded, so it is the same every time.
 const rngOf = (seed) => { let s = seed >>> 0; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); };
 const CACHE = new Map();
 
-// L: { split (x of the seam), tag: [x, y] (where the dive-log tag hangs), name }
+// L: { split (x of the seam), name }
 export function lockerTexture(w = 1200, h = 800, L = {}) {
-  const split = Math.round(L.split || w * 0.5), key = `locker:${w}x${h}:${split}:${L.tag ? L.tag.join(',') : ''}`;
+  const split = Math.round(L.split || w * 0.5), key = `locker:${w}x${h}:${split}`;
   if (CACHE.has(key)) return CACHE.get(key);
   const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'), R = rngOf(7);
   const plate = (x0, x1, tone, wear) => {
@@ -69,22 +68,11 @@ export function lockerTexture(w = 1200, h = 800, L = {}) {
   for (let i = 0; i < 6; i++) rust(split + 9, 26 + Math.floor(R() * 18) * 34, 3, 15 + R() * 40);
   for (let i = 0; i < 8; i++) rust(30 + R() * (w - 60), h - 48, 6 + R() * 10, 10);
   // an engraved maker's plate, high on the left plate
-  { const px = split - 210, py = h - 150; x.fillStyle = '#6e6650'; x.fillRect(px, py, 150, 26); x.fillStyle = 'rgba(255,250,220,0.12)'; x.fillRect(px, py, 150, 1.5); x.fillStyle = 'rgba(0,0,0,0.4)'; x.fillRect(px, py + 25, 150, 1.5);
+  { const px = split + 230, py = h - 150; x.fillStyle = '#6e6650'; x.fillRect(px, py, 150, 26); x.fillStyle = 'rgba(255,250,220,0.12)'; x.fillRect(px, py, 150, 1.5); x.fillStyle = 'rgba(0,0,0,0.4)'; x.fillRect(px, py + 25, 150, 1.5);
     x.fillStyle = 'rgba(30,26,16,0.75)'; x.font = '600 9px "IBM Plex Mono", monospace'; x.fillText('DIVE LOCKER', px + 10, py + 11); x.font = '8px "IBM Plex Mono", monospace'; x.fillText('MARGARET · E-7 · 1971', px + 10, py + 21);
     rivet(px + 5, py + 13, 1.8); rivet(px + 145, py + 13, 1.8); }
   // a faded decal on the right plate
   { x.save(); x.globalAlpha = 0.1; x.translate(split + 40, h - 120); x.rotate(-0.05); x.strokeStyle = '#e8e4d0'; x.lineWidth = 2; x.strokeRect(0, 0, 150, 38); x.fillStyle = '#e8e4d0'; x.font = 'bold 13px Georgia, serif'; x.fillText('BAYSIDE MARINE', 12, 17); x.font = '9px Georgia, serif'; x.fillText('SUPPLY · HARBOUR RD', 12, 30); x.restore(); }
-  // the dive-log tag on a bulldog clip, hung on a nail below Earl's stand
-  if (L.tag) { const [tx, ty] = L.tag; x.save(); x.translate(tx, ty); x.rotate(-0.04);
-    rivet(0, -14, 2.2); x.strokeStyle = 'rgba(30,30,24,0.8)'; x.lineWidth = 1; x.beginPath(); x.moveTo(0, -12); x.lineTo(-6, 2); x.moveTo(0, -12); x.lineTo(6, 2); x.stroke();
-    x.fillStyle = 'rgba(0,0,0,0.35)'; x.fillRect(-48, 6, 104, 118); // its shadow
-    x.fillStyle = '#d8d0b4'; x.fillRect(-52, 2, 104, 116); x.fillStyle = 'rgba(120,100,60,0.12)'; x.fillRect(-52, 92, 104, 26); // a coffee ring of grime at the bottom
-    x.strokeStyle = 'rgba(80,110,140,0.35)'; x.lineWidth = 0.8; for (let k = 0; k < 9; k++) { x.beginPath(); x.moveTo(-46, 22 + k * 10); x.lineTo(46, 22 + k * 10); x.stroke(); }
-    x.fillStyle = 'rgba(40,36,30,0.85)'; x.font = '600 8px "IBM Plex Mono", monospace'; x.fillText('DIVE LOG', -44, 14);
-    x.font = 'italic 10px Caveat, Georgia, serif'; x.fillStyle = 'rgba(40,40,60,0.8)';
-    ['air checked  ✓', 'net, bag  ✓', 'lights  ✓', 'tell the boat', 'back by dark'].forEach((t, k) => x.fillText(t, -44, 30 + k * 10));
-    const cg = x.createLinearGradient(-16, 0, 16, 0); cg.addColorStop(0, '#5a5e58'); cg.addColorStop(0.5, '#a8aca0'); cg.addColorStop(1, '#4a4e48'); x.fillStyle = cg; x.fillRect(-16, -2, 32, 9); // the clip
-    x.restore(); }
   // the light: a lamp above, falling unevenly
   { const lg = x.createRadialGradient(w * 0.42, -h * 0.1, 0, w * 0.42, -h * 0.1, h * 1.1); lg.addColorStop(0, 'rgba(255,240,210,0.12)'); lg.addColorStop(0.5, 'rgba(255,240,210,0.03)'); lg.addColorStop(1, 'rgba(0,0,0,0.18)'); x.fillStyle = lg; x.fillRect(0, 0, w, h); }
   // a stencilled 07, faded, low on the right plate
