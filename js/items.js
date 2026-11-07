@@ -10,6 +10,7 @@
 //   fins: swim, sprint                    tank: air (s), speed, quiet
 //   bag: slots, apart                     suit: press (m), air (×), speed (×), bite, warm, quiet, look
 // An owned thing is an instance in the locker: { u, id, sk: [[skill, level], ...], leg }.
+import { designFor } from './designs.js';
 import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, STATION_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
 export { RARITY, RARITIES, SKILLS, LEGEND, SETS } from './item_data.js';
 
@@ -111,6 +112,8 @@ function add(def) {
   if (def.kind === 'fins') def.finLook = Lk ? Lk.fin : ex ? EXOTIC_LOOK.fin : null;
   if (def.kind === 'tank') def.tankLook = Lk ? Lk.tank : ex ? EXOTIC_LOOK.tank : null;
   if (def.kind === 'suit' && (Lk || ex)) { def.pal = Lk ? Lk.suit : EXOTIC_LOOK.suit[def.arch]; def.suitGlow = Lk ? Lk.glow : null; }
+  // (3.0.0) designs: each Rare in its finish, each set in its set's, each Exotic its own (designs.js)
+  const D = designFor(def); if (D) { if (D.look && def.kind === 'net') def.look = { ...(typeof def.look === 'object' ? def.look : {}), ...D.look }; else if (D.look) def.look = D.look; for (const k of ['finLook', 'tankLook', 'bagLook', 'pal']) if (D[k]) def[k] = D[k]; }
   ITEMS[def.id] = def;
 }
 const fromRow = (shop) => ([id, kind, arch, rarity, price, name, line, good, bad, sk]) => add({ id, kind, arch, rarity, price, name, line, good, bad: bad || '', shop, sk: sk || null });

@@ -836,3 +836,16 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - Bought items go into the locker (not put on); the shop refuses when the locker is full.
 - Not yet: the shared shop with the cart (next), chests (with Dave and the old one), the hand-drawn looks
   of Exotics and Legendaries on Earl, quests.
+
+## 3.0.0: the gear, shops and quests overhaul (docs/GEAR_AND_SHOPS_PLAN.md, built on branch v3)
+- One website engine for every shop with a computer (js/catalog.js WEBSHOPS: Bayside, the Station Stores, Dave's
+  Haul), with a cart, one checkout into the locker, a Sell your gear page; the diver, tool and buyers upgrades
+  scrapped (economy.js SCRAPPED), the sub's yard kept; hulls past 500 m need the station found, past 1,300 m Dave met.
+- Quests (js/quests.js): a HUD button, the Margaret's log (a tutorial line), a board of three by rarity; the radio
+  is decoration. At the wheel the Margaret turns to face her way (BOAT.yaw, boatDock()).
+- The research station (js/station_draw.js, world.js STATION) on the seamount's summit, its collar at ~280 m.
+- Dave on his own computer; more detail round his hut. The old one (js/oldone.js): a stone table below her mouth,
+  five Rare/Exotic things changing every three in-game days, F to look and buy; coins gone.
+- Designs (js/designs.js): each Rare in a hand-picked finish, each set in its set's, each Exotic its own.
+- Also: messages back (pressure ×N, hull, cold, brine, Something noticed you...), the camera only changes at the
+  wheel, cabin mouse-follow, a still start, a bulkhead-and-gauge loading screen.

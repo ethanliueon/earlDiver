@@ -18,7 +18,21 @@ const SUIT_LOOK = {
 // (2.8.1) a Legendary tank on his back: a living swim bladder, two cylinders of whalebone, or a warm vent-stone
 export function drawSpecialTank(ctx, u, TL, t) {
   ctx.save();
-  if (TL.fx === 'lung') {
+  if (TL.fx === 'paint') {
+    // (3.0.0) a painted (or copper, or brass) cylinder, or two side by side: bands, rivets, a stencil, its valve
+    const n = TL.n || 1, B = TL.body;
+    for (let i = 0; i < n; i++) {
+      const y0 = (n === 2 ? -19 + i * 6.5 : -17.5) * u, hh = (n === 2 ? 6 : 11.5) * u, g = ctx.createLinearGradient(0, y0, 0, y0 + hh);
+      g.addColorStop(0, B[1]); g.addColorStop(0.3, B[0]); g.addColorStop(0.65, B[1]); g.addColorStop(1, B[2]);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(-2 * u, y0, 32 * u, hh, hh / 2); ctx.fill();
+      ctx.fillStyle = TL.band; ctx.fillRect(21 * u, y0, 2.2 * u, hh); if (TL.twin) ctx.fillRect(17.5 * u, y0, 1.2 * u, hh);
+      if (TL.rivets) { ctx.fillStyle = 'rgba(30,20,10,0.55)'; for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.arc((2 + k * 4.4) * u, y0 + hh * 0.18, 0.35 * u, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc((2 + k * 4.4) * u, y0 + hh * 0.82, 0.35 * u, 0, TAU); ctx.fill(); } }
+      ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fillRect(1 * u, y0 + hh * 0.2, 26 * u, hh * 0.12);
+      if (TL.label && i === 0) { ctx.fillStyle = 'rgba(20,18,14,0.7)'; ctx.font = `bold ${Math.max(5, 3.4 * u)}px monospace`; ctx.fillText(TL.label, 6 * u, y0 + hh * 0.72); }
+    }
+    ctx.fillStyle = '#17191b'; ctx.beginPath(); ctx.roundRect(29 * u, -15 * u, 4.5 * u, 6.5 * u, 1 * u); ctx.fill(); // valve
+    ctx.fillStyle = '#3e4347'; ctx.beginPath(); ctx.arc(33.5 * u, -11.5 * u, 1.8 * u, 0, TAU); ctx.fill();
+  } else if (TL.fx === 'lung') {
     const g = ctx.createRadialGradient(14 * u, -14 * u, 1 * u, 14 * u, -12 * u, 18 * u); g.addColorStop(0, '#2a4a34'); g.addColorStop(0.6, '#10241a'); g.addColorStop(1, '#050c08');
     ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(14 * u, -12 * u, 17 * u + Math.sin(t * 1.4) * 0.6 * u, 6.4 * u + Math.sin(t * 1.4) * 0.5 * u, 0, 0, TAU); ctx.fill(); // it breathes
     ctx.strokeStyle = 'rgba(90,140,100,0.45)'; ctx.lineWidth = 0.4 * u;
@@ -152,6 +166,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     if (FL) {
       if (FL.fx === 'rays') { ctx.strokeStyle = 'rgba(255,190,160,0.55)'; ctx.lineWidth = 0.35 * u; for (let k = 1; k < 8; k++) { const f = k / 8; ctx.beginPath(); ctx.moveTo(8 * u, 0); ctx.lineTo((6 + f * 30) * u, (-3.6 - Math.sin(f * Math.PI)) * u + flex * (4 + f * 5) * u); ctx.stroke(); } }
       if (FL.fx === 'bone') { ctx.fillStyle = 'rgba(232,240,232,0.9)'; for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse((10 + k * 5) * u, flex * (2 + k) * u, 2.1 * u, 1.1 * u, 0, 0, TAU); ctx.fill(); } ctx.strokeStyle = 'rgba(200,215,220,0.8)'; ctx.lineWidth = 0.3 * u; ctx.beginPath(); ctx.moveTo(8 * u, 0); ctx.lineTo(33 * u, flex * 8 * u); ctx.stroke(); }
+      if (FL.stripe) { ctx.strokeStyle = FL.stripe; ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.moveTo(9 * u, 0); ctx.lineTo(33 * u, flex * 8 * u); ctx.stroke(); } // (3.0.0) a Rare's stripe
       if (FL.fx === 'glass') { ctx.strokeStyle = 'rgba(220,250,255,0.75)'; ctx.lineWidth = 0.5 * u; ctx.stroke(); ctx.strokeStyle = 'rgba(255,180,240,0.35)'; ctx.lineWidth = 0.3 * u; ctx.beginPath(); ctx.moveTo(8 * u, -2.4 * u); ctx.quadraticCurveTo(20 * u, -3.2 * u + flex * 4 * u, 32 * u, -2.6 * u + flex * 9 * u); ctx.stroke(); }
       ctx.globalAlpha = 1;
     }

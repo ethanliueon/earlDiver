@@ -32,6 +32,8 @@ function finsPic(ctx, w, h, FL, legend) {
     if (FL.fx === 'rays') { ctx.strokeStyle = 'rgba(255,205,180,0.65)'; ctx.lineWidth = 0.9; for (let k = 1; k < 12; k++) { const f = k / 12; ctx.beginPath(); ctx.moveTo(44, 0); ctx.quadraticCurveTo(40 + f * 60, -4, 40 + f * 118, -9 - Math.sin(f * Math.PI) * 8); ctx.stroke(); } }
     else if (FL.fx === 'bone') { for (let k = 0; k < 7; k++) { const x = 52 + k * 15, gg = ctx.createLinearGradient(0, -7, 0, 7); gg.addColorStop(0, '#fbfff8'); gg.addColorStop(1, '#a8b4ac'); ctx.fillStyle = gg; ctx.beginPath(); ctx.ellipse(x, 0, 6.5, 5 + k * 0.6, 0, 0, TAU); ctx.fill(); } ctx.strokeStyle = '#d8e4e8'; ctx.lineWidth = 0.8; for (let k = 0; k < 6; k++) { const x = 58 + k * 15; ctx.beginPath(); ctx.moveTo(x, -4); ctx.lineTo(x + 3, 4); ctx.stroke(); } } // vertebrae and silver wire
     else if (FL.fx === 'glass') { ctx.strokeStyle = 'rgba(255,170,240,0.45)'; ctx.lineWidth = 1; for (const y of [-8, 0, 8]) { ctx.beginPath(); ctx.moveTo(48, y * 0.5); ctx.quadraticCurveTo(100, y * 1.1, 154, y * 2.2); ctx.stroke(); } }
+    else if (FL.fx === 'wood') { ctx.strokeStyle = 'rgba(60,36,16,0.45)'; ctx.lineWidth = 0.8; for (let k = -3; k <= 3; k++) { ctx.beginPath(); ctx.moveTo(44, k * 1.6); ctx.bezierCurveTo(80, k * 2.2 + 2, 120, k * 3 - 1, 156, k * 3.6); ctx.stroke(); } } // the grain of a carved paddle
+    else if (FL.fx === 'stripe') { if (FL.stripe) { ctx.strokeStyle = FL.stripe; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(48, 0); ctx.quadraticCurveTo(100, 0, 156, 0); ctx.stroke(); if (FL.twin) { ctx.lineWidth = 1.4; for (const y of [-7, 7]) { ctx.beginPath(); ctx.moveTo(60, y * 0.6); ctx.quadraticCurveTo(110, y, 152, y * 1.7); ctx.stroke(); } } } }
     else { ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1.2; for (const y of [-5, 0, 5]) { ctx.beginPath(); ctx.moveTo(50, y * 0.6); ctx.quadraticCurveTo(100, y * 1.2, 150, y * 2.4); ctx.stroke(); } } // channels
     // the foot pocket, its heel strap and buckle
     const pg = ctx.createLinearGradient(0, -12, 0, 12); pg.addColorStop(0, '#2a2e32'); pg.addColorStop(0.5, '#16181b'); pg.addColorStop(1, '#0a0b0c');
@@ -39,7 +41,7 @@ function finsPic(ctx, w, h, FL, legend) {
     ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(4, -6); ctx.lineTo(42, -8); ctx.stroke();
     ctx.fillStyle = FL.fx === 'vintage' ? '#6a5030' : '#222'; ctx.fillRect(-6, -3, 14, 6);
     ctx.fillStyle = FL.fx === 'vintage' ? '#c8a050' : '#8a9094'; ctx.fillRect(4, -4, 5, 8);
-    if (FL.fx === 'vintage') { ctx.fillStyle = 'rgba(210,180,120,0.75)'; ctx.font = 'italic 9px Georgia'; ctx.fillText('No. 3', 70, 4); }
+    if (FL.fx === 'vintage' && FL.label !== '') { ctx.fillStyle = 'rgba(210,180,120,0.75)'; ctx.font = 'italic 9px Georgia'; ctx.fillText(FL.label || 'No. 3', 70, 4); } // its stencil
     ctx.restore();
   }
 }
@@ -78,9 +80,12 @@ function bagPic(ctx, w, h, def) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(cx - bw * 0.7, cy - bh * 0.3, bw * 1.4, bh * 0.7, bh * 0.2); ctx.fill();
     ctx.strokeStyle = 'rgba(140,170,130,0.3)'; ctx.lineWidth = h * 0.005; for (let k = 0; k < 12; k++) { ctx.beginPath(); ctx.arc(cx - bw * 0.6 + k * bw * 0.11, cy + bh * 0.05, bw * 0.06, Math.PI, TAU); ctx.stroke(); } // scales
     ctx.fillStyle = '#e8e4d0'; for (let k = 0; k < 9; k++) { const x = cx - bw * 0.4 + k * bw * 0.1; ctx.beginPath(); ctx.moveTo(x, cy - bh * 0.3); ctx.lineTo(x + bw * 0.04, cy - bh * 0.2); ctx.lineTo(x + bw * 0.08, cy - bh * 0.3); ctx.fill(); } // a clasp of teeth
+  } else if (def.bagLook && def.bagLook.fx !== 'satchel') {
+    designedBag(ctx, w, h, cx, cy, bw, bh, def.bagLook);
   } else {
     // an Exotic satchel: waxed canvas, leather straps, brass rings
-    const g = ctx.createLinearGradient(0, cy - bh * 0.3, 0, cy + bh * 0.4); g.addColorStop(0, '#8a7a52'); g.addColorStop(1, '#5a4c30');
+    const sb = (def.bagLook && def.bagLook.body) || '#8a7a52';
+    const g = ctx.createLinearGradient(0, cy - bh * 0.3, 0, cy + bh * 0.4); g.addColorStop(0, sb); g.addColorStop(1, shade(sb, 0.35));
     ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(cx - bw * 0.75, cy - bh * 0.25, bw * 1.5, bh * 0.68, bh * 0.06); ctx.fill();
     ctx.fillStyle = '#6a5838'; ctx.beginPath(); ctx.moveTo(cx - bw * 0.78, cy - bh * 0.25); ctx.lineTo(cx + bw * 0.78, cy - bh * 0.25); ctx.lineTo(cx + bw * 0.7, cy + bh * 0.08); ctx.quadraticCurveTo(cx, cy + bh * 0.16, cx - bw * 0.7, cy + bh * 0.08); ctx.closePath(); ctx.fill(); // the flap
     ctx.fillStyle = '#4a3420'; for (const x of [-0.4, 0.4]) ctx.fillRect(cx + x * bw - bw * 0.05, cy - bh * 0.26, bw * 0.1, bh * 0.45);
@@ -89,6 +94,60 @@ function bagPic(ctx, w, h, def) {
   }
   ctx.restore();
 }
+const shade = (c, k) => { const [r, g, b] = rgb(c); return `rgb(${Math.round(r * (1 - k))},${Math.round(g * (1 - k))},${Math.round(b * (1 - k))})`; };
+// (3.0.0) the bags of the Exotics and the Rares, one style each: a body colour and a trim
+function designedBag(ctx, w, h, cx, cy, bw, bh, L) {
+  const body = L.body, acc = L.accent, lw = Math.max(1, h * 0.012);
+  const fillG = (y0, y1) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, body); g.addColorStop(1, shade(body, 0.4)); return g; };
+  if (L.fx === 'finish') { // a Rare: a mesh bag in its colours, a coloured collar and toggle
+    ctx.fillStyle = shade(body, 0.2); ctx.beginPath(); ctx.moveTo(cx - bw * 0.5, cy - bh * 0.4); ctx.quadraticCurveTo(cx - bw * 0.8, cy + bh * 0.35, cx, cy + bh * 0.48); ctx.quadraticCurveTo(cx + bw * 0.8, cy + bh * 0.35, cx + bw * 0.5, cy - bh * 0.4); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.clip(); ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; for (let i = -12; i < 12; i++) { ctx.beginPath(); ctx.moveTo(cx + i * 6, cy - bh); ctx.lineTo(cx + i * 6 + bh, cy + bh); ctx.moveTo(cx + i * 6, cy - bh); ctx.lineTo(cx + i * 6 - bh, cy + bh); ctx.stroke(); } ctx.restore();
+    ctx.fillStyle = body; ctx.fillRect(cx - bw * 0.55, cy - bh * 0.46, bw * 1.1, bh * 0.1);
+    if (L.mark !== 'none') { ctx.fillStyle = acc; ctx.fillRect(cx - bw * 0.55, cy - bh * 0.4, bw * 1.1, bh * 0.035); }
+    ctx.fillStyle = acc; ctx.beginPath(); ctx.roundRect(cx + bw * 0.3, cy - bh * 0.5, bw * 0.12, bh * 0.16, bw * 0.04); ctx.fill();
+  } else if (L.fx === 'jarcase') { // a leather case, lid open, three glass jars in it
+    ctx.fillStyle = fillG(cy - bh * 0.1, cy + bh * 0.4); ctx.beginPath(); ctx.roundRect(cx - bw * 0.8, cy - bh * 0.05, bw * 1.6, bh * 0.45, bh * 0.05); ctx.fill();
+    for (let k = 0; k < 3; k++) { const x = cx - bw * 0.5 + k * bw * 0.5; const g = ctx.createLinearGradient(x - bw * 0.15, 0, x + bw * 0.15, 0); g.addColorStop(0, 'rgba(200,220,215,0.35)'); g.addColorStop(0.5, 'rgba(235,245,240,0.6)'); g.addColorStop(1, 'rgba(160,190,180,0.3)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(x - bw * 0.15, cy - bh * 0.32, bw * 0.3, bh * 0.4, bw * 0.04); ctx.fill(); ctx.fillStyle = acc; ctx.fillRect(x - bw * 0.16, cy - bh * 0.36, bw * 0.32, bh * 0.06); }
+    ctx.strokeStyle = acc; ctx.lineWidth = lw; ctx.strokeRect(cx - bw * 0.8, cy - bh * 0.05, bw * 1.6, bh * 0.45);
+  } else if (L.fx === 'pouch') { // a drawstring pouch, its cord and a toggle
+    ctx.fillStyle = fillG(cy - bh * 0.4, cy + bh * 0.45); ctx.beginPath(); ctx.moveTo(cx - bw * 0.25, cy - bh * 0.35); ctx.bezierCurveTo(cx - bw * 0.85, cy - bh * 0.1, cx - bw * 0.7, cy + bh * 0.45, cx, cy + bh * 0.45); ctx.bezierCurveTo(cx + bw * 0.7, cy + bh * 0.45, cx + bw * 0.85, cy - bh * 0.1, cx + bw * 0.25, cy - bh * 0.35); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = lw; for (const d of [-0.15, 0, 0.15]) { ctx.beginPath(); ctx.moveTo(cx + d * bw, cy - bh * 0.33); ctx.lineTo(cx + d * bw * 1.6, cy - bh * 0.05); ctx.stroke(); } // gathers
+    ctx.strokeStyle = acc; ctx.lineWidth = lw * 1.2; ctx.beginPath(); ctx.moveTo(cx - bw * 0.25, cy - bh * 0.35); ctx.quadraticCurveTo(cx, cy - bh * 0.42, cx + bw * 0.25, cy - bh * 0.35); ctx.moveTo(cx + bw * 0.1, cy - bh * 0.38); ctx.lineTo(cx + bw * 0.2, cy - bh * 0.12); ctx.stroke();
+    ctx.fillStyle = acc; ctx.beginPath(); ctx.ellipse(cx + bw * 0.2, cy - bh * 0.1, bw * 0.05, bw * 0.08, 0, 0, TAU); ctx.fill();
+  } else if (L.fx === 'sack') { // a string sack bulging with sponges
+    for (let k = 0; k < 6; k++) { const x = cx + Math.sin(k * 2.1) * bw * 0.4, y = cy + Math.cos(k * 1.3) * bh * 0.18; ctx.fillStyle = k % 2 ? '#c8a860' : '#a88a48'; ctx.beginPath(); ctx.ellipse(x, y, bw * 0.24, bh * 0.16, k, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(60,40,10,0.35)'; for (let j = 0; j < 4; j++) { ctx.beginPath(); ctx.arc(x + Math.cos(j * 1.7) * bw * 0.1, y + Math.sin(j * 2.3) * bh * 0.07, bw * 0.025, 0, TAU); ctx.fill(); } }
+    ctx.strokeStyle = acc; ctx.lineWidth = lw; for (let i = -6; i <= 6; i++) { ctx.beginPath(); ctx.moveTo(cx + i * bw * 0.12, cy - bh * 0.4); ctx.quadraticCurveTo(cx + i * bw * 0.16, cy, cx + i * bw * 0.1, cy + bh * 0.4); ctx.stroke(); }
+    ctx.lineWidth = lw * 2; ctx.beginPath(); ctx.moveTo(cx - bw * 0.3, cy - bh * 0.42); ctx.quadraticCurveTo(cx, cy - bh * 0.6, cx + bw * 0.3, cy - bh * 0.42); ctx.stroke(); // the rope
+  } else if (L.fx === 'basket' || L.fx === 'creel') { // woven rattan or wicker: a basket, or a creel with its lid
+    ctx.fillStyle = shade(body, 0.15); ctx.beginPath(); ctx.moveTo(cx - bw * 0.7, cy - bh * 0.25); ctx.lineTo(cx + bw * 0.7, cy - bh * 0.25); ctx.lineTo(cx + bw * 0.55, cy + bh * 0.42); ctx.lineTo(cx - bw * 0.55, cy + bh * 0.42); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.clip(); ctx.strokeStyle = body; ctx.lineWidth = bh * 0.06; for (let k = 0; k < 9; k++) { const y = cy - bh * 0.2 + k * bh * 0.075; ctx.beginPath(); ctx.moveTo(cx - bw, y); for (let x = -1; x <= 1; x += 0.1) ctx.lineTo(cx + x * bw, y + Math.sin((x * 10 + k) * Math.PI) * bh * 0.012); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(40,25,10,0.4)'; ctx.lineWidth = lw; for (let k = -6; k <= 6; k++) { ctx.beginPath(); ctx.moveTo(cx + k * bw * 0.11, cy - bh * 0.3); ctx.lineTo(cx + k * bw * 0.09, cy + bh * 0.45); ctx.stroke(); } ctx.restore();
+    if (L.fx === 'creel') { ctx.fillStyle = shade(body, 0.05); ctx.beginPath(); ctx.ellipse(cx, cy - bh * 0.27, bw * 0.72, bh * 0.07, -0.05, 0, TAU); ctx.fill(); ctx.fillStyle = acc; ctx.fillRect(cx - bw * 0.06, cy - bh * 0.34, bw * 0.12, bh * 0.08); } // its lid and catch
+    ctx.strokeStyle = acc; ctx.lineWidth = lw * 1.6; ctx.beginPath(); ctx.moveTo(cx - bw * 0.6, cy - bh * 0.25); ctx.quadraticCurveTo(cx, cy - bh * (L.fx === 'creel' ? 0.75 : 0.62), cx + bw * 0.6, cy - bh * 0.25); ctx.stroke(); // strap or handle
+  } else if (L.fx === 'mesh') { // a modern mesh bag on a frame, with a float
+    ctx.fillStyle = rgbaOf(body, 0.35); ctx.beginPath(); ctx.moveTo(cx - bw * 0.5, cy - bh * 0.38); ctx.quadraticCurveTo(cx - bw * 0.85, cy + bh * 0.35, cx, cy + bh * 0.5); ctx.quadraticCurveTo(cx + bw * 0.85, cy + bh * 0.35, cx + bw * 0.5, cy - bh * 0.38); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.clip(); ctx.strokeStyle = body; ctx.lineWidth = lw; for (let i = -12; i < 12; i++) { ctx.beginPath(); ctx.moveTo(cx + i * 7, cy - bh); ctx.lineTo(cx + i * 7 + bh, cy + bh); ctx.moveTo(cx + i * 7, cy - bh); ctx.lineTo(cx + i * 7 - bh, cy + bh); ctx.stroke(); } ctx.restore();
+    ctx.strokeStyle = '#2a2a28'; ctx.lineWidth = lw * 2.4; ctx.beginPath(); ctx.moveTo(cx - bw * 0.55, cy - bh * 0.4); ctx.lineTo(cx + bw * 0.55, cy - bh * 0.4); ctx.stroke(); // the frame
+    ctx.fillStyle = acc; ctx.beginPath(); ctx.ellipse(cx + bw * 0.62, cy - bh * 0.5, bw * 0.13, bh * 0.08, 0, 0, TAU); ctx.fill(); // its float
+  } else if (L.fx === 'box') { // a riveted brass box with a hinged lid
+    const g = ctx.createLinearGradient(0, cy - bh * 0.3, 0, cy + bh * 0.4); g.addColorStop(0, '#d8b868'); g.addColorStop(0.4, body); g.addColorStop(1, shade(body, 0.5));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(cx - bw * 0.7, cy - bh * 0.25, bw * 1.4, bh * 0.65, bh * 0.04); ctx.fill();
+    ctx.fillStyle = shade(body, 0.2); ctx.fillRect(cx - bw * 0.72, cy - bh * 0.3, bw * 1.44, bh * 0.1);
+    ctx.fillStyle = acc; for (let k = 0; k < 8; k++) for (const y of [-0.15, 0.33]) { ctx.beginPath(); ctx.arc(cx - bw * 0.62 + k * bw * 0.177, cy + y * bh, bw * 0.025, 0, TAU); ctx.fill(); }
+    ctx.fillRect(cx - bw * 0.06, cy - bh * 0.22, bw * 0.12, bh * 0.12); // the hasp
+  } else if (L.fx === 'crate') { // a slatted wooden specimen crate, stencilled
+    ctx.fillStyle = fillG(cy - bh * 0.3, cy + bh * 0.4); ctx.fillRect(cx - bw * 0.75, cy - bh * 0.3, bw * 1.5, bh * 0.7);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; for (let k = 1; k < 4; k++) ctx.fillRect(cx - bw * 0.75, cy - bh * 0.3 + k * bh * 0.175, bw * 1.5, bh * 0.025);
+    ctx.fillStyle = acc; ctx.fillRect(cx - bw * 0.75, cy - bh * 0.3, bw * 0.08, bh * 0.7); ctx.fillRect(cx + bw * 0.67, cy - bh * 0.3, bw * 0.08, bh * 0.7);
+    ctx.fillStyle = 'rgba(30,20,10,0.55)'; ctx.font = `bold ${Math.round(bh * 0.12)}px monospace`; ctx.textAlign = 'center'; ctx.fillText('VALDIVIA', cx, cy + bh * 0.12); ctx.textAlign = 'left';
+  } else if (L.fx === 'roll') { // a canvas tool roll, tied
+    ctx.fillStyle = fillG(cy - bh * 0.2, cy + bh * 0.25); ctx.beginPath(); ctx.roundRect(cx - bw * 0.85, cy - bh * 0.18, bw * 1.7, bh * 0.38, bh * 0.19); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = lw; ctx.beginPath(); ctx.ellipse(cx + bw * 0.78, cy + bh * 0.01, bh * 0.06, bh * 0.17, 0, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.ellipse(cx + bw * 0.78, cy + bh * 0.01, bh * 0.03, bh * 0.1, 0, 0, TAU); ctx.stroke(); // its spiral end
+    ctx.fillStyle = acc; for (const x of [-0.4, 0.3]) ctx.fillRect(cx + x * bw, cy - bh * 0.2, bw * 0.1, bh * 0.42); // straps
+  }
+}
+const rgbaOf = (c, a) => { const [r, g, b] = rgb(c); return `rgba(${r},${g},${b},${a})`; };
 function suitPic(ctx, w, h, def, legend) {
   // the suit, standing, in its own colours (a Legendary's seams glowing)
   ctx.save(); ctx.translate(w / 2, h * 0.5); ctx.rotate(-Math.PI / 2);
@@ -97,7 +156,7 @@ function suitPic(ctx, w, h, def, legend) {
 }
 function sideToolPic(ctx, w, h, def, legend) {
   // the side tools: their usual drawing, then a Legendary's own parts over it
-  const ic = toolIcon(def.kind, typeof def.look === 'number' ? def.look : 0, Math.round(w * 0.8), Math.round(h * 0.8));
+  const ic = toolIcon(def.kind, def.look || 0, Math.round(w * 0.8), Math.round(h * 0.8)); // (with its finish)
   ctx.drawImage(ic, w * 0.1, h * 0.1);
   if (!legend) return;
   ctx.save();

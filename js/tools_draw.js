@@ -225,6 +225,7 @@ const NET_SHAPES = {
 
 // The slurp gun: a clear tube, a spring plunger, a nozzle. pull 0..1 draws the plunger back.
 export function drawSlurp(ctx, u, tier, t, pull, held) {
+  const F = tier && typeof tier === 'object' ? tier : null; if (F) tier = F.base || 0; // (3.0.0) a finish: body, its dark, an accent
   const pro = tier >= 1;
   const len = (pro ? 36 : 28) * u, r = (pro ? 2.6 : 2.2) * u, x0 = -10 * u, x1 = x0 + len;
   // plunger rod out of the back, with a T-handle
@@ -260,11 +261,12 @@ export function drawSlurp(ctx, u, tier, t, pull, held) {
   ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 0.5 * u;
   ctx.beginPath(); ctx.moveTo(x0 + 2 * u, -r * 0.55); ctx.lineTo(x1 - 3 * u, -r * 0.55); ctx.stroke();
   // end caps
-  ctx.fillStyle = '#121416';
-  ctx.beginPath(); ctx.roundRect(x0 - 1 * u, -r - 0.4 * u, 1.8 * u, r * 2 + 0.8 * u, 0.5 * u); ctx.fill();
-  ctx.beginPath(); ctx.roundRect(x1 - 1 * u, -r - 0.4 * u, 1.8 * u, r * 2 + 0.8 * u, 0.5 * u); ctx.fill();
+  ctx.fillStyle = F ? F.body : '#121416';
+  ctx.beginPath(); ctx.roundRect(x0 - 1 * u, -r - 0.4 * u, (F ? 3.2 : 1.8) * u, r * 2 + 0.8 * u, 0.5 * u); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(x1 - (F ? 2.4 : 1) * u, -r - 0.4 * u, (F ? 3.2 : 1.8) * u, r * 2 + 0.8 * u, 0.5 * u); ctx.fill();
+  if (F) { ctx.fillStyle = F.accent; ctx.fillRect(x0 + 2.4 * u, -r - 0.4 * u, 0.7 * u, r * 2 + 0.8 * u); if (F.mark === 'twin') ctx.fillRect(x1 - 3.4 * u, -r - 0.4 * u, 0.7 * u, r * 2 + 0.8 * u); }
   // nozzle: a tapering cone
-  ctx.fillStyle = '#1c1f22';
+  ctx.fillStyle = F ? F.body2 : '#1c1f22';
   ctx.beginPath(); ctx.moveTo(x1 + 0.6 * u, -r * 0.9); ctx.lineTo(x1 + 5 * u, -0.9 * u); ctx.lineTo(x1 + 5 * u, 0.9 * u); ctx.lineTo(x1 + 0.6 * u, r * 0.9); ctx.closePath(); ctx.fill();
   if (pro) { ctx.fillStyle = '#3a6a8a'; ctx.fillRect(x1 + 1.4 * u, -r * 0.7, 1 * u, r * 1.4); } // one-way valve band
   return { tipX: x1 + 5 * u, tipY: 0 };
@@ -272,6 +274,7 @@ export function drawSlurp(ctx, u, tier, t, pull, held) {
 
 // Tag guns. pull 0..1 is the shot (recoil, the sling stretched); loaded shows the dart.
 export function drawTagger(ctx, u, tier, t, pull, loaded = true) {
+  const F = tier && typeof tier === 'object' ? tier : null; if (F) tier = F.base || 0;
   const kick = -Math.sin(Math.min(1, pull) * Math.PI) * 2.5 * u;
   ctx.save(); ctx.translate(kick, 0);
   let tipX;
@@ -279,11 +282,11 @@ export function drawTagger(ctx, u, tier, t, pull, loaded = true) {
     // pole tagger: an aluminium pole, an orange rubber sling looped at the back, a steel dart
     const len = 62 * u;
     // the sling: a loop of surgical tubing from the back of the pole to his hand
-    ctx.strokeStyle = '#d0702c'; ctx.lineWidth = 1.1 * u; ctx.lineCap = 'round';
+    ctx.strokeStyle = F ? F.accent : '#d0702c'; ctx.lineWidth = 1.1 * u; ctx.lineCap = 'round';
     const st = -6 * u - pull * 6 * u;
     ctx.beginPath(); ctx.moveTo(-2 * u, -1 * u); ctx.quadraticCurveTo(st, -2.6 * u, st - 2 * u, 0); ctx.quadraticCurveTo(st, 2.6 * u, -2 * u, 1 * u); ctx.stroke();
-    tube(ctx, -2 * u, len, 0.95 * u, '#c4cacb', '#8a9294', '#4a5254');
-    ctx.fillStyle = '#1e2124'; ctx.beginPath(); ctx.roundRect(4 * u, -1.25 * u, 10 * u, 2.5 * u, 0.8 * u); ctx.fill(); // grip
+    if (F) tube(ctx, -2 * u, len, 0.95 * u, F.body, F.body, F.body2); else tube(ctx, -2 * u, len, 0.95 * u, '#c4cacb', '#8a9294', '#4a5254');
+    ctx.fillStyle = F ? F.body2 : '#1e2124'; ctx.beginPath(); ctx.roundRect(4 * u, -1.25 * u, 10 * u, 2.5 * u, 0.8 * u); ctx.fill(); // grip
     tipX = len;
   } else {
     // pneumatic / satellite: a barrel with a pistol grip and a muzzle, like a short speargun
@@ -291,8 +294,8 @@ export function drawTagger(ctx, u, tier, t, pull, loaded = true) {
     ctx.fillStyle = '#16181a';
     ctx.beginPath(); ctx.moveTo(-2 * u, r); ctx.lineTo(3 * u, r); ctx.lineTo(1.6 * u, r + 7 * u); ctx.lineTo(-3 * u, r + 6.4 * u); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = '#2a2d30'; ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.moveTo(4 * u, r); ctx.quadraticCurveTo(6 * u, r + 3 * u, 3 * u, r + 3.6 * u); ctx.stroke(); // trigger guard
-    tube(ctx, -8 * u, len, r, sat ? '#8a9094' : '#3a3e42', sat ? '#5a6064' : '#1e2124', '#0c0d0e');
-    ctx.fillStyle = sat ? '#d8b42a' : '#c8641e'; ctx.fillRect(-6 * u, -r, 2.4 * u, r * 2); // band
+    if (F) tube(ctx, -8 * u, len, r, F.body, F.body, F.body2); else tube(ctx, -8 * u, len, r, sat ? '#8a9094' : '#3a3e42', sat ? '#5a6064' : '#1e2124', '#0c0d0e');
+    ctx.fillStyle = F ? F.accent : sat ? '#d8b42a' : '#c8641e'; ctx.fillRect(-6 * u, -r, 2.4 * u, r * 2); // band
     ctx.fillStyle = '#2a2d30'; ctx.beginPath(); ctx.roundRect(-11 * u, -r * 1.1, 3.5 * u, r * 2.2, 0.8 * u); ctx.fill(); // air reservoir cap
     ctx.fillStyle = '#0c0d0e'; ctx.beginPath(); ctx.roundRect(len - 1 * u, -r * 1.15, 2.6 * u, r * 2.3, 0.6 * u); ctx.fill(); // muzzle
     tipX = len + 1.6 * u;
@@ -303,6 +306,7 @@ export function drawTagger(ctx, u, tier, t, pull, loaded = true) {
 }
 // the tag dart (or a satellite tag) sitting in the muzzle; also used for darts in flight
 export function drawDart(ctx, u, tier, x0, t) {
+  if (tier && typeof tier === 'object') tier = tier.base || 0;
   ctx.fillStyle = '#b8bec2'; ctx.fillRect(x0, -0.35 * u, 9 * u, 0.7 * u);                  // steel shaft
   ctx.beginPath(); ctx.moveTo(x0 + 9 * u, -0.9 * u); ctx.lineTo(x0 + 12 * u, 0); ctx.lineTo(x0 + 9 * u, 0.9 * u); ctx.closePath(); ctx.fill(); // barb
   if (tier === 2) {
@@ -320,10 +324,12 @@ export function drawDart(ctx, u, tier, x0, t) {
 
 // Cameras. flash 0..1 is the strobe firing.
 export function drawCamera(ctx, u, tier, t, flash) {
+  const F = tier && typeof tier === 'object' ? tier : null; if (F) tier = F.base || 0;
   let lensX;
   if (tier === 0) {
     // a yellow plastic waterproof compact
-    ctx.fillStyle = '#d8b02a'; ctx.beginPath(); ctx.roundRect(-3 * u, -4.5 * u, 12 * u, 8 * u, 1.6 * u); ctx.fill();
+    ctx.fillStyle = F ? F.body : '#d8b02a'; ctx.beginPath(); ctx.roundRect(-3 * u, -4.5 * u, 12 * u, 8 * u, 1.6 * u); ctx.fill();
+    if (F && F.mark !== 'none') { ctx.fillStyle = F.accent; ctx.fillRect(-0.6 * u, 2 * u, 9.6 * u, 0.9 * u); }
     ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(-2 * u, -4 * u, 10 * u, 1 * u);
     ctx.fillStyle = '#1a1c1e'; ctx.beginPath(); ctx.roundRect(9 * u, -2.4 * u, 2 * u, 4.6 * u, 0.6 * u); ctx.fill();
     ctx.fillStyle = '#28333a'; ctx.beginPath(); ctx.arc(10.6 * u, -0.2 * u, 1.7 * u, 0, TAU); ctx.fill();
@@ -346,9 +352,9 @@ export function drawCamera(ctx, u, tier, t, flash) {
       ctx.fillStyle = flash > 0 ? '#ffffff' : '#c8d2d6'; ctx.fillRect(9.6 * u, sgn * (h * 0.45 + 8 * u) - 1.6 * u, 0.9 * u, 3.2 * u);
     }
     const hg = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-    hg.addColorStop(0, big ? '#3a3e42' : '#a8b0b4'); hg.addColorStop(0.4, big ? '#1e2124' : '#6a7276'); hg.addColorStop(1, '#16181a');
+    if (F) { hg.addColorStop(0, F.body); hg.addColorStop(0.5, F.body); hg.addColorStop(1, F.body2); } else { hg.addColorStop(0, big ? '#3a3e42' : '#a8b0b4'); hg.addColorStop(0.4, big ? '#1e2124' : '#6a7276'); hg.addColorStop(1, '#16181a'); }
     ctx.fillStyle = hg; ctx.beginPath(); ctx.roundRect(-4 * u, -h / 2, w, h, 2 * u); ctx.fill();
-    if (big) { ctx.fillStyle = '#a02a20'; ctx.fillRect(-4 * u, -h / 2 + 1.2 * u, w, 0.9 * u); }
+    if (big || F) { ctx.fillStyle = F ? F.accent : '#a02a20'; ctx.fillRect(-4 * u, -h / 2 + 1.2 * u, w, 0.9 * u); }
     // handles on either side
     ctx.fillStyle = '#121416'; ctx.beginPath(); ctx.roundRect(-6.5 * u, -h * 0.4, 2.6 * u, h * 0.8, 1 * u); ctx.fill();
     // the port: a glass dome (flat for the low-light camera)
@@ -462,12 +468,12 @@ export function toolIcon(kind, tier, w, h) {
     ctx.translate(6 * u, h * 0.42); ctx.rotate(-0.12);
     drawNet(ctx, u, tier, 0.6, 0, null);
   } else if (kind === 'slurp') {
-    const u = w / (tier ? 56 : 48);
+    const b = tier && typeof tier === 'object' ? tier.base || 0 : tier, u = w / (b ? 56 : 48);
     ctx.translate(w * 0.32, h * 0.45); ctx.rotate(-0.08);
     drawSlurp(ctx, u, tier, 0, 0, null);
   } else if (kind === 'tag') {
-    const u = w / (tier === 0 ? 86 : tier === 2 ? 72 : 64);
-    ctx.translate(w * (tier === 0 ? 0.12 : 0.2), h * 0.42); ctx.rotate(-0.06);
+    const b = tier && typeof tier === 'object' ? tier.base || 0 : tier, u = w / (b === 0 ? 86 : b === 2 ? 72 : 64);
+    ctx.translate(w * (b === 0 ? 0.12 : 0.2), h * 0.42); ctx.rotate(-0.06);
     drawTagger(ctx, u, tier, 0.4, 0, true);
   } else if (kind === 'trap') {
     const type = ['pot', 'fish', 'steel', 'cage'][tier] || 'pot', T = TRAPS[type];
@@ -475,7 +481,7 @@ export function toolIcon(kind, tier, w, h) {
     ctx.translate(w / 2, h * 0.88);
     drawBoxTrap(ctx, mm, type, 0.5, []);
   } else if (kind === 'cam') {
-    const u = h / (tier === 0 ? 14 : 30);
+    const b = tier && typeof tier === 'object' ? tier.base || 0 : tier, u = h / (b === 0 ? 14 : 30);
     ctx.translate(w * 0.42, h * 0.5);
     drawCamera(ctx, u, tier, 0, 0);
   }
