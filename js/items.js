@@ -70,7 +70,7 @@ function statsOf(kind, arch, rarity) {
   return s;
 }
 // what a thing is worth (a chest item's value, before its skills; selling pays about a third)
-const VALUE = { common: 120, uncommon: 450, rare: 1800, exotic: 9000, legendary: 40000 };
+const VALUE = { common: 120, uncommon: 450, rare: 1800, exotic: 15000, legendary: 90000 }; // (3.7.0) the top two raised with what the deep pays
 // the "good for" line, worked out from the stats
 function goodOf(kind, s) {
   const cm = (m) => Math.round(m * 100);

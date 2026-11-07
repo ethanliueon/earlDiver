@@ -214,7 +214,7 @@ export const UPGRADES = {
   camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, top: 13, max: 10, cost: 12, growth: 1.7, fmt: 'm' },
   // the submersible
   ballast:   { group: 'Submersible', name: 'Ballast', base: 0, top: 1.44, max: 10, cost: 25, growth: 1.7, fmt: 'bonus' },
-  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4000], costs: [150, 600, 2000, 6000, 15000, 35000, 80000], max: 7, fmt: 'depth' },
+  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4000], costs: [150, 600, 2000, 8000, 24000, 65000, 150000], max: 7, fmt: 'depth' },
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, top: 1.45, max: 10, cost: 30, growth: 1.7, fmt: 'x' },
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, lin: 1, max: 2, cost: 60, growth: 3, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 4, cost: 80, growth: 2.2, fmt: 'n' },

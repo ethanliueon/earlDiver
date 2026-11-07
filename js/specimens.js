@@ -137,13 +137,45 @@ const EXOTIC_CAP = 4000; // (3.1.0) an Exotic never fetches more than $4,000
 const LEG_PRICE = { 100: 40000, 101: 30000, 104: 35000, 105: 45000, 107: 25000, 108: 60000, 54: 55000, 2102: 30000, 2103: 35000, 2106: 28000, 2150: 40000, 2146: 38000, 2162: 25000, 2110: 32000, 2109: 50000 };
 const PRICE_CACHE = new Map();
 // what one of this species pays (before size, condition, rare form, upgrades)
-export function rarityPrice(sp) {
-  let p = PRICE_CACHE.get(sp.id);
+// (3.7.0) the list price: it sets the rarity tier (and how often the animal is met) and nothing else now
+const BASE_CACHE = new Map();
+export function basePrice(sp) {
+  let p = BASE_CACHE.get(sp.id);
   if (p !== undefined) return p;
   p = PRICE[sp.id] !== undefined ? PRICE[sp.id] : formulaPrice(sp);
   if (isDeep(sp)) p = Math.max(30, p); // nothing from the deep is common
   if (LEGENDARY.has(sp.id)) p = LEG_PRICE[sp.id] || 30000;
   else if (!isTagOnly(sp)) p = Math.min(EXOTIC_CAP, p);
+  BASE_CACHE.set(sp.id, p);
+  return p;
+}
+// (3.7.0) how deep an animal lives, 0 (the sunlit shallows) to 1 (the deep): from the middle of the band it
+// usually keeps to, so a viperfish whose recorded range starts at the surface still counts as deep
+export function deepness(sp) {
+  const core = sp.x && sp.x.core, lo = core ? core[0] : sp.dmin, hi = core ? core[1] : Math.min(sp.dmax, Math.max(sp.dmin * 4, 1500));
+  const mid = (lo + hi) / 2;
+  return clamp01((mid - 100) / (450 - 100));
+}
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+const lerpN = (a, b, q) => a + (b - a) * q;
+// (3.7.0) what one healthy adult of normal size pays: commons and uncommons at their list price ($100 is a good
+// day early on); rares $10-80 in the shallows, $150-500 from the deep; exotics $1-2k shallow, $3-5k from
+// the mid-depths, $6-8k from the deep; legendaries $60-120k. Within a band, the bigger and the rarer pay more.
+export function rarityPrice(sp) {
+  let p = PRICE_CACHE.get(sp.id);
+  if (p !== undefined) return p;
+  const base = basePrice(sp), R = rarityOf(sp);
+  const size = clamp01(Math.log(Math.max(0.03, sp.len) / 0.05) / Math.log(2 / 0.05)), d = deepness(sp);
+  if (sp.undoc || (isTagOnly(sp) && !LEGENDARY.has(sp.id)) || R.i <= 1) p = base;
+  else if (R.id === 'legendary') { const lo = 25000, hi = 60000; p = lerpN(60000, 120000, clamp01((base - lo) / (hi - lo))); }
+  else if (R.id === 'exotic') {
+    const lo = d < 0.5 ? lerpN(1000, 3000, d * 2) : lerpN(3000, 6000, (d - 0.5) * 2), hi = d < 0.5 ? lerpN(2000, 5000, d * 2) : lerpN(5000, 8000, (d - 0.5) * 2);
+    p = lerpN(lo, hi, 0.65 * size + 0.35 * R.pos);
+  } else { // rare
+    const lo = lerpN(10, 150, d), hi = lerpN(80, 500, d);
+    p = lerpN(lo, hi, lerpN(0.5, 0.3, d) * size + lerpN(0.5, 0.7, d) * R.pos); // (in the deep, a small one is no worse than a big one)
+  }
+  p = p >= 100 ? Math.round(p / 5) * 5 : Math.round(p * 100) / 100;
   PRICE_CACHE.set(sp.id, p);
   return p;
 }
@@ -154,7 +186,7 @@ export function rarityOf(sp) {
   let r = RAR_CACHE.get(sp.id);
   if (r) return r;
   if (sp.undoc) { r = { ...UNDOCUMENTED, pos: 0.5 }; RAR_CACHE.set(sp.id, r); return r; }
-  const w = isTagOnly(sp) ? Math.max(rarityPrice(sp), TAG[sp.id]) : rarityPrice(sp); // (a giant you can only tag is as rare as its tag is worth)
+  const w = isTagOnly(sp) ? Math.max(basePrice(sp), TAG[sp.id]) : basePrice(sp); // (a giant you can only tag is as rare as its tag is worth)
   let i = RARITY.findIndex((t) => w < t.upTo);
   if (LEGENDARY.has(sp.id)) i = 4; else if (i === 4 && !isTagOnly(sp)) i = 3; // (a hidden tier may stay legendary: it only sets how often it is met)
   const lo = i ? RARITY[i - 1].upTo : 0.2, hi = RARITY[i].upTo === Infinity ? 50000 : RARITY[i].upTo;
@@ -174,7 +206,7 @@ export function liveValue(sp, len = sp.len) {
 // condition: 1 healthy .. 0 dead. Stressed animals sell for less; dead ones for almost nothing.
 export function conditionMult(c) {
   if (c <= 0.05) return 0.1;
-  return c >= 0.7 ? c : c * 0.8;
+  return c >= 0.7 ? c : Math.max(0.55, c * 0.8); // (3.7.0) alive, however weak, is worth more than dead (half)
 }
 export function conditionName(c) {
   return c <= 0.05 ? 'dead' : c >= 0.8 ? 'healthy' : c >= 0.5 ? 'stressed' : 'weak';

@@ -16,14 +16,14 @@ export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { 
 
 // the main line: [id, what to do, a line of help, the check, the reward]
 export const MAIN = [
-  { id: 'net', text: 'Net a fish', help: 'Swim up to a fish and press Space (key 1 is the net).', need: 1, on: 'catch', pay: 20 },
-  { id: 'sell', text: 'Sell your catch', help: 'Climb aboard the Margaret and sell at the stern, or press U at her side.', need: 1, on: 'sell', pay: 30 },
-  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The Shop in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 40 },
-  { id: 'wear', text: 'Put on something new', help: 'Press B for your inventory and drag it onto Earl, or click it and Put on.', need: 1, on: 'wear', pay: 30 },
-  { id: 'sub', text: 'Take the sub down to 60 m', help: 'Climb into the sub at her stern; W and S to dive and rise.', need: 60, on: 'subDepth', pay: 80 },
-  { id: 'chamber', text: 'Bring an animal up alive in the sub', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 100 },
-  { id: 'aquarium', text: 'Put an animal in the aquarium', help: "The lit tank in the cabin. Mark one to Keep when you sell, then put it in at the tank.", need: 1, on: 'aquarium', pay: 120 },
-  { id: 'trap', text: 'Set a trap', help: 'Buy one from Bayside, then key 5 near the surface to set it at a depth.', need: 1, on: 'trap', pay: 80 },
+  { id: 'net', text: 'Net a fish', help: 'Swim up to a fish and press Space (key 1 is the net).', need: 1, on: 'catch', pay: 10 },
+  { id: 'sell', text: 'Sell your catch', help: 'Climb aboard the Margaret and sell at the stern, or press U at her side.', need: 1, on: 'sell', pay: 15 },
+  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The Shop in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 20 },
+  { id: 'wear', text: 'Put on something new', help: 'Press B for your inventory and drag it onto Earl, or click it and Put on.', need: 1, on: 'wear', pay: 10 },
+  { id: 'sub', text: 'Take the sub down to 60 m', help: 'Climb into the sub at her stern; W and S to dive and rise.', need: 60, on: 'subDepth', pay: 25 },
+  { id: 'chamber', text: 'Bring an animal up alive in the sub', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 30 },
+  { id: 'aquarium', text: 'Put an animal in the aquarium', help: "The lit tank in the cabin. Mark one to Keep when you sell, then put it in at the tank.", need: 1, on: 'aquarium', pay: 30 },
+  { id: 'trap', text: 'Set a trap', help: 'Buy one from Bayside, then key 5 near the surface to set it at a depth.', need: 1, on: 'trap', pay: 20 },
   { id: 'done', text: 'That is the basics', help: 'The rest of the sea is yours to find. Quests on the board pay cash.', need: 0, on: null, pay: 0, gift: 'split' },
 ];
 
@@ -38,7 +38,10 @@ const KINDS = {
     const deep = [60, 250, 700, 1600][r];
     const pool = SPECIES.filter((s) => canTakeLive(s) && s.dmin <= deep && s.dmin >= deep * 0.25 && liveValue(s) > 0.5);
     const sp = pool[Math.floor(rnd() * pool.length)]; if (!sp) return null;
-    return { id: sp.id, n: 1, pay: Math.round(liveValue(sp) * [2.5, 3, 3.5, 4][r] + [40, 150, 500, 2000][r]), text: () => `Bring up a live ${sp.name.toLowerCase()}` };
+    // (3.7.0) a multiple of its value for the cheap ones; for an exotic or a legendary (worth thousands already)
+    // a quarter more than the market, or the board would pay more than a lifetime of diving
+    const v = liveValue(sp), mult = v >= 1000 ? 1.25 : [2.5, 3, 3.5, 4][r];
+    return { id: sp.id, n: 1, pay: Math.round(v * mult + [40, 150, 500, 2000][r]), text: () => `Bring up a live ${sp.name.toLowerCase()}` };
   },
 };
 const R_INDEX = { common: 0, uncommon: 1, rare: 2, exotic: 3 };
