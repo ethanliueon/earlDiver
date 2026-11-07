@@ -14,6 +14,7 @@ import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
 import { drawStation, STATION_TOP } from './station_draw.js';
 import { drawTable, TABLE } from './oldone.js';
 import { pictureOf } from './catalog.js';
+const SIMPLE_SMALL = false; // (4.3.7) small animals as generic shapes (off: each is drawn as itself)
 import { drawPrompt } from './fittings.js'; // (4.3.2) the tutorial's prompt beside the fish
 import { Wake } from './trail.js';
 import { TRAPS, lv, statValue } from './economy.js';
@@ -330,7 +331,10 @@ export class Renderer {
       const Ld = fishDrawLen(c.len) * ppm;
       const shape = c.sp.v.s;
       const tilt = clamp(Math.atan2(c.hvy !== undefined ? c.hvy : c.vy, Math.max(Math.abs(c.vx), c.hvy !== undefined ? c.speed * 0.8 : 0) + 0.2), -0.5, 0.5);
-      if (Ld < 20 && !c.variant && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
+      // (4.3.7) no stand-in shapes: every animal is drawn as itself at any size (from its cached frames). Small fish,
+      // shrimp and krill used to be drawn here as a generic oval and tail, so a krill looked like a little fish until
+      // he was close enough for its own drawing. Kept, switched off, in case a slow machine ever needs it back.
+      if (SIMPLE_SMALL && Ld < 20 && !c.variant && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
         let bt = batches.get(c.sp.id);
         if (!bt) { bt = { sp: c.sp, back: new Path2D(), belly: new Path2D(), flash: new Path2D(), eyes: new Path2D(), nf: 0 }; batches.set(c.sp.id, bt); }
         const x = S(c.x), y = Sy(c.y);
@@ -1237,7 +1241,7 @@ export class Renderer {
     }
     if (budgetMs >= 3 && !onlyLiving) for (const sp of this.nearSpecies) wanted.push([sp, fishDrawLen(sp.len) * ppm]); // the look-ahead only when frames are quick
     for (const [sp, Ld] of wanted) {
-      if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(sp.v.s) || (Ld < 20 && (sp.v.s === 'fish' || sp.v.s === 'shrimp' || sp.v.s === 'hatchet'))) continue;
+      if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(sp.v.s) || (SIMPLE_SMALL && Ld < 20 && (sp.v.s === 'fish' || sp.v.s === 'shrimp' || sp.v.s === 'hatchet'))) continue;
       const { key, bl } = this.spriteKey(sp, Ld);
       let e = cache.get(key);
       if (!e) { const box = Math.ceil(bl * 2.4); e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES) }; cache.set(key, e); }
