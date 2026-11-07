@@ -227,10 +227,10 @@ export const setOn = (P, k) => totals(P).setsOn.has(k);
 export function chestPick(rarity, rnd = Math.random) { const pool = CHEST_POOL.filter((it) => it.rarity === rarity); return pool[Math.floor(rnd() * pool.length)]; }
 
 // (3.0.12) rescaled once the list is built, generated items included: a suit's pressure limit is a third of
-// what it was (the wetsuit: 100 m, the toughest about 290 m), and every bag holds two animals fewer (the
-// starting bag: 3, the best: 9), so the spread between a cheap bag and a great one is wider. The numbers in
-// each item's words are rewritten to match.
-const PRESS_K = 1 / 3, BAG_LESS = 2;
+// what it was (the wetsuit: 100 m, the toughest about 290 m). (3.0.13) Only the beginner bags are smaller:
+// Commons hold two animals fewer (the starting bag: 3), Uncommons one fewer, Rare and up as they were (the
+// best still 11). The numbers in each item's words are rewritten to match.
+const PRESS_K = 1 / 3, BAG_LESS_OF = { common: 2, uncommon: 1 };
 const reword = (it, f) => { for (const k of ['line', 'good', 'bad', 'tag', 'desc']) if (typeof it[k] === 'string') it[k] = f(it[k]); };
 for (const it of Object.values(ITEMS)) {
   if (typeof it.press === 'number') {
@@ -238,7 +238,7 @@ for (const it of Object.values(ITEMS)) {
     reword(it, (t) => t.replace(/(\d[\d,]*) m\b/g, (m0, n) => { const v = +n.replace(/,/g, ''); return v >= 200 && v <= 1000 ? `${Math.max(100, Math.round(v * PRESS_K / 10) * 10)} m` : m0; }));
   }
   if (it.kind === 'bag' && typeof it.slots === 'number') {
-    const was = it.slots; it.slots = Math.max(3, was - BAG_LESS);
+    const was = it.slots; it.slots = Math.max(3, was - (BAG_LESS_OF[it.rarity || 'common'] || 0));
     reword(it, (t) => t.replace(new RegExp(`\\b${was} animals`, 'g'), `${it.slots} animals`));
   }
 }

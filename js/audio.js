@@ -192,6 +192,8 @@ export class Audio {
     if (m.on) m.playedT = (m.playedT || 0) + dt; else m.playedT = 0;
     if (m.on && m.playLen && m.playedT > m.playLen) { m.cutBySerious = false; this.stopPiece(); } // its time is up: a slow fade (about 20 s)
     if (g.mode === 'dying' || (serious && m.playedT >= 60)) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
+    // (3.0.13) the hull: past the sub's rated depth, or on course to pass it within 10 s at the speed it is diving
+    if (playing && e.inSub && g.sub && !g.sub.imploded && (g.sub.y > g.sub.rated || (g.sub.vy > 0 && g.sub.y + g.sub.vy * 10 > g.sub.rated))) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
     if (m.on) m.cutBySerious = false;
     // a long stretch of nothing much (standing about, waiting, swimming back and forth doing the same thing):
     // the rest before the next piece runs out faster, and the music is likelier to come
