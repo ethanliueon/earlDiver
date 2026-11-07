@@ -1436,3 +1436,11 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .tr-msg.on { opacity: 1; transform: translate(-50%, 0); }
 .gl-catch .gl-room { margin-top: 10px; justify-content: center; font: 13px var(--mono); color: #f0dca0; border-color: rgba(201,166,90,0.6); }
 .gl-catch .gl-room::before { content: ''; }
+
+/* (3.0.19) warnings over the full-screen panels (the HUD's toasts are under them) */
+#overflash { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 9000; display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
+#overflash .of-line { padding: 6px 16px; border-radius: 3px; font: 15px var(--serif); color: #f6d9b0; background: rgba(40,16,10,0.88); box-shadow: 0 0 0 1px rgba(230,120,80,0.55), 0 6px 18px rgba(0,0,0,0.5); transition: opacity 0.4s; }
+#overflash .of-line.gone { opacity: 0; }
+#overair { position: fixed; right: 16px; top: 66px; z-index: 9000; padding: 6px 14px; border-radius: 3px; font: 13px var(--mono); color: #ffd7c4; background: rgba(60,14,10,0.9); box-shadow: 0 0 0 1px rgba(255,110,80,0.6); pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+#overair.on { opacity: 1; animation: overairPulse 1.6s ease-in-out infinite; }
+@keyframes overairPulse { 50% { box-shadow: 0 0 0 1px rgba(255,110,80,0.9), 0 0 14px rgba(255,90,60,0.45); } }

@@ -43,6 +43,37 @@ const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
 const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
+// (3.0.19) the HUD is under the full-screen panels (the tank room, the shops, the cabin...): while one is open,
+// warnings are repeated on a strip over it, so nothing that matters (air above all) goes unseen
+{ const toast0 = hud.toast.bind(hud);
+  hud.toast = (text, kind = '') => { toast0(text, kind);
+    if (kind !== 'warn') return;
+    try { if (!ui.anyOpen()) return; } catch (err) { return; } // (before the UI exists)
+    if (g && g.inTankAct) return; // a refusal in the tank room: it says that one itself (3.0.15)
+    flashOver(text); }; }
+function flashOver(text) {
+  let el = document.getElementById('overflash');
+  if (!el) { el = document.createElement('div'); el.id = 'overflash'; document.body.appendChild(el); }
+  const line = document.createElement('div'); line.className = 'of-line'; line.textContent = text;
+  el.appendChild(line); while (el.children.length > 3) el.firstChild.remove();
+  setTimeout(() => { line.classList.add('gone'); setTimeout(() => line.remove(), 500); }, 4000);
+}
+// the steady line: how the air is, while a panel is open and it is getting short
+function airOver(g) {
+  let el = document.getElementById('overair');
+  if (!el) { el = document.createElement('div'); el.id = 'overair'; document.body.appendChild(el); }
+  const e = g.earl, sub = g.sub;
+  let txt = '';
+  if (g.mode === 'play' && ui.anyOpen() && !g.aboard) {
+    const subAir = e.inSub && sub && sub.o2Max ? sub.o2 / sub.o2Max : 1, own = e.o2Max ? e.o2 / e.o2Max : 1;
+    if (g.noAir) txt = 'Out of air — surface!';
+    else if (e.inSub && subAir <= 0.001) txt = own < 0.5 ? `Cabin out of air · your tank: ${Math.ceil(e.o2)} s` : 'Cabin out of air: breathing from your tank';
+    else if (e.inSub && subAir < 0.25) txt = `Sub air low: ${Math.round(subAir * 100)} %`;
+    else if (!e.inSub && own < 0.35) txt = `${Math.ceil(e.o2)} s of air left`;
+  }
+  if (el.textContent !== txt) el.textContent = txt;
+  el.classList.toggle('on', !!txt);
+}
 const audio = new Audio(); window.__earlAudio = audio; // (for testing)
 
 const keys = new Set();
@@ -217,7 +248,7 @@ const ui = new UI({
   onWare: (k) => wareBuy(k),
   onTank: (act, where, i, to) => { // (3.0.15) a refusal is said inside the tank room too (the toasts are under it)
     const n0 = hud.toasts.length, last0 = hud.toasts[n0 - 1];
-    const r = tankAction(act, where, i, to);
+    g.inTankAct = true; let r; try { r = tankAction(act, where, i, to); } finally { g.inTankAct = false; }
     if (r === false && act !== 'swaps') { const t = hud.toasts[hud.toasts.length - 1]; g.roomMsg = { text: t && (t !== last0 || hud.toasts.length !== n0) ? t.text : (act === 'press' ? 'The chambers are full' : act === 'tobag' ? 'The bag is full' : 'The tank is full'), t: performance.now() }; }
     return r;
   },
@@ -2057,6 +2088,7 @@ function frame(now) {
   hud.draw(g, dt);
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen()); // (3.0.0) the Quests button
   audio.update(g, dt);
+  airOver(g);
   ui.update(g, dt);
   // dread colour grading on the scene canvas only
   const fx = g.fx;
