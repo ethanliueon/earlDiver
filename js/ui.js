@@ -340,14 +340,14 @@ export class UI {
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
   // a brass "are you sure?" plate: yes runs onYes; no, Esc or a click outside just closes it
-  confirm(title, body, yes, no, onYes) {
+  confirm(title, body, yes, no, onYes, onNo = null) {
     const el = $('confirm'), close = () => { el.hidden = true; window.removeEventListener('keydown', key, true); };
     const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
     el.querySelector('.cf-title').textContent = title;
     el.querySelector('.cf-body').innerHTML = esc(body).replace(/\n/g, '<br>');
     el.querySelector('.cf-yes').textContent = yes; el.querySelector('.cf-no').textContent = no;
     el.querySelector('.cf-yes').onclick = () => { close(); onYes(); };
-    el.querySelector('.cf-no').onclick = close;
+    el.querySelector('.cf-no').onclick = () => { close(); if (onNo) onNo(); }; // (4.2.0)
     el.onclick = (e) => { if (e.target === el) close(); };
     window.addEventListener('keydown', key, true);
     el.hidden = false; el.querySelector('.cf-no').focus();

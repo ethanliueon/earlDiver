@@ -836,6 +836,37 @@ function withLoading(fn) {
   ui.showLoading(true);
   setTimeout(() => { fn(); g.warmUntil = performance.now() + 1500; }, 40);
 }
+// (4.2.0) the tutorial: a welcome at the start of a new game, with a skip (asked twice); then tutor() guides the
+// first steps of the Log with a line of text, a fading trail to where to go, and a ring on the fish to catch
+function tutorWelcome() {
+  const P = profile; if (!P || P.tut) return;
+  ui.confirm('Welcome to the tutorial', 'This will be quick: just a look around the game.', 'Start', 'Skip tutorial',
+    () => { P.tut = 'on'; saveProfile(P); g.tutSaid = null; },
+    () => ui.confirm('Skip the tutorial?', 'Are you sure? The Margaret\'s Log (O) still lists the basics.', 'Skip it', 'Back', () => { P.tut = 'skip'; saveProfile(P); }, () => tutorWelcome()));
+}
+const TUT_IDS = new Set(['swim', 'observe', 'net', 'sell', 'buy', 'wear']);
+function tutor() {
+  const P = profile, e = g.earl; g.tut = null;
+  if (!P || P.tut !== 'on' || g.mode !== 'play' || g.aboard && false) return;
+  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the Log (O) has more', 'big'); } return; }
+  const done = S.mainProg >= m.need;
+  let text = null, to = null, fish = null;
+  if (!done && (m.id === 'swim' || m.id === 'observe' || m.id === 'net')) {
+    // the nearest easy fish: small, slow, not deep
+    let best = null, bd = 1e9;
+    for (const c of g.fauna.list) { if (c.dead || c.pet || !c.sp || c.len > 0.45 || c.y > 40 || c.y < 2 || !canTakeLive(c.sp)) continue; const d = dist(e.x, e.y, c.x, c.y); if (d < bd) { bd = d; best = c; } }
+    if (best) { to = { x: best.x, y: best.y }; fish = best; }
+    text = m.id === 'swim' || bd > 6 ? 'Follow the trail to your first fish · hold Shift or the right mouse button to sprint' : m.id === 'observe' || !g.journal.has(best.sp.id) ? 'Swim close and press F to observe it' : 'Press Space (or click) to net it';
+  } else if (done && e.y > 2 && !g.aboard) { text = 'Well done. Swim up to the surface and take a breather'; to = { x: e.x, y: 0 }; }
+  else if (done) text = g.tutClaimHint ? 'Now claim it: press O, then Claim' : 'Press O for your quests, then Claim';
+  else if (m.id === 'sell') {
+    if (!P.tutJournal) text = 'Press J: your journal keeps every animal you have observed';
+    else { text = 'Bring your catch to the Margaret and press U to sell it'; to = { x: BOAT.x - 6, y: 1 }; }
+  } else if (m.id === 'buy') text = 'Climb aboard (F), go into the cabin, and buy something at the computer';
+  else if (m.id === 'wear') text = 'Press B for your inventory and put on what you bought';
+  g.tut = { text, to, fish };
+  if (text && (g.tutSaid !== text || g.time - (g.tutSaidT || 0) > 25)) { g.tutSaid = text; g.tutSaidT = g.time; hud.toast(text, 'note'); }
+}
 function startRun() {
   mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic();
@@ -852,6 +883,7 @@ function startRun() {
   hud.toasts = [];
   ui.showGame();
   canvas.focus();
+  if (fresh && !profile.tut) setTimeout(tutorWelcome, 900); // (4.2.0) a new game: the welcome, and the choice to skip
 }
 
 // ---------------- input ----------------
@@ -1756,6 +1788,9 @@ function update(dt) {
     g.questT = (g.questT || 0) + dt;
     profile.playT = (profile.playT || 0) + dt; // (3.0.0) play time: the old one's days
     if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
+    if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
+    if (!document.getElementById('quests').hidden) g.tutClaimHint = true;
+    tutor(); // (4.2.0)
     const dl = updateSpecimens(g, dt);
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
     const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : s.pile ? ' on the floor of the sub' : ' in the tank') : '');

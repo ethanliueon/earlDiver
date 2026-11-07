@@ -467,6 +467,22 @@ export class Renderer {
     if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
     // brackets around what the net, slurp gun or claw will go for (a setting: pause menu)
+    // (4.2.0) the tutorial: a trail of fading markers from Earl to where to go, and a ring pulsing round the fish
+    if (g.tut && g.tut.to && g.mode === 'play') {
+      const e = g.earl, tx = g.tut.to.x, ty = g.tut.to.y, d = Math.hypot(tx - e.x, ty - e.y), n = Math.min(40, Math.floor(d / 1.2));
+      for (let i = 1; i < n; i++) {
+        const q = i / n, ph = (q * 6 - g.time * 1.5) % 1, a = (0.25 + 0.55 * (ph < 0 ? ph + 1 : ph)) * Math.min(1, (1 - q) * 4) * Math.min(1, q * 6);
+        ctx.fillStyle = `rgba(255,226,150,${a.toFixed(3)})`; ctx.beginPath(); ctx.arc(S(lerp(e.x, tx, q)), Sy(lerp(e.y, ty, q)), Math.max(2, ppm * 0.09), 0, TAU); ctx.fill();
+      }
+      if (g.tut.fish) { const f = g.tut.fish, r = Math.max(14, ppm * (f.len * 0.8 + 0.4)) * (1 + 0.12 * Math.sin(g.time * 4));
+        ctx.strokeStyle = 'rgba(255,226,150,0.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(S(f.x), Sy(f.y), r, 0, TAU); ctx.stroke(); }
+      // off-screen: an arrow at the edge of the screen pointing the way
+      const sx = S(tx), sy = Sy(ty), W2 = this.W, H2 = this.H;
+      if (sx < 0 || sx > W2 || sy < 0 || sy > H2) {
+        const ax = clamp(sx, 40, W2 - 40), ay = clamp(sy, 60, H2 - 60), ang = Math.atan2(sy - H2 / 2, sx - W2 / 2);
+        ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.fillStyle = 'rgba(255,226,150,0.9)'; ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -11); ctx.lineTo(-4, 0); ctx.lineTo(-10, 11); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+    }
     const ctg = g.mode === 'play' && SETTINGS.brackets ? g.catchTarget : null;
     if (ctg) {
       const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y;

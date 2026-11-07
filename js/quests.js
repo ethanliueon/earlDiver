@@ -48,11 +48,18 @@ const MAIN_I = Object.fromEntries(MAIN.map((m, i) => [m.id, i]));
 export function learned(P, id) { const S = Q(P), i = MAIN_I[id]; return i === undefined || S.main > i || (S.seen[id] || 0) >= MAIN[i].need; }
 
 // the board's quests, by kind: what to do at each rarity, and the pay
+// (4.2.0) a hidden player level, 1-10, from what he has done: lifetime earnings, deepest dive, the sub's hull.
+// Board quests ask more and pay more as it rises; an early 'catch 25' pays about $50.
+export function playerLevel(P) {
+  const earn = Math.log10(1 + (P.lifetime || 0)), deep = Math.log10(1 + (P.deepest || 0)), hull = (P.tlv && P.tlv.depth) || (P.lv && P.lv.depth) || 0;
+  return Math.max(1, Math.min(10, Math.round(1 + earn * 1.1 + deep * 0.6 + hull * 0.6 - 1.2)));
+}
+const payK = (P) => 0.35 + (playerLevel(P) - 1) * 0.13;
 const KINDS = {
-  catch: (r) => ({ n: [5, 12, 25, 50][r], pay: [135, 420, 1425, 6300][r], text: (q) => `Catch ${q.n} animals` }),
-  deep: (r) => ({ d: [40, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [240, 900, 3200, 13000][r], // (4.0.0) the deep pays most
+  catch: (r) => ({ n: [25, 50, 100, 200][r], pay: [135, 420, 1425, 6300][r], text: (q) => `Catch ${q.n} animals` }),
+  deep: (r) => ({ d: [100, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [240, 900, 3200, 13000][r], // (4.0.0) the deep pays most
     text: (q) => `Catch ${q.n > 1 ? q.n + ' animals' : 'an animal'} below ${q.d} m` }),
-  sell: (r) => ({ n: [150, 700, 3000, 15000][r], pay: [90, 360, 1350, 6000][r], text: (q) => `Sell $${q.n.toLocaleString()} of catch` }),
+  sell: (r) => ({ n: [450, 2000, 9000, 45000][r], pay: [90, 360, 1350, 6000][r], text: (q) => `Sell $${q.n.toLocaleString()} of catch` }),
   photo: (r) => ({ n: [1, 3, 6, 12][r], pay: [120, 450, 1350, 5700][r], text: (q) => `Photograph ${q.n} new species` }),
   tag: (r) => ({ n: [1, 2, 4, 8][r], pay: [150, 525, 1650, 6750][r], text: (q) => `Tag ${q.n} animal${q.n > 1 ? 's' : ''}` }),
   species: (r, rnd, P) => {
@@ -92,6 +99,7 @@ export function newQuest(P, rnd = Math.random, taken = new Set()) {
     const kinds = ['catch', 'catch', 'deep', 'sell', 'species', 'species'].concat(ownsKind(P, 'cam') ? ['photo'] : []).concat(ownsKind(P, 'tag') ? ['tag'] : []);
     const kind = kinds[Math.floor(rnd() * kinds.length)];
     const q = KINDS[kind](r, rnd, P); if (!q) continue;
+    if (kind !== 'species') q.pay = Math.max(10, Math.round(q.pay * payK(P) / 5) * 5); // (4.2.0) by the hidden player level
     const key = kind + (q.id || ''); if ([...taken].some((t) => t === key || (kind === 'catch' && t.startsWith('catch')))) continue; // one of each kind on the board
     return { key, kind, rarity, n: q.n, d: q.d, id: q.id, pay: q.pay, text: q.text(q), prog: 0, until: Date.now() + QUEST_HOURS[rarity] * 3600000, fresh: true };
   }
