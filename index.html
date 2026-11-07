@@ -10,54 +10,54 @@
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&family=Allerta+Stencil&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* the loading screen (2.6.4): drawn before anything else loads, faded out once the game is ready */
-    #boot { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 45%, #0e1a22, #04080b 70%); color: #d9ccaa; transition: opacity 0.9s ease; }
+    /* the loading screen (3.0.0): the boat's own bulkhead. Riveted olive steel, the brass nameplate from the
+       title, and a brass depth gauge whose needle winds round as the game loads; what it is doing is typed
+       on a strip of label tape. Faded out once the game is ready. */
+    #boot { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; transition: opacity 0.9s ease;
+      background: repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 3px), linear-gradient(180deg, #4f574c, #353b33 70%, #2b3029); }
+    #boot::before { content: ''; position: absolute; inset: 14px; border: 1px solid rgba(20,24,18,0.6); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); pointer-events: none;
+      --r: radial-gradient(circle at 50% 45%, #b8bea9 0 1.4px, #7c8470 2px, #2a2f27 3.4px, transparent 4px);
+      background: var(--r) 0 6px / 28px 12px repeat-x, var(--r) 0 calc(100% - 6px) / 28px 12px repeat-x, var(--r) 6px 0 / 12px 28px repeat-y, var(--r) calc(100% - 6px) 0 / 12px 28px repeat-y; }
     #boot.done { opacity: 0; pointer-events: none; }
-    #boot .bt { display: grid; justify-items: center; gap: 18px; font-family: "EB Garamond", Georgia, serif; }
-    #boot svg { width: 170px; height: 170px; filter: drop-shadow(0 10px 24px rgba(0,0,0,0.6)); }
-    #boot .ship { transform-origin: 85px 92px; animation: bt-rock 4s ease-in-out infinite; }
-    #boot .sea { animation: bt-sea 4s ease-in-out infinite; }
-    @keyframes bt-rock { 0%, 100% { transform: rotate(-2deg) translateY(0); } 50% { transform: rotate(2deg) translateY(1.5px); } }
-    @keyframes bt-sea { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.5px); } }
-    #boot h1 { margin: 0; font-weight: 500; font-size: 30px; letter-spacing: 0.02em; color: #e6d6a8; }
-    #boot .bar { width: 220px; height: 3px; border-radius: 2px; background: rgba(217,204,170,0.15); overflow: hidden; }
-    #boot .bar i { display: block; height: 100%; width: 12%; background: linear-gradient(90deg, #9a7a34, #ecd28e); transition: width 0.4s ease; }
-    #boot small { font: 11px "IBM Plex Mono", ui-monospace, monospace; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(217,204,170,0.5); min-height: 14px; }
+    #boot .bt { display: grid; justify-items: center; gap: 22px; font-family: "EB Garamond", Georgia, serif; }
+    #boot .plate { position: relative; padding: 10px 30px 12px; border-radius: 5px; background: linear-gradient(180deg, #ecd28e 0%, #c9a65a 38%, #a8873e 62%, #7a5a22 100%);
+      box-shadow: 0 3px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,250,220,0.7), inset 0 -1px 0 rgba(60,40,10,0.6); }
+    #boot .plate::before, #boot .plate::after { content: ''; position: absolute; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #f4e2a8, #7a5a22 70%); }
+    #boot .plate::before { left: 10px; } #boot .plate::after { right: 10px; }
+    #boot h1 { margin: 0; font-family: "EB Garamond", Georgia, serif; font-weight: 400; font-size: 46px; line-height: 1.05; color: #3a2a0e; text-shadow: 0 1px 0 rgba(255,245,210,0.6); }
+    #boot svg { width: 168px; height: 168px; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.35)); }
+    #boot .needle { transform-origin: 84px 84px; transition: transform 0.6s cubic-bezier(.3,1.4,.5,1); }
+    #boot .tape { font: 13px "IBM Plex Mono", ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #f2efe6; background: #1c1c1a; padding: 4px 12px 5px;
+      border-radius: 2px; box-shadow: 0 1px 0 rgba(255,255,255,0.08), 0 2px 3px rgba(0,0,0,0.4); min-height: 16px; transform: rotate(-0.6deg); }
   </style>
 </head>
 <body>
   <div id="boot" aria-label="Loading">
     <div class="bt">
-      <svg viewBox="0 0 170 170" aria-hidden="true">
+      <div class="plate"><h1>Earl the Diver</h1></div>
+      <svg viewBox="0 0 168 168" aria-hidden="true">
         <defs>
           <radialGradient id="bt-brass" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#ecd28e"/><stop offset="0.5" stop-color="#b8913e"/><stop offset="1" stop-color="#5e4418"/></radialGradient>
-          <linearGradient id="bt-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c3346"/><stop offset="1" stop-color="#3b6278"/></linearGradient>
-          <linearGradient id="bt-water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4a5e"/><stop offset="1" stop-color="#081a24"/></linearGradient>
-          <clipPath id="bt-glass"><circle cx="85" cy="85" r="62"/></clipPath>
+          <radialGradient id="bt-face" cx="45%" cy="40%" r="70%"><stop offset="0" stop-color="#f1ead6"/><stop offset="1" stop-color="#cfc5a8"/></radialGradient>
         </defs>
-        <g clip-path="url(#bt-glass)">
-          <rect x="0" y="0" width="170" height="170" fill="url(#bt-sky)"/>
-          <g class="ship" fill="#0b1318">
-            <path d="M52 92 L118 92 L113 101 L58 101 Z"/><rect x="74" y="80" width="20" height="12" rx="2"/><rect x="83" y="66" width="2" height="15"/><path d="M104 92 L116 70 L118 71 L107 92 Z"/>
-          </g>
-          <g class="sea"><rect x="0" y="96" width="170" height="80" fill="url(#bt-water)"/><rect x="0" y="96" width="170" height="1.2" fill="rgba(220,235,240,0.35)"/></g>
-          <ellipse cx="62" cy="58" rx="34" ry="12" fill="rgba(255,255,255,0.06)" transform="rotate(-30 62 58)"/>
-        </g>
-        <circle cx="85" cy="85" r="70" fill="none" stroke="url(#bt-brass)" stroke-width="15"/>
-        <circle cx="85" cy="85" r="62.5" fill="none" stroke="rgba(40,26,6,0.7)" stroke-width="1.5"/>
-        <g fill="#e8cc80">
-          <circle cx="85" cy="15" r="2.6"/><circle cx="155" cy="85" r="2.6"/><circle cx="85" cy="155" r="2.6"/><circle cx="15" cy="85" r="2.6"/>
-          <circle cx="134.5" cy="35.5" r="2.6"/><circle cx="134.5" cy="134.5" r="2.6"/><circle cx="35.5" cy="134.5" r="2.6"/><circle cx="35.5" cy="35.5" r="2.6"/>
-        </g>
+        <circle cx="84" cy="84" r="80" fill="url(#bt-brass)"/>
+        <circle cx="84" cy="84" r="68" fill="#3a2a0e" opacity="0.55"/>
+        <circle cx="84" cy="84" r="66" fill="url(#bt-face)"/>
+        <g stroke="#2a2418" stroke-width="2" stroke-linecap="round"><line x1="47.2" y1="120.8" x2="40.2" y2="127.8"/><line x1="30.7" y1="101.3" x2="25.0" y2="103.2"/><line x1="28.7" y1="75.2" x2="22.8" y2="74.3"/><line x1="38.7" y1="51.1" x2="33.8" y2="47.6"/><line x1="58.6" y1="34.1" x2="55.9" y2="28.8"/><line x1="84.0" y1="32.0" x2="84.0" y2="22.0"/><line x1="109.4" y1="34.1" x2="112.1" y2="28.8"/><line x1="129.3" y1="51.1" x2="134.2" y2="47.6"/><line x1="139.3" y1="75.2" x2="145.2" y2="74.3"/><line x1="137.3" y1="101.3" x2="143.0" y2="103.2"/><line x1="120.8" y1="120.8" x2="127.8" y2="127.8"/></g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="#2a2418" text-anchor="middle"><text x="53.6" y="117.4">0</text><text x="41.5" y="80.3">2</text><text x="64.5" y="48.7">4</text><text x="103.5" y="48.7">6</text><text x="126.5" y="80.3">8</text><text x="114.4" y="117.4">10</text></g>
+        <text x="84" y="128" font-family="EB Garamond, Georgia, serif" font-size="10" fill="#5a4a2a" text-anchor="middle" font-style="italic">fathoms ×10</text>
+        <path d="M 138 118 A 64 64 0 0 1 116 140" fill="none" stroke="#a83a2a" stroke-width="4" opacity="0.6"/>
+        <g class="needle" style="transform: rotate(-225deg)"><path d="M84 84 L140 82.6 L140 85.4 Z" fill="#1c1a16"/><path d="M84 84 L70 83 L70 85 Z" fill="#1c1a16"/></g>
+        <circle cx="84" cy="84" r="6" fill="url(#bt-brass)" stroke="#3a2a0e" stroke-width="1"/>
+        <g fill="#7a5a22"><circle cx="136.3" cy="136.3" r="2.6"/><circle cx="31.7" cy="136.3" r="2.6"/><circle cx="31.7" cy="31.7" r="2.6"/><circle cx="136.3" cy="31.7" r="2.6"/></g>
+        <ellipse cx="62" cy="54" rx="30" ry="12" fill="rgba(255,255,255,0.22)" transform="rotate(-35 62 54)"/>
       </svg>
-      <h1>Earl the Diver</h1>
-      <div class="bar"><i></i></div>
-      <small>Loading</small>
+      <div class="tape">Loading</div>
     </div>
   </div>
   <script>
     // the game reports how far it has got (window.__boot), then fades this away (window.__bootDone)
-    window.__boot = function (k, label) { var b = document.querySelector('#boot .bar i'), s = document.querySelector('#boot small'); if (b) b.style.width = Math.round(Math.max(0.12, Math.min(1, k)) * 100) + '%'; if (s && label) s.textContent = label; };
+    window.__boot = function (k, label) { var n = document.querySelector('#boot .needle'), s = document.querySelector('#boot .tape'); if (n) n.style.transform = 'rotate(' + (-225 + 270 * Math.max(0.05, Math.min(1, k))) + 'deg)'; if (s && label) s.textContent = label; };
     window.__bootDone = function () { var el = document.getElementById('boot'); if (!el) return; el.classList.add('done'); setTimeout(function () { el.remove(); }, 1000); };
     window.__boot(0.25, 'Loading');
   </script>
@@ -241,55 +241,55 @@
   <!-- stamp:start (tools/stamp.py) -->
   <script type="importmap">
   { "imports": {
-    "./js/aquarium.js": "./js/aquarium.js?v=3.0.0-a6",
-    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=3.0.0-a6",
-    "./js/arm.js": "./js/arm.js?v=3.0.0-a6",
-    "./js/audio.js": "./js/audio.js?v=3.0.0-a6",
-    "./js/autopilot.js": "./js/autopilot.js?v=3.0.0-a6",
-    "./js/cabin.js": "./js/cabin.js?v=3.0.0-a6",
-    "./js/capture.js": "./js/capture.js?v=3.0.0-a6",
-    "./js/catalog.js": "./js/catalog.js?v=3.0.0-a6",
-    "./js/chests.js": "./js/chests.js?v=3.0.0-a6",
-    "./js/clouds.js": "./js/clouds.js?v=3.0.0-a6",
-    "./js/contracts.js": "./js/contracts.js?v=3.0.0-a6",
-    "./js/creatures_draw.js": "./js/creatures_draw.js?v=3.0.0-a6",
-    "./js/dave.js": "./js/dave.js?v=3.0.0-a6",
-    "./js/earl_draw.js": "./js/earl_draw.js?v=3.0.0-a6",
-    "./js/economy.js": "./js/economy.js?v=3.0.0-a6",
-    "./js/entity.js": "./js/entity.js?v=3.0.0-a6",
-    "./js/fauna.js": "./js/fauna.js?v=3.0.0-a6",
-    "./js/gallery.js": "./js/gallery.js?v=3.0.0-a6",
-    "./js/hud.js": "./js/hud.js?v=3.0.0-a6",
-    "./js/hunters.js": "./js/hunters.js?v=3.0.0-a6",
-    "./js/item_art.js": "./js/item_art.js?v=3.0.0-a6",
-    "./js/item_data.js": "./js/item_data.js?v=3.0.0-a6",
-    "./js/items.js": "./js/items.js?v=3.0.0-a6",
-    "./js/main.js": "./js/main.js?v=3.0.0-a6",
-    "./js/monster_draw.js": "./js/monster_draw.js?v=3.0.0-a6",
-    "./js/player.js": "./js/player.js?v=3.0.0-a6",
-    "./js/quests.js": "./js/quests.js?v=3.0.0-a6",
-    "./js/render.js": "./js/render.js?v=3.0.0-a6",
-    "./js/scenery_draw.js": "./js/scenery_draw.js?v=3.0.0-a6",
-    "./js/settings.js": "./js/settings.js?v=3.0.0-a6",
-    "./js/showcase.js": "./js/showcase.js?v=3.0.0-a6",
-    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=3.0.0-a6",
-    "./js/species.js": "./js/species.js?v=3.0.0-a6",
-    "./js/specimens.js": "./js/specimens.js?v=3.0.0-a6",
-    "./js/station_draw.js": "./js/station_draw.js?v=3.0.0-a6",
-    "./js/survey.js": "./js/survey.js?v=3.0.0-a6",
-    "./js/tankroom.js": "./js/tankroom.js?v=3.0.0-a6",
-    "./js/tools_draw.js": "./js/tools_draw.js?v=3.0.0-a6",
-    "./js/trail.js": "./js/trail.js?v=3.0.0-a6",
-    "./js/traps.js": "./js/traps.js?v=3.0.0-a6",
-    "./js/ui.js": "./js/ui.js?v=3.0.0-a6",
-    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=3.0.0-a6",
-    "./js/util.js": "./js/util.js?v=3.0.0-a6",
-    "./js/variants.js": "./js/variants.js?v=3.0.0-a6",
-    "./js/version.js": "./js/version.js?v=3.0.0-a6",
-    "./js/world.js": "./js/world.js?v=3.0.0-a6"
+    "./js/aquarium.js": "./js/aquarium.js?v=3.0.0-a7",
+    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=3.0.0-a7",
+    "./js/arm.js": "./js/arm.js?v=3.0.0-a7",
+    "./js/audio.js": "./js/audio.js?v=3.0.0-a7",
+    "./js/autopilot.js": "./js/autopilot.js?v=3.0.0-a7",
+    "./js/cabin.js": "./js/cabin.js?v=3.0.0-a7",
+    "./js/capture.js": "./js/capture.js?v=3.0.0-a7",
+    "./js/catalog.js": "./js/catalog.js?v=3.0.0-a7",
+    "./js/chests.js": "./js/chests.js?v=3.0.0-a7",
+    "./js/clouds.js": "./js/clouds.js?v=3.0.0-a7",
+    "./js/contracts.js": "./js/contracts.js?v=3.0.0-a7",
+    "./js/creatures_draw.js": "./js/creatures_draw.js?v=3.0.0-a7",
+    "./js/dave.js": "./js/dave.js?v=3.0.0-a7",
+    "./js/earl_draw.js": "./js/earl_draw.js?v=3.0.0-a7",
+    "./js/economy.js": "./js/economy.js?v=3.0.0-a7",
+    "./js/entity.js": "./js/entity.js?v=3.0.0-a7",
+    "./js/fauna.js": "./js/fauna.js?v=3.0.0-a7",
+    "./js/gallery.js": "./js/gallery.js?v=3.0.0-a7",
+    "./js/hud.js": "./js/hud.js?v=3.0.0-a7",
+    "./js/hunters.js": "./js/hunters.js?v=3.0.0-a7",
+    "./js/item_art.js": "./js/item_art.js?v=3.0.0-a7",
+    "./js/item_data.js": "./js/item_data.js?v=3.0.0-a7",
+    "./js/items.js": "./js/items.js?v=3.0.0-a7",
+    "./js/main.js": "./js/main.js?v=3.0.0-a7",
+    "./js/monster_draw.js": "./js/monster_draw.js?v=3.0.0-a7",
+    "./js/player.js": "./js/player.js?v=3.0.0-a7",
+    "./js/quests.js": "./js/quests.js?v=3.0.0-a7",
+    "./js/render.js": "./js/render.js?v=3.0.0-a7",
+    "./js/scenery_draw.js": "./js/scenery_draw.js?v=3.0.0-a7",
+    "./js/settings.js": "./js/settings.js?v=3.0.0-a7",
+    "./js/showcase.js": "./js/showcase.js?v=3.0.0-a7",
+    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=3.0.0-a7",
+    "./js/species.js": "./js/species.js?v=3.0.0-a7",
+    "./js/specimens.js": "./js/specimens.js?v=3.0.0-a7",
+    "./js/station_draw.js": "./js/station_draw.js?v=3.0.0-a7",
+    "./js/survey.js": "./js/survey.js?v=3.0.0-a7",
+    "./js/tankroom.js": "./js/tankroom.js?v=3.0.0-a7",
+    "./js/tools_draw.js": "./js/tools_draw.js?v=3.0.0-a7",
+    "./js/trail.js": "./js/trail.js?v=3.0.0-a7",
+    "./js/traps.js": "./js/traps.js?v=3.0.0-a7",
+    "./js/ui.js": "./js/ui.js?v=3.0.0-a7",
+    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=3.0.0-a7",
+    "./js/util.js": "./js/util.js?v=3.0.0-a7",
+    "./js/variants.js": "./js/variants.js?v=3.0.0-a7",
+    "./js/version.js": "./js/version.js?v=3.0.0-a7",
+    "./js/world.js": "./js/world.js?v=3.0.0-a7"
   } }
   </script>
-  <script type="module" src="js/main.js?v=3.0.0-a6"></script>
+  <script type="module" src="js/main.js?v=3.0.0-a7"></script>
   <!-- stamp:end -->
 </body>
 </html>

@@ -699,6 +699,7 @@ function withLoading(fn) {
   setTimeout(() => { fn(); g.warmUntil = performance.now() + 1500; }, 40);
 }
 function startRun() {
+  mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic(); audio.cue && audio.cue('start'); // (2.9.2) a new dive, or back after a death
   if (!getSlot()) setSlot(firstFreeSlot());
   if (!profile) { profile = newProfile(); saveProfile(profile); }
@@ -1590,13 +1591,13 @@ function update(dt) {
     g.questT = (g.questT || 0) + dt;
     if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
     const dl = updateSpecimens(g, dt);
-    for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from its depth`, 'warn');
+    for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died${s.pressDeath ? ' of the pressure' : ''}`, 'warn');
     for (const ev of dl.events) {
       const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
-      if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the ${ev.deeper ? 'depth' : 'climb'}: get it into one of the sub's chambers`, 'warn');
-      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying: get it to a chamber, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
-      else if (ev.type === 'stressed') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : "in the sub's tank"} is stressed`, 'warn');
-      else if (ev.type === 'dying') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : "in the sub's tank"} is dying`, 'warn');
+      if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the pressure: get it into a chamber`, 'warn');
+      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying of the pressure: get it to a chamber, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
+      else if (ev.type === 'stressed') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : "in the sub's tank"} is stressed${ev.press ? ' by the pressure' : ''}`, 'warn');
+      else if (ev.type === 'dying') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : "in the sub's tank"} is dying${ev.press ? ' of the pressure' : ''}`, 'warn');
     }
     g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here

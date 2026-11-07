@@ -98,7 +98,7 @@ export class Cabin {
       if (ev.type === 'keydown') {
         if (k === 'escape') { ev.preventDefault(); ev.stopImmediatePropagation(); this.h.close(); return; }
         if (k === 'e' || k === 'f') { ev.preventDefault(); ev.stopImmediatePropagation(); this.use(); return; }
-        if (['a', 'd', 'arrowleft', 'arrowright', 'shift'].includes(k)) { ev.preventDefault(); ev.stopImmediatePropagation(); this.keys.add(k); this.goal = null; }
+        if (['a', 'd', 'arrowleft', 'arrowright', 'shift'].includes(k)) { ev.preventDefault(); ev.stopImmediatePropagation(); this.keys.add(k); this.goal = null; if (k !== 'shift') this.keyAt = performance.now(); }
       } else this.keys.delete(k);
     };
     // (2.6.2) the mouse: click to walk there; click on a thing (or where he stands at it) to use it
@@ -109,11 +109,18 @@ export class Cabin {
       if (st && this.near() === st.id) { this.use(); return; }
       this.goal = clamp(st ? st.x : fx, ROOM.min, ROOM.max); this.goalUse = !!st;
     });
+    // (3.0.0) as in the water: he walks toward the cursor (after it has moved since the cabin opened, and since a key)
+    this.c.addEventListener('mousemove', (ev) => {
+      this.mcx = ev.clientX;
+      if (Math.abs(ev.clientX - (this.mlx ?? ev.clientX)) > 1) this.mMoved = performance.now();
+      this.mlx = ev.clientX;
+    });
+    this.c.addEventListener('mouseleave', () => { this.mcx = null; });
     this.c.style.cursor = 'pointer';
     window.addEventListener('keydown', this.onKey, true);
     window.addEventListener('keyup', this.onKey, true);
   }
-  show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); this.goal = null; }
+  show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); this.goal = null; this.mMoved = -1e9; this.mlx = null; }
   near() { const st = STATIONS.find((q) => Math.abs(this.x - q.x) < 0.045); return st ? st.id : null; }
   use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'tank' ? 'gallery' : n); }
   atTank() { this.x = ROOM.tank; this.face = 1; this.keys.clear(); this.goal = null; }
@@ -123,7 +130,13 @@ export class Cabin {
     let dir = (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0);
     if (!dir && this.goal != null) { const d = this.goal - this.x; if (Math.abs(d) < 0.006) { this.x = this.goal; this.goal = null; if (this.goalUse) { this.goalUse = false; if (this.near()) this.use(); } } else dir = Math.sign(d); }
     // (2.6.2) the same walk as on deck: the stride, footsteps; Shift runs
-    const run = this.keys.has('shift'), pace = run ? 0.32 : 0.2;
+    // following the cursor: a dead zone round him, a run when it is far
+    let mRun = false;
+    if (!dir && this.goal == null && this.mcx != null && (this.mMoved || -1e9) > (this.keyAt || -1e9) && !this.h.blocked()) {
+      const d = clamp((this.mcx + (this.camX || 0)) / window.innerWidth, ROOM.min, ROOM.max) - this.x;
+      if (Math.abs(d) > 0.035) { dir = Math.sign(d); mRun = Math.abs(d) > 0.3; }
+    }
+    const run = this.keys.has('shift') || mRun, pace = run ? 0.32 : 0.2;
     if (!this.h.blocked()) {
       const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);

@@ -135,7 +135,7 @@ export class Renderer {
     // 120 m), and in the sub in the deep, where the animals are small lights (46 m across near the surface,
     // 38 m below 400 m)
     const dv = clamp((e.y - 40) / 80, 0, 1), ds = clamp((e.y - 150) / 250, 0, 1);
-    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : g.aboard ? 15 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1)); // aboard the Margaret: close, the deck fills the view
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1)); // (3.0.0) only the wheel changes the view; on deck it is the same as in the water
     this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
@@ -145,7 +145,6 @@ export class Renderer {
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
-    if (g.aboard) { tx = BOAT.x + 0.3 + clamp(g.aboard.lx ?? g.aboard.x ?? 0, -6, 6) * 0.35; ty = -2.3; } // close on the deck, drifting a little after him
     if (g.helm) { tx = BOAT.x + 3 * Math.cos(BOAT.yaw || 0) + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
     if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }

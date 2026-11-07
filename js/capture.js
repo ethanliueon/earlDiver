@@ -256,11 +256,12 @@ export function updateSpecimens(g, dt) {
     // (2.9.1) however it comes to suffer (pressure, time in the bag, the floor of the tank room), say so once
     // as it gets stressed and once as it starts to die; one in a chamber at its own pressure is left in peace
     if (!(s.pressed && gap <= 5)) {
-      if (s.cond < 0.6 && !s.warnStress) { s.warnStress = true; events.push({ type: 'stressed', s, inBag }); }
-      if (s.cond < 0.3 && !s.warnDying) { s.warnDying = true; events.push({ type: 'dying', s, inBag }); }
+      const press = gap > ZONE.ok; // is the pressure the cause?
+      if (s.cond < 0.6 && !s.warnStress) { s.warnStress = true; events.push({ type: 'stressed', s, inBag, press }); }
+      if (s.cond < 0.3 && !s.warnDying) { s.warnDying = true; events.push({ type: 'dying', s, inBag, press }); }
     }
     if (s.cond > 0.75) s.warnStress = s.warnDying = false; // recovered: it can warn again
-    if (before > 0.05 && s.cond <= 0.05) deaths.push(s);
+    if (before > 0.05 && s.cond <= 0.05) { s.pressDeath = gap > ZONE.ok; deaths.push(s); }
   };
   for (const s of g.bag) tick(s, true);
   for (const s of g.subTank) tick(s, false);
