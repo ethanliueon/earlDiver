@@ -1828,3 +1828,6 @@ body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { 
 #inventory .fc .r-stars b, .tr-card .r-stars b, .gl-tag .r-stars b, .entry .r-stars b, .ct-cap .r-stars b { display: inline; margin: 0; font-family: Georgia, serif; font-weight: 400; font-style: normal; color: #e8b84a; }
 #inventory .fc .rs-legendary b, .tr-card .rs-legendary b, .gl-tag .rs-legendary b, .entry .rs-legendary b, .ct-cap .rs-legendary b { color: #ffd36a; }
 #inventory .fc .r-stars b { font-size: 12px; line-height: 1; }
+/* (3.0.43) the bag's pictures: a larger frame, each animal scaled in it by its real length */
+#inventory .inv-catch2 .fc img { height: 64px; width: 100%; object-fit: contain; transform-origin: 50% 70%; }
+#inventory .inv-catch2 .fc-grid.g4 { grid-auto-rows: 132px; }

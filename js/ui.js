@@ -21,7 +21,7 @@ import { SETTINGS, setSetting } from './settings.js';
 import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
-import { TankRoom } from './tankroom.js';
+import { TankRoom, sizeK } from './tankroom.js';
 import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
@@ -393,7 +393,8 @@ export class UI {
     const dot = (s2) => (s2.cond <= 0.05 ? '#8a6a5a' : s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a');
     const state = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
     const card = (cls, s2, span = 1) => { const sp = SPECIES_BY_ID[s2.id];
-      return `<div class="${cls}${rarityCls(sp)}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m">${rarityStars(sp)}<img src="${ic(sp)}" alt=""><b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
+      const pct = Math.round(Math.max(36, 100 * sizeK(s2.len || sp.len))); // (3.0.43) the picture at its real size, against a 2.4 m giant
+      return `<div class="${cls}${rarityCls(sp)}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m · ${(s2.len || sp.len).toFixed(2)} m">${rarityStars(sp)}<img src="${ic(sp)}" alt="" style="transform:scale(${Math.min(1.25, pct / 100 * 1.3).toFixed(2)})"><b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
     // the bag: eleven cubbies, the ones beyond his bag padlocked
     const BAG_MAX = 12, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);

@@ -19,7 +19,10 @@ const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], ti
 
 const MAX_CHAMBERS = UPGRADES.pressTanks.base + UPGRADES.pressTanks.max;
 const CW = 150, CH = 330; // a chamber, in its own units
-const tankLen = (len, max) => clamp(len * 1.6 * 110, 20, max);
+// (3.0.43) drawn by its real length: the largest (2.4 m, a Legendary giant) fills `max`, and every size below is
+// smaller in proportion (gently compressed, so a 10 cm fish is still seen): a giant outsizes a tuna, a tuna a frogfish
+export const sizeK = (len) => Math.pow(Math.min(len || 0.1, 2.4) / 2.4, 0.62);
+const tankLen = (len, max) => Math.max(14, max * sizeK(len));
 // how an animal is doing, in a word, and its colour
 function stateOf(g, s, inBag) {
   if (s.cond <= 0.05) return ['dead', '#9a9a9a'];
@@ -462,7 +465,7 @@ export class TankRoom {
     for (let k = 0; k <= 12; k++) ctx.lineTo(cx - 12 + k * 2, 258 + (k % 2 ? -4 : 4)); ctx.stroke();
     const home = s ? homeOf(s) : 0, pumping = s && (s.press || 0) < Math.min(home, cmax) - 1;
     if (s && !(this.drag && this.drag.s === s)) {
-      const L = Math.min(66, tankLen(s.len, 62) * (this.chamberFish || 1));
+      const L = Math.max(22, 66 * Math.pow(Math.min(s.len || 0.1, 1.2) / 1.2, 0.6)) * Math.min(1, this.chamberFish || 1); // (a chamber holds up to 1.2 m)
       const a = this.swim(g, s, false, { x0: X0 + 4, x1: X1 - 4, y0: TOP + 26, y1: BOT - 14 }, L, dt, 0.6);
       this.drawFish(ctx, g, s, a, L, false);
     }
@@ -545,10 +548,10 @@ export class TankRoom {
     for (const fx of [0.05, 0.09, 0.91, 0.95]) { const x = w * fx; ctx.beginPath(); ctx.moveTo(x, bot - 8); ctx.quadraticCurveTo(x + Math.sin(t * 0.8 + fx * 9) * 10, bot - h * 0.35, x + Math.sin(t * 0.6 + fx * 7) * 14, bot - h * 0.6); ctx.stroke(); }
     ctx.lineCap = 'butt';
     for (let k = 0; k < 16; k++) { const q = (t * 0.35 + k / 16) % 1; ctx.strokeStyle = `rgba(220,240,255,${(0.6 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(w - 40 + Math.sin(q * 12 + k) * 4, bot - 12 - q * (bot - top - 16), 1.5 + (k % 3), 0, TAU); ctx.stroke(); }
-    const maxL = clamp(h * 0.45, 40, 140);
+    const maxL = clamp(Math.min(h * 0.9, w * 0.42), 40, 260); // (3.0.43) a 2.4 m giant nearly fills the tank's height; the rest by their real size
     for (const s of g.subTank) {
       if (s.pressed || s.pile || (this.drag && this.drag.s === s)) continue;
-      const L = tankLen(s.len, maxL) * clamp(h / 220, 0.8, 1.6);
+      const L = tankLen(s.len, maxL);
       const a = this.swim(g, s, false, { x0: 10, x1: w - 10, y0: top + 14, y1: bot - 18 }, L, dt);
       this.drawFish(ctx, g, s, a, L, false);
       if (hits) hits.push({ s, x: a.x, y: a.y, r: Math.max(16, L * 0.6) });
