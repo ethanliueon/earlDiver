@@ -87,7 +87,7 @@ export class UI {
       close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), daveSays: () => (this.dave && this.dave.says ? this.dave.says() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     try { this.dressPanels(); } catch (err) { /* the plain look stays */ }
-    this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), close: () => this.toggleTank(false) });
+    this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
@@ -474,7 +474,6 @@ export class UI {
   // a move made from the Catch page; a refusal is said here too (in the sub's rooms the room says it)
   tankDo(act, w, i, to) {
     const r = this.h.onTank(act, w, i, to), g = this.h.getGame();
-    if (r === false && g && g.roomMsg && performance.now() - g.roomMsg.t < 500 && this.h.toast) this.h.toast(g.roomMsg.text, 'warn');
     return r;
   }
   theName(sp) { return /^the /i.test(sp.name) ? sp.name.replace(/^the/, 'The') : 'The ' + sp.name.toLowerCase(); }

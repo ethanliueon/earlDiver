@@ -103,7 +103,7 @@ export class TankRoom {
           }
         }
         const tgt = this.dropAt(ev.clientX, ev.clientY), why = tgt ? null : this.whyNot(ev.clientX, ev.clientY); this.drag = null;
-        if (why) { const g = this.h.getGame(); if (g) g.roomMsg = { text: why, t: performance.now() }; }
+        if (why && this.h.say) this.h.say(why);
         if (tgt) {
           if (tgt.kind === 'chamber') this.h.act('press', d.where, d.i, tgt.n);
           else if (tgt.kind === 'tank') this.h.act('open', d.where, d.i);
@@ -222,12 +222,7 @@ export class TankRoom {
       <i class="st"></i><div class="acts">${acts}</div>${swaps}</div>`;
   }
   states(g) {
-    // (3.0.15) a refusal (the tank is full, the chambers are full...), shown in the room for 2.5 s
-    let msg = this.root.querySelector('.tr-msg');
-    if (!msg) { msg = document.createElement('div'); msg.className = 'tr-msg'; this.root.appendChild(msg); }
-    const M = g.roomMsg, on = !!M && performance.now() - M.t < 2500;
-    if (on && msg.textContent !== M.text) msg.textContent = M.text;
-    msg.classList.toggle('on', on);
+    // (3.4.0) a refusal is said on the game's message line (messages.js)
     this.root.querySelector('.tr-depth').textContent = `outside ${Math.max(0, Math.round(g.sub.y))} m`;
     this.over.querySelectorAll('[data-tag]').forEach((el) => {
       const where = el.dataset.where, s = (where === 'bag' ? g.bag : g.subTank)[+el.dataset.i];

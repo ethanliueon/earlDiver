@@ -40,6 +40,7 @@ export class Hud {
     const same = this.toasts.find((tt) => tt.text === text && tt.kind === kind && tt.t < 3.5);
     if (same) { same.n = (same.n || 1) + 1; same.t = Math.min(same.t, 0.4); return; }
     this.toasts.push({ text, kind, t: 0 }); if (this.toasts.length > 4) this.toasts.shift();
+    if (this.onShow) this.onShow(text, kind); // (3.4.0) said by the message line (messages.js), not drawn here
   }
 
   // The hotbar (1 net, 2 slurp gun) and a row of specimen slots above it.
@@ -522,6 +523,7 @@ export class Hud {
     for (let i = 0; i < this.toasts.length; i++) {
       const tt = this.toasts[i];
       tt.t += dt;
+      if (this.onShow) continue; // (3.4.0) the message line shows them
       const a = clamp(Math.min(tt.t * 3, (4.5 - tt.t) * 1.5), 0, 1);
       const fs = (tt.kind === 'big' ? 24 : 18) * s;
       ctx.font = `${fs}px ${GAME}`;

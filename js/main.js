@@ -39,30 +39,15 @@ import { Hud, titled } from './hud.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
 import { Beacon } from './alarm.js';
+import { Messages } from './messages.js';
 
 const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
 const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
-// (3.0.19) the HUD is under the full-screen panels (the tank room, the shops, the cabin...): while one is open,
-// warnings are repeated on a strip over it, so nothing that matters (air above all) goes unseen
-{ const toast0 = hud.toast.bind(hud);
-  hud.toast = (text, kind = '') => { toast0(text, kind);
-    if (kind !== 'warn') return;
-    try { if (!ui.anyOpen()) return; } catch (err) { return; } // (before the UI exists)
-    if (g && g.inTankAct) return; // a refusal in the tank room: it says that one itself (3.0.15)
-    flashOver(text); }; }
-function flashOver(text) {
-  text = titled(text);
-  let el = document.getElementById('overflash');
-  if (!el) { el = document.createElement('div'); el.id = 'overflash'; document.body.appendChild(el); }
-  // (3.0.40) the same line again while it is still up: count it instead of stacking a copy
-  const last = el.lastElementChild;
-  if (last && !last.classList.contains('gone') && last.dataset.text === text) { last.dataset.n = +(last.dataset.n || 1) + 1; last.textContent = `${text} ×${last.dataset.n}`; clearTimeout(last._t); last._t = setTimeout(() => { last.classList.add('gone'); setTimeout(() => last.remove(), 500); }, 4000); return; }
-  const line = document.createElement('div'); line.className = 'of-line'; line.textContent = text; line.dataset.text = text;
-  el.appendChild(line); while (el.children.length > 3) el.firstChild.remove();
-  line._t = setTimeout(() => { line.classList.add('gone'); setTimeout(() => line.remove(), 500); }, 4000);
-}
+// (3.4.0) everything the game says goes to one message line, top centre, over the sea and every room and panel
+const messages = new Messages();
+hud.onShow = (text, kind) => messages.show(text, kind);
 // the steady line: how the air is, while a panel is open and it is getting short
 function airOver(g) {
   let el = document.getElementById('overair');
@@ -256,8 +241,9 @@ const ui = new UI({
   inSub: () => !!(g && g.earl && g.earl.inSub),
   onTank: (act, where, i, to) => { // (3.0.15) a refusal is said inside the tank room too (the toasts are under it)
     const n0 = hud.toasts.length, last0 = hud.toasts[n0 - 1];
-    g.inTankAct = true; let r; try { r = tankAction(act, where, i, to); } finally { g.inTankAct = false; }
-    if (r === false && act !== 'swaps') { const t = hud.toasts[hud.toasts.length - 1]; g.roomMsg = { text: t && (t !== last0 || hud.toasts.length !== n0) ? t.text : (act === 'press' ? 'The chambers are full' : act === 'tobag' ? 'The bag is full' : 'The tank is full'), t: performance.now() }; }
+    const r = tankAction(act, where, i, to);
+    // a refusal that didn't say why: say what it was
+    if (r === false && act !== 'swaps' && hud.toasts.length === n0 && hud.toasts[n0 - 1] === last0) hud.toast(act === 'press' ? 'The chambers are full' : act === 'tobag' ? 'The bag is full' : 'The tank is full', 'warn');
     return r;
   },
   onSetTrap: (type, depth) => {
@@ -646,6 +632,34 @@ function tankAction(act, where, i, to = -1) {
   } else return false;
   if (act === 'release') audio.ready && audio.click();
   return true;
+}
+// (3.4.0) the animals' news, a line a kind: by name if there is one, else counted
+function sayFish(FM, whereOf) {
+  const nm = (s) => SPECIES_BY_ID[s.id].name.toLowerCase();
+  if (FM.deaths.length === 1) { const s = FM.deaths[0]; hud.toast(`The ${nm(s)}${whereOf(s)} has died${s.pressDeath ? ' from barotrauma' : ''}`, 'warn'); }
+  else if (FM.deaths.length > 1) hud.toast(`${FM.deaths.length} animals have died${FM.deaths.every((s) => s.pressDeath) ? ' from barotrauma' : ''}`, 'warn');
+  const dead = new Set(FM.deaths), dying = new Set(FM.ev.filter((e) => /dying|Dying/.test(e.type)).map((e) => e.s));
+  const by = {};
+  for (const ev of FM.ev) {
+    if (dead.has(ev.s) || ((ev.type === 'stressed' || ev.type === 'bagStress') && dying.has(ev.s))) continue;
+    (by[ev.type] || (by[ev.type] = [])).push(ev);
+  }
+  const one = {
+    bagStress: (ev) => `The ${nm(ev.s)} in your net feels the pressure: get it into ${tooBig(ev.s) ? 'the large pressure tank' : 'a chamber'}`,
+    bagDying: (ev) => `The ${nm(ev.s)} in your net is dying from barotrauma: get it to ${tooBig(ev.s) ? 'the large pressure tank' : 'a chamber'}, or go back ${ev.deeper ? 'up' : 'down'}`,
+    stressed: (ev) => `The ${nm(ev.s)} ${ev.inBag ? 'in your net' : 'in the tank'} is stressed${ev.press ? ' by the pressure' : ''}`,
+    dying: (ev) => `The ${nm(ev.s)} ${ev.inBag ? 'in your net' : 'in the tank'} is dying${ev.press ? ' from barotrauma' : ''}`,
+  };
+  const many = {
+    bagStress: (n) => `${n} animals in your net feel the pressure: get them into chambers`,
+    bagDying: (n) => `${n} animals in your net are dying from barotrauma`,
+    stressed: (n) => `${n} animals are stressed by the pressure`,
+    dying: (n) => `${n} animals are dying from barotrauma`,
+  };
+  for (const type of ['bagDying', 'dying', 'bagStress', 'stressed']) {
+    const L = by[type]; if (!L) continue;
+    hud.toast(L.length === 1 ? one[type](L[0]) : many[type](L.length), 'warn');
+  }
 }
 function spawnReleased(r) {
   const sp = SPECIES_BY_ID[r.id];
@@ -1685,14 +1699,13 @@ function update(dt) {
     const dl = updateSpecimens(g, dt);
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
     const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : ' in the tank') : '');
-    for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()}${whereOf(s)} has died${s.pressDeath ? ' from barotrauma' : ''}`, 'warn');
-    for (const ev of dl.events) {
-      const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
-      if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the pressure: get it into ${tooBig(ev.s) ? 'the large pressure tank' : 'a chamber'}`, 'warn');
-      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying from barotrauma: get it to ${tooBig(ev.s) ? 'the large pressure tank' : 'a chamber'}, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
-      else if (ev.type === 'stressed') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : 'in the tank'} is stressed${ev.press ? ' by the pressure' : ''}`, 'warn');
-      else if (ev.type === 'dying') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : 'in the tank'} is dying${ev.press ? ' from barotrauma' : ''}`, 'warn');
-    }
+    // (3.4.0) gathered for a moment and said once: one animal by name, several as one line ("3 animals are
+    // dying from barotrauma"); an animal already dying isn't also said to be stressed
+    const FM = g.fishMsgs || (g.fishMsgs = { t: 0, deaths: [], ev: [] });
+    for (const s of dl) FM.deaths.push(s);
+    for (const ev of dl.events) FM.ev.push(ev);
+    if (FM.deaths.length || FM.ev.length) FM.t += dt;
+    if (FM.t > 0.8) { sayFish(FM, whereOf); g.fishMsgs = null; }
     g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
     // (2.6.6) a target is named and nothing more: the colour of the name already says how rare it is
