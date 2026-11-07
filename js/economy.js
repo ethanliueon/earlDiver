@@ -389,6 +389,9 @@ export const tlv = (P, t) => { if (!P.tlv) { migrateTracks(P); P.tlvV = 2; } els
 // (3.0.0) the diver's, the tools' and the buyers' upgrades are scrapped (the gear is the upgrade): their levels
 // count as nothing, even on an old save. The sub's yard (hull, engine, chambers, tanks, rack) and the claw stay.
 const SCRAPPED = new Set(['Diver', 'Buyers', 'Net', 'Slurp gun', 'Tag gun', 'Camera']);
+// (3.0.0) how deep a hull the yard can build: 500 m at first; finding the research station brings the plans
+// for hulls to 1,300 m; meeting Dave, his deep hulls beyond (levels of the depth track: 300, 500, 900, 1300, ...)
+export const hullCap = (P) => ((P && P.daveVisits) ? 99 : (P && P.stationFound) ? 3 : 1);
 export const lv = (P, id) => {
   if (TRACKS[id]) return SCRAPPED.has(TRACKS[id].group) ? 0 : tlv(P, id);
   const t = TRACK_OF[id];

@@ -111,6 +111,70 @@ export const BAYSIDE_ROWS = [
 ];
 
 // ---------- Dave's Haul (until his shop moves onto the shared engine) ----------
+// (3.0.0) the research station's stores, ~280 m on the seamount: kit the scientists use and release to visiting
+// divers. Its specialties are cameras, tag guns, slurp guns and suits for the cold; a few of everything else.
+// Mostly Uncommon, some Rare, two Exotics (bought Exotics are a shade below the chest ones).
+export const STATION_ROWS = [
+  // cameras (11)
+  ['st_survey', 'cam', 'compact', 'uncommon', 380, 'Survey compact', 'The station issue camera, scuffed at the corners, a lanyard tied through it.', 'Plenty of shots for a survey', ''],
+  ['st_fieldmacro', 'cam', 'macro', 'uncommon', 620, 'Field macro', 'A macro lens on a short housing, for things the size of a fingernail.', 'Small animals pay more', 'Range'],
+  ['st_quadrat', 'cam', 'compact', 'uncommon', 540, 'Quadrat camera', 'Fixed on a frame for photographing one square metre at a time. Unbolted for you.', 'Steady, many shots', '', ['shutterbug', 1]],
+  ['st_strobe', 'cam', 'housed', 'uncommon', 1400, 'Twin-strobe housing', 'Two old strobes on bent arms. They still fire.', 'A long range', 'Heavy'],
+  ['st_nightcam', 'cam', 'lowlight', 'uncommon', 2600, 'Night-survey camera', 'A grainy sensor that needs no flash. The pictures look like ghosts, but they count.', 'Nothing sees the picture taken', 'Fewer shots'],
+  ['st_specimen', 'cam', 'macro', 'rare', 2200, 'Specimen camera', 'A ring light and a scale bar in the frame. The institute likes these.', 'Small animals pay more', '', ['scholar', 1]],
+  ['st_transect', 'cam', 'housed', 'rare', 3600, 'Transect camera', 'Built to photograph a line of seabed a kilometre long.', 'Many shots, a long range', '', ['shutterbug', 1]],
+  ['st_cold', 'cam', 'lowlight', 'rare', 6800, 'Cold-light camera', 'A deep-sea sensor salvaged from a lander.', 'No flash, and sharp in the dark', ''],
+  ['st_census', 'cam', 'compact', 'rare', 1900, 'Census camera', 'For counting fish. It counts them for you, if you let it.', 'Many shots', '', ['scholar', 1]],
+  ['st_drop', 'cam', 'housed', 'uncommon', 900, 'Drop camera', 'Meant to be lowered on a line. Held in a hand, it works just as well.', 'A long range', ''],
+  ['st_lander', 'cam', 'lowlight', 'exotic', 14000, 'Lander optic', 'The eye of an autonomous lander that never came back up. They found it on the seamount.', 'No flash, long range, many shots', 'Costly'],
+  // tag guns (10)
+  ['st_poletag', 'tag', 'pole', 'uncommon', 300, 'Station pole tagger', 'The station spear: a tag on the end of a long stick.', 'Cheap and reliable', 'Short'],
+  ['st_dart', 'tag', 'gas', 'uncommon', 1100, 'Dart applicator', 'A gas cartridge pushes the dart. It hisses.', 'Range', ''],
+  ['st_acoustic', 'tag', 'sat', 'uncommon', 1500, 'Acoustic tagger', 'Tags that ping a receiver on the station. They pay for the data.', 'Tags pay more', 'Slow'],
+  ['st_quiet', 'tag', 'gas', 'uncommon', 1300, 'Quiet tag gun', 'A muffled barrel: the animal hardly notices.', 'Big animals barely startle', '', ['ambush', 1]],
+  ['st_longpole', 'tag', 'pole', 'uncommon', 650, 'Long tag pole', 'A three-section carbon pole.', 'Reach', 'Slow to set'],
+  ['st_archival', 'tag', 'sat', 'rare', 3400, 'Archival tagger', 'Tags that record depth and temperature for a year.', 'Tags pay much more', '', ['scholar', 1]],
+  ['st_rapid', 'tag', 'gas', 'rare', 2900, 'Rapid tagger', 'A drum of six darts. Reloads itself.', 'Quick reloads', '', ['quickdraw', 1]],
+  ['st_popup', 'tag', 'sat', 'rare', 4200, 'Pop-up satellite tagger', 'The tag lets go after a season, floats up and calls home.', 'Tags pay much more', ''],
+  ['st_marker', 'tag', 'pole', 'uncommon', 450, 'Marker tagger', 'Plain yellow tags. Every fisherman knows them.', 'Cheap', ''],
+  ['st_biolog', 'tag', 'sat', 'exotic', 12500, 'Biologging rig', 'Camera tags that ride on the animal and film where it goes.', 'Tags pay the most', 'Costly'],
+  // slurp guns (10)
+  ['st_sampler', 'slurp', 'normal', 'uncommon', 420, 'Sampling slurp gun', 'The station standard: a clear tube and a plunger.', 'Small fish', ''],
+  ['st_pipette', 'slurp', 'sipper', 'uncommon', 520, 'Pipette gun', 'A tiny bore for tiny things.', 'The very small, unharmed', 'Anything bigger'],
+  ['st_wide', 'slurp', 'wide', 'uncommon', 760, 'Wide-bore sampler', 'A fat tube for fat little fish.', 'Bigger small fish', 'Slow'],
+  ['st_reach', 'slurp', 'long', 'uncommon', 880, 'Long sampler', 'An extension on the nozzle, for crevices.', 'Reaching into gaps', ''],
+  ['st_suction', 'slurp', 'normal', 'rare', 1800, 'Suction sampler', 'A pump in place of a plunger. It does not tire.', 'Quick and sure', '', ['quickdraw', 1]],
+  ['st_gentle', 'slurp', 'sipper', 'rare', 1600, 'Larval sampler', 'For plankton and larvae. It would not hurt a soap bubble.', 'The very small, unharmed', '', ['performance', 1]],
+  ['st_bulk', 'slurp', 'wide', 'rare', 2400, 'Bulk sampler', 'Two chambers, so it takes two before you empty it.', 'Bigger small fish', ''],
+  ['st_crevice', 'slurp', 'long', 'rare', 2100, 'Crevice sampler', 'A thin steel nozzle, a long reach.', 'Reaching into gaps', '', ['overreaching', 1]],
+  ['st_trap', 'slurp', 'normal', 'uncommon', 600, 'Trap-door sampler', 'A flap shuts behind what goes in.', 'Small fish stay in', ''],
+  ['st_benthic', 'slurp', 'wide', 'uncommon', 980, 'Benthic sampler', 'For things that sit on the bottom and do not want to come.', 'Bigger small fish', ''],
+  // suits for the cold (10)
+  ['st_shell', 'suit', 'dry', 'uncommon', 1300, 'Shell drysuit', 'A thin shell suit with a fleece under it. Station issue.', 'Keeps the cold out', ''],
+  ['st_neodry', 'suit', 'dry', 'uncommon', 1700, 'Neoprene drysuit', 'Thick, crushed neoprene. Warm even when torn.', 'Keeps the cold out', 'A little slower'],
+  ['st_thermal', 'suit', 'dry', 'uncommon', 2100, 'Thermal drysuit', 'An undersuit you could sleep in.', 'Cold costs less air', '', ['warmth', 1]],
+  ['st_ice', 'suit', 'dry', 'rare', 3900, 'Ice-diving suit', 'Made for under the ice, where a cold minute is a long one.', 'Cold costs much less air', '', ['warmth', 1]],
+  ['st_vulc', 'suit', 'dry', 'rare', 4600, 'Vulcanised drysuit', 'A rubber suit that shrugs off the deep.', 'Cold and pressure, deeper', ''],
+  ['st_warmskin', 'suit', 'skin', 'uncommon', 900, 'Warm skin', 'A lined freediving skin. Quick, and not quite as hungry.', 'Speed', 'Air'],
+  ['st_hotwater', 'suit', 'dry', 'rare', 5400, 'Hot-water suit', 'A hose would pump warm water through it. Without the hose, it is still a good suit.', 'Cold costs much less air', '', ['mending', 1]],
+  ['st_survival', 'suit', 'dry', 'uncommon', 1500, 'Survival suit', 'Bright orange. Never lost.', 'Keeps the cold out', ''],
+  ['st_chainwarm', 'suit', 'chain', 'rare', 4200, 'Lined chain suit', 'Chain-mail over a drysuit, for the station\'s shark work.', 'Bites and cold', 'Heavy'],
+  ['st_bathy', 'suit', 'dry', 'exotic', 16000, 'Bathythermal suit', 'A prototype that kept a diver warm at four degrees for six hours. The only one they made.', 'Cold and pressure, much deeper', 'Costly', ['warmth', 2]],
+  // a few of everything else
+  ['st_samplenet', 'net', 'gentle', 'uncommon', 460, 'Sample net', 'A fine bag on a short frame, numbered on the handle.', 'Fish arrive unmarked', 'Small'],
+  ['st_trawlhoop', 'net', 'sure', 'uncommon', 820, 'Hoop sampler', 'A rigid hoop that does not flinch.', 'Fewer misses', ''],
+  ['st_polenet', 'net', 'reach', 'rare', 2300, 'Survey pole net', 'A long, light pole for the station\'s transects.', 'Reach', 'Slow'],
+  ['st_flipper', 'fins', 'split', 'uncommon', 520, 'Station fins', 'Split blades, the station\'s spare pairs.', 'Easy cruising', ''],
+  ['st_longfin', 'fins', 'long', 'uncommon', 900, 'Long survey fins', 'For long transects.', 'Fast cruising', ''],
+  ['st_jetfin', 'fins', 'jet', 'rare', 2200, 'Vented power fins', 'Stiff and vented: a fast kick.', 'Sprint', ''],
+  ['st_steel', 'tank', 'steel', 'uncommon', 600, 'Station steel cylinder', 'Stamped with the station\'s number.', 'More air', ''],
+  ['st_bigsteel', 'tank', 'big', 'uncommon', 1300, 'Long steel cylinder', 'Long and heavy.', 'Much more air', 'A little slower'],
+  ['st_side', 'tank', 'side', 'rare', 3200, 'Sidemount rig', 'Two cylinders along the body, for tight spaces.', 'A lot of air', ''],
+  ['st_samplebag', 'bag', 'divided', 'uncommon', 520, 'Sample bag', 'Numbered pockets, one animal in each.', 'Room, and they keep apart', ''],
+  ['st_cooler', 'bag', 'large', 'uncommon', 780, 'Insulated bag', 'Keeps what is inside cool and calm.', 'Room', ''],
+  ['st_mesh', 'bag', 'light', 'rare', 1900, 'Light mesh bag', 'Light, and it rides close.', 'Room, and it hardly slows him', ''],
+];
+
 export const DAVE_ROWS = [
   ['pronet', 'net', 'sure', 'rare', 3500, 'Pro capture net', 'A D-frame with a padded rim and a clear rubber bag.', 'Fish up to a metre, quick and gentle', ''],
   ['deepnet', 'net', 'big', 'rare', 4200, 'Deep-water game net', 'Heavy hoop, heavy mesh, a weighted rim that falls fast.', 'Big fish', 'Small fish slip through'],

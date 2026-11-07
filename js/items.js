@@ -10,7 +10,7 @@
 //   fins: swim, sprint                    tank: air (s), speed, quiet
 //   bag: slots, apart                     suit: press (m), air (×), speed (×), bite, warm, quiet, look
 // An owned thing is an instance in the locker: { u, id, sk: [[skill, level], ...], leg }.
-import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
+import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, STATION_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
 export { RARITY, RARITIES, SKILLS, LEGEND, SETS } from './item_data.js';
 
 export const KINDS = ['net', 'slurp', 'tag', 'cam', 'suit', 'fins', 'tank', 'bag'];
@@ -117,6 +117,7 @@ const fromRow = (shop) => ([id, kind, arch, rarity, price, name, line, good, bad
 FREE_ROWS.forEach(fromRow('free'));
 BAYSIDE_ROWS.forEach(fromRow('catalog'));
 DAVE_ROWS.forEach(fromRow('dave'));
+STATION_ROWS.forEach(fromRow('station')); // (3.0.0)
 // chest Commons, Uncommons and Rares: a maker, a model, what it is
 for (const kind of KINDS) {
   const counts = CHEST_COUNTS[MAIN_KINDS.includes(kind) ? 'main' : 'side'], archs = Object.keys(ARCH[kind]);

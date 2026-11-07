@@ -4,7 +4,7 @@ const SPECIES_COUNT = SPECIES.length;
 const SHOWCASE_TABS = new Set(['diver', 'tools', 'sub']);
 import { speciesIcon } from './creatures_draw.js';
 import { RESOURCES, BOAT } from './world.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS } from './economy.js';
+import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { specimenValue, conditionName, rarityOf } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
@@ -1022,18 +1022,19 @@ export class UI {
       // one row per track: its level, the price of the next step, and in its sheet every stat it moves
       for (const [id, T] of Object.entries(TRACKS)) {
         if (T.group !== grp) continue;
-        const l = lv(P, id), maxed = l >= T.max, cost = upgradeCost(P, id), coins = upgradeCoins(P, id);
+        const l = lv(P, id), capped = id === 'tHull' && l >= hullCap(P) && l < T.max, maxed = l >= T.max || capped, cost = upgradeCost(P, id), coins = upgradeCoins(P, id);
         const specs = [];
         if (id === 'tHull') {
           const d = lv(P, 'depth');
           specs.push(['now', `${SUBS[d].name}, ${SUBS[d].rated} m`]);
-          if (!maxed) specs.push(['next', `${SUBS[d + 1].name}, ${SUBS[d + 1].rated} m · cabin air ${SUBS[d + 1].o2} s`, 'good']);
+          if (capped) specs.push(['next', 'not yet: the yard has no plans for a deeper hull', 'bad']);
+          else if (!maxed) specs.push(['next', `${SUBS[d + 1].name}, ${SUBS[d + 1].rated} m · cabin air ${SUBS[d + 1].o2} s`, 'good']);
         } else for (const sid of T.stats) {
           const sl = lv(P, sid), U = UPGRADES[sid], nl = Math.min(U.max, Math.round((l + 1) / T.max * U.max));
           const now = fmtStat(sid, statAt(sid, sl)), next = fmtStat(sid, statAt(sid, nl));
           specs.push([U.name.toLowerCase(), maxed || nl === sl ? now : `${now} → ${next}`, maxed || nl === sl ? '' : 'good']);
         }
-        specs.push(['level', maxed ? 'the most it can be' : `${l} of ${T.max}`, 'sheet']);
+        specs.push(['level', capped ? 'the deepest the yard can build for now' : maxed ? 'the most it can be' : `${l} of ${T.max}`, 'sheet']);
         html += this.row('up:' + id, T.name + (id === this.rec ? ' <em class="rec-badge">Recommended</em>' : ''), T.line || '',
           `<span class="lamps">${Array.from({ length: T.max }, (_, k) => `<i class="${k < l ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : ''}`,
           `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < coins ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && coins ? ` <em class="pluscoin">+${COIN}${coins}</em>` : ''}</button>`,

@@ -11,6 +11,7 @@ import { sleeperState } from './sleeper_draw.js';
 import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
+import { drawStation, STATION_TOP } from './station_draw.js';
 import { Wake } from './trail.js';
 import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
@@ -1899,6 +1900,9 @@ export class Renderer {
     // cylinder on four legs, lit portholes (Dave passes behind one now and then), the airlock and its docking
     // collar at the east end, a hand-painted sign on the roof, a mast with a red beacon, and the junk of a
     // man who lives down here: a net strung out to dry, glass floats, crates, a drum, an anchor, a tyre.
+    // (3.0.0) the research station on the seamount's summit (station_draw.js)
+    const St = W.station;
+    if (St && inView(St.x, St.y - 18, 34)) { ctx.save(); drawStation(ctx, (dx) => S(St.x + dx), (dy) => Sy(St.y + dy), ppm, t, true); ctx.restore(); }
     const Dv = W.dave;
     if (Dv && inView(Dv.x, Dv.y - 4, 26)) {
       const X = (dx) => S(Dv.x + dx), Y = (dy) => Sy(Dv.y + dy), m = ppm;
@@ -2334,6 +2338,13 @@ export class Renderer {
         this.netLamp = [nx, ny, na, nd + 9 * ppm];
       } else this.netLamp = null;
     }
+    // (3.0.0) the research station: its windows and dome, cool and white, and the docking light
+    const Sn = g.world.station;
+    if (Sn) { const sx2 = S(Sn.x), sy2 = Sy(Sn.y - STATION_TOP - 2);
+      if (sx2 > -800 && sx2 < this.W + 800 && sy2 > -800 && sy2 < this.H + 800) {
+        radial(S(Sn.x - 5.5), sy2, 8 * ppm, [210, 235, 232], 0.3); radial(S(Sn.x + 4.6), sy2, 7 * ppm, [210, 235, 232], 0.28); radial(sx2, sy2, 5 * ppm, [170, 220, 215], 0.3);
+        radial(S(Sn.x + 10), Sy(Sn.y - STATION_TOP - 3.2), 4 * ppm, [255, 200, 110], 0.5); lamps.push({ x: sx2, y: sy2, r: 10 * ppm, a: 0.5 });
+      } }
     // (2.7.0) Dave's hut: warm portholes, the lamp over the hatch, the sign's lamp, the mast's red beacon
     const Dh = g.world.dave;
     if (Dh) { const hx = S(Dh.x), hy = Sy(Dh.y - 3.3);

@@ -78,6 +78,8 @@ export const WHALE_FALL = { x: 2770 };            // a dead whale on the plain, 
 export const SEEP = { x: 3960 };
 // (2.7.0) Dave's Haul: a diver's habitat on a terrace cut into the seamount's east flank, about 1,200 m down
 export const DAVE = { x: 3278, half: 11 };                 // a cold seep on the rise: methane, mussels, tube worms
+// (3.0.0) the research station: a tower on the seamount's summit (~315 m), the station ~30 m up it (~285 m)
+export const STATION = { x: 3175, half: 16 };
 export const PIT = { x: 1180, half: 38, y: 5100 };       // the deepest point: a pit in the hadal trench floor
 export const TRENCH = { x0: 70, x1: 2220 };              // the hadal trench floor (the monster's lair is down here)
 export const CANYON = { x0: 4385, x1: 4495, top: 1000 }; // the canyon below its rim, where the current runs
@@ -124,7 +126,7 @@ export function generateWorld(seed) {
     W.brine = { x0: BRINE.x0 + 1.5, x1: BRINE.x1 - 1.5, y: surf };
   }
   // level beds for the whale fall (on the plain) and the seep (a terrace cut into the rise)
-  for (const [cx, half] of [[WHALE_FALL.x, 16], [SEEP.x, 13], [DAVE.x, DAVE.half]]) {
+  for (const [cx, half] of [[WHALE_FALL.x, 16], [SEEP.x, 13], [DAVE.x, DAVE.half], [STATION.x, STATION.half]]) {
     const ic = Math.round(cx / FLOOR_RES), h = Math.round(half / FLOOR_RES), edge = Math.round(8 / FLOOR_RES);
     const level = floor[ic];
     for (let i = ic - h - edge; i <= ic + h + edge; i++) {
@@ -196,6 +198,7 @@ export function generateWorld(seed) {
   }
   // nothing sticks out of the brine pool
   W.rocks = W.rocks.filter((rk) => !(rk.x1 > BRINE.x0 - 2 && rk.x0 < BRINE.x1 + 2 && rk.y1 > W.brine.y - 4));
+  { const sy = W.floorAt(STATION.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > STATION.x - STATION.half - 4 && rk.x0 < STATION.x + STATION.half + 4 && rk.y1 > sy - 40)); } // (3.0.0) the summit kept clear for the station
   { const dy = W.floorAt(DAVE.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > DAVE.x - DAVE.half - 4 && rk.x0 < DAVE.x + DAVE.half + 4 && rk.y1 > dy - 14)); } // (2.7.0) Dave's terrace kept clear of rock
   // the anglerfish's cave mouth: an upper and a lower lip of rock jutting from the west wall
   {
@@ -253,6 +256,7 @@ export function generateWorld(seed) {
   W.whaleFall = { x: WHALE_FALL.x, y: W.floorAt(WHALE_FALL.x) };
   W.seep = { x: SEEP.x, y: W.floorAt(SEEP.x), phase: rng() * 6 };
   W.dave = { x: DAVE.x, y: W.floorAt(DAVE.x) }; // Dave's hut stands on its terrace; its airlock faces east, toward the boat
+  W.station = { x: STATION.x, y: W.floorAt(STATION.x) }; // (3.0.0) the foot of the station's tower
 
   // ---- Sea lanterns: 1-2 per 500x500 m cell in open water; extra deeper ----
   W.lanterns = [];
@@ -398,6 +402,7 @@ export function generateWorld(seed) {
   }
   W.statics = W.statics.filter((s) => !(s.x > BRINE.x0 && s.x < BRINE.x1));
   W.statics = W.statics.filter((s) => !(s.x > DAVE.x - DAVE.half - 3 && s.x < DAVE.x + DAVE.half + 3)); // (2.7.0) nothing grows on Dave's terrace
+  W.statics = W.statics.filter((s) => !(s.x > STATION.x - 3 && s.x < STATION.x + 3)); // (3.0.0) the tower's foot
   W.statics.sort((a, b) => a.x - b.x);
   buildHabitats(W);
   return W;

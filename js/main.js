@@ -19,10 +19,12 @@ import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayK
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf, kit, worn } from './economy.js';
 import { DAVE_FINDS, DAVE_RATE } from './dave.js';
+import { STATION_COLLAR } from './station_draw.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { CHESTS, rollChest } from './chests.js';
+import { hullCap } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
@@ -235,7 +237,7 @@ const ui = new UI({
   onSaveProfile: () => saveProfile(profile),
   canChangeGear: () => !!(g && g.mode === 'play' && (g.aboard || g.earl.inSub || ui.cabinOpen())),
   onEquip: (k) => { const ok = buy(k); return ok; },
-  canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave())), // someone to sell to: the Margaret, or Dave
+  canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave() || nearStation())), // someone to sell to: the Margaret, the station, or Dave
 });
 
 // ---------------- injuries ----------------
@@ -397,6 +399,7 @@ function displaySpecimen(key) {
 // craves this dive, which she pays three times the market for.
 const ANGLER_RATE = 0.7, CRAVE_RATE = 3;
 // (2.7.0) Dave's Haul: at his airlock (docked in the sub, or swimming), F opens his shop
+const nearStation = () => { const St = g.world.station; return !!St && dist(g.earl.x, g.earl.y, St.x + STATION_COLLAR.dx + 1.5, St.y + STATION_COLLAR.dy) < 9; }; // (3.0.0)
 const nearDave = () => { const D = g.world.dave; return !!D && dist(g.earl.x, g.earl.y, D.x + 6.5, D.y - 3.1) < 10; };
 // he buys odd finds for a quarter more than the Margaret pays: one kind, or 'all' of them
 function daveSell(k) {
@@ -619,7 +622,7 @@ function buy(kind) {
     // one more step on a track: every stat it covers improves together
     const id = kind.slice(3), T = TRACKS[id];
     const cc = T ? upgradeCoins(P, id) : 0;
-    if (T && (!T.needs || owns(P, T.needs)) && lv(P, id) < T.max && (P.coins || 0) >= cc && spend(P, upgradeCost(P, id))) {
+    if (T && (!T.needs || owns(P, T.needs)) && lv(P, id) < T.max && (id !== 'tHull' || lv(P, id) < hullCap(P)) && (P.coins || 0) >= cc && spend(P, upgradeCost(P, id))) {
       P.coins = (P.coins || 0) - cc;
       const mk0 = markOf(statValue(P, 'depth'));
       tlv(P, id); P.tlv = Object.assign({}, P.tlv, { [id]: lv(P, id) + 1 }); ok = true;
@@ -1312,7 +1315,11 @@ function update(dt) {
     const target = findTarget();
     g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);
-    const atAngler = nearAngler(), atDave = !atAngler && nearDave();
+    const atAngler = nearAngler(), atDave = !atAngler && nearDave(), atStation = !atAngler && !atDave && nearStation();
+    if (atStation) {
+      g.prompt = 'F  Station stores' + (e.inSub ? '   ·   hold F  Leave sub' : '');
+      if (!profile.stationFound) { profile.stationFound = true; saveProfile(profile); hud.toast('A research station, lit up on the summit', 'big'); hud.hint("The station's stores sell to visiting divers. The Margaret's yard now has more for the sub"); }
+    }
     if (atDave) g.prompt = "F  Dave's Haul" + (e.inSub ? '   ·   hold F  Leave sub' : '');
     if (atAngler) g.prompt = (g.caveTraded ? 'The old one has eaten this dive' : 'F  Trade with the old one') + (e.inSub ? '   ·   hold F  Leave sub' : '');
     if (atAngler && !g.caveMet) g.caveMet = true;
@@ -1355,6 +1362,7 @@ function update(dt) {
     }
     if (pressed.has('f-tap') && atAngler) ui.toggleCave();
     else if (pressed.has('f-tap') && atDave) ui.toggleDave();
+    else if (pressed.has('f-tap') && atStation) ui.toggleCatalog(undefined, 'station');
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
     if (pressed.has('l')) {
