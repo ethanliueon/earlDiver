@@ -2190,3 +2190,40 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 #quests .qs-q.claimed { opacity: 0.45; filter: saturate(0.4); }
 #quests .qs-q.claimed .qs-t span { font-style: normal; }
 #quests .qs-paid { font: 400 10px var(--stencil, monospace); letter-spacing: 0.16em; text-transform: uppercase; color: #9cc27a; }
+
+/* (4.0.0) the steady air line, in the messages' own style: words over a soft shade, a pulsing mark, no box */
+#overair { --mc: #f2b45a; right: 22px; top: 70px; padding: 4px 4px 4px 22px; border-radius: 0; background: none; box-shadow: none; font: 500 18px/1.2 var(--serif); letter-spacing: 0.01em; color: #f2b45a;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.9), 0 2px 10px rgba(0,0,0,0.85); }
+#overair::before { content: ''; position: absolute; left: 4px; top: 50%; width: 7px; height: 7px; transform: translateY(-50%) rotate(45deg); background: currentColor; box-shadow: 0 0 8px currentColor; }
+#overair::after { content: ''; position: absolute; inset: -14px -30px -14px -20px; z-index: -1; background: radial-gradient(closest-side, rgba(4,8,10,0.5), rgba(4,8,10,0)); }
+#overair.on { animation: none; }
+#overair.on::before { animation: msg-pulse 1.2s ease-in-out infinite; }
+
+/* (4.0.0) the alarm tags, toned to the game: words under the beacon in the messages' style, a pulsing mark, no glowing box */
+#beacon .bc-list { gap: 2px; margin-top: 4px; }
+#beacon .bc-list li { position: relative; padding: 1px 4px 1px 16px; border-radius: 0; background: none; box-shadow: none; animation: none;
+  font: 500 15px/1.25 var(--serif); letter-spacing: 0.01em; text-transform: none; color: #ef8f74; text-shadow: 0 1px 0 rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.85); }
+#beacon .bc-list li::before { content: ''; position: absolute; left: 3px; top: 50%; width: 6px; height: 6px; transform: translateY(-50%) rotate(45deg); background: currentColor; animation: bc-mark 1.2s ease-in-out infinite; }
+@keyframes bc-mark { 50% { opacity: 0.35; } }
+/* (4.0.0) brought up with the sub: safe until she dives again */
+.sp-safe { margin-left: 8px; font: 500 12px var(--mono); letter-spacing: 0.04em; color: #8fe08a; }
+/* (4.0.0) the aquarium as a ship's lab: a stamped steel plate and steel switches, no gold */
+#gallery .tr-plate { background: linear-gradient(180deg, #5d6569, #3a4144 60%, #2a3033); box-shadow: 0 0 0 1px #15191b, 0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18); }
+#gallery .tr-plate b { color: #e4e8e2; text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+#gallery .tr-plate span, #gallery .tr-plate .gl-sub { color: rgba(220,228,222,0.65); }
+#gallery .tr-plate::before, #gallery .tr-plate::after { background: radial-gradient(circle at 40% 35%, #b8c0c2, #5a6266); }
+#gallery .gl-lights button { color: #c8d0cc; background: #1c2124; box-shadow: 0 0 0 1px #0c0f10, inset 0 1px 0 rgba(255,255,255,0.08); }
+#gallery .gl-lights button.on { color: #12201a; background: linear-gradient(180deg, #a8d8c0, #6aa48a); box-shadow: 0 0 0 1px #0c0f10, inset 0 1px 0 rgba(255,255,255,0.4); }
+#gallery .gl-catch h4 { color: #a8c8bc; }
+#gallery .gl-catch p { font-style: normal; color: rgba(214,224,218,0.6); }
+#gallery .gl-catch button { border-color: rgba(168,200,188,0.22); }
+#gallery .gl-catch .gl-room { color: #d8e4dc; border-color: rgba(168,200,188,0.5); }
+#gallery .tr-close { color: #e4e8e2; background: radial-gradient(circle at 40% 35%, #7a8286, #3a4144 60%, #22282a); }
+#gallery .tr-plate { color: #e4e8e2 !important;
+  background:
+    radial-gradient(circle at 7px 50%, #1a1e20 0 2px, #9aa3a6 2.2px 3.4px, transparent 3.6px),
+    radial-gradient(circle at calc(100% - 7px) 50%, #1a1e20 0 2px, #9aa3a6 2.2px 3.4px, transparent 3.6px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 1px, rgba(0,0,0,0.04) 1px 3px),
+    linear-gradient(180deg, #5d6569, #3a4144 60%, #2a3033) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.4), 0 2px 6px rgba(0,0,0,0.55) !important; }
+#gallery .tr-plate b { text-shadow: 0 1px 0 rgba(0,0,0,0.6); }

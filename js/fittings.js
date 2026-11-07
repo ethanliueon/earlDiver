@@ -384,7 +384,14 @@ export function keyCap(ctx, x, y, key, s = 1) {
   return w;
 }
 // a whole prompt, centred on cx at y: key-caps and upright words, a soft shadow pooled behind (no box)
-export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19 } = {}) {
+// (4.0.0) the soft pool of shade behind a prompt: one fixed size whatever the words, wide and diffuse
+export function promptShade(ctx, cx, y, s = 1, a = 1) {
+  if (a <= 0.01) return;
+  const R = 300 * s, sh = ctx.createRadialGradient(cx, y, 0, cx, y, R);
+  sh.addColorStop(0, `rgba(4,8,10,${(0.42 * a).toFixed(3)})`); sh.addColorStop(0.45, `rgba(4,8,10,${(0.24 * a).toFixed(3)})`); sh.addColorStop(0.8, `rgba(4,8,10,${(0.07 * a).toFixed(3)})`); sh.addColorStop(1, 'rgba(4,8,10,0)');
+  ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.2); ctx.translate(-cx, -y); ctx.fillStyle = sh; ctx.fillRect(cx - R, y - R, R * 2, R * 2); ctx.restore();
+}
+export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19, shade = true } = {}) {
   const parts = parsePrompt(text), gapK = 9 * s, gapP = 26 * s, fs = size * s;
   ctx.save(); ctx.textBaseline = 'middle';
   const measure = (p) => {
@@ -395,10 +402,7 @@ export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19
     return w;
   };
   const ws = parts.map(measure), total = ws.reduce((a, b) => a + b, 0) + gapP * (parts.length - 1);
-  // the pooled shadow
-  const sh = ctx.createRadialGradient(cx, y, 4, cx, y, total * 0.62 + 30 * s);
-  sh.addColorStop(0, 'rgba(4,8,10,0.55)'); sh.addColorStop(0.6, 'rgba(4,8,10,0.3)'); sh.addColorStop(1, 'rgba(4,8,10,0)');
-  ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.28); ctx.translate(-cx, -y); ctx.fillStyle = sh; ctx.fillRect(cx - total, y - total, total * 2, total * 2); ctx.restore();
+  if (shade) promptShade(ctx, cx, y, s);
   let x = cx - total / 2;
   parts.forEach((p, i) => {
     if (i) { ctx.fillStyle = 'rgba(236,230,210,0.45)'; ctx.beginPath(); ctx.arc(x - gapP / 2, y, 2 * s, 0, TAU); ctx.fill(); }

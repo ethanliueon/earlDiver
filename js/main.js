@@ -918,9 +918,12 @@ function readMove() {
     // swim toward the cursor; full speed beyond a few metres, easing in, and still when he is there
     const e = g.earl, [mx, my] = mouseScreen();
     const dx = mx - renderer.S(e.x), dy = my - renderer.Sy(e.y), d = Math.hypot(dx, dy);
-    const ppm = renderer.cam.ppm, full = ppm * 3, dead = ppm * (e.inSub ? 2.5 : 0.6);
-    if (g.aboard) { const ax = Math.abs(dx); if (ax > dead) x = Math.sign(dx) * Math.min(1, (ax - dead) / full); } // (2.6.7) on the boat: left and right only
-    else if (d > dead) { const k = Math.min(1, (d - dead) / full) / d; x = Math.abs(dx) < ppm * 0.4 ? 0 : dx * k; y = dy * k; } // (2.6.8) nearly straight above or below him: straight up or down, no flicker of sideways
+    // (4.0.0) a wider dead zone, longer in front and behind than above and below: the cursor resting just
+    // ahead of him or just behind him leaves him still
+    const ppm = renderer.cam.ppm, full = ppm * 3, dx0 = ppm * (e.inSub ? 3.6 : 1.4), dy0 = ppm * (e.inSub ? 2.4 : 0.8);
+    const dn = Math.hypot(dx / dx0, dy / dy0);
+    if (g.aboard) { const ax = Math.abs(dx), dead = ppm * 1.1; if (ax > dead) x = Math.sign(dx) * Math.min(1, (ax - dead) / full); } // (2.6.7) on the boat: left and right only
+    else if (dn > 1) { const out = d * (1 - 1 / dn), k = Math.min(1, out / full) / d; x = Math.abs(dx) < ppm * 0.4 ? 0 : dx * k; y = dy * k; } // (2.6.8) nearly straight above or below him: straight up or down, no flicker of sideways
   }
   // (2.6.7) standing on the boat (the deck, the cabin, the wheel, the ladder): up and down mean nothing,
   // from the keys, the arrows or the mouse, so nothing upward or downward ever reaches the walking
@@ -958,6 +961,9 @@ export function useStation(id) {
   if (id === 'door' || id === 'computer') { ui.toggleCabin(true); return; }
   if (id === 'yard') { ui.openShop('sub', ['sub']); return; }
 }
+// (4.0.0) seconds for the anchor to go down or come up through `d` metres of water
+const GLOW_SECONDS = 90;
+function anchorTime(d) { return d <= 200 ? 3 + 4 * (d / 200) : 7 + 5 * Math.min(1, (d - 200) / 2800); }
 function deckInput(dt, mv) {
   const e = g.earl;
   if (!g.aboard) {
@@ -984,7 +990,7 @@ function deckInput(dt, mv) {
     const s0 = A.step || 0; A.step = s0 + dt * pace * 3.4; // (the stride lengthens a little when he runs)
     if (Math.floor(A.step / Math.PI) !== Math.floor(s0 / Math.PI) && A.walk > 0.35) audio.ready && audio.footstep && audio.footstep(0.06 * A.walk); // each foot coming down
   }
-  const atDoor = Math.abs(A.x - DOOR_M) < 0.5;
+  const atDoor = Math.abs(A.x - (DECK_MIN + DECK_MAX) / 2) < (DECK_MAX - DECK_MIN) / 6 || Math.abs(A.x - DOOR_M) < 0.5; // (4.0.0) the middle third of the deck
   A.near = atDoor ? 'door' : null;
   g.prompt = atDoor ? 'F  Enter the cabin' : null;
   if (pressed.has('f-tap')) { pressed.delete('f-tap'); if (atDoor && !ui.anyOpen()) useStation('door'); }
@@ -1542,8 +1548,11 @@ function update(dt) {
     }
     if (pressed.has('e')) {
       // the necklace is only a light now: on and off, never used up
-      if (g.items.necklace > 0) { g.necklaceOn = !g.necklaceOn; hud.toast(g.necklaceOn ? 'The necklace glows green against your chest' : 'You tuck the necklace away'); audio.ready && audio.click(); }
-      else hud.toast('No necklace', 'warn');
+      // (4.0.0) a glow stick: snapped, it burns warm amber for 90 s and is spent. In the sub it lights the
+      // cabin and the water round the hull; he takes it out with him when he leaves.
+      if (g.necklaceOn) hud.toast(`The glow stick is still burning: ${Math.ceil(g.glowT || 0)} s left`);
+      else if (g.items.necklace > 0) { g.items.necklace--; g.glowT = GLOW_SECONDS; g.necklaceOn = true; hud.toast('You snap a glow stick: warm amber light for 90 s'); audio.ready && audio.click(); }
+      else hud.toast('No glow sticks', 'warn');
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
     g.airMul = 1; g.luck = 0; g.stillMul = 1;
@@ -1802,7 +1811,7 @@ function update(dt) {
           if (alongside) { g.sub.docked = true; hud.toast('The sub is lifted into the Margaret\'s cradle'); audio.ready && audio.thud(0.2); }
           else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast('The sub is still out: bring it alongside first (hold C to send it home)', 'warn'); } }
         }
-        if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast('The anchor is down: G to raise it', 'warn'); } }
+        if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast(g.anchorDir < 0 ? 'The anchor is still coming up' : 'The anchor is down: G to raise it', 'warn'); } }
         // (3.1.1) slower, heavier: 3.5 m/s flat out, about twice as long to get under way and to stop
         const want = g.anchored ? 0 : mv.x * 3.5;
         g.boatV = lerp(g.boatV || 0, want, 1 - Math.exp(-dt * (want ? 0.15 : 0.1)));
@@ -1810,12 +1819,28 @@ function update(dt) {
         if (!e.inSub) { e.x = BOAT.x - 3; e.y = 0.5; e.vx = e.vy = 0; }
       }
     }
-    // the anchor: G at the helm. Down, she holds her place (and the next dive starts there); up and
-    // nobody at the wheel, she drifts on the current
-    if (pressed.has('g') && g.helm) {
-      g.anchored = !g.anchored;
-      if (g.anchored) { profile.boatX = Math.round(BOAT.x); saveProfile(profile); hud.toast(`Anchor down, ${Math.round(Math.max(0, g.world.floorAt(BOAT.x)))} m of water under the Margaret`); audio.ready && audio.thud(0.25); }
-      else { hud.toast('Anchor up'); audio.ready && audio.click(); }
+    // (4.0.0) the anchor: G at the helm lets it go or winds it in, on a real chain. It takes its time:
+    // about 3 s in shallow water, 7 s at 200 m, 12 s from the deepest floor she can sit over. While any
+    // of it is out she holds her place and the wheel does nothing.
+    {
+      const floor = Math.max(2, g.world.floorAt(BOAT.x) - 1);
+      if (g.anchorLen == null) g.anchorLen = g.anchored ? floor : 0;
+      if (pressed.has('g') && g.helm) {
+        g.anchorDir = g.anchorDir ? -g.anchorDir : (g.anchorLen > 0 ? -1 : 1);
+        const sec = anchorTime(floor);
+        if (g.anchorDir > 0) { g.anchored = true; hud.toast(`Letting the anchor go: ${Math.round(floor)} m of water`); audio.ready && audio.thud(0.18); }
+        else hud.toast(`Winding the anchor in: about ${Math.round(sec * (g.anchorLen / floor))} s`);
+      }
+      if (g.anchorDir) {
+        const rate = floor / anchorTime(floor);
+        g.anchorLen = clamp(g.anchorLen + g.anchorDir * rate * dt, 0, floor);
+        g.chainT = (g.chainT || 0) + dt;
+        if (audio.ready && audio.footstep && g.chainT > 0.11) { g.chainT = 0; audio.footstep(0.035); } // the links over the gypsy
+        if (g.anchorDir > 0 && g.anchorLen >= floor) {
+          g.anchorDir = 0; profile.boatX = Math.round(BOAT.x); saveProfile(profile);
+          hud.toast(`Anchor down, ${Math.round(floor)} m of water under the Margaret`); audio.ready && audio.thud(0.25);
+        } else if (g.anchorDir < 0 && g.anchorLen <= 0) { g.anchorDir = 0; g.anchored = false; hud.toast('Anchor up: she is free to steer'); audio.ready && audio.thud(0.15); }
+      } else if (g.anchored) g.anchorLen = floor; // (the floor under her if she swung a little)
     }
     if (!g.helm && !g.anchored) g.boatV = lerp(g.boatV || 0, 0.25 * Math.sin(g.time * 0.003 + 1), 1 - Math.exp(-dt * 0.1)); // adrift
     if (g.anchored) g.boatV *= Math.exp(-dt * 1.5);
@@ -1904,7 +1929,7 @@ function update(dt) {
       if (ent.lureT <= 0) g.lure = null;
     }
     // protection: necklace or a nearby lantern
-    if (!g.items.necklace) g.necklaceOn = false;
+    if (g.necklaceOn) { g.glowT = (g.glowT || 0) - dt; if (g.glowT <= 0) { g.necklaceOn = false; g.glowT = 0; hud.toast('The glow stick has faded'); } }
     g.protection = null;
     for (const l of W.lanterns) {
       const d = dist(e.x, e.y, l.x, l.y);
@@ -2158,7 +2183,7 @@ function frame(now) {
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen()); // (3.0.0) the Quests button
   audio.update(g, dt);
   airOver(g);
-  beacon.update(ui.inventoryOpen && ui.inventoryOpen() ? null : g, dt); // (3.3.0) the alarm beacon (not over the locker)
+  beacon.update(ui.inventoryOpen && ui.inventoryOpen() ? null : g, dt, !!(ui.tankOpen && ui.tankOpen())); // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
   // dread colour grading on the scene canvas only
   const fx = g.fx;

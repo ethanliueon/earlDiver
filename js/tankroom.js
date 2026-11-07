@@ -59,6 +59,7 @@ export function seaAt(d) {
 // how an animal is doing, in a word, and its colour
 function stateOf(g, s, inBag) {
   if (s.cond <= 0.05) return ['dead', '#9a9a9a'];
+  if (s.safe) return ['✓ safe at the surface', '#78dc8c'];
   if (gapOf(g, s, inBag) > SAFE_GAP) return ['dying: barotrauma', '#ff6a50'];
   if (s.acc) return ['acclimated', '#8fd4ff'];
   if (s.cond < 0.5) return ['weak', '#e6503c'];
@@ -569,10 +570,10 @@ export class TankRoom {
     const A = g.alarm; if (!A) return;
     const face = Math.max(0, Math.cos(A.rot)), bx = G.W - 272, sweep = Math.sin(A.rot);
     ctx.save(); ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = `rgba(150,10,4,${(0.05 + 0.12 * face).toFixed(3)})`; ctx.fillRect(0, 0, G.W, G.H);
+    ctx.fillStyle = `rgba(140,24,10,${(0.035 + 0.08 * face).toFixed(3)})`; // (4.0.0) toned down ctx.fillRect(0, 0, G.W, G.H);
     // the beam across the wall
     const x = bx + sweep * G.W * 0.7, rg = ctx.createRadialGradient(x, G.H * 0.35, 10, x, G.H * 0.35, G.H * 0.6);
-    rg.addColorStop(0, `rgba(255,40,20,${(0.22 * (0.4 + 0.6 * face)).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,40,20,0)');
+    rg.addColorStop(0, `rgba(240,70,40,${(0.15 * (0.4 + 0.6 * face)).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,40,20,0)');
     ctx.fillStyle = rg; ctx.fillRect(0, 0, G.W, G.H);
     ctx.restore();
   }
@@ -1021,5 +1022,16 @@ export class TankRoom {
     ctx.scale(-f, Math.abs(sy) < 0.1 ? 0.1 * Math.sign(sy || 1) : sy);
     drawSpecies(ctx, sp, L, a.phase, lerp(0.15, 1, a.vit ?? 1), 0);
     ctx.restore();
+    if (s.safe) safeMark(ctx, a.x + L * 0.32, a.y - Math.max(14, L * halfH(sp)) - 8, clamp(L * 0.09, 8, 12)); // (4.0.0) brought up: safe
   }
+}
+// (4.0.0) a green check in a dark disc: this animal came up with the sub and is safe until she dives again
+export function safeMark(ctx, x, y, r) {
+  ctx.save(); ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(0, 1.2, r, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#2f6b3a'; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(200,255,200,0.4)'; ctx.lineWidth = Math.max(1, r * 0.12); ctx.beginPath(); ctx.arc(0, 0, r * 0.86, 0, TAU); ctx.stroke();
+  ctx.strokeStyle = '#d8ffd2'; ctx.lineWidth = Math.max(1.6, r * 0.24); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(-r * 0.42, r * 0.02); ctx.lineTo(-r * 0.1, r * 0.34); ctx.lineTo(r * 0.45, -r * 0.32); ctx.stroke();
+  ctx.restore();
 }

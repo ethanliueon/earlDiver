@@ -508,6 +508,48 @@ export class Renderer {
       }
     }
 
+    // (4.0.0) the anchor chain: steel links from the hawse on her bow down to the anchor, as much of it
+    // as is out (g.anchorLen metres of depth), hanging in a long curve toward the bow
+    if (g.anchorLen > 0.2) {
+      const dirB = -Math.sign(Math.cos(BOAT.yaw || 0) || 1), hx = BOAT.x + dirB * 7, hy = surfY(BOAT.x) * 0.8 - 1.5;
+      let len = g.anchorLen; const scope = Math.min(len * 0.22, 30);
+      const cx = (y) => { const k = clamp((y - hy) / Math.max(1, len - hy), 0, 1); return hx + dirB * (0.3 + scope * k * k * (3 - 2 * k)); };
+      if (g.anchored && !g.anchorDir) len = Math.max(1, g.world.floorAt(cx(len)) - 0.35); // resting on the bottom where it lies, not where she floats
+      const ya = Math.max(hy, y0 - 1), yb = Math.min(len, y1 + 1);
+      if (ya < yb && Math.abs(cx((ya + yb) / 2) - cam.x) < cam.w) {
+        const step = 0.3, big = ppm * step >= 3.5;
+        ctx.lineCap = 'round';
+        if (!big) { ctx.strokeStyle = 'rgba(70,76,80,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.08); ctx.beginPath(); for (let y = ya; y <= yb; y += Math.max(step, 2 / ppm)) ctx.lineTo(S(cx(y)), Sy(y)); ctx.stroke(); }
+        else {
+          let i = Math.floor((ya - hy) / step);
+          for (let y = hy + i * step; y <= yb; y += step, i++) {
+            const x = cx(y), a = Math.atan2(step, cx(y + step) - x), px = S(x), py = Sy(y), L = ppm * step * 0.62, Wd = ppm * step * 0.36;
+            ctx.save(); ctx.translate(px, py); ctx.rotate(a);
+            if (i % 2) { // seen face on: an oval ring with a stud across it
+              ctx.strokeStyle = '#2a2e31'; ctx.lineWidth = Math.max(1.2, Wd * 0.55); ctx.beginPath(); ctx.ellipse(0, 0, L, Wd, 0, 0, TAU); ctx.stroke();
+              ctx.strokeStyle = '#7c8488'; ctx.lineWidth = Math.max(0.6, Wd * 0.28); ctx.beginPath(); ctx.ellipse(0, 0, L, Wd, 0, Math.PI * 1.05, Math.PI * 1.75); ctx.stroke();
+              ctx.strokeStyle = '#4a5054'; ctx.lineWidth = Math.max(0.8, Wd * 0.3); ctx.beginPath(); ctx.moveTo(0, -Wd * 0.8); ctx.lineTo(0, Wd * 0.8); ctx.stroke();
+            } else { // edge on: a bar
+              ctx.strokeStyle = '#25292c'; ctx.lineWidth = Math.max(1.4, Wd * 0.75); ctx.beginPath(); ctx.moveTo(-L, 0); ctx.lineTo(L, 0); ctx.stroke();
+              ctx.strokeStyle = '#6e767a'; ctx.lineWidth = Math.max(0.5, Wd * 0.22); ctx.beginPath(); ctx.moveTo(-L * 0.8, -Wd * 0.15); ctx.lineTo(L * 0.8, -Wd * 0.15); ctx.stroke();
+            }
+            ctx.restore();
+          }
+        }
+        // the anchor itself, a stockless one hanging by its shackle (or lying on the mud)
+        const ax = cx(len), ay = len;
+        if (inView(ax, ay, 4)) {
+          const u = ppm * 0.5; ctx.save(); ctx.translate(S(ax), Sy(ay)); ctx.rotate(Math.atan2(step, cx(len) - cx(len - step)) - Math.PI / 2);
+          ctx.fillStyle = '#3a3f42'; ctx.strokeStyle = '#1c1f21'; ctx.lineWidth = Math.max(1, u * 0.08);
+          ctx.beginPath(); ctx.arc(0, -u * 0.15, u * 0.22, 0, TAU); ctx.stroke(); // shackle
+          ctx.fillRect(-u * 0.12, 0, u * 0.24, u * 1.9); ctx.strokeRect(-u * 0.12, 0, u * 0.24, u * 1.9); // shank
+          ctx.beginPath(); ctx.moveTo(-u * 0.95, u * 1.35); ctx.quadraticCurveTo(-u * 0.6, u * 2.25, 0, u * 2.2); ctx.quadraticCurveTo(u * 0.6, u * 2.25, u * 0.95, u * 1.35);
+          ctx.lineTo(u * 0.7, u * 1.75); ctx.quadraticCurveTo(0, u * 1.95, -u * 0.7, u * 1.75); ctx.closePath(); ctx.fill(); ctx.stroke(); // crown and flukes
+          ctx.fillStyle = 'rgba(160,170,175,0.35)'; ctx.fillRect(-u * 0.12, 0, u * 0.07, u * 1.9);
+          ctx.restore();
+        }
+      }
+    }
     // ---- boat + sub ----
     const boatX = S(BOAT.x), boatY = Sy(surfY(BOAT.x) * 0.8);
     let crane = null;
@@ -1212,12 +1254,34 @@ export class Renderer {
     this.sunset = sunset;
     ctx.fillStyle = sg; ctx.fillRect(-20, -20, W + 40, horizon + 22 + (0.2 + g.waveBoost * 2.5) * this.cam.ppm);
     // stars
+    // (4.0.0) baked once per screen size into their own layer: points scattered at random (no rows), most
+    // faint and tiny, a few bright ones with a soft glow, faintly blue or warm, thinning toward the haze
     if (dayEff < 0.4) {
-      ctx.fillStyle = `rgba(230,235,255,${((0.4 - dayEff) * 1.6).toFixed(3)})`;
-      for (const [sx, sy, b] of this.stars) {
-        const y = horizon - (1 - sy) * this.H * 0.9;
-        if (y < horizon - 4) ctx.fillRect(sx * W, y, 1 + b, 1 + b);
+      const sh = Math.ceil(this.H * 0.9), sw = Math.ceil(W);
+      if (!this.starC || this.starC.width !== sw || this.starC.height !== sh) {
+        const c = this.starC || (this.starC = document.createElement('canvas')); c.width = sw; c.height = sh;
+        const x = c.getContext('2d'); let z = 1234567;
+        const rnd = () => { z ^= z << 13; z ^= z >>> 17; z ^= z << 5; return ((z >>> 0) % 100000) / 100000; };
+        const n = Math.round(sw * sh / 2600);
+        for (let i = 0; i < n; i++) {
+          const px = rnd() * sw, py = rnd() * sh, k = py / sh; // k: toward the horizon
+          if (rnd() < k * 0.75) continue; // the haze near the sea hides most of the low ones
+          const m = Math.pow(rnd(), 5); // magnitude: very few bright
+          const tint = rnd(), col = tint < 0.2 ? '200,215,255' : tint > 0.88 ? '255,226,196' : '236,240,255';
+          const a = (0.25 + 0.75 * Math.min(1, m * 3 + 0.15)) * (1 - k * 0.5);
+          if (m > 0.25) {
+            const r = 2 + m * 5, gl = x.createRadialGradient(px, py, 0, px, py, r);
+            gl.addColorStop(0, `rgba(${col},${(a * 0.5).toFixed(3)})`); gl.addColorStop(1, `rgba(${col},0)`);
+            x.fillStyle = gl; x.fillRect(px - r, py - r, r * 2, r * 2);
+          }
+          x.fillStyle = `rgba(${col},${a.toFixed(3)})`;
+          x.beginPath(); x.arc(px, py, 0.45 + m * 1.1, 0, TAU); x.fill();
+        }
       }
+      ctx.save(); ctx.globalAlpha = Math.min(1, (0.4 - dayEff) * 2.5);
+      ctx.beginPath(); ctx.rect(0, 0, W, horizon - 4); ctx.clip();
+      ctx.drawImage(this.starC, 0, horizon - this.H * 0.9);
+      ctx.restore();
     }
     // sun / moon
     const arc = (p) => [W * (0.1 + p * 0.8), horizon - Math.sin(p * Math.PI) * this.H * 0.45 - 20];
@@ -2346,7 +2410,12 @@ export class Renderer {
       cone(head.x, head.y, ang, 17 * ppm * (e.nightSet ? 1.5 : 1), 0.32 * (e.nightSet ? 1.2 : 1), beamCol, 0.95 * TORCH * flick); // (the Night Shift set: half as far again)
       radial(head.x, head.y, 3.2 * ppm, beamCol, 0.3 * TORCH * flick); lamps.push({ x: head.x, y: head.y, r: 3.2 * ppm, a: 0.3 * TORCH * flick });
     }
-    if (g.necklaceOn && !e.inSub) radial(S(e.x), Sy(e.y), 6 * ppm, [170, 255, 190], 0.5); // the necklace: a glowstick's soft green light
+    if (g.necklaceOn) { // (4.0.0) the glow stick: warm amber, wide; in the sub it fills the cabin and lights the water round her
+      const fade = Math.min(1, (g.glowT || 0) / 8), fl = 0.94 + 0.06 * Math.sin(g.time * 7.3) * Math.sin(g.time * 2.1);
+      const gx = e.inSub ? S(g.sub.x) : S(e.x), gy = e.inSub ? Sy(g.sub.y) : Sy(e.y), gr = (e.inSub ? 13 : 10) * ppm;
+      radial(gx, gy, gr, [255, 178, 92], 0.75 * fade * fl); radial(gx, gy, gr * 0.35, [255, 205, 140], 0.45 * fade * fl);
+      lamps.push({ x: gx, y: gy, r: gr, a: 0.75 * fade });
+    }
     if (e.biolum && e.lampOn && !e.inSub) { const gc = hexToRgb(e.glows && e.glows[0] || '#8af0d0'), br = (4 + 1.5 * e.biolum) * ppm, pulse = 0.85 + 0.15 * Math.sin(g.time * 1.3); radial(S(e.x), Sy(e.y), br, gc, 0.45 * pulse); lamps.push({ x: S(e.x), y: Sy(e.y), r: br, a: 0.45 }); } // (2.8.0) Bioluminescence: his gear glows while his light is on
     if (g.legend) { // the legendary moment: a pale light comes up on it, and fades
       const c = g.legend.c, k = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
@@ -2624,7 +2693,7 @@ export class Renderer {
       if (x < -50 || x > this.W + 50 || y < -50 || y > this.H + 50) continue;
       halo(x, y - ppm * 0.2, ppm * 0.5, p.type === 'lure' ? [190, 240, 255] : [90, 140, 255], 0.35 * haze + 0.1);
     }
-    if (g.necklaceOn && !e.inSub) halo(S(e.x), Sy(e.y), ppm * 2.2, [170, 255, 190], 0.2);
+    if (g.necklaceOn) { const fade = Math.min(1, (g.glowT || 0) / 8); if (e.inSub) halo(S(g.sub.x), Sy(g.sub.y), ppm * 4.5, [255, 180, 96], 0.16 * fade); else halo(S(e.x), Sy(e.y), ppm * 3.2, [255, 180, 96], 0.3 * fade); }
     if (this.boatLight) halo(this.boatLight.x, this.boatLight.y, ppm * 4, [255, 190, 110], 0.25 * this.boatLight.a);
   }
 }

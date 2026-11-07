@@ -68,7 +68,7 @@ export class Audio {
   loadSfx() {
     this.sfxBuf = {};
     const names = ['chamber_plop', 'tank_plop', 'seagull', 'hull_creak_1', 'hull_creak_2', 'hull_creak_3', 'sub_implosion',
-      'ui_click', 'ui_click_soft', 'ui_rollover', 'ui_sale_coins', 'journal_page'];
+      'ui_click', 'ui_click_soft', 'ui_rollover', 'ui_sale_coins', 'journal_page', 'sub_alarm'];
     const get = (name, file) => fetch(file).then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => this.ac.decodeAudioData(b, res, rej)))
       .then((buf) => { this.sfxBuf[name] = buf; if (name === 'surface_lapping') this.startLapping(); }).catch(() => {});
     for (const n of names) get(n, `assets/audio/sfx/${n}.mp3`);
@@ -373,10 +373,24 @@ export class Audio {
   // paper: a tag stirring
   rustle(vol = 0.06) { this.burst('bandpass', 3200, 0.9, 0.22, vol); this.burst('highpass', 5200, 0.7, 0.12, vol * 0.6, this.white, 0.08); }
   // (3.3.0) the sub's klaxon: a rising whoop, twice, a little rough
-  alarm(vol = 0.05) {
+  // (4.0.0) the recorded alarm, played once through: muffled by the water and the hull (cut: the low-pass, Hz)
+  alarm(vol = 0.05, cut = 1600) {
     if (this.muted) return;
+    const buf = this.sfxBuf && this.sfxBuf.sub_alarm;
+    if (this.ready && buf) {
+      this.stopAlarm();
+      const s = this.ac.createBufferSource(); s.buffer = buf;
+      const f = this.ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; f.Q.value = 0.7;
+      const g = this.ac.createGain(); g.gain.value = 0.55;
+      s.connect(f).connect(g).connect(this.master); s.start();
+      this.alarmNode = { s, f, g }; s.onended = () => { if (this.alarmNode && this.alarmNode.s === s) this.alarmNode = null; };
+      return;
+    }
     for (const w of [0, 0.62]) { this.tone(420, 0.5, vol, 'sawtooth', w, 840); this.tone(423, 0.5, vol * 0.6, 'square', w, 846); }
   }
+  // the muffle follows where he is: clearer in the sub's rooms, duller out at the helm view
+  alarmMuffle(cut) { if (this.alarmNode) this.alarmNode.f.frequency.setTargetAtTime(cut, this.ac.currentTime, 0.2); }
+  stopAlarm() { if (this.alarmNode) { const n = this.alarmNode; this.alarmNode = null; n.g.gain.setTargetAtTime(0, this.ac.currentTime, 0.15); try { n.s.stop(this.ac.currentTime + 0.6); } catch (e) { /* already stopped */ } } }
   sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
   click() { if (!this.sfx('ui_click', 0.55)) this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }

@@ -22,7 +22,7 @@ import { SPECIES_BY_ID } from './species.js';
 const ROOM = { door: 0.075, desk: 0.74, min: 0.07, max: 1.4, width: 1.45, radio: 1.1, wheel: 1.31, tank: 0.965 }; // (2.6.8) the aquarium: a lit tank across the room from the door
 const STATIONS = [
   { id: 'door', x: ROOM.door, label: 'F  Out on deck' },
-  { id: 'desk', x: ROOM.desk - 0.085, label: 'F  Shop' }, // (3.0.20: the computer is the shop)
+  { id: 'desk', x: ROOM.desk - 0.03, label: 'F  Shop' }, // (3.0.20: the computer is the shop; 4.0.0: centred on it)
   { id: 'tank', x: ROOM.tank, label: 'F  The aquarium' },
   { id: 'wheel', x: ROOM.wheel - 0.075, label: 'F  Take the wheel' },
 ];
@@ -99,6 +99,7 @@ export class Cabin {
       if (ev.type === 'keydown') {
         if (k === 'escape') { ev.preventDefault(); ev.stopImmediatePropagation(); this.h.close(); return; }
         if (k === 'e' || k === 'f') { ev.preventDefault(); ev.stopImmediatePropagation(); this.use(); return; }
+        if ((k === ' ' || k === 'w' || k === 'arrowup') && !this.hop) { ev.preventDefault(); ev.stopImmediatePropagation(); this.hop = 0.55; return; } // (4.0.0) a jump, as on deck
         if (['a', 'd', 'arrowleft', 'arrowright', 'shift'].includes(k)) { ev.preventDefault(); ev.stopImmediatePropagation(); this.keys.add(k); this.goal = null; if (k !== 'shift') this.keyAt = performance.now(); }
       } else this.keys.delete(k);
     };
@@ -106,7 +107,7 @@ export class Cabin {
     this.c.addEventListener('mousedown', (ev) => {
       if (this.root.hidden || this.h.blocked() || ev.button !== 0) return;
       const W = window.innerWidth, camX = this.camX || 0, fx = (ev.clientX + camX) / W;
-      const st = STATIONS.find((q) => Math.abs(fx - q.x) < 0.09 || (q.id === 'desk' && Math.abs(fx - ROOM.desk) < 0.09) || (q.id === 'wheel' && Math.abs(fx - ROOM.wheel) < 0.06));
+      const st = STATIONS.find((q) => Math.abs(fx - q.x) < 0.09 || (q.id === 'desk' && Math.abs(fx - ROOM.desk) < 0.12) || (q.id === 'wheel' && Math.abs(fx - ROOM.wheel) < 0.06));
       if (st && this.near() === st.id) { this.use(); return; }
       this.goal = clamp(st ? st.x : fx, ROOM.min, ROOM.max); this.goalUse = !!st;
     });
@@ -123,7 +124,7 @@ export class Cabin {
   }
   show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); this.goal = null; this.mMoved = -1e9; this.mlx = null; }
   // (3.0.20) wider: each thing answers from 0.09 of a screen either side (twice what it was), the nearest one if two do
-  near() { let best = null, bd = 0.09; for (const q of STATIONS) { const d = Math.abs(this.x - q.x); if (d < bd) { bd = d; best = q; } } return best ? best.id : null; }
+  near() { let best = null, bd = 1; for (const q of STATIONS) { const d = Math.abs(this.x - q.x) / (q.id === 'desk' ? 0.11 : 0.09); if (d < bd) { bd = d; best = q; } } return best ? best.id : null; } // (4.0.0) the desk answers from the whole width of it
   use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'tank' ? 'gallery' : n); }
   atTank() { this.x = ROOM.tank; this.face = 1; this.keys.clear(); this.goal = null; }
   atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; this.keys.clear(); }
@@ -136,16 +137,18 @@ export class Cabin {
     let mRun = false;
     if (!dir && this.goal == null && this.mcx != null && (this.mMoved || -1e9) > (this.keyAt || -1e9) && !this.h.blocked()) {
       const d = clamp((this.mcx + (this.camX || 0)) / window.innerWidth, ROOM.min, ROOM.max) - this.x;
-      if (Math.abs(d) > 0.035) { dir = Math.sign(d); this.ease = clamp((Math.abs(d) - 0.035) / 0.06, 0.35, 1); } // (3.0.27) a steady walk; Shift runs
+      if (Math.abs(d) > 0.05) { dir = Math.sign(d); this.ease = clamp((Math.abs(d) - 0.05) / 0.06, 0.35, 1); } // (3.0.27) a steady walk; Shift runs
     }
-    const run = this.keys.has('shift') || mRun, pace = (run ? 0.32 : 0.2) * 0.6 * (this.ease || 1); this.ease = 1; // (3.0.20) a cabin pace: 0.6 of his walk elsewhere
+    const run = this.keys.has('shift') || mRun, pace = (run ? 0.32 : 0.2) * (this.ease || 1); this.ease = 1; // (4.0.0) his own pace again, and Shift runs
     if (!this.h.blocked()) {
       const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);
       if (dir) { this.face = dir; this.walkT += dt; } else this.walkT = 0;
     } else dir = 0;
     this.walk = (this.walk || 0) + ((dir ? 1 : 0) - (this.walk || 0)) * Math.min(1, dt * (dir ? 8 : 6));
-    if (dir || this.walk > 0.05) { const s0 = this.step || 0; this.step = s0 + dt * (run ? 11.5 : 7.5) * 0.6; if (Math.floor(this.step / Math.PI) !== Math.floor(s0 / Math.PI) && this.walk > 0.35) this.h.footstep && this.h.footstep(0.05 * this.walk); }
+    if (this.hop) { this.hop = Math.max(0, this.hop - dt); if (!this.hop) this.h.footstep && this.h.footstep(0.1); }
+    // (4.0.0) the stride keeps pace with the floor going by, so his feet grip it instead of sliding
+    if (dir || this.walk > 0.05) { const s0 = this.step || 0, eh = window.innerHeight * 0.34; this.step = s0 + dt * Math.max(2, (dir ? pace : 0.1) * window.innerWidth / eh * 6.1); if (Math.floor(this.step / Math.PI) !== Math.floor(s0 / Math.PI) && this.walk > 0.35) this.h.footstep && this.h.footstep(0.05 * this.walk); }
     const n = this.near();
     { const html = n ? promptHtml(STATIONS.find((q) => q.id === n).label) : ''; if (this.promptSrc !== html) { this.promptSrc = html; this.prompt.innerHTML = html; } } // (3.6.0) a brass key-cap and the words
     this.prompt.hidden = !n;
@@ -517,7 +520,8 @@ export class Cabin {
     // ---------- Earl, standing and walking: boots on, tank off ----------
     const ex = X(this.x), eh = RH * 0.5;
     contact(ex + (ex - lx) / W * 30 * k, floor + 6 * k, 34 * k, 6 * k, 0.65);
-    ctx.save(); ctx.translate(ex, floor - eh * 0.5); ctx.scale(this.face, 1); ctx.rotate(-Math.PI / 2);
+    const hopY = this.hop ? Math.sin((1 - this.hop / 0.55) * Math.PI) * eh * 0.22 : 0;
+    ctx.save(); ctx.translate(ex, floor - eh * 0.5 - hopY); ctx.scale(this.face, 1); ctx.rotate(-Math.PI / 2);
     drawEarl(ctx, eh, this.step || 0, 0, null, null, { kind: 'none', tier: 0, t, suit: this.h.suit(), bag: [], land: true, noTank: true, noMask: true, walk: this.walk || 0 });
     ctx.restore();
     // ---------- the light: dim everywhere, warm under the lamp, cool by the porthole and door, green at the screen ----------

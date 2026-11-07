@@ -106,6 +106,8 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
       thighA = Math.PI - 0.15 - lift * 1.15;
       bend = 0.2 + lift * 1.35;
     }
+    if (!near && gear && gear.land) thighA -= 0.09; // (4.0.0) standing, the far foot a little ahead: both boots show
+    if (!near && !(gear && (gear.land || gear.walk != null || gear.climb != null))) thighA += 0.05; // and both fins in the water
     const shinA = thighA + bend;
     const hx = hipX, hy = near ? 1.6 * u : -1.2 * u;
     const [kx, ky] = at(hx, hy, thighA, 25 * u);
@@ -133,7 +135,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
       // on deck or in the cabin: rubber deck boots instead of fins - a shaft to mid-calf, a heel, a toe
       // pointing to his front, a thick dark sole
       ctx.save(); ctx.translate(ax, ay); ctx.rotate(shinA); ctx.scale(1, -1); // (the shin points back down his body: mirrored, so the toe is to his front)
-      const bc = near ? '#4a5a3a' : '#26301e', bs = near ? '#1c1d1a' : '#111210';
+      const bc = near ? '#4a5a3a' : '#3a4730', bs = near ? '#1c1d1a' : '#151613'; // (4.0.0) the far boot a shade darker, not lost in the dark
       ctx.fillStyle = bc; ctx.beginPath(); ctx.roundRect(-11 * u, -4.6 * u, 14 * u, 9.2 * u, 2 * u); ctx.fill(); // the shaft
       ctx.beginPath(); ctx.moveTo(-1 * u, -4.6 * u); ctx.quadraticCurveTo(2 * u, -5 * u, 3 * u, -3 * u); ctx.lineTo(3.4 * u, 9.5 * u); ctx.quadraticCurveTo(1 * u, 11 * u, -1.5 * u, 10.5 * u); ctx.lineTo(-1.5 * u, -4.6 * u); ctx.fill(); // the foot, toward his front
       ctx.fillStyle = bs; ctx.fillRect(3 * u, -4.6 * u, 1.8 * u, 15.4 * u); // the sole
@@ -145,12 +147,12 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     const flex = -s * (0.12 + 0.3 * m);
     // pointed foot: the fin carries straight on from the shin, so the leg reads as one long line
     ctx.save(); ctx.translate(ax, ay); ctx.rotate(shinA + 0.04);
-    ctx.fillStyle = near ? '#1d2024' : '#101215';
+    ctx.fillStyle = near ? '#1d2024' : '#17191d';
     ctx.beginPath(); ctx.ellipse(3 * u, 0, 6 * u, 3.2 * u, 0, 0, Math.PI * 2); ctx.fill(); // foot pocket
     ctx.fillStyle = WEBBING; ctx.fillRect(-1 * u, -2.9 * u, 1.4 * u, 5.4 * u); // heel strap
     const FL = gear && gear.finLook, bg = ctx.createLinearGradient(6 * u, 0, 34 * u, 0);
-    if (FL) { bg.addColorStop(0, FL.c[0]); bg.addColorStop(0.6, FL.c[1]); bg.addColorStop(1, FL.c[2]); if (!near) ctx.globalAlpha = 0.6; }
-    else { bg.addColorStop(0, near ? '#1d3346' : '#101b25'); bg.addColorStop(0.6, near ? '#24506a' : '#152a38'); bg.addColorStop(1, near ? 'rgba(60,120,150,0.55)' : 'rgba(30,60,80,0.5)'); }
+    if (FL) { bg.addColorStop(0, FL.c[0]); bg.addColorStop(0.6, FL.c[1]); bg.addColorStop(1, FL.c[2]); if (!near) ctx.globalAlpha = 0.85; }
+    else { bg.addColorStop(0, near ? '#1d3346' : '#172a3a'); bg.addColorStop(0.6, near ? '#24506a' : '#1c4058'); bg.addColorStop(1, near ? 'rgba(60,120,150,0.55)' : 'rgba(48,96,122,0.5)'); } // (4.0.0) both fins read
     ctx.fillStyle = bg;
     ctx.beginPath();
     ctx.moveTo(6 * u, -3.4 * u);

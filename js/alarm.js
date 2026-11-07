@@ -22,23 +22,23 @@ export class Beacon {
     document.body.appendChild(el);
     this.el = el; this.cv = el.querySelector('canvas'); this.list = el.querySelector('.bc-list');
   }
-  update(g, dt) {
+  // (4.0.0) rooms: whether he is in the sub's rooms, the only place the beacon and its tags are seen. The
+  // alarm sounds once when something new goes wrong (not on a loop), muffled by the water round the hull.
+  update(g, dt, rooms = false) {
     const A = g && !g.paused ? alarmsOf(g) : [], live = A.length > 0;
     if (g) g.alarm = live ? { rot: this.rot, list: A } : null;
     this.on = clamp(this.on + (live ? dt * 4 : -dt * 3), 0, 1);
-    this.el.hidden = this.on <= 0;
+    if (live || this.on > 0) this.rot = (this.rot + dt * 5.2) % TAU;
+    const heard = new Set(A.map((a) => a.id)), fresh = A.some((a) => !(this.heard || new Set()).has(a.id));
+    if (fresh && this.audio && this.audio.ready && this.audio.alarm) this.audio.alarm(0.05, rooms ? 2600 : 1100);
+    if (!live && this.heard && this.heard.size && this.audio && this.audio.stopAlarm) this.audio.stopAlarm();
+    this.heard = heard;
+    if (this.audio && this.audio.alarmMuffle) this.audio.alarmMuffle(rooms ? 2600 : 1100);
+    this.el.hidden = !rooms || this.on <= 0;
     if (this.el.hidden) { this.ids = ''; return; }
-    this.rot = (this.rot + dt * 5.2) % TAU;
-    // the list under it, rebuilt when it changes
+    // the list, rebuilt when it changes
     const ids = A.map((a) => a.id + a.text).join('|');
-    if (ids !== this.ids) {
-      const fresh = A.some((a) => !this.ids.includes(a.id));
-      this.ids = ids; this.list.innerHTML = A.map((a) => `<li class="bc-${a.id}">${a.text}</li>`).join('');
-      if (fresh) this.hornT = 0; // a new alarm sounds at once
-    }
-    // the klaxon: a rising two-tone whoop, every 1.6 s while it lasts
-    this.hornT -= dt;
-    if (live && this.hornT <= 0) { this.hornT = 1.6; if (this.audio && this.audio.ready && this.audio.alarm) this.audio.alarm(); }
+    if (ids !== this.ids) { this.ids = ids; this.list.innerHTML = A.map((a) => `<li class="bc-${a.id}">${a.text}</li>`).join(''); }
     this.draw(live);
   }
   draw(live) {
@@ -59,12 +59,12 @@ export function drawBeacon(x, x0, top, k, r, live) {
   x.fillStyle = '#1a1b1c'; x.fillRect(cx - 5, 92, 10, 12); x.fillStyle = '#2c2e30'; x.fillRect(cx - 18, 100, 36, 4);
   // the glow around it, strongest when the mirror faces out
   const gl = x.createRadialGradient(cx, 46, 4, cx, 46, 48);
-  gl.addColorStop(0, `rgba(255,60,40,${(0.55 * lit * (0.45 + 0.55 * Math.max(0, face))).toFixed(3)})`); gl.addColorStop(1, 'rgba(255,40,20,0)');
+  gl.addColorStop(0, `rgba(240,80,50,${(0.4 * lit * (0.45 + 0.55 * Math.max(0, face))).toFixed(3)})`); gl.addColorStop(1, 'rgba(255,40,20,0)');
   x.fillStyle = gl; x.fillRect(0, 0, W, H);
   // the dome
   const dome = new Path2D(); dome.moveTo(cx - 26, 78); dome.lineTo(cx - 21, 30); dome.quadraticCurveTo(cx, 16, cx + 21, 30); dome.lineTo(cx + 26, 78); dome.closePath();
   const dg = x.createLinearGradient(cx - 26, 0, cx + 26, 0);
-  dg.addColorStop(0, '#6a0806'); dg.addColorStop(0.3, '#d61e14'); dg.addColorStop(0.55, '#ff4a32'); dg.addColorStop(1, '#5a0604');
+  dg.addColorStop(0, '#4e130e'); dg.addColorStop(0.3, '#a8301f'); dg.addColorStop(0.55, '#d4573d'); dg.addColorStop(1, '#43100b'); // (4.0.0) an old, sun-faded red, not a toy's
   x.fillStyle = dg; x.fill(dome);
   x.save(); x.clip(dome);
   // the turning mirror: a bright band that slides across and narrows as it turns away
@@ -88,7 +88,7 @@ export function drawBeacon(x, x0, top, k, r, live) {
     const k = (face - 0.55) / 0.45, fx = bx, fy = 50;
     x.save(); x.globalCompositeOperation = 'lighter';
     const fg = x.createRadialGradient(fx, fy, 0, fx, fy, 30 * k + 6);
-    fg.addColorStop(0, `rgba(255,240,220,${(0.95 * k).toFixed(3)})`); fg.addColorStop(0.3, `rgba(255,120,60,${(0.5 * k).toFixed(3)})`); fg.addColorStop(1, 'rgba(255,60,20,0)');
+    fg.addColorStop(0, `rgba(255,236,214,${(0.7 * k).toFixed(3)})`); fg.addColorStop(0.3, `rgba(255,120,60,${(0.5 * k).toFixed(3)})`); fg.addColorStop(1, 'rgba(255,60,20,0)');
     x.fillStyle = fg; x.fillRect(0, 0, W, H);
     x.strokeStyle = `rgba(255,220,190,${(0.7 * k).toFixed(3)})`; x.lineWidth = 1.2;
     x.beginPath(); x.moveTo(fx - 34 * k, fy); x.lineTo(fx + 34 * k, fy); x.moveTo(fx, fy - 20 * k); x.lineTo(fx, fy + 20 * k); x.stroke();

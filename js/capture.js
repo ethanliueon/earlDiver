@@ -216,14 +216,29 @@ export function gapSigned(g, s, inBag) {
   return homeOf(s) - felt;
 }
 export function gapOf(g, s, inBag) {
+  if (s.safe) return 0; // (4.0.0) brought up: safe until the sub dives again
   return Math.abs(gapSigned(g, s, inBag));
+}
+// (4.0.0) when the sub touches the surface, every animal aboard is safe: its condition is held where it is
+// until she dives again. Diving undoes it (moving one between tanks down there, it feels the pressure);
+// coming back up makes them safe again.
+const SURFACE_Y = 2.2, DIVE_Y = 5; // (as the sub breathing fresh air: under 2.2 m she is at the surface)
+export function surfaceSafety(g) {
+  const sub = g.sub; if (!sub || sub.imploded) return;
+  const inSub = g.earl.inSub;
+  if (sub.y <= SURFACE_Y || sub.docked) for (const s of inSub ? g.subTank.concat(g.bag) : g.subTank) { if (s.cond > 0.05) s.safe = true; }
+  else if (sub.y > DIVE_Y) for (const s of g.subTank) s.safe = false;
+  // what he carries in his bag is safe only while it is aboard with him: out in the water, below the surface, not
+  if (sub.y > DIVE_Y && inSub || !inSub && g.earl.y > DIVE_Y) for (const s of g.bag) s.safe = false;
 }
 export function updateSpecimens(g, dt) {
   const deaths = [], events = [];
   const cmax = chamberMax(g);
+  surfaceSafety(g);
   const tick = (s, inBag) => {
     if (s.home === undefined) s.home = s.from || 0;
     if (s.cond <= 0.05) return;
+    if (s.safe) { s.warnStress = s.warnDying = false; return; } // (4.0.0) safe at the surface: held as it is
     if (inBag && g.earl.legends && g.earl.legends.has('kinship')) return; // (2.8.0) Kinship: in his bag, never stressed, never dying
     const before = s.cond;
     if (inBag) s.cond -= dt * 0.0005;
@@ -340,10 +355,16 @@ export function updateSubNet(g, dt, canTake) {
     n.open += (want - n.open) * Math.min(1, dt * 2);
     n.dir = sub.facing || n.dir;
     if (n.open > 0.6) {
-      const r = T.mouth * n.open;
+      // (4.0.0) only what goes in at the mouth: an animal is caught when it crosses the mouth's opening
+      // (from the sub's side to the bag's side, within the hoop), not anything near the net
+      const r = T.mouth * n.open, prev = n.prev || (n.prev = new Map()), seen = new Map();
       for (const c of g.fauna.list) {
         if (c.dead || c.hidden || c.pet || n.got.includes(c)) continue;
-        if (Math.abs(c.x - n.mx) > 3 || Math.abs(c.y - n.my) > r) continue;
+        const rel = (c.x - n.mx) * n.dir; // + ahead of the mouth (toward the sub), - inside the bag
+        if (Math.abs(rel) > 4 || Math.abs(c.y - n.my) > r + 1) continue;
+        seen.set(c, rel);
+        const was = prev.get(c);
+        if (!(was !== undefined && was > 0 && rel <= 0 && Math.abs(c.y - n.my) < r)) continue;
         if (!canTake(c.sp)) continue;
         if (c.len > T.maxLen) {
           // too big: it hits the net; it may tear straight through, losing the net and everything in it
@@ -353,6 +374,7 @@ export function updateSubNet(g, dt, canTake) {
         if (n.got.length >= T.max) continue;
         n.got.push(c); c.dead = true; c.netted = true;
       }
+      n.prev = seen;
     }
     if (n.pt >= TOW_MAX) { n.phase = 'purse'; n.pt = 0; }
   } else if (n.phase === 'purse') {

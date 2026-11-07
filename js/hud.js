@@ -1,4 +1,4 @@
-import { drawPrompt } from './fittings.js';
+import { drawPrompt, promptShade } from './fittings.js';
 import { TITLES, LEGEND_OF } from './species.js';
 // (3.0.42) a Legendary's title in a message: never 'the the fangtooth', always 'the Fangtooth'
 const TITLE_RE = Object.values(TITLES).concat(Object.values(LEGEND_OF).map((x) => x[0])).map((t) => [new RegExp(`\\b(?:the |an? )?${t}\\b`, 'gi'), t]);
@@ -213,6 +213,16 @@ export class Hud {
     ctx.restore();
   }
 
+  // (4.0.0) a prompt's text fading in, and the one it replaced fading out; level: how much is showing
+  fadeText(slot, text, col) {
+    const st = (this.fadeState || (this.fadeState = {}))[slot] || (this.fadeState[slot] = { items: [], t: performance.now() });
+    const now = performance.now(), dt = Math.min(0.1, (now - st.t) / 1000); st.t = now;
+    if (text && !st.items.some((q) => q.text === text && q.on)) { for (const q of st.items) q.on = false; st.items.push({ text, col, a: 0, on: true }); }
+    if (!text) for (const q of st.items) q.on = false;
+    for (const q of st.items) { if (q.on) q.col = col || q.col; q.a = q.on ? Math.min(1, q.a + dt / 0.16) : Math.max(0, q.a - dt / 0.2); }
+    st.items = st.items.filter((q) => q.on || q.a > 0.01).slice(-3);
+    return { list: st.items.map((q) => [q.text, q.a, q.col]), level: st.items.reduce((m, q) => Math.max(m, q.a), 0) };
+  }
   draw(g, dt) {
     const ctx = this.ctx, W = this.c.width, H = this.c.height, s = this.s;
     ctx.clearRect(0, 0, W, H);
@@ -406,7 +416,7 @@ export class Hud {
     const slots = [];
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
     if (e.inSub && (g.items.airTank > 0 || g.tankFit)) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', g.tankFit ? g.tankFit / 3 : 0]);
-    if (g.items.necklace > 0) slots.push(['e', 'E', 'GLOW STICK', g.items.necklace, '#b8f0c0', g.necklaceOn ? 1 : 0]);
+    if (g.items.necklace > 0 || g.necklaceOn) slots.push(['e', 'E', g.necklaceOn ? `GLOW ${Math.ceil(g.glowT || 0)} S` : 'GLOW STICK', g.items.necklace, '#ffc070', g.necklaceOn ? 1 : 0]);
     // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
     if (e.inSub) {
       const n = g.subNet, N = n ? n.T : g.items.net && NETS_SUB[g.items.net];
@@ -492,15 +502,23 @@ export class Hud {
     const keyWidth = (txt, px) => { ctx.font = `${px}px ${GAME}`; return ctx.measureText(txt).width; };
     const capHidden = !SETTINGS.catchTags && !!g.catchTarget; // the catch tag is a setting (pause menu); other Space prompts stay
     // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
-    if (g.capPrompt && !capHidden && !dying && !g.kill) {
-      // (3.6.0) a brass key-cap and the words, no box; a catch's name in its rarity's colour
-      const py = H * 0.72 - (g.prompt ? 40 : 0) * s;
-      drawPrompt(ctx, g.capPrompt, W / 2, py + 14 * s, s, { col: g.capPrompt.startsWith('Space') ? (g.capRarity ? g.capRarity.col : '#d6ecce') : '#f0c2a6', size: 18 });
+    // (4.0.0) what the tool can reach, said below (the prompts are all drawn together, after this)
+    const capOn = g.capPrompt && !capHidden && !dying && !g.kill;
+    this.capWant = capOn ? [g.capPrompt, g.capPrompt.startsWith('Space') ? (g.capRarity ? g.capRarity.col : '#d6ecce') : '#f0c2a6'] : null;
     }
-    }
-    // ---------- interaction prompt ----------
-    if (g.prompt && !dying && !g.kill) { // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
-      drawPrompt(ctx, g.prompt, W / 2, H * 0.72 + 15 * s, s); // (3.6.0)
+    // ---------- interaction prompts ----------
+    // (4.0.0) both prompts fade in and out, and one crossfades into the next; the shade behind them is one
+    // fixed soft pool that fades with them
+    {
+      const cw = aboard ? null : this.capWant;
+      const capFx = this.fadeText('cap', cw ? cw[0] : null, cw ? cw[1] : null);
+      const prFx = this.fadeText('pr', g.prompt && !dying && !g.kill ? g.prompt : null, '#ece6d2'); // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
+      const shadeA = Math.max(capFx.level, prFx.level);
+      const both = capFx.level > 0.01 && prFx.level > 0.01, capY = H * 0.72 - (both || g.prompt ? 40 : 0) * s + 14 * s, prY = H * 0.72 + 15 * s;
+      const sy = both ? (capY + prY) / 2 : capFx.level > prFx.level ? capY : prY; this.shadeY = shadeA > 0.02 && this.shadeY != null ? this.shadeY + (sy - this.shadeY) * 0.15 : sy;
+      if (shadeA > 0.01) promptShade(ctx, W / 2, this.shadeY, s, shadeA);
+      for (const [txt, a, col] of capFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, capY, s, { col, size: 18, shade: false }); ctx.restore(); } // (3.6.0) a brass key-cap and the words; a catch's name in its rarity's colour
+      for (const [txt, a, col] of prFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, prY, s, { col, shade: false }); ctx.restore(); }
     }
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
