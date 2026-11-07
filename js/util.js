@@ -61,6 +61,8 @@ export function fbm2(x, y, oct = 4, seed = 0) {
 
 // Colour helpers. Colours are [r,g,b] 0..255 arrays.
 export function hexToRgb(h) {
+  // (3.7.5) an rgb()/rgba() string as well as hex: shade() returns rgb(), and its result is often fed back in
+  if (typeof h === 'string' && h.startsWith('rgb')) { const m = h.match(/[\d.]+/g) || [0, 0, 0]; return [+m[0], +m[1], +m[2]]; }
   h = h.replace('#', '');
   if (h.length === 3) h = h.split('').map((c) => c + c).join('');
   const n = parseInt(h, 16);
