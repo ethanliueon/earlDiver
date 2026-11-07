@@ -2,7 +2,7 @@
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
 const SHOWCASE_TABS = new Set(['diver', 'tools', 'sub']);
-import { speciesIcon } from './creatures_draw.js';
+import { speciesIcon, fittedIcon } from './creatures_draw.js';
 import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
@@ -26,7 +26,7 @@ import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
-import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf, BIG as BIG_CH, gapOf, SAFE_GAP } from './capture.js';
+import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf, BIG as BIG_CH, gapOf, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
@@ -393,8 +393,8 @@ export class UI {
       panel.dataset.tex = key;
       panel.style.backgroundImage = `url(${lockerTexture(W2, H2, { split })})`; panel.style.backgroundSize = '100% 100%';
     });
-    body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.renderInventory(); }));
-    if (tab === 'gear') this.equipWire(P, g);
+    body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.fishSel = null; this.renderInventory(); }));
+    if (tab === 'gear') this.equipWire(P, g); else this.catchWire(g);
   }
   // the Catch page: his net bag as pockets, the sub's tank, what he has found, the sub itself
   // (3.0.35) the Catch page in two fixed halves. Left: the net bag, every pocket a bag can have (the ones his bag
@@ -418,7 +418,8 @@ export class UI {
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))], tank = g.subTank || [];
     const open = tank.filter((s2) => !s2.pressed && !s2.pile), floor = tank.filter((s2) => s2.pile), big = tank.filter((s2) => s2.pressed && s2.chamber === BIG_CH);
     const chambers = tank.filter((s2) => s2.pressed && s2.chamber !== BIG_CH), oCap = tankSlots(g), pCap = pressSlots(g), oUsed = open.reduce((t, s2) => t + slotsOf(s2), 0);
-    const elsewhere = [floor.length ? `On the floor: ${floor.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')}` : '', big.length ? `In the big tank: ${big.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')}` : ''].filter(Boolean).join(' · ');
+    const elsewhere = floor.length ? `On the floor: ${floor.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')} · ` : '';
+    const bigCap = big.some(tooBig) ? 1 : 3;
     const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`;
     this.catchShown = Math.max(5, pCap);
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
@@ -426,30 +427,153 @@ export class UI {
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
-      + `<p class="ct-cap">${this.catchCap(g) || (elsewhere || 'Tap an animal to see it.')}</p></div></div></div>`;
+      // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
+      + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank <i>not fitted</i></h4>`)
+      + `<p class="ct-cap">${elsewhere}Click an animal for its card · drag it to move it${g.earl && g.earl.inSub ? '' : ' (in the sub)'}</p></div></div></div>`
+      + (this.fishSel ? this.fishPop(P, g) : '');
   }
-  // the caption under the sub: the animal last tapped, how it is, where from, what it is worth
-  catchCap(g) {
-    const s2 = this.catchSel; if (!s2 || !(g.subTank || []).includes(s2)) return '';
-    const sp = SPECIES_BY_ID[s2.id], P = g.profile;
-    const dying = s2.cond > 0.05 && gapOf(g, s2, false) > SAFE_GAP;
-    return `<b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${rarityStars(sp)}${sp.species ? ` <i>(${sp.species})</i>` : ''}${s2.variant ? ` <em>${s2.variant}</em>` : ''} · ${s2.cond <= 0.05 ? 'dead' : dying ? '<strong>dying: wrong pressure</strong>' : conditionName(s2.cond)} · from ${Math.round(s2.from || 0)} m · <span>${money(specimenValue(s2) * statValue(P, 'payFish'))}</span>`;
+  // (3.2.0) where an animal is: { list: 'bag' | 'tank' (the index space tankAction uses), i, place, n }
+  fishWhere(g, s2) {
+    let i = g.bag.indexOf(s2); if (i >= 0) return { where: 'bag', i, place: 'bag' };
+    i = (g.subTank || []).indexOf(s2); if (i < 0) return null;
+    const place = s2.pile ? 'floor' : !s2.pressed ? 'open' : s2.chamber === BIG_CH ? 'big' : 'chamber';
+    return { where: 'tank', i, place, n: s2.chamber };
+  }
+  // (3.2.0) an animal's card, like a piece of gear's: its picture at a fixed size top left (a frogfish as big as a
+  // shark), its name in its rarity's colour with its stars, what it is, where it was found and lives, what it is
+  // worth, how it is; along the bottom, small arrow-style moves, which work only in the sub
+  fishPop(P, g) {
+    const s2 = this.fishSel, at = s2 && this.fishWhere(g, s2); if (!at) { this.fishSel = null; return ''; }
+    const sp = SPECIES_BY_ID[s2.id], R = rarityOf(sp), col = rarityCol(sp) || 'var(--paint)';
+    if (!this.fitPics) this.fitPics = new Map();
+    if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
+    const dying = s2.cond > 0.05 && gapOf(g, s2, at.place === 'bag') > SAFE_GAP;
+    const st = s2.cond <= 0.05 ? ['dead', '#8a6a5a'] : dying ? ['dying: wrong pressure', '#e8806a'] : [conditionName(s2.cond), s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a'];
+    const place = { bag: 'In the net bag', open: 'The open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'The large pressure tank', floor: 'On the floor of the sub' }[at.place];
+    const row = (k, v) => `<tr><th>${k}</th><td>${v}</td></tr>`;
+    const facts = row('Where', place) + row('Condition', `<i class="dot" style="background:${st[1]}"></i>${st[0]}`)
+      + row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m`) + row('Lives at', `${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m`)
+      + row('Length', `${(s2.len || sp.len).toFixed(2)} m${tooBig(s2) ? ' · <em>too big for a chamber</em>' : ''}`) + row('Value', `<b class="val">${money(specimenValue(s2) * statValue(P, 'payFish'))}</b>`);
+    // the moves: the same as dragging, spelled out
+    const inSub = this.h.inSub ? this.h.inSub() : false, w = at.where, i = at.i, mv = (label, act, to = -1, on = true) => `<button data-fm="${act}:${w}:${i}:${to}"${on ? '' : ' disabled'}>${label}</button>`;
+    let acts = '';
+    if (inSub) {
+      if (tooBig(s2)) { if (at.place !== 'big') acts += hasBigTank(g) ? mv('Into the large tank', 'press', BIG_CH, bigFits(g, s2)) : ''; }
+      else if (at.place !== 'chamber') { const f = freeChamber(g); if (pressSlots(g) > 0) acts += mv(f >= 0 ? 'Into a chamber' : 'Into a chamber (all in use)', 'press', f, f >= 0); }
+      if (!tooBig(s2) && hasBigTank(g) && at.place !== 'big') acts += mv('Into the large tank', 'press', BIG_CH, bigFits(g, s2));
+      if (at.place !== 'open') acts += mv('Into the open tank', 'open', -1, tankFits(g, { ...s2, pressed: false, pile: false }));
+      if (at.place !== 'bag') acts += mv('Into the net bag', 'tobag', -1, g.bag.length < bagSlots(g));
+      acts += mv('Let it go', 'release');
+    }
+    const note = inSub ? '' : `<p class="fp-note">${at.place === 'bag' ? 'Animals are moved in the sub: get in (or call it with C), then drag it to a tank.' : `${this.theName(sp)} is in the sub: move it from there (T in the sub, or here once you are aboard).`}</p>`;
+    return `<div class="item-pop fish-pop"><div class="ip-box fp-box${R && R.id === 'legendary' ? ' r-legendary' : ''}" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
+      <div class="fp-top"><div class="fp-pic"><img src="${this.fitPics.get(sp.id)}" alt=""></div><div class="fp-head">${rarityStars(sp)}<b class="nm" style="color:${col}">${sp.name}</b>
+      <span class="rr" style="color:${col}">${R && !R.hidden ? R.name : ''}</span>${sp.species || sp.sci ? `<i class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci || ''}</i>` : ''}${s2.variant ? `<em class="rarel">rare form: ${s2.variant}</em>` : ''}</div></div>
+      <table class="fp-facts">${facts}</table>${acts ? `<div class="fp-acts">${acts}</div>` : ''}${note}</div></div>`;
+  }
+  // a move made from the Catch page; a refusal is said here too (in the sub's rooms the room says it)
+  tankDo(act, w, i, to) {
+    const r = this.h.onTank(act, w, i, to), g = this.h.getGame();
+    if (r === false && g && g.roomMsg && performance.now() - g.roomMsg.t < 500 && this.h.toast) this.h.toast(g.roomMsg.text, 'warn');
+    return r;
+  }
+  theName(sp) { return /^the /i.test(sp.name) ? sp.name.replace(/^the/, 'The') : 'The ' + sp.name.toLowerCase(); }
+  // the Catch page's clicks and drags: a click on an animal (a bag pocket, or one in a tank) opens its card; a
+  // press and drag carries it to the bag, the open tank, a chamber or the large tank. Wired once, on the
+  // inventory itself, so it outlives every redraw of the page.
+  catchWire(g) {
+    const root = $('inventory'), pop = root.querySelector('.fish-pop');
+    if (pop) pop.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button[data-fm]');
+      if (b) { if (b.disabled) return; const [act, w, i, to] = b.dataset.fm.split(':'); const r = this.tankDo(act, w, +i, +to); if (r !== false && act === 'release') this.fishSel = null; this.renderInventory(); return; }
+      if (ev.target === pop || ev.target.closest('.ip-close')) { this.fishSel = null; this.renderInventory(); }
+    });
+    if (this.catchDragWired) return;
+    this.catchDragWired = true;
+    const game = () => this.h.getGame(); // (the game now, not the one there was when this was wired)
+    root.addEventListener('pointerdown', (ev) => {
+      if (this.invTab !== 'catch' || ev.button > 0 || ev.target.closest('.item-pop')) return;
+      const s2 = this.catchFishAt(ev.clientX, ev.clientY); if (!s2) return;
+      this.cDrag = { s: s2, x: ev.clientX, y: ev.clientY, moved: false };
+      ev.preventDefault();
+    });
+    window.addEventListener('pointermove', (ev) => {
+      const d = this.cDrag; if (!d) return;
+      if (!d.moved && Math.hypot(ev.clientX - d.x, ev.clientY - d.y) > 6) {
+        d.moved = true; const sp = SPECIES_BY_ID[d.s.id];
+        if (!this.fitPics) this.fitPics = new Map();
+        if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
+        d.ghost = document.createElement('img'); d.ghost.className = 'fish-ghost'; d.ghost.src = this.fitPics.get(sp.id); document.body.appendChild(d.ghost);
+      }
+      if (d.ghost) {
+        d.ghost.style.left = ev.clientX + 'px'; d.ghost.style.top = ev.clientY + 'px';
+        const tgt = this.catchDropAt(ev.clientX, ev.clientY);
+        root.querySelectorAll('.drop-on').forEach((el) => el.classList.remove('drop-on'));
+        if (tgt && tgt.el) tgt.el.classList.add('drop-on');
+      }
+    });
+    const end = (ev) => {
+      const d = this.cDrag; if (!d) return; this.cDrag = null;
+      if (d.ghost) d.ghost.remove();
+      root.querySelectorAll('.drop-on').forEach((el) => el.classList.remove('drop-on'));
+      const g2 = game(); if (!g2 || ev.type === 'pointercancel') return;
+      if (!d.moved) { this.fishSel = d.s; this.renderInventory(); return; } // a click: its card
+      const tgt = this.catchDropAt(ev.clientX, ev.clientY); if (!tgt) return;
+      this.catchMove(g2, d.s, tgt);
+    };
+    window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+  }
+  // the animal under the pointer on the Catch page, or null
+  catchFishAt(cx, cy) {
+    const g = this.h.getGame(), root = $('inventory'); if (!g) return null;
+    const el = document.elementFromPoint(cx, cy); if (!el || !root.contains(el)) return null;
+    const card = el.closest('.inv-catch2 .fc[data-b]'); if (card) return g.bag[+card.dataset.b] || null;
+    const k = this.invScale || 1;
+    for (const [sel, hits] of [['.ct-tank', this.tankHits], ['.ct-ch', this.chHits], ['.ct-big', this.bigHits]]) {
+      const c = root.querySelector(sel); if (!c || el !== c) continue;
+      const r = c.getBoundingClientRect(), x = (cx - r.left) / k, y = (cy - r.top) / k;
+      let best = null, bd = 1e9; for (const h2 of hits || []) { const d = Math.hypot(h2.x - x, h2.y - y), rr = h2.r || Math.max(18, (h2.L || 30) * 0.5); if (d < rr * 1.3 && d < bd) { bd = d; best = h2.s; } }
+      return best;
+    }
+    return null;
+  }
+  // where a dragged animal would land: { kind: 'bag' | 'open' | 'chamber' | 'big', n, el }
+  catchDropAt(cx, cy) {
+    const root = $('inventory'), el = document.elementFromPoint(cx, cy); if (!el || !root.contains(el)) return null;
+    const left = el.closest('.inv-catch2 .inv-left'); if (left) return { kind: 'bag', el: left.querySelector('.fc-grid') };
+    const tank = el.closest('.tank-win'); if (tank) return { kind: 'open', el: tank };
+    if (el.matches('canvas.ct-big')) return { kind: 'big', n: BIG_CH, el };
+    if (el.matches('canvas.ct-ch')) { const r = el.getBoundingClientRect(), n = Math.floor((cx - r.left) / (r.width / (this.catchShown || 5))); return { kind: 'chamber', n, el }; }
+    return null;
+  }
+  // (3.2.0) a drop on the Catch page: the same move as in the sub's rooms, or why it can't be made
+  catchMove(g, s2, tgt) {
+    const at = this.fishWhere(g, s2); if (!at) return;
+    const same = (tgt.kind === 'bag' && at.place === 'bag') || (tgt.kind === 'open' && at.place === 'open') || (tgt.kind === 'big' && at.place === 'big') || (tgt.kind === 'chamber' && at.place === 'chamber' && at.n === tgt.n);
+    if (same) return;
+    const sp = SPECIES_BY_ID[s2.id], say = (t) => this.h.toast && this.h.toast(t, 'warn');
+    if (!(this.h.inSub && this.h.inSub())) {
+      say(at.place === 'bag' ? `You aren't in the sub: get in to put ${this.theName(sp).replace(/^The/, 'the')} in a tank` : `${this.theName(sp)} is in the sub: get in to move it`);
+      return;
+    }
+    let r;
+    if (tgt.kind === 'bag') r = this.tankDo('tobag', at.where, at.i, -1);
+    else if (tgt.kind === 'open') r = this.tankDo('open', at.where, at.i, -1);
+    else if (tgt.kind === 'big') r = this.tankDo('press', at.where, at.i, BIG_CH);
+    else {
+      if (tgt.n >= pressSlots(g)) { say('That chamber isn\'t fitted yet: the sub\'s yard fits more'); return; }
+      if (tooBig(s2)) { say(`${this.theName(sp)} is too big for a chamber: only the large pressure tank holds it`); return; }
+      const occ = g.subTank.find((q) => q.pressed && q.chamber === tgt.n);
+      r = this.tankDo(occ ? 'swap' : 'press', at.where, at.i, tgt.n);
+    }
+    this.renderInventory();
+    return r;
   }
   // (3.0.36) every frame while the Catch page is open: the tank and the chambers, drawn by the tank room's own hand
   drawCatch(g, dt) {
-    const root = $('inventory'), tv = root.querySelector('.ct-tank'), cv = root.querySelector('.ct-ch'); if (!tv || !cv) return;
+    const root = $('inventory'), tv = root.querySelector('.ct-tank'), cv = root.querySelector('.ct-ch'), bv = root.querySelector('.ct-big'); if (!tv || !cv) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1) * (this.invScale || 1);
     const fit = (c) => { const w = c.clientWidth, h = c.clientHeight; if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); } const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h); return [x, w, h]; };
-    if (!this.catchWired || this.catchWired !== tv) {
-      this.catchWired = tv;
-      const tap = (c, which) => c.addEventListener('click', (ev) => {
-        const r = c.getBoundingClientRect(), k = this.invScale || 1, x = (ev.clientX - r.left) / k, y = (ev.clientY - r.top) / k;
-        const hits = (which === 'tank' ? this.tankHits : this.chHits) || [];
-        let best = null, bd = 1e9; for (const h2 of hits) { const d = Math.hypot(h2.x - x, h2.y - y); if (d < h2.r * 1.4 && d < bd) { bd = d; best = h2.s; } }
-        this.catchSel = best; const cap = root.querySelector('.ct-cap'); if (cap) cap.innerHTML = this.catchCap(g) || 'Tap an animal to see it.';
-      });
-      tap(tv, 'tank'); tap(cv, 'ch');
-    }
     this.troubleT = (this.troubleT || 0) - dt;
     if (this.troubleT <= 0) {
       this.troubleT = 0.4;
@@ -457,8 +581,12 @@ export class UI {
       root.querySelectorAll('.inv-catch2 .fc[data-b]').forEach((el) => { const s2 = g.bag[+el.dataset.b]; el.classList.toggle('trouble', !!(s2 && bad(s2, true))); });
       tv.parentElement.classList.toggle('trouble', (g.subTank || []).some((s2) => !s2.pressed && !s2.pile && bad(s2, false)));
     }
+    // (an animal in hand is left out of where it was)
+    const held = this.cDrag && this.cDrag.moved ? this.cDrag.s : null; this.tankRoom.drag = held ? { s: held } : null;
     const [a, aw, ah] = fit(tv); this.tankHits = this.tankRoom.drawMiniTank(a, g, aw, ah, dt);
     const [b, bw, bh] = fit(cv); this.chHits = this.tankRoom.drawMiniChambers(b, g, bw, bh, 0, this.catchShown || 5);
+    if (bv) { const [c, cw, ch] = fit(bv); this.bigHits = this.tankRoom.drawMiniBig(c, g, cw, ch, 0); }
+    this.tankRoom.drag = null;
   }
   // ---------- the locker (2.8.0): Earl and his eight slots; everything he owns in rarity frames ----------
   // Drag a thing onto him (or its slot) to put it on, or click it for its card: what it is, its skills, its

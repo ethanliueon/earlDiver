@@ -1418,7 +1418,8 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 /* (3.0.8) the tank room's fish tag: smaller, a picture, the name in its rarity's colour, small buttons */
 .tr-card { width: 228px; padding: 8px 10px 10px; gap: 3px; }
 .tr-card .tc-top { display: flex; align-items: center; gap: 8px; }
-.tr-card .tc-top img { width: 64px; height: 34px; object-fit: contain; flex: none; }
+.tr-card .tc-top { align-items: flex-start; }
+.tr-card .tc-top img { width: 96px; height: 60px; object-fit: contain; flex: none; border-radius: 3px; background: radial-gradient(ellipse at 50% 40%, rgba(60,100,110,0.25), rgba(0,0,0,0.4)); box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.5); }
 .tr-card .tc-top b { display: block; font: 500 16px/1.15 var(--serif); }
 .tr-card .sci { display: block; font: italic 12px var(--serif); color: var(--paint-dim, rgba(220,226,224,0.6)); }
 .tr-card .tc-facts { display: flex; flex-direction: column; font: 10.5px/1.45 var(--mono); color: var(--paint-dim, rgba(220,226,224,0.65)); margin-top: 2px; }
@@ -1856,3 +1857,49 @@ body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { 
   background: linear-gradient(180deg, #b39c68, #a08a58) !important; color: #2a2010 !important; text-shadow: 0 1px 0 rgba(255,240,200,0.25) !important;
   box-shadow: 0 0 0 1px #3a2e16, 0 2px 0 #4a3a1c, 0 3px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,245,215,0.45), inset 0 -1px 0 rgba(0,0,0,0.2) !important; border: 0 !important; }
 #pause #savequit, #confirm .cf-no { background: linear-gradient(180deg, #2c3228, #22271f) !important; color: #d8d6c4 !important; box-shadow: 0 0 0 1px #0c0e0a, 0 2px 0 #12140f, inset 0 1px 0 rgba(255,255,240,0.08) !important; border: 0 !important; }
+/* (3.2.0) the large tank's room, before one is fitted: a stencilled note over the empty cradle */
+.tr-note { position: absolute; transform: translate(-50%, -10%); max-width: 360px; padding: 10px 16px 12px; text-align: center; pointer-events: none; border-radius: 3px;
+  background: rgba(20,22,23,0.72); box-shadow: 0 0 0 1px rgba(201,166,90,0.45); }
+.tr-note b { display: block; font: 600 12px var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: #f0dca0; }
+.tr-note span { display: block; margin-top: 4px; font: italic 14px/1.35 var(--serif); color: rgba(232,228,212,0.75); }
+/* (3.2.0) the Catch page: wide chambers in a shorter row, the large pressure tank on its side below them; no
+   scrollbar on either half (they are laid out to fit) */
+#inventory .inv-catch2 .inv-left, #inventory .inv-catch2 .inv-right { overflow: hidden; }
+#inventory .tank-win canvas { height: 176px; }
+#inventory canvas.ct-ch { height: 132px; }
+#inventory canvas.ct-big { position: static; inset: auto; display: block; width: 100%; height: 92px; margin-top: 2px; cursor: pointer; }
+#inventory .sub-bay > h4 ~ h4 { margin-top: 10px; }
+#inventory .inv-catch2 .sub-bay > h4.off { opacity: 0.5; }
+#inventory .inv-catch2 .sub-bay > h4.off i { margin-left: 6px; font-style: italic; text-transform: none; letter-spacing: 0.04em; }
+#inventory .inv-catch2 .fc[data-b] { cursor: grab; touch-action: none; }
+#inventory .inv-catch2 canvas { touch-action: none; }
+#inventory .drop-on { outline: 2px solid rgba(240,212,138,0.9); outline-offset: 3px; box-shadow: 0 0 16px rgba(240,212,138,0.45); border-radius: 6px; }
+.fish-ghost { position: fixed; z-index: 100; width: 120px; height: 72px; transform: translate(-50%, -50%) rotate(-4deg); pointer-events: none; filter: drop-shadow(0 6px 6px rgba(0,0,0,0.6)); }
+/* an animal's card: as a piece of gear's, its picture always the same size at the top left */
+#inventory .fp-box { width: min(560px, calc(100% - 32px)); box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, inset 0 0 0 2px var(--rc), 0 18px 40px rgba(0,0,0,0.55); }
+#inventory .fp-top { display: flex; gap: 16px; align-items: flex-start; }
+#inventory .fp-pic { flex: none; width: 220px; height: 132px; border-radius: 4px; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, rgba(60,100,110,0.3), rgba(0,0,0,0.5)); box-shadow: inset 0 2px 8px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.6); }
+#inventory .fp-pic img { display: block; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 3px rgba(0,0,0,0.6)); }
+#inventory .fp-head { min-width: 0; padding-top: 2px; }
+#inventory .fp-head .r-stars { position: static; display: inline-flex; margin-bottom: 2px; }
+#inventory .fp-head .r-stars b { display: inline; margin: 0; font: 400 14px Georgia, serif; color: #e8b84a; }
+#inventory .fp-head .rs-legendary b { color: #ffd36a; }
+#inventory .fp-head .nm { display: block; font: 400 24px/1.1 var(--serif); }
+#inventory .fp-head .rr { display: block; margin-top: 3px; font: 10px var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; }
+#inventory .fp-head .sci { display: block; margin-top: 6px; font: italic 14px var(--serif); color: var(--paint-dim); }
+#inventory .fp-head .rarel { display: block; margin-top: 4px; font: italic 13px var(--serif); color: var(--r-rare); }
+#inventory .fp-facts { width: 100%; margin-top: 12px; border-collapse: collapse; font: 13px var(--mono); }
+#inventory .fp-facts th { width: 110px; padding: 4px 0; text-align: left; font: 10px var(--stencil); letter-spacing: 0.14em; text-transform: uppercase; color: var(--paint-dim); font-weight: 400; }
+#inventory .fp-facts td { padding: 4px 0; color: var(--paint); border-bottom: 1px solid rgba(0,0,0,0.35); }
+#inventory .fp-facts tr:last-child td { border-bottom: 0; }
+#inventory .fp-facts .dot { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; vertical-align: 0; }
+#inventory .fp-facts em { font: italic 13px var(--serif); color: #e8b84a; }
+#inventory .fp-facts .val { font: 500 14px var(--mono); color: #c8a050; }
+#inventory .fp-acts { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.5); box-shadow: inset 0 1px 0 rgba(255,255,240,0.05); }
+#inventory .fp-acts button { position: relative; padding: 3px 8px 3px 18px; font: 15px var(--serif); text-align: left; color: var(--paint); background: none; border: 1px solid transparent; border-radius: 2px; cursor: pointer; }
+#inventory .fp-acts button::before { content: '›'; position: absolute; left: 6px; top: 1px; font-size: 17px; color: var(--paint-dim); }
+#inventory .fp-acts button:hover:not(:disabled), #inventory .fp-acts button:focus-visible { border-color: rgba(232,228,212,0.55); outline: none; }
+#inventory .fp-acts button:disabled { opacity: 0.4; cursor: default; }
+#inventory .fp-note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.5); font: italic 14px var(--serif); color: var(--paint-dim); }
+/* (3.2.0) a refusal in the sub's rooms: low, above the bag note, clear of the warnings along the top */
+.tr-msg { top: auto; bottom: calc(14% + 46px); }

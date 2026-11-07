@@ -250,6 +250,8 @@ const ui = new UI({
   onDisplay: (k) => displaySpecimen(k),
   onCaveOffer: () => caveOffer(),
   onWare: (k) => wareBuy(k),
+  toast: (text, kind) => hud.toast(text, kind),
+  inSub: () => !!(g && g.earl && g.earl.inSub),
   onTank: (act, where, i, to) => { // (3.0.15) a refusal is said inside the tank room too (the toasts are under it)
     const n0 = hud.toasts.length, last0 = hud.toasts[n0 - 1];
     g.inTankAct = true; let r; try { r = tankAction(act, where, i, to); } finally { g.inTankAct = false; }
@@ -2136,7 +2138,7 @@ requestAnimationFrame(frame);
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape' || ui.typing()) return;
   if (ui.settingsOpen && ui.settingsOpen()) { ui.toggleSettings(false); return; }
-  if (ui.inventoryOpen && ui.inventoryOpen()) { if (ui.lkSel) { ui.lkSel = null; ui.renderInventory(); return; } ui.toggleInventory(false); return; } // (3.0.31) the item pop-up first
+  if (ui.inventoryOpen && ui.inventoryOpen()) { if (ui.lkSel || ui.fishSel) { ui.lkSel = null; ui.fishSel = null; ui.renderInventory(); return; } ui.toggleInventory(false); return; } // (3.0.31) the item pop-up first
   if (g.mode !== 'play') return;
   if (ui.anyOpen()) { ui.closeAll(); return; }
   g.paused = !g.paused;

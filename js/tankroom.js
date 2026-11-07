@@ -7,7 +7,7 @@
 // catch bag hangs in both rooms, and a fish is dragged from the bag, the tank or a chamber and dropped
 // on a chamber, the open tank or the bag.
 import { SPECIES_BY_ID } from './species.js';
-import { drawSpecies, speciesIcon } from './creatures_draw.js';
+import { drawSpecies, speciesIcon, speciesBox, fittedIcon } from './creatures_draw.js';
 import { rarityOf, specimenValue, rarityStars, rarityCls } from './specimens.js';
 import { money } from './economy.js';
 import { xEyes } from './gallery.js';
@@ -18,11 +18,22 @@ import { clamp, lerp, TAU } from './util.js';
 const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], tint: null }, dim: { name: 'Dim', water: ['#0f3440', '#04151b'], tint: 'rgba(0,10,20,0.45)', glow: true } }; // (3.0.26: no Red in the sub)
 
 const MAX_CHAMBERS = UPGRADES.pressTanks.base + UPGRADES.pressTanks.max;
-const CW = 150, CH = 330; // a chamber, in its own units
+const ROOMS = { chambers: 'The chamber room', tank: 'The tank room', big: 'The large tank' }, ROOM_ORDER = ['chambers', 'tank', 'big'];
+// (3.2.0) a chamber, in its own units: as tall as before, about 2.4 times as wide inside (EX more), so they
+// line up almost side by side across the middle of the wall
+const EX = 104, CW = 150 + EX, CH = 330, PIPE_X = CW / 2 + 22; // where the feed pipe comes in
 // (3.0.43) drawn by its real length: the largest (2.4 m, a Legendary giant) fills `max`, and every size below is
 // smaller in proportion (gently compressed, so a 10 cm fish is still seen): a giant outsizes a tuna, a tuna a frogfish
 export const sizeK = (len) => Math.pow(Math.min(len || 0.1, 2.4) / 2.4, 0.62);
 const tankLen = (len, max) => Math.max(14, max * sizeK(len));
+// (3.2.0) a fish's real half-height and half-length (as shares of its length), and the box its centre may swim in
+// so that every part of it stays between x0..x1 and y0..y1 (swim keeps the centre half a length from the sides)
+const halfH = (sp) => { const B = speciesBox(sp); return Math.max(0.08, Math.abs(B.y0), Math.abs(B.y1)); };
+const halfW = (sp) => { const B = speciesBox(sp); return Math.max(0.3, Math.abs(B.x0), Math.abs(B.x1)); };
+function inside(sp, L, x0, x1, y0, y1) {
+  const hy = Math.min(halfH(sp) * L, (y1 - y0) / 2), hx = Math.max(0, halfW(sp) - 0.5) * L;
+  return { x0: x0 + hx, x1: Math.max(x0 + hx, x1 - hx), y0: y0 + hy, y1: Math.max(y0 + hy, y1 - hy) };
+}
 // how an animal is doing, in a word, and its colour
 function stateOf(g, s, inBag) {
   if (s.cond <= 0.05) return ['dead', '#9a9a9a'];
@@ -49,6 +60,7 @@ export class TankRoom {
     root.querySelector('.tr-help').innerHTML = `<p>Every animal has the pressure it lives at. Up to ${SAFE_GAP} m away from it, shallower or deeper, it lives, stressed; further, it starts to die. Taking a shallow animal deep hurts it as much as bringing a deep one up.</p>
       <p>A chamber pumps an animal back up to its own pressure and it recovers there. Its rating is how much more than the water outside it can hold: it keeps an animal safe until the sub climbs above the animal's depth less the rating. The gauge's green band is what it can hold where you are.</p>
       <p>Nothing moves on its own: drag a fish from the catch bag (it hangs in both rooms) onto a chamber or into the open tank, or back into the bag to carry it through the hatch.</p>
+      <p>A Legendary, or anything 1.2 m and longer, is too big for a chamber: only the large pressure tank holds one (its own room, through the tank room's far hatch). It takes three animals, or one big one.</p>
       <p>Dead animals sell for half the plain market price.</p>`;
     this.over.addEventListener('click', (ev) => {
       const b = ev.target.closest('button[data-tk]');
@@ -84,7 +96,8 @@ export class TankRoom {
             this.drag = null; this.layout(true); return;
           }
         }
-        const tgt = this.dropAt(ev.clientX, ev.clientY); this.drag = null;
+        const tgt = this.dropAt(ev.clientX, ev.clientY), why = tgt ? null : this.whyNot(ev.clientX, ev.clientY); this.drag = null;
+        if (why) { const g = this.h.getGame(); if (g) g.roomMsg = { text: why, t: performance.now() }; }
         if (tgt) {
           if (tgt.kind === 'chamber') this.h.act('press', d.where, d.i, tgt.n);
           else if (tgt.kind === 'tank') this.h.act('open', d.where, d.i);
@@ -102,8 +115,9 @@ export class TankRoom {
     this.c.addEventListener('pointercancel', () => { this.press = null; this.drag = null; });
     this.onKey = (ev) => {
       if (this.root.hidden) return;
-      if (ev.key === 'ArrowRight' && this.room === 'chambers') { this.room = 'tank'; this.openKey = null; this.layout(true); }
-      else if (ev.key === 'ArrowLeft' && this.room === 'tank') { this.room = 'chambers'; this.openKey = null; this.layout(true); }
+      // (3.2.0) three rooms in a row: the chambers, the open tank, the large tank
+      const i = ROOM_ORDER.indexOf(this.room), to = ev.key === 'ArrowRight' ? ROOM_ORDER[i + 1] : ev.key === 'ArrowLeft' ? ROOM_ORDER[i - 1] : null;
+      if (to) { this.room = to; this.openKey = null; this.card = null; this.layout(true); }
     };
     window.addEventListener('keydown', this.onKey);
   }
@@ -114,22 +128,26 @@ export class TankRoom {
     const W = window.innerWidth, H = window.innerHeight, narrow = W < 700;
     const g = this.h.getGame(), ps = g ? pressSlots(g) : 1;
     // on a narrow screen: only the fitted chambers and one empty bracket, the hatch at the bottom
-    const n = narrow ? Math.min(MAX_CHAMBERS, ps + 1) : MAX_CHAMBERS, areaW = narrow ? W * 0.72 : W * 0.62, x0 = narrow ? W * 0.02 : W * 0.17;
-    const k = Math.min((H * (narrow ? 0.45 : 0.6)) / CH, (areaW / n) / (CW + 24));
-    const gap = (areaW - n * CW * k) / n;
-    const top = H * 0.14;
-    const chambers = Array.from({ length: n }, (_, i) => ({ x: x0 + gap / 2 + i * (CW * k + gap), y: top, k }));
-    const hatchSide = (x) => (narrow ? { x: W * 0.5, y: H * 0.84, r: Math.min(W, H) * 0.09 } : { x, y: H * 0.66, r: Math.min(W, H) * 0.13 });
+    // (3.2.0) the wide chambers in a row across the middle of the wall, almost touching
+    const n = narrow ? Math.min(MAX_CHAMBERS, ps + 1) : MAX_CHAMBERS, areaW = narrow ? W * 0.96 : W * 0.66, x0 = narrow ? W * 0.02 : W * 0.155;
+    // each one's fittings on the left tuck into the space beside the one before: STEP apart, in its own units
+    const STEP = 226, span = (n - 1) * STEP + CW;
+    const k = Math.min((H * (narrow ? 0.4 : 0.52)) / CH, areaW / span);
+    const left = x0 + (areaW - span * k) / 2, top = narrow ? H * 0.3 : H * 0.47 - CH * k / 2;
+    const chambers = Array.from({ length: n }, (_, i) => ({ x: left + i * STEP * k, y: top, k }));
+    // on a narrow screen both hatches sit along the bottom
+    const hatchSide = (x) => (narrow ? { x: x < W / 2 ? W * 0.22 : W * 0.78, y: H * 0.86, r: Math.min(W, H) * 0.08 } : { x, y: H * 0.66, r: Math.min(W, H) * 0.13 });
     return { W, H, k, narrow, chambers, tagY: top + CH * k + 10, floor: H * 0.9,
       port: narrow ? null : { x: W * 0.9, y: H * 0.3, r: Math.max(34, Math.min(W, H) * 0.075) },
       hatchR: hatchSide(W * 0.92), hatchL: hatchSide(W * 0.07),
       tank: narrow ? { x: W * 0.05, y: H * 0.13, w: W * 0.9, h: H * 0.3 } : { x: W * 0.17, y: H * 0.14, w: W * 0.6, h: Math.min(H * 0.42, W * 0.3) },
       // the net's haul heaped on the floor, and the large pressure tank on its saddles beside it
       pile: narrow ? { x: W * 0.06, y: H * 0.66, w: W * 0.42 } : { x: W * 0.2, y: H * 0.88, w: W * 0.25 },
-      big: narrow ? { x: W * 0.5, y: H * 0.56, w: W * 0.44, h: H * 0.11 } : { x: W * 0.5, y: H * 0.69, w: W * 0.3, h: Math.min(H * 0.15, 120) },
+      // (3.2.0) the large pressure tank has a room of its own: one chamber laid on its side, long and wide
+      big: narrow ? { x: W * 0.05, y: H * 0.36, w: W * 0.9, h: H * 0.2 } : { x: W * 0.17, y: H * 0.37, w: W * 0.62, h: Math.min(H * 0.3, W * 0.17) },
       // the catch bag hangs on a hook in each room (on the left of the chamber room, the right of the
       // tank room); it grows with what is in it, and its tags hang below it on cords
-      hook: this.room === 'chambers' ? (narrow ? { x: W * 0.87, y: H * 0.16 } : { x: W * 0.085, y: H * 0.16 }) : (narrow ? { x: W * 0.84, y: H * 0.5 } : { x: W * 0.87, y: H * 0.16 }),
+      hook: this.room === 'chambers' ? (narrow ? { x: W * 0.87, y: H * 0.1 } : { x: W * 0.085, y: H * 0.16 }) : (narrow ? { x: W * 0.84, y: this.room === 'big' ? H * 0.1 : H * 0.5 } : { x: W * 0.87, y: H * 0.16 }),
       bagTags: !(narrow && this.room === 'chambers'),
       bagH: (n) => 84 + Math.min(4, n) * 22,
       bagTag(i, n) { return narrow ? [W * 0.4, H * 0.5 + i * 104] : [this.hook.x - 8, this.hook.y + 8 + 84 + Math.min(4, n) * 22 + 34 + i * 100]; } };
@@ -147,12 +165,16 @@ export class TankRoom {
     if (!force && sig === this.sig) { this.states(g); return; }
     this.sig = sig;
     const G = this.geometry();
-    this.root.querySelector('.tr-room').textContent = this.room === 'chambers' ? 'The chamber room' : 'The tank room';
+    this.root.querySelector('.tr-room').textContent = ROOMS[this.room];
     let html = '';
-    if (this.room === 'chambers') html += `<button class="hatch-btn" data-go="tank" style="left:${G.hatchR.x}px;top:${G.hatchR.y}px">The tank room →</button>`;
-    else html += `<button class="hatch-btn" data-go="chambers" style="left:${G.hatchL.x}px;top:${G.hatchL.y}px">← The chamber room</button>`;
+    const go = (to, side, label) => `<button class="hatch-btn" data-go="${to}" style="left:${G[side].x}px;top:${G[side].y}px">${label}</button>`;
+    if (this.room === 'chambers') html += go('tank', 'hatchR', 'The tank room →');
+    else if (this.room === 'tank') html += go('chambers', 'hatchL', '← The chamber room') + go('big', 'hatchR', 'The large tank →');
+    else html += go('tank', 'hatchL', '← The tank room');
+    if (this.room === 'big' && !hasBigTank(g)) html += `<div class="tr-note" style="left:${G.big.x + G.big.w / 2}px;top:${G.big.y + G.big.h / 2}px"><b>Not fitted yet</b><span>The large pressure tank goes on this cradle: three animals, or one big one. The sub's yard sells it (the computer in the cabin).</span></div>`;
     html += this.cardHtml(g, G);
-    if (g.bag.length && !this.drag) html += `<div class="tr-dragnote">${g.bag.length} in the bag · drag ${g.bag.length > 1 ? 'them' : 'it'} into ${this.room === 'chambers' ? 'a chamber' : 'the tank'}${this.room === 'chambers' ? ', or into the tank next door (→)' : ''}</div>`;
+    const into = { chambers: 'a chamber, or into the tank next door (→)', tank: 'the tank', big: hasBigTank(g) ? 'the large tank' : 'the tank next door (←)' }[this.room];
+    if (g.bag.length && !this.drag) html += `<div class="tr-dragnote">${g.bag.length} in the bag · drag ${g.bag.length > 1 ? 'them' : 'it'} into ${into}</div>`;
     this.over.innerHTML = html;
     this.states(g);
   }
@@ -184,13 +206,13 @@ export class TankRoom {
     // (3.0.8) a small tag: its picture, the name in its rarity's colour, the scientific name, where it lives,
     // where it was found, what it sells for, how it is; small buttons in a row
     if (!this.pics) this.pics = new Map();
-    if (!this.pics.has(sp.id)) this.pics.set(sp.id, speciesIcon(sp, 150, 80).toDataURL());
+    if (!this.pics.has(sp.id)) this.pics.set(sp.id, fittedIcon(sp, 192, 120).toDataURL()); // (3.2.0) every animal the same size here
     const R = rarityOf(sp), price = specimenValue(s);
     const x = clamp(C.x + 16, 12, G.W - 250), y = clamp(C.y - 20, 12, G.H - 230);
     return `<div class="tr-card${rarityCls(sp)}" data-tag="${C.key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px">${rarityStars(sp)}
       <div class="tc-top"><img src="${this.pics.get(sp.id)}" alt=""><div><b style="color:${R.col}">${sp.name}</b><i class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci || ''}</i></div></div>
       ${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}
-      <div class="tc-facts"><span>Found at: ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : ''}</span><span>Habitat: ${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m</span><span>Value: <b>${money(price)}</b></span></div>
+      <div class="tc-facts"><span>Found at: ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : inBig ? ' · the large tank' : ''}</span><span>Habitat: ${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m</span><span>Value: <b>${money(price)}</b></span></div>
       <i class="st"></i><div class="acts">${acts}</div>${swaps}</div>`;
   }
   states(g) {
@@ -216,7 +238,7 @@ export class TankRoom {
     if (!g) return null;
     const b = this.bagFishAt(cx, cy);
     if (b >= 0) return { s: g.bag[b], where: 'bag', i: b };
-    if (this.room === 'tank') for (const f of (this.pileFish || []).concat(this.bigFish || [])) {
+    if (this.room !== 'chambers') for (const f of this.room === 'tank' ? this.pileFish || [] : this.bigFish || []) {
       if (Math.hypot(f.x - cx, f.y - cy) < Math.max(20, f.L * 0.45)) { const i = g.subTank.indexOf(f.s); if (i >= 0) return { s: f.s, where: 'tank', i }; }
     }
     const key = this.hitTest(cx, cy, true);
@@ -248,9 +270,38 @@ export class TankRoom {
       return null;
     }
     const T = G.tank, d = this.drag.s;
+    if (this.room === 'big') {
+      const B = G.big;
+      if (hasBigTank(g) && cx > B.x - 10 && cx < B.x + B.w + 10 && cy > B.y - 20 && cy < B.y + B.h + 20 && !(d.pressed && d.chamber === BIG) && bigFits(g, d)) return { kind: 'chamber', n: BIG, big: true };
+      return null;
+    }
     if (cx > T.x && cx < T.x + T.w && cy > T.y && cy < T.y + T.h && (this.drag.where === 'bag' || d.pressed || d.pile) && tankFits(g, { len: d.len })) return { kind: 'tank' };
-    const B = G.big;
-    if (hasBigTank(g) && cx > B.x - 10 && cx < B.x + B.w + 10 && cy > B.y - 10 && cy < B.y + B.h + 10 && !(d.pressed && d.chamber === BIG) && bigFits(g, d)) return { kind: 'chamber', n: BIG, big: true };
+    return null;
+  }
+  // (3.2.0) dropped somewhere it can't go: why, in a sentence (null if it wasn't dropped on anything)
+  whyNot(cx, cy) {
+    const g = this.h.getGame(), G = this.geometry(), d = this.drag; if (!g || !d) return null;
+    const s = d.s, nm = SPECIES_BY_ID[s.id].name, the = /^the /i.test(nm) ? 'The' + nm.slice(3) : 'The ' + nm.toLowerCase();
+    if (this.room === 'chambers') {
+      for (const [n, c] of G.chambers.entries()) {
+        if (!(cx >= c.x - 10 && cx <= c.x + CW * c.k + 10 && cy >= c.y - 10 && cy <= c.y + CH * c.k + 10)) continue;
+        if (n >= pressSlots(g)) return 'That chamber isn\'t fitted yet: the sub\'s yard fits more';
+        if (tooBig(s)) return `${the} is too big for a chamber: only the large pressure tank holds it`;
+        if (s.pressed && s.chamber === n) return null;
+        return 'That chamber is in use: drag its animal out first';
+      }
+      return null;
+    }
+    if (this.room === 'big') {
+      const B = G.big;
+      if (!(cx > B.x - 10 && cx < B.x + B.w + 10 && cy > B.y - 20 && cy < B.y + B.h + 20)) return null;
+      if (!hasBigTank(g)) return 'The large pressure tank isn\'t fitted yet: the sub\'s yard sells it';
+      if (s.pressed && s.chamber === BIG) return null;
+      return tooBig(s) ? 'The large tank holds one big animal at a time, and it has animals in it' : 'The large tank holds three, or one big animal: it is full';
+    }
+    const T = G.tank;
+    if (cx > T.x && cx < T.x + T.w && cy > T.y && cy < T.y + T.h && (d.where === 'bag' || s.pressed || s.pile))
+      return s.len >= 0.6 ? `The open tank has no room for a fish that size (${s.len >= 1.2 ? 3 : 2} places)` : 'The open tank is full';
     return null;
   }
   hitTest(cx, cy, fishOnly = false) {
@@ -267,6 +318,10 @@ export class TankRoom {
       return null;
     }
     let best = null, bd = 60;
+    if (this.room === 'big') {
+      for (const f of this.bigFish || []) { const d = Math.hypot(f.x - cx, f.y - cy); if (d < Math.max(bd, f.L * 0.5)) { bd = d; best = f.s; } }
+      return best ? this.keyOf(best) : null;
+    }
     for (const s of g.subTank) {
       if (s.pressed || s.pile) continue;
       const a = this.anim.get(s);
@@ -280,7 +335,7 @@ export class TankRoom {
   // (3.0.25) the open tank's light: Daylight, Dim, or the Red deep animals can't see (shown in the tank room)
   lightsHtml(g) {
     const el = this.root.querySelector('.tr-lights'); if (!el) return;
-    const cur = (g.profile && g.profile.subTankLight) || 'day', show = this.room !== 'chambers';
+    const cur = (g.profile && g.profile.subTankLight) || 'day', show = this.room === 'tank';
     const html = show ? Object.entries(TANK_LIGHTS).map(([k, L]) => `<button data-light="${k}" class="${k === cur ? 'on' : ''}">${L.name}</button>`).join('') : '';
     if (el.innerHTML !== html) el.innerHTML = html;
     el.hidden = !show;
@@ -299,6 +354,7 @@ export class TankRoom {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.drawWall(ctx, G, dpr);
     if (this.room === 'chambers') this.drawChamberRoom(ctx, G, g, dt);
+    else if (this.room === 'big') this.drawBigRoom(ctx, G, g, dt);
     else this.drawTankRoom(ctx, G, g, dt);
     this.drawBag(ctx, G, g);
     this.drawLamp(ctx, G);
@@ -311,7 +367,7 @@ export class TankRoom {
     const tgt = this.dropAt(p.x, p.y);
     ctx.save();
     ctx.strokeStyle = 'rgba(240,212,138,0.85)'; ctx.lineWidth = 3; ctx.shadowColor = 'rgba(240,212,138,0.8)'; ctx.shadowBlur = 16;
-    if (tgt && tgt.big) { const B = G.big; ctx.strokeRect(B.x - 6, B.y - 6, B.w + 12, B.h + 12); }
+    if (tgt && tgt.big) { const B = G.big; ctx.beginPath(); ctx.roundRect(B.x - 8, B.y - B.h * 0.12, B.w + 16, B.h * 1.24, 10); ctx.stroke(); }
     else if (tgt && tgt.kind === 'chamber') { const c = tgt.c; ctx.strokeRect(c.x - 6, c.y - 6, CW * c.k + 12, CH * c.k + 12); }
     else if (tgt && tgt.kind === 'tank') ctx.strokeRect(G.tank.x - 4, G.tank.y - 4, G.tank.w + 8, G.tank.h + 8);
     else if (tgt && tgt.kind === 'bag' && this.bagBox) { const r = this.bagBox; ctx.strokeRect(r.x0 - 8, r.y0 - 8, r.x1 - r.x0 + 16, r.y1 - r.y0 + 16); }
@@ -409,7 +465,7 @@ export class TankRoom {
     ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(0, py - 5, G.W * 0.82, 3);
     G.chambers.forEach((c, n) => {
       if (n >= ps) return;
-      const tx = c.x + 95 * c.k;
+      const tx = c.x + PIPE_X * c.k;
       ctx.fillStyle = '#4b5355'; ctx.fillRect(tx - 3, py, 6, c.y + 14 * c.k - py);
       ctx.fillStyle = '#606a6c'; ctx.fillRect(tx - 7, py - 8, 14, 16);
     });
@@ -446,14 +502,14 @@ export class TankRoom {
   drawBracket(ctx) {
     // straps and bolt holes on the bulkhead, waiting for a chamber
     ctx.strokeStyle = 'rgba(150,160,162,0.35)'; ctx.lineWidth = 6;
-    for (const y of [110, 280]) { ctx.beginPath(); ctx.arc(75, y, 40, Math.PI * 0.15, Math.PI * 0.85, true); ctx.stroke(); }
+    for (const y of [110, 280]) { ctx.beginPath(); ctx.ellipse(CW / 2, y, 40 + EX / 2, 40, 0, Math.PI * 0.15, Math.PI * 0.85, true); ctx.stroke(); }
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    for (const [x, y] of [[30, 110], [120, 110], [30, 280], [120, 280]]) { ctx.beginPath(); ctx.arc(x, y, 4, 0, TAU); ctx.fill(); }
+    for (const [x, y] of [[30, 110], [CW - 30, 110], [30, 280], [CW - 30, 280]]) { ctx.beginPath(); ctx.arc(x, y, 4, 0, TAU); ctx.fill(); }
   }
   drawChamber(ctx, g, s, rating, cmax, outside, dt, idx) {
-    const t = this.t, cx = CW / 2, X0 = 38, X1 = 112, TOP = 92, BOT = 312;
+    const t = this.t, cx = CW / 2, X0 = 38, X1 = 112 + EX, TOP = 92, BOT = 312;
     // wall straps behind it
-    ctx.fillStyle = '#2a2f30'; for (const y of [120, 270]) ctx.fillRect(28, y - 5, 94, 10);
+    ctx.fillStyle = '#2a2f30'; for (const y of [120, 270]) ctx.fillRect(28, y - 5, 94 + EX, 10);
     ctx.fillStyle = '#16181a';
     ctx.beginPath(); ctx.moveTo(40, 92); ctx.lineTo(6, 86); ctx.quadraticCurveTo(2, 90, 6, 95); ctx.lineTo(40, 99); ctx.fill();
     const body = new Path2D();
@@ -468,13 +524,13 @@ export class TankRoom {
     for (let k = 0; k <= 12; k++) ctx.lineTo(cx - 12 + k * 2, 258 + (k % 2 ? -4 : 4)); ctx.stroke();
     const home = s ? homeOf(s) : 0, pumping = s && (s.press || 0) < Math.min(home, cmax) - 1;
     if (s && !(this.drag && this.drag.s === s)) {
-      const L = Math.max(22, 66 * Math.pow(Math.min(s.len || 0.1, 1.2) / 1.2, 0.6)) * Math.min(1, this.chamberFish || 1); // (a chamber holds up to 1.2 m)
-      const a = this.swim(g, s, false, { x0: X0 + 4, x1: X1 - 4, y0: TOP + 26, y1: BOT - 14 }, L, dt, 0.6);
+      const L = Math.max(26, 128 * Math.pow(Math.min(s.len || 0.1, 1.2) / 1.2, 0.6)) * Math.min(1, this.chamberFish || 1); // (a chamber holds up to 1.2 m)
+      const a = this.swim(g, s, false, inside(SPECIES_BY_ID[s.id], L, X0 + 4, X1 - 4, TOP + 26, BOT - 10), L, dt, 0.6);
       this.drawFish(ctx, g, s, a, L, false);
     }
     const n = pumping ? 14 : 3;
     for (let k = 0; k < n; k++) {
-      const q = (t * (pumping ? 0.6 : 0.15) + k / n + idx * 0.37) % 1, bx = cx + Math.sin(k * 7.1 + idx) * 22 + Math.sin(q * 9 + k) * 3;
+      const q = (t * (pumping ? 0.6 : 0.15) + k / n + idx * 0.37) % 1, bx = cx + Math.sin(k * 7.1 + idx) * (22 + EX * 0.35) + Math.sin(q * 9 + k) * 3;
       ctx.strokeStyle = `rgba(210,230,255,${(0.5 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(bx, BOT - 8 - q * (BOT - TOP - 10), 1.5 + (k % 3), 0, TAU); ctx.stroke();
     }
@@ -482,7 +538,7 @@ export class TankRoom {
     ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(X0 + 7, TOP + 4, 6, BOT - TOP - 18);
     ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(X0 + 16, TOP + 4, 3, BOT - TOP - 18);
     ctx.strokeStyle = 'rgba(10,10,40,0.35)'; ctx.lineWidth = 1;
-    for (const x of [X0 + 24, X0 + 46, X1 - 8]) { ctx.beginPath(); ctx.moveTo(x, TOP + 2); ctx.lineTo(x, BOT - 6); ctx.stroke(); }
+    for (const x of [X0 + 24, X0 + 46, cx + 30, X1 - 8]) { ctx.beginPath(); ctx.moveTo(x, TOP + 2); ctx.lineTo(x, BOT - 6); ctx.stroke(); }
     ctx.strokeStyle = 'rgba(160,170,255,0.4)'; ctx.stroke(body);
     for (const y of [TOP + 14, BOT - 34]) {
       const cg = ctx.createLinearGradient(0, y - 3, 0, y + 3);
@@ -490,20 +546,23 @@ export class TankRoom {
       ctx.fillStyle = cg; ctx.fillRect(X0 - 2, y - 3, X1 - X0 + 4, 6);
       ctx.fillStyle = '#777'; ctx.fillRect(X1 - 14, y - 4, 8, 8);
     }
-    const hg = ctx.createLinearGradient(28, 0, 122, 0);
+    const hg = ctx.createLinearGradient(28, 0, 122 + EX, 0);
     hg.addColorStop(0, '#0b0b0c'); hg.addColorStop(0.3, '#2c2d30'); hg.addColorStop(0.55, '#1a1b1d'); hg.addColorStop(1, '#070708');
-    ctx.fillStyle = hg; ctx.beginPath(); ctx.roundRect(28, 42, 94, 50, 6); ctx.fill();
-    ctx.fillStyle = '#26272a'; ctx.beginPath(); ctx.ellipse(cx, 43, 47, 8, 0, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#121214'; ctx.fillRect(32, 84, 86, 10);
+    ctx.fillStyle = hg; ctx.beginPath(); ctx.roundRect(28, 42, 94 + EX, 50, 6); ctx.fill();
+    ctx.fillStyle = '#26272a'; ctx.beginPath(); ctx.ellipse(cx, 43, 47 + EX / 2, 8, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#121214'; ctx.fillRect(32, 84, 86 + EX, 10);
+    // its number, stencilled on the head
+    ctx.fillStyle = 'rgba(214,210,186,0.5)'; ctx.font = '600 11px "IBM Plex Mono", monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(`CH-${idx + 1}`, X1 + 2, 68);
     ctx.fillStyle = '#3d4c5c'; ctx.beginPath(); ctx.roundRect(2, 54, 30, 16, 4); ctx.fill();
     ctx.fillStyle = '#58b3d8'; ctx.fillRect(0, 57, 4, 10);
     ctx.fillStyle = '#c8321f';
     ctx.save(); ctx.translate(16, 52); ctx.beginPath(); ctx.roundRect(-8, -9, 16, 10, 3); ctx.fill(); ctx.restore();
-    ctx.fillStyle = '#111'; ctx.fillRect(92, 24, 6, 16);
-    ctx.fillStyle = '#3a9ee0'; ctx.save(); ctx.translate(95, 22); ctx.fillRect(-9, -3, 18, 6); ctx.restore();
+    ctx.fillStyle = '#111'; ctx.fillRect(PIPE_X - 3, 24, 6, 16);
+    ctx.fillStyle = '#3a9ee0'; ctx.save(); ctx.translate(PIPE_X, 22); ctx.fillRect(-9, -3, 18, 6); ctx.restore();
     // the gauge: 0-4,000 m; a green band for what the chamber can hold here (outside to outside +
     // rating); the needle turns amber when the animal needs more than that
-    const gx = cx - 8, gy = 66, gr = 15, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, ang = (m) => a0 + (a1 - a0) * clamp(m / 4000, 0, 1);
+    const gx = cx - 22, gy = 66, gr = 15, a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, ang = (m) => a0 + (a1 - a0) * clamp(m / 4000, 0, 1);
     ctx.fillStyle = '#e9e4d6'; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, TAU); ctx.fill();
     ctx.strokeStyle = '#8a8a8a'; ctx.lineWidth = 2; ctx.stroke();
     ctx.strokeStyle = 'rgba(60,170,80,0.85)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(gx, gy, gr - 3, ang(outside), Math.max(ang(outside) + 0.05, ang(cmax))); ctx.stroke();
@@ -513,9 +572,9 @@ export class TankRoom {
     const na = ang(s ? s.press || 0 : outside) + (pumping ? Math.sin(t * 30) * 0.02 : 0);
     ctx.strokeStyle = short ? '#e89a20' : '#a0201a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + Math.cos(na) * (gr - 4), gy + Math.sin(na) * (gr - 4)); ctx.stroke();
     ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(gx, gy, 2, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#0a120c'; ctx.fillRect(cx + 12, 58, 34, 16);
+    ctx.fillStyle = '#0a120c'; ctx.fillRect(cx - 2, 58, 34, 16);
     ctx.fillStyle = short ? '#f0b040' : s ? '#9fe08a' : '#3d5a36'; ctx.font = '9px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(s ? `${Math.round(s.press || 0)}m` : '---', cx + 29, 66);
+    ctx.fillText(s ? `${Math.round(s.press || 0)}m` : '---', cx + 15, 66);
   }
 
   // ---------------- the tank room ----------------
@@ -531,7 +590,7 @@ export class TankRoom {
     ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, 0, T.w, 8);
     ctx.restore();
     this.drawHatch(ctx, G.hatchL);
-    this.drawBigTank(ctx, G, g, dt);
+    this.drawHatch(ctx, G.hatchR);
     this.drawPile(ctx, G, g);
   }
   // (3.0.36) the open tank's water and what swims in it, at 0,0, w by h: here and on the inventory's Catch page
@@ -582,24 +641,24 @@ export class TankRoom {
   drawMiniChambers(ctx, g, w, h, dt, shown) {
     const rating = chamberRating(g), cmax = chamberMax(g), ps = pressSlots(g), outside = Math.max(0, g.sub.y), hits = [];
     const by = new Map(g.subTank.filter((s) => s.pressed).map((s) => [s.chamber, s]));
-    const slot = w / shown, k = Math.min(slot / 140, h / 296);
+    const slot = w / shown, k = Math.min(slot / (CW - 12), h / 296);
     for (let n = 0; n < shown; n++) {
-      const x = slot * n + (slot - 150 * k) / 2;
+      const x = slot * n + (slot - CW * k) / 2;
       ctx.save(); ctx.translate(x, -20 * k); ctx.scale(k, k);
       if (n >= ps) {
         this.drawBracket(ctx);
         // a stamped padlock: not fitted yet
         ctx.fillStyle = 'rgba(200,196,176,0.32)'; ctx.strokeStyle = 'rgba(200,196,176,0.32)'; ctx.lineWidth = 7;
-        ctx.beginPath(); ctx.arc(75, 186, 17, Math.PI, 0); ctx.stroke(); ctx.fillRect(48, 186, 54, 42);
-        ctx.fillStyle = 'rgba(20,22,20,0.6)'; ctx.beginPath(); ctx.arc(75, 202, 6, 0, TAU); ctx.fill(); ctx.fillRect(72, 204, 6, 14);
+        ctx.beginPath(); ctx.arc(CW / 2, 186, 17, Math.PI, 0); ctx.stroke(); ctx.fillRect(CW / 2 - 27, 186, 54, 42);
+        ctx.fillStyle = 'rgba(20,22,20,0.6)'; ctx.beginPath(); ctx.arc(CW / 2, 202, 6, 0, TAU); ctx.fill(); ctx.fillRect(CW / 2 - 3, 204, 6, 14);
       } else {
         const s = by.get(n);
         if (s && s.cond > 0.05 && (s.cond < 0.3 || gapOf(g, s, false) > SAFE_GAP)) { // in trouble: a faint red glow behind it
-          const pulse = 0.55 + 0.45 * Math.sin(this.t * 3), rg = ctx.createRadialGradient(75, 200, 10, 75, 200, 110);
-          rg.addColorStop(0, `rgba(230,70,50,${(0.38 * pulse).toFixed(3)})`); rg.addColorStop(1, 'rgba(230,70,50,0)'); ctx.fillStyle = rg; ctx.fillRect(-35, 80, 220, 250);
+          const pulse = 0.55 + 0.45 * Math.sin(this.t * 3), rg = ctx.createRadialGradient(CW / 2, 200, 10, CW / 2, 200, 110 + EX / 2);
+          rg.addColorStop(0, `rgba(230,70,50,${(0.38 * pulse).toFixed(3)})`); rg.addColorStop(1, 'rgba(230,70,50,0)'); ctx.fillStyle = rg; ctx.fillRect(-35, 80, CW + 70, 250);
         }
         this.chamberFish = 1.25; this.drawChamber(ctx, g, s, rating, cmax, outside, dt, n); this.chamberFish = 1;
-        if (s) hits.push({ s, x: x + 75 * k, y: (200 - 20) * k, r: 60 * k });
+        if (s) hits.push({ s, x: x + CW / 2 * k, y: (200 - 20) * k, r: Math.max(60 * k, 22), n });
       }
       ctx.restore();
     }
@@ -632,46 +691,106 @@ export class TankRoom {
     ctx.restore();
     ctx.restore();
   }
-  // the large pressure tank: a horizontal steel cylinder on saddles, a long viewing window down its side
-  drawBigTank(ctx, G, g, dt) {
-    this.bigFish = [];
-    if (!hasBigTank(g)) return;
-    const B = G.big, r = B.h / 2, t = this.t;
-    ctx.save();
-    // saddles
-    ctx.fillStyle = '#2a2e2f'; for (const fx of [0.18, 0.82]) { ctx.beginPath(); ctx.moveTo(B.x + B.w * fx - 22, B.y + B.h + 14); ctx.lineTo(B.x + B.w * fx - 14, B.y + r); ctx.lineTo(B.x + B.w * fx + 14, B.y + r); ctx.lineTo(B.x + B.w * fx + 22, B.y + B.h + 14); ctx.fill(); }
-    // the cylinder with domed ends
-    const body = new Path2D(); body.moveTo(B.x + r * 0.6, B.y); body.lineTo(B.x + B.w - r * 0.6, B.y);
-    body.quadraticCurveTo(B.x + B.w + r * 0.25, B.y + r, B.x + B.w - r * 0.6, B.y + B.h); body.lineTo(B.x + r * 0.6, B.y + B.h);
-    body.quadraticCurveTo(B.x - r * 0.25, B.y + r, B.x + r * 0.6, B.y); body.closePath();
-    const sg = ctx.createLinearGradient(0, B.y, 0, B.y + B.h);
-    sg.addColorStop(0, '#8a9294'); sg.addColorStop(0.25, '#c4cacb'); sg.addColorStop(0.55, '#5e6668'); sg.addColorStop(1, '#262b2c');
-    ctx.fillStyle = sg; ctx.fill(body);
-    // weld seams, bolted flanges
-    ctx.strokeStyle = 'rgba(20,24,24,0.55)'; ctx.lineWidth = 1.5;
-    for (const fx of [0.12, 0.88]) { ctx.beginPath(); ctx.moveTo(B.x + B.w * fx, B.y + 1); ctx.lineTo(B.x + B.w * fx, B.y + B.h - 1); ctx.stroke(); }
-    ctx.fillStyle = '#d6dcdc'; for (const fx of [0.12, 0.88]) for (let k = 1; k < 6; k++) { ctx.beginPath(); ctx.arc(B.x + B.w * fx + 4, B.y + B.h * k / 6, 1.6, 0, TAU); ctx.fill(); }
-    // the window: water, the animals, a sheen
-    const wx = B.x + B.w * 0.16, wy = B.y + B.h * 0.2, ww = B.w * 0.68, wh = B.h * 0.6;
-    ctx.fillStyle = '#16191a'; ctx.beginPath(); ctx.roundRect(wx - 5, wy - 5, ww + 10, wh + 10, wh * 0.3); ctx.fill();
-    ctx.save(); ctx.beginPath(); ctx.roundRect(wx, wy, ww, wh, wh * 0.28); ctx.clip();
-    const wg = ctx.createLinearGradient(0, wy, 0, wy + wh); wg.addColorStop(0, '#1c4f5e'); wg.addColorStop(1, '#081e26');
-    ctx.fillStyle = wg; ctx.fillRect(wx, wy, ww, wh);
-    ctx.translate(wx, wy);
-    for (const s of bigIn(g)) {
-      if (this.drag && this.drag.s === s) continue;
-      const L = clamp(tankLen(s.len, wh * 1.6), 26, ww * 0.8);
-      const a = this.swim(g, s, false, { x0: 6, x1: ww - 6, y0: 8, y1: wh - 8 }, L, dt, 0.6);
-      this.drawFish(ctx, g, s, a, L, false);
-      this.bigFish.push({ s, x: wx + a.x, y: wy + a.y, L });
+  // (3.2.0) the large tank's own room: the tank on its cradle across the middle of the wall, fed from the
+  // pipe run, the hatch back to the tank room; an empty cradle, padlocked, until one is fitted
+  drawBigRoom(ctx, G, g, dt) {
+    const B = G.big, fitted = hasBigTank(g), cap = B.h * 0.5;
+    // the pipe run, dropping to the tank's head
+    const py = B.y - B.h * 0.55, px = B.x + cap * 0.55;
+    ctx.fillStyle = '#4b5355'; ctx.fillRect(0, py - 6, G.W * 0.82, 12);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(0, py - 5, G.W * 0.82, 3);
+    if (fitted) { ctx.fillStyle = '#4b5355'; ctx.fillRect(px - 3, py, 6, B.y - B.h * 0.12 - py); ctx.fillStyle = '#606a6c'; ctx.fillRect(px - 7, py - 8, 14, 16); }
+    this.drawCradle(ctx, G, B);
+    if (fitted) this.bigFish = this.drawBigChamber(ctx, g, B, dt);
+    else {
+      this.bigFish = [];
+      // a stamped padlock on the bulkhead where it will go
+      const cx = B.x + B.w / 2, cy = B.y + B.h * 0.1;
+      ctx.strokeStyle = 'rgba(200,196,176,0.28)'; ctx.fillStyle = 'rgba(200,196,176,0.28)'; ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.arc(cx, cy - 34, 15, Math.PI, 0); ctx.stroke(); ctx.fillRect(cx - 24, cy - 34, 48, 36);
     }
-    ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(0, 0, ww, wh * 0.18);
+    this.drawHatch(ctx, G.hatchL);
+  }
+  // two steel saddles bolted to the deck, and the straps over the top that hold the tank down
+  drawCradle(ctx, G, B) {
+    for (const fx of [0.26, 0.8]) {
+      const x = B.x + B.w * fx, top = B.y + B.h * 0.55, w = B.h * 0.5;
+      const sg = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0); sg.addColorStop(0, '#2a2f30'); sg.addColorStop(0.5, '#454c4e'); sg.addColorStop(1, '#1f2324');
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.moveTo(x - w * 0.62, G.floor); ctx.lineTo(x - w / 2, top); ctx.quadraticCurveTo(x, top + B.h * 0.32, x + w / 2, top); ctx.lineTo(x + w * 0.62, G.floor); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#7c8587'; for (const k of [-1, 1]) { ctx.beginPath(); ctx.arc(x + k * w * 0.45, G.floor - 8, 3, 0, TAU); ctx.fill(); }
+    }
+  }
+  // the large pressure tank: the same clear blue cylinder as a chamber, laid on its side and drawn out long,
+  // its black head at the left with the gauge and the readout. Returns where each animal is.
+  drawBigChamber(ctx, g, B, dt, mini = false) {
+    const t = this.t, cap = Math.min(B.h * 0.5, B.w * 0.14), X0 = B.x + cap - 4, X1 = B.x + B.w, TOP = B.y, BOT = B.y + B.h, r = Math.min(16, B.h * 0.12);
+    const inn = bigIn(g), fish = [], cmax = chamberMax(g), outside = Math.max(0, g.sub.y);
+    // the acrylic body
+    const body = new Path2D();
+    body.moveTo(X0, TOP); body.lineTo(X1 - r, TOP); body.quadraticCurveTo(X1, TOP, X1, TOP + r); body.lineTo(X1, BOT - r); body.quadraticCurveTo(X1, BOT, X1 - r, BOT); body.lineTo(X0, BOT); body.closePath();
+    const wg = ctx.createLinearGradient(0, TOP, 0, BOT);
+    wg.addColorStop(0, 'rgba(28,30,110,0.95)'); wg.addColorStop(0.35, 'rgba(70,80,190,0.78)'); wg.addColorStop(0.6, 'rgba(84,96,205,0.74)'); wg.addColorStop(1, 'rgba(24,26,96,0.95)');
+    ctx.fillStyle = wg; ctx.fill(body);
+    ctx.save(); ctx.clip(body);
+    const pumping = inn.some((s) => (s.press || 0) < Math.min(homeOf(s), cmax) - 1);
+    for (const s of inn) {
+      if (this.drag && this.drag.s === s) continue;
+      // (3.2.0) the whole animal stays inside the window: no taller than it, by its real drawn height
+      const sp = SPECIES_BY_ID[s.id], hh = halfH(sp);
+      const L = Math.min(clamp(tankLen(s.len, B.h * 1.9), 24, (X1 - X0) * (inn.length > 1 ? 0.42 : 0.62)), (BOT - TOP - 10) / (2 * hh));
+      const a = this.swim(g, s, false, inside(sp, L, X0 + 6, X1 - 6, TOP + 5, BOT - 5), L, dt, 0.6);
+      this.drawFish(ctx, g, s, a, L, false);
+      fish.push({ s, x: a.x, y: a.y, L });
+    }
+    const n = pumping ? 18 : 5;
+    for (let k = 0; k < n; k++) {
+      const q = (t * (pumping ? 0.5 : 0.12) + k / n) % 1, bx = X0 + 20 + ((Math.sin(k * 7.1) + 1) / 2) * (X1 - X0 - 40) + Math.sin(q * 9 + k) * 3;
+      ctx.strokeStyle = `rgba(210,230,255,${(0.5 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(bx, BOT - 6 - q * (BOT - TOP - 10), 1.5 + (k % 3), 0, TAU); ctx.stroke();
+    }
     ctx.restore();
-    // its gauge and a stencil
-    ctx.fillStyle = '#e8e4d8'; ctx.beginPath(); ctx.arc(B.x + B.w * 0.94, B.y - 6, 9, 0, TAU); ctx.fill(); ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.strokeStyle = '#a02a1a'; ctx.beginPath(); ctx.moveTo(B.x + B.w * 0.94, B.y - 6); ctx.lineTo(B.x + B.w * 0.94 + Math.cos(-2.4 + Math.min(1, bigIn(g).length / 3) * 2.6) * 7, B.y - 6 + Math.sin(-2.4 + Math.min(1, bigIn(g).length / 3) * 2.6) * 7); ctx.stroke();
-    ctx.fillStyle = 'rgba(30,30,28,0.7)'; ctx.font = '600 9px monospace'; ctx.textAlign = 'left'; ctx.fillText('P-TANK  3 / 1 BIG', B.x + B.w * 0.16, B.y + B.h * 0.14);
-    ctx.restore();
+    // sheen along the top, faint seams, the outline
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(X0 + 4, TOP + B.h * 0.07, X1 - X0 - 18, Math.max(2, B.h * 0.035));
+    ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(X0 + 4, TOP + B.h * 0.15, X1 - X0 - 18, Math.max(1, B.h * 0.016));
+    ctx.strokeStyle = 'rgba(160,170,255,0.4)'; ctx.lineWidth = 1; ctx.stroke(body);
+    // steel bands with their latches
+    for (const fx of [0.18, 0.78]) {
+      const x = X0 + (X1 - X0) * fx, bw = Math.max(4, B.h * 0.045);
+      const cg = ctx.createLinearGradient(x - bw / 2, 0, x + bw / 2, 0); cg.addColorStop(0, '#f2f2f2'); cg.addColorStop(0.5, '#9a9a9a'); cg.addColorStop(1, '#d8d8d8');
+      ctx.fillStyle = cg; ctx.fillRect(x - bw / 2, TOP - 2, bw, B.h + 4);
+      ctx.fillStyle = '#777'; ctx.fillRect(x - bw * 0.7, BOT - B.h * 0.2, bw * 1.4, bw * 1.6);
+    }
+    // the head: black, its end face toward us as an ellipse
+    const HT = TOP - B.h * 0.1, HB = BOT + B.h * 0.1;
+    const hg = ctx.createLinearGradient(0, HT, 0, HB);
+    hg.addColorStop(0, '#0b0b0c'); hg.addColorStop(0.3, '#2c2d30'); hg.addColorStop(0.55, '#1a1b1d'); hg.addColorStop(1, '#070708');
+    ctx.fillStyle = hg; ctx.beginPath(); ctx.roundRect(B.x, HT, cap, HB - HT, 6); ctx.fill();
+    ctx.fillStyle = '#26272a'; ctx.beginPath(); ctx.ellipse(B.x + 1, (HT + HB) / 2, Math.max(4, cap * 0.09), (HB - HT) / 2, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#121214'; ctx.fillRect(B.x + cap - 8, HT + 4, 10, HB - HT - 8);
+    if (!mini) { ctx.fillStyle = '#111'; ctx.fillRect(B.x + cap * 0.55 - 3, HT - 14, 6, 16); ctx.fillStyle = '#3a9ee0'; ctx.fillRect(B.x + cap * 0.55 - 9, HT - 17, 18, 6); }
+    // the gauge and the readout on the head (the first animal's pressure)
+    const s0 = inn[0], gx = B.x + cap * 0.5, gy = HT + (HB - HT) * 0.34, gr = Math.min(cap * 0.3, (HB - HT) * 0.16);
+    const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25, ang = (m) => a0 + (a1 - a0) * clamp(m / 4000, 0, 1);
+    ctx.fillStyle = '#e9e4d6'; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, TAU); ctx.fill(); ctx.strokeStyle = '#8a8a8a'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = 'rgba(60,170,80,0.85)'; ctx.lineWidth = Math.max(2, gr * 0.2); ctx.beginPath(); ctx.arc(gx, gy, gr * 0.8, ang(outside), Math.max(ang(outside) + 0.05, ang(cmax))); ctx.stroke();
+    const short = s0 && homeOf(s0) > cmax + 1, na = ang(s0 ? s0.press || 0 : outside) + (pumping ? Math.sin(t * 30) * 0.02 : 0);
+    ctx.strokeStyle = short ? '#e89a20' : '#a0201a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + Math.cos(na) * gr * 0.75, gy + Math.sin(na) * gr * 0.75); ctx.stroke();
+    if (!mini) {
+      const dw = cap * 0.62, dh = Math.max(12, (HB - HT) * 0.11), dy = HT + (HB - HT) * 0.6;
+      ctx.fillStyle = '#0a120c'; ctx.fillRect(gx - dw / 2, dy, dw, dh);
+      ctx.fillStyle = short ? '#f0b040' : s0 ? '#9fe08a' : '#3d5a36'; ctx.font = `${Math.round(dh * 0.7)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(s0 ? `${Math.round(s0.press || 0)}m` : '---', gx, dy + dh / 2 + 1);
+      ctx.fillStyle = 'rgba(214,210,186,0.5)'; ctx.font = `600 ${Math.round(Math.max(9, dh * 0.62))}px "IBM Plex Mono", monospace`;
+      ctx.fillText(`${inn.length}/${inn.some(tooBig) ? 1 : 3}`, gx, HB - (HB - HT) * 0.1);
+    }
+    return fish;
+  }
+  // (3.2.0) the large tank as a strip, for the inventory's Catch page. Returns where each animal is, for a tap.
+  drawMiniBig(ctx, g, w, h, dt) {
+    if (!hasBigTank(g)) return [];
+    this.t += dt;
+    return this.drawBigChamber(ctx, g, { x: 4, y: h * 0.14, w: w - 8, h: h * 0.72 }, dt, true);
   }
 
   // the catch bag, on its hook: its fish seen through the mesh, its tags on cords below

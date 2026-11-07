@@ -2358,3 +2358,32 @@ export function speciesIcon(sp, w = 160, h = 90) {
   try { drawSpecies(ctx, sp, L, 1.3, 0.4, 0); } catch (e) { /* ignore */ }
   return c;
 }
+
+// (3.2.0) how big a species really draws: its painted outline measured once (at length 1, around the point it is
+// drawn from), so a picture can be fitted to a box by what shows, not by its length: a frogfish and a shark
+// then fill a card's picture alike, and a deep-bodied fish can be kept wholly inside a tank's window.
+const BOXES = new Map();
+export function speciesBox(sp) {
+  if (BOXES.has(sp.id)) return BOXES.get(sp.id);
+  const S = 400, L = 200, c = document.createElement('canvas'); c.width = S; c.height = S;
+  const x = c.getContext('2d'); x.translate(S / 2, S / 2);
+  let box = { x0: -0.5, x1: 0.5, y0: -0.2, y1: 0.2 };
+  try {
+    drawSpecies(x, sp, L, 1.3, 0.4, 0);
+    const d = x.getImageData(0, 0, S, S).data; let x0 = S, x1 = -1, y0 = S, y1 = -1;
+    for (let y = 0; y < S; y++) for (let i = 0; i < S; i++) if (d[(y * S + i) * 4 + 3] > 24) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 > x0 && y1 > y0) box = { x0: (x0 - S / 2) / L, x1: (x1 + 1 - S / 2) / L, y0: (y0 - S / 2) / L, y1: (y1 + 1 - S / 2) / L };
+  } catch (e) { /* the default box */ }
+  box.w = box.x1 - box.x0; box.h = box.y1 - box.y0;
+  BOXES.set(sp.id, box);
+  return box;
+}
+// a picture of a species fitted to w x h by what shows (pad: the margin, a share of the box), centred
+export function fittedIcon(sp, w = 240, h = 150, pad = 0.08) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'), B = speciesBox(sp);
+  const L = Math.min((w * (1 - pad * 2)) / B.w, (h * (1 - pad * 2)) / B.h);
+  x.translate(w / 2 - (B.x0 + B.w / 2) * L, h / 2 - (B.y0 + B.h / 2) * L);
+  try { drawSpecies(x, sp, L, 1.3, 0.4, 0); } catch (e) { /* ignore */ }
+  return c;
+}
