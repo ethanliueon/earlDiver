@@ -114,7 +114,7 @@ export class Audio {
     this.musicBufs[id] = null; // loading
     const T = THEMES.find((q) => q.id === id);
     fetch(T.file).then((r) => r.arrayBuffer()).then((b) => new Promise((res, rej) => this.ac.decodeAudioData(b, res, rej)))
-      .then((buf) => { this.musicBufs[id] = buf; if (this.musicWanted === id && ((id === 'sunlit' && !this.musFirstStarted) || (this.calm && this.musState().zone === id))) { this.musicWanted = null; this.startPiece(id); } }).catch(() => { delete this.musicBufs[id]; });
+      .then((buf) => { this.musicBufs[id] = buf; if (this.musicWanted === id && !(this.musState().startIn > 0) && ((id === 'sunlit' && !this.musFirstStarted) || (this.calm && this.musState().zone === id))) { this.musicWanted = null; this.startPiece(id); } }).catch(() => { delete this.musicBufs[id]; });
   }
   // the theme for a depth, with 25 m of give at each boundary so it does not flicker across one
   themeAt(depth, cur) {

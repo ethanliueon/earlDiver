@@ -43,7 +43,7 @@ const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
 const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
-const audio = new Audio();
+const audio = new Audio(); window.__earlAudio = audio; // (for testing)
 
 const keys = new Set();
 const PRY = new Set(['clam', 'mussel']);
