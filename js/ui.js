@@ -31,7 +31,7 @@ import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
 import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { refreshIn, ready as contractReady } from './contracts.js';
-import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice } from './quests.js';
+import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice, questLeft, fillQuests } from './quests.js';
 import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 import { VERSION } from './version.js';
@@ -283,7 +283,9 @@ export class UI {
         this.renderQuests();
       });
     }
-    b.hidden = !show;
+    const wrap = $('quests-hud'); wrap.hidden = !show;
+    const P0 = this.h.getProfile && this.h.getProfile(), S0 = P0 && P0.quests, st = S0 && QUEST_MAIN[S0.main];
+    wrap.querySelector('.qh-step').textContent = st && st.on ? ((S0.mainProg >= st.need ? '✓ ' : '') + st.text + (st.need > 1 && S0.mainProg < st.need ? `  ${S0.mainProg}/${st.need}` : '')) : '';
     const n = this.h.questsReady ? this.h.questsReady() : 0, dot = b.querySelector('i');
     dot.hidden = !n; if (n) dot.textContent = n;
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
@@ -292,7 +294,7 @@ export class UI {
   toggleQuests(force) { const el = $('quests'), open = force === undefined ? el.hidden : force; el.hidden = !open; if (open) this.renderQuests(); }
   renderQuests() {
     const P = this.h.getProfile(); if (!P) return;
-    const S = questsOf(P), m = QUEST_MAIN[S.main];
+    fillQuests(P); const S = questsOf(P), m = QUEST_MAIN[S.main];
     const bar = (a, b) => `<div class="qs-bar"><i style="width:${Math.round(Math.min(1, b ? a / b : 1) * 100)}%"></i></div>`;
     let html = '';
     if (m) {
@@ -303,7 +305,9 @@ export class UI {
     html += `<h3>The board</h3>`;
     for (const q of S.board) {
       const ok = q.prog >= q.n;
-      html += `<div class="qs-q r-${q.rarity}${ok ? ' ready' : ''}"><div class="qs-t"><small>${QUEST_RARITY[q.rarity].name}</small><b>${q.text}</b>${q.n > 1 ? bar(q.prog, q.n) + `<span>${q.kind === 'sell' ? money(q.prog, false) + ' of ' + money(q.n, false) : q.prog + ' of ' + q.n}</span>` : ''}</div>
+      const left = questLeft(q), lh = Math.floor(left / 3600000), lm = Math.ceil((left % 3600000) / 60000);
+      const timer = ok ? 'done: claim it' : lh >= 1 ? `${lh} h left` : `${lm} min left`;
+      html += `<div class="qs-q r-${q.rarity}${ok ? ' ready' : ''}"><div class="qs-t"><b>${q.text}</b><small class="qs-time">${timer}</small>${q.n > 1 ? bar(q.prog, q.n) + `<span>${q.kind === 'sell' ? money(q.prog, false) + ' of ' + money(q.n, false) : q.prog + ' of ' + q.n}</span>` : ''}</div>
         <div class="qs-pay">${money(q.pay, false)}${ok ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div>`;
     }
     const wait = boardIn(P), totM = Math.ceil(wait / 60000), hrs = Math.floor(totM / 60), mins = totM % 60, price = refreshPrice(P);

@@ -133,7 +133,7 @@ export class Audio {
   // one source with its own gain (so two can cross-fade), played through from the start
   playSource(id, fadeIn) {
     const s = this.ac.createBufferSource(), gn = this.ac.createGain(), now = this.ac.currentTime;
-    s.buffer = this.musicBufs[id]; s.loop = false; s.connect(gn).connect(this.musicLP);
+    s.buffer = this.musicBufs[id]; s.loop = true; // (3.0.1) it loops; a piece ends by fading, never by running out s.connect(gn).connect(this.musicLP);
     gn.gain.setValueAtTime(fadeIn ? 0.0001 : 1, now); if (fadeIn) gn.gain.exponentialRampToValueAtTime(1, now + fadeIn);
     s.start(0, 0);
     const src = { s, gn, id };
@@ -152,7 +152,7 @@ export class Audio {
     if (!this.musicBufs[id]) { this.loadTheme(id); this.musicWanted = id; return; }
     if (this.musicSrc && this.musicSrc.id === id && m.level > 0.05) { m.on = true; m.playedT = 0; return; } // still fading out: it swells back
     if (this.musicSrc) { this.fadeAway(this.musicSrc, 1.5); this.musicSrc = null; }
-    this.musicSrc = this.playSource(id, 0); m.on = true; this.musFirstStarted = true; m.level = Math.max(m.level, 0.3); // (each track has its own quiet start)
+    this.musicSrc = this.playSource(id, 0); m.on = true; m.playLen = 150 + Math.random() * 150; // (3.0.1) 2½ to 5 minutes, then it fades this.musFirstStarted = true; m.level = Math.max(m.level, 0.3); // (each track has its own quiet start)
   }
   // a good moment (a sale, a rare find, getting home): once the rest is over and all is calm, the music comes now
   // (2.9.2) as before 2.6.9: a new dive, coming back from a death, and getting home always bring it in
@@ -180,6 +180,7 @@ export class Audio {
     this.calm = playing && !stress;
     if (stress) m.sinceStress = 0; else m.sinceStress += dt;
     if (m.on) m.playedT = (m.playedT || 0) + dt; else m.playedT = 0;
+    if (m.on && m.playLen && m.playedT > m.playLen) { m.cutBySerious = false; this.stopPiece(); } // its time is up: a slow fade (about 20 s)
     if (g.mode === 'dying' || (serious && m.playedT >= 60)) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
     if (m.on) m.cutBySerious = false;
     // a long stretch of nothing much (standing about, waiting, swimming back and forth doing the same thing):

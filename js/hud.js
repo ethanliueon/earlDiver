@@ -502,7 +502,7 @@ export class Hud {
     }
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
-    if (step && step.on && g.mode === 'play' && !dying && !g.kill && !g.hideQuest) {
+    if (false && step && step.on && g.mode === 'play' && !dying && !g.kill && !g.hideQuest) { // (3.0.1: shown beside the Quests button instead)
       const tx = W - pad, ty0 = H * 0.42 + 42 * s, ok = qs.mainProg >= step.need;
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.font = `${15 * s}px ${GAME}`;

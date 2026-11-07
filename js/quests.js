@@ -42,6 +42,9 @@ const KINDS = {
   },
 };
 const R_INDEX = { common: 0, uncommon: 1, rare: 2, exotic: 3 };
+// (3.0.1) how long a quest stays on the board, in real time: the rarer, the longer
+export const QUEST_HOURS = { common: 12, uncommon: 21, rare: 36, exotic: 60 };
+export const questLeft = (q, now = Date.now()) => Math.max(0, (q.until || now) - now);
 
 export function Q(P) { return P.quests || (P.quests = { main: 0, mainProg: 0, board: [], boardAt: 0, done: 0 }); }
 
@@ -53,13 +56,15 @@ export function newQuest(P, rnd = Math.random, taken = new Set()) {
     const kind = kinds[Math.floor(rnd() * kinds.length)];
     const q = KINDS[kind](r, rnd, P); if (!q) continue;
     const key = kind + (q.id || ''); if ([...taken].some((t) => t === key || (kind === 'catch' && t.startsWith('catch')))) continue; // one of each kind on the board
-    return { key, kind, rarity, n: q.n, d: q.d, id: q.id, pay: q.pay, text: q.text(q), prog: 0 };
+    return { key, kind, rarity, n: q.n, d: q.d, id: q.id, pay: q.pay, text: q.text(q), prog: 0, until: Date.now() + QUEST_HOURS[rarity] * 3600000 };
   }
   return null;
 }
 const ownsKind = (P, kind) => kitOf(P).items.some((it) => ITEMS[it.id] && ITEMS[it.id].kind === kind);
 // top the board up to three (a new one replaces a claimed one at once)
 export function fillQuests(P) {
+  const now = Date.now(); Q(P).board.forEach((q) => { if (!q.until) q.until = now + QUEST_HOURS[q.rarity || 'common'] * 3600000; });
+  Q(P).board = Q(P).board.filter((q) => q.prog >= q.n || q.until > now); // run out (unless done and waiting to be claimed)
   const S = Q(P), taken = new Set(S.board.map((q) => q.key.replace(/(common|uncommon|rare|exotic)$/, '')));
   while (S.board.length < 3) { const q = newQuest(P, Math.random, taken); if (!q) break; S.board.push(q); taken.add(q.key); }
   if (!S.boardAt) S.boardAt = Date.now();

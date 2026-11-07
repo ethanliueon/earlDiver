@@ -1359,11 +1359,17 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #catalog.th-dave .cat-glass { box-shadow: inset 0 0 0 3px #5a5238; }
 
 /* ---------- 3.0.0 quests: a brass button on the right of the HUD, a riveted steel panel ---------- */
-#quests-btn { position: fixed; right: 16px; top: 42%; z-index: 20; font: 15px var(--serif); padding: 5px 14px 6px; border: 0; border-radius: 3px; cursor: pointer; color: #2e220a;
-  background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510, 0 2px 6px rgba(0,0,0,0.35); }
-#quests-btn[hidden] { display: none; }
-#quests-btn i { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; border-radius: 9px; background: #6ab06a; color: #0e1a0e; font: 600 11px/18px var(--mono); font-style: normal; text-align: center; box-shadow: 0 0 0 2px #1a1f19; }
+/* (3.0.1) a round brass medallion with a scroll on it, under the cash; the next step of the log beside it */
+#quests-hud { position: fixed; left: 16px; top: 74px; z-index: 20; display: flex; align-items: center; gap: 10px; }
+#quests-hud[hidden] { display: none; }
+#quests-btn { position: relative; width: 42px; height: 42px; padding: 6px; border: 0; border-radius: 50%; cursor: pointer;
+  background: radial-gradient(circle at 38% 32%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); box-shadow: 0 2px 0 rgba(0,0,0,0.45), inset 0 0 0 2px rgba(60,40,10,0.35), 0 3px 8px rgba(0,0,0,0.3); }
+#quests-btn svg { width: 100%; height: 100%; display: block; }
+#quests-btn:hover { filter: brightness(1.08); }
+#quests-btn i { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; border-radius: 9px; background: #6ab06a; color: #0e1a0e; font: 600 11px/18px var(--mono); font-style: normal; text-align: center; box-shadow: 0 0 0 2px #1a1f19; }
 #quests-btn i[hidden] { display: none; }
+#quests-hud .qh-step { font: 15px var(--serif); color: rgba(236,232,220,0.9); text-shadow: 0 1px 3px rgba(0,0,0,0.7); max-width: 260px; }
+#quests .qs-t .qs-time { display: block; margin-top: 3px; font: italic 13px var(--serif); letter-spacing: 0; text-transform: none; color: var(--paint-dim); }
 #quests { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(6,10,10,0.55); }
 #quests[hidden] { display: none; }
 #quests .qs-panel { width: min(560px, calc(100vw - 32px)); max-height: 86vh; overflow-y: auto; padding: 16px 20px 18px; border-radius: 6px; color: var(--paint);
