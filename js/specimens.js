@@ -199,9 +199,12 @@ export function rarityOf(sp) {
 export function tagPrice(id) { return TAG[id] ? rarityPrice(SPECIES_BY_ID[id]) * 0.25 : 0; }
 
 // a healthy specimen of normal size; len is this individual's length
+// (3.7.1) the price follows the animal's weight: weight goes with the cube of its length, and buyers pay a
+// little less than proportionally for the heavy ones (a fish twice as heavy is worth about 1.6 times as much).
+// So a small one of its kind (0.6 of the usual length) fetches about 40 %, a big one (1.35) about 175 %.
+export const sizeMult = (sp, len = sp.len) => Math.min(1.9, Math.max(0.35, Math.pow(Math.max(0.01, len) / Math.max(0.01, sp.len), 3 * 0.66)));
 export function liveValue(sp, len = sp.len) {
-  const size = Math.min(1.4, Math.max(0.7, len / Math.max(0.01, sp.len)));
-  return rarityPrice(sp) * size;
+  return rarityPrice(sp) * sizeMult(sp, len);
 }
 // condition: 1 healthy .. 0 dead. Stressed animals sell for less; dead ones for almost nothing.
 export function conditionMult(c) {

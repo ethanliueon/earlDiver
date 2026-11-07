@@ -23,12 +23,12 @@ import { SETTINGS, setSetting } from './settings.js';
 import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
-import { TankRoom, sizeK, seaAt } from './tankroom.js';
+import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's drawn size against a 2.4 m giant)
 import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
-import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf, BIG as BIG_CH, gapOf, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
+import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
@@ -462,7 +462,8 @@ export class UI {
     // (3.6.1) the specimen station: a small lit aquarium on the left, the animal swimming in water the colour of
     // its own depth (drawCatch keeps it moving); its record on the right
     const len = (s2.len || sp.len), kg = weightOf(sp, len);
-    const status = s2.cond <= 0.05 ? ['Dead', 'dead'] : dying ? ['Dying · barotrauma', 'dying'] : s2.cond < 0.6 ? [s2.cond < 0.3 ? 'Weak' : 'Stressed', 'weak'] : ['Healthy', 'live'];
+    const low = gapSigned(g, s2, at.place === 'bag') > 0; // (home deeper than here: the pressure is too low for it)
+    const status = s2.cond <= 0.05 ? ['Dead', 'dead'] : dying ? [`Dying <span class="sp-why">(pressure too ${low ? 'low' : 'high'})</span>`, 'dying'] : s2.cond < 0.6 ? [s2.cond < 0.3 ? 'Weak' : 'Stressed', 'weak'] : ['Healthy', 'live'];
     const where = { bag: 'Net bag', open: 'Open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'Large pressure tank', floor: 'Sub, on the floor' }[at.place];
     const row = (k, v, cls = '') => `<div class="sp-r${cls}"><dt>${k}</dt><dd>${v}</dd></div>`;
     // (3.6.2) metric, with feet and pounds beside it
@@ -501,37 +502,43 @@ export class UI {
   drawSpecimenTank(dt) {
     const cv = $('inventory').querySelector('canvas.sp-aq'), A = this.aqSel; if (!cv || !A) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1) * (this.invScale || 1), w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
-    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
     const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
     const t = (this.aqT = (this.aqT || 0) + dt), sea = seaAt(A.home), dead = A.s.cond <= 0.05;
-    const top = 10, bot = h - 18, glass = { x: 8, y: top, w: w - 16, h: bot - top };
-    // water: its colour at the animal's depth, lifted a little by the tank's lamp
+    // (3.7.1) a real tank: a steel rim on top, glass walls with green-edged corners and silicone seams, a thick glass
+    // floor pane on a steel stand
+    const rimH = 9, baseH = 16, paneH = 6, top = rimH + 2, bot = h - baseH - paneH, glass = { x: 10, y: top, w: w - 20, h: bot - top };
     const wg = x.createLinearGradient(0, glass.y, 0, glass.y + glass.h), lift = (c, k) => c.map((v) => Math.round(v + (255 - v) * k));
     wg.addColorStop(0, `rgb(${lift(sea, 0.16).join(',')})`); wg.addColorStop(1, `rgb(${sea.map((v) => Math.round(v * 0.55)).join(',')})`);
     x.fillStyle = wg; x.fillRect(glass.x, glass.y, glass.w, glass.h);
-    // the lamp's beams
     x.save(); x.globalAlpha = 0.07; x.fillStyle = '#e8f4f0';
     for (let k = 0; k < 3; k++) { const bx = glass.x + glass.w * (0.2 + k * 0.28) + Math.sin(t * 0.4 + k) * 6; x.beginPath(); x.moveTo(bx, glass.y); x.lineTo(bx + 22, glass.y); x.lineTo(bx + 48, bot); x.lineTo(bx + 12, bot); x.fill(); }
     x.restore();
-    // sand and a stone
+    const sandTop = bot - 12;
     x.fillStyle = '#6a5e48'; x.beginPath(); x.moveTo(glass.x, bot);
-    for (let sx = 0; sx <= glass.w; sx += 10) x.lineTo(glass.x + sx, bot - 10 - Math.sin(sx * 0.06) * 3); x.lineTo(glass.x + glass.w, bot); x.fill();
-    x.fillStyle = '#3e4040'; x.beginPath(); x.ellipse(glass.x + glass.w * 0.78, bot - 12, 18, 9, -0.2, 0, Math.PI * 2); x.fill();
-    // bubbles from the stone
-    for (let k = 0; k < 9; k++) { const q = (t * 0.3 + k / 9) % 1; x.strokeStyle = `rgba(220,240,255,${(0.5 * (1 - q)).toFixed(3)})`; x.lineWidth = 1; x.beginPath(); x.arc(glass.x + glass.w * 0.78 + Math.sin(q * 10 + k) * 3, bot - 18 - q * (glass.h - 24), 1.3 + (k % 3) * 0.6, 0, Math.PI * 2); x.stroke(); }
-    // (3.6.2) the animal, a little smaller than the tank, and as well as it is: healthy it swims easily; stressed it
-    // slows and lists; dying it sinks, its colour drains and now and then it rolls over; dead it floats belly-up
-    // at the top with its eyes crossed out
+    for (let sx = 0; sx <= glass.w; sx += 10) x.lineTo(glass.x + sx, sandTop + 2 - Math.sin(sx * 0.06) * 3); x.lineTo(glass.x + glass.w, bot); x.fill();
+    x.fillStyle = '#3e4040'; x.beginPath(); x.ellipse(glass.x + glass.w * 0.8, sandTop, 16, 8, -0.2, 0, Math.PI * 2); x.fill();
+    for (let k = 0; k < 9; k++) { const q = (t * 0.3 + k / 9) % 1; x.strokeStyle = `rgba(220,240,255,${(0.5 * (1 - q)).toFixed(3)})`; x.lineWidth = 1; x.beginPath(); x.arc(glass.x + glass.w * 0.8 + Math.sin(q * 10 + k) * 3, sandTop - 6 - q * (glass.h - 24), 1.3 + (k % 3) * 0.6, 0, Math.PI * 2); x.stroke(); }
+    // (3.6.2) the animal as well as it is; (3.7.1) at its real size against the others (a clownfish small, a
+    // two-metre legendary filling the tank), and never out of the glass
     const c = A.s.cond, stressed = !dead && c < 0.6, dyingNow = !dead && (c < 0.3 || (this.aqDying || false));
-    const B = speciesBox(A.sp), L = Math.min((glass.w * 0.44) / B.w, (glass.h * 0.36) / B.h);
+    const B = speciesBox(A.sp), len = A.s.len || A.sp.len;
+    const fitL = Math.min((glass.w * 0.86) / B.w, ((sandTop - glass.y) * 0.8) / B.h);
+    let L = Math.max(fitL * 0.16, fitL * sizeK(len));
     const pace = dead ? 0 : dyingNow ? 0.12 : stressed ? 0.2 : 0.35;
     this.aqPh = (this.aqPh || 0) + dt * pace;
-    const span = Math.max(0, glass.w / 2 - (B.w * L) / 2 - 12), ph = this.aqPh, face = Math.cos(ph) >= 0 ? 1 : -1;
-    const fx = dead ? glass.x + glass.w / 2 + Math.sin(t * 0.25) * 8 : glass.x + glass.w / 2 + Math.sin(ph) * span;
-    const fy = dead ? glass.y + (B.h * L) / 2 + 6 : dyingNow ? bot - 18 - (Math.max(B.h, B.w * 0.45) * L) * 0.62 - Math.abs(Math.sin(t * 0.7)) * 6 : stressed ? glass.y + glass.h * 0.58 + Math.sin(t * 0.6) * 4 : glass.y + glass.h * 0.44 + Math.sin(t * 0.9) * 6;
-    // a roll onto its back and up again, every few seconds, while dying
+    const ph = this.aqPh, face = Math.cos(ph) >= 0 ? 1 : -1;
     const rollQ = dyingNow ? Math.max(0, Math.sin(t * 0.55)) : 0, flipY = dead ? -1 : dyingNow && rollQ > 0.92 ? Math.cos((rollQ - 0.92) / 0.08 * Math.PI) : 1;
     const list = dead ? 0 : dyingNow ? 0.5 + Math.sin(t * 0.8) * 0.12 : stressed ? 0.18 : 0;
+    // how far the turned body reaches from its centre; shrink it if it could not fit at all
+    let ex, ey;
+    const reach = () => { const hw = (B.w * L) / 2, hh = (B.h * L) / 2, cs = Math.abs(Math.cos(list)), sn = Math.abs(Math.sin(list)); ex = hw * cs + hh * sn; ey = hw * sn + hh * cs; };
+    reach(); const room = Math.min((glass.w / 2 - 6) / ex, ((sandTop - glass.y) / 2 - 4) / ey); if (room < 1) { L *= room; reach(); }
+    const x0 = glass.x + ex + 6, x1 = glass.x + glass.w - ex - 6, y0 = glass.y + ey + 4, y1 = sandTop - ey - 2;
+    const midX = (x0 + x1) / 2, spanX = Math.max(0, (x1 - x0) / 2);
+    const fx = dead ? midX + Math.sin(t * 0.25) * Math.min(8, spanX) : midX + Math.sin(ph) * spanX;
+    const want = dead ? 0 : dyingNow ? 1 : stressed ? 0.75 : 0.45 + Math.sin(t * 0.9) * 0.12;
+    const fy = y0 + (Math.max(0, y1 - y0)) * Math.max(0, Math.min(1, want));
     x.save(); x.beginPath(); x.rect(glass.x, glass.y, glass.w, glass.h); x.clip();
     x.translate(fx, fy); x.rotate(list * face);
     x.scale(-face, Math.abs(flipY) < 0.08 ? 0.08 * Math.sign(flipY || 1) : flipY);
@@ -540,14 +547,26 @@ export class UI {
     try { drawSpecies(x, A.sp, L, dead ? 0 : t * (dyingNow ? 0.4 : stressed ? 0.8 : 1.4), dead ? 0 : dyingNow ? 0.15 : stressed ? 0.35 : 0.6, 0); if (dead) xEyes(x, L, A.sp); } catch (e) { /* the empty tank, then */ }
     x.filter = 'none';
     x.restore();
-    // glass: a sheen down one side, the edges
-    const gl = x.createLinearGradient(glass.x, 0, glass.x + glass.w, 0); gl.addColorStop(0, 'rgba(255,255,255,0.12)'); gl.addColorStop(0.08, 'rgba(255,255,255,0)'); gl.addColorStop(0.92, 'rgba(255,255,255,0)'); gl.addColorStop(1, 'rgba(255,255,255,0.08)');
+    // the glass walls: a sheen, then thick green-edged glass at each side with a silicone bead in the corner
+    const gl = x.createLinearGradient(glass.x, 0, glass.x + glass.w, 0); gl.addColorStop(0, 'rgba(255,255,255,0.12)'); gl.addColorStop(0.07, 'rgba(255,255,255,0)'); gl.addColorStop(0.93, 'rgba(255,255,255,0)'); gl.addColorStop(1, 'rgba(255,255,255,0.08)');
     x.fillStyle = gl; x.fillRect(glass.x, glass.y, glass.w, glass.h);
-    x.strokeStyle = 'rgba(200,230,230,0.35)'; x.lineWidth = 1; x.strokeRect(glass.x + 0.5, glass.y + 0.5, glass.w - 1, glass.h - 1);
-    // the steel rim on top, the base below
-    const rim = (y0, hh) => { const rg = x.createLinearGradient(0, y0, 0, y0 + hh); rg.addColorStop(0, '#6a7270'); rg.addColorStop(0.5, '#3a403e'); rg.addColorStop(1, '#1c201f'); x.fillStyle = rg; x.fillRect(2, y0, w - 4, hh); };
-    rim(top - 8, 9); rim(bot, h - bot - 2);
-    x.fillStyle = '#9aa29e'; for (const bx of [10, w - 10]) { x.beginPath(); x.arc(bx, bot + 8, 1.6, 0, Math.PI * 2); x.fill(); }
+    for (const [sx, dir] of [[glass.x - 4, 1], [glass.x + glass.w, -1]]) {
+      const eg = x.createLinearGradient(sx, 0, sx + 4, 0); eg.addColorStop(0, 'rgba(120,190,170,0.55)'); eg.addColorStop(1, 'rgba(60,120,110,0.35)');
+      x.fillStyle = eg; x.fillRect(sx, glass.y - 2, 4, glass.h + paneH + 2); // the glass edge, seen end-on: green
+      x.fillStyle = 'rgba(20,24,22,0.55)'; x.fillRect(dir > 0 ? glass.x : glass.x + glass.w - 2, glass.y, 2, glass.h); // the silicone seam
+      x.fillStyle = 'rgba(255,255,255,0.18)'; x.fillRect(sx + (dir > 0 ? 1 : 2), glass.y, 1, glass.h); // light along the edge
+    }
+    // the floor pane: thick glass under the sand, its edge green
+    const pg = x.createLinearGradient(0, bot, 0, bot + paneH); pg.addColorStop(0, 'rgba(150,210,190,0.75)'); pg.addColorStop(0.5, 'rgba(70,130,115,0.8)'); pg.addColorStop(1, 'rgba(40,80,70,0.85)');
+    x.fillStyle = pg; x.fillRect(glass.x - 4, bot, glass.w + 8, paneH);
+    x.fillStyle = 'rgba(255,255,255,0.25)'; x.fillRect(glass.x - 4, bot, glass.w + 8, 1);
+    // the steel rim on top and the stand below, its corner brackets bolted on
+    const steel = (y0, hh, a, b2, c2) => { const rg = x.createLinearGradient(0, y0, 0, y0 + hh); rg.addColorStop(0, a); rg.addColorStop(0.5, b2); rg.addColorStop(1, c2); x.fillStyle = rg; x.fillRect(2, y0, w - 4, hh); };
+    steel(0, rimH, '#7a8280', '#454b49', '#222625');
+    steel(bot + paneH, baseH, '#5a6260', '#353b39', '#181b1a');
+    x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(2, bot + paneH, w - 4, 1);
+    for (const bx of [3, w - 15]) { x.fillStyle = '#2a2e2d'; x.fillRect(bx, 0, 12, rimH + 10); x.fillRect(bx, bot - 8, 12, paneH + baseH + 8);
+      x.fillStyle = '#9aa29e'; for (const by of [5, rimH + 5, bot - 3, bot + paneH + baseH - 5]) { x.beginPath(); x.arc(bx + 6, by, 1.5, 0, Math.PI * 2); x.fill(); } }
   }
   theName(sp) { return /^the /i.test(sp.name) ? sp.name.replace(/^the/, 'The') : 'The ' + sp.name.toLowerCase(); }
   // the Catch page's clicks and drags: a click on an animal (a bag pocket, or one in a tank) opens its card; a

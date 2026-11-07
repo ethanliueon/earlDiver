@@ -381,7 +381,7 @@ export class Fauna {
 
   makeFish(sp, x, y, dir, gid, leader) {
     const rng = this.rng;
-    const sz = rng.range(0.75, 1.15);
+    const sz = Math.min(rng.range(0.6, 1.15), rng.range(0.6, 1.15)) + (rng.range(0, 1) < 0.08 ? rng.range(0.1, 0.2) : 0); // (3.7.1) sizes from 0.6 to 1.35 of the usual: most a bit under, now and then a big one
     const len = sp.len * sz, hab = sp.v.hab;
     // cruising at roughly one body length a second (bounded), much slower for drifters
     let cruise = clamp(len * 0.8, 0.3, 1.6);
