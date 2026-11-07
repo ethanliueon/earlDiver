@@ -19,16 +19,18 @@ const BAIT = [
   { id: 50, min: 2, max: 100, n: [100, 180] },  // Northern anchovy
   { id: 51, min: 2, max: 150, n: [50, 90] },    // Atlantic mackerel
   { id: 62, min: 40, max: 400, n: [50, 90] },   // Alaska pollock
-  { id: 161, min: 5, max: 350, n: [120, 200] }, // Antarctic krill
-  { id: 98, min: 250, max: 900, nightMin: 15, nightMax: 250, n: [90, 170] }, // spotted lanternfish
-  { id: 99, min: 200, max: 600, n: [45, 90] },  // silver hatchetfish
-  // (3.0.21) the twilight is the most crowded water in the sea: more of its small animals, in bigger schools
-  { id: 327, min: 250, max: 1000, n: [100, 180] }, // bristlemouth (the most numerous fish there is)
-  { id: 151, min: 200, max: 450, nightMin: 10, nightMax: 120, n: [50, 100] }, // firefly squid
+  { id: 161, min: 5, max: 350, n: [70, 120] }, // Antarctic krill
+  { id: 98, min: 250, max: 900, nightMin: 15, nightMax: 250, n: [50, 95] }, // spotted lanternfish
+  { id: 99, min: 200, max: 600, n: [35, 65] },  // silver hatchetfish
+  // (3.0.21) the twilight is the most crowded water in the sea: more kinds of school; (3.0.22) each a little smaller, for smoothness
+  { id: 327, min: 250, max: 1000, n: [55, 100] }, // bristlemouth (the most numerous fish there is)
+  { id: 151, min: 200, max: 450, nightMin: 10, nightMax: 120, n: [35, 65] }, // firefly squid
   { id: 484, min: 300, max: 650, n: [35, 70] },    // lovely hatchetfish
-  { id: 450, min: 300, max: 900, nightMin: 20, nightMax: 220, n: [70, 140] }, // glacier lanternfish
+  { id: 450, min: 300, max: 900, nightMin: 20, nightMax: 220, n: [40, 75] }, // glacier lanternfish
 ];
 
+// (3.0.22) the twilight's everyday animals: most of the lone fish out there are these
+const FILLER = new Set([98, 99, 327, 151, 370, 484, 450, 161]);
 const DEEP_HUNTER = (sp) => sp.cat === 'Deep Sea Fish' && /viper|dragon|angler|seadevil|sea devil|fangtooth|gulper|swallower|loosejaw|barbeled/i.test(sp.name);
 // Species that migrate up toward the surface at night and back down by day.
 const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90, 42]);
@@ -410,9 +412,11 @@ export class Fauna {
 
   // keep about a dozen lone glowing animals around the view in the deep (fewer just below 220 m)
   spawnGlimmer(cam, night) {
-    const k = smoothstep(220, 700, cam.y);
+    // (3.0.22) the twilight's loose filler: lone lanternfish, hatchetfish, bristlemouths, firefly squid, krill
+    // and shrimp scattered all through the water (not only in schools), so a rare fish is one among many
+    const k = smoothstep(150, 500, cam.y) * (cam.y > 1500 ? 0.6 : 1);
     if (k <= 0) return;
-    const want = Math.round(14 * k);
+    const want = Math.round(40 * k);
     let have = 0; for (const c of this.list) if (c.glimmer && !c.dead) have++;
     if (have >= want) return;
     // anywhere about the view, but out in the dark, well away from him and his lamps (a deep fish
@@ -420,13 +424,14 @@ export class Fauna {
     const rng = this.rng, side = rng() < 0.5 ? -1 : 1;
     const x = clamp(cam.x + rng.range(-0.75, 0.75) * cam.w, 5, 4995);
     const fl = this.W.floorAt(x);
-    const y = clamp(cam.y + rng.range(-0.7, 0.7) * cam.h, 200, fl - 3);
-    if (fl - 3 < 200 || dist(x, y, cam.x, cam.y) < 12) return;
+    const y = clamp(cam.y + rng.range(-0.7, 0.7) * cam.h, 150, fl - 3);
+    if (fl - 3 < 150 || dist(x, y, cam.x, cam.y) < 12) return;
     const pool = [];
     for (const sp of SPECIES) {
-      if (!sp.v.glow || sp.v.hab !== 'pelagic' || sp.len > 1 || y < sp.dmin || y > sp.dmax) continue;
+      const filler = FILLER.has(sp.id);
+      if ((!sp.v.glow && !filler) || (sp.v.hab !== 'pelagic' && !filler) || sp.len > 1 || y < sp.dmin || y > sp.dmax) continue;
       const w = this.depthPref(sp, x, y, night);
-      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len)]); // the small and common first
+      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1)]); // the small and common first, the filler most of all
     }
     if (!pool.length) return;
     let tot = 0; for (const [, w] of pool) tot += w;
@@ -489,7 +494,7 @@ export class Fauna {
     // the deep's living lights: below about 220 m there are always small glowing animals about
     // (lanternfish, hatchetfish, firefly squid, dragonfish, viperfish...), each one real and catchable
     this.glimT = (this.glimT || 0) - dt;
-    if (this.glimT <= 0) { this.glimT = 0.4; this.spawnGlimmer(cam, night); }
+    if (this.glimT <= 0) { this.glimT = this.list.length < 120 ? 0.12 : 0.4; this.spawnGlimmer(cam, night); } // (3.0.22: quicker while the water is empty)
     if (this.baitT <= 0) {
       this.baitT = 0.6;
       if (this.schools.size < this.baitTarget(cam.y, dread)) this.trySpawnBait(cam, night);
