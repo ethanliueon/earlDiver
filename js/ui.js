@@ -252,6 +252,22 @@ export class UI {
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
   showChest(key, q) { this.chest.open(key, q); }
+  // (3.0.0) one of the old one's things, or a bundle, seen from where Earl is: what it is, and her price
+  oldCard(html) {
+    let el = document.getElementById('oldcard');
+    if (!el) {
+      el = document.createElement('section'); el.id = 'oldcard'; el.hidden = true; document.body.appendChild(el);
+      el.addEventListener('click', (ev) => {
+        if (ev.target === el || ev.target.closest('.oc-close')) { el.hidden = true; return; }
+        const b = ev.target.closest('[data-oc]'); if (!b || b.disabled) return;
+        if (this.h.onOldBuy(b.dataset.oc)) el.hidden = true;
+      });
+      window.addEventListener('keydown', (ev) => { if (!el.hidden && (ev.key === 'Escape' || ev.key.toLowerCase() === 'f')) { ev.preventDefault(); ev.stopImmediatePropagation(); el.hidden = true; } }, true);
+    }
+    if (html === null) { el.hidden = true; return; }
+    el.innerHTML = `<div class="oc-box"><button class="oc-close" aria-label="Close">×</button>${html}</div>`; el.hidden = false;
+  }
+  oldCardOpen() { const el = document.getElementById('oldcard'); return !!el && !el.hidden; }
   // (3.0.0) the Quests button on the HUD (with a dot when one can be claimed) and its panel
   questsButton(show) {
     const b = $('quests-btn'); if (!b) return;
@@ -294,7 +310,7 @@ export class UI {
     html += `<div class="qs-refresh">${wait > 0 ? `<span>New quests free in ${hrs ? hrs + ' h ' : ''}${mins} min</span><button data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now · ${money(price, false)}</button>` : '<button data-q="refresh|free">New quests</button>'}</div>`;
     $('quests').querySelector('.qs-body').innerHTML = html;
   }
-  anyOpen() { return this.stationsOpen() || !$('chest').hidden || !$('quests').hidden || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  anyOpen() { return this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
   closeAll() { this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
@@ -346,7 +362,7 @@ export class UI {
     const fish = (s) => { const sp = SPECIES_BY_ID[s.id]; return `<div class="inv-row"><img src="${ic(sp)}" alt=""><span>${sp.name}${s.variant ? ` <em>${s.variant}</em>` : ''}<br><em>${s.cond <= 0.05 ? 'dead' : conditionName(s.cond)} · from ${s.from || 0} m · about ${money(specimenValue(s) * statValue(P, 'payFish'))}</em></span></div>`; };
     const sec = (title, inner, wide = false) => `<div class="inv-sec${wide ? ' wide' : ''}"><h4>${title}</h4><div class="inv-list">${inner}</div></div>`;
     let html = this.equipHtml(P, g);
-    html += `<div class="inv-sec wide"><div class="inv-cash"><div><span>CASH</span>${money(P.cash)}</div>${P.coins ? `<div><span>OLD GOLD COINS</span>${P.coins}</div>` : ''}</div></div>`;
+    html += `<div class="inv-sec wide"><div class="inv-cash"><div><span>CASH</span>${money(P.cash)}</div></div></div>`;
     // the animals first (the bag, then the sub's tanks); supplies, finds and gear below
     html += sec(`The catch bag · ${g.bag.length} of ${Math.round(statValue(P, 'bag'))}`, g.bag.length ? g.bag.map(fish).join('') : '<p class="inv-empty">Empty.</p>', true);
     if (!g.sub.imploded) {

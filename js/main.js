@@ -20,10 +20,15 @@ import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP
 import { SUITS, suitOf, kit, worn } from './economy.js';
 import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
+import { oldStock, overTable, daysLeft } from './oldone.js';
+import { CHESTS, oddsText } from './chests.js';
+import { giveRolled } from './items.js';
+import { SKILLS, RARITY } from './item_data.js';
+import { pictureOf } from './catalog.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
-import { CHESTS, rollChest } from './chests.js';
+import { rollChest } from './chests.js';
 import { hullCap } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
@@ -162,6 +167,7 @@ const ui = new UI({
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
+  onOldBuy: (k) => oldBuy(k),
   questsReady: () => (profile ? questsReady(profile) : 0),
   // (3.0.0) a shop's cart, checked out at once: all of it, or nothing (cash and room in the locker)
   onCheckout: (keys) => {
@@ -293,6 +299,30 @@ function sellSpecimens(list, lines) {
   }
 }
 hud.questMain = QUEST_MAIN;
+// (3.0.0) the old one's card: one of her things (its skills, her price) or a bundle (its odds)
+function showOldCard(H) {
+  const P = profile, st = oldStock(P), ROMAN = ['', 'I', 'II', 'III', 'IV'];
+  if (H.kind === 'chest') {
+    const C = CHESTS[H.key];
+    ui.oldCard(`<div class="oc-t"><b>${C.name}</b><span>${C.line}</span><small class="ch-odds">${oddsText(C.odds)}</small></div><div class="oc-buy"><em>${money(C.price, false)}</em><button data-oc="chest:${H.key}" ${P.cash < C.price ? 'disabled' : ''}>Open it</button></div>`);
+    return;
+  }
+  const it = st.items[H.i]; if (!it || it.sold) return;
+  const def = ITEMS[it.id], sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
+  ui.oldCard(`<div class="oc-top r-${def.rarity}"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""><div class="oc-t"><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><span>${def.line || ''}</span>${def.good ? `<i>${def.good}</i>` : ''}<div class="oc-sk">${sk}</div></div></div>
+    <div class="oc-buy"><small>${daysLeft(P) <= 1 ? 'She takes it all away soon.' : `She keeps these out another ${daysLeft(P)} days.`}</small><em>${money(it.price, false)}</em><button data-oc="item:${H.i}" ${P.cash < it.price ? 'disabled' : ''}>Take it</button></div>`);
+}
+function oldBuy(what) {
+  const P = profile;
+  if (what.startsWith('chest:')) return buy(what);
+  const st = oldStock(P), it = st.items[+what.slice(5)];
+  if (!it || it.sold) return false;
+  if (lockerFree(P) <= 0) { hud.toast(`The locker is full (${LOCKER}): sell something first`, 'warn'); return false; }
+  if (!spend(P, it.price)) return false;
+  giveRolled(P, it); it.sold = true; saveProfile(P); audio.ready && audio.sale();
+  hud.toast(`${ITEMS[it.id].name} is in your inventory (B)`, 'big');
+  return true;
+}
 function sellAll() {
   marketTick(profile);
   // old gold coins for every live animal from the deep that leaves the boat today
@@ -1322,7 +1352,14 @@ function update(dt) {
       if (!profile.stationFound) { profile.stationFound = true; saveProfile(profile); hud.toast('A research station, lit up on the summit', 'big'); hud.hint("The station's stores sell to visiting divers. The Margaret's yard now has more for the sub"); }
     }
     if (atDave) g.prompt = "F  Dave's Haul" + (e.inSub ? '   ·   hold F  Leave sub' : '');
-    if (atAngler) g.prompt = (g.caveTraded ? 'The old one has eaten this dive' : 'F  Trade with the old one') + (e.inSub ? '   ·   hold F  Leave sub' : '');
+    // (3.0.0) the old one trades no more: her things lie on the table below her
+    g.oldHover = overTable(e.x, e.y);
+    if (g.oldHover) {
+      const st = oldStock(profile), H = g.oldHover;
+      if (H.kind === 'item') { const it = st.items[H.i]; g.prompt = it && !it.sold ? `F  Look at the ${ITEMS[it.id].name}` : 'Nothing here now'; }
+      else g.prompt = `F  Look at the ${CHESTS[H.key].name}`;
+      if (e.inSub) g.prompt += '   ·   hold F  Leave sub';
+    }
     if (atAngler && !g.caveMet) g.caveMet = true;
     // in the submersible the prompt stays out of the way: hidden while moving, and gone after
     // 5 s of the same text (it comes back when something new is in reach or the sub stops again)
@@ -1361,7 +1398,7 @@ function update(dt) {
       const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
       if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('Something far below accepts it. For a while, it will not look for you.', 'note'); }
     }
-    if (pressed.has('f-tap') && atAngler) ui.toggleCave();
+    if (pressed.has('f-tap') && g.oldHover) showOldCard(g.oldHover);
     else if (pressed.has('f-tap') && atDave) ui.toggleDave();
     else if (pressed.has('f-tap') && atStation) ui.toggleCatalog(undefined, 'station');
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
@@ -1589,6 +1626,7 @@ function update(dt) {
     }
     // (3.0.0) quests: what can be read off the game, once a second
     g.questT = (g.questT || 0) + dt;
+    profile.playT = (profile.playT || 0) + dt; // (3.0.0) play time: the old one's days
     if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
     const dl = updateSpecimens(g, dt);
     for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died${s.pressDeath ? ' of the pressure' : ''}`, 'warn');

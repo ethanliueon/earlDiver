@@ -1388,3 +1388,23 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 
 #catalog .cat-says { margin: 0 0 12px; padding: 10px 14px; border-left: 3px solid var(--navy); background: rgba(58,74,42,0.08); font: italic 17px var(--serif); }
 #catalog .cat-says b { font-style: normal; color: var(--navy); margin-right: 4px; }
+
+/* ---------- 3.0.0 the old one's table: a card for what Earl is looking at (the game's steel, her lure's cold light) ---------- */
+#oldcard { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; background: rgba(4,8,12,0.45); }
+#oldcard[hidden] { display: none; }
+#oldcard .oc-box { position: relative; width: min(520px, calc(100vw - 32px)); padding: 16px 18px 14px; border-radius: 6px; color: var(--paint);
+  background: linear-gradient(180deg, #2a302e, #161a19); box-shadow: 0 0 0 1px #0a0c0b, 0 0 0 3px #3e4644, 0 0 0 4px #0a0c0b, 0 18px 40px rgba(0,0,0,0.6); }
+#oldcard .oc-close { position: absolute; right: 10px; top: 8px; border: 0; background: none; color: var(--paint-dim); font-size: 20px; cursor: pointer; }
+#oldcard .oc-top { display: flex; gap: 14px; align-items: flex-start; }
+#oldcard .oc-top img { width: 150px; height: 90px; object-fit: contain; flex: none; background: rgba(0,0,0,0.25); border-radius: 3px; }
+#oldcard .oc-t b { display: block; font: 400 20px var(--serif); }
+#oldcard .oc-t span { display: block; font: italic 14px var(--serif); color: var(--paint-dim); margin-top: 2px; }
+#oldcard .oc-t i { display: block; font: 14px var(--serif); margin-top: 6px; }
+#oldcard .rr { font: 10px var(--stencil, monospace); letter-spacing: 0.16em; text-transform: uppercase; }
+#oldcard .r-rare .rr { color: var(--r-rare); } #oldcard .r-exotic .rr { color: var(--r-exotic); }
+#oldcard .oc-sk { margin-top: 6px; font: 13px var(--serif); color: var(--paint-dim); } #oldcard .oc-sk b { display: inline; font: 500 13px var(--serif); color: #9ad8ff; margin-right: 4px; }
+#oldcard .oc-buy { display: flex; align-items: center; gap: 12px; justify-content: flex-end; margin-top: 12px; }
+#oldcard .oc-buy small { margin-right: auto; font: italic 13px var(--serif); color: var(--paint-dim); }
+#oldcard .oc-buy em { font: 15px var(--mono); font-style: normal; color: var(--brass-hi); }
+#oldcard .oc-buy button { font: 15px var(--serif); padding: 5px 16px; border: 0; border-radius: 3px; cursor: pointer; color: #2e220a; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); }
+#oldcard .oc-buy button:disabled { opacity: 0.45; cursor: default; }

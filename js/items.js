@@ -179,6 +179,8 @@ export function kitOf(P) {
   return P.kit;
 }
 function mk(id, rnd) { const def = ITEMS[id]; return { u: newUid(), id, sk: rollSkills(def, rnd), ...(def.legend ? { leg: def.legend } : {}) }; }
+export const rollSkillsFor = (def, rnd) => rollSkills(def, rnd); // (3.0.0) the old one's wares are rolled when laid out
+export function giveRolled(P, q) { if (lockerFree(P) <= 0) return null; const n = { u: newUid(), id: q.id, sk: q.sk || [], ...(q.leg ? { leg: q.leg } : {}) }; kitOf(P).items.push(n); bump(P); return n; }
 export const lockerCount = (P) => kitOf(P).items.length;
 export const lockerFree = (P) => LOCKER - lockerCount(P);
 export const instOf = (P, u) => kitOf(P).items.find((q) => q.u === u) || null;

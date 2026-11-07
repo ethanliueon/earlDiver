@@ -12,6 +12,8 @@ import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
 import { drawStation, STATION_TOP } from './station_draw.js';
+import { drawTable, TABLE } from './oldone.js';
+import { pictureOf } from './catalog.js';
 import { Wake } from './trail.js';
 import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
@@ -2021,6 +2023,8 @@ export class Renderer {
       ctx.restore();
       if (r && r[0]) this.escaW = { x: ANGLER.x - r[0][0] / ppm, y: ANGLER.y + bob + r[0][1] / ppm };
     }
+    // (3.0.0) her table, below her mouth, and what lies on it
+    if (inView(TABLE.x0 + 10, TABLE.y, 30)) drawTable(ctx, S, Sy, ppm, t, g.profile, pictureOf, g.oldHover);
   }
 
   drawVent(ctx, v, S, Sy, ppm, t) {
@@ -2399,7 +2403,7 @@ export class Renderer {
       }
     }
     if (g.lure) radial(S(g.lure.x), Sy(g.lure.y), (g.lure.old ? 12 : 8) * ppm, g.lure.old ? [120, 170, 255] : [170, 230, 255], 0.9);
-    if (this.escaW) radial(S(this.escaW.x), Sy(this.escaW.y), 16 * ppm, [150, 220, 255], 0.75 + 0.15 * Math.sin(g.time * 1.7));
+    if (this.escaW) { radial(S(this.escaW.x), Sy(this.escaW.y), 16 * ppm, [150, 220, 255], 0.75 + 0.15 * Math.sin(g.time * 1.7)); radial(S(this.escaW.x + 4), Sy(this.escaW.y + 6), 30 * ppm, [120, 190, 230], 0.35); radial(S(TABLE.x0 + 10), Sy(TABLE.y - 3), 18 * ppm, [140, 200, 225], 0.45); lamps.push({ x: S(TABLE.x0 + 10), y: Sy(TABLE.y - 3), r: 18 * ppm, a: 0.45 }); } // (3.0.0) and further: the sea round her, and her table
     for (const v of g.world.vents) {
       const x = S(v.x), y = Sy(v.y - v.h);
       if (x < -500 || x > this.W + 500 || y < -500 || y > this.H + 500) continue;

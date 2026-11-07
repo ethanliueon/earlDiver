@@ -326,14 +326,18 @@ export const GEAR = {
 // A second currency, only from the deep: animals caught below 500 m when they are sold (1 a head,
 // 2 below 1,500 m, 3 below 2,500 m, one more for a rare form), the old one's trades, and sapphires.
 // They are never turned into cash: they buy her wares, the deepest refits and the abyss tank.
-export function coinsFor(spec) {
+export function coinsFor(spec) { return 0; // (3.0.0) old gold coins are gone
+}
+function coinsForOld(spec) {
   if (!spec || spec.cond <= 0.05) return 0;
   const f = spec.from || 0;
   const base = f >= 2500 ? 3 : f >= 1500 ? 2 : f >= 500 ? 1 : 0;
   return base ? base + (spec.variant ? 1 : 0) : 0;
 }
 // the deepest refits also cost coins: 1 each to 2,600 m, 2 to 3,200 m, 3 to 3,800 m, then 4
-export function upgradeCoins(P, id) {
+export function upgradeCoins(P, id) { return 0; // (3.0.0) no coins
+}
+function upgradeCoinsOld(P, id) {
   if (id !== 'depth' && id !== 'tHull') return 0;
   const next = statAt('depth', lv(P, 'depth') + 1);
   return next > 2000 ? Math.ceil((next - 2000) / 600) : 0;
