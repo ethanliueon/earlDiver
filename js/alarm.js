@@ -7,10 +7,10 @@ import { clamp, TAU } from './util.js';
 export function alarmsOf(g) {
   if (!g || g.mode !== 'play' || !g.earl || !g.earl.inSub || !g.sub || g.sub.imploded) return [];
   const sub = g.sub, out = [], ent = g.entity;
-  if (sub.y > sub.rated * 1.33) out.push({ id: 'crush', text: `Crush depth: ${Math.round(sub.y)} m of ${sub.rated} m. Ascend now` });
-  else if (sub.y > sub.rated) out.push({ id: 'depth', text: `Past her rated depth: ${Math.round(sub.y)} m of ${sub.rated} m` });
-  if (sub.hull < 0.4) out.push({ id: 'hull', text: `Hull at ${Math.round(sub.hull * 100)} %: the cabin is leaking air` });
-  if (ent && (ent.dist ?? Infinity) < 200 && ent.state !== 'away') out.push({ id: 'contact', text: 'Something large on the sonar' });
+  if (sub.y > sub.rated * 1.33) out.push({ id: 'crush', text: 'Crush depth! Ascend' });
+  else if (sub.y > sub.rated) out.push({ id: 'depth', text: `Past rated depth: ${Math.round(sub.y)} / ${sub.rated} m` });
+  if (sub.hull < 0.4) out.push({ id: 'hull', text: `Hull ${Math.round(sub.hull * 100)} %: leaking air` });
+  if (ent && (ent.dist ?? Infinity) < 200 && ent.state !== 'away') out.push({ id: 'contact', text: 'Contact on sonar' });
   return out;
 }
 

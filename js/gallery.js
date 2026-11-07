@@ -269,11 +269,14 @@ export class Gallery {
       else { ctx.fillStyle = '#5e5444'; ctx.beginPath(); ctx.moveTo(r.x, base); for (let x = 0; x <= r.w; x += 10) ctx.lineTo(r.x + x, base - 8 - Math.sin(x * 0.07) * 3); ctx.lineTo(r.x + r.w, base); ctx.fill(); this.decor(ctx, r); }
       const shown = shownAll.filter(([, d]) => { const sp = SPECIES_BY_ID[d.id]; return sp && deepKeeper(sp) === press; });
       const maxL = clamp(Math.min(r.h * 0.4, r.w * 0.38), 40, 240);
+      // (4.1.2) one true scale in each tank: its biggest animal (at least 1.2 m) spans 90 % of the glass and every
+      // other one is drawn against it at its real length, never smaller than a readable 26 px
+      const biggest = Math.max(1.2, ...shownAll.filter(([, d]) => { const q = SPECIES_BY_ID[d.id]; return q && deepKeeper(q) === press; }).map(([, d]) => d.len || SPECIES_BY_ID[d.id].len)), pxm = r.w * 0.9 / biggest;
       shown.forEach(([k, d]) => {
         const sp = SPECIES_BY_ID[d.id], dead = d.cond <= 0.05;
         // (4.1.1) small ones still readable; the big ones as big as they are, up to nearly the tank's width (an
         // oarfish is a long ribbon right across it)
-        const len0 = d.len || sp.len, L = len0 >= 1.5 ? clamp(r.w * Math.min(0.92, 0.25 + len0 * 0.12), maxL, r.w * 0.92) : clamp(36 + Math.sqrt(len0) * 120, 36, maxL);
+        const len0 = d.len || sp.len, L = Math.max(26, len0 * pxm);
         let a = this.anim.get(k);
         const onSand = /floor/.test(sp.v.hab) && !/swim/.test(sp.v.hab);
         if (!a) { a = { x: lerp(0.1, 0.9, Math.random()), y: onSand ? 0.91 : lerp(0.25, 0.75, Math.random()), tx: Math.random(), ty: 0.5, face: Math.random() < 0.5 ? -1 : 1, ph: Math.random() * 6, rt: 0 }; this.anim.set(k, a); }

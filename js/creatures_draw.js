@@ -469,9 +469,13 @@ function drawShark(ctx, L, v, t, swim) {
   ctx.restore();
   // dorsal fin (first + second)
   ctx.fillStyle = c0;
-  finPath(ctx, [[nose + L * 0.36, -H * 0.48], [nose + L * 0.43, -H * (v.small ? 0.8 : 1.15)], [nose + L * 0.52, -H * 0.42]]); ctx.fill();
+  const dTop = -H * (v.small ? 0.8 : 1.15);
+  finPath(ctx, [[nose + L * 0.36, -H * 0.48], [nose + L * 0.43, dTop], [nose + L * 0.52, -H * 0.42]]); ctx.fill();
+  // (4.1.2) white tips (the whitetip reef shark's): the fin's own top, fading softly into it, not a pasted triangle
+  const tipOf = (top, base) => { const g2 = ctx.createLinearGradient(0, top, 0, base); g2.addColorStop(0, v.tips); g2.addColorStop(0.3, v.tips); g2.addColorStop(0.42, rgba(v.tips, 0)); ctx.save(); ctx.clip(); ctx.fillStyle = g2; ctx.fillRect(-L, top - H, L * 2, base - top + H); ctx.restore(); };
+  if (v.tips) tipOf(dTop, -H * 0.45);
+  ctx.fillStyle = c0;
   finPath(ctx, [[nose + L * 0.66, -H * 0.27], [nose + L * 0.69, -H * 0.45], [nose + L * 0.72, -H * 0.2]]); ctx.fill();
-  if (v.tips) { ctx.fillStyle = v.tips; finPath(ctx, [[nose + L * 0.41, -H * 0.95], [nose + L * 0.43, -H * 1.15], [nose + L * 0.46, -H * 0.9]]); ctx.fill(); }
   // tail - heterocercal
   const tx = nose + L * 0.8, ty = sway * H * 0.04;
   const flex = 0.65 + 0.35 * Math.abs(Math.cos(t * 3 * swim));
@@ -482,6 +486,7 @@ function drawShark(ctx, L, v, t, swim) {
   ctx.lineTo(tx + L * 0.12 * flex, ty + H * (v.wide ? 0.6 : 0.45));
   ctx.quadraticCurveTo(tx + L * 0.03, ty + H * 0.2, tx - L * 0.02, ty + H * 0.08);
   ctx.closePath(); ctx.fill();
+  if (v.tips) tipOf(ty - H * 0.95, ty - H * 0.2); // and the tail's upper lobe
   // gills
   ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = Math.max(0.6, L * 0.005);
   for (let k = 0; k < (v.sixgill ? 6 : v.frill ? 6 : 5); k++) {
