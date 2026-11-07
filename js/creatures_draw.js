@@ -500,7 +500,18 @@ function drawShark(ctx, L, v, t, swim) {
     ctx.beginPath(); ctx.ellipse(nose + L * 0.03, 0, L * 0.035, H * 0.9, 0, 0, TAU); ctx.fill();
     eye(ctx, nose + L * 0.03, -H * 0.8, Math.max(1, H * 0.05), '#111');
   }
-  if (v.goblin) { ctx.fillStyle = shade(c0, 0.05); finPath(ctx, [[nose + L * 0.02, -H * 0.2], [nose - L * 0.1, -H * 0.12], [nose + L * 0.03, H * 0.0]]); ctx.fill(); }
+  if (v.goblin) {
+    // (3.7.5) the goblin shark: a long, flat blade of a snout dotted with sensory pores, and beneath it the jaws
+    // slung forward out of the head on their ligaments, pink gums and rows of long, nail-like teeth
+    const sn = new Path2D(); sn.moveTo(nose + L * 0.04, -H * 0.24); sn.quadraticCurveTo(nose - L * 0.08, -H * 0.24, nose - L * 0.16, -H * 0.1); sn.quadraticCurveTo(nose - L * 0.1, -H * 0.02, nose + L * 0.04, H * 0.0); sn.closePath();
+    const sg = ctx.createLinearGradient(0, -H * 0.25, 0, 0); sg.addColorStop(0, shade(c0, 0.08)); sg.addColorStop(1, shade(c1, -0.05)); ctx.fillStyle = sg; ctx.fill(sn);
+    ctx.fillStyle = rgba(shade(c0, -0.35), 0.5); for (let k = 0; k < 16; k++) { ctx.beginPath(); ctx.arc(nose - L * 0.12 + hashN(k, 51) * L * 0.15, -H * 0.2 + hashN(k, 52) * H * 0.16, Math.max(0.4, L * 0.0025), 0, TAU); ctx.fill(); }
+    const jx = nose - L * 0.02, jy = H * 0.12, gape = 0.6 + 0.4 * Math.sin(t * 0.7);
+    ctx.fillStyle = '#4a1a20'; ctx.beginPath(); ctx.moveTo(jx + L * 0.09, H * 0.08); ctx.lineTo(jx - L * 0.04, jy - H * 0.06); ctx.lineTo(jx - L * 0.05, jy + H * 0.18 * gape); ctx.lineTo(jx + L * 0.09, H * 0.26); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#c87880'; ctx.beginPath(); ctx.moveTo(jx + L * 0.09, H * 0.06); ctx.lineTo(jx - L * 0.045, jy - H * 0.08); ctx.lineTo(jx - L * 0.04, jy - H * 0.02); ctx.lineTo(jx + L * 0.09, H * 0.1); ctx.fill(); // upper gum
+    ctx.beginPath(); ctx.moveTo(jx + L * 0.09, H * 0.24); ctx.lineTo(jx - L * 0.055, jy + H * 0.16 * gape); ctx.lineTo(jx - L * 0.05, jy + H * 0.22 * gape); ctx.lineTo(jx + L * 0.09, H * 0.29); ctx.fill(); // lower gum
+    for (let k = 0; k < 8; k++) { const u = k / 7, x = jx - L * 0.04 + u * L * 0.12; glassFang(ctx, x, jy - H * 0.05, H * (0.2 + (k % 2) * 0.08), 1, Math.max(0.5, L * 0.003), 0.15); glassFang(ctx, x, jy + H * 0.2 * gape - u * H * 0.02, H * (0.18 + (k % 2) * 0.08), -1, Math.max(0.5, L * 0.003), 0.15); }
+  }
   if (v.saw) {
     ctx.fillStyle = shade(c0, -0.05); ctx.fillRect(nose - L * 0.22, -H * 0.06, L * 0.23, H * 0.12);
     ctx.fillStyle = '#e8e4d8'; for (let k = 0; k < 14; k++) { const x = nose - L * 0.21 + k * L * 0.016; ctx.fillRect(x, -H * 0.12, L * 0.004, H * 0.24); }
@@ -1512,6 +1523,9 @@ function drawVampire(ctx, L, v, t, swim = 1) {
     ctx.fillStyle = rgba(glow, 0.5 + 0.4 * Math.sin(t * 3 + ax)); ctx.beginPath(); ctx.arc(ax, ay, Math.max(0.6, L * 0.006), 0, TAU); ctx.fill(); P.push([ax, ay, 0.6]);
   }
   ctx.strokeStyle = rgba(shade(c0, -0.5), 0.5); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.stroke(cloak);
+  // the head, where the arms and the cloak gather: rounded, joining cloak to mantle
+  const hd = ctx.createRadialGradient(-L * 0.02, -H * 0.1, L * 0.01, 0, 0, L * 0.14); hd.addColorStop(0, shade(c1, 0.1)); hd.addColorStop(1, shade(c0, -0.2));
+  ctx.fillStyle = hd; ctx.beginPath(); ctx.ellipse(-L * 0.02, 0, L * 0.12, H * 0.34, 0, 0, TAU); ctx.fill();
   // the mantle: a soft rounded bag behind the head, velvety, with a near-side fin
   const mantle = new Path2D(); mantle.moveTo(-L * 0.02, -H * 0.3); mantle.bezierCurveTo(L * 0.12, -H * 0.52, L * 0.38, -H * 0.42, L * 0.44, -H * 0.06); mantle.bezierCurveTo(L * 0.46, H * 0.2, L * 0.2, H * 0.42, -L * 0.02, H * 0.3); mantle.closePath();
   const mg = ctx.createRadialGradient(L * 0.15, -H * 0.18, L * 0.02, L * 0.2, 0, L * 0.3); mg.addColorStop(0, shade(c1, 0.18)); mg.addColorStop(0.6, c1); mg.addColorStop(1, shade(c0, -0.25)); ctx.fillStyle = mg; ctx.fill(mantle);
