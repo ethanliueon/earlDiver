@@ -116,7 +116,7 @@ export function rarityStars(sp) {
   const r = rarityOf(sp); if (!r || r.hidden || !STARS[r.id]) return '';
   return `<i class="r-stars rs-${r.id}" title="${r.name}">${'<b>★</b>'.repeat(STARS[r.id])}</i>`;
 }
-export const rarityCls = (sp) => { const r = rarityOf(sp); return !r || r.hidden || !STARS[r.id] ? '' : ` has-stars`; };
+export const rarityCls = (sp) => { const r = rarityOf(sp); return !r || r.hidden || !STARS[r.id] ? '' : r.id === 'legendary' ? ' has-stars leg-card' : ' has-stars'; };
 export const rarityCol = (sp) => { const r = rarityOf(sp); return !r || r.hidden ? '' : r.col; };
 export const RARITY = [
   { id: 'common', name: 'Common', col: '#9aa0a6', upTo: 5, spawn: 1 },
@@ -132,7 +132,9 @@ export const UNDOCUMENTED = { id: 'undocumented', name: 'Undocumented', col: '#b
 // humpback anglerfish, common fangtooth, barreleye, pelican gulper eel, blobfish, coelacanth, giant oarfish
 export const LEGENDARY = new Set([100, 101, 104, 105, 107, 108, 54, 2102, 2103, 2106, 2150, 2146, 2162, 2110, 2109]); // (3.0.42) and the giant versions of the viperfish, dragonfish, swallower, vampire squid, dumbo, isopod, tripod, grenadier
 // a capturable animal that is not legendary stays inside the exotic band, however much it would fetch
-const EXOTIC_CAP = 4800;
+const EXOTIC_CAP = 4000; // (3.1.0) an Exotic never fetches more than $4,000
+// (3.1.0) what each Legendary pays: $25,000 to $60,000, by how rare and how strange
+const LEG_PRICE = { 100: 40000, 101: 30000, 104: 35000, 105: 45000, 107: 25000, 108: 60000, 54: 55000, 2102: 30000, 2103: 35000, 2106: 28000, 2150: 40000, 2146: 38000, 2162: 25000, 2110: 32000, 2109: 50000 };
 const PRICE_CACHE = new Map();
 // what one of this species pays (before size, condition, rare form, upgrades)
 export function rarityPrice(sp) {
@@ -140,7 +142,7 @@ export function rarityPrice(sp) {
   if (p !== undefined) return p;
   p = PRICE[sp.id] !== undefined ? PRICE[sp.id] : formulaPrice(sp);
   if (isDeep(sp)) p = Math.max(30, p); // nothing from the deep is common
-  if (LEGENDARY.has(sp.id)) p = Math.max(5000, p);
+  if (LEGENDARY.has(sp.id)) p = LEG_PRICE[sp.id] || 30000;
   else if (!isTagOnly(sp)) p = Math.min(EXOTIC_CAP, p);
   PRICE_CACHE.set(sp.id, p);
   return p;

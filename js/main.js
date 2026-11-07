@@ -6,7 +6,7 @@ import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
-import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, NETS_SUB, updateSubNet, tankFits, BIG } from './capture.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, NETS_SUB, updateSubNet, tankFits, BIG, tooBig } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
 import { SETTINGS } from './settings.js';
@@ -585,6 +585,7 @@ function tankAction(act, where, i, to = -1) {
   if (act === 'press') {
     // into a chamber (the one it was dropped on): from the bag, the open tank, or another chamber
     if (s.pressed && s.chamber === to) return false;
+    if (to !== BIG && tooBig(s)) { hud.toast(`${SPECIES_BY_ID[s.id].name} is too big for a chamber: only the large pressure tank holds it`, 'warn'); return false; }
     const was = s.chamber;
     if (s.pressed) { s.pressed = false; }
     if (!seal(g, s, to)) { if (was !== undefined && where !== 'bag') { s.pressed = true; s.chamber = was; } hud.toast(to === BIG ? 'The large tank holds three, or one big animal' : to >= 0 ? 'That chamber is in use' : 'Every chamber is in use: the boat fits more', 'warn'); return false; }
@@ -596,6 +597,7 @@ function tankAction(act, where, i, to = -1) {
     // (2.7.4) all chambers full: this animal takes chamber `to`, and the one in it goes where this one was
     const o = g.subTank.find((q) => q.pressed && q.chamber === to);
     if (!o || o === s) return false;
+    if (tooBig(s)) { hud.toast(`${SPECIES_BY_ID[s.id].name} is too big for a chamber: only the large pressure tank holds it`, 'warn'); return false; }
     const wasPressed = s.pressed && where !== 'bag', wasChamber = s.chamber, wasPile = !!s.pile;
     o.pressed = false; delete o.chamber;
     if (s.pressed) { s.pressed = false; delete s.chamber; }
@@ -1682,8 +1684,8 @@ function update(dt) {
     for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()}${whereOf(s)} has died${s.pressDeath ? ' from barotrauma' : ''}`, 'warn');
     for (const ev of dl.events) {
       const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
-      if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the pressure: get it into a chamber`, 'warn');
-      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying from barotrauma: get it to a chamber, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
+      if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the pressure: get it into ${tooBig(ev.s) ? 'the large pressure tank' : 'a chamber'}`, 'warn');
+      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying from barotrauma: get it to ${tooBig(ev.s) ? 'the large pressure tank' : 'a chamber'}, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
       else if (ev.type === 'stressed') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : 'in the tank'} is stressed${ev.press ? ' by the pressure' : ''}`, 'warn');
       else if (ev.type === 'dying') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : 'in the tank'} is dying${ev.press ? ' from barotrauma' : ''}`, 'warn');
     }

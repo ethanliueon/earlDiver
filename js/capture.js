@@ -1,5 +1,6 @@
 // Catching animals alive: the net and the slurp gun, the specimen bag, the sub's tank, and what
 // happens to an animal between the catch and the sale (handling, time, coming up too fast).
+import { LEGENDARY } from './specimens.js';
 import { clamp, dist } from './util.js';
 import { pressureTolerance } from './specimens.js';
 import { SPECIES_BY_ID } from './species.js';
@@ -18,13 +19,15 @@ export const tankFits = (g, s) => tankUsed(g) + slotsOf(s) <= tankSlots(g);
 // the large pressure tank (an add-on): a long steel cylinder in the tank room, one more pressure
 // chamber that holds three animals, or one big one (1.2 m and up). Its specimens have chamber BIG.
 export const BIG = 100;
+// (3.1.0) too big for an ordinary chamber: a Legendary, or anything 1.2 m and up. Only the large pressure tank holds one.
+export const tooBig = (s) => LEGENDARY.has(s.id) || (s.len || 0) >= 1.2;
 export const hasBigTank = (g) => !!(g.addons || {}).bigTank;
 export const bigIn = (g) => g.subTank.filter((s) => s.pressed && s.chamber === BIG);
 export function bigFits(g, spec) {
   if (!hasBigTank(g)) return false;
   const inn = bigIn(g).filter((s) => s !== spec);
   if (!inn.length) return true;
-  return spec.len < 1.2 && inn.length < 3 && !inn.some((s) => s.len >= 1.2);
+  return !tooBig(spec) && inn.length < 3 && !inn.some((s) => tooBig(s));
 }
 export const pressUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed ? 1 : 0), 0);
 // put a specimen in the sub: deep animals into a pressure tank if one is free, else the open tank
@@ -41,6 +44,7 @@ export function seal(g, spec, want = -1) {
     spec.pressed = true; spec.chamber = BIG; delete spec.pile; spec.press = Math.max(0, g.sub.y);
     return true;
   }
+  if (tooBig(spec)) return false; // (3.1.0) not in an ordinary chamber
   const used = new Set(g.subTank.filter((s) => s.pressed && s !== spec).map((s) => s.chamber));
   const c = want >= 0 ? (want < pressSlots(g) && !used.has(want) ? want : -1) : freeChamber(g);
   if (c < 0) return false;
@@ -49,7 +53,8 @@ export function seal(g, spec, want = -1) {
   return true;
 }
 export function stow(g, spec) {
-  if ((spec.from || 0) > 100 && freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
+  if ((spec.from || 0) > 100 && tooBig(spec) && bigFits(g, spec)) { seal(g, spec, BIG); g.subTank.push(spec); return 'press'; }
+  if ((spec.from || 0) > 100 && !tooBig(spec) && freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
   if (tankFits(g, spec)) { spec.pressed = false; g.subTank.push(spec); return 'tank'; }
   if (freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
   return null;

@@ -11,7 +11,7 @@ import { drawSpecies, speciesIcon } from './creatures_draw.js';
 import { rarityOf, specimenValue, rarityStars, rarityCls } from './specimens.js';
 import { money } from './economy.js';
 import { xEyes } from './gallery.js';
-import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, bigIn, slotsOf} from './capture.js';
+import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf} from './capture.js';
 import { UPGRADES } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
 // (3.0.25) the open tank's lights, as the aquarium's
@@ -166,7 +166,10 @@ export class TankRoom {
     const inChamber = where === 'tank' && s.pressed && s.chamber !== BIG, inOpen = where === 'tank' && !s.pressed && !s.pile;
     const free = freeChamber(g), btn = (label, tk, on = true) => `<button data-tk="${tk}" ${on ? '' : 'disabled'}>${label}</button>`;
     let acts = '';
-    if (!inChamber) {
+    const big = tooBig(s), inBig = where === 'tank' && s.pressed && s.chamber === BIG;
+    if (big) { // (3.1.0) too big for a chamber: the large pressure tank, or nothing
+      if (!inBig) acts += hasBigTank(g) ? btn('Into the large tank', `press:${where}:${i}:${BIG}`, bigFits(g, s)) : '<small class="tc-big">Too big for a chamber: it needs the large pressure tank</small>';
+    } else if (!inChamber) {
       if (free >= 0) acts += btn('Into a chamber', `press:${where}:${i}:${free}`);
       else if (pressSlots(g) > 0) acts += btn('Swap with a chamber…', `swaps:${where}:${i}`);
     }
@@ -239,7 +242,7 @@ export class TankRoom {
         if (n >= ps) continue;
         if (cx >= c.x - 10 && cx <= c.x + CW * c.k + 10 && cy >= c.y - 10 && cy <= c.y + CH * c.k + 10) {
           const occ = g.subTank.find((q) => q.pressed && q.chamber === n);
-          return !occ || occ === this.drag.s ? { kind: 'chamber', n, c } : null;
+          return (!occ || occ === this.drag.s) && !tooBig(this.drag.s) ? { kind: 'chamber', n, c } : null;
         }
       }
       return null;
