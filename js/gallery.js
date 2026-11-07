@@ -6,7 +6,7 @@ import { rarityStars, rarityCls, rarityCol } from './specimens.js';
 // for the whole gallery: daylight, dim, or the red light deep animals can't see.
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
-import { aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale, gallerySlots, GALLERY_STEPS } from './aquarium.js';
+import { aquariumOf, isHappy, HAPPY_AFTER, FAMOUS_AFTER, gallerySale, gallerySlots, GALLERY_STEPS, placesUsed, placesTaken } from './aquarium.js';
 import { VARIANTS, makeVariantSprite } from './variants.js';
 import { clamp, lerp, TAU } from './util.js';
 import { usualDepth } from './fauna.js';
@@ -95,16 +95,16 @@ export class Gallery {
     if (sig === this.sig) return;
     this.sig = sig;
     this.root.querySelector('.gl-lights').innerHTML = Object.entries(LIGHTS).map(([k, L]) => `<button data-light="${k}" class="${k === light ? 'on' : ''}">${L.name}</button>`).join('');
-    const nShown = Object.keys(A.display).length;
-    this.root.querySelector('.gl-sub').textContent = `(${nShown}/${gallerySlots(P)}) places · aboard the Margaret`;
+    const nShown = Object.keys(A.display).length, used = placesUsed(P);
+    this.root.querySelector('.gl-sub').textContent = `${used} of ${gallerySlots(P)} places taken · aboard the Margaret`; // (4.1.1) by size
     // the catch aboard, the kept ones first: one button each to put it into the tank
-    const full = nShown >= gallerySlots(P);
+    const full = used >= gallerySlots(P);
     // (3.0.15) more room, bought right here: two more places a time
     const lvG = P.galleryLv || 0, step = GALLERY_STEPS[lvG];
     const roomBtn = step !== undefined ? `<button class="gl-room" data-room="1" ${P.cash + 1e-6 < step ? 'disabled' : ''}>More room · ${gallerySlots(P)} → ${gallerySlots({ galleryLv: lvG + 1 })} places · $${step.toLocaleString()}</button>` : '<p>The aquarium is as big as the Margaret can hold.</p>';
     this.root.querySelector('.gl-catch').innerHTML = !cand.length ? '<h4>Your catch</h4><p>Nothing alive aboard to put in. Bring something up, and Keep it on the Sell tab so it is not sold.</p>' : `<h4>Your catch</h4>` + cand.slice(0, 12).map((c) => {
       const sp = SPECIES_BY_ID[c.s.id], why = c.why;
-      return `<button data-place="${c.where}:${c.i}" ${why ? `disabled title="${esc(why)}"` : 'title="Put it into the tank"'} class="${c.s.kept ? 'kept' : ''}">${c.s.variant ? `<em class="rarel r-${c.s.variant}">${VARIANTS[c.s.variant].name}</em> ` : ''}${esc(sp.name)}${c.s.kept ? '<small>kept</small>' : ''}${why ? `<small>${esc(why)}</small>` : ''}</button>`;
+      return `<button data-place="${c.where}:${c.i}" ${why ? `disabled title="${esc(why)}"` : 'title="Put it into the tank"'} class="${c.s.kept ? 'kept' : ''}">${c.s.variant ? `<em class="rarel r-${c.s.variant}">${VARIANTS[c.s.variant].name}</em> ` : ''}${esc(sp.name)}<small>${placesTaken(P, c.s)} place${placesTaken(P, c.s) > 1 ? 's' : ''}</small>${c.s.kept ? '<small>kept</small>' : ''}${why ? `<small>${esc(why)}</small>` : ''}</button>`;
     }).join('') + (full ? '<p>The tank is full: sell one, or buy more room below.</p>' : '');
     this.root.querySelector('.gl-catch').insertAdjacentHTML('beforeend', roomBtn);
     let html = '';
@@ -271,7 +271,9 @@ export class Gallery {
       const maxL = clamp(Math.min(r.h * 0.4, r.w * 0.38), 40, 240);
       shown.forEach(([k, d]) => {
         const sp = SPECIES_BY_ID[d.id], dead = d.cond <= 0.05;
-        const L = clamp(36 + Math.sqrt(d.len || sp.len) * 120, 36, maxL); // small ones still readable; big ones shrunk to fit the tank
+        // (4.1.1) small ones still readable; the big ones as big as they are, up to nearly the tank's width (an
+        // oarfish is a long ribbon right across it)
+        const len0 = d.len || sp.len, L = len0 >= 1.5 ? clamp(r.w * Math.min(0.92, 0.25 + len0 * 0.12), maxL, r.w * 0.92) : clamp(36 + Math.sqrt(len0) * 120, 36, maxL);
         let a = this.anim.get(k);
         const onSand = /floor/.test(sp.v.hab) && !/swim/.test(sp.v.hab);
         if (!a) { a = { x: lerp(0.1, 0.9, Math.random()), y: onSand ? 0.91 : lerp(0.25, 0.75, Math.random()), tx: Math.random(), ty: 0.5, face: Math.random() < 0.5 ? -1 : 1, ph: Math.random() * 6, rt: 0 }; this.anim.set(k, a); }
@@ -285,7 +287,7 @@ export class Gallery {
           if (Math.abs(a.tx - a.x) > 0.01) a.face = lerp(a.face, a.tx > a.x ? 1 : -1, dt * 3);
           a.ph += dt * (0.6 + d.cond);
         }
-        const mx = Math.min(0.45, L / r.w * 0.5);
+        const mx = Math.min(0.48, L / r.w * 0.5 + 0.01); // (4.1.1) the whole length inside the glass
         a.sx = r.x + clamp(a.x, mx, 1 - mx) * r.w; a.sy = r.y + clamp(a.y, 0.1, 0.93) * r.h;
         ctx.save(); ctx.translate(a.sx, a.sy);
         if (k === this.open) { ctx.strokeStyle = 'rgba(200,230,220,0.45)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.ellipse(0, 0, L * 0.62, L * 0.32, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }

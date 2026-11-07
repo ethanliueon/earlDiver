@@ -847,28 +847,54 @@ function drawGulper(ctx, L, v, t, swim = 1) {
   const [ex, ey] = B.at(1), pulse = 0.7 + 0.3 * Math.sin(t * 2.4);
   const tg = ctx.createRadialGradient(ex, ey, 0, ex, ey, Math.max(3, L * 0.03)); tg.addColorStop(0, rgba(glow, 0.9 * pulse)); tg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(ex, ey, Math.max(3, L * 0.03), 0, TAU); ctx.fill();
   ctx.fillStyle = rgba(shade(glow, 0.3), pulse); ctx.beginPath(); ctx.ellipse(ex - L * 0.008, ey, Math.max(1, L * 0.008), Math.max(0.8, L * 0.004), 0, 0, TAU); ctx.fill();
-  // the jaws: a long thin upper jaw and the vast lower jaw, the membrane between them billowing a little
-  const [hx, hy, hh] = B.at(0.02), gape = H * (2.2 + 0.25 * Math.sin(t * 0.9));
-  const jaw = new Path2D();
-  jaw.moveTo(hx + L * 0.04, hy - hh * 0.6);
-  jaw.quadraticCurveTo(-L * 0.4, hy - gape * 0.62, -L * 0.68, hy - gape * 0.55);    // the upper jaw, bowing
-  jaw.bezierCurveTo(-L * 0.8, hy - gape * 0.1, -L * 0.82, hy + gape * 0.6, -L * 0.7, hy + gape * 0.95); // the membrane's free edge, billowing out
-  jaw.quadraticCurveTo(-L * 0.38, hy + gape * 0.85, hx + L * 0.06, hy + hh * 0.7);  // back along the lower jaw to the throat
-  jaw.closePath();
-  const jg = ctx.createLinearGradient(-L * 0.7, 0, hx, 0); jg.addColorStop(0, rgba(shade(c1, 0.12), 0.75)); jg.addColorStop(1, shade(c0, -0.1));
-  ctx.fillStyle = jg; ctx.fill(jaw);
-  // the membrane's folds and the inside of the mouth showing through
-  ctx.save(); ctx.clip(jaw);
-  ctx.fillStyle = 'rgba(4,2,3,0.55)'; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(-L * 0.66, hy - gape * 0.4); ctx.lineTo(-L * 0.66, hy + gape * 0.8); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = rgba(shade(c1, 0.35), 0.28); ctx.lineWidth = Math.max(0.4, L * 0.002);
-  for (let k = 1; k < 7; k++) { const u = k / 7; ctx.beginPath(); ctx.moveTo(hx + L * 0.02, hy + hh * 0.2); ctx.quadraticCurveTo(-L * 0.4, hy + gape * (u - 0.3) * 0.9, -L * 0.68, hy + gape * (u * 1.5 - 0.55)); ctx.stroke(); }
+  // (4.1.1) the head: a small skull behind the jaws' hinge, a slim upper jaw and a long lower jaw slung under it,
+  // the mouth a little open, and below the lower jaw the vast pouch of black skin, stretched thin, with a sheen
+  // where it bellies out. Fine pale rims on the jaws, needle teeth, a tiny eye at the front of the skull.
+  const [hx, hy, hh] = B.at(0.03), gape = H * (2.1 + 0.2 * Math.sin(t * 0.9)), tipX = -L * 0.66;
+  const hinge = [hx + L * 0.03, hy - hh * 0.2];
+  const up = { x0: hinge[0], y0: hy - hh * 0.75, cx: -L * 0.35, cy: hy - gape * 0.42, x1: tipX, y1: hy - gape * 0.22 };
+  const lo = { x0: hx + L * 0.06, y0: hy + hh * 0.75, cx: -L * 0.36, cy: hy + gape * 0.24, x1: tipX + L * 0.015, y1: hy + gape * 0.02 };
+  // the pouch: from the lower jaw's tip, sagging in a deep curve, back to the throat
+  const pouch = new Path2D();
+  pouch.moveTo(lo.x1, lo.y1); pouch.quadraticCurveTo(lo.cx, lo.cy, lo.x0, lo.y0);
+  const sag = 1.15 + 0.05 * Math.sin(t * 1.3), X = (u) => lo.x1 + (lo.x0 - lo.x1) * u; // the pouch: a deep, rounded bag hanging under the whole lower jaw
+  pouch.bezierCurveTo(lo.x0, hy + gape * 0.65, X(0.78), hy + gape * sag, X(0.48), hy + gape * sag);
+  pouch.bezierCurveTo(X(0.16), hy + gape * sag, lo.x1 - L * 0.015, hy + gape * 0.62, lo.x1, lo.y1); pouch.closePath();
+  const pg = ctx.createRadialGradient(X(0.48), hy + gape * 0.6, H * 0.2, X(0.48), hy + gape * 0.5, gape * 0.9);
+  pg.addColorStop(0, rgba(shade(c1, 0.22), 0.92)); pg.addColorStop(0.6, rgba(shade(c0, 0.02), 0.95)); pg.addColorStop(1, rgba(shade(c0, -0.2), 0.97));
+  ctx.fillStyle = pg; ctx.fill(pouch);
+  ctx.save(); ctx.clip(pouch);
+  ctx.strokeStyle = rgba(shade(c1, 0.4), 0.16); ctx.lineWidth = Math.max(0.4, L * 0.0018); // the skin's stretch lines, fanning from the throat
+  for (let k = 1; k < 9; k++) { const u = k / 9; ctx.beginPath(); ctx.moveTo(lo.x0, lo.y0); ctx.quadraticCurveTo(X(0.85 - u * 0.2), hy + gape * (0.4 + u * 0.55), X(0.9 - u * 0.85), hy + gape * (1.15 - u * 0.9)); ctx.stroke(); }
+  const sh = ctx.createRadialGradient(X(0.4), hy + gape * 0.55, 0, X(0.4), hy + gape * 0.55, gape * 0.35); sh.addColorStop(0, 'rgba(200,170,220,0.16)'); sh.addColorStop(1, 'rgba(200,170,220,0)');
+  ctx.fillStyle = sh; ctx.fillRect(X(0) - L * 0.05, hy, X(1) - X(0) + L * 0.1, gape * 1.3); // a dull violet sheen where it is stretched thinnest
   ctx.restore();
-  // the jaw bones as fine pale lines, tiny teeth along them
-  ctx.strokeStyle = rgba(shade(c1, 0.45), 0.6); ctx.lineWidth = Math.max(0.6, L * 0.004);
-  ctx.beginPath(); ctx.moveTo(hx + L * 0.04, hy - hh * 0.6); ctx.quadraticCurveTo(-L * 0.4, hy - gape * 0.62, -L * 0.68, hy - gape * 0.55); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(hx + L * 0.06, hy + hh * 0.7); ctx.quadraticCurveTo(-L * 0.38, hy + gape * 0.85, -L * 0.7, hy + gape * 0.95); ctx.stroke();
-  // the eye: tiny, right at the front of the head above the jaw's hinge
-  eye(ctx, hx + L * 0.015, hy - hh * 0.75, Math.max(0.8, L * 0.006), '#8a9aa0');
+  ctx.strokeStyle = rgba(shade(c1, 0.3), 0.5); ctx.lineWidth = Math.max(0.5, L * 0.0025); ctx.stroke(pouch);
+  // the mouth between the jaws: dark, a hint of the throat
+  ctx.fillStyle = 'rgba(6,3,5,0.92)'; ctx.beginPath(); ctx.moveTo(up.x0, up.y0 + hh * 0.4); ctx.quadraticCurveTo(up.cx, up.cy + gape * 0.1, up.x1 + L * 0.01, up.y1 + gape * 0.04);
+  ctx.quadraticCurveTo(lo.cx, lo.cy - gape * 0.05, lo.x0, lo.y0 - hh * 0.3); ctx.closePath(); ctx.fill();
+  // the jaws as bones, pale-rimmed, with needle teeth
+  const bone = (J, w) => {
+    ctx.strokeStyle = shade(c0, 0.06); ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(J.x0, J.y0); ctx.quadraticCurveTo(J.cx, J.cy, J.x1, J.y1); ctx.stroke();
+    ctx.strokeStyle = rgba(shade(c1, 0.55), 0.55); ctx.lineWidth = Math.max(0.5, w * 0.3); ctx.stroke();
+  };
+  bone(up, Math.max(1.2, L * 0.011)); bone(lo, Math.max(1.4, L * 0.013));
+  ctx.fillStyle = 'rgba(230,226,214,0.75)';
+  for (let k = 1; k < 12; k++) { const u = k / 12, q = (a, b, c) => (1 - u) * (1 - u) * a + 2 * (1 - u) * u * b + u * u * c;
+    const ux = q(up.x0, up.cx, up.x1), uy = q(up.y0, up.cy, up.y1), lx = q(lo.x0, lo.cx, lo.x1), ly = q(lo.y0, lo.cy, lo.y1), tl = Math.max(0.8, L * 0.006);
+    ctx.beginPath(); ctx.moveTo(ux - tl * 0.4, uy); ctx.lineTo(ux, uy + tl); ctx.lineTo(ux + tl * 0.4, uy); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(lx - tl * 0.4, ly); ctx.lineTo(lx, ly - tl); ctx.lineTo(lx + tl * 0.4, ly); ctx.fill(); }
+  ctx.lineCap = 'butt';
+  // the skull: a small dome over the hinge, darker, with a gill slit behind it
+  const sk = ctx.createRadialGradient(hx - L * 0.005, hy - hh * 0.6, 0, hx, hy - hh * 0.2, hh * 1.4); sk.addColorStop(0, shade(c1, 0.18)); sk.addColorStop(1, shade(c0, -0.05));
+  ctx.fillStyle = sk; ctx.beginPath(); ctx.ellipse(hx + L * 0.012, hy - hh * 0.35, L * 0.03, hh * 0.75, -0.25, 0, TAU); ctx.fill();
+  ctx.strokeStyle = rgba(shade(c1, 0.4), 0.45); ctx.lineWidth = Math.max(0.5, L * 0.002);
+  ctx.beginPath(); ctx.moveTo(hx + L * 0.045, hy - hh * 0.3); ctx.quadraticCurveTo(hx + L * 0.055, hy + hh * 0.2, hx + L * 0.04, hy + hh * 0.7); ctx.stroke();
+  // the lateral line's pores, pale dots running back down the body
+  ctx.fillStyle = rgba(shade(c1, 0.5), 0.35);
+  for (let k = 0; k < 26; k++) { const [x, y] = B.at(0.08 + k * 0.032); ctx.beginPath(); ctx.arc(x, y, Math.max(0.5, L * 0.0025), 0, TAU); ctx.fill(); }
+  // the eye: tiny, at the very front of the skull
+  eye(ctx, hx - L * 0.02, hy - hh * 0.75, Math.max(0.9, L * 0.007), '#8a9aa0');
   return [[ex, ey, 1.4]];
 }
 function drawHatchet(ctx, L, v, t, swim) {
@@ -988,13 +1014,30 @@ function drawRatfish(ctx, L, v, t, swim) {
   finPath(ctx, [[-L * 0.3, H * 0.1], [-L * 0.05, H * 0.9 + Math.sin(t * 2.4) * H * 0.2], [-L * 0.05, H * 0.2]]); ctx.fill();
   eye(ctx, -L * 0.38, -H * 0.15, Math.max(1.2, H * 0.2), v.eyec || '#4ac08a');
 }
+// (4.1.1) the tripod fish standing on the mud: two long pelvic rays under the front of the body and one from the
+// lower lobe of the tail, all three tapering to the same footing; the pectoral rays held up and forward over the
+// head like feelers. The stilts belong to the fish: nothing floats free of it.
 function drawTripod(ctx, L, v, t) {
-  const H = L * v.h;
-  ctx.strokeStyle = shade(v.c[0], 0.2); ctx.lineWidth = Math.max(0.5, L * 0.008);
-  ctx.beginPath(); ctx.moveTo(-L * 0.1, H * 0.3); ctx.lineTo(-L * 0.12, L * 0.35); ctx.moveTo(L * 0.05, H * 0.3); ctx.lineTo(L * 0.08, L * 0.35);
-  ctx.moveTo(L * 0.4, 0); ctx.lineTo(L * 0.6, L * 0.35); ctx.stroke();
-  drawFish(ctx, L * 0.8, { ...v, t: 'fork', f: v.c[0] }, t, 0.1);
-  ctx.beginPath(); ctx.moveTo(-L * 0.35, -H * 0.1); ctx.lineTo(-L * 0.6, -H * 0.5); ctx.stroke();
+  const H = L * v.h, foot = L * 0.34, c0 = v.c[0];
+  const stilt = (x0, y0, x1, y1, w0, col) => { // a fin ray: thick where it leaves the body, a fine point on the mud
+    const a = Math.atan2(y1 - y0, x1 - x0), nx = -Math.sin(a), ny = Math.cos(a);
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x0 + nx * w0, y0 + ny * w0); ctx.lineTo(x1, y1); ctx.lineTo(x0 - nx * w0, y0 - ny * w0); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x1, y1, w0 * 0.9, w0 * 0.35, 0, 0, TAU); ctx.fill(); // its tip, splayed a little
+  };
+  const w = Math.max(0.7, L * 0.008), far = shade(c0, -0.15), near = shade(c0, 0.18);
+  // the far pelvic stilt, then the tail stilt from the lower lobe, then (after the body) the near one
+  stilt(-L * 0.02, H * 0.3, L * 0.02, foot, w, far);
+  stilt(L * 0.27, H * 0.22, L * 0.37, foot, w * 0.9, near);
+  drawFish(ctx, L * 0.8, { ...v, t: 'fork', f: c0 }, t, 0.1);
+  stilt(-L * 0.08, H * 0.32, -L * 0.1, foot, w, near);
+  // the pectoral rays: two fine filaments arching up and forward from behind the head, swaying in the current
+  const sw = Math.sin(t * 0.8) * L * 0.01;
+  ctx.strokeStyle = rgba(near, 0.85); ctx.lineCap = 'round';
+  for (const [k, lw] of [[0, 1], [1, 0.75]]) {
+    ctx.lineWidth = Math.max(0.5, L * 0.004 * lw);
+    ctx.beginPath(); ctx.moveTo(-L * 0.22, -H * 0.05); ctx.bezierCurveTo(-L * 0.24, -H * (1.6 + k * 0.4), -L * 0.42 + sw, -H * (2.1 + k * 0.3), -L * (0.58 + k * 0.05) + sw, -H * (1.5 + k * 0.5)); ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
 }
 function drawMola(ctx, L, v, t) {
   const H = L * v.h;

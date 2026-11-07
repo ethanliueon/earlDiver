@@ -34,7 +34,7 @@ export const MAIN = [
   { id: 'wear', text: 'Put on something new', help: 'Press B for your inventory and drag it onto Earl, or click it and Put on.', need: 1, on: 'wear', pay: 30 },
   { id: 'sub', text: 'Take the sub down to 60 m', help: 'Swim into the sub at her stern (F); W and S to dive and rise.', need: 60, on: 'subDepth', pay: 50 },
   { id: 'air', text: 'Top up the cabin air', help: 'When the cabin air is down, press R in the sub: a backup tank fills it to full.', need: 1, on: 'airTank', pay: 20, kit: [['supply', 'airTank', 1]] },
-  { id: 'trawl', text: 'Let out the trawl net', help: 'In the sub, under way below 6 m, press N: the net drops from the hatch. N again closes it.', need: 1, on: 'trawl', pay: 30, kit: [['trawl', 'basic']] },
+  { id: 'trawl', text: 'Let out the trawl net', help: 'In the sub, under way below 6 m, press N: the net drops from the hatch. N again closes it. The catch lands on the floor of the sub, out of water: get it into a tank (T) within a minute.', need: 1, on: 'trawl', pay: 30, kit: [['trawl', 'basic']] },
   { id: 'chamber', text: 'Bring an animal up alive in the sub', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 70 },
   { id: 'surface', text: 'Surface with an animal aboard', help: 'When the sub breaks the surface, every animal aboard is safe (a green ✓) until she dives again.', need: 1, on: 'surfaceSafe', pay: 30 },
   { id: 'aquarium', text: 'Put an animal in the aquarium', help: 'The lit tank in the cabin. Mark one to Keep when you sell, then put it in at the tank.', need: 1, on: 'aquarium', pay: 60 },

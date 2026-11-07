@@ -20,6 +20,15 @@ export const WING_BY_ID = Object.fromEntries(WINGS.map((w) => [w.id, w]));
 export const GALLERY_SIZES = [5, 7, 11, 15, 20];
 export const GALLERY_STEPS = [200, 1000, 3500, 10000];
 export const gallerySlots = (P) => GALLERY_SIZES[Math.min(GALLERY_STEPS.length, P.galleryLv || 0)];
+// (4.1.1) how many places an animal takes, by its length: a small fish one, a metre-long one three, an oarfish or a
+// big shark six. Something bigger than the whole aquarium still goes in, if the aquarium is otherwise empty:
+// it simply fills it.
+export function placesOf(spec) {
+  const len = spec.len || (SPECIES_BY_ID[spec.id] || {}).len || 0.2;
+  return len < 0.5 ? 1 : len < 1 ? 2 : len < 2 ? 3 : len < 3.5 ? 4 : len < 5 ? 5 : 6;
+}
+export const placesTaken = (P, spec) => Math.min(placesOf(spec), gallerySlots(P));
+export const placesUsed = (P) => Object.values(aquariumOf(P).display).reduce((a, d) => a + placesTaken(P, d), 0);
 
 // which wing an animal belongs in (where it lives, and where it was caught)
 export function zoneOf(spec) {
@@ -43,7 +52,7 @@ export function displayRefusal(P, spec) {
   const A = aquariumOf(P);
   if (A.display[displayKey(spec)]) return 'already in the gallery';
   if (spec.cond <= 0.05) return 'dead: it can only be sold';
-  if (Object.keys(A.display).length >= gallerySlots(P)) return 'the gallery is full';
+  if (placesUsed(P) + placesTaken(P, spec) > gallerySlots(P)) { const n = placesTaken(P, spec); return `it needs ${n} place${n > 1 ? 's' : ''}: not enough room`; }
   return null;
 }
 export function display(P, spec) {

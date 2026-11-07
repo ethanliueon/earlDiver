@@ -222,6 +222,7 @@ export function gapOf(g, s, inBag) {
 // (4.0.0) when the sub touches the surface, every animal aboard is safe: its condition is held where it is
 // until she dives again. Diving undoes it (moving one between tanks down there, it feels the pressure);
 // coming back up makes them safe again.
+const AIR_WARN = 30, AIR_DEAD = 90; // (4.1.1) seconds out of the water, on the floor of the sub
 const SURFACE_Y = 2.2, DIVE_Y = 5; // (as the sub breathing fresh air: under 2.2 m she is at the surface)
 export function surfaceSafety(g) {
   const sub = g.sub; if (!sub || sub.imploded) return;
@@ -241,11 +242,21 @@ export function updateSpecimens(g, dt) {
   const tick = (s, inBag) => {
     if (s.home === undefined) s.home = s.from || 0;
     if (s.cond <= 0.05) return;
+    // (4.1.1) out of the water, heaped on the floor of the sub (what the trawl hauls in lands there): it suffocates.
+    // Fine for about 30 s, then a warning; it weakens through the next 30 s and is dead by about 90 s. Put into a
+    // tank, its clock starts again. Safe at the surface or not, a fish needs water.
+    if (s.pile) {
+      const before0 = s.cond; s.airT = (s.airT || 0) + dt;
+      if (s.airT > AIR_WARN && !s.warnAir) { s.warnAir = true; events.push({ type: 'air', s }); }
+      if (s.airT > AIR_WARN) { const k = Math.min(1, (s.airT - AIR_WARN) / (AIR_DEAD - AIR_WARN)); s.cond = Math.min(s.cond, Math.max(0, 0.75 * (1 - k))); }
+      if (s.airT > AIR_DEAD) s.cond = 0;
+      if (before0 > 0.05 && s.cond <= 0.05) { s.airDeath = true; deaths.push(s); }
+      if (s.cond <= 0.05) return;
+    } else if (s.airT) { s.airT = 0; s.warnAir = false; }
     if (s.safe) { s.warnStress = s.warnDying = false; return; } // (4.0.0) safe at the surface: held as it is
     if (inBag && g.earl.legends && g.earl.legends.has('kinship')) return; // (2.8.0) Kinship: in his bag, never stressed, never dying
     const before = s.cond;
     if (inBag) s.cond -= dt * 0.0005;
-    if (s.pile) s.cond -= dt * 0.002; // heaped on the floor of the tank room, out of the water's support
     if (s.pressed) {
       if (s.press === undefined) s.press = Math.max(0, g.sub.y);
       // the chamber holds its rating either way: above the water outside, or (a shallow animal taken
@@ -320,8 +331,8 @@ export { conditionName };
 export const NETS_SUB = {
   basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 1.0, mouth: 1.6, tear: 0.7, slip: 0.15,
     desc: 'A light trawl for the hatch under the sub. A small mouth, room for six, fish up to a metre; a few slip out before it closes, and anything bigger may tear it. Used up in one haul.' },
-  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 2.5, mouth: 2.6, tear: 0.3, slip: 0.03,
-    desc: 'A heavy-twine trawl with a wide mouth: room for ten, sharks to 2.5 m and the great legends; almost nothing slips out, and it seldom tears. Used up in one haul.' },
+  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 6.0, mouth: 2.6, tear: 0.3, slip: 0.03,
+    desc: 'A heavy-twine trawl with a wide mouth: room for ten, sharks and oarfish up to 6 m and the great legends; almost nothing slips out, and it seldom tears. Used up in one haul.' },
 };
 export const NET_DROP = 1.5, TOW_MAX = 8, NET_PURSE = 1.0, NET_HAUL = 1.5;
 // where the hatch is under the hull, and where the net's mouth hangs behind it, for a sub facing dir
@@ -369,7 +380,7 @@ export function updateSubNet(g, dt, canTake) {
         const was = prev.get(c);
         if (!(was !== undefined && was > 0 && rel <= 0 && Math.abs(c.y - n.my) < r)) continue;
         if (!canTake(c.sp)) continue;
-        if (c.len > T.maxLen) {
+        if (c.len > T.maxLen && !(T.maxLen >= 6 && LEGENDARY.has(c.sp.id))) { // (4.1.1) the big net never tears on a legend
           // too big: it hits the net; it may tear straight through, losing the net and everything in it
           if (Math.random() < T.tear) { tearNet(g, c); return { torn: c.sp }; }
           continue;

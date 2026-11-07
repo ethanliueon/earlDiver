@@ -679,7 +679,7 @@ function tankAction(act, where, i, to = -1) {
 // (3.4.0) the animals' news, a line a kind: by name if there is one, else counted
 function sayFish(FM, whereOf) {
   const nm = (s) => SPECIES_BY_ID[s.id].name.toLowerCase();
-  if (FM.deaths.length === 1) { const s = FM.deaths[0]; hud.toast(`The ${nm(s)}${whereOf(s)} has died${s.pressDeath ? ' from barotrauma' : ''}`, 'warn'); }
+  if (FM.deaths.length === 1) { const s = FM.deaths[0]; hud.toast(s.airDeath ? `The ${nm(s)} on the floor of the sub has suffocated` : `The ${nm(s)}${whereOf(s)} has died${s.pressDeath ? ' from barotrauma' : ''}`, 'warn'); }
   else if (FM.deaths.length > 1) hud.toast(`${FM.deaths.length} animals have died${FM.deaths.every((s) => s.pressDeath) ? ' from barotrauma' : ''}`, 'warn');
   const dead = new Set(FM.deaths), dying = new Set(FM.ev.filter((e) => /dying|Dying/.test(e.type)).map((e) => e.s));
   const by = {};
@@ -688,18 +688,20 @@ function sayFish(FM, whereOf) {
     (by[ev.type] || (by[ev.type] = [])).push(ev);
   }
   const one = {
+    air: (ev) => `The ${nm(ev.s)} from the trawl is about to die from lack of air: put it in water (T)`, // (4.1.1)
     bagStress: (ev) => `The ${nm(ev.s)} in your net feels the pressure: get it into ${tooBig(ev.s) ? 'the large pressure tank' : 'a chamber'}`,
     bagDying: (ev) => `The ${nm(ev.s)} in your net is dying from barotrauma: get it to ${tooBig(ev.s) ? 'the large pressure tank' : 'a chamber'}, or go back ${ev.deeper ? 'up' : 'down'}`,
-    stressed: (ev) => `The ${nm(ev.s)} ${ev.inBag ? 'in your net' : 'in the tank'} is stressed${ev.press ? ' by the pressure' : ''}`,
-    dying: (ev) => `The ${nm(ev.s)} ${ev.inBag ? 'in your net' : 'in the tank'} is dying${ev.press ? ' from barotrauma' : ''}`,
+    stressed: (ev) => `The ${nm(ev.s)} ${ev.inBag ? 'in your net' : ev.s.pile ? 'on the floor of the sub' : 'in the tank'} is stressed${ev.press ? ' by the pressure' : ''}`,
+    dying: (ev) => ev.s.pile ? `The ${nm(ev.s)} on the floor of the sub is suffocating: put it in water (T)` : `The ${nm(ev.s)} ${ev.inBag ? 'in your net' : 'in the tank'} is dying${ev.press ? ' from barotrauma' : ''}`,
   };
   const many = {
+    air: (n) => `${n} animals from the trawl are about to die from lack of air: put them in water (T)`,
     bagStress: (n) => `${n} animals in your net feel the pressure: get them into chambers`,
     bagDying: (n) => `${n} animals in your net are dying from barotrauma`,
     stressed: (n) => `${n} animals are stressed by the pressure`,
     dying: (n) => `${n} animals are dying from barotrauma`,
   };
-  for (const type of ['bagDying', 'dying', 'bagStress', 'stressed']) {
+  for (const type of ['air', 'bagDying', 'dying', 'bagStress', 'stressed']) {
     const L = by[type]; if (!L) continue;
     hud.toast(L.length === 1 ? one[type](L[0]) : many[type](L.length), 'warn');
   }
@@ -1756,7 +1758,7 @@ function update(dt) {
     if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
     const dl = updateSpecimens(g, dt);
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
-    const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : ' in the tank') : '');
+    const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : s.pile ? ' on the floor of the sub' : ' in the tank') : '');
     // (3.4.0) gathered for a moment and said once: one animal by name, several as one line ("3 animals are
     // dying from barotrauma"); an animal already dying isn't also said to be stressed
     const FM = g.fishMsgs || (g.fishMsgs = { t: 0, deaths: [], ev: [] });

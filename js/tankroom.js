@@ -60,6 +60,7 @@ export function seaAt(d) {
 function stateOf(g, s, inBag) {
   if (s.cond <= 0.05) return ['dead', '#9a9a9a'];
   if (s.safe) return ['✓ safe at the surface', '#78dc8c'];
+  if (s.pile) return [(s.airT || 0) > 30 ? 'suffocating: out of water' : 'out of water', (s.airT || 0) > 30 ? '#ff6a50' : '#e8b040']; // (4.1.1)
   if (gapOf(g, s, inBag) > SAFE_GAP) return ['dying: barotrauma', '#ff6a50'];
   if (s.acc) return ['acclimated', '#8fd4ff'];
   if (s.cond < 0.5) return ['weak', '#e6503c'];
