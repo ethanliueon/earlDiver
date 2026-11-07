@@ -7,6 +7,7 @@
 // catch bag hangs in both rooms, and a fish is dragged from the bag, the tank or a chamber and dropped
 // on a chamber, the open tank or the bag.
 import { SPECIES_BY_ID } from './species.js';
+import { usualDepth } from './fauna.js';
 import { drawSpecies, speciesIcon, speciesBox, fittedIcon } from './creatures_draw.js';
 import { rarityOf, specimenValue, rarityStars, rarityCls } from './specimens.js';
 import { money } from './economy.js';
@@ -259,7 +260,7 @@ export class TankRoom {
     return `<div class="tr-card${rarityCls(sp)}" data-tag="${C.key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px">${rarityStars(sp)}
       <div class="tc-top"><img src="${this.pics.get(sp.id)}" alt=""><div><b style="color:${R.col}">${sp.name}</b><i class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci || ''}</i></div></div>
       ${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}
-      <div class="tc-facts"><span>Found at: ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : inBig ? ' · the large tank' : ''}</span><span>Habitat: ${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m</span><span>Value: <b>${money(price)}</b></span></div>
+      <div class="tc-facts"><span>Found at: ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : inBig ? ' · the large tank' : ''}</span><span>Habitat: ${usualDepth(sp).map((v) => v.toLocaleString()).join('–')} m</span><span>Value: <b>${money(price)}</b></span></div>
       <i class="st"></i><div class="acts">${acts}</div>${swaps}</div>`;
   }
   states(g) {

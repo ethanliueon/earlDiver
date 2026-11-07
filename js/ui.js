@@ -5,6 +5,7 @@ const SHOWCASE_TABS = new Set(['diver', 'tools', 'sub']);
 import { speciesIcon, fittedIcon, speciesBox, drawSpecies } from './creatures_draw.js';
 import { ABOUT } from '../data/species_about.js';
 import { xEyes } from './gallery.js';
+import { usualDepth } from './fauna.js';
 import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
@@ -467,9 +468,10 @@ export class UI {
     const where = { bag: 'Net bag', open: 'Open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'Large pressure tank', floor: 'Sub, on the floor' }[at.place];
     const row = (k, v, cls = '') => `<div class="sp-r${cls}"><dt>${k}</dt><dd>${v}</dd></div>`;
     // (3.6.2) metric, with feet and pounds beside it
+    const hab = usualDepth(sp); // (3.7.3) where it is usually met here, not the record extremes
     const FT = 3.28084, LB = 2.20462, ft = (m) => Math.round(m * FT).toLocaleString(), u = (t) => ` <span class="sp-u">(${t})</span>`;
     const kgTxt = kg < 0.1 ? kg.toFixed(3) : kg < 10 ? kg.toFixed(kg < 1 ? 2 : 1) : Math.round(kg).toLocaleString(), lb = kg * LB, lbTxt = lb < 10 ? lb.toFixed(lb < 1 ? 2 : 1) : Math.round(lb).toLocaleString();
-    const rows = row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m${u(ft(s2.from || 0) + ' ft')}`) + row('Habitat', `${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m${u(ft(sp.dmin) + '–' + ft(sp.dmax) + ' ft')}`)
+    const rows = row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m${u(ft(s2.from || 0) + ' ft')}`) + row('Habitat', `${hab[0].toLocaleString()}–${hab[1].toLocaleString()} m${u(ft(hab[0]) + '–' + ft(hab[1]) + ' ft')}`)
       + row('Length', `${len.toFixed(2)} m${u((len * FT).toFixed(1) + ' ft')}${tooBig(s2) ? ' <small>over chamber limit</small>' : ''}`) + row('Weight', `${kgTxt} kg${u(lbTxt + ' lb')}`)
       + row('Location', where) + row('Status', `<i class="sp-dot"></i>${status[0]}`, ` st-${status[1]}`) + row('Value', money(specimenValue(s2) * statValue(P, 'payFish')), ' val');
     const inSub = this.h.inSub ? this.h.inSub() : false, w = at.where, i = at.i, mv = (label, act, to = -1, on = true) => `<button data-fm="${act}:${w}:${i}:${to}"${on ? '' : ' disabled'}>${label}</button>`;
@@ -1080,7 +1082,7 @@ export class UI {
       const txt = document.createElement('div');
       txt.innerHTML = `<h3${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci}</div>
         <p>${sp.desc}</p>
-        <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''} · pressure tolerance x${pressureKind(sp).k} (${pressureKind(sp).why})</div>
+        <div class="meta">Seen at ${info.depth} m · lives ${usualDepth(sp)[0].toLocaleString()}–${usualDepth(sp)[1].toLocaleString()} m · up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''} · pressure tolerance x${pressureKind(sp).k} (${pressureKind(sp).why})</div>
         ${this.variantRow(sp)}`;
       row.append(img, txt); row.insertAdjacentHTML('afterbegin', rarityStars(sp));
       list.append(row);

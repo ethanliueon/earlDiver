@@ -32,6 +32,20 @@ const BAIT = [
 const FILLER = new Set([98, 99, 327, 151, 370, 484, 450, 161]);
 // (3.7.3) the height of the deep's spawning curve q^1.4 (1-q)^0.55, at its peak (q = 1.4 / 1.95)
 const DEEP_PEAK = Math.pow(1.4 / 1.95, 1.4) * Math.pow(0.55 / 1.95, 0.55);
+// (3.7.3) where an animal is usually met in this sea, for its card and the journal: not the extremes ever
+// recorded but the stretch where most of them are. A deep animal's spawning curve (see depthPref) is skewed
+// down its band, so that is roughly from a third of the way down its band to near its foot; a shallow one's is
+// its everyday band. Rounded to tidy figures.
+export function usualDepth(sp) {
+  const kin = sp.legendOf || sp.id, day = CORE[kin] || [sp.dmin, sp.dmax], deepKind = day[0] >= 150 || sp.cat === 'Deep Sea Fish';
+  let lo = day[0], hi = day[1];
+  if (DEEP_HUNTER(sp)) { lo = Math.max(lo, 500); hi = Math.max(hi, lo + 100, Math.min(sp.dmax, 3000)); }
+  if (deepKind) { const R = rarityOf(sp); if (R && R.i >= 2) lo = Math.max(lo, 100); const a = lo + (hi - lo) * 0.33, b = lo + (hi - lo) * 0.95; lo = a; hi = b; }
+  else if (!CORE[kin] && hi > lo * 4 + 60) hi = lo + (hi - lo) * 0.6; // a wide recorded range, no everyday band: its upper part
+  const nice = (v) => (v < 20 ? Math.round(v) : v < 100 ? Math.round(v / 5) * 5 : v < 300 ? Math.round(v / 10) * 10 : v < 1000 ? Math.round(v / 50) * 50 : Math.round(v / 100) * 100);
+  lo = nice(lo); hi = Math.max(lo + 1, nice(hi));
+  return [lo, hi];
+}
 const DEEP_HUNTER = (sp) => sp.cat === 'Deep Sea Fish' && /viper|dragon|angler|seadevil|sea devil|football|fangtooth|sabertooth|daggertooth|snaggletooth|gulper|swallower|loosejaw|barbeled|dreamer|wolftrap|fanfin|whipnose/i.test(sp.name);
 // Species that migrate up toward the surface at night and back down by day.
 const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90, 42]);
