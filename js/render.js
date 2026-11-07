@@ -472,7 +472,7 @@ export class Renderer {
       const e = g.earl, tx = g.tut.to.x, ty = g.tut.to.y, d = Math.hypot(tx - e.x, ty - e.y), n = Math.min(40, Math.floor(d / 1.2));
       for (let i = 1; i < n; i++) {
         const q = i / n, ph = (q * 6 - g.time * 1.5) % 1, a = (0.25 + 0.55 * (ph < 0 ? ph + 1 : ph)) * Math.min(1, (1 - q) * 4) * Math.min(1, q * 6);
-        ctx.fillStyle = `rgba(255,226,150,${a.toFixed(3)})`; ctx.beginPath(); ctx.arc(S(lerp(e.x, tx, q)), Sy(lerp(e.y, ty, q)), Math.max(2, ppm * 0.09), 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(S(lerp(e.x, tx, q)), Sy(lerp(e.y, ty, q)), Math.max(3.5, ppm * 0.13), 0, TAU); ctx.fillStyle = `rgba(255,214,120,${a.toFixed(3)})`; ctx.fill(); ctx.strokeStyle = `rgba(40,28,8,${(a * 0.7).toFixed(3)})`; ctx.lineWidth = 1.2; ctx.stroke(); // (4.2.1) bigger, edged: readable on sky and water
       }
       if (g.tut.fish) { const f = g.tut.fish, r = Math.max(14, ppm * (f.len * 0.8 + 0.4)) * (1 + 0.12 * Math.sin(g.time * 4));
         ctx.strokeStyle = 'rgba(255,226,150,0.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(S(f.x), Sy(f.y), r, 0, TAU); ctx.stroke(); }

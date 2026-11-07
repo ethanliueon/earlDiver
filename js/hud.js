@@ -218,7 +218,11 @@ export class Hud {
   fadeText(slot, text, col) {
     const st = (this.fadeState || (this.fadeState = {}))[slot] || (this.fadeState[slot] = { items: [], t: performance.now() });
     const now = performance.now(), dt = Math.min(0.1, (now - st.t) / 1000); st.t = now;
-    if (text && !st.items.some((q) => q.text === text && q.on)) { for (const q of st.items) q.on = false; st.items.push({ text, col, a: 0, on: true }); }
+    if (text && !st.items.some((q) => q.text === text && q.on)) {
+      for (const q of st.items) q.on = false;
+      const back = st.items.find((q) => q.text === text); // (4.2.1) the same words coming back while they fade: they come back, not a second copy
+      if (back) back.on = true; else st.items.push({ text, col, a: 0, on: true });
+    }
     if (!text) for (const q of st.items) q.on = false;
     for (const q of st.items) { if (q.on) q.col = col || q.col; q.a = q.on ? Math.min(1, q.a + dt / 0.16) : Math.max(0, q.a - dt / 0.2); }
     st.items = st.items.filter((q) => q.on || q.a > 0.01).slice(-3);

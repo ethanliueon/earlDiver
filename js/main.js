@@ -846,7 +846,7 @@ function tutorWelcome() {
 }
 const TUT_IDS = new Set(['swim', 'observe', 'net', 'sell', 'buy', 'wear']);
 function tutor() {
-  const P = profile, e = g.earl; g.tut = null;
+  const P = profile, e = g.earl; g.tut = null; if (ui.cabin) ui.cabin.tutMark = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play' || g.aboard && false) return;
   const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the Log (O) has more', 'big'); } return; }
   const done = S.mainProg >= m.need;
@@ -861,10 +861,16 @@ function tutor() {
   else if (done) text = g.tutClaimHint ? 'Now claim it: press O, then Claim' : 'Press O for your quests, then Claim';
   else if (m.id === 'sell') {
     if (!P.tutJournal) text = 'Press J: your journal keeps every animal you have observed';
-    else { text = 'Bring your catch to the Margaret and press U to sell it'; to = { x: BOAT.x - 6, y: 1 }; }
-  } else if (m.id === 'buy') text = 'Climb aboard (F), go into the cabin, and buy something at the computer';
+    else { text = g.aboard ? 'Go into the cabin and sell at the computer' : 'Bring your catch to the Margaret and press U to sell it'; to = g.aboard ? null : { x: BOAT.x + LADDER_M * Math.sign(Math.cos(BOAT.yaw || 0) || 1), y: 1 }; }
+  } else if (m.id === 'buy') {
+    const inCabin = !document.getElementById('cabin').hidden, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1);
+    if (inCabin) text = 'Walk to the computer and press F to shop';
+    else if (g.aboard) { text = 'Go into the cabin: walk to the door and press F'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; }
+    else { text = 'Swim to the Margaret\'s ladder and press F to climb aboard'; to = { x: BOAT.x + LADDER_M * dir, y: 1 }; }
+  }
   else if (m.id === 'wear') text = 'Press B for your inventory and put on what you bought';
   g.tut = { text, to, fish };
+  ui.cabin.tutMark = !document.getElementById('cabin').hidden && (m.id === 'buy' || (m.id === 'sell' && P.tutJournal)) ? 'desk' : null; // (4.2.1) an arrow over the computer
   if (text && (g.tutSaid !== text || g.time - (g.tutSaidT || 0) > 25)) { g.tutSaid = text; g.tutSaidT = g.time; hud.toast(text, 'note'); }
 }
 function startRun() {
@@ -1033,7 +1039,7 @@ function deckInput(dt, mv) {
     const s0 = A.step || 0; A.step = s0 + dt * pace * 3.4; // (the stride lengthens a little when he runs)
     if (Math.floor(A.step / Math.PI) !== Math.floor(s0 / Math.PI) && A.walk > 0.35) audio.ready && audio.footstep && audio.footstep(0.06 * A.walk); // each foot coming down
   }
-  const atDoor = Math.abs(A.x - (DECK_MIN + DECK_MAX) / 2) < (DECK_MAX - DECK_MIN) / 6 || Math.abs(A.x - DOOR_M) < 0.5; // (4.0.0) the middle third of the deck
+  const atDoor = A.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && A.x < DOOR_M + 0.7; // (4.2.1) one zone: from the middle third of the deck to just past the door
   A.near = atDoor ? 'door' : null;
   g.prompt = atDoor ? 'F  Enter the cabin' : null;
   if (pressed.has('f-tap')) { pressed.delete('f-tap'); if (atDoor && !ui.anyOpen()) useStation('door'); }

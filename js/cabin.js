@@ -524,6 +524,13 @@ export class Cabin {
     ctx.save(); ctx.translate(ex, floor - eh * 0.5 - hopY); ctx.scale(this.face, 1); ctx.rotate(-Math.PI / 2);
     drawEarl(ctx, eh, this.step || 0, 0, null, null, { kind: 'none', tier: 0, t, suit: this.h.suit(), bag: [], land: true, noTank: true, noMask: true, walk: this.walk || 0 });
     ctx.restore();
+    // (4.2.1) the tutorial's mark: a bouncing arrow over the computer, and a trail of dots to it along the floor
+    if (this.tutMark === 'desk') {
+      const kx2 = X(ROOM.desk), ay = floor - RH * 0.34 - 150 * k + Math.sin(t * 4) * 8 * k;
+      ctx.fillStyle = 'rgba(255,226,150,0.95)'; ctx.beginPath(); ctx.moveTo(kx2, ay + 22 * k); ctx.lineTo(kx2 - 14 * k, ay); ctx.lineTo(kx2 - 5 * k, ay); ctx.lineTo(kx2 - 5 * k, ay - 18 * k); ctx.lineTo(kx2 + 5 * k, ay - 18 * k); ctx.lineTo(kx2 + 5 * k, ay); ctx.lineTo(kx2 + 14 * k, ay); ctx.closePath(); ctx.fill();
+      const n = Math.max(0, Math.floor(Math.abs(kx2 - ex) / (28 * k)));
+      for (let i = 1; i < n; i++) { const q = i / n, ph = ((q * 6 - t * 1.5) % 1 + 1) % 1; ctx.fillStyle = `rgba(255,226,150,${(0.25 + 0.55 * ph).toFixed(3)})`; ctx.beginPath(); ctx.arc(ex + (kx2 - ex) * q, floor + 10 * k, 3.5 * k, 0, TAU); ctx.fill(); }
+    }
     // ---------- the light: dim everywhere, warm under the lamp, cool by the porthole and door, green at the screen ----------
     const q = 0.5, lw = Math.ceil(W * q), lh = Math.ceil(H * q), lc = this.lc;
     if (lc.width !== lw || lc.height !== lh) { lc.width = lw; lc.height = lh; }
