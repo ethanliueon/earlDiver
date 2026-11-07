@@ -524,8 +524,6 @@ export class Hud {
       if (shadeA > 0.01) promptShade(ctx, W / 2, this.shadeY, s, shadeA);
       for (const [txt, a, col] of capFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, capY, s, { col, size: 18, shade: false, icon: parsePromptKey(txt) ? null : this.capIconNow }); ctx.restore(); } // (3.6.0) a brass key-cap and the words; a catch's name in its rarity's colour
       for (const [txt, a, col] of prFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, prY, s, { col, shade: false }); ctx.restore(); }
-      // (4.3.8) where the prompt sits on screen (in page pixels), so the tutorial can point at it rather than repeat it
-      const k = window.innerHeight / H; this.promptPos = prFx.level > 0.4 ? { x: (W / 2) * k, y: prY * k, txt: g.prompt || '' } : null;
     }
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;

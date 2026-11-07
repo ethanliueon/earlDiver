@@ -94,7 +94,7 @@ kbd {
 .page.left { border-right: 1px solid rgba(80, 60, 30, 0.25); box-shadow: inset -18px 0 30px -18px rgba(60, 40, 10, 0.35); }
 .page header { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid rgba(60, 40, 20, 0.25); margin-bottom: 14px; }
 .page h2 { font-weight: 500; font-size: 28px; margin: 0 0 6px; }
-#journal-count { font-style: italic; color: rgba(43, 35, 24, 0.6); }
+#journal-count { font-style: italic; color: rgba(43, 35, 24, 0.6); margin-left: 1.6em; } /* (4.4.1) a little further from the title */
 #journal-list { overflow-y: auto; padding-right: 8px; }
 .tabs { display: flex; gap: 14px; margin: -4px 0 10px; }
 .tabs button { background: none; border: 0; padding: 2px 0; font: 16px var(--serif); color: rgba(43, 35, 24, 0.5); border-bottom: 1px solid transparent; }

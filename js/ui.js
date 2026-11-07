@@ -1085,7 +1085,7 @@ export class UI {
   renderJournal() {
     if ((this.tab || 'species') !== 'species') return this.renderJournalTab(this.tab);
     const g = this.h.getGame();
-    $('journal-count').textContent = `${formatTime(g.survival)} into the dive · (${g.journal.size}/${SPECIES_COUNT}) recorded`;
+    this.journalCount(g);
     const list = $('journal-list');
     list.innerHTML = '';
     if (g.journal.size === 0) {
@@ -1129,7 +1129,7 @@ export class UI {
       const e = g.earl, ent = g.entity, sub = g.sub;
       const lvl = ['unhurt', 'grazed', 'wounded', 'badly hurt', 'critical'][Math.min(4, g.injury || 0)];
       const items = Object.entries(g.inv).filter(([, n]) => n > 0).map(([k, n]) => `${RESOURCES[k].name} ${n}`).join(', ') || 'nothing';
-      $('journal-count').textContent = formatTime(g.survival) + ' into the dive';
+      this.journalCount(g);
       list.innerHTML =
         row('Cash', money(this.h.getProfile().cash), 'safe at the boat') +
         row('Deep sapphires found', `${g.sapphires}`, 'this dive') +
@@ -1140,7 +1140,7 @@ export class UI {
         row('Carrying', items) +
         row('Lures · glow sticks', `${g.items.lure} · ${g.items.necklace}`);
     } else {
-      $('journal-count').textContent = `${formatTime(g.survival)} into the dive`;
+      this.journalCount(g);
       const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / snap a glow stick (warm amber, 90 s; in the sub it lights her up)'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out the trawl net (one carried; $300 a new one at the boat)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G lets the anchor go or winds it in'], ['J', 'this journal'], ['P', 'the yard (on or beside the Margaret)'], ['O', 'quests'], ['L (on the Margaret)', 'the sub\'s lights on / off'], ['`', 'show frames per second'], ['X', 'developer: +$500,000'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
@@ -1482,8 +1482,14 @@ export class UI {
     el.innerHTML = `<h2>Dive log</h2><table><thead><tr><th>Lasted</th><th>Ended</th><th>Deepest</th><th>Sold</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
+  // (4.4.1) the time into the dive, at the top of the journal: kept ticking while it is open (it froze when opened)
+  journalCount(g) {
+    const t = `${formatTime(g.survival)} into the dive` + ((this.tab || 'species') === 'species' ? ` · (${g.journal.size}/${SPECIES_COUNT}) recorded` : '');
+    const el = $('journal-count'); if (el.textContent !== t) el.textContent = t;
+  }
   update(g, dt) {
     if (!$('journal').hidden && this.journalDirty) { this.journalDirty = false; this.renderJournal(); }
+    if (!$('journal').hidden) this.journalCount(g);
     if (!$('workshop').hidden) {
       const e = g.earl;
       if (Math.abs(e.x - BOAT.x) > 16 || e.y > 5) this.toggleWorkshop(false);

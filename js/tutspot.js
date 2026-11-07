@@ -20,9 +20,7 @@ const ACTIONS = {
   quests:    ['O',       'O',      null],
   inventory: ['B',       'B',      null],
   journal:   ['J',       'J',      null],
-  sell:      ['U',       'U',      null],
   back:      ['Esc',     'Esc',    null],
-  leaveSub:  ['F',       'F',      null], // held
 };
 const COL = { mouse: 0, keys: 1, touch: 2 };
 export const keyFor = (act) => (ACTIONS[act] ? ACTIONS[act][COL[INPUT.mode] ?? 0] : null);
@@ -60,13 +58,9 @@ export class TutSpot {
     this.kbd = this.keyBox.querySelector('kbd'); this.keyText = this.keyBox.querySelector('span');
     this.lastTarget = null;
     this.line = el.querySelector('.ts-line'); this.lineText = null;
-    // (4.4.0) the tutorial's own button: a click presses its key (or holds it, for leaving the sub)
-    this.keyBox.addEventListener('click', () => {
-      const b = this.btn; if (!b) return; const k = keyFor(b.act); if (!k) return;
-      const key = k.length === 1 ? k.toLowerCase() : k;
-      window.dispatchEvent(new KeyboardEvent('keydown', { key }));
-      setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { key })), b.hold ? 1300 : 80);
-    });
+    // (4.4.1) the tutorial's own button: a click does the step's action (main.js runTutAction), as its key does
+    this.onAction = null;
+    this.keyBox.addEventListener('click', () => { if (this.btn && this.onAction) this.onAction(this.btn); });
   }
   // (4.3.8) the tutorial's instruction, on its own line at the left under the quest tracker (not in the game's
   // message line at the top, where it held other messages back). It stays while it is the instruction.
@@ -93,12 +87,6 @@ export class TutSpot {
     const conf = document.getElementById('confirm');
     if (spot && conf && !conf.hidden) spot = spot.confirm ? { sel: ['#confirm .cf-yes'], say: spot.confirm, below: true } : null; // (4.3.5) the arrow under the button, off the words
     if (!spot) { this.lastTarget = null; return; }
-    // (4.3.8) a point on screen (the game's own prompt): a bobbing arrow over it, nothing else
-    if (spot.point) {
-      this.arrow.style.display = 'block'; this.arrow.className = 'ts-arrow down';
-      this.arrow.style.left = spot.point.x + 'px'; this.arrow.style.top = (spot.point.y - 40) + 'px';
-      return;
-    }
     const t = this.find(spot.sel);
     if (t) {
       // keep it on screen inside a scrolling panel (the shop, the inventory)
@@ -123,13 +111,14 @@ export class TutSpot {
       // (4.3.1) no words by it: the ring and the arrow are enough (the banner at the top says what the step is)
     } else {
       this.lastTarget = null;
-      const k = spot.act ? keyFor(spot.act) : null;
-      this.btn = spot.button ? spot : null; this.keyBox.classList.toggle('btn', !!spot.button);
+      // a key to press (or the tutorial's button: spot.button is its action, spot.key its key)
+      const k = spot.key || (spot.act ? keyFor(spot.act) : null);
+      this.btn = spot.button || null; this.keyBox.classList.toggle('btn', !!spot.button);
       if (k) {
-        this.keyBox.style.display = 'flex'; this.keyText.textContent = spot.say || '';
-        const mouseKey = k === 'LMB' || k === 'RMB';
-        this.kbd.className = mouseKey ? 'mouse ' + k.toLowerCase() : '';
-        this.kbd.innerHTML = mouseKey ? '<b></b><b></b>' : ''; if (!mouseKey) this.kbd.textContent = k;
+        this.keyBox.style.display = 'flex';
+        if (this.keyText.textContent !== (spot.say || '')) this.keyText.textContent = spot.say || '';
+        const mouseKey = k === 'LMB' || k === 'RMB', cls = mouseKey ? 'mouse ' + k.toLowerCase() : '';
+        if (this.kbd.dataset.k !== k) { this.kbd.dataset.k = k; this.kbd.className = cls; this.kbd.innerHTML = mouseKey ? '<b></b><b></b>' : ''; if (!mouseKey) this.kbd.textContent = k; }
       }
     }
   }

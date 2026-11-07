@@ -238,7 +238,7 @@ const ui = new UI({
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
-  tutAllowCabin: (id) => !(g && g.tutHidePrompts) || !!(g.tutCabin && g.tutCabin.has(id)),
+  tutAllowCabin: (id) => !(g && g.tutHidePrompts) || !!(g.tutAction && { desk: 'shop', door: 'outdoor' }[id] === g.tutAction.id), // the station the step wants (key or click)
   onQuestRefresh: (paid) => {
     const P = profile;
     if (paid && !guardBuy.ok && needsConfirm(refreshPrice(P))) return guardBuy(refreshPrice(P), () => ui.h.onQuestRefresh(true));
@@ -856,7 +856,9 @@ function tutorWelcome() {
 // (4.3.0, 4.3.1) tutor(): one thing at a time. Each frame it works out the single next thing to do and sets g.tut:
 //   text    a line of help (said once, as the banner at the top, when it changes)
 //   to      a point in the sea for the trail of arrows;  fish  the fish to ring
-//   prompt  drawn in the sea over the target, like the game's own prompts ('F  Observe'); toLabel: words at the target
+//   prompt  drawn beside the fish (swinging the net, "it got away")
+//   action  (4.4.1) the one thing the step lets him do here: { id, key, say }. It has its own hit area (zone()), a
+//           button, and its key; either runs it directly (runTutAction), whatever the game itself is aiming at
 //   spot    for the spotlight (js/tutspot.js): what to click (the rest shaded), or which action's key to press
 // It names actions, not keys (keyFor() turns them into keys for the input in use), and never names keys for moving:
 // the trail shows where to go.
@@ -891,7 +893,7 @@ function tutor() {
   const P = profile, e = g.earl; g.tut = null; g.tutForce = null; if (ui.cabin) ui.cabin.tutMark = null;
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
-  g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutKeys = null; g.tutCabin = null;
+  g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
   const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the quest board is open (O)', 'big'); } return; }
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
@@ -900,21 +902,22 @@ function tutor() {
   const K = (act) => keyFor(act) || '';
   // (4.3.2) a prompt drawn beside the fish: { key, mouse, text, col }. The key (or a mouse) follows the input in use
   const netPrompt = () => (g.toolSel !== 'net' ? { key: K('net'), text: 'Take out your net' } : click ? { mouse: true, text: 'Swing your net' } : { key: K('use'), text: 'Swing your net' });
-  let text = null, to = null, fish = null, prompt = null, toLabel = null, spot = null, door = false;
-  // (4.4.0) the game still works out its prompt behind the scenes ('F  Climb aboard', 'F  Enter the cabin', ...):
-  // that says where he is. button(): the tutorial's own button for the one action wanted now, and its key let through
-  const gp = g.prompt || '', at = (words) => gp.includes(words);
-  const allowK = new Set(), allowC = new Set();
-  const button = (act, say, hold = false) => { spot = { act, say, button: true, hold }; const k = keyFor(act); if (k) allowK.add(k.toLowerCase()); };
-  const cabinTo = (id, say) => { ui.cabin.tutMark = id; allowC.add(id); if (ui.cabin.near && ui.cabin.near() === id) button('interact', say); };
+  let text = null, to = null, fish = null, prompt = null, spot = null, door = false, action = null;
+  // (4.4.1) a hit area: on the moment he is in it, off only once he has been out of it for a moment, so a button
+  // never blinks at the edge. offer(): the step's one action here, shown as the tutorial's button
+  const Z = g.tutZones || (g.tutZones = {}), now = performance.now();
+  const zone = (name, inside) => { if (inside) Z[name] = now; return now - (Z[name] || -1e9) < 400; };
+  const offer = (id, say, key = 'F') => { action = { id, say, key }; spot = { key, say, button: id }; };
+  const cabinTo = (id, act, say) => { ui.cabin.tutMark = id; if (zone('cabin-' + id, ui.cabin.near && ui.cabin.near() === id)) offer(act, say); else action = { id: act, say, key: 'F', cabinOnly: true }; };
+  const ladderZone = () => zone('ladder', !e.inSub && !g.aboard && e.y < 2.6 && e.y > -0.6 && Math.abs(e.x - BOAT.x - LADDER_M) < 1.6);
   // the steps that need a fish: the fish to go to, and what to do at it
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
-    if (inCabin) { text = 'Leave the cabin: walk to the door'; cabinTo('door', 'Out on deck'); return; } // (4.3.3) arrows to the door
-    if (g.aboard) { text = 'Walk off the end of the deck to jump in'; toLabel = 'Jump in'; return; }
-    if (e.inSub) { text = 'Leave the sub'; button('leaveSub', 'Hold to leave the sub', true); return; }
-    if (bd > 3.2) {
-      text = 'Swim to the orange fish'; toLabel = 'Swim here';
+    if (inCabin) { text = 'Leave the cabin: walk to the door'; cabinTo('door', 'outdoor', 'Out on deck'); return; } // (4.3.3) arrows to the door
+    if (g.aboard) { text = 'Walk off the end of the deck to jump in'; return; }
+    if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); return; }
+    if (!zone('fish', bd < 2.6)) {
+      text = 'Swim to the orange fish';
       // (4.3.5) how to sprint, until he has: the right mouse button held, or Shift
       if (!P.tutSprinted) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; // (4.3.9) the whole swim there
       return;
@@ -939,7 +942,7 @@ function tutor() {
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
-        if (part <= 1) { if (at('Observe')) { text = 'Observe the fish'; button('interact', 'Observe'); } else text = 'Swim right up to the fish'; }
+        if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe'); }
         else if (g.tutOops && g.time - g.tutOops < 3) { text = 'Oops, it got away! Try again'; prompt = { text: 'Oops, it got away! Try again', col: '#f2c7a0' }; }
         else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); }
       });
@@ -953,28 +956,28 @@ function tutor() {
       // sold already, or lost it: another fish, then sell that one
       fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); });
     }
-    else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; cabinTo('door', 'Out on deck'); }
-    else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; toLabel = 'Jump in here'; }
-    else if (!nearBoat) { text = 'Bring your catch up beside the Margaret'; to = ladder; toLabel = 'Sell here'; }
-    else { text = 'Sell your catch'; button('sell', 'Sell your catch'); }
+    else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; cabinTo('door', 'outdoor', 'Out on deck'); }
+    else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; }
+    else if (!zone('boat', nearBoat)) { text = 'Bring your catch up beside the Margaret'; to = ladder; }
+    else { text = 'Sell your catch'; offer('sell', 'Sell your catch', 'U'); }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
     if (!pick && !catOpen && !g.bag.length) {
       fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = netPrompt(); });
     } else if (!pick && !catOpen) {
-      if (!nearBoat || g.aboard) { text = 'Not enough cash for gear yet: sell your catch first'; to = ladder; toLabel = 'Sell here'; }
+      if (g.aboard || !zone('boat', nearBoat)) { text = 'Not enough cash for gear yet: sell your catch first'; to = ladder; }
       else if (shopOpen) spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])'], say: 'Sell all' };
-      else { text = 'Sell your catch first'; button('sell', 'Sell your catch'); }
+      else { text = 'Sell your catch first'; offer('sell', 'Sell your catch', 'U'); }
     } else if (catOpen) {
       const sel = ['#catalog button[data-buy^="item:"]:not([disabled])', '#catalog [data-cart="checkout"]:not([disabled])'];
       if (pick) sel.push(`#catalog .cat-main [data-go="item:${pick.id}"]`, `#catalog .cat-nav [data-go="${pick.kind}"]`);
       text = pick ? `Buy some gear: the ${pick.name.toLowerCase()} is ${money(pick.price, false)}` : 'Not enough cash yet: sell more catch first';
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
     }
-    else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'Open the shop'); }
-    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (at('Enter the cabin')) button('interact', 'Enter the cabin'); } // (4.3.5) the door itself lit up
-    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; toLabel = 'Ladder'; if (at('Climb aboard')) button('interact', 'Climb aboard'); }
+    else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
+    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) offer('cabin', 'Enter the cabin'); } // (4.3.5) the door itself lit up
+    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; if (ladderZone()) offer('climb', 'Climb aboard'); }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
@@ -983,18 +986,19 @@ function tutor() {
       // in the water: aboard first. If the inventory is up, its close button is the way out (nothing else works)
       text = 'Climb aboard the Margaret to change your gear'; to = ladder;
       spot = invOpen ? { sel: ['#inventory .inv-close'], act: 'inventory' } : null;
-      if (!invOpen && at('Climb aboard')) button('interact', 'Climb aboard');
+      if (!invOpen && ladderZone()) offer('climb', 'Climb aboard');
     }
     else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
   }
-  g.tut = { text, to, fish, prompt, toLabel, spot, door };
+  g.tut = { text, to, fish, prompt, spot, door };
   // (4.3.8) the instruction has its own line at the left (tutspot.js), so the game's own messages at the top are
   // never held back by it. None while the quests are open: the arrow at Claim is enough.
-  if (qOpen) g.tut.text = null;
-  g.tutKeys = allowK; g.tutCabin = allowC; // (4.4.0) what the key gate and the cabin let through this moment
+  if (ui.anyOpen('cabin')) g.tut.text = null; // (4.4.1) nor over any open screen (the journal, the shop, ...): its arrow says it
+  g.tutAction = action;
 }
 const tutSpot = new TutSpot();
+tutSpot.onAction = (id) => runTutAction(id); // (4.4.1) the button
 function startRun() {
   mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic();
@@ -1017,15 +1021,32 @@ function startRun() {
 // ---------------- input ----------------
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
-// always work, and the one key the step asks for (g.tutKeys, set by tutor()) is let through
+// always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
 const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
-function tutGated(k) { return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k) && !(g.tutKeys && g.tutKeys.has(k))); }
+function tutGated(k) { return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); }
+const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
+// (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
+// to frame): observe the tutorial fish, sell, climb aboard, into the cabin, the shop, back out on deck, out of the sub
+function runTutAction(id) {
+  const a = g && g.tutAction; if (!a || a.id !== id || a.cabinOnly) return false;
+  const tf = g.tutFish;
+  if (id === 'observe' && tf && !tf.dead) interact({ kind: 'creature', sp: tf.sp, c: tf, x: tf.x, y: tf.y }, false);
+  else if (id === 'sell') ui.openShop('sell', ['sell']);
+  else if (id === 'climb') boardDeck();
+  else if (id === 'cabin') useStation('door');
+  else if (id === 'shop') ui.toggleCatalog(true);
+  else if (id === 'outdoor') ui.toggleCabin(false);
+  else if (id === 'leavesub') leaveSub();
+  else return false;
+  audio.ready && audio.click(); return true;
+}
 window.addEventListener('keydown', (ev) => {
   if (ui.typing()) { if (ev.key === 'Escape') ui.blurTyping(); return; }
   // (4.3.2) moving with the keys: the hints are for the keyboard until the mouse is used again
   if (/^(w|a|s|d|arrowup|arrowdown|arrowleft|arrowright)$/i.test(ev.key)) INPUT.mode = 'keys';
   if (ui.confirmOpen && ui.confirmOpen()) return; // an "are you sure?" is up: its own buttons only
   const k = ev.key.toLowerCase();
+  if (g && g.tutHidePrompts && g.tutAction && k === g.tutAction.key.toLowerCase() && !ev.repeat) { ev.preventDefault(); runTutAction(g.tutAction.id); return; } // (4.4.1)
   if (tutGated(k)) return; // (4.4.0)
   if (g.mode === 'menu' && (k === 'enter' || k === ' ')) {
     ev.preventDefault();
