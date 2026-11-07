@@ -1787,3 +1787,6 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .worth-plate i { font: italic 13px var(--serif); color: #4a3c20; }
 #inventory .tank-win canvas { height: 200px; }
 #inventory canvas.ct-ch { height: 214px; }
+/* (3.0.38) what the catch is worth, painted straight onto the door in the Margaret's lettering: big, but faded paint */
+#inventory .worth-paint { align-self: flex-start; margin: auto 0 0 34px; font: bold 64px/1 Georgia, serif; letter-spacing: 0.01em; color: rgba(222,216,190,0.42);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.35), 0 -1px 0 rgba(255,255,240,0.05); -webkit-mask-image: repeating-linear-gradient(92deg, #000 0 7px, rgba(0,0,0,0.82) 7px 9px, #000 9px 15px); mask-image: repeating-linear-gradient(92deg, #000 0 7px, rgba(0,0,0,0.82) 7px 9px, #000 9px 15px); }

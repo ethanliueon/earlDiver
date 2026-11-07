@@ -51,7 +51,7 @@ const ARCH = {
   },
 };
 const TOOL_LOOK = { net: { everyday: 0, gentle: 1, reach: 2, quick: 0, big: 3, school: 1, sure: 3 }, slurp: { normal: 0, sipper: 0, wide: 1, long: 1 }, tag: { pole: 0, gas: 1, sat: 2 }, cam: { compact: 0, macro: 0, housed: 1, lowlight: 2 } };
-const BAG_PLUS = [0, 1, 1, 2, 4];
+const BAG_PLUS = [0, 1, 1, 2, 5]; // (3.0.38) a Legendary bag: twelve pockets
 function statsOf(kind, arch, rarity) {
   const b = ARCH[kind][arch], p = RARITY[rarity].p, k = RARITY[rarity].k, s = { ...b };
   if (kind === 'net' || kind === 'slurp') {

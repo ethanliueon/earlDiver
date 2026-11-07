@@ -396,7 +396,7 @@ export class UI {
       return `<div class="${cls}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m"><img src="${ic(sp)}" alt=""><b>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
     // the bag: eleven cubbies, the ones beyond his bag padlocked
-    const BAG_MAX = 11, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
+    const BAG_MAX = 12, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
     const bag = g.bag.map((s2) => card('fc', s2)).join('') + rep2('<div class="fc empty"></div>', cap - g.bag.length) + rep2('<div class="fc locked"><i></i></div>', shown - Math.max(cap, g.bag.length));
     const all = g.bag.concat(g.subTank || []), total = all.reduce((t, s2) => t + worth(s2), 0);
     // the sub: the open tank itself, its animals swimming as they do in the sub, and the chambers as they hang there
@@ -407,7 +407,7 @@ export class UI {
     const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`;
     this.catchShown = Math.max(5, pCap);
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
-      + `<div class="worth-plate"><span>Worth, all of it</span><b>${money(total)}</b><i>bag and sub, about</i></div></div>`
+      + `<div class="worth-paint" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win"><canvas class="ct-tank"></canvas></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
