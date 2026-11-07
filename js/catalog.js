@@ -4,7 +4,7 @@
 // two or three numbers that change against what he has on). No basket: Buy is instant, and the thing is
 // on at once (he can change back in the inventory, B). The yard (the sub's parts) is a link to the old
 // shop screen. Plain words, real units, nothing else. See docs/SHOP_PLAN.md.
-import { ITEMS, ITEMS_OF, kitOf } from './items.js';
+import { ITEMS, ITEMS_OF, kitOf, ownsItem, worn as wornItem, RARITY } from './items.js';
 import { SUITS, TRAPS, SUPPLIES, supplyMax, money, owns, kit } from './economy.js';
 import { NETS_SUB } from './capture.js';
 import { toolIcon } from './tools_draw.js';
@@ -60,14 +60,12 @@ export class Catalog {
   go(page) { if (page.startsWith('item:') && !this.page.startsWith('item:')) this.back = this.page; this.page = page; this.render(); this.main.scrollTop = 0; }
   // every thing the catalog sells in a category, in one shape
   entries(cat) {
-    const P = this.h.getProfile(), g = this.h.getGame(); kit(P); const K = kitOf(P);
-    if (['net', 'slurp', 'tag', 'cam', 'fins', 'tank', 'bag'].includes(cat)) {
-      return ITEMS_OF(cat, 'catalog').map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad, tag: it.tag,
-        owned: K.own[cat].includes(it.id), on: K.on[cat] === it.id, pic: [cat, it] }));
-    }
-    if (cat === 'suit') {
-      const have = new Set(P.suits || ['wet']), wornS = P.suit || 'wet';
-      return ['wet', 'skin', 'dry', 'chain'].map((k) => { const S = SUITS[k]; return { key: 'suit:' + k, id: k, it: S, kind: 'suit', name: S.name, price: S.price, line: S.desc.split('.')[0] + '.', good: { wet: '', skin: 'Faster swimming', dry: 'Pressure starts 100 m deeper; keeps out the cold', chain: 'A bite does one less injury' }[k], bad: { skin: 'Uses more air', chain: 'Heavy' }[k], owned: have.has(k), on: wornS === k, pic: ['suit', k] }; });
+    const P = this.h.getProfile(), g = this.h.getGame(); kit(P);
+    if (['net', 'slurp', 'tag', 'cam', 'fins', 'tank', 'bag', 'suit'].includes(cat)) {
+      // (2.8.0) items, suits included; a bought one goes into the locker, and is put on in the inventory (B)
+      const on = wornItem(P, cat);
+      return ITEMS_OF(cat, 'catalog').map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad, tag: RARITY[it.rarity].name, rarity: it.rarity,
+        owned: ownsItem(P, it.id), on: !!on && on.id === it.id, pic: [cat, it] }));
     }
     if (cat === 'trawl') { const T = NETS_SUB.basic, inHatch = g && g.items && g.items.net === 'basic'; return [{ key: 'subnet:basic', id: 'basic', kind: 'trawl', name: T.name, price: T.price, line: "A light net for the sub's belly hatch.", good: 'A haul of shallow fish while you drive', bad: 'Deep animals tear it', owned: inHatch, on: inHatch, onText: 'In the hatch', pic: ['trawl', 0] }]; }
     if (cat === 'trap') {
@@ -114,7 +112,7 @@ export class Catalog {
     let vs = '';
     const M = MEASURES[cat];
     if (M && !e.on) {
-      const cur = cat === 'suit' ? SUITS[P.suit || 'wet'] : (() => { const id = kitOf(P).on[cat]; return id ? ITEMS[id] : null; })();
+      const cur = wornItem(P, cat);
       const rows = M.map(([label, txt, num, hi]) => {
         const b = txt(e.it); if (!cur) return `<div class="row"><span>${label}</span><span>${b}</span></div>`;
         const a = txt(cur); if (a === b) return '';
@@ -125,7 +123,7 @@ export class Catalog {
     }
     let btn;
     if (e.on) btn = `<span class="cat-have">${e.onText || 'You have it on'}</span>`;
-    else if (e.owned && e.kind !== 'trawl') btn = `<button class="cat-btn" data-buy="${e.kind === 'suit' ? e.key : 'on:' + e.id}">Put it on</button><span class="cat-have">Owned</span>`;
+    else if (e.owned && e.kind !== 'trawl') btn = `<span class="cat-have">In your locker (B)</span>`;
     else if (e.full) btn = `<span class="cat-have">${e.count}</span>`;
     else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)} · not enough cash` : `Buy · ${money(e.price, false)}`}</button>` + (e.price > cash && e.kind !== 'trap' ? `<a href="#" class="cat-save" data-wish="${e.key.startsWith('item:') ? e.id : e.key}">${P.wish === e.id || P.wish === e.key ? 'Saving for this ✓' : 'Save for this'}</a>` : '');
     const name = (CATS.find((c) => c && c[0] === cat) || [, ''])[1];
@@ -145,7 +143,7 @@ export function pictureOf(kind, v, w, h, plain = false) {
     if (!plain) { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#cfdadf'); bg.addColorStop(1, '#b4c3ca'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
     const tool = { net: 'net', slurp: 'slurp', tag: 'tag', cam: 'cam', trap: 'trap' }[kind];
     if (tool) { const ic = toolIcon(tool, kind === 'trap' ? v : v.look || 0, Math.round(w * 0.8), Math.round(h * 0.8)); ctx.drawImage(ic, w * 0.1, h * 0.1); }
-    else if (kind === 'suit') { ctx.save(); ctx.translate(w / 2, h * 0.52); ctx.rotate(-Math.PI / 2); drawEarl(ctx, h * 0.86, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: v, bag: [], noTank: true }); ctx.restore(); }
+    else if (kind === 'suit') { ctx.save(); ctx.translate(w / 2, h * 0.52); ctx.rotate(-Math.PI / 2); drawEarl(ctx, h * 0.86, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: v && typeof v === 'object' ? v.pal || v.look : v, bag: [], noTank: true }); ctx.restore(); }
     else if (kind === 'fins') drawFins(ctx, w, h, v);
     else if (kind === 'tank') drawTank(ctx, w, h, v);
     else if (kind === 'bag') drawBag(ctx, w, h, v);

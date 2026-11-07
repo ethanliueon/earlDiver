@@ -19,7 +19,7 @@ import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayK
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf, kit, worn } from './economy.js';
 import { DAVE_FINDS, DAVE_RATE } from './dave.js';
-import { ITEMS, ownsItem, giveItem, putOn, takeOff } from './items.js';
+import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
@@ -55,16 +55,28 @@ let profile = loadProfile();
 // what his suit does: pressure, air, speed (see SUITS)
 // what he has on (2.6.0): the tank's air, the fins (and a heavy tank's drag), the camera's card
 function applyKit(e, P) {
-  kit(P);
+  kit(P); applySuit(e, P);
   const was = e.o2Max || 0; e.o2Max = statValue(P, 'air'); e.o2 = Math.min(e.o2Max, (e.o2 || 0) + Math.max(0, e.o2Max - was));
   e.finSpeed = statValue(P, 'swim'); e.sprintMul = statValue(P, 'sprint');
   e.tankQuiet = !!(worn(P, 'tank') || {}).quiet;
+  // (2.8.0) skills, Legendary skills and set traits, all stacked across what he has on
+  const T = totals(P), L = (k) => skillLv(P, k);
+  e.pressRes = Math.max(0.4, 1 - 0.15 * L('resilience'));
+  e.sprintAir = setOn(P, 'harbour') ? 1 : 2;
+  e.featherK = Math.max(0, 1 - 0.2 * (L('feather') + ((worn(P, 'bag') || {}).feather || 0)));
+  e.warmK = Math.max(0, 1 - 0.25 * L('warmth'));
+  e.ambush = Math.min(0.8, 0.12 * L('ambush'));
+  e.hardened = L('hardened'); e.mending = L('mending'); e.prospector = L('prospector');
+  e.biolum = L('biolum'); e.glows = T.glows; e.trail = T.trail; e.legends = T.legends;
+  e.kelpSet = setOn(P, 'kelp'); e.nightSet = setOn(P, 'night'); e.triesteSet = setOn(P, 'trieste'); e.challengerSet = setOn(P, 'challenger');
   if (g && owns(P, 'camera')) g.shots = Math.max(g.shots || 0, gear(P, 'cam').shots);
   if (g && g.toolSel && g.toolSel !== 'net' && g.toolSel !== 'trap' && g.toolSel !== 'none' && !owns(P, { slurp: 'slurp', tag: 'tagger', cam: 'camera' }[g.toolSel])) g.toolSel = 'net';
 }
 function applySuit(e, P) {
+  // (2.8.0) the suit is an item: its look is its kind of suit, or its own colours (Rare and up)
   const S = suitOf(P);
-  e.pressStart = S.press; e.suitAir = S.air; e.suitSpeed = S.speed; e.suitQuiet = !!S.quiet; e.suit = (P && P.suit) || 'wet';
+  e.pressStart = S.press; e.suitAir = S.air; e.suitSpeed = S.speed; e.suitQuiet = !!S.quiet; e.suit = S.pal || S.look || 'wet';
+  if (P) P.suit = S.look || 'wet'; // (what the old drawings and pages read)
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
@@ -124,7 +136,7 @@ function newGame(mode) {
   // upgrades bought on earlier dives
   g.earl.o2Max = g.earl.o2 = statValue(P, 'air');
   g.earl.finSpeed = statValue(P, 'swim'); g.earl.sprintMul = statValue(P, 'sprint');
-  if (mode === 'play') { applyKit(g.earl, P); g.earl.o2 = g.earl.o2Max; if (P.kitRefund) { const r = P.kitRefund; P.kitRefund = 0; setTimeout(() => hud.toast(`The shop now sells separate items: your upgrades became items, and $${r.toLocaleString()} came back`, 'big'), 2500); } }
+  if (mode === 'play') { applyKit(g.earl, P); g.earl.o2 = g.earl.o2Max; }
   applySuit(g.earl, P);
   applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = P.hull;
   if (P.subLost) { g.sub.imploded = true; g.sub.docked = false; }
@@ -196,6 +208,7 @@ const ui = new UI({
   onSaveProfile: () => saveProfile(profile),
   canChangeGear: () => !!(g && g.mode === 'play' && (g.aboard || g.earl.inSub || ui.cabinOpen())),
   onEquip: (k) => { const ok = buy(k); return ok; },
+  canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave())), // someone to sell to: the Margaret, or Dave
 });
 
 // ---------------- injuries ----------------
@@ -208,6 +221,8 @@ const INJURY = {
 function hurt(dmg, sp, how) {
   if (g.mode !== 'play') return;
   const suit = suitOf(profile);
+  if (g.earl.hardened && Math.random() < 0.15 * g.earl.hardened) dmg = Math.max(0, dmg - 1); // (2.8.0) Hardened: a bite now and then does one less
+  if (dmg <= 0) return;
   if (suit.bite && how !== 'whale' && how !== 'heat') { dmg = Math.max(0, dmg - suit.bite); if (!dmg) { g.fx.shake = Math.max(g.fx.shake, 0.8); hud.toast(`The ${suitOf(profile).name.toLowerCase()} turns the bite`, 'note'); audio.ready && audio.thud(0.3); return; } }
   g.injury += dmg; g.healT = 0;
   const e = g.earl;
@@ -240,7 +255,8 @@ function sellSpecimens(list, lines) {
   for (const [gk, specs] of groups) {
     const [id, v] = gk.split(':');
     const dead = v === 'dead';
-    const key = 'sp' + id + (v && !dead ? ':' + v : ''), base = specs.reduce((a, s) => a + specimenValue(s), 0) / specs.length;
+    const deepK = (s) => (g.earl.challengerSet && (s.from || 0) > 500 ? 1.4 : 1); // the Challenger set: the deep sells for more
+    const key = 'sp' + id + (v && !dead ? ':' + v : ''), base = specs.reduce((a, s) => a + specimenValue(s) * deepK(s), 0) / specs.length;
     const worst = specs.reduce((a, s) => Math.min(a, s.cond), 1);
     const acc = !dead && specs.every((s) => s.acc);
     const name = dead ? `${SPECIES_BY_ID[id].name} (dead, half price)` : variantLabel(SPECIES_BY_ID[id], v || null) + (acc ? ' (acclimated)' : worst < 0.8 ? ` (${conditionName(worst)})` : '');
@@ -543,20 +559,24 @@ function buy(kind) {
   const P = profile, sub = g.sub, e = g.earl;
   let ok = false;
   if (kind.startsWith('item:')) {
-    // (2.6.0) an item from the catalog: his for good, and on at once (he can change back in B)
+    // (2.8.0) bought: into the locker, put on by hand in the inventory (B). Not if the locker is full.
     const it = ITEMS[kind.slice(5)];
-    if (it && !ownsItem(P, it.id) && spend(P, it.price)) {
-      kit(P); giveItem(P, it.id, true); applyKit(e, P); ok = true;
-      hud.toast(`${it.name}: yours, and on`, 'big');
-      const key = { slurp: 2, tag: 3, cam: 4 }[it.kind];
-      if (key) { g.toolSel = it.kind; hud.hint(`Press ${key} for the ${it.name.toLowerCase()}`); }
+    if (it && lockerFree(P) <= 0) hud.toast(`The locker is full (${LOCKER}): sell something first`, 'warn');
+    else if (it && spend(P, it.price)) {
+      giveItem(P, it.id); ok = true;
+      hud.toast(`${it.name} is in your inventory (B)`, 'big');
       if (P.wish === it.id) P.wish = null;
     }
   } else if (kind.startsWith('off:')) {
     takeOff(P, kind.slice(4)); applyKit(e, P); ok = true;
   } else if (kind.startsWith('on:')) {
-    const it = ITEMS[kind.slice(3)];
-    if (it && ownsItem(P, it.id)) { putOn(P, it.id); applyKit(e, P); ok = true; hud.toast(`${it.name}: on`); }
+    // (2.8.0) on:<uid> puts on a thing from the locker
+    const q = instOf(P, kind.slice(3));
+    if (q && putOn(P, q.u)) { applyKit(e, P); ok = true; const key = { slurp: 2, tag: 3, cam: 4 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Press ${key} for the ${ITEMS[q.id].name.toLowerCase()}`); }
+  } else if (kind.startsWith('sellgear:')) {
+    // (2.8.0) selling gear back, for about a third of what it is worth; never what he has on
+    const q = instOf(P, kind.slice(9));
+    if (q && !isOn(P, q)) { const v = sellValue(q); if (removeItem(P, q.u)) { P.cash = Math.round((P.cash + v) * 100) / 100; ok = true; hud.toast(`Sold: ${ITEMS[q.id].name}, ${money(v)}`); } }
   } else if (kind.startsWith('up:')) {
     // one more step on a track: every stat it covers improves together
     const id = kind.slice(3), T = TRACKS[id];
@@ -579,14 +599,8 @@ function buy(kind) {
       if (!has('depth')) hud.toast(`${T.name}: level ${lv(P, id)} of ${T.max}`);
     }
   } else if (kind.startsWith('suit:')) {
-    // buy it (if new) and put it on
-    const k = kind.slice(5), S = SUITS[k];
-    const have = (P.suits || ['wet']).includes(k);
-    if (S && (have || spend(P, S.price))) {
-      if (!have) P.suits = [...(P.suits || ['wet']), k];
-      P.suit = k; applySuit(e, P); ok = true;
-      hud.toast(have ? `Wearing the ${S.name.toLowerCase()}` : `${S.name}: bought and on`, 'big');
-    }
+    // (2.8.0) suits are items now: suit:<id> buys one, as item:<id> does
+    return buy('item:' + kind.slice(5));
   } else if (kind.startsWith('gear:')) {
     // a new piece of gear, bought once
     const k = kind.slice(5), G = GEAR[k];
@@ -1566,12 +1580,12 @@ function update(dt) {
     }
 
     // injuries: slower, hungrier for air, heal one point every 15 s
-    if (g.injury > 0) { g.healT += dt; if (g.healT >= 15) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
+    if (g.injury > 0) { g.healT += dt; if (g.healT >= 15 / (1 + 0.25 * (e.mending || 0))) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
     const lvl = Math.min(4, g.injury);
     const kg = loadKg(g); g.loadKg = kg;
-    e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg) * (e.suitSpeed || 1);
-    const cold = !e.inSub && !suitOf(profile).warm && e.y > 200 ? 1 + clamp((e.y - 200) / 800, 0, 1) * 0.35 : 1;
-    e.o2Mul = INJURY.air[lvl] * loadAir(kg) * (e.suitAir || 1) * cold;
+    e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg * (e.featherK ?? 1)) * (e.suitSpeed || 1);
+    const cold = !e.inSub && !suitOf(profile).warm && e.y > 200 ? 1 + clamp((e.y - 200) / 800, 0, 1) * 0.35 * (e.warmK ?? 1) : 1;
+    e.o2Mul = INJURY.air[lvl] * loadAir(kg * (e.featherK ?? 1)) * (e.suitAir || 1) * cold;
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
@@ -1644,7 +1658,10 @@ function update(dt) {
     // the cabin is out of air: he stays in, breathing from his own tank (no depth effect in the cabin)
     if (res === 'cabin-empty' && !g.cabinWarned) { g.cabinWarned = true; hud.toast('The cabin is out of air: you breathe from your own tank', 'warn'); }
     if (g.sub.o2 > 1) g.cabinWarned = false;
-    if (res === 'o2') {
+    if (res === 'o2' && !g.noAir && !e.inSub && e.legends && e.legends.has('secondwind') && !g.secondWindUsed) {
+      // (2.8.0) Second Wind: once a dive, when the air runs out, it fills again
+      g.secondWindUsed = true; e.o2 = e.o2Max; g.fx.flash = 0.25; hud.toast('Second Wind: the air comes back', 'big'); audio.ready && audio.gasp && audio.gasp();
+    } else if (res === 'o2') {
       if (!g.noAir) { g.noAir = 0.001; g.noAirCause = e.inSub ? 'sub-o2' : 'o2'; hud.toast(e.inSub ? 'Your tank is empty too: surface, or open a backup tank (R)' : 'Out of air — get to the surface', 'warn'); }
       // under pressure air hunger comes on far faster: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m
       g.noAirRate = e.inSub ? 1 : Math.pow(diverDrainMult(e.y, e.pressStart || 300), 0.75); // pressure eats the breath hold fast

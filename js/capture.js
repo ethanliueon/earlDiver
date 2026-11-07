@@ -219,6 +219,7 @@ export function updateSpecimens(g, dt) {
   const tick = (s, inBag) => {
     if (s.home === undefined) s.home = s.from || 0;
     if (s.cond <= 0.05) return;
+    if (inBag && g.earl.legends && g.earl.legends.has('kinship')) return; // (2.8.0) Kinship: in his bag, never stressed, never dying
     const before = s.cond;
     if (inBag) s.cond -= dt * 0.0005;
     if (s.pile) s.cond -= dt * 0.002; // heaped on the floor of the tank room, out of the water's support

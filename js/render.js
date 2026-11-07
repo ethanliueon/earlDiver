@@ -319,6 +319,7 @@ export class Renderer {
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
       if (!c.sp.v.glow && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
+      if (c.variant && g.earl.legends && g.earl.legends.has('eye')) glowPts.push([S(c.x), Sy(c.y), '#ffe6a0', Math.max(ppm * 0.9, fishDrawLen(c.len) * ppm), 0.85]); // (2.8.0) Eye of the Sea: rare forms glow
       const Ld = fishDrawLen(c.len) * ppm;
       const shape = c.sp.v.s;
       const tilt = clamp(Math.atan2(c.hvy !== undefined ? c.hvy : c.vy, Math.max(Math.abs(c.vx), c.hvy !== undefined ? c.speed * 0.8 : 0) + 0.2), -0.5, 0.5);
@@ -741,6 +742,21 @@ export class Renderer {
       }
       const h = drawEarl(ctx, (g.aboard ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       ctx.restore();
+      // (2.8.0) a Legendary leaves a trail: a wake of faint motes in its own colour, behind him as he swims
+      if (e.trail && !e.inSub && !g.aboard && g.mode === 'play') {
+        const tr = this.trailPts || (this.trailPts = []), last = tr[tr.length - 1];
+        if (!last || Math.hypot(last.x - e.x, last.y - e.y) > 0.1) tr.push({ x: e.x - Math.cos(e.angle) * e.facing * 0.5, y: e.y - Math.sin(e.angle) * 0.5, t: g.time, j: Math.random() * 6.28 });
+        while (tr.length && (g.time - tr[0].t > 1.8 || tr.length > 60)) tr.shift();
+        const tc = hexToRgb(e.trail);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        for (const p of tr) {
+          const k = clamp(1 - (g.time - p.t) / 1.8, 0, 1), x = S(p.x + Math.sin(p.j + g.time * 2) * 0.06 * (1 - k)), y = Sy(p.y - (1 - k) * 0.25);
+          const gg = ctx.createRadialGradient(x, y, 0, x, y, ppm * (0.04 + 0.11 * k));
+          gg.addColorStop(0, `rgba(${tc[0]},${tc[1]},${tc[2]},${(0.32 * k * k).toFixed(3)})`); gg.addColorStop(1, `rgba(${tc[0]},${tc[1]},${tc[2]},0)`);
+          ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, y, ppm * (0.04 + 0.11 * k), 0, TAU); ctx.fill();
+        }
+        ctx.restore();
+      } else if (this.trailPts) this.trailPts.length = 0;
       if (h.tip) {
         const ca2 = Math.cos(e.angle), sa2 = Math.sin(e.angle);
         g.toolTip = { x: e.x + e.facing * (h.tip.x * ca2 - h.tip.y * sa2) / ppm, y: e.y + (h.tip.x * sa2 + h.tip.y * ca2) / ppm };
@@ -2276,10 +2292,11 @@ export class Renderer {
     const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse;
     if (head && e.lampOn) {
       const ang = this.lampAngle(g, e, head);
-      cone(head.x, head.y, ang, 17 * ppm, 0.32, beamCol, 0.95 * TORCH * flick);
+      cone(head.x, head.y, ang, 17 * ppm * (e.nightSet ? 1.5 : 1), 0.32 * (e.nightSet ? 1.2 : 1), beamCol, 0.95 * TORCH * flick); // (the Night Shift set: half as far again)
       radial(head.x, head.y, 3.2 * ppm, beamCol, 0.3 * TORCH * flick); lamps.push({ x: head.x, y: head.y, r: 3.2 * ppm, a: 0.3 * TORCH * flick });
     }
     if (g.necklaceOn && !e.inSub) radial(S(e.x), Sy(e.y), 6 * ppm, [170, 255, 190], 0.5); // the necklace: a glowstick's soft green light
+    if (e.biolum && e.lampOn && !e.inSub) { const gc = hexToRgb(e.glows && e.glows[0] || '#8af0d0'), br = (4 + 1.5 * e.biolum) * ppm, pulse = 0.85 + 0.15 * Math.sin(g.time * 1.3); radial(S(e.x), Sy(e.y), br, gc, 0.45 * pulse); lamps.push({ x: S(e.x), y: Sy(e.y), r: br, a: 0.45 }); } // (2.8.0) Bioluminescence: his gear glows while his light is on
     if (g.legend) { // the legendary moment: a pale light comes up on it, and fades
       const c = g.legend.c, k = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
       radial(S(c.x), Sy(c.y), Math.max(7, c.len * 4) * ppm, [215, 232, 240], 0.95 * k); radial(S(c.x), Sy(c.y), Math.max(3, c.len * 1.6) * ppm, [235, 242, 246], 0.6 * k); lamps.push({ x: S(c.x), y: Sy(c.y), r: Math.max(7, c.len * 4) * ppm, a: 0.95 * k });
@@ -2339,7 +2356,7 @@ export class Renderer {
       if (p.type === 'sapphire' || p.type === 'lure') {
         const x = S(p.x), y = Sy(p.y);
         if (x < -100 || x > this.W + 100 || y < -100 || y > this.H + 100) continue;
-        radial(x, y, (p.type === 'lure' ? 2.5 : 1.6) * ppm, p.type === 'lure' ? [170, 230, 255] : [80, 120, 255], 0.5);
+        radial(x, y, (p.type === 'lure' ? 2.5 : 1.6 * (1 + 0.8 * (e.prospector || 0))) * ppm, p.type === 'lure' ? [170, 230, 255] : [80, 120, 255], p.type === 'lure' ? 0.5 : 0.5 + 0.1 * (e.prospector || 0)); // (Prospector: sapphires shine from farther off)
       }
     }
     if (g.lure) radial(S(g.lure.x), Sy(g.lure.y), (g.lure.old ? 12 : 8) * ppm, g.lure.old ? [120, 170, 255] : [170, 230, 255], 0.9);

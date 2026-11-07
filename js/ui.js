@@ -13,7 +13,8 @@ import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
 import { Catalog, pictureOf } from './catalog.js';
-import { ITEMS, kitOf, KINDS } from './items.js';
+import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue } from './items.js';
+const SIDE_TOOLS = new Set(['slurp', 'tag', 'cam']);
 import { kit as ensureKit } from './economy.js';
 import { drawEarl } from './earl_draw.js';
 import { SETTINGS, setSetting } from './settings.js';
@@ -318,50 +319,70 @@ export class UI {
     $('inventory').querySelector('.inv-body').innerHTML = html;
     this.equipWire(P, g);
   }
-  // ---------- changing gear (2.6.0): Earl and his eight slots, and everything he owns beside him ----------
-  // Drag a thing onto him (or its slot), or click it; what was in the slot goes back. Unlocked on deck,
-  // in the cabin and in the sub; in the water it only shows.
+  // ---------- the locker (2.8.0): Earl and his eight slots; everything he owns in rarity frames ----------
+  // Drag a thing onto him (or its slot) to put it on, or click it for its card: what it is, its skills, its
+  // set, Put on / Take off, and Sell when someone is there to buy it (the Margaret, Dave). Changing gear works
+  // on deck, in the cabin and in the sub; in the water it only shows.
   equipHtml(P, g) {
-    ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), suitsOwn = P.suits || ['wet'];
+    ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear();
     const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp gun'], ['tag', '3  Tag gun'], ['cam', '4  Camera']];
-    const picOf = (kind, id) => (kind === 'suit' ? pictureOf('suit', id, 120, 72, true) : pictureOf(kind, ITEMS[id], 120, 72, true));
-    const nameOf = (kind, id) => (kind === 'suit' ? SUITS[id].name : ITEMS[id].name);
-    const tipOf = (kind, id) => { if (kind === 'suit') return SUITS[id].name; const it = ITEMS[id]; return `${it.name}${it.good ? ' · good for: ' + it.good.toLowerCase() : ''}${it.bad ? ' · not for: ' + it.bad.toLowerCase() : ''}`; };
-    const onOf = (kind) => (kind === 'suit' ? P.suit || 'wet' : K.on[kind]);
-    const slot = ([kind, label]) => { const id = onOf(kind); return `<div class="eq-slot${id ? '' : ' empty'}" data-slot="${kind}" title="${id ? tipOf(kind, id) : 'nothing'}"><span>${label}</span>${id ? `<img src="${picOf(kind, id)}" alt="" draggable="${free && !['suit', 'fins', 'tank', 'bag', 'net'].includes(kind)}" data-kind="${kind}" data-id="${id}"><b>${nameOf(kind, id)}</b>` : '<b>—</b>'}</div>`; };
-    let shelf = '';
-    for (const [kind, label] of SLOTS) {
-      const own = kind === 'suit' ? suitsOwn : K.own[kind] || [];
-      if (own.length < 2 && !(own.length === 1 && !onOf(kind))) continue; // nothing else to choose
-      shelf += `<div class="eq-row"><span>${label.replace(/^\d\s+/, '')}</span>${own.map((id) => `<img class="eq-item${onOf(kind) === id ? ' on' : ''}" src="${picOf(kind, id)}" alt="${nameOf(kind, id)}" title="${tipOf(kind, id)}" draggable="${free}" data-kind="${kind}" data-id="${id}">`).join('')}</div>`;
-    }
+    const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
+    const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id];
+      return `<div class="eq-slot${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}"><span>${label}</span>${q ? `<img src="${pic(q)}" alt="" draggable="${free && SIDE_TOOLS.has(kind)}" data-kind="${kind}" data-u="${q.u}"><b data-u="${q.u}">${it.name}</b>` : '<b>—</b>'}</div>`; };
+    // the locker: by kind, the rarest first
+    const order = ['net', 'slurp', 'tag', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
+    const list = K.items.slice().sort((a2, b2) => order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || rk(b2) - rk(a2));
+    const tiles = list.map((q) => { const it = ITEMS[q.id], on = K.on[it.kind] === q.u;
+      return `<div class="lk-tile r-${it.rarity}${on ? ' on' : ''}${this.lkSel === q.u ? ' sel' : ''}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${on ? '<i>on</i>' : ''}${q.leg ? '<em>✦</em>' : ''}</div>`; }).join('');
+    const card = this.lkSel ? this.lockerCard(P, g, free) : '';
     return `<div class="inv-sec wide eq${free ? '' : ' locked'}"><h4>Gear</h4><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="240" height="300"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
-      + (free ? (shelf ? `<div class="eq-shelf"><p class="eq-note">Drag something onto him, or click it.</p>${shelf}</div>` : '<p class="eq-note">Everything you own is on. The catalog, on the cabin computer, sells more.</p>') : '<p class="eq-note eq-lock">Change gear on deck or in the sub.</p>') + '</div>';
+      + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
+      + `<div class="lk-head"><h4>Locker</h4><span class="${K.items.length >= LOCKER ? 'full' : ''}">${K.items.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}</div>${card}</div>`;
+  }
+  // one thing's card: name in its rarity's colour, what it does, its skills, its set, and what can be done
+  lockerCard(P, g, free) {
+    const K = kitOf(P), q = K.items.find((x) => x.u === this.lkSel); if (!q) { this.lkSel = null; return ''; }
+    const it = ITEMS[q.id], R = RARITY[it.rarity], on = K.on[it.kind] === q.u, T = totals(P);
+    const roman = ['', 'I', 'II', 'III', 'IV'];
+    const skills = (q.sk || []).map(([k, l]) => `<div class="lk-sk"><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + roman[l]}</b><span>${SKILLS[k].what}</span></div>`).join('')
+      + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span></div>` : '');
+    const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
+    const set = S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b> · ${have >= 3 ? 'on' : `${have} of 3 worn`}<span>${S.trait}</span></div>` : '';
+    const seller = this.h.canSellGear && this.h.canSellGear();
+    let acts = '';
+    if (free && !on) acts += `<button data-lk="on:${q.u}">Put on</button>`;
+    if (free && on && SIDE_TOOLS.has(it.kind)) acts += `<button data-lk="off:${it.kind}">Take off</button>`;
+    if (!on && seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell · ${money(sellValue(q), false)}</button>`;
+    else if (!on && !seller) acts += '<small>Sell it on the Margaret, or to Dave.</small>';
+    return `<div class="lk-card r-${it.rarity}"><div class="lk-top"><img src="${pictureOf(it.kind, it, 200, 120, true)}" alt=""><div><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ' · net of legend' : ''}</span><p>${it.line || ''}</p></div></div>
+      <div class="lk-good">${it.good || ''}${it.bad ? `<em>Not for: ${it.bad}</em>` : ''}</div>${skills ? `<div class="lk-sks">${skills}</div>` : ''}${set}<div class="lk-acts">${acts}</div></div>`;
   }
   equipWire(P, g) {
     const root = $('inventory').querySelector('.eq'); if (!root) return;
     // Earl, in what he has on
     const cv = root.querySelector('.eq-earl');
-    if (cv) { const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.save(); c.translate(cv.width / 2, cv.height * 0.5); c.rotate(-Math.PI / 2); drawEarl(c, cv.height * 0.84, 0, 0.1, null, null, { kind: 'none', tier: 0, t: 0, suit: P.suit || 'wet', bag: [] }); c.restore(); }
+    if (cv) { const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.save(); c.translate(cv.width / 2, cv.height * 0.5); c.rotate(-Math.PI / 2); drawEarl(c, cv.height * 0.84, 0, 0.1, null, null, { kind: 'none', tier: 0, t: 0, suit: (g && g.earl && g.earl.suit) || 'wet', bag: [] }); c.restore(); }
+    // a card's buttons, and clicking a tile (or a slot's item) to open its card
+    root.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); if (k.startsWith('sellgear:')) this.lkSel = null; this.renderInventory(); }));
+    root.querySelectorAll('.lk-tile, .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = this.lkSel === el.dataset.u ? null : el.dataset.u; this.renderInventory(); }));
     if (!this.h.canChangeGear()) return;
-    const put = (kind, id) => { if (kind === 'suit') this.h.onEquip('suit:' + id); else this.h.onEquip('on:' + id); this.renderInventory(); };
-    const off = (kind) => { if (['slurp', 'tag', 'cam'].includes(kind)) { this.h.onEquip('off:' + kind); this.renderInventory(); } };
-    root.querySelectorAll('.eq-item').forEach((el) => {
-      el.addEventListener('click', () => put(el.dataset.kind, el.dataset.id));
-      el.addEventListener('dragstart', (ev) => { this.dragKind = el.dataset.kind; ev.dataTransfer.setData('text/plain', el.dataset.kind + ':' + el.dataset.id); root.querySelectorAll(`[data-slot="${el.dataset.kind}"]`).forEach((s) => s.classList.add('hot')); });
-      el.addEventListener('dragend', () => root.querySelectorAll('.hot').forEach((s) => s.classList.remove('hot')));
+    const put = (u) => { this.h.onEquip('on:' + u); this.renderInventory(); };
+    const off = (kind) => { if (SIDE_TOOLS.has(kind)) { this.h.onEquip('off:' + kind); this.renderInventory(); } };
+    root.querySelectorAll('.lk-tile').forEach((el) => {
+      el.addEventListener('dragstart', (ev) => { this.dragKind = el.dataset.kind; ev.dataTransfer.setData('text/plain', el.dataset.kind + ':' + el.dataset.u); root.querySelectorAll(`[data-slot="${el.dataset.kind}"]`).forEach((s2) => s2.classList.add('hot')); });
+      el.addEventListener('dragend', () => root.querySelectorAll('.hot').forEach((s2) => s2.classList.remove('hot')));
     });
     root.querySelectorAll('.eq-slot img').forEach((el) => el.addEventListener('dragstart', (ev) => { this.dragKind = 'off:' + el.dataset.kind; ev.dataTransfer.setData('text/plain', 'off:' + el.dataset.kind); }));
-    root.querySelectorAll('.eq-slot').forEach((s) => {
-      s.addEventListener('dragover', (ev) => { if (this.dragKind === s.dataset.slot) ev.preventDefault(); });
-      s.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, id] = ev.dataTransfer.getData('text/plain').split(':'); if (k === s.dataset.slot) put(k, id); });
+    root.querySelectorAll('.eq-slot').forEach((s2) => {
+      s2.addEventListener('dragover', (ev) => { if (this.dragKind === s2.dataset.slot) ev.preventDefault(); });
+      s2.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, u] = ev.dataTransfer.getData('text/plain').split(':'); if (k === s2.dataset.slot) put(u); });
     });
     const earl = root.querySelector('.eq-earl');
     earl.addEventListener('dragover', (ev) => { if (this.dragKind && !this.dragKind.startsWith('off:')) ev.preventDefault(); });
-    earl.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, id] = ev.dataTransfer.getData('text/plain').split(':'); if (k !== 'off') put(k, id); });
-    const shelf = root.querySelector('.eq-shelf') || root;
-    shelf.addEventListener('dragover', (ev) => { if (this.dragKind && this.dragKind.startsWith('off:')) ev.preventDefault(); });
-    shelf.addEventListener('drop', (ev) => { const d = ev.dataTransfer.getData('text/plain'); if (d.startsWith('off:')) { ev.preventDefault(); off(d.slice(4)); } });
+    earl.addEventListener('drop', (ev) => { ev.preventDefault(); const [k, u] = ev.dataTransfer.getData('text/plain').split(':'); if (k !== 'off') put(u); });
+    const grid = root.querySelector('.lk-grid') || root;
+    grid.addEventListener('dragover', (ev) => { if (this.dragKind && this.dragKind.startsWith('off:')) ev.preventDefault(); });
+    grid.addEventListener('drop', (ev) => { const d = ev.dataTransfer.getData('text/plain'); if (d.startsWith('off:')) { ev.preventDefault(); off(d.slice(4)); } });
   }
   settingsOpen() { return !$('settings').hidden; }
   toggleSettings(force) { const el = $('settings'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderSettings(); }

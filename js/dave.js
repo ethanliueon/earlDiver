@@ -3,13 +3,12 @@
 // website: what he sells chalked up on the left (the items in items.js with shop: 'dave', and the rebreather
 // suit), what he buys on the right (pearls, sapphires, whalebone, glass sponge and nodules, for a quarter more
 // than the Margaret pays). He says a line when you come in (text only), and remembers how often you've been.
-import { ITEMS, kitOf } from './items.js';
+import { ITEMS, ownsItem, worn as wornItem } from './items.js';
 import { SUITS, GOODS, money } from './economy.js';
 import { pictureOf } from './catalog.js';
 
 export const DAVE_FINDS = ['pearl', 'sapphire', 'bone', 'glass', 'nodule'];
 export const DAVE_RATE = 1.25; // what he pays, against the Margaret's price
-const DAVE_SUITS = ['rebreather'];
 
 const FIRST = "Well, would you look at that. Nobody comes down this far. I'm Dave. This is my place, and that's my shop. Have a look, mind the drips.";
 const LINES = [
@@ -56,11 +55,9 @@ export class DaveShop {
     this.render();
   }
   wares(P) {
-    const K = kitOf(P), have = new Set(P.suits || ['wet']);
-    const items = Object.values(ITEMS).filter((it) => it.shop === 'dave').map((it) => ({ key: 'item:' + it.id, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad,
-      owned: K.own[it.kind].includes(it.id), on: K.on[it.kind] === it.id, pic: pictureOf(it.kind, it, 150, 90, true) }));
-    const suits = DAVE_SUITS.map((k) => { const S = SUITS[k]; return { key: 'suit:' + k, name: S.name, price: S.price, line: S.line, good: 'No bubbles: what lives down here is not disturbed', bad: 'Uses a little more air', owned: have.has(k), on: P.suit === k, pic: pictureOf('suit', k, 150, 90, true) }; });
-    return items.concat(suits);
+    // (2.8.0) his items, suits included, from items.js (shop: 'dave'); bought ones go into the locker
+    return Object.values(ITEMS).filter((it) => it.shop === 'dave').map((it) => { const w = wornItem(P, it.kind); return { key: 'item:' + it.id, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad,
+      owned: ownsItem(P, it.id), on: !!w && w.id === it.id, pic: pictureOf(it.kind, it, 150, 90, true) }; });
   }
   render() {
     const P = this.h.getProfile(), g = this.h.getGame();

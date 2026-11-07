@@ -691,8 +691,10 @@ export class Fauna {
       } else if (c.flee > 0 && !c.prey && !c.ctrl && !earl.inSub) {
         const closing = ((c.x - earl.x) * earl.vx + (c.y - earl.y) * earl.vy) / (de + 0.01);
         // hanging still he can come very close; drifting slowly, a little less; fast, not at all
-        const threat = earl.speedNow < 0.4 ? 0.9 : earl.speedNow < 1.3 ? 1.4 : (3 + c.len * 1.5) * (earl.sprint ? 1.6 : 1) * (closing > 1 ? 1.4 : 1);
-        if (de < threat) c.fleeT = 1.2 + c.len * 0.5;
+        const threat = (earl.speedNow < 0.4 ? 0.9 : earl.speedNow < 1.3 ? 1.4 : (3 + c.len * 1.5) * (earl.sprint ? 1.6 : 1) * (closing > 1 ? 1.4 : 1)) * (1 - (earl.ambush || 0));
+        const unseen = (earl.kelpSet && W.inKelp(earl.x, earl.y)) || (earl.legends && earl.legends.has('magnetic')); // (2.8.0) the Kelp Runner set; Magnetic
+        if (de < threat && !unseen) c.fleeT = 1.2 + c.len * 0.5;
+        if (earl.legends && earl.legends.has('magnetic') && !c.predator && de < 12 && de > 1.2) { ax += (earl.x - c.x) / de * 4; ay += (earl.y - c.y) / de * 3; } // fish come to him
       } else if (c.flee > 0 && earl.inSub && de < 10) c.fleeT = 1.5; // the sub is loud
       if (c.fleeT > 0) {
         c.fleeT -= dt;

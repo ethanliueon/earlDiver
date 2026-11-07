@@ -1220,3 +1220,49 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
   background: linear-gradient(180deg, var(--brass-hi, #ecd28e), var(--brass, #c9a65a) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
 .tr-card button small { color: rgba(46,34,10,0.7); margin-left: 4px; }
 .tr-card button:disabled { opacity: 0.4; cursor: default; }
+/* ---------- the locker (2.8.0): every item in a frame of its rarity's colour ---------- */
+#inventory { --r-common: #c9cdc4; --r-uncommon: #7ccf7f; --r-rare: #5aa8f0; --r-exotic: #c27af0; --r-legendary: #f2b84a; }
+#inventory .lk-head { display: flex; align-items: baseline; justify-content: space-between; margin-top: 14px; }
+#inventory .lk-head span { font: 12px var(--mono); color: var(--paint-dim); }
+#inventory .lk-head span.full { color: #e8a040; }
+#inventory .lk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+#inventory .lk-tile { position: relative; height: 46px; border-radius: 4px; cursor: pointer; background: rgba(0,0,0,0.28); border: 2px solid var(--rc, #888); box-shadow: inset 0 0 8px rgba(0,0,0,0.5); display: grid; place-items: center; }
+#inventory .lk-tile img { width: 54px; height: 32px; object-fit: contain; pointer-events: none; }
+#inventory .lk-tile i { position: absolute; left: 3px; top: 1px; font: 8px var(--stencil); letter-spacing: 0.1em; text-transform: uppercase; color: var(--rc); font-style: normal; }
+#inventory .lk-tile em { position: absolute; right: 3px; top: 0; font-style: normal; color: var(--r-legendary); font-size: 11px; }
+#inventory .lk-tile.on { background: rgba(255,255,255,0.06); }
+#inventory .lk-tile.sel { outline: 2px solid #fff6d8; outline-offset: 1px; }
+#inventory .lk-tile:hover { filter: brightness(1.15); }
+#inventory .r-common { --rc: var(--r-common); } #inventory .r-uncommon { --rc: var(--r-uncommon); } #inventory .r-rare { --rc: var(--r-rare); }
+#inventory .r-exotic { --rc: var(--r-exotic); } #inventory .r-legendary { --rc: var(--r-legendary); }
+/* Exotic and Legendary frames: a second line inside, corner studs, and (Legendary) a slow shimmer */
+#inventory .lk-tile.r-exotic, #inventory .lk-tile.r-legendary { border-width: 2px; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.6), inset 0 0 0 3px var(--rc), inset 0 0 10px rgba(0,0,0,0.5); }
+#inventory .lk-tile.r-exotic::before, #inventory .lk-tile.r-legendary::before { content: ''; position: absolute; inset: -4px; pointer-events: none;
+  background: radial-gradient(circle, var(--rc) 0 2px, transparent 2.5px) 0 0 / 8px 8px no-repeat, radial-gradient(circle, var(--rc) 0 2px, transparent 2.5px) 100% 0 / 8px 8px no-repeat,
+    radial-gradient(circle, var(--rc) 0 2px, transparent 2.5px) 0 100% / 8px 8px no-repeat, radial-gradient(circle, var(--rc) 0 2px, transparent 2.5px) 100% 100% / 8px 8px no-repeat; }
+#inventory .lk-tile.r-legendary { background: radial-gradient(ellipse at 50% 120%, rgba(242,184,74,0.25), rgba(0,0,0,0.3) 70%); animation: lk-shimmer 3s ease-in-out infinite; }
+@keyframes lk-shimmer { 0%, 100% { border-color: #f2b84a; } 50% { border-color: #ffe3a0; } }
+#inventory .eq-slot.r-common { border-color: var(--r-common); } #inventory .eq-slot.r-uncommon { border-color: var(--r-uncommon); } #inventory .eq-slot.r-rare { border-color: var(--r-rare); }
+#inventory .eq-slot.r-exotic { border-color: var(--r-exotic); } #inventory .eq-slot.r-legendary { border-color: var(--r-legendary); }
+#inventory .eq-slot b[data-u] { cursor: pointer; }
+/* the card of the thing clicked */
+#inventory .lk-card { margin-top: 10px; padding: 10px 12px; border-radius: 6px; border: 2px solid var(--rc); background: rgba(0,0,0,0.3); }
+#inventory .lk-top { display: flex; gap: 12px; align-items: flex-start; }
+#inventory .lk-top img { width: 120px; height: 72px; object-fit: contain; flex: none; background: rgba(255,255,255,0.04); border-radius: 4px; }
+#inventory .lk-top .nm { display: block; font: 400 19px var(--serif); }
+#inventory .lk-top .rr { font: 10px var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; }
+#inventory .lk-top p { margin: 4px 0 0; font: italic 14px var(--serif); color: var(--paint-dim); }
+#inventory .lk-good { margin-top: 8px; font: 14px var(--serif); color: var(--paint); }
+#inventory .lk-good em { display: block; font-style: normal; color: #e09a7a; }
+#inventory .lk-sks { margin-top: 8px; display: grid; gap: 3px; }
+#inventory .lk-sk { font: 13px var(--serif); color: var(--paint-dim); }
+#inventory .lk-sk b { font-weight: 500; color: #9ad8ff; margin-right: 6px; }
+#inventory .lk-sk.leg b { color: var(--r-legendary); }
+#inventory .lk-set { margin-top: 8px; font: 13px var(--serif); color: var(--paint-dim); }
+#inventory .lk-set b { color: #d8c8ff; font-weight: 500; }
+#inventory .lk-set span { display: block; font-style: italic; }
+#inventory .lk-set.live b { color: #a0ffb8; }
+#inventory .lk-acts { margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#inventory .lk-acts button { font: 14px var(--serif); padding: 5px 14px; border: 0; border-radius: 3px; cursor: pointer; color: #2e220a; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
+#inventory .lk-acts button.sell { background: linear-gradient(180deg, #9ad89a, #5aa05a); }
+#inventory .lk-acts small { font: italic 13px var(--serif); color: var(--paint-dim); }

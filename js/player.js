@@ -150,7 +150,7 @@ export function updateEarl(g, dt, inp) {
       e.surfacing = Math.min(1, e.surfacing + dt);
     } else {
       e.surfacing = 0;
-      e.o2 -= dt * diverDrainMult(e.y, e.pressStart || 300) * (inp.sprint && e.speedNow > 1 ? 2 : 1) * e.o2Mul * (g.airMul || 1);
+      e.o2 -= dt * (1 + (diverDrainMult(e.y, e.pressStart || 300) - 1) * (e.pressRes ?? 1)) * (inp.sprint && e.speedNow > 1 ? (e.sprintAir ?? 2) : 1) * e.o2Mul * (g.airMul || 1); // (2.8.0: Resilience, the Harbour Patrol set)
     }
     if (e.o2 <= 0) { e.o2 = 0; return 'o2'; }
   }

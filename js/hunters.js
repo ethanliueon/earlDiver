@@ -56,6 +56,7 @@ export function directEncounters(g, dt, SPECIES_BY_ID) {
   if (g.injury > 0) rate *= 1 + g.injury * 0.6;   // blood in the water
   if (g.concealed || g.protection) rate *= 0.1;
   rate *= g.stillMul || 1;                         // still water: they are slow to come
+  if (e.legends && e.legends.has('faithless')) rate *= 0.4; // (2.8.0) Faithless: fewer come for him
   if (active >= 2) rate = 0;                        // one or two at a time
   g.encT = (g.encT ?? 20) - dt * rate / 0.5;         // a countdown that runs faster in dangerous water
   if (g.encT > 0 || !pool.length) return;

@@ -147,3 +147,9 @@ up to IV, plus exactly one legendary skill.
   are more detailed.
 - **Legendary items leave a trail** as Earl swims, and **every Legendary has Bioluminescence**: like any
   item with that skill, it glows only while his light is on.
+- **Legendary skills are on nets only** (changed 7 Nov): the net is the heart of the kit. There are six
+  Legendary nets, one for each legendary skill. Every other Legendary has no legendary skill: it is the
+  strongest of its kind, rolls one more skill (up to level IV), glows, and leaves a trail. Only one trail ever
+  shows: the net's if it is Legendary, otherwise the first Legendary's.
+- **Skill levels by rarity** (7 Nov): Common (half have a skill) always I; Uncommon 70 % I, 30 % II; Rare 30 % I,
+  40 % II, 30 % III; Exotic 10 % I, 35 % II, 55 % III; Legendary 5 % I, 20 % II, 40 % III, 35 % IV.

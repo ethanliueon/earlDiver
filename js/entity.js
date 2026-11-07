@@ -170,6 +170,7 @@ export class Entity {
       if (g.sub.lightsOn && g.ambient < 0.3) r += 60;
       return r;
     }
+    if (e.legends && e.legends.has('phantom') && e.speedNow < 0.3) { g.concealed = true; return 2; } // (2.8.0) Phantom: still, he is not there
     const hidden = g.world.inKelp(e.x, e.y) || g.world.underLedge(e.x, e.y);
     const fast = e.sprint && e.speedNow > 1;
     g.concealed = hidden && !fast && !e.lampOn && e.speedNow < 2.5;
@@ -214,7 +215,7 @@ export class Entity {
     const ap = g.autopilot;
     if (ap && ap.active && !e.inSub && g.sub.y > 200 && ap.speed > 0.5) rate += 0.008 * (1 + (g.sub.y - 200) / 400) * (g.addons && g.addons.quiet ? 0.5 : 1);
     if (d < per) rate += 0.35;                                       // it has noticed him
-    if (rate > 0) rate *= (g.stillMul || 1) * (g.blessed ? 0.5 : 1); // still water, or her blessing: it is slow to notice
+    if (rate > 0) rate *= (g.stillMul || 1) * (g.blessed ? 0.5 : 1) * (e.legends && e.legends.has('faithless') ? 0.6 : 1) * (e.triesteSet ? 0.5 : 1); // still water, a blessing, Faithless, the Trieste set: it is slow to notice
     this.attn = clamp(this.attn + rate * dt, 0, 1);
     if (this.attn >= 1) this.mark(g);
   }

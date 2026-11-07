@@ -810,3 +810,29 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 - `tankAction('swap', where, i, chamber)` in main.js: the animal takes that chamber, and the one in it
   goes where this one was (its chamber, the open tank, the pile, or the bag).
 - A fish dragged within the open tank stays where it is dropped for a moment, then swims on as usual.
+
+## 2.8.0 — the item engine: rarities, skills, sets, the locker (step 1 of docs/GEAR_AND_SHOPS_PLAN.md)
+- js/item_data.js: rarities (Common, Uncommon, Rare, Exotic, Legendary and their colours), the 17 skills
+  and 6 legendary skills, the free kit, Bayside's 48 items, Dave's 12, the chest-only Exotics (lost
+  expedition gear: 15 per main kind, 5 per side tool), the 22 Legendaries (eerie things from the deep), the 8
+  sets (4 Rare, 4 Exotic; 5 pieces each), and the names for the generated chest Commons/Uncommons/Rares.
+- js/items.js: the definitions (364 items; stats from each kind's archetype scaled by the rarity's power),
+  `rollSkills` (counts and level odds by rarity, decided 7 Nov; a set piece rolls one fewer; a Legendary
+  that isn't a net one more; every Legendary has Bioluminescence on top), the locker (`P.kit = { v: 2,
+  items: [{u, id, sk, leg}], on: {kind: u} }`, 40 things, worn included), `giveItem/putOn/takeOff/
+  removeItem`, `sellValue` (about a third), and `totals(P)`: skills summed across everything worn, the
+  legendary skills, set pieces worn and the sets on (3 or more), the glows, the one trail.
+- **Legendary skills are on nets only** (six Legendary nets, one per skill). All air ×0.4 (he starts with 20 s).
+  Suits are items now (`suitOf` is the worn suit; a Rare-and-up suit has its own colours on Earl).
+- Effects in play: Performance / Oversized / Overreaching / Quickdraw / Shutterbug / Scholar on the tools
+  (`gear()`), Haste / Rebreathing / Deep Pockets (`statValue`), Ambush and Magnetic (fauna), Featherweight,
+  Warmth, Hardened, Mending (main), Resilience and the Harbour set (player.js), Prospector, Eye of the Sea,
+  Bioluminescence, the Night Shift set (render), Second Wind (main), Phantom, Faithless and the Trieste set
+  (entity, hunters), Kinship (capture), the Reef, Bathysphere, Challenger and Sealab sets. A Legendary leaves
+  a faint trail of its own colour.
+- The inventory (B) is the locker: Earl and his eight slots (framed by rarity), every item in a frame of
+  its rarity's colour (Exotic and Legendary: a double frame and corner studs; Legendary shimmers), a card per
+  item (its skills, its set and how many are worn, Put on / Take off / Sell when on the Margaret or at Dave).
+- Bought items go into the locker (not put on); the shop refuses when the locker is full.
+- Not yet: the shared shop with the cart (next), chests (with Dave and the old one), the hand-drawn looks
+  of Exotics and Legendaries on Earl, quests.

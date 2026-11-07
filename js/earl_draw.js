@@ -41,7 +41,7 @@ const at = (x, y, a, l) => [x + Math.cos(a) * l, y + Math.sin(a) * l];
 //   catchSp: a fish in the net, held: a fish in the slurp gun, bag: [{col}] for the belt bag }
 export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   const u = L / 100;
-  const look = SUIT_LOOK[(gear && gear.suit) || 'wet'] || SUIT_LOOK.wet;
+  const look = Array.isArray(gear && gear.suit) ? gear.suit : SUIT_LOOK[(gear && gear.suit) || 'wet'] || SUIT_LOOK.wet; // (2.8.0: a Rare-and-up suit brings its own colours)
   [SUIT, SUIT_HI, SUIT_PANEL, SUIT_SEAM, GLOVE] = look;
   const m = moving;
   const s1 = Math.sin(kick);

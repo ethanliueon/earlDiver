@@ -1,5 +1,5 @@
 import { VERSION as GAME_VERSION } from './version.js';
-import { ITEMS, ITEMS_OF, kitOf, worn as wornItem, FREE } from './items.js';
+import { ITEMS, kitOf, worn as wornItem, skillLv, hasLegend, setOn } from './items.js';
 // The money side of the game: the save (what survives death), prices, the market, and the
 // catalogue of things Earl can buy at the boat.
 //
@@ -241,7 +241,8 @@ export const SUITS = {
   rebreather: { line: "He breathes his air twice, and leaves no bubbles to follow.", name: 'Rebreather suit', price: 19000, press: 300, air: 0.75, speed: 1.1, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
   hard: { line: "A small iron room in the shape of a man.", name: 'Atmospheric hardsuit', price: 59000, press: 700, air: 0.9, speed: 1.02, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m, and small thrusters on its back push him along.' },
 };
-export const suitOf = (P) => SUITS[(P && P.suit) || 'wet'];
+// (2.8.0) the suit he has on, as an item: press (m), air (×), speed (×), bite, warm, quiet, look
+export const suitOf = (P) => { const S = (P && worn(P, 'suit')) || ITEMS.wet; return setOn(P, 'bathysphere') ? { ...S, press: S.press + 400 } : S; };
 
 // what each upgrade is, in a sentence (the shop shows it when you hover the row)
 export const UPGRADE_DESC = {
@@ -401,39 +402,16 @@ export function statAt(id, l) {
 }
 // (2.6.0) air, swimming, sprint and the bag come from what he has on, not a ladder
 export const statValue = (P, id) => { const o = itemStat(P, id); return o != null ? o : statAt(id, lv(P, id)); };
-// ---------------- the kit (2.6.0): items in place of the tool, fins, tank and bag ladders ----------------
-// A save from before gets, for each ladder, every catalog item it could have bought with what it spent
-// climbing it, the dearest of them on, and the rest of the money back.
-const KIT_TRACK = { net: 'tNet', slurp: 'tSlurp', tag: 'tTag', cam: 'tCam', fins: 'tFins', tank: 'tTank', bag: 'tBag' };
-const KIT_GEAR = { slurp: 'slurp', tag: 'tagger', cam: 'camera' };
-function migrateKit(P) {
-  P.kit = { own: {}, on: {} };
-  let refund = 0;
-  for (const [kind, t] of Object.entries(KIT_TRACK)) {
-    if (KIT_GEAR[kind] && !(P.gear && P.gear[KIT_GEAR[kind]])) continue; // a tool he never bought
-    const l = (P.tlv && P.tlv[t]) || 0; let spent = 0;
-    if (l && TRACKS[t]) { const Q = { tlv: Object.assign({}, P.tlv), tlvV: 2 }; for (let k = 0; k < l; k++) { Q.tlv[t] = k; spent += upgradeCost(Q, t); } }
-    const list = ITEMS_OF(kind, 'catalog').sort((a, b) => a.price - b.price);
-    const own = [], base = list.find((it) => it.price === 0) || (KIT_GEAR[kind] ? list[0] : null);
-    if (base) own.push(base.id);
-    let left = spent;
-    for (const it of list) if (!own.includes(it.id) && it.price <= left) { own.push(it.id); left -= it.price; }
-    refund += left;
-    // on: the dearest with no catch to it (the long-handle net for nets, if he has it); the rest are his to choose in B
-    const plain = own.filter((id) => !ITEMS[id].bad);
-    P.kit.own[kind] = own; P.kit.on[kind] = kind === 'net' && own.includes('long') ? 'long' : plain.length ? plain[plain.length - 1] : own.length ? own[own.length - 1] : null;
-  }
-  if (P.gear && P.gear.lowlight) { P.kit.own.cam = [...(P.kit.own.cam || []), 'lowlight']; P.kit.on.cam = 'lowlight'; }
-  if (refund > 0.5) { P.cash = Math.round(((P.cash || 0) + refund) * 100) / 100; P.kitRefund = Math.round(refund); }
-}
-export const kit = (P) => { if (!P.kit) migrateKit(P); return kitOf(P); };
-export const worn = (P, kind) => { kit(P); return wornItem(P, kind); };
+// ---------------- the kit (2.8.0): what he has on, and its skills ----------------
+// air, swimming, sprint and the bag come from the items on him; skills stack across everything worn
+export const kit = (P) => kitOf(P);
+export const worn = (P, kind) => wornItem(P, kind);
 function itemStat(P, id) {
   if (!P || (id !== 'air' && id !== 'swim' && id !== 'sprint' && id !== 'bag')) return null;
-  if (id === 'air') return worn(P, 'tank').air;
-  if (id === 'swim') return worn(P, 'fins').swim * (worn(P, 'tank').speed || 1);
+  if (id === 'air') return Math.min(300, worn(P, 'tank').air * (1 + 0.1 * skillLv(P, 'rebreathing')) * (setOn(P, 'sealab') ? 1.5 : 1));
+  if (id === 'swim') return worn(P, 'fins').swim * (worn(P, 'tank').speed || 1) * (1 + 0.06 * skillLv(P, 'haste'));
   if (id === 'sprint') return worn(P, 'fins').sprint;
-  return worn(P, 'bag').slots;
+  return worn(P, 'bag').slots + skillLv(P, 'pockets');
 }
 const roundCost = (c) => (c < 10 ? Math.round(c * 100) / 100 : c < 100 ? Math.round(c * 4) / 4 : Math.round(c));
 const statStepCost = (id, l) => { const U = UPGRADES[id]; return U.costs ? U.costs[Math.min(l, U.costs.length - 1)] : U.cost * Math.pow(U.growth, l); };
@@ -451,7 +429,7 @@ export const owns = (P, k) => {
   if (k === 'slurp') return !!worn(P, 'slurp');
   if (k === 'tagger') return !!worn(P, 'tag');
   if (k === 'camera') return !!worn(P, 'cam');
-  if (k === 'lowlight') { const c = worn(P, 'cam'); return !!c && c.id === 'lowlight'; }
+  if (k === 'lowlight') { const c = worn(P, 'cam'); return !!c && c.flash === false; }
   return !!(P.gear && P.gear[k]);
 };
 const trim = (t) => t.replace(/\.?0+$/, '');
@@ -478,8 +456,18 @@ const sumLv = (P, ids) => ids.reduce((a, id) => a + lv(P, id), 0);
 export function gear(P, kind) {
   const v = (id) => statValue(P, id);
   if (kind === 'net' || kind === 'slurp' || kind === 'tag' || kind === 'cam') {
+    // the tool he has on, with every skill he wears added in (2.8.0)
     const it = worn(P, kind) || ITEMS[{ net: 'hand', slurp: 'slurp', tag: 'pole', cam: 'compact' }[kind]];
-    return Object.assign({ noise: 0.01, success: 0.9, harm: 0.04 }, it);
+    const d = Object.assign({ noise: 0.01, success: 0.9, harm: 0.04 }, it), L = (k) => skillLv(P, k);
+    if (d.success != null) d.success = Math.min(0.98, d.success + 0.04 * L('performance'));
+    if (d.provoke != null) d.provoke = Math.max(0.05, d.provoke * (1 - 0.1 * L('performance')));
+    if (d.maxLen != null) d.maxLen = +(d.maxLen * (1 + 0.1 * L('oversized'))).toFixed(2);
+    if (d.range != null) d.range = +(d.range * (1 + 0.1 * L('overreaching'))).toFixed(2);
+    if (d.time != null) d.time = Math.max(0.3, d.time * (1 - 0.08 * L('quickdraw')));
+    if (d.shots != null) d.shots += 2 * L('shutterbug');
+    if (d.pay != null) d.pay *= 1 + 0.1 * L('scholar');
+    if (d.harm != null && setOn(P, 'reef')) d.harm = 0; // the Reef Keeper set: nothing he catches is harmed
+    return d;
   }
   if (kind === 'net') {
     const n = sumLv(P, ['netSize', 'netReach', 'netSpeed', 'netGrip', 'netSoft']);
