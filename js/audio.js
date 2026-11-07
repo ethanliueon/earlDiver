@@ -185,7 +185,7 @@ export class Audio {
     // played a minute (a piece just begun plays on through). Lesser trouble (out of air, hurt, deep outside
     // the sub) never stops it; it only keeps a new piece from starting.
     const serious = playing && ((ent && ent.marked) || g.fx.dread > 0.35 || !!g.threat || !!g.reveal || !!g.legend);
-    const mild = playing && (g.fx.dread > 0.02 || !!g.noAir || (g.injury || 0) > 0 || (!e.inSub && e.y > 300));
+    const mild = playing && (g.fx.dread > 0.02 || !!g.noAir || (g.injury || 0) > 0 || (!e.inSub && e.y > (e.pressStart || 300))); // (3.0.17) the suit's own limit
     const stress = serious || mild;
     this.calm = playing && !stress;
     if (stress) m.sinceStress = 0; else m.sinceStress += dt;
