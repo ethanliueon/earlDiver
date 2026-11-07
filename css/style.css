@@ -1814,3 +1814,17 @@ body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { 
   box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #9a4a38, 0 0 0 4px #1a1d18, inset 0 0 20px rgba(230,70,50,0.35), 0 0 8px rgba(230,70,50,0.2); animation: inv-trouble2 1.8s ease-in-out infinite; }
 @keyframes inv-trouble2 { 50% { box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #d0644a, 0 0 0 4px #1a1d18, inset 0 0 30px rgba(230,70,50,0.55), 0 0 16px rgba(230,70,50,0.45); } }
 #inventory .tank-win.trouble { box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #9a4a38, 0 0 10px rgba(230,70,50,0.3); }
+
+/* ---------- 3.0.41 rarity on an animal's card: the name in its colour; gold stars in the corner ---------- */
+.has-stars { position: relative; }
+.r-stars { position: absolute; top: 6px; right: 7px; z-index: 3; display: flex; gap: 1px; pointer-events: none; font-style: normal; }
+.r-stars b { margin: 0; font: 400 12px/1 Georgia, serif; color: #e8b84a; text-shadow: 0 1px 1px rgba(0,0,0,0.7), 0 0 4px rgba(242,184,74,0.35); }
+.rs-legendary b { color: #ffd36a; text-shadow: 0 1px 1px rgba(0,0,0,0.7), 0 0 6px rgba(255,200,90,0.75); animation: star-glint 3.6s ease-in-out infinite; }
+.rs-legendary b:nth-child(2) { animation-delay: 0.35s; } .rs-legendary b:nth-child(3) { animation-delay: 0.7s; }
+@keyframes star-glint { 0%, 60%, 100% { transform: scale(1); filter: none; } 70% { transform: scale(1.25); filter: brightness(1.35); } 80% { transform: scale(1); filter: none; } }
+/* in the Catch page's line, the stars sit right after the name */
+.ct-cap .r-stars { position: static; display: inline-flex; margin: 0 6px 0 4px; vertical-align: 1px; }
+.ct-cap .r-stars b { font-size: 11px; }
+#inventory .fc .r-stars b, .tr-card .r-stars b, .gl-tag .r-stars b, .entry .r-stars b, .ct-cap .r-stars b { display: inline; margin: 0; font-family: Georgia, serif; font-weight: 400; font-style: normal; color: #e8b84a; }
+#inventory .fc .rs-legendary b, .tr-card .rs-legendary b, .gl-tag .rs-legendary b, .entry .rs-legendary b, .ct-cap .rs-legendary b { color: #ffd36a; }
+#inventory .fc .r-stars b { font-size: 12px; line-height: 1; }

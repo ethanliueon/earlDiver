@@ -8,7 +8,7 @@
 // on a chamber, the open tank or the bag.
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies, speciesIcon } from './creatures_draw.js';
-import { rarityOf, specimenValue } from './specimens.js';
+import { rarityOf, specimenValue, rarityStars, rarityCls } from './specimens.js';
 import { money } from './economy.js';
 import { xEyes } from './gallery.js';
 import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, bigIn, slotsOf} from './capture.js';
@@ -181,7 +181,7 @@ export class TankRoom {
     if (!this.pics.has(sp.id)) this.pics.set(sp.id, speciesIcon(sp, 150, 80).toDataURL());
     const R = rarityOf(sp), price = specimenValue(s);
     const x = clamp(C.x + 16, 12, G.W - 250), y = clamp(C.y - 20, 12, G.H - 230);
-    return `<div class="tr-card" data-tag="${C.key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px">
+    return `<div class="tr-card${rarityCls(sp)}" data-tag="${C.key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px">${rarityStars(sp)}
       <div class="tc-top"><img src="${this.pics.get(sp.id)}" alt=""><div><b style="color:${R.col}">${sp.name}</b><i class="sci">${sp.sci || ''}</i></div></div>
       ${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}
       <div class="tc-facts"><span>Found at: ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : ''}</span><span>Habitat: ${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m</span><span>Value: <b>${money(price)}</b></span></div>

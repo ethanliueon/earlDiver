@@ -6,7 +6,7 @@ import { speciesIcon } from './creatures_draw.js';
 import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
-import { specimenValue, conditionName, rarityOf } from './specimens.js';
+import { specimenValue, conditionName, rarityOf, rarityStars, rarityCls, rarityCol } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
@@ -393,12 +393,12 @@ export class UI {
     const dot = (s2) => (s2.cond <= 0.05 ? '#8a6a5a' : s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a');
     const state = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
     const card = (cls, s2, span = 1) => { const sp = SPECIES_BY_ID[s2.id];
-      return `<div class="${cls}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m"><img src="${ic(sp)}" alt=""><b>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
+      return `<div class="${cls}${rarityCls(sp)}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m">${rarityStars(sp)}<img src="${ic(sp)}" alt=""><b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
     // the bag: eleven cubbies, the ones beyond his bag padlocked
     const BAG_MAX = 12, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
     const inTrouble = (s2, inBag) => s2.cond > 0.05 && (s2.cond < 0.3 || gapOf(g, s2, inBag) > SAFE_GAP);
-    const bag = g.bag.map((s2, i) => card(inTrouble(s2, true) ? 'fc trouble' : 'fc', s2).replace(/^<div class="fc( trouble)?"/, (m) => `${m} data-b="${i}"`)).join('') + rep2('<div class="fc empty"></div>', cap - g.bag.length) + rep2('<div class="fc locked"><i></i></div>', shown - Math.max(cap, g.bag.length));
+    const bag = g.bag.map((s2, i) => card(inTrouble(s2, true) ? 'fc trouble' : 'fc', s2).replace(/^<div class="fc[^"]*"/, (m) => `${m} data-b="${i}"`)).join('') + rep2('<div class="fc empty"></div>', cap - g.bag.length) + rep2('<div class="fc locked"><i></i></div>', shown - Math.max(cap, g.bag.length));
     const all = g.bag.concat(g.subTank || []), total = all.reduce((t, s2) => t + worth(s2), 0);
     // the sub: the open tank itself, its animals swimming as they do in the sub, and the chambers as they hang there
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))], tank = g.subTank || [];
@@ -419,7 +419,7 @@ export class UI {
     const s2 = this.catchSel; if (!s2 || !(g.subTank || []).includes(s2)) return '';
     const sp = SPECIES_BY_ID[s2.id], P = g.profile;
     const dying = s2.cond > 0.05 && gapOf(g, s2, false) > SAFE_GAP;
-    return `<b>${sp.name}</b>${s2.variant ? ` <em>${s2.variant}</em>` : ''} · ${s2.cond <= 0.05 ? 'dead' : dying ? '<strong>dying: wrong pressure</strong>' : conditionName(s2.cond)} · from ${Math.round(s2.from || 0)} m · <span>${money(specimenValue(s2) * statValue(P, 'payFish'))}</span>`;
+    return `<b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${rarityStars(sp)}${s2.variant ? ` <em>${s2.variant}</em>` : ''} · ${s2.cond <= 0.05 ? 'dead' : dying ? '<strong>dying: wrong pressure</strong>' : conditionName(s2.cond)} · from ${Math.round(s2.from || 0)} m · <span>${money(specimenValue(s2) * statValue(P, 'payFish'))}</span>`;
   }
   // (3.0.36) every frame while the Catch page is open: the tank and the chambers, drawn by the tank room's own hand
   drawCatch(g, dt) {
@@ -835,17 +835,17 @@ export class UI {
     for (const [id, info] of entries) {
       const sp = SPECIES_BY_ID[id];
       const row = document.createElement('div');
-      row.className = 'entry';
+      row.className = 'entry' + rarityCls(sp);
       let icon = this.iconCache.get(id);
       if (!icon) { icon = speciesIcon(sp, 160, 90); this.iconCache.set(id, icon); }
       const img = document.createElement('img');
       img.src = icon.toDataURL(); img.alt = sp.name;
       const txt = document.createElement('div');
-      txt.innerHTML = `<h3>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.sci}</div>
+      txt.innerHTML = `<h3${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.sci}</div>
         <p>${sp.desc}</p>
         <div class="meta">Seen at ${info.depth} m · lives ${sp.dmin}–${sp.dmax} m · up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''} · pressure tolerance x${pressureKind(sp).k} (${pressureKind(sp).why})</div>
         ${this.variantRow(sp)}`;
-      row.append(img, txt);
+      row.append(img, txt); row.insertAdjacentHTML('afterbegin', rarityStars(sp));
       list.append(row);
     }
   }

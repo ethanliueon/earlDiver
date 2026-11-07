@@ -108,6 +108,16 @@ export function isTagOnly(sp) { return TAG[sp.id] !== undefined && TAG[sp.id] > 
 // ---------- rarity ----------
 // Every species has a rarity, from how scarce and remarkable it is (the reference figures above):
 // common, uncommon, rare, exotic, legendary. What it pays comes from its rarity.
+// (3.0.41) an animal's rarity on its card: its name in the rarity's colour, and gold stars in the top-right
+// corner, one for Rare, two for Exotic, three for Legendary (a Legendary's stars glint now and then). Nothing for
+// the animals whose rarity is never shown.
+const STARS = { rare: 1, exotic: 2, legendary: 3 };
+export function rarityStars(sp) {
+  const r = rarityOf(sp); if (!r || r.hidden || !STARS[r.id]) return '';
+  return `<i class="r-stars rs-${r.id}" title="${r.name}">${'<b>★</b>'.repeat(STARS[r.id])}</i>`;
+}
+export const rarityCls = (sp) => { const r = rarityOf(sp); return !r || r.hidden || !STARS[r.id] ? '' : ` has-stars`; };
+export const rarityCol = (sp) => { const r = rarityOf(sp); return !r || r.hidden ? '' : r.col; };
 export const RARITY = [
   { id: 'common', name: 'Common', col: '#9aa0a6', upTo: 5, spawn: 1 },
   { id: 'uncommon', name: 'Uncommon', col: '#5fbf6a', upTo: 30, spawn: 0.4 },

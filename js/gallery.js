@@ -1,3 +1,4 @@
+import { rarityStars, rarityCls, rarityCol } from './specimens.js';
 // The aquarium gallery, walked aboard the Margaret: one big lit tank, every animal in it together (a deep
 // one lives here well enough if it came up healthy). Tap one for its brass tag: its name, how it is doing (Happy after five
 // minutes healthy, Famous fifteen minutes after that), and what can be done: pet it, feed it, sell
@@ -104,9 +105,9 @@ export class Gallery {
       const st = dead ? 'dead' : d.cond < 0.7 ? 'recovering' : happy ? 'happy' : 'settling in';
       const prog = dead ? '' : d.famous ? '<em class="gl-famous">Famous</em>' : happy ? `famous in ${Math.ceil(toFamous / 60)} min` : d.cond >= 0.7 ? `happy in ${Math.ceil(toHappy / 60)} min` : 'needs to get well first';
       const x = clamp(a.sx, 150, G.W - 150), y = a.sy + 30 > G.H - 220 ? a.sy - 230 : a.sy + 30;
-      html += `<div class="btag open gl-tag" style="left:${x}px;top:${y}px">
+      html += `<div class="btag open gl-tag${rarityCls(sp)}" style="left:${x}px;top:${y}px">${rarityStars(sp)}
         ${dead ? '' : `<input data-name="${esc(this.open)}" maxlength="18" placeholder="give it a name" value="${esc(d.name || '')}">`}
-        <b>${d.name ? esc(d.name) + ', ' : ''}${sp.name}</b>${d.variant ? `<em class="rarel r-${d.variant}">${VARIANTS[d.variant].name}</em>` : ''}
+        <b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${d.name ? esc(d.name) + ', ' : ''}${sp.name}</b>${d.variant ? `<em class="rarel r-${d.variant}">${VARIANTS[d.variant].name}</em>` : ''}
         <small>${st}${prog ? ' · ' + prog : ''}</small>
         <small>sells for about $${Math.round(gallerySale(d) * (this.h.pay ? this.h.pay() : 1)).toLocaleString()}${!dead && (happy || d.famous) ? ` (x${((happy ? 1.2 : 1) * (d.famous ? 2 : 1)).toFixed(1)})` : ''}</small>
         <div class="acts">
