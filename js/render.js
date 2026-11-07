@@ -11,6 +11,7 @@ import { sleeperState } from './sleeper_draw.js';
 import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
+import { Wake } from './trail.js';
 import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
@@ -742,21 +743,11 @@ export class Renderer {
       }
       const h = drawEarl(ctx, (g.aboard ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       ctx.restore();
-      // (2.8.0) a Legendary leaves a trail: a wake of faint motes in its own colour, behind him as he swims
+      // (2.8.2) a Legendary's wake: a few dim motes that school with him, shaped by the net's skill (trail.js)
       if (e.trail && !e.inSub && !g.aboard && g.mode === 'play') {
-        const tr = this.trailPts || (this.trailPts = []), last = tr[tr.length - 1];
-        if (!last || Math.hypot(last.x - e.x, last.y - e.y) > 0.1) tr.push({ x: e.x - Math.cos(e.angle) * e.facing * 0.5, y: e.y - Math.sin(e.angle) * 0.5, t: g.time, j: Math.random() * 6.28 });
-        while (tr.length && (g.time - tr[0].t > 1.8 || tr.length > 60)) tr.shift();
-        const tc = hexToRgb(e.trail);
-        ctx.save(); ctx.globalCompositeOperation = 'lighter';
-        for (const p of tr) {
-          const k = clamp(1 - (g.time - p.t) / 1.8, 0, 1), x = S(p.x + Math.sin(p.j + g.time * 2) * 0.06 * (1 - k)), y = Sy(p.y - (1 - k) * 0.25);
-          const gg = ctx.createRadialGradient(x, y, 0, x, y, ppm * (0.04 + 0.11 * k));
-          gg.addColorStop(0, `rgba(${tc[0]},${tc[1]},${tc[2]},${(0.32 * k * k).toFixed(3)})`); gg.addColorStop(1, `rgba(${tc[0]},${tc[1]},${tc[2]},0)`);
-          ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(x, y, ppm * (0.04 + 0.11 * k), 0, TAU); ctx.fill();
-        }
-        ctx.restore();
-      } else if (this.trailPts) this.trailPts.length = 0;
+        const wk = this.wake || (this.wake = new Wake());
+        wk.update(e, g.time, e.trailKind); wk.draw(ctx, S, Sy, ppm, e.trail, !!e.lampOn, g.time);
+      } else if (this.wake) this.wake.reset();
       if (h.tip) {
         const ca2 = Math.cos(e.angle), sa2 = Math.sin(e.angle);
         g.toolTip = { x: e.x + e.facing * (h.tip.x * ca2 - h.tip.y * sa2) / ppm, y: e.y + (h.tip.x * sa2 + h.tip.y * ca2) / ppm };

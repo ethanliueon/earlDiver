@@ -200,13 +200,13 @@ const TOT = new WeakMap();
 export function totals(P) {
   const K = kitOf(P), hit = TOT.get(K);
   if (hit && hit.rev === K.rev) return hit.t;
-  const t = { sk: {}, legends: new Set(), sets: {}, setsOn: new Set(), glows: [], trail: null };
+  const t = { sk: {}, legends: new Set(), sets: {}, setsOn: new Set(), glows: [], trail: null, trailKind: null };
   for (const u of Object.values(K.on)) {
     const q = u && instOf(P, u); if (!q) continue;
     const def = ITEMS[q.id];
     for (const [k, l] of q.sk || []) t.sk[k] = (t.sk[k] || 0) + l;
     if (q.leg) t.legends.add(q.leg);
-    if (def.rarity === 'legendary' && (def.kind === 'net' || !t.trail)) t.trail = def.glow; // one trail only: the net's, if it is Legendary
+    if (def.rarity === 'legendary' && (def.kind === 'net' || !t.trail)) { t.trail = def.glow; t.trailKind = def.legend || 'motes'; } // one trail only: the net's, if it is Legendary
     if ((q.sk || []).some(([k]) => k === 'biolum')) t.glows.push(def.glow || '#8af0d0');
     if (def.set) t.sets[def.set] = (t.sets[def.set] || 0) + 1;
   }

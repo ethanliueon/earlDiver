@@ -67,7 +67,7 @@ function applyKit(e, P) {
   e.warmK = Math.max(0, 1 - 0.25 * L('warmth'));
   e.ambush = Math.min(0.8, 0.12 * L('ambush'));
   e.hardened = L('hardened'); e.mending = L('mending'); e.prospector = L('prospector');
-  e.biolum = L('biolum'); e.glows = T.glows; e.trail = T.trail; e.legends = T.legends;
+  e.biolum = L('biolum'); e.glows = T.glows; e.trail = T.trail; e.trailKind = T.trailKind; e.legends = T.legends;
   const wf = worn(P, 'fins'), wt = worn(P, 'tank'), ws = worn(P, 'suit'); e.finLook = (wf && wf.finLook) || null; e.tankLook = (wt && wt.tankLook) || null; e.suitGlow = (ws && ws.suitGlow) || null; // (2.8.1) how his special gear looks on him
   e.kelpSet = setOn(P, 'kelp'); e.nightSet = setOn(P, 'night'); e.triesteSet = setOn(P, 'trieste'); e.challengerSet = setOn(P, 'challenger');
   if (g && owns(P, 'camera')) g.shots = Math.max(g.shots || 0, gear(P, 'cam').shots);
