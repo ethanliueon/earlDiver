@@ -89,7 +89,7 @@ export class Gallery {
     const full = nShown >= gallerySlots(P);
     // (3.0.15) more room, bought right here: two more places a time
     const lvG = P.galleryLv || 0, step = GALLERY_STEPS[lvG];
-    const roomBtn = step !== undefined ? `<button class="gl-room" data-room="1" ${P.cash + 1e-6 < step ? 'disabled' : ''}>More room · ${gallerySlots(P)} → ${gallerySlots(P) + 2} places · $${step.toLocaleString()}</button>` : '<p>The aquarium is as big as the Margaret can hold.</p>';
+    const roomBtn = step !== undefined ? `<button class="gl-room" data-room="1" ${P.cash + 1e-6 < step ? 'disabled' : ''}>More room · ${gallerySlots(P)} → ${gallerySlots({ galleryLv: lvG + 1 })} places · $${step.toLocaleString()}</button>` : '<p>The aquarium is as big as the Margaret can hold.</p>';
     this.root.querySelector('.gl-catch').innerHTML = !cand.length ? '<h4>Your catch</h4><p>Nothing alive aboard to put in. Bring something up, and Keep it on the Sell tab so it is not sold.</p>' : `<h4>Your catch</h4>` + cand.slice(0, 12).map((c) => {
       const sp = SPECIES_BY_ID[c.s.id], why = c.why;
       return `<button data-place="${c.where}:${c.i}" ${why ? `disabled title="${esc(why)}"` : 'title="Put it into the tank"'} class="${c.s.kept ? 'kept' : ''}">${c.s.variant ? `<em class="rarel r-${c.s.variant}">${VARIANTS[c.s.variant].name}</em> ` : ''}${esc(sp.name)}${c.s.kept ? '<small>kept</small>' : ''}${why ? `<small>${esc(why)}</small>` : ''}</button>`;

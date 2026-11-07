@@ -907,7 +907,7 @@ export class UI {
         html += `<div class="wing"><div class="wing-h"><b>Aboard</b><em>${list.length}/${slots}</em></div><div class="tanks">${cells}</div></div>`;
       }
       const lvG = P.galleryLv || 0;
-      if (lvG < GALLERY_STEPS.length) html += card('More room in the aquarium', 'Another pair of places in the tanks: pumps, chillers and glass.', `room for ${slots} now`, GALLERY_STEPS[lvG], 'buy', 'gallery', 'Fit', '', '', [['places', `${slots} → ${slots + 2}`, 'good']]);
+      if (lvG < GALLERY_STEPS.length) html += card('More room in the aquarium', 'More places in the tanks: pumps, chillers and glass.', `room for ${slots} now`, GALLERY_STEPS[lvG], 'buy', 'gallery', 'Fit', '', '', [['places', `${slots} → ${gallerySlots({ galleryLv: lvG + 1 })}`, 'good']]);
       else html += '<p class="shop-note">The aquarium is as big as the Margaret can hold.</p>';
       if (A.lastDay) html += `<p class="shop-note">Yesterday: ${A.lastDay.visitors} visitors, ${money(A.lastDay.income, false)} in tickets. Earned so far: ${money(A.earned, false)}.</p>`;
     }

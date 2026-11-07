@@ -16,8 +16,10 @@ export const WINGS = [
 ];
 export const WING_BY_ID = Object.fromEntries(WINGS.map((w) => [w.id, w]));
 // room for animals: four to start, two more for each refit, up to twenty
-export const GALLERY_STEPS = [200, 600, 1800, 5000, 12000, 30000, 70000, 150000];
-export const gallerySlots = (P) => 5 + 2 * Math.min(GALLERY_STEPS.length, P.galleryLv || 0); // (3.0.15) starts at 5
+// (3.0.16) the aquarium's size by level: 5, then 7 ($200), 11 ($1,000), 15 ($3,500), 20 ($10,000)
+export const GALLERY_SIZES = [5, 7, 11, 15, 20];
+export const GALLERY_STEPS = [200, 1000, 3500, 10000];
+export const gallerySlots = (P) => GALLERY_SIZES[Math.min(GALLERY_STEPS.length, P.galleryLv || 0)];
 
 // which wing an animal belongs in (where it lives, and where it was caught)
 export function zoneOf(spec) {
