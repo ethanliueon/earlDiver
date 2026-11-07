@@ -2,8 +2,8 @@
 // The chamber room: pressure chambers (after the SubCAS chambers fisheries scientists use) strapped
 // to a riveted bulkhead, a pipe run feeding them, a caged lamp and a porthole onto the water outside.
 // The tank room: the open tank set into the wall, and the catch bag hanging on its hook.
-// Each animal has a small brass tag (its name, where it was found, how it is); tap a tag, a chamber
-// or a fish to open its choices. How it swims shows how it is doing. Animals are moved by hand: the
+// (2.7.4) No tags: click an animal for a small card (its name, where it was found, how it is) and what
+// can be done with it; drag it anywhere in the open tank to put it there. How it swims shows how it is doing. Animals are moved by hand: the
 // catch bag hangs in both rooms, and a fish is dragged from the bag, the tank or a chamber and dropped
 // on a chamber, the open tank or the bag.
 import { SPECIES_BY_ID } from './species.js';
@@ -44,7 +44,8 @@ export class TankRoom {
       <p>Dead animals sell for half the plain market price.</p>`;
     this.over.addEventListener('click', (ev) => {
       const b = ev.target.closest('button[data-tk]');
-      if (b) { if (!b.disabled) { const [act, where, i] = b.dataset.tk.split(':'); this.h.act(act, where, +i); this.openKey = null; this.layout(true); } return; }
+      if (b) { if (!b.disabled) { const [act, where, i, to] = b.dataset.tk.split(':'); if (act === 'swaps') { this.card.swaps = !this.card.swaps; this.layout(true); return; } this.h.act(act, where, +i, to === undefined ? -1 : +to); this.openKey = null; this.card = null; this.layout(true); } return; }
+      if (ev.target.closest('.tr-card')) return;
       const tag = ev.target.closest('[data-tag]');
       if (tag) { this.openKey = this.openKey === tag.dataset.tag ? null : tag.dataset.tag; this.layout(true); return; }
       const go = ev.target.closest('[data-go]');
@@ -66,7 +67,16 @@ export class TankRoom {
     this.c.addEventListener('pointerup', (ev) => {
       const press = this.press; this.press = null;
       if (this.drag) {
-        const d = this.drag, tgt = this.dropAt(ev.clientX, ev.clientY); this.drag = null;
+        const d = this.drag;
+        // (2.7.4) a fish already swimming in the open tank, dropped in it: it stays where it was put, then carries on
+        if (this.room === 'tank' && d.where === 'tank' && !d.s.pressed && !d.s.pile) {
+          const T = this.geometry().tank, a = this.anim.get(d.s);
+          if (a && ev.clientX > T.x && ev.clientX < T.x + T.w && ev.clientY > T.y && ev.clientY < T.y + T.h) {
+            a.x = a.tx = ev.clientX - T.x; a.y = a.ty = ev.clientY - T.y; a.vx = a.vy = 0; a.retT = 2 + Math.random() * 2; a.placed = true;
+            this.drag = null; this.layout(true); return;
+          }
+        }
+        const tgt = this.dropAt(ev.clientX, ev.clientY); this.drag = null;
         if (tgt) {
           if (tgt.kind === 'chamber') this.h.act('press', d.where, d.i, tgt.n);
           else if (tgt.kind === 'tank') this.h.act('open', d.where, d.i);
@@ -76,8 +86,9 @@ export class TankRoom {
         return;
       }
       if (!press) return;
-      const hit = this.hitTest(ev.clientX, ev.clientY);
+      const hit = this.hitTest(ev.clientX, ev.clientY) || (press.item ? this.keyOf(press.item.s) : null);
       this.openKey = hit && hit !== this.openKey ? hit : null;
+      this.card = this.openKey ? { key: this.openKey, x: ev.clientX, y: ev.clientY } : null;
       this.layout(true);
     });
     this.c.addEventListener('pointercancel', () => { this.press = null; this.drag = null; });
@@ -129,50 +140,42 @@ export class TankRoom {
     this.sig = sig;
     const G = this.geometry();
     this.root.querySelector('.tr-room').textContent = this.room === 'chambers' ? 'The chamber room' : 'The tank room';
-    const tag = (s, where, i, x, y, extra = '') => {
-      const key = this.keyOf(s), open = this.openKey === key, sp = SPECIES_BY_ID[s.id];
-      let acts = '';
-      if (open) {
-        acts += `<button class="ghost" data-tk="release:${where}:${i}">Let go</button>`;
-        acts += `<small class="hint">drag the fish to move it</small>`;
-      }
-      return `<div class="btag${open ? ' open' : ''}" data-tag="${key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px${extra}">
-        <b>${sp.name}</b>${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}<small>found at ${s.from || 0} m</small><i class="st"></i>${acts ? `<div class="acts">${acts}</div>` : ''}</div>`;
-    };
     let html = '';
-    if (this.room === 'chambers') {
-      const by = new Map(g.subTank.map((s, i) => [s, i]).filter(([s]) => s.pressed).map(([s, i]) => [s.chamber, [s, i]]));
-      const ps = pressSlots(g);
-      G.chambers.forEach((c, n) => {
-        const x = c.x + CW * c.k / 2;
-        if (n >= ps) html += `<div class="btag blank" style="left:${x}px;top:${G.tagY}px"><small>not fitted</small></div>`;
-        else if (by.has(n)) { const [s, i] = by.get(n); html += tag(s, 'tank', i, x, G.tagY); }
-        else html += `<div class="btag blank" style="left:${x}px;top:${G.tagY}px"><small>chamber ${n + 1} · empty</small></div>`;
-      });
-      if (G.bagTags) g.bag.forEach((s, i) => { const [bx, byy] = G.bagTag(i, g.bag.length); html += tag(s, 'bag', i, bx, byy); });
-      html += `<button class="hatch-btn" data-go="tank" style="left:${G.hatchR.x}px;top:${G.hatchR.y}px">The tank room →</button>`;
-    } else {
-      const open = g.subTank.map((s, i) => [s, i]).filter(([s]) => !s.pressed && !s.pile);
-      const T = G.tank, free = Math.max(0, tankSlots(g) - tankUsed(g)), n = Math.max(1, open.length + (free ? 1 : 0)), step = T.w / n;
-      open.forEach(([s, i], k) => { html += tag(s, 'tank', i, T.x + step * (k + 0.5), T.y + T.h + 18); });
-      if (free) html += `<div class="btag blank" style="left:${T.x + step * (open.length + 0.5)}px;top:${T.y + T.h + 18}px"><small>room for ${free} more place${free > 1 ? 's' : ''}</small></div>`;
-      const pile = g.subTank.filter((s) => s.pile);
-      if (pile.length) html += `<div class="btag blank pilenote" style="left:${G.pile.x + G.pile.w / 2}px;top:${G.pile.y - 132}px"><small>the net's haul · ${pile.length} · out of the water: sort them</small></div>`;
-      if (hasBigTank(g)) {
-        const B = G.big, inn = g.subTank.map((s, i) => [s, i]).filter(([s]) => s.pressed && s.chamber === BIG);
-        inn.forEach(([s, i], k) => { html += tag(s, 'tank', i, B.x + B.w * (k + 0.5) / Math.max(1, inn.length), B.y + B.h + 12); });
-        if (!inn.length) html += `<div class="btag blank" style="left:${B.x + B.w / 2}px;top:${B.y + B.h + 12}px"><small>large pressure tank · three, or one big</small></div>`;
-      }
-      if (G.bagTags) g.bag.forEach((s, i) => { const [bx, byy] = G.bagTag(i, g.bag.length); html += tag(s, 'bag', i, bx, byy); });
-      html += `<button class="hatch-btn" data-go="chambers" style="left:${G.hatchL.x}px;top:${G.hatchL.y}px">← The chamber room</button>`;
-    }
+    if (this.room === 'chambers') html += `<button class="hatch-btn" data-go="tank" style="left:${G.hatchR.x}px;top:${G.hatchR.y}px">The tank room →</button>`;
+    else html += `<button class="hatch-btn" data-go="chambers" style="left:${G.hatchL.x}px;top:${G.hatchL.y}px">← The chamber room</button>`;
+    html += this.cardHtml(g, G);
     if (g.bag.length && !this.drag) html += `<div class="tr-dragnote">${g.bag.length} in the bag · drag ${g.bag.length > 1 ? 'them' : 'it'} into ${this.room === 'chambers' ? 'a chamber' : 'the tank'}${this.room === 'chambers' ? ', or into the tank next door (→)' : ''}</div>`;
     this.over.innerHTML = html;
     this.states(g);
   }
+  // the card for the animal clicked: its name, where it was found, how it is, and what can be done
+  cardHtml(g, G) {
+    const C = this.card; if (!C) return '';
+    let where = 'tank', i = g.subTank.findIndex((q) => q._k === C.key);
+    if (i < 0) { where = 'bag'; i = g.bag.findIndex((q) => q._k === C.key); }
+    if (i < 0) { this.card = null; this.openKey = null; return ''; }
+    const s = where === 'bag' ? g.bag[i] : g.subTank[i], sp = SPECIES_BY_ID[s.id];
+    const inChamber = where === 'tank' && s.pressed && s.chamber !== BIG, inOpen = where === 'tank' && !s.pressed && !s.pile;
+    const free = freeChamber(g), btn = (label, tk, on = true) => `<button data-tk="${tk}" ${on ? '' : 'disabled'}>${label}</button>`;
+    let acts = '';
+    if (!inChamber) {
+      if (free >= 0) acts += btn('Into a chamber', `press:${where}:${i}:${free}`);
+      else if (pressSlots(g) > 0) acts += btn('Swap with a chamber…', `swaps:${where}:${i}`);
+    }
+    if (!inOpen) acts += btn('Into the open tank', `open:${where}:${i}`, tankFits(g, { ...s, pressed: false, pile: false }));
+    if (where !== 'bag') acts += btn('Into the bag', `tobag:${where}:${i}`, g.bag.length < bagSlots(g));
+    acts += btn('Let go', `release:${where}:${i}`);
+    let swaps = '';
+    if (C.swaps) {
+      const occ = g.subTank.filter((q) => q.pressed && q.chamber !== BIG && q !== s).sort((a, b) => a.chamber - b.chamber);
+      swaps = `<div class="tr-swaps">${occ.map((o) => btn(`↔ ${SPECIES_BY_ID[o.id].name} <small>chamber ${o.chamber + 1}</small>`, `swap:${where}:${i}:${o.chamber}`)).join('')}</div>`;
+    }
+    const x = clamp(C.x + 16, 12, G.W - 260), y = clamp(C.y - 20, 12, G.H - 260);
+    return `<div class="tr-card" data-tag="${C.key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px"><b>${sp.name}</b>${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}<small>found at ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : ''}</small><i class="st"></i><div class="acts">${acts}</div>${swaps}</div>`;
+  }
   states(g) {
     this.root.querySelector('.tr-depth').textContent = `outside ${Math.max(0, Math.round(g.sub.y))} m`;
-    this.over.querySelectorAll('.btag[data-tag]').forEach((el) => {
+    this.over.querySelectorAll('[data-tag]').forEach((el) => {
       const where = el.dataset.where, s = (where === 'bag' ? g.bag : g.subTank)[+el.dataset.i];
       if (!s) return;
       const [w, col] = stateOf(g, s, where === 'bag');
@@ -592,7 +595,7 @@ export class TankRoom {
     const n = g.bag.length, bw = 136, bh = G.bagH(n);
     // cords from the bag down to each tag
     ctx.strokeStyle = 'rgba(160,130,80,0.85)'; ctx.lineWidth = 1.5;
-    if (G.bagTags) g.bag.forEach((s, i) => { const [tx, ty] = G.bagTag(i, n); ctx.beginPath(); ctx.moveTo(hk.x - 8, hk.y + 8 + bh + 8); ctx.quadraticCurveTo(tx, (hk.y + bh + ty) / 2 + 10, tx, ty + 6); ctx.stroke(); });
+    // (2.7.4: no tags, so no cords)
     ctx.save(); ctx.translate(hk.x - 8, hk.y + 8);
     const bag = new Path2D();
     bag.moveTo(-8, 0); bag.lineTo(8, 0); bag.quadraticCurveTo(bw * 0.62, bh * 0.35, bw * 0.34, bh); bag.quadraticCurveTo(0, bh + 16, -bw * 0.34, bh); bag.quadraticCurveTo(-bw * 0.62, bh * 0.35, -8, 0);

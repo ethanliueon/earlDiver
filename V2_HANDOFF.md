@@ -800,3 +800,13 @@ canvas drawings (earl_draw.js, tools_draw.js, the sub hulls) rather than new art
 ## 2.7.3 — the sub's front lights
 - The main beam reaches 46 m (was 33) and is brighter; the wide fill and the second lamp reach farther too,
   with the haze and motes in the beam to match. The softer edges and the glow round the hull are as before.
+
+## 2.7.4 — the tank room without tags
+- The brass tags (and the blank "chamber 2 · empty", "room for 1 more", "the net's haul" notes, and the
+  bag's cords) are gone. Click any animal (in the bag, the open tank, a chamber, the pile or the large tank)
+  for a small card at the pointer: its name, where it was found, how it is, and what can be done: into a
+  chamber (the first free one), "Swap with a chamber…" when every chamber is full (a list of who is in
+  each), into the open tank, into the bag, let go. Dragging still works as before.
+- `tankAction('swap', where, i, chamber)` in main.js: the animal takes that chamber, and the one in it
+  goes where this one was (its chamber, the open tank, the pile, or the bag).
+- A fish dragged within the open tank stays where it is dropped for a moment, then swims on as usual.

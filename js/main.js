@@ -474,6 +474,19 @@ function tankAction(act, where, i, to = -1) {
     audio.ready && audio.chamberPlop();
     const home = s.home ?? s.from ?? 0, rating = chamberRating(g);
     hud.toast(home > rating ? `${SPECIES_BY_ID[s.id].name}: sealed in, but the chamber only holds ${rating} m of its ${home} m` : `${SPECIES_BY_ID[s.id].name}: sealed in, pumping to ${home} m`);
+  } else if (act === 'swap') {
+    // (2.7.4) all chambers full: this animal takes chamber `to`, and the one in it goes where this one was
+    const o = g.subTank.find((q) => q.pressed && q.chamber === to);
+    if (!o || o === s) return false;
+    const wasPressed = s.pressed && where !== 'bag', wasChamber = s.chamber, wasPile = !!s.pile;
+    o.pressed = false; delete o.chamber;
+    if (s.pressed) { s.pressed = false; delete s.chamber; }
+    if (!seal(g, s, to)) { o.pressed = true; o.chamber = to; if (wasPressed) { s.pressed = true; s.chamber = wasChamber; } return false; }
+    if (where === 'bag') { L.splice(i, 1); g.subTank.push(s); g.subTank.splice(g.subTank.indexOf(o), 1); g.bag.push(o); }
+    else if (wasPressed) seal(g, o, wasChamber);
+    else if (wasPile) o.pile = true;
+    audio.ready && audio.chamberPlop();
+    hud.toast(`${SPECIES_BY_ID[s.id].name} and ${SPECIES_BY_ID[o.id].name.toLowerCase()} swapped`);
   } else if (act === 'open') {
     if (where === 'tank' && !s.pressed && !s.pile) return false;
     if (!tankFits(g, { ...s, pressed: false, pile: false })) { hud.toast(s.len >= 0.6 ? `The open tank has no room for a fish that size (${s.len >= 1.2 ? 3 : 2} places)` : 'The open tank is full', 'warn'); return false; }
