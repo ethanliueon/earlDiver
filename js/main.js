@@ -1865,7 +1865,13 @@ function update(dt) {
       const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
       flushSave();
       g.mode = 'over';
-      withLoading(() => { g = newGame('menu'); ui.showMenu({ cause, survived, bill, lost }); });
+      // (3.0.14) no menu after a death: behind the loading screen, straight back aboard the Margaret for the next
+      // dive, and what happened in one message
+      withLoading(() => {
+        startRun();
+        const lostTxt = lost && lost.length ? ` Lost: ${lost.join(', ')}.` : '';
+        hud.toast(`${cause}.${bill > 0 ? ` Hospital bill ${money(bill)}.` : ''}${lostTxt}`, 'warn');
+      });
       return;
     }
     // the entity keeps closing in during the fade
