@@ -956,7 +956,7 @@ function promptFor(t) {
   let p = null;
   if (t) {
     if (t.kind === 'pickup') {
-      const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'fangtooth necklace' : t.p.type === 'sapphire' ? 'deep sapphire' : (RESOURCES[t.p.type] ? RESOURCES[t.p.type].name.toLowerCase() : t.p.type);
+      const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'glow stick' : t.p.type === 'sapphire' ? 'deep sapphire' : (RESOURCES[t.p.type] ? RESOURCES[t.p.type].name.toLowerCase() : t.p.type);
       if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? `Cutting the net… ${Math.round(g.pry.t / HOLD_TIME.net * 100)} %` : `Hold F  Cut the ${t.p.animal} free`;
       else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') {
@@ -1014,9 +1014,9 @@ function interact(t, exitSub) {
     // taking things from the deep draws its attention
     if (p.y > 200) g.entity.disturb(g, p.type === 'necklace' ? 0.3 : p.type === 'lure' ? 0.2 : p.type === 'sapphire' ? 0.25 : 0.04);
     if (p.type === 'lure' || p.type === 'necklace') {
-      if (g.items[p.type] >= 1) { hud.toast(p.type === 'lure' ? 'You already carry a lure: you leave this one' : 'You already carry a necklace: you leave this one', 'warn'); return; }
+      if (g.items[p.type] >= 1) { hud.toast(p.type === 'lure' ? 'You already carry a lure: you leave this one' : 'You already carry a glow stick: you leave this one', 'warn'); return; }
       g.items[p.type]++;
-      hud.toast(p.type === 'lure' ? 'Anglerfish lure — still glowing  [Q]' : 'Fangtooth necklace  [E]');
+      hud.toast(p.type === 'lure' ? 'Anglerfish lure — still glowing  [Q]' : 'Glow stick  [E]');
     } else if (p.type === 'sapphire') {
       g.sapphires++; g.inv.sapphire = (g.inv.sapphire || 0) + 1;
       hud.toast(`A deep sapphire — worth around ${money(priceOf(profile, 'sapphire', GOODS.sapphire.price))} at the boat`, 'big');

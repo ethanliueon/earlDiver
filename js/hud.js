@@ -399,7 +399,7 @@ export class Hud {
     const slots = [];
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
     if (e.inSub && (g.items.airTank > 0 || g.tankFit)) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', g.tankFit ? g.tankFit / 3 : 0]);
-    if (g.items.necklace > 0) slots.push(['e', 'E', 'NECKLACE', g.items.necklace, '#b8f0c0', g.necklaceOn ? 1 : 0]);
+    if (g.items.necklace > 0) slots.push(['e', 'E', 'GLOW STICK', g.items.necklace, '#b8f0c0', g.necklaceOn ? 1 : 0]);
     // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
     if (e.inSub) {
       const n = g.subNet, N = n ? n.T : g.items.net && NETS_SUB[g.items.net];

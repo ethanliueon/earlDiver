@@ -2102,12 +2102,12 @@ export class Renderer {
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(u * 0.2, -u * 0.3, u * 0.05, -u * 0.5); ctx.stroke();
         ctx.fillStyle = '#d8f2ff'; ctx.beginPath(); ctx.arc(u * 0.05, -u * 0.55, u * 0.07, 0, TAU); ctx.fill();
         break;
-      case 'necklace':
-        ctx.strokeStyle = '#4a3a2a'; ctx.lineWidth = u * 0.025;
-        ctx.beginPath(); ctx.ellipse(0, -u * 0.08, u * 0.3, u * 0.08, 0, 0, TAU); ctx.stroke();
-        ctx.fillStyle = '#e8e2d0';
-        for (let k = 0; k < 7; k++) { const a = Math.PI * 0.15 + k * 0.12 * Math.PI; const px = Math.cos(a) * u * 0.3, py = -u * 0.08 + Math.sin(a) * u * 0.08; ctx.beginPath(); ctx.moveTo(px - u * 0.02, py); ctx.lineTo(px, py + u * 0.14); ctx.lineTo(px + u * 0.02, py); ctx.fill(); }
+      case 'necklace': { // (3.0.1) a glow stick lying in the silt, still faintly lit
+        const gg = ctx.createRadialGradient(0, -u * 0.05, 0, 0, -u * 0.05, u * 0.45); gg.addColorStop(0, 'rgba(160,255,180,0.35)'); gg.addColorStop(1, 'rgba(160,255,180,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, -u * 0.05, u * 0.45, 0, TAU); ctx.fill();
+        ctx.save(); ctx.rotate(-0.25); ctx.fillStyle = '#9af0b0'; ctx.beginPath(); ctx.roundRect(-u * 0.22, -u * 0.09, u * 0.44, u * 0.07, u * 0.035); ctx.fill();
+        ctx.fillStyle = '#2a3a30'; ctx.fillRect(u * 0.2, -u * 0.1, u * 0.06, u * 0.09); ctx.restore();
         break;
+      }
       case 'coral': {
         ctx.strokeStyle = '#d88a6a'; ctx.lineWidth = Math.max(1, u * 0.05); ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(-u * 0.15, 0); ctx.lineTo(0, -u * 0.25); ctx.lineTo(u * 0.12, -u * 0.4); ctx.moveTo(0, -u * 0.25); ctx.lineTo(-u * 0.1, -u * 0.4); ctx.stroke(); ctx.lineCap = 'butt';
