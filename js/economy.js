@@ -234,15 +234,15 @@ export const SUB_AIR = [150, 160, 170, 185, 200, 225, 260, 300];
 // bite: injury taken off a shark or billfish bite · quiet: no bubbles (the entity hears less) ·
 // warm: keeps out the cold (deep and upwelling water) · col: how it is drawn
 export const SUITS = {
-  wet: { line: "Black neoprene, salt-stiff at the seams.", name: 'Wetsuit', price: 0, press: 300, air: 1, speed: 1, desc: 'Black neoprene. What he started with.' },
-  skin: { line: "Thin as a seal's hide: quick, and hungry for breath.", name: 'Freediving skin', price: 160, press: 300, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works him harder.' },
-  dry: { line: "Sealed against the cold that lives below the light.", name: 'Drysuit', price: 1200, press: 400, air: 1, speed: 1.06, warm: true, desc: 'Sealed and dry inside, with a little air in it. Pressure starts to bite 100 m deeper, and it keeps out the cold.' },
-  chain: { line: "Steel rings, borrowed from the men who feed sharks.", name: 'Chain-mail shark suit', price: 2400, press: 300, air: 1, speed: 1.04, bite: 1, desc: 'Steel mesh over neoprene, as shark feeders wear. A bite does one less injury, and the weight gives each kick a little more drive.' },
-  rebreather: { line: "He breathes his air twice, and leaves no bubbles to follow.", name: 'Rebreather suit', price: 19000, press: 300, air: 0.75, speed: 1.1, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
-  hard: { line: "A small iron room in the shape of a man.", name: 'Atmospheric hardsuit', price: 59000, press: 700, air: 0.9, speed: 1.02, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m, and small thrusters on its back push him along.' },
+  wet: { line: "Black neoprene, salt-stiff at the seams.", name: 'Wetsuit', price: 0, press: 100, air: 1, speed: 1, desc: 'Black neoprene. What he started with.' },
+  skin: { line: "Thin as a seal's hide: quick, and hungry for breath.", name: 'Freediving skin', price: 160, press: 100, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works him harder.' },
+  dry: { line: "Sealed against the cold that lives below the light.", name: 'Drysuit', price: 1200, press: 130, air: 1, speed: 1.06, warm: true, desc: 'Sealed and dry inside, with a little air in it. Pressure starts to bite 100 m deeper, and it keeps out the cold.' },
+  chain: { line: "Steel rings, borrowed from the men who feed sharks.", name: 'Chain-mail shark suit', price: 2400, press: 100, air: 1, speed: 1.04, bite: 1, desc: 'Steel mesh over neoprene, as shark feeders wear. A bite does one less injury, and the weight gives each kick a little more drive.' },
+  rebreather: { line: "He breathes his air twice, and leaves no bubbles to follow.", name: 'Rebreather suit', price: 19000, press: 100, air: 0.75, speed: 1.1, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
+  hard: { line: "A small iron room in the shape of a man.", name: 'Atmospheric hardsuit', price: 59000, press: 230, air: 0.9, speed: 1.02, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m, and small thrusters on its back push him along.' },
 };
 // (2.8.0) the suit he has on, as an item: press (m), air (×), speed (×), bite, warm, quiet, look
-export const suitOf = (P) => { const S = (P && worn(P, 'suit')) || ITEMS.wet; return setOn(P, 'bathysphere') ? { ...S, press: S.press + 400 } : S; };
+export const suitOf = (P) => { const S = (P && worn(P, 'suit')) || ITEMS.wet; return setOn(P, 'bathysphere') ? { ...S, press: S.press + 130 } : S; }; // (3.0.12: +130 m, scaled with the suits)
 
 // what each upgrade is, in a sentence (the shop shows it when you hover the row)
 export const UPGRADE_DESC = {
