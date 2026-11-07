@@ -60,6 +60,13 @@ export class TutSpot {
     this.kbd = this.keyBox.querySelector('kbd'); this.keyText = this.keyBox.querySelector('span');
     this.lastTarget = null;
     this.line = el.querySelector('.ts-line'); this.lineText = null;
+    // (4.4.0) the tutorial's own button: a click presses its key (or holds it, for leaving the sub)
+    this.keyBox.addEventListener('click', () => {
+      const b = this.btn; if (!b) return; const k = keyFor(b.act); if (!k) return;
+      const key = k.length === 1 ? k.toLowerCase() : k;
+      window.dispatchEvent(new KeyboardEvent('keydown', { key }));
+      setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { key })), b.hold ? 1300 : 80);
+    });
   }
   // (4.3.8) the tutorial's instruction, on its own line at the left under the quest tracker (not in the game's
   // message line at the top, where it held other messages back). It stays while it is the instruction.
@@ -117,6 +124,7 @@ export class TutSpot {
     } else {
       this.lastTarget = null;
       const k = spot.act ? keyFor(spot.act) : null;
+      this.btn = spot.button ? spot : null; this.keyBox.classList.toggle('btn', !!spot.button);
       if (k) {
         this.keyBox.style.display = 'flex'; this.keyText.textContent = spot.say || '';
         const mouseKey = k === 'LMB' || k === 'RMB';

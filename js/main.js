@@ -14,7 +14,7 @@ import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from
 import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
-import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS, firstFishPart } from './quests.js';
+import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS, firstFishPart, tutorialOn } from './quests.js';
 import { TutSpot, keyFor, clicks, INPUT } from './tutspot.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
@@ -237,6 +237,8 @@ const ui = new UI({
     hud.toast(gift ? `${ITEMS[r.gift].name} added` : got.length ? `Quest done · ${money(r.pay)} + ${got.join(', ')}` : `Quest done · ${money(r.pay)}`, 'big');
     return true;
   },
+  tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
+  tutAllowCabin: (id) => !(g && g.tutHidePrompts) || !!(g.tutCabin && g.tutCabin.has(id)),
   onQuestRefresh: (paid) => {
     const P = profile;
     if (paid && !guardBuy.ok && needsConfirm(refreshPrice(P))) return guardBuy(refreshPrice(P), () => ui.h.onQuestRefresh(true));
@@ -887,6 +889,9 @@ function tutorFish(dir) {
 }
 function tutor() {
   const P = profile, e = g.earl; g.tut = null; g.tutForce = null; if (ui.cabin) ui.cabin.tutMark = null;
+  // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
+  // gate below): only the action the step asks for works, on the tutorial's own, larger button
+  g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutKeys = null; g.tutCabin = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
   const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the quest board is open (O)', 'big'); } return; }
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
@@ -896,12 +901,18 @@ function tutor() {
   // (4.3.2) a prompt drawn beside the fish: { key, mouse, text, col }. The key (or a mouse) follows the input in use
   const netPrompt = () => (g.toolSel !== 'net' ? { key: K('net'), text: 'Take out your net' } : click ? { mouse: true, text: 'Swing your net' } : { key: K('use'), text: 'Swing your net' });
   let text = null, to = null, fish = null, prompt = null, toLabel = null, spot = null, door = false;
+  // (4.4.0) the game still works out its prompt behind the scenes ('F  Climb aboard', 'F  Enter the cabin', ...):
+  // that says where he is. button(): the tutorial's own button for the one action wanted now, and its key let through
+  const gp = g.prompt || '', at = (words) => gp.includes(words);
+  const allowK = new Set(), allowC = new Set();
+  const button = (act, say, hold = false) => { spot = { act, say, button: true, hold }; const k = keyFor(act); if (k) allowK.add(k.toLowerCase()); };
+  const cabinTo = (id, say) => { ui.cabin.tutMark = id; allowC.add(id); if (ui.cabin.near && ui.cabin.near() === id) button('interact', say); };
   // the steps that need a fish: the fish to go to, and what to do at it
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
-    if (inCabin) { text = 'Leave the cabin: walk to the door'; ui.cabin.tutMark = 'door'; return; } // (4.3.3) arrows to the door
+    if (inCabin) { text = 'Leave the cabin: walk to the door'; cabinTo('door', 'Out on deck'); return; } // (4.3.3) arrows to the door
     if (g.aboard) { text = 'Walk off the end of the deck to jump in'; toLabel = 'Jump in'; return; }
-    if (e.inSub) { text = 'Leave the sub: hold F'; spot = { act: 'leaveSub', say: 'Hold to leave the sub' }; return; }
+    if (e.inSub) { text = 'Leave the sub'; button('leaveSub', 'Hold to leave the sub', true); return; }
     if (bd > 3.2) {
       text = 'Swim to the orange fish'; toLabel = 'Swim here';
       // (4.3.5) how to sprint, until he has: the right mouse button held, or Shift
@@ -928,7 +939,7 @@ function tutor() {
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
-        if (part <= 1) text = `Observe it: press ${K('interact')}`; // (the game's own prompt shows the key)
+        if (part <= 1) { if (at('Observe')) { text = 'Observe the fish'; button('interact', 'Observe'); } else text = 'Swim right up to the fish'; }
         else if (g.tutOops && g.time - g.tutOops < 3) { text = 'Oops, it got away! Try again'; prompt = { text: 'Oops, it got away! Try again', col: '#f2c7a0' }; }
         else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); }
       });
@@ -942,10 +953,10 @@ function tutor() {
       // sold already, or lost it: another fish, then sell that one
       fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); });
     }
-    else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; ui.cabin.tutMark = 'door'; }
+    else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; cabinTo('door', 'Out on deck'); }
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; toLabel = 'Jump in here'; }
     else if (!nearBoat) { text = 'Bring your catch up beside the Margaret'; to = ladder; toLabel = 'Sell here'; }
-    else { text = `Sell your catch: press ${K('sell')}`; spot = { act: 'sell', say: 'Sell your catch' }; }
+    else { text = 'Sell your catch'; button('sell', 'Sell your catch'); }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
@@ -954,16 +965,16 @@ function tutor() {
     } else if (!pick && !catOpen) {
       if (!nearBoat || g.aboard) { text = 'Not enough cash for gear yet: sell your catch first'; to = ladder; toLabel = 'Sell here'; }
       else if (shopOpen) spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])'], say: 'Sell all' };
-      else { text = 'Sell your catch first'; spot = { act: 'sell', say: 'Sell your catch' }; }
+      else { text = 'Sell your catch first'; button('sell', 'Sell your catch'); }
     } else if (catOpen) {
       const sel = ['#catalog button[data-buy^="item:"]:not([disabled])', '#catalog [data-cart="checkout"]:not([disabled])'];
       if (pick) sel.push(`#catalog .cat-main [data-go="item:${pick.id}"]`, `#catalog .cat-nav [data-go="${pick.kind}"]`);
       text = pick ? `Buy some gear: the ${pick.name.toLowerCase()} is ${money(pick.price, false)}` : 'Not enough cash yet: sell more catch first';
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
     }
-    else if (inCabin) { text = 'Walk to the computer to shop'; ui.cabin.tutMark = 'desk'; }
-    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; } // (4.3.5) the door itself lit up
-    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; toLabel = 'Ladder'; }
+    else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'Open the shop'); }
+    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (at('Enter the cabin')) button('interact', 'Enter the cabin'); } // (4.3.5) the door itself lit up
+    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; toLabel = 'Ladder'; if (at('Climb aboard')) button('interact', 'Climb aboard'); }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
@@ -972,6 +983,7 @@ function tutor() {
       // in the water: aboard first. If the inventory is up, its close button is the way out (nothing else works)
       text = 'Climb aboard the Margaret to change your gear'; to = ladder;
       spot = invOpen ? { sel: ['#inventory .inv-close'], act: 'inventory' } : null;
+      if (!invOpen && at('Climb aboard')) button('interact', 'Climb aboard');
     }
     else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
@@ -980,12 +992,7 @@ function tutor() {
   // (4.3.8) the instruction has its own line at the left (tutspot.js), so the game's own messages at the top are
   // never held back by it. None while the quests are open: the arrow at Claim is enough.
   if (qOpen) g.tut.text = null;
-  // (4.3.8) the key asked for is already in the game's own prompt (U  Sell, F  Climb aboard): no key-cap of ours,
-  // just an arrow pointing at that prompt
-  if (spot && spot.act && !spot.sel && hud.promptPos) {
-    const k = keyFor(spot.act), pt = hud.promptPos.txt || '';
-    if (k && new RegExp(`(^|·)\\s*(hold\\s+)?${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s{2}`, 'i').test(pt)) g.tut.spot = { point: { x: hud.promptPos.x, y: hud.promptPos.y } };
-  }
+  g.tutKeys = allowK; g.tutCabin = allowC; // (4.4.0) what the key gate and the cabin let through this moment
 }
 const tutSpot = new TutSpot();
 function startRun() {
@@ -1008,12 +1015,18 @@ function startRun() {
 }
 
 // ---------------- input ----------------
+// (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
+// V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
+// always work, and the one key the step asks for (g.tutKeys, set by tutor()) is let through
+const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
+function tutGated(k) { return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k) && !(g.tutKeys && g.tutKeys.has(k))); }
 window.addEventListener('keydown', (ev) => {
   if (ui.typing()) { if (ev.key === 'Escape') ui.blurTyping(); return; }
   // (4.3.2) moving with the keys: the hints are for the keyboard until the mouse is used again
   if (/^(w|a|s|d|arrowup|arrowdown|arrowleft|arrowright)$/i.test(ev.key)) INPUT.mode = 'keys';
   if (ui.confirmOpen && ui.confirmOpen()) return; // an "are you sure?" is up: its own buttons only
   const k = ev.key.toLowerCase();
+  if (tutGated(k)) return; // (4.4.0)
   if (g.mode === 'menu' && (k === 'enter' || k === ' ')) {
     ev.preventDefault();
     if (ui.titleOpen()) { const n = lastSlot(); ui.h.onSlot(n && readSlot(n).state === 'ok' ? n : firstFreeSlot()); }
@@ -1028,6 +1041,7 @@ window.addEventListener('keydown', (ev) => {
 window.addEventListener('keyup', (ev) => {
   const k = ev.key.toLowerCase();
   keys.delete(k);
+  if (tutGated(k)) return; // (4.4.0) no F-tap from a key the tutorial has off
   if (k === 'f') { if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
   if (k === 'c') { if (performance.now() - cDown < 600) pressed.add('c-tap'); cHeld = 0; }
 });

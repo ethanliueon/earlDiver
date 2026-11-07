@@ -398,7 +398,7 @@ export class Hud {
     // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
     yy = jy + jh + 10 * s;
     this.subHot = null;
-    if (!g.sub.imploded && !dying) {
+    if (!g.sub.imploded && !dying && !g.tutHidePrompts) { // (4.4.0) not during the tutorial
       const ap = g.autopilot;
       const label = e.inSub ? (g.homeRun ? 'autopilot off' : g.sub.docked ? null : 'autopilot home') : (ap && ap.state === 'coming' ? 'stop sub' : 'call sub');
       if (label) {
@@ -508,7 +508,7 @@ export class Hud {
     const capHidden = !SETTINGS.catchTags && !!g.catchTarget; // the catch tag is a setting (pause menu); other Space prompts stay
     // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
     // (4.0.0) what the tool can reach, said below (the prompts are all drawn together, after this)
-    const capOn = g.capPrompt && !capHidden && !dying && !g.kill;
+    const capOn = g.capPrompt && !capHidden && !dying && !g.kill && !g.tutHidePrompts; // (4.4.0) the tutorial shows its own
     this.capWant = capOn ? [g.capPrompt, g.capRarity ? g.capRarity.col : g.capPrompt.startsWith('Space') ? '#d6ecce' : '#f0c2a6', g.capIcon] : null; // (4.0.6) a name alone, in its rarity's colour
     }
     // ---------- interaction prompts ----------
@@ -517,7 +517,7 @@ export class Hud {
     {
       const cw = aboard ? null : this.capWant;
       const capFx = this.fadeText('cap', cw ? cw[0] : null, cw ? cw[1] : null); this.capIconNow = cw ? cw[2] : this.capIconNow;
-      const prFx = this.fadeText('pr', g.prompt && !dying && !g.kill ? g.prompt : null, '#ece6d2'); // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
+      const prFx = this.fadeText('pr', g.prompt && !dying && !g.kill && !g.tutHidePrompts ? g.prompt : null, '#ece6d2'); // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
       const shadeA = Math.max(capFx.level, prFx.level);
       const both = capFx.level > 0.01 && prFx.level > 0.01, capY = H * 0.72 - (both || g.prompt ? 40 : 0) * s + 14 * s, prY = H * 0.72 + 15 * s;
       const sy = both ? (capY + prY) / 2 : capFx.level > prFx.level ? capY : prY; this.shadeY = shadeA > 0.02 && this.shadeY != null ? this.shadeY + (sy - this.shadeY) * 0.15 : sy;

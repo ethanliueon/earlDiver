@@ -125,7 +125,8 @@ export class Cabin {
   show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); this.goal = null; this.mMoved = -1e9; this.mlx = null; }
   // (3.0.20) wider: each thing answers from 0.09 of a screen either side (twice what it was), the nearest one if two do
   near() { let best = null, bd = 1; for (const q of STATIONS) { const d = Math.abs(this.x - q.x) / (q.id === 'desk' ? 0.11 : 0.09); if (d < bd) { bd = d; best = q; } } return best ? best.id : null; } // (4.0.0) the desk answers from the whole width of it
-  use() { const n = this.near(); if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'tank' ? 'gallery' : n); }
+  use() { const n = this.near(); if (n && this.h.tutAllow && !this.h.tutAllow(n)) return; // (4.4.0) during the tutorial, only what the step asks for
+    if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'tank' ? 'gallery' : n); }
   atTank() { this.x = ROOM.tank; this.face = 1; this.keys.clear(); this.goal = null; }
   atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; this.keys.clear(); }
   update(dt) {
@@ -151,7 +152,7 @@ export class Cabin {
     if (dir || this.walk > 0.05) { const s0 = this.step || 0, eh = window.innerHeight * 0.34; this.step = s0 + dt * Math.max(2, (dir ? pace : 0.1) * window.innerWidth / eh * 6.1); if (Math.floor(this.step / Math.PI) !== Math.floor(s0 / Math.PI) && this.walk > 0.35) this.h.footstep && this.h.footstep(0.05 * this.walk); }
     const n = this.near();
     { const html = n ? promptHtml(STATIONS.find((q) => q.id === n).label) : ''; if (this.promptSrc !== html) { this.promptSrc = html; this.prompt.innerHTML = html; } } // (3.6.0) a brass key-cap and the words
-    this.prompt.hidden = !n;
+    this.prompt.hidden = !n || !!(this.h.tutHide && this.h.tutHide()); // (4.4.0) the tutorial shows its own button instead
     this.draw();
   }
   // the baked wood, remade only when the window changes size
