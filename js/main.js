@@ -199,7 +199,7 @@ const ui = new UI({
     const why = canSetHere(g); if (why) { hud.toast(why, 'warn'); return true; }
     if (trapsFree(g, type) <= 0) { hud.toast('None of those left to set', 'warn'); return false; }
     const d = setTrap(g, type, depth);
-    hud.toast(`Trap set, ${d} m down`); hud.hint(TRAPS[type].winch ? 'Come back in five minutes: winch it up from the Margaret at its buoy, or empty it down there' : 'Come back in five minutes: F at the buoy hauls it up, or empty it where it hangs');
+    hud.toast(`The ${TRAPS[type].name.toLowerCase()} goes down on its ${TRAPS[type].line}, to ${d} m`); hud.hint(TRAPS[type].winch ? 'Come back in five minutes: winch it up from the Margaret at its buoy, or empty it down there' : 'Come back in five minutes: F at the buoy hauls it up, or empty it where it hangs');
     audio.ready && audio.click(); return true;
   },
   onCaveTrade: (keys) => caveTrade(keys),
@@ -256,7 +256,7 @@ function damageSub(amt, sp) {
   g.fx.shake = Math.max(g.fx.shake, 2.2); g.fx.flash = 0.25;
   for (let i = 0; i < 60; i++) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 6, y: sub.y + (Math.random() - 0.5) * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
   audio.ready && audio.ram();
-  hud.toast(`Rammed by ${sp.id === 187 ? 'an orca' : 'a ' + sp.name.toLowerCase()}`, 'warn');
+  hud.toast(`Rammed by ${sp.id === 187 ? 'an orca' : 'a ' + sp.name.toLowerCase()} — hull ${Math.round(sub.hull * 100)} %, air leaking`, 'warn');
 }
 // ---------------- the boat: selling and buying ----------------
 // Everything Earl carries (except lures and necklaces, which he keeps for use) goes in the basket.
@@ -915,7 +915,9 @@ function promptFor(t) {
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
     }
-    else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the trap` : t.how === 'needboat' ? 'Too heavy to haul by hand: bring the Margaret here' : 'F  Empty the trap'; // (2.6.1: short)
+    else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
+      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use her winch`
+      : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your aquarium`;
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
@@ -970,7 +972,7 @@ function interact(t, exitSub) {
       hud.toast(p.type === 'lure' ? 'Anglerfish lure — still glowing  [Q]' : 'Fangtooth necklace  [E]');
     } else if (p.type === 'sapphire') {
       g.sapphires++; g.inv.sapphire = (g.inv.sapphire || 0) + 1;
-      hud.toast('A deep sapphire', 'big');
+      hud.toast(`A deep sapphire — worth around ${money(priceOf(profile, 'sapphire', GOODS.sapphire.price))} at the boat`, 'big');
       audio.ready && audio.sapphire();
     } else {
       g.inv[p.type] = (g.inv[p.type] || 0) + 1;
@@ -1252,6 +1254,7 @@ function zoneHazards(dt) {
     if (e.inSub) e.y = sub.y;
   }
   if (!e.inSub && inBrine(e.x, e.y)) {
+    if (!g.brineT) hud.toast('Brine: no air in it at all. Get out!', 'warn'); // (3.0.0) back
     g.brineT = (g.brineT || 0) + dt;
     g.fx.redFlash = Math.max(g.fx.redFlash || 0, 0.3);
     if (g.brineT > 3) die(`Drowned in the brine pool at ${Math.round(e.y)} m`);
@@ -1473,9 +1476,9 @@ function update(dt) {
           const r = takePhoto(g);
           audio.ready && audio.click();
           if (r.type === 'noShots') hud.toast('No shots left — the boat has a fresh card', 'warn');
-          else if (r.empty) hud.toast('Nothing in the frame');
-          else if (r.old) hud.toast(`${r.name}: photographed before`);
-          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`${r.name}`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
+          else if (r.empty) hud.toast(`Nothing in the frame · ${g.shots} shots left`);
+          else if (r.old) hud.toast(`${r.name}: you already have this one · ${g.shots} left`);
+          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
         }
       } else if (tool.kind === 'none') { /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
@@ -1498,8 +1501,8 @@ function update(dt) {
         tr.y = 0; const moved = emptyTrap(g, tr);
         hud.toast(n ? `The ${TRAPS[tr.type].name.toLowerCase()} is up: ${n} inside${moved < n ? ` — ${n - moved} would not fit in the bag and went back` : ''}` : `The ${TRAPS[tr.type].name.toLowerCase()} comes up empty`, n ? 'note' : '');
         audio.ready && audio.thud && audio.thud(0.25);
-      } else if (ev.type === 'settled') { /* (2.6.1: the buoy's label says it) */ }
-      else if (ev.type === 'spoiling') hud.toast('A trap has been left too long', 'warn');
+      } else if (ev.type === 'settled') hud.toast(`The ${TRAPS[ev.trap.type].name.toLowerCase()} settles at ${ev.trap.depth} m${ev.trap.onBottom ? ', on the bottom' : ''}`);
+      else if (ev.type === 'spoiling') hud.toast(`A ${TRAPS[ev.trap.type].name.toLowerCase()} has been left too long: what is in it is starting to die`, 'warn');
       else if (ev.type === 'ghost') hud.toast(`An abandoned ${TRAPS[ev.trap.type].name.toLowerCase()} has torn loose from its buoy: a ghost net now`, 'warn');
     }
     if (g.capture && (g.capture.kind === 'tag' || g.capture.kind === 'cam')) { g.capture.t += dt; if (g.capture.t >= g.capture.dur) g.capture = null; }
@@ -1613,6 +1616,7 @@ function update(dt) {
     e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg * (e.featherK ?? 1)) * (e.suitSpeed || 1);
     const cold = !e.inSub && !suitOf(profile).warm && e.y > 200 ? 1 + clamp((e.y - 200) / 800, 0, 1) * 0.35 * (e.warmK ?? 1) : 1;
     e.o2Mul = INJURY.air[lvl] * loadAir(kg * (e.featherK ?? 1)) * (e.suitAir || 1) * cold;
+    if (cold > 1.05 && !g.coldTold) { g.coldTold = true; hud.toast('The cold bites: without a warm suit he burns air faster', 'note'); } // (3.0.0) back
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
@@ -1768,7 +1772,8 @@ function update(dt) {
         g.fx.shake = Math.max(g.fx.shake, 2.6); audio.ready && audio.ram();
         for (let i = 0; i < 40; i++) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 6, y: g.sub.y + 1 + Math.random() * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
       }
-      else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); }
+      else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); hud.toast('Something bumped you', 'warn'); }
+      else if (ev === 'lost') hud.toast('It has lost you in the dark.', 'note');
       else if (ev === 'charge') { audio.ready && audio.whoosh(); }
       else if (ev === 'clicks') { audio.ready && audio.clicks(6); }
       else if (ev === 'orca') { audio.ready && audio.orcaCall(); }
