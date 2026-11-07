@@ -1,4 +1,4 @@
-# Shops, catalog and the Margaret's deck: plan v2 (proposed, not built)
+# Shops, catalog and the Margaret's deck: plan v2 (superseded for the shops by GEAR_AND_SHOPS_PLAN.md)
 
 Everything we have agreed so far, in one place. Items marked **(?)** still need a yes from the owner.
 
