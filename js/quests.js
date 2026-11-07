@@ -7,7 +7,9 @@
 // look at the game once a second (questTick: depth, the aquarium, what he has bought and has on).
 import { SPECIES } from './species.js';
 import { canTakeLive, liveValue, rarityOf, LEGENDARY } from './specimens.js';
-import { kitOf, ITEMS } from './items.js';
+import { kitOf, ITEMS, FREE } from './items.js';
+const STARTER = new Set(Object.values(FREE)); // (4.0.6) what he starts with is not bought, nor new to put on
+const bought = (id) => ITEMS[id] && !ITEMS[id].free && !STARTER.has(id);
 
 // (4.0.0) refreshing the board by hand: one free refresh, then a three-hour window in which more refreshes cost
 // $100, $300, $1,000, $2,500 and then $5,000 each; when the window ends, the next is free again. A new game
@@ -20,17 +22,30 @@ export const refreshPrice = (P) => { const S = Q(P); return LADDER[Math.min(LADD
 export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { name: 'Uncommon', odds: 21 }, rare: { name: 'Rare', odds: 6.5 }, exotic: { name: 'Exotic', odds: 0.5 } };
 
 // the main line: [id, what to do, a line of help, the check, the reward]
+// (4.0.6) the Margaret's Log is the tutorial: each step teaches one thing, and the things a step uses are given
+// when it is done (kit: ['item', id] into the locker, ['supply', key, n], ['trawl', tier] into the hatch,
+// ['trap', type]). Once the net and trawl steps are done their key hints leave the screen (learned()).
 export const MAIN = [
-  { id: 'net', text: 'Net a fish', help: 'Swim up to a fish and press Space (key 1 is the net).', need: 1, on: 'catch', pay: 20 },
-  { id: 'sell', text: 'Sell your catch', help: 'Climb aboard the Margaret and sell at the stern, or press U at her side.', need: 1, on: 'sell', pay: 30 },
-  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The Shop in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 40 },
+  { id: 'swim', text: 'Swim down to 10 m', help: 'Earl swims toward the mouse (or use W A S D). Shift is faster, and uses more air.', need: 10, on: 'swimDepth', pay: 10 },
+  { id: 'observe', text: 'Observe a fish', help: 'Swim close to a fish and press F: you learn what it is, and it goes in your journal (J).', need: 1, on: 'observe', pay: 20 },
+  { id: 'net', text: 'Net a fish', help: 'With the net out (key 1), get close and press Space or click. Small, slow fish are easiest.', need: 1, on: 'catch', pay: 20, kit: [['item', 'flicknet']] },
+  { id: 'sell', text: 'Sell your catch', help: 'Climb aboard the Margaret and sell, or press U at her side.', need: 1, on: 'sell', pay: 30 },
+  { id: 'buy', text: 'Buy something from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought things go into your inventory.", need: 1, on: 'bought', pay: 40 },
   { id: 'wear', text: 'Put on something new', help: 'Press B for your inventory and drag it onto Earl, or click it and Put on.', need: 1, on: 'wear', pay: 30 },
-  { id: 'sub', text: 'Take the sub down to 60 m', help: 'Climb into the sub at her stern; W and S to dive and rise.', need: 60, on: 'subDepth', pay: 80 },
-  { id: 'chamber', text: 'Bring an animal up alive in the sub', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 100 },
-  { id: 'aquarium', text: 'Put an animal in the aquarium', help: "The lit tank in the cabin. Mark one to Keep when you sell, then put it in at the tank.", need: 1, on: 'aquarium', pay: 120 },
-  { id: 'trap', text: 'Set a trap', help: 'Buy one from Bayside, then key 5 near the surface to set it at a depth.', need: 1, on: 'trap', pay: 80 },
+  { id: 'sub', text: 'Take the sub down to 60 m', help: 'Swim into the sub at her stern (F); W and S to dive and rise.', need: 60, on: 'subDepth', pay: 50 },
+  { id: 'air', text: 'Top up the cabin air', help: 'When the cabin air is down, press R in the sub: a backup tank fills it to full.', need: 1, on: 'airTank', pay: 20, kit: [['supply', 'airTank', 1]] },
+  { id: 'trawl', text: 'Let out the trawl net', help: 'In the sub, under way below 6 m, press N: the net drops from the hatch. N again closes it.', need: 1, on: 'trawl', pay: 30, kit: [['trawl', 'basic']] },
+  { id: 'chamber', text: 'Bring an animal up alive in the sub', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 70 },
+  { id: 'surface', text: 'Surface with an animal aboard', help: 'When the sub breaks the surface, every animal aboard is safe (a green ✓) until she dives again.', need: 1, on: 'surfaceSafe', pay: 30 },
+  { id: 'aquarium', text: 'Put an animal in the aquarium', help: 'The lit tank in the cabin. Mark one to Keep when you sell, then put it in at the tank.', need: 1, on: 'aquarium', pay: 60 },
+  { id: 'trap', text: 'Set a trap', help: 'You own a wire pot: near the surface press 5, then Space to set it at a depth.', need: 1, on: 'trap', pay: 40, kit: [['trap', 'pot']] },
   { id: 'done', text: 'That is the basics', help: 'The rest of the sea is yours to find. Quests on the board pay cash.', need: 0, on: null, pay: 0, gift: 'split' },
 ];
+// the Log before 4.0.6, so an older save keeps its place
+const OLD_MAIN = ['net', 'sell', 'buy', 'wear', 'sub', 'chamber', 'aquarium', 'trap', 'done'];
+const MAIN_I = Object.fromEntries(MAIN.map((m, i) => [m.id, i]));
+// (4.0.6) has the Log taught this yet? (the step done, or the Log past it)
+export function learned(P, id) { const S = Q(P), i = MAIN_I[id]; return i === undefined || S.main > i || (S.seen[id] || 0) >= MAIN[i].need; }
 
 // the board's quests, by kind: what to do at each rarity, and the pay
 const KINDS = {
@@ -62,6 +77,8 @@ export function Q(P) {
   // (3.0.40) the main line remembers what he has already done for steps still ahead of it; an older save
   // starts from what can be told (money earned means a fish has been caught and sold)
   if (!S.seen) { S.seen = {}; if ((P.lifetime || 0) > 0) { S.seen.net = 1; S.seen.sell = 1; } }
+  // (4.0.6) a save from before the tutorial: the same step, by name, in the new Log; what it has already done counts
+  if (!S.v) { S.v = 2; const id = OLD_MAIN[S.main] || 'done', k = MAIN.findIndex((m) => m.id === id); if (S.main > 0 || (P.lifetime || 0) > 0) { S.main = Math.max(0, k); S.seen.swim = 10; S.seen.observe = 1; } }
   return S;
 }
 // (3.0.40) note progress on any step of the main line not yet claimed; the active step's counter follows it
@@ -131,10 +148,12 @@ export function questTick(g, P) {
   // every step not yet claimed, so what he does early still counts when its turn comes
   for (let i = S.main; i < MAIN.length; i++) {
     const st = MAIN[i]; if (!st.on || (S.seen[st.id] || 0) >= st.need) continue;
-    if (st.on === 'bought' && K.items.some((it) => ITEMS[it.id] && !ITEMS[it.id].free)) ch = mark(S, st, 1) || ch;
-    if (st.on === 'wear' && Object.values(K.on).some((u) => { const it = u && K.items.find((q) => q.u === u); return it && ITEMS[it.id] && !ITEMS[it.id].free; })) ch = mark(S, st, 1) || ch;
+    if (st.on === 'bought' && K.items.some((it) => bought(it.id))) ch = mark(S, st, 1) || ch;
+    if (st.on === 'wear' && Object.values(K.on).some((u) => { const it = u && K.items.find((q) => q.u === u); return it && bought(it.id); })) ch = mark(S, st, 1) || ch;
     if (st.on === 'subDepth' && e.inSub) ch = mark(S, st, Math.floor(g.sub.y)) || ch;
     if (st.on === 'subAlive' && (g.subTank.some((s) => s.cond > 0.3) || g.subTank.length && g.sub.y < 3)) ch = mark(S, st, 1) || ch;
+    if (st.on === 'swimDepth' && !e.inSub) ch = mark(S, st, Math.floor(e.y)) || ch;
+    if (st.on === 'surfaceSafe' && g.subTank.some((s) => s.safe && s.cond > 0.05)) ch = mark(S, st, 1) || ch;
     if (st.on === 'aquarium' && P.aquarium && Object.keys(P.aquarium.display || {}).length) ch = mark(S, st, 1) || ch;
   }
   return follow(S) || ch;
@@ -145,7 +164,7 @@ export function claim(P, which) {
   if (which === 'main') {
     const m = MAIN[S.main]; if (!m || S.mainProg < m.need) return null;
     S.main++; S.mainProg = 0; S.done++; follow(S); // the next step: already done, if he has done it
-    return { pay: m.pay, gift: m.gift || null, text: m.text };
+    return { pay: m.pay, gift: m.gift || null, kit: m.kit || null, text: m.text };
   }
   const i = S.board.findIndex((q) => q.key === which); if (i < 0) return null;
   const q = S.board[i]; if (q.prog < q.n || q.claimed) return null;

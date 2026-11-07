@@ -1,4 +1,5 @@
-import { drawPrompt, promptShade } from './fittings.js';
+import { drawPrompt, promptShade, parsePrompt } from './fittings.js';
+const parsePromptKey = (t) => parsePrompt(t).some((p) => p.key);
 import { TITLES, LEGEND_OF } from './species.js';
 // (3.0.42) a Legendary's title in a message: never 'the the fangtooth', always 'the Fangtooth'
 const TITLE_RE = Object.values(TITLES).concat(Object.values(LEGEND_OF).map((x) => x[0])).map((t) => [new RegExp(`\\b(?:the |an? )?${t}\\b`, 'gi'), t]);
@@ -420,7 +421,7 @@ export class Hud {
     // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
     if (e.inSub) {
       const n = g.subNet, N = n ? n.T : g.items.net && NETS_SUB[g.items.net];
-      const state = n ? (n.phase === 'tow' ? 'OUT · N CLOSES' : n.phase === 'torn' ? 'TORN' : 'HAULING') : N ? N.short : 'NO NET';
+      const state = n ? (n.phase === 'tow' ? (g.trawlTaught ? 'OUT' : 'OUT · N CLOSES') : n.phase === 'torn' ? 'TORN' : 'HAULING') : N ? N.short : 'NO NET';
       slots.push(['n', 'N', state, n || N ? 1 : 0, '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / TOW_MAX) : 0]);
     }
     this.slotHot = {};
@@ -431,7 +432,7 @@ export class Hud {
       ctx.fillStyle = col; ctx.globalAlpha = n > 0 ? 1 : 0.3;
       ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 8 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
       if (active > 0) { ctx.strokeStyle = col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 13 * s, -Math.PI / 2, -Math.PI / 2 + TAU * active); ctx.stroke(); }
-      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; ctx.fillText(key, x + 5 * s, y + 4 * s);
+      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; if (!(id === 'n' && g.trawlTaught)) ctx.fillText(key, x + 5 * s, y + 4 * s); // (4.0.6) N, once learned, is not shown
       ctx.textAlign = 'right'; if (id !== 'n') ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
       ctx.font = `${8 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name, x - 6 * s, y + sz / 2 - 4 * s);
     });
@@ -504,20 +505,20 @@ export class Hud {
     // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
     // (4.0.0) what the tool can reach, said below (the prompts are all drawn together, after this)
     const capOn = g.capPrompt && !capHidden && !dying && !g.kill;
-    this.capWant = capOn ? [g.capPrompt, g.capPrompt.startsWith('Space') ? (g.capRarity ? g.capRarity.col : '#d6ecce') : '#f0c2a6'] : null;
+    this.capWant = capOn ? [g.capPrompt, g.capRarity ? g.capRarity.col : g.capPrompt.startsWith('Space') ? '#d6ecce' : '#f0c2a6', g.capIcon] : null; // (4.0.6) a name alone, in its rarity's colour
     }
     // ---------- interaction prompts ----------
     // (4.0.0) both prompts fade in and out, and one crossfades into the next; the shade behind them is one
     // fixed soft pool that fades with them
     {
       const cw = aboard ? null : this.capWant;
-      const capFx = this.fadeText('cap', cw ? cw[0] : null, cw ? cw[1] : null);
+      const capFx = this.fadeText('cap', cw ? cw[0] : null, cw ? cw[1] : null); this.capIconNow = cw ? cw[2] : this.capIconNow;
       const prFx = this.fadeText('pr', g.prompt && !dying && !g.kill ? g.prompt : null, '#ece6d2'); // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
       const shadeA = Math.max(capFx.level, prFx.level);
       const both = capFx.level > 0.01 && prFx.level > 0.01, capY = H * 0.72 - (both || g.prompt ? 40 : 0) * s + 14 * s, prY = H * 0.72 + 15 * s;
       const sy = both ? (capY + prY) / 2 : capFx.level > prFx.level ? capY : prY; this.shadeY = shadeA > 0.02 && this.shadeY != null ? this.shadeY + (sy - this.shadeY) * 0.15 : sy;
       if (shadeA > 0.01) promptShade(ctx, W / 2, this.shadeY, s, shadeA);
-      for (const [txt, a, col] of capFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, capY, s, { col, size: 18, shade: false }); ctx.restore(); } // (3.6.0) a brass key-cap and the words; a catch's name in its rarity's colour
+      for (const [txt, a, col] of capFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, capY, s, { col, size: 18, shade: false, icon: parsePromptKey(txt) ? null : this.capIconNow }); ctx.restore(); } // (3.6.0) a brass key-cap and the words; a catch's name in its rarity's colour
       for (const [txt, a, col] of prFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, prY, s, { col, shade: false }); ctx.restore(); }
     }
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------

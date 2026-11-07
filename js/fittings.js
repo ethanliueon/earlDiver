@@ -391,7 +391,7 @@ export function promptShade(ctx, cx, y, s = 1, a = 1) {
   sh.addColorStop(0, `rgba(4,8,10,${(0.42 * a).toFixed(3)})`); sh.addColorStop(0.45, `rgba(4,8,10,${(0.24 * a).toFixed(3)})`); sh.addColorStop(0.8, `rgba(4,8,10,${(0.07 * a).toFixed(3)})`); sh.addColorStop(1, 'rgba(4,8,10,0)');
   ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.2); ctx.translate(-cx, -y); ctx.fillStyle = sh; ctx.fillRect(cx - R, y - R, R * 2, R * 2); ctx.restore();
 }
-export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19, shade = true } = {}) {
+export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19, shade = true, icon = null } = {}) {
   const parts = parsePrompt(text), gapK = 9 * s, gapP = 26 * s, fs = size * s;
   ctx.save(); ctx.textBaseline = 'middle';
   const measure = (p) => {
@@ -401,7 +401,8 @@ export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19
     ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; w += ctx.measureText(p.label).width;
     return w;
   };
-  const ws = parts.map(measure), total = ws.reduce((a, b) => a + b, 0) + gapP * (parts.length - 1);
+  const IW = icon ? fs * 1.15 + 8 * s : 0; // (4.0.6) a small mark after the name: in reach of the net (or slurp gun)
+  const ws = parts.map(measure), total = ws.reduce((a, b) => a + b, 0) + gapP * (parts.length - 1) + IW;
   if (shade) promptShade(ctx, cx, y, s);
   let x = cx - total / 2;
   parts.forEach((p, i) => {
@@ -413,6 +414,25 @@ export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19
     ctx.fillStyle = col; ctx.fillText(p.label, x, y + 1 * s); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
     x += ctx.measureText(p.label).width + gapP;
   });
+  if (icon) reachMark(ctx, x - gapP + 10 * s + fs * 0.55, y, fs * 0.68, col, icon);
+  ctx.restore();
+}
+// (4.0.6) the little mark beside a name that says it can be caught from here: a hoop net, or the slurp gun's nozzle
+function reachMark(ctx, x, y, r, col, kind) {
+  ctx.save(); ctx.translate(x, y); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
+  if (kind === 'slurp') {
+    ctx.lineWidth = Math.max(1.2, r * 0.16); ctx.beginPath(); ctx.roundRect(-r * 0.9, -r * 0.3, r * 1.3, r * 0.6, r * 0.2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(r * 0.4, 0); ctx.lineTo(r, 0); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 0.3); ctx.lineTo(-r * 0.5, r * 0.9); ctx.stroke();
+  } else {
+    // a hoop on a short handle, its bag of mesh hanging below
+    ctx.lineWidth = Math.max(1.2, r * 0.16);
+    ctx.beginPath(); ctx.moveTo(-r * 1.0, r * 0.75); ctx.lineTo(-r * 0.35, r * 0.1); ctx.stroke(); // the handle
+    ctx.beginPath(); ctx.ellipse(r * 0.2, -r * 0.25, r * 0.6, r * 0.45, -0.5, 0, Math.PI * 2); ctx.stroke(); // the hoop
+    ctx.lineWidth = Math.max(0.7, r * 0.08); ctx.globalAlpha *= 0.75;
+    ctx.beginPath(); ctx.moveTo(-r * 0.25, 0); ctx.quadraticCurveTo(r * 0.1, r * 0.95, r * 0.55, r * 0.05); ctx.stroke(); // the mesh
+    ctx.beginPath(); ctx.moveTo(r * 0.05, -r * 0.1); ctx.lineTo(r * 0.2, r * 0.6); ctx.moveTo(r * 0.4, -r * 0.35); ctx.lineTo(r * 0.38, r * 0.35); ctx.stroke();
+  }
   ctx.restore();
 }
 // the same, as HTML (for the rooms drawn in HTML, such as the cabin)

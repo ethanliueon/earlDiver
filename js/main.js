@@ -14,7 +14,7 @@ import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from
 import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
-import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady } from './quests.js';
+import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned } from './quests.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf, kit, worn } from './economy.js';
@@ -221,8 +221,17 @@ const ui = new UI({
     const P = profile, r = claimQuest(P, which); if (!r) return false;
     if (r.pay) { P.cash = Math.round((P.cash + r.pay) * 100) / 100; P.lifetime = Math.round((P.lifetime + r.pay) * 100) / 100; }
     let gift = null; if (r.gift) gift = giveItem(P, r.gift);
+    // (4.0.6) a tutorial step gives what it taught him to use: a net, a backup air tank, a trawl net, a trap
+    const got = [];
+    for (const [kind, id, n = 1] of r.kit || []) {
+      if (kind === 'item' && ITEMS[id] && giveItem(P, id)) got.push(`a ${ITEMS[id].name.toLowerCase()} (in your inventory, B)`);
+      else if (kind === 'supply' && g) { g.items[id] = (g.items[id] || 0) + n; got.push(n > 1 ? `${n} ${SUPPLIES[id].name.toLowerCase()}s` : `a ${SUPPLIES[id].name.toLowerCase()}`); }
+      else if (kind === 'trawl' && g) { if (!g.items.net) { g.items.net = id; got.push(`a ${NETS_SUB[id].name.toLowerCase()} in the hatch`); } else { P.cash = Math.round((P.cash + NETS_SUB[id].price) * 100) / 100; got.push(`${money(NETS_SUB[id].price)} for a trawl net (the hatch is full)`); } }
+      else if (kind === 'trap') { convertOldTraps(P); if ((P.traps[id] || 0) < TRAPS[id].max) { P.traps[id] = (P.traps[id] || 0) + 1; got.push(`a ${TRAPS[id].name.toLowerCase()}`); } }
+    }
+    if (got.length) syncProfile();
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
-    hud.toast(gift ? `${ITEMS[r.gift].name} is in your inventory (B)` : `Quest done · ${money(r.pay)}`, 'big');
+    hud.toast(gift ? `${ITEMS[r.gift].name} is in your inventory (B)` : got.length ? `Quest done · ${money(r.pay)} and ${got.join(', ')}` : `Quest done · ${money(r.pay)}`, 'big');
     return true;
   },
   onQuestRefresh: (paid) => {
@@ -1147,6 +1156,7 @@ function interact(t, exitSub) {
   } else if (t.kind === 'creature') {
     if (!g.journal.has(t.sp.id)) {
       g.journal.set(t.sp.id, { depth: Math.round(e.y), time: g.survival });
+      questEvent(profile, 'observe'); // (4.0.6)
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
       hud.toast(`${t.sp.name} — ${t.sp.sci}`, 'note');
       audio.ready && audio.note();
@@ -1279,7 +1289,7 @@ function repairs(dt, target, holding) {
       if (g.tankFit > 1 && Math.random() < dt * 4) audio.ready && audio.burst('highpass', 4000 + Math.random() * 2000, 1, 0.15, 0.02);
       if (Math.random() < dt * 10) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 2, y: sub.y - 0.5, r: 0.02 + Math.random() * 0.04, w: Math.random() * 6, t: 0 });
       if (g.tankFit >= 3) {
-        g.tankFit = 0; g.items.airTank--; sub.o2 = sub.o2Max;
+        g.tankFit = 0; g.items.airTank--; sub.o2 = sub.o2Max; questEvent(profile, 'airTank'); // (4.0.6)
         audio.ready && audio.burst('bandpass', 2600, 0.8, 0.9, 0.09); // the valve: a hiss
         audio.ready && audio.bubbles && audio.bubbles(10, 0.03);
         for (let i = 0; i < 70; i++) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 3, y: sub.y - 0.6 + (Math.random() - 0.5) * 1.5, r: 0.04 + Math.random() * 0.16, w: Math.random() * 6, t: -Math.random() * 0.8 });
@@ -1725,7 +1735,7 @@ function update(dt) {
       const why = fireSubNet(g);
       if (why === 'closing') { hud.toast('The drawstring pulls the net shut…'); audio.ready && audio.click(); }
       else if (why && why !== 'busy') hud.toast(why, 'warn');
-      else if (!why) { hud.toast('The net drops from the hatch: drive through a school, N to close it'); audio.ready && audio.whoosh(); }
+      else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') ? 'The net drops from the hatch' : 'The net drops from the hatch: drive through a school, N to close it'); audio.ready && audio.whoosh(); }
     }
     const netRes = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
     if (netRes && netRes.torn) { hud.toast(`The ${netRes.torn.name.toLowerCase()} tears straight through the net: it is gone, and everything in it swims free`, 'warn'); audio.ready && audio.thud(0.5); }
@@ -1754,7 +1764,7 @@ function update(dt) {
     for (const ev of dl.events) if (!FM.ev.some((e) => e.s === ev.s && e.type === ev.type)) FM.ev.push(ev); // (an animal counted once)
     if (FM.deaths.length || FM.ev.length) FM.t += dt;
     if (FM.t > 0.8) { sayFish(FM, whereOf); g.fishMsgs = null; }
-    g.catchTarget = null; g.capRarity = null;
+    g.catchTarget = null; g.capRarity = null; g.capIcon = null; g.trawlTaught = learned(profile, 'trawl'); // (4.0.6)
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
     // (2.6.6) a target is named and nothing more: the colour of the name already says how rare it is
     if (e.inSub && owns(profile, 'arm') && !g.armGame) {
@@ -1776,10 +1786,17 @@ function update(dt) {
       g.capPrompt = ps ? (ps.ok ? `Space  ${ps.name}` : `${ps.name}: ${ps.why}`) : null;
     } else {
     const ct = !e.inSub ? findCatch(g) : null;
-    g.capPrompt = ct ? (ct.ok ? `Space  ${ct.name}` : `${ct.sp.name}: ${ct.why}`) : null;
-    // what the net or slurp gun will go for: marked on screen
-    g.catchTarget = ct && ct.ok ? { c: ct.c, x: ct.x, y: ct.y, len: ct.len, col: rarityOf(ct.sp).col } : null;
-    g.capRarity = ct && ct.ok ? rarityOf(ct.sp) : null;
+    // (4.0.6) an animal he has never observed has no name yet: only F Observe is said (it can still be netted).
+    // Once observed, its name; Space before it only until the Log has taught the net, then a small net mark when
+    // it is in reach
+    const known = ct && g.journal.has(ct.sp.id), taught = learned(profile, 'net');
+    g.capPrompt = ct && known ? (ct.ok ? (taught ? ct.name : `Space  ${ct.name}`) : `${ct.sp.name}: ${ct.why}`) : null;
+    g.capIcon = ct && known && ct.ok && taught ? (tool.kind === 'slurp' ? 'slurp' : 'net') : null;
+    // what the net or slurp gun will go for: marked on screen (in plain white while it is unknown)
+    g.catchTarget = ct && ct.ok ? { c: ct.c, x: ct.x, y: ct.y, len: ct.len, col: known ? rarityOf(ct.sp).col : '#d8e2de' } : null;
+    g.capRarity = ct && ct.ok && known ? rarityOf(ct.sp) : null;
+    // the name is said once: not again on the F line
+    if (ct && known && g.prompt && g.prompt.startsWith(ct.sp.name)) g.prompt = g.prompt.slice(ct.sp.name.length).replace(/^\s*·\s*/, '') || null;
     }
     // a fresh memory card and charged strobes at the boat
     if (owns(profile, 'camera') && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) g.shots = gear(profile, 'cam').shots;
