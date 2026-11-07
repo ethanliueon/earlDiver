@@ -1739,7 +1739,7 @@ function update(dt) {
     if (g.helm) {
       if (pressed.has('w')) { leaveHelm(); } // (2.6.7) only W, as the prompt says: up/down arrows (or S) at the wheel no longer throw him off it into the cabin
       else {
-        // a heavy working boat: she takes her time to get under way and longer still to stop; 5 m/s flat out
+        // a heavy working boat: she takes her time to get under way and longer still to stop
         // getting under way: a sub alongside is lifted into her cradle; one still out holds her here
         if (mv.x && !g.sub.docked && !g.sub.imploded) {
           const alongside = Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6) < 16 && !(g.autopilot && g.autopilot.active);
@@ -1747,8 +1747,9 @@ function update(dt) {
           else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast('The sub is still out: bring it alongside first (hold C to send it home)', 'warn'); } }
         }
         if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast('The anchor is down: G to raise it', 'warn'); } }
-        const want = g.anchored ? 0 : mv.x * 5;
-        g.boatV = lerp(g.boatV || 0, want, 1 - Math.exp(-dt * (want ? 0.28 : 0.18)));
+        // (3.1.1) slower, heavier: 3.5 m/s flat out, about twice as long to get under way and to stop
+        const want = g.anchored ? 0 : mv.x * 3.5;
+        g.boatV = lerp(g.boatV || 0, want, 1 - Math.exp(-dt * (want ? 0.15 : 0.1)));
         mv.x = 0; mv.y = 0;
         if (!e.inSub) { e.x = BOAT.x - 3; e.y = 0.5; e.vx = e.vy = 0; }
       }
@@ -1769,7 +1770,7 @@ function update(dt) {
     // (3.0.0) she turns like the sub to face the way she is going while he steers (about 4 s to come round);
     // let go of the wheel and she swings back to her usual heading (the deck and the ladder are built for it)
     { const face = g.helm && Math.abs(g.boatV || 0) > 0.4 ? Math.sign(g.boatV) : g.helm ? (BOAT.face || -1) : -1;
-      BOAT.face = face; const yawT = face < 0 ? 0 : Math.PI, rate = Math.PI / 4;
+      BOAT.face = face; const yawT = face < 0 ? 0 : Math.PI, rate = Math.PI / 8; // (3.1.1) she comes round slowly: about 8 s end to end
       BOAT.yaw = (BOAT.yaw || 0) + clamp(yawT - (BOAT.yaw || 0), -rate * dt, rate * dt); }
     // a docked sub sits in the boat's cradle wherever she goes
     if (g.sub.docked && !g.sub.imploded && !(g.autopilot && g.autopilot.active)) { g.sub.x = boatDock(); g.sub.y = 2.6; g.sub.vx = g.sub.vy = 0; g.sub.yaw = Math.PI - BOAT.yaw; g.sub.facing = Math.cos(BOAT.yaw) >= 0 ? -1 : 1; }
