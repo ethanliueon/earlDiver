@@ -31,7 +31,7 @@ const BAIT = [
 
 // (3.0.22) the twilight's everyday animals: most of the lone fish out there are these
 const FILLER = new Set([98, 99, 327, 151, 370, 484, 450, 161]);
-const DEEP_HUNTER = (sp) => sp.cat === 'Deep Sea Fish' && /viper|dragon|angler|seadevil|sea devil|fangtooth|gulper|swallower|loosejaw|barbeled/i.test(sp.name);
+const DEEP_HUNTER = (sp) => sp.cat === 'Deep Sea Fish' && /viper|dragon|angler|seadevil|sea devil|football|fangtooth|sabertooth|daggertooth|snaggletooth|gulper|swallower|loosejaw|barbeled|dreamer|wolftrap|fanfin|whipnose/i.test(sp.name);
 // Species that migrate up toward the surface at night and back down by day.
 const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90, 42]);
 // Where an animal actually lives, when the recorded range (the deepest and shallowest it was ever
@@ -467,8 +467,8 @@ export class Fauna {
     const core = (night && NIGHT[sp.id]) || CORE[sp.id];
     let lo = core ? core[0] : sp.dmin, hi = Math.min(core ? core[1] : sp.dmax, this.W.floorAt(x) - 2);
     // (3.0.21) the deep's hunters (viperfish, dragonfish, anglers and seadevils, fangtooths, gulpers, swallowers)
-    // never come above 500 m by day, or 350 m at night, whatever the records allow
-    if (DEEP_HUNTER(sp)) { lo = Math.max(lo, night ? 350 : 500); hi = Math.min(Math.max(hi, lo + 100, Math.min(sp.dmax, 3000)), this.W.floorAt(x) - 2); } // (and down as deep as each is ever found, to 3,000 m)
+    // never come above 500 m, day or night, whatever the records allow
+    if (DEEP_HUNTER(sp)) { lo = Math.max(lo, 500); hi = Math.min(Math.max(hi, lo + 100, Math.min(sp.dmax, 3000)), this.W.floorAt(x) - 2); } // (and down as deep as each is ever found, to 3,000 m)
     if (MIGRATORS.has(sp.id) && !core) {
       if (night) hi = Math.min(hi, Math.max(lo + 30, 250));
       else lo = Math.max(lo, Math.min(hi - 30, 280));
