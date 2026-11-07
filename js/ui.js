@@ -448,7 +448,7 @@ export class UI {
     if (!this.fitPics) this.fitPics = new Map();
     if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
     const dying = s2.cond > 0.05 && gapOf(g, s2, at.place === 'bag') > SAFE_GAP;
-    const st = s2.cond <= 0.05 ? ['dead', '#8a6a5a'] : dying ? ['dying: wrong pressure', '#e8806a'] : [conditionName(s2.cond), s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a'];
+    const st = s2.cond <= 0.05 ? ['dead', '#8a6a5a'] : dying ? ['dying: barotrauma', '#e8806a'] : [conditionName(s2.cond), s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a'];
     const place = { bag: 'In the net bag', open: 'The open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'The large pressure tank', floor: 'On the floor of the sub' }[at.place];
     const row = (k, v) => `<tr><th>${k}</th><td>${v}</td></tr>`;
     const facts = row('Where', place) + row('Condition', `<i class="dot" style="background:${st[1]}"></i>${st[0]}`)

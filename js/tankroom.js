@@ -19,9 +19,9 @@ const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], ti
 
 const MAX_CHAMBERS = UPGRADES.pressTanks.base + UPGRADES.pressTanks.max;
 const ROOMS = { chambers: 'The chamber room', tank: 'The tank room', big: 'The large tank' }, ROOM_ORDER = ['chambers', 'tank', 'big'];
-// (3.2.0) a chamber, in its own units: as tall as before, about 2.4 times as wide inside (EX more), so they
+// (3.2.0) a chamber, in its own units (3.2.1: 90 taller, so a tall rectangle), about 2.4 times as wide inside (EX more), so they
 // line up almost side by side across the middle of the wall
-const EX = 104, CW = 150 + EX, CH = 330, PIPE_X = CW / 2 + 22; // where the feed pipe comes in
+const EX = 104, CW = 150 + EX, CH = 420, PIPE_X = CW / 2 + 22; // where the feed pipe comes in
 // (3.0.43) drawn by its real length: the largest (2.4 m, a Legendary giant) fills `max`, and every size below is
 // smaller in proportion (gently compressed, so a 10 cm fish is still seen): a giant outsizes a tuna, a tuna a frogfish
 export const sizeK = (len) => Math.pow(Math.min(len || 0.1, 2.4) / 2.4, 0.62);
@@ -34,10 +34,16 @@ function inside(sp, L, x0, x1, y0, y1) {
   const hy = Math.min(halfH(sp) * L, (y1 - y0) / 2), hx = Math.max(0, halfW(sp) - 0.5) * L;
   return { x0: x0 + hx, x1: Math.max(x0 + hx, x1 - hx), y0: y0 + hy, y1: Math.max(y0 + hy, y1 - hy) };
 }
+// (3.2.1) the colour of the water at a depth, as the porthole shows it
+const SEA = [[0, [90, 190, 200]], [60, [40, 130, 170]], [200, [16, 64, 120]], [500, [6, 24, 58]], [1000, [1, 4, 10]]];
+function seaAt(d) {
+  for (let i = 1; i < SEA.length; i++) if (d <= SEA[i][0]) { const [d0, c0] = SEA[i - 1], [d1, c1] = SEA[i], q = (d - d0) / (d1 - d0); return c0.map((v, k) => lerp(v, c1[k], q)); }
+  return SEA[SEA.length - 1][1].slice();
+}
 // how an animal is doing, in a word, and its colour
 function stateOf(g, s, inBag) {
   if (s.cond <= 0.05) return ['dead', '#9a9a9a'];
-  if (gapOf(g, s, inBag) > SAFE_GAP) return ['dying', '#ff6a50'];
+  if (gapOf(g, s, inBag) > SAFE_GAP) return ['dying: barotrauma', '#ff6a50'];
   if (s.acc) return ['acclimated', '#8fd4ff'];
   if (s.cond < 0.5) return ['weak', '#e6503c'];
   if (s.cond < 0.8) return ['stressed', '#e8b040'];
@@ -133,7 +139,7 @@ export class TankRoom {
     // each one's fittings on the left tuck into the space beside the one before: STEP apart, in its own units
     const STEP = 226, span = (n - 1) * STEP + CW;
     const k = Math.min((H * (narrow ? 0.4 : 0.52)) / CH, areaW / span);
-    const left = x0 + (areaW - span * k) / 2, top = narrow ? H * 0.3 : H * 0.47 - CH * k / 2;
+    const left = x0 + (areaW - span * k) / 2, top = narrow ? H * 0.3 : H * 0.5 - CH * k / 2;
     const chambers = Array.from({ length: n }, (_, i) => ({ x: left + i * STEP * k, y: top, k }));
     // on a narrow screen both hatches sit along the bottom
     const hatchSide = (x) => (narrow ? { x: x < W / 2 ? W * 0.22 : W * 0.78, y: H * 0.86, r: Math.min(W, H) * 0.08 } : { x, y: H * 0.66, r: Math.min(W, H) * 0.13 });
@@ -144,7 +150,7 @@ export class TankRoom {
       // the net's haul heaped on the floor, and the large pressure tank on its saddles beside it
       pile: narrow ? { x: W * 0.06, y: H * 0.66, w: W * 0.42 } : { x: W * 0.2, y: H * 0.88, w: W * 0.25 },
       // (3.2.0) the large pressure tank has a room of its own: one chamber laid on its side, long and wide
-      big: narrow ? { x: W * 0.05, y: H * 0.36, w: W * 0.9, h: H * 0.2 } : { x: W * 0.17, y: H * 0.37, w: W * 0.62, h: Math.min(H * 0.3, W * 0.17) },
+      big: narrow ? { x: W * 0.05, y: H * 0.36, w: W * 0.9, h: H * 0.2 } : { x: W * 0.16, y: H * 0.42, w: W * 0.68, h: Math.min(H * 0.3, W * 0.17) }, // (3.2.1) wider, centred
       // the catch bag hangs on a hook in each room (on the left of the chamber room, the right of the
       // tank room); it grows with what is in it, and its tags hang below it on cords
       hook: this.room === 'chambers' ? (narrow ? { x: W * 0.87, y: H * 0.1 } : { x: W * 0.085, y: H * 0.16 }) : (narrow ? { x: W * 0.84, y: this.room === 'big' ? H * 0.1 : H * 0.5 } : { x: W * 0.87, y: H * 0.16 }),
@@ -460,7 +466,7 @@ export class TankRoom {
     const rating = chamberRating(g), cmax = chamberMax(g), ps = pressSlots(g), outside = Math.max(0, g.sub.y);
     const by = new Map(g.subTank.filter((s) => s.pressed).map((s) => [s.chamber, s]));
     // the pipe run along the bulkhead, dropping to each chamber's head
-    const py = G.chambers[0].y - 26;
+    const py = G.chambers[0].y - 70; // (3.2.1) the pipe run higher up the wall: they hang from longer drops
     ctx.fillStyle = '#4b5355'; ctx.fillRect(0, py - 6, G.W * 0.82, 12);
     ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(0, py - 5, G.W * 0.82, 3);
     G.chambers.forEach((c, n) => {
@@ -477,10 +483,11 @@ export class TankRoom {
     ctx.fillStyle = '#6a4e1c'; ctx.beginPath(); ctx.arc(0, 0, P.r + 4, 0, TAU); ctx.fill();
     for (let k = 0; k < 10; k++) { const a = k / 10 * TAU; ctx.fillStyle = '#c9a65a'; ctx.beginPath(); ctx.arc(Math.cos(a) * (P.r + 8), Math.sin(a) * (P.r + 8), 2.2, 0, TAU); ctx.fill(); }
     ctx.beginPath(); ctx.arc(0, 0, P.r, 0, TAU); ctx.clip();
-    const dk = clamp(d / 600, 0, 1);
+    // (3.2.1) the sea outside by depth: sunlit blue-green, the twilight's deep blue, black by 1,000 m
+    const dk = clamp(d / 1000, 0, 1), top = seaAt(d), bot = seaAt(d + 120).map((v) => v * 0.55);
     const wg = ctx.createLinearGradient(0, -P.r, 0, P.r);
-    wg.addColorStop(0, `rgb(${Math.round(lerp(60, 3, dk))},${Math.round(lerp(140, 12, dk))},${Math.round(lerp(170, 22, dk))})`);
-    wg.addColorStop(1, `rgb(${Math.round(lerp(20, 1, dk))},${Math.round(lerp(70, 6, dk))},${Math.round(lerp(100, 12, dk))})`);
+    wg.addColorStop(0, `rgb(${top.map(Math.round).join(',')})`);
+    wg.addColorStop(1, `rgb(${bot.map(Math.round).join(',')})`);
     ctx.fillStyle = wg; ctx.fillRect(-P.r, -P.r, P.r * 2, P.r * 2);
     for (let k = 0; k < 26; k++) {
       const q = (this.t * 0.04 + k * 0.618) % 1, sx = Math.sin(k * 12.9) * P.r, sy = -P.r + q * P.r * 2;
@@ -502,14 +509,14 @@ export class TankRoom {
   drawBracket(ctx) {
     // straps and bolt holes on the bulkhead, waiting for a chamber
     ctx.strokeStyle = 'rgba(150,160,162,0.35)'; ctx.lineWidth = 6;
-    for (const y of [110, 280]) { ctx.beginPath(); ctx.ellipse(CW / 2, y, 40 + EX / 2, 40, 0, Math.PI * 0.15, Math.PI * 0.85, true); ctx.stroke(); }
+    for (const y of [110, CH - 50]) { ctx.beginPath(); ctx.ellipse(CW / 2, y, 40 + EX / 2, 40, 0, Math.PI * 0.15, Math.PI * 0.85, true); ctx.stroke(); }
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    for (const [x, y] of [[30, 110], [CW - 30, 110], [30, 280], [CW - 30, 280]]) { ctx.beginPath(); ctx.arc(x, y, 4, 0, TAU); ctx.fill(); }
+    for (const [x, y] of [[30, 110], [CW - 30, 110], [30, CH - 50], [CW - 30, CH - 50]]) { ctx.beginPath(); ctx.arc(x, y, 4, 0, TAU); ctx.fill(); }
   }
   drawChamber(ctx, g, s, rating, cmax, outside, dt, idx) {
-    const t = this.t, cx = CW / 2, X0 = 38, X1 = 112 + EX, TOP = 92, BOT = 312;
+    const t = this.t, cx = CW / 2, X0 = 38, X1 = 112 + EX, TOP = 92, BOT = CH - 18;
     // wall straps behind it
-    ctx.fillStyle = '#2a2f30'; for (const y of [120, 270]) ctx.fillRect(28, y - 5, 94 + EX, 10);
+    ctx.fillStyle = '#2a2f30'; for (const y of [120, CH - 60]) ctx.fillRect(28, y - 5, 94 + EX, 10);
     ctx.fillStyle = '#16181a';
     ctx.beginPath(); ctx.moveTo(40, 92); ctx.lineTo(6, 86); ctx.quadraticCurveTo(2, 90, 6, 95); ctx.lineTo(40, 99); ctx.fill();
     const body = new Path2D();
@@ -518,10 +525,10 @@ export class TankRoom {
     wg.addColorStop(0, 'rgba(28,30,110,0.95)'); wg.addColorStop(0.35, 'rgba(70,80,190,0.78)'); wg.addColorStop(0.6, 'rgba(84,96,205,0.74)'); wg.addColorStop(1, 'rgba(24,26,96,0.95)');
     ctx.fillStyle = wg; ctx.fill(body);
     ctx.save(); ctx.clip(body);
-    ctx.fillStyle = 'rgba(40,40,48,0.8)'; ctx.beginPath(); ctx.arc(cx, 236, 9, 0, TAU); ctx.fill();
-    ctx.fillStyle = 'rgba(190,40,40,0.75)'; ctx.beginPath(); ctx.arc(cx - 3, 233, 6, Math.PI * 0.8, Math.PI * 1.8); ctx.fill();
+    ctx.fillStyle = 'rgba(40,40,48,0.8)'; ctx.beginPath(); ctx.arc(cx, BOT - 76, 9, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(190,40,40,0.75)'; ctx.beginPath(); ctx.arc(cx - 3, BOT - 79, 6, Math.PI * 0.8, Math.PI * 1.8); ctx.fill();
     ctx.strokeStyle = 'rgba(150,150,170,0.55)'; ctx.lineWidth = 1.2; ctx.beginPath();
-    for (let k = 0; k <= 12; k++) ctx.lineTo(cx - 12 + k * 2, 258 + (k % 2 ? -4 : 4)); ctx.stroke();
+    for (let k = 0; k <= 12; k++) ctx.lineTo(cx - 12 + k * 2, BOT - 54 + (k % 2 ? -4 : 4)); ctx.stroke();
     const home = s ? homeOf(s) : 0, pumping = s && (s.press || 0) < Math.min(home, cmax) - 1;
     if (s && !(this.drag && this.drag.s === s)) {
       const L = Math.max(26, 128 * Math.pow(Math.min(s.len || 0.1, 1.2) / 1.2, 0.6)) * Math.min(1, this.chamberFish || 1); // (a chamber holds up to 1.2 m)
@@ -641,7 +648,7 @@ export class TankRoom {
   drawMiniChambers(ctx, g, w, h, dt, shown) {
     const rating = chamberRating(g), cmax = chamberMax(g), ps = pressSlots(g), outside = Math.max(0, g.sub.y), hits = [];
     const by = new Map(g.subTank.filter((s) => s.pressed).map((s) => [s.chamber, s]));
-    const slot = w / shown, k = Math.min(slot / (CW - 12), h / 296);
+    const slot = w / shown, k = Math.min(slot / (CW - 12), h / (CH - 34));
     for (let n = 0; n < shown; n++) {
       const x = slot * n + (slot - CW * k) / 2;
       ctx.save(); ctx.translate(x, -20 * k); ctx.scale(k, k);
@@ -649,16 +656,16 @@ export class TankRoom {
         this.drawBracket(ctx);
         // a stamped padlock: not fitted yet
         ctx.fillStyle = 'rgba(200,196,176,0.32)'; ctx.strokeStyle = 'rgba(200,196,176,0.32)'; ctx.lineWidth = 7;
-        ctx.beginPath(); ctx.arc(CW / 2, 186, 17, Math.PI, 0); ctx.stroke(); ctx.fillRect(CW / 2 - 27, 186, 54, 42);
-        ctx.fillStyle = 'rgba(20,22,20,0.6)'; ctx.beginPath(); ctx.arc(CW / 2, 202, 6, 0, TAU); ctx.fill(); ctx.fillRect(CW / 2 - 3, 204, 6, 14);
+        const ly = CH * 0.56; ctx.beginPath(); ctx.arc(CW / 2, ly, 17, Math.PI, 0); ctx.stroke(); ctx.fillRect(CW / 2 - 27, ly, 54, 42);
+        ctx.fillStyle = 'rgba(20,22,20,0.6)'; ctx.beginPath(); ctx.arc(CW / 2, ly + 16, 6, 0, TAU); ctx.fill(); ctx.fillRect(CW / 2 - 3, ly + 18, 6, 14);
       } else {
         const s = by.get(n);
         if (s && s.cond > 0.05 && (s.cond < 0.3 || gapOf(g, s, false) > SAFE_GAP)) { // in trouble: a faint red glow behind it
-          const pulse = 0.55 + 0.45 * Math.sin(this.t * 3), rg = ctx.createRadialGradient(CW / 2, 200, 10, CW / 2, 200, 110 + EX / 2);
-          rg.addColorStop(0, `rgba(230,70,50,${(0.38 * pulse).toFixed(3)})`); rg.addColorStop(1, 'rgba(230,70,50,0)'); ctx.fillStyle = rg; ctx.fillRect(-35, 80, CW + 70, 250);
+          const pulse = 0.55 + 0.45 * Math.sin(this.t * 3), rg = ctx.createRadialGradient(CW / 2, CH * 0.6, 10, CW / 2, CH * 0.6, 110 + EX / 2);
+          rg.addColorStop(0, `rgba(230,70,50,${(0.38 * pulse).toFixed(3)})`); rg.addColorStop(1, 'rgba(230,70,50,0)'); ctx.fillStyle = rg; ctx.fillRect(-35, 80, CW + 70, CH - 80);
         }
         this.chamberFish = 1.25; this.drawChamber(ctx, g, s, rating, cmax, outside, dt, n); this.chamberFish = 1;
-        if (s) hits.push({ s, x: x + CW / 2 * k, y: (200 - 20) * k, r: Math.max(60 * k, 22), n });
+        if (s) hits.push({ s, x: x + CW / 2 * k, y: (CH * 0.6 - 20) * k, r: Math.max(60 * k, 22), n });
       }
       ctx.restore();
     }

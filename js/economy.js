@@ -219,7 +219,7 @@ export const UPGRADES = {
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, lin: 1, max: 2, cost: 60, growth: 3, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 4, cost: 80, growth: 2.2, fmt: 'n' },
   pressRating: { group: 'Submersible', name: 'Chamber rating', base: 400, top: 4000, max: 10, cost: 60, growth: 1.75, fmt: 'depth' },
-  subTank:   { group: 'Submersible', name: 'Open tank', base: 3, lin: 1, max: 6, cost: 40, growth: 1.9, fmt: 'n' },
+  subTank:   { group: 'Submersible', name: 'Open tank', base: 3, vals: [3, 6, 9, 12, 16, 20, 24], max: 6, cost: 60, growth: 2, fmt: 'n' }, // (3.2.1) up to 24 places, in bigger steps
   // the claw
   armReach:  { group: 'Claw', needs: 'arm', name: 'Reach', base: 3, top: 6, max: 10, cost: 40, growth: 1.7, fmt: 'm' },
   armSize:   { group: 'Claw', needs: 'arm', name: 'Jaw size', base: 1.0, top: 2.0, max: 10, cost: 40, growth: 1.7, fmt: 'cm' },
@@ -269,7 +269,7 @@ export const UPGRADE_DESC = {
   ballast: 'Bigger ballast tanks and faster pumps: the sub dives and rises 12 % faster per level.',
   depth: 'The yard builds you the next submersible: a deeper rating and more cabin air. Past its rating, the cabin leaks air faster and faster, and the hull is gambling.',
   subSpeed: 'A stronger motor: faster everywhere.',
-  subTank: 'Room for one more animal in the open tank, in the back of the sub (you start with three).',
+  subTank: 'A bigger open tank in the back of the sub: three or four more places each time (you start with three, the biggest holds 24).',
   airTanks: 'Room in the sub for one more backup air tank (you start with room for one, up to three).',
   pressTanks: 'One more pressure chamber in the tank room (you start with one). An animal sealed in one is pumped back up to the pressure it was caught at, takes no harm on the way up, and slowly recovers. T in the sub.',
   pressRating: 'Thicker acrylic and stronger seals: every chamber holds 150 m more over the water outside. A chamber keeps an animal at its own pressure until the sub climbs above its home depth less the rating.',
@@ -304,7 +304,7 @@ export const UPGRADE_LINE = {
   ballast: 'Iron lungs: the sub sinks and climbs like a stone, then a cork.',
   depth: 'Thicker steel between him and the weight of the sea.',
   subSpeed: 'A stronger heart in the engine room.',
-  subTank: 'A longer tank, and room for one more.',
+  subTank: 'A longer tank, and room for three or four more.',
   airTanks: 'Another steel bottle strapped behind the seat.',
   pressTanks: "Clear blue cylinders that keep the deep's own weight on what you bring up.",
   pressRating: 'Walls that hold back a little more of the sea.',
