@@ -181,7 +181,7 @@ export class TankRoom {
     return `<div class="tr-card" data-tag="${C.key}" data-where="${where}" data-i="${i}" style="left:${x}px;top:${y}px">
       <div class="tc-top"><img src="${this.pics.get(sp.id)}" alt=""><div><b style="color:${R.col}">${sp.name}</b><i class="sci">${sp.sci || ''}</i></div></div>
       ${s.variant ? `<em class="rarel r-${s.variant}">rare form: ${s.variant}</em>` : ''}
-      <div class="tc-facts"><span>lives ${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m</span><span>found at ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : ''}</span><span>sells for about <b>${money(price)}</b></span></div>
+      <div class="tc-facts"><span>Found at: ${s.from || 0} m${inChamber ? ` · chamber ${s.chamber + 1}` : ''}</span><span>Habitat: ${sp.dmin.toLocaleString()}–${sp.dmax.toLocaleString()} m</span><span>Value: <b>${money(price)}</b></span></div>
       <i class="st"></i><div class="acts">${acts}</div>${swaps}</div>`;
   }
   states(g) {

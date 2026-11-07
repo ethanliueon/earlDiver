@@ -1424,6 +1424,9 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .tr-card .tc-facts { display: flex; flex-direction: column; font: 10.5px/1.45 var(--mono); color: var(--paint-dim, rgba(220,226,224,0.65)); margin-top: 2px; }
 .tr-card .tc-facts b { font: 500 11px var(--mono); color: #d8e8c8; }
 .tr-card .st { font-size: 13px; }
-.tr-card .acts { flex-direction: row; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.tr-card .acts button { font: 11.5px var(--serif); padding: 3px 8px; border-radius: 3px; color: var(--paint, #e8e4d4); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); box-shadow: none; }
-.tr-card .acts button:hover:not(:disabled) { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.35); }
+.tr-card .acts { flex-direction: column; gap: 1px; margin-top: 5px; }
+/* (3.0.9) the options as a plain list with an arrow; the one under the pointer gets an outline */
+.tr-card .acts button { font: 14px var(--serif); padding: 3px 6px 3px 18px; position: relative; text-align: left; color: var(--paint, #e8e4d4); background: none; border: 1px solid transparent; border-radius: 2px; box-shadow: none; }
+.tr-card .acts button::before { content: '›'; position: absolute; left: 6px; top: 1px; font-size: 16px; color: var(--paint-dim, rgba(220,226,224,0.55)); }
+.tr-card .acts button:hover:not(:disabled), .tr-card .acts button:focus-visible { border-color: rgba(232,228,212,0.55); outline: none; }
+.tr-card .acts button:hover:not(:disabled)::before { color: var(--paint, #e8e4d4); }

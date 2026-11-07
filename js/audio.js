@@ -373,9 +373,10 @@ export class Audio {
     const under = g.mode === 'menu' ? 0 : depth > 0.9 ? 1 : 0;
     // music: not always playing. In a dive it comes now and then when things are calm (and on some
     // good moments), plays a while, and fades; anything frightening stops it at once.
-    let mv = g.mode === 'menu' ? 0.55 : 0.25; // (3.0.3) quieter in play (about 40 % down); full at the menus
+    let mv = g.mode === 'menu' ? 0.55 : 0.15; // (3.0.3) quieter in play; (3.0.9) 40 % lower again; full at the menus
     mv *= this.musicSession(g, dt); // (2.6.9) in every mode: the title only hears it on a fresh start
     mv *= 1 - fx.dread * 0.7;
+    if (under) mv *= 0.7; // (3.0.9) heard through the water: quieter as well as muffled
     if (g.mode === 'dying') mv *= clamp(1 - g.deathT / 3.5, 0, 1);
     if (g.paused) mv *= 0.4;
     const hush = 1 - 0.85 * ((g.fx && g.fx.hush) || 0); // it is near: the sea goes quiet
