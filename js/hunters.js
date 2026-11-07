@@ -25,7 +25,7 @@ export const AGGRO = {
   21: { kind: 'lurk', dmg: 1, range: 3.2 },  // titan triggerfish guarding its nest
   184: { kind: 'whale', dmg: 5, hull: 0.4, p: 0.05, minDepth: 250 }, // sperm whale
   187: { kind: 'ram', hull: 0.2, p: 0.04 },  // orca: rams the sub, leaves divers alone
-  188: { kind: 'ambush', dmg: 4, hull: 0.3, p: 0.08, minDepth: 2400 }, // abyssal sleeper shark: from below, Earl or the sub
+  188: { kind: 'ambush', dmg: 4, hull: 0.3, p: 0.08, minDepth: 2900 }, // abyssal sleeper shark: from below, Earl or the sub
 };
 // the species added since that attack (data/species_more.js)
 for (const m of MORE_SPECIES) if (m.x.aggro) AGGRO[m.id] = m.x.aggro;
@@ -51,8 +51,8 @@ export function directEncounters(g, dt, SPECIES_BY_ID) {
     if (e.y < 60) pool.push(80);
     if (night) { rate *= 2; pool.push(148, 148); }
   }
-  // 2,500-3,000 m belongs to the abyssal sleeper shark (in the sub or out of it)
-  if (e.y > 2450 && e.y < 3050) { rate = 0.14; pool = [188]; }
+  // (3.0.37) below 3,000 m, anywhere, belongs to the abyssal sleeper shark (in the sub or out of it)
+  if (e.y > 2950) { rate = 0.14; pool = [188]; }
   if (g.injury > 0) rate *= 1 + g.injury * 0.6;   // blood in the water
   if (g.concealed || g.protection) rate *= 0.1;
   rate *= g.stillMul || 1;                         // still water: they are slow to come

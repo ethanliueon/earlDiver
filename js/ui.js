@@ -407,9 +407,9 @@ export class UI {
     const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`;
     this.catchShown = Math.max(5, pCap);
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
-      + `<div class="cash-plate worth"><span>ALL OF IT, ABOUT</span><b>${money(total)}</b></div></div>`
+      + `<div class="worth-plate"><span>Worth, all of it</span><b>${money(total)}</b><i>bag and sub, about</i></div></div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
-      + `<h4>The open tank <i>(${oUsed}/${oCap} spaces)</i></h4><div class="tank-win"><canvas class="ct-tank"></canvas></div>`
+      + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win"><canvas class="ct-tank"></canvas></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       + `<p class="ct-cap">${this.catchCap(g) || (elsewhere || 'Tap an animal to see it.')}</p></div></div></div>`;
   }

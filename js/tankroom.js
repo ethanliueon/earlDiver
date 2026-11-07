@@ -462,7 +462,7 @@ export class TankRoom {
     for (let k = 0; k <= 12; k++) ctx.lineTo(cx - 12 + k * 2, 258 + (k % 2 ? -4 : 4)); ctx.stroke();
     const home = s ? homeOf(s) : 0, pumping = s && (s.press || 0) < Math.min(home, cmax) - 1;
     if (s && !(this.drag && this.drag.s === s)) {
-      const L = tankLen(s.len, 62);
+      const L = Math.min(66, tankLen(s.len, 62) * (this.chamberFish || 1));
       const a = this.swim(g, s, false, { x0: X0 + 4, x1: X1 - 4, y0: TOP + 26, y1: BOT - 14 }, L, dt, 0.6);
       this.drawFish(ctx, g, s, a, L, false);
     }
@@ -587,7 +587,7 @@ export class TankRoom {
         ctx.beginPath(); ctx.arc(75, 186, 17, Math.PI, 0); ctx.stroke(); ctx.fillRect(48, 186, 54, 42);
         ctx.fillStyle = 'rgba(20,22,20,0.6)'; ctx.beginPath(); ctx.arc(75, 202, 6, 0, TAU); ctx.fill(); ctx.fillRect(72, 204, 6, 14);
       } else {
-        const s = by.get(n); this.drawChamber(ctx, g, s, rating, cmax, outside, dt, n);
+        const s = by.get(n); this.chamberFish = 1.25; this.drawChamber(ctx, g, s, rating, cmax, outside, dt, n); this.chamberFish = 1;
         if (s) hits.push({ s, x: x + 75 * k, y: (200 - 20) * k, r: 60 * k });
       }
       ctx.restore();

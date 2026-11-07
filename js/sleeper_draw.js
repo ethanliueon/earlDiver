@@ -1,4 +1,4 @@
-// The Abyssal Sleeper Shark (Somniosus abyssalis): the apex predator of 2,500-3,000 m. A sleeper
+// The Abyssal Sleeper Shark (Somniosus abyssalis): the apex predator below 3,000 m. A sleeper
 // shark grown huge and old: heavy and slow, a sagging belly, a blunt rounded snout; a hide of mottled
 // brown-grey lumps, cookiecutter craters and raked old scars; torn fins; a small milky eye with a
 // pale parasitic copepod trailing from it (as on real Greenland sharks); a down-turned mouth with a

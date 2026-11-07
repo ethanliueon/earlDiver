@@ -36,7 +36,7 @@ const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 9
 // Where an animal actually lives, when the recorded range (the deepest and shallowest it was ever
 // found) is far wider than its everyday one. Day ranges; NIGHT is where night migrators rise to.
 const CORE = {
-  188: [2500, 3000], // abyssal sleeper shark: never above 2,500 m
+  188: [3000, 5100], // abyssal sleeper shark (3.0.37): everywhere below 3,000 m, never above it
   319: [500, 1500],  // Pacific viperfish (3.0.21)
   487: [500, 1500],  // highfin dragonfish (3.0.21)
   67: [30, 200],     // monkfish: a shelf fish on the bottom, not one of the deep anglers (3.0.21)
