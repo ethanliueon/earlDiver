@@ -29,6 +29,17 @@ export const keyFor = (act) => (ACTIONS[act] ? ACTIONS[act][COL[INPUT.mode] ?? 0
 export const clicks = () => INPUT.mode !== 'keys';
 
 const PAD = 5;
+
+// (4.3.6) while the spotlight points at something on a screen (a panel, a shop, a confirm), nothing else can be
+// used: clicks outside the lit hole are caught by four blockers round it, and keys are swallowed but the one the
+// step asks for. Registered when this module loads, before any panel's own key handlers, so it goes first.
+let LOCK = null; // { allow: Set of keys } while locked
+window.addEventListener('keydown', (ev) => {
+  if (!LOCK) return;
+  const k = ev.key.length === 1 ? ev.key.toLowerCase() : ev.key;
+  if (LOCK.allow.has(k)) return;
+  ev.preventDefault(); ev.stopImmediatePropagation();
+}, true);
 function visible(el) {
   if (!el || el.disabled) return false;
   if (el.closest('[hidden]')) return false;
@@ -41,9 +52,10 @@ function visible(el) {
 export class TutSpot {
   constructor() {
     const el = document.createElement('div'); el.id = 'tut-spot'; el.hidden = true;
-    el.innerHTML = '<div class="ts-frame"></div><div class="ts-hole"></div><div class="ts-arrow"></div><div class="ts-say"></div><div class="ts-key"><kbd></kbd><span></span></div>';
+    el.innerHTML = '<div class="ts-frame"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-hole"></div><div class="ts-arrow"></div><div class="ts-say"></div><div class="ts-key"><kbd></kbd><span></span></div>';
     document.body.appendChild(el);
     this.el = el; this.frame = el.querySelector('.ts-frame'); this.hole = el.querySelector('.ts-hole'); this.arrow = el.querySelector('.ts-arrow');
+    this.blocks = [...el.querySelectorAll('.ts-block')];
     this.say = el.querySelector('.ts-say'); this.keyBox = el.querySelector('.ts-key');
     this.kbd = this.keyBox.querySelector('kbd'); this.keyText = this.keyBox.querySelector('span');
     this.lastTarget = null;
@@ -55,10 +67,10 @@ export class TutSpot {
     }
     return null;
   }
-  hideParts() { this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; }
+  hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot) {
-    if (!on) { this.el.hidden = true; this.lastTarget = null; return; }
+    if (!on) { this.el.hidden = true; this.lastTarget = null; LOCK = null; return; }
     this.el.hidden = false; this.hideParts();
     // a confirm plate is up: point at its yes button when the step expects one (a purchase), else stay out of the way
     const conf = document.getElementById('confirm');
@@ -72,6 +84,13 @@ export class TutSpot {
       const x = r.left - PAD, y = r.top - PAD, w = r.width + PAD * 2, h = r.height + PAD * 2;
       Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
       this.hole.classList.toggle('light', !!spot.light); // over the sea, a lighter shade: he may still be swimming
+      // (4.3.6) on a screen (not over the sea while he plays): only the lit thing can be used
+      if (!spot.light) {
+        const R = [[0, 0, vw, Math.max(0, y)], [0, y + h, vw, Math.max(0, vh - y - h)], [0, y, Math.max(0, x), h], [x + w, y, Math.max(0, vw - x - w), h]];
+        this.blocks.forEach((b, i) => { const [bx, by, bw, bh] = R[i]; Object.assign(b.style, { display: 'block', left: bx + 'px', top: by + 'px', width: bw + 'px', height: bh + 'px' }); });
+        const k = spot.act ? keyFor(spot.act) : null;
+        LOCK = { allow: new Set(['Shift', 'Control', 'Alt', 'Meta', 'F5', 'F11', 'F12', ...(k ? [k.length === 1 ? k.toLowerCase() : k] : []), ...(spot.keys || [])]) };
+      }
       // the arrow and the line: above the thing when there is room, otherwise below it
       const above = !spot.below && y > 100, cx = Math.max(110, Math.min(vw - 110, x + w / 2));
       this.arrow.style.display = 'block';

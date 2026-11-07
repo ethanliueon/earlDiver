@@ -2253,6 +2253,8 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 /* round the edges of the screen: a soft brass glow while the tutorial is guiding */
 #tut-spot .ts-frame { position: fixed; inset: 0; box-shadow: inset 0 0 60px 6px rgba(216, 191, 130, 0.16), inset 0 0 0 1px rgba(216, 191, 130, 0.22);
   animation: ts-breathe 3.2s ease-in-out infinite; }
+/* (4.3.6) round the lit hole: catch every click, so nothing but the lit thing can be used */
+#tut-spot .ts-block { position: fixed; display: none; pointer-events: auto; cursor: not-allowed; }
 #tut-spot .ts-hole { position: fixed; border-radius: 6px; border: 1.5px solid var(--brass);
   box-shadow: 0 0 0 200vmax rgba(2, 7, 11, 0.45), 0 0 14px 2px rgba(216, 191, 130, 0.45);
   animation: ts-pulse 1.6s ease-in-out infinite; transition: left .15s, top .15s, width .15s, height .15s; }

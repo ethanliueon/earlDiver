@@ -255,3 +255,5 @@ for (const it of Object.values(ITEMS)) {
     reword(it, (t) => t.replace(new RegExp(`\\b${was} animals`, 'g'), `${it.slots} animals`));
   }
 }
+// (4.3.6) the starting mesh bag holds two: the first bag bought (three) is a step up
+if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.mesh, (t) => t.replace(/\b3 animals/g, '2 animals')); }

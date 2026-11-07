@@ -967,7 +967,13 @@ function tutor() {
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
-    if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
+    const canChange = !!(ui.h.canChangeGear && ui.h.canChangeGear()); // (4.3.6) gear is changed aboard (deck, cabin, sub); in the water it only shows
+    if (!canChange) {
+      // in the water: aboard first. If the inventory is up, its close button is the way out (nothing else works)
+      text = 'Climb aboard the Margaret to change your gear'; to = ladder;
+      spot = invOpen ? { sel: ['#inventory .inv-close'], act: 'inventory' } : null;
+    }
+    else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
   }
   g.tut = { text, to, fish, prompt, toLabel, spot, door };
