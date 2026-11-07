@@ -26,7 +26,7 @@ import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
-import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf, BIG as BIG_CH } from './capture.js';
+import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf, BIG as BIG_CH, gapOf, SAFE_GAP } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
@@ -397,7 +397,8 @@ export class UI {
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
     // the bag: eleven cubbies, the ones beyond his bag padlocked
     const BAG_MAX = 12, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
-    const bag = g.bag.map((s2) => card('fc', s2)).join('') + rep2('<div class="fc empty"></div>', cap - g.bag.length) + rep2('<div class="fc locked"><i></i></div>', shown - Math.max(cap, g.bag.length));
+    const inTrouble = (s2, inBag) => s2.cond > 0.05 && (s2.cond < 0.3 || gapOf(g, s2, inBag) > SAFE_GAP);
+    const bag = g.bag.map((s2, i) => card(inTrouble(s2, true) ? 'fc trouble' : 'fc', s2).replace(/^<div class="fc( trouble)?"/, (m) => `${m} data-b="${i}"`)).join('') + rep2('<div class="fc empty"></div>', cap - g.bag.length) + rep2('<div class="fc locked"><i></i></div>', shown - Math.max(cap, g.bag.length));
     const all = g.bag.concat(g.subTank || []), total = all.reduce((t, s2) => t + worth(s2), 0);
     // the sub: the open tank itself, its animals swimming as they do in the sub, and the chambers as they hang there
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))], tank = g.subTank || [];
@@ -409,7 +410,7 @@ export class UI {
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
       + `<div class="worth-paint" style="font-size:${Math.min(160, Math.floor(540 / (money(total).length * 0.6)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
-      + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win"><canvas class="ct-tank"></canvas></div>`
+      + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       + `<p class="ct-cap">${this.catchCap(g) || (elsewhere || 'Tap an animal to see it.')}</p></div></div></div>`;
   }
@@ -417,7 +418,8 @@ export class UI {
   catchCap(g) {
     const s2 = this.catchSel; if (!s2 || !(g.subTank || []).includes(s2)) return '';
     const sp = SPECIES_BY_ID[s2.id], P = g.profile;
-    return `<b>${sp.name}</b>${s2.variant ? ` <em>${s2.variant}</em>` : ''} · ${s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond)} · from ${Math.round(s2.from || 0)} m · <span>${money(specimenValue(s2) * statValue(P, 'payFish'))}</span>`;
+    const dying = s2.cond > 0.05 && gapOf(g, s2, false) > SAFE_GAP;
+    return `<b>${sp.name}</b>${s2.variant ? ` <em>${s2.variant}</em>` : ''} · ${s2.cond <= 0.05 ? 'dead' : dying ? '<strong>dying: wrong pressure</strong>' : conditionName(s2.cond)} · from ${Math.round(s2.from || 0)} m · <span>${money(specimenValue(s2) * statValue(P, 'payFish'))}</span>`;
   }
   // (3.0.36) every frame while the Catch page is open: the tank and the chambers, drawn by the tank room's own hand
   drawCatch(g, dt) {
@@ -433,6 +435,13 @@ export class UI {
         this.catchSel = best; const cap = root.querySelector('.ct-cap'); if (cap) cap.innerHTML = this.catchCap(g) || 'Tap an animal to see it.';
       });
       tap(tv, 'tank'); tap(cv, 'ch');
+    }
+    this.troubleT = (this.troubleT || 0) - dt;
+    if (this.troubleT <= 0) {
+      this.troubleT = 0.4;
+      const bad = (s2, inBag) => s2.cond > 0.05 && (s2.cond < 0.3 || gapOf(g, s2, inBag) > SAFE_GAP);
+      root.querySelectorAll('.inv-catch2 .fc[data-b]').forEach((el) => { const s2 = g.bag[+el.dataset.b]; el.classList.toggle('trouble', !!(s2 && bad(s2, true))); });
+      tv.parentElement.classList.toggle('trouble', (g.subTank || []).some((s2) => !s2.pressed && !s2.pile && bad(s2, false)));
     }
     const [a, aw, ah] = fit(tv); this.tankHits = this.tankRoom.drawMiniTank(a, g, aw, ah, dt);
     const [b, bw, bh] = fit(cv); this.chHits = this.tankRoom.drawMiniChambers(b, g, bw, bh, 0, this.catchShown || 5);
@@ -465,8 +474,14 @@ export class UI {
   // phone sees the same locker as a computer, only smaller
   fitInventory() {
     const panel = $('inventory').querySelector('.inv-panel'); if (!panel) return;
-    const k = Math.min(1, (window.innerWidth - 12) / 1240, (window.innerHeight - 12) / 820);
-    this.invScale = k; panel.style.setProperty('--inv-k', k.toFixed(4));
+    const vw = window.innerWidth, vh = window.innerHeight, small = vw < 900 || vh < 560, H = small ? 730 : 820;
+    const k = Math.min(1, (vw - (small ? 4 : 12)) / 1240, (vh - (small ? 4 : 12)) / H);
+    this.invScale = k; panel.style.setProperty('--inv-k', k.toFixed(4)); panel.style.height = H + 'px';
+    $('inventory').classList.toggle('small', small);
+    // (3.0.40) warnings while it is open: just above Gear / Catch (on a phone, along the bottom edge), not over the locker
+    document.documentElement.style.setProperty('--inv-msg-y', Math.round((vh - H * k) / 2 + 30 * k) + 'px');
+    document.documentElement.style.setProperty('--inv-msg-x', Math.round(vw / 2 + (small ? 120 : 180) * k) + 'px');
+    document.documentElement.style.setProperty('--inv-msg-w', Math.round(small ? Math.min(vw / 2 - 120 * k - 8, 340) : 420 * k) + 'px');
     if (!this.invFitWired) { this.invFitWired = true; window.addEventListener('resize', () => { if (!$('inventory').hidden) this.fitInventory(); }); }
   }
   // (3.0.35) his oxygen tank, large, and its pressure gauge: how much air he has (full aboard), and how long it lasts

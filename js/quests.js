@@ -46,7 +46,16 @@ const R_INDEX = { common: 0, uncommon: 1, rare: 2, exotic: 3 };
 export const QUEST_HOURS = { common: 12, uncommon: 21, rare: 36, exotic: 60 };
 export const questLeft = (q, now = Date.now()) => Math.max(0, (q.until || now) - now);
 
-export function Q(P) { return P.quests || (P.quests = { main: 0, mainProg: 0, board: [], boardAt: 0, done: 0 }); }
+export function Q(P) {
+  const S = P.quests || (P.quests = { main: 0, mainProg: 0, board: [], boardAt: 0, done: 0 });
+  // (3.0.40) the main line remembers what he has already done for steps still ahead of it; an older save
+  // starts from what can be told (money earned means a fish has been caught and sold)
+  if (!S.seen) { S.seen = {}; if ((P.lifetime || 0) > 0) { S.seen.net = 1; S.seen.sell = 1; } }
+  return S;
+}
+// (3.0.40) note progress on any step of the main line not yet claimed; the active step's counter follows it
+function mark(S, st, v) { const nv = Math.min(st.need, v); if (nv > (S.seen[st.id] || 0)) { S.seen[st.id] = nv; return true; } return false; }
+function follow(S) { const m = MAIN[S.main]; if (m && m.on && (S.seen[m.id] || 0) > S.mainProg) { S.mainProg = Math.min(m.need, S.seen[m.id]); return true; } return false; }
 
 function rollRarity(rnd) { let x = rnd() * 100; for (const [k, R] of Object.entries(QUEST_RARITY)) { if ((x -= R.odds) < 0) return k; } return 'common'; }
 export function newQuest(P, rnd = Math.random, taken = new Set()) {
@@ -80,10 +89,11 @@ export function refreshBoard(P, paid) {
 
 // an event from the game: type and what it was about
 export function questEvent(P, type, data = {}) {
-  const S = Q(P), m = MAIN[S.main];
+  const S = Q(P);
   let changed = false;
-  // the main line
-  if (m && m.on === type && S.mainProg < m.need) { S.mainProg = Math.min(m.need, S.mainProg + (data.n || 1)); changed = true; }
+  // the main line: this step and every one still ahead of it
+  for (let i = S.main; i < MAIN.length; i++) { const st = MAIN[i]; if (st.on === type && st.on !== 'subDepth') changed = mark(S, st, (S.seen[st.id] || 0) + (data.n || 1)) || changed; }
+  changed = follow(S) || changed;
   // the board
   for (const q of S.board) {
     if (q.prog >= q.n) continue;
@@ -100,22 +110,25 @@ export function questEvent(P, type, data = {}) {
 }
 // once a second: what can be read straight off the game
 export function questTick(g, P) {
-  const S = Q(P), m = MAIN[S.main];
-  if (!m || !m.on || S.mainProg >= m.need) return false;
-  const e = g.earl;
-  if (m.on === 'bought' && kitOf(P).items.some((it) => ITEMS[it.id] && !ITEMS[it.id].free)) { S.mainProg = 1; return true; }
-  if (m.on === 'wear' && Object.values(kitOf(P).on).some((u) => { const it = u && kitOf(P).items.find((q) => q.u === u); return it && ITEMS[it.id] && !ITEMS[it.id].free; })) { S.mainProg = 1; return true; }
-  if (m.on === 'subDepth' && e.inSub && g.sub.y > S.mainProg) { S.mainProg = Math.min(m.need, Math.floor(g.sub.y)); return true; }
-  if (m.on === 'subAlive' && (g.subTank.some((s) => s.cond > 0.3) || g.subTank.length && g.sub.y < 3)) { S.mainProg = 1; return true; }
-  if (m.on === 'aquarium' && P.aquarium && Object.keys(P.aquarium.display || {}).length) { S.mainProg = 1; return true; }
-  return false;
+  const S = Q(P), e = g.earl, K = kitOf(P);
+  let ch = false;
+  // every step not yet claimed, so what he does early still counts when its turn comes
+  for (let i = S.main; i < MAIN.length; i++) {
+    const st = MAIN[i]; if (!st.on || (S.seen[st.id] || 0) >= st.need) continue;
+    if (st.on === 'bought' && K.items.some((it) => ITEMS[it.id] && !ITEMS[it.id].free)) ch = mark(S, st, 1) || ch;
+    if (st.on === 'wear' && Object.values(K.on).some((u) => { const it = u && K.items.find((q) => q.u === u); return it && ITEMS[it.id] && !ITEMS[it.id].free; })) ch = mark(S, st, 1) || ch;
+    if (st.on === 'subDepth' && e.inSub) ch = mark(S, st, Math.floor(g.sub.y)) || ch;
+    if (st.on === 'subAlive' && (g.subTank.some((s) => s.cond > 0.3) || g.subTank.length && g.sub.y < 3)) ch = mark(S, st, 1) || ch;
+    if (st.on === 'aquarium' && P.aquarium && Object.keys(P.aquarium.display || {}).length) ch = mark(S, st, 1) || ch;
+  }
+  return follow(S) || ch;
 }
 // claim: the main step (moves the line on) or a board quest (replaced at once by a new one)
 export function claim(P, which) {
   const S = Q(P);
   if (which === 'main') {
     const m = MAIN[S.main]; if (!m || S.mainProg < m.need) return null;
-    S.main++; S.mainProg = 0; S.done++;
+    S.main++; S.mainProg = 0; S.done++; follow(S); // the next step: already done, if he has done it
     return { pay: m.pay, gift: m.gift || null, text: m.text };
   }
   const i = S.board.findIndex((q) => q.key === which); if (i < 0) return null;

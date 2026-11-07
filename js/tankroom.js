@@ -587,7 +587,12 @@ export class TankRoom {
         ctx.beginPath(); ctx.arc(75, 186, 17, Math.PI, 0); ctx.stroke(); ctx.fillRect(48, 186, 54, 42);
         ctx.fillStyle = 'rgba(20,22,20,0.6)'; ctx.beginPath(); ctx.arc(75, 202, 6, 0, TAU); ctx.fill(); ctx.fillRect(72, 204, 6, 14);
       } else {
-        const s = by.get(n); this.chamberFish = 1.25; this.drawChamber(ctx, g, s, rating, cmax, outside, dt, n); this.chamberFish = 1;
+        const s = by.get(n);
+        if (s && s.cond > 0.05 && (s.cond < 0.3 || gapOf(g, s, false) > SAFE_GAP)) { // in trouble: a faint red glow behind it
+          const pulse = 0.55 + 0.45 * Math.sin(this.t * 3), rg = ctx.createRadialGradient(75, 200, 10, 75, 200, 110);
+          rg.addColorStop(0, `rgba(230,70,50,${(0.38 * pulse).toFixed(3)})`); rg.addColorStop(1, 'rgba(230,70,50,0)'); ctx.fillStyle = rg; ctx.fillRect(-35, 80, 220, 250);
+        }
+        this.chamberFish = 1.25; this.drawChamber(ctx, g, s, rating, cmax, outside, dt, n); this.chamberFish = 1;
         if (s) hits.push({ s, x: x + 75 * k, y: (200 - 20) * k, r: 60 * k });
       }
       ctx.restore();

@@ -1791,3 +1791,26 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .worth-paint { align-self: flex-start; margin: auto 0 0 34px; font: bold 64px/1 Georgia, serif; letter-spacing: 0.01em; color: rgba(222,216,190,0.42);
   text-shadow: 0 1px 0 rgba(0,0,0,0.35), 0 -1px 0 rgba(255,255,240,0.05); -webkit-mask-image: repeating-linear-gradient(92deg, #000 0 7px, rgba(0,0,0,0.82) 7px 9px, #000 9px 15px); mask-image: repeating-linear-gradient(92deg, #000 0 7px, rgba(0,0,0,0.82) 7px 9px, #000 9px 15px); }
 #inventory .worth-paint { margin: auto 0 -6px 26px; line-height: 0.9; } /* (3.0.39) two and a half times as big; smaller only if a long sum would not fit */
+
+/* ---------- 3.0.40 warnings above Gear / Catch; trouble shown in red; phones get a larger locker ---------- */
+body:has(#inventory:not([hidden])) #overflash { top: auto; bottom: var(--inv-msg-y, 120px); }
+/* an animal in trouble (dying of the wrong pressure, or very weak): its pocket, or the tank glass, glows a faint, slow red */
+@keyframes inv-trouble { 50% { box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #a8483a, 0 0 0 4px #1a1d18, inset 0 0 22px rgba(230,70,50,0.45), 0 0 14px rgba(230,70,50,0.35); } }
+#inventory .fc.trouble { box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #7a4a3a, 0 0 0 4px #1a1d18, inset 0 0 14px rgba(230,70,50,0.25); animation: inv-trouble 1.8s ease-in-out infinite; }
+@keyframes inv-trouble-tank { 50% { box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #a8483a, 0 0 18px rgba(230,70,50,0.4); } }
+#inventory .tank-win.trouble { animation: inv-trouble-tank 1.8s ease-in-out infinite; }
+#inventory .ct-cap strong { font-weight: 400; font-style: normal; color: #e8806a; }
+/* phones: no sign; Gear / Catch at the top in its place */
+#inventory.small .set-plate { display: none; }
+#inventory.small .inv-tabs { order: -1; margin: 0 0 12px; }
+#inventory.small .inv-panel { padding-top: 18px; }
+/* the warnings, while the locker is open: two at most, small, on the kick plate to the right of Gear / Catch */
+body:has(#inventory:not([hidden])) #overflash { top: auto; left: var(--inv-msg-x, 60%); right: auto; bottom: var(--inv-msg-y, 40px); transform: none; align-items: flex-start; width: var(--inv-msg-w, 420px); }
+body:has(#inventory:not([hidden])) #overflash .of-line { max-width: 100%; padding: 4px 10px; font-size: 13px; line-height: 1.25; }
+body:has(#inventory:not([hidden])) #overflash .of-line:not(:nth-last-child(-n+2)) { display: none; }
+body:has(#inventory.small:not([hidden])) #overflash .of-line { padding: 3px 8px; font-size: 10px; }
+body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { display: none; }
+#inventory .inv-catch2 .fc.trouble { background: radial-gradient(ellipse at 50% 60%, rgba(200,60,40,0.22), rgba(0,0,0,0) 75%), linear-gradient(180deg, #221c18, #2e2620 85%, #3a3028);
+  box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #9a4a38, 0 0 0 4px #1a1d18, inset 0 0 20px rgba(230,70,50,0.35), 0 0 8px rgba(230,70,50,0.2); animation: inv-trouble2 1.8s ease-in-out infinite; }
+@keyframes inv-trouble2 { 50% { box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #d0644a, 0 0 0 4px #1a1d18, inset 0 0 30px rgba(230,70,50,0.55), 0 0 16px rgba(230,70,50,0.45); } }
+#inventory .tank-win.trouble { box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #9a4a38, 0 0 10px rgba(230,70,50,0.3); }

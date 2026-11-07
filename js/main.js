@@ -54,9 +54,12 @@ const hud = new Hud(hudCanvas);
 function flashOver(text) {
   let el = document.getElementById('overflash');
   if (!el) { el = document.createElement('div'); el.id = 'overflash'; document.body.appendChild(el); }
-  const line = document.createElement('div'); line.className = 'of-line'; line.textContent = text;
+  // (3.0.40) the same line again while it is still up: count it instead of stacking a copy
+  const last = el.lastElementChild;
+  if (last && !last.classList.contains('gone') && last.dataset.text === text) { last.dataset.n = +(last.dataset.n || 1) + 1; last.textContent = `${text} ×${last.dataset.n}`; clearTimeout(last._t); last._t = setTimeout(() => { last.classList.add('gone'); setTimeout(() => last.remove(), 500); }, 4000); return; }
+  const line = document.createElement('div'); line.className = 'of-line'; line.textContent = text; line.dataset.text = text;
   el.appendChild(line); while (el.children.length > 3) el.firstChild.remove();
-  setTimeout(() => { line.classList.add('gone'); setTimeout(() => line.remove(), 500); }, 4000);
+  line._t = setTimeout(() => { line.classList.add('gone'); setTimeout(() => line.remove(), 500); }, 4000);
 }
 // the steady line: how the air is, while a panel is open and it is getting short
 function airOver(g) {
@@ -1673,13 +1676,15 @@ function update(dt) {
     profile.playT = (profile.playT || 0) + dt; // (3.0.0) play time: the old one's days
     if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
     const dl = updateSpecimens(g, dt);
-    for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died${s.pressDeath ? ' of the pressure' : ''}`, 'warn');
+    // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
+    const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : ' in the tank') : '');
+    for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()}${whereOf(s)} has died${s.pressDeath ? ' from barotrauma' : ''}`, 'warn');
     for (const ev of dl.events) {
       const nm = SPECIES_BY_ID[ev.s.id].name.toLowerCase();
       if (ev.type === 'bagStress') hud.toast(`The ${nm} in your net feels the pressure: get it into a chamber`, 'warn');
-      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying of the pressure: get it to a chamber, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
-      else if (ev.type === 'stressed') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : "in the sub's tank"} is stressed${ev.press ? ' by the pressure' : ''}`, 'warn');
-      else if (ev.type === 'dying') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : "in the sub's tank"} is dying${ev.press ? ' of the pressure' : ''}`, 'warn');
+      else if (ev.type === 'bagDying') hud.toast(`The ${nm} in your net is dying from barotrauma: get it to a chamber, or go back ${ev.deeper ? 'up' : 'down'}`, 'warn');
+      else if (ev.type === 'stressed') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : 'in the tank'} is stressed${ev.press ? ' by the pressure' : ''}`, 'warn');
+      else if (ev.type === 'dying') hud.toast(`The ${nm} ${ev.inBag ? 'in your net' : 'in the tank'} is dying${ev.press ? ' from barotrauma' : ''}`, 'warn');
     }
     g.catchTarget = null; g.capRarity = null;
     // the reloads for the net / slurp go through updateCapture; tag and camera prompts here
