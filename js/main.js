@@ -670,7 +670,7 @@ function withLoading(fn) {
   setTimeout(() => { fn(); g.warmUntil = performance.now() + 1500; }, 40);
 }
 function startRun() {
-  audio.init(); audio.resume(); audio.playMusic();
+  audio.init(); audio.resume(); audio.playMusic(); audio.cue && audio.cue('start'); // (2.9.2) a new dive, or back after a death
   if (!getSlot()) setSlot(firstFreeSlot());
   if (!profile) { profile = newProfile(); saveProfile(profile); }
   profile.runs = (profile.runs || 0) + 1; saveProfile(profile);

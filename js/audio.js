@@ -150,12 +150,16 @@ export class Audio {
     id = id || m.zone;
     if (m.on || id === 'deep') return; // the deep: no music
     if (!this.musicBufs[id]) { this.loadTheme(id); this.musicWanted = id; return; }
-    if (this.musicSrc) { this.fadeAway(this.musicSrc, 0.05); this.musicSrc = null; }
+    if (this.musicSrc && this.musicSrc.id === id && m.level > 0.05) { m.on = true; m.playedT = 0; return; } // still fading out: it swells back
+    if (this.musicSrc) { this.fadeAway(this.musicSrc, 1.5); this.musicSrc = null; }
     this.musicSrc = this.playSource(id, 0); m.on = true; this.musFirstStarted = true; m.level = Math.max(m.level, 0.3); // (each track has its own quiet start)
   }
   // a good moment (a sale, a rare find, getting home): once the rest is over and all is calm, the music comes now
-  cue() {
+  // (2.9.2) as before 2.6.9: a new dive, coming back from a death, and getting home always bring it in
+  cue(kind) {
     const m = this.musState();
+    if (kind === 'start') m.zone = 'sunlit'; // every dive starts on the Margaret's deck
+    if ((kind === 'start' || kind === 'home') && !m.on && m.zone !== 'deep') { this.startPiece(); return; }
     if (!m.on && m.rest <= 0 && this.calm && m.sinceStress >= 20 && m.zone !== 'deep') this.startPiece();
     else m.meter = Math.min(1, m.meter + 0.15);
   }
@@ -176,7 +180,8 @@ export class Audio {
     this.calm = playing && !stress;
     if (stress) m.sinceStress = 0; else m.sinceStress += dt;
     if (m.on) m.playedT = (m.playedT || 0) + dt; else m.playedT = 0;
-    if (g.mode === 'dying' || (serious && m.playedT >= 60)) { this.musicWanted = null; this.stopPiece(); }
+    if (g.mode === 'dying' || (serious && m.playedT >= 60)) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
+    if (m.on) m.cutBySerious = false;
     // a long stretch of nothing much (standing about, waiting, swimming back and forth doing the same thing):
     // the rest before the next piece runs out faster, and the music is likelier to come
     const sp = Math.hypot(e.vx || 0, e.vy || 0);
@@ -196,7 +201,7 @@ export class Audio {
         if (m.rollT >= (bored > 0.5 ? 12 : 30)) { m.rollT = 0; if (Math.random() < 0.5 + m.meter * 0.4 + bored * 0.3) this.startPiece(); }
       }
     }
-    const fade = m.on ? 0.5 : g.mode === 'dying' ? 1 : 0.35;           // in: 2 s; cut off: about 3 s
+    const fade = m.on ? 0.5 : g.mode === 'dying' ? 0.6 : (m.cutBySerious ? 0.3 : 0.05); // (2.9.2) in: 2 s; out: always a fade (about 20 s; 3 s for danger)
     m.level += clamp((m.on ? 1 : 0) - m.level, -fade * dt, fade * dt);
     if (!m.on && m.level <= 0.001 && this.musicSrc) { this.fadeAway(this.musicSrc, 0.05); this.musicSrc = null; }
     return m.level;
@@ -367,7 +372,7 @@ export class Audio {
     const hush = 1 - 0.85 * ((g.fx && g.fx.hush) || 0); // it is near: the sea goes quiet
     this.musicGain.gain.setTargetAtTime(mv * hush, now, 0.4);
     const hurtMuffle = (g.injury >= 3 ? 0.5 : 1) * (g.noAir ? 1 - Math.min(1, g.noAir / 15) * 0.4 : 1);
-    const lp = (under ? clamp(4200 * Math.exp(-depth / 2500), 1600, 4200) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle; // (2.6.10) a lighter muffle: each depth has its own theme now, and it should be heard
+    const lp = (under ? clamp(2400 * Math.exp(-depth / 900), 700, 2400) * (1 - fx.dread * 0.5) : 16000) * hurtMuffle; // (2.6.10) a lighter muffle: each depth has its own theme now, and it should be heard
     this.musicLP.frequency.setTargetAtTime(lp, now, 0.25);
     // beds
     this.amb.g.gain.setTargetAtTime((under ? 0.14 + clamp(depth / 1500, 0, 0.12) : 0.03) * hush, now, 0.5);
