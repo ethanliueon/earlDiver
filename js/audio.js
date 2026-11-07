@@ -159,8 +159,7 @@ export class Audio {
   cue(kind) {
     const m = this.musState();
     if (kind === 'start') m.zone = 'sunlit'; // every dive starts on the Margaret's deck
-    if (kind === 'start') { if (m.on && (m.playedT || 0) < 1 && m.level < 0.2) { m.on = false; m.level = 0; } if (!m.on) m.startIn = 3.5; return; } // (a piece only just begun by the click that started the dive waits too) // (3.0.4) a new dive: a few seconds on the boat first, then it fades in
-    if (kind === 'home' && !m.on && m.zone !== 'deep') { this.startPiece(); return; }
+    if ((kind === 'start' || kind === 'home') && !m.on && m.zone !== 'deep') { this.startPiece(); return; }
     if (!m.on && m.rest <= 0 && this.calm && m.sinceStress >= 20 && m.zone !== 'deep') this.startPiece();
     else m.meter = Math.min(1, m.meter + 0.15);
   }
@@ -173,7 +172,6 @@ export class Audio {
     // (3.0.3) every time he comes back to a menu (the title, or after a death), the theme swells in, full and slow
     if (g.mode === 'menu' && this.lastMode !== 'menu' && this.musFirstDone) { m.zone = 'sunlit'; m.menuSwell = true; if (!m.on) { m.rest = 0; this.startPiece('sunlit'); } }
     if (g.mode !== 'menu') m.menuSwell = false;
-    if (m.startIn > 0 && playing && !g.paused) { m.startIn -= dt; if (m.startIn <= 0 && !m.on) { m.rest = 0; this.startPiece(); } }
     this.lastMode = g.mode;
     const ent = g.entity, e = g.earl;
     // (2.9.1) smarter: only something truly serious (the thing in the deep marking him, closing in or
