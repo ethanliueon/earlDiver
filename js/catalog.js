@@ -103,10 +103,10 @@ export class Catalog {
     if (cat === 'trawl') { const T = NETS_SUB.basic, inHatch = g && g.items && g.items.net === 'basic'; return [{ key: 'subnet:basic', id: 'basic', kind: 'trawl', name: T.name, price: T.price, line: "A light net for the sub's belly hatch.", good: 'A haul of shallow fish while you drive', bad: 'Deep animals tear it', owned: inHatch, on: inHatch, onText: 'In the hatch', pic: ['trawl', 0] }]; }
     if (cat === 'trap') {
       const tr = P.traps || {};
-      return ['pot', 'fish'].map((k, i) => { const T = TRAPS[k], have = tr[k] || 0; return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, price: T.price, line: k === 'pot' ? 'A galvanised box with one funnel.' : 'A mesh box with a funnel at each end.', good: `To ${T.maxDepth} m; up to ${T.holds} animals`, count: `you have ${have} of ${T.max}`, full: have >= T.max, pic: ['trap', i] }; });
+      return ['pot', 'fish'].map((k, i) => { const T = TRAPS[k], have = tr[k] || 0; return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, price: T.price, line: k === 'pot' ? 'A galvanised box with one funnel.' : 'A mesh box with a funnel at each end.', good: `To ${T.maxDepth} m; up to ${T.holds} animals`, count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', i] }; });
     }
     if (cat === 'supply') {
-      return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = (g && g.items[k]) || 0, mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you have ${have} of ${mx}`, full: have >= mx, pic: ['supply', k] }; });
+      return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = (g && g.items[k]) || 0, mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
     }
     return [];
   }
@@ -124,7 +124,7 @@ export class Catalog {
       const wish = P.wish ? this.find('item:' + P.wish) || this.find(P.wish) : null;
       if (wish) {
         const k = Math.min(1, (P.cash || 0) / Math.max(1, wish.e.price));
-        html += `<a href="#" class="cat-saving" data-go="${wish.e.key}"><img src="${this.pic(wish.e, 240, 128)}" alt=""><div><small>SAVING FOR</small><div class="nm">${wish.e.name}</div><div class="bar"><i style="width:${Math.round(k * 100)}%"></i></div></div><div class="amt">${money(Math.min(P.cash, wish.e.price), false)} of ${money(wish.e.price, false)}</div></a>`;
+        html += `<a href="#" class="cat-saving" data-go="${wish.e.key}"><img src="${this.pic(wish.e, 240, 128)}" alt=""><div><small>SAVING FOR</small><div class="nm">${wish.e.name}</div><div class="bar"><i style="width:${Math.round(k * 100)}%"></i></div></div><div class="amt">(${money(Math.min(P.cash, wish.e.price), false)}/${money(wish.e.price, false)})</div></a>`;
       } else html += `<p class="cat-lede">${this.cfg.lede}</p>`;
       if (this.id === 'dave' && this.h.daveSays && this.h.daveSays()) html = `<div class="cat-says"><b>Dave:</b> “${this.h.daveSays()}”</div>` + html;
       let pick = this.cfg.newIn.map((k) => this.find(k)).filter((q) => q && !q.e.owned).slice(0, 3);

@@ -706,7 +706,7 @@ function buy(kind) {
       if (has('sprint')) e.sprintMul = statValue(P, 'sprint');
       if (has('depth') || has('subSpeed') || has('ballast')) applySub(sub, P);
       if (has('camShots')) g.shots = gear(P, 'cam').shots;
-      if (!has('depth')) hud.toast(`${T.name}: level ${lv(P, id)} of ${T.max}`);
+      if (!has('depth')) hud.toast(`${T.name}: level (${lv(P, id)}/${T.max})`);
     }
   } else if (kind.startsWith('suit:')) {
     // (2.8.0) suits are items now: suit:<id> buys one, as item:<id> does

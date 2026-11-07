@@ -1540,3 +1540,89 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .ip-box { overflow: visible; }
 #inventory .ip-box .ip-inner { max-height: 76vh; overflow-y: auto; }
 #inventory .ip-box .lk-acts button small { color: #4a3812; opacity: 1; font-style: italic; }
+
+/* ---------- 3.0.32 the inventory, finished: tabs, a brass counter, sockets with plaques, a quiet locker, Legendaries that glint, the catch page ---------- */
+#inventory .glyph.g-suit { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23c8c4b0%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%204a3%203%200%201%201%200%206a3%203%200%201%201%200-6zM8%2011h8l1%209h-3l-1%208h-2l-1-8H7z%22/%3E%3C/svg%3E"); }
+#inventory .glyph.g-fins { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23c8c4b0%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%2018l6-2%2012-8%206%202-4%206-14%206z%22/%3E%3C/svg%3E"); }
+#inventory .glyph.g-tank { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23c8c4b0%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%225%22%20y%3D%2211%22%20width%3D%2218%22%20height%3D%228%22%20rx%3D%224%22/%3E%3Crect%20x%3D%2223%22%20y%3D%2213%22%20width%3D%223%22%20height%3D%224%22/%3E%3C/svg%3E"); }
+#inventory .glyph.g-bag { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23c8c4b0%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M9%209h12l-2%2014h-8z%20M9%209q6-5%2012%200%22/%3E%3C/svg%3E"); }
+#inventory .glyph.g-net { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23c8c4b0%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2021L17%2013%22/%3E%3Cellipse%20cx%3D%2221%22%20cy%3D%2211%22%20rx%3D%225%22%20ry%3D%223%22/%3E%3Cpath%20d%3D%22M16%2011q5%2012%2010%200%22/%3E%3C/svg%3E"); }
+#inventory .glyph.g-slurp { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23c8c4b0%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%224%22%20y%3D%2213%22%20width%3D%2218%22%20height%3D%225%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M22%2014l5%201.5-5%201.5z%20M8%2018v5h3v-5%22/%3E%3C/svg%3E"); }
+#inventory .glyph.g-tag { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23c8c4b0%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2016h20%20M23%2014l4%202-4%202z%22/%3E%3Cpath%20d%3D%22M7%2016v6h3v-6%22/%3E%3C/svg%3E"); }
+#inventory .glyph.g-cam { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2030%2030%22%20fill%3D%22none%22%20stroke%3D%22%23c8c4b0%22%20stroke-width%3D%221.3%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%226%22%20y%3D%2210%22%20width%3D%2215%22%20height%3D%2211%22%20rx%3D%222%22/%3E%3Ccircle%20cx%3D%2221%22%20cy%3D%2215.5%22%20r%3D%223%22/%3E%3C/svg%3E"); }
+
+#inventory .inv-tabs { display: flex; gap: 6px; margin: -4px 0 12px; }
+#inventory .inv-tabs button { font: 12px var(--stencil); letter-spacing: 0.2em; text-transform: uppercase; padding: 6px 16px 5px; border: 0; border-radius: 3px 3px 0 0; cursor: pointer; color: var(--paint-dim);
+  background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.32)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -2px 0 rgba(0,0,0,0.35); }
+#inventory .inv-tabs button.on { color: #2e220a; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
+#inventory .inv-tabs button i { font-style: normal; opacity: 0.75; }
+/* the cash, on a small brass counter plate */
+#inventory .cash-plate { display: inline-flex; align-items: baseline; gap: 10px; margin: 0 0 12px; padding: 5px 14px 6px; border-radius: 3px;
+  background: linear-gradient(180deg, #1a1c18, #0e100d); box-shadow: 0 0 0 1px #0a0b09, 0 0 0 3px #8a6a2c, 0 0 0 4px #2a1e08, inset 0 1px 3px rgba(0,0,0,0.8); }
+#inventory .cash-plate span { font: 10px var(--stencil); letter-spacing: 0.24em; color: #c8a050; }
+#inventory .cash-plate b { font: 600 21px var(--mono); color: #f2e6c0; letter-spacing: 0.04em; }
+/* the stand he is on: a lit bay, a grating at his feet */
+#inventory .eq-stage { position: relative; overflow: hidden;
+  background: radial-gradient(ellipse 45% 38% at 50% 8%, rgba(255,226,170,0.13), rgba(255,226,170,0) 100%), radial-gradient(ellipse at 50% 60%, rgba(110,140,140,0.12), rgba(0,0,0,0) 65%), linear-gradient(180deg, #23281f, #171b15);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.04), inset 0 -30px 40px -30px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.05); }
+#inventory .eq-stage::after { content: ''; position: absolute; left: 22%; right: 22%; bottom: 10px; height: 16px; pointer-events: none; border-radius: 2px; opacity: 0.55;
+  background: repeating-linear-gradient(90deg, #3a4036 0 2px, transparent 2px 7px), linear-gradient(180deg, #2a2f26, #161914); box-shadow: 0 -1px 0 rgba(255,255,255,0.05); }
+#inventory .eq-stage .eq-earl { position: relative; z-index: 1; }
+/* the slots: sockets sunk into the steel, a bevelled rim, a darker well; a brass plaque under each */
+#inventory .eq-stage .eq-slot.sq { border: 0; border-radius: 6px; background: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.2), rgba(0,0,0,0.5));
+  box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, inset 0 3px 8px rgba(0,0,0,0.7), inset 0 0 0 2px var(--rc, transparent); }
+#inventory .eq-stage .eq-slot.sq.empty { border: 0; }
+#inventory .eq-stage .eq-slot.sq.r-legendary { box-shadow: 0 0 0 1px #2a1e08, 0 0 0 3px #a8873e, 0 0 0 4px #2a1e08, inset 0 3px 8px rgba(0,0,0,0.7), inset 0 0 14px rgba(242,190,90,0.22); }
+#inventory .eq-stage .eq-slot.sq > span { display: none; }
+#inventory .glyph { position: absolute; inset: 18%; background: center / contain no-repeat; opacity: 0.16; pointer-events: none; }
+#inventory .eq-slot:not(.empty) .glyph { display: none; }
+#inventory .eq-stage .eq-slot .slot-nm, #inventory .eq-stage .eq-slot.sq.empty .slot-nm { display: block; bottom: -19px; left: 50%; right: auto; transform: translateX(-50%); padding: 1px 7px 0; border-radius: 2px; white-space: nowrap;
+  font: 9px var(--stencil); letter-spacing: 0.16em; color: #2e220a; background: linear-gradient(180deg, #d8bc74, #a8873e); box-shadow: 0 1px 0 rgba(0,0,0,0.5); }
+#inventory .eq-stage .eq-col { row-gap: 26px; }
+#inventory .eq-stage .eq-slot.sq .key { color: rgba(220,215,195,0.55); }
+/* the locker: tiles as sockets too; empty ones only a faint dent in the steel */
+#inventory .inv-right .lk-tile:not(.empty) { border: 0; border-radius: 6px; background: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.18), rgba(0,0,0,0.48));
+  box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, inset 0 3px 8px rgba(0,0,0,0.65), inset 0 0 0 2px var(--rc); transition: transform 0.12s, filter 0.12s; }
+#inventory .inv-right .lk-tile:not(.empty)::after { content: ''; position: absolute; right: 0; bottom: 0; width: 0; height: 0; border-style: solid; border-width: 0 0 12px 12px; border-color: transparent transparent var(--rc) transparent; border-radius: 0 0 6px 0; opacity: 0.9; } /* a corner tab in its rarity's colour */
+#inventory .inv-right .lk-tile:not(.empty):hover { transform: translateY(-2px); filter: brightness(1.15); }
+#inventory .inv-right .lk-tile.empty { border: 0; border-radius: 6px; background: rgba(0,0,0,0.1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.04); }
+#inventory .inv-right .lk-tile::before { display: none; }
+#inventory .lk-tile i.new { right: 4px; top: 4px; padding: 1px 4px 0; border-radius: 2px; background: linear-gradient(180deg, #e0c47a, #a8873e); color: #2e220a; box-shadow: 0 1px 0 rgba(0,0,0,0.5); }
+/* Legendary: lit from within, faintly, and now and then a glint */
+#inventory .inv-right .lk-tile.r-legendary:not(.empty) { background: radial-gradient(ellipse at 50% 55%, rgba(242,196,96,0.2), rgba(0,0,0,0.45) 75%);
+  box-shadow: 0 0 0 1px #2a1e08, 0 0 0 3px #a8873e, 0 0 0 4px #2a1e08, inset 0 3px 8px rgba(0,0,0,0.6), inset 0 0 16px rgba(242,196,96,0.25), 0 0 10px rgba(242,196,96,0.12); }
+#inventory .glint { position: absolute; left: var(--x); top: var(--y); width: 7px; height: 7px; pointer-events: none; opacity: 0; animation: lk-glint 4.2s var(--d, 0s) infinite ease-in-out;
+  background: radial-gradient(circle, rgba(255,246,214,0.95) 0 1px, rgba(255,246,214,0) 2px), linear-gradient(rgba(255,240,200,0.8), rgba(255,240,200,0.8)) center / 1px 100% no-repeat, linear-gradient(rgba(255,240,200,0.8), rgba(255,240,200,0.8)) center / 100% 1px no-repeat; }
+#inventory .glint.b { width: 5px; height: 5px; animation-duration: 5.6s; }
+@keyframes lk-glint { 0%, 70%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); } 78% { opacity: 0.9; transform: scale(1) rotate(25deg); } 86% { opacity: 0; transform: scale(0.6) rotate(45deg); } }
+#inventory .lk-head h4 { font: 13px var(--stencil); letter-spacing: 0.24em; color: var(--paint); text-shadow: 0 -1px 0 rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06); }
+#inventory .lk-head span { font: 13px var(--mono); color: var(--paint-dim); }
+#inventory .eq-note { font-size: 14px; }
+/* the pop-up, finished: a brass arrow, the numbers on a dark inset plate */
+#inventory .ip-arrow { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; color: #2e220a; background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); box-shadow: 0 1px 0 rgba(0,0,0,0.5); }
+#inventory .ip-col { border: 0; background: linear-gradient(180deg, rgba(0,0,0,0.22), rgba(0,0,0,0.34)); box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, inset 0 0 0 2px var(--rc, transparent); }
+#inventory .ip-col.r-legendary { box-shadow: 0 0 0 1px #2a1e08, 0 0 0 3px #a8873e, 0 0 0 4px #2a1e08, inset 0 0 18px rgba(242,196,96,0.18); }
+#inventory .ip-col img { box-shadow: inset 0 2px 6px rgba(0,0,0,0.6); }
+#inventory .ip-vs { background: rgba(0,0,0,0.28); border-radius: 4px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.5); }
+#inventory .ip-vs th, #inventory .ip-vs td { border-bottom: 1px solid rgba(0,0,0,0.35); box-shadow: 0 1px 0 rgba(255,255,255,0.03); }
+/* the Catch page */
+#inventory .inv-catch section { margin-bottom: 16px; }
+#inventory .inv-catch h4 { margin: 0 0 8px; font: 12px var(--stencil); letter-spacing: 0.22em; text-transform: uppercase; color: var(--paint); }
+#inventory .inv-catch h4 i { font-style: normal; color: var(--paint-dim); }
+#inventory .fc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+#inventory .fc { position: relative; padding: 8px 10px 9px; border-radius: 6px; background: radial-gradient(ellipse at 50% 30%, rgba(90,130,140,0.14), rgba(0,0,0,0.42));
+  box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, inset 0 3px 8px rgba(0,0,0,0.6); }
+#inventory .fc.empty { min-height: 116px; background: rgba(0,0,0,0.1); box-shadow: inset 0 2px 4px rgba(0,0,0,0.35); }
+#inventory .fc.empty::after { content: ''; position: absolute; inset: 14px; border-radius: 4px; opacity: 0.09; background: repeating-linear-gradient(45deg, #c8c4b0 0 1px, transparent 1px 7px), repeating-linear-gradient(-45deg, #c8c4b0 0 1px, transparent 1px 7px); } /* an empty net pocket */
+#inventory .fc img { display: block; width: 100%; height: 64px; object-fit: contain; }
+#inventory .fc b { display: block; margin-top: 4px; font: 400 15px var(--serif); color: var(--paint); }
+#inventory .fc em { font: italic 12px var(--serif); color: var(--r-rare); }
+#inventory .fc span { display: flex; align-items: center; gap: 5px; font: italic 12px var(--serif); color: var(--paint-dim); }
+#inventory .fc span i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+#inventory .fc small { display: block; margin-top: 2px; font: 12px var(--mono); color: #c8a050; }
+#inventory .fd-row { display: flex; flex-wrap: wrap; gap: 8px; }
+#inventory .fd { padding: 4px 10px; border-radius: 3px; font: 14px var(--serif); color: var(--paint); background: rgba(0,0,0,0.3); box-shadow: inset 0 1px 3px rgba(0,0,0,0.5); }
+#inventory .fd i { font-style: normal; color: var(--paint-dim); }
+#inventory .sub-plate { display: inline-flex; align-items: baseline; gap: 10px; margin-top: 4px; padding: 6px 14px; border-radius: 3px; color: #2e220a;
+  background: linear-gradient(180deg, var(--brass-hi), var(--brass) 55%, #9a7a34); box-shadow: 0 1px 0 #4a3510, inset 0 1px 0 rgba(255,250,220,0.6); }
+#inventory .sub-plate span { font: 9px var(--stencil); letter-spacing: 0.22em; } #inventory .sub-plate b { font: 400 16px var(--serif); } #inventory .sub-plate i { font: 12px var(--mono); font-style: normal; opacity: 0.75; }

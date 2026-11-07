@@ -285,7 +285,7 @@ export class UI {
     }
     const wrap = $('quests-hud'); wrap.hidden = !show;
     const P0 = this.h.getProfile && this.h.getProfile(), S0 = P0 && P0.quests, st = S0 && QUEST_MAIN[S0.main];
-    wrap.querySelector('.qh-step').textContent = st && st.on ? ((S0.mainProg >= st.need ? '✓ ' : '') + st.text + (st.need > 1 && S0.mainProg < st.need ? `  ${S0.mainProg}/${st.need}` : '')) : '';
+    wrap.querySelector('.qh-step').textContent = st && st.on ? ((S0.mainProg >= st.need ? '✓ ' : '') + st.text + (st.need > 1 && S0.mainProg < st.need ? `  (${S0.mainProg}/${st.need})` : '')) : '';
     const n = this.h.questsReady ? this.h.questsReady() : 0, dot = b.querySelector('i');
     dot.hidden = !n; if (n) dot.textContent = n;
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
@@ -307,7 +307,7 @@ export class UI {
       const ok = q.prog >= q.n;
       const left = questLeft(q), lh = Math.floor(left / 3600000), lm = Math.ceil((left % 3600000) / 60000);
       const timer = ok ? 'done: claim it' : lh >= 1 ? `${lh} h left` : `${lm} min left`;
-      html += `<div class="qs-q r-${q.rarity}${ok ? ' ready' : ''}"><div class="qs-t"><b>${q.text}</b><small class="qs-time">${timer}</small>${q.n > 1 ? bar(q.prog, q.n) + `<span>${q.kind === 'sell' ? money(q.prog, false) + ' of ' + money(q.n, false) : q.prog + ' of ' + q.n}</span>` : ''}</div>
+      html += `<div class="qs-q r-${q.rarity}${ok ? ' ready' : ''}"><div class="qs-t"><b>${q.text}</b><small class="qs-time">${timer}</small>${q.n > 1 ? bar(q.prog, q.n) + `<span>(${q.kind === 'sell' ? money(q.prog, false) + '/' + money(q.n, false) : q.prog + '/' + q.n})</span>` : ''}</div>
         <div class="qs-pay">${money(q.pay, false)}${ok ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div>`;
     }
     const wait = boardIn(P), totM = Math.ceil(wait / 60000), hrs = Math.floor(totM / 60), mins = totM % 60, price = refreshPrice(P);
@@ -361,23 +361,31 @@ export class UI {
   renderInventory() {
     const g = this.h.getGame(), P = this.h.getProfile();
     if (!g || !P) { $('inventory').querySelector('.inv-body').innerHTML = '<p class="inv-empty">Nothing yet: start a dive.</p>'; return; }
-    const ic = (sp) => { if (!this.toolImgs) this.toolImgs = new Map(); const k = 'inv' + sp.id; if (!this.toolImgs.has(k)) this.toolImgs.set(k, speciesIcon(sp, 120, 68).toDataURL()); return this.toolImgs.get(k); };
-    const row = (label, n, note = '') => `<div class="inv-row"><span>${label}${note ? ` <em>${note}</em>` : ''}</span>${n === '' ? '' : `<b class="n${n ? '' : ' zero'}">${n}</b>`}</div>`;
-    const fish = (s) => { const sp = SPECIES_BY_ID[s.id]; return `<div class="inv-row"><img src="${ic(sp)}" alt=""><span>${sp.name}${s.variant ? ` <em>${s.variant}</em>` : ''}<br><em>${s.cond <= 0.05 ? 'dead' : conditionName(s.cond)} · from ${s.from || 0} m · about ${money(specimenValue(s) * statValue(P, 'payFish'))}</em></span></div>`; };
-    const sec = (title, inner, wide = false) => `<div class="inv-sec${wide ? ' wide' : ''}"><h4>${title}</h4><div class="inv-list">${inner}</div></div>`;
-    let html = '';
-    // the animals first (the bag, then the sub's tanks); supplies, finds and gear below
-    html += sec(`The catch bag · ${g.bag.length} of ${Math.round(statValue(P, 'bag'))}`, g.bag.length ? g.bag.map(fish).join('') : '<p class="inv-empty">Empty.</p>', true);
-    // supplies and finds: only what he actually has (the lure and the necklace are on the screen already; clams and pearls too)
-    const it = g.items || {}, SHOWN_ELSEWHERE = new Set(['lure', 'necklace', 'clam', 'pearl']);
-    const carried = Object.entries(SUPPLIES).filter(([k]) => !SHOWN_ELSEWHERE.has(k) && (it[k] || 0) > 0);
-    const finds = Object.entries(g.inv || {}).filter(([k, n]) => n > 0 && !SHOWN_ELSEWHERE.has(k));
-    if (finds.length) html += sec('Finds, to sell at the boat', finds.map(([k, n]) => row(RESOURCES[k] ? RESOURCES[k].name : k, n)).join(''));
-    const tools = ['net'].concat(Object.keys(GEAR).filter((k) => owns(P, k))).map((k) => k === 'net' ? 'Hand net' : GEAR[k].name);
+    // (3.0.32) two pages: his gear, and his catch
+    const tab = this.invTab || 'gear';
+    const tabs = `<nav class="inv-tabs"><button data-invtab="gear" class="${tab === 'gear' ? 'on' : ''}">Gear</button><button data-invtab="catch" class="${tab === 'catch' ? 'on' : ''}">Catch <i>(${g.bag.length + g.subTank.length})</i></button></nav>`;
+    const body = $('inventory').querySelector('.inv-body');
+    body.innerHTML = tabs + (tab === 'catch' ? this.catchHtml(P, g) : this.equipHtml(P, g));
+    body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.renderInventory(); }));
+    if (tab === 'gear') this.equipWire(P, g);
+  }
+  // the Catch page: his net bag as pockets, the sub's tank, what he has found, the sub itself
+  catchHtml(P, g) {
+    const ic = (sp) => { if (!this.toolImgs) this.toolImgs = new Map(); const k = 'inv' + sp.id; if (!this.toolImgs.has(k)) this.toolImgs.set(k, speciesIcon(sp, 160, 90).toDataURL()); return this.toolImgs.get(k); };
+    const cond = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
+    const fishCard = (s2) => { const sp = SPECIES_BY_ID[s2.id], col = s2.cond <= 0.05 ? '#8a6a5a' : s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a';
+      return `<div class="fc"><img src="${ic(sp)}" alt=""><b>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${col}"></i>${cond(s2)} · from ${Math.round(s2.from || 0)} m</span><small>about ${money(specimenValue(s2) * statValue(P, 'payFish'))}</small></div>`; };
+    const cap = Math.round(statValue(P, 'bag'));
+    const pockets = g.bag.map(fishCard).join('') + '<div class="fc empty"></div>'.repeat(Math.max(0, cap - g.bag.length));
+    let html = `<div class="inv-catch"><section><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid">${pockets}</div></section>`;
+    const tank = g.subTank || [];
+    html += `<section><h4>The sub's tank <i>(${tank.length})</i></h4>${tank.length ? `<div class="fc-grid">${tank.map(fishCard).join('')}</div>` : '<p class="inv-empty">Nothing in the sub. In the sub, T opens the tank room.</p>'}</section>`;
+    const SHOWN = new Set(['lure', 'necklace', 'clam', 'pearl']);
+    const finds = Object.entries(g.inv || {}).filter(([k, n]) => n > 0 && !SHOWN.has(k));
+    if (finds.length) html += `<section><h4>Finds, to sell</h4><div class="fd-row">${finds.map(([k, n]) => `<span class="fd">${RESOURCES[k] ? RESOURCES[k].name : k} <i>(${n})</i></span>`).join('')}</div></section>`;
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
-    html += sec('Equipment', row('Submersible', '', g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}, rated ${g.sub.rated} m`), true);
-    $('inventory').querySelector('.inv-body').innerHTML = this.equipHtml(P, g, html); // (3.0.29) two panes: Earl and the rest on the left, the locker on the right
-    this.equipWire(P, g);
+    html += `<div class="sub-plate"><span>SUBMERSIBLE</span><b>${g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`}</b><i>rated ${g.sub.rated} m</i></div></div>`;
+    return html;
   }
   // ---------- the locker (2.8.0): Earl and his eight slots; everything he owns in rarity frames ----------
   // Drag a thing onto him (or its slot) to put it on, or click it for its card: what it is, its skills, its
@@ -391,16 +399,16 @@ export class UI {
     const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp gun'], ['tag', '3  Tag gun'], ['cam', '4  Camera']];
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
     const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
-      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}" title="${q ? it.name : nm + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : `<span>${nm}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}<small class="slot-nm">${nm}</small></div>`; };
+      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}" title="${q ? it.name : nm + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : `<span>${nm}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}<small class="slot-nm">${nm}</small><i class="glyph g-${kind}"></i></div>`; };
     const order = ['net', 'slurp', 'tag', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
-      return `<div class="lk-tile r-${it.rarity}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${q.isNew ? '<i class="new">new</i>' : ''}${q.leg ? '<em>✦</em>' : ''}</div>`; }).join('');
+      return `<div class="lk-tile r-${it.rarity}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${q.isNew ? '<i class="new">new</i>' : ''}${it.rarity === 'legendary' ? `<span class="glint" style="--d:${(q.u.length * 7 % 23) / 10}s;--x:${20 + q.u.charCodeAt(1) % 60}%;--y:${18 + q.u.charCodeAt(2) % 50}%"></span><span class="glint b" style="--d:${(q.u.length * 13 % 31) / 10 + 1.4}s;--x:${30 + q.u.charCodeAt(3) % 50}%;--y:${40 + q.u.charCodeAt(4) % 40}%"></span>` : ''}</div>`; }).join('');
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
-    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="inv-cash top"><span>CASH</span>${money(P.cash)}</div>`
+    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
       + (free ? '<p class="eq-note">Click a slot to take a thing off · drag one in to put it on</p>' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
-      + `<div class="inv-rest">${extra || ''}</div></div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">${list.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
   }
   // one thing, as a column of the pop-up: its picture, name, rarity, what it is, its skills and its set
   itemCol(P, q, head) {
@@ -409,7 +417,7 @@ export class UI {
       + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span></div>` : '');
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
     return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ' · net of legend' : ''}</span><p>${it.line || ''}</p>
-      <div class="ip-sks">${skills || '<span class="none">No skills</span>'}</div>${S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b> · ${have >= 3 ? 'on' : `${have} of 3 worn`}<span>${S.trait}</span></div>` : ''}</div>`;
+      <div class="ip-sks">${skills || '<span class="none">No skills</span>'}</div>${S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b> · ${have >= 3 ? 'on' : `worn (${have}/3)`}<span>${S.trait}</span></div>` : ''}</div>`;
   }
   // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind
   itemPop(P, g, free) {
@@ -624,7 +632,7 @@ export class UI {
         const g = this.h.getGame();
         const have = k === 'oldlure' ? (P.oldLures || 0) : k === 'relic' ? (P.relics || 0) : k === 'eye' ? (P.eye ? 1 : 0) : (g.blessed ? 1 : 0);
         const done = (W.max && have >= W.max) || (W.once && have) || (k === 'blessing' && have);
-        const owned = W.max ? `${have} / ${W.max}` : done ? (k === 'blessing' ? 'on you this dive' : 'yours') : '';
+        const owned = W.max ? `(${have}/${W.max})` : done ? (k === 'blessing' ? 'on you this dive' : 'yours') : '';
         html += this.row('ware:' + k, W.name, W.line, owned, `<button data-cave="ware:${k}" class="coinbtn" ${done || (P.coins || 0) < W.coins ? 'disabled' : ''}>${COIN}${W.coins}</button>`, '', W.desc, [['price', `${W.coins} old gold coin${W.coins > 1 ? 's' : ''}`, 'sheet']]);
       }
       html += '<p class="shop-note">Old gold comes from the deep: every live animal caught below 500 m pays coins when it is sold (more the deeper it lived), the old one pays some in every trade, and so does every sapphire.</p>';
@@ -729,7 +737,7 @@ export class UI {
   renderJournal() {
     if ((this.tab || 'species') !== 'species') return this.renderJournalTab(this.tab);
     const g = this.h.getGame();
-    $('journal-count').textContent = `${formatTime(g.survival)} into the dive · ${g.journal.size} of ${SPECIES_COUNT} recorded`;
+    $('journal-count').textContent = `${formatTime(g.survival)} into the dive · (${g.journal.size}/${SPECIES_COUNT}) recorded`;
     const list = $('journal-list');
     list.innerHTML = '';
     if (g.journal.size === 0) {
@@ -868,7 +876,7 @@ export class UI {
       const tr = P.traps || {};
       TRAP_ORDER.forEach((k, i) => {
         const T = TRAPS[k], have = tr[k] || 0, full = have >= T.max;
-        html += card(T.name, T.desc, `you own ${have} / ${T.max}`, full ? null : T.price, 'buy', 'trap:' + k, full ? 'Full' : 'Buy', '', icon('trap', i), [
+        html += card(T.name, T.desc, `you own (${have}/${T.max})`, full ? null : T.price, 'buy', 'trap:' + k, full ? 'Full' : 'Buy', '', icon('trap', i), [
           ['depth', `down to ${T.maxDepth.toLocaleString()} m`, 'press'], ['catch', `${T.count[0]}–${T.count[1]} fish in 5 min`], ['fish up to', `${T.maxLen} m long`],
           ['holds', `${T.holds}`], ['hauled', T.winch ? "by the boat's winch" : 'by hand', T.winch ? 'bad' : 'good']].concat(T.lure ? [['lure', 'lit: draws deep animals and it', 'bad']] : []));
       });
@@ -894,7 +902,7 @@ export class UI {
       for (const [k, it] of Object.entries(SUPPLIES)) {
         if (it.needs && !owns(P, it.needs)) continue; // tags only once he has the tag gun
         const mx = supplyMax(P, k), have = g.items[k] || 0, full = have >= mx;
-        html += card(it.name, it.desc, `carrying ${have} / ${mx}`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy', '', '', SUPPLY_SPECS[k]);
+        html += card(it.name, it.desc, `carrying (${have}/${mx})`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy', '', '', SUPPLY_SPECS[k]);
       }
     } else if (tab === 'radio') {
       const lists = [g.bag].concat(!sub.imploded && Math.hypot(sub.x - (BOAT.x + 8.5), sub.y - 2.6) < 20 ? [g.subTank] : []);
@@ -1070,7 +1078,7 @@ export class UI {
           const now = fmtStat(sid, statAt(sid, sl)), next = fmtStat(sid, statAt(sid, nl));
           specs.push([U.name.toLowerCase(), maxed || nl === sl ? now : `${now} → ${next}`, maxed || nl === sl ? '' : 'good']);
         }
-        specs.push(['level', capped ? 'the deepest the yard can build for now' : maxed ? 'the most it can be' : `${l} of ${T.max}`, 'sheet']);
+        specs.push(['level', capped ? 'the deepest the yard can build for now' : maxed ? 'the most it can be' : `(${l}/${T.max})`, 'sheet']);
         html += this.row('up:' + id, T.name + (id === this.rec ? ' <em class="rec-badge">Recommended</em>' : ''), T.line || '',
           `<span class="lamps">${Array.from({ length: T.max }, (_, k) => `<i class="${k < l ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : ''}`,
           `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < coins ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && coins ? ` <em class="pluscoin">+${COIN}${coins}</em>` : ''}</button>`,
