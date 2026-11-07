@@ -14,6 +14,8 @@ import { xEyes } from './gallery.js';
 import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, bigIn, slotsOf} from './capture.js';
 import { UPGRADES } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
+// (3.0.25) the open tank's lights, as the aquarium's
+const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], tint: null }, dim: { name: 'Dim', water: ['#0f3440', '#04151b'], tint: 'rgba(0,10,20,0.35)' }, red: { name: 'Red', water: ['#3a1416', '#12080a'], tint: 'rgba(120,10,10,0.28)' } };
 
 const MAX_CHAMBERS = UPGRADES.pressTanks.base + UPGRADES.pressTanks.max;
 const CW = 150, CH = 330; // a chamber, in its own units
@@ -36,9 +38,10 @@ export class TankRoom {
     root.innerHTML = `<canvas class="tr-canvas"></canvas><div class="tr-over"></div>
       <div class="tr-plate"><b class="tr-room"></b><span class="tr-depth"></span></div>
       <button class="tr-help-btn" aria-label="How it works">?</button><button class="tr-close" aria-label="Close">×</button>
-      <div class="tr-help" hidden></div>`;
+      <div class="tr-help" hidden></div><div class="gl-lights tr-lights"></div>`;
     this.c = root.querySelector('.tr-canvas'); this.over = root.querySelector('.tr-over');
     root.querySelector('.tr-close').addEventListener('click', () => this.h.close());
+    root.querySelector('.tr-lights').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-light]'); const g = this.h.getGame(); if (b && g && g.profile) { g.profile.subTankLight = b.dataset.light; this.lightsHtml(g); } });
     root.querySelector('.tr-help-btn').addEventListener('click', () => { const hp = root.querySelector('.tr-help'); hp.hidden = !hp.hidden; });
     root.querySelector('.tr-help').innerHTML = `<p>Every animal has the pressure it lives at. Up to ${SAFE_GAP} m away from it, shallower or deeper, it lives, stressed; further, it starts to die. Taking a shallow animal deep hurts it as much as bringing a deep one up.</p>
       <p>A chamber pumps an animal back up to its own pressure and it recovers there. Its rating is how much more than the water outside it can hold: it keeps an animal safe until the sub climbs above the animal's depth less the rating. The gauge's green band is what it can hold where you are.</p>
@@ -268,10 +271,19 @@ export class TankRoom {
     return best ? this.keyOf(best) : null;
   }
 
+  // (3.0.25) the open tank's light: Daylight, Dim, or the Red deep animals can't see (shown in the tank room)
+  lightsHtml(g) {
+    const el = this.root.querySelector('.tr-lights'); if (!el) return;
+    const cur = (g.profile && g.profile.subTankLight) || 'day', show = this.room !== 'chambers';
+    const html = show ? Object.entries(TANK_LIGHTS).map(([k, L]) => `<button data-light="${k}" class="${k === cur ? 'on' : ''}">${L.name}</button>`).join('') : '';
+    if (el.innerHTML !== html) el.innerHTML = html;
+    el.hidden = !show;
+  }
   update(dt) {
     const g = this.h.getGame();
     if (!g) return;
     this.t += dt; this.infoT += dt;
+    this.lightsHtml(g);
     if (this.signature(g) !== this.sig) this.layout(true);
     else if (this.infoT > 0.3) { this.infoT = 0; this.states(g); }
     const G = this.geometry(), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -510,8 +522,9 @@ export class TankRoom {
     for (let x = T.x - 4; x < T.x + T.w + 8; x += 24) { ctx.beginPath(); ctx.arc(x, T.y - 6, 2, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(x, T.y + T.h + 6, 2, 0, TAU); ctx.fill(); }
     ctx.save(); ctx.beginPath(); ctx.rect(T.x, T.y, T.w, T.h); ctx.clip(); ctx.translate(T.x, T.y);
     const w = T.w, h = T.h, top = 6, bot = h - 4;
+    const L0 = TANK_LIGHTS[(g.profile && g.profile.subTankLight) || 'day'] || TANK_LIGHTS.day; // (3.0.25) the tank's light, set like the aquarium's
     const wg = ctx.createLinearGradient(0, top, 0, bot);
-    wg.addColorStop(0, '#1d5f70'); wg.addColorStop(1, '#0a2a33');
+    wg.addColorStop(0, L0.water[0]); wg.addColorStop(1, L0.water[1]);
     ctx.fillStyle = wg; ctx.fillRect(0, 0, w, h);
     ctx.globalAlpha = 0.08; ctx.fillStyle = '#cfefff';
     for (let k = 0; k < 4; k++) { const x = w * (0.15 + k * 0.23) + Math.sin(t * 0.4 + k) * 12; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 30, 0); ctx.lineTo(x + 70, bot); ctx.lineTo(x + 20, bot); ctx.fill(); }
@@ -530,6 +543,7 @@ export class TankRoom {
       const a = this.swim(g, s, false, { x0: 10, x1: w - 10, y0: top + 14, y1: bot - 18 }, L, dt);
       this.drawFish(ctx, g, s, a, L, false);
     }
+    if (L0.tint) { ctx.fillStyle = L0.tint; ctx.fillRect(0, 0, w, h); }
     ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, 0, w, 8);
     ctx.restore();
     this.drawHatch(ctx, G.hatchL);
