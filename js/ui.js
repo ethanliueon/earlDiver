@@ -335,7 +335,7 @@ export class UI {
     const tiles = list.map((q) => { const it = ITEMS[q.id], on = K.on[it.kind] === q.u;
       return `<div class="lk-tile r-${it.rarity}${on ? ' on' : ''}${this.lkSel === q.u ? ' sel' : ''}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${on ? '<i>on</i>' : ''}${q.leg ? '<em>✦</em>' : ''}</div>`; }).join('');
     const card = this.lkSel ? this.lockerCard(P, g, free) : '';
-    return `<div class="inv-sec wide eq${free ? '' : ' locked'}"><h4>Gear</h4><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="240" height="300"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
+    return `<div class="inv-sec wide eq${free ? '' : ' locked'}"><h4>Gear</h4><div class="eq-grid"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="300" height="380"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       + `<div class="lk-head"><h4>Locker</h4><span class="${K.items.length >= LOCKER ? 'full' : ''}">${K.items.length} / ${LOCKER}</span></div><div class="lk-grid">${tiles}</div>${card}</div>`;
   }
@@ -354,14 +354,41 @@ export class UI {
     if (free && on && SIDE_TOOLS.has(it.kind)) acts += `<button data-lk="off:${it.kind}">Take off</button>`;
     if (!on && seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell · ${money(sellValue(q), false)}</button>`;
     else if (!on && !seller) acts += '<small>Sell it on the Margaret, or to Dave.</small>';
-    return `<div class="lk-card r-${it.rarity}"><div class="lk-top"><img src="${pictureOf(it.kind, it, 200, 120, true)}" alt=""><div><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ' · net of legend' : ''}</span><p>${it.line || ''}</p></div></div>
+    return `<div class="lk-card r-${it.rarity}"${it.glow ? ` style="--glow:${it.glow}"` : ''}><i class="lk-orn tl"></i><i class="lk-orn tr"></i><i class="lk-orn bl"></i><i class="lk-orn br"></i><div class="lk-top"><img src="${pictureOf(it.kind, it, 200, 120, true)}" alt=""><div><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ' · net of legend' : ''}</span><p>${it.line || ''}</p></div></div>
       <div class="lk-good">${it.good || ''}${it.bad ? `<em>Not for: ${it.bad}</em>` : ''}</div>${skills ? `<div class="lk-sks">${skills}</div>` : ''}${set}<div class="lk-acts">${acts}</div></div>`;
   }
   equipWire(P, g) {
     const root = $('inventory').querySelector('.eq'); if (!root) return;
     // Earl, in what he has on
+    // (2.8.1) Earl, in what he has on, on a turntable: drag across him to turn him round; he keeps turning a
+    // little after you let go, slows, and settles facing you
     const cv = root.querySelector('.eq-earl');
-    if (cv) { const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); c.save(); c.translate(cv.width / 2, cv.height * 0.5); c.rotate(-Math.PI / 2); drawEarl(c, cv.height * 0.84, 0, 0.1, null, null, { kind: 'none', tier: 0, t: 0, suit: (g && g.earl && g.earl.suit) || 'wet', bag: [] }); c.restore(); }
+    if (cv) {
+      const sp = this.spin || (this.spin = { a: 0.35, v: 0 });
+      const e = g && g.earl, look = () => ({ kind: 'none', tier: 0, t: performance.now() / 1000, suit: (e && e.suit) || 'wet', bag: [], finLook: e && e.finLook, tankLook: e && e.tankLook, suitGlow: e && e.suitGlow });
+      this.spinCv = cv; // the panel is redrawn often; the loop always draws on the canvas that's there now
+      const draw = () => {
+        const cv = this.spinCv, c = cv.getContext('2d'), W2 = cv.width, H2 = cv.height, t = performance.now() / 1000, k = Math.cos(sp.a);
+        c.clearRect(0, 0, W2, H2);
+        // his shadow on the floor of the stand
+        c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(W2 / 2, H2 * 0.93, W2 * 0.22, H2 * 0.03, 0, 0, Math.PI * 2); c.fill();
+        c.save(); c.translate(W2 / 2, H2 * 0.5 + Math.sin(t * 1.2) * 2); c.scale(Math.sign(k || 1) * Math.max(0.12, Math.abs(k)), 1); c.rotate(-Math.PI / 2);
+        drawEarl(c, H2 * 0.84, t * 1.5, 0.08, null, null, look());
+        c.restore();
+        if (Math.abs(k) < 0.5) { c.fillStyle = `rgba(10,14,12,${(0.5 - Math.abs(k)) * 0.5})`; c.fillRect(0, 0, W2, H2); } // edge on: he darkens as he turns away from the light
+      };
+      const loop = () => {
+        if ($('inventory').hidden || !this.spinCv.isConnected) { this.spinLoop = false; return; }
+        if (!this.spinDrag) { sp.a += sp.v * 0.016; sp.v *= 0.94; if (Math.abs(sp.v) < 0.05) { const rest = Math.round((sp.a - 0.35) / Math.PI) * Math.PI + 0.35; sp.a += (rest - sp.a) * 0.06; } }
+        draw(); requestAnimationFrame(loop);
+      };
+      if (!this.spinLoop) { this.spinLoop = true; requestAnimationFrame(loop); }
+      cv.style.cursor = 'grab';
+      cv.addEventListener('pointerdown', (ev) => { this.spinDrag = { x: ev.clientX, t: performance.now() }; cv.setPointerCapture(ev.pointerId); cv.style.cursor = 'grabbing'; });
+      cv.addEventListener('pointermove', (ev) => { if (!this.spinDrag) return; const dx = ev.clientX - this.spinDrag.x, dt = Math.max(1, performance.now() - this.spinDrag.t); sp.a += dx * 0.02; sp.v = dx * 0.02 / (dt / 1000); this.spinDrag = { x: ev.clientX, t: performance.now() }; });
+      const up = () => { this.spinDrag = null; cv.style.cursor = 'grab'; sp.v = Math.max(-12, Math.min(12, sp.v)); };
+      cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    }
     // a card's buttons, and clicking a tile (or a slot's item) to open its card
     root.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); if (k.startsWith('sellgear:')) this.lkSel = null; this.renderInventory(); }));
     root.querySelectorAll('.lk-tile, .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = this.lkSel === el.dataset.u ? null : el.dataset.u; this.renderInventory(); }));

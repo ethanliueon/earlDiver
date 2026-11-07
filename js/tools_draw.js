@@ -34,7 +34,8 @@ const NET_LOOK = [
 // The net. ang is unused here (the caller rotates); flutter 0..1 moves the bag.
 // catchSp: {sp, len, t} shows a fish thrashing in the bag.
 export function drawNet(ctx, u, tier, t, flutter, catchSp) {
-  const L = NET_LOOK[clamp(tier, 0, 3)];
+  // (2.8.1) tier may be a look of its own (an Exotic's or a Legendary's): see item_art.js
+  const L = typeof tier === 'object' && tier ? { ...NET_LOOK[clamp(tier.base || 0, 0, 3)], ...tier } : NET_LOOK[clamp(tier, 0, 3)];
   const len = L.len * u, r = L.r * u;
   // ---- handle ----
   tube(ctx, -4 * u, len, 1.05 * u, L.h[0], L.h[1], L.h[2]);
@@ -50,6 +51,7 @@ export function drawNet(ctx, u, tier, t, flutter, catchSp) {
     ctx.fillStyle = 'rgba(0,0,0,0.3)'; for (let k = -1.4; k < 1.6; k += 0.9) ctx.fillRect(cx + k * u, -1.6 * u, 0.35 * u, 3.2 * u);
     tube(ctx, cx + 2 * u, len, 0.85 * u, L.h[0], L.h[1], L.h[2]);
   }
+  if (L.shape && NET_SHAPES[L.shape]) return NET_SHAPES[L.shape](ctx, L, u, len, r, t, Math.sin(t * 5) * 0.12 + flutter * 0.6);
   // ---- hoop (seen a little from above: an ellipse along the handle) and the bag ----
   const hx = len + r; // hoop centre
   const sway = Math.sin(t * 5) * 0.12 + flutter * 0.6;
@@ -98,6 +100,128 @@ export function drawNet(ctx, u, tier, t, flutter, catchSp) {
   ctx.fillStyle = L.h[2]; ctx.beginPath(); ctx.roundRect(len - 2 * u, -1.3 * u, 4 * u, 2.6 * u, 0.6 * u); ctx.fill();
   return { tipX: hx, tipY: 0 };
 }
+
+// ---------- nets of other shapes (2.8.1) ----------
+// The better nets differ by their shape, not their colour. Each draws the whole head (frame, bag, mesh)
+// beyond the handle at len; r is the hoop's size, t the time, sway the bag's swing. Returns the tip.
+// Materials stay natural: steel, brass, wood, bone, hemp, rope. Only a bioluminescent part glows, softly.
+const softGlow = (ctx, x, y, rad, col, a) => { const g = ctx.createRadialGradient(x, y, 0, x, y, rad); g.addColorStop(0, col.replace('A', a)); g.addColorStop(1, col.replace('A', 0)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad, 0, TAU); ctx.fill(); };
+function bagOf(ctx, L, u, path, x0, y0, x1, y1) { ctx.save(); ctx.fillStyle = L.tint; ctx.fill(path); ctx.clip(path); mesh(ctx, x0, y0, x1, y1, L.step * u, L.mesh, Math.max(0.5, 0.32 * u)); ctx.restore(); }
+const NET_SHAPES = {
+  // a square dip frame, seen a little from above: a shallow box of a bag, for small, soft things
+  square(ctx, L, u, len, r, t, sway) {
+    const x0 = len, x1 = len + r * 1.9, d = r * 0.42, bagD = L.bag * u * 0.75;
+    const bag = new Path2D(); bag.moveTo(x0, -d * 0.2); bag.lineTo(x0 + sway * u, bagD); bag.lineTo(x1 + sway * 1.5 * u, bagD * 0.95); bag.lineTo(x1, d * 0.2); bag.closePath();
+    bagOf(ctx, L, u, bag, x0 - 2 * u, -d, x1 + 3 * u, bagD + 2 * u);
+    ctx.strokeStyle = L.hoop; ctx.lineWidth = 1.1 * u; ctx.beginPath(); ctx.moveTo(x0, -d * 0.2); ctx.lineTo(x0 + d * 0.5, -d); ctx.lineTo(x1 + d * 0.5, -d); ctx.lineTo(x1, d * 0.2); ctx.closePath(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.moveTo(x0 + d * 0.55, -d + 0.4 * u); ctx.lineTo(x1 + d * 0.45, -d + 0.4 * u); ctx.stroke();
+    return { tipX: (x0 + x1) / 2, tipY: 0 };
+  },
+  // a pear-shaped hoop, narrow at the handle, and a long, deep bag that tapers to a point
+  teardrop(ctx, L, u, len, r, t, sway) {
+    const x0 = len, x1 = len + r * 2.4, tipX = len + r * 1.3 + sway * 5 * u, tipY = L.bag * u * 1.25;
+    const bag = new Path2D(); bag.moveTo(x0 + r * 0.3, 0); bag.bezierCurveTo(x0 + r * 0.2, tipY * 0.5, tipX - r * 0.3, tipY, tipX, tipY); bag.bezierCurveTo(tipX + r * 0.4, tipY * 0.8, x1, tipY * 0.35, x1 - r * 0.1, 0); bag.closePath();
+    bagOf(ctx, L, u, bag, x0 - 2 * u, -r, x1 + 3 * u, tipY + 2 * u);
+    ctx.strokeStyle = L.hoop; ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.moveTo(x0, 0); ctx.bezierCurveTo(x0 + r * 0.6, -r * 0.55, x1 + r * 0.1, -r * 0.6, x1, 0); ctx.bezierCurveTo(x1 + r * 0.1, r * 0.55, x0 + r * 0.6, r * 0.5, x0, 0); ctx.stroke();
+    return { tipX: (x0 + x1) / 2, tipY: 0 };
+  },
+  // wide and shallow, for a school: a long flat hoop and a bag like a hammock
+  wide(ctx, L, u, len, r, t, sway) {
+    const cx = len + r * 1.6, rx = r * 1.6, ry = r * 0.28, dep = L.bag * u * 0.55;
+    const bag = new Path2D(); bag.moveTo(cx - rx, 0); bag.quadraticCurveTo(cx + sway * 3 * u, dep * 2.1, cx + rx, 0); bag.closePath();
+    bagOf(ctx, L, u, bag, cx - rx - 2 * u, -ry, cx + rx + 2 * u, dep * 1.2 + 2 * u);
+    ctx.strokeStyle = L.hoop; ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.ellipse(cx, 0, rx, ry, 0, 0, TAU); ctx.stroke();
+    ctx.fillStyle = L.hoop; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.arc(cx + k * rx * 0.42, dep * (1 - (k / 2.6) ** 2) * 1.05, 0.5 * u, 0, TAU); ctx.fill(); } // lead weights along the bottom of the bag
+    return { tipX: cx, tipY: 0 };
+  },
+  // ---- the Legendary nets ----
+  // Gulper's Throat: the eel's open jaws for a frame, hinged where they meet the bone handle, needle teeth
+  // along both, and its stretched gullet hanging behind as the bag
+  jaw(ctx, L, u, len, r, t, sway) {
+    const x0 = len, jl = r * 2.6, gape = r * 0.75 + Math.sin(t * 0.8) * 0.06 * r, tipX = x0 + jl * 0.75 + sway * 4 * u, tipY = L.bag * u * 1.15;
+    const gul = new Path2D(); gul.moveTo(x0 + jl * 0.2, gape * 0.15); gul.bezierCurveTo(x0 + jl * 0.3, tipY * 0.7, tipX - r, tipY * 1.05, tipX, tipY); gul.bezierCurveTo(tipX + r * 0.6, tipY * 0.7, x0 + jl * 0.95, gape * 0.9, x0 + jl, gape * 0.6); gul.closePath();
+    ctx.save(); const gg = ctx.createLinearGradient(0, 0, 0, tipY); gg.addColorStop(0, 'rgba(60,40,44,0.75)'); gg.addColorStop(1, 'rgba(30,20,24,0.55)'); ctx.fillStyle = gg; ctx.fill(gul);
+    ctx.clip(gul); ctx.strokeStyle = 'rgba(140,100,100,0.35)'; ctx.lineWidth = 0.35 * u; for (let k = 0; k < 7; k++) { ctx.beginPath(); ctx.moveTo(x0 + jl * (0.25 + k * 0.1), gape * 0.3); ctx.quadraticCurveTo(x0 + jl * (0.4 + k * 0.05), tipY * 0.5, tipX, tipY); ctx.stroke(); } ctx.restore(); // folds in the skin
+    const jawPath = (sgn) => { ctx.beginPath(); ctx.moveTo(x0, 0); ctx.quadraticCurveTo(x0 + jl * 0.5, sgn * gape * 1.25, x0 + jl, sgn * gape * (sgn < 0 ? 0.55 : 0.6)); };
+    for (const sgn of [-1, 1]) {
+      jawPath(sgn); ctx.strokeStyle = '#d8ccb0'; ctx.lineWidth = 1.6 * u; ctx.stroke(); ctx.strokeStyle = 'rgba(90,70,50,0.6)'; ctx.lineWidth = 0.4 * u; ctx.stroke();
+      ctx.fillStyle = '#efe6cc';
+      for (let k = 1; k < 12; k++) { const f = k / 12, x = (1 - f) * (1 - f) * x0 + 2 * (1 - f) * f * (x0 + jl * 0.5) + f * f * (x0 + jl), y = 2 * (1 - f) * f * sgn * gape * 1.25 + f * f * sgn * gape * (sgn < 0 ? 0.55 : 0.6); ctx.beginPath(); ctx.moveTo(x - 0.3 * u, y); ctx.lineTo(x + 0.1 * u, y - sgn * (1.2 + (k % 2) * 0.8) * u); ctx.lineTo(x + 0.4 * u, y); ctx.fill(); }
+    }
+    ctx.fillStyle = '#b8ac90'; ctx.beginPath(); ctx.arc(x0, 0, 1.3 * u, 0, TAU); ctx.fill(); // the hinge
+    return { tipX: x0 + jl * 0.5, tipY: 0 };
+  },
+  // The Drowned Choir's Veil: no hoop at all, a living bell like a siphonophore's, with a scalloped rim, and a
+  // veil of fine tentacles trailing behind to hold what it takes. Faint lights along the rim (bioluminescent).
+  bell(ctx, L, u, len, r, t, sway) {
+    const cx = len + r * 1.2, bw = r * 1.15, bh = r * 0.9, pulse = Math.sin(t * 1.6) * 0.06;
+    for (let k = 0; k < 11; k++) { const f = k / 10, x = cx - bw + f * bw * 2, sw = Math.sin(t * 1.4 + k) * 1.4 * u + sway * 3 * u; ctx.strokeStyle = 'rgba(200,190,220,0.35)'; ctx.lineWidth = 0.28 * u; ctx.beginPath(); ctx.moveTo(x, bh * 0.15); ctx.bezierCurveTo(x + sw, bh + 4 * u, x - sw, bh + 12 * u, x + sw * 1.5, bh + (18 + (k % 3) * 4) * u); ctx.stroke(); }
+    const bell = new Path2D(); bell.moveTo(cx - bw * (1 + pulse), bh * 0.15); bell.bezierCurveTo(cx - bw * 1.05, -bh * 1.2, cx + bw * 1.05, -bh * 1.2, cx + bw * (1 + pulse), bh * 0.15);
+    for (let k = 6; k >= 0; k--) { const x = cx - bw + (k / 6) * bw * 2; bell.quadraticCurveTo(x + bw / 6, bh * 0.45, x, bh * 0.15); }
+    const g = ctx.createLinearGradient(0, -bh, 0, bh * 0.4); g.addColorStop(0, 'rgba(220,214,232,0.55)'); g.addColorStop(1, 'rgba(160,150,190,0.3)');
+    ctx.fillStyle = g; ctx.fill(bell); ctx.strokeStyle = 'rgba(235,230,245,0.6)'; ctx.lineWidth = 0.4 * u; ctx.stroke(bell);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 0.3 * u; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(cx + k * bw * 0.3, bh * 0.1); ctx.quadraticCurveTo(cx + k * bw * 0.22, -bh * 0.5, cx + k * bw * 0.05, -bh * 0.85); ctx.stroke(); } // canals in the bell
+    if (L.lit) for (let k = 0; k < 7; k++) softGlow(ctx, cx - bw + (k / 6) * bw * 2, bh * 0.2, 1.4 * u, 'rgba(200,180,255,A)', 0.55 * (0.6 + 0.4 * Math.sin(t * 2 + k)));
+    return { tipX: cx, tipY: 0 };
+  },
+  // Lanternmesh: the pole curls over at its end like an anglerfish's lure-stalk; the ring hangs from the curl,
+  // the bag is spun of fine thread, and the lure itself dangles in front (its light is its own)
+  lure(ctx, L, u, len, r, t, sway) {
+    const cx = len + r * 1.1, top = -r * 1.5;
+    ctx.strokeStyle = L.h[1]; ctx.lineWidth = 1.6 * u; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(len - 2 * u, 0); ctx.bezierCurveTo(len + r * 0.4, -r * 0.4, cx - r * 0.2, top, cx + r * 0.6, top + r * 0.25); ctx.stroke(); ctx.lineCap = 'butt';
+    const ex = cx + r * 0.9 + Math.sin(t * 1.3) * 0.6 * u, ey = top + r * 0.9 + Math.cos(t * 1.1) * 0.4 * u;
+    ctx.strokeStyle = 'rgba(60,40,24,0.8)'; ctx.lineWidth = 0.25 * u; ctx.beginPath(); ctx.moveTo(cx + r * 0.6, top + r * 0.25); ctx.lineTo(ex, ey); ctx.stroke();
+    const tipX = cx + sway * 4 * u, tipY = L.bag * u;
+    const bag = new Path2D(); bag.moveTo(cx - r, 0); bag.bezierCurveTo(cx - r, tipY * 0.6, tipX - r * 0.4, tipY, tipX, tipY); bag.bezierCurveTo(tipX + r * 0.5, tipY, cx + r, tipY * 0.5, cx + r, 0); bag.closePath();
+    bagOf(ctx, L, u, bag, cx - r - 2 * u, -2 * u, cx + r + 2 * u, tipY + 2 * u);
+    ctx.strokeStyle = L.hoop; ctx.lineWidth = 1 * u; ctx.beginPath(); ctx.ellipse(cx, 0, r, r * 0.38, 0, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(60,40,24,0.7)'; ctx.lineWidth = 0.25 * u; ctx.beginPath(); ctx.moveTo(cx - r * 0.2, -r * 0.38); ctx.lineTo(cx + r * 0.3, top + r * 0.35); ctx.stroke(); // the ring hangs from the curl
+    ctx.fillStyle = '#6a5030'; ctx.beginPath(); ctx.ellipse(ex, ey, 1.1 * u, 1.5 * u, 0, 0, TAU); ctx.fill(); // the lure's bulb
+    if (L.lit) softGlow(ctx, ex, ey + 0.3 * u, 4 * u, 'rgba(240,226,160,A)', 0.5 + 0.15 * Math.sin(t * 2.2));
+    return { tipX: cx, tipY: 0 };
+  },
+  // The Hagfish's Knot: a hoop of knotted, uneven whalebone, a bag of dried slime that hangs in strings
+  knot(ctx, L, u, len, r, t, sway) {
+    const cx = len + r, rx = r * 1.05, ry = r * 0.45, tipX = cx + sway * 4 * u, tipY = L.bag * u * 1.05;
+    const bag = new Path2D(); bag.moveTo(cx - rx, 0); bag.bezierCurveTo(cx - rx, tipY * 0.6, tipX - r * 0.5, tipY, tipX, tipY); bag.bezierCurveTo(tipX + r * 0.5, tipY, cx + rx, tipY * 0.5, cx + rx, 0); bag.closePath();
+    ctx.save(); ctx.fillStyle = 'rgba(200,190,150,0.2)'; ctx.fill(bag); ctx.clip(bag);
+    ctx.strokeStyle = 'rgba(214,204,168,0.6)'; ctx.lineWidth = 0.5 * u; for (let k = -5; k <= 5; k++) { ctx.beginPath(); ctx.moveTo(cx + k * rx * 0.2, -1 * u); ctx.bezierCurveTo(cx + k * rx * 0.18, tipY * 0.4, tipX + k * 0.6 * u, tipY * 0.7, tipX, tipY); ctx.stroke(); } // strings, not a mesh
+    ctx.restore();
+    ctx.strokeStyle = '#d8ceb0'; ctx.lineWidth = 1.5 * u; ctx.beginPath();
+    for (let k = 0; k <= 24; k++) { const a = k / 24 * TAU, wob = 1 + Math.sin(a * 5 + 1.3) * 0.07; const x = cx + Math.cos(a) * rx * wob, y = Math.sin(a) * ry * wob; if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); }
+    ctx.stroke();
+    ctx.fillStyle = '#c8bc9c'; for (const a of [0.6, 2.1, 3.5, 5.2]) { ctx.beginPath(); ctx.ellipse(cx + Math.cos(a) * rx, Math.sin(a) * ry, 1.1 * u, 0.8 * u, a, 0, TAU); ctx.fill(); } // the knots
+    for (let k = 0; k < 4; k++) { const a = (k + 0.5) / 4 * Math.PI, x = cx + Math.cos(a) * rx, y = Math.sin(a) * ry, dl = (1.5 + ((t * 0.3 + k * 0.27) % 1) * 3) * u; ctx.fillStyle = 'rgba(214,204,168,0.55)'; ctx.beginPath(); ctx.moveTo(x - 0.3 * u, y); ctx.quadraticCurveTo(x, y + dl, x + 0.3 * u, y); ctx.fill(); } // drips
+    return { tipX: cx, tipY: 0 };
+  },
+  // Stillwater Seine: a crossbar at the end of a short handle, and a black curtain of net hanging below it,
+  // corked along the bar and leaded along the foot: a seine for one man
+  seine(ctx, L, u, len, r, t, sway) {
+    const bx = len + r * 0.9, half = r * 1.4, drop = L.bag * u * 1.1;
+    ctx.strokeStyle = L.h[1]; ctx.lineWidth = 1.3 * u; ctx.beginPath(); ctx.moveTo(len - 1 * u, 0); ctx.lineTo(bx, 0); ctx.stroke();
+    const cur = new Path2D(); cur.moveTo(bx, -half * 0.35); cur.lineTo(bx + 1 * u, half * 0.35);
+    cur.bezierCurveTo(bx + drop * 0.3 + sway * 3 * u, half * 0.4, bx + drop * 0.85 + sway * 5 * u, half * 0.25, bx + drop + sway * 6 * u, half * 0.1); cur.lineTo(bx + drop * 0.95 + sway * 6 * u, -half * 0.1);
+    cur.bezierCurveTo(bx + drop * 0.6, -half * 0.3, bx + drop * 0.25, -half * 0.42, bx, -half * 0.35); cur.closePath();
+    bagOf(ctx, L, u, cur, bx - 2 * u, -half, bx + drop + 8 * u, half);
+    ctx.strokeStyle = '#2a2c34'; ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.moveTo(bx, -half * 0.35); ctx.lineTo(bx + 1 * u, half * 0.35); ctx.stroke(); // the crossbar, seen end-on
+    ctx.fillStyle = '#4a4436'; for (let k = 0; k < 4; k++) { const f = (k + 0.5) / 4; ctx.beginPath(); ctx.arc(bx + drop * f * 0.96 + sway * 6 * u * f, -half * (0.38 - f * 0.28) - 0.4 * u, 0.6 * u, 0, TAU); ctx.fill(); } // corks
+    return { tipX: bx + drop * 0.5, tipY: 0 };
+  },
+  // The Old One's Tithe: a forked branch of driftwood for a frame, an old rope net slung between the prongs,
+  // barnacles on the wood, a shell tied on with twine
+  fork(ctx, L, u, len, r, t, sway) {
+    const fx = len + r * 0.3, py = r * 0.7, px = fx + r * 2;
+    ctx.strokeStyle = '#6a5a40'; ctx.lineWidth = 1.5 * u; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(len - 2 * u, 0); ctx.lineTo(fx, 0); ctx.quadraticCurveTo(fx + r * 0.8, -py * 0.4, px, -py); ctx.moveTo(fx, 0); ctx.quadraticCurveTo(fx + r * 0.9, py * 0.5, px - r * 0.2, py); ctx.stroke(); ctx.lineCap = 'butt';
+    ctx.strokeStyle = 'rgba(40,30,20,0.4)'; ctx.lineWidth = 0.3 * u; ctx.beginPath(); ctx.moveTo(fx + r * 0.3, -0.5 * u); ctx.lineTo(fx + r * 1.2, -py * 0.55); ctx.stroke(); // the grain
+    const tipX = px + r * 0.6 + sway * 5 * u, tipY = L.bag * u * 0.9;
+    const bag = new Path2D(); bag.moveTo(px, -py); bag.bezierCurveTo(px + r * 0.5, -py * 0.2, tipX + r * 0.3, tipY * 0.6, tipX, tipY); bag.bezierCurveTo(tipX - r * 0.5, tipY, px - r * 0.4, py * 1.4, px - r * 0.2, py); bag.closePath();
+    bagOf(ctx, L, u, bag, px - r, -py - 2 * u, tipX + r, tipY + 2 * u);
+    ctx.fillStyle = '#d8d0b8'; for (const [x, y, s2] of [[fx + r * 0.6, -py * 0.25, 0.7], [fx + r * 1.4, -py * 0.75, 0.55], [fx + r * 1.1, py * 0.55, 0.65]]) { ctx.beginPath(); ctx.arc(x, y, s2 * u, 0, TAU); ctx.fill(); ctx.fillStyle = '#6a6250'; ctx.beginPath(); ctx.arc(x, y, s2 * 0.4 * u, 0, TAU); ctx.fill(); ctx.fillStyle = '#d8d0b8'; } // barnacles
+    ctx.fillStyle = '#e8dcc4'; ctx.beginPath(); ctx.moveTo(px - 0.4 * u, -py + 2.5 * u); ctx.lineTo(px + 1.6 * u, -py + 4.6 * u); ctx.lineTo(px - 1.2 * u, -py + 4.8 * u); ctx.closePath(); ctx.fill(); // a shell tied on
+    return { tipX: px, tipY: 0 };
+  },
+};
 
 // The slurp gun: a clear tube, a spring plunger, a nozzle. pull 0..1 draws the plunger back.
 export function drawSlurp(ctx, u, tier, t, pull, held) {
@@ -333,7 +457,7 @@ export function toolIcon(kind, tier, w, h) {
   c.width = w; c.height = h;
   const ctx = c.getContext('2d');
   if (kind === 'net') {
-    const L = NET_LOOK[tier];
+    const L = typeof tier === 'object' && tier ? { ...NET_LOOK[clamp(tier.base || 0, 0, 3)], ...tier } : NET_LOOK[tier];
     const u = w / (L.len + L.r * 2 + 14);
     ctx.translate(6 * u, h * 0.42); ctx.rotate(-0.12);
     drawNet(ctx, u, tier, 0.6, 0, null);

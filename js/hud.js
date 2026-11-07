@@ -42,7 +42,7 @@ export class Hud {
     const ctx = this.ctx, P = g.profile, e = g.earl;
     this.icons = this.icons || new Map();
     const icon = (kind, tier) => {
-      const k = kind + tier;
+      const k = kind + (tier && typeof tier === 'object' ? (tier.fx || '') + (tier.base || 0) + (tier.hoop || '') : tier); // (a special net's look is an object)
       if (!this.icons.has(k)) this.icons.set(k, toolIcon(kind, tier, 120, 60));
       return this.icons.get(k);
     };

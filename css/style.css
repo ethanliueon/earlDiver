@@ -1240,8 +1240,6 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .lk-tile.r-exotic::before, #inventory .lk-tile.r-legendary::before { content: ''; position: absolute; inset: -4px; pointer-events: none;
   background: radial-gradient(circle, var(--rc) 0 2px, transparent 2.5px) 0 0 / 8px 8px no-repeat, radial-gradient(circle, var(--rc) 0 2px, transparent 2.5px) 100% 0 / 8px 8px no-repeat,
     radial-gradient(circle, var(--rc) 0 2px, transparent 2.5px) 0 100% / 8px 8px no-repeat, radial-gradient(circle, var(--rc) 0 2px, transparent 2.5px) 100% 100% / 8px 8px no-repeat; }
-#inventory .lk-tile.r-legendary { background: radial-gradient(ellipse at 50% 120%, rgba(242,184,74,0.25), rgba(0,0,0,0.3) 70%); animation: lk-shimmer 3s ease-in-out infinite; }
-@keyframes lk-shimmer { 0%, 100% { border-color: #f2b84a; } 50% { border-color: #ffe3a0; } }
 #inventory .eq-slot.r-common { border-color: var(--r-common); } #inventory .eq-slot.r-uncommon { border-color: var(--r-uncommon); } #inventory .eq-slot.r-rare { border-color: var(--r-rare); }
 #inventory .eq-slot.r-exotic { border-color: var(--r-exotic); } #inventory .eq-slot.r-legendary { border-color: var(--r-legendary); }
 #inventory .eq-slot b[data-u] { cursor: pointer; }
@@ -1266,3 +1264,32 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #inventory .lk-acts button { font: 14px var(--serif); padding: 5px 14px; border: 0; border-radius: 3px; cursor: pointer; color: #2e220a; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
 #inventory .lk-acts button.sell { background: linear-gradient(180deg, #9ad89a, #5aa05a); }
 #inventory .lk-acts small { font: italic 13px var(--serif); color: var(--paint-dim); }
+/* ---------- the locker, dressed (2.8.1): the boat's steel and brass, nothing lit ---------- */
+#inventory .eq-earl { width: 150px; height: 190px; touch-action: none; border-radius: 4px;
+  background: linear-gradient(180deg, var(--steel-lo), var(--steel-deep)); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), inset 0 -18px 18px -14px rgba(0,0,0,0.6); }
+/* Exotic and Legendary tiles: a doubled frame, the Legendary's in brass with rivets at its corners */
+#inventory .lk-tile.r-exotic { box-shadow: inset 0 0 0 2px var(--steel-deep), inset 0 0 0 3px color-mix(in srgb, var(--r-exotic) 55%, var(--steel)); }
+#inventory .lk-tile.r-legendary { border-color: var(--brass); box-shadow: inset 0 0 0 2px var(--steel-deep), inset 0 0 0 3px #8a6a2c; }
+/* the card */
+#inventory .lk-card { position: relative; }
+#inventory .lk-card .lk-orn { display: none; }
+#inventory .lk-card.r-exotic, #inventory .lk-card.r-legendary { border: 0; padding: 12px 14px;
+  background: linear-gradient(180deg, var(--steel-lo), var(--steel-deep)); box-shadow: 0 0 0 1px #12150f, 0 0 0 3px var(--steel), 0 0 0 4px #12150f, inset 0 1px 0 rgba(255,255,255,0.05); }
+#inventory .lk-card.r-legendary { padding: 16px 18px; box-shadow: 0 0 0 1px #2a1e08, 0 0 0 4px var(--brass), 0 0 0 5px #2a1e08, 0 0 0 7px var(--steel-lo), inset 0 1px 0 rgba(255,255,255,0.05); }
+/* rivets and brass corner plates */
+#inventory .lk-card.r-exotic .lk-orn, #inventory .lk-card.r-legendary .lk-orn { display: block; position: absolute; width: 8px; height: 8px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 35% 35%, #8a9282, var(--steel-lo) 70%); box-shadow: 0 1px 0 rgba(0,0,0,0.6); }
+#inventory .lk-card.r-legendary .lk-orn { width: 22px; height: 22px; border-radius: 0;
+  background: radial-gradient(circle at 7px 7px, #e0c27a 0 1.6px, #7a5a1e 2.4px, transparent 3px), linear-gradient(135deg, var(--brass-hi), var(--brass) 45%, #7a5a22 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 30%, 30% 30%, 30% 100%, 0 100%); }
+#inventory .lk-orn.tl { left: 4px; top: 4px; } #inventory .lk-orn.tr { right: 4px; top: 4px; transform: scaleX(-1); }
+#inventory .lk-orn.bl { left: 4px; bottom: 4px; transform: scaleY(-1); } #inventory .lk-orn.br { right: 4px; bottom: 4px; transform: scale(-1, -1); }
+#inventory .lk-card.r-legendary .lk-orn.tl { left: -6px; top: -6px; } #inventory .lk-card.r-legendary .lk-orn.tr { right: -6px; top: -6px; }
+#inventory .lk-card.r-legendary .lk-orn.bl { left: -6px; bottom: -6px; } #inventory .lk-card.r-legendary .lk-orn.br { right: -6px; bottom: -6px; }
+#inventory .lk-card.r-legendary .nm { font-size: 22px !important; }
+#inventory .lk-card.r-exotic .lk-top img, #inventory .lk-card.r-legendary .lk-top img { background: rgba(0,0,0,0.22); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5); }
+#inventory .lk-card.r-legendary .lk-top img { width: 150px; height: 90px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), 0 0 0 1px #7a5a22; }
+/* its own skill on an engraved brass plate */
+#inventory .lk-card.r-legendary .lk-sk.leg { padding: 6px 9px; margin-top: 2px; border-radius: 2px; color: #2e220a;
+  background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #8a6a2c); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 1px 0 #2a1e08; }
+#inventory .lk-card.r-legendary .lk-sk.leg b { color: #1e1606; }

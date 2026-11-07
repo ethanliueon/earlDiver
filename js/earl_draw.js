@@ -15,6 +15,31 @@ const SUIT_LOOK = {
   hard: ['#c8a23a', '#ecd27a', '#8a6a1e', '#6a5014', '#3a3a3a'],
 };
 
+// (2.8.1) a Legendary tank on his back: a living swim bladder, two cylinders of whalebone, or a warm vent-stone
+export function drawSpecialTank(ctx, u, TL, t) {
+  ctx.save();
+  if (TL.fx === 'lung') {
+    const g = ctx.createRadialGradient(14 * u, -14 * u, 1 * u, 14 * u, -12 * u, 18 * u); g.addColorStop(0, '#2a4a34'); g.addColorStop(0.6, '#10241a'); g.addColorStop(1, '#050c08');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(14 * u, -12 * u, 17 * u + Math.sin(t * 1.4) * 0.6 * u, 6.4 * u + Math.sin(t * 1.4) * 0.5 * u, 0, 0, TAU); ctx.fill(); // it breathes
+    ctx.strokeStyle = 'rgba(90,140,100,0.45)'; ctx.lineWidth = 0.4 * u;
+    for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(0, -12 * u); ctx.bezierCurveTo(8 * u, (-16 + k * 2) * u, 18 * u, (-9 - k * 2) * u, (28 - k) * u, (-13 + k * 1.5) * u); ctx.stroke(); }
+  } else if (TL.fx === 'bone') {
+    for (const [y0, h] of [[-18, 5.6], [-12.2, 5.6]]) {
+      const g = ctx.createLinearGradient(0, y0 * u, 0, (y0 + h) * u); g.addColorStop(0, '#d8ccb0'); g.addColorStop(0.35, '#f4ecd8'); g.addColorStop(1, '#8a7e64');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(-1 * u, y0 * u, 31 * u, h * u, 2.8 * u); ctx.fill();
+      ctx.fillStyle = 'rgba(90,70,40,0.35)'; for (let k = 4; k < 28; k += 5) ctx.fillRect(k * u, y0 * u, 0.6 * u, h * u); // the growth rings of the bone
+    }
+    ctx.fillStyle = '#c8a050'; ctx.beginPath(); ctx.roundRect(28 * u, -16 * u, 4.5 * u, 8 * u, 1 * u); ctx.fill();
+
+  } else if (TL.fx === 'vent') {
+    const g = ctx.createLinearGradient(0, -18 * u, 0, -6 * u); g.addColorStop(0, '#3a3430'); g.addColorStop(0.5, '#1e1a18'); g.addColorStop(1, '#0c0a08');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-1 * u, -16 * u); ctx.lineTo(8 * u, -18 * u); ctx.lineTo(20 * u, -17.5 * u); ctx.lineTo(31 * u, -15 * u); ctx.lineTo(31 * u, -7.5 * u); ctx.lineTo(18 * u, -6 * u); ctx.lineTo(4 * u, -6.5 * u); ctx.closePath(); ctx.fill();
+    const fl = 0.75 + 0.25 * Math.sin(t * 2.3); ctx.strokeStyle = `rgba(200,${Math.round(90 + 30 * fl)},50,${0.6 * fl})`; ctx.lineWidth = 0.5 * u; // the warmth in its cracks
+    ctx.beginPath(); ctx.moveTo(3 * u, -14 * u); ctx.lineTo(9 * u, -11 * u); ctx.lineTo(14 * u, -13 * u); ctx.lineTo(21 * u, -9 * u); ctx.moveTo(14 * u, -13 * u); ctx.lineTo(17 * u, -16 * u); ctx.moveTo(24 * u, -14 * u); ctx.lineTo(28 * u, -10 * u); ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // A tapered limb segment with rounded ends (reads as flesh in a wetsuit, not a stick).
 // Shaded across its width (lit from his back, shadowed on his front), so it reads round.
 function seg(ctx, x0, y0, x1, y1, w0, w1, col, shade = true) {
@@ -109,15 +134,27 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     ctx.fillStyle = near ? '#1d2024' : '#101215';
     ctx.beginPath(); ctx.ellipse(3 * u, 0, 6 * u, 3.2 * u, 0, 0, Math.PI * 2); ctx.fill(); // foot pocket
     ctx.fillStyle = WEBBING; ctx.fillRect(-1 * u, -2.9 * u, 1.4 * u, 5.4 * u); // heel strap
-    const bg = ctx.createLinearGradient(6 * u, 0, 34 * u, 0);
-    bg.addColorStop(0, near ? '#1d3346' : '#101b25'); bg.addColorStop(0.6, near ? '#24506a' : '#152a38'); bg.addColorStop(1, near ? 'rgba(60,120,150,0.55)' : 'rgba(30,60,80,0.5)');
+    const FL = gear && gear.finLook, bg = ctx.createLinearGradient(6 * u, 0, 34 * u, 0);
+    if (FL) { bg.addColorStop(0, FL.c[0]); bg.addColorStop(0.6, FL.c[1]); bg.addColorStop(1, FL.c[2]); if (!near) ctx.globalAlpha = 0.6; }
+    else { bg.addColorStop(0, near ? '#1d3346' : '#101b25'); bg.addColorStop(0.6, near ? '#24506a' : '#152a38'); bg.addColorStop(1, near ? 'rgba(60,120,150,0.55)' : 'rgba(30,60,80,0.5)'); }
     ctx.fillStyle = bg;
     ctx.beginPath();
     ctx.moveTo(6 * u, -3.4 * u);
-    ctx.quadraticCurveTo(20 * u, -4.4 * u + flex * 4 * u, 33 * u, -3.8 * u + flex * 9 * u);
-    ctx.lineTo(34 * u, 3.4 * u + flex * 9 * u);
+    if (FL && FL.fx === 'rays') { // the oarfish's crest: a frilled edge of long soft rays
+      for (let k = 0; k <= 8; k++) { const f = k / 8; ctx.lineTo((6 + f * 30) * u, (-4.2 - Math.sin(f * Math.PI) * 1.2 - (k % 2) * 1.4) * u + flex * (4 + f * 5) * u); }
+      ctx.lineTo(37 * u, 3.6 * u + flex * 9 * u);
+    } else {
+      ctx.quadraticCurveTo(20 * u, -4.4 * u + flex * 4 * u, 33 * u, -3.8 * u + flex * 9 * u);
+      ctx.lineTo(34 * u, 3.4 * u + flex * 9 * u);
+    }
     ctx.quadraticCurveTo(20 * u, 3.6 * u + flex * 4 * u, 6 * u, 2.6 * u);
     ctx.closePath(); ctx.fill();
+    if (FL) {
+      if (FL.fx === 'rays') { ctx.strokeStyle = 'rgba(255,190,160,0.55)'; ctx.lineWidth = 0.35 * u; for (let k = 1; k < 8; k++) { const f = k / 8; ctx.beginPath(); ctx.moveTo(8 * u, 0); ctx.lineTo((6 + f * 30) * u, (-3.6 - Math.sin(f * Math.PI)) * u + flex * (4 + f * 5) * u); ctx.stroke(); } }
+      if (FL.fx === 'bone') { ctx.fillStyle = 'rgba(232,240,232,0.9)'; for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse((10 + k * 5) * u, flex * (2 + k) * u, 2.1 * u, 1.1 * u, 0, 0, TAU); ctx.fill(); } ctx.strokeStyle = 'rgba(200,215,220,0.8)'; ctx.lineWidth = 0.3 * u; ctx.beginPath(); ctx.moveTo(8 * u, 0); ctx.lineTo(33 * u, flex * 8 * u); ctx.stroke(); }
+      if (FL.fx === 'glass') { ctx.strokeStyle = 'rgba(220,250,255,0.75)'; ctx.lineWidth = 0.5 * u; ctx.stroke(); ctx.strokeStyle = 'rgba(255,180,240,0.35)'; ctx.lineWidth = 0.3 * u; ctx.beginPath(); ctx.moveTo(8 * u, -2.4 * u); ctx.quadraticCurveTo(20 * u, -3.2 * u + flex * 4 * u, 32 * u, -2.6 * u + flex * 9 * u); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    }
     // stiff side rails and the channels moulded into the blade
     ctx.strokeStyle = near ? '#14181c' : '#0b0d10'; ctx.lineWidth = 1.1 * u;
     ctx.beginPath(); ctx.moveTo(6 * u, -3.4 * u); ctx.quadraticCurveTo(20 * u, -4.4 * u + flex * 4 * u, 33 * u, -3.8 * u + flex * 9 * u); ctx.stroke();
@@ -164,9 +201,11 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   arm(Math.PI, false);
 
   // ---------- tank on his back ----------
-  if (!(gear && gear.noTank)) {
+  const TL = gear && gear.tankLook;
+  if (!(gear && gear.noTank) && TL && TL.fx !== 'brass') drawSpecialTank(ctx, u, TL, (gear && gear.t) || 0);
+  else if (!(gear && gear.noTank)) {
   const tg = ctx.createLinearGradient(0, -17.5 * u, 0, -6 * u);
-  tg.addColorStop(0, '#4c5257'); tg.addColorStop(0.3, '#9aa2a8'); tg.addColorStop(0.55, '#646c72'); tg.addColorStop(1, '#25292c');
+  if (TL && TL.fx === 'brass') { tg.addColorStop(0, '#5a4418'); tg.addColorStop(0.3, '#e0c070'); tg.addColorStop(0.55, '#a08040'); tg.addColorStop(1, '#3a2c10'); } else { tg.addColorStop(0, '#4c5257'); tg.addColorStop(0.3, '#9aa2a8'); tg.addColorStop(0.55, '#646c72'); tg.addColorStop(1, '#25292c'); }
   ctx.fillStyle = tg;
   ctx.beginPath(); ctx.roundRect(-2 * u, -17.5 * u, 32 * u, 11.5 * u, 5.7 * u); ctx.fill();
   ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(8 * u, -17.5 * u, 1.8 * u, 11.5 * u); ctx.fillRect(19 * u, -17.5 * u, 1.8 * u, 11.5 * u); // cam bands
@@ -194,7 +233,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   ctx.beginPath();
   ctx.moveTo(4 * u, -6.2 * u); ctx.lineTo(28 * u, -7.4 * u); ctx.quadraticCurveTo(31 * u, 0, 28 * u, 7.4 * u);
   ctx.lineTo(9 * u, 6.4 * u); ctx.quadraticCurveTo(3 * u, 0, 4 * u, -6.2 * u); ctx.closePath(); ctx.fill();
-  // the jacket's piping in the suit's trim colour
+  // the jacket's piping in the suit's trim colour (a Legendary suit's seams glow)
   ctx.strokeStyle = SUIT_SEAM; ctx.lineWidth = 0.6 * u;
   ctx.beginPath(); ctx.moveTo(4.5 * u, -5.8 * u); ctx.lineTo(27.5 * u, -6.9 * u); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(9.5 * u, 6 * u); ctx.lineTo(27.5 * u, 6.9 * u); ctx.stroke();

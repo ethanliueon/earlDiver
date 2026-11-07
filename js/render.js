@@ -732,11 +732,11 @@ export class Renderer {
         }
         gear = { kind: tool.kind === 'trap' ? 'none' : tool.kind, tier: tool.tier, t, sweep: g.capture && g.capture.kind === tool.kind ? clamp(g.capture.t / g.capture.dur, 0, 1) : null,
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
-          aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0, suit: e.suit };
+          aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0, suit: e.suit, finLook: e.finLook, tankLook: e.tankLook, suitGlow: e.suitGlow };
       }
       if (g.aboard) { // on deck: tools stowed, boots on, no tank or mask; on the ladder: tank and mask still on, hands on the rungs
         const P0 = g.aboard.pose, onDeck = P0 === 'deck' && !(g.aboard.jump > 0);
-        gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: true, noTank: onDeck, noMask: onDeck };
+        gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: true, noTank: onDeck, noMask: onDeck, tankLook: e.tankLook, suitGlow: e.suitGlow };
         if (onDeck) gear.walk = g.aboard.walk || 0;
         else if (P0 === 'climb') gear.climb = g.aboard.rung || 0;
       }

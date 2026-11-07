@@ -10,7 +10,7 @@
 //   fins: swim, sprint                    tank: air (s), speed, quiet
 //   bag: slots, apart                     suit: press (m), air (×), speed (×), bite, warm, quiet, look
 // An owned thing is an instance in the locker: { u, id, sk: [[skill, level], ...], leg }.
-import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS } from './item_data.js';
+import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
 export { RARITY, RARITIES, SKILLS, LEGEND, SETS } from './item_data.js';
 
 export const KINDS = ['net', 'slurp', 'tag', 'cam', 'suit', 'fins', 'tank', 'bag'];
@@ -98,6 +98,19 @@ function add(def) {
   if (!def.good) def.good = goodOf(def.kind, def);
   if (def.price == null) def.price = Math.round(VALUE[def.rarity] * (SIDE_KINDS.includes(def.kind) ? 0.6 : 1));
   def.pal = paletteOf(def);
+  // (2.8.1) the special looks: a Legendary's own, or the old-expedition look of an Exotic
+  const Lk = LOOKS[def.id], ex = def.rarity === 'exotic';
+  if (def.kind === 'net') {
+    // a net's shape is what it is for (a square dip frame, a long pear-shaped pole net, a wide school net,
+    // a D-frame for big game); the Legendaries have their own; Exotics are old brass and wood
+    const SHAPE = { gentle: 'square', reach: 'teardrop', school: 'wide' }[def.arch] || null, base = typeof def.look === 'number' ? def.look : 0;
+    if (Lk) def.look = Lk.net;
+    else if (ex) def.look = EXOTIC_LOOK.net(base, SHAPE);
+    else if (SHAPE || def.arch === 'quick') def.look = { base, shape: SHAPE, ...(def.arch === 'quick' ? { len: 24, r: 7.5, bag: 12 } : {}), ...(def.rarity === 'rare' ? { hoop: '#3a4046', h: ['#7a8a96', '#4a5660', '#22282e'] } : {}) };
+  }
+  if (def.kind === 'fins') def.finLook = Lk ? Lk.fin : ex ? EXOTIC_LOOK.fin : null;
+  if (def.kind === 'tank') def.tankLook = Lk ? Lk.tank : ex ? EXOTIC_LOOK.tank : null;
+  if (def.kind === 'suit' && (Lk || ex)) { def.pal = Lk ? Lk.suit : EXOTIC_LOOK.suit[def.arch]; def.suitGlow = Lk ? Lk.glow : null; }
   ITEMS[def.id] = def;
 }
 const fromRow = (shop) => ([id, kind, arch, rarity, price, name, line, good, bad, sk]) => add({ id, kind, arch, rarity, price, name, line, good, bad: bad || '', shop, sk: sk || null });

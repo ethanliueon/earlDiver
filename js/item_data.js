@@ -335,3 +335,33 @@ export const ARCH_LINE = {
 };
 // how many chest-only items of each rarity, per kind
 export const CHEST_COUNTS = { main: { common: 5, uncommon: 5, rare: 15 }, side: { common: 2, uncommon: 2, rare: 5 } };
+
+// ---------- how the special things look (2.8.1): in his hand, on him, and in their pictures ----------
+// net: a net look for tools_draw's drawNet (base: the plain net it starts from; fx: its own details)
+// fin: blade colours [root, tip, edge] and fx ('rays', 'bone', 'glass', 'vintage'); tank: fx ('lung', 'bone',
+// 'vent', 'brass'); suit: a palette [suit, highlight, panel, seam, glove] and a glow for its seams
+export const LOOKS = {
+  gulper: { net: { base: 0, shape: 'jaw', len: 40, r: 10, bag: 22, step: 2, mesh: 'rgba(160,130,120,0.5)', tint: 'rgba(60,40,44,0.5)', hoop: '#d8ccb0', h: ['#e0d6bc', '#b8ac90', '#7a6e58'], grip: '#4a3e30' } },
+  choirveil: { net: { base: 1, shape: 'bell', len: 34, r: 10, bag: 18, step: 1.4, mesh: 'rgba(210,200,230,0.45)', tint: 'rgba(170,160,200,0.15)', hoop: '#d8d0e8', h: ['#c8c0d8', '#8a82a0', '#4a4460'], grip: '#2a2638', lit: true } },
+  lanternmesh: { net: { base: 0, shape: 'lure', len: 36, r: 9.5, bag: 18, step: 1.3, mesh: 'rgba(200,180,130,0.55)', tint: 'rgba(180,160,110,0.1)', hoop: '#7a6a4a', h: ['#5a4630', '#3a2c1e', '#1e160e'], grip: '#1a120a', lit: true } },
+  hagnet: { net: { base: 2, shape: 'knot', len: 66, r: 10, bag: 20, step: 2.0, mesh: 'rgba(214,204,168,0.6)', tint: 'rgba(200,190,150,0.2)', hoop: '#d8ceb0', h: ['#e8e0c8', '#c0b494', '#8a8068'], grip: '#5a4e38', collar: null } },
+  stillwater: { net: { base: 0, shape: 'seine', len: 30, r: 9, bag: 20, step: 1.6, mesh: 'rgba(78,84,96,0.9)', tint: 'rgba(20,22,30,0.4)', hoop: '#50545e', h: ['#5a5e68', '#383c44', '#1a1c22'], grip: '#0a0b0e' } },
+  oldnet: { net: { base: 1, shape: 'fork', len: 42, r: 10, bag: 20, step: 2.6, mesh: 'rgba(130,110,80,0.85)', tint: 'rgba(90,75,50,0.15)', hoop: '#6a5a40', h: ['#8a7a5a', '#6a5a40', '#3e3424'], grip: '#2e2618' } },
+  oarcrest: { fin: { c: ['#5a1812', '#a83a2a', 'rgba(210,120,100,0.75)'], fx: 'rays' } },
+  pinions: { fin: { c: ['#2a3430', '#5a7068', 'rgba(200,214,208,0.85)'], fx: 'bone' } },
+  glasswing: { fin: { c: ['rgba(190,215,225,0.4)', 'rgba(170,205,220,0.22)', 'rgba(215,235,240,0.8)'], fx: 'glass' } },
+  blacklung: { tank: { fx: 'lung' } },
+  whalefall: { tank: { fx: 'bone' } },
+  ventheart: { tank: { fx: 'vent' } },
+  oldskin: { suit: ['#3a2c14', '#7a6230', '#54421c', '#b89040', '#1e1608'] },
+  abyssalhide: { suit: ['#07080e', '#1a1e2c', '#0e1018', '#3a4a6a', '#040408'] },
+  hagmantle: { suit: ['#5a5446', '#9a907a', '#766c58', '#c8bc9c', '#2e2a22'] },
+};
+// every Exotic looks like old expedition gear: brass, hemp, varnished wood, worn rubber, canvas
+export const EXOTIC_LOOK = {
+  net: (base, shape) => ({ base, shape, mesh: 'rgba(170,145,105,0.85)', tint: 'rgba(150,125,85,0.12)', hoop: '#9a7a3a', h: ['#a88a60', '#7a5e3a', '#40301c'], grip: '#3a2a18' }),
+  fin: { c: ['#16140f', '#2e2a20', 'rgba(110,96,70,0.7)'], fx: 'vintage' },
+  tank: { fx: 'brass' },
+  suit: { wet: ['#1c1a16', '#3e3a30', '#2c2820', '#b8913e', '#100e0a'], skin: ['#18222a', '#34485a', '#22303c', '#b8913e', '#0c1218'], dry: ['#2a2418', '#5a4c32', '#3e3424', '#c8a050', '#14100a'],
+    chain: ['#2a2a26', '#6a6a5e', '#3e3e36', '#b8913e', '#141410'], rebreather: ['#1e2418', '#3e4a32', '#2a3222', '#c8a050', '#0e120a'], hard: ['#5a4a2a', '#a08a5a', '#7a6640', '#d8b060', '#2a2418'] },
+};
