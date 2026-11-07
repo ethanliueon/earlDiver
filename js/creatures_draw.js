@@ -690,19 +690,102 @@ function drawAngler(ctx, L, v, t, swim = 1) {
   ctx.fillStyle = sac; ctx.beginPath(); ctx.ellipse(lx, ly, er2, er2 * 1.15, 0, 0, TAU); ctx.fill();
   return [[lx, ly, 1.6]];
 }
-function drawFangtooth(ctx, L, v, t, swim) {
-  const H = L * v.h;
-  drawFish(ctx, L, { ...v, h: v.h, t: 'fork', bigeye: 0, f: '#2a2420' }, t, swim);
-  ctx.fillStyle = 'rgba(235,230,215,0.9)';
-  for (let k = 0; k < 4; k++) { const x = -L * 0.48 + k * L * 0.045; finPath(ctx, [[x, H * 0.02], [x + L * 0.012, H * 0.3], [x + L * 0.025, H * 0.02]]); ctx.fill(); }
+// (3.7.5) a long body that bends as it swims: its centreline from the head (-x) to the tail, half-widths along it
+function bendBody(L, t, swim, half, n = 28, amp = 0.05, waves = 1.6) {
+  const top = [], bot = [], mid = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, x = -L / 2 + u * L, y = Math.sin(t * 3 - u * waves * TAU) * amp * L * Math.pow(u, 1.4) * swim, h = half(u);
+    mid.push([x, y]); top.push([x, y - h]); bot.push([x, y + h]);
+  }
+  const path = new Path2D(); top.forEach((p, i) => (i ? path.lineTo(p[0], p[1]) : path.moveTo(p[0], p[1]))); for (let i = bot.length - 1; i >= 0; i--) path.lineTo(bot[i][0], bot[i][1]); path.closePath();
+  return { top, bot, mid, path, at: (u) => { const f = u * n, i = Math.min(n - 1, Math.floor(f)), k = f - i; return [mid[i][0] + (mid[i + 1][0] - mid[i][0]) * k, mid[i][1] + (mid[i + 1][1] - mid[i][1]) * k, half(u)]; } };
 }
-function drawViper(ctx, L, v, t, swim) {
-  const H = L * v.h;
-  drawEel(ctx, L, { ...v, h: v.h * 0.9, f: '#24343a' }, t, swim * 0.5);
-  ctx.fillStyle = 'rgba(230,230,220,0.85)';
-  for (let k = 0; k < 3; k++) { const x = -L * 0.5 + L * 0.015 + k * L * 0.02; finPath(ctx, [[x, -H * 0.4], [x + L * 0.006, H * 0.9], [x + L * 0.012, -H * 0.4]]); ctx.fill(); }
-  const P = [[-L * 0.3, -H * 1.6, 1.3]]; // the lure at the tip of its long dorsal ray
-  for (let k = 0; k < 5; k++) P.push([-L * 0.4 + k * L * 0.16, H * 0.35, 0.4]);
+function glassFang(ctx, x, y, len, dir, w, lean = 0.15) {
+  const tx = x + len * lean, ty = y + dir * len;
+  const g = ctx.createLinearGradient(x, y, tx, ty); g.addColorStop(0, 'rgba(205,200,186,0.95)'); g.addColorStop(0.75, 'rgba(238,236,228,0.88)'); g.addColorStop(1, 'rgba(255,255,252,0.5)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - w, y); ctx.quadraticCurveTo(x - w * 0.15, y + dir * len * 0.6, tx, ty); ctx.quadraticCurveTo(x + w * 0.6, y + dir * len * 0.45, x + w, y); ctx.closePath(); ctx.fill();
+}
+function photophores(ctx, B, u0, u1, n, off, r, col) {
+  const P = [];
+  for (let k = 0; k < n; k++) { const [x, y, h] = B.at(u0 + (u1 - u0) * (k / Math.max(1, n - 1))), py = y + h * off;
+    ctx.fillStyle = 'rgba(8,10,12,0.85)'; ctx.beginPath(); ctx.arc(x, py, r * 1.5, 0, TAU); ctx.fill();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, py, r, 0, TAU); ctx.fill(); P.push([x, py, 0.4]); }
+  return P;
+}
+// the fangtooth: short and deep, a huge armoured head, two great fangs in the lower jaw that fold into sockets
+// either side of the brain, rough plated skin, small eye, a forked tail
+function drawFangtooth(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], fin = shade(c1, 0.18), sw = Math.sin(t * 4) * swim;
+  // tail
+  const tx = L * 0.3, tips = []; for (let k = 0; k <= 8; k++) { const a = -0.7 + k * 0.175, fork = 1 - 0.35 * Math.cos(a * 4.4) * (Math.abs(a) < 0.25 ? 1 : 0); tips.push([tx + L * 0.2 * fork * Math.cos(a), Math.sin(a) * L * 0.24 + sw * H * 0.12]); }
+  rayFin(ctx, [[tx, -H * 0.1], [tx, H * 0.1]], tips, fin, 0.65);
+  rayFin(ctx, [[-L * 0.02, -H * 0.44], [L * 0.24, -H * 0.18]], [[L * 0.02, -H * 0.56], [L * 0.12, -H * 0.5], [L * 0.22, -H * 0.32]], fin, 0.55);
+  rayFin(ctx, [[L * 0.08, H * 0.4], [L * 0.25, H * 0.17]], [[L * 0.12, H * 0.52], [L * 0.2, H * 0.42], [L * 0.27, H * 0.26]], fin, 0.55);
+  const body = new Path2D();
+  body.moveTo(-L * 0.47, -H * 0.02);
+  body.bezierCurveTo(-L * 0.47, -H * 0.5, -L * 0.2, -H * 0.62, L * 0.0, -H * 0.5);
+  body.bezierCurveTo(L * 0.16, -H * 0.42, L * 0.27, -H * 0.2, L * 0.31, -H * 0.1);
+  body.lineTo(L * 0.31, H * 0.1);
+  body.bezierCurveTo(L * 0.2, H * 0.3, L * 0.02, H * 0.55, -L * 0.18, H * 0.55);
+  body.bezierCurveTo(-L * 0.36, H * 0.55, -L * 0.5, H * 0.4, -L * 0.5, H * 0.2);
+  body.closePath();
+  const bg = ctx.createRadialGradient(-L * 0.18, -H * 0.2, L * 0.02, -L * 0.05, H * 0.05, L * 0.5); bg.addColorStop(0, shade(c1, 0.2)); bg.addColorStop(0.6, c1); bg.addColorStop(1, shade(c0, -0.3));
+  ctx.fillStyle = bg; ctx.fill(body);
+  ctx.save(); ctx.clip(body);
+  // rough plated skin: small overlapping scales, the head's bony ridges and pits
+  ctx.strokeStyle = rgba(shade(c1, 0.3), 0.18); ctx.lineWidth = Math.max(0.4, L * 0.003);
+  for (let r = 0; r < 9; r++) for (let k = 0; k < 9; k++) { const x = -L * 0.05 + k * L * 0.042 + (r % 2) * L * 0.021, y = -H * 0.45 + r * H * 0.12; ctx.beginPath(); ctx.arc(x, y, L * 0.024, 0.2 * PI, 0.8 * PI); ctx.stroke(); }
+  ctx.strokeStyle = rgba(shade(c0, -0.5), 0.55); ctx.lineWidth = Math.max(0.5, L * 0.005);
+  for (const [a, b2, r] of [[-0.3, -0.3, 0.12], [-0.28, -0.18, 0.2], [-0.22, -0.05, 0.26]]) { ctx.beginPath(); ctx.arc(L * a, H * b2, H * r, 1.0, 2.6); ctx.stroke(); }
+  ctx.fillStyle = rgba(shade(c0, -0.6), 0.5); for (let k = 0; k < 14; k++) { ctx.beginPath(); ctx.arc(-L * 0.42 + hashN(k, 7) * L * 0.3, -H * 0.4 + hashN(k, 8) * H * 0.5, Math.max(0.5, L * 0.006), 0, TAU); ctx.fill(); }
+  const shd = ctx.createLinearGradient(0, -H * 0.6, 0, H * 0.6); shd.addColorStop(0, 'rgba(255,240,220,0.08)'); shd.addColorStop(0.4, 'rgba(0,0,0,0)'); shd.addColorStop(1, 'rgba(0,0,0,0.35)'); ctx.fillStyle = shd; ctx.fillRect(-L, -H, 2 * L, 2 * H);
+  ctx.restore();
+  // the mouth, a dark slash, then the fangs: two huge ones in front of the lower jaw, the rest small
+  ctx.fillStyle = '#050304'; ctx.beginPath(); ctx.moveTo(-L * 0.48, H * 0.04); ctx.quadraticCurveTo(-L * 0.33, H * 0.18, -L * 0.18, H * 0.12); ctx.quadraticCurveTo(-L * 0.33, H * 0.3, -L * 0.5, H * 0.22); ctx.closePath(); ctx.fill();
+  glassFang(ctx, -L * 0.46, H * 0.22, H * 0.55, -1, L * 0.014, 0.05); glassFang(ctx, -L * 0.41, H * 0.24, H * 0.5, -1, L * 0.013, 0.05);
+  for (let k = 0; k < 4; k++) glassFang(ctx, -L * 0.36 + k * L * 0.04, H * 0.22, H * (0.12 + (k % 2) * 0.06), -1, L * 0.008);
+  for (let k = 0; k < 5; k++) glassFang(ctx, -L * 0.46 + k * L * 0.05, H * 0.06, H * (0.1 + (k % 2) * 0.08), 1, L * 0.008);
+  // the gill cover, the pectoral, the small eye
+  ctx.strokeStyle = rgba(shade(c0, -0.6), 0.7); ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.beginPath(); ctx.moveTo(-L * 0.12, -H * 0.3); ctx.quadraticCurveTo(-L * 0.04, H * 0.05, -L * 0.14, H * 0.4); ctx.stroke();
+  rayFin(ctx, [[-L * 0.08, H * 0.05], [-L * 0.08, H * 0.16]], [[L * 0.04, H * 0.0], [L * 0.07, H * 0.12], [L * 0.02, H * 0.22]], fin, 0.5);
+  eye(ctx, -L * 0.3, -H * 0.24, Math.max(1, L * 0.025), '#5a6a70');
+}
+// the viperfish: long and narrow, iridescent, its lower jaw's fangs so long they close outside the mouth past the eye;
+// the first ray of its dorsal fin a long whip with a light at the tip; rows of lights along the belly
+function drawViper(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], fin = shade(c1, 0.2), glow = v.glow || '#6ad0ff';
+  const B = bendBody(L, t, swim * 0.6, (u) => H * 0.5 * (u < 0.1 ? 0.75 + u * 2.5 : u < 0.8 ? 1 - (u - 0.1) * 0.55 : 0.6 - (u - 0.8) * 2.2), 30, 0.04, 1.3);
+  // tail and the small fins along the back of the body
+  const [txx, tyy] = B.at(1);
+  rayFin(ctx, [[txx - L * 0.01, tyy - H * 0.1], [txx - L * 0.01, tyy + H * 0.1]], [[txx + L * 0.08, tyy - H * 0.55], [txx + L * 0.05, tyy - H * 0.1], [txx + L * 0.03, tyy], [txx + L * 0.05, tyy + H * 0.1], [txx + L * 0.08, tyy + H * 0.55]], fin, 0.6);
+  { const [x, y, h] = B.at(0.78); rayFin(ctx, [[x - L * 0.05, y + h], [x + L * 0.04, y + h * 0.9]], [[x - L * 0.03, y + h + H * 0.5], [x + L * 0.02, y + h + H * 0.45]], fin, 0.5); }
+  const bg = ctx.createLinearGradient(0, -H * 0.6, 0, H * 0.6); bg.addColorStop(0, shade(c0, -0.3)); bg.addColorStop(0.45, c1); bg.addColorStop(1, shade(c0, -0.2));
+  ctx.fillStyle = bg; ctx.fill(B.path);
+  ctx.save(); ctx.clip(B.path);
+  // its hexagonal scale net, catching the light in blue and violet
+  ctx.strokeStyle = 'rgba(140,190,220,0.16)'; ctx.lineWidth = Math.max(0.4, L * 0.0025);
+  for (let i = 0; i < 26; i++) { const [x, y, h] = B.at(0.08 + i * 0.034); for (let j = -2; j <= 2; j++) { const yy = y + j * h * 0.42 + (i % 2) * h * 0.21; ctx.beginPath(); ctx.moveTo(x - L * 0.014, yy); ctx.lineTo(x, yy - h * 0.2); ctx.lineTo(x + L * 0.014, yy); ctx.lineTo(x, yy + h * 0.2); ctx.closePath(); ctx.stroke(); } }
+  const sheen = ctx.createLinearGradient(-L * 0.5, 0, L * 0.5, 0); sheen.addColorStop(0, 'rgba(120,90,200,0.12)'); sheen.addColorStop(0.5, 'rgba(90,180,200,0.1)'); sheen.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = sheen; ctx.fillRect(-L, -H * 2, 2 * L, 4 * H);
+  ctx.restore();
+  const P = photophores(ctx, B, 0.08, 0.9, 16, 0.72, Math.max(0.6, L * 0.004), rgba(glow, 0.85));
+  P.push(...photophores(ctx, B, 0.12, 0.6, 9, 0.3, Math.max(0.5, L * 0.003), rgba(glow, 0.6)));
+  // the head: a large eye, the gill cover, a light below the eye; the jaw opened, the fangs reaching past the eye
+  const [hx, hy, hh] = B.at(0.04);
+  ctx.fillStyle = '#060506'; ctx.beginPath(); ctx.moveTo(-L * 0.5, hy - hh * 0.1); ctx.lineTo(-L * 0.38, hy + hh * 0.2); ctx.lineTo(-L * 0.5, hy + hh * 0.75); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rgba(shade(c1, 0.3), 0.5); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.beginPath(); ctx.moveTo(-L * 0.4, hy - hh * 0.8); ctx.quadraticCurveTo(-L * 0.36, hy, -L * 0.41, hy + hh * 0.9); ctx.stroke();
+  eye(ctx, -L * 0.455, hy - hh * 0.45, Math.max(1, hh * 0.32), '#7a9aa8');
+  ctx.fillStyle = rgba(glow, 0.9); ctx.beginPath(); ctx.arc(-L * 0.45, hy + hh * 0.05, Math.max(0.7, hh * 0.12), 0, TAU); ctx.fill(); P.push([-L * 0.45, hy + hh * 0.05, 0.7]);
+  // (the lower fangs close outside the mouth, reaching up past the eye)
+  glassFang(ctx, -L * 0.497, hy + hh * 0.72, Math.max(hh * 2.4, L * 0.055), -1, Math.max(0.7, L * 0.0055), -0.04);
+  glassFang(ctx, -L * 0.48, hy + hh * 0.74, Math.max(hh * 1.9, L * 0.042), -1, Math.max(0.6, L * 0.0045), -0.02);
+  glassFang(ctx, -L * 0.462, hy + hh * 0.74, Math.max(hh * 1.2, L * 0.026), -1, Math.max(0.5, L * 0.0035), 0);
+  glassFang(ctx, -L * 0.492, hy - hh * 0.08, Math.max(hh * 1.3, L * 0.03), 1, Math.max(0.5, L * 0.004), 0.08);
+  glassFang(ctx, -L * 0.474, hy - hh * 0.05, Math.max(hh * 0.9, L * 0.02), 1, Math.max(0.4, L * 0.0035), 0.08);
+  // the dorsal whip and its lure, swaying forward over the head
+  const [dx, dy, dh] = B.at(0.1), lx = -L * 0.48 + Math.sin(t * 1.2) * L * 0.02, ly = dy - dh - H * 2.2;
+  ctx.strokeStyle = rgba(fin, 0.8); ctx.lineWidth = Math.max(0.5, L * 0.0035); ctx.beginPath(); ctx.moveTo(dx, dy - dh); ctx.quadraticCurveTo(dx - L * 0.02, ly - H * 0.6, lx, ly); ctx.stroke();
+  const hg = ctx.createRadialGradient(lx, ly, 0, lx, ly, Math.max(3, L * 0.02)); hg.addColorStop(0, rgba(glow, 0.9)); hg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(lx, ly, Math.max(3, L * 0.02), 0, TAU); ctx.fill();
+  P.push([lx, ly, 1.3]);
   return P;
 }
 function drawBarreleye(ctx, L, v, t, swim) {
@@ -714,13 +797,42 @@ function drawBarreleye(ctx, L, v, t, swim) {
   ctx.fillStyle = '#4ad86a';
   ctx.beginPath(); ctx.ellipse(-L * 0.3, -H * 0.5, L * 0.03, H * 0.16, 0, 0, TAU); ctx.fill();
 }
-function drawGulper(ctx, L, v, t, swim) {
-  const H = L * v.h;
-  drawEel(ctx, L, { ...v, h: v.h * 0.5 }, t, swim * 0.5);
-  ctx.fillStyle = v.c[0];
-  ctx.beginPath(); ctx.moveTo(-L * 0.36, -H * 0.2); ctx.lineTo(-L * 0.62, -H * 2.2); ctx.lineTo(-L * 0.64, H * 2.4); ctx.lineTo(-L * 0.36, H * 0.3); ctx.fill();
-  ctx.strokeStyle = 'rgba(80,60,60,0.5)'; ctx.stroke();
-  return [[L * 0.5, 0]];
+// (3.7.5) the gulper eel: a loose bag of a mouth, its huge lower jaw hung with black membrane, a tiny eye at the very
+// front, a body that thins to a whip, and a pink light at the end of the tail
+function drawGulper(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], glow = v.glow || '#ff7aa0';
+  const B = bendBody(L, t, swim * 0.8, (u) => H * 0.5 * (u < 0.3 ? 1.2 - u : Math.max(0.05, 0.9 - (u - 0.3) * 1.25)), 34, 0.07, 1.9);
+  const bg = ctx.createLinearGradient(0, -H, 0, H); bg.addColorStop(0, shade(c1, 0.1)); bg.addColorStop(1, shade(c0, -0.2)); ctx.fillStyle = bg; ctx.fill(B.path);
+  // the fin along the back, a low fringe
+  ctx.strokeStyle = rgba(shade(c1, 0.2), 0.5); ctx.lineWidth = Math.max(0.4, L * 0.002);
+  for (let i = 0; i < 30; i++) { const [x, y, h] = B.at(0.25 + i * 0.022); ctx.beginPath(); ctx.moveTo(x, y - h); ctx.lineTo(x + L * 0.006, y - h - H * 0.25); ctx.stroke(); }
+  // the tail's light organ
+  const [ex, ey] = B.at(1), pulse = 0.7 + 0.3 * Math.sin(t * 2.4);
+  const tg = ctx.createRadialGradient(ex, ey, 0, ex, ey, Math.max(3, L * 0.03)); tg.addColorStop(0, rgba(glow, 0.9 * pulse)); tg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(ex, ey, Math.max(3, L * 0.03), 0, TAU); ctx.fill();
+  ctx.fillStyle = rgba(shade(glow, 0.3), pulse); ctx.beginPath(); ctx.ellipse(ex - L * 0.008, ey, Math.max(1, L * 0.008), Math.max(0.8, L * 0.004), 0, 0, TAU); ctx.fill();
+  // the jaws: a long thin upper jaw and the vast lower jaw, the membrane between them billowing a little
+  const [hx, hy, hh] = B.at(0.02), gape = H * (2.2 + 0.25 * Math.sin(t * 0.9));
+  const jaw = new Path2D();
+  jaw.moveTo(hx + L * 0.04, hy - hh * 0.6);
+  jaw.quadraticCurveTo(-L * 0.4, hy - gape * 0.62, -L * 0.68, hy - gape * 0.55);    // the upper jaw, bowing
+  jaw.bezierCurveTo(-L * 0.8, hy - gape * 0.1, -L * 0.82, hy + gape * 0.6, -L * 0.7, hy + gape * 0.95); // the membrane's free edge, billowing out
+  jaw.quadraticCurveTo(-L * 0.38, hy + gape * 0.85, hx + L * 0.06, hy + hh * 0.7);  // back along the lower jaw to the throat
+  jaw.closePath();
+  const jg = ctx.createLinearGradient(-L * 0.7, 0, hx, 0); jg.addColorStop(0, rgba(shade(c1, 0.12), 0.75)); jg.addColorStop(1, shade(c0, -0.1));
+  ctx.fillStyle = jg; ctx.fill(jaw);
+  // the membrane's folds and the inside of the mouth showing through
+  ctx.save(); ctx.clip(jaw);
+  ctx.fillStyle = 'rgba(4,2,3,0.55)'; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(-L * 0.66, hy - gape * 0.4); ctx.lineTo(-L * 0.66, hy + gape * 0.8); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rgba(shade(c1, 0.35), 0.28); ctx.lineWidth = Math.max(0.4, L * 0.002);
+  for (let k = 1; k < 7; k++) { const u = k / 7; ctx.beginPath(); ctx.moveTo(hx + L * 0.02, hy + hh * 0.2); ctx.quadraticCurveTo(-L * 0.4, hy + gape * (u - 0.3) * 0.9, -L * 0.68, hy + gape * (u * 1.5 - 0.55)); ctx.stroke(); }
+  ctx.restore();
+  // the jaw bones as fine pale lines, tiny teeth along them
+  ctx.strokeStyle = rgba(shade(c1, 0.45), 0.6); ctx.lineWidth = Math.max(0.6, L * 0.004);
+  ctx.beginPath(); ctx.moveTo(hx + L * 0.04, hy - hh * 0.6); ctx.quadraticCurveTo(-L * 0.4, hy - gape * 0.62, -L * 0.68, hy - gape * 0.55); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hx + L * 0.06, hy + hh * 0.7); ctx.quadraticCurveTo(-L * 0.38, hy + gape * 0.85, -L * 0.7, hy + gape * 0.95); ctx.stroke();
+  // the eye: tiny, right at the front of the head above the jaw's hinge
+  eye(ctx, hx + L * 0.015, hy - hh * 0.75, Math.max(0.8, L * 0.006), '#8a9aa0');
+  return [[ex, ey, 1.4]];
 }
 function drawHatchet(ctx, L, v, t, swim) {
   // A marine hatchetfish (head toward -x): a deep, knife-thin silver body that drops into a keel of
@@ -2216,17 +2328,61 @@ function drawTurtle(ctx, L, v, t) {
   flipper(-L * 0.2, L * 0.03, L * 0.5, L * 0.1, 0.35 + stroke * 0.6, skin, false);
 }
 
-function drawSwallower(ctx, L, v, t, swim) {
-  drawFish(ctx, L, { ...v, t: 'fork', f: '#1a1414', belly: 1 }, t, swim);
-  const H = L * v.h;
-  ctx.fillStyle = 'rgba(60,40,40,0.8)'; ctx.beginPath(); ctx.ellipse(-L * 0.05, H * 0.45, L * 0.18, H * 0.5, 0, 0, TAU); ctx.fill();
+// (3.7.5) the black swallower: a slim dark fish whose belly has stretched into a pale, see-through sac with its last
+// meal curled inside, a fish longer than itself
+function drawSwallower(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], fin = shade(c1, 0.2);
+  const B = bendBody(L, t, swim * 0.6, (u) => H * 0.5 * (u < 0.12 ? 0.8 + u * 1.6 : 1 - (u - 0.12) * 0.75), 26, 0.04, 1.3);
+  const [tx, ty] = B.at(1);
+  rayFin(ctx, [[tx - L * 0.01, ty - H * 0.12], [tx - L * 0.01, ty + H * 0.12]], [[tx + L * 0.09, ty - H * 0.6], [tx + L * 0.05, ty], [tx + L * 0.09, ty + H * 0.6]], fin, 0.6);
+  { const [x, y, h] = B.at(0.6); rayFin(ctx, [[x - L * 0.1, y - h], [x + L * 0.12, y - h * 0.8]], [[x - L * 0.08, y - h - H * 0.35], [x + L * 0.02, y - h - H * 0.3], [x + L * 0.1, y - h - H * 0.2]], fin, 0.5); }
+  // the stomach first, a translucent sac hanging below the front half, the swallowed fish inside
+  const [sx, sy, shh] = B.at(0.33), sr = H * 0.95;
+  ctx.save(); ctx.beginPath(); ctx.ellipse(sx, sy + shh * 0.3 + sr * 0.45, L * 0.19, sr * 0.75, 0, 0, TAU);
+  const sg = ctx.createRadialGradient(sx - L * 0.05, sy + shh + sr * 0.3, 2, sx, sy + shh + sr * 0.6, L * 0.22); sg.addColorStop(0, 'rgba(170,140,132,0.55)'); sg.addColorStop(0.7, 'rgba(80,56,54,0.8)'); sg.addColorStop(1, 'rgba(40,28,28,0.9)');
+  ctx.fillStyle = sg; ctx.fill(); ctx.clip();
+  ctx.save(); ctx.translate(sx, sy + shh * 0.3 + sr * 0.5); ctx.rotate(0.15); ctx.globalAlpha = 0.5;
+  ctx.fillStyle = '#8a8478'; ctx.beginPath(); ctx.ellipse(0, 0, L * 0.17, sr * 0.25, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#5a564c'; ctx.beginPath(); ctx.moveTo(L * 0.15, 0); ctx.lineTo(L * 0.2, -sr * 0.2); ctx.lineTo(L * 0.2, sr * 0.2); ctx.fill(); // its tail, folded
+  ctx.globalAlpha = 1; ctx.restore();
+  ctx.strokeStyle = 'rgba(230,210,200,0.3)'; ctx.lineWidth = Math.max(0.4, L * 0.003);
+  for (let k = 0; k < 5; k++) { ctx.beginPath(); ctx.ellipse(sx, sy + shh * 0.3 + sr * 0.45, L * (0.06 + k * 0.032), sr * (0.2 + k * 0.12), 0, 0.2, 2.9); ctx.stroke(); } // the stretched skin's lines
+  ctx.restore();
+  const bg = ctx.createLinearGradient(0, -H, 0, H); bg.addColorStop(0, shade(c0, -0.2)); bg.addColorStop(0.5, c1); bg.addColorStop(1, shade(c0, -0.1)); ctx.fillStyle = bg; ctx.fill(B.path);
+  // the head: big jaws lined with hooked teeth, the eye well forward
+  const [hx, hy, hh] = B.at(0.05);
+  ctx.fillStyle = '#060404'; ctx.beginPath(); ctx.moveTo(-L * 0.5, hy - hh * 0.05); ctx.lineTo(-L * 0.36, hy + hh * 0.3); ctx.lineTo(-L * 0.5, hy + hh * 0.7); ctx.closePath(); ctx.fill();
+  for (let k = 0; k < 6; k++) { glassFang(ctx, -L * 0.49 + k * L * 0.022, hy + hh * 0.02, hh * 0.35, 1, Math.max(0.4, L * 0.003), 0.25); glassFang(ctx, -L * 0.49 + k * L * 0.022, hy + hh * 0.68, hh * 0.32, -1, Math.max(0.4, L * 0.003), 0.25); }
+  eye(ctx, -L * 0.44, hy - hh * 0.45, Math.max(1, hh * 0.3), '#7a8a8a');
 }
-function drawDragon(ctx, L, v, t, swim) {
-  drawEel(ctx, L, { ...v, f: '#0c0a0a' }, t, swim * 0.5);
-  const H = L * v.h;
-  ctx.strokeStyle = 'rgba(40,30,30,0.9)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(-L * 0.47, H * 0.4); ctx.quadraticCurveTo(-L * 0.45, H * 4, -L * 0.42, H * 5); ctx.stroke();
-  return [[-L * 0.42, H * 5, 1.3], [-L * 0.41, H * 0.1, 0.8]]; // chin barbel lure, and the light under the eye
+// (3.7.5) a dragonfish: long, black, velvet-skinned, a long barbel from the chin with a glowing bulb, fangs in a
+// jaw that opens wide, rows of small lights along the belly, the dorsal and anal fins far back by the tail
+function drawDragon(ctx, L, v, t, swim = 1) {
+  const H = L * v.h, c0 = v.c[0], c1 = v.c[1], glow = v.glow || '#ff6a5a', fin = shade(c1, 0.22);
+  const B = bendBody(L, t, swim * 0.7, (u) => H * 0.5 * (u < 0.06 ? 0.85 + u * 2.5 : u < 0.85 ? 1 - (u - 0.06) * 0.35 : 0.72 - (u - 0.85) * 3.2), 36, 0.05, 1.8);
+  const [tx, ty] = B.at(1);
+  rayFin(ctx, [[tx - L * 0.01, ty - H * 0.15], [tx - L * 0.01, ty + H * 0.15]], [[tx + L * 0.06, ty - H * 1.1], [tx + L * 0.035, ty], [tx + L * 0.06, ty + H * 1.1]], fin, 0.55);
+  { const [x, y, h] = B.at(0.86); rayFin(ctx, [[x - L * 0.05, y - h], [x + L * 0.05, y - h * 0.8]], [[x - L * 0.03, y - h - H * 1.1], [x + L * 0.04, y - h - H * 0.9]], fin, 0.5);
+    rayFin(ctx, [[x - L * 0.06, y + h], [x + L * 0.05, y + h * 0.8]], [[x - L * 0.04, y + h + H * 1.1], [x + L * 0.04, y + h + H * 0.9]], fin, 0.5); }
+  const bg = ctx.createLinearGradient(0, -H, 0, H); bg.addColorStop(0, shade(c0, -0.3)); bg.addColorStop(0.5, shade(c1, 0.08)); bg.addColorStop(1, shade(c0, -0.2));
+  ctx.fillStyle = bg; ctx.fill(B.path);
+  ctx.save(); ctx.clip(B.path); ctx.fillStyle = 'rgba(160,180,200,0.06)'; for (let i = 0; i < 40; i++) { const [x, y, h] = B.at(i / 40); ctx.fillRect(x, y - h, L * 0.004, h * 0.6); } ctx.restore();
+  const P = photophores(ctx, B, 0.06, 0.82, 22, 0.75, Math.max(0.5, L * 0.003), rgba(shade(glow, 0.2), 0.75));
+  // the head, the jaw open, fangs
+  const [hx, hy, hh] = B.at(0.03);
+  ctx.fillStyle = '#050304'; ctx.beginPath(); ctx.moveTo(-L * 0.5, hy - hh * 0.15); ctx.lineTo(-L * 0.42, hy + hh * 0.15); ctx.lineTo(-L * 0.505, hy + hh * 0.8); ctx.closePath(); ctx.fill();
+  for (let k = 0; k < 4; k++) { glassFang(ctx, -L * 0.498 + k * L * 0.018, hy - hh * 0.1, hh * (0.5 + (k % 2) * 0.4), 1, Math.max(0.4, L * 0.0025), 0.2); glassFang(ctx, -L * 0.5 + k * L * 0.018, hy + hh * 0.78, hh * (0.6 + (k % 2) * 0.5), -1, Math.max(0.4, L * 0.0025), 0.2); }
+  eye(ctx, -L * 0.475, hy - hh * 0.5, Math.max(0.9, hh * 0.32), '#6a7a80');
+  // the light under the eye
+  ctx.fillStyle = rgba(glow, 0.9); ctx.beginPath(); ctx.ellipse(-L * 0.468, hy + hh * 0.05, Math.max(0.8, hh * 0.18), Math.max(0.6, hh * 0.1), 0, 0, TAU); ctx.fill();
+  // the chin barbel, long and drifting, with its glowing bulb and a few filaments
+  const bx = -L * 0.49, by = hy + hh * 0.85, sway = Math.sin(t * 1.1) * L * 0.03, ex = -L * 0.44 + sway, ey = by + H * 4.5;
+  ctx.strokeStyle = rgba(shade(c1, 0.35), 0.75); ctx.lineWidth = Math.max(0.4, L * 0.0025);
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.bezierCurveTo(bx - L * 0.02, by + H * 1.5, ex + L * 0.03, ey - H * 1.5, ex, ey); ctx.stroke();
+  const hg = ctx.createRadialGradient(ex, ey, 0, ex, ey, Math.max(3, L * 0.016)); hg.addColorStop(0, rgba(glow, 0.95)); hg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(ex, ey, Math.max(3, L * 0.016), 0, TAU); ctx.fill();
+  ctx.fillStyle = rgba(shade(glow, 0.5), 0.95); ctx.beginPath(); ctx.ellipse(ex, ey, Math.max(0.9, L * 0.005), Math.max(1.2, L * 0.008), 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = rgba(glow, 0.5); ctx.lineWidth = Math.max(0.3, L * 0.0015); for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + (k - 1) * L * 0.006 + sway * 0.2, ey + H * (0.8 + k * 0.3)); ctx.stroke(); }
+  return [[ex, ey, 1.3], [-L * 0.468, hy + hh * 0.05, 0.8], ...P];
 }
 function drawCoral(ctx, L, v) { drawLophelia(ctx, L, v); }
 
