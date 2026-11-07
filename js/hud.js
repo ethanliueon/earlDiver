@@ -3,7 +3,7 @@
 // (depth, radar, heart rate, journal), item slots and prompts.
 import { clamp, lerp, formatTime, TAU } from './util.js';
 import { SUB_LEVELS, diverDrainMult } from './player.js';
-import { RESOURCES } from './world.js';
+import { RESOURCES, boatDock } from './world.js';
 import { GOODS, money, gear, owns } from './economy.js';
 import { BOAT } from './world.js';
 import { VARIANTS } from './variants.js';
@@ -294,7 +294,7 @@ export class Hud {
     if (ap && !e.inSub && !g.sub.imploded && (ap.active || ap.state === 'waiting')) {
       const dsub = Math.hypot(g.sub.x - e.x, g.sub.y - e.y);
       let txt;
-      if (ap.state === 'home') txt = `sub returning · ${Math.round(Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6))} m`;
+      if (ap.state === 'home') txt = `sub returning · ${Math.round(Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6))} m`;
       else if (ap.holding && ap.remaining < 3) txt = `sub holding at ${Math.round(g.sub.y)} m · rated depth`;
       else if (ap.state === 'waiting') txt = `sub waiting · ${Math.round(dsub)} m`;
       else txt = `sub coming · ${Math.round(dsub)} m · ${Math.ceil(ap.eta || 0)} s`;
@@ -500,22 +500,16 @@ export class Hud {
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(W / 2 - tw / 2, H * 0.72, tw, 30 * s, 6 * s); ctx.fill();
       ctx.fillStyle = 'rgba(236,240,236,0.92)'; ctx.fillText(g.prompt, W / 2, H * 0.72 + 7 * s);
     }
-    // ---------- the contracts taken at the radio: a short list on the right, ticked when the goods are aboard ----------
-    const taken = (g.contracts || []).filter((c) => c.taken);
-    if (taken.length && !dying && !g.kill) {
-      const tx = W - pad, lh = 19 * s;
-      let ty0 = aboard ? pad : H * 0.42;
+    // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
+    const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
+    if (step && step.on && g.mode === 'play' && !dying && !g.kill && !g.hideQuest) {
+      const tx = W - pad, ty0 = H * 0.42 + 42 * s, ok = qs.mainProg >= step.need;
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-      ctx.font = `600 ${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,220,180,0.6)'; ctx.fillText('CONTRACTS', tx, ty0); ty0 += 17 * s;
-      for (const c of taken) {
-        const ok = this.contractReady ? this.contractReady(g, c) : false;
-        ctx.font = `${15 * s}px ${GAME}`;
-        const line = `${ok ? '✓ ' : ''}${c.text.length > 34 ? c.text.slice(0, 33) + '…' : c.text}`;
-        ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(line, tx + 1, ty0 + 1);
-        ctx.fillStyle = ok ? 'rgba(170,230,150,0.95)' : 'rgba(236,232,220,0.85)'; ctx.fillText(line, tx, ty0);
-        ctx.font = `${12 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,210,150,0.75)'; ctx.fillText(money(c.pay), tx, ty0 + lh * 0.95);
-        ty0 += lh * 2.1;
-      }
+      ctx.font = `${15 * s}px ${GAME}`;
+      const line = (ok ? '✓ ' : '') + step.text + (step.need > 1 && !ok ? `  ${qs.mainProg}/${step.need}` : '');
+      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(line, tx + 1, ty0 + 1);
+      ctx.fillStyle = ok ? 'rgba(170,230,150,0.95)' : 'rgba(236,232,220,0.88)'; ctx.fillText(line, tx, ty0);
+      if (ok) { ctx.font = `${12 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,210,150,0.75)'; ctx.fillText('claim it in Quests', tx, ty0 + 19 * s); }
     }
     // ---------- toasts ----------
     ctx.textAlign = 'center';

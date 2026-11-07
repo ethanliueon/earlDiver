@@ -1357,3 +1357,31 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 #catalog.th-dave .cat-bezel { background: linear-gradient(180deg, #d6cba8, #b8ab84 70%, #9c8f68); }
 #catalog.th-dave header h1 { font-family: 'Caveat', var(--serif); font-size: 32px; font-weight: 700; }
 #catalog.th-dave .cat-glass { box-shadow: inset 0 0 0 3px #5a5238; }
+
+/* ---------- 3.0.0 quests: a brass button on the right of the HUD, a riveted steel panel ---------- */
+#quests-btn { position: fixed; right: 16px; top: 42%; z-index: 20; font: 15px var(--serif); padding: 5px 14px 6px; border: 0; border-radius: 3px; cursor: pointer; color: #2e220a;
+  background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510, 0 2px 6px rgba(0,0,0,0.35); }
+#quests-btn[hidden] { display: none; }
+#quests-btn i { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; border-radius: 9px; background: #6ab06a; color: #0e1a0e; font: 600 11px/18px var(--mono); font-style: normal; text-align: center; box-shadow: 0 0 0 2px #1a1f19; }
+#quests-btn i[hidden] { display: none; }
+#quests { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(6,10,10,0.55); }
+#quests[hidden] { display: none; }
+#quests .qs-panel { width: min(560px, calc(100vw - 32px)); max-height: 86vh; overflow-y: auto; padding: 16px 20px 18px; border-radius: 6px; color: var(--paint);
+  background: linear-gradient(180deg, var(--steel), var(--steel-lo)); box-shadow: 0 0 0 1px #12150f, 0 0 0 3px var(--steel-hi), 0 0 0 4px #12150f, 0 18px 40px rgba(0,0,0,0.5); }
+#quests header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+#quests .qs-plate { padding: 4px 16px; border-radius: 3px; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
+#quests .qs-plate h2 { margin: 0; font: 400 22px var(--serif); color: #2e220a; }
+#quests .qs-close { width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; font-size: 18px; color: #2e220a; background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); }
+#quests h3 { margin: 14px 0 6px; font: 11px var(--stencil, monospace); letter-spacing: 0.2em; text-transform: uppercase; color: var(--paint-dim); }
+#quests .qs-q { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 9px 12px; margin-bottom: 6px; border-radius: 4px; background: rgba(0,0,0,0.25); border-left: 3px solid var(--rc, #8a8a7a); }
+#quests .qs-q.main { --rc: var(--brass); } #quests .qs-q.r-common { --rc: var(--r-common); } #quests .qs-q.r-uncommon { --rc: var(--r-uncommon); } #quests .qs-q.r-rare { --rc: var(--r-rare); } #quests .qs-q.r-exotic { --rc: var(--r-exotic); }
+#quests .qs-q.ready { background: rgba(80,120,70,0.25); }
+#quests .qs-t b { display: block; font: 400 17px var(--serif); color: var(--paint); }
+#quests .qs-t small { font: 10px var(--stencil, monospace); letter-spacing: 0.14em; text-transform: uppercase; color: var(--rc); }
+#quests .qs-t span { display: block; font: italic 13px var(--serif); color: var(--paint-dim); margin-top: 2px; }
+#quests .qs-bar { height: 4px; margin-top: 6px; border-radius: 2px; background: rgba(0,0,0,0.4); overflow: hidden; }
+#quests .qs-bar i { display: block; height: 100%; background: var(--rc, var(--brass)); }
+#quests .qs-pay { text-align: right; font: 14px var(--mono); color: var(--brass-hi); display: grid; gap: 6px; justify-items: end; }
+#quests button[data-q] { font: 14px var(--serif); padding: 4px 14px; border: 0; border-radius: 3px; cursor: pointer; color: #2e220a; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
+#quests button[data-q]:disabled { opacity: 0.45; cursor: default; }
+#quests .qs-refresh { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; font: italic 13px var(--serif); color: var(--paint-dim); flex-wrap: wrap; }

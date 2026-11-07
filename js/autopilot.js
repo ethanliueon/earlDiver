@@ -2,12 +2,12 @@
 // routing around rock, and stops a few metres away. Hold C to send it back to the dock.
 // It never goes below its rated depth: past that it holds and waits.
 import { clamp, lerp, dist } from './util.js';
-import { collide, BOAT, WORLD_W } from './world.js';
+import { collide, BOAT, WORLD_W, boatDock } from './world.js';
 import { SUB_SPEED, ballastBoost } from './player.js';
 
 const CELL = 3;            // routing grid, metres
 const STOP = 5;            // how far from Earl it stops (the hull is ~9 m long)
-const DOCK = { get x() { return BOAT.x + 8.5; }, y: 2.6 };
+const DOCK = { get x() { return boatDock(); }, y: 2.6 };
 const MAX_EXPAND = 60000;  // A* budget per plan
 
 // is a grid cell open water the sub fits through?

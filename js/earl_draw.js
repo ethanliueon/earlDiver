@@ -901,7 +901,7 @@ export function deckLine(xu) {
   const x = Math.max(-56, xu), tt = (-72 + Math.sqrt(5184 + 16 * (56 + x))) / 8; // the sheer is a quadratic curve: x(t) = -56 + 72t + 4t²
   return -16 + 11 * tt - 5.5 * tt * tt;
 }
-export function drawBoat(ctx, Lp, t, sub) {
+export function drawBoat(ctx, Lp, t, sub, mirrored = false) {
   // A small, hard-worked dive-support boat, bow to the left: a flared bow and a curved sheer line,
   // a red boot-top at the waterline, rub rail, plating seams and rust; a wheelhouse with framed
   // windows; a mast with radar, antennas and lights; an exhaust stack; deck clutter; and at the
@@ -944,7 +944,8 @@ export function drawBoat(ctx, Lp, t, sub) {
   ctx.strokeStyle = '#d8d4c8'; ctx.lineWidth = 0.8 * u;
   ctx.beginPath(); ctx.moveTo(-56 * u, -16 * u); ctx.quadraticCurveTo(-20 * u, -10.5 * u, 20 * u, -10.5 * u); ctx.lineTo(46 * u, -11.5 * u); ctx.stroke();
   // name on the bow, hawse pipe and anchor
-  ctx.fillStyle = 'rgba(40,36,30,0.7)'; ctx.font = `bold ${3 * u}px Georgia, serif`; ctx.fillText('MARGARET', -47 * u, -7.5 * u);
+  ctx.fillStyle = 'rgba(40,36,30,0.7)'; ctx.font = `bold ${3 * u}px Georgia, serif`;
+  if (mirrored) { const tw = ctx.measureText('MARGARET').width; ctx.save(); ctx.translate(-47 * u + tw / 2, 0); ctx.scale(-1, 1); ctx.fillText('MARGARET', -tw / 2, -7.5 * u); ctx.restore(); } else ctx.fillText('MARGARET', -47 * u, -7.5 * u);
   ctx.fillStyle = '#2a2624'; ctx.beginPath(); ctx.ellipse(-50 * u, -11.5 * u, 1 * u, 0.8 * u, 0, 0, TAU); ctx.fill();
   ctx.strokeStyle = '#3a3630'; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.moveTo(-50 * u, -11 * u); ctx.lineTo(-50.5 * u, -6 * u); ctx.stroke();
   // tyre fenders hanging over the side

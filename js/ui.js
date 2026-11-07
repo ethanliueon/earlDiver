@@ -31,6 +31,7 @@ import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
 import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { refreshIn, ready as contractReady } from './contracts.js';
+import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice } from './quests.js';
 import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime } from './util.js';
 import { VERSION } from './version.js';
@@ -251,8 +252,50 @@ export class UI {
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
   showChest(key, q) { this.chest.open(key, q); }
-  anyOpen() { return this.stationsOpen() || !$('chest').hidden || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
-  closeAll() { this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
+  // (3.0.0) the Quests button on the HUD (with a dot when one can be claimed) and its panel
+  questsButton(show) {
+    const b = $('quests-btn'); if (!b) return;
+    if (!this.qWired) {
+      this.qWired = true;
+      b.addEventListener('click', () => this.toggleQuests());
+      $('quests').querySelector('.qs-close').addEventListener('click', () => this.toggleQuests(false));
+      $('quests').addEventListener('click', (ev) => {
+        if (ev.target === $('quests')) { this.toggleQuests(false); return; }
+        const a = ev.target.closest('[data-q]'); if (!a || a.disabled) return;
+        const [act, arg] = a.dataset.q.split('|');
+        if (act === 'claim') this.h.onQuestClaim(arg); else if (act === 'refresh') this.h.onQuestRefresh(arg === 'paid');
+        this.renderQuests();
+      });
+    }
+    b.hidden = !show;
+    const n = this.h.questsReady ? this.h.questsReady() : 0, dot = b.querySelector('i');
+    dot.hidden = !n; if (n) dot.textContent = n;
+    if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
+  }
+  questsOpen() { return !$('quests').hidden; }
+  toggleQuests(force) { const el = $('quests'), open = force === undefined ? el.hidden : force; el.hidden = !open; if (open) this.renderQuests(); }
+  renderQuests() {
+    const P = this.h.getProfile(); if (!P) return;
+    const S = questsOf(P), m = QUEST_MAIN[S.main];
+    const bar = (a, b) => `<div class="qs-bar"><i style="width:${Math.round(Math.min(1, b ? a / b : 1) * 100)}%"></i></div>`;
+    let html = '';
+    if (m) {
+      const ok = S.mainProg >= m.need;
+      html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
+        <div class="qs-pay">${m.gift ? 'a gift' : money(m.pay, false)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
+    }
+    html += `<h3>The board</h3>`;
+    for (const q of S.board) {
+      const ok = q.prog >= q.n;
+      html += `<div class="qs-q r-${q.rarity}${ok ? ' ready' : ''}"><div class="qs-t"><small>${QUEST_RARITY[q.rarity].name}</small><b>${q.text}</b>${q.n > 1 ? bar(q.prog, q.n) + `<span>${q.kind === 'sell' ? money(q.prog, false) + ' of ' + money(q.n, false) : q.prog + ' of ' + q.n}</span>` : ''}</div>
+        <div class="qs-pay">${money(q.pay, false)}${ok ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div>`;
+    }
+    const wait = boardIn(P), totM = Math.ceil(wait / 60000), hrs = Math.floor(totM / 60), mins = totM % 60, price = refreshPrice(P);
+    html += `<div class="qs-refresh">${wait > 0 ? `<span>New quests free in ${hrs ? hrs + ' h ' : ''}${mins} min</span><button data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now · ${money(price, false)}</button>` : '<button data-q="refresh|free">New quests</button>'}</div>`;
+    $('quests').querySelector('.qs-body').innerHTML = html;
+  }
+  anyOpen() { return this.stationsOpen() || !$('chest').hidden || !$('quests').hidden || !$('cabin').hidden || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  closeAll() { this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
   // a brass "are you sure?" plate: yes runs onYes; no, Esc or a click outside just closes it

@@ -145,7 +145,7 @@ export class Renderer {
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
     if (g.aboard) { tx = BOAT.x + 0.3 + clamp(g.aboard.lx ?? g.aboard.x ?? 0, -6, 6) * 0.35; ty = -2.3; } // close on the deck, drifting a little after him
-    if (g.helm) { tx = BOAT.x + 3 + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
+    if (g.helm) { tx = BOAT.x + 3 * Math.cos(BOAT.yaw || 0) + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
     if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
@@ -517,10 +517,11 @@ export class Renderer {
       bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, bw, bh);
       bctx.globalCompositeOperation = 'source-over';
       bctx.translate(bw * 0.45, bh * 0.82);
-      crane = drawBoat(bctx, 14 * ppm, t, g.sub);
+      const bcos = Math.cos(BOAT.yaw || 0), bsx = Math.sign(bcos || 1) * Math.max(0.06, Math.abs(bcos));
+      crane = drawBoat(bctx, 14 * ppm, t, g.sub, bsx < 0);
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
       if (dimB > 0.01) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, bw, bh); }
-      ctx.drawImage(bc, -bw * 0.45, -bh * 0.82);
+      ctx.save(); ctx.scale(bsx, 1); ctx.drawImage(bc, -bw * 0.45, -bh * 0.82); ctx.restore(); // (3.0.0) turned with her heading
       this.boatFrame = { x: boatX, y: boatY, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
       if (dayEff < 0.5) {
         // the cabin light stays on at night
@@ -539,7 +540,7 @@ export class Renderer {
     if ((!sub.imploded || crumple >= 0) && !(g.kill && g.kill.swallowed && g.kill.inSub) && inView(sub.x, sub.y, 10)) {
       if (crane && sub.docked) {
         ctx.strokeStyle = 'rgba(30,30,28,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
-        ctx.beginPath(); ctx.moveTo(boatX + crane.craneTip[0], boatY + crane.craneTip[1]); ctx.lineTo(S(sub.x), Sy(sub.y) - 2.6 * ppm); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(boatX + crane.craneTip[0] * Math.sign(Math.cos(BOAT.yaw || 0) || 1) * Math.max(0.06, Math.abs(Math.cos(BOAT.yaw || 0))), boatY + crane.craneTip[1]); // (turned with her) ctx.lineTo(S(sub.x), Sy(sub.y) - 2.6 * ppm); ctx.stroke();
       }
       // at night, the part of her above the water must be as dark as the night (the light map only
       // darkens below the surface; the boat is dimmed the same way): she is drawn on her own layer,

@@ -23,7 +23,6 @@ const STATIONS = [
   { id: 'door', x: ROOM.door, label: 'F  Out on deck' },
   { id: 'desk', x: ROOM.desk - 0.085, label: 'F  The computer' },
   { id: 'tank', x: ROOM.tank, label: 'F  The aquarium' },
-  { id: 'radio', x: ROOM.radio, label: 'F  The radio' },
   { id: 'wheel', x: ROOM.wheel - 0.075, label: 'F  Take the wheel' },
 ];
 

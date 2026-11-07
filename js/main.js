@@ -1,7 +1,7 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
-import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH } from './world.js';
+import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
@@ -14,7 +14,7 @@ import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from
 import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
-import { fillBoard, fulfil, refreshIn, ready as contractReady } from './contracts.js';
+import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady } from './quests.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf, kit, worn } from './economy.js';
@@ -126,7 +126,7 @@ function newGame(mode) {
     traps: [], armGame: null, contracts: [],
   };
   // the radio's jobs: the ones he took before carry over; the rest of the board is new each dive
-  if (mode === 'play') { g.contracts = (P.taken || []).map((c) => ({ ...c, taken: true })); fillBoard(P, g.contracts); }
+  if (mode === 'play') fillQuests(P); // (3.0.0) quests in place of the radio's contracts
   g.hurt = (dmg, sp, how) => hurt(dmg, sp, how);
   g.damageSub = (amt, sp) => damageSub(amt, sp);
   g.sub.docked = true;
@@ -149,7 +149,6 @@ function newGame(mode) {
   return g;
 }
 
-hud.contractReady = (gg, c) => contractReady(gg, c, [gg.bag, gg.subTank]);
 let g = newGame('menu');
 // the title screen's music starts with the first key or click (browsers keep pages silent until then)
 const wakeAudio = () => { audio.init(); audio.resume(); audio.playMusic(); window.removeEventListener('pointerdown', wakeAudio, true); window.removeEventListener('keydown', wakeAudio, true); };
@@ -161,6 +160,7 @@ const ui = new UI({
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => buy(k),
+  questsReady: () => (profile ? questsReady(profile) : 0),
   // (3.0.0) a shop's cart, checked out at once: all of it, or nothing (cash and room in the locker)
   onCheckout: (keys) => {
     const P = profile, its = keys.map((k) => ITEMS[k.slice(5)]).filter(Boolean);
@@ -185,8 +185,21 @@ const ui = new UI({
   payMul: () => statValue(profile, 'payFish'),
   onStation: (id) => useStation(id),
   onFootstep: (v) => audio.ready && audio.footstep && audio.footstep(v),
-  onRefreshContracts: () => { if (refreshIn(profile) > 0) return false; g.contracts = g.contracts.filter((q) => q.taken); fillBoard(profile, g.contracts); profile.refreshAt = Date.now(); saveProfile(profile); audio.ready && audio.click(); return true; },
-  onTakeContract: (key) => { const c = g.contracts.find((q) => q.key === key); if (!c || c.taken) return false; c.taken = true; profile.taken = g.contracts.filter((q) => q.taken); saveProfile(profile); audio.ready && audio.click(); return true; },
+  // (3.0.0) quests: claim one (cash, and on the main line sometimes a thing), or new quests on the board
+  onQuestClaim: (which) => {
+    const P = profile, r = claimQuest(P, which); if (!r) return false;
+    if (r.pay) { P.cash = Math.round((P.cash + r.pay) * 100) / 100; P.lifetime = Math.round((P.lifetime + r.pay) * 100) / 100; }
+    let gift = null; if (r.gift) gift = giveItem(P, r.gift);
+    saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
+    hud.toast(gift ? `${ITEMS[r.gift].name} is in your inventory (B)` : `Quest done · ${money(r.pay)}`, 'big');
+    return true;
+  },
+  onQuestRefresh: (paid) => {
+    const P = profile;
+    if (paid && !spend(P, refreshPrice(P))) return false;
+    if (!refreshBoard(P, paid)) return false;
+    saveProfile(P); audio.ready && audio.click(); return true;
+  },
   onRename: (v) => { const P = g.profile; P.subName = v; P.subNamed = true; saveProfile(P); hud.toast(`${v} is painted on the sub's hull`); },
   onSellItem: (k) => sellItem(k),
   onDaveSell: (k) => daveSell(k),
@@ -198,7 +211,7 @@ const ui = new UI({
   onSetTrap: (type, depth) => {
     const why = canSetHere(g); if (why) { hud.toast(why, 'warn'); return true; }
     if (trapsFree(g, type) <= 0) { hud.toast('None of those left to set', 'warn'); return false; }
-    const d = setTrap(g, type, depth);
+    const d = setTrap(g, type, depth); questEvent(profile, 'trap');
     hud.toast(`The ${TRAPS[type].name.toLowerCase()} goes down on its ${TRAPS[type].line}, to ${d} m`); hud.hint(TRAPS[type].winch ? 'Come back in five minutes: winch it up from the Margaret at its buoy, or empty it down there' : 'Come back in five minutes: F at the buoy hauls it up, or empty it where it hangs');
     audio.ready && audio.click(); return true;
   },
@@ -261,7 +274,7 @@ function damageSub(amt, sp) {
 // ---------------- the boat: selling and buying ----------------
 // Everything Earl carries (except lures and necklaces, which he keeps for use) goes in the basket.
 // the sub's tank can only be emptied when the sub is at the boat
-const subAtBoat = () => !g.sub.imploded && Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) < 20;
+const subAtBoat = () => !g.sub.imploded && Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6) < 20;
 function sellSpecimens(list, lines) {
   const groups = new Map();
   // the dead go in their own lot: half the plain market price and no rare-form bonus
@@ -277,14 +290,14 @@ function sellSpecimens(list, lines) {
     lines.push(sell(profile, key, specs.length, base * statValue(profile, 'payFish'), name));
   }
 }
+hud.questMain = QUEST_MAIN;
 function sellAll() {
   marketTick(profile);
   // old gold coins for every live animal from the deep that leaves the boat today
   let coins = 0;
   for (const L of [g.bag].concat(subAtBoat() ? [g.subTank] : [])) for (const s of L) coins += coinsFor(s);
   coins += g.inv.sapphire || 0;
-  // contracts first: they pay more than the market
-  const lines = fulfil(g, profile, [g.bag].concat(subAtBoat() ? [g.subTank] : []));
+  const lines = [];
   if (g.bag.length) { sellSpecimens(g.bag, lines); g.bag = []; }
   if (g.subTank.length && subAtBoat()) { sellSpecimens(g.subTank, lines); g.subTank = []; }
   // the research program: one line per species tagged, each tag a little less than the last
@@ -309,6 +322,7 @@ function sellAll() {
   if (!lines.length) return null;
   const total = lines.reduce((a, l) => a + l.total, 0);
   g.earned += total;
+  if (total > 0) questEvent(profile, 'sell', { total });
   if (total > 0) audio.cue && audio.cue('sale');
   saveProfile(profile);
   audio.ready && audio.sale();
@@ -477,7 +491,7 @@ function galleryAction(act, key, v) {
     P.cash = Math.round((P.cash + pay) * 100) / 100; P.lifetime = Math.round(((P.lifetime || 0) + pay) * 100) / 100; g.earned += pay;
     delete A.display[key]; hud.toast(`Sold ${who} for ${money(pay)}`); audio.ready && audio.sale();
   } else if (act === 'tosub') {
-    if (g.sub.imploded || Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) > 20) { hud.toast('The sub has to be alongside the boat', 'warn'); return false; }
+    if (g.sub.imploded || Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6) > 20) { hud.toast('The sub has to be alongside the boat', 'warn'); return false; }
     const spec = { id: d.id, len: d.len || sp.len, cond: d.cond, from: d.from || Math.round((sp.dmin + sp.dmax) / 2), t: g.time, variant: d.variant || undefined, aq: { name: d.name, happy: isHappy(d), famous: !!d.famous } };
     if (d.variant) spec.mult = variantMult(d.variant);
     if (!seal(g, spec, spec.len >= 1.2 ? BIG : -1) && !seal(g, spec, BIG)) { hud.toast(spec.len >= 1.2 ? 'It needs the large pressure tank, and room in it' : 'No free pressure tank in the sub', 'warn'); return false; }
@@ -806,7 +820,6 @@ export function useStation(id) {
   if (id === 'helm') { ui.toggleCabin(false); g.helm = true; return; }
   if (id === 'gallery') { ui.toggleGallery(true); return; }
   if (id === 'door' || id === 'computer') { ui.toggleCabin(true); return; }
-  if (id === 'radio') { ui.openShop('radio', ['radio']); return; }
   if (id === 'yard') { ui.openShop('sub', ['sub']); return; }
 }
 function deckInput(dt, mv) {
@@ -1478,7 +1491,7 @@ function update(dt) {
           if (r.type === 'noShots') hud.toast('No shots left — the boat has a fresh card', 'warn');
           else if (r.empty) hud.toast(`Nothing in the frame · ${g.shots} shots left`);
           else if (r.old) hud.toast(`${r.name}: you already have this one · ${g.shots} left`);
-          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
+          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed: ${r.name} · about ${money(r.value)} from the institute · ${g.shots} left`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; questEvent(profile, 'photo', { id: r.sp.id }); if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
         }
       } else if (tool.kind === 'none') { /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
@@ -1509,7 +1522,7 @@ function update(dt) {
     g.camFlash = Math.max(0, g.camFlash - dt * 5);
     for (const ev of updateDarts(g, dt)) {
       if (ev.type === 'tagged') {
-        g.tags.push({ key: ev.key, value: ev.value, name: ev.name });
+        g.tags.push({ key: ev.key, value: ev.value, name: ev.name }); questEvent(profile, 'tag');
         hud.toast(`Tagged: ${ev.name} · about ${money(ev.value)} from the program`, 'note');
         audio.ready && audio.note();
         if (!g.journal.has(ev.sp.id)) { g.journal.set(ev.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
@@ -1524,6 +1537,7 @@ function update(dt) {
     for (const ev of capEvs) {
       if (ev.type === 'caught') {
         const sp = ev.sp, v = ev.spec.variant;
+        questEvent(profile, 'catch', { id: sp.id, depth: ev.spec.from || e.y, alive: ev.spec.cond > 0.05 });
         if (v) {
           hud.toast(`${ev.name}!`, 'big');
           audio.ready && audio.sapphire(); audio.cue && audio.cue('rare');
@@ -1564,6 +1578,9 @@ function update(dt) {
       }
       audio.ready && audio.thud(0.3);
     }
+    // (3.0.0) quests: what can be read off the game, once a second
+    g.questT = (g.questT || 0) + dt;
+    if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
     const dl = updateSpecimens(g, dt);
     for (const s of dl) hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} has died: too far from its depth`, 'warn');
     for (const ev of dl.events) {
@@ -1626,7 +1643,7 @@ function update(dt) {
         // a heavy working boat: she takes her time to get under way and longer still to stop; 5 m/s flat out
         // getting under way: a sub alongside is lifted into her cradle; one still out holds her here
         if (mv.x && !g.sub.docked && !g.sub.imploded) {
-          const alongside = Math.hypot(g.sub.x - (BOAT.x + 8.5), g.sub.y - 2.6) < 16 && !(g.autopilot && g.autopilot.active);
+          const alongside = Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6) < 16 && !(g.autopilot && g.autopilot.active);
           if (alongside) { g.sub.docked = true; hud.toast('The sub is lifted into the Margaret\'s cradle'); audio.ready && audio.thud(0.2); }
           else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast('The sub is still out: bring it alongside first (hold C to send it home)', 'warn'); } }
         }
@@ -1650,8 +1667,13 @@ function update(dt) {
       BOAT.x = clamp(BOAT.x + g.boatV * dt, BOAT_MIN, BOAT_MAX);
       if (BOAT.x === BOAT_MIN || BOAT.x === BOAT_MAX) g.boatV = 0;
     }
+    // (3.0.0) she turns like the sub to face the way she is going while he steers (about 4 s to come round);
+    // let go of the wheel and she swings back to her usual heading (the deck and the ladder are built for it)
+    { const face = g.helm && Math.abs(g.boatV || 0) > 0.4 ? Math.sign(g.boatV) : g.helm ? (BOAT.face || -1) : -1;
+      BOAT.face = face; const yawT = face < 0 ? 0 : Math.PI, rate = Math.PI / 4;
+      BOAT.yaw = (BOAT.yaw || 0) + clamp(yawT - (BOAT.yaw || 0), -rate * dt, rate * dt); }
     // a docked sub sits in the boat's cradle wherever she goes
-    if (g.sub.docked && !g.sub.imploded && !(g.autopilot && g.autopilot.active)) { g.sub.x = BOAT.x + 8.5; g.sub.y = 2.6; g.sub.vx = g.sub.vy = 0; }
+    if (g.sub.docked && !g.sub.imploded && !(g.autopilot && g.autopilot.active)) { g.sub.x = boatDock(); g.sub.y = 2.6; g.sub.vx = g.sub.vy = 0; g.sub.yaw = Math.PI - BOAT.yaw; g.sub.facing = Math.cos(BOAT.yaw) >= 0 ? -1 : 1; }
     if (e.x > CANYON.x0 && e.x < CANYON.x1 && e.y > CANYON.top && !g.helm) {
       const k = 0.7 + 0.3 * Math.sin(g.time * 0.25), cvx = -1.1 * k, cvy = 0.35 * k;
       if (e.inSub) { g.sub.x += cvx * dt * 0.5; g.sub.y += cvy * dt * 0.5; } else { e.x += cvx * dt; e.y += cvy * dt; }
@@ -1965,6 +1987,7 @@ function frame(now) {
     if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.showLoading(false); }
   } else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   hud.draw(g, dt);
+  ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen()); // (3.0.0) the Quests button
   audio.update(g, dt);
   ui.update(g, dt);
   // dread colour grading on the scene canvas only
