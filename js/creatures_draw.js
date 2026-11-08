@@ -815,12 +815,28 @@ function drawBarreleye(ctx, L, v, t, swim = 1) {
   body.moveTo(-L * 0.46, H * 0.08); body.bezierCurveTo(-L * 0.45, -H * 0.32, -L * 0.2, -H * 0.44, L * 0.05, -H * 0.4);
   body.bezierCurveTo(L * 0.2, -H * 0.36, L * 0.3, -H * 0.18, L * 0.33, -H * 0.1); body.lineTo(L * 0.33, H * 0.1);
   body.bezierCurveTo(L * 0.25, H * 0.3, L * 0.0, H * 0.45, -L * 0.2, H * 0.42); body.bezierCurveTo(-L * 0.36, H * 0.4, -L * 0.46, H * 0.3, -L * 0.46, H * 0.08); body.closePath();
+  // (4.6.1) the top of the head IS the clear shield: the body is not drawn inside the dome above the eyes' feet, and
+  // just below that line it fades into the clear fluid (no hard edge)
+  const DX = -L * 0.26, DY = -H * 0.1, DW = L * 0.18, DH = H * 0.66, ycut = DY + DH * 0.08;
+  const topCap = new Path2D(); topCap.rect(-L, -H * 3, L * 3, H * 6);
+  { let first = true; for (let k = 0; k <= 40; k++) { const a2 = PI + k / 40 * PI, px = DX + Math.cos(a2) * DW, py = DY + Math.sin(a2) * DH; if (first) { topCap.moveTo(px, py); first = false; } else topCap.lineTo(px, py); }
+    const ex2 = DX + DW * Math.sqrt(Math.max(0, 1 - ((ycut - DY) / DH) ** 2)); topCap.lineTo(ex2, ycut); topCap.lineTo(DX - (ex2 - DX), ycut); topCap.closePath(); }
+  ctx.save(); ctx.clip(topCap, 'evenodd');
   const bg = ctx.createLinearGradient(0, -H * 0.45, 0, H * 0.45); bg.addColorStop(0, shade(c0, -0.2)); bg.addColorStop(0.6, c1); bg.addColorStop(1, shade(c0, -0.3)); ctx.fillStyle = bg; ctx.fill(body);
   ctx.save(); ctx.clip(body);
   // large scales, each edged lighter
   ctx.strokeStyle = rgba(shade(c1, 0.35), 0.3); ctx.lineWidth = Math.max(0.4, L * 0.003);
   for (let r = 0; r < 5; r++) for (let k = 0; k < 9; k++) { const x = -L * 0.12 + k * L * 0.05 + (r % 2) * L * 0.025, y = -H * 0.35 + r * H * 0.17; ctx.beginPath(); ctx.arc(x, y, L * 0.03, -0.4 * PI, 0.4 * PI); ctx.stroke(); }
+  // (4.6.1) a silvery sheen down the flank, and the lateral line's pores
+  const shn = ctx.createLinearGradient(0, -H * 0.1, 0, H * 0.3); shn.addColorStop(0, 'rgba(200,210,215,0)'); shn.addColorStop(0.5, 'rgba(200,210,215,0.16)'); shn.addColorStop(1, 'rgba(200,210,215,0)');
+  ctx.fillStyle = shn; ctx.fillRect(-L * 0.5, -H * 0.1, L, H * 0.4);
+  ctx.fillStyle = 'rgba(230,230,220,0.35)'; for (let k = 0; k < 14; k++) { ctx.beginPath(); ctx.arc(-L * 0.18 + k * L * 0.035, -H * 0.06 + Math.sin(k * 0.4) * H * 0.02, Math.max(0.5, L * 0.003), 0, TAU); ctx.fill(); }
   ctx.restore();
+  ctx.restore();
+  { // the fade: inside the dome, the body's colour thinning upward from the cut into the clear fluid
+    ctx.save(); ctx.clip(body); const fg = ctx.createLinearGradient(0, ycut, 0, ycut - DH * 0.32);
+    fg.addColorStop(0, rgba(c1, 0.9)); fg.addColorStop(0.4, rgba(shade(c1, 0.05), 0.45)); fg.addColorStop(1, rgba(c1, 0));
+    ctx.beginPath(); ctx.ellipse(DX, DY, DW, DH, 0, 0, TAU); ctx.clip(); ctx.fillStyle = fg; ctx.fillRect(DX - DW, ycut - DH * 0.32, DW * 2, DH * 0.32 + 1); ctx.restore(); }
   // the pectoral fin, broad and flat, held out
   rayFin(ctx, [[-L * 0.14, H * 0.1], [-L * 0.12, H * 0.22]], [[L * 0.05, H * 0.15 + sw * H * 0.03], [L * 0.08, H * 0.32], [-L * 0.02, H * 0.42]], fin, 0.55);
   // (4.5.0) the dome: a clear, fluid-filled shield rising out of the head with no hard edge; it is a whole ellipse
@@ -832,16 +848,42 @@ function drawBarreleye(ctx, L, v, t, swim = 1) {
   const dg = ctx.createLinearGradient(0, dy - dh, 0, dy + dh * 0.15);
   dg.addColorStop(0, 'rgba(200,236,248,0.22)'); dg.addColorStop(0.55, 'rgba(150,200,220,0.12)'); dg.addColorStop(1, 'rgba(150,200,220,0)');
   ctx.fillStyle = dg; ctx.fillRect(dx - dw, dy - dh, dw * 2, dh * 1.2);
-  const br = ctx.createRadialGradient(dx + dw * 0.42, dy - dh * 0.08, 0, dx + dw * 0.42, dy - dh * 0.08, dw * 0.32); br.addColorStop(0, 'rgba(205,160,150,0.42)'); br.addColorStop(1, 'rgba(205,160,150,0)');
-  ctx.fillStyle = br; ctx.fillRect(dx, dy - dh * 0.5, dw, dh * 0.8); // the brain, soft
-  for (const [ox, k] of [[-0.14, 0.7], [0.08, 1]]) { // the far eye first, dimmer
-    const ex = dx + dw * ox, top = dy - dh * 0.74, bot = dy + dh * 0.02, w2 = dw * 0.17;
-    const tg = ctx.createLinearGradient(ex - w2, 0, ex + w2, 0); tg.addColorStop(0, rgba(shade(eyec, -0.55), 0.55 * k)); tg.addColorStop(0.45, rgba(shade(eyec, -0.15), 0.8 * k)); tg.addColorStop(1, rgba(shade(eyec, -0.6), 0.6 * k));
-    ctx.fillStyle = tg; ctx.beginPath(); ctx.moveTo(ex - w2, top); ctx.lineTo(ex - w2 * 0.85, bot); ctx.quadraticCurveTo(ex, bot + w2 * 0.8, ex + w2 * 0.85, bot); ctx.lineTo(ex + w2, top); ctx.closePath(); ctx.fill();
-    const lg = ctx.createRadialGradient(ex - w2 * 0.2, top - w2 * 0.1, 0, ex, top, w2 * 1.6); lg.addColorStop(0, rgba(shade(eyec, 0.6), k)); lg.addColorStop(0.45, rgba(eyec, 0.95 * k)); lg.addColorStop(1, rgba(eyec, 0));
-    ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(ex, top, w2 * 1.6, 0, TAU); ctx.fill(); // the lens, glowing
-    ctx.fillStyle = rgba(shade(eyec, 0.75), 0.9 * k); ctx.beginPath(); ctx.ellipse(ex, top, w2 * 0.95, w2 * 0.42, 0, 0, TAU); ctx.fill();
+  // the brain: two small pale lobes behind the eyes, a faint fold down each
+  for (const [bx, by, br0] of [[dx + dw * 0.42, dy - dh * 0.1, dw * 0.2], [dx + dw * 0.55, dy + dh * 0.02, dw * 0.15]]) {
+    const bg2 = ctx.createRadialGradient(bx - br0 * 0.3, by - br0 * 0.3, 0, bx, by, br0); bg2.addColorStop(0, 'rgba(232,196,186,0.6)'); bg2.addColorStop(1, 'rgba(180,130,120,0.15)');
+    ctx.fillStyle = bg2; ctx.beginPath(); ctx.ellipse(bx, by, br0, br0 * 0.8, 0.3, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(150,100,95,0.35)'; ctx.lineWidth = Math.max(0.4, L * 0.0018); ctx.beginPath(); ctx.moveTo(bx - br0 * 0.6, by); ctx.quadraticCurveTo(bx, by - br0 * 0.4, bx + br0 * 0.6, by + br0 * 0.1); ctx.stroke();
   }
+  // fine veins in the clear shield, branching up from the head
+  ctx.strokeStyle = 'rgba(200,110,110,0.22)'; ctx.lineWidth = Math.max(0.35, L * 0.0015);
+  for (const [vx, a] of [[-0.55, -1.9], [0.15, -1.3], [0.62, -1.0]]) {
+    let x = dx + dw * vx, y = dy + dh * 0.05, ang = a; ctx.beginPath(); ctx.moveTo(x, y);
+    for (let k = 0; k < 4; k++) { x += Math.cos(ang) * dw * 0.16; y += Math.sin(ang) * dh * 0.13; ang += (k % 2 ? 0.35 : -0.3); ctx.lineTo(x, y); }
+    ctx.stroke();
+  }
+  // the two tubular eyes: barrels that widen toward the top, silvered on their sides, each crowned by a big round
+  // green lens that gathers light from above; optic nerves run from their feet back to the brain
+  for (const [ox, k] of [[-0.16, 0.65], [0.06, 1]]) { // the far eye first, dimmer
+    const bx0 = dx + dw * ox, by0 = dy + dh * 0.04; ctx.save(); ctx.translate(bx0, by0); ctx.rotate(-0.22 - ox * 0.3); ctx.translate(-bx0, -by0); // tilted forward a little, as the real ones are
+    const ex = bx0, top = dy - dh * 0.5, bot = by0, wt = dw * 0.21, wb = dw * 0.09;
+    ctx.strokeStyle = `rgba(214,190,170,${(0.45 * k).toFixed(3)})`; ctx.lineWidth = Math.max(0.6, L * 0.004);
+    ctx.beginPath(); ctx.moveTo(ex, bot); ctx.quadraticCurveTo(ex + dw * 0.15, bot + dh * 0.08, dx + dw * 0.36, dy - dh * 0.02); ctx.stroke(); // the optic nerve
+    const tube = new Path2D(); tube.moveTo(ex - wt, top); tube.lineTo(ex - wb, bot); tube.quadraticCurveTo(ex, bot + wb * 0.9, ex + wb, bot); tube.lineTo(ex + wt, top); tube.closePath();
+    const tg = ctx.createLinearGradient(ex - wt, 0, ex + wt, 0);
+    tg.addColorStop(0, rgba('#c8d8d0', 0.45 * k)); tg.addColorStop(0.18, rgba(shade(eyec, -0.5), 0.75 * k)); tg.addColorStop(0.55, rgba(shade(eyec, -0.2), 0.85 * k)); tg.addColorStop(0.85, rgba(shade(eyec, -0.55), 0.8 * k)); tg.addColorStop(1, rgba('#c8d8d0', 0.4 * k));
+    ctx.fillStyle = tg; ctx.fill(tube); // silvered edges, a deep green core
+    ctx.strokeStyle = rgba(shade(eyec, -0.6), 0.5 * k); ctx.lineWidth = Math.max(0.4, L * 0.002);
+    for (let r2 = 1; r2 < 4; r2++) { const yy = top + (bot - top) * r2 / 4, ww = wt + (wb - wt) * r2 / 4; ctx.beginPath(); ctx.moveTo(ex - ww, yy); ctx.quadraticCurveTo(ex, yy + ww * 0.25, ex + ww, yy); ctx.stroke(); } // faint rings down the barrel
+    const lr = wt * 1.15, lg = ctx.createRadialGradient(ex - lr * 0.35, top - lr * 0.4, 0, ex, top, lr * 2.1);
+    lg.addColorStop(0, rgba(shade(eyec, 0.7), k)); lg.addColorStop(0.35, rgba(eyec, 0.95 * k)); lg.addColorStop(0.6, rgba(shade(eyec, -0.3), 0.5 * k)); lg.addColorStop(1, rgba(eyec, 0));
+    ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(ex, top, lr * 2.1, 0, TAU); ctx.fill(); // its glow
+    const ls = ctx.createRadialGradient(ex - lr * 0.3, top - lr * 0.35, 0, ex, top, lr); ls.addColorStop(0, rgba(shade(eyec, 0.85), k)); ls.addColorStop(0.7, rgba(eyec, k)); ls.addColorStop(1, rgba(shade(eyec, -0.35), k));
+    ctx.fillStyle = ls; ctx.beginPath(); ctx.arc(ex, top, lr, 0, TAU); ctx.fill(); // the lens itself, a sphere
+    ctx.fillStyle = `rgba(255,255,255,${(0.75 * k).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(ex - lr * 0.35, top - lr * 0.4, lr * 0.28, lr * 0.17, -0.5, 0, TAU); ctx.fill(); // its glint
+    ctx.restore();
+  }
+  // a soft inner rim: the shield has thickness
+  ctx.strokeStyle = 'rgba(200,236,248,0.14)'; ctx.lineWidth = Math.max(1, L * 0.008); ctx.beginPath(); ctx.ellipse(dx, dy, dw * 0.94, dh * 0.95, 0, PI * 1.1, PI * 1.9); ctx.stroke();
   ctx.restore();
   // its rim: a highlight along the top of the glass that thins to nothing at both ends (no hard line where it meets the head)
   const rim = ctx.createLinearGradient(dx - dw, 0, dx + dw, 0); rim.addColorStop(0, 'rgba(230,250,255,0)'); rim.addColorStop(0.3, 'rgba(230,250,255,0.55)'); rim.addColorStop(0.7, 'rgba(230,250,255,0.3)'); rim.addColorStop(1, 'rgba(230,250,255,0)');
