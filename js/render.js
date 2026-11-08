@@ -477,7 +477,16 @@ export class Renderer {
     // (4.2.0, 4.3.1) the tutorial: a stream of brass chevrons flowing from Earl to where to go, a ring pulsing round
     // the fish (or the spot), and an arrow at the edge of the screen when it is off screen. No words: the game's own
     // prompts already say what to press there
-    const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : null; // (4.9.0) or the developer's trail to a legend (X)
+    // (4.10.0) the player's chart markers, as small pins in the sea with their names
+    if (g.mode === 'play' && g.profile && Array.isArray(g.profile.markers)) for (const m of g.profile.markers) {
+      const px = S(m.x), py = Sy(m.y); if (px < -80 || px > W + 80 || py < -40 || py > H + 40) continue;
+      const bob = Math.sin(t * 1.6 + m.x) * 2, pr = clamp(ppm * 0.28, 7, 11);
+      ctx.save(); ctx.translate(px, py + bob); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 5; ctx.fillStyle = m.col || '#f2c868';
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-pr * 0.4, -pr * 0.7, -pr, -pr * 1.1, -pr, -pr * 1.7); ctx.arc(0, -pr * 1.7, pr, Math.PI, 0); ctx.bezierCurveTo(pr, -pr * 1.1, pr * 0.4, -pr * 0.7, 0, 0); ctx.fill();
+      ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(20,16,8,0.75)'; ctx.beginPath(); ctx.arc(0, -pr * 1.7, pr * 0.38, 0, TAU); ctx.fill(); ctx.restore();
+      drawPrompt(ctx, m.name, px, py + bob - pr * 3.4, 0.9, { size: 15, shade: false, col: '#ece6d2' });
+    }
+    const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : g.markGuide ? { to: g.markGuide } : null; // (4.9.0) or the developer's trail to a legend (X)
     if (guide && g.mode === 'play') {
       const e = guide.from || g.earl, tx = guide.to.x, ty = guide.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
       const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));

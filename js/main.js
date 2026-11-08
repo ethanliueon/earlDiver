@@ -3,6 +3,7 @@ import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock } from './world.js';
 import { SPECIES, SPECIES_BY_ID, TITLES } from './species.js';
+import { Chart } from './chart.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
@@ -316,6 +317,9 @@ const ui = new UI({
   onEquip: (k) => { const ok = buy(k); return ok; },
   canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave() || nearStation())), // someone to sell to: the Margaret, the station, or Dave
 });
+// (4.10.0) the chart (K, or the chart button under the journal): the whole sea, and the player's own markers
+ui.chart = new Chart({ getGame: () => g, getProfile: () => profile, save: () => saveProfile(profile),
+  follow: (m) => { g.markGuide = m || null; if (m) hud.toast(`Following: ${m.name}`); }, following: () => g.markGuide || null });
 
 // ---------------- injuries ----------------
 // Hidden injury points. Each point heals 15 s after the last one; 5 at once is fatal.
@@ -1184,6 +1188,7 @@ hudCanvas.addEventListener('mousedown', (ev) => {
   if (ev.button === 2) { mouse.rdown = true; return; } // held: sprint
   if (ev.button !== 0) return;
   if (inRect(hud.journalHot, ev.clientX, ev.clientY)) { ui.toggleJournal(); return; }
+  if (inRect(hud.chartHot, ev.clientX, ev.clientY)) { ui.closeAll(); ui.chart.toggle(true); return; }
   if (inRect(hud.subHot, ev.clientX, ev.clientY)) { pressed.add('c-tap'); return; }
   if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
   if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
@@ -1823,6 +1828,7 @@ function update(dt) {
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
     if (pressed.has('o')) ui.toggleQuests(); // (4.0.0) the quest board
+    if (pressed.has('k')) { const was = ui.chart.isOpen(); ui.closeAll(); if (!was) ui.chart.toggle(true); } // (4.10.0) the chart
     if (pressed.has('l') && (g.aboard || g.helm)) { g.sub.lightsOn = !g.sub.lightsOn; audio.ready && audio.click(); } // (4.0.0) aboard the Margaret: the sub's lights, quietly
     else if (pressed.has('l')) {
       g.lampFlashT = g.time;
@@ -1872,6 +1878,7 @@ function update(dt) {
     g.fauna.rareMult = Math.abs(e.x - WHALE_FALL.x) < 60 && e.y > 2900 ? 3 : Math.abs(e.x - SEEP.x) < 50 && e.y > 2300 ? 2 : 1;
     // the legendary moment: the first sight of a legend on this dive. The music falls away, a pale
     // light comes up on it for a few seconds, and its name: something to remember.
+    if (g.markGuide && Math.hypot(g.markGuide.x - e.x, g.markGuide.y - e.y) < 8) { hud.toast(`Arrived: ${g.markGuide.name}`); g.markGuide = null; } // (4.10.0) a followed marker, reached
     if (g.devGuide) { const c = g.devGuide.c; if (c.dead || c.legendSeen || !g.fauna.list.includes(c) || Math.hypot(c.x - e.x, c.y - e.y) < 6) g.devGuide = null; } // (4.9.0) the developer's trail ends at the legend
     if (g.legend) { g.legend.t += dt; if (g.legend.t > 8 || g.legend.c.dead) g.legend = null; }
     else {

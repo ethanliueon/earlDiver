@@ -2381,3 +2381,42 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 
 #quests .qp-map { position: static !important; inset: auto !important; }
 #quests .qs-panel { position: relative; }
+
+/* (4.10.0) the chart: the whole sea in section on a steel plate, the player's markers under it */
+#chart { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(6,10,10,0.6); }
+#chart[hidden] { display: none; }
+#chart .ch-panel { width: min(1100px, calc(100vw - 32px), calc((100vh - 170px) * 1.857)); max-height: 92vh; overflow-y: auto; padding: 14px 18px 14px; border-radius: 6px; color: var(--paint);
+  background: linear-gradient(180deg, var(--steel), var(--steel-lo)); box-shadow: 0 0 0 1px #12150f, 0 0 0 3px var(--steel-hi), 0 0 0 4px #12150f, 0 18px 40px rgba(0,0,0,0.5); }
+#chart header { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+#chart .ch-plate { padding: 4px 16px; border-radius: 3px; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); box-shadow: 0 1px 0 #4a3510; }
+#chart .ch-plate h2 { margin: 0; font: 400 22px var(--serif); color: #2e220a; }
+#chart .ch-hint { flex: 1; font: italic 14px var(--serif); color: var(--paint-dim); }
+#chart .ch-close { width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; font-size: 18px; color: #2e220a; background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); }
+#chart .ch-wrap { position: relative; }
+#chart .ch-map { position: static; inset: auto; display: block; width: 100%; height: auto; border-radius: 4px; cursor: crosshair; box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #3a4136, inset 0 0 30px rgba(0,0,0,0.6); }
+#chart footer { display: flex; align-items: flex-start; gap: 14px; margin-top: 10px; }
+#chart .ch-at { flex: 0 0 230px; padding-top: 5px; font: 12px var(--mono); color: rgba(214,224,226,0.75); }
+#chart .ch-at.warn { color: #e8a060; }
+#chart .ch-list { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+#chart .ch-none { font: italic 14px var(--serif); color: var(--paint-dim); padding-top: 4px; }
+#chart .ch-chip { display: inline-flex; border-radius: 3px; overflow: hidden; box-shadow: 0 0 0 1px #0c0e0a; background: rgba(0,0,0,0.3); }
+#chart .ch-chip.on { box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 2px rgba(242,184,74,0.7); }
+#chart .ch-chip button { border: 0; background: none; cursor: pointer; color: #e4e6da; font: 500 14px var(--serif); padding: 4px 8px; display: inline-flex; align-items: center; gap: 6px; }
+#chart .ch-chip button:hover { background: rgba(255,255,255,0.06); }
+#chart .ch-chip i { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.6); }
+#chart .ch-chip small { font: 11px var(--mono); color: rgba(214,224,226,0.6); }
+#chart .ch-chip .ch-go { border-left: 1px solid rgba(0,0,0,0.5); color: var(--brass-hi); font-size: 12px; }
+#chart .ch-edit { position: absolute; width: 250px; padding: 12px; border-radius: 5px; z-index: 2;
+  background: linear-gradient(180deg, #2b3129, #1b1f1a); box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #3a4136, 0 12px 30px rgba(0,0,0,0.7); }
+#chart .ch-edit[hidden] { display: none; }
+#chart .ce-head { font: 500 17px var(--serif); color: #f0e8d0; margin-bottom: 8px; }
+#chart .ce-head small { display: block; font: 11px var(--mono); color: rgba(214,224,226,0.65); margin-top: 2px; }
+#chart .ce-name { width: 100%; box-sizing: border-box; padding: 6px 8px; border: 0; border-radius: 3px; font: 500 16px var(--serif); color: #2a2010; background: #e8dfc4; box-shadow: inset 0 1px 3px rgba(0,0,0,0.4); outline: none; }
+#chart .ce-name:focus { box-shadow: inset 0 1px 3px rgba(0,0,0,0.4), 0 0 0 2px rgba(242,184,74,0.7); }
+#chart .ce-cols { display: flex; gap: 8px; margin: 10px 0; }
+#chart .ce-col { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; background: var(--c); box-shadow: 0 0 0 1px rgba(0,0,0,0.6); }
+#chart .ce-col.on { box-shadow: 0 0 0 2px #1b1f1a, 0 0 0 4px #ece6d2; }
+#chart .ce-btns { display: flex; gap: 6px; }
+#chart .ce-btns button { flex: 1; padding: 6px 8px; border: 0; border-radius: 3px; cursor: pointer; font: 500 14px var(--serif); color: #2a2010; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); }
+#chart .ce-btns .ce-cancel, #chart .ce-btns .ce-del { color: #e4e6da; background: rgba(255,255,255,0.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+#chart .ce-btns button:hover { filter: brightness(1.1); }

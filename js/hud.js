@@ -26,7 +26,7 @@ export class Hud {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
     this.ecg = new Array(120).fill(0); this.ecgT = 0; this.beatPhase = 0;
-    this.sweep = 0; this.blip = null; this.toasts = []; this.journalHot = null;
+    this.sweep = 0; this.blip = null; this.toasts = []; this.journalHot = null; this.chartHot = null;
   }
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -395,8 +395,16 @@ export class Hud {
     ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 8 * s, jy + 5.5 * s, 10 * s, 11 * s);
     ctx.font = `${10 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,220,192,0.5)'; ctx.textAlign = 'right'; ctx.fillText('J', jx - 5 * s, jy + 6 * s);
 
+    // (4.10.0) the chart: a small rolled sea chart under the journal (K)
+    const cy0 = jy + jh + 6 * s;
+    this.chartHot = { x: jx * kx, y: cy0 * kx, w: jw * kx, h: jh * kx };
+    ctx.fillStyle = 'rgba(30,26,20,0.6)'; ctx.beginPath(); ctx.roundRect(jx, cy0, jw, jh, 4 * s); ctx.fill();
+    ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 5 * s, cy0 + 5 * s, 16 * s, 12 * s);
+    ctx.strokeStyle = '#3a6a7a'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(jx + 5 * s, cy0 + 10 * s); ctx.quadraticCurveTo(jx + 9 * s, cy0 + 8 * s, jx + 13 * s, cy0 + 11 * s); ctx.quadraticCurveTo(jx + 17 * s, cy0 + 14 * s, jx + 21 * s, cy0 + 12 * s); ctx.stroke();
+    ctx.fillStyle = '#c84a3a'; ctx.beginPath(); ctx.arc(jx + 15 * s, cy0 + 8.5 * s, 2 * s, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(232,220,192,0.5)'; ctx.fillText('K', jx - 5 * s, cy0 + 15 * s);
     // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
-    yy = jy + jh + 10 * s;
+    yy = cy0 + jh + 10 * s;
     this.subHot = null;
     if (!g.sub.imploded && !dying && !g.tutHidePrompts) { // (4.4.0) not during the tutorial
       const ap = g.autopilot;
