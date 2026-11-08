@@ -59,7 +59,6 @@ export function rollCrush(rated, rnd = Math.random) {
 }
 // add-ons for the submersible (bought once)
 export const SUB_ADDONS = {
-  recall: { name: 'Recall unit', price: 280, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
   quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
   bigTank: { inRoom: true, name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
   sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },

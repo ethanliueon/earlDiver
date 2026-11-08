@@ -1430,7 +1430,7 @@ export class UI {
           <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, GEAR.arm.desc + ' The claw comes at its best: full reach, the big jaws, quick hydraulics.', GEAR.arm.price, owns(P, 'arm')]]
           .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, a.desc, a.price, !!(P.addons || {})[k]]));
-        html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<span class="yd-string"></span><button class="yd-price yd-hang" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'}>${money(price, false)}</button>`}</div>`).join('')}</div>`;
+        html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="yd-buy" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'}><small>Fit it</small>${money(price, false)}</button>`}</div>`).join('')}</div>`;
         html += '<p class="shop-note">Pressure chambers are bought in the sub\'s chamber room, the large pressure tank in its own room.</p>';
       }
     } else if (tab === 'supplies') {
