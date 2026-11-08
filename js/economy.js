@@ -29,14 +29,16 @@ export const FINS = [
 // she gives way at as a multiple of it (hidden, drawn fresh each dive; the window narrows on deeper,
 // better-built hulls), and the cabin air she carries. Relics add 100 m each to the rating.
 export const SUBS = [
-  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 120 },
-  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 130 },
-  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 145 },
-  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 160 },
-  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 180 },
-  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 200 },
-  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 230 },
-  { name: 'Full-ocean-depth submersible', rated: 4000, crush: 1.25, o2: 260 },
+  // (4.14.0) each sub comes with everything built in: speed, sink and rise (+10 % a step, compounding), the
+  // chambers' rating and the open tank; there are no separate upgrades for them
+  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 120, speed: 1, ballast: 0, rating: 400, tank: 3, price: 0 },
+  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 130, speed: 1.3, ballast: 0.1, rating: 600, tank: 5, price: 500 },
+  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 145, speed: 1.5, ballast: 0.21, rating: 1000, tank: 7, price: 3000 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 160, speed: 1.75, ballast: 0.331, rating: 1400, tank: 9, price: 12000 },
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 180, speed: 2, ballast: 0.4641, rating: 2000, tank: 12, price: 40000 },
+  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 200, speed: 2.4, ballast: 0.6105, rating: 2600, tank: 15, price: 100000 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 230, speed: 2.7, ballast: 0.7716, rating: 3400, tank: 19, price: 220000 },
+  { name: 'Full-ocean-depth submersible', rated: 4000, crush: 1.25, o2: 260, speed: 3, ballast: 0.9487, rating: 4000, tank: 24, price: 450000 },
 ];
 export const SUB_TIERS = SUBS; // (old name)
 // No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
@@ -215,7 +217,7 @@ export const UPGRADES = {
   camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, top: 13, max: 10, cost: 12, growth: 1.7, fmt: 'm' },
   // the submersible
   ballast:   { group: 'Submersible', name: 'Ballast', base: 0, top: 1.44, max: 10, cost: 25, growth: 1.7, fmt: 'bonus' },
-  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4000], costs: [150, 600, 2000, 8000, 24000, 65000, 150000], max: 7, fmt: 'depth' },
+  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4000], costs: [500, 3000, 12000, 40000, 100000, 220000, 450000], max: 7, fmt: 'depth' }, // (4.14.0)
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, lin: 0.04, max: 50, cost: 236, growth: 1.1, fmt: 'x' }, // (4.13.0) fifty small steps to 3x, about $275,000 in all
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, lin: 1, max: 2, cost: 60, growth: 3, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 5, costs: [100, 1000, 5000, 20000, 60000], fmt: 'n' }, // (4.13.0) bought one at a time in the chamber room
@@ -366,13 +368,13 @@ export const TRACKS = {
   tSlurp:    { group: 'Slurp gun', needs: 'slurp', name: 'Slurp gun', stats: ['slurpSize', 'slurpReach', 'slurpSpeed'], max: 4, line: 'Bigger catches, longer reach, faster reload' },
   tTag:      { group: 'Tag gun', needs: 'tagger', name: 'Tag gun', stats: ['tagReach', 'tagReload', 'tagPay', 'tagCalm'], max: 5, line: 'Range, reload, better-paying tags, cleaner shots' },
   tCam:      { group: 'Camera', needs: 'camera', name: 'Camera', stats: ['camShots', 'camRange'], max: 5, line: 'More shots a dive, longer range' },
-  tHull:     { group: 'Submersible', name: 'A deeper submersible', stats: ['depth'], max: 7, line: 'The next hull: deeper, more cabin air' },
-  tEngine:   { group: 'Submersible', name: 'Engine', stats: ['subSpeed', 'ballast'], max: 50, line: 'Faster, and quicker to sink and rise: fifty small steps' },
-  tChambers: { group: 'Submersible', name: 'Chamber rating', stats: ['pressRating'], max: 4, line: 'Chamber walls that hold more pressure' },
+  tHull:     { group: 'Submersible', name: 'Submersible', stats: ['depth'], max: 7, line: 'The next hull: deeper, more cabin air' },
+  tEngine:   { retired: true, group: 'Submersible', name: 'Engine', stats: ['subSpeed', 'ballast'], max: 50, line: 'Faster, and quicker to sink and rise: fifty small steps' },
+  tChambers: { retired: true, group: 'Submersible', name: 'Chamber rating', stats: ['pressRating'], max: 4, line: 'Chamber walls that hold more pressure' },
   tPress:    { inRoom: true, group: 'Submersible', name: 'Pressure chamber', stats: ['pressTanks'], max: 5, line: 'One more chamber (bought in the chamber room)' }, // (4.13.0)
-  tOpen:     { group: 'Submersible', name: 'Open tank', stats: ['subTank'], max: 6, line: 'Room for more animals in the sub' },
+  tOpen:     { retired: true, group: 'Submersible', name: 'Open tank', stats: ['subTank'], max: 6, line: 'Room for more animals in the sub' },
   tRack:     { retired: true, group: 'Submersible', name: 'Backup air rack', stats: ['airTanks'], max: 2, line: 'Racks for more backup air tanks' },
-  tClaw:     { group: 'Claw', needs: 'arm', name: 'Claw', stats: ['armReach', 'armSize', 'armSpeed', 'armGrip'], max: 5, line: 'Reach, jaw size, hydraulics, grip' },
+  tClaw:     { retired: true, group: 'Claw', needs: 'arm', name: 'Claw', stats: ['armReach', 'armSize', 'armSpeed', 'armGrip'], max: 5, line: 'Reach, jaw size, hydraulics, grip' },
 };
 export const TRACK_OF = Object.fromEntries(Object.entries(TRACKS).flatMap(([t, T]) => T.stats.map((sid) => [sid, t])));
 const mapLevel = (sid, t, l) => Math.round(l / TRACKS[t].max * UPGRADES[sid].max);
@@ -403,7 +405,13 @@ const SCRAPPED = new Set(['Diver', 'Buyers', 'Net', 'Slurp gun', 'Tag gun', 'Cam
 // (3.0.0) how deep a hull the yard can build: 500 m at first; finding the research station brings the plans
 // for hulls to 1,300 m; meeting Dave, his deep hulls beyond (levels of the depth track: 300, 500, 900, 1300, ...)
 export const hullCap = (P) => ((P && P.daveVisits) ? 99 : (P && P.stationFound) ? 3 : 1);
+// (4.14.0) what each sub has built in, by its hull: these stats are the sub's own, not upgrades
+const BAKED = { subSpeed: 'speed', ballast: 'ballast', pressRating: 'rating', subTank: 'tank' };
+const hullOf = (P) => Math.min(SUBS.length - 1, tlv(P, 'tHull'));
 export const lv = (P, id) => {
+  if (BAKED[id]) return Math.round(hullOf(P) / (SUBS.length - 1) * UPGRADES[id].max); // (for the sub's drawing)
+  if (id === 'tClaw') return owns(P, 'arm') ? TRACKS.tClaw.max : 0; // the claw: fixed at its best once the hydraulics are fitted
+  if (TRACK_OF[id] === 'tClaw') return owns(P, 'arm') ? UPGRADES[id].max : 0;
   if (TRACKS[id]) return SCRAPPED.has(TRACKS[id].group) ? 0 : tlv(P, id);
   const t = TRACK_OF[id];
   if (t && SCRAPPED.has(TRACKS[t].group)) return 0;
@@ -419,7 +427,7 @@ export function statAt(id, l) {
   return U.base + (U.top - U.base) * (Math.pow(GAIN, l) - 1) / (Math.pow(GAIN, U.max) - 1);
 }
 // (2.6.0) air, swimming, sprint and the bag come from what he has on, not a ladder
-export const statValue = (P, id) => { const o = itemStat(P, id); return o != null ? o : statAt(id, lv(P, id)); };
+export const statValue = (P, id) => { if (BAKED[id]) return SUBS[hullOf(P)][BAKED[id]]; const o = itemStat(P, id); return o != null ? o : statAt(id, lv(P, id)); };
 // ---------------- the kit (2.8.0): what he has on, and its skills ----------------
 // air, swimming, sprint and the bag come from the items on him; skills stack across everything worn
 export const kit = (P) => kitOf(P);
