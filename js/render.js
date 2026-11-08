@@ -21,6 +21,7 @@ import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
+import { LEGENDARY } from './specimens.js';
 import { SETTINGS } from './settings.js';
 import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
@@ -328,7 +329,8 @@ export class Renderer {
     let glowSkip = 0;
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
-      if (!c.sp.v.glow && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
+      if (LEGENDARY.has(c.sp.id) && !c.dead) glowPts.push([S(c.x), Sy(c.y), '#ffd98a', Math.max(ppm * 1.4, fishDrawLen(c.len) * ppm * 0.95), 1.5 + 0.45 * Math.sin(t * 1.6 + (c.wob || 0))]); // (4.16.4) a legend carries its own soft golden aura, even in the dark
+      if (!c.sp.v.glow && !c.variant && !LEGENDARY.has(c.sp.id) && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
       if (c.variant && g.earl.legends && g.earl.legends.has('eye')) glowPts.push([S(c.x), Sy(c.y), '#ffe6a0', Math.max(ppm * 0.9, fishDrawLen(c.len) * ppm), 0.85]); // (2.8.0) Eye of the Sea: rare forms glow
       const Ld = fishDrawLen(c.len) * ppm;
       const shape = c.sp.v.s;

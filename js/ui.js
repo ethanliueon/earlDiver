@@ -111,7 +111,8 @@ export class UI {
       close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { toast: (t, k) => h.toast && h.toast(t, k), getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), daveSays: () => (this.dave && this.dave.says ? this.dave.says() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     try { this.dressPanels(); } catch (err) { /* the plain look stays */ }
-    this.tankRoom = new TankRoom($('tankroom'), { buy: (k) => { h.onBuy(k); this.tankRoom.sig = ''; }, act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
+    // (4.16.4) every purchase in the sub asks first
+    this.tankRoom = new TankRoom($('tankroom'), { buy: (k) => { const price = k === 'bigTank' ? SUB_ADDONS.bigTank.price : (UPGRADES.pressTanks.costs || [])[lv(h.getProfile(), 'tPress')], what = k === 'bigTank' ? 'the large pressure tank' : `chamber ${Math.round(statValue(h.getProfile(), 'pressTanks')) + 1}`; this.confirm(`Buy ${what}?`, `${money(price, false)}`, 'Buy', 'Cancel', () => { h.onBuyNow(k); this.tankRoom.sig = ''; }); }, act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
@@ -161,6 +162,7 @@ export class UI {
       if (act === 'buy' && arg.startsWith('subnet:')) {
         h.onBuy(arg); // (4.11.0) the hatch holds two beginner nets and an advanced one: nothing is replaced
       }
+      else if (act === 'buy' && b.classList.contains('pay-tag')) { const nm = (b.closest('.yd-refit, .yd-card, .yd-info') || b).querySelector('b, h4, h3'); this.confirm(`Buy ${nm ? nm.textContent.replace(/^No\. \d+(of \d+)?\s*/, '').trim() : 'it'}?`, money(h.costOf(arg), false), 'Buy', 'Cancel', () => { h.onBuyNow(arg); this.renderWorkshop(); }); } // (4.16.4) the sub page's price tags ask first
       else if (act === 'buy') h.onBuy(arg);
       else if (act === 'take') { h.onTakeContract(arg); }
       else if (act === 'refresh') { h.onRefreshContracts(); }

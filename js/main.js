@@ -4,7 +4,7 @@ import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './e
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock } from './world.js';
 import { SPECIES, SPECIES_BY_ID, TITLES } from './species.js';
 import { Chart } from './chart.js';
-import { Fauna } from './fauna.js';
+import { Fauna, usualDepth } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, canFireSubNet, netsOf, netKinds, netTotal, NETS_SUB, updateSubNet, tankFits, BIG, tooBig } from './capture.js';
@@ -132,13 +132,14 @@ function devMaxAll() {
   }
   const sp = SPECIES_BY_ID[DEV_LEGENDS[devLegendI++ % DEV_LEGENDS.length]]; if (!sp) return;
   const e = g.earl, W = g.world, hab = sp.v && sp.v.hab, onFloor = hab === 'floor' || hab === 'demersal';
-  const want = clamp(Math.round(Math.sqrt(Math.max(1, sp.dmin) * sp.dmax)), sp.dmin + 5, Math.min(sp.dmax, (g.sub.ratedV || 4000) - 50));
+  const [uLo, uHi] = usualDepth(sp); // (4.16.4) where it is really met, as the sea's own spawning places it
+  const want = clamp(Math.round((uLo + uHi) / 2), sp.dmin + 5, Math.min(sp.dmax, (g.sub.ratedV || 4000) - 50));
   // the nearest column of sea where it would live: deep enough water for a swimmer, a floor in its range for a bottom animal
   let at = null;
   for (let r = 30; r < WORLD_W && !at; r += 6) for (const x of [e.x + r * (e.facing || 1), e.x - r * (e.facing || 1)]) {
     if (x < 30 || x > WORLD_W - 30) continue;
     const fl = W.floorAt(x);
-    if (onFloor ? (fl >= sp.dmin && fl <= Math.min(sp.dmax, (g.sub.ratedV || 4000) - 20)) : fl > want + 25) {
+    if (onFloor ? (fl >= uLo && fl <= Math.min(uHi, (g.sub.ratedV || 4000) - 20)) : fl > want + 25) { // (bottom animals on a seabed within their usual depths)
       const y = onFloor ? fl - 0.6 : want;
       if (!W.rockAt(x, y, 1)) { at = { x, y }; break; }
     }
@@ -214,6 +215,8 @@ const ui = new UI({
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => guardBuy(costOf(k), () => buy(k)),
+  onBuyNow: (k) => { guardBuy.ok = true; try { return buy(k); } finally { guardBuy.ok = false; ui.refreshOpen(); } }, // (4.16.4) already confirmed by its own prompt
+  costOf: (k) => costOf(k),
   onOldBuy: (k) => guardBuy(k.startsWith('chest:') ? costOf(k) : costOf('old:' + k.slice(5)), () => oldBuy(k), () => ui.oldCard(null)),
   questsReady: () => (profile ? questsReady(profile) : 0),
   // (3.0.0) a shop's cart, checked out at once: all of it, or nothing (cash and room in the locker)
