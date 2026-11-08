@@ -32,7 +32,11 @@ export class Hud {
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
     if (this.c.width !== w || this.c.height !== h) { this.c.width = w; this.c.height = h; }
-    this.s = h / 900; // UI scale
+    // (4.17.0) the UI scale: from the screen's height, but never below 0.7 of the design (a phone held sideways is
+    // only ~390 px tall) nor above 1.5; and the notch's safe areas kept clear
+    this.s = Math.max(0.85, Math.min(1.5, window.innerHeight / 900)) * dpr;
+    if (!this.safeEl) { this.safeEl = document.createElement('div'); this.safeEl.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(this.safeEl); }
+    const cs = getComputedStyle(this.safeEl); this.safe = { l: parseFloat(cs.paddingLeft) * dpr || 0, r: parseFloat(cs.paddingRight) * dpr || 0, t: parseFloat(cs.paddingTop) * dpr || 0, b: parseFloat(cs.paddingBottom) * dpr || 0 };
   }
   // explanations: only when hints are on (H)
   hint(text) { if (this.hints) this.toast(text, 'note'); }
@@ -241,9 +245,15 @@ export class Hud {
     st.items = st.items.filter((q) => q.on || q.a > 0.01).slice(-3);
     return { list: st.items.map((q) => [q.text, q.a, q.col]), level: st.items.reduce((m, q) => Math.max(m, q.a), 0) };
   }
+  // (4.17.0) the HUD is drawn inside the screen's safe area (clear of a phone's notch and rounded corners)
   draw(g, dt) {
-    const ctx = this.ctx, W = this.c.width, H = this.c.height, s = this.s;
-    ctx.clearRect(0, 0, W, H);
+    const sf = this.safe || { l: 0, r: 0, t: 0, b: 0 }; this.safeL = sf.l; this.safeT = sf.t;
+    this.ctx.clearRect(0, 0, this.c.width, this.c.height);
+    this.ctx.save(); this.ctx.translate(sf.l, sf.t);
+    try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }
+  }
+  drawIn(g, dt, W, H) {
+    const ctx = this.ctx, s = this.s;
     if (g.mode === 'menu') return;
     const e = g.earl, fx = g.fx;
     const dying = g.mode === 'dying';
@@ -406,8 +416,8 @@ export class Hud {
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy, s); yy += 82 * s; }
     // journal: a small book button
     const jw = 26 * s, jh = 22 * s, jx = rx0 - jw, jy = yy;
-    const kx = window.innerWidth / W;
-    this.journalHot = { x: jx * kx, y: jy * kx, w: jw * kx, h: jh * kx };
+    const kx = window.innerWidth / this.c.width;
+    this.journalHot = { x: (jx + this.safeL) * kx, y: (jy + this.safeT) * kx, w: jw * kx, h: jh * kx };
     ctx.fillStyle = 'rgba(30,26,20,0.6)'; ctx.beginPath(); ctx.roundRect(jx, jy, jw, jh, 4 * s); ctx.fill();
     ctx.fillStyle = '#6a4a2e'; ctx.fillRect(jx + 6 * s, jy + 4 * s, 14 * s, 14 * s);
     ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 8 * s, jy + 5.5 * s, 10 * s, 11 * s);
@@ -415,7 +425,7 @@ export class Hud {
 
     // (4.10.0) the chart: a small rolled sea chart under the journal (K)
     const cy0 = jy + jh + 6 * s;
-    this.chartHot = { x: jx * kx, y: cy0 * kx, w: jw * kx, h: jh * kx };
+    this.chartHot = { x: (jx + this.safeL) * kx, y: (cy0 + this.safeT) * kx, w: jw * kx, h: jh * kx };
     ctx.fillStyle = 'rgba(30,26,20,0.6)'; ctx.beginPath(); ctx.roundRect(jx, cy0, jw, jh, 4 * s); ctx.fill();
     ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 5 * s, cy0 + 5 * s, 16 * s, 12 * s);
     ctx.strokeStyle = '#3a6a7a'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(jx + 5 * s, cy0 + 10 * s); ctx.quadraticCurveTo(jx + 9 * s, cy0 + 8 * s, jx + 13 * s, cy0 + 11 * s); ctx.quadraticCurveTo(jx + 17 * s, cy0 + 14 * s, jx + 21 * s, cy0 + 12 * s); ctx.stroke();
@@ -431,7 +441,7 @@ export class Hud {
         // bottom-right corner, a little larger
         ctx.font = `${15 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         const bw = ctx.measureText(label).width + 50 * s, bh = 31 * s, bx = rx0 - bw, by = H - pad - bh;
-        this.subHot = { x: bx * kx, y: by * kx, w: bw * kx, h: bh * kx };
+        this.subHot = { x: (bx + this.safeL) * kx, y: (by + this.safeT) * kx, w: bw * kx, h: bh * kx };
         const on = g.homeRun || (ap && ap.state === 'coming');
         ctx.fillStyle = on ? 'rgba(60,52,24,0.7)' : 'rgba(6,12,14,0.55)'; ctx.strokeStyle = on ? 'rgba(232,214,160,0.5)' : 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 7 * s); ctx.fill(); ctx.stroke();
@@ -457,7 +467,7 @@ export class Hud {
     this.slotHot = {};
     slots.forEach(([id, key, name, n, col, active, badge], i) => {
       const x = rx0 - sz, y = yy + i * (sz + 8 * s);
-      this.slotHot[id] = { x: x * kx, y: y * kx, w: sz * kx, h: sz * kx };
+      this.slotHot[id] = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: sz * kx, h: sz * kx };
       glass(x, y, sz, sz);
       ctx.fillStyle = col; ctx.globalAlpha = n > 0 ? 1 : 0.3;
       ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 8 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;

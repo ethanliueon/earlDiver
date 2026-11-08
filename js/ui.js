@@ -454,6 +454,7 @@ export class UI {
       else return '';
       return `<div class="gain r-${r}"><div class="g-tile"><img src="${pic}" alt=""><i class="new">new</i>${r === 'legendary' ? '<span class="glint"></span>' : ''}</div><b>${name}</b><span class="g-plus">+1</span></div>`;
     };
+    { const n = Math.min(5, entries.length); el.style.setProperty('--gn', n); el.style.setProperty('--gh', [0, 45, 38, 32, 26, 26][n] + 'vh'); } // (4.17.0) sized from the screen: one big card, smaller as more come
     el.innerHTML = `<div class="g-row">${entries.slice(0, 5).map(card).join('')}</div>`;
     el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
     clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), 2900);
