@@ -2831,24 +2831,14 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 /* the notch: the game fills the screen; panels and overlays keep clear of the safe areas */
 body { padding: 0; }
 #msgs, #quests-hud, #tut-spot .ts-line { margin-left: env(safe-area-inset-left); }
-/* (4.17.0) a short screen (a phone held sideways): the title menu fits, scrolling if it must, and tightens up */
-#title { overflow-y: auto; }
+/* (4.17.0) a short screen (a phone held sideways): nothing is resized; tall panels scroll instead of being cut off */
+#title { overflow-y: auto; align-items: safe center; }
 @media (max-height: 560px) {
-  #title { align-items: flex-start; padding-top: max(12px, env(safe-area-inset-top)); padding-bottom: 12px; }
-  #title .title-panel { transform-origin: top left; zoom: 0.78; }
-  #title .tag { margin: 4px 0 8px; }
-  #quests .qs-panel, #chart .ch-panel, .shop-main, #settings .set-panel { max-height: calc(100vh - 16px) !important; }
-}
-@media (max-height: 560px) {
-  #workshop.refit-full .shop-main { zoom: 0.62; height: calc(100vh / 0.62); padding: 18px 26px 18px; }
-  #workshop.refit-full .yd-pic.big { height: 300px; }
-  #workshop.refit-full .yd-ruler { height: 324px; }
-  #workshop:not(.refit-full) .shop-main { zoom: 0.8; max-height: calc(100vh / 0.8 - 16px) !important; }
-  #workshop.refit-full .refit-x { zoom: 0.8; }
-}
-@media (max-height: 560px) { #workshop.refit-full .shop-main { width: calc(100vw / 0.62) !important; max-width: none !important; box-sizing: border-box; } }
-@media (max-height: 560px) { #workshop.refit-full .shop-main { max-height: none !important; height: calc(100vh / 0.62) !important; } }
-@media (max-height: 560px) {
-  #workshop.refit-full .yd-hero { grid-template-columns: 1.5fr 1fr !important; gap: 18px; }
-  #workshop.refit-full .shop-main > header { padding-right: 90px; }
+  #title { align-items: flex-start; padding-top: 12px; padding-bottom: 12px; }
+  #quests .qs-panel, #chart .ch-panel, #settings .set-panel { max-height: calc(100vh - 16px) !important; overflow-y: auto; }
+  .shop-main:not(.x) { max-height: calc(100vh - 16px) !important; }
+  #workshop.refit-full .shop-main { max-height: none !important; height: 100vh; }
+  #workshop.refit-full #shop-body { overflow-y: auto !important; }
+  #workshop.refit-full .yd-allwrap { height: auto; }
+  #chart .ch-panel { overflow-y: auto; }
 }

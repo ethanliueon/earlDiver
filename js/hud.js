@@ -34,7 +34,7 @@ export class Hud {
     if (this.c.width !== w || this.c.height !== h) { this.c.width = w; this.c.height = h; }
     // (4.17.0) the UI scale: from the screen's height, but never below 0.7 of the design (a phone held sideways is
     // only ~390 px tall) nor above 1.5; and the notch's safe areas kept clear
-    this.s = Math.max(0.85, Math.min(1.5, window.innerHeight / 900)) * dpr;
+    this.s = h / 900; // UI scale (as on desktop: the phone sizing waits for the controls pass)
     if (!this.safeEl) { this.safeEl = document.createElement('div'); this.safeEl.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(this.safeEl); }
     const cs = getComputedStyle(this.safeEl); this.safe = { l: parseFloat(cs.paddingLeft) * dpr || 0, r: parseFloat(cs.paddingRight) * dpr || 0, t: parseFloat(cs.paddingTop) * dpr || 0, b: parseFloat(cs.paddingBottom) * dpr || 0 };
   }
