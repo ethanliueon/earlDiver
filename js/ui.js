@@ -1,6 +1,17 @@
 // DOM overlays: home screen, journal, boat workshop, pause, run log.
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
+// (4.14.2) a few words about each sub, for its own page
+const SUB_ABOUT = [
+  'A Soviet-era bathyscaphe the Margaret came with: a steel float, a two-man sphere slung underneath and a claw that has seen better days. Slow, honest and only good for the shelf.',
+  'The same old boat, rebuilt at the yard: thicker sphere, new seals, a bigger motor. Still a bathyscaphe at heart, but the twilight is in reach.',
+  'A yellow work boat built for the oil rigs: tough, quick on the throttle and roomy inside. Made to work all day in the twilight and the top of the midnight zone.',
+  'The heavy version of the work boat: a reinforced sphere, extra ballast and a cargo frame. It takes real pressure and brings real hauls home.',
+  'A scientist\'s submersible: syntactic foam, a clean hull and a cabin that keeps you breathing longer. The first true deep-sea machine.',
+  'A deep research boat from an institute fleet: a thicker sphere, faster trim tanks and room for a proper catch. Comfortable well into the abyss.',
+  'A titanium hull and a titanium sphere: light, very strong and fast. Built for expeditions that stay down for hours.',
+  'The only kind of boat that can go anywhere in the sea: a full-ocean-depth hull, rated for the trench floor. There is nothing deeper.',
+];
 const SHOWCASE_TABS = new Set(['diver', 'tools']); // (4.14.0: the sub page draws its own)
 import { speciesIcon, fittedIcon, speciesBox, drawSpecies } from './creatures_draw.js';
 import { ABOUT } from '../data/species_about.js';
@@ -134,7 +145,7 @@ export class UI {
     }));
     // one delegated handler for every button in the shop
     $('shop-body').addEventListener('click', (ev) => {
-      const yd = ev.target.closest('[data-yd]'); if (yd) { this.ydAll = yd.dataset.yd === 'all'; this.renderWorkshop(); $('shop-body').scrollTop = 0; return; } // (4.14.0) all the subs, and back
+      const yd = !ev.target.closest('button[data-act]') && ev.target.closest('[data-yd]'); if (yd) { const v = yd.dataset.yd; this.ydSub = v.startsWith('sub:') ? +v.slice(4) : null; this.ydAll = v === 'all' || v.startsWith('sub:'); this.renderWorkshop(); $('shop-body').scrollTop = 0; return; } // (4.14.2) all the subs, one sub, and back
       const b = ev.target.closest('button[data-act], button[data-sell]');
       if (!b) {
         const i = ev.target.closest('button.info'); if (i) { this.toggleInfo(i.closest('[data-row]')); return; }
@@ -475,7 +486,7 @@ export class UI {
   }
   // the shop, opened on one tab (a station aboard the Margaret)
   openShop(tab, allowed = null, refit = false) {
-    this.ydAll = false;
+    this.ydAll = false; this.ydSub = null;
     this.refitOnly = refit; // (4.12.6) from the tank room: the sub's upgrades and refits, but no new hull (that is the Margaret's yard)
     this.shopTab = tab;
     document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x.dataset.shop === tab));
@@ -1377,31 +1388,38 @@ export class UI {
       });
       html += '</div>';
     } else if (tab === 'sub') {
-      // (4.14.0) one page: her (large) and what she has; the refits with their price tags; and, behind a button,
-      // all eight subs side by side. Everything a sub can do comes with the sub: there are no upgrades for it
+      // (4.14.2) one page: her (large) and her sheet; the refits with price tags; All submersibles shows the ones he
+      // has had, his own and the next he can buy (or one dark card, to be discovered); click a sub for its own page
       const hl = Math.min(SUBS.length - 1, lv(P, 'depth')), S0 = SUBS[hl], cap = hullCap(P);
-      // (4.14.1) her figures on a typed yard specification sheet; against your sub, a green triangle for better, red for worse
-      const facts = (S) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', `${S.o2} s`, S.o2], ['Speed', `×${S.speed}`, S.speed], ['Sink & rise', `×${(1 + S.ballast).toFixed(2)}`, S.ballast], ['Chamber rating', `${S.rating.toLocaleString()} m`, S.rating], ['Open tank', `${S.tank} spaces`, S.tank]];
-      const factHtml = (S, cmp = null, stamp = '') => { const base = cmp ? facts(cmp) : null;
-        return `<div class="yd-sheet"><div class="ys-head"><span>BAYSIDE YARD · SPECIFICATION</span><span>${esc(S.name.toUpperCase())}</span></div>${facts(S).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
-          return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
-      if (this.ydAll) {
+      const air = (s2) => `${Math.floor(s2 / 60)} min${s2 % 60 ? ` ${s2 % 60} s` : ''}`;
+      const facts = (S, k) => [['Safe depth', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(S.o2), S.o2], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed],
+        ['Dive speed', k ? '+10%' : 'standard', S.ballast], ['Open tank', `holds ${S.tank} animals`, S.tank]];
+      const sheet = (S, k, cmp = null, stamp = '', big = false) => { const base = cmp ? facts(cmp, 1) : null;
+        return `<div class="yd-sheet${big ? ' big' : ''}"><div class="ys-head"><span>BAYSIDE YARD · SPECIFICATION</span><span>No. ${k + 1}</span></div>${facts(S, k).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
+          return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}<p class="ys-note">Her pressure chambers hold animals from as deep as she can dive.</p>${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
+      const statusOf = (k) => {
+        if (k === hl && !sub.imploded) return '';
+        if (k < hl) return '<span class="yd-tag past">Had it</span>';
+        if (k === hl + 1 && k <= cap) return `<button class="yd-price" data-act="buy" data-arg="up:tHull" ${can(SUBS[k].price) ? '' : 'disabled'}>${money(SUBS[k].price, false)}</button>`;
+        return '';
+      };
+      const open = this.ydSub != null && this.ydSub <= Math.min(hl + 1, cap) ? this.ydSub : null;
+      if (open != null) { // one sub, large: its picture, its sheet, a word about it
+        const S = SUBS[open];
+        html += `<div class="yd-top"><h3><small>No. ${open + 1} of ${SUBS.length}</small>${S.name}</h3><button class="yd-btn" data-yd="all">← All submersibles</button></div>
+          <div class="yd-hero"><canvas class="yd-pic big" data-hull="${open}"></canvas><div class="yd-info"><p class="yd-about">${SUB_ABOUT[open]}</p>${sheet(S, open, open === hl ? null : S0, open === hl && !sub.imploded ? 'IN SERVICE' : '', true)}<div class="yd-foot">${statusOf(open)}</div></div></div>`;
+      } else if (this.ydAll) {
         html += `<div class="yd-top"><h3>All submersibles</h3><button class="yd-btn" data-yd="back">← Back to your sub</button></div><div class="yd-grid">`;
-        SUBS.forEach((S, k) => {
-          let foot;
-          if (k === hl && !sub.imploded) foot = ''; // (its sheet is stamped IN SERVICE)
-          else if (k < hl) foot = '<span class="yd-tag past">Had it</span>';
-          else if (k === hl + 1 && k > cap) foot = `<span class="yd-tag lock">Plans from ${cap < 3 ? 'the research station' : 'Dave'}</span>`;
-          else if (k === hl + 1) foot = `<button class="yd-price" data-act="buy" data-arg="up:tHull" ${can(S.price) ? '' : 'disabled'}>${money(S.price, false)}</button>`;
-          else foot = `<span class="yd-tag lock">${money(S.price, false)} · buy the ${SUBS[k - 1].name.toLowerCase()} first</span>`;
-          html += `<div class="yd-card${k === hl ? ' cur' : ''}${k > hl + 1 ? ' later' : ''}"><canvas class="yd-pic" data-hull="${k}"></canvas><h4><small>No. ${k + 1}</small>${S.name}</h4>${factHtml(S, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${foot}</div></div>`;
-        });
+        for (let k = 0; k <= Math.min(hl + 1, SUBS.length - 1); k++) {
+          if (k > cap) { html += `<div class="yd-card unknown"><div class="yd-pic dark"><span>?</span></div><h4><small>No. ${k + 1}</small>To be discovered</h4></div>`; break; }
+          const S = SUBS[k];
+          html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><canvas class="yd-pic" data-hull="${k}"></canvas><h4><small>No. ${k + 1}</small>${S.name}</h4>${sheet(S, k, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${statusOf(k)}</div></div>`;
+        }
         html += '</div>';
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
-        html += `<div class="yd-hero"><canvas class="yd-pic big" data-hull="${hl}"></canvas><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ` <button class="yd-btn" data-act="buy" data-arg="patch" ${can(PATCH_PRICE) ? '' : 'disabled'}>Patch it · ${money(PATCH_PRICE, false)}</button>` : ''}</p>${factHtml(S0, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
-          <button class="yd-btn yd-all" data-yd="all">See all submersibles${hl < SUBS.length - 1 ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
-        // refits: one-off fittings, a price tag until fitted, kept from sub to sub
+        html += `<div class="yd-hero"><canvas class="yd-pic big" data-hull="${hl}"></canvas><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ` <button class="yd-btn" data-act="buy" data-arg="patch" ${can(PATCH_PRICE) ? '' : 'disabled'}>Patch it · ${money(PATCH_PRICE, false)}</button>` : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
+          <button class="yd-btn yd-all" data-yd="all">All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, GEAR.arm.desc + ' The claw comes at its best: full reach, the big jaws, quick hydraulics.', GEAR.arm.price, owns(P, 'arm')]]
           .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, a.desc, a.price, !!(P.addons || {})[k]]));
         html += `<h4 class="yd-h">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-tag yours">Fitted</span>' : `<button class="yd-price" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'}>${money(price, false)}</button>`}</div>`).join('')}</div>`;

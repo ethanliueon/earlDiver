@@ -2569,3 +2569,21 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .yd-card .yd-sheet:has(.ys-stamp) { padding-bottom: 32px; }
 #workshop .yd-card .ys-head { display: none; }
 #workshop .yd-refits + .shop-note { margin-top: 18px; }
+
+/* (4.14.2) the sheets on darker, older stock (no glare against the steel); a sub's own page; the unknown card */
+#workshop .yd-sheet { color: #2a2418; background: linear-gradient(180deg, rgba(255,240,200,0.06), rgba(0,0,0,0.08)), repeating-linear-gradient(0deg, rgba(80,64,30,0.07) 0 1px, transparent 1px 22px), #b7aa86;
+  box-shadow: inset 0 0 30px rgba(70,54,20,0.35), 0 6px 14px rgba(0,0,0,0.5); }
+#workshop .ys-row span { color: rgba(42,36,24,0.78); }
+#workshop .ys-row i { border-bottom-color: rgba(42,36,24,0.4); }
+#workshop .ys-row em.up { color: #23601f; } #workshop .ys-row em.down { color: #8a2f1c; }
+#workshop .ys-note { margin: 8px 0 0; font: italic 12px/1.35 var(--serif); color: rgba(42,36,24,0.72); }
+#workshop .yd-sheet.big { font-size: 15px; padding: 14px 18px 40px; }
+#workshop .yd-sheet.big .ys-row { padding: 5px 0; }
+#workshop .yd-sheet.big .ys-note { font-size: 14px; }
+#workshop .yd-about { margin: 0 0 4px; font: italic 16px/1.5 var(--serif); color: rgba(232,228,214,0.85); }
+#workshop .yd-card[data-yd] { cursor: pointer; transition: transform .12s; }
+#workshop .yd-card[data-yd]:hover { transform: translateY(-2px); }
+#workshop .yd-card.unknown { justify-content: flex-start; }
+#workshop .yd-pic.dark { height: 160px; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #142028, #05090c); }
+#workshop .yd-pic.dark span { font: 400 64px var(--serif); color: rgba(232,212,154,0.25); }
+#workshop .yd-top h3 small { display: block; font: 600 11px "IBM Plex Mono", monospace; letter-spacing: 0.12em; color: rgba(232,212,154,0.7); }
