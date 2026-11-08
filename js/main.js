@@ -893,7 +893,7 @@ function dieInjury(sp) {
 // their sprites (at most 1.5 s), so the first moments never stutter or pop
 function withLoading(fn) {
   ui.showLoading(true);
-  setTimeout(() => { fn(); g.warmUntil = performance.now() + 1500; }, 40);
+  setTimeout(() => { ui.setLoading(0.3, 'Building the sea'); setTimeout(() => { fn(); ui.setLoading(0.6, 'Waking the animals'); g.warmFrom = performance.now(); g.warmUntil = g.warmFrom + 1500; }, 60); }, 60); // (4.15.0) a pause between steps lets the bar move
 }
 // (4.2.0) the tutorial: a welcome at the start of a new game, with a skip (asked twice); then tutor() guides the
 // first steps of the Log with a line of text, a fading trail to where to go, and a ring on the fish to catch
@@ -2583,7 +2583,8 @@ function frame(now) {
   // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
   if (g.warmUntil) { // behind the loading card: build the sprites on screen at full speed, then lift it
     const done = renderer.warmSprites(g, 60, true);
-    if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.showLoading(false); }
+    ui.setLoading(0.6 + 0.4 * Math.min(1, (performance.now() - (g.warmFrom || 0)) / 1500), 'Waking the animals');
+    if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.setLoading(1, 'Ready'); setTimeout(() => ui.showLoading(false), 250); }
   } else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   weightedCursor(Math.min(0.05, dt)); hud.draw(g, dt);
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)

@@ -2587,3 +2587,7 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .yd-pic.dark { height: 160px; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #142028, #05090c); }
 #workshop .yd-pic.dark span { font: 400 64px var(--serif); color: rgba(232,212,154,0.25); }
 #workshop .yd-top h3 small { display: block; font: 600 11px "IBM Plex Mono", monospace; letter-spacing: 0.12em; color: rgba(232,212,154,0.7); }
+
+/* (4.15.0) the dive's loading screen: the boot screen's design (its rules are in index.html) */
+#loading.ld { display: block; z-index: 9600; background: #02070a; }
+#loading.ld[hidden] { display: none; }
