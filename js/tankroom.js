@@ -662,11 +662,11 @@ export class TankRoom {
     const w = 130 + EX * 0.6, h = 84, x = CW / 2 - w / 2, y = CH / 2 - h / 2 + 4;
     ctx.save(); ctx.globalAlpha = next ? 1 : 0.42;
     ctx.strokeStyle = 'rgba(150,140,110,0.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(CW / 2, 110); ctx.lineTo(CW / 2, y); ctx.stroke(); // the string from the strap
-    const gr = ctx.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, hot ? '#f6e3a8' : '#e8d49a'); gr.addColorStop(1, hot ? '#c89a48' : '#a8823c');
+    const gr = ctx.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, hot ? '#5fb06c' : '#4f9a5c'); gr.addColorStop(0.55, hot ? '#378a48' : '#2f7a3e'); gr.addColorStop(1, '#1d5229'); // (4.15.4) green: what is for sale
     ctx.fillStyle = gr; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
     ctx.beginPath(); ctx.roundRect(x, y, w, h, 7); ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = 'rgba(60,40,10,0.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 5); ctx.stroke();
-    ctx.fillStyle = '#2e220a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(220,255,210,0.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 5); ctx.stroke();
+    ctx.fillStyle = '#f3f1e2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = '600 15px "IBM Plex Mono", monospace'; ctx.fillText(`CHAMBER ${n + 1}`, CW / 2, y + 24);
     ctx.font = '500 30px "EB Garamond", Georgia, serif'; ctx.fillText('$' + price.toLocaleString(), CW / 2, y + 56);
     ctx.restore();
