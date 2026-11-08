@@ -1197,7 +1197,7 @@ export class UI {
       list.innerHTML = '<p class="empty">Nothing recorded yet.<br>Swim close to a creature and press F to observe it.</p>';
       return;
     }
-    const entries = [...g.journal.entries()].sort((a, b) => b[1].time - a[1].time);
+    const entries = [...g.journal.entries()].sort((a, b) => ((b[1].at || 0) - (a[1].at || 0)) || (b[1].time - a[1].time)); // (4.12.4) newest found first, across dives
     for (const [id, info] of entries) {
       const sp = SPECIES_BY_ID[id];
       const row = document.createElement('div');
@@ -1216,6 +1216,28 @@ export class UI {
     }
   }
 
+  // (4.12.4) every animal in the sea, from the surface down: the ones found in their colours and names, the rest
+  // a black shape and ???. Pictures are drawn as they scroll into view (there are hundreds).
+  renderAllFish(g, list) {
+    this.journalCount(g);
+    const all = SPECIES.filter((sp) => !sp.giant).slice().sort((a, b) => usualDepth(a)[0] - usualDepth(b)[0] || usualDepth(a)[1] - usualDepth(b)[1]);
+    list.innerHTML = `<div class="allfish">${all.map((sp) => { const seen = g.journal.has(sp.id), c = seen ? rarityCol(sp) : null;
+      return `<div class="af${seen ? ' seen' : ''}" title="${seen ? sp.name.replace(/"/g, '') : 'Not yet found'}"><img data-af="${sp.id}" alt=""><b${c ? ` style="color:${c}"` : ''}>${seen ? sp.name : '???'}</b><small>${usualDepth(sp)[0].toLocaleString()}–${usualDepth(sp)[1].toLocaleString()} m</small></div>`; }).join('')}</div>`;
+    if (this.afObs) this.afObs.disconnect();
+    this.afObs = new IntersectionObserver((ents) => {
+      for (const en of ents) { if (!en.isIntersecting) continue; const img = en.target; this.afObs.unobserve(img); const sp = SPECIES_BY_ID[+img.dataset.af]; if (sp) img.src = this.allFishPic(sp, g.journal.has(sp.id)); }
+    }, { root: list, rootMargin: '200px' });
+    list.querySelectorAll('img[data-af]').forEach((im) => this.afObs.observe(im));
+  }
+  allFishPic(sp, seen) {
+    const key = sp.id + (seen ? ':c' : ':s'); this.afCache = this.afCache || new Map();
+    if (this.afCache.has(key)) return this.afCache.get(key);
+    let icon = this.iconCache.get(sp.id); if (!icon) { icon = speciesIcon(sp, 160, 90); this.iconCache.set(sp.id, icon); }
+    let url;
+    if (seen) url = icon.toDataURL();
+    else { const c = document.createElement('canvas'); c.width = icon.width; c.height = icon.height; const x = c.getContext('2d'); x.drawImage(icon, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = '#14120e'; x.fillRect(0, 0, c.width, c.height); url = c.toDataURL(); }
+    this.afCache.set(key, url); return url;
+  }
   // six slots for the rare variants of a species: locked until a normal one is caught
   variantRow(sp) {
     const P = this.h.getProfile && this.h.getProfile();
@@ -1229,6 +1251,7 @@ export class UI {
   // the details that used to crowd the screen live here
   renderJournalTab(tab) {
     const g = this.h.getGame(), list = $('journal-list');
+    if (tab === 'all') return this.renderAllFish(g, list);
     const row = (k, v, note = '') => `<div class="stat"><span>${k}${note ? `<br><small>${note}</small>` : ''}</span><b>${v}</b></div>`;
     if (tab === 'status') {
       const e = g.earl, ent = g.entity, sub = g.sub;
@@ -1589,7 +1612,7 @@ export class UI {
 
   // (4.4.1) the time into the dive, at the top of the journal: kept ticking while it is open (it froze when opened)
   journalCount(g) {
-    const t = `${formatTime(g.survival)} into the dive` + ((this.tab || 'species') === 'species' ? ` · (${g.journal.size}/${SPECIES_COUNT}) recorded` : '');
+    const t = `${formatTime(g.survival)} into the dive` + (['species', 'all'].includes(this.tab || 'species') ? ` · (${g.journal.size}/${SPECIES_COUNT}) recorded` : '');
     const el = $('journal-count'); if (el.textContent !== t) el.textContent = t;
   }
   update(g, dt) {

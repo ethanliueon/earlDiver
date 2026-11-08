@@ -1481,7 +1481,7 @@ function interact(t, exitSub) {
     t.k.harvested = true; g.inv.kelp = (g.inv.kelp || 0) + 1; hud.toast('+1 Kelp'); audio.ready && audio.pickup();
   } else if (t.kind === 'creature') {
     if (!g.journal.has(t.sp.id)) {
-      g.journal.set(t.sp.id, { depth: Math.round(e.y), time: g.survival });
+      g.journal.set(t.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() });
       questEvent(profile, 'observe'); // (4.0.6)
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
       hud.toast(`${t.sp.name} — ${t.sp.sci}`, 'note');
@@ -1998,7 +1998,7 @@ function update(dt) {
           if (r.type === 'noShots') hud.toast('No shots left', 'warn');
           else if (r.empty) hud.toast(`Nothing in frame · ${g.shots} left`);
           else if (r.old) hud.toast(`${r.name}: already photographed`);
-          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed ${r.name} · ${money(r.value)}`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; questEvent(profile, 'photo', { id: r.sp.id }); if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
+          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed ${r.name} · ${money(r.value)}`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; questEvent(profile, 'photo', { id: r.sp.id }); if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
         }
       } else if (tool.kind === 'none') { /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
@@ -2010,7 +2010,7 @@ function update(dt) {
     if (armEv && armEv.type === 'armCatch') {
       hud.toast(armEv.crushed ? `The ${armEv.name.toLowerCase()} was gripped too hard` : `${armEv.name} caught`, armEv.crushed ? 'warn' : 'note');
       const sp = armEv.sp;
-      if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
+      if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; }
       if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
     } else if (armEv && armEv.type === 'armMiss') hud.toast(`The ${armEv.name.toLowerCase()} slips out of the claw`);
@@ -2032,7 +2032,7 @@ function update(dt) {
         g.tags.push({ key: ev.key, value: ev.value, name: ev.name }); questEvent(profile, 'tag');
         hud.toast(`Tagged ${ev.name} · ${money(ev.value)}`, 'note');
         audio.ready && audio.note();
-        if (!g.journal.has(ev.sp.id)) { g.journal.set(ev.sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
+        if (!g.journal.has(ev.sp.id)) { g.journal.set(ev.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; }
         if (!(profile.caught || []).includes(ev.sp.id)) { profile.caught = [...(profile.caught || []), ev.sp.id]; g.fauna.caught.add(ev.sp.id); }
         if (ev.variant) { const vk = ev.sp.id + ':' + ev.variant; if (!(profile.variants || []).includes(vk)) profile.variants = [...(profile.variants || []), vk]; }
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
@@ -2048,7 +2048,7 @@ function update(dt) {
         // (4.3.1) the Log's 'observe' step, and he netted the fish before pressing F: a fish in the net has been
         // looked at closely enough. It goes in the journal and the step is done (the net step then has a new fish)
         if ((QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && !g.journal.has(sp.id)) {
-          g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile);
+          g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile);
         }
         if (v) {
           hud.toast(`${ev.name}!`, 'big');
@@ -2064,7 +2064,7 @@ function update(dt) {
         const extra = capEvs.filter((q) => q.type === 'caught' && q.extra).length; // (the bait-ball net: more from the same school)
         if (!v && !ev.extra) hud.toast(`${ev.name}${extra ? ` ×${extra + 1}` : ''}${hurt}`, 'rar:' + rr.col);
         audio.ready && audio.pickup();
-        if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival }); ui.journalDirty = true; }
+        if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; }
         if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       } else if (ev.type === 'missed') {
@@ -2097,7 +2097,7 @@ function update(dt) {
       else {
         hud.toast(`Net in · ${haul.length} animal${haul.length > 1 ? 's' : ''}${netRes.lost ? ` (${netRes.lost} slipped out)` : ''}`, 'big');
         hud.hint('T: the tank room. Drag them into the tank or the chambers before they suffer');
-        for (const s of haul) { const sp = SPECIES_BY_ID[s.id]; if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(s.from), time: g.survival }); ui.journalDirty = true; } if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); } }
+        for (const s of haul) { const sp = SPECIES_BY_ID[s.id]; if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(s.from), time: g.survival, at: Date.now() }); ui.journalDirty = true; } if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); } }
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       }
       audio.ready && audio.thud(0.3);

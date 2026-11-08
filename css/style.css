@@ -2470,3 +2470,12 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #tut-spot .ts-key.btn { background: linear-gradient(180deg, rgba(43,49,41,0.94), rgba(27,31,26,0.94)); color: #e4e2d4; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
   box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #3a4136, 0 0 0 4px #0c0e0a, 0 10px 24px rgba(0,0,0,0.5); }
 #tut-spot .ts-key.btn:hover { box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #59624f, 0 0 0 4px #0c0e0a, 0 12px 26px rgba(0,0,0,0.55); filter: brightness(1.06); }
+
+/* (4.12.4) the journal's All fish page: a grid of every animal, the unknown ones as black shapes */
+#journal .allfish { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px 8px; padding: 4px 2px 10px; }
+#journal .af { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 4px; background: rgba(60,50,30,0.06); }
+#journal .af img { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; }
+#journal .af:not(.seen) img { opacity: 0.85; }
+#journal .af b { font: 500 14px/1.15 var(--serif); text-align: center; color: #3a3428; }
+#journal .af:not(.seen) b { letter-spacing: 0.12em; color: rgba(58,52,40,0.55); }
+#journal .af small { font: 10px var(--mono); color: rgba(58,52,40,0.55); }
