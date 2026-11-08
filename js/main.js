@@ -161,7 +161,7 @@ function newGame(mode) {
   const rng = makeRng(seed ^ 0x5bd1e995);
   const g = {
     mode, seed, world, rng, profile,
-    time: 25 + Math.random() * 60, // a little after sunrise
+    time: 572, // (4.17.4) a dive sets out at sunrise: the moon just down, the sky warming, full day about 30 s later
     survival: 0,
     earl: new Earl(), sub: new Sub(),
     entity: new Entity(rng, world),
@@ -770,6 +770,7 @@ function syncProfile() {
 // (4.12.6) carrying on from the last save of a dive (a reload, a crash): everything as it was, times shifted to the new clock
 function resumeDive(P) {
   const r = P.resume; if (!r || r.v !== 1 || g.mode !== 'play') return false;
+  if (typeof r.time === 'number') g.time = r.time; // (4.17.4) the time of day it was
   const dt0 = g.time - (r.time || 0), shift = (list) => (list || []).map((s) => (typeof s.t === 'number' ? Object.assign({}, s, { t: s.t + dt0 }) : Object.assign({}, s)));
   g.bag = shift(r.bag); g.subTank = shift(r.subTank); g.inv = Object.assign({}, r.inv || {}); g.survival = r.survival || 0;
   if (r.aboard) return true; // on the Margaret: back on her deck, the catch with him
