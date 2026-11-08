@@ -2771,3 +2771,18 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .yd-card h4 { margin: -30px 10px 0; line-height: 1.25; min-height: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #workshop .yd-card .yd-sheet { margin-top: 14px; }
 #workshop .ys-stamp { transform: rotate(-3deg); }
+/* (4.15.11) the board fills the screen evenly, top and bottom; All submersibles without pins or tilted photographs:
+   each sub's picture in a plain brass-edged frame, its name under it, its sheet under that, lower down the board */
+#workshop.refit-full .shop-main { display: flex; flex-direction: column; }
+#workshop.refit-full #shop-body { flex: 1 1 auto; min-height: 0; margin-bottom: 4px; }
+#workshop .yd-grid { margin-top: 34px; }
+#workshop .yd-card, #workshop .yd-card:nth-child(odd), #workshop .yd-card:nth-child(even) { transform: none; }
+#workshop .yd-card[data-yd]:hover { transform: translateY(-3px); }
+#workshop .yd-photo { padding: 0; background: none; box-shadow: none; }
+#workshop .yd-photo .yd-pic, #workshop .yd-photo .yd-pic.dark { border-radius: 6px; box-shadow: 0 0 0 2px #2a1e08, 0 0 0 5px #8a6d34, 0 6px 14px rgba(0,0,0,0.5); }
+#workshop .yd-card.cur .yd-photo { box-shadow: none; }
+#workshop .yd-card.cur .yd-photo .yd-pic { box-shadow: 0 0 0 2px #2a1e08, 0 0 0 5px #9fdc8c, 0 6px 14px rgba(0,0,0,0.5); }
+#workshop .yd-card h4 { margin: 16px 2px 0; color: #f1efe6; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+#workshop .yd-card h4 small { color: rgba(232,212,154,0.75); }
+#workshop .yd-card .yd-where { color: rgba(232,212,154,0.8); }
+#workshop .yd-card .yd-sheet { margin: 12px 0 0; transform: none; }
