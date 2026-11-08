@@ -49,6 +49,7 @@
     @keyframes ld-push { from { transform: scale(1); } to { transform: scale(1.06) translate(-0.8%, 0.8%); } }
     @keyframes ld-glint { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
     @keyframes ld-bub { from { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } to { transform: translate(16px, -80vh); opacity: 0; } }
+    @media (max-height: 560px) { .ld .ld-head { top: 18%; gap: 4px; } .ld .ld-title { font-size: clamp(30px, 9vh, 56px); } .ld .ld-helmet { width: 30px; height: 30px; } .ld .ld-ui { bottom: 18px; gap: 10px; } .ld .ld-tip { font-size: 15px; } }
     @media (prefers-reduced-motion: reduce) { .ld * { animation: none !important; } }
   </style>
 </head>
@@ -65,7 +66,7 @@
     // the game reports how far it has got (window.__boot), then fades this away (window.__bootDone)
     // (4.15.0) how far the game has got (window.__boot / __load), then fade it away (window.__bootDone)
     window.__ldSet = function (el, k, label) { if (!el) return; k = Math.max(0.04, Math.min(1, k)); var f = el.querySelector('.ld-fill'), h = el.querySelector('.ld-bar .ld-helmet'), t = el.querySelector('.ld-step'); if (f) f.style.width = (k * 100) + '%'; if (h) h.style.left = (k * 100) + '%'; if (t && label) t.textContent = label; };
-    window.__ldTips = ['Deep animals need a pressure chamber to come up alive.', 'Mark a spot on your chart with <kbd>K</kbd> to find it again.', 'Below her depth rating, the sub leaks air faster and faster.', 'Legends are commoner near the bottom of their depths.', 'A lure <kbd>Q</kbd> draws the thing in the deep away from you.', 'Sell your catch at the Margaret with <kbd>U</kbd>.', 'Some animals come to the light. Some run from it. Some hunt it.', 'Choose your trawl net with <kbd>N</kbd>: only the advanced net holds a legend.'];
+    window.__ldTips = ['Animals from the deep need a pressure chamber, or they won\'t survive the trip up.', 'Found something worth coming back for? Mark it on your chart with <kbd>K</kbd>.', 'Below its depth rating, the sub leaks air faster and faster.', 'Legendary animals hide near the deepest part of their range.', 'Throw a lure with <kbd>Q</kbd> to pull the thing in the deep away from you.', 'Sell your catch at the Margaret with <kbd>U</kbd>.', 'Some animals come to the light. Some run from it. Some hunt it.', 'Only the advanced trawl net can hold a legend. Pick your net with <kbd>N</kbd>.'];
     window.__ldTip = function (el) { var tip = el && el.querySelector('.ld-tip span') || (function () { var w = el && el.querySelector('.ld-tip'); if (!w) return null; var sp = document.createElement('span'); w.appendChild(sp); return sp; })(); if (!tip) return; var i = Math.floor(Math.random() * window.__ldTips.length); tip.innerHTML = window.__ldTips[i]; clearInterval(el.__tipT); el.__tipT = setInterval(function () { i = (i + 1) % window.__ldTips.length; tip.style.opacity = 0; setTimeout(function () { tip.innerHTML = window.__ldTips[i]; tip.style.opacity = 1; }, 400); }, 4200); };
     window.__boot = function (k, label) { window.__ldSet(document.getElementById('boot'), k, label); };
     window.__bootDone = function () { var el = document.getElementById('boot'); if (!el) return; el.classList.add('done'); clearInterval(el.__tipT); setTimeout(function () { el.remove(); }, 800); };

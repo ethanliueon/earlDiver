@@ -1137,7 +1137,8 @@ export class UI {
 
   // the title screen: Continue (the last slot played), and each slot with what it holds
   showTitle() {
-    this.closeAll(); this.setPaused(false);
+    this.closeAll(); this.setPaused(false); setTimeout(() => this.fitTitle(), 0); requestAnimationFrame(() => this.fitTitle());
+    if (!this.fitBound) { this.fitBound = true; window.addEventListener('resize', () => this.fitTitle()); document.fonts && document.fonts.ready.then(() => this.fitTitle()); }
     $('menu').classList.add('gone');
     const ago = (ms) => { const m = (Date.now() - ms) / 60000; return m < 2 ? 'just now' : m < 60 ? `${Math.round(m)} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
     let html = '';
@@ -1160,6 +1161,12 @@ export class UI {
   // the painted loading screen is only for opening the game
   showLoading(on) { const el = $('loading'); el.hidden = !on; if (on) this.setLoading(0, 'Charting the sea'); }
   setLoading(k, label) { const sp = $('loading').querySelector('span'); if (sp && label && sp.textContent !== label) sp.textContent = label; }
+  // (4.17.1) on a short screen, the title menu is scaled down to fit its height (measured, so nothing is cut off)
+  fitTitle() {
+    const t = $('title'), pnl = t && t.querySelector('.title-panel'); if (!pnl) return;
+    pnl.style.zoom = 1; const h = pnl.scrollHeight, room = window.innerHeight - 20;
+    pnl.style.zoom = h > room ? Math.max(0.5, room / h).toFixed(3) : '';
+  }
   showGame() {
     $('title').classList.add('gone');
     $('menu').classList.add('gone');
@@ -1167,6 +1174,7 @@ export class UI {
     this.journalDirty = true;
   }
   showMenu(last) {
+    setTimeout(() => this.fitTitle(), 0);
     this.closeAll();
     $('menu').classList.remove('gone');
     this.setPaused(false);

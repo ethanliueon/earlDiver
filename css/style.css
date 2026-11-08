@@ -2842,3 +2842,8 @@ body { padding: 0; }
   #workshop.refit-full .yd-allwrap { height: auto; }
   #chart .ch-panel { overflow-y: auto; }
 }
+/* (4.17.1) a phone held sideways: the title menu scaled to fit the screen's height, nothing cut off */
+@media (max-height: 560px) {
+  #title { align-items: center; padding-top: 0; padding-bottom: 0; overflow: hidden; }
+  #title .title-panel { zoom: calc(var(--tfit, 1)); }
+}
