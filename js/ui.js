@@ -1455,13 +1455,21 @@ export class UI {
         html += `<div class="yd-top"><h3><small>No. ${open + 1} of ${SUBS.length}</small>${S.name}</h3><button class="yd-tab" data-yd="all">← All submersibles</button></div>
           <div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${open}"></canvas></div>${ruler(S)}</div><div class="yd-info"><p class="yd-about">${SUB_ABOUT[open]}</p>${sheet(S, open, open === hl ? null : S0, open === hl && !sub.imploded ? 'IN SERVICE' : '', true)}<div class="yd-foot">${statusOf(open)}</div></div></div>`;
       } else if (this.ydAll) {
-        html += `<div class="yd-top"><h3 class="yd-stencil">All submersibles</h3><button class="yd-tab" data-yd="back">← Back to your sub</button></div><div class="yd-grid">`;
-        for (let k = 0; k <= Math.min(hl + 1, SUBS.length - 1); k++) {
-          if (k > cap) { html += `<div class="yd-card unknown"><div class="yd-photo"><div class="yd-pic dark"><span>?</span></div></div><h4><small>No. ${k + 1}</small>To be discovered <em class="yd-where">(${cap < 3 ? 'the research station' : "Dave's cabin"})</em></h4>${sheet(SUBS[k], k, S0)}</div>`; break; } // (4.15.1) its figures shown; where its plans are, in brackets
+        html += `<div class="yd-allwrap"><div class="yd-top"><h3 class="yd-stencil">All submersibles</h3><button class="yd-tab" data-yd="back">← Back to your sub</button></div><div class="yd-grid">`;
+        // (4.15.12) all eight: the ones whose plans are still to be found as black shapes, ??? for a name, where to
+        // find them, and their figures locked away
+        const lockSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><circle cx="12" cy="16" r="1.6" fill="#2a2418"/></svg>';
+        for (let k = 0; k < SUBS.length; k++) {
           const S = SUBS[k];
-          html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}"></canvas></div><h4><small>No. ${k + 1}</small>${S.name}</h4>${sheet(S, k, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${statusOf(k)}</div></div>`;
+          if (k > cap) {
+            const where = k <= 3 ? 'the research station' : "Dave's Haul";
+            html += `<div class="yd-card unknown"><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}" data-shadow="1"></canvas></div><h4><small>No. ${k + 1}</small>???</h4><p class="yd-disc">To be discovered at ${where}</p><div class="yd-locked">${sheet(S, k, S0)}<div class="yd-lock">${lockSvg}</div></div></div>`;
+            continue;
+          }
+          const foot = k > hl + 1 ? `<span class="yd-tag lock">${money(S.price, false)} · buy No. ${hl + 2} first</span>` : statusOf(k);
+          html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}"></canvas></div><h4><small>No. ${k + 1}</small>${S.name}</h4>${sheet(S, k, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${foot}</div></div>`;
         }
-        html += '</div>';
+        html += '</div></div>';
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
         html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
@@ -1573,10 +1581,19 @@ export class UI {
     const looks = cvs.map((cv) => { const k = +cv.dataset.hull; const Pk = { ...P, tlvV: 2, tlvCh: 1, tlv: { ...(P.tlv || {}), tHull: k } }; return { kind: 'sub', now: subLook(Pk), next: null }; });
     const t0 = performance.now(), tick = () => {
       if (!cvs[0].isConnected || $('workshop').hidden) return;
-      const t = (performance.now() - t0) / 1000; cvs.forEach((cv, i) => drawShowcase(cv, looks[i], t + i * 0.7));
+      const t = (performance.now() - t0) / 1000;
+      cvs.forEach((cv, i) => { if (cv.dataset.shadow) { if (!cv.dataset.done) this.drawShadowSub(cv, looks[i]); } else drawShowcase(cv, looks[i], t + i * 0.7); });
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+  }
+  // (4.15.12) a sub not yet discovered: the water as usual, the sub in it a black shape (drawn once)
+  drawShadowSub(cv, look) {
+    if (!cv.clientWidth) return;
+    drawShowcase(cv, null, 0); const x = cv.getContext('2d'), w = cv.width, h = cv.height, water = x.getImageData(0, 0, w, h);
+    drawShowcase(cv, look, 0); const full = x.getImageData(0, 0, w, h), a = water.data, b = full.data;
+    for (let i = 0; i < b.length; i += 4) { const d = Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]); if (d > 18) { b[i] = 4; b[i + 1] = 8; b[i + 2] = 11; } }
+    x.putImageData(full, 0, 0); cv.dataset.done = '1';
   }
   // copy the selected row's name, figures and button into the showcase, and start its drawing
   fillShowcase(sel, P) {

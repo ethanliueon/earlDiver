@@ -2786,3 +2786,15 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .yd-card h4 small { color: rgba(232,212,154,0.75); }
 #workshop .yd-card .yd-where { color: rgba(232,212,154,0.8); }
 #workshop .yd-card .yd-sheet { margin: 12px 0 0; transform: none; }
+/* (4.15.12) All submersibles: all eight, scrolling, the row centred up and down when it fits; the undiscovered ones
+   as black shapes with their figures locked away */
+#workshop.refit-full #shop-body { overflow-y: auto; }
+#workshop .yd-allwrap { display: flex; flex-direction: column; min-height: 100%; }
+#workshop .yd-allwrap .yd-grid { margin: auto 0; padding: 24px 0 30px; }
+#workshop .yd-card.unknown h4 { letter-spacing: 0.2em; }
+#workshop .yd-disc { margin: 4px 2px 0; font: italic 14px var(--serif); color: rgba(232,212,154,0.85); }
+#workshop .yd-locked { position: relative; margin-top: 10px; }
+#workshop .yd-locked .yd-sheet { filter: blur(3px) grayscale(0.6) brightness(0.55); pointer-events: none; user-select: none; margin: 0; }
+#workshop .yd-lock { position: absolute; inset: 0; display: grid; place-items: center; }
+#workshop .yd-lock svg { width: 44px; height: 44px; color: #c8b07a; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7)); }
+#workshop .yd-card.unknown .yd-photo .yd-pic { box-shadow: 0 0 0 2px #2a1e08, 0 0 0 5px #4a4232, 0 6px 14px rgba(0,0,0,0.5); }
