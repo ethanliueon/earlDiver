@@ -893,7 +893,7 @@ function dieInjury(sp) {
 // their sprites (at most 1.5 s), so the first moments never stutter or pop
 function withLoading(fn) {
   ui.showLoading(true);
-  setTimeout(() => { ui.setLoading(0.3, 'Building the sea'); setTimeout(() => { fn(); ui.setLoading(0.6, 'Waking the animals'); g.warmFrom = performance.now(); g.warmUntil = g.warmFrom + 1500; }, 60); }, 60); // (4.15.0) a pause between steps lets the bar move
+  setTimeout(() => { ui.setLoading(0.3, 'Generating the ocean'); setTimeout(() => { fn(); ui.setLoading(0.6, 'Rendering the animals'); g.warmFrom = performance.now(); g.warmUntil = g.warmFrom + 1500; }, 60); }, 60); // (4.15.0) a pause between steps lets the bar move
 }
 // (4.2.0) the tutorial: a welcome at the start of a new game, with a skip (asked twice); then tutor() guides the
 // first steps of the Log with a line of text, a fading trail to where to go, and a ring on the fish to catch
@@ -2583,7 +2583,7 @@ function frame(now) {
   // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
   if (g.warmUntil) { // behind the loading card: build the sprites on screen at full speed, then lift it
     const done = renderer.warmSprites(g, 60, true);
-    ui.setLoading(0.6 + 0.4 * Math.min(1, (performance.now() - (g.warmFrom || 0)) / 1500), 'Waking the animals');
+    ui.setLoading(0.6 + 0.4 * Math.min(1, (performance.now() - (g.warmFrom || 0)) / 1500), 'Rendering the animals');
     if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.setLoading(1, 'Ready'); setTimeout(() => ui.showLoading(false), 250); }
   } else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   weightedCursor(Math.min(0.05, dt)); hud.draw(g, dt);
@@ -2609,13 +2609,13 @@ requestAnimationFrame(frame);
 // slow drawing, done here so it never hitches later), let the first frames settle, then fade into the title
 (async () => {
   const B = window.__boot || (() => {}), frames = (n) => new Promise((r) => { let i = 0; const f = () => (++i >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-  B(0.6, 'Filling the sea');
+  B(0.6, 'Generating the ocean');
   await frames(2);
   try { await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 3000))]); } catch (e) { /* the fallback fonts will do */ }
-  B(0.78, 'Waking the deep');
+  B(0.78, 'Preparing textures');
   await frames(1);
   try { prepareMonster(); } catch (e) { /* drawn on first sight instead */ }
-  B(0.92, 'Setting out the boat');
+  B(0.92, 'Rendering the first frames');
   await frames(14);
   B(1, 'Ready');
   await frames(4);

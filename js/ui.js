@@ -1153,7 +1153,7 @@ export class UI {
   // (4.15.0) the loading screen (the same pictures as the first one): its bar, its line, a tip
   showLoading(on) {
     const el = $('loading');
-    if (on) { el.classList.remove('done'); el.hidden = false; if (window.__ldSet) window.__ldSet(el, 0.08, 'Charting the sea'); if (window.__ldTip) window.__ldTip(el); return; }
+    if (on) { el.classList.remove('done'); el.hidden = false; if (window.__ldSet) window.__ldSet(el, 0.08, 'Preparing the dive'); if (window.__ldTip) window.__ldTip(el); return; }
     if (el.hidden) return;
     el.classList.add('done'); clearInterval(el.__tipT);
     setTimeout(() => { if (el.classList.contains('done')) { el.hidden = true; el.classList.remove('done'); } }, 650);
