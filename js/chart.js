@@ -71,7 +71,7 @@ export class Chart {
   openEdit(m, isNew) {
     this.sel = m; const { W, H, X, Y } = this.geo, r = this.cv.getBoundingClientRect(), k = r.width / W;
     const ed = this.edit, following = this.h.following() === m;
-    ed.innerHTML = `<div class="ce-head">${isNew ? 'New marker' : 'Marker'} <small>${Math.round(m.x).toLocaleString()} m along · ${Math.round(m.y).toLocaleString()} m deep</small></div>
+    ed.innerHTML = `<div class="ce-head">${isNew ? 'New marker' : 'Marker'} <small>${Math.round(m.y).toLocaleString()} m deep</small></div>
       <input class="ce-name" maxlength="28" value="${esc(m.name)}" spellcheck="false">
       <div class="ce-cols">${MARK_COLS.map((c) => `<button class="ce-col${c === m.col ? ' on' : ''}" data-col="${c}" style="--c:${c}" aria-label="Colour"></button>`).join('')}</div>
       <div class="ce-btns"><button class="ce-save">${isNew ? 'Set marker' : 'Save'}</button>${isNew ? '<button class="ce-cancel">Cancel</button>' : `<button class="ce-follow">${following ? 'Stop following' : 'Follow'}</button><button class="ce-del">Remove</button>`}</div>`;
@@ -144,7 +144,7 @@ export class Chart {
     if (this.sel && !markersOf(P).includes(this.sel)) this.pin(x, X(this.sel.x), Y(this.sel.y), this.sel.col, '', false, true, t);
     // the reading under the pointer
     const at = this.el.querySelector('.ch-at');
-    if (!at.classList.contains('warn')) at.textContent = this.hover ? (this.hover.rock ? `${Math.round(this.hover.x).toLocaleString()} m along · rock` : `${Math.round(this.hover.x).toLocaleString()} m along · ${Math.round(this.hover.y).toLocaleString()} m deep`) : `You: ${Math.round(Math.max(0, e.y)).toLocaleString()} m deep`;
+    if (!at.classList.contains('warn')) at.textContent = this.hover ? (this.hover.rock ? 'rock' : `${Math.round(this.hover.y).toLocaleString()} m deep`) : `You: ${Math.round(Math.max(0, e.y)).toLocaleString()} m deep`;
     if (this.hover && !this.hover.rock) { x.strokeStyle = 'rgba(236,230,210,0.25)'; x.beginPath(); x.moveTo(X(this.hover.x), top); x.lineTo(X(this.hover.x), H); x.moveTo(0, Y(this.hover.y)); x.lineTo(W, Y(this.hover.y)); x.stroke(); }
   }
   pin(x, px, py, col, name, followed, sel, t) {

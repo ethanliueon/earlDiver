@@ -29,7 +29,7 @@ import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
-import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
+import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, netsOf, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
@@ -144,9 +144,7 @@ export class UI {
       if (b.disabled) return;
       const act = b.dataset.act || b.dataset.sell, arg = b.dataset.arg;
       if (act === 'buy' && arg.startsWith('subnet:')) {
-        const g0 = h.getGame(), k = arg.slice(7), cur = g0 && g0.items.net;
-        if (cur && cur !== k) { this.confirm('Replace the net?', `The hatch holds one net. Buying the ${NETS_SUB[k].name.toLowerCase()} replaces your ${NETS_SUB[cur].name.toLowerCase()}, which is lost.`, 'Replace it', 'Keep mine', () => { h.onBuy(arg); this.renderWorkshop(); }); return; }
-        h.onBuy(arg);
+        h.onBuy(arg); // (4.11.0) the hatch holds two beginner nets and an advanced one: nothing is replaced
       }
       else if (act === 'buy') h.onBuy(arg);
       else if (act === 'take') { h.onTakeContract(arg); }
@@ -429,6 +427,27 @@ export class UI {
     el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
     clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), 2900);
   }
+  // (4.11.0) N with more than one kind of net in the hatch: their cards in the middle of the screen, in the item
+  // cards' look (picture, name, a number in a circle when there are two). Click one, or press its number; N or Esc
+  // puts the choice away. The sea runs on behind it.
+  pickNet(kinds, counts, onPick) {
+    let el = document.getElementById('netpick');
+    if (!el) { el = document.createElement('div'); el.id = 'netpick'; el.hidden = true; document.body.appendChild(el); }
+    const close = () => { el.hidden = true; window.removeEventListener('keydown', key, true); this.netPickClose = null; };
+    if (this.netPickClose) { this.netPickClose(); return; }
+    const pick = (k) => { close(); onPick(k); };
+    const key = (e) => {
+      const k = e.key.toLowerCase(), i = '123'.indexOf(k);
+      if (i >= 0 && kinds[i]) { e.stopPropagation(); e.preventDefault(); pick(kinds[i]); }
+      else if (k === 'escape' || k === 'n') { e.stopPropagation(); e.preventDefault(); close(); }
+    };
+    el.innerHTML = `<p class="np-title">Which net?</p><div class="g-row">${kinds.map((k, i) => { const N = NETS_SUB[k], adv = k === 'adv';
+      return `<button class="gain np-card ${adv ? 'r-legendary' : 'r-common'}" data-net="${k}"><div class="g-tile"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt="">${counts[k] > 1 ? `<i class="np-n">${counts[k]}</i>` : ''}</div><b>${N.name}</b><span class="np-line">${adv ? `Up to ${N.max} animals, ${N.maxLen} m long · wide mouth · takes legends` : `Up to ${N.max} animals, ${N.maxLen} m long · small fish only`}</span><span class="np-key">${i + 1}</span></button>`; }).join('')}</div><p class="np-hint">Click a net or press its number · N or Esc to cancel</p>`;
+    el.onclick = (e) => { const b = e.target.closest('[data-net]'); if (b) pick(b.dataset.net); else if (e.target === el) close(); };
+    window.addEventListener('keydown', key, true);
+    this.netPickClose = close; el.hidden = false;
+  }
+  netPickOpen() { const el = document.getElementById('netpick'); return !!el && !el.hidden; }
   hideGains() { const el = document.getElementById('gains'); if (!el) return; clearTimeout(this.gainT); el.classList.remove('in'); el.classList.add('out'); }
   // (4.0.0) after a purchase confirmed in the dialog: whatever shop is open shows the new state
   refreshOpen() {
@@ -1318,9 +1337,9 @@ export class UI {
     } else if (tab === 'supplies') {
       // the sub's trawl nets: one in the hatch at a time, each used up in one haul
       for (const [k, N] of Object.entries(NETS_SUB)) {
-        const inHatch = g.items.net === k;
-        html += card(N.name, N.desc, inHatch ? 'in the hatch' : g.items.net ? `replaces your ${NETS_SUB[g.items.net].name.toLowerCase()}` : 'the hatch is empty', inHatch ? null : N.price, 'buy', 'subnet:' + k, inHatch ? 'In the hatch' : 'Buy', '', '',
-          [['holds', `${N.max} animals`], ['fish up to', `${N.maxLen} m`], ['mouth', `${(N.mouth * 2).toFixed(1)} m tall`], ['tears', N.tear > 0.5 ? 'often, on big animals' : 'seldom', N.tear > 0.5 ? 'bad' : 'good'], ['use', 'N in the sub, once', 'sheet']]);
+        const have = netsOf(g.items)[k], full = have >= N.cap, adv = k === 'adv';
+        html += card(N.name, N.desc, `in the hatch (${have}/${N.cap})`, full ? null : N.price, 'buy', 'subnet:' + k, full ? 'Full' : 'Buy', '', '',
+          [['holds', `${N.max} animals`, adv ? 'good' : ''], ['fish up to', `${N.maxLen} m long`, adv ? 'good' : ''], ['mouth', adv ? `${(N.mouth * 2).toFixed(1)} m wide: catches far more of a school` : `${(N.mouth * 2).toFixed(1)} m wide`, adv ? 'good' : ''], ['legends', adv ? 'yes: never tears on one' : 'no: too small', adv ? 'good' : 'bad'], ['tears', N.tear > 0.5 ? 'often, on big animals' : 'seldom', N.tear > 0.5 ? 'bad' : 'good'], ['use', 'N in the sub, once', 'sheet']]);
       }
       for (const [k, it] of Object.entries(SUPPLIES)) {
         if (it.needs && !owns(P, it.needs)) continue; // tags only once he has the tag gun

@@ -6,7 +6,7 @@
 // Gear can be sold back wherever there is a shop. The old one has no website (see main.js / render.js).
 import { ITEMS, ITEMS_OF, kitOf, ownsItem, worn as wornItem, RARITY, isOn, sellValue, LOCKER, lockerFree } from './items.js';
 import { SUITS, TRAPS, SUPPLIES, supplyMax, money, owns, kit } from './economy.js';
-import { NETS_SUB } from './capture.js';
+import { NETS_SUB, netsOf } from './capture.js';
 import { toolIcon } from './tools_draw.js';
 import { drawSpecialPicture } from './item_art.js';
 import { drawEarl } from './earl_draw.js';
@@ -100,7 +100,7 @@ export class Catalog {
         owned: ownsItem(P, it.id), on: !!on && on.id === it.id, pic: [cat, it] }));
     }
     if (this.id !== 'bayside') return [];
-    if (cat === 'trawl') { const T = NETS_SUB.basic, inHatch = g && g.items && g.items.net === 'basic'; return [{ key: 'subnet:basic', id: 'basic', kind: 'trawl', name: T.name, price: T.price, line: "A light net for the sub's belly hatch.", good: 'A haul of shallow fish while you drive', bad: 'Deep animals tear it', owned: inHatch, on: inHatch, onText: 'In the hatch', pic: ['trawl', 0] }]; }
+    if (cat === 'trawl') { const T = NETS_SUB.basic, have = g && g.items ? netsOf(g.items).basic : 0, full = have >= T.cap; return [{ key: 'subnet:basic', id: 'basic', kind: 'trawl', name: T.name, price: T.price, line: `A light net for the sub's belly hatch. Carry up to ${T.cap} (${have}/${T.cap}).`, good: 'A haul of shallow fish while you drive', bad: 'Fish over 1 m tear it', owned: full, on: full, onText: `In the hatch (${have}/${T.cap})`, pic: ['trawl', 0] }]; } // (4.11.0)
     if (cat === 'trap') {
       const tr = P.traps || {};
       return ['pot', 'fish'].map((k, i) => { const T = TRAPS[k], have = tr[k] || 0; return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, price: T.price, line: k === 'pot' ? 'A galvanised box with one funnel.' : 'A mesh box with a funnel at each end.', good: `To ${T.maxDepth} m; up to ${T.holds} animals`, count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', i] }; });
@@ -217,7 +217,7 @@ export function pictureOf(kind, v, w, h, plain = false) {
     else if (kind === 'fins') drawFins(ctx, w, h, v);
     else if (kind === 'tank') drawTank(ctx, w, h, v);
     else if (kind === 'bag') drawBag(ctx, w, h, v);
-    else if (kind === 'trawl') drawTrawl(ctx, w, h);
+    else if (kind === 'trawl') drawTrawl(ctx, w, h, v);
     else drawSupply(ctx, w, h, v);
     const url = c.toDataURL(); PICS.set(key, url); return url;
 }
@@ -259,7 +259,19 @@ function drawBag(ctx, w, h, it) {
   ctx.save(); ctx.clip(); ctx.strokeStyle = 'rgba(30,50,40,0.5)'; ctx.lineWidth = 1; for (let i = -10; i < 10; i++) { ctx.beginPath(); ctx.moveTo(cx + i * 7, cy - bh); ctx.lineTo(cx + i * 7 + bh, cy + bh); ctx.moveTo(cx + i * 7, cy - bh); ctx.lineTo(cx + i * 7 - bh, cy + bh); ctx.stroke(); } ctx.restore();
   if (it.id === 'divided') { ctx.strokeStyle = 'rgba(30,40,50,0.6)'; ctx.lineWidth = 2; for (const f of [-0.15, 0.15]) { ctx.beginPath(); ctx.moveTo(cx + bw * f, cy - bh * 0.5); ctx.lineTo(cx + bw * f * 0.5, cy + bh * 0.4); ctx.stroke(); } }
 }
-function drawTrawl(ctx, w, h) {
+function drawTrawl(ctx, w, h, v) {
+  if (v === 'adv') { // (4.11.0) the advanced net: a far wider mouth on a brass hoop, heavy dark twine, a long full bag
+    const top = 0.14, bot = 0.86, x0 = 0.14, x1 = 0.88;
+    ctx.fillStyle = 'rgba(40,70,70,0.25)'; ctx.beginPath(); ctx.moveTo(w * x0, h * top); ctx.quadraticCurveTo(w * 0.55, h * 0.12, w * x1, h * 0.42); ctx.lineTo(w * x1, h * 0.58); ctx.quadraticCurveTo(w * 0.55, h * 0.88, w * x0, h * bot); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(70,96,92,0.95)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(w * x0, h * top); ctx.quadraticCurveTo(w * 0.55, h * 0.12, w * x1, h * 0.42); ctx.moveTo(w * x0, h * bot); ctx.quadraticCurveTo(w * 0.55, h * 0.88, w * x1, h * 0.58); ctx.stroke();
+    ctx.strokeStyle = 'rgba(96,124,118,0.6)'; ctx.lineWidth = 1.3;
+    for (let i = 1; i < 12; i++) { const f = i / 12, x = w * (x0 + f * (x1 - x0)), sp = (1 - f * 0.78) * 0.36; ctx.beginPath(); ctx.moveTo(x, h * (0.5 - sp)); ctx.lineTo(x, h * (0.5 + sp)); ctx.stroke(); }
+    for (const q of [0.33, 0.5, 0.67]) { ctx.beginPath(); ctx.moveTo(w * x0, h * (top + (bot - top) * q)); ctx.quadraticCurveTo(w * 0.55, h * (0.5 + (q - 0.5) * 0.5), w * x1, h * (0.5 + (q - 0.5) * 0.2)); ctx.stroke(); }
+    ctx.strokeStyle = '#c8a050'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.ellipse(w * x0, h * 0.5, w * 0.025, h * (bot - top) / 2, 0, 0, TAU); ctx.stroke(); // the hoop
+    ctx.fillStyle = '#f0a040'; for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.arc(w * (x0 + 0.01), h * (top + 0.03 + i * 0.145), h * 0.032, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#c8a050'; ctx.beginPath(); ctx.arc(w * (x1 + 0.015), h * 0.5, h * 0.05, 0, TAU); ctx.fill();
+    return;
+  }
   ctx.strokeStyle = 'rgba(60,70,60,0.85)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(w * 0.15, h * 0.3); ctx.quadraticCurveTo(w * 0.5, h * 0.22, w * 0.85, h * 0.45); ctx.moveTo(w * 0.15, h * 0.7); ctx.quadraticCurveTo(w * 0.5, h * 0.78, w * 0.85, h * 0.55); ctx.stroke();
   ctx.strokeStyle = 'rgba(80,90,80,0.5)'; ctx.lineWidth = 1; for (let i = 0; i < 10; i++) { const f = i / 10; ctx.beginPath(); ctx.moveTo(w * (0.15 + f * 0.7), h * (0.3 - Math.sin(f * 3) * 0.03 + f * 0.15)); ctx.lineTo(w * (0.15 + f * 0.7), h * (0.7 + Math.sin(f * 3) * 0.03 - f * 0.15)); ctx.stroke(); }
   ctx.fillStyle = '#e8783a'; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(w * (0.15 + i * 0.012), h * (0.3 + i * 0.13), h * 0.03, 0, TAU); ctx.fill(); }

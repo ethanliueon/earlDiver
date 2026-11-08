@@ -331,23 +331,40 @@ export { conditionName };
 // the winch hauls the bag up into the hatch; the haul lands in a heap on the tank-room floor. An animal
 // too big for the net may tear it: the net is lost, and everything in it swims free. Loud below 200 m.
 export const NETS_SUB = {
-  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 1.0, mouth: 1.6, tear: 0.7, slip: 0.15,
-    desc: 'A light trawl for the hatch under the sub. A small mouth, room for six, fish up to a metre; a few slip out before it closes, and anything bigger may tear it. Used up in one haul.' },
-  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 6.0, mouth: 2.6, tear: 0.3, slip: 0.03,
-    desc: 'A heavy-twine trawl with a wide mouth: room for ten, sharks and oarfish up to 6 m and the great legends; almost nothing slips out, and it seldom tears. Used up in one haul.' },
+  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 1.0, mouth: 1.6, tear: 0.7, slip: 0.15, cap: 2,
+    desc: 'A light trawl for the hatch under the sub. A narrow mouth, room for six animals, fish up to 1 m long. A few slip out before it closes, and anything bigger may tear it. Used up in one haul; carry up to two.' },
+  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 6.0, mouth: 2.6, tear: 0.3, slip: 0.03, cap: 1,
+    desc: 'The net for big game. Its mouth is over half again as wide, so it sweeps up far more of a school; it holds ten animals, takes sharks and oarfish up to 6 m, and it is the only net that can bring up a legend. Almost nothing slips out and it seldom tears. Used up in one haul; carry one.' },
 };
+// (4.11.0) the hatch holds nets of each kind: up to two beginner nets and one advanced net. items.nets = { basic, adv }
+// (an old save's single items.net becomes one of its kind)
+export function netsOf(items) {
+  if (!items.nets || typeof items.nets !== 'object') { items.nets = { basic: 0, adv: 0 }; if (items.net && NETS_SUB[items.net]) items.nets[items.net] = 1; }
+  delete items.net;
+  for (const k of Object.keys(NETS_SUB)) items.nets[k] = Math.max(0, Math.min(NETS_SUB[k].cap, items.nets[k] | 0));
+  return items.nets;
+}
+export const netKinds = (items) => { const N = netsOf(items); return Object.keys(NETS_SUB).filter((k) => N[k] > 0); };
+export const netTotal = (items) => { const N = netsOf(items); return Object.values(N).reduce((a, b) => a + b, 0); };
 export const NET_DROP = 1.5, TOW_MAX = 8, NET_PURSE = 1.0, NET_HAUL = 1.5;
 // where the hatch is under the hull, and where the net's mouth hangs behind it, for a sub facing dir
 export const hatchAt = (g) => ({ x: g.sub.x - (g.sub.facing || 1) * 1.2, y: g.sub.y + 1.3 });
 const towTarget = (g) => { const d = g.sub.facing || 1, k = g.subNet ? g.subNet.T.mouth : 1.6; return { x: g.sub.x - d * (7.5 + k * 1.5), y: g.sub.y + 2.4 + k }; };
-export function fireSubNet(g) {
-  const n = g.subNet;
-  if (n) { if (n.phase === 'tow') { n.phase = 'purse'; n.pt = 0; return 'closing'; } return 'busy'; }
-  const tier = g.items.net;
-  if (!tier || !NETS_SUB[tier]) return 'No net in the hatch: the Margaret sells them';
+// tier: which net to let out (main asks when there is a choice); without one, the only kind carried
+export function canFireSubNet(g) {
+  if (g.subNet) return null;
+  if (!netKinds(g.items).length) return 'No net in the hatch: the Margaret sells them';
   if (g.sub.docked || !g.earl.inSub) return 'Only from the sub, under way';
   if (g.sub.y < 6) return 'Too shallow to trawl';
-  g.items.net = null; // used up in this haul, whatever happens
+  return null;
+}
+export function fireSubNet(g, tier = null) {
+  const n = g.subNet;
+  if (n) { if (n.phase === 'tow') { n.phase = 'purse'; n.pt = 0; return 'closing'; } return 'busy'; }
+  const why = canFireSubNet(g); if (why) return why;
+  const N = netsOf(g.items); tier = tier || netKinds(g.items)[0];
+  if (!N[tier]) return 'That net is not in the hatch';
+  N[tier]--; // used up in this haul, whatever happens
   const h = hatchAt(g);
   g.subNet = { tier, T: NETS_SUB[tier], phase: 'drop', t: 0, pt: 0, mx: h.x, my: h.y, open: 0, got: [], dir: g.sub.facing || 1 };
   if (g.sub.y > 200) g.entity.disturb(g, 0.35);

@@ -16,7 +16,7 @@ import { VARIANTS } from './variants.js';
 import { speciesIcon } from './creatures_draw.js';
 import { SETTINGS } from './settings.js';
 import { toolIcon } from './tools_draw.js';
-import { bagSlots, tankSlots, pressSlots, NETS_SUB, TOW_MAX } from './capture.js';
+import { bagSlots, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
@@ -432,12 +432,12 @@ export class Hud {
     if (g.items.necklace > 0 || g.necklaceOn) slots.push(['e', 'E', g.necklaceOn ? `GLOW ${Math.ceil(g.glowT || 0)} S` : 'GLOW STICK', g.items.necklace, '#ffc070', g.necklaceOn ? 1 : 0]);
     // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
     if (e.inSub) {
-      const n = g.subNet, N = n ? n.T : g.items.net && NETS_SUB[g.items.net];
-      const state = n ? (n.phase === 'tow' ? (g.trawlTaught ? 'OUT' : 'OUT · N CLOSES') : n.phase === 'torn' ? 'TORN' : 'HAULING') : N ? N.short : 'NO NET';
-      slots.push(['n', 'N', state, n || N ? 1 : 0, '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / TOW_MAX) : 0]);
+      const n = g.subNet, kinds = netKinds(g.items), N = n ? n.T : kinds.length ? NETS_SUB[kinds[0]] : null; // (4.11.0) every kind in the hatch
+      const state = n ? (n.phase === 'tow' ? (g.trawlTaught ? 'OUT' : 'OUT · N CLOSES') : n.phase === 'torn' ? 'TORN' : 'HAULING') : kinds.length ? kinds.map((k) => NETS_SUB[k].short).join(' + ') : 'NO NET';
+      slots.push(['n', 'N', state, n || N ? 1 : 0, n ? '#e8b070' : kinds.includes('adv') ? '#f0c060' : '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / TOW_MAX) : 0, n ? 0 : netsOf(g.items).basic]); // (the badge: two beginner nets)
     }
     this.slotHot = {};
-    slots.forEach(([id, key, name, n, col, active], i) => {
+    slots.forEach(([id, key, name, n, col, active, badge], i) => {
       const x = rx0 - sz, y = yy + i * (sz + 8 * s);
       this.slotHot[id] = { x: x * kx, y: y * kx, w: sz * kx, h: sz * kx };
       glass(x, y, sz, sz);
@@ -446,6 +446,11 @@ export class Hud {
       if (active > 0) { ctx.strokeStyle = col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 13 * s, -Math.PI / 2, -Math.PI / 2 + TAU * active); ctx.stroke(); }
       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; if (!(id === 'n' && g.trawlTaught)) ctx.fillText(key, x + 5 * s, y + 4 * s); // (4.0.6) N, once learned, is not shown
       ctx.textAlign = 'right'; if (id !== 'n') ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
+      if (badge > 1) { // (4.11.0) how many nets are in the hatch: a number in a small brass circle at the corner
+        const bx = x + sz - 2 * s, by = y + 2 * s, br = 7.5 * s;
+        ctx.fillStyle = '#c8a050'; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(20,14,4,0.8)'; ctx.lineWidth = 1.2 * s; ctx.stroke();
+        ctx.save(); ctx.fillStyle = '#2a1e08'; ctx.font = `600 ${10 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(badge), bx, by + 0.5 * s); ctx.restore();
+      }
       ctx.font = `${8 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name, x - 6 * s, y + sz / 2 - 4 * s);
     });
 

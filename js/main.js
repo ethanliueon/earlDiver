@@ -7,7 +7,7 @@ import { Chart } from './chart.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
-import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, NETS_SUB, updateSubNet, tankFits, BIG, tooBig } from './capture.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, canFireSubNet, netsOf, netKinds, netTotal, NETS_SUB, updateSubNet, tankFits, BIG, tooBig } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
 import { SETTINGS } from './settings.js';
@@ -167,7 +167,7 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, tag: P.items ? P.items.tag || 0 : 0, tagAdv: P.items ? P.items.tagAdv || 0 : 0, net: P.items && P.items.net !== undefined ? P.items.net : null }, inv: {}, // a new diver starts with one backup air tank
+    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, tag: P.items ? P.items.tag || 0 : 0, tagAdv: P.items ? P.items.tagAdv || 0 : 0, net: P.items && P.items.net !== undefined ? P.items.net : null, nets: P.items && P.items.nets ? Object.assign({}, P.items.nets) : null }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
@@ -253,7 +253,7 @@ const ui = new UI({
     for (const [kind, id, n = 1] of r.kit || []) {
       if (kind === 'item' && ITEMS[id]) { const q = giveItem(P, id); if (q) { q.gift = true; got.push(ITEMS[id].name); } } // (4.3.0) a gift, not a purchase
       else if (kind === 'supply' && g) { g.items[id] = (g.items[id] || 0) + n; got.push(n > 1 ? `${n} × ${SUPPLIES[id].name}` : SUPPLIES[id].name); }
-      else if (kind === 'trawl' && g) { if (!g.items.net) { g.items.net = id; got.push(NETS_SUB[id].name); } else { P.cash = Math.round((P.cash + NETS_SUB[id].price) * 100) / 100; got.push(money(NETS_SUB[id].price)); } }
+      else if (kind === 'trawl' && g) { const N = netsOf(g.items); if (N[id] < NETS_SUB[id].cap) { N[id]++; got.push(NETS_SUB[id].name); } else { P.cash = Math.round((P.cash + NETS_SUB[id].price) * 100) / 100; got.push(money(NETS_SUB[id].price)); } }
       else if (kind === 'trap') { convertOldTraps(P); if ((P.traps[id] || 0) < TRAPS[id].max) { P.traps[id] = (P.traps[id] || 0) + 1; got.push(TRAPS[id].name); } }
     }
     if (got.length) syncProfile();
@@ -751,7 +751,7 @@ function spawnReleased(r) {
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subLost = !!g.sub.imploded;
-  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, net: g.items.net, tag: g.items.tag, tagAdv: g.items.tagAdv };
+  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, nets: Object.assign({}, netsOf(g.items)), tag: g.items.tag, tagAdv: g.items.tagAdv };
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
 }
@@ -835,9 +835,9 @@ function buy(kind) {
     const tk = kind.slice(5);
     P.traps[tk] = (P.traps[tk] || 0) + 1; ok = true;
     ui.showGains([{ kind: 'trap', id: tk }]); hud.hint('Press 5, then Space at the surface to set a trap at the depth you choose');
-  } else if (kind.startsWith('subnet:') && NETS_SUB[kind.slice(7)] && g.items.net !== kind.slice(7) && spend(P, NETS_SUB[kind.slice(7)].price)) {
-    g.items.net = kind.slice(7); ok = true;
-    ui.showGains([{ kind: 'trawl', id: g.items.net }]);
+  } else if (kind.startsWith('subnet:') && NETS_SUB[kind.slice(7)] && netsOf(g.items)[kind.slice(7)] < NETS_SUB[kind.slice(7)].cap && spend(P, NETS_SUB[kind.slice(7)].price)) {
+    netsOf(g.items)[kind.slice(7)]++; ok = true; // (4.11.0) up to two beginner nets and one advanced
+    ui.showGains([{ kind: 'trawl', id: kind.slice(7) }]);
   } else if (kind === 'gallery') {
     const lvG = P.galleryLv || 0;
     if (lvG < GALLERY_STEPS.length && spend(P, GALLERY_STEPS[lvG])) { P.galleryLv = lvG + 1; ok = true; hud.toast(`The aquarium: room for ${gallerySlots(P)}`, 'big'); audio.cue && audio.cue('wing'); }
@@ -909,7 +909,7 @@ function lessons() {
       const sp = SPECIES.find((q) => /Northern Anchovy/.test(q.name)) || SPECIES.find((q) => /Anchovy|Sardine|Herring/.test(q.name));
       const gid = g.fauna.groupId++, school = [];
       for (let k = 0; k < 9; k++) { const f = g.fauna.makeFish(sp, cx + (k % 3) * 0.9 - 0.9, cy + Math.floor(k / 3) * 0.7 - 0.7, -dir, gid, k === 0); f.placed = true; f.lesson = true; g.fauna.list.push(f); school.push(f); }
-      if (!g.items.net) g.items.net = 'basic';
+      { const N = netsOf(g.items); if (!N.basic) N.basic = 1; } // (the lesson's net is a beginner's)
       g.lesson = { kind: 'trawl', part: 'drop', school };
     }
   }
@@ -928,7 +928,7 @@ function lessons() {
   if (L.part === 'haul' && !g.subNet) {
     if (g.subTank.some((s) => s.pile)) L.part = 'tank';
     else { // nothing in it: the net back, a new school ahead, and again
-      g.items.net = 'basic'; const dir = sub.facing || 1, cx = sub.x + dir * 6, cy = sub.y + 4, sp = L.school[0].sp, gid = g.fauna.groupId++; L.school = [];
+      { const N = netsOf(g.items); N.basic = Math.max(1, N.basic); } const dir = sub.facing || 1, cx = sub.x + dir * 6, cy = sub.y + 4, sp = L.school[0].sp, gid = g.fauna.groupId++; L.school = [];
       for (let k = 0; k < 9; k++) { const f = g.fauna.makeFish(sp, cx + (k % 3) * 0.9 - 0.9, cy + Math.floor(k / 3) * 0.7 - 0.7, -dir, gid, k === 0); f.placed = true; f.lesson = true; g.fauna.list.push(f); L.school.push(f); }
       L.part = 'drop'; hud.toast('Nothing in it. Try again: drive straight through the fish', 'note');
     }
@@ -937,7 +937,7 @@ function lessons() {
   if (L.part === 'drag' && !g.subTank.some((s) => s.pile)) L.part = 'end';
   if (L.part === 'end') {
     g.lesson = null; P.lessonTrawl = 'done';
-    if (!g.items.net) { g.items.net = 'basic'; ui.showGains([{ kind: 'trawl', id: 'basic' }]); }
+    if (!netTotal(g.items)) { netsOf(g.items).basic = 1; ui.showGains([{ kind: 'trawl', id: 'basic' }]); }
     syncProfile(); saveProfile(P); hud.toast('Lesson done. A spare trawl net is in the hatch', 'note'); return;
   }
   if (L.part === 'drop') set('Let out the trawl net', { act: 'trawl', say: 'Let out the net' }, ['n']);
@@ -2049,11 +2049,18 @@ function update(dt) {
       else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
     }
     // the sub's trawl: N drops it, N again (or time) closes it; the winch brings it in with what it caught
+    // (4.11.0) with more than one kind of net in the hatch, N asks which: two cards, pick one and it goes out
     if (pressed.has('n') && e.inSub) {
-      const why = fireSubNet(g);
-      if (why === 'closing') { hud.toast('Closing the net…'); audio.ready && audio.click(); }
-      else if (why && why !== 'busy') hud.toast(why, 'warn');
-      else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? 'Net out' : 'Net out (N to close)'); audio.ready && audio.whoosh(); }
+      const letOut = (tier) => {
+        const why = fireSubNet(g, tier);
+        if (why === 'closing') { hud.toast('Closing the net…'); audio.ready && audio.click(); }
+        else if (why && why !== 'busy') hud.toast(why, 'warn');
+        else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? `${NETS_SUB[g.subNet.tier].name} out` : `${NETS_SUB[g.subNet.tier].name} out (N to close)`); audio.ready && audio.whoosh(); }
+      };
+      const kinds = netKinds(g.items);
+      if (g.subNet || canFireSubNet(g) || kinds.length < 2) letOut(g.lesson && kinds.includes('basic') ? 'basic' : null);
+      else if (g.lesson) letOut('basic');
+      else { ui.pickNet(kinds, netsOf(g.items), (k) => { if (g.earl.inSub && !g.subNet) letOut(k); }); audio.ready && audio.click(); }
     }
     const netRes = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
     if (netRes && netRes.torn) { hud.toast(`The ${netRes.torn.name.toLowerCase()} tore through the net`, 'warn'); audio.ready && audio.thud(0.5); }
