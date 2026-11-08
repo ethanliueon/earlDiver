@@ -1403,7 +1403,7 @@ export class UI {
       const hl = Math.min(SUBS.length - 1, lv(P, 'depth')), S0 = SUBS[hl], cap = hullCap(P);
       const air = (s2) => `${Math.floor(s2 / 60)} min${s2 % 60 ? ` ${s2 % 60} s` : ''}`;
       const facts = (S, k) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(S.o2), S.o2], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed],
-        ['Dive speed', k ? '+10%' : 'standard', S.ballast], ['Open tank', `holds ${S.tank} animals`, S.tank]];
+        ['Dive speed', k ? '+10%' : 'standard', S.ballast], ['Open tank', `${S.tank} spaces`, S.tank]];
       const sheet = (S, k, cmp = null, stamp = '', big = false) => { const base = cmp ? facts(cmp, 1) : null;
         return `<div class="yd-sheet${big ? ' big' : ''}"><div class="ys-head"><span>BAYSIDE YARD · SPECIFICATION</span><span>No. ${k + 1}</span></div>${facts(S, k).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
           return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}<p class="ys-note">Her pressure chambers hold animals from as deep as she can dive.</p>${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
@@ -1417,7 +1417,7 @@ export class UI {
         ballast: '<path d="M0 -8 V6 M-5 1 L0 7 L5 1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
         tank: '<path d="M-8 0 C-4 -5 3 -5 6 0 C3 5 -4 5 -8 0 Z M6 0 L9 -3 V3 Z" fill="currentColor"/>' };
       const LABEL = { rated: 'Safe depth', o2: 'Cabin air', speed: 'Top speed', ballast: 'Dive speed', tank: 'Open tank' };
-      const VAL = { rated: (S) => `${S.rated.toLocaleString()} m`, o2: (S) => air(S.o2), speed: (S) => `${(3.36 * S.speed).toFixed(1)} m/s`, ballast: (S, k) => (k ? `+10%` : 'standard'), tank: (S) => `${S.tank} animals` };
+      const VAL = { rated: (S) => `${S.rated.toLocaleString()} m`, o2: (S) => air(S.o2), speed: (S) => `${(3.36 * S.speed).toFixed(1)} m/s`, ballast: (S, k) => (k ? `+10%` : 'standard'), tank: (S) => `${S.tank} spaces` };
       const dial = (key, S, k, cmp, mini) => {
         const [lo, hi] = RANGE[key], f = Math.max(0.06, (S[key] - lo) / (hi - lo)), R = 22, a0 = -225, sweep = 270, a1 = a0 + sweep * f;
         const pt = (a) => [Math.cos(a * Math.PI / 180) * R, Math.sin(a * Math.PI / 180) * R];
