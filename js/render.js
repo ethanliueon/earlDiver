@@ -143,7 +143,8 @@ export class Renderer {
     // 38 m below 400 m)
     const dv = clamp((e.y - 40) / 80, 0, 1), ds = clamp((e.y - 150) / 250, 0, 1);
     const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1)); // (3.0.0) only the wheel changes the view; on deck it is the same as in the water
-    this.viewW = lerp(this.viewW, targetView, 1 - Math.exp(-dt * 1.2));
+    const lk = g.legendK || 0; // (4.9.0) the legendary moment: the view leans in on it, about a tenth, and back
+    this.viewW = lerp(this.viewW, targetView * (1 - 0.1 * lk), 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
     const cam = this.cam;
     cam.w = this.viewW; cam.h = this.H / ppm; cam.ppm = ppm;
@@ -153,6 +154,7 @@ export class Renderer {
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
     if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
     if (g.helm) { tx = BOAT.x + 3 * Math.cos(BOAT.yaw || 0) + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
+    if (lk > 0 && g.legend && g.legend.c) { const q = 0.35 * lk; tx = lerp(tx, g.legend.c.x, q); ty = lerp(ty, g.legend.c.y, q); this.legendAt = g.legend.c; }
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
     if (Math.hypot(cam.x - tx, cam.y - ty) > 80) { cam.x = tx; cam.y = ty; }
     const k = 1 - Math.exp(-dt * (g.mode === 'menu' ? 0.6 : 3));
@@ -475,8 +477,9 @@ export class Renderer {
     // (4.2.0, 4.3.1) the tutorial: a stream of brass chevrons flowing from Earl to where to go, a ring pulsing round
     // the fish (or the spot), and an arrow at the edge of the screen when it is off screen. No words: the game's own
     // prompts already say what to press there
-    if (g.tut && g.tut.to && g.mode === 'play') {
-      const e = g.tut.from || g.earl, tx = g.tut.to.x, ty = g.tut.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
+    const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : null; // (4.9.0) or the developer's trail to a legend (X)
+    if (guide && g.mode === 'play') {
+      const e = guide.from || g.earl, tx = guide.to.x, ty = guide.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
       const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));
       const sz = clamp(ppm * 0.22, 7, 16), flow = (g.time * 1.6) % 1;
       ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -492,15 +495,15 @@ export class Renderer {
         ctx.restore();
       }
       ctx.restore();
-      const f = g.tut.fish, cx = S(f ? f.x : tx), cy = Sy(f ? f.y : ty);
+      const f = guide.fish, cx = S(f ? f.x : tx), cy = Sy(f ? f.y : ty);
       const r = (f ? Math.max(16, ppm * (f.len * 0.8 + 0.45)) : Math.max(14, ppm * 0.5)) * (1 + 0.1 * Math.sin(g.time * 4));
-      ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.8)'; ctx.shadowBlur = 10; if (g.tut.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
+      ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.8)'; ctx.shadowBlur = 10; if (guide.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
       ctx.strokeStyle = 'rgba(232,208,146,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
       ctx.strokeStyle = `rgba(232,208,146,${(0.5 * (1 - ((g.time * 0.8) % 1))).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.8 * ((g.time * 0.8) % 1)), 0, TAU); ctx.stroke(); // a ripple going out
       ctx.restore();
       // (4.3.2) a prompt beside the fish, only where the game's own prompts don't already say it (swinging the net,
       // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words
-      const tp = g.tut.prompt;
+      const tp = guide.prompt;
       if (tp && typeof tp === 'object' && cx > -60 && cx < this.W + 60 && cy > -60 && cy < this.H + 60) {
         ctx.save(); ctx.font = '500 18px "EB Garamond", Georgia, serif';
         const iw = tp.mouse ? 24 : tp.key ? (tp.key.length > 1 ? 58 : 26) + 9 : 0, total = iw + ctx.measureText(tp.text).width;
@@ -1016,6 +1019,20 @@ export class Renderer {
       ctx.drawImage(this.gc, Math.sin(t * 1.3) * ppm * 0.9 * sep, Math.cos(t * 1.1) * ppm * 0.4 * sep, W, H);
       ctx.globalAlpha = 1;
     }
+    // (4.9.0) the legendary moment: the edges of the sea grey out and darken, so only the legend stands out
+    const lk = g.legendK || 0, la = g.legend ? g.legend.c : this.legendAt;
+    if (lk > 0.01 && la && g.mode === 'play') {
+      const lx = S(la.x), ly = Sy(la.y), r0 = Math.max(Math.min(W, H) * 0.16, ppm * Math.max(2, la.len * 1.6)), r1 = Math.hypot(W, H) * 0.62;
+      ctx.save();
+      const dg = ctx.createRadialGradient(lx, ly, r0, lx, ly, r1);
+      dg.addColorStop(0, 'rgba(128,128,128,0)'); dg.addColorStop(0.45, `rgba(128,128,128,${(0.7 * lk).toFixed(3)})`); dg.addColorStop(1, `rgba(128,128,128,${(0.95 * lk).toFixed(3)})`);
+      ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = dg; ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'source-over';
+      const kg = ctx.createRadialGradient(lx, ly, r0 * 0.9, lx, ly, r1);
+      kg.addColorStop(0, 'rgba(0,0,0,0)'); kg.addColorStop(0.5, `rgba(0,2,4,${(0.42 * lk).toFixed(3)})`); kg.addColorStop(1, `rgba(0,2,4,${(0.78 * lk).toFixed(3)})`);
+      ctx.fillStyle = kg; ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    } else if (lk <= 0.01) this.legendAt = null;
     // vignette
     const vs = 0.38 + fx.vignette * 0.32;
     const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * (0.42 - fx.vignette * 0.2), W / 2, H / 2, Math.max(W, H) * 0.72);

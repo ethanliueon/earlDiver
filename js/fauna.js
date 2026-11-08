@@ -612,7 +612,7 @@ export class Fauna {
       if (c.dead) { this.list.splice(i, 1); continue; }
       // despawn far away
       const busy = c.att && c.att.s !== 'idle';
-      if (!busy && (Math.abs(c.x - cam.x) > cam.w * 1.7 || Math.abs(c.y - cam.y) > cam.h * 2.4)) { this.list.splice(i, 1); continue; }
+      if (!busy && !c.devKeep && (Math.abs(c.x - cam.x) > cam.w * 1.7 || Math.abs(c.y - cam.y) > cam.h * 2.4)) { this.list.splice(i, 1); continue; }
       // a newcomer that would start inside rock is lifted clear of the seabed, or not spawned at all
       if (!c.placed) {
         c.placed = true;

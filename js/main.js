@@ -2,7 +2,7 @@
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock } from './world.js';
-import { SPECIES, SPECIES_BY_ID } from './species.js';
+import { SPECIES, SPECIES_BY_ID, TITLES } from './species.js';
 import { Fauna } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
@@ -116,13 +116,36 @@ function applySub(sub, P) {
   sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
   sub.level = lv(P, 'depth');
 }
-// X (a developer's key): everything at its best - every upgrade maxed, every piece of gear and every
-// suit owned (the deepest-rated one put on), every add-on, full trap racks and supplies, and money
-function devMaxAll() { // (developer key X: half a million dollars, nothing else)
-  const P = profile;
-  P.cash = Math.round(((P.cash || 0) + 500000) * 100) / 100;
-  saveProfile(P);
-  hud.toast('Developer: +$500,000', 'big'); audio.ready && audio.click();
+// (4.9.0) X (a developer's key): the first press, the deepest submersible and half a million dollars; each press
+// after, the next legend turned loose at its usual depth somewhere sensible, with the tutorial's trail to it
+let devPresses = 0, devLegendI = 0;
+const DEV_LEGENDS = [100, 108, 104, 107, 101, 105, 54, 2150, 2146, 2162, 2110, 2109, 2102, 2103, 2106];
+function devMaxAll() {
+  const P = profile; if (!P || !g || g.mode !== 'play') return;
+  if (devPresses++ === 0) {
+    P.tlv = P.tlv || {}; P.tlv.tHull = TRACKS.tHull.max;
+    P.cash = Math.round(((P.cash || 0) + 500000) * 100) / 100;
+    saveProfile(P); applySub(g.sub, P);
+    hud.toast('Developer: the deepest sub, +$500,000', 'big'); audio.ready && audio.click();
+    return;
+  }
+  const sp = SPECIES_BY_ID[DEV_LEGENDS[devLegendI++ % DEV_LEGENDS.length]]; if (!sp) return;
+  const e = g.earl, W = g.world, hab = sp.v && sp.v.hab, onFloor = hab === 'floor' || hab === 'demersal';
+  const want = clamp(Math.round(Math.sqrt(Math.max(1, sp.dmin) * sp.dmax)), sp.dmin + 5, Math.min(sp.dmax, (g.sub.ratedV || 4000) - 50));
+  // the nearest column of sea where it would live: deep enough water for a swimmer, a floor in its range for a bottom animal
+  let at = null;
+  for (let r = 30; r < WORLD_W && !at; r += 6) for (const x of [e.x + r * (e.facing || 1), e.x - r * (e.facing || 1)]) {
+    if (x < 30 || x > WORLD_W - 30) continue;
+    const fl = W.floorAt(x);
+    if (onFloor ? (fl >= sp.dmin && fl <= Math.min(sp.dmax, (g.sub.ratedV || 4000) - 20)) : fl > want + 25) {
+      const y = onFloor ? fl - 0.6 : want;
+      if (!W.rockAt(x, y, 1)) { at = { x, y }; break; }
+    }
+  }
+  if (!at) { hud.toast(`Developer: nowhere for ${TITLES[sp.id] || sp.name}`); return; }
+  const f = g.fauna.makeFish(sp, at.x, at.y, Math.random() < 0.5 ? 1 : -1, g.fauna.groupId++, true);
+  f.devKeep = true; g.fauna.list.push(f); g.devGuide = { c: f };
+  hud.toast(`Developer: a legend at ${Math.round(at.y)} m`); audio.ready && audio.click();
 }
 // the 'reduce flashing' setting (pause menu): kept in this browser
 function readReduceFlash() { try { return localStorage.getItem('earl.reduceFlash') === '1'; } catch (e) { return false; } }
@@ -1849,6 +1872,7 @@ function update(dt) {
     g.fauna.rareMult = Math.abs(e.x - WHALE_FALL.x) < 60 && e.y > 2900 ? 3 : Math.abs(e.x - SEEP.x) < 50 && e.y > 2300 ? 2 : 1;
     // the legendary moment: the first sight of a legend on this dive. The music falls away, a pale
     // light comes up on it for a few seconds, and its name: something to remember.
+    if (g.devGuide) { const c = g.devGuide.c; if (c.dead || c.legendSeen || !g.fauna.list.includes(c) || Math.hypot(c.x - e.x, c.y - e.y) < 6) g.devGuide = null; } // (4.9.0) the developer's trail ends at the legend
     if (g.legend) { g.legend.t += dt; if (g.legend.t > 8 || g.legend.c.dead) g.legend = null; }
     else {
       for (const c of g.fauna.list) {
@@ -2471,13 +2495,22 @@ function adaptQuality(realDt) {
   else if (frameEma < 1 / 57 && q < 1 && qualityT > 3) { renderer.quality = Math.min(1, q + 0.05); qualityT = 0; }
   else if (qualityT > 3) qualityT = 1;
 }
+const smooth01 = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
 function frame(now) {
   const realDt = (now - last) / 1000;
   const dt = Math.min(0.05, realDt);
   last = now;
   if (realDt < 0.25) adaptQuality(realDt);
   renderer.resize(); hud.resize();
-  update(dt);
+  // (4.9.0) the legendary moment: time slows to a third for a few seconds, easing in and back out (counted in real
+  // time); legendK is how far into it the moment is, for the camera and the greyed edges
+  let ts = 1;
+  if (g && g.legend && !g.paused) {
+    const L = g.legend; L.rt = (L.rt || 0) + dt;
+    const k = smooth01(L.rt / 0.9) * (1 - smooth01((L.rt - 3.6) / 1.6));
+    g.legendK = k; ts = 1 - 0.67 * k;
+  } else if (g && g.legendK) g.legendK = Math.max(0, g.legendK - dt / 1.2);
+  update(dt * ts);
   renderer.updateCamera(g, dt);
   // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
   const covered = !document.getElementById('cabin').hidden || !document.getElementById('tankroom').hidden || !document.getElementById('gallery').hidden;
