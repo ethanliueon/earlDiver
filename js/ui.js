@@ -1408,7 +1408,7 @@ export class UI {
       const statusOf = (k) => {
         if (k === hl && !sub.imploded) return '';
         if (k < hl) return '<span class="yd-tag past">Had it</span>';
-        if (k === hl + 1 && k <= cap) return `<button class="yd-price" data-act="buy" data-arg="up:tHull" ${can(SUBS[k].price) ? '' : 'disabled'}>${money(SUBS[k].price, false)}</button>`;
+        if (k === hl + 1 && k <= cap) return `<button class="pay-tag" data-act="buy" data-arg="up:tHull" ${can(SUBS[k].price) ? '' : 'disabled'} title="Buy her">${money(SUBS[k].price, false)}</button>`;
         return '';
       };
       const open = this.ydSub != null && this.ydSub <= Math.min(hl + 1, cap) ? this.ydSub : null;
@@ -1426,11 +1426,11 @@ export class UI {
         html += '</div>';
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
-        html += `<div class="yd-hero"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ` <button class="yd-btn" data-act="buy" data-arg="patch" ${can(PATCH_PRICE) ? '' : 'disabled'}>Patch it · ${money(PATCH_PRICE, false)}</button>` : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
+        html += `<div class="yd-hero"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
           <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, GEAR.arm.desc + ' The claw comes at its best: full reach, the big jaws, quick hydraulics.', GEAR.arm.price, owns(P, 'arm')]]
           .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, a.desc, a.price, !!(P.addons || {})[k]]));
-        html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="yd-buy" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'}><small>Fit it</small>${money(price, false)}</button>`}</div>`).join('')}</div>`;
+        html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="pay-tag" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'} title="Buy and fit it">${money(price, false)}</button>`}</div>`).join('')}</div>`;
         html += '<p class="shop-note">Pressure chambers are bought in the sub\'s chamber room, the large pressure tank in its own room.</p>';
       }
     } else if (tab === 'supplies') {

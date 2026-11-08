@@ -2692,10 +2692,25 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .yd-refit button.yd-buy, #workshop button.yd-price { color: var(--pay-ink) !important; text-shadow: 0 1px 0 rgba(0,0,0,0.35);
   background: linear-gradient(180deg, var(--pay-hi), var(--pay) 55%, var(--pay-lo)) !important; box-shadow: inset 0 0 0 1px rgba(10,30,14,0.6), inset 0 1px 0 rgba(220,255,210,0.35), 0 2px 0 #10301a !important; }
 #workshop .yd-refit button.yd-buy small { color: rgba(243,241,226,0.8); }
-#catalog .cat-btn[data-buy]:not([data-buy^="sellgear"]), #catalog .cat-mini[data-buy], #catalog [data-cart^="add"], #catalog [data-cart="checkout"] {
   background: linear-gradient(180deg, var(--pay-hi), var(--pay) 60%, var(--pay-lo)) !important; border-color: #123a1c !important; color: var(--pay-ink) !important; }
 #quests .qs-buy { color: var(--pay-ink) !important; background: linear-gradient(180deg, var(--pay-hi), var(--pay) 60%, var(--pay-lo)) !important; box-shadow: 0 2px 0 #10301a !important; }
 /* the plaque in aged, brushed brass: muted, not bright yellow */
 #workshop .yd-plaque { color: #2c2010; text-shadow: 0 1px 0 rgba(255,236,190,0.22);
   background: repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 1px, rgba(0,0,0,0.03) 1px 3px), linear-gradient(180deg, #b39a62, #9a8048 50%, #7e6535); }
 #workshop .yd-plaque i { background: radial-gradient(circle at 35% 35%, #d8c48e, #4a3816 70%); }
+
+/* (4.15.5) a price tag you can't mistake: green, the shape of a real shop tag (a notched end with a brass eyelet
+   and a string loop), and the price filling it in big, bold figures. Only in the game itself; the catalog website
+   keeps its own buttons */
+.pay-tag { position: relative; flex: none; min-width: 118px; height: 46px; padding: 0 16px 0 30px !important; border: 0; cursor: pointer;
+  font: 700 22px "IBM Plex Mono", monospace !important; letter-spacing: -0.01em; color: #f6f3e2 !important; text-shadow: 0 1px 0 rgba(0,0,0,0.45), 0 0 12px rgba(160,255,170,0.25);
+  background: radial-gradient(circle at 14px 50%, #0c140b 0 4px, #d8c88e 4.2px 6.6px, transparent 6.9px), repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #5aa866, #2f7a3e 55%, #1d5229) !important;
+  clip-path: polygon(13px 0, 100% 0, 100% 100%, 13px 100%, 0 50%); border-radius: 0 6px 6px 0 !important;
+  box-shadow: inset 0 0 0 2px rgba(10,30,14,0.55), inset 0 2px 0 rgba(220,255,210,0.4) !important; transition: transform .1s, filter .12s; }
+.pay-tag::after { content: ''; position: absolute; left: 4px; top: 50%; width: 22px; height: 30px; margin-top: -32px; border: 1.5px solid rgba(220,210,170,0.75); border-radius: 50% 50% 0 0; border-bottom: 0; transform: rotate(-35deg); pointer-events: none; }
+.pay-tag:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px) rotate(-1.5deg); }
+.pay-tag:active:not(:disabled) { transform: translateY(1px); filter: brightness(0.95); }
+.pay-tag:disabled { cursor: default; color: rgba(240,236,220,0.6) !important; filter: grayscale(0.75) brightness(0.62); }
+.shop button[data-act="buy"]:not(.primary):not(.warn):not(.pay-tag) span { font-size: 15px !important; font-weight: 700; opacity: 1 !important; }
+.pay-tag { display: inline-flex !important; align-items: center; justify-content: center; line-height: 1 !important; }
