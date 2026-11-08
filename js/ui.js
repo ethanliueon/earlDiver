@@ -1150,15 +1150,10 @@ export class UI {
     $('title').classList.remove('gone');
   }
   titleOpen() { return !$('title').classList.contains('gone'); }
-  // (4.15.0) the loading screen (the same pictures as the first one): its bar, its line, a tip
-  showLoading(on) {
-    const el = $('loading');
-    if (on) { el.classList.remove('done'); el.hidden = false; if (window.__ldSet) window.__ldSet(el, 0.08, 'Preparing the dive'); if (window.__ldTip) window.__ldTip(el); return; }
-    if (el.hidden) return;
-    el.classList.add('done'); clearInterval(el.__tipT);
-    setTimeout(() => { if (el.classList.contains('done')) { el.hidden = true; el.classList.remove('done'); } }, 650);
-  }
-  setLoading(k, label) { if (window.__ldSet) window.__ldSet($('loading'), k, label); }
+  // (4.16.3) loading during play (a dive starting, after a death, back to the title): the simple porthole card;
+  // the painted loading screen is only for opening the game
+  showLoading(on) { const el = $('loading'); el.hidden = !on; if (on) this.setLoading(0, 'Charting the sea'); }
+  setLoading(k, label) { const sp = $('loading').querySelector('span'); if (sp && label && sp.textContent !== label) sp.textContent = label; }
   showGame() {
     $('title').classList.add('gone');
     $('menu').classList.add('gone');
