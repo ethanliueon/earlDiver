@@ -329,8 +329,15 @@ export class Renderer {
     let glowSkip = 0;
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
-      if (LEGENDARY.has(c.sp.id) && !c.dead) glowPts.push([S(c.x), Sy(c.y), '#ffd98a', Math.max(ppm * 1.4, fishDrawLen(c.len) * ppm * 0.95), 1.5 + 0.45 * Math.sin(t * 1.6 + (c.wob || 0))]); // (4.16.4) a legend carries its own soft golden aura, even in the dark
-      if (!c.sp.v.glow && !c.variant && !LEGENDARY.has(c.sp.id) && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
+      if (LEGENDARY.has(c.sp.id) && !c.dead) { // (4.16.5) a legend leaves a trail of small glowing bubbles that rise, twinkle and fade
+        const tr = c.trail || (c.trail = []), dir = c.dir || (c.vx >= 0 ? 1 : -1), Lm = fishDrawLen(c.len);
+        if (!c.trailAt || t - c.trailAt > 0.09) { c.trailAt = t; tr.push({ x: c.x - dir * Lm * (0.3 + Math.random() * 0.25), y: c.y + (Math.random() - 0.5) * Lm * 0.25, t0: t, r: 0.06 + Math.random() * 0.09, sway: Math.random() * 6.28 }); }
+        while (tr.length && t - tr[0].t0 > 2.4) tr.shift();
+        for (const b of tr) { const age = (t - b.t0) / 2.4, a = Math.sin(Math.PI * Math.min(1, age * 1.4)) * (1 - age) * (0.75 + 0.25 * Math.sin(t * 9 + b.sway));
+          const bx = S(b.x + Math.sin(t * 2 + b.sway) * 0.08), by = Sy(b.y - age * 1.6), rr = Math.max(1.4, (b.r + age * 0.05) * ppm);
+          glowPts.push([bx, by, '#ffe6a8', rr * 4, a * 2.4, Math.max(1.2, rr * 0.7)]); }
+      }
+      if (!c.sp.v.glow && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
       if (c.variant && g.earl.legends && g.earl.legends.has('eye')) glowPts.push([S(c.x), Sy(c.y), '#ffe6a0', Math.max(ppm * 0.9, fishDrawLen(c.len) * ppm), 0.85]); // (2.8.0) Eye of the Sea: rare forms glow
       const Ld = fishDrawLen(c.len) * ppm;
       const shape = c.sp.v.s;
