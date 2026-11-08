@@ -879,13 +879,13 @@ function refreshAir() { if (!g || !g.earl || !profile) return; const e = g.earl,
 // (4.6.0) after the tutorial, a tip the first time it is needed, once each: how to sprint, if he has swum a whole
 // minute underwater without it; how to put on something bought (the first purchase after the tutorial)
 function afterTips(dt) {
-  const P = profile, e = g.earl; if (!P || P.tut === 'on' || !P.tut) return;
+  const P = profile, e = g.earl; if (!P || P.tut === 'on' || !P.tut || P.tut === 'skip') return;
   if (!P.tipSprint) {
     if (!e.inSub && !g.aboard && e.y > 1.5 && !(keys.has('shift') || mouse.rdown)) g.noSprintT = (g.noSprintT || 0) + dt; else if (keys.has('shift') || mouse.rdown) g.noSprintT = 0;
     if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast(keyFor('sprint') === 'RMB' ? 'Hold the right mouse button to sprint' : 'Hold Shift to sprint', 'note'); }
   }
 }
-function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => hud.toast(`Press ${keyFor('inventory')} to put it on`, 'note'), 3000); }
+function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === 'skip' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => messages.show(`Press ${keyFor('inventory')} to put it on`, 'note', 3.5), 3000); } // (4.12.0) up for 3.5 s
 // (4.7.0) the lessons after the tutorial, in the tutorial's own way: the sea is held still (the animals, the thing in
 // the deep, the sub's air and hull, the catch's suffering all wait), only what the lesson teaches works, its line
 // says what to do and its key-cap lights; a trail leads where to go.
@@ -897,7 +897,7 @@ function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tipEquip)
 const MOVE_KEYS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'];
 function lessons() {
   const P = profile, e = g.earl, sub = g.sub; g.frozen = false;
-  if (!P || g.mode !== 'play' || P.tut === 'on' || !P.tut || g.kill || sub.imploded) { g.lesson = null; return; }
+  if (!P || g.mode !== 'play' || P.tut === 'on' || !P.tut || P.tut === 'skip' || g.kill || sub.imploded) { g.lesson = null; return; }
   const set = (text, spot, allow, to) => { g.tut = { text, to: to || null, spot, fish: null }; g.tutHidePrompts = true; g.lesson.allow = new Set(allow); g.frozen = true; };
   // starting a lesson
   if (!g.lesson && e.inSub && !sub.docked && !ui.anyOpen() && !g.alarm) {
@@ -951,7 +951,7 @@ function tutorWelcome() {
   const P = profile; if (!P || P.tut) return;
   ui.confirm('Welcome to the tutorial', 'This will be quick: just a look around the game.', 'Start', 'Skip tutorial',
     () => { P.tut = 'on'; saveProfile(P); g.tutSaid = null; refreshAir(); },
-    () => ui.confirm('Skip the tutorial?', 'Are you sure?', 'Skip it', 'Back', () => { P.tut = 'skip'; saveProfile(P); }, () => tutorWelcome()));
+    () => ui.confirm('Skip the tutorial?', 'Are you sure?', 'Skip it', 'Back', () => { P.tut = 'skip'; P.lessonAir = P.lessonTrawl = 'done'; P.tipEquip = P.tipSprint = true; saveProfile(P); }, () => tutorWelcome())); // (4.12.0) skipped: no lessons or tips after it either
 }
 // (4.3.0, 4.3.1) tutor(): one thing at a time. Each frame it works out the single next thing to do and sets g.tut:
 //   text    a line of help (said once, as the banner at the top, when it changes)
@@ -1368,7 +1368,7 @@ function canOffer() {
   return !e.inSub && e.y > 100 && (g.items.lure > 0 || g.items.necklace > 0) && ent && ent.marked && (ent.dist ?? Infinity) < 1000;
 }
 function promptFor(t) {
-  g.promptBar = null; // (4.5.0) a hold in progress: a small bar under the words, not a counting percentage
+  g.promptName = null; g.promptBar = null; // (4.5.0) a hold in progress: a small bar under the words, not a counting percentage
   const e = g.earl;
   const nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   let p = null;
@@ -1385,7 +1385,7 @@ function promptFor(t) {
       : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your aquarium`;
-    else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
+    else if (t.kind === 'creature') { p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe'; if (g.journal.has(t.sp.id)) { const R = rarityOf(t.sp); g.promptName = { text: t.sp.name, col: R ? R.col : null, legend: !!(R && R.id === 'legendary') || LEGENDARY.has(t.sp.id) }; } } // (4.12.0) its name in its rarity's colour
   }
   { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; // a damaged patch within reach: hold R
     if (pi >= 0) p = g.repair && g.repair.i === pi ? (g.promptBar = g.repair.t / REPAIR_TIME, 'Repairing') : (p ? p + '   ·   ' : '') + 'Hold R  Repair';
@@ -1843,7 +1843,7 @@ function update(dt) {
     if (pressed.has('b')) ui.toggleInventory();
     // (4.0.0) the shipyard: part of the Margaret, opened with P anywhere aboard her (deck, cabin, wheel) or
     // alongside her (in the water at her side, or in the sub in her cradle)
-    if (pressed.has('p')) { if (g.aboard || g.helm || atBoat) { audio.ready && audio.click(); ui.openShop('sub', ['sub']); } else hud.toast('The yard is on the Margaret', 'warn'); }
+    if (pressed.has('p')) { if (g.aboard || g.helm || atBoat) { audio.ready && audio.click(); ui.openShop('sub', ['sub']); } else hud.showFps = !hud.showFps; } // (4.12.0) the yard at the Margaret; anywhere else, the frame counter
     if (pressed.has('v') && g.helm) { leaveHelm(); audio.ready && audio.click(); } // (the helm is taken aboard, at the wheel)
     if (pressed.has('q')) {
       const old = (profile.oldLures || 0) > 0;
@@ -1903,7 +1903,6 @@ function update(dt) {
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
     if (pressed.has('`')) { hud.showFps = !hud.showFps; } // (4.0.0: P is the shipyard now)
     if (pressed.has('x')) devMaxAll();
-    if (pressed.has('h')) { hud.hints = !hud.hints; hud.toast(hud.hints ? 'Hints on (H)' : 'Hints off (H)'); }
     // the aquarium's day: tickets in, upkeep out
     tickGallery(profile, dt);
     for (const d of Object.values(aquariumOf(profile).display)) if (d.justFamous) { d.justFamous = false; saveProfile(profile); hud.toast(`${d.name || 'Your ' + SPECIES_BY_ID[d.id].name.toLowerCase()} is Famous now`, 'big'); }

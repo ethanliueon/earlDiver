@@ -483,6 +483,7 @@ export class Fauna {
     if (y >= lo && y <= hi) {
       // (3.7.3) the deep's animals are few at the top of their band, most common about seven tenths of the way
       // down and still common near its foot; shallow animals stay best through the middle
+      if (rarityOf(sp) && rarityOf(sp).id === 'legendary') { const q = (y - lo) / Math.max(1, hi - lo); return (0.5 + q) * deepK; } // (4.12.0) a legend is three times as likely at the foot of its band as at the top
       if (deepKind) { const q = (y - lo) / Math.max(1, hi - lo); return (0.08 + 0.92 * Math.pow(q, 1.4) * Math.pow(1 - q, 0.55) / DEEP_PEAK) * deepK; }
       const half = Math.max(1, (hi - lo) / 2); return (0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half)) * deepK;
     }

@@ -226,7 +226,6 @@ export class UI {
     // display settings: the brackets round a target, and the "[Space] Net the …" catch tags
     $('set-brackets').addEventListener('click', () => { setSetting('brackets', !SETTINGS.brackets); this.renderSettings(); });
     $('set-catchtags').addEventListener('click', () => { setSetting('catchTags', !SETTINGS.catchTags); this.renderSettings(); });
-    $('set-hints').addEventListener('click', () => { h.onHints && h.onHints(); this.renderSettings(); });
     $('set-sound').addEventListener('click', () => { h.onMute && h.onMute(); this.renderSettings(); });
     document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
     $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory')) this.toggleInventory(false); });
@@ -954,7 +953,6 @@ export class UI {
     row('flashing', 'Reduce flashing', !!(g && g.reduceFlash), 'the thing in the deep: slower, softer lights');
     row('set-brackets', 'Target brackets', SETTINGS.brackets, 'corners round what the net will go for');
     row('set-catchtags', 'Catch tags', SETTINGS.catchTags, 'the name of what you can catch, under it');
-    row('set-hints', 'Hints', this.h.getHints ? this.h.getHints() : true, 'tips now and then (H); what F does always shows');
     row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, 'M');
     $('set-fullscreen').innerHTML = `<span>Full screen<em>the game fills the whole screen (Esc leaves it)</em></span><b class="${document.fullscreenElement ? 'on' : ''}">${document.fullscreenElement ? 'on' : 'off'}</b>`;
     $('set-graphics').innerHTML = `<span>Graphics<em>Fast: softer picture and fewer extras, for smoother play on slower computers</em></span><b class="on">${SETTINGS.fast ? 'fast' : 'auto'}</b>`;
@@ -1199,7 +1197,7 @@ export class UI {
       const txt = document.createElement('div');
       txt.innerHTML = `<h3${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci}</div>
         <p>${sp.desc}</p>
-        <div class="meta">Seen at ${info.depth} m · lives ${usualDepth(sp)[0].toLocaleString()}–${usualDepth(sp)[1].toLocaleString()} m · up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''} · pressure tolerance x${pressureKind(sp).k} (${pressureKind(sp).why})</div>
+        <div class="meta">Seen at ${info.depth} m · lives ${usualDepth(sp)[0].toLocaleString()}–${usualDepth(sp)[1].toLocaleString()} m · up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''}</div>
         ${this.variantRow(sp)}`;
       row.append(img, txt); row.insertAdjacentHTML('afterbegin', rarityStars(sp));
       list.append(row);
@@ -1236,7 +1234,7 @@ export class UI {
         row('Lures · glow sticks', `${g.items.lure} · ${g.items.necklace}`);
     } else {
       this.journalCount(g);
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / snap a glow stick (warm amber, 90 s; in the sub it lights her up)'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out the trawl net (one carried; $300 a new one at the boat)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G lets the anchor go or winds it in'], ['J', 'this journal'], ['P', 'the yard (on or beside the Margaret)'], ['O', 'quests'], ['L (on the Margaret)', 'the sub\'s lights on / off'], ['`', 'show frames per second'], ['X', 'developer: +$500,000'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / snap a glow stick (warm amber, 90 s; in the sub it lights her up)'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out a trawl net (choose which: up to two beginner nets and one advanced)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G lets the anchor go or winds it in'], ['J', 'this journal'], ['P', 'the yard (at the Margaret); anywhere else, frames per second'], ['O', 'quests'], ['L (on the Margaret)', 'the sub\'s lights on / off'], ['X', 'developer: the deepest sub and $500,000, then a legend to find'], ['Esc · M', 'pause · mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -1508,7 +1506,7 @@ export class UI {
       }
       // one row per track: its level, the price of the next step, and in its sheet every stat it moves
       for (const [id, T] of Object.entries(TRACKS)) {
-        if (T.group !== grp) continue;
+        if (T.group !== grp || T.retired) continue; // (4.12.0: the rack is gone: two backup tanks for everyone)
         const l = lv(P, id), capped = id === 'tHull' && l >= hullCap(P) && l < T.max, maxed = l >= T.max || capped, cost = upgradeCost(P, id), coins = upgradeCoins(P, id);
         const specs = [];
         if (id === 'tHull') {

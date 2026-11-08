@@ -331,9 +331,9 @@ export { conditionName };
 // the winch hauls the bag up into the hatch; the haul lands in a heap on the tank-room floor. An animal
 // too big for the net may tear it: the net is lost, and everything in it swims free. Loud below 200 m.
 export const NETS_SUB = {
-  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
+  basic: { name: 'Beginner trawl net', short: 'NET', price: 120, max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
     desc: 'A light trawl for the hatch under the sub: room for six animals, and it holds fish up to 2 m. Anything bigger, small sharks too, may still be caught, but the bigger it is the likelier it breaks out, and a break can tear the net and lose the whole haul. Nine legends in ten escape it. Used up in one haul; carry up to two.' },
-  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 4.0, mouth: 2.6, tear: 0.2, slip: 0.03, cap: 1, legendOut: 0,
+  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 1200, max: 10, maxLen: 4.0, mouth: 2.6, tear: 0.2, slip: 0.03, cap: 1, legendOut: 0,
     desc: 'The net for big game. Its mouth is over half again as wide, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
 };
 // (4.11.1) the chance an animal too big for a net breaks out of it (legends by the net's own odds): more the bigger it is

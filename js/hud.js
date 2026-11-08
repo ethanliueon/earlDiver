@@ -310,7 +310,7 @@ export class Hud {
     const ap = g.autopilot;
     if (ap && e.inSub && g.homeRun) {
       ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,214,160,0.85)';
-      ctx.fillText(`autopilot home · ${Math.round(ap.remaining || 0)} m · ${Math.ceil(ap.eta || 0)} s · air ×0.8`, rx0, yy);
+      ctx.fillText('autopilot · air ×0.6', rx0, yy);
       yy += 18 * s;
     }
     if (ap && !e.inSub && !g.sub.imploded && (ap.active || ap.state === 'waiting')) {
@@ -536,7 +536,7 @@ export class Hud {
       const sy = both ? (capY + prY) / 2 : capFx.level > prFx.level ? capY : prY; this.shadeY = shadeA > 0.02 && this.shadeY != null ? this.shadeY + (sy - this.shadeY) * 0.15 : sy;
       if (shadeA > 0.01) promptShade(ctx, W / 2, this.shadeY, s, shadeA);
       for (const [txt, a, col] of capFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, capY, s, { col, size: 18, shade: false, icon: parsePromptKey(txt) ? null : this.capIconNow }); ctx.restore(); } // (3.6.0) a brass key-cap and the words; a catch's name in its rarity's colour
-      for (const [txt, a, col] of prFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, prY, s, { col, shade: false }); ctx.restore(); }
+      for (const [txt, a, col] of prFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, prY, s, { col, shade: false, named: g.promptName }); ctx.restore(); }
       if (g.promptBar != null && prFx.level > 0.01) { // (4.5.0) the hold's progress: a slim brass bar in a dark groove
         const bw = 150 * s, bh = 5 * s, bx = W / 2 - bw / 2, by = prY + 18 * s, k = Math.max(0, Math.min(1, g.promptBar));
         ctx.save(); ctx.globalAlpha = prFx.level;

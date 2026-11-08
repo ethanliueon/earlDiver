@@ -2452,3 +2452,6 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 #netpick .np-lock { position: absolute; inset: 0; display: grid; place-items: center; color: #d8d4c4; }
 #netpick .np-lock svg { width: 38%; height: 38%; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
 #netpick .np-out { font: italic 13px var(--serif); color: #d8d4c4; }
+
+/* (4.12.0) in the tank room the tutorial's line sits higher, clear of the first chamber */
+body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }

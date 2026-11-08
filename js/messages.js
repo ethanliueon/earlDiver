@@ -29,15 +29,15 @@ export class Messages {
     const cls = kind === 'warn' ? (DANGER.test(text) ? 'danger' : 'warn') : kind || 'plain';
     return { cls, p: CRITICAL.test(text) && cls === 'danger' ? 3 : cls === 'plain' ? 1 : 2 };
   }
-  show(text, kind = '') {
+  show(text, kind = '', minHold = 0) {
     if (!text) return;
     const k = this.kindOf(text, kind);
     if (this.cur && !this.cur.leaving && this.cur.text === text) { this.cur.t = 0; this.pulse(this.cur.el); return; }
     const sm = this.small.find((m) => m.text === text); if (sm) { sm.t = 0; this.pulse(sm.el); return; }
-    const m = { text, k, t: 0, hold: k.p === 3 ? 6 : HOLD[k.cls] || 3 };
+    const m = { text, k, t: 0, hold: Math.max(minHold, k.p === 3 ? 6 : HOLD[k.cls] || 3), minHold };
     if (!this.cur || this.cur.leaving) { this.cur = m; this.enter(m); return; }
-    if (k.p >= this.cur.k.p && !(this.cur.k.p === 3 && k.p < 3)) { const old = this.cur; this.leave(old); this.addSmall(old.text, old.k, 1.6); this.cur = m; this.enter(m); }
-    else this.addSmall(text, k, 2.2);
+    if (k.p >= this.cur.k.p && !(this.cur.k.p === 3 && k.p < 3)) { const old = this.cur; this.leave(old); this.addSmall(old.text, old.k, Math.max(1.6, (old.minHold || 0) - old.t)); this.cur = m; this.enter(m); }
+    else this.addSmall(text, k, Math.max(2.2, minHold));
   }
   addSmall(text, k, hold) {
     const el = document.createElement('div'); el.className = `msg-small msg-${k.cls}`; if (k.col) el.style.setProperty('--mc', k.col);

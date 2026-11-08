@@ -90,7 +90,7 @@ export function updateEarl(g, dt, inp) {
     // oxygen
     const surf = sub.y < 2.2;
     if (surf) sub.o2 = Math.min(sub.o2Max, sub.o2 + (sub.o2Max / 4) * dt);
-    else if (sub.o2 > 0 && !g.frozen) sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(sub) * (g.homeRun ? 0.8 : 1) * (g.airMul || 1); // a steady autopilot is thriftier
+    else if (sub.o2 > 0 && !g.frozen) sub.o2 -= dt * subDrainMult(sub.y, sub.rated) * (inp.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(sub) * (g.homeRun ? 0.6 : 1) * (g.airMul || 1); // a steady autopilot is thriftier
     e.atSurface = surf;
     // hull
     const r = sub.y / sub.rated;

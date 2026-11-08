@@ -137,7 +137,7 @@ export const ARMS = [
 ];
 export const PATCH_PRICE = 25;      // +40 % hull integrity
 export const HOSPITAL_SHARE = 0.10;  // a death costs this share of cash...
-export const HOSPITAL_CAP = 1500;    // ...but never more than this
+export const HOSPITAL_CAP = 10000;    // ...but never more than this
 // a replacement sub after an implosion: built to the same rating, a share of what it cost
 export function replacementPrice(P) {
   // a share of what the subs up to this one cost (the first is cheap to replace)
@@ -153,7 +153,7 @@ export const SUPPLIES = {
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
-export const supplyMax = (P, k) => Math.min(k === 'airTank' ? 2 : 99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.5.0) two backup tanks at most
+export const supplyMax = (P, k) => k === 'airTank' ? 2 : Math.min(99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.12.0) two backup tanks, always // (4.5.0) two backup tanks at most
 
 // ---------------- prices ----------------
 // What the buyers on the radio pay for each kind of thing, before the market moves.
@@ -370,7 +370,7 @@ export const TRACKS = {
   tEngine:   { group: 'Submersible', name: 'Engine', stats: ['subSpeed', 'ballast'], max: 5, line: 'Faster, and quicker to sink and rise' },
   tChambers: { group: 'Submersible', name: 'Pressure chambers', stats: ['pressTanks', 'pressRating'], max: 4, line: 'More chambers, holding more pressure' },
   tOpen:     { group: 'Submersible', name: 'Open tank', stats: ['subTank'], max: 6, line: 'Room for more animals in the sub' },
-  tRack:     { group: 'Submersible', name: 'Backup air rack', stats: ['airTanks'], max: 2, line: 'Racks for more backup air tanks' },
+  tRack:     { retired: true, group: 'Submersible', name: 'Backup air rack', stats: ['airTanks'], max: 2, line: 'Racks for more backup air tanks' },
   tClaw:     { group: 'Claw', needs: 'arm', name: 'Claw', stats: ['armReach', 'armSize', 'armSpeed', 'armGrip'], max: 5, line: 'Reach, jaw size, hydraulics, grip' },
 };
 export const TRACK_OF = Object.fromEntries(Object.entries(TRACKS).flatMap(([t, T]) => T.stats.map((sid) => [sid, t])));
