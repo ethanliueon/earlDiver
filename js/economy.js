@@ -31,13 +31,13 @@ export const FINS = [
 export const SUBS = [
   // (4.14.0) each sub comes with everything built in: speed, sink and rise (+10 % a step, compounding), the
   // chambers' rating and the open tank; there are no separate upgrades for them
-  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 120, speed: 1, ballast: 0, rating: 400, tank: 3, price: 0 },
-  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 130, speed: 1.3, ballast: 0.1, rating: 600, tank: 5, price: 500 },
-  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 145, speed: 1.5, ballast: 0.21, rating: 1000, tank: 7, price: 3000 },
-  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 160, speed: 1.75, ballast: 0.331, rating: 1400, tank: 9, price: 12000 },
-  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 180, speed: 2, ballast: 0.4641, rating: 2000, tank: 12, price: 40000 },
-  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 200, speed: 2.4, ballast: 0.6105, rating: 2600, tank: 15, price: 100000 },
-  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 230, speed: 2.7, ballast: 0.7716, rating: 3400, tank: 19, price: 220000 },
+  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 120, speed: 1, ballast: 0, rating: 300, tank: 3, price: 0 },
+  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 130, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 500 },
+  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 145, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3000 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 160, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 12000 },
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 180, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 40000 },
+  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 200, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 230, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
   { name: 'Full-ocean-depth submersible', rated: 4000, crush: 1.25, o2: 260, speed: 3, ballast: 0.9487, rating: 4000, tank: 24, price: 450000 },
 ];
 export const SUB_TIERS = SUBS; // (old name)
@@ -61,7 +61,6 @@ export function rollCrush(rated, rnd = Math.random) {
 export const SUB_ADDONS = {
   recall: { name: 'Recall unit', price: 280, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
   quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
-  tracker: { name: 'Tag tracker', price: 900, desc: 'A receiver for the tags on the fish you released from your gallery: a faint trail leads from the sub (or from Earl) to the nearest one, with its name and how far.' },
   bigTank: { inRoom: true, name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
   sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
 };

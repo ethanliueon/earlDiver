@@ -1380,23 +1380,26 @@ export class UI {
       // (4.14.0) one page: her (large) and what she has; the refits with their price tags; and, behind a button,
       // all eight subs side by side. Everything a sub can do comes with the sub: there are no upgrades for it
       const hl = Math.min(SUBS.length - 1, lv(P, 'depth')), S0 = SUBS[hl], cap = hullCap(P);
-      const facts = (S) => [['Depth rating', `${S.rated.toLocaleString()} m`], ['Cabin air', `${S.o2} s`], ['Speed', `×${S.speed}`], ['Sink & rise', `×${(1 + S.ballast).toFixed(2)}`], ['Chamber rating', `${S.rating.toLocaleString()} m`], ['Open tank', `${S.tank} places`]];
-      const factHtml = (S) => `<div class="yd-facts">${facts(S).map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('')}</div>`;
+      // (4.14.1) her figures on a typed yard specification sheet; against your sub, a green triangle for better, red for worse
+      const facts = (S) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', `${S.o2} s`, S.o2], ['Speed', `×${S.speed}`, S.speed], ['Sink & rise', `×${(1 + S.ballast).toFixed(2)}`, S.ballast], ['Chamber rating', `${S.rating.toLocaleString()} m`, S.rating], ['Open tank', `${S.tank} spaces`, S.tank]];
+      const factHtml = (S, cmp = null, stamp = '') => { const base = cmp ? facts(cmp) : null;
+        return `<div class="yd-sheet"><div class="ys-head"><span>BAYSIDE YARD · SPECIFICATION</span><span>${esc(S.name.toUpperCase())}</span></div>${facts(S).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
+          return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
       if (this.ydAll) {
         html += `<div class="yd-top"><h3>All submersibles</h3><button class="yd-btn" data-yd="back">← Back to your sub</button></div><div class="yd-grid">`;
         SUBS.forEach((S, k) => {
           let foot;
-          if (k === hl && !sub.imploded) foot = '<span class="yd-tag yours">Yours</span>';
+          if (k === hl && !sub.imploded) foot = ''; // (its sheet is stamped IN SERVICE)
           else if (k < hl) foot = '<span class="yd-tag past">Had it</span>';
           else if (k === hl + 1 && k > cap) foot = `<span class="yd-tag lock">Plans from ${cap < 3 ? 'the research station' : 'Dave'}</span>`;
           else if (k === hl + 1) foot = `<button class="yd-price" data-act="buy" data-arg="up:tHull" ${can(S.price) ? '' : 'disabled'}>${money(S.price, false)}</button>`;
           else foot = `<span class="yd-tag lock">${money(S.price, false)} · buy the ${SUBS[k - 1].name.toLowerCase()} first</span>`;
-          html += `<div class="yd-card${k === hl ? ' cur' : ''}${k > hl + 1 ? ' later' : ''}"><canvas class="yd-pic" data-hull="${k}"></canvas><h4>${S.name}</h4>${factHtml(S)}<div class="yd-foot">${foot}</div></div>`;
+          html += `<div class="yd-card${k === hl ? ' cur' : ''}${k > hl + 1 ? ' later' : ''}"><canvas class="yd-pic" data-hull="${k}"></canvas><h4><small>No. ${k + 1}</small>${S.name}</h4>${factHtml(S, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${foot}</div></div>`;
         });
         html += '</div>';
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
-        html += `<div class="yd-hero"><canvas class="yd-pic big" data-hull="${hl}"></canvas><div class="yd-info"><h3>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ` <button class="yd-btn" data-act="buy" data-arg="patch" ${can(PATCH_PRICE) ? '' : 'disabled'}>Patch it · ${money(PATCH_PRICE, false)}</button>` : ''}</p>${factHtml(S0)}
+        html += `<div class="yd-hero"><canvas class="yd-pic big" data-hull="${hl}"></canvas><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ` <button class="yd-btn" data-act="buy" data-arg="patch" ${can(PATCH_PRICE) ? '' : 'disabled'}>Patch it · ${money(PATCH_PRICE, false)}</button>` : ''}</p>${factHtml(S0, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
           <button class="yd-btn yd-all" data-yd="all">See all submersibles${hl < SUBS.length - 1 ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
         // refits: one-off fittings, a price tag until fitted, kept from sub to sub
         const refits = [['gear:arm', GEAR.arm.name, GEAR.arm.desc + ' The claw comes at its best: full reach, the big jaws, quick hydraulics.', GEAR.arm.price, owns(P, 'arm')]]
