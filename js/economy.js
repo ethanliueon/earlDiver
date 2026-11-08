@@ -60,7 +60,7 @@ export const SUB_ADDONS = {
   recall: { name: 'Recall unit', price: 280, desc: 'An acoustic link to the autopilot. Called with C, the sub comes 1.5× faster.' },
   quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
   tracker: { name: 'Tag tracker', price: 900, desc: 'A receiver for the tags on the fish you released from your gallery: a faint trail leads from the sub (or from Earl) to the nearest one, with its name and how far.' },
-  bigTank: { name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
+  bigTank: { inRoom: true, name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
   sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
 };
 // ---------------- catching gear ----------------
@@ -216,9 +216,9 @@ export const UPGRADES = {
   // the submersible
   ballast:   { group: 'Submersible', name: 'Ballast', base: 0, top: 1.44, max: 10, cost: 25, growth: 1.7, fmt: 'bonus' },
   depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4000], costs: [150, 600, 2000, 8000, 24000, 65000, 150000], max: 7, fmt: 'depth' },
-  subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, top: 1.45, max: 10, cost: 30, growth: 1.7, fmt: 'x' },
+  subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, lin: 0.04, max: 50, cost: 236, growth: 1.1, fmt: 'x' }, // (4.13.0) fifty small steps to 3x, about $275,000 in all
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, lin: 1, max: 2, cost: 60, growth: 3, fmt: 'n' },
-  pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 4, cost: 80, growth: 2.2, fmt: 'n' },
+  pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 5, costs: [100, 1000, 5000, 20000, 60000], fmt: 'n' }, // (4.13.0) bought one at a time in the chamber room
   pressRating: { group: 'Submersible', name: 'Chamber rating', base: 400, top: 4000, max: 10, cost: 60, growth: 1.75, fmt: 'depth' },
   subTank:   { group: 'Submersible', name: 'Open tank', base: 3, vals: [3, 6, 9, 12, 16, 20, 24], max: 6, cost: 60, growth: 2, fmt: 'n' }, // (3.2.1) up to 24 places, in bigger steps
   // the claw
@@ -367,8 +367,9 @@ export const TRACKS = {
   tTag:      { group: 'Tag gun', needs: 'tagger', name: 'Tag gun', stats: ['tagReach', 'tagReload', 'tagPay', 'tagCalm'], max: 5, line: 'Range, reload, better-paying tags, cleaner shots' },
   tCam:      { group: 'Camera', needs: 'camera', name: 'Camera', stats: ['camShots', 'camRange'], max: 5, line: 'More shots a dive, longer range' },
   tHull:     { group: 'Submersible', name: 'A deeper submersible', stats: ['depth'], max: 7, line: 'The next hull: deeper, more cabin air' },
-  tEngine:   { group: 'Submersible', name: 'Engine', stats: ['subSpeed', 'ballast'], max: 5, line: 'Faster, and quicker to sink and rise' },
-  tChambers: { group: 'Submersible', name: 'Pressure chambers', stats: ['pressTanks', 'pressRating'], max: 4, line: 'More chambers, holding more pressure' },
+  tEngine:   { group: 'Submersible', name: 'Engine', stats: ['subSpeed', 'ballast'], max: 50, line: 'Faster, and quicker to sink and rise: fifty small steps' },
+  tChambers: { group: 'Submersible', name: 'Chamber rating', stats: ['pressRating'], max: 4, line: 'Chamber walls that hold more pressure' },
+  tPress:    { inRoom: true, group: 'Submersible', name: 'Pressure chamber', stats: ['pressTanks'], max: 5, line: 'One more chamber (bought in the chamber room)' }, // (4.13.0)
   tOpen:     { group: 'Submersible', name: 'Open tank', stats: ['subTank'], max: 6, line: 'Room for more animals in the sub' },
   tRack:     { retired: true, group: 'Submersible', name: 'Backup air rack', stats: ['airTanks'], max: 2, line: 'Racks for more backup air tanks' },
   tClaw:     { group: 'Claw', needs: 'arm', name: 'Claw', stats: ['armReach', 'armSize', 'armSpeed', 'armGrip'], max: 5, line: 'Reach, jaw size, hydraulics, grip' },
@@ -390,7 +391,12 @@ function rescaleTracks(P) {
   for (const [t, m] of Object.entries(OLD_TRACK_MAX)) if (P.tlv[t]) P.tlv[t] = Math.min(TRACKS[t].max, Math.round(P.tlv[t] / m * TRACKS[t].max));
   P.tlvV = 2;
 }
-export const tlv = (P, t) => { if (!P.tlv) { migrateTracks(P); P.tlvV = 2; } else if (P.tlvV !== 2) rescaleTracks(P); return Math.min(P.tlv[t] || 0, TRACKS[t].max); };
+export const tlv = (P, t) => {
+  if (!P.tlv) { migrateTracks(P); P.tlvV = 2; } else if (P.tlvV !== 2) rescaleTracks(P);
+  // (4.13.0) chambers split off the rating (bought in the chamber room), and the engine in fifty steps: an old save keeps what it had
+  if (P.tlvCh !== 1) { P.tlvCh = 1; if (P.tlv.tPress == null) P.tlv.tPress = P.tlv.tChambers || 0; P.tlv.tEngine = Math.min(50, (P.tlv.tEngine || 0) * 10); }
+  return Math.min(P.tlv[t] || 0, TRACKS[t].max);
+};
 // (3.0.0) the diver's, the tools' and the buyers' upgrades are scrapped (the gear is the upgrade): their levels
 // count as nothing, even on an old save. The sub's yard (hull, engine, chambers, tanks, rack) and the claw stay.
 const SCRAPPED = new Set(['Diver', 'Buyers', 'Net', 'Slurp gun', 'Tag gun', 'Camera']);
@@ -510,7 +516,7 @@ export function gear(P, kind) {
 // ---------------- the profile ----------------
 export function newProfile() {
   return {
-    v: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
+    v: 1, tlvCh: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
     lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 1, fish: 0, steel: 0, cage: 0 }, // one beginner's wire pot
     journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(), coins: 0,
   };

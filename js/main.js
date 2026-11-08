@@ -112,10 +112,9 @@ function applySuit(e, P) {
   if (P) P.suit = S.look || 'wet'; // (what the old drawings and pages read)
 }
 // the sub's rating, air and engine come from its upgrades
-const HULL_SPEED = [1, 1.25, 1.5, 1.8, 2.1, 2.4, 2.7, 3.0];
 function applySub(sub, P) {
   sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible
-  sub.speedMul = HULL_SPEED[Math.min(HULL_SPEED.length - 1, lv(P, 'depth'))] * statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.12.1) each new hull is faster: the deepest about 3x the first
+  sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.13.0) the engine alone sets her speed: 50 steps to 3x
   sub.level = lv(P, 'depth');
 }
 // (4.9.0) X (a developer's key): the first press, the deepest submersible and half a million dollars; each press
@@ -834,7 +833,8 @@ function buy(kind) {
       if (has('sprint')) e.sprintMul = statValue(P, 'sprint');
       if (has('depth') || has('subSpeed') || has('ballast')) applySub(sub, P);
       if (has('camShots')) g.shots = gear(P, 'cam').shots;
-      if (!has('depth')) hud.toast(`${T.name}: level (${lv(P, id)}/${T.max})`);
+      if (id === 'tPress') hud.toast(`Chamber ${lv(P, id) + 1} fitted`, 'big'); // (4.13.0)
+      else if (!has('depth')) hud.toast(`${T.name}: level (${lv(P, id)}/${T.max})`);
     }
   } else if (kind.startsWith('suit:')) {
     // (2.8.0) suits are items now: suit:<id> buys one, as item:<id> does

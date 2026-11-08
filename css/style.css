@@ -2493,3 +2493,6 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
   font: 600 26px/1 var(--serif); color: #fff3ee; background: radial-gradient(circle at 40% 35%, #e86a5a, #b02a20 60%, #7a140e); box-shadow: 0 0 0 1px #3a0a06, 0 3px 8px rgba(0,0,0,0.55); }
 #workshop.refit-full .refit-x:hover { filter: brightness(1.12); }
 #workshop.refit-full .shop-main > header { padding-right: 64px; }
+.lamps-bar { display: inline-block; vertical-align: middle; width: 70px; height: 6px; border-radius: 3px; background: rgba(0,0,0,0.45); box-shadow: inset 0 1px 2px rgba(0,0,0,0.6); overflow: hidden; margin-right: 6px; }
+.lamps-bar i { display: block; height: 100%; background: linear-gradient(90deg, #a8823c, #f0d48a); }
+.lv-n { font: 10px var(--mono); color: rgba(214,224,226,0.6); margin-right: 6px; }

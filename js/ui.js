@@ -97,7 +97,7 @@ export class UI {
       close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { toast: (t, k) => h.toast && h.toast(t, k), getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), daveSays: () => (this.dave && this.dave.says ? this.dave.says() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     try { this.dressPanels(); } catch (err) { /* the plain look stays */ }
-    this.tankRoom = new TankRoom($('tankroom'), { refit: () => this.openRefit(), act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
+    this.tankRoom = new TankRoom($('tankroom'), { buy: (k) => { h.onBuy(k); this.tankRoom.sig = ''; }, act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
@@ -1382,7 +1382,7 @@ export class UI {
         if (sub.hull < 0.999) html += card('Patch the hull', 'Weld plates over the worst of it.', '', PATCH_PRICE, 'buy', 'patch', 'Patch', '', '', [['hull', `${Math.round(sub.hull * 100)} % → ${Math.round(Math.min(1, sub.hull + 0.4) * 100)} %`, 'good'], ['damaged hull', 'leaks cabin air', 'bad']]);
         if (this.refitOnly) html += `<p class="shop-note">Refits done from inside the sub. A new, deeper hull is built at the Margaret's yard (P).</p>`;
         html += this.upgradeGroups(P, ['Submersible', 'Claw'], icon, can);
-        for (const [k, a] of Object.entries(SUB_ADDONS)) if (!(P.addons || {})[k]) html += card(a.name, a.desc, '', a.price, 'buy', k, 'Fit', '', '', ADDON_SPECS[k]);
+        for (const [k, a] of Object.entries(SUB_ADDONS)) if (!(P.addons || {})[k] && !a.inRoom) html += card(a.name, a.desc, '', a.price, 'buy', k, 'Fit', '', '', ADDON_SPECS[k]);
         const fitted = Object.entries(SUB_ADDONS).filter(([k]) => (P.addons || {})[k]).map(([, a]) => a.name.toLowerCase());
         if (fitted.length) html += `<p class="shop-note">Fitted: ${fitted.join(', ')}.</p>`;
       }
@@ -1559,7 +1559,7 @@ export class UI {
       }
       // one row per track: its level, the price of the next step, and in its sheet every stat it moves
       for (const [id, T] of Object.entries(TRACKS)) {
-        if (T.group !== grp || T.retired || (this.refitOnly && id === 'tHull')) continue; // (4.12.0: the rack is gone: two backup tanks for everyone)
+        if (T.group !== grp || T.retired || T.inRoom || (this.refitOnly && id === 'tHull')) continue; // (4.13.0) chambers are bought in the chamber room // (4.12.0: the rack is gone: two backup tanks for everyone)
         const l = lv(P, id), capped = id === 'tHull' && l >= hullCap(P) && l < T.max, maxed = l >= T.max || capped, cost = upgradeCost(P, id), coins = upgradeCoins(P, id);
         const specs = [];
         if (id === 'tHull') {
@@ -1574,7 +1574,7 @@ export class UI {
         }
         specs.push(['level', capped ? 'the deepest the yard can build for now' : maxed ? 'the most it can be' : `(${l}/${T.max})`, 'sheet']);
         html += this.row('up:' + id, T.name + (id === this.rec ? ' <em class="rec-badge">Recommended</em>' : ''), T.line || '',
-          `<span class="lamps">${Array.from({ length: T.max }, (_, k) => `<i class="${k < l ? 'lit' : ''}"></i>`).join('')}</span>${maxed ? 'max' : ''}`,
+          (T.max > 12 ? `<span class="lamps-bar" title="${l}/${T.max}"><i style="width:${Math.round(l / T.max * 100)}%"></i></span><small class="lv-n">${l}/${T.max}</small>` : `<span class="lamps">${Array.from({ length: T.max }, (_, k) => `<i class="${k < l ? 'lit' : ''}"></i>`).join('')}</span>`) + (maxed ? 'max' : ''), // (4.13.0) a long track (the engine's fifty steps) as a bar
           `<button data-act="buy" data-arg="up:${id}" ${maxed || !can(cost) || (P.coins || 0) < coins ? 'disabled' : ''}>${maxed ? '—' : money(cost)}${!maxed && coins ? ` <em class="pluscoin">+${COIN}${coins}</em>` : ''}</button>`,
           '', '', specs);
       }

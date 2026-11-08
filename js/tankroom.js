@@ -13,7 +13,7 @@ import { rarityOf, specimenValue, rarityStars, rarityCls } from './specimens.js'
 import { money } from './economy.js';
 import { xEyes } from './gallery.js';
 import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf, chamberRoom } from './capture.js';
-import { UPGRADES } from './economy.js';
+import { UPGRADES, SUB_ADDONS } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
 import { paintedText, depthCounter, hatchRim, paperTag, instructionPlate, cleanPatch, cappedFlange, hoseCoil, hazardTape, toggleSwitch, brassTag, ease } from './fittings.js';
 import { drawBeacon } from './alarm.js';
@@ -75,11 +75,10 @@ export class TankRoom {
     this.t = 0; this.room = 'chambers'; this.openKey = null; this.sig = ''; this.infoT = 0;
     root.innerHTML = `<canvas class="tr-canvas"></canvas><div class="tr-over"></div>
       <div class="tr-plate"><b class="tr-room"></b><span class="tr-depth"></span></div>
-      <button class="tr-refit" title="Upgrades and refits for this sub">Refit</button><button class="tr-help-btn" aria-label="How it works">?</button><button class="tr-close" aria-label="Close">×</button>
+      <button class="tr-help-btn" aria-label="How it works">?</button><button class="tr-close" aria-label="Close">×</button>
       <div class="tr-help" hidden></div><div class="gl-lights tr-lights"></div>`;
     this.c = root.querySelector('.tr-canvas'); this.over = root.querySelector('.tr-over');
     root.querySelector('.tr-close').addEventListener('click', () => this.h.close());
-    root.querySelector('.tr-refit').addEventListener('click', () => this.h.refit && this.h.refit()); // (4.12.7) the refit room, from inside her (bottom left of every room)
     root.querySelector('.tr-lights').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-light]'); const g = this.h.getGame(); if (b && g && g.profile) { g.profile.subTankLight = b.dataset.light; this.lightsHtml(g); } });
     root.querySelector('.tr-help-btn').addEventListener('click', () => { const hp = root.querySelector('.tr-help'); hp.hidden = !hp.hidden; });
     root.querySelector('.tr-help').innerHTML = `<p>Every animal has the pressure it lives at. Up to ${SAFE_GAP} m away from it, shallower or deeper, it lives, stressed; further, it starts to die. Taking a shallow animal deep hurts it as much as bringing a deep one up.</p>
@@ -171,11 +170,19 @@ export class TankRoom {
     const G = this.geometry();
     for (const side of ['L', 'R']) { const h = G['hatch' + side], to = this.hatchTo(side); if (to && Math.hypot(cx - h.x, cy - h.y) < h.r + 12) return { kind: 'hatch', side, to }; }
     const S = this.switchBox; if (this.room === 'tank' && S && cx > S.x - 4 && cx < S.x + S.w + 4 && cy > S.y - 4 && cy < S.y + S.h + 4) return { kind: 'switch' };
+    const g = this.h.getGame();
+    if (g && this.room === 'chambers') { const ps = pressSlots(g); for (const [n, c] of G.chambers.entries()) if (n >= ps && (UPGRADES.pressTanks.costs || [])[n - 1] != null && cx >= c.x && cx <= c.x + CW * c.k && cy >= c.y && cy <= c.y + CH * c.k) return { kind: 'buyChamber', n, ps }; } // (4.13.0)
+    if (g && this.room === 'big' && !hasBigTank(g) && G.big && cx > G.big.x - 20 && cx < G.big.x + G.big.w + 20 && cy > G.big.y - G.big.h * 0.8 && cy < G.big.y + G.big.h * 1.3) return { kind: 'buyBig' };
     return null;
   }
   useHot(hot) {
     const g = this.h.getGame(); if (!g) return;
     if (hot.kind === 'hatch') this.go(hot.to);
+    else if (hot.kind === 'buyChamber') { // (4.13.0) in order: the next one, or a word about which comes first
+      if (hot.n > hot.ps) { if (this.h.say) this.h.say(`Buy chamber ${hot.ps + 1} first`); }
+      else if (this.h.buy) this.h.buy('up:tPress');
+    }
+    else if (hot.kind === 'buyBig') { if (this.h.buy) this.h.buy('bigTank'); }
     else if (hot.kind === 'switch' && g.profile) { g.profile.subTankLight = (g.profile.subTankLight || 'day') === 'day' ? 'dim' : 'day'; if (g.audio && g.audio.ready) g.audio.click(); }
   }
 
@@ -641,11 +648,28 @@ export class TankRoom {
     // the chambers, and empty brackets where more will go
     G.chambers.forEach((c, n) => {
       ctx.save(); ctx.translate(c.x, c.y); ctx.scale(c.k, c.k);
-      if (n >= ps) this.drawBracket(ctx);
+      if (n >= ps) { this.drawBracket(ctx); this.drawPriceTag(ctx, n, ps); }
       else this.drawChamber(ctx, g, by.get(n), rating, cmax, outside, dt, n);
       ctx.restore();
     });
     this.drawHatch(ctx, G.hatchR, 'R');
+  }
+  // (4.13.0) an empty bracket's price: a brass tag hung between its straps. The next one to buy is lit and
+  // takes a click; the ones after it are dim (they say which to buy first)
+  drawPriceTag(ctx, n, ps) {
+    const price = (UPGRADES.pressTanks.costs || [])[n - 1]; if (price == null) return;
+    const next = n === ps, hot = this.hot && this.hot.kind === 'buyChamber' && this.hot.n === n;
+    const w = 130 + EX * 0.6, h = 84, x = CW / 2 - w / 2, y = CH / 2 - h / 2 + 4;
+    ctx.save(); ctx.globalAlpha = next ? 1 : 0.42;
+    ctx.strokeStyle = 'rgba(150,140,110,0.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(CW / 2, 110); ctx.lineTo(CW / 2, y); ctx.stroke(); // the string from the strap
+    const gr = ctx.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, hot ? '#f6e3a8' : '#e8d49a'); gr.addColorStop(1, hot ? '#c89a48' : '#a8823c');
+    ctx.fillStyle = gr; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 7); ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = 'rgba(60,40,10,0.55)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 5); ctx.stroke();
+    ctx.fillStyle = '#2e220a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '600 15px "IBM Plex Mono", monospace'; ctx.fillText(`CHAMBER ${n + 1}`, CW / 2, y + 24);
+    ctx.font = '500 30px "EB Garamond", Georgia, serif'; ctx.fillText('$' + price.toLocaleString(), CW / 2, y + 56);
+    ctx.restore();
   }
   drawBracket(ctx) {
     // straps and bolt holes on the bulkhead, waiting for a chamber
@@ -863,7 +887,7 @@ export class TankRoom {
       hoseCoil(ctx, B.x + B.w * 0.88, B.y + B.h * 0.18, Math.min(40, B.h * 0.18));
       hazardTape(ctx, B.x - 10, B.x + B.w + 10, G.floor + 3);
       paperTag(ctx, fl.x + 150, fl.y + 26, 250, 196, { t: this.t, seed: 3, from: { x: fl.x + 10, y: fl.y - 2 }, stamp: 'NOT FITTED',
-        fields: [['ITEM', 'LARGE PRESSURE TANK'], ['HOLDS', '3, OR 1 OVER 1.2 M'], ['SUPPLIER', "THE SUB'S YARD"], ['ORDER AT', 'CABIN COMPUTER']] });
+        fields: [['ITEM', 'LARGE PRESSURE TANK'], ['HOLDS', '3, OR 1 OVER 1.2 M'], ['PRICE', '$' + SUB_ADDONS.bigTank.price.toLocaleString()], ['TO FIT', 'CLICK THE BAY']] }); // (4.13.0) bought here
     }
     this.drawHatch(ctx, G.hatchL, 'L');
   }
