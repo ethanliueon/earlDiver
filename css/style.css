@@ -2455,3 +2455,18 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 
 /* (4.12.0) in the tank room the tutorial's line sits higher, clear of the first chamber */
 body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
+
+/* (4.12.2) the tutorial's card beside the lit thing: a few words and OK */
+#tut-spot .ts-card { position: fixed; display: none; pointer-events: auto; z-index: 3; padding: 12px 14px 10px; border-radius: 5px; color: #ece6d2;
+  background: linear-gradient(180deg, #2b3129, #1b1f1a); box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 2px var(--brass-d), 0 12px 30px rgba(0,0,0,0.6); }
+#tut-spot .ts-card p { margin: 0 0 10px; font: 500 16px/1.4 var(--serif); }
+#tut-spot .ts-card button { float: right; padding: 5px 18px; border: 0; border-radius: 3px; cursor: pointer; font: 500 15px var(--serif); color: #2a2010; background: linear-gradient(180deg, #f0dc9c, #c8a050); box-shadow: 0 2px 0 #5a4518; }
+#tut-spot .ts-card button:hover { filter: brightness(1.08); }
+#quests.fading { transition: opacity 0.42s ease; opacity: 0; pointer-events: none; }
+#tut-spot { transition: opacity 0.4s ease; }
+#tut-spot.out { opacity: 0; }
+/* (4.12.2) the tutorial's big button (F Enter the cabin, F Climb aboard): the same worn olive steel as the game's
+   plates, a thin dark rim and a steel edge, cream words; no navy and no gold glow */
+#tut-spot .ts-key.btn { background: linear-gradient(180deg, rgba(43,49,41,0.94), rgba(27,31,26,0.94)); color: #e4e2d4; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #3a4136, 0 0 0 4px #0c0e0a, 0 10px 24px rgba(0,0,0,0.5); }
+#tut-spot .ts-key.btn:hover { box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #59624f, 0 0 0 4px #0c0e0a, 0 12px 26px rgba(0,0,0,0.55); filter: brightness(1.06); }

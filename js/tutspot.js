@@ -53,7 +53,7 @@ function visible(el) {
 export class TutSpot {
   constructor() {
     const el = document.createElement('div'); el.id = 'tut-spot'; el.hidden = true;
-    el.innerHTML = '<div class="ts-frame"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-hole"></div><div class="ts-arrow"></div><div class="ts-say"></div><div class="ts-key"><kbd></kbd><span></span></div><div class="ts-line"></div>';
+    el.innerHTML = '<div class="ts-frame"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-hole"></div><div class="ts-arrow"></div><div class="ts-say"></div><div class="ts-key"><kbd></kbd><span></span></div><div class="ts-line"></div><div class="ts-card"><p></p><button>OK</button></div>';
     document.body.appendChild(el);
     this.el = el; this.frame = el.querySelector('.ts-frame'); this.hole = el.querySelector('.ts-hole'); this.arrow = el.querySelector('.ts-arrow');
     this.blocks = [...el.querySelectorAll('.ts-block')];
@@ -64,6 +64,9 @@ export class TutSpot {
     // (4.4.1) the tutorial's own button: a click does the step's action (main.js runTutAction), as its key does
     this.onAction = null;
     this.keyBox.addEventListener('click', () => { if (this.btn && this.onAction) this.onAction(this.btn); });
+    // (4.12.2) a card by the lit thing: a few words about it and OK (spot.card = { id, text }); OK calls onCard(id)
+    this.card = el.querySelector('.ts-card'); this.onCard = null;
+    this.card.querySelector('button').addEventListener('click', () => { if (this.cardId && this.onCard) this.onCard(this.cardId); });
   }
   // (4.3.8) the tutorial's instruction, on its own line at the left under the quest tracker (not in the game's
   // message line at the top, where it held other messages back). It stays while it is the instruction.
@@ -81,21 +84,29 @@ export class TutSpot {
     }
     return null;
   }
-  hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; }
+  hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot, text = null) {
-    if (!on) { this.el.hidden = true; this.lastTarget = null; LOCK = null; this.setLine(null); return; }
+    if (!on) { // (4.12.2) the spotlight fades out rather than vanishing (no bright flash when a step ends)
+      LOCK = null; this.lastTarget = null; this.setLine(null); for (const b of this.blocks) b.style.display = 'none';
+      if (!this.el.hidden && !this.fadingOut) { this.fadingOut = true; this.el.classList.add('out'); this.fadeT = setTimeout(() => { this.el.hidden = true; this.el.classList.remove('out'); this.fadingOut = false; }, 420); }
+      return;
+    }
+    if (this.fadingOut) { clearTimeout(this.fadeT); this.fadingOut = false; this.el.classList.remove('out'); }
     this.el.hidden = false; this.hideParts(); this.setLine(text);
     // a confirm plate is up: point at its yes button when the step expects one (a purchase), else stay out of the way
     const conf = document.getElementById('confirm');
     if (spot && conf && !conf.hidden) spot = spot.confirm ? { sel: ['#confirm .cf-yes'], say: spot.confirm, below: true } : null; // (4.3.5) the arrow under the button, off the words
     if (!spot) { this.lastTarget = null; return; }
-    const t = this.find(spot.sel);
+    let t = this.find(spot.sel);
+    // (4.12.2) the thing it points at gone for a moment (a panel redrawn): keep the shade where it was a little
+    // longer, so the screen does not flash bright
+    if (!t && this.lastRect && performance.now() - this.lastSeen < 500 && spot.sel) { const r0 = this.lastRect; Object.assign(this.hole.style, { display: 'block', left: r0.x + 'px', top: r0.y + 'px', width: r0.w + 'px', height: r0.h + 'px' }); return; }
     if (t) {
       // keep it on screen inside a scrolling panel (the shop, the inventory)
       if (t !== this.lastTarget) { this.lastTarget = t; try { t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* old browsers */ } }
       const r = t.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
-      const x = r.left - PAD, y = r.top - PAD, w = r.width + PAD * 2, h = r.height + PAD * 2;
+      const x = r.left - PAD, y = r.top - PAD, w = r.width + PAD * 2, h = r.height + PAD * 2; this.lastRect = { x, y, w, h }; this.lastSeen = performance.now();
       Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
       this.hole.classList.toggle('light', !!spot.light); // over the sea, a lighter shade: he may still be swimming
       // (4.3.6) on a screen (not over the sea while he plays): only the lit thing can be used
@@ -111,6 +122,13 @@ export class TutSpot {
       this.arrow.className = 'ts-arrow ' + (above ? 'down' : 'up');
       this.arrow.style.left = cx + 'px';
       this.arrow.style.top = (above ? y - 30 : y + h + 8) + 'px';
+      if (spot.card) { // the card beside the lit thing (below it when there is room, else above), the arrow hidden
+        this.arrow.style.display = 'none'; this.cardId = spot.card.id;
+        const p = this.card.querySelector('p'); if (p.textContent !== spot.card.text) p.textContent = spot.card.text;
+        this.card.style.display = 'block'; const cw = Math.min(320, vw - 24), ch = this.card.offsetHeight || 110;
+        const left = Math.max(12, Math.min(vw - cw - 12, x + w / 2 - cw / 2)), top = y + h + 14 + ch < vh ? y + h + 14 : Math.max(12, y - ch - 14);
+        Object.assign(this.card.style, { left: left + 'px', top: top + 'px', width: cw + 'px' });
+      }
       // (4.3.1) no words by it: the ring and the arrow are enough (the banner at the top says what the step is)
     } else {
       this.lastTarget = null;

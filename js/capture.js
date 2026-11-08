@@ -411,7 +411,7 @@ export function updateSubNet(g, dt, canTake) {
       }
       n.prev = seen;
     }
-    if (n.pt >= TOW_MAX) { n.phase = 'purse'; n.pt = 0; }
+    if (n.pt >= TOW_MAX && !(g.lesson && g.lesson.kind === 'trawl')) { n.phase = 'purse'; n.pt = 0; } // (4.12.2) in the lesson it stays out until it is closed
   } else if (n.phase === 'purse') {
     n.open = Math.max(0, n.open - dt / NET_PURSE);
     n.mx += (tgt.x - n.mx) * Math.min(1, dt); n.my += (tgt.y - n.my) * Math.min(1, dt);

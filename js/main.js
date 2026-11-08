@@ -246,7 +246,9 @@ const ui = new UI({
   // (3.0.0) quests: claim one (cash, and on the main line sometimes a thing), or new quests on the board
   onQuestClaim: (which) => {
     const P = profile, tutWas = P.tut === 'on', r = claimQuest(P, which); if (!r) return false;
-    if (which === 'main' && tutWas) setTimeout(() => ui.toggleQuests(false), 250); // (4.3.5) the tutorial goes straight on to the next step
+    const mNext = QUEST_MAIN[questsOf(P).main], lastTut = which === 'main' && tutWas && (!mNext || !TUT_IDS.has(mNext.id));
+    if (lastTut) ui.closeQuestsAfterTutorial(); // (4.12.2) the last step: the board stays as it was, fades out, and the new quests come 3 s after
+    else if (which === 'main' && tutWas) setTimeout(() => ui.toggleQuests(false), 250); // (4.3.5) the tutorial goes straight on to the next step
     if (r.pay) { P.cash = Math.round((P.cash + r.pay) * 100) / 100; P.lifetime = Math.round((P.lifetime + r.pay) * 100) / 100; }
     let gift = null; if (r.gift) gift = giveItem(P, r.gift);
     // (4.0.6) a tutorial step gives what it taught him to use: a net, a backup air tank, a trawl net, a trap
@@ -907,9 +909,8 @@ function lessons() {
       g.lesson = { kind: 'air' }; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); ui.showGains([{ kind: 'supply', id: 'airTank' }]);
     } else if (!P.lessonTrawl && (P.subTimes || 0) >= 2 && sub.y >= 10 && floor - sub.y >= 10) {
       const dir = sub.facing || 1, cx = sub.x + dir * 6, cy = sub.y + 4; // (just ahead: the net trails some 10 m behind her)
-      const sp = SPECIES.find((q) => /Northern Anchovy/.test(q.name)) || SPECIES.find((q) => /Anchovy|Sardine|Herring/.test(q.name));
-      const gid = g.fauna.groupId++, school = [];
-      for (let k = 0; k < 9; k++) { const f = g.fauna.makeFish(sp, cx + (k % 3) * 0.9 - 0.9, cy + Math.floor(k / 3) * 0.7 - 0.7, -dir, gid, k === 0); f.placed = true; f.lesson = true; g.fauna.list.push(f); school.push(f); }
+      // (4.12.2) one moon jelly, drifting just ahead: one animal to catch, one to put in the tank
+      const school = [lessonJelly(cx, cy, dir)];
       { const N = netsOf(g.items); if (!N.basic) N.basic = 1; } // (the lesson's net is a beginner's)
       g.lesson = { kind: 'trawl', part: 'drop', school };
     }
@@ -924,29 +925,34 @@ function lessons() {
   // the trawl
   const n = g.subNet, alive = L.school.filter((f) => !f.dead), mid = alive.length ? { x: alive.reduce((a, f) => a + f.x, 0) / alive.length, y: alive.reduce((a, f) => a + f.y, 0) / alive.length } : null;
   if (L.part === 'drop' && n) L.part = 'tow';
-  if (L.part === 'tow' && n && n.phase !== 'drop' && (n.phase !== 'tow' || n.got.length >= Math.min(3, L.school.length) || !alive.length)) L.part = n.phase === 'tow' ? 'close' : 'haul';
+  if (L.part === 'tow' && n && n.phase !== 'drop' && (n.phase !== 'tow' || n.got.length >= 1 || !alive.length)) L.part = n.phase === 'tow' ? 'close' : 'haul';
   if (L.part === 'close' && n && n.phase !== 'tow') L.part = 'haul';
   if (L.part === 'haul' && !g.subNet) {
     if (g.subTank.some((s) => s.pile)) L.part = 'tank';
     else { // nothing in it: the net back, a new school ahead, and again
-      { const N = netsOf(g.items); N.basic = Math.max(1, N.basic); } const dir = sub.facing || 1, cx = sub.x + dir * 6, cy = sub.y + 4, sp = L.school[0].sp, gid = g.fauna.groupId++; L.school = [];
-      for (let k = 0; k < 9; k++) { const f = g.fauna.makeFish(sp, cx + (k % 3) * 0.9 - 0.9, cy + Math.floor(k / 3) * 0.7 - 0.7, -dir, gid, k === 0); f.placed = true; f.lesson = true; g.fauna.list.push(f); L.school.push(f); }
-      L.part = 'drop'; hud.toast('Nothing in it. Try again: drive straight through the fish', 'note');
+      { const N = netsOf(g.items); N.basic = Math.max(1, N.basic); } const dir = sub.facing || 1; L.school = [lessonJelly(sub.x + dir * 6, sub.y + 4, dir)];
+      L.part = 'drop'; hud.toast('Nothing in it. Try again: drive straight through the jellyfish', 'note');
     }
   }
   if (L.part === 'tank' && ui.tankOpen && ui.tankOpen()) L.part = 'drag';
   if (L.part === 'drag' && !g.subTank.some((s) => s.pile)) L.part = 'end';
+  else if (L.part === 'drag' && !(ui.tankOpen && ui.tankOpen())) L.part = 'tank'; // (4.12.2) the tank room closed before the catch was in: back to opening it
   if (L.part === 'end') {
     g.lesson = null; P.lessonTrawl = 'done';
     if (!netTotal(g.items)) { netsOf(g.items).basic = 1; ui.showGains([{ kind: 'trawl', id: 'basic' }]); }
     syncProfile(); saveProfile(P); hud.toast('Lesson done. A spare trawl net is in the hatch', 'note'); return;
   }
   if (L.part === 'drop') set('Let out the trawl net', { act: 'trawl', say: 'Let out the net' }, ['n']);
-  else if (L.part === 'tow') { set('Steer so the net passes through the school of fish', null, MOVE_KEYS, mid); if (n && g.tut) g.tut.from = { x: n.mx, y: n.my }; } // (4.8.1) the trail from the net's mouth: it is the net that has to get there
+  else if (L.part === 'tow') { set('Steer so the net passes over the jellyfish', null, MOVE_KEYS, mid); if (n && g.tut) g.tut.from = { x: n.mx, y: n.my }; } // (4.8.1) the trail from the net's mouth: it is the net that has to get there
   else if (L.part === 'close') set('Close the net', { act: 'trawl', say: 'Close the net' }, ['n'].concat(MOVE_KEYS));
   else if (L.part === 'haul') set('The net is coming in', null, MOVE_KEYS);
   else if (L.part === 'tank') set('Open the tank room to see your catch', { act: 'tank', say: 'Tank room' }, ['t']);
-  else if (L.part === 'drag') set('Drag each fish off the floor into the tank: out of the water, it suffocates', null, []);
+  else if (L.part === 'drag') set('Drag the jellyfish off the floor into the tank: out of the water, it dies', null, []);
+}
+// (4.12.2) the trawl lesson's one animal: a moon jelly drifting just ahead of the sub, held where it is
+function lessonJelly(x, y, dir) {
+  const sp = SPECIES_BY_ID[171] || SPECIES.find((q) => /Moon Jelly/.test(q.name));
+  const f = g.fauna.makeFish(sp, x, y, -dir, g.fauna.groupId++, true); f.placed = true; f.lesson = true; f.devKeep = true; g.fauna.list.push(f); return f;
 }
 function tutorWelcome() {
   const P = profile; if (!P || P.tut) return;
@@ -1051,6 +1057,13 @@ function tutor() {
     }
   } else if (m.id === 'sell') {
     if (!P.tutJournal) { text = 'Open your journal: every animal you observe goes in it'; spot = jOpen ? null : { act: 'journal', say: 'Open your journal' }; }
+    else if (jOpen && (P.tutJTour || 0) < 3) { // (4.12.2) a short look round the journal before it is closed
+      const k = P.tutJTour || 0;
+      text = 'Your journal';
+      spot = k === 0 ? { sel: ['#journal-list .entry img'], card: { id: 'jtour', text: 'Every animal you observe gets an entry. This is where you look at it: its picture, drawn from life.' } }
+        : k === 1 ? { sel: ['#journal-list .entry .meta', '#journal-list .entry p'], card: { id: 'jtour', text: 'Under it: what it is, how big it grows, and the depths it lives at. Use it to work out where to find more.' } }
+        : { sel: ['#notes'], card: { id: 'jtour', text: 'And this page is yours: write notes, plans or anything worth remembering. They are kept.' } };
+    }
     else if (jOpen) { text = 'Close the journal'; spot = { sel: ['#journal-close'], act: 'journal', say: 'Close the journal' }; }
     else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-sell="tobasket"]'], say: 'Sell all' }; }
     else if (!g.bag.length && !g.subTank.length) {
@@ -1100,6 +1113,7 @@ function tutor() {
 }
 const tutSpot = new TutSpot();
 tutSpot.onAction = (id) => runTutAction(id); // (4.4.1) the button
+tutSpot.onCard = (id) => { if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
 function startRun() {
   mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic();
@@ -1472,6 +1486,7 @@ function interact(t, exitSub) {
 
 function leaveSub() {
   const e = g.earl, sub = g.sub;
+  if (g.lesson) { hud.toast('Finish the lesson first', 'warn'); return; } // (4.12.2) a lesson keeps him in the sub
   e.inSub = false;
   e.x = sub.x - sub.facing * 1.5; e.y = Math.max(0.4, sub.y + 2.6); e.vx = 0; e.vy = 0;
   // (2.5.0: leaving the sub no longer puts it in her cradle: it docks when the Margaret gets under way)

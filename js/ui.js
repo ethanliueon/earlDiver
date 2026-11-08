@@ -356,8 +356,20 @@ export class UI {
     clearInterval(this.qTick);
     if (open) { this.renderQuests(); this.qTick = setInterval(() => { if ($('quests').hidden) { clearInterval(this.qTick); return; } const c = $('quests').querySelector('.qs-clock'), P = this.h.getProfile(); if (c && P) { const w = boardIn(P); if (w <= 0) this.renderQuests(); else { const t = Math.ceil(w / 1000); c.textContent = `${Math.floor(t / 3600)}:${String(Math.floor((t % 3600) / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; } } }, 1000); } // (4.0.1) the clock ticks
   }
+  // (4.12.2) after the tutorial's last claim: nothing on the board changes while it fades out and closes, and the new
+  // board is only filled 3 s after that
+  closeQuestsAfterTutorial() {
+    this.qFreeze = true; this.boardWait = Date.now() + 450 + 3000;
+    $('quests').classList.add('fading');
+    setTimeout(() => { this.toggleQuests(false); $('quests').classList.remove('fading'); this.qFreeze = false; }, 450);
+  }
   renderQuests() {
-    const P = this.h.getProfile(); if (!P) return;
+    const P = this.h.getProfile(); if (!P || this.qFreeze) return;
+    if (this.boardWait && Date.now() < this.boardWait) { // the new board is being posted
+      const m0 = QUEST_MAIN[questsOf(P).main];
+      $('quests').querySelector('.qs-body').innerHTML = `<h3>The board</h3><p class="qs-locked">New quests are being posted…</p>`;
+      clearTimeout(this.boardT); this.boardT = setTimeout(() => { if (!$('quests').hidden) this.renderQuests(); }, this.boardWait - Date.now() + 30); return;
+    }
     fillQuests(P); const S = questsOf(P), m = QUEST_MAIN[S.main];
     const bar = (a, b) => `<div class="qs-bar"><i style="width:${Math.round(Math.min(1, b ? a / b : 1) * 100)}%"></i></div>`;
     let html = '';
