@@ -1824,6 +1824,7 @@ function update(dt) {
         g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1.0, old };
         ent.throwLure(g.lure.x, g.lure.y, old ? 25 : 10);
         hud.toast(old ? 'The old lure drifts away' : 'The lure drifts away');
+        if (g.entity && (g.entity.dist ?? Infinity) < 300) questEvent(profile, 'lureMonster'); // (4.8.0)
       } else if (!g.lure) hud.toast('No lures', 'warn');
     }
     if (pressed.has('r')) {
@@ -2026,6 +2027,7 @@ function update(dt) {
     const netRes = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
     if (netRes && netRes.torn) { hud.toast(`The ${netRes.torn.name.toLowerCase()} tore through the net`, 'warn'); audio.ready && audio.thud(0.5); }
     const haul = netRes && netRes.haul;
+    if (haul && haul.length) questEvent(profile, 'trawlHaul', { n: haul.length }); // (4.8.0)
     if (haul) {
       if (!haul.length) hud.toast('The net comes in empty');
       else {
@@ -2039,7 +2041,7 @@ function update(dt) {
     // (3.0.0) quests: what can be read off the game, once a second
     g.questT = (g.questT || 0) + dt;
     profile.playT = (profile.playT || 0) + dt; // (3.0.0) play time: the old one's days
-    if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
+    if (g.questT > 1) { g.questT = 0; g.chambersFull = pressSlots(g) > 0 && pressUsed(g) >= pressSlots(g); if (questTick(g, profile)) saveProfile(profile); }
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
     tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
     afterTips(dt); // (4.6.0)

@@ -5,7 +5,9 @@
 //    harder and the better paid. Cash only. New ones free every three hours, or at once for a fee.
 // Progress comes from game events (questEvent: a catch, a sale, a photo, a tag, a trap set) and from a
 // look at the game once a second (questTick: depth, the aquarium, what he has bought and has on).
-import { SPECIES } from './species.js';
+import { SPECIES, SPECIES_BY_ID } from './species.js';
+import { usualDepth } from './fauna.js';
+import { SUBS } from './economy.js';
 import { canTakeLive, liveValue, rarityOf, LEGENDARY } from './specimens.js';
 import { kitOf, ITEMS, FREE } from './items.js';
 const STARTER = new Set(Object.values(FREE)); // (4.0.6) what he starts with is not bought, nor new to put on
@@ -21,7 +23,7 @@ const LADDER = [100, 300, 1000, 2500, 5000];
 const windowOver = (S, now) => now >= (S.freeAt || 0);
 export const boardIn = (P, now = Date.now()) => Math.max(0, (Q(P).freeAt || 0) - now);
 export const refreshPrice = (P) => { const S = Q(P); return LADDER[Math.min(LADDER.length - 1, windowOver(S, Date.now()) ? 0 : S.paidN || 0)]; };
-export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { name: 'Uncommon', odds: 21 }, rare: { name: 'Rare', odds: 6.5 }, exotic: { name: 'Exotic', odds: 0.5 } };
+export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { name: 'Uncommon', odds: 21 }, rare: { name: 'Rare', odds: 6.5 }, exotic: { name: 'Exotic', odds: 0.5 }, legendary: { name: 'Legendary', odds: 0 } };
 
 // the main line: [id, what to do, a line of help, the check, the reward]
 // (4.0.6) the Margaret's Log is the tutorial: each step teaches one thing, and the things a step uses are given
@@ -86,9 +88,9 @@ const KINDS = {
     return { id: sp.id, n: 1, pay: Math.round(v * mult + [40, 150, 500, 2000][r]), text: () => `Bring up a live ${sp.name.toLowerCase()}` };
   },
 };
-const R_INDEX = { common: 0, uncommon: 1, rare: 2, exotic: 3 };
+const R_INDEX = { common: 0, uncommon: 1, rare: 2, exotic: 3, legendary: 4 };
 // (3.0.1) how long a quest stays on the board, in real time: the rarer, the longer
-export const QUEST_HOURS = { common: 12, uncommon: 21, rare: 36, exotic: 60 };
+export const QUEST_HOURS = { common: 12, uncommon: 21, rare: 36, exotic: 60, legendary: 72 };
 export const questLeft = (q, now = Date.now()) => Math.max(0, (q.until || now) - now);
 
 export function Q(P) {
@@ -123,18 +125,93 @@ export function Q(P) {
 function mark(S, st, v) { const nv = Math.min(st.need, v); if (nv > (S.seen[st.id] || 0)) { S.seen[st.id] = nv; return true; } return false; }
 function follow(S) { const m = MAIN[S.main]; if (m && m.on && (S.seen[m.id] || 0) > S.mainProg) { S.mainProg = Math.min(m.need, S.seen[m.id]); return true; } return false; }
 
-function rollRarity(rnd) { let x = rnd() * 100; for (const [k, R] of Object.entries(QUEST_RARITY)) { if ((x -= R.odds) < 0) return k; } return 'common'; }
+// (4.8.0) the board, by the hidden player level: what rarity comes up (Common and Uncommon early; Exotic from level 3,
+// Legendary from level 6), and every quest within his reach: an animal must live no deeper than his sub can go
+// (or he has been). Groups of animals ('any jellyfish', 'any crab', 'any deep-sea crab', 'any Twilight Zone fish',
+// 'an anglerfish'...), three of a kind, the tools he owns, and the Legendary challenges. Undocumented species only
+// once he has been as deep as they live. Never a legendary animal.
+const reachOf = (P) => { const lv0 = (P.tlv && P.tlv.depth) || (P.lv && P.lv.depth) || 0; return Math.max((SUBS[Math.min(SUBS.length - 1, lv0)] || SUBS[0]).rated, P.deepest || 0); };
+const live = (s) => canTakeLive(s) && !s.giant && !LEGENDARY.has(s.id) && rarityOf(s).id !== 'legendary';
+const mid = (s) => { const [a, b] = usualDepth(s); return (a + b) / 2; };
+// group: a test on a species, its pay (about, at the start), and a name
+export const GROUPS = {
+  jelly:   { name: 'any jellyfish', many: 'jellyfish', pay: 50, test: (s) => s.cat === 'Jellyfish & Drifters' && /jelly|nettle|medusa/i.test(s.name) },
+  reef:    { name: 'any reef fish', many: 'reef fish', pay: 60, test: (s) => s.cat === 'Reef Fish' },
+  kelpfish:{ name: 'any cold-water fish', many: 'cold-water fish', pay: 70, test: (s) => s.cat === 'Cold Water Fish' },
+  crab:    { name: 'any crab', many: 'crabs', pay: 120, test: (s) => /crab/i.test(s.name) },
+  urchin:  { name: 'any sea urchin or starfish', many: 'urchins or starfish', pay: 150, test: (s) => s.cat === 'Starfish & Urchins' },
+  octo:    { name: 'any octopus or squid', many: 'octopuses or squid', pay: 260, test: (s) => s.cat === 'Octopus & Squid' },
+  shark:   { name: 'any shark or ray', many: 'sharks or rays', pay: 420, test: (s) => s.cat === 'Sharks & Rays' },
+  deep200: { name: 'any fish below 200 m', many: 'fish from below 200 m', pay: 380, test: (s) => /Fish/.test(s.cat) && mid(s) >= 200 },
+  twilight:{ name: 'any Twilight Zone fish', many: 'Twilight Zone fish', pay: 600, test: (s) => /Fish/.test(s.cat) && mid(s) >= 200 && mid(s) < 1000 },
+  deepcrab:{ name: 'any deep-sea crab', many: 'deep-sea crabs', pay: 900, test: (s) => /crab/i.test(s.name) && mid(s) >= 200 },
+  eel:     { name: 'any eel', many: 'eels', pay: 1400, test: (s) => /\beel\b|moray/i.test(s.name) },
+  midnight:{ name: 'any Midnight Zone fish', many: 'Midnight Zone fish', pay: 2600, test: (s) => /Fish/.test(s.cat) && mid(s) >= 1000 && mid(s) < 4000 },
+  viper:   { name: 'a viperfish', many: 'viperfish', pay: 3200, test: (s) => /viperfish/i.test(s.name) },
+  dragon:  { name: 'a dragonfish', many: 'dragonfish', pay: 3200, test: (s) => /dragonfish/i.test(s.name) },
+  angler:  { name: 'an anglerfish', many: 'anglerfish', pay: 4200, test: (s) => /angler|seadevil|sea devil|football/i.test(s.name) },
+  abyss:   { name: 'any abyssal animal', many: 'abyssal animals', pay: 8000, test: (s) => mid(s) >= 4000 },
+  undoc:   { name: 'an undocumented species', many: 'undocumented species', pay: 20000, undoc: true, test: (s) => !!s.undoc },
+};
+const GROUP_SPECIES = {};
+const groupList = (k) => GROUP_SPECIES[k] || (GROUP_SPECIES[k] = SPECIES.filter((s) => (GROUPS[k].undoc ? !!s.undoc : live(s) && !s.undoc) && GROUPS[k].test(s)));
+// can he do it: some animal of the group lives within his reach (undocumented: he has been that deep)
+const groupOk = (k, P) => { const L = groupList(k), r = reachOf(P); return L.length > 0 && L.some((s) => (GROUPS[k].undoc ? (P.deepest || 0) >= s.dmin : usualDepth(s)[0] <= r)); };
+const tierOfPay = (pay) => (pay < 100 ? 0 : pay < 400 ? 1 : pay < 2500 ? 2 : 3);
+function rollRarity(rnd, P) {
+  const L = playerLevel(P), w = { common: Math.max(20, 70 - 6 * (L - 1)), uncommon: 22, rare: 5 + 2 * L, exotic: L >= 3 ? 1 + 1.5 * (L - 3) : 0, legendary: L >= 6 ? 1 + (L - 6) : 0 };
+  let x = rnd() * Object.values(w).reduce((a, b) => a + b, 0); for (const [k, v] of Object.entries(w)) { if ((x -= v) < 0) return k; } return 'common';
+}
+const LEGEND_QUESTS = [
+  { key: 'L-angler10', text: 'Catch 10 anglerfish', kind: 'group', g: 'angler', n: 10, pay: 60000, ok: (P) => groupOk('angler', P) },
+  { key: 'L-viper10', text: 'Catch 10 viperfish', kind: 'group', g: 'viper', n: 10, pay: 50000, ok: (P) => groupOk('viper', P) },
+  { key: 'L-dive100', text: 'Catch 100 animals in one dive', kind: 'divecatch', n: 100, pay: 50000, ok: () => true },
+  { key: 'L-depth4000', text: 'Dive below 4,000 m', kind: 'depth', d: 4000, n: 1, pay: 75000, ok: (P) => reachOf(P) >= 3300 },
+  { key: 'L-lure', text: 'Throw a lure while the thing in the deep is near', kind: 'lureMonster', n: 1, pay: 55000, ok: (P) => (P.deepest || 0) >= 1000 },
+  { key: 'L-chambers', text: 'Fill every pressure chamber at once', kind: 'chambers', n: 1, pay: 50000, ok: () => true },
+];
 export function newQuest(P, rnd = Math.random, taken = new Set()) {
-  for (let tries = 0; tries < 30; tries++) {
-    const rarity = rollRarity(rnd), r = R_INDEX[rarity];
-    const kinds = ['catch', 'catch', 'deep', 'sell', 'species', 'species'].concat(ownsKind(P, 'cam') ? ['photo'] : []).concat(ownsKind(P, 'tag') ? ['tag'] : []);
+  const L = playerLevel(P), scale = 0.8 + 0.06 * (L - 1), round5 = (v) => Math.max(10, Math.round(v / 5) * 5);
+  for (let tries = 0; tries < 40; tries++) {
+    const rarity = rollRarity(rnd, P), r = R_INDEX[rarity], now = Date.now(), base = { rarity, prog: 0, until: now + QUEST_HOURS[rarity] * 3600000, fresh: true };
+    if (rarity === 'legendary') {
+      const opts = LEGEND_QUESTS.filter((q) => q.ok(P) && !taken.has(q.key)); if (!opts.length) continue;
+      const q = opts[Math.floor(rnd() * opts.length)];
+      return { ...base, key: q.key, kind: q.kind, g: q.g, d: q.d, n: q.n, pay: q.pay, text: q.text };
+    }
+    const kinds = ['group', 'group', 'group', 'deep', 'catch', 'sell', 'species'].concat(ownsKind(P, 'cam') ? ['photo'] : []).concat(ownsKind(P, 'tag') ? ['tag'] : []).concat(P.lessonTrawl ? ['trawl'] : []);
     const kind = kinds[Math.floor(rnd() * kinds.length)];
-    const q = KINDS[kind](r, rnd, P); if (!q) continue;
-    if (kind !== 'species') q.pay = Math.max(10, Math.round(q.pay * payK(P) / 5) * 5); // (4.2.0) by the hidden player level
-    const key = kind + (q.id || ''); if ([...taken].some((t) => t === key || (kind === 'catch' && t.startsWith('catch')))) continue; // one of each kind on the board
-    return { key, kind, rarity, n: q.n, d: q.d, id: q.id, pay: q.pay, text: q.text(q), prog: 0, until: Date.now() + QUEST_HOURS[rarity] * 3600000, fresh: true };
+    let q;
+    if (kind === 'group') {
+      // a group whose pay suits the rarity, within his reach; now and then three of a kind (a step rarer, more pay)
+      const three = r >= 1 && rnd() < 0.3, want = three ? r - 1 : r;
+      const opts = Object.keys(GROUPS).filter((k) => tierOfPay(GROUPS[k].pay) === want && groupOk(k, P)); if (!opts.length) continue;
+      const k = opts[Math.floor(rnd() * opts.length)], G = GROUPS[k], n = three ? 3 : 1;
+      q = { key: 'group-' + k + n, kind: 'group', g: k, n, pay: round5(G.pay * scale * (three ? 2.6 : 1)), text: `Catch ${three ? '3 ' + G.many : G.name}` };
+    } else if (kind === 'deep') {
+      const d = [100, 200, 600, 1500][Math.min(r, 3)]; if (d > reachOf(P)) continue;
+      q = { key: 'deep', kind: 'deep', d, n: [1, 2, 3, 3][Math.min(r, 3)], pay: round5([240, 900, 3200, 13000][Math.min(r, 3)] * 0.5 * scale) }; q.text = `Catch ${q.n > 1 ? q.n + ' animals' : 'an animal'} below ${d} m`;
+    } else if (kind === 'trawl') {
+      q = { key: 'trawl', kind: 'trawl', n: [5, 12, 25, 50][Math.min(r, 3)], pay: round5([100, 400, 1500, 6000][Math.min(r, 3)] * scale) }; q.text = `Haul up ${q.n} animals in the trawl net`;
+    } else {
+      const o = KINDS[kind](Math.min(r, 3), rnd, P); if (!o) continue;
+      if (kind === 'species' && usualDepth(SPECIES_BY_ID[o.id])[0] > reachOf(P)) continue;
+      if (kind !== 'species') o.pay = round5(o.pay * payK(P));
+      q = { ...o, key: kind + (o.id || ''), kind, text: o.text(o) };
+    }
+    if ([...taken].some((t) => t === q.key || (q.kind === 'catch' && t.startsWith('catch')))) continue;
+    return { ...base, ...q };
   }
   return null;
+}
+// (4.8.0) a new diver's first board, always: an animal below 100 m, any jellyfish, and $300 of catch sold
+function firstBoard(P) {
+  const until = Date.now() + QUEST_HOURS.common * 3600000, b = { rarity: 'common', prog: 0, until, fresh: false };
+  return [
+    { ...b, key: 'deep', kind: 'deep', d: 100, n: 1, pay: 120, text: 'Catch an animal below 100 m' },
+    { ...b, key: 'group-jelly1', kind: 'group', g: 'jelly', n: 1, pay: 50, text: 'Catch any jellyfish' },
+    { ...b, key: 'sell', kind: 'sell', n: 300, pay: 80, text: 'Sell $300 of catch' },
+  ];
 }
 const ownsKind = (P, kind) => kitOf(P).items.some((it) => ITEMS[it.id] && ITEMS[it.id].kind === kind);
 // (4.0.0) keep the board at three: a quest whose time has run out is replaced by a new one (marked NEW), and so is
@@ -142,9 +219,10 @@ const ownsKind = (P, kind) => kitOf(P).items.some((it) => ITEMS[it.id] && ITEMS[
 // yet claimed never runs out.
 export function fillQuests(P, byHand = false) {
   const now = Date.now(), S = Q(P), starting = !S.board.length; // (4.0.1) NEW only on a quest that replaced one by itself
+  if (starting && !S.firstBoard) { S.firstBoard = true; S.board = firstBoard(P); return; }
   S.board.forEach((q) => { if (!q.until) q.until = now + QUEST_HOURS[q.rarity || 'common'] * 3600000; });
   S.board = S.board.filter((q) => (q.prog >= q.n && !q.claimed) || q.until > now);
-  const taken = new Set(S.board.map((q) => q.key.replace(/(common|uncommon|rare|exotic)$/, '')));
+  const taken = new Set(S.board.map((q) => q.key.replace(/(common|uncommon|rare|exotic|legendary)$/, '')));
   while (S.board.length < 3) { const q = newQuest(P, Math.random, taken); if (!q) break; q.fresh = !starting && !byHand; S.board.push(q); taken.add(q.key); }
 }
 // new quests by hand: the free one if it is ready, otherwise the next price on the ladder (the caller charges it).
@@ -179,6 +257,10 @@ export function questEvent(P, type, data = {}) {
     if (q.prog >= q.n || q.claimed) continue;
     let add = 0;
     if (type === 'catch' && q.kind === 'catch') add = 1;
+    if (type === 'catch' && q.kind === 'group' && SPECIES_BY_ID[data.id] && GROUPS[q.g] && GROUPS[q.g].test(SPECIES_BY_ID[data.id])) add = 1; // (4.8.0)
+    if (type === 'catch' && q.kind === 'divecatch') { if (q.runAt !== P.runs) { q.runAt = P.runs; q.prog = 0; } add = 1; }
+    if (type === 'trawlHaul' && q.kind === 'trawl') add = data.n || 1;
+    if (type === 'lureMonster' && q.kind === 'lureMonster') add = 1;
     if (type === 'catch' && q.kind === 'deep' && (data.depth || 0) >= q.d) add = 1;
     if (type === 'catch' && q.kind === 'species' && data.id === q.id && data.alive) add = 1;
     if (type === 'sell' && q.kind === 'sell') add = Math.round(data.total || 0);
@@ -205,6 +287,12 @@ export function questTick(g, P) {
     }
     if (st.on === 'surfaceSafe' && g.subTank.some((s) => s.safe && s.cond > 0.05)) ch = mark(S, st, 1) || ch;
     if (st.on === 'aquarium' && P.aquarium && Object.keys(P.aquarium.display || {}).length) ch = mark(S, st, 1) || ch;
+  }
+  // (4.8.0) the board's challenges read off the game: a depth reached, every chamber full
+  if (!tutorialOn(P)) for (const q of S.board) {
+    if (q.prog >= q.n || q.claimed) continue;
+    if (q.kind === 'depth' && Math.max(e.y, e.inSub ? g.sub.y : 0) >= q.d) { q.prog = 1; ch = true; }
+    if (q.kind === 'chambers' && g.chambersFull) { q.prog = 1; ch = true; }
   }
   return follow(S) || ch;
 }

@@ -2337,3 +2337,21 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 #gains { --r-common: #c9cdc4; --r-uncommon: #7ccf7f; --r-rare: #5aa8f0; --r-exotic: #c27af0; --r-legendary: #f2b84a; }
 #gains .g-tile { background: radial-gradient(ellipse at 50% 40%, #2a3027, #121510); }
 #gains .gain.r-supply .g-tile { --rc: #6e7672; }
+
+/* (4.8.0) a quest's rarity: Common and Uncommon plain; Rare a blue stripe down the left; Exotic a purple stripe and an
+   engraved double edge with marks at its corners; Legendary a gold stripe, a gold glow behind the row and its title
+   in gold stencil capitals */
+#quests .qs-q { position: relative; }
+#quests .qs-q.r-rare::before, #quests .qs-q.r-exotic::before, #quests .qs-q.r-legendary::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 4px; border-radius: 2px; background: var(--rq); box-shadow: 0 0 6px var(--rq); }
+#quests .qs-q.r-rare { --rq: #5aa8f0; } #quests .qs-q.r-exotic { --rq: #c27af0; } #quests .qs-q.r-legendary { --rq: #f2b84a; }
+#quests .qs-q.r-exotic { box-shadow: inset 0 0 0 1px rgba(194,122,240,0.45), inset 0 0 0 3px rgba(12,14,10,0.9), inset 0 0 0 4px rgba(194,122,240,0.25), 0 1px 0 rgba(255,255,240,0.1), inset 0 4px 8px rgba(0,0,0,0.6) !important; }
+#quests .qs-q.r-exotic::after { content: ''; position: absolute; inset: 3px; pointer-events: none; opacity: 0.8;
+  background: linear-gradient(#c27af0, #c27af0) 0 0 / 8px 1px no-repeat, linear-gradient(#c27af0, #c27af0) 0 0 / 1px 8px no-repeat,
+    linear-gradient(#c27af0, #c27af0) 100% 0 / 8px 1px no-repeat, linear-gradient(#c27af0, #c27af0) 100% 0 / 1px 8px no-repeat,
+    linear-gradient(#c27af0, #c27af0) 0 100% / 8px 1px no-repeat, linear-gradient(#c27af0, #c27af0) 0 100% / 1px 8px no-repeat,
+    linear-gradient(#c27af0, #c27af0) 100% 100% / 8px 1px no-repeat, linear-gradient(#c27af0, #c27af0) 100% 100% / 1px 8px no-repeat; }
+#quests .qs-q.r-legendary { background: radial-gradient(ellipse at 30% 50%, rgba(242,184,74,0.16), rgba(0,0,0,0) 70%), linear-gradient(180deg, #24241a, #2c2a1c 85%, #34301e) !important;
+  box-shadow: 0 0 0 1px rgba(242,184,74,0.55), 0 0 18px rgba(242,184,74,0.28), inset 0 4px 8px rgba(0,0,0,0.6) !important; animation: qs-legend 3.2s ease-in-out infinite; }
+@keyframes qs-legend { 50% { box-shadow: 0 0 0 1px rgba(242,184,74,0.75), 0 0 28px rgba(242,184,74,0.42), inset 0 4px 8px rgba(0,0,0,0.6); } }
+#quests .qs-q.r-legendary .qs-t b { font: 400 16px var(--stencil) !important; letter-spacing: 0.08em; text-transform: uppercase; color: #f2c868; text-shadow: 0 0 10px rgba(242,184,74,0.45); }
+@media (prefers-reduced-motion: reduce) { #quests .qs-q.r-legendary { animation: none; } }
