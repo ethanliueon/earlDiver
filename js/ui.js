@@ -13,7 +13,7 @@ const SUB_ABOUT = [
   'The only kind of boat that can go anywhere in the sea: a full-ocean-depth hull, rated for the trench floor. There is nothing deeper.',
 ];
 // (4.15.7) where each refit sits in the showcase drawing of the sub: [x, y, w, h] as fractions of the picture
-const PART_CROP = { arm: [0.66, 0.56, 0.34, 0.34], quiet: [0.7, 0.16, 0.3, 0.3], sonar: [0.58, 0.44, 0.2, 0.2] };
+const PART_CROP = { arm: [0.66, 0.56, 0.34, 0.34], quiet: [0.7, 0.16, 0.3, 0.3], sonar: [0.6, 0.46, 0.18, 0.24] };
 const SHOWCASE_TABS = new Set(['diver', 'tools']); // (4.14.0: the sub page draws its own)
 import { speciesIcon, fittedIcon, speciesBox, drawSpecies } from './creatures_draw.js';
 import { ABOUT } from '../data/species_about.js';
@@ -1402,7 +1402,7 @@ export class UI {
       // has had, his own and the next he can buy (or one dark card, to be discovered); click a sub for its own page
       const hl = Math.min(SUBS.length - 1, lv(P, 'depth')), S0 = SUBS[hl], cap = hullCap(P);
       const air = (s2) => `${Math.floor(s2 / 60)} min${s2 % 60 ? ` ${s2 % 60} s` : ''}`;
-      const facts = (S, k) => [['Safe depth', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(S.o2), S.o2], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed],
+      const facts = (S, k) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(S.o2), S.o2], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed],
         ['Dive speed', k ? '+10%' : 'standard', S.ballast], ['Open tank', `holds ${S.tank} animals`, S.tank]];
       const sheet = (S, k, cmp = null, stamp = '', big = false) => { const base = cmp ? facts(cmp, 1) : null;
         return `<div class="yd-sheet${big ? ' big' : ''}"><div class="ys-head"><span>BAYSIDE YARD · SPECIFICATION</span><span>No. ${k + 1}</span></div>${facts(S, k).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
@@ -1541,7 +1541,14 @@ export class UI {
       const withArm = render(true), plain = render(false);
       const crop = (c, [fx, fy, fw, fh]) => { const o = document.createElement('canvas'); o.width = 300; o.height = 176; const x = o.getContext('2d');
         x.drawImage(c, c.width * fx, c.height * fy, c.width * fw, c.height * fh, 0, 0, 300, 176); return o.toDataURL(); };
-      this.partPics = { 'gear:arm': crop(withArm, PART_CROP.arm), quiet: crop(plain, PART_CROP.quiet), sonar: crop(plain, PART_CROP.sonar) };
+      const sonarPic = (() => { // (4.15.8) the sonar pod, and its green pings fanning out below it
+        const o = document.createElement('canvas'); o.width = 300; o.height = 176; const x = o.getContext('2d'), [fx, fy, fw, fh] = PART_CROP.sonar;
+        x.drawImage(plain, plain.width * fx, plain.height * fy, plain.width * fw, plain.height * fh, 0, 0, 300, 176);
+        const cx = 150, cy = 62; x.lineCap = 'round';
+        for (let i = 0; i < 4; i++) { const r = 34 + i * 26; x.strokeStyle = `rgba(120,240,140,${(0.85 - i * 0.18).toFixed(2)})`; x.lineWidth = 3 - i * 0.4; x.shadowColor = 'rgba(120,240,140,0.8)'; x.shadowBlur = 8;
+          x.beginPath(); x.arc(cx, cy, r, Math.PI * 0.22, Math.PI * 0.78); x.stroke(); }
+        return o.toDataURL(); })();
+      this.partPics = { 'gear:arm': crop(withArm, PART_CROP.arm), quiet: crop(plain, PART_CROP.quiet), sonar: sonarPic };
     }
     for (const im of imgs) im.src = this.partPics[im.dataset.part] || '';
   }
