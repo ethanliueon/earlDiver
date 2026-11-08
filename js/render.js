@@ -738,9 +738,14 @@ export class Renderer {
     for (const d of g.debris) {
       if (!inView(d.x, d.y)) continue;
       ctx.save(); ctx.translate(S(d.x), Sy(d.y)); ctx.rotate(d.rot);
-      ctx.fillStyle = '#2e332b';
-      const r = d.size * ppm;
-      ctx.beginPath(); ctx.moveTo(-r, -r * 0.3); ctx.lineTo(r * 0.2, -r * 0.5); ctx.lineTo(r, r * 0.1); ctx.lineTo(-r * 0.3, r * 0.4); ctx.closePath(); ctx.fill();
+      // (4.8.3) torn plating: a jagged steel shard, a lit edge where it was ripped, a little rust; three shapes
+      const r = d.size * ppm, kind = Math.floor((d.size * 997) % 3);
+      const pts = kind === 0 ? [[-1, -0.25], [-0.2, -0.45], [0.35, -0.2], [1, 0.05], [0.1, 0.38], [-0.55, 0.2]] : kind === 1 ? [[-0.9, 0.1], [-0.3, -0.5], [0.8, -0.3], [0.45, 0.3], [-0.1, 0.15]] : [[-0.7, -0.35], [0.9, -0.15], [0.2, 0.45]];
+      ctx.beginPath(); pts.forEach(([px, py], i) => (i ? ctx.lineTo(px * r, py * r) : ctx.moveTo(px * r, py * r))); ctx.closePath();
+      const sg = ctx.createLinearGradient(0, -r * 0.5, 0, r * 0.5); sg.addColorStop(0, '#5a6164'); sg.addColorStop(1, '#2a2f31');
+      ctx.fillStyle = sg; ctx.fill();
+      ctx.strokeStyle = 'rgba(190,200,205,0.55)'; ctx.lineWidth = Math.max(0.6, r * 0.08); ctx.beginPath(); ctx.moveTo(pts[0][0] * r, pts[0][1] * r); ctx.lineTo(pts[1][0] * r, pts[1][1] * r); ctx.stroke(); // the torn edge
+      ctx.fillStyle = 'rgba(140,72,34,0.45)'; ctx.beginPath(); ctx.arc(pts[2][0] * r * 0.5, pts[2][1] * r * 0.4, r * 0.18, 0, TAU); ctx.fill(); // rust
       ctx.restore();
     }
     // ---- Earl ----

@@ -341,12 +341,11 @@ export class UI {
     if (bed) {
       // (4.8.2) bottom animals: the seabed itself lit where it lies within their depths
       const lit = (m) => { const f = g.world.floorAt(m); return f > 1 && bed.some(([a, b]) => f >= a && f <= b); };
-      x.strokeStyle = '#9fdc8c'; x.lineWidth = 4; x.lineCap = 'round'; x.shadowColor = 'rgba(159,220,140,0.8)'; x.shadowBlur = 6;
+      x.strokeStyle = 'rgba(170,214,150,0.75)'; x.lineWidth = 2.5; x.lineCap = 'round'; // (4.8.3) a quiet line along the bottom, no glow
       x.beginPath(); let on = false;
       for (let m = 0; m <= Wd; m += 5) { const f = g.world.floorAt(m); if (lit(m)) { if (!on) { x.moveTo(X(m), Y(f)); on = true; } else x.lineTo(X(m), Y(f)); if (Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; bestY = f; } } else on = false; }
-      x.stroke(); x.shadowBlur = 0;
-      if (best != null && bd > 80) { x.fillStyle = '#9fdc8c'; x.beginPath(); x.arc(X(best), Y(bestY), 5, 0, Math.PI * 2); x.fill(); x.fillText('nearest place they live', Math.min(W - 170, X(best) + 8), Y(bestY) + (Y(bestY) > H - 30 ? -10 : 16)); }
-      else if (best != null) { x.fillStyle = '#9fdc8c'; x.fillText('they live right where you are', 8, H - 10); }
+      x.stroke();
+      // (no 'nearest place' for the bottom: the lit seabed says where)
     } else {
       x.strokeStyle = 'rgba(242,184,74,0.85)'; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]);
       x.fillStyle = '#f2c868'; x.fillText(`${Math.round(d).toLocaleString()} m`, 6, Y(d) - 4);
