@@ -2310,3 +2310,30 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 @keyframes msg-again { 40% { transform: scale(1.04); filter: brightness(1.25); } }
 #msgs .msg-small { position: relative; padding: 1px 18px; }
 #msgs .msg-small::before { content: ''; position: absolute; inset: -6px -10px; z-index: -1; background: radial-gradient(closest-side, rgba(4,8,10,0.5), rgba(4,8,10,0)); }
+/* (4.6.0) things gained: the locker's own slots, in a row in the middle of the screen, a name and +1 under each */
+#gains { position: fixed; left: 0; right: 0; top: 50%; z-index: 9400; display: flex; justify-content: center; pointer-events: none; transform: translateY(-50%); opacity: 0; }
+#gains.in { animation: gains-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+#gains.out { animation: gains-out 0.45s ease-in forwards; }
+@keyframes gains-in { from { opacity: 0; transform: translateY(calc(-50% + 10px)); } to { opacity: 1; transform: translateY(-50%); } }
+@keyframes gains-out { from { opacity: 1; transform: translateY(-50%); } to { opacity: 0; transform: translateY(calc(-50% - 8px)); } }
+#gains .g-row { display: flex; gap: 18px; }
+#gains .gain { --rc: #8a9290; width: min(20vw, 210px); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 12px 10px; border-radius: 8px;
+  background: linear-gradient(180deg, rgba(34,40,32,0.94), rgba(22,26,20,0.94)); box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, 0 14px 30px rgba(0,0,0,0.55); }
+#gains .gain:nth-child(2) { animation-delay: 0.12s; } #gains .gain:nth-child(3) { animation-delay: 0.24s; } #gains .gain:nth-child(4) { animation-delay: 0.36s; }
+#gains.in .gain { animation: gain-pop 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes gain-pop { from { opacity: 0; transform: translateY(8px) scale(0.96); } }
+#gains .r-common { --rc: var(--r-common); } #gains .r-uncommon { --rc: var(--r-uncommon); } #gains .r-rare { --rc: var(--r-rare); } #gains .r-exotic { --rc: var(--r-exotic); } #gains .r-legendary { --rc: var(--r-legendary); }
+#gains .g-tile { position: relative; width: 100%; aspect-ratio: 1 / 1; display: grid; place-items: center; border-radius: 6px; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.18), rgba(0,0,0,0.48));
+  box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, inset 0 3px 8px rgba(0,0,0,0.65), inset 0 0 0 2px var(--rc); }
+#gains .g-tile::after { content: ''; position: absolute; right: 0; bottom: 0; border-style: solid; border-width: 0 0 14px 14px; border-color: transparent transparent var(--rc) transparent; opacity: 0.9; }
+#gains .g-tile img { width: 82%; height: auto; }
+#gains .g-tile .new { position: absolute; right: 4px; top: 4px; padding: 0 5px; border-radius: 2px; background: #c8a050; color: #2e220a; font: 600 9px var(--stencil); letter-spacing: 0.08em; text-transform: uppercase; font-style: normal; }
+#gains .g-tile .glint { position: absolute; inset: 0; background: linear-gradient(110deg, transparent 40%, rgba(255,236,190,0.35) 50%, transparent 60%); background-size: 250% 100%; animation: g-glint 2.4s linear infinite; }
+@keyframes g-glint { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+#gains .gain b { font: 500 17px/1.2 var(--serif); color: var(--rc); text-align: center; text-shadow: 0 1px 0 rgba(0,0,0,0.8); }
+#gains .gain.r-supply b { color: #e4e0d0; }
+#gains .g-plus { font: 600 16px var(--mono); color: #e8e2c8; letter-spacing: 0.04em; }
+#gains { --r-common: #c9cdc4; --r-uncommon: #7ccf7f; --r-rare: #5aa8f0; --r-exotic: #c27af0; --r-legendary: #f2b84a; }
+#gains .g-tile { background: radial-gradient(ellipse at 50% 40%, #2a3027, #121510); }
+#gains .gain.r-supply .g-tile { --rc: #6e7672; }

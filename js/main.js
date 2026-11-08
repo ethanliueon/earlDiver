@@ -203,7 +203,7 @@ const ui = new UI({
     for (const it of its) { const q = giveItem(P, it.id); if (q) q.paid = true; if (P.wish === it.id) P.wish = null; }
     questEvent(P, 'bought'); // (4.3.0) the Log's 'buy' step counts a real purchase, nothing else
     saveProfile(P); audio.ready && audio.sale();
-    hud.toast(its.length === 1 ? `${its[0].name} added` : `${its.length} items added`, 'big');
+    ui.showGains(its.map((it) => ({ kind: 'item', id: it.id }))); tipEquip(); // (4.6.0) the cards say it
     return true;
   },
   onSellAll: () => withKept(() => sellAll()),
@@ -234,7 +234,9 @@ const ui = new UI({
     }
     if (got.length) syncProfile();
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
-    hud.toast(gift ? `${ITEMS[r.gift].name} added` : got.length ? `Quest done · ${money(r.pay)} + ${got.join(', ')}` : `Quest done · ${money(r.pay)}`, 'big');
+    const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id })));
+    if (cards.length) ui.showGains(cards); // (4.6.0)
+    hud.toast(`Quest done · ${money(r.pay)}`, 'big');
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
@@ -398,7 +400,7 @@ function oldBuy(what) {
   if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; }
   if (!spend(P, it.price)) return false;
   giveRolled(P, it); it.sold = true; saveProfile(P); audio.ready && audio.sale();
-  hud.toast(`${ITEMS[it.id].name} added`, 'big');
+  ui.showGains([{ kind: 'item', id: it.id }]);
   return true;
 }
 function sellAll() {
@@ -736,7 +738,7 @@ function buy(kind) {
     if (C && lockerFree(P) <= 0) hud.toast('Locker full', 'warn');
     else if (C && spend(P, C.price)) {
       const def = rollChest(key), q = def && giveItem(P, def.id);
-      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); }
+      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); setTimeout(() => ui.showGains([{ kind: 'item', id: q.id }]), 1600); } // (4.6.0) the card once the lid is up
     }
     return ok;
   }
@@ -746,7 +748,7 @@ function buy(kind) {
     if (it && lockerFree(P) <= 0) hud.toast('Locker full', 'warn');
     else if (it && spend(P, it.price)) {
       const q = giveItem(P, it.id); if (q) q.paid = true; ok = true; questEvent(P, 'bought'); // (4.3.0)
-      hud.toast(`${it.name} added`, 'big');
+      ui.showGains([{ kind: 'item', id: it.id }]); tipEquip();
       if (P.wish === it.id) P.wish = null;
     }
   } else if (kind.startsWith('off:')) {
@@ -805,10 +807,10 @@ function buy(kind) {
   } else if (kind.startsWith('trap:') && TRAPS[kind.slice(5)] && (convertOldTraps(P), (P.traps[kind.slice(5)] || 0) < TRAPS[kind.slice(5)].max) && spend(P, TRAPS[kind.slice(5)].price)) {
     const tk = kind.slice(5);
     P.traps[tk] = (P.traps[tk] || 0) + 1; ok = true;
-    hud.toast(`${TRAPS[tk].name} (${P.traps[tk]})`, 'big'); hud.hint('Press 5, then Space at the surface to set a trap at the depth you choose');
+    ui.showGains([{ kind: 'trap', id: tk }]); hud.hint('Press 5, then Space at the surface to set a trap at the depth you choose');
   } else if (kind.startsWith('subnet:') && NETS_SUB[kind.slice(7)] && g.items.net !== kind.slice(7) && spend(P, NETS_SUB[kind.slice(7)].price)) {
     g.items.net = kind.slice(7); ok = true;
-    hud.toast(`${NETS_SUB[g.items.net].name} in the hatch`, 'big');
+    ui.showGains([{ kind: 'trawl', id: g.items.net }]);
   } else if (kind === 'gallery') {
     const lvG = P.galleryLv || 0;
     if (lvG < GALLERY_STEPS.length && spend(P, GALLERY_STEPS[lvG])) { P.galleryLv = lvG + 1; ok = true; hud.toast(`The aquarium: room for ${gallerySlots(P)}`, 'big'); audio.cue && audio.cue('wing'); }
@@ -821,7 +823,7 @@ function buy(kind) {
   } else if (SUPPLIES[kind] && (g.items[kind] || 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) {
     g.items[kind] = g.items[kind] || 0;
     g.items[kind]++; ok = true;
-    hud.toast(`Bought: ${SUPPLIES[kind].name.toLowerCase()}`);
+    ui.showGains([{ kind: 'supply', id: kind }]);
   }
   if (ok) { syncProfile(); saveProfile(P); audio.ready && audio.sale(); }
   return ok;
@@ -847,6 +849,16 @@ function withLoading(fn) {
 function firstDive(P) { return !!P && P.tut === 'on' && (QUEST_MAIN[questsOf(P).main] || {}).id === 'firstfish'; }
 function airMax(P) { return statValue(P, 'air') * (firstDive(P) ? 1.5 : 1); }
 function refreshAir() { if (!g || !g.earl || !profile) return; const e = g.earl, was = e.o2Max || 0, now = airMax(profile); if (Math.abs(now - was) < 0.01) return; e.o2Max = now; e.o2 = Math.min(now, (e.o2 || 0) + Math.max(0, now - was)); }
+// (4.6.0) after the tutorial, a tip the first time it is needed, once each: how to sprint, if he has swum a whole
+// minute underwater without it; how to put on something bought (the first purchase after the tutorial)
+function afterTips(dt) {
+  const P = profile, e = g.earl; if (!P || P.tut === 'on' || !P.tut) return;
+  if (!P.tipSprint) {
+    if (!e.inSub && !g.aboard && e.y > 1.5 && !(keys.has('shift') || mouse.rdown)) g.noSprintT = (g.noSprintT || 0) + dt; else if (keys.has('shift') || mouse.rdown) g.noSprintT = 0;
+    if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast(keyFor('sprint') === 'RMB' ? 'Hold the right mouse button to sprint' : 'Hold Shift to sprint', 'note'); }
+  }
+}
+function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => hud.toast(`Press ${keyFor('inventory')} to put it on`, 'note'), 3000); }
 function tutorWelcome() {
   const P = profile; if (!P || P.tut) return;
   ui.confirm('Welcome to the tutorial', 'This will be quick: just a look around the game.', 'Start', 'Skip tutorial',
@@ -895,7 +907,7 @@ function tutor() {
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
   g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
-  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the quest board is open (O)', 'big'); } return; }
+  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the quest board is open (O)', 'big'); setTimeout(() => hud.toast(`If you need help: controls are in your journal (${keyFor('journal')}), settings in the pause menu (Esc)`, 'note'), 4500); } return; }
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
@@ -1333,7 +1345,7 @@ function interact(t, exitSub) {
     if (p.type === 'lure' || p.type === 'necklace') {
       if (g.items[p.type] >= 1) { hud.toast(p.type === 'lure' ? 'You already carry a lure' : 'You already carry a glow stick', 'warn'); return; }
       g.items[p.type]++;
-      hud.toast(p.type === 'lure' ? 'Anglerfish lure (Q)' : 'Glow stick (E)');
+      ui.showGains([{ kind: 'supply', id: p.type }]);
     } else if (p.type === 'sapphire') {
       g.sapphires++; g.inv.sapphire = (g.inv.sapphire || 0) + 1;
       hud.toast(`Deep sapphire · about ${money(priceOf(profile, 'sapphire', GOODS.sapphire.price))}`, 'big');
@@ -1969,6 +1981,7 @@ function update(dt) {
     if (g.questT > 1) { g.questT = 0; if (questTick(g, profile)) saveProfile(profile); }
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
     tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
+    afterTips(dt); // (4.6.0)
     const dl = updateSpecimens(g, dt);
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
     const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : s.pile ? ' on the floor of the sub' : ' in the tank') : '');

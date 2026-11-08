@@ -355,6 +355,30 @@ export class UI {
     el.hidden = false; el.querySelector('.cf-no').focus();
   }
   confirmOpen() { return !$('confirm').hidden; }
+  // (4.6.0) things gained: a row of cards in the middle of the screen, each the locker's own slot (its picture in
+  // the rarity-edged box, a NEW tag in the corner) with the name under it and +1 at the bottom. The game runs on
+  // behind them; a click anywhere sends them off early. entries: [{ kind: 'item'|'supply'|'trawl'|'trap', id }]
+  showGains(entries) {
+    if (!entries || !entries.length) return;
+    let el = document.getElementById('gains');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'gains'; document.body.appendChild(el);
+      window.addEventListener('pointerdown', () => { if (el.classList.contains('in')) this.hideGains(); }, true);
+    }
+    const card = (e) => {
+      let name = '', pic = '', r = 'supply';
+      if (e.kind === 'item' && ITEMS[e.id]) { const it = ITEMS[e.id]; name = it.name; r = it.rarity; pic = pictureOf(it.kind, it, 120, 72, true); }
+      else if (e.kind === 'supply' && SUPPLIES[e.id]) { name = SUPPLIES[e.id].name; pic = pictureOf('supply', e.id, 120, 72, true); }
+      else if (e.kind === 'trawl' && NETS_SUB[e.id]) { name = NETS_SUB[e.id].name; pic = pictureOf('trawl', e.id, 120, 72, true); }
+      else if (e.kind === 'trap' && TRAPS[e.id]) { name = TRAPS[e.id].name; pic = pictureOf('trap', e.id, 120, 72, true); }
+      else return '';
+      return `<div class="gain r-${r}"><div class="g-tile"><img src="${pic}" alt=""><i class="new">new</i>${r === 'legendary' ? '<span class="glint"></span>' : ''}</div><b>${name}</b><span class="g-plus">+1</span></div>`;
+    };
+    el.innerHTML = `<div class="g-row">${entries.slice(0, 5).map(card).join('')}</div>`;
+    el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
+    clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), 2900);
+  }
+  hideGains() { const el = document.getElementById('gains'); if (!el) return; clearTimeout(this.gainT); el.classList.remove('in'); el.classList.add('out'); }
   // (4.0.0) after a purchase confirmed in the dialog: whatever shop is open shows the new state
   refreshOpen() {
     const open = (id) => { const el = $(id); return el && !el.hidden; };
