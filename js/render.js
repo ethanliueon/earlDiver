@@ -2485,8 +2485,12 @@ export class Renderer {
     }
     if (e.biolum && e.lampOn && !e.inSub) { const gc = hexToRgb(e.glows && e.glows[0] || '#8af0d0'), br = (4 + 1.5 * e.biolum) * ppm, pulse = 0.85 + 0.15 * Math.sin(g.time * 1.3); radial(S(e.x), Sy(e.y), br, gc, 0.45 * pulse); lamps.push({ x: S(e.x), y: Sy(e.y), r: br, a: 0.45 }); } // (2.8.0) Bioluminescence: his gear glows while his light is on
     if (g.legend) { // the legendary moment: a pale light comes up on it, and fades
-      const c = g.legend.c, k = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
-      radial(S(c.x), Sy(c.y), Math.max(7, c.len * 4) * ppm, [215, 232, 240], 0.95 * k); radial(S(c.x), Sy(c.y), Math.max(3, c.len * 1.6) * ppm, [235, 242, 246], 0.6 * k); lamps.push({ x: S(c.x), y: Sy(c.y), r: Math.max(7, c.len * 4) * ppm, a: 0.95 * k });
+      const c = g.legend.c, kf = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
+      // (4.8.2) one even, pale light: as soft in the middle as at its edge (no hot spot on the fish), fading only at the rim
+      const R0 = Math.max(7, c.len * 4) * ppm, x0 = S(c.x), y0 = Sy(c.y), A0 = 0.42 * kf;
+      visR.push(x0, y0, R0); const lg = l.createRadialGradient(x0 * k, y0 * k, 0, x0 * k, y0 * k, R0 * k);
+      lg.addColorStop(0, rgbStr([215, 232, 240], A0)); lg.addColorStop(0.55, rgbStr([215, 232, 240], A0 * 0.92)); lg.addColorStop(1, rgbStr([215, 232, 240], 0));
+      l.fillStyle = lg; l.beginPath(); l.arc(x0 * k, y0 * k, R0 * k, 0, TAU); l.fill(); lamps.push({ x: x0, y: y0, r: R0, a: A0 });
     }
     this.netLamp = null;
     if (subLamps) {

@@ -312,32 +312,47 @@ export class UI {
     let pop = $('quests').querySelector('.qs-pop');
     if (!pop) { pop = document.createElement('div'); pop.className = 'qs-pop'; $('quests').querySelector('.qs-panel').appendChild(pop); pop.addEventListener('click', (ev) => { if (ev.target.closest('.qp-close') || ev.target === pop) pop.hidden = true; }); }
     const esc2 = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-    const card = (sp) => { const [a, b] = usualDepth(sp), R0 = rarityOf(sp); return `<div class="qp-sp"><img src="${fittedIcon(sp, 240, 140).toDataURL()}" alt=""><div><b style="color:${R0 ? R0.col : 'inherit'}">${esc2(sp.name)}</b><i>${esc2(sp.sci || '')}</i><small>usually ${a.toLocaleString()}–${b.toLocaleString()} m · ${esc2(sp.zone || '')}${sp.oceans ? ' · ' + esc2(sp.oceans) : ''}</small></div></div>`; };
-    let body = '', map = null;
-    if (q.kind === 'species' && SPECIES_BY_ID[q.id]) { const sp = SPECIES_BY_ID[q.id]; body = card(sp) + `<p>${esc2(sp.desc || '')}</p><p>It has to come up alive: keep it in water, at its own pressure.</p>`; map = usualDepth(sp)[0]; }
+    const card = (sp) => { const [a, b] = usualDepth(sp), R0 = rarityOf(sp); return `<div class="qp-sp"><img src="${fittedIcon(sp, 240, 140).toDataURL()}" alt=""><div><b style="color:${R0 ? R0.col : 'inherit'}">${esc2(sp.name)}</b><i>${esc2(sp.sci || '')}</i><small>${/^(floor|floor-swim|demersal|reef)$/.test((sp.v && sp.v.hab) || '') && a < 5 ? `on the seabed, down to ${b.toLocaleString()} m` : `usually ${a.toLocaleString()}–${b.toLocaleString()} m`} · ${esc2(sp.zone || '')}${sp.oceans ? ' · ' + esc2(sp.oceans) : ''}</small></div></div>`; };
+    let body = '', map = null, bed = null; // bed: [[lo, hi], ...] for animals that live on the bottom (the map lights where the seabed is that deep)
+    const bottom = (sp) => /^(floor|floor-swim|demersal|reef)$/.test((sp.v && sp.v.hab) || '');
+    if (q.kind === 'species' && SPECIES_BY_ID[q.id]) { const sp = SPECIES_BY_ID[q.id]; body = card(sp) + `<p>${esc2(sp.desc || '')}</p>` + (bottom(sp) ? '<p>It lives on the seabed: the lit stretches of the bottom on the map are where it is found.</p>' : '') + `<p>It has to come up alive: keep it in water, at its own pressure.</p>`; if (bottom(sp)) bed = [usualDepth(sp)]; else map = usualDepth(sp)[0]; }
     else if (q.kind === 'group' && QUEST_GROUPS[q.g]) {
       const G = QUEST_GROUPS[q.g], L = groupSpecies(q.g);
       if (G.undoc) { const d = Math.min(...L.map((s2) => s2.dmin)); body = `<p>Something no one has written down yet. They have been found from about ${d.toLocaleString()} m down, near the bottom. You will know one when you see it.</p>`; map = d; }
       else { const ex = L.slice().sort((a2, b2) => usualDepth(a2)[0] - usualDepth(b2)[0]).filter((_, i, A2) => i % Math.max(1, Math.floor(A2.length / 3)) === 0).slice(0, 3); const lo = Math.min(...L.map((s2) => usualDepth(s2)[0]));
-        body = `<p>Any of ${L.length} kinds counts. The shallowest of them are usually met from about ${lo.toLocaleString()} m. Some of them:</p>` + ex.map(card).join(''); map = lo; }
+        const onBed = L.filter(bottom).length >= L.length / 2;
+        body = (onBed ? `<p>Any of ${L.length} kinds counts. They live on the seabed: the lit stretches of the bottom on the map are where they are found. Some of them:</p>` : `<p>Any of ${L.length} kinds counts. The shallowest of them are usually met from about ${lo.toLocaleString()} m. Some of them:</p>`) + ex.map(card).join('');
+        if (onBed) bed = L.map((s2) => usualDepth(s2)); else map = lo; }
     } else if (q.kind === 'deep' || q.kind === 'depth') { body = `<p>${q.kind === 'depth' ? 'Take the sub down past' : 'Catch your animals below'} ${q.d.toLocaleString()} m. The map shows where you are, that depth, and the nearest place the seafloor is deep enough.</p>`; map = q.d; }
     else body = `<p>${{ catch: 'Any animal counts, caught any way: net, slurp gun, claw, trawl or trap.', sell: 'Everything sold counts: at the Margaret, at the station, or to Dave.', photo: 'Take out the camera (4) and photograph animals you have not photographed before.', tag: 'Take out the tag gun (3) and tag animals as they swim.', trawl: 'Let the trawl net out from the sub (N), drive through fish, and bring it in. Every animal it hauls up counts.', divecatch: 'Every animal caught in one dive counts; the count starts again each dive.', lureMonster: 'Throw a lure (Q) while the thing in the deep is close. It is far below, and it is dangerous.', chambers: 'Have every pressure chamber in the sub holding an animal at the same time.' }[q.kind] || ''}</p>`;
-    if (map != null && map < 50) map = null; // (shallow: no map needed)
-    pop.innerHTML = `<div class="qp-box"><button class="qp-close" aria-label="Close">×</button><h4>${esc2(q.text)}</h4>${body}${map != null ? '<canvas class="qp-map" width="520" height="190"></canvas>' : ''}</div>`;
+    if (map != null && map < 50) map = null; // (shallow open water: no map needed)
+    pop.innerHTML = `<div class="qp-box"><button class="qp-close" aria-label="Close">×</button><h4>${esc2(q.text)}</h4>${body}${map != null || bed ? '<canvas class="qp-map" width="520" height="190"></canvas>' : ''}</div>`;
     pop.hidden = false;
-    if (map != null && g && g.world) this.drawQuestMap(pop.querySelector('.qp-map'), g, map);
+    if ((map != null || bed) && g && g.world) this.drawQuestMap(pop.querySelector('.qp-map'), g, map, bed);
   }
   // the sea in section: the seafloor across the whole map, the depth asked for as a line, where he is, and the nearest
   // place the floor goes deeper than that
-  drawQuestMap(cv, g, d) {
+  drawQuestMap(cv, g, d, bed = null) {
     const x = cv.getContext('2d'), W = cv.width, H = cv.height, Wd = 5000, D = 5200, X = (m) => (m / Wd) * W, Y = (y) => (y / D) * (H - 14) + 4;
     x.fillStyle = '#0d2230'; x.fillRect(0, 0, W, H);
     x.fillStyle = '#4a4234'; x.beginPath(); x.moveTo(0, H); for (let m = 0; m <= Wd; m += 10) x.lineTo(X(m), Y(Math.max(0, g.world.floorAt(m)))); x.lineTo(W, H); x.closePath(); x.fill();
-    x.strokeStyle = 'rgba(242,184,74,0.85)'; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]);
-    x.font = '11px "IBM Plex Mono", monospace'; x.fillStyle = '#f2c868'; x.fillText(`${Math.round(d).toLocaleString()} m`, 6, Y(d) - 4);
-    const e = g.earl.inSub ? g.sub : g.earl; let best = null, bd = Infinity;
-    for (let m = 0; m <= Wd; m += 5) if (g.world.floorAt(m) > d + 15 && Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; }
-    if (best != null) { x.fillStyle = '#9fdc8c'; x.beginPath(); x.arc(X(best), Y(d), 5, 0, Math.PI * 2); x.fill(); x.fillText('nearest place this deep', Math.min(W - 160, X(best) + 8), Y(d) + (Math.abs(X(best) - X(e.x)) < 130 && Math.abs(Y(d) - Y(Math.max(0, e.y))) < 30 ? 30 : 14)); }
+    x.font = '11px "IBM Plex Mono", monospace';
+    const e = g.earl.inSub ? g.sub : g.earl; let best = null, bd = Infinity, bestY = 0;
+    if (bed) {
+      // (4.8.2) bottom animals: the seabed itself lit where it lies within their depths
+      const lit = (m) => { const f = g.world.floorAt(m); return f > 1 && bed.some(([a, b]) => f >= a && f <= b); };
+      x.strokeStyle = '#9fdc8c'; x.lineWidth = 4; x.lineCap = 'round'; x.shadowColor = 'rgba(159,220,140,0.8)'; x.shadowBlur = 6;
+      x.beginPath(); let on = false;
+      for (let m = 0; m <= Wd; m += 5) { const f = g.world.floorAt(m); if (lit(m)) { if (!on) { x.moveTo(X(m), Y(f)); on = true; } else x.lineTo(X(m), Y(f)); if (Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; bestY = f; } } else on = false; }
+      x.stroke(); x.shadowBlur = 0;
+      if (best != null && bd > 80) { x.fillStyle = '#9fdc8c'; x.beginPath(); x.arc(X(best), Y(bestY), 5, 0, Math.PI * 2); x.fill(); x.fillText('nearest place they live', Math.min(W - 170, X(best) + 8), Y(bestY) + (Y(bestY) > H - 30 ? -10 : 16)); }
+      else if (best != null) { x.fillStyle = '#9fdc8c'; x.fillText('they live right where you are', 8, H - 10); }
+    } else {
+      x.strokeStyle = 'rgba(242,184,74,0.85)'; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]);
+      x.fillStyle = '#f2c868'; x.fillText(`${Math.round(d).toLocaleString()} m`, 6, Y(d) - 4);
+      for (let m = 0; m <= Wd; m += 5) if (g.world.floorAt(m) > d + 15 && Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; }
+    }
+    if (best != null && !bed) { x.fillStyle = '#9fdc8c'; x.beginPath(); x.arc(X(best), Y(d), 5, 0, Math.PI * 2); x.fill(); x.fillText('nearest place this deep', Math.min(W - 160, X(best) + 8), Y(d) + (Math.abs(X(best) - X(e.x)) < 130 && Math.abs(Y(d) - Y(Math.max(0, e.y))) < 30 ? 30 : 14)); }
     x.fillStyle = '#ffffff'; x.beginPath(); x.arc(X(e.x), Y(Math.max(0, e.y)), 4.5, 0, Math.PI * 2); x.fill(); x.fillText('you are here', Math.min(W - 92, X(e.x) + 7), Y(Math.max(0, e.y)) + (Y(e.y) < 20 ? 14 : -6));
   }
   toggleQuests(force) {
