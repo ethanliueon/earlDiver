@@ -2816,3 +2816,4 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #loading.ld .ld-scale span { font: 11px "IBM Plex Mono", monospace; font-style: normal; color: rgba(214,232,238,0.75); letter-spacing: 0.08em; }
 #loading.ld .ld-step { font: 13px "IBM Plex Mono", monospace; font-style: normal; color: #f2efe6; }
 #loading.ld .ld-depth { font-style: normal; }
+#loading.ld .ld-tip span { letter-spacing: 0; font: inherit; color: inherit; }
