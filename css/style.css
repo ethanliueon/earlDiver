@@ -2592,3 +2592,73 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #loading.ld { display: block; z-index: 9600; background: #02070a; }
 #loading.ld[hidden] { display: none; }
 #workshop .yd-where { font: italic 14px var(--serif); color: rgba(232,212,154,0.75); }
+
+/* (4.15.2) the sub page as the yard's planning board: blueprint paper on a drafting board with the sub's outline
+   faintly drawn, held by brass tacks; her picture in a riveted viewing port; the other subs as pinned photographs
+   with their typed sheets tucked under; refits as clipped catalogue cards with string-tied price tags; a cast brass
+   plaque, folder tabs, and headings sprayed through a stencil */
+#workshop.refit-full #shop-body { position: relative; padding: 26px 30px 30px; border-radius: 3px;
+  background:
+    var(--bp-mark, none) right -40px bottom -30px / min(70%, 900px) auto no-repeat,
+    repeating-linear-gradient(0deg, rgba(190,220,255,0.07) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(90deg, rgba(190,220,255,0.07) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(0deg, rgba(190,220,255,0.12) 0 1px, transparent 1px 120px),
+    repeating-linear-gradient(90deg, rgba(190,220,255,0.12) 0 1px, transparent 1px 120px),
+    radial-gradient(ellipse at 40% 30%, #234f78, #17375a 60%, #102a46);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), inset 0 0 60px rgba(0,0,0,0.45), 0 0 0 6px #3a3226, 0 0 0 7px #1a160f, 0 10px 30px rgba(0,0,0,0.55); }
+#workshop.refit-full #shop-body::before { content: ''; position: sticky; display: block; height: 0; top: 0; z-index: 3; pointer-events: none; }
+#workshop.refit-full .shop-main { background-image: linear-gradient(180deg, #4a3e2c, #3a3022); } /* the drafting board's wood round the paper */
+#workshop.refit-full .yd-tack { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f6e2a6, #b48a3a 55%, #5c4318); box-shadow: 0 2px 3px rgba(0,0,0,0.6); }
+#workshop .yd-stencil { margin: 6px 0 14px; font: 400 26px var(--stencil, 'Allerta Stencil', sans-serif); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(236,240,232,0.82);
+  text-shadow: 0 0 1px rgba(236,240,232,0.6), 1px 0 0 rgba(236,240,232,0.15); -webkit-mask-image: repeating-linear-gradient(97deg, #000 0 7px, rgba(0,0,0,0.75) 7px 9px, #000 9px 15px); mask-image: repeating-linear-gradient(97deg, #000 0 7px, rgba(0,0,0,0.75) 7px 9px, #000 9px 15px); }
+#workshop .yd-stencil small { margin-left: 12px; font: italic 14px var(--serif); letter-spacing: 0; text-transform: none; color: rgba(214,228,240,0.7); }
+#workshop .yd-top h3.yd-stencil { margin: 0; }
+/* the viewing port */
+#workshop .yd-port { position: relative; padding: 12px; border-radius: 26px; background: radial-gradient(circle at 30% 25%, #e8cf8e, #b38a3c 45%, #6e5020 100%);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.55), inset 0 2px 2px rgba(255,240,200,0.5), inset 0 -3px 4px rgba(40,26,6,0.6); }
+#workshop .yd-port::before { content: ''; position: absolute; inset: 4px; border-radius: 22px; pointer-events: none;
+  background: radial-gradient(circle, #f2dc9c 0 2.2px, #6e5020 2.6px, transparent 3.4px) 0 0 / 34px 34px; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; padding: 4px; }
+#workshop .yd-port .yd-pic { border-radius: 16px; box-shadow: inset 0 0 0 2px #2a1e08, 0 0 0 2px #2a1e08; }
+#workshop .yd-port::after { content: ''; position: absolute; inset: 12px; border-radius: 16px; pointer-events: none; background: linear-gradient(125deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 22%, rgba(255,255,255,0) 40%), radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.35)); }
+/* the brass plaque */
+#workshop .yd-plaque { position: relative; margin-top: auto; padding: 16px 30px; border: 0; cursor: pointer; font: 500 20px var(--serif); letter-spacing: 0.04em; color: #2a1e08; text-shadow: 0 1px 0 rgba(255,240,200,0.6);
+  background: linear-gradient(180deg, #f2dc9c, #d4b062 45%, #a8823a); clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px);
+  box-shadow: inset 0 0 0 2px rgba(90,64,20,0.6), inset 0 0 0 5px rgba(255,236,180,0.35); transition: transform .08s, filter .12s; }
+#workshop .yd-plaque:hover { filter: brightness(1.06); }
+#workshop .yd-plaque:active { transform: translateY(2px); filter: brightness(0.94); }
+#workshop .yd-plaque i { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff2c8, #6e5020 70%); box-shadow: inset 0 0 0 1px rgba(40,26,6,0.6); }
+#workshop .yd-plaque i::after { content: ''; position: absolute; left: 1px; right: 1px; top: 3px; height: 1px; background: rgba(40,26,6,0.7); transform: rotate(35deg); }
+#workshop .yd-plaque i:nth-child(1) { left: 14px; top: 9px; } #workshop .yd-plaque i:nth-child(2) { right: 14px; top: 9px; } #workshop .yd-plaque i:nth-child(3) { left: 14px; bottom: 9px; } #workshop .yd-plaque i:nth-child(4) { right: 14px; bottom: 9px; }
+/* folder tabs */
+#workshop .yd-tab { padding: 8px 18px 7px; border: 0; border-radius: 9px 9px 0 0; cursor: pointer; font: 500 15px var(--serif); color: #2a2418; background: linear-gradient(180deg, #d8cba6, #b9aa82); box-shadow: 0 -1px 0 rgba(255,255,255,0.3) inset, 0 3px 0 #8d7f5a, 0 6px 12px rgba(0,0,0,0.35); transform: rotate(-1deg); }
+#workshop .yd-tab:hover { filter: brightness(1.05); transform: rotate(-1deg) translateY(-1px); }
+/* pinned photographs, their sheets tucked under */
+#workshop .yd-grid { gap: 26px 22px; padding-top: 8px; }
+#workshop .yd-card, #workshop .yd-card.cur { position: relative; background: none; box-shadow: none; padding: 0; gap: 0; }
+#workshop .yd-card:nth-child(odd) { transform: rotate(-1.1deg); } #workshop .yd-card:nth-child(even) { transform: rotate(0.9deg); }
+#workshop .yd-card[data-yd]:hover { transform: rotate(0deg) translateY(-3px); }
+#workshop .yd-photo { padding: 8px 8px 22px; background: #efe9da; box-shadow: 0 6px 14px rgba(0,0,0,0.5); }
+#workshop .yd-photo .yd-pic { border-radius: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3); }
+#workshop .yd-card h4 { position: relative; margin: -16px 8px 0; padding: 0 2px; font-size: 15px; color: #2a2418; z-index: 1; }
+#workshop .yd-card h4 small { color: rgba(42,36,24,0.6); display: inline; margin-right: 6px; }
+#workshop .yd-card .yd-where { color: rgba(90,60,20,0.85); }
+#workshop .yd-card .yd-sheet { margin: 10px 10px 0; transform: rotate(1.2deg); z-index: 0; }
+#workshop .yd-card.cur .yd-photo { box-shadow: 0 0 0 3px rgba(185,240,154,0.55), 0 6px 14px rgba(0,0,0,0.5); }
+#workshop .yd-pin { position: absolute; top: -9px; left: 50%; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; z-index: 2; background: radial-gradient(circle at 35% 30%, #ff9a8a, #c0302a 55%, #6a1410); box-shadow: 0 3px 4px rgba(0,0,0,0.55); }
+#workshop .yd-foot { padding: 8px 10px 0; }
+/* catalogue cards with a bulldog clip, the price tag on a string */
+#workshop .yd-refits { gap: 24px 18px; padding-top: 10px; }
+#workshop .yd-refit { position: relative; padding: 18px 18px 14px 16px; border-radius: 2px; color: #2a2418; background: linear-gradient(180deg, transparent 0 30px, rgba(200,70,60,0.35) 30px 31px, transparent 31px), repeating-linear-gradient(0deg, rgba(60,90,140,0.14) 0 1px, transparent 1px 19px), #ece4cf; box-shadow: 0 5px 12px rgba(0,0,0,0.45); }
+#workshop .yd-refit:nth-child(odd) { transform: rotate(-0.6deg); } #workshop .yd-refit:nth-child(even) { transform: rotate(0.5deg); }
+#workshop .yd-refit::before, #workshop .yd-refit::after { content: none; }
+#workshop .yd-refit b { color: #1e1a12; font-size: 17px; }
+#workshop .yd-refit p { color: rgba(42,36,24,0.78); }
+#workshop .yd-clip { position: absolute; top: -10px; left: 50%; width: 46px; height: 18px; margin-left: -23px; border-radius: 3px 3px 6px 6px; background: linear-gradient(180deg, #4a4f52, #22272a); box-shadow: 0 2px 3px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.25); }
+#workshop .yd-clip::before { content: ''; position: absolute; left: 8px; right: 8px; top: -9px; height: 10px; border: 2px solid #8a9296; border-bottom: 0; border-radius: 8px 8px 0 0; }
+#workshop .yd-string { position: absolute; right: 74px; top: 12px; width: 26px; height: 22px; border-top: 1.5px solid rgba(80,60,30,0.7); border-right: 1.5px solid rgba(80,60,30,0.7); border-radius: 0 12px 0 0; transform: rotate(8deg); pointer-events: none; }
+#workshop .yd-hang { transform: rotate(-6deg); }
+#workshop .yd-fitted { flex: none; padding: 3px 10px; border: 2.5px solid rgba(46,110,40,0.75); border-radius: 3px; color: rgba(46,110,40,0.8); font: 700 14px var(--stencil, 'Allerta Stencil', sans-serif); letter-spacing: 0.12em; transform: rotate(-10deg); }
+#workshop .yd-refits + .shop-note { color: rgba(214,228,240,0.65); }
+#workshop.refit-full .yd-info h3 { color: #f1efe6; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+#workshop.refit-full .yd-hull { color: rgba(214,228,240,0.8); }
+#workshop.refit-full .yd-about { color: rgba(230,236,240,0.9); }
