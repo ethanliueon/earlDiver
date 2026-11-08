@@ -112,9 +112,10 @@ function applySuit(e, P) {
   if (P) P.suit = S.look || 'wet'; // (what the old drawings and pages read)
 }
 // the sub's rating, air and engine come from its upgrades
+const HULL_SPEED = [1, 1.25, 1.5, 1.8, 2.1, 2.4, 2.7, 3.0];
 function applySub(sub, P) {
   sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible
-  sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast');
+  sub.speedMul = HULL_SPEED[Math.min(HULL_SPEED.length - 1, lv(P, 'depth'))] * statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.12.1) each new hull is faster: the deepest about 3x the first
   sub.level = lv(P, 'depth');
 }
 // (4.9.0) X (a developer's key): the first press, the deepest submersible and half a million dollars; each press
@@ -765,7 +766,7 @@ function buy(kind) {
     if (C && lockerFree(P) <= 0) hud.toast('Locker full', 'warn');
     else if (C && spend(P, C.price)) {
       const def = rollChest(key), q = def && giveItem(P, def.id);
-      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); setTimeout(() => ui.showGains([{ kind: 'item', id: q.id }]), 1600); } // (4.6.0) the card once the lid is up
+      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); tipEquip(); } // (4.12.1) one thing from a crate: the crate's own reveal shows it (no item card on top)
     }
     return ok;
   }

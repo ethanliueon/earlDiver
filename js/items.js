@@ -257,3 +257,22 @@ for (const it of Object.values(ITEMS)) {
 }
 // (4.3.6) the starting mesh bag holds two: the first bag bought (three) is a step up
 if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.mesh, (t) => t.replace(/\b3 animals/g, '2 animals')); }
+// (4.12.1) air and bag room by rarity: each rarity has its own span, and within it the items keep their order
+// (common tanks 20-30 s, uncommon 30-50, rare 50-80, exotic 80-110, legendary 150-180; bags: the starting mesh 2,
+// commons 3, uncommon 4-5, rare 5-7, exotic 7-10, legendary 11-12). The numbers in each item's words follow.
+{
+  const SPAN = { tank: { common: [20, 30], uncommon: [30, 50], rare: [50, 80], exotic: [80, 110], legendary: [150, 180] },
+    bag: { common: [3, 3], uncommon: [4, 5], rare: [5, 7], exotic: [7, 10], legendary: [11, 12] } };
+  for (const [kind, key, unit] of [['tank', 'air', ' s'], ['bag', 'slots', ' animals']]) {
+    for (const [rar, [lo, hi]] of Object.entries(SPAN[kind])) {
+      const list = Object.values(ITEMS).filter((it) => it.kind === kind && (it.rarity || 'common') === rar && typeof it[key] === 'number' && it.id !== 'mesh')
+        .sort((a, b) => a[key] - b[key] || String(a.id).localeCompare(String(b.id)));
+      list.forEach((it, i) => {
+        const was = it[key], now = Math.round(list.length < 2 ? (lo + hi) / 2 : lo + (hi - lo) * i / (list.length - 1));
+        if (it.id === 'al80') { it[key] = 20; return; } // the tank he starts with
+        it[key] = now;
+        if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was}${unit}`, 'g'), `${now}${unit}`));
+      });
+    }
+  }
+}
