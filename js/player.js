@@ -18,10 +18,12 @@ export function diverDrainMult(depth, start = 300) {
   return depth <= start ? 1 : Math.exp(K_PRESS * (depth - start));
 }
 // a damaged hull leaks: at 40 % integrity the air drains 2.5x as fast
-export function subLeak(sub) { return 1 / Math.max(0.25, sub.hull); }
+// (4.5.0) a damaged hull leaks air (hidden from the player): +3 % air use for every 1 % of hull lost; at 0 % four times
+export function subLeak(sub) { return 1 + 3 * (1 - Math.max(0, Math.min(1, sub.hull))); }
 export function subDrainMult(depth, rated) {
+  // (4.5.0) anywhere within her rating the air lasts as it should; past it, the cabin works harder
   const r = depth / rated;
-  return r <= 0.5 ? 1 : Math.exp(1.386 * (r - 0.5));
+  return r <= 1 ? 1 : 1 + (r - 1) * 2;
 }
 
 export class Earl {
@@ -52,7 +54,7 @@ export class Sub {
   }
   // set from the upgrades (see applySub in main.js)
   get rated() { return this.ratedV || 300; }
-  get o2Max() { return this.o2V || 150; }
+  get o2Max() { return this.o2V || 120; }
 }
 
 // Input: {x,y} move vector -1..1, sprint bool

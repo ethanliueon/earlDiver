@@ -372,25 +372,28 @@ export class Audio {
   hatch(vol = 0.5) { this.burst('bandpass', 1400, 3, 0.12, vol * 0.25); this.thud(vol * 0.6); this.tone(190, 0.6, vol * 0.05, 'sine', 0.05, 170); this.burst('bandpass', 900, 6, 0.3, vol * 0.08, this.white, 0.18); }
   // paper: a tag stirring
   rustle(vol = 0.06) { this.burst('bandpass', 3200, 0.9, 0.22, vol); this.burst('highpass', 5200, 0.7, 0.12, vol * 0.6, this.white, 0.08); }
-  // (3.3.0) the sub's klaxon: a rising whoop, twice, a little rough
-  // (4.0.0) the recorded alarm, played once through: muffled by the water and the hull (cut: the low-pass, Hz)
-  alarm(vol = 0.05, cut = 1600) {
-    if (this.muted) return;
+  // (4.5.0) the recorded alarm, looped seamlessly (the mp3's padding trimmed off each end): 'loop' plays until it is
+  // stopped (a breached hull), 'three' plays three times through and fades out. Half the loudness it was, and
+  // muffled by the water; alarmSet() moves the muffle and the loudness with where Earl is (in the rooms, at the
+  // helm, or outside in the water, fading with distance)
+  alarmPlay(mode = 'three') {
+    if (this.muted || !this.ready) return;
     const buf = this.sfxBuf && this.sfxBuf.sub_alarm;
-    if (this.ready && buf) {
-      this.stopAlarm();
-      const s = this.ac.createBufferSource(); s.buffer = buf;
-      const f = this.ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; f.Q.value = 0.7;
-      const g = this.ac.createGain(); g.gain.value = 0.55;
-      s.connect(f).connect(g).connect(this.master); s.start();
-      this.alarmNode = { s, f, g }; s.onended = () => { if (this.alarmNode && this.alarmNode.s === s) this.alarmNode = null; };
-      return;
-    }
-    for (const w of [0, 0.62]) { this.tone(420, 0.5, vol, 'sawtooth', w, 840); this.tone(423, 0.5, vol * 0.6, 'square', w, 846); }
+    if (!buf) { for (const w of [0, 0.62]) { this.tone(420, 0.5, 0.025, 'sawtooth', w, 840); } return; }
+    this.stopAlarm(0.05);
+    const ac = this.ac, now = ac.currentTime, a = 0.04, b = Math.max(a + 0.5, buf.duration - 0.08), per = b - a;
+    const s = ac.createBufferSource(); s.buffer = buf; s.loop = true; s.loopStart = a; s.loopEnd = b;
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1100; f.Q.value = 0.5;
+    const fade = ac.createGain(), dist = ac.createGain(); fade.gain.value = 0.27; dist.gain.value = 1;
+    s.connect(f).connect(fade).connect(dist).connect(this.master); s.start(now, a);
+    let until = Infinity;
+    if (mode === 'three') { until = now + per * 3; fade.gain.setValueAtTime(0.27, until - 1.6); fade.gain.linearRampToValueAtTime(0, until); s.stop(until + 0.05); }
+    this.alarmNode = { s, f, fade, dist, mode, until };
+    s.onended = () => { if (this.alarmNode && this.alarmNode.s === s) this.alarmNode = null; };
   }
-  // the muffle follows where he is: clearer in the sub's rooms, duller out at the helm view
-  alarmMuffle(cut) { if (this.alarmNode) this.alarmNode.f.frequency.setTargetAtTime(cut, this.ac.currentTime, 0.2); }
-  stopAlarm() { if (this.alarmNode) { const n = this.alarmNode; this.alarmNode = null; n.g.gain.setTargetAtTime(0, this.ac.currentTime, 0.15); try { n.s.stop(this.ac.currentTime + 0.6); } catch (e) { /* already stopped */ } } }
+  alarmPlaying() { const n = this.alarmNode; return !!n && (n.mode === 'loop' || this.ac.currentTime < n.until); }
+  alarmSet(cut, k = 1) { const n = this.alarmNode; if (!n) return; const t = this.ac.currentTime; n.f.frequency.setTargetAtTime(cut, t, 0.25); n.dist.gain.setTargetAtTime(Math.max(0, k), t, 0.25); }
+  stopAlarm(fadeS = 0.8) { if (this.alarmNode) { const n = this.alarmNode; this.alarmNode = null; const t = this.ac.currentTime; n.fade.gain.cancelScheduledValues(t); n.fade.gain.setValueAtTime(n.fade.gain.value, t); n.fade.gain.linearRampToValueAtTime(0, t + fadeS); try { n.s.stop(t + fadeS + 0.05); } catch (e) { /* already stopped */ } } }
   sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
   click() { if (!this.sfx('ui_click', 0.55)) this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }

@@ -2300,3 +2300,13 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 @keyframes ts-press { 50% { transform: translateY(2px); box-shadow: 0 1.5px 0 #4a3a18, 0 0 0 1px rgba(30, 20, 4, 0.9), inset 0 1px 0 rgba(255, 244, 210, 0.6); } }
 @media (prefers-reduced-motion: reduce) { #tut-spot * { animation: none !important; } }
 #quests .qs-locked { margin: 6px 4px 10px; padding: 10px 12px; border: 1px dashed rgba(90, 70, 30, 0.5); border-radius: 6px; font-style: italic; opacity: 0.8; }
+/* (4.5.0) what is said at the same moment as the main line: small lines beneath it, at once, never waiting */
+#msgs .msg-subs { position: absolute; left: 0; right: 0; top: 70px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+#msgs .msg-small { --mc: #ece6d2; font: 500 15px/1.25 var(--serif); color: var(--mc); opacity: 0; transform: translateY(-4px); transition: opacity 0.3s ease, transform 0.4s ease;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.85); }
+#msgs .msg-small.in { opacity: 0.92; transform: none; }
+#msgs .msg-small.msg-note { --mc: #e6d39c; } #msgs .msg-small.msg-good { --mc: #9fdc8c; } #msgs .msg-small.msg-warn { --mc: #f2b45a; } #msgs .msg-small.msg-danger { --mc: #ff7a62; } #msgs .msg-small.msg-big { --mc: #f0d48a; }
+#msgs .pulse .msg-t, #msgs .msg-small.pulse { animation: msg-again 0.35s ease-out; }
+@keyframes msg-again { 40% { transform: scale(1.04); filter: brightness(1.25); } }
+#msgs .msg-small { position: relative; padding: 1px 18px; }
+#msgs .msg-small::before { content: ''; position: absolute; inset: -6px -10px; z-index: -1; background: radial-gradient(closest-side, rgba(4,8,10,0.5), rgba(4,8,10,0)); }

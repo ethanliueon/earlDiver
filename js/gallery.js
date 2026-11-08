@@ -297,6 +297,7 @@ export class Gallery {
         if (dead) { ctx.scale(1, -1); ctx.globalAlpha = 0.85; if (d.variant) drawVariantFish(ctx, sp, d.variant, L, 0); else drawSpecies(ctx, sp, L, 0, 0, 0); xEyes(ctx, L, sp); }
         else { const f = Math.abs(a.face) < 0.1 ? 0.1 * Math.sign(a.face || 1) : a.face; ctx.scale(-f, 1); if (d.variant) drawVariantFish(ctx, sp, d.variant, L, a.ph); else drawSpecies(ctx, sp, L, a.ph, press ? 0.9 : 0.6, 0); }
         ctx.restore();
+        if (k === this.open) { const el = this.over.querySelector('.gl-tag'); if (el) { el.style.left = `${clamp(a.sx + L * 0.35, 150, G.W - 150)}px`; el.style.top = `${a.sy + 30 > G.H - 220 ? a.sy - 230 : a.sy - L * 0.25 + 30}px`; } } // (4.5.0) the tag follows its fish
         if (d.famous && !dead) { ctx.fillStyle = '#f0d070'; ctx.font = '10px serif'; ctx.textAlign = 'center'; ctx.fillText('★', a.sx, a.sy - L * 0.32 - 4); }
         if (d.name) { ctx.fillStyle = 'rgba(230,236,230,0.75)'; ctx.font = '12px "EB Garamond", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillText(d.name, a.sx, a.sy + L * 0.32 + 12); }
       });

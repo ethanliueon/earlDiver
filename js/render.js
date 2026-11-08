@@ -893,10 +893,14 @@ export class Renderer {
     this.drawKelp(g, S, Sy, ppm, 1, x0, x1);
     // ---- bubbles ----
     ctx.strokeStyle = 'rgba(220,240,255,0.55)'; ctx.lineWidth = Math.max(0.8, ppm * 0.02);
+    // (4.5.0) every bubble in one path and one stroke (a stroke each was what made a burst of them slow)
+    ctx.beginPath();
     for (const b of g.bubbles) {
       if (!inView(b.x, b.y)) continue;
-      ctx.beginPath(); ctx.arc(S(b.x), Sy(b.y), Math.max(1, b.r * ppm), 0, TAU); ctx.stroke();
+      const bx = S(b.x), by = Sy(b.y), br = Math.max(1, b.r * ppm);
+      ctx.moveTo(bx + br, by); ctx.arc(bx, by, br, 0, TAU);
     }
+    ctx.stroke();
     // ---- marine snow ----
     this.drawSnow(g, S, Sy, ppm, x0, x1, y0, y1);
     // ---- foam on the crests of storm waves ----

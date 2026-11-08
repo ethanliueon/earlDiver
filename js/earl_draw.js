@@ -885,7 +885,9 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     ctx.fillStyle = 'rgba(140,72,34,0.35)'; ctx.beginPath(); ctx.ellipse(cx + r * 0.2, cy + r * 0.9, r * 0.35, r * 0.7, 0.1, 0, TAU); ctx.fill();
     // a thin thread of bubbles leaking out and up
     ctx.fillStyle = 'rgba(210,235,245,0.7)';
-    for (let k = 0; k < 4; k++) { const ph = ((t * 0.9 + k / 4 + q.seed) % 1); ctx.beginPath(); ctx.arc(cx + Math.sin(ph * 9 + k) * u * 0.8, cy - r * 0.6 - ph * 14 * u, (0.35 + 0.35 * (1 - ph)) * u, 0, TAU); ctx.fill(); }
+    ctx.beginPath(); // (4.5.0) one path for the thread
+    for (let k = 0; k < 4; k++) { const ph = ((t * 0.9 + k / 4 + q.seed) % 1); const bx = cx + Math.sin(ph * 9 + k) * u * 0.8, by = cy - r * 0.6 - ph * 14 * u; ctx.arc(cx + Math.sin(ph * 9 + k) * u * 0.8, cy - r * 0.6 - ph * 14 * u, (0.35 + 0.35 * (1 - ph)) * u, 0, TAU); ctx.closePath(); }
+    ctx.fill();
     ctx.restore();
   }
   // ---------- the light mast (an add-on, 2.3.5): a pole raised aft of the tower with a floodlight on

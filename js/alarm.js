@@ -3,14 +3,16 @@
 // depth further down), or the thing in the deep is on the sonar. It shows from the helm and in the back of the sub.
 import { clamp, TAU } from './util.js';
 
-// what is wrong right now, most urgent first: [{ id, text }]
+// (4.5.0) what is wrong with the sub right now, whether or not Earl is aboard (so leaving and coming back never
+// sets it off again): the hull breached (0 %), past her rated depth or at crush depth, and (only while he is in her)
+// the thing in the deep on the sonar. [{ id, text }]
 export function alarmsOf(g) {
-  if (!g || g.mode !== 'play' || !g.earl || !g.earl.inSub || !g.sub || g.sub.imploded) return [];
+  if (!g || g.mode !== 'play' || !g.earl || !g.sub || g.sub.imploded || g.sub.docked) return [];
   const sub = g.sub, out = [], ent = g.entity;
+  if (sub.hull <= 0.001) out.push({ id: 'hull0', text: 'Hull breached' });
   if (sub.y > sub.rated * 1.33) out.push({ id: 'crush', text: 'Crush depth! Ascend' });
   else if (sub.y > sub.rated) out.push({ id: 'depth', text: `Past rated depth: ${Math.round(sub.y)} / ${sub.rated} m` });
-  if (sub.hull < 0.4) out.push({ id: 'hull', text: `Hull ${Math.round(sub.hull * 100)} %: leaking air` });
-  if (ent && (ent.dist ?? Infinity) < 200 && ent.state !== 'away') out.push({ id: 'contact', text: 'Contact on sonar' });
+  if (g.earl.inSub && ent && (ent.dist ?? Infinity) < 200 && ent.state !== 'away') out.push({ id: 'contact', text: 'Contact on sonar' });
   return out;
 }
 
@@ -24,27 +26,34 @@ export class Beacon {
   }
   // (4.0.0) rooms: whether he is in the sub's rooms, the only place the beacon and its tags are seen. The
   // alarm sounds once when something new goes wrong (not on a loop), muffled by the water round the hull.
+  // (4.5.0) the sound: a breached hull loops without end until it is mended or she goes; anything else plays the
+  // alarm three times and fades. It belongs to the sub: out in the water Earl hears it muffled, quieter with
+  // distance, gone by about 40 m; back aboard it is as it was (never started over). The red light is only for
+  // when he is aboard.
   update(g, dt, rooms = false) {
-    if (g && g.paused) return; // (4.0.2) paused: the alarm holds as it is (it does not end and start again)
-    const A = g ? alarmsOf(g) : [], live = A.length > 0;
-    if (g) g.alarm = live ? { rot: this.rot, list: A } : null;
-    this.on = clamp(this.on + (live ? dt * 4 : -dt * 3), 0, 1);
+    if (g && g.paused) return;
+    const A = g ? alarmsOf(g) : [], live = A.length > 0, aboard = !!(g && g.earl && g.earl.inSub), au = this.audio;
+    if (g) g.alarm = live && aboard ? { rot: this.rot, list: A } : null;
+    this.on = clamp(this.on + (live && aboard ? dt * 4 : -dt * 3), 0, 1);
     if (live || this.on > 0) this.rot = (this.rot + dt * 5.2) % TAU;
-    // an alarm is new only if it has been quiet for 4 s: hovering at the rated depth does not sound it over and over
     const now = performance.now(), last = this.lastOn || (this.lastOn = new Map());
-    const isNew = (id) => !last.has(id) || now - last.get(id) > 4000;
+    const isNew = (id) => !last.has(id) || now - last.get(id) > 4000; // quiet for 4 s first: hovering at a limit does not set it off over and over
     const newOnes = A.filter((a) => isNew(a.id)); for (const a of A) last.set(a.id, now);
-    const heard = new Set(A.map((a) => a.id)), fresh = newOnes.length > 0;
-    if (fresh && this.audio && this.audio.ready && this.audio.alarm) this.audio.alarm(0.05, rooms ? 2600 : 1100);
-    if (!live && this.heard && this.heard.size && this.audio && this.audio.stopAlarm) this.audio.stopAlarm();
-    this.heard = heard;
-    if (this.audio && this.audio.alarmMuffle) this.audio.alarmMuffle(rooms ? 2600 : 1100);
-    // (4.0.2) each alarm, as it starts, is said on the game's one message line at the top (as any other message)
-    if (this.say) for (const a of newOnes) this.say(a.text, a.id === 'contact' ? 'warn' : 'danger');
+    const breach = A.some((a) => a.id === 'hull0');
+    if (au && au.ready && au.alarmPlay) {
+      if (newOnes.some((a) => a.id === 'hull0')) au.alarmPlay('loop');
+      else if (newOnes.length && !au.alarmPlaying()) au.alarmPlay('three');
+      if (this.breach && !breach && au.alarmNode && au.alarmNode.mode === 'loop') au.stopAlarm(1.2); // mended in time
+      if (!live && this.wasLive) au.stopAlarm(1.2);
+      const d = g && g.earl && g.sub ? Math.hypot(g.earl.x - g.sub.x, g.earl.y - g.sub.y) : 0;
+      au.alarmSet(aboard ? (rooms ? 1800 : 1000) : 380, aboard ? 1 : clamp(1 - d / 40, 0, 1) * 0.7);
+    }
+    this.breach = breach; this.wasLive = live;
+    if (this.say && aboard) for (const a of newOnes) if (a.id !== 'hull0') this.say(a.text, a.id === 'contact' ? 'warn' : 'danger');
     this.el.hidden = !rooms || this.on <= 0;
     if (this.el.hidden) return;
     this.list.innerHTML = '';
-    this.draw(live);
+    this.draw(live && aboard);
   }
   draw(live) {
     const c = this.cv, x = c.getContext('2d');

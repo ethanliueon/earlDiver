@@ -823,20 +823,30 @@ function drawBarreleye(ctx, L, v, t, swim = 1) {
   ctx.restore();
   // the pectoral fin, broad and flat, held out
   rayFin(ctx, [[-L * 0.14, H * 0.1], [-L * 0.12, H * 0.22]], [[L * 0.05, H * 0.15 + sw * H * 0.03], [L * 0.08, H * 0.32], [-L * 0.02, H * 0.42]], fin, 0.55);
-  // the dome: clear, a little blue, a bright rim; the green eyes and the brain behind them seen through it
-  const dx = -L * 0.27, dy = -H * 0.08, dw = L * 0.17, dh = H * 0.62; // (the dome is the top of the head itself)
-  const dome = new Path2D(); dome.ellipse(dx, dy, dw, dh, 0, PI, TAU); dome.lineTo(dx + dw, dy); dome.closePath();
-  const dg = ctx.createRadialGradient(dx - dw * 0.3, dy - dh * 0.5, 1, dx, dy, dw * 1.1); dg.addColorStop(0, 'rgba(230,248,255,0.28)'); dg.addColorStop(0.7, 'rgba(160,210,230,0.14)'); dg.addColorStop(1, 'rgba(160,210,230,0.24)');
-  ctx.fillStyle = dg; ctx.fill(dome);
-  ctx.fillStyle = 'rgba(190,150,140,0.35)'; ctx.beginPath(); ctx.ellipse(dx + dw * 0.45, dy - dh * 0.12, dw * 0.2, dh * 0.16, 0, 0, TAU); ctx.fill(); // the brain
-  for (const [ox, k] of [[-0.12, 0.85], [0.08, 1]]) { // two tube eyes, the far one behind, each a barrel with a green lens on top
-    const ex = dx + dw * ox, top = dy - dh * 0.72;
-    ctx.fillStyle = rgba(shade(eyec, -0.45), 0.85 * k); ctx.beginPath(); ctx.roundRect(ex - dw * 0.16, top, dw * 0.32, dh * 0.62, dw * 0.12); ctx.fill();
-    const lg = ctx.createRadialGradient(ex, top + dh * 0.04, 0, ex, top + dh * 0.04, dw * 0.2); lg.addColorStop(0, shade(eyec, 0.5)); lg.addColorStop(1, eyec);
-    ctx.fillStyle = lg; ctx.globalAlpha = k; ctx.beginPath(); ctx.ellipse(ex, top + dh * 0.05, dw * 0.17, dh * 0.1, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+  // (4.5.0) the dome: a clear, fluid-filled shield rising out of the head with no hard edge; it is a whole ellipse
+  // whose glass fades out where it meets the head, so the head simply turns clear. Inside: the brain, and two green
+  // tubular eyes standing in it, each a translucent barrel with a glowing lens on top, looking up.
+  const dx = -L * 0.26, dy = -H * 0.1, dw = L * 0.18, dh = H * 0.66;
+  const dome = new Path2D(); dome.ellipse(dx, dy, dw, dh, 0, 0, TAU);
+  ctx.save(); ctx.clip(dome);
+  const dg = ctx.createLinearGradient(0, dy - dh, 0, dy + dh * 0.15);
+  dg.addColorStop(0, 'rgba(200,236,248,0.22)'); dg.addColorStop(0.55, 'rgba(150,200,220,0.12)'); dg.addColorStop(1, 'rgba(150,200,220,0)');
+  ctx.fillStyle = dg; ctx.fillRect(dx - dw, dy - dh, dw * 2, dh * 1.2);
+  const br = ctx.createRadialGradient(dx + dw * 0.42, dy - dh * 0.08, 0, dx + dw * 0.42, dy - dh * 0.08, dw * 0.32); br.addColorStop(0, 'rgba(205,160,150,0.42)'); br.addColorStop(1, 'rgba(205,160,150,0)');
+  ctx.fillStyle = br; ctx.fillRect(dx, dy - dh * 0.5, dw, dh * 0.8); // the brain, soft
+  for (const [ox, k] of [[-0.14, 0.7], [0.08, 1]]) { // the far eye first, dimmer
+    const ex = dx + dw * ox, top = dy - dh * 0.74, bot = dy + dh * 0.02, w2 = dw * 0.17;
+    const tg = ctx.createLinearGradient(ex - w2, 0, ex + w2, 0); tg.addColorStop(0, rgba(shade(eyec, -0.55), 0.55 * k)); tg.addColorStop(0.45, rgba(shade(eyec, -0.15), 0.8 * k)); tg.addColorStop(1, rgba(shade(eyec, -0.6), 0.6 * k));
+    ctx.fillStyle = tg; ctx.beginPath(); ctx.moveTo(ex - w2, top); ctx.lineTo(ex - w2 * 0.85, bot); ctx.quadraticCurveTo(ex, bot + w2 * 0.8, ex + w2 * 0.85, bot); ctx.lineTo(ex + w2, top); ctx.closePath(); ctx.fill();
+    const lg = ctx.createRadialGradient(ex - w2 * 0.2, top - w2 * 0.1, 0, ex, top, w2 * 1.6); lg.addColorStop(0, rgba(shade(eyec, 0.6), k)); lg.addColorStop(0.45, rgba(eyec, 0.95 * k)); lg.addColorStop(1, rgba(eyec, 0));
+    ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(ex, top, w2 * 1.6, 0, TAU); ctx.fill(); // the lens, glowing
+    ctx.fillStyle = rgba(shade(eyec, 0.75), 0.9 * k); ctx.beginPath(); ctx.ellipse(ex, top, w2 * 0.95, w2 * 0.42, 0, 0, TAU); ctx.fill();
   }
-  ctx.strokeStyle = 'rgba(230,250,255,0.5)'; ctx.lineWidth = Math.max(0.5, L * 0.003); ctx.beginPath(); ctx.ellipse(dx, dy, dw, dh, 0, PI * 1.05, PI * 1.6); ctx.stroke();
-  ctx.strokeStyle = 'rgba(230,250,255,0.25)'; ctx.beginPath(); ctx.ellipse(dx, dy, dw, dh, 0, PI, TAU); ctx.stroke();
+  ctx.restore();
+  // its rim: a highlight along the top of the glass that thins to nothing at both ends (no hard line where it meets the head)
+  const rim = ctx.createLinearGradient(dx - dw, 0, dx + dw, 0); rim.addColorStop(0, 'rgba(230,250,255,0)'); rim.addColorStop(0.3, 'rgba(230,250,255,0.55)'); rim.addColorStop(0.7, 'rgba(230,250,255,0.3)'); rim.addColorStop(1, 'rgba(230,250,255,0)');
+  ctx.strokeStyle = rim; ctx.lineWidth = Math.max(0.6, L * 0.004); ctx.beginPath(); ctx.ellipse(dx, dy, dw, dh, 0, PI * 1.08, PI * 1.92); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.beginPath(); ctx.ellipse(dx - dw * 0.42, dy - dh * 0.55, dw * 0.12, dh * 0.22, -0.5, 0, TAU); ctx.fill(); // a glint
   // the nostrils that look like eyes, and the small mouth at the tip
   for (const k of [0, 1]) { ctx.fillStyle = '#0c0a0a'; ctx.beginPath(); ctx.arc(-L * 0.4 + k * L * 0.035, H * 0.0, Math.max(0.8, L * 0.011), 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.arc(-L * 0.403 + k * L * 0.035, -H * 0.02, Math.max(0.3, L * 0.003), 0, TAU); ctx.fill(); }
   ctx.strokeStyle = rgba(shade(c0, -0.5), 0.8); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.beginPath(); ctx.moveTo(-L * 0.46, H * 0.08); ctx.lineTo(-L * 0.42, H * 0.12); ctx.stroke();

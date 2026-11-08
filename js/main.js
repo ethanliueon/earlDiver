@@ -319,7 +319,7 @@ function hurt(dmg, sp, how) {
 function damageSub(amt, sp) {
   const sub = g.sub;
   g.subHit = true;
-  sub.hull = Math.max(0.05, sub.hull - amt);
+  sub.hull = Math.max(0, sub.hull - amt);
   g.fx.shake = Math.max(g.fx.shake, 2.2); g.fx.flash = 0.25;
   for (let i = 0; i < 60; i++) g.bubbles.push({ x: sub.x + (Math.random() - 0.5) * 6, y: sub.y + (Math.random() - 0.5) * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
   audio.ready && audio.ram();
@@ -1267,14 +1267,15 @@ function canOffer() {
   return !e.inSub && e.y > 100 && (g.items.lure > 0 || g.items.necklace > 0) && ent && ent.marked && (ent.dist ?? Infinity) < 1000;
 }
 function promptFor(t) {
+  g.promptBar = null; // (4.5.0) a hold in progress: a small bar under the words, not a counting percentage
   const e = g.earl;
   const nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   let p = null;
   if (t) {
     if (t.kind === 'pickup') {
       const name = t.p.type === 'lure' ? 'anglerfish lure' : t.p.type === 'necklace' ? 'glow stick' : t.p.type === 'sapphire' ? 'deep sapphire' : (RESOURCES[t.p.type] ? RESOURCES[t.p.type].name.toLowerCase() : t.p.type);
-      if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? `Cutting the net… ${Math.round(g.pry.t / HOLD_TIME.net * 100)} %` : `Hold F  Cut the ${t.p.animal} free`;
-      else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? `Prying loose… ${Math.round(g.pry.t / PRY_TIME * 100)} %` : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
+      if (t.p.type === 'net') p = g.pry && g.pry.p === t.p ? (g.promptBar = g.pry.t / HOLD_TIME.net, 'Cutting the net free') : `Hold F  Cut the ${t.p.animal} free`;
+      else p = PRY.has(t.p.type) ? (g.pry && g.pry.p === t.p ? (g.promptBar = g.pry.t / PRY_TIME, 'Prying loose') : `Hold F  Pry loose the ${name}`) : `F  Collect ${name}`;
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
     }
@@ -1286,9 +1287,9 @@ function promptFor(t) {
     else if (t.kind === 'creature') p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe';
   }
   { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; // a damaged patch within reach: hold R
-    if (pi >= 0) p = g.repair && g.repair.i === pi ? `Repairing… ${Math.round(g.repair.t / REPAIR_TIME * 100)} %` : (p ? p + '   ·   ' : '') + 'Hold R  Repair';
+    if (pi >= 0) p = g.repair && g.repair.i === pi ? (g.promptBar = g.repair.t / REPAIR_TIME, 'Repairing') : (p ? p + '   ·   ' : '') + 'Hold R  Repair';
     else if (!e.inSub && !g.sub.imploded && (g.sub.patches || []).length && dist(e.x, e.y, g.sub.x, g.sub.y) < 9) p = (p ? p + '   ·   ' : '') + 'The sub needs repairs: swim to a hole'; }
-  if (canPlant(t)) p = g.plant ? `Planting coral… ${Math.round(g.plant / PLANT_TIME * 100)} %` : 'Hold F  Plant a coral fragment';
+  if (canPlant(t)) p = g.plant ? (g.promptBar = g.plant / PLANT_TIME, 'Planting coral') : 'Hold F  Plant a coral fragment';
   if (canOffer() && (g.offerT || 0) < 10) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep'; // offered for 10 s, then left unsaid
   if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room';
   if ((nearBoat || (e.inSub && g.sub.docked)) && !g.aboard && !g.helm) p = (p ? p + '   ·   ' : '') + 'U  Sell'; // (the helm, the shops and the radio are aboard)
@@ -1348,7 +1349,7 @@ function interact(t, exitSub) {
     e.inSub = true; sub.docked = false;
     if (sub.o2 < 1 && sub.y > 2.2) hud.toast('Cabin out of air: breathing from your tank', 'warn');
     // nothing is moved for him: his catch stays in the bag until he drags it to a chamber or the tank
-    hud.toast(g.bag.length ? `In the sub · ${g.bag.length} in the bag (T)` : 'In the sub');
+    if ((sub.patches || []).length) hud.toast('The sub needs repairs', 'warn'); // (4.5.0) said only on climbing in; nothing else is
     audio.ready && audio.click();
   } else if (t.kind === 'kelp') {
     t.k.harvested = true; g.inv.kelp = (g.inv.kelp || 0) + 1; hud.toast('+1 Kelp'); audio.ready && audio.pickup();
@@ -1461,7 +1462,7 @@ function escapeKill(how) {
   if (how === 'lure') { const dir = -K.s; g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1, old: false }; ent.throwLure(g.lure.x, g.lure.y, 10); }
   // it lets go, but not before it has done its damage (never enough, on its own, to kill)
   if (K.inSub) {
-    g.sub.hull = Math.max(0.05, g.sub.hull - 0.35); audio.ready && audio.ram();
+    g.sub.hull = Math.max(0, g.sub.hull - 0.35); audio.ready && audio.ram();
     hud.toast(`${how === 'flash' ? 'The light burns it' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it lets go · hull ${Math.round(g.sub.hull * 100)} %`, 'warn');
   } else {
     g.injury = Math.min(4, g.injury + 2); g.healT = 0; g.fx.redFlash = 1; // its teeth caught him as it turned
@@ -1523,11 +1524,11 @@ function repairs(dt, target, holding) {
 }
 // each 30 % of lost hull shows as one hole, somewhere along her side, three at most (2.5.0: was 15 %, six)
 // (sub-local units, 100 = her length)
-const PATCH_SHARE = 0.3, REPAIR_TIME = 5;
+const PATCH_SHARE = 0.3, REPAIR_TIME = 3; // (4.5.0) three seconds a hole
 function syncPatches(sub) {
   if (!sub.patches) sub.patches = [];
   const n = sub.imploded ? 0 : Math.min(3, Math.max(0, Math.ceil((1 - sub.hull) / PATCH_SHARE - 0.02)));
-  if (n > (g.patchCount || 0) && !sub.imploded) { hud.toast('The sub needs repairs', 'warn'); if (!g.repairHinted) { g.repairHinted = true; hud.hint('Swim to a hole in the sub\'s hull and hold R to repair it'); } }
+  if (n > (g.patchCount || 0) && !sub.imploded) { if (!g.repairHinted) { g.repairHinted = true; hud.hint('Swim to a hole in the sub\'s hull and hold R to repair it'); } }
   g.patchCount = n;
   while (sub.patches.length > n) sub.patches.pop();
   for (let tries = 0; sub.patches.length < n && tries < 40; tries++) {
@@ -1553,6 +1554,8 @@ function patchNear() {
 const FAIL_WINDOW = 0.5;
 function crushDepth(dt) {
   const sub = g.sub, r = sub.y / sub.rated;
+  // (4.5.0) a hull at 0 %: ten seconds, unsaid, then she goes (a mended hole in time stops it)
+  if (!sub.imploded && !sub.docked && sub.hull <= 0.001) { sub.breachT = (sub.breachT || 0) + dt; if (sub.breachT >= 10) { g.implodeNow = true; sub.breachT = 0; } } else sub.breachT = 0;
   if (sub.failing != null) {
     sub.failing += dt;
     g.fx.shake = Math.max(g.fx.shake, 1 + sub.failing * 3);
@@ -1610,7 +1613,7 @@ function zoneHazards(dt) {
   g.ventT = Math.max(0, (g.ventT || 0) - dt);
   if (scald && g.ventT <= 0) { g.ventT = 2; hurt(1, { name: 'hydrothermal vent' }, 'heat'); }
   if (cook) {
-    sub.hull = Math.max(0.05, sub.hull - dt * 0.015);
+    sub.hull = Math.max(0, sub.hull - dt * 0.015);
     g.cookT = (g.cookT || 0) - dt;
   }
   const B = W.brine;
@@ -1840,7 +1843,7 @@ function update(dt) {
       if (why) { g.homeRun = false; ap.cancel(); hud.toast(why, steer ? '' : 'warn'); }
       else {
         const r2 = ap.update(g, dt, 1);
-        if (r2 === 'docked') { g.homeRun = false; hud.toast('The sub is home'); audio.cue && audio.cue('home'); }
+        if (r2 === 'docked') { g.homeRun = false; audio.cue && audio.cue('home'); }
       }
     }
     g.subHit = false;
@@ -2014,9 +2017,9 @@ function update(dt) {
     if (owns(profile, 'camera') && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) g.shots = gear(profile, 'cam').shots;
     if (!e.inSub) {
       const r = ap.update(g, dt, g.addons.recall ? 1.5 : 1);
-      if (r === 'arrived') { hud.toast('The sub is here'); audio.ready && audio.sonar(0.06); }
+      if (r === 'arrived') { audio.ready && audio.sonar(0.06); }
       else if (r === 'holding') hud.toast(`Sub holding at ${Math.round(g.sub.y)} m (rated depth)`, 'warn');
-      else if (r === 'docked') hud.toast('The sub is back at the boat');
+      else if (r === 'docked') { /* (4.5.0) nothing said: he can see it */ }
     }
 
     // injuries: slower, hungrier for air, heal one point every 15 s
@@ -2204,7 +2207,7 @@ function update(dt) {
       } else if (ev === 'windup') { g.fx.markPulse = 1; audio.ready && audio.swell(); }
       else if (ev === 'strike') { audio.ready && (audio.whoosh(), audio.heartbeat(0.6)); }
       else if (ev === 'tailbump') { // the first approach: its tail strikes the hull out of the dark
-        if (e.inSub) { g.sub.hull = Math.max(0.05, g.sub.hull - 0.06); g.subHit = true; }
+        if (e.inSub) { g.sub.hull = Math.max(0, g.sub.hull - 0.06); g.subHit = true; }
         g.fx.shake = Math.max(g.fx.shake, 2.6); audio.ready && audio.ram();
         for (let i = 0; i < 40; i++) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 6, y: g.sub.y + 1 + Math.random() * 2, r: 0.05 + Math.random() * 0.2, w: Math.random() * 6, t: -Math.random() * 0.4 });
       }
@@ -2232,7 +2235,7 @@ function update(dt) {
       withLoading(() => {
         startRun();
         const lostTxt = lost && lost.length ? ` Lost: ${lost.join(', ')}.` : '';
-        hud.toast(`${cause}.${bill > 0 ? ` Hospital bill ${money(bill)}.` : ''}${lostTxt}`, 'warn');
+        hud.toast(`${cause}.${bill > 0 ? ` Hospital bill ${money(bill)}.` : ''}${lostTxt}`, 'critical'); // (4.5.0) never cut off
       });
       return;
     }
@@ -2365,7 +2368,7 @@ function updateBubbles(dt) {
     const sy = g.surfY ? g.surfY(b.x) : 0;
     if (b.y < sy + 0.1 || b.t > 25) g.bubbles.splice(i, 1);
   }
-  if (g.bubbles.length > 300) g.bubbles.splice(0, g.bubbles.length - 300);
+  if (g.bubbles.length > 160) g.bubbles.splice(0, g.bubbles.length - 160); // (4.5.0) fewer at once
 }
 
 // ---------------- loop ----------------

@@ -72,7 +72,7 @@ export class Catalog {
       else if (a.dataset.sellfind) { this.h.sellFind && this.h.sellFind(a.dataset.sellfind); this.render(); }
       else if (a.dataset.cart) {
         const cart = this.cart(), [act, arg] = a.dataset.cart.split('|');
-        if (act === 'add' && !cart.includes(arg)) cart.push(arg);
+        if (act === 'add' && !cart.includes(arg)) { if (cart.length >= 5) { this.h.toast && this.h.toast('The cart holds 5 things', 'warn'); } else cart.push(arg); } // (4.5.0) five at most
         else if (act === 'rm') cart.splice(cart.indexOf(arg), 1);
         else if (act === 'checkout') { const done = this.h.checkout && this.h.checkout(cart.slice()); if (done) cart.length = 0; }
         this.render();
@@ -124,7 +124,7 @@ export class Catalog {
     this.nav.innerHTML = this.cats.map((c) => (c ? `<a href="#" data-go="${c[0]}" class="${c[0] === cur ? 'on' : ''}">${c[1]}</a>` : '<div class="gap"></div>')).join('');
     let html = '';
     if (this.page === 'home') {
-      const wish = P.wish ? this.find('item:' + P.wish) || this.find(P.wish) : null;
+      const wish = null; // (4.5.0) saving for something is gone
       if (wish) {
         const k = Math.min(1, (P.cash || 0) / Math.max(1, wish.e.price));
         html += `<a href="#" class="cat-saving" data-go="${wish.e.key}"><img src="${this.pic(wish.e, 240, 128)}" alt=""><div><small>SAVING FOR</small><div class="nm">${wish.e.name}</div><div class="bar"><i style="width:${Math.round(k * 100)}%"></i></div></div><div class="amt">(${money(Math.min(P.cash, wish.e.price), false)}/${money(wish.e.price, false)})</div></a>`;
@@ -195,7 +195,7 @@ export class Catalog {
     else if (e.full) btn = `<span class="cat-have">${e.count}</span>`;
     else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)} · not enough cash` : `Buy now · ${money(e.price, false)}`}</button>`
       + (item ? (inCart ? `<a href="#" class="cat-save" data-go="cart">In your cart ✓</a>` : `<a href="#" class="cat-btn2" data-cart="add|${e.key}">Add to cart</a>`) : '')
-      + (e.price > cash && e.kind !== 'trap' ? `<a href="#" class="cat-save" data-wish="${item ? e.id : e.key}">${P.wish === e.id || P.wish === e.key ? 'Saving for this ✓' : 'Save for this'}</a>` : '');
+      ; // (4.5.0) no 'Save for this'
     return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><img src="${this.pic(e, 640, 420)}" alt=""><div>
       <h2>${e.name}</h2>${e.rarity ? `<div class="rr r-${e.rarity}">${RARITY[e.rarity].name}</div>` : ''}<div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
       <div class="gf">${e.good ? `<div class="g">${e.good}</div>` : ''}${e.bad ? `<div class="b">${e.bad}</div>` : ''}</div>${vs}<div class="buy">${btn}</div></div></div>`;

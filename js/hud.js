@@ -40,7 +40,7 @@ export class Hud {
     text = titled(text);
     // the same line again while it is still up: count it ("x2") instead of stacking a copy
     const same = this.toasts.find((tt) => tt.text === text && tt.kind === kind && tt.t < 3.5);
-    if (same) { same.n = (same.n || 1) + 1; same.t = Math.min(same.t, 0.4); return; }
+    if (same) { same.t = Math.min(same.t, 0.4); if (this.onShow) this.onShow(text, kind); return; } // (4.5.0) said again: the line stays up (no count)
     this.toasts.push({ text, kind, t: 0 }); if (this.toasts.length > 4) this.toasts.shift();
     if (this.onShow) this.onShow(text, kind); // (3.4.0) said by the message line (messages.js), not drawn here
   }
@@ -524,6 +524,14 @@ export class Hud {
       if (shadeA > 0.01) promptShade(ctx, W / 2, this.shadeY, s, shadeA);
       for (const [txt, a, col] of capFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, capY, s, { col, size: 18, shade: false, icon: parsePromptKey(txt) ? null : this.capIconNow }); ctx.restore(); } // (3.6.0) a brass key-cap and the words; a catch's name in its rarity's colour
       for (const [txt, a, col] of prFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, prY, s, { col, shade: false }); ctx.restore(); }
+      if (g.promptBar != null && prFx.level > 0.01) { // (4.5.0) the hold's progress: a slim brass bar in a dark groove
+        const bw = 150 * s, bh = 5 * s, bx = W / 2 - bw / 2, by = prY + 18 * s, k = Math.max(0, Math.min(1, g.promptBar));
+        ctx.save(); ctx.globalAlpha = prFx.level;
+        ctx.fillStyle = 'rgba(6,10,12,0.7)'; ctx.beginPath(); ctx.roundRect(bx - 1, by - 1, bw + 2, bh + 2, 3 * s); ctx.fill();
+        const gr = ctx.createLinearGradient(0, by, 0, by + bh); gr.addColorStop(0, '#f0d48a'); gr.addColorStop(1, '#a8823c');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.roundRect(bx, by, Math.max(bh, bw * k), bh, 2.5 * s); ctx.fill();
+        ctx.restore();
+      }
     }
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;

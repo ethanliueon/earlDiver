@@ -29,14 +29,14 @@ export const FINS = [
 // she gives way at as a multiple of it (hidden, drawn fresh each dive; the window narrows on deeper,
 // better-built hulls), and the cabin air she carries. Relics add 100 m each to the rating.
 export const SUBS = [
-  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 150 },
-  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 160 },
-  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 170 },
-  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 185 },
-  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 200 },
-  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 225 },
-  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 260 },
-  { name: 'Full-ocean-depth submersible', rated: 4000, crush: 1.25, o2: 300 },
+  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 120 },
+  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 130 },
+  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 145 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 160 },
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 180 },
+  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 200 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 230 },
+  { name: 'Full-ocean-depth submersible', rated: 4000, crush: 1.25, o2: 260 },
 ];
 export const SUB_TIERS = SUBS; // (old name)
 // No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
@@ -153,7 +153,7 @@ export const SUPPLIES = {
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
-export const supplyMax = (P, k) => SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max;
+export const supplyMax = (P, k) => Math.min(k === 'airTank' ? 2 : 99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.5.0) two backup tanks at most
 
 // ---------------- prices ----------------
 // What the buyers on the radio pay for each kind of thing, before the market moves.
@@ -229,7 +229,7 @@ export const UPGRADES = {
 };
 // The eight submersibles the depth upgrade buys: the cabin air comes with the boat, not an upgrade
 // (the best holds five minutes).
-export const SUB_AIR = [150, 160, 170, 185, 200, 225, 260, 300];
+export const SUB_AIR = [120, 130, 145, 160, 180, 200, 230, 260]; // (4.5.0) two minutes of cabin air on the first hull
 // Suits: bought once at the boat, one worn at a time (changed at the boat).
 // press: depth at which the pressure starts to eat his air · air: air use · speed: swimming speed ·
 // bite: injury taken off a shark or billfish bite · quiet: no bubbles (the entity hears less) ·

@@ -7,53 +7,59 @@
 const DANGER = /died|dying|no air|crush|implod|torn|taken|out of air|lost/i;
 const HOLD = { '': 3, note: 3, good: 3, warn: 3, danger: 4.2, big: 4 };
 
+// (4.5.0) Nothing waits its turn: a message is said the moment it happens, or not at all. The most important one
+// holds the main line; anything said at the same time shows at once as a small line beneath it (up to three, about
+// two seconds). A new message as important as the one up (or more) takes the main line, and the old one steps down
+// to a small line. A critical one (a death, the sub lost, out of air) is never pushed off its line. The same words
+// again simply keep the line up a little longer, with a pulse: never a count.
+const CRITICAL = /killed|died|drowned|imploded|out of air|hospital|you wake|lost at sea|surface!/i;
 export class Messages {
   constructor() {
     const el = document.createElement('div'); el.id = 'msgs'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
+    el.innerHTML = '<div class="msg-subs"></div>';
     document.body.appendChild(el);
-    this.el = el; this.cur = null; this.queue = [];
-    // its own clock: it keeps time while the game is paused or a room covers it
+    this.el = el; this.subs = el.querySelector('.msg-subs'); this.cur = null; this.small = [];
     let last = performance.now();
     const tick = (now) => { this.update(Math.min(0.1, (now - last) / 1000)); last = now; requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
   }
   kindOf(text, kind = '') {
-    if (kind.startsWith('rar:')) return { cls: 'rar', col: kind.slice(4) };
-    if (kind === 'warn') return { cls: DANGER.test(text) ? 'danger' : 'warn' };
-    return { cls: kind || 'plain' };
+    if (kind === 'critical') return { cls: 'danger', p: 3 };
+    if (kind.startsWith('rar:')) return { cls: 'rar', col: kind.slice(4), p: 2 };
+    const cls = kind === 'warn' ? (DANGER.test(text) ? 'danger' : 'warn') : kind || 'plain';
+    return { cls, p: CRITICAL.test(text) && cls === 'danger' ? 3 : cls === 'plain' ? 1 : 2 };
   }
   show(text, kind = '') {
     if (!text) return;
     const k = this.kindOf(text, kind);
-    // the same line again: it counts, and stays
-    const same = (m) => m && m.text === text;
-    if (same(this.cur) && !this.cur.leaving) { this.cur.n++; this.cur.t = 0; this.paint(this.cur); return; }
-    const q = this.queue.find(same); if (q) { q.n++; return; }
-    const m = { text, k, n: 1, t: 0, hold: HOLD[k.cls] || 3 };
-    // danger goes to the front; the queue stays short (the oldest plain lines give way)
-    if (k.cls === 'danger') this.queue.unshift(m); else this.queue.push(m);
-    while (this.queue.length > 3) { const i = this.queue.findIndex((x) => x.k.cls !== 'danger'); this.queue.splice(i >= 0 ? i : this.queue.length - 1, 1); }
-    // a line waiting: the one up now moves on sooner (but is read first)
-    if (this.cur) this.cur.hold = Math.min(this.cur.hold, Math.max(1.3, this.cur.t + 0.2));
+    if (this.cur && !this.cur.leaving && this.cur.text === text) { this.cur.t = 0; this.pulse(this.cur.el); return; }
+    const sm = this.small.find((m) => m.text === text); if (sm) { sm.t = 0; this.pulse(sm.el); return; }
+    const m = { text, k, t: 0, hold: k.p === 3 ? 6 : HOLD[k.cls] || 3 };
+    if (!this.cur || this.cur.leaving) { this.cur = m; this.enter(m); return; }
+    if (k.p >= this.cur.k.p && !(this.cur.k.p === 3 && k.p < 3)) { const old = this.cur; this.leave(old); this.addSmall(old.text, old.k, 1.6); this.cur = m; this.enter(m); }
+    else this.addSmall(text, k, 2.2);
   }
-  clear() { this.queue = []; if (this.cur) this.cur.hold = 0; }
+  addSmall(text, k, hold) {
+    const el = document.createElement('div'); el.className = `msg-small msg-${k.cls}`; if (k.col) el.style.setProperty('--mc', k.col);
+    el.textContent = text; this.subs.appendChild(el);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
+    this.small.push({ text, k, el, t: 0, hold });
+    while (this.small.length > 3) this.dropSmall(this.small[0]);
+  }
+  dropSmall(m) { this.small = this.small.filter((x) => x !== m); m.el.classList.remove('in'); setTimeout(() => m.el.remove(), 400); }
+  pulse(el) { if (!el) return; el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
+  clear() { if (this.cur) this.cur.hold = 0; for (const m of [...this.small]) this.dropSmall(m); }
   update(dt) {
-    if (this.cur) {
-      this.cur.t += dt;
-      if (this.cur.t >= this.cur.hold) { this.leave(this.cur); this.cur = null; }
-    }
-    if (!this.cur && this.queue.length) { this.cur = this.queue.shift(); this.enter(this.cur); }
+    if (this.cur) { this.cur.t += dt; if (this.cur.t >= this.cur.hold) { this.leave(this.cur); this.cur = null; } }
+    for (const m of [...this.small]) { m.t += dt; if (m.t >= m.hold) this.dropSmall(m); }
   }
-  paint(m) {
-    const n = m.n > 1 ? `<i class="msg-n">×${m.n}</i>` : '';
-    m.el.querySelector('.msg-t').innerHTML = `${esc(m.text)}${n}`;
-  }
+  paint(m) { m.el.querySelector('.msg-t').textContent = m.text; }
   enter(m) {
     const el = document.createElement('div');
     el.className = `msg msg-${m.k.cls}`; if (m.k.col) el.style.setProperty('--mc', m.k.col);
     el.innerHTML = '<span class="msg-t"></span><i class="msg-rule"></i>';
     m.el = el; this.paint(m);
-    this.el.appendChild(el);
+    this.el.insertBefore(el, this.subs);
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('in')));
   }
   leave(m) {

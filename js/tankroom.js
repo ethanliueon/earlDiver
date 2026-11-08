@@ -415,6 +415,9 @@ export class TankRoom {
     // (3.6.0) the alarm beacon, a fixture: always hanging from the ceiling, dark until something is wrong
     drawBeacon(ctx, G.W - 279, 0, 0.9, g.alarm ? g.alarm.rot : 0, !!g.alarm);
     this.drawCounter(ctx, G, g);
+    // (4.5.0) an open tag keeps to its fish: pinned just off the fish's top left, following it as it swims
+    if (this.card) { const s = g.subTank.find((q) => q._k === this.card.key) || g.bag.find((q) => q._k === this.card.key), p = s && this.seenAt && this.seenAt.get(s), el = this.over && this.over.querySelector('.tr-card');
+      if (p && el) { el.style.left = `${clamp(p.x + p.L * 0.35, 12, G.W - 250)}px`; el.style.top = `${clamp(p.y - p.L * 0.3 - 20, 12, G.H - 230)}px`; } }
     this.drawAlarmLight(ctx, G, g);
     this.drawDragged(ctx, G, g);
     this.drawWipe(ctx, G);
@@ -428,7 +431,7 @@ export class TankRoom {
   // the depth counter, screwed to the wall beside the name
   drawCounter(ctx, G, g) {
     // (3.6.1) top and centre, under the message line
-    depthCounter(ctx, G.W / 2 - 74, G.narrow ? 70 : 84, this.shownDepth || 0, { warn: g.sub.y > g.sub.rated, t: this.t });
+    depthCounter(ctx, G.W / 2 - 74, G.narrow ? 58 : 66, this.shownDepth || 0, { warn: g.sub.y > g.sub.rated, t: this.t });
   }
   // the dark wipe of a hatch
   drawWipe(ctx, G) {
@@ -1015,6 +1018,7 @@ export class TankRoom {
   drawFish(ctx, g, s, a, L) {
     const sp = SPECIES_BY_ID[s.id], dead = s.cond <= 0.05;
     ctx.save(); ctx.translate(a.x, a.y);
+    { const m = ctx.getTransform(), d = Math.min(2, window.devicePixelRatio || 1); (this.seenAt || (this.seenAt = new Map())).set(s, { x: m.e / d, y: m.f / d, L: L * Math.hypot(m.a, m.b) / d }); } // (4.5.0) where it is on screen, for its tag
     if (dead) { ctx.scale(1, -1); ctx.globalAlpha = 0.85; drawSpecies(ctx, sp, L, 0, 0, 0); xEyes(ctx, L, sp); ctx.restore(); return; }
     const f = Math.abs(a.face) < 0.08 ? 0.08 * Math.sign(a.face || 1) : a.face;
     ctx.rotate((clamp(a.vy * 0.02, -0.3, 0.3) + a.roll) * Math.sign(f));
