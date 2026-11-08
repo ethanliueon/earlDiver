@@ -143,7 +143,7 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 1, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, tag: P.items ? P.items.tag || 0 : 0, tagAdv: P.items ? P.items.tagAdv || 0 : 0, net: P.items && P.items.net !== undefined ? P.items.net : 'basic' }, inv: {}, // a new diver starts with one backup air tank
+    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, tag: P.items ? P.items.tag || 0 : 0, tagAdv: P.items ? P.items.tagAdv || 0 : 0, net: P.items && P.items.net !== undefined ? P.items.net : null }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
@@ -859,6 +859,67 @@ function afterTips(dt) {
   }
 }
 function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => hud.toast(`Press ${keyFor('inventory')} to put it on`, 'note'), 3000); }
+// (4.7.0) the lessons after the tutorial, in the tutorial's own way: the sea is held still (the animals, the thing in
+// the deep, the sub's air and hull, the catch's suffering all wait), only what the lesson teaches works, its line
+// says what to do and its key-cap lights; a trail leads where to go.
+//  - the trawl: the second time he is in the sub (with 10 m of water above her and 10 m below), a small school is
+//    set out ahead; let the net out, drive through, close it, open the tank room, put the catch in water. A spare
+//    net after.
+//  - the air: the first time the cabin air is 10 s from running out, a backup tank is given; connect it (R). Another
+//    is given after.
+const MOVE_KEYS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'];
+function lessons() {
+  const P = profile, e = g.earl, sub = g.sub; g.frozen = false;
+  if (!P || g.mode !== 'play' || P.tut === 'on' || !P.tut || g.kill || sub.imploded) { g.lesson = null; return; }
+  const set = (text, spot, allow, to) => { g.tut = { text, to: to || null, spot, fish: null }; g.tutHidePrompts = true; g.lesson.allow = new Set(allow); g.frozen = true; };
+  // starting a lesson
+  if (!g.lesson && e.inSub && !sub.docked && !ui.anyOpen() && !g.alarm) {
+    const floor = g.world.floorAt(sub.x);
+    if (!P.lessonAir && sub.y > 2.2 && sub.o2 <= 10) {
+      g.lesson = { kind: 'air' }; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); ui.showGains([{ kind: 'supply', id: 'airTank' }]);
+    } else if (!P.lessonTrawl && (P.subTimes || 0) >= 2 && sub.y >= 10 && floor - sub.y >= 10) {
+      const dir = sub.facing || 1, cx = sub.x + dir * 6, cy = sub.y + 4; // (just ahead: the net trails some 10 m behind her)
+      const sp = SPECIES.find((q) => /Northern Anchovy/.test(q.name)) || SPECIES.find((q) => /Anchovy|Sardine|Herring/.test(q.name));
+      const gid = g.fauna.groupId++, school = [];
+      for (let k = 0; k < 9; k++) { const f = g.fauna.makeFish(sp, cx + (k % 3) * 0.9 - 0.9, cy + Math.floor(k / 3) * 0.7 - 0.7, -dir, gid, k === 0); f.placed = true; f.lesson = true; g.fauna.list.push(f); school.push(f); }
+      if (!g.items.net) g.items.net = 'basic';
+      g.lesson = { kind: 'trawl', part: 'drop', school };
+    }
+  }
+  const L = g.lesson; if (!L) return;
+  if (!e.inSub) { g.tut = null; return; } // out of the sub: the lesson waits for him (the sea runs on)
+  if (L.kind === 'air') {
+    if (sub.o2 >= sub.o2Max - 1) { g.lesson = null; P.lessonAir = 'done'; if ((g.items.airTank || 0) < 2) { g.items.airTank = (g.items.airTank || 0) + 1; ui.showGains([{ kind: 'supply', id: 'airTank' }]); } syncProfile(); saveProfile(P); hud.toast('Cabin air full. Here is a spare tank for next time', 'note'); return; }
+    set(g.tankFit ? 'Connecting the tank…' : 'The cabin air is almost gone: connect a backup tank', g.tankFit ? null : { act: 'airtank', say: 'Connect a backup tank' }, ['r']);
+    return;
+  }
+  // the trawl
+  const n = g.subNet, alive = L.school.filter((f) => !f.dead), mid = alive.length ? { x: alive.reduce((a, f) => a + f.x, 0) / alive.length, y: alive.reduce((a, f) => a + f.y, 0) / alive.length } : null;
+  if (L.part === 'drop' && n) L.part = 'tow';
+  if (L.part === 'tow' && n && n.phase !== 'drop' && (n.phase !== 'tow' || n.got.length >= Math.min(3, L.school.length) || !alive.length)) L.part = n.phase === 'tow' ? 'close' : 'haul';
+  if (L.part === 'close' && n && n.phase !== 'tow') L.part = 'haul';
+  if (L.part === 'haul' && !g.subNet) {
+    if (g.subTank.some((s) => s.pile)) L.part = 'tank';
+    else { // nothing in it: the net back, a new school ahead, and again
+      g.items.net = 'basic'; const dir = sub.facing || 1, cx = sub.x + dir * 6, cy = sub.y + 4, sp = L.school[0].sp, gid = g.fauna.groupId++; L.school = [];
+      for (let k = 0; k < 9; k++) { const f = g.fauna.makeFish(sp, cx + (k % 3) * 0.9 - 0.9, cy + Math.floor(k / 3) * 0.7 - 0.7, -dir, gid, k === 0); f.placed = true; f.lesson = true; g.fauna.list.push(f); L.school.push(f); }
+      L.part = 'drop'; hud.toast('Nothing in it. Try again: drive straight through the fish', 'note');
+    }
+  }
+  if (L.part === 'tank' && ui.tankOpen && ui.tankOpen()) L.part = 'drag';
+  if (L.part === 'drag' && !g.subTank.some((s) => s.pile)) L.part = 'end';
+  if (L.part === 'end') {
+    g.lesson = null; P.lessonTrawl = 'done';
+    if (!g.items.net) { g.items.net = 'basic'; ui.showGains([{ kind: 'trawl', id: 'basic' }]); }
+    syncProfile(); saveProfile(P); hud.toast('Lesson done. A spare trawl net is in the hatch', 'note'); return;
+  }
+  if (L.part === 'drop') set('Let out the trawl net', { act: 'trawl', say: 'Let out the net' }, ['n']);
+  else if (L.part === 'tow') set('Drive the sub through the school of fish', null, MOVE_KEYS, mid);
+  else if (L.part === 'close') set('Close the net', { act: 'trawl', say: 'Close the net' }, ['n'].concat(MOVE_KEYS));
+  else if (L.part === 'haul') set('The net is coming in', null, MOVE_KEYS);
+  else if (L.part === 'tank') set('Open the tank room to see your catch', { act: 'tank', say: 'Tank room' }, ['t']);
+  else if (L.part === 'drag') set('Drag each fish off the floor into the tank: out of the water, it suffocates', null, []);
+}
 function tutorWelcome() {
   const P = profile; if (!P || P.tut) return;
   ui.confirm('Welcome to the tutorial', 'This will be quick: just a look around the game.', 'Start', 'Skip tutorial',
@@ -1035,7 +1096,7 @@ function startRun() {
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
 const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
-function tutGated(k) { return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); }
+function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
 // to frame): observe the tutorial fish, sell, climb aboard, into the cabin, the shop, back out on deck, out of the sub
@@ -1358,7 +1419,7 @@ function interact(t, exitSub) {
     p.taken = true;
     audio.ready && audio.pickup();
   } else if (t.kind === 'board') {
-    e.inSub = true; sub.docked = false;
+    e.inSub = true; sub.docked = false; if (profile) { profile.subTimes = (profile.subTimes || 0) + 1; saveProfile(profile); } // (4.7.0) for the lessons
     if (sub.o2 < 1 && sub.y > 2.2) hud.toast('Cabin out of air: breathing from your tank', 'warn');
     // nothing is moved for him: his catch stays in the bag until he drags it to a chamber or the tank
     if ((sub.patches || []).length) hud.toast('The sub needs repairs', 'warn'); // (4.5.0) said only on climbing in; nothing else is
@@ -1960,7 +2021,7 @@ function update(dt) {
       const why = fireSubNet(g);
       if (why === 'closing') { hud.toast('Closing the net…'); audio.ready && audio.click(); }
       else if (why && why !== 'busy') hud.toast(why, 'warn');
-      else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') ? 'Net out' : 'Net out (N to close)'); audio.ready && audio.whoosh(); }
+      else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? 'Net out' : 'Net out (N to close)'); audio.ready && audio.whoosh(); }
     }
     const netRes = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
     if (netRes && netRes.torn) { hud.toast(`The ${netRes.torn.name.toLowerCase()} tore through the net`, 'warn'); audio.ready && audio.thud(0.5); }
@@ -1982,7 +2043,8 @@ function update(dt) {
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
     tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
     afterTips(dt); // (4.6.0)
-    const dl = updateSpecimens(g, dt);
+    lessons(); // (4.7.0)
+    const dl = g.frozen ? Object.assign([], { events: [] }) : updateSpecimens(g, dt); // (4.7.0) frozen: nothing suffers
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
     const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : s.pile ? ' on the floor of the sub' : ' in the tank') : '');
     // (3.4.0) gathered for a moment and said once: one animal by name, several as one line ("3 animals are
@@ -2118,7 +2180,7 @@ function update(dt) {
         if (!mv.x && !mouse.down && performance.now() - mouse.movedAt < 3000 && Math.abs(ax) > renderer.cam.ppm * 1.2) e.facing = ax > 0 ? 1 : -1;
       }
     }
-    if (e.inSub && !g.sub.imploded && g.mode === 'play') crushDepth(dt);
+    if (e.inSub && !g.sub.imploded && g.mode === 'play' && !g.frozen) crushDepth(dt);
     if (res === 'implode' || g.implodeNow) {
       g.implodeNow = false;
       g.sub.imploded = true; g.imploded = true; g.implodeDepth = g.sub.y; g.implodeT = 0; g.sub.failing = null;
@@ -2190,8 +2252,7 @@ function update(dt) {
 
     // animals that attack
     g.fauna.bleeding = g.injury > 0;
-    directEncounters(g, dt, SPECIES_BY_ID);
-    updateHunters(g, dt);
+    if (!g.frozen) { directEncounters(g, dt, SPECIES_BY_ID); updateHunters(g, dt); }
     // entity (during the reveal it hangs in front of him, then sinks away; it does not take him)
     let r = null;
     if (g.reveal) {
@@ -2201,7 +2262,7 @@ function update(dt) {
       ent.x = lerp(ent.x, tx, dt * (R.t < 2 ? 0.6 : 1.5)); ent.y = lerp(ent.y, ty, dt * 1.5);
       ent.dist = dist(ent.x, ent.y, e.x, e.y); ent.eyeOpen = 1; ent.fade = 1; ent.heading = Math.PI;
       if (R.t > 26) { g.reveal = null; ent.y = Math.max(ent.y, e.y + 200); }
-    } else if (!g.kill) r = ent.update(g, dt);
+    } else if (!g.kill && !g.frozen) r = ent.update(g, dt);
     if (r === 'grab' || r === 'swallow') startKill();
     for (const ev of g.events) {
       if (ev === 'marked') {
@@ -2335,7 +2396,7 @@ function update(dt) {
   }
   // ----- life -----
   g.fauna.entityNear = ent.marked || (ent.dist ?? 999) < 300;
-  g.fauna.update(dt, renderer.cam, e, ent, fx.dread, g.time, g.day.light < 0.3);
+  g.fauna.update(g.frozen ? 0 : dt, renderer.cam, e, ent, fx.dread, g.time, g.day.light < 0.3); // (4.7.0) a lesson holds the sea still
   // breathing bubbles
   if (!e.inSub && e.y > 1 && g.mode === 'play' && !e.suitQuiet) {
     g.breathT -= dt;
@@ -2430,7 +2491,7 @@ function frame(now) {
   airOver(g);
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
-  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && profile.tut === 'on' && !!g.tut; tutSpot.update(on, on ? g.tut.spot : null, on ? g.tut.text : null); } // (4.3.0)
+  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; tutSpot.update(on, on ? g.tut.spot : null, on ? g.tut.text : null); } // (4.3.0)
   // dread colour grading on the scene canvas only
   const fx = g.fx;
   // no steady blur: it comes in slow pulses, a swell of fog every few seconds that clears again

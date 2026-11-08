@@ -21,6 +21,9 @@ const ACTIONS = {
   inventory: ['B',       'B',      null],
   journal:   ['J',       'J',      null],
   back:      ['Esc',     'Esc',    null],
+  trawl:     ['N',       'N',      null], // (4.7.0) the lessons
+  tank:      ['T',       'T',      null],
+  airtank:   ['R',       'R',      null],
 };
 const COL = { mouse: 0, keys: 1, touch: 2 };
 export const keyFor = (act) => (ACTIONS[act] ? ACTIONS[act][COL[INPUT.mode] ?? 0] : null);
