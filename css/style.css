@@ -2766,3 +2766,8 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .yd-part { width: 150px; height: 88px; }
 #workshop .yd-refit .yd-part { flex: 0 0 150px; width: 150px; height: 88px; }
 #workshop .yd-refit .yd-part { flex: 0 0 128px; width: 128px; height: 76px; } #workshop .yd-refit .pay-tag { min-width: 96px; height: 40px; font-size: 18px !important; padding: 0 12px 0 26px !important; } #workshop .yd-refit { gap: 12px; }
+/* (4.15.9) each photograph's name written on its white border, clear of the edge; the stamp nearly level */
+#workshop .yd-photo { padding: 8px 8px 34px; }
+#workshop .yd-card h4 { margin: -30px 10px 0; line-height: 1.25; min-height: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#workshop .yd-card .yd-sheet { margin-top: 14px; }
+#workshop .ys-stamp { transform: rotate(-3deg); }
