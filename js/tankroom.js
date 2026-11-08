@@ -79,7 +79,7 @@ export class TankRoom {
       <div class="tr-help" hidden></div><div class="gl-lights tr-lights"></div>`;
     this.c = root.querySelector('.tr-canvas'); this.over = root.querySelector('.tr-over');
     root.querySelector('.tr-close').addEventListener('click', () => this.h.close());
-    root.querySelector('.tr-refit').addEventListener('click', () => this.h.refit && this.h.refit()); // (4.12.6) the sub's refits, from inside her
+    root.querySelector('.tr-refit').addEventListener('click', () => this.h.refit && this.h.refit()); // (4.12.7) the refit room, from inside her (bottom left of every room)
     root.querySelector('.tr-lights').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-light]'); const g = this.h.getGame(); if (b && g && g.profile) { g.profile.subTankLight = b.dataset.light; this.lightsHtml(g); } });
     root.querySelector('.tr-help-btn').addEventListener('click', () => { const hp = root.querySelector('.tr-help'); hp.hidden = !hp.hidden; });
     root.querySelector('.tr-help').innerHTML = `<p>Every animal has the pressure it lives at. Up to ${SAFE_GAP} m away from it, shallower or deeper, it lives, stressed; further, it starts to die. Taking a shallow animal deep hurts it as much as bringing a deep one up.</p>

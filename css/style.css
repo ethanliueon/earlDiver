@@ -2479,5 +2479,17 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #journal .af b { font: 500 14px/1.15 var(--serif); text-align: center; color: #3a3428; }
 #journal .af:not(.seen) b { letter-spacing: 0.12em; color: rgba(58,52,40,0.55); }
 #journal .af small { font: 10px var(--mono); color: rgba(58,52,40,0.55); }
-.tr-refit { position: absolute; top: 14px; right: 106px; height: 34px; padding: 0 14px; border: 0; border-radius: 17px; cursor: pointer; font: 500 16px var(--serif); color: #2e220a; background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); box-shadow: 0 0 0 1px #2a1e08, 0 3px 6px rgba(0,0,0,0.5); z-index: 5; }
+.tr-refit { position: absolute; left: 18px; bottom: 18px; height: 46px; padding: 0 22px 0 18px; border: 0; border-radius: 6px; cursor: pointer; font: 500 19px var(--serif); letter-spacing: 0.02em; color: #2e220a; background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); box-shadow: 0 0 0 1px #2a1e08, 0 3px 6px rgba(0,0,0,0.5); z-index: 5; }
 .tr-refit:hover { filter: brightness(1.08); }
+
+/* (4.12.7) the refit room: the yard's sub page filling the whole screen, nothing of the game behind it, a red X */
+.tr-refit::before { content: '⚙'; margin-right: 8px; font-size: 18px; }
+#workshop.refit-full { position: fixed; inset: 0; left: 0; top: 0; transform: none; max-width: none; z-index: 60; display: flex; justify-content: center; align-items: stretch;
+  background: radial-gradient(ellipse at 50% 30%, #2c332a, #151913 75%); }
+#workshop.refit-full .shop-main { width: 100vw; box-sizing: border-box; max-width: none; max-height: none; height: 100vh; border-radius: 0; box-shadow: none; padding: 28px 40px 30px; }
+#workshop.refit-full #workshop-close { display: none; }
+#workshop .refit-x { display: none; }
+#workshop.refit-full .refit-x { display: grid; place-items: center; position: fixed; top: 16px; right: 18px; z-index: 2; width: 44px; height: 44px; border: 0; border-radius: 50%; cursor: pointer;
+  font: 600 26px/1 var(--serif); color: #fff3ee; background: radial-gradient(circle at 40% 35%, #e86a5a, #b02a20 60%, #7a140e); box-shadow: 0 0 0 1px #3a0a06, 0 3px 8px rgba(0,0,0,0.55); }
+#workshop.refit-full .refit-x:hover { filter: brightness(1.12); }
+#workshop.refit-full .shop-main > header { padding-right: 64px; }

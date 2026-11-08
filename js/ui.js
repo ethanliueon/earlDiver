@@ -97,7 +97,7 @@ export class UI {
       close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { toast: (t, k) => h.toast && h.toast(t, k), getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), daveSays: () => (this.dave && this.dave.says ? this.dave.says() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     try { this.dressPanels(); } catch (err) { /* the plain look stays */ }
-    this.tankRoom = new TankRoom($('tankroom'), { refit: () => this.openShop('sub', ['sub'], true), act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
+    this.tankRoom = new TankRoom($('tankroom'), { refit: () => this.openRefit(), act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
@@ -1175,10 +1175,25 @@ export class UI {
     else this.blurTyping();
   }
   // allowed: the tabs this place offers (selling from the water: Sell only; a station aboard: its own); null for all
+  // (4.12.7) the refit room: the sub's upgrades and add-ons, full screen, the game paused behind it; a red X closes it
+  openRefit() {
+    const el = $('workshop'), g = this.h.getGame();
+    if (!el.querySelector('.refit-x')) { const x = document.createElement('button'); x.className = 'refit-x'; x.setAttribute('aria-label', 'Close the refit room'); x.textContent = '×'; x.addEventListener('click', () => this.toggleWorkshop(false)); el.appendChild(x); }
+    this.refitPaused = !!g && !g.paused; if (g) g.paused = true;
+    el.classList.add('refit-full');
+    this.openShop('sub', ['sub'], true);
+    el.querySelector('.nameplate h2').innerHTML = 'Refit';
+    if (this.dressPanels) this.dressPanels();
+  }
   toggleWorkshop(force, allowed = null) {
     const el = $('workshop');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
+    if (!open && el.classList.contains('refit-full')) { // leaving the refit room: the game carries on
+      el.classList.remove('refit-full'); el.querySelector('.nameplate h2').innerHTML = 'The <i>Margaret</i>';
+      const g = this.h.getGame(); if (g && this.refitPaused) g.paused = false; this.refitPaused = false; this.refitOnly = false;
+      if (this.dressPanels) this.dressPanels();
+    }
     if (open) {
       this.shopAllowed = allowed;
       document.querySelectorAll('.shop-tabs button[data-shop]').forEach((b) => { b.hidden = !!allowed && !allowed.includes(b.dataset.shop); });
