@@ -435,8 +435,11 @@ export class UI {
   // (4.6.0) things gained: a row of cards in the middle of the screen, each the locker's own slot (its picture in
   // the rarity-edged box, a NEW tag in the corner) with the name under it and +1 at the bottom. The game runs on
   // behind them; a click anywhere sends them off early. entries: [{ kind: 'item'|'supply'|'trawl'|'trap', id }]
-  showGains(entries) {
+  // (4.16.9) while a shop, the catalog, the quest board or a crate is open, the cards wait; they come when it closes
+  gainsBlocked() { return ['catalog', 'workshop', 'chest', 'dave', 'cave', 'quests', 'confirm'].some((id) => { const el = $(id); return el && !el.hidden; }); }
+  showGains(entries, now = false) {
     if (!entries || !entries.length) return;
+    if (!now && this.gainsBlocked()) { this.gainsQueue = (this.gainsQueue || []).concat(entries); return; }
     let el = document.getElementById('gains');
     if (!el) {
       el = document.createElement('div'); el.id = 'gains'; document.body.appendChild(el);
@@ -1786,6 +1789,7 @@ export class UI {
     const el = $('journal-count'); if (el.textContent !== t) el.textContent = t;
   }
   update(g, dt) {
+    if (this.gainsQueue && this.gainsQueue.length && !this.gainsBlocked()) { const q = this.gainsQueue; this.gainsQueue = []; setTimeout(() => this.showGains(q, true), 250); }
     if (!$('journal').hidden && this.journalDirty) { this.journalDirty = false; this.renderJournal(); }
     if (!$('journal').hidden) this.journalCount(g);
     if (!$('workshop').hidden) {

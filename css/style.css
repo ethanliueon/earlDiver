@@ -2814,3 +2814,9 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #loading.ld .ld-step { font: 13px "IBM Plex Mono", monospace; font-style: normal; color: #f2efe6; }
 #loading.ld .ld-depth { font-style: normal; }
 #loading.ld .ld-tip span { letter-spacing: 0; font: inherit; color: inherit; }
+
+/* (4.16.9) the item cards see-through, the sea showing behind them */
+#gains .gain { background: linear-gradient(180deg, rgba(34,40,32,0.72), rgba(22,26,20,0.72)) !important; backdrop-filter: blur(6px); }
+#gains .g-tile { background: radial-gradient(ellipse at 50% 40%, rgba(42,48,39,0.65), rgba(18,21,16,0.75)) !important; }
+#gains .gain { background: linear-gradient(180deg, rgba(34,40,32,0.86), rgba(22,26,20,0.86)) !important; backdrop-filter: blur(10px); }
+#gains .g-tile { background: radial-gradient(ellipse at 50% 40%, #2a3027, #121510) !important; }

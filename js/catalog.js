@@ -109,9 +109,9 @@ export class Catalog {
     }
     // (4.0.0) the anglerfish lure: not at Bayside, only at the station and Dave's, and dear
     if (cat === 'lure') { const S = SUPPLIES.lure, have = (g && g.items.lure) || 0, mx = supplyMax(P, 'lure');
-      return [{ key: 'lure', id: 'lure', kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you carry ${have} of ${mx}`, full: have >= mx }]; }
+      return [{ key: 'lure', id: 'lure', kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you carry ${have} of ${mx}`, full: have >= mx, pic: ['supply', 'lure'] }]; }
     if (cat === 'supply') {
-      return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = (g && g.items[k]) || 0, mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
+      return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = (g && g.items[k]) || 0, mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc, count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
     }
     return [];
   }
@@ -172,7 +172,7 @@ export class Catalog {
   }
   card(e) {
     const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag${e.rarity ? ' r-' + e.rarity : ''}">${e.tag || ''}</div>`;
-    const go = e.kind === 'supply' ? '' : `data-go="${e.key}"`;
+    const go = `data-go="${e.key}"`; // (4.16.9) supplies open their own page too
     const buy = e.kind === 'supply' ? `<button class="cat-mini" data-buy="${e.key}" ${e.full || this.h.getProfile().cash < e.price ? 'disabled' : ''}>${e.full ? 'Full' : 'Buy'}</button>` : '';
     return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t"><b>${e.name}</b><span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
   }

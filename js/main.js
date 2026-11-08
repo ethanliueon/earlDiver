@@ -791,7 +791,7 @@ function buy(kind) {
     if (C && lockerFree(P) <= 0) hud.toast('Locker full', 'warn');
     else if (C && spend(P, C.price)) {
       const def = rollChest(key), q = def && giveItem(P, def.id);
-      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); tipEquip(); } // (4.12.1) one thing from a crate: the crate's own reveal shows it (no item card on top)
+      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); ui.showGains([{ kind: 'item', id: q.id }]); tipEquip(); } // (4.16.9) its card waits until the crate's reveal is closed
     }
     return ok;
   }

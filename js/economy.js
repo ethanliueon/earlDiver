@@ -150,7 +150,7 @@ export const SUPPLIES = {
   necklace: { name: 'Glow stick', price: 370, max: 1, desc: 'A chemical glow stick on a lanyard, snapped to light (E): 90 s of warm amber light around Earl, and in the sub it lights her and the water round her. It does not keep anything away, and a light can be seen. Used up once snapped.' },
   tag: { name: 'Basic tags', price: 5, max: 3, needs: 'tagger', desc: 'Research darts for the tag gun: for common, uncommon and rare animals, and big tag-only animals under two metres.' },
   tagAdv: { name: 'Advanced tags', price: 200, max: 3, needs: 'tagger', desc: 'Satellite tags with a wider spread and a faint glow: needed for exotic, legendary and undocumented animals, and anything tag-only two metres long or more.' },
-  airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The tank rack holds one to start; it can be enlarged.' },
+  airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
 export const supplyMax = (P, k) => k === 'airTank' ? 2 : Math.min(99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.12.0) two backup tanks, always // (4.5.0) two backup tanks at most
