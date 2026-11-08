@@ -16,7 +16,7 @@ import { VARIANTS } from './variants.js';
 import { speciesIcon } from './creatures_draw.js';
 import { SETTINGS } from './settings.js';
 import { toolIcon } from './tools_draw.js';
-import { bagSlots, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf } from './capture.js';
+import { bagSlots, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf, tankUsed, BIG, hasBigTank, bigIn } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
 
 const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
@@ -90,13 +90,26 @@ export class Hud {
     }
     // specimen slots: the bag (or, in the sub, its tank). Each dot shows the animal's colour,
     // ringed by its condition: green healthy, amber stressed, red weak, grey dead.
-    const list = e.inSub ? g.subTank.filter((q) => !q.pressed) : g.bag, slots = e.inSub ? tankSlots(g) : bagSlots(g);
-    const pList = e.inSub ? g.subTank.filter((q) => q.pressed) : [], pSlots = e.inSub ? pressSlots(g) : 0;
+    // (4.16.7) in the sub, just counts: the open tank's spaces, the chambers, the large tank if fitted
+    if (e.inSub) {
+      const sy0 = y - 16 * s, fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1));
+      const parts = [['TANK', `${fmt(tankUsed(g))}/${tankSlots(g)}`]];
+      if (pressSlots(g)) parts.push(['CHAMBERS', `${g.subTank.filter((q) => q.pressed && q.chamber !== BIG).length}/${pressSlots(g)}`]);
+      if (hasBigTank(g)) parts.push(['LARGE TANK', `${bigIn(g).length}/3`]);
+      ctx.textBaseline = 'middle';
+      const lab = `${9 * s}px ${MONO}`, val = `600 ${12 * s}px ${MONO}`, gapP = 22 * s;
+      const widths = parts.map(([l, v]) => { ctx.font = lab; const a2 = ctx.measureText(l).width; ctx.font = val; return a2 + 6 * s + ctx.measureText(v).width; });
+      let px = W / 2 - (widths.reduce((a2, b2) => a2 + b2, 0) + gapP * (parts.length - 1)) / 2;
+      parts.forEach(([l, v], i) => { ctx.textAlign = 'left'; ctx.font = lab; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(l, px, sy0); const lw = ctx.measureText(l).width;
+        ctx.font = val; ctx.fillStyle = 'rgba(232,240,236,0.92)'; ctx.fillText(v, px + lw + 6 * s, sy0); px += widths[i] + gapP; });
+    }
+    const list = e.inSub ? [] : g.bag, slots = e.inSub ? 0 : bagSlots(g);
+    const pList = [], pSlots = 0;
     const r = 6 * s, step = 17 * s, rowW = (slots + (pSlots ? pSlots + 0.6 : 0)) * step;
     let sx = W / 2 - rowW / 2 + step / 2;
     const sy = y - 16 * s;
     ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(200,220,215,0.5)'; ctx.fillText(e.inSub ? 'TANK' : 'BAG', sx - step * 0.6 - 2 * s, sy);
+    if (!e.inSub) { ctx.fillStyle = 'rgba(200,220,215,0.5)'; ctx.fillText('BAG', sx - step * 0.6 - 2 * s, sy); }
     for (let i = 0; i < slots; i++, sx += step) {
       const sp = list[i];
       ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU);
