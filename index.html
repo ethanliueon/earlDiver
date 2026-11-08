@@ -11,61 +11,45 @@
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&family=Allerta+Stencil&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* (4.16.1) the loading screen: the key art (a painting: the Margaret at sunset, a school in the shallows, Earl
-       diving with his lamp, the thing in the deep rising under him), the title with a brass diving-helmet emblem,
-       a slim glowing bar with the helmet riding it, what is loading, and a tip between two rules. Only CSS moves. */
-    .ld { position: fixed; inset: 0; z-index: 100; overflow: hidden; background: #03090c; transition: opacity 0.7s ease; }
+    /* (4.17.2) the loading screen, poster-style: the painting left alone (only a slow push-in), and over it, at the
+       lower left, flat type in the sunset's own orange and a warm off-white: a stamped helmet mark, the title, a
+       hairline bar that fills with orange, what is loading, and a tip. No gradients, no glows. */
+    .ld { --sun: #e9944a; --paper: #efe6d4; position: fixed; inset: 0; z-index: 100; overflow: hidden; background: #050b0e; transition: opacity 0.7s ease; }
     .ld.done { opacity: 0; pointer-events: none; }
     .ld[hidden] { display: none; }
-    .ld .ld-art { position: absolute; inset: -2%; animation: ld-push 32s ease-in-out infinite alternate; }
+    .ld .ld-art { position: absolute; inset: -2%; animation: ld-push 34s ease-in-out infinite alternate; }
     .ld .ld-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; user-select: none; pointer-events: none; }
-    .ld .ld-sun { position: absolute; left: 66%; width: 16%; top: 18.5%; height: 9%; background: radial-gradient(ellipse at 50% 20%, rgba(255,210,140,0.55), rgba(255,180,100,0) 70%); mix-blend-mode: screen; animation: ld-glint 4.5s ease-in-out infinite; }
-    .ld .ld-vig { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55)), linear-gradient(180deg, rgba(0,0,0,0) 70%, rgba(0,4,8,0.6)); pointer-events: none; }
-    .ld .ld-bubbles i { position: absolute; bottom: -20px; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid rgba(200,235,240,0.35); animation: ld-bub 11s linear infinite; }
-    .ld .ld-head { position: absolute; left: 50%; top: 23%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; text-align: center; }
-    /* (4.16.2) the title in the water: sunset-warm at the top, sea-green below, its edges rippled as if seen through
-       the surface, a slow band of light passing over it, a soft teal glow round it */
-    .ld .ld-title { font: 500 clamp(40px, 6.4vw, 104px)/1.05 "EB Garamond", Georgia, serif; letter-spacing: 0.015em; white-space: nowrap; padding: 0 0.1em;
-      background: linear-gradient(105deg, rgba(255,255,255,0) 35%, rgba(255,250,225,0.55) 47%, rgba(255,255,255,0) 58%) 0 0 / 260% 100% no-repeat,
-        linear-gradient(180deg, #ffe9bf 0%, #f0d9a6 34%, #b9d3c2 66%, #6fa9ad 100%);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      filter: url(#ld-water) drop-shadow(0 0 16px rgba(110,200,205,0.28)) drop-shadow(0 4px 10px rgba(0,8,14,0.6));
-      animation: ld-shine 7s ease-in-out infinite; }
-    @keyframes ld-shine { 0% { background-position: 130% 0, 0 0; } 60%, 100% { background-position: -40% 0, 0 0; } }
-    .ld .ld-rule { display: flex; align-items: center; gap: 14px; width: min(640px, 70vw); }
-    .ld .ld-rule::before, .ld .ld-rule::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(232,212,154,0), rgba(232,212,154,0.75)); }
-    .ld .ld-rule::after { background: linear-gradient(90deg, rgba(232,212,154,0.75), rgba(232,212,154,0)); }
-    .ld .ld-helmet { width: 40px; height: 40px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
-    .ld .ld-tag { font: italic 400 clamp(17px, 1.7vw, 26px) "EB Garamond", Georgia, serif; color: rgba(240,234,214,0.92); text-shadow: 0 2px 8px rgba(0,0,0,0.7); white-space: nowrap; }
-    .ld .ld-ui { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); width: min(780px, 84vw); display: flex; flex-direction: column; align-items: center; gap: 16px; }
-    .ld .ld-bar { position: relative; width: 100%; height: 8px; border-radius: 4px; background: rgba(0,0,0,0.55); box-shadow: 0 0 0 1px rgba(232,212,154,0.28), inset 0 1px 3px rgba(0,0,0,0.8); }
-    .ld .ld-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 5%; border-radius: 4px; background: linear-gradient(90deg, #8a6a2c, #e8c472 70%, #fff0c0); box-shadow: 0 0 10px rgba(240,200,110,0.7), 0 0 22px rgba(240,200,110,0.35); transition: width 0.45s ease; }
-    .ld .ld-fill::after { content: ''; position: absolute; right: -4px; top: 50%; width: 30px; height: 14px; margin-top: -7px; border-radius: 50%; background: radial-gradient(ellipse, rgba(255,240,200,0.9), rgba(255,220,150,0)); }
-    .ld .ld-bar .ld-helmet { position: absolute; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; left: 5%; transition: left 0.45s ease; }
-    .ld .ld-step { padding: 6px 14px 7px; border-radius: 3px; font: 13px "IBM Plex Mono", monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #ece6d2; background: rgba(10,14,16,0.82); box-shadow: 0 0 0 1px rgba(232,212,154,0.18), 0 2px 8px rgba(0,0,0,0.5); }
-    .ld .ld-tip { display: flex; align-items: center; gap: 16px; width: 100%; font: italic 18px/1.35 "EB Garamond", Georgia, serif; color: rgba(236,230,210,0.9); text-shadow: 0 1px 6px rgba(0,0,0,0.8); transition: opacity 0.4s; }
-    .ld .ld-tip::before, .ld .ld-tip::after { content: ''; flex: 1 0 40px; height: 1px; background: rgba(232,212,154,0.45); }
-    .ld .ld-tip kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; margin: 0 3px; border-radius: 3px; font: 600 12px "IBM Plex Mono", monospace; font-style: normal; color: #2a1e08; background: linear-gradient(180deg, #f0dc9c, #c49a48); box-shadow: 0 2px 0 #5a4518; vertical-align: 1px; }
-    @keyframes ld-push { from { transform: scale(1); } to { transform: scale(1.06) translate(-0.8%, 0.8%); } }
-    @keyframes ld-glint { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-    @keyframes ld-bub { from { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } to { transform: translate(16px, -80vh); opacity: 0; } }
-    @media (max-height: 560px) { .ld .ld-head { top: 18%; gap: 4px; } .ld .ld-title { font-size: clamp(30px, 9vh, 56px); } .ld .ld-helmet { width: 30px; height: 30px; } .ld .ld-ui { bottom: 18px; gap: 10px; } .ld .ld-tip { font-size: 15px; } }
+    .ld .ld-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(3,8,11,0.78) 0%, rgba(3,8,11,0.35) 32%, rgba(3,8,11,0) 55%); pointer-events: none; }
+    .ld .ld-block { position: absolute; left: max(7vw, 28px); bottom: max(8vh, 26px); width: min(560px, 80vw); color: var(--paper); font-family: "EB Garamond", Georgia, serif; }
+    .ld .ld-mark { width: 30px; height: 30px; color: var(--sun); display: block; margin-bottom: 14px; }
+    .ld .ld-title { margin: 0; font: 500 clamp(30px, 4.6vw, 68px)/0.95 "EB Garamond", Georgia, serif; letter-spacing: 0.16em; text-transform: uppercase; color: var(--paper); }
+    .ld .ld-title em { font-style: normal; color: var(--sun); }
+    .ld .ld-sub { margin: 10px 0 0; font: 12px "IBM Plex Mono", monospace; letter-spacing: 0.34em; text-transform: uppercase; color: rgba(239,230,212,0.55); }
+    .ld .ld-bar { position: relative; height: 2px; margin-top: clamp(22px, 5vh, 40px); background: rgba(239,230,212,0.22); }
+    .ld .ld-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 4%; background: var(--sun); transition: width 0.45s ease; }
+    .ld .ld-fill::after { content: ''; position: absolute; right: -1px; top: -5px; width: 2px; height: 12px; background: var(--sun); }
+    .ld .ld-row { display: flex; justify-content: space-between; gap: 16px; margin-top: 10px; font: 11px "IBM Plex Mono", monospace; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(239,230,212,0.7); }
+    .ld .ld-pct { color: var(--sun); }
+    .ld .ld-tip { margin-top: 14px; font: italic 16px/1.4 "EB Garamond", Georgia, serif; color: rgba(239,230,212,0.72); transition: opacity 0.4s; }
+    .ld .ld-tip kbd { display: inline-block; padding: 0 5px; margin: 0 2px; border: 1px solid rgba(233,148,74,0.8); border-radius: 2px; font: 600 11px/16px "IBM Plex Mono", monospace; font-style: normal; color: var(--sun); vertical-align: 1px; }
+    @keyframes ld-push { from { transform: scale(1); } to { transform: scale(1.05) translate(-0.6%, 0.6%); } }
+    @media (max-height: 560px) { .ld .ld-block { bottom: 18px; } .ld .ld-mark { width: 22px; height: 22px; margin-bottom: 8px; } .ld .ld-title { font-size: clamp(26px, 9vh, 44px); } .ld .ld-bar { margin-top: 16px; } .ld .ld-tip { font-size: 14px; margin-top: 8px; } }
     @media (prefers-reduced-motion: reduce) { .ld * { animation: none !important; } }
   </style>
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ld-water" x="-5%" y="-20%" width="110%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
   <div id="boot" class="ld" aria-label="Loading">
-    <div class="ld-art"><img src="assets/loading/key-art.jpg" alt=""><div class="ld-sun"></div></div>
-    <div class="ld-bubbles"><i style="left:44%;animation-delay:0s"></i><i style="left:58%;animation-delay:2.6s;width:4px;height:4px"></i><i style="left:66%;animation-delay:5s"></i><i style="left:72%;animation-delay:1.4s;width:3px;height:3px"></i><i style="left:24%;animation-delay:3.8s;width:4px;height:4px"></i></div>
-    <div class="ld-vig"></div>
-    <div class="ld-head"><div class="ld-title">Earl the Diver</div><div class="ld-rule"><svg class="ld-helmet" viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="ldh" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ffe6a8"/><stop offset="0.5" stop-color="#c79a48"/><stop offset="1" stop-color="#5e4418"/></radialGradient></defs><path d="M7 30 Q6 10 20 6 Q34 10 33 30 Z" fill="url(#ldh)" stroke="#3a2a0e" stroke-width="1"/><rect x="5" y="29" width="30" height="6" rx="2" fill="url(#ldh)" stroke="#3a2a0e" stroke-width="1"/><circle cx="20" cy="19" r="7.5" fill="#123a44" stroke="#3a2a0e" stroke-width="1.6"/><circle cx="20" cy="19" r="5.2" fill="none" stroke="#e8cf8e" stroke-width="1.4"/><ellipse cx="17.6" cy="16.6" rx="2" ry="1.2" fill="rgba(255,255,255,0.55)"/><circle cx="9.5" cy="20" r="2.2" fill="#123a44" stroke="#3a2a0e"/><circle cx="30.5" cy="20" r="2.2" fill="#123a44" stroke="#3a2a0e"/></svg></div></div>
-    <div class="ld-ui"><div class="ld-bar"><i class="ld-fill"></i><svg class="ld-helmet" viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="ldh" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ffe6a8"/><stop offset="0.5" stop-color="#c79a48"/><stop offset="1" stop-color="#5e4418"/></radialGradient></defs><path d="M7 30 Q6 10 20 6 Q34 10 33 30 Z" fill="url(#ldh)" stroke="#3a2a0e" stroke-width="1"/><rect x="5" y="29" width="30" height="6" rx="2" fill="url(#ldh)" stroke="#3a2a0e" stroke-width="1"/><circle cx="20" cy="19" r="7.5" fill="#123a44" stroke="#3a2a0e" stroke-width="1.6"/><circle cx="20" cy="19" r="5.2" fill="none" stroke="#e8cf8e" stroke-width="1.4"/><ellipse cx="17.6" cy="16.6" rx="2" ry="1.2" fill="rgba(255,255,255,0.55)"/><circle cx="9.5" cy="20" r="2.2" fill="#123a44" stroke="#3a2a0e"/><circle cx="30.5" cy="20" r="2.2" fill="#123a44" stroke="#3a2a0e"/></svg></div><span class="ld-step">Loading</span><div class="ld-tip"></div></div>
+    <div class="ld-art"><img src="assets/loading/key-art.jpg" alt=""></div><div class="ld-shade"></div>
+    <div class="ld-block"><svg class="ld-mark" viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 25 V14 a9 9 0 0 1 18 0 V25"/><path d="M5 25 H27 V29 H5 Z"/><circle cx="16" cy="15" r="5"/><circle cx="7.5" cy="16" r="1.6"/><circle cx="24.5" cy="16" r="1.6"/></svg><h1 class="ld-title">Earl the <em>Diver</em></h1>
+      <div class="ld-bar"><i class="ld-fill"></i></div>
+      <div class="ld-row"><span class="ld-step">Loading</span><span class="ld-pct">0%</span></div>
+      <div class="ld-tip"></div></div>
   </div>
   <script>
     // the game reports how far it has got (window.__boot), then fades this away (window.__bootDone)
     // (4.15.0) how far the game has got (window.__boot / __load), then fade it away (window.__bootDone)
-    window.__ldSet = function (el, k, label) { if (!el) return; k = Math.max(0.04, Math.min(1, k)); var f = el.querySelector('.ld-fill'), h = el.querySelector('.ld-bar .ld-helmet'), t = el.querySelector('.ld-step'); if (f) f.style.width = (k * 100) + '%'; if (h) h.style.left = (k * 100) + '%'; if (t && label) t.textContent = label; };
+    window.__ldSet = function (el, k, label) { if (!el) return; k = Math.max(0.04, Math.min(1, k)); var f = el.querySelector('.ld-fill'), t = el.querySelector('.ld-step'), pc = el.querySelector('.ld-pct'); if (f) f.style.width = (k * 100) + '%'; if (pc) pc.textContent = Math.round(k * 100) + '%'; if (t && label) t.textContent = label; };
     window.__ldTips = ['Animals from the deep need a pressure chamber, or they won\'t survive the trip up.', 'Found something worth coming back for? Mark it on your chart with <kbd>K</kbd>.', 'Below its depth rating, the sub leaks air faster and faster.', 'Legendary animals hide near the deepest part of their range.', 'Throw a lure with <kbd>Q</kbd> to pull the thing in the deep away from you.', 'Sell your catch at the Margaret with <kbd>U</kbd>.', 'Some animals come to the light. Some run from it. Some hunt it.', 'Only the advanced trawl net can hold a legend. Pick your net with <kbd>N</kbd>.'];
     window.__ldTip = function (el) { var tip = el && el.querySelector('.ld-tip span') || (function () { var w = el && el.querySelector('.ld-tip'); if (!w) return null; var sp = document.createElement('span'); w.appendChild(sp); return sp; })(); if (!tip) return; var i = Math.floor(Math.random() * window.__ldTips.length); tip.innerHTML = window.__ldTips[i]; clearInterval(el.__tipT); el.__tipT = setInterval(function () { i = (i + 1) % window.__ldTips.length; tip.style.opacity = 0; setTimeout(function () { tip.innerHTML = window.__ldTips[i]; tip.style.opacity = 1; }, 400); }, 4200); };
     window.__boot = function (k, label) { window.__ldSet(document.getElementById('boot'), k, label); };
