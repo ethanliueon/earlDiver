@@ -12,6 +12,8 @@ const SUB_ABOUT = [
   'A titanium hull and a titanium sphere: light, very strong and fast. Built for expeditions that stay down for hours.',
   'The only kind of boat that can go anywhere in the sea: a full-ocean-depth hull, rated for the trench floor. There is nothing deeper.',
 ];
+// (4.15.7) where each refit sits in the showcase drawing of the sub: [x, y, w, h] as fractions of the picture
+const PART_CROP = { arm: [0.66, 0.56, 0.34, 0.34], quiet: [0.7, 0.16, 0.3, 0.3], sonar: [0.58, 0.44, 0.2, 0.2] };
 const SHOWCASE_TABS = new Set(['diver', 'tools']); // (4.14.0: the sub page draws its own)
 import { speciesIcon, fittedIcon, speciesBox, drawSpecies } from './creatures_draw.js';
 import { ABOUT } from '../data/species_about.js';
@@ -1451,22 +1453,22 @@ export class UI {
       if (open != null) { // one sub, large: its picture, its sheet, a word about it
         const S = SUBS[open];
         html += `<div class="yd-top"><h3><small>No. ${open + 1} of ${SUBS.length}</small>${S.name}</h3><button class="yd-tab" data-yd="all">← All submersibles</button></div>
-          <div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${open}"></canvas></div>${ruler(S)}</div><div class="yd-info"><p class="yd-about">${SUB_ABOUT[open]}</p>${gauges(S, open, open === hl ? null : S0)}${sheet(S, open, open === hl ? null : S0, open === hl && !sub.imploded ? 'IN SERVICE' : '', true)}<div class="yd-foot">${statusOf(open)}</div></div></div>`;
+          <div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${open}"></canvas></div>${ruler(S)}</div><div class="yd-info"><p class="yd-about">${SUB_ABOUT[open]}</p>${sheet(S, open, open === hl ? null : S0, open === hl && !sub.imploded ? 'IN SERVICE' : '', true)}<div class="yd-foot">${statusOf(open)}</div></div></div>`;
       } else if (this.ydAll) {
         html += `<div class="yd-top"><h3 class="yd-stencil">All submersibles</h3><button class="yd-tab" data-yd="back">← Back to your sub</button></div><div class="yd-grid">`;
         for (let k = 0; k <= Math.min(hl + 1, SUBS.length - 1); k++) {
-          if (k > cap) { html += `<div class="yd-card unknown"><span class="yd-pin"></span><div class="yd-photo"><div class="yd-pic dark"><span>?</span></div></div><h4><small>No. ${k + 1}</small>To be discovered <em class="yd-where">(${cap < 3 ? 'the research station' : "Dave's cabin"})</em></h4>${gauges(SUBS[k], k, S0, true)}</div>`; break; } // (4.15.1) its figures shown; where its plans are, in brackets
+          if (k > cap) { html += `<div class="yd-card unknown"><span class="yd-pin"></span><div class="yd-photo"><div class="yd-pic dark"><span>?</span></div></div><h4><small>No. ${k + 1}</small>To be discovered <em class="yd-where">(${cap < 3 ? 'the research station' : "Dave's cabin"})</em></h4>${sheet(SUBS[k], k, S0)}</div>`; break; } // (4.15.1) its figures shown; where its plans are, in brackets
           const S = SUBS[k];
-          html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><span class="yd-pin"></span><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}"></canvas></div><h4><small>No. ${k + 1}</small>${S.name}</h4>${gauges(S, k, k === hl ? null : S0, true)}<div class="yd-foot">${k === hl && !sub.imploded ? '<span class="yd-fitted">IN SERVICE</span>' : statusOf(k)}</div></div>`;
+          html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><span class="yd-pin"></span><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}"></canvas></div><h4><small>No. ${k + 1}</small>${S.name}</h4>${sheet(S, k, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${statusOf(k)}</div></div>`;
         }
         html += '</div>';
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
-        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${gauges(S0, hl)}<p class="ys-note light">Her pressure chambers hold animals from as deep as she can dive.</p>
-          <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
+        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
+          <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i><svg class="yd-lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15 L21 21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, 'Works the claw under the sphere: from inside, Space grabs an animal.', GEAR.arm.price, owns(P, 'arm')]]
           .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, { quiet: 'Half the noise down there: the deep notices her less.', sonar: 'A strip under the radar draws the seafloor around her.' }[k] || a.desc, a.price, !!(P.addons || {})[k]]));
-        html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div class="yd-part">${PART[arg] || ''}</div><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="pay-tag" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'} title="Buy and fit it">${money(price, false)}</button>`}</div>`).join('')}</div>`;
+        html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div class="yd-part"><img data-part="${arg}" alt=""></div><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="pay-tag" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'} title="Buy and fit it">${money(price, false)}</button>`}</div>`).join('')}</div>`;
         html += '<p class="shop-note">Pressure chambers are bought in the sub\'s chamber room, the large pressure tank in its own room.</p>';
       }
     } else if (tab === 'supplies') {
@@ -1526,9 +1528,23 @@ export class UI {
     const wk = $('workshop'), full = tab === 'sub';
     if (full && !wk.querySelector('.refit-x')) { const x = document.createElement('button'); x.className = 'refit-x'; x.setAttribute('aria-label', 'Close'); x.textContent = '×'; x.addEventListener('click', () => this.toggleWorkshop(false)); wk.appendChild(x); }
     if (wk.classList.contains('refit-full') !== full) { wk.classList.toggle('refit-full', full); if (this.dressPanels) this.dressPanels(); }
-    if (full) { this.drawSubPics(P); this.blueprintMark(P); }
+    if (full) { this.drawSubPics(P); this.blueprintMark(P); this.refitPics(P); }
   }
 
+  // (4.15.7) each refit's picture: the part itself, cut from the game's own drawing of the sub with it fitted
+  refitPics(P) {
+    const imgs = [...$('shop-body').querySelectorAll('img[data-part]')]; if (!imgs.length) return;
+    if (!this.partPics) {
+      const Pk = { ...P, gear: { ...(P.gear || {}), arm: true }, addons: { ...(P.addons || {}), quiet: true, sonar: true } };
+      const render = (arm) => { const c = document.createElement('canvas'); c.style.width = '1200px'; c.style.height = '700px'; document.body.appendChild(c); // (measured for drawShowcase)
+        drawShowcase(c, { kind: 'sub', now: subLook(Pk, Pk.addons), next: null, arm }, 0.4); c.remove(); return c; };
+      const withArm = render(true), plain = render(false);
+      const crop = (c, [fx, fy, fw, fh]) => { const o = document.createElement('canvas'); o.width = 300; o.height = 176; const x = o.getContext('2d');
+        x.drawImage(c, c.width * fx, c.height * fy, c.width * fw, c.height * fh, 0, 0, 300, 176); return o.toDataURL(); };
+      this.partPics = { 'gear:arm': crop(withArm, PART_CROP.arm), quiet: crop(plain, PART_CROP.quiet), sonar: crop(plain, PART_CROP.sonar) };
+    }
+    for (const im of imgs) im.src = this.partPics[im.dataset.part] || '';
+  }
   // (4.15.2) the planning board's watermark: the outline of the sub in service, drawn faintly on the blueprint
   blueprintMark(P) {
     const hl = Math.min(SUBS.length - 1, lv(P, 'depth')), key = 'bp' + hl;

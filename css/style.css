@@ -2757,3 +2757,12 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .ru-fish { filter: grayscale(1) brightness(0.32) contrast(1.4); }
 #workshop .ru-fish.in { filter: drop-shadow(0 0 4px rgba(200,240,255,0.35)); }
 #workshop .ru-tick { z-index: 1; }
+/* (4.15.7) the refits as pictures of the parts; a lens on the All submersibles plaque */
+#workshop .yd-part { width: 120px; height: 70px; opacity: 1; border-radius: 3px; overflow: hidden; box-shadow: inset 0 0 0 2px rgba(42,36,24,0.55), 0 2px 4px rgba(0,0,0,0.35); background: #0d2a36; }
+#workshop .yd-part img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#workshop .yd-refit.have .yd-part { opacity: 0.6; }
+#workshop .yd-plaque { display: flex; align-items: center; justify-content: center; gap: 10px; }
+#workshop .yd-lens { width: 22px; height: 22px; color: #2c2010; flex: none; }
+#workshop .yd-part { width: 150px; height: 88px; }
+#workshop .yd-refit .yd-part { flex: 0 0 150px; width: 150px; height: 88px; }
+#workshop .yd-refit .yd-part { flex: 0 0 128px; width: 128px; height: 76px; } #workshop .yd-refit .pay-tag { min-width: 96px; height: 40px; font-size: 18px !important; padding: 0 12px 0 26px !important; } #workshop .yd-refit { gap: 12px; }
