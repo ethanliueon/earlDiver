@@ -113,7 +113,7 @@ function applySuit(e, P) {
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
-  sub.ratedV = statValue(P, 'depth') + (P.relics || 0) * 100; sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible
+  sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics) sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible
   sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.13.0) the engine alone sets her speed: 50 steps to 3x
   sub.level = lv(P, 'depth');
 }
@@ -606,7 +606,6 @@ function wareBuy(k) {
   if (k === 'oldlure') { if ((P.oldLures || 0) >= W.max) return false; P.oldLures = (P.oldLures || 0) + 1; hud.toast('Old lure (Q)', 'big'); }
   else if (k === 'blessing') { if (g.blessed) return false; g.blessed = true; hud.toast('Blessed: the deep looks away', 'big'); }
   else if (k === 'eye') { if (P.eye) return false; P.eye = true; hud.toast('Sapphires now show on sonar', 'big'); }
-  else if (k === 'relic') { if ((P.relics || 0) >= W.max) return false; P.relics = (P.relics || 0) + 1; applySub(g.sub, P); hud.toast(`Sub now rated ${g.sub.rated} m`, 'big'); }
   P.coins -= W.coins;
   saveProfile(P); audio.ready && audio.sale();
   return true;

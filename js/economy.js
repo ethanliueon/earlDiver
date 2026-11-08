@@ -38,7 +38,7 @@ export const SUBS = [
   { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 180, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 40000 },
   { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 200, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
   { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 230, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
-  { name: 'Full-ocean-depth submersible', rated: 4000, crush: 1.25, o2: 260, speed: 3, ballast: 0.9487, rating: 4000, tank: 24, price: 450000 },
+  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 260, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 450000 },
 ];
 export const SUB_TIERS = SUBS; // (old name)
 // No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
@@ -215,7 +215,7 @@ export const UPGRADES = {
   camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, top: 13, max: 10, cost: 12, growth: 1.7, fmt: 'm' },
   // the submersible
   ballast:   { group: 'Submersible', name: 'Ballast', base: 0, top: 1.44, max: 10, cost: 25, growth: 1.7, fmt: 'bonus' },
-  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4000], costs: [500, 3000, 12000, 40000, 100000, 220000, 450000], max: 7, fmt: 'depth' }, // (4.14.0)
+  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4500], costs: [500, 3000, 12000, 40000, 100000, 220000, 450000], max: 7, fmt: 'depth' }, // (4.14.0)
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, lin: 0.04, max: 50, cost: 236, growth: 1.1, fmt: 'x' }, // (4.13.0) fifty small steps to 3x, about $275,000 in all
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, lin: 1, max: 2, cost: 60, growth: 3, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 5, costs: [100, 1000, 5000, 20000, 60000], fmt: 'n' }, // (4.13.0) bought one at a time in the chamber room
@@ -348,7 +348,6 @@ export const WARES = {
   oldlure: { name: 'An old lure', coins: 2, max: 3, line: 'A lure that has hung in the dark longer than the boat has floated.', desc: 'Burns two and a half times as long as a common lure (25 s), and the deep follows it farther. Thrown first with Q.' },
   blessing: { name: 'The old one\'s blessing', coins: 2, line: 'The old one breathes on you. The deep looks away, for a while.', desc: 'For the rest of this dive, the entity notices you half as fast.' },
   eye: { name: 'A sapphire eye', coins: 8, once: true, line: 'A blue stone that turns toward its own kind.', desc: 'Deep sapphires within 150 m show on the sonar as blue points. Kept for good.' },
-  relic: { name: 'A pressure relic', coins: 5, max: 4, line: 'An iron ring from a hull that went deeper than it should have.', desc: 'Bolted inside the sub: its rating goes 100 m deeper. Up to four.' },
 };
 // (never past the top level: an old save may hold more levels than an upgrade now has)
 // ---------------- upgrade tracks (v2.0.15) ----------------

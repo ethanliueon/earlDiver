@@ -1406,7 +1406,7 @@ export class UI {
           return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}<p class="ys-note">Her pressure chambers hold animals from as deep as she can dive.</p>${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
       // (4.15.6) at a glance: each figure as a dial (how this sub sits between the first and the best), its icon
       // in the middle and the figure under it; a ▲/▼ against your sub
-      const RANGE = { rated: [300, 4000], o2: [120, 260], speed: [1, 3], ballast: [0, 0.9487], tank: [3, 24] };
+      const RANGE = { rated: [300, 4500], o2: [120, 260], speed: [1, 3], ballast: [0, 0.9487], tank: [3, 24] };
       const ICON = {
         rated: '<path d="M-7 4 A8 8 0 1 1 7 4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M0 2 L4 -5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle r="1.6" cy="2" fill="currentColor"/>',
         o2: '<rect x="-4" y="-7" width="8" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="-1.5" y="-10" width="3" height="3" fill="currentColor"/><path d="M-4 0 H4" stroke="currentColor" stroke-width="1.2"/>',
@@ -1428,11 +1428,11 @@ export class UI {
       const gauges = (S, k, cmp = null, mini = false) => `<div class="gz-row${mini ? ' mini' : ''}">${(mini ? ['rated', 'o2', 'speed'] : ['rated', 'o2', 'speed', 'ballast', 'tank']).map((key) => dial(key, S, k, cmp, mini)).join('')}</div>`;
       // a depth ruler beside her picture: the zones, how deep she goes, and the animals that lie within reach (lit) or beyond it (dark)
       const RULER = [[49, 30], [171, 120], [98, 380], [104, 700], [107, 1000], [105, 1500], [100, 2200], [2146, 3000], [2110, 3800]];
-      const ruler = (S) => { const Y = (dd) => (Math.sqrt(dd / 4000) * 100).toFixed(2) + '%';
+      const ruler = (S) => { const Y = (dd) => (Math.sqrt(dd / 4500) * 100).toFixed(2) + '%';
         if (!this.rulerPics) this.rulerPics = new Map();
         const pic = (id) => { if (!this.rulerPics.has(id)) { const sp = SPECIES_BY_ID[id]; this.rulerPics.set(id, sp ? fittedIcon(sp, 120, 60).toDataURL() : ''); } return this.rulerPics.get(id); };
-        return `<div class="yd-ruler" title="How deep she can go"><div class="ru-zones"><i style="top:0;height:${Y(200)}" class="z1"></i><i style="top:${Y(200)};height:calc(${Y(1000)} - ${Y(200)})" class="z2"></i><i style="top:${Y(1000)};height:calc(${Y(4000)} - ${Y(1000)})" class="z3"></i></div>
-          ${[0, 200, 1000, 2000, 3000, 4000].map((dd) => `<span class="ru-tick" style="top:${Y(dd)}">${dd.toLocaleString()}</span>`).join('')}
+        return `<div class="yd-ruler" title="How deep she can go"><div class="ru-zones"><i style="top:0;height:${Y(200)}" class="z1"></i><i style="top:${Y(200)};height:calc(${Y(1000)} - ${Y(200)})" class="z2"></i><i style="top:${Y(1000)};height:calc(${Y(4500)} - ${Y(1000)})" class="z3"></i></div>
+          ${[0, 200, 1000, 2000, 3000, 4500].map((dd) => `<span class="ru-tick" style="top:${Y(dd)}">${dd.toLocaleString()}</span>`).join('')}
           <div class="ru-reach" style="height:${Y(S.rated)}"></div><div class="ru-mark" style="top:${Y(S.rated)}"><b>${S.rated.toLocaleString()} m</b></div>
           ${RULER.map(([id, dd]) => `<img class="ru-fish${dd <= S.rated ? ' in' : ''}" src="${pic(id)}" style="top:${Y(dd)}" alt="">`).join('')}</div>`; };
       // the refits drawn as parts, in ink, like a page of a parts catalogue
