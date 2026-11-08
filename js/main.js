@@ -1836,7 +1836,7 @@ function update(dt) {
       else { const was = e.lampOn || (e.y <= 1 && !e.lampAuto && e.lampWanted); e.lampAuto = false; e.lampWanted = !was; }
       hud.toast(e.inSub ? (g.sub.lightsOn ? 'Lights on' : 'Lights off') : (e.lampWanted ? 'Headlamp on' : 'Headlamp off'));
     }
-    if (pressed.has('u') && !g.aboard && ((e.inSub && g.sub.docked) || (Math.abs(e.x - BOAT.x) < 14 && e.y < 4))) { if (e.inSub) ui.toggleWorkshop(); else ui.openShop('sell', ['sell']); }
+    if (pressed.has('u') && !g.aboard && ((e.inSub && g.sub.docked) || (Math.abs(e.x - BOAT.x) < 14 && e.y < 4))) { if (ui.anyOpen()) ui.closeAll(); else ui.openShop('sell', e.inSub ? ['sell', 'sub'] : ['sell']); } // (4.11.1) the Margaret: Sell (U) and the yard (P); supplies and the aquarium are online
     if (pressed.has('t')) { if (e.inSub && !g.sub.imploded) ui.toggleTank(); else hud.toast('The tank room is in the sub', 'warn'); }
     // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
@@ -2058,11 +2058,12 @@ function update(dt) {
         else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? `${NETS_SUB[g.subNet.tier].name} out` : `${NETS_SUB[g.subNet.tier].name} out (N to close)`); audio.ready && audio.whoosh(); }
       };
       const kinds = netKinds(g.items);
-      if (g.subNet || canFireSubNet(g) || kinds.length < 2) letOut(g.lesson && kinds.includes('basic') ? 'basic' : null);
+      if (g.subNet || canFireSubNet(g)) letOut(null);
       else if (g.lesson) letOut('basic');
       else { ui.pickNet(kinds, netsOf(g.items), (k) => { if (g.earl.inSub && !g.subNet) letOut(k); }); audio.ready && audio.click(); }
     }
     const netRes = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
+    if (g.netEscape) { hud.toast(`The ${g.netEscape.name.toLowerCase()} broke out of the net`, 'warn'); g.netEscape = null; } // (4.11.1)
     if (netRes && netRes.torn) { hud.toast(`The ${netRes.torn.name.toLowerCase()} tore through the net`, 'warn'); audio.ready && audio.thud(0.5); }
     const haul = netRes && netRes.haul;
     if (haul && haul.length) questEvent(profile, 'trawlHaul', { n: haul.length }); // (4.8.0)

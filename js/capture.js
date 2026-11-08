@@ -331,11 +331,13 @@ export { conditionName };
 // the winch hauls the bag up into the hatch; the haul lands in a heap on the tank-room floor. An animal
 // too big for the net may tear it: the net is lost, and everything in it swims free. Loud below 200 m.
 export const NETS_SUB = {
-  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 1.0, mouth: 1.6, tear: 0.7, slip: 0.15, cap: 2,
-    desc: 'A light trawl for the hatch under the sub. A narrow mouth, room for six animals, fish up to 1 m long. A few slip out before it closes, and anything bigger may tear it. Used up in one haul; carry up to two.' },
-  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 6.0, mouth: 2.6, tear: 0.3, slip: 0.03, cap: 1,
-    desc: 'The net for big game. Its mouth is over half again as wide, so it sweeps up far more of a school; it holds ten animals, takes sharks and oarfish up to 6 m, and it is the only net that can bring up a legend. Almost nothing slips out and it seldom tears. Used up in one haul; carry one.' },
+  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
+    desc: 'A light trawl for the hatch under the sub: room for six animals, and it holds fish up to 2 m. Anything bigger, small sharks too, may still be caught, but the bigger it is the likelier it breaks out, and a break can tear the net and lose the whole haul. Nine legends in ten escape it. Used up in one haul; carry up to two.' },
+  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 400, max: 10, maxLen: 4.0, mouth: 2.6, tear: 0.2, slip: 0.03, cap: 1, legendOut: 0,
+    desc: 'The net for big game. Its mouth is over half again as wide, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
 };
+// (4.11.1) the chance an animal too big for a net breaks out of it (legends by the net's own odds): more the bigger it is
+export const escapeOdds = (T, c) => LEGENDARY.has(c.sp.id) ? T.legendOut : c.len <= T.maxLen ? 0 : Math.min(0.95, 0.35 + 0.6 * (c.len - T.maxLen) / T.maxLen);
 // (4.11.0) the hatch holds nets of each kind: up to two beginner nets and one advanced net. items.nets = { basic, adv }
 // (an old save's single items.net becomes one of its kind)
 export function netsOf(items) {
@@ -399,10 +401,10 @@ export function updateSubNet(g, dt, canTake) {
         const was = prev.get(c);
         if (!(was !== undefined && was > 0 && rel <= 0 && Math.abs(c.y - n.my) < r)) continue;
         if (!canTake(c.sp)) continue;
-        if (c.len > T.maxLen && !(T.maxLen >= 6 && LEGENDARY.has(c.sp.id))) { // (4.1.1) the big net never tears on a legend
-          // too big: it hits the net; it may tear straight through, losing the net and everything in it
+        // (4.11.1) too big for the net: it may break out, and breaking out may tear the net, losing everything in it
+        if (Math.random() < escapeOdds(T, c)) {
           if (Math.random() < T.tear) { tearNet(g, c); return { torn: c.sp }; }
-          continue;
+          n.broke = (n.broke || 0) + 1; c.vx = (c.vx || 0) + n.dir * 4; c.vy = (c.vy || 0) + (Math.random() - 0.5) * 2; g.netEscape = c.sp; continue; // it bursts back out through the mouth, a kick of speed away; the net holds
         }
         if (n.got.length >= T.max) continue;
         n.got.push(c); c.dead = true; c.netted = true;

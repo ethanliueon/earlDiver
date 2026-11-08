@@ -2442,3 +2442,13 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 #netpick .gain b { font: 500 17px/1.2 var(--serif); color: var(--rc); text-align: center; text-shadow: 0 1px 0 rgba(0,0,0,0.8); }
 #netpick .np-line { font: 13px/1.3 var(--serif); color: rgba(228,230,218,0.78); text-align: center; }
 #netpick .np-key { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 4px; font: 600 12px var(--mono); color: #2a2010; background: linear-gradient(180deg, #f0dc9c, #c8a050); box-shadow: 0 2px 0 #5a4518; }
+/* (4.11.1) the net cards: what the net does first and large, its name under it; ×n in a pill; a net not carried greyed under a lock */
+#netpick .np-line { font: 500 16px/1.35 var(--serif); color: #ece6d2; margin-top: 2px; }
+#netpick .gain b { font-size: 14px; opacity: 0.9; margin-top: 2px; }
+#netpick .np-n { width: auto; min-width: 34px; padding: 0 8px; border-radius: 12px; font-size: 13px; }
+#netpick .gain.np-none { cursor: default; filter: grayscale(1) brightness(0.55); }
+#netpick .gain.np-none:hover { transform: none; box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, 0 14px 30px rgba(0,0,0,0.55); }
+#netpick .np-none .g-tile img { opacity: 0.35; }
+#netpick .np-lock { position: absolute; inset: 0; display: grid; place-items: center; color: #d8d4c4; }
+#netpick .np-lock svg { width: 38%; height: 38%; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+#netpick .np-out { font: italic 13px var(--serif); color: #d8d4c4; }

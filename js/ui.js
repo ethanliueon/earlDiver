@@ -438,12 +438,13 @@ export class UI {
     const pick = (k) => { close(); onPick(k); };
     const key = (e) => {
       const k = e.key.toLowerCase(), i = '123'.indexOf(k);
-      if (i >= 0 && kinds[i]) { e.stopPropagation(); e.preventDefault(); pick(kinds[i]); }
+      if (i >= 0 && all[i] && counts[all[i]]) { e.stopPropagation(); e.preventDefault(); pick(all[i]); }
       else if (k === 'escape' || k === 'n') { e.stopPropagation(); e.preventDefault(); close(); }
     };
-    el.innerHTML = `<p class="np-title">Which net?</p><div class="g-row">${kinds.map((k, i) => { const N = NETS_SUB[k], adv = k === 'adv';
-      return `<button class="gain np-card ${adv ? 'r-legendary' : 'r-common'}" data-net="${k}"><div class="g-tile"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt="">${counts[k] > 1 ? `<i class="np-n">${counts[k]}</i>` : ''}</div><b>${N.name}</b><span class="np-line">${adv ? `Up to ${N.max} animals, ${N.maxLen} m long · wide mouth · takes legends` : `Up to ${N.max} animals, ${N.maxLen} m long · small fish only`}</span><span class="np-key">${i + 1}</span></button>`; }).join('')}</div><p class="np-hint">Click a net or press its number · N or Esc to cancel</p>`;
-    el.onclick = (e) => { const b = e.target.closest('[data-net]'); if (b) pick(b.dataset.net); else if (e.target === el) close(); };
+    const all = Object.keys(NETS_SUB); // (4.11.1) every net, the ones not in the hatch greyed with a lock
+    el.innerHTML = `<p class="np-title">Which net?</p><p class="np-hint">Click a net · N or Esc to cancel</p><div class="g-row">${all.map((k) => { const N = NETS_SUB[k], adv = k === 'adv', have = counts[k] || 0;
+      return `<button class="gain np-card ${adv ? 'r-legendary' : 'r-common'}${have ? '' : ' np-none'}" data-net="${k}" ${have ? '' : 'disabled'}><div class="g-tile"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt="">${have ? `<i class="np-n">×${have}</i>` : '<span class="np-lock" aria-label="Not in the hatch"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/></svg></span>'}</div><span class="np-line">${adv ? `Up to ${N.max} animals, ${N.maxLen} m long · wide mouth · no legend escapes` : `Up to ${N.max} animals, ${N.maxLen} m long`}</span><b>${N.name}</b>${have ? '' : '<small class="np-out">Not in the hatch</small>'}</button>`; }).join('')}</div>`;
+    el.onclick = (e) => { const b = e.target.closest('[data-net]'); if (b && !b.disabled) pick(b.dataset.net); else if (e.target === el) close(); };
     window.addEventListener('keydown', key, true);
     this.netPickClose = close; el.hidden = false;
   }
@@ -1339,7 +1340,7 @@ export class UI {
       for (const [k, N] of Object.entries(NETS_SUB)) {
         const have = netsOf(g.items)[k], full = have >= N.cap, adv = k === 'adv';
         html += card(N.name, N.desc, `in the hatch (${have}/${N.cap})`, full ? null : N.price, 'buy', 'subnet:' + k, full ? 'Full' : 'Buy', '', '',
-          [['holds', `${N.max} animals`, adv ? 'good' : ''], ['fish up to', `${N.maxLen} m long`, adv ? 'good' : ''], ['mouth', adv ? `${(N.mouth * 2).toFixed(1)} m wide: catches far more of a school` : `${(N.mouth * 2).toFixed(1)} m wide`, adv ? 'good' : ''], ['legends', adv ? 'yes: never tears on one' : 'no: too small', adv ? 'good' : 'bad'], ['tears', N.tear > 0.5 ? 'often, on big animals' : 'seldom', N.tear > 0.5 ? 'bad' : 'good'], ['use', 'N in the sub, once', 'sheet']]);
+          [['holds', `${N.max} animals`, adv ? 'good' : ''], ['fish up to', `${N.maxLen} m long`, adv ? 'good' : ''], ['mouth', adv ? `${(N.mouth * 2).toFixed(1)} m wide: catches far more of a school` : `${(N.mouth * 2).toFixed(1)} m wide`, adv ? 'good' : ''], ['legends', adv ? 'none escape' : '9 in 10 escape', adv ? 'good' : 'bad'], ['big animals', adv ? 'seldom break out' : 'often break out, may tear it', adv ? 'good' : 'bad'], ['use', 'N in the sub, once', 'sheet']]);
       }
       for (const [k, it] of Object.entries(SUPPLIES)) {
         if (it.needs && !owns(P, it.needs)) continue; // tags only once he has the tag gun
