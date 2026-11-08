@@ -1535,6 +1535,7 @@ export class UI {
     // (4.14.0) the sub page fills the screen, with a red X; its pictures of the subs move gently
     const wk = $('workshop'), full = tab === 'sub';
     if (full && !wk.querySelector('.refit-x')) { const x = document.createElement('button'); x.className = 'refit-x'; x.setAttribute('aria-label', 'Close'); x.textContent = '×'; x.addEventListener('click', () => this.toggleWorkshop(false)); wk.appendChild(x); }
+    { const cur = $('shop-body').querySelector('.yd-allwrap .yd-card.cur'); if (cur) cur.scrollIntoView({ inline: 'center', block: 'nearest' }); } // (4.15.13) the row opens on the sub in service
     if (wk.classList.contains('refit-full') !== full) { wk.classList.toggle('refit-full', full); if (this.dressPanels) this.dressPanels(); }
     if (full) { this.drawSubPics(P); this.blueprintMark(P); this.refitPics(P); }
   }

@@ -2798,3 +2798,15 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .yd-lock { position: absolute; inset: 0; display: grid; place-items: center; }
 #workshop .yd-lock svg { width: 44px; height: 44px; color: #c8b07a; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7)); }
 #workshop .yd-card.unknown .yd-photo .yd-pic { box-shadow: 0 0 0 2px #2a1e08, 0 0 0 5px #4a4232, 0 6px 14px rgba(0,0,0,0.5); }
+/* (4.15.13) All submersibles in one row that scrolls sideways, centred up and down; the sub in service in a heavier
+   brass frame, the others a little darker */
+#workshop.refit-full #shop-body:has(.yd-allwrap) { overflow-y: hidden; }
+#workshop .yd-allwrap { height: 100%; min-height: 0; }
+#workshop .yd-allwrap .yd-grid { display: flex; gap: 26px; margin: auto 0; padding: 18px 4px 22px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; scrollbar-color: #8a6d34 rgba(0,0,0,0.3); }
+#workshop .yd-allwrap .yd-card { flex: 0 0 300px; scroll-snap-align: start; }
+#workshop .yd-allwrap .yd-card .yd-photo .yd-pic { box-shadow: 0 0 0 2px #2a1e08, 0 0 0 5px #8a6d34, 0 6px 14px rgba(0,0,0,0.5); }
+#workshop .yd-allwrap .yd-card.cur .yd-photo .yd-pic { box-shadow: 0 0 0 2px #2a1e08, 0 0 0 10px #b8913e, 0 0 0 12px #2a1e08, 0 8px 18px rgba(0,0,0,0.6); }
+#workshop .yd-allwrap .yd-card:not(.cur) { filter: brightness(0.72); transition: filter .15s, transform .12s; }
+#workshop .yd-allwrap .yd-card:not(.cur):hover { filter: brightness(0.9); }
+#workshop .yd-allwrap .yd-card.cur { margin: 0 8px; }
+#workshop .yd-allwrap .yd-grid { padding: 22px 16px 22px; scroll-padding: 0 16px; }
