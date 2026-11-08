@@ -2591,3 +2591,4 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 /* (4.15.0) the dive's loading screen: the boot screen's design (its rules are in index.html) */
 #loading.ld { display: block; z-index: 9600; background: #02070a; }
 #loading.ld[hidden] { display: none; }
+#workshop .yd-where { font: italic 14px var(--serif); color: rgba(232,212,154,0.75); }

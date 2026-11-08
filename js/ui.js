@@ -1419,7 +1419,7 @@ export class UI {
       } else if (this.ydAll) {
         html += `<div class="yd-top"><h3>All submersibles</h3><button class="yd-btn" data-yd="back">← Back to your sub</button></div><div class="yd-grid">`;
         for (let k = 0; k <= Math.min(hl + 1, SUBS.length - 1); k++) {
-          if (k > cap) { html += `<div class="yd-card unknown"><div class="yd-pic dark"><span>?</span></div><h4><small>No. ${k + 1}</small>To be discovered</h4></div>`; break; }
+          if (k > cap) { html += `<div class="yd-card unknown"><div class="yd-pic dark"><span>?</span></div><h4><small>No. ${k + 1}</small>To be discovered <em class="yd-where">(${cap < 3 ? 'the research station' : "Dave's cabin"})</em></h4>${sheet(SUBS[k], k, S0)}</div>`; break; } // (4.15.1) its figures shown; where its plans are, in brackets
           const S = SUBS[k];
           html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><canvas class="yd-pic" data-hull="${k}"></canvas><h4><small>No. ${k + 1}</small>${S.name}</h4>${sheet(S, k, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${statusOf(k)}</div></div>`;
         }
