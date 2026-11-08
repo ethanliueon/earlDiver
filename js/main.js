@@ -1222,10 +1222,20 @@ hudCanvas.addEventListener('wheel', (ev) => {
 // the cursor in screen pixels of the scene canvas
 function mouseScreen() { const k = canvas.width / window.innerWidth; return [mouse.x * k, mouse.y * k]; }
 
+// (4.12.3) a long piece of work in progress, held down
+function holdingWork() { return !!(g && (g.pry || g.repair || (g.plant || 0) > 0 || (g.tankFit || 0) > 0)); }
+// while it lasts the pointer is weighted: the system cursor hides and a brass ring follows it a little behind
+function weightedCursor(dt) {
+  const on = holdingWork() && mouse.seen && INPUT.mode === 'mouse';
+  if (on) { if (!g.holdCursor) g.holdCursor = { x: mouse.x, y: mouse.y }; const k = 1 - Math.exp(-dt * 7); g.holdCursor.x += (mouse.x - g.holdCursor.x) * k; g.holdCursor.y += (mouse.y - g.holdCursor.y) * k; }
+  else g.holdCursor = null;
+  const want = on ? 'none' : ''; if (hudCanvas.style.cursor !== want) hudCanvas.style.cursor = want;
+}
 function readMove() {
   if (g.kill) return { x: 0, y: 0, sprint: false }; // in its grip, nothing he does moves him
   if (ui.tankOpen && ui.tankOpen()) return { x: 0, y: 0, sprint: false }; // in the back of the sub, the helm is left alone
   if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
+  if (holdingWork()) return { x: 0, y: 0, sprint: false }; // (4.12.3) a long hold (welding, cutting a net free, prying, planting, fitting a tank): he stays put
   if (g.homeRun) return { x: 0, y: 0, sprint: false }; // on autopilot the keys and the mouse leave the helm alone (C hands it back)
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
@@ -2550,7 +2560,7 @@ function frame(now) {
     const done = renderer.warmSprites(g, 60, true);
     if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.showLoading(false); }
   } else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
-  hud.draw(g, dt);
+  weightedCursor(Math.min(0.05, dt)); hud.draw(g, dt);
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
   airOver(g);
