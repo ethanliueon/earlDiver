@@ -1405,6 +1405,42 @@ export class UI {
       const sheet = (S, k, cmp = null, stamp = '', big = false) => { const base = cmp ? facts(cmp, 1) : null;
         return `<div class="yd-sheet${big ? ' big' : ''}"><div class="ys-head"><span>BAYSIDE YARD · SPECIFICATION</span><span>No. ${k + 1}</span></div>${facts(S, k).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
           return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}<p class="ys-note">Her pressure chambers hold animals from as deep as she can dive.</p>${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
+      // (4.15.6) at a glance: each figure as a dial (how this sub sits between the first and the best), its icon
+      // in the middle and the figure under it; a ▲/▼ against your sub
+      const RANGE = { rated: [300, 4000], o2: [120, 260], speed: [1, 3], ballast: [0, 0.9487], tank: [3, 24] };
+      const ICON = {
+        rated: '<path d="M-7 4 A8 8 0 1 1 7 4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M0 2 L4 -5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle r="1.6" cy="2" fill="currentColor"/>',
+        o2: '<rect x="-4" y="-7" width="8" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="-1.5" y="-10" width="3" height="3" fill="currentColor"/><path d="M-4 0 H4" stroke="currentColor" stroke-width="1.2"/>',
+        speed: '<g fill="currentColor"><ellipse cx="0" cy="-4.5" rx="2.2" ry="4.5"/><ellipse cx="0" cy="4.5" rx="2.2" ry="4.5"/><ellipse cx="-4.5" cy="0" rx="4.5" ry="2.2"/><ellipse cx="4.5" cy="0" rx="4.5" ry="2.2"/></g><circle r="1.8" fill="#11161a"/>',
+        ballast: '<path d="M0 -8 V6 M-5 1 L0 7 L5 1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+        tank: '<path d="M-8 0 C-4 -5 3 -5 6 0 C3 5 -4 5 -8 0 Z M6 0 L9 -3 V3 Z" fill="currentColor"/>' };
+      const LABEL = { rated: 'Safe depth', o2: 'Cabin air', speed: 'Top speed', ballast: 'Dive speed', tank: 'Open tank' };
+      const VAL = { rated: (S) => `${S.rated.toLocaleString()} m`, o2: (S) => air(S.o2), speed: (S) => `${(3.36 * S.speed).toFixed(1)} m/s`, ballast: (S, k) => (k ? `+10%` : 'standard'), tank: (S) => `${S.tank} animals` };
+      const dial = (key, S, k, cmp, mini) => {
+        const [lo, hi] = RANGE[key], f = Math.max(0.06, (S[key] - lo) / (hi - lo)), R = 22, a0 = -225, sweep = 270, a1 = a0 + sweep * f;
+        const pt = (a) => [Math.cos(a * Math.PI / 180) * R, Math.sin(a * Math.PI / 180) * R];
+        const [x0, y0] = pt(a0), [x1, y1] = pt(a1), [xe, ye] = pt(a0 + sweep), large = sweep * f > 180 ? 1 : 0;
+        const d = cmp ? S[key] - cmp[key] : 0, mark = d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : '';
+        return `<div class="gz${mini ? ' mini' : ''}"><svg viewBox="-30 -30 60 60" aria-hidden="true"><circle r="27" class="gz-rim"/><circle r="25" class="gz-face"/>
+          <path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 1 1 ${xe.toFixed(1)} ${ye.toFixed(1)}" class="gz-track"/>
+          <path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" class="gz-fill"/>
+          <g class="gz-icon">${ICON[key]}</g></svg>${mini ? '' : `<span>${LABEL[key]}</span>`}<b>${VAL[key](S, k)}${mark}</b></div>`;
+      };
+      const gauges = (S, k, cmp = null, mini = false) => `<div class="gz-row${mini ? ' mini' : ''}">${(mini ? ['rated', 'o2', 'speed'] : ['rated', 'o2', 'speed', 'ballast', 'tank']).map((key) => dial(key, S, k, cmp, mini)).join('')}</div>`;
+      // a depth ruler beside her picture: the zones, how deep she goes, and the animals that lie within reach (lit) or beyond it (dark)
+      const RULER = [[49, 30], [171, 120], [98, 380], [104, 700], [107, 1000], [105, 1500], [100, 2200], [2146, 3000], [2110, 3800]];
+      const ruler = (S) => { const Y = (dd) => (Math.sqrt(dd / 4000) * 100).toFixed(2) + '%';
+        if (!this.rulerPics) this.rulerPics = new Map();
+        const pic = (id) => { if (!this.rulerPics.has(id)) { const sp = SPECIES_BY_ID[id]; this.rulerPics.set(id, sp ? fittedIcon(sp, 120, 60).toDataURL() : ''); } return this.rulerPics.get(id); };
+        return `<div class="yd-ruler" title="How deep she can go"><div class="ru-zones"><i style="top:0;height:${Y(200)}" class="z1"></i><i style="top:${Y(200)};height:calc(${Y(1000)} - ${Y(200)})" class="z2"></i><i style="top:${Y(1000)};height:calc(${Y(4000)} - ${Y(1000)})" class="z3"></i></div>
+          ${[0, 200, 1000, 2000, 3000, 4000].map((dd) => `<span class="ru-tick" style="top:${Y(dd)}">${dd.toLocaleString()}</span>`).join('')}
+          <div class="ru-reach" style="height:${Y(S.rated)}"></div><div class="ru-mark" style="top:${Y(S.rated)}"><b>${S.rated.toLocaleString()} m</b></div>
+          ${RULER.map(([id, dd]) => `<img class="ru-fish${dd <= S.rated ? ' in' : ''}" src="${pic(id)}" style="top:${Y(dd)}" alt="">`).join('')}</div>`; };
+      // the refits drawn as parts, in ink, like a page of a parts catalogue
+      const PART = {
+        'gear:arm': '<svg viewBox="0 0 120 70"><g fill="none" stroke="#2a2418" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18 H34 L58 40"/><circle cx="34" cy="18" r="4"/><circle cx="58" cy="40" r="4"/><path d="M58 40 L80 44"/><path d="M80 44 L100 30 M80 44 L104 50"/><path d="M100 30 L108 36 M104 50 L110 44"/><path d="M14 12 V24 M8 12 H20" /></g><path d="M40 26 L52 36" stroke="#2a2418" stroke-width="5" stroke-linecap="round" opacity="0.35"/></svg>',
+        quiet: '<svg viewBox="0 0 120 70"><g fill="none" stroke="#2a2418" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="22" width="44" height="26" rx="6"/><path d="M58 35 H74"/><ellipse cx="82" cy="24" rx="5" ry="11"/><ellipse cx="82" cy="46" rx="5" ry="11"/><path d="M20 48 v8 M52 48 v8 M14 60 H58"/><path d="M20 56 q4 -4 8 0 M44 56 q4 -4 8 0"/></g><g fill="none" stroke="#2a2418" stroke-width="1.6" opacity="0.55" stroke-linecap="round"><path d="M98 24 q6 11 0 22"/><path d="M106 18 q10 17 0 34" stroke-dasharray="3 4"/></g></svg>',
+        sonar: '<svg viewBox="0 0 120 70"><g fill="none" stroke="#2a2418" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M30 14 H60 V22 H30 Z"/><path d="M36 22 V30 H54 V22"/><path d="M30 30 Q45 52 60 30 Z"/></g><g fill="none" stroke="#2a2418" stroke-width="1.6" stroke-linecap="round" opacity="0.6"><path d="M28 50 Q45 62 62 50"/><path d="M22 56 Q45 72 68 56" stroke-dasharray="3 4"/></g><path d="M74 58 L86 46 L98 54 L112 40" fill="none" stroke="#2a2418" stroke-width="1.6" opacity="0.6"/></svg>' };
       const statusOf = (k) => {
         if (k === hl && !sub.imploded) return '';
         if (k < hl) return '<span class="yd-tag past">Had it</span>';
@@ -1415,22 +1451,22 @@ export class UI {
       if (open != null) { // one sub, large: its picture, its sheet, a word about it
         const S = SUBS[open];
         html += `<div class="yd-top"><h3><small>No. ${open + 1} of ${SUBS.length}</small>${S.name}</h3><button class="yd-tab" data-yd="all">← All submersibles</button></div>
-          <div class="yd-hero"><div class="yd-port"><canvas class="yd-pic big" data-hull="${open}"></canvas></div><div class="yd-info"><p class="yd-about">${SUB_ABOUT[open]}</p>${sheet(S, open, open === hl ? null : S0, open === hl && !sub.imploded ? 'IN SERVICE' : '', true)}<div class="yd-foot">${statusOf(open)}</div></div></div>`;
+          <div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${open}"></canvas></div>${ruler(S)}</div><div class="yd-info"><p class="yd-about">${SUB_ABOUT[open]}</p>${gauges(S, open, open === hl ? null : S0)}${sheet(S, open, open === hl ? null : S0, open === hl && !sub.imploded ? 'IN SERVICE' : '', true)}<div class="yd-foot">${statusOf(open)}</div></div></div>`;
       } else if (this.ydAll) {
         html += `<div class="yd-top"><h3 class="yd-stencil">All submersibles</h3><button class="yd-tab" data-yd="back">← Back to your sub</button></div><div class="yd-grid">`;
         for (let k = 0; k <= Math.min(hl + 1, SUBS.length - 1); k++) {
-          if (k > cap) { html += `<div class="yd-card unknown"><span class="yd-pin"></span><div class="yd-photo"><div class="yd-pic dark"><span>?</span></div></div><h4><small>No. ${k + 1}</small>To be discovered <em class="yd-where">(${cap < 3 ? 'the research station' : "Dave's cabin"})</em></h4>${sheet(SUBS[k], k, S0)}</div>`; break; } // (4.15.1) its figures shown; where its plans are, in brackets
+          if (k > cap) { html += `<div class="yd-card unknown"><span class="yd-pin"></span><div class="yd-photo"><div class="yd-pic dark"><span>?</span></div></div><h4><small>No. ${k + 1}</small>To be discovered <em class="yd-where">(${cap < 3 ? 'the research station' : "Dave's cabin"})</em></h4>${gauges(SUBS[k], k, S0, true)}</div>`; break; } // (4.15.1) its figures shown; where its plans are, in brackets
           const S = SUBS[k];
-          html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><span class="yd-pin"></span><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}"></canvas></div><h4><small>No. ${k + 1}</small>${S.name}</h4>${sheet(S, k, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${statusOf(k)}</div></div>`;
+          html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><span class="yd-pin"></span><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}"></canvas></div><h4><small>No. ${k + 1}</small>${S.name}</h4>${gauges(S, k, k === hl ? null : S0, true)}<div class="yd-foot">${k === hl && !sub.imploded ? '<span class="yd-fitted">IN SERVICE</span>' : statusOf(k)}</div></div>`;
         }
         html += '</div>';
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
-        html += `<div class="yd-hero"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
+        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${gauges(S0, hl)}<p class="ys-note light">Her pressure chambers hold animals from as deep as she can dive.</p>
           <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
-        const refits = [['gear:arm', GEAR.arm.name, GEAR.arm.desc + ' The claw comes at its best: full reach, the big jaws, quick hydraulics.', GEAR.arm.price, owns(P, 'arm')]]
-          .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, a.desc, a.price, !!(P.addons || {})[k]]));
-        html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="pay-tag" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'} title="Buy and fit it">${money(price, false)}</button>`}</div>`).join('')}</div>`;
+        const refits = [['gear:arm', GEAR.arm.name, 'Works the claw under the sphere: from inside, Space grabs an animal.', GEAR.arm.price, owns(P, 'arm')]]
+          .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, { quiet: 'Half the noise down there: the deep notices her less.', sonar: 'A strip under the radar draws the seafloor around her.' }[k] || a.desc, a.price, !!(P.addons || {})[k]]));
+        html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div class="yd-part">${PART[arg] || ''}</div><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="pay-tag" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'} title="Buy and fit it">${money(price, false)}</button>`}</div>`).join('')}</div>`;
         html += '<p class="shop-note">Pressure chambers are bought in the sub\'s chamber room, the large pressure tank in its own room.</p>';
       }
     } else if (tab === 'supplies') {

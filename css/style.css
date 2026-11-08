@@ -2714,3 +2714,46 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 .pay-tag:disabled { cursor: default; color: rgba(240,236,220,0.6) !important; filter: grayscale(0.75) brightness(0.62); }
 .shop button[data-act="buy"]:not(.primary):not(.warn):not(.pay-tag) span { font-size: 15px !important; font-weight: 700; opacity: 1 !important; }
 .pay-tag { display: inline-flex !important; align-items: center; justify-content: center; line-height: 1 !important; }
+
+/* (4.15.6) at a glance: dials for her figures, a depth ruler beside her picture, the refits drawn as parts */
+#workshop .gz-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+#workshop .gz-row.mini { grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 10px 4px 0; }
+#workshop .gz { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+#workshop .gz svg { width: 74px; height: 74px; overflow: visible; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5)); }
+#workshop .gz.mini svg { width: 56px; height: 56px; }
+#workshop .gz-rim { fill: url(#none); fill: #9a7d44; stroke: #4a3714; stroke-width: 1.2; }
+#workshop .gz-face { fill: #11161a; }
+#workshop .gz-track { fill: none; stroke: rgba(185,230,154,0.12); stroke-width: 4; stroke-linecap: round; }
+#workshop .gz-fill { fill: none; stroke: #9fdc8c; stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(159,220,140,0.6)); }
+#workshop .gz-icon { color: #e8dfc4; }
+#workshop .gz span { font: 600 10px "IBM Plex Mono", monospace; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(214,228,240,0.7); }
+#workshop .gz b { font: 600 13px "IBM Plex Mono", monospace; color: #f1efe6; white-space: nowrap; }
+#workshop .gz.mini b { font-size: 11px; }
+#workshop .gz em { font-style: normal; margin-left: 3px; font-size: 0.9em; } #workshop .gz em.up { color: #8fe07a; } #workshop .gz em.down { color: #f0907a; }
+#workshop .yd-card .gz b { color: #2a2418; } #workshop .yd-card .gz em.up { color: #23601f; } #workshop .yd-card .gz em.down { color: #8a2f1c; }
+#workshop .ys-note.light { margin: 2px 0 0; font: italic 13px var(--serif); color: rgba(214,228,240,0.65); }
+/* the depth ruler */
+#workshop .yd-portcol { display: grid; grid-template-columns: 1fr 110px; gap: 14px; align-items: stretch; }
+#workshop .yd-ruler { position: relative; border-radius: 6px; overflow: visible; background: #0a1418; box-shadow: 0 0 0 2px #2a1e08, 0 0 0 5px #8a6d34, 0 6px 14px rgba(0,0,0,0.5); }
+#workshop .ru-zones { position: absolute; inset: 0; border-radius: 6px; overflow: hidden; }
+#workshop .ru-zones i { position: absolute; left: 0; right: 0; }
+#workshop .ru-zones .z1 { background: linear-gradient(180deg, #3a8ea2, #1d5a70); } #workshop .ru-zones .z2 { background: linear-gradient(180deg, #1d5a70, #0b2a3a); } #workshop .ru-zones .z3 { background: linear-gradient(180deg, #0b2a3a, #020709); }
+#workshop .ru-tick { position: absolute; left: 3px; transform: translateY(-50%); font: 9px "IBM Plex Mono", monospace; color: rgba(214,228,240,0.5); }
+#workshop .ru-tick::after { content: ''; position: absolute; left: -3px; top: 50%; width: 8px; border-top: 1px solid rgba(214,228,240,0.35); }
+#workshop .ru-reach { position: absolute; left: 0; top: 0; right: 0; border-radius: 6px 6px 0 0; background: linear-gradient(90deg, rgba(159,220,140,0.14), rgba(159,220,140,0.03)); }
+#workshop .ru-mark { position: absolute; left: -10px; right: -10px; height: 0; border-top: 2px solid #e8cf8e; box-shadow: 0 0 8px rgba(232,207,142,0.6); }
+#workshop .ru-mark b { position: absolute; right: 2px; top: 2px; padding: 1px 5px; border-radius: 2px; font: 600 11px "IBM Plex Mono", monospace; color: #2a1e08; background: #e8cf8e; }
+#workshop .ru-fish { position: absolute; right: 6px; width: 54px; height: 27px; transform: translateY(-50%); object-fit: contain; filter: brightness(0) opacity(0.55); }
+#workshop .ru-fish.in { filter: drop-shadow(0 0 4px rgba(200,240,255,0.35)); }
+#workshop .yd-port { min-width: 0; }
+/* the refit parts, inked on their cards */
+#workshop .yd-refit { align-items: center; }
+#workshop .yd-part { flex: none; width: 96px; height: 56px; opacity: 0.85; }
+#workshop .yd-part svg { width: 100%; height: 100%; }
+#workshop .yd-refit.have .yd-part { opacity: 0.45; }
+#workshop .yd-card .gz b { color: #f1efe6; } #workshop .yd-card .gz em.up { color: #8fe07a; } #workshop .yd-card .gz em.down { color: #f0907a; }
+#workshop .yd-portcol { align-items: start; }
+#workshop .yd-ruler { height: calc(min(46vh, 420px) + 24px); }
+#workshop .ru-fish { filter: grayscale(1) brightness(0.32) contrast(1.4); }
+#workshop .ru-fish.in { filter: drop-shadow(0 0 4px rgba(200,240,255,0.35)); }
+#workshop .ru-tick { z-index: 1; }
