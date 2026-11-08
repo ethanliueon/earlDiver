@@ -13,7 +13,12 @@ export const tankSlots = (g) => Math.round(statValue(g.profile, 'subTank'));
 // the sealed pressure tanks: separate places in the sub (specimens in them carry pressed: true)
 export const pressSlots = (g) => Math.round(statValue(g.profile, 'pressTanks'));
 // a big animal takes more of the open tank: one place to 60 cm, two to 1.2 m, three beyond
-export const slotsOf = (s) => (s.len < 0.6 ? 1 : s.len < 1.2 ? 2 : 3);
+// (4.12.6) a tiny animal (under 20 cm) takes half a place, in the open tank or in a chamber
+export const TINY = 0.2;
+export const slotsOf = (s) => ((s.len || 0) < TINY ? 0.5 : s.len < 0.6 ? 1 : s.len < 1.2 ? 2 : 3);
+// how full an ordinary chamber is: one place each, a tiny animal half (two tiny ones share a chamber)
+export const chamberLoad = (g, n, except = null) => g.subTank.reduce((a, q) => a + (q.pressed && q.chamber === n && q !== except ? ((q.len || 0) < TINY ? 0.5 : 1) : 0), 0);
+export const chamberRoom = (g, n, spec) => chamberLoad(g, n, spec) + ((spec.len || 0) < TINY ? 0.5 : 1) <= 1;
 export const tankUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed || s.pile ? 0 : slotsOf(s)), 0);
 export const tankFits = (g, s) => tankUsed(g) + slotsOf(s) <= tankSlots(g);
 // the large pressure tank (an add-on): a long steel cylinder in the tank room, one more pressure
@@ -32,9 +37,9 @@ export function bigFits(g, spec) {
 export const pressUsed = (g) => g.subTank.reduce((a, s) => a + (s.pressed ? 1 : 0), 0);
 // put a specimen in the sub: deep animals into a pressure tank if one is free, else the open tank
 // the first free chamber, or -1
-export function freeChamber(g) {
-  const used = new Set(g.subTank.filter((s) => s.pressed).map((s) => s.chamber));
-  for (let i = 0; i < pressSlots(g); i++) if (!used.has(i)) return i;
+export function freeChamber(g, spec = null) {
+  if (spec && (spec.len || 0) < TINY) for (let i = 0; i < pressSlots(g); i++) if (chamberLoad(g, i, spec) === 0.5) return i; // a tiny one: beside another tiny one first
+  for (let i = 0; i < pressSlots(g); i++) if (chamberLoad(g, i, spec) === 0) return i;
   return -1;
 }
 // seal a specimen into a chamber: the one asked for (if it is fitted and empty), or the first free one
@@ -45,8 +50,7 @@ export function seal(g, spec, want = -1) {
     return true;
   }
   if (tooBig(spec)) return false; // (3.1.0) not in an ordinary chamber
-  const used = new Set(g.subTank.filter((s) => s.pressed && s !== spec).map((s) => s.chamber));
-  const c = want >= 0 ? (want < pressSlots(g) && !used.has(want) ? want : -1) : freeChamber(g);
+  const c = want >= 0 ? (want < pressSlots(g) && chamberRoom(g, want, spec) ? want : -1) : freeChamber(g, spec);
   if (c < 0) return false;
   spec.pressed = true; spec.chamber = c; delete spec.pile;
   spec.press = Math.max(0, g.sub.y); // sealed at the pressure outside, then pumped up to its home
@@ -54,9 +58,9 @@ export function seal(g, spec, want = -1) {
 }
 export function stow(g, spec) {
   if ((spec.from || 0) > 100 && tooBig(spec) && bigFits(g, spec)) { seal(g, spec, BIG); g.subTank.push(spec); return 'press'; }
-  if ((spec.from || 0) > 100 && !tooBig(spec) && freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
+  if ((spec.from || 0) > 100 && !tooBig(spec) && freeChamber(g, spec) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
   if (tankFits(g, spec)) { spec.pressed = false; g.subTank.push(spec); return 'tank'; }
-  if (freeChamber(g) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
+  if (freeChamber(g, spec) >= 0) { seal(g, spec); g.subTank.push(spec); return 'press'; }
   return null;
 }
 export const subFull = (g) => tankUsed(g) >= tankSlots(g) && pressUsed(g) >= pressSlots(g);
@@ -215,7 +219,7 @@ export const homeOf = (s) => (s.home ?? s.from ?? 0);
 // as surely as being brought up (signed: positive when it is under less pressure than its own)
 export function gapSigned(g, s, inBag) {
   const felt = s.pressed ? (s.press || 0) : Math.max(0, inBag ? g.earl.y : g.sub.y);
-  return homeOf(s) - felt;
+  return (s.pressed && s.shareHome != null ? s.shareHome : homeOf(s)) - felt; // (4.12.6) sharing a chamber: measured from the chamber's own setting
 }
 export function gapOf(g, s, inBag) {
   if (s.safe) return 0; // (4.0.0) brought up: safe until the sub dives again
@@ -241,6 +245,10 @@ export function updateSpecimens(g, dt) {
   // (4.0.1) never a legendary or a 1.2 m+ animal in an ordinary chamber, however it got there (an old save):
   // into the large pressure tank if it fits, otherwise out onto the floor of the tank room
   for (const s of g.subTank) if (s.pressed && s.chamber !== BIG && tooBig(s)) { if (bigFits(g, s)) s.chamber = BIG; else { s.pressed = false; s.chamber = undefined; s.pile = true; } }
+  // (4.12.6) animals sharing a chamber (two tiny ones, or several in the large tank): the chamber is set to the
+  // average of their own pressures, and each is kept healthy at it
+  { const by = new Map(); for (const s of g.subTank) { if (s.pressed) { if (s.home === undefined) s.home = s.from || 0; const L = by.get(s.chamber) || []; L.push(s); by.set(s.chamber, L); } else delete s.shareHome; }
+    for (const L of by.values()) { if (L.length < 2) { delete L[0].shareHome; continue; } const avg = L.reduce((a, q) => a + q.home, 0) / L.length; for (const q of L) q.shareHome = avg; } }
   const tick = (s, inBag) => {
     if (s.home === undefined) s.home = s.from || 0;
     if (s.cond <= 0.05) return;
@@ -264,7 +272,7 @@ export function updateSpecimens(g, dt) {
       // the chamber holds its rating either way: above the water outside, or (a shallow animal taken
       // deep) below it, as the sub's own sphere does
       const cmin = Math.max(0, Math.max(0, g.sub.y) - chamberRating(g));
-      const target = clamp(s.home, cmin, cmax);
+      const target = clamp(s.shareHome != null ? s.shareHome : s.home, cmin, cmax);
       if (s.press > cmax) s.press = cmax; // more than the walls can hold over the outside: it vents
       if (s.press < cmin) s.press = cmin; // the outside presses in past what the walls can keep out
       if (s.press < target) s.press = Math.min(target, s.press + PUMP * dt);
@@ -274,7 +282,7 @@ export function updateSpecimens(g, dt) {
     // (pressureTolerance): within 50 m healthy; to 150 m stressed; to 250 m dying; to 350 m dying
     // fast; beyond, dead
     if (!s.tol) { const sp = SPECIES_BY_ID[s.id]; s.tol = sp ? pressureTolerance(sp, homeOf(s)).k : 1; }
-    const gap = gapOf(g, s, inBag) / s.tol;
+    const gap = s.pressed && s.shareHome != null ? Math.min(gapOf(g, s, inBag) / s.tol, ZONE.ok) : gapOf(g, s, inBag) / s.tol; // (sharing: kept healthy)
     // in the net there is nothing to protect it: say so, once as it starts to suffer, once as it dies
     const deeper = gapSigned(g, s, inBag) < 0;
     if (inBag && gap > ZONE.ok && !s.warnStress) { s.warnStress = true; events.push({ type: 'bagStress', s, deeper }); }

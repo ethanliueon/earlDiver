@@ -97,7 +97,7 @@ export class UI {
       close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { toast: (t, k) => h.toast && h.toast(t, k), getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), daveSays: () => (this.dave && this.dave.says ? this.dave.says() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     try { this.dressPanels(); } catch (err) { /* the plain look stays */ }
-    this.tankRoom = new TankRoom($('tankroom'), { act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
+    this.tankRoom = new TankRoom($('tankroom'), { refit: () => this.openShop('sub', ['sub'], true), act: (a2, w, i, to) => h.onTank(a2, w, i, to), getGame: () => h.getGame(), say: (t) => h.toast && h.toast(t, 'warn'), close: () => this.toggleTank(false) });
     this.caveSel = new Set();
     $('cave-body').addEventListener('click', (ev) => {
       const b = ev.target.closest('[data-cave]');
@@ -472,7 +472,8 @@ export class UI {
     if (open('inventory')) this.renderInventory();
   }
   // the shop, opened on one tab (a station aboard the Margaret)
-  openShop(tab, allowed = null) {
+  openShop(tab, allowed = null, refit = false) {
+    this.refitOnly = refit; // (4.12.6) from the tank room: the sub's upgrades and refits, but no new hull (that is the Margaret's yard)
     this.shopTab = tab;
     document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x.dataset.shop === tab));
     this.toggleWorkshop(true, allowed);
@@ -606,7 +607,7 @@ export class UI {
     let acts = '';
     if (inSub) {
       if (tooBig(s2)) { if (at.place !== 'big') acts += hasBigTank(g) ? mv('Large tank', 'press', BIG_CH, bigFits(g, s2)) : ''; }
-      else if (at.place !== 'chamber') { const f = freeChamber(g); if (pressSlots(g) > 0) acts += mv('Chamber', 'press', f, f >= 0); }
+      else if (at.place !== 'chamber') { const f = freeChamber(g, s2); if (pressSlots(g) > 0) acts += mv('Chamber', 'press', f, f >= 0); }
       if (!tooBig(s2) && hasBigTank(g) && at.place !== 'big') acts += mv('Large tank', 'press', BIG_CH, bigFits(g, s2));
       if (at.place !== 'open') acts += mv('Open tank', 'open', -1, tankFits(g, { ...s2, pressed: false, pile: false }));
       if (at.place !== 'bag') acts += mv('Net bag', 'tobag', -1, g.bag.length < bagSlots(g));
@@ -1358,11 +1359,13 @@ export class UI {
       });
       html += '</div>';
     } else if (tab === 'sub') {
-      if (sub.imploded) {
+      if (sub.imploded && this.refitOnly) html += '<p class="shop-note">The sub is lost: the Margaret\'s yard has a replacement.</p>';
+      else if (sub.imploded) {
         html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['upgrades', 'all kept', 'good']]);
       } else {
         html += `<p class="shop-note">Rated ${sub.rated} m: deeper, the cabin air leaks away faster and faster · hull ${Math.round(sub.hull * 100)} %</p>`;
         if (sub.hull < 0.999) html += card('Patch the hull', 'Weld plates over the worst of it.', '', PATCH_PRICE, 'buy', 'patch', 'Patch', '', '', [['hull', `${Math.round(sub.hull * 100)} % → ${Math.round(Math.min(1, sub.hull + 0.4) * 100)} %`, 'good'], ['damaged hull', 'leaks cabin air', 'bad']]);
+        if (this.refitOnly) html += `<p class="shop-note">Refits done from inside the sub. A new, deeper hull is built at the Margaret's yard (P).</p>`;
         html += this.upgradeGroups(P, ['Submersible', 'Claw'], icon, can);
         for (const [k, a] of Object.entries(SUB_ADDONS)) if (!(P.addons || {})[k]) html += card(a.name, a.desc, '', a.price, 'buy', k, 'Fit', '', '', ADDON_SPECS[k]);
         const fitted = Object.entries(SUB_ADDONS).filter(([k]) => (P.addons || {})[k]).map(([, a]) => a.name.toLowerCase());
@@ -1541,7 +1544,7 @@ export class UI {
       }
       // one row per track: its level, the price of the next step, and in its sheet every stat it moves
       for (const [id, T] of Object.entries(TRACKS)) {
-        if (T.group !== grp || T.retired) continue; // (4.12.0: the rack is gone: two backup tanks for everyone)
+        if (T.group !== grp || T.retired || (this.refitOnly && id === 'tHull')) continue; // (4.12.0: the rack is gone: two backup tanks for everyone)
         const l = lv(P, id), capped = id === 'tHull' && l >= hullCap(P) && l < T.max, maxed = l >= T.max || capped, cost = upgradeCost(P, id), coins = upgradeCoins(P, id);
         const specs = [];
         if (id === 'tHull') {
@@ -1620,7 +1623,7 @@ export class UI {
     if (!$('journal').hidden) this.journalCount(g);
     if (!$('workshop').hidden) {
       const e = g.earl;
-      if (Math.abs(e.x - BOAT.x) > 16 || e.y > 5) this.toggleWorkshop(false);
+      if (!this.refitOnly && (Math.abs(e.x - BOAT.x) > 16 || e.y > 5)) this.toggleWorkshop(false); // (refits from the tank room work anywhere)
     }
     if (!$('tankroom').hidden) {
       if (!g.earl.inSub) this.toggleTank(false);

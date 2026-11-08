@@ -12,7 +12,7 @@ import { drawSpecies, speciesIcon, speciesBox, fittedIcon } from './creatures_dr
 import { rarityOf, specimenValue, rarityStars, rarityCls } from './specimens.js';
 import { money } from './economy.js';
 import { xEyes } from './gallery.js';
-import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf} from './capture.js';
+import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf, chamberRoom } from './capture.js';
 import { UPGRADES } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
 import { paintedText, depthCounter, hatchRim, paperTag, instructionPlate, cleanPatch, cappedFlange, hoseCoil, hazardTape, toggleSwitch, brassTag, ease } from './fittings.js';
@@ -75,10 +75,11 @@ export class TankRoom {
     this.t = 0; this.room = 'chambers'; this.openKey = null; this.sig = ''; this.infoT = 0;
     root.innerHTML = `<canvas class="tr-canvas"></canvas><div class="tr-over"></div>
       <div class="tr-plate"><b class="tr-room"></b><span class="tr-depth"></span></div>
-      <button class="tr-help-btn" aria-label="How it works">?</button><button class="tr-close" aria-label="Close">×</button>
+      <button class="tr-refit" title="Upgrades and refits for this sub">Refit</button><button class="tr-help-btn" aria-label="How it works">?</button><button class="tr-close" aria-label="Close">×</button>
       <div class="tr-help" hidden></div><div class="gl-lights tr-lights"></div>`;
     this.c = root.querySelector('.tr-canvas'); this.over = root.querySelector('.tr-over');
     root.querySelector('.tr-close').addEventListener('click', () => this.h.close());
+    root.querySelector('.tr-refit').addEventListener('click', () => this.h.refit && this.h.refit()); // (4.12.6) the sub's refits, from inside her
     root.querySelector('.tr-lights').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-light]'); const g = this.h.getGame(); if (b && g && g.profile) { g.profile.subTankLight = b.dataset.light; this.lightsHtml(g); } });
     root.querySelector('.tr-help-btn').addEventListener('click', () => { const hp = root.querySelector('.tr-help'); hp.hidden = !hp.hidden; });
     root.querySelector('.tr-help').innerHTML = `<p>Every animal has the pressure it lives at. Up to ${SAFE_GAP} m away from it, shallower or deeper, it lives, stressed; further, it starts to die. Taking a shallow animal deep hurts it as much as bringing a deep one up.</p>
@@ -236,7 +237,7 @@ export class TankRoom {
     if (i < 0) { this.card = null; this.openKey = null; return ''; }
     const s = where === 'bag' ? g.bag[i] : g.subTank[i], sp = SPECIES_BY_ID[s.id];
     const inChamber = where === 'tank' && s.pressed && s.chamber !== BIG, inOpen = where === 'tank' && !s.pressed && !s.pile;
-    const free = freeChamber(g), btn = (label, tk, on = true) => `<button data-tk="${tk}" ${on ? '' : 'disabled'}>${label}</button>`;
+    const free = freeChamber(g, s), btn = (label, tk, on = true) => `<button data-tk="${tk}" ${on ? '' : 'disabled'}>${label}</button>`;
     let acts = '';
     const big = tooBig(s), inBig = where === 'tank' && s.pressed && s.chamber === BIG;
     if (big) { // (3.1.0) too big for a chamber: the large pressure tank, or nothing
@@ -308,8 +309,7 @@ export class TankRoom {
       for (const [n, c] of G.chambers.entries()) {
         if (n >= ps) continue;
         if (cx >= c.x - 10 && cx <= c.x + CW * c.k + 10 && cy >= c.y - 10 && cy <= c.y + CH * c.k + 10) {
-          const occ = g.subTank.find((q) => q.pressed && q.chamber === n);
-          return (!occ || occ === this.drag.s) && !tooBig(this.drag.s) ? { kind: 'chamber', n, c } : null;
+          return chamberRoom(g, n, this.drag.s) && !tooBig(this.drag.s) ? { kind: 'chamber', n, c } : null; // (4.12.6) two tiny ones share
         }
       }
       return null;
@@ -333,7 +333,8 @@ export class TankRoom {
         if (n >= pressSlots(g)) return 'That chamber isn\'t fitted yet: the sub\'s yard fits more';
         if (tooBig(s)) return `${the} is too big for a chamber: only the large pressure tank holds it`;
         if (s.pressed && s.chamber === n) return null;
-        return 'That chamber is in use: drag its animal out first';
+        if (chamberRoom(g, n, s)) return null;
+        return 'That chamber is in use: drag its animal out first (two tiny ones under 20 cm can share)';
       }
       return null;
     }
@@ -604,7 +605,7 @@ export class TankRoom {
   // ---------------- the chamber room ----------------
   drawChamberRoom(ctx, G, g, dt) {
     const rating = chamberRating(g), cmax = chamberMax(g), ps = pressSlots(g), outside = Math.max(0, g.sub.y);
-    const by = new Map(g.subTank.filter((s) => s.pressed).map((s) => [s.chamber, s]));
+    const by = new Map(); for (const s of g.subTank) if (s.pressed) { const L = by.get(s.chamber) || []; L.push(s); by.set(s.chamber, L); } // (4.12.6) a chamber may hold two tiny ones
     // the pipe run along the bulkhead, dropping to each chamber's head
     const py = G.chambers[0].y - 70; // (3.2.1) the pipe run higher up the wall: they hang from longer drops
     ctx.fillStyle = '#4b5355'; ctx.fillRect(0, py - 6, G.W * 0.82, 12);
@@ -653,7 +654,8 @@ export class TankRoom {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     for (const [x, y] of [[30, 110], [CW - 30, 110], [30, CH - 50], [CW - 30, CH - 50]]) { ctx.beginPath(); ctx.arc(x, y, 4, 0, TAU); ctx.fill(); }
   }
-  drawChamber(ctx, g, s, rating, cmax, outside, dt, idx) {
+  drawChamber(ctx, g, list, rating, cmax, outside, dt, idx) {
+    const all = Array.isArray(list) ? list : list ? [list] : [], s = all[0];
     const t = this.t, cx = CW / 2, X0 = 38, X1 = 112 + EX, TOP = 92, BOT = CH - 18;
     // wall straps behind it
     ctx.fillStyle = '#2a2f30'; for (const y of [120, CH - 60]) ctx.fillRect(28, y - 5, 94 + EX, 10);
@@ -670,11 +672,13 @@ export class TankRoom {
     ctx.strokeStyle = 'rgba(150,150,170,0.55)'; ctx.lineWidth = 1.2; ctx.beginPath();
     for (let k = 0; k <= 12; k++) ctx.lineTo(cx - 12 + k * 2, BOT - 54 + (k % 2 ? -4 : 4)); ctx.stroke();
     const home = s ? homeOf(s) : 0, pumping = s && (s.press || 0) < Math.min(home, cmax) - 1;
-    if (s && !(this.drag && this.drag.s === s)) {
-      const L = Math.max(26, 128 * Math.pow(Math.min(s.len || 0.1, 1.2) / 1.2, 0.6)) * Math.min(1, this.chamberFish || 1); // (a chamber holds up to 1.2 m)
-      const a = this.swim(g, s, false, inside(SPECIES_BY_ID[s.id], L, X0 + 4, X1 - 4, TOP + 26, BOT - 10), L, dt, 0.6);
-      this.drawFish(ctx, g, s, a, L, false);
-    }
+    all.forEach((f, j) => { // (4.12.6) two sharing: one in the upper half, one in the lower
+      if (this.drag && this.drag.s === f) return;
+      const L = Math.max(26, 128 * Math.pow(Math.min(f.len || 0.1, 1.2) / 1.2, 0.6)) * Math.min(1, this.chamberFish || 1); // (a chamber holds up to 1.2 m)
+      const y0 = TOP + 26, y1 = BOT - 10, hh = (y1 - y0) / all.length;
+      const a = this.swim(g, f, false, inside(SPECIES_BY_ID[f.id], L, X0 + 4, X1 - 4, y0 + hh * j, y0 + hh * (j + 1)), L, dt, 0.6);
+      this.drawFish(ctx, g, f, a, L, false);
+    });
     const n = pumping ? 14 : 3;
     for (let k = 0; k < n; k++) {
       const q = (t * (pumping ? 0.6 : 0.15) + k / n + idx * 0.37) % 1, bx = cx + Math.sin(k * 7.1 + idx) * (22 + EX * 0.35) + Math.sin(q * 9 + k) * 3;

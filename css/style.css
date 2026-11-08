@@ -2479,3 +2479,5 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #journal .af b { font: 500 14px/1.15 var(--serif); text-align: center; color: #3a3428; }
 #journal .af:not(.seen) b { letter-spacing: 0.12em; color: rgba(58,52,40,0.55); }
 #journal .af small { font: 10px var(--mono); color: rgba(58,52,40,0.55); }
+.tr-refit { position: absolute; top: 14px; right: 106px; height: 34px; padding: 0 14px; border: 0; border-radius: 17px; cursor: pointer; font: 500 16px var(--serif); color: #2e220a; background: radial-gradient(circle at 40% 35%, var(--brass-hi), var(--brass) 55%, var(--brass-lo)); box-shadow: 0 0 0 1px #2a1e08, 0 3px 6px rgba(0,0,0,0.5); z-index: 5; }
+.tr-refit:hover { filter: brightness(1.08); }

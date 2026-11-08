@@ -757,6 +757,28 @@ function syncProfile() {
   P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, nets: Object.assign({}, netsOf(g.items)), tag: g.items.tag, tagAdv: g.items.tagAdv };
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
+  // (4.12.6) where the dive is, so a reload carries on from here: Earl, the sub, what he carries and what is in her tank
+  if (g.mode === 'play' && !g.kill) {
+    const e = g.earl, s = g.sub;
+    P.resume = { v: 1, at: Date.now(), time: g.time, survival: g.survival, aboard: !!g.aboard || !!g.helm,
+      e: { x: e.x, y: e.y, inSub: !!e.inSub, o2: e.o2, facing: e.facing || 1 },
+      sub: { x: s.x, y: s.y, facing: s.facing || 1, o2: s.o2, docked: !!s.docked, lightsOn: !!s.lightsOn },
+      bag: g.bag, subTank: g.subTank, inv: g.inv };
+  }
+}
+// (4.12.6) carrying on from the last save of a dive (a reload, a crash): everything as it was, times shifted to the new clock
+function resumeDive(P) {
+  const r = P.resume; if (!r || r.v !== 1 || g.mode !== 'play') return false;
+  const dt0 = g.time - (r.time || 0), shift = (list) => (list || []).map((s) => (typeof s.t === 'number' ? Object.assign({}, s, { t: s.t + dt0 }) : Object.assign({}, s)));
+  g.bag = shift(r.bag); g.subTank = shift(r.subTank); g.inv = Object.assign({}, r.inv || {}); g.survival = r.survival || 0;
+  if (r.aboard) return true; // on the Margaret: back on her deck, the catch with him
+  const e = g.earl, s = g.sub;
+  g.aboard = null; g.helm = false;
+  Object.assign(s, { x: r.sub.x, y: r.sub.y, facing: r.sub.facing, o2: Math.min(s.o2Max || r.sub.o2, r.sub.o2), docked: r.sub.docked, lightsOn: r.sub.lightsOn });
+  e.inSub = r.e.inSub; e.x = r.e.inSub ? s.x : r.e.x; e.y = r.e.inSub ? s.y : r.e.y; e.o2 = Math.min(e.o2Max || r.e.o2, r.e.o2); e.facing = r.e.facing; e.vx = e.vy = 0;
+  renderer.cam.x = e.x; renderer.cam.y = e.y;
+  hud.toast('Carrying on where you left off');
+  return true;
 }
 // buy(kind): 'tank' | 'fins' | 'sub' | 'patch' | 'replace' | 'lure' | 'necklace'
 function buy(kind) {
@@ -1127,6 +1149,7 @@ function startRun() {
   profile.runs = (profile.runs || 0) + 1; saveProfile(profile);
   g = newGame('play');
   boardDeck(false, true); // a dive starts on deck, at the top of the stern ladder
+  resumeDive(profile); // (4.12.6) unless a dive was under way when the page closed
   hud.toasts = [];
   ui.showGame();
   canvas.focus();
@@ -1702,6 +1725,7 @@ function crushDepth(dt) {
 
 function die(cause, kind = 'normal') {
   if (g.mode !== 'play' || g.noDeath) return;
+  if (profile) profile.resume = null; // (4.12.6) a death ends the dive: the next one starts at the boat
   g.mode = 'dying'; g.deathT = 0; g.deathCause = cause; g.deathKind = kind;
   ui.closeAll();
   // what death costs: everything unsold, a hospital bill, and (if it took him) what he carried for it
@@ -2109,6 +2133,7 @@ function update(dt) {
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
     tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
     afterTips(dt); // (4.6.0)
+    g.autosaveT = (g.autosaveT || 0) + dt; if (g.autosaveT > 10 && profile && !g.kill) { g.autosaveT = 0; syncProfile(); saveProfile(profile); } // (4.12.6) the dive saved every 10 s
     lessons(); // (4.7.0)
     const dl = g.frozen ? Object.assign([], { events: [] }) : updateSpecimens(g, dt); // (4.7.0) frozen: nothing suffers
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
