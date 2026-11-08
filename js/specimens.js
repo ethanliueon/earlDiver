@@ -137,6 +137,9 @@ const EXOTIC_CAP = 4000; // (3.1.0) an Exotic never fetches more than $4,000
 const LEG_PRICE = { 100: 40000, 101: 30000, 104: 35000, 105: 45000, 107: 25000, 108: 60000, 54: 55000, 2102: 30000, 2103: 35000, 2106: 28000, 2150: 40000, 2146: 38000, 2162: 25000, 2110: 32000, 2109: 50000 };
 const PRICE_CACHE = new Map();
 // what one of this species pays (before size, condition, rare form, upgrades)
+// (4.16.6) what a healthy legend pays: by the depth it usually keeps to, $60,000 for the coelacanth in the shallows
+// (about 245 m) up to $150,000 for the tripod fish of the abyss (about 3,350 m), on a log scale
+const LEG_VALUE = {"54":96000,"100":135000,"101":134000,"104":97000,"105":136000,"107":108000,"108":60000,"2102":134000,"2103":121000,"2106":134000,"2109":129000,"2110":150000,"2146":147000,"2150":104000,"2162":123000};
 // (3.7.0) the list price: it sets the rarity tier (and how often the animal is met) and nothing else now
 const BASE_CACHE = new Map();
 export function basePrice(sp) {
@@ -167,7 +170,7 @@ export function rarityPrice(sp) {
   const base = basePrice(sp), R = rarityOf(sp);
   const size = clamp01(Math.log(Math.max(0.03, sp.len) / 0.05) / Math.log(2 / 0.05)), d = deepness(sp);
   if (sp.undoc || (isTagOnly(sp) && !LEGENDARY.has(sp.id)) || R.i <= 1) p = base;
-  else if (R.id === 'legendary') { const lo = 25000, hi = 60000; p = lerpN(60000, 120000, clamp01((base - lo) / (hi - lo))); }
+  else if (R.id === 'legendary') p = LEG_VALUE[sp.id] || 90000; // (4.16.6) by how deep it lives
   else if (R.id === 'exotic') {
     const lo = d < 0.5 ? lerpN(1000, 3000, d * 2) : lerpN(3000, 6000, (d - 0.5) * 2), hi = d < 0.5 ? lerpN(2000, 5000, d * 2) : lerpN(5000, 8000, (d - 0.5) * 2);
     p = lerpN(lo, hi, 0.65 * size + 0.35 * R.pos);
