@@ -19,7 +19,7 @@ const BAIT = [
   { id: 50, min: 2, max: 100, n: [100, 180] },  // Northern anchovy
   { id: 51, min: 2, max: 150, n: [50, 90] },    // Atlantic mackerel
   { id: 62, min: 40, max: 400, n: [50, 90] },   // Alaska pollock
-  { id: 161, min: 5, max: 350, n: [70, 120] }, // Antarctic krill
+  { id: 161, min: 5, max: 350, n: [30, 50] }, // Antarctic krill (4.12.5: smaller swarms, spread wider)
   { id: 98, min: 250, max: 900, nightMin: 15, nightMax: 250, n: [30, 55] }, // spotted lanternfish
   { id: 99, min: 200, max: 600, n: [20, 40] },  // silver hatchetfish
   // (3.0.21) the twilight is the most crowded water in the sea: more kinds of school; (3.0.22) each a little smaller, for smoothness
@@ -226,7 +226,7 @@ export class Fauna {
     return Math.round(base * (1 - dread * 0.95));
   }
   baitTarget(depth, dread) {
-    const base = depth < 150 ? (this.reefy ? 1 : 2) : depth < 1000 ? 2 : depth < 1600 ? 1 : 0; // (3.0.26) two schools through the twilight; the rest of its life comes singly
+    const base = depth < 150 ? 1 : depth < 1000 ? 1 : 0; // (4.12.5) one school at a time, fewer everywhere // (3.0.26) two schools through the twilight; the rest of its life comes singly
     return Math.round(base * (1 - dread));
   }
   groupCount() {
@@ -278,7 +278,7 @@ export class Fauna {
     const spread = Math.min(1, H.r / 6);
     for (let i = 0; i < n; i++) {
       const k = Math.max(1, sp.len * 0.7);
-      const ox = rng.range(-1, 1) * Math.min(6, 0.6 + n * 0.12) * k * spread, oy = rng.range(-1, 1) * Math.min(3, 0.4 + n * 0.06) * k * spread;
+      const ox = rng.range(-1, 1) * Math.min(8, 0.9 + n * 0.18) * k * spread, oy = rng.range(-1, 1) * Math.min(4, 0.6 + n * 0.09) * k * spread; // (4.12.5) spread wider
       const x = home.x + ox;
       // day-active reef fish are met out in the water, 3-15 m above the seabed; the rest at home
       const yHome = sp.v.hab === 'reef' && H.act !== 'night' ? Math.max(1.2, W.floorAt(x) - rng.range(3, 15)) : home.y + oy;
@@ -344,7 +344,7 @@ export class Fauna {
     let tot = 0; for (const c of cands) tot += wOf(c);
     let r = rng() * tot, sp = cands[0];
     for (const c of cands) { r -= wOf(c); if (r <= 0) { sp = c; break; } }
-    const n = Math.max(1, Math.min(24, Math.round((sp.v.sch || 1) * rng.range(0.5, 1.2))));
+    const n = Math.max(1, Math.min(14, Math.round((sp.v.sch || 1) * rng.range(0.35, 0.8)))); // (4.12.5) smaller groups
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
     const home = homes.get(sp.id) || null, H = HOME[sp.id];
@@ -374,12 +374,12 @@ export class Fauna {
     if (!opts.length) return;
     const b = rng.pick(opts);
     const sp = SPECIES_BY_ID[b.id];
-    const n = Math.round(rng.int(b.n[0], b.n[1]) * 0.65); // a third fewer fish than the table: still a big school, much cheaper
+    const n = Math.round(rng.int(b.n[0], b.n[1]) * 0.42); // (4.12.5) well under half the table: still a school, far cheaper to draw
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
     // spacing: about a body length and a half between fish, never tighter than ~15 cm (tiny
     // krill and lanternfish otherwise merge into one solid blob)
-    const baseR = Math.sqrt(n) * Math.max(sp.len, 0.1) * 0.75 + 0.6;
+    const baseR = Math.sqrt(n) * Math.max(sp.len, 0.16) * 1.15 + 0.8; // (4.12.5) looser: more water between the fish
     this.schools.set(gid, {
       sp, x, y, vx: dir * 0.6, vy: 0, dir, n, r: baseR, baseR, wob: rng() * 100, threat: 0, turnTime: -99, turnT: rng.range(15, 40),
       lo: night && b.nightMin !== undefined ? b.nightMin : b.min, hi: night && b.nightMax !== undefined ? b.nightMax : b.max,
@@ -755,6 +755,12 @@ export class Fauna {
         } else {
           ax = (c.x - earl.x) / (de + 0.1) * 30; ay = (c.y - earl.y) / (de + 0.1) * 20;
           sp = Math.max(sp, c.flee);
+          // (4.12.5) not into a wall: rock or seabed ahead turns it back the other way, and the bottom lifts it
+          const sx = Math.sign(ax) || 1, look = 1.5 + c.len;
+          if (W.rockAt(c.x + sx * look, c.y, 0.2) || W.floorAt(c.x + sx * look) < c.y + 0.4) { ax = -sx * 30; c.wallT = 1.2; }
+          else if (c.wallT > 0) { c.wallT -= dt; ax = Math.abs(ax) * (c.vx >= 0 ? 1 : -1); }
+          if (c.y + Math.max(0, ay) * 0.08 > W.floorAt(c.x) - 1 - c.len * 0.5) ay = -Math.abs(ay) - 8;
+          if (W.rockAt(c.x, c.y + Math.sign(ay) * look, 0.2)) ay = -ay;
         }
       }
       // tucked into its home: it waits there while the diver is close, then creeps back out

@@ -1906,7 +1906,7 @@ export class Renderer {
     const ctx = this.ctx, t = g.time;
     const surf = g.surfY || (() => 0);
     const stalks = new Path2D(), bulbs = new Path2D(), blades = [];
-    const len = 1.3 * ppm, wid = 0.24 * ppm, br = wid * 0.32;
+    const len = 1.5 * ppm, wid = 0.26 * ppm, br = wid * 0.32;
     let any = false;
     for (let i = 0; i < g.world.kelp.length; i++) {
       const k = g.world.kelp[i];
@@ -1915,7 +1915,7 @@ export class Renderer {
       const topY = k.base - k.h;
       if (k.base < this.cam.y - this.cam.h || topY > this.cam.y + this.cam.h) continue;
       any = true;
-      const segs = Math.max(5, Math.floor(k.h / 1.9)); // (a blade every ~1.9 m: a third fewer draws, each a little longer)
+      const segs = Math.max(4, Math.floor(k.h / 2.4)); // (4.12.5: a blade every ~2.4 m, each a little longer: a fifth fewer draws in the forest)
       for (let s2 = 0; s2 <= segs; s2++) {
         const u = s2 / segs, hh = u * k.h;
         let y = k.base - hh;
