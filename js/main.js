@@ -914,7 +914,7 @@ function lessons() {
     syncProfile(); saveProfile(P); hud.toast('Lesson done. A spare trawl net is in the hatch', 'note'); return;
   }
   if (L.part === 'drop') set('Let out the trawl net', { act: 'trawl', say: 'Let out the net' }, ['n']);
-  else if (L.part === 'tow') set('Drive the sub through the school of fish', null, MOVE_KEYS, mid);
+  else if (L.part === 'tow') { set('Steer so the net passes through the school of fish', null, MOVE_KEYS, mid); if (n && g.tut) g.tut.from = { x: n.mx, y: n.my }; } // (4.8.1) the trail from the net's mouth: it is the net that has to get there
   else if (L.part === 'close') set('Close the net', { act: 'trawl', say: 'Close the net' }, ['n'].concat(MOVE_KEYS));
   else if (L.part === 'haul') set('The net is coming in', null, MOVE_KEYS);
   else if (L.part === 'tank') set('Open the tank room to see your catch', { act: 'tank', say: 'Tank room' }, ['t']);

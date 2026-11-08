@@ -476,7 +476,7 @@ export class Renderer {
     // the fish (or the spot), and an arrow at the edge of the screen when it is off screen. No words: the game's own
     // prompts already say what to press there
     if (g.tut && g.tut.to && g.mode === 'play') {
-      const e = g.earl, tx = g.tut.to.x, ty = g.tut.to.y, d = Math.hypot(tx - e.x, ty - e.y);
+      const e = g.tut.from || g.earl, tx = g.tut.to.x, ty = g.tut.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
       const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));
       const sz = clamp(ppm * 0.22, 7, 16), flow = (g.time * 1.6) % 1;
       ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';

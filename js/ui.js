@@ -35,7 +35,7 @@ import { statAt } from './economy.js';
 import { pressureKind, pressureTolerance } from './specimens.js';
 import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { refreshIn, ready as contractReady } from './contracts.js';
-import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice, questLeft, fillQuests, tutorialOn, stepLabel } from './quests.js';
+import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice, questLeft, fillQuests, tutorialOn, stepLabel, GROUPS as QUEST_GROUPS, groupSpecies } from './quests.js';
 import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
 import { formatTime, clamp } from './util.js';
 import { VERSION } from './version.js';
@@ -291,6 +291,7 @@ export class UI {
         if (ev.target === $('quests')) { this.toggleQuests(false); return; }
         const a = ev.target.closest('[data-q]'); if (!a || a.disabled) return;
         const [act, arg] = a.dataset.q.split('|');
+        if (act === 'info') { this.questInfo(arg); return; } // (4.8.1)
         if (act === 'claim') this.h.onQuestClaim(arg); else if (act === 'refresh') this.h.onQuestRefresh(arg === 'paid');
         this.renderQuests();
       });
@@ -303,6 +304,42 @@ export class UI {
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
   }
   questsOpen() { return !$('quests').hidden; }
+  // (4.8.1) a quest's i: what it asks, and where to go for it. A species: its card. A group: some of its animals and
+  // the depths they keep. A depth: the sea in section with where he is, the depth asked for, and the nearest place
+  // that deep. A tool or a challenge: how. An undocumented species: only where to look (no picture: that is the find).
+  questInfo(key) {
+    const P = this.h.getProfile(), g = this.h.getGame(), q = P && questsOf(P).board.find((x) => x.key === key); if (!q) return;
+    let pop = $('quests').querySelector('.qs-pop');
+    if (!pop) { pop = document.createElement('div'); pop.className = 'qs-pop'; $('quests').querySelector('.qs-panel').appendChild(pop); pop.addEventListener('click', (ev) => { if (ev.target.closest('.qp-close') || ev.target === pop) pop.hidden = true; }); }
+    const esc2 = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const card = (sp) => { const [a, b] = usualDepth(sp), R0 = rarityOf(sp); return `<div class="qp-sp"><img src="${fittedIcon(sp, 240, 140).toDataURL()}" alt=""><div><b style="color:${R0 ? R0.col : 'inherit'}">${esc2(sp.name)}</b><i>${esc2(sp.sci || '')}</i><small>usually ${a.toLocaleString()}–${b.toLocaleString()} m · ${esc2(sp.zone || '')}${sp.oceans ? ' · ' + esc2(sp.oceans) : ''}</small></div></div>`; };
+    let body = '', map = null;
+    if (q.kind === 'species' && SPECIES_BY_ID[q.id]) { const sp = SPECIES_BY_ID[q.id]; body = card(sp) + `<p>${esc2(sp.desc || '')}</p><p>It has to come up alive: keep it in water, at its own pressure.</p>`; map = usualDepth(sp)[0]; }
+    else if (q.kind === 'group' && QUEST_GROUPS[q.g]) {
+      const G = QUEST_GROUPS[q.g], L = groupSpecies(q.g);
+      if (G.undoc) { const d = Math.min(...L.map((s2) => s2.dmin)); body = `<p>Something no one has written down yet. They have been found from about ${d.toLocaleString()} m down, near the bottom. You will know one when you see it.</p>`; map = d; }
+      else { const ex = L.slice().sort((a2, b2) => usualDepth(a2)[0] - usualDepth(b2)[0]).filter((_, i, A2) => i % Math.max(1, Math.floor(A2.length / 3)) === 0).slice(0, 3); const lo = Math.min(...L.map((s2) => usualDepth(s2)[0]));
+        body = `<p>Any of ${L.length} kinds counts. The shallowest of them are usually met from about ${lo.toLocaleString()} m. Some of them:</p>` + ex.map(card).join(''); map = lo; }
+    } else if (q.kind === 'deep' || q.kind === 'depth') { body = `<p>${q.kind === 'depth' ? 'Take the sub down past' : 'Catch your animals below'} ${q.d.toLocaleString()} m. The map shows where you are, that depth, and the nearest place the seafloor is deep enough.</p>`; map = q.d; }
+    else body = `<p>${{ catch: 'Any animal counts, caught any way: net, slurp gun, claw, trawl or trap.', sell: 'Everything sold counts: at the Margaret, at the station, or to Dave.', photo: 'Take out the camera (4) and photograph animals you have not photographed before.', tag: 'Take out the tag gun (3) and tag animals as they swim.', trawl: 'Let the trawl net out from the sub (N), drive through fish, and bring it in. Every animal it hauls up counts.', divecatch: 'Every animal caught in one dive counts; the count starts again each dive.', lureMonster: 'Throw a lure (Q) while the thing in the deep is close. It is far below, and it is dangerous.', chambers: 'Have every pressure chamber in the sub holding an animal at the same time.' }[q.kind] || ''}</p>`;
+    if (map != null && map < 50) map = null; // (shallow: no map needed)
+    pop.innerHTML = `<div class="qp-box"><button class="qp-close" aria-label="Close">×</button><h4>${esc2(q.text)}</h4>${body}${map != null ? '<canvas class="qp-map" width="520" height="190"></canvas>' : ''}</div>`;
+    pop.hidden = false;
+    if (map != null && g && g.world) this.drawQuestMap(pop.querySelector('.qp-map'), g, map);
+  }
+  // the sea in section: the seafloor across the whole map, the depth asked for as a line, where he is, and the nearest
+  // place the floor goes deeper than that
+  drawQuestMap(cv, g, d) {
+    const x = cv.getContext('2d'), W = cv.width, H = cv.height, Wd = 5000, D = 5200, X = (m) => (m / Wd) * W, Y = (y) => (y / D) * (H - 14) + 4;
+    x.fillStyle = '#0d2230'; x.fillRect(0, 0, W, H);
+    x.fillStyle = '#4a4234'; x.beginPath(); x.moveTo(0, H); for (let m = 0; m <= Wd; m += 10) x.lineTo(X(m), Y(Math.max(0, g.world.floorAt(m)))); x.lineTo(W, H); x.closePath(); x.fill();
+    x.strokeStyle = 'rgba(242,184,74,0.85)'; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]);
+    x.font = '11px "IBM Plex Mono", monospace'; x.fillStyle = '#f2c868'; x.fillText(`${Math.round(d).toLocaleString()} m`, 6, Y(d) - 4);
+    const e = g.earl.inSub ? g.sub : g.earl; let best = null, bd = Infinity;
+    for (let m = 0; m <= Wd; m += 5) if (g.world.floorAt(m) > d + 15 && Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; }
+    if (best != null) { x.fillStyle = '#9fdc8c'; x.beginPath(); x.arc(X(best), Y(d), 5, 0, Math.PI * 2); x.fill(); x.fillText('nearest place this deep', Math.min(W - 160, X(best) + 8), Y(d) + (Math.abs(X(best) - X(e.x)) < 130 && Math.abs(Y(d) - Y(Math.max(0, e.y))) < 30 ? 30 : 14)); }
+    x.fillStyle = '#ffffff'; x.beginPath(); x.arc(X(e.x), Y(Math.max(0, e.y)), 4.5, 0, Math.PI * 2); x.fill(); x.fillText('you are here', Math.min(W - 92, X(e.x) + 7), Y(Math.max(0, e.y)) + (Y(e.y) < 20 ? 14 : -6));
+  }
   toggleQuests(force) {
     const el = $('quests'), open = force === undefined ? el.hidden : force; el.hidden = !open;
     clearInterval(this.qTick);
@@ -327,7 +364,7 @@ export class UI {
       const ok = q.prog >= q.n, left = questLeft(q);
       const timer = q.claimed ? `done · a new quest in ${hm(left)}` : ok ? 'done: claim it' : `${hm(left)} left`;
       html += `<div class="qs-q r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b><small class="qs-time">${timer}</small>${q.n > 1 && !q.claimed ? bar(q.prog, q.n) + `<span>(${q.kind === 'sell' ? money(q.prog, false) + '/' + money(q.n, false) : q.prog + '/' + q.n})</span>` : ''}</div>
-        <div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : money(q.pay, false)}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div></div>`;
+        <div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : money(q.pay, false)}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div><button class="qs-info" data-q="info|${q.key}" title="About this quest">i</button></div>`;
     }
     // (4.0.0) the free refresh, or the next price on the ladder for this three-hour window
     const wait = boardIn(P), price = refreshPrice(P);

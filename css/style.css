@@ -2342,7 +2342,7 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
    engraved double edge with marks at its corners; Legendary a gold stripe, a gold glow behind the row and its title
    in gold stencil capitals */
 #quests .qs-q { position: relative; }
-#quests .qs-q.r-rare::before, #quests .qs-q.r-exotic::before, #quests .qs-q.r-legendary::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 4px; border-radius: 2px; background: var(--rq); box-shadow: 0 0 6px var(--rq); }
+#quests .qs-q.r-rare::before, #quests .qs-q.r-exotic::before, #quests .qs-q.r-legendary::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 22px; pointer-events: none; border: 3px solid var(--rq); border-right: 0; border-radius: 5px 0 0 5px; box-shadow: -2px 0 8px -3px var(--rq); -webkit-mask: linear-gradient(90deg, #000 40%, transparent); mask: linear-gradient(90deg, #000 40%, transparent); } /* (4.8.1) a bracket round the row's left corners, fading off along the top and bottom */
 #quests .qs-q.r-rare { --rq: #5aa8f0; } #quests .qs-q.r-exotic { --rq: #c27af0; } #quests .qs-q.r-legendary { --rq: #f2b84a; }
 #quests .qs-q.r-exotic { box-shadow: inset 0 0 0 1px rgba(194,122,240,0.45), inset 0 0 0 3px rgba(12,14,10,0.9), inset 0 0 0 4px rgba(194,122,240,0.25), 0 1px 0 rgba(255,255,240,0.1), inset 0 4px 8px rgba(0,0,0,0.6) !important; }
 #quests .qs-q.r-exotic::after { content: ''; position: absolute; inset: 3px; pointer-events: none; opacity: 0.8;
@@ -2355,3 +2355,29 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 @keyframes qs-legend { 50% { box-shadow: 0 0 0 1px rgba(242,184,74,0.75), 0 0 28px rgba(242,184,74,0.42), inset 0 4px 8px rgba(0,0,0,0.6); } }
 #quests .qs-q.r-legendary .qs-t b { font: 400 16px var(--stencil) !important; letter-spacing: 0.08em; text-transform: uppercase; color: #f2c868; text-shadow: 0 0 10px rgba(242,184,74,0.45); }
 @media (prefers-reduced-motion: reduce) { #quests .qs-q.r-legendary { animation: none; } }
+
+/* (4.8.1) the Catch page's large tank: tall enough to see what is in it */
+#inventory canvas.ct-big { height: 140px !important; }
+
+/* (4.8.1) a quest's i, and what it opens: a plate over the board with the animal's card, some of a group's animals,
+   or the sea in section with where to go */
+#quests .qs-q .qs-info { position: absolute; right: 6px; top: 6px; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  font: italic 600 12px/18px var(--serif); color: #2a2010; background: radial-gradient(circle at 40% 35%, #e8d49a, #a8823c 70%); box-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+#quests .qs-q .qs-info:hover { filter: brightness(1.12); }
+#quests .qs-q .qs-pay { padding-right: 18px; }
+#quests .qs-pop { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(4,8,10,0.55); border-radius: 6px; }
+#quests .qs-pop[hidden] { display: none; }
+#quests .qp-box { position: relative; width: min(560px, 92%); max-height: 88%; overflow-y: auto; padding: 16px 18px 14px; border-radius: 6px;
+  background: linear-gradient(180deg, #2b3129, #1b1f1a); box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #3a4136, 0 14px 40px rgba(0,0,0,0.7); color: #e4e6da; }
+#quests .qp-box h4 { margin: 0 26px 10px 0; font: 500 21px var(--serif); color: #f0e8d0; }
+#quests .qp-box p { margin: 0 0 10px; font: 500 15px/1.4 var(--serif); color: rgba(228,230,218,0.85); }
+#quests .qp-close { position: absolute; right: 10px; top: 10px; width: 26px; height: 26px; border: 0; border-radius: 50%; cursor: pointer; font-size: 16px; color: #2e220a; background: radial-gradient(circle at 40% 35%, #e8d49a, #a8823c 70%); }
+#quests .qp-sp { display: flex; gap: 12px; align-items: center; margin: 0 0 10px; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.25); }
+#quests .qp-sp img { width: 120px; height: 70px; object-fit: contain; border-radius: 3px; background: radial-gradient(ellipse, #1e4252, #0a1c26); }
+#quests .qp-sp b { display: block; font: 500 18px var(--serif); }
+#quests .qp-sp i { display: block; font: italic 14px var(--serif); color: rgba(220,226,222,0.7); }
+#quests .qp-sp small { display: block; margin-top: 3px; font: 12px var(--mono); color: rgba(214,224,226,0.75); }
+#quests .qp-map { display: block; width: 100%; height: auto; border-radius: 4px; box-shadow: 0 0 0 1px #0c0e0a; }
+
+#quests .qp-map { position: static !important; inset: auto !important; }
+#quests .qs-panel { position: relative; }

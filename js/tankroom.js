@@ -942,7 +942,7 @@ export class TankRoom {
   drawMiniBig(ctx, g, w, h, dt) {
     if (!hasBigTank(g)) return [];
     this.t += dt;
-    return this.drawBigChamber(ctx, g, { x: 4, y: h * 0.14, w: w - 8, h: h * 0.72 }, dt, true);
+    return this.drawBigChamber(ctx, g, { x: 4, y: h * 0.06, w: w - 8, h: h * 0.88 }, dt, true); // (4.8.1) more of the height for the animal
   }
 
   // the catch bag, on its hook: its fish seen through the mesh, its tags on cords below

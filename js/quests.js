@@ -154,6 +154,7 @@ export const GROUPS = {
   undoc:   { name: 'an undocumented species', many: 'undocumented species', pay: 20000, undoc: true, test: (s) => !!s.undoc },
 };
 const GROUP_SPECIES = {};
+export const groupSpecies = (k) => groupList(k);
 const groupList = (k) => GROUP_SPECIES[k] || (GROUP_SPECIES[k] = SPECIES.filter((s) => (GROUPS[k].undoc ? !!s.undoc : live(s) && !s.undoc) && GROUPS[k].test(s)));
 // can he do it: some animal of the group lives within his reach (undocumented: he has been that deep)
 const groupOk = (k, P) => { const L = groupList(k), r = reachOf(P); return L.length > 0 && L.some((s) => (GROUPS[k].undoc ? (P.deepest || 0) >= s.dmin : usualDepth(s)[0] <= r)); };
