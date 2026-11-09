@@ -33,18 +33,21 @@
     .ld .ld-tip { margin-top: 14px; font: italic 16px/1.4 "EB Garamond", Georgia, serif; color: rgba(239,230,212,0.72); transition: opacity 0.4s; }
     .ld .ld-tip kbd { display: inline-block; padding: 0 5px; margin: 0 2px; border: 1px solid rgba(233,148,74,0.8); border-radius: 2px; font: 600 11px/16px "IBM Plex Mono", monospace; font-style: normal; color: var(--sun); vertical-align: 1px; }
     @keyframes ld-push { from { transform: scale(1); } to { transform: scale(1.05) translate(-0.6%, 0.6%); } }
-    /* (4.17.4) the block kept clear of the monster's head (narrower, lower left); the name with a shape of its own:
-       EARL large and heavy, THE DIVER small and spaced under it; orange only on the progress line; the status shown
-       as the percentage alone (the words kept for screen readers) */
-    .ld .ld-block { width: min(460px, 38vw); bottom: max(9vh, 28px); }
-    .ld .ld-title { display: flex; flex-direction: column; gap: 0.18em; white-space: nowrap; }
+    /* (4.17.5) the pieces apart, as a game's loading screen sets them: the name alone in the dark water at the lower
+       left, part of the picture; a small loading line tucked in the bottom-right corner; the tip on its own along the
+       bottom edge */
+    .ld .ld-title { position: absolute; left: max(6vw, 24px); bottom: max(14vh, 64px); margin: 0; display: flex; flex-direction: column; gap: 0.2em; white-space: nowrap; }
     .ld .ld-title b { font: 600 clamp(54px, 9vw, 150px)/0.82 "EB Garamond", Georgia, serif; letter-spacing: 0.04em; color: var(--paper); }
-    .ld .ld-title span { padding-left: 0.18em; font: 500 clamp(13px, 1.5vw, 22px) "IBM Plex Mono", monospace; letter-spacing: 0.62em; color: rgba(239,230,212,0.78); }
-    .ld .ld-bar { height: 2px; margin-top: clamp(18px, 4vh, 34px); background: rgba(239,230,212,0.16); }
+    .ld .ld-title span { padding-left: 0.2em; font: 500 clamp(12px, 1.4vw, 20px) "IBM Plex Mono", monospace; letter-spacing: 0.62em; text-transform: uppercase; color: rgba(239,230,212,0.7); }
+    .ld .ld-load { position: absolute; right: max(4vw, 20px); bottom: max(5vh, 20px); display: flex; align-items: center; gap: 12px; }
+    .ld .ld-bar { position: relative; width: clamp(90px, 9vw, 150px); height: 2px; margin: 0; background: rgba(239,230,212,0.18); }
+    .ld .ld-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 4%; background: var(--sun); transition: width 0.45s ease; }
+    .ld .ld-fill::after { content: none; }
+    .ld .ld-pct { min-width: 3.2em; text-align: right; font: 11px "IBM Plex Mono", monospace; letter-spacing: 0.14em; color: var(--sun); }
     .ld .ld-step { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-    .ld .ld-row { justify-content: flex-end; margin-top: 8px; }
-    .ld .ld-tip { margin-top: 18px; max-width: 30em; }
-    @media (max-height: 560px) { .ld .ld-block { width: min(380px, 44vw); bottom: 20px; } .ld .ld-title b { font-size: clamp(40px, 16vh, 64px); } .ld .ld-title span { font-size: 11px; } .ld .ld-bar { margin-top: 14px; } .ld .ld-tip { font-size: 13px; margin-top: 10px; } }
+    .ld .ld-tip { position: absolute; left: 50%; bottom: max(5vh, 20px); transform: translateX(-50%); width: max-content; max-width: min(46vw, 560px); margin: 0; text-align: center; font: italic 15px/1.4 "EB Garamond", Georgia, serif; color: rgba(239,230,212,0.6); transition: opacity 0.4s; }
+    .ld .ld-shade { background: linear-gradient(0deg, rgba(3,8,11,0.6) 0%, rgba(3,8,11,0.2) 28%, rgba(3,8,11,0) 50%); }
+    @media (max-height: 560px) { .ld .ld-title { bottom: 52px; } .ld .ld-title b { font-size: clamp(40px, 16vh, 64px); } .ld .ld-title span { font-size: 10px; } .ld .ld-tip { font-size: 12px; bottom: 16px; max-width: 44vw; } .ld .ld-load { bottom: 18px; } }
     @media (prefers-reduced-motion: reduce) { .ld * { animation: none !important; } }
   </style>
 </head>
@@ -52,10 +55,9 @@
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ld-water" x="-5%" y="-20%" width="110%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
   <div id="boot" class="ld" aria-label="Loading">
     <div class="ld-art"><img src="assets/loading/key-art.jpg" alt=""></div><div class="ld-shade"></div>
-    <div class="ld-block"><h1 class="ld-title"><b>Earl</b><span>the Diver</span></h1>
-      <div class="ld-bar"><i class="ld-fill"></i></div>
-      <div class="ld-row"><span class="ld-step" aria-live="polite">Loading</span><span class="ld-pct">0%</span></div>
-      <div class="ld-tip"></div></div>
+    <h1 class="ld-title"><b>Earl</b><span>the Diver</span></h1>
+    <div class="ld-load"><span class="ld-step" aria-live="polite">Loading</span><div class="ld-bar"><i class="ld-fill"></i></div><span class="ld-pct">0%</span></div>
+    <div class="ld-tip"></div>
   </div>
   <script>
     // the game reports how far it has got (window.__boot), then fades this away (window.__bootDone)
