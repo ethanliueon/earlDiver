@@ -48,13 +48,37 @@
     .ld .ld-tip { position: absolute; left: 50%; bottom: max(5vh, 20px); transform: translateX(-50%); width: max-content; max-width: min(46vw, 560px); margin: 0; text-align: center; font: italic 15px/1.4 "EB Garamond", Georgia, serif; color: rgba(239,230,212,0.6); transition: opacity 0.4s; }
     .ld .ld-shade { background: linear-gradient(0deg, rgba(3,8,11,0.6) 0%, rgba(3,8,11,0.2) 28%, rgba(3,8,11,0) 50%); }
     @media (max-height: 560px) { .ld .ld-title { bottom: 52px; } .ld .ld-title b { font-size: clamp(48px, 21vh, 86px); } .ld .ld-title span { font-size: 12px; } .ld .ld-tip { font-size: 12px; bottom: 16px; max-width: 44vw; } .ld .ld-load { bottom: 18px; } }
+    /* the painting moves a little: the stage is the picture's own frame, covering the screen the way the image used to
+       (object-fit: cover, 50% 30%), so everything laid on it stays on the painting at any screen size */
+    .ld .ld-art { container-type: size; }
+    .ld .ld-stage { position: absolute; left: 50%; top: 30%; width: max(100cqw, 167.49cqh); height: max(100cqh, 59.71cqw); transform: translate(-50%, -30%); }
+    .ld .ld-stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; }
+    .ld .ld-stage i { position: absolute; display: block; pointer-events: none; }
+    /* the thing in the deep rises toward Earl, slowly, along its own neck */
+    .ld .ld-mon { position: absolute; left: 24.03%; top: 54.70%; width: 40.67%; height: 45.30%; animation: ld-rise 15s ease-in-out infinite alternate; will-change: transform; }
+    .ld .ld-eye { left: 73.5%; top: 7.5%; width: 3.2%; height: 5.4%; margin: -2.7% 0 0 -1.6%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,190,110,0.9), rgba(255,140,60,0.35) 45%, rgba(255,120,50,0)); mix-blend-mode: screen; animation: ld-eye 5.5s ease-in-out infinite; }
+    /* the sunlight through the surface breathes */
+    .ld .ld-rays { left: 40%; top: 20%; width: 60%; height: 55%; background: repeating-linear-gradient(105deg, rgba(150,210,215,0) 0 7%, rgba(150,210,215,0.10) 9%, rgba(150,210,215,0) 12% 19%); -webkit-mask-image: linear-gradient(180deg, #000, transparent); mask-image: linear-gradient(180deg, #000, transparent); mix-blend-mode: screen; animation: ld-rays 9s ease-in-out infinite; }
+    /* Earl's lamp, and his breath */
+    .ld .ld-lamp { left: 67.96%; top: 46.65%; width: 2.4%; height: 4%; margin: -2% 0 0 -1.2%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,240,200,0.75), rgba(255,240,200,0)); mix-blend-mode: screen; animation: ld-lamp 4.3s linear infinite; }
+    .ld .ld-bub { left: 69.9%; top: 43.1%; width: 4px; height: 4px; margin-left: var(--x); border: 1px solid rgba(220,240,240,0.55); border-radius: 50%; opacity: 0; animation: ld-bub 6.2s ease-in infinite var(--d); }
+    /* marine snow, drifting down through the light */
+    .ld .ld-snowbox { left: 0; top: 18%; width: 100%; height: 82%; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent, #000 8%, #000 70%, transparent); mask-image: linear-gradient(180deg, transparent, #000 8%, #000 70%, transparent); }
+    .ld .ld-snow { left: 0; top: -240px; width: 100%; height: calc(100% + 240px); background-image: radial-gradient(1.2px 1.2px at 13% 21%, rgba(210,235,235,0.55), transparent), radial-gradient(1px 1px at 61% 7%, rgba(210,235,235,0.45), transparent), radial-gradient(1.5px 1.5px at 84% 43%, rgba(210,235,235,0.4), transparent), radial-gradient(1px 1px at 37% 66%, rgba(210,235,235,0.5), transparent), radial-gradient(1.3px 1.3px at 72% 88%, rgba(210,235,235,0.35), transparent); background-size: 260px 240px; animation: ld-snow 26s linear infinite; --t: 240px; }
+    .ld .ld-snow2 { top: -370px; height: calc(100% + 370px); background-size: 410px 370px; opacity: 0.55; animation-duration: 58s; --t: 370px; }
+    @keyframes ld-rise { from { transform: translate(0, 0); } to { transform: translate(1.3%, -1.4%); } }
+    @keyframes ld-eye { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+    @keyframes ld-rays { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.8; } }
+    @keyframes ld-lamp { 0%, 41%, 45%, 100% { opacity: 0.9; } 43% { opacity: 0.45; } 70% { opacity: 0.75; } }
+    @keyframes ld-bub { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 10% { opacity: 1; } 80% { opacity: 0.7; } 100% { opacity: 0; transform: translate(6px, -9vh) scale(1.2); } }
+    @keyframes ld-snow { from { transform: translateY(0); } to { transform: translateY(var(--t)); } }
     @media (prefers-reduced-motion: reduce) { .ld * { animation: none !important; } }
   </style>
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ld-water" x="-5%" y="-20%" width="110%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.05" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter></svg>
   <div id="boot" class="ld" aria-label="Loading">
-    <div class="ld-art"><img src="assets/loading/key-art.jpg" alt=""></div><div class="ld-shade"></div>
+    <div class="ld-art"><div class="ld-stage"><img src="assets/loading/key-art.jpg" alt=""><i class="ld-rays"></i><div class="ld-mon"><img src="assets/loading/ka-monster.png" alt=""><i class="ld-eye"></i></div><i class="ld-lamp"></i><i class="ld-bub" style="--d:0s;--x:0px"></i><i class="ld-bub" style="--d:2.3s;--x:-3px"></i><i class="ld-bub" style="--d:4.1s;--x:2px"></i><i class="ld-snowbox"><i class="ld-snow"></i><i class="ld-snow ld-snow2"></i></i></div></div><div class="ld-shade"></div>
     <h1 class="ld-title"><b>Earl</b><span>the Diver</span></h1>
     <div class="ld-load"><span class="ld-step" aria-live="polite">Loading</span><div class="ld-bar"><i class="ld-fill"></i></div><span class="ld-pct">0%</span></div>
     <div class="ld-tip"></div>
