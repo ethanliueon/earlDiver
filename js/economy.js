@@ -31,14 +31,14 @@ export const FINS = [
 export const SUBS = [
   // (4.14.0) each sub comes with everything built in: speed, sink and rise (+10 % a step, compounding), the
   // chambers' rating and the open tank; there are no separate upgrades for them
-  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 120, speed: 1, ballast: 0, rating: 300, tank: 3, price: 0 },
-  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 130, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 500 },
-  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 145, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3000 },
-  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 160, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 12000 },
-  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 180, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 40000 },
-  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 200, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
-  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 230, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
-  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 260, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 450000 },
+  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 170, speed: 1, ballast: 0, rating: 300, tank: 3, price: 0 },
+  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 180, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 500 },
+  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 195, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3000 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 210, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 12000 },
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 225, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 40000 },
+  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 240, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 260, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
+  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 280, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 450000 },
 ];
 export const SUB_TIERS = SUBS; // (old name)
 // No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
@@ -230,7 +230,7 @@ export const UPGRADES = {
 };
 // The eight submersibles the depth upgrade buys: the cabin air comes with the boat, not an upgrade
 // (the best holds five minutes).
-export const SUB_AIR = [120, 130, 145, 160, 180, 200, 230, 260]; // (4.5.0) two minutes of cabin air on the first hull
+export const SUB_AIR = [170, 180, 195, 210, 225, 240, 260, 280]; // (4.5.0) two minutes of cabin air on the first hull; (claude-polish) nearly three: from the Margaret moored over deep water, two minutes could not reach 250 m, where the first fish worth a net live, and come back
 // Suits: bought once at the boat, one worn at a time (changed at the boat).
 // press: depth at which the pressure starts to eat his air · air: air use · speed: swimming speed ·
 // bite: injury taken off a shark or billfish bite · quiet: no bubbles (the entity hears less) ·

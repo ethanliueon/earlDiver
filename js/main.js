@@ -113,7 +113,8 @@ function applySuit(e, P) {
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
-  sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics) sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible
+  sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics)
+  sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible ((claude-polish) this sat inside the comment above: every hull had the first one's two minutes)
   sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.13.0) the engine alone sets her speed: 50 steps to 3x
   sub.level = lv(P, 'depth');
 }
