@@ -84,3 +84,18 @@ most of the game: the first sub had about 30 s of work at 150 m.
 - The backup air tank costs $240 (was $800): two of them triple a dive's air, and a dive to 200-300 m now pays for them.
 - Leaving the sub: Earl comes out into open water, trying each side of the hull; before, if the point behind her was
   inside the seabed (a sub hugging a cliff) the collision pushed him onto the floor above, as much as 150 m up in one frame.
+
+## 4.18.4 · the claw, and the premium softened at the top
+
+Measured the claw: a sub rated for the depth, three minutes hunting with the grip timed in the green (air topped
+up, a full bag emptied into the tank): 9 animals and $69 at 250 m (mostly krill, worth nothing), $7,500 at 800 m,
+$76,000 at 1,500 m and $194,000 at 2,400 m. A real dive is limited by its air and its chambers (deep animals in the
+open tank die of pressure on the way up and fetch half), so perhaps a third to a half of that: about two or three
+dives for each of the last subs, which is quicker than the danger down there deserves.
+
+- The depth premium is softened at the top: x1.8 at 1,000 m, x3.1 at 2,000 m, x4.2 at 3,000 m, x5 at 4,000 m, x5.6
+  at 5,000 m. One animal met: $1,510 at 500-1,000 m, $2,170 at 1,000-2,000 m, $3,820 at 2,000-3,000 m, $4,370 at
+  3,000-4,000 m, $4,000 in the trench (before this branch: $926, $1,107, $1,630, $1,710, $1,339).
+
+Also run: 1,100 rounds of a chaos play-test (random keys, panels, button clicks, teleports between every region, the
+sub, the mouse) over three seeds: no page errors at all.

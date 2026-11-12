@@ -186,8 +186,8 @@ export function rarityPrice(sp) {
 // (4.18.0) what living deep is worth on top of rarity and size: below 500 m every animal fetches more, the more
 // the deeper its home (the middle of the band it keeps to). A sub that goes deeper costs far more and the water
 // is far more dangerous; without this a 4,000 m animal paid what a 700 m one did.
-//   500 m x1 · 1,000 m x1.9 · 2,000 m x3.4 · 3,000 m x4.8 · 4,000 m x6 · 5,000 m x7
-const DEPTH_PAY = [[500, 1], [1000, 1.9], [2000, 3.4], [3000, 4.8], [4000, 6], [5000, 7]];
+//   500 m x1 · 1,000 m x1.8 · 2,000 m x3.1 · 3,000 m x4.2 · 4,000 m x5 · 5,000 m x5.6 (4.18.4: softened at the top; the claw takes a great deal down there)
+const DEPTH_PAY = [[500, 1], [1000, 1.8], [2000, 3.1], [3000, 4.2], [4000, 5], [5000, 5.6]];
 export function homeDepth(sp) {
   const core = sp.x && sp.x.core, lo = core ? core[0] : sp.dmin, hi = core ? core[1] : Math.min(sp.dmax, Math.max(sp.dmin * 4, 1500));
   return (lo + hi) / 2;
