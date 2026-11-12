@@ -1219,7 +1219,7 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
+const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta', 'z']);
 function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
@@ -1339,7 +1339,10 @@ function readMove() {
   // (2.6.7) standing on the boat (the deck, the cabin, the wheel, the ladder): up and down mean nothing,
   // from the keys, the arrows or the mouse, so nothing upward or downward ever reaches the walking
   if (g.aboard) y = 0;
-  const sprint = keys.has('shift') || !!mouse.rdown;
+  // (4.20.6) hold Z to creep: half speed, slow enough that a fish lets him come within reach of the net (the keys
+  // only knew full speed; the mouse could ease in, the keyboard could not)
+  if (keys.has('z') && !g.earl.inSub && !g.aboard) { x *= 0.5; y *= 0.5; }
+  const sprint = (keys.has('shift') || !!mouse.rdown) && !keys.has('z');
   // (4.3.9) the sprint hint goes once he has sprinted for about a second while it was showing (a tap doesn't count)
   if (sprint && (x || y) && profile && profile.tut === 'on' && !profile.tutSprinted && g.tut && g.tut.spot && g.tut.spot.act === 'sprint') {
     const tNow = performance.now(); g.tutSprintT = (g.tutSprintT || 0) + Math.min(0.1, (tNow - (g.tutSprintAt || tNow)) / 1000); g.tutSprintAt = tNow;
@@ -2152,6 +2155,7 @@ function update(dt) {
         if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       } else if (ev.type === 'missed') {
+        if (profile && !profile.tipCreep && !tutorialOn(profile)) { profile.tipCreep = true; saveProfile(profile); setTimeout(() => hud.hint('Fish bolt from a fast swimmer. Hold Z to creep up on one (or ease the mouse in)'), 1500); } // (4.20.6)
         if (g.tutForce === 'miss') { profile.tutMissed = true; saveProfile(profile); g.tutOops = g.time; } // (4.3.2) the tutorial's first swing
         else hud.toast(`The ${ev.name.toLowerCase()} got away`);
       }
