@@ -2015,6 +2015,8 @@ function update(dt) {
     if (pressed.has('5')) { const tr = profile.traps || {}; if (TRAP_ORDER.some((k) => tr[k] > 0)) pick('trap', `Traps to set: ${TRAP_ORDER.filter((k) => tr[k] > 0).map((k) => `${trapsFree(g, k)} ${TRAPS[k].name.toLowerCase()}`).join(', ')}`); else hud.toast('No traps', 'warn'); }
     if (pressed.has('4')) { if (owns(profile, 'camera')) pick('cam', `${gear(profile, 'cam').name} · ${g.shots} shots left`); else hud.toast('No camera', 'warn'); }
     const tool = activeTool(g);
+    if (keys.has(' ') && g.aboard && g.toolSel === 'trap' && !g.trapDeckSaid) { g.trapDeckSaid = true; hud.toast('Jump in first: traps are set from the water, at the surface', 'warn'); } // (claude-polish) on deck Space did nothing at all
+    if (!keys.has(' ')) g.trapDeckSaid = false;
     if (pressed.has(' ') && !e.inSub && g.toolSel === 'trap') {
       // at the surface: open the depth meter (setting happens there; the Space that set it is ignored)
       if (!ui.trapSetOpen() && performance.now() - (ui.tsClosedAt || 0) > 400) { const msg = canSetHere(g); if (msg) hud.toast(msg, 'warn'); else ui.openTrapSet(); }
