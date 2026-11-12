@@ -108,7 +108,7 @@ export class Gallery {
     }).join('') + (full ? '<p>The tank is full: sell one, or buy more room below.</p>' : '');
     this.root.querySelector('.gl-catch').insertAdjacentHTML('beforeend', roomBtn);
     let html = '';
-    if (!nShown) html += `<div class="gl-empty">The tank is empty. Put in a live animal from your catch (on the right).</div>`;
+    // (claude-polish) no "the tank is empty" line across both tanks: each says Empty itself, and the catch column says how to put one in
     const d = this.open && A.display[this.open], a = this.open && this.anim.get(this.open);
     if (d && a) {
       const sp = SPECIES_BY_ID[d.id], dead = d.cond <= 0.05;
