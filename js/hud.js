@@ -288,6 +288,9 @@ export class Hud {
     ctx.fillRect(bx, by, bw * clamp(o2, 0, 1), bh);
     ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(bx, by + 1.5 * s, bw * clamp(o2, 0, 1), 3 * s); // a glint along the top
     ctx.restore();
+    // (4.18.0) the air it takes to get straight up from here: a notch on the gauge (amber once the air is near it)
+    if (g.airUp > 0.02 && !onTank) { const ux = bx + bw * clamp(g.airUp, 0, 1), near = o2 < g.airUp * 1.35;
+      ctx.fillStyle = near ? 'rgba(240,180,70,0.95)' : 'rgba(235,245,250,0.7)'; ctx.fillRect(Math.round(ux) - 1 * s, by - 3 * s, 2 * s, bh + 6 * s); }
     ctx.strokeStyle = 'rgba(180,215,240,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.stroke();
     ctx.font = `500 ${11 * s}px ${MONO}`; ctx.textAlign = 'right';
     if (g.noAir) { ctx.fillStyle = Math.sin(g.time * 9) > 0 ? '#ff5040' : '#a02820'; ctx.fillText('NO AIR', bx - 8 * s, by); }

@@ -31,14 +31,14 @@ export const FINS = [
 export const SUBS = [
   // (4.14.0) each sub comes with everything built in: speed, sink and rise (+10 % a step, compounding), the
   // chambers' rating and the open tank; there are no separate upgrades for them
-  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 120, speed: 1, ballast: 0, rating: 300, tank: 3, price: 0 },
-  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 130, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 500 },
-  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 145, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3000 },
-  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 160, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 12000 },
-  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 180, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 40000 },
-  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 200, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
-  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 230, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
-  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 260, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 450000 },
+  { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 180, speed: 1, ballast: 0, rating: 300, tank: 3, price: 0 },
+  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 210, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 500 },
+  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 260, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3000 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 300, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 12000 },
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 340, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 40000 },
+  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 360, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 390, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
+  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 420, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 450000 },
 ];
 export const SUB_TIERS = SUBS; // (old name)
 // No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
@@ -150,7 +150,7 @@ export const SUPPLIES = {
   necklace: { name: 'Glow stick', price: 370, max: 1, desc: 'A chemical glow stick on a lanyard, snapped to light (E): 90 s of warm amber light around Earl, and in the sub it lights her and the water round her. It does not keep anything away, and a light can be seen. Used up once snapped.' },
   tag: { name: 'Basic tags', price: 5, max: 3, needs: 'tagger', desc: 'Research darts for the tag gun: for common, uncommon and rare animals, and big tag-only animals under two metres.' },
   tagAdv: { name: 'Advanced tags', price: 200, max: 3, needs: 'tagger', desc: 'Satellite tags with a wider spread and a faint glow: needed for exotic, legendary and undocumented animals, and anything tag-only two metres long or more.' },
-  airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
+  airTank: { name: 'Backup air tank', price: 300, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
 export const supplyMax = (P, k) => k === 'airTank' ? 2 : Math.min(99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.12.0) two backup tanks, always // (4.5.0) two backup tanks at most
@@ -229,7 +229,9 @@ export const UPGRADES = {
 };
 // The eight submersibles the depth upgrade buys: the cabin air comes with the boat, not an upgrade
 // (the best holds five minutes).
-export const SUB_AIR = [120, 130, 145, 160, 180, 200, 230, 260]; // (4.5.0) two minutes of cabin air on the first hull
+// (4.18.0) enough for each hull to reach her rating and come straight back up on the cabin air alone (measured
+// from her speed and ballast); time down there comes from the backup tanks
+export const SUB_AIR = SUBS.map((s) => s.o2);
 // Suits: bought once at the boat, one worn at a time (changed at the boat).
 // press: depth at which the pressure starts to eat his air · air: air use · speed: swimming speed ·
 // bite: injury taken off a shark or billfish bite · quiet: no bubbles (the entity hears less) ·

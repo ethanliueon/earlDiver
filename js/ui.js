@@ -1418,7 +1418,7 @@ export class UI {
           return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}<p class="ys-note">Her pressure chambers hold animals from as deep as she can dive.</p>${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
       // (4.15.6) at a glance: each figure as a dial (how this sub sits between the first and the best), its icon
       // in the middle and the figure under it; a ▲/▼ against your sub
-      const RANGE = { rated: [300, 4500], o2: [120, 260], speed: [1, 3], ballast: [0, 0.9487], tank: [3, 24] };
+      const RANGE = { rated: [300, 4500], o2: [180, 420], speed: [1, 3], ballast: [0, 0.9487], tank: [3, 24] };
       const ICON = {
         rated: '<path d="M-7 4 A8 8 0 1 1 7 4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M0 2 L4 -5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle r="1.6" cy="2" fill="currentColor"/>',
         o2: '<rect x="-4" y="-7" width="8" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="-1.5" y="-10" width="3" height="3" fill="currentColor"/><path d="M-4 0 H4" stroke="currentColor" stroke-width="1.2"/>',

@@ -98,14 +98,25 @@ export class Autopilot {
   get active() { return this.state === 'coming' || this.state === 'home'; }
 
   call(g) { this.state = 'coming'; this.path = null; this.replanT = 0; this.holding = false; g.sub.docked = false; }
-  sendHome(g) { this.state = 'home'; this.path = null; this.replanT = 0; this.holding = false; g.sub.docked = false; }
+  sendHome(g) {
+    this.state = 'home'; this.path = null; this.replanT = 0; this.holding = false; g.sub.docked = false;
+    // (4.18.0) with him aboard she goes up first, nearly straight (the ballast lifts her fastest that way), and
+    // then home along the surface, where the cabin air fills again: the straight line to the boat could run the
+    // cabin dry at depth, and a dry cabin deep down drowned him on the way home
+    const sub = g.sub, toward = Math.sign(boatDock() - sub.x) || 1, far = Math.abs(boatDock() - sub.x);
+    this.rise = g.earl.inSub && sub.y > 8 ? { x: clamp(sub.x + toward * Math.min(far, sub.y * 0.25), 6, WORLD_W - 18), y: 1.8 } : null;
+  }
   cancel() { this.state = 'idle'; this.path = null; }
 
   // where it is heading right now
   goal(g) {
     const e = g.earl, sub = g.sub;
     const maxY = sub.rated - 4;
-    if (this.state === 'home') return { x: DOCK.x, y: DOCK.y, maxY, home: true };
+    if (this.state === 'home') {
+      if (this.rise && (sub.y < 3 || !e.inSub)) { this.rise = null; this.path = null; } // up: now for the boat
+      if (this.rise) return { x: this.rise.x, y: this.rise.y, maxY, rising: true };
+      return { x: DOCK.x, y: DOCK.y, maxY, home: true };
+    }
     // stop beside him, on the side it is coming from
     let dx = sub.x - e.x, dy = sub.y - e.y;
     const d = Math.hypot(dx, dy) || 1;
@@ -147,14 +158,14 @@ export class Autopilot {
     let wp = this.path[0];
     if (this.path.length > 1 && dist(sub.x, sub.y, wp.x, wp.y) < 3) { this.path.shift(); wp = this.path[0]; }
     const toGoal = dist(sub.x, sub.y, G.x, G.y);
-    this.remaining = toGoal;
+    this.remaining = G.rising ? toGoal + Math.abs(DOCK.x - G.x) : toGoal;
     // steer like a pilot would: same speed, same ballast boost on straight dives and ascents
     const sp = SUB_SPEED * speedMul * (sub.speedMul || 1);
     let dx = wp.x - sub.x, dy = wp.y - sub.y;
     const dl = Math.hypot(dx, dy) || 1;
     let nx = dx / dl, ny = dy / dl;
     const vBoost = ballastBoost(nx, ny) * (1 + (sub.ballast || 0) * Math.min(1, Math.abs(ny)));
-    const slow = this.path.length === 1 ? clamp(toGoal / 6, 0.15, 1) : 1; // ease in at the end
+    const slow = this.path.length === 1 && !G.rising ? clamp(toGoal / 6, 0.15, 1) : 1; // ease in at the end (not at the top of the climb: it carries on for the boat)
     const arrived = toGoal < 1.2;
     const tvx = arrived ? 0 : nx * sp * slow, tvy = arrived ? 0 : ny * sp * vBoost * slow;
     sub.vx = lerp(sub.vx, tvx, 1 - Math.exp(-dt * 0.9));
@@ -173,6 +184,7 @@ export class Autopilot {
     this.eta = toGoal / Math.max(0.5, sp * 0.8);
     // stuck against something: plan again
     if (this.speed < 0.3 && !arrived) { this.stuckT += dt; if (this.stuckT > 2) { this.stuckT = 0; this.path = null; } } else this.stuckT = 0;
+    if (G.rising && toGoal < 2.5) { this.rise = null; this.path = null; return null; } // (the climb's end, wherever rock let it get: on for the boat)
     if (arrived && this.speed < 0.4) {
       if (G.home) { sub.x = DOCK.x; sub.y = DOCK.y; sub.vx = sub.vy = 0; sub.docked = true; this.state = 'idle'; return 'docked'; }
       if (!this.holding) { this.state = 'waiting'; this.heldMsg = false; return 'arrived'; }

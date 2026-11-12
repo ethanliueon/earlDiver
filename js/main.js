@@ -5,7 +5,7 @@ import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W,
 import { SPECIES, SPECIES_BY_ID, TITLES } from './species.js';
 import { Chart } from './chart.js';
 import { Fauna, usualDepth } from './fauna.js';
-import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
+import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS, SUB_SPEED, SUB_RISE, DIVE_SPEED } from './player.js';
 import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, canFireSubNet, netsOf, netKinds, netTotal, NETS_SUB, updateSubNet, tankFits, BIG, tooBig } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
@@ -113,7 +113,8 @@ function applySuit(e, P) {
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
-  sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics) sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible
+  sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics)
+  sub.o2V = SUB_AIR[Math.min(SUB_AIR.length - 1, lv(P, 'depth'))]; // the cabin air comes with the submersible (4.18.0: this line had slipped into the comment above, so every hull had the first one's two minutes)
   sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.13.0) the engine alone sets her speed: 50 steps to 3x
   sub.level = lv(P, 'depth');
 }
@@ -2317,6 +2318,15 @@ function update(dt) {
     g.diverDrain = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
     g.diverDrain *= e.o2Mul;
     g.subDrain = subDrainMult(g.sub.y, g.sub.rated) * (mv.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(g.sub);
+    // (4.18.0) the air it takes to go straight up from here, at the pace she or he climbs: a mark on the air gauge,
+    // and one warning when what is left comes near it (deep in the first sub the cabin air ran out on the way home)
+    { const sub = g.sub, inS = e.inSub && sub.o2 > 0;
+      const up = inS ? sub.y / (SUB_SPEED * (sub.speedMul || 1) * SUB_RISE * (1 + (sub.ballast || 0))) : e.y / (DIVE_SPEED * (e.speedMul || 1) * (e.finSpeed || 1));
+      const need = (up + 4) * (inS ? subDrainMult(sub.y, sub.rated) * subLeak(sub) : diverDrainMult(e.y, e.pressStart || 300) * e.o2Mul) * (g.airMul || 1);
+      const have = inS ? sub.o2 : e.o2, max = inS ? sub.o2Max : e.o2Max;
+      g.airUp = e.atSurface || g.aboard || e.y < 6 ? 0 : Math.min(1, need / max);
+      if (g.airUp > 0 && (inS || e.y > 25) && have < need * 1.35 && !g.upWarned && !g.homeRun) { g.upWarned = true; hud.toast(inS ? 'Just enough cabin air to get up: surface now' : 'Just enough air to get up: surface now', 'warn'); audio.ready && audio.sonar && audio.sonar(0.06); }
+      else if (e.atSurface || have > need * 2) g.upWarned = false; }
     if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical — surface', 'warn'); }
     if (e.atSurface) g.lowO2Warned = false;
 
