@@ -24,7 +24,7 @@ export const AGGRO = {
   24: { kind: 'lurk', dmg: 1, range: 1.8 },  // giant moray
   21: { kind: 'lurk', dmg: 1, range: 3.2 },  // titan triggerfish guarding its nest
   184: { kind: 'whale', dmg: 5, hull: 0.4, p: 0.05, minDepth: 250 }, // sperm whale
-  187: { kind: 'ram', hull: 0.2, p: 0.04 },  // orca: rams the sub, leaves divers alone
+  187: { kind: 'ram', hull: 0.2, p: 0.02 },  // orca: rams the sub, leaves divers alone ((claude-polish) half as often: a first trip to the drop-off met three rams in four minutes)
   188: { kind: 'ambush', dmg: 4, hull: 0.3, p: 0.08, minDepth: 2900 }, // abyssal sleeper shark: from below, Earl or the sub
 };
 // the species added since that attack (data/species_more.js)
