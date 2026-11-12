@@ -24,7 +24,7 @@ export const AGGRO = {
   24: { kind: 'lurk', dmg: 1, range: 1.8 },  // giant moray
   21: { kind: 'lurk', dmg: 1, range: 3.2 },  // titan triggerfish guarding its nest
   184: { kind: 'whale', dmg: 5, hull: 0.4, p: 0.05, minDepth: 250 }, // sperm whale
-  187: { kind: 'ram', hull: 0.2, p: 0.04 },  // orca: rams the sub, leaves divers alone
+  187: { kind: 'ram', hull: 0.1, p: 0.04 },  // orca: rams the sub, leaves divers alone (4.18.0: a pod of three took 60 % of the first sub's hull)
   188: { kind: 'ambush', dmg: 4, hull: 0.3, p: 0.08, minDepth: 2900 }, // abyssal sleeper shark: from below, Earl or the sub
 };
 // the species added since that attack (data/species_more.js)
@@ -43,7 +43,7 @@ export function directEncounters(g, dt, SPECIES_BY_ID) {
   let rate = 0, pool = [];
   if (e.inSub) {
     if (e.y > 300) { rate = 0.12; pool = [184]; }
-    else if (e.y < 150) { rate = 0.1; pool = [187]; }
+    else if (e.y < 90) { rate = 0.06; pool = [187]; } // (4.18.0: near the surface, as they are; the first sub spends nearly all her time above 150 m)
   } else if (e.y > 260) { rate = 0.18; pool = [184]; }
   else if (e.y > 3) {
     rate = open ? 0.45 : 0.22;

@@ -2364,7 +2364,10 @@ function update(dt) {
 
     // animals that attack
     g.fauna.bleeding = g.injury > 0;
-    if (!g.frozen) { directEncounters(g, dt, SPECIES_BY_ID); updateHunters(g, dt); }
+    // (4.18.0) nothing comes hunting during the tutorial, nor in the shallows right by the Margaret (her ladder is where
+    // a new diver spends his first minutes, and a great white there was the end of most first games)
+    const harbour = (profile && tutorialOn(profile)) || (!e.inSub && e.y < 14 && Math.abs(e.x - BOAT.x) < 30);
+    if (!g.frozen) { if (!harbour) directEncounters(g, dt, SPECIES_BY_ID); updateHunters(g, dt); }
     // entity (during the reveal it hangs in front of him, then sinks away; it does not take him)
     let r = null;
     if (g.reveal) {
