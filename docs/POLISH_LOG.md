@@ -134,7 +134,11 @@ Also run: a 40-minute soak (the bot playing while memory and the game's lists we
   so time at depth is what a mid-game player most wants more of. It has its own picture (four bottles in brass straps
   on a manifold), shows on the spec sheet, and the new bottles come full.
 
-## 4.19.1 · the radio's jobs worth taking
+## 4.19.1 · the radio's jobs worth taking (no effect in play: see the note)
+
+Note, found after: nothing generates contracts any more (the radio became decoration in 3.0.0, when the quest board
+replaced it; `js/contracts.js` is only imported for two helpers). The floor below is kept as a fix to the module, but
+it changes nothing a player sees. The README's three mentions of radio contracts are removed.
 
 Sampled the board and the radio at four stages of a game. Mid-game (a 1,900 m sub) the radio offered "a by-the-wind
 sailor for the collection, alive or dead: $1", a velvet swimming crab for $4 and five clams for $24, taking slots

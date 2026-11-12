@@ -33,8 +33,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | B | Inventory: cash, supplies, finds, the catch bag, what is in the sub, your gear |
 | T | In the sub: the back of the sub (the chamber room and the tank room; arrows to move between them) |
 | F at the ladder | Climb aboard the Margaret, rung by rung (a dive starts on the deck). On deck, A / D walk (Shift runs, Space or W jumps); the only thing to use is the wheelhouse door (F, Enter the cabin). Walk off either end of the deck to jump in |
-| F (in the cabin) | A / D walk the cabin (Shift runs), or click where to go; click a thing to use it. F at: the computer (the catalog and the sub's yard), the radio (accept contracts; new ones free every 3 hours), the wheel (A / D steer, G anchor, W leaves the wheel), the hatch in the floor (the gallery). Esc or the door goes back out on deck |
-| U (in the water by the boat) | Sell the catch, without going aboard. Contracts you accepted at the radio are paid here when the goods are aboard |
+| F (in the cabin) | A / D walk the cabin (Shift runs), or click where to go; click a thing to use it. F at: the computer (the catalog and the sub's yard), the wheel (A / D steer, G anchor, W leaves the wheel), the aquarium (the gallery). Esc or the door goes back out on deck |
+| U (in the water by the boat) | Sell the catch, without going aboard |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
 | Esc | Pause (save and quit to the title from there) |
 | ⚙ | Settings and controls (on the title screen, in the journal and the pause menu): target brackets, catch tags, reduce flashing, hints, sound, graphics (Auto / Fast) |
@@ -55,9 +55,9 @@ Settings → Pages → Deploy from a branch → `main` / root).
   guns, cameras, trawl nets, traps, suits, fins, air tanks, bags and supplies, each its own item with
   what it is good for and not for. Bought items are yours at once and go on; change them in the
   inventory (B) on deck, in the cabin or in the sub (drag onto Earl, or click). "The yard" sells the
-  sub's parts (hull, engine, chambers, open tank, air rack, claw); better buyers are on the radio.
-- **Contracts** on the radio pay the market price plus a premium for the trip (more for deeper work),
-  never more extra than your next submersible costs.
+  sub's refits (the claw, the quiet engine, the spare air bank, the seafloor sonar) and the next sub.
+- **Quests** (O): the Margaret's log teaches the basics one step at a time; the board offers three
+  quests at a time for cash (new ones free every three hours, or sooner for a fee).
 - **Selling.** Everything sells at the boat; the price board shows what the last sales fetched.
   Tiny fish are "too small" to tag; medium ones pay a dollar or two in tags. Upgrades grow like
   Cat Goes Fishing: each level worth more than the last, and dearer.
@@ -109,7 +109,6 @@ Settings → Pages → Deploy from a branch → `main` / root).
   (sells for ×1.2), then Famous fifteen minutes later (×2, for good). Take a Happy one down in the
   sub to its own depth and let it go: it stays there under its name, every dive. The tag tracker
   shows the way back to it.
-- The radio at the boat has a few contracts each dive that pay well over the market.
 - Something is out there: a gulper some 60 m long, nearly all head and mouth, with red lights
   flickering along its length and red eyes. Each run it starts somewhere new, between 1,500 and 3,500 m, and roams the whole ocean; by night
   it rises. Once a run, if it is far off while you are down in its water, it is suddenly 500 m nearer. It
