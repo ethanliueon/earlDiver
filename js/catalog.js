@@ -215,7 +215,7 @@ export function pictureOf(kind, v, w, h, plain = false) {
     if (v && typeof v === 'object' && (v.rarity === 'legendary' || v.rarity === 'exotic' || v.finLook || v.tankLook || v.bagLook) && v.id) { drawSpecialPicture(ctx, v, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; } // (2.8.1) their own drawings, on the usual background
     const tool = { net: 'net', slurp: 'slurp', tag: 'tag', cam: 'cam', trap: 'trap' }[kind];
     if (tool) { const ic = toolIcon(tool, kind === 'trap' ? v : v.look || 0, Math.round(w * 0.8), Math.round(h * 0.8)); ctx.drawImage(ic, w * 0.1, h * 0.1); }
-    else if (kind === 'suit') { ctx.save(); ctx.translate(w / 2, h * 0.52); ctx.rotate(-Math.PI / 2); drawEarl(ctx, h * 0.86, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: v && typeof v === 'object' ? v.pal || v.look : v, bag: [], noTank: true }); ctx.restore(); }
+    else if (kind === 'suit') { ctx.save(); ctx.translate(w / 2, h * 0.36); ctx.rotate(-Math.PI / 2); drawEarl(ctx, h * 0.62, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: v && typeof v === 'object' ? v.pal || v.look : v, bag: [], noTank: true }); ctx.restore(); }
     else if (kind === 'fins') drawFins(ctx, w, h, v);
     else if (kind === 'tank') drawTank(ctx, w, h, v);
     else if (kind === 'bag') drawBag(ctx, w, h, v);

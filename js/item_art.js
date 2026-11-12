@@ -150,8 +150,8 @@ function designedBag(ctx, w, h, cx, cy, bw, bh, L) {
 const rgbaOf = (c, a) => { const [r, g, b] = rgb(c); return `rgba(${r},${g},${b},${a})`; };
 function suitPic(ctx, w, h, def, legend) {
   // the suit, standing, in its own colours (a Legendary's seams glowing)
-  ctx.save(); ctx.translate(w / 2, h * 0.5); ctx.rotate(-Math.PI / 2);
-  drawEarl(ctx, h * 0.84, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: def.pal || def.look, bag: [], noTank: true, suitGlow: def.suitGlow });
+  ctx.save(); ctx.translate(w / 2, h * 0.36); ctx.rotate(-Math.PI / 2);
+  drawEarl(ctx, h * 0.62, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: def.pal || def.look, bag: [], noTank: true, suitGlow: def.suitGlow });
   ctx.restore();
 }
 function sideToolPic(ctx, w, h, def, legend) {

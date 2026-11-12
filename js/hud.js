@@ -490,7 +490,9 @@ export class Hud {
     }
     }
     // ---------- cash, top left: what is safe at the boat, and what is in the bag ----------
-    if (g.profile && !dying) {
+    // (claude-polish) not while the inventory is open: it has its own cash counter, and its edge cut this one in half
+    const invOpen = (this._invEl || (this._invEl = document.getElementById('inventory'))) && !this._invEl.hidden;
+    if (g.profile && !dying && !invOpen) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.font = `500 ${20 * s}px ${MONO}`;
       const ctxt = money(g.profile.cash);
