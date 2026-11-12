@@ -737,7 +737,7 @@ export class Fauna {
       const de = dist(c.x, c.y, earl.x, earl.y);
       if (school) {
         // school fish don't break ranks: the whole school moves off (see the school centres)
-      } else if (c.flee > 0 && !c.prey && !c.ctrl && !earl.inSub) {
+      } else if (c.flee > 0 && !c.prey && !c.ctrl && !earl.inSub && !c.tutor) { // (claude-polish: the tutorial's fish never bolts from him: chased straight on, as the step says, it used to flee for good and he drowned)
         const closing = ((c.x - earl.x) * earl.vx + (c.y - earl.y) * earl.vy) / (de + 0.01);
         // hanging still he can come very close; drifting slowly, a little less; fast, not at all
         const threat = (earl.speedNow < 0.4 ? 0.9 : earl.speedNow < 1.3 ? 1.4 : (3 + c.len * 1.5) * (earl.sprint ? 1.6 : 1) * (closing > 1 ? 1.4 : 1)) * (1 - (earl.ambush || 0));
