@@ -307,7 +307,7 @@ export class Hud {
       const parts = [];
       if (e.sprint && e.speedNow > 1) parts.push(`sprinting ×${e.inSub ? 3 : 2}`);
       const press = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300);
-      if (press > 1.05) parts.push(`pressure ×${press.toFixed(1)}`);
+      if (press > 1.05) parts.push(press >= 100 ? 'pressure ×100+' : `pressure ×${press.toFixed(press < 10 ? 1 : 0)}`); // (4.18.7) past x100 the number means nothing (it grows to millions in the abyss)
       if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.fillText(parts.join(' · '), rx0, ly); ly += 15 * s; }
     }
     let yy = ly + 8 * s;

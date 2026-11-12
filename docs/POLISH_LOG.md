@@ -114,3 +114,12 @@ $69 before (mostly krill), $747 after (firefly squid, hatchetfish).
   empty table cell, Dave signing his page.)
 - The first step of the Log, for a diver who skipped the tutorial, reads in plain words ("swim down", "observe a fish
   (F)", "catch a fish", "back up to the surface") instead of pointing at an orange fish that is not there.
+
+## 4.18.7 · two display bugs
+
+- The diver's pressure readout printed the raw air-drain multiplier, which grows exponentially: "pressure ×367427196.6"
+  at 3,250 m and "×7475884414230.2" in the trench. It now reads ×1.1 to ×9.9, ×10 to ×99, then "×100+".
+- The Log's first step lowercased its key: "observe a fish (f)". Only the first letter is lowered now.
+
+Also run: a 40-minute soak (the bot playing while memory and the game's lists were sampled): the heap held at about
+15 MB, the page's element count did not grow, and the caches levelled off. No leaks.
