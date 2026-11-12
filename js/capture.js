@@ -5,7 +5,7 @@ import { clamp, dist } from './util.js';
 import { pressureTolerance } from './specimens.js';
 import { SPECIES_BY_ID } from './species.js';
 import { WEIGHT, gear, owns, statValue } from './economy.js';
-import { canTakeLive, isTagOnly, liveValue, fragile, conditionName } from './specimens.js';
+import { canTakeLive, isTagOnly, liveValue, deepPremium, fragile, conditionName } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 
 export const bagSlots = (g) => Math.round(statValue(g.profile, 'bag'));
@@ -113,7 +113,7 @@ export function findCatch(g) {
     consider(s.sp, s.x, s.y - Math.min(0.5, s.sp.len * s.scale * 0.3), s.sp.len * s.scale, { s, variant: s.variant });
   }
   if (best) {
-    best.value = liveValue(best.sp, best.len) * variantMult(best.variant); best.name = variantName(best.sp, best.variant);
+    best.value = liveValue(best.sp, best.len) * variantMult(best.variant) * deepPremium(best.y); best.name = variantName(best.sp, best.variant);
     best.chance = catchChance(def, kind, best, g.luck || 0);
   }
   return best ? { ok: true, ...best } : blocked ? { ok: false, ...blocked } : null;

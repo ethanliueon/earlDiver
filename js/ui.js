@@ -22,7 +22,7 @@ import { usualDepth } from './fauna.js';
 import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
-import { specimenValue, conditionName, rarityOf, rarityStars, rarityCls, rarityCol } from './specimens.js';
+import { specimenValue, deepPremium, conditionName, rarityOf, rarityStars, rarityCls, rarityCol } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
@@ -624,7 +624,7 @@ export class UI {
     const kgTxt = kg < 0.1 ? kg.toFixed(3) : kg < 10 ? kg.toFixed(kg < 1 ? 2 : 1) : Math.round(kg).toLocaleString(), lb = kg * LB, lbTxt = lb < 10 ? lb.toFixed(lb < 1 ? 2 : 1) : Math.round(lb).toLocaleString();
     const rows = row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m${u(ft(s2.from || 0) + ' ft')}`) + row('Habitat', `${hab[0].toLocaleString()}–${hab[1].toLocaleString()} m${u(ft(hab[0]) + '–' + ft(hab[1]) + ' ft')}`)
       + row('Length', `${len.toFixed(2)} m${u((len * FT).toFixed(1) + ' ft')}${tooBig(s2) ? ' <small>over chamber limit</small>' : ''}`) + row('Weight', `${kgTxt} kg${u(lbTxt + ' lb')}`)
-      + row('Location', where) + row('Status', `<i class="sp-dot"></i>${status[0]}`, ` st-${status[1]}`) + row('Value', money(specimenValue(s2) * statValue(P, 'payFish')), ' val');
+      + row('Location', where) + row('Status', `<i class="sp-dot"></i>${status[0]}`, ` st-${status[1]}`) + row('Value', money(specimenValue(s2) * statValue(P, 'payFish')) + (deepPremium(s2.from) > 1.001 ? u(`deep catch, ×${deepPremium(s2.from).toFixed(1)}`) : ''), ' val');
     const inSub = this.h.inSub ? this.h.inSub() : false, w = at.where, i = at.i, mv = (label, act, to = -1, on = true) => `<button data-fm="${act}:${w}:${i}:${to}"${on ? '' : ' disabled'}>${label}</button>`;
     let acts = '';
     if (inSub) {

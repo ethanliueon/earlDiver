@@ -194,6 +194,9 @@ function habitatOk(sp, x, y, W) {
 // how often a species is met: smaller, schooling animals more, and above all the rarer the less
 // (common 1, uncommon 0.4, rare 0.14, exotic 0.05, legendary 0.012: see RARITY in specimens.js).
 // Big animals and sharks are mostly exotic already, so their own penalty is lighter than it was.
+// (claude-polish) the bottom of the sea is richer: below 2,500 m the rare and exotic animals turn up more often,
+// up to three times as often by 4,000 m (the deepest water was emptier, and paid less than the plain above it)
+const richK = (sp, y) => { if (y <= 2500) return 1; const i = rarityOf(sp).i; return i === 2 || i === 3 ? 1 + 2 * Math.min(1, (y - 2500) / 1500) : 1; };
 const WEIGHT = new Map();
 function weightOf(sp) {
   let w = WEIGHT.get(sp.id);
@@ -261,7 +264,7 @@ export class Fauna {
           if (rng() < p) {
             const cands = SWIMMERS.filter((s) => { const R = HOME[s.id];
               return R && R.k.includes(kind) && h.y >= s.dmin && h.y <= s.dmax && !(TROPICAL.has(s.id) && !onTropicalReef(h.x)) && !(COLD.has(s.id) && onTropicalReef(h.x)); });
-            if (cands.length) { const wt = (c) => weightOf(c) * this.depthPref(c, h.x, h.y, this.night); let tot = 0; for (const c of cands) tot += wt(c); let r = rng() * tot; for (const c of cands) { r -= wt(c); if (r <= 0) { h.res = c.id; break; } } if (!h.res) h.res = cands[0].id; }
+            if (cands.length) { const wt = (c) => weightOf(c) * this.depthPref(c, h.x, h.y, this.night) * richK(c, h.y); let tot = 0; for (const c of cands) tot += wt(c); let r = rng() * tot; for (const c of cands) { r -= wt(c); if (r <= 0) { h.res = c.id; break; } } if (!h.res) h.res = cands[0].id; }
           }
         }
         if (!h.res || residents > 60) continue;
@@ -333,7 +336,7 @@ export class Fauna {
     });
     if (!cands.length) return;
     const wOf = (c) => {
-      let w = weightOf(c) * this.depthPref(c, x, y, this.night);
+      let w = weightOf(c) * this.depthPref(c, x, y, this.night) * richK(c, y);
       if (this.bleeding && /Shark/.test(c.cat)) w *= 3;           // blood in the water
       if (this.night && /Shark/.test(c.cat)) w *= 1.6;            // sharks hunt at night
       if (c.id === 185 || c.id === 186) w *= 2.5;                 // dolphin pods are fairly common near the surface
@@ -488,6 +491,9 @@ export class Fauna {
       const half = Math.max(1, (hi - lo) / 2); return (0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half)) * deepK;
     }
     if (deepKind && y < lo) return 0;
+    // (claude-polish) the abyss: below 2,500 m a rare or exotic animal turns up anywhere its records reach, not only
+    // in its everyday band (which for most stops far above), so the bottom of the sea is not left nearly empty
+    if (y > hi && y > 2500 && y <= sp.dmax) { const i = rarityOf(sp).i; if (i === 2 || i === 3) return 0.45 * deepK; }
     const d = y < lo ? lo - y : y - hi, scale = Math.max(30, (hi - lo) * 0.3);
     return 0.07 * Math.exp(-d / scale);
   }

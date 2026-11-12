@@ -220,10 +220,13 @@ export function conditionName(c) {
 // a dead animal is worth half the plain market price of its kind: no rare-form or contract
 // bonus. One brought slowly up to surface pressure in a chamber (acclimated) is worth a quarter more.
 export const isDead = (s) => s.cond <= 0.05;
+// (claude-polish) the deep pays: anything brought up from below 1,500 m is worth more the deeper it was caught,
+// half as much again at 2,500 m, twice at 3,500 m, up to 2.4 times from 4,300 m down (legendaries included)
+export const deepPremium = (y) => 1 + Math.min(1.4, Math.max(0, ((y || 0) - 1500) / 2000));
 export function specimenValue(s) {
-  const sp = SPECIES_BY_ID[s.id];
-  if (isDead(s)) return liveValue(sp, s.len) * 0.5;
-  return liveValue(sp, s.len) * conditionMult(s.cond) * (s.mult || 1) * (s.acc ? 1.25 : 1);
+  const sp = SPECIES_BY_ID[s.id], dk = deepPremium(s.from);
+  if (isDead(s)) return liveValue(sp, s.len) * 0.5 * dk;
+  return liveValue(sp, s.len) * conditionMult(s.cond) * (s.mult || 1) * (s.acc ? 1.25 : 1) * dk;
 }
 // fragile animals (jellies, comb jellies) take more harm from a net
 export const fragile = (sp) => sp.cat === 'Jellyfish & Drifters';

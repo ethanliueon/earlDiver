@@ -2,7 +2,7 @@
 // how big and how fast depend on the arm fitted: see ARMS in economy.js); then a marker sweeps a gauge and Space again closes the
 // claw. In the green: a clean grip. In the amber: it holds, but too hard. Outside: it slips away.
 import { clamp, dist } from './util.js';
-import { canTakeLive, liveValue } from './specimens.js';
+import { canTakeLive, liveValue, deepPremium } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 import { bagSlots } from './capture.js';
 import { gear, owns } from './economy.js';
@@ -28,7 +28,7 @@ export function findArmTarget(g) {
   };
   for (const c of g.fauna.list) if (!c.dead && !c.pet && !(c.att && c.att.s !== 'idle')) test(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
   for (const s of g.world.statics) if (Math.abs(s.x - b.x) < D.reach + 3) test(s.sp, s.x, s.y - s.sp.len * s.scale * 0.3, s.sp.len * s.scale, { s, variant: s.variant });
-  if (best) { best.value = liveValue(best.sp, best.len) * variantMult(best.variant); best.name = variantName(best.sp, best.variant); }
+  if (best) { best.value = liveValue(best.sp, best.len) * variantMult(best.variant) * deepPremium(best.y); best.name = variantName(best.sp, best.variant); }
   return best;
 }
 
