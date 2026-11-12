@@ -2645,7 +2645,7 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // debug hooks for automated testing
-window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud };
+window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck() };
 
 // leaving the page: whatever has changed is written to the slot at once
 function saveNow() { if (!profile) return; if (g.mode === 'play') syncProfile(); saveProfile(profile); flushSave(); }

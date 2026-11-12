@@ -496,19 +496,27 @@ export class Hud {
     if (g.profile && !dying && !invOpen) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.font = `500 ${20 * s}px ${MONO}`;
+      // (claude-polish) on a small counter plate, as in the locker: the word stamped small, the sum in cream
       const ctxt = money(g.profile.cash);
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(ctxt, pad + 1.5 * s, pad + 1.5 * s);
-      ctx.fillStyle = 'rgba(220,236,214,0.9)'; ctx.fillText(ctxt, pad, pad);
+      ctx.font = `600 ${17 * s}px ${MONO}`; const vw = ctx.measureText(ctxt).width;
+      const cpx = pad - 10 * s, cpy = pad - 7 * s, cph = 30 * s, cpw = vw + 62 * s;
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1.5 * s;
+      const cpg = ctx.createLinearGradient(0, cpy, 0, cpy + cph); cpg.addColorStop(0, 'rgba(30,30,26,0.9)'); cpg.addColorStop(1, 'rgba(14,14,12,0.9)');
+      ctx.fillStyle = cpg; ctx.beginPath(); ctx.roundRect(cpx, cpy, cpw, cph, 4 * s); ctx.fill(); ctx.restore();
+      ctx.strokeStyle = 'rgba(201,180,126,0.55)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(cpx + 0.5, cpy + 0.5, cpw - 1, cph - 1, 4 * s); ctx.stroke();
+      ctx.textBaseline = 'middle'; ctx.font = `600 ${8.5 * s}px ${MONO}`; ctx.fillStyle = 'rgba(201,180,126,0.85)'; ctx.fillText('C A S H', cpx + 10 * s, cpy + cph / 2 + 0.5 * s);
+      ctx.font = `600 ${17 * s}px ${MONO}`; ctx.fillStyle = '#f0e6c8'; ctx.fillText(ctxt, cpx + 52 * s, cpy + cph / 2 + 1 * s);
+      ctx.textBaseline = 'top';
       let carried = 0;
       for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k]) carried += GOODS[k].price * n;
       if (carried > 0) {
         ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.6)';
-        ctx.fillText(`+ about ${money(carried, carried < 100)} unsold`, pad, pad + 27 * s);
+        ctx.fillText(`+ about ${money(carried, carried < 100)} unsold`, pad, pad + 30 * s);
       }
       if ((g.loadKg || 0) > 5 && !e.inSub) {
         ctx.font = `${11 * s}px ${MONO}`;
         ctx.fillStyle = g.loadKg > 10 ? '#e8b040' : 'rgba(200,220,215,0.6)';
-        ctx.fillText(`load ${Math.round(g.loadKg)} kg${g.loadKg > 10 ? ' · heavy' : ''}`, pad, pad + (carried > 0 ? 43 : 27) * s);
+        ctx.fillText(`load ${Math.round(g.loadKg)} kg${g.loadKg > 10 ? ' · heavy' : ''}`, pad, pad + (carried > 0 ? 45 : 30) * s);
       }
     }
 
