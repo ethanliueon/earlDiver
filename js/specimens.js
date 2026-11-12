@@ -178,9 +178,28 @@ export function rarityPrice(sp) {
     const lo = lerpN(10, 150, d), hi = lerpN(80, 500, d);
     p = lerpN(lo, hi, lerpN(0.5, 0.3, d) * size + lerpN(0.5, 0.7, d) * R.pos); // (in the deep, a small one is no worse than a big one)
   }
+  if (R.id !== 'legendary') p *= depthPay(sp); // (4.18.0) the deep pays: legends are priced by their depth already
   p = p >= 100 ? Math.round(p / 5) * 5 : Math.round(p * 100) / 100;
   PRICE_CACHE.set(sp.id, p);
   return p;
+}
+// (4.18.0) what living deep is worth on top of rarity and size: below 500 m every animal fetches more, the more
+// the deeper its home (the middle of the band it keeps to). A sub that goes deeper costs far more and the water
+// is far more dangerous; without this a 4,000 m animal paid what a 700 m one did.
+//   500 m x1 · 1,000 m x1.9 · 2,000 m x3.4 · 3,000 m x4.8 · 4,000 m x6 · 5,000 m x7
+const DEPTH_PAY = [[500, 1], [1000, 1.9], [2000, 3.4], [3000, 4.8], [4000, 6], [5000, 7]];
+export function homeDepth(sp) {
+  const core = sp.x && sp.x.core, lo = core ? core[0] : sp.dmin, hi = core ? core[1] : Math.min(sp.dmax, Math.max(sp.dmin * 4, 1500));
+  return (lo + hi) / 2;
+}
+export function depthPay(sp) {
+  const D = homeDepth(sp);
+  if (D <= DEPTH_PAY[0][0]) return 1;
+  for (let i = 1; i < DEPTH_PAY.length; i++) {
+    const [a, ma] = DEPTH_PAY[i - 1], [b, mb] = DEPTH_PAY[i];
+    if (D <= b) return ma + (mb - ma) * (D - a) / (b - a);
+  }
+  return DEPTH_PAY[DEPTH_PAY.length - 1][1];
 }
 const RAR_CACHE = new Map();
 // { tier index, rarity entry, position 0..1 within the tier, hidden }. Animals that can't be captured

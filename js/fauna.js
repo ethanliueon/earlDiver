@@ -221,7 +221,8 @@ export class Fauna {
   targetCount(depth, dread, openWater) {
     // (2.3.1: the deep a little livelier - every animal there is small and dark, so a few more groups are
     // needed for any to pass through the lights; open water only thins the shallows)
-    let base = depth < 60 ? 9 : depth < 200 ? 7 : depth < 600 ? 6 : depth < 1200 ? 5 : depth < 2500 ? 4 : 3;
+    // (4.18.0) the deep livelier below 1,200 m (6 groups, was 4 and 3): its animals are few and small, and a haul or a claw hunt down there should find something
+    let base = depth < 60 ? 9 : depth < 200 ? 7 : depth < 600 ? 6 : depth < 1200 ? 5 : 6;
     if (openWater && depth < 200) base = Math.max(2, base - 1);
     return Math.round(base * (1 - dread * 0.95));
   }
