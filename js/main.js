@@ -2258,6 +2258,10 @@ function update(dt) {
     { const face = g.helm && Math.abs(g.boatV || 0) > 0.4 ? Math.sign(g.boatV) : g.helm ? (BOAT.face || -1) : -1;
       BOAT.face = face; const yawT = face < 0 ? 0 : Math.PI, rate = Math.PI / 8; // (3.1.1) she comes round slowly: about 8 s end to end
       BOAT.yaw = (BOAT.yaw || 0) + clamp(yawT - (BOAT.yaw || 0), -rate * dt, rate * dt); }
+    // (claude-polish) at the controls of a docked sub, driving off takes her out of the cradle (after the autopilot
+    // brought her home, nothing did: he had to climb out and back in to dive again)
+    if (e.inSub && g.sub.docked && !g.sub.imploded && !g.helm && !g.homeRun && !ui.anyOpen() && (Math.abs(mv.x) > 0.3 || mv.y > 0.3) && !(g.autopilot && g.autopilot.active)) { g.sub.docked = false; hud.toast('Out of the cradle'); audio.ready && audio.thud && audio.thud(0.15); }
+    g.homeSafe = Math.abs(e.x - BOAT.x) < 60 && e.y < 40;
     // a docked sub sits in the boat's cradle wherever she goes
     if (g.sub.docked && !g.sub.imploded && !(g.autopilot && g.autopilot.active)) { g.sub.x = boatDock(); g.sub.y = 2.6; g.sub.vx = g.sub.vy = 0; g.sub.yaw = Math.PI - BOAT.yaw; g.sub.facing = Math.cos(BOAT.yaw) >= 0 ? -1 : 1; }
     if (e.x > CANYON.x0 && e.x < CANYON.x1 && e.y > CANYON.top && !g.helm) {
@@ -2311,7 +2315,7 @@ function update(dt) {
       audio.ready && audio.gasp && audio.gasp();
     }
     // an empty sub at the surface (or docked) airs out its cabin
-    if (!e.inSub && !g.sub.imploded && g.sub.y < 2.2 && g.sub.o2 < g.sub.o2Max) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max / 4 * dt);
+    if (!e.inSub && !g.sub.imploded && (g.sub.y < 2.2 || g.sub.docked) && g.sub.o2 < g.sub.o2Max) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max / 4 * dt);
     // diver tank refills from the sub's air
     if (e.inSub && g.sub.o2 > 0 && e.o2 < e.o2Max) { const r = Math.min(e.o2Max - e.o2, (e.o2Max / 3.5) * dt); e.o2 += r; } // (only while the cabin has air to give)
     // (3.0.17) swimming past what the suit can take: said once, and again only after he has come back above it
@@ -2641,7 +2645,7 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // debug hooks for automated testing
-window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys };
+window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud };
 
 // leaving the page: whatever has changed is written to the slot at once
 function saveNow() { if (!profile) return; if (g.mode === 'play') syncProfile(); saveProfile(profile); flushSave(); }

@@ -442,3 +442,70 @@ export function promptHtml(text) {
   const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   return parsePrompt(text).map((p) => `<span class="pr-part">${p.hold ? `<i class="pr-hold">${esc(p.hold)}</i>` : ''}${p.key ? `<kbd class="keycap${p.key.length > 1 ? ' wide' : ''}">${esc(p.key)}</kbd>` : ''}<span class="pr-label">${esc(p.label)}</span></span>`).join('<i class="pr-sep"></i>');
 }
+
+// ---------------- (claude-polish) the instruments in the corner of the screen ----------------
+// The same materials as the sub's rooms: a name on dymo tape (black, the letters pressed up white), a level as a
+// glass tube in a brass rim with its quarter ticks, the sonar's glass in a brass bezel.
+export function dymo(ctx, text, xr, y, s = 1, { tape = '#1c1d1b', ink = 'rgba(236,234,224,0.92)', align = 'right' } = {}) {
+  ctx.save();
+  ctx.font = `700 ${8.5 * s}px ${MONO}`; ctx.textBaseline = 'middle';
+  const sp = 1.6 * s, chars = [...text.toUpperCase()];
+  const tw = chars.reduce((a, c) => a + ctx.measureText(c).width + sp, 0) - sp, h = 12 * s, w = tw + 9 * s;
+  const x = align === 'right' ? xr - w : xr;
+  ctx.translate(x + w / 2, y + h / 2); ctx.rotate(-0.012); ctx.translate(-w / 2, -h / 2);
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 3 * s; ctx.shadowOffsetY = 1 * s;
+  ctx.fillStyle = tape; ctx.beginPath(); ctx.roundRect(0, 0, w, h, 1.5 * s); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(0, 0, w, 1.2 * s); // the tape's sheen
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, h - 1.2 * s, w, 1.2 * s);
+  let cx = 4.5 * s;
+  for (const c of chars) { // each letter pressed up from behind: a pale face, a hint of its edge
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(c, cx + 0.5 * s, h / 2 + 0.9 * s);
+    ctx.fillStyle = ink; ctx.fillText(c, cx, h / 2 + 0.4 * s);
+    cx += ctx.measureText(c).width + sp;
+  }
+  ctx.restore();
+  return w;
+}
+export function tubeGauge(ctx, x, y, w, h, frac, s = 1, { col = [80, 170, 240], alpha = 1, ticks = 4 } = {}) {
+  const r = h / 2, rim = Math.max(1.5, 2.2 * s);
+  ctx.save();
+  // the brass rim
+  const bz = ctx.createLinearGradient(0, y - rim, 0, y + h + rim);
+  bz.addColorStop(0, '#c9b47e'); bz.addColorStop(0.5, '#8a7444'); bz.addColorStop(1, '#4e3e1e');
+  ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 4 * s; ctx.shadowOffsetY = 1 * s;
+  ctx.fillStyle = bz; ctx.beginPath(); ctx.roundRect(x - rim, y - rim, w + rim * 2, h + rim * 2, r + rim); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  // the glass, dark inside
+  ctx.fillStyle = 'rgba(6,10,12,0.92)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.clip();
+  // what is left, lit from above
+  const f = clamp(frac, 0, 1), c = col;
+  if (f > 0) {
+    const lg = ctx.createLinearGradient(0, y, 0, y + h);
+    lg.addColorStop(0, `rgba(${Math.min(255, c[0] + 70)},${Math.min(255, c[1] + 60)},${Math.min(255, c[2] + 40)},${alpha})`);
+    lg.addColorStop(0.45, `rgba(${c[0]},${c[1]},${c[2]},${alpha})`); lg.addColorStop(1, `rgba(${c[0] * 0.55 | 0},${c[1] * 0.55 | 0},${c[2] * 0.55 | 0},${alpha})`);
+    ctx.fillStyle = lg; ctx.fillRect(x, y, w * f, h);
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + w * f - 1, y, 1, h); // the meniscus
+  }
+  // the quarter ticks etched on the glass, and its glint
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  for (let i = 1; i < ticks; i++) ctx.fillRect(x + (w * i) / ticks - 0.5, y, 1, h * 0.45);
+  ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fillRect(x + r * 0.6, y + h * 0.18, w - r * 1.2, Math.max(1, h * 0.16));
+  ctx.restore();
+}
+export function brassBezel(ctx, cx, cy, R, s = 1) {
+  ctx.save();
+  const w = 3.2 * s, g = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
+  g.addColorStop(0, '#d6c28c'); g.addColorStop(0.5, '#8a7444'); g.addColorStop(1, '#4a3a1a');
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5 * s;
+  ctx.strokeStyle = g; ctx.lineWidth = w; ctx.beginPath(); ctx.arc(cx, cy, R + w / 2, 0, TAU); ctx.stroke();
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(cx, cy, R + w - 0.6, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke();
+  for (const a of [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75]) { // four screws in the bezel
+    const sx = cx + Math.cos(a) * (R + w / 2), sy = cy + Math.sin(a) * (R + w / 2);
+    ctx.fillStyle = '#3e3016'; ctx.beginPath(); ctx.arc(sx, sy, 1.5 * s, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,14,4,0.9)'; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(sx - 1 * s, sy - 0.6 * s); ctx.lineTo(sx + 1 * s, sy + 0.6 * s); ctx.stroke();
+  }
+  ctx.restore();
+}

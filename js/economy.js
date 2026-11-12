@@ -142,6 +142,7 @@ export const HOSPITAL_CAP = 10000;    // ...but never more than this
 export function replacementPrice(P) {
   // a share of what the subs up to this one cost (the first is cheap to replace)
   let c = 0; for (let i = 0; i < lv(P, 'depth'); i++) c += UPGRADES.depth.costs[i];
+  if (!lv(P, 'depth')) return 0; // (claude-polish) the free first hull is free to replace: a new diver who lost it with no cash had no way back
   return Math.max(40, Math.round(c * 0.3 + 40));
 }
 export const SUPPLIES = {

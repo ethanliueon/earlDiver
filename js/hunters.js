@@ -83,7 +83,9 @@ export function updateHunters(g, dt) {
   // a big animal bites with its head, not its middle: how far its snout is from him (drawn 1.6x life)
   const headD = (c) => Math.hypot(c.x + (c.dir > 0 ? 1 : -1) * c.len * 0.8 - e.x, c.y - e.y);
   const night = g.day.light < 0.3;
-  const protectedNow = !!g.protection;
+  // (claude-polish) the Margaret's own water is safe: near her (60 m) and above 40 m nothing starts an attack, and one under
+  // way breaks off (a great white took a new diver at 6 m beside her, an orca stove in the first sub at 30 m)
+  const protectedNow = !!g.protection || !!g.homeSafe;
   const dolphinsNear = list.some((c) => DOLPHINS.has(c.sp.id) && dist(c.x, c.y, e.x, e.y) < 25);
   const frenzy = g.fauna.puffs.some((p) => dist(p.x, p.y, e.x, e.y) < 35);
   const hidden = g.concealed;
@@ -211,7 +213,10 @@ export function updateHunters(g, dt) {
         toEarl(9);
         g.threat = c;
         if (d < 2.5 + c.len * 0.15) {
-          if (e.inSub) g.damageSub(A.hull, c.sp);
+          // (claude-polish) a pod takes turns: one ram, then the others hang back a while (two orcas took 60 % of a
+          // first sub's hull in a second)
+          if (e.inSub && g.time - (g.lastRamT ?? -99) < 15) { leave(rng.range(20, 40)); break; }
+          if (e.inSub) { g.damageSub(A.hull, c.sp); g.lastRamT = g.time; }
           else if (A.dmg) g.hurt(A.dmg, c.sp, 'whale');
           leave(rng.range(60, 120));
         }

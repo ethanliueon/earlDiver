@@ -1,4 +1,4 @@
-import { drawPrompt, promptShade, parsePrompt } from './fittings.js';
+import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap } from './fittings.js';
 const parsePromptKey = (t) => parsePrompt(t).some((p) => p.key);
 import { TITLES, LEGEND_OF } from './species.js';
 // (3.0.42) a Legendary's title in a message: never 'the the fangtooth', always 'the Fangtooth'
@@ -34,7 +34,7 @@ export class Hud {
     if (this.c.width !== w || this.c.height !== h) { this.c.width = w; this.c.height = h; }
     // (4.17.0) the UI scale: from the screen's height, but never below 0.7 of the design (a phone held sideways is
     // only ~390 px tall) nor above 1.5; and the notch's safe areas kept clear
-    this.s = h / 900; // UI scale (as on desktop: the phone sizing waits for the controls pass)
+    this.s = Math.min(1.5 * dpr, Math.max(h / 900, 0.7 * dpr)); // (claude-polish) as the comment above says: the clamp was never applied, so a phone's instruments were drawn at 0.43 and unreadable
     if (!this.safeEl) { this.safeEl = document.createElement('div'); this.safeEl.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(this.safeEl); }
     const cs = getComputedStyle(this.safeEl); this.safe = { l: parseFloat(cs.paddingLeft) * dpr || 0, r: parseFloat(cs.paddingRight) * dpr || 0, t: parseFloat(cs.paddingTop) * dpr || 0, b: parseFloat(cs.paddingBottom) * dpr || 0 };
   }
@@ -73,14 +73,17 @@ export class Hud {
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'slurp' && owns(P, 'slurp') ? 'slurp' : g.toolSel === 'tag' && owns(P, 'tagger') ? 'tag' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
-      ctx.fillStyle = on ? 'rgba(14,26,28,0.72)' : 'rgba(6,12,14,0.5)';
-      ctx.strokeStyle = on ? 'rgba(200,230,215,0.55)' : 'rgba(160,200,200,0.14)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.roundRect(x, y, sw, sh, 6 * s); ctx.fill(); ctx.stroke();
+      // (claude-polish) a pressed-steel cubby like the locker's: the tool in hand lit, its rim brass
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1.5 * s;
+      const cg = ctx.createLinearGradient(0, y, 0, y + sh); cg.addColorStop(0, on ? 'rgba(66,70,60,0.94)' : 'rgba(44,48,42,0.82)'); cg.addColorStop(1, on ? 'rgba(36,39,33,0.94)' : 'rgba(22,25,21,0.82)');
+      ctx.fillStyle = cg; ctx.beginPath(); ctx.roundRect(x, y, sw, sh, 5 * s); ctx.fill(); ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath(); ctx.roundRect(x + 3 * s, y + 3 * s, sw - 6 * s, sh - 6 * s, 3 * s); ctx.fill(); // the well
+      ctx.strokeStyle = on ? 'rgba(222,196,130,0.85)' : 'rgba(201,180,126,0.28)'; ctx.lineWidth = on ? 1.6 : 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, sw - 1, sh - 1, 5 * s); ctx.stroke();
       ctx.globalAlpha = e.inSub ? 0.35 : on ? 1 : 0.55;
       ctx.drawImage(icon(kind, tier), x + 6 * s, y + 4 * s, sw - 12 * s, sh - 12 * s);
       ctx.globalAlpha = 1;
       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.fillText(key, x + 5 * s, y + 4 * s);
+      keyCap(ctx, x - 5 * s, y - 7 * s, key, s * 0.6); ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.shots ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${g.shots}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       if (kind === 'trap') { const free = ownedTraps - g.traps.length; ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       if (kind === 'tag' && (g.tags.length)) { ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(232,176,42,0.9)'; ctx.fillText(`${g.tags.length}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
@@ -89,7 +92,7 @@ export class Hud {
         ctx.fillStyle = 'rgba(200,230,215,0.7)';
         ctx.fillRect(x + 4 * s, y + sh - 4 * s, (sw - 8 * s) * clamp(g.capture.t / g.capture.dur, 0, 1), 2 * s);
       }
-      if (on) { ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name.toUpperCase(), x + sw / 2, y + sh + 4 * s); }
+      if (on) { ctx.font = `${9 * s}px ${MONO}`; const nw = dymo(ctx, name, 0, -999, s, { align: 'left' }); dymo(ctx, name, x + sw / 2 - nw / 2, y + sh + 3 * s, s, { align: 'left' }); }
       x += sw + gap;
     }
     // specimen slots: the bag (or, in the sub, its tank). Each dot shows the animal's colour,
@@ -270,30 +273,25 @@ export class Hud {
     ctx.textBaseline = 'top'; ctx.textAlign = 'right';
     const rx0 = W - pad;
     if (!dying && !aboard) {
-      ctx.font = `500 ${46 * s}px ${MONO}`;
-      const dtxt = `${Math.max(0, e.y).toFixed(0)} m`;
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillText(dtxt, rx0 + 2 * s, pad + 2 * s);
-      ctx.fillStyle = 'rgba(236,240,240,0.94)'; ctx.fillText(dtxt, rx0, pad);
+      // (claude-polish) the depth on the counter's drums, as in the sub's rooms (it was plain text)
+      const k = 0.72 * s, warnD = e.inSub ? g.sub.y / g.sub.rated > 0.9 : e.y > (e.pressStart || 300);
+      ctx.save(); ctx.translate(rx0 - 144 * k, pad - 4 * s); ctx.scale(k, k);
+      depthCounter(ctx, 0, 0, Math.max(0, e.y), { warn: warnD, t: g.time, label: 'METRES' });
+      ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
     }
     if (!aboard) {
     // ---------- air: a short, thick, blue tank gauge under it ----------
     const onTank = e.inSub && g.sub.o2 <= 0; // an empty cabin: the gauge shows his own tank
     const o2 = e.inSub && !onTank ? g.sub.o2 / g.sub.o2Max : e.o2 / e.o2Max;
-    const bw = 96 * s, bh = 12 * s, bx = rx0 - bw, by = pad + 58 * s;
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.fill();
-    const oc = o2 > 0.25 ? [80, 170, 240] : o2 > 0.1 ? [230, 170, 60] : [225, 55, 45];
+    const bw = 104 * s, bh = 11 * s, bx = rx0 - bw, by = pad + (aboard ? 0 : 62 * s);
+    const oc = o2 > 0.25 ? [70, 160, 230] : o2 > 0.1 ? [230, 165, 55] : [225, 55, 45];
     const pulse = o2 < 0.1 ? 0.6 + 0.4 * Math.sin(g.time * 10) : 1;
-    ctx.fillStyle = `rgba(${oc[0]},${oc[1]},${oc[2]},${pulse})`;
-    ctx.save(); ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.clip();
-    ctx.fillRect(bx, by, bw * clamp(o2, 0, 1), bh);
-    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(bx, by + 1.5 * s, bw * clamp(o2, 0, 1), 3 * s); // a glint along the top
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(180,215,240,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 6 * s); ctx.stroke();
-    ctx.font = `500 ${11 * s}px ${MONO}`; ctx.textAlign = 'right';
-    if (g.noAir) { ctx.fillStyle = Math.sin(g.time * 9) > 0 ? '#ff5040' : '#a02820'; ctx.fillText('NO AIR', bx - 8 * s, by); }
-    else if (onTank) { ctx.fillStyle = '#e8b040'; ctx.fillText('CABIN EMPTY · O₂', bx - 8 * s, by); }
-    else { ctx.fillStyle = 'rgba(180,215,240,0.75)'; ctx.fillText(e.inSub ? 'CABIN O₂' : 'O₂', bx - 8 * s, by); }
-    let ly = by + bh + 6 * s;
+    tubeGauge(ctx, bx, by, bw, bh, o2, s, { col: oc, alpha: pulse });
+    if (g.noAir) dymo(ctx, 'no air', bx - 9 * s, by - 0.5 * s, s, { tape: Math.sin(g.time * 9) > 0 ? '#8a1a10' : '#4a0c08' });
+    else if (onTank) dymo(ctx, 'cabin empty', bx - 9 * s, by - 0.5 * s, s, { tape: '#6a4a10' });
+    else dymo(ctx, e.inSub ? 'cabin air' : 'air', bx - 9 * s, by - 0.5 * s, s);
+    ctx.font = `500 ${11 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    let ly = by + bh + 8 * s;
     ctx.font = `${11 * s}px ${MONO}`;
     const left = e.inSub && !onTank ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
     const sec = Math.max(0, Math.floor(left));
@@ -321,11 +319,11 @@ export class Hud {
     // the sub: one line, only inside it
     if (e.inSub) {
       // (2.6.1) the hull as a small gauge under the air; a word only when something is wrong
-      const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1), hw = 96 * s, hh = 5 * s, hx = rx0 - hw;
-      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.roundRect(hx, yy, hw, hh, 3 * s); ctx.fill();
-      ctx.fillStyle = hi < 0.4 ? '#e0503a' : hi < 0.75 ? '#e8b040' : 'rgba(150,210,180,0.85)'; ctx.beginPath(); ctx.roundRect(hx, yy, Math.max(hh, hw * hi), hh, 3 * s); ctx.fill();
-      ctx.font = `${9 * s}px ${MONO}`; ctx.fillStyle = 'rgba(180,215,240,0.6)'; ctx.fillText('HULL', hx - 6 * s, yy - 2 * s);
-      yy += 14 * s;
+      const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1), hw = 104 * s, hh = 7 * s, hx = rx0 - hw;
+      tubeGauge(ctx, hx, yy, hw, hh, hi, s, { col: hi < 0.4 ? [224, 80, 58] : hi < 0.75 ? [232, 176, 64] : [120, 196, 160] });
+      dymo(ctx, 'hull', hx - 9 * s, yy - 2.5 * s, s);
+      ctx.font = `${11 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      yy += 16 * s;
       const warn = g.sub.failing != null ? 'the hull is failing' : r > 1 ? 'past the sub\'s rated depth' : r > 0.9 ? 'near the sub\'s rated depth' : '';
       if (warn) { ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = r > 1 || g.sub.failing != null ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : '#e8b040'; ctx.fillText(warn, rx0, yy); yy += 18 * s; }
       // (3.0.0) and the plain line under it again: hull %, depth against the rating
@@ -410,27 +408,28 @@ export class Hud {
     }
     ctx.restore();
     ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.beginPath(); ctx.arc(rcx, rcy, 1.6 * s, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(160,200,200,0.2)'; ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.stroke();
-    yy = rcy + rr + 10 * s;
+    brassBezel(ctx, rcx, rcy, rr, s);
+    yy = rcy + rr + 14 * s;
     // the seafloor sonar (a fitted extra): the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy, s); yy += 82 * s; }
     // journal: a small book button
     const jw = 26 * s, jh = 22 * s, jx = rx0 - jw, jy = yy;
     const kx = window.innerWidth / this.c.width;
     this.journalHot = { x: (jx + this.safeL) * kx, y: (jy + this.safeT) * kx, w: jw * kx, h: jh * kx };
-    ctx.fillStyle = 'rgba(30,26,20,0.6)'; ctx.beginPath(); ctx.roundRect(jx, jy, jw, jh, 4 * s); ctx.fill();
+    const plate = (x, y) => { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 4 * s; ctx.shadowOffsetY = 1 * s; const pg = ctx.createLinearGradient(0, y, 0, y + jh); pg.addColorStop(0, '#3c4038'); pg.addColorStop(1, '#23261f'); ctx.fillStyle = pg; ctx.beginPath(); ctx.roundRect(x, y, jw, jh, 3 * s); ctx.fill(); ctx.restore(); ctx.strokeStyle = 'rgba(201,180,126,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, jw - 1, jh - 1, 3 * s); ctx.stroke(); };
+    plate(jx, jy);
     ctx.fillStyle = '#6a4a2e'; ctx.fillRect(jx + 6 * s, jy + 4 * s, 14 * s, 14 * s);
     ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 8 * s, jy + 5.5 * s, 10 * s, 11 * s);
-    ctx.font = `${10 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,220,192,0.5)'; ctx.textAlign = 'right'; ctx.fillText('J', jx - 5 * s, jy + 6 * s);
+    keyCap(ctx, jx - 22 * s, jy + 1 * s, 'J', s * 0.68);
 
     // (4.10.0) the chart: a small rolled sea chart under the journal (K)
     const cy0 = jy + jh + 6 * s;
     this.chartHot = { x: (jx + this.safeL) * kx, y: (cy0 + this.safeT) * kx, w: jw * kx, h: jh * kx };
-    ctx.fillStyle = 'rgba(30,26,20,0.6)'; ctx.beginPath(); ctx.roundRect(jx, cy0, jw, jh, 4 * s); ctx.fill();
+    plate(jx, cy0);
     ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 5 * s, cy0 + 5 * s, 16 * s, 12 * s);
     ctx.strokeStyle = '#3a6a7a'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(jx + 5 * s, cy0 + 10 * s); ctx.quadraticCurveTo(jx + 9 * s, cy0 + 8 * s, jx + 13 * s, cy0 + 11 * s); ctx.quadraticCurveTo(jx + 17 * s, cy0 + 14 * s, jx + 21 * s, cy0 + 12 * s); ctx.stroke();
     ctx.fillStyle = '#c84a3a'; ctx.beginPath(); ctx.arc(jx + 15 * s, cy0 + 8.5 * s, 2 * s, 0, TAU); ctx.fill();
-    ctx.fillStyle = 'rgba(232,220,192,0.5)'; ctx.fillText('K', jx - 5 * s, cy0 + 15 * s);
+    keyCap(ctx, jx - 22 * s, cy0 + 1 * s, 'K', s * 0.68);
     // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
     yy = cy0 + jh + 10 * s;
     this.subHot = null;
@@ -439,20 +438,22 @@ export class Hud {
       const label = e.inSub ? (g.homeRun ? 'autopilot off' : g.sub.docked ? null : 'autopilot home') : (ap && ap.state === 'coming' ? 'stop sub' : 'call sub');
       if (label) {
         // bottom-right corner, a little larger
-        ctx.font = `${15 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        const bw = ctx.measureText(label).width + 50 * s, bh = 31 * s, bx = rx0 - bw, by = H - pad - bh;
+        const word = label.charAt(0).toUpperCase() + label.slice(1);
+        ctx.font = `500 ${17 * s}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        const tw = ctx.measureText(word).width, bw = tw + 36 * s, bh = 31 * s, bx = rx0 - bw, by = H - pad - bh;
         this.subHot = { x: (bx + this.safeL) * kx, y: (by + this.safeT) * kx, w: bw * kx, h: bh * kx };
         const on = g.homeRun || (ap && ap.state === 'coming');
-        ctx.fillStyle = on ? 'rgba(60,52,24,0.7)' : 'rgba(6,12,14,0.55)'; ctx.strokeStyle = on ? 'rgba(232,214,160,0.5)' : 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 7 * s); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = 'rgba(232,214,160,0.9)'; ctx.font = `500 ${14 * s}px ${MONO}`; ctx.fillText('C', bx + 11 * s, by + bh / 2);
-        ctx.fillStyle = 'rgba(220,236,230,0.85)'; ctx.font = `${15 * s}px ${MONO}`; ctx.fillText(label, bx + 33 * s, by + bh / 2);
-        ctx.textBaseline = 'top';
+        promptShade(ctx, bx + bw / 2, by + bh / 2, s * 0.45);
+        keyCap(ctx, bx, by + 2 * s, 'C', s);
+        ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1;
+        ctx.fillStyle = on ? '#f0d890' : '#ece6d2'; ctx.fillText(word, bx + 36 * s, by + bh / 2 + 1 * s);
+        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.textBaseline = 'top';
       }
     }
 
     // ---------- Q / E items: in the right-hand column, only when carried ----------
-    const glass = (x, y, w, h) => { ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.strokeStyle = 'rgba(160,200,200,0.14)'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 8 * s); ctx.fill(); ctx.stroke(); };
+    // (claude-polish) a small steel plate in a brass rim, as the journal and chart buttons
+    const glass = (x, y, w, h) => { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 5 * s; ctx.shadowOffsetY = 1 * s; const pg = ctx.createLinearGradient(0, y, 0, y + h); pg.addColorStop(0, 'rgba(58,62,54,0.92)'); pg.addColorStop(1, 'rgba(30,33,28,0.92)'); ctx.fillStyle = pg; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6 * s); ctx.fill(); ctx.restore(); ctx.strokeStyle = 'rgba(201,180,126,0.5)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, 6 * s); ctx.stroke(); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.52, 15 * s, 0, TAU); ctx.fill(); };
     const sz = 46 * s;
     const slots = [];
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
@@ -472,14 +473,14 @@ export class Hud {
       ctx.fillStyle = col; ctx.globalAlpha = n > 0 ? 1 : 0.3;
       ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 8 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
       if (active > 0) { ctx.strokeStyle = col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 13 * s, -Math.PI / 2, -Math.PI / 2 + TAU * active); ctx.stroke(); }
-      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; if (!(id === 'n' && g.trawlTaught)) ctx.fillText(key, x + 5 * s, y + 4 * s); // (4.0.6) N, once learned, is not shown
+      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; if (!(id === 'n' && g.trawlTaught)) keyCap(ctx, x - 6 * s, y - 6 * s, key, s * 0.62); // (4.0.6) N, once learned, is not shown
       ctx.textAlign = 'right'; if (id !== 'n') ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
       if (badge > 1) { // (4.11.0) how many nets are in the hatch: a number in a small brass circle at the corner
         const bw = 22 * s, bh = 14 * s, bx = x + sz - bw + 6 * s, by = y - 5 * s; // (4.11.1) a wider pill: ×2
         ctx.fillStyle = '#c8a050'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, bh / 2); ctx.fill(); ctx.strokeStyle = 'rgba(20,14,4,0.8)'; ctx.lineWidth = 1.2 * s; ctx.stroke();
         ctx.save(); ctx.fillStyle = '#2a1e08'; ctx.font = `600 ${10 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`×${badge}`, bx + bw / 2, by + bh / 2 + 0.5 * s); ctx.restore();
       }
-      ctx.font = `${8 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.55)'; ctx.fillText(name, x - 6 * s, y + sz / 2 - 4 * s);
+      dymo(ctx, name.toLowerCase(), x - 9 * s, y + sz / 2 - 6 * s, s, { tape: name === 'NO NET' || name === 'TORN' ? '#4a1810' : '#1c1d1b' });
     });
 
     // ---------- P: frames per second, the picture's resolution, and whether lite mode is on ----------
