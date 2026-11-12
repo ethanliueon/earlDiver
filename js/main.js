@@ -2646,3 +2646,7 @@ function saveNow() { if (!profile) return; if (g.mode === 'play') syncProfile();
 window.addEventListener('beforeunload', saveNow);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 ui.showTitle();
+// (claude-polish) a phone turned upright shows "Turn your phone sideways" over the game: the game pauses under it
+{ const mq = window.matchMedia && window.matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 700px)');
+  const onTurn = () => { if (mq.matches && g.mode === 'play' && !g.paused) { g.paused = true; ui.setPaused(true); saveNow(); } };
+  if (mq) { mq.addEventListener ? mq.addEventListener('change', onTurn) : mq.addListener(onTurn); setInterval(onTurn, 1000); } }

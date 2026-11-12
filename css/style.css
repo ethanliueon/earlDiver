@@ -2847,3 +2847,15 @@ body { padding: 0; }
   #title { align-items: center; padding-top: 0; padding-bottom: 0; overflow: hidden; }
   #title .title-panel { zoom: calc(var(--tfit, 1)); }
 }
+
+/* (claude-polish) an upright phone: the sea is a sliver and the corners crowd each other, so ask for sideways */
+#turn-phone { display: none; }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 700px) {
+  #turn-phone { display: flex; position: fixed; inset: 0; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #0a1620; color: #e8dcbc; font: 18px var(--serif); }
+  #turn-phone svg { width: 72px; height: 72px; animation: tp-turn 2.4s ease-in-out infinite; }
+}
+@keyframes tp-turn { 0%, 30% { transform: rotate(0deg); } 60%, 100% { transform: rotate(-90deg); } }
+/* a narrow window: the quest line wraps short of the readings on the right */
+@media (max-width: 560px) { #quests-hud .qh-step { max-width: 38vw; font-size: 13px; } }
+/* (claude-polish) the quest line ran across the pause panel on a short screen */
+body:has(#pause:not([hidden])) #quests-hud { visibility: hidden; }
