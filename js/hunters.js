@@ -24,7 +24,7 @@ export const AGGRO = {
   24: { kind: 'lurk', dmg: 1, range: 1.8 },  // giant moray
   21: { kind: 'lurk', dmg: 1, range: 3.2 },  // titan triggerfish guarding its nest
   184: { kind: 'whale', dmg: 5, hull: 0.4, p: 0.05, minDepth: 250 }, // sperm whale
-  187: { kind: 'ram', hull: 0.2, p: 0.02 },  // orca: rams the sub, leaves divers alone ((claude-polish) half as often: a first trip to the drop-off met three rams in four minutes)
+  187: { kind: 'ram', hull: 0.2, p: 0.008 },  // orca: rams the sub, leaves divers alone ((claude-polish) half as often: a first trip to the drop-off met three rams in four minutes)
   188: { kind: 'ambush', dmg: 4, hull: 0.3, p: 0.08, minDepth: 2900 }, // abyssal sleeper shark: from below, Earl or the sub
 };
 // the species added since that attack (data/species_more.js)
@@ -213,9 +213,9 @@ export function updateHunters(g, dt) {
         toEarl(9);
         g.threat = c;
         if (d < 2.5 + c.len * 0.15) {
-          // (claude-polish) a pod takes turns: one ram, then the others hang back a while (two orcas took 60 % of a
+          // (claude-polish) a pod takes turns: one ram, then none for two minutes (two orcas took 60 % of a
           // first sub's hull in a second)
-          if (e.inSub && g.time - (g.lastRamT ?? -99) < 15) { leave(rng.range(20, 40)); break; }
+          if (e.inSub && g.time - (g.lastRamT ?? -999) < 120) { leave(rng.range(20, 40)); break; }
           if (e.inSub) { g.damageSub(A.hull, c.sp); g.lastRamT = g.time; }
           else if (A.dmg) g.hurt(A.dmg, c.sp, 'whale');
           leave(rng.range(60, 120));
