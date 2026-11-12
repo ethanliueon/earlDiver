@@ -1515,7 +1515,9 @@ export class Renderer {
     f.globalCompositeOperation = 'source-over';
     // light from above: a soft bright rim along every top edge and a shade along every belly,
     // found from the layer itself (what has nothing above it, what has nothing below it)
-    if (rim && dBot > 0) {
+    // (claude-polish) not in the dark below 600 m: there is no sunlight to make a rim, and under the night of the
+    // light map neither the highlight nor the shade showed, though they cost a tenth of a frame there
+    if (rim && dBot > 0 && cam.y < 600) {
       // only around the animals that were drawn live; everything else has the rim baked in
       const rp = this.lpad;
       const bx = Math.max(0, Math.floor(rim[0] - rp)), by = Math.max(0, Math.floor(rim[1] - rp));

@@ -133,12 +133,17 @@ export class Clouds {
     this.build();
     const tc = this.tint;
     // a fixed-size buffer (re-allocating it as the horizon moved cost time every frame)
-    const th = Math.max(1, Math.ceil(skyH * 1.25));
-    if (tc.width !== W || tc.height < th) { tc.width = W; tc.height = th; }
-    const hz = Math.min(horizon, tc.height);
+    // (claude-polish) the buffer matches the scale it is drawn at: the sky is painted at half size, so a
+    // full-size buffer only did four times the pixel work to be shrunk again
+    const k = Math.min(1, Math.abs(ctx.getTransform().a) || 1);
+    const th = Math.max(1, Math.ceil(skyH * 1.25)), bw = Math.ceil(W * k), bh = Math.ceil(th * k);
+    if (tc.width !== bw || tc.height < bh) { tc.width = bw; tc.height = bh; }
+    const hz = Math.min(horizon, th);
     const tctx = tc.getContext('2d');
+    tctx.setTransform(1, 0, 0, 1, 0, 0);
     tctx.globalCompositeOperation = 'source-over';
     tctx.clearRect(0, 0, tc.width, tc.height);
+    tctx.setTransform(k, 0, 0, k, 0, 0);
     for (const L of this.layers) {
       const dh = skyH * L.h, dw = dh * (L.img.width / L.img.height);
       const y = hz - skyH + skyH * L.y0 - dh * 0.25;
@@ -163,9 +168,9 @@ export class Clouds {
     // light the whole cloud deck at once: multiply by the colour of the light, keep the alpha
     tctx.globalCompositeOperation = 'source-atop';
     tctx.fillStyle = `rgba(${tint[0] | 0},${tint[1] | 0},${tint[2] | 0},${(1 - light * 0.85).toFixed(3)})`;
-    tctx.fillRect(0, 0, tc.width, tc.height);
+    tctx.fillRect(0, 0, W, th);
     tctx.globalCompositeOperation = 'source-over';
     // only the part above the horizon is shown (clouds never hang below the sea)
-    if (hz >= 1) ctx.drawImage(tc, 0, 0, W, hz, 0, horizon - hz, W, hz);
+    if (hz >= 1) ctx.drawImage(tc, 0, 0, bw, Math.min(tc.height, Math.ceil(hz * k)), 0, horizon - hz, W, Math.min(tc.height, Math.ceil(hz * k)) / k);
   }
 }
