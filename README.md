@@ -46,8 +46,10 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - **Saves.** Three save slots on the title screen; the game saves as you play (cash, gear, the
   journal, the aquarium, named and released fish, where the Margaret is anchored). Continue picks up
   the last one.
-- **Air** is the bar under the depth. Surface to refill. Earl's tank goes up to 200 s with upgrades;
-  the cabin air comes with each submersible (150 s in the first, 300 s in the best).
+- **Air** is the bar under the depth. Surface to refill. Earl's tank is the one he wears: 20 s for the
+  starting aluminium cylinder, up to about two minutes for the rarest. The cabin air comes with each
+  submersible (120 s in the first, 260 s in the last), and inside her his own tank refills from it.
+  Backup air tanks ($240, two carried) refill the cabin with R: a deep dive needs them.
 - **The catalog** (the computer in the cabin, F) is a small shop website: hand nets, slurp guns, tag
   guns, cameras, trawl nets, traps, suits, fins, air tanks, bags and supplies, each its own item with
   what it is good for and not for. Bought items are yours at once and go on; change them in the
@@ -63,12 +65,16 @@ Settings → Pages → Deploy from a branch → `main` / root).
   anglerfish, fangtooth, pelican gulper eel, barreleye, blobfish, coelacanth, oarfish) are giants
   here, and meeting one is an event. Once you have caught a species, 1 in 20 of its kind are rare
   forms (giant, albino, golden, melanistic, abnormal, crimson) that pay 2-5×.
+- **The deep pays.** An animal is worth more the deeper it lives: from 500 m down a premium rises to
+  about x1.8 at 1,000 m, x3 at 2,000 m, x4 at 3,000 m and x5.6 at the bottom of the trench (legends are
+  priced by their depth already). The claw, fitted in the yard, reaches for whatever in range is most
+  worth taking.
 - **Pressure.** Every animal has the depth it lives at. Within 50 m of it, it is fine; 150, stressed;
   250, dying; 350, dying fast; beyond, dead. Jellies take three times that, daily migrators twice,
   fish without a swim bladder 1.5×, and the deeper an animal lives the more it tolerates. The sub's
   chambers (and the large pressure tank) hold animals at their own pressure.
 - **Dying** costs whatever you have not sold and a hospital bill (10 % of your cash, never more than
-  $1,500). Cash, upgrades, the journal and the aquarium carry on.
+  $10,000). Cash, upgrades, the journal and the aquarium carry on.
 - **The ocean** (see `docs/ocean_profile.png` for a side section) is 5,000 m wide: the beach, reef, kelp and wreck in the east; the shelf edge, a
   canyon, the slope with its cold seep, the abyssal plain with vents, a brine pool and a whale fall,
   a seamount; and in the west, under the wall with the old one's cave, the hadal trench: a wide
@@ -77,16 +83,17 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - **Eight submersibles**, each a deeper one from the yard: the Б-7 bathyscaphe (300 m), its refit
   (500 m), a yellow 1960s work sub with an acrylic dome (900 m), a white oilfield work sub (1,300 m),
   a research sub (1,900 m), an Alvin-type deep research sub (2,500 m), a titanium one (3,300 m) and
-  a full-ocean-depth sub (4,000 m). From the third, you name her; the name is painted on every hull
-  after. Pressure relics add 100 m each. Past her rating the hull creaks and the seams weep; each
+  a full-ocean-depth sub (4,500 m). From the third, you name her; the name is painted on every hull
+  after. Past her rating the hull creaks and the seams weep; each
   dive she has a hidden crush depth (about 1.6× the rating for the first, 1.25× for the last, a
   narrower window on deeper hulls). Nothing survives the bottom of the pit.
 - **Hull damage** shows on the sub as patches: dents in the plating, cracked and leaking (each about
   15 % of her hull; the cabin air leaks faster the more there are). Get out, swim to a patch and hold
   R: five seconds mends it. The boat can still patch her up for money.
-- **The trawl net** is built into every sub: N lets it out; it takes up to ten animals, sharks to
-  2.5 m, even legends, and dumps the haul on the tank-room floor. It comes back torn: one net is
-  carried at a time (the first is free, then $300 at the boat). It is loud below 200 m. Big
+- **The trawl net** is built into every sub: N lets it out, and it tows for up to 20 s (N again closes it
+  sooner). Steer its mouth through a school: lone animals flee the sub. It dumps the haul on the
+  tank-room floor and is used up: a beginner net ($60) takes six animals, an advanced one ($1,200) ten and
+  any legend. It is loud below 200 m. Big
   animals take two or three places in the open tank; the large pressure tank holds three animals,
   or one big one.
 - **The Margaret** goes anywhere on the surface, slowly (5 m/s flat out). Drop the anchor (G at
