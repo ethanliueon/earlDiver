@@ -36,6 +36,7 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | F (in the cabin) | A / D walk the cabin (Shift runs), or click where to go; click a thing to use it. F at: the computer (the catalog and the sub's yard), the radio (accept contracts; new ones free every 3 hours), the wheel (A / D steer, G anchor, W leaves the wheel), the hatch in the floor (the gallery). Esc or the door goes back out on deck |
 | U (in the water by the boat) | Sell the catch, without going aboard. Contracts you accepted at the radio are paid here when the goods are aboard |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
+| hold Z | Creep: half speed, slow enough that a fish lets him come within reach of the net |
 | K | The chart: the whole sea in section. Click to set a marker; follow one; from aboard, **Sail here** takes the Margaret to it (the trip's time passes on the clock) and drops her anchor |
 | O | Quests: the Margaret's log and the board |
 | P | The yard (the sub's hulls and refits), from aboard |
