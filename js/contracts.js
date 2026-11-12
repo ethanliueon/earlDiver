@@ -34,6 +34,9 @@ function payFor(P, market, depth, rnd) {
 // one new contract that does not repeat what is already on the board
 export function newContract(P, taken, rnd = Math.random) {
   const R = reach(P);
+  // (4.19.1) no job worth less than a fiftieth of his next submersible (and never under $15): a mid-game diver was
+  // offered $1 for a by-the-wind sailor and $24 for five clams, which only took up the radio's slots
+  const minPay = Math.max(15, (lv(P, 'depth') < UPGRADES.depth.max ? upgradeCost(P, 'depth') : 100000) * 0.02);
   const kinds = ['live', 'live', 'salvage'];
   if (owns(P, 'tagger')) kinds.push('tag');
   if (owns(P, 'camera')) kinds.push('photo');
@@ -47,6 +50,7 @@ export function newContract(P, taken, rnd = Math.random) {
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('live' + sp.id)) continue;
       const pay = payFor(P, liveValue(sp), sp.dmin, rnd);
+      if (pay < minPay) continue;
       // a museum will take a specimen in any state (a dead one only fetches the dead price);
       // an aquarium wants it alive and well
       if (rnd() < 0.3) return { kind, id: sp.id, key: 'live' + sp.id, pay: Math.round(pay * 0.8 * 100) / 100, who: 'The museum', anyState: true, text: `${an(sp.name)} for the collection, alive or dead` };
@@ -57,6 +61,7 @@ export function newContract(P, taken, rnd = Math.random) {
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('tag' + sp.id)) continue;
       const pay = payFor(P, tagPrice(sp.id) * gear(P, 'tag').pay, sp.dmin, rnd);
+      if (pay < minPay) continue;
       return { kind, id: sp.id, key: 'tag' + sp.id, pay, who: 'The research program', text: `a tag on ${an(sp.name)}` };
     }
     if (kind === 'photo') {
@@ -65,6 +70,7 @@ export function newContract(P, taken, rnd = Math.random) {
       const sp = pool[Math.floor(rnd() * pool.length)];
       if (!sp || taken.has('photo' + sp.id)) continue;
       const pay = payFor(P, photoValue(sp), sp.dmin, rnd);
+      if (pay < minPay) continue;
       return { kind, id: sp.id, key: 'photo' + sp.id, pay, who: 'The institute', text: `a photograph of ${an(sp.name)}` };
     }
     // salvage: a quantity of something from the bottom
@@ -74,6 +80,7 @@ export function newContract(P, taken, rnd = Math.random) {
     const n = Math.max(1, Math.round(n0 * (0.7 + rnd() * 0.6)));
     if (taken.has('salvage' + k)) continue;
     const pay = payFor(P, GOODS[k].price * n, dk, rnd);
+    if (pay < minPay) continue;
     return { kind: 'salvage', item: k, n, key: 'salvage' + k, pay, who: 'A buyer', text: `${n} ${n > 1 ? PLURAL[k] : GOODS[k].name.toLowerCase()}` };
   }
   return null;

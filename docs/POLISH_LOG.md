@@ -133,3 +133,13 @@ Also run: a 40-minute soak (the bot playing while memory and the game's lists we
   the last sub 260 s to 390 s). With her own air restored the deepest sub still reaches 4,050 m with only 53 s left,
   so time at depth is what a mid-game player most wants more of. It has its own picture (four bottles in brass straps
   on a manifold), shows on the spec sheet, and the new bottles come full.
+
+## 4.19.1 · the radio's jobs worth taking
+
+Sampled the board and the radio at four stages of a game. Mid-game (a 1,900 m sub) the radio offered "a by-the-wind
+sailor for the collection, alive or dead: $1", a velvet swimming crab for $4 and five clams for $24, taking slots
+from real work. A job now pays at least a fiftieth of his next submersible (never under $15): $10-60 early, about
+$2,000 mid-game. After: mid-game jobs $2,000-10,000, late $2,400-36,000; a new diver still gets small salvage jobs.
+
+Also: a scan of the code for statements left behind a `//` (the shape of the cabin-air bug): one more, a
+`ctx.shadowBlur = 0` in a HUD loop that no longer runs; put back in front of its comment.
