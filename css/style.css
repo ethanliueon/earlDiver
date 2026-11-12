@@ -2849,3 +2849,8 @@ body { padding: 0; }
   #title { align-items: center; padding-top: 0; padding-bottom: 0; overflow: hidden; }
   #title .title-panel { zoom: calc(var(--tfit, 1)); }
 }
+
+/* (4.20.3) the tank room: stow the trawl's haul at once */
+#tankroom .tr-stow { position: absolute; z-index: 3; padding: 8px 14px; border: 1px solid rgba(0,0,0,0.55); border-radius: 3px; cursor: pointer; font: 500 15px var(--serif); color: #2e220a; background: linear-gradient(180deg, var(--brass-hi, #ecd28e), var(--brass, #c9a65a) 60%, #9a7a34); box-shadow: 0 2px 6px rgba(0,0,0,0.45); }
+#tankroom .tr-stow small { margin-left: 6px; font: 600 12px var(--mono, monospace); color: rgba(46,34,10,0.75); }
+#tankroom .tr-stow:hover { filter: brightness(1.08); }

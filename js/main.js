@@ -687,6 +687,20 @@ function galleryAction(act, key, v) {
 function tankAction(act, where, i, to = -1) {
   const e = g.earl;
   if (!e.inSub) return false;
+  if (act === 'stowall') { // (4.20.3) the haul on the floor, all at once: the furthest from home first, into free chambers, the rest into the open tank
+    const gap = (q) => { const h = q.home ?? q.from ?? 0; return Math.max(Math.abs(h - g.sub.y), h); }; // the worst it will feel: here, or at the surface where the trip ends (a chamber holds it either way: a shallow one taken deep needs one as much)
+    const piles = g.subTank.filter((q) => q.pile).sort((a, b) => gap(b) - gap(a));
+    let ch = 0, op = 0, left = 0;
+    for (const q of piles) {
+      const deep = gap(q) > 100;
+      if (deep && !tooBig(q)) { q.pressed = false; delete q.pile; if (seal(g, q, -1)) { ch++; continue; } q.pile = true; }
+      if (tankFits(g, { ...q, pressed: false, pile: false })) { delete q.pile; q.pressed = false; delete q.chamber; op++; continue; }
+      left++;
+    }
+    if (ch || op) audio.ready && (ch ? audio.chamberPlop() : audio.tankPlop());
+    hud.toast([ch && `${ch} into the chambers`, op && `${op} into the open tank`, left && `${left} with no room`].filter(Boolean).join(' · ') || 'No room for any of them', left ? 'warn' : '');
+    return ch + op > 0;
+  }
   const L = where === 'bag' ? g.bag : g.subTank, s = L[i];
   if (!s) return false;
   if (act === 'press') {

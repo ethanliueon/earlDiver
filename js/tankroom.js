@@ -90,6 +90,7 @@ export class TankRoom {
       const b = ev.target.closest('button[data-tk]');
       if (b) { if (!b.disabled) { const [act, where, i, to] = b.dataset.tk.split(':'); if (act === 'swaps') { this.card.swaps = !this.card.swaps; this.layout(true); return; } this.h.act(act, where, +i, to === undefined ? -1 : +to); this.openKey = null; this.card = null; this.layout(true); } return; }
       if (ev.target.closest('.tr-card')) return;
+      if (ev.target.closest('[data-stow]')) { this.h.act('stowall', 'tank', 0); this.layout(true); return; }
       const tag = ev.target.closest('[data-tag]');
       if (tag) { this.openKey = this.openKey === tag.dataset.tag ? null : tag.dataset.tag; this.layout(true); return; }
       const go = ev.target.closest('[data-go]');
@@ -233,6 +234,11 @@ export class TankRoom {
     // (and, for a screen reader, a button per hatch, unseen)
     let html = ['L', 'R'].map((side) => { const to = this.hatchTo(side); return to ? `<button class="sr-only" data-go="${to}">${ROOMS[to]}</button>` : ''; }).join('');
     html += this.cardHtml(g, G);
+    // (4.20.3) the trawl's haul on the floor: one button stows it all (deep animals into free chambers first, the rest
+    // into the open tank), instead of dragging each before it suffocates
+    const piles = g.subTank.filter((q) => q.pile).length;
+    if (piles > 1) { const at = this.room === 'tank' ? `left:${Math.round(G.pile.x)}px;top:${Math.round(G.pile.y - 64)}px` : `left:50%;transform:translateX(-50%);bottom:${Math.round(window.innerHeight * 0.13)}px`;
+      html += `<button class="tr-stow" data-stow="1" style="${at}">${this.room === 'tank' ? 'Stow the catch' : 'Stow the catch on the tank-room floor'} <small>${piles}</small></button>`; }
     this.over.innerHTML = html;
     this.states(g);
   }
