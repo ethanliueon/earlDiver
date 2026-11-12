@@ -105,9 +105,9 @@ export const TRAPS = {
     desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float..' },
   fish: { name: 'Fish trap', price: 450, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
     desc: 'A larger mesh box with a funnel at each end, on a stout line..' },
-  steel: { name: 'Steel pot', price: 17500, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
+  steel: { name: 'Steel pot', price: 6000, max: 2, maxDepth: 500, count: [3, 6], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
     desc: 'A heavy steel-framed pot with two chambers, on a thick rope.. Too heavy to lift by hand.' },
-  cage: { name: 'Deep cage', price: 90000, max: 2, maxDepth: 1500, count: [6, 12], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
+  cage: { name: 'Deep cage', price: 90000, max: 2, maxDepth: 1500, count: [3, 7], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
     desc: 'A tall weighted cage with a lit lure, on a heavy rope.. The light draws deep animals, and other things.' },
 };
 export const BAGS = [

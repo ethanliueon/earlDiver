@@ -126,6 +126,14 @@ export function updateTraps(g, dt, cam) {
       }
       // the deep cage's light, below 200 m, draws attention
       if (T.lure && t.y > 200 && !g.entity.marked) g.entity.attn = Math.min(1, g.entity.attn + dt * 0.0012);
+      // (4.21.0) the cage's light draws the thing in the deep, and when it comes near it takes the cage: line, catch and all
+      if (T.lure && t.y > 200 && g.entity && Number.isFinite(g.entity.x) && dist(g.entity.x, g.entity.y, t.x, t.y) < 90 && Math.random() < dt / 20) {
+        g.traps.splice(i, 1);
+        const P = g.profile; if (P.traps && P.traps[t.type] > 0) P.traps[t.type]--;
+        for (const { c } of t.coming) if (c) c.ctrl = null;
+        ev.push({ type: 'wrecked', trap: t, n: t.catch.length });
+        continue;
+      }
       // left too long: the catch weakens and dies; then the trap tears free and drifts as a ghost net
       const over = t.age - FILL_TIME;
       if (over > SPOIL_AFTER) for (const s of t.catch) s.cond = Math.max(0, s.cond - dt / 240);

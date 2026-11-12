@@ -2110,6 +2110,7 @@ function update(dt) {
         audio.ready && audio.thud && audio.thud(0.25);
       } else if (ev.type === 'settled') hud.toast(`${TRAPS[ev.trap.type].name} set at ${ev.trap.depth} m${ev.trap.onBottom ? ', on the bottom' : ''}`);
       else if (ev.type === 'spoiling') hud.toast(`A ${TRAPS[ev.trap.type].name.toLowerCase()} has been left too long`, 'warn');
+      else if (ev.type === 'wrecked') { hud.toast(`Something took the deep cage${ev.n ? `, and the ${ev.n} animal${ev.n > 1 ? 's' : ''} in it` : ''}`, 'warn'); audio.ready && audio.groan && audio.groan(0.3); }
       else if (ev.type === 'ghost') hud.toast(`An abandoned ${TRAPS[ev.trap.type].name.toLowerCase()} broke loose`, 'warn');
     }
     if (g.capture && (g.capture.kind === 'tag' || g.capture.kind === 'cam')) { g.capture.t += dt; if (g.capture.t >= g.capture.dur) g.capture = null; }
