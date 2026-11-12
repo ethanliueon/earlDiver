@@ -268,7 +268,7 @@ const ui = new UI({
     if (cards.length) ui.showGains(cards); // (4.6.0)
     hud.toast(`Quest done · ${money(r.pay)}`, 'big');
     // (4.18.0) after the Log's first sub dive: nothing had said the Margaret herself can take him out over the deep
-    if (which === 'main' && r.id === 'sub') setTimeout(() => hud.toast('The deep water is west of here. The Margaret can take you: the wheel is at the front of her cabin', 'note'), 4200);
+    if (which === 'main' && r.id === 'sub') setTimeout(() => hud.toast('The deep water is west of here. The Margaret can take you: set a course from your chart (K), or take her wheel in the cabin', 'note'), 4200);
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
@@ -327,7 +327,35 @@ const ui = new UI({
 });
 // (4.10.0) the chart (K, or the chart button under the journal): the whole sea, and the player's own markers
 ui.chart = new Chart({ getGame: () => g, getProfile: () => profile, save: () => saveProfile(profile),
-  follow: (m) => { g.markGuide = m || null; if (m) hud.toast(`Following: ${m.name}`); }, following: () => g.markGuide || null });
+  follow: (m) => { g.markGuide = m || null; if (m) hud.toast(`Following: ${m.name}`); }, following: () => g.markGuide || null,
+  canSail: () => !!(g && g.mode === 'play' && !g.kill && (g.aboard || g.helm)), sail: (m) => sailTo(m) });
+// (4.18.0) a course on the chart: from aboard, the Margaret steams to a marker while the screen fades (the trip's
+// time passes on the clock: she makes about 5 m/s), and drops anchor over it. At 3.5 m/s at the wheel the trench
+// was eighteen minutes away.
+const SAIL_SPEED = 5;
+function sailTo(m) {
+  if (!g || g.mode !== 'play' || g.kill || !(g.aboard || g.helm)) return;
+  const sub = g.sub;
+  if (!sub.docked && !sub.imploded) {
+    const alongside = Math.hypot(sub.x - boatDock(), sub.y - 2.6) < 16 && !(g.autopilot && g.autopilot.active);
+    if (!alongside) { hud.toast('The sub is still out: bring her home first (hold C)', 'warn'); return; }
+    sub.docked = true;
+  }
+  const to = clamp(m.x, BOAT_MIN, BOAT_MAX), d = Math.abs(to - BOAT.x);
+  if (d < 25) { hud.toast('She is there already'); return; }
+  const secs = d / SAIL_SPEED;
+  withLoading(() => {
+    g.anchored = false; g.anchorDir = 0; g.anchorLen = 0; g.boatV = 0;
+    BOAT.face = to < BOAT.x ? -1 : 1; BOAT.x = to;
+    g.time += secs; // the trip's time on the clock (the day turns, the deep goes on with its night)
+    if (sub.docked && !sub.imploded) { sub.x = boatDock(); sub.y = 2.6; sub.vx = sub.vy = 0; }
+    const floor = Math.max(2, g.world.floorAt(BOAT.x) - 1);
+    g.anchored = true; g.anchorLen = floor; profile.boatX = Math.round(BOAT.x); saveProfile(profile);
+    renderer.updateCamera(g, 10);
+    const mins = Math.max(1, Math.round(secs / 60));
+    setTimeout(() => hud.toast(`At anchor over ${m.name} · ${Math.round(floor).toLocaleString()} m of water · ${mins} min under way`, 'note'), 1800);
+  });
+}
 
 // ---------------- injuries ----------------
 // Hidden injury points. Each point heals 15 s after the last one; 5 at once is fatal.
@@ -1337,7 +1365,7 @@ function deckInput(dt, mv) {
     }
     return;
   }
-  if (g.helm) { g.prompt = 'A / D  steer   ·   G  anchor   ·   W  leave the wheel'; return; }
+  if (g.helm) { g.prompt = 'A / D  steer (Shift: full ahead)   ·   G  anchor   ·   W  leave the wheel'; return; }
   const A = g.aboard;
   if (A.climb > 0 || A.jump > 0) { g.prompt = null; pressed.delete('f-tap'); return; }
   const walk = ui.anyOpen() ? 0 : Math.sign(mv.x || 0), run = walk && (keys.has('shift') || mv.sprint), pace = run ? RUN : WALK;
@@ -2227,7 +2255,7 @@ function update(dt) {
         }
         if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast(g.anchorDir < 0 ? 'Anchor still coming up' : 'Anchor down (G)', 'warn'); } }
         // (3.1.1) slower, heavier: 3.5 m/s flat out, about twice as long to get under way and to stop
-        const want = g.anchored ? 0 : mv.x * 3.5;
+        const want = g.anchored ? 0 : mv.x * (mv.sprint ? 7 : 3.5); // (4.18.0) Shift: full ahead
         g.boatV = lerp(g.boatV || 0, want, 1 - Math.exp(-dt * (want ? 0.15 : 0.1)));
         mv.x = 0; mv.y = 0;
         if (!e.inSub) { e.x = BOAT.x - 3; e.y = 0.5; e.vx = e.vy = 0; }

@@ -2416,7 +2416,9 @@ kbd.keycap.wide { min-width: 50px; font-size: 10.5px; letter-spacing: 0.08em; te
 #chart .ce-cols { display: flex; gap: 8px; margin: 10px 0; }
 #chart .ce-col { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; background: var(--c); box-shadow: 0 0 0 1px rgba(0,0,0,0.6); }
 #chart .ce-col.on { box-shadow: 0 0 0 2px #1b1f1a, 0 0 0 4px #ece6d2; }
-#chart .ce-btns { display: flex; gap: 6px; }
+#chart .ce-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+#chart .ce-btns button { white-space: nowrap; }
+#chart .ce-btns .ce-sail { flex-basis: 100%; order: -1; } /* (4.18.0) the course: a full-width button over the rest */
 #chart .ce-btns button { flex: 1; padding: 6px 8px; border: 0; border-radius: 3px; cursor: pointer; font: 500 14px var(--serif); color: #2a2010; background: linear-gradient(180deg, var(--brass-hi), var(--brass) 60%, #9a7a34); }
 #chart .ce-btns .ce-cancel, #chart .ce-btns .ce-del { color: #e4e6da; background: rgba(255,255,255,0.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
 #chart .ce-btns button:hover { filter: brightness(1.1); }

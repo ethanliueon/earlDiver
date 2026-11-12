@@ -14,7 +14,7 @@ export class Chart {
   constructor(h) {
     this.h = h; // { getGame, getProfile, save, follow(marker|null), following() }
     const el = this.el = document.createElement('section'); el.id = 'chart'; el.hidden = true;
-    el.innerHTML = `<div class="ch-panel"><header><div class="ch-plate"><h2>Chart</h2></div><span class="ch-hint">Click the sea to set a marker · K</span><button class="ch-close" aria-label="Close">×</button></header>
+    el.innerHTML = `<div class="ch-panel"><header><div class="ch-plate"><h2>Chart</h2></div><span class="ch-hint">Click the sea to set a marker · from aboard, sail to one · K</span><button class="ch-close" aria-label="Close">×</button></header>
       <div class="ch-wrap"><canvas class="ch-map" width="1040" height="560"></canvas><div class="ch-edit" hidden></div></div>
       <footer><span class="ch-at"></span><div class="ch-list"></div></footer></div>`;
     document.body.appendChild(el);
@@ -74,7 +74,7 @@ export class Chart {
     ed.innerHTML = `<div class="ce-head">${isNew ? 'New marker' : 'Marker'} <small>${Math.round(m.y).toLocaleString()} m deep</small></div>
       <input class="ce-name" maxlength="28" value="${esc(m.name)}" spellcheck="false">
       <div class="ce-cols">${MARK_COLS.map((c) => `<button class="ce-col${c === m.col ? ' on' : ''}" data-col="${c}" style="--c:${c}" aria-label="Colour"></button>`).join('')}</div>
-      <div class="ce-btns"><button class="ce-save">${isNew ? 'Set marker' : 'Save'}</button>${isNew ? '<button class="ce-cancel">Cancel</button>' : `<button class="ce-follow">${following ? 'Stop following' : 'Follow'}</button><button class="ce-del">Remove</button>`}</div>`;
+      <div class="ce-btns"><button class="ce-save">${isNew ? 'Set marker' : 'Save'}</button>${isNew ? '<button class="ce-cancel">Cancel</button>' : `<button class="ce-follow">${following ? 'Stop following' : 'Follow'}</button>${this.h.canSail && this.h.canSail() ? '<button class="ce-sail">Sail here</button>' : ''}<button class="ce-del">Remove</button>`}</div>`;
     ed.hidden = false;
     const left = X(m.x) * k, topY = Y(m.y) * k, ew = 250;
     ed.style.left = Math.max(6, Math.min(r.width - ew - 6, left + (left > r.width / 2 ? -ew - 16 : 16))) + 'px';
@@ -92,6 +92,7 @@ export class Chart {
       else if (b.classList.contains('ce-save')) save();
       else if (b.classList.contains('ce-cancel')) this.closeEdit();
       else if (b.classList.contains('ce-follow')) { m.name = name.value.trim().slice(0, 28) || m.name; this.h.follow(following ? null : m); this.h.save(); this.closeEdit(); this.list(); }
+      else if (b.classList.contains('ce-sail')) { m.name = name.value.trim().slice(0, 28) || m.name; this.h.save(); this.closeEdit(); this.toggle(false); this.h.sail(m); }
       else if (b.classList.contains('ce-del')) { const M = markersOf(this.h.getProfile()), i = M.indexOf(m); if (i >= 0) M.splice(i, 1); if (this.h.following() === m) this.h.follow(null); this.h.save(); this.closeEdit(); this.list(); }
     };
     name.onkeydown = (ev) => { ev.stopPropagation(); if (ev.key === 'Enter') save(); else if (ev.key === 'Escape') this.closeEdit(); };
