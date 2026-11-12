@@ -19,12 +19,16 @@ export function armBase(g) {
 export function findArmTarget(g) {
   const b = armBase(g), sub = g.sub, D = armDef(g);
   if (!D) return null;
-  let best = null, bd = 1e9;
+  // (4.18.5) of what is in reach, the one most worth the reach: its worth over how far the claw has to go, so a
+  // swarm of krill at the glass does not stand between the claw and the dragonfish just behind it
+  let best = null, bs = -1;
   const test = (sp, x, y, len, ref) => {
     if (!canTakeLive(sp) || len > D.maxLen) return;
     if ((x - b.x) * sub.facing < -1) return;
     const d = dist(b.x, b.y, x, y) - len * 0.4;
-    if (d < D.reach && d < bd) { bd = d; best = { sp, x, y, len, ...ref }; }
+    if (d >= D.reach) return;
+    const score = (liveValue(sp, len) * variantMult(ref.variant) + 0.5) / (1 + Math.max(0, d) * 0.6);
+    if (score > bs) { bs = score; best = { sp, x, y, len, ...ref }; }
   };
   for (const c of g.fauna.list) if (!c.dead && !c.pet && !(c.att && c.att.s !== 'idle')) test(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
   for (const s of g.world.statics) if (Math.abs(s.x - b.x) < D.reach + 3) test(s.sp, s.x, s.y - s.sp.len * s.scale * 0.3, s.sp.len * s.scale, { s, variant: s.variant });

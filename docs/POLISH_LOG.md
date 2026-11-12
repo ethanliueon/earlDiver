@@ -99,3 +99,9 @@ dives for each of the last subs, which is quicker than the danger down there des
 
 Also run: 1,100 rounds of a chaos play-test (random keys, panels, button clicks, teleports between every region, the
 sub, the mouse) over three seeds: no page errors at all.
+
+## 4.18.5 · the claw reaches for what is worth it
+
+The claw took the nearest animal in reach, so in a krill swarm (worth $0.10 each) it could not get at anything else.
+It now takes the one most worth the reach (its worth over how far the claw must go). Measured, 3 minutes at 250 m:
+$69 before (mostly krill), $747 after (firefly squid, hatchetfish).
