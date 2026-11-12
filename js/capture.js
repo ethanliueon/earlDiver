@@ -339,7 +339,7 @@ export { conditionName };
 // the winch hauls the bag up into the hatch; the haul lands in a heap on the tank-room floor. An animal
 // too big for the net may tear it: the net is lost, and everything in it swims free. Loud below 200 m.
 export const NETS_SUB = {
-  basic: { name: 'Beginner trawl net', short: 'NET', price: 120, max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
+  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, /* (claude-polish) was 120: a net used up in one haul cost more than a first sub's haul was worth, and one empty net left a new diver broke */ max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
     desc: 'A light trawl for the hatch under the sub: room for six animals, and it holds fish up to 2 m. Anything bigger, small sharks too, may still be caught, but the bigger it is the likelier it breaks out, and a break can tear the net and lose the whole haul. Nine legends in ten escape it. Used up in one haul; carry up to two.' },
   adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 1200, max: 10, maxLen: 4.0, mouth: 2.6, tear: 0.2, slip: 0.03, cap: 1, legendOut: 0,
     desc: 'The net for big game. Its mouth is over half again as wide, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
@@ -356,7 +356,7 @@ export function netsOf(items) {
 }
 export const netKinds = (items) => { const N = netsOf(items); return Object.keys(NETS_SUB).filter((k) => N[k] > 0); };
 export const netTotal = (items) => { const N = netsOf(items); return Object.values(N).reduce((a, b) => a + b, 0); };
-export const NET_DROP = 1.5, TOW_MAX = 8, NET_PURSE = 1.0, NET_HAUL = 1.5;
+export const NET_DROP = 1.5, TOW_MAX = 15, /* (claude-polish) was 8: the mouth trails 12 m behind the sub, so a net let out short of a school shut just as it reached the fish */ NET_PURSE = 1.0, NET_HAUL = 1.5;
 // where the hatch is under the hull, and where the net's mouth hangs behind it, for a sub facing dir
 export const hatchAt = (g) => ({ x: g.sub.x - (g.sub.facing || 1) * 1.2, y: g.sub.y + 1.3 });
 const towTarget = (g) => { const d = g.sub.facing || 1, k = g.subNet ? g.subNet.T.mouth : 1.6; return { x: g.sub.x - d * (7.5 + k * 1.5), y: g.sub.y + 2.4 + k }; };

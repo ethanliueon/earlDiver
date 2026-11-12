@@ -470,8 +470,8 @@ export class UI {
     const pick = (k) => { close(); onPick(k); };
     const key = (e) => {
       const k = e.key.toLowerCase(), i = '123'.indexOf(k);
-      if (i >= 0 && all[i] && counts[all[i]]) { e.stopPropagation(); e.preventDefault(); pick(all[i]); }
-      else if (k === 'escape' || k === 'n') { e.stopPropagation(); e.preventDefault(); close(); }
+      if (i >= 0 && all[i] && counts[all[i]]) { e.stopImmediatePropagation(); e.preventDefault(); pick(all[i]); } // (claude-polish) immediate: the game's own key handler on the same window also took the 1 (and put the hand net away)
+      else if (k === 'escape' || k === 'n') { e.stopImmediatePropagation(); e.preventDefault(); close(); }
     };
     const all = Object.keys(NETS_SUB); // (4.11.1) every net, the ones not in the hatch greyed with a lock
     el.innerHTML = `<p class="np-title">Which net?</p><p class="np-hint">Click a net · N or Esc to cancel</p><div class="g-row">${all.map((k) => { const N = NETS_SUB[k], adv = k === 'adv', have = counts[k] || 0;
