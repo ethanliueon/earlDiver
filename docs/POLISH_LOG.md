@@ -167,3 +167,14 @@ boat and the dive site (a pod about every two and a half minutes above 150 m, ea
 
 - No orca pods while the sub is on the surface within 120 m of the Margaret: a safe harbour. Rams in the same hour of
   play: 26 before, 8 after. Out at sea and under the surface they come as before.
+
+## 4.19.3 · browsers fetch the new version
+
+Every script is loaded as `js/name.js?v=<version>` through an import map that `tools/stamp.py` writes, so a
+player's browser fetches each version's files fresh instead of mixing cached old ones with new. It had not been run
+since 3.1.3 (every script still asked for ?v=3.1.3) and five newer modules (the message line, the tutorial's
+spotlight, the prompts, the alarm, the chart) were not in the map at all. Stamped for this version, the tool now
+covers `data/` too (the species lists), and DEV_NOTES says to run it after each bump. Checked: 56 modules, each
+fetched once, all tagged.
+
+Also measured: the page loads 3.3 MB in 71 files before the title (music is fetched later, when it plays).

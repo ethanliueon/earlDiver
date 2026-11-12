@@ -49,6 +49,10 @@ tell when a change has been published. Bump it with every change: the last numbe
 and tweaks, the middle one for new features or bigger changes, the first for a major overhaul.
 Say the new number when reporting the change.
 
+After bumping it, run `python3 tools/stamp.py`: it stamps the version on every script in `js/` and `data/`
+(the import map in `index.html`), so players' browsers fetch the new files instead of mixing cached old ones
+with new. (It had not been run since 3.1.3, and five newer modules were missing from the map.)
+
 ## Testing
 
 Serve the folder (`python3 -m http.server`) and open it in a browser. `window.__earl` exposes
