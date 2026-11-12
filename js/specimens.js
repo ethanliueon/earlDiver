@@ -162,11 +162,11 @@ export function deepness(sp) {
 }
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 // (4.18.0) the abyss pays: what lives below the twilight and the mid-depths (usually past ~2,800 m) is worth more the
-// deeper it keeps, up to four times at the trench floor, so the deepest hulls open the richest water and not the
+// deeper it keeps, up to eight times at the trench floor, so the deepest hulls open the richest water and not the
 // emptiest (before, a trench prawn paid a twentieth of a dragonfish from 2,000 m)
 export function abyssK(sp) {
   const [lo, hi] = usualDepth(sp), mid = (lo + hi) / 2, q = clamp01((mid - 2800) / 2000);
-  return 1 + 3 * q * q * (3 - 2 * q);
+  return 1 + 7 * q * q * (3 - 2 * q); // (4.19.0: up to 8x; with exotics as rare down there as anywhere, 4x left the trench poorer than the midnight zone)
 }
 const lerpN = (a, b, q) => a + (b - a) * q;
 // (3.7.0) what one healthy adult of normal size pays: commons and uncommons at their list price ($100 is a good
