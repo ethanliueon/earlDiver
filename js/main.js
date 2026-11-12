@@ -1046,7 +1046,7 @@ function tutor() {
   const fishStep = (doWhat) => {
     const tf = tutorFish(dir), bd = dist(e.x, e.y, tf.x, tf.y); to = { x: tf.x, y: tf.y }; fish = tf;
     if (inCabin) { text = 'Leave the cabin: walk to the door'; cabinTo('door', 'outdoor', 'Out on deck'); return; } // (4.3.3) arrows to the door
-    if (g.aboard) { text = 'Walk off the end of the deck to jump in'; return; }
+    if (g.aboard) { text = `Walk off the ${tf.x < e.x ? 'left' : 'right'} end of the deck to jump in`; return; } // (4.18.0) the end on the fish's side: off the other one it is a long swim back under the hull
     if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); return; }
     if (!zone('fish', bd < 2.6)) {
       text = 'Swim to the orange fish';

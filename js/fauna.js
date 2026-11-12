@@ -7,7 +7,7 @@
 import { rollVariant, canBeRare } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
-import { rarityOf } from './specimens.js';
+import { rarityOf, isTagOnly as TAG_ONLY } from './specimens.js';
 import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
 
 const SWIMMERS = SPECIES.filter((s) => isSwimHab(s.v.hab));
@@ -442,9 +442,13 @@ export class Fauna {
     const y = clamp(cam.y + rng.range(-0.7, 0.7) * cam.h, 150, fl - 3);
     if (fl - 3 < 150 || dist(x, y, cam.x, cam.y) < 12) return;
     const pool = [];
+    // (4.18.0) below the glowing animals' water (the abyss and the trench) the loose life is the abyss's own crowd,
+    // lit or not: prawns, amphipods, rattails, snailfish, cusk-eels, and near the bottom the things that walk it
+    const abyss = y > 3100, nearFloor = fl - y < 45;
     for (const sp of SPECIES) {
-      const filler = FILLER.has(sp.id);
-      if ((!sp.v.glow && !filler) || (sp.v.hab !== 'pelagic' && !filler) || sp.len > 1 || y < sp.dmin || y > sp.dmax) continue;
+      const filler = FILLER.has(sp.id), hab = sp.v.hab;
+      const abyssal = abyss && (hab === 'pelagic' || ((hab === 'demersal' || hab === 'floor-swim') && nearFloor)) && !TAG_ONLY(sp);
+      if (((!sp.v.glow || hab !== 'pelagic') && !filler && !abyssal) || sp.len > (abyssal ? 1.3 : 1) || y < sp.dmin || y > sp.dmax) continue;
       const w = this.depthPref(sp, x, y, night);
       if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1)]); // the small and common first, the filler most of all
     }

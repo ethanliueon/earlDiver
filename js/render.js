@@ -1612,8 +1612,11 @@ export class Renderer {
       let mid = 0; for (let k = -4; k <= 4; k++) mid += g.world.floorAt(cam.x + k * 12); mid /= 9;
       this.drawFloor(g, bS, bSy, ppm, F.x0, F.x1, { ctx: fctx, W: cw, H: ch, midD: mid, camY: cam.y, y0: F.y0, y1: F.y1 });
     }
-    const k = ppm / F.ppm;
-    this.ctx.drawImage(F.c, S(F.x0), Sy(F.y0), (F.x1 - F.x0) * F.ppm * k, (F.y1 - F.y0) * F.ppm * k);
+    // only the part of the bake that is on screen (the bake has a margin all round, 2.5 screens in all)
+    const k = ppm / F.ppm, dx0 = S(F.x0), dy0 = Sy(F.y0);
+    const sx = Math.max(0, -dx0 / k), sy = Math.max(0, -dy0 / k);
+    const sw = Math.min(F.c.width - sx, this.W / k - Math.max(0, dx0) / k), sh = Math.min(F.c.height - sy, this.H / k - Math.max(0, dy0) / k);
+    if (sw > 0 && sh > 0) this.ctx.drawImage(F.c, sx, sy, sw, sh, Math.max(0, dx0), Math.max(0, dy0), sw * k, sh * k);
   }
 
   drawFloor(g, S, Sy, ppm, x0, x1, V = null) {
@@ -2394,6 +2397,7 @@ export class Renderer {
     const cell = 2.2;
     ctx.fillStyle = 'rgba(225,232,236,0.5)';
     const cx0 = Math.floor(x0 / cell), cx1 = Math.ceil(x1 / cell), cy0 = Math.floor(Math.max(0.5, y0) / cell), cy1 = Math.ceil(y1 / cell);
+    ctx.beginPath(); // (one fill for all the specks, not two hundred)
     for (let i = cx0; i <= cx1; i++) for (let j = cy0; j <= cy1; j++) {
       const h = Math.abs(Math.sin(i * 127.1 + j * 311.7) * 43758.5453) % 1;
       if (h > 0.55) continue;
@@ -2401,8 +2405,9 @@ export class Renderer {
       const x = i * cell + h * cell + Math.sin(t * 0.3 + h * 10) * 0.3;
       let y = j * cell + ((h2 * cell + t * 0.05 * (0.5 + h)) % cell);
       const s = Math.max(1, ppm * (0.02 + h2 * 0.03));
-      ctx.fillRect(S(x), Sy(y), s, s);
+      ctx.rect(S(x), Sy(y), s, s);
     }
+    ctx.fill();
   }
 
   buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY) {
@@ -2699,7 +2704,10 @@ export class Renderer {
       if (a <= 0.002) return;
       const c = this.coneSprite(col, spread);
       ctx.save(); ctx.translate(x, y); ctx.rotate(ang); const k = range / 256; ctx.scale(k, k);
-      ctx.globalAlpha = Math.min(1, a); ctx.drawImage(c, -256, -256); ctx.restore();
+      ctx.globalAlpha = Math.min(1, a);
+      // only the part of the sprite the wedge covers: its right half, and no taller than the widest feather (most of the square is empty)
+      const hh = Math.min(256, Math.ceil(256 * Math.sin(Math.min(Math.PI / 2, spread * 1.9)) + 2));
+      ctx.drawImage(c, 256, 256 - hh, 256, hh * 2, 0, -hh, 256, hh * 2); ctx.restore();
     };
     const motes = (x, y, ang, range, spread, col, a) => {
       if (this.lite) return;

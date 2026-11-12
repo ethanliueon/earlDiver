@@ -723,9 +723,10 @@ function glassFang(ctx, x, y, len, dir, w, lean = 0.15) {
 }
 function photophores(ctx, B, u0, u1, n, off, r, col) {
   const P = [];
-  for (let k = 0; k < n; k++) { const [x, y, h] = B.at(u0 + (u1 - u0) * (k / Math.max(1, n - 1))), py = y + h * off;
-    ctx.fillStyle = 'rgba(8,10,12,0.85)'; ctx.beginPath(); ctx.arc(x, py, r * 1.5, 0, TAU); ctx.fill();
-    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, py, r, 0, TAU); ctx.fill(); P.push([x, py, 0.4]); }
+  // (two paths, not two fills a light: the dark rims, then the lights over them)
+  for (let k = 0; k < n; k++) { const [x, y, h] = B.at(u0 + (u1 - u0) * (k / Math.max(1, n - 1))); P.push([x, y + h * off, 0.4]); }
+  ctx.fillStyle = 'rgba(8,10,12,0.85)'; ctx.beginPath(); for (const [x, py] of P) { ctx.moveTo(x + r * 1.5, py); ctx.arc(x, py, r * 1.5, 0, TAU); } ctx.fill();
+  ctx.fillStyle = col; ctx.beginPath(); for (const [x, py] of P) { ctx.moveTo(x + r, py); ctx.arc(x, py, r, 0, TAU); } ctx.fill();
   return P;
 }
 // the fangtooth: short and deep, a huge armoured head, two great fangs in the lower jaw that fold into sockets
@@ -780,7 +781,7 @@ function drawViper(ctx, L, v, t, swim = 1) {
   ctx.save(); ctx.clip(B.path);
   // its hexagonal scale net, catching the light in blue and violet
   ctx.strokeStyle = 'rgba(140,190,220,0.16)'; ctx.lineWidth = Math.max(0.4, L * 0.0025);
-  for (let i = 0; i < 26; i++) { const [x, y, h] = B.at(0.08 + i * 0.034); for (let j = -2; j <= 2; j++) { const yy = y + j * h * 0.42 + (i % 2) * h * 0.21; ctx.beginPath(); ctx.moveTo(x - L * 0.014, yy); ctx.lineTo(x, yy - h * 0.2); ctx.lineTo(x + L * 0.014, yy); ctx.lineTo(x, yy + h * 0.2); ctx.closePath(); ctx.stroke(); } }
+  ctx.beginPath(); for (let i = 0; i < 26; i++) { const [x, y, h] = B.at(0.08 + i * 0.034); for (let j = -2; j <= 2; j++) { const yy = y + j * h * 0.42 + (i % 2) * h * 0.21; ctx.moveTo(x - L * 0.014, yy); ctx.lineTo(x, yy - h * 0.2); ctx.lineTo(x + L * 0.014, yy); ctx.lineTo(x, yy + h * 0.2); ctx.closePath(); } } ctx.stroke(); // (one path: 130 strokes a fish were the costliest thing in the deep)
   const sheen = ctx.createLinearGradient(-L * 0.5, 0, L * 0.5, 0); sheen.addColorStop(0, 'rgba(120,90,200,0.12)'); sheen.addColorStop(0.5, 'rgba(90,180,200,0.1)'); sheen.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = sheen; ctx.fillRect(-L, -H * 2, 2 * L, 4 * H);
   ctx.restore();
   const P = photophores(ctx, B, 0.08, 0.9, 16, 0.72, Math.max(0.6, L * 0.004), rgba(glow, 0.85));
@@ -2611,7 +2612,7 @@ function drawDragon(ctx, L, v, t, swim = 1) {
     rayFin(ctx, [[x - L * 0.06, y + h], [x + L * 0.05, y + h * 0.8]], [[x - L * 0.04, y + h + H * 1.1], [x + L * 0.04, y + h + H * 0.9]], fin, 0.5); }
   const bg = ctx.createLinearGradient(0, -H, 0, H); bg.addColorStop(0, shade(c0, -0.3)); bg.addColorStop(0.5, shade(c1, 0.08)); bg.addColorStop(1, shade(c0, -0.2));
   ctx.fillStyle = bg; ctx.fill(B.path);
-  ctx.save(); ctx.clip(B.path); ctx.fillStyle = 'rgba(160,180,200,0.06)'; for (let i = 0; i < 40; i++) { const [x, y, h] = B.at(i / 40); ctx.fillRect(x, y - h, L * 0.004, h * 0.6); } ctx.restore();
+  ctx.save(); ctx.clip(B.path); ctx.fillStyle = 'rgba(160,180,200,0.06)'; ctx.beginPath(); for (let i = 0; i < 40; i++) { const [x, y, h] = B.at(i / 40); ctx.rect(x, y - h, L * 0.004, h * 0.6); } ctx.fill(); ctx.restore();
   const P = photophores(ctx, B, 0.06, 0.82, 22, 0.75, Math.max(0.5, L * 0.003), rgba(shade(glow, 0.2), 0.75));
   // the head, the jaw open, fangs
   const [hx, hy, hh] = B.at(0.03);

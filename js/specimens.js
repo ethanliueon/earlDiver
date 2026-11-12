@@ -5,6 +5,7 @@
 // anything rooted, anything too big to carry off the bottom.
 import { SPECIES_BY_ID } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
+import { usualDepth } from './fauna.js';
 
 // What one healthy adult of normal size sells for, in dollars: roughly what it would fetch in the
 // real world (a sardine is pocket change, a salmon a good day, a coelacanth a lifetime). Set by hand
@@ -160,6 +161,13 @@ export function deepness(sp) {
   return clamp01((mid - 100) / (450 - 100));
 }
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
+// (4.18.0) the abyss pays: what lives below the twilight and the mid-depths (usually past ~2,800 m) is worth more the
+// deeper it keeps, up to four times at the trench floor, so the deepest hulls open the richest water and not the
+// emptiest (before, a trench prawn paid a twentieth of a dragonfish from 2,000 m)
+export function abyssK(sp) {
+  const [lo, hi] = usualDepth(sp), mid = (lo + hi) / 2, q = clamp01((mid - 2800) / 2000);
+  return 1 + 3 * q * q * (3 - 2 * q);
+}
 const lerpN = (a, b, q) => a + (b - a) * q;
 // (3.7.0) what one healthy adult of normal size pays: commons and uncommons at their list price ($100 is a good
 // day early on); rares $10-80 in the shallows, $150-500 from the deep; exotics $1-2k shallow, $3-5k from
@@ -178,6 +186,7 @@ export function rarityPrice(sp) {
     const lo = lerpN(10, 150, d), hi = lerpN(80, 500, d);
     p = lerpN(lo, hi, lerpN(0.5, 0.3, d) * size + lerpN(0.5, 0.7, d) * R.pos); // (in the deep, a small one is no worse than a big one)
   }
+  if (R.id !== 'legendary' && !(isTagOnly(sp) && !LEGENDARY.has(sp.id))) p *= abyssK(sp); // (4.18.0)
   p = p >= 100 ? Math.round(p / 5) * 5 : Math.round(p * 100) / 100;
   PRICE_CACHE.set(sp.id, p);
   return p;
