@@ -377,6 +377,7 @@ export function fireSubNet(g, tier = null) {
   N[tier]--; // used up in this haul, whatever happens
   const h = hatchAt(g);
   g.subNet = { tier, T: NETS_SUB[tier], phase: 'drop', t: 0, pt: 0, mx: h.x, my: h.y, open: 0, got: [], dir: g.sub.facing || 1 };
+  if ((g.items.bait || 0) > 0) { g.items.bait--; g.subNet.bait = true; } // (4.20.0) a bait canister in its mouth
   if (g.sub.y > 200) g.entity.disturb(g, 0.35);
   return null;
 }
@@ -397,6 +398,21 @@ export function updateSubNet(g, dt, canTake) {
     const want = clamp(speed / 1.2, 0.25, 1); // moving, the mouth stands open; stopped, it sags
     n.open += (want - n.open) * Math.min(1, dt * 2);
     n.dir = sub.facing || n.dir;
+    // (4.20.0) the bait: what is near follows the scent to the mouth (a fish near the sub otherwise bolts from her, and
+    // the net trailing ten metres behind found the water already empty); schools, hunters and the big stay their course
+    if (n.bait && n.open > 0.4) {
+      for (const c of g.fauna.list) {
+        if (c.dead || c.hidden || c.pet || c.att || c.prey || c.ctrl || c.len > T.maxLen || (g.fauna.schools && g.fauna.schools.has(c.gid))) continue;
+        // only what is ahead of the mouth (between it and the sub, and beyond): it holds its place in the net's path,
+        // at the height of the mouth, and the net sweeps it in as she tows
+        const rel = (c.x - n.mx) * n.dir, dy = n.my - c.y;
+        if (rel < 0.4 || rel > 18 || Math.abs(dy) > 12) continue;
+        const k = 1 - rel / 18;
+        c.y += clamp(dy, -1, 1) * (1.2 + 2.2 * k) * dt; // to the mouth's height
+        c.x -= n.dir * 0.6 * k * dt;                       // and drifting back toward it
+        c.vx *= 0.9; c.vy *= 0.9; c.fleeT = 0; // (it does not bolt from the sub while it has the scent)
+      }
+    }
     if (n.open > 0.6) {
       // (4.0.0) only what goes in at the mouth: an animal is caught when it crosses the mouth's opening
       // (from the sub's side to the bag's side, within the hoop), not anything near the net

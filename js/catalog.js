@@ -286,6 +286,15 @@ function drawTrawl(ctx, w, h, v) {
 function drawSupply(ctx, w, h, k) {
   const cx = w / 2, cy = h / 2;
   if (k === 'airTank') { drawTank(ctx, w, h, { id: 's100', air: 70 }); return; }
+  if (k === 'bait') { // (4.20.0) a perforated steel canister with a clip, a little of the bait showing at its holes
+    const bw = w * 0.2, bh = h * 0.56, x0 = cx - bw / 2, y0 = cy - bh / 2;
+    const gr = ctx.createLinearGradient(x0, 0, x0 + bw, 0); gr.addColorStop(0, '#5c6266'); gr.addColorStop(0.35, '#a9b0b3'); gr.addColorStop(0.6, '#8a9194'); gr.addColorStop(1, '#4a5054');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.roundRect(x0, y0, bw, bh, bw * 0.12); ctx.fill();
+    ctx.fillStyle = '#3c4246'; ctx.fillRect(x0 - bw * 0.06, y0 - h * 0.025, bw * 1.12, h * 0.05); ctx.fillRect(x0 - bw * 0.06, y0 + bh - h * 0.025, bw * 1.12, h * 0.05);
+    for (let r2 = 0; r2 < 5; r2++) for (let c2 = 0; c2 < 3; c2++) { const hx = x0 + bw * (0.25 + c2 * 0.25), hy = y0 + bh * (0.18 + r2 * 0.16); ctx.fillStyle = '#2a1e18'; ctx.beginPath(); ctx.arc(hx, hy, h * 0.022, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(176,96,72,0.85)'; ctx.beginPath(); ctx.arc(hx, hy + h * 0.004, h * 0.012, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = '#3c4246'; ctx.lineWidth = h * 0.025; ctx.beginPath(); ctx.arc(cx, y0 - h * 0.07, h * 0.05, Math.PI * 0.1, Math.PI * 0.9, true); ctx.stroke(); // the clip
+    return;
+  }
   if (k === 'tag' || k === 'tagAdv') { ctx.strokeStyle = '#3a3e40'; ctx.lineWidth = h * 0.04; ctx.beginPath(); ctx.moveTo(cx - w * 0.25, cy); ctx.lineTo(cx + w * 0.2, cy); ctx.stroke(); ctx.fillStyle = k === 'tagAdv' ? '#9fe8ff' : '#e8c040'; ctx.beginPath(); ctx.moveTo(cx + w * 0.2, cy - h * 0.06); ctx.lineTo(cx + w * 0.3, cy); ctx.lineTo(cx + w * 0.2, cy + h * 0.06); ctx.fill(); ctx.fillRect(cx - w * 0.28, cy - h * 0.08, w * 0.06, h * 0.16); return; }
   const glow = k === 'necklace' ? '255,184,96' : '170,230,255'; // (4.0.0) the glow stick burns warm amber
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, h * 0.35); g.addColorStop(0, `rgba(${glow},0.95)`); g.addColorStop(1, `rgba(${glow},0)`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);

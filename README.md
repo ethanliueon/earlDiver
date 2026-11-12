@@ -88,6 +88,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
   on credit if the cash is short (half of every sale until it is paid). Past her rating the hull creaks and the seams weep; each
   dive she has a hidden crush depth (about 1.6× the rating for the first, 1.25× for the last, a
   narrower window on deeper hulls). Nothing survives the bottom of the pit.
+- **Bait canisters** (Bayside, $150, carry three): one goes out with each trawl net; while it tows, the animals ahead
+  of its mouth hold their place in its path at its height instead of scattering from the sub (about four times the catch).
 - **Hull damage** shows on the sub as patches: dents in the plating, cracked and leaking (each about
   15 % of her hull; the cabin air leaks faster the more there are). Get out, swim to a patch and hold
   R: five seconds mends it.
