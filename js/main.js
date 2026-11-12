@@ -58,7 +58,7 @@ function airOver(g) {
   let txt = '';
   if (g.mode === 'play' && ui.anyOpen() && !g.aboard) {
     const subAir = e.inSub && sub && sub.o2Max ? sub.o2 / sub.o2Max : 1, own = e.o2Max ? e.o2 / e.o2Max : 1;
-    if (g.noAir) txt = 'Out of air — surface!';
+    if (g.noAir) txt = 'Out of air: surface!';
     else if (e.inSub && subAir <= 0.001) txt = own < 0.5 ? `Cabin out of air · your tank: ${Math.ceil(e.o2)} s` : 'Cabin out of air: breathing from your tank';
     else if (e.inSub && subAir < 0.25) txt = `Sub air low: ${Math.round(subAir * 100)} %`;
     else if (!e.inSub && own < 0.35) txt = `${Math.ceil(e.o2)} s of air left`;
@@ -1510,7 +1510,7 @@ function interact(t, exitSub) {
       g.journal.set(t.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() });
       questEvent(profile, 'observe'); // (4.0.6)
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
-      hud.toast(`${t.sp.name} — ${t.sp.sci}`, 'note');
+      hud.toast(`${t.sp.name} · ${t.sp.sci}`, 'note');
       audio.ready && audio.note();
       ui.journalDirty = true;
     } else if (!e.inSub && (QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && firstFishPart(profile) <= 1) {
@@ -2002,8 +2002,8 @@ function update(dt) {
     // the way home: the autopilot steers; anything that needs a pilot hands her back
     if (g.homeRun) {
       const steer = false; // steering no longer takes over: only C does
-      const why = g.subHit ? 'Something hit the hull — autopilot off' : g.threat ? 'Something is coming — autopilot off'
-        : (g.fx.dread > 0.05 || (ent.marked && (ent.dist ?? 999) < 220)) ? 'Something is near — autopilot off' : null;
+      const why = g.subHit ? 'Something hit the hull: autopilot off' : g.threat ? 'Something is coming: autopilot off'
+        : (g.fx.dread > 0.05 || (ent.marked && (ent.dist ?? 999) < 220)) ? 'Something is near: autopilot off' : null;
       if (why) { g.homeRun = false; ap.cancel(); hud.toast(why, steer ? '' : 'warn'); }
       else {
         const r2 = ap.update(g, dt, 1);
@@ -2163,7 +2163,7 @@ function update(dt) {
       g.capPrompt = at ? `Space  ${at.name}` : null;
       g.catchTarget = at ? { c: at.c, x: at.x, y: at.y, len: at.len, col: rarityOf(at.sp).col } : null;
       g.capRarity = at ? rarityOf(at.sp) : null;
-    } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw — in the green' : null;
+    } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw in the green' : null;
     else if (g.toolSel === 'trap') {
       const fl = g.world.floorAt(e.x);
       const why = canSetHere(g);
@@ -2324,7 +2324,7 @@ function update(dt) {
     g.diverDrain = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
     g.diverDrain *= e.o2Mul;
     g.subDrain = subDrainMult(g.sub.y, g.sub.rated) * (mv.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(g.sub);
-    if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical — surface', 'warn'); }
+    if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical: surface', 'warn'); }
     if (e.atSurface) g.lowO2Warned = false;
 
     // lure physics

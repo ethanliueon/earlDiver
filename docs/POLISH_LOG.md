@@ -105,3 +105,12 @@ sub, the mouse) over three seeds: no page errors at all.
 The claw took the nearest animal in reach, so in a krill swarm (worth $0.10 each) it could not get at anything else.
 It now takes the one most worth the reach (its worth over how far the claw must go). Measured, 3 minutes at 250 m:
 $69 before (mostly krill), $747 after (firefly squid, hatchetfish).
+
+## 4.18.6 · wording
+
+- Messages in the house style (a colon, as most already were) instead of dashes: "Out of air: surface!" was written
+  both ways; "Bag full: get to the sub or the boat"; "Something hit the hull: autopilot off"; the claw's "Close the
+  claw in the green"; a species observed reads "Garibaldi · Hypsypops rubicundus". (Dashes left where they belong: an
+  empty table cell, Dave signing his page.)
+- The first step of the Log, for a diver who skipped the tutorial, reads in plain words ("swim down", "observe a fish
+  (F)", "catch a fish", "back up to the surface") instead of pointing at an orange fish that is not there.
