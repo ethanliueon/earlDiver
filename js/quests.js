@@ -303,7 +303,7 @@ export function claim(P, which) {
   if (which === 'main') {
     const m = MAIN[S.main]; if (!m || S.mainProg < m.need) return null;
     S.main++; S.mainProg = 0; S.done++; follow(S); // the next step: already done, if he has done it
-    return { pay: m.pay, gift: m.gift || null, kit: m.kit || null, text: m.text };
+    return { id: m.id, pay: m.pay, gift: m.gift || null, kit: m.kit || null, text: m.text };
   }
   if (tutorialOn(P)) return null; // (4.3.0) the board opens after the tutorial
   const i = S.board.findIndex((q) => q.key === which); if (i < 0) return null;

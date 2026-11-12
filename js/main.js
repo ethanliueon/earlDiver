@@ -267,6 +267,8 @@ const ui = new UI({
     const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id })));
     if (cards.length) ui.showGains(cards); // (4.6.0)
     hud.toast(`Quest done · ${money(r.pay)}`, 'big');
+    // (4.18.0) after the Log's first sub dive: nothing had said the Margaret herself can take him out over the deep
+    if (which === 'main' && r.id === 'sub') setTimeout(() => hud.toast('The deep water is west of here. The Margaret can take you: the wheel is at the front of her cabin', 'note'), 4200);
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
