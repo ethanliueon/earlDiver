@@ -54,3 +54,14 @@ Profiling in headless Chromium: the game's own JavaScript takes about 10-20 ms a
 (no hot spot over 1 %); about 90 % of the frame is the browser painting (software rendering in the test
 browser). Long frames are rare and short. A/B of the lightmap's smoothing quality made no difference. Real
 GPUs paint far faster, so there was nothing worth changing on this evidence.
+
+## 4.18.2 · the trawl net
+
+Traced tow by tow: the net closed by itself after 8 s, its mouth 1.6 m wide and trailing 13 m behind and 4 m under
+the sub. Lone animals flee anything within 10 m of the sub, so the net only meets schools, and only when steered
+through one. Measured, 5 hauls a depth: driven straight, 0-1 animals at 120-600 m; steered at the nearest school,
+$0-14 at 120-200 m, $0-142 at 280 m, $214-773 at 600 m. A beginner net cost $120 and is used up in one haul,
+so in the first sub's water (to 300 m) it lost money every time.
+
+- The tow lasts 20 s before the net closes by itself (N still closes it sooner): time to reach a school.
+- The beginner net costs $60 (was $120) and its mouth is 2.0 m (was 1.6; the advanced net stays 2.6).
