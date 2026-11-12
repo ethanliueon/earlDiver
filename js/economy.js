@@ -37,8 +37,8 @@ export const SUBS = [
   { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 300, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 12000 },
   { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 340, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 30000 }, // (4.18.0: was $40,000; the mid-depths pay less now exotics are met as rarely as they should be)
   { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 360, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
-  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 390, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
-  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 420, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 450000 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 390, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 170000 }, // (4.19.1: was $220,000)
+  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 420, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 320000 }, // (4.19.1: was $450,000: a trip below 2,500 m pays little more than one at 1,700 m, so the last hulls took sixteen trips)
 ];
 export const SUB_TIERS = SUBS; // (old name)
 // No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
@@ -215,7 +215,7 @@ export const UPGRADES = {
   camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, top: 13, max: 10, cost: 12, growth: 1.7, fmt: 'm' },
   // the submersible
   ballast:   { group: 'Submersible', name: 'Ballast', base: 0, top: 1.44, max: 10, cost: 25, growth: 1.7, fmt: 'bonus' },
-  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4500], costs: [500, 3000, 12000, 30000, 100000, 220000, 450000], max: 7, fmt: 'depth' }, // (4.14.0)
+  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4500], costs: [500, 3000, 12000, 30000, 100000, 170000, 320000], max: 7, fmt: 'depth' }, // (4.14.0)
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, lin: 0.04, max: 50, cost: 236, growth: 1.1, fmt: 'x' }, // (4.13.0) fifty small steps to 3x, about $275,000 in all
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, lin: 1, max: 2, cost: 60, growth: 3, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 5, costs: [100, 1000, 5000, 20000, 60000], fmt: 'n' }, // (4.13.0) bought one at a time in the chamber room
