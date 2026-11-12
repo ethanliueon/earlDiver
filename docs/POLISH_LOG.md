@@ -123,3 +123,13 @@ $69 before (mostly krill), $747 after (firefly squid, hatchetfish).
 
 Also run: a 40-minute soak (the bot playing while memory and the game's lists were sampled): the heap held at about
 15 MB, the page's element count did not grow, and the caches levelled off. No leaks.
+
+## 4.19.0 · every sub's cabin air, and the spare air bank
+
+- A bug since 4.16.8: removing the pressure relics left `sub.o2V = SUB_AIR[...]` inside a comment on the line above,
+  so every sub had the default 120 s of cabin air instead of her own (up to 260 s for the last). Measured before and
+  after: the research sub (180 s) had 109 s left at 100 m; now 169 s. Each sub now has its intended air.
+- New refit in the yard: the spare air bank, $8,000, half as much cabin air again on every sub (the Б-7 120 s to 180 s,
+  the last sub 260 s to 390 s). With her own air restored the deepest sub still reaches 4,050 m with only 53 s left,
+  so time at depth is what a mid-game player most wants more of. It has its own picture (four bottles in brass straps
+  on a manifold), shows on the spec sheet, and the new bottles come full.

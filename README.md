@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 4.18.7 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 4.19.0 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -49,7 +49,8 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - **Air** is the bar under the depth. Surface to refill. Earl's tank is the one he wears: 20 s for the
   starting aluminium cylinder, up to about two minutes for the rarest. The cabin air comes with each
   submersible (120 s in the first, 260 s in the last), and inside her his own tank refills from it.
-  Backup air tanks ($240, two carried) refill the cabin with R: a deep dive needs them.
+  Backup air tanks ($240, two carried) refill the cabin with R: a deep dive needs them. The spare air bank
+  (a refit in the yard, $8,000) gives every sub half as much cabin air again.
 - **The catalog** (the computer in the cabin, F) is a small shop website: hand nets, slurp guns, tag
   guns, cameras, trawl nets, traps, suits, fins, air tanks, bags and supplies, each its own item with
   what it is good for and not for. Bought items are yours at once and go on; change them in the

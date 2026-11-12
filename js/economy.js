@@ -61,6 +61,8 @@ export function rollCrush(rated, rnd = Math.random) {
 export const SUB_ADDONS = {
   quiet: { name: 'Quiet engine', price: 1600, desc: 'Rubber-mounted motors and a slower prop. The sub makes half the noise down there.' },
   bigTank: { inRoom: true, name: 'Large pressure tank', price: 4500, desc: 'A long steel pressure cylinder in the tank room: three animals, or one big one, held at their own pressure.' },
+  // (4.18.8) more air in the cabin, on every sub: the deep subs reach near their rating with little left
+  airBank: { name: 'Spare air bank', price: 8000, desc: 'A rack of air bottles strapped behind the sphere and plumbed into the cabin: half as much cabin air again, on every sub.' },
   sonar: { name: 'Seafloor sonar', price: 2400, desc: 'A sonar head under the sphere. In the cabin, a strip under the radar draws the seafloor below and around the sub, and how far down it is.' },
 };
 // ---------------- catching gear ----------------

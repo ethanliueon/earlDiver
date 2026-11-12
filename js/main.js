@@ -113,7 +113,8 @@ function applySuit(e, P) {
 }
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
-  sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics) sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible
+  sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics)
+  sub.o2V = SUB_AIR[lv(P, 'depth')] * ((P.addons || {}).airBank ? 1.5 : 1); // the cabin air comes with the submersible (4.18.8: this had ended up inside the comment above, so every sub had 120 s; the spare air bank adds half again)
   sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.13.0) the engine alone sets her speed: 50 steps to 3x
   sub.level = lv(P, 'depth');
 }
@@ -874,6 +875,7 @@ function buy(kind) {
     hud.toast('Pressure canisters fitted', 'big');
   } else if (SUB_ADDONS[kind] && !(P.addons || {})[kind] && spend(P, SUB_ADDONS[kind].price)) {
     P.addons = Object.assign({}, P.addons, { [kind]: true }); g.addons = P.addons; ok = true;
+    if (kind === 'airBank') { const was = g.sub.o2Max; applySub(g.sub, P); g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + Math.max(0, g.sub.o2Max - was)); } // (4.18.8) the new bottles come full
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
   } else if (SUPPLIES[kind] && (g.items[kind] || 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) {
     g.items[kind] = g.items[kind] || 0;

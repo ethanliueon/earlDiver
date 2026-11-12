@@ -1411,7 +1411,8 @@ export class UI {
       // has had, his own and the next he can buy (or one dark card, to be discovered); click a sub for its own page
       const hl = Math.min(SUBS.length - 1, lv(P, 'depth')), S0 = SUBS[hl], cap = hullCap(P);
       const air = (s2) => `${Math.floor(s2 / 60)} min${s2 % 60 ? ` ${s2 % 60} s` : ''}`;
-      const facts = (S, k) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(S.o2), S.o2], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed],
+      const bank = (P.addons || {}).airBank ? 1.5 : 1; // (4.18.8) the spare air bank, on every sub
+      const facts = (S, k) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(Math.round(S.o2 * bank)), S.o2 * bank], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed],
         ['Dive speed', k ? '+10%' : 'standard', S.ballast], ['Open tank', `${S.tank} spaces`, S.tank]];
       const sheet = (S, k, cmp = null, stamp = '', big = false) => { const base = cmp ? facts(cmp, 1) : null;
         return `<div class="yd-sheet${big ? ' big' : ''}"><div class="ys-head"><span>BAYSIDE YARD · SPECIFICATION</span><span>No. ${k + 1}</span></div>${facts(S, k).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
@@ -1484,7 +1485,7 @@ export class UI {
         html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
           <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i><svg class="yd-lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15 L21 21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, 'Works the claw under the sphere: from inside, Space grabs an animal.', GEAR.arm.price, owns(P, 'arm')]]
-          .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, { quiet: 'Half the noise down there: the deep notices her less.', sonar: 'A strip under the radar draws the seafloor around her.' }[k] || a.desc, a.price, !!(P.addons || {})[k]]));
+          .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, { quiet: 'Half the noise down there: the deep notices her less.', sonar: 'A strip under the radar draws the seafloor around her.', airBank: 'Bottles strapped behind the sphere: half as much cabin air again, on every sub.' }[k] || a.desc, a.price, !!(P.addons || {})[k]]));
         html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div class="yd-part"><img data-part="${arg}" alt=""></div><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="pay-tag" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'} title="Buy and fit it">${money(price, false)}</button>`}</div>`).join('')}</div>`;
         html += '<p class="shop-note">Pressure chambers are bought in the sub\'s chamber room, the large pressure tank in its own room.</p>';
       }
@@ -1566,7 +1567,24 @@ export class UI {
         for (let i = 0; i < 4; i++) { const r = 34 + i * 26; x.strokeStyle = `rgba(120,240,140,${(0.85 - i * 0.18).toFixed(2)})`; x.lineWidth = 3 - i * 0.4; x.shadowColor = 'rgba(120,240,140,0.8)'; x.shadowBlur = 8;
           x.beginPath(); x.arc(cx, cy, r, Math.PI * 0.22, Math.PI * 0.78); x.stroke(); }
         return o.toDataURL(); })();
-      this.partPics = { 'gear:arm': crop(withArm, PART_CROP.arm), quiet: crop(plain, PART_CROP.quiet), sonar: sonarPic };
+      // (4.18.8) the spare air bank: not on the sub's drawing, so painted here: four bottles in brass straps on a manifold
+      const airPic = (() => {
+        const o = document.createElement('canvas'); o.width = 300; o.height = 176; const x = o.getContext('2d');
+        const bg = x.createLinearGradient(0, 0, 0, 176); bg.addColorStop(0, '#163650'); bg.addColorStop(1, '#0a1a28'); x.fillStyle = bg; x.fillRect(0, 0, 300, 176);
+        for (let i = 0; i < 18; i++) { x.fillStyle = `rgba(200,225,240,${(0.08 + 0.1 * ((i * 7) % 5) / 5).toFixed(2)})`; x.beginPath(); x.arc((i * 53) % 300, (i * 37) % 176, 1 + (i % 3) * 0.6, 0, Math.PI * 2); x.fill(); } // marine snow
+        x.fillStyle = '#3a4248'; x.fillRect(48, 34, 204, 10); // the manifold
+        for (let i = 0; i < 4; i++) {
+          const cx = 72 + i * 52, w = 36, top = 50, bot = 150;
+          const cg = x.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0); cg.addColorStop(0, '#6d6a40'); cg.addColorStop(0.35, '#d8c870'); cg.addColorStop(0.6, '#b8a64c'); cg.addColorStop(1, '#4e4a28');
+          x.fillStyle = cg; x.beginPath(); x.roundRect(cx - w / 2, top, w, bot - top, [14, 14, 6, 6]); x.fill();
+          x.strokeStyle = 'rgba(20,16,4,0.6)'; x.lineWidth = 1.5; x.stroke();
+          x.fillStyle = '#2c3236'; x.fillRect(cx - 5, 40, 10, 12); x.fillStyle = '#596268'; x.fillRect(cx - 7, 37, 14, 5); // valve
+          for (const sy of [78, 124]) { x.fillStyle = '#9a7a3a'; x.fillRect(cx - w / 2 - 2, sy, w + 4, 6); x.fillStyle = 'rgba(255,230,160,0.5)'; x.fillRect(cx - w / 2 - 2, sy, w + 4, 1.5); } // brass straps
+          x.fillStyle = 'rgba(255,255,255,0.18)'; x.fillRect(cx - w / 2 + 6, top + 10, 4, bot - top - 22); // the light on it
+        }
+        x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(0, 150, 300, 26);
+        return o.toDataURL(); })();
+      this.partPics = { 'gear:arm': crop(withArm, PART_CROP.arm), quiet: crop(plain, PART_CROP.quiet), sonar: sonarPic, airBank: airPic };
     }
     for (const im of imgs) im.src = this.partPics[im.dataset.part] || '';
   }
