@@ -147,3 +147,23 @@ $2,000 mid-game. After: mid-game jobs $2,000-10,000, late $2,400-36,000; a new d
 
 Also: a scan of the code for statements left behind a `//` (the shape of the cabin-air bug): one more, a
 `ctx.shadowBlur = 0` in a HUD loop that no longer runs; put back in front of its comment.
+
+## 4.19.2 · a safe harbour, and a whole sub career played
+
+A campaign bot played a sub career dive by dive through the game's own controls and update loop: drive out on the
+surface to water of the right depth, dive, hunt with the claw (grip timed in the green; the bag into the chambers
+first, then the open tank), connect backup tanks when the cabin runs low, come up while there is air to, drive
+home, sell; between dives buy tanks, chambers, the spare air bank and the next sub. The thing in the deep was kept
+away and hull damage was counted then mended (a player dodges or patches), so this measures the economy.
+
+From the first sub with the claw to the full-ocean-depth sub: 24 dives, about 3.4 hours of game time (six of them
+ended by the bot getting its descent stuck on terrain). The Б-7 earns about $500 a 6.5-minute dive; the work sub
+comes at about 50 minutes; from the heavy work sub on, dives earn $50,000-210,000 and most deep animals in the open
+tank die on the way up (5-6 of 25 alive), which is what the chambers are for. A person, who misses grips and meets
+the thing in the deep, will take a good deal longer: perhaps 6-10 hours for the whole game.
+
+It counted hull hits too: 26 in an hour, nearly all from orca pods while the sub was on the surface between the
+boat and the dive site (a pod about every two and a half minutes above 150 m, each orca ramming for 20 % of the hull).
+
+- No orca pods while the sub is on the surface within 120 m of the Margaret: a safe harbour. Rams in the same hour of
+  play: 26 before, 8 after. Out at sea and under the surface they come as before.

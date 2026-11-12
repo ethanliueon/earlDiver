@@ -9,6 +9,7 @@
 import { clamp, dist, lerp } from './util.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { MORE_SPECIES } from '../data/species_more.js';
+import { BOAT } from './world.js';
 
 export const AGGRO = {
   42: { kind: 'charge', dmg: 1, p: 0.05 },   // swordfish
@@ -44,6 +45,9 @@ export function directEncounters(g, dt, SPECIES_BY_ID) {
   if (e.inSub) {
     if (e.y > 300) { rate = 0.12; pool = [184]; }
     else if (e.y < 150) { rate = 0.1; pool = [187]; }
+    // (4.19.2) on the surface by the Margaret is a safe harbour: measured, a sub driven out to work and home again was
+    // rammed about once every 70 s of surface driving, nearly all of it within sight of the boat
+    if (e.y < 4 && Math.abs(e.x - BOAT.x) < 120) rate = 0;
   } else if (e.y > 260) { rate = 0.18; pool = [184]; }
   else if (e.y > 3) {
     rate = open ? 0.45 : 0.22;
