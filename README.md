@@ -1,6 +1,6 @@
 # Earl the Diver
 
-Version 4.8.3 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 4.19 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 
@@ -36,7 +36,11 @@ Settings → Pages → Deploy from a branch → `main` / root).
 | F (in the cabin) | A / D walk the cabin (Shift runs), or click where to go; click a thing to use it. F at: the computer (the catalog and the sub's yard), the radio (accept contracts; new ones free every 3 hours), the wheel (A / D steer, G anchor, W leaves the wheel), the hatch in the floor (the gallery). Esc or the door goes back out on deck |
 | U (in the water by the boat) | Sell the catch, without going aboard. Contracts you accepted at the radio are paid here when the goods are aboard |
 | Mouse | Earl swims toward the cursor by himself (the keys take over while you use them); left click swings the net (or uses the tool in hand; in the sub, the arm); hold the right button to sprint; the lamp follows the cursor; wheel to zoom; click the Q/E slots to use items |
-| Esc | Pause (save and quit to the title from there) |
+| K | The chart: the whole sea in section. Click to set a marker; follow one; from aboard, **Sail here** takes the Margaret to it (the trip's time passes on the clock) and drops her anchor |
+| O | Quests: the Margaret's log and the board |
+| P | The yard (the sub's hulls and refits), from aboard |
+| Shift (at the wheel) | Full ahead |
+| Esc | Pause (save and quit to the title from there). Under water, any open menu holds the sea still |
 | ⚙ | Settings and controls (on the title screen, in the journal and the pause menu): target brackets, catch tags, reduce flashing, hints, sound, graphics (Auto / Fast) |
 | M | Mute |
 | H | Hints on / off |
@@ -77,13 +81,16 @@ Settings → Pages → Deploy from a branch → `main` / root).
 - **Eight submersibles**, each a deeper one from the yard: the Б-7 bathyscaphe (300 m), its refit
   (500 m), a yellow 1960s work sub with an acrylic dome (900 m), a white oilfield work sub (1,300 m),
   a research sub (1,900 m), an Alvin-type deep research sub (2,500 m), a titanium one (3,300 m) and
-  a full-ocean-depth sub (4,000 m). From the third, you name her; the name is painted on every hull
-  after. Pressure relics add 100 m each. Past her rating the hull creaks and the seams weep; each
+  a full-ocean-depth sub (4,500 m), $500 to $320,000. Each carries the cabin air to reach her rating
+  and come straight back (3 minutes in the first, 7 in the last); the backup tanks buy time down there,
+  and a notch on the air gauge marks the air it takes to go straight up from where she is. From the
+  third, you name her; the name is painted on every hull after. A lost sub is replaced at the yard,
+  on credit if the cash is short (half of every sale until it is paid). Past her rating the hull creaks and the seams weep; each
   dive she has a hidden crush depth (about 1.6× the rating for the first, 1.25× for the last, a
   narrower window on deeper hulls). Nothing survives the bottom of the pit.
 - **Hull damage** shows on the sub as patches: dents in the plating, cracked and leaking (each about
   15 % of her hull; the cabin air leaks faster the more there are). Get out, swim to a patch and hold
-  R: five seconds mends it. The boat can still patch her up for money.
+  R: five seconds mends it.
 - **The trawl net** is built into every sub: N lets it out; it takes up to ten animals, sharks to
   2.5 m, even legends, and dumps the haul on the tank-room floor. It comes back torn: one net is
   carried at a time (the first is free, then $300 at the boat). It is loud below 200 m. Big
