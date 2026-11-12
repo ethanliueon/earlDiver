@@ -65,3 +65,22 @@ so in the first sub's water (to 300 m) it lost money every time.
 
 - The tow lasts 20 s before the net closes by itself (N still closes it sooner): time to reach a school.
 - The beginner net costs $60 (was $120) and its mouth is 2.0 m (was 1.6; the advanced net stays 2.6).
+
+## 4.18.3 · air in the sub, and out of the hatch
+
+Measured straight dives from the surface, a full cabin each (time to depth, cabin air left):
+
+| Sub | Cabin | 150 m | 90 % of her rating |
+| --- | --- | --- | --- |
+| Б-7 (300 m) | 120 s | 45 s, 75 left | 270 m at 81 s, 39 left |
+| Work (900 m) | 145 s | 26 s, 95 left | 810 m at 134 s, none left |
+| Research (1,900 m) | 180 s | 16 s, 104 left | 1,710 m at 175 s, none left |
+| Full-ocean (4,500 m) | 260 s | 9 s, 111 left | 4,050 m at 207 s, none left |
+
+Earl's own tank refills from the cabin, so the cabin is all the air a dive has. No sub can go near her rating and
+come back without backup tanks (R refills the cabin; two carried), and at $800 each they were out of reach for
+most of the game: the first sub had about 30 s of work at 150 m.
+
+- The backup air tank costs $240 (was $800): two of them triple a dive's air, and a dive to 200-300 m now pays for them.
+- Leaving the sub: Earl comes out into open water, trying each side of the hull; before, if the point behind her was
+  inside the seabed (a sub hugging a cliff) the collision pushed him onto the floor above, as much as 150 m up in one frame.

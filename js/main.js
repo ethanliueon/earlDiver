@@ -1524,7 +1524,14 @@ function leaveSub() {
   const e = g.earl, sub = g.sub;
   if (g.lesson) { hud.toast('Finish the lesson first', 'warn'); return; } // (4.12.2) a lesson keeps him in the sub
   e.inSub = false;
-  e.x = sub.x - sub.facing * 1.5; e.y = Math.max(0.4, sub.y + 2.6); e.vx = 0; e.vy = 0;
+  // (4.18.3) out through the hatch into open water: behind her as before, but if that is inside the seabed or a
+  // rock (backed against a cliff, sitting on a slope) another side of the hull. Before, the collision pushed him
+  // out onto the floor above, which against a cliff could throw him 150 m up in one frame.
+  const W = g.world, open = (x, y) => y > 0.35 && W.floorAt(x) > y + 0.6 && !W.rockAt(x, y, 0.6);
+  const tries = [[-1.5, 2.6], [1.5, 2.6], [-2.5, 0], [2.5, 0], [0, -2.2], [-1.5, -1.8], [1.5, -1.8], [0, 3.4]];
+  let ex = sub.x - sub.facing * 1.5, ey = Math.max(0.4, sub.y + 2.6);
+  for (const [dx, dy] of tries) { const x = sub.x + dx * sub.facing, y = Math.max(0.4, sub.y + dy); if (open(x, y)) { ex = x; ey = y; break; } }
+  e.x = ex; e.y = ey; e.vx = 0; e.vy = 0;
   // (2.5.0: leaving the sub no longer puts it in her cradle: it docks when the Margaret gets under way)
   if (e.y > (e.pressStart || 300)) { hud.toast('Outside, the pressure is immense.', 'warn'); g.pressWarned = true; } // (3.0.0) back; (3.0.17) from the suit's own limit
 
