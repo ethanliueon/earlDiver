@@ -7,7 +7,7 @@
 import { clamp, dist } from './util.js';
 import { TRAPS, TRAP_ORDER } from './economy.js';
 import { SPECIES } from './species.js';
-import { canTakeLive } from './specimens.js';
+import { canTakeLive, rarityOf } from './specimens.js';
 import { rollVariant, variantMult, canBeRare } from './variants.js';
 import { bagSlots } from './capture.js';
 import { BOAT } from './world.js';
@@ -35,7 +35,7 @@ function candidates(g, T, x, d, onBottom) {
     const pref = g.fauna.depthPref ? g.fauna.depthPref(s, x, Math.min(d, fl - 2.5), night) : 1; // (bands stop just above the bottom)
     if (pref < 0.12) continue;                                       // only where it is reasonably common
     if (!climateOk(s.id, x)) continue;                               // warm-water animals on the warm reefs, cold-water ones off them
-    out.push([s, pref / (0.6 + s.len)]);                            // the small and the common come first
+    out.push([s, pref / (0.6 + s.len) * rarityOf(s).spawn]);       // the small and the common come first (4.18.0: and by rarity: a deep cage brought up exotics and legends as often as anything)
   }
   return out;
 }

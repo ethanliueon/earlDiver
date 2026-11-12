@@ -450,7 +450,7 @@ export class Fauna {
       const abyssal = abyss && (hab === 'pelagic' || ((hab === 'demersal' || hab === 'floor-swim') && nearFloor)) && !TAG_ONLY(sp);
       if (((!sp.v.glow || hab !== 'pelagic') && !filler && !abyssal) || sp.len > (abyssal ? 1.3 : 1) || y < sp.dmin || y > sp.dmax) continue;
       const w = this.depthPref(sp, x, y, night);
-      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1)]); // the small and common first, the filler most of all
+      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1) * rarityOf(sp).spawn / 0.14]); // the small and common first, the filler most of all (4.18.0: and by rarity, as everything else is met: an exotic was as likely as a lanternfish)
     }
     if (!pool.length) return;
     let tot = 0; for (const [, w] of pool) tot += w;

@@ -35,7 +35,7 @@ export const SUBS = [
   { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 210, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 500 },
   { name: 'Work submersible', rated: 900, crush: 1.5, o2: 260, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3000 },
   { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 300, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 12000 },
-  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 340, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 40000 },
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 340, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 30000 }, // (4.18.0: was $40,000; the mid-depths pay less now exotics are met as rarely as they should be)
   { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 360, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
   { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 390, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
   { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 420, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 450000 },
@@ -101,9 +101,9 @@ export const CAMERAS = [
 // the boat's winch, not by hand; lure: a light that draws deep animals, and other things.
 export const TRAP_ORDER = ['pot', 'fish', 'steel', 'cage'];
 export const TRAPS = {
-  pot: { name: 'Wire pot', price: 130, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
+  pot: { name: 'Wire pot', price: 40, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
     desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float..' },
-  fish: { name: 'Fish trap', price: 1600, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
+  fish: { name: 'Fish trap', price: 450, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
     desc: 'A larger mesh box with a funnel at each end, on a stout line..' },
   steel: { name: 'Steel pot', price: 17500, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
     desc: 'A heavy steel-framed pot with two chambers, on a thick rope.. Too heavy to lift by hand.' },
@@ -215,7 +215,7 @@ export const UPGRADES = {
   camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, top: 13, max: 10, cost: 12, growth: 1.7, fmt: 'm' },
   // the submersible
   ballast:   { group: 'Submersible', name: 'Ballast', base: 0, top: 1.44, max: 10, cost: 25, growth: 1.7, fmt: 'bonus' },
-  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4500], costs: [500, 3000, 12000, 40000, 100000, 220000, 450000], max: 7, fmt: 'depth' }, // (4.14.0)
+  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4500], costs: [500, 3000, 12000, 30000, 100000, 220000, 450000], max: 7, fmt: 'depth' }, // (4.14.0)
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, lin: 0.04, max: 50, cost: 236, growth: 1.1, fmt: 'x' }, // (4.13.0) fifty small steps to 3x, about $275,000 in all
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, lin: 1, max: 2, cost: 60, growth: 3, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 5, costs: [100, 1000, 5000, 20000, 60000], fmt: 'n' }, // (4.13.0) bought one at a time in the chamber room
