@@ -121,6 +121,7 @@ function applySub(sub, P) {
 // (4.9.0) X (a developer's key): the first press, the deepest submersible and half a million dollars; each press
 // after, the next legend turned loose at its usual depth somewhere sensible, with the tutorial's trail to it
 let devPresses = 0, devLegendI = 0;
+const DEV = /[?&]dev\b/.test(location.search); // (4.19.5) the developer's key is on only at index.html?dev
 const DEV_LEGENDS = [100, 108, 104, 107, 101, 105, 54, 2150, 2146, 2162, 2110, 2109, 2102, 2103, 2106];
 function devMaxAll() {
   const P = profile; if (!P || !g || g.mode !== 'play') return;
@@ -1997,7 +1998,7 @@ function update(dt) {
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
     if (pressed.has('`')) { hud.showFps = !hud.showFps; } // (4.0.0: P is the shipyard now)
-    if (pressed.has('x')) devMaxAll();
+    if (pressed.has('x') && DEV) devMaxAll(); // (4.19.5) only with ?dev in the address: one stray X gave any save the deepest sub and half a million
     // the aquarium's day: tickets in, upkeep out
     tickGallery(profile, dt);
     for (const d of Object.values(aquariumOf(profile).display)) if (d.justFamous) { d.justFamous = false; saveProfile(profile); hud.toast(`${d.name || 'Your ' + SPECIES_BY_ID[d.id].name.toLowerCase()} is Famous now`, 'big'); }
