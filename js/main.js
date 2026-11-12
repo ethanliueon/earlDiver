@@ -8,7 +8,7 @@ import { Fauna, usualDepth } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS, SUB_SPEED, SUB_RISE, DIVE_SPEED } from './player.js';
 import { Autopilot } from './autopilot.js';
 import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, canFireSubNet, netsOf, netKinds, netTotal, NETS_SUB, updateSubNet, tankFits, BIG, tooBig } from './capture.js';
-import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
+import { specimenValue, conditionName, rarityOf, canTakeLive, rarityPrice } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
 import { SETTINGS } from './settings.js';
 import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
@@ -2147,7 +2147,7 @@ function update(dt) {
       else if (g.lesson) letOut('basic');
       else { ui.pickNet(kinds, netsOf(g.items), (k) => { if (g.earl.inSub && !g.subNet) letOut(k); }); audio.ready && audio.click(); }
     }
-    const netRes = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
+    const netRes = updateSubNet(g, dt, (sp) => (canTakeLive(sp) || LEGENDARY.has(sp.id)) && !(sp.len < 0.05 && rarityPrice(sp) < 1)); // (4.19.2) krill and the like go through the mesh: a swarm filled the net with nothing
     if (g.netEscape) { hud.toast(`The ${g.netEscape.name.toLowerCase()} broke out of the net`, 'warn'); g.netEscape = null; } // (4.11.1)
     if (netRes && netRes.torn) { hud.toast(`The ${netRes.torn.name.toLowerCase()} tore through the net`, 'warn'); audio.ready && audio.thud(0.5); }
     const haul = netRes && netRes.haul;
