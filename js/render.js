@@ -825,6 +825,12 @@ export class Renderer {
       ctx.beginPath(); ctx.moveTo(S(mx), Sy(my - r)); ctx.quadraticCurveTo(S(mx + dir * 0.25), Sy(my), S(mx), Sy(my + r)); ctx.stroke();
       ctx.fillStyle = '#e8762a'; for (const f of [-0.35, 0.35]) { ctx.beginPath(); ctx.arc(S(mx - dir * 0.3 + f * 0.4), Sy(my - r - 0.05), Math.max(1.6, ppm * 0.09), 0, TAU); ctx.fill(); }
       ctx.fillStyle = '#2a2c2a'; for (const f of [-0.3, 0, 0.3]) { ctx.beginPath(); ctx.arc(S(mx - dir * 0.2 + f * 0.4), Sy(my + r + 0.05), Math.max(1.6, ppm * 0.08), 0, TAU); ctx.fill(); }
+      if (n.bait && !torn) { // (4.20.0) the bait canister on the headrope, and its scent: a faint brown haze drifting ahead of the mouth
+        const bx = S(mx + dir * 0.15), by = Sy(my - r * 0.4), cw = Math.max(2, ppm * 0.16), ch = Math.max(3, ppm * 0.28);
+        ctx.fillStyle = '#7d8588'; ctx.fillRect(bx - cw / 2, by - ch / 2, cw, ch); ctx.fillStyle = '#3c4246'; ctx.fillRect(bx - cw / 2, by - ch / 2, cw, Math.max(1, ch * 0.14)); ctx.fillRect(bx - cw / 2, by + ch / 2 - Math.max(1, ch * 0.14), cw, Math.max(1, ch * 0.14));
+        if (n.phase === 'tow' || n.phase === 'drop') for (let k = 0; k < 14; k++) { const q = ((t * 0.35 + k / 14) % 1), sx = mx + dir * (0.4 + q * 7), sy = my - r * 0.4 + Math.sin(k * 2.3 + t) * (0.3 + q * 1.6);
+          ctx.fillStyle = `rgba(205,175,135,${(0.4 * (1 - q)).toFixed(3)})`; ctx.beginPath(); ctx.arc(S(sx), Sy(sy), Math.max(1, ppm * (0.05 + q * 0.12)), 0, TAU); ctx.fill(); }
+      }
       ctx.restore();
       if (!torn) for (const c of n.got) { // what it holds, bunched toward the cod end
         const f = 0.55 + ((c.wob || 0) * 7 % 1) * 0.35, fy = cyf(f) + ((c.wob || 0) * 13 % 1 - 0.5) * half(f) * 1.2;
