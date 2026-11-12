@@ -2376,6 +2376,7 @@ function update(dt) {
       const need = (up + 4) * (inS ? subDrainMult(sub.y, sub.rated) * subLeak(sub) : diverDrainMult(e.y, e.pressStart || 300) * e.o2Mul) * (g.airMul || 1);
       const have = inS ? sub.o2 : e.o2, max = inS ? sub.o2Max : e.o2Max;
       g.airUp = e.atSurface || g.aboard || e.y < 6 ? 0 : Math.min(1, need / max);
+      if (g.airUp > 0.05 && profile && !profile.tipAirMark && !tutorialOn(profile) && !g.lesson) { profile.tipAirMark = true; saveProfile(profile); hud.hint('The mark on the air gauge: the air it takes to go straight up from here'); }
       if (g.airUp > 0 && (inS || e.y > 25) && have < need * 1.35 && !g.upWarned && !g.homeRun) { g.upWarned = true; hud.toast(inS ? 'Just enough cabin air to get up: surface now' : 'Just enough air to get up: surface now', 'warn'); audio.ready && audio.sonar && audio.sonar(0.06); }
       else if (e.atSurface || have > need * 2) g.upWarned = false; }
     if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical — surface', 'warn'); }
