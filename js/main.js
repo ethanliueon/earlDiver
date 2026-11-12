@@ -495,8 +495,12 @@ function sellAll() {
   }
   if (coins) { profile.coins = (profile.coins || 0) + coins; lines.push({ label: 'Old gold, for what came up from the deep', n: 1, total: 0, coins }); }
   if (!lines.length) return null;
-  const total = lines.reduce((a, l) => a + l.total, 0);
-  g.earned += total;
+  const gross = lines.reduce((a, l) => a + l.total, 0);
+  // (4.19.4) a sub on credit: what went to the yard, its own line on the receipt
+  const owed = lines.reduce((a, l) => a + (l.owed || 0), 0);
+  if (owed > 0) lines.push({ label: profile.debt > 0 ? `To the yard, for the sub (${money(profile.debt, false)} still owed)` : 'To the yard: the sub is paid for', n: 1, total: -Math.round(owed * 100) / 100 });
+  const total = gross - owed;
+  g.earned += gross;
   if (total > 0) questEvent(profile, 'sell', { total });
   if (total > 0) audio.cue && audio.cue('sale');
   saveProfile(profile);
@@ -890,6 +894,12 @@ function buy(kind) {
   } else if (kind === 'replace' && sub.imploded && spend(P, replacementPrice(P))) {
     g.sub = new Sub(); applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.docked = true; g.imploded = false; ok = true;
     hud.toast(`New sub · rated ${g.sub.rated} m`, 'big');
+  } else if (kind === 'replaceCredit' && sub.imploded && P.cash < replacementPrice(P)) {
+    // (4.19.4) on credit: without a sub there is no way back to the deep, and a deep hull's replacement can be more
+    // than a lost dive leaves him; the yard builds her now and takes half of every sale until it is paid
+    P.debt = Math.round((replacementPrice(P) - P.cash) * 100) / 100; P.cash = 0;
+    g.sub = new Sub(); applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.docked = true; g.imploded = false; ok = true;
+    hud.toast(`New sub, on credit · ${money(P.debt)} owed to the yard`, 'big');
   } else if (kind.startsWith('trap:') && TRAPS[kind.slice(5)] && (convertOldTraps(P), (P.traps[kind.slice(5)] || 0) < TRAPS[kind.slice(5)].max) && spend(P, TRAPS[kind.slice(5)].price)) {
     const tk = kind.slice(5);
     P.traps[tk] = (P.traps[tk] || 0) + 1; ok = true;

@@ -586,9 +586,11 @@ export function sell(p, kind, n, base, label) {
   let total = base * n;
   total = Math.round(total * 100) / 100;
   if (n > 0) { const b = (p.board || []).filter((r) => r.k !== kind); b.unshift({ k: kind, label, each: Math.round(base * 100) / 100, t: Date.now() }); p.board = b.slice(0, 14); }
-  p.cash = Math.round((p.cash + total) * 100) / 100;
+  // (4.19.4) a sub bought on credit: half of every sale goes to the yard until it is paid
+  let owed = 0; if (p.debt > 0 && total > 0) { owed = Math.min(p.debt, Math.round(total * 50) / 100); p.debt = Math.round((p.debt - owed) * 100) / 100; }
+  p.cash = Math.round((p.cash + total - owed) * 100) / 100;
   p.lifetime = Math.round((p.lifetime + total) * 100) / 100;
-  return { label, n, total };
+  return { label, n, total, owed };
 }
 
 export function spend(p, amount) {
