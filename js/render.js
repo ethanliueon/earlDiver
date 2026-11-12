@@ -671,7 +671,7 @@ export class Renderer {
     if ((!sub.imploded || crumple >= 0) && !(g.kill && g.kill.swallowed && g.kill.inSub) && inView(sub.x, sub.y, 10)) {
       if (crane && sub.docked) {
         ctx.strokeStyle = 'rgba(30,30,28,0.9)'; ctx.lineWidth = Math.max(1, ppm * 0.05);
-        ctx.beginPath(); ctx.moveTo(boatX + crane.craneTip[0] * Math.sign(Math.cos(BOAT.yaw || 0) || 1) * Math.max(0.06, Math.abs(Math.cos(BOAT.yaw || 0))), boatY + crane.craneTip[1]); // (turned with her) ctx.lineTo(S(sub.x), Sy(sub.y) - 2.6 * ppm); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(boatX + crane.craneTip[0] * Math.sign(Math.cos(BOAT.yaw || 0) || 1) * Math.max(0.06, Math.abs(Math.cos(BOAT.yaw || 0))), boatY + crane.craneTip[1]); ctx.lineTo(S(sub.x), Sy(sub.y) - 2.6 * ppm); ctx.stroke(); // (turned with her)
       }
       // at night, the part of her above the water must be as dark as the night (the light map only
       // darkens below the surface; the boat is dimmed the same way): she is drawn on her own layer,

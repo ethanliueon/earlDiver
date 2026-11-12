@@ -56,7 +56,7 @@ function airOver(g) {
   if (!el) { el = document.createElement('div'); el.id = 'overair'; document.body.appendChild(el); }
   const e = g.earl, sub = g.sub;
   let txt = '';
-  if (g.mode === 'play' && ui.anyOpen() && !g.aboard) {
+  if (g.mode === 'play' && ui.anyOpen() && !g.aboard && !g.held) { // (4.18.0: not while the menu holds the sea still: the air is not going, and the gauge beside it says the same)
     const subAir = e.inSub && sub && sub.o2Max ? sub.o2 / sub.o2Max : 1, own = e.o2Max ? e.o2 / e.o2Max : 1;
     if (g.noAir) txt = 'Out of air — surface!';
     else if (e.inSub && subAir <= 0.001) txt = own < 0.5 ? `Cabin out of air · your tank: ${Math.ceil(e.o2)} s` : 'Cabin out of air: breathing from your tank';
@@ -1259,6 +1259,7 @@ function weightedCursor(dt) {
   const want = on ? 'none' : ''; if (hudCanvas.style.cursor !== want) hudCanvas.style.cursor = want;
 }
 function readMove() {
+  if (g && g.held) return { x: 0, y: 0, sprint: false }; // (4.18.0) a menu is up under water: he waits
   if (g.kill) return { x: 0, y: 0, sprint: false }; // in its grip, nothing he does moves him
   if (ui.tankOpen && ui.tankOpen()) return { x: 0, y: 0, sprint: false }; // in the back of the sub, the helm is left alone
   if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
@@ -2133,12 +2134,19 @@ function update(dt) {
     // (3.0.0) quests: what can be read off the game, once a second
     g.questT = (g.questT || 0) + dt;
     profile.playT = (profile.playT || 0) + dt; // (3.0.0) play time: the old one's days
-    if (g.questT > 1) { g.questT = 0; g.chambersFull = pressSlots(g) > 0 && pressUsed(g) >= pressSlots(g); if (questTick(g, profile)) saveProfile(profile); }
+    if (g.questT > 1) { g.questT = 0; g.chambersFull = pressSlots(g) > 0 && pressUsed(g) >= pressSlots(g); if (questTick(g, profile)) saveProfile(profile);
+      // (4.18.0) the Log's dive to 60 m, from the Margaret's anchorage where the bottom is half that: once, on the bottom, which way the deep is
+      { const st = QUEST_MAIN[questsOf(profile).main]; if (st && st.on === 'subDepth' && e.inSub && !g.shallowSaid && g.sub.y < st.need && g.world.floorAt(g.sub.x) - g.sub.y < 7) { g.shallowSaid = true; hud.toast(`Too shallow here for ${st.need} m: the sea deepens to the ${g.world.floorAt(g.sub.x - 60) > g.world.floorAt(g.sub.x + 60) ? 'west (left)' : 'east (right)'}`, 'note'); } } }
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
     tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
     afterTips(dt); // (4.6.0)
     g.autosaveT = (g.autosaveT || 0) + dt; if (g.autosaveT > 10 && profile && !g.kill) { g.autosaveT = 0; syncProfile(); saveProfile(profile); } // (4.12.6) the dive saved every 10 s
     lessons(); // (4.7.0)
+    // (4.18.0) a menu open under water (the journal, quests, chart, inventory, a shop) holds the sea still, as a lesson
+    // does: no air used, nothing hunting, nothing suffering. With a twenty-second tank, reading the journal at 10 m
+    // used to drown him. The tank room is part of the work and runs on.
+    g.held = !!(g.mode === 'play' && !g.kill && !g.aboard && !e.atSurface && ui.anyOpen('cabin') && !(ui.tankOpen && ui.tankOpen()));
+    if (g.held) g.frozen = true;
     const dl = g.frozen ? Object.assign([], { events: [] }) : updateSpecimens(g, dt); // (4.7.0) frozen: nothing suffers
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
     const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : s.pile ? ' on the floor of the sub' : ' in the tank') : '');

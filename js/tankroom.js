@@ -582,7 +582,7 @@ export class TankRoom {
     const A = g.alarm; if (!A) return;
     const face = Math.max(0, Math.cos(A.rot)), bx = G.W - 272, sweep = Math.sin(A.rot);
     ctx.save(); ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = `rgba(140,24,10,${(0.035 + 0.08 * face).toFixed(3)})`; // (4.0.0) toned down ctx.fillRect(0, 0, G.W, G.H);
+    ctx.fillStyle = `rgba(140,24,10,${(0.035 + 0.08 * face).toFixed(3)})`; ctx.fillRect(0, 0, G.W, G.H); // (4.0.0) toned down
     // the beam across the wall
     const x = bx + sweep * G.W * 0.7, rg = ctx.createRadialGradient(x, G.H * 0.35, 10, x, G.H * 0.35, G.H * 0.6);
     rg.addColorStop(0, `rgba(240,70,40,${(0.15 * (0.4 + 0.6 * face)).toFixed(3)})`); rg.addColorStop(1, 'rgba(255,40,20,0)');

@@ -150,7 +150,7 @@ export function updateEarl(g, dt, inp) {
     if (e.atSurface) {
       e.o2 = Math.min(e.o2Max, e.o2 + (e.o2Max / 3.5) * dt);
       e.surfacing = Math.min(1, e.surfacing + dt);
-    } else {
+    } else if (!g.frozen || !g.held) {
       e.surfacing = 0;
       e.o2 -= dt * (1 + (diverDrainMult(e.y, e.pressStart || 300) - 1) * (e.pressRes ?? 1)) * (inp.sprint && e.speedNow > 1 ? (e.sprintAir ?? 2) : 1) * e.o2Mul * (g.airMul || 1); // (2.8.0: Resilience, the Harbour Patrol set)
     }
