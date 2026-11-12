@@ -356,7 +356,7 @@ export function netsOf(items) {
 }
 export const netKinds = (items) => { const N = netsOf(items); return Object.keys(NETS_SUB).filter((k) => N[k] > 0); };
 export const netTotal = (items) => { const N = netsOf(items); return Object.values(N).reduce((a, b) => a + b, 0); };
-export const NET_DROP = 1.5, TOW_MAX = 8, NET_PURSE = 1.0, NET_HAUL = 1.5;
+export const NET_DROP = 1.5, TOW_MAX = 20, NET_PURSE = 1.0, NET_HAUL = 1.5; // (4.18.0: a tow was 8 s, about one animal a net in open water, less than the net cost)
 // where the hatch is under the hull, and where the net's mouth hangs behind it, for a sub facing dir
 export const hatchAt = (g) => ({ x: g.sub.x - (g.sub.facing || 1) * 1.2, y: g.sub.y + 1.3 });
 const towTarget = (g) => { const d = g.sub.facing || 1, k = g.subNet ? g.subNet.T.mouth : 1.6; return { x: g.sub.x - d * (7.5 + k * 1.5), y: g.sub.y + 2.4 + k }; };

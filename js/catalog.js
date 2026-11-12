@@ -135,6 +135,10 @@ export class Catalog {
       let pick = this.cfg.newIn.map((k) => this.find(k)).filter((q) => q && !q.e.owned).slice(0, 3);
       if (!pick.length) pick = ITEM_CATS.flatMap((c) => this.entries(c)).filter((e) => !e.owned).sort((a2, b2) => b2.price - a2.price).slice(0, 3).map((e) => ({ e }));
       if (pick.length) html += `<h4>${this.id === 'dave' ? 'Just in' : this.id === 'station' ? 'Recently released' : 'New in'}</h4><div class="cat-grid">${pick.map((q) => this.card(q.e)).join('')}</div>`;
+      // (4.18.0) the best of what he could buy today: the dearest pieces he can afford and does not have
+      const seen = new Set(pick.map((q) => q.e.key)), cash = P.cash || 0;
+      const afford = ITEM_CATS.flatMap((c) => this.entries(c)).filter((e) => !e.owned && !e.full && e.price > 0 && e.price <= cash && !seen.has(e.key)).sort((a2, b2) => b2.price - a2.price).slice(0, 3);
+      if (afford.length) html += `<h4>${this.id === 'dave' ? 'What you can afford' : 'Within your budget'}</h4><div class="cat-grid">${afford.map((e) => this.card(e)).join('')}</div>`;
     } else if (this.page === 'chest') {
       html += `<h2>${this.cfg.chestTitle}</h2><p class="cat-lede">${this.cfg.chestLede}</p>`;
       html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)} · not enough cash` : `Buy and open · ${money(c.price, false)}`}</button></div></div>`).join('');

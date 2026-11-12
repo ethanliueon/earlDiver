@@ -1070,6 +1070,7 @@ export class UI {
   }
 
   toggleTank(force) {
+    if (this.netPickClose) this.netPickClose(); // (4.18.0) the net picker never stays up over the back of the sub
     const el = $('tankroom');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;

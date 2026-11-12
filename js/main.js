@@ -2112,7 +2112,8 @@ function update(dt) {
         else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? `${NETS_SUB[g.subNet.tier].name} out` : `${NETS_SUB[g.subNet.tier].name} out (N to close)`); audio.ready && audio.whoosh(); }
       };
       const kinds = netKinds(g.items);
-      if (g.subNet || canFireSubNet(g)) letOut(null);
+      if (!g.subNet && g.time - (g.netInT ?? -99) < 2.5) { /* the net just came in on its own: this N was meant to close it */ }
+      else if (g.subNet || canFireSubNet(g)) letOut(null);
       else if (g.lesson) letOut('basic');
       else { ui.pickNet(kinds, netsOf(g.items), (k) => { if (g.earl.inSub && !g.subNet) letOut(k); }); audio.ready && audio.click(); }
     }
@@ -2122,6 +2123,7 @@ function update(dt) {
     const haul = netRes && netRes.haul;
     if (haul && haul.length) questEvent(profile, 'trawlHaul', { n: haul.length }); // (4.8.0)
     if (haul) {
+      g.netInT = g.time; // (4.18.0) for N pressed a moment too late to close a net that closed itself
       if (!haul.length) hud.toast('The net comes in empty');
       else {
         hud.toast(`Net in · ${haul.length} animal${haul.length > 1 ? 's' : ''}${netRes.lost ? ` (${netRes.lost} slipped out)` : ''}`, 'big');
