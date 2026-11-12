@@ -709,7 +709,7 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .gl-lights button { padding: 5px 12px; border: 1px solid #6e5424; border-radius: 3px; background: #1e1b16; color: #c8b07a; font: 11px var(--mono); letter-spacing: 0.08em; cursor: pointer; }
 .gl-lights button.on { background: linear-gradient(180deg, #c9a65a, #8e6c2c); color: #2a1c06; }
 .gl-wing { position: absolute; padding: 2px 8px; border-radius: 2px; background: rgba(20,16,10,0.6); color: #e0c88a; font: 11px var(--serif); letter-spacing: 0.04em; pointer-events: none !important; }
-.gl-empty { position: absolute; left: 50%; top: 45%; transform: translateX(-50%); color: #c8b07a; font: 14px var(--serif); }
+.gl-empty { position: absolute; left: 50%; top: 62px; transform: translateX(-50%); color: #c8b07a; font: italic 14px var(--serif); white-space: nowrap; pointer-events: none; } /* (4.18.1) above the tanks, not across the seam between them */
 .gl-tag { transform: translateX(-50%); min-width: 220px; }
 .gl-tag input { width: 100%; box-sizing: border-box; margin: 2px 0 6px; padding: 4px 6px; border: 0; border-radius: 2px; background: rgba(60,40,10,0.18); color: #2a1c06; font: 13px var(--serif); text-align: center; }
 .gl-tag .acts { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
@@ -2847,3 +2847,11 @@ body { padding: 0; }
   #title { align-items: center; padding-top: 0; padding-bottom: 0; overflow: hidden; }
   #title .title-panel { zoom: calc(var(--tfit, 1)); }
 }
+
+/* (4.18.1) the refit cards: the picture on the left, the name and the whole description beside it, the price under
+   them (it was a third column that squeezed the words into a narrow strip) */
+#workshop .yd-refit { display: grid; grid-template-columns: 120px 1fr; grid-template-rows: auto 1fr; column-gap: 14px; row-gap: 8px; align-items: start; }
+#workshop .yd-refit .yd-part { grid-column: 1; grid-row: 1 / span 2; align-self: center; }
+#workshop .yd-refit > div:not(.yd-part) { grid-column: 2; grid-row: 1; }
+#workshop .yd-refit > .pay-tag, #workshop .yd-refit > .yd-fitted, #workshop .yd-refit > button { grid-column: 2; grid-row: 2; justify-self: start; align-self: end; }
+#workshop .yd-refit b { display: block; line-height: 1.15; }
