@@ -248,8 +248,10 @@ export function updateHunters(g, dt) {
         break;
       case 'leave': {
         // swim off, away from Earl
-        const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.01;
-        c.ctrl = { x: c.x + dx / dd * 20, y: clamp(c.y + dy / dd * 6, 2, 3000), speed: 5 };
+        // (claude-polish) mostly sideways, and never down into the bottom: straight away from him, an animal below him
+        // swam into the seabed and stayed there, pressed against it (orcas breaking off near the boat sat on the floor)
+        const dx = c.x - e.x, sx = Math.sign(dx) || (c.dir > 0 ? 1 : -1), floor = g.world.floorAt(c.x + sx * 20);
+        c.ctrl = { x: c.x + sx * 22, y: clamp(Math.min(c.y, e.y - 2), 2, Math.max(2, floor - c.len - 3)), speed: 5 };
         if (at.t > 6) { at.s = 'idle'; at.t = 0; c.ctrl = null; }
         break;
       }
