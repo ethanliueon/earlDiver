@@ -32,3 +32,24 @@
   content: ''; position: absolute; left: 50%; top: 50%; width: 11px; height: 11px; transform: translate(-50%, -50%);
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 11'%3E%3Cpath d='M1 1 L10 10 M10 1 L1 10' stroke='%232e220a' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E") center / 11px 11px no-repeat; }
 #quests .qs-close, #chart .ch-close { position: relative; }
+
+/* ---------------------------------------------------------------- the wells: pressed into the door, painted (tools/olive_kit.py) */
+#inventory .eq-stage, #inventory .air-rig, #inventory .sub-bay, #inventory .inv-tabs button, #inventory .eq-stage .eq-slot.sq, #inventory .fc, #inventory .ip-col {
+  border: 10px solid transparent !important; border-image: url("../assets/ui/olive/well.png") 30 fill / 10px stretch !important; background-image: none !important; background-color: transparent !important; }
+#inventory .eq-stage .eq-slot.sq { border-width: 8px !important; border-image-width: 8px !important; }
+/* the chosen slot or tab keeps its white-paint ring, drawn outside the well */
+#inventory .inv-tabs button.on { box-shadow: 0 0 0 2px rgba(236, 232, 216, 0.92) !important; }
+#inventory .inv-tabs button { box-shadow: none !important; }
+#inventory .eq-stage .eq-slot.sq { box-shadow: inset 0 -3px 0 var(--rc, transparent) !important; }
+/* the locker's back: perforated steel */
+#inventory .inv-right .lk-grid { background: url("../assets/ui/olive/pegboard.png") 0 0 / 88px 88px !important; box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.75), inset 0 0 0 1px #0c0e0a !important; }
+
+/* ---------------------------------------------------------------- the other screens' panels: the painted paint as a tile, the painted edge round it */
+.plated { background-image: url("../assets/ui/olive/tile.png") !important; background-size: 512px 512px !important; background-repeat: repeat !important;
+  border-style: solid !important; border-image: url("../assets/ui/olive/panel.png") 60 / 30px stretch !important; }
+/* the rows on those panels: the same painted wells */
+:is(#settings, #inventory) .set-row, #quests .qs-q, #inventory .inv-row {
+  border: 8px solid transparent !important; border-image: url("../assets/ui/olive/well.png") 30 fill / 8px stretch !important; background: none !important; box-shadow: none !important; }
+#quests .qs-q { border-left-width: 8px !important; }
+:is(#settings, #inventory) .set-row { padding: 1px 6px !important; margin-bottom: 4px !important; }
+#quests .qs-q { padding: 1px 4px !important; }

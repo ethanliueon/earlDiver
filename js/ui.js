@@ -551,7 +551,10 @@ export class UI {
       const W2 = panel.offsetWidth, H2 = panel.offsetHeight, split = Math.round((rr.left - pr.left) / k - 12);
       const key = [W2, H2, split].join(':'); if (panel.dataset.tex === key) return;
       panel.dataset.tex = key;
-      panel.style.backgroundImage = `url(${lockerTexture(W2, H2, { split })})`; panel.style.backgroundSize = '100% 100%';
+      // (olive) the door painted once as a picture (tools/olive_kit.py) for the layout it is always laid out at; any other
+      // layout falls back to the one drawn here
+      const painted = W2 === 1240 && H2 === 820 && Math.abs(split - 605) < 3;
+      panel.style.backgroundImage = painted ? 'url(assets/ui/olive/locker-door.jpg)' : `url(${lockerTexture(W2, H2, { split })})`; panel.style.backgroundSize = '100% 100%';
     });
     body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.fishSel = null; this.renderInventory(); }));
     if (tab === 'gear') this.equipWire(P, g); else this.catchWire(g);
