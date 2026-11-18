@@ -443,24 +443,21 @@ export function promptHtml(text) {
 // ---------------- (claude-polish) the instruments in the corner of the screen ----------------
 // The same materials as the sub's rooms: a name on dymo tape (black, the letters pressed up white), a level as a
 // glass tube in a brass rim with its quarter ticks, the sonar's glass in a brass bezel.
-export function dymo(ctx, text, xr, y, s = 1, { tape = '#1c1d1b', ink = 'rgba(236,234,224,0.92)', align = 'right' } = {}) {
+export function dymo(ctx, text, xr, y, s = 1, { tape = '#1c1d1b', ink = null, align = 'right' } = {}) {
+  // (olive) the name painted on the steel in the Margaret's cream, in Garamond small caps: no tape stuck on
+  // (docs/ART_DIRECTION.md). An alarm paints it red, a warning amber; `tape` keeps its old meaning for that.
+  const t = String(tape).toLowerCase(), red = /^#(8a1a10|4a0c08|4a1810)$/.test(t), amber = t === '#6a4a10';
+  const col = ink || (red ? '#ec7a62' : amber ? '#e8bc6a' : 'rgba(230,222,196,0.92)');
   ctx.save();
-  ctx.font = `700 ${8.5 * s}px ${MONO}`; ctx.textBaseline = 'middle';
-  const sp = 0.7 * s, chars = [...text.toUpperCase()]; // (olive) set close, as a label maker sets it
-  const tw = chars.reduce((a, c) => a + ctx.measureText(c).width + sp, 0) - sp, h = 12 * s, w = tw + 9 * s;
+  ctx.font = `600 ${12.5 * s}px "EB Garamond", Georgia, serif`;
+  if ('fontVariantCaps' in ctx) ctx.fontVariantCaps = 'all-small-caps';
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${0.9 * s}px`;
+  const label = 'fontVariantCaps' in ctx ? String(text) : String(text).toUpperCase();
+  const w = ctx.measureText(label).width + 2 * s, h = 12 * s;
   const x = align === 'right' ? xr - w : xr;
-  ctx.translate(x + w / 2, y + h / 2); ctx.rotate(-0.012); ctx.translate(-w / 2, -h / 2);
-  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 3 * s; ctx.shadowOffsetY = 1 * s;
-  ctx.fillStyle = tape; ctx.beginPath(); ctx.roundRect(0, 0, w, h, 1.5 * s); ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(0, 0, w, 1.2 * s); // the tape's sheen
-  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, h - 1.2 * s, w, 1.2 * s);
-  let cx = 4.5 * s;
-  for (const c of chars) { // each letter pressed up from behind: a pale face, a hint of its edge
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(c, cx + 0.5 * s, h / 2 + 0.9 * s);
-    ctx.fillStyle = ink; ctx.fillText(c, cx, h / 2 + 0.4 * s);
-    cx += ctx.measureText(c).width + sp;
-  }
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 3 * s; ctx.shadowOffsetY = 1 * s;
+  ctx.fillStyle = col; ctx.fillText(label, x + 1 * s, y + h / 2 + 0.5 * s);
   ctx.restore();
   return w;
 }
