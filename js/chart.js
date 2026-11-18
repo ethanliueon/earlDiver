@@ -105,39 +105,47 @@ export class Chart {
   draw() {
     const g = this.h.getGame(), P = this.h.getProfile(); if (!g || !P || !this.floor) return;
     const x = this.cv.getContext('2d'), { W, H, X, Y, top } = this.geo, t = performance.now() / 1000;
-    // the water, lighter at the top; a strip of sky above the surface
-    const wg = x.createLinearGradient(0, top, 0, H); wg.addColorStop(0, '#1d5670'); wg.addColorStop(0.06, '#123a50'); wg.addColorStop(0.3, '#0b2434'); wg.addColorStop(1, '#050f17');
-    x.fillStyle = '#1a2a30'; x.fillRect(0, 0, W, top); x.fillStyle = wg; x.fillRect(0, top, W, H - top);
-    // the zones: a faint line at each, named at the left
-    x.font = '11px "IBM Plex Mono", monospace'; x.textBaseline = 'alphabetic';
-    for (const [d, name] of ZONES) {
-      if (d) { x.strokeStyle = 'rgba(160,200,210,0.13)'; x.setLineDash([3, 5]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]); }
-      x.fillStyle = 'rgba(190,220,226,0.42)'; x.fillText(`${name.toUpperCase()}${d ? '  ' + d.toLocaleString() + ' m' : ''}`, 14, Y(d) + 14);
+    // (ui-studio) a printed chart on paper, as the Margaret's skipper would have pinned up: the water in flat steps
+    // of tint deepening with each zone, the seabed hatched in sepia with an ink outline, figures in the printed face
+    const INK = '#2b2418', inkA = (a) => `rgba(43,36,24,${a})`;
+    if (!this.paperPat) { if (!this.paperImg) { this.paperImg = new Image(); this.paperImg.src = 'assets/ui/paper-tile.png'; } if (this.paperImg.complete && this.paperImg.naturalWidth) this.paperPat = x.createPattern(this.paperImg, 'repeat'); }
+    x.fillStyle = this.paperPat || '#e8dec4'; x.fillRect(0, 0, W, H);
+    const TINT = [[0, 'rgba(120,170,190,0.30)'], [200, 'rgba(90,140,170,0.36)'], [1000, 'rgba(66,110,150,0.42)'], [2000, 'rgba(52,88,130,0.48)'], [3000, 'rgba(40,70,112,0.54)'], [4000, 'rgba(30,54,94,0.6)']];
+    for (let i = 0; i < TINT.length; i++) { const y0 = Y(TINT[i][0]), y1 = i + 1 < TINT.length ? Y(TINT[i + 1][0]) : H; x.fillStyle = TINT[i][1]; x.fillRect(0, y0, W, y1 - y0); }
+    // fathom lines every 500 m, figures down the right edge; the zones named at the left in small capitals
+    x.textBaseline = 'alphabetic';
+    for (let d = 500; d < DEPTH; d += 500) {
+      x.strokeStyle = inkA(d % 1000 ? 0.1 : 0.2); x.lineWidth = 1; x.beginPath(); x.moveTo(0, Y(d) + 0.5); x.lineTo(W, Y(d) + 0.5); x.stroke();
+      if (!(d % 1000)) { x.font = 'italic 13px "EB Garamond", Georgia, serif'; x.fillStyle = inkA(0.6); x.textAlign = 'right'; x.fillText(`${d.toLocaleString()} m`, W - 8, Y(d) - 4); x.textAlign = 'left'; }
     }
-    // the deepest he has been: a dashed brass line
+    x.font = '15px "IM Fell English SC", "IM Fell English", Georgia, serif';
+    for (const [d, name] of ZONES) { x.fillStyle = inkA(0.72); x.fillText(name, 14, Y(d) + 18); }
+    // the deepest he has been: a red pencil line
     const deep = Math.max(P.deepest || 0, g.earl.maxDepth || 0);
-    if (deep > 30) { x.strokeStyle = 'rgba(242,184,74,0.5)'; x.setLineDash([6, 5]); x.beginPath(); x.moveTo(0, Y(deep)); x.lineTo(W, Y(deep)); x.stroke(); x.setLineDash([]); }
-    // the seabed: rock, darker below, with a light edge along its top
-    x.beginPath(); x.moveTo(0, H); for (let i = 0; i < this.floor.length; i++) x.lineTo(X(i * 5), Y(this.floor[i])); x.lineTo(W, H); x.closePath();
-    const rg = x.createLinearGradient(0, top, 0, H); rg.addColorStop(0, '#6a5a40'); rg.addColorStop(0.5, '#4a4234'); rg.addColorStop(1, '#2c2820');
-    x.fillStyle = rg; x.fill();
-    x.beginPath(); for (let i = 0; i < this.floor.length; i++) x[i ? 'lineTo' : 'moveTo'](X(i * 5), Y(this.floor[i])); x.strokeStyle = 'rgba(214,196,150,0.55)'; x.lineWidth = 1.5; x.stroke(); x.lineWidth = 1;
-    if (deep > 30) { x.fillStyle = 'rgba(242,200,104,0.85)'; x.shadowColor = '#000'; x.shadowBlur = 3; x.fillText(`deepest so far · ${Math.round(deep).toLocaleString()} m`, 200, Y(deep) - 5); x.shadowBlur = 0; }
+    if (deep > 30) { x.strokeStyle = 'rgba(168,44,30,0.7)'; x.lineWidth = 1.5; x.setLineDash([7, 4]); x.beginPath(); x.moveTo(0, Y(deep)); x.lineTo(W, Y(deep)); x.stroke(); x.setLineDash([]); x.lineWidth = 1; }
+    // the seabed: sepia, hatched, an ink line along its top
+    const bed = new Path2D(); bed.moveTo(0, H); for (let i = 0; i < this.floor.length; i++) bed.lineTo(X(i * 5), Y(this.floor[i])); bed.lineTo(W, H); bed.closePath();
+    x.fillStyle = 'rgba(196,164,112,0.55)'; x.fill(bed);
+    x.save(); x.clip(bed); x.strokeStyle = 'rgba(110,80,44,0.32)'; x.lineWidth = 1; x.beginPath();
+    for (let k = -H; k < W; k += 7) { x.moveTo(k, H); x.lineTo(k + H, 0); } x.stroke(); x.restore();
+    x.beginPath(); for (let i = 0; i < this.floor.length; i++) x[i ? 'lineTo' : 'moveTo'](X(i * 5), Y(this.floor[i])); x.strokeStyle = INK; x.lineWidth = 1.6; x.stroke(); x.lineWidth = 1;
+    if (deep > 30) { x.font = 'italic 14px "EB Garamond", Georgia, serif'; x.fillStyle = 'rgba(150,36,24,0.9)'; x.fillText(`deepest so far, ${Math.round(deep).toLocaleString()} m`, 200, Y(deep) - 5); }
     // the surface
-    x.strokeStyle = 'rgba(190,226,236,0.55)'; x.beginPath(); x.moveTo(0, Y(0)); x.lineTo(W, Y(0)); x.stroke();
+    x.strokeStyle = INK; x.lineWidth = 1.4; x.beginPath(); x.moveTo(0, Y(0)); x.lineTo(W, Y(0)); x.stroke(); x.lineWidth = 1;
+    x.font = 'italic 14px "EB Garamond", Georgia, serif';
     // places he knows: the Margaret, the station and Dave once found
-    const label = (px, py, txt, col = 'rgba(236,230,210,0.85)') => { const w2 = x.measureText(txt).width / 2; x.fillStyle = col; x.textAlign = 'center'; x.fillText(txt, Math.max(w2 + 4, Math.min(W - w2 - 4, px)), py); x.textAlign = 'left'; };
-    { const bx = X(BOAT.x), by = Y(0); x.fillStyle = '#d8d0b8'; x.beginPath(); x.moveTo(bx - 9, by - 3); x.lineTo(bx + 9, by - 3); x.lineTo(bx + 6, by + 2); x.lineTo(bx - 6, by + 2); x.closePath(); x.fill(); x.fillRect(bx - 1, by - 11, 2, 8); label(bx, by - 14, 'the Margaret'); }
-    const site = (sx, txt) => { const py = Y(this.floorAt(sx)); x.fillStyle = '#e8d49a'; x.fillRect(X(sx) - 4, py - 7, 8, 7); label(X(sx), py - 11, txt); };
+    const label = (px, py, txt, col = INK) => { const w2 = x.measureText(txt).width / 2; x.fillStyle = col; x.textAlign = 'center'; x.fillText(txt, Math.max(w2 + 4, Math.min(W - w2 - 4, px)), py); x.textAlign = 'left'; };
+    { const bx = X(BOAT.x), by = Y(0); x.fillStyle = INK; x.beginPath(); x.moveTo(bx - 9, by - 3); x.lineTo(bx + 9, by - 3); x.lineTo(bx + 6, by + 2); x.lineTo(bx - 6, by + 2); x.closePath(); x.fill(); x.fillRect(bx - 1, by - 11, 2, 8); label(bx, by - 14, 'the Margaret'); }
+    const site = (sx, txt) => { const py = Y(this.floorAt(sx)); x.fillStyle = INK; x.fillRect(X(sx) - 4, py - 7, 8, 7); label(X(sx), py - 11, txt); };
     if (P.stationFound) site(STATION.x, 'the station');
     if (P.daveVisits) site(DAVE.x, "Dave's");
     // the sub, when he is out of it; and him
     const e = g.earl;
-    if (!e.inSub && g.sub && !g.sub.docked) { x.fillStyle = '#9ab0b4'; x.beginPath(); x.ellipse(X(g.sub.x), Y(Math.max(0, g.sub.y)), 6, 3, 0, 0, Math.PI * 2); x.fill(); }
+    if (!e.inSub && g.sub && !g.sub.docked) { x.fillStyle = inkA(0.7); x.beginPath(); x.ellipse(X(g.sub.x), Y(Math.max(0, g.sub.y)), 6, 3, 0, 0, Math.PI * 2); x.fill(); }
     const ex = X(e.x), ey = Y(Math.max(0, e.y)), pr = 4 + 5 * ((t * 0.8) % 1);
-    x.strokeStyle = `rgba(255,255,255,${(0.6 * (1 - ((t * 0.8) % 1))).toFixed(3)})`; x.beginPath(); x.arc(ex, ey, pr, 0, Math.PI * 2); x.stroke();
-    x.fillStyle = '#fff'; x.beginPath(); x.arc(ex, ey, 4, 0, Math.PI * 2); x.fill();
-    x.fillStyle = 'rgba(255,255,255,0.9)'; x.fillText('you', Math.min(W - 30, ex + 8), ey + (ey < top + 14 ? 14 : -6));
+    x.strokeStyle = `rgba(168,44,30,${(0.8 * (1 - ((t * 0.8) % 1))).toFixed(3)})`; x.beginPath(); x.arc(ex, ey, pr, 0, Math.PI * 2); x.stroke();
+    x.fillStyle = '#a82c1e'; x.beginPath(); x.arc(ex, ey, 4, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#a82c1e'; x.fillText('you', Math.min(W - 30, ex + 8), ey + (ey < top + 14 ? 14 : -6));
     // the markers: a pin each, its name beside it; the one being followed with a ring
     const f = this.h.following();
     for (const m of markersOf(P)) this.pin(x, X(m.x), Y(m.y), m.col, m.name, m === f, m === this.sel, t);
@@ -145,15 +153,15 @@ export class Chart {
     // the reading under the pointer
     const at = this.el.querySelector('.ch-at');
     if (!at.classList.contains('warn')) at.textContent = this.hover ? (this.hover.rock ? 'rock' : `${Math.round(this.hover.y).toLocaleString()} m deep`) : `You: ${Math.round(Math.max(0, e.y)).toLocaleString()} m deep`;
-    if (this.hover && !this.hover.rock) { x.strokeStyle = 'rgba(236,230,210,0.25)'; x.beginPath(); x.moveTo(X(this.hover.x), top); x.lineTo(X(this.hover.x), H); x.moveTo(0, Y(this.hover.y)); x.lineTo(W, Y(this.hover.y)); x.stroke(); }
+    if (this.hover && !this.hover.rock) { x.strokeStyle = inkA(0.3); x.beginPath(); x.moveTo(X(this.hover.x), top); x.lineTo(X(this.hover.x), H); x.moveTo(0, Y(this.hover.y)); x.lineTo(W, Y(this.hover.y)); x.stroke(); }
   }
   pin(x, px, py, col, name, followed, sel, t) {
     x.save();
     if (followed || sel) { x.strokeStyle = col; x.globalAlpha = 0.55 + 0.35 * Math.sin(t * 4); x.lineWidth = 1.5; x.beginPath(); x.arc(px, py - 9, 11, 0, Math.PI * 2); x.stroke(); x.globalAlpha = 1; }
-    x.shadowColor = 'rgba(0,0,0,0.7)'; x.shadowBlur = 4;
+    x.shadowColor = 'rgba(40,30,16,0.45)'; x.shadowBlur = 2;
     x.fillStyle = col; x.beginPath(); x.moveTo(px, py); x.bezierCurveTo(px - 3, py - 5, px - 7, py - 8, px - 7, py - 12); x.arc(px, py - 12, 7, Math.PI, 0); x.bezierCurveTo(px + 7, py - 8, px + 3, py - 5, px, py); x.fill();
     x.shadowBlur = 0; x.fillStyle = 'rgba(20,16,8,0.75)'; x.beginPath(); x.arc(px, py - 12, 2.6, 0, Math.PI * 2); x.fill();
-    if (name) { x.font = '500 13px "EB Garamond", Georgia, serif'; x.fillStyle = '#ece6d2'; x.shadowColor = '#000'; x.shadowBlur = 4; x.fillText(name, px + 10, py - 8); }
+    if (name) { x.font = 'italic 15px "EB Garamond", Georgia, serif'; x.fillStyle = '#2b2418'; x.shadowBlur = 0; x.fillText(name, px + 10, py - 8); }
     x.restore();
   }
 }
