@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="28" viewBox="0 0 56 28">
+  <!-- A rocker switch, off: a black bezel, the rocker pressed down at its left end; its right end, the lamp
+       window, dark. -->
+  <rect x="1.5" y="2.5" width="53" height="24" rx="5" fill="#000" opacity="0.5"/>
+  <rect x="1" y="1" width="54" height="24" rx="5" fill="#0d0f10" stroke="#020303" stroke-width="1"/>
+  <rect x="4" y="4" width="48" height="18" rx="3" fill="#24282b"/>
+  <rect x="4" y="4" width="24" height="18" rx="3" fill="#1b1e20"/>
+  <path d="M28 4 V22" stroke="#000" stroke-width="1.2"/>
+  <rect x="34" y="8" width="12" height="10" rx="2" fill="#2a1d16" stroke="#000" stroke-width="0.8"/>
+  <path d="M8 13 H22" stroke="#ece6d6" stroke-opacity="0.35" stroke-width="2" stroke-linecap="round"/>
+</svg>

@@ -1,123 +1,145 @@
 /* =====================================================================================================
-   Studio pass (ui-studio branch). Loaded after style.css; everything here overrides it.
+   ui-studio: the console. Loaded after style.css; everything here overrides it, so removing this one file
+   puts the old look back.
 
-   One kit, painted once (tools/ui_kit.py -> assets/ui/*.png, at twice the size shown), used everywhere:
-   - the Margaret's steel: worn olive deck paint, rivets only at the corners, as a nine-slice frame
-   - aged brass: nameplates with two slotted screws, and the primary buttons
-   - blackened steel: the secondary buttons
-   - paper: the log on the title, the notes and tags, the quest slip
-   Two typefaces: IM Fell English for anything printed or stamped (titles, buttons, labels), EB Garamond for
-   reading. The hand-written log entries use Caveat. Monospace and the stencil are kept for the instruments.
+   Every panel, button, key, switch and lamp is a part drawn as vector art (assets/src/parts/*.svg), rendered to
+   PNG at 3x (tools/render_parts.cjs -> assets/ui/parts) and laid on with border-image, the corners never
+   stretched. One family: matte black enamel held by screws, off-white print, rubber keys, rocker switches,
+   indicator lamps. Signal orange for the one thing to do and for what wants attention; red for danger.
+   Two faces: Barlow Condensed for anything printed on the equipment (labels, figures, buttons), EB Garamond for
+   sentences.
    ===================================================================================================== */
 :root {
-  --fell: "IM Fell English", "EB Garamond", Georgia, serif;
-  --fell-sc: "IM Fell English SC", "IM Fell English", Georgia, serif;
-  --text: "EB Garamond", Georgia, serif;
-  --hand: "Caveat", "Segoe Print", cursive;
-  --ink: #2a2218; --ink-soft: rgba(42, 34, 24, 0.68); --ink-blue: #22304a;
-  --paint: #e2dbc2; --paint-dim: rgba(226, 219, 194, 0.62);
-  --kit: url("../assets/ui/");
+  --c-ink: #ece6d6; --c-dim: rgba(236, 230, 214, 0.58); --c-faint: rgba(236, 230, 214, 0.32);
+  --c-orange: #ec6a2c; --c-red: #d8392b; --c-green: #7fcf74;
+  --c-num: "Barlow Condensed", "Arial Narrow", sans-serif; --c-text: "EB Garamond", Georgia, serif;
+  --P: url("../assets/ui/parts/panel.png"); --W: url("../assets/ui/parts/well.png"); --KEY: url("../assets/ui/parts/key.png");
+  --BTN: url("../assets/ui/parts/btn.png"); --BTN1: url("../assets/ui/parts/btn-primary.png"); --BTND: url("../assets/ui/parts/btn-down.png");
+  /* the old look's names, pointed at the new colours, so style.css's own rules follow along */
+  --paint: var(--c-ink); --paint-dim: var(--c-dim); --brass: #8a8f92; --brass-hi: #b8bcbe; --brass-lo: #4a4f52;
 }
 
-/* ---------------------------------------------------------------- kit classes */
-/* steel panel: the frame is the painted plate; its middle is the same plate, tiled */
-.kit-steel, .shop .shop-main, #pause, :is(#settings, #inventory) .set-panel, #quests .qs-panel, #trapset .ts-panel {
-  border: 28px solid transparent !important;
-  border-image: url("../assets/ui/panel-steel.png") 56 / 28px stretch !important;
-  background: url("../assets/ui/steel-tile.png") 0 0 / 384px 384px !important; background-clip: padding-box !important; background-origin: padding-box !important;
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.6) !important;
-  border-radius: 0 !important;
+/* ---------------------------------------------------------------- panels: the console face */
+.shop .shop-main, #pause, :is(#settings, #inventory) .set-panel, #quests .qs-panel, #chart .ch-panel, #confirm .cf-plate, #stations .st-plate {
+  border: 22px solid transparent !important; border-radius: 0 !important;
+  border-image: var(--P) 66 fill / 22px stretch !important;
+  background: none !important; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55) !important; backdrop-filter: none !important;
+  color: var(--c-ink);
 }
-/* the old CSS rivet rings, gone: the plate has its own */
-.shop .shop-main::before, #pause::before, .slot::before { content: none !important; }
+#inventory .inv-panel { background-image: none !important; }
+.shop .shop-main::before, #pause::before, .slot::before, #title .title-panel::before { content: none !important; }
 
-/* brass nameplate */
-.kit-brass, .shop .nameplate, #pause h2, :is(#settings, #inventory) .set-plate, #quests .qs-plate {
-  border: 0 solid transparent !important; border-width: 15px 22px !important;
-  border-image: url("../assets/ui/plate-brass.png") 30 44 fill / 15px 22px stretch !important;
-  background: none !important; box-shadow: 0 3px 4px rgba(0, 0, 0, 0.35) !important; border-radius: 0 !important;
-  padding: 0 4px !important; filter: none !important;
+/* panel names: printed on the face in capitals, an orange rule under them (no brass plate) */
+.shop .nameplate, #pause h2, :is(#settings, #inventory) .set-plate, #quests .qs-plate, #chart .ch-plate {
+  background: none !important; box-shadow: none !important; border: 0 !important; border-image: none !important; border-radius: 0 !important;
+  padding: 0 0 6px !important; filter: none !important; position: relative;
 }
 .shop .nameplate::before, .shop .nameplate::after, #title .t-plate::before, #title .t-plate::after { content: none !important; }
-.shop .nameplate h2, #pause h2, :is(#settings, #inventory) .set-plate {
-  font: 400 26px/1.05 var(--fell) !important; color: #2a1d08 !important; letter-spacing: 0 !important;
-  text-shadow: 0 1px 0 rgba(255, 236, 180, 0.5), 0 -1px 0 rgba(40, 26, 6, 0.35) !important;
+.shop .nameplate::after, :is(#settings, #inventory) .set-plate::after, #quests .qs-plate::after, #chart .ch-plate::after, #pause h2::after {
+  content: '' !important; position: absolute; left: 0; bottom: 0; width: 34px; height: 3px; background: var(--c-orange); border-radius: 0; }
+.shop .nameplate h2, #pause h2, :is(#settings, #inventory) .set-plate, #quests .qs-plate h2, #chart .ch-plate h2 {
+  font: 600 24px/1.1 var(--c-num) !important; letter-spacing: 0.14em !important; text-transform: uppercase !important;
+  color: var(--c-ink) !important; text-shadow: none !important; margin: 0 !important;
 }
-.shop .nameplate .shop-sub, .shop .shop-sub { font: italic 13px var(--text) !important; letter-spacing: 0 !important; text-transform: none !important; color: rgba(42, 29, 8, 0.78) !important; }
+.shop .nameplate h2 em, .shop .nameplate h2 i { font-style: normal !important; }
+.shop .nameplate .shop-sub, .shop .shop-sub { font: italic 15px var(--c-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--c-dim) !important; }
 
-/* buttons: stamped brass (the one thing to do), blackened steel (everything else) */
-.btn-brass, #pause #resume, .shop button.primary {
-  border: 12px solid transparent !important; border-radius: 0 !important;
-  border-image: url("../assets/ui/btn-brass.png") 24 fill / 12px stretch !important;
-  background: none !important; box-shadow: 0 3px 3px rgba(0, 0, 0, 0.35) !important;
-  color: #2a1d08 !important; text-shadow: 0 1px 0 rgba(255, 236, 180, 0.5) !important;
-  font: 400 18px/1 var(--fell-sc) !important; letter-spacing: 0.04em !important; text-transform: none !important;
-  padding: 2px 18px 4px !important; cursor: pointer; transition: transform 0.06s, filter 0.1s;
+/* buttons: dark rubber push-buttons; the one thing to do in signal orange */
+.c-btn, .shop button.primary, #pause button:not(.small):not(.gear-btn):not(.link), #confirm button, #quests button[data-q]:not(.qs-info), #quests .qs-buy, #title #continue, #title #play, #menu #play {
+  border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--BTN) 36 fill / 12px stretch !important;
+  background: none !important; box-shadow: none !important; padding: 0 10px 4px !important; min-height: 44px;
+  font: 600 16px/1 var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase !important;
+  color: var(--c-ink) !important; text-shadow: none !important; cursor: pointer; filter: none !important;
 }
-.btn-brass:hover:hover, #pause #resume:hover:hover, .shop button.primary:hover:not(:disabled) {
-  border-image-source: url("../assets/ui/btn-brass-hover.png") !important; filter: none !important; }
-.btn-brass:active:active, #pause #resume:active:active, .shop button.primary:active:not(:disabled) {
-  border-image-source: url("../assets/ui/btn-brass-down.png") !important; transform: translateY(1px); box-shadow: 0 1px 1px rgba(0, 0, 0, 0.35) !important; }
-.btn-steel, #pause button:not(#resume):not(.small):not(.gear-btn):not(.link) {
-  border: 12px solid transparent !important; border-radius: 0 !important;
-  border-image: url("../assets/ui/btn-steel.png") 24 fill / 12px stretch !important;
-  background: none !important; box-shadow: 0 3px 3px rgba(0, 0, 0, 0.35) !important;
-  color: var(--paint) !important; font: 400 17px/1 var(--fell-sc) !important; letter-spacing: 0.04em !important; text-transform: none !important;
-  padding: 2px 16px 4px !important; cursor: pointer;
+.shop button.primary, #pause #resume, #confirm .cf-yes, #quests .qs-buy, #quests button[data-q^="claim"], #title #continue, #title #play, #menu #play {
+  border-image-source: var(--BTN1) !important; color: #1c0b03 !important; }
+.c-btn:hover, .shop button.primary:hover:not(:disabled), #pause button:not(.small):not(.gear-btn):not(.link):hover, #confirm button:hover, #quests button[data-q]:not(.qs-info):hover, #title #continue:hover { filter: brightness(1.15) !important; }
+.c-btn:active, .shop button.primary:active, #pause button:not(.small):not(.gear-btn):not(.link):active, #confirm button:active, #quests button[data-q]:not(.qs-info):active, #title #continue:active { border-image-source: var(--BTND) !important; color: var(--c-ink) !important; padding-top: 3px !important; padding-bottom: 1px !important; }
+.shop button.primary:disabled, #quests button[data-q]:disabled { border-image-source: var(--BTN) !important; color: var(--c-faint) !important; cursor: default; }
+.shop button.primary span { font: inherit !important; opacity: 0.8; margin-left: 8px; }
+
+/* close: a rubber key with an x */
+:is(#settings, #inventory) .set-close, #workshop-close, #cave-close, #trapset-close, .refit-x, #inventory .ip-close, .oc-close, .qp-close, #quests .qs-close, #chart .ch-close, #journal-close {
+  width: 34px !important; height: 34px !important; padding: 0 0 3px !important; box-sizing: border-box; border: 9px solid transparent !important; border-radius: 0 !important;
+  border-image: var(--KEY) 24 fill / 9px stretch !important; background: none !important; box-shadow: none !important; opacity: 1 !important;
+  font: 500 20px/1 var(--c-num) !important; color: var(--c-ink) !important; display: grid; place-items: center; cursor: pointer;
 }
-.btn-steel:hover, #pause button:not(#resume):not(.small):not(.gear-btn):not(.link):hover:hover { border-image-source: url("../assets/ui/btn-steel-hover.png") !important; filter: none !important; }
-.btn-steel:active, #pause button:not(#resume):not(.small):not(.gear-btn):not(.link):active:active { border-image-source: url("../assets/ui/btn-steel-down.png") !important; transform: translateY(1px); }
+#journal-close { color: var(--c-ink) !important; }
 
-/* the gear: a square brass button, the cog stamped dark into it */
-.gear-btn { border: 8px solid transparent !important; border-image: url("../assets/ui/btn-brass.png") 24 fill / 8px stretch !important; background: none !important; border-radius: 0 !important; box-shadow: 0 2px 2px rgba(0, 0, 0, 0.35) !important; }
-.gear-btn:hover { border-image-source: url("../assets/ui/btn-brass-hover.png") !important; filter: none !important; }
-.gear-btn::before { inset: 2px !important; background: #2a1d08 !important; }
+/* the settings gear: a rubber key, the cog printed on it */
+.gear-btn { border: 8px solid transparent !important; border-image: var(--KEY) 24 fill / 8px stretch !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; }
+.gear-btn:hover { filter: brightness(1.2) !important; }
+.gear-btn::before { inset: 1px !important; background: var(--c-ink) !important; }
 
-/* labels: plain small capitals of the same face, not tracked-out stencil */
-#settings h4, #inventory .inv-sec h4, .t-label, #quests h4 {
-  font: 400 15px var(--fell-sc) !important; letter-spacing: 0.02em !important; text-transform: none !important; color: var(--paint-dim) !important;
+/* labels printed on panels: small spaced capitals */
+#settings h4, #inventory .inv-sec h4, #inventory h4, .t-label, #quests h4, .shop h3, .shop h4, #quests h3 {
+  font: 600 13px var(--c-num) !important; letter-spacing: 0.16em !important; text-transform: uppercase !important; color: var(--c-dim) !important;
+  background: none !important; box-shadow: none !important; padding: 0 !important; border: 0 !important;
 }
-/* reading text in the menus: Garamond, not the code font */
-:is(#settings, #inventory) .set-row em, #inventory .inv-row em, #pause .small, .shop .shop-cash span {
-  font-family: var(--text) !important; font-style: italic !important; letter-spacing: 0 !important; text-transform: none !important;
+/* sentences on panels: the serif */
+:is(#settings, #inventory) .set-row em, #inventory .inv-row em, #pause .small, #confirm p, .shop p, .shop .note { font-family: var(--c-text) !important; letter-spacing: 0 !important; text-transform: none !important; }
+
+/* rows: a shallow well pressed into the face */
+:is(#settings, #inventory) .set-row, #inventory .inv-row, #quests .qs-q {
+  border: 8px solid transparent !important; border-radius: 0 !important; border-image: var(--W) 24 fill / 8px stretch !important;
+  background: none !important; box-shadow: none !important; padding: 4px 6px !important; margin-bottom: 6px !important;
 }
-:is(#settings, #inventory) .set-row em { font-size: 13px !important; }
-:is(#settings, #inventory) .set-row { font: 17px var(--text) !important; }
+:is(#settings, #inventory) .set-row { font: 18px var(--c-text) !important; color: var(--c-ink) !important; align-items: center; }
+:is(#settings, #inventory) .set-row em { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; }
+:is(#settings, #inventory) .set-row:hover { filter: brightness(1.18) !important; }
+/* a setting's state: the word printed small, and a rocker switch beside it, its lamp lit when on */
+:is(#settings, #inventory) .set-row b { display: inline-flex !important; align-items: center; gap: 10px; min-width: 0 !important; padding: 0 !important; background: none !important; box-shadow: none !important; border: 0 !important;
+  font: 600 13px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; color: var(--c-faint) !important; }
+:is(#settings, #inventory) .set-row b::after { content: ''; width: 56px; height: 28px; background: url("../assets/ui/parts/toggle-off.png") center / 56px 28px no-repeat; }
+:is(#settings, #inventory) .set-row b.on { color: var(--c-ink) !important; }
+:is(#settings, #inventory) .set-row b.on::after { background-image: url("../assets/ui/parts/toggle-on.png"); }
+/* the controls list: rubber keys and printed words */
+:is(#settings, #inventory) .set-controls { font: 15px var(--c-text) !important; color: var(--c-ink) !important; }
+:is(#settings, #inventory) .set-controls kbd, .controls kbd { border: 7px solid transparent !important; border-image: var(--KEY) 24 fill / 7px stretch !important; background: none !important; box-shadow: none !important;
+  font: 600 13px/1 var(--c-num) !important; color: var(--c-ink) !important; padding: 0 3px 2px !important; min-width: 12px; }
 
-/* rows inside steel panels: a recess pressed into the plate (no bevelled box on a bevelled box) */
-:is(#settings, #inventory) .set-row, #inventory .inv-row {
-  background: rgba(14, 18, 12, 0.42) !important; border: 0 !important; border-radius: 2px !important;
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.06), 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+/* tabs: dark keys side by side; the open one lit (its lamp, its words) */
+.shop .shop-tabs button, #inventory .inv-tabs button {
+  border: 10px solid transparent !important; border-radius: 0 !important; border-image: var(--BTN) 36 fill / 10px stretch !important;
+  background: none !important; box-shadow: none !important; padding: 0 12px 3px 24px !important; min-height: 38px;
+  font: 600 14px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; color: var(--c-dim) !important; position: relative;
 }
-:is(#settings, #inventory) .set-row b { border-radius: 2px !important; font: 400 13px var(--fell-sc) !important; letter-spacing: 0.04em !important; text-transform: none !important; }
-:is(#settings, #inventory) .set-row b.on { background: none !important; border: 5px solid transparent; border-image: url("../assets/ui/btn-brass.png") 24 fill / 5px stretch; color: #2a1d08 !important; box-shadow: none !important; }
+.shop .shop-tabs button::before, #inventory .inv-tabs button::before { content: '' !important; position: absolute !important; left: 4px !important; top: 50% !important; width: 14px !important; height: 14px !important; margin-top: -8px;
+  background: url("../assets/ui/parts/lamp-off.png") center / 14px 14px no-repeat !important; box-shadow: none !important; border-radius: 0 !important; }
+.shop .shop-tabs button.on, #inventory .inv-tabs button.on { color: var(--c-ink) !important; }
+.shop .shop-tabs button.on::before, #inventory .inv-tabs button.on::before { background-image: url("../assets/ui/parts/lamp-orange.png") !important; }
+#inventory .inv-tabs { background: none !important; box-shadow: none !important; padding: 0 !important; gap: 10px !important; }
+#inventory .inv-tabs button { min-width: 150px !important; min-height: 46px !important; font-size: 16px !important; }
+#inventory .inv-tabs button i { font-style: normal; opacity: 0.7; }
 
-/* close buttons (the x on panels): a steel cap with a cross cut into it, not a coin */
-:is(#settings, #inventory) .set-close, .shop .close, #workshop-close, #cave-close, #trapset-close, .refit-x, #inventory .ip-close, .oc-close, .qp-close, #quests .qs-close {
-  border: 8px solid transparent !important; border-radius: 0 !important; width: 34px !important; height: 34px !important; padding: 0 !important;
-  border-image: url("../assets/ui/btn-steel.png") 24 fill / 8px stretch !important; background: none !important;
-  color: var(--paint) !important; font: 400 20px/14px var(--fell) !important; box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4) !important;
-}
+/* the mechanical counters (cash in the shops): figures in a sunk window, not drums */
+.shop .counter { border: 6px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 6px stretch !important; background: none !important; box-shadow: none !important; padding: 0 6px !important; }
+.shop .counter .drum, .shop .counter .sep { background: none !important; width: auto !important; font: 500 24px/1.2 var(--c-num) !important; color: var(--c-ink) !important; animation: none !important; }
+.shop .shop-cash span { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
 
-/* ---------------------------------------------------------------- pause */
-#pause { padding: 14px 18px 18px !important; }
-#pause .small { color: var(--paint-dim) !important; font-size: 15px !important; }
-#pause .pause-version { font: italic 12px var(--text) !important; }
-
-/* focus: a soft lamp glow around the plate, not the browser's white ring */
-#pause button:focus { outline: none; }
-#pause button:focus-visible { outline: none; filter: drop-shadow(0 0 4px rgba(255, 200, 110, 0.8)) !important; }
-/* the pause menu's two drastic choices: quiet written links, and the version out of their way */
+/* pause */
+#pause { padding: 6px 10px 12px !important; }
+#pause h2 { display: inline-block; margin-bottom: 14px !important; }
+#pause .small { color: var(--c-dim) !important; font-size: 15px !important; }
+#pause button:focus, #confirm button:focus { outline: none; }
+#pause button:focus-visible, #confirm button:focus-visible { outline: 2px solid rgba(236, 106, 44, 0.7); outline-offset: 2px; }
 #pause .p-links { display: flex; justify-content: center; gap: 22px; margin-top: 12px; }
-#pause .p-links .link { font: italic 15px var(--text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--paint-dim) !important; border: 0 !important; border-bottom: 1px dotted rgba(226, 219, 194, 0.4) !important; background: none !important; padding: 0 !important; box-shadow: none !important; }
-#pause .p-links .link:hover { color: #f0b090 !important; }
-#pause .pause-version { position: absolute; right: 6px !important; bottom: -22px !important; color: rgba(226, 219, 194, 0.4) !important; }
+#pause .p-links .link { font: italic 15px var(--c-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--c-dim) !important; border: 0 !important; border-bottom: 1px dotted var(--c-faint) !important; background: none !important; padding: 0 !important; box-shadow: none !important; }
+#pause .p-links .link:hover { color: #f0a080 !important; }
+#pause .pause-version { position: absolute; right: 6px !important; bottom: -24px !important; font: 12px var(--c-num) !important; letter-spacing: 0.1em; color: var(--c-faint) !important; }
 
-/* ---------------------------------------------------------------- messages across the top: printed, no ornament */
+/* confirm dialogs */
+#confirm .cf-plate { text-align: center; padding: 10px 14px 6px !important; }
+#confirm .cf-plate::before, #confirm .cf-plate::after { content: none !important; }
+#confirm h3 { font: 600 22px/1.15 var(--c-num) !important; letter-spacing: 0.08em !important; text-transform: uppercase; color: var(--c-ink) !important; text-shadow: none !important; margin: 4px 0 8px !important; }
+#confirm p { font-size: 17px !important; color: var(--c-dim) !important; line-height: 1.4 !important; }
+#confirm .cf-acts { gap: 12px !important; }
+#confirm button { min-width: 110px; white-space: nowrap; }
+
+/* top messages: in the reading face, no ornament */
 #msgs .msg-rule { display: none !important; }
-#msgs .msg-t { font: 400 25px/1.2 var(--fell) !important; letter-spacing: 0 !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 14px rgba(0, 0, 0, 0.7) !important; }
-#msgs .msg-n { font: italic 15px var(--text) !important; }
-
+#msgs .msg-t { font: 500 24px/1.2 var(--c-text) !important; letter-spacing: 0 !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 14px rgba(0, 0, 0, 0.7) !important; }
+#msgs .msg-n { font: 600 14px var(--c-num) !important; letter-spacing: 0.1em; }
 
 /* =====================================================================================================
    (ui-studio, style B) the console family: matte black enamel, off-white print, rubber keys, lamps.
@@ -145,3 +167,109 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
 #quests-hud .qh-step:empty { display: none; }
 #quests-hud .qh-k { font: 600 12px/1.2 var(--c-num); letter-spacing: 0.12em; color: var(--c-dim); }
 #quests-hud .qh-k.done { color: var(--c-green); }
+
+/* ---------------------------------------------------------------- the inventory: the dive locker as a console */
+#inventory .inv-panel { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55) !important; }
+#inventory .inv-right { box-shadow: none !important; border-left: 1px solid rgba(0, 0, 0, 0.6) !important; }
+/* cash: printed CASH and the sum in a sunk window */
+#inventory .cash-plate { border: 7px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 7px stretch !important; background: none !important; box-shadow: none !important; padding: 0 10px !important; align-items: center !important; }
+#inventory .cash-plate span { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
+#inventory .cash-plate b { font: 500 25px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.02em !important; }
+/* Earl's stage: a deep well, lit from above */
+#inventory .eq-stage { border: 10px solid transparent !important; border-image: var(--W) 24 fill / 10px stretch !important; background: radial-gradient(ellipse 60% 55% at 50% 30%, rgba(236, 230, 214, 0.07), transparent 70%) !important; box-shadow: none !important; border-radius: 0 !important; }
+/* his eight slots: wells; what is in one shown by its picture and a bar of its rarity's colour along the bottom */
+#inventory .eq-stage .eq-slot.sq { border: 8px solid transparent !important; border-image: var(--W) 24 fill / 8px stretch !important; background: none !important; border-radius: 0 !important;
+  box-shadow: inset 0 -3px 0 var(--rc, transparent) !important; width: 78px !important; height: 78px !important; }
+#inventory .eq-stage .eq-slot.sq.empty { box-shadow: none !important; }
+#inventory .eq-stage .eq-slot.sq.empty > span { font: 600 11px var(--c-num) !important; letter-spacing: 0.14em !important; color: var(--c-faint) !important; }
+#inventory .eq-stage .eq-slot .slot-nm { background: none !important; box-shadow: none !important; padding: 0 !important; bottom: -19px !important; font: 600 11px var(--c-num) !important; letter-spacing: 0.14em !important; color: var(--c-dim) !important; }
+#inventory .eq-slot.sq .key { font: 600 12px var(--c-num) !important; color: var(--c-dim) !important; left: 2px !important; top: 0 !important; }
+#inventory .eq-slot.sq.sel, #inventory .eq-slot.hot { outline: 2px solid var(--c-orange) !important; outline-offset: 2px; background: none !important; }
+#inventory .eq-stage .eq-col { row-gap: 26px !important; }
+/* the locker: rows of wells; a thing in one shows its rarity as a bar along the bottom; an empty locker says so */
+#inventory .inv-right .lk-grid { background: none !important; padding: 0 !important; gap: 8px !important; }
+#inventory .lk-tile { border: 6px solid transparent !important; border-image: var(--W) 24 fill / 6px stretch !important; background: none !important; border-radius: 0 !important; box-shadow: inset 0 -3px 0 var(--rc, transparent) !important; }
+#inventory .lk-tile::before { content: none !important; }
+#inventory .lk-tile.empty { opacity: 0.55 !important; box-shadow: none !important; }
+#inventory .lk-tile.sel { outline: 2px solid var(--c-orange) !important; }
+#inventory .lk-tile i { font: 600 10px var(--c-num) !important; letter-spacing: 0.1em; color: var(--c-orange) !important; }
+#inventory .lk-head h4 { margin: 0 !important; }
+#inventory .lk-head small { font: italic 14px var(--c-text) !important; color: var(--c-faint) !important; }
+#inventory .lk-head span { font: 600 13px var(--c-num) !important; letter-spacing: 0.1em; color: var(--c-dim) !important; }
+#inventory .eq-note { font: italic 14px var(--c-text) !important; color: var(--c-faint) !important; }
+/* the air rig: the tank large, the console's own gauge beside it */
+#inventory .air-rig { border: 8px solid transparent !important; border-image: var(--W) 24 fill / 8px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
+  grid-template-columns: minmax(0, 1fr) 84px auto !important; padding: 2px 8px !important; }
+#inventory .air-rig img { max-height: 78px !important; }
+#inventory .air-dial { position: relative; width: 84px !important; height: 84px !important; filter: none !important; }
+#inventory .air-dial img { width: 100%; height: 100%; max-height: none !important; filter: none !important; }
+#inventory .air-dial i { position: absolute; left: 50%; top: 50%; width: 32%; height: 3px; margin-top: -1.5px; background: var(--c-orange); border-radius: 2px; transform-origin: 0 50%; }
+#inventory .air-dial::after { content: ''; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #2b2f32; box-shadow: 0 0 0 1px #000; }
+#inventory .air-dial b { position: absolute; left: 0; right: 0; top: 60%; text-align: center; font: 600 10px var(--c-num); letter-spacing: 0.14em; color: var(--c-dim); }
+#inventory .air-txt .tape { background: none !important; box-shadow: none !important; padding: 0 !important; font: 600 13px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase; color: var(--c-dim) !important; }
+#inventory .air-txt b { font: 500 30px var(--c-num) !important; color: var(--c-ink) !important; }
+#inventory .air-txt i { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; }
+#inventory .air-rig.warn .air-txt b { color: var(--c-orange) !important; }
+:is(#settings, #inventory) .set-panel::before { content: none !important; }
+/* his slots: raised tiles on the stage, like the tools on the belt rack */
+#inventory .eq-stage .eq-slot.sq { border: 12px solid transparent !important; border-image: url("../assets/ui/parts/tile.png") 36 fill / 12px stretch !important; }
+#inventory .eq-stage .eq-slot.sq img { width: 100% !important; height: 100% !important; }
+#inventory .eq-stage .eq-slot.sq .key { left: -6px !important; top: -8px !important; }
+#inventory .inv-right .lk-grid { position: relative; }
+#inventory .lk-none { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; width: 74%; margin: 0; padding: 16px 20px; text-align: center;
+  font: italic 18px/1.4 var(--c-text); color: var(--c-dim); background: rgba(12, 14, 15, 0.92); border: 1px solid rgba(236, 230, 214, 0.12); }
+#inventory .eq-stage .eq-slot.sq img { transform: scale(1.4); }
+#inventory .lk-tile.empty { opacity: 0.35 !important; }
+
+/* ---------------------------------------------------------------- the inventory's catch page */
+#inventory .inv-catch2 .inv-left > h4, #inventory .inv-catch2 .sub-bay > h4 { background: none !important; box-shadow: none !important; padding: 0 !important; text-shadow: none !important; }
+#inventory .inv-catch2 h4 i { font: 600 13px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.06em; }
+#inventory .inv-catch2 h4.off, #inventory .inv-catch2 h4.off i { color: var(--c-faint) !important; }
+/* the bag's pockets: raised tiles; an empty one a plain well; one not yet bought, a dim well with its lock */
+#inventory .fc, #inventory .fc:not(.empty) { border: 10px solid transparent !important; border-radius: 0 !important; border-image: url("../assets/ui/parts/tile.png") 36 fill / 10px stretch !important;
+  background: none !important; box-shadow: inset 0 -3px 0 var(--rc, transparent) !important; padding: 2px 4px !important; }
+#inventory .fc.empty, #inventory .fc.locked { border-image: var(--W) 24 fill / 10px stretch !important; box-shadow: none !important; opacity: 0.6; }
+#inventory .fc.locked { opacity: 0.35; }
+#inventory .fc::before, #inventory .fc.empty::after { content: none !important; display: none !important; }
+#inventory .fc b { font: 16px var(--c-text) !important; color: var(--c-ink) !important; }
+#inventory .fc small { font: 600 14px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.04em; }
+#inventory .fc span { font: italic 13px var(--c-text) !important; color: var(--c-dim) !important; }
+#inventory .fc.trouble { box-shadow: inset 0 -3px 0 var(--c-red), 0 0 0 2px rgba(216, 57, 43, 0.6) !important; }
+/* what it would all sell for: a figure in a sunk window, not a giant stencil */
+#inventory .worth-paint { font: 500 30px/1 var(--c-num) !important; letter-spacing: 0.02em !important; color: var(--c-ink) !important; text-shadow: none !important; -webkit-text-stroke: 0 !important; background: none !important;
+  margin: auto 0 4px 0 !important; padding: 8px 14px 8px 14px; border: 7px solid transparent; border-image: url("../assets/ui/parts/window.png") 24 fill / 7px stretch; display: inline-flex; align-items: baseline; gap: 12px; opacity: 1 !important; }
+#inventory .worth-paint::before { content: 'WORTH ABOUT'; font: 600 12px var(--c-num); letter-spacing: 0.16em; color: var(--c-dim); }
+/* the sub's bay: a well; its name printed; the tank's window a sunk frame */
+#inventory .sub-bay { border: 12px solid transparent !important; border-image: var(--W) 24 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 4px 6px 6px !important; }
+#inventory .sub-bay::before, #inventory .sub-bay::after { content: none !important; }
+#inventory .sb-name { background: none !important; box-shadow: none !important; border: 0 !important; border-image: none !important; padding: 0 0 8px !important; border-bottom: 1px solid rgba(0, 0, 0, 0.6) !important; }
+#inventory .sb-name b { font: 600 20px var(--c-num) !important; letter-spacing: 0.12em !important; color: var(--c-ink) !important; text-shadow: none !important; }
+#inventory .sb-name span { font: 600 12px var(--c-num) !important; letter-spacing: 0.14em !important; color: var(--c-dim) !important; }
+#inventory .sb-name::before, #inventory .sb-name::after { content: none !important; }
+#inventory .tank-win { border: 7px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 7px stretch !important; background: none !important; box-shadow: none !important; padding: 2px !important; border-radius: 0 !important; }
+#inventory .tank-win::before, #inventory .tank-win::after { content: none !important; }
+#inventory .ct-cap { background: none !important; box-shadow: none !important; border: 0 !important; padding: 6px 0 0 !important; font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; text-transform: none !important; letter-spacing: 0 !important; }
+#inventory .fc.empty { opacity: 1 !important; }
+#inventory .fc.locked { opacity: 0.28 !important; }
+#inventory .lk-tile i.new, #inventory .lk-tile i { background: var(--c-orange) !important; color: #1c0b03 !important; padding: 1px 4px 0 !important; border-radius: 1px; box-shadow: none !important; }
+
+/* ---------------------------------------------------------------- item and fish cards (inventory pop-ups) */
+#inventory .ip-box, #inventory .fish-pop .sp-panel { border: 22px solid transparent !important; border-image: var(--P) 66 fill / 22px stretch !important; background: none !important; border-radius: 0 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important; padding: 2px 6px 4px !important; }
+#inventory .ip-box.r-legendary { box-shadow: 0 0 0 2px rgba(255, 211, 106, 0.55), 0 20px 50px rgba(0, 0, 0, 0.6) !important; }
+#inventory .ip-col { border: 10px solid transparent !important; border-image: var(--W) 24 fill / 10px stretch !important; background: none !important; border-radius: 0 !important;
+  box-shadow: inset 0 -3px 0 var(--rc, transparent) !important; padding: 2px 4px 6px !important; }
+#inventory .ip-col.empty { opacity: 0.7; }
+#inventory .ip-col img { background: rgba(0, 0, 0, 0.3) !important; border-radius: 0 !important; }
+#inventory .ip-col h5, #inventory .ip-vs thead td { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
+#inventory .ip-col .nm { font: 20px var(--c-text) !important; color: var(--c-ink); }
+#inventory .ip-col .rr { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; }
+#inventory .ip-col p { font: italic 14px var(--c-text) !important; }
+#inventory .ip-arrow { background: none !important; box-shadow: none !important; color: var(--c-orange) !important; font: 600 24px var(--c-num) !important; width: auto !important; height: auto !important; }
+#inventory .ip-vs { font: 15px var(--c-text) !important; }
+#inventory .ip-vs td.up { color: var(--c-green) !important; } #inventory .ip-vs td.down { color: #f08a6a !important; }
+#inventory .lk-acts { gap: 10px !important; }
+#inventory .lk-acts button { border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--BTN) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important;
+  padding: 0 10px 4px !important; min-height: 44px; font: 600 15px/1 var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-ink) !important; }
+#inventory .lk-acts button:first-child:not(.sell) { border-image-source: var(--BTN1) !important; color: #1c0b03 !important; }
+#inventory .lk-acts button:hover { filter: brightness(1.15); }

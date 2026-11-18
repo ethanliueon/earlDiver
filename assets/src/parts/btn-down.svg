@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="40" viewBox="0 0 48 40">
+  <!-- The push-button pressed: sunk onto its base, the top face in shadow. -->
+  <rect x="2" y="6" width="44" height="32" rx="6" fill="#000"/>
+  <rect x="2" y="5" width="44" height="32.5" rx="6" fill="#24282a" stroke="#030404" stroke-width="1"/>
+  <rect x="4.5" y="7.5" width="39" height="26" rx="4" fill="#2a2e31"/>
+  <path d="M8 8 H40" stroke="#000" stroke-opacity="0.5" stroke-width="1.6"/>
+</svg>

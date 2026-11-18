@@ -222,13 +222,12 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   if (!(gear && gear.noTank) && TL && TL.fx !== 'brass') drawSpecialTank(ctx, u, TL, (gear && gear.t) || 0);
   else if (!(gear && gear.noTank)) {
   const tg = ctx.createLinearGradient(0, -17.5 * u, 0, -6 * u);
-  if (TL && TL.fx === 'brass') { tg.addColorStop(0, '#5a4418'); tg.addColorStop(0.3, '#e0c070'); tg.addColorStop(0.55, '#a08040'); tg.addColorStop(1, '#3a2c10'); } else { tg.addColorStop(0, '#6a5420'); tg.addColorStop(0.28, '#d9b24a'); tg.addColorStop(0.52, '#a98428'); tg.addColorStop(1, '#3e3012'); } // (ui-studio) a working diver's tank: steel painted signal yellow, faded, not chrome
+  if (TL && TL.fx === 'brass') { tg.addColorStop(0, '#5a4418'); tg.addColorStop(0.3, '#e0c070'); tg.addColorStop(0.55, '#a08040'); tg.addColorStop(1, '#3a2c10'); } else { tg.addColorStop(0, '#4c5257'); tg.addColorStop(0.3, '#9aa2a8'); tg.addColorStop(0.55, '#646c72'); tg.addColorStop(1, '#25292c'); } // (the tank's own colour: the item pictures show it silver)
   ctx.fillStyle = tg;
   ctx.beginPath(); ctx.roundRect(-2 * u, -17.5 * u, 32 * u, 11.5 * u, 5.7 * u); ctx.fill();
   ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(8 * u, -17.5 * u, 1.8 * u, 11.5 * u); ctx.fillRect(19 * u, -17.5 * u, 1.8 * u, 11.5 * u); // cam bands
   ctx.fillStyle = 'rgba(225,215,170,0.55)'; ctx.fillRect(24 * u, -17.5 * u, 2.4 * u, 11.5 * u); // inspection band
   ctx.fillStyle = '#121416'; ctx.beginPath(); ctx.roundRect(-2.4 * u, -17.6 * u, 5 * u, 11.7 * u, 2.2 * u); ctx.fill(); // rubber boot
-  if (!TL) { ctx.fillStyle = 'rgba(60,48,20,0.45)'; ctx.fillRect(4 * u, -9.4 * u, 15 * u, 0.7 * u); ctx.fillStyle = 'rgba(70,66,58,0.7)'; ctx.fillRect(12 * u, -16.6 * u, 3 * u, 1.1 * u); ctx.fillRect(22 * u, -8.2 * u, 2.2 * u, 0.9 * u); } // a scuff along the belly of it, and paint chipped to bare steel
   ctx.fillStyle = '#17191b'; ctx.beginPath(); ctx.roundRect(29 * u, -15 * u, 4.5 * u, 6.5 * u, 1 * u); ctx.fill(); // valve
   ctx.fillStyle = '#3e4347'; ctx.beginPath(); ctx.arc(33.5 * u, -11.5 * u, 1.8 * u, 0, Math.PI * 2); ctx.fill(); // first stage
 

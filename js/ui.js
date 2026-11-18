@@ -869,7 +869,7 @@ export class UI {
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
       + (free ? '<p class="eq-note">Click a slot to take a thing off · drag one in to put it on</p>' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       + this.airHtml(P, g)
-      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${list.length ? '' : '<p class="lk-none">Nothing in the locker yet.<br>What you buy at Bayside goes in here.</p>'}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled down to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
@@ -890,13 +890,9 @@ export class UI {
     const K = kitOf(P), q = K.on.tank && K.items.find((x2) => x2.u === K.on.tank), it = q && ITEMS[q.id]; if (!it) return '';
     const e = g.earl, max = Math.max(1, Math.round(e.o2Max || it.air || 20)), now = Math.max(0, Math.min(max, e.o2 ?? max)), k = now / max;
     const ang = -135 + 270 * k, warn = k < 0.25;
-    const dial = `<svg viewBox="0 0 100 100" class="air-dial"><defs><radialGradient id="ad-face" cx="45%" cy="40%" r="70%"><stop offset="0" stop-color="#ece4cc"/><stop offset="1" stop-color="#c8bc9a"/></radialGradient></defs>
-      <circle cx="50" cy="50" r="48" fill="#6e5a38"/><circle cx="50" cy="50" r="44" fill="#2a2418"/><circle cx="50" cy="50" r="41" fill="url(#ad-face)"/>
-      <path d="M 25 75 A 35 35 0 0 1 21 66" stroke="#a83a2a" stroke-width="5" fill="none"/>
-      ${Array.from({ length: 11 }, (_, i) => { const a2 = (-225 + i * 27) * Math.PI / 180; return `<line x1="${50 + 30 * Math.cos(a2)}" y1="${50 + 30 * Math.sin(a2)}" x2="${50 + 36 * Math.cos(a2)}" y2="${50 + 36 * Math.sin(a2)}" stroke="#2a2418" stroke-width="${i % 5 ? 1.2 : 2}"/>`; }).join('')}
-      <text x="50" y="70" text-anchor="middle" font-size="8" font-family="IBM Plex Mono, monospace" fill="#4a3c24">AIR</text>
-      <g transform="rotate(${ang} 50 50)"><path d="M50 50 L50 17" stroke="#1c1a16" stroke-width="2.2" stroke-linecap="round"/></g><circle cx="50" cy="50" r="4" fill="#8a7448"/></svg>`;
-    return `<div class="air-rig${warn ? ' warn' : ''}"><img src="${pictureOf(it.kind, it, 320, 120, true)}" alt="">${dial}<div class="air-txt"><span class="tape">${it.name.toUpperCase()}</span><b>${Math.round(now)} s</b><i>of ${max} s of air</i></div></div>`;
+    // (ui-studio) the same air gauge as on the instruments: its face, an orange needle, AIR printed under the pivot
+    const dial = `<div class="air-dial"><img src="assets/ui/parts/gauge.png" alt=""><i style="transform: rotate(${(144 + 252 * k).toFixed(1)}deg)"></i><b>AIR</b></div>`;
+    return `<div class="air-rig${warn ? ' warn' : ''}"><img src="${pictureOf(it.kind, it, 320, 120, true)}" alt="">${dial}<div class="air-txt"><span class="tape">${it.name}</span><b>${Math.round(now)} s</b><i>of ${max} s of air</i></div></div>`;
   }
   // one thing, as a column of the pop-up: its picture, name, rarity, what it is, its skills and its set
   itemCol(P, q, head) {
@@ -1001,7 +997,7 @@ export class UI {
     row('set-catchtags', 'Catch tags', SETTINGS.catchTags, 'the name of what you can catch, under it');
     row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, 'M');
     $('set-fullscreen').innerHTML = `<span>Full screen<em>the game fills the whole screen (Esc leaves it)</em></span><b class="${document.fullscreenElement ? 'on' : ''}">${document.fullscreenElement ? 'on' : 'off'}</b>`;
-    $('set-graphics').innerHTML = `<span>Graphics<em>Fast: softer picture and fewer extras, for smoother play on slower computers</em></span><b class="on">${SETTINGS.fast ? 'fast' : 'auto'}</b>`;
+    $('set-graphics').innerHTML = `<span>Graphics<em>Fast: softer picture and fewer extras, for smoother play on slower computers</em></span><b class="${SETTINGS.fast ? 'on' : ''}">${SETTINGS.fast ? 'fast' : 'auto'}</b>`;
   }
   galleryOpen() { return !$('gallery').hidden; }
   cabinOpen() { return !$('cabin').hidden; }

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="32" viewBox="0 0 40 32">
+  <!-- A shallow well pressed into a panel (nine-slice: 8 px corners): a shade darker, in shadow along its top,
+       catching a thread of light along its bottom edge. Rows and slots sit in these. -->
+  <rect x="1" y="1" width="38" height="30" rx="4" fill="#0c0e0f"/>
+  <path d="M5 2.2 H35" stroke="#000" stroke-opacity="0.85" stroke-width="2"/>
+  <path d="M5 30.4 H35" stroke="#fff" stroke-opacity="0.07" stroke-width="1"/>
+</svg>
