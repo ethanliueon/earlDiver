@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&family=Allerta+Stencil&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=4.24.2">
-  <link rel="stylesheet" href="css/olive.css?v=4.24.2">
+  <link rel="stylesheet" href="css/style.css?v=4.24.3">
+  <link rel="stylesheet" href="css/olive.css?v=4.24.3">
   <style>
     /* (4.17.2) the loading screen, poster-style: the painting left alone (only a slow push-in), and over it, at the
        lower left, flat type in the sunset's own orange and a warm off-white: a stamped helmet mark, the title, a
@@ -124,6 +124,8 @@
         <span><kbd>Shift</kbd> faster, more air</span>
         <span><kbd>F</kbd> interact</span>
         <span><kbd>J</kbd> journal</span>
+        <span><kbd>K</kbd> chart</span>
+        <span><kbd>O</kbd> quests</span>
         <span><kbd>L</kbd> lights</span>
         <span><kbd>Q</kbd> lure</span>
         <span><kbd>E</kbd> glow stick</span>
@@ -133,12 +135,12 @@
         <span><kbd>B</kbd> inventory</span>
         <span><kbd>F</kbd> at the Margaret's ladder: climb aboard</span>
         <span><kbd>T</kbd> in the sub: the tank room</span>
-        <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd> net · slurp gun · tag gun · camera · traps</span>
+        <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd> net, slurp gun, tag gun, camera, traps</span>
         <span><kbd>Space</kbd> catch</span>
         <span><kbd>Mouse</kbd> Earl swims to the cursor, click to swing the net, hold right to sprint, wheel zoom</span>
         <span><kbd>N</kbd> in the sub: the trawl net</span>
         <span>hold <kbd>R</kbd> at a hole in the sub: repair it</span>
-        <span><kbd>G</kbd> offer to the deep · at the wheel: the anchor</span>
+        <span><kbd>G</kbd> offer to the deep; at the wheel, the anchor</span>
         <span><kbd>Esc</kbd> pause</span>
         <span><kbd>M</kbd> mute</span>
       </div>
@@ -273,66 +275,66 @@
   <!-- stamp:start (tools/stamp.py) -->
   <script type="importmap">
   { "imports": {
-    "./js/alarm.js": "./js/alarm.js?v=4.24.2",
-    "./js/aquarium.js": "./js/aquarium.js?v=4.24.2",
-    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=4.24.2",
-    "./js/arm.js": "./js/arm.js?v=4.24.2",
-    "./js/audio.js": "./js/audio.js?v=4.24.2",
-    "./js/autopilot.js": "./js/autopilot.js?v=4.24.2",
-    "./js/cabin.js": "./js/cabin.js?v=4.24.2",
-    "./js/capture.js": "./js/capture.js?v=4.24.2",
-    "./js/catalog.js": "./js/catalog.js?v=4.24.2",
-    "./js/chart.js": "./js/chart.js?v=4.24.2",
-    "./js/chests.js": "./js/chests.js?v=4.24.2",
-    "./js/clouds.js": "./js/clouds.js?v=4.24.2",
-    "./js/contracts.js": "./js/contracts.js?v=4.24.2",
-    "./js/creatures_draw.js": "./js/creatures_draw.js?v=4.24.2",
-    "./js/dave.js": "./js/dave.js?v=4.24.2",
-    "./js/designs.js": "./js/designs.js?v=4.24.2",
-    "./js/earl_draw.js": "./js/earl_draw.js?v=4.24.2",
-    "./js/economy.js": "./js/economy.js?v=4.24.2",
-    "./js/entity.js": "./js/entity.js?v=4.24.2",
-    "./js/fauna.js": "./js/fauna.js?v=4.24.2",
-    "./js/fittings.js": "./js/fittings.js?v=4.24.2",
-    "./js/gallery.js": "./js/gallery.js?v=4.24.2",
-    "./js/hud.js": "./js/hud.js?v=4.24.2",
-    "./js/hunters.js": "./js/hunters.js?v=4.24.2",
-    "./js/item_art.js": "./js/item_art.js?v=4.24.2",
-    "./js/item_data.js": "./js/item_data.js?v=4.24.2",
-    "./js/items.js": "./js/items.js?v=4.24.2",
-    "./js/main.js": "./js/main.js?v=4.24.2",
-    "./js/messages.js": "./js/messages.js?v=4.24.2",
-    "./js/monster_draw.js": "./js/monster_draw.js?v=4.24.2",
-    "./js/oldone.js": "./js/oldone.js?v=4.24.2",
-    "./js/player.js": "./js/player.js?v=4.24.2",
-    "./js/quests.js": "./js/quests.js?v=4.24.2",
-    "./js/render.js": "./js/render.js?v=4.24.2",
-    "./js/scenery_draw.js": "./js/scenery_draw.js?v=4.24.2",
-    "./js/settings.js": "./js/settings.js?v=4.24.2",
-    "./js/showcase.js": "./js/showcase.js?v=4.24.2",
-    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=4.24.2",
-    "./js/species.js": "./js/species.js?v=4.24.2",
-    "./js/specimens.js": "./js/specimens.js?v=4.24.2",
-    "./js/station_draw.js": "./js/station_draw.js?v=4.24.2",
-    "./js/survey.js": "./js/survey.js?v=4.24.2",
-    "./js/tankroom.js": "./js/tankroom.js?v=4.24.2",
-    "./js/textures.js": "./js/textures.js?v=4.24.2",
-    "./js/tools_draw.js": "./js/tools_draw.js?v=4.24.2",
-    "./js/trail.js": "./js/trail.js?v=4.24.2",
-    "./js/traps.js": "./js/traps.js?v=4.24.2",
-    "./js/tutspot.js": "./js/tutspot.js?v=4.24.2",
-    "./js/ui.js": "./js/ui.js?v=4.24.2",
-    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=4.24.2",
-    "./js/util.js": "./js/util.js?v=4.24.2",
-    "./js/variants.js": "./js/variants.js?v=4.24.2",
-    "./js/version.js": "./js/version.js?v=4.24.2",
-    "./js/world.js": "./js/world.js?v=4.24.2",
-    "./data/species_about.js": "./data/species_about.js?v=4.24.2",
-    "./data/species_data.js": "./data/species_data.js?v=4.24.2",
-    "./data/species_more.js": "./data/species_more.js?v=4.24.2"
+    "./js/alarm.js": "./js/alarm.js?v=4.24.3",
+    "./js/aquarium.js": "./js/aquarium.js?v=4.24.3",
+    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=4.24.3",
+    "./js/arm.js": "./js/arm.js?v=4.24.3",
+    "./js/audio.js": "./js/audio.js?v=4.24.3",
+    "./js/autopilot.js": "./js/autopilot.js?v=4.24.3",
+    "./js/cabin.js": "./js/cabin.js?v=4.24.3",
+    "./js/capture.js": "./js/capture.js?v=4.24.3",
+    "./js/catalog.js": "./js/catalog.js?v=4.24.3",
+    "./js/chart.js": "./js/chart.js?v=4.24.3",
+    "./js/chests.js": "./js/chests.js?v=4.24.3",
+    "./js/clouds.js": "./js/clouds.js?v=4.24.3",
+    "./js/contracts.js": "./js/contracts.js?v=4.24.3",
+    "./js/creatures_draw.js": "./js/creatures_draw.js?v=4.24.3",
+    "./js/dave.js": "./js/dave.js?v=4.24.3",
+    "./js/designs.js": "./js/designs.js?v=4.24.3",
+    "./js/earl_draw.js": "./js/earl_draw.js?v=4.24.3",
+    "./js/economy.js": "./js/economy.js?v=4.24.3",
+    "./js/entity.js": "./js/entity.js?v=4.24.3",
+    "./js/fauna.js": "./js/fauna.js?v=4.24.3",
+    "./js/fittings.js": "./js/fittings.js?v=4.24.3",
+    "./js/gallery.js": "./js/gallery.js?v=4.24.3",
+    "./js/hud.js": "./js/hud.js?v=4.24.3",
+    "./js/hunters.js": "./js/hunters.js?v=4.24.3",
+    "./js/item_art.js": "./js/item_art.js?v=4.24.3",
+    "./js/item_data.js": "./js/item_data.js?v=4.24.3",
+    "./js/items.js": "./js/items.js?v=4.24.3",
+    "./js/main.js": "./js/main.js?v=4.24.3",
+    "./js/messages.js": "./js/messages.js?v=4.24.3",
+    "./js/monster_draw.js": "./js/monster_draw.js?v=4.24.3",
+    "./js/oldone.js": "./js/oldone.js?v=4.24.3",
+    "./js/player.js": "./js/player.js?v=4.24.3",
+    "./js/quests.js": "./js/quests.js?v=4.24.3",
+    "./js/render.js": "./js/render.js?v=4.24.3",
+    "./js/scenery_draw.js": "./js/scenery_draw.js?v=4.24.3",
+    "./js/settings.js": "./js/settings.js?v=4.24.3",
+    "./js/showcase.js": "./js/showcase.js?v=4.24.3",
+    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=4.24.3",
+    "./js/species.js": "./js/species.js?v=4.24.3",
+    "./js/specimens.js": "./js/specimens.js?v=4.24.3",
+    "./js/station_draw.js": "./js/station_draw.js?v=4.24.3",
+    "./js/survey.js": "./js/survey.js?v=4.24.3",
+    "./js/tankroom.js": "./js/tankroom.js?v=4.24.3",
+    "./js/textures.js": "./js/textures.js?v=4.24.3",
+    "./js/tools_draw.js": "./js/tools_draw.js?v=4.24.3",
+    "./js/trail.js": "./js/trail.js?v=4.24.3",
+    "./js/traps.js": "./js/traps.js?v=4.24.3",
+    "./js/tutspot.js": "./js/tutspot.js?v=4.24.3",
+    "./js/ui.js": "./js/ui.js?v=4.24.3",
+    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=4.24.3",
+    "./js/util.js": "./js/util.js?v=4.24.3",
+    "./js/variants.js": "./js/variants.js?v=4.24.3",
+    "./js/version.js": "./js/version.js?v=4.24.3",
+    "./js/world.js": "./js/world.js?v=4.24.3",
+    "./data/species_about.js": "./data/species_about.js?v=4.24.3",
+    "./data/species_data.js": "./data/species_data.js?v=4.24.3",
+    "./data/species_more.js": "./data/species_more.js?v=4.24.3"
   } }
   </script>
-  <script type="module" src="js/main.js?v=4.24.2"></script>
+  <script type="module" src="js/main.js?v=4.24.3"></script>
   <!-- stamp:end -->
 </body>
 </html>

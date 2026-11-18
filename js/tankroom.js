@@ -627,9 +627,9 @@ export class TankRoom {
     const P = G.port, d = outside;
     if (P) {
     ctx.save(); ctx.translate(P.x, P.y);
-    ctx.fillStyle = '#a07a34'; ctx.beginPath(); ctx.arc(0, 0, P.r + 12, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#6a4e1c'; ctx.beginPath(); ctx.arc(0, 0, P.r + 4, 0, TAU); ctx.fill();
-    for (let k = 0; k < 10; k++) { const a = k / 10 * TAU; ctx.fillStyle = '#c9a65a'; ctx.beginPath(); ctx.arc(Math.cos(a) * (P.r + 8), Math.sin(a) * (P.r + 8), 2.2, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = '#4b5541'; ctx.beginPath(); ctx.arc(0, 0, P.r + 12, 0, TAU); ctx.fill(); // (studio pass) a painted steel rim, not brass
+    ctx.fillStyle = '#262c20'; ctx.beginPath(); ctx.arc(0, 0, P.r + 4, 0, TAU); ctx.fill();
+    for (let k = 0; k < 10; k++) { const a = k / 10 * TAU; ctx.fillStyle = '#7c8a64'; ctx.beginPath(); ctx.arc(Math.cos(a) * (P.r + 8), Math.sin(a) * (P.r + 8), 2.2, 0, TAU); ctx.fill(); }
     ctx.beginPath(); ctx.arc(0, 0, P.r, 0, TAU); ctx.clip();
     // (3.2.1) the sea outside by depth: sunlit blue-green, the twilight's deep blue, black by 1,000 m
     const dk = clamp(d / 1000, 0, 1), top = seaAt(d), bot = seaAt(d + 120).map((v) => v * 0.55);

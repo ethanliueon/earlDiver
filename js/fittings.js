@@ -44,18 +44,18 @@ export function paintedText(ctx, text, x, y, size, { col = 'rgba(214,206,172,1)'
 // ---------------- the depth counter ----------------
 // a brass-bezelled window of number drums, rolling as the sub goes down: each drum turns only while the ones to
 // its right roll over from 9, like an odometer. Past the sub's rating the window glows amber.
-export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'DEPTH · METRES' } = {}) {
+export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'METRES' } = {}) {
   // (3.6.0) larger, and the drums lit more evenly so the digits read at a glance
   const N = 4, dw = 30, dh = 44, pad = 10, W = N * dw + pad * 2 + 4, H = dh + pad * 2;
   ctx.save(); ctx.translate(x, y);
   // the brass bezel, its screws
   const bz = ctx.createLinearGradient(0, 0, 0, H);
-  bz.addColorStop(0, '#b4a070'); bz.addColorStop(0.45, '#8a7444'); bz.addColorStop(1, '#5a4828');
+  bz.addColorStop(0, '#7c8a64'); bz.addColorStop(0.45, '#4b5541'); bz.addColorStop(1, '#262c20'); // (studio pass) painted steel, not brass
   ctx.fillStyle = '#1a1408'; ctx.beginPath(); ctx.roundRect(-2, -1, W + 4, H + 4, 8); ctx.fill();
   ctx.fillStyle = bz; ctx.beginPath(); ctx.roundRect(0, 0, W, H, 7); ctx.fill();
   ctx.strokeStyle = 'rgba(255,240,200,0.28)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0.5, 0.5, W - 1, H - 1, 7); ctx.stroke();
   for (const [sx, sy] of [[6, 6], [W - 6, 6], [6, H - 6], [W - 6, H - 6]]) {
-    ctx.fillStyle = '#5a4620'; ctx.beginPath(); ctx.arc(sx, sy, 2.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#262c20'; ctx.beginPath(); ctx.arc(sx, sy, 2.4, 0, TAU); ctx.fill();
     ctx.strokeStyle = '#2a2008'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(sx - 1.6, sy - 1); ctx.lineTo(sx + 1.6, sy + 1); ctx.stroke();
   }
   // the window, recessed
@@ -344,7 +344,7 @@ export function brassTag(ctx, x, y, text, rot = 0.2) {
   ctx.strokeStyle = '#8a7a50'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, TAU); ctx.stroke();
   ctx.rotate(rot); ctx.translate(0, 4);
   ctx.font = `600 11px ${MONO}`; const w = Math.max(30, ctx.measureText(text).width + 14), h = 18;
-  const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#dcc890'); bg.addColorStop(0.5, '#b49a5c'); bg.addColorStop(1, '#7c6436');
+  const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#e2dcc6'); bg.addColorStop(0.5, '#cfc7ab'); bg.addColorStop(1, '#a9a184'); // (studio pass) a cream-painted tag, not brass
   ctx.fillStyle = '#2a2008'; ctx.beginPath(); ctx.roundRect(-w / 2 - 1, -1, w + 2, h + 2, 4); ctx.fill();
   ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(-w / 2, 0, w, h, 3.5); ctx.fill();
   ctx.fillStyle = '#1e1606'; ctx.beginPath(); ctx.arc(-w / 2 + 5, h / 2, 1.8, 0, TAU); ctx.fill();
