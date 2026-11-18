@@ -295,7 +295,7 @@ export class Hud {
     ctx.font = `${11 * s}px ${MONO}`;
     const left = e.inSub && !onTank ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
     const sec = Math.max(0, Math.floor(left));
-    if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText((g.noAirRate || 1) > 1.3 ? 'under pressure — surface!' : 'holding your breath — surface!', rx0, ly); ly += 15 * s; }
+    if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.fillText((g.noAirRate || 1) > 1.3 ? 'under pressure: surface!' : 'holding your breath: surface!', rx0, ly); ly += 15 * s; }
     else if (e.atSurface && o2 < 0.999) { ctx.fillStyle = 'rgba(180,215,240,0.65)'; ctx.fillText('refilling…', rx0, ly); ly += 15 * s; }
     else if (!e.atSurface && o2 < 0.5) {
       ctx.fillStyle = o2 < 0.25 ? '#e8b040' : 'rgba(180,215,240,0.65)';
@@ -305,7 +305,7 @@ export class Hud {
       const parts = [];
       if (e.sprint && e.speedNow > 1) parts.push(`sprinting ×${e.inSub ? 3 : 2}`);
       const press = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300);
-      if (press > 1.05) parts.push(`pressure ×${press.toFixed(1)}`);
+      if (press > 1.05) parts.push(press >= 100 ? 'pressure ×100+' : `pressure ×${press.toFixed(press < 10 ? 1 : 0)}`); // past x100 the number means nothing (it grows to millions in the abyss)
       if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.fillText(parts.join(' · '), rx0, ly); ly += 15 * s; }
     }
     let yy = ly + 8 * s;

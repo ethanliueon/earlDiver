@@ -52,11 +52,13 @@ const MAIN_I = Object.fromEntries(MAIN.map((m, i) => [m.id, i]));
 const ALIAS = { swim: 'firstfish', observe: 'firstfish', net: 'firstfish' }; // (4.3.4) learned('net'): the first-fish step
 // (4.3.4) the first-fish step, part by part: 0 swim down to the fish, 1 observe it, 2 catch it, 3 back to the surface, 4 done
 export const FIRST_FISH = ['Swim down to the fish', 'Observe it', 'Catch it', 'Swim back up to the surface'];
+// (4.18.6) the same parts in plain words for a diver who skipped the tutorial (there is no orange fish then)
+export const FIRST_FISH_PLAIN = ['Swim down', 'Observe a fish (F)', 'Catch a fish', 'Back up to the surface'];
 export function firstFishPart(P) { const S = Q(P), sn = S.seen; if (MAIN[S.main] && MAIN[S.main].id !== 'firstfish') return 4; if (S.mainProg >= 1) return 4; return sn.ff_catch ? 3 : sn.ff_obs ? 2 : sn.ff_reach ? 1 : 0; }
 // the line on the HUD for the step the Log is on (for the first fish: which part, and how far along)
 export function stepLabel(P) {
   const S = Q(P), m = MAIN[S.main]; if (!m || !m.on) return '';
-  if (m.id === 'firstfish') { const k = firstFishPart(P); return k >= 4 ? '✓ ' + m.text : `${m.text} (${k + 1}/4): ${FIRST_FISH[k].toLowerCase()}`; }
+  if (m.id === 'firstfish') { const k = firstFishPart(P); return k >= 4 ? '✓ ' + m.text : `${m.text} (${k + 1}/4): ${(P.tut === 'on' ? FIRST_FISH : FIRST_FISH_PLAIN)[k].toLowerCase()}`; }
   return (S.mainProg >= m.need ? '✓ ' : '') + m.text + (m.need > 1 && S.mainProg < m.need ? `  (${S.mainProg}/${m.need})` : '');
 }
 // (4.0.6) has the Log taught this yet? (the step done, or the Log past it)

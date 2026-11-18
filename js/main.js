@@ -58,7 +58,7 @@ function airOver(g) {
   let txt = '';
   if (g.mode === 'play' && ui.anyOpen() && !g.aboard) {
     const subAir = e.inSub && sub && sub.o2Max ? sub.o2 / sub.o2Max : 1, own = e.o2Max ? e.o2 / e.o2Max : 1;
-    if (g.noAir) txt = 'Out of air — surface!';
+    if (g.noAir) txt = 'Out of air: surface!';
     else if (e.inSub && subAir <= 0.001) txt = own < 0.5 ? `Cabin out of air · your tank: ${Math.ceil(e.o2)} s` : 'Cabin out of air: breathing from your tank';
     else if (e.inSub && subAir < 0.25) txt = `Sub air low: ${Math.round(subAir * 100)} %`;
     else if (!e.inSub && own < 0.35) txt = `${Math.ceil(e.o2)} s of air left`;
@@ -114,7 +114,7 @@ function applySuit(e, P) {
 // the sub's rating, air and engine come from its upgrades
 function applySub(sub, P) {
   sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics)
-  sub.o2V = SUB_AIR[lv(P, 'depth')]; // the cabin air comes with the submersible ((claude-polish) this sat inside the comment above: every hull had the first one's two minutes)
+  sub.o2V = SUB_AIR[lv(P, 'depth')] * ((P.addons || {}).airBank ? 1.5 : 1); // (the spare air bank adds half again) the cabin air comes with the submersible ((claude-polish) this sat inside the comment above: every hull had the first one's two minutes)
   sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.13.0) the engine alone sets her speed: 50 steps to 3x
   sub.level = lv(P, 'depth');
 }
@@ -875,6 +875,7 @@ function buy(kind) {
     hud.toast('Pressure canisters fitted', 'big');
   } else if (SUB_ADDONS[kind] && !(P.addons || {})[kind] && spend(P, SUB_ADDONS[kind].price)) {
     P.addons = Object.assign({}, P.addons, { [kind]: true }); g.addons = P.addons; ok = true;
+    if (kind === 'airBank') { const was = g.sub.o2Max; applySub(g.sub, P); g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + Math.max(0, g.sub.o2Max - was)); } // the new bottles come full
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
   } else if (SUPPLIES[kind] && (g.items[kind] || 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) {
     g.items[kind] = g.items[kind] || 0;
@@ -1513,7 +1514,7 @@ function interact(t, exitSub) {
       g.journal.set(t.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() });
       questEvent(profile, 'observe'); // (4.0.6)
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
-      hud.toast(`${t.sp.name} — ${t.sp.sci}`, 'note');
+      hud.toast(`${t.sp.name} · ${t.sp.sci}`, 'note');
       audio.ready && audio.note();
       ui.journalDirty = true;
     } else if (!e.inSub && (QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && firstFishPart(profile) <= 1) {
@@ -1527,7 +1528,14 @@ function leaveSub() {
   const e = g.earl, sub = g.sub;
   if (g.lesson) { hud.toast('Finish the lesson first', 'warn'); return; } // (4.12.2) a lesson keeps him in the sub
   e.inSub = false;
-  e.x = sub.x - sub.facing * 1.5; e.y = Math.max(0.4, sub.y + 2.6); e.vx = 0; e.vy = 0;
+  // (4.18.3) out through the hatch into open water: behind her as before, but if that is inside the seabed or a
+  // rock (backed against a cliff, sitting on a slope) another side of the hull. Before, the collision pushed him
+  // out onto the floor above, which against a cliff could throw him 150 m up in one frame.
+  const W = g.world, open = (x, y) => y > 0.35 && W.floorAt(x) > y + 0.6 && !W.rockAt(x, y, 0.6);
+  const tries = [[-1.5, 2.6], [1.5, 2.6], [-2.5, 0], [2.5, 0], [0, -2.2], [-1.5, -1.8], [1.5, -1.8], [0, 3.4]];
+  let ex = sub.x - sub.facing * 1.5, ey = Math.max(0.4, sub.y + 2.6);
+  for (const [dx, dy] of tries) { const x = sub.x + dx * sub.facing, y = Math.max(0.4, sub.y + dy); if (open(x, y)) { ex = x; ey = y; break; } }
+  e.x = ex; e.y = ey; e.vx = 0; e.vy = 0;
   // (2.5.0: leaving the sub no longer puts it in her cradle: it docks when the Margaret gets under way)
   if (e.y > (e.pressStart || 300)) { hud.toast('Outside, the pressure is immense.', 'warn'); g.pressWarned = true; } // (3.0.0) back; (3.0.17) from the suit's own limit
 
@@ -1998,8 +2006,8 @@ function update(dt) {
     // the way home: the autopilot steers; anything that needs a pilot hands her back
     if (g.homeRun) {
       const steer = false; // steering no longer takes over: only C does
-      const why = g.subHit ? 'Something hit the hull — autopilot off' : g.threat ? 'Something is coming — autopilot off'
-        : (g.fx.dread > 0.05 || (ent.marked && (ent.dist ?? 999) < 220)) ? 'Something is near — autopilot off' : null;
+      const why = g.subHit ? 'Something hit the hull: autopilot off' : g.threat ? 'Something is coming: autopilot off'
+        : (g.fx.dread > 0.05 || (ent.marked && (ent.dist ?? 999) < 220)) ? 'Something is near: autopilot off' : null;
       if (why) { g.homeRun = false; ap.cancel(); hud.toast(why, steer ? '' : 'warn'); }
       else {
         const r2 = ap.update(g, dt, 1);
@@ -2161,7 +2169,7 @@ function update(dt) {
       g.capPrompt = at ? `Space  ${at.name}` : null;
       g.catchTarget = at ? { c: at.c, x: at.x, y: at.y, len: at.len, col: rarityOf(at.sp).col } : null;
       g.capRarity = at ? rarityOf(at.sp) : null;
-    } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw — in the green' : null;
+    } else if (e.inSub) g.capPrompt = g.armGame && g.armGame.phase === 'grip' ? 'Space  Close the claw in the green' : null;
     else if (g.toolSel === 'trap') {
       const fl = g.world.floorAt(e.x);
       const why = canSetHere(g);
@@ -2326,7 +2334,7 @@ function update(dt) {
     g.diverDrain = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
     g.diverDrain *= e.o2Mul;
     g.subDrain = subDrainMult(g.sub.y, g.sub.rated) * (mv.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(g.sub);
-    if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical — surface', 'warn'); }
+    if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical: surface', 'warn'); }
     if (e.atSurface) g.lowO2Warned = false;
 
     // lure physics

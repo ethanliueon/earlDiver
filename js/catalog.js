@@ -135,6 +135,15 @@ export class Catalog {
       let pick = this.cfg.newIn.map((k) => this.find(k)).filter((q) => q && !q.e.owned).slice(0, 3);
       if (!pick.length) pick = ITEM_CATS.flatMap((c) => this.entries(c)).filter((e) => !e.owned).sort((a2, b2) => b2.price - a2.price).slice(0, 3).map((e) => ({ e }));
       if (pick.length) html += `<h4>${this.id === 'dave' ? 'Just in' : this.id === 'station' ? 'Recently released' : 'New in'}</h4><div class="cat-grid">${pick.map((q) => this.card(q.e)).join('')}</div>`;
+      // (4.18.1) for each thing he has on, the cheapest step up this shop sells (by what matters most for it: a
+      // net's fish size, the air in a tank, a bag's room, fins' speed, the depth a suit holds out to)
+      const KEY = { net: 0, tank: 0, bag: 0, fins: 0, suit: 2 }, shown = new Set(pick.map((q) => q.e.key));
+      const ups = Object.entries(KEY).map(([cat, i]) => {
+        const M = MEASURES[cat], cur = wornItem(P, cat); if (!M || !cur) return null;
+        const better = this.entries(cat).filter((e) => !e.owned && !shown.has(e.key) && e.it && M[i][2](e.it) > M[i][2](cur));
+        return better.sort((a2, b2) => a2.price - b2.price)[0] || null;
+      }).filter(Boolean).sort((a2, b2) => a2.price - b2.price).slice(0, 3);
+      if (ups.length) html += `<h4>A step up from what you have on</h4><div class="cat-grid">${ups.map((e) => this.card(e)).join('')}</div>`;
     } else if (this.page === 'chest') {
       html += `<h2>${this.cfg.chestTitle}</h2><p class="cat-lede">${this.cfg.chestLede}</p>`;
       html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)} · not enough cash` : `Buy and open · ${money(c.price, false)}`}</button></div></div>`).join('');

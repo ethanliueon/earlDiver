@@ -9,8 +9,10 @@ import os, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ver = re.search(r"VERSION = '([^']+)'", open(os.path.join(ROOT, 'js', 'version.js')).read()).group(1)
-mods = sorted(f for f in os.listdir(os.path.join(ROOT, 'js')) if f.endswith('.js'))
-lines = ',\n'.join(f'    "./js/{m}": "./js/{m}?v={ver}"' for m in mods)
+# every module in js/ and data/ (the species lists change between versions too: 4.19.3)
+mods = [f'js/{f}' for f in sorted(os.listdir(os.path.join(ROOT, 'js'))) if f.endswith('.js')] + \
+       [f'data/{f}' for f in sorted(os.listdir(os.path.join(ROOT, 'data'))) if f.endswith('.js')]
+lines = ',\n'.join(f'    "./{m}": "./{m}?v={ver}"' for m in mods)
 block = f'<!-- stamp:start (tools/stamp.py) -->\n  <script type="importmap">\n  {{ "imports": {{\n{lines}\n  }} }}\n  </script>\n  <script type="module" src="js/main.js?v={ver}"></script>\n  <!-- stamp:end -->'
 p = os.path.join(ROOT, 'index.html')
 html = open(p).read()

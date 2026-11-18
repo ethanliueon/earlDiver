@@ -133,7 +133,7 @@ export function useTool(g) {
   if (e.inSub) return 'Not from inside the submersible';
   if (g.capture) return null; // already mid-swing
   if ((g.toolCool || 0) > 0) return null;
-  if (g.bag.length >= bagSlots(g)) return 'Bag full — get to the sub or the boat';
+  if (g.bag.length >= bagSlots(g)) return 'Bag full: get to the sub or the boat';
   const { kind, def, tier } = activeTool(g);
   const lock = findCatch(g);
   g.capture = { kind, def, tier, t: 0, dur: def.time, resolveAt: kind === 'net' ? 0.35 : 0.12, done: false, lock: lock && lock.ok ? lock : null };
