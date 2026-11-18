@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="56" viewBox="0 0 64 56">
+  <!-- The tile of the tool in hand: the well ringed with a painted off-white line, as on a selector panel. -->
+  <rect x="2.5" y="4" width="59" height="50" rx="6" fill="#000" opacity="0.42"/>
+  <rect x="2" y="2" width="60" height="50" rx="6" fill="#1a1d1f" stroke="#020303" stroke-width="1"/>
+  <path d="M8 3.2 H56" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.2" stroke-linecap="round"/>
+  <rect x="6" y="6" width="52" height="42" rx="3.5" fill="#101314"/>
+  <rect x="5" y="5" width="54" height="44" rx="4" fill="none" stroke="#ece6d6" stroke-width="1.6"/>
+</svg>

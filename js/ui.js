@@ -312,7 +312,18 @@ export class UI {
     }
     const wrap = $('quests-hud'); wrap.hidden = !show;
     const P0 = this.h.getProfile && this.h.getProfile(), S0 = P0 && P0.quests, st = S0 && QUEST_MAIN[S0.main];
-    wrap.querySelector('.qh-step').textContent = st && st.on ? stepLabel(P0) : ''; // (4.3.4) the first fish shows which part it is on
+    // (ui-studio) the line in two parts: the quest's name and progress small above, what to do now below
+    const lab = st && st.on ? stepLabel(P0) : '', stepEl = wrap.querySelector('.qh-step');
+    if (stepEl.dataset.lab !== lab) {
+      stepEl.dataset.lab = lab;
+      const done = lab.startsWith('✓ '), body = lab.replace(/^✓ /, '');
+      let kick = "THE MARGARET'S LOG", line = body, m;
+      if ((m = body.match(/^(.*?) \((\d+)\/(\d+)\): (.*)$/))) { kick = `${m[1].toUpperCase()}  ·  ${m[2]} / ${m[3]}`; line = m[4].charAt(0).toUpperCase() + m[4].slice(1).replace(/\(([a-z])\)/g, (x, k) => `(${k.toUpperCase()})`); }
+      else if ((m = body.match(/^(.*?)\s+\((\d+)\/(\d+)\)$/))) { kick = `THE MARGARET'S LOG  ·  ${m[2]} / ${m[3]}`; line = m[1]; }
+      if (done) kick = 'DONE  ·  OPEN QUESTS TO CLAIM';
+      stepEl.innerHTML = lab ? `<b class="qh-k${done ? ' done' : ''}"></b><span class="qh-l"></span>` : '';
+      if (lab) { stepEl.querySelector('.qh-k').textContent = kick; stepEl.querySelector('.qh-l').textContent = line; }
+    }
     const n = this.h.questsReady ? this.h.questsReady() : 0, dot = b.querySelector('i');
     dot.hidden = !n; if (n) dot.textContent = n;
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }

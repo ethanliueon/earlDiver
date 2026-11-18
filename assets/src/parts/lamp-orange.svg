@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+  <!-- An indicator lamp in a black bezel: orange. -->
+  <defs><radialGradient id="g" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/><stop offset="0.35" stop-color="#ec6a2c"/><stop offset="1" stop-color="#ec6a2c" stop-opacity="1"/></radialGradient>
+  <radialGradient id="h" cx="0.5" cy="0.5" r="0.5"><stop offset="0.3" stop-color="#ec6a2c" stop-opacity="0.45"/><stop offset="1" stop-color="#ec6a2c" stop-opacity="0"/></radialGradient></defs>
+  <circle cx="10" cy="10" r="10" fill="url(#h)"/>
+  <circle cx="10" cy="10" r="5.2" fill="#050606"/>
+  <circle cx="10" cy="10" r="3.7" fill="url(#g)"/>
+</svg>

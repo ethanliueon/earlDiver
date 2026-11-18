@@ -3,6 +3,7 @@
 // work-order tags on string, chalk on the bulkhead, a toggle switch, a brass tag. Four materials, each with one
 // job: paint names places, brass is what you operate, paper and chalk tell you things, red is only for alarms.
 import { clamp, lerp, TAU } from './util.js';
+import { nine, NUM as CNUM, INK as CINK } from './console.js';
 
 const STENCIL = '"Allerta Stencil", "IBM Plex Mono", monospace';
 const HAND = '"Caveat", "Segoe Print", cursive';
@@ -362,24 +363,14 @@ const KEYS = /^(?:(Hold|Tap)\s+)?(Space|Shift|Enter|Esc|Tab|F\d{1,2}|[A-Z0-9])\s
 export function parsePrompt(text) {
   return String(text).split(/\s+·\s+/).map((part) => { const m = part.trim().match(KEYS); return m ? { hold: m[1] || '', key: m[2], label: m[3] } : { hold: '', key: '', label: part.trim() }; });
 }
-// a key-cap, brass, the key engraved on its top: at (x, y) its top-left, size s; returns its width
+// a key-cap: (ui-studio) the console's rubber key (js/console.js), its letter printed on it; at (x, y) its top-left,
+// size s; returns its width (the same widths as before, so every prompt keeps its layout)
 export function keyCap(ctx, x, y, key, s = 1) {
-  const h = 26 * s, w = key.length > 1 ? Math.max(h * 1.9, (key.length * 8 + 18) * s) : h, d = 3.5 * s, r = 4.5 * s;
+  const h = 26 * s, w = key.length > 1 ? Math.max(h * 1.9, (key.length * 8 + 18) * s) : h;
   ctx.save();
-  // its side (the depth of the key), then the top face
-  ctx.fillStyle = '#4a3a18'; ctx.beginPath(); ctx.roundRect(x, y + d, w, h, r); ctx.fill();
-  const tg = ctx.createLinearGradient(0, y, 0, y + h); tg.addColorStop(0, '#e4d29e'); tg.addColorStop(0.55, '#b89c5c'); tg.addColorStop(1, '#94793e');
-  ctx.fillStyle = tg; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
-  ctx.strokeStyle = 'rgba(30,20,4,0.9)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h + d - 1, r); ctx.stroke();
-  ctx.strokeStyle = 'rgba(255,244,210,0.6)'; ctx.beginPath(); ctx.moveTo(x + r, y + 1.5); ctx.lineTo(x + w - r, y + 1.5); ctx.stroke();
-  // the dished top: a soft hollow
-  const dg = ctx.createRadialGradient(x + w / 2, y + h * 0.42, 1, x + w / 2, y + h * 0.42, Math.max(w, h) * 0.6); dg.addColorStop(0, 'rgba(255,240,200,0.18)'); dg.addColorStop(1, 'rgba(60,40,10,0.12)');
-  ctx.fillStyle = dg; ctx.beginPath(); ctx.roundRect(x + 2.5 * s, y + 2.5 * s, w - 5 * s, h - 5 * s, r * 0.8); ctx.fill();
-  // the engraving
-  ctx.font = `600 ${(key.length > 1 ? 10.5 : 14) * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const lab = key.length > 1 ? key.toUpperCase() : key;
-  ctx.fillStyle = 'rgba(255,244,210,0.55)'; ctx.fillText(lab, x + w / 2, y + h / 2 + 1.6 * s);
-  ctx.fillStyle = '#2a1e06'; ctx.fillText(lab, x + w / 2, y + h / 2 + 0.6 * s);
+  if (!nine(ctx, 'key', x, y, w, h, 8, s)) { ctx.fillStyle = '#2b2f32'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 4.5 * s); ctx.fill(); }
+  ctx.font = `600 ${(key.length > 1 ? 12 : 15) * s}px ${CNUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = CINK; ctx.fillText(key.length > 1 ? key.toUpperCase() : key, x + w / 2, y + h * 0.45);
   ctx.restore();
   return w;
 }
@@ -396,7 +387,7 @@ export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19
   ctx.save(); ctx.textBaseline = 'middle';
   const measure = (p) => {
     let w = 0;
-    if (p.hold) { ctx.font = `600 ${9.5 * s}px ${MONO}`; w += ctx.measureText(p.hold.toUpperCase()).width + 6 * s; }
+    if (p.hold) { ctx.font = `600 ${11 * s}px ${CNUM}`; w += ctx.measureText(p.hold.toUpperCase()).width + 6 * s; }
     if (p.key) { const kw = p.key.length > 1 ? Math.max(26 * s * 1.9, (p.key.length * 8 + 18) * s) : 26 * s; w += kw + gapK; }
     ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; w += ctx.measureText(p.label).width;
     return w;
@@ -407,7 +398,7 @@ export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19
   let x = cx - total / 2;
   parts.forEach((p, i) => {
     if (i) { ctx.fillStyle = 'rgba(236,230,210,0.45)'; ctx.beginPath(); ctx.arc(x - gapP / 2, y, 2 * s, 0, TAU); ctx.fill(); }
-    if (p.hold) { ctx.font = `600 ${9.5 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(236,230,210,0.75)'; ctx.fillText(p.hold.toUpperCase(), x, y); x += ctx.measureText(p.hold.toUpperCase()).width + 6 * s; }
+    if (p.hold) { ctx.font = `600 ${11 * s}px ${CNUM}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(236,230,210,0.75)'; ctx.fillText(p.hold.toUpperCase(), x, y); x += ctx.measureText(p.hold.toUpperCase()).width + 6 * s; }
     if (p.key) { x += keyCap(ctx, x, y - 15 * s, p.key, s) + gapK; }
     ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'left';
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1;

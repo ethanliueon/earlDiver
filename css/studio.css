@@ -118,3 +118,30 @@
 #msgs .msg-t { font: 400 25px/1.2 var(--fell) !important; letter-spacing: 0 !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 14px rgba(0, 0, 0, 0.7) !important; }
 #msgs .msg-n { font: italic 15px var(--text) !important; }
 
+
+/* =====================================================================================================
+   (ui-studio, style B) the console family: matte black enamel, off-white print, rubber keys, lamps.
+   The parts are PNGs drawn as vector art (assets/src/parts -> assets/ui/parts, 3x); see js/console.js.
+   ===================================================================================================== */
+:root { --c-ink: #ece6d6; --c-dim: rgba(236, 230, 214, 0.58); --c-orange: #ec6a2c; --c-red: #d8392b; --c-green: #7fcf74;
+  --c-num: "Barlow Condensed", "Arial Narrow", sans-serif; --c-text: "EB Garamond", Georgia, serif; }
+/* a rubber key anywhere in the page (prompts written as HTML, the tutorial's lines) */
+kbd.keycap, .c-key { display: inline-grid; place-items: center; min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 5px 2px;
+  border: 7px solid transparent; border-image: url("../assets/ui/parts/key.png") 24 fill / 7px stretch; background: none !important; box-shadow: none !important;
+  font: 600 14px/1 var(--c-num) !important; color: var(--c-ink) !important; text-shadow: none !important; vertical-align: middle; }
+kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing: 0.06em; }
+
+/* the quest line, top left: an orange rule, the quest's name small above, the step in the serif below */
+#quests-hud { top: 70px !important; gap: 12px !important; align-items: stretch !important; }
+#quests-btn { width: 34px !important; height: 34px !important; padding: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; align-self: center; }
+#quests-btn .qb-key { display: grid; place-items: center; width: 100%; height: 100%; box-sizing: border-box; padding-bottom: 3px;
+  border: 9px solid transparent; border-image: url("../assets/ui/parts/key.png") 24 fill / 9px stretch; font: 600 17px/1 var(--c-num); color: var(--c-ink); }
+#quests-btn:hover .qb-key { filter: brightness(1.25); }
+#quests-btn i { top: -6px !important; right: -7px !important; min-width: 17px !important; height: 17px !important; border-radius: 9px !important; background: var(--c-orange) !important;
+  color: #1a0b03 !important; font: 600 12px/17px var(--c-num) !important; box-shadow: 0 0 6px rgba(236, 106, 44, 0.7) !important; }
+#quests-hud .qh-step { display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 1px 0 2px 12px; border-left: 3px solid var(--c-orange);
+  max-width: min(46vw, 460px) !important; font: 19px/1.2 var(--c-text) !important; color: var(--c-ink) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.45) !important; }
+#quests-hud .qh-step:empty { display: none; }
+#quests-hud .qh-k { font: 600 12px/1.2 var(--c-num); letter-spacing: 0.12em; color: var(--c-dim); }
+#quests-hud .qh-k.done { color: var(--c-green); }

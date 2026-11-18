@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="32" viewBox="0 0 40 32">
+  <!-- A display window sunk into the plate (nine-slice: 8 px corners): near-black glass, its top edge in the
+       plate's shadow, a thin pale frame, a faint reflection along the bottom. -->
+  <rect x="1" y="1" width="38" height="30" rx="3.5" fill="#040505" stroke="#ece6d6" stroke-opacity="0.32" stroke-width="1"/>
+  <rect x="2" y="2" width="36" height="5" rx="2" fill="#000" opacity="0.65"/>
+  <path d="M6 28.6 H34" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1"/>
+</svg>
