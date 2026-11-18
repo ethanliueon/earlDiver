@@ -364,19 +364,18 @@ export function parsePrompt(text) {
 }
 // a key-cap, brass, the key engraved on its top: at (x, y) its top-left, size s; returns its width
 export function keyCap(ctx, x, y, key, s = 1) {
-  // (olive) a key in the Margaret's cream deck paint, a dark letter: the same "press me" as every button
-  // (docs/ART_DIRECTION.md); the letter centred by measuring it, not by the line box
-  const h = 26 * s, w = key.length > 1 ? Math.max(h * 1.9, (key.length * 8 + 18) * s) : h, d = 3 * s, r = 4 * s;
+  // (olive-studio) a key as a painted label, not a button: a flat tab of dark olive enamel with a thin cream line
+  // and a cream letter, no bevel and no cast side (raised caps read as things to click)
+  const h = 24 * s, w = key.length > 1 ? Math.max(h * 1.9, (key.length * 8 + 16) * s) : h, r = 3.5 * s, yo = 1 * s;
   ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.roundRect(x, y + d, w, h, r); ctx.fill();            // its side, in shadow
-  ctx.fillStyle = '#d8d0b6'; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();                        // the painted face
-  ctx.fillStyle = 'rgba(255,252,236,0.35)'; ctx.fillRect(x + r, y + 1, w - 2 * r, 1.2 * s);                       // light on the top edge
-  ctx.fillStyle = 'rgba(60,56,40,0.18)'; ctx.fillRect(x + 2 * s, y + h - 4 * s, w - 4 * s, 2 * s);                // grime low on the face
-  ctx.strokeStyle = 'rgba(20,18,12,0.85)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h + d - 1, r); ctx.stroke();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 3 * s;
+  ctx.fillStyle = 'rgba(38,45,31,0.92)'; ctx.beginPath(); ctx.roundRect(x, y + yo, w, h, r); ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(226,218,190,0.72)'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.roundRect(x + 2.2 * s, y + yo + 2.2 * s, w - 4.4 * s, h - 4.4 * s, r * 0.6); ctx.stroke();
   const word = key.length > 1 ? key.charAt(0).toUpperCase() + key.slice(1).toLowerCase() : key;
-  ctx.font = `600 ${(key.length > 1 ? 12 : 14.5) * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `600 ${(key.length > 1 ? 11 : 13) * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
   const m = ctx.measureText(word);
-  ctx.fillStyle = '#26241a'; ctx.fillText(word, x + w / 2, y + h / 2 + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
+  ctx.fillStyle = '#e6dec4'; ctx.fillText(word, x + w / 2, y + yo + h / 2 + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
   ctx.restore();
   return w;
 }

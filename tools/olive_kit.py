@@ -334,6 +334,104 @@ def button(kind='olive', W=120, H=48, pressed=False, seed=61):
     d = ImageDraw.Draw(base); d.rounded_rectangle([pad, pad, w - pad - 1, h - pad - 1], radius=4 * K, outline=(14, 16, 12, 255), width=K)
     return base
 
+
+# ---------------------------------------------------------------- (olive-studio) the instruments in the corner of the play screen
+def plate(W, H, seed, rivets=True, wear=0.55, olive=(78, 90, 64), radius=5):
+    """a small raised plate of the locker's painted steel: bevel, a cast shadow, a rivet in each corner"""
+    w, h = W * K, H * K; pad = 5 * K
+    col, _ = painted_steel(w - 2 * pad, h - 2 * pad, seed, olive=olive, wear=wear, light=(0.2, -0.2))
+    iw, ih = w - 2 * pad, h - 2 * pad
+    yy, xx = np.mgrid[0:ih, 0:iw].astype(np.float32); e = 3 * K
+    col *= (1 + 0.24 * np.maximum(np.clip(1 - yy / e, 0, 1), np.clip(1 - xx / e, 0, 1) * 0.6))[..., None]
+    col *= (1 - 0.34 * np.maximum(np.clip(1 - (ih - 1 - yy) / e, 0, 1), np.clip(1 - (iw - 1 - xx) / e, 0, 1) * 0.6))[..., None]
+    face = to_img(col).convert('RGBA')
+    m = Image.new('L', (iw, ih), 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, iw - 1, ih - 1], radius=radius * K, fill=255); face.putalpha(m)
+    out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    sh = Image.new('L', (w, h), 0); ImageDraw.Draw(sh).rounded_rectangle([pad, pad + 3 * K, w - pad, h - pad + 3 * K], radius=radius * K, fill=190)
+    shadow = Image.new('RGBA', (w, h), (0, 0, 0, 255)); shadow.putalpha(sh.filter(ImageFilter.GaussianBlur(3 * K)))
+    out.alpha_composite(shadow); out.alpha_composite(face, (pad, pad))
+    d = ImageDraw.Draw(out); d.rounded_rectangle([pad, pad, w - pad - 1, h - pad - 1], radius=radius * K, outline=(12, 14, 10, 255), width=K)
+    if rivets:
+        R = random.Random(seed + 7); r = 2.6 * K; m2 = pad + 8 * K
+        for (x, y) in ((m2, m2), (w - m2, m2), (m2, h - m2), (w - m2, h - m2)): rivet(out, x, y, r, R, 0.0)
+    return out
+
+
+def recess(img, box, radius=4, depth=1.0, glass=None, seed=91):
+    """press a window into a plate: a dark recess with a shadowed upper lip and light on the lower one; glass
+    (an rgb) gives it a dark tinted face with a soft reflection"""
+    x0, y0, x1, y1 = [int(v) for v in box]; w, h = x1 - x0, y1 - y0
+    rng = np.random.default_rng(seed); yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    base = np.array(glass or (22, 26, 18), np.float32)
+    col = base[None, None] * (0.85 + 0.25 * vnoise(w, h, 24 * K, rng, 3)[..., None])
+    col *= (1 - 0.65 * depth * np.maximum(np.clip(1 - yy / (7 * K), 0, 1) ** 1.5, np.clip(1 - xx / (6 * K), 0, 1) ** 1.5 * 0.6))[..., None]
+    col = mix(col, (150, 160, 130), np.clip(1 - (h - 1 - yy) / (2 * K), 0, 1) * 0.3)
+    if glass:  # a soft reflection across the glass, upper left
+        refl = np.exp(-(((xx / w) - 0.25) ** 2) / 0.05 - (((yy / h) - 0.2) ** 2) / 0.04) * 0.12
+        col = col + 255 * refl[..., None]
+    face = to_img(col).convert('RGBA'); m = Image.new('L', (w, h), 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, w - 1, h - 1], radius=radius * K, fill=255); face.putalpha(m)
+    img.alpha_composite(face, (x0, y0))
+    ImageDraw.Draw(img).rounded_rectangle([x0, y0, x1 - 1, y1 - 1], radius=radius * K, outline=(8, 10, 6, 255), width=K)
+    return img
+
+
+def hud_depth():
+    """the depth gauge: a riveted plate with a deep dark window for large figures (drawn live)"""
+    W, H = 200, 84; img = plate(W, H, 101)
+    return recess(img, (16 * K, 15 * K, (W - 16) * K, (H - 17) * K), radius=4, glass=(14, 20, 20), seed=102)
+
+
+def hud_bar():
+    """a gauge housing for a level (air, hull): a long plate with a slot for the reading (nine-slice across)"""
+    W, H = 200, 30; img = plate(W, H, 111, rivets=False, wear=0.35, radius=4)
+    return recess(img, (62 * K, 11 * K, (W - 12) * K, (H - 12) * K), radius=2, seed=112)  # the name is painted on the plate to the slot's left
+
+
+def hud_scope(S=96):
+    """the sonar: a dark glass face in a riveted ring of painted steel; faint range rings and a glare (the sweep is live)"""
+    w = h = S * K; c = w / 2; R0 = c - 4 * K
+    out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    col, _ = painted_steel(w, h, 121, wear=0.5, light=(0.2, -0.2)); ring = to_img(col).convert('RGBA')
+    m = Image.new('L', (w, h), 0); dm = ImageDraw.Draw(m); dm.ellipse([4 * K, 4 * K, w - 4 * K, h - 4 * K], fill=255); dm.ellipse([14 * K, 14 * K, w - 14 * K, h - 14 * K], fill=0)
+    ring.putalpha(m)
+    sh = Image.new('L', (w, h), 0); ImageDraw.Draw(sh).ellipse([5 * K, 8 * K, w - 3 * K, h], fill=180)
+    shadow = Image.new('RGBA', (w, h), (0, 0, 0, 255)); shadow.putalpha(sh.filter(ImageFilter.GaussianBlur(3 * K)))
+    out.alpha_composite(shadow)
+    # the glass: dark sea-green, deeper at the rim
+    rng = np.random.default_rng(122); yy, xx = np.mgrid[0:h, 0:w].astype(np.float32); rr = np.hypot(xx - c, yy - c) / (c - 14 * K)
+    g = np.array((10, 24, 22), np.float32)[None, None] * (1.15 - 0.5 * np.clip(rr, 0, 1) ** 2)[..., None] * (0.9 + 0.2 * vnoise(w, h, 20 * K, rng, 3)[..., None])
+    glass = to_img(g).convert('RGBA'); gm = Image.new('L', (w, h), 0); ImageDraw.Draw(gm).ellipse([14 * K, 14 * K, w - 14 * K, h - 14 * K], fill=255); glass.putalpha(gm)
+    out.alpha_composite(glass)
+    lay = Image.new('RGBA', (w, h), (0, 0, 0, 0)); dl = ImageDraw.Draw(lay)  # (faint lines on their own layer: drawing on RGBA replaces, it does not blend)
+    for f in (0.33, 0.66): rr2 = (c - 14 * K) * f; dl.ellipse([c - rr2, c - rr2, c + rr2, c + rr2], outline=(130, 186, 160, 34), width=K)
+    dl.line([(c, 16 * K), (c, h - 16 * K)], fill=(130, 186, 160, 20), width=K); dl.line([(16 * K, c), (w - 16 * K, c)], fill=(130, 186, 160, 20), width=K)
+    out.alpha_composite(lay)
+    out.alpha_composite(ring)
+    d = ImageDraw.Draw(out, 'RGBA')
+    # the ring's bevel and its screws
+    d.ellipse([4 * K, 4 * K, w - 4 * K, h - 4 * K], outline=(10, 12, 8, 255), width=K)
+    d.ellipse([14 * K, 14 * K, w - 14 * K, h - 14 * K], outline=(6, 8, 6, 255), width=2 * K)
+    lay2 = Image.new('RGBA', (w, h), (0, 0, 0, 0)); ImageDraw.Draw(lay2).arc([6 * K, 6 * K, w - 6 * K, h - 6 * K], 200, 300, fill=(200, 210, 180, 60), width=K); out.alpha_composite(lay2)
+    R = random.Random(123)
+    for a in (45, 135, 225, 315):
+        x = c + math.cos(math.radians(a)) * (R0 - 5 * K); y = c + math.sin(math.radians(a)) * (R0 - 5 * K); rivet(out, x, y, 2.4 * K, R, 0.0)
+    # a glare on the glass
+    gl = Image.new('L', (w, h), 0); ImageDraw.Draw(gl).ellipse([24 * K, 20 * K, c, c - 6 * K], fill=46); gl = gl.filter(ImageFilter.GaussianBlur(6 * K))
+    glare = Image.new('RGBA', (w, h), (230, 240, 230, 255)); glare.putalpha(Image.fromarray(np.minimum(np.asarray(gl), np.asarray(gm))))
+    out.alpha_composite(glare)
+    return out
+
+
+def hud_slot(on=False):
+    """a tool's slot on the hotbar: a raised plate with a well pressed into it; the tool in hand ringed in cream paint"""
+    W, H = 92, 56; img = plate(W, H, 131 if not on else 133, rivets=False, wear=0.45, radius=5)
+    recess(img, (9 * K, 9 * K, (W - 9) * K, (H - 10) * K), radius=3, seed=132)
+    if on:
+        lay = Image.new('RGBA', img.size, (0, 0, 0, 0)); pad = 5 * K
+        ImageDraw.Draw(lay).rounded_rectangle([pad - K, pad - K, W * K - pad, H * K - pad], radius=6 * K, outline=(226, 218, 190, 235), width=2 * K); img.alpha_composite(lay)
+    return img
+
+
 def save(img, name):
     p = os.path.join(OUT, name); img.save(p, optimize=True)
     print(f'  {name:22s} {img.size[0]}x{img.size[1]}  {os.path.getsize(p) // 1024} KB')
@@ -348,3 +446,8 @@ if __name__ == '__main__':
     save(pegboard(), 'pegboard.png')
     save(button('cream'), 'btn-cream.png'); save(button('cream', pressed=True), 'btn-cream-down.png')
     save(button('olive', seed=63), 'btn-olive.png'); save(button('olive', pressed=True, seed=63), 'btn-olive-down.png')
+    save(hud_depth(), 'hud-depth.png')
+    save(hud_bar(), 'hud-bar.png')
+    save(hud_scope(), 'hud-scope.png')
+    save(hud_slot(), 'hud-slot.png'); save(hud_slot(True), 'hud-slot-on.png')
+    save(plate(150, 44, 141), 'hud-plate.png')

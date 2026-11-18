@@ -18,6 +18,21 @@ function well(ctx, x, y, w, h, b) {
   const S = 30, N = WELL.naturalWidth, M = N - 2 * S, xs = [x, x + b, x + w - b], ws = [b, w - 2 * b, b], ys = [y, y + b, y + h - b], hs = [b, h - 2 * b, b], sx = [0, S, N - S], sw = [S, M, S];
   for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (ws[i] > 0 && hs[j] > 0) ctx.drawImage(WELL, sx[i], sx[j], sw[i], sw[j], xs[i], ys[j], ws[i], hs[j]);
 }
+// (olive-studio) the painted instruments from tools/olive_kit.py (assets/ui/olive/hud-*.png), drawn at their own proportions
+const KIT = {};
+const kit = (name) => { let im = KIT[name]; if (!im) { im = KIT[name] = new Image(); im.src = `assets/ui/olive/${name}.png`; } return im.complete && im.naturalWidth ? im : null; };
+// a level in its painted housing: the plate (200 x 30 at 1x), its name painted on the left, the reading in the slot
+function gauge(ctx, x, y, w, frac, col, name, s, nameCol) {
+  const k = w / 200, h = 30 * k, im = kit('hud-bar');
+  if (im) ctx.drawImage(im, x, y, w, h);
+  const sx = x + 62 * k, sy = y + 11 * k, sw = 126 * k, sh = 7 * k, f = clamp(frac, 0, 1); // the slot painted in the plate (tools/olive_kit.py hud_bar)
+  if (f > 0) {
+    ctx.fillStyle = col; ctx.fillRect(sx + 1, sy + 1, Math.max(2, (sw - 2) * f), sh - 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(sx + 1, sy + 1, Math.max(2, (sw - 2) * f), Math.max(1, sh * 0.28));
+  }
+  dymo(ctx, name, x + 13 * k, y + h / 2 - 6.5 * s, s, { align: 'left', ink: nameCol });
+  return h;
+}
 const parsePromptKey = (t) => parsePrompt(t).some((p) => p.key);
 import { TITLES, LEGEND_OF } from './species.js';
 // (3.0.42) a Legendary's title in a message: never 'the the fangtooth', always 'the Fangtooth'
@@ -93,9 +108,7 @@ export class Hud {
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
       // (olive) a plate of the locker's painted steel with the kit's recess pressed into it
-      steelPlate(ctx, x, y, sw, sh, s); well(ctx, x + 4 * s, y + 4 * s, sw - 8 * s, sh - 8 * s, 6 * s);
-      // (olive) the tool in hand ringed in the deck's white paint, not gold
-      ctx.strokeStyle = on ? 'rgba(236,232,216,0.92)' : 'rgba(0,0,0,0.55)'; ctx.lineWidth = on ? 2 * s : 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, sw - 1, sh - 1, 5 * s); ctx.stroke();
+      { const im = kit(on ? 'hud-slot-on' : 'hud-slot'); if (im) ctx.drawImage(im, x, y, sw, sh); else { steelPlate(ctx, x, y, sw, sh, s); well(ctx, x + 4 * s, y + 4 * s, sw - 8 * s, sh - 8 * s, 6 * s); } }
       ctx.globalAlpha = e.inSub ? 0.35 : on ? 1 : 0.55;
       ctx.drawImage(icon(kind, tier), x + 6 * s, y + 4 * s, sw - 12 * s, sh - 12 * s);
       ctx.globalAlpha = 1;
@@ -291,36 +304,32 @@ export class Hud {
     // centred under both
     const pad = 26 * s;
     ctx.textBaseline = 'top'; ctx.textAlign = 'right';
-    const rx0 = W - pad, CW = 156 * s, cx0 = rx0 - CW, ccx = cx0 + CW / 2;
+    const rx0 = W - pad, CW = 184 * s, cx0 = rx0 - CW, ccx = cx0 + CW / 2;
     this.colX = ccx;
     if (!dying && !aboard) {
       const warnD = e.inSub ? g.sub.y / g.sub.rated > 0.9 : e.y > (e.pressStart || 300);
-      const ph = 58 * s, py = pad - 8 * s;
-      steelPlate(ctx, cx0, py, CW, ph, s);
-      // the window: a dark recess, its upper edge in shadow
-      const wx = cx0 + 9 * s, wy = py + 9 * s, ww = CW - 18 * s, wh = ph - 18 * s;
-      ctx.fillStyle = '#0d100c'; ctx.beginPath(); ctx.roundRect(wx, wy, ww, wh, 3 * s); ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(wx + 2 * s, wy, ww - 4 * s, 3 * s);
-      ctx.strokeStyle = 'rgba(255,255,240,0.1)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(wx + 3 * s, wy + wh - 0.5); ctx.lineTo(wx + ww - 3 * s, wy + wh - 0.5); ctx.stroke();
-      ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right';
-      ctx.font = `500 ${32 * s}px ${MONO}`; ctx.fillStyle = warnD ? '#e8a040' : '#efe8d2';
-      ctx.fillText(String(Math.round(Math.max(0, e.y))), wx + ww - 30 * s, wy + wh - 8 * s);
-      ctx.font = `500 ${17 * s}px ${MONO}`; ctx.fillStyle = 'rgba(239,232,210,0.6)'; ctx.fillText('m', wx + ww - 10 * s, wy + wh - 8 * s);
+      // (olive-studio) the depth gauge: the kit's riveted plate, the figures large in its deep window
+      const k = CW / 200, py = pad - 12 * s, im = kit('hud-depth');
+      if (im) ctx.drawImage(im, cx0, py, CW, 84 * k); else steelPlate(ctx, cx0, py, CW, 84 * k, s);
+      const wx = cx0 + 16 * k, wy = py + 15 * k, ww = CW - 32 * k, wh = 84 * k - 32 * k; // the window painted in the plate (hud_depth)
+      ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(239,232,210,0.25)'; ctx.shadowBlur = 8 * s;
+      ctx.font = `500 ${24 * s}px ${MONO}`; const mw = ctx.measureText('m').width;
+      ctx.fillStyle = 'rgba(239,232,210,0.6)'; ctx.fillText('m', wx + ww - 10 * k, wy + wh - 11 * k);
+      ctx.font = `500 ${50 * s}px ${MONO}`; ctx.fillStyle = warnD ? '#e8a040' : '#efe8d2';
+      ctx.fillText(String(Math.round(Math.max(0, e.y))), wx + ww - 10 * k - mw - 6 * s, wy + wh - 11 * k);
       ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
     }
     if (!aboard) {
     // ---------- air: its name on tape at the column's left edge, the tube to its right edge ----------
     const onTank = e.inSub && g.sub.o2 <= 0; // an empty cabin: the gauge shows his own tank
     const o2 = e.inSub && !onTank ? g.sub.o2 / g.sub.o2Max : e.o2 / e.o2Max;
-    const airName = g.noAir ? 'no air' : onTank ? 'cabin empty' : e.inSub ? 'cabin air' : 'air';
-    const bh = 11 * s, by = pad + (aboard ? 0 : 62 * s);
-    const tw = dymo(ctx, airName, cx0, -999, s, { align: 'left' }), bx = cx0 + tw + 6 * s, bw = rx0 - bx;
-    const oc = o2 > 0.25 ? [70, 160, 230] : o2 > 0.1 ? [230, 165, 55] : [225, 55, 45];
-    const pulse = o2 < 0.1 ? 0.6 + 0.4 * Math.sin(g.time * 10) : 1;
-    tubeGauge(ctx, bx, by, bw, bh, o2, s, { col: oc, alpha: pulse });
-    dymo(ctx, airName, cx0, by + bh / 2 - 6 * s, s, { align: 'left', tape: g.noAir ? (Math.sin(g.time * 9) > 0 ? '#8a1a10' : '#4a0c08') : onTank ? '#6a4a10' : '#1c1d1b' });
+    const airName = g.noAir ? 'no air' : onTank ? 'empty' : 'air'; // (olive-studio) short, to sit on its plate
+    const by = pad + 70 * s, pulse = o2 < 0.1 ? 0.55 + 0.45 * Math.sin(g.time * 10) : 1;
+    // (olive-studio) sea-glass blue for air: it sits with the water; amber and red only when it runs low
+    const aCol = g.noAir || o2 < 0.1 ? `rgba(226,84,64,${pulse.toFixed(3)})` : o2 < 0.25 || onTank ? '#d9a24c' : '#7fc2d8';
+    const bh = gauge(ctx, cx0, by, CW, o2, aCol, airName, s, g.noAir ? '#ec7a62' : onTank ? '#e8bc6a' : null);
     ctx.font = `500 ${11 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-    let ly = by + bh + 8 * s;
+    let ly = by + bh + 4 * s;
     ctx.font = `${11 * s}px ${MONO}`;
     // (olive) a status line under the instruments: words in Garamond italic, centred on the column, never wider than it
     const colW = rx0 - cx0;
@@ -355,17 +364,13 @@ export class Hud {
     // the sub: one line, only inside it
     if (e.inSub) {
       // (2.6.1) the hull as a small gauge under the air; a word only when something is wrong
-      const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1), hh = 7 * s, htw = dymo(ctx, 'hull', cx0, -999, s, { align: 'left' }), hx = cx0 + htw + 6 * s, hw = rx0 - hx; // (olive) on the column, as the air
-      tubeGauge(ctx, hx, yy, hw, hh, hi, s, { col: hi < 0.4 ? [224, 80, 58] : hi < 0.75 ? [232, 176, 64] : [120, 196, 160] });
-      dymo(ctx, 'hull', cx0, yy + hh / 2 - 6 * s, s, { align: 'left' });
+      const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1);
+      yy -= 6 * s; yy += gauge(ctx, cx0, yy, CW, hi, hi < 0.4 ? '#e2543f' : hi < 0.75 ? '#d9a24c' : '#a9c8a0', 'hull', s) + 2 * s;
       ctx.font = `${11 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-      yy += 16 * s;
       const warn = g.sub.failing != null ? 'the hull is failing' : r > 1 ? 'past the sub\'s rated depth' : r > 0.9 ? 'near the sub\'s rated depth' : '';
       if (warn) { note(warn, yy, r > 1 || g.sub.failing != null ? (Math.sin(g.time * 8) > 0 ? '#ff6a54' : '#b03a2c') : '#e8bc6a'); yy += 18 * s; }
-      // (3.0.0) and the plain line under it again: hull %, depth against the rating
-      note(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ' and leaking' : ''}, rated ${g.sub.rated.toLocaleString()} m`, yy,
-        r > 1 || hi < 0.5 ? (Math.sin(g.time * 8) > 0 ? '#ff6a54' : '#b03a2c') : r > 0.85 || hi < 0.99 ? '#e8bc6a' : 'rgba(196,220,200,0.8)');
-      yy += 18 * s;
+      // (olive-studio) a line only when the hull is hurt: the gauge says the rest
+      if (hi < 0.99) { note(`hull ${Math.round(hi * 100)}%, leaking`, yy, hi < 0.5 ? (Math.sin(g.time * 8) > 0 ? '#ff6a54' : '#b03a2c') : '#e8bc6a'); yy += 18 * s; }
     }
     // the sub on autopilot: where it is and how long it will be
     const ap = g.autopilot;
@@ -384,12 +389,11 @@ export class Hud {
       yy += 18 * s;
     }
     // sonar: small, always there
-    const rr = 38 * s, rcx = ccx, rcy = yy + rr;
+    const rr = 33 * s, rcx = ccx, rcy = yy + rr + 12 * s;
+    { const sc = kit('hud-scope'), D = rr * 96 / 34; if (sc) ctx.drawImage(sc, rcx - D / 2, rcy - D / 2 + 1 * s, D, D); }
     ctx.save();
-    ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.fillStyle = 'rgba(4,20,16,0.6)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); if (!kit('hud-scope')) { ctx.fillStyle = 'rgba(4,20,16,0.6)'; ctx.fill(); }
     ctx.clip();
-    ctx.strokeStyle = 'rgba(80,200,150,0.15)'; ctx.lineWidth = 1;
-    for (const k of [0.5, 1]) { ctx.beginPath(); ctx.arc(rcx, rcy, rr * k, 0, TAU); ctx.stroke(); }
     this.sweep = (this.sweep + dt * 1.6) % TAU;
     const sg = ctx.createConicGradient ? ctx.createConicGradient(this.sweep - 0.9, rcx, rcy) : null;
     if (sg) { sg.addColorStop(0, 'rgba(80,220,160,0)'); sg.addColorStop(0.14, 'rgba(80,220,160,0.22)'); sg.addColorStop(0.145, 'rgba(80,220,160,0)'); ctx.fillStyle = sg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
@@ -440,28 +444,13 @@ export class Hud {
     }
     ctx.restore();
     ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.beginPath(); ctx.arc(rcx, rcy, 1.6 * s, 0, TAU); ctx.fill();
-    brassBezel(ctx, rcx, rcy, rr, s);
-    yy = rcy + rr + 14 * s;
+    yy = rcy + rr + 20 * s;
     // the seafloor sonar (a fitted extra): the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy, s); yy += 82 * s; }
-    // journal: a small book button
-    const jw = 26 * s, jh = 22 * s, pairW = (22 * s + jw) * 2 + 18 * s, jx = ccx - pairW / 2 + 22 * s, jy = yy; // (olive) the two side by side, centred on the column
+    // (olive-studio) J and K are keys (listed in the controls), not buttons on the screen
     const kx = window.innerWidth / this.c.width;
-    this.journalHot = { x: (jx + this.safeL) * kx, y: (jy + this.safeT) * kx, w: jw * kx, h: jh * kx };
-    const plate = (x, y) => { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 4 * s; ctx.shadowOffsetY = 1 * s; const pg = ctx.createLinearGradient(0, y, 0, y + jh); pg.addColorStop(0, '#3c4038'); pg.addColorStop(1, '#23261f'); ctx.fillStyle = pg; ctx.beginPath(); ctx.roundRect(x, y, jw, jh, 3 * s); ctx.fill(); ctx.restore(); ctx.strokeStyle = 'rgba(201,180,126,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, jw - 1, jh - 1, 3 * s); ctx.stroke(); };
-    plate(jx, jy);
-    ctx.fillStyle = '#6a4a2e'; ctx.fillRect(jx + 6 * s, jy + 4 * s, 14 * s, 14 * s);
-    ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 8 * s, jy + 5.5 * s, 10 * s, 11 * s);
-    keyCap(ctx, jx - 22 * s, jy + 1 * s, 'J', s * 0.68);
-
-    // (4.10.0) the chart: a small rolled sea chart under the journal (K)
-    const cy0 = jy, kx0 = jx + jw + 18 * s + 22 * s;
-    this.chartHot = { x: (kx0 + this.safeL) * kx, y: (cy0 + this.safeT) * kx, w: jw * kx, h: jh * kx };
-    plate(kx0, cy0);
-    ctx.fillStyle = '#d8c8a0'; ctx.fillRect(kx0 + 5 * s, cy0 + 5 * s, 16 * s, 12 * s);
-    ctx.strokeStyle = '#3a6a7a'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.moveTo(kx0 + 5 * s, cy0 + 10 * s); ctx.quadraticCurveTo(kx0 + 9 * s, cy0 + 8 * s, kx0 + 13 * s, cy0 + 11 * s); ctx.quadraticCurveTo(kx0 + 17 * s, cy0 + 14 * s, kx0 + 21 * s, cy0 + 12 * s); ctx.stroke();
-    ctx.fillStyle = '#c84a3a'; ctx.beginPath(); ctx.arc(kx0 + 15 * s, cy0 + 8.5 * s, 2 * s, 0, TAU); ctx.fill();
-    keyCap(ctx, kx0 - 22 * s, cy0 + 1 * s, 'K', s * 0.68);
+    this.journalHot = null; this.chartHot = null;
+    const cy0 = yy, jh = 0;
     // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
     yy = cy0 + jh + 10 * s;
     this.subHot = null;
@@ -485,14 +474,14 @@ export class Hud {
 
     // ---------- Q / E items: in the right-hand column, only when carried ----------
     // (claude-polish) a small steel plate in a brass rim, as the journal and chart buttons
-    const glass = (x, y, w, h) => { steelPlate(ctx, x, y, w, h, s); well(ctx, x + 4 * s, y + 4 * s, w - 8 * s, h - 8 * s, 6 * s); };
+    const glass = (x, y, w, h) => { const im = kit('hud-slot'); if (im) ctx.drawImage(im, x, y, w, h); else { steelPlate(ctx, x, y, w, h, s); well(ctx, x + 4 * s, y + 4 * s, w - 8 * s, h - 8 * s, 6 * s); } };
     const sz = 46 * s;
     const slots = [];
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
     if (e.inSub && (g.items.airTank > 0 || g.tankFit)) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', g.tankFit ? g.tankFit / 3 : 0]);
     if (g.items.necklace > 0 || g.necklaceOn) slots.push(['e', 'E', g.necklaceOn ? `GLOW ${Math.ceil(g.glowT || 0)} S` : 'GLOW STICK', g.items.necklace, '#ffc070', g.necklaceOn ? 1 : 0]);
     // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
-    if (e.inSub) {
+    if (e.inSub && (g.subNet || netKinds(g.items).length)) { // (olive-studio) only when a net is carried or out
       const n = g.subNet, kinds = netKinds(g.items), N = n ? n.T : kinds.length ? NETS_SUB[kinds[0]] : null; // (4.11.0) every kind in the hatch
       const state = n ? (n.phase === 'tow' ? (g.trawlTaught ? 'OUT' : 'OUT · N CLOSES') : n.phase === 'torn' ? 'TORN' : 'HAULING') : kinds.length ? kinds.map((k) => NETS_SUB[k].short).join(' + ') : 'NO NET';
       slots.push(['n', 'N', state, n || N ? 1 : 0, n ? '#e8b070' : kinds.includes('adv') ? '#f0c060' : '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / (n.T.tow || TOW_MAX)) : 0, n ? 0 : netsOf(g.items).basic]); // (the badge: two beginner nets)
@@ -531,10 +520,10 @@ export class Hud {
       // (olive) the cash as the depth: a plate of the locker's steel, the sum in a dark window, its name on tape
       const ctxt = money(g.profile.cash);
       ctx.font = `500 ${20 * s}px ${MONO}`; const vw = ctx.measureText(ctxt).width;
-      const cpx = pad - 10 * s, cpy = pad - 10 * s, cph = 40 * s, tw2 = dymo(ctx, 'cash', 0, -999, s, { align: 'left' }), cpw = vw + tw2 + 46 * s;
-      steelPlate(ctx, cpx, cpy, cpw, cph, s);
-      dymo(ctx, 'cash', cpx + 9 * s, cpy + cph / 2 - 6 * s, s, { align: 'left' });
-      const wx2 = cpx + tw2 + 18 * s, ww2 = cpw - tw2 - 27 * s;
+      const cpx = pad - 10 * s, cpy = pad - 10 * s, cph = 40 * s, tw2 = dymo(ctx, 'cash', 0, -999, s, { align: 'left' }), cpw = vw + tw2 + 70 * s;
+      { const im = kit('hud-plate'); if (im) ctx.drawImage(im, cpx, cpy, cpw, cph); else steelPlate(ctx, cpx, cpy, cpw, cph, s); }
+      dymo(ctx, 'cash', cpx + 15 * s, cpy + cph / 2 - 6 * s, s, { align: 'left' });
+      const wx2 = cpx + tw2 + 22 * s, ww2 = cpw - tw2 - 46 * s;
       ctx.fillStyle = '#0d100c'; ctx.beginPath(); ctx.roundRect(wx2, cpy + 7 * s, ww2, cph - 14 * s, 3 * s); ctx.fill();
       ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(wx2 + 2 * s, cpy + 7 * s, ww2 - 4 * s, 2 * s);
       ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; ctx.font = `500 ${20 * s}px ${MONO}`; ctx.fillStyle = '#efe8d2';
