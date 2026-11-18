@@ -463,7 +463,7 @@ export class Hud {
     if (e.inSub) {
       const n = g.subNet, kinds = netKinds(g.items), N = n ? n.T : kinds.length ? NETS_SUB[kinds[0]] : null; // (4.11.0) every kind in the hatch
       const state = n ? (n.phase === 'tow' ? (g.trawlTaught ? 'OUT' : 'OUT · N CLOSES') : n.phase === 'torn' ? 'TORN' : 'HAULING') : kinds.length ? kinds.map((k) => NETS_SUB[k].short).join(' + ') : 'NO NET';
-      slots.push(['n', 'N', state, n || N ? 1 : 0, n ? '#e8b070' : kinds.includes('adv') ? '#f0c060' : '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / TOW_MAX) : 0, n ? 0 : netsOf(g.items).basic]); // (the badge: two beginner nets)
+      slots.push(['n', 'N', state, n || N ? 1 : 0, n ? '#e8b070' : kinds.includes('adv') ? '#f0c060' : '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / (n.T.tow || TOW_MAX)) : 0, n ? 0 : netsOf(g.items).basic]); // (the badge: two beginner nets)
     }
     this.slotHot = {};
     slots.forEach(([id, key, name, n, col, active, badge], i) => {

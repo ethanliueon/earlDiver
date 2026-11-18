@@ -339,10 +339,10 @@ export { conditionName };
 // the winch hauls the bag up into the hatch; the haul lands in a heap on the tank-room floor. An animal
 // too big for the net may tear it: the net is lost, and everything in it swims free. Loud below 200 m.
 export const NETS_SUB = {
-  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, /* (claude-polish) was 120: a net used up in one haul cost more than a first sub's haul was worth, and one empty net left a new diver broke */ max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
-    desc: 'A light trawl for the hatch under the sub: room for six animals, and it holds fish up to 2 m. Anything bigger, small sharks too, may still be caught, but the bigger it is the likelier it breaks out, and a break can tear the net and lose the whole haul. Nine legends in ten escape it. Used up in one haul; carry up to two.' },
-  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 1200, max: 10, maxLen: 4.0, mouth: 2.6, tear: 0.2, slip: 0.03, cap: 1, legendOut: 0,
-    desc: 'The net for big game. Its mouth is over half again as wide, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
+  basic: { name: 'Beginner trawl net', short: 'NET', price: 50, /* (claude-polish) was 120: a net used up in one haul cost more than a first sub's haul was worth, and one empty net left a new diver broke */ tow: 8, max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
+    desc: 'A light trawl for the hatch under the sub: room for six animals, open for 8 seconds, and it holds fish up to 2 m. Anything bigger, small sharks too, may still be caught, but the bigger it is the likelier it breaks out, and a break can tear the net and lose the whole haul. Nine legends in ten escape it. Used up in one haul; carry up to two.' },
+  adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 1200, tow: 11, max: 10, maxLen: 4.0, mouth: 2.6, tear: 0.2, slip: 0.03, cap: 1, legendOut: 0,
+    desc: 'The net for big game. Its mouth is over half again as wide and it stays open 11 seconds, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
 };
 // (4.11.1) the chance an animal too big for a net breaks out of it (legends by the net's own odds): more the bigger it is
 export const escapeOdds = (T, c) => LEGENDARY.has(c.sp.id) ? T.legendOut : c.len <= T.maxLen ? 0 : Math.min(0.95, 0.35 + 0.6 * (c.len - T.maxLen) / T.maxLen);
@@ -356,7 +356,7 @@ export function netsOf(items) {
 }
 export const netKinds = (items) => { const N = netsOf(items); return Object.keys(NETS_SUB).filter((k) => N[k] > 0); };
 export const netTotal = (items) => { const N = netsOf(items); return Object.values(N).reduce((a, b) => a + b, 0); };
-export const NET_DROP = 1.5, TOW_MAX = 15, /* (claude-polish) was 8: the mouth trails 12 m behind the sub, so a net let out short of a school shut just as it reached the fish */ NET_PURSE = 1.0, NET_HAUL = 1.5;
+export const NET_DROP = 1.5, TOW_MAX = 8, /* the beginner net's tow; each net has its own (T.tow): 8 s, the advanced 11 s. Timing the run at a school is the skill */ NET_PURSE = 1.0, NET_HAUL = 1.5;
 // where the hatch is under the hull, and where the net's mouth hangs behind it, for a sub facing dir
 export const hatchAt = (g) => ({ x: g.sub.x - (g.sub.facing || 1) * 1.2, y: g.sub.y + 1.3 });
 const towTarget = (g) => { const d = g.sub.facing || 1, k = g.subNet ? g.subNet.T.mouth : 1.6; return { x: g.sub.x - d * (7.5 + k * 1.5), y: g.sub.y + 2.4 + k }; };
@@ -419,7 +419,7 @@ export function updateSubNet(g, dt, canTake) {
       }
       n.prev = seen;
     }
-    if (n.pt >= TOW_MAX && !(g.lesson && g.lesson.kind === 'trawl')) { n.phase = 'purse'; n.pt = 0; } // (4.12.2) in the lesson it stays out until it is closed
+    if (n.pt >= (n.T.tow || TOW_MAX) && !(g.lesson && g.lesson.kind === 'trawl')) { n.phase = 'purse'; n.pt = 0; } // (4.12.2) in the lesson it stays out until it is closed
   } else if (n.phase === 'purse') {
     n.open = Math.max(0, n.open - dt / NET_PURSE);
     n.mx += (tgt.x - n.mx) * Math.min(1, dt); n.my += (tgt.y - n.my) * Math.min(1, dt);
