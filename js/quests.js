@@ -58,8 +58,8 @@ export function firstFishPart(P) { const S = Q(P), sn = S.seen; if (MAIN[S.main]
 // the line on the HUD for the step the Log is on (for the first fish: which part, and how far along)
 export function stepLabel(P) {
   const S = Q(P), m = MAIN[S.main]; if (!m || !m.on) return '';
-  if (m.id === 'firstfish') { const k = firstFishPart(P); return k >= 4 ? '✓ ' + m.text : `${m.text} (${k + 1}/4): ${(P.tut === 'on' ? FIRST_FISH : FIRST_FISH_PLAIN)[k].toLowerCase()}`; }
-  return (S.mainProg >= m.need ? '✓ ' : '') + m.text + (m.need > 1 && S.mainProg < m.need ? `  (${S.mainProg}/${m.need})` : '');
+  if (m.id === 'firstfish') { const k = firstFishPart(P); return k >= 4 ? m.text + ': done' : `${m.text} (${k + 1}/4): ${(P.tut === 'on' ? FIRST_FISH : FIRST_FISH_PLAIN)[k].replace(/^./, (c) => c.toLowerCase()).replace(/\(([a-z])\)/g, (x, c) => `(${c.toUpperCase()})`)}`; } // (the key letter stays a capital; no tick character)
+  return m.text + (S.mainProg >= m.need ? ': done' : '') + (m.need > 1 && S.mainProg < m.need ? `  (${S.mainProg}/${m.need})` : '');
 }
 // (4.0.6) has the Log taught this yet? (the step done, or the Log past it)
 export function learned(P, id) { id = ALIAS[id] || id; const S = Q(P), i = MAIN_I[id]; return i === undefined || S.main > i || (S.seen[id] || 0) >= MAIN[i].need; }

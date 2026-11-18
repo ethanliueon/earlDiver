@@ -859,7 +859,7 @@ export class UI {
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
-      + (free ? '<p class="eq-note">Click a slot to take a thing off · drag one in to put it on</p>' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
+      + (free ? '<p class="eq-note">Drag a thing onto a slot to put it on; click one to take it off.</p>' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       + this.airHtml(P, g)
       + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
   }
@@ -1152,7 +1152,7 @@ export class UI {
         html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? ` · ${p.subName}` : ''}</b><span>${p.runs || 0} dive${p.runs === 1 ? '' : 's'} · deepest ${p.deepest || 0} m · ${(p.journal || []).length} species · ${r.saved ? ago(r.saved) : ''}</span></div><button class="del" title="Delete this save">Delete</button></div>`;
       } else if (r.state === 'damaged') {
         html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">Delete</button></div>`;
-      } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>Empty: new game</b><span>start a new diver here</span></div><span></span></div>`;
+      } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>Empty</b><span>a new diver</span></div><span></span></div>`;
     }
     $('slots').innerHTML = html;
     const last = lastSlot();
@@ -1335,7 +1335,7 @@ export class UI {
     $('shop-coins').innerHTML = P.coins ? `${COIN}${P.coins}` : '';
     {
       const M = SUB_MARKS[markOf(statValue(P, 'depth'))];
-      $('shop-sub').innerHTML = sub.imploded ? 'No submersible' : `${M.named ? `<b>${esc(P.subName || 'EARL')}</b> · ` : ''}${M.name} · rated ${sub.rated} m · hull ${Math.round(sub.hull * 100)} %${M.named ? '<button class="rename" data-rename="1">rename</button>' : ''}`;
+      $('shop-sub').innerHTML = sub.imploded ? 'No submersible' : `${M.named ? `<b>${esc(P.subName || 'EARL')}</b>, ` : ''}${M.name}, rated to ${sub.rated} m, hull at ${Math.round(sub.hull * 100)}%${M.named ? '<button class="rename" data-rename="1">rename</button>' : ''}`;
       const rn = $('shop-sub').querySelector('.rename');
       if (rn) rn.onclick = () => this.askSubName(P.subName, (v) => { this.h.onRename(v); this.renderWorkshop(); }, 'A fresh coat of paint, free of charge.');
     }
@@ -1486,7 +1486,7 @@ export class UI {
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
         html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
-          <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i><svg class="yd-lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15 L21 21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` · next: ${money(SUBS[hl + 1].price, false)}` : ''}</button></div></div>`;
+          <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i><svg class="yd-lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15 L21 21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` (next ${money(SUBS[hl + 1].price, false)})` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, 'Works the claw under the sphere: from inside, Space grabs an animal.', GEAR.arm.price, owns(P, 'arm')]]
           .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, { quiet: 'Half the noise down there: the deep notices her less.', sonar: 'A strip under the radar draws the seafloor around her.', airBank: 'Bottles strapped behind the sphere: half as much cabin air again, on every sub.' }[k] || a.desc, a.price, !!(P.addons || {})[k]]));
         html += `<h4 class="yd-stencil">Refits <small>fitted once, kept on every sub</small></h4><div class="yd-refits">${refits.map(([arg, name, desc, price, have]) => `<div class="yd-refit${have ? ' have' : ''}"><span class="yd-clip"></span><div class="yd-part"><img data-part="${arg}" alt=""></div><div><b>${name}</b><p>${desc}</p></div>${have ? '<span class="yd-fitted">FITTED</span>' : `<button class="pay-tag" data-act="buy" data-arg="${arg}" ${can(price) ? '' : 'disabled'} title="Buy and fit it">${money(price, false)}</button>`}</div>`).join('')}</div>`;

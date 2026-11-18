@@ -364,22 +364,19 @@ export function parsePrompt(text) {
 }
 // a key-cap, brass, the key engraved on its top: at (x, y) its top-left, size s; returns its width
 export function keyCap(ctx, x, y, key, s = 1) {
-  const h = 26 * s, w = key.length > 1 ? Math.max(h * 1.9, (key.length * 8 + 18) * s) : h, d = 3.5 * s, r = 4.5 * s;
+  // (olive) a key in the Margaret's cream deck paint, a dark letter: the same "press me" as every button
+  // (docs/ART_DIRECTION.md); the letter centred by measuring it, not by the line box
+  const h = 26 * s, w = key.length > 1 ? Math.max(h * 1.9, (key.length * 8 + 18) * s) : h, d = 3 * s, r = 4 * s;
   ctx.save();
-  // its side (the depth of the key), then the top face
-  ctx.fillStyle = '#4a3a18'; ctx.beginPath(); ctx.roundRect(x, y + d, w, h, r); ctx.fill();
-  const tg = ctx.createLinearGradient(0, y, 0, y + h); tg.addColorStop(0, '#e4d29e'); tg.addColorStop(0.55, '#b89c5c'); tg.addColorStop(1, '#94793e');
-  ctx.fillStyle = tg; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();
-  ctx.strokeStyle = 'rgba(30,20,4,0.9)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h + d - 1, r); ctx.stroke();
-  ctx.strokeStyle = 'rgba(255,244,210,0.6)'; ctx.beginPath(); ctx.moveTo(x + r, y + 1.5); ctx.lineTo(x + w - r, y + 1.5); ctx.stroke();
-  // the dished top: a soft hollow
-  const dg = ctx.createRadialGradient(x + w / 2, y + h * 0.42, 1, x + w / 2, y + h * 0.42, Math.max(w, h) * 0.6); dg.addColorStop(0, 'rgba(255,240,200,0.18)'); dg.addColorStop(1, 'rgba(60,40,10,0.12)');
-  ctx.fillStyle = dg; ctx.beginPath(); ctx.roundRect(x + 2.5 * s, y + 2.5 * s, w - 5 * s, h - 5 * s, r * 0.8); ctx.fill();
-  // the engraving
-  ctx.font = `600 ${(key.length > 1 ? 10.5 : 14) * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const lab = key.length > 1 ? key.toUpperCase() : key;
-  ctx.fillStyle = 'rgba(255,244,210,0.55)'; ctx.fillText(lab, x + w / 2, y + h / 2 + 1.6 * s);
-  ctx.fillStyle = '#2a1e06'; ctx.fillText(lab, x + w / 2, y + h / 2 + 0.6 * s);
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.roundRect(x, y + d, w, h, r); ctx.fill();            // its side, in shadow
+  ctx.fillStyle = '#d8d0b6'; ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fill();                        // the painted face
+  ctx.fillStyle = 'rgba(255,252,236,0.35)'; ctx.fillRect(x + r, y + 1, w - 2 * r, 1.2 * s);                       // light on the top edge
+  ctx.fillStyle = 'rgba(60,56,40,0.18)'; ctx.fillRect(x + 2 * s, y + h - 4 * s, w - 4 * s, 2 * s);                // grime low on the face
+  ctx.strokeStyle = 'rgba(20,18,12,0.85)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h + d - 1, r); ctx.stroke();
+  const word = key.length > 1 ? key.charAt(0).toUpperCase() + key.slice(1).toLowerCase() : key;
+  ctx.font = `600 ${(key.length > 1 ? 12 : 14.5) * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  const m = ctx.measureText(word);
+  ctx.fillStyle = '#26241a'; ctx.fillText(word, x + w / 2, y + h / 2 + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
   ctx.restore();
   return w;
 }
@@ -449,7 +446,7 @@ export function promptHtml(text) {
 export function dymo(ctx, text, xr, y, s = 1, { tape = '#1c1d1b', ink = 'rgba(236,234,224,0.92)', align = 'right' } = {}) {
   ctx.save();
   ctx.font = `700 ${8.5 * s}px ${MONO}`; ctx.textBaseline = 'middle';
-  const sp = 1.6 * s, chars = [...text.toUpperCase()];
+  const sp = 0.7 * s, chars = [...text.toUpperCase()]; // (olive) set close, as a label maker sets it
   const tw = chars.reduce((a, c) => a + ctx.measureText(c).width + sp, 0) - sp, h = 12 * s, w = tw + 9 * s;
   const x = align === 'right' ? xr - w : xr;
   ctx.translate(x + w / 2, y + h / 2); ctx.rotate(-0.012); ctx.translate(-w / 2, -h / 2);
@@ -472,7 +469,7 @@ export function tubeGauge(ctx, x, y, w, h, frac, s = 1, { col = [80, 170, 240], 
   ctx.save();
   // the brass rim
   const bz = ctx.createLinearGradient(0, y - rim, 0, y + h + rim);
-  bz.addColorStop(0, '#c9b47e'); bz.addColorStop(0.5, '#8a7444'); bz.addColorStop(1, '#4e3e1e');
+  bz.addColorStop(0, '#7c8a64'); bz.addColorStop(0.5, '#4b5541'); bz.addColorStop(1, '#262c20'); // (olive) the tube's rim in the panels' painted steel
   ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 4 * s; ctx.shadowOffsetY = 1 * s;
   ctx.fillStyle = bz; ctx.beginPath(); ctx.roundRect(x - rim, y - rim, w + rim * 2, h + rim * 2, r + rim); ctx.fill();
   ctx.shadowColor = 'transparent';
@@ -497,14 +494,14 @@ export function tubeGauge(ctx, x, y, w, h, frac, s = 1, { col = [80, 170, 240], 
 export function brassBezel(ctx, cx, cy, R, s = 1) {
   ctx.save();
   const w = 3.2 * s, g = ctx.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
-  g.addColorStop(0, '#d6c28c'); g.addColorStop(0.5, '#8a7444'); g.addColorStop(1, '#4a3a1a');
+  g.addColorStop(0, '#7c8a64'); g.addColorStop(0.5, '#4b5541'); g.addColorStop(1, '#262c20'); // (olive) painted steel, as the panels (no brass)
   ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5 * s;
   ctx.strokeStyle = g; ctx.lineWidth = w; ctx.beginPath(); ctx.arc(cx, cy, R + w / 2, 0, TAU); ctx.stroke();
   ctx.shadowColor = 'transparent';
-  ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(cx, cy, R + w - 0.6, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke();
+  ctx.strokeStyle = 'rgba(230,236,210,0.22)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(cx, cy, R + w - 0.6, Math.PI * 1.1, Math.PI * 1.6); ctx.stroke();
   for (const a of [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75]) { // four screws in the bezel
     const sx = cx + Math.cos(a) * (R + w / 2), sy = cy + Math.sin(a) * (R + w / 2);
-    ctx.fillStyle = '#3e3016'; ctx.beginPath(); ctx.arc(sx, sy, 1.5 * s, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#2a3022'; ctx.beginPath(); ctx.arc(sx, sy, 1.5 * s, 0, TAU); ctx.fill();
     ctx.strokeStyle = 'rgba(20,14,4,0.9)'; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(sx - 1 * s, sy - 0.6 * s); ctx.lineTo(sx + 1 * s, sy + 0.6 * s); ctx.stroke();
   }
   ctx.restore();

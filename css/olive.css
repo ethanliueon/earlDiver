@@ -53,3 +53,144 @@
 #quests .qs-q { border-left-width: 8px !important; }
 :is(#settings, #inventory) .set-row { padding: 1px 6px !important; margin-bottom: 4px !important; }
 #quests .qs-q { padding: 1px 4px !important; }
+
+/* =====================================================================================================
+   The real-game pass (docs/ART_DIRECTION.md): one material, one "press me", two faces, names painted on.
+   ===================================================================================================== */
+:root {
+  --o-cream: #e6dec4; --o-cream-dim: rgba(230, 222, 196, 0.62); --o-cream-faint: rgba(230, 222, 196, 0.38); --o-ink: #26241a;
+  --o-text: "EB Garamond", Georgia, serif; --o-num: "IBM Plex Mono", ui-monospace, monospace;
+  --o-btn: url("../assets/ui/olive/btn-olive.png"); --o-btn-down: url("../assets/ui/olive/btn-olive-down.png");
+  --o-btn1: url("../assets/ui/olive/btn-cream.png"); --o-btn1-down: url("../assets/ui/olive/btn-cream-down.png");
+}
+/* no rivet rings as borders: the panels' painted edge has its own four */
+html body :is(.shop .shop-main, #pause, #title .title-panel, .slot, :is(#settings, #inventory) .set-panel)::before { content: none !important; }
+
+/* ---- a panel's name: painted on the steel in the cream deck paint */
+html body :is(.shop .nameplate, #pause h2, :is(#settings, #inventory) .set-plate, #quests .qs-plate, #chart .ch-plate, #title .t-plate, .tr-plate) {
+  background: none !important; box-shadow: none !important; border: 0 !important; border-image: none !important; padding: 0 !important; filter: none !important; }
+html body :is(.shop .nameplate, #title .t-plate, .tr-plate)::before, html body :is(.shop .nameplate, #title .t-plate, .tr-plate)::after { content: none !important; }
+html body :is(.shop .nameplate h2, #pause h2, :is(#settings, #inventory) .set-plate, #quests .qs-plate h2, #chart .ch-plate h2, #title .t-plate h1, .tr-plate b) {
+  font: 500 30px/1.1 var(--o-text) !important; letter-spacing: 0.01em !important; text-transform: none !important; color: var(--o-cream) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55), 0 0 1px rgba(0, 0, 0, 0.3) !important; opacity: 0.94; }
+html body #title .t-plate h1 { font-size: 46px !important; }
+html body :is(.shop .nameplate .shop-sub, .shop .shop-sub, #title .t-plate span, .tr-plate span) { font: italic 15px var(--o-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--o-cream-dim) !important; text-shadow: none !important; }
+#title .tag, #title .t-plate span { display: none !important; }
+
+/* ---- section labels: small capitals in the paint, no tape */
+html body :is(#settings h4, #inventory .inv-sec h4, #inventory .lk-head h4, #inventory .inv-catch2 .inv-left > h4, #inventory .inv-catch2 .sub-bay > h4, #quests h3, #quests h4, #title .t-label, .shop h3, .shop .yd-stencil, .gl-catch h4) {
+  font: 500 16px var(--o-text) !important; font-variant: small-caps !important; letter-spacing: 0.05em !important; text-transform: lowercase !important;
+  color: var(--o-cream-dim) !important; background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important;
+  -webkit-mask-image: none !important; mask-image: none !important; }
+html body :is(#inventory .inv-catch2 h4 i, #inventory .lk-head span) { font: 14px var(--o-num) !important; color: var(--o-cream-dim) !important; font-variant: normal !important; }
+html body #inventory .lk-head small, html body .shop .yd-stencil small { font: italic 14px var(--o-text) !important; font-variant: normal !important; text-transform: none !important; color: var(--o-cream-faint) !important; }
+
+/* ---- words in the reading face, wherever the code font had crept into sentences */
+html body :is(:is(#settings, #inventory) .set-row em, #title .slot .info span, #title .hint, .shop .shop-note, .shop-empty, #inventory .eq-note, #inventory .ct-cap, .gl-catch p, #pause .small, #quests .qs-t span, #quests .qs-t small, .radio-refresh) {
+  font-family: var(--o-text) !important; font-style: italic !important; letter-spacing: 0 !important; text-transform: none !important; }
+html body :is(#settings, #inventory) .set-row em { font-size: 14px !important; color: var(--o-cream-dim) !important; }
+html body :is(#settings, #inventory) .set-row { font: 18px var(--o-text) !important; color: var(--o-cream) !important; }
+
+/* ---- the one "press me": cream deck paint on a raised plate; everything else a raised olive plate */
+html body :is(#pause button:not(.gear-btn):not(.link), #confirm button, .shop button.primary, .shop .yd-plaque, #quests button[data-q]:not(.qs-info), #quests .qs-buy, #quests .qs-refresh,
+  #title #continue, #title #play, .gl-lights button, .gl-catch .gl-room, #inventory .lk-acts button, .shop .shop-tabs button, #workshop .yd-tab, #inventory .inv-tabs button,
+  .shop button[data-act="buy"]:not(.primary):not(.warn), .shop button[data-act="refresh"]:not(.primary), #workshop button.yd-price, .pay-tag, #trapset .ts-btn) {
+  border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 12px stretch !important;
+  background: none !important; box-shadow: none !important; clip-path: none !important; transform: none !important; filter: none !important;
+  min-height: 44px; height: auto !important; padding: 0 12px 2px !important; cursor: pointer;
+  font: 500 17px/1 var(--o-text) !important; letter-spacing: 0.01em !important; text-transform: none !important; color: var(--o-cream) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important; }
+html body :is(#pause #resume, #confirm .cf-yes, .shop button.primary, #quests button[data-q^="claim"], #quests .qs-buy, #title #continue, #title #play, .gl-catch .gl-room, #inventory .lk-acts button:first-child:not(.sell),
+  .shop button[data-act="buy"]:not(.primary):not(.warn), #workshop button.yd-price, .pay-tag, .gl-lights button.on, .shop .shop-tabs button.on, #inventory .inv-tabs button.on, #trapset .ts-btn.primary) {
+  border-image-source: var(--o-btn1) !important; color: var(--o-ink) !important; text-shadow: 0 1px 0 rgba(255, 250, 230, 0.4) !important; }
+html body :is(#pause button, #confirm button, .shop button, #quests button, #title button, .gl-lights button, .gl-catch button, #inventory .lk-acts button, #inventory .inv-tabs button, .pay-tag, #trapset .ts-btn):hover:not(:disabled) { filter: brightness(1.08) !important; }
+html body :is(#pause button, #confirm button, .shop button, #quests button, #title button, .gl-lights button, .gl-catch button, #inventory .lk-acts button, .pay-tag, #trapset .ts-btn):active:not(:disabled) { border-image-source: var(--o-btn-down) !important; padding-top: 2px !important; padding-bottom: 0 !important; }
+html body :is(.shop button[data-act="buy"], .pay-tag, #workshop button.yd-price, #quests button[data-q]):disabled { border-image-source: var(--o-btn) !important; color: var(--o-cream-faint) !important; cursor: default; filter: none !important; }
+html body :is(.shop button, .pay-tag) span { font: 15px var(--o-num) !important; color: inherit !important; opacity: 0.85; margin-left: 6px; }
+html body .pay-tag, html body #workshop button.yd-price, html body .shop button[data-act="buy"] { font-family: var(--o-num) !important; font-size: 16px !important; }
+.pay-tag::before, .pay-tag::after, .shop .shop-tabs button::before, .shop .yd-plaque i, .shop .yd-plaque::before, .shop .yd-plaque::after { display: none !important; content: none !important; }
+html body #inventory .inv-tabs button { min-width: 140px !important; min-height: 46px !important; }
+html body #inventory .inv-tabs button.on { box-shadow: none !important; }
+html body #inventory .inv-tabs button i { font-family: var(--o-num) !important; font-size: 14px; opacity: 0.8; }
+/* a setting's state: the word on a small plate, cream when on */
+html body :is(#settings, #inventory) .set-row b { border: 8px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 8px stretch !important; background: none !important; box-shadow: none !important;
+  min-width: 54px; padding: 0 4px 1px !important; font: 500 15px var(--o-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--o-cream-dim) !important; text-align: center; }
+html body :is(#settings, #inventory) .set-row b.on { border-image-source: var(--o-btn1) !important; color: var(--o-ink) !important; }
+/* close: one, everywhere: a small olive plate with a cream cross */
+html body :is(:is(#settings, #inventory) .set-close, #workshop-close, #cave-close, #trapset-close, .refit-x, #inventory .ip-close, .oc-close, .qp-close, #quests .qs-close, #chart .ch-close, .tr-close) {
+  width: 36px !important; height: 36px !important; border: 10px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 10px stretch !important;
+  background: none !important; box-shadow: none !important; font-size: 0 !important; color: transparent !important; padding: 0 !important; opacity: 1 !important; }
+html body :is(:is(#settings, #inventory) .set-close, #workshop-close, #cave-close, #trapset-close, .refit-x, #inventory .ip-close, .oc-close, .qp-close, #quests .qs-close, #chart .ch-close, .tr-close)::after {
+  content: '' !important; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; transform: translate(-50%, -50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1.5 1.5 L10.5 10.5 M10.5 1.5 L1.5 10.5' stroke='%23e6dec4' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat !important; }
+html body :is(#workshop-close, .refit-x, #quests .qs-close, #chart .ch-close, .oc-close) { position: relative; }
+/* the settings gear: the same olive plate */
+html body .gear-btn { border: 8px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 8px stretch !important; background: none !important; box-shadow: none !important; }
+html body .gear-btn::before { background: var(--o-cream) !important; inset: 0 !important; }
+
+/* ---- cash, one way: the figure in a dark window, its name in small capitals */
+html body :is(#inventory .cash-plate, .shop .counter) { background: #0d100c !important; border: 0 !important; border-radius: 3px !important; box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 240, 0.08) !important; padding: 2px 10px !important; }
+html body .shop .counter .drum, html body .shop .counter .sep { background: none !important; box-shadow: none !important; animation: none !important; width: auto !important; font: 500 22px/1.3 var(--o-num) !important; color: #efe8d2 !important; }
+html body :is(#inventory .cash-plate span, .shop .shop-cash span) { font: 500 14px var(--o-text) !important; font-variant: small-caps; text-transform: lowercase !important; letter-spacing: 0.05em !important; color: var(--o-cream-dim) !important; }
+html body #inventory .cash-plate b { font: 500 21px var(--o-num) !important; color: #efe8d2 !important; letter-spacing: 0 !important; }
+
+/* ---- no characters as icons */
+#inventory .eq-lock::before { content: none !important; }
+
+/* ---- the yard: one material. The board a dark well; the sub behind plain steel; her figures, the refits and
+   all the subs in wells; prices on the cream plates; no blueprint, brass port, typed paper, clipboards or tacks */
+html body #workshop.refit-full #shop-body { background: none !important; border: 12px solid transparent !important; border-image: url("../assets/ui/olive/well.png") 30 fill / 12px stretch !important; box-shadow: none !important; border-radius: 0 !important; }
+html body #workshop.refit-full .shop-main { background-image: url("../assets/ui/olive/tile.png") !important; background-size: 512px 512px !important; }
+#workshop.refit-full .yd-tack, #workshop .yd-clip { display: none !important; }
+html body #workshop .yd-port { background: #14170f !important; border-radius: 4px !important; padding: 6px !important; box-shadow: inset 0 0 0 1px #0a0c08, 0 1px 0 rgba(255, 255, 240, 0.08) !important; }
+#workshop .yd-port::before, #workshop .yd-port::after { content: none !important; }
+html body #workshop .yd-port .yd-pic { border-radius: 2px !important; box-shadow: none !important; }
+html body #workshop .yd-ruler { box-shadow: inset 0 0 0 1px #0a0c08 !important; border-radius: 3px !important; }
+html body #workshop :is(.yd-sheet, .yd-refit) { background: none !important; border: 10px solid transparent !important; border-image: url("../assets/ui/olive/well.png") 30 fill / 10px stretch !important; box-shadow: none !important; transform: none !important; border-radius: 0 !important; color: var(--o-cream) !important; }
+#workshop :is(.yd-sheet, .yd-refit)::before, #workshop :is(.yd-sheet, .yd-refit)::after { content: none !important; }
+html body #workshop :is(.ys-head, .ys-head span) { font: 500 15px var(--o-text) !important; font-variant: small-caps; text-transform: lowercase !important; letter-spacing: 0.04em !important; color: var(--o-cream-dim) !important; border-color: rgba(0, 0, 0, 0.5) !important; }
+html body #workshop .ys-row, html body #workshop .ys-row span { font: 16px var(--o-text) !important; text-transform: none !important; letter-spacing: 0 !important; color: var(--o-cream-dim) !important; }
+html body #workshop .ys-row b, html body #workshop .yd-sheet b { font: 500 15px var(--o-num) !important; color: #efe8d2 !important; }
+html body #workshop .ys-row::after, html body #workshop .ys-row i { border-color: rgba(230, 222, 196, 0.12) !important; }
+html body #workshop .ys-note, html body #workshop .yd-refit p { font: italic 15px var(--o-text) !important; color: var(--o-cream-dim) !important; }
+html body #workshop .yd-refit b { font: 500 18px var(--o-text) !important; color: var(--o-cream) !important; }
+html body #workshop .ys-stamp { transform: none !important; border: 0 !important; box-shadow: none !important; background: none !important; padding: 0 !important; font: italic 15px var(--o-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: #b8d49a !important; }
+html body #workshop .yd-info h3 { font: 500 26px var(--o-text) !important; color: var(--o-cream) !important; }
+html body #workshop .yd-info h3 small { font: 500 15px var(--o-text) !important; font-variant: small-caps; text-transform: lowercase !important; letter-spacing: 0.04em !important; color: var(--o-cream-dim) !important; }
+html body #workshop .yd-hull { font: italic 15px var(--o-text) !important; color: var(--o-cream-dim) !important; }
+html body #workshop .yd-photo { background: #14170f !important; padding: 5px !important; box-shadow: inset 0 0 0 1px #0a0c08 !important; transform: none !important; }
+html body #workshop .yd-photo .yd-pic, html body #workshop .yd-allwrap .yd-card .yd-photo .yd-pic { box-shadow: none !important; border-radius: 2px !important; }
+html body #workshop .yd-allwrap .yd-card.cur .yd-photo { box-shadow: 0 0 0 2px var(--o-cream) !important; }
+html body #workshop .yd-card h4 { font: 500 16px var(--o-text) !important; color: var(--o-cream) !important; }
+html body #workshop .yd-plaque svg { color: var(--o-cream); width: 18px; height: 18px; vertical-align: -3px; margin-right: 6px; }
+html body #workshop .yd-fitted { font: italic 15px var(--o-text) !important; color: #b8d49a !important; background: none !important; transform: none !important; box-shadow: none !important; }
+
+/* ---- the title: the saves as rows in wells, their number in the paint, no brass coins; the links as small plates */
+html body #title .slot { border: 10px solid transparent !important; border-image: url("../assets/ui/olive/well.png") 30 fill / 10px stretch !important; background: none !important; box-shadow: none !important; padding: 2px 6px !important; border-radius: 0 !important; }
+html body #title .slot:hover { filter: brightness(1.15) !important; transform: none !important; }
+html body #title .slot .num { background: none !important; box-shadow: none !important; width: auto !important; height: auto !important; font: 500 22px var(--o-text) !important; color: var(--o-cream-dim) !important; }
+html body #title .slot .info b { font: 500 18px var(--o-text) !important; font-style: normal !important; color: var(--o-cream) !important; }
+html body #title .slot.empty .info b { color: var(--o-cream-dim) !important; }
+html body #title .slot .info span { font: italic 14px var(--o-text) !important; color: var(--o-cream-faint) !important; }
+html body #title .slot .del { border: 8px solid transparent !important; border-image: var(--o-btn) 28 fill / 8px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; font: 500 14px var(--o-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--o-cream-dim) !important; padding: 0 4px !important; }
+html body #title .menu-links .link { border: 9px solid transparent !important; border-image: var(--o-btn) 28 fill / 9px stretch !important; background: none !important; padding: 0 8px 2px !important; min-height: 34px;
+  font: 500 15px var(--o-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--o-cream) !important; text-decoration: none !important; border-bottom: 9px solid transparent !important; }
+html body #title .hint { font: italic 14px var(--o-text) !important; color: var(--o-cream-faint) !important; }
+
+/* ---- the inventory's names: painted small capitals, not label tape */
+html body #inventory .eq-stage .eq-slot .slot-nm, html body #inventory .air-txt .tape { background: none !important; box-shadow: none !important; padding: 0 !important; transform: none !important;
+  font: 500 14px var(--o-text) !important; font-variant: small-caps; text-transform: lowercase !important; letter-spacing: 0.04em !important; color: var(--o-cream-dim) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6) !important; }
+html body #inventory .eq-slot.sq .key { font: 500 13px var(--o-num) !important; color: var(--o-cream-faint) !important; }
+html body #inventory .air-txt b { font: 500 26px var(--o-num) !important; color: #efe8d2 !important; }
+/* a price that cannot be paid: the olive plate, the figure faint (named outright, after every cream rule) */
+/* (the cream rule above lists #pause #resume, and :is() gives every item its heaviest selector's weight: two ids; so this one carries two) */
+html body :is(.pay-tag, .shop button[data-act="buy"], button.yd-price, #quests button[data-q])[disabled]:not(#_a):not(#_b) {
+  border-image-source: url("../assets/ui/olive/btn-olive.png") !important; color: rgba(230, 222, 196, 0.38) !important; text-shadow: none !important; }
+
+/* ---- the HUD's HTML parts in the same family: the quests button an olive plate, keys in the page cream */
+html body #quests-btn { border: 9px solid transparent !important; border-image: url("../assets/ui/olive/btn-olive.png") 28 fill / 9px stretch !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; width: 40px !important; height: 40px !important; }
+html body #quests-btn svg path, html body #quests-btn svg rect { fill: none !important; stroke: #e6dec4 !important; }
+html body #quests-btn svg > path:first-child { fill: none !important; }
+html body #quests-btn i { background: #e6dec4 !important; color: #26241a !important; font: 600 11px/18px var(--o-num) !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important; }
+html body #quests-hud .qh-step { font: 17px var(--o-text) !important; color: #efe8d2 !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; }
+html body kbd.keycap, html body .ts-key kbd:not(.mouse) { background: #d8d0b6 !important; color: #26241a !important; border: 1px solid rgba(20, 18, 12, 0.85) !important; border-radius: 4px !important;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.55) !important; font: 600 13px/20px var(--o-num) !important; text-shadow: none !important; }

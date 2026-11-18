@@ -96,7 +96,7 @@ export class Gallery {
     this.sig = sig;
     this.root.querySelector('.gl-lights').innerHTML = Object.entries(LIGHTS).map(([k, L]) => `<button data-light="${k}" class="${k === light ? 'on' : ''}">${L.name}</button>`).join('');
     const nShown = Object.keys(A.display).length, used = placesUsed(P);
-    this.root.querySelector('.gl-sub').textContent = `${used} of ${gallerySlots(P)} places taken · aboard the Margaret`; // (4.1.1) by size
+    this.root.querySelector('.gl-sub').textContent = `${used} of ${gallerySlots(P)} places taken`; // (4.1.1) by size
     // the catch aboard, the kept ones first: one button each to put it into the tank
     const full = used >= gallerySlots(P);
     // (3.0.15) more room, bought right here: two more places a time

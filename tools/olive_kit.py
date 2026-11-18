@@ -301,6 +301,39 @@ def pegboard(S=88):
             if R.random() < 0.12: d.arc([x - r - K, y - r - K, x + r + K, y + r + K], 0, 180, fill=(110, 60, 30, 90), width=K)
     return img
 
+def button(kind='olive', W=120, H=48, pressed=False, seed=61):
+    """a raised plate (nine-slice: 14 px corners at 1x): painted steel with a bevel, a cast shadow, paint chipped at its
+    corners where thumbs go. kind 'cream' is the Margaret's white deck paint (the one thing to do); 'olive' the rest"""
+    w, h = W * K, H * K; pad = 4 * K
+    paint = (214, 206, 182) if kind == 'cream' else (86, 98, 70)
+    col, wear = painted_steel(w - 2 * pad, h - 2 * pad, seed, olive=paint, wear=0.0)
+    rng = np.random.default_rng(seed + 1); yy, xx = np.mgrid[0:h - 2 * pad, 0:w - 2 * pad].astype(np.float32)
+    ih, iw = h - 2 * pad, w - 2 * pad
+    # chips at the corners and along the lower edge: through to olive (on cream) or to primer (on olive)
+    cd = np.minimum(np.hypot(xx, yy), np.minimum(np.hypot(iw - xx, yy), np.minimum(np.hypot(xx, ih - yy), np.hypot(iw - xx, ih - yy))))
+    want = np.exp(-cd / (9 * K)) * 1.0 + np.clip((yy / ih - 0.85) * 4, 0, 1) * 0.4
+    chip = np.clip((want + vnoise(iw, ih, 5 * K, rng, 3) * 0.7 - 1.05) * 8, 0, 1)
+    under = (78, 90, 64) if kind == 'cream' else (108, 66, 48)
+    col = mix(col, under, chip)
+    # the bevel: lit along the top and left, shadowed along the bottom and right, 3 px at 1x
+    e = 3 * K
+    top = np.clip(1 - yy / e, 0, 1); left = np.clip(1 - xx / e, 0, 1); bot = np.clip(1 - (ih - 1 - yy) / e, 0, 1); right = np.clip(1 - (iw - 1 - xx) / e, 0, 1)
+    k = -1 if pressed else 1
+    col *= (1 + k * 0.28 * np.maximum(top, left * 0.7))[..., None]
+    col *= (1 - k * 0.35 * np.maximum(bot, right * 0.7))[..., None]
+    if pressed: col *= 0.9
+    face = to_img(col)
+    out = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    sh = Image.new('L', (w, h), 0); ImageDraw.Draw(sh).rounded_rectangle([pad + K, pad + (1 if pressed else 3) * K, w - pad + K, h - pad + (1 if pressed else 3) * K], radius=4 * K, fill=170)
+    out.putalpha(sh.filter(ImageFilter.GaussianBlur(2 * K)))
+    out = Image.composite(out, Image.new('RGBA', (w, h), (0, 0, 0, 0)), out.getchannel('A'))
+    shadow = Image.new('RGBA', (w, h), (0, 0, 0, 255)); shadow.putalpha(out.getchannel('A'))
+    m = Image.new('L', (iw, ih), 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, iw - 1, ih - 1], radius=4 * K, fill=255)
+    face.putalpha(m)
+    base = Image.new('RGBA', (w, h), (0, 0, 0, 0)); base.alpha_composite(shadow); base.alpha_composite(face, (pad, pad))
+    d = ImageDraw.Draw(base); d.rounded_rectangle([pad, pad, w - pad - 1, h - pad - 1], radius=4 * K, outline=(14, 16, 12, 255), width=K)
+    return base
+
 def save(img, name):
     p = os.path.join(OUT, name); img.save(p, optimize=True)
     print(f'  {name:22s} {img.size[0]}x{img.size[1]}  {os.path.getsize(p) // 1024} KB')
@@ -313,3 +346,5 @@ if __name__ == '__main__':
     save(tile(), 'tile.png')
     save(well(), 'well.png')
     save(pegboard(), 'pegboard.png')
+    save(button('cream'), 'btn-cream.png'); save(button('cream', pressed=True), 'btn-cream-down.png')
+    save(button('olive', seed=63), 'btn-olive.png'); save(button('olive', pressed=True, seed=63), 'btn-olive-down.png')

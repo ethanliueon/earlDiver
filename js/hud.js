@@ -617,7 +617,7 @@ export class Hud {
       const tx = W - pad, ty0 = H * 0.42 + 42 * s, ok = qs.mainProg >= step.need;
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.font = `${15 * s}px ${GAME}`;
-      const line = (ok ? '✓ ' : '') + step.text + (step.need > 1 && !ok ? `  ${qs.mainProg}/${step.need}` : '');
+      const line = step.text + (ok ? ': done' : '') + (step.need > 1 && !ok ? `  ${qs.mainProg}/${step.need}` : '');
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(line, tx + 1, ty0 + 1);
       ctx.fillStyle = ok ? 'rgba(170,230,150,0.95)' : 'rgba(236,232,220,0.88)'; ctx.fillText(line, tx, ty0);
       if (ok) { ctx.font = `${12 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,210,150,0.75)'; ctx.fillText('claim it in Quests', tx, ty0 + 19 * s); }

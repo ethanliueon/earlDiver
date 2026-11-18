@@ -662,13 +662,13 @@ export class TankRoom {
     const w = 130 + EX * 0.6, h = 84, x = CW / 2 - w / 2, y = CH / 2 - h / 2 + 4;
     ctx.save(); ctx.globalAlpha = next ? 1 : 0.42;
     ctx.strokeStyle = 'rgba(150,140,110,0.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(CW / 2, 110); ctx.lineTo(CW / 2, y); ctx.stroke(); // the string from the strap
-    const gr = ctx.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, hot ? '#5fb06c' : '#4f9a5c'); gr.addColorStop(0.55, hot ? '#378a48' : '#2f7a3e'); gr.addColorStop(1, '#1d5229'); // (4.15.4) green: what is for sale
+    const gr = ctx.createLinearGradient(0, y, 0, y + h); gr.addColorStop(0, hot ? '#f0e8d0' : '#e2dac0'); gr.addColorStop(0.6, hot ? '#e2dac0' : '#d2c9ac'); gr.addColorStop(1, '#b8ae90'); // (olive) the cream deck paint every price is in (docs/ART_DIRECTION.md)
     ctx.fillStyle = gr; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
     ctx.beginPath(); ctx.roundRect(x, y, w, h, 7); ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.strokeStyle = 'rgba(220,255,210,0.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 5); ctx.stroke();
-    ctx.fillStyle = '#f3f1e2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '600 15px "IBM Plex Mono", monospace'; ctx.fillText(`CHAMBER ${n + 1}`, CW / 2, y + 24);
-    ctx.font = '500 30px "EB Garamond", Georgia, serif'; ctx.fillText('$' + price.toLocaleString(), CW / 2, y + 56);
+    ctx.strokeStyle = 'rgba(30,28,20,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, 7); ctx.stroke();
+    ctx.fillStyle = '#26241a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 17px "EB Garamond", Georgia, serif'; ctx.fillText(`Chamber ${n + 1}`, CW / 2, y + 24);
+    ctx.font = '500 26px "IBM Plex Mono", monospace'; ctx.fillText('$' + price.toLocaleString(), CW / 2, y + 56);
     ctx.restore();
   }
   drawBracket(ctx) {
