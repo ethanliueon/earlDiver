@@ -1261,7 +1261,7 @@ export class UI {
       const txt = document.createElement('div');
       txt.innerHTML = `<h3${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci}</div>
         <p>${sp.desc}</p>
-        <div class="meta">Seen at ${info.depth} m · lives ${usualDepth(sp)[0].toLocaleString()}–${usualDepth(sp)[1].toLocaleString()} m · up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''}</div>
+        <div class="meta">Seen at ${info.depth} m. Lives at ${usualDepth(sp)[0].toLocaleString()} to ${usualDepth(sp)[1].toLocaleString()} m, up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''}.</div>
         ${this.variantRow(sp)}`;
       row.append(img, txt); row.insertAdjacentHTML('afterbegin', rarityStars(sp));
       list.append(row);

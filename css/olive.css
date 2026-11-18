@@ -194,3 +194,17 @@ html body #quests-btn i { background: #e6dec4 !important; color: #26241a !import
 html body #quests-hud .qh-step { font: 17px var(--o-text) !important; color: #efe8d2 !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; }
 html body kbd.keycap, html body .ts-key kbd:not(.mouse) { background: #d8d0b6 !important; color: #26241a !important; border: 1px solid rgba(20, 18, 12, 0.85) !important; border-radius: 4px !important;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.55) !important; font: 600 13px/20px var(--o-num) !important; text-shadow: none !important; }
+
+/* ---- rarity in print: the word in its colour, small capitals, as a field guide sets it (no coloured pill) */
+html body .rbadge { background: none !important; color: var(--rc) !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+  font: 600 13px var(--o-text) !important; font-variant: small-caps; text-transform: lowercase !important; letter-spacing: 0.04em !important; margin-left: 6px !important; filter: brightness(0.8) saturate(1.2); }
+html body .r-stars b svg { display: block; }
+/* the pause menu's two drastic choices: quiet written links in the reading face */
+html body #pause .p-links .link { font: italic 15px var(--o-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--o-cream-dim) !important; border-bottom: 1px dotted rgba(230, 222, 196, 0.35) !important; }
+html body #pause .p-links .link:hover { color: #f0b090 !important; }
+/* the journal's notes on each animal: written, not typed */
+html body #journal .entry .meta, html body .entry .meta { font: italic 14px var(--o-text) !important; letter-spacing: 0 !important; color: rgba(60, 48, 30, 0.75) !important; }
+/* the quest board's i: a small olive plate in the row's corner, clear of the reward */
+html body #quests .qs-q { position: relative; padding-right: 34px !important; }
+html body #quests .qs-q .qs-info { right: 2px !important; top: 2px !important; width: 22px !important; height: 22px !important; border: 6px solid transparent !important; border-radius: 0 !important;
+  border-image: url("../assets/ui/olive/btn-olive.png") 28 fill / 6px stretch !important; background: none !important; box-shadow: none !important; font: italic 600 13px/1 var(--o-text) !important; color: var(--o-cream) !important; padding: 0 !important; display: grid; place-items: center; }

@@ -114,7 +114,7 @@ export function isTagOnly(sp) { return TAG[sp.id] !== undefined && TAG[sp.id] > 
 const STARS = { rare: 1, exotic: 2, legendary: 3 };
 export function rarityStars(sp) {
   const r = rarityOf(sp); if (!r || r.hidden || !STARS[r.id]) return '';
-  return `<i class="r-stars rs-${r.id}" title="${r.name}">${'<b>★</b>'.repeat(STARS[r.id])}</i>`;
+  return `<i class="r-stars rs-${r.id}" title="${r.name}">${'<b><svg viewBox="0 0 10 10" width="1em" height="1em" aria-hidden="true"><path d="M5 .6l1.3 2.9 3.1.3-2.4 2.1.7 3.1L5 7.4 2.3 9l.7-3.1L.6 3.8l3.1-.3z" fill="currentColor"/></svg></b>'.repeat(STARS[r.id])}</i>`; // (olive) a drawn star, not the character
 }
 export const rarityCls = (sp) => { const r = rarityOf(sp); return !r || r.hidden || !STARS[r.id] ? '' : r.id === 'legendary' ? ' has-stars leg-card' : ' has-stars'; };
 export const rarityCol = (sp) => { const r = rarityOf(sp); return !r || r.hidden ? '' : r.col; };
