@@ -641,14 +641,14 @@ export class Hud {
       ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       ctx.font = `500 ${40 * s}px ${MONO}`;
       ctx.fillStyle = '#d8241e'; ctx.fillText(formatTime(g.survival + g.deathT), W - pad, pad);
-      ctx.font = `${13 * s}px ${MONO}`; ctx.fillStyle = `rgba(216,36,30,${clamp(g.deathT - (crushed ? 3.4 : 0.5), 0, 0.8).toFixed(3)})`;
+      ctx.font = `italic ${17 * s}px "EB Garamond", Georgia, serif`; ctx.fillStyle = `rgba(216,36,30,${clamp(g.deathT - (crushed ? 3.4 : 0.5), 0, 0.8).toFixed(3)})`;
       ctx.fillText(g.deathCause || '', W - pad, pad + 50 * s);
     }
     // ---------- death countdown ----------
     if (dying && !bleedOut && !crushed && g.deathT > 0) {
       const left = Math.max(0, 3 - Math.floor(g.deathT - g.deathDelay));
       if (g.deathT > g.deathDelay) {
-        ctx.font = `500 ${120 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `${150 * s}px "IM Fell English", "EB Garamond", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; // (ui-studio) printed, not the code font
         ctx.fillStyle = `rgba(216,36,30,${clamp(1 - ((g.deathT - g.deathDelay) % 1), 0.2, 1)})`;
         if (left > 0) ctx.fillText(String(left), W / 2, H / 2);
         ctx.textBaseline = 'top';

@@ -5,7 +5,7 @@
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
-import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, boatRock } from './earl_draw.js';
+import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, boatRock, weather } from './earl_draw.js';
 import { drawMonster, drawMonsterLights, drawMonsterShape, MONSTER_LEN } from './monster_draw.js';
 import { sleeperState } from './sleeper_draw.js';
 import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
@@ -679,7 +679,7 @@ export class Renderer {
       const nightDim = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
       const awash = nightDim > 0.01 && sub.y - 4 < surfY(sub.x) + 1;
       let dctx = ctx, oc = null, ox = 0, oy = 0;
-      if (awash) {
+      { // (ui-studio) always drawn apart now, so the weathering can be laid over the hull alone
         oc = this.subNightC || (this.subNightC = document.createElement('canvas'));
         const ow = Math.ceil(18 * ppm), oh = Math.ceil(14 * ppm);
         if (oc.width !== ow || oc.height !== oh) { oc.width = ow; oc.height = oh; }
@@ -703,6 +703,7 @@ export class Renderer {
       const look = subLook(g.profile, g.addons);
       look.patches = sub.patches;
       const r = drawSub(dctx, 9 * ppm, t, sub.stress, lights, armArg, look);
+      { const u9 = 9 * ppm / 100; weather(dctx, 'sub', -70 * u9, -50 * u9, 140 * u9, 110 * u9, 26 * u9 / 512, 0.85); } // (ui-studio)
       dctx.restore();
       // mid-turn the hull is seen nearly bow-on: draw its round cross-section over the squashed side view
       const bow = clamp(1 - Math.abs(cy) / 0.5, 0, 1);
@@ -721,15 +722,15 @@ export class Renderer {
         if (lights) { dctx.fillStyle = '#f4f8ff'; dctx.beginPath(); dctx.arc(bx + 6 * u2, by - 6 * u2, 1.6 * u2, 0, TAU); dctx.fill(); }
         dctx.restore();
       }
-      if (oc) {
+      if (oc && awash) {
         dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalCompositeOperation = 'source-atop';
         dctx.fillStyle = `rgba(4,6,10,${nightDim.toFixed(3)})`;
         dctx.beginPath(); dctx.moveTo(0, 0); dctx.lineTo(oc.width, 0);
         for (let px = oc.width; px >= -4; px -= 4) { const wx = sub.x + (px + ox - S(sub.x)) / ppm; dctx.lineTo(px, Sy(surfY(wx)) - oy); }
         dctx.closePath(); dctx.fill();
         dctx.globalCompositeOperation = 'source-over';
-        ctx.drawImage(oc, ox, oy);
       }
+      if (oc) ctx.drawImage(oc, ox, oy);
       if (lights) subLamps = r;
     }
 
@@ -1877,21 +1878,47 @@ export class Renderer {
   // a kelp blade, 128 px long along +x from its base, centred on y = 0 of a 64 px tall picture;
   // v: how far it droops (0 straight .. 2 most); the near layer is a little brighter
   bladeSprite(layer, v) {
+    // (ui-studio) painted at twice the size it is used (256x128 for a 128x64 blade): a golden-brown blade that is
+    // darker and thicker near the bladder and thins to a see-through, ragged tip; ripples across it where the
+    // edges frill; a midrib; a few pale scars and a nibbled hole. Still one stored picture per droop.
     const key = layer * 3 + v, arr = this.bladeSprites || (this.bladeSprites = []);
     if (arr[key]) return arr[key];
-    const c = document.createElement('canvas'); c.width = 128; c.height = 64;
-    const x = c.getContext('2d'), dark = layer === 1 ? 0.75 : 1, droop = [0.05, 0.3, 0.55][v] * 128;
+    const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+    const x = c.getContext('2d'); x.scale(2, 2);
+    const dark = layer === 1 ? 0.75 : 1, droop = [0.05, 0.3, 0.55][v] * 128;
+    let seed = 7 + key * 31; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     const P = (q, e) => [128 * q, 32 + droop * q * q + e + q * q * 128 * 0.08];
     const left = [], right = [];
-    for (let j = 0; j <= 10; j++) { const q = j / 10, w = 9 * Math.sin(Math.PI * Math.pow(q, 0.6)) * (1 + 0.15 * Math.sin(q * 13)); left.push(P(q, w)); right.push(P(q, -w)); }
-    x.beginPath(); x.moveTo(left[0][0], left[0][1]);
-    for (const p of left) x.lineTo(p[0], p[1]);
-    for (let j = right.length - 1; j >= 0; j--) x.lineTo(right[j][0], right[j][1]);
-    x.closePath();
-    x.fillStyle = `rgba(${(122 * dark) | 0},${(96 * dark) | 0},${(34 * dark) | 0},0.78)`; x.fill();
-    const m0 = P(0.05, 0), m1 = P(0.55, 0), m2 = P(0.92, 0);
-    x.strokeStyle = `rgba(${(70 * dark) | 0},${(54 * dark) | 0},${(20 * dark) | 0},0.5)`; x.lineWidth = 1.2;
-    x.beginPath(); x.moveTo(m0[0], m0[1]); x.quadraticCurveTo(m1[0], m1[1], m2[0], m2[1]); x.stroke();
+    for (let j = 0; j <= 28; j++) {
+      const q = j / 28, frill = 1 + 0.18 * Math.sin(q * 41) * q + (q > 0.82 ? (rnd() - 0.5) * 0.5 : 0); // the tip worn ragged
+      const w = 9 * Math.sin(Math.PI * Math.pow(q, 0.6)) * (1 + 0.15 * Math.sin(q * 13)) * frill;
+      left.push(P(q, w)); right.push(P(q, -w * (0.92 + 0.08 * Math.sin(q * 23))));
+    }
+    const blade = new Path2D(); blade.moveTo(left[0][0], left[0][1]);
+    for (const p of left) blade.lineTo(p[0], p[1]);
+    for (let j = right.length - 1; j >= 0; j--) blade.lineTo(right[j][0], right[j][1]);
+    blade.closePath();
+    const col = (r, g2, b2, a2) => `rgba(${(r * dark) | 0},${(g2 * dark) | 0},${(b2 * dark) | 0},${a2})`;
+    const lg = x.createLinearGradient(0, 0, 128, 0);
+    lg.addColorStop(0, col(92, 66, 22, 0.92)); lg.addColorStop(0.35, col(128, 98, 36, 0.84)); lg.addColorStop(0.8, col(150, 122, 50, 0.66)); lg.addColorStop(1, col(160, 136, 60, 0.42));
+    x.fillStyle = lg; x.fill(blade);
+    x.save(); x.clip(blade);
+    // ripples across the blade: alternating light and shade where it corrugates
+    for (let k = 4; k < 124; k += 3.2 + rnd() * 1.6) {
+      const [px, py] = P(k / 128, 0), a2 = 0.05 + 0.07 * rnd();
+      x.strokeStyle = col(40, 28, 8, a2); x.lineWidth = 1.1; x.beginPath(); x.moveTo(px - 2, py - 14); x.quadraticCurveTo(px + 1.5, py, px - 2, py + 14); x.stroke();
+      x.strokeStyle = `rgba(255,236,170,${(a2 * 0.8).toFixed(3)})`; x.lineWidth = 0.7; x.beginPath(); x.moveTo(px - 0.8, py - 14); x.quadraticCurveTo(px + 2.6, py, px - 0.8, py + 14); x.stroke();
+    }
+    // the light comes through the thin edges
+    x.strokeStyle = 'rgba(255,230,150,0.18)'; x.lineWidth = 2.2; x.stroke(blade);
+    // pale scars and one nibbled hole
+    for (let k = 0; k < 3; k++) { const [px, py] = P(0.3 + rnd() * 0.55, (rnd() - 0.5) * 8); x.fillStyle = 'rgba(230,214,160,0.22)'; x.beginPath(); x.ellipse(px, py, 1.5 + rnd() * 2.5, 0.8 + rnd(), rnd() * 3, 0, TAU); x.fill(); }
+    { const [hx, hy] = P(0.55 + rnd() * 0.3, (rnd() - 0.5) * 6); x.globalCompositeOperation = 'destination-out'; x.beginPath(); x.ellipse(hx, hy, 1.6 + rnd() * 1.4, 1.2 + rnd(), rnd() * 3, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; }
+    x.restore();
+    // the midrib, darker at the base, fading toward the tip
+    const m0 = P(0.02, 0), m1 = P(0.55, 0), m2 = P(0.9, 0);
+    const mg = x.createLinearGradient(0, 0, 128, 0); mg.addColorStop(0, col(60, 44, 14, 0.75)); mg.addColorStop(1, col(60, 44, 14, 0));
+    x.strokeStyle = mg; x.lineWidth = 1.4; x.beginPath(); x.moveTo(m0[0], m0[1]); x.quadraticCurveTo(m1[0], m1[1], m2[0], m2[1]); x.stroke();
     arr[key] = c;
     return c;
   }
@@ -1954,7 +1981,7 @@ export class Renderer {
       // M x translate(bx,by) x rotate(a2) x scale(sx, sy)
       const a_ = ca * sx, b_ = sa * sx, c_ = -sa * sy, d_ = ca * sy;
       ctx.setTransform(M.a * a_ + M.c * b_, M.b * a_ + M.d * b_, M.a * c_ + M.c * d_, M.b * c_ + M.d * d_, M.a * bx + M.c * by + M.e, M.b * bx + M.d * by + M.f);
-      ctx.drawImage(spr, 0, -32);
+      ctx.drawImage(spr, 0, -32, 128, 64);
     }
     ctx.setTransform(M);
     ctx.fillStyle = `rgba(${(140 * dark) | 0},${(120 * dark) | 0},${(50 * dark) | 0},0.9)`;

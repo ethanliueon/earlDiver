@@ -222,12 +222,13 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   if (!(gear && gear.noTank) && TL && TL.fx !== 'brass') drawSpecialTank(ctx, u, TL, (gear && gear.t) || 0);
   else if (!(gear && gear.noTank)) {
   const tg = ctx.createLinearGradient(0, -17.5 * u, 0, -6 * u);
-  if (TL && TL.fx === 'brass') { tg.addColorStop(0, '#5a4418'); tg.addColorStop(0.3, '#e0c070'); tg.addColorStop(0.55, '#a08040'); tg.addColorStop(1, '#3a2c10'); } else { tg.addColorStop(0, '#4c5257'); tg.addColorStop(0.3, '#9aa2a8'); tg.addColorStop(0.55, '#646c72'); tg.addColorStop(1, '#25292c'); }
+  if (TL && TL.fx === 'brass') { tg.addColorStop(0, '#5a4418'); tg.addColorStop(0.3, '#e0c070'); tg.addColorStop(0.55, '#a08040'); tg.addColorStop(1, '#3a2c10'); } else { tg.addColorStop(0, '#6a5420'); tg.addColorStop(0.28, '#d9b24a'); tg.addColorStop(0.52, '#a98428'); tg.addColorStop(1, '#3e3012'); } // (ui-studio) a working diver's tank: steel painted signal yellow, faded, not chrome
   ctx.fillStyle = tg;
   ctx.beginPath(); ctx.roundRect(-2 * u, -17.5 * u, 32 * u, 11.5 * u, 5.7 * u); ctx.fill();
   ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(8 * u, -17.5 * u, 1.8 * u, 11.5 * u); ctx.fillRect(19 * u, -17.5 * u, 1.8 * u, 11.5 * u); // cam bands
   ctx.fillStyle = 'rgba(225,215,170,0.55)'; ctx.fillRect(24 * u, -17.5 * u, 2.4 * u, 11.5 * u); // inspection band
   ctx.fillStyle = '#121416'; ctx.beginPath(); ctx.roundRect(-2.4 * u, -17.6 * u, 5 * u, 11.7 * u, 2.2 * u); ctx.fill(); // rubber boot
+  if (!TL) { ctx.fillStyle = 'rgba(60,48,20,0.45)'; ctx.fillRect(4 * u, -9.4 * u, 15 * u, 0.7 * u); ctx.fillStyle = 'rgba(70,66,58,0.7)'; ctx.fillRect(12 * u, -16.6 * u, 3 * u, 1.1 * u); ctx.fillRect(22 * u, -8.2 * u, 2.2 * u, 0.9 * u); } // a scuff along the belly of it, and paint chipped to bare steel
   ctx.fillStyle = '#17191b'; ctx.beginPath(); ctx.roundRect(29 * u, -15 * u, 4.5 * u, 6.5 * u, 1 * u); ctx.fill(); // valve
   ctx.fillStyle = '#3e4347'; ctx.beginPath(); ctx.arc(33.5 * u, -11.5 * u, 1.8 * u, 0, Math.PI * 2); ctx.fill(); // first stage
 
@@ -906,6 +907,68 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
 }
 
 // Small weathered work boat with an A-frame crane. Origin at the waterline centre. Faces -x (bow left).
+// (ui-studio) weathering: a painted tile (tools/art_kit.py -> assets/art/weather-*.png) laid over a hull that has just
+// been drawn, only where the hull is ('source-atop'), so the clean shapes read as steel that has been at sea. The
+// pattern lives in the hull's own frame (scale: metres of hull per tile), so it moves with her.
+const WEATHER = {};
+export function weather(ctx, kind, x, y, w, h, scale, alpha = 1) {
+  let W = WEATHER[kind];
+  if (!W) { W = WEATHER[kind] = { img: new Image(), pats: new WeakMap() }; W.img.src = `assets/art/weather-${kind}.png`; }
+  if (!W.img.complete || !W.img.naturalWidth) return;
+  let p = W.pats.get(ctx); if (!p) { p = ctx.createPattern(W.img, 'repeat'); W.pats.set(ctx, p); }
+  p.setTransform(new DOMMatrix([scale, 0, 0, scale, x, y]));
+  ctx.save(); ctx.globalCompositeOperation = 'source-atop'; ctx.globalAlpha = alpha; ctx.fillStyle = p; ctx.fillRect(x, y, w, h); ctx.restore();
+}
+
+// (ui-studio) the Margaret is drawn once into a stored picture (her hull, house, mast, crane and the weathering over
+// them) and that picture is what the game puts on screen each frame, rocked; only what moves is drawn live on top:
+// the radar bar, the smoke, the tutorial's lit door. Before, all of her was drawn from shapes every frame.
+function boatRadar(ctx, u, t) { const rad = Math.cos(t * 2.4); ctx.fillStyle = '#d8d4c8'; ctx.fillRect((4 - 5 * Math.abs(rad)) * u, -50 * u, 10 * Math.abs(rad) * u + 0.6 * u, 1.2 * u); }
+function drawBoatLive(ctx, u, t, opts) {
+  // (4.3.5) the tutorial: the door lit up, a brass glow round it pulsing, so it is plain where the cabin is
+  if (opts.tutDoor) {
+    const p = 0.5 + 0.5 * Math.sin(t * 4);
+    ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.95)'; ctx.shadowBlur = (6 + 8 * p) * u * 0.6;
+    ctx.fillStyle = `rgba(232,208,146,${(0.22 + 0.18 * p).toFixed(3)})`; ctx.fillRect(17 * u, -24 * u, 4 * u, 13 * u);
+    ctx.strokeStyle = `rgba(240,216,150,${(0.8 + 0.2 * p).toFixed(3)})`; ctx.lineWidth = 1.1 * u; ctx.strokeRect(16.4 * u, -24.6 * u, 5.2 * u, 14.2 * u);
+    // a brass arrow beside it, bobbing toward the door (it turns with her, so it always points at the door)
+    const ax = 24.5 * u + Math.sin(t * 5) * 0.9 * u, ay = -17.5 * u;
+    ctx.fillStyle = 'rgba(240,216,150,0.97)'; ctx.shadowBlur = 4 * u * 0.6; ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.beginPath(); ctx.moveTo(ax - 2.4 * u, ay); ctx.lineTo(ax + 0.6 * u, ay - 2.4 * u); ctx.lineTo(ax + 0.6 * u, ay - 0.9 * u); ctx.lineTo(ax + 3.6 * u, ay - 0.9 * u);
+    ctx.lineTo(ax + 3.6 * u, ay + 0.9 * u); ctx.lineTo(ax + 0.6 * u, ay + 0.9 * u); ctx.lineTo(ax + 0.6 * u, ay + 2.4 * u); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  // the wisp of smoke from the stack
+  for (let k = 0; k < 4; k++) {
+    const p = ((t * 0.25 + k / 4) % 1);
+    ctx.fillStyle = `rgba(90,90,92,${(0.25 * (1 - p)).toFixed(3)})`;
+    ctx.beginPath(); ctx.arc((13.5 + p * 8) * u, (-39 - p * 10) * u, (1 + p * 3) * u, 0, TAU); ctx.fill();
+  }
+}
+let BOAT_PIC = null;
+export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
+  const u = Lp / 100, W = WEATHER.boat, ready = !!(W && W.img.complete && W.img.naturalWidth);
+  const key = `${Math.round(Lp)}|${mirrored ? 1 : 0}|${ready ? 1 : 0}|${document.fonts ? document.fonts.status : ''}`;
+  if (!BOAT_PIC || BOAT_PIC.key !== key) {
+    const c = BOAT_PIC && BOAT_PIC.c || document.createElement('canvas');
+    const ox = Math.ceil(66 * u), oy = Math.ceil(64 * u);
+    c.width = Math.ceil(132 * u); c.height = Math.ceil(78 * u);
+    const x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height); x.setTransform(1, 0, 0, 1, ox, oy);
+    drawBoatFull(x, Lp, 0, sub, mirrored, { still: true });
+    BOAT_PIC = { c, key, ox, oy };
+    if (!ready) weather(x, 'boat', 0, 0, 1, 1, 1, 0); // (starts the weathering's picture loading; the next frame stores her with it)
+  }
+  ctx.save(); ctx.rotate(boatRock(t));
+  ctx.drawImage(BOAT_PIC.c, -BOAT_PIC.ox, -BOAT_PIC.oy);
+  ctx.restore();
+  // what moves, drawn in the same rocking frame
+  ctx.save(); ctx.rotate(boatRock(t));
+  boatRadar(ctx, u, t);
+  drawBoatLive(ctx, u, t, opts);
+  ctx.restore();
+  return { craneTip: [56 * u, -40 * u] };
+}
+
 // ---------- the Margaret's geometry, shared with the game (2.5.0) ----------
 // The boat is drawn 14 m long in 100 units: BOAT_U metres a unit. x is + toward the stern, y + down,
 // the origin on the waterline at her middle. Things that stand on her (Earl) are drawn in her frame, so
@@ -920,13 +983,13 @@ export function deckLine(xu) {
   const x = Math.max(-56, xu), tt = (-72 + Math.sqrt(5184 + 16 * (56 + x))) / 8; // the sheer is a quadratic curve: x(t) = -56 + 72t + 4t²
   return -16 + 11 * tt - 5.5 * tt * tt;
 }
-export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
+function drawBoatFull(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   // A small, hard-worked dive-support boat, bow to the left: a flared bow and a curved sheer line,
   // a red boot-top at the waterline, rub rail, plating seams and rust; a wheelhouse with framed
   // windows; a mast with radar, antennas and lights; an exhaust stack; deck clutter; and at the
   // stern an A-frame with hydraulic rams, a winch drum and a block that carries the sub's cable.
   const u = Lp / 100;
-  const roll = boatRock(t);
+  const roll = opts.still ? 0 : boatRock(t);
   ctx.save(); ctx.rotate(roll);
   // ---------- hull ----------
   const hull = new Path2D();
@@ -963,7 +1026,7 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   ctx.strokeStyle = '#d8d4c8'; ctx.lineWidth = 0.8 * u;
   ctx.beginPath(); ctx.moveTo(-56 * u, -16 * u); ctx.quadraticCurveTo(-20 * u, -10.5 * u, 20 * u, -10.5 * u); ctx.lineTo(46 * u, -11.5 * u); ctx.stroke();
   // name on the bow, hawse pipe and anchor
-  ctx.fillStyle = 'rgba(40,36,30,0.7)'; ctx.font = `bold ${3 * u}px Georgia, serif`;
+  ctx.fillStyle = 'rgba(30,38,54,0.82)'; ctx.font = `${3.5 * u}px "IM Fell English SC", "IM Fell English", Georgia, serif`; // (ui-studio) signwritten, not typed
   if (mirrored) { const tw = ctx.measureText('MARGARET').width; ctx.save(); ctx.translate(-47 * u + tw / 2, 0); ctx.scale(-1, 1); ctx.fillText('MARGARET', -tw / 2, -7.5 * u); ctx.restore(); } else ctx.fillText('MARGARET', -47 * u, -7.5 * u);
   ctx.fillStyle = '#2a2624'; ctx.beginPath(); ctx.ellipse(-50 * u, -11.5 * u, 1 * u, 0.8 * u, 0, 0, TAU); ctx.fill();
   ctx.strokeStyle = '#3a3630'; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.moveTo(-50 * u, -11 * u); ctx.lineTo(-50.5 * u, -6 * u); ctx.stroke();
@@ -1005,43 +1068,26 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
     const wg = ctx.createLinearGradient(x, y, x + w, y + h);
     wg.addColorStop(0, '#a8bcc4'); wg.addColorStop(0.5, '#62767e'); wg.addColorStop(1, '#3a4a50');
     ctx.fillStyle = wg; ctx.fillRect(x, y, w, h);
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.moveTo(x + 0.8 * u, y + h - 0.8 * u); ctx.lineTo(x + w - 0.8 * u, y + 0.8 * u); ctx.stroke();
+    ctx.fillStyle = 'rgba(230,238,240,0.22)'; ctx.fillRect(x, y, w, h * 0.32); // the sky's light along the top of the glass
+    ctx.fillStyle = 'rgba(20,24,26,0.35)'; ctx.fillRect(x, y + h * 0.78, w, h * 0.22); // the cabin's dark at the sill
   }
   // door with a porthole, life ring on the wall
   ctx.fillStyle = '#b0aca0'; ctx.fillRect(17 * u, -24 * u, 4 * u, 13 * u);
   ctx.strokeStyle = 'rgba(40,38,32,0.5)'; ctx.lineWidth = 0.3 * u; ctx.strokeRect(17 * u, -24 * u, 4 * u, 13 * u);
   ctx.fillStyle = '#3a4a50'; ctx.beginPath(); ctx.arc(19 * u, -20.5 * u, 1 * u, 0, TAU); ctx.fill();
   // (4.3.5) the tutorial: the door lit up, a brass glow round it pulsing, so it is plain where the cabin is
-  if (opts.tutDoor) {
-    const p = 0.5 + 0.5 * Math.sin(t * 4);
-    ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.95)'; ctx.shadowBlur = (6 + 8 * p) * u * 0.6;
-    ctx.fillStyle = `rgba(232,208,146,${(0.22 + 0.18 * p).toFixed(3)})`; ctx.fillRect(17 * u, -24 * u, 4 * u, 13 * u);
-    ctx.strokeStyle = `rgba(240,216,150,${(0.8 + 0.2 * p).toFixed(3)})`; ctx.lineWidth = 1.1 * u; ctx.strokeRect(16.4 * u, -24.6 * u, 5.2 * u, 14.2 * u);
-    // a brass arrow beside it, bobbing toward the door (it turns with her, so it always points at the door)
-    const ax = 24.5 * u + Math.sin(t * 5) * 0.9 * u, ay = -17.5 * u;
-    ctx.fillStyle = 'rgba(240,216,150,0.97)'; ctx.shadowBlur = 4 * u * 0.6; ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.beginPath(); ctx.moveTo(ax - 2.4 * u, ay); ctx.lineTo(ax + 0.6 * u, ay - 2.4 * u); ctx.lineTo(ax + 0.6 * u, ay - 0.9 * u); ctx.lineTo(ax + 3.6 * u, ay - 0.9 * u);
-    ctx.lineTo(ax + 3.6 * u, ay + 0.9 * u); ctx.lineTo(ax + 0.6 * u, ay + 0.9 * u); ctx.lineTo(ax + 0.6 * u, ay + 2.4 * u); ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
   ctx.strokeStyle = '#e05a2a'; ctx.lineWidth = 1.1 * u; ctx.beginPath(); ctx.arc(-4.5 * u, -15.5 * u, 2.2 * u, 0, TAU); ctx.stroke();
   ctx.strokeStyle = '#f0ece0'; ctx.lineWidth = 1.1 * u;
   for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(-4.5 * u, -15.5 * u, 2.2 * u, k * Math.PI / 2, k * Math.PI / 2 + 0.35); ctx.stroke(); }
   // exhaust stack with a wisp of smoke
   ctx.fillStyle = '#2a2826'; ctx.fillRect(12 * u, -38 * u, 3 * u, 6 * u);
   ctx.fillStyle = '#8a2a20'; ctx.fillRect(12 * u, -38 * u, 3 * u, 1 * u);
-  for (let k = 0; k < 4; k++) {
-    const p = ((t * 0.25 + k / 4) % 1);
-    ctx.fillStyle = `rgba(90,90,92,${(0.25 * (1 - p)).toFixed(3)})`;
-    ctx.beginPath(); ctx.arc((13.5 + p * 8) * u, (-39 - p * 10) * u, (1 + p * 3) * u, 0, TAU); ctx.fill();
-  }
   // ---------- mast: radar, antennas, lights ----------
   ctx.strokeStyle = '#3a3836'; ctx.lineWidth = 0.9 * u;
   ctx.beginPath(); ctx.moveTo(4 * u, -33 * u); ctx.lineTo(4 * u, -54 * u); ctx.stroke();
   ctx.lineWidth = 0.5 * u; ctx.beginPath(); ctx.moveTo(-1 * u, -46 * u); ctx.lineTo(9 * u, -46 * u); ctx.stroke(); // yard
   ctx.beginPath(); ctx.moveTo(9 * u, -46 * u); ctx.lineTo(10 * u, -57 * u); ctx.moveTo(-1 * u, -46 * u); ctx.lineTo(-1.5 * u, -53 * u); ctx.stroke(); // whips
-  const rad = Math.cos(t * 2.4); // the radar bar sweeps round (foreshortened)
-  ctx.fillStyle = '#d8d4c8'; ctx.fillRect((4 - 5 * Math.abs(rad)) * u, -50 * u, 10 * Math.abs(rad) * u + 0.6 * u, 1.2 * u);
+  if (!opts.still) boatRadar(ctx, u, t);
   ctx.fillStyle = '#2a2826'; ctx.fillRect(3.2 * u, -49 * u, 1.6 * u, 2 * u);
   ctx.fillStyle = '#fff4d0'; ctx.beginPath(); ctx.arc(4 * u, -54.4 * u, 0.6 * u, 0, TAU); ctx.fill(); // masthead light
   ctx.fillStyle = '#ff5a40'; ctx.beginPath(); ctx.arc(-8.5 * u, -29 * u, 0.5 * u, 0, TAU); ctx.fill(); // port light
@@ -1061,6 +1107,7 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   ctx.beginPath(); ctx.moveTo(29.5 * u, -15 * u); ctx.lineTo(56 * u, -40.5 * u); ctx.stroke();   // cable up to the block
   ctx.fillStyle = '#e0a020'; ctx.beginPath(); ctx.arc(56 * u, -40 * u, 1.6 * u, 0, TAU); ctx.fill(); // block (yellow)
   ctx.fillStyle = '#2a2826'; ctx.beginPath(); ctx.arc(56 * u, -40 * u, 0.6 * u, 0, TAU); ctx.fill();
+  weather(ctx, 'boat', -62 * u, -70 * u, 124 * u, 82 * u, 34 * u / 512, 0.78); // (ui-studio) salt, rust and grime over all of her
   ctx.restore();
   return { craneTip: [56 * u, -40 * u] };
 }

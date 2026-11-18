@@ -20,5 +20,6 @@ if '<!-- stamp:start' in html:
     html = re.sub(r'<!-- stamp:start.*?<!-- stamp:end -->', lambda m: block, html, flags=re.S)
 else:
     html = html.replace('<script type="module" src="js/main.js"></script>', block)
+html = re.sub(r'href="css/(\w+)\.css(\?v=[^"]*)?"', lambda m: f'href="css/{m.group(1)}.css?v={ver}"', html)  # the stylesheets too (ui-studio)
 open(p, 'w').write(html)
 print('stamped', ver, len(mods), 'modules')
