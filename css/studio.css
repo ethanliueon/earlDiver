@@ -273,3 +273,151 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
   padding: 0 10px 4px !important; min-height: 44px; font: 600 15px/1 var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-ink) !important; }
 #inventory .lk-acts button:first-child:not(.sell) { border-image-source: var(--BTN1) !important; color: #1c0b03 !important; }
 #inventory .lk-acts button:hover { filter: brightness(1.15); }
+
+/* ---------------------------------------------------------------- the old rules that named elements by id (and so outranked
+   the ones above, and set border: 0, which took the parts' art away): matched here, by id, after them */
+html body :is(#pause #resume, #pause #savequit, #confirm .cf-yes, #confirm .cf-no, #quests .qs-refresh, #workshop button.go[data-act="sellall"]) {
+  border: 12px solid transparent !important; border-image: var(--BTN) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important;
+  color: var(--c-ink) !important; text-shadow: none !important; border-radius: 0 !important; padding: 0 12px 4px !important; min-height: 44px;
+  font: 600 16px/1 var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; }
+html body :is(#pause #resume, #confirm .cf-yes, #workshop button.go[data-act="sellall"]) { border-image-source: var(--BTN1) !important; color: #1c0b03 !important; }
+html body :is(#pause #resume, #pause #savequit, #confirm .cf-yes, #confirm .cf-no, #quests .qs-refresh, #workshop button.go):hover { filter: brightness(1.15) !important; }
+html body :is(#pause #resume, #pause #savequit, #confirm .cf-yes, #confirm .cf-no, #quests .qs-refresh, #workshop button.go):active { border-image-source: var(--BTND) !important; color: var(--c-ink) !important; }
+html body :is(#pause, #confirm) button { outline: none !important; }
+html body :is(#pause, #confirm) button:focus-visible { outline: 2px solid rgba(236, 106, 44, 0.7) !important; outline-offset: 3px; }
+html body .shop:not(.cave) .nameplate { background: none !important; box-shadow: none !important; }
+html body .shop:not(.cave) .nameplate h2 { color: var(--c-ink) !important; text-shadow: none !important; }
+html body .shop:not(.cave) .nameplate .shop-sub { color: var(--c-dim) !important; text-shadow: none !important; }
+/* the quest board's i: a small rubber key */
+html body #quests .qs-info { width: 24px !important; height: 24px !important; border: 6px solid transparent !important; border-image: var(--KEY) 24 fill / 6px stretch !important; background: none !important; box-shadow: none !important;
+  border-radius: 0 !important; font: italic 600 13px/1 var(--c-text) !important; color: var(--c-ink) !important; padding: 0 0 2px !important; display: inline-grid; place-items: center; }
+#quests .qs-q.ready .qs-t b::after { content: '  ·  READY'; font: 600 12px var(--c-num); letter-spacing: 0.14em; color: var(--c-green); }
+#quests .qs-pay { font: 600 18px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.02em; }
+#quests .qs-t b { font: 18px var(--c-text) !important; color: var(--c-ink) !important; }
+#quests .qs-t span, #quests .qs-t small { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; letter-spacing: 0 !important; text-transform: none !important; }
+#quests .qs-bar { height: 4px !important; background: #050606 !important; border-radius: 0 !important; }
+#quests .qs-bar i { background: var(--c-orange) !important; }
+#quests .qs-q::before, #quests .qs-q::after { content: none !important; }
+#quests .qs-wait { font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; }
+#quests .qs-clock { font: 600 15px var(--c-num) !important; color: var(--c-ink) !important; }
+#quests .qs-q { position: relative; padding-right: 40px !important; }
+html body #quests .qs-info { position: absolute !important; right: 4px !important; top: 50% !important; transform: translateY(-50%); margin: 0 !important; }
+html body #confirm button:focus-visible { outline: none !important; filter: brightness(1.2) !important; }
+.shop .shop-empty { border: 10px solid transparent !important; border-image: var(--W) 24 fill / 10px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
+  font: italic 17px var(--c-text) !important; color: var(--c-dim) !important; padding: 8px 10px !important; }
+
+/* ---------------------------------------------------------------- the yard (the sub page): the same console, a drafting grid kept faintly */
+html body #workshop.refit-full #shop-body { border: 12px solid transparent !important; border-image: var(--W) 24 fill / 12px stretch !important; border-radius: 0 !important;
+  background: repeating-linear-gradient(0deg, rgba(236, 230, 214, 0.035) 0 1px, transparent 1px 24px), repeating-linear-gradient(90deg, rgba(236, 230, 214, 0.035) 0 1px, transparent 1px 24px) !important;
+  box-shadow: none !important; }
+html body #workshop.refit-full .shop-main { background-image: none !important; }
+#workshop.refit-full .yd-tack { display: none !important; }
+/* her picture and the depth ruler behind sunk glass, no brass */
+html body #workshop .yd-port { border: 10px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 10px stretch !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; }
+#workshop .yd-port::before, #workshop .yd-port::after { content: none !important; }
+html body #workshop .yd-port .yd-pic { border-radius: 0 !important; box-shadow: none !important; }
+html body #workshop .yd-ruler { box-shadow: 0 0 0 1px #000, 0 0 0 4px #151819, 0 0 0 5px rgba(236, 230, 214, 0.18) !important; border-radius: 0 !important; }
+#workshop .ru-zones { border-radius: 0 !important; }
+/* headings printed, not sprayed through a stencil */
+#workshop .yd-stencil { -webkit-mask-image: none !important; mask-image: none !important; font: 600 15px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-ink) !important; text-shadow: none !important; }
+#workshop .yd-stencil small { font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; letter-spacing: 0 !important; }
+#workshop .yd-info h3, #workshop .yd-top h3 { font: 600 22px var(--c-num) !important; letter-spacing: 0.08em !important; text-transform: uppercase; color: var(--c-ink) !important; }
+#workshop .yd-info h3 small, #workshop .yd-top h3 small { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
+#workshop .yd-hull { font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; }
+/* her specification: printed on a plate, not a typed paper sheet */
+html body #workshop .yd-sheet { border: 12px solid transparent !important; border-image: var(--W) 24 fill / 12px stretch !important; background: none !important; box-shadow: none !important; transform: none !important;
+  color: var(--c-ink) !important; padding: 4px 6px 6px !important; border-radius: 0 !important; }
+#workshop .yd-sheet::before, #workshop .yd-sheet::after { content: none !important; }
+#workshop .ys-head, #workshop .ys-head span { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; border-color: rgba(0, 0, 0, 0.6) !important; }
+#workshop .ys-row, #workshop .yd-sheet .ys-row span { font: 600 13px var(--c-num) !important; letter-spacing: 0.12em !important; color: var(--c-dim) !important; }
+#workshop .ys-row b, #workshop .yd-sheet b { font: 600 15px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.04em !important; }
+#workshop .ys-note { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; }
+html body #workshop .ys-stamp { transform: none !important; border: 0 !important; box-shadow: none !important; background: none !important; padding: 0 0 0 20px !important; position: relative;
+  font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-green) !important; }
+#workshop .ys-stamp::before { content: ''; position: absolute; left: 0; top: 50%; width: 15px; height: 15px; margin-top: -8px; background: url("../assets/ui/parts/lamp-green.png") center / 15px 15px no-repeat; }
+/* the way to the other subs: a push-button, not a brass plaque */
+html body #workshop .yd-plaque { border: 12px solid transparent !important; border-image: var(--BTN) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
+  font: 600 16px var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-ink) !important; text-shadow: none !important; padding: 2px 14px 6px !important; }
+#workshop .yd-plaque i, #workshop .yd-plaque::before, #workshop .yd-plaque::after { display: none !important; }
+#workshop .yd-plaque svg, #workshop .yd-plaque .yd-lens { filter: invert(0.9); }
+/* the refits: raised tiles (no paper cards, no clips), each with an orange buy button for its price */
+html body #workshop .yd-refit { border: 12px solid transparent !important; border-image: url("../assets/ui/parts/tile.png") 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; transform: none !important; border-radius: 0 !important; color: var(--c-ink) !important; }
+#workshop .yd-refit::before, #workshop .yd-refit::after, #workshop .yd-clip { display: none !important; }
+#workshop .yd-refit b { font: 18px var(--c-text) !important; color: var(--c-ink) !important; }
+#workshop .yd-refit p { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; }
+html body .pay-tag { border: 12px solid transparent !important; border-image: var(--BTN1) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; transform: none !important;
+  height: auto !important; min-height: 44px; padding: 0 12px 4px !important; font: 600 17px/1 var(--c-num) !important; letter-spacing: 0.06em !important; color: #1c0b03 !important; text-shadow: none !important; clip-path: none !important; }
+.pay-tag::before, .pay-tag::after { content: none !important; display: none !important; }
+html body .pay-tag:disabled { border-image-source: var(--BTN) !important; color: var(--c-faint) !important; }
+html body .pay-tag:hover:not(:disabled) { filter: brightness(1.12) !important; transform: none !important; }
+#workshop .yd-fitted { font: 600 13px var(--c-num) !important; letter-spacing: 0.14em !important; color: var(--c-green) !important; background: none !important; box-shadow: none !important; border: 0 !important; transform: none !important; }
+html body #workshop .ys-stamp { position: relative !important; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; display: inline-block !important; margin-top: 10px !important; }
+/* every price, everywhere (the yard, the catalog, the quest board, the refits): an orange push-button with its figure */
+html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .shop button[data-act="refresh"]:not(.primary), #workshop .yd-refit button.yd-buy, #workshop button.yd-price, .pay-tag) {
+  border: 12px solid transparent !important; border-image: var(--BTN1) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
+  clip-path: none !important; transform: none !important; filter: none !important; height: auto !important; min-height: 44px; padding: 0 12px 4px !important;
+  font-family: var(--c-num) !important; font-weight: 600 !important; font-size: 17px !important; letter-spacing: 0.06em !important; color: #1c0b03 !important; text-shadow: none !important; }
+html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .shop button[data-act="refresh"]:not(.primary), #workshop button.yd-price, .pay-tag) span { color: #1c0b03 !important; font-family: var(--c-num) !important; }
+html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .pay-tag, #workshop button.yd-price):disabled { border-image-source: var(--BTN) !important; color: var(--c-dim) !important; cursor: default; }
+html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .pay-tag, #workshop button.yd-price):disabled span { color: var(--c-dim) !important; }
+html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .pay-tag):hover:not(:disabled) { filter: brightness(1.12) !important; }
+/* all the subs: each picture behind sunk glass, the one in service ringed orange; the way back a push-button */
+html body #workshop .yd-photo { border: 8px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 8px stretch !important; background: none !important; box-shadow: none !important; padding: 0 !important; transform: none !important; border-radius: 0 !important; }
+html body #workshop .yd-photo::before, html body #workshop .yd-photo::after { content: none !important; }
+html body #workshop .yd-card .yd-pic, html body #workshop .yd-photo .yd-pic { border-radius: 0 !important; box-shadow: none !important; border: 0 !important; outline: 0 !important; }
+html body #workshop .yd-card.cur .yd-photo { outline: 2px solid var(--c-orange) !important; outline-offset: 3px; }
+html body #workshop .yd-card h4 { font: 600 14px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase; color: var(--c-ink) !important; }
+html body #workshop .yd-tab { border: 10px solid transparent !important; border-image: var(--BTN) 36 fill / 10px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; transform: none !important;
+  font: 600 14px var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-ink) !important; padding: 0 10px 3px !important; }
+
+/* ---------------------------------------------------------------- the aquarium and the tank room: their headers and switches */
+html body .tr-plate { border: 12px solid transparent !important; border-image: url("../assets/ui/parts/plate.png") 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 8px !important; }
+html body .tr-plate::before, html body .tr-plate::after { content: none !important; }
+html body .tr-plate b { font: 600 18px var(--c-num) !important; letter-spacing: 0.14em !important; text-transform: uppercase; color: var(--c-ink) !important; text-shadow: none !important; }
+html body .tr-plate span { font: 600 11px var(--c-num) !important; letter-spacing: 0.14em !important; text-transform: uppercase; color: var(--c-dim) !important; }
+html body .tr-close { width: 34px !important; height: 34px !important; border: 9px solid transparent !important; border-image: var(--KEY) 24 fill / 9px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
+  font: 500 20px/1 var(--c-num) !important; color: var(--c-ink) !important; padding: 0 0 3px !important; display: grid; place-items: center; }
+.gl-lights button { border: 10px solid transparent !important; border-image: var(--BTN) 36 fill / 10px stretch !important; background: none !important; border-radius: 0 !important; position: relative;
+  padding: 0 10px 3px 24px !important; min-height: 38px; font: 600 13px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase; color: var(--c-dim) !important; }
+.gl-lights button::before { content: ''; position: absolute; left: 4px; top: 50%; width: 14px; height: 14px; margin-top: -8px; background: url("../assets/ui/parts/lamp-off.png") center / 14px 14px no-repeat; }
+.gl-lights button.on { color: var(--c-ink) !important; }
+.gl-lights button.on::before { background-image: url("../assets/ui/parts/lamp-orange.png"); }
+.gl-catch h4 { font: 600 13px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
+.gl-catch p { font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; }
+.gl-catch button { border: 8px solid transparent !important; border-image: var(--W) 24 fill / 8px stretch !important; background: none !important; border-radius: 0 !important; font: 16px var(--c-text) !important; color: var(--c-ink) !important; }
+.gl-catch button::before { color: var(--c-orange) !important; font-family: var(--c-num) !important; }
+.gl-catch button small { font: 600 12px var(--c-num) !important; letter-spacing: 0.08em; color: var(--c-dim) !important; }
+html body .gl-catch .gl-room { border-image-source: var(--BTN1) !important; color: #1c0b03 !important; font: 600 14px var(--c-num) !important; letter-spacing: 0.08em !important; text-transform: uppercase; }
+html body .gl-catch .gl-room::before { content: none !important; }
+
+/* ---------------------------------------------------------------- the title: a console face; the three saves as channels with lamps */
+html body #title .title-panel { border: 22px solid transparent !important; border-image: var(--P) 66 fill / 22px stretch !important; background: none !important; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 0 !important; width: min(500px, 90vw); max-width: none; padding: 16px 18px 10px !important; }
+html body #title .t-plate { background: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 0 18px !important; display: block; }
+html body #title .t-plate h1 { font: 500 clamp(44px, 4.6vw, 58px)/1 var(--c-text) !important; letter-spacing: 0.01em !important; color: var(--c-ink) !important; text-shadow: none !important; }
+html body #title .t-plate::after { content: '' !important; display: block; width: 46px; height: 3px; margin-top: 12px; background: var(--c-orange); position: static !important; }
+html body #title #continue { min-width: 200px; min-height: 50px; font-size: 18px !important; margin: 0 0 18px !important; }
+html body #title .t-label { margin: 0 0 8px !important; }
+#title .slots { gap: 6px !important; max-width: none !important; }
+html body #title .slot { grid-template-columns: 22px 26px 1fr auto !important; gap: 8px !important; border: 8px solid transparent !important; border-image: var(--W) 24 fill / 8px stretch !important;
+  background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 4px 4px 4px 2px !important; }
+html body #title .slot:hover { transform: none !important; filter: brightness(1.2) !important; }
+#title .slot .lamp { width: 18px; height: 18px; background: url("../assets/ui/parts/lamp-off.png") center / 18px 18px no-repeat; }
+#title .slot .lamp.on { background-image: url("../assets/ui/parts/lamp-green.png"); }
+#title .slot .lamp.bad { background-image: url("../assets/ui/parts/lamp-red.png"); }
+html body #title .slot .num { width: auto !important; height: auto !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; display: block;
+  font: 600 20px var(--c-num) !important; color: var(--c-dim) !important; }
+html body #title .slot .info b { font: 600 19px var(--c-num) !important; letter-spacing: 0.04em; color: var(--c-ink) !important; font-style: normal !important; }
+html body #title .slot.empty .info b { color: var(--c-dim) !important; }
+html body #title .slot .info span { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; letter-spacing: 0 !important; }
+html body #title .slot .del { border: 7px solid transparent !important; border-image: var(--KEY) 24 fill / 7px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
+  font: 600 11px var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-dim) !important; padding: 0 4px 2px !important; }
+html body #title .slot .del:hover { color: #f08a6a !important; }
+#title .menu-links { display: flex; gap: 10px !important; margin-top: 14px !important; }
+#title .t-key { border: 9px solid transparent; border-image: var(--BTN) 36 fill / 9px stretch; background: none; cursor: pointer; padding: 0 8px 3px; min-height: 34px;
+  font: 600 13px var(--c-num); letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-ink); }
+#title .t-key:hover { filter: brightness(1.2); }
+html body #title .hint { font: 13px var(--c-text) !important; color: var(--c-faint) !important; margin: 12px 0 0 !important; }
+html body #title .hint .version { font: 600 12px var(--c-num); letter-spacing: 0.1em; }
+#title .tag, #title .t-gear { display: none !important; }
+html body #confirm .cf-yes.danger { border-image-source: url("../assets/ui/parts/btn-danger.png") !important; color: #fbe8e2 !important; }
