@@ -189,7 +189,7 @@ export class UI {
     document.addEventListener('fullscreenchange', () => { $('fullscreen').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; });
     $('restart').addEventListener('click', () => this.confirm('Start a new game?', 'A new diver, from nothing: no cash, no gear, an empty journal. This save is replaced.', 'Start over', 'Keep playing', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); }));
     // the title screen: Continue, the three slots, controls, full screen
-    $('continue').addEventListener('click', () => { const n = +$('continue').dataset.n || lastSlot(); if (n) h.onSlot(n); });
+    $('continue').addEventListener('click', () => { const n = lastSlot(); if (n) h.onSlot(n); });
     $('slots').addEventListener('click', (ev) => {
       const del = ev.target.closest('.del'), card = ev.target.closest('.slot');
       if (!card) return;
@@ -1141,26 +1141,19 @@ export class UI {
     if (!this.fitBound) { this.fitBound = true; window.addEventListener('resize', () => this.fitTitle()); document.fonts && document.fonts.ready.then(() => this.fitTitle()); }
     $('menu').classList.add('gone');
     const ago = (ms) => { const m = (Date.now() - ms) / 60000; return m < 2 ? 'just now' : m < 60 ? `${Math.round(m)} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
-    // (ui-studio) the slots as entries in Earl's dive log, written by hand: each diver on its own ruled line; of
-    // the empty slots only the first, as one line to start a new diver. One brass button carries on the last.
-    let html = '', firstEmpty = 0;
-    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    let html = '';
     for (let n = 1; n <= SLOTS; n++) {
       const r = readSlot(n);
       if (r.state === 'ok') {
         const p = r.profile;
-        html += `<div class="slot" data-n="${n}"><div class="num">No. ${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? ` · ${esc(p.subName)}` : ''}</b><span>${p.runs || 0} dive${p.runs === 1 ? '' : 's'}, deepest ${p.deepest || 0} m, ${(p.journal || []).length} species${r.saved ? ` · ${ago(r.saved)}` : ''}</span></div><button class="del" title="Delete this save">strike out</button></div>`;
+        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? ` · ${p.subName}` : ''}</b><span>${p.runs || 0} dive${p.runs === 1 ? '' : 's'} · deepest ${p.deepest || 0} m · ${(p.journal || []).length} species · ${r.saved ? ago(r.saved) : ''}</span></div><button class="del" title="Delete this save">Delete</button></div>`;
       } else if (r.state === 'damaged') {
-        html += `<div class="slot damaged" data-n="${n}"><div class="num">No. ${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">strike out</button></div>`;
-      } else if (!firstEmpty) { firstEmpty = n; html += `<div class="slot empty" data-n="${n}"><div class="num">No. ${n}</div><div class="info"><b>A new diver</b><span>a fresh page, no cash, no gear</span></div><span></span></div>`; }
+        html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">Delete</button></div>`;
+      } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>Empty: new game</b><span>start a new diver here</span></div><span></span></div>`;
     }
     $('slots').innerHTML = html;
-    const last = lastSlot(), lastOk = last && readSlot(last).state === 'ok';
-    const cont = $('continue');
-    cont.hidden = !(lastOk || firstEmpty);
-    cont.dataset.n = lastOk ? last : firstEmpty;
-    cont.textContent = lastOk ? 'Continue' : 'Start diving';
-    $('title').classList.toggle('lb-fresh', !lastOk);
+    const last = lastSlot();
+    $('continue').hidden = !(last && readSlot(last).state === 'ok');
     $('title').classList.remove('gone');
   }
   titleOpen() { return !$('title').classList.contains('gone'); }
