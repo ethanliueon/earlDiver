@@ -212,3 +212,48 @@ html body #quests .qs-q .qs-info { right: 2px !important; top: 2px !important; w
 html body .tr-help-btn { border: 9px solid transparent !important; border-image: url("../assets/ui/olive/btn-olive.png") 28 fill / 9px stretch !important; background: none !important; color: #e6dec4 !important; text-shadow: none !important; box-shadow: none !important; border-radius: 0 !important; display: grid !important; place-items: center !important; padding: 0 !important; }
 /* (olive-studio) keys in HTML as the painted labels on the canvas: a flat dark olive tab, a thin cream line inside, a cream letter */
 html body kbd.keycap, html body .ts-key kbd:not(.mouse) { background: rgba(38, 45, 31, 0.92) !important; color: #e6dec4 !important; border: 0 !important; box-shadow: inset 0 0 0 2px rgba(38, 45, 31, 0.92), inset 0 0 0 3px rgba(226, 218, 190, 0.72), 0 1px 3px rgba(0, 0, 0, 0.5) !important; border-radius: 4px !important; }
+
+/* (olive-studio) the title as a game's front screen, in the locker's olive: the name painted in cream on a riveted
+   board, one big cream plate to dive, the divers on small riveted plates, settings and full screen as olive plates in
+   the corner; no box round it all, no footer */
+html body #title#title .title-panel { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important;
+  position: absolute !important; left: 6vw !important; top: 13vh !important; transform: none !important; width: auto !important; max-width: none !important;
+  padding: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important; align-items: flex-start !important; text-align: left !important; }
+html body #title#title .title-panel::before, html body #title#title .title-panel::after { content: none !important; }
+html body #title#title .t-plate { width: min(560px, 40vw) !important; aspect-ratio: 620 / 150 !important; padding: 0 !important; margin: 0 0 4.5vh !important; border: 0 !important; border-image: none !important; box-shadow: none !important;
+  background: url("../assets/ui/olive/title-board.png") center / 100% 100% no-repeat !important; display: grid !important; place-items: center !important; }
+html body #title#title .t-plate::before, html body #title#title .t-plate::after { content: none !important; }
+html body #title#title .t-plate h1 { font: 500 clamp(34px, 3.9vw, 66px)/1 "EB Garamond", Georgia, serif !important; color: #e8e0c6 !important; letter-spacing: 0.015em !important; margin: 0 0 4px !important; white-space: nowrap !important;
+  /* paint on steel: the cream a little uneven, worn thin in places by the plate's own grain */
+  background: linear-gradient(180deg, #efe8d2 0%, #ddd4b8 60%, #cfc6a6 100%) !important; -webkit-background-clip: text !important; background-clip: text !important; -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.55)) drop-shadow(0 -1px 0 rgba(255, 255, 240, 0.08)) !important; text-shadow: none !important; }
+html body #title#title .menu-buttons { margin: 0 !important; display: flex !important; justify-content: flex-start !important; }
+html body #title#title :is(#continue, #t-dive) { font: 500 26px/1 "EB Garamond", Georgia, serif !important; padding: 14px 70px !important; min-width: 270px !important;
+  border: 12px solid transparent !important; border-image: url("../assets/ui/olive/btn-cream.png") 28 fill / 12px stretch !important; background: none !important; color: #23251c !important;
+  box-shadow: none !important; border-radius: 0 !important; cursor: pointer !important; }
+html body #title#title :is(#continue, #t-dive):hover { filter: brightness(1.05) !important; }
+html body #title#title :is(#continue, #t-dive):active { border-image: url("../assets/ui/olive/btn-cream-down.png") 28 fill / 12px stretch !important; }
+html body #title#title :is(#continue, #t-dive)[hidden] { display: none !important; }
+html body #title#title .t-label { font: 600 15px "EB Garamond", Georgia, serif !important; font-variant: all-small-caps !important; letter-spacing: 0.14em !important; color: #e6dec4 !important;
+  margin: 5vh 0 8px 4px !important; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important; }
+html body #title#title .slots { display: flex !important; flex-wrap: nowrap !important; gap: 12px !important; width: auto !important; max-width: none !important; grid-template-columns: none !important; }
+html body #title#title .slot { box-sizing: border-box !important; width: 190px !important; height: 56px !important; padding: 8px 16px !important; margin: 0 !important; position: relative !important;
+  border: 0 !important; border-image: none !important; border-radius: 0 !important; box-shadow: none !important; background: url("../assets/ui/olive/save-plate.png") center / 100% 100% no-repeat !important;
+  display: flex !important; align-items: center !important; text-align: left !important; }
+html body #title#title .slot:hover { filter: brightness(1.12) !important; transform: none !important; }
+html body #title#title .slot .num { display: none !important; }
+html body #title#title .slot .info { padding-left: 6px !important; }
+html body #title#title .slot .info b { font: 500 17px "EB Garamond", Georgia, serif !important; color: #e8e0c6 !important; white-space: nowrap !important; display: block !important; }
+html body #title#title .slot.empty .info b { color: rgba(232, 224, 198, 0.72) !important; }
+html body #title#title .slot .info span { font: italic 13px "EB Garamond", Georgia, serif !important; color: rgba(232, 224, 198, 0.62) !important; white-space: nowrap !important; display: block !important; }
+html body #title#title .slot .del { position: absolute !important; right: 14px !important; bottom: 9px !important; border: 0 !important; border-image: none !important; background: none !important; padding: 0 !important; min-width: 0 !important;
+  font: italic 13px "EB Garamond", Georgia, serif !important; color: #e8a090 !important; box-shadow: none !important; opacity: 0 !important; transition: opacity 0.15s !important; }
+html body #title#title .slot:hover .del { opacity: 1 !important; }
+html body #title .t-corner { position: absolute; top: 18px; right: 22px; display: flex; gap: 8px; z-index: 2; }
+html body #title#title .t-corner :is(.t-icon, .t-gear) { position: relative !important; top: auto !important; left: auto !important; right: auto !important; bottom: auto !important; margin: 0 !important; transform: none !important;
+  width: 46px !important; height: 46px !important; padding: 0 !important; border: 10px solid transparent !important; border-image: url("../assets/ui/olive/btn-olive.png") 28 fill / 10px stretch !important;
+  background-color: transparent !important; border-radius: 0 !important; box-shadow: none !important; color: #e6dec4 !important; display: grid !important; place-items: center !important; cursor: pointer; }
+html body #title#title .t-corner :is(.t-icon, .t-gear):active { border-image: url("../assets/ui/olive/btn-olive-down.png") 28 fill / 10px stretch !important; }
+html body #title#title .t-corner .t-icon svg { width: 18px; height: 18px; }
+html body #title#title .t-corner .t-gear::before { background: #e6dec4 !important; inset: 16% !important; }
+html body #title .t-version { position: absolute; right: 22px; bottom: 14px; font: 12px "IBM Plex Mono", monospace; color: rgba(232, 224, 198, 0.45); }

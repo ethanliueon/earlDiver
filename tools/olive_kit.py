@@ -451,3 +451,5 @@ if __name__ == '__main__':
     save(hud_scope(), 'hud-scope.png')
     save(hud_slot(), 'hud-slot.png'); save(hud_slot(True), 'hud-slot-on.png')
     save(plate(150, 44, 141), 'hud-plate.png')
+    save(plate(620, 150, 151, wear=0.8, radius=6), 'title-board.png')
+    save(plate(220, 64, 161, wear=0.5, radius=5), 'save-plate.png')

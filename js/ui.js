@@ -190,6 +190,8 @@ export class UI {
     $('restart').addEventListener('click', () => this.confirm('Start a new game?', 'A new diver, from nothing: no cash, no gear, an empty journal. This save is replaced.', 'Start over', 'Keep playing', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); }));
     // the title screen: Continue, the three slots, controls, full screen
     $('continue').addEventListener('click', () => { const n = lastSlot(); if (n) h.onSlot(n); });
+    // (olive-studio) with no diver yet, one Dive: the first empty slot
+    $('t-dive').addEventListener('click', () => { let n = 1; for (let k = 1; k <= SLOTS; k++) if (readSlot(k).state === 'empty') { n = k; break; } h.onSlot(n); });
     $('slots').addEventListener('click', (ev) => {
       const del = ev.target.closest('.del'), card = ev.target.closest('.slot');
       if (!card) return;
@@ -1149,7 +1151,7 @@ export class UI {
       const r = readSlot(n);
       if (r.state === 'ok') {
         const p = r.profile;
-        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? ` · ${p.subName}` : ''}</b><span>${p.runs || 0} dive${p.runs === 1 ? '' : 's'} · deepest ${p.deepest || 0} m · ${(p.journal || []).length} species · ${r.saved ? ago(r.saved) : ''}</span></div><button class="del" title="Delete this save">Delete</button></div>`;
+        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}</b><span>deepest ${(p.deepest || 0).toLocaleString()} m</span></div><button class="del" title="Delete this save">Delete</button></div>`;
       } else if (r.state === 'damaged') {
         html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">Delete</button></div>`;
       } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>Empty</b><span>a new diver</span></div><span></span></div>`;
@@ -1157,6 +1159,7 @@ export class UI {
     $('slots').innerHTML = html;
     const last = lastSlot();
     $('continue').hidden = !(last && readSlot(last).state === 'ok');
+    $('t-dive').hidden = !$('continue').hidden;
     $('title').classList.remove('gone');
   }
   titleOpen() { return !$('title').classList.contains('gone'); }
