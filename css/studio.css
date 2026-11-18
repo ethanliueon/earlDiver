@@ -421,3 +421,35 @@ html body #title .hint { font: 13px var(--c-text) !important; color: var(--c-fai
 html body #title .hint .version { font: 600 12px var(--c-num); letter-spacing: 0.1em; }
 #title .tag, #title .t-gear { display: none !important; }
 html body #confirm .cf-yes.danger { border-image-source: url("../assets/ui/parts/btn-danger.png") !important; color: #fbe8e2 !important; }
+
+/* ---------------------------------------------------------------- settings: the switches and the controls side by side, nothing below the fold */
+html body #settings .set-panel { width: min(980px, 94vw) !important; }
+html body #settings .set-body { display: grid !important; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 0 26px; align-items: start; }
+html body #settings .set-controls { grid-template-columns: 1fr !important; gap: 7px !important; }
+html body #settings .set-row { padding: 2px 6px !important; }
+
+/* ---------------------------------------------------------------- the loading screen: the painting kept; its type and its line in the console's faces */
+#boot .ld-title span { font: 600 clamp(15px, 1.9vw, 26px) var(--c-num) !important; letter-spacing: 0.32em !important; color: rgba(239, 230, 212, 0.78) !important; }
+#boot .ld-bar { height: 6px !important; border-radius: 0 !important; background: rgba(0, 0, 0, 0.55) !important; box-shadow: 0 0 0 1px rgba(239, 230, 212, 0.25) !important; }
+#boot .ld-fill { background: var(--c-orange) !important; }
+#boot .ld-pct { font: 600 15px var(--c-num) !important; letter-spacing: 0.08em !important; color: var(--c-ink) !important; }
+#boot .ld-tip { font: italic 17px/1.4 var(--c-text) !important; }
+#boot .ld-tip kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 4px 2px !important; margin: 0 3px; vertical-align: 1px;
+  border: 6px solid transparent !important; border-image: url("../assets/ui/parts/key.png") 24 fill / 6px stretch !important; background: none !important; font: 600 13px/1 var(--c-num) !important; font-style: normal; color: var(--c-ink) !important; }
+
+/* ---------------------------------------------------------------- the tutorial's guide: in the console's colour for attention, its keys rubber */
+html body #tut-spot { --brass: #ec6a2c; --brass-d: #b8461a; }
+html body #tut-spot .ts-frame { box-shadow: inset 0 0 60px 6px rgba(236, 106, 44, 0.12), inset 0 0 0 1px rgba(236, 106, 44, 0.2) !important; }
+html body #tut-spot .ts-key kbd:not(.mouse) { border: 8px solid transparent !important; border-image: url("../assets/ui/parts/key.png") 24 fill / 8px stretch !important; background: none !important; box-shadow: none !important;
+  border-radius: 0 !important; color: var(--c-ink) !important; font: 600 16px/1 var(--c-num) !important; text-shadow: none !important; padding: 0 4px 2px !important; min-width: 30px; height: 30px; }
+html body #tut-spot .ts-key kbd.mouse { border-color: var(--c-ink) !important; }
+html body #tut-spot .ts-key, html body #tut-spot .ts-say { font-family: var(--c-text) !important; }
+html body #tut-spot .ts-line { border-left: 3px solid var(--c-orange) !important; }
+html body #tut-spot .ts-say { box-shadow: 0 0 0 1px rgba(236, 230, 214, 0.18), 0 6px 18px rgba(0, 0, 0, 0.5) !important; border-radius: 0 !important; }
+/* the quest line grows with the screen as the canvas instruments do (they scale by the window's height / 900) */
+#quests-hud { zoom: clamp(0.8, calc(100vh / 900px), 1.5); }
+/* the journal is a book: its own two keys (settings, close) stay rubber keys but sit on the paper quietly */
+html body #journal header .j-gear, html body #journal-close { width: 30px !important; height: 30px !important; }
+html body #journal-close { background-image: none !important; background-color: transparent !important; font-size: 18px !important; padding: 0 0 2px !important; }
+/* inside the journal (drawn slightly scaled) a nine-sliced key shows its seams: there, the key as one whole image */
+html body #journal-close, html body #journal header .j-gear { border: 0 !important; border-image: none !important; background: url("../assets/ui/parts/key.png") center / 100% 100% no-repeat !important; }
