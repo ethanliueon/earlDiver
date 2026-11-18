@@ -1,10 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-  <!-- A console panel face (nine-slice: 22 px corners): black enamel on a steel sheet, a lit top lip, a dark
-       bottom lip, held by a screw in each corner (the corners never stretch, so the screws stay round). -->
-  <defs><g id="s"><circle cx="5" cy="5.4" r="3.8" fill="#000" opacity="0.5"/><circle cx="5" cy="5" r="3.6" fill="#3b4043" stroke="#050606" stroke-width="0.8"/><path d="M3.1 4.3 A2.6 2.6 0 0 1 6.6 3.2" stroke="#fff" stroke-opacity="0.18" stroke-width="0.7" fill="none"/><path d="M2.6 4.3 L7.4 5.8" stroke="#0b0c0d" stroke-width="1.2" stroke-linecap="round"/></g></defs>
-  <rect x="2" y="2" width="92" height="92" rx="8" fill="#141718" stroke="#010202" stroke-width="1.5"/>
-  <path d="M10 3.4 H86" stroke="#fff" stroke-opacity="0.12" stroke-width="1.4" stroke-linecap="round"/>
-  <path d="M3.5 12 V84" stroke="#fff" stroke-opacity="0.04" stroke-width="1"/>
-  <path d="M10 92.6 H86" stroke="#000" stroke-opacity="0.7" stroke-width="1.4" stroke-linecap="round"/>
-  <use href="#s" x="6" y="6"/><use href="#s" x="80" y="6"/><use href="#s" x="6" y="80"/><use href="#s" x="80" y="80"/>
+  <!-- A screen (nine-slice 22): dark glass in a black bezel, a faint phosphor rim just inside it. -->
+  <rect x="0" y="0" width="96" height="96" fill="#000" opacity="0.55"/>
+  <rect x="3" y="3" width="90" height="90" fill="#06110e" fill-opacity="0.93"/>
+  <rect x="3.5" y="3.5" width="89" height="89" fill="none" stroke="#b9e69a" stroke-opacity="0.18" stroke-width="1"/>
 </svg>

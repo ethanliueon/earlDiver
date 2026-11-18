@@ -10,9 +10,9 @@
    sentences.
    ===================================================================================================== */
 :root {
-  --c-ink: #ece6d6; --c-dim: rgba(236, 230, 214, 0.58); --c-faint: rgba(236, 230, 214, 0.32);
-  --c-orange: #ec6a2c; --c-red: #d8392b; --c-green: #7fcf74;
-  --c-num: "Barlow Condensed", "Arial Narrow", sans-serif; --c-text: "EB Garamond", Georgia, serif;
+  --c-ink: #b9e69a; --c-dim: rgba(185, 230, 154, 0.58); --c-faint: rgba(185, 230, 154, 0.3);
+  --c-orange: #b9e69a; --c-red: #ff5a46; --c-green: #b9e69a; --c-glass: #06110e;
+  --c-num: VT323, "IBM Plex Mono", monospace; --c-text: "EB Garamond", Georgia, serif;
   --P: url("../assets/ui/parts/panel.png"); --W: url("../assets/ui/parts/well.png"); --KEY: url("../assets/ui/parts/key.png");
   --BTN: url("../assets/ui/parts/btn.png"); --BTN1: url("../assets/ui/parts/btn-primary.png"); --BTND: url("../assets/ui/parts/btn-down.png");
   /* the old look's names, pointed at the new colours, so style.css's own rules follow along */
@@ -36,9 +36,9 @@
 }
 .shop .nameplate::before, .shop .nameplate::after, #title .t-plate::before, #title .t-plate::after { content: none !important; }
 .shop .nameplate::after, :is(#settings, #inventory) .set-plate::after, #quests .qs-plate::after, #chart .ch-plate::after, #pause h2::after {
-  content: '' !important; position: absolute; left: 0; bottom: 0; width: 34px; height: 3px; background: var(--c-orange); border-radius: 0; }
+  content: none !important; }
 .shop .nameplate h2, #pause h2, :is(#settings, #inventory) .set-plate, #quests .qs-plate h2, #chart .ch-plate h2 {
-  font: 600 24px/1.1 var(--c-num) !important; letter-spacing: 0.14em !important; text-transform: uppercase !important;
+  font: 600 32px/1.1 var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase !important;
   color: var(--c-ink) !important; text-shadow: none !important; margin: 0 !important;
 }
 .shop .nameplate h2 em, .shop .nameplate h2 i { font-style: normal !important; }
@@ -48,11 +48,11 @@
 .c-btn, .shop button.primary, #pause button:not(.small):not(.gear-btn):not(.link), #confirm button, #quests button[data-q]:not(.qs-info), #quests .qs-buy, #title #continue, #title #play, #menu #play {
   border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--BTN) 36 fill / 12px stretch !important;
   background: none !important; box-shadow: none !important; padding: 0 10px 4px !important; min-height: 44px;
-  font: 600 16px/1 var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase !important;
+  font: 600 22px/1 var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase !important;
   color: var(--c-ink) !important; text-shadow: none !important; cursor: pointer; filter: none !important;
 }
 .shop button.primary, #pause #resume, #confirm .cf-yes, #quests .qs-buy, #quests button[data-q^="claim"], #title #continue, #title #play, #menu #play {
-  border-image-source: var(--BTN1) !important; color: #1c0b03 !important; }
+  border-image-source: var(--BTN1) !important; color: #06110e !important; }
 .c-btn:hover, .shop button.primary:hover:not(:disabled), #pause button:not(.small):not(.gear-btn):not(.link):hover, #confirm button:hover, #quests button[data-q]:not(.qs-info):hover, #title #continue:hover { filter: brightness(1.15) !important; }
 .c-btn:active, .shop button.primary:active, #pause button:not(.small):not(.gear-btn):not(.link):active, #confirm button:active, #quests button[data-q]:not(.qs-info):active, #title #continue:active { border-image-source: var(--BTND) !important; color: var(--c-ink) !important; padding-top: 3px !important; padding-bottom: 1px !important; }
 .shop button.primary:disabled, #quests button[data-q]:disabled { border-image-source: var(--BTN) !important; color: var(--c-faint) !important; cursor: default; }
@@ -62,7 +62,7 @@
 :is(#settings, #inventory) .set-close, #workshop-close, #cave-close, #trapset-close, .refit-x, #inventory .ip-close, .oc-close, .qp-close, #quests .qs-close, #chart .ch-close, #journal-close {
   width: 34px !important; height: 34px !important; padding: 0 0 3px !important; box-sizing: border-box; border: 9px solid transparent !important; border-radius: 0 !important;
   border-image: var(--KEY) 24 fill / 9px stretch !important; background: none !important; box-shadow: none !important; opacity: 1 !important;
-  font: 500 20px/1 var(--c-num) !important; color: var(--c-ink) !important; display: grid; place-items: center; cursor: pointer;
+  font: 500 27px/1 var(--c-num) !important; color: var(--c-ink) !important; display: grid; place-items: center; cursor: pointer;
 }
 #journal-close { color: var(--c-ink) !important; }
 
@@ -73,7 +73,7 @@
 
 /* labels printed on panels: small spaced capitals */
 #settings h4, #inventory .inv-sec h4, #inventory h4, .t-label, #quests h4, .shop h3, .shop h4, #quests h3 {
-  font: 600 13px var(--c-num) !important; letter-spacing: 0.16em !important; text-transform: uppercase !important; color: var(--c-dim) !important;
+  font: 600 18px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase !important; color: var(--c-dim) !important;
   background: none !important; box-shadow: none !important; padding: 0 !important; border: 0 !important;
 }
 /* sentences on panels: the serif */
@@ -89,20 +89,20 @@
 :is(#settings, #inventory) .set-row:hover { filter: brightness(1.18) !important; }
 /* a setting's state: the word printed small, and a rocker switch beside it, its lamp lit when on */
 :is(#settings, #inventory) .set-row b { display: inline-flex !important; align-items: center; gap: 10px; min-width: 0 !important; padding: 0 !important; background: none !important; box-shadow: none !important; border: 0 !important;
-  font: 600 13px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; color: var(--c-faint) !important; }
+  font: 600 18px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase !important; color: var(--c-faint) !important; }
 :is(#settings, #inventory) .set-row b::after { content: ''; width: 56px; height: 28px; background: url("../assets/ui/parts/toggle-off.png") center / 56px 28px no-repeat; }
 :is(#settings, #inventory) .set-row b.on { color: var(--c-ink) !important; }
 :is(#settings, #inventory) .set-row b.on::after { background-image: url("../assets/ui/parts/toggle-on.png"); }
 /* the controls list: rubber keys and printed words */
 :is(#settings, #inventory) .set-controls { font: 15px var(--c-text) !important; color: var(--c-ink) !important; }
 :is(#settings, #inventory) .set-controls kbd, .controls kbd { border: 7px solid transparent !important; border-image: var(--KEY) 24 fill / 7px stretch !important; background: none !important; box-shadow: none !important;
-  font: 600 13px/1 var(--c-num) !important; color: var(--c-ink) !important; padding: 0 3px 2px !important; min-width: 12px; }
+  font: 600 18px/1 var(--c-num) !important; color: var(--c-ink) !important; padding: 0 3px 2px !important; min-width: 12px; }
 
 /* tabs: dark keys side by side; the open one lit (its lamp, its words) */
 .shop .shop-tabs button, #inventory .inv-tabs button {
   border: 10px solid transparent !important; border-radius: 0 !important; border-image: var(--BTN) 36 fill / 10px stretch !important;
   background: none !important; box-shadow: none !important; padding: 0 12px 3px 24px !important; min-height: 38px;
-  font: 600 14px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase !important; color: var(--c-dim) !important; position: relative;
+  font: 600 19px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase !important; color: var(--c-dim) !important; position: relative;
 }
 .shop .shop-tabs button::before, #inventory .inv-tabs button::before { content: '' !important; position: absolute !important; left: 4px !important; top: 50% !important; width: 14px !important; height: 14px !important; margin-top: -8px;
   background: url("../assets/ui/parts/lamp-off.png") center / 14px 14px no-repeat !important; box-shadow: none !important; border-radius: 0 !important; }
@@ -114,24 +114,24 @@
 
 /* the mechanical counters (cash in the shops): figures in a sunk window, not drums */
 .shop .counter { border: 6px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 6px stretch !important; background: none !important; box-shadow: none !important; padding: 0 6px !important; }
-.shop .counter .drum, .shop .counter .sep { background: none !important; width: auto !important; font: 500 24px/1.2 var(--c-num) !important; color: var(--c-ink) !important; animation: none !important; }
-.shop .shop-cash span { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
+.shop .counter .drum, .shop .counter .sep { background: none !important; width: auto !important; font: 500 32px/1.2 var(--c-num) !important; color: var(--c-ink) !important; animation: none !important; }
+.shop .shop-cash span { font: 600 16px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; }
 
 /* pause */
 #pause { padding: 6px 10px 12px !important; }
 #pause h2 { display: inline-block; margin-bottom: 14px !important; }
 #pause .small { color: var(--c-dim) !important; font-size: 15px !important; }
 #pause button:focus, #confirm button:focus { outline: none; }
-#pause button:focus-visible, #confirm button:focus-visible { outline: 2px solid rgba(236, 106, 44, 0.7); outline-offset: 2px; }
+#pause button:focus-visible, #confirm button:focus-visible { outline: 2px solid rgba(185, 230, 154, 0.7); outline-offset: 2px; }
 #pause .p-links { display: flex; justify-content: center; gap: 22px; margin-top: 12px; }
 #pause .p-links .link { font: italic 15px var(--c-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--c-dim) !important; border: 0 !important; border-bottom: 1px dotted var(--c-faint) !important; background: none !important; padding: 0 !important; box-shadow: none !important; }
-#pause .p-links .link:hover { color: #f0a080 !important; }
-#pause .pause-version { position: absolute; right: 6px !important; bottom: -24px !important; font: 12px var(--c-num) !important; letter-spacing: 0.1em; color: var(--c-faint) !important; }
+#pause .p-links .link:hover { color: #ff5a46 !important; }
+#pause .pause-version { position: absolute; right: 6px !important; bottom: -24px !important; font: 16px var(--c-num) !important; letter-spacing: 0; color: var(--c-faint) !important; }
 
 /* confirm dialogs */
 #confirm .cf-plate { text-align: center; padding: 10px 14px 6px !important; }
 #confirm .cf-plate::before, #confirm .cf-plate::after { content: none !important; }
-#confirm h3 { font: 600 22px/1.15 var(--c-num) !important; letter-spacing: 0.08em !important; text-transform: uppercase; color: var(--c-ink) !important; text-shadow: none !important; margin: 4px 0 8px !important; }
+#confirm h3 { font: 600 30px/1.15 var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-ink) !important; text-shadow: none !important; margin: 4px 0 8px !important; }
 #confirm p { font-size: 17px !important; color: var(--c-dim) !important; line-height: 1.4 !important; }
 #confirm .cf-acts { gap: 12px !important; }
 #confirm button { min-width: 110px; white-space: nowrap; }
@@ -139,33 +139,31 @@
 /* top messages: in the reading face, no ornament */
 #msgs .msg-rule { display: none !important; }
 #msgs .msg-t { font: 500 24px/1.2 var(--c-text) !important; letter-spacing: 0 !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 14px rgba(0, 0, 0, 0.7) !important; }
-#msgs .msg-n { font: 600 14px var(--c-num) !important; letter-spacing: 0.1em; }
+#msgs .msg-n { font: 600 19px var(--c-num) !important; letter-spacing: 0; }
 
 /* =====================================================================================================
    (ui-studio, style B) the console family: matte black enamel, off-white print, rubber keys, lamps.
    The parts are PNGs drawn as vector art (assets/src/parts -> assets/ui/parts, 3x); see js/console.js.
    ===================================================================================================== */
-:root { --c-ink: #ece6d6; --c-dim: rgba(236, 230, 214, 0.58); --c-orange: #ec6a2c; --c-red: #d8392b; --c-green: #7fcf74;
-  --c-num: "Barlow Condensed", "Arial Narrow", sans-serif; --c-text: "EB Garamond", Georgia, serif; }
 /* a rubber key anywhere in the page (prompts written as HTML, the tutorial's lines) */
 kbd.keycap, .c-key { display: inline-grid; place-items: center; min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 5px 2px;
   border: 7px solid transparent; border-image: url("../assets/ui/parts/key.png") 24 fill / 7px stretch; background: none !important; box-shadow: none !important;
-  font: 600 14px/1 var(--c-num) !important; color: var(--c-ink) !important; text-shadow: none !important; vertical-align: middle; }
-kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing: 0.06em; }
+  font: 600 19px/1 var(--c-num) !important; color: var(--c-ink) !important; text-shadow: none !important; vertical-align: middle; }
+kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing: 0; }
 
 /* the quest line, top left: an orange rule, the quest's name small above, the step in the serif below */
 #quests-hud { top: 70px !important; gap: 12px !important; align-items: stretch !important; }
 #quests-btn { width: 34px !important; height: 34px !important; padding: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; align-self: center; }
 #quests-btn .qb-key { display: grid; place-items: center; width: 100%; height: 100%; box-sizing: border-box; padding-bottom: 3px;
-  border: 9px solid transparent; border-image: url("../assets/ui/parts/key.png") 24 fill / 9px stretch; font: 600 17px/1 var(--c-num); color: var(--c-ink); }
+  border: 9px solid transparent; border-image: url("../assets/ui/parts/key.png") 24 fill / 9px stretch; font: 600 23px/1 var(--c-num); color: var(--c-ink); }
 #quests-btn:hover .qb-key { filter: brightness(1.25); }
 #quests-btn i { top: -6px !important; right: -7px !important; min-width: 17px !important; height: 17px !important; border-radius: 9px !important; background: var(--c-orange) !important;
-  color: #1a0b03 !important; font: 600 12px/17px var(--c-num) !important; box-shadow: 0 0 6px rgba(236, 106, 44, 0.7) !important; }
-#quests-hud .qh-step { display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 1px 0 2px 12px; border-left: 3px solid var(--c-orange);
+  color: #1a0b03 !important; font: 600 12px/17px var(--c-num) !important; box-shadow: 0 0 6px rgba(185, 230, 154, 0.7) !important; }
+#quests-hud .qh-step { display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 1px 0 2px 0; border-left: 0;
   max-width: min(46vw, 460px) !important; font: 19px/1.2 var(--c-text) !important; color: var(--c-ink) !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.45) !important; }
 #quests-hud .qh-step:empty { display: none; }
-#quests-hud .qh-k { font: 600 12px/1.2 var(--c-num); letter-spacing: 0.12em; color: var(--c-dim); }
+#quests-hud .qh-k { font: 600 16px/1.2 var(--c-num); letter-spacing: 0; color: var(--c-dim); }
 #quests-hud .qh-k.done { color: var(--c-green); }
 
 /* ---------------------------------------------------------------- the inventory: the dive locker as a console */
@@ -173,17 +171,17 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
 #inventory .inv-right { box-shadow: none !important; border-left: 1px solid rgba(0, 0, 0, 0.6) !important; }
 /* cash: printed CASH and the sum in a sunk window */
 #inventory .cash-plate { border: 7px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 7px stretch !important; background: none !important; box-shadow: none !important; padding: 0 10px !important; align-items: center !important; }
-#inventory .cash-plate span { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
-#inventory .cash-plate b { font: 500 25px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.02em !important; }
+#inventory .cash-plate span { font: 600 16px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; }
+#inventory .cash-plate b { font: 500 34px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0 !important; }
 /* Earl's stage: a deep well, lit from above */
-#inventory .eq-stage { border: 10px solid transparent !important; border-image: var(--W) 24 fill / 10px stretch !important; background: radial-gradient(ellipse 60% 55% at 50% 30%, rgba(236, 230, 214, 0.07), transparent 70%) !important; box-shadow: none !important; border-radius: 0 !important; }
+#inventory .eq-stage { border: 10px solid transparent !important; border-image: var(--W) 24 fill / 10px stretch !important; background: radial-gradient(ellipse 60% 55% at 50% 30%, rgba(185, 230, 154, 0.07), transparent 70%) !important; box-shadow: none !important; border-radius: 0 !important; }
 /* his eight slots: wells; what is in one shown by its picture and a bar of its rarity's colour along the bottom */
 #inventory .eq-stage .eq-slot.sq { border: 8px solid transparent !important; border-image: var(--W) 24 fill / 8px stretch !important; background: none !important; border-radius: 0 !important;
   box-shadow: inset 0 -3px 0 var(--rc, transparent) !important; width: 78px !important; height: 78px !important; }
 #inventory .eq-stage .eq-slot.sq.empty { box-shadow: none !important; }
-#inventory .eq-stage .eq-slot.sq.empty > span { font: 600 11px var(--c-num) !important; letter-spacing: 0.14em !important; color: var(--c-faint) !important; }
-#inventory .eq-stage .eq-slot .slot-nm { background: none !important; box-shadow: none !important; padding: 0 !important; bottom: -19px !important; font: 600 11px var(--c-num) !important; letter-spacing: 0.14em !important; color: var(--c-dim) !important; }
-#inventory .eq-slot.sq .key { font: 600 12px var(--c-num) !important; color: var(--c-dim) !important; left: 2px !important; top: 0 !important; }
+#inventory .eq-stage .eq-slot.sq.empty > span { font: 600 15px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-faint) !important; }
+#inventory .eq-stage .eq-slot .slot-nm { background: none !important; box-shadow: none !important; padding: 0 !important; bottom: -19px !important; font: 600 15px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; }
+#inventory .eq-slot.sq .key { font: 600 16px var(--c-num) !important; color: var(--c-dim) !important; left: 2px !important; top: 0 !important; }
 #inventory .eq-slot.sq.sel, #inventory .eq-slot.hot { outline: 2px solid var(--c-orange) !important; outline-offset: 2px; background: none !important; }
 #inventory .eq-stage .eq-col { row-gap: 26px !important; }
 /* the locker: rows of wells; a thing in one shows its rarity as a bar along the bottom; an empty locker says so */
@@ -192,10 +190,10 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
 #inventory .lk-tile::before { content: none !important; }
 #inventory .lk-tile.empty { opacity: 0.55 !important; box-shadow: none !important; }
 #inventory .lk-tile.sel { outline: 2px solid var(--c-orange) !important; }
-#inventory .lk-tile i { font: 600 10px var(--c-num) !important; letter-spacing: 0.1em; color: var(--c-orange) !important; }
+#inventory .lk-tile i { font: 600 14px var(--c-num) !important; letter-spacing: 0; color: var(--c-orange) !important; }
 #inventory .lk-head h4 { margin: 0 !important; }
 #inventory .lk-head small { font: italic 14px var(--c-text) !important; color: var(--c-faint) !important; }
-#inventory .lk-head span { font: 600 13px var(--c-num) !important; letter-spacing: 0.1em; color: var(--c-dim) !important; }
+#inventory .lk-head span { font: 600 18px var(--c-num) !important; letter-spacing: 0; color: var(--c-dim) !important; }
 #inventory .eq-note { font: italic 14px var(--c-text) !important; color: var(--c-faint) !important; }
 /* the air rig: the tank large, the console's own gauge beside it */
 #inventory .air-rig { border: 8px solid transparent !important; border-image: var(--W) 24 fill / 8px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
@@ -205,9 +203,9 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
 #inventory .air-dial img { width: 100%; height: 100%; max-height: none !important; filter: none !important; }
 #inventory .air-dial i { position: absolute; left: 50%; top: 50%; width: 32%; height: 3px; margin-top: -1.5px; background: var(--c-orange); border-radius: 2px; transform-origin: 0 50%; }
 #inventory .air-dial::after { content: ''; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #2b2f32; box-shadow: 0 0 0 1px #000; }
-#inventory .air-dial b { position: absolute; left: 0; right: 0; top: 60%; text-align: center; font: 600 10px var(--c-num); letter-spacing: 0.14em; color: var(--c-dim); }
-#inventory .air-txt .tape { background: none !important; box-shadow: none !important; padding: 0 !important; font: 600 13px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase; color: var(--c-dim) !important; }
-#inventory .air-txt b { font: 500 30px var(--c-num) !important; color: var(--c-ink) !important; }
+#inventory .air-dial b { position: absolute; left: 0; right: 0; top: 60%; text-align: center; font: 600 14px var(--c-num); letter-spacing: 0; color: var(--c-dim); }
+#inventory .air-txt .tape { background: none !important; box-shadow: none !important; padding: 0 !important; font: 600 18px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-dim) !important; }
+#inventory .air-txt b { font: 500 40px var(--c-num) !important; color: var(--c-ink) !important; }
 #inventory .air-txt i { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; }
 #inventory .air-rig.warn .air-txt b { color: var(--c-orange) !important; }
 :is(#settings, #inventory) .set-panel::before { content: none !important; }
@@ -217,13 +215,13 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
 #inventory .eq-stage .eq-slot.sq .key { left: -6px !important; top: -8px !important; }
 #inventory .inv-right .lk-grid { position: relative; }
 #inventory .lk-none { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; width: 74%; margin: 0; padding: 16px 20px; text-align: center;
-  font: italic 18px/1.4 var(--c-text); color: var(--c-dim); background: rgba(12, 14, 15, 0.92); border: 1px solid rgba(236, 230, 214, 0.12); }
+  font: italic 18px/1.4 var(--c-text); color: var(--c-dim); background: rgba(12, 14, 15, 0.92); border: 1px solid rgba(185, 230, 154, 0.12); }
 #inventory .eq-stage .eq-slot.sq img { transform: scale(1.4); }
 #inventory .lk-tile.empty { opacity: 0.35 !important; }
 
 /* ---------------------------------------------------------------- the inventory's catch page */
 #inventory .inv-catch2 .inv-left > h4, #inventory .inv-catch2 .sub-bay > h4 { background: none !important; box-shadow: none !important; padding: 0 !important; text-shadow: none !important; }
-#inventory .inv-catch2 h4 i { font: 600 13px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.06em; }
+#inventory .inv-catch2 h4 i { font: 600 18px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0; }
 #inventory .inv-catch2 h4.off, #inventory .inv-catch2 h4.off i { color: var(--c-faint) !important; }
 /* the bag's pockets: raised tiles; an empty one a plain well; one not yet bought, a dim well with its lock */
 #inventory .fc, #inventory .fc:not(.empty) { border: 10px solid transparent !important; border-radius: 0 !important; border-image: url("../assets/ui/parts/tile.png") 36 fill / 10px stretch !important;
@@ -232,26 +230,26 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
 #inventory .fc.locked { opacity: 0.35; }
 #inventory .fc::before, #inventory .fc.empty::after { content: none !important; display: none !important; }
 #inventory .fc b { font: 16px var(--c-text) !important; color: var(--c-ink) !important; }
-#inventory .fc small { font: 600 14px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.04em; }
+#inventory .fc small { font: 600 19px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0; }
 #inventory .fc span { font: italic 13px var(--c-text) !important; color: var(--c-dim) !important; }
 #inventory .fc.trouble { box-shadow: inset 0 -3px 0 var(--c-red), 0 0 0 2px rgba(216, 57, 43, 0.6) !important; }
 /* what it would all sell for: a figure in a sunk window, not a giant stencil */
-#inventory .worth-paint { font: 500 30px/1 var(--c-num) !important; letter-spacing: 0.02em !important; color: var(--c-ink) !important; text-shadow: none !important; -webkit-text-stroke: 0 !important; background: none !important;
+#inventory .worth-paint { font: 500 40px/1 var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-ink) !important; text-shadow: none !important; -webkit-text-stroke: 0 !important; background: none !important;
   margin: auto 0 4px 0 !important; padding: 8px 14px 8px 14px; border: 7px solid transparent; border-image: url("../assets/ui/parts/window.png") 24 fill / 7px stretch; display: inline-flex; align-items: baseline; gap: 12px; opacity: 1 !important; }
-#inventory .worth-paint::before { content: 'WORTH ABOUT'; font: 600 12px var(--c-num); letter-spacing: 0.16em; color: var(--c-dim); }
+#inventory .worth-paint::before { content: 'WORTH ABOUT'; font: 600 16px var(--c-num); letter-spacing: 0; color: var(--c-dim); }
 /* the sub's bay: a well; its name printed; the tank's window a sunk frame */
 #inventory .sub-bay { border: 12px solid transparent !important; border-image: var(--W) 24 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 4px 6px 6px !important; }
 #inventory .sub-bay::before, #inventory .sub-bay::after { content: none !important; }
 #inventory .sb-name { background: none !important; box-shadow: none !important; border: 0 !important; border-image: none !important; padding: 0 0 8px !important; border-bottom: 1px solid rgba(0, 0, 0, 0.6) !important; }
-#inventory .sb-name b { font: 600 20px var(--c-num) !important; letter-spacing: 0.12em !important; color: var(--c-ink) !important; text-shadow: none !important; }
-#inventory .sb-name span { font: 600 12px var(--c-num) !important; letter-spacing: 0.14em !important; color: var(--c-dim) !important; }
+#inventory .sb-name b { font: 600 27px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-ink) !important; text-shadow: none !important; }
+#inventory .sb-name span { font: 600 16px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; }
 #inventory .sb-name::before, #inventory .sb-name::after { content: none !important; }
 #inventory .tank-win { border: 7px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 7px stretch !important; background: none !important; box-shadow: none !important; padding: 2px !important; border-radius: 0 !important; }
 #inventory .tank-win::before, #inventory .tank-win::after { content: none !important; }
 #inventory .ct-cap { background: none !important; box-shadow: none !important; border: 0 !important; padding: 6px 0 0 !important; font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; text-transform: none !important; letter-spacing: 0 !important; }
 #inventory .fc.empty { opacity: 1 !important; }
 #inventory .fc.locked { opacity: 0.28 !important; }
-#inventory .lk-tile i.new, #inventory .lk-tile i { background: var(--c-orange) !important; color: #1c0b03 !important; padding: 1px 4px 0 !important; border-radius: 1px; box-shadow: none !important; }
+#inventory .lk-tile i.new, #inventory .lk-tile i { background: var(--c-orange) !important; color: #06110e !important; padding: 1px 4px 0 !important; border-radius: 1px; box-shadow: none !important; }
 
 /* ---------------------------------------------------------------- item and fish cards (inventory pop-ups) */
 #inventory .ip-box, #inventory .fish-pop .sp-panel { border: 22px solid transparent !important; border-image: var(--P) 66 fill / 22px stretch !important; background: none !important; border-radius: 0 !important;
@@ -261,17 +259,17 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
   box-shadow: inset 0 -3px 0 var(--rc, transparent) !important; padding: 2px 4px 6px !important; }
 #inventory .ip-col.empty { opacity: 0.7; }
 #inventory .ip-col img { background: rgba(0, 0, 0, 0.3) !important; border-radius: 0 !important; }
-#inventory .ip-col h5, #inventory .ip-vs thead td { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
+#inventory .ip-col h5, #inventory .ip-vs thead td { font: 600 16px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; }
 #inventory .ip-col .nm { font: 20px var(--c-text) !important; color: var(--c-ink); }
-#inventory .ip-col .rr { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; }
+#inventory .ip-col .rr { font: 600 16px var(--c-num) !important; letter-spacing: 0 !important; }
 #inventory .ip-col p { font: italic 14px var(--c-text) !important; }
-#inventory .ip-arrow { background: none !important; box-shadow: none !important; color: var(--c-orange) !important; font: 600 24px var(--c-num) !important; width: auto !important; height: auto !important; }
+#inventory .ip-arrow { background: none !important; box-shadow: none !important; color: var(--c-orange) !important; font: 600 32px var(--c-num) !important; width: auto !important; height: auto !important; }
 #inventory .ip-vs { font: 15px var(--c-text) !important; }
-#inventory .ip-vs td.up { color: var(--c-green) !important; } #inventory .ip-vs td.down { color: #f08a6a !important; }
+#inventory .ip-vs td.up { color: var(--c-green) !important; } #inventory .ip-vs td.down { color: #ff5a46 !important; }
 #inventory .lk-acts { gap: 10px !important; }
 #inventory .lk-acts button { border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--BTN) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important;
-  padding: 0 10px 4px !important; min-height: 44px; font: 600 15px/1 var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-ink) !important; }
-#inventory .lk-acts button:first-child:not(.sell) { border-image-source: var(--BTN1) !important; color: #1c0b03 !important; }
+  padding: 0 10px 4px !important; min-height: 44px; font: 600 20px/1 var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-ink) !important; }
+#inventory .lk-acts button:first-child:not(.sell) { border-image-source: var(--BTN1) !important; color: #06110e !important; }
 #inventory .lk-acts button:hover { filter: brightness(1.15); }
 
 /* ---------------------------------------------------------------- the old rules that named elements by id (and so outranked
@@ -279,27 +277,27 @@ kbd.keycap.wide { padding: 0 9px 2px; font-size: 12px !important; letter-spacing
 html body :is(#pause #resume, #pause #savequit, #confirm .cf-yes, #confirm .cf-no, #quests .qs-refresh, #workshop button.go[data-act="sellall"]) {
   border: 12px solid transparent !important; border-image: var(--BTN) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important;
   color: var(--c-ink) !important; text-shadow: none !important; border-radius: 0 !important; padding: 0 12px 4px !important; min-height: 44px;
-  font: 600 16px/1 var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; }
-html body :is(#pause #resume, #confirm .cf-yes, #workshop button.go[data-act="sellall"]) { border-image-source: var(--BTN1) !important; color: #1c0b03 !important; }
+  font: 600 22px/1 var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase !important; }
+html body :is(#pause #resume, #confirm .cf-yes, #workshop button.go[data-act="sellall"]) { border-image-source: var(--BTN1) !important; color: #06110e !important; }
 html body :is(#pause #resume, #pause #savequit, #confirm .cf-yes, #confirm .cf-no, #quests .qs-refresh, #workshop button.go):hover { filter: brightness(1.15) !important; }
 html body :is(#pause #resume, #pause #savequit, #confirm .cf-yes, #confirm .cf-no, #quests .qs-refresh, #workshop button.go):active { border-image-source: var(--BTND) !important; color: var(--c-ink) !important; }
 html body :is(#pause, #confirm) button { outline: none !important; }
-html body :is(#pause, #confirm) button:focus-visible { outline: 2px solid rgba(236, 106, 44, 0.7) !important; outline-offset: 3px; }
+html body :is(#pause, #confirm) button:focus-visible { outline: 2px solid rgba(185, 230, 154, 0.7) !important; outline-offset: 3px; }
 html body .shop:not(.cave) .nameplate { background: none !important; box-shadow: none !important; }
 html body .shop:not(.cave) .nameplate h2 { color: var(--c-ink) !important; text-shadow: none !important; }
 html body .shop:not(.cave) .nameplate .shop-sub { color: var(--c-dim) !important; text-shadow: none !important; }
 /* the quest board's i: a small rubber key */
 html body #quests .qs-info { width: 24px !important; height: 24px !important; border: 6px solid transparent !important; border-image: var(--KEY) 24 fill / 6px stretch !important; background: none !important; box-shadow: none !important;
   border-radius: 0 !important; font: italic 600 13px/1 var(--c-text) !important; color: var(--c-ink) !important; padding: 0 0 2px !important; display: inline-grid; place-items: center; }
-#quests .qs-q.ready .qs-t b::after { content: '  ·  READY'; font: 600 12px var(--c-num); letter-spacing: 0.14em; color: var(--c-green); }
-#quests .qs-pay { font: 600 18px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.02em; }
+#quests .qs-q.ready .qs-t b::after { content: '  ·  READY'; font: 600 16px var(--c-num); letter-spacing: 0; color: var(--c-green); }
+#quests .qs-pay { font: 600 24px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0; }
 #quests .qs-t b { font: 18px var(--c-text) !important; color: var(--c-ink) !important; }
 #quests .qs-t span, #quests .qs-t small { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; letter-spacing: 0 !important; text-transform: none !important; }
 #quests .qs-bar { height: 4px !important; background: #050606 !important; border-radius: 0 !important; }
 #quests .qs-bar i { background: var(--c-orange) !important; }
 #quests .qs-q::before, #quests .qs-q::after { content: none !important; }
 #quests .qs-wait { font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; }
-#quests .qs-clock { font: 600 15px var(--c-num) !important; color: var(--c-ink) !important; }
+#quests .qs-clock { font: 600 20px var(--c-num) !important; color: var(--c-ink) !important; }
 #quests .qs-q { position: relative; padding-right: 40px !important; }
 html body #quests .qs-info { position: absolute !important; right: 4px !important; top: 50% !important; transform: translateY(-50%); margin: 0 !important; }
 html body #confirm button:focus-visible { outline: none !important; filter: brightness(1.2) !important; }
@@ -308,7 +306,7 @@ html body #confirm button:focus-visible { outline: none !important; filter: brig
 
 /* ---------------------------------------------------------------- the yard (the sub page): the same console, a drafting grid kept faintly */
 html body #workshop.refit-full #shop-body { border: 12px solid transparent !important; border-image: var(--W) 24 fill / 12px stretch !important; border-radius: 0 !important;
-  background: repeating-linear-gradient(0deg, rgba(236, 230, 214, 0.035) 0 1px, transparent 1px 24px), repeating-linear-gradient(90deg, rgba(236, 230, 214, 0.035) 0 1px, transparent 1px 24px) !important;
+  background: repeating-linear-gradient(0deg, rgba(185, 230, 154, 0.035) 0 1px, transparent 1px 24px), repeating-linear-gradient(90deg, rgba(185, 230, 154, 0.035) 0 1px, transparent 1px 24px) !important;
   box-shadow: none !important; }
 html body #workshop.refit-full .shop-main { background-image: none !important; }
 #workshop.refit-full .yd-tack { display: none !important; }
@@ -316,28 +314,28 @@ html body #workshop.refit-full .shop-main { background-image: none !important; }
 html body #workshop .yd-port { border: 10px solid transparent !important; border-image: url("../assets/ui/parts/window.png") 24 fill / 10px stretch !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; padding: 0 !important; }
 #workshop .yd-port::before, #workshop .yd-port::after { content: none !important; }
 html body #workshop .yd-port .yd-pic { border-radius: 0 !important; box-shadow: none !important; }
-html body #workshop .yd-ruler { box-shadow: 0 0 0 1px #000, 0 0 0 4px #151819, 0 0 0 5px rgba(236, 230, 214, 0.18) !important; border-radius: 0 !important; }
+html body #workshop .yd-ruler { box-shadow: 0 0 0 1px #000, 0 0 0 4px #151819, 0 0 0 5px rgba(185, 230, 154, 0.18) !important; border-radius: 0 !important; }
 #workshop .ru-zones { border-radius: 0 !important; }
 /* headings printed, not sprayed through a stencil */
-#workshop .yd-stencil { -webkit-mask-image: none !important; mask-image: none !important; font: 600 15px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-ink) !important; text-shadow: none !important; }
+#workshop .yd-stencil { -webkit-mask-image: none !important; mask-image: none !important; font: 600 20px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-ink) !important; text-shadow: none !important; }
 #workshop .yd-stencil small { font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; letter-spacing: 0 !important; }
-#workshop .yd-info h3, #workshop .yd-top h3 { font: 600 22px var(--c-num) !important; letter-spacing: 0.08em !important; text-transform: uppercase; color: var(--c-ink) !important; }
-#workshop .yd-info h3 small, #workshop .yd-top h3 small { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
+#workshop .yd-info h3, #workshop .yd-top h3 { font: 600 30px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-ink) !important; }
+#workshop .yd-info h3 small, #workshop .yd-top h3 small { font: 600 16px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; }
 #workshop .yd-hull { font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; }
 /* her specification: printed on a plate, not a typed paper sheet */
 html body #workshop .yd-sheet { border: 12px solid transparent !important; border-image: var(--W) 24 fill / 12px stretch !important; background: none !important; box-shadow: none !important; transform: none !important;
   color: var(--c-ink) !important; padding: 4px 6px 6px !important; border-radius: 0 !important; }
 #workshop .yd-sheet::before, #workshop .yd-sheet::after { content: none !important; }
-#workshop .ys-head, #workshop .ys-head span { font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; border-color: rgba(0, 0, 0, 0.6) !important; }
-#workshop .ys-row, #workshop .yd-sheet .ys-row span { font: 600 13px var(--c-num) !important; letter-spacing: 0.12em !important; color: var(--c-dim) !important; }
-#workshop .ys-row b, #workshop .yd-sheet b { font: 600 15px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0.04em !important; }
+#workshop .ys-head, #workshop .ys-head span { font: 600 16px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; border-color: rgba(0, 0, 0, 0.6) !important; }
+#workshop .ys-row, #workshop .yd-sheet .ys-row span { font: 600 18px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; }
+#workshop .ys-row b, #workshop .yd-sheet b { font: 600 20px var(--c-num) !important; color: var(--c-ink) !important; letter-spacing: 0 !important; }
 #workshop .ys-note { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; }
 html body #workshop .ys-stamp { transform: none !important; border: 0 !important; box-shadow: none !important; background: none !important; padding: 0 0 0 20px !important; position: relative;
-  font: 600 12px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-green) !important; }
+  font: 600 16px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-green) !important; }
 #workshop .ys-stamp::before { content: ''; position: absolute; left: 0; top: 50%; width: 15px; height: 15px; margin-top: -8px; background: url("../assets/ui/parts/lamp-green.png") center / 15px 15px no-repeat; }
 /* the way to the other subs: a push-button, not a brass plaque */
 html body #workshop .yd-plaque { border: 12px solid transparent !important; border-image: var(--BTN) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
-  font: 600 16px var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-ink) !important; text-shadow: none !important; padding: 2px 14px 6px !important; }
+  font: 600 22px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-ink) !important; text-shadow: none !important; padding: 2px 14px 6px !important; }
 #workshop .yd-plaque i, #workshop .yd-plaque::before, #workshop .yd-plaque::after { display: none !important; }
 #workshop .yd-plaque svg, #workshop .yd-plaque .yd-lens { filter: invert(0.9); }
 /* the refits: raised tiles (no paper cards, no clips), each with an orange buy button for its price */
@@ -346,18 +344,18 @@ html body #workshop .yd-refit { border: 12px solid transparent !important; borde
 #workshop .yd-refit b { font: 18px var(--c-text) !important; color: var(--c-ink) !important; }
 #workshop .yd-refit p { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; }
 html body .pay-tag { border: 12px solid transparent !important; border-image: var(--BTN1) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; transform: none !important;
-  height: auto !important; min-height: 44px; padding: 0 12px 4px !important; font: 600 17px/1 var(--c-num) !important; letter-spacing: 0.06em !important; color: #1c0b03 !important; text-shadow: none !important; clip-path: none !important; }
+  height: auto !important; min-height: 44px; padding: 0 12px 4px !important; font: 600 23px/1 var(--c-num) !important; letter-spacing: 0 !important; color: #06110e !important; text-shadow: none !important; clip-path: none !important; }
 .pay-tag::before, .pay-tag::after { content: none !important; display: none !important; }
 html body .pay-tag:disabled { border-image-source: var(--BTN) !important; color: var(--c-faint) !important; }
 html body .pay-tag:hover:not(:disabled) { filter: brightness(1.12) !important; transform: none !important; }
-#workshop .yd-fitted { font: 600 13px var(--c-num) !important; letter-spacing: 0.14em !important; color: var(--c-green) !important; background: none !important; box-shadow: none !important; border: 0 !important; transform: none !important; }
+#workshop .yd-fitted { font: 600 18px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-green) !important; background: none !important; box-shadow: none !important; border: 0 !important; transform: none !important; }
 html body #workshop .ys-stamp { position: relative !important; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; display: inline-block !important; margin-top: 10px !important; }
 /* every price, everywhere (the yard, the catalog, the quest board, the refits): an orange push-button with its figure */
 html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .shop button[data-act="refresh"]:not(.primary), #workshop .yd-refit button.yd-buy, #workshop button.yd-price, .pay-tag) {
   border: 12px solid transparent !important; border-image: var(--BTN1) 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
   clip-path: none !important; transform: none !important; filter: none !important; height: auto !important; min-height: 44px; padding: 0 12px 4px !important;
-  font-family: var(--c-num) !important; font-weight: 600 !important; font-size: 17px !important; letter-spacing: 0.06em !important; color: #1c0b03 !important; text-shadow: none !important; }
-html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .shop button[data-act="refresh"]:not(.primary), #workshop button.yd-price, .pay-tag) span { color: #1c0b03 !important; font-family: var(--c-num) !important; }
+  font-family: var(--c-num) !important; font-weight: 600 !important; font-size: 17px !important; letter-spacing: 0 !important; color: #06110e !important; text-shadow: none !important; }
+html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .shop button[data-act="refresh"]:not(.primary), #workshop button.yd-price, .pay-tag) span { color: #06110e !important; font-family: var(--c-num) !important; }
 html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .pay-tag, #workshop button.yd-price):disabled { border-image-source: var(--BTN) !important; color: var(--c-dim) !important; cursor: default; }
 html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .pay-tag, #workshop button.yd-price):disabled span { color: var(--c-dim) !important; }
 html body :is(.shop button[data-act="buy"]:not(.primary):not(.warn), .pay-tag):hover:not(:disabled) { filter: brightness(1.12) !important; }
@@ -366,36 +364,36 @@ html body #workshop .yd-photo { border: 8px solid transparent !important; border
 html body #workshop .yd-photo::before, html body #workshop .yd-photo::after { content: none !important; }
 html body #workshop .yd-card .yd-pic, html body #workshop .yd-photo .yd-pic { border-radius: 0 !important; box-shadow: none !important; border: 0 !important; outline: 0 !important; }
 html body #workshop .yd-card.cur .yd-photo { outline: 2px solid var(--c-orange) !important; outline-offset: 3px; }
-html body #workshop .yd-card h4 { font: 600 14px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase; color: var(--c-ink) !important; }
+html body #workshop .yd-card h4 { font: 600 19px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-ink) !important; }
 html body #workshop .yd-tab { border: 10px solid transparent !important; border-image: var(--BTN) 36 fill / 10px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; transform: none !important;
-  font: 600 14px var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-ink) !important; padding: 0 10px 3px !important; }
+  font: 600 19px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-ink) !important; padding: 0 10px 3px !important; }
 
 /* ---------------------------------------------------------------- the aquarium and the tank room: their headers and switches */
 html body .tr-plate { border: 12px solid transparent !important; border-image: url("../assets/ui/parts/plate.png") 36 fill / 12px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 8px !important; }
 html body .tr-plate::before, html body .tr-plate::after { content: none !important; }
-html body .tr-plate b { font: 600 18px var(--c-num) !important; letter-spacing: 0.14em !important; text-transform: uppercase; color: var(--c-ink) !important; text-shadow: none !important; }
-html body .tr-plate span { font: 600 11px var(--c-num) !important; letter-spacing: 0.14em !important; text-transform: uppercase; color: var(--c-dim) !important; }
+html body .tr-plate b { font: 600 24px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-ink) !important; text-shadow: none !important; }
+html body .tr-plate span { font: 600 15px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-dim) !important; }
 html body .tr-close { width: 34px !important; height: 34px !important; border: 9px solid transparent !important; border-image: var(--KEY) 24 fill / 9px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
-  font: 500 20px/1 var(--c-num) !important; color: var(--c-ink) !important; padding: 0 0 3px !important; display: grid; place-items: center; }
+  font: 500 27px/1 var(--c-num) !important; color: var(--c-ink) !important; padding: 0 0 3px !important; display: grid; place-items: center; }
 .gl-lights button { border: 10px solid transparent !important; border-image: var(--BTN) 36 fill / 10px stretch !important; background: none !important; border-radius: 0 !important; position: relative;
-  padding: 0 10px 3px 24px !important; min-height: 38px; font: 600 13px var(--c-num) !important; letter-spacing: 0.12em !important; text-transform: uppercase; color: var(--c-dim) !important; }
+  padding: 0 10px 3px 24px !important; min-height: 38px; font: 600 18px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-dim) !important; }
 .gl-lights button::before { content: ''; position: absolute; left: 4px; top: 50%; width: 14px; height: 14px; margin-top: -8px; background: url("../assets/ui/parts/lamp-off.png") center / 14px 14px no-repeat; }
 .gl-lights button.on { color: var(--c-ink) !important; }
 .gl-lights button.on::before { background-image: url("../assets/ui/parts/lamp-orange.png"); }
-.gl-catch h4 { font: 600 13px var(--c-num) !important; letter-spacing: 0.16em !important; color: var(--c-dim) !important; }
+.gl-catch h4 { font: 600 18px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-dim) !important; }
 .gl-catch p { font: italic 15px var(--c-text) !important; color: var(--c-dim) !important; }
 .gl-catch button { border: 8px solid transparent !important; border-image: var(--W) 24 fill / 8px stretch !important; background: none !important; border-radius: 0 !important; font: 16px var(--c-text) !important; color: var(--c-ink) !important; }
 .gl-catch button::before { color: var(--c-orange) !important; font-family: var(--c-num) !important; }
-.gl-catch button small { font: 600 12px var(--c-num) !important; letter-spacing: 0.08em; color: var(--c-dim) !important; }
-html body .gl-catch .gl-room { border-image-source: var(--BTN1) !important; color: #1c0b03 !important; font: 600 14px var(--c-num) !important; letter-spacing: 0.08em !important; text-transform: uppercase; }
+.gl-catch button small { font: 600 16px var(--c-num) !important; letter-spacing: 0; color: var(--c-dim) !important; }
+html body .gl-catch .gl-room { border-image-source: var(--BTN1) !important; color: #06110e !important; font: 600 19px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; }
 html body .gl-catch .gl-room::before { content: none !important; }
 
 /* ---------------------------------------------------------------- the title: a console face; the three saves as channels with lamps */
 html body #title .title-panel { border: 22px solid transparent !important; border-image: var(--P) 66 fill / 22px stretch !important; background: none !important; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6) !important;
   border-radius: 0 !important; width: min(500px, 90vw); max-width: none; padding: 16px 18px 10px !important; }
 html body #title .t-plate { background: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 0 18px !important; display: block; }
-html body #title .t-plate h1 { font: 500 clamp(44px, 4.6vw, 58px)/1 var(--c-text) !important; letter-spacing: 0.01em !important; color: var(--c-ink) !important; text-shadow: none !important; }
-html body #title .t-plate::after { content: '' !important; display: block; width: 46px; height: 3px; margin-top: 12px; background: var(--c-orange); position: static !important; }
+html body #title .t-plate h1 { font: 500 clamp(44px, 4.6vw, 58px)/1 var(--c-text) !important; letter-spacing: 0 !important; color: var(--c-ink) !important; text-shadow: none !important; }
+html body #title .t-plate::after { content: none !important; }
 html body #title #continue { min-width: 200px; min-height: 50px; font-size: 18px !important; margin: 0 0 18px !important; }
 html body #title .t-label { margin: 0 0 8px !important; }
 #title .slots { gap: 6px !important; max-width: none !important; }
@@ -406,21 +404,21 @@ html body #title .slot:hover { transform: none !important; filter: brightness(1.
 #title .slot .lamp.on { background-image: url("../assets/ui/parts/lamp-green.png"); }
 #title .slot .lamp.bad { background-image: url("../assets/ui/parts/lamp-red.png"); }
 html body #title .slot .num { width: auto !important; height: auto !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; display: block;
-  font: 600 20px var(--c-num) !important; color: var(--c-dim) !important; }
-html body #title .slot .info b { font: 600 19px var(--c-num) !important; letter-spacing: 0.04em; color: var(--c-ink) !important; font-style: normal !important; }
+  font: 600 27px var(--c-num) !important; color: var(--c-dim) !important; }
+html body #title .slot .info b { font: 600 26px var(--c-num) !important; letter-spacing: 0; color: var(--c-ink) !important; font-style: normal !important; }
 html body #title .slot.empty .info b { color: var(--c-dim) !important; }
 html body #title .slot .info span { font: italic 14px var(--c-text) !important; color: var(--c-dim) !important; letter-spacing: 0 !important; }
 html body #title .slot .del { border: 7px solid transparent !important; border-image: var(--KEY) 24 fill / 7px stretch !important; background: none !important; box-shadow: none !important; border-radius: 0 !important;
-  font: 600 11px var(--c-num) !important; letter-spacing: 0.1em !important; text-transform: uppercase; color: var(--c-dim) !important; padding: 0 4px 2px !important; }
-html body #title .slot .del:hover { color: #f08a6a !important; }
+  font: 600 15px var(--c-num) !important; letter-spacing: 0 !important; text-transform: lowercase; color: var(--c-dim) !important; padding: 0 4px 2px !important; }
+html body #title .slot .del:hover { color: #ff5a46 !important; }
 #title .menu-links { display: flex; gap: 10px !important; margin-top: 14px !important; }
 #title .t-key { border: 9px solid transparent; border-image: var(--BTN) 36 fill / 9px stretch; background: none; cursor: pointer; padding: 0 8px 3px; min-height: 34px;
-  font: 600 13px var(--c-num); letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-ink); }
+  font: 600 18px var(--c-num); letter-spacing: 0; text-transform: lowercase; color: var(--c-ink); }
 #title .t-key:hover { filter: brightness(1.2); }
 html body #title .hint { font: 13px var(--c-text) !important; color: var(--c-faint) !important; margin: 12px 0 0 !important; }
-html body #title .hint .version { font: 600 12px var(--c-num); letter-spacing: 0.1em; }
+html body #title .hint .version { font: 600 16px var(--c-num); letter-spacing: 0; }
 #title .tag, #title .t-gear { display: none !important; }
-html body #confirm .cf-yes.danger { border-image-source: url("../assets/ui/parts/btn-danger.png") !important; color: #fbe8e2 !important; }
+html body #confirm .cf-yes.danger { border-image-source: url("../assets/ui/parts/btn-danger.png") !important; color: #ffd0c8 !important; }
 
 /* ---------------------------------------------------------------- settings: the switches and the controls side by side, nothing below the fold */
 html body #settings .set-panel { width: min(980px, 94vw) !important; }
@@ -429,23 +427,23 @@ html body #settings .set-controls { grid-template-columns: 1fr !important; gap: 
 html body #settings .set-row { padding: 2px 6px !important; }
 
 /* ---------------------------------------------------------------- the loading screen: the painting kept; its type and its line in the console's faces */
-#boot .ld-title span { font: 600 clamp(15px, 1.9vw, 26px) var(--c-num) !important; letter-spacing: 0.32em !important; color: rgba(239, 230, 212, 0.78) !important; }
+#boot .ld-title span { font: 600 clamp(15px, 1.9vw, 26px) var(--c-num) !important; letter-spacing: 0 !important; color: rgba(239, 230, 212, 0.78) !important; }
 #boot .ld-bar { height: 6px !important; border-radius: 0 !important; background: rgba(0, 0, 0, 0.55) !important; box-shadow: 0 0 0 1px rgba(239, 230, 212, 0.25) !important; }
 #boot .ld-fill { background: var(--c-orange) !important; }
-#boot .ld-pct { font: 600 15px var(--c-num) !important; letter-spacing: 0.08em !important; color: var(--c-ink) !important; }
+#boot .ld-pct { font: 600 20px var(--c-num) !important; letter-spacing: 0 !important; color: var(--c-ink) !important; }
 #boot .ld-tip { font: italic 17px/1.4 var(--c-text) !important; }
 #boot .ld-tip kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 4px 2px !important; margin: 0 3px; vertical-align: 1px;
-  border: 6px solid transparent !important; border-image: url("../assets/ui/parts/key.png") 24 fill / 6px stretch !important; background: none !important; font: 600 13px/1 var(--c-num) !important; font-style: normal; color: var(--c-ink) !important; }
+  border: 6px solid transparent !important; border-image: url("../assets/ui/parts/key.png") 24 fill / 6px stretch !important; background: none !important; font: 600 18px/1 var(--c-num) !important; font-style: normal; color: var(--c-ink) !important; }
 
 /* ---------------------------------------------------------------- the tutorial's guide: in the console's colour for attention, its keys rubber */
-html body #tut-spot { --brass: #ec6a2c; --brass-d: #b8461a; }
-html body #tut-spot .ts-frame { box-shadow: inset 0 0 60px 6px rgba(236, 106, 44, 0.12), inset 0 0 0 1px rgba(236, 106, 44, 0.2) !important; }
+html body #tut-spot { --brass: #b9e69a; --brass-d: #6e9a5a; }
+html body #tut-spot .ts-frame { box-shadow: inset 0 0 60px 6px rgba(185, 230, 154, 0.08), inset 0 0 0 1px rgba(185, 230, 154, 0.18) !important; }
 html body #tut-spot .ts-key kbd:not(.mouse) { border: 8px solid transparent !important; border-image: url("../assets/ui/parts/key.png") 24 fill / 8px stretch !important; background: none !important; box-shadow: none !important;
-  border-radius: 0 !important; color: var(--c-ink) !important; font: 600 16px/1 var(--c-num) !important; text-shadow: none !important; padding: 0 4px 2px !important; min-width: 30px; height: 30px; }
+  border-radius: 0 !important; color: var(--c-ink) !important; font: 600 22px/1 var(--c-num) !important; text-shadow: none !important; padding: 0 4px 2px !important; min-width: 30px; height: 30px; }
 html body #tut-spot .ts-key kbd.mouse { border-color: var(--c-ink) !important; }
 html body #tut-spot .ts-key, html body #tut-spot .ts-say { font-family: var(--c-text) !important; }
-html body #tut-spot .ts-line { border-left: 3px solid var(--c-orange) !important; }
-html body #tut-spot .ts-say { box-shadow: 0 0 0 1px rgba(236, 230, 214, 0.18), 0 6px 18px rgba(0, 0, 0, 0.5) !important; border-radius: 0 !important; }
+html body #tut-spot .ts-line { border-left: 2px solid var(--c-ink) !important; }
+html body #tut-spot .ts-say { box-shadow: 0 0 0 1px rgba(185, 230, 154, 0.18), 0 6px 18px rgba(0, 0, 0, 0.5) !important; border-radius: 0 !important; }
 /* the quest line grows with the screen as the canvas instruments do (they scale by the window's height / 900) */
 #quests-hud { zoom: clamp(0.8, calc(100vh / 900px), 1.5); }
 /* the journal is a book: its own two keys (settings, close) stay rubber keys but sit on the paper quietly */
@@ -453,3 +451,20 @@ html body #journal header .j-gear, html body #journal-close { width: 30px !impor
 html body #journal-close { background-image: none !important; background-color: transparent !important; font-size: 18px !important; padding: 0 0 2px !important; }
 /* inside the journal (drawn slightly scaled) a nine-sliced key shows its seams: there, the key as one whole image */
 html body #journal-close, html body #journal header .j-gear { border: 0 !important; border-image: none !important; background: url("../assets/ui/parts/key.png") center / 100% 100% no-repeat !important; }
+
+/* ---------------------------------------------------------------- (phosphor pass) */
+/* close: a cross drawn as two strokes, centred by the box (not a font's x, which sits on its baseline) */
+html body :is(:is(#settings, #inventory) .set-close, #workshop-close, #cave-close, #trapset-close, .refit-x, #inventory .ip-close, .oc-close, .qp-close, #quests .qs-close, #chart .ch-close, #journal-close, .tr-close) {
+  font-size: 0 !important; color: transparent !important; line-height: 0 !important; height: 34px !important; min-height: 34px; }
+html body :is(:is(#settings, #inventory) .set-close, #workshop-close, #cave-close, #trapset-close, .refit-x, #inventory .ip-close, .oc-close, .qp-close, #quests .qs-close, #chart .ch-close, #journal-close, .tr-close)::after {
+  content: '' !important; position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; transform: translate(-50%, -50%); display: block;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1 1 L11 11 M11 1 L1 11' stroke='%23b9e69a' stroke-width='1.6' stroke-linecap='square'/%3E%3C/svg%3E") center / 12px 12px no-repeat !important; }
+html body #journal-close::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1 1 L11 11 M11 1 L1 11' stroke='%23b9e69a' stroke-width='1.6' stroke-linecap='square'/%3E%3C/svg%3E") !important; }
+/* instrument text prints in lower case, everywhere it appears */
+.shop .shop-cash span, #workshop .ys-head, #workshop .ys-head span, #workshop .ys-row, #workshop .ys-row span, #workshop .ys-row b, #workshop .yd-info h3 small, #workshop .ys-stamp,
+#inventory .cash-plate span, #inventory .lk-head span, .tr-plate b, .tr-plate span, .gl-catch h4, #quests-hud .qh-k { text-transform: lowercase !important; letter-spacing: 0 !important; }
+#workshop .ys-stamp::before { background-image: url("../assets/ui/parts/lamp-on.png") !important; }
+/* the quest line: its heading in phosphor */
+#quests-hud .qh-k { font: 18px var(--c-num) !important; color: var(--c-dim) !important; }
+#quests-hud .qh-k.done { color: var(--c-ink) !important; }
+html body :is(#quests .qs-close, #chart .ch-close, #journal-close, #workshop-close, .oc-close) { position: relative; }

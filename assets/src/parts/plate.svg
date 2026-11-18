@@ -1,9 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="48" viewBox="0 0 64 48">
-  <!-- Enamel plate (nine-slice: 12 px corners). Matte black enamel on steel: a hard black edge, the top lip
-       catching the light, the bottom lip in shadow, a soft drop shadow under it. -->
-  <rect x="2.5" y="4" width="59" height="42" rx="6" fill="#000" opacity="0.42"/>
-  <rect x="2" y="2" width="60" height="42" rx="6" fill="#151819" stroke="#020303" stroke-width="1"/>
-  <path d="M8 3.2 H56" stroke="#ffffff" stroke-opacity="0.13" stroke-width="1.2" stroke-linecap="round"/>
-  <path d="M3.4 9 V37" stroke="#ffffff" stroke-opacity="0.05" stroke-width="1"/>
-  <path d="M8 42.6 H56" stroke="#000" stroke-opacity="0.6" stroke-width="1.2" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <!-- A screen (nine-slice 22): dark glass in a black bezel, a faint phosphor rim just inside it. -->
+  <rect x="0" y="0" width="96" height="96" fill="#000" opacity="0.55"/>
+  <rect x="3" y="3" width="90" height="90" fill="#06110e" fill-opacity="0.93"/>
+  <rect x="3.5" y="3.5" width="89" height="89" fill="none" stroke="#b9e69a" stroke-opacity="0.18" stroke-width="1"/>
 </svg>

@@ -77,16 +77,17 @@ export class Hud {
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
       C.tile(ctx, x, y, sw, sh, s, on);
-      C.lamp(ctx, x + sw - 13 * s, y + 13 * s, on ? 'orange' : 'off', s, 18);
-      C.label(ctx, key, x + 12 * s, y + 14 * s, s, { col: on ? C.INK : C.DIM, size: 14, spacing: 0 });
-      ctx.globalAlpha = e.inSub ? 0.35 : on ? 1 : 0.6;
-      ctx.drawImage(icon(kind, tier), x + 14 * s, y + 13 * s, sw - 28 * s, (sw - 28 * s) / 2);
+      C.label(ctx, key, x + 10 * s, y + 13 * s, s, { col: on ? C.INK : C.DIM, size: 13 });
+      const ic = icon(kind, tier), iw = sw - 28 * s;
+      ctx.globalAlpha = e.inSub ? 0.35 : 1;
+      ctx.drawImage(C.tinted(ic, on ? 1 : 0.5), x + 14 * s, y + 10 * s, iw, iw / 2);
       ctx.globalAlpha = 1;
-      const nm = String(name || '').toUpperCase(), short = nm.length > 13 ? nm.split(' ').slice(-2).join(' ').slice(0, 13) : nm;
-      C.label(ctx, short, x + sw / 2, y + sh - 13 * s, s, { align: 'center', col: on ? C.INK : C.DIM, size: 11, spacing: 1.2 });
-      const count = (n, warn) => C.label(ctx, String(n), x + sw - 24 * s, y + 14 * s, s, { align: 'right', col: warn ? C.RED : C.INK, size: 13, spacing: 0 });
+      const nm = String(name || '').toLowerCase(), short = nm.length > 13 ? nm.split(' ').slice(-2).join(' ').slice(0, 13) : nm;
+      if (on) C.inverse(ctx, short, x + 2 * s, y + sh - 19 * s, sw - 4 * s, 17 * s, s, { size: 11 });
+      else C.label(ctx, short, x + sw / 2, y + sh - 11 * s, s, { align: 'center', size: 11 });
+      const count = (n, warn) => C.label(ctx, String(n), x + sw - 10 * s, y + 13 * s, s, { align: 'right', col: warn ? C.RED : C.INK, size: 13, spacing: 0 });
       if (kind === 'cam') count(g.shots, !g.shots);
-      if (kind === 'trap') { const free = ownedTraps - g.traps.length; C.label(ctx, `×${free}`, x + sw - 24 * s, y + 14 * s, s, { align: 'right', col: free ? C.DIM : C.RED, size: 12, spacing: 0 }); }
+      if (kind === 'trap') { const free = ownedTraps - g.traps.length; C.label(ctx, `x${free}`, x + sw - 10 * s, y + 13 * s, s, { align: 'right', col: free ? C.DIM : C.RED, size: 12, spacing: 0 }); }
       if (kind === 'tag' && g.tags.length) count(g.tags.length, false);
       // sweep / reload progress along the bottom edge of the well
       if (on && g.capture && g.capture.kind === kind) {
@@ -107,8 +108,8 @@ export class Hud {
     if (!e.inSub) C.label(ctx, 'BAG', sx - step * 0.6 - 2 * s, sy, s, { align: 'right', size: 11 });
     for (let i = 0; i < slots; i++, sx += step) {
       const sp = list[i];
-      ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU);
-      ctx.fillStyle = '#050606'; ctx.fill();
+      ctx.beginPath(); ctx.rect(sx - r, sy - r, r * 2, r * 2);
+      ctx.fillStyle = C.GLASS; ctx.fill();
       if (sp) {
         const c = sp.cond;
         ctx.fillStyle = SPECIES_BY_ID[sp.id].v.c[0];
@@ -121,7 +122,7 @@ export class Hud {
           ctx.strokeStyle = `rgba(255,90,60,${(0.8 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1.4 * s;
           ctx.beginPath(); ctx.arc(sx, sy, r * (1 + q * 0.9), 0, TAU); ctx.stroke();
         }
-      } else { ctx.strokeStyle = 'rgba(236,230,214,0.45)'; ctx.lineWidth = 1.2 * s; ctx.stroke(); }
+      } else { ctx.strokeStyle = C.P(0.6); ctx.lineWidth = Math.max(1, s); ctx.stroke(); }
     }
     // the pressure tanks: brass-ringed, after a small gap
     if (pSlots) sx += step * 0.6;
@@ -257,73 +258,80 @@ export class Hud {
     const red = dying || false;
     const aboard = !!g.aboard && !dying; // on the Margaret's deck or in her cabin: only cash, the prompt and the contracts
 
-    // ---------- (ui-studio) the right-hand column: the console's instruments, one family of parts ----------
+    // ---------- (ui-studio) the dive computer: one screen, top right. Depth large; air (and in the sub cabin air, the
+    // hull, the rating, the cargo) as rows of blocks; the sonar at its foot. Phosphor on glass (docs/UI_BRIEF.md).
     const pad = 26 * s;
     ctx.textBaseline = 'top'; ctx.textAlign = 'right';
-    const rx0 = W - pad, CW = 220 * s, cx0 = rx0 - CW;
+    const rx0 = W - pad, CW = 220 * s, cx0 = rx0 - CW, IX = cx0 + 12 * s, IR = rx0 - 12 * s;
     let yy = pad - 6 * s;
-    // depth: an enamel plate, the figure large in a sunk window; the deepest of this dive on the plate; an orange
-    // arrow for the way he is going (none when still)
-    if (!dying && !aboard) {
-      const d = Math.max(0, e.y), warnD = e.inSub ? g.sub.y / g.sub.rated > 0.9 : e.y > (e.pressStart || 300);
-      const vy = (this.lastDepth == null ? 0 : (d - this.lastDepth) / Math.max(dt, 1e-3)); this.lastDepth = d;
-      this.vyS = (this.vyS || 0) * 0.9 + vy * 0.1;
-      const ph = 88 * s;
-      C.plate(ctx, cx0, yy, CW, ph, s, true);
-      C.label(ctx, 'DEPTH', cx0 + 18 * s, yy + 17 * s, s, { col: C.INK });
-      C.label(ctx, `DEEPEST ${Math.round(Math.max(d, e.maxDepth || 0))}`, rx0 - 18 * s, yy + 17 * s, s, { align: 'right', spacing: 1 });
-      C.sunk(ctx, cx0 + 16 * s, yy + 28 * s, CW - 32 * s, 48 * s, s);
-      ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right';
-      ctx.font = `500 ${46 * s}px ${C.NUM}`; ctx.fillStyle = warnD ? C.ORANGE : C.INK; ctx.fillText(String(Math.round(d)), rx0 - 46 * s, yy + 70 * s);
-      ctx.font = `500 ${22 * s}px ${C.NUM}`; ctx.fillStyle = C.DIM; ctx.fillText('m', rx0 - 26 * s, yy + 70 * s);
-      if (Math.abs(this.vyS) > 0.25) { const ax = cx0 + 32 * s, ay = yy + 52 * s, dn = this.vyS > 0 ? 1 : -1; ctx.fillStyle = C.ORANGE; ctx.beginPath(); ctx.moveTo(ax - 6 * s, ay - 4 * s * dn); ctx.lineTo(ax + 6 * s, ay - 4 * s * dn); ctx.lineTo(ax, ay + 5 * s * dn); ctx.closePath(); ctx.fill(); }
-      ctx.restore();
-      yy += ph + 8 * s;
-    }
+    const ap = g.autopilot;
     if (!aboard) {
-    // the gauges: swimming, air beside the sonar; in the sub, cabin air beside the hull, the sonar under them
-    const onTank = e.inSub && g.sub.o2 <= 0; // an empty cabin: the gauge shows his own tank
+    const onTank = e.inSub && g.sub.o2 <= 0; // an empty cabin: the reading is his own tank
     const o2 = e.inSub && !onTank ? g.sub.o2 / g.sub.o2Max : e.o2 / e.o2Max;
     const left = e.inSub && !onTank ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
-    const sec = Math.max(0, Math.floor(left)), secTxt = e.atSurface && o2 < 0.999 ? 'FILLING' : sec >= 600 ? `${Math.floor(sec / 60)} MIN` : sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec} S`;
-    const GR = 52 * s, gcxL = cx0 + GR, gcxR = rx0 - GR, gcy = yy + GR;
-    C.gauge(ctx, gcxL, gcy, GR, o2, s, { name: g.noAir ? 'NO AIR' : onTank ? 'HIS TANK' : e.inSub ? 'CABIN' : 'AIR', reading: secTxt, warn: g.noAir || o2 < 0.1 ? 2 : o2 < 0.25 ? 1 : 0, t: g.time });
-    let rcx = gcxR, rcy = gcy; const rr = C.faceR(GR);
+    const sec = Math.max(0, Math.floor(left)), secTxt = e.atSurface && o2 < 0.999 ? 'filling' : sec >= 600 ? `${Math.floor(sec / 60)} min` : sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec} s`;
+    const airWarn = g.noAir || o2 < 0.1 ? 2 : o2 < 0.25 ? 1 : 0;
+    const hi = e.inSub ? clamp(g.sub.hull, 0, 1) : 1, rr8 = e.inSub ? g.sub.y / g.sub.rated : 0;
+    const GR = 46 * s;
+    // its height: the depth block, air, (hull, rating, cargo), the sonar
+    let cargo = [];
     if (e.inSub) {
-      // the hull: the same gauge, its reading the hull's strength; red sector = failing
-      const hi = clamp(g.sub.hull, 0, 1), r = g.sub.y / g.sub.rated;
-      C.gauge(ctx, gcxR, gcy, GR, hi, s, { name: 'HULL', reading: `${Math.round(hi * 100)}%`, warn: g.sub.failing != null || hi < 0.4 ? 2 : hi < 0.75 ? 1 : 0, t: g.time });
-      yy += GR * 2 + 10 * s;
-      // the rating: depth against what she is built for, a lamp that lights amber near it and red past it
-      const lampSt = g.sub.failing != null || r > 1 ? (Math.sin(g.time * 8) > 0 ? 'red' : 'off') : r > 0.9 ? 'orange' : 'green';
-      C.lamp(ctx, cx0 + 8 * s, yy + 8 * s, lampSt, s);
-      const warn = g.sub.failing != null ? 'HULL FAILING' : r > 1 ? 'PAST HER RATING' : r > 0.9 ? 'NEAR HER RATING' : 'WITHIN RATING';
-      C.label(ctx, warn, cx0 + 22 * s, yy + 8 * s, s, { col: lampSt === 'green' ? C.DIM : lampSt === 'orange' ? C.ORANGE : C.RED, size: 12 });
-      C.label(ctx, `${Math.round(g.sub.y)} / ${g.sub.rated} M`, rx0, yy + 8 * s, s, { align: 'right', col: C.INK, size: 12, spacing: 1 });
-      yy += 24 * s;
-      rcx = rx0 - GR; rcy = yy + GR;
-      // the cargo plate beside the scope: what the open tank, the chambers and the large tank hold
       const fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1));
-      const rows = [['TANK', `${fmt(tankUsed(g))} / ${tankSlots(g)}`, tankUsed(g) >= tankSlots(g)]];
-      if (pressSlots(g)) { const n = g.subTank.filter((q) => q.pressed && q.chamber !== BIG).length; rows.push(['CHAMBERS', `${n} / ${pressSlots(g)}`, n >= pressSlots(g)]); }
-      if (hasBigTank(g)) rows.push(['LARGE TANK', `${bigIn(g).length} / 3`, bigIn(g).length >= 3]);
-      if (g.bag.length) rows.push(['IN THE BAG', String(g.bag.length), false]);
-      const pw = rcx - GR - 10 * s - cx0, ph2 = GR * 2;
-      C.plate(ctx, cx0, rcy - GR, pw, ph2, s);
-      C.label(ctx, 'CARGO', cx0 + 12 * s, rcy - GR + 16 * s, s, { col: C.INK, size: 12 });
-      rows.forEach(([l, v, full], i) => {
-        const ry = rcy - GR + 36 * s + i * 19 * s;
-        C.label(ctx, l, cx0 + 12 * s, ry, s, { size: 11, spacing: 1 });
-        C.label(ctx, v, cx0 + pw - 12 * s, ry, s, { align: 'right', col: full ? C.ORANGE : C.INK, size: 14, spacing: 0 });
-      });
+      cargo.push(['tank', `${fmt(tankUsed(g))} / ${tankSlots(g)}`, tankUsed(g) >= tankSlots(g)]);
+      if (pressSlots(g)) { const n = g.subTank.filter((q) => q.pressed && q.chamber !== BIG).length; cargo.push(['chambers', `${n} / ${pressSlots(g)}`, n >= pressSlots(g)]); }
+      if (hasBigTank(g)) cargo.push(['large tank', `${bigIn(g).length} / 3`, bigIn(g).length >= 3]);
+      if (g.bag.length) cargo.push(['in the bag', String(g.bag.length), false]);
     }
-    // the sonar scope: its face, then what it shows, clipped inside the glass
-    C.scopeFace(ctx, rcx, rcy, GR);
+    const SH = (dying ? 0 : 86 * s) + 46 * s + (e.inSub ? 46 * s + 24 * s + cargo.length * 20 * s + 8 * s : 0) + GR * 2 + 22 * s;
+    C.screen(ctx, cx0, yy, CW, SH, s);
+    let iy = yy;
+    if (!dying) {
+      const d = Math.max(0, e.y), warnD = e.inSub ? rr8 > 0.9 : e.y > (e.pressStart || 300);
+      const vy = (this.lastDepth == null ? 0 : (d - this.lastDepth) / Math.max(dt, 1e-3)); this.lastDepth = d;
+      this.vyS = (this.vyS || 0) * 0.9 + vy * 0.1;
+      C.label(ctx, 'depth', IX, iy + 16 * s, s);
+      C.label(ctx, `max ${Math.round(Math.max(d, e.maxDepth || 0))}`, IR, iy + 16 * s, s, { align: 'right' });
+      C.reading(ctx, String(Math.round(d)), IR - 26 * s, iy + 72 * s, 62 * s, { col: warnD ? C.RED : C.INK });
+      C.reading(ctx, 'm', IR, iy + 72 * s, 30 * s, { col: C.DIM });
+      if (Math.abs(this.vyS) > 0.25) C.reading(ctx, this.vyS > 0 ? '▼' : '▲', IX, iy + 66 * s, 24 * s, { align: 'left' });
+      iy += 86 * s; C.rule(ctx, IX - 2 * s, IR + 2 * s, iy - 4 * s, s);
+    }
+    // air
+    const airName = g.noAir ? 'no air' : onTank ? 'his tank' : e.inSub ? 'cabin air' : 'air';
+    C.label(ctx, airName, IX, iy + 12 * s, s, { col: airWarn > 1 ? C.RED : C.DIM, glow: airWarn > 1 });
+    C.label(ctx, secTxt, IR, iy + 12 * s, s, { align: 'right', col: airWarn > 1 ? C.RED : C.INK, size: 14, glow: true });
+    C.blocks(ctx, IX, iy + 24 * s, IR - IX, 10 * s, o2, s, { warn: airWarn, t: g.time });
+    iy += 46 * s;
+    if (e.inSub) {
+      C.label(ctx, 'hull', IX, iy + 12 * s, s, { col: hi < 0.4 ? C.RED : C.DIM });
+      C.label(ctx, `${Math.round(hi * 100)}%${hi < 0.99 ? ' leaking' : ''}`, IR, iy + 12 * s, s, { align: 'right', col: hi < 0.4 ? C.RED : C.INK, size: 14, glow: true });
+      C.blocks(ctx, IX, iy + 24 * s, IR - IX, 10 * s, hi, s, { warn: g.sub.failing != null || hi < 0.25 ? 2 : 0, t: g.time });
+      iy += 46 * s;
+      // the rating: a lamp, what it means, her depth against it
+      const st = g.sub.failing != null ? 'hull failing' : rr8 > 1 ? 'past her rating' : rr8 > 0.9 ? 'near her rating' : 'within rating';
+      const bad = g.sub.failing != null || rr8 > 1, flick = bad ? Math.sin(g.time * 8) > 0 : true;
+      C.lamp(ctx, IX + 4 * s, iy + 8 * s, bad ? (flick ? 'red' : 'off') : rr8 > 0.9 ? 'on' : 'off', s);
+      C.label(ctx, st, IX + 14 * s, iy + 8 * s, s, { col: bad ? C.RED : rr8 > 0.9 ? C.INK : C.DIM });
+      C.label(ctx, `${Math.round(g.sub.y)} / ${g.sub.rated} m`, IR, iy + 8 * s, s, { align: 'right', col: C.DIM });
+      iy += 24 * s; C.rule(ctx, IX - 2 * s, IR + 2 * s, iy - 4 * s, s);
+      for (const [l, v, full] of cargo) { C.label(ctx, l, IX, iy + 10 * s, s); C.label(ctx, v, IR, iy + 10 * s, s, { align: 'right', col: C.INK, size: 13, glow: full }); iy += 20 * s; }
+      iy += 8 * s;
+    }
+    C.rule(ctx, IX - 2 * s, IR + 2 * s, iy - 4 * s, s);
+    let rcx = cx0 + CW / 2, rcy = iy + GR + 8 * s; const rr = GR;
+    C.label(ctx, '200 m', IR, iy + 10 * s, s, { align: 'right', size: 10 });
+    if (e.inSub && ap && g.homeRun) { C.inverse(ctx, 'autopilot', IX - 4 * s, iy + 2 * s, 86 * s, 16 * s, s, { size: 11 }); C.label(ctx, 'air x0.6', IX, iy + 30 * s, s, { size: 10 }); }
+    // the scope: range rings and a cross, ghosted
+    ctx.save(); ctx.strokeStyle = C.GHOST; ctx.lineWidth = Math.max(1, s);
+    for (const k of [1 / 3, 2 / 3, 1]) { ctx.beginPath(); ctx.arc(rcx, rcy, rr * k, 0, TAU); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(rcx - rr, rcy); ctx.lineTo(rcx + rr, rcy); ctx.moveTo(rcx, rcy - rr); ctx.lineTo(rcx, rcy + rr); ctx.stroke(); ctx.restore();
+    yy += SH + 10 * s;
+    // the sonar: what it shows, clipped to the scope
     ctx.save();
     ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.clip();
     this.sweep = (this.sweep + dt * 1.6) % TAU;
     const sg = ctx.createConicGradient ? ctx.createConicGradient(this.sweep - 0.9, rcx, rcy) : null;
-    if (sg) { sg.addColorStop(0, 'rgba(127,207,116,0)'); sg.addColorStop(0.14, 'rgba(127,207,116,0.32)'); sg.addColorStop(0.145, 'rgba(127,207,116,0)'); ctx.fillStyle = sg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
+    if (sg) { sg.addColorStop(0, C.P(0)); sg.addColorStop(0.14, C.P(0.32)); sg.addColorStop(0.145, C.P(0)); ctx.fillStyle = sg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
     // his traps: small orange marks where their lines are
     for (const tr of g.traps || []) {
       const dx = tr.x - e.x, dy = tr.y - e.y, d = Math.hypot(dx, dy);
@@ -360,21 +368,18 @@ export class Hud {
       }
     }
     // the sub's transponder: a steady pale square inside 200 m, a tick on the rim beyond
-    const ap = g.autopilot;
     if (!e.inSub && !g.sub.imploded && !dying) {
       const ds = Math.hypot(g.sub.x - e.x, g.sub.y - e.y), as = Math.atan2(g.sub.y - e.y, g.sub.x - e.x);
       const k = Math.min(1, ds / 200) * (ds > 200 ? 0.92 : 1);
       const sxp = rcx + Math.cos(as) * k * rr, syp = rcy + Math.sin(as) * k * rr;
       const on = ap && ap.active ? 0.55 + 0.45 * Math.sin(g.time * 5) : 0.8;
-      ctx.fillStyle = `rgba(236,230,214,${on.toFixed(3)})`;
+      ctx.fillStyle = C.P(on);
       const q = (ds > 200 ? 1.6 : 2.2) * s;
       ctx.fillRect(sxp - q, syp - q, q * 2, q * 2);
     }
     ctx.restore();
     ctx.fillStyle = C.INK; ctx.beginPath(); ctx.arc(rcx, rcy, 2 * s, 0, TAU); ctx.fill();
     // in the sub, what the scope sits beside: the autopilot's state, the sub's air rate
-    if (e.inSub && ap && g.homeRun) { C.label(ctx, 'AUTOPILOT', cx0 + 4 * s, rcy - 8 * s, s, { col: C.ORANGE, size: 12 }); C.label(ctx, 'AIR ×0.6', cx0 + 4 * s, rcy + 10 * s, s, { col: C.DIM, size: 12 }); }
-    yy = rcy + GR + 10 * s;
     // status lines under the instruments, printed small: what is draining the air, the sub on its way
     const lines = [];
     if (g.noAir && !e.atSurface) lines.push([(g.noAirRate || 1) > 1.3 ? 'UNDER PRESSURE: SURFACE!' : 'HOLDING YOUR BREATH: SURFACE!', C.RED]);
@@ -401,10 +406,10 @@ export class Hud {
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy, s); yy += 88 * s; }
     // journal and chart: rubber keys with their names printed beside them, in one row; each key and word clickable
     const kx = window.innerWidth / this.c.width;
-    const kw1 = C.key(ctx, cx0 + 4 * s, yy, 'J', s); C.label(ctx, 'JOURNAL', cx0 + 4 * s + kw1 + 8 * s, yy + 12 * s, s, { col: C.INK, size: 12 });
+    const kw1 = C.key(ctx, cx0 + 4 * s, yy, 'J', s); C.label(ctx, 'journal', cx0 + 4 * s + kw1 + 8 * s, yy + 11 * s, s, { col: C.INK, size: 12 });
     this.journalHot = { x: (cx0 + this.safeL) * kx, y: (yy + this.safeT) * kx, w: 92 * s * kx, h: 26 * s * kx };
     const kx2 = cx0 + 120 * s;
-    const kw2 = C.key(ctx, kx2, yy, 'K', s); C.label(ctx, 'CHART', kx2 + kw2 + 8 * s, yy + 12 * s, s, { col: C.INK, size: 12 });
+    const kw2 = C.key(ctx, kx2, yy, 'K', s); C.label(ctx, 'chart', kx2 + kw2 + 8 * s, yy + 11 * s, s, { col: C.INK, size: 12 });
     this.chartHot = { x: (kx2 + this.safeL) * kx, y: (yy + this.safeT) * kx, w: 86 * s * kx, h: 26 * s * kx };
     yy += 26 * s + 14 * s;
     // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
@@ -447,8 +452,8 @@ export class Hud {
       this.slotHot[id] = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: sz * kx, h: sh2 * kx };
       const empty = !(n > 0) && !active, bad = name === 'NO NET' || name === 'TORN';
       C.tile(ctx, x, y, sz, sh2, s, false);
-      C.lamp(ctx, x + sz - 12 * s, y + 12 * s, active > 0 ? 'orange' : bad ? 'red' : 'off', s, 16);
-      if (!(id === 'n' && g.trawlTaught)) C.label(ctx, key, x + 11 * s, y + 13 * s, s, { col: C.INK, size: 13, spacing: 0 });
+      C.lamp(ctx, x + sz - 12 * s, y + 12 * s, active > 0 ? 'on' : 'off', s, 16);
+      if (!(id === 'n' && g.trawlTaught)) C.label(ctx, key, x + 10 * s, y + 13 * s, s, { col: C.INK, size: 13, raw: true });
       // the thing itself: a coloured bead (lure, glow, air), the net as a drawn mesh
       const icx = x + sz / 2, icy = y + 27 * s;
       ctx.save(); ctx.globalAlpha = empty ? 0.3 : 1;
@@ -460,7 +465,7 @@ export class Hud {
       const cnt = id !== 'n' ? n : badge > 1 ? badge : null, narrow = sz < 58 * s; // (a narrow tile: the count goes with the name)
       if (cnt != null && !narrow) C.label(ctx, `×${cnt}`, x + sz - 22 * s, y + 13 * s, s, { align: 'right', col: cnt > 0 ? C.DIM : C.RED, size: 12, spacing: 0 });
       const nm = (name.length > 12 ? name.slice(0, 12) : name) + (cnt != null && narrow ? ` ×${cnt}` : '');
-      C.label(ctx, nm, icx, y + sh2 - 11 * s, s, { align: 'center', col: bad ? C.RED : empty ? C.DIM : C.INK, size: 10, spacing: 1 });
+      C.label(ctx, nm, icx, y + sh2 - 11 * s, s, { align: 'center', col: bad || empty ? C.DIM : C.INK, size: 10 });
     });
     // ---------- P: frames per second, the picture's resolution, and whether lite mode is on ----------
     if (this.showFps) {

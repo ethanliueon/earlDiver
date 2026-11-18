@@ -3,7 +3,7 @@
 // work-order tags on string, chalk on the bulkhead, a toggle switch, a brass tag. Four materials, each with one
 // job: paint names places, brass is what you operate, paper and chalk tell you things, red is only for alarms.
 import { clamp, lerp, TAU } from './util.js';
-import { nine, NUM as CNUM, INK as CINK } from './console.js';
+import { key as cKey, NUM as CNUM, INK as CINK, P as CP } from './console.js';
 
 const STENCIL = '"Allerta Stencil", "IBM Plex Mono", monospace';
 const HAND = '"Caveat", "Segoe Print", cursive';
@@ -366,11 +366,15 @@ export function parsePrompt(text) {
 // a key-cap: (ui-studio) the console's rubber key (js/console.js), its letter printed on it; at (x, y) its top-left,
 // size s; returns its width (the same widths as before, so every prompt keeps its layout)
 export function keyCap(ctx, x, y, key, s = 1) {
+  // (ui-studio) a phosphor key, its letter centred by measuring the letter (docs/UI_BRIEF.md); the old widths kept
   const h = 26 * s, w = key.length > 1 ? Math.max(h * 1.9, (key.length * 8 + 18) * s) : h;
   ctx.save();
-  if (!nine(ctx, 'key', x, y, w, h, 8, s)) { ctx.fillStyle = '#2b2f32'; ctx.beginPath(); ctx.roundRect(x, y, w, h, 4.5 * s); ctx.fill(); }
-  ctx.font = `600 ${(key.length > 1 ? 12 : 15) * s}px ${CNUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = CINK; ctx.fillText(key.length > 1 ? key.toUpperCase() : key, x + w / 2, y + h * 0.45);
+  ctx.fillStyle = 'rgba(6,17,14,0.7)'; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = CP(0.85); ctx.lineWidth = Math.max(1, s); ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w) - 1, Math.round(h) - 1);
+  const word = key.length > 1 ? key.toLowerCase() : key;
+  ctx.font = `${Math.round((key.length > 1 ? 18 : 22) * s)}px ${CNUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  const m = ctx.measureText(word); ctx.fillStyle = CINK;
+  ctx.fillText(word, x + w / 2, y + h / 2 + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2);
   ctx.restore();
   return w;
 }

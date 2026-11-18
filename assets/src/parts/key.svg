@@ -1,8 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
-  <!-- A rubber key (nine-slice: 8 px corners): dark grey rubber on a black base, the top face slightly raised,
-       a soft highlight along its upper edge. The letter is printed on it at run time. -->
-  <rect x="2" y="5" width="24" height="21" rx="4.5" fill="#000"/>
-  <rect x="2" y="2" width="24" height="21.5" rx="4.5" fill="#2b2f32" stroke="#030404" stroke-width="1"/>
-  <rect x="4" y="4" width="20" height="16" rx="3" fill="#31363a"/>
-  <path d="M7 3.4 H21" stroke="#ffffff" stroke-opacity="0.16" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- A key (nine-slice 8): a phosphor outline on glass. Its letter is set by the page, centred by the box. -->
+  <rect x="0.5" y="0.5" width="27" height="27" fill="#06110e" fill-opacity="0.8" stroke="#b9e69a" stroke-opacity="0.85" stroke-width="1"/>
 </svg>
