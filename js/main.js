@@ -1306,7 +1306,7 @@ window.addEventListener('mouseup', (ev) => {
 });
 // (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch. The first touch
 // in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
-const touch = new Touch(hudCanvas, { buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play'), onMessage: (m) => hud.toast(m) });
+const touch = new Touch(hudCanvas, { buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
   d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
@@ -2693,6 +2693,7 @@ function frame(now) {
   // phone's fill is better spent on the sea
   hudDt += dt; hudFrame++;
   { const on = !!(hud.touch && g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen()); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
+  hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen()); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
@@ -2750,7 +2751,7 @@ window.addEventListener('beforeunload', saveNow);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) saveNow();
   const ac = audio.ac; if (!ac) return;
-  try { if (document.hidden) { if (ac.state === 'running') ac.suspend(); } else if (ac.state === 'suspended') ac.resume(); } catch (e) { /* ignore */ }
+  try { if (document.hidden) { if (ac.state === 'running') ac.suspend(); } else if (ac.state === 'suspended' && !audio.muted) ac.resume(); } catch (e) { /* ignore */ }
 });
 ui.showTitle();
 // (claude-polish) a phone turned upright shows "Turn your phone sideways" over the game: the game pauses under it

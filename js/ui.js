@@ -1063,7 +1063,7 @@ export class UI {
     row('set-catchtags', 'Show fish names', SETTINGS.catchTags, 'the name of the fish your net can reach');
     row('set-brackets', 'Mark what the net will catch', SETTINGS.brackets, 'corners round the fish');
     row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
-    $('set-graphics').innerHTML = `<span>Smoother on slow devices<em>a softer picture, fewer extras</em></span>${sw(!!SETTINGS.fast)}`;
+    $('set-graphics').innerHTML = `<span>Smoother on slow devices<em>${document.documentElement.classList.contains('touch') ? 'battery saver: 30 frames a second, cooler and longer' : 'a softer picture, fewer extras'}</em></span>${sw(!!SETTINGS.fast)}`;
   }
   galleryOpen() { return !$('gallery').hidden; }
   cabinOpen() { return !$('cabin').hidden; }

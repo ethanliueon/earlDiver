@@ -106,7 +106,7 @@ export class Audio {
     s.connect(f).connect(g).connect(this.master); s.start();
     return { s, f, g };
   }
-  resume() { if (this.ac && this.ac.state === 'suspended') this.ac.resume(); }
+  resume() { if (this.ac && this.ac.state === 'suspended' && !this.muted) this.ac.resume(); }
   // ---------------- music (2.6.9): one track, played whole, and rarely ----------------
   // It plays once on the first screen of a fresh session (the title, carrying on into the dive) and is
   // never restarted by a new dive, by coming back from a death, or by getting home. Once played (or cut
@@ -288,7 +288,14 @@ export class Audio {
     this.tone(28, 1.3, 0.55, 'sine', 0, 58);
     this.burst('lowpass', 200, 0.8, 1.2, 0.35, this.brown);
   }
-  setMuted(m) { this.muted = m; if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ac.currentTime, 0.1); }
+  setMuted(m) {
+    this.muted = m; if (!this.master) return;
+    this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ac.currentTime, 0.1);
+    // (5.4) muted, the whole sound engine rests (its drones and noise beds otherwise keep working in silence)
+    clearTimeout(this.muteT);
+    if (m) this.muteT = setTimeout(() => { if (this.muted && this.ac.state === 'running') this.ac.suspend(); }, 600);
+    else if (this.ac.state === 'suspended' && !document.hidden) this.ac.resume();
+  }
 
   burst(type, freq, q, dur, vol, buf = this.white, when = 0) {
     const ac = this.ac, t0 = ac.currentTime + when;

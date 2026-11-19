@@ -687,7 +687,7 @@ export class Hud {
       }
     }
     // (5.1.1) a touch screen: the actions, bottom right (on deck too: the F action is how he goes in)
-    if (touch && g.profile && g.mode === 'play' && !dying && !g.kill && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) this.drawActions(g, W, H, s, dt, aboard);
+    if (touch && !this.panel && g.profile && g.mode === 'play' && !dying && !g.kill && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) this.drawActions(g, W, H, s, dt, aboard);
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
     if (false && step && step.on && g.mode === 'play' && !dying && !g.kill && !g.hideQuest) { // (3.0.1: shown beside the Quests button instead)
