@@ -217,7 +217,7 @@ export class Hud {
   drawActions(g, W, H, s, dt, aboard) {
     const ctx = this.ctx, P = g.profile, e = g.earl, kx = window.innerWidth / this.c.width;
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
-    const pad = 26 * s, R = 42 * s, cx = W - pad - R, cy = H - pad - R;
+    const pad = 26 * s, R = 48 * s, cx = W - pad - R, cy = H - pad - R;
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
     const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
     const plate = (x, y, r, on) => {
@@ -267,7 +267,7 @@ export class Hud {
       { key: 'e', icon: 'glow', label: 'Glow stick', on: (g.items.necklace || 0) > 0 && !aboard, n: g.items.necklace, lit: g.necklaceOn },
       { key: 'h', icon: 'pet', label: P.pet ? (P.petStay ? 'Pet: follow' : 'Pet: stay') : 'Pet', on: !!P.pet && !aboard },
     ];
-    const r = 24 * s, rho0 = R + 46 * s, rho1 = rho0 + 64 * s, ANG = [-92, -136, -180, -98, -124, -150, -176];
+    const r = 29 * s, rho0 = R + 50 * s, rho1 = rho0 + 70 * s, ANG = [-92, -136, -180, -98, -124, -150, -176]; // (5.2.1) larger, and no words under them
     A.forEach((a, i) => {
       const ang = ANG[i] * Math.PI / 180, rho = i < 3 ? rho0 : rho1, x = cx + Math.cos(ang) * rho, y = cy + Math.sin(ang) * rho;
       ctx.save(); ctx.globalAlpha = a.on ? 1 : 0.38;
@@ -276,8 +276,6 @@ export class Hud {
       glyph(a.icon, x, y - 2 * s, r * 0.62);
       if (a.n > 1) { ctx.font = `700 ${11 * s}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.arc(x, y, r - 3 * s, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
-      ctx.font = `600 ${11 * s}px ${HUDF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4 * s;
-      ctx.fillText(a.label, x, y + r + 3 * s);
       ctx.restore();
       if (a.on) hot(x - r, y - r, r * 2, r * 2, a.key);
     });

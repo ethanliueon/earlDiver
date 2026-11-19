@@ -400,27 +400,25 @@ export class UI {
     let html = '';
     if (m) {
       const ok = S.mainProg >= m.need;
-      // (5.1) the log's step: one card, the whole card claims it when it is done
-      html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"${ok ? ' data-q="claim|main"' : ''}><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
-        <div class="qs-pay"><b>${m.gift ? 'a gift' : money(m.pay, false)}</b>${ok ? '<em>Claim</em>' : ''}</div></div>`;
+      html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
+        <div class="qs-pay">${m.gift ? 'a gift' : money(m.pay, false)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
     html += `<h3>The board</h3>`;
     // (4.3.0) during the tutorial the board waits, so one step at a time is all there is to claim
     if (tutorialOn(P)) { $('quests').querySelector('.qs-body').innerHTML = html + `<p class="qs-locked">The board opens when the tutorial is done. Finish the Margaret's log steps first.</p>`; return; }
-    // (5.1) the board: a card for each quest, the reward big; tap a finished one to claim it, any other to see what
-    // counts for it. No timers, no info buttons: a done quest is stamped PAID until a new one takes its place
-    html += '<div class="qs-cards">';
+    const hm = (ms) => { const totM = Math.ceil(ms / 60000), h = Math.floor(totM / 60), mi = totM % 60; return h ? `${h} h ${mi} min` : `${mi} min`; };
     for (const q of S.board) {
-      const ok = q.prog >= q.n, act = q.claimed ? '' : ok ? `claim|${q.key}` : `info|${q.key}`;
-      html += `<div class="qs-q r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"${act ? ` data-q="${act}"` : ''}><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b>${q.n > 1 && !q.claimed ? bar(q.prog, q.n) + `<span>${q.kind === 'sell' ? money(q.prog, false) + ' of ' + money(q.n, false) : q.prog + ' of ' + q.n}</span>` : ''}</div>
-        <div class="qs-pay">${q.claimed ? '<span class="qs-paid">Paid</span>' : `<b>${money(q.pay, false)}</b>`}${ok && !q.claimed ? '<em>Claim</em>' : ''}</div></div>`;
+      // (4.0.0) a claimed quest stays, dimmed, until its time runs out; a new one is marked NEW until the board is seen
+      const ok = q.prog >= q.n, left = questLeft(q);
+      const timer = q.claimed ? `done, a new quest in ${hm(left)}` : ok ? 'done: claim it' : `${hm(left)} left`;
+      html += `<div class="qs-q r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b><small class="qs-time">${timer}</small>${q.n > 1 && !q.claimed ? bar(q.prog, q.n) + `<span>(${q.kind === 'sell' ? money(q.prog, false) + '/' + money(q.n, false) : q.prog + '/' + q.n})</span>` : ''}</div>
+        <div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : money(q.pay, false)}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div><button class="qs-info" data-q="info|${q.key}" title="About this quest">i</button></div>`;
     }
-    html += '</div>';
     // (4.0.0) the free refresh, or the next price on the ladder for this three-hour window
     const wait = boardIn(P), price = refreshPrice(P);
     // (4.0.1) the countdown is plain words under the board with a ticking green clock; only the button is brass
     const clock = (ms) => { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sc = t % 60; return `${h}:${String(m).padStart(2, '0')}:${String(sc).padStart(2, '0')}`; };
-    html += `<div class="qs-foot">${wait > 0 ? `<button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''} title="Free again in ${clock(wait)}">New quests<span>${money(price, false)}</span></button>` : '<button class="qs-buy" data-q="refresh|free">New quests<span>Free</span></button>'}</div>`;
+    html += `<div class="qs-foot">${wait > 0 ? `<span class="qs-wait">Free refresh in <b class="qs-clock">${clock(wait)}</b></span><button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now, ${money(price, false)}</button>` : '<span class="qs-wait">A free refresh is ready</span><button class="qs-buy" data-q="refresh|free">New quests (free)</button>'}</div>`;
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
