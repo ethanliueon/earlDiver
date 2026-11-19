@@ -13,6 +13,9 @@ const HOLD = { '': 3, note: 3, good: 3, warn: 3, danger: 4.2, big: 4 };
 // to a small line. A critical one (a death, the sub lost, out of air) is never pushed off its line. The same words
 // again simply keep the line up a little longer, with a pulse: never a count.
 const CRITICAL = /killed|died|drowned|imploded|out of air|hospital|you wake|lost at sea|surface!/i;
+// what a message is about, so two lines saying the same thing (out of air, air critical) are not both shown
+const TOPICS = [['air', /\bair\b|oxygen|breath/i], ['pressure', /pressure|crush|depth|rated/i], ['hull', /hull|leak/i], ['deep', /noticed|watch|something/i]];
+function topicOf(t) { for (const [k, re] of TOPICS) if (re.test(t)) return k; return null; }
 export class Messages {
   constructor() {
     const el = document.createElement('div'); el.id = 'msgs'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite');
@@ -35,9 +38,13 @@ export class Messages {
     if (this.cur && !this.cur.leaving && this.cur.text === text) { this.cur.t = 0; this.pulse(this.cur.el); return; }
     const sm = this.small.find((m) => m.text === text); if (sm) { sm.t = 0; this.pulse(sm.el); return; }
     const m = { text, k, t: 0, hold: Math.max(minHold, k.p === 3 ? 6 : HOLD[k.cls] || 3), minHold };
+    // (5.1) one message at a time. A new one as important as the one up (or more) takes its place; a less important
+    // one waits its turn (briefly: stale ones are dropped), and one about the same thing as what is up is dropped
+    m.topic = topicOf(text); m.at = performance.now();
     if (!this.cur || this.cur.leaving) { this.cur = m; this.enter(m); return; }
-    if (k.p >= this.cur.k.p && !(this.cur.k.p === 3 && k.p < 3)) { const old = this.cur; this.leave(old); this.addSmall(old.text, old.k, Math.max(1.6, (old.minHold || 0) - old.t)); this.cur = m; this.enter(m); }
-    else this.addSmall(text, k, Math.max(2.2, minHold));
+    if (m.topic && m.topic === this.cur.topic && k.p <= this.cur.k.p) { this.cur.t = Math.min(this.cur.t, 0.5); return; }
+    if (k.p >= this.cur.k.p && !(this.cur.k.p === 3 && k.p < 3)) { this.leave(this.cur); this.cur = m; this.enter(m); }
+    else { this.queue = (this.queue || []).filter((q) => q.text !== text && (!m.topic || q.topic !== m.topic)); this.queue.push(m); if (this.queue.length > 2) this.queue.shift(); }
   }
   addSmall(text, k, hold) {
     const el = document.createElement('div'); el.className = `msg-small msg-${k.cls}`; if (k.col) el.style.setProperty('--mc', k.col);
@@ -51,6 +58,10 @@ export class Messages {
   clear() { if (this.cur) this.cur.hold = 0; for (const m of [...this.small]) this.dropSmall(m); }
   update(dt) {
     if (this.cur) { this.cur.t += dt; if (this.cur.t >= this.cur.hold) { this.leave(this.cur); this.cur = null; } }
+    if (!this.cur && this.queue && this.queue.length) {
+      const now = performance.now(); this.queue = this.queue.filter((q) => now - q.at < 4500);
+      const nx = this.queue.shift(); if (nx) { nx.t = 0; this.cur = nx; this.enter(nx); }
+    }
     for (const m of [...this.small]) { m.t += dt; if (m.t >= m.hold) this.dropSmall(m); }
   }
   paint(m) { m.el.querySelector('.msg-t').textContent = m.text; }

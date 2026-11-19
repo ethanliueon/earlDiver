@@ -66,113 +66,104 @@ export class Hud {
   }
 
   // The hotbar (1 net, 2 slurp gun) and a row of specimen slots above it.
+  // (5.1) The hands, bottom right, where a thumb will be: one round action button (the tool in hand: net, camera,
+  // traps; in the sub the claw) with the bag's pockets (in the sub, the tank's places) as marks round its rim, and
+  // above it a small chip for each tool to switch to. Every one is a button (click now, tap later); the key it
+  // stands for is printed on it. Bottom left is left empty, for a stick one day.
   drawGear(g, W, H, s, dt) {
-    const ctx = this.ctx, P = g.profile, e = g.earl;
+    const ctx = this.ctx, P = g.profile, e = g.earl, kx = window.innerWidth / this.c.width;
     this.icons = this.icons || new Map();
     const icon = (kind, tier) => {
-      const k = kind + (tier && typeof tier === 'object' ? (tier.fx || '') + (tier.base || 0) + (tier.hoop || '') + (tier.body || '') + (tier.shape || '') : tier); // (a special net's look is an object)
+      const k = kind + (tier && typeof tier === 'object' ? (tier.fx || '') + (tier.base || 0) + (tier.hoop || '') + (tier.body || '') + (tier.shape || '') : tier);
       if (!this.icons.has(k)) this.icons.set(k, toolIcon(kind, tier, 120, 60));
       return this.icons.get(k);
     };
+    const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
     const G = (k) => gear(P, k);
-    const tools = [['1', 'net', G('net').look, G('net').name]];
-    if (owns(P, 'camera')) tools.push(['2', 'cam', G('cam').look, G('cam').name]);
-    const tr = P.traps || {};
-    const ownedTraps = ['pot', 'fish', 'steel', 'cage'].reduce((a, k) => a + (tr[k] || 0), 0);
-    if (ownedTraps > 0) tools.push(['3', 'trap', ['pot', 'fish', 'steel', 'cage'].findIndex((k) => tr[k] > 0), 'Traps']);
-    const sw = 84 * s, sh = 46 * s, gap = 8 * s;
-    const total = tools.length * sw + (tools.length - 1) * gap;
-    let x = W / 2 - total / 2;
-    const y = H - sh - 22 * s;
+    const pad = 26 * s, R = 40 * s, cx = W - pad - R, cy = H - pad - R;
+    this.actionC = { cx, cy, R };
+    const tr = P.traps || {}, ownedTraps = ['pot', 'fish', 'steel', 'cage'].reduce((a, k) => a + (tr[k] || 0), 0);
+    const tools = [['1', 'net', G('net').look]];
+    if (owns(P, 'camera')) tools.push(['2', 'cam', G('cam').look]);
+    if (ownedTraps > 0) tools.push(['3', 'trap', ['pot', 'fish', 'steel', 'cage'].findIndex((k) => tr[k] > 0)]);
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
-    for (const [key, kind, tier, name] of tools) {
-      const on = kind === sel && !e.inSub;
-      // (olive) a raised plate of the panels' painted steel with a well pressed into it; the tool in hand ringed in
-      // the deck's cream paint
-      if (!oliveNine(ctx, 'btn-olive', x - 3 * s, y - 3 * s, sw + 6 * s, sh + 6 * s, 28, 10 * s)) { ctx.fillStyle = 'rgba(44,48,42,0.9)'; ctx.beginPath(); ctx.roundRect(x, y, sw, sh, 5 * s); ctx.fill(); }
-      oliveNine(ctx, 'well', x + 4 * s, y + 4 * s, sw - 8 * s, sh - 8 * s, 30, 6 * s);
-      if (on) { ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.roundRect(x - 2 * s, y - 2 * s, sw + 4 * s, sh + 4 * s, 6 * s); ctx.stroke(); }
-      ctx.globalAlpha = e.inSub ? 0.35 : on ? 1 : 0.55;
-      ctx.drawImage(icon(kind, tier), x + 6 * s, y + 4 * s, sw - 12 * s, sh - 12 * s);
-      ctx.globalAlpha = 1;
-      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      keyCap(ctx, x - 5 * s, y - 7 * s, key, s * 0.6); ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.items.film ? 'rgba(216,236,230,0.8)' : '#e0524a'; ctx.fillText(`${g.items.film || 0}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
-      if (kind === 'trap') { const free = ownedTraps - g.traps.length; ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
-      // sweep / reload progress along the bottom edge
-      if (on && kind === 'cam' && g.photo) { ctx.fillStyle = 'rgba(200,230,215,0.7)'; ctx.fillRect(x + 4 * s, y + sh - 4 * s, (sw - 8 * s) * clamp(g.photo.t / g.photo.dur, 0, 1), 2 * s); }
-      if (on && g.capture && g.capture.kind === kind) {
-        ctx.fillStyle = 'rgba(200,230,215,0.7)';
-        ctx.fillRect(x + 4 * s, y + sh - 4 * s, (sw - 8 * s) * clamp(g.capture.t / g.capture.dur, 0, 1), 2 * s);
-      }
-      if (on) { ctx.font = `${9 * s}px ${MONO}`; const nw = dymo(ctx, name, 0, -999, s, { align: 'left' }); dymo(ctx, name, x + sw / 2 - nw / 2, y + sh + 3 * s, s, { align: 'left' }); }
-      x += sw + gap;
-    }
-    // specimen slots: the bag (or, in the sub, its tank). Each dot shows the animal's colour,
-    // ringed by its condition: green healthy, amber stressed, red weak, grey dead.
-    // (4.16.7) in the sub, just counts: the open tank's spaces, the chambers, the large tank if fitted
+    const plate = (x, y, r, lift = 1) => {
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 2 * s;
+      const pg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.4, r * 0.1, x, y, r);
+      pg.addColorStop(0, `rgba(${Math.round(84 * lift)},${Math.round(92 * lift)},${Math.round(72 * lift)},0.96)`); pg.addColorStop(1, 'rgba(34,38,30,0.96)');
+      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.restore();
+      ctx.strokeStyle = 'rgba(12,14,10,0.9)'; ctx.lineWidth = 1.5 * s; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,250,230,0.12)'; ctx.lineWidth = 1 * s; ctx.beginPath(); ctx.arc(x, y, r - 2 * s, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+      ctx.fillStyle = 'rgba(8,12,10,0.55)'; ctx.beginPath(); ctx.arc(x, y, r * 0.8, 0, TAU); ctx.fill();
+    };
+    const fit = (im, x, y, w) => { const h = w * im.height / im.width; ctx.drawImage(im, x - w / 2, y - h / 2, w, h); };
+    // ---- the action button ----
+    const armT = e.inSub && owns(P, 'arm');
+    const ready = !!g.catchTarget || (e.inSub && g.capPrompt && g.capPrompt.startsWith('Space'));
+    plate(cx, cy, R, ready ? 1.25 : 1);
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R * 0.78, 0, TAU); ctx.clip();
     if (e.inSub) {
-      const sy0 = y - 18 * s, fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1));
-      const parts = [['Tank', `${fmt(tankUsed(g))}/${tankSlots(g)}`]];
-      if (pressSlots(g)) parts.push(['Chambers', `${g.subTank.filter((q) => q.pressed && q.chamber !== BIG).length}/${pressSlots(g)}`]);
-      if (g.bag.length) parts.push(['Bag', `${g.bag.length}`]); // (4.28) what is still outside the tank, in the row (it was printed over it)
-      if (hasBigTank(g)) parts.push(['Large tank', `${bigIn(g).length}/3`]);
-      ctx.textBaseline = 'middle';
-      const lab = `600 ${17 * s}px ${HUDF}`, val = `600 ${15 * s}px ${MONO}`, gapP = 26 * s;
-      const widths = parts.map(([l, v]) => { ctx.font = lab; const a2 = ctx.measureText(l).width; ctx.font = val; return a2 + 6 * s + ctx.measureText(v).width; });
-      let px = W / 2 - (widths.reduce((a2, b2) => a2 + b2, 0) + gapP * (parts.length - 1)) / 2;
-      parts.forEach(([l, v], i) => { ctx.textAlign = 'left'; ctx.font = lab; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * s; ctx.fillStyle = 'rgba(230,224,204,0.85)'; ctx.fillText(l, px, sy0); const lw = ctx.measureText(l).width;
-        ctx.font = val; ctx.fillStyle = '#efe8d2'; ctx.fillText(v, px + lw + 6 * s, sy0); ctx.shadowBlur = 0; px += widths[i] + gapP; });
+      ctx.globalAlpha = armT ? 1 : 0.3; ctx.strokeStyle = '#d8d0b6'; ctx.lineWidth = 4 * s; ctx.lineCap = 'round';
+      const o = g.armGame ? 0.15 : 0.5; // the claw, open or closing
+      ctx.beginPath(); ctx.moveTo(cx - R * 0.45, cy + R * 0.2); ctx.lineTo(cx - R * 0.05, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - R * 0.05, cy); ctx.quadraticCurveTo(cx + R * 0.3, cy - R * o, cx + R * 0.45, cy - R * (o * 0.3)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - R * 0.05, cy); ctx.quadraticCurveTo(cx + R * 0.3, cy + R * o, cx + R * 0.45, cy + R * (o * 0.3)); ctx.stroke();
+    } else if (sel) {
+      const t = tools.find((q) => q[1] === sel) || tools[0];
+      fit(icon(t[1], t[2]), cx, cy, R * (t[1] === 'cam' ? 1.05 : 1.45));
     }
-    const list = e.inSub ? [] : g.bag, slots = e.inSub ? 0 : bagSlots(g);
-    const pList = [], pSlots = 0;
-    const r = 7.5 * s, step = 21 * s, rowW = (slots + (pSlots ? pSlots + 0.6 : 0)) * step;
-    let sx = W / 2 - rowW / 2 + step / 2;
-    const sy = y - 18 * s;
-    ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    if (!e.inSub) { ctx.save(); ctx.font = `600 ${17 * s}px ${HUDF}`; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * s; ctx.fillStyle = 'rgba(230,224,204,0.85)'; ctx.fillText('Bag', sx - step * 0.6 - 2 * s, sy); ctx.restore(); }
-    for (let i = 0; i < slots; i++, sx += step) {
-      const sp = list[i];
-      ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU);
-      ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.fill();
-      if (sp) {
-        const c = sp.cond;
-        ctx.fillStyle = SPECIES_BY_ID[sp.id].v.c[0];
-        ctx.beginPath(); ctx.arc(sx, sy, r * 0.62, 0, TAU); ctx.fill();
-        ctx.strokeStyle = c <= 0.05 ? 'rgba(140,140,140,0.9)' : c >= 0.8 ? 'rgba(120,220,140,0.9)' : c >= 0.5 ? 'rgba(232,176,64,0.95)' : 'rgba(230,80,60,0.95)';
-        ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.stroke();
-        // dying in the net (too far from its own pressure): a red ring pulses out from it
-        if (c > 0.05 && sp.warnDying && !e.inSub) {
-          const q = (g.time * 1.2) % 1;
-          ctx.strokeStyle = `rgba(255,90,60,${(0.8 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1.4 * s;
-          ctx.beginPath(); ctx.arc(sx, sy, r * (1 + q * 0.9), 0, TAU); ctx.stroke();
-        }
-      } else { ctx.strokeStyle = 'rgba(160,200,200,0.18)'; ctx.lineWidth = 1; ctx.stroke(); }
-    }
-    // the pressure tanks: brass-ringed, after a small gap
-    if (pSlots) sx += step * 0.6;
-    for (let i = 0; i < pSlots; i++, sx += step) {
-      const sp = pList[i];
-      ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.fill();
-      if (sp) { ctx.fillStyle = SPECIES_BY_ID[sp.id].v.c[0]; ctx.beginPath(); ctx.arc(sx, sy, r * 0.62, 0, TAU); ctx.fill(); }
-      ctx.strokeStyle = sp ? 'rgba(224,180,90,0.95)' : 'rgba(224,180,90,0.35)'; ctx.lineWidth = 1.8 * s;
-      ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.stroke();
-    }
-    // old gold coins: a little stack and the count, at the end of the row
-    const coins = (g.profile && g.profile.coins) || 0;
-    if (coins) {
-      const cx0 = W / 2 + rowW / 2 + 12 * s;
-      for (let k = 2; k >= 0; k--) {
-        const cy0 = sy + 3 * s - k * 2.6 * s;
-        const cg = ctx.createLinearGradient(cx0 - 6 * s, cy0 - 3 * s, cx0 + 6 * s, cy0 + 3 * s);
-        cg.addColorStop(0, '#fff0b0'); cg.addColorStop(0.5, '#e0aa44'); cg.addColorStop(1, '#8a5a16');
-        ctx.fillStyle = '#6a400c'; ctx.beginPath(); ctx.ellipse(cx0, cy0 + 1.2 * s, 6 * s, 3 * s, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = cg; ctx.beginPath(); ctx.ellipse(cx0, cy0, 6 * s, 3 * s, 0, 0, TAU); ctx.fill();
+    ctx.restore();
+    // its progress: a swing, an exposure, the claw's reach
+    const prog = g.photo ? g.photo.t / g.photo.dur : g.capture && g.capture.dur ? g.capture.t / g.capture.dur : 0;
+    if (prog > 0) { ctx.strokeStyle = 'rgba(244,246,240,0.9)'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.arc(cx, cy, R - 4 * s, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(prog, 0, 1)); ctx.stroke(); }
+    if (ready) { const q = 0.5 + 0.5 * Math.sin(g.time * 5); ctx.strokeStyle = `rgba(244,246,240,${(0.35 + 0.4 * q).toFixed(3)})`; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(cx, cy, R + 3 * s + q * 2 * s, 0, TAU); ctx.stroke(); }
+    // the pockets round the rim: each a short arc, lit in the colour of how its animal is
+    {
+      const n = e.inSub ? tankSlots(g) : bagSlots(g), used = e.inSub ? tankUsed(g) : g.bag.length;
+      const span = Math.PI * 0.75, a0 = -Math.PI * 0.375, step = span / Math.max(1, n), rr = R + 8 * s; // (on its outer side, clear of the chips)
+      for (let i = 0; i < n; i++) {
+        const sp = !e.inSub ? g.bag[i] : null, full = i < used;
+        const c = sp ? sp.cond : 1;
+        ctx.strokeStyle = !full ? 'rgba(10,14,12,0.6)' : sp && c <= 0.05 ? 'rgba(150,150,150,0.95)' : sp && c < 0.5 ? 'rgba(226,80,64,0.95)' : 'rgba(170,226,170,0.95)';
+        ctx.lineWidth = 4 * s; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(cx, cy, rr, a0 + i * step + step * 0.18, a0 + (i + 1) * step - step * 0.18); ctx.stroke();
       }
-      ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(240,212,138,0.9)'; ctx.font = `${10 * s}px ${MONO}`;
-      ctx.fillText(String(coins), cx0 + 9 * s, sy);
-      this.coinW = 30 * s + ctx.measureText(String(coins)).width;
-    } else this.coinW = 0;
+      ctx.lineCap = 'butt';
+    }
+    keyCap(ctx, cx - R - 4 * s, cy + R - 20 * s, 'Space', s * 0.62);
+    if (!(e.inSub && !armT)) hot(cx - R, cy - R, R * 2, R * 2, ' ');
+    // ---- (5.1) the tools to switch to, and the things he carries (Q, E, R, N), as small round buttons in an arc
+    // round the action button's upper left: two rings, so a short phone screen still has room above
+    const chips = [];
+    if (!e.inSub && tools.length > 1) for (const [key, kind, tier] of tools) chips.push({ tool: true, key, kind, tier, on: kind === sel });
+    for (const [id, key, name, n, col, active, badge] of this.itemSlots || []) chips.push({ key: id, cap: key, name, n, col, active, badge });
+    const r = 22 * s, rho0 = R + 44 * s, rho1 = rho0 + 54 * s, A0 = [-92, -136, -180], A1 = [-92, -114, -136, -158];
+    let top = cy - R - 14 * s, low = cx - R - 22 * s;
+    chips.forEach((c, i) => {
+      const ring = i < 3 ? 0 : 1, ang = (ring ? A1[i - 3] : A0[i]) * Math.PI / 180, rho = ring ? rho1 : rho0;
+      if (ang === undefined || isNaN(ang)) return;
+      const x = cx + Math.cos(ang) * rho, y = cy + Math.sin(ang) * rho;
+      plate(x, y, r, c.on ? 1.3 : 0.85);
+      if (c.tool) {
+        ctx.save(); ctx.globalAlpha = c.on ? 1 : 0.6; ctx.beginPath(); ctx.arc(x, y, r * 0.8, 0, TAU); ctx.clip(); fit(icon(c.kind, c.tier), x, y, r * (c.kind === 'cam' ? 1.25 : 2.1)); ctx.restore();
+        if (c.on) { ctx.strokeStyle = 'rgba(236,230,210,0.95)'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x, y, r + 2.5 * s, 0, TAU); ctx.stroke(); }
+        const cnt = c.kind === 'cam' ? g.items.film || 0 : c.kind === 'trap' ? ownedTraps - g.traps.length : null;
+        if (cnt != null) { ctx.save(); ctx.font = `600 ${11 * s}px ${HUDF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = cnt ? 'rgba(236,230,210,0.95)' : '#f06a5c'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * s; ctx.fillText(String(cnt), x + r * 0.78, y + r * 0.78); ctx.restore(); }
+        keyCap(ctx, x - r - 5 * s, y - r - 3 * s, c.key, s * 0.55);
+      } else {
+        ctx.fillStyle = c.col; ctx.globalAlpha = c.n > 0 ? 1 : 0.3; ctx.beginPath(); ctx.arc(x, y, 7 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+        if (c.active > 0) { ctx.strokeStyle = c.col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x, y, 12 * s, -Math.PI / 2, -Math.PI / 2 + TAU * c.active); ctx.stroke(); }
+        ctx.save(); ctx.font = `600 ${11 * s}px ${HUDF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = 'rgba(236,230,210,0.95)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * s;
+        const cnt = c.key === 'n' ? (c.badge > 1 ? c.badge : null) : c.n; if (cnt != null) ctx.fillText(String(cnt), x + r * 0.78, y + r * 0.78);
+        ctx.restore();
+        if (!(c.key === 'n' && g.trawlTaught)) keyCap(ctx, x - r - 5 * s, y - r - 3 * s, c.cap, s * 0.55);
+      }
+      hot(x - r, y - r, r * 2, r * 2, c.key);
+      top = Math.min(top, y - r - 12 * s);
+      if (y > cy - R * 1.2) low = Math.min(low, x - r - 16 * s);
+    });
+    this.pillRight = low;
+    this.chipTop = top;
     // the arm's grip gauge: a marker sweeping a bar; close the claw in the green
     const A = g.armGame;
     if (A && A.phase === 'grip') {
@@ -271,7 +262,7 @@ export class Hud {
     try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }
   }
   drawIn(g, dt, W, H) {
-    const ctx = this.ctx, s = this.s; this.hudNotes = [];
+    const ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = [];
     if (g.mode === 'menu') return;
     const e = g.earl, fx = g.fx;
     const dying = g.mode === 'dying';
@@ -366,16 +357,18 @@ export class Hud {
     }
     // the seafloor sonar (a fitted extra): under the instrument, the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy + 4 * s, s); yy += 88 * s; }
+    // (5.1) the radar: top right, under the depth and the air, with the other things to read; notes under it
+    const rr = 50 * s, rcx = rx0 - rr, rcy = yy + 6 * s + rr;
+    yy = rcy + rr + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {
       let ny = yy;
       ctx.save(); ctx.font = `600 ${19 * s}px ${HUDF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.shadowOffsetY = 1;
-      for (const [t, c] of notes) { ctx.fillStyle = c; ctx.fillText(t, ccx, ny); ny += 24 * s; }
+      for (const [t, c] of notes) { ctx.textAlign = 'right'; ctx.fillStyle = c; ctx.fillText(t, rx0, ny); ny += 24 * s; }
       ctx.restore();
     }
     // ---------- the radar: large, in the bottom right corner ----------
-    const rr = 64 * s, rcx = rx0 - rr, rcy = H - pad - rr;
     ctx.save();
     ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.fillStyle = 'rgba(4,20,16,0.6)'; ctx.fill();
     ctx.clip();
@@ -432,27 +425,9 @@ export class Hud {
     ctx.restore();
     ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.beginPath(); ctx.arc(rcx, rcy, 1.6 * s, 0, TAU); ctx.fill();
     brassBezel(ctx, rcx, rcy, rr, s);
-    const slotBase = rcy - rr - 20 * s; // the carried things stack upward from here
-    // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
+    const slotBase = this.chipTop || H - 200 * s; // (5.1) the carried things stack upward from above the tool chips
+    // (5.1) calling the sub (C) is one of the context buttons beside the action button (see the prompts below)
     this.subHot = null;
-    if (!g.sub.imploded && !dying && !g.tutHidePrompts) { // (4.4.0) not during the tutorial
-      const ap = g.autopilot;
-      const label = e.inSub ? (g.homeRun ? 'autopilot off' : g.sub.docked ? null : 'autopilot home') : (ap && ap.state === 'coming' ? 'stop sub' : 'call sub');
-      if (label) {
-        // bottom-right corner, a little larger
-        const word = label.charAt(0).toUpperCase() + label.slice(1);
-        ctx.font = `600 ${19 * s}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        const tw = ctx.measureText(word).width, bw = tw + 40 * s, bh = 31 * s, bx = rcx - rr - 18 * s - bw, by = H - pad - bh;
-        this.subHot = { x: (bx + this.safeL) * kx, y: (by + this.safeT) * kx, w: bw * kx, h: bh * kx };
-        const on = g.homeRun || (ap && ap.state === 'coming');
-        promptShade(ctx, bx + bw / 2, by + bh / 2, s * 0.45);
-        keyCap(ctx, bx, by + 2 * s, 'C', s);
-        ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1;
-        ctx.fillStyle = '#efe8d2'; ctx.fillText(word, bx + 38 * s, by + bh / 2 + 1 * s);
-        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.textBaseline = 'top';
-      }
-    }
-
     // ---------- Q / E items: in the right-hand column, only when carried ----------
     // (claude-polish) a small steel plate in a brass rim, as the journal and chart buttons
     // (olive) the item slots: the same raised olive plate and well as the hotbar
@@ -468,23 +443,7 @@ export class Hud {
       const state = n ? (n.phase === 'tow' ? (g.trawlTaught ? 'OUT' : 'OUT, N CLOSES') : n.phase === 'torn' ? 'TORN' : 'HAULING') : kinds.length ? kinds.map((k) => NETS_SUB[k].short).join(' + ') : 'NO NET';
       if (n || N) slots.push(['n', 'N', state, n || N ? 1 : 0, n ? '#e8b070' : kinds.includes('adv') ? '#f0c060' : '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / (n.T.tow || TOW_MAX)) : 0, n ? 0 : netsOf(g.items).basic]); // (the badge: two beginner nets)
     }
-    this.slotHot = {};
-    slots.forEach(([id, key, name, n, col, active, badge], i) => {
-      const x = rx0 - sz, y = slotBase - (i + 1) * (sz + 10 * s) + 10 * s;
-      this.slotHot[id] = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: sz * kx, h: sz * kx };
-      glass(x, y, sz, sz);
-      ctx.fillStyle = col; ctx.globalAlpha = n > 0 ? 1 : 0.3;
-      ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 8 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
-      if (active > 0) { ctx.strokeStyle = col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 13 * s, -Math.PI / 2, -Math.PI / 2 + TAU * active); ctx.stroke(); }
-      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; if (!(id === 'n' && g.trawlTaught)) keyCap(ctx, x - 6 * s, y - 6 * s, key, s * 0.62); // (4.0.6) N, once learned, is not shown
-      ctx.textAlign = 'right'; if (id !== 'n') ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
-      if (badge > 1) { // (4.11.0) how many nets are in the hatch: a number in a small brass circle at the corner
-        const bw = 22 * s, bh = 14 * s, bx = x + sz - bw + 6 * s, by = y - 5 * s; // (4.11.1) a wider pill: ×2
-        ctx.fillStyle = '#d8d0b6'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 3 * s); ctx.fill(); ctx.strokeStyle = 'rgba(20,18,12,0.85)'; ctx.lineWidth = 1; ctx.stroke(); // (olive) cream, as the keys
-        ctx.save(); ctx.fillStyle = '#26241a'; ctx.font = `600 ${10 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`×${badge}`, bx + bw / 2, by + bh / 2 + 0.5 * s); ctx.restore();
-      }
-      dymo(ctx, name.toLowerCase(), x - 9 * s, y + sz / 2 - 6 * s, s, { tape: name === 'NO NET' || name === 'TORN' ? '#4a1810' : '#1c1d1b' });
-    });
+    this.itemSlots = slots; this.slotHot = {}; // (5.1) drawn round the action button (drawGear)
     // ---------- P: frames per second, the picture's resolution, and whether lite mode is on ----------
     if (this.showFps) {
       ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.font = `${11 * s}px ${MONO}`;
@@ -505,7 +464,7 @@ export class Hud {
       const a = 1 - calm * 0.65;
       // (4.28) a real eye in the dark, not a sign: a wet dark lid line, an iris of deep amber going to blood red with
       // fibres in it, a slit that breathes, a point of light on the cornea; it opens slowly and blinks now and then
-      const ex = pad + 46 * s, ey = H - pad - 30 * s, ew = 40 * s, eh = 24 * s;
+      const ex = W - pad - 210 * s, ey = pad + 30 * s, ew = 30 * s, eh = 18 * s; // (5.1) up by the depth, the danger corner; the bottom left stays clear
       const blink = (g.time % 7.3) < 0.18 ? Math.abs(Math.sin((g.time % 7.3) / 0.18 * Math.PI)) : 0, open = (1 - blink) * (0.85 + 0.15 * Math.sin(g.time * 0.5));
       ctx.save();
       const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.7);
@@ -547,27 +506,53 @@ export class Hud {
     const capOn = g.capPrompt && !capHidden && !dying && !g.kill && !g.tutHidePrompts; // (4.4.0) the tutorial shows its own
     this.capWant = capOn ? [g.capPrompt, g.capRarity ? g.capRarity.col : g.capPrompt.startsWith('Space') ? '#d6ecce' : '#ece6d2', g.capIcon] : null; // (4.0.6) a name alone, in its rarity's colour
     }
-    // ---------- interaction prompts ----------
-    // (4.0.0) both prompts fade in and out, and one crossfades into the next; the shade behind them is one
-    // fixed soft pool that fades with them
+    // ---------- interaction prompts: (5.1) buttons, bottom right, beside the action button ----------
+    // What the tool can reach, what F (or T, U...) does here, and calling the sub: each a button with its key on it,
+    // stacked upward from the bottom, right-aligned against the action button (or the corner, on deck). Clicking one
+    // is the same as pressing its key (held while the button is held); a line with no key is just words.
     {
+      const pills = [], paused = !!g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden);
+      const keyOf = (k) => (k === 'Space' ? ' ' : String(k || '').toLowerCase());
       const cw = aboard ? null : this.capWant;
-      const capFx = this.fadeText('cap', cw ? cw[0] : null, cw ? cw[1] : null); this.capIconNow = cw ? cw[2] : this.capIconNow;
-      const prFx = this.fadeText('pr', g.prompt && !dying && !g.kill && !g.tutHidePrompts ? g.prompt : null, '#ece6d2'); // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
-      const shadeA = Math.max(capFx.level, prFx.level);
-      const both = capFx.level > 0.01 && prFx.level > 0.01, capY = H * 0.72 - (both || g.prompt ? 40 : 0) * s + 14 * s, prY = H * 0.72 + 15 * s;
-      const sy = both ? (capY + prY) / 2 : capFx.level > prFx.level ? capY : prY; this.shadeY = shadeA > 0.02 && this.shadeY != null ? this.shadeY + (sy - this.shadeY) * 0.15 : sy;
-      if (shadeA > 0.01) promptShade(ctx, W / 2, this.shadeY, s, shadeA);
-      for (const [txt, a, col] of capFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, capY, s, { col, size: 18, shade: false, icon: parsePromptKey(txt) ? null : this.capIconNow }); ctx.restore(); } // (3.6.0) a brass key-cap and the words; a catch's name in its rarity's colour
-      for (const [txt, a, col] of prFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, prY, s, { col, shade: false, named: g.promptName }); ctx.restore(); }
-      if (g.promptBar != null && prFx.level > 0.01) { // (4.5.0) the hold's progress: a slim brass bar in a dark groove
-        const bw = 150 * s, bh = 5 * s, bx = W / 2 - bw / 2, by = prY + 18 * s, k = Math.max(0, Math.min(1, g.promptBar));
-        ctx.save(); ctx.globalAlpha = prFx.level;
-        ctx.fillStyle = 'rgba(6,10,12,0.7)'; ctx.beginPath(); ctx.roundRect(bx - 1, by - 1, bw + 2, bh + 2, 3 * s); ctx.fill();
-        const gr = ctx.createLinearGradient(0, by, 0, by + bh); gr.addColorStop(0, '#f4f6f0'); gr.addColorStop(1, '#b8bab0');
-        ctx.fillStyle = gr; ctx.beginPath(); ctx.roundRect(bx, by, Math.max(bh, bw * k), bh, 2.5 * s); ctx.fill();
-        ctx.restore();
+      if (cw && cw[0] && !dying) for (const p of parsePrompt(cw[0])) pills.push({ key: p.key ? keyOf(p.key) : cw[2] ? ' ' : null, cap: p.key || (cw[2] ? '' : null), hold: p.hold, label: p.label, col: cw[1] });
+      if (g.prompt && !dying && !g.kill && !g.tutHidePrompts) for (const p of parsePrompt(g.prompt)) pills.push({ key: p.key ? keyOf(p.key) : null, cap: p.key || null, hold: p.hold, label: p.label, col: p.key ? '#ece6d2' : (g.promptName && g.promptName.col) || '#ece6d2', bar: p.hold || g.promptBar != null });
+      if (!g.sub.imploded && !dying && !g.tutHidePrompts && !aboard) {
+        const ap = g.autopilot, lab = e.inSub ? (g.homeRun ? 'Autopilot off' : g.sub.docked ? null : 'Autopilot home') : (ap && ap.state === 'coming' ? 'Stop the sub' : 'Call the sub');
+        if (lab) pills.push({ key: 'c', cap: 'C', label: lab, col: '#ece6d2' });
       }
+      if (paused) pills.length = 0;
+      const AC = !aboard && this.actionC, right = AC ? (this.pillRight || AC.cx - AC.R - 22 * s) : W - pad;
+      const ph = 36 * s, gapY = 10 * s;
+      let by = H - pad - ph;
+      this.pillA = this.pillA || {};
+      const seen = new Set();
+      for (const P2 of pills) {
+        const id = (P2.cap || '') + P2.label; seen.add(id);
+        const a = this.pillA[id] = Math.min(1, (this.pillA[id] || 0) + dt / 0.15);
+        ctx.save(); ctx.globalAlpha = a; ctx.textBaseline = 'middle';
+        ctx.font = `600 ${17 * s}px ${HUDF}`;
+        const tw = ctx.measureText(P2.label).width, ks = 0.8 * s, kw = P2.cap ? (P2.cap.length > 1 ? Math.max(26 * ks * 1.9, (P2.cap.length * 8 + 18) * ks) : 26 * ks) : 0;
+        ctx.font = `500 ${14 * s}px ${HUDF}`; const hw = P2.hold ? ctx.measureText('Hold').width + 7 * s : 0;
+        if (P2.key) {
+          const w = 12 * s + hw + kw + (kw ? 9 * s : 0) + tw + 16 * s, x = right - w;
+          ctx.fillStyle = 'rgba(14,18,14,0.8)'; ctx.beginPath(); ctx.roundRect(x, by, w, ph, ph / 2); ctx.fill();
+          ctx.strokeStyle = 'rgba(236,230,210,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+          let tx = x + 12 * s;
+          if (P2.hold) { ctx.fillStyle = 'rgba(236,230,210,0.7)'; ctx.textAlign = 'left'; ctx.fillText('Hold', tx, by + ph / 2 + 1 * s); tx += hw; }
+          if (kw) { keyCap(ctx, tx, by + ph / 2 - 13 * ks - 1.5 * s, P2.cap, ks); tx += kw + 9 * s; }
+          else if (P2.cap === '') { tx -= 0; }
+          ctx.font = `600 ${17 * s}px ${HUDF}`; ctx.textAlign = 'left'; ctx.fillStyle = P2.col || '#ece6d2'; ctx.fillText(P2.label, tx, by + ph / 2 + 1 * s);
+          if (P2.bar && g.promptBar != null) { const k = clamp(g.promptBar, 0, 1); ctx.fillStyle = 'rgba(244,246,240,0.9)'; ctx.beginPath(); ctx.roundRect(x + ph / 2, by + ph - 5 * s, Math.max(2, (w - ph) * k), 3 * s, 1.5 * s); ctx.fill(); }
+          this.hots.push({ x: (x + this.safeL) * kx, y: (by + this.safeT) * kx, w: w * kx, h: ph * kx, key: P2.key });
+        } else {
+          ctx.font = `600 ${17 * s}px ${HUDF}`; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s;
+          ctx.fillStyle = P2.col || '#ece6d2'; ctx.fillText(P2.label, right - 6 * s, by + ph / 2 + 1 * s);
+        }
+        ctx.restore();
+        by -= ph + gapY;
+      }
+      for (const id of Object.keys(this.pillA)) if (!seen.has(id)) delete this.pillA[id];
+      this.uiTop = by; // (where the stack ends: the mouse doesn't steer Earl below and right of here)
     }
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;

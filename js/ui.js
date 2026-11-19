@@ -166,6 +166,7 @@ export class UI {
       else if (act === 'sellall') { const sale = h.onSellAll(); if (sale) this.showLedger(sale); }
       else if (act === 'tobasket') { (this.sellPick || (this.sellPick = new Set())).add(arg); }
       else if (act === 'frombasket') { this.sellPick && this.sellPick.delete(arg); }
+      else if (act === 'sellone') { const sale = h.onSellSome([arg]); if (sale) this.showLedger(sale); }
       else if (act === 'sellpick') { const sale = h.onSellSome([...(this.sellPick || [])]); this.sellPick = new Set(); if (sale) this.showLedger(sale); }
       // (2.6.8) Keep only marks it (on the animal itself): it stays in the catch and in this list, darkened and
       // crossed out, and every sale leaves it alone; pressed again, it is back. Into the aquarium it goes only
@@ -399,25 +400,27 @@ export class UI {
     let html = '';
     if (m) {
       const ok = S.mainProg >= m.need;
-      html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
-        <div class="qs-pay">${m.gift ? 'a gift' : money(m.pay, false)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
+      // (5.1) the log's step: one card, the whole card claims it when it is done
+      html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"${ok ? ' data-q="claim|main"' : ''}><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
+        <div class="qs-pay"><b>${m.gift ? 'a gift' : money(m.pay, false)}</b>${ok ? '<em>Claim</em>' : ''}</div></div>`;
     }
     html += `<h3>The board</h3>`;
     // (4.3.0) during the tutorial the board waits, so one step at a time is all there is to claim
     if (tutorialOn(P)) { $('quests').querySelector('.qs-body').innerHTML = html + `<p class="qs-locked">The board opens when the tutorial is done. Finish the Margaret's log steps first.</p>`; return; }
-    const hm = (ms) => { const totM = Math.ceil(ms / 60000), h = Math.floor(totM / 60), mi = totM % 60; return h ? `${h} h ${mi} min` : `${mi} min`; };
+    // (5.1) the board: a card for each quest, the reward big; tap a finished one to claim it, any other to see what
+    // counts for it. No timers, no info buttons: a done quest is stamped PAID until a new one takes its place
+    html += '<div class="qs-cards">';
     for (const q of S.board) {
-      // (4.0.0) a claimed quest stays, dimmed, until its time runs out; a new one is marked NEW until the board is seen
-      const ok = q.prog >= q.n, left = questLeft(q);
-      const timer = q.claimed ? `done, a new quest in ${hm(left)}` : ok ? 'done: claim it' : `${hm(left)} left`;
-      html += `<div class="qs-q r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b><small class="qs-time">${timer}</small>${q.n > 1 && !q.claimed ? bar(q.prog, q.n) + `<span>(${q.kind === 'sell' ? money(q.prog, false) + '/' + money(q.n, false) : q.prog + '/' + q.n})</span>` : ''}</div>
-        <div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : money(q.pay, false)}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div><button class="qs-info" data-q="info|${q.key}" title="About this quest">i</button></div>`;
+      const ok = q.prog >= q.n, act = q.claimed ? '' : ok ? `claim|${q.key}` : `info|${q.key}`;
+      html += `<div class="qs-q r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"${act ? ` data-q="${act}"` : ''}><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b>${q.n > 1 && !q.claimed ? bar(q.prog, q.n) + `<span>${q.kind === 'sell' ? money(q.prog, false) + ' of ' + money(q.n, false) : q.prog + ' of ' + q.n}</span>` : ''}</div>
+        <div class="qs-pay">${q.claimed ? '<span class="qs-paid">Paid</span>' : `<b>${money(q.pay, false)}</b>`}${ok && !q.claimed ? '<em>Claim</em>' : ''}</div></div>`;
     }
+    html += '</div>';
     // (4.0.0) the free refresh, or the next price on the ladder for this three-hour window
     const wait = boardIn(P), price = refreshPrice(P);
     // (4.0.1) the countdown is plain words under the board with a ticking green clock; only the button is brass
     const clock = (ms) => { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sc = t % 60; return `${h}:${String(m).padStart(2, '0')}:${String(sc).padStart(2, '0')}`; };
-    html += `<div class="qs-foot">${wait > 0 ? `<span class="qs-wait">Free refresh in <b class="qs-clock">${clock(wait)}</b></span><button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now, ${money(price, false)}</button>` : '<span class="qs-wait">A free refresh is ready</span><button class="qs-buy" data-q="refresh|free">New quests (free)</button>'}</div>`;
+    html += `<div class="qs-foot">${wait > 0 ? `<button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''} title="Free again in ${clock(wait)}">New quests<span>${money(price, false)}</span></button>` : '<button class="qs-buy" data-q="refresh|free">New quests<span>Free</span></button>'}</div>`;
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
@@ -1050,13 +1053,14 @@ export class UI {
   settingsOpen() { return !$('settings').hidden; }
   toggleSettings(force) { const el = $('settings'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderSettings(); }
   renderSettings() {
-    const g = this.h.getGame(), row = (id, label, on, note) => { $(id).innerHTML = `<span>${label}${note ? `<em>${note}</em>` : ''}</span><b class="${on ? 'on' : ''}">${on ? 'on' : 'off'}</b>`; };
-    row('flashing', 'Reduce flashing', !!(g && g.reduceFlash), 'the thing in the deep: slower, softer lights');
-    row('set-brackets', 'Target brackets', SETTINGS.brackets, 'corners round what the net will go for');
-    row('set-catchtags', 'Catch tags', SETTINGS.catchTags, 'the name of what you can catch, under it');
-    row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, 'M');
-    $('set-fullscreen').innerHTML = `<span>Full screen<em>the game fills the whole screen (Esc leaves it)</em></span><b class="${document.fullscreenElement ? 'on' : ''}">${document.fullscreenElement ? 'on' : 'off'}</b>`;
-    $('set-graphics').innerHTML = `<span>Graphics<em>Fast: softer picture and fewer extras, for smoother play on slower computers</em></span><b class="on">${SETTINGS.fast ? 'fast' : 'auto'}</b>`;
+    // (5.1) plain words and a big switch each: what it does, not what it is called inside the game
+    const g = this.h.getGame(), sw = (on) => `<b class="sw${on ? ' on' : ''}" aria-hidden="true"><i></i></b>`, row = (id, label, on, note) => { $(id).innerHTML = `<span>${label}${note ? `<em>${note}</em>` : ''}</span>${sw(on)}`; };
+    row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, '');
+    row('set-fullscreen', 'Full screen', !!document.fullscreenElement, '');
+    row('set-catchtags', 'Show fish names', SETTINGS.catchTags, 'the name of the fish your net can reach');
+    row('set-brackets', 'Mark what the net will catch', SETTINGS.brackets, 'corners round the fish');
+    row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
+    $('set-graphics').innerHTML = `<span>Smoother on slow devices<em>a softer picture, fewer extras</em></span>${sw(!!SETTINGS.fast)}`;
   }
   galleryOpen() { return !$('gallery').hidden; }
   cabinOpen() { return !$('cabin').hidden; }
@@ -1207,15 +1211,18 @@ export class UI {
     if (!this.fitBound) { this.fitBound = true; window.addEventListener('resize', () => this.fitTitle()); document.fonts && document.fonts.ready.then(() => this.fitTitle()); }
     $('menu').classList.add('gone');
     const ago = (ms) => { const m = (Date.now() - ms) / 60000; return m < 2 ? 'just now' : m < 60 ? `${Math.round(m)} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
+    // (5.1) each save is a stamped steel dive tag: its number punched big, what it holds stamped under it; the one
+    // played last is the one Dive continues (ringed). A small x deletes; an empty tag says New diver
     let html = '';
+    const last0 = lastSlot();
     for (let n = 1; n <= SLOTS; n++) {
-      const r = readSlot(n);
+      const r = readSlot(n), num = `<b class="tg-n">${String(n).padStart(2, '0')}</b><i class="hole"></i>`;
       if (r.state === 'ok') {
         const p = r.profile;
-        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? `, ${p.subName}` : ''}</b><span>${p.deepest || 0} m deepest, ${(p.journal || []).length} species${r.saved ? `, ${ago(r.saved)}` : ''}</span></div><button class="del" title="Delete this save">Delete</button></div>`;
+        html += `<div class="slot tag${n === last0 ? ' last' : ''}" data-n="${n}" title="${r.saved ? 'Played ' + ago(r.saved) : ''}">${num}<div class="info"><b>${money(p.cash, false)}</b><span>${p.deepest || 0} m deepest</span></div><button class="del" title="Delete this diver" aria-label="Delete">×</button></div>`;
       } else if (r.state === 'damaged') {
-        html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">Delete</button></div>`;
-      } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>New diver</b></div><span></span></div>`;
+        html += `<div class="slot tag damaged" data-n="${n}">${num}<div class="info"><b>Damaged</b><span>could not be read</span></div><button class="del" aria-label="Delete">×</button></div>`;
+      } else html += `<div class="slot tag empty" data-n="${n}">${num}<div class="info"><b>New diver</b></div></div>`;
     }
     $('slots').innerHTML = html;
     const last = lastSlot();
@@ -1302,35 +1309,39 @@ export class UI {
     }
   }
 
+  // (5.1) the journal is a field notebook: the left page a grid of the animals found, each drawn with its name under
+  // it (newest first); tap one and the right page turns to its entry (a large drawing, what it is, where it lives,
+  // its rare forms). With nothing chosen the right page is the notes
   renderJournal() {
     if ((this.tab || 'species') !== 'species') return this.renderJournalTab(this.tab);
     const g = this.h.getGame();
     this.journalCount(g);
     const list = $('journal-list');
-    list.innerHTML = '';
     if (g.journal.size === 0) {
       list.innerHTML = '<p class="empty">Nothing recorded yet.<br>Swim close to a creature and press F to observe it.</p>';
-      return;
+      this.journalDetail(null); return;
     }
     const entries = [...g.journal.entries()].sort((a, b) => ((b[1].at || 0) - (a[1].at || 0)) || (b[1].time - a[1].time)); // (4.12.4) newest found first, across dives
-    for (const [id, info] of entries) {
-      const sp = SPECIES_BY_ID[id];
-      const row = document.createElement('div');
-      row.className = 'entry' + rarityCls(sp);
-      let icon = this.iconCache.get(id);
-      if (!icon) { icon = speciesIcon(sp, 160, 90); this.iconCache.set(id, icon); }
-      const img = document.createElement('img');
-      img.src = icon.toDataURL(); img.alt = sp.name;
-      const txt = document.createElement('div');
-      txt.innerHTML = `<h3>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.species ? sp.species + ', ' : ''}${sp.sci}</div>
-        <p>${sp.desc}</p>
-        <div class="meta">Seen at ${info.depth} m. Lives at ${usualDepth(sp)[0].toLocaleString()} to ${usualDepth(sp)[1].toLocaleString()} m, up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''}.</div>
-        ${this.variantRow(sp)}`;
-      row.append(img, txt); row.insertAdjacentHTML('afterbegin', rarityStars(sp));
-      list.append(row);
-    }
+    list.innerHTML = `<div class="jgrid">${entries.map(([id]) => { const sp = SPECIES_BY_ID[id], c = rarityCol(sp);
+      return `<button class="jcell${this.jSel === id ? ' on' : ''}" data-js="${id}" title="${sp.name.replace(/"/g, '')}"><img src="${this.allFishPic(sp, true)}" alt=""><b>${sp.name}</b>${c ? `<i style="background:${c}"></i>` : ''}</button>`; }).join('')}</div>`;
+    list.querySelectorAll('[data-js]').forEach((b) => b.addEventListener('click', () => { const id = +b.dataset.js; this.jSel = this.jSel === id ? null : id; this.renderJournal(); }));
+    this.journalDetail(this.jSel && g.journal.has(this.jSel) ? this.jSel : null);
   }
-
+  // the right page: one animal's entry, or the notes
+  journalDetail(id) {
+    const det = $('journal-detail'), notes = $('journal-notes'), title = $('jr-title'); if (!det) return;
+    if (id == null) { det.hidden = true; notes.hidden = false; title.textContent = 'Notes'; return; }
+    const g = this.h.getGame(), sp = SPECIES_BY_ID[id], info = g.journal.get(id) || {}, R = rarityOf(sp), hab = usualDepth(sp);
+    if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
+    const ph = (g.photos || []).filter((p) => p.id === id && p.img).sort((a, b) => b.q - a.q)[0];
+    title.textContent = sp.name; notes.hidden = true; det.hidden = false;
+    det.innerHTML = `<div class="jd-pic">${ph ? `<img class="jd-photo" src="${ph.img}" alt="">` : `<img src="${this.fitPics.get(sp.id)}" alt="">`}</div>
+      <p class="jd-sci">${sp.species ? sp.species + ', ' : ''}<i>${sp.sci || ''}</i>${R && !R.hidden ? `, <span style="color:${R.col}">${R.name.toLowerCase()}</span>` : ''}</p>
+      <p class="jd-desc">${sp.desc}</p>
+      <dl class="jd-rows"><div><dt>Lives at</dt><dd>${hab[0].toLocaleString()} to ${hab[1].toLocaleString()} m</dd></div><div><dt>Grows to</dt><dd>${sp.size}</dd></div><div><dt>First seen</dt><dd>at ${info.depth ?? '?'} m</dd></div></dl>
+      ${this.variantRow(sp)}<button class="jd-back">Back to the notes</button>`;
+    det.querySelector('.jd-back').addEventListener('click', () => { this.jSel = null; this.renderJournal(); });
+  }
   // (4.12.4) every animal in the sea, from the surface down: the ones found in their colours and names, the rest
   // a black shape and ???. Pictures are drawn as they scroll into view (there are hundreds).
   renderAllFish(g, list) {
@@ -1343,6 +1354,8 @@ export class UI {
       for (const en of ents) { if (!en.isIntersecting) continue; const img = en.target; this.afObs.unobserve(img); const sp = SPECIES_BY_ID[+img.dataset.af]; if (sp) img.src = this.allFishPic(sp, g.journal.has(sp.id)); }
     }, { root: list, rootMargin: '200px' });
     list.querySelectorAll('img[data-af]').forEach((im) => this.afObs.observe(im));
+    list.querySelectorAll('.af.seen').forEach((el) => el.addEventListener('click', () => { const id = +el.querySelector('img').dataset.af; this.jSel = id; this.journalDetail(id); }));
+    this.journalDetail(this.jSel && g.journal.has(this.jSel) ? this.jSel : null);
   }
   allFishPic(sp, seen) {
     const key = sp.id + (seen ? ':c' : ':s'); this.afCache = this.afCache || new Map();
@@ -1434,25 +1447,32 @@ export class UI {
         const name = (L) => { const worst = L.reduce((a, x) => Math.min(a, x.cond), 1), cn = conditionName(worst); return `${this.mini(spc)}<span class="sell-name">${v ? `<span class="rare r-${v}">${VARIANTS[v].name}</span> ` : ''}${spc.name}${worst < 0.7 ? ` <em class="cond c-${cn}">${cn}</em>` : ''}</span>` + (L.length > 1 ? `<span class="sell-n">×${L.length}</span>` : ''); };
         const canKeep = rest.some((x) => x.cond > 0.05); // a live one (the dead can only be sold)
         const keepBtn = canKeep ? `<button class="sell-keep" data-sell="keep" data-arg="${dk}" title="Hold it back from the sale (put it in the aquarium at the aquarium)">Keep</button>` : '';
-        if (rest.length) items.push({ key: 'sp:' + gk, value: rest.reduce((a, x) => a + specimenValue(x), 0) * pay, keep: keepBtn, html: name(rest) });
-        if (keptL.length) items.push({ key: 'kept:' + dk, value: keptL.reduce((a, x) => a + specimenValue(x), 0) * pay, kept: true, html: name(keptL),
+        if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(spc.id)) this.fitPics.set(spc.id, fittedIcon(spc, 300, 180).toDataURL());
+        const worst = (L) => L.reduce((a, x) => Math.min(a, x.cond), 1);
+        const tile = (L) => ({ pic: this.fitPics.get(spc.id), name: (v ? VARIANTS[v].name + ' ' : '') + spc.name, n: L.length, cond: worst(L) < 0.7 ? conditionName(worst(L)) : '', rc: rarityCol(spc) });
+        if (rest.length) items.push({ key: 'sp:' + gk, value: rest.reduce((a, x) => a + specimenValue(x), 0) * pay, keep: keepBtn, html: name(rest), dk, canKeep, ...tile(rest) });
+        if (keptL.length) items.push({ key: 'kept:' + dk, value: keptL.reduce((a, x) => a + specimenValue(x), 0) * pay, kept: true, html: name(keptL), dk, ...tile(keptL),
           keep: `<button class="sell-keep on" data-sell="unkeep" data-arg="${dk}" title="Sell it after all">Keep</button>` });
       }
       const tg = new Map();
       for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
       for (const [k, list] of tg) items.push({ key: 'tag:' + k, value: list[0].value * list.length * statValue(P, 'payFish'), html: `<span class="sell-name">Tag data: ${list[0].name}</span>` + (list.length > 1 ? `<span class="sell-n">×${list.length}</span>` : '') });
-      for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, value: ph.value * statValue(P, 'payFish'), html: `${ph.img ? `<img class="sell-photo" src="${ph.img}" alt="">` : ''}<span class="sell-name">Photo: ${ph.name}${ph.grade && ph.grade !== 'Good' ? ` <em class="cond">${ph.grade.toLowerCase()}</em>` : ''}</span>` });
-      for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k] && k !== 'coral') items.push({ key: 'good:' + k, value: GOODS[k].price * n * statValue(P, 'paySalvage'), html: `<span class="sell-name">${GOODS[k].name}</span>` + (n > 1 ? `<span class="sell-n">×${n}</span>` : '') });
+      for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, photo: ph.img, name: ph.name, n: 1, cond: ph.grade && ph.grade !== 'Good' ? ph.grade.toLowerCase() : '', value: ph.value * statValue(P, 'payFish'), html: `${ph.img ? `<img class="sell-photo" src="${ph.img}" alt="">` : ''}<span class="sell-name">Photo: ${ph.name}${ph.grade && ph.grade !== 'Good' ? ` <em class="cond">${ph.grade.toLowerCase()}</em>` : ''}</span>` });
+      for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k] && k !== 'coral') items.push({ key: 'good:' + k, name: GOODS[k].name, n, value: GOODS[k].price * n * statValue(P, 'paySalvage'), html: `<span class="sell-name">${GOODS[k].name}</span>` + (n > 1 ? `<span class="sell-n">×${n}</span>` : '') });
       for (const k of [...pick]) if (!items.some((it) => it.key === k && !it.kept)) pick.delete(k);
       if (!items.length) html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
       else {
-        const total = items.reduce((a, it) => a + (it.kept ? 0 : it.value), 0), inB = items.filter((it) => pick.has(it.key)), bTotal = inB.reduce((a, it) => a + it.value, 0);
-        const row = (it, act) => it.kept ? `<div class="sell-row kept"><div class="sell-item" title="Kept: not for sale">${it.html}<b>${money(it.value)}</b></div>${it.keep}</div>`
-          : `<div class="sell-row"><button class="sell-item" data-sell="${act}" data-arg="${it.key}">${it.html}<b>${money(it.value)}</b></button>${act === 'tobasket' ? it.keep || '' : ''}</div>`;
+        // (5.1) one grid of what he brought up, each thing a tile with its picture and price: tap a tile to sell it,
+        // Sell all for the lot. A live animal has Keep in its corner (kept, it is held back for the aquarium)
+        const total = items.reduce((a, it) => a + (it.kept ? 0 : it.value), 0);
+        const tileH = (it) => `<div class="sl-tile${it.kept ? ' kept' : ''}${it.photo ? ' photo' : ''}">
+          <button class="sl-main" ${it.kept ? 'disabled' : `data-act="sellone" data-arg="${it.key}"`} title="${it.kept ? 'Kept for the aquarium' : 'Sell it'}">
+            <span class="sl-pic">${it.photo ? `<img src="${it.photo}" alt="">` : it.pic ? `<img src="${it.pic}" alt="">` : '<i class="sl-good"></i>'}</span>
+            <b${it.rc ? ` style="color:${it.rc}"` : ''}>${it.name || ''}</b>${it.n > 1 ? `<em class="sl-n">×${it.n}</em>` : ''}${it.cond ? `<em class="sl-cond">${it.cond}</em>` : ''}
+            <span class="sl-price">${it.kept ? 'Kept' : money(it.value)}</span></button>
+          ${it.kept ? `<button class="sl-keep on" data-sell="unkeep" data-arg="${it.dk}">Keep</button>` : it.canKeep ? `<button class="sl-keep" data-sell="keep" data-arg="${it.dk}" title="Hold one back for the aquarium">Keep</button>` : ''}</div>`;
         html += `<button class="primary go" data-act="sellall" ${total > 0 ? '' : 'disabled'}>Sell all<span>${money(total)}</span></button>`;
-        html += `<div class="sell-cols"><div class="sell-col"><h4>Your catch</h4>${items.filter((it) => !pick.has(it.key)).map((it) => row(it, 'tobasket')).join('') || '<p class="shop-empty">All in the basket.</p>'}</div>`;
-        html += `<div class="sell-col basket"><h4>To sell</h4>${inB.map((it) => row(it, 'frombasket')).join('') || '<p class="shop-empty">Click something to put it here.</p>'}`;
-        html += `<button class="sell-these" data-act="sellpick" ${inB.length ? '' : 'disabled'}>Sell these<span>${money(bTotal)}</span></button></div></div>`;
+        html += `<div class="sl-grid">${items.map(tileH).join('')}</div>`;
         if (!atBoat && g.subTank.length) html += `<p class="shop-note">${g.subTank.length} animal${g.subTank.length > 1 ? 's' : ''} in the sub's tank: bring the sub alongside to sell them.</p>`;
       }
       // the price board on the Margaret: chalked up after every sale, the newest first
@@ -1878,7 +1898,7 @@ export class UI {
 
   // (4.4.1) the time into the dive, at the top of the journal: kept ticking while it is open (it froze when opened)
   journalCount(g) {
-    const t = `${formatTime(g.survival)} into the dive` + (['species', 'all'].includes(this.tab || 'species') ? `, ${g.journal.size} of ${SPECIES_COUNT} recorded` : '');
+    const t = `${g.journal.size} of ${SPECIES_COUNT} found`; // (5.1) one line: how much of the sea is in the book
     const el = $('journal-count'); if (el.textContent !== t) el.textContent = t;
   }
   update(g, dt) {

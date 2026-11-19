@@ -1109,12 +1109,12 @@ function tutor() {
     else if (jOpen && (P.tutJTour || 0) < 3) { // (4.12.2) a short look round the journal before it is closed
       const k = P.tutJTour || 0;
       text = 'Your journal';
-      spot = k === 0 ? { sel: ['#journal-list .entry img'], card: { id: 'jtour', text: 'Every animal you observe is drawn here.' } }
-        : k === 1 ? { sel: ['#journal-list .entry .meta', '#journal-list .entry p'], card: { id: 'jtour', text: 'Below it: how big it grows and how deep it lives. Use that to find more.' } }
+      spot = k === 0 ? { sel: ['#journal-list .jcell'], card: { id: 'jtour', text: 'Every animal you observe is drawn here. Tap one to read about it.' } }
+        : k === 1 ? { sel: ['#journal .tabs'], card: { id: 'jtour', text: 'All shows every animal in the sea, the ones still to find in shadow.' } }
         : { sel: ['#notes'], card: { id: 'jtour', text: 'This page is yours, for notes. It is kept.' } };
     }
     else if (jOpen) { text = 'Close the journal'; spot = { sel: ['#journal-close'], act: 'journal', say: 'Close the journal' }; }
-    else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-sell="tobasket"]'], say: 'Sell all' }; }
+    else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-act="sellone"]'], say: 'Sell all' }; }
     else if (!g.bag.length && !g.subTank.length) {
       // sold already, or lost it: another fish, then sell that one
       fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); });
@@ -1254,7 +1254,15 @@ hudCanvas.addEventListener('mousedown', (ev) => {
   if (ev.button !== 0) return;
   if (inRect(hud.journalHot, ev.clientX, ev.clientY)) { ui.toggleJournal(); return; }
   if (inRect(hud.chartHot, ev.clientX, ev.clientY)) { ui.closeAll(); ui.chart.toggle(true); return; }
-  if (inRect(hud.subHot, ev.clientX, ev.clientY)) { pressed.add('c-tap'); return; }
+  // (5.1) the HUD's buttons: the action button, the tool chips, the context buttons. A press is the key's press, held
+  // as long as the button is held (so a hold-F button works), and a short one counts as a tap, as on the keyboard
+  const hb = hudButtonAt(ev.clientX, ev.clientY);
+  if (hb) {
+    const k = hb.key; mouse.btn = k;
+    if (!keys.has(k)) { pressed.add(k); if (k === 'f') fDown = performance.now(); if (k === 'c') { cDown = performance.now(); cHeld = 0; } }
+    keys.add(k); audio.ready && audio.click && audio.click();
+    return;
+  }
   if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
   if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
   if (inRect(hud.slotHot && hud.slotHot.r, ev.clientX, ev.clientY)) { pressed.add('r'); return; }
@@ -1263,7 +1271,16 @@ hudCanvas.addEventListener('mousedown', (ev) => {
   mouse.down = true;
   pressed.add(' '); // a click swings the net (or uses whatever is in hand)
 });
-window.addEventListener('mouseup', (ev) => { if (ev.button === 0) mouse.down = false; if (ev.button === 2) mouse.rdown = false; });
+window.addEventListener('mouseup', (ev) => {
+  if (ev.button === 0) mouse.down = false; if (ev.button === 2) mouse.rdown = false;
+  if (ev.button === 0 && mouse.btn != null) { // (5.1) letting go of a HUD button: the key comes up
+    const k = mouse.btn; mouse.btn = null; keys.delete(k);
+    if (k === 'f') { if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
+    if (k === 'c') { if (performance.now() - cDown < 600) pressed.add('c-tap'); cHeld = 0; }
+  }
+});
+// (5.1) the HUD button under the pointer, if any
+function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return null; }
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 hudCanvas.addEventListener('wheel', (ev) => {
   ev.preventDefault();
@@ -1279,7 +1296,7 @@ function weightedCursor(dt) {
   const on = holdingWork() && mouse.seen && INPUT.mode === 'mouse';
   if (on) { if (!g.holdCursor) g.holdCursor = { x: mouse.x, y: mouse.y }; const k = 1 - Math.exp(-dt * 7); g.holdCursor.x += (mouse.x - g.holdCursor.x) * k; g.holdCursor.y += (mouse.y - g.holdCursor.y) * k; }
   else g.holdCursor = null;
-  const want = on ? 'none' : ''; if (hudCanvas.style.cursor !== want) hudCanvas.style.cursor = want;
+  const want = on ? 'none' : mouse.inside && hudButtonAt(mouse.x, mouse.y) ? 'pointer' : ''; if (hudCanvas.style.cursor !== want) hudCanvas.style.cursor = want;
 }
 function readMove() {
   if (g.kill) return { x: 0, y: 0, sprint: false }; // in its grip, nothing he does moves him
@@ -1292,7 +1309,7 @@ function readMove() {
   const now = performance.now();
   if (x || y) keyMoveAt = now;
   // the mouse steers when it has been moved since the keys were last used, and is over the game
-  if (!x && !y && mouse.seen && mouse.inside && mouse.movedAt > keyMoveAt && renderer.S && !ui.anyOpen()) {
+  if (!x && !y && mouse.seen && mouse.inside && mouse.movedAt > keyMoveAt && renderer.S && !ui.anyOpen() && !hudButtonAt(mouse.x, mouse.y)) {
     // swim toward the cursor; full speed beyond a few metres, easing in, and still when he is there
     const e = g.earl, [mx, my] = mouseScreen();
     const dx = mx - renderer.S(e.x), dy = my - renderer.Sy(e.y), d = Math.hypot(dx, dy);

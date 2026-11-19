@@ -192,6 +192,37 @@ game from a save slot, version stamps on all 56 modules and both stylesheets.
 - Locker: maker's plate removed, vent centred on the right plate, count beside its heading. Tank room hint: two lines
   of text under the bag (the plate cut into the tank's frame). Tutorial card: words and OK side by side.
 
+## 5.1.0 (owner: "a game, not a website"; web now, mobile later: touch not added yet, but nothing in the way of it)
+
+Rules for every screen: one main thing; few, big targets; pictures over text; numbers only when they matter; things
+in the world rather than web panels; nothing you can press that you can't also click (later, tap).
+
+- **Play HUD zones (hud.js).** Top right: depth, O2 (and HULL), the radar under them (r 50), notes under that, and the
+  red eye left of the depth. Bottom right: one round action button (the tool in hand, or the claw in the sub) with the
+  bag's pockets (the sub's tank places) as marks on its outer rim, a ring of tool chips (1 net, 2 camera, 3 traps) and
+  carried things (Q lure, E glow stick, R air tank, N trawl) arced round its upper left, and the context buttons
+  stacked to its left: what the tool can reach (Space), what F / T / U... do here, and C (call the sub / autopilot).
+  Bottom left is empty, kept for a stick. The old bottom-centre hotbar and the centre prompts are gone.
+- **Every HUD button is clickable (main.js `hud.hots`, `hudButtonAt`).** A press is that key's press, held while the
+  button is held (so hold-F buttons work); a short one is a tap (f-tap, c-tap). The pointer becomes a hand over one,
+  and the mouse does not steer Earl while over a button.
+- **One message at a time (messages.js).** No small lines under the main one. A message as important (or more)
+  replaces it; a lesser one waits briefly (dropped after 4.5 s); one about the same topic (air, pressure, hull, the
+  deep) as what is up is dropped.
+- **Title.** Painted, worn EARL; one big Dive button (continues the last save); the saves as three stamped steel
+  dive tags (number, cash, deepest; the last played ringed; x on hover deletes). Version in the corner.
+- **Journal.** A field notebook: Found / All as ribbon bookmarks; Found is a grid of drawings with names (a thin
+  rarity line under each); tap one and the right page is its entry (big drawing or your best photo, species and
+  rarity in ink, description, lives at / grows to / first seen, rare forms); otherwise the right page is the notes.
+  Status and Controls are no longer journal tabs (controls are in Settings).
+- **Selling.** One grid of tiles (picture, name, count, condition, price): tap a tile to sell it, Sell all for
+  everything; Keep in a live animal's corner holds it back for the aquarium.
+- **Quests.** Paper cards, the reward big; tap a finished card to claim, any other to see what counts. No timers or
+  info buttons; one New quests button (Free, or its price).
+- **Settings.** Big switches, plain words (Sound, Full screen, Show fish names, Mark what the net will catch, Softer
+  flashes, Smoother on slow devices). **Pause.** Larger buttons; HUD buttons hidden while paused.
+- **Catch page.** The bag's value painted on the door again (large, faded, chipped).
+
 ## 5.0.0 (owner: fish that act like fish, a net that feels physical, a camera, pets; slurp and tag guns gone)
 
 Design rule from the owner: a fish is hard because of how it behaves, not because the gear is weak. Messages stay
