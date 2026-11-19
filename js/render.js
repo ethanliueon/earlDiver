@@ -319,7 +319,7 @@ export class Renderer {
     }
 
     // painted kelp forests far behind (baked once, high detail, gently swaying)
-    this.drawKelpBackdrop(g, ppm, t);
+    if (!this.phone) this.drawKelpBackdrop(g, ppm, t); // (5.3.2) the far painted kelp: not on a phone
     // ================= TERRAIN & STRUCTURES =================
     for (const w of g.world.wrecks) if (Math.abs(w.x - cam.x) < cam.w / 2 + w.len && visible(w.x, w.y, w.len * 0.6)) this.drawWreck(ctx, w, S, Sy, ppm);
     if (!(this.skip && this.skip.kelp)) this.drawKelp(g, S, Sy, ppm, 0, x0, x1);
@@ -1041,7 +1041,7 @@ export class Renderer {
       if (n > 90) { const keep = [], small = []; for (const p of glowPts) (p[3] > ppm * 0.9 ? keep : small).push(p); const step = small.length / Math.max(1, 90 - keep.length); glowPts.length = 0; glowPts.push(...keep); for (let i = 0; i < small.length && glowPts.length < 90; i += Math.max(1, step)) glowPts.push(small[Math.floor(i)]); } }
     if (!(this.skip && this.skip.light)) { this.buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY);
     ctx.globalCompositeOperation = 'multiply';
-    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = this.phone ? 'low' : 'high'; // (5.3.2) 'high' scaling is very slow in Safari
     ctx.drawImage(this.lc, 0, 0, W, H); }
     ctx.imageSmoothingQuality = 'low'; // (only the light needs the careful scaling; everything else uses the fast kind)
     ctx.globalCompositeOperation = 'lighter';
@@ -1668,6 +1668,7 @@ export class Renderer {
   }
   // fill the current clip with a noise tile pinned to the world (ox, oy: where its corner sits)
   texture(ctx, name, metres, alpha, op = 'soft-light', ox = 0, oy = 0, area = null) {
+    if (this.phone) return; // (5.3.2) soft-light blending is software-slow in Safari
     if (this.lite && !area) return;
     const tile = name === 'murk' ? this.noiseTile('murk', 192, 7, 3, 1.3) : name === 'grain' ? this.noiseTile('grain', 192, 3, 4, 1.2) : this.noiseTile('rock', 192, 11, 5, 1.3);
     this.pats = this.pats || {};
@@ -1722,7 +1723,7 @@ export class Renderer {
     // grain texture
     ctx.save(); ctx.clip();
     // rock and sediment: large mottling and a fine grain, pinned to the world so they never swim
-    this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, camY), 'soft-light', S(0), Sy(0), area);
+    if (!this.phone) this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, camY), 'soft-light', S(0), Sy(0), area);
     if (ppm > 14 && !this.lite) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61), area);
     // a pale skin of settled silt just under the surface line, darkening below
     {
@@ -2782,7 +2783,7 @@ export class Renderer {
   drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff) {
     const ctx = this.ctx, cam = this.cam, fx = g.fx, t = g.time;
     // god rays near the surface
-    const rayStrength = dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7);
+    const rayStrength = this.phone ? 0 : dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7); // (5.3.2) no god rays on a phone
     if (rayStrength > 0.01) {
       // drawn into a quarter-size picture (they are soft: nothing is lost) and laid over the scene
       // in one go; remade every other frame, shifted with the camera in between

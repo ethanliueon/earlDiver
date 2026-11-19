@@ -76,7 +76,17 @@ const beacon = new Beacon(audio); beacon.say = (text, kind) => messages.show(tex
 
 const keys = new Set();
 hud.held = keys; // (5.3) the keys held, so a touch button shows pushed in
-if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) renderer.lite = true; // (5.3) a phone starts in lite mode (it comes off by itself if there is room)
+// (5.3.2) a phone: lite mode for good, and the effects Safari draws in software switched off: blurred shadows (on
+// every context the game draws on), soft-light and multiply-heavy extras, high-quality scaling. ?full keeps them
+if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !/[?&]full\b/.test(location.search)) {
+  renderer.lite = true; renderer.phone = true;
+  const noShadow = (c) => { if (!c) return; Object.defineProperty(c, 'shadowBlur', { get: () => 0, set: () => {}, configurable: true }); };
+  const gc = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, o) { const c = gc.call(this, type, o); if (c && type === '2d' && !c.__ns) { c.__ns = 1; noShadow(c); } return c; };
+  noShadow(renderer.ctx); noShadow(renderer.lctx); noShadow(hudCanvas.getContext('2d'));
+}
+// (5.3.2) ?fps shows frames a second in the corner (P does too)
+if (/[?&]fps\b/.test(location.search)) hud.showFps = true;
 const PRY = new Set(['clam', 'mussel']);
 const PRY_TIME = 1.5;
 // how long each hold-F job takes, and how much calm a good deed gives
@@ -2618,7 +2628,7 @@ function adaptQuality(realDt) {
   const q = renderer.quality ?? 1;
   // the floor is set by the real screen: never below ~90 % of a screen pixel (75 % on plain screens), so
   // the picture never turns soft or pixelated; on sharp (high-DPI) screens that leaves room to drop further
-  const floor = SETTINGS.fast ? 0.55 : Math.min(0.75, 0.9 / Math.min(window.devicePixelRatio || 1, 1.25));
+  const floor = SETTINGS.fast || renderer.phone ? 0.55 : Math.min(0.75, 0.9 / Math.min(window.devicePixelRatio || 1, 1.25)); // (5.3.2) a phone may soften further
   if (SETTINGS.fast && !renderer.lite) renderer.lite = true; // Fast graphics: the extras stay off
   if (frameEma > 1 / 45 && q > floor) { renderer.quality = Math.max(floor, q - 0.05); qualityT = 0; }
   // still slow at the floor: lite mode drops the costliest extras (the rim light on animals, the water
@@ -2626,7 +2636,7 @@ function adaptQuality(realDt) {
   else if (frameEma > 1 / 45 && !renderer.lite) { renderer.lite = true; qualityT = 0; }
   // lite mode comes on first when frames are well under 40 a second, before any sharpness goes
   if (frameEma > 1 / 38 && !renderer.lite) { renderer.lite = true; qualityT = 0; }
-  else if (frameEma < 1 / 57 && renderer.lite && qualityT > 4 && !SETTINGS.fast) { renderer.lite = false; qualityT = 0; }
+  else if (frameEma < 1 / 57 && renderer.lite && qualityT > 4 && !SETTINGS.fast && !renderer.phone) { renderer.lite = false; qualityT = 0; }
   else if (frameEma < 1 / 57 && q < 1 && qualityT > 3) { renderer.quality = Math.min(1, q + 0.05); qualityT = 0; }
   else if (qualityT > 3) qualityT = 1;
 }
