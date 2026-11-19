@@ -2624,6 +2624,9 @@ function adaptQuality(realDt) {
   frameEma = lerp(frameEma, realDt, 0.05);
   hud.fps = 1 / Math.max(1e-3, frameEma); hud.quality = renderer.quality; hud.lite = renderer.lite;
   qualityT += realDt;
+  // (5.3.2) a phone keeps one resolution for good: switching resizes every canvas and rebuilds what was drawn at the
+  // old size, which costs more than it saves (and made the boat's stains flicker). Lite mode stays on
+  if (renderer.phone) { if (renderer.quality !== 0.7) { renderer.quality = 0.7; renderer.resize(); } return; }
   if (qualityT < 1) return;
   const q = renderer.quality ?? 1;
   // the floor is set by the real screen: never below ~90 % of a screen pixel (75 % on plain screens), so

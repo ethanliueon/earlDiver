@@ -693,3 +693,9 @@ html body #confirm button:focus-visible { outline: 2px solid rgba(239, 232, 210,
   html body #catalog .cat-nav * { white-space: nowrap; }
   html body #catalog .cat-main { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 }
+/* (5.3.2) the loading screen on a short screen: the name smaller and higher, the tip under it, never on top of it */
+@media (max-height: 520px) {
+  html body .ld .ld-title:not(#_a) { bottom: auto !important; top: 12vh !important; }
+  html body .ld .ld-title b:not(#_a) { font-size: 17vh !important; }
+  html body .ld .ld-tip:not(#_a):not(#_b) { left: max(6vw, 24px) !important; transform: none !important; bottom: 8vh !important; max-width: 46vw !important; text-align: left !important; }
+}

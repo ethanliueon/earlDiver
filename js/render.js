@@ -726,7 +726,7 @@ export class Renderer {
       const roll = Math.atan2(surfY(BOAT.x + 4) - surfY(BOAT.x - 4), 8) * (0.7 + (g.storm || 0) * 0.8);
       ctx.save(); ctx.translate(boatX, boatY); ctx.rotate(roll);
       // draw the boat into a small offscreen canvas and darken it there (canvas filters are slow)
-      const bw = Math.ceil(14 * ppm * 1.3), bh = Math.ceil(14 * ppm * 0.75);
+      const bw = Math.ceil(14 * ppm * 1.3 / 8) * 8, bh = Math.ceil(14 * ppm * 0.75 / 8) * 8; // (5.3.2) in steps of 8 px: a resized canvas is a new one
       const bc = this.boatC || (this.boatC = document.createElement('canvas'));
       if (bc.width !== bw || bc.height !== bh) { bc.width = bw; bc.height = bh; }
       const bctx = bc.getContext('2d');
@@ -737,7 +737,7 @@ export class Renderer {
       crane = drawBoat(bctx, 14 * ppm, t, g.sub, bsx < 0, { tutDoor: !!(g.tut && g.tut.door) });
       // (4.28) weathering laid over the drawing, only where the boat is: grain, grime settling low, rust running down
       // from the deck edge, a darker band at the waterline; painted once per size, one image per frame
-      { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(bw, bh, bsx < 0), 0, 0); bctx.globalCompositeOperation = 'source-over'; }
+      { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(1092, 630, bsx < 0), 0, 0, bw, bh); /* (5.3.2) painted once at one size and scaled: it used to be repainted (new stains) whenever the zoom moved */ bctx.globalCompositeOperation = 'source-over'; }
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
       if (dimB > 0.01) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, bw, bh); }
       ctx.save(); ctx.scale(bsx, 1); ctx.drawImage(bc, -bw * 0.45, -bh * 0.82); ctx.restore(); // (3.0.0) turned with her heading
