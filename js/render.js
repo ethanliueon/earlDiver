@@ -509,15 +509,15 @@ export class Renderer {
         ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
         ctx.beginPath(); ctx.moveTo(-sz * 0.55, -sz * 0.7); ctx.lineTo(sz * 0.35, 0); ctx.lineTo(-sz * 0.55, sz * 0.7);
         ctx.strokeStyle = `rgba(20,14,4,${(a * 0.6).toFixed(3)})`; ctx.lineWidth = sz * 0.42 + 2; ctx.stroke(); // a dark edge: readable on sky and water
-        ctx.strokeStyle = `rgba(232,208,146,${a.toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke();
+        ctx.strokeStyle = `rgba(230,222,196,${a.toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke();
         ctx.restore();
       }
       ctx.restore();
       const f = guide.fish, cx = S(f ? f.x : tx), cy = Sy(f ? f.y : ty);
       const r = (f ? Math.max(16, ppm * (f.len * 0.8 + 0.45)) : Math.max(14, ppm * 0.5)) * (1 + 0.1 * Math.sin(g.time * 4));
-      ctx.save(); ctx.shadowColor = 'rgba(232,208,146,0.8)'; ctx.shadowBlur = 10; if (guide.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
-      ctx.strokeStyle = 'rgba(232,208,146,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = `rgba(232,208,146,${(0.5 * (1 - ((g.time * 0.8) % 1))).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.8 * ((g.time * 0.8) % 1)), 0, TAU); ctx.stroke(); // a ripple going out
+      ctx.save(); ctx.shadowColor = 'rgba(230,222,196,0.8)'; ctx.shadowBlur = 10; if (guide.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
+      ctx.strokeStyle = 'rgba(230,222,196,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = `rgba(230,222,196,${(0.5 * (1 - ((g.time * 0.8) % 1))).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.8 * ((g.time * 0.8) % 1)), 0, TAU); ctx.stroke(); // a ripple going out
       ctx.restore();
       // (4.3.2) a prompt beside the fish, only where the game's own prompts don't already say it (swinging the net,
       // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words
@@ -534,7 +534,7 @@ export class Renderer {
           ctx.fillStyle = 'rgba(20,16,8,0.6)'; ctx.strokeStyle = '#ece6d2'; ctx.lineWidth = 1.6;
           ctx.beginPath(); ctx.roundRect(-8, -12, 16, 24, 8); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
           const on = 0.6 + 0.4 * Math.abs(Math.sin(g.time * 3));
-          ctx.fillStyle = `rgba(216,191,130,${on.toFixed(2)})`; ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(0, -1); ctx.lineTo(-8, -1); ctx.lineTo(-8, -4); ctx.arcTo(-8, -12, 0, -12, 8); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = `rgba(230,222,196,${on.toFixed(2)})`; ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(0, -1); ctx.lineTo(-8, -1); ctx.lineTo(-8, -4); ctx.arcTo(-8, -12, 0, -12, 8); ctx.closePath(); ctx.fill();
           ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(0, -1); ctx.moveTo(-8, -1); ctx.lineTo(8, -1); ctx.stroke();
           ctx.restore();
           drawPrompt(ctx, tp.text, x0 + iw + (total - iw) / 2, cy, 1, { size: 18, shade: false, col: tp.col || '#ece6d2' });
@@ -545,7 +545,7 @@ export class Renderer {
       if (cx < 0 || cx > W2 || cy < 0 || cy > H2) {
         const ax = clamp(cx, 48, W2 - 48), ay = clamp(cy, 70, H2 - 70), a2 = Math.atan2(cy - H2 / 2, cx - W2 / 2), pulse = 1 + 0.12 * Math.sin(g.time * 5);
         ctx.save(); ctx.translate(ax, ay); ctx.rotate(a2); ctx.scale(pulse, pulse);
-        ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6; ctx.fillStyle = 'rgba(232,208,146,0.95)';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6; ctx.fillStyle = 'rgba(230,222,196,0.95)';
         ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(-12, -16); ctx.lineTo(-4, 0); ctx.lineTo(-12, 16); ctx.closePath(); ctx.fill(); ctx.restore();
         ctx.save(); ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(236,230,210,0.85)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
         ctx.fillText(`${Math.round(d)} m`, ax - Math.cos(a2) * 34, ay - Math.sin(a2) * 34 + 4); ctx.restore();

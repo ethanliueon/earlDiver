@@ -583,16 +583,16 @@ export class UI {
     const chambers = tank.filter((s2) => s2.pressed && s2.chamber !== BIG_CH), oCap = tankSlots(g), pCap = pressSlots(g), oUsed = open.reduce((t, s2) => t + slotsOf(s2), 0);
     const elsewhere = floor.length ? `On the floor: ${floor.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')} · ` : '';
     const bigCap = big.some(tooBig) ? 1 : 3;
-    const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ' · ' : ''}${M.name}`;
+    const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}`;
     this.catchShown = Math.max(5, pCap);
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
       + `<div class="worth-paint" style="font-size:${Math.min(160, Math.floor(540 / (money(total).length * 0.6)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
-      + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated ${g.sub.rated} m</span></div>`
+      + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
       + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank <i>not fitted</i></h4>`)
-      + `<p class="ct-cap">${elsewhere}Click an animal for its card · drag it to move it${g.earl && g.earl.inSub ? '' : ' (in the sub)'}</p></div></div></div>`
+      + `<p class="ct-cap">${elsewhere}Click an animal for its card; drag it to move it${g.earl && g.earl.inSub ? '' : ' (in the sub)'}</p></div></div></div>`
       + (this.fishSel ? this.fishPop(P, g) : '');
   }
   // (3.2.0) where an animal is: { list: 'bag' | 'tank' (the index space tankAction uses), i, place, n }
