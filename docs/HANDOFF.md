@@ -191,3 +191,18 @@ game from a save slot, version stamps on all 56 modules and both stylesheets.
   spotlight) are neutral white, so they never read as yellow on the warm cabin; the hold bar is white.
 - Locker: maker's plate removed, vent centred on the right plate, count beside its heading. Tank room hint: two lines
   of text under the bag (the plate cut into the tank's frame). Tutorial card: words and OK side by side.
+
+## 4.28 (owner: "do everything in the report that makes sense", touch controls last, the deep stays dark)
+- One type family: Barlow Condensed (names, the depth figures, the logo) and Barlow Semi Condensed (everything else);
+  EB Garamond, IBM Plex Mono and IM Fell are gone from the interface (CSS variables and canvas fonts). No italics, no
+  small caps. Kept on purpose: Caveat on Dave's chalkboard, Allerta Stencil painted on walls, the cabin CRT's mono.
+- HUD: depth as bare figures, cooling and dimming with depth, flickering past the rating; air and hull as thin lines with
+  painted icons. Cash is off the HUD (inventory, journal, shops). The quest, journal and chart group folds to the quest
+  picture; tap opens it, it folds after a few seconds, opens itself when the step changes; hidden on the title.
+- The deep: the beam catches more particles the deeper you are; rare distant living lights (flash, pulse, a pair of eyes).
+- Loading: logo in Barlow Condensed, the bar a descent to 1,000 m. Title: the name large over the scene, slots as a list.
+- Fixes: duplicate warnings, HUD bag overlap, bag cards, quest map label, middle dots, focus ring, pause buttons, journal
+  rarity once and no gear, chart landmarks, catalog cards say what an item does and shared drawings get their own finish,
+  kelp backdrop seams, the marked eye redrawn, the boat weathered with its name in the game's letters.
+- Not yet: touch controls (owner: last), hand-drawn art per item and per fish family, the tank room's grey palette,
+  settings toggles, the aquarium's empty floor.

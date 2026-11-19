@@ -223,7 +223,19 @@ export function pictureOf(kind, v, w, h, plain = false) {
     if (!plain) { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#cfdadf'); bg.addColorStop(1, '#b4c3ca'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
     if (v && typeof v === 'object' && (v.rarity === 'legendary' || v.rarity === 'exotic' || v.finLook || v.tankLook || v.bagLook) && v.id) { drawSpecialPicture(ctx, v, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; } // (2.8.1) their own drawings, on the usual background
     const tool = { net: 'net', slurp: 'slurp', tag: 'tag', cam: 'cam', trap: 'trap' }[kind];
-    if (tool) { const ic = toolIcon(tool, kind === 'trap' ? v : v.look || 0, Math.round(w * 0.8), Math.round(h * 0.8)); ctx.drawImage(ic, w * 0.1, h * 0.1); }
+    if (tool) {
+      const ic = toolIcon(tool, kind === 'trap' ? v : v.look || 0, Math.round(w * 0.8), Math.round(h * 0.8));
+      // (4.28) items that share a drawing are told apart: each gets its own finish (a tint from a small palette of
+      // real gear colours) and its own length, both fixed by its id
+      const id = v && v.id ? String(v.id) : '';
+      if (id && kind !== 'trap') {
+        let hsh = 0; for (const ch of id) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
+        const FIN = [null, '#c85a2a', '#2f6f8f', '#e0b23a', '#3d7a4a', '#8a3a3a', '#6a6a72', '#d8d0b8'], fin = FIN[hsh % FIN.length], k = 0.84 + ((hsh >> 4) % 5) * 0.04;
+        const tc = document.createElement('canvas'); tc.width = ic.width; tc.height = ic.height; const tx = tc.getContext('2d'); tx.drawImage(ic, 0, 0);
+        if (fin) { tx.globalCompositeOperation = 'source-atop'; tx.globalAlpha = 0.3; tx.fillStyle = fin; tx.fillRect(0, 0, tc.width, tc.height); }
+        const dw = w * 0.8 * k, dh = h * 0.8 * k; ctx.drawImage(tc, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      } else ctx.drawImage(ic, w * 0.1, h * 0.1);
+    }
     else if (kind === 'suit') { ctx.save(); ctx.translate(w / 2, h * 0.36); ctx.rotate(-Math.PI / 2); drawEarl(ctx, h * 0.62, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: v && typeof v === 'object' ? v.pal || v.look : v, bag: [], noTank: true }); ctx.restore(); }
     else if (kind === 'fins') drawFins(ctx, w, h, v);
     else if (kind === 'tank') drawTank(ctx, w, h, v);
