@@ -1263,7 +1263,7 @@ export class UI {
     pnl.style.zoom = h > room ? Math.max(0.5, room / h).toFixed(3) : '';
   }
   showGame() {
-    $('title').classList.add('gone');
+    $('title').classList.add('gone'); $('title').classList.remove('select', 'attract'); // (5.3.6) the divers' tags must not stay live (invisible) over the game
     $('menu').classList.add('gone');
     $('notes').value = '';
     this.journalDirty = true;

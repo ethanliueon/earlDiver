@@ -702,3 +702,9 @@ html body #confirm button:focus-visible { outline: 2px solid rgba(239, 232, 210,
 /* (5.3.4) the canvases fill exactly what can be seen: on an iPhone 100vh is the screen behind Safari's bars, so the
    bottom of the game (the net button, the hotbar) was below the edge */
 html body canvas#game, html body canvas#hud { width: 100vw; height: 100vh; height: 100dvh; }
+
+/* (5.3.6) a screen that has gone is really gone: not just see-through. Before, the title's diver tags stayed live
+   (invisible) over the game, so on a phone every tap went to them (no joystick; a tap on a button deleted a diver),
+   and its full-screen layer and pulsing "tap to dive" were still composited over every frame */
+html body #title.gone, html body #menu.gone { visibility: hidden; transition: opacity 0.9s ease, visibility 0s linear 0.9s; }
+html body #title.gone *, html body #menu.gone * { pointer-events: none !important; animation: none !important; }

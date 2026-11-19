@@ -296,25 +296,24 @@ export class Hud {
     A.forEach((a, i) => { const ang = [-92, -146, -200][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
     const r2 = 18 * u; TOP.forEach((a, i) => btn(a, 44 * u, 84 * u + r2 + i * (r2 * 2 + 7 * u), r2)); // (5.3.4) a column under the clipboard, clear of the quest's words
     const rho1 = rho0;
-    if (aboard) return;
     // ---- the big button: the main action ----
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     const armT = e.inSub && owns(P, 'arm');
-    const can = e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
-    ctx.save(); ctx.globalAlpha = (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7;
+    const can = aboard ? false : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
+    ctx.save(); ctx.globalAlpha = aboard || (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7; // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
     plate(cx, cy, R, can, bdown);
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(244,242,234,${(0.35 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R - 1.5 * u, 0, TAU); ctx.stroke(); }
     // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
     if (e.inSub) drawGlyph(ctx, 'claw', cx, cy + (bdown ? 2 * u : 0), R * 1.1);
-    else if (sel) drawGlyph(ctx, sel, cx, cy + (bdown ? 2 * u : 0), R * 1.1);
+    else drawGlyph(ctx, sel || 'net', cx, cy + (bdown ? 2 * u : 0), R * 1.1); // (5.3.6) never an empty button
     const prog = g.photo ? g.photo.t / g.photo.dur : g.capture && g.capture.dur ? g.capture.t / g.capture.dur : 0;
     if (prog > 0) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.arc(cx, cy, R - 1.5 * u, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(prog, 0, 1)); ctx.stroke(); }
     ctx.restore();
     // what it would go for: its name above the button, in its rarity's colour
     const nm = this.capWant && this.capWant[0] ? parsePrompt(this.capWant[0]).map((p) => p.label).join(' ') : '';
     if (nm && can) { ctx.save(); ctx.font = `600 ${16 * u}px ${HUDF}`; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillStyle = this.capWant[1] || '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.textBaseline = 'middle'; ctx.fillText(nm, cx - rho1 - r - 14 * u, cy + R * 0.3); ctx.restore(); }
-    if (!(e.inSub && !armT)) hot(cx - R, cy - R, R * 2, R * 2, ' ');
+    hot(cx - R, cy - R, R * 2, R * 2, aboard ? 'msg:Jump in first: walk off the end of the deck' : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
   }
 
   // A strip of sonar: the seabed profile 80 m each side of the sub, scaled to fit, with the sub at the
