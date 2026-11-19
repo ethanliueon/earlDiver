@@ -50,7 +50,7 @@ export class Beacon {
     }
     this.breach = breach; this.wasLive = live;
     if (this.say && aboard) for (const a of newOnes) if (a.id !== 'hull0') this.say(a.text, a.id === 'contact' ? 'warn' : 'danger');
-    this.el.hidden = !rooms || this.on <= 0;
+    const hid = !rooms || this.on <= 0; if (this.el.hidden !== hid) this.el.hidden = hid; // (5.4) only on a change: each write is a style pass
     if (this.el.hidden) return;
     this.list.innerHTML = '';
     this.draw(live && aboard);

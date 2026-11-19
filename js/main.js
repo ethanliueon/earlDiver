@@ -1,5 +1,7 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { setTouchText } from './touchtext.js';
+import { installFatFinger } from './fatfinger.js';
+installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock } from './world.js';
@@ -45,6 +47,10 @@ import { UI } from './ui.js';
 import { Beacon } from './alarm.js';
 import { Messages } from './messages.js';
 import { updatePet, toggleStay, petRefusal, petOf } from './pets.js';
+// (5.4) many HUD bits set .hidden every frame to what it already is; on a phone each such write still costs a style
+// pass. Writing the value it already has now does nothing.
+{ const d = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'hidden');
+  if (d && d.set && d.get) Object.defineProperty(HTMLElement.prototype, 'hidden', { ...d, set(v) { if (d.get.call(this) !== !!v || typeof v === 'string') d.set.call(this, v); } }); }
 
 const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
@@ -2648,7 +2654,7 @@ const smooth01 = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2
 // (5.4) a phone's frame budget: never more than 60 frames a second (a 90 or 120 Hz screen otherwise doubles the work and
 // the heat), 30 with "Smoother on slow devices" on and on the title; the sea behind a panel or the pause menu is redrawn
 // ten times a second (the game itself keeps its pace)
-let seaDrawnAt = 0;
+let seaDrawnAt = 0, hudDrawnAt = 0;
 function phoneCap(now) {
   if (!hud.touch) return 0;
   return (SETTINGS.fast || g.mode === 'menu') ? 1000 / 30 : 1000 / 60;
@@ -2671,7 +2677,8 @@ function frame(now) {
   update(dt * ts);
   renderer.updateCamera(g, dt);
   // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
-  const covered = !document.getElementById('cabin').hidden || !document.getElementById('tankroom').hidden || !document.getElementById('gallery').hidden;
+  const covered = !document.getElementById('cabin').hidden || !document.getElementById('tankroom').hidden || !document.getElementById('gallery').hidden
+    || (hud.touch && innerHeight > innerWidth); // (5.4) a phone held upright: the turn-your-phone card covers it all
   const behind = hud.touch && (g.paused || (ui.anyOpen && ui.anyOpen())) && g.mode === 'play';
   if (!covered && (!behind || now - seaDrawnAt > 100)) { renderer.render(g); seaDrawnAt = now; }
   // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
@@ -2679,13 +2686,14 @@ function frame(now) {
     const done = renderer.warmSprites(g, 60, true);
     ui.setLoading(0.6 + 0.4 * Math.min(1, (performance.now() - (g.warmFrom || 0)) / 1500), 'Charting the sea');
     if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.setLoading(1, 'Charting the sea'); setTimeout(() => ui.showLoading(false), 250); }
-  } else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
+  } else if (renderer.phone) { if (!behind) renderer.warmSprites(g, realDt < 1 / 50 ? 3 : 1, true); } // (5.4) a phone: only the animals about now (the look-ahead over every species near this depth outgrew its memory and kept rebuilding), none behind a panel
+  else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   weightedCursor(Math.min(0.05, dt));
   // (5.3) in lite mode the HUD (its text, its shadows) is drawn every second frame: it changes slowly, and a
   // phone's fill is better spent on the sea
   hudDt += dt; hudFrame++;
   { const on = !!(hud.touch && g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen()); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
-  hud.draw(g, hudDt); hudDt = 0; // (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
+  if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
   airOver(g);
@@ -2733,12 +2741,17 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // debug hooks for automated testing
-window.__earl = { get g() { return g; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck() };
+window.__earl = { get g() { return g; }, get touch() { return touch; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck() };
 
 // leaving the page: whatever has changed is written to the slot at once
 function saveNow() { if (!profile) return; if (g.mode === 'play') syncProfile(); saveProfile(profile); flushSave(); }
 window.addEventListener('beforeunload', saveNow);
-document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
+// (5.4) out of sight (the phone locked, another app): the sound stops working too, and starts again on coming back
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saveNow();
+  const ac = audio.ac; if (!ac) return;
+  try { if (document.hidden) { if (ac.state === 'running') ac.suspend(); } else if (ac.state === 'suspended') ac.resume(); } catch (e) { /* ignore */ }
+});
 ui.showTitle();
 // (claude-polish) a phone turned upright shows "Turn your phone sideways" over the game: the game pauses under it
 { const mq = window.matchMedia && window.matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 700px)');

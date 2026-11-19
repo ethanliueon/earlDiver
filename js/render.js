@@ -202,6 +202,7 @@ export class Renderer {
   }
 
   render(g) {
+    this.frameNo = (this.frameNo || 0) + 1;
     HUSH = (g.fx && g.fx.hush) || 0;
     const ctx = this.ctx, W = this.W, H = this.H, cam = this.cam, ppm = cam.ppm;
     const t = g.time;
@@ -1200,10 +1201,10 @@ export class Renderer {
     let e = cache.get(key);
     if (!e) {
       const box = Math.ceil(bl * 2.4);
-      e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES) };
+      e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES), seen: this.frameNo };
       cache.set(key, e);
-      if (cache.size > 900) cache.delete(cache.keys().next().value); // keep memory bounded
-    }
+      if (cache.size > (this.phone ? 360 : 900)) cache.delete(cache.keys().next().value); // keep memory bounded (a phone tighter)
+    } else if (e.seen !== this.frameNo) { e.seen = this.frameNo; cache.delete(key); cache.set(key, e); } // (5.4) used: to the back of the queue, so what is on screen is the last to go
     let f = Math.floor((((phase % SPRITE_PERIOD) + SPRITE_PERIOD) % SPRITE_PERIOD) / SPRITE_PERIOD * SPRITE_FRAMES) % SPRITE_FRAMES;
     if (!e.frames[f]) {
       // not built yet: show the nearest frame that is, and let the warm-up queue fill the gap
@@ -1313,41 +1314,13 @@ export class Renderer {
     return arr[f];
   }
 
-  // One animation frame of a species, with the light from above worked in once instead of every
-  // frame on screen: a shade along every belly (baked in), and a bright rim along every back (kept
-  // as its own mask, laid on at the strength the depth and the daylight give).
+  // One animation frame of a species, drawn once and kept.
   buildFrame(e, sp, f) {
     const c = document.createElement('canvas'); c.width = c.height = e.box;
     const x = c.getContext('2d'); x.translate(e.box / 2, e.box / 2);
     e.glows[f] = drawSpecies(x, sp, e.bl, (f / SPRITE_FRAMES) * SPRITE_PERIOD, 1, 0);
-    x.setTransform(1, 0, 0, 1, 0, 0);
-    const off = clamp(Math.round(0.035 * e.bl / fishDrawLen(sp.len)), 1, 3);
-    // a solid outline first (see-through fins would otherwise leave lines across the body)
-    // (grown by a pixel and shrunk back, which also closes hairline seams inside a drawing)
-    // the working canvases are reused from frame to frame: only the frame and its highlight are kept
-    const scratch = this.frameScratch || (this.frameScratch = [0, 1, 2].map(() => document.createElement('canvas')));
-    const mk = (i) => { const k = scratch[i]; if (k.width < e.box || k.height < e.box) { k.width = k.height = Math.max(e.box, k.width); } const kx = k.getContext('2d'); kx.setTransform(1, 0, 0, 1, 0, 0); kx.globalCompositeOperation = 'source-over'; kx.globalAlpha = 1; kx.clearRect(0, 0, k.width, k.height); return k; };
-    const grow = mk(0), gx = grow.getContext('2d');
-    for (const [ox, oy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) { gx.drawImage(c, ox, oy); gx.drawImage(c, ox, oy); }
-    gx.globalCompositeOperation = 'source-in'; gx.fillStyle = '#fff'; gx.fillRect(0, 0, e.box, e.box);
-    const sil = mk(1), sx = sil.getContext('2d');
-    sx.drawImage(grow, 0, 0);
-    sx.globalCompositeOperation = 'destination-in';
-    for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) sx.drawImage(grow, ox, oy);
-    const edge = (dy, col, keep) => {
-      let m;
-      if (keep) { m = document.createElement('canvas'); m.width = m.height = e.box; } else m = mk(2);
-      const mx = m.getContext('2d');
-      mx.drawImage(sil, 0, 0);
-      mx.globalCompositeOperation = 'destination-out'; mx.drawImage(sil, 0, dy);
-      mx.globalCompositeOperation = 'source-in'; mx.fillStyle = col; mx.fillRect(0, 0, e.box, e.box);
-      return m;
-    };
-    if (!e.hi) e.hi = new Array(SPRITE_FRAMES);
-    e.hi[f] = edge(off, 'rgb(225,240,245)', true);
-    const sh = edge(-off, 'rgb(4,10,18)', false);
-    void sh; // (2.3.2: the belly shade is no longer laid on: the animals look better plain, and it switched on
-    // and off as they crossed the size where they stop being drawn as simple school shapes)
+    // (5.4) the rim-light masks and the belly shade built here were no longer drawn (2.3.2): ~25 MB of canvases and
+    // several passes per frame for nothing, gone
     e.frames[f] = c;
   }
 
@@ -1370,7 +1343,7 @@ export class Renderer {
       if (Ld > 150 || Ld < 6 || CACHE_SKIP.has(sp.v.s) || (SIMPLE_SMALL && Ld < 20 && (sp.v.s === 'fish' || sp.v.s === 'shrimp' || sp.v.s === 'hatchet'))) continue;
       const { key, bl } = this.spriteKey(sp, Ld);
       let e = cache.get(key);
-      if (!e) { const box = Math.ceil(bl * 2.4); e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES) }; cache.set(key, e); }
+      if (!e) { const box = Math.ceil(bl * 2.4); e = { box, bl, frames: new Array(SPRITE_FRAMES), glows: new Array(SPRITE_FRAMES), seen: this.frameNo }; cache.set(key, e); if (cache.size > (this.phone ? 360 : 900)) cache.delete(cache.keys().next().value); } // (5.4) the same bound as drawCached
       for (let f = 0; f < SPRITE_FRAMES; f++) {
         if (e.frames[f]) continue;
         this.buildFrame(e, sp, f);

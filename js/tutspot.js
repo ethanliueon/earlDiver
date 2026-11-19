@@ -50,6 +50,21 @@ function visible(el) {
   return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity !== 0;
 }
 
+// writes are held until the frame's update is over, then only what ends up different reaches the page (the parts are
+// hidden and shown again inside one update)
+const PENDING = new Set();
+function quietStyle(n) {
+  const real = n.style, seen = Object.create(null), want = Object.create(null);
+  const p = new Proxy(real, {
+    set(t, k, v) { want[k] = v == null ? '' : String(v); PENDING.add(flush); return true; },
+    get(t, k) { if (k in want) return want[k]; const v = t[k]; return typeof v === 'function' ? v.bind(t) : v; },
+  });
+  const flush = () => { for (const k in want) { if (seen[k] !== want[k]) { seen[k] = want[k]; real[k] = want[k]; } delete want[k]; } };
+  Object.defineProperty(n, 'style', { get: () => p, configurable: true });
+}
+function flushStyles() { for (const f of PENDING) f(); PENDING.clear(); }
+const setClass = (n, c) => { if (n.className !== c) n.className = c; };
+
 export class TutSpot {
   constructor() {
     const el = document.createElement('div'); el.id = 'tut-spot'; el.hidden = true;
@@ -57,6 +72,10 @@ export class TutSpot {
     document.body.appendChild(el);
     this.el = el; this.frame = el.querySelector('.ts-frame'); this.hole = el.querySelector('.ts-hole'); this.arrow = el.querySelector('.ts-arrow');
     this.blocks = [...el.querySelectorAll('.ts-block')];
+    // (5.4) update() lays the parts out again every frame; their style only takes the values that changed, so an
+    // unchanged spotlight costs the page nothing (it was ~400 style writes a second, each a fresh style pass)
+    for (const n of el.querySelectorAll('*')) quietStyle(n);
+    quietStyle(el);
     this.say = el.querySelector('.ts-say'); this.keyBox = el.querySelector('.ts-key');
     this.kbd = this.keyBox.querySelector('kbd'); this.keyText = this.keyBox.querySelector('span');
     this.lastTarget = null;
@@ -86,7 +105,8 @@ export class TutSpot {
   }
   hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
-  update(on, spot, text = null) {
+  update(on, spot, text = null) { this.update0(on, spot, text); flushStyles(); }
+  update0(on, spot, text = null) {
     if (!on) { // (4.12.2) the spotlight fades out rather than vanishing (no bright flash when a step ends)
       LOCK = null; this.lastTarget = null; this.setLine(null); for (const b of this.blocks) b.style.display = 'none';
       if (!this.el.hidden && !this.fadingOut) { this.fadingOut = true; this.el.classList.add('out'); this.fadeT = setTimeout(() => { this.el.hidden = true; this.el.classList.remove('out'); this.fadingOut = false; }, 420); }
@@ -108,7 +128,7 @@ export class TutSpot {
       const r = t.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
       const x = r.left - PAD, y = r.top - PAD, w = r.width + PAD * 2, h = r.height + PAD * 2; this.lastRect = { x, y, w, h }; this.lastSeen = performance.now();
       Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
-      this.hole.classList.toggle('light', !!spot.light); // over the sea, a lighter shade: he may still be swimming
+      if (this.hole.classList.contains('light') !== !!spot.light) this.hole.classList.toggle('light', !!spot.light); // over the sea, a lighter shade: he may still be swimming
       // (4.3.6) on a screen (not over the sea while he plays): only the lit thing can be used
       if (!spot.light) {
         const R = [[0, 0, vw, Math.max(0, y)], [0, y + h, vw, Math.max(0, vh - y - h)], [0, y, Math.max(0, x), h], [x + w, y, Math.max(0, vw - x - w), h]];
@@ -119,13 +139,13 @@ export class TutSpot {
       // the arrow and the line: above the thing when there is room, otherwise below it
       const above = !spot.below && y > 100, cx = Math.max(110, Math.min(vw - 110, x + w / 2));
       this.arrow.style.display = 'block';
-      this.arrow.className = 'ts-arrow ' + (above ? 'down' : 'up');
+      setClass(this.arrow, 'ts-arrow ' + (above ? 'down' : 'up'));
       this.arrow.style.left = cx + 'px';
       this.arrow.style.top = (above ? y - 30 : y + h + 8) + 'px';
       if (spot.card) { // the card beside the lit thing (below it when there is room, else above), the arrow hidden
         this.arrow.style.display = 'none'; this.cardId = spot.card.id;
         const p = this.card.querySelector('p'); if (p.textContent !== spot.card.text) p.textContent = spot.card.text;
-        this.card.style.display = 'block'; const cw = Math.min(320, vw - 24), ch = this.card.offsetHeight || 110;
+        this.card.style.display = 'block'; flushStyles(); const cw = Math.min(320, vw - 24), ch = this.card.offsetHeight || 110;
         const left = Math.max(12, Math.min(vw - cw - 12, x + w / 2 - cw / 2)), top = y + h + 14 + ch < vh ? y + h + 14 : Math.max(12, y - ch - 14);
         Object.assign(this.card.style, { left: left + 'px', top: top + 'px', width: cw + 'px' });
       }
@@ -151,8 +171,8 @@ export class TutSpot {
         if (h) {
           const x = h.x - PAD, y = h.y - PAD, w = h.w + PAD * 2, hh = h.h + PAD * 2;
           Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: hh + 'px' });
-          this.hole.classList.add('light');
-          const above = y > 100; this.arrow.style.display = 'block'; this.arrow.className = 'ts-arrow ' + (above ? 'down' : 'up');
+          if (!this.hole.classList.contains('light')) this.hole.classList.add('light');
+          const above = y > 100; this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow ' + (above ? 'down' : 'up'));
           this.arrow.style.left = Math.max(40, Math.min(innerWidth - 40, x + w / 2)) + 'px'; this.arrow.style.top = (above ? y - 30 : y + hh + 8) + 'px';
         }
         return;

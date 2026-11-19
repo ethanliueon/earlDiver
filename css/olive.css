@@ -716,3 +716,5 @@ html.touch #settings .set-controls, html.touch #settings .set-group:has(.set-con
 /* (5.4) phones: a blur behind a panel is worked out again every frame over the moving sea; plain tint instead */
 html.touch *, html.touch *::before, html.touch *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 html.touch #msgs .msg { filter: none !important; }
+/* (5.4) the turn-your-phone card at a readable size on the phone's wide page */
+#rotate > * { zoom: var(--fk, 1); }

@@ -8,6 +8,7 @@ const MUSIC_LEN = [75, 90];    // (3.0.24) a piece plays at most ~90 s, then fad
 //   main      "Polaroid II - deeper (B)": the main theme, everywhere else
 //   bathy / open  "Bathyscaphe" or "Open Water": in the sub, settled below 200 m (to the bottom of the map)
 //   musicbox  "Music box": starts by itself on coming to Dave's Haul
+const COARSE = !!(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
 const THEMES = [
   { id: 'sunlit', file: 'assets/audio/polaroid_melodic.mp3' },
   { id: 'main', file: 'assets/audio/polaroid_twilight.mp3' },
@@ -166,8 +167,12 @@ export class Audio {
     if (m.on || !id) return;
     if (!this.musicBufs[id]) { this.loadTheme(id); this.musicWanted = id; return; }
     if (this.musicSrc && this.musicSrc.id === id && m.level > 0.05) { m.on = true; m.playedT = 0; return; } // still fading out: it swells back
+    const was = this.musicSrc ? this.musicSrc.id : null;
     if (this.musicSrc) { this.fadeAway(this.musicSrc, 1.5); this.musicSrc = null; }
-    this.musicSrc = this.playSource(id, 0); m.on = true; m.playLen = MUSIC_LEN[0] + Math.random() * (MUSIC_LEN[1] - MUSIC_LEN[0]); this.musFirstStarted = true; // (3.0.1) 2½ to 5 minutes, then it fades; (3.0.3) it always rises from silence
+    this.musicSrc = this.playSource(id, 0);
+    // (5.4) a decoded piece is ~45 MB; a phone keeps only the one playing and the one fading out (the file stays in
+    // the browser's cache, so another is decoded again when it is wanted)
+    if (COARSE) for (const k of Object.keys(this.musicBufs)) if (k !== id && k !== was && this.musicBufs[k]) delete this.musicBufs[k]; m.on = true; m.playLen = MUSIC_LEN[0] + Math.random() * (MUSIC_LEN[1] - MUSIC_LEN[0]); this.musFirstStarted = true; // (3.0.1) 2½ to 5 minutes, then it fades; (3.0.3) it always rises from silence
   }
   // a good moment (a sale, a rare find, getting home): once the rest is over and all is calm, the music comes now
   // (2.9.2) as before 2.6.9: a new dive, coming back from a death, and getting home always bring it in

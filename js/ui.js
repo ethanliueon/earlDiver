@@ -568,7 +568,7 @@ export class UI {
       // (olive) the door painted once as a picture (tools/olive_kit.py) for the layout it is always laid out at; any other
       // layout falls back to the one drawn here
       const painted = W2 === 1240 && H2 === 820 && Math.abs(split - 605) < 3;
-      panel.style.backgroundImage = painted ? 'url(assets/ui/olive/locker-door.jpg)' : `url(${lockerTexture(W2, H2, { split })})`; panel.style.backgroundSize = '100% 100%';
+      panel.style.backgroundImage = painted ? (window.__fingerK ? 'url(assets/ui/olive/locker-door-m.jpg)' : 'url(assets/ui/olive/locker-door.jpg)') : `url(${lockerTexture(W2, H2, { split })})`; panel.style.backgroundSize = '100% 100%';
     });
     body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.fishSel = null; this.petSel = false; this.phSel = null; this.renderInventory(); }));
     if (tab === 'catch') this.catchWire(g); else this.equipWire(P, g);
