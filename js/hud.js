@@ -224,7 +224,7 @@ export class Hud {
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
     // (5.3) sized from the finger, not the screen: CSS pixels (about 0.18 mm each on a phone). The main button about
     // 2 cm across, the others about 1.4 cm, never below Apple's 44 pt
-    const u = this.c.width / window.innerWidth * (window.__fingerK || 1), pad = 16 * u, R = 36 * u, cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm
+    const u = this.c.width / window.innerWidth * (window.__fingerK || 1.3), pad = 16 * u, R = 36 * u, cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm // (5.4) a tablet (no page scaling): 1.3x, so the small buttons reach 44 pt
     const held = this.held || new Set();
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
     const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
@@ -613,7 +613,7 @@ export class Hud {
 
     if (!aboard) {
     // ---------- tools and specimens, bottom centre ----------
-    if (g.profile && g.mode === 'play' && !dying) this.drawGear(g, W, H, s, dt);
+    if (g.profile && g.mode === 'play' && !dying && !this.panel) this.drawGear(g, W, H, s, dt); // (5.4) touch: not under an open panel
 
     // ---------- marked: a symbol, the red eye, bottom left ----------
     // each good deed fades it a step
