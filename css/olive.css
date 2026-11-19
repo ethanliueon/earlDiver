@@ -490,3 +490,13 @@ html body #inventory .inv-catch2 .fc.locked:not(#_a) { opacity: 1 !important;
 html body #inventory .inv-catch2 .fc.locked:not(#_a) > i { display: none !important; }
 html body #inventory .inv-catch2 .fc.locked::before { display: none !important; }
 html body #inventory .inv-catch2 .fc:not(#_a):not(#_b) { border-image: none !important; border: 0 !important; }
+
+/* 5.0.1: what the catch is worth, painted straight onto the steel again: big, faded cream paint, chipped and brushed,
+   in the game's own lettering (its size set inline so a long sum still fits beside the pet slot) */
+html body #inventory .inv-catch2 .worth-paint:not(#_a):not(#_b) { display: block !important; background: none !important; box-shadow: none !important; padding: 0 !important; border-radius: 0;
+  font-family: var(--o-title) !important; font-weight: 700 !important; font-size: var(--wp, 80px) !important; line-height: 0.86 !important; letter-spacing: 0.01em !important; color: rgba(226, 218, 192, 0.5) !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45), 0 -1px 0 rgba(255, 255, 240, 0.06) !important; margin: 0 4px 0 auto !important; align-self: flex-end; position: relative;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='discrete' tableValues='0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' fill='%23000'/%3E%3C/svg%3E"), repeating-linear-gradient(92deg, #000 0 7px, rgba(0,0,0,0.78) 7px 9px, #000 9px 15px);
+  -webkit-mask-composite: source-in; mask-composite: intersect;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='4'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='discrete' tableValues='0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' fill='%23000'/%3E%3C/svg%3E"), repeating-linear-gradient(92deg, #000 0 7px, rgba(0,0,0,0.78) 7px 9px, #000 9px 15px); }
+html body #inventory .inv-catch2 .worth-paint:not(#_a):not(#_b)::before { content: 'WORTH ABOUT' !important; display: block; font: 700 13px var(--o-title) !important; letter-spacing: 0.22em; color: rgba(226, 218, 192, 0.55); margin: 0 0 4px 3px; text-align: left; }

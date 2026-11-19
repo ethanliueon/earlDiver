@@ -602,7 +602,7 @@ export class UI {
     if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
     const petSlot = `<div class="pet-slot${pet ? ' on' : ''}" title="${pet ? psp.name + ': click for its card' : 'At the surface, drag a fish here: 60 cm to 1.5 m, or any legend'}"><span class="ps-lbl">Pet</span>${pet ? `<img src="${this.fitPics.get(psp.id)}" alt=""><b>${psp.name}</b><small>${P.petStay ? 'Staying (H)' : 'Following (H)'}</small>` : '<em>Drag a fish here at the surface</em>'}</div>`;
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
-      + `<div class="catch-row">${petSlot}<div class="worth-paint" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
+      + `<div class="catch-row">${petSlot}<div class="worth-paint" style="--wp:${Math.min(104, Math.floor(400 / (money(total).length * 0.52)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
       + (hasPh ? this.photoBoxes(P, g) : '') + `</div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
