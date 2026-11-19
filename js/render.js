@@ -661,6 +661,9 @@ export class Renderer {
       bctx.translate(bw * 0.45, bh * 0.82);
       const bcos = Math.cos(BOAT.yaw || 0), bsx = Math.sign(bcos || 1) * Math.max(0.06, Math.abs(bcos));
       crane = drawBoat(bctx, 14 * ppm, t, g.sub, bsx < 0, { tutDoor: !!(g.tut && g.tut.door) });
+      // (4.28) weathering laid over the drawing, only where the boat is: grain, grime settling low, rust running down
+      // from the deck edge, a darker band at the waterline; painted once per size, one image per frame
+      { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(bw, bh, bsx < 0), 0, 0); bctx.globalCompositeOperation = 'source-over'; }
       const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
       if (dimB > 0.01) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, bw, bh); }
       ctx.save(); ctx.scale(bsx, 1); ctx.drawImage(bc, -bw * 0.45, -bh * 0.82); ctx.restore(); // (3.0.0) turned with her heading
@@ -1862,6 +1865,24 @@ export class Renderer {
     this.kelpBack = layers;
   }
 
+  boatWear(w, h, flip) {
+    const key = w + 'x' + h + (flip ? 'f' : '');
+    if (this.boatWearC && this.boatWearC.key === key) return this.boatWearC.c;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+    let sd = 4242; const R = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    // fine grain
+    const id = x.createImageData(w, h), d = id.data;
+    for (let i = 0; i < d.length; i += 4) { const v = R(); d[i] = d[i + 1] = d[i + 2] = v < 0.5 ? 0 : 255; d[i + 3] = Math.floor(Math.abs(v - 0.5) * 34); }
+    x.putImageData(id, 0, 0);
+    // grime: soft dark blotches, more of them low on the hull
+    for (let k = 0; k < 70; k++) { const px = R() * w, py = h * (0.35 + Math.pow(R(), 0.6) * 0.6), r = (0.01 + R() * 0.04) * w; const gr = x.createRadialGradient(px, py, 0, px, py, r); gr.addColorStop(0, `rgba(40,34,24,${(0.05 + R() * 0.12).toFixed(3)})`); gr.addColorStop(1, 'rgba(40,34,24,0)'); x.fillStyle = gr; x.fillRect(px - r, py - r, r * 2, r * 2); }
+    // rust runs from the deck edge downward
+    for (let k = 0; k < 26; k++) { const px = w * (0.12 + R() * 0.72), py = h * (0.5 + R() * 0.12), len = h * (0.05 + R() * 0.14), lw = Math.max(1, w * (0.0015 + R() * 0.003)); const gr = x.createLinearGradient(0, py, 0, py + len); gr.addColorStop(0, `rgba(122,62,28,${(0.25 + R() * 0.3).toFixed(3)})`); gr.addColorStop(1, 'rgba(122,62,28,0)'); x.fillStyle = gr; x.fillRect(px, py, lw, len); }
+    // the waterline: a dark stain band, and the light catching the top edges
+    const wl = x.createLinearGradient(0, h * 0.78, 0, h); wl.addColorStop(0, 'rgba(20,24,18,0)'); wl.addColorStop(0.35, 'rgba(20,24,18,0.28)'); wl.addColorStop(1, 'rgba(20,24,18,0.4)'); x.fillStyle = wl; x.fillRect(0, h * 0.78, w, h * 0.22);
+    const tl = x.createLinearGradient(0, 0, 0, h * 0.5); tl.addColorStop(0, 'rgba(255,246,226,0.08)'); tl.addColorStop(1, 'rgba(255,246,226,0)'); x.fillStyle = tl; x.fillRect(0, 0, w, h * 0.5);
+    this.boatWearC = { key, c }; return c;
+  }
   drawKelpBackdrop(g, ppm, t) {
     const cam = this.cam;
     if (cam.x < EAST + 700 || cam.x > WORLD_W || cam.y > 120) return;
@@ -1870,7 +1891,7 @@ export class Renderer {
     for (const L of this.lite ? this.kelpBack.slice(1) : this.kelpBack) { // lite: only the nearer layer
       const scale = ppm * L.f / L.PX;               // image pixels -> screen pixels
       const x0 = W / 2 + (L.X0 - cam.x) * ppm * L.f; // further layers slide slower and look smaller
-      const bands = 8, bh = L.c.height / bands;
+      const bands = 48, bh = L.c.height / bands; // (4.28) thin bands: neighbouring offsets differ by a pixel, so no visible seams
       for (let b = 0; b < bands; b++) {
         // sway grows toward the tops of the stalks (top bands)
         const up = 1 - b / bands;

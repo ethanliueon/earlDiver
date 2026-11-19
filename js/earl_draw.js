@@ -963,7 +963,7 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   ctx.strokeStyle = '#d8d4c8'; ctx.lineWidth = 0.8 * u;
   ctx.beginPath(); ctx.moveTo(-56 * u, -16 * u); ctx.quadraticCurveTo(-20 * u, -10.5 * u, 20 * u, -10.5 * u); ctx.lineTo(46 * u, -11.5 * u); ctx.stroke();
   // name on the bow, hawse pipe and anchor
-  ctx.fillStyle = 'rgba(40,36,30,0.7)'; ctx.font = `bold ${3 * u}px Georgia, serif`;
+  ctx.fillStyle = 'rgba(36,32,26,0.78)'; ctx.font = `700 ${3.4 * u}px "Barlow Condensed", "Arial Narrow", sans-serif`; if ('letterSpacing' in ctx) ctx.letterSpacing = `${0.35 * u}px`; // (4.28) painted on in the game's own letters
   if (mirrored) { const tw = ctx.measureText('MARGARET').width; ctx.save(); ctx.translate(-47 * u + tw / 2, 0); ctx.scale(-1, 1); ctx.fillText('MARGARET', -tw / 2, -7.5 * u); ctx.restore(); } else ctx.fillText('MARGARET', -47 * u, -7.5 * u);
   ctx.fillStyle = '#2a2624'; ctx.beginPath(); ctx.ellipse(-50 * u, -11.5 * u, 1 * u, 0.8 * u, 0, 0, TAU); ctx.fill();
   ctx.strokeStyle = '#3a3630'; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.moveTo(-50 * u, -11 * u); ctx.lineTo(-50.5 * u, -6 * u); ctx.stroke();

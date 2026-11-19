@@ -497,30 +497,40 @@ export class Hud {
     if (g.profile && g.mode === 'play' && !dying) this.drawGear(g, W, H, s, dt);
 
     // ---------- marked: a symbol, the red eye, bottom left ----------
-    // A pointed almond in flat orange-red with a vertical black slit and a soft glow. The slit slowly
-    // narrows and widens; each good deed fades it a step.
+    // each good deed fades it a step
     if (g.entity && g.entity.marked && !dying) {
       const calm = clamp((g.entity.calm || 0) / 60, 0, 1);
       const a = 1 - calm * 0.65;
-      const ex = pad + 52 * s, ey = H - pad - 34 * s, ew = 48 * s, eh = 30 * s;
-      const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.5);
-      og.addColorStop(0, `rgba(255,60,30,${(0.28 * a).toFixed(3)})`); og.addColorStop(1, 'rgba(255,60,30,0)');
-      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ex, ey, ew * 1.5, 0, TAU); ctx.fill();
-      // the almond: two arcs meeting in sharp points at either side
-      ctx.fillStyle = `rgba(240,52,28,${a.toFixed(3)})`;
-      ctx.beginPath();
-      ctx.moveTo(ex - ew, ey);
-      ctx.quadraticCurveTo(ex, ey - eh * 1.4, ex + ew, ey);
-      ctx.quadraticCurveTo(ex, ey + eh * 1.4, ex - ew, ey);
-      ctx.closePath(); ctx.fill();
-      // the vertical slit, pointed at top and bottom
-      const sw = eh * (0.22 + 0.08 * Math.sin(g.time * 0.9));
-      ctx.fillStyle = `rgba(8,2,2,${(0.97 * a).toFixed(3)})`;
-      ctx.beginPath();
-      ctx.moveTo(ex, ey - eh * 0.6);
-      ctx.quadraticCurveTo(ex + sw, ey, ex, ey + eh * 0.6);
-      ctx.quadraticCurveTo(ex - sw, ey, ex, ey - eh * 0.6);
-      ctx.closePath(); ctx.fill();
+      // (4.28) a real eye in the dark, not a sign: a wet dark lid line, an iris of deep amber going to blood red with
+      // fibres in it, a slit that breathes, a point of light on the cornea; it opens slowly and blinks now and then
+      const ex = pad + 46 * s, ey = H - pad - 30 * s, ew = 40 * s, eh = 24 * s;
+      const blink = (g.time % 7.3) < 0.18 ? Math.abs(Math.sin((g.time % 7.3) / 0.18 * Math.PI)) : 0, open = (1 - blink) * (0.85 + 0.15 * Math.sin(g.time * 0.5));
+      ctx.save();
+      const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.7);
+      og.addColorStop(0, `rgba(160,20,10,${(0.22 * a).toFixed(3)})`); og.addColorStop(1, 'rgba(160,20,10,0)');
+      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ex, ey, ew * 1.7, 0, TAU); ctx.fill();
+      const lid = () => { ctx.beginPath(); ctx.moveTo(ex - ew, ey); ctx.bezierCurveTo(ex - ew * 0.45, ey - eh * 1.15 * open, ex + ew * 0.5, ey - eh * 1.05 * open, ex + ew, ey + eh * 0.05);
+        ctx.bezierCurveTo(ex + ew * 0.5, ey + eh * 0.95 * open, ex - ew * 0.45, ey + eh * 1.0 * open, ex - ew, ey); ctx.closePath(); };
+      lid(); ctx.save(); ctx.clip();
+      // the white of it, dark and bloodshot
+      ctx.fillStyle = `rgba(52,14,10,${a.toFixed(3)})`; ctx.fillRect(ex - ew, ey - eh * 1.2, ew * 2, eh * 2.4);
+      // the iris: amber in the middle, red, then almost black at its rim
+      const ir = eh * 1.05, ig = ctx.createRadialGradient(ex + ew * 0.05, ey, 0, ex + ew * 0.05, ey, ir);
+      ig.addColorStop(0, `rgba(255,170,60,${a.toFixed(3)})`); ig.addColorStop(0.45, `rgba(214,52,22,${a.toFixed(3)})`); ig.addColorStop(0.85, `rgba(110,14,8,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(30,4,2,${a.toFixed(3)})`);
+      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex + ew * 0.05, ey, ir, 0, TAU); ctx.fill();
+      ctx.strokeStyle = `rgba(255,190,110,${(0.22 * a).toFixed(3)})`; ctx.lineWidth = Math.max(1, 0.8 * s);
+      for (let k = 0; k < 22; k++) { const an = k / 22 * TAU + 0.2 * Math.sin(k * 3.1); ctx.beginPath(); ctx.moveTo(ex + ew * 0.05 + Math.cos(an) * ir * 0.25, ey + Math.sin(an) * ir * 0.25); ctx.lineTo(ex + ew * 0.05 + Math.cos(an) * ir * (0.7 + 0.2 * Math.sin(k * 7.7)), ey + Math.sin(an) * ir * (0.7 + 0.2 * Math.sin(k * 7.7))); ctx.stroke(); }
+      // the slit
+      const sw = eh * (0.16 + 0.07 * Math.sin(g.time * 0.9));
+      ctx.fillStyle = `rgba(4,1,1,${a.toFixed(3)})`; ctx.beginPath(); ctx.moveTo(ex + ew * 0.05, ey - ir * 0.92); ctx.quadraticCurveTo(ex + ew * 0.05 + sw, ey, ex + ew * 0.05, ey + ir * 0.92); ctx.quadraticCurveTo(ex + ew * 0.05 - sw, ey, ex + ew * 0.05, ey - ir * 0.92); ctx.fill();
+      // shadow from the upper lid, and a point of wet light
+      const sh = ctx.createLinearGradient(0, ey - eh, 0, ey); sh.addColorStop(0, 'rgba(0,0,0,0.75)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = sh; ctx.fillRect(ex - ew, ey - eh * 1.2, ew * 2, eh * 1.2);
+      ctx.fillStyle = `rgba(255,240,220,${(0.75 * a).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(ex - ew * 0.18, ey - eh * 0.38, 2.4 * s, 1.6 * s, -0.4, 0, TAU); ctx.fill();
+      ctx.restore();
+      // the lid line: dark and wet
+      lid(); ctx.strokeStyle = `rgba(10,3,2,${a.toFixed(3)})`; ctx.lineWidth = 2.2 * s; ctx.stroke();
+      ctx.restore();
     }
 
     // ---------- what the tool can reach ----------
