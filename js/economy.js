@@ -151,12 +151,11 @@ export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
     desc: 'Thrown (Q). The thing in the deep follows its light for a while. You carry one.' },
   necklace: { name: 'Glow stick', price: 370, max: 1, desc: 'A chemical glow stick on a lanyard, snapped to light (E): 90 s of warm amber light around Earl, and in the sub it lights her and the water round her. It does not keep anything away, and a light can be seen. Used up once snapped.' },
-  tag: { name: 'Basic tags', price: 5, max: 3, needs: 'tagger', desc: 'Research darts for the tag gun: for common, uncommon and rare animals, and big tag-only animals under two metres.' },
-  tagAdv: { name: 'Advanced tags', price: 200, max: 3, needs: 'tagger', desc: 'Satellite tags with a wider spread and a faint glow: needed for exotic, legendary and undocumented animals, and anything tag-only two metres long or more.' },
+  film: { name: 'Film', price: 4, max: 5, needs: 'camera', desc: 'One exposure each. The camera holds as many as it takes; every picture uses one, sharp or not.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
-export const supplyMax = (P, k) => k === 'airTank' ? 2 : Math.min(99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.12.0) two backup tanks, always // (4.5.0) two backup tanks at most
+export const supplyMax = (P, k) => k === 'film' ? (owns(P, 'camera') ? gear(P, 'cam').shots : 0) : k === 'airTank' ? 2 : Math.min(99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.12.0) two backup tanks, always // (4.5.0) two backup tanks at most
 
 // ---------------- prices ----------------
 // What the buyers on the radio pay for each kind of thing, before the market moves.
@@ -320,9 +319,7 @@ export const UPGRADE_LINE = {
 
 // one-off gear: bought once, then its stats are levelled above
 export const GEAR = {
-  slurp: { name: 'Slurp gun', price: 75, desc: 'A clear tube and a spring plunger. Sucks in small fish, even fast ones. Key 2.' },
-  tagger: { name: 'Tag gun', price: 160, desc: 'Puts a research tag in sharks, billfish, whales: anything too big to bring up. Key 3.' },
-  camera: { name: 'Camera', price: 50, desc: 'The institute pays for the first photograph of every species and rare form. Key 4.' },
+  camera: { name: 'Camera', price: 50, desc: 'Hold still, keep the animal in frame, and sell the picture at the boat. Key 2.' },
   lowlight: { line: 'See in the dark without being seen.', name: 'Low-light sensor', price: 2400, needs: 'camera', desc: 'No flash any more: nothing in the dark sees you take the picture.' },
   arm: { name: 'Claw hydraulics', price: 2400, desc: 'Works the old claw under the sub: from inside, Space reaches for an animal; time the grip.' },
 };
@@ -452,8 +449,7 @@ export function upgradeCost(P, id) {
   return roundCost(statStepCost(id, lv(P, id)));
 }
 export const owns = (P, k) => {
-  if (k === 'slurp') return !!worn(P, 'slurp');
-  if (k === 'tagger') return !!worn(P, 'tag');
+  if (k === 'slurp' || k === 'tagger') return false; // (5.0) gone
   if (k === 'camera') return !!worn(P, 'cam');
   if (k === 'lowlight') { const c = worn(P, 'cam'); return !!c && c.flash === false; }
   return !!(P.gear && P.gear[k]);

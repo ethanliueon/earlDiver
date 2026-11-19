@@ -76,17 +76,15 @@ export class Hud {
     };
     const G = (k) => gear(P, k);
     const tools = [['1', 'net', G('net').look, G('net').name]];
-    if (owns(P, 'slurp')) tools.push(['2', 'slurp', G('slurp').look, G('slurp').name]);
-    if (owns(P, 'tagger')) tools.push(['3', 'tag', G('tag').look, G('tag').name]);
-    if (owns(P, 'camera')) tools.push(['4', 'cam', G('cam').look, G('cam').name]);
+    if (owns(P, 'camera')) tools.push(['2', 'cam', G('cam').look, G('cam').name]);
     const tr = P.traps || {};
     const ownedTraps = ['pot', 'fish', 'steel', 'cage'].reduce((a, k) => a + (tr[k] || 0), 0);
-    if (ownedTraps > 0) tools.push(['5', 'trap', ['pot', 'fish', 'steel', 'cage'].findIndex((k) => tr[k] > 0), 'Traps']);
+    if (ownedTraps > 0) tools.push(['3', 'trap', ['pot', 'fish', 'steel', 'cage'].findIndex((k) => tr[k] > 0), 'Traps']);
     const sw = 84 * s, sh = 46 * s, gap = 8 * s;
     const total = tools.length * sw + (tools.length - 1) * gap;
     let x = W / 2 - total / 2;
     const y = H - sh - 22 * s;
-    const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'slurp' && owns(P, 'slurp') ? 'slurp' : g.toolSel === 'tag' && owns(P, 'tagger') ? 'tag' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
+    const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
       // (olive) a raised plate of the panels' painted steel with a well pressed into it; the tool in hand ringed in
@@ -99,10 +97,10 @@ export class Hud {
       ctx.globalAlpha = 1;
       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       keyCap(ctx, x - 5 * s, y - 7 * s, key, s * 0.6); ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.shots ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${g.shots}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
+      if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.items.film ? 'rgba(216,236,230,0.8)' : '#e0524a'; ctx.fillText(`${g.items.film || 0}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       if (kind === 'trap') { const free = ownedTraps - g.traps.length; ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
-      if (kind === 'tag' && (g.tags.length)) { ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(232,176,42,0.9)'; ctx.fillText(`${g.tags.length}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       // sweep / reload progress along the bottom edge
+      if (on && kind === 'cam' && g.photo) { ctx.fillStyle = 'rgba(200,230,215,0.7)'; ctx.fillRect(x + 4 * s, y + sh - 4 * s, (sw - 8 * s) * clamp(g.photo.t / g.photo.dur, 0, 1), 2 * s); }
       if (on && g.capture && g.capture.kind === kind) {
         ctx.fillStyle = 'rgba(200,230,215,0.7)';
         ctx.fillRect(x + 4 * s, y + sh - 4 * s, (sw - 8 * s) * clamp(g.capture.t / g.capture.dur, 0, 1), 2 * s);
@@ -309,28 +307,32 @@ export class Hud {
       const dm = clamp((e.y - 120) / 1400, 0, 1), lit = 1 - dm * 0.42;
       const fl = past && Math.random() < 0.06 ? 0.35 : 1;
       const cr = Math.round(lerp(239, 170, dm)), cg = Math.round(lerp(232, 192, dm)), cb = Math.round(lerp(212, 204, dm));
-      const ink = (a) => warnD ? `rgba(255,140,110,${(a * fl).toFixed(3)})` : `rgba(${cr},${cg},${cb},${(a * lit * fl).toFixed(3)})`;
+      const ink = (a) => warnD ? `rgba(240,84,72,${(a * fl).toFixed(3)})` : `rgba(${cr},${cg},${cb},${(a * lit * fl).toFixed(3)})`;
       ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 1;
       const base = pad + 44 * s;
       ctx.font = `600 ${24 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText('m', rx0, base);
       ctx.font = `600 ${58 * s}px ${HUDT}`; ctx.fillStyle = ink(1); ctx.fillText(String(Math.round(Math.max(0, e.y))), rx0 - 24 * s, base);
       ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
       // a thin line with its painted icon at the left
-      const lineW = 196 * s, lx = rx0 - lineW, lh = 6 * s;
+      // (5.0) a short line with its mark in the same letters as the depth: O2 for his air, HULL for the sub's
+      const lineW = 132 * s, lx = rx0 - lineW, lh = 6 * s;
       const line = (name, y, frac, col, pulse = 1) => {
-        const isz = 24 * s, im = hudIcon(name);
-        if (im) { ctx.save(); ctx.globalAlpha = 0.9 * lit; ctx.drawImage(im, lx - isz - 6 * s, y + lh / 2 - isz / 2, isz, isz); ctx.restore(); }
+        ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4 * s;
+        ctx.fillStyle = `rgba(${cr},${cg},${cb},${(0.8 * lit).toFixed(3)})`;
+        if (name === 'air') { ctx.font = `600 ${15 * s}px ${HUDT}`; const sw2 = ctx.measureText('2').width * 0.7; ctx.fillText('O', lx - 8 * s - sw2 - 1 * s, y + lh / 2 + 1 * s); ctx.font = `600 ${10 * s}px ${HUDT}`; ctx.fillText('2', lx - 8 * s, y + lh / 2 + 5 * s); }
+        else { ctx.font = `600 ${12 * s}px ${HUDT}`; ctx.fillText('HULL', lx - 8 * s, y + lh / 2 + 1 * s); }
+        ctx.restore();
         ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.roundRect(lx, y, lineW, lh, lh / 2); ctx.fill();
         ctx.strokeStyle = `rgba(255,255,255,${(0.14 * lit).toFixed(3)})`; ctx.lineWidth = 1; ctx.stroke();
         ctx.globalAlpha = lit * pulse; ctx.fillStyle = `rgb(${col.join(',')})`; ctx.shadowColor = `rgba(${col.join(',')},0.6)`; ctx.shadowBlur = 6 * s;
         ctx.beginPath(); ctx.roundRect(lx + 1, y + 1, Math.max(lh - 2, (lineW - 2) * clamp(frac, 0, 1)), lh - 2, (lh - 2) / 2); ctx.fill(); ctx.restore();
       };
-      const oc = o2 > 0.25 ? [96, 172, 226] : o2 > 0.1 ? [232, 170, 70] : [226, 66, 52];
+      const oc = o2 > 0.25 ? [96, 172, 226] : [226, 66, 52]; // (5.0) blue, then red: no orange
       const ay = base + 16 * s;
       line('air', ay, o2, oc, o2 < 0.1 || g.noAir ? 0.55 + 0.45 * Math.sin(g.time * 10) : 1);
-      if (e.inSub) { const hi = clamp(g.sub.hull, 0, 1); line('hull', ay + 22 * s, hi, hi < 0.4 ? [224, 80, 58] : hi < 0.75 ? [232, 176, 64] : [130, 196, 164]); }
+      if (e.inSub) { const hi = clamp(g.sub.hull, 0, 1); line('hull', ay + 22 * s, hi, hi < 0.5 ? [226, 66, 52] : [130, 196, 164]); }
       yy = ay + (e.inSub ? 22 * s : 0) + lh + 18 * s;
-      if ((g.loadKg || 0) > 10 && !e.inSub) notes.push([`Heavy: ${Math.round(g.loadKg)} kg`, '#ff9a6a']);
+      if ((g.loadKg || 0) > 10 && !e.inSub) notes.push([`Heavy: ${Math.round(g.loadKg)} kg`, '#f06a5c']);
       const py = pad - 8 * s;
       // hidden: a small leaf at the plate's left
       if (g.concealed) {
@@ -343,13 +345,13 @@ export class Hud {
     const sec = Math.max(0, Math.floor(left));
     const flash = (a, b2) => (Math.sin(g.time * 8) > 0 ? a : b2);
     if (g.noAir && !e.atSurface) { /* (4.28) the message line says it; not twice */ }
-    else if (!e.atSurface && o2 < 0.25) notes.push([sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air` : `${sec} s of air`, '#ff9a6a']);
+    else if (!e.atSurface && o2 < 0.25) notes.push([sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air` : `${sec} s of air`, '#f06a5c']);
     // (4.28) no pressure multiplier: the air line draining faster says it
     if (e.inSub) {
       const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1);
       if (g.sub.failing != null) notes.push(['Hull failing!', flash('#ff4a3a', '#a02a20')]);
-      else if (r > 0.9) notes.push([`Near her ${g.sub.rated} m`, '#ff9a6a']);
-      else if (hi < 0.99) notes.push(['Hull leaking', '#ff9a6a']);
+      else if (r > 0.9) notes.push([`Near her ${g.sub.rated} m`, '#f06a5c']);
+      else if (hi < 0.99) notes.push(['Hull leaking', '#f06a5c']);
     }
     const ap = g.autopilot;
     if (ap && e.inSub && g.homeRun) notes.push(['Autopilot home', '#e6dec4']);
@@ -360,7 +362,7 @@ export class Hud {
       else if (ap.holding && ap.remaining < 3) txt = `Sub holding at ${Math.round(g.sub.y)} m`;
       else if (ap.state === 'waiting') txt = `Sub ${Math.round(dsub)} m away`;
       else txt = `Sub coming, ${Math.ceil(ap.eta || 0)} s`;
-      notes.push([txt, ap.holding ? '#ff9a6a' : '#e6dec4']);
+      notes.push([txt, ap.holding ? '#f06a5c' : '#e6dec4']);
     }
     // the seafloor sonar (a fitted extra): under the instrument, the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy + 4 * s, s); yy += 88 * s; }
@@ -543,7 +545,7 @@ export class Hud {
     // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
     // (4.0.0) what the tool can reach, said below (the prompts are all drawn together, after this)
     const capOn = g.capPrompt && !capHidden && !dying && !g.kill && !g.tutHidePrompts; // (4.4.0) the tutorial shows its own
-    this.capWant = capOn ? [g.capPrompt, g.capRarity ? g.capRarity.col : g.capPrompt.startsWith('Space') ? '#d6ecce' : '#f0c2a6', g.capIcon] : null; // (4.0.6) a name alone, in its rarity's colour
+    this.capWant = capOn ? [g.capPrompt, g.capRarity ? g.capRarity.col : g.capPrompt.startsWith('Space') ? '#d6ecce' : '#ece6d2', g.capIcon] : null; // (4.0.6) a name alone, in its rarity's colour
     }
     // ---------- interaction prompts ----------
     // (4.0.0) both prompts fade in and out, and one crossfades into the next; the shade behind them is one
@@ -590,7 +592,7 @@ export class Hud {
       ctx.font = `${fs}px ${GAME}`;
       ctx.shadowColor = `rgba(0,0,0,${0.7 * a})`; ctx.shadowBlur = 6 * s;
       if (tt.kind.startsWith('rar:')) { ctx.globalAlpha = a; ctx.fillStyle = tt.kind.slice(4); }
-      else ctx.fillStyle = tt.kind === 'warn' ? `rgba(255,150,110,${a})` : tt.kind === 'note' ? `rgba(240,226,190,${a})` : `rgba(230,238,236,${a})`;
+      else ctx.fillStyle = tt.kind === 'warn' ? `rgba(244,110,98,${a})` : tt.kind === 'note' ? `rgba(240,226,190,${a})` : `rgba(230,238,236,${a})`;
       ctx.fillText(tt.text, W / 2, ty); // (3.0.0: no ×N on a repeated line: it just stays up) ctx.shadowBlur = 0;
       ty += fs * 1.45;
       ctx.globalAlpha = 1;

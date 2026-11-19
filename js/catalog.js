@@ -17,26 +17,25 @@ import { chestsOf, oddsText, chestPicture } from './chests.js';
 export const WEBSHOPS = {
   bayside: { title: 'Bayside Marine Supply', sub: 'Harbour Road, since 1974', stock: 'catalog', theme: 'bayside',
     lede: 'Diving gear and supplies, sent out to the boat the same day.', newIn: ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'],
-    cats: [['home', 'Home'], null, ['net', 'Hand nets'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
+    cats: [['home', 'Home'], null, ['net', 'Hand nets'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
       ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['chest', 'Surplus crates'], ['sell', 'Sell your gear']], // (4.0.0: the yard is on the Margaret now, P)
     chestTitle: 'Surplus crates', chestLede: 'Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.' },
   station: { title: 'Station Stores', sub: 'Abyssal Research Station, 280 m, requisitions', stock: 'station', theme: 'station',
     lede: 'Surplus and spare equipment from the station stores, released to visiting divers. Delivered to your locker.', newIn: [],
-    cats: [['home', 'Index'], null, ['cam', 'Cameras'], ['tag', 'Tag guns'], ['slurp', 'Slurp guns'], ['suit', 'Cold-water suits'], null,
+    cats: [['home', 'Index'], null, ['cam', 'Cameras'], ['suit', 'Cold-water suits'], null,
       ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['lure', 'Lures'], ['chest', 'Equipment cases'], ['sell', 'Return equipment']],
     chestTitle: 'Equipment cases', chestLede: 'Sealed cases of kit the scientists stopped using. One item in each, unlisted.' },
   dave: { title: "Dave's Haul", sub: '1,200 m down, cash only, no refunds', stock: 'dave', theme: 'dave',
     lede: "Deep gear, second hand and first rate. If it's on here, I've got it. If it isn't, I haven't. — Dave", newIn: [],
     cats: [['home', 'Front page'], null, ['tank', 'Air'], ['suit', 'Deep suits'], ['net', 'Big-game nets'], null,
-      ['fins', 'Fins'], ['bag', 'Bags'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], null, ['lure', 'Lures'], ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
+      ['fins', 'Fins'], ['bag', 'Bags'], ['cam', 'Cameras'], null, ['lure', 'Lures'], ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
     chestTitle: 'Boxes, unopened', chestLede: "Whatever came down on the rope. I haven't looked. I say." },
 };
-const ITEM_CATS = ['net', 'slurp', 'tag', 'cam', 'fins', 'tank', 'bag', 'suit'];
+const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];
 const LEDE = {
   net: 'Key 1 under water. You carry one; change it in your inventory (B) on deck or in the sub.',
-  slurp: 'Key 2. For small, quick animals the net would miss.', tag: 'Key 3. A research tag on anything too big to bring up.',
-  cam: 'Key 4. The institute pays for the first photograph of each species.', trawl: "One in the sub's belly hatch (N); used up in one haul.",
-  trap: 'Set from the surface, on a line from a buoy (key 5).', suit: 'One worn at a time.', fins: 'How fast he swims, and sprints.',
+  cam: 'Key 2. Hold still while the shutter is open; sell the pictures at the boat. Film is bought by the exposure.', trawl: "One in the sub's belly hatch (N); used up in one haul.",
+  trap: 'Set from the surface, on a line from a buoy (key 3).', suit: 'One worn at a time.', fins: 'How fast he swims, and sprints.',
   tank: 'How long he can stay down.', bag: 'How many animals he can carry.', supply: 'Bought by the number.',
 };
 const cm = (m) => `${Math.round(m * 100)} cm`;
@@ -48,7 +47,7 @@ export const MEASURES = {
   net: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Swing', (it) => (it.time <= 0.85 ? 'quick' : it.time <= 1.2 ? 'steady' : 'slow'), (it) => -it.time, true]],
   slurp: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   tag: [['Range', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
-  cam: [['Shots a dive', (it) => `${it.shots}`, (it) => it.shots, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
+  cam: [['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
   fins: [['Cruising', (it) => x(it.swim), (it) => it.swim, true], ['Sprint', (it) => x(it.sprint), (it) => it.sprint, true]],
   tank: [['Air', (it) => `about ${secs(it.air)}`, (it) => it.air, true], ['Speed', (it) => (it.speed >= 1 ? 'no slower' : it.speed >= 0.96 ? 'a little slower' : 'slower'), (it) => it.speed, true]],
   bag: [['Animals', (it) => `${it.slots}`, (it) => it.slots, true]],

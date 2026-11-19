@@ -35,7 +35,6 @@ function payFor(P, market, depth, rnd) {
 export function newContract(P, taken, rnd = Math.random) {
   const R = reach(P);
   const kinds = ['live', 'live', 'salvage'];
-  if (owns(P, 'tagger')) kinds.push('tag');
   if (owns(P, 'camera')) kinds.push('photo');
   for (let tries = 0; tries < 30; tries++) {
     const kind = kinds[Math.floor(rnd() * kinds.length)];
@@ -115,7 +114,7 @@ export function fulfil(g, P, lists) {
       if (j >= 0) { g.tags.splice(j, 1); ok = true; }
     } else if (c.kind === 'photo') {
       const j = g.photos.findIndex((p) => p.id === c.id);
-      if (j >= 0) { const p = g.photos.splice(j, 1)[0]; P.photos = [...(P.photos || []), p.key]; ok = true; }
+      if (j >= 0) { const p = g.photos.splice(j, 1)[0]; P.photos = [...(P.photos || []), p.sk || p.key]; P.roll = g.photos.slice(); ok = true; }
     } else if (c.kind === 'salvage') {
       if ((g.inv[c.item] || 0) >= c.n) { g.inv[c.item] -= c.n; ok = true; }
     }

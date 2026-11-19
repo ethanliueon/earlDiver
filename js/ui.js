@@ -30,7 +30,7 @@ import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
 import { Catalog, pictureOf, MEASURES } from './catalog.js';
 import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS } from './items.js';
-const SIDE_TOOLS = new Set(['slurp', 'tag', 'cam']);
+const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
 import { drawEarl } from './earl_draw.js';
 import { SETTINGS, setSetting } from './settings.js';
@@ -65,14 +65,11 @@ const ADDON_SPECS = {
 const SUPPLY_SPECS = {
   lure: [['use', 'Q throws it'], ['effect', 'the deep thing follows its light', 'good'], ['lasts', 'a while']],
   necklace: [['use', 'E snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round Earl, or round the sub while he is in her', 'good'], ['but', 'a light can be seen', 'bad']],
-  tag: [['use', 'the tag gun (3)'], ['for', 'common to rare, tag-only under 2 m'], ['pays', '$0.50-2 a fish, more for big animals', 'good']],
-  tagAdv: [['use', 'the tag gun (3)'], ['for', 'exotic, legendary, undocumented, big animals', 'good'], ['dart', 'wider spread, faint glow']],
+  film: [['use', 'the camera (2)'], ['one each', 'every picture, sharp or not'], ['pays', 'a sharp, close picture most', 'good']],
   airTank: [['use', 'R, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
 };
 const GEAR_SPECS = {
-  slurp: [['key', '2'], ['catches', 'small fish, even fast ones', 'good']],
-  tagger: [['key', '3'], ['tags', 'sharks, billfish, whales'], ['pays', 'per tag, less each time']],
-  camera: [['key', '4'], ['pays', 'first photo of each species and rare form', 'good']],
+  camera: [['key', '2'], ['pays', 'for every picture, the first of a species most', 'good']],
   arm: [['use', 'Space, from inside the sub'], ['catches', 'time the grip']],
 };
 const $ = (id) => document.getElementById(id);
@@ -319,12 +316,13 @@ export class UI {
     const wrap = $('quests-hud'); wrap.hidden = !show;
     const P0 = this.h.getProfile && this.h.getProfile(), S0 = P0 && P0.quests, st = S0 && QUEST_MAIN[S0.main];
     { const txt = st && st.on ? stepLabel(P0) : '', el = wrap.querySelector('.qh-step'); // (4.3.4) the first fish shows which part it is on
-      if (el.textContent !== txt) { el.textContent = txt; if (txt && show) this.hudGroup(true, 4500); } } // (4.28) a new step: the group opens a moment to show it
+      if (el.textContent !== txt) { el.textContent = txt; if (txt && show) this.hudPeek(); } } // (5.0) a new step: only its words show a moment; the journal and chart stay folded away
     const n = this.h.questsReady ? this.h.questsReady() : 0, dot = b.querySelector('i');
     dot.hidden = !n; if (n) dot.textContent = n;
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
   }
   // (4.28) open or fold the left-hand group; open for `ms` then fold again on its own
+  hudPeek(ms = 4000) { const w = $('quests-hud'); if (!w) return; clearTimeout(this.hpT); w.classList.add('peek'); this.hpT = setTimeout(() => w.classList.remove('peek'), ms); }
   hudGroup(open, ms = 6000) { const w = $('quests-hud'); if (!w) return; clearTimeout(this.hgT); w.classList.toggle('open', !!open); if (open) this.hgT = setTimeout(() => w.classList.remove('open'), ms); }
   questsOpen() { return !$('quests').hidden; }
   // (4.8.1) a quest's i: what it asks, and where to go for it. A species: its card. A group: some of its animals and
@@ -347,7 +345,7 @@ export class UI {
         body = (onBed ? `<p>Any of ${L.length} kinds counts. They live on the seabed: the lit stretches of the bottom on the map are where they are found. Some of them:</p>` : `<p>Any of ${L.length} kinds counts. The shallowest of them are usually met from about ${lo.toLocaleString()} m. Some of them:</p>`) + ex.map(card).join('');
         if (onBed) bed = L.map((s2) => usualDepth(s2)); else map = lo; }
     } else if (q.kind === 'deep' || q.kind === 'depth') { body = `<p>${q.kind === 'depth' ? 'Take the sub down past' : 'Catch your animals below'} ${q.d.toLocaleString()} m. The map shows where you are, that depth, and the nearest place the seafloor is deep enough.</p>`; map = q.d; }
-    else body = `<p>${{ catch: 'Any animal counts, caught any way: net, slurp gun, claw, trawl or trap.', sell: 'Everything sold counts: at the Margaret, at the station, or to Dave.', photo: 'Take out the camera (4) and photograph animals you have not photographed before.', tag: 'Take out the tag gun (3) and tag animals as they swim.', trawl: 'Let the trawl net out from the sub (N), drive through fish, and bring it in. Every animal it hauls up counts.', divecatch: 'Every animal caught in one dive counts; the count starts again each dive.', lureMonster: 'Throw a lure (Q) while the thing in the deep is close. It is far below, and it is dangerous.', chambers: 'Have every pressure chamber in the sub holding an animal at the same time.' }[q.kind] || ''}</p>`;
+    else body = `<p>${{ catch: 'Any animal counts, caught any way: net, claw, trawl or trap.', sell: 'Everything sold counts: at the Margaret, at the station, or to Dave.', photo: 'Take out the camera (2) and photograph animals you have not photographed before. Hold still while it takes the picture.', tag: 'Take out the tag gun (3) and tag animals as they swim.', trawl: 'Let the trawl net out from the sub (N), drive through fish, and bring it in. Every animal it hauls up counts.', divecatch: 'Every animal caught in one dive counts; the count starts again each dive.', lureMonster: 'Throw a lure (Q) while the thing in the deep is close. It is far below, and it is dangerous.', chambers: 'Have every pressure chamber in the sub holding an animal at the same time.' }[q.kind] || ''}</p>`;
     if (map != null && map < 50) map = null; // (shallow open water: no map needed)
     pop.innerHTML = `<div class="qp-box"><button class="qp-close" aria-label="Close">×</button><h4>${esc2(q.text)}</h4>${body}${map != null || bed ? '<canvas class="qp-map" width="520" height="190"></canvas>' : ''}</div>`;
     pop.hidden = false;
@@ -546,6 +544,7 @@ export class UI {
     if (!g || !P) { $('inventory').querySelector('.inv-body').innerHTML = '<p class="inv-empty">Nothing yet: start a dive.</p>'; return; }
     // (3.0.32) two pages: his gear, and his catch
     const tab = this.invTab || 'gear';
+    const hasPh = owns(P, 'camera') || (g.photos || []).length;
     const tabs = `<nav class="inv-tabs"><button data-invtab="gear" class="${tab === 'gear' ? 'on' : ''}">Gear</button><button data-invtab="catch" class="${tab === 'catch' ? 'on' : ''}">Catch <i>(${g.bag.length + g.subTank.length})</i></button></nav>`;
     const body = $('inventory').querySelector('.inv-body');
     body.innerHTML = (tab === 'catch' ? this.catchHtml(P, g) : this.equipHtml(P, g)) + tabs; // (3.0.33) the page switch: big, at the bottom middle
@@ -565,8 +564,8 @@ export class UI {
       const painted = W2 === 1240 && H2 === 820 && Math.abs(split - 605) < 3;
       panel.style.backgroundImage = painted ? 'url(assets/ui/olive/locker-door.jpg)' : `url(${lockerTexture(W2, H2, { split })})`; panel.style.backgroundSize = '100% 100%';
     });
-    body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.fishSel = null; this.renderInventory(); }));
-    if (tab === 'gear') this.equipWire(P, g); else this.catchWire(g);
+    body.querySelectorAll('[data-invtab]').forEach((b2) => b2.addEventListener('click', () => { this.invTab = b2.dataset.invtab; this.lkSel = null; this.fishSel = null; this.petSel = false; this.phSel = null; this.renderInventory(); }));
+    if (tab === 'catch') this.catchWire(g); else this.equipWire(P, g);
   }
   // the Catch page: his net bag as pockets, the sub's tank, what he has found, the sub itself
   // (3.0.35) the Catch page in two fixed halves. Left: the net bag, every pocket a bag can have (the ones his bag
@@ -579,7 +578,10 @@ export class UI {
     const state = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
     const card = (cls, s2, span = 1) => { const sp = SPECIES_BY_ID[s2.id];
       const pct = Math.round(Math.max(36, 100 * sizeK(s2.len || sp.len))); // (3.0.43) the picture at its real size, against a 2.4 m giant
-      return `<div class="${cls}${rarityCls(sp)}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m, ${(s2.len || sp.len).toFixed(2)} m">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${ic(sp)}" alt="" style="transform:scale(${Math.min(1.25, pct / 100 * 1.3).toFixed(2)})"><b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
+      // (5.0) a pocket shows the animal and nothing else: big, at its relative size, with a dot for how it is. Its
+      // name, state and price are on its card (click), so nothing is cut off
+      if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
+      return `<div class="${cls}${rarityCls(sp)} pic-only"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}, ${state(s2)}">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}" style="width:${Math.round(Math.min(100, 46 + pct * 0.6))}%"><i class="fc-dot" style="background:${dot(s2)}"></i></div>`; };
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
     // the bag: eleven cubbies, the ones beyond his bag padlocked
     const BAG_MAX = 12, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
@@ -594,15 +596,49 @@ export class UI {
     const bigCap = big.some(tooBig) ? 1 : 3;
     const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}`;
     this.catchShown = Math.max(5, pCap);
+    const hasPh = owns(P, 'camera') || (g.photos || []).length;
+    // (5.0) the pet slot and the pictures he has taken
+    const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
+    if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
+    const petSlot = `<div class="pet-slot${pet ? ' on' : ''}" title="${pet ? psp.name + ': click for its card' : 'At the surface, drag a fish here: 60 cm to 1.5 m, or any legend'}"><span class="ps-lbl">Pet</span>${pet ? `<img src="${this.fitPics.get(psp.id)}" alt=""><b>${psp.name}</b><small>${P.petStay ? 'Staying (H)' : 'Following (H)'}</small>` : '<em>Drag a fish here at the surface</em>'}</div>`;
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
-      + `<div class="worth-paint" style="font-size:${Math.min(160, Math.floor(540 / (money(total).length * 0.6)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
+      + `<div class="catch-row">${petSlot}<div class="worth-paint" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
+      + (hasPh ? this.photoBoxes(P, g) : '') + `</div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
       + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank <i>not fitted</i></h4>`)
       + `<p class="ct-cap">${elsewhere}Click an animal for its card; drag it to move it${g.earl && g.earl.inSub ? '' : ' (in the sub)'}</p></div></div></div>`
-      + (this.fishSel ? this.fishPop(P, g) : '');
+      + (this.fishSel ? this.fishPop(P, g) : '') + (this.petSel ? this.petPop(P) : '') + (this.phSel != null ? this.photoPop(P, g) : '');
+  }
+  // (5.0) the pet's card: what it is, and the way out of the slot (the aquarium, or the sea), with a warning
+  petPop(P) {
+    const pet = P.pet; if (!pet) { this.petSel = false; return ''; }
+    const sp = SPECIES_BY_ID[pet.id], col = rarityCol(sp) || 'var(--paint)', len = pet.len, kg = weightOf(sp, len);
+    if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
+    const row = (k, v) => `<div class="sp-r"><dt>${k}</dt><dd>${v}</dd></div>`;
+    const here = this.h.petHere && this.h.petHere();
+    return `<div class="item-pop fish-pop pet-pop"><div class="sp-panel" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
+      <div class="sp-tank pet-pic"><img src="${this.fitPics.get(sp.id)}" alt=""></div>
+      <div class="sp-info"><span class="sp-kind">Your pet</span><b class="sp-name">${sp.name}</b>
+        <dl class="sp-rows">${row('Length', `${len.toFixed(2)} m`)}${row('Weight', `${kg < 10 ? kg.toFixed(1) : Math.round(kg)} kg`)}${row('Does', 'follows you, hunts small fish in schools, warns you')}${row('Keys', 'H: stay here / follow me')}</dl>
+        ${here ? `<p class="sp-remark warnline">Taken out, it goes to the aquarium or back to the sea. It won't come back to the slot.</p><div class="sp-acts"><button data-pet="aquarium">Aquarium</button><button data-pet="release">Release</button></div>` : '<p class="sp-remark">It can leave the slot only at the surface.</p>'}</div></div></div>`;
+  }
+  // (5.0) the Photos page: the camera's own screen. Every picture he carries in a plain grid, the frame counter
+  // and film left at the top; click one and it fills the screen, with its name, how it came out and what it pays
+  // (5.0) below the bag (scroll down): ten boxes for the pictures he carries, numbered like the frames of a roll;
+  // click one and it fills the view with its name, how it came out and what it pays
+  photoBoxes(P, g) {
+    const roll = g.photos || [], cam = owns(P, 'camera') ? gear(P, 'cam') : null;
+    const cells = roll.map((ph, i) => `<button class="ph-cell" data-ph="${i}" title="${ph.name}">${ph.img ? `<img src="${ph.img}" alt="">` : '<span></span>'}<b>${String(i + 1).padStart(2, '0')}</b>${ph.grade && ph.grade !== 'Good' ? `<i>${ph.grade}</i>` : ''}</button>`).join('');
+    return `<h4 class="ph-h">Photos <i>(${roll.length})</i>${cam ? `<span>Film ${g.items.film || 0}/${cam.shots}</span>` : ''}</h4><div class="ph-grid">${cells}${'<div class="ph-cell empty"></div>'.repeat(Math.max(0, 10 - roll.length))}</div>`;
+  }
+  // (5.0) a photograph, large
+  photoPop(P, g) {
+    const ph = (g.photos || [])[this.phSel]; if (!ph) { this.phSel = null; return ''; }
+    return `<div class="item-pop photo-pop"><div class="ph-panel"><button class="ip-close" aria-label="Close">×</button>${ph.img ? `<img src="${ph.img}" alt="">` : ''}
+      <div class="ph-cap"><b>${ph.name}</b><span>${ph.grade || 'Good'}${ph.first ? ', first of its kind' : ''}</span><em>${money(ph.value * statValue(P, 'payFish'))}</em></div></div></div>`;
   }
   // (3.2.0) where an animal is: { list: 'bag' | 'tank' (the index space tankAction uses), i, place, n }
   fishWhere(g, s2) {
@@ -738,7 +774,23 @@ export class UI {
   // press and drag carries it to the bag, the open tank, a chamber or the large tank. Wired once, on the
   // inventory itself, so it outlives every redraw of the page.
   catchWire(g) {
-    const root = $('inventory'), pop = root.querySelector('.fish-pop');
+    const root0 = $('inventory');
+    // (5.0) the pet slot and the photographs
+    const pslot = root0.querySelector('.inv-catch2 .pet-slot.on'); if (pslot) pslot.addEventListener('click', () => { this.petSel = true; this.fishSel = null; this.renderInventory(); });
+    root0.querySelectorAll('.inv-catch2 .ph-cell[data-ph]').forEach((b) => b.addEventListener('click', () => { this.phSel = +b.dataset.ph; this.fishSel = null; this.renderInventory(); }));
+    const phpop = root0.querySelector('.photo-pop');
+    if (phpop) phpop.addEventListener('click', (ev) => { if (ev.target === phpop || ev.target.closest('.ip-close')) { this.phSel = null; this.renderInventory(); } });
+    const ppop = root0.querySelector('.pet-pop');
+    if (ppop) ppop.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button[data-pet]');
+      if (b) {
+        const go = () => { if (this.h.onPet(b.dataset.pet) !== false) this.petSel = false; this.renderInventory(); };
+        if (b.dataset.pet === 'release') this.confirm('Release your pet?', 'It swims off into the sea and won\'t come back.', 'Release', 'Keep it', go); else go();
+        return;
+      }
+      if (ev.target === ppop || ev.target.closest('.ip-close')) { this.petSel = false; this.renderInventory(); }
+    });
+    const root = root0, pop = root.querySelector('.fish-pop:not(.pet-pop)');
     // (3.6.2) the station's steel: the locker's worn paint, drawn for its size, darkened (see .sp-panel)
     const panel = pop && pop.querySelector('.sp-panel');
     if (panel) requestAnimationFrame(() => { const w = panel.offsetWidth, h = panel.offsetHeight; if (w > 40 && h > 40) panel.style.setProperty('--tex', `url(${lockerTexture(w, h, { plain: true })})`); });
@@ -799,6 +851,7 @@ export class UI {
   // where a dragged animal would land: { kind: 'bag' | 'open' | 'chamber' | 'big', n, el }
   catchDropAt(cx, cy) {
     const root = $('inventory'), el = document.elementFromPoint(cx, cy); if (!el || !root.contains(el)) return null;
+    const ps = el.closest('.inv-catch2 .pet-slot'); if (ps) return { kind: 'pet', el: ps };
     const left = el.closest('.inv-catch2 .inv-left'); if (left) return { kind: 'bag', el: left.querySelector('.fc-grid') };
     const tank = el.closest('.tank-win'); if (tank) return { kind: 'open', el: tank };
     if (el.matches('canvas.ct-big')) return { kind: 'big', n: BIG_CH, el };
@@ -811,6 +864,7 @@ export class UI {
     const same = (tgt.kind === 'bag' && at.place === 'bag') || (tgt.kind === 'open' && at.place === 'open') || (tgt.kind === 'big' && at.place === 'big') || (tgt.kind === 'chamber' && at.place === 'chamber' && at.n === tgt.n);
     if (same) return;
     const sp = SPECIES_BY_ID[s2.id], say = (t) => this.h.toast && this.h.toast(t, 'warn');
+    if (tgt.kind === 'pet') { const r = this.h.onPet('set', at.where, at.i); this.renderInventory(); return r; }
     if (!(this.h.inSub && this.h.inSub())) {
       say(at.place === 'bag' ? `You aren't in the sub: get in to put ${this.theName(sp).replace(/^The/, 'the')} in a tank` : `${this.theName(sp)} is in the sub: get in to move it`);
       return;
@@ -857,11 +911,11 @@ export class UI {
   // it, new things marked NEW. Click anything for a pop-up: what it is, and side by side with what he has on.
   equipHtml(P, g, extra = '') {
     ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), onSet = new Set(Object.values(K.on));
-    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp'], ['tag', '3  Tagger'], ['cam', '4  Camera']];
+    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['cam', '2  Camera']];
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
     const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
       return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}" title="${q ? it.name : nm + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : `<span>${nm}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}<small class="slot-nm">${nm}</small><i class="glyph g-${kind}"></i></div>`; };
-    const order = ['net', 'slurp', 'tag', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
+    const order = ['net', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
       return `<div class="lk-tile r-${it.rarity}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${q.isNew ? '<i class="new">new</i>' : ''}${it.rarity === 'legendary' ? `<span class="glint" style="--d:${(q.u.length * 7 % 23) / 10}s;--x:${20 + q.u.charCodeAt(1) % 60}%;--y:${18 + q.u.charCodeAt(2) % 50}%"></span><span class="glint b" style="--d:${(q.u.length * 13 % 31) / 10 + 1.4}s;--x:${30 + q.u.charCodeAt(3) % 50}%;--y:${40 + q.u.charCodeAt(4) % 40}%"></span>` : ''}</div>`; }).join('');
@@ -1330,7 +1384,7 @@ export class UI {
         row('Lures', String(g.items.lure)) + row('Glow sticks', String(g.items.necklace));
     } else {
       this.journalCount(g);
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C / hold C', 'call the submersible to you / send it back to the boat'], ['1 / 2 / Space', 'net / slurp gun / use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 / 4', 'tag gun / camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / snap a glow stick (warm amber, 90 s; in the sub it lights her up)'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out a trawl net (choose which: up to two beginner nets and one advanced)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G lets the anchor go or winds it in'], ['J', 'this journal'], ['P', 'the yard (at the Margaret); anywhere else, frames per second'], ['O', 'quests'], ['L (on the Margaret)', 'the sub\'s lights on / off'], ['X', 'developer: the deepest sub and $500,000, then a legend to find'], ['Esc / M', 'pause / mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C / hold C', 'call the submersible to you / send it back to the boat'], ['1 / 2 / Space', 'net / camera / use it; press a tool\'s number again to put it away'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / snap a glow stick (warm amber, 90 s; in the sub it lights her up)'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out a trawl net (choose which: up to two beginner nets and one advanced)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G lets the anchor go or winds it in'], ['J', 'this journal'], ['P', 'the yard (at the Margaret); anywhere else, frames per second'], ['O', 'quests'], ['L (on the Margaret)', 'the sub\'s lights on / off'], ['X', 'developer: the deepest sub and $500,000, then a legend to find'], ['Esc / M', 'pause / mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -1387,7 +1441,7 @@ export class UI {
       const tg = new Map();
       for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
       for (const [k, list] of tg) items.push({ key: 'tag:' + k, value: list[0].value * list.length * statValue(P, 'payFish'), html: `<span class="sell-name">Tag data: ${list[0].name}</span>` + (list.length > 1 ? `<span class="sell-n">×${list.length}</span>` : '') });
-      for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, value: ph.value * statValue(P, 'payFish'), html: `<span class="sell-name">Photograph: ${ph.name}</span>` });
+      for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, value: ph.value * statValue(P, 'payFish'), html: `${ph.img ? `<img class="sell-photo" src="${ph.img}" alt="">` : ''}<span class="sell-name">Photo: ${ph.name}${ph.grade && ph.grade !== 'Good' ? ` <em class="cond">${ph.grade.toLowerCase()}</em>` : ''}</span>` });
       for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k] && k !== 'coral') items.push({ key: 'good:' + k, value: GOODS[k].price * n * statValue(P, 'paySalvage'), html: `<span class="sell-name">${GOODS[k].name}</span>` + (n > 1 ? `<span class="sell-n">×${n}</span>` : '') });
       for (const k of [...pick]) if (!items.some((it) => it.key === k && !it.kept)) pick.delete(k);
       if (!items.length) html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
@@ -1408,7 +1462,7 @@ export class UI {
       html += this.upgradeGroups(P, ['Diver'], icon, can);
       html += this.suitRows(P, can);
     } else if (tab === 'tools') {
-      html += this.upgradeGroups(P, ['Net', 'Slurp gun', 'Tag gun', 'Camera'], icon, can);
+      html += this.upgradeGroups(P, ['Net', 'Camera'], icon, can);
       html += '<div class="up-group"><h4>Traps</h4>';
       const tr = P.traps || {};
       TRAP_ORDER.forEach((k, i) => {
@@ -1509,7 +1563,7 @@ export class UI {
           [['holds', `${N.max} animals`, adv ? 'good' : ''], ['fish up to', `${N.maxLen} m long`, adv ? 'good' : ''], ['mouth', adv ? `${(N.mouth * 2).toFixed(1)} m wide: catches far more of a school` : `${(N.mouth * 2).toFixed(1)} m wide`, adv ? 'good' : ''], ['legends', adv ? 'none escape' : '9 in 10 escape', adv ? 'good' : 'bad'], ['big animals', adv ? 'seldom break out' : 'often break out, may tear it', adv ? 'good' : 'bad'], ['use', 'N in the sub, once', 'sheet']]);
       }
       for (const [k, it] of Object.entries(SUPPLIES)) {
-        if (it.needs && !owns(P, it.needs)) continue; // tags only once he has the tag gun
+        if (it.needs && !owns(P, it.needs)) continue; // film only once he has a camera
         const mx = supplyMax(P, k), have = g.items[k] || 0, full = have >= mx;
         html += card(it.name, it.desc, `carrying (${have}/${mx})`, full ? null : it.price, 'buy', k, full ? 'Full' : 'Buy', '', '', SUPPLY_SPECS[k]);
       }
@@ -1739,8 +1793,8 @@ export class UI {
   // Upgrade rows, grouped: each stat on one line with what it is now, what the next level makes it,
   // its level and the price. Gear not yet owned shows as a card to buy it first.
   upgradeGroups(P, groups, icon, can) {
-    const GEAR_OF = { 'Slurp gun': 'slurp', 'Tag gun': 'tagger', 'Camera': 'camera', 'Claw': 'arm' };
-    const ICON_OF = { 'Net': ['net', gear(P, 'net').look], 'Slurp gun': ['slurp', 0], 'Tag gun': ['tag', 0], 'Camera': ['cam', 0] };
+    const GEAR_OF = { 'Camera': 'camera', 'Claw': 'arm' };
+    const ICON_OF = { 'Net': ['net', gear(P, 'net').look], 'Camera': ['cam', 0] };
     let html = '';
     for (const grp of groups) {
       const gk = GEAR_OF[grp];

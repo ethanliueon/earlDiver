@@ -67,11 +67,12 @@ export function drawNet(ctx, u, tier, t, flutter, catchSp) {
   ctx.clip();
   if (catchSp) {
     // the catch thrashing in the mesh
-    const k = clamp(catchSp.t / 1.1, 0, 1);
-    const fl = Math.max(5 * u, Math.min(r * 1.8, catchSp.len * 1.6 * 100 * u));
-    ctx.save(); ctx.translate(hx * 0.5 + tipX * 0.5, tipY * 0.55);
-    ctx.rotate(Math.sin(catchSp.t * 24) * 0.5 * (1 - k * 0.6) + 0.3);
-    ctx.globalAlpha = 0.95;
+    // (5.0) it thrashes hard, then less, then fades into the bag
+    const k = clamp(catchSp.t / (catchSp.dur || 1.1), 0, 1), fight = 1 - k * 0.75;
+    const fl = Math.max(5 * u, Math.min(r * 1.8, catchSp.len * 1.6 * 100 * u)) * (1 - 0.25 * Math.max(0, k - 0.65) / 0.35);
+    ctx.save(); ctx.translate(hx * 0.5 + tipX * 0.5 + Math.sin(catchSp.t * 31) * 1.2 * u * fight, tipY * 0.55 + Math.sin(catchSp.t * 19) * 0.8 * u * fight);
+    ctx.rotate(Math.sin(catchSp.t * 24) * 0.55 * fight + 0.3);
+    ctx.globalAlpha = k < 0.65 ? 0.95 : 0.95 * (1 - (k - 0.65) / 0.35);
     drawSpecies(ctx, catchSp.sp, fl, t * 3, 1, 0);
     ctx.restore();
   }

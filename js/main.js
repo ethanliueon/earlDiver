@@ -11,7 +11,7 @@ import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlot
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
 import { SETTINGS } from './settings.js';
-import { findTagTarget, findPhotoSubject, fireTag, updateDarts, takePhoto } from './survey.js';
+import { photoTarget, startPhoto, updatePhoto } from './survey.js';
 import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
@@ -42,6 +42,7 @@ import { Audio } from './audio.js';
 import { UI } from './ui.js';
 import { Beacon } from './alarm.js';
 import { Messages } from './messages.js';
+import { updatePet, toggleStay, petRefusal, petOf } from './pets.js';
 
 const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
@@ -102,8 +103,10 @@ function applyKit(e, P) {
   e.biolum = L('biolum'); e.glows = T.glows; e.trail = T.trail; e.trailKind = T.trailKind; e.legends = T.legends;
   const wf = worn(P, 'fins'), wt = worn(P, 'tank'), ws = worn(P, 'suit'); e.finLook = (wf && wf.finLook) || null; e.tankLook = (wt && wt.tankLook) || null; e.suitGlow = (ws && ws.suitGlow) || null; // (2.8.1) how his special gear looks on him
   e.kelpSet = setOn(P, 'kelp'); e.nightSet = setOn(P, 'night'); e.triesteSet = setOn(P, 'trieste'); e.challengerSet = setOn(P, 'challenger');
-  if (g && owns(P, 'camera')) g.shots = Math.max(g.shots || 0, gear(P, 'cam').shots);
-  if (g && g.toolSel && g.toolSel !== 'net' && g.toolSel !== 'trap' && g.toolSel !== 'none' && !owns(P, { slurp: 'slurp', tag: 'tagger', cam: 'camera' }[g.toolSel])) g.toolSel = 'net';
+  // (5.0) a camera comes with one roll of film, the first time he has one; after that film is bought at the boat
+  if (g && owns(P, 'camera') && g.items.film == null) g.items.film = gear(P, 'cam').shots;
+  if (g && g.items.film > 0 && owns(P, 'camera')) g.items.film = Math.min(g.items.film, gear(P, 'cam').shots);
+  if (g && g.toolSel && g.toolSel !== 'net' && g.toolSel !== 'trap' && g.toolSel !== 'none' && !(g.toolSel === 'cam' && owns(P, 'camera'))) g.toolSel = 'net';
 }
 function applySuit(e, P) {
   // (2.8.0) the suit is an item: its look is its kind of suit, or its own colours (Rare and up)
@@ -169,7 +172,7 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, tag: P.items ? P.items.tag || 0 : 0, tagAdv: P.items ? P.items.tagAdv || 0 : 0, net: P.items && P.items.net !== undefined ? P.items.net : null, nets: P.items && P.items.nets ? Object.assign({}, P.items.nets) : null }, inv: {}, // a new diver starts with one backup air tank
+    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, film: P.items && P.items.film != null ? P.items.film : null, net: P.items && P.items.net !== undefined ? P.items.net : null, nets: P.items && P.items.nets ? Object.assign({}, P.items.nets) : null }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
@@ -178,7 +181,7 @@ function newGame(mode) {
     injury: 0, healT: 0, blood: [], deathKind: null, lampFlashT: -99, threat: null,
     autopilot: new Autopilot(), addons: P.addons || {}, anchored: true,
     bag: [], subTank: [], captureFx: [], capture: null, toolSel: 'net', capPrompt: null,
-    darts: [], tags: [], photos: [], shots: owns(P, 'camera') ? gear(P, 'cam').shots : 0, camFlash: 0,
+    darts: [], tags: [], photos: Array.isArray(P.roll) ? P.roll.slice() : [], photo: null, camFlash: 0,
     traps: [], armGame: null, contracts: [],
   };
   // the radio's jobs: the ones he took before carry over; the rest of the board is new each dive
@@ -287,6 +290,25 @@ const ui = new UI({
   onWare: (k) => wareBuy(k),
   toast: (text, kind) => hud.toast(text, kind),
   inSub: () => !!(g && g.earl && g.earl.inSub),
+  // (5.0) the pet slot: an animal from the catch into it (only at the surface), or the pet out of it (to the
+  // aquarium, or back to the sea)
+  petHere: () => !!(g && (g.aboard || (g.earl.inSub && g.sub.y < 4 && Math.hypot(g.sub.x - BOAT.x, g.sub.y) < 40))),
+  petWhy: (s) => petRefusal(s),
+  onPet: (act, where, i) => {
+    const P = profile;
+    if (act === 'set') {
+      const L = where === 'bag' ? g.bag : g.subTank, s = L[i]; if (!s) return false;
+      if (!(g.aboard || (g.earl.inSub && g.sub.y < 4))) { hud.toast('Only at the surface', 'warn'); return false; }
+      if (P.pet) { hud.toast('The pet slot is taken', 'warn'); return false; }
+      const why = petRefusal(s); if (why) { hud.toast(why, 'warn'); return false; }
+      L.splice(i, 1); P.pet = petOf(s); P.petStay = false; saveProfile(P); hud.toast(`${SPECIES_BY_ID[s.id].name} will follow you`, 'note'); return true;
+    }
+    if (!P.pet) return false;
+    const spec = { id: P.pet.id, len: P.pet.len, variant: P.pet.variant, cond: 1, from: P.pet.from };
+    if (act === 'aquarium') { const why = displayRefusal(P, spec); if (why) { hud.toast(why.charAt(0).toUpperCase() + why.slice(1), 'warn'); return false; } display(P, spec); }
+    P.pet = null; P.petStay = false; g.petStayAt = null; saveProfile(P);
+    hud.toast(act === 'aquarium' ? 'In the aquarium' : 'Released'); return true;
+  },
   onTank: (act, where, i, to) => { // (3.0.15) a refusal is said inside the tank room too (the toasts are under it)
     const n0 = hud.toasts.length, last0 = hud.toasts[n0 - 1];
     const r = tankAction(act, where, i, to);
@@ -455,9 +477,9 @@ function sellAll() {
     const pv = Math.round(ph.value * statValue(profile, 'payFish') * 100) / 100;
     profile.cash = Math.round((profile.cash + pv) * 100) / 100; profile.lifetime = Math.round((profile.lifetime + pv) * 100) / 100;
     lines.push({ label: `Photograph: ${ph.name}`, n: 1, total: pv });
-    profile.photos = [...(profile.photos || []), ph.key];
+    if (ph.sk && !(profile.photos || []).includes(ph.sk)) profile.photos = [...(profile.photos || []), ph.sk];
   }
-  g.photos = [];
+  g.photos = []; profile.roll = [];
   for (const [k, n] of Object.entries(g.inv)) {
     if (!n || !GOODS[k] || k === 'coral') continue;
     lines.push(sell(profile, k, n, GOODS[k].price * statValue(profile, 'paySalvage'), GOODS[k].name));
@@ -756,7 +778,8 @@ function spawnReleased(r) {
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subLost = !!g.sub.imploded;
-  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, nets: Object.assign({}, netsOf(g.items)), tag: g.items.tag, tagAdv: g.items.tagAdv };
+  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, nets: Object.assign({}, netsOf(g.items)), film: g.items.film };
+  P.roll = g.photos.slice(); // (5.0) the pictures he carries, kept with the save
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
   // (4.12.6) where the dive is, so a reload carries on from here: Earl, the sub, what he carries and what is in her tank
@@ -813,7 +836,7 @@ function buy(kind) {
   } else if (kind.startsWith('on:')) {
     // (2.8.0) on:<uid> puts on a thing from the locker
     const q = instOf(P, kind.slice(3));
-    if (q && putOn(P, q.u)) { applyKit(e, P); ok = true; const key = { slurp: 2, tag: 3, cam: 4 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Press ${key} for the ${ITEMS[q.id].name.toLowerCase()}`); }
+    if (q && putOn(P, q.u)) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Press ${key} for the ${ITEMS[q.id].name.toLowerCase()}`); }
   } else if (kind.startsWith('sellgear:')) {
     // (2.8.0) selling gear back, for about a third of what it is worth; never what he has on
     const q = instOf(P, kind.slice(9));
@@ -836,7 +859,6 @@ function buy(kind) {
       if (has('swim')) e.finSpeed = statValue(P, 'swim');
       if (has('sprint')) e.sprintMul = statValue(P, 'sprint');
       if (has('depth') || has('subSpeed') || has('ballast')) applySub(sub, P);
-      if (has('camShots')) g.shots = gear(P, 'cam').shots;
       if (id === 'tPress') hud.toast(`Chamber ${lv(P, id) + 1} fitted`, 'big'); // (4.13.0)
       else if (!has('depth')) hud.toast(`${T.name}: level (${lv(P, id)}/${T.max})`);
     }
@@ -849,9 +871,7 @@ function buy(kind) {
     if (G && !owns(P, k) && (!G.needs || owns(P, G.needs)) && spend(P, G.price)) {
       P.gear = Object.assign({}, P.gear, { [k]: true }); ok = true;
       hud.toast(G.name, 'big');
-      if (k === 'slurp') { g.toolSel = 'slurp'; hud.hint('Press 2 for the slurp gun'); }
-      if (k === 'tagger') { g.toolSel = 'tag'; hud.hint('Press 3 for the tag gun; aim with the mouse, Space to fire'); }
-      if (k === 'camera') { g.toolSel = 'cam'; g.shots = gear(P, 'cam').shots; hud.hint('Press 4 for the camera, Space to take a picture'); }
+      if (k === 'camera') { g.toolSel = 'cam'; hud.hint('Press 2 for the camera, hold still while it takes the picture'); }
       if (k === 'arm') hud.hint('In the sub, Space reaches for an animal; Space again in the green closes the claw');
     }
   } else if (kind === 'patch' && !sub.imploded && sub.hull < 0.999 && spend(P, PATCH_PRICE)) {
@@ -1882,6 +1902,7 @@ function update(dt) {
       }
     } else g.plant = 0;
     // giving something back: release a lure or a necklace into the deep
+    if (pressed.has('h') && profile.pet && !g.aboard) { const r = toggleStay(g); if (r) hud.toast(r === 'stay' ? 'Your pet stays here' : 'Your pet follows you'); }
     if (pressed.has('g') && canOffer() && !g.helm) {
       const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
       if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('The deep accepts it, for now', 'note'); }
@@ -2019,10 +2040,8 @@ function update(dt) {
     // a number picks up that tool; the same number again puts it away (hands free)
     const pick = (sel, msg) => { if (g.toolSel === sel) { g.toolSel = 'none'; g.capture = null; hud.toast('Hands free'); } else { g.toolSel = sel; hud.toast(msg); } };
     if (pressed.has('1')) pick('net', gear(profile, 'net').name);
-    if (pressed.has('2')) { if (owns(profile, 'slurp')) pick('slurp', gear(profile, 'slurp').name); else hud.toast('No slurp gun', 'warn'); }
-    if (pressed.has('3')) { if (owns(profile, 'tagger')) pick('tag', gear(profile, 'tag').name); else hud.toast('No tag gun', 'warn'); }
-    if (pressed.has('5')) { const tr = profile.traps || {}; if (TRAP_ORDER.some((k) => tr[k] > 0)) pick('trap', `Traps to set: ${TRAP_ORDER.filter((k) => tr[k] > 0).map((k) => `${trapsFree(g, k)} ${TRAPS[k].name.toLowerCase()}`).join(', ')}`); else hud.toast('No traps', 'warn'); }
-    if (pressed.has('4')) { if (owns(profile, 'camera')) pick('cam', `${gear(profile, 'cam').name} · ${g.shots} shots left`); else hud.toast('No camera', 'warn'); }
+    if (pressed.has('2') || pressed.has('4')) { if (owns(profile, 'camera')) pick('cam', `${gear(profile, 'cam').name}, ${g.items.film || 0}/${gear(profile, 'cam').shots}`); else hud.toast('No camera', 'warn'); }
+    if (pressed.has('3') || pressed.has('5')) { const tr = profile.traps || {}; if (TRAP_ORDER.some((k) => tr[k] > 0)) pick('trap', `Traps to set: ${TRAP_ORDER.filter((k) => tr[k] > 0).map((k) => `${trapsFree(g, k)} ${TRAPS[k].name.toLowerCase()}`).join(', ')}`); else hud.toast('No traps', 'warn'); }
     const tool = activeTool(g);
     if (keys.has(' ') && g.aboard && g.toolSel === 'trap' && !g.trapDeckSaid) { g.trapDeckSaid = true; hud.toast('Jump in first: traps are set from the water, at the surface', 'warn'); } // (claude-polish) on deck Space did nothing at all
     if (!keys.has(' ')) g.trapDeckSaid = false;
@@ -2030,17 +2049,7 @@ function update(dt) {
       // at the surface: open the depth meter (setting happens there; the Space that set it is ignored)
       if (!ui.trapSetOpen() && performance.now() - (ui.tsClosedAt || 0) > 400) { const msg = canSetHere(g); if (msg) hud.toast(msg, 'warn'); else ui.openTrapSet(); }
     } else if (pressed.has(' ') && !e.inSub) {
-      if (tool.kind === 'tag') { if (!g.capture) { const why = fireTag(g); if (why) hud.toast(why.charAt(0).toUpperCase() + why.slice(1), 'warn'); else audio.ready && audio.thud && audio.thud(0.15); } }
-      else if (tool.kind === 'cam') {
-        if (!g.capture) {
-          const r = takePhoto(g);
-          audio.ready && audio.click();
-          if (r.type === 'noShots') hud.toast('No shots left', 'warn');
-          else if (r.empty) hud.toast(`Nothing in frame · ${g.shots} left`);
-          else if (r.old) hud.toast(`${r.name}: already photographed`);
-          else { audio.calmBoost && audio.calmBoost(0.08); hud.toast(`Photographed ${r.name} · ${money(r.value)}`, 'note'); hud.photoCard = { sp: r.sp, variant: r.variant, t: 0 }; questEvent(profile, 'photo', { id: r.sp.id }); if (!g.journal.has(r.sp.id)) { g.journal.set(r.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }
-        }
-      } else if (tool.kind === 'none') { /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
+      if (tool.kind === 'cam') { if (!g.photo) { const why = startPhoto(g); if (why) hud.toast(why, 'warn'); else audio.ready && audio.click(); } } else if (tool.kind === 'none') { /* hands free: nothing to use */ } else { const msg = useTool(g); if (msg) hud.toast(msg, 'warn'); else if (g.capture && g.capture.t === 0) audio.ready && audio.whoosh && audio.whoosh(0.25); }
     } else if (pressed.has(' ') && e.inSub && !g.armGame && !g.homeRun) {
       if (!owns(profile, 'arm')) hud.toast('The claw needs hydraulics', 'warn');
       else { const msg = startArm(g); if (msg) hud.toast(msg, 'warn'); else audio.ready && audio.ram && audio.click(); }
@@ -2067,18 +2076,20 @@ function update(dt) {
     }
     if (g.capture && (g.capture.kind === 'tag' || g.capture.kind === 'cam')) { g.capture.t += dt; if (g.capture.t >= g.capture.dur) g.capture = null; }
     g.camFlash = Math.max(0, g.camFlash - dt * 5);
-    for (const ev of updateDarts(g, dt)) {
-      if (ev.type === 'tagged') {
-        g.tags.push({ key: ev.key, value: ev.value, name: ev.name }); questEvent(profile, 'tag');
-        hud.toast(`Tagged ${ev.name} · ${money(ev.value)}`, 'note');
-        audio.ready && audio.note();
-        if (!g.journal.has(ev.sp.id)) { g.journal.set(ev.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; }
-        if (!(profile.caught || []).includes(ev.sp.id)) { profile.caught = [...(profile.caught || []), ev.sp.id]; g.fauna.caught.add(ev.sp.id); }
-        if (ev.variant) { const vk = ev.sp.id + ':' + ev.variant; if (!(profile.variants || []).includes(vk)) profile.variants = [...(profile.variants || []), vk]; }
-        profile.journal = [...g.journal.entries()]; saveProfile(profile);
-      } else if (ev.type === 'provoked') hud.toast(`The ${ev.sp.name.toLowerCase()} turns toward you`, 'warn');
-      else if (ev.type === 'dartMiss') hud.toast('Missed');
-      else if (ev.type === 'tooSmall') hud.toast(`The ${ev.sp.name.toLowerCase()} is too small to tag`);
+    // (5.0) the camera: an exposure in progress, and the picture when the shutter closes
+    const ph = updatePhoto(g, dt);
+    if (ph) {
+      audio.ready && audio.click();
+      if (ph.empty) hud.toast('Nothing in frame');
+      else {
+        const pic = { key: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), sk: ph.sk, id: ph.sp.id, variant: ph.variant || null, name: ph.name, q: ph.q, grade: ph.grade, value: ph.value, first: ph.first, at: Math.round(e.y), img: renderer.snapshot(ph.frame, 1 - ph.sharp) };
+        g.photos.push(pic); profile.roll = g.photos.slice(); saveProfile(profile);
+        audio.calmBoost && audio.calmBoost(0.08);
+        hud.toast(ph.grade === 'Good' ? ph.name : `${ph.name}, ${ph.grade.toLowerCase()}`, 'note');
+        questEvent(profile, 'photo', { id: ph.sp.id });
+        if (!g.journal.has(ph.sp.id)) { g.journal.set(ph.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); }
+      }
+      if (!(g.items.film > 0)) hud.hint('Out of film: the boat sells more');
     }
     const capEvs = updateCapture(g, dt);
     for (const ev of capEvs) {
@@ -2100,7 +2111,7 @@ function update(dt) {
         audio.calmBoost && audio.calmBoost(0.12);
         // (2.5.0: just the name, in its rarity's colour; "hurt" only when it is. The price, the pressure
         // tolerance and the bag count were too much: the bag shows on the HUD, the price at the boat)
-        const hurt = ev.spec.cond < 0.7 ? ` · ${conditionName(ev.spec.cond)}` : '';
+        const hurt = ''; // (5.0) just the name: its condition is on its card
         const extra = capEvs.filter((q) => q.type === 'caught' && q.extra).length; // (the bait-ball net: more from the same school)
         if (!v && !ev.extra) hud.toast(`${ev.name}${extra ? ` ×${extra + 1}` : ''}${hurt}`, 'rar:' + rr.col);
         audio.ready && audio.pickup();
@@ -2109,9 +2120,9 @@ function update(dt) {
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       } else if (ev.type === 'missed') {
         if (g.tutForce === 'miss') { profile.tutMissed = true; saveProfile(profile); g.tutOops = g.time; } // (4.3.2) the tutorial's first swing
-        else hud.toast(`The ${ev.name.toLowerCase()} got away`);
+        else hud.toast('Got away');
       }
-      else if (ev.type === 'miss' && ev.why) hud.toast(`${ev.sp.name}: ${ev.why}`, 'warn');
+      else if (ev.type === 'miss' && ev.why) hud.toast(ev.why[0].toUpperCase() + ev.why.slice(1), 'warn');
     }
     // the sub's trawl: N drops it, N again (or time) closes it; the winch brings it in with what it caught
     // (4.11.0) with more than one kind of net in the hatch, N asks which: two cards, pick one and it goes out
@@ -2174,13 +2185,11 @@ function update(dt) {
       const fl = g.world.floorAt(e.x);
       const why = canSetHere(g);
       g.capPrompt = why ? `Traps: ${why.charAt(0).toLowerCase() + why.slice(1)}` : 'Space  Set a trap here';
-    } else if (!e.inSub && tool.kind === 'tag') {
-      const tt = findTagTarget(g);
-      const ammo = `tags ${g.items.tag || 0} basic · ${g.items.tagAdv || 0} advanced`;
-      g.capPrompt = tt ? (tt.ok ? `Space  ${tt.name}` : `${tt.sp.name}: ${tt.why}`) : ammo;
     } else if (!e.inSub && tool.kind === 'cam') {
-      const ps = findPhotoSubject(g);
-      g.capPrompt = ps ? (ps.ok ? `Space  ${ps.name}` : `${ps.name}: ${ps.why}`) : null;
+      // (5.0) while the shutter is open: hold still; otherwise what is in frame, and the film left
+      const film = `${g.items.film || 0}/${gear(profile, 'cam').shots}`;
+      if (g.photo) g.capPrompt = 'Hold still';
+      else { const ps = photoTarget(g); g.capPrompt = ps ? `Space  ${ps.name}  ${film}` : `Film ${film}`; }
     } else {
     const ct = !e.inSub ? findCatch(g) : null;
     // (4.0.6) an animal he has never observed has no name yet: only F Observe is said (it can still be netted).
@@ -2188,15 +2197,13 @@ function update(dt) {
     // it is in reach
     const known = ct && g.journal.has(ct.sp.id), taught = learned(profile, 'net');
     g.capPrompt = ct && known ? (ct.ok ? (taught ? ct.name : `Space  ${ct.name}`) : `${ct.sp.name}: ${ct.why}`) : null;
-    g.capIcon = ct && known && ct.ok && taught ? (tool.kind === 'slurp' ? 'slurp' : 'net') : null;
+    g.capIcon = ct && known && ct.ok && taught ? 'net' : null;
     // what the net or slurp gun will go for: marked on screen (in plain white while it is unknown)
     g.catchTarget = ct && ct.ok ? { c: ct.c, x: ct.x, y: ct.y, len: ct.len, col: known ? rarityOf(ct.sp).col : '#d8e2de' } : null;
     g.capRarity = ct && ct.ok && known ? rarityOf(ct.sp) : null;
     // the name is said once: not again on the F line
     if (ct && known && g.prompt && g.prompt.startsWith(ct.sp.name)) g.prompt = g.prompt.slice(ct.sp.name.length).replace(/^\s*·\s*/, '') || null;
     }
-    // a fresh memory card and charged strobes at the boat
-    if (owns(profile, 'camera') && Math.abs(e.x - BOAT.x) < 14 && e.y < 4) g.shots = gear(profile, 'cam').shots;
     if (!e.inSub) {
       const r = ap.update(g, dt, g.addons.recall ? 1.5 : 1);
       if (r === 'arrived') { audio.ready && audio.sonar(0.06); }
@@ -2508,6 +2515,10 @@ function update(dt) {
   // ----- life -----
   g.fauna.entityNear = ent.marked || (ent.dist ?? 999) < 300;
   g.fauna.update(g.frozen ? 0 : dt, renderer.cam, e, ent, fx.dread, g.time, g.day.light < 0.3); // (4.7.0) a lesson holds the sea still
+  if (!g.frozen) updatePet(g, dt, fx.dread);
+  if (g.aboard && profile.petStay) { profile.petStay = false; g.petStayAt = null; } // back aboard, it comes home with him
+  // (5.0) a spent fish pants: now and then a few small bubbles from its gills, so you can see it has run out
+  if (!g.frozen) for (const c of g.fauna.list) if (c.tired > 0 && Math.random() < dt * 2.2 && Math.abs(c.x - e.x) < 25) { const n = 1 + (Math.random() * 2 | 0); for (let i = 0; i < n; i++) g.bubbles.push({ x: c.x - (c.dir || 1) * c.len * 0.2, y: c.y - c.len * 0.05, r: 0.012 + Math.random() * 0.02 + c.len * 0.02, w: Math.random() * 6, t: 0 }); }
   // breathing bubbles
   if (!e.inSub && e.y > 1 && g.mode === 'play' && !e.suitQuiet) {
     g.breathT -= dt;

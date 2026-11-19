@@ -192,6 +192,42 @@ game from a save slot, version stamps on all 56 modules and both stylesheets.
 - Locker: maker's plate removed, vent centred on the right plate, count beside its heading. Tank room hint: two lines
   of text under the bag (the plate cut into the tank's frame). Tutorial card: words and OK side by side.
 
+## 5.0.0 (owner: fish that act like fish, a net that feels physical, a camera, pets; slurp and tag guns gone)
+
+Design rule from the owner: a fish is hard because of how it behaves, not because the gear is weak. Messages stay
+short (a name, at most); details live on the cards.
+
+- **Fish behaviour (fauna.js).** Each free fish has stamina (`energy`, `drain` by type: sprinters tire fast, big
+  cruisers barely). Fleeing drains it; at zero the fish is `tired` 2.6-4 s (slow, sinking, nose-down, panting
+  bubbles from main.js) and can't run. A fleeing fish that hits rock may be `dazed` (rolls and wobbles). Startle on
+  Earl's approach (`startle`, a flinch and a kick). Burst-and-glide swimming (`kick`, soft speed cap so it coasts),
+  tail beat follows the kick. Turns are an edge-on swing (`turnAt`, render.js). Reef fish no longer dart into their
+  homes; resting reef fish spread loosely low over their patch.
+- **Catching (capture.js).** Soft size limit: up to 1.5x a net's size can be tried at falling odds (`sizeOdds`);
+  tired or dazed fish +25 % and a better chance at oversize. On a catch the fish fights the net (`g.netCatch.dur`
+  by size), tugs Earl (`g.tug`, player.js) and churns bubbles, then fades into the bag. A miss: the fish flinches
+  and bolts with silt and bubbles (or, 22 %, is clipped and dazed). Toasts: the name only; "Got away"; "Too big".
+- **Nets.** The free hand net is worn: 30 cm, 58 %, rough on fish (items.js overrides ITEMS.hand). Gentle nets 30 cm.
+- **Slurp gun and tag gun removed.** items.js skips those kinds (`RETIRED`); a pre-5.0 save is refunded what they
+  cost, and its tag darts (P.retired5, P.refund5). Keys: 1 net, 2 camera (4 still works), 3 traps (5 still works).
+- **Camera (survey.js).** Film is a supply (SUPPLIES.film, $4, carry up to the camera's `shots`); a new camera comes
+  with one roll. Space opens the shutter for the camera's `exp` seconds (compact 1.8 s, housed 0.9 s...): Earl
+  holds still, a viewfinder closes on the animal, he can keep aiming. Quality = centring (eased by the camera's
+  `assist`) + sharpness (how far the animal moved) + size in frame; graded Good / Blurry / Off-centre. Value =
+  institute price x quality, the first of a species in full, repeats 35 %. The picture is `renderer.snapshot`: the
+  screen behind, softened, and the animal redrawn sharp at 480x320. Photos are kept (g.photos, saved as P.roll),
+  shown in ten boxes under the bag on the Catch page (click to view), sold at the boat.
+- **Pets (pets.js).** At the surface (deck, or the sub at the surface), drag a healthy free-swimming fish of 60 cm
+  to 1.5 m (or any free-swimming legend) onto the Pet slot on the Catch page. It follows Earl (or the sub), can't be
+  netted, photographed or observed, ignores pressure, hunts fish under 40 cm from schools now and then, and tucks in
+  close and twitches when dread rises or a hunter is near. H: stay / follow (an edge arrow points back to a staying
+  pet; back aboard, it comes home). Its card: Aquarium or Release (with a warning).
+- **Catch page.** Pockets show only the animal (big) and a condition dot; name, state and price on its card. Open
+  pockets are mesh wells, locked ones steel covers with a padlock. The left half scrolls: bag, pet + value, photos.
+  The sub's open tank fills its half.
+- **HUD.** Air: a short line with an O2 mark, blue then red (no orange); hull HULL. Warnings red, not orange. The
+  quest group is just the clipboard in play; a new step peeks its words for 4 s; journal and chart only on tap.
+
 ## 4.28 (owner: "do everything in the report that makes sense", touch controls last, the deep stays dark)
 - One type family: Barlow Condensed (names, the depth figures, the logo) and Barlow Semi Condensed (everything else);
   EB Garamond, IBM Plex Mono and IM Fell are gone from the interface (CSS variables and canvas fonts). No italics, no

@@ -101,13 +101,13 @@ export function findCatch(g) {
     if (d > reach) return;
     let why = null;
     if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'needs a tag' : null;
-    else if (len > def.maxLen) why = isTagOnly(sp) && len > 1.1 ? 'needs a tag' : `too big for the ${def.name.toLowerCase()}`;
-    else if (def.minLen && len < def.minLen) why = `slips through the ${def.name.toLowerCase()}`;
+    else if (len > def.maxLen * OVER) why = isTagOnly(sp) && len > 1.1 ? 'needs a tag' : 'too big';
+    else if (def.minLen && len < def.minLen) why = 'slips through';
     if (why === null && !canTakeLive(sp)) return; // plants, corals: not even worth mentioning
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
     if (d < bd) { bd = d; best = { sp, x, y, len, d, ...ref }; }
   };
-  for (const c of g.fauna.list) if (!c.dead && !c.pet && !(c.att && c.att.s !== 'idle')) consider(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
+  for (const c of g.fauna.list) if (!c.dead && !c.pet && !c.companion && !(c.att && c.att.s !== 'idle')) consider(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
   for (const s of W.statics) {
     if (Math.abs(s.x - h.x) > reach + 3) continue;
     consider(s.sp, s.x, s.y - Math.min(0.5, s.sp.len * s.scale * 0.3), s.sp.len * s.scale, { s, variant: s.variant });
@@ -119,12 +119,18 @@ export function findCatch(g) {
   return best ? { ok: true, ...best } : blocked ? { ok: false, ...blocked } : null;
 }
 
-// the odds of a catch: the tool, and whether the animal is already bolting
+// (5.0) the size limit is soft: a fish up to half again the net's size can still be tried, at worse odds
+// the further over it is (a 25 cm net on a 35 cm fish: about one in seven), and gone past that
+export const OVER = 1.5;
+export const sizeOdds = (def, len) => (len <= def.maxLen ? 1 : clamp(1 - (len / def.maxLen - 1) * 2, 0, 1));
+// the odds of a catch: the tool, the fish's size, and what the fish is doing (bolting, spent, dazed)
 export function catchChance(def, kind, tgt, luck = 0) {
-  const fleeing = tgt.c && tgt.c.fleeT > 0;
+  const c = tgt.c, fleeing = c && c.fleeT > 0, spent = c && (c.tired > 0 || c.dazed > 0);
   let chance = def.success * (fleeing ? (kind === 'slurp' ? 0.9 : 0.8) : 1);
+  if (spent) chance = Math.min(0.97, chance + 0.25); // a worn-out fish hardly moves
   if (tgt.s) chance = Math.min(0.97, chance + 0.2); // things on the bottom don't swim off
-  return Math.min(0.98, chance + luck);
+  chance *= sizeOdds(def, tgt.len) * (spent && tgt.len > def.maxLen ? 1.6 : 1);
+  return clamp(chance + luck, 0, 0.98);
 }
 
 // Start a sweep / a shot. Returns a message for the player, or null when it starts.
@@ -145,7 +151,14 @@ export function useTool(g) {
 export function updateCapture(g, dt) {
   const ev = [];
   g.toolCool = Math.max(0, (g.toolCool || 0) - dt);
-  if (g.netCatch) { g.netCatch.t += dt; if (g.netCatch.t > 1.1) g.netCatch = null; }
+  if (g.netCatch) {
+    const N = g.netCatch; N.t += dt;
+    // the fight churns the water: bubbles off the net while it thrashes, fewer as it tires
+    const tip = g.toolTip, fight = 1 - N.t / (N.dur || 1.1);
+    if (tip && g.bubbles && Math.random() < dt * (6 + N.len * 18) * fight) g.bubbles.push({ x: tip.x + (Math.random() - 0.5) * 0.25, y: tip.y + (Math.random() - 0.5) * 0.2, r: 0.015 + Math.random() * 0.035, w: Math.random() * 6, t: 0 });
+    if (N.t > (N.dur || 1.1)) g.netCatch = null;
+  }
+  if (g.tug) { g.tug.t += dt; if (g.tug.t > g.tug.dur) g.tug = null; }
   if (g.slurpHeld) { g.slurpHeld.t += dt; if (g.slurpHeld.t > 1.6) g.slurpHeld = null; }
   for (let i = g.captureFx.length - 1; i >= 0; i--) { const f = g.captureFx[i]; f.t += dt; if (f.t > f.dur) g.captureFx.splice(i, 1); }
   const cap = g.capture;
@@ -176,14 +189,17 @@ export function updateCapture(g, dt) {
         if (tgt.s) { g.world.statics.splice(g.world.statics.indexOf(tgt.s), 1); g.world.staticsVer = (g.world.staticsVer || 0) + 1; }
         g.bag.push(spec);
         g.captureFx.push({ sp: tgt.sp, len: tgt.len, x: tgt.x, y: tgt.y, dir: tgt.c ? tgt.c.dir : 1, t: 0, dur: kind === 'slurp' ? 0.25 : 0.3, kind });
-        if (kind === 'net') g.netCatch = { sp: tgt.sp, len: tgt.len, t: 0 };
-        else g.slurpHeld = { sp: tgt.sp, len: tgt.len, t: 0 };
+        // (5.0) it fights the net: a pull on Earl the way it was swimming, as strong as it is big
+        if (kind === 'net') {
+          g.netCatch = { sp: tgt.sp, len: tgt.len, t: 0, dur: clamp(0.7 + tgt.len * 1.1, 0.75, 1.7) };
+          g.tug = { dir: tgt.c ? (tgt.c.dir || 1) : e.facing, str: clamp(0.4 + tgt.len * 2.2, 0.5, 3.2), t: 0, dur: clamp(0.3 + tgt.len * 1.2, 0.3, 1.2) };
+        } else g.slurpHeld = { sp: tgt.sp, len: tgt.len, t: 0 };
         ev.push({ type: 'caught', sp: tgt.sp, spec, name: variantName(tgt.sp, tgt.variant) });
         if (def.multi > 1 && tgt.c && tgt.c.gid != null) {
           let more = def.multi - 1;
           for (const c of g.fauna.list) {
             if (more <= 0 || g.bag.length >= bagSlots(g)) break;
-            if (c === tgt.c || c.dead || c.pet || c.gid !== tgt.c.gid || c.len > def.maxLen || dist(c.x, c.y, tgt.x, tgt.y) > 1.8) continue;
+            if (c === tgt.c || c.dead || c.pet || c.gid !== tgt.c.gid || c.len > def.maxLen * 1.1 || dist(c.x, c.y, tgt.x, tgt.y) > 1.8) continue;
             c.dead = true; more--;
             const s2 = { id: c.sp.id, len: c.len, cond: clamp(1 - def.harm * (fragile(c.sp) ? 2 : 1) - Math.random() * 0.05, 0.05, 1), from: Math.round(Math.max(e.y, c.y)), t: g.time };
             g.bag.push(s2); g.captureFx.push({ sp: c.sp, len: c.len, x: c.x, y: c.y, dir: c.dir, t: 0, dur: 0.3, kind });
@@ -192,7 +208,16 @@ export function updateCapture(g, dt) {
         }
       } else {
         ev.push({ type: 'missed', sp: tgt.sp, name: variantName(tgt.sp, tgt.variant) });
-        if (tgt.c) tgt.c.fleeT = 2.2;
+        // (5.0) a miss you can see: the fish flinches and bolts with a kick of speed and a puff of silt and bubbles
+        // (now and then the rim clips it instead, and it hangs dazed a moment: a second chance)
+        const c = tgt.c;
+        if (c && !(c.tired > 0) && Math.random() < 0.22) { c.dazed = 1.3; c.fleeT = 0; }
+        else if (c) {
+          c.tired = 0; c.dazed = 0; c.fleeT = 2.2; c.startle = 0.32;
+          const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.1, f = Math.max(1.5, (c.flee || 1.2) * 1.4);
+          c.vx = dx / dd * f; c.vy = dy / dd * f * 0.6;
+        }
+        if (g.bubbles) for (let i = 0; i < 8; i++) g.bubbles.push({ x: tgt.x + (Math.random() - 0.5) * 0.4, y: tgt.y + (Math.random() - 0.5) * 0.3, r: 0.02 + Math.random() * 0.05, w: Math.random() * 6, t: 0 });
       }
       // the commotion scares off whatever else is close
       for (const c of g.fauna.list) if (c !== tgt.c && c.flee > 0 && dist(c.x, c.y, e.x, e.y) < 3.5) c.fleeT = Math.max(c.fleeT, 1.5);
@@ -402,7 +427,7 @@ export function updateSubNet(g, dt, canTake) {
       // (from the sub's side to the bag's side, within the hoop), not anything near the net
       const r = T.mouth * n.open, prev = n.prev || (n.prev = new Map()), seen = new Map();
       for (const c of g.fauna.list) {
-        if (c.dead || c.hidden || c.pet || n.got.includes(c)) continue;
+        if (c.dead || c.hidden || c.pet || c.companion || n.got.includes(c)) continue;
         const rel = (c.x - n.mx) * n.dir; // + ahead of the mouth (toward the sub), - inside the bag
         if (Math.abs(rel) > 4 || Math.abs(c.y - n.my) > r + 1) continue;
         seen.set(c, rel);

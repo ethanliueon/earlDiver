@@ -106,17 +106,21 @@ export function updateEarl(g, dt, inp) {
   } else {
     // ---- diver ----
     let sp = DIVE_SPEED * (inp.sprint ? e.sprintMul || 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed;
-    const mag = Math.hypot(inp.x, inp.y);
-    let ix = inp.x, iy = inp.y;
+    // (5.0) the camera's shutter is open: he holds still (he can still aim)
+    const hold = !!g.photo;
+    const mag = hold ? 0 : Math.hypot(inp.x, inp.y);
+    let ix = hold ? 0 : inp.x, iy = hold ? 0 : inp.y;
     if (mag > 1) { ix /= mag; iy /= mag; }
     const tvx = ix * sp, tvy = iy * sp;
-    const acc = (mag > 0.1 ? 2.6 : 1.4) * (1 - (e.struggle || 0) * 0.5); // heavy, sluggish response
+    const acc = (hold ? 5 : mag > 0.1 ? 2.6 : 1.4) * (1 - (e.struggle || 0) * 0.5); // heavy, sluggish response
     e.vx = lerp(e.vx, tvx, 1 - Math.exp(-dt * acc));
     e.vy = lerp(e.vy, tvy, 1 - Math.exp(-dt * acc));
     // slight negative buoyancy when idle at depth, positive near surface
     if (mag < 0.1) e.vy += (e.y < 8 ? -0.12 : 0.05) * dt;
     // losing his bearings: a slow sideways pull and a sag, applied to his drift, not his steering
     if (e.struggle) { e.vx += Math.sin(g.time * 0.6) * 0.9 * e.struggle * dt; e.vy += (0.35 + Math.sin(g.time * 0.9) * 0.3) * e.struggle * dt; }
+    // (5.0) a fish fighting the net pulls him along a little, harder the bigger it is
+    if (g.tug) { const T = g.tug, k = T.t / T.dur, f = T.str * (1 - k) * (0.55 + 0.45 * Math.sin(g.time * 23)); e.vx += T.dir * f * dt * 3.2; e.vy += Math.sin(g.time * 17) * f * dt * 1.6; }
     e.x += e.vx * dt; e.y += e.vy * dt;
     if (e.y < 0.35) { e.y = 0.35; if (e.vy < 0) e.vy = 0; }
     const c = collide(W, e.x, e.y, 0.28);

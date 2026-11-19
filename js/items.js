@@ -14,10 +14,13 @@ import { designFor } from './designs.js';
 import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, STATION_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
 export { RARITY, RARITIES, SKILLS, LEGEND, SETS } from './item_data.js';
 
-export const KINDS = ['net', 'slurp', 'tag', 'cam', 'suit', 'fins', 'tank', 'bag'];
+// (5.0) the slurp gun and the tag gun are gone: the net catches, the camera records what can't be brought up
+export const KINDS = ['net', 'cam', 'suit', 'fins', 'tank', 'bag'];
 export const MAIN_KINDS = ['net', 'fins', 'tank', 'bag', 'suit'];
-export const SIDE_KINDS = ['slurp', 'tag', 'cam'];
-export const KIND_NAME = { net: 'Hand nets', slurp: 'Slurp guns', tag: 'Tag guns', cam: 'Cameras', suit: 'Suits', fins: 'Fins', tank: 'Air', bag: 'Bags' };
+export const SIDE_KINDS = ['cam'];
+export const RETIRED_KINDS = new Set(['slurp', 'tag']);
+export const RETIRED = {}; // id -> what it cost: a save that owned one is paid this back
+export const KIND_NAME = { net: 'Hand nets', cam: 'Cameras', suit: 'Suits', fins: 'Fins', tank: 'Air', bag: 'Bags' };
 export const FREE = { net: 'hand', fins: 'rubber', tank: 'al80', bag: 'mesh', suit: 'wet' }; // what he starts with, all on (the tools 2-4 start empty)
 export const SHOP_OF = { catalog: 'Bayside Marine Supply', dave: "Dave's Haul", station: 'The research station', old: 'The old one' };
 export const LOCKER = 30; // (3.0.31) thirty things in the locker; what he has on is not in it
@@ -26,7 +29,7 @@ export const LOCKER = 30; // (3.0.31) thirty things in the locker; what he has o
 const ARCH = {
   net: {
     everyday: { range: 1.2, time: 1.0, maxLen: 0.45, success: 0.65, harm: 0.15 },
-    gentle: { range: 1.3, time: 0.8, maxLen: 0.25, success: 0.75, harm: 0.03 },
+    gentle: { range: 1.3, time: 0.8, maxLen: 0.3, success: 0.75, harm: 0.03 },
     reach: { range: 2.2, time: 1.45, maxLen: 0.55, success: 0.7, harm: 0.12 },
     quick: { range: 1.1, time: 0.6, maxLen: 0.4, success: 0.72, harm: 0.12 },
     big: { range: 1.5, time: 1.25, minLen: 0.3, maxLen: 1.0, success: 0.7, harm: 0.14 },
@@ -40,7 +43,8 @@ const ARCH = {
     long: { range: 2.6, time: 1.7, maxLen: 0.2, success: 0.85, harm: 0.05 },
   },
   tag: { pole: { range: 2.5, time: 4, provoke: 0.5, pay: 1 }, gas: { range: 5, time: 3.2, provoke: 0.3, pay: 1 }, sat: { range: 4, time: 3.5, provoke: 0.35, pay: 1.4 } },
-  cam: { compact: { range: 8, shots: 5, flash: true }, macro: { range: 2, shots: 8, flash: true, small: 1.5 }, housed: { range: 11, shots: 14, flash: true }, lowlight: { range: 9, shots: 10, flash: false } },
+  // (5.0) exp: how long the shutter is open (Earl holds still); assist: how much it steadies the frame on the animal
+  cam: { compact: { range: 8, shots: 5, flash: true, exp: 1.8, assist: 0.15 }, macro: { range: 2, shots: 8, flash: true, small: 1.5, exp: 1.3, assist: 0.3 }, housed: { range: 11, shots: 14, flash: true, exp: 0.9, assist: 0.5 }, lowlight: { range: 9, shots: 10, flash: false, exp: 0.7, assist: 0.55 } },
   fins: { rubber: { swim: 1, sprint: 1.5 }, split: { swim: 1.2, sprint: 1.4 }, long: { swim: 1.3, sprint: 1.65 }, jet: { swim: 1.08, sprint: 2.0 }, free: { swim: 1.35, sprint: 1.5 } },
   // (2.8.0: all air is cut to 0.4 of what it was: he starts with 20 s)
   tank: { al: { air: 20, speed: 1 }, steel: { air: 28, speed: 1 }, big: { air: 38, speed: 0.97 }, twin: { air: 56, speed: 0.92 }, side: { air: 62, speed: 1 }, rebreather: { air: 80, speed: 1, quiet: true } },
@@ -60,7 +64,7 @@ function statsOf(kind, arch, rarity) {
     if (b.multi) s.multi = b.multi + (k >= 3 ? 1 : 0) + (k >= 4 ? 1 : 0);
     s.noise = 0.012 / p;
   } else if (kind === 'tag') { s.range = +(b.range * Math.pow(p, 0.7)).toFixed(1); s.time = +(b.time / Math.pow(p, 0.6)).toFixed(1); s.provoke = +(b.provoke / Math.pow(p, 1.3)).toFixed(2); s.pay = +(b.pay * Math.pow(p, 0.4)).toFixed(2); }
-  else if (kind === 'cam') { s.range = +(b.range * Math.pow(p, 0.5)).toFixed(1); s.shots = Math.round(b.shots * p); }
+  else if (kind === 'cam') { s.range = +(b.range * Math.pow(p, 0.5)).toFixed(1); s.shots = Math.round(b.shots * p); s.exp = +(b.exp / Math.pow(p, 0.6)).toFixed(2); s.assist = +Math.min(0.85, b.assist + 0.08 * k).toFixed(2); }
   else if (kind === 'fins') { s.swim = +(b.swim * Math.pow(p, 0.55)).toFixed(2); s.sprint = +(b.sprint * Math.pow(p, 0.3)).toFixed(2); }
   else if (kind === 'tank') { s.air = Math.round(b.air * Math.pow(p, 0.9)); }
   else if (kind === 'bag') { s.slots = b.slots + BAG_PLUS[k]; }
@@ -76,7 +80,7 @@ function goodOf(kind, s) {
   const cm = (m) => Math.round(m * 100);
   if (kind === 'net' || kind === 'slurp') return `${s.multi ? `Up to ${s.multi} from a school at once; ` : ''}fish ${s.minLen ? `${cm(s.minLen)}–${cm(s.maxLen)} cm` : `up to ${cm(s.maxLen)} cm`}, reach ${s.range} m`;
   if (kind === 'tag') return `Tagging from ${s.range} m`;
-  if (kind === 'cam') return `${s.shots} photographs a dive${s.flash ? '' : ', no flash'}`;
+  if (kind === 'cam') return `Holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
   if (kind === 'fins') return `Cruising ×${s.swim}, sprint ×${s.sprint}`;
   if (kind === 'tank') return `About ${s.air} s of air${s.quiet ? ', no bubbles' : ''}`;
   if (kind === 'bag') return `${s.slots} animals${s.apart ? ', kept apart' : ''}`;
@@ -95,6 +99,7 @@ function paletteOf(def) {
 // ---------- the definitions ----------
 export const ITEMS = {};
 function add(def) {
+  if (RETIRED_KINDS.has(def.kind)) { RETIRED[def.id] = def.price != null ? def.price : Math.round(VALUE[def.rarity] * 0.6); return; }
   Object.assign(def, statsOf(def.kind, def.arch, def.rarity));
   if (!def.good) def.good = goodOf(def.kind, def);
   if (def.price == null) def.price = Math.round(VALUE[def.rarity] * (SIDE_KINDS.includes(def.kind) ? 0.6 : 1));
@@ -118,6 +123,9 @@ function add(def) {
 }
 const fromRow = (shop) => ([id, kind, arch, rarity, price, name, line, good, bad, sk]) => add({ id, kind, arch, rarity, price, name, line, good, bad: bad || '', shop, sk: sk || null });
 FREE_ROWS.forEach(fromRow('free'));
+// (5.0) the net he starts with is a worn one: smaller fish, more misses, rougher on them, a slower swing.
+// Every net in the shop now beats it at something (size, care, speed, reach) instead of being a step down
+Object.assign(ITEMS.hand, { maxLen: 0.3, success: 0.58, harm: 0.2, time: 1.1, range: 1.1 });
 BAYSIDE_ROWS.forEach(fromRow('catalog'));
 DAVE_ROWS.forEach(fromRow('dave'));
 STATION_ROWS.forEach(fromRow('station')); // (3.0.0)
@@ -178,6 +186,15 @@ export function kitOf(P) {
     for (const [kind, id] of Object.entries(FREE)) { const it = mk(id); P.kit.items.push(it); P.kit.on[kind] = it.u; }
     for (const id of old) if (ITEMS[id] && !Object.values(FREE).includes(id) && P.kit.items.length < LOCKER) P.kit.items.push(mk(id));
     for (const k of SIDE_KINDS) if (P.kit.on[k] === undefined) P.kit.on[k] = null;
+  }
+  // (5.0) a save from before 5.0: slurp guns and tag guns (and tag darts) are bought back at what they cost
+  if (!P.retired5) {
+    P.retired5 = 1;
+    let back = 0;
+    P.kit.items = P.kit.items.filter((q) => { if (ITEMS[q.id]) return true; back += RETIRED[q.id] || 0; return false; });
+    for (const k of ['slurp', 'tag']) delete P.kit.on[k];
+    if (P.items) { back += (P.items.tag || 0) * 5 + (P.items.tagAdv || 0) * 200; delete P.items.tag; delete P.items.tagAdv; }
+    if (back > 0) { P.cash = Math.round(((P.cash || 0) + back) * 100) / 100; P.refund5 = back; }
   }
   return P.kit;
 }

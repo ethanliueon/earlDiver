@@ -49,7 +49,7 @@ export const LEGEND = {
 
 // ---------- the free kit ----------
 export const FREE_ROWS = [
-  ['hand', 'net', 'everyday', 'common', 0, 'Hand net', 'The green net he started with. It has seen better days, and so has he.', 'Everyday fish, up to 45 cm', ''],
+  ['hand', 'net', 'everyday', 'common', 0, 'Hand net', 'The green net he started with. It has seen better days, and so has he.', 'Small fish, up to 30 cm', 'Rough on fish, and it misses'],
   ['rubber', 'fins', 'rubber', 'common', 0, 'Rubber fins', 'Standard blades, a little cracked at the straps.', 'Everyday swimming', ''],
   ['al80', 'tank', 'al', 'common', 0, 'Aluminium 80', 'Dented, honest, and not very big.', 'About 20 s of air', ''],
   ['mesh', 'bag', 'mesh', 'common', 0, 'Mesh bag', 'Clipped to his belt. It holds what it holds.', '5 animals', ''],
@@ -59,14 +59,14 @@ export const FREE_ROWS = [
 // ---------- Bayside Marine Supply (the Margaret's cabin computer): hand nets, fins and bags ----------
 export const BAYSIDE_ROWS = [
   // hand nets (11)
-  ['dip', 'net', 'gentle', 'common', 35, 'Aquarium dip net', "Knotless mesh that won't split a fin. Made for aquarium collectors.", 'Fish arrive almost unmarked', 'Anything over 25 cm'],
+  ['dip', 'net', 'gentle', 'common', 35, 'Aquarium dip net', "Knotless mesh that won't split a fin. Made for aquarium collectors.", 'Fish arrive almost unmarked, worth more', 'Big fish'],
   ['shrimpnet', 'net', 'gentle', 'common', 45, 'Shrimp scoop', 'A fine, deep bag on a short handle, for things that hide in the weed.', 'Small, soft animals', 'Anything quick'],
   ['bait', 'net', 'school', 'common', 120, 'Bait-ball net', 'A wide, shallow net for schooling fish.', 'Two fish from a school in one sweep', 'Slow to swing, and rough on fish'],
   ['long', 'net', 'reach', 'common', 260, 'Long-handle net', 'A telescopic pole and a deep bag.', 'Reaching a fish before it bolts', 'Quick fish up close: it swings slowly'],
   ['flicknet', 'net', 'quick', 'common', 140, 'Flick net', 'Short, light and stiff. You can swing it before you have thought about it.', 'Quick fish up close', 'Anything out of arm\'s reach'],
   ['sturdy', 'net', 'sure', 'common', 180, 'Collector\'s hoop net', 'A heavy hoop that does not wobble. What goes in, stays in.', 'Fewer misses', ''],
   ['coarse', 'net', 'big', 'uncommon', 900, 'Coarse game net', 'Big mesh on a heavy hoop.', 'Big fish, 30 cm to over a metre', 'Small fish slip through'],
-  ['finemesh', 'net', 'gentle', 'uncommon', 320, 'Fine-mesh net', 'Soft, knotless mesh on a light frame. Lighter, quicker, kinder.', 'Fish arrive almost unmarked', 'Anything over 30 cm'],
+  ['finemesh', 'net', 'gentle', 'uncommon', 320, 'Fine-mesh net', 'Soft, knotless mesh on a light frame. Lighter, quicker, kinder.', 'Fish arrive almost unmarked, worth more', 'Big fish'],
   ['reefpole', 'net', 'reach', 'uncommon', 640, 'Reef pole net', 'A carbon pole and a narrow bag, for fish that live in the gaps.', 'Reaching into the reef', 'Slow to swing', ['ambush', 1]],
   ['schooner', 'net', 'school', 'uncommon', 780, 'Schooling seine', 'A short seine on a hoop, for a diver alone.', 'Two or three from a school at once', 'Rough on fish'],
   ['prohoop', 'net', 'sure', 'rare', 2400, 'Bayside Pro hoop', 'The best net the shop sells. Ask for it by name.', 'Fewer misses, and gentle with it', '', ['performance', 1]],
@@ -176,7 +176,7 @@ export const STATION_ROWS = [
 ];
 
 export const DAVE_ROWS = [
-  ['pronet', 'net', 'sure', 'rare', 3500, 'Pro capture net', 'A D-frame with a padded rim and a clear rubber bag.', 'Fish up to a metre, quick and gentle', ''],
+  ['pronet', 'net', 'sure', 'rare', 3500, 'Pro capture net', 'A D-frame with a padded rim and a clear rubber bag.', 'Fewer misses, quick and gentle', ''],
   ['deepnet', 'net', 'big', 'rare', 4200, 'Deep-water game net', 'Heavy hoop, heavy mesh, a weighted rim that falls fast.', 'Big fish', 'Small fish slip through'],
   ['proslurp', 'slurp', 'long', 'rare', 1400, 'Pro slurp gun', 'A longer barrel, a stronger spring, a pistol grip.', 'Fish up to 20 cm, from further off', ''],
   ['pneumatic', 'tag', 'gas', 'rare', 2500, 'Pneumatic tag gun', 'Air-powered, accurate to six metres.', 'Big animals barely notice', ''],

@@ -134,6 +134,38 @@ export class Renderer {
       this.gc.width = Math.ceil(w / 2); this.gc.height = Math.ceil(h / 2);
     }
   }
+  // (5.0) a photograph: the last frame drawn, cut around where the camera pointed, as a small JPEG. A shaky
+  // exposure comes out blurred, as it would
+  snapshot(frame, blur = 0) {
+    try {
+      const cam = this.cam, ppm = cam.ppm, W = this.W, H = this.H;
+      const cx = (frame.x - cam.x) * ppm + W / 2, cy = (frame.y - cam.y) * ppm + H / 2;
+      const cwM = clamp((fishDrawLen(frame.len) * 1.9 + 0.45), 1.1, 8), cw = cwM * ppm, ch = cw * 2 / 3, OW = 480, OH = 320;
+      const o = document.createElement('canvas'); o.width = OW; o.height = OH;
+      const x = o.getContext('2d');
+      x.fillStyle = '#0a1418'; x.fillRect(0, 0, OW, OH); x.imageSmoothingQuality = 'high';
+      // the water behind, from the screen, a little soft (as a lens focused on the animal sees it)...
+      x.filter = `blur(${(3 + blur * 4).toFixed(1)}px) contrast(1.06) saturate(1.1)`;
+      x.drawImage(this.c, cx - cw / 2, cy - ch / 2, cw, ch, 0, 0, OW, OH);
+      x.filter = 'none';
+      // ...and the animal itself drawn again at the picture's own size, sharp (soft only if the exposure shook),
+      // dimmed to the light it was in
+      const S2 = frame.sub;
+      if (S2) {
+        const k = OW / cwM, Ld = fishDrawLen(S2.len) * k, lit = S2.flash ? 1 : clamp(Math.max(1 - S2.y / 300, this.litAt(S2.x, S2.y)), 0.2, 1);
+        x.save(); x.translate(OW / 2 + (S2.x - frame.x) * k, OH / 2 + (S2.y - frame.y) * k);
+        if (S2.dir > 0) x.scale(-1, 1);
+        x.rotate(-S2.tilt);
+        const fl = [blur > 0.25 ? `blur(${(blur * 3).toFixed(1)}px)` : '', lit < 0.98 ? `brightness(${lit.toFixed(2)})` : ''].filter(Boolean).join(' ');
+        if (fl) x.filter = fl;
+        try { if (S2.variant) this.drawVariant(x, S2.sp, S2.variant, Ld, S2.phase); else drawSpecies(x, S2.sp, Ld, S2.phase, S2.still ? 0 : 1, 0); } catch (e) { /* the water alone, then */ }
+        x.restore();
+      }
+      const v = x.createRadialGradient(OW / 2, OH / 2, OH * 0.3, OW / 2, OH / 2, OW * 0.62); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.38)');
+      x.fillStyle = v; x.fillRect(0, 0, OW, OH);
+      return o.toDataURL('image/jpeg', 0.84);
+    } catch (e) { return null; }
+  }
   get W() { return this.c.width; }
   get H() { return this.c.height; }
 
@@ -393,12 +425,19 @@ export class Renderer {
       const tg = isLive && Ld >= 6 ? layer() : ctx;
       if (tg !== ctx) this.lgrow(S(c.x), Sy(c.y), Ld * 1.4);
       tg.save(); tg.translate(S(c.x), Sy(c.y));
-      if (c.dir > 0) tg.scale(-1, 1);
+      // (5.0) body language: a turn is a quick edge-on swing, not a flip; a startle is a flinch; a spent fish
+      // hangs nose-down; a dazed one rolls and wobbles
+      let turnK = 1, extra = 0, roll = 1;
+      if (c.turnAt !== undefined) { const k = (t - c.turnAt) / (0.18 + Math.min(0.5, c.len * 0.25)); if (k >= 0 && k < 1) turnK = 0.1 + 0.9 * k * k * (3 - 2 * k); }
+      if (c.startle > 0) extra += Math.sin((1 - c.startle / 0.32) * Math.PI) * 0.5;
+      if (c.tired > 0) extra += -0.3 + Math.sin(t * 1.3 + c.wob) * 0.06;
+      if (c.dazed > 0) { const dk = Math.min(1, c.dazed / 0.8); extra += Math.sin(t * 11 + c.wob) * 0.32 * dk; roll = 1 - 0.5 * dk * Math.abs(Math.sin(t * 7 + c.wob)); }
+      tg.scale(c.dir > 0 ? -turnK : turnK, roll);
       if (c.sp.v.hab === 'floor' && c.y > g.world.floorAt(c.x) - 0.6) {
         // a crab, an octopus, a starfish on the bottom: along the slope under it, not level
         const a = seabedPose(g.world, c.x, Math.max(0.1, c.len * 0.5), true).rot;
         tg.rotate(c.dir > 0 ? -a : a);
-      } else tg.rotate(c.sp.v.hab === 'drift' ? 0 : -tilt);
+      } else tg.rotate((c.sp.v.hab === 'drift' ? 0 : -tilt) + extra);
       const r = c.variant ? this.drawVariant(tg, c.sp, c.variant, Ld, c.phase) : this.drawCached(tg, c.sp, Ld, c.phase, c.wob, isLive ? null : this.veilFor(c.y));
       tg.restore();
       if (Ld >= 6 && (c.variant || Ld > 150 || CACHE_SKIP.has(shape))) {
@@ -562,6 +601,18 @@ export class Renderer {
         ctx.fillText(`${Math.round(d)} m`, ax - Math.cos(a2) * 34, ay - Math.sin(a2) * 34 + 4); ctx.restore();
       }
     }
+    // (5.0) a pet left to stay, off the screen: a smaller, dimmer arrow at the edge pointing back to it, with how far
+    const pc = g.petC;
+    if (pc && g.profile && g.profile.petStay && g.mode === 'play' && !g.photo) {
+      const cx = S(pc.x), cy = Sy(pc.y), W2 = this.W, H2 = this.H;
+      if (cx < 0 || cx > W2 || cy < 0 || cy > H2) {
+        const ax = clamp(cx, 40, W2 - 40), ay = clamp(cy, 64, H2 - 64), a2 = Math.atan2(cy - H2 / 2, cx - W2 / 2);
+        ctx.save(); ctx.translate(ax, ay); ctx.rotate(a2); ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 5; ctx.fillStyle = 'rgba(200,228,236,0.8)';
+        ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-8, -11); ctx.lineTo(-3, 0); ctx.lineTo(-8, 11); ctx.closePath(); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.font = '600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(200,228,236,0.85)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+        ctx.fillText(`Pet ${Math.round(Math.hypot(pc.x - g.earl.x, pc.y - g.earl.y))} m`, ax - Math.cos(a2) * 32, ay - Math.sin(a2) * 32 + 4); ctx.restore();
+      }
+    }
     const ctg = g.mode === 'play' && SETTINGS.brackets ? g.catchTarget : null;
     if (ctg) {
       const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y;
@@ -573,6 +624,26 @@ export class Renderer {
         ctx.moveTo(cx + sx * r, cy + sy * rh - sy * k); ctx.lineTo(cx + sx * r, cy + sy * rh); ctx.lineTo(cx + sx * r - sx * k, cy + sy * rh);
       }
       ctx.stroke(); ctx.globalAlpha = 1;
+    }
+    // (5.0) the camera's viewfinder while the shutter is open: four thin corners along the aim, closing in on the
+    // animal as the exposure runs, a line filling under them. (Gone in the last instant: the picture is cut from
+    // this canvas, and the frame must not be in it.)
+    const PH = g.photo;
+    if (PH && g.mode === 'play' && PH.t < PH.dur - 0.06) {
+      const e = g.earl, a = g.aim !== null && g.aim !== undefined ? g.aim : (e.facing > 0 ? 0 : Math.PI);
+      const subj = PH.s ? (PH.s.c ? PH.s.c : PH.s) : null, dd = subj ? Math.hypot(subj.x - e.x, subj.y - e.y) : 3;
+      const as = PH.def.assist || 0.2, ax = e.x + Math.cos(a) * dd, ay = e.y + Math.sin(a) * dd;
+      const fx2 = subj ? ax + (subj.x - ax) * as : ax, fy2 = subj ? ay + (subj.y - ay) * as : ay;
+      const k = clamp(PH.t / PH.dur, 0, 1), L = subj ? fishDrawLen(PH.s.len) : 0.6;
+      const rw = Math.max(ppm * 0.9, L * ppm * 1.4) * (1.35 - 0.3 * k), rh = rw * 0.66, c = rw * 0.28;
+      const cx = S(fx2), cy = Sy(fy2);
+      ctx.save(); ctx.strokeStyle = 'rgba(244,246,240,0.9)'; ctx.lineWidth = Math.max(1.5, ppm * 0.04); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
+      ctx.beginPath();
+      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.moveTo(cx + sx * rw, cy + sy * rh - sy * c); ctx.lineTo(cx + sx * rw, cy + sy * rh); ctx.lineTo(cx + sx * rw - sx * c, cy + sy * rh); }
+      ctx.stroke();
+      ctx.lineWidth = Math.max(1, ppm * 0.025); ctx.beginPath(); ctx.moveTo(cx - 6, cy); ctx.lineTo(cx + 6, cy); ctx.moveTo(cx, cy - 6); ctx.lineTo(cx, cy + 6); ctx.stroke();
+      ctx.fillStyle = 'rgba(244,246,240,0.85)'; ctx.fillRect(cx - rw, cy + rh + 6, rw * 2 * k, Math.max(2, ppm * 0.05));
+      ctx.restore();
     }
     // the entity's body, lit by the same light as everything else (invisible in the dark)
     const entB = g.entity;

@@ -94,7 +94,7 @@ export function updateHunters(g, dt) {
 
   for (const c of list) {
     const A = AGGRO[c.sp.id];
-    if (!A || c.dead) continue;
+    if (!A || c.dead || c.companion) continue;
     const at = c.att || (c.att = { s: 'idle', t: 0, cool: rng.range(5, 20) });
     const d = dist(c.x, c.y, e.x, e.y);
     at.t += dt;

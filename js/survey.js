@@ -50,7 +50,7 @@ function inCone(g, range, cone, pick) {
     const score = pick(sp, ref, d, da);
     if (score !== null && score < bs) { bs = score; best = { sp, x, y, len, d, ...ref }; }
   };
-  for (const c of g.fauna.list) if (!c.dead && !c.pet) test(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
+  for (const c of g.fauna.list) if (!c.dead && !c.pet && !c.companion) test(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
   for (const s of g.world.statics) if (Math.abs(s.x - e.x) < range + 5) test(s.sp, s.x, s.y - s.sp.len * s.scale * 0.3, s.sp.len * s.scale, { s, variant: s.variant });
   return best;
 }
@@ -136,22 +136,59 @@ export function updateDarts(g, dt) {
 }
 function provoke(c) { c.hunting = true; if (c.att) c.att.cool = 0; }
 
-// take a picture of the best subject in front of him
-export function takePhoto(g) {
-  const def = gear(g.profile, 'cam'), e = g.earl;
-  if (g.shots <= 0) return { type: 'noShots' };
-  g.shots--;
-  g.capture = { kind: 'cam', t: 0, dur: 0.9, resolveAt: 1, done: true };
+// (5.0) Photographs. The camera holds film (bought at the boat, a roll as long as the camera takes). Space starts
+// an exposure: Earl holds still while the shutter is open (a cheap compact for nearly two seconds, a good housed
+// camera for well under one), and keeps the animal in frame by aiming. What comes out is a picture kept with the
+// catch and sold at the boat: a sharp, centred, close photograph pays in full, a blurred or off-centre one less,
+// and the first of a species most of all. A better camera is quicker, and steadies the frame on the animal.
+export function photoTarget(g) {
+  if (!owns(g.profile, 'camera')) return null;
+  const def = gear(g.profile, 'cam');
+  const t = inCone(g, def.range, 0.45, (sp, ref, d, da) => d + da * 4 - (ref.variant ? 3 : 0) + (sp.len < 0.04 ? 20 : 0));
+  return t ? { ...t, name: variantName(t.sp, t.variant) } : null;
+}
+export function startPhoto(g) {
+  if (g.photo) return null;
+  if (!((g.items.film || 0) > 0)) return 'No film: buy it at the boat';
+  const def = gear(g.profile, 'cam'), t = photoTarget(g);
+  g.photo = { t: 0, dur: def.exp || 1.6, def, s: t ? { c: t.c || null, st: t.s || null, sp: t.sp, variant: t.variant || null, x: t.x, y: t.y, len: t.len, name: t.name } : null, moved: 0 };
+  return null;
+}
+const subjPos = (S) => (S.c ? { x: S.c.x, y: S.c.y } : { x: S.x, y: S.y });
+// advance an exposure; at the end, the picture: { type: 'photo', ... } (or { type: 'photo', empty: true })
+export function updatePhoto(g, dt) {
+  const P = g.photo; if (!P) return null;
+  const S = P.s;
+  if (S && S.c && !S.c.dead) { const q = subjPos(S); P.moved += Math.hypot(q.x - (P.lx ?? q.x), q.y - (P.ly ?? q.y)); P.lx = q.x; P.ly = q.y; }
+  P.t += dt;
+  if (P.t < P.dur) return null;
+  g.photo = null;
+  g.items.film = Math.max(0, (g.items.film || 0) - 1);
+  const def = P.def, e = g.earl;
   if (def.flash) {
     g.camFlash = 1;
     if (e.y > 200) g.entity.disturb(g, 0.05); // a flash in the dark is seen a long way off
-    // a flash makes nearby fish start
     for (const c of g.fauna.list) if (c.flee > 0 && dist(c.x, c.y, e.x, e.y) < 6) c.fleeT = Math.max(c.fleeT, 1.2);
   }
-  const s = findPhotoSubject(g);
-  if (!s) return { type: 'photo', empty: true };
-  if (!s.ok) return { type: 'photo', old: true, sp: s.sp, name: s.name, variant: s.variant };
-  const value = def.small && s.sp.len < 0.15 ? Math.round(s.value * def.small * 100) / 100 : s.value; // (the macro camera: small animals pay more)
-  g.photos.push({ key: s.key, id: s.sp.id, variant: s.variant || null, value, name: s.name });
-  return { type: 'photo', sp: s.sp, variant: s.variant, value, name: s.name };
+  const a = aimAngle(g), ox = e.x + Math.cos(a) * 0.5, oy = e.y + Math.sin(a) * 0.5;
+  if (!S || (S.c && S.c.dead)) return { type: 'photo', empty: true, aim: a, ox, oy };
+  const q0 = subjPos(S), dx = q0.x - ox, dy = q0.y - oy, d = Math.max(0.3, Math.hypot(dx, dy) - S.len * 0.35);
+  let da = Math.abs(Math.atan2(dy, dx) - a); if (da > Math.PI) da = 2 * Math.PI - da;
+  const assist = def.assist || 0.2, half = 0.5 + Math.atan2(S.len * 0.5, Math.max(1, d));
+  const daE = da * (1 - assist);
+  if (daE > half || d > def.range + 1.5) return { type: 'photo', empty: true, aim: a, ox, oy };
+  const centre = 1 - Math.min(1, daE / half);
+  const sharp = 1 - Math.min(1, Math.max(0, (P.moved * (1 - assist * 0.5)) / (0.25 + S.len * 0.8) - 0.3));
+  const size = Math.min(1, Math.max(0.25, S.len / (d * 0.18 + 0.05)));
+  const q = Math.round((centre * 0.4 + sharp * 0.4 + size * 0.2) * 100) / 100;
+  const grade = q >= 0.72 ? 'Good' : sharp < centre ? 'Blurry' : 'Off-centre';
+  const sk = photoKey(S.sp, S.variant), have = new Set(g.profile.photos || []), first = !have.has(sk) && !g.photos.some((p) => p.sk === sk);
+  let value = photoValue(S.sp, S.variant) * (0.3 + 0.7 * q) * (first ? 1 : 0.35);
+  if (def.small && S.sp.len < 0.15) value *= def.small; // the macro camera: small animals pay more
+  value = Math.max(0.05, Math.round(value * 100) / 100);
+  // where the frame was: along the aim at the animal's distance, steadied toward it by the camera
+  const fx = ox + Math.cos(a) * Math.hypot(dx, dy), fy = oy + Math.sin(a) * Math.hypot(dx, dy);
+  return { type: 'photo', sp: S.sp, variant: S.variant, name: S.name, sk, first, q, grade, sharp, value,
+    frame: { x: fx + (q0.x - fx) * Math.max(assist, 0.35), y: fy + (q0.y - fy) * Math.max(assist, 0.35), len: S.len, d,
+      sub: { x: q0.x, y: q0.y, sp: S.sp, variant: S.variant, len: S.len, dir: S.c ? S.c.dir || 1 : 1, tilt: S.c ? Math.max(-0.5, Math.min(0.5, Math.atan2(S.c.vy || 0, Math.abs(S.c.vx || 0) + 0.2))) - (S.c.tired > 0 ? -0.3 : 0) : 0, phase: S.c ? S.c.phase || 0 : 0, still: !S.c, flash: !!def.flash } } };
 }

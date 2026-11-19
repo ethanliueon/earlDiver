@@ -413,3 +413,80 @@ html body #title .t-gear { position: absolute !important; right: 0; top: 6px; }
 html body #title .t-plate h1 span:not(#_a) { display: block !important; }
 html body #title .t-plate h1 b { text-transform: uppercase; }
 html body #title .t-gear:not(#_a) { position: fixed !important; right: 22px !important; top: 20px !important; left: auto !important; }
+
+/* ---------- 5.0: the Catch page's pet slot and photographs; the pet's card; a photograph large; sell rows ---------- */
+html body #inventory .inv-catch2 .catch-row { display: flex; gap: 14px; margin: 14px 0 10px; align-items: stretch; }
+html body #inventory .inv-catch2 .pet-slot { position: relative; flex: 0 0 196px; height: 108px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 22px 8px 8px; box-sizing: border-box; text-align: center;
+  background: rgba(0, 0, 0, 0.16); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45); outline: 1px dashed rgba(230, 222, 196, 0.28); outline-offset: -6px; cursor: default; }
+html body #inventory .inv-catch2 .pet-slot.on { cursor: pointer; outline: none; background: radial-gradient(ellipse at 50% 35%, rgba(90, 130, 140, 0.16), rgba(0, 0, 0, 0.42)); box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #4a5246, 0 0 0 4px #1a1d18, inset 0 3px 8px rgba(0, 0, 0, 0.6); }
+html body #inventory .inv-catch2 .pet-slot.on:hover { filter: brightness(1.12); }
+html body #inventory .inv-catch2 .pet-slot.drop-on { outline: 2px solid rgba(244, 246, 240, 0.85); outline-offset: -4px; }
+html body #inventory .inv-catch2 .pet-slot .ps-lbl { position: absolute; left: 10px; top: 7px; font: 600 11px var(--o-text); letter-spacing: 0.16em; text-transform: uppercase; color: var(--o-cream-dim); }
+html body #inventory .inv-catch2 .pet-slot img { height: 44px; max-width: 150px; object-fit: contain; margin-bottom: 2px; }
+html body #inventory .inv-catch2 .pet-slot b { font: 600 14px/1.1 var(--o-text); color: #efe8d2; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body #inventory .inv-catch2 .pet-slot small { font: 500 12px var(--o-text); color: var(--o-cream-dim); }
+html body #inventory .inv-catch2 .pet-slot em { font: 500 13px/1.25 var(--o-text); font-style: normal; color: rgba(230, 222, 196, 0.55); margin: auto 0; max-width: 150px; }
+html body #inventory .pet-pop .pet-pic { display: flex; align-items: center; justify-content: center; }
+html body #inventory .pet-pop .pet-pic img { max-width: 92%; max-height: 80%; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5)); }
+html body #inventory .pet-pop .warnline { color: #e8b0a0 !important; }
+html body .shop .sell-photo, html body .sell-item .sell-photo { width: 54px; height: 36px; object-fit: cover; border: 3px solid #e8e2cf; border-bottom-width: 4px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); margin-right: 10px; flex: 0 0 auto; }
+
+/* the Catch page: the left half scrolls (the bag, the pet, then ten boxes for photographs); the sub's tank fills the right */
+html body #inventory .inv-catch2 { height: 100%; }
+html body #inventory .inv-catch2 .inv-left { display: block !important; overflow-y: auto !important; overflow-x: hidden !important; padding-right: 8px !important; padding-bottom: 70px !important; scrollbar-width: thin; scrollbar-color: rgba(230, 222, 196, 0.35) transparent; }
+html body #inventory .inv-catch2 .inv-right { display: flex !important; flex-direction: column !important; min-height: 0; }
+html body #inventory .inv-catch2 .fc-grid.g4 { grid-auto-rows: 132px !important; }
+html body #inventory .inv-catch2 .catch-row { display: flex; align-items: flex-end; margin: 16px 0 6px; }
+html body #inventory .inv-catch2 .catch-row .worth-paint { margin: 0 0 0 auto !important; align-self: flex-end; }
+html body #inventory .inv-catch2 .sub-bay { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+html body #inventory .inv-catch2 .sub-bay .tank-win { flex: 1 1 auto; min-height: 150px; display: flex; }
+html body #inventory .inv-catch2 .sub-bay .tank-win canvas.ct-tank { flex: 1 1 auto; width: 100% !important; height: 100% !important; }
+html body #inventory .inv-catch2 .fc.pic-only { display: flex !important; align-items: center !important; justify-content: center !important; padding: 10px !important; }
+html body #inventory .inv-catch2 .fc.pic-only img { flex: 0 0 auto !important; height: auto !important; max-height: 80% !important; max-width: 96%; object-fit: contain; transform: scale(1.18) !important; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45)); }
+html body #inventory .inv-catch2 .fc.pic-only .fc-dot { position: absolute; right: 9px; bottom: 9px; width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.45); z-index: 2; }
+html body #inventory .inv-catch2 h4.ph-h { display: flex !important; align-items: baseline; gap: 10px; margin-top: 20px !important; }
+html body #inventory .inv-catch2 h4.ph-h span { margin-left: 14px; font: 500 14px var(--o-text); letter-spacing: 0; text-transform: none; color: var(--o-cream-dim); }
+html body #inventory .inv-catch2 .ph-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+html body #inventory .inv-catch2 .ph-cell { position: relative; aspect-ratio: 3 / 2; padding: 0; border: 0; border-radius: 3px; overflow: hidden; background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45); }
+html body #inventory .inv-catch2 .ph-cell[data-ph] { cursor: pointer; background: #0b1316; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7); }
+html body #inventory .inv-catch2 .ph-cell[data-ph]:hover { box-shadow: 0 0 0 2px rgba(244, 246, 240, 0.8); }
+html body #inventory .inv-catch2 .ph-cell img { display: block; width: 100%; height: 100%; object-fit: cover; }
+html body #inventory .inv-catch2 .ph-cell b { position: absolute; left: 5px; top: 4px; font: 600 11px var(--o-num); color: rgba(244, 246, 240, 0.85); text-shadow: 0 1px 2px #000; }
+html body #inventory .inv-catch2 .ph-cell i { position: absolute; right: 4px; bottom: 4px; font: 600 10px var(--o-text); font-style: normal; color: #f0d8cc; background: rgba(0, 0, 0, 0.55); padding: 0 4px; border-radius: 2px; }
+html body #inventory .photo-pop { display: flex; align-items: center; justify-content: center; background: rgba(4, 8, 8, 0.82); }
+html body #inventory .photo-pop .ph-panel { position: relative; width: 82%; max-width: 900px; }
+html body #inventory .photo-pop .ph-panel > img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; background: #0b1316; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 20px 50px rgba(0, 0, 0, 0.6); }
+html body #inventory .photo-pop .ph-cap { display: flex; align-items: baseline; gap: 16px; margin-top: 12px; color: #efe8d2; font: 600 22px var(--o-text); }
+html body #inventory .photo-pop .ph-cap span { font: 500 17px var(--o-text); color: var(--o-cream-dim); }
+html body #inventory .photo-pop .ph-cap em { margin-left: auto; font: 600 22px var(--o-num); font-style: normal; color: #efe8d2; }
+html body #inventory .photo-pop .ip-close { position: absolute; right: -16px; top: -16px; }
+
+/* 5.0: in play the group is just the clipboard: a new step peeks out for a moment, words only; the journal and the
+   chart show only when the clipboard is tapped */
+html body #quests-hud.peek:not(.open) .qh-step { opacity: 1; transform: none; pointer-events: auto; }
+
+/* 5.0: the bag's pockets with a material each. An open pocket is a dark well with the bag's own knotted mesh across
+   it (stronger round a pocket with an animal in it); a pocket his bag doesn't have yet is a screwed-down steel cover
+   with a padlock, so it reads as locked at a glance */
+html body #inventory .inv-catch2 .fc:not(.locked):not(#_a) {
+  background:
+    repeating-linear-gradient(45deg, rgba(214, 206, 170, 0.075) 0 1.5px, transparent 1.5px 11px),
+    repeating-linear-gradient(-45deg, rgba(214, 206, 170, 0.075) 0 1.5px, transparent 1.5px 11px),
+    radial-gradient(ellipse at 50% 40%, rgba(70, 100, 96, 0.22), rgba(0, 0, 0, 0) 70%),
+    linear-gradient(180deg, #1d211a, #262b21 70%, #2d3326) !important;
+  box-shadow: 0 0 0 1px #0c0e0b, 0 0 0 3px #454c3c, 0 0 0 4px #161912, inset 0 4px 10px rgba(0, 0, 0, 0.65), inset 0 -1px 0 rgba(255, 255, 255, 0.04) !important; }
+html body #inventory .inv-catch2 .fc.empty:not(#_a) { opacity: 0.8; }
+html body #inventory .inv-catch2 .fc.empty::after { display: none !important; }
+html body #inventory .inv-catch2 .fc.locked:not(#_a) { opacity: 1 !important;
+  background:
+    radial-gradient(circle at 12px 12px, #8a8f80 0 2.5px, #2a2d24 3px, transparent 4px),
+    radial-gradient(circle at calc(100% - 12px) 12px, #8a8f80 0 2.5px, #2a2d24 3px, transparent 4px),
+    radial-gradient(circle at 12px calc(100% - 12px), #8a8f80 0 2.5px, #2a2d24 3px, transparent 4px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), #8a8f80 0 2.5px, #2a2d24 3px, transparent 4px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10V7a5 5 0 0 1 10 0v3' fill='none' stroke='%23c8c2a8' stroke-width='2.2'/%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='%23c8c2a8'/%3E%3Ccircle cx='12' cy='15' r='1.7' fill='%233a3d32'/%3E%3C/svg%3E") center / 26px 26px no-repeat,
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 5px),
+    linear-gradient(180deg, #4e5444, #3e4336 55%, #363b2f) !important;
+  box-shadow: 0 0 0 1px #0c0e0b, inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -2px 4px rgba(0, 0, 0, 0.35) !important; }
+html body #inventory .inv-catch2 .fc.locked:not(#_a) > i { display: none !important; }
+html body #inventory .inv-catch2 .fc.locked::before { display: none !important; }
+html body #inventory .inv-catch2 .fc:not(#_a):not(#_b) { border-image: none !important; border: 0 !important; }

@@ -416,6 +416,10 @@ export class Fauna {
       speed: cruise, cruise, flee, fleeT: 0,
       tDepth: y, tDepthT: rng.range(4, 15), turnT: rng.range(25, 70),
       predator: PREDATORS.has(sp.id), prey: null, huntCool: rng.range(2, 10), dead: false,
+      // (5.0) stamina: a chase wears a fish out. Sprinters (tuna, mackerel) are fast and spent quickly,
+      // big cruisers hardly tire; spent, it slows and rests a few seconds (the moment to net it)
+      energy: 1, drain: FAST.has(sp.id) ? 0.42 : len < 0.3 ? 0.32 : len < 1 ? 0.24 : 0.13, tired: 0, dazed: 0, startle: 0,
+      kick: rng() * 6.28, kickHz: rng.range(0.7, 1.1),
     };
     // rare variants, once Earl has caught a normal one of this species
     if (this.caught && this.caught.has(sp.id) && canBeRare(sp) && !this.schools.has(gid)) {
@@ -617,6 +621,7 @@ export class Fauna {
     for (let i = this.list.length - 1; i >= 0; i--) {
       const c = this.list[i];
       if (c.dead) { this.list.splice(i, 1); continue; }
+      if (c.companion) continue; // (5.0) a pet: steered by pets.js
       // despawn far away
       const busy = c.att && c.att.s !== 'idle';
       if (!busy && !c.devKeep && (Math.abs(c.x - cam.x) > cam.w * 1.7 || Math.abs(c.y - cam.y) > cam.h * 2.4)) { this.list.splice(i, 1); continue; }
@@ -648,7 +653,8 @@ export class Fauna {
         // seconds, back home if it strays, and tucked in to rest at its own time of day
         const h = c.home;
         const resting = (c.act === 'day' && night) || (c.act === 'night' && !night);
-        const R = resting ? Math.min(c.homeR, 0.7) : (c.act === 'night' && night ? c.nightR : c.homeR);
+        // (5.0) at rest they settle loosely low over their patch, each its own spot, not stacked on one point of sand
+        const R = resting ? Math.min(c.homeR, 3) : (c.act === 'night' && night ? c.nightR : c.homeR);
         c.tT -= dt;
         if (c.tT <= 0 || c.tx === undefined || Math.hypot(c.tx - c.x, c.ty - c.y) < 0.3) {
           c.tT = rng.range(2.5, 8);
@@ -659,6 +665,7 @@ export class Fauna {
           // open-water reef fish, out and about, swim well clear of the rock: 3-15 m above the seabed
           // (never right at the surface); at rest, or hiding, they keep to their home
           if (c.sp.v.hab === 'reef' && !resting && !(c.hideT > 0)) ny = Math.max(1.2, W.floorAt(nx) - rng.range(3, 15));
+          else if (resting && h.kind !== 'kelp') ny = W.floorAt(nx) - rng.range(0.7, 2.6);
           c.tx = nx; c.ty = Math.min(ny, W.floorAt(nx) - 0.4 - c.len * 0.3);
         }
         const high = c.sp.v.hab === 'reef' && !resting;
@@ -734,8 +741,7 @@ export class Fauna {
             // only the fish right at the strike dart aside (forward, with the school); the rest of
             // the school's response is the whole body veering away and balling up
             // (school fish don't scatter on their own: the whole school veers away instead)
-          } else if (d < 4 && c.home && c.hide) c.fleeT = Math.max(c.fleeT, 1.5); // into its hole
-          else if (d < 4) { ax += dx / d * 30; ay += dy / d * 30; sp *= 2.5; }
+          } else if (d < 4) { ax += dx / d * 30; ay += dy / d * 30; sp *= 2.5; }
         }
       }
       // Earl: schools part around him; other fish bolt if he comes at them fast, but a slow,
@@ -748,22 +754,31 @@ export class Fauna {
         // hanging still he can come very close; drifting slowly, a little less; fast, not at all
         const threat = (earl.speedNow < 0.4 ? 0.9 : earl.speedNow < 1.3 ? 1.4 : (3 + c.len * 1.5) * (earl.sprint ? 1.6 : 1) * (closing > 1 ? 1.4 : 1)) * (1 - (earl.ambush || 0));
         const unseen = (earl.kelpSet && W.inKelp(earl.x, earl.y)) || (earl.legends && earl.legends.has('magnetic')); // (2.8.0) the Kelp Runner set; Magnetic
-        if (de < threat && !unseen) c.fleeT = 1.2 + c.len * 0.5;
+        if (de < threat && !unseen && !(c.tired > 0) && !(c.dazed > 0)) {
+          // (5.0) the startle: a flinch and a kick straight away from him, before the run
+          if (!(c.fleeT > 0)) { c.startle = 0.32; const dd = de + 0.1; c.vx += (c.x - earl.x) / dd * c.flee * 0.9; c.vy += (c.y - earl.y) / dd * c.flee * 0.5; }
+          c.fleeT = 1.2 + c.len * 0.5;
+        }
         if (earl.legends && earl.legends.has('magnetic') && !c.predator && de < 12 && de > 1.2) { ax += (earl.x - c.x) / de * 4; ay += (earl.y - c.y) / de * 3; } // fish come to him
       } else if (c.flee > 0 && earl.inSub && de < 10) c.fleeT = 1.5; // the sub is loud
+      if (c.startle > 0) c.startle -= dt;
+      // (5.0) spent or dazed: it can't run. A tired fish hangs, tail slow, sinking a little; a dazed one wobbles
+      if (c.tired > 0 || c.dazed > 0) {
+        c.fleeT = 0;
+        if (c.tired > 0) { c.tired -= dt; if (c.tired <= 0) c.energy = 0.55; }
+        if (c.dazed > 0) c.dazed -= dt;
+        if (!c.ctrl && !c.prey) { ax = -c.vx * 1.6; ay = -c.vy * 1.2 + (c.tired > 0 ? 0.22 : Math.sin(time * 5 + c.wob) * 0.6); sp = c.speed * 0.3; }
+      } else if (c.fleeT > 0) c.energy = Math.max(0, c.energy - dt * (c.drain || 0.25));
+      else if (c.energy !== undefined) c.energy = Math.min(1, c.energy + dt * 0.11);
+      if (c.fleeT > 0 && c.energy !== undefined && c.energy <= 0 && !c.ctrl && !c.prey) { c.tired = rng.range(2.6, 4); c.fleeT = 0; }
       if (c.fleeT > 0) {
         c.fleeT -= dt;
-        if (c.home && c.hide) {
-          // a reef animal doesn't bolt into open water: it darts back into its home and stays there
-          const hx = c.home.x - c.x, hy = c.home.y - c.y, hd = Math.hypot(hx, hy) + 0.01;
-          ax = hx / hd * 30; ay = hy / hd * 30; sp = Math.max(sp, c.flee || c.speed * 2);
-          if (hd < 0.5) c.hideT = Math.max(c.hideT || 0, rng.range(4, 9));
-        } else {
+        {
           ax = (c.x - earl.x) / (de + 0.1) * 30; ay = (c.y - earl.y) / (de + 0.1) * 20;
           sp = Math.max(sp, c.flee);
           // (4.12.5) not into a wall: rock or seabed ahead turns it back the other way, and the bottom lifts it
           const sx = Math.sign(ax) || 1, look = 1.5 + c.len;
-          if (W.rockAt(c.x + sx * look, c.y, 0.2) || W.floorAt(c.x + sx * look) < c.y + 0.4) { ax = -sx * 30; c.wallT = 1.2; }
+          if (W.rockAt(c.x + sx * look, c.y, 0.2) || W.floorAt(c.x + sx * look) < c.y + 0.4) { ax = -sx * 30; if (!(c.wallT > 0) && Math.hypot(c.vx, c.vy) > c.flee * 0.7 && rng() < 0.35) { c.dazed = 1.4; c.fleeT = 0; } c.wallT = 1.2; }
           else if (c.wallT > 0) { c.wallT -= dt; ax = Math.abs(ax) * (c.vx >= 0 ? 1 : -1); }
           if (c.y + Math.max(0, ay) * 0.08 > W.floorAt(c.x) - 1 - c.len * 0.5) ay = -Math.abs(ay) - 8;
           if (W.rockAt(c.x, c.y + Math.sign(ay) * look, 0.2)) ay = -ay;
@@ -779,8 +794,7 @@ export class Fauna {
         c.hidden = true;
       } else c.hidden = false;
       // flee the entity (reef animals hide from it instead)
-      if (entity && dread > 0.05 && c.home && c.hide) c.hideT = Math.max(c.hideT || 0, 3);
-      else if (entity && dread > 0.05) {
+      if (entity && dread > 0.05) {
         const dx = c.x - entity.x, dy = c.y - entity.y, dd = Math.hypot(dx, dy) + 1;
         const f = dread * 30;
         ax += (dx / dd) * f; ay += (dy / dd) * f * 0.5;
@@ -812,9 +826,19 @@ export class Fauna {
         if (c.y > band[1] + 20) ay -= 2;
       }
       if (c.variant === 'abnormal') { ay += Math.sin(time * 2.7 + c.wob) * 2.5; ax += Math.sin(time * 1.9 + c.wob * 2) * 0.8; } // it swims wrong
+      // (5.0) burst and glide: a free fish kicks, coasts, kicks again (faster beats when it runs), instead of
+      // sliding at one speed; the cap is soft, so between kicks it glides down rather than stopping dead
+      const free = !school && !c.ctrl && !c.prey && c.flee > 0 && c.len < 2.5;
+      let pulse = 1;
+      if (free) {
+        const run = c.fleeT > 0;
+        c.kick += dt * Math.PI * 2 * c.kickHz * (run ? 2.2 : 1) / Math.max(0.6, Math.sqrt(c.len * 2.2));
+        pulse = Math.pow(Math.max(0, Math.sin(c.kick)), 2);
+        sp *= run ? 0.75 + 0.5 * pulse : 0.55 + 0.8 * pulse;
+      }
       c.vx += ax * dt; c.vy += ay * dt;
       const v = Math.hypot(c.vx, c.vy);
-      if (v > sp) { c.vx *= sp / v; c.vy *= sp / v; }
+      if (v > sp) { const k = free ? Math.max(sp / v, 1 - dt * 2.2) : sp / v; c.vx *= k; c.vy *= k; }
       c.vy *= 0.97;
       const ox = c.x, oy = c.y;
       c.x += c.vx * dt; c.y += c.vy * dt;
@@ -840,9 +864,10 @@ export class Fauna {
         if (c.dir !== school.dir && time - school.turnTime > (1 - front) * 0.45) { c.dir = school.dir; c.turnedAt = time; }
         c.hvy = lerp(c.hvy || 0, school.vy * 0.8 + (c.vy - school.vy) * 0.25, Math.min(1, dt * 3));
         c.flash = 0;
-      } else if (Math.abs(c.vx) > 0.08) c.dir = c.vx > 0 ? 1 : -1;
+      } else if (Math.abs(c.vx) > 0.08) { const nd = c.vx > 0 ? 1 : -1; if (nd !== c.dir) c.turnAt = time; c.dir = nd; }
       if (c.x < 3) { c.dir = 1; c.vx = Math.abs(c.vx); }
-      c.phase += dt * (0.6 + Math.min(4, v * 1.4));
+      // the tail beats on the kick and rests on the glide; a tired fish barely moves it
+      c.phase += dt * (0.6 + Math.min(4, v * 1.4)) * (free ? 0.35 + 1.3 * pulse : 1) * (c.tired > 0 ? 0.35 : 1);
     }
     // forget schools that have dispersed or gone off-screen
     for (const gid of this.schools.keys()) if (!counts.get(gid)) this.schools.delete(gid);
@@ -852,6 +877,7 @@ export class Fauna {
   nearest(x, y, maxD) {
     let best = null, bd = maxD;
     for (const c of this.list) {
+      if (c.companion) continue;
       const d = dist(x, y, c.x, c.y) - c.len * 0.4;
       if (d < bd) { bd = d; best = c; }
     }
