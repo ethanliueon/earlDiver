@@ -443,24 +443,37 @@ export function promptHtml(text) {
 // ---------------- (claude-polish) the instruments in the corner of the screen ----------------
 // The same materials as the sub's rooms: a name on dymo tape (black, the letters pressed up white), a level as a
 // glass tube in a brass rim with its quarter ticks, the sonar's glass in a brass bezel.
-export function dymo(ctx, text, xr, y, s = 1, { tape = '#1c1d1b', ink = 'rgba(236,234,224,0.92)', align = 'right' } = {}) {
-  ctx.save();
-  ctx.font = `700 ${8.5 * s}px ${MONO}`; ctx.textBaseline = 'middle';
-  const sp = 0.7 * s, chars = [...text.toUpperCase()]; // (olive) set close, as a label maker sets it
-  const tw = chars.reduce((a, c) => a + ctx.measureText(c).width + sp, 0) - sp, h = 12 * s, w = tw + 9 * s;
-  const x = align === 'right' ? xr - w : xr;
-  ctx.translate(x + w / 2, y + h / 2); ctx.rotate(-0.012); ctx.translate(-w / 2, -h / 2);
-  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 3 * s; ctx.shadowOffsetY = 1 * s;
-  ctx.fillStyle = tape; ctx.beginPath(); ctx.roundRect(0, 0, w, h, 1.5 * s); ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(0, 0, w, 1.2 * s); // the tape's sheen
-  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(0, h - 1.2 * s, w, 1.2 * s);
-  let cx = 4.5 * s;
-  for (const c of chars) { // each letter pressed up from behind: a pale face, a hint of its edge
-    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(c, cx + 0.5 * s, h / 2 + 0.9 * s);
-    ctx.fillStyle = ink; ctx.fillText(c, cx, h / 2 + 0.4 * s);
-    cx += ctx.measureText(c).width + sp;
+// (olive) painted parts for the HUD: the same plates as the menus (tools/olive_kit.py), nine-sliced at their 2x size
+const OLIVE = {};
+function oliveImg(n) { let im = OLIVE[n]; if (!im) { im = OLIVE[n] = new Image(); im.src = `assets/ui/olive/${n}.png`; } return im.complete && im.naturalWidth ? im : null; }
+export function oliveNine(ctx, name, x, y, w, h, slice, dest) {
+  const im = oliveImg(name); if (!im) return false;
+  const W = im.naturalWidth, H = im.naturalHeight, c = Math.min(dest, w / 2, h / 2);
+  const xs = [0, slice, W - slice, W], ys = [0, slice, H - slice, H], dx = [x, x + c, x + w - c, x + w], dy = [y, y + c, y + h - c, y + h];
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    const sw = xs[j + 1] - xs[j], sh = ys[i + 1] - ys[i], dw = dx[j + 1] - dx[j], dh = dy[i + 1] - dy[i];
+    if (sw > 0 && sh > 0 && dw > 0.5 && dh > 0.5) ctx.drawImage(im, xs[j], ys[i], sw, sh, dx[j], dy[i], dw, dh);
   }
+  return true;
+}
+// a name on the HUD: a small painted olive plate, the name in cream small capitals (it was black label tape).
+// tape: a colour hint kept from the old call sites; a red one means trouble (no air, no net), and the plate is then
+// painted dark red. Returns the plate's width; y < -900 only measures.
+export function dymo(ctx, text, xr, y, s = 1, { tape = '#1c1d1b', align = 'right' } = {}) {
+  ctx.save();
+  const word = String(text).toLowerCase(), fs = 13 * s;
+  ctx.font = `600 ${fs}px "EB Garamond", Georgia, serif`;
+  if ('fontVariantCaps' in ctx) ctx.fontVariantCaps = 'small-caps';
+  const tw = ctx.measureText(word).width, h = 20 * s, w = tw + 16 * s, top = y + 6 * s - h / 2; // (centred where the 12 px tape was)
+  if (y < -900) { ctx.restore(); return w; }
+  const x = align === 'right' ? xr - w : xr;
+  const bad = /^#[4-8][0-9a-f]1/i.test(tape) || tape === '#4a1810' || tape === '#8a1a10' || tape === '#4a0c08';
+  if (!oliveNine(ctx, 'btn-olive', x, top - 2 * s, w, h + 4 * s, 28, 8 * s)) { ctx.fillStyle = '#4b5541'; ctx.beginPath(); ctx.roundRect(x, top, w, h, 3 * s); ctx.fill(); }
+  if (bad) { ctx.fillStyle = 'rgba(150,30,18,0.65)'; ctx.beginPath(); ctx.roundRect(x + 4 * s, top + 2 * s, w - 8 * s, h - 4 * s, 2 * s); ctx.fill(); }
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center';
+  const m = ctx.measureText(word), cy = top + h / 2 + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(word, x + w / 2, cy + 1 * s);
+  ctx.fillStyle = '#e6dec4'; ctx.fillText(word, x + w / 2, cy);
   ctx.restore();
   return w;
 }

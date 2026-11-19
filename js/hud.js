@@ -1,4 +1,4 @@
-import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap } from './fittings.js';
+import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine } from './fittings.js';
 import { lockerTexture } from './textures.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
@@ -85,13 +85,11 @@ export class Hud {
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'slurp' && owns(P, 'slurp') ? 'slurp' : g.toolSel === 'tag' && owns(P, 'tagger') ? 'tag' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     for (const [key, kind, tier, name] of tools) {
       const on = kind === sel && !e.inSub;
-      // (claude-polish) a pressed-steel cubby like the locker's: the tool in hand lit, its rim brass
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1.5 * s;
-      const cg = ctx.createLinearGradient(0, y, 0, y + sh); cg.addColorStop(0, on ? 'rgba(66,70,60,0.94)' : 'rgba(44,48,42,0.82)'); cg.addColorStop(1, on ? 'rgba(36,39,33,0.94)' : 'rgba(22,25,21,0.82)');
-      ctx.fillStyle = cg; ctx.beginPath(); ctx.roundRect(x, y, sw, sh, 5 * s); ctx.fill(); ctx.restore();
-      ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath(); ctx.roundRect(x + 3 * s, y + 3 * s, sw - 6 * s, sh - 6 * s, 3 * s); ctx.fill(); // the well
-      // (olive) the tool in hand ringed in the deck's white paint, not gold
-      ctx.strokeStyle = on ? 'rgba(236,232,216,0.92)' : 'rgba(0,0,0,0.55)'; ctx.lineWidth = on ? 2 * s : 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, sw - 1, sh - 1, 5 * s); ctx.stroke();
+      // (olive) a raised plate of the panels' painted steel with a well pressed into it; the tool in hand ringed in
+      // the deck's cream paint
+      if (!oliveNine(ctx, 'btn-olive', x - 3 * s, y - 3 * s, sw + 6 * s, sh + 6 * s, 28, 10 * s)) { ctx.fillStyle = 'rgba(44,48,42,0.9)'; ctx.beginPath(); ctx.roundRect(x, y, sw, sh, 5 * s); ctx.fill(); }
+      oliveNine(ctx, 'well', x + 4 * s, y + 4 * s, sw - 8 * s, sh - 8 * s, 30, 6 * s);
+      if (on) { ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.roundRect(x - 2 * s, y - 2 * s, sw + 4 * s, sh + 4 * s, 6 * s); ctx.stroke(); }
       ctx.globalAlpha = e.inSub ? 0.35 : on ? 1 : 0.55;
       ctx.drawImage(icon(kind, tier), x + 6 * s, y + 4 * s, sw - 12 * s, sh - 12 * s);
       ctx.globalAlpha = 1;
@@ -129,7 +127,7 @@ export class Hud {
     let sx = W / 2 - rowW / 2 + step / 2;
     const sy = y - 16 * s;
     ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    if (!e.inSub) { ctx.fillStyle = 'rgba(200,220,215,0.5)'; ctx.fillText('BAG', sx - step * 0.6 - 2 * s, sy); }
+    if (!e.inSub) { ctx.save(); ctx.font = `600 ${12 * s}px "EB Garamond", Georgia, serif`; if ('fontVariantCaps' in ctx) ctx.fontVariantCaps = 'small-caps'; ctx.fillStyle = 'rgba(230,222,196,0.7)'; ctx.fillText('bag', sx - step * 0.6 - 2 * s, sy); ctx.restore(); }
     for (let i = 0; i < slots; i++, sx += step) {
       const sp = list[i];
       ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU);
@@ -221,7 +219,9 @@ export class Hud {
     const S = this.sonarP, top = sub.y - 8, span = Math.max(40, Math.min(1500, Math.max(...S.fl) - top + 10));
     const Y = (d) => y0 + 12 * s + (d - top) / span * (h - 14 * s);
     ctx.save();
-    ctx.fillStyle = 'rgba(4,20,16,0.6)'; ctx.beginPath(); ctx.roundRect(x0, y0, w, h, 5 * s); ctx.fill();
+    // (olive) the trace behind glass set into a raised olive plate, as the other instruments
+    oliveNine(ctx, 'btn-olive', x0 - 6 * s, y0 - 6 * s, w + 12 * s, h + 12 * s, 28, 10 * s);
+    ctx.fillStyle = 'rgba(4,16,13,0.92)'; ctx.beginPath(); ctx.roundRect(x0, y0, w, h, 3 * s); ctx.fill();
     ctx.beginPath(); ctx.roundRect(x0, y0, w, h, 5 * s); ctx.clip();
     // the seabed: a filled profile, brighter along its edge where the echo comes back
     ctx.beginPath(); ctx.moveTo(x0, y0 + h);
@@ -240,10 +240,10 @@ export class Hud {
     ctx.fillStyle = '#e8d8a8'; ctx.beginPath(); ctx.ellipse(sx, sy, 4 * s, 2 * s, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
     ctx.save();
-    ctx.font = `${10 * s}px ${MONO}`; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(150,220,180,0.85)';
-    ctx.fillText(`bottom ${Math.max(0, Math.round(S.below))} m below`, x0 + 5 * s, y0 + 3 * s);
+    ctx.font = `italic ${12 * s}px "EB Garamond", Georgia, serif`; ctx.textBaseline = 'top'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(150,220,180,0.85)';
+    ctx.textBaseline = 'bottom'; ctx.fillText(`bottom ${Math.max(0, Math.round(S.below))} m below`, x0 + 5 * s, y0 + h - 3 * s); ctx.textBaseline = 'top'; // (olive: in the reading face, low, clear of the sub's mark)
     ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(150,220,180,0.6)';
-    ctx.fillText(`${Math.round(sub.y + S.below)} m`, x0 + w - 5 * s, y0 + h - 13 * s);
+    ctx.fillText(`${Math.round(sub.y + S.below)} m`, x0 + w - 5 * s, y0 + 3 * s);
     ctx.restore();
   }
 
@@ -315,9 +315,9 @@ export class Hud {
     const pulse = o2 < 0.1 ? 0.6 + 0.4 * Math.sin(g.time * 10) : 1;
     tubeGauge(ctx, bx, by, bw, bh, o2, s, { col: oc, alpha: pulse });
     dymo(ctx, airName, cx0, by + bh / 2 - 6 * s, s, { align: 'left', tape: g.noAir ? (Math.sin(g.time * 9) > 0 ? '#8a1a10' : '#4a0c08') : onTank ? '#6a4a10' : '#1c1d1b' });
-    ctx.font = `500 ${11 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
     let ly = by + bh + 8 * s;
-    ctx.font = `${11 * s}px ${MONO}`;
+    ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`;
     const left = e.inSub && !onTank ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
     const sec = Math.max(0, Math.floor(left));
     if (g.noAir && !e.atSurface) { ctx.fillStyle = '#ff6a5a'; ctx.textAlign = 'center'; ctx.fillText((g.noAirRate || 1) > 1.3 ? 'under pressure: surface!' : 'holding your breath: surface!', ccx, ly); ly += 15 * s; }
@@ -331,7 +331,7 @@ export class Hud {
       if (e.sprint && e.speedNow > 1) parts.push(`sprinting ×${e.inSub ? 3 : 2}`);
       const press = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300);
       if (press > 1.05) parts.push(press >= 100 ? 'pressure ×100+' : `pressure ×${press.toFixed(press < 10 ? 1 : 0)}`); // past x100 the number means nothing (it grows to millions in the abyss)
-      if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.textAlign = 'center'; ctx.fillText(parts.join(' · '), ccx, ly); ly += 15 * s; }
+      if (parts.length) { ctx.fillStyle = '#e8a040'; ctx.textAlign = 'center'; ctx.fillText(parts.join(', '), ccx, ly); ly += 15 * s; }
     }
     let yy = ly + 8 * s;
     // hidden: a small leaf
@@ -347,31 +347,31 @@ export class Hud {
       const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1), hh = 7 * s, htw = dymo(ctx, 'hull', cx0, -999, s, { align: 'left' }), hx = cx0 + htw + 6 * s, hw = rx0 - hx; // (olive) on the column, as the air
       tubeGauge(ctx, hx, yy, hw, hh, hi, s, { col: hi < 0.4 ? [224, 80, 58] : hi < 0.75 ? [232, 176, 64] : [120, 196, 160] });
       dymo(ctx, 'hull', cx0, yy + hh / 2 - 6 * s, s, { align: 'left' });
-      ctx.font = `${11 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+      ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
       yy += 16 * s;
       const warn = g.sub.failing != null ? 'the hull is failing' : r > 1 ? 'past the sub\'s rated depth' : r > 0.9 ? 'near the sub\'s rated depth' : '';
-      if (warn) { ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = r > 1 || g.sub.failing != null ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : '#e8b040'; ctx.textAlign = 'center'; ctx.fillText(warn, ccx, yy); yy += 18 * s; }
+      if (warn) { ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`; ctx.fillStyle = r > 1 || g.sub.failing != null ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : '#e8b040'; ctx.textAlign = 'center'; ctx.fillText(warn, ccx, yy); yy += 18 * s; }
       // (3.0.0) and the plain line under it again: hull %, depth against the rating
-      ctx.font = `${11 * s}px ${MONO}`;
+      ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`;
       ctx.fillStyle = r > 1 || hi < 0.5 ? (Math.sin(g.time * 8) > 0 ? '#ff4a3a' : '#a02a20') : r > 0.85 || hi < 0.99 ? '#e8b040' : 'rgba(150,210,180,0.8)';
-      ctx.textAlign = 'center'; ctx.fillText(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ' leaking' : ''} · ${Math.round(g.sub.y)}/${g.sub.rated} m`, ccx, yy);
+      ctx.textAlign = 'center'; ctx.fillText(`hull ${Math.round(hi * 100)}%${hi < 0.99 ? ', leaking' : ''}, ${Math.round(g.sub.y)} of ${g.sub.rated} m`, ccx, yy);
       yy += 18 * s;
     }
     // the sub on autopilot: where it is and how long it will be
     const ap = g.autopilot;
     if (ap && e.inSub && g.homeRun) {
-      ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,214,160,0.85)';
-      ctx.textAlign = 'center'; ctx.fillText('autopilot · air ×0.6', ccx, yy);
+      ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`; ctx.fillStyle = 'rgba(232,214,160,0.85)';
+      ctx.textAlign = 'center'; ctx.fillText('on autopilot, air lasts longer', ccx, yy);
       yy += 18 * s;
     }
     if (ap && !e.inSub && !g.sub.imploded && (ap.active || ap.state === 'waiting')) {
       const dsub = Math.hypot(g.sub.x - e.x, g.sub.y - e.y);
       let txt;
-      if (ap.state === 'home') txt = `sub returning · ${Math.round(Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6))} m`;
-      else if (ap.holding && ap.remaining < 3) txt = `sub holding at ${Math.round(g.sub.y)} m · rated depth`;
-      else if (ap.state === 'waiting') txt = `sub waiting · ${Math.round(dsub)} m`;
-      else txt = `sub coming · ${Math.round(dsub)} m · ${Math.ceil(ap.eta || 0)} s`;
-      ctx.font = `${11 * s}px ${MONO}`;
+      if (ap.state === 'home') txt = `sub returning, ${Math.round(Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6))} m to go`;
+      else if (ap.holding && ap.remaining < 3) txt = `sub holding at ${Math.round(g.sub.y)} m, her rated depth`;
+      else if (ap.state === 'waiting') txt = `sub waiting, ${Math.round(dsub)} m away`;
+      else txt = `sub coming, ${Math.round(dsub)} m, ${Math.ceil(ap.eta || 0)} s`;
+      ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`;
       ctx.fillStyle = ap.holding ? '#e8b040' : 'rgba(232,214,160,0.85)';
       ctx.textAlign = 'center'; ctx.fillText(txt, ccx, yy);
       yy += 18 * s;
@@ -441,7 +441,7 @@ export class Hud {
     const jw = 26 * s, jh = 22 * s, pairW = (22 * s + jw) * 2 + 18 * s, jx = ccx - pairW / 2 + 22 * s, jy = yy; // (olive) the two side by side, centred on the column
     const kx = window.innerWidth / this.c.width;
     this.journalHot = { x: (jx + this.safeL) * kx, y: (jy + this.safeT) * kx, w: jw * kx, h: jh * kx };
-    const plate = (x, y) => { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 4 * s; ctx.shadowOffsetY = 1 * s; const pg = ctx.createLinearGradient(0, y, 0, y + jh); pg.addColorStop(0, '#3c4038'); pg.addColorStop(1, '#23261f'); ctx.fillStyle = pg; ctx.beginPath(); ctx.roundRect(x, y, jw, jh, 3 * s); ctx.fill(); ctx.restore(); ctx.strokeStyle = 'rgba(201,180,126,0.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, jw - 1, jh - 1, 3 * s); ctx.stroke(); };
+    const plate = (x, y) => { if (!oliveNine(ctx, 'btn-olive', x - 2 * s, y - 2 * s, jw + 4 * s, jh + 4 * s, 28, 8 * s)) { ctx.fillStyle = '#3c4038'; ctx.fillRect(x, y, jw, jh); } }; // (olive) the panels' plate
     plate(jx, jy);
     ctx.fillStyle = '#6a4a2e'; ctx.fillRect(jx + 6 * s, jy + 4 * s, 14 * s, 14 * s);
     ctx.fillStyle = '#d8c8a0'; ctx.fillRect(jx + 8 * s, jy + 5.5 * s, 10 * s, 11 * s);
@@ -478,7 +478,8 @@ export class Hud {
 
     // ---------- Q / E items: in the right-hand column, only when carried ----------
     // (claude-polish) a small steel plate in a brass rim, as the journal and chart buttons
-    const glass = (x, y, w, h) => { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 5 * s; ctx.shadowOffsetY = 1 * s; const pg = ctx.createLinearGradient(0, y, 0, y + h); pg.addColorStop(0, 'rgba(58,62,54,0.92)'); pg.addColorStop(1, 'rgba(30,33,28,0.92)'); ctx.fillStyle = pg; ctx.beginPath(); ctx.roundRect(x, y, w, h, 6 * s); ctx.fill(); ctx.restore(); ctx.strokeStyle = 'rgba(201,180,126,0.5)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, 6 * s); ctx.stroke(); ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.52, 15 * s, 0, TAU); ctx.fill(); };
+    // (olive) the item slots: the same raised olive plate and well as the hotbar
+    const glass = (x, y, w, h) => { if (!oliveNine(ctx, 'btn-olive', x - 3 * s, y - 3 * s, w + 6 * s, h + 6 * s, 28, 10 * s)) { ctx.fillStyle = 'rgba(44,48,42,0.9)'; ctx.fillRect(x, y, w, h); } oliveNine(ctx, 'well', x + 4 * s, y + 4 * s, w - 8 * s, h - 8 * s, 30, 6 * s); };
     const sz = 46 * s;
     const slots = [];
     if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
@@ -487,7 +488,7 @@ export class Hud {
     // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
     if (e.inSub) {
       const n = g.subNet, kinds = netKinds(g.items), N = n ? n.T : kinds.length ? NETS_SUB[kinds[0]] : null; // (4.11.0) every kind in the hatch
-      const state = n ? (n.phase === 'tow' ? (g.trawlTaught ? 'OUT' : 'OUT · N CLOSES') : n.phase === 'torn' ? 'TORN' : 'HAULING') : kinds.length ? kinds.map((k) => NETS_SUB[k].short).join(' + ') : 'NO NET';
+      const state = n ? (n.phase === 'tow' ? (g.trawlTaught ? 'OUT' : 'OUT, N CLOSES') : n.phase === 'torn' ? 'TORN' : 'HAULING') : kinds.length ? kinds.map((k) => NETS_SUB[k].short).join(' + ') : 'NO NET';
       slots.push(['n', 'N', state, n || N ? 1 : 0, n ? '#e8b070' : kinds.includes('adv') ? '#f0c060' : '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / (n.T.tow || TOW_MAX)) : 0, n ? 0 : netsOf(g.items).basic]); // (the badge: two beginner nets)
     }
     this.slotHot = {};
@@ -502,8 +503,8 @@ export class Hud {
       ctx.textAlign = 'right'; if (id !== 'n') ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
       if (badge > 1) { // (4.11.0) how many nets are in the hatch: a number in a small brass circle at the corner
         const bw = 22 * s, bh = 14 * s, bx = x + sz - bw + 6 * s, by = y - 5 * s; // (4.11.1) a wider pill: ×2
-        ctx.fillStyle = '#c8a050'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, bh / 2); ctx.fill(); ctx.strokeStyle = 'rgba(20,14,4,0.8)'; ctx.lineWidth = 1.2 * s; ctx.stroke();
-        ctx.save(); ctx.fillStyle = '#2a1e08'; ctx.font = `600 ${10 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`×${badge}`, bx + bw / 2, by + bh / 2 + 0.5 * s); ctx.restore();
+        ctx.fillStyle = '#d8d0b6'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 3 * s); ctx.fill(); ctx.strokeStyle = 'rgba(20,18,12,0.85)'; ctx.lineWidth = 1; ctx.stroke(); // (olive) cream, as the keys
+        ctx.save(); ctx.fillStyle = '#26241a'; ctx.font = `600 ${10 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`×${badge}`, bx + bw / 2, by + bh / 2 + 0.5 * s); ctx.restore();
       }
       dymo(ctx, name.toLowerCase(), x - 9 * s, y + sz / 2 - 6 * s, s, { tape: name === 'NO NET' || name === 'TORN' ? '#4a1810' : '#1c1d1b' });
     });
@@ -536,13 +537,13 @@ export class Hud {
       let carried = 0;
       for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k]) carried += GOODS[k].price * n;
       if (carried > 0) {
-        ctx.font = `${11 * s}px ${MONO}`; ctx.fillStyle = 'rgba(200,220,215,0.6)';
+        ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`; ctx.fillStyle = 'rgba(200,220,215,0.6)';
         ctx.fillText(`+ about ${money(carried, carried < 100)} unsold`, pad - 6 * s, pad + 38 * s);
       }
       if ((g.loadKg || 0) > 5 && !e.inSub) {
-        ctx.font = `${11 * s}px ${MONO}`;
+        ctx.font = `italic ${12.5 * s}px "EB Garamond", Georgia, serif`;
         ctx.fillStyle = g.loadKg > 10 ? '#e8b040' : 'rgba(200,220,215,0.6)';
-        ctx.fillText(`load ${Math.round(g.loadKg)} kg${g.loadKg > 10 ? ' · heavy' : ''}`, pad - 6 * s, pad + (carried > 0 ? 53 : 38) * s);
+        ctx.fillText(`load ${Math.round(g.loadKg)} kg${g.loadKg > 10 ? ', heavy' : ''}`, pad - 6 * s, pad + (carried > 0 ? 53 : 38) * s);
       }
     }
 
