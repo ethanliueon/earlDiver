@@ -272,9 +272,10 @@ export class Hud {
       { key: 't', icon: 'tank', on: true },
       { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
     ] : [
-      { key: 'obs', icon: 'eye', on: (!!g.obsTarget && !g.tutHidePrompts) || ta === 'obs', away: true },
       { key: 'f', icon: 'hand', on: (!!F && !/observe/i.test(F.label)) || ta === 'f', bar: true, away: true },
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
+      // observing is done to every new animal: the eye larger, low beside the net, where the thumb already is
+      { key: 'obs', icon: 'eye', on: (!!g.obsTarget && !g.tutHidePrompts) || ta === 'obs', away: true, ang: -186, k: 1.25, out: 16 },
     ];
     // the column: pause, the bag, the lamp, then the things carried, each only while there is one to use
     const TOP = [{ key: 'escape', icon: 'pause', on: true }, { key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
@@ -312,7 +313,7 @@ export class Hud {
       hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : 'msg:' + (a.why || 'Not now'));
     };
     const r = 24 * u, gap = 14 * u, rho0 = R + r + gap;
-    A.forEach((a, i) => { const ang = [-92, -146, -200][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
+    A.forEach((a, i) => { const ang = (a.ang ?? [-92, -146, -200][i]) * Math.PI / 180, rho = rho0 + (a.out || 0) * u; btn(a, cx + Math.cos(ang) * rho, cy + Math.sin(ang) * rho, r * (a.k || 1)); });
     // (5.3.4) a column under the clipboard, clear of the quest's words; (5.4) it turns into a second column before it
     // would reach the stick's ring in the lower left (the sub has six of them)
     const r2 = 18 * u, step = r2 * 2 + 7 * u, fk = window.__fingerK || 1;

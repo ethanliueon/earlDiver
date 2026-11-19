@@ -941,7 +941,7 @@ function dieInjury(sp) {
 // their sprites (at most 1.5 s), so the first moments never stutter or pop
 function withLoading(fn) {
   ui.showLoading(true);
-  setTimeout(() => { ui.setLoading(0.3, 'Charting the sea'); setTimeout(() => { fn(); ui.setLoading(0.6, 'Charting the sea'); g.warmFrom = performance.now(); g.warmUntil = g.warmFrom + 1500; }, 60); }, 60); // (4.15.0) a pause between steps lets the bar move
+  setTimeout(() => { ui.setLoading(0.3, 'Charting the sea'); setTimeout(() => { fn(); ui.setLoading(0.6, 'Charting the sea'); g.warmFrom = performance.now(); g.warmUntil = g.warmFrom + (hud.touch ? 8000 : 1500); g.warmFrames = 0; g.warmCalm = 0; }, 60); }, 60); // (4.15.0) a pause between steps lets the bar move
 }
 // (4.2.0) the tutorial: a welcome at the start of a new game, with a skip (asked twice); then tutor() guides the
 // first steps of the Log with a line of text, a fading trail to where to go, and a ring on the fish to catch
@@ -1189,6 +1189,11 @@ const tutSpot = new TutSpot();
 tutSpot.onAction = (id) => runTutAction(id); // (4.4.1) the button
 tutSpot.onCard = (id) => { if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
 function startRun() {
+  // (5.5) an iPhone's browser cannot show a page full screen: once, on the first dive there, how to get it
+  if (/iPhone|iPod/.test(navigator.userAgent) && !(window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) && !navigator.standalone) {
+    let seen = false; try { seen = !!localStorage.getItem('earl.iosFsTip'); localStorage.setItem('earl.iosFsTip', '1'); } catch (e) { seen = true; }
+    if (!seen) setTimeout(() => hud.toast('For full screen: Share, then Add to Home Screen, and open Earl from there', 'note'), 6000);
+  }
   messages.clear(); // (5.5) a new dive starts with a clear line (no "Out of air" left over from the last)
   mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic();
@@ -2682,7 +2687,9 @@ function phoneCap(now) {
   if (!hud.touch) return 0;
   return (SETTINGS.fast || g.mode === 'menu' || slow30) ? 1000 / 30 : 1000 / 60;
 }
+let lastWork = 0;
 function noteWork(ms, dt) {
+  lastWork = ms;
   if (!hud.touch || g.warmUntil || g.mode !== 'play') return; // the loading card's heavy frames do not count
   workEma += (Math.min(ms, 50) - workEma) * 0.03;
   if (!slow30) { overT = workEma > 14 ? overT + dt : 0; if (overT > 3) { slow30 = true; quickT = 0; } } // slow for 3 s on end
@@ -2715,7 +2722,12 @@ function frame(now) {
   if (g.warmUntil) { // behind the loading card: build the sprites on screen at full speed, then lift it
     const done = renderer.warmSprites(g, 60, true);
     ui.setLoading(0.6 + 0.4 * Math.min(1, (performance.now() - (g.warmFrom || 0)) / 1500), 'Charting the sea');
-    if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.setLoading(1, 'Charting the sea'); setTimeout(() => ui.showLoading(false), 250); }
+    // (5.5) on a phone the card stays until the game runs smoothly behind it: every animal about built, and a dozen
+    // frames in a row drawn quickly (the first draws of the sea, the seabed and the boat are built and handed to the
+    // phone's graphics chip here, not in the first minute of play); never more than 8 s
+    g.warmFrames++; g.warmCalm = lastWork < 22 ? g.warmCalm + 1 : 0;
+    const ready = hud.touch ? done && g.warmFrames > 12 && g.warmCalm >= 12 : done;
+    if (ready || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.setLoading(1, 'Charting the sea'); setTimeout(() => ui.showLoading(false), 250); }
   } else if (renderer.phone) { if (!behind) renderer.warmSprites(g, realDt < 1 / 50 ? 3 : 1, true); } // (5.4) a phone: only the animals about now (the look-ahead over every species near this depth outgrew its memory and kept rebuilding), none behind a panel
   else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   weightedCursor(Math.min(0.05, dt));
