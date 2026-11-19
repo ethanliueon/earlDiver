@@ -266,7 +266,7 @@ const ui = new UI({
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
     const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id })));
     if (cards.length) ui.showGains(cards); // (4.6.0)
-    hud.toast(`Quest done · ${money(r.pay)}`, 'big');
+    hud.toast(`Quest done: +${money(r.pay)}`, 'big');
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
@@ -1029,7 +1029,7 @@ function tutor() {
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
   g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
-  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done · the quest board is open (O)', 'big'); setTimeout(() => hud.toast(`If you need help: controls are in your journal (${keyFor('journal')}), settings in the pause menu (Esc)`, 'note'), 4500); } return; }
+  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done. The quest board is open (O)', 'big'); setTimeout(() => hud.toast(`If you need help: controls are in your journal (${keyFor('journal')}), settings in the pause menu (Esc)`, 'note'), 4500); } return; }
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
@@ -1066,32 +1066,32 @@ function tutor() {
     else if (ui.anyOpen()) {
       // (4.3.5) another screen is up: point at the way out of it (the shop's Log off, a close button), no keys named;
       // in the cabin (no button to leave by) the quests key still works
-      text = 'Quest complete! Claim it in your quests';
+      text = 'Done. Claim it in your quests';
       spot = { sel: ['#catalog .cat-off', '#workshop-close', '#inventory .inv-close', '#journal-close', '#quests-btn'] }; // (the Quests button shows in the cabin)
     }
-    else { text = 'Quest complete! Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Quest complete! Claim it here', light: true }; }
+    else { text = 'Done. Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Claim it here', light: true }; }
   } else if (m.id === 'firstfish') {
     // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
     // The step is only done at the surface, so the claim is never made underwater.
     const part = firstFishPart(P);
-    if (part === 3) { text = 'Nice catch! Now swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 }; if (!P.tutSprinted && !e.inSub) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; }
+    if (part === 3) { text = 'Got it. Swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 }; if (!P.tutSprinted && !e.inSub) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; }
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
         if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe'); }
-        else if (g.tutOops && g.time - g.tutOops < 3) { text = 'Oops, it got away! Try again'; prompt = { text: 'Oops, it got away! Try again', col: '#f2c7a0' }; }
+        else if (g.tutOops && g.time - g.tutOops < 3) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
         else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
     }
   } else if (m.id === 'sell') {
-    if (!P.tutJournal) { text = 'Open your journal: every animal you observe goes in it'; spot = jOpen ? null : { act: 'journal', say: 'Open your journal' }; }
+    if (!P.tutJournal) { text = 'Open your journal'; spot = jOpen ? null : { act: 'journal', say: 'Open your journal' }; }
     else if (jOpen && (P.tutJTour || 0) < 3) { // (4.12.2) a short look round the journal before it is closed
       const k = P.tutJTour || 0;
       text = 'Your journal';
-      spot = k === 0 ? { sel: ['#journal-list .entry img'], card: { id: 'jtour', text: 'Every animal you observe gets an entry. This is where you look at it: its picture, drawn from life.' } }
-        : k === 1 ? { sel: ['#journal-list .entry .meta', '#journal-list .entry p'], card: { id: 'jtour', text: 'Under it: what it is, how big it grows, and the depths it lives at. Use it to work out where to find more.' } }
-        : { sel: ['#notes'], card: { id: 'jtour', text: 'And this page is yours: write notes, plans or anything worth remembering. They are kept.' } };
+      spot = k === 0 ? { sel: ['#journal-list .entry img'], card: { id: 'jtour', text: 'Every animal you observe is drawn here.' } }
+        : k === 1 ? { sel: ['#journal-list .entry .meta', '#journal-list .entry p'], card: { id: 'jtour', text: 'Below it: how big it grows and how deep it lives. Use that to find more.' } }
+        : { sel: ['#notes'], card: { id: 'jtour', text: 'This page is yours, for notes. It is kept.' } };
     }
     else if (jOpen) { text = 'Close the journal'; spot = { sel: ['#journal-close'], act: 'journal', say: 'Close the journal' }; }
     else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-sell="tobasket"]'], say: 'Sell all' }; }

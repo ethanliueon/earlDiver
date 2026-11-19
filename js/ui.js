@@ -196,8 +196,8 @@ export class UI {
       const n = +card.dataset.n;
       if (del) {
         ev.stopPropagation();
-        const info = card.querySelector('.info'), what = info ? `${info.querySelector('b').textContent} · ${info.querySelector('span').textContent}` : '';
-        this.confirm(`Delete diver ${n}?`, `${what}\n\nEverything in this save is lost for good: cash, gear, the journal, the aquarium.`, 'Delete for good', 'Keep it', () => { deleteSlot(n); this.showTitle(); });
+        const info = card.querySelector('.info'), what = info ? `${info.querySelector('b').textContent}: ${info.querySelector('span').textContent}.` : '';
+        this.confirm(`Delete diver ${n}?`, `${what}\nIt will be gone for good.`, 'Delete for good', 'Keep it', () => { deleteSlot(n); this.showTitle(); });
         return;
       }
       if (card.classList.contains('damaged') && !card.classList.contains('sure')) { card.classList.add('sure'); card.querySelector('.info span').textContent = 'click again to start a new game here'; return; }
@@ -863,12 +863,12 @@ export class UI {
       + this.airHtml(P, g)
       + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
   }
-  // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled down to fit whatever screen it is on: a
+  // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
   fitInventory() {
     const panel = $('inventory').querySelector('.inv-panel'); if (!panel) return;
     const vw = window.innerWidth, vh = window.innerHeight, small = vw < 900 || vh < 560, H = small ? 730 : 820;
-    const k = Math.min(1, (vw - (small ? 4 : 12)) / 1240, (vh - (small ? 4 : 12)) / H);
+    const k = Math.min(1.6, (vw - (small ? 4 : 40)) / 1240, (vh - (small ? 4 : 40)) / H); // (4.26) and up, on a large screen (its painted door is drawn at twice this size)
     this.invScale = k; panel.style.setProperty('--inv-k', k.toFixed(4)); panel.style.height = H + 'px';
     $('inventory').classList.toggle('small', small);
     // (3.0.40) warnings while it is open: just above Gear / Catch (on a phone, along the bottom edge), not over the locker
@@ -1149,7 +1149,7 @@ export class UI {
       const r = readSlot(n);
       if (r.state === 'ok') {
         const p = r.profile;
-        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? ` · ${p.subName}` : ''}</b><span>${p.runs || 0} dive${p.runs === 1 ? '' : 's'} · deepest ${p.deepest || 0} m · ${(p.journal || []).length} species · ${r.saved ? ago(r.saved) : ''}</span></div><button class="del" title="Delete this save">Delete</button></div>`;
+        html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? `, ${p.subName}` : ''}</b><span>${p.deepest || 0} m deepest, ${(p.journal || []).length} species${r.saved ? `, ${ago(r.saved)}` : ''}</span></div><button class="del" title="Delete this save">Delete</button></div>`;
       } else if (r.state === 'damaged') {
         html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">Delete</button></div>`;
       } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>Empty</b><span>a new diver</span></div><span></span></div>`;
@@ -1815,7 +1815,7 @@ export class UI {
 
   // (4.4.1) the time into the dive, at the top of the journal: kept ticking while it is open (it froze when opened)
   journalCount(g) {
-    const t = `${formatTime(g.survival)} into the dive` + (['species', 'all'].includes(this.tab || 'species') ? ` · (${g.journal.size}/${SPECIES_COUNT}) recorded` : '');
+    const t = `${formatTime(g.survival)} into the dive` + (['species', 'all'].includes(this.tab || 'species') ? `, ${g.journal.size} of ${SPECIES_COUNT} recorded` : '');
     const el = $('journal-count'); if (el.textContent !== t) el.textContent = t;
   }
   update(g, dt) {

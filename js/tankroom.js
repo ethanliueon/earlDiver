@@ -72,7 +72,7 @@ export class TankRoom {
   constructor(root, hooks) {
     this.root = root; this.h = hooks;
     this.anim = new WeakMap();
-    this.t = 0; this.room = 'chambers'; this.openKey = null; this.sig = ''; this.infoT = 0;
+    this.t = 0; this.room = 'tank'; this.openKey = null; this.sig = ''; this.infoT = 0;
     root.innerHTML = `<canvas class="tr-canvas"></canvas><div class="tr-over"></div>
       <div class="tr-plate"><b class="tr-room"></b><span class="tr-depth"></span></div>
       <button class="tr-help-btn" aria-label="How it works">?</button><button class="tr-close" aria-label="Close">×</button>
@@ -150,6 +150,7 @@ export class TankRoom {
     window.addEventListener('keydown', this.onKey);
   }
   open() {
+    this.room = 'tank'; // (4.26) T always opens on the tank itself; the chambers and the large tank are through its hatches
     this.openKey = null; this.sig = ''; this.trans = null; this.layout(true);
     const g = this.h.getGame(), P = g && g.profile;
     if (P && g.bag.length) { P.tips = P.tips || {}; P.tips.opens = (P.tips.opens || 0) + 1; }

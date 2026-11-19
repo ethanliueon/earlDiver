@@ -325,7 +325,7 @@ export class Renderer {
     const baseM = ctx.getTransform();
     this.rimSun = this.lite || cam.y + cam.h / 2 <= 0 ? 0 : clamp(1 - Math.max(0, cam.y) / 260, 0.25, 1) * (0.55 + 0.45 * (g.dayEff || 0));
     const rbox = [1e9, 1e9, -1e9, -1e9]; // animals drawn live (not from baked frames) get the rim the old way
-    const batches = new Map();
+    const batches = new Map(), flatB = new Map();
     let glowSkip = 0;
     for (const c of g.fauna.list) {
       if (!inView(c.x, c.y, c.len)) continue;
@@ -345,6 +345,16 @@ export class Renderer {
       // (4.3.7) no stand-in shapes: every animal is drawn as itself at any size (from its cached frames). Small fish,
       // shrimp and krill used to be drawn here as a generic oval and tail, so a krill looked like a little fish until
       // he was close enough for its own drawing. Kept, switched off, in case a slow machine ever needs it back.
+      // (4.26) the smallest animals (krill, larvae, a far school) are one flat silhouette each, in the species' own
+      // colour under the water's tint: at a few pixels the full drawing only shimmered, and it cost the most
+      if (Ld < 12 && !c.variant && !LEGENDARY.has(c.sp.id)) {
+        let fb = flatB.get(c.sp.id);
+        if (!fb) { fb = { sp: c.sp, path: new Path2D() }; flatB.set(c.sp.id, fb); }
+        const x = S(c.x), y = Sy(c.y), rot = c.dir > 0 ? tilt : Math.PI - tilt, hl = Math.max(1.2, Ld * 0.5), hh = Math.max(0.8, Ld * Math.min(0.22, c.sp.v.h * 0.5 + 0.06));
+        fb.path.moveTo(x + Math.cos(rot) * hl, y + Math.sin(rot) * hl); fb.path.ellipse(x, y, hl, hh, rot, 0, TAU);
+        if (c.sp.v.glow && (glowSkip++ % 6 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.35), 0.4, 0.7]);
+        continue;
+      }
       if (SIMPLE_SMALL && Ld < 20 && !c.variant && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
         let bt = batches.get(c.sp.id);
         if (!bt) { bt = { sp: c.sp, back: new Path2D(), belly: new Path2D(), flash: new Path2D(), eyes: new Path2D(), nf: 0 }; batches.set(c.sp.id, bt); }
@@ -416,6 +426,7 @@ export class Renderer {
     // the small fish, batched: their colours mixed with the water's, as the veil would have done
     const bv = this.veilFor(cam.y);
     const vmix = (hex) => rgbStr(mixRgb(hexToRgb(hex), bv.col, bv.a));
+    for (const fb of flatB.values()) { ctx.fillStyle = vmix(fb.sp.v.c[0]); ctx.fill(fb.path); }
     for (const bt of batches.values()) {
       ctx.fillStyle = vmix(bt.sp.v.c[0]); ctx.fill(bt.back);
       ctx.fillStyle = vmix(bt.sp.v.c[1]); ctx.fill(bt.belly);

@@ -387,12 +387,13 @@ export function promptShade(ctx, cx, y, s = 1, a = 1) {
   sh.addColorStop(0, `rgba(4,8,10,${(0.42 * a).toFixed(3)})`); sh.addColorStop(0.45, `rgba(4,8,10,${(0.24 * a).toFixed(3)})`); sh.addColorStop(0.8, `rgba(4,8,10,${(0.07 * a).toFixed(3)})`); sh.addColorStop(1, 'rgba(4,8,10,0)');
   ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.2); ctx.translate(-cx, -y); ctx.fillStyle = sh; ctx.fillRect(cx - R, y - R, R * 2, R * 2); ctx.restore();
 }
+const holdWord = (h) => h.trim().charAt(0).toUpperCase() + h.trim().slice(1).toLowerCase();
 export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19, shade = true, icon = null, named = null } = {}) {
-  const parts = parsePrompt(text), gapK = 9 * s, gapP = 26 * s, fs = size * s;
+  const parts = parsePrompt(text), gapK = 9 * s, gapP = 44 * s, fs = size * s; // (4.26) a wide gap between choices, no dot
   ctx.save(); ctx.textBaseline = 'middle';
   const measure = (p) => {
     let w = 0;
-    if (p.hold) { ctx.font = `600 ${9.5 * s}px ${MONO}`; w += ctx.measureText(p.hold.toUpperCase()).width + 6 * s; }
+    if (p.hold) { ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; w += ctx.measureText(holdWord(p.hold)).width + 8 * s; }
     if (p.key) { const kw = p.key.length > 1 ? Math.max(26 * s * 1.9, (p.key.length * 8 + 18) * s) : 26 * s; w += kw + gapK; }
     ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; w += ctx.measureText(p.label).width;
     return w;
@@ -402,8 +403,7 @@ export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19
   if (shade) promptShade(ctx, cx, y, s);
   let x = cx - total / 2;
   parts.forEach((p, i) => {
-    if (i) { ctx.fillStyle = 'rgba(236,230,210,0.45)'; ctx.beginPath(); ctx.arc(x - gapP / 2, y, 2 * s, 0, TAU); ctx.fill(); }
-    if (p.hold) { ctx.font = `600 ${9.5 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(236,230,210,0.75)'; ctx.fillText(p.hold.toUpperCase(), x, y); x += ctx.measureText(p.hold.toUpperCase()).width + 6 * s; }
+    if (p.hold) { ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'left'; ctx.fillStyle = col; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.fillText(holdWord(p.hold), x, y + 1 * s); ctx.shadowBlur = 0; x += ctx.measureText(holdWord(p.hold)).width + 8 * s; }
     if (p.key) { x += keyCap(ctx, x, y - 15 * s, p.key, s) + gapK; }
     ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'left';
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1;

@@ -162,3 +162,17 @@ Each item: screenshot before, change, screenshot after, look at it at 2x as a st
 
 Random-input soak (150 rounds, 0 errors), tutorial first dive and claim, the "put on your bag" step, starting a
 game from a save slot, version stamps on all 56 modules and both stylesheets.
+
+## 4.26.0 (owner's play-through notes)
+- HUD: larger overall (scale from window height / 780); cash without its tape, large; the right column has fixed
+  places (depth, air, hull in the sub, radar, journal and chart pictures) so the radar never jumps; status words
+  ("12 s of air", "Sub 40 m away", "Near her 300 m") are upright, large, under everything. No J/K key caps; the
+  letter is engraved in the plate's corner. The empty trawl slot ("NO NET") is gone. "hull 100%, 5 of 300 m" removed.
+- Prompts: no dot between choices; "Hold" as a word. Toasts: middle dots become commas everywhere (hud.toast).
+- Tutorial: one instruction at the left (the tutorial line takes the quest line's place); its card and action button
+  are the olive panel and cream plate; lines shortened, no exclamation marks. The message line is cream, no diamond.
+- Item cards (gains), confirm dialogs, the sell page (price ink on cream, painted column names, Sell these as a plate).
+- Italics in olive.css made upright and larger. Title slot meta and the delete dialog shortened.
+- Inventory scales up past 1240x820 (to 1.6x). T always opens on the tank (not the chambers).
+- Tiny animals (< 12 px) are one flat silhouette each, batched by species (no shimmer, cheaper).
+- Owner: the first quest board stays as it is (a player can use the sub or wait). claude/olive-studio may stay.
