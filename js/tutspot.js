@@ -168,6 +168,12 @@ export class TutSpot {
           const say = 'Push the stick out to its rim to sprint';
           if (this.keyText.textContent !== say) this.keyText.textContent = say;
         }
+        // the journal, the quests and the chart are not HUD buttons but the clipboard group at the top left: the
+        // picture itself when it shows, else the clipboard that opens the group
+        const DOMK = { j: ['#hud-journal', '#quests-btn'], o: ['#quests-btn'], k: ['#hud-chart', '#quests-btn'] };
+        if (!h && DOMK[want]) { const el2 = this.find(DOMK[want]), r = el2 && el2.getBoundingClientRect(); if (r) h = { x: r.left, y: r.top, w: r.width, h: r.height }; }
+        // words with it, never a key cap (a step with nothing to ring keeps just its words)
+        if (spot.act !== 'sprint' && spot.say) { this.keyBox.style.display = 'flex'; this.kbd.style.display = 'none'; const say = spot.say.replace(/^(Press|Hold)\b/, (m) => (m === 'Press' ? 'Tap' : 'Hold')); if (this.keyText.textContent !== say) this.keyText.textContent = say; }
         if (h) {
           const x = h.x - PAD, y = h.y - PAD, w = h.w + PAD * 2, hh = h.h + PAD * 2;
           Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: hh + 'px' });

@@ -718,3 +718,10 @@ html.touch *, html.touch *::before, html.touch *::after { backdrop-filter: none 
 html.touch #msgs .msg { filter: none !important; }
 /* (5.4) the turn-your-phone card at a readable size on the phone's wide page */
 #rotate > * { zoom: var(--fk, 1); }
+/* (5.4) the clipboard group's own box is much bigger than the clipboard (it makes room for the journal, the chart
+   and the next step when it opens): the box never takes a tap, only what shows in it, so the pause button and the
+   bag below it can be reached while the group is folded */
+html body #quests-hud { pointer-events: none !important; }
+html body #quests-hud > #quests-btn, html body #quests-hud.open > * { pointer-events: auto; }
+/* (5.4) on a phone the chart sits beside the journal, not under it, clear of the pause button below */
+html.touch body #quests-hud #hud-chart:not(#_a) { grid-row: 2; grid-column: 2; justify-self: start; }
