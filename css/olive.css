@@ -618,3 +618,59 @@ html body #settings .set-row b.sw.on:not(#_a):not(#_b) { background: #4a6a3a !im
 html body #settings .set-row b.sw.on i { left: 30px; background: #efe8d2; }
 html body #pause button:not(#_a):not(#_b) { min-height: 50px; font-size: 18px !important; }
 html body #pause #resume:not(#_a):not(#_b) { min-height: 60px; font-size: 22px !important; }
+
+/* ---------- 5.2: the title as a game's front end. First the name, big and centred over the living scene, and
+   "Press any key" (Tap to dive) pulsing low; then the diver select: the name steps up, the sea darkens, and three
+   large diver panels stand across the screen ---------- */
+html body #title .title-panel:not(#_a):not(#_b):not(#_c) { position: fixed !important; inset: 0 !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; zoom: 1 !important;
+  display: flex !important; flex-direction: column; align-items: center; justify-content: center; transform: none !important; left: 0 !important; top: 0 !important; }
+html body #title::after { content: ''; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, rgba(4, 10, 14, 0) 30%, rgba(4, 10, 14, 0.55) 100%); transition: background 0.4s; z-index: 0; }
+html body #title.select::after { background: rgba(4, 10, 14, 0.62); }
+html body #title .title-panel > * { position: relative; z-index: 1; }
+html body #title .t-plate:not(#_a):not(#_b) { margin: 0 !important; transition: transform 0.45s cubic-bezier(.2, .8, .2, 1); text-align: center; }
+html body #title .t-plate h1:not(#_a):not(#_b) { align-items: center; margin: 0 !important; }
+html body #title .t-plate h1 b:not(#_a):not(#_b) { font-size: clamp(90px, 24vh, 230px) !important; line-height: 0.82 !important; }
+html body #title .t-plate h1 span:not(#_a):not(#_b):not(#_c) { font-size: clamp(16px, 3.4vh, 30px) !important; letter-spacing: 0.7em !important; margin-right: -0.7em; }
+html body #title.select .t-plate { transform: translateY(-30vh) scale(0.42); }
+html body #title .t-press { position: absolute !important; bottom: 15vh; left: 0; right: 0; text-align: center; pointer-events: none; transition: opacity 0.3s; }
+html body #title .t-press span { font: 700 clamp(16px, 3vh, 24px) var(--o-title); letter-spacing: 0.32em; text-transform: uppercase; color: #efe8d2; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7); animation: tpress 2.2s ease-in-out infinite; }
+@keyframes tpress { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+html body #title.select .t-press { opacity: 0; }
+html body #title .t-select { position: absolute !important; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vh; opacity: 0; pointer-events: none; transition: opacity 0.35s 0.1s; padding-top: 12vh; }
+html body #title.select .t-select { opacity: 1; pointer-events: auto; }
+html body #title .t-choose { margin: 0; font: 700 clamp(14px, 2.4vh, 20px) var(--o-title); letter-spacing: 0.36em; text-transform: uppercase; color: rgba(239, 232, 210, 0.75); }
+html body #title .t-back:not(#_a):not(#_b) { position: absolute; left: 24px; top: 20px; padding: 8px 16px !important; border: 0 !important; border-image: none !important; background: rgba(0, 0, 0, 0.35) !important; border-radius: 20px !important;
+  font: 700 15px var(--o-title) !important; letter-spacing: 0.18em; text-transform: uppercase; color: #efe8d2 !important; box-shadow: none !important; }
+html body #title .t-back::before { content: '‹ '; }
+html body #title .t-select #slots.slots:not(#_a):not(#_b) { gap: clamp(12px, 2.4vw, 28px) !important; }
+/* a diver panel: a tall stamped steel tag */
+html body #title .t-select .slot.tag:not(#_a):not(#_b):not(#_c) { flex: 0 0 auto; width: clamp(170px, 24vw, 290px); height: clamp(210px, 48vh, 380px); padding: clamp(14px, 2.4vh, 22px) clamp(14px, 1.6vw, 22px) !important;
+  display: flex !important; flex-direction: column !important; justify-content: flex-start; gap: clamp(4px, 1vh, 10px) !important; border-radius: 14px !important; position: relative; }
+html body #title .t-select .slot.tag:hover { transform: translateY(-6px) !important; }
+html body #title .t-select .slot.tag.last:not(#_a):not(#_b):not(#_c) { box-shadow: 0 0 0 4px rgba(239, 232, 210, 0.95), 0 0 40px rgba(239, 232, 210, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 10px 24px rgba(0, 0, 0, 0.5) !important; transform: translateY(-4px); }
+html body #title .t-select .slot.tag .tg-n { font-size: clamp(44px, 10vh, 84px) !important; line-height: 0.85 !important; }
+html body #title .t-select .slot.tag .info b:not(#_a):not(#_b):not(#_c) { font-size: clamp(22px, 4.4vh, 36px) !important; }
+html body #title .t-select .slot.tag .info span:not(#_a):not(#_b):not(#_c) { font-size: clamp(11px, 1.9vh, 15px) !important; }
+html body #title .t-select .tg-depth { position: absolute; right: clamp(14px, 1.6vw, 22px); top: clamp(16px, 2.6vh, 24px); width: 8px; height: 46%; border-radius: 4px; background: rgba(30, 32, 26, 0.25); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35); display: flex; align-items: flex-start; overflow: hidden; }
+html body #title .t-select .tg-depth i { display: block; width: 100%; background: linear-gradient(180deg, #4a7a9a, #1a2a3a); border-radius: 4px; }
+html body #title .t-select .tg-rows { margin: auto 0 0; display: flex; gap: 16px; }
+html body #title .t-select .tg-rows dt { font: 700 11px var(--o-title); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(36, 38, 32, 0.6); }
+html body #title .t-select .tg-rows dd { margin: 0; font: 700 clamp(14px, 2.4vh, 18px) var(--o-title); color: rgba(30, 32, 26, 0.9); }
+html body #title .t-select .tg-go { font: 700 clamp(14px, 2.4vh, 18px) var(--o-title); font-style: normal; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; padding: 8px 0; border-radius: 8px; background: rgba(30, 32, 26, 0.85); color: #efe8d2; }
+html body #title .t-select .slot.tag.empty { justify-content: center !important; align-items: center !important; }
+html body #title .t-select .slot.tag.empty .tg-n { position: absolute; left: clamp(14px, 1.6vw, 22px); top: clamp(14px, 2.4vh, 22px); }
+html body #title .t-select .tg-plus { font: 300 clamp(60px, 14vh, 110px)/1 var(--o-title); font-style: normal; color: rgba(225, 228, 216, 0.85); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+html body #title .t-select .slot.tag.empty .info { align-items: center; }
+html body #title .t-select .slot.tag .del:not(#_a):not(#_b):not(#_c) { right: 10px; bottom: auto; top: calc(46% + 30px); }
+html body #title .t-gear:not(#_a):not(#_b) { z-index: 3; }
+html body #title .hint:not(#_a):not(#_b) { position: fixed !important; z-index: 2; }
+html body #title .title-panel:not(#_a):not(#_b):not(#_c) { z-index: 1 !important; }
+html body #title .t-select #slots.slots:not(#_a):not(#_b):not(#_c) { width: auto !important; max-width: calc(100vw - 32px); margin: 0 !important; justify-content: center !important; }
+html body #title.select .t-plate { transform: translateY(-38vh) scale(0.34); }
+html body #title.select .t-plate h1 span { opacity: 0; }
+html body #title .t-select { padding-top: 10vh !important; }
+html body #title .t-select .tg-go { align-self: stretch; }
+html body #title .t-select .slot.tag:not(.last) .tg-go { background: rgba(30, 32, 26, 0.55); }
+html body #title .t-select .slot.tag.empty:not(#_a):not(#_b):not(#_c) { background: rgba(14, 20, 18, 0.55) !important; box-shadow: inset 0 0 0 2px rgba(239, 232, 210, 0.28), 0 10px 24px rgba(0, 0, 0, 0.35) !important; opacity: 1; }
+html body #title .t-select .slot.tag.empty .tg-n:not(#_a), html body #title .t-select .slot.tag.empty .info b:not(#_a):not(#_b):not(#_c), html body #title .t-select .tg-plus { color: rgba(239, 232, 210, 0.85) !important; text-shadow: none !important; }
+html body #title .t-select .slot.tag.empty:hover { box-shadow: inset 0 0 0 2px rgba(239, 232, 210, 0.7), 0 10px 24px rgba(0, 0, 0, 0.35) !important; }

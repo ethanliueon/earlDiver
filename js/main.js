@@ -1218,6 +1218,7 @@ window.addEventListener('keydown', (ev) => {
   if (tutGated(k)) return; // (4.4.0)
   if (g.mode === 'menu' && (k === 'enter' || k === ' ')) {
     ev.preventDefault();
+    if (ui.titleOpen() && document.getElementById('title').classList.contains('attract')) return; // (5.2) the first key only brings up the divers
     if (ui.titleOpen()) { const n = lastSlot(); ui.h.onSlot(n && readSlot(n).state === 'ok' ? n : firstFreeSlot()); }
     else startRun();
     return;

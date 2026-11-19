@@ -1211,23 +1211,41 @@ export class UI {
     if (!this.fitBound) { this.fitBound = true; window.addEventListener('resize', () => this.fitTitle()); document.fonts && document.fonts.ready.then(() => this.fitTitle()); }
     $('menu').classList.add('gone');
     const ago = (ms) => { const m = (Date.now() - ms) / 60000; return m < 2 ? 'just now' : m < 60 ? `${Math.round(m)} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`; };
-    // (5.1) each save is a stamped steel dive tag: its number punched big, what it holds stamped under it; the one
-    // played last is the one Dive continues (ringed). A small x deletes; an empty tag says New diver
+    // (5.2) the save select: three large diver panels across the screen, each with what that diver has done (cash,
+    // how deep, how much of the sea is in the book), the one played last ringed; an empty one is a big + New diver
     let html = '';
     const last0 = lastSlot();
     for (let n = 1; n <= SLOTS; n++) {
-      const r = readSlot(n), num = `<b class="tg-n">${String(n).padStart(2, '0')}</b><i class="hole"></i>`;
+      const r = readSlot(n), num = `<b class="tg-n">${n}</b>`;
       if (r.state === 'ok') {
-        const p = r.profile;
-        html += `<div class="slot tag${n === last0 ? ' last' : ''}" data-n="${n}" title="${r.saved ? 'Played ' + ago(r.saved) : ''}">${num}<div class="info"><b>${money(p.cash, false)}</b><span>${p.deepest || 0} m deepest</span></div><button class="del" title="Delete this diver" aria-label="Delete">×</button></div>`;
+        const p = r.profile, deep = p.deepest || 0, found = (p.journal || []).length;
+        html += `<div class="slot tag${n === last0 ? ' last' : ''}" data-n="${n}">${num}<div class="info"><b>${money(p.cash, false)}</b><span>${deep.toLocaleString()} m deepest</span></div>
+          <div class="tg-depth"><i style="height:${Math.round(Math.min(1, deep / 5000) * 100)}%"></i></div>
+          <dl class="tg-rows"><div><dt>Species</dt><dd>${found}</dd></div><div><dt>Played</dt><dd>${r.saved ? ago(r.saved) : 'new'}</dd></div></dl>
+          <em class="tg-go">${n === last0 ? 'Continue' : 'Dive'}</em><button class="del" title="Delete this diver" aria-label="Delete">×</button></div>`;
       } else if (r.state === 'damaged') {
         html += `<div class="slot tag damaged" data-n="${n}">${num}<div class="info"><b>Damaged</b><span>could not be read</span></div><button class="del" aria-label="Delete">×</button></div>`;
-      } else html += `<div class="slot tag empty" data-n="${n}">${num}<div class="info"><b>New diver</b></div></div>`;
+      } else html += `<div class="slot tag empty" data-n="${n}">${num}<i class="tg-plus">+</i><div class="info"><b>New diver</b></div></div>`;
     }
     $('slots').innerHTML = html;
     const last = lastSlot();
     $('continue').hidden = !(last && readSlot(last).state === 'ok');
     $('title').classList.remove('gone');
+    // (5.2) first the name and "press any key"; any key or a tap brings up the divers
+    const T = $('title'); T.classList.add('attract'); T.classList.remove('select');
+    const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches;
+    T.querySelector('.t-press span').textContent = touch ? 'Tap to dive' : 'Press any key';
+    if (!this.titleWired) {
+      this.titleWired = true;
+      const go = () => { if (T.classList.contains('gone') || !T.classList.contains('attract')) return; T.classList.remove('attract'); T.classList.add('select'); };
+      T.addEventListener('pointerdown', (ev) => { if (ev.target.closest('.t-gear, .t-select, #settings')) return; go(); });
+      window.addEventListener('keydown', (ev) => {
+        if (T.classList.contains('gone') || !$('settings').hidden || !$('confirm').hidden) return;
+        if (T.classList.contains('attract')) { if (!['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(ev.key)) { ev.preventDefault(); go(); } return; }
+        if (ev.key === 'Escape') { T.classList.add('attract'); T.classList.remove('select'); }
+      });
+      T.querySelector('.t-back').addEventListener('click', () => { T.classList.add('attract'); T.classList.remove('select'); });
+    }
   }
   titleOpen() { return !$('title').classList.contains('gone'); }
   // (4.16.3) loading during play (a dive starting, after a death, back to the title): the simple porthole card;
@@ -1236,6 +1254,7 @@ export class UI {
   setLoading(k, label) { const sp = $('loading').querySelector('span'); if (sp && label && sp.textContent !== label) sp.textContent = label; }
   // (4.17.1) on a short screen, the title menu is scaled down to fit its height (measured, so nothing is cut off)
   fitTitle() {
+    return; // (5.2) the title is laid out for the whole screen now; nothing to scale
     const t = $('title'), pnl = t && t.querySelector('.title-panel'); if (!pnl) return;
     pnl.style.zoom = 1; const h = pnl.scrollHeight, room = window.innerHeight - 20;
     pnl.style.zoom = h > room ? Math.max(0.5, room / h).toFixed(3) : '';
