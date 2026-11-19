@@ -112,7 +112,7 @@ export function updateEarl(g, dt, inp) {
     let ix = hold ? 0 : inp.x, iy = hold ? 0 : inp.y;
     if (mag > 1) { ix /= mag; iy /= mag; }
     const tvx = ix * sp, tvy = iy * sp;
-    const acc = (hold ? 5 : mag > 0.1 ? 2.6 : 1.4) * (1 - (e.struggle || 0) * 0.5); // heavy, sluggish response
+    const acc = (hold ? 5 : mag > 0.1 ? (inp.stick ? 3.8 : 2.6) : 1.4) * (1 - (e.struggle || 0) * 0.5); // heavy, sluggish response (5.3.4: a little quicker on the stick, which has no keys' snap)
     e.vx = lerp(e.vx, tvx, 1 - Math.exp(-dt * acc));
     e.vy = lerp(e.vy, tvy, 1 - Math.exp(-dt * acc));
     // slight negative buoyancy when idle at depth, positive near surface

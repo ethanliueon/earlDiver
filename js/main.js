@@ -1329,7 +1329,7 @@ function readMove() {
   if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
   if (holdingWork()) return { x: 0, y: 0, sprint: false }; // (4.12.3) a long hold (welding, cutting a net free, prying, planting, fitting a tank): he stays put
   if (g.homeRun) return { x: 0, y: 0, sprint: false }; // on autopilot the keys and the mouse leave the helm alone (C hands it back)
-  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: touch.vec.sprint }; // (5.3) the joystick
+  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: touch.vec.sprint, stick: true }; // (5.3) the joystick
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
   const now = performance.now();
@@ -2626,7 +2626,7 @@ function adaptQuality(realDt) {
   qualityT += realDt;
   // (5.3.2) a phone keeps one resolution for good: switching resizes every canvas and rebuilds what was drawn at the
   // old size, which costs more than it saves (and made the boat's stains flicker). Lite mode stays on
-  if (renderer.phone) { if (renderer.quality !== 0.7) { renderer.quality = 0.7; renderer.resize(); } return; }
+  if (renderer.phone) { if (renderer.quality !== 0.85) { renderer.quality = 0.85; renderer.resize(); } return; }
   if (qualityT < 1) return;
   const q = renderer.quality ?? 1;
   // the floor is set by the real screen: never below ~90 % of a screen pixel (75 % on plain screens), so
@@ -2674,7 +2674,7 @@ function frame(now) {
   // phone's fill is better spent on the sea
   hudDt += dt; hudFrame++;
   { const on = !!(hud.touch && g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen()); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
-  if (!renderer.lite || hudFrame % 2 === 0 || g.mode !== 'play') { hud.draw(g, hudDt); hudDt = 0; }
+  hud.draw(g, hudDt); hudDt = 0; // (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
   airOver(g);

@@ -294,7 +294,7 @@ export class Hud {
     };
     const r = 24 * u, gap = 14 * u, rho0 = R + r + gap;
     A.forEach((a, i) => { const ang = [-92, -146, -200][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
-    const r2 = 20 * u; TOP.forEach((a, i) => btn(a, 92 * u + i * (r2 * 2 + 8 * u) + r2, 16 * u + r2, r2));
+    const r2 = 18 * u; TOP.forEach((a, i) => btn(a, 44 * u, 84 * u + r2 + i * (r2 * 2 + 7 * u), r2)); // (5.3.4) a column under the clipboard, clear of the quest's words
     const rho1 = rho0;
     if (aboard) return;
     // ---- the big button: the main action ----

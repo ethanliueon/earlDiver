@@ -699,3 +699,6 @@ html body #confirm button:focus-visible { outline: 2px solid rgba(239, 232, 210,
   html body .ld .ld-title b:not(#_a) { font-size: 17vh !important; }
   html body .ld .ld-tip:not(#_a):not(#_b) { left: max(6vw, 24px) !important; transform: none !important; bottom: 8vh !important; max-width: 46vw !important; text-align: left !important; }
 }
+/* (5.3.4) the canvases fill exactly what can be seen: on an iPhone 100vh is the screen behind Safari's bars, so the
+   bottom of the game (the net button, the hotbar) was below the edge */
+html body canvas#game, html body canvas#hud { width: 100vw; height: 100vh; height: 100dvh; }
