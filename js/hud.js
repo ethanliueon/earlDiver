@@ -117,6 +117,7 @@ export class Hud {
       const sy0 = y - 18 * s, fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1));
       const parts = [['Tank', `${fmt(tankUsed(g))}/${tankSlots(g)}`]];
       if (pressSlots(g)) parts.push(['Chambers', `${g.subTank.filter((q) => q.pressed && q.chamber !== BIG).length}/${pressSlots(g)}`]);
+      if (g.bag.length) parts.push(['Bag', `${g.bag.length}`]); // (4.28) what is still outside the tank, in the row (it was printed over it)
       if (hasBigTank(g)) parts.push(['Large tank', `${bigIn(g).length}/3`]);
       ctx.textBaseline = 'middle';
       const lab = `600 ${17 * s}px ${HUDF}`, val = `600 ${15 * s}px ${MONO}`, gapP = 26 * s;
@@ -206,7 +207,6 @@ export class Hud {
       }
     }
     // a second row inside the sub: what is still in the bag outside the tank
-    if (e.inSub && g.bag.length) { ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(232,176,64,0.8)'; ctx.fillText(`+${g.bag.length} in the bag${list.length >= slots ? ' (tank full)' : ''}`, W / 2 + rowW / 2 + 8 * s + (this.coinW || 0), sy); }
     ctx.textBaseline = 'top';
   }
 
@@ -342,16 +342,12 @@ export class Hud {
     const left = e.inSub && !onTank ? g.sub.o2 / Math.max(0.0001, g.subDrain) : e.o2 / Math.max(0.0001, g.diverDrain);
     const sec = Math.max(0, Math.floor(left));
     const flash = (a, b2) => (Math.sin(g.time * 8) > 0 ? a : b2);
-    if (g.noAir && !e.atSurface) notes.push([(g.noAirRate || 1) > 1.3 ? 'Under pressure: surface!' : 'No air: surface!', flash('#ff6a5a', '#c0382a')]);
+    if (g.noAir && !e.atSurface) { /* (4.28) the message line says it; not twice */ }
     else if (!e.atSurface && o2 < 0.25) notes.push([sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air` : `${sec} s of air`, '#ff9a6a']);
-    if (!e.atSurface && !e.inSub) {
-      const press = diverDrainMult(e.y, e.pressStart || 300);
-      if (press > 1.05) notes.push([press >= 100 ? 'Pressure ×100+' : `Pressure ×${press.toFixed(press < 10 ? 1 : 0)}`, '#ff9a6a']); // past x100 the number means nothing
-    }
+    // (4.28) no pressure multiplier: the air line draining faster says it
     if (e.inSub) {
       const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1);
       if (g.sub.failing != null) notes.push(['Hull failing!', flash('#ff4a3a', '#a02a20')]);
-      else if (r > 1) notes.push([`Past her ${g.sub.rated} m`, flash('#ff4a3a', '#a02a20')]);
       else if (r > 0.9) notes.push([`Near her ${g.sub.rated} m`, '#ff9a6a']);
       else if (hi < 0.99) notes.push(['Hull leaking', '#ff9a6a']);
     }

@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Allerta+Stencil&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=4.28.0">
-  <link rel="stylesheet" href="css/olive.css?v=4.28.0">
+  <link rel="stylesheet" href="css/style.css?v=4.28.1">
+  <link rel="stylesheet" href="css/olive.css?v=4.28.1">
   <style>
     /* (4.17.2) the loading screen, poster-style: the painting left alone (only a slow push-in), and over it, at the
        lower left, flat type in the sunset's own orange and a warm off-white: a stamped helmet mark, the title, a
@@ -74,6 +74,25 @@
     @keyframes ld-bub { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 10% { opacity: 1; } 80% { opacity: 0.7; } 100% { opacity: 0; transform: translate(6px, -9vh) scale(1.2); } }
     @keyframes ld-snow { from { transform: translateY(0); } to { transform: translateY(var(--t)); } }
     @media (prefers-reduced-motion: reduce) { .ld * { animation: none !important; } }
+    /* (4.28) one family (Barlow Condensed) for the name; the bar is a descent: a line with a tick every tenth, a cream
+       fill, and the reading in metres going down (loading to 100% is the dive to 1,000 m); the tip upright */
+    .ld { --ink: #efe8d6; }
+    .ld .ld-title { gap: 0.32em; }
+    .ld .ld-title b { font: 700 clamp(72px, 13vw, 210px)/0.8 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: 0.01em; color: var(--ink); text-shadow: 0 2px 24px rgba(0,0,0,0.45); }
+    .ld .ld-title span { padding-left: 0.18em; font: 600 clamp(14px, 1.9vw, 28px) "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: 0.55em; color: rgba(239,232,214,0.72); }
+    .ld .ld-load { gap: 14px; align-items: flex-end; }
+    .ld .ld-step { position: static; width: auto; height: auto; overflow: visible; clip: auto; font: 600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(239,232,214,0.55); white-space: nowrap; }
+    .ld .ld-bar { width: clamp(150px, 16vw, 260px); height: 12px; border-radius: 0; background: none; overflow: visible; border-bottom: 1px solid rgba(239,232,214,0.28);
+      background-image: repeating-linear-gradient(90deg, rgba(239,232,214,0.35) 0 1px, transparent 1px 10%); background-size: 100% 6px; background-repeat: no-repeat; background-position: 0 100%; }
+    .ld .ld-fill { top: auto; bottom: -1px; height: 3px; background: var(--ink); box-shadow: 0 0 8px rgba(239,232,214,0.45); }
+    .ld .ld-fill::after { content: ''; position: absolute; right: -3px; bottom: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 10px rgba(239,232,214,0.7); }
+    .ld .ld-pct { min-width: 4.6em; font: 600 20px/1 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: 0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .ld .ld-tip { font: 500 16px/1.4 "Barlow Semi Condensed", "Arial Narrow", sans-serif; font-style: normal; color: rgba(239,232,214,0.7); }
+    .ld .ld-tip kbd { border-color: rgba(239,232,214,0.6); color: var(--ink); font: 600 12px/17px "Barlow Semi Condensed", "Arial Narrow", sans-serif; }
+    .ld .ld-load { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 14px; row-gap: 6px; align-items: end; }
+    .ld .ld-step { grid-column: 1 / 3; grid-row: 1; text-align: left; }
+    .ld .ld-bar { grid-column: 1; grid-row: 2; } .ld .ld-pct { grid-column: 2; grid-row: 2; }
+    .ld .ld-tip { left: max(6vw, 24px); transform: none; text-align: left; max-width: min(40vw, 520px); }
   </style>
 </head>
 <body>
@@ -81,13 +100,13 @@
   <div id="boot" class="ld" aria-label="Loading">
     <div class="ld-art"><div class="ld-stage"><img src="assets/loading/key-art.jpg" alt=""><i class="ld-rays"></i><div class="ld-mon"><img src="assets/loading/ka-monster.png" alt=""><i class="ld-eye"></i></div><i class="ld-lamp"></i><i class="ld-bub" style="--d:0s;--x:0px"></i><i class="ld-bub" style="--d:2.3s;--x:-3px"></i><i class="ld-bub" style="--d:4.1s;--x:2px"></i><i class="ld-snowbox"><i class="ld-snow"></i><i class="ld-snow ld-snow2"></i></i></div></div><div class="ld-shade"></div>
     <h1 class="ld-title"><b>Earl</b><span>the Diver</span></h1>
-    <div class="ld-load"><span class="ld-step" aria-live="polite">Loading</span><div class="ld-bar"><i class="ld-fill"></i></div><span class="ld-pct">0%</span></div>
+    <div class="ld-load"><span class="ld-step" aria-live="polite">Loading</span><div class="ld-bar"><i class="ld-fill"></i></div><span class="ld-pct">0 m</span></div>
     <div class="ld-tip"></div>
   </div>
   <script>
     // the game reports how far it has got (window.__boot), then fades this away (window.__bootDone)
     // (4.15.0) how far the game has got (window.__boot / __load), then fade it away (window.__bootDone)
-    window.__ldSet = function (el, k, label) { if (!el) return; k = Math.max(0.04, Math.min(1, k)); var f = el.querySelector('.ld-fill'), t = el.querySelector('.ld-step'), pc = el.querySelector('.ld-pct'); if (f) f.style.width = (k * 100) + '%'; if (pc) pc.textContent = Math.round(k * 100) + '%'; if (t && label) t.textContent = label; };
+    window.__ldSet = function (el, k, label) { if (!el) return; k = Math.max(0.04, Math.min(1, k)); var f = el.querySelector('.ld-fill'), t = el.querySelector('.ld-step'), pc = el.querySelector('.ld-pct'); if (f) f.style.width = (k * 100) + '%'; if (pc) pc.textContent = (Math.round(k * 100) * 10).toLocaleString() + ' m'; if (t && label) t.textContent = label; };
     window.__ldTips = ['Animals from the deep need a pressure chamber, or they won\'t survive the trip up.', 'Found something worth coming back for? Mark it on your chart with <kbd>K</kbd>.', 'Below its depth rating, the sub leaks air faster and faster.', 'Legendary animals hide near the deepest part of their range.', 'Throw a lure with <kbd>Q</kbd> to pull the thing in the deep away from you.', 'Sell your catch at the Margaret with <kbd>U</kbd>.', 'Some animals come to the light. Some run from it. Some hunt it.', 'Only the advanced trawl net can hold a legend. Pick your net with <kbd>N</kbd>.'];
     window.__ldTip = function (el) { var tip = el && el.querySelector('.ld-tip span') || (function () { var w = el && el.querySelector('.ld-tip'); if (!w) return null; var sp = document.createElement('span'); w.appendChild(sp); return sp; })(); if (!tip) return; var i = Math.floor(Math.random() * window.__ldTips.length); tip.innerHTML = window.__ldTips[i]; clearInterval(el.__tipT); el.__tipT = setInterval(function () { i = (i + 1) % window.__ldTips.length; tip.style.opacity = 0; setTimeout(function () { tip.innerHTML = window.__ldTips[i]; tip.style.opacity = 1; }, 400); }, 4200); };
     window.__boot = function (k, label) { window.__ldSet(document.getElementById('boot'), k, label); };
@@ -102,12 +121,12 @@
   <section id="title">
     <div class="menu-inner title-panel">
       <button class="gear-btn t-gear" data-settings aria-label="Settings and controls" title="Settings and controls"></button>
-      <div class="t-plate"><h1>Earl the Diver</h1></div>
+      <div class="t-plate"><h1><b>Earl</b><span>the Diver</span></h1></div>
       <div class="menu-buttons"><button id="continue" hidden>Continue</button></div>
       <div class="t-label">Divers' log</div>
       <div id="slots" class="slots"></div>
       <div class="menu-links"><button id="title-fullscreen" class="link">Full screen</button></div>
-      <p class="hint">Best with headphones. Each diver saves as you play. <span class="version"></span></p>
+      <p class="hint"><span class="version"></span></p>
     </div>
   </section>
   <div id="loading" hidden><div class="porthole"><div class="dial"><i class="tick"></i><i class="needle"></i><b>DEPTH</b></div></div><span>Charting the sea</span></div>
@@ -273,66 +292,66 @@
   <!-- stamp:start (tools/stamp.py) -->
   <script type="importmap">
   { "imports": {
-    "./js/alarm.js": "./js/alarm.js?v=4.28.0",
-    "./js/aquarium.js": "./js/aquarium.js?v=4.28.0",
-    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=4.28.0",
-    "./js/arm.js": "./js/arm.js?v=4.28.0",
-    "./js/audio.js": "./js/audio.js?v=4.28.0",
-    "./js/autopilot.js": "./js/autopilot.js?v=4.28.0",
-    "./js/cabin.js": "./js/cabin.js?v=4.28.0",
-    "./js/capture.js": "./js/capture.js?v=4.28.0",
-    "./js/catalog.js": "./js/catalog.js?v=4.28.0",
-    "./js/chart.js": "./js/chart.js?v=4.28.0",
-    "./js/chests.js": "./js/chests.js?v=4.28.0",
-    "./js/clouds.js": "./js/clouds.js?v=4.28.0",
-    "./js/contracts.js": "./js/contracts.js?v=4.28.0",
-    "./js/creatures_draw.js": "./js/creatures_draw.js?v=4.28.0",
-    "./js/dave.js": "./js/dave.js?v=4.28.0",
-    "./js/designs.js": "./js/designs.js?v=4.28.0",
-    "./js/earl_draw.js": "./js/earl_draw.js?v=4.28.0",
-    "./js/economy.js": "./js/economy.js?v=4.28.0",
-    "./js/entity.js": "./js/entity.js?v=4.28.0",
-    "./js/fauna.js": "./js/fauna.js?v=4.28.0",
-    "./js/fittings.js": "./js/fittings.js?v=4.28.0",
-    "./js/gallery.js": "./js/gallery.js?v=4.28.0",
-    "./js/hud.js": "./js/hud.js?v=4.28.0",
-    "./js/hunters.js": "./js/hunters.js?v=4.28.0",
-    "./js/item_art.js": "./js/item_art.js?v=4.28.0",
-    "./js/item_data.js": "./js/item_data.js?v=4.28.0",
-    "./js/items.js": "./js/items.js?v=4.28.0",
-    "./js/main.js": "./js/main.js?v=4.28.0",
-    "./js/messages.js": "./js/messages.js?v=4.28.0",
-    "./js/monster_draw.js": "./js/monster_draw.js?v=4.28.0",
-    "./js/oldone.js": "./js/oldone.js?v=4.28.0",
-    "./js/player.js": "./js/player.js?v=4.28.0",
-    "./js/quests.js": "./js/quests.js?v=4.28.0",
-    "./js/render.js": "./js/render.js?v=4.28.0",
-    "./js/scenery_draw.js": "./js/scenery_draw.js?v=4.28.0",
-    "./js/settings.js": "./js/settings.js?v=4.28.0",
-    "./js/showcase.js": "./js/showcase.js?v=4.28.0",
-    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=4.28.0",
-    "./js/species.js": "./js/species.js?v=4.28.0",
-    "./js/specimens.js": "./js/specimens.js?v=4.28.0",
-    "./js/station_draw.js": "./js/station_draw.js?v=4.28.0",
-    "./js/survey.js": "./js/survey.js?v=4.28.0",
-    "./js/tankroom.js": "./js/tankroom.js?v=4.28.0",
-    "./js/textures.js": "./js/textures.js?v=4.28.0",
-    "./js/tools_draw.js": "./js/tools_draw.js?v=4.28.0",
-    "./js/trail.js": "./js/trail.js?v=4.28.0",
-    "./js/traps.js": "./js/traps.js?v=4.28.0",
-    "./js/tutspot.js": "./js/tutspot.js?v=4.28.0",
-    "./js/ui.js": "./js/ui.js?v=4.28.0",
-    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=4.28.0",
-    "./js/util.js": "./js/util.js?v=4.28.0",
-    "./js/variants.js": "./js/variants.js?v=4.28.0",
-    "./js/version.js": "./js/version.js?v=4.28.0",
-    "./js/world.js": "./js/world.js?v=4.28.0",
-    "./data/species_about.js": "./data/species_about.js?v=4.28.0",
-    "./data/species_data.js": "./data/species_data.js?v=4.28.0",
-    "./data/species_more.js": "./data/species_more.js?v=4.28.0"
+    "./js/alarm.js": "./js/alarm.js?v=4.28.1",
+    "./js/aquarium.js": "./js/aquarium.js?v=4.28.1",
+    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=4.28.1",
+    "./js/arm.js": "./js/arm.js?v=4.28.1",
+    "./js/audio.js": "./js/audio.js?v=4.28.1",
+    "./js/autopilot.js": "./js/autopilot.js?v=4.28.1",
+    "./js/cabin.js": "./js/cabin.js?v=4.28.1",
+    "./js/capture.js": "./js/capture.js?v=4.28.1",
+    "./js/catalog.js": "./js/catalog.js?v=4.28.1",
+    "./js/chart.js": "./js/chart.js?v=4.28.1",
+    "./js/chests.js": "./js/chests.js?v=4.28.1",
+    "./js/clouds.js": "./js/clouds.js?v=4.28.1",
+    "./js/contracts.js": "./js/contracts.js?v=4.28.1",
+    "./js/creatures_draw.js": "./js/creatures_draw.js?v=4.28.1",
+    "./js/dave.js": "./js/dave.js?v=4.28.1",
+    "./js/designs.js": "./js/designs.js?v=4.28.1",
+    "./js/earl_draw.js": "./js/earl_draw.js?v=4.28.1",
+    "./js/economy.js": "./js/economy.js?v=4.28.1",
+    "./js/entity.js": "./js/entity.js?v=4.28.1",
+    "./js/fauna.js": "./js/fauna.js?v=4.28.1",
+    "./js/fittings.js": "./js/fittings.js?v=4.28.1",
+    "./js/gallery.js": "./js/gallery.js?v=4.28.1",
+    "./js/hud.js": "./js/hud.js?v=4.28.1",
+    "./js/hunters.js": "./js/hunters.js?v=4.28.1",
+    "./js/item_art.js": "./js/item_art.js?v=4.28.1",
+    "./js/item_data.js": "./js/item_data.js?v=4.28.1",
+    "./js/items.js": "./js/items.js?v=4.28.1",
+    "./js/main.js": "./js/main.js?v=4.28.1",
+    "./js/messages.js": "./js/messages.js?v=4.28.1",
+    "./js/monster_draw.js": "./js/monster_draw.js?v=4.28.1",
+    "./js/oldone.js": "./js/oldone.js?v=4.28.1",
+    "./js/player.js": "./js/player.js?v=4.28.1",
+    "./js/quests.js": "./js/quests.js?v=4.28.1",
+    "./js/render.js": "./js/render.js?v=4.28.1",
+    "./js/scenery_draw.js": "./js/scenery_draw.js?v=4.28.1",
+    "./js/settings.js": "./js/settings.js?v=4.28.1",
+    "./js/showcase.js": "./js/showcase.js?v=4.28.1",
+    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=4.28.1",
+    "./js/species.js": "./js/species.js?v=4.28.1",
+    "./js/specimens.js": "./js/specimens.js?v=4.28.1",
+    "./js/station_draw.js": "./js/station_draw.js?v=4.28.1",
+    "./js/survey.js": "./js/survey.js?v=4.28.1",
+    "./js/tankroom.js": "./js/tankroom.js?v=4.28.1",
+    "./js/textures.js": "./js/textures.js?v=4.28.1",
+    "./js/tools_draw.js": "./js/tools_draw.js?v=4.28.1",
+    "./js/trail.js": "./js/trail.js?v=4.28.1",
+    "./js/traps.js": "./js/traps.js?v=4.28.1",
+    "./js/tutspot.js": "./js/tutspot.js?v=4.28.1",
+    "./js/ui.js": "./js/ui.js?v=4.28.1",
+    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=4.28.1",
+    "./js/util.js": "./js/util.js?v=4.28.1",
+    "./js/variants.js": "./js/variants.js?v=4.28.1",
+    "./js/version.js": "./js/version.js?v=4.28.1",
+    "./js/world.js": "./js/world.js?v=4.28.1",
+    "./data/species_about.js": "./data/species_about.js?v=4.28.1",
+    "./data/species_data.js": "./data/species_data.js?v=4.28.1",
+    "./data/species_more.js": "./data/species_more.js?v=4.28.1"
   } }
   </script>
-  <script type="module" src="js/main.js?v=4.28.0"></script>
+  <script type="module" src="js/main.js?v=4.28.1"></script>
   <!-- stamp:end -->
 </body>
 </html>

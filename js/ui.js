@@ -335,7 +335,7 @@ export class UI {
     let pop = $('quests').querySelector('.qs-pop');
     if (!pop) { pop = document.createElement('div'); pop.className = 'qs-pop'; $('quests').querySelector('.qs-panel').appendChild(pop); pop.addEventListener('click', (ev) => { if (ev.target.closest('.qp-close') || ev.target === pop) pop.hidden = true; }); }
     const esc2 = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-    const card = (sp) => { const [a, b] = usualDepth(sp), R0 = rarityOf(sp); return `<div class="qp-sp"><img src="${fittedIcon(sp, 240, 140).toDataURL()}" alt=""><div><b style="color:${R0 ? R0.col : 'inherit'}">${esc2(sp.name)}</b><i>${esc2(sp.sci || '')}</i><small>${/^(floor|floor-swim|demersal|reef)$/.test((sp.v && sp.v.hab) || '') && a < 5 ? `on the seabed, down to ${b.toLocaleString()} m` : `usually ${a.toLocaleString()}–${b.toLocaleString()} m`} · ${esc2(sp.zone || '')}${sp.oceans ? ' · ' + esc2(sp.oceans) : ''}</small></div></div>`; };
+    const card = (sp) => { const [a, b] = usualDepth(sp), R0 = rarityOf(sp); return `<div class="qp-sp"><img src="${fittedIcon(sp, 240, 140).toDataURL()}" alt=""><div><b style="color:${R0 ? R0.col : 'inherit'}">${esc2(sp.name)}</b><i>${esc2(sp.sci || '')}</i><small>${/^(floor|floor-swim|demersal|reef)$/.test((sp.v && sp.v.hab) || '') && a < 5 ? `on the seabed, down to ${b.toLocaleString()} m` : `usually ${a.toLocaleString()}–${b.toLocaleString()} m`}, ${esc2(sp.zone || '')}${sp.oceans ? ', ' + esc2(sp.oceans) : ''}</small></div></div>`; };
     let body = '', map = null, bed = null; // bed: [[lo, hi], ...] for animals that live on the bottom (the map lights where the seabed is that deep)
     const bottom = (sp) => /^(floor|floor-swim|demersal|reef)$/.test((sp.v && sp.v.hab) || '');
     if (q.kind === 'species' && SPECIES_BY_ID[q.id]) { const sp = SPECIES_BY_ID[q.id]; body = card(sp) + `<p>${esc2(sp.desc || '')}</p>` + (bottom(sp) ? '<p>It lives on the seabed: the lit stretches of the bottom on the map are where it is found.</p>' : '') + `<p>It has to come up alive: keep it in water, at its own pressure.</p>`; if (bottom(sp)) bed = [usualDepth(sp)]; else map = usualDepth(sp)[0]; }
@@ -359,7 +359,7 @@ export class UI {
     const x = cv.getContext('2d'), W = cv.width, H = cv.height, Wd = 5000, D = 5200, X = (m) => (m / Wd) * W, Y = (y) => (y / D) * (H - 14) + 4;
     x.fillStyle = '#0d2230'; x.fillRect(0, 0, W, H);
     x.fillStyle = '#4a4234'; x.beginPath(); x.moveTo(0, H); for (let m = 0; m <= Wd; m += 10) x.lineTo(X(m), Y(Math.max(0, g.world.floorAt(m)))); x.lineTo(W, H); x.closePath(); x.fill();
-    x.font = '11px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
+    x.font = '600 13px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
     const e = g.earl.inSub ? g.sub : g.earl; let best = null, bd = Infinity, bestY = 0;
     if (bed) {
       // (4.8.2) bottom animals: the seabed itself lit where it lies within their depths
@@ -370,8 +370,8 @@ export class UI {
       x.stroke();
       // (no 'nearest place' for the bottom: the lit seabed says where)
     } else {
-      x.strokeStyle = 'rgba(242,184,74,0.85)'; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]);
-      x.fillStyle = '#f2c868'; x.fillText(`${Math.round(d).toLocaleString()} m`, 6, Y(d) - 4);
+      x.strokeStyle = 'rgba(239,232,210,0.7)'; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]);
+      x.fillStyle = '#efe8d2'; x.textBaseline = Y(d) < 18 ? 'top' : 'alphabetic'; x.fillText(`${Math.round(d).toLocaleString()} m`, 6, Y(d) < 18 ? Y(d) + 4 : Y(d) - 4); x.textBaseline = 'alphabetic'; // (4.28) below the line when the line is at the top (it was cut off)
       for (let m = 0; m <= Wd; m += 5) if (g.world.floorAt(m) > d + 15 && Math.abs(m - e.x) < bd) { bd = Math.abs(m - e.x); best = m; }
     }
     if (best != null && !bed) { x.fillStyle = '#9fdc8c'; x.beginPath(); x.arc(X(best), Y(d), 5, 0, Math.PI * 2); x.fill(); x.fillText('nearest place this deep', Math.min(W - 160, X(best) + 8), Y(d) + (Math.abs(X(best) - X(e.x)) < 130 && Math.abs(Y(d) - Y(Math.max(0, e.y))) < 30 ? 30 : 14)); }
@@ -411,7 +411,7 @@ export class UI {
     for (const q of S.board) {
       // (4.0.0) a claimed quest stays, dimmed, until its time runs out; a new one is marked NEW until the board is seen
       const ok = q.prog >= q.n, left = questLeft(q);
-      const timer = q.claimed ? `done · a new quest in ${hm(left)}` : ok ? 'done: claim it' : `${hm(left)} left`;
+      const timer = q.claimed ? `done, a new quest in ${hm(left)}` : ok ? 'done: claim it' : `${hm(left)} left`;
       html += `<div class="qs-q r-${q.rarity}${ok && !q.claimed ? ' ready' : ''}${q.claimed ? ' claimed' : ''}"><div class="qs-t"><b>${q.text}${q.fresh ? '<i class="qs-new">New</i>' : ''}</b><small class="qs-time">${timer}</small>${q.n > 1 && !q.claimed ? bar(q.prog, q.n) + `<span>(${q.kind === 'sell' ? money(q.prog, false) + '/' + money(q.n, false) : q.prog + '/' + q.n})</span>` : ''}</div>
         <div class="qs-pay">${q.claimed ? '<span class="qs-paid">paid</span>' : money(q.pay, false)}${ok && !q.claimed ? `<button data-q="claim|${q.key}">Claim</button>` : ''}</div><button class="qs-info" data-q="info|${q.key}" title="About this quest">i</button></div>`;
     }
@@ -419,7 +419,7 @@ export class UI {
     const wait = boardIn(P), price = refreshPrice(P);
     // (4.0.1) the countdown is plain words under the board with a ticking green clock; only the button is brass
     const clock = (ms) => { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sc = t % 60; return `${h}:${String(m).padStart(2, '0')}:${String(sc).padStart(2, '0')}`; };
-    html += `<div class="qs-foot">${wait > 0 ? `<span class="qs-wait">Free refresh in <b class="qs-clock">${clock(wait)}</b></span><button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now · ${money(price, false)}</button>` : '<span class="qs-wait">A free refresh is ready</span><button class="qs-buy" data-q="refresh|free">New quests · free</button>'}</div>`;
+    html += `<div class="qs-foot">${wait > 0 ? `<span class="qs-wait">Free refresh in <b class="qs-clock">${clock(wait)}</b></span><button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now, ${money(price, false)}</button>` : '<span class="qs-wait">A free refresh is ready</span><button class="qs-buy" data-q="refresh|free">New quests (free)</button>'}</div>`;
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
@@ -483,8 +483,8 @@ export class UI {
       else if (k === 'escape' || k === 'n') { e.stopImmediatePropagation(); e.preventDefault(); close(); }
     };
     const all = Object.keys(NETS_SUB); // (4.11.1) every net, the ones not in the hatch greyed with a lock
-    el.innerHTML = `<p class="np-title">Which net?</p><p class="np-hint">Click a net · N or Esc to cancel</p><div class="g-row">${all.map((k) => { const N = NETS_SUB[k], adv = k === 'adv', have = counts[k] || 0;
-      return `<button class="gain np-card ${adv ? 'r-legendary' : 'r-common'}${have ? '' : ' np-none'}" data-net="${k}" ${have ? '' : 'disabled'}><div class="g-tile"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt="">${have ? `<i class="np-n">×${have}</i>` : '<span class="np-lock" aria-label="Not in the hatch"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/></svg></span>'}</div><span class="np-line">${adv ? `Up to ${N.max} animals, ${N.maxLen} m long · wide mouth · no legend escapes` : `Up to ${N.max} animals, ${N.maxLen} m long`}</span><b>${N.name}</b>${have ? '' : '<small class="np-out">Not in the hatch</small>'}</button>`; }).join('')}</div>`;
+    el.innerHTML = `<p class="np-title">Which net?</p><p class="np-hint">Click a net, N or Esc to cancel</p><div class="g-row">${all.map((k) => { const N = NETS_SUB[k], adv = k === 'adv', have = counts[k] || 0;
+      return `<button class="gain np-card ${adv ? 'r-legendary' : 'r-common'}${have ? '' : ' np-none'}" data-net="${k}" ${have ? '' : 'disabled'}><div class="g-tile"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt="">${have ? `<i class="np-n">×${have}</i>` : '<span class="np-lock" aria-label="Not in the hatch"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/></svg></span>'}</div><span class="np-line">${adv ? `Up to ${N.max} animals, ${N.maxLen} m long, wide mouth, no legend escapes` : `Up to ${N.max} animals, ${N.maxLen} m long`}</span><b>${N.name}</b>${have ? '' : '<small class="np-out">Not in the hatch</small>'}</button>`; }).join('')}</div>`;
     el.onclick = (e) => { const b = e.target.closest('[data-net]'); if (b && !b.disabled) pick(b.dataset.net); else if (e.target === el) close(); };
     window.addEventListener('keydown', key, true);
     this.netPickClose = close; el.hidden = false;
@@ -579,7 +579,7 @@ export class UI {
     const state = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
     const card = (cls, s2, span = 1) => { const sp = SPECIES_BY_ID[s2.id];
       const pct = Math.round(Math.max(36, 100 * sizeK(s2.len || sp.len))); // (3.0.43) the picture at its real size, against a 2.4 m giant
-      return `<div class="${cls}${rarityCls(sp)}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m · ${(s2.len || sp.len).toFixed(2)} m">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${ic(sp)}" alt="" style="transform:scale(${Math.min(1.25, pct / 100 * 1.3).toFixed(2)})"><b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
+      return `<div class="${cls}${rarityCls(sp)}"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}: ${state(s2)}, from ${Math.round(s2.from || 0)} m, ${(s2.len || sp.len).toFixed(2)} m">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${ic(sp)}" alt="" style="transform:scale(${Math.min(1.25, pct / 100 * 1.3).toFixed(2)})"><b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name}</b>${s2.variant ? `<em>${s2.variant}</em>` : ''}<span><i style="background:${dot(s2)}"></i>${state(s2)}</span><small>${money(worth(s2))}</small></div>`; };
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
     // the bag: eleven cubbies, the ones beyond his bag padlocked
     const BAG_MAX = 12, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
@@ -590,7 +590,7 @@ export class UI {
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))], tank = g.subTank || [];
     const open = tank.filter((s2) => !s2.pressed && !s2.pile), floor = tank.filter((s2) => s2.pile), big = tank.filter((s2) => s2.pressed && s2.chamber === BIG_CH);
     const chambers = tank.filter((s2) => s2.pressed && s2.chamber !== BIG_CH), oCap = tankSlots(g), pCap = pressSlots(g), oUsed = open.reduce((t, s2) => t + slotsOf(s2), 0);
-    const elsewhere = floor.length ? `On the floor: ${floor.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')} · ` : '';
+    const elsewhere = floor.length ? `On the floor: ${floor.map((s2) => SPECIES_BY_ID[s2.id].name).join(', ')}, ` : '';
     const bigCap = big.some(tooBig) ? 1 : 3;
     const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}`;
     this.catchShown = Math.max(5, pCap);
@@ -653,7 +653,7 @@ export class UI {
     return `<div class="item-pop fish-pop"><div class="sp-panel${R2 && R2.id === 'legendary' ? ' leg' : ''}" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
       <div class="sp-tank"><canvas class="sp-aq"></canvas><p class="sp-about">${aboutOf(sp)}</p></div>
       <div class="sp-info"><span class="sp-kind">${(sp.cat || '').replace(/&/g, 'and')}</span>${R2 ? `<span class="sp-rar">${R2.name}${rarityStars(sp)}</span>` : ''}<b class="sp-name">${sp.name}</b>
-        ${sp.species || sp.sci ? `<span class="sp-sci">${sp.species ? `${sp.species} · ` : ''}<i>${sp.sci || ''}</i></span>` : ''}${s2.variant ? `<span class="sp-var">Rare form: ${s2.variant}</span>` : ''}
+        ${sp.species || sp.sci ? `<span class="sp-sci">${sp.species ? `${sp.species}, ` : ''}<i>${sp.sci || ''}</i></span>` : ''}${s2.variant ? `<span class="sp-var">Rare form: ${s2.variant}</span>` : ''}
         <dl class="sp-rows">${rows}</dl>
         ${acts ? `<div class="sp-acts"><span>Move to</span>${acts}</div>` : `<p class="sp-remark">${remark}</p>`}</div></div></div>`;
   }
@@ -857,7 +857,7 @@ export class UI {
   // it, new things marked NEW. Click anything for a pop-up: what it is, and side by side with what he has on.
   equipHtml(P, g, extra = '') {
     ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), onSet = new Set(Object.values(K.on));
-    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp gun'], ['tag', '3  Tag gun'], ['cam', '4  Camera']];
+    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['slurp', '2  Slurp'], ['tag', '3  Tagger'], ['cam', '4  Camera']];
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
     const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
       return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}" title="${q ? it.name : nm + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : `<span>${nm}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}<small class="slot-nm">${nm}</small><i class="glyph g-${kind}"></i></div>`; };
@@ -868,7 +868,7 @@ export class UI {
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
-      + (free ? '<p class="eq-note">Drag a thing onto a slot to put it on; click one to take it off.</p>' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
+      + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       + this.airHtml(P, g)
       + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
   }
@@ -897,7 +897,7 @@ export class UI {
       ${Array.from({ length: 11 }, (_, i) => { const a2 = (-225 + i * 27) * Math.PI / 180; return `<line x1="${50 + 30 * Math.cos(a2)}" y1="${50 + 30 * Math.sin(a2)}" x2="${50 + 36 * Math.cos(a2)}" y2="${50 + 36 * Math.sin(a2)}" stroke="#2a2418" stroke-width="${i % 5 ? 1.2 : 2}"/>`; }).join('')}
       <text x="50" y="70" text-anchor="middle" font-size="8" font-family=""Barlow Semi Condensed", "Arial Narrow", sans-serif" fill="#4a3c24">AIR</text>
       <g transform="rotate(${ang} 50 50)"><path d="M50 50 L50 17" stroke="#1c1a16" stroke-width="2.2" stroke-linecap="round"/></g><circle cx="50" cy="50" r="4" fill="#8a7448"/></svg>`;
-    return `<div class="air-rig${warn ? ' warn' : ''}"><img src="${pictureOf(it.kind, it, 320, 120, true)}" alt="">${dial}<div class="air-txt"><span class="tape">${it.name.toUpperCase()}</span><b>${Math.round(now)} s</b><i>of ${max} s of air</i></div></div>`;
+    return `<div class="air-rig${warn ? ' warn' : ''}"><img src="${pictureOf(it.kind, it, 320, 120, true)}" alt="">${dial}<div class="air-txt"><span class="tape">${it.name.toUpperCase()}</span><b>${Math.round(now)} s</b><i>${Math.round(now) >= max ? 'of air, full' : `of ${max} s`}</i></div></div>`;
   }
   // one thing, as a column of the pop-up: its picture, name, rarity, what it is, its skills and its set
   itemCol(P, q, head) {
@@ -905,8 +905,8 @@ export class UI {
     const skills = (q.sk || []).map(([k, l]) => `<div class="lk-sk"><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + roman[l]}</b><span>${SKILLS[k].what}</span></div>`).join('')
       + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span></div>` : '');
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
-    return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ' · net of legend' : ''}</span><p>${it.line || ''}</p>
-      <div class="ip-sks">${skills || '<span class="none">No skills</span>'}</div>${S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b> · ${have >= 3 ? 'on' : `worn (${have}/3)`}<span>${S.trait}</span></div>` : ''}</div>`;
+    return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ', net of legend' : ''}</span><p>${it.line || ''}</p>
+      <div class="ip-sks">${skills || '<span class="none">No skills</span>'}</div>${S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b>, ${have >= 3 ? 'on' : `worn (${have}/3)`}<span>${S.trait}</span></div>` : ''}</div>`;
   }
   // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind
   itemPop(P, g, free) {
@@ -931,7 +931,7 @@ export class UI {
       body = `<div class="ip-cols">${cur ? this.itemCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.itemCol(P, q, 'Selected')}</div>`
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
       if (free) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
-      if (seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell · ${money(sellValue(q), false)}</button>`;
+      if (seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
     }
     return `<div class="item-pop"><div class="ip-box r-${it.rarity}"><button class="ip-close" aria-label="Close">×</button>${body}<div class="lk-acts">${acts}</div></div></div>`;
@@ -1058,7 +1058,7 @@ export class UI {
     for (const k of TRAP_ORDER) {
       const own = (g.profile.traps || {})[k] || 0; if (!own) continue;
       const b = document.createElement('button'); const free = trapsFree(g, k);
-      b.textContent = `${TRAPS[k].name} · ${free} ready`; b.disabled = free <= 0; b.classList.toggle('on', k === this.ts.type);
+      b.textContent = `${TRAPS[k].name}, ${free} ready`; b.disabled = free <= 0; b.classList.toggle('on', k === this.ts.type);
       b.addEventListener('click', () => { this.ts.type = k; this.tsRender(); });
       types.append(b);
     }
@@ -1069,7 +1069,7 @@ export class UI {
     $('ts-depth').textContent = this.ts.depth;
     // the depth of the bottom is not told: only that the line has reached it, once it has
     $('ts-bottom').textContent = `All the way (${T.maxDepth} m)`;
-    $('ts-info').textContent = `The ${T.name.toLowerCase()} is rated to ${T.maxDepth} m${T.winch ? ' · hauled with the boat\'s winch' : ''}`;
+    $('ts-info').textContent = `The ${T.name.toLowerCase()} is rated to ${T.maxDepth} m${T.winch ? ', hauled with the boat\'s winch' : ''}`;
     const w = $('ts-warn');
     if (this.ts.depth >= fl) { w.hidden = false; w.textContent = `The bottom here is only ${fl} m: the trap will rest on the bottom at ${fl} m (good for crabs, lobsters and bottom fish).`; }
     else if (this.ts.depth === T.maxDepth) { w.hidden = false; w.textContent = `The ${T.name.toLowerCase()} goes no deeper than ${T.maxDepth} m.`; }
@@ -1107,11 +1107,11 @@ export class UI {
     if (!P || !off) return;
     this.renderCounter($('cave-cash'), money(P.cash));
     $('cave-coins').innerHTML = `${COIN}${P.coins || 0}`;
-    $('cave-sub').textContent = `A giant anglerfish, older than the boat · this dive it craves: ${off.craving.name.toLowerCase()}`;
+    $('cave-sub').textContent = `A giant anglerfish, older than the boat, this dive it craves: ${off.craving.name.toLowerCase()}`;
     let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">The old one's wares</button><button data-cave="tab:chests" class="${this.caveTab === 'chests' ? 'on' : ''}">What the deep took</button></nav>`;
     if (this.caveTab === 'chests') {
       html += '<p class="shop-note">Bundles left in the silt of the cave. The Reliquary is the only place the oldest things come from.</p>';
-      html += chestsOf('oldone').map((c) => `<div class="ch-row"><img src="${chestPicture(c.look, 192, 150)}" alt=""><div class="ch-txt"><b>${c.name}</b><span>${c.line}</span><small class="ch-odds">${oddsText(c.odds)}</small></div><button data-cave="chest:${c.key}" ${P.cash + 1e-6 < c.price ? 'disabled' : ''}>Open · ${money(c.price, false)}</button></div>`).join('');
+      html += chestsOf('oldone').map((c) => `<div class="ch-row"><img src="${chestPicture(c.look, 192, 150)}" alt=""><div class="ch-txt"><b>${c.name}</b><span>${c.line}</span><small class="ch-odds">${oddsText(c.odds)}</small></div><button data-cave="chest:${c.key}" ${P.cash + 1e-6 < c.price ? 'disabled' : ''}>Open, ${money(c.price, false)}</button></div>`).join('');
       $('cave-body').innerHTML = html;
       return;
     }
@@ -1161,7 +1161,7 @@ export class UI {
         html += `<div class="slot" data-n="${n}"><div class="num">${n}</div><div class="info"><b>${money(p.cash, false)}${p.subName ? `, ${p.subName}` : ''}</b><span>${p.deepest || 0} m deepest, ${(p.journal || []).length} species${r.saved ? `, ${ago(r.saved)}` : ''}</span></div><button class="del" title="Delete this save">Delete</button></div>`;
       } else if (r.state === 'damaged') {
         html += `<div class="slot damaged" data-n="${n}"><div class="num">${n}</div><div class="info"><b>A damaged save</b><span>it could not be read</span></div><button class="del">Delete</button></div>`;
-      } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>Empty</b><span>a new diver</span></div><span></span></div>`;
+      } else html += `<div class="slot empty" data-n="${n}"><div class="num">${n}</div><div class="info"><b>New diver</b></div><span></span></div>`;
     }
     $('slots').innerHTML = html;
     const last = lastSlot();
@@ -1268,7 +1268,7 @@ export class UI {
       const img = document.createElement('img');
       img.src = icon.toDataURL(); img.alt = sp.name;
       const txt = document.createElement('div');
-      txt.innerHTML = `<h3${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.species ? sp.species + ' · ' : ''}${sp.sci}</div>
+      txt.innerHTML = `<h3>${sp.name} ${badge(sp)}</h3><div class="sci">${sp.species ? sp.species + ', ' : ''}${sp.sci}</div>
         <p>${sp.desc}</p>
         <div class="meta">Seen at ${info.depth} m. Lives at ${usualDepth(sp)[0].toLocaleString()} to ${usualDepth(sp)[1].toLocaleString()} m, up to ${sp.size}${sp.giant ? ' (this one far larger)' : ''}.</div>
         ${this.variantRow(sp)}`;
@@ -1283,7 +1283,7 @@ export class UI {
     this.journalCount(g);
     const all = SPECIES.filter((sp) => !sp.giant).slice().sort((a, b) => usualDepth(a)[0] - usualDepth(b)[0] || usualDepth(a)[1] - usualDepth(b)[1]);
     list.innerHTML = `<div class="allfish">${all.map((sp) => { const seen = g.journal.has(sp.id), c = seen ? rarityCol(sp) : null;
-      return `<div class="af${seen ? ' seen' : ''}" title="${seen ? sp.name.replace(/"/g, '') : 'Not yet found'}"><img data-af="${sp.id}" alt=""><b${c ? ` style="color:${c}"` : ''}>${seen ? sp.name : '???'}</b><small>${usualDepth(sp)[0].toLocaleString()}–${usualDepth(sp)[1].toLocaleString()} m</small></div>`; }).join('')}</div>`;
+      return `<div class="af${seen ? ' seen' : ''}" title="${seen ? sp.name.replace(/"/g, '') : 'Not yet found'}"><img data-af="${sp.id}" alt=""><b${c && seen ? ` style="color:${c}"` : ''}>${seen ? sp.name : ''}</b><small>${usualDepth(sp)[0].toLocaleString()}–${usualDepth(sp)[1].toLocaleString()} m</small></div>`; }).join('')}</div>`;
     if (this.afObs) this.afObs.disconnect();
     this.afObs = new IntersectionObserver((ents) => {
       for (const en of ents) { if (!en.isIntersecting) continue; const img = en.target; this.afObs.unobserve(img); const sp = SPECIES_BY_ID[+img.dataset.af]; if (sp) img.src = this.allFishPic(sp, g.journal.has(sp.id)); }
@@ -1330,7 +1330,7 @@ export class UI {
         row('Lures', String(g.items.lure)) + row('Glow sticks', String(g.items.necklace));
     } else {
       this.journalCount(g);
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C · hold C', 'call the submersible to you · send it back to the boat'], ['1 · 2 · Space', 'net · slurp gun · use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 · 4', 'tag gun · camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / snap a glow stick (warm amber, 90 s; in the sub it lights her up)'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out a trawl net (choose which: up to two beginner nets and one advanced)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G lets the anchor go or winds it in'], ['J', 'this journal'], ['P', 'the yard (at the Margaret); anywhere else, frames per second'], ['O', 'quests'], ['L (on the Margaret)', 'the sub\'s lights on / off'], ['X', 'developer: the deepest sub and $500,000, then a legend to find'], ['Esc · M', 'pause · mute']];
+      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C / hold C', 'call the submersible to you / send it back to the boat'], ['1 / 2 / Space', 'net / slurp gun / use it (approach slowly, then sweep); press a tool\'s number again to put it away'], ['3 / 4', 'tag gun / camera (aim with the mouse, Space to fire)'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / snap a glow stick (warm amber, 90 s; in the sub it lights her up)'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out a trawl net (choose which: up to two beginner nets and one advanced)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G lets the anchor go or winds it in'], ['J', 'this journal'], ['P', 'the yard (at the Margaret); anywhere else, frames per second'], ['O', 'quests'], ['L (on the Margaret)', 'the sub\'s lights on / off'], ['X', 'developer: the deepest sub and $500,000, then a legend to find'], ['Esc / M', 'pause / mute']];
       list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
     }
   }
@@ -1427,7 +1427,7 @@ export class UI {
       const facts = (S, k) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(Math.round(S.o2 * bank)), S.o2 * bank], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed],
         ['Dive speed', k ? '+10%' : 'standard', S.ballast], ['Open tank', `${S.tank} spaces`, S.tank]];
       const sheet = (S, k, cmp = null, stamp = '', big = false) => { const base = cmp ? facts(cmp, 1) : null;
-        return `<div class="yd-sheet${big ? ' big' : ''}"><div class="ys-head"><span>BAYSIDE YARD · SPECIFICATION</span><span>No. ${k + 1}</span></div>${facts(S, k).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
+        return `<div class="yd-sheet${big ? ' big' : ''}"><div class="ys-head"><span>Specification</span><span>No. ${k + 1}</span></div>${facts(S, k).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
           return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}<p class="ys-note">Her pressure chambers hold animals from as deep as she can dive.</p>${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
       // (4.15.6) at a glance: each figure as a dial (how this sub sits between the first and the best), its icon
       // in the middle and the figure under it; a ▲/▼ against your sub
@@ -1488,13 +1488,13 @@ export class UI {
             html += `<div class="yd-card unknown"><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}" data-shadow="1"></canvas></div><h4><small>No. ${k + 1}</small>???</h4><p class="yd-disc">To be discovered at ${where}</p><div class="yd-locked">${sheet(S, k, S0)}<div class="yd-lock">${lockSvg}</div></div></div>`;
             continue;
           }
-          const foot = k > hl + 1 ? `<span class="yd-tag lock">${money(S.price, false)} · buy No. ${hl + 2} first</span>` : statusOf(k);
+          const foot = k > hl + 1 ? `<span class="yd-tag lock">${money(S.price, false)}, buy No. ${hl + 2} first</span>` : statusOf(k);
           html += `<div class="yd-card${k === hl ? ' cur' : ''}" data-yd="sub:${k}" title="See the ${esc(S.name)}"><div class="yd-photo"><canvas class="yd-pic" data-hull="${k}"></canvas></div><h4><small>No. ${k + 1}</small>${S.name}</h4>${sheet(S, k, k === hl ? null : S0, k === hl && !sub.imploded ? 'IN SERVICE' : '')}<div class="yd-foot">${foot}</div></div>`;
         }
         html += '</div></div>';
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
-        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ' · damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
+        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ', damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
           <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i><svg class="yd-lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15 L21 21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` (next ${money(SUBS[hl + 1].price, false)})` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, 'Works the claw under the sphere: from inside, Space grabs an animal.', GEAR.arm.price, owns(P, 'arm')]]
           .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, { quiet: 'Half the noise down there: the deep notices her less.', sonar: 'A strip under the radar draws the seafloor around her.', airBank: 'Bottles strapped behind the sphere: half as much cabin air again, on every sub.' }[k] || a.desc, a.price, !!(P.addons || {})[k]]));
@@ -1535,7 +1535,7 @@ export class UI {
           if (!this.toolImgs) this.toolImgs = new Map();
           if (!this.toolImgs.has(key)) this.toolImgs.set(key, speciesIcon(sp, 120, 68).toDataURL());
           const st = d.cond <= 0.05 ? 'dead' : d.cond < 0.3 ? 'dying' : d.cond < 0.7 ? 'stressed' : d.famous ? 'famous' : isHappy(d) ? 'happy' : 'settling in';
-          return `<div class="tank-cell st-${st.replace(' ', '-')}" style="border-color:${rarityOf(sp).col}" title="${variantLabel(sp, d.variant)} · ${st} · about ${money(earnsOf(d))} a day"><img src="${this.toolImgs.get(key)}" alt="">${d.variant ? `<i class="r-${d.variant}">${VARIANTS[d.variant].name}</i>` : ''}<span>${d.name ? d.name : sp.name}</span><em>${st}</em></div>`;
+          return `<div class="tank-cell st-${st.replace(' ', '-')}" style="border-color:${rarityOf(sp).col}" title="${variantLabel(sp, d.variant)}, ${st}, about ${money(earnsOf(d))} a day"><img src="${this.toolImgs.get(key)}" alt="">${d.variant ? `<i class="r-${d.variant}">${VARIANTS[d.variant].name}</i>` : ''}<span>${d.name ? d.name : sp.name}</span><em>${st}</em></div>`;
         }).join('') + Array.from({ length: slots - list.length }, () => '<div class="tank-cell empty"></div>').join('');
         html += `<div class="wing"><div class="wing-h"><b>Aboard</b><em>${list.length}/${slots}</em></div><div class="tanks">${cells}</div></div>`;
       }
@@ -1760,7 +1760,7 @@ export class UI {
           const d = lv(P, 'depth');
           specs.push(['now', `${SUBS[d].name}, ${SUBS[d].rated} m`]);
           if (capped) specs.push(['next', 'not yet: the yard has no plans for a deeper hull', 'bad']);
-          else if (!maxed) specs.push(['next', `${SUBS[d + 1].name}, ${SUBS[d + 1].rated} m · cabin air ${SUBS[d + 1].o2} s`, 'good']);
+          else if (!maxed) specs.push(['next', `${SUBS[d + 1].name}, ${SUBS[d + 1].rated} m, cabin air ${SUBS[d + 1].o2} s`, 'good']);
         } else for (const sid of T.stats) {
           const sl = lv(P, sid), U = UPGRADES[sid], nl = Math.min(U.max, Math.round((l + 1) / T.max * U.max));
           const now = fmtStat(sid, statAt(sid, sl)), next = fmtStat(sid, statAt(sid, nl));
@@ -1784,7 +1784,7 @@ export class UI {
     clearInterval(this.ledgerTimer);
     el.hidden = false; el.classList.remove('done');
     const d = new Date();
-    const head = `<div class="slip-head">BAYSIDE MARINE BUYERS<br><small>receipt · ${d.toLocaleDateString()} ${d.toTimeString().slice(0, 5)}</small></div>`;
+    const head = `<div class="slip-head">BAYSIDE MARINE BUYERS<br><small>receipt, ${d.toLocaleDateString()} ${d.toTimeString().slice(0, 5)}</small></div>`;
     const lines = sale.lines.map((l) => `<div class="slip-line${l.coins ? ' coins' : ''}"><span>${l.n > 1 ? l.n + ' × ' : ''}${l.label}</span><b>${l.coins ? `${COIN}${l.coins}` : money(l.total)}</b></div>`);
     lines.push(`<div class="slip-total"><span>Total</span><b>${money(sale.total)}</b></div><div class="slip-stamp">PAID</div>`);
     el.innerHTML = head;

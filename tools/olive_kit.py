@@ -213,14 +213,7 @@ def locker_door(W=1240, H=820, split=605):
     d.line([(0, ky0), (w, ky0)], fill=(0, 0, 0, 200), width=2 * K); d.line([(0, ky0 + 2 * K), (w, ky0 + 2 * K)], fill=(220, 220, 210, 60), width=K)
     for x in range(20 * K, w, 120 * K): rivet(img, x, ky0 + 23 * K, 3.4 * K, R, 0.6)
     # (4.27) no maker's plate: it drew the eye to the middle of the locker for nothing
-    # the stencilled 07, sprayed and weathered, low on the right plate
-    st = Image.new('L', (w, h), 0); sd = ImageDraw.Draw(st)
-    sd.text((w - 230 * K, h - 260 * K), '07', font=ImageFont.truetype(FONT_SANS, 170 * K), fill=255)
-    sm = np.asarray(st.filter(ImageFilter.GaussianBlur(1.2 * K)), np.float32) / 255
-    sm *= np.clip(vnoise(w, h, 9 * K, np.random.default_rng(8), 3) * 1.6 - 0.35, 0, 1)
-    a = np.asarray(img, np.float32)
-    a[..., :3] = a[..., :3] * (1 - sm[..., None] * 0.13) + np.array([226, 222, 200], np.float32) * sm[..., None] * 0.13
-    img = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+    # (4.28) no stencilled 07: cut by the frame, it read as noise
     # a faded handling decal on the left plate's top corner
     dm = Image.new('L', (w, h), 0); ImageDraw.Draw(dm).text((44 * K, h - 112 * K), 'KEEP CLOSED AT SEA', font=ImageFont.truetype(FONT_SANS, 9 * K), fill=255)
     dmm = np.asarray(dm.filter(ImageFilter.GaussianBlur(0.6 * K)), np.float32) / 255 * np.clip(vnoise(w, h, 4 * K, np.random.default_rng(9), 2) * 1.8 - 0.5, 0, 1)

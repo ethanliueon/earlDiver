@@ -119,7 +119,7 @@ export class Gallery {
       html += `<div class="btag open gl-tag${rarityCls(sp)}" style="left:${x}px;top:${y}px">${rarityStars(sp)}
         ${dead ? '' : `<input data-name="${esc(this.open)}" maxlength="18" placeholder="give it a name" value="${esc(d.name || '')}">`}
         <b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${d.name ? esc(d.name) + ', ' : ''}${sp.name}</b>${d.variant ? `<em class="rarel r-${d.variant}">${VARIANTS[d.variant].name}</em>` : ''}
-        <small>${st}${prog ? ' · ' + prog : ''}</small>
+        <small>${st}${prog ? ', ' + prog : ''}</small>
         <small>sells for about $${Math.round(gallerySale(d) * (this.h.pay ? this.h.pay() : 1)).toLocaleString()}${!dead && (happy || d.famous) ? ` (x${((happy ? 1.2 : 1) * (d.famous ? 2 : 1)).toFixed(1)})` : ''}</small>
         <div class="acts">
           ${dead ? '' : `<button data-gl="pet|${esc(this.open)}">Pet</button><button data-gl="feed|${esc(this.open)}">Feed</button>${d.name !== undefined ? `<button data-gl="rename|${esc(this.open)}">Name</button>` : ''}`}

@@ -372,3 +372,44 @@ html body #quests-hud .qh-step { cursor: pointer; }
 html body #quests-hud:not(.open) #quests-btn { opacity: 0.85; }
 /* never on the title screen */
 body:has(#title:not(.gone)) #quests-hud { visibility: hidden !important; }
+
+/* ---------- (4.28) small fixes from the review ---------- */
+/* the catalog card: what the thing does, then its rarity when it is not common */
+html body #catalog .cat-card .tag { display: flex; flex-direction: column; gap: 2px; font-size: 15px !important; color: #3c4650 !important; }
+html body #catalog .cat-card .tag em { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+/* focus: the game's own ring, not the browser's rectangle */
+html body button:focus { outline: none !important; }
+html body button:focus-visible { outline: 2px solid rgba(239, 232, 210, 0.9) !important; outline-offset: 2px; }
+/* pause: the two lesser choices as buttons, side by side */
+html body #pause .p-links { display: flex !important; gap: 10px !important; justify-content: center; }
+html body #pause .p-links .link:not(#_a) { flex: 1; border: 12px solid transparent !important; border-image: var(--o-btn) 28 fill / 12px stretch !important; background: none !important;
+  font: 500 16px/1 var(--o-text) !important; color: var(--o-cream-dim) !important; text-decoration: none !important; padding: 2px 6px !important; letter-spacing: 0 !important; }
+html body #journal .j-gear { display: none !important; } /* (4.28) settings live in the pause menu */
+/* the rarity badge: a small coloured tab, the word in the page's ink (it was a second coloured word in a code face) */
+html body .rbadge { display: inline-block; vertical-align: 3px; margin-left: 6px; padding: 1px 7px 1px 6px; border-left: 4px solid var(--rc); border-radius: 2px; background: rgba(60, 48, 30, 0.08);
+  font: 600 11px/1.5 var(--o-text) !important; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(50, 40, 26, 0.8) !important; }
+html body #journal .entry h3 { color: #2e2416 !important; }
+/* the bag's cards: picture, name, condition, price stacked in a column with room for each; the pocket number in the
+   top corner (it sat on the name), no dashed inner rectangle */
+html body #inventory .inv-catch2 .fc::before { display: none !important; }
+html body #inventory .inv-catch2 .fc::after { left: 6px !important; top: 6px !important; bottom: auto !important; background: rgba(0, 0, 0, 0.45) !important; color: var(--o-cream-dim) !important; box-shadow: none !important; font: 600 11px var(--o-text) !important; }
+html body #inventory .inv-catch2 .fc:not(.empty):not(.locked) { display: flex !important; flex-direction: column; align-items: center; justify-content: flex-end; gap: 1px; padding: 6px 6px 7px !important; text-align: center; }
+html body #inventory .inv-catch2 .fc:not(.empty):not(.locked) img { flex: 1 1 auto; min-height: 0; height: auto !important; max-height: 52px; }
+html body #inventory .inv-catch2 .fc b { font: 600 14px/1.1 var(--o-text) !important; color: #efe8d2 !important; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body #inventory .inv-catch2 .fc span { font: 600 10.5px var(--o-text) !important; letter-spacing: 0.08em; justify-content: center; }
+html body #inventory .inv-catch2 .fc small { font: 600 13px var(--o-text) !important; color: #efe8d2 !important; text-align: center !important; padding: 0 !important; }
+
+/* ---------- (4.28) the title: the name large over the scene, as on the loading screen, and the divers as a short
+   list under it; no panel, no filler lines ---------- */
+html body #title .title-panel:not(#_a) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; padding: 0 !important; width: min(420px, 86vw) !important; }
+html body #title .t-plate h1:not(#_a) { display: flex; flex-direction: column; gap: 0.3em; margin: 0 0 26px; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5) !important; opacity: 1 !important; }
+html body #title .t-plate h1 b { font: 700 clamp(84px, 10vw, 150px)/0.8 var(--o-title); letter-spacing: 0.01em; color: #efe8d6; }
+html body #title .t-plate h1 span:not(#_a):not(#_b) { font: 600 clamp(15px, 1.6vw, 24px)/1 var(--o-title) !important; letter-spacing: 0.55em !important; text-transform: uppercase !important; color: rgba(239, 232, 214, 0.75) !important; padding-left: 0.2em; }
+html body #title .t-label, html body #title .menu-links { display: none !important; }
+html body #title .slot .info span:not(#_a) { font: 500 15px var(--o-text) !important; color: var(--o-cream-dim) !important; }
+html body #title .slot:has(.info b:only-child), html body #title .slot .info b { font: 600 19px var(--o-text) !important; }
+html body #title .hint { text-align: left !important; margin-top: 10px !important; font-size: 13px !important; opacity: 0.6; }
+html body #title .t-gear { position: absolute !important; right: 0; top: 6px; }
+html body #title .t-plate h1 span:not(#_a) { display: block !important; }
+html body #title .t-plate h1 b { text-transform: uppercase; }
+html body #title .t-gear:not(#_a) { position: fixed !important; right: 22px !important; top: 20px !important; left: auto !important; }

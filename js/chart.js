@@ -14,7 +14,7 @@ export class Chart {
   constructor(h) {
     this.h = h; // { getGame, getProfile, save, follow(marker|null), following() }
     const el = this.el = document.createElement('section'); el.id = 'chart'; el.hidden = true;
-    el.innerHTML = `<div class="ch-panel"><header><div class="ch-plate"><h2>Chart</h2></div><span class="ch-hint">Click the sea to set a marker · K</span><button class="ch-close" aria-label="Close">×</button></header>
+    el.innerHTML = `<div class="ch-panel"><header><div class="ch-plate"><h2>Chart</h2></div><span class="ch-hint">Click the sea to set a marker (K)</span><button class="ch-close" aria-label="Close">×</button></header>
       <div class="ch-wrap"><canvas class="ch-map" width="1040" height="560"></canvas><div class="ch-edit" hidden></div></div>
       <footer><span class="ch-at"></span><div class="ch-list"></div></footer></div>`;
     document.body.appendChild(el);
@@ -109,26 +109,34 @@ export class Chart {
     const wg = x.createLinearGradient(0, top, 0, H); wg.addColorStop(0, '#1d5670'); wg.addColorStop(0.06, '#123a50'); wg.addColorStop(0.3, '#0b2434'); wg.addColorStop(1, '#050f17');
     x.fillStyle = '#1a2a30'; x.fillRect(0, 0, W, top); x.fillStyle = wg; x.fillRect(0, top, W, H - top);
     // the zones: a faint line at each, named at the left
-    x.font = '11px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textBaseline = 'alphabetic';
+    x.font = '600 13px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textBaseline = 'alphabetic';
     for (const [d, name] of ZONES) {
       if (d) { x.strokeStyle = 'rgba(160,200,210,0.13)'; x.setLineDash([3, 5]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]); }
       x.fillStyle = 'rgba(190,220,226,0.42)'; x.fillText(`${name.toUpperCase()}${d ? '  ' + d.toLocaleString() + ' m' : ''}`, 14, Y(d) + 14);
     }
     // the deepest he has been: a dashed brass line
     const deep = Math.max(P.deepest || 0, g.earl.maxDepth || 0);
-    if (deep > 30) { x.strokeStyle = 'rgba(242,184,74,0.5)'; x.setLineDash([6, 5]); x.beginPath(); x.moveTo(0, Y(deep)); x.lineTo(W, Y(deep)); x.stroke(); x.setLineDash([]); }
+    if (deep > 30) { x.strokeStyle = 'rgba(239,232,210,0.45)'; x.setLineDash([6, 5]); x.beginPath(); x.moveTo(0, Y(deep)); x.lineTo(W, Y(deep)); x.stroke(); x.setLineDash([]); }
     // the seabed: rock, darker below, with a light edge along its top
     x.beginPath(); x.moveTo(0, H); for (let i = 0; i < this.floor.length; i++) x.lineTo(X(i * 5), Y(this.floor[i])); x.lineTo(W, H); x.closePath();
     const rg = x.createLinearGradient(0, top, 0, H); rg.addColorStop(0, '#6a5a40'); rg.addColorStop(0.5, '#4a4234'); rg.addColorStop(1, '#2c2820');
     x.fillStyle = rg; x.fill();
     x.beginPath(); for (let i = 0; i < this.floor.length; i++) x[i ? 'lineTo' : 'moveTo'](X(i * 5), Y(this.floor[i])); x.strokeStyle = 'rgba(214,196,150,0.55)'; x.lineWidth = 1.5; x.stroke(); x.lineWidth = 1;
-    if (deep > 30) { x.fillStyle = 'rgba(242,200,104,0.85)'; x.shadowColor = '#000'; x.shadowBlur = 3; x.fillText(`deepest so far · ${Math.round(deep).toLocaleString()} m`, 200, Y(deep) - 5); x.shadowBlur = 0; }
+    if (deep > 30) { x.fillStyle = 'rgba(239,232,210,0.85)'; x.shadowColor = '#000'; x.shadowBlur = 3; x.fillText(`deepest so far, ${Math.round(deep).toLocaleString()} m`, 200, Y(deep) - 5); x.shadowBlur = 0; }
     // the surface
     x.strokeStyle = 'rgba(190,226,236,0.55)'; x.beginPath(); x.moveTo(0, Y(0)); x.lineTo(W, Y(0)); x.stroke();
     // places he knows: the Margaret, the station and Dave once found
     const label = (px, py, txt, col = 'rgba(236,230,210,0.85)') => { const w2 = x.measureText(txt).width / 2; x.fillStyle = col; x.textAlign = 'center'; x.fillText(txt, Math.max(w2 + 4, Math.min(W - w2 - 4, px)), py); x.textAlign = 'left'; };
     { const bx = X(BOAT.x), by = Y(0); x.fillStyle = '#d8d0b8'; x.beginPath(); x.moveTo(bx - 9, by - 3); x.lineTo(bx + 9, by - 3); x.lineTo(bx + 6, by + 2); x.lineTo(bx - 6, by + 2); x.closePath(); x.fill(); x.fillRect(bx - 1, by - 11, 2, 8); label(bx, by - 14, 'the Margaret'); }
     const site = (sx, txt) => { const py = Y(this.floorAt(sx)); x.fillStyle = '#e8d49a'; x.fillRect(X(sx) - 4, py - 7, 8, 7); label(X(sx), py - 11, txt); };
+    // (4.28) the lie of the land, named on the seabed itself: the kelp under the boat, the seamount, the plain, the trench
+    if (!this.landmarks) {
+      const F = (m) => this.floorAt(m), pick = (a, b, better) => { let bx = a; for (let m = a; m <= b; m += 10) if (better(F(m), F(bx))) bx = m; return bx; };
+      this.landmarks = [[4750, 'kelp forest'], [pick(2400, 3900, (u, v) => u < v) + 260, 'seamount'], [2150, 'abyssal plain'], [pick(0, 1400, (u, v) => u > v), 'trench']];
+    }
+    x.save(); x.font = '600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textAlign = 'center'; x.letterSpacing = '1.5px';
+    for (const [mx, nm] of this.landmarks) { x.fillStyle = 'rgba(236,228,200,0.5)'; x.fillText(nm.toUpperCase(), Math.max(60, Math.min(W - 60, X(mx))), Math.min(H - 8, Y(this.floorAt(mx)) + 22)); }
+    x.restore();
     if (P.stationFound) site(STATION.x, 'the station');
     if (P.daveVisits) site(DAVE.x, "Dave's");
     // the sub, when he is out of it; and him

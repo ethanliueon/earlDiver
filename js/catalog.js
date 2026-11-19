@@ -15,17 +15,17 @@ import { chestsOf, oddsText, chestPicture } from './chests.js';
 
 // the shops with a website: their names, look and stock. cats: the categories in the side bar (null: a gap)
 export const WEBSHOPS = {
-  bayside: { title: 'Bayside Marine Supply', sub: 'Harbour Road · since 1974', stock: 'catalog', theme: 'bayside',
+  bayside: { title: 'Bayside Marine Supply', sub: 'Harbour Road, since 1974', stock: 'catalog', theme: 'bayside',
     lede: 'Diving gear and supplies, sent out to the boat the same day.', newIn: ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'],
     cats: [['home', 'Home'], null, ['net', 'Hand nets'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
       ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['chest', 'Surplus crates'], ['sell', 'Sell your gear']], // (4.0.0: the yard is on the Margaret now, P)
     chestTitle: 'Surplus crates', chestLede: 'Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.' },
-  station: { title: 'Station Stores', sub: 'Abyssal Research Station · 280 m · requisitions', stock: 'station', theme: 'station',
+  station: { title: 'Station Stores', sub: 'Abyssal Research Station, 280 m, requisitions', stock: 'station', theme: 'station',
     lede: 'Surplus and spare equipment from the station stores, released to visiting divers. Delivered to your locker.', newIn: [],
     cats: [['home', 'Index'], null, ['cam', 'Cameras'], ['tag', 'Tag guns'], ['slurp', 'Slurp guns'], ['suit', 'Cold-water suits'], null,
       ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['lure', 'Lures'], ['chest', 'Equipment cases'], ['sell', 'Return equipment']],
     chestTitle: 'Equipment cases', chestLede: 'Sealed cases of kit the scientists stopped using. One item in each, unlisted.' },
-  dave: { title: "Dave's Haul", sub: '1,200 m down · cash only · no refunds', stock: 'dave', theme: 'dave',
+  dave: { title: "Dave's Haul", sub: '1,200 m down, cash only, no refunds', stock: 'dave', theme: 'dave',
     lede: "Deep gear, second hand and first rate. If it's on here, I've got it. If it isn't, I haven't. — Dave", newIn: [],
     cats: [['home', 'Front page'], null, ['tank', 'Air'], ['suit', 'Deep suits'], ['net', 'Big-game nets'], null,
       ['fins', 'Fins'], ['bag', 'Bags'], ['slurp', 'Slurp guns'], ['tag', 'Tag guns'], ['cam', 'Cameras'], null, ['lure', 'Lures'], ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
@@ -146,7 +146,7 @@ export class Catalog {
       if (ups.length) html += `<h4>A step up from what you have on</h4><div class="cat-grid">${ups.map((e) => this.card(e)).join('')}</div>`;
     } else if (this.page === 'chest') {
       html += `<h2>${this.cfg.chestTitle}</h2><p class="cat-lede">${this.cfg.chestLede}</p>`;
-      html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)} · not enough cash` : `Buy and open · ${money(c.price, false)}`}</button></div></div>`).join('');
+      html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)}, not enough cash` : `Buy and open, ${money(c.price, false)}`}</button></div></div>`).join('');
     } else if (this.page === 'cart') {
       html += this.cartPage(P, cart);
     } else if (this.page === 'sell') {
@@ -169,7 +169,7 @@ export class Catalog {
     return `<h2>Your cart</h2><table class="cat-cartlist">${rows.map((q) => `<tr><td><img src="${this.pic(q.e, 120, 60)}" alt=""></td><td><a href="#" data-go="${q.e.key}">${q.e.name}</a><small>${q.e.tag || ''}</small></td><td class="pr">${money(q.e.price, false)}</td><td><a href="#" class="rm" data-cart="rm|${q.e.key}">Remove</a></td></tr>`).join('')}
       <tr class="tot"><td></td><td>Total</td><td class="pr">${money(total, false)}</td><td></td></tr></table>
       <p class="cat-lede">${full ? `Your locker has room for ${room} more (${LOCKER} in all). Sell something first.` : `Delivered to your locker: put things on in your inventory (B).`}</p>
-      <button class="cat-btn" data-cart="checkout" ${short || full ? 'disabled' : ''}>${short ? `${money(total, false)} · not enough cash` : `Check out · ${money(total, false)}`}</button>`;
+      <button class="cat-btn" data-cart="checkout" ${short || full ? 'disabled' : ''}>${short ? `${money(total, false)}, not enough cash` : `Check out, ${money(total, false)}`}</button>`;
   }
   // selling gear back: anything in the locker that isn't on him
   sellPage(P) {
@@ -180,7 +180,7 @@ export class Catalog {
     return html + `<table class="cat-cartlist">${list.map((q) => { const it = ITEMS[q.id]; return `<tr><td><img src="${pictureOf(it.kind, it, 120, 60)}" alt=""></td><td>${it.name}<small class="r-${it.rarity}">${RARITY[it.rarity].name}</small></td><td class="pr">${money(sellValue(q), false)}</td><td><button class="cat-mini" data-buy="sellgear:${q.u}" ${can ? '' : 'disabled'}>Sell</button></td></tr>`; }).join('')}</table>`;
   }
   card(e) {
-    const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag${e.rarity ? ' r-' + e.rarity : ''}">${e.tag || ''}</div>`;
+    const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag${e.rarity ? ' r-' + e.rarity : ''}">${e.good ? `<span class="good">${e.good}</span>` : ''}${e.rarity && e.rarity !== 'common' ? `<em>${e.tag}</em>` : !e.good ? e.tag || '' : ''}</div>`; // (4.28) what it does on the card; the rarity only when it is not common
     const go = `data-go="${e.key}"`; // (4.16.9) supplies open their own page too
     const buy = e.kind === 'supply' ? `<button class="cat-mini" data-buy="${e.key}" ${e.full || this.h.getProfile().cash < e.price ? 'disabled' : ''}>${e.full ? 'Full' : 'Buy'}</button>` : '';
     return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t"><b>${e.name}</b><span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
@@ -204,7 +204,7 @@ export class Catalog {
     if (e.on) btn = `<span class="cat-have">${e.onText || 'You have it on'}</span>`;
     else if (e.owned && e.kind !== 'trawl') btn = `<span class="cat-have">In your locker (B)</span>`;
     else if (e.full) btn = `<span class="cat-have">${e.count}</span>`;
-    else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)} · not enough cash` : `Buy now · ${money(e.price, false)}`}</button>`
+    else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)}, not enough cash` : `Buy now, ${money(e.price, false)}`}</button>`
       + (item ? (inCart ? `<a href="#" class="cat-save" data-go="cart">In your cart ✓</a>` : `<a href="#" class="cat-btn2" data-cart="add|${e.key}">Add to cart</a>`) : '')
       ; // (4.5.0) no 'Save for this'
     return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><img src="${this.pic(e, 640, 420)}" alt=""><div>
