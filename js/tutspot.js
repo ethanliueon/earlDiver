@@ -133,10 +133,32 @@ export class TutSpot {
     } else {
       this.lastTarget = null;
       // a key to press (or the tutorial's button: spot.button is its action, spot.key its key)
-      const k = spot.key || (spot.act ? keyFor(spot.act) : null);
+      const k = spot.key || (spot.act ? keyFor(spot.act) : null) || (INPUT.mode === 'touch' && spot.act ? ACTIONS[spot.act] && ACTIONS[spot.act][1] : null);
       this.btn = spot.button || null; this.keyBox.classList.toggle('btn', !!spot.button);
+      // (5.4) a touch screen has no keys: ring the on-screen button that does the same (the HUD lists where each is
+      // and which key it stands for); a step with no such button just keeps its line of words
+      if (INPUT.mode === 'touch' && k && !spot.button) {
+        const want = { space: ' ', esc: 'escape', rmb: 'sprint', lmb: ' ' }[String(k).toLowerCase()] || String(k).toLowerCase();
+        let h = (window.__hudHots || []).find((q) => q.key === want);
+        // sprinting has no button: the stick pushed out to its rim does it, so the stick is ringed and the words say so
+        if (!h && spot.act === 'sprint') {
+          const st = document.querySelector('#stick .st-base'), r = st && st.getBoundingClientRect();
+          if (r && r.width) h = { x: r.left, y: r.top, w: r.width, h: r.height };
+          this.keyBox.style.display = 'flex'; this.kbd.style.display = 'none';
+          const say = 'Push the stick out to its rim to sprint';
+          if (this.keyText.textContent !== say) this.keyText.textContent = say;
+        }
+        if (h) {
+          const x = h.x - PAD, y = h.y - PAD, w = h.w + PAD * 2, hh = h.h + PAD * 2;
+          Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: hh + 'px' });
+          this.hole.classList.add('light');
+          const above = y > 100; this.arrow.style.display = 'block'; this.arrow.className = 'ts-arrow ' + (above ? 'down' : 'up');
+          this.arrow.style.left = Math.max(40, Math.min(innerWidth - 40, x + w / 2)) + 'px'; this.arrow.style.top = (above ? y - 30 : y + hh + 8) + 'px';
+        }
+        return;
+      }
       if (k) {
-        this.keyBox.style.display = 'flex';
+        this.keyBox.style.display = 'flex'; this.kbd.style.display = '';
         if (this.keyText.textContent !== (spot.say || '')) this.keyText.textContent = spot.say || '';
         const mouseKey = k === 'LMB' || k === 'RMB', cls = mouseKey ? 'mouse ' + k.toLowerCase() : '';
         if (this.kbd.dataset.k !== k) { this.kbd.dataset.k = k; this.kbd.className = cls; this.kbd.innerHTML = mouseKey ? '<b></b><b></b>' : ''; if (!mouseKey) this.kbd.textContent = k; }

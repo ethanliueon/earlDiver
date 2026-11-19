@@ -128,8 +128,11 @@ export class Renderer {
     if (this.quality === undefined) this.quality = 1;
     // at most 1.25x the screen: sharp, without drawing 1.5x the pixels; (5.3) on a phone or tablet 1x: its screen is
     // small and dense, and the fill it saves is most of a frame
-    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-    const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.25) * this.quality;
+    // (5.4) asked once, not every frame (matchMedia each frame cost a little on a phone); a phone's page is laid out
+    // wider than its screen (index.html), so the picture is sized from the real screen: one pixel a point
+    if (this.coarse === undefined) this.coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    const coarse = this.coarse, fk = window.__fingerK || 1;
+    const dpr = (coarse ? 1 / fk : Math.min(window.devicePixelRatio || 1, 1.25)) * this.quality;
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
     if (this.c.width !== w || this.c.height !== h) {
       this.c.width = w; this.c.height = h;

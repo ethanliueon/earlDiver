@@ -708,3 +708,11 @@ html body canvas#game, html body canvas#hud { width: 100vw; height: 100vh; heigh
    and its full-screen layer and pulsing "tap to dive" were still composited over every frame */
 html body #title.gone, html body #menu.gone { visibility: hidden; transition: opacity 0.9s ease, visibility 0s linear 0.9s; }
 html body #title.gone *, html body #menu.gone * { pointer-events: none !important; animation: none !important; }
+
+/* (5.4) a touch screen: key caps in the page's words are hidden (the words are rewritten: js/touchtext.js), and the
+   keyboard's list of controls gives way to the touch controls */
+html.touch kbd { display: none !important; }
+html.touch #settings .set-controls, html.touch #settings .set-group:has(.set-controls) { display: none !important; }
+/* (5.4) phones: a blur behind a panel is worked out again every frame over the moving sea; plain tint instead */
+html.touch *, html.touch *::before, html.touch *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+html.touch #msgs .msg { filter: none !important; }

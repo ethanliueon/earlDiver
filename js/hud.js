@@ -48,7 +48,8 @@ export class Hud {
     this.sweep = 0; this.blip = null; this.toasts = []; this.journalHot = null; this.chartHot = null;
   }
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    // (5.4) on a phone the page is wider than the screen (index.html): the HUD drawn at 1.5 pixels a real point, as before
+    const dpr = window.__fingerK ? 1.5 / window.__fingerK : Math.min(window.devicePixelRatio || 1, 1.5);
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
     if (this.c.width !== w || this.c.height !== h) { this.c.width = w; this.c.height = h; }
     // (4.17.0) the UI scale: from the screen's height, but never below 0.7 of the design (a phone held sideways is
@@ -222,7 +223,7 @@ export class Hud {
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
     // (5.3) sized from the finger, not the screen: CSS pixels (about 0.18 mm each on a phone). The main button about
     // 2 cm across, the others about 1.4 cm, never below Apple's 44 pt
-    const u = this.c.width / window.innerWidth, pad = 16 * u, R = 36 * u, cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm
+    const u = this.c.width / window.innerWidth * (window.__fingerK || 1), pad = 16 * u, R = 36 * u, cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm
     const held = this.held || new Set();
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
     const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
@@ -294,7 +295,12 @@ export class Hud {
     };
     const r = 24 * u, gap = 14 * u, rho0 = R + r + gap;
     A.forEach((a, i) => { const ang = [-92, -146, -200][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
-    const r2 = 18 * u; TOP.forEach((a, i) => btn(a, 44 * u, 84 * u + r2 + i * (r2 * 2 + 7 * u), r2)); // (5.3.4) a column under the clipboard, clear of the quest's words
+    // (5.3.4) a column under the clipboard, clear of the quest's words; (5.4) it turns into a second column before it
+    // would reach the stick's ring in the lower left (the sub has six of them)
+    const r2 = 18 * u, step = r2 * 2 + 7 * u, fk = window.__fingerK || 1;
+    const sR = Math.max(40, Math.min(52, window.innerHeight / fk * 0.12)) * fk, stickTop = (window.innerHeight - 2 * sR - 28 * fk) / kx - this.safeT;
+    const rows = Math.max(2, Math.floor((stickTop - 84 * u - 6 * u) / step));
+    TOP.forEach((a, i) => btn(a, 44 * u + Math.floor(i / rows) * step, 84 * u + r2 + (i % rows) * step, r2));
     const rho1 = rho0;
     // ---- the big button: the main action ----
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
@@ -379,7 +385,7 @@ export class Hud {
     try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }
   }
   drawIn(g, dt, W, H) {
-    const touch = !!this.touch, ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = []; // (5.3.1) the HUD keeps its size on a phone: only the controls are added
+    const touch = !!this.touch, ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = []; window.__hudHots = this.hots; // (5.4) for the tutorial's pointing on touch (5.3.1) the HUD keeps its size on a phone: only the controls are added
     if (g.mode === 'menu') return;
     const e = g.earl, fx = g.fx;
     const dying = g.mode === 'dying';

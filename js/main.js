@@ -1,4 +1,5 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
+import { setTouchText } from './touchtext.js';
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock } from './world.js';
@@ -51,7 +52,7 @@ const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
 // (5.1.1) a touch screen (a phone, a tablet) gets the action buttons; a computer keeps the prompts and keys it had.
 // ?touch in the address forces the touch layout (for trying it on a computer)
-{ const q = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null; const set = () => { renderer.touch = hud.touch = /[?&]touch\b/.test(location.search) || !!(q && q.matches && !(window.matchMedia('(pointer: fine)').matches)); }; set(); q && q.addEventListener && q.addEventListener('change', set); }
+{ const q = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null; const set = () => { renderer.touch = hud.touch = /[?&]touch\b/.test(location.search) || !!(q && q.matches && !(window.matchMedia('(pointer: fine)').matches)); document.documentElement.classList.toggle('touch', hud.touch); if (hud.touch) INPUT.mode = 'touch'; setTouchText(hud.touch); }; set(); q && q.addEventListener && q.addEventListener('change', set); }
 // (3.4.0) everything the game says goes to one message line, top centre, over the sea and every room and panel
 const messages = new Messages();
 hud.onShow = (text, kind) => messages.show(text, kind);
@@ -947,8 +948,8 @@ function refreshAir() { if (!g || !g.earl || !profile) return; const e = g.earl,
 function afterTips(dt) {
   const P = profile, e = g.earl; if (!P || P.tut === 'on' || !P.tut || P.tut === 'skip') return;
   if (!P.tipSprint) {
-    if (!e.inSub && !g.aboard && e.y > 1.5 && !(keys.has('shift') || mouse.rdown)) g.noSprintT = (g.noSprintT || 0) + dt; else if (keys.has('shift') || mouse.rdown) g.noSprintT = 0;
-    if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast(keyFor('sprint') === 'RMB' ? 'Hold the right mouse button to sprint' : 'Hold Shift to sprint', 'note'); }
+    if (!e.inSub && !g.aboard && e.y > 1.5 && !(keys.has('shift') || mouse.rdown || (touch && touch.vec.sprint))) g.noSprintT = (g.noSprintT || 0) + dt; else g.noSprintT = 0;
+    if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast(hud.touch ? 'Push the stick out to its rim to sprint' : keyFor('sprint') === 'RMB' ? 'Hold the right mouse button to sprint' : 'Hold Shift to sprint', 'note'); }
   }
 }
 function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === 'skip' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => messages.show(`Press ${keyFor('inventory')} to put it on`, 'note', 3.5), 3000); } // (4.12.0) up for 3.5 s
@@ -1259,13 +1260,13 @@ const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= 
 hudCanvas.addEventListener('mousemove', (ev) => {
   // a real move, not the browser repeating the last position
   if (Math.abs(ev.clientX - mouse.x) + Math.abs(ev.clientY - mouse.y) > 1) mouse.movedAt = performance.now();
-  if (mouse.seen && Math.abs(ev.clientX - mouse.x) + Math.abs(ev.clientY - mouse.y) > 3) INPUT.mode = 'mouse'; // (4.3.2) the hints follow the input in use
+  if (!hud.touch && mouse.seen && Math.abs(ev.clientX - mouse.x) + Math.abs(ev.clientY - mouse.y) > 3) INPUT.mode = 'mouse'; // (4.3.2) the hints follow the input in use
   mouse.x = ev.clientX; mouse.y = ev.clientY; mouse.seen = true; mouse.inside = true;
 });
 hudCanvas.addEventListener('mouseleave', () => { mouse.inside = false; });
 hudCanvas.addEventListener('mouseenter', () => { mouse.inside = true; });
 hudCanvas.addEventListener('mousedown', (ev) => {
-  audio.resume(); INPUT.mode = 'mouse'; // (4.3.2)
+  audio.resume(); if (!hud.touch) INPUT.mode = 'mouse'; // (4.3.2) (5.4: a tap on a phone stays touch)
   if (g.mode !== 'play') return;
   if (ev.button === 2) { mouse.rdown = true; return; } // held: sprint
   if (ev.button !== 0) return;
@@ -2644,7 +2645,16 @@ function adaptQuality(realDt) {
   else if (qualityT > 3) qualityT = 1;
 }
 const smooth01 = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+// (5.4) a phone's frame budget: never more than 60 frames a second (a 90 or 120 Hz screen otherwise doubles the work and
+// the heat), 30 with "Smoother on slow devices" on and on the title; the sea behind a panel or the pause menu is redrawn
+// ten times a second (the game itself keeps its pace)
+let seaDrawnAt = 0;
+function phoneCap(now) {
+  if (!hud.touch) return 0;
+  return (SETTINGS.fast || g.mode === 'menu') ? 1000 / 30 : 1000 / 60;
+}
 function frame(now) {
+  { const cap = phoneCap(now); if (cap && now - last < cap - 2) { requestAnimationFrame(frame); return; } }
   const realDt = (now - last) / 1000;
   const dt = Math.min(0.05, realDt);
   last = now;
@@ -2662,7 +2672,8 @@ function frame(now) {
   renderer.updateCamera(g, dt);
   // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
   const covered = !document.getElementById('cabin').hidden || !document.getElementById('tankroom').hidden || !document.getElementById('gallery').hidden;
-  if (!covered) renderer.render(g);
+  const behind = hud.touch && (g.paused || (ui.anyOpen && ui.anyOpen())) && g.mode === 'play';
+  if (!covered && (!behind || now - seaDrawnAt > 100)) { renderer.render(g); seaDrawnAt = now; }
   // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
   if (g.warmUntil) { // behind the loading card: build the sprites on screen at full speed, then lift it
     const done = renderer.warmSprites(g, 60, true);
@@ -2680,7 +2691,7 @@ function frame(now) {
   airOver(g);
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
-  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; tutSpot.update(on, on ? g.tut.spot : null, on ? g.tut.text : null); } // (4.3.0)
+  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && ui.anyOpen && ui.anyOpen(); tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)
   // dread colour grading on the scene canvas only
   const fx = g.fx;
   // no steady blur: it comes in slow pulses, a swell of fog every few seconds that clears again

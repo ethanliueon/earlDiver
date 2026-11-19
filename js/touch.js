@@ -24,7 +24,7 @@ export class Touch {
     const key = k === ' ' ? ' ' : k === 'escape' ? 'Escape' : k;
     window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { key, bubbles: true }));
   }
-  radius() { return Math.max(40, Math.min(52, window.innerHeight * 0.12)); } // (5.3.1) CSS px centre to rim: about 1.6 cm across
+  radius() { const k = window.__fingerK || 1; return Math.max(40, Math.min(52, window.innerHeight / k * 0.12)) * k; } // (5.4) in real points, on a page laid out wider than the screen // (5.3.1) CSS px centre to rim: about 1.6 cm across
   start(e) {
     if (!this.active()) return;
     e.preventDefault();
@@ -69,7 +69,7 @@ export class Touch {
     if (!this.el) return;
     if (!show) { this.el.hidden = true; return; }
     if (this.stick) return;
-    const R = this.radius(), x = Math.max(R + 28, window.innerWidth * 0.13), y = window.innerHeight - R - 28;
+    const R = this.radius(), k = window.__fingerK || 1, x = Math.max(R + 28 * k, window.innerWidth * 0.13), y = window.innerHeight - R - 28 * k;
     this.el.hidden = false; this.el.style.setProperty('--r', R + 'px');
     this.base.style.transform = `translate(${x}px, ${y}px)`; this.knob.style.transform = `translate(${x}px, ${y}px)`;
   }
