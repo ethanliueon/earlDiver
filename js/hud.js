@@ -91,7 +91,7 @@ export class Hud {
     let x = W / 2 - total / 2;
     const y = H - sh - 22 * s;
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
-    for (const [key, kind, tier, name] of (this.touch && e.inSub ? [] : tools)) { // (5.5) on a phone, not in the sub (they cannot be used from it)
+    for (const [key, kind, tier, name] of (this.touch ? [] : tools)) { // (5.5.2) on a touch screen the tools are buttons up the right edge (drawActions)
       const on = kind === sel && !e.inSub;
       // (olive) a raised plate of the panels' painted steel with a well pressed into it; the tool in hand ringed in
       // the deck's cream paint
@@ -291,12 +291,12 @@ export class Hud {
     ]).filter((a) => !(a.away && !a.on));
     const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
     const vis = this.btnVis || (this.btnVis = {});
-    const ring = (x, y, r) => { // two brass rings breathing out from the button, one after the other
+    const ring = (x, y, r) => { // (5.5.2) two cold rings, as the deep's own light, breathing out from the button, one after the other
       for (let i = 0; i < 2; i++) {
         const k = ((g.time * 0.75) + i * 0.5) % 1, rr = r * (1.08 + k * 0.62);
-        ctx.strokeStyle = `rgba(255,206,120,${(0.85 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (3.2 - 1.8 * k) * u; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = `rgba(120,236,216,${(0.85 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (3.2 - 1.8 * k) * u; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
       }
-      ctx.strokeStyle = 'rgba(255,226,160,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.04, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(170,246,230,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.04, 0, TAU); ctx.stroke();
     };
     const btn = (a, x, y, r) => {
       const down = held.has(a.key);
@@ -314,6 +314,19 @@ export class Hud {
     };
     const r = 24 * u, gap = 14 * u, rho0 = R + r + gap;
     A.forEach((a, i) => { const ang = (a.ang ?? [-92, -146, -200][i]) * Math.PI / 180, rho = rho0 + (a.out || 0) * u; btn(a, cx + Math.cos(ang) * rho, cy + Math.sin(ang) * rho, r * (a.k || 1)); });
+    // (5.5.2) the tools, as their own buttons beside the ring: the net, the camera, the traps. The one
+    // in hand glows; one not owned yet is there, greyed (a tap says where it is sold), so what the game has is in view
+    if (!e.inSub && !aboard) {
+      const trs = P.traps || {}, trapN = ['pot', 'fish', 'steel', 'cage'].reduce((n, k) => n + (trs[k] || 0), 0);
+      const TOOLS = [
+        { key: '1', icon: 'net', on: true, lit: g.toolSel === 'net' },
+        { key: '2', icon: 'cam', on: owns(P, 'camera'), lit: g.toolSel === 'cam', n: owns(P, 'camera') ? (g.items.film || 0) : 0, why: 'No camera yet: the catalog in the cabin sells them' },
+        { key: '3', icon: 'trap', on: trapN > 0, lit: g.toolSel === 'trap', n: trapN > 0 ? Math.max(0, trapN - (g.traps ? g.traps.length : 0)) : 0, why: 'No traps yet: the catalog in the cabin sells them' },
+      ];
+      // a row along the bottom edge, leftward from beside the eye's place (clear of the sonar above)
+      const rt = 20 * u, step2 = rt * 2 + 9 * u, eyeX = cx + Math.cos(-186 * Math.PI / 180) * (rho0 + 16 * u), x0 = eyeX - r * 1.25 - 12 * u - rt, y0 = H - pad - rt;
+      TOOLS.forEach((a, i) => btn(a, x0 - i * step2, y0, rt));
+    }
     // (5.3.4) a column under the clipboard, clear of the quest's words; (5.4) it turns into a second column before it
     // would reach the stick's ring in the lower left (the sub has six of them)
     const r2 = 18 * u, step = r2 * 2 + 7 * u, fk = window.__fingerK || 1;
@@ -335,7 +348,7 @@ export class Hud {
     plate(cx, cy, R, can || !(aboard || (e.inSub && !armT) || (!sel && !e.inSub)), bdown, false, true);
     if (tutKey === ' ') ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
-    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(255,206,120,${(0.3 + 0.5 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
+    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(110,236,214,${(0.3 + 0.5 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
     // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
     if (e.inSub) drawGlyph(ctx, 'claw', cx, cy + (bdown ? 2 * u : 0), R * 0.98);
     else drawGlyph(ctx, sel || 'net', cx, cy + (bdown ? 2 * u : 0), R * 0.98); // (5.3.6) never an empty button

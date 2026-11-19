@@ -31,7 +31,7 @@ export function drawGlyph(ctx, name, cx, cy, size, alpha = 1) {
   const paint = (col) => { ctx.fillStyle = ctx.strokeStyle = col; for (const p of paths) { if (p.stroke) { ctx.lineWidth = p.w; ctx.lineCap = 'round'; ctx.stroke(p.stroke); } else ctx.fill(p, 'evenodd'); } };
   // (5.5) cut into the enamel: a dark groove below and to the right, the symbol in the deck's cream paint on top
   ctx.save(); ctx.translate(0.45, 1.0); paint('rgba(0,0,0,0.6)'); ctx.restore();
-  ctx.save(); ctx.translate(-0.25, -0.35); paint('rgba(255,250,230,0.18)'); ctx.restore();
-  paint(drawGlyph.col || '#e9dec0');
+  ctx.save(); ctx.translate(-0.25, -0.35); paint('rgba(220,240,235,0.12)'); ctx.restore();
+  paint(drawGlyph.col || '#cdd3c4'); // (5.5.2) pale bone, not warm cream
   ctx.restore();
 }

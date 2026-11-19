@@ -25,6 +25,9 @@ export class Audio {
   init() {
     if (this.ready) return;
     const AC = window.AudioContext || window.webkitAudioContext;
+    // (5.5) an iPhone plays web audio through the ringer's channel, so its silent switch muted the whole game: as a
+    // game (media playback) it plays like a video does
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older iOS */ }
     const ac = (this.ac = new AC());
     this.master = ac.createGain(); this.master.gain.value = 0.9; this.master.connect(ac.destination);
     // music
@@ -106,7 +109,7 @@ export class Audio {
     s.connect(f).connect(g).connect(this.master); s.start();
     return { s, f, g };
   }
-  resume() { if (this.ac && this.ac.state === 'suspended' && !this.muted) this.ac.resume(); }
+  resume() { if (this.ac && this.ac.state !== 'running' && this.ac.state !== 'closed' && !this.muted) this.ac.resume(); } // (5.5) iOS also has 'interrupted' (after a call, or the app put away)
   // ---------------- music (2.6.9): one track, played whole, and rarely ----------------
   // It plays once on the first screen of a fresh session (the title, carrying on into the dive) and is
   // never restarted by a new dive, by coming back from a death, or by getting home. Once played (or cut
@@ -294,7 +297,7 @@ export class Audio {
     // (5.4) muted, the whole sound engine rests (its drones and noise beds otherwise keep working in silence)
     clearTimeout(this.muteT);
     if (m) this.muteT = setTimeout(() => { if (this.muted && this.ac.state === 'running') this.ac.suspend(); }, 600);
-    else if (this.ac.state === 'suspended' && !document.hidden) this.ac.resume();
+    else if (this.ac.state !== 'running' && this.ac.state !== 'closed' && !document.hidden) this.ac.resume();
   }
 
   burst(type, freq, q, dur, vol, buf = this.white, when = 0) {

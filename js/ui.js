@@ -433,14 +433,16 @@ export class UI {
   tankOpen() { return !$('tankroom').hidden; }
   // a brass "are you sure?" plate: yes runs onYes; no, Esc or a click outside just closes it
   confirm(title, body, yes, no, onYes, onNo = null) {
-    const el = $('confirm'), close = () => { el.hidden = true; window.removeEventListener('keydown', key, true); };
-    const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); close(); } };
+    const modal = !!this.confirmModal; this.confirmModal = false; // (5.5) set just before by a question that must be answered
+    const el = $('confirm'), close = () => { el.hidden = true; el.classList.remove('modal'); this.confirmModal = false; window.removeEventListener('keydown', key, true); };
+    const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); if (!modal) close(); } };
+    if (modal) { this.confirmModal = true; el.classList.add('modal'); }
     el.querySelector('.cf-title').textContent = title;
     el.querySelector('.cf-body').innerHTML = esc(body).replace(/\n/g, '<br>');
     el.querySelector('.cf-yes').textContent = yes; el.querySelector('.cf-no').textContent = no;
     el.querySelector('.cf-yes').onclick = () => { close(); onYes(); };
     el.querySelector('.cf-no').onclick = () => { close(); if (onNo) onNo(); }; // (4.2.0)
-    el.onclick = (e) => { if (e.target === el) close(); };
+    el.onclick = (e) => { if (e.target === el && !modal) close(); };
     window.addEventListener('keydown', key, true);
     el.hidden = false; el.querySelector('.cf-no').focus();
   }

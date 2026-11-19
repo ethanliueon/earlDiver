@@ -79,6 +79,7 @@ function airOver(g) {
   el.classList.toggle('on', !!txt);
 }
 const audio = new Audio(); window.__earlAudio = audio; // (for testing)
+audio.musicAllowed = true; // (5.5) the title too: the theme was only allowed from the first dive on, so the title stayed silent
 const beacon = new Beacon(audio); beacon.say = (text, kind) => messages.show(text, kind); // (4.0.2) the alarms on the message line
 
 const keys = new Set();
@@ -1026,6 +1027,7 @@ function lessonJelly(x, y, dir) {
 }
 function tutorWelcome() {
   const P = profile; if (!P || P.tut) return;
+  ui.confirmModal = true; // (5.5) answered with Start or Skip only (a tap beside it no longer dismisses it undecided), the game held still meanwhile
   ui.confirm('Welcome to the tutorial', 'This will be quick: just a look around the game.', 'Start', 'Skip tutorial',
     () => { P.tut = 'on'; saveProfile(P); g.tutSaid = null; refreshAir(); },
     () => ui.confirm('Skip the tutorial?', 'Are you sure?', 'Skip it', 'Back', () => { P.tut = 'skip'; P.lessonAir = P.lessonTrawl = 'done'; P.tipEquip = P.tipSprint = true; saveProfile(P); }, () => tutorWelcome())); // (4.12.0) skipped: no lessons or tips after it either
@@ -2711,7 +2713,7 @@ function frame(now) {
     const k = smooth01(L.rt / 0.9) * (1 - smooth01((L.rt - 3.6) / 1.6));
     g.legendK = k; ts = 1 - 0.67 * k;
   } else if (g && g.legendK) g.legendK = Math.max(0, g.legendK - dt / 1.2);
-  update(dt * ts);
+  if (!(ui.confirmOpen && ui.confirmOpen() && ui.confirmModal)) update(dt * ts); // (5.5) a question that must be answered (the tutorial's welcome) holds the world still
   renderer.updateCamera(g, dt);
   // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
   const covered = !document.getElementById('cabin').hidden || !document.getElementById('tankroom').hidden || !document.getElementById('gallery').hidden
@@ -2794,7 +2796,7 @@ window.addEventListener('beforeunload', saveNow);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) saveNow();
   const ac = audio.ac; if (!ac) return;
-  try { if (document.hidden) { if (ac.state === 'running') ac.suspend(); } else if (ac.state === 'suspended' && !audio.muted) ac.resume(); } catch (e) { /* ignore */ }
+  try { if (document.hidden) { if (ac.state === 'running') ac.suspend(); } else if (ac.state !== 'running' && ac.state !== 'closed' && !audio.muted) ac.resume(); } catch (e) { /* ignore */ }
 });
 ui.showTitle();
 // (claude-polish) a phone turned upright shows "Turn your phone sideways" over the game: the game pauses under it
