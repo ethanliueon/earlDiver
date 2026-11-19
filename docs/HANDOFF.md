@@ -74,6 +74,20 @@ anything into `main`; the owner decides that.
   seafloor sonar set into a plate, the lines under the instruments in Garamond italic without middle dots.
 - Step 2 (tank and chamber rooms): done in 4.25.1: no brass (porthole rim, depth counter bezel, bag tag, `?`
   button). The grey bulkheads are kept on purpose: the inside of the sub is unpainted steel, a different place.
+- Step 3 (tutorial): done in 4.25.2: highlight, arrows, key caps, pointer and door glow in cream (colours only).
+- Step 4 (loading screen): left as it is: its orange bar is the sunset painting's own colour.
+- Step 5 (catalog): left as it is: navy is Bayside Marine Supply's own brand on an in-world web page; the station
+  and Dave already have their own themes.
+- Steps 6 and 7 (inventory leftovers, settings keys): done in 4.25.2: locked pockets plain, pocket numbers cream,
+  the bag's worth in a readout window, the sub's name painted on, settings' control keys as cream caps.
+- Step 8 (aquarium): copy cleaned in 4.25.3 (Room for 7 with its price; no middle dots). The dark plank room kept.
+- Step 9 (journal tabs, cabin): journal notes in its ink, no middle dots (4.25.4). The cabin needed nothing.
+- Step 10 (three window sizes): checked at 1024x600, 1280x760, 1920x1080, no overlaps; the quest line now scales
+  with the window as the canvas instruments do (4.25.5).
+
+**Still open for a later pass:** at 1024x600 the canvas HUD is small (the game scales it by window height, floor
+0.7x of design); the inventory does not grow past 1240x820 at full HD; the chapter of grey tank rooms vs the olive
+boat is a deliberate contrast, judge it again with the owner; the first-quest issue and the cloud 404s (section 7).
 - An abandoned attempt by another session (`claude/olive-studio`, and 6 commits pushed onto `claude/olive`) was
   discarded by the owner's decision: `claude/olive` was force-reset to 4.25.0. If `claude/olive-studio` still
   exists on GitHub, it is that discarded attempt; the owner deletes it (this environment cannot delete branches).

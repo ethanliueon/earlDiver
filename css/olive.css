@@ -242,3 +242,6 @@ html body .gl-catch .gl-room span { font: 500 16px var(--o-num) !important; opac
 
 /* the journal's small notes (status, controls, the unknown fish): written in the book's ink, not typed */
 html body #journal .stat small, html body #journal .af small, html body #journal-list small { font: italic 14px var(--o-text) !important; letter-spacing: 0 !important; color: rgba(60, 48, 30, 0.7) !important; text-transform: none !important; }
+
+/* the quest line (HTML) grows with the window as the canvas instruments do (they scale by the window's height / 900) */
+#quests-hud { zoom: clamp(0.8, calc(100vh / 900px), 1.5); }
