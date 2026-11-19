@@ -48,6 +48,9 @@ const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
 const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
+// (5.1.1) a touch screen (a phone, a tablet) gets the action buttons; a computer keeps the prompts and keys it had.
+// ?touch in the address forces the touch layout (for trying it on a computer)
+{ const q = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null; const set = () => { hud.touch = /[?&]touch\b/.test(location.search) || !!(q && q.matches && !(window.matchMedia('(pointer: fine)').matches)); }; set(); q && q.addEventListener && q.addEventListener('change', set); }
 // (3.4.0) everything the game says goes to one message line, top centre, over the sea and every room and panel
 const messages = new Messages();
 hud.onShow = (text, kind) => messages.show(text, kind);

@@ -192,6 +192,19 @@ game from a save slot, version stamps on all 56 modules and both stylesheets.
 - Locker: maker's plate removed, vent centred on the right plate, count beside its heading. Tank room hint: two lines
   of text under the bag (the plate cut into the tank's frame). Tutorial card: words and OK side by side.
 
+## 5.1.1 (owner: actions in the arc, not tools; grey, don't move; no key letters on touch; desktop as before)
+
+- **Two layouts, chosen by the device (main.js sets `hud.touch`).** A touch screen (pointer coarse, no fine pointer)
+  gets the action layout; a computer keeps the 5.0 HUD: the hotbar at the bottom centre, the F / Space prompts in the
+  middle with their keys, the radar bottom right, the C button. `?touch` in the address forces the touch layout.
+- **Touch layout (`Hud.drawActions`).** A big button bottom right for the main action (swing the net, take the
+  picture, set a trap; the claw in the sub), and action buttons in a fixed arc round it: swimming, Observe (or what
+  F does here) / Call sub / Lamp, then Lure / Glow stick / Pet; in the sub, Leave / Tank room / Autopilot, then
+  Trawl / Spare air / Sell / Lights. A button that can't be used now is greyed in its place, never moved or hidden.
+  A plain picture and a word on each, no key letters (the hotbar's key caps are hidden on touch too). The name of
+  what the big button would go for shows above the arc. The radar is under the depth; the eye beside the depth.
+- On both layouts every tool in the hotbar can be clicked (tapped) to pick it up.
+
 ## 5.1.0 (owner: "a game, not a website"; web now, mobile later: touch not added yet, but nothing in the way of it)
 
 Rules for every screen: one main thing; few, big targets; pictures over text; numbers only when they matter; things
