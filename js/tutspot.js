@@ -107,6 +107,7 @@ export class TutSpot {
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot, text = null) { this.update0(on, spot, text); flushStyles(); }
   update0(on, spot, text = null) {
+    window.__hudTutKey = null;
     if (!on) { // (4.12.2) the spotlight fades out rather than vanishing (no bright flash when a step ends)
       LOCK = null; this.lastTarget = null; this.setLine(null); for (const b of this.blocks) b.style.display = 'none';
       if (!this.el.hidden && !this.fadingOut) { this.fadingOut = true; this.el.classList.add('out'); this.fadeT = setTimeout(() => { this.el.hidden = true; this.el.classList.remove('out'); this.fadingOut = false; }, 420); }
@@ -157,9 +158,14 @@ export class TutSpot {
       this.btn = spot.button || null; this.keyBox.classList.toggle('btn', !!spot.button);
       // (5.4) a touch screen has no keys: ring the on-screen button that does the same (the HUD lists where each is
       // and which key it stands for); a step with no such button just keeps its line of words
-      if (INPUT.mode === 'touch' && k && !spot.button) {
-        const want = { space: ' ', esc: 'escape', rmb: 'sprint', lmb: ' ' }[String(k).toLowerCase()] || String(k).toLowerCase();
-        let h = (window.__hudHots || []).find((q) => q.key === want);
+      const want = k ? ({ space: ' ', esc: 'escape', rmb: 'sprint', lmb: ' ' }[String(k).toLowerCase()] || String(k).toLowerCase()) : null;
+      const onHud = INPUT.mode === 'touch' && want && (window.__hudHots || []).find((q) => q.key === want);
+      // (5.5) a step the tutorial would do with its own button in the middle of the screen: on a phone, when the HUD
+      // has the button for it, that button is ringed instead (pressing it does the step, as the tutorial's own would)
+      if (INPUT.mode === 'touch' && k && (!spot.button || onHud)) {
+        if (spot.button) this.keyBox.classList.remove('btn');
+        let h = onHud;
+        if (h) window.__hudTutKey = want; // the HUD draws the pulsing ring itself, on its own button
         // sprinting has no button: the stick pushed out to its rim does it, so the stick is ringed and the words say so
         if (!h && spot.act === 'sprint') {
           const st = document.querySelector('#stick .st-base'), r = st && st.getBoundingClientRect();
@@ -173,8 +179,8 @@ export class TutSpot {
         const DOMK = { j: ['#hud-journal', '#quests-btn'], o: ['#quests-btn'], k: ['#hud-chart', '#quests-btn'] };
         if (!h && DOMK[want]) { const el2 = this.find(DOMK[want]), r = el2 && el2.getBoundingClientRect(); if (r) h = { x: r.left, y: r.top, w: r.width, h: r.height }; }
         // words with it, never a key cap (a step with nothing to ring keeps just its words)
-        if (spot.act !== 'sprint' && spot.say) { this.keyBox.style.display = 'flex'; this.kbd.style.display = 'none'; const say = spot.say.replace(/^(Press|Hold)\b/, (m) => (m === 'Press' ? 'Tap' : 'Hold')); if (this.keyText.textContent !== say) this.keyText.textContent = say; }
-        if (h) {
+        if (spot.act !== 'sprint' && spot.say) { this.keyBox.style.display = 'flex'; this.kbd.style.display = 'none'; const say = ({ obs: 'Tap the eye to observe it' })[want] || spot.say.replace(/^(Press|Hold)\b/, (m) => (m === 'Press' ? 'Tap' : 'Hold')); if (this.keyText.textContent !== say) this.keyText.textContent = say; }
+        if (h && !onHud) {
           const x = h.x - PAD, y = h.y - PAD, w = h.w + PAD * 2, hh = h.h + PAD * 2;
           Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: hh + 'px' });
           if (!this.hole.classList.contains('light')) this.hole.classList.add('light');

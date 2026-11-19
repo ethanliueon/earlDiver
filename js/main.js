@@ -785,7 +785,7 @@ function sayFish(FM, whereOf) {
     stressed: (n) => `${n} animals are stressed`,
     dying: (n) => `${n} animals are dying`,
   };
-  for (const type of ['air', 'bagDying', 'dying', 'bagStress', 'stressed']) {
+  for (const type of ['air', 'bagDying', 'dying', 'bagStress']) { // (5.5) not 'stressed': the bag's coloured dot already says it, at once after every catch
     const L = by[type]; if (!L) continue;
     hud.toast(L.length === 1 ? one[type](L[0]) : many[type](L.length), 'warn');
   }
@@ -1084,6 +1084,8 @@ function tutor() {
   // never blinks at the edge. offer(): the step's one action here, shown as the tutorial's button
   const Z = g.tutZones || (g.tutZones = {}), now = performance.now();
   const zone = (name, inside) => { if (inside) Z[name] = now; return now - (Z[name] || -1e9) < 400; };
+  // (5.5) on a phone, with a fish in reach: the net button ringed (or the net's slot, if it is not in hand)
+  const netSpot = () => (hud.touch && g.catchTarget ? (g.toolSel !== 'net' ? { key: '1', say: 'Tap the net to take it out' } : { act: 'use', say: 'Tap the net to swing it' }) : null);
   const offer = (id, say, key = 'F') => { action = { id, say, key }; spot = { key, say, button: id }; };
   const cabinTo = (id, act, say) => { ui.cabin.tutMark = id; if (zone('cabin-' + id, ui.cabin.near && ui.cabin.near() === id)) offer(act, say); else action = { id: act, say, key: 'F', cabinOnly: true }; };
   const ladderZone = () => zone('ladder', !e.inSub && !g.aboard && e.y < 2.6 && e.y > -0.6 && Math.abs(e.x - BOAT.x - LADDER_M) < 1.6);
@@ -1121,9 +1123,9 @@ function tutor() {
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
-        if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe'); }
+        if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe', hud.touch ? 'obs' : 'F'); } // (5.5) on a phone, its own eye button
         else if (g.tutOops && g.time - g.tutOops < 3) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
-        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); }
+        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(); }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
     }
@@ -1140,7 +1142,7 @@ function tutor() {
     else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-act="sellone"]'], say: 'Sell all' }; }
     else if (!g.bag.length && !g.subTank.length) {
       // sold already, or lost it: another fish, then sell that one
-      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); });
+      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); spot = spot || netSpot(); });
     }
     else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; cabinTo('door', 'outdoor', 'Out on deck'); }
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; }
@@ -1150,7 +1152,7 @@ function tutor() {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
     if (!pick && !catOpen && !g.bag.length) {
-      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = netPrompt(); });
+      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = netPrompt(); spot = spot || netSpot(); });
     } else if (!pick && !catOpen) {
       if (g.aboard || !zone('boat', nearBoat)) { text = 'Not enough cash for gear yet: sell your catch first'; to = ladder; }
       else if (shopOpen) spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])'], say: 'Sell all' };
@@ -1187,6 +1189,7 @@ const tutSpot = new TutSpot();
 tutSpot.onAction = (id) => runTutAction(id); // (4.4.1) the button
 tutSpot.onCard = (id) => { if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
 function startRun() {
+  messages.clear(); // (5.5) a new dive starts with a clear line (no "Out of air" left over from the last)
   mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic();
   if (!getSlot()) setSlot(firstFreeSlot());
@@ -1457,6 +1460,20 @@ function placeOnDeck(dt) {
   e.x = BOAT.x + A.lx; e.y = sy + A.ly; e.kick = A.step || 0;
 }
 
+// (5.5) what the observe button looks at: the nearest animal in reach he has not observed yet (swimming, or still on
+// the seabed), never one already in the journal, a pet, or anything from the sub or the deck
+function observeTarget() {
+  const e = g.earl; if (!g.fauna || e.inSub || g.aboard) return null;
+  const cr = g.fauna.nearest(e.x, e.y, 3.5);
+  if (cr && !cr.pet && !g.journal.has(cr.sp.id)) return { kind: 'creature', sp: cr.sp, c: cr };
+  let sb = null, sd = 2.6;
+  for (const st of g.world.statics) {
+    if (Math.abs(st.x - e.x) > sd + 2 || g.journal.has(st.sp.id)) continue;
+    const d = dist(e.x, e.y, st.x, st.y - Math.min(1, st.sp.len * 0.4));
+    if (d < sd) { sd = d; sb = st; }
+  }
+  return sb ? { kind: 'creature', sp: sb.sp } : null;
+}
 function findTarget() {
   const e = g.earl, W = g.world;
   const tn = trapNear(g);
@@ -1902,6 +1919,9 @@ function update(dt) {
       if (e.inSub && fHeld > 0.6 && fHeld - dt <= 0.6) interact(null, true);
     }
     const target = findTarget();
+    // (5.5) the observe button (touch): the nearest animal in reach not yet in the journal, and its press
+    g.obsTarget = hud.touch ? observeTarget() : null;
+    if (pressed.has('obs')) { pressed.delete('obs'); const ot = g.obsTarget || observeTarget(); if (ot) interact(ot, false); }
     g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);
     const atAngler = nearAngler(), atDave = !atAngler && nearDave(), atStation = !atAngler && !atDave && nearStation();

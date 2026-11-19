@@ -1,5 +1,6 @@
 import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
+import { drawToken } from './tokens.js';
 import { drawGlyph } from './glyphs.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
@@ -90,7 +91,7 @@ export class Hud {
     let x = W / 2 - total / 2;
     const y = H - sh - 22 * s;
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
-    for (const [key, kind, tier, name] of tools) {
+    for (const [key, kind, tier, name] of (this.touch && e.inSub ? [] : tools)) { // (5.5) on a phone, not in the sub (they cannot be used from it)
       const on = kind === sel && !e.inSub;
       // (olive) a raised plate of the panels' painted steel with a well pressed into it; the tool in hand ringed in
       // the deck's cream paint
@@ -229,10 +230,8 @@ export class Hud {
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
     const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
     // (5.3.1) a button is a dark translucent disc with a thin light rim (as a phone game's), a real picture on it
-    const plate = (x, y, r, on, down) => {
-      ctx.fillStyle = down ? 'rgba(8,12,14,0.62)' : 'rgba(8,12,14,0.42)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
-      ctx.strokeStyle = down ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1.2 * u; ctx.stroke();
-    };
+    // (5.5) each a brass-bezelled enamel fitting (tokens.js), not a see-through disc
+    const plate = (x, y, r, on, down, lit, big) => drawToken(ctx, x, y, r, big ? 'big' : 'small', down ? 'down' : !on ? 'off' : lit ? 'lit' : 'on');
     const pic = (name, x, y, w) => { const im = hudIcon('act-' + name); if (im) ctx.drawImage(im, x - w / 2, y - w / 2, w, w); };
     // the pictures on the buttons: plain shapes in the deck's cream paint
     const NAME = { eye: 'eye', hand: 'hand', leave: 'leave', sub: 'sub', lamp: 'lamp', lure: 'lure', glow: 'glow', pet: 'pet', tank: 'tank', trawl: 'trawl', air: 'air', sell: 'sell', auto: 'auto', pause: 'pause', bag: 'bag' };
@@ -264,34 +263,52 @@ export class Hud {
     const subLabel = e.inSub ? (g.homeRun ? 'Autopilot off' : 'Autopilot') : (ap && ap.state === 'coming' ? 'Stop sub' : 'Call sub');
     // the near ring: the three things done most (always there, greyed when they can't be done); the top row: the
     // rarer ones, small, beside pause and the bag
+    // (5.5) the tutorial's own action (its F, or the observe button) keeps its button up even while it hides prompts
+    const ta = g.tutAction && !g.tutAction.cabinOnly ? String(g.tutAction.key).toLowerCase() : null;
+    // (5.5) the near ring: observe (its own button, up only with a new animal in reach), the hand (only with something
+    // to take, board or open), the sub. A button with nothing to do is not there at all; the rest keep their places
     const A = e.inSub ? [
-      { key: 'f', icon: 'leave', on: !!F, bar: true, why: 'Nothing to do here' },
+      { key: 'f', icon: 'leave', on: !!F || ta === 'f', bar: true, why: 'Nothing to do here' },
       { key: 't', icon: 'tank', on: true },
       { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
     ] : [
-      { key: 'f', icon: F && /observe/i.test(F.label) ? 'eye' : 'hand', on: !!F, bar: true, why: 'Nothing here: swim up to something' },
+      { key: 'obs', icon: 'eye', on: (!!g.obsTarget && !g.tutHidePrompts) || ta === 'obs', away: true },
+      { key: 'f', icon: 'hand', on: (!!F && !/observe/i.test(F.label)) || ta === 'f', bar: true, away: true },
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
-      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'Not on deck' },
     ];
+    // the column: pause, the bag, the lamp, then the things carried, each only while there is one to use
     const TOP = [{ key: 'escape', icon: 'pause', on: true }, { key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
-      { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet, why: 'No trawl net: the boat sells them' },
-      { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, why: 'No spare air tank: the boat sells them' },
-      { key: 'u', icon: 'sell', on: !!partOf('u'), why: 'Bring her alongside the boat to sell' },
       { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
+      { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet, away: true },
+      { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
+      { key: 'u', icon: 'sell', on: !!partOf('u'), away: true },
     ] : aboard ? [] : [
-      { key: 'q', icon: 'lure', on: (g.items.lure || 0) > 0, n: g.items.lure, why: 'No lure: the station and Dave sell them' },
-      { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, why: 'No glow stick: the boat sells them' },
-      { key: 'h', icon: 'pet', on: !!P.pet, lit: P.pet && P.petStay, why: 'No pet: at the surface, drag a big fish into the pet slot' },
-    ]);
+      { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
+      { key: 'q', icon: 'lure', on: (g.items.lure || 0) > 0, n: g.items.lure, away: true },
+      { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, away: true },
+      { key: 'h', icon: 'pet', on: !!P.pet, lit: P.pet && P.petStay, away: true },
+    ]).filter((a) => !(a.away && !a.on));
+    const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
+    const vis = this.btnVis || (this.btnVis = {});
+    const ring = (x, y, r) => { // two brass rings breathing out from the button, one after the other
+      for (let i = 0; i < 2; i++) {
+        const k = ((g.time * 0.75) + i * 0.5) % 1, rr = r * (1.08 + k * 0.62);
+        ctx.strokeStyle = `rgba(255,206,120,${(0.85 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (3.2 - 1.8 * k) * u; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(255,226,160,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.04, 0, TAU); ctx.stroke();
+    };
     const btn = (a, x, y, r) => {
       const down = held.has(a.key);
-      ctx.save();
-      plate(x, y, r, a.on, down); ctx.globalAlpha = a.on ? 1 : 0.35;
-      if (a.lit) { ctx.strokeStyle = 'rgba(255,214,140,0.9)'; ctx.lineWidth = 2.5 * u; ctx.shadowColor = 'rgba(255,200,120,0.8)'; ctx.shadowBlur = 8 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.66, 0, TAU); ctx.stroke(); ctx.shadowBlur = 0; }
-      glyph(a.icon, x, y + (down ? 1.5 * u : 0), r * 0.4);
+      // one that comes and goes rises in (and sinks away) over a fifth of a second rather than blinking
+      if (a.away) { const v0 = vis[a.key] ?? 0, v = vis[a.key] = clamp(v0 + (a.on ? 1 : -1) * dt * 6, 0, 1); if (v <= 0.01) return; r *= 0.7 + 0.3 * (1 - (1 - v) * (1 - v)); ctx.save(); ctx.globalAlpha *= v; }
+      else ctx.save();
+      if (tutKey === a.key && a.on) ring(x, y, r);
+      plate(x, y, r, a.on, down, a.lit); ctx.globalAlpha = a.on ? 1 : 0.4;
+      glyph(a.icon, x, y + (down ? 1.5 * u : 0), r * 0.36);
       if (a.n > 1) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
       ctx.restore();
+      if (a.away && !a.on) return; // going: no longer pressable
       hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : 'msg:' + (a.why || 'Not now'));
     };
     const r = 24 * u, gap = 14 * u, rho0 = R + r + gap;
@@ -314,11 +331,13 @@ export class Hud {
     const can = aboard ? false : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
     ctx.save(); ctx.globalAlpha = aboard || (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7; // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
-    plate(cx, cy, R, can, bdown);
-    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(244,242,234,${(0.35 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R - 1.5 * u, 0, TAU); ctx.stroke(); }
+    plate(cx, cy, R, can || !(aboard || (e.inSub && !armT) || (!sel && !e.inSub)), bdown, false, true);
+    if (tutKey === ' ') ring(cx, cy, R);
+    // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
+    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(255,206,120,${(0.3 + 0.5 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
     // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
-    if (e.inSub) drawGlyph(ctx, 'claw', cx, cy + (bdown ? 2 * u : 0), R * 1.1);
-    else drawGlyph(ctx, sel || 'net', cx, cy + (bdown ? 2 * u : 0), R * 1.1); // (5.3.6) never an empty button
+    if (e.inSub) drawGlyph(ctx, 'claw', cx, cy + (bdown ? 2 * u : 0), R * 0.98);
+    else drawGlyph(ctx, sel || 'net', cx, cy + (bdown ? 2 * u : 0), R * 0.98); // (5.3.6) never an empty button
     const prog = g.photo ? g.photo.t / g.photo.dur : g.capture && g.capture.dur ? g.capture.t / g.capture.dur : 0;
     if (prog > 0) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.arc(cx, cy, R - 1.5 * u, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(prog, 0, 1)); ctx.stroke(); }
     ctx.restore();
