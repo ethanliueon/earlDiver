@@ -55,6 +55,7 @@ export class Hud {
     // (4.17.0) the UI scale: from the screen's height, but never below 0.7 of the design (a phone held sideways is
     // only ~390 px tall) nor above 1.5; and the notch's safe areas kept clear
     this.s = Math.min(1.6 * dpr, Math.max(h / 780, 0.8 * dpr)); // (4.26) larger: readable at a glance // (claude-polish) as the comment above says: the clamp was never applied, so a phone's instruments were drawn at 0.43 and unreadable
+    if (window.__fingerK) this.s *= 1.15; // (5.4) a phone's screen is smaller than a laptop's: the instruments' words a little larger (as the quest line)
     if (!this.safeEl) { this.safeEl = document.createElement('div'); this.safeEl.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(this.safeEl); }
     const cs = getComputedStyle(this.safeEl); this.safe = { l: parseFloat(cs.paddingLeft) * dpr || 0, r: parseFloat(cs.paddingRight) * dpr || 0, t: parseFloat(cs.paddingTop) * dpr || 0, b: parseFloat(cs.paddingBottom) * dpr || 0 };
   }
@@ -299,8 +300,13 @@ export class Hud {
     // would reach the stick's ring in the lower left (the sub has six of them)
     const r2 = 18 * u, step = r2 * 2 + 7 * u, fk = window.__fingerK || 1;
     const sR = Math.max(40, Math.min(52, window.innerHeight / fk * 0.12)) * fk, stickTop = (window.innerHeight - 2 * sR - 28 * fk) / kx - this.safeT;
-    const rows = Math.max(2, Math.floor((stickTop - 84 * u - 6 * u) / step));
-    TOP.forEach((a, i) => btn(a, 44 * u + Math.floor(i / rows) * step, 84 * u + r2 + (i % rows) * step, r2));
+    // the column starts under the clipboard group's second row (the journal, laid out even while folded), read from
+    // the page once a second, so the opened group never lies over the pause button
+    const nowMs = performance.now();
+    if (!this.qhAt || nowMs - this.qhAt > 1000) { this.qhAt = nowMs; const j = document.getElementById('hud-journal'), r = j && j.getBoundingClientRect(); this.qhBottom = r && r.height ? r.bottom : 0; }
+    const top0 = Math.max(84 * u, this.qhBottom ? this.qhBottom / kx - this.safeT + 8 * u : 0);
+    const rows = Math.max(2, Math.floor((stickTop - top0 - 6 * u) / step));
+    TOP.forEach((a, i) => btn(a, 44 * u + Math.floor(i / rows) * step, top0 + r2 + (i % rows) * step, r2));
     const rho1 = rho0;
     // ---- the big button: the main action ----
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';

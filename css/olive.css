@@ -725,3 +725,6 @@ html body #quests-hud { pointer-events: none !important; }
 html body #quests-hud > #quests-btn, html body #quests-hud.open > * { pointer-events: auto; }
 /* (5.4) on a phone the chart sits beside the journal, not under it, clear of the pause button below */
 html.touch body #quests-hud #hud-chart:not(#_a) { grid-row: 2; grid-column: 2; justify-self: start; }
+/* (5.4) on a phone the quest line and the clipboard a little larger: about 11 pt words, a 36 pt clipboard */
+html.touch #quests-hud { zoom: 1.15; }
+html.touch body #tut-spot .ts-line { zoom: 1.15; } /* the tutorial's line beside it, at the same size */
