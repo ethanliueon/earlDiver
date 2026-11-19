@@ -4,9 +4,9 @@
 // job: paint names places, brass is what you operate, paper and chalk tell you things, red is only for alarms.
 import { clamp, lerp, TAU } from './util.js';
 
-const STENCIL = '"Allerta Stencil", "IBM Plex Mono", monospace';
+const STENCIL = '"Allerta Stencil", "Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const HAND = '"Caveat", "Segoe Print", cursive';
-const MONO = '"IBM Plex Mono", ui-monospace, monospace';
+const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const ease = (q) => 1 - Math.pow(1 - clamp(q, 0, 1), 3);
 
 // a little seeded noise, so chips and grain stay put from frame to frame
@@ -388,7 +388,7 @@ export function promptShade(ctx, cx, y, s = 1, a = 1) {
   ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.2); ctx.translate(-cx, -y); ctx.fillStyle = sh; ctx.fillRect(cx - R, y - R, R * 2, R * 2); ctx.restore();
 }
 // (4.27) the face for everything laid over the game (prompts, the instruments' words, labels): a sturdy semi-condensed
-// sans that reads at a glance on a small screen; the book face (EB Garamond) stays for the panels and pages
+// sans that reads at a glance on a small screen
 export const HUDF = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif';
 const holdWord = (h) => h.trim().charAt(0).toUpperCase() + h.trim().slice(1).toLowerCase();
 export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19, shade = true, icon = null, named = null } = {}) {
@@ -411,7 +411,7 @@ export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19
     ctx.font = `600 ${fs}px ${HUDF}`; ctx.textAlign = 'left';
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1;
     const nm = named && named.text === p.label && !p.key ? named : null; // (4.12.0) an animal's name in its rarity's colour; a legend's in italic gold with a soft glow
-    if (nm && nm.legend) { ctx.font = `italic 500 ${fs}px "EB Garamond", Georgia, serif`; ctx.shadowColor = 'rgba(242,184,74,0.75)'; ctx.shadowBlur = 14 * s; ctx.shadowOffsetY = 0; ctx.fillStyle = nm.col || '#f2c868'; ctx.fillText(p.label, x, y + 1 * s); ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; }
+    if (nm && nm.legend) { ctx.font = `500 ${fs}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.shadowColor = 'rgba(242,184,74,0.75)'; ctx.shadowBlur = 14 * s; ctx.shadowOffsetY = 0; ctx.fillStyle = nm.col || '#f2c868'; ctx.fillText(p.label, x, y + 1 * s); ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; }
     ctx.fillStyle = nm && nm.col ? nm.col : col; ctx.fillText(p.label, x, y + 1 * s); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
     x += ctx.measureText(p.label).width + gapP;
   });

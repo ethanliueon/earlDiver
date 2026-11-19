@@ -98,6 +98,6 @@ export function drawShowcase(canvas, pv, t) {
   drawOne(ctx, pv, b, W * 0.5, H * 0.04, W * 0.5, H * 0.86, t + 0.7);
   ctx.fillStyle = 'rgba(240,212,138,0.85)'; ctx.font = `${Math.round(H * 0.16)}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('→', W * 0.48, H * 0.5);
-  ctx.font = `${Math.max(9, Math.round(H * 0.075))}px "IBM Plex Mono", monospace`; ctx.fillStyle = 'rgba(220,236,240,0.6)';
+  ctx.font = `${Math.max(9, Math.round(H * 0.075))}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.fillStyle = 'rgba(220,236,240,0.6)';
   ctx.fillText(pv.kind === 'earl' ? 'WORN NOW' : 'NOW', W * 0.23, H * 0.92); ctx.fillStyle = 'rgba(240,212,138,0.9)'; ctx.fillText(pv.kind === 'earl' ? 'THIS SUIT' : 'NEXT', W * 0.75, H * 0.92);
 }

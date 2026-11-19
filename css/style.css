@@ -5,8 +5,8 @@
   --paper-ink: #2b2318;
   --line: rgba(160, 200, 200, 0.18);
   --glass: rgba(6, 12, 14, 0.72);
-  --serif: "EB Garamond", Georgia, "Times New Roman", serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --serif: "Barlow Semi Condensed", Georgia, "Times New Roman", serif;
+  --mono: "Barlow Semi Condensed", ui-monospace, Menlo, Consolas, monospace;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: #02070b; color: var(--ink); overflow: hidden; font-family: var(--mono); }
@@ -324,7 +324,7 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
   --brass: #ab935e; --brass-hi: #c8b688; --brass-lo: #6c5834; /* (3.0.34) aged, matte brass: less yellow, less shine (the Legendaries keep their own gold) */
   --paint: #ddd6bc; --paint-dim: rgba(221, 214, 188, 0.55);
   --amber: #ffb648; --phosphor: #b9e69a;
-  --stencil: "Allerta Stencil", "IBM Plex Mono", monospace;
+  --stencil: "Barlow Semi Condensed", "Barlow Semi Condensed", monospace;
 }
 .shop .shop-main {
   position: relative; padding: 26px 30px 28px;
@@ -457,7 +457,7 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
    v1.2.0: the game's own type. IM Fell English (an old ship's-log print) for names, labels,
    tooltips and messages; the stencil for painted labels; numbers stay on the instrument mono.
    ===================================================================== */
-:root { --game: "IM Fell English", "EB Garamond", Georgia, serif; --game-sc: "IM Fell English SC", "IM Fell English", Georgia, serif; }
+:root { --game: "Barlow Semi Condensed", "Barlow Semi Condensed", Georgia, serif; --game-sc: "Barlow Semi Condensed", "Barlow Semi Condensed", Georgia, serif; }
 .shop .up-name, .shop .card h3, .shop .card p, .shop .manifest td:first-child, .shop .contract b,
 .shop .shop-empty, .shop .shop-note, .shop .wing-h b, .shop .owned b, .shop .season p { font-family: var(--game); letter-spacing: 0.01em; }
 .shop .up-name { font-size: 16px; }
@@ -622,7 +622,7 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 .plates { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
 .plate {
   display: inline-flex; align-items: baseline; gap: 5px; padding: 2px 7px 2px 6px; border-radius: 3px;
-  font: 12px var(--mono, "IBM Plex Mono", monospace); color: var(--paint); white-space: nowrap;
+  font: 12px var(--mono, "Barlow Semi Condensed", monospace); color: var(--paint); white-space: nowrap;
   background: linear-gradient(180deg, rgba(0,0,0,0.38), rgba(0,0,0,0.22)); border: 1px solid rgba(0,0,0,0.5);
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.06);
 }
@@ -638,7 +638,7 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
   border: 1px solid rgba(0,0,0,0.6); box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06); }
 .sheet { display: grid; gap: 6px; }
 .sheet:empty { display: none; }
-.sheet-row { display: grid; grid-template-columns: 130px auto 1fr; align-items: center; gap: 12px; font: 13px var(--mono, "IBM Plex Mono", monospace); }
+.sheet-row { display: grid; grid-template-columns: 130px auto 1fr; align-items: center; gap: 12px; font: 13px var(--mono, "Barlow Semi Condensed", monospace); }
 .sheet-row span { font: 10.5px var(--stencil); letter-spacing: 0.16em; text-transform: uppercase; color: var(--paint-dim); }
 .sheet-row b { font-weight: 500; color: var(--paint); }
 .sheet-row.p-good b { color: var(--phosphor); }
@@ -656,7 +656,7 @@ button.disp:hover { background: rgba(150, 210, 190, 0.12) !important; }
 @media (max-width: 700px) { .sheet-row { grid-template-columns: 96px 1fr; } .sheet-row .gauge { grid-column: 1 / -1; } }
 /* v1.20.1: the cards' figures as dot points: a small brass rivet for each, label then value */
 .bullets { list-style: none; margin: 7px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 3px 16px; }
-.bullets li { position: relative; padding-left: 13px; display: flex; gap: 7px; align-items: baseline; font: 12.5px var(--mono, "IBM Plex Mono", monospace); color: var(--paint); }
+.bullets li { position: relative; padding-left: 13px; display: flex; gap: 7px; align-items: baseline; font: 12.5px var(--mono, "Barlow Semi Condensed", monospace); color: var(--paint); }
 .bullets li::before { content: ''; position: absolute; left: 0; top: 50%; width: 5px; height: 5px; margin-top: -3px; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, var(--brass-hi), var(--brass) 60%, var(--brass-lo)); box-shadow: 0 1px 1px rgba(0,0,0,0.6); }
 .bullets em { font: normal 9.5px var(--stencil); letter-spacing: 0.14em; text-transform: uppercase; color: var(--paint-dim); white-space: nowrap; }
@@ -1846,7 +1846,7 @@ body:has(#inventory.small:not([hidden])) #overflash .of-line:not(:last-child) { 
 .plated { background-color: #4b5541 !important; box-shadow: 0 0 0 1px #0e100c, 0 0 0 4px #2c3128, 0 0 0 5px #0e100c, 0 24px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08) !important; }
 /* section titles on dymo tape */
 #quests .qs-body h3, #settings .set-group h4, #workshop .sell-col h4 {
-  display: inline-block; padding: 3px 10px 2px; border-radius: 1px; font: 600 10px "IBM Plex Mono", monospace; letter-spacing: 0.2em; text-transform: uppercase; color: #f2f2ea !important;
+  display: inline-block; padding: 3px 10px 2px; border-radius: 1px; font: 600 10px "Barlow Semi Condensed", monospace; letter-spacing: 0.2em; text-transform: uppercase; color: #f2f2ea !important;
   background: linear-gradient(180deg, #2a2a2a, #111); box-shadow: 0 1px 2px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12); text-shadow: 0 1px 0 rgba(0,0,0,0.9); transform: rotate(-0.4deg); }
 /* rows as pressed-steel cubbies */
 #quests .qs-q, #settings .set-row, #workshop .sell-row .sell-item {
@@ -2545,7 +2545,7 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
    dotted leaders, a rubber stamp; nameplates in brass; refits as hanging brass tags on a steel board */
 #workshop .yd-sheet { position: relative; padding: 10px 14px 12px; border-radius: 2px; color: #2b261c;
   background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(0,0,0,0.04)), repeating-linear-gradient(0deg, rgba(120,100,60,0.05) 0 1px, transparent 1px 22px), #e7dec3;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 6px 14px rgba(0,0,0,0.45); font: 13px "IBM Plex Mono", monospace; transform: rotate(-0.4deg); }
+  box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 6px 14px rgba(0,0,0,0.45); font: 13px "Barlow Semi Condensed", monospace; transform: rotate(-0.4deg); }
 #workshop .yd-card .yd-sheet { transform: none; padding: 8px 10px 10px; font-size: 11.5px; }
 #workshop .ys-head { display: flex; justify-content: space-between; gap: 8px; padding-bottom: 6px; margin-bottom: 4px; border-bottom: 1.5px solid rgba(43,38,28,0.6); font-size: 10px; letter-spacing: 0.08em; color: rgba(43,38,28,0.7); }
 #workshop .yd-card .ys-head span:first-child { display: none; }
@@ -2555,9 +2555,9 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .ys-row b { font-weight: 600; color: #1e1a12; white-space: nowrap; }
 #workshop .ys-row em { font-style: normal; margin-left: 5px; font-size: 0.9em; }
 #workshop .ys-row em.up { color: #2f7a2a; } #workshop .ys-row em.down { color: #a8402a; }
-#workshop .ys-stamp { position: absolute; right: 12px; bottom: 10px; padding: 2px 8px; border: 2px solid rgba(46,110,40,0.7); border-radius: 3px; color: rgba(46,110,40,0.75); font: 700 13px var(--stencil, "IBM Plex Mono"); letter-spacing: 0.12em; transform: rotate(-8deg); pointer-events: none; }
+#workshop .ys-stamp { position: absolute; right: 12px; bottom: 10px; padding: 2px 8px; border: 2px solid rgba(46,110,40,0.7); border-radius: 3px; color: rgba(46,110,40,0.75); font: 700 13px var(--stencil, "Barlow Semi Condensed"); letter-spacing: 0.12em; transform: rotate(-8deg); pointer-events: none; }
 #workshop .yd-card .ys-stamp { font-size: 10px; bottom: 8px; right: 8px; }
-#workshop .yd-info h3 small, #workshop .yd-card h4 small { display: block; font: 600 11px "IBM Plex Mono", monospace; letter-spacing: 0.12em; color: rgba(232,212,154,0.7); margin-bottom: 2px; }
+#workshop .yd-info h3 small, #workshop .yd-card h4 small { display: block; font: 600 11px "Barlow Semi Condensed", monospace; letter-spacing: 0.12em; color: rgba(232,212,154,0.7); margin-bottom: 2px; }
 #workshop .yd-card { background: linear-gradient(180deg, #2b3129, #1d211c); box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #3a4136, 0 0 0 4px #0c0e0a, 0 8px 18px rgba(0,0,0,0.4); border-radius: 4px; padding: 12px; }
 #workshop .yd-card.cur { box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #7a9a5a, 0 0 0 4px #0c0e0a, 0 8px 18px rgba(0,0,0,0.4); }
 #workshop .yd-refit { position: relative; padding: 14px 16px 14px 18px; border-radius: 4px; background: linear-gradient(180deg, #2b3129, #1d211c); box-shadow: 0 0 0 1px #0c0e0a, 0 0 0 3px #3a4136, 0 0 0 4px #0c0e0a; }
@@ -2586,7 +2586,7 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .yd-card.unknown { justify-content: flex-start; }
 #workshop .yd-pic.dark { height: 160px; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #142028, #05090c); }
 #workshop .yd-pic.dark span { font: 400 64px var(--serif); color: rgba(232,212,154,0.25); }
-#workshop .yd-top h3 small { display: block; font: 600 11px "IBM Plex Mono", monospace; letter-spacing: 0.12em; color: rgba(232,212,154,0.7); }
+#workshop .yd-top h3 small { display: block; font: 600 11px "Barlow Semi Condensed", monospace; letter-spacing: 0.12em; color: rgba(232,212,154,0.7); }
 
 #workshop .yd-where { font: italic 14px var(--serif); color: rgba(232,212,154,0.75); }
 
@@ -2668,12 +2668,12 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 @media (max-width: 1000px) { #workshop .yd-refits { grid-template-columns: 1fr; } }
 #workshop .yd-refit p { color: rgba(42,36,24,0.8); }
 #workshop .yd-buy { flex: none; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 92px; padding: 7px 12px; border: 0; border-radius: 3px; cursor: pointer;
-  font: 600 15px "IBM Plex Mono", monospace; color: #2a1e08; background: linear-gradient(180deg, #e8cf8e, #b8913e); box-shadow: inset 0 0 0 1px rgba(90,64,20,0.6), 0 2px 0 #5a4518; }
+  font: 600 15px "Barlow Semi Condensed", monospace; color: #2a1e08; background: linear-gradient(180deg, #e8cf8e, #b8913e); box-shadow: inset 0 0 0 1px rgba(90,64,20,0.6), 0 2px 0 #5a4518; }
 #workshop .yd-buy small { font: 500 11px var(--serif); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
 #workshop .yd-buy:hover:not(:disabled) { filter: brightness(1.07); }
 #workshop .yd-buy:active:not(:disabled) { transform: translateY(1px); }
 #workshop .yd-buy:disabled { opacity: 0.5; cursor: default; }
-#workshop .yd-refit button.yd-buy { clip-path: none; padding: 7px 14px !important; border-radius: 3px !important; font-family: "IBM Plex Mono", monospace !important; color: #2a1e08 !important;
+#workshop .yd-refit button.yd-buy { clip-path: none; padding: 7px 14px !important; border-radius: 3px !important; font-family: "Barlow Semi Condensed", monospace !important; color: #2a1e08 !important;
   background: linear-gradient(180deg, #e8cf8e, #b8913e) !important; box-shadow: inset 0 0 0 1px rgba(90,64,20,0.6), 0 2px 0 #5a4518 !important; }
 #workshop .yd-refit button.yd-buy:hover:not(:disabled) { transform: none; }
 #workshop .yd-refit button.yd-buy:disabled { filter: grayscale(0.6) brightness(0.7); background: linear-gradient(180deg, #b8a882, #a8966c) !important; }
@@ -2700,7 +2700,7 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
    and a string loop), and the price filling it in big, bold figures. Only in the game itself; the catalog website
    keeps its own buttons */
 .pay-tag { position: relative; flex: none; min-width: 118px; height: 46px; padding: 0 16px 0 30px !important; border: 0; cursor: pointer;
-  font: 700 22px "IBM Plex Mono", monospace !important; letter-spacing: -0.01em; color: #f6f3e2 !important; text-shadow: 0 1px 0 rgba(0,0,0,0.45), 0 0 12px rgba(160,255,170,0.25);
+  font: 700 22px "Barlow Semi Condensed", monospace !important; letter-spacing: -0.01em; color: #f6f3e2 !important; text-shadow: 0 1px 0 rgba(0,0,0,0.45), 0 0 12px rgba(160,255,170,0.25);
   background: radial-gradient(circle at 14px 50%, #0c140b 0 4px, #d8c88e 4.2px 6.6px, transparent 6.9px), repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 5px),
     linear-gradient(180deg, #5aa866, #2f7a3e 55%, #1d5229) !important;
   clip-path: polygon(13px 0, 100% 0, 100% 100%, 13px 100%, 0 50%); border-radius: 0 6px 6px 0 !important;
@@ -2723,8 +2723,8 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .gz-track { fill: none; stroke: rgba(185,230,154,0.12); stroke-width: 4; stroke-linecap: round; }
 #workshop .gz-fill { fill: none; stroke: #9fdc8c; stroke-width: 4; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(159,220,140,0.6)); }
 #workshop .gz-icon { color: #e8dfc4; }
-#workshop .gz span { font: 600 10px "IBM Plex Mono", monospace; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(214,228,240,0.7); }
-#workshop .gz b { font: 600 13px "IBM Plex Mono", monospace; color: #f1efe6; white-space: nowrap; }
+#workshop .gz span { font: 600 10px "Barlow Semi Condensed", monospace; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(214,228,240,0.7); }
+#workshop .gz b { font: 600 13px "Barlow Semi Condensed", monospace; color: #f1efe6; white-space: nowrap; }
 #workshop .gz.mini b { font-size: 11px; }
 #workshop .gz em { font-style: normal; margin-left: 3px; font-size: 0.9em; } #workshop .gz em.up { color: #8fe07a; } #workshop .gz em.down { color: #f0907a; }
 #workshop .yd-card .gz b { color: #2a2418; } #workshop .yd-card .gz em.up { color: #23601f; } #workshop .yd-card .gz em.down { color: #8a2f1c; }
@@ -2735,11 +2735,11 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 #workshop .ru-zones { position: absolute; inset: 0; border-radius: 6px; overflow: hidden; }
 #workshop .ru-zones i { position: absolute; left: 0; right: 0; }
 #workshop .ru-zones .z1 { background: linear-gradient(180deg, #3a8ea2, #1d5a70); } #workshop .ru-zones .z2 { background: linear-gradient(180deg, #1d5a70, #0b2a3a); } #workshop .ru-zones .z3 { background: linear-gradient(180deg, #0b2a3a, #020709); }
-#workshop .ru-tick { position: absolute; left: 3px; transform: translateY(-50%); font: 9px "IBM Plex Mono", monospace; color: rgba(214,228,240,0.5); }
+#workshop .ru-tick { position: absolute; left: 3px; transform: translateY(-50%); font: 9px "Barlow Semi Condensed", monospace; color: rgba(214,228,240,0.5); }
 #workshop .ru-tick::after { content: ''; position: absolute; left: -3px; top: 50%; width: 8px; border-top: 1px solid rgba(214,228,240,0.35); }
 #workshop .ru-reach { position: absolute; left: 0; top: 0; right: 0; border-radius: 6px 6px 0 0; background: linear-gradient(90deg, rgba(159,220,140,0.14), rgba(159,220,140,0.03)); }
 #workshop .ru-mark { position: absolute; left: -10px; right: -10px; height: 0; border-top: 2px solid #e8cf8e; box-shadow: 0 0 8px rgba(232,207,142,0.6); }
-#workshop .ru-mark b { position: absolute; right: 2px; top: 2px; padding: 1px 5px; border-radius: 2px; font: 600 11px "IBM Plex Mono", monospace; color: #2a1e08; background: #e8cf8e; }
+#workshop .ru-mark b { position: absolute; right: 2px; top: 2px; padding: 1px 5px; border-radius: 2px; font: 600 11px "Barlow Semi Condensed", monospace; color: #2a1e08; background: #e8cf8e; }
 #workshop .ru-fish { position: absolute; right: 6px; width: 54px; height: 27px; transform: translateY(-50%); object-fit: contain; filter: brightness(0) opacity(0.55); }
 #workshop .ru-fish.in { filter: drop-shadow(0 0 4px rgba(200,240,255,0.35)); }
 #workshop .yd-port { min-width: 0; }
@@ -2810,8 +2810,8 @@ body:has(#tankroom:not([hidden])) #tut-spot .ts-line { top: 96px; }
 /* (4.16.0) the old porthole card's rules no longer apply to the key-art loading screen */
 #loading.ld span, #loading.ld .ld-step { letter-spacing: 0.12em; }
 #loading.ld span::after, #boot.ld span::after { content: none !important; }
-#loading.ld .ld-scale span { font: 11px "IBM Plex Mono", monospace; font-style: normal; color: rgba(214,232,238,0.75); letter-spacing: 0.08em; }
-#loading.ld .ld-step { font: 13px "IBM Plex Mono", monospace; font-style: normal; color: #f2efe6; }
+#loading.ld .ld-scale span { font: 11px "Barlow Semi Condensed", monospace; font-style: normal; color: rgba(214,232,238,0.75); letter-spacing: 0.08em; }
+#loading.ld .ld-step { font: 13px "Barlow Semi Condensed", monospace; font-style: normal; color: #f2efe6; }
 #loading.ld .ld-depth { font-style: normal; }
 #loading.ld .ld-tip span { letter-spacing: 0; font: inherit; color: inherit; }
 

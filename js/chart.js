@@ -109,7 +109,7 @@ export class Chart {
     const wg = x.createLinearGradient(0, top, 0, H); wg.addColorStop(0, '#1d5670'); wg.addColorStop(0.06, '#123a50'); wg.addColorStop(0.3, '#0b2434'); wg.addColorStop(1, '#050f17');
     x.fillStyle = '#1a2a30'; x.fillRect(0, 0, W, top); x.fillStyle = wg; x.fillRect(0, top, W, H - top);
     // the zones: a faint line at each, named at the left
-    x.font = '11px "IBM Plex Mono", monospace'; x.textBaseline = 'alphabetic';
+    x.font = '11px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textBaseline = 'alphabetic';
     for (const [d, name] of ZONES) {
       if (d) { x.strokeStyle = 'rgba(160,200,210,0.13)'; x.setLineDash([3, 5]); x.beginPath(); x.moveTo(0, Y(d)); x.lineTo(W, Y(d)); x.stroke(); x.setLineDash([]); }
       x.fillStyle = 'rgba(190,220,226,0.42)'; x.fillText(`${name.toUpperCase()}${d ? '  ' + d.toLocaleString() + ' m' : ''}`, 14, Y(d) + 14);
@@ -153,7 +153,7 @@ export class Chart {
     x.shadowColor = 'rgba(0,0,0,0.7)'; x.shadowBlur = 4;
     x.fillStyle = col; x.beginPath(); x.moveTo(px, py); x.bezierCurveTo(px - 3, py - 5, px - 7, py - 8, px - 7, py - 12); x.arc(px, py - 12, 7, Math.PI, 0); x.bezierCurveTo(px + 7, py - 8, px + 3, py - 5, px, py); x.fill();
     x.shadowBlur = 0; x.fillStyle = 'rgba(20,16,8,0.75)'; x.beginPath(); x.arc(px, py - 12, 2.6, 0, Math.PI * 2); x.fill();
-    if (name) { x.font = '500 13px "EB Garamond", Georgia, serif'; x.fillStyle = '#ece6d2'; x.shadowColor = '#000'; x.shadowBlur = 4; x.fillText(name, px + 10, py - 8); }
+    if (name) { x.font = '500 13px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.fillStyle = '#ece6d2'; x.shadowColor = '#000'; x.shadowBlur = 4; x.fillText(name, px + 10, py - 8); }
     x.restore();
   }
 }

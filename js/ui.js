@@ -299,7 +299,10 @@ export class UI {
     const b = $('quests-btn'); if (!b) return;
     if (!this.qWired) {
       this.qWired = true;
-      b.addEventListener('click', () => this.toggleQuests());
+      // (4.28) the group folds away: only the quest board's picture shows; a tap opens it out (the next step, the
+      // journal, the chart) and it folds again after a few seconds. With a quest ready to claim, the tap opens the board.
+      b.addEventListener('click', () => { const n0 = this.h.questsReady ? this.h.questsReady() : 0; if (n0) { this.toggleQuests(); return; } this.hudGroup(!$('quests-hud').classList.contains('open')); });
+      $('quests-hud').querySelector('.qh-step').addEventListener('click', () => this.toggleQuests());
       // (4.27) the journal and the chart: under the quest board, at the left, as pictures
       $('hud-journal').addEventListener('click', () => this.toggleJournal());
       $('hud-chart').addEventListener('click', () => { this.closeAll(); this.chart.toggle(true); });
@@ -315,11 +318,14 @@ export class UI {
     }
     const wrap = $('quests-hud'); wrap.hidden = !show;
     const P0 = this.h.getProfile && this.h.getProfile(), S0 = P0 && P0.quests, st = S0 && QUEST_MAIN[S0.main];
-    wrap.querySelector('.qh-step').textContent = st && st.on ? stepLabel(P0) : ''; // (4.3.4) the first fish shows which part it is on
+    { const txt = st && st.on ? stepLabel(P0) : '', el = wrap.querySelector('.qh-step'); // (4.3.4) the first fish shows which part it is on
+      if (el.textContent !== txt) { el.textContent = txt; if (txt && show) this.hudGroup(true, 4500); } } // (4.28) a new step: the group opens a moment to show it
     const n = this.h.questsReady ? this.h.questsReady() : 0, dot = b.querySelector('i');
     dot.hidden = !n; if (n) dot.textContent = n;
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
   }
+  // (4.28) open or fold the left-hand group; open for `ms` then fold again on its own
+  hudGroup(open, ms = 6000) { const w = $('quests-hud'); if (!w) return; clearTimeout(this.hgT); w.classList.toggle('open', !!open); if (open) this.hgT = setTimeout(() => w.classList.remove('open'), ms); }
   questsOpen() { return !$('quests').hidden; }
   // (4.8.1) a quest's i: what it asks, and where to go for it. A species: its card. A group: some of its animals and
   // the depths they keep. A depth: the sea in section with where he is, the depth asked for, and the nearest place
@@ -353,7 +359,7 @@ export class UI {
     const x = cv.getContext('2d'), W = cv.width, H = cv.height, Wd = 5000, D = 5200, X = (m) => (m / Wd) * W, Y = (y) => (y / D) * (H - 14) + 4;
     x.fillStyle = '#0d2230'; x.fillRect(0, 0, W, H);
     x.fillStyle = '#4a4234'; x.beginPath(); x.moveTo(0, H); for (let m = 0; m <= Wd; m += 10) x.lineTo(X(m), Y(Math.max(0, g.world.floorAt(m)))); x.lineTo(W, H); x.closePath(); x.fill();
-    x.font = '11px "IBM Plex Mono", monospace';
+    x.font = '11px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
     const e = g.earl.inSub ? g.sub : g.earl; let best = null, bd = Infinity, bestY = 0;
     if (bed) {
       // (4.8.2) bottom animals: the seabed itself lit where it lies within their depths
@@ -889,7 +895,7 @@ export class UI {
       <circle cx="50" cy="50" r="48" fill="#6e5a38"/><circle cx="50" cy="50" r="44" fill="#2a2418"/><circle cx="50" cy="50" r="41" fill="url(#ad-face)"/>
       <path d="M 25 75 A 35 35 0 0 1 21 66" stroke="#a83a2a" stroke-width="5" fill="none"/>
       ${Array.from({ length: 11 }, (_, i) => { const a2 = (-225 + i * 27) * Math.PI / 180; return `<line x1="${50 + 30 * Math.cos(a2)}" y1="${50 + 30 * Math.sin(a2)}" x2="${50 + 36 * Math.cos(a2)}" y2="${50 + 36 * Math.sin(a2)}" stroke="#2a2418" stroke-width="${i % 5 ? 1.2 : 2}"/>`; }).join('')}
-      <text x="50" y="70" text-anchor="middle" font-size="8" font-family="IBM Plex Mono, monospace" fill="#4a3c24">AIR</text>
+      <text x="50" y="70" text-anchor="middle" font-size="8" font-family=""Barlow Semi Condensed", "Arial Narrow", sans-serif" fill="#4a3c24">AIR</text>
       <g transform="rotate(${ang} 50 50)"><path d="M50 50 L50 17" stroke="#1c1a16" stroke-width="2.2" stroke-linecap="round"/></g><circle cx="50" cy="50" r="4" fill="#8a7448"/></svg>`;
     return `<div class="air-rig${warn ? ' warn' : ''}"><img src="${pictureOf(it.kind, it, 320, 120, true)}" alt="">${dial}<div class="air-txt"><span class="tape">${it.name.toUpperCase()}</span><b>${Math.round(now)} s</b><i>of ${max} s of air</i></div></div>`;
   }

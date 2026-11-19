@@ -55,7 +55,7 @@ export function drawAquarium(ctx, s, wings, t, day, nVisitors) {
       ctx.fillStyle = '#2f5c70'; ctx.fillRect(x + ww * 0.36, ground - 4 * s, ww * 0.28, 0.6 * s);
       // the sign along the parapet
       ctx.fillStyle = '#1e3a4a'; ctx.fillRect(x + ww * 0.22, ground - h + 0.6 * s, ww * 0.56, 1.8 * s);
-      ctx.fillStyle = '#f0ead8'; ctx.font = `600 ${Math.max(5, 1.3 * s)}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#f0ead8'; ctx.font = `600 ${Math.max(5, 1.3 * s)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       if (s > 2.5) ctx.fillText("EARL'S AQUARIUM", x + ww / 2, ground - h + 1.55 * s);
     } else if (w === 'kelp') {
       // a tall glass cylinder with kelp inside, ringed by steel bands

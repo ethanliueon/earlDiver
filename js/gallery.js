@@ -229,7 +229,7 @@ export class Gallery {
     const need = n ? 0.62 : 0.05, na = Math.PI * 0.75 + need * Math.PI * 1.5 + Math.sin(this.t * 1.7) * 0.01;
     ctx.strokeStyle = '#a3291c'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + Math.cos(na) * gr * 0.8, gy + Math.sin(na) * gr * 0.8); ctx.stroke();
     ctx.fillStyle = '#2a2a26'; ctx.beginPath(); ctx.arc(gx, gy, 2.5, 0, TAU); ctx.fill();
-    ctx.font = '8px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#3a3a34'; ctx.fillText('BAR', gx, gy + gr * 0.5);
+    ctx.font = '8px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#3a3a34'; ctx.fillText('BAR', gx, gy + gr * 0.5);
     ctx.fillStyle = '#3e4548'; ctx.fillRect(gx - 3, gy + gr + 2, 6, T + 6);
   }
   update(dt) {
@@ -299,14 +299,14 @@ export class Gallery {
         ctx.restore();
         if (k === this.open) { const el = this.over.querySelector('.gl-tag'); if (el) { el.style.left = `${clamp(a.sx + L * 0.35, 150, G.W - 150)}px`; el.style.top = `${a.sy + 30 > G.H - 220 ? a.sy - 230 : a.sy - L * 0.25 + 30}px`; } } // (4.5.0) the tag follows its fish
         if (d.famous && !dead) { ctx.fillStyle = '#f0d070'; ctx.font = '10px serif'; ctx.textAlign = 'center'; ctx.fillText('★', a.sx, a.sy - L * 0.32 - 4); }
-        if (d.name) { ctx.fillStyle = 'rgba(230,236,230,0.75)'; ctx.font = '12px "EB Garamond", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillText(d.name, a.sx, a.sy + L * 0.32 + 12); }
+        if (d.name) { ctx.fillStyle = 'rgba(230,236,230,0.75)'; ctx.font = '12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(d.name, a.sx, a.sy + L * 0.32 + 12); }
       });
       if (!press && light.tint) { ctx.fillStyle = light.tint; ctx.fillRect(r.x, r.y, r.w, r.h); }
       if (press) { const vg = ctx.createRadialGradient(r.x + r.w / 2, r.y + r.h * 0.45, r.w * 0.2, r.x + r.w / 2, r.y + r.h * 0.45, r.w * 0.9); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.38)'); ctx.fillStyle = vg; ctx.fillRect(r.x, r.y, r.w, r.h); }
       ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(r.x, r.y, r.w, 5);
       ctx.restore();
       if (press) this.pressFrame(ctx, r, shown.length); else this.glassFrame(ctx, r);
-      if (!shown.length) { ctx.fillStyle = 'rgba(220,226,222,0.35)'; ctx.font = '15px "EB Garamond", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillText(press ? 'Empty: for animals that live below 500 m' : 'Empty', r.x + r.w / 2, r.y + r.h * 0.45); }
+      if (!shown.length) { ctx.fillStyle = 'rgba(220,226,222,0.35)'; ctx.font = '15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(press ? 'Empty: for animals that live below 500 m' : 'Empty', r.x + r.w / 2, r.y + r.h * 0.45); }
       // the plate under each tank
       paintedText(ctx, press ? 'PRESSURE DISPLAY' : 'OPEN DISPLAY', r.x + r.w / 2, base + 40, 15, { col: 'rgba(214,220,212,1)', alpha: 0.75, align: 'center' });
     }

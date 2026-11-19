@@ -534,7 +534,7 @@ export class Renderer {
       // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words
       const tp = guide.prompt;
       if (tp && typeof tp === 'object' && cx > -60 && cx < this.W + 60 && cy > -60 && cy < this.H + 60) {
-        ctx.save(); ctx.font = '500 18px "EB Garamond", Georgia, serif';
+        ctx.save(); ctx.font = '500 18px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
         const iw = tp.mouse ? 24 : tp.key ? (tp.key.length > 1 ? 58 : 26) + 9 : 0, total = iw + ctx.measureText(tp.text).width;
         // on the side away from Earl, so it never sits on him; the other side if it would leave the screen
         const leftSide = S(g.earl.x) > cx; let x0 = leftSide ? cx - r - 14 - total : cx + r + 14;
@@ -558,7 +558,7 @@ export class Renderer {
         ctx.save(); ctx.translate(ax, ay); ctx.rotate(a2); ctx.scale(pulse, pulse);
         ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6; ctx.fillStyle = 'rgba(244,246,240,0.95)';
         ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(-12, -16); ctx.lineTo(-4, 0); ctx.lineTo(-12, 16); ctx.closePath(); ctx.fill(); ctx.restore();
-        ctx.save(); ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(236,230,210,0.85)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+        ctx.save(); ctx.font = '600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(236,230,210,0.85)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
         ctx.fillText(`${Math.round(d)} m`, ax - Math.cos(a2) * 34, ay - Math.sin(a2) * 34 + 4); ctx.restore();
       }
     }
@@ -1006,7 +1006,7 @@ export class Renderer {
     }
     // the trap buoys' labels: what is in each and how long its bait has left
     if (this.trapLabels && this.trapLabels.length) {
-      ctx.font = `${Math.max(11, ppm * 0.28).toFixed(0)}px IBM Plex Mono, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.font = `${Math.max(11, ppm * 0.28).toFixed(0)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
       for (const [lx, ly, txt] of this.trapLabels) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(txt, lx + 1, ly + 1); ctx.fillStyle = txt.endsWith('!') ? '#ffb070' : 'rgba(235,240,230,0.9)'; ctx.fillText(txt, lx, ly); }
     }
     ctx.restore();
@@ -2717,6 +2717,7 @@ export class Renderer {
     const motes = (x, y, ang, range, spread, col, a) => {
       if (this.lite) return;
       // the same deterministic particle field as the marine snow, but finer, lit only inside the cone
+      a *= 1 + 1.3 * clamp((cam.y - 250) / 900, 0, 1); // (4.28) in the dark the light catches more: the beam is what there is to see
       const rm = range / ppm, cell = 0.9;
       const wx = cam.x + (x - this.W / 2) / ppm, wy = cam.y + (y - this.H / 2) / ppm;
       const i0 = Math.floor((wx - rm) / cell), i1 = Math.ceil((wx + rm) / cell);
@@ -2754,6 +2755,22 @@ export class Renderer {
     };
     const e = g.earl;
     const lp = fx.lightPulse;
+    // (4.28) the dark is not empty: now and then, far off, a living light: a blue-green flash, a slow pulse, or a pair
+    // of lights that turn and go. Nothing is explained. Only below the sunlit water, never close to him.
+    {
+      const deep = clamp((cam.y - 260) / 700, 0, 1), dt0 = Math.min(0.1, t - (this.bioT || t)); this.bioT = t;
+      const bl = this.bioLights || (this.bioLights = []);
+      if (deep > 0 && !this.lite && Math.random() < dt0 * 0.35 * deep && bl.length < 4) {
+        const side = Math.random() < 0.5 ? -1 : 1, kind = Math.random() < 0.22 ? 'pair' : Math.random() < 0.5 ? 'pulse' : 'flash';
+        bl.push({ x: this.W / 2 + side * this.W * (0.22 + Math.random() * 0.26), y: this.H * (0.15 + Math.random() * 0.7), t0: t, life: kind === 'pair' ? 4.5 : kind === 'pulse' ? 3.2 : 1.1, kind, col: Math.random() < 0.8 ? '#5fd6c8' : '#7aa8ff', vx: (Math.random() - 0.5) * 18, r: 0.7 + Math.random() * 0.8 });
+      }
+      for (let i = bl.length - 1; i >= 0; i--) {
+        const L = bl[i], k = (t - L.t0) / L.life; if (k >= 1 || deep <= 0) { bl.splice(i, 1); continue; }
+        const env = Math.sin(Math.PI * k), x = L.x + L.vx * (t - L.t0), y = L.y;
+        if (L.kind === 'pair') { const a = env * 0.55 * deep; halo(x, y, ppm * 0.5, '#e8f0d8', a); halo(x + ppm * 0.55, y, ppm * 0.5, '#e8f0d8', a); glare(x, y, '#ffffff', a * 0.6); glare(x + ppm * 0.55, y, '#ffffff', a * 0.6); }
+        else { const a = (L.kind === 'pulse' ? env * (0.6 + 0.4 * Math.sin((t - L.t0) * 7)) : env * env) * 0.7 * deep; halo(x, y, ppm * 1.6 * L.r, L.col, a * 0.6); glare(x, y, L.col, a); }
+      }
+    }
     if (head && e.lampOn && haze > 0) {
       const ang = this.lampAngle(g, e, head);
       coneHaze(head.x, head.y, ang, 15 * ppm, 0.28, beamCol, 0.06 * TORCH * haze * lp);

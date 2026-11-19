@@ -672,8 +672,8 @@ export class TankRoom {
     ctx.beginPath(); ctx.roundRect(x, y, w, h, 7); ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
     ctx.strokeStyle = 'rgba(30,28,20,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, 7); ctx.stroke();
     ctx.fillStyle = '#26241a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = 'italic 17px "EB Garamond", Georgia, serif'; ctx.fillText(`Chamber ${n + 1}`, CW / 2, y + 24);
-    ctx.font = '500 26px "IBM Plex Mono", monospace'; ctx.fillText('$' + price.toLocaleString(), CW / 2, y + 56);
+    ctx.font = '500 17px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.fillText(`Chamber ${n + 1}`, CW / 2, y + 24);
+    ctx.font = '500 26px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.fillText('$' + price.toLocaleString(), CW / 2, y + 56);
     ctx.restore();
   }
   drawBracket(ctx) {
@@ -732,7 +732,7 @@ export class TankRoom {
     ctx.fillStyle = '#26272a'; ctx.beginPath(); ctx.ellipse(cx, 43, 47 + EX / 2, 8, 0, 0, TAU); ctx.fill();
     ctx.fillStyle = '#121214'; ctx.fillRect(32, 84, 86 + EX, 10);
     // its number, stencilled on the head
-    ctx.fillStyle = 'rgba(214,210,186,0.5)'; ctx.font = '600 11px "IBM Plex Mono", monospace'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(214,210,186,0.5)'; ctx.font = '600 11px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     ctx.fillText(`CH-${idx + 1}`, X1 + 2, 68);
     ctx.fillStyle = '#3d4c5c'; ctx.beginPath(); ctx.roundRect(2, 54, 30, 16, 4); ctx.fill();
     ctx.fillStyle = '#58b3d8'; ctx.fillRect(0, 57, 4, 10);
@@ -753,7 +753,7 @@ export class TankRoom {
     ctx.strokeStyle = short ? '#e89a20' : '#a0201a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + Math.cos(na) * (gr - 4), gy + Math.sin(na) * (gr - 4)); ctx.stroke();
     ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(gx, gy, 2, 0, TAU); ctx.fill();
     ctx.fillStyle = '#0a120c'; ctx.fillRect(cx - 2, 58, 34, 16);
-    ctx.fillStyle = short ? '#f0b040' : s ? '#9fe08a' : '#3d5a36'; ctx.font = '9px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = short ? '#f0b040' : s ? '#9fe08a' : '#3d5a36'; ctx.font = '9px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(s ? `${Math.round(s.press || 0)}m` : '---', cx + 15, 66);
   }
 
@@ -964,9 +964,9 @@ export class TankRoom {
     if (!mini) {
       const dw = cap * 0.62, dh = Math.max(12, (HB - HT) * 0.11), dy = HT + (HB - HT) * 0.6;
       ctx.fillStyle = '#0a120c'; ctx.fillRect(gx - dw / 2, dy, dw, dh);
-      ctx.fillStyle = short ? '#f0b040' : s0 ? '#9fe08a' : '#3d5a36'; ctx.font = `${Math.round(dh * 0.7)}px "IBM Plex Mono", monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = short ? '#f0b040' : s0 ? '#9fe08a' : '#3d5a36'; ctx.font = `${Math.round(dh * 0.7)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(s0 ? `${Math.round(s0.press || 0)}m` : '---', gx, dy + dh / 2 + 1);
-      ctx.fillStyle = 'rgba(214,210,186,0.5)'; ctx.font = `600 ${Math.round(Math.max(9, dh * 0.62))}px "IBM Plex Mono", monospace`;
+      ctx.fillStyle = 'rgba(214,210,186,0.5)'; ctx.font = `600 ${Math.round(Math.max(9, dh * 0.62))}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`;
       ctx.fillText(`${inn.length}/${inn.some(tooBig) ? 1 : 3}`, gx, HB - (HB - HT) * 0.1);
     }
     return fish;

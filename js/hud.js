@@ -34,7 +34,8 @@ import { toolIcon } from './tools_draw.js';
 import { bagSlots, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf, tankUsed, BIG, hasBigTank, bigIn } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
 
-const MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
+const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
+const HUDT = '"Barlow Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
 const GAME = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'; // (4.27) the HUD face
 
 export class Hud {
@@ -300,29 +301,37 @@ export class Hud {
     const onTank = e.inSub && g.sub.o2 <= 0; // an empty cabin: the gauge shows his own tank
     const o2 = e.inSub && !onTank ? g.sub.o2 / g.sub.o2Max : e.o2 / e.o2Max;
     if (!dying) {
+      // (4.28) no plate: the depth as bare figures, a dive computer's readout, and the air (in the sub, the hull) as
+      // thin lines under it. It cools and dims as he goes down: bright in the sunlit water, a faint cold grey in the
+      // dark, and it flickers when he is past what he (or the sub) is built for. Red only for danger.
       const warnD = e.inSub ? g.sub.y / g.sub.rated > 0.9 : e.y > (e.pressStart || 300);
-      const rowH = 30 * s, rows = e.inSub ? 2 : 1, wh = 50 * s, ph = 18 * s + wh + 8 * s + rows * rowH, py = pad - 8 * s;
-      steelPlate(ctx, cx0, py, CW, ph, s);
-      const wx = cx0 + 9 * s, wy = py + 9 * s, ww = CW - 18 * s;
-      ctx.fillStyle = '#0d100c'; ctx.beginPath(); ctx.roundRect(wx, wy, ww, wh, 3 * s); ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(wx + 2 * s, wy, ww - 4 * s, 3 * s);
-      ctx.strokeStyle = 'rgba(255,255,240,0.1)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(wx + 3 * s, wy + wh - 0.5); ctx.lineTo(wx + ww - 3 * s, wy + wh - 0.5); ctx.stroke();
-      ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right';
-      ctx.font = `500 ${42 * s}px ${MONO}`; ctx.fillStyle = warnD ? '#ff9a6a' : '#efe8d2';
-      ctx.fillText(String(Math.round(Math.max(0, e.y))), wx + ww - 34 * s, wy + wh - 9 * s);
-      ctx.font = `500 ${20 * s}px ${MONO}`; ctx.fillStyle = 'rgba(239,232,210,0.6)'; ctx.fillText('m', wx + ww - 11 * s, wy + wh - 9 * s);
+      const past = e.inSub ? g.sub.y > g.sub.rated : e.y > (e.pressStart || 300) * 1.6;
+      const dm = clamp((e.y - 120) / 1400, 0, 1), lit = 1 - dm * 0.42;
+      const fl = past && Math.random() < 0.06 ? 0.35 : 1;
+      const cr = Math.round(lerp(239, 170, dm)), cg = Math.round(lerp(232, 192, dm)), cb = Math.round(lerp(212, 204, dm));
+      const ink = (a) => warnD ? `rgba(255,140,110,${(a * fl).toFixed(3)})` : `rgba(${cr},${cg},${cb},${(a * lit * fl).toFixed(3)})`;
+      ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 1;
+      const base = pad + 44 * s;
+      ctx.font = `600 ${24 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText('m', rx0, base);
+      ctx.font = `600 ${58 * s}px ${HUDT}`; ctx.fillStyle = ink(1); ctx.fillText(String(Math.round(Math.max(0, e.y))), rx0 - 24 * s, base);
       ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
-      // a gauge row: the painted icon at the left, the tube filling the rest of the plate
-      const row = (name, y, frac, col, alpha = 1) => {
-        const isz = 36 * s, im = hudIcon(name), tx = wx + isz + 4 * s, th = 13 * s;
-        if (im) { ctx.save(); ctx.globalAlpha = alpha; ctx.drawImage(im, wx - 4 * s, y + rowH / 2 - isz / 2, isz, isz); ctx.restore(); }
-        tubeGauge(ctx, tx, y + rowH / 2 - th / 2, wx + ww - tx, th, frac, s, { col, alpha });
+      // a thin line with its painted icon at the left
+      const lineW = 196 * s, lx = rx0 - lineW, lh = 6 * s;
+      const line = (name, y, frac, col, pulse = 1) => {
+        const isz = 24 * s, im = hudIcon(name);
+        if (im) { ctx.save(); ctx.globalAlpha = 0.9 * lit; ctx.drawImage(im, lx - isz - 6 * s, y + lh / 2 - isz / 2, isz, isz); ctx.restore(); }
+        ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.beginPath(); ctx.roundRect(lx, y, lineW, lh, lh / 2); ctx.fill();
+        ctx.strokeStyle = `rgba(255,255,255,${(0.14 * lit).toFixed(3)})`; ctx.lineWidth = 1; ctx.stroke();
+        ctx.globalAlpha = lit * pulse; ctx.fillStyle = `rgb(${col.join(',')})`; ctx.shadowColor = `rgba(${col.join(',')},0.6)`; ctx.shadowBlur = 6 * s;
+        ctx.beginPath(); ctx.roundRect(lx + 1, y + 1, Math.max(lh - 2, (lineW - 2) * clamp(frac, 0, 1)), lh - 2, (lh - 2) / 2); ctx.fill(); ctx.restore();
       };
-      const oc = o2 > 0.25 ? [70, 160, 230] : o2 > 0.1 ? [230, 165, 55] : [225, 55, 45];
-      const ay = wy + wh + 8 * s;
-      row('air', ay, o2, oc, o2 < 0.1 || g.noAir ? 0.6 + 0.4 * Math.sin(g.time * 10) : 1);
-      if (e.inSub) { const hi = clamp(g.sub.hull, 0, 1); row('hull', ay + rowH, hi, hi < 0.4 ? [224, 80, 58] : hi < 0.75 ? [232, 176, 64] : [120, 196, 160]); }
-      yy = py + ph + 12 * s;
+      const oc = o2 > 0.25 ? [96, 172, 226] : o2 > 0.1 ? [232, 170, 70] : [226, 66, 52];
+      const ay = base + 16 * s;
+      line('air', ay, o2, oc, o2 < 0.1 || g.noAir ? 0.55 + 0.45 * Math.sin(g.time * 10) : 1);
+      if (e.inSub) { const hi = clamp(g.sub.hull, 0, 1); line('hull', ay + 22 * s, hi, hi < 0.4 ? [224, 80, 58] : hi < 0.75 ? [232, 176, 64] : [130, 196, 164]); }
+      yy = ay + (e.inSub ? 22 * s : 0) + lh + 18 * s;
+      if ((g.loadKg || 0) > 10 && !e.inSub) notes.push([`Heavy: ${Math.round(g.loadKg)} kg`, '#ff9a6a']);
+      const py = pad - 8 * s;
       // hidden: a small leaf at the plate's left
       if (g.concealed) {
         const icx = cx0 - 16 * s, icy = py + 22 * s;
@@ -485,36 +494,7 @@ export class Hud {
       ctx.fillText(`${Math.round(this.fps || 0)} fps · ${Math.round(Math.min(1, (this.quality ?? 1) * Math.min(window.devicePixelRatio || 1, 1.25)) * 100)} % sharp${this.lite ? ' · lite' : ''}`, pad, H - pad * 0.4);
     }
     }
-    // ---------- cash, top left: what is safe at the boat, and what is in the bag ----------
-    // (claude-polish) not while the inventory is open: it has its own cash counter, and its edge cut this one in half
-    const invOpen = (this._invEl || (this._invEl = document.getElementById('inventory'))) && !this._invEl.hidden;
-    if (g.profile && !dying && !invOpen) {
-      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ctx.font = `500 ${20 * s}px ${MONO}`;
-      // (olive) the cash as the depth: a plate of the locker's steel, the sum in a dark window, its name on tape
-      const ctxt = money(g.profile.cash);
-      ctx.font = `500 ${27 * s}px ${MONO}`; const vw = ctx.measureText(ctxt).width;
-      // (4.26) no name on it: the dollar sign says what it is; the sum large, as the depth
-      const cpx = pad - 10 * s, cpy = pad - 10 * s, cph = 52 * s, cpw = vw + 40 * s;
-      steelPlate(ctx, cpx, cpy, cpw, cph, s);
-      const wx2 = cpx + 9 * s, ww2 = cpw - 18 * s;
-      ctx.fillStyle = '#0d100c'; ctx.beginPath(); ctx.roundRect(wx2, cpy + 8 * s, ww2, cph - 16 * s, 3 * s); ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(wx2 + 2 * s, cpy + 8 * s, ww2 - 4 * s, 2 * s);
-      ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.font = `500 ${27 * s}px ${MONO}`; ctx.fillStyle = '#efe8d2';
-      ctx.fillText(ctxt, wx2 + ww2 / 2, cpy + cph / 2 + 1 * s); ctx.restore();
-      ctx.textBaseline = 'top';
-      let carried = 0;
-      for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k]) carried += GOODS[k].price * n;
-      if (carried > 0) {
-        ctx.font = `600 ${17 * s}px ${HUDF}`; ctx.fillStyle = 'rgba(230,224,204,0.85)'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 3 * s;
-        ctx.fillText(`+${money(carried, carried < 100)} to sell`, cpx + cpw + 12 * s, cpy + 6 * s); ctx.shadowBlur = 0;
-      }
-      if ((g.loadKg || 0) > 5 && !e.inSub) {
-        ctx.font = `600 ${17 * s}px ${HUDF}`; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 3 * s;
-        ctx.fillStyle = g.loadKg > 10 ? '#e8b040' : 'rgba(230,224,204,0.85)';
-        ctx.fillText(`${Math.round(g.loadKg)} kg${g.loadKg > 10 ? ', heavy' : ''}`, cpx + cpw + 12 * s, cpy + (carried > 0 ? 27 : 6) * s); ctx.shadowBlur = 0;
-      }
-    }
+    // (4.28) no cash on the HUD: it cannot change under water. It is in the inventory, the journal and the shops.
 
     if (!aboard) {
     // ---------- tools and specimens, bottom centre ----------
