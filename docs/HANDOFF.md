@@ -192,6 +192,33 @@ game from a save slot, version stamps on all 56 modules and both stylesheets.
 - Locker: maker's plate removed, vent centred on the right plate, count beside its heading. Tank room hint: two lines
   of text under the bag (the plate cut into the tank's frame). Tutorial card: words and OK side by side.
 
+## 5.3.0 (owner: a full mobile pass; landscape only; painted controls; fix the lag)
+
+- **Install and full screen.** manifest.webmanifest (display fullscreen, orientation landscape, icons in
+  assets/app, made from the key art), apple-touch-icon, no pinch zoom. An iPhone's browser cannot full-screen a page:
+  the Full screen button explains Add to Home Screen there; on Android the first touch in play asks for full screen
+  and locks landscape. Held upright on a phone, #rotate covers the game ("Turn your phone sideways"). No
+  pull-to-refresh, no text selection or long-press menus.
+- **Touch input (js/touch.js).** Every finger followed on its own: one on a HUD button sends that key's real keydown
+  (held while the finger stays, a short one a tap); one elsewhere in the left half grows a floating joystick there
+  (analogue, a dead zone, the base follows the thumb, pushed past the rim he sprints). Emulated mouse events are
+  suppressed. readMove (main.js) takes the stick first.
+- **Painted controls (tools/touch_kit.py -> assets/ui/touch).** Brass bezel, screws, rubber boot, up and pressed
+  (btn, btn-big); the joystick a recessed rubber well with direction ticks and a knurled knob. Buttons show pushed
+  in while their key is held (hud.held = keys). Drop shadows are cheap discs, not canvas shadow blur.
+- **Touch layout (Hud.drawActions), sized from the finger (CSS px).** Big action button bottom right; a near ring of
+  three: what F does here, the sub (C), the lamp (in the sub: leave, the tank room, autopilot); a top row beside the
+  clipboard: pause, the bag, then the rarer ones (lure, glow stick, pet; in the sub: trawl, spare air, sell,
+  lights). Pictures only, no words, no key letters; greyed in place when unavailable. The HUD's own scale on touch
+  is at least ~0.92 CSS px per unit; the radar is small, under the depth.
+- **On touch:** the camera aims itself at the nearest animal ahead; the tutorial's prompts drop their key / mouse.
+- **Panels on a short screen (max-height 520px):** the olive panels scaled to fit (zoom 100vh/430px), the shop
+  website scaled and its side nav laid along the top.
+- **Lag.** Phones render at 1x (not 1.25x) and start in lite mode; lite builds the light at a quarter resolution
+  (not half), drops the fine grain texture and the full-screen CSS colour grade for faint dread, and draws the HUD
+  every second frame.
+- Quests are the original list again (5.2.1).
+
 ## 5.1.1 (owner: actions in the arc, not tools; grey, don't move; no key letters on touch; desktop as before)
 
 - **Two layouts, chosen by the device (main.js sets `hud.touch`).** A touch screen (pointer coarse, no fine pointer)

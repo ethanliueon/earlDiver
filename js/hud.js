@@ -13,6 +13,8 @@ function steelPlate(ctx, x, y, w, h, s) {
 }
 // (4.27) the painted HUD icons (tools/icon_kit.py)
 const ICONS = {};
+const TIMG = {};
+function touchImg(n) { let im = TIMG[n]; if (!im) { im = new Image(); im.src = `assets/ui/touch/${n}.png`; TIMG[n] = im; } return im.complete && im.naturalWidth ? im : null; }
 function hudIcon(n) { let im = ICONS[n]; if (!im) { im = new Image(); im.src = `assets/ui/icons/${n}.png`; ICONS[n] = im; } return im.complete && im.naturalWidth ? im : null; }
 const parsePromptKey = (t) => parsePrompt(t).some((p) => p.key);
 import { TITLES, LEGEND_OF } from './species.js';
@@ -217,21 +219,25 @@ export class Hud {
   drawActions(g, W, H, s, dt, aboard) {
     const ctx = this.ctx, P = g.profile, e = g.earl, kx = window.innerWidth / this.c.width;
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
-    const pad = 26 * s, R = 48 * s, cx = W - pad - R, cy = H - pad - R;
+    // (5.3) sized from the finger, not the screen: CSS pixels (about 0.18 mm each on a phone). The main button about
+    // 2 cm across, the others about 1.4 cm, never below Apple's 44 pt
+    const u = this.c.width / window.innerWidth, pad = 18 * u, R = clamp(window.innerHeight * 0.14, 48, 64) * u, cx = W - pad - R, cy = H - pad - R;
+    const held = this.held || new Set();
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
     const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
-    const plate = (x, y, r, on) => {
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 2 * s;
-      const pg = ctx.createRadialGradient(x - r * 0.3, y - r * 0.4, r * 0.1, x, y, r);
-      pg.addColorStop(0, on ? 'rgba(96,106,82,0.97)' : 'rgba(60,64,54,0.9)'); pg.addColorStop(1, on ? 'rgba(38,42,32,0.97)' : 'rgba(30,32,28,0.9)');
-      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.restore();
-      ctx.strokeStyle = on ? 'rgba(236,230,210,0.35)' : 'rgba(12,14,10,0.9)'; ctx.lineWidth = 1.5 * s; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+    // (5.3) the painted panel buttons (tools/touch_kit.py): brass bezel, rubber boot; pushed in while held
+    const plate = (x, y, r, on, down, big) => {
+      const im = touchImg(big ? (down ? 'btn-big-down' : 'btn-big') : down ? 'btn-down' : 'btn');
+      // (a soft drop shadow, as a cheap translucent disc: no canvas shadow blur, which costs a frame's worth on a phone)
+      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.arc(x + 1 * u, y + 3.5 * u, r * 1.02, 0, TAU); ctx.fill();
+      if (im) ctx.drawImage(im, x - r, y - r, r * 2, r * 2); else { ctx.fillStyle = '#3a3e34'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
     };
     // the pictures on the buttons: plain shapes in the deck's cream paint
-    const glyph = (kind, x, y, r) => {
-      ctx.save(); ctx.translate(x, y); ctx.strokeStyle = ctx.fillStyle = '#ece6d2'; ctx.lineWidth = 2.2 * s; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const glyph = (kind, x, y, r) => { glyph1(kind, x, y + 1.2 * u, r, 'rgba(0,0,0,0.6)'); glyph1(kind, x, y, r, 'rgba(232,226,204,0.92)'); };
+    const glyph1 = (kind, x, y, r, col) => {
+      ctx.save(); ctx.translate(x, y); ctx.strokeStyle = ctx.fillStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       const k = r / 22;
-      ctx.scale(k, k); ctx.lineWidth = 2.2 * s / k;
+      ctx.scale(k, k); ctx.lineWidth = 2.6;
       const P0 = () => ctx.beginPath();
       if (kind === 'eye') { P0(); ctx.moveTo(-11, 0); ctx.quadraticCurveTo(0, -10, 11, 0); ctx.quadraticCurveTo(0, 10, -11, 0); ctx.stroke(); P0(); ctx.arc(0, 0, 3.6, 0, TAU); ctx.fill(); }
       else if (kind === 'hand') { P0(); ctx.moveTo(-8, 0); ctx.lineTo(6, 0); ctx.moveTo(1, -5); ctx.lineTo(7, 0); ctx.lineTo(1, 5); ctx.stroke(); P0(); ctx.moveTo(9, -9); ctx.lineTo(9, 9); ctx.stroke(); }
@@ -245,50 +251,62 @@ export class Hud {
       else if (kind === 'trawl') { P0(); ctx.moveTo(-10, -7); ctx.lineTo(10, -2); ctx.lineTo(10, 2); ctx.lineTo(-10, 7); ctx.closePath(); ctx.stroke(); P0(); ctx.moveTo(-4, -5); ctx.lineTo(-4, 5); ctx.moveTo(3, -3); ctx.lineTo(3, 3); ctx.stroke(); }
       else if (kind === 'air') { P0(); ctx.roundRect(-5, -8, 10, 18, 4); ctx.stroke(); P0(); ctx.rect(-2, -11, 4, 3); ctx.fill(); }
       else if (kind === 'sell') { P0(); ctx.arc(0, 0, 9, 0, TAU); ctx.stroke(); ctx.font = `700 13px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', 0, 1); }
+      else if (kind === 'pause') { P0(); ctx.rect(-6, -8, 4, 16); ctx.rect(2, -8, 4, 16); ctx.fill(); }
+      else if (kind === 'bag') { P0(); ctx.moveTo(-9, -3); ctx.lineTo(9, -3); ctx.lineTo(7, 10); ctx.lineTo(-7, 10); ctx.closePath(); ctx.stroke(); P0(); ctx.arc(0, -3, 5, Math.PI, 0); ctx.stroke(); P0(); ctx.moveTo(-3, 2); ctx.lineTo(3, 8); ctx.moveTo(3, 2); ctx.lineTo(-3, 8); ctx.stroke(); }
       else if (kind === 'auto') { P0(); ctx.arc(0, 0, 8, 0, TAU); ctx.stroke(); P0(); ctx.moveTo(0, -8); ctx.lineTo(0, 8); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.stroke(); }
       ctx.restore();
     };
     // ---- the actions, in fixed places ----
     const F = partOf('f'), ap = g.autopilot, sub = g.sub;
     const subLabel = e.inSub ? (g.homeRun ? 'Autopilot off' : 'Autopilot') : (ap && ap.state === 'coming' ? 'Stop sub' : 'Call sub');
+    // the near ring: the three things done most (always there, greyed when they can't be done); the top row: the
+    // rarer ones, small, beside pause and the bag
     const A = e.inSub ? [
-      { key: 'f', icon: 'leave', label: F ? short(F.label) : 'Leave sub', on: !!F, bar: true },
-      { key: 't', icon: 'tank', label: 'Tank room', on: true },
-      { key: 'c', icon: 'auto', label: subLabel, on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun },
-      { key: 'n', icon: 'trawl', label: g.subNet ? 'Close net' : 'Trawl', on: !!g.subNet || netKinds(g.items).length > 0 },
-      { key: 'r', icon: 'air', label: 'Spare air', on: (g.items.airTank || 0) > 0, n: g.items.airTank },
-      { key: 'u', icon: 'sell', label: 'Sell', on: !!partOf('u') },
-      { key: 'l', icon: 'lamp', label: 'Lights', on: true, lit: !!e.lampOn },
+      { key: 'f', icon: 'leave', on: !!F, bar: true },
+      { key: 't', icon: 'tank', on: true },
+      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun },
     ] : [
-      { key: 'f', icon: F && /observe/i.test(F.label) ? 'eye' : 'hand', label: F ? short(F.label) : 'Observe', on: !!F, bar: true },
-      { key: 'c', icon: 'sub', label: subLabel, on: !sub.imploded && !g.tutHidePrompts && !aboard },
-      { key: 'l', icon: 'lamp', label: 'Lamp', on: !aboard, lit: !!e.lampOn },
-      { key: 'q', icon: 'lure', label: 'Lure', on: (g.items.lure || 0) > 0 && !aboard, n: g.items.lure },
-      { key: 'e', icon: 'glow', label: 'Glow stick', on: (g.items.necklace || 0) > 0 && !aboard, n: g.items.necklace, lit: g.necklaceOn },
-      { key: 'h', icon: 'pet', label: P.pet ? (P.petStay ? 'Pet: follow' : 'Pet: stay') : 'Pet', on: !!P.pet && !aboard },
+      { key: 'f', icon: F && /observe/i.test(F.label) ? 'eye' : 'hand', on: !!F, bar: true },
+      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming' },
+      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn },
     ];
-    const r = 29 * s, rho0 = R + 50 * s, rho1 = rho0 + 70 * s, ANG = [-92, -136, -180, -98, -124, -150, -176]; // (5.2.1) larger, and no words under them
-    A.forEach((a, i) => {
-      const ang = ANG[i] * Math.PI / 180, rho = i < 3 ? rho0 : rho1, x = cx + Math.cos(ang) * rho, y = cy + Math.sin(ang) * rho;
-      ctx.save(); ctx.globalAlpha = a.on ? 1 : 0.38;
-      plate(x, y, r, a.on);
-      if (a.lit) { ctx.strokeStyle = 'rgba(236,230,210,0.95)'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x, y, r + 3 * s, 0, TAU); ctx.stroke(); }
-      glyph(a.icon, x, y - 2 * s, r * 0.62);
-      if (a.n > 1) { ctx.font = `700 ${11 * s}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
-      if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.arc(x, y, r - 3 * s, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
+    const TOP = [{ key: 'escape', icon: 'pause', on: true }, { key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
+      { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet },
+      { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank },
+      { key: 'u', icon: 'sell', on: !!partOf('u') },
+      { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
+    ] : aboard ? [] : [
+      { key: 'q', icon: 'lure', on: (g.items.lure || 0) > 0, n: g.items.lure },
+      { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn },
+      { key: 'h', icon: 'pet', on: !!P.pet, lit: P.pet && P.petStay },
+    ]);
+    const btn = (a, x, y, r) => {
+      const down = held.has(a.key);
+      ctx.save(); ctx.globalAlpha = a.on ? 1 : 0.4;
+      plate(x, y, r, a.on, down);
+      if (a.lit) { ctx.strokeStyle = 'rgba(255,214,140,0.9)'; ctx.lineWidth = 2.5 * u; ctx.shadowColor = 'rgba(255,200,120,0.8)'; ctx.shadowBlur = 8 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.66, 0, TAU); ctx.stroke(); ctx.shadowBlur = 0; }
+      glyph(a.icon, x, y + (down ? 1.5 * u : 0), r * 0.4);
+      if (a.n > 1) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
+      if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
       ctx.restore();
       if (a.on) hot(x - r, y - r, r * 2, r * 2, a.key);
-    });
+    };
+    const r = clamp(window.innerHeight * 0.09, 30, 40) * u, gap = 10 * u, rho0 = R + r + gap;
+    A.forEach((a, i) => { const ang = [-115, -158, -200][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
+    const r2 = 24 * u; TOP.forEach((a, i) => btn(a, 104 * u + i * (r2 * 2 + 10 * u) + r2, 20 * u + r2, r2));
+    const rho1 = rho0;
     if (aboard) return;
     // ---- the big button: the main action ----
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     const armT = e.inSub && owns(P, 'arm');
     const can = e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
-    ctx.save(); ctx.globalAlpha = (e.inSub && !armT) || !sel && !e.inSub ? 0.38 : can ? 1 : 0.62;
-    plate(cx, cy, R, can);
-    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R * 0.8, 0, TAU); ctx.clip();
+    ctx.save(); ctx.globalAlpha = (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7;
+    const bdown = held.has(' ');
+    plate(cx, cy, R, can, bdown, true);
+    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(239,232,210,${(0.3 + 0.35 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.7, 0, TAU); ctx.stroke(); }
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R * 0.62, 0, TAU); ctx.clip(); if (bdown) ctx.translate(0, 2 * u);
     if (e.inSub) {
-      ctx.strokeStyle = '#ece6d2'; ctx.lineWidth = 4 * s; ctx.lineCap = 'round'; const o = g.armGame ? 0.15 : 0.5;
+      ctx.strokeStyle = '#ece6d2'; ctx.lineWidth = 4 * u; ctx.lineCap = 'round'; const o = g.armGame ? 0.15 : 0.5;
       ctx.beginPath(); ctx.moveTo(cx - R * 0.45, cy + R * 0.2); ctx.lineTo(cx - R * 0.05, cy); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(cx - R * 0.05, cy); ctx.quadraticCurveTo(cx + R * 0.3, cy - R * o, cx + R * 0.45, cy - R * o * 0.3); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(cx - R * 0.05, cy); ctx.quadraticCurveTo(cx + R * 0.3, cy + R * o, cx + R * 0.45, cy + R * o * 0.3); ctx.stroke();
@@ -296,15 +314,15 @@ export class Hud {
       const G = (k) => gear(P, k), tier = sel === 'net' ? G('net').look : sel === 'cam' ? G('cam').look : ['pot', 'fish', 'steel', 'cage'].findIndex((k) => (P.traps || {})[k] > 0);
       this.icons = this.icons || new Map(); const k2 = sel + JSON.stringify(tier);
       if (!this.icons.has(k2)) this.icons.set(k2, toolIcon(sel, tier, 120, 60));
-      const im = this.icons.get(k2), w = R * (sel === 'cam' ? 1.1 : 1.5), h = w * im.height / im.width; ctx.drawImage(im, cx - w / 2, cy - h / 2, w, h);
+      const im = this.icons.get(k2), w = R * (sel === 'cam' ? 0.85 : 1.15), h = w * im.height / im.width; ctx.drawImage(im, cx - w / 2, cy - h / 2, w, h);
     }
     ctx.restore();
     const prog = g.photo ? g.photo.t / g.photo.dur : g.capture && g.capture.dur ? g.capture.t / g.capture.dur : 0;
-    if (prog > 0) { ctx.strokeStyle = 'rgba(244,246,240,0.9)'; ctx.lineWidth = 3 * s; ctx.beginPath(); ctx.arc(cx, cy, R - 4 * s, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(prog, 0, 1)); ctx.stroke(); }
+    if (prog > 0) { ctx.strokeStyle = 'rgba(244,246,240,0.9)'; ctx.lineWidth = 4 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.66, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(prog, 0, 1)); ctx.stroke(); }
     ctx.restore();
     // what it would go for: its name above the button, in its rarity's colour
     const nm = this.capWant && this.capWant[0] ? parsePrompt(this.capWant[0]).map((p) => p.label).join(' ') : '';
-    if (nm && can) { ctx.save(); ctx.font = `600 ${15 * s}px ${HUDF}`; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillStyle = this.capWant[1] || '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.fillText(nm, cx + R, cy - rho1 - r - 22 * s); ctx.restore(); }
+    if (nm && can) { ctx.save(); ctx.font = `600 ${16 * u}px ${HUDF}`; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillStyle = this.capWant[1] || '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.textBaseline = 'middle'; ctx.fillText(nm, cx - rho1 - r - 14 * u, cy + R * 0.3); ctx.restore(); }
     if (!(e.inSub && !armT)) hot(cx - R, cy - R, R * 2, R * 2, ' ');
   }
 
@@ -371,7 +389,7 @@ export class Hud {
     try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }
   }
   drawIn(g, dt, W, H) {
-    const ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = []; const touch = !!this.touch;
+    const touch = !!this.touch, ctx = this.ctx, s = touch ? Math.max(this.s, (this.c.width / window.innerWidth) * 0.92) : this.s; this.hudNotes = []; this.hots = []; // (5.3) on a phone, sized from the finger
     if (g.mode === 'menu') return;
     const e = g.earl, fx = g.fx;
     const dying = g.mode === 'dying';
@@ -467,7 +485,7 @@ export class Hud {
     // the seafloor sonar (a fitted extra): under the instrument, the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy + 4 * s, s); yy += 88 * s; }
     // (5.1.1) on a touch screen the radar sits under the instrument; the bottom right is the actions'
-    const rrT = 50 * s, rcyT = yy + 6 * s + rrT;
+    const rrT = 30 * s, rcyT = yy + 4 * s + rrT;
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {

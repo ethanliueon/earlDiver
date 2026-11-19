@@ -182,7 +182,12 @@ export class UI {
     $('fullscreen').addEventListener('click', () => {
       const d = document;
       if (d.fullscreenElement) d.exitFullscreen && d.exitFullscreen();
-      else (d.documentElement.requestFullscreen ? d.documentElement.requestFullscreen() : Promise.reject()).catch(() => { $('fullscreen').textContent = 'Full screen: press F11'; });
+      else (d.documentElement.requestFullscreen ? d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})) : Promise.reject()).catch(() => {
+        // (5.3) an iPhone's browser has no full screen for a page: the way is Add to Home Screen
+        const ios = /iPhone|iPod/.test(navigator.userAgent);
+        if (ios) this.confirm('Full screen on iPhone', 'Tap the Share button, then Add to Home Screen. Opened from there, Earl plays full screen and sideways, with no browser bars.', 'OK', 'Close', () => {});
+        else $('fullscreen').textContent = 'Full screen: press F11';
+      });
     });
     document.addEventListener('fullscreenchange', () => { $('fullscreen').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; });
     $('restart').addEventListener('click', () => this.confirm('Start a new game?', 'A new diver, from nothing: no cash, no gear, an empty journal. This save is replaced.', 'Start over', 'Keep playing', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); }));

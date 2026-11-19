@@ -651,3 +651,43 @@ html body #title .t-select .slot.tag:not(.last) .tg-go { background: rgba(30, 32
 html body #title .t-select .slot.tag.empty:not(#_a):not(#_b):not(#_c) { background: rgba(14, 20, 18, 0.55) !important; box-shadow: inset 0 0 0 2px rgba(239, 232, 210, 0.28), 0 10px 24px rgba(0, 0, 0, 0.35) !important; opacity: 1; }
 html body #title .t-select .slot.tag.empty .tg-n:not(#_a), html body #title .t-select .slot.tag.empty .info b:not(#_a):not(#_b):not(#_c), html body #title .t-select .tg-plus { color: rgba(239, 232, 210, 0.85) !important; text-shadow: none !important; }
 html body #title .t-select .slot.tag.empty:hover { box-shadow: inset 0 0 0 2px rgba(239, 232, 210, 0.7), 0 10px 24px rgba(0, 0, 0, 0.35) !important; }
+
+/* ---------- 5.3: phones. Landscape only (upright, a "turn your phone" card); no zooming, no pull-to-refresh,
+   no text selection or long-press menus while playing; the page fills the visible screen (dvh) ---------- */
+html, body { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; height: 100dvh; }
+#game, #hud, #stick { touch-action: none; }
+html body textarea, html body input { -webkit-user-select: text; user-select: text; }
+#rotate { display: none; }
+@media (orientation: portrait) and (pointer: coarse) {
+  #rotate { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; background: #050b0e; color: #efe8d2; }
+  #rotate p { margin: 0; font: 700 20px "Barlow Condensed", sans-serif; letter-spacing: 0.18em; text-transform: uppercase; }
+  #rotate .rt-phone { width: 54px; height: 92px; border: 4px solid #efe8d2; border-radius: 10px; position: relative; animation: rt-turn 2.4s ease-in-out infinite; }
+  #rotate .rt-phone i { position: absolute; left: 50%; bottom: 6px; width: 14px; height: 3px; margin-left: -7px; border-radius: 2px; background: #efe8d2; }
+}
+@keyframes rt-turn { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+/* the focus ring only for the keyboard, and round like the button it is on */
+html body button:focus:not(:focus-visible) { outline: none !important; box-shadow: none; }
+html body #confirm button:focus-visible { outline: 2px solid rgba(239, 232, 210, 0.85) !important; outline-offset: 3px; border-radius: 6px; }
+@media (pointer: coarse) { html body button:focus-visible { outline: none !important; } }
+
+/* ---------- 5.3: the joystick: a ring of dark rubber in a brass bezel where the thumb lands, a knurled knob ---------- */
+#stick { position: fixed; inset: 0; pointer-events: none; z-index: 30; opacity: 0; transition: opacity 0.18s; }
+#stick.on { opacity: 1; transition: opacity 0.05s; }
+#stick .st-base, #stick .st-knob { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }
+#stick .st-base { width: calc(var(--r, 60px) * 2); height: calc(var(--r, 60px) * 2); margin: calc(var(--r, 60px) * -1) 0 0 calc(var(--r, 60px) * -1);
+  background: url(../assets/ui/touch/stick-base.png) center / 100% 100% no-repeat; }
+#stick .st-knob { width: calc(var(--r, 60px) * 1.05); height: calc(var(--r, 60px) * 1.05); margin: calc(var(--r, 60px) * -0.525) 0 0 calc(var(--r, 60px) * -0.525);
+  background: url(../assets/ui/touch/stick-knob.png) center / 100% 100% no-repeat; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55)); }
+#stick.sprint .st-base { filter: drop-shadow(0 0 10px rgba(239, 232, 210, 0.45)); }
+/* (5.3) on a short screen (a phone held sideways) the panels are laid out as on a laptop and scaled to fit, so
+   nothing is cut off and nothing has to be redesigned twice */
+@media (max-height: 520px) {
+  html body :is(#workshop .shop-main, #cave .shop-main, #quests .qs-panel, #settings .set-panel, #pause, #confirm .cf-plate, #trapset .shop-main) { zoom: calc(100vh / 430px) !important; max-height: calc(100vh / (100vh / 430px) - 16px) !important; }
+  html body #catalog .cat-bezel { zoom: calc(100vh / 470px) !important; width: calc((100vw - 16px) / (100vh / 470px)) !important; height: calc((100vh - 16px) / (100vh / 470px)) !important; max-width: none !important; max-height: none !important; }
+}
+@media (max-height: 520px) {
+  html body #catalog .cat-wrap { display: flex !important; flex-direction: column !important; min-height: 0; }
+  html body #catalog .cat-nav { position: static !important; display: flex !important; flex-direction: row !important; flex: 0 0 auto; gap: 14px; overflow-x: auto; white-space: nowrap; padding: 8px 16px !important; width: auto !important; height: auto !important; border-right: 0 !important; border-bottom: 1px solid rgba(0, 0, 0, 0.12); scrollbar-width: none; }
+  html body #catalog .cat-nav * { white-space: nowrap; }
+  html body #catalog .cat-main { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+}

@@ -126,11 +126,14 @@ export class Renderer {
   // It is lowered automatically when frames run slow and raised again when there is headroom.
   resize() {
     if (this.quality === undefined) this.quality = 1;
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.25) * this.quality; // at most 1.25x the screen: sharp, without drawing 1.5x the pixels
+    // at most 1.25x the screen: sharp, without drawing 1.5x the pixels; (5.3) on a phone or tablet 1x: its screen is
+    // small and dense, and the fill it saves is most of a frame
+    const coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const dpr = Math.min(window.devicePixelRatio || 1, coarse ? 1 : 1.25) * this.quality;
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
     if (this.c.width !== w || this.c.height !== h) {
       this.c.width = w; this.c.height = h;
-      this.lc.width = Math.ceil(w / 2); this.lc.height = Math.ceil(h / 2); // light at half resolution, smoothed when stretched
+      // (the light's size is set where it is built: half, or a quarter in lite mode)
       this.gc.width = Math.ceil(w / 2); this.gc.height = Math.ceil(h / 2);
     }
   }
@@ -319,7 +322,7 @@ export class Renderer {
     this.drawKelpBackdrop(g, ppm, t);
     // ================= TERRAIN & STRUCTURES =================
     for (const w of g.world.wrecks) if (Math.abs(w.x - cam.x) < cam.w / 2 + w.len && visible(w.x, w.y, w.len * 0.6)) this.drawWreck(ctx, w, S, Sy, ppm);
-    this.drawKelp(g, S, Sy, ppm, 0, x0, x1);
+    if (!(this.skip && this.skip.kelp)) this.drawKelp(g, S, Sy, ppm, 0, x0, x1);
     for (const v of g.world.vents) if (inView(v.x, v.y, 30)) this.drawVent(ctx, v, S, Sy, ppm, t);
     this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
@@ -571,7 +574,7 @@ export class Renderer {
       ctx.restore();
       // (4.3.2) a prompt beside the fish, only where the game's own prompts don't already say it (swinging the net,
       // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words
-      const tp = guide.prompt;
+      const tp0 = guide.prompt, tp = tp0 && typeof tp0 === 'object' && this.touch ? { text: tp0.text, col: tp0.col } : tp0; // (5.3) on a phone no key or mouse: the buttons are the way
       if (tp && typeof tp === 'object' && cx > -60 && cx < this.W + 60 && cy > -60 && cy < this.H + 60) {
         ctx.save(); ctx.font = '500 18px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
         const iw = tp.mouse ? 24 : tp.key ? (tp.key.length > 1 ? 58 : 26) + 9 : 0, total = iw + ctx.measureText(tp.text).width;
@@ -986,7 +989,7 @@ export class Renderer {
       head = { x: S(e.x) + (h.headX * ca - h.headY * sa) * e.facing, y: Sy(e.y) + (h.headX * sa + h.headY * ca), beamA: h.beamA };
     }
     // ---- front kelp ----
-    this.drawKelp(g, S, Sy, ppm, 1, x0, x1);
+    if (!(this.skip && this.skip.kelp)) this.drawKelp(g, S, Sy, ppm, 1, x0, x1);
     // ---- bubbles ----
     ctx.strokeStyle = 'rgba(220,240,255,0.55)'; ctx.lineWidth = Math.max(0.8, ppm * 0.02);
     // (4.5.0) every bubble in one path and one stroke (a stroke each was what made a burst of them slow)
@@ -1036,10 +1039,10 @@ export class Renderer {
       for (const p of glowPts) if (p[0] > -80 && p[0] < W0 + 80 && p[1] > -80 && p[1] < H0 + 80) glowPts[n++] = p;
       glowPts.length = n;
       if (n > 90) { const keep = [], small = []; for (const p of glowPts) (p[3] > ppm * 0.9 ? keep : small).push(p); const step = small.length / Math.max(1, 90 - keep.length); glowPts.length = 0; glowPts.push(...keep); for (let i = 0; i < small.length && glowPts.length < 90; i += Math.max(1, step)) glowPts.push(small[Math.floor(i)]); } }
-    this.buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY);
+    if (!(this.skip && this.skip.light)) { this.buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY);
     ctx.globalCompositeOperation = 'multiply';
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(this.lc, 0, 0, W, H);
+    ctx.drawImage(this.lc, 0, 0, W, H); }
     ctx.imageSmoothingQuality = 'low'; // (only the light needs the careful scaling; everything else uses the fast kind)
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
@@ -1720,7 +1723,7 @@ export class Renderer {
     ctx.save(); ctx.clip();
     // rock and sediment: large mottling and a fine grain, pinned to the world so they never swim
     this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, camY), 'soft-light', S(0), Sy(0), area);
-    if (ppm > 14) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61), area);
+    if (ppm > 14 && !this.lite) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61), area);
     // a pale skin of settled silt just under the surface line, darkening below
     {
       ctx.beginPath();
@@ -2511,6 +2514,9 @@ export class Renderer {
   }
 
   buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY) {
+    // (5.3) the light is soft by nature: half the screen's resolution, and a quarter in lite mode (it is stretched
+    // with smoothing over the picture, so it reads the same, at a quarter of the fill)
+    { const div = this.lite ? 4 : 2, lw = Math.ceil(this.W / div), lh = Math.ceil(this.H / div); if (this.lc.width !== lw || this.lc.height !== lh) { this.lc.width = lw; this.lc.height = lh; } }
     const l = this.lctx, LW = this.lc.width, LH = this.lc.height;
     const k = LW / this.W;
     const cam = this.cam, fx = g.fx;

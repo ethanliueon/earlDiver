@@ -38,6 +38,7 @@ import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
 import { Hud, titled } from './hud.js';
+import { Touch } from './touch.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
 import { Beacon } from './alarm.js';
@@ -50,7 +51,7 @@ const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
 // (5.1.1) a touch screen (a phone, a tablet) gets the action buttons; a computer keeps the prompts and keys it had.
 // ?touch in the address forces the touch layout (for trying it on a computer)
-{ const q = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null; const set = () => { hud.touch = /[?&]touch\b/.test(location.search) || !!(q && q.matches && !(window.matchMedia('(pointer: fine)').matches)); }; set(); q && q.addEventListener && q.addEventListener('change', set); }
+{ const q = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null; const set = () => { renderer.touch = hud.touch = /[?&]touch\b/.test(location.search) || !!(q && q.matches && !(window.matchMedia('(pointer: fine)').matches)); }; set(); q && q.addEventListener && q.addEventListener('change', set); }
 // (3.4.0) everything the game says goes to one message line, top centre, over the sea and every room and panel
 const messages = new Messages();
 hud.onShow = (text, kind) => messages.show(text, kind);
@@ -74,6 +75,8 @@ const audio = new Audio(); window.__earlAudio = audio; // (for testing)
 const beacon = new Beacon(audio); beacon.say = (text, kind) => messages.show(text, kind); // (4.0.2) the alarms on the message line
 
 const keys = new Set();
+hud.held = keys; // (5.3) the keys held, so a touch button shows pushed in
+if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) renderer.lite = true; // (5.3) a phone starts in lite mode (it comes off by itself if there is room)
 const PRY = new Set(['clam', 'mussel']);
 const PRY_TIME = 1.5;
 // how long each hold-F job takes, and how much calm a good deed gives
@@ -1283,6 +1286,13 @@ window.addEventListener('mouseup', (ev) => {
     if (k === 'c') { if (performance.now() - cDown < 600) pressed.add('c-tap'); cHeld = 0; }
   }
 });
+// (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch. The first touch
+// in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
+const touch = new Touch(hudCanvas, { buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play') });
+hudCanvas.addEventListener('touchend', () => {
+  const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
+  d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
+}, { once: false, passive: true });
 // (5.1) the HUD button under the pointer, if any
 function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return null; }
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
@@ -1308,6 +1318,7 @@ function readMove() {
   if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
   if (holdingWork()) return { x: 0, y: 0, sprint: false }; // (4.12.3) a long hold (welding, cutting a net free, prying, planting, fitting a tank): he stays put
   if (g.homeRun) return { x: 0, y: 0, sprint: false }; // on autopilot the keys and the mouse leave the helm alone (C hands it back)
+  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: touch.vec.sprint }; // (5.3) the joystick
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
   const now = performance.now();
@@ -2207,6 +2218,12 @@ function update(dt) {
       const why = canSetHere(g);
       g.capPrompt = why ? `Traps: ${why.charAt(0).toLowerCase() + why.slice(1)}` : 'Space  Set a trap here';
     } else if (!e.inSub && tool.kind === 'cam') {
+      // (5.3) on a touch screen there is no pointer to aim with: the camera turns to the nearest animal ahead
+      if (hud.touch && !g.photo) {
+        const rng = gear(profile, 'cam').range + 1; let best = null, bd = 1e9;
+        for (const c of g.fauna.list) { if (c.dead || c.companion) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > rng || dx * (e.facing || 1) < -0.5) continue; if (d < bd) { bd = d; best = c; } }
+        g.aim = best ? Math.atan2(best.y - e.y, best.x - e.x) : null;
+      }
       // (5.0) while the shutter is open: hold still; otherwise what is in frame, and the film left
       const film = `${g.items.film || 0}/${gear(profile, 'cam').shots}`;
       if (g.photo) g.capPrompt = 'Hold still';
@@ -2591,7 +2608,7 @@ function updateBubbles(dt) {
 // ---------------- loop ----------------
 let last = performance.now();
 let filterKey = '';
-let frameEma = 1 / 60, qualityT = 0;
+let frameEma = 1 / 60, qualityT = 0, hudDt = 0, hudFrame = 0;
 function adaptQuality(realDt) {
   frameEma = lerp(frameEma, realDt, 0.05);
   hud.fps = 1 / Math.max(1e-3, frameEma); hud.quality = renderer.quality; hud.lite = renderer.lite;
@@ -2638,7 +2655,11 @@ function frame(now) {
     ui.setLoading(0.6 + 0.4 * Math.min(1, (performance.now() - (g.warmFrom || 0)) / 1500), 'Charting the sea');
     if (done || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.setLoading(1, 'Charting the sea'); setTimeout(() => ui.showLoading(false), 250); }
   } else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
-  weightedCursor(Math.min(0.05, dt)); hud.draw(g, dt);
+  weightedCursor(Math.min(0.05, dt));
+  // (5.3) in lite mode the HUD (its text, its shadows) is drawn every second frame: it changes slowly, and a
+  // phone's fill is better spent on the sea
+  hudDt += dt; hudFrame++;
+  if (!renderer.lite || hudFrame % 2 === 0 || g.mode !== 'play') { hud.draw(g, hudDt); hudDt = 0; }
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
   airOver(g);
@@ -2651,7 +2672,7 @@ function frame(now) {
   const blurAmp = Math.max(fx.disorient * 1.2, fx.pressure * 2.4);
   const blurPx = Math.round(blurAmp * Math.pow(Math.max(0, Math.sin(g.time * 1.3)), 3) * 4) / 4;
   const f = `saturate(${(1 - fx.dread * 0.65 - fx.pressure * 0.25 - (g.injury >= 4 ? 0.45 : g.injury >= 3 ? 0.15 : 0)).toFixed(2)}) contrast(${(1 + fx.dread * 0.18).toFixed(2)})${blurPx > 0.25 ? ` blur(${blurPx.toFixed(1)}px)` : ''}`;
-  const f2 = fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 && g.injury < 3 ? 'none' : f;
+  const f2 = (fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 && g.injury < 3) || (renderer.lite && fx.dread < 0.5 && blurPx <= 0.25) ? 'none' : f; // (5.3) lite: no full-screen filter for a faint grade
   if (f2 !== filterKey) { canvas.style.filter = f2; filterKey = f2; }
   pressed.clear();
   requestAnimationFrame(frame);
