@@ -1014,8 +1014,8 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   // (4.3.5) the tutorial: the door lit up, a brass glow round it pulsing, so it is plain where the cabin is
   if (opts.tutDoor) {
     const p = 0.5 + 0.5 * Math.sin(t * 4);
-    ctx.save(); ctx.shadowColor = 'rgba(230,222,196,0.95)'; ctx.shadowBlur = (6 + 8 * p) * u * 0.6;
-    ctx.fillStyle = `rgba(230,222,196,${(0.22 + 0.18 * p).toFixed(3)})`; ctx.fillRect(17 * u, -24 * u, 4 * u, 13 * u);
+    ctx.save(); ctx.shadowColor = 'rgba(244,246,240,0.95)'; ctx.shadowBlur = (6 + 8 * p) * u * 0.6;
+    ctx.fillStyle = `rgba(244,246,240,${(0.22 + 0.18 * p).toFixed(3)})`; ctx.fillRect(17 * u, -24 * u, 4 * u, 13 * u);
     ctx.strokeStyle = `rgba(240,216,150,${(0.8 + 0.2 * p).toFixed(3)})`; ctx.lineWidth = 1.1 * u; ctx.strokeRect(16.4 * u, -24.6 * u, 5.2 * u, 14.2 * u);
     // a brass arrow beside it, bobbing toward the door (it turns with her, so it always points at the door)
     const ax = 24.5 * u + Math.sin(t * 5) * 0.9 * u, ay = -17.5 * u;

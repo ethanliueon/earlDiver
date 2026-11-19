@@ -300,6 +300,9 @@ export class UI {
     if (!this.qWired) {
       this.qWired = true;
       b.addEventListener('click', () => this.toggleQuests());
+      // (4.27) the journal and the chart: under the quest board, at the left, as pictures
+      $('hud-journal').addEventListener('click', () => this.toggleJournal());
+      $('hud-chart').addEventListener('click', () => { this.closeAll(); this.chart.toggle(true); });
       $('quests').querySelector('.qs-close').addEventListener('click', () => this.toggleQuests(false));
       $('quests').addEventListener('click', (ev) => {
         if (ev.target === $('quests')) { this.toggleQuests(false); return; }

@@ -185,9 +185,9 @@ def locker_door(W=1240, H=820, split=605):
         d.line([(3 * K, kyk - 30 * K), (3 * K, kyk + 30 * K)], fill=(150, 154, 140, 120), width=K)
         for by in (-22, 0, 22): rivet(img, 10 * K, kyk + by * K, 2.6 * K, R, 0.3)
     # the vent louvre high on the right plate: slats, each lit on its top, dark gap under, dust caught in them
-    vx, vy, vw = w - 190 * K, 38 * K, 120 * K
-    d.rounded_rectangle([vx - 6 * K, vy - 6 * K, vx + vw + 6 * K, vy + 46 * K], radius=3 * K, fill=(40, 46, 34, 255), outline=(12, 14, 10, 255), width=K)
-    for i in range(7):
+    vx, vy, vw = int((split + 1240) / 2 * K) - 60 * K, 30 * K, 120 * K  # (4.27) centred on the right plate, clear of the locker's heading
+    d.rounded_rectangle([vx - 6 * K, vy - 6 * K, vx + vw + 6 * K, vy + 34 * K], radius=3 * K, fill=(40, 46, 34, 255), outline=(12, 14, 10, 255), width=K)
+    for i in range(5):
         sy = vy + i * 6 * K
         d.rectangle([vx, sy, vx + vw, sy + 3 * K], fill=(92, 104, 78, 255)); d.line([(vx, sy), (vx + vw, sy)], fill=(170, 180, 150, 140), width=K)
         d.rectangle([vx, sy + 3 * K, vx + vw, sy + 6 * K], fill=(10, 12, 8, 255))
@@ -212,13 +212,7 @@ def locker_door(W=1240, H=820, split=605):
     d = ImageDraw.Draw(img, 'RGBA')
     d.line([(0, ky0), (w, ky0)], fill=(0, 0, 0, 200), width=2 * K); d.line([(0, ky0 + 2 * K), (w, ky0 + 2 * K)], fill=(220, 220, 210, 60), width=K)
     for x in range(20 * K, w, 120 * K): rivet(img, x, ky0 + 23 * K, 3.4 * K, R, 0.6)
-    # the maker's plate: a small aluminium plate, riveted, engraved
-    mx, my = w - 370 * K, h - 136 * K
-    d.rounded_rectangle([mx, my, mx + 142 * K, my + 26 * K], radius=2 * K, fill=(176, 172, 158, 255), outline=(60, 58, 50, 255), width=K)
-    f = ImageFont.truetype(FONT_MONO, 9 * K)
-    d.text((mx + 12 * K, my + 3 * K), 'DIVE LOCKER  No. 07', font=f, fill=(48, 46, 40, 255))
-    d.text((mx + 12 * K, my + 13 * K), 'BAYSIDE MARINE  1974', font=ImageFont.truetype(FONT_MONO, 7 * K), fill=(70, 68, 60, 255))
-    rivet(img, mx + 5 * K, my + 13 * K, 2 * K, R, 0); rivet(img, mx + 137 * K, my + 13 * K, 2 * K, R, 0)
+    # (4.27) no maker's plate: it drew the eye to the middle of the locker for nothing
     # the stencilled 07, sprayed and weathered, low on the right plate
     st = Image.new('L', (w, h), 0); sd = ImageDraw.Draw(st)
     sd.text((w - 230 * K, h - 260 * K), '07', font=ImageFont.truetype(FONT_SANS, 170 * K), fill=255)

@@ -176,3 +176,18 @@ game from a save slot, version stamps on all 56 modules and both stylesheets.
 - Inventory scales up past 1240x820 (to 1.6x). T always opens on the tank (not the chambers).
 - Tiny animals (< 12 px) are one flat silhouette each, batched by species (no shimmer, cheaper).
 - Owner: the first quest board stays as it is (a player can use the sub or wait). claude/olive-studio may stay.
+
+## 4.27.0 (owner's notes on 4.26)
+- HUD layout: top right is one instrument (depth in a dark window, air and in the sub hull as painted icon + tube on
+  the same plate, words under it). Bottom right: the radar, large (r 64), the C button beside it, carried things
+  (lure, glow stick, air tank, trawl) stacked above it. The journal and chart are painted pictures under the quest
+  board at the left (#quests-hud is a grid: quest, its step beside it, journal, chart).
+- Icons: tools/icon_kit.py paints assets/ui/icons/{quest,journal,chart,air,hull}.png (512 px shaded shapes, one dark
+  outline, a soft shadow, reduced to 128).
+- Two faces now: Barlow Semi Condensed (var --o-hud, HUDF in fittings.js) for everything laid over the game (prompts,
+  instrument words, labels, the message line, the quest step, the tutorial's line and button); EB Garamond for panels
+  and pages. Figures stay IBM Plex Mono.
+- Colour: the message line is one light colour (danger alone is red); tutorial highlights (ring, arrow, door glow,
+  spotlight) are neutral white, so they never read as yellow on the warm cabin; the hold bar is white.
+- Locker: maker's plate removed, vent centred on the right plate, count beside its heading. Tank room hint: two lines
+  of text under the bag (the plate cut into the tank's frame). Tutorial card: words and OK side by side.

@@ -462,9 +462,12 @@ export class TankRoom {
     const P = g.profile || {}, tips = P.tips || {};
     if (!g.bag.length || this.drag || (tips.drags || 0) >= 3 || (tips.opens || 0) > 6 || G.narrow) return;
     const hk = G.hook, by = hk.y + 8 + G.bagH(g.bag.length) + 30;
-    const L = this.room === 'chambers' ? ['DRAG SPECIMENS', 'BAG  TO  CHAMBER'] : this.room === 'tank' ? ['DRAG SPECIMENS', 'BAG  TO  OPEN TANK'] : hasBigTank(g) ? ['LARGE SPECIMENS', 'BAG  TO  LARGE TANK'] : ['OPEN TANK', 'NEXT COMPARTMENT'];
-    if (this.room === 'chambers') instructionPlate(ctx, hk.x - 74, by, L, { arrow: 1 });
-    else instructionPlate(ctx, hk.x + 58, by, L, { align: 'right', arrow: -1 });
+    // (4.27) two short lines under the bag, centred on it, in the HUD's face (the engraved plate cut into the tank's frame)
+    const L = this.room === 'chambers' ? ['Drag an animal', 'into a chamber'] : this.room === 'tank' ? ['Drag an animal', 'into the tank'] : hasBigTank(g) ? ['Drag a large animal', 'into the tank'] : ['The large tank is', 'not fitted yet'];
+    ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = '600 18px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
+    ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5; ctx.fillStyle = '#efe8d2';
+    L.forEach((t, i) => ctx.fillText(t, hk.x, by - 10 + i * 22));
+    ctx.restore();
   }
   // the fish in hand follows the pointer, wriggling; where it would land glows
   drawDragged(ctx, G, g) {

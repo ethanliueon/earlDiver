@@ -387,15 +387,18 @@ export function promptShade(ctx, cx, y, s = 1, a = 1) {
   sh.addColorStop(0, `rgba(4,8,10,${(0.42 * a).toFixed(3)})`); sh.addColorStop(0.45, `rgba(4,8,10,${(0.24 * a).toFixed(3)})`); sh.addColorStop(0.8, `rgba(4,8,10,${(0.07 * a).toFixed(3)})`); sh.addColorStop(1, 'rgba(4,8,10,0)');
   ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.2); ctx.translate(-cx, -y); ctx.fillStyle = sh; ctx.fillRect(cx - R, y - R, R * 2, R * 2); ctx.restore();
 }
+// (4.27) the face for everything laid over the game (prompts, the instruments' words, labels): a sturdy semi-condensed
+// sans that reads at a glance on a small screen; the book face (EB Garamond) stays for the panels and pages
+export const HUDF = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif';
 const holdWord = (h) => h.trim().charAt(0).toUpperCase() + h.trim().slice(1).toLowerCase();
 export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19, shade = true, icon = null, named = null } = {}) {
   const parts = parsePrompt(text), gapK = 9 * s, gapP = 44 * s, fs = size * s; // (4.26) a wide gap between choices, no dot
   ctx.save(); ctx.textBaseline = 'middle';
   const measure = (p) => {
     let w = 0;
-    if (p.hold) { ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; w += ctx.measureText(holdWord(p.hold)).width + 8 * s; }
+    if (p.hold) { ctx.font = `600 ${fs}px ${HUDF}`; w += ctx.measureText(holdWord(p.hold)).width + 8 * s; }
     if (p.key) { const kw = p.key.length > 1 ? Math.max(26 * s * 1.9, (p.key.length * 8 + 18) * s) : 26 * s; w += kw + gapK; }
-    ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; w += ctx.measureText(p.label).width;
+    ctx.font = `600 ${fs}px ${HUDF}`; w += ctx.measureText(p.label).width;
     return w;
   };
   const IW = icon ? fs * 1.15 + 8 * s : 0; // (4.0.6) a small mark after the name: in reach of the net (or slurp gun)
@@ -403,9 +406,9 @@ export function drawPrompt(ctx, text, cx, y, s = 1, { col = '#ece6d2', size = 19
   if (shade) promptShade(ctx, cx, y, s);
   let x = cx - total / 2;
   parts.forEach((p, i) => {
-    if (p.hold) { ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'left'; ctx.fillStyle = col; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.fillText(holdWord(p.hold), x, y + 1 * s); ctx.shadowBlur = 0; x += ctx.measureText(holdWord(p.hold)).width + 8 * s; }
+    if (p.hold) { ctx.font = `600 ${fs}px ${HUDF}`; ctx.textAlign = 'left'; ctx.fillStyle = col; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.fillText(holdWord(p.hold), x, y + 1 * s); ctx.shadowBlur = 0; x += ctx.measureText(holdWord(p.hold)).width + 8 * s; }
     if (p.key) { x += keyCap(ctx, x, y - 15 * s, p.key, s) + gapK; }
-    ctx.font = `500 ${fs}px "EB Garamond", Georgia, serif`; ctx.textAlign = 'left';
+    ctx.font = `600 ${fs}px ${HUDF}`; ctx.textAlign = 'left';
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1;
     const nm = named && named.text === p.label && !p.key ? named : null; // (4.12.0) an animal's name in its rarity's colour; a legend's in italic gold with a soft glow
     if (nm && nm.legend) { ctx.font = `italic 500 ${fs}px "EB Garamond", Georgia, serif`; ctx.shadowColor = 'rgba(242,184,74,0.75)'; ctx.shadowBlur = 14 * s; ctx.shadowOffsetY = 0; ctx.fillStyle = nm.col || '#f2c868'; ctx.fillText(p.label, x, y + 1 * s); ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; }
@@ -460,9 +463,9 @@ export function oliveNine(ctx, name, x, y, w, h, slice, dest) {
 // painted dark red. Returns the plate's width; y < -900 only measures.
 export function dymo(ctx, text, xr, y, s = 1, { tape = '#1c1d1b', align = 'right' } = {}) {
   ctx.save();
-  const word = String(text).toLowerCase(), fs = 13 * s;
-  ctx.font = `600 ${fs}px "EB Garamond", Georgia, serif`;
-  if ('fontVariantCaps' in ctx) ctx.fontVariantCaps = 'small-caps';
+  const word = String(text).toUpperCase(), fs = 12.5 * s;
+  ctx.font = `600 ${fs}px ${HUDF}`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${0.8 * s}px`;
   const tw = ctx.measureText(word).width, h = 20 * s, w = tw + 16 * s, top = y + 6 * s - h / 2; // (centred where the 12 px tape was)
   if (y < -900) { ctx.restore(); return w; }
   const x = align === 'right' ? xr - w : xr;

@@ -530,7 +530,7 @@ export class Cabin {
     if (this.tutMark && ROOM[this.tutMark] !== undefined) {
       const kx2 = X(ROOM[this.tutMark]), ay = floor - RH * (this.tutMark === 'door' ? 0.49 : 0.34) - 150 * k + Math.sin(t * 4) * 8 * k;
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 6;
-      ctx.fillStyle = 'rgba(230,222,196,0.95)'; ctx.beginPath(); ctx.moveTo(kx2, ay + 22 * k); ctx.lineTo(kx2 - 14 * k, ay); ctx.lineTo(kx2 - 5 * k, ay); ctx.lineTo(kx2 - 5 * k, ay - 18 * k); ctx.lineTo(kx2 + 5 * k, ay - 18 * k); ctx.lineTo(kx2 + 5 * k, ay); ctx.lineTo(kx2 + 14 * k, ay); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(244,246,240,0.95)'; ctx.beginPath(); ctx.moveTo(kx2, ay + 22 * k); ctx.lineTo(kx2 - 14 * k, ay); ctx.lineTo(kx2 - 5 * k, ay); ctx.lineTo(kx2 - 5 * k, ay - 18 * k); ctx.lineTo(kx2 + 5 * k, ay - 18 * k); ctx.lineTo(kx2 + 5 * k, ay); ctx.lineTo(kx2 + 14 * k, ay); ctx.closePath(); ctx.fill();
       ctx.restore();
       const dir = Math.sign(kx2 - ex) || 1, len = Math.abs(kx2 - ex), gap = 34 * k, sz = 9 * k, flow = (t * 1.6) % 1;
       ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -539,7 +539,7 @@ export class Cabin {
         const x = ex + dir * m, y = floor + 10 * k, a = (0.45 + 0.45 * (0.5 + 0.5 * Math.cos((m / len * 4 - t * 2.2) * Math.PI))) * Math.min(1, (m - 30 * k) / (40 * k));
         ctx.beginPath(); ctx.moveTo(x - dir * sz * 0.55, y - sz * 0.7); ctx.lineTo(x + dir * sz * 0.35, y); ctx.lineTo(x - dir * sz * 0.55, y + sz * 0.7);
         ctx.strokeStyle = `rgba(20,14,4,${(a * 0.6).toFixed(3)})`; ctx.lineWidth = sz * 0.42 + 2; ctx.stroke();
-        ctx.strokeStyle = `rgba(230,222,196,${a.toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke();
+        ctx.strokeStyle = `rgba(244,246,240,${a.toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke();
       }
       ctx.restore();
     }

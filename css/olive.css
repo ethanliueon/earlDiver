@@ -320,3 +320,36 @@ html body #workshop button.sell-these:not(#_a):not(#_b)::before, html body #work
 html body #workshop button.sell-these:not(#_a):not(#_b) span { font: 500 18px var(--o-num) !important; color: var(--o-ink) !important; }
 html body #workshop button.sell-these[disabled]:not(#_a):not(#_b) { border-image-source: var(--o-btn) !important; color: var(--o-cream-dim) !important; opacity: 0.6 !important; filter: none !important; }
 html body #workshop button.sell-these[disabled]:not(#_a):not(#_b) span { color: var(--o-cream-dim) !important; }
+
+/* ---------- (4.27) the HUD face and the left-hand group ---------- */
+:root { --o-hud: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif; }
+/* the quest board, the journal and the chart: three painted pictures stacked at the left, under the cash; the quest's
+   next step beside the first */
+html body #quests-hud { display: grid !important; grid-template-columns: 62px auto; grid-auto-rows: 62px; column-gap: 10px; row-gap: 4px; align-items: center; top: 78px; }
+html body #quests-hud #quests-btn { grid-row: 1; grid-column: 1; }
+html body #quests-hud .qh-step { grid-row: 1; grid-column: 2; }
+html body #quests-hud #hud-journal { grid-row: 2; grid-column: 1; }
+html body #quests-hud #hud-chart { grid-row: 3; grid-column: 1; }
+html body #quests-hud .hud-ic:not(#_a) { position: relative; width: 62px !important; height: 62px !important; padding: 0 !important; border: 0 !important; border-image: none !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; cursor: pointer; transition: transform .12s; }
+html body #quests-hud .hud-ic img { width: 100%; height: 100%; display: block; pointer-events: none; }
+html body #quests-hud .hud-ic:hover { transform: scale(1.06); filter: none !important; }
+html body #quests-hud .hud-ic:active { transform: scale(0.95); }
+html body #quests-btn i:not(#_a) { top: -2px !important; right: -4px !important; min-width: 20px; height: 20px; border-radius: 10px !important; background: #c8402e !important; color: #fff6ea !important; font: 700 13px/20px var(--o-hud) !important; box-shadow: 0 0 0 2px #181a14 !important; }
+html body #quests-hud .qh-step:not(#_a) { font: 600 19px/1.2 var(--o-hud) !important; color: #efe8d2 !important; text-shadow: 0 1px 3px #000, 0 0 8px rgba(0, 0, 0, 0.6) !important; max-width: min(420px, 50vw) !important; }
+/* the tutorial's line takes the quest step's place, in the same face */
+html body #tut-spot .ts-line:not(#_a) { left: 88px !important; top: 78px !important; min-height: 62px; font: 600 19px/1.2 var(--o-hud) !important; }
+/* the message line at the top and the tutorial's action: the HUD face */
+html body #msgs .msg-t { font-family: var(--o-hud) !important; font-weight: 600 !important; letter-spacing: 0.01em !important; }
+html body #tut-spot .ts-key, html body #tut-spot .ts-key.btn { font-family: var(--o-hud) !important; font-weight: 600 !important; }
+html body #inventory .lk-head span { margin-left: 10px !important; margin-right: auto !important; position: static !important; } /* (4.27) the count beside its heading, clear of the vent */
+/* (4.27) the message line: everything in the one light colour; only real danger stays red */
+html body #msgs .msg-warn, html body #msgs .msg-note, html body #msgs .msg-small.msg-warn, html body #msgs .msg-small.msg-note, html body #msgs .msg-big { --mc: #efe8d2 !important; }
+html body #msgs .msg-warn .msg-t, html body #msgs .msg-note .msg-t { color: #efe8d2 !important; }
+/* the tutorial's card: the words and OK side by side, OK at the right, both centred on the card's height */
+html body #tut-spot .ts-card[style*="display: block"] { display: flex !important; align-items: center; gap: 16px; }
+html body #tut-spot .ts-card p:not(#_a) { flex: 1; margin: 0 !important; }
+html body #tut-spot .ts-card button:not(#_a) { float: none !important; flex: none; }
+/* (4.27) the left-hand group steps aside while a screen of its own is open over the game */
+body:has(#journal:not([hidden])) #quests-hud, body:has(#tankroom:not([hidden])) #quests-hud, body:has(#inventory:not([hidden])) #quests-hud,
+body:has(#workshop:not([hidden])) #quests-hud, body:has(#catalog:not([hidden])) #quests-hud, body:has(#gallery:not([hidden])) #quests-hud,
+body:has(#settings:not([hidden])) #quests-hud, body:has(#chart:not([hidden])) #quests-hud { visibility: hidden; }
