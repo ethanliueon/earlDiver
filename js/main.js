@@ -2655,12 +2655,22 @@ const smooth01 = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2
 // the heat), 30 with "Smoother on slow devices" on and on the title; the sea behind a panel or the pause menu is redrawn
 // ten times a second (the game itself keeps its pace)
 let seaDrawnAt = 0, hudDrawnAt = 0;
+// (5.4) and on its own: a phone whose frames take longer than ~14 ms of work goes to an even 30 (steadier than a
+// juddering 40-50, and cooler); back to 60 once the work has stayed under 9 ms for 8 s
+let workEma = 8, slow30 = false, quickT = 0, overT = 0;
 function phoneCap(now) {
   if (!hud.touch) return 0;
-  return (SETTINGS.fast || g.mode === 'menu') ? 1000 / 30 : 1000 / 60;
+  return (SETTINGS.fast || g.mode === 'menu' || slow30) ? 1000 / 30 : 1000 / 60;
+}
+function noteWork(ms, dt) {
+  if (!hud.touch || g.warmUntil || g.mode !== 'play') return; // the loading card's heavy frames do not count
+  workEma += (Math.min(ms, 50) - workEma) * 0.03;
+  if (!slow30) { overT = workEma > 14 ? overT + dt : 0; if (overT > 3) { slow30 = true; quickT = 0; } } // slow for 3 s on end
+  else { quickT = workEma < 9 ? quickT + dt : 0; if (quickT > 8) { slow30 = false; overT = 0; } }
 }
 function frame(now) {
   { const cap = phoneCap(now); if (cap && now - last < cap - 2) { requestAnimationFrame(frame); return; } }
+  const workFrom = performance.now();
   const realDt = (now - last) / 1000;
   const dt = Math.min(0.05, realDt);
   last = now;
@@ -2710,6 +2720,7 @@ function frame(now) {
   const f2 = (fx.dread < 0.01 && fx.pressure < 0.01 && blurPx <= 0.25 && g.injury < 3) || (renderer.lite && fx.dread < 0.5 && blurPx <= 0.25) ? 'none' : f; // (5.3) lite: no full-screen filter for a faint grade
   if (f2 !== filterKey) { canvas.style.filter = f2; filterKey = f2; }
   pressed.clear();
+  noteWork(performance.now() - workFrom, Math.min(0.1, realDt));
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
