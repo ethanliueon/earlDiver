@@ -239,3 +239,6 @@ html body #inventory .inv-catch2 h4.off i { font: italic 15px var(--o-text) !imp
 /* the aquarium's room button: its words and its price apart */
 html body .gl-catch .gl-room { display: flex !important; justify-content: space-between; align-items: center; gap: 12px; }
 html body .gl-catch .gl-room span { font: 500 16px var(--o-num) !important; opacity: 1 !important; }
+
+/* the journal's small notes (status, controls, the unknown fish): written in the book's ink, not typed */
+html body #journal .stat small, html body #journal .af small, html body #journal-list small { font: italic 14px var(--o-text) !important; letter-spacing: 0 !important; color: rgba(60, 48, 30, 0.7) !important; text-transform: none !important; }
