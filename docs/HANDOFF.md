@@ -68,6 +68,17 @@ anything into `main`; the owner decides that.
 
 ## 5. What to do next, in order
 
+**Progress (later sessions):**
+- Step 1 (HUD small parts): done in 4.25.0: labels as painted olive plates with cream small caps (`dymo()` in
+  `js/fittings.js`), hotbar and item slots as olive plates with wells (`oliveNine()`), J/K plates olive, the
+  seafloor sonar set into a plate, the lines under the instruments in Garamond italic without middle dots.
+- Step 2 (tank and chamber rooms): done in 4.25.1: no brass (porthole rim, depth counter bezel, bag tag, `?`
+  button). The grey bulkheads are kept on purpose: the inside of the sub is unpainted steel, a different place.
+- An abandoned attempt by another session (`claude/olive-studio`, and 6 commits pushed onto `claude/olive`) was
+  discarded by the owner's decision: `claude/olive` was force-reset to 4.25.0. If `claude/olive-studio` still
+  exists on GitHub, it is that discarded attempt; the owner deletes it (this environment cannot delete branches).
+
+
 Each item: screenshot before, change, screenshot after, look at it at 2x as a stranger would, fix, test, commit.
 
 1. **HUD small parts** (`js/hud.js`, `js/fittings.js`): still the pre-rules kit.

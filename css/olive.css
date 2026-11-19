@@ -208,3 +208,6 @@ html body #journal .entry .meta, html body .entry .meta { font: italic 14px var(
 html body #quests .qs-q { position: relative; padding-right: 34px !important; }
 html body #quests .qs-q .qs-info { right: 2px !important; top: 2px !important; width: 22px !important; height: 22px !important; border: 6px solid transparent !important; border-radius: 0 !important;
   border-image: url("../assets/ui/olive/btn-olive.png") 28 fill / 6px stretch !important; background: none !important; box-shadow: none !important; font: italic 600 13px/1 var(--o-text) !important; color: var(--o-cream) !important; padding: 0 !important; display: grid; place-items: center; }
+/* the tank rooms' ? : the same olive plate as the close button beside it */
+html body .tr-help-btn { width: 36px !important; height: 36px !important; border: 10px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 10px stretch !important;
+  background: none !important; box-shadow: none !important; padding: 0 !important; font: 600 16px/1 var(--o-text) !important; color: var(--o-cream) !important; right: 62px !important; display: grid; place-items: center; }
