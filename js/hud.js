@@ -597,12 +597,6 @@ export class Hud {
       }
       dymo(ctx, name.toLowerCase(), x - 9 * s, y + sz / 2 - 6 * s, s, { tape: name === 'NO NET' || name === 'TORN' ? '#4a1810' : '#1c1d1b' });
     });
-    // ---------- P: frames per second, the picture's resolution, and whether lite mode is on ----------
-    if (this.showFps) {
-      ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.font = `${11 * s}px ${MONO}`;
-      ctx.fillStyle = 'rgba(200,225,215,0.75)';
-      ctx.fillText(`${Math.round(this.fps || 0)} fps · ${Math.round(Math.min(1, (this.quality ?? 1) * Math.min(window.devicePixelRatio || 1, 1.25)) * 100)} % sharp${this.lite ? ' · lite' : ''}`, pad, H - pad * 0.4);
-    }
     }
     // (4.28) no cash on the HUD: it cannot change under water. It is in the inventory, the journal and the shops.
 
@@ -693,6 +687,12 @@ export class Hud {
       ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(line, tx + 1, ty0 + 1);
       ctx.fillStyle = ok ? 'rgba(170,230,150,0.95)' : 'rgba(236,232,220,0.88)'; ctx.fillText(line, tx, ty0);
       if (ok) { ctx.font = `${12 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,210,150,0.75)'; ctx.fillText('claim it in Quests', tx, ty0 + 19 * s); }
+    }
+    // ---------- P: frames per second, the picture's resolution, and whether lite mode is on ----------
+    if (this.showFps) { // (5.3.5) top right, everywhere (on deck too)
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `${11 * s}px ${MONO}`;
+      ctx.fillStyle = 'rgba(200,225,215,0.75)';
+      ctx.fillText(`${Math.round(this.fps || 0)} fps · ${Math.round(Math.min(1, (this.quality ?? 1) * Math.min(window.devicePixelRatio || 1, 1.25)) * 100)} % sharp${this.lite ? ' · lite' : ''}`, W / 2, 6 * s);
     }
     // ---------- toasts ----------
     ctx.textAlign = 'center';

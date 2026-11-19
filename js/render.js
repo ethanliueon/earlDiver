@@ -725,22 +725,28 @@ export class Renderer {
     if (Math.abs(BOAT.x - cam.x) < cam.w) {
       const roll = Math.atan2(surfY(BOAT.x + 4) - surfY(BOAT.x - 4), 8) * (0.7 + (g.storm || 0) * 0.8);
       ctx.save(); ctx.translate(boatX, boatY); ctx.rotate(roll);
-      // draw the boat into a small offscreen canvas and darken it there (canvas filters are slow)
-      const bw = Math.ceil(14 * ppm * 1.3 / 8) * 8, bh = Math.ceil(14 * ppm * 0.75 / 8) * 8; // (5.3.2) in steps of 8 px: a resized canvas is a new one
-      const bc = this.boatC || (this.boatC = document.createElement('canvas'));
-      if (bc.width !== bw || bc.height !== bh) { bc.width = bw; bc.height = bh; }
-      const bctx = bc.getContext('2d');
-      bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, bw, bh);
-      bctx.globalCompositeOperation = 'source-over';
-      bctx.translate(bw * 0.45, bh * 0.82);
+      // (5.3.5) the boat is painted into a picture at one fixed scale (its weathering laid on once there) and only
+      // repainted a few times a second (the radar turning, the lights) or when she turns, the light changes or a door
+      // lights up; each frame that picture is rocked, darkened for the hour and scaled into place. It was drawn
+      // stroke by stroke at full size every frame, the costliest thing on the screen on a phone
+      const REF = 40, Rw = Math.ceil(14 * REF * 1.3), Rh = Math.ceil(14 * REF * 0.75);
       const bcos = Math.cos(BOAT.yaw || 0), bsx = Math.sign(bcos || 1) * Math.max(0.06, Math.abs(bcos));
-      crane = drawBoat(bctx, 14 * ppm, t, g.sub, bsx < 0, { tutDoor: !!(g.tut && g.tut.door) });
-      // (4.28) weathering laid over the drawing, only where the boat is: grain, grime settling low, rust running down
-      // from the deck edge, a darker band at the waterline; painted once per size, one image per frame
-      { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(1092, 630, bsx < 0), 0, 0, bw, bh); /* (5.3.2) painted once at one size and scaled: it used to be repainted (new stains) whenever the zoom moved */ bctx.globalCompositeOperation = 'source-over'; }
-      const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff));
-      if (dimB > 0.01) { bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, bw, bh); }
-      ctx.save(); ctx.scale(bsx, 1); ctx.drawImage(bc, -bw * 0.45, -bh * 0.82); ctx.restore(); // (3.0.0) turned with her heading
+      const dimB = 1 - (0.22 + 0.78 * Math.sqrt(dayEff)), door = !!(g.tut && g.tut.door);
+      const bc = this.boatC || (this.boatC = document.createElement('canvas'));
+      const BK = this.boatK || {};
+      if (bc.width !== Rw || bc.height !== Rh || BK.flip !== (bsx < 0) || BK.door !== door || Math.abs((BK.dim ?? -1) - dimB) > 0.02 || BK.docked !== g.sub.docked || t - (BK.t ?? -9) > (this.phone ? 0.25 : 0.1)) {
+        if (bc.width !== Rw || bc.height !== Rh) { bc.width = Rw; bc.height = Rh; }
+        const bctx = bc.getContext('2d');
+        bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, Rw, Rh); bctx.globalCompositeOperation = 'source-over';
+        bctx.translate(Rw * 0.45, Rh * 0.82);
+        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { tutDoor: door, noRoll: true });
+        bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(Rw, Rh, bsx < 0), 0, 0);
+        if (dimB > 0.01) { bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, Rw, Rh); }
+        bctx.globalCompositeOperation = 'source-over';
+        this.boatK = { flip: bsx < 0, door, dim: dimB, docked: g.sub.docked, t };
+      }
+      const kB = ppm / REF; crane = this.boatCrane ? { craneTip: [this.boatCrane.craneTip[0] * kB, this.boatCrane.craneTip[1] * kB] } : null;
+      ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, -Rw * 0.45 * kB, -Rh * 0.82 * kB, Rw * kB, Rh * kB); ctx.restore(); // (3.0.0) turned with her heading
       this.boatFrame = { x: boatX, y: boatY, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
       if (dayEff < 0.5) {
         // the cabin light stays on at night

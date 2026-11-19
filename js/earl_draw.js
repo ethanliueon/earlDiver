@@ -926,7 +926,7 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   // windows; a mast with radar, antennas and lights; an exhaust stack; deck clutter; and at the
   // stern an A-frame with hydraulic rams, a winch drum and a block that carries the sub's cable.
   const u = Lp / 100;
-  const roll = boatRock(t);
+  const roll = opts.noRoll ? 0 : boatRock(t); // (5.3.5) a baked boat is rocked where it is laid down
   ctx.save(); ctx.rotate(roll);
   // ---------- hull ----------
   const hull = new Path2D();
