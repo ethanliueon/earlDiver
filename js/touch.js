@@ -7,8 +7,8 @@
 // drifts too far, so the stick never "runs out". The emulated mouse events a browser makes after a touch are
 // suppressed, so a tap never also counts as a click.
 export class Touch {
-  constructor(canvas, { buttonAt, active }) {
-    this.c = canvas; this.buttonAt = buttonAt; this.active = active;
+  constructor(canvas, { buttonAt, active, onMessage }) {
+    this.c = canvas; this.buttonAt = buttonAt; this.active = active; this.onMessage = onMessage;
     this.stick = null; this.fingers = new Map();
     this.vec = { x: 0, y: 0, mag: 0, on: false, sprint: false };
     this.el = document.getElementById('stick');
@@ -24,13 +24,14 @@ export class Touch {
     const key = k === ' ' ? ' ' : k === 'escape' ? 'Escape' : k;
     window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { key, bubbles: true }));
   }
-  radius() { return Math.max(46, Math.min(70, window.innerHeight * 0.15)); } // CSS px from the centre to the rim
+  radius() { return Math.max(40, Math.min(52, window.innerHeight * 0.12)); } // (5.3.1) CSS px centre to rim: about 1.6 cm across
   start(e) {
     if (!this.active()) return;
     e.preventDefault();
     if (navigator.vibrate) this.vibe = true;
     for (const t of e.changedTouches) {
       const b = this.buttonAt(t.clientX, t.clientY);
+      if (b && b.key.startsWith('msg:')) { this.fingers.set(t.identifier, {}); this.onMessage && this.onMessage(b.key.slice(4)); continue; } // a greyed button: why
       if (b) { this.fingers.set(t.identifier, { key: b.key }); this.key(b.key, true); if (this.vibe) navigator.vibrate(8); continue; }
       if (!this.stick && t.clientX < window.innerWidth * 0.5) {
         this.stick = { id: t.identifier, x: t.clientX, y: t.clientY };
@@ -62,7 +63,16 @@ export class Touch {
     this.vec = { x: d ? dx / d * mag : 0, y: d ? dy / d * mag : 0, mag, on: true, sprint: d > R * 1.08 };
     this.paint(S.x, S.y, S.x + (d ? dx / d : 0) * Math.min(d, R), S.y + (d ? dy / d : 0) * Math.min(d, R), R);
   }
-  clearStick() { this.stick = null; this.vec = { x: 0, y: 0, mag: 0, on: false, sprint: false }; if (this.el) { this.el.classList.remove('on'); } }
+  clearStick() { this.stick = null; this.vec = { x: 0, y: 0, mag: 0, on: false, sprint: false }; if (this.el) { this.el.classList.remove('on'); this.rest(true); } }
+  // at rest: the faint ring in the lower left, where a thumb would go (hidden off the game)
+  rest(show) {
+    if (!this.el) return;
+    if (!show) { this.el.hidden = true; return; }
+    if (this.stick) return;
+    const R = this.radius(), x = Math.max(R + 28, window.innerWidth * 0.13), y = window.innerHeight - R - 28;
+    this.el.hidden = false; this.el.style.setProperty('--r', R + 'px');
+    this.base.style.transform = `translate(${x}px, ${y}px)`; this.knob.style.transform = `translate(${x}px, ${y}px)`;
+  }
   paint(bx, by, kx, ky, R) {
     if (!this.el) return;
     this.el.hidden = false; this.el.classList.add('on');

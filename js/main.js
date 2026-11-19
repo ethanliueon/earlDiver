@@ -1264,6 +1264,7 @@ hudCanvas.addEventListener('mousedown', (ev) => {
   // (5.1) the HUD's buttons: the action button, the tool chips, the context buttons. A press is the key's press, held
   // as long as the button is held (so a hold-F button works), and a short one counts as a tap, as on the keyboard
   const hb = hudButtonAt(ev.clientX, ev.clientY);
+  if (hb && hb.key.startsWith('msg:')) { hud.toast(hb.key.slice(4)); return; } // (5.3.1) a greyed button says why
   if (hb) {
     const k = hb.key; mouse.btn = k;
     if (!keys.has(k)) { pressed.add(k); if (k === 'f') fDown = performance.now(); if (k === 'c') { cDown = performance.now(); cHeld = 0; } }
@@ -1288,7 +1289,7 @@ window.addEventListener('mouseup', (ev) => {
 });
 // (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch. The first touch
 // in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
-const touch = new Touch(hudCanvas, { buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play') });
+const touch = new Touch(hudCanvas, { buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play'), onMessage: (m) => hud.toast(m) });
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
   d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
@@ -2659,6 +2660,7 @@ function frame(now) {
   // (5.3) in lite mode the HUD (its text, its shadows) is drawn every second frame: it changes slowly, and a
   // phone's fill is better spent on the sea
   hudDt += dt; hudFrame++;
+  { const on = !!(hud.touch && g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen()); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
   if (!renderer.lite || hudFrame % 2 === 0 || g.mode !== 'play') { hud.draw(g, hudDt); hudDt = 0; }
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);

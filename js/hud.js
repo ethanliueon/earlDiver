@@ -221,19 +221,19 @@ export class Hud {
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
     // (5.3) sized from the finger, not the screen: CSS pixels (about 0.18 mm each on a phone). The main button about
     // 2 cm across, the others about 1.4 cm, never below Apple's 44 pt
-    const u = this.c.width / window.innerWidth, pad = 18 * u, R = clamp(window.innerHeight * 0.14, 48, 64) * u, cx = W - pad - R, cy = H - pad - R;
+    const u = this.c.width / window.innerWidth, pad = 16 * u, R = 36 * u, cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm
     const held = this.held || new Set();
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
     const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
-    // (5.3) the painted panel buttons (tools/touch_kit.py): brass bezel, rubber boot; pushed in while held
-    const plate = (x, y, r, on, down, big) => {
-      const im = touchImg(big ? (down ? 'btn-big-down' : 'btn-big') : down ? 'btn-down' : 'btn');
-      // (a soft drop shadow, as a cheap translucent disc: no canvas shadow blur, which costs a frame's worth on a phone)
-      ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.arc(x + 1 * u, y + 3.5 * u, r * 1.02, 0, TAU); ctx.fill();
-      if (im) ctx.drawImage(im, x - r, y - r, r * 2, r * 2); else { ctx.fillStyle = '#3a3e34'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+    // (5.3.1) a button is a dark translucent disc with a thin light rim (as a phone game's), a real picture on it
+    const plate = (x, y, r, on, down) => {
+      ctx.fillStyle = down ? 'rgba(10,14,16,0.6)' : 'rgba(10,14,16,0.38)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = down ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.32)'; ctx.lineWidth = 1.5 * u; ctx.stroke();
     };
+    const pic = (name, x, y, w) => { const im = hudIcon('act-' + name); if (im) ctx.drawImage(im, x - w / 2, y - w / 2, w, w); };
     // the pictures on the buttons: plain shapes in the deck's cream paint
-    const glyph = (kind, x, y, r) => { glyph1(kind, x, y + 1.2 * u, r, 'rgba(0,0,0,0.6)'); glyph1(kind, x, y, r, 'rgba(232,226,204,0.92)'); };
+    const NAME = { eye: 'eye', hand: 'hand', leave: 'leave', sub: 'sub', lamp: 'lamp', lure: 'lure', glow: 'glow', pet: 'pet', tank: 'tank', trawl: 'trawl', air: 'air', sell: 'sell', auto: 'auto', pause: 'pause', bag: 'bag' };
+    const glyph = (kind, x, y, r) => { if (kind === 'air') { const im = hudIcon('air'); if (im) ctx.drawImage(im, x - r * 1.25, y - r * 1.25, r * 2.5, r * 2.5); return; } pic(NAME[kind] || kind, x, y, r * 2.5); };
     const glyph1 = (kind, x, y, r, col) => {
       ctx.save(); ctx.translate(x, y); ctx.strokeStyle = ctx.fillStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       const k = r / 22;
@@ -262,38 +262,38 @@ export class Hud {
     // the near ring: the three things done most (always there, greyed when they can't be done); the top row: the
     // rarer ones, small, beside pause and the bag
     const A = e.inSub ? [
-      { key: 'f', icon: 'leave', on: !!F, bar: true },
+      { key: 'f', icon: 'leave', on: !!F, bar: true, why: 'Nothing to do here' },
       { key: 't', icon: 'tank', on: true },
-      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun },
+      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
     ] : [
-      { key: 'f', icon: F && /observe/i.test(F.label) ? 'eye' : 'hand', on: !!F, bar: true },
-      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming' },
-      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn },
+      { key: 'f', icon: F && /observe/i.test(F.label) ? 'eye' : 'hand', on: !!F, bar: true, why: 'Nothing here: swim up to something' },
+      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
+      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'Not on deck' },
     ];
     const TOP = [{ key: 'escape', icon: 'pause', on: true }, { key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
-      { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet },
-      { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank },
-      { key: 'u', icon: 'sell', on: !!partOf('u') },
+      { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet, why: 'No trawl net: the boat sells them' },
+      { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, why: 'No spare air tank: the boat sells them' },
+      { key: 'u', icon: 'sell', on: !!partOf('u'), why: 'Bring her alongside the boat to sell' },
       { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
     ] : aboard ? [] : [
-      { key: 'q', icon: 'lure', on: (g.items.lure || 0) > 0, n: g.items.lure },
-      { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn },
-      { key: 'h', icon: 'pet', on: !!P.pet, lit: P.pet && P.petStay },
+      { key: 'q', icon: 'lure', on: (g.items.lure || 0) > 0, n: g.items.lure, why: 'No lure: the station and Dave sell them' },
+      { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, why: 'No glow stick: the boat sells them' },
+      { key: 'h', icon: 'pet', on: !!P.pet, lit: P.pet && P.petStay, why: 'No pet: at the surface, drag a big fish into the pet slot' },
     ]);
     const btn = (a, x, y, r) => {
       const down = held.has(a.key);
-      ctx.save(); ctx.globalAlpha = a.on ? 1 : 0.4;
-      plate(x, y, r, a.on, down);
+      ctx.save();
+      plate(x, y, r, a.on, down); ctx.globalAlpha = a.on ? 1 : 0.35;
       if (a.lit) { ctx.strokeStyle = 'rgba(255,214,140,0.9)'; ctx.lineWidth = 2.5 * u; ctx.shadowColor = 'rgba(255,200,120,0.8)'; ctx.shadowBlur = 8 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.66, 0, TAU); ctx.stroke(); ctx.shadowBlur = 0; }
       glyph(a.icon, x, y + (down ? 1.5 * u : 0), r * 0.4);
       if (a.n > 1) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
       ctx.restore();
-      if (a.on) hot(x - r, y - r, r * 2, r * 2, a.key);
+      hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : 'msg:' + (a.why || 'Not now'));
     };
-    const r = clamp(window.innerHeight * 0.09, 30, 40) * u, gap = 10 * u, rho0 = R + r + gap;
-    A.forEach((a, i) => { const ang = [-115, -158, -200][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
-    const r2 = 24 * u; TOP.forEach((a, i) => btn(a, 104 * u + i * (r2 * 2 + 10 * u) + r2, 20 * u + r2, r2));
+    const r = 24 * u, gap = 14 * u, rho0 = R + r + gap;
+    A.forEach((a, i) => { const ang = [-92, -146, -200][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
+    const r2 = 20 * u; TOP.forEach((a, i) => btn(a, 92 * u + i * (r2 * 2 + 8 * u) + r2, 16 * u + r2, r2));
     const rho1 = rho0;
     if (aboard) return;
     // ---- the big button: the main action ----
@@ -302,7 +302,7 @@ export class Hud {
     const can = e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
     ctx.save(); ctx.globalAlpha = (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7;
     const bdown = held.has(' ');
-    plate(cx, cy, R, can, bdown, true);
+    plate(cx, cy, R, can, bdown);
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(239,232,210,${(0.3 + 0.35 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.7, 0, TAU); ctx.stroke(); }
     ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R * 0.62, 0, TAU); ctx.clip(); if (bdown) ctx.translate(0, 2 * u);
     if (e.inSub) {
@@ -389,7 +389,7 @@ export class Hud {
     try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }
   }
   drawIn(g, dt, W, H) {
-    const touch = !!this.touch, ctx = this.ctx, s = touch ? Math.max(this.s, (this.c.width / window.innerWidth) * 0.92) : this.s; this.hudNotes = []; this.hots = []; // (5.3) on a phone, sized from the finger
+    const touch = !!this.touch, ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = []; // (5.3.1) the HUD keeps its size on a phone: only the controls are added
     if (g.mode === 'menu') return;
     const e = g.earl, fx = g.fx;
     const dying = g.mode === 'dying';
@@ -485,7 +485,7 @@ export class Hud {
     // the seafloor sonar (a fitted extra): under the instrument, the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy + 4 * s, s); yy += 88 * s; }
     // (5.1.1) on a touch screen the radar sits under the instrument; the bottom right is the actions'
-    const rrT = 30 * s, rcyT = yy + 4 * s + rrT;
+    const rrT = 44 * s, rcyT = yy + 6 * s + rrT;
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {

@@ -670,15 +670,17 @@ html body button:focus:not(:focus-visible) { outline: none !important; box-shado
 html body #confirm button:focus-visible { outline: 2px solid rgba(239, 232, 210, 0.85) !important; outline-offset: 3px; border-radius: 6px; }
 @media (pointer: coarse) { html body button:focus-visible { outline: none !important; } }
 
-/* ---------- 5.3: the joystick: a ring of dark rubber in a brass bezel where the thumb lands, a knurled knob ---------- */
-#stick { position: fixed; inset: 0; pointer-events: none; z-index: 30; opacity: 0; transition: opacity 0.18s; }
-#stick.on { opacity: 1; transition: opacity 0.05s; }
-#stick .st-base, #stick .st-knob { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }
-#stick .st-base { width: calc(var(--r, 60px) * 2); height: calc(var(--r, 60px) * 2); margin: calc(var(--r, 60px) * -1) 0 0 calc(var(--r, 60px) * -1);
-  background: url(../assets/ui/touch/stick-base.png) center / 100% 100% no-repeat; }
-#stick .st-knob { width: calc(var(--r, 60px) * 1.05); height: calc(var(--r, 60px) * 1.05); margin: calc(var(--r, 60px) * -0.525) 0 0 calc(var(--r, 60px) * -0.525);
-  background: url(../assets/ui/touch/stick-knob.png) center / 100% 100% no-repeat; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55)); }
-#stick.sprint .st-base { filter: drop-shadow(0 0 10px rgba(239, 232, 210, 0.45)); }
+/* ---------- 5.3.1: the joystick, as phone games have it: a thin translucent ring and a soft knob where the thumb
+   lands, fading when it lets go; a very faint ring at rest bottom left says where it lives ---------- */
+#stick { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+#stick .st-base, #stick .st-knob { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; transition: opacity 0.2s; }
+#stick .st-base { width: calc(var(--r, 50px) * 2); height: calc(var(--r, 50px) * 2); margin: calc(var(--r, 50px) * -1) 0 0 calc(var(--r, 50px) * -1);
+  border: 2px solid rgba(255, 255, 255, 0.32); background: rgba(10, 14, 16, 0.18); box-sizing: border-box; opacity: 0.35; }
+#stick .st-knob { width: calc(var(--r, 50px) * 0.9); height: calc(var(--r, 50px) * 0.9); margin: calc(var(--r, 50px) * -0.45) 0 0 calc(var(--r, 50px) * -0.45);
+  background: rgba(255, 255, 255, 0.28); border: 1.5px solid rgba(255, 255, 255, 0.45); box-sizing: border-box; opacity: 0.35; }
+#stick.on .st-base, #stick.on .st-knob { opacity: 1; transition: opacity 0.05s; }
+#stick.sprint .st-base { border-color: rgba(255, 255, 255, 0.7); }
+#stick[hidden] { display: none; }
 /* (5.3) on a short screen (a phone held sideways) the panels are laid out as on a laptop and scaled to fit, so
    nothing is cut off and nothing has to be redesigned twice */
 @media (max-height: 520px) {

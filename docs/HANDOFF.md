@@ -192,6 +192,16 @@ game from a save slot, version stamps on all 56 modules and both stylesheets.
 - Locker: maker's plate removed, vent centred on the right plate, count beside its heading. Tank room hint: two lines
   of text under the bag (the plate cut into the tank's frame). Tutorial card: words and OK side by side.
 
+## 5.3.1 (owner: controls far too big; keep the screen as it was, just add controls; a Roblox-like dynamic stick)
+
+- The HUD keeps its desktop size on a phone; only the controls are added. The radar sits under the depth.
+- Joystick (CSS, no images): a thin translucent ring and soft knob (about 1.6 cm across) that appears under the
+  thumb anywhere on the left half and follows it; at rest a faint ring in the lower left shows where it lives.
+- Buttons: dark translucent discs with a thin light rim (main about 1.3 cm, others about 0.9 cm, top row smaller),
+  each with a painted picture (tools/action_icons.py -> assets/ui/icons/act-*.png, the same hand as the HUD icons).
+  Every button is always shown; one that can't be used is greyed and, tapped, says why (hot key 'msg:...').
+  tools/touch_kit.py (the brass set) stays in the repo, unused.
+
 ## 5.3.0 (owner: a full mobile pass; landscape only; painted controls; fix the lag)
 
 - **Install and full screen.** manifest.webmanifest (display fullscreen, orientation landscape, icons in
