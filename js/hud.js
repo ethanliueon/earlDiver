@@ -1,5 +1,6 @@
 import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
+import { drawGlyph } from './glyphs.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
 function steelPlate(ctx, x, y, w, h, s) {
@@ -227,13 +228,13 @@ export class Hud {
     const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
     // (5.3.1) a button is a dark translucent disc with a thin light rim (as a phone game's), a real picture on it
     const plate = (x, y, r, on, down) => {
-      ctx.fillStyle = down ? 'rgba(10,14,16,0.6)' : 'rgba(10,14,16,0.38)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
-      ctx.strokeStyle = down ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.32)'; ctx.lineWidth = 1.5 * u; ctx.stroke();
+      ctx.fillStyle = down ? 'rgba(8,12,14,0.62)' : 'rgba(8,12,14,0.42)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+      ctx.strokeStyle = down ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1.2 * u; ctx.stroke();
     };
     const pic = (name, x, y, w) => { const im = hudIcon('act-' + name); if (im) ctx.drawImage(im, x - w / 2, y - w / 2, w, w); };
     // the pictures on the buttons: plain shapes in the deck's cream paint
     const NAME = { eye: 'eye', hand: 'hand', leave: 'leave', sub: 'sub', lamp: 'lamp', lure: 'lure', glow: 'glow', pet: 'pet', tank: 'tank', trawl: 'trawl', air: 'air', sell: 'sell', auto: 'auto', pause: 'pause', bag: 'bag' };
-    const glyph = (kind, x, y, r) => { if (kind === 'air') { const im = hudIcon('air'); if (im) ctx.drawImage(im, x - r * 1.25, y - r * 1.25, r * 2.5, r * 2.5); return; } pic(NAME[kind] || kind, x, y, r * 2.5); };
+    const glyph = (kind, x, y, r) => drawGlyph(ctx, kind, x, y, r * 2.35); // (5.3.3) one set of bold white symbols (glyphs.js)
     const glyph1 = (kind, x, y, r, col) => {
       ctx.save(); ctx.translate(x, y); ctx.strokeStyle = ctx.fillStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       const k = r / 22;
@@ -303,22 +304,12 @@ export class Hud {
     ctx.save(); ctx.globalAlpha = (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7;
     const bdown = held.has(' ');
     plate(cx, cy, R, can, bdown);
-    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(239,232,210,${(0.3 + 0.35 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.7, 0, TAU); ctx.stroke(); }
-    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R * 0.62, 0, TAU); ctx.clip(); if (bdown) ctx.translate(0, 2 * u);
-    if (e.inSub) {
-      ctx.strokeStyle = '#ece6d2'; ctx.lineWidth = 4 * u; ctx.lineCap = 'round'; const o = g.armGame ? 0.15 : 0.5;
-      ctx.beginPath(); ctx.moveTo(cx - R * 0.45, cy + R * 0.2); ctx.lineTo(cx - R * 0.05, cy); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx - R * 0.05, cy); ctx.quadraticCurveTo(cx + R * 0.3, cy - R * o, cx + R * 0.45, cy - R * o * 0.3); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx - R * 0.05, cy); ctx.quadraticCurveTo(cx + R * 0.3, cy + R * o, cx + R * 0.45, cy + R * o * 0.3); ctx.stroke();
-    } else if (sel) {
-      const G = (k) => gear(P, k), tier = sel === 'net' ? G('net').look : sel === 'cam' ? G('cam').look : ['pot', 'fish', 'steel', 'cage'].findIndex((k) => (P.traps || {})[k] > 0);
-      this.icons = this.icons || new Map(); const k2 = sel + JSON.stringify(tier);
-      if (!this.icons.has(k2)) this.icons.set(k2, toolIcon(sel, tier, 120, 60));
-      const im = this.icons.get(k2), w = R * (sel === 'cam' ? 0.85 : 1.15), h = w * im.height / im.width; ctx.drawImage(im, cx - w / 2, cy - h / 2, w, h);
-    }
-    ctx.restore();
+    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(244,242,234,${(0.35 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R - 1.5 * u, 0, TAU); ctx.stroke(); }
+    // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
+    if (e.inSub) drawGlyph(ctx, 'claw', cx, cy + (bdown ? 2 * u : 0), R * 1.1);
+    else if (sel) drawGlyph(ctx, sel, cx, cy + (bdown ? 2 * u : 0), R * 1.1);
     const prog = g.photo ? g.photo.t / g.photo.dur : g.capture && g.capture.dur ? g.capture.t / g.capture.dur : 0;
-    if (prog > 0) { ctx.strokeStyle = 'rgba(244,246,240,0.9)'; ctx.lineWidth = 4 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.66, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(prog, 0, 1)); ctx.stroke(); }
+    if (prog > 0) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.arc(cx, cy, R - 1.5 * u, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(prog, 0, 1)); ctx.stroke(); }
     ctx.restore();
     // what it would go for: its name above the button, in its rarity's colour
     const nm = this.capWant && this.capWant[0] ? parsePrompt(this.capWant[0]).map((p) => p.label).join(' ') : '';
