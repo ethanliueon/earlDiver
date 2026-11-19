@@ -101,8 +101,8 @@ export class Gallery {
     const full = used >= gallerySlots(P);
     // (3.0.15) more room, bought right here: two more places a time
     const lvG = P.galleryLv || 0, step = GALLERY_STEPS[lvG];
-    const roomBtn = step !== undefined ? `<button class="gl-room" data-room="1" ${P.cash + 1e-6 < step ? 'disabled' : ''}>More room · ${gallerySlots(P)} → ${gallerySlots({ galleryLv: lvG + 1 })} places · $${step.toLocaleString()}</button>` : '<p>The aquarium is as big as the Margaret can hold.</p>';
-    this.root.querySelector('.gl-catch').innerHTML = !cand.length ? '<h4>Your catch</h4><p>Nothing alive aboard to put in. Bring something up, and Keep it on the Sell tab so it is not sold.</p>' : `<h4>Your catch</h4>` + cand.slice(0, 12).map((c) => {
+    const roomBtn = step !== undefined ? `<button class="gl-room" data-room="1" ${P.cash + 1e-6 < step ? 'disabled' : ''}>Room for ${gallerySlots({ galleryLv: lvG + 1 })} <span>$${step.toLocaleString()}</span></button>` : '<p>The aquarium is as big as the Margaret can hold.</p>';
+    this.root.querySelector('.gl-catch').innerHTML = !cand.length ? '<h4>Your catch</h4><p>Nothing alive aboard yet. Bring something up and choose Keep when you sell, and it will wait here.</p>' : `<h4>Your catch</h4>` + cand.slice(0, 12).map((c) => {
       const sp = SPECIES_BY_ID[c.s.id], why = c.why;
       return `<button data-place="${c.where}:${c.i}" ${why ? `disabled title="${esc(why)}"` : 'title="Put it into the tank"'} class="${c.s.kept ? 'kept' : ''}">${c.s.variant ? `<em class="rarel r-${c.s.variant}">${VARIANTS[c.s.variant].name}</em> ` : ''}${esc(sp.name)}<small>${placesTaken(P, c.s)} place${placesTaken(P, c.s) > 1 ? 's' : ''}</small>${c.s.kept ? '<small>kept</small>' : ''}${why ? `<small>${esc(why)}</small>` : ''}</button>`;
     }).join('') + (full ? '<p>The tank is full: sell one, or buy more room below.</p>' : '');
@@ -308,7 +308,7 @@ export class Gallery {
       if (press) this.pressFrame(ctx, r, shown.length); else this.glassFrame(ctx, r);
       if (!shown.length) { ctx.fillStyle = 'rgba(220,226,222,0.35)'; ctx.font = '15px "EB Garamond", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillText(press ? 'Empty: for animals that live below 500 m' : 'Empty', r.x + r.w / 2, r.y + r.h * 0.45); }
       // the plate under each tank
-      paintedText(ctx, press ? 'PRESSURE DISPLAY · DEEP' : 'OPEN DISPLAY', r.x + r.w / 2, base + 40, 15, { col: 'rgba(214,220,212,1)', alpha: 0.75, align: 'center' });
+      paintedText(ctx, press ? 'PRESSURE DISPLAY' : 'OPEN DISPLAY', r.x + r.w / 2, base + 40, 15, { col: 'rgba(214,220,212,1)', alpha: 0.75, align: 'center' });
     }
     // hearts, when petted
     this.hearts = this.hearts.filter((h) => (h.t += dt) < 1.4);

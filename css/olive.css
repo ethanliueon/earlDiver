@@ -235,3 +235,7 @@ html body #inventory .ct-cap { background: none !important; box-shadow: none !im
   font: italic 15px var(--o-text) !important; color: var(--o-cream-dim) !important; letter-spacing: 0 !important; text-transform: none !important; }
 html body #inventory .inv-catch2 h4 i { background: none !important; box-shadow: none !important; padding: 0 !important; font: 14px var(--o-num) !important; color: var(--o-cream-dim) !important; }
 html body #inventory .inv-catch2 h4.off i { font: italic 15px var(--o-text) !important; text-transform: none !important; }
+
+/* the aquarium's room button: its words and its price apart */
+html body .gl-catch .gl-room { display: flex !important; justify-content: space-between; align-items: center; gap: 12px; }
+html body .gl-catch .gl-room span { font: 500 16px var(--o-num) !important; opacity: 1 !important; }
