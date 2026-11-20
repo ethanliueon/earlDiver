@@ -13,12 +13,10 @@ const rnd = (seed) => { let s = seed >>> 0; return () => ((s = (s * 1664525 + 10
 const hsl = (h, s, l, a = 1) => `hsla(${h},${s}%,${l}%,${a})`;
 
 // the face colour of each: muted, deep, telling the buttons apart at a glance
-const HUE = {
-  net: [100, 24, 15], eye: [186, 32, 13], sprint: [208, 26, 14], hand: [28, 26, 14], sub: [78, 18, 13], cam: [36, 38, 15],
-  trap: [14, 32, 14], lamp: [34, 42, 14], claw: [200, 10, 14], leave: [78, 18, 13], tank: [190, 28, 13], auto: [78, 18, 13],
-  trawl: [100, 24, 15], air: [200, 14, 14], sell: [44, 30, 14], lure: [170, 34, 10], glow: [120, 26, 11], pet: [186, 32, 13], swap: [60, 8, 12],
-  dive: [200, 26, 14], door: [96, 14, 12], gear: [40, 18, 13], bag: [96, 18, 11], quest: [30, 22, 13], journal: [150, 14, 11], chart: [190, 20, 13],
-};
+// (5.9.6) the plain buttons all share one worn grey-brown, so colour on a button means one thing: rarity, on the
+// ability's. Only two keep a hint of their own: the sub's (and its controls') olive green, the glow stick's faint glow
+const PLAIN = [32, 10, 13];
+const HUE = new Proxy({ sub: [78, 18, 13], leave: [78, 18, 13], auto: [78, 18, 13], glow: [88, 30, 12] }, { get: (o, k) => o[k] || PLAIN });
 
 function face(x, R, hue, seed) {
   const [h, s, l0] = hue, l = l0 + 4; // (a little lighter than the deep: they must read over dark water)

@@ -208,7 +208,7 @@ export function kitOf(P) {
 }
 function mk(id, rnd) { const def = ITEMS[id]; return { u: newUid(), id, sk: rollSkills(def, rnd), ...(def.legend ? { leg: def.legend } : {}) }; }
 export const rollSkillsFor = (def, rnd) => rollSkills(def, rnd); // (3.0.0) the old one's wares are rolled when laid out
-export function giveRolled(P, q) { if (lockerFree(P) <= 0) return null; const n = { u: newUid(), id: q.id, sk: q.sk || [], isNew: true, ...(q.leg ? { leg: q.leg } : {}) }; kitOf(P).items.push(n); bump(P); return n; }
+export function giveRolled(P, q) { if (lockerFree(P) <= 0) return null; const n = { u: newUid(), id: q.id, sk: q.sk || [], isNew: true, ...(q.leg ? { leg: q.leg } : {}) }; kitOf(P).items.push(n); P.bagGot = (P.bagGot || 0) + 1; /* (5.9.6) for the bag's "!" */ bump(P); return n; }
 export const lockerCount = (P) => { const K = kitOf(P), on = new Set(Object.values(K.on)); return K.items.filter((q) => !on.has(q.u)).length; }; // (3.0.31) only what he hasn't on
 export const lockerFree = (P) => LOCKER - lockerCount(P);
 export const instOf = (P, u) => kitOf(P).items.find((q) => q.u === u) || null;
@@ -218,7 +218,7 @@ export const ownsItem = (P, id) => kitOf(P).items.some((q) => q.id === id);
 export const isOn = (P, q) => kitOf(P).on[ITEMS[q.id].kind] === q.u;
 const bump = (P) => { kitOf(P).rev = (kitOf(P).rev || 0) + 1; };
 // a new thing into the locker (null if it is full)
-export function giveItem(P, id, rnd) { if (!ITEMS[id] || lockerFree(P) <= 0) return null; const q = mk(id, rnd); q.isNew = true; kitOf(P).items.push(q); bump(P); return q; }
+export function giveItem(P, id, rnd) { if (!ITEMS[id] || lockerFree(P) <= 0) return null; const q = mk(id, rnd); q.isNew = true; kitOf(P).items.push(q); P.bagGot = (P.bagGot || 0) + 1; /* (5.9.6) */ bump(P); return q; }
 export function putOn(P, u) { const q = instOf(P, u); if (!q) return false; kitOf(P).on[ITEMS[q.id].kind] = u; bump(P); return true; }
 // take a thing off, back into the locker. Net, fins, tank, bag and suit always have one on: taking one off puts his
 // starter one back on (3.0.31). Not when the locker has no room for it; not the starter itself.

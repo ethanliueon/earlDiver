@@ -930,8 +930,8 @@ html.touch body #inventory .eq-stage .eq-col:not(#_a):not(#_b) { row-gap: 26px !
 #legendfx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9350; }
 /* ---------- (5.9.2) the journal, again: the game's own type, real paper, divider tabs on its edge ---------- */
 /* the pages: painted paper (assets/ui/book), browned at the edges and darker into the gutter */
-html body #journal .page.left:not(#_a):not(#_b):not(#_c), html body #bookshell .bs-page.l { background: #e4d8b8 url("../assets/ui/book/page_left.jpg") center / 100% 100% no-repeat !important; }
-html body #journal .page.right:not(#_a):not(#_b):not(#_c), html body #bookshell .bs-page.r { background: #e4d8b8 url("../assets/ui/book/page_right.jpg") center / 100% 100% no-repeat !important; }
+html body #journal .page.left:not(#_a):not(#_b):not(#_c), html body #bookshell .bs-page.l { background: #cbba92 url("../assets/ui/book/page_left.jpg") center / 100% 100% no-repeat !important; }
+html body #journal .page.right:not(#_a):not(#_b):not(#_c), html body #bookshell .bs-page.r { background: #cbba92 url("../assets/ui/book/page_right.jpg") center / 100% 100% no-repeat !important; }
 html body #journal .page::before:not(#_a) { content: none; }
 html body #journal .page.left::before, html body #journal .page.right::before { content: none !important; }
 /* the game's type everywhere in it: no handwriting, no italics, nothing tilted */
@@ -975,3 +975,18 @@ html.touch body #quests-hud #quests-btn:not(#_a) { position: relative; overflow:
 html.touch body #quests-hud #quests-btn:not(#_a) img { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; margin: 0 !important; max-width: none !important; }
 /* (5.9.5) no "turn your phone sideways" card: held upright, the game is shown turned (index.html's shell) */
 html body #rotate, html body #turn-phone { display: none !important; }
+/* (5.9.6) Quests in the book: the log on the left page, the board on the right, written larger to fill them */
+html.touch body.bookmode #quests .qs-body:not(#_a) { display: grid; grid-template-columns: 1.25fr 1fr; column-gap: 64px; align-items: start; overflow: auto; max-height: calc(min(640px, 82vh) - 130px); padding: 0 6px 0 4px; }
+html.touch body.bookmode #quests .qs-pg { min-width: 0; }
+html.touch body.bookmode #quests h3:not(#_a):not(#_b) { font: 700 15px var(--o-text) !important; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(46, 38, 24, 0.75) !important; margin: 4px 0 10px !important; border-bottom: 1px solid rgba(70, 56, 30, 0.3); padding-bottom: 6px; }
+html.touch body.bookmode #quests .qs-q:not(#_a):not(#_b) { padding: 10px 6px 12px !important; margin: 0 0 6px !important; }
+html.touch body.bookmode #quests .qs-q .qs-t b:not(#_a) { font: 600 18px/1.2 var(--o-text) !important; }
+html.touch body.bookmode #quests .qs-q .qs-t span:not(#_a), html.touch body.bookmode #quests .qs-q .qs-t small:not(#_a) { font: 500 14px/1.35 var(--o-text) !important; color: rgba(46, 38, 24, 0.7) !important; }
+html.touch body.bookmode #quests .qs-pay:not(#_a) { font: 700 18px var(--o-num, var(--o-text)) !important; color: #2e2618 !important; }
+html.touch body.bookmode #quests .qs-foot:not(#_a):not(#_b) { margin-top: 26px !important; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border: 0 !important; background: none !important; }
+html.touch body.bookmode #quests .qs-wait:not(#_a) { font: 500 15px var(--o-text) !important; color: rgba(46, 38, 24, 0.7) !important; }
+html.touch body.bookmode #quests .qs-locked:not(#_a) { font: 500 16px/1.4 var(--o-text) !important; color: rgba(46, 38, 24, 0.7) !important; }
+/* the divider tabs come out from behind the book's edge, in the cover's cloth: tucked under it by a third of their length */
+html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a):not(#_b):not(#_c), html.touch body.bookmode #booktabs:not(#_a):not(#_b):not(#_c) { z-index: 38 !important; left: calc(50vw + min(520px, 46vw) - 40px); top: calc(50vh - min(320px, 41vh) + 30px); gap: 4px; }
+html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button:not(#_b):not(#_c), html.touch body.bookmode #booktabs:not(#_a) button:not(#_b):not(#_c) { width: 122px !important; padding: 0 0 0 50px !important; text-align: left !important; color: #e2d9bc !important; }
+html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button.on:not(#_b):not(#_c), html.touch body.bookmode #booktabs:not(#_a) button.on:not(#_b):not(#_c) { width: 130px !important; color: #2e2618 !important; }

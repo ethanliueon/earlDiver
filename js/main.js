@@ -344,6 +344,10 @@ const ui = new UI({
     if (r === false && act !== 'swaps' && hud.toasts.length === n0 && hud.toasts[n0 - 1] === last0) hud.toast(act === 'press' ? 'The chambers are full' : act === 'tobag' ? 'The bag is full' : 'The tank is full', 'warn');
     return r;
   },
+  // (5.9.6) Use on a trap in the bag: at the surface the trap-setting card opens; anywhere else, why not
+  onTrapUse: (k) => { const e = g.earl; const why = g.aboard ? 'Traps are set from the water: jump in, at the surface' : canSetHere(g);
+    if (why) { hud.toast(why === 'Traps are set from the surface: come up first' ? 'You can only set a trap at the surface' : why, 'warn'); return false; }
+    void e; g.toolSel = 'trap'; setTimeout(() => ui.openTrapSet(), 0); return 'open'; },
   onSetTrap: (type, depth) => {
     const why = canSetHere(g); if (why) { hud.toast(why, 'warn'); return true; }
     if (trapsFree(g, type) <= 0) { hud.toast('None of those left to set', 'warn'); return false; }
@@ -2011,7 +2015,7 @@ function update(dt) {
     if (g.sprintLock) { if (e.inSub) g.sprintLock = false; else { g.sprintIdle = touch && touch.vec.on ? 0 : (g.sprintIdle || 0) + dt; if (g.sprintIdle > 1.2) g.sprintLock = false; } }
     if (touch) touch.lock = !!g.sprintLock;
     // (5.6) the swap chip on the big button: the next tool owned into the hand (as its key would)
-    if (pressed.has('swap')) { pressed.delete('swap'); const trs = profile.traps || {}, owned = ['net'].concat(owns(profile, 'camera') ? ['cam'] : [], TRAP_ORDER.some((k) => trs[k] > 0) ? ['trap'] : []); const cur = g.toolSel === 'none' ? 'net' : g.toolSel; const nx = owned[(owned.indexOf(cur) + 1) % owned.length]; pressed.add({ net: '1', cam: '2', trap: '3' }[nx]); }
+    if (pressed.has('swap')) { pressed.delete('swap'); const owned = ['net'].concat(owns(profile, 'camera') ? ['cam'] : []); /* (5.9.6) net and camera only: traps are used from the bag */ const cur = g.toolSel === 'none' || g.toolSel === 'trap' ? 'net' : g.toolSel; const nx = owned[(owned.indexOf(cur) + 1) % owned.length]; pressed.add({ net: '1', cam: '2', trap: '3' }[nx]); }
     if (pressed.has('obs')) { pressed.delete('obs'); const ot = g.obsTarget || observeTarget(); if (ot) interact(ot, false); }
     g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);
@@ -2832,6 +2836,10 @@ function bookTabs() {
     if (!sh && inBook) { sh = document.createElement('div'); sh.id = 'bookshell'; sh.innerHTML = '<div class="bs-page l"></div><div class="bs-page r"></div>'; document.body.appendChild(sh); }
     if (sh) sh.hidden = !inBook; document.body.classList.toggle('bookmode', !!inBook); }
   if (show) for (const b of el.children) { const on = !!open[b.dataset.t]; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
+  // (5.9.6) the tabs hang off the book actually showing: their inner third tucked under its right edge, near its top
+  if (show) { const bk = open.journal ? document.getElementById('journal') : document.getElementById('bookshell');
+    const R = bk && bk.getBoundingClientRect(); if (R && R.width) { const z = parseFloat(getComputedStyle(el).zoom) || 1, L = (R.right - 40) / z + 'px', T = (R.top + 30) / z + 'px';
+      if (el.style.left !== L) el.style.setProperty('left', L, 'important'); if (el.style.top !== T) el.style.setProperty('top', T, 'important'); } }
 }
 let lureNoUntil = 0;
 function lureAsk() {

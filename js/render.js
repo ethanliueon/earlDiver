@@ -1174,6 +1174,23 @@ export class Renderer {
     // (5.6.8) on a phone, the things a tap acts on (the ladder, the cabin door, the sub, a thing to pick up, a trap, the
     // Margaret when there is a catch to sell): thin cream corners round each, breathing, the same mark an animal to
     // observe gets. Where each was drawn is kept for the tap (CSS pixels)
+    // (5.9.6) the way aboard: at the surface near the Margaret (and not already at her ladder) a short line of chevrons
+    // runs along the water from Earl to her ladder, drifting toward it, so nobody is left guessing how to get on
+    { const e = g.earl, lxW = BOAT.x + 9 * 0.14, dx = lxW - e.x;
+      const want = g.mode === 'play' && !g.aboard && !e.inSub && !g.kill && e.y < 3 && e.y > -1 && Math.abs(dx) > 1.6 && Math.abs(dx) < 26 && !(g.helm);
+      this.wayK = clamp((this.wayK || 0) + (want ? 1 : -1) * (g.dtLast || 1 / 60) * 2.5, 0, 1);
+      if (this.wayK > 0.01) {
+        const dir = Math.sign(dx), n = Math.min(7, Math.max(2, Math.floor(Math.abs(dx) / 1.4))), step = Math.abs(dx) / (n + 1), ph = (g.time * 0.9) % 1, yW = 0.35;
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (let i = 0; i < n; i++) {
+          const f = (i + ph) / n, xW = e.x + dir * step * (i + ph + 0.5), sx = S(xW), sy = Sy(yW) - Math.sin(g.time * 1.3 + xW) * ppm * 0.05;
+          const a = this.wayK * Math.sin(Math.PI * clamp(f, 0, 1)) * 0.85, c = ppm * 0.22;
+          for (const [w, col] of [[ppm * 0.13, `rgba(14,18,10,${(a * 0.6).toFixed(3)})`], [ppm * 0.06, `rgba(240,228,196,${a.toFixed(3)})`]]) {
+            ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.5, w); ctx.beginPath(); ctx.moveTo(sx - dir * c, sy - c); ctx.lineTo(sx, sy); ctx.lineTo(sx - dir * c, sy + c); ctx.stroke(); }
+        }
+        ctx.restore();
+      }
+    }
     this.tapRects = [];
     if (this.touch && g.tapMarks && g.tapMarks.length && g.mode === 'play') {
       const fk = window.__fingerK || 1, kC = innerWidth / this.c.width / fk, BF = this.boatFrame, tk = g.tutAction ? String(g.tutAction.key).toLowerCase() : null;

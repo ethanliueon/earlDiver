@@ -331,7 +331,11 @@ export class UI {
     { const txt = st && st.on ? stepLabel(P0) : '', el = wrap.querySelector('.qh-step'); // (4.3.4) the first fish shows which part it is on
       if (el.textContent !== txt) { el.textContent = txt; if (txt && show) this.hudPeek(); } } // (5.0) a new step: only its words show a moment; the journal and chart stay folded away
     const n = this.h.questsReady ? this.h.questsReady() : 0, dot = b.querySelector('i');
-    dot.hidden = !n; if (n) dot.textContent = n;
+    // (5.9.6) on a phone the journal's coin wears a red "!" (as games do) for a quest to claim or an animal not yet looked at
+    const gJ = this.h.getGame && this.h.getGame(), jNew = !!(P0 && gJ && gJ.journal && gJ.journal.size > (P0.jSeenN ?? gJ.journal.size));
+    if (P0 && gJ && gJ.journal && P0.jSeenN == null) P0.jSeenN = gJ.journal.size;
+    const touch = document.documentElement.classList.contains('touch'), want = n > 0 || (touch && jNew), txt = touch ? '!' : String(n);
+    dot.hidden = !want; if (want && dot.textContent !== txt) dot.textContent = txt; dot.classList.toggle('bang', touch);
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
   }
   // (4.28) open or fold the left-hand group; open for `ms` then fold again on its own
@@ -409,15 +413,15 @@ export class UI {
     }
     fillQuests(P); const S = questsOf(P), m = QUEST_MAIN[S.main];
     const bar = (a, b) => `<div class="qs-bar"><i style="width:${Math.round(Math.min(1, b ? a / b : 1) * 100)}%"></i></div>`;
-    let html = '';
+    let html = '<div class="qs-pg l">'; // (5.9.6) two pages: the log (and the refresh) on the left, the board on the right
     if (m) {
       const ok = S.mainProg >= m.need;
       html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
         <div class="qs-pay">${m.gift ? 'a gift' : money(m.pay, false)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
-    html += `<h3>The board</h3>`;
+    const footAt = html.length; html += `</div><div class="qs-pg r"><h3>The board</h3>`;
     // (4.3.0) during the tutorial the board waits, so one step at a time is all there is to claim
-    if (tutorialOn(P)) { $('quests').querySelector('.qs-body').innerHTML = html + `<p class="qs-locked">The board opens when the tutorial is done. Finish the Margaret's log steps first.</p>`; return; }
+    if (tutorialOn(P)) { $('quests').querySelector('.qs-body').innerHTML = html + `<p class="qs-locked">The board opens when the tutorial is done. Finish the Margaret's log steps first.</p></div>`; return; }
     const hm = (ms) => { const totM = Math.ceil(ms / 60000), h = Math.floor(totM / 60), mi = totM % 60; return h ? `${h} h ${mi} min` : `${mi} min`; };
     for (const q of S.board) {
       // (4.0.0) a claimed quest stays, dimmed, until its time runs out; a new one is marked NEW until the board is seen
@@ -431,6 +435,7 @@ export class UI {
     // (4.0.1) the countdown is plain words under the board with a ticking green clock; only the button is brass
     const clock = (ms) => { const t = Math.ceil(ms / 1000), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sc = t % 60; return `${h}:${String(m).padStart(2, '0')}:${String(sc).padStart(2, '0')}`; };
     html += `<div class="qs-foot">${wait > 0 ? `<span class="qs-wait">Free refresh in <b class="qs-clock">${clock(wait)}</b></span><button class="qs-buy" data-q="refresh|paid" ${P.cash < price ? 'disabled' : ''}>New quests now, ${money(price, false)}</button>` : '<span class="qs-wait">A free refresh is ready</span><button class="qs-buy" data-q="refresh|free">New quests (free)</button>'}</div>`;
+    { const fi = html.lastIndexOf('<div class="qs-foot">'); const foot = html.slice(fi); html = html.slice(0, footAt) + foot + html.slice(footAt, fi) + '</div>'; } // the refresh goes under the log, on the left page
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
@@ -573,7 +578,7 @@ export class UI {
       dress(sec, sel); }
     window.addEventListener('resize', () => { for (const [id, sel] of PANELS) { const sec = $(id); if (sec) dress(sec, sel); } });
   }
-  toggleInventory(force) { const el = $('inventory'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderInventory(); }
+  toggleInventory(force) { const el = $('inventory'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) { this.renderInventory(); const P1 = this.h.getProfile && this.h.getProfile(); if (P1) P1.bagSeenAt = (P1.bagGot || 0); } } // (5.9.6) opened: the bag's "!" goes
   // B: what Earl has on him, what is in the sub, his gear
   renderInventory() {
     const g = this.h.getGame(), P = this.h.getProfile();
@@ -960,13 +965,17 @@ export class UI {
     const beltSlot = (k) => { const n = (g.items && g.items[k]) || 0;
       return `<div class="eq-slot sq belt${n ? ' r-common' : ' empty'}" data-belt="${k}" title="${SUPN[k]}">${n ? `<img src="${pictureOf('supply', k, 120, 72, true)}" alt="">${k === 'necklace' ? `<b class="belt-n">${n}/5</b>` : ''}` : `<span>${SUPN[k]}</span>`}<small class="slot-nm">${SUPN[k]}</small></div>`; };
     const spare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).map((k) => `<div class="lk-tile r-common sup" data-sup="${k}" title="${SUPN[k]}: tap to put on the belt"><img src="${pictureOf('supply', k, 120, 72, true)}" alt=""><b class="belt-n">×${SP[k]}</b></div>`).join('');
-    const nSpare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).length;
+    // (5.9.6) traps live in the bag, not on the swap chip: a tile each kind with its number; a tap opens a card with Use
+    const TR = P.traps || {}, trapKinds = Object.keys(TRAPS).filter((k) => (TR[k] || 0) > 0);
+    const trapTiles = trapKinds.map((k) => `<div class="lk-tile r-common sup trp" data-trap="${k}" title="${TRAPS[k].name}: tap to use"><img src="${pictureOf('trap', k, 120, 72, true)}" alt=""><b class="belt-n">×${TR[k]}</b></div>`).join('');
+    const trapPop = this.trapSel && TRAPS[this.trapSel] && (TR[this.trapSel] || 0) > 0 ? `<div class="item-pop trap-pop"><div class="ip-box r-common"><button class="ip-close" aria-label="Close">×</button><div class="ip-cols one"><img class="ip-pic" src="${pictureOf('trap', this.trapSel, 240, 144, true)}" alt=""><h4>${TRAPS[this.trapSel].name}</h4><p>${TR[this.trapSel]} owned. Set from the water, at the surface: it is lowered on a line with a buoy, and fills while you are away.</p></div><div class="lk-acts"><button data-trapuse="${this.trapSel}">Use</button></div></div></div>` : '';
+    const nSpare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length;
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot('necklace')}${beltSlot('lure')}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       + this.airHtml(P, g)
-      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}`;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
@@ -1072,7 +1081,11 @@ export class UI {
     const beltMsg = () => this.h.onMessage && this.h.onMessage('Change gear on deck, in the cabin or in the sub');
     root.querySelectorAll('[data-belt]').forEach((el) => el.addEventListener('click', () => { if (!this.h.canChangeGear()) return beltMsg(); if (this.h.onBelt) { this.h.onBelt(el.dataset.belt, false); this.renderInventory(); } }));
     root.querySelectorAll('[data-sup]').forEach((el) => el.addEventListener('click', () => { if (!this.h.canChangeGear()) return beltMsg(); if (this.h.onBelt) { this.h.onBelt(el.dataset.sup, true); this.renderInventory(); } }));
-    const pop = box.querySelector('.item-pop');
+    root.querySelectorAll('[data-trap]').forEach((el) => el.addEventListener('click', () => { this.trapSel = el.dataset.trap; this.renderInventory(); }));
+    { const tp = box.querySelector('.trap-pop'); if (tp) tp.addEventListener('click', (ev) => { const u2 = ev.target.closest('[data-trapuse]');
+      if (u2) { const k = u2.dataset.trapuse; this.trapSel = null; if (this.h.onTrapUse && this.h.onTrapUse(k) === 'open') { this.toggleInventory(false); return; } this.renderInventory(); return; }
+      if (ev.target === tp || ev.target.closest('.ip-close')) { this.trapSel = null; this.renderInventory(); } }); }
+    const pop = box.querySelector('.item-pop:not(.trap-pop)');
     if (pop) { pop.addEventListener('click', (ev) => { if (ev.target === pop || ev.target.closest('.ip-close')) { this.lkSel = null; this.renderInventory(); } }); }
     if (!this.h.canChangeGear()) return;
     const put = (u) => { this.h.onEquip('on:' + u); this.renderInventory(); };
@@ -1337,6 +1350,7 @@ export class UI {
     const el = $('journal');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
+    if (open) { const P1 = this.h.getProfile && this.h.getProfile(), g1 = this.h.getGame && this.h.getGame(); if (P1 && g1 && g1.journal) P1.jSeenN = g1.journal.size; } // (5.9.6) looked at: the "!" goes
     if (open && el.hidden === false && !this['_was_' + 'toggleJournal']) { const g0 = this.h.getGame(); g0 && g0.audio && g0.audio.ready && g0.audio.journalPage(); }
     this['_was_' + 'toggleJournal'] = open;
     if (open) { this.toggleWorkshop(false); this.renderJournal(); }

@@ -47,6 +47,7 @@ const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const HUDT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
 const GAME = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'; // (4.27) the HUD face
 
+const dwOf = (ctx) => ctx.measureText('0').width; // (5.9.6) one figure's width
 export class Hud {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
@@ -396,6 +397,10 @@ e.inSub ? [
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
       } else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
+      if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do
+        const bx = x + r * 0.74, by = y - r * 0.74, br = Math.max(8 * u, r * 0.4), pq = 1 + 0.08 * Math.sin(g.time * 5);
+        ctx.save(); ctx.globalAlpha = 1; ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.arc(bx, by, br * pq, 0, TAU); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff6ea'; ctx.font = `700 ${br * 1.45}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + br * 0.06); ctx.restore(); }
       if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 2.2, r * 2.2, g.time, 7); // (5.9.1) a legendary's sparks
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
         if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'legendary' ? 'rgba(255,214,130,0.95)' : 'rgba(240,236,214,0.95)'; ctx.lineWidth = 3.4 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
@@ -440,10 +445,9 @@ e.inSub ? [
     ctx.save(); ctx.globalAlpha = aboard ? (handOn ? 1 : 0.7) : (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7; // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
     const bKey = aboard ? 'f' : ' ';
-    const rarOf = (k) => { const it = k === 'net' ? gear(P, 'net') : k === 'cam' && owns(P, 'camera') ? gear(P, 'cam') : null; return it && it.rarity || null; }; // (5.6.9) the tool's rarity tints its coin
+    const rarOf = () => null; // (5.9.6) no rarity colours on the tool buttons: only the ability's button carries one
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
-    if (!aboard && !e.inSub && rarOf(sel || 'net') === 'legendary') legendMotes(ctx, cx, cy, R * 2.2, R * 2.2, g.time, 3); // (5.9.1)
     if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
     if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
@@ -465,7 +469,7 @@ e.inSub ? [
     }
     // (5.6) the swap chip on the big button's rim: the next tool owned, a tap takes it in hand
     if (!e.inSub && !aboard) {
-      const trs = P.traps || {}, owned = ['net'].concat(owns(P, 'camera') ? ['cam'] : [], ['pot', 'fish', 'steel', 'cage'].some((k) => trs[k] > 0) ? ['trap'] : []);
+      const owned = ['net'].concat(owns(P, 'camera') ? ['cam'] : []); /* (5.9.6) net and camera only */
       // (5.6.9) larger, and always there: the tool it swaps to; with nothing to swap to, a camera behind a padlock
       const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1);
       if (owned.length > 1) {
@@ -605,19 +609,23 @@ e.inSub ? [
       ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 1;
       const base = pad + 44 * s;
       ctx.font = `600 ${24 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText('m', rx0, base);
-      // (5.7.0) the figures roll like a dive computer's: the last digit turns smoothly to the next as he goes
-      { ctx.font = `600 ${58 * s}px ${HUDT}`; ctx.fillStyle = ink(1);
-        const v = Math.max(0, e.y), n = Math.floor(v), fr = v - n, dw = ctx.measureText('0').width, xr = rx0 - 24 * s, last = n % 10, lh = 58 * s * 0.86;
-        const pre = n >= 10 ? String(Math.floor(n / 10) + (last === 9 && fr > 0.5 ? 0 : 0)) : '';
-        if (pre) ctx.fillText(pre, xr - dw, base);
-        ctx.save(); ctx.beginPath(); ctx.rect(xr - dw - 2 * s, base - lh, dw + 4 * s, lh + 10 * s); ctx.clip(); ctx.textAlign = 'center';
-        const ease = fr < 0.86 ? 0 : (fr - 0.86) / 0.14, off = ease * ease * (3 - 2 * ease) * lh; // it holds, then clicks over in the last quarter metre
-        ctx.fillText(String(last), xr - dw / 2, base - off); ctx.fillText(String((last + 1) % 10), xr - dw / 2, base - off + lh);
+      // (5.9.6) the figure changes calmly: a small dead zone so it does not flicker as he bobs on a metre's line, and
+      // the new number slides in a little and fades up over a quarter second while the old one fades out (the last digit
+      // used to snap over in the last quarter metre, and the next digit's top showed under the window)
+      { ctx.font = `600 ${58 * s}px ${HUDT}`;
+        const v = Math.max(0, e.y), xr = rx0 - 24 * s, lh = 58 * s * 0.86, nowT = performance.now();
+        if (this.dShown == null) { this.dShown = Math.floor(v); this.dPrev = null; this.dDir = 1; }
+        if (v >= this.dShown + 1.12 || v < this.dShown - 0.12) { this.dPrev = this.dShown; this.dShown = Math.floor(v); this.dT = nowT; this.dDir = this.dShown > this.dPrev ? 1 : -1; }
+        const k = this.dPrev == null ? 1 : clamp((nowT - (this.dT || 0)) / 260, 0, 1), ek = k * k * (3 - 2 * k), sl = lh * 0.22;
+        ctx.save(); ctx.beginPath(); ctx.rect(xr - 4 * dwOf(ctx) - 8 * s, base - lh - 4 * s, 4 * dwOf(ctx) + 12 * s, lh + 6 * s); ctx.clip();
+        if (k < 1) { ctx.globalAlpha = 1 - ek; ctx.fillStyle = ink(1); ctx.fillText(String(this.dPrev), xr, base - this.dDir * sl * ek); }
+        ctx.globalAlpha = ek; ctx.fillStyle = ink(1); ctx.fillText(String(this.dShown), xr, base + this.dDir * sl * (1 - ek));
+        if (k >= 1) this.dPrev = null;
         ctx.restore(); }
       ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
       // a thin line with its painted icon at the left
       // (5.0) a short line with its mark in the same letters as the depth: O2 for his air, HULL for the sub's
-      const lineW = 132 * s, lx = rx0 - lineW, lh = 6 * s;
+      const lineW = 132 * s, lx = rx0 - lineW, lh = (touch ? 10 : 6) * s; // (5.9.6) thicker on a phone: new divers did not see it
       const line = (name, y, frac, col, pulse = 1) => {
         ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4 * s;
         ctx.fillStyle = `rgba(${cr},${cg},${cb},${(0.8 * lit).toFixed(3)})`;
@@ -637,6 +645,17 @@ e.inSub ? [
         const fw = (lineW - 2) * clamp(o2, 0, 1), k2 = (g.time * 1.6) % 1, bx = lx + 1 + fw * (1 - k2);
         ctx.save(); ctx.globalAlpha = 0.85 * (1 - k2); ctx.fillStyle = '#eaf6ff'; ctx.shadowColor = 'rgba(200,235,255,0.9)'; ctx.shadowBlur = 8 * s; ctx.beginPath(); ctx.arc(bx, ay + lh / 2, lh * 0.55, 0, TAU); ctx.fill(); ctx.restore(); }
       if (e.inSub) { const hi = clamp(g.sub.hull, 0, 1); line('hull', ay + 22 * s, hi, hi < 0.5 ? [226, 66, 52] : [130, 196, 164]); }
+      // (5.9.6) the first time under, a callout on the air bar: a pulsing cream frame round it and words to its left
+      const PA = g.profile;
+      if (touch && PA && !e.inSub && !aboard && (e.y > 1.5 || this.airTipT > 0) && !PA.tutAirSeen) { this.airTipT = (this.airTipT || 0) + dt; if (this.airTipT > 9) { PA.tutAirSeen = true; this.airTipT = 0; } }
+      if (touch && this.airTipT > 0 && PA && !PA.tutAirSeen) {
+        const k = Math.min(1, this.airTipT / 0.4, (9 - this.airTipT) / 0.6), q = 0.5 + 0.5 * Math.sin(g.time * 4.5), fx0 = lx - 44 * s, fy0 = ay - 7 * s, fw = lineW + 50 * s, fh = lh + 14 * s;
+        ctx.save(); ctx.globalAlpha = k;
+        ctx.strokeStyle = 'rgba(14,18,10,0.7)'; ctx.lineWidth = 5 * s; ctx.beginPath(); ctx.roundRect(fx0, fy0, fw, fh, fh / 2); ctx.stroke();
+        ctx.strokeStyle = `rgba(240,230,200,${(0.7 + 0.3 * q).toFixed(3)})`; ctx.lineWidth = 2.2 * s; ctx.stroke();
+        ctx.font = `700 ${24 * s}px ${HUDF}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.fillStyle = '#efe8d2';
+        ctx.fillText('Your air', fx0 - 14 * s, fy0 + fh / 2 - 12 * s); ctx.font = `500 ${18 * s}px ${HUDF}`; ctx.fillStyle = 'rgba(239,232,210,0.85)'; ctx.fillText('come up before it runs out', fx0 - 14 * s, fy0 + fh / 2 + 12 * s);
+        ctx.restore(); }
       yy = ay + (e.inSub ? 22 * s : 0) + lh + 18 * s;
       if ((g.loadKg || 0) > 10 && !e.inSub) notes.push([`Heavy: ${Math.round(g.loadKg)} kg`, '#f06a5c']);
       const py = pad - 8 * s;
@@ -673,7 +692,7 @@ e.inSub ? [
     // the seafloor sonar (a fitted extra): under the instrument, the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy + 4 * s, s); yy += 88 * s; }
     // (5.1.1) on a touch screen the radar sits under the instrument; the bottom right is the actions'
-    const rrT = 56 * s, rcyT = yy + 6 * s + rrT; // (5.6.9b) larger: 44 to 56
+    const rrT = 66 * s, rcyT = yy + 6 * s + rrT; // (5.6.9b) larger: 44 to 56; (5.9.6) 66: as wide as the air bar over it
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {
