@@ -179,7 +179,8 @@ export class Entity {
     if (e.speedNow > 2) r += 25;
     if (fast) r += 90;
     if (e.lampOn) r += 70;
-    if (g.necklaceOn) r += 25; // the necklace's glow is a light too, if a dim one
+    if (g.necklaceOn) r += 25;
+    if (g.abilLight) r += 25 * g.abilLight; // (5.9.0) a Flare is seen too // the necklace's glow is a light too, if a dim one
     if (e.suitQuiet) r *= 0.7; // no bubbles: much less to hear
     if (e.atSurface) r += 30; // splashing
     return r;
@@ -221,6 +222,9 @@ export class Entity {
   }
 
   update(g, dt) {
+    // (5.9.0) Tidewarden: held still while the water turns, then gone far off for five minutes
+    if (this.frozen) { this.dist = dist(this.x, this.y, g.earl.x, g.earl.y); return; }
+    if (this.sleepT > 0) { this.sleepT -= dt; this.marked = false; this.dist = dist(this.x, this.y, g.earl.x, g.earl.y); this.fade = this.sleepT > 0 ? 0 : 1; return; }
     this.closeIn(g);
     const e = g.earl;
     const d = dist(this.x, this.y, e.x, e.y);

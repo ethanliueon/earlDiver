@@ -2,6 +2,8 @@ import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, br
 import { lockerTexture } from './textures.js';
 import { drawToken } from './tokens.js';
 import { drawCoin, drawCash } from './coins.js';
+import { abilityState, whyNot, cooldownLeft } from './abilities.js';
+import { rarityOf } from './specimens.js';
 import { drawGlyph } from './glyphs.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
@@ -290,12 +292,17 @@ export class Hud {
     // (5.7.1) the same four in the sub as in the water, each doing its own job there: the sub's slot lets him out (in
     // the water it calls her), the glow stick, the hand (the station, Dave, selling when she is docked), the lamp.
     // Leaving always works (it used to wait on the prompt, which hides itself after a few seconds)
+    // (5.9.0) the ability in the arc's last place: the carried scroll's emblem on a coin of its rarity; a sweep while it
+    // recovers, a bright ring running down while it is on
+    const AB = this.abilDef || null, ABS = abilityState(g);
+    const abil = () => { if (!AB) return { key: 'ability', icon: 'ab_sprint', on: false, why: 'No ability: put a scroll on in the bag', lock: true };
+      const why = whyNot(g, P, AB); return { key: 'ability', icon: 'ab_' + AB.fam, look: { tier: AB.tier }, tint: AB.tier, on: !why || why === 'Already running', lit: ABS.activeT > 0, why, abil: true }; };
     const handSub = e.inSub ? (g.subHandF ? 'f' : sub.docked ? 'u' : null) : null;
     const A = e.inSub ? [
       { key: 'leavesub', icon: 'leave', on: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
       { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
       { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach' },
-      { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
+      abil(),
     ] : [
       // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
       // (5.6.8) the same four in the same places on deck and in the cabin: the sprint button runs there; the rest wait
@@ -308,7 +315,7 @@ export class Hud {
       (() => { if (aboard) return this.inCabin ? { key: 'outdeck', icon: 'door', on: true } : { key: 'divein', icon: 'dive', on: !(g.aboard && (g.aboard.jump || g.aboard.climb)) && !g.helm, why: 'Not now' };
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
         return { key: hu ? 'u' : 'f', icon: 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
-      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'For the water' },
+      abil(),
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
     const ROW = [{ key: 'journal', dom: true }, { key: 'b', icon: 'bag', on: true }].concat( // (5.6.9) the journal's coin (HTML) above the bag
@@ -386,6 +393,10 @@ e.inSub ? [
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
       } else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
+      if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
+        if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'legendary' ? 'rgba(255,214,130,0.95)' : 'rgba(240,236,214,0.95)'; ctx.lineWidth = 3.4 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
+        else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
+          ctx.font = `700 ${11 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(cdl >= 90 ? Math.ceil(cdl / 60) + 'm' : String(Math.ceil(cdl)), x, y + r * 0.62); ctx.shadowBlur = 0; } }
       if (a.n > 1 && !a.lock) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
       ctx.restore();
@@ -462,14 +473,13 @@ e.inSub ? [
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No camera yet: the computer in the cabin sells them');
       }
     }
-    // (5.7.2) sprint in the bottom left corner, fixed (it floated above the stick and stuck out): smaller, snug in the
-    // corner inside the safe edge, the stick's resting ring moved over to leave a gap. A tap locks sprinting on. Not in the sub
-    if (!e.inSub) {
+    // (5.9.0) the lamp in the bottom left corner (the arc's last place is the ability now), in the water and the sub
+    if (!aboard) {
       const rs = 18 * u, px2 = 12 * u + rs, py2 = H - 12 * u - rs;
-      const dn = pressFx('sprint', px2, py2, rs);
-      drawCoin(ctx, px2, py2, rs, 'sprint', dn ? 'press' : g.sprintLock ? 'lit' : 'on', g.sprintLock ? { lit: true } : null);
-      if (tutKey === 'sprint') ring(px2, py2, rs);
-      hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'sprint');
+      const dn = pressFx('l', px2, py2, rs);
+      drawCoin(ctx, px2, py2, rs, 'lamp', dn ? 'press' : e.lampOn ? 'lit' : 'on', e.lampOn ? { lit: true } : null);
+      if (tutKey === 'l') ring(px2, py2, rs);
+      hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'l');
     }
     // (5.8.1) the spotlight: while the tutorial waits on a button, the screen darkens round it (the game is paused under
     // it, main.js) and the button stands in a pool of light; its ring and arrow are drawn again over the dark
@@ -686,6 +696,9 @@ e.inSub ? [
       const k = rr * Math.min(1, d / 200);
       ctx.fillStyle = 'rgba(240,190,90,0.9)'; ctx.beginPath(); ctx.arc(rcx + dx / (d || 1) * k, rcy + dy / (d || 1) * k, 2 * s, 0, TAU); ctx.fill();
     }
+    // (5.9.0) Echo: every animal within the radar's 200 m as a dot while it lasts (rare and better in their colours at Echo+)
+    if (g.echoT > 0 && g.fauna) { const al = Math.min(1, g.echoT / 1.5); for (const c of g.fauna.list) { if (c.dead) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > 200) continue; const k = rr * d / 200, R = g.echoLv >= 2 ? rarityOf(c.sp) : null, rare = R && R.id !== 'common' && R.id !== 'uncommon';
+      ctx.globalAlpha = al; ctx.fillStyle = rare ? R.col : 'rgba(170,236,210,0.85)'; ctx.beginPath(); ctx.arc(rcx + dx / (d || 1) * k, rcy + dy / (d || 1) * k, (rare ? 2.6 : 1.5) * s, 0, TAU); ctx.fill(); } ctx.globalAlpha = 1; }
     const ent = g.entity;
     if (ent && ent.dist < 200 && !dying) {
       const a = Math.atan2(ent.y - e.y, ent.x - e.x);

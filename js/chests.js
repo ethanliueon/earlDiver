@@ -36,7 +36,9 @@ export function rollRarity(odds, rnd = Math.random) {
 export function rollChest(key, rnd = Math.random) {
   const C = CHESTS[key]; if (!C) return null;
   const rarity = rollRarity(C.odds, rnd), pool = CHEST_POOL.filter((it) => it.rarity === rarity);
-  return pool[Math.floor(rnd() * pool.length)] || null;
+  let pick = pool[Math.floor(rnd() * pool.length)] || null;
+  if (pick && pick.kind === 'ability' && rnd() < 0.5) pick = pool[Math.floor(rnd() * pool.length)] || pick; // (5.9.0) scrolls rarer than gear
+  return pick;
 }
 // the odds as words for the shop: "Common 60 % · Uncommon 30 % · …"
 export const oddsText = (odds) => Object.entries(odds).map(([k, p]) => `<span class="r-${k}">${RARITY[k].name} ${p} %</span>`).join(' · ');

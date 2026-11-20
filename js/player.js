@@ -66,7 +66,7 @@ export function updateEarl(g, dt, inp) {
     // ---- submersible ----
     // (on the way home under autopilot the autopilot moves the sub; nothing here steers it)
     if (!g.homeRun) {
-    const sp = SUB_SPEED * (inp.sprint ? 1.5 : 1) * (sub.speedMul || 1);
+    const sp = SUB_SPEED * (inp.sprint ? 1.5 : 1) * (sub.speedMul || 1) * (e.abilSpeed || 1); // (5.9.0) the Sprint ability drives her too
     // diagonal input is normalised, so going right and down at once is no faster than one way
     const im = Math.hypot(inp.x, inp.y), nx = im > 1 ? inp.x / im : inp.x, ny = im > 1 ? inp.y / im : inp.y;
     // the ballast boost only applies to (mostly) straight dives and ascents, never to diagonals
@@ -99,13 +99,13 @@ export function updateEarl(g, dt, inp) {
       // the cabin is empty: he stays at the controls on his own tank. The cabin is still at surface
       // pressure, so depth doesn't make his air go faster (only injury does)
       sub.o2 = 0;
-      if (!surf) e.o2 -= dt * e.o2Mul * (g.airMul || 1);
+      if (!surf) e.o2 -= dt * e.o2Mul * (g.airMul || 1) * (e.abilNoAir ? 0 : 1);
       if (e.o2 <= 0) { e.o2 = 0; return 'o2'; }
       return 'cabin-empty';
     }
   } else {
     // ---- diver ----
-    let sp = DIVE_SPEED * (inp.sprint ? e.sprintMul || 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed;
+    let sp = DIVE_SPEED * (inp.sprint ? e.sprintMul || 1.5 : 1) * (lowO2 ? 1.5 : 1) * e.speedMul * e.finSpeed * (e.abilSpeed || 1); // (5.9.0)
     // (5.0) the camera's shutter is open: he holds still (he can still aim)
     const hold = !!g.photo;
     const mag = hold ? 0 : Math.hypot(inp.x, inp.y);
@@ -156,7 +156,7 @@ export function updateEarl(g, dt, inp) {
       e.surfacing = Math.min(1, e.surfacing + dt);
     } else {
       e.surfacing = 0;
-      e.o2 -= dt * (1 + (diverDrainMult(e.y, e.pressStart || 300) - 1) * (e.pressRes ?? 1)) * (inp.sprint && e.speedNow > 1 ? (e.sprintAir ?? 2) : 1) * e.o2Mul * (g.airMul || 1); // (2.8.0: Resilience, the Harbour Patrol set)
+      e.o2 -= dt * (1 + (diverDrainMult(e.y, e.pressStart || 300) - 1) * (e.pressRes ?? 1)) * (inp.sprint && e.speedNow > 1 ? (e.sprintAir ?? 2) : 1) * e.o2Mul * (g.airMul || 1) * (e.abilNoAir ? 0 : 1); // (5.9.0) Riptide: no air used // (2.8.0: Resilience, the Harbour Patrol set)
     }
     if (e.o2 <= 0) { e.o2 = 0; return 'o2'; }
   }

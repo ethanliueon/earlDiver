@@ -922,3 +922,7 @@ html.touch body #tut-spot .ts-arrow.down:not(#_a) { border-left-width: 13px; bor
 html.touch body #tut-spot .ts-arrow.up:not(#_a) { border-left-width: 13px; border-right-width: 13px; border-bottom-width: 20px; }
 /* (5.7.5) a newer version is out: a small plate at the top centre, tap to load it */
 #updbar { all: unset; position: fixed; z-index: 9900; left: 50%; top: 8px; transform: translateX(-50%); padding: 6px 16px; border-radius: 4px; background: rgba(30, 36, 28, 0.94); box-shadow: 0 0 0 1px rgba(230, 222, 196, 0.5), 0 4px 14px rgba(0, 0, 0, 0.5); color: #efe8d2; font: 600 15px "Barlow Semi Condensed", sans-serif; cursor: pointer; }
+/* (5.9.0) five slots down the left of Earl (the Ability slot under the bag) */
+#inventory .eq-stage .eq-col:not(#_a):not(#_b) { grid-template-rows: none; grid-auto-rows: auto; }
+html.touch body #inventory .eq-stage .eq-col:not(#_a):not(#_b) { row-gap: 26px !important; }
+#inventory .eq-slot[data-slot="ability"] img { object-fit: contain; }

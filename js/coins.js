@@ -3,7 +3,7 @@
 // and a worn dark lip. The art is drawn here at a size of its own (no flat symbols): the net and the camera from
 // the player's own gear, the eye, the fins, the sub, the glove, the torch, the crab pot, the claw. Each look is
 // painted once into a picture and reused.
-import { drawEmblem, ABILITY_FAMILIES } from './scrolls.js';
+import { drawEmblem, ABILITY_FAMILIES, drawTierEmblemMask, ACCENT } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { drawNet, netLook } from './tools_draw.js';
 
@@ -459,7 +459,11 @@ const ART = {
 };
 
 // (5.8.0) the ability buttons: the family's emblem on the coin (its face tinted by the scroll's rarity)
-for (const f of ABILITY_FAMILIES) ART['ab_' + f] = (x) => { x.save(); x.scale(1.45, 1.45); drawEmblem(x, f); x.restore(); };
+for (const f of ABILITY_FAMILIES) ART['ab_' + f] = (x, look) => { // (5.9.0) the scroll's own emblem for its tier, painted on the coin
+  const tier = (look && look.tier) || 'rare', m = drawTierEmblemMask(f, tier, 220), col = tier === 'legendary' ? '#d8b066' : (ACCENT[f] || '#e8e0c8');
+  const tint = (c0) => { const c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d'); t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = c0; t.fillRect(0, 0, c.width, c.height); return c; };
+  x.globalAlpha = 0.6; x.drawImage(tint('#000'), -43, -41, 88, 88); x.globalAlpha = 1; x.drawImage(tint(col), -44, -44, 88, 88);
+};
 
 // the face for button `kind` (the art, if drawn here; else its symbol in bone), radius r, state 'on' | 'off' | 'down' | 'lit'
 // (5.6.9) a tool's coin tinted by its rarity: dark, muddy versions of the rarity colours (they sit in the olive and

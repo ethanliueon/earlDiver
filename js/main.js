@@ -28,7 +28,8 @@ import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, daysLeft } from './oldone.js';
 import { CHESTS, oddsText } from './chests.js';
-import { giveRolled } from './items.js';
+import { giveRolled, wornInst } from './items.js';
+import { abilityOf, abilityState, whyNot, cooldownLeft } from './abilities.js';
 import { SKILLS, RARITY } from './item_data.js';
 import { pictureOf } from './catalog.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
@@ -405,6 +406,7 @@ function hurt(dmg, sp, how) {
 }
 function damageSub(amt, sp) {
   const sub = g.sub;
+  if (g.subGuardT > 0) { g.fx.flash = 0.15; return; } // (5.9.0) Bulwark: nothing hurts her while it holds
   g.subHit = true;
   sub.hull = Math.max(0, sub.hull - amt);
   g.fx.shake = Math.max(g.fx.shake, 2.2); g.fx.flash = 0.25;
@@ -1127,7 +1129,7 @@ function tutor() {
     // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
     // The step is only done at the surface, so the claim is never made underwater.
     const part = firstFishPart(P);
-    if (part === 3) { text = 'Got it. Swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 }; if (!P.tutSprinted && !e.inSub) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; }
+    if (part === 3) { text = 'Got it. Swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 }; if (!P.tutSprinted && !e.inSub && !hud.touch) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; }
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
@@ -1203,6 +1205,7 @@ function startRun() {
     if (!seen) setTimeout(() => hud.toast('For full screen: Share, then Add to Home Screen, and open Earl from there', 'note'), 6000);
   }
   g.menuT0 = null; // (5.7.0) the title's dive starts again next time
+  g.abilUsed = 0; g.abil = null; g.tideFx = null; if (profile && profile.markers) profile.markers = profile.markers.filter((m) => !m.auto); // (5.9.0) a new dive: per-dive abilities back; Fathom's marks cleared
   // (5.7.5) the journal's pictures drawn ahead, a few at a time while he plays, so the book opens with them already there
   setTimeout(() => { const ids = [...(g.journal ? g.journal.keys() : [])]; let i = 0; const step = () => { for (let k = 0; k < 6 && i < ids.length; k++, i++) { const sp = SPECIES_BY_ID[ids[i]]; if (sp) ui.allFishPic(sp, true); } if (i < ids.length) setTimeout(step, 40); }; step(); }, 2500);
   messages.clear(); // (5.5) a new dive starts with a clear line (no "Out of air" left over from the last)
@@ -1229,7 +1232,7 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'sprinton', 'leavesub', 'divein', 'outdeck', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
+const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'sprinton', 'leavesub', 'divein', 'outdeck', 'ability', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
 function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
@@ -1368,7 +1371,7 @@ function readMove() {
     const w = patchWorld(g.sub, g.sub.patches[g.repairTap]), dx = w.x - g.earl.x, dy = w.y + 0.6 - g.earl.y, d = Math.hypot(dx, dy);
     if (d > 0.9) return { x: dx / d * Math.min(1, d / 2), y: dy / d * Math.min(1, d / 2), sprint: false, stick: true };
   }
-  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: touch.vec.sprint || !!g.sprintLock, stick: true }; // (5.3) the joystick; (5.5.3) or the sprint button's lock
+  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: hud.touch ? !!(g.aboard && g.abil && g.abil.activeT > 0 && g.abil.def && g.abil.def.speed) : (touch.vec.sprint || !!g.sprintLock), stick: true }; // (5.9.0) on a phone speed is the Sprint ability's (no air); on deck it runs // (5.3) the joystick; (5.5.3) or the sprint button's lock
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
   const now = performance.now();
@@ -1924,6 +1927,41 @@ function causeText(kind) {
   }
 }
 
+// ---------------- (5.9.0) abilities ----------------
+function currentAbility() { const q = profile && wornInst(profile, 'ability'); return q ? abilityOf(q.id) : null; }
+function useAbility() {
+  const A = currentAbility(), why = whyNot(g, profile, A); if (why) { hud.toast(why, 'note'); return; }
+  const S = abilityState(g), e = g.earl, P = profile;
+  S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
+  if (A.charges) { S.charges = (S.charges == null ? A.charges : S.charges) - 1; if (S.charges <= 0) { P.abilReady = (P.playT || 0) + A.dur + A.cd; S.charges = A.charges; } }
+  else P.abilReady = (P.playT || 0) + A.dur + A.cd;
+  if (A.perDive) g.abilUsed = (g.abilUsed || 0) + 1;
+  saveProfile(P);
+  audio.ready && audio.click && audio.click();
+  if (A.dash) { const v = touch && touch.vec.on ? [touch.vec.x, touch.vec.y] : [e.facing || 1, 0], m = Math.hypot(v[0], v[1]) || 1, tgt = e.inSub ? g.sub : e; tgt.vx = (tgt.vx || 0) + v[0] / m * A.dash; tgt.vy = (tgt.vy || 0) + v[1] / m * A.dash * 0.8;
+    for (let i = 0; i < 14; i++) g.bubbles.push({ x: tgt.x - v[0] / m * Math.random() * 1.5, y: tgt.y - v[1] / m * Math.random() * 1.5, r: 0.03 + Math.random() * 0.07, w: Math.random() * 6, t: 0 });
+    if (A.pull) for (const c of g.fauna.list) { if (c.dead || c.len > 0.7 || dist(c.x, c.y, tgt.x, tgt.y) > 7) continue; c.fleeT = 0; c.vx = v[0] / m * A.dash * 0.85; c.vy = v[1] / m * A.dash * 0.6; c.pulledT = 1.2; } }
+  if (A.repair) { const sub = g.sub; sub.hull = 1; if (sub.patches) sub.patches.length = 0; g.fx.flash = 0.35; hud.toast(`${A.name}: the hull is whole`, 'big'); if (A.guard) g.subGuardT = A.dur; }
+  if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time;
+    if (A.echo >= 3) { const marks = (P.markers || (P.markers = [])).filter((m) => !m.auto); const found = g.fauna.list.filter((c) => !c.dead && (rarityOf(c.sp) || {}).id !== 'common' && dist(c.x, c.y, e.x, e.y) < 1000).slice(0, 4); for (const c of found) { const R = rarityOf(c.sp); marks.push({ x: c.x, y: c.y, name: c.sp.name, col: R ? R.col : '#f2c868', auto: true }); } P.markers = marks; if (found.length) hud.toast(`${A.name}: ${found.length} marked on the chart`, 'note'); } }
+  if (A.tide) { g.tideFx = { t: 0 }; }
+}
+function tickAbility(dt) {
+  const S = abilityState(g), e = g.earl, A = S.def;
+  if (S.activeT > 0) S.activeT = Math.max(0, S.activeT - dt);
+  const on = S.activeT > 0 && A;
+  e.abilSpeed = on && A.speed ? A.speed : 1; e.abilNoAir = !!(on && A.noAir);
+  g.reachMul = on && A.reach ? A.reach : 1; g.swingMul = on && A.swing ? A.swing : 1; g.sureCatch = !!(on && A.sure);
+  g.abilLight = on && A.light ? A.light : 0; g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!(on && A.ward && !A.tide);
+  if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
+  if (g.subGuardT > 0) g.subGuardT = Math.max(0, g.subGuardT - dt);
+  // Tidewarden: the red washes to blue, the thing's light turns blue, it freezes, fades, and is gone for 5 minutes
+  if (g.tideFx) { const T = g.tideFx, ent = g.entity; T.t += dt;
+    if (ent) { ent.frozen = T.t < 3.2; ent.fade = Math.max(0, 1 - Math.max(0, T.t - 1.6) / 1.4); ent.tideBlue = Math.min(1, T.t / 1.2); }
+    if (T.t >= 3.2 && !T.sent && ent) { T.sent = true; ent.sleepT = 300; ent.marked = false; ent.x = clamp(e.x + (e.x > 2500 ? -2600 : 2600), 80, 4920); ent.y = 2600; }
+    if (T.t >= 4.2) { if (ent) { ent.frozen = false; ent.tideBlue = 0; } g.tideFx = null; } }
+}
+
 // ---------------- update ----------------
 function update(dt) {
   g.time += dt;
@@ -1960,6 +1998,9 @@ function update(dt) {
     // (5.5.3) the sprint button: a tap locks sprinting on (it costs air faster, as ever), another tap or letting go of the
     // stick for a moment ends it; never in the sub or on deck
     // (5.7.1) the sub's leave button: always works (the tutorial's own leave step, if it is the one asked)
+    // (5.9.0) the ability: fired from the arc's button (key 'ability'), run each frame
+    if (pressed.has('ability')) { pressed.delete('ability'); useAbility(); }
+    tickAbility(dt);
     if (pressed.has('leavesub')) { pressed.delete('leavesub'); if (e.inSub) { if (!(g.tutAction && g.tutAction.id === 'leavesub' && runTutAction('leavesub'))) leaveSub(); } }
     // (5.7.5) the arc's own jobs aboard: Dive in (over the nearer rail) and Out on deck (from the cabin)
     if (pressed.has('divein')) { pressed.delete('divein'); if (g.aboard && !ui.cabinOpen() && !g.helm) { const A = g.aboard, mid = (DECK_MIN + DECK_MAX) / 2; leaveDeck(A.x >= mid ? 1 : -1); } }
@@ -2520,7 +2561,7 @@ function update(dt) {
     }
     // protection: necklace or a nearby lantern
     if (g.necklaceOn) { g.glowT = (g.glowT || 0) - dt; if (g.glowT <= 0) { g.necklaceOn = false; g.glowT = 0; hud.toast('The glow stick has faded'); } }
-    g.protection = null;
+    g.protection = g.wardOn ? { x: e.x, y: e.y } : null; // (5.9.0) Lighthouse: hunters will not come into its light
     for (const l of W.lanterns) {
       const d = dist(e.x, e.y, l.x, l.y);
       const inside = d < (e.inSub ? LANTERN_RADIUS + 3 : LANTERN_RADIUS) && l.charge > 0.05;
@@ -2876,6 +2917,7 @@ function frame(now) {
     hud.spotWanted = !!(hud.touch && profile && profile.tut === 'on' && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
+  hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)

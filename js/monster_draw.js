@@ -252,13 +252,14 @@ export function drawMonsterLights(ctx, info, at, ppm, t, L) {
   const prev = ctx.globalCompositeOperation; ctx.globalCompositeOperation = 'lighter';
   const rate = L.reduce ? 1.2 : 9;                  // how fast the lights stutter
   const surge = L.reduce ? 0.85 : 0.55 + 0.45 * flicker(99, t, 2.5); // the whole animal brightens and dims
-  const red = glowSprite(RED), core = glowSprite(RED_CORE), blue = glowSprite(BLUE);
+  const B = L.blue; // (5.9.0) Tidewarden: its lights turn blue
+  const red = glowSprite(B ? BLUE : RED), core = glowSprite(B ? BLUE : RED_CORE), blue = glowSprite(BLUE);
   // a dim red haze along the whole animal, breathing with the surge, so it reads as one glowing body
   if (L.flash > 0.01 && info.spine) {
     info.spine.forEach(([lx, ly, w]) => { const [x, y] = at(lx, ly), r = w * 2; ctx.globalAlpha = Math.min(1, L.flash * (L.reduce ? 0.25 : 0.5)); ctx.drawImage(blue, x - r * 1.3, y - r * 0.8, r * 2.6, r * 1.6); });
   }
   if (L.body > 0.01 && info.spine) {
-    const haze = glowSprite('200,20,16');
+    const haze = glowSprite(B ? '60,140,240' : '200,20,16');
     info.spine.forEach(([lx, ly, w], k) => {
       const [x, y] = at(lx, ly), r = w * (1.6 + 0.2 * flicker(k + 50, t, rate * 0.3));
       ctx.globalAlpha = Math.min(1, L.body * surge * 0.3); ctx.drawImage(haze, x - r * 1.3, y - r * 0.8, r * 2.6, r * 1.6);
@@ -289,8 +290,8 @@ export function drawMonsterLights(ctx, info, at, ppm, t, L) {
     for (const [x, y, s] of [[far[0], far[1], 0.6], [ex, ey, 1]]) {
       // (softer since v2: a smaller, fainter haze; the eye reads by its hot centre, not a wash of red)
       const k = L.eye * pulse * s, r = ppm * (0.6 + 1.9 * L.eye) * s;
-      ctx.globalAlpha = Math.min(1, k * 0.3); ctx.drawImage(glowSprite(EYE), x - r * 1.7, y - r * 1.7, r * 3.4, r * 3.4); // the haze round it
-      ctx.globalAlpha = Math.min(1, k * 0.65); ctx.drawImage(glowSprite(EYE), x - r, y - r, r * 2, r * 2);
+      ctx.globalAlpha = Math.min(1, k * 0.3); ctx.drawImage(glowSprite(B ? BLUE : EYE), x - r * 1.7, y - r * 1.7, r * 3.4, r * 3.4); // the haze round it
+      ctx.globalAlpha = Math.min(1, k * 0.65); ctx.drawImage(glowSprite(B ? BLUE : EYE), x - r, y - r, r * 2, r * 2);
       ctx.globalAlpha = Math.min(1, k); const rc = ppm * (0.18 + 0.25 * L.eye) * s; ctx.drawImage(core, x - rc, y - rc, rc * 2, rc * 2); // the hot centre
     }
   }

@@ -92,7 +92,7 @@ export function findCatch(g) {
   const { def, kind } = activeTool(g);
   if (kind !== 'net' && kind !== 'slurp') return null;
   const h = handPos(g);
-  const reach = def.range + 0.7;
+  const reach = def.range * (g.reachMul || 1) + 0.7; // (5.9.0) Vigor reaches further
   let best = null, bd = 1e9, blocked = null, bbd = 1e9;
   const consider = (sp, x, y, len, ref) => {
     if ((x - h.x) * h.fx < -0.8) return; // behind him
@@ -142,7 +142,7 @@ export function useTool(g) {
   if (g.bag.length >= bagSlots(g)) return 'Bag full: get to the sub or the boat';
   const { kind, def, tier } = activeTool(g);
   const lock = findCatch(g);
-  g.capture = { kind, def, tier, t: 0, dur: def.time, resolveAt: kind === 'net' ? 0.35 : 0.12, done: false, lock: lock && lock.ok ? lock : null };
+  g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1), resolveAt: kind === 'net' ? 0.35 : 0.12, done: false, lock: lock && lock.ok ? lock : null };
   if (e.y > 200) g.entity.disturb(g, def.noise);
   return null;
 }
@@ -172,7 +172,7 @@ export function updateCapture(g, dt) {
     const L = cap.lock;
     if (L && !(L.c && L.c.dead) && !(L.s && !g.world.statics.includes(L.s))) {
       const h = handPos(g), x = L.c ? L.c.x : L.x, y = L.c ? L.c.y : L.y;
-      if (Math.hypot(x - h.x, (y - h.y) * 0.75) - L.len * 0.5 < cap.def.range + 1.3) tgt = Object.assign({}, L, { x, y });
+      if (Math.hypot(x - h.x, (y - h.y) * 0.75) - L.len * 0.5 < cap.def.range * (g.reachMul || 1) + 1.3) tgt = Object.assign({}, L, { x, y });
     }
     if (!tgt) tgt = findCatch(g);
     const e = g.earl;
@@ -181,7 +181,7 @@ export function updateCapture(g, dt) {
       const { def, kind } = cap;
       // (4.3.2) the tutorial's net step: the first swing misses, the next one catches (g.tutForce, set by tutor())
       const force = g.tutForce;
-      if (force === 'catch' || (force !== 'miss' && Math.random() < catchChance(def, kind, tgt, g.luck || 0))) {
+      if (force === 'catch' || (force !== 'miss' && g.sureCatch) || (force !== 'miss' && Math.random() < catchChance(def, kind, tgt, g.luck || 0))) {
         const harm = def.harm * (fragile(tgt.sp) ? 2 : 1) + Math.random() * 0.05;
         const spec = { id: tgt.sp.id, len: tgt.len, cond: clamp(1 - harm, 0.05, 1), from: Math.round(Math.max(e.y, tgt.y)), t: g.time };
         if (tgt.variant) { spec.variant = tgt.variant; spec.mult = variantMult(tgt.variant); if (tgt.variant === 'crimson') g.entity.disturb(g, 0.08); }

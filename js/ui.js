@@ -947,7 +947,7 @@ export class UI {
   // it, new things marked NEW. Click anything for a pop-up: what it is, and side by side with what he has on.
   equipHtml(P, g, extra = '') {
     ensureKit(P); const K = kitOf(P), free = !!this.h.canChangeGear(), onSet = new Set(Object.values(K.on));
-    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['net', '1  Net'], ['cam', '2  Camera']];
+    const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Ability'], ['net', '1  Net'], ['cam', '2  Camera']]; // (5.9.0) the Ability slot: the scroll he carries
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
     const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
       return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}" title="${q ? it.name : nm + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : `<span>${nm}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}<small class="slot-nm">${nm}</small><i class="glyph g-${kind}"></i></div>`; };
@@ -963,7 +963,7 @@ export class UI {
     const nSpare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).length;
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}${beltSlot('necklace')}${beltSlot('lure')}</div></div>`
+      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot('necklace')}${beltSlot('lure')}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       + this.airHtml(P, g)
       + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}`;

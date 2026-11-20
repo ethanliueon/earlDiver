@@ -5,6 +5,7 @@
 // colours and stock (its specialties). Bought things go into the locker, to be put on in the inventory (B).
 // Gear can be sold back wherever there is a shop. The old one has no website (see main.js / render.js).
 import { ITEMS, ITEMS_OF, kitOf, ownsItem, worn as wornItem, RARITY, isOn, sellValue, LOCKER, lockerFree } from './items.js';
+import { drawScroll3 } from './scrolls.js';
 import { SUITS, TRAPS, SUPPLIES, supplyMax, money, owns, kit } from './economy.js';
 import { NETS_SUB, netsOf } from './capture.js';
 import { toolIcon } from './tools_draw.js';
@@ -220,6 +221,7 @@ export function pictureOf(kind, v, w, h, plain = false) {
     if (PICS.has(key)) return PICS.get(key);
     const c = document.createElement('canvas'); c.width = w; c.height = h; const ctx = c.getContext('2d');
     if (!plain) { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#cfdadf'); bg.addColorStop(1, '#b4c3ca'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
+    if (v && typeof v === 'object' && v.kind === 'ability') { drawScroll3(ctx, w / 2, h / 2, Math.min(w, h) * 0.98, v.fam, v.tier); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.9.0) an ability's scroll
     if (v && typeof v === 'object' && (v.rarity === 'legendary' || v.rarity === 'exotic' || v.finLook || v.tankLook || v.bagLook) && v.id) { drawSpecialPicture(ctx, v, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; } // (2.8.1) their own drawings, on the usual background
     const tool = { net: 'net', slurp: 'slurp', tag: 'tag', cam: 'cam', trap: 'trap' }[kind];
     if (tool) {

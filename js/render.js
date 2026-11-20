@@ -1086,7 +1086,7 @@ export class Renderer {
       const I = this.entInfo, Lt = ent.lit || { body: 1, eye: 0.3, flash: 0 }, fade = ent.fade ?? 1;
       const lidOpen = ent.blink > 0 ? 0.1 : 1;
       drawMonsterLights(ctx, I.info, (lx, ly) => [I.x + lx * I.flip, I.y + ly], ppm, t,
-        { body: Lt.body * fade, eye: Lt.eye * fade * lidOpen, flash: Lt.flash * fade, reduce: !!g.reduceFlash });
+        { body: Lt.body * fade, eye: Lt.eye * fade * lidOpen, flash: Lt.flash * fade, reduce: !!g.reduceFlash, blue: (ent.tideBlue || 0) > 0.5 });
     }
     // taken: it comes in from the side, jaws opening, and he is in its open mouth; then they shut.
     // Drawn again over the lit scene (the lamps on it) so it cannot be lost in the dark.
@@ -1240,6 +1240,29 @@ export class Renderer {
       ctx.restore();
     }
     // ================= POST =================
+    // (5.9.0) abilities, seen. Sprint: streaks of water rushing past him while he moves (more of them, and brighter, at
+    // each tier; Riptide's gold, with a warm aura and the edges of sight pulsing) and the faintest judder. Vigor: a pale
+    // arc in the water where the net now reaches. Flare: light round him. Echo: a ring going out. Bulwark: a shimmer
+    // round the sub. Tidewarden: the red washed out to blue.
+    if (g.mode === 'play' && g.abil && g.abil.activeT > 0 && g.abil.def) {
+      const A = g.abil.def, e = g.earl, mover = e.inSub ? g.sub : e, ex = S(mover.x), ey = Sy(mover.y), spd = Math.hypot(mover.vx || 0, mover.vy || 0);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (A.speed && spd > 0.6) {
+        const n = A.tier === 'legendary' ? 22 : A.tier === 'exotic' ? 14 : 8, ang = Math.atan2(mover.vy || 0, mover.vx || 1), col = A.tier === 'legendary' ? '255,214,140' : '220,240,250';
+        for (let i = 0; i < n; i++) { const sd = (i * 97.13) % 1, ph = (g.time * (1.6 + sd) + sd * 7) % 1, off = (((i * 53.7) % 1) - 0.5) * ppm * (e.inSub ? 5 : 2.6), back = ph * ppm * (e.inSub ? 9 : 5), L = ppm * (0.6 + sd * 0.9) * (A.tier === 'legendary' ? 1.4 : 1);
+          const bx = ex - Math.cos(ang) * back - Math.sin(ang) * off, by = ey - Math.sin(ang) * back + Math.cos(ang) * off;
+          ctx.strokeStyle = `rgba(${col},${(0.45 * (1 - ph)).toFixed(3)})`; ctx.lineWidth = A.tier === 'legendary' ? 2.2 : 1.5; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx - Math.cos(ang) * L, by - Math.sin(ang) * L); ctx.stroke(); }
+        g.fx.shake = Math.max(g.fx.shake || 0, A.tier === 'legendary' ? 0.5 : 0.25);
+        if (A.tier === 'legendary') { const pu = 0.5 + 0.5 * Math.sin(g.time * 5), au = ctx.createRadialGradient(ex, ey, ppm * 0.4, ex, ey, ppm * 2.2); au.addColorStop(0, `rgba(255,214,140,${(0.28 + 0.12 * pu).toFixed(3)})`); au.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = au; ctx.fillRect(ex - ppm * 2.2, ey - ppm * 2.2, ppm * 4.4, ppm * 4.4);
+          const big = Math.hypot(this.W, this.H), vg = ctx.createRadialGradient(this.W / 2, this.H / 2, big * 0.32, this.W / 2, this.H / 2, big * 0.6); vg.addColorStop(0, 'rgba(255,190,90,0)'); vg.addColorStop(1, `rgba(255,190,90,${(0.1 + 0.08 * pu).toFixed(3)})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, this.W, this.H); }
+      }
+      if (A.reach && !e.inSub) { const r0 = ((g.netRange || 1.2) * (A.reach || 1) + 0.7) * ppm, fx2 = e.facing || 1; ctx.strokeStyle = `rgba(214,236,226,${(0.22 + 0.08 * Math.sin(g.time * 3)).toFixed(3)})`; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.arc(ex, ey, r0, fx2 > 0 ? -0.9 : Math.PI - 0.9, fx2 > 0 ? 0.9 : Math.PI + 0.9); ctx.stroke(); ctx.setLineDash([]); }
+      if (A.light) { const rr = ppm * (3 + A.light * 2.2), lg = ctx.createRadialGradient(ex, ey, 0, ex, ey, rr); lg.addColorStop(0, `rgba(255,236,200,${(0.22 + 0.08 * A.light).toFixed(3)})`); lg.addColorStop(1, 'rgba(255,220,170,0)'); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = lg; ctx.fillRect(ex - rr, ey - rr, rr * 2, rr * 2); ctx.globalCompositeOperation = 'source-over'; }
+      ctx.restore();
+    }
+    if (g.mode === 'play' && g.echoAt != null && g.time - g.echoAt < 1.6) { const k = (g.time - g.echoAt) / 1.6, e = g.earl, m = e.inSub ? g.sub : e; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = `rgba(150,230,214,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 3 * (1 - k) + 1; ctx.beginPath(); ctx.arc(S(m.x), Sy(m.y), k * Math.max(this.W, this.H) * 0.7, 0, TAU); ctx.stroke(); ctx.restore(); }
+    if (g.mode === 'play' && g.subGuardT > 0) { const sx0 = S(g.sub.x), sy0 = Sy(g.sub.y), q = 0.5 + 0.5 * Math.sin(g.time * 6); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = `rgba(200,224,240,${(0.3 + 0.25 * q).toFixed(3)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(sx0, sy0 - ppm * 0.6, ppm * 5.2, ppm * 2.6, 0, 0, TAU); ctx.stroke(); ctx.restore(); }
+    if (g.tideFx) { const k = Math.min(1, g.tideFx.t / 1.2) * Math.min(1, (4.2 - g.tideFx.t) / 1); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(40,110,200,${(0.55 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); ctx.globalCompositeOperation = 'source-over'; const tt = g.tideFx.t, m0 = g.earl.inSub ? g.sub : g.earl; for (const d0 of [0, 0.5]) { const kk = Math.min(1, Math.max(0, (tt - d0) / 1.6)); if (kk <= 0 || kk >= 1) continue; ctx.strokeStyle = `rgba(150,210,255,${(0.75 * (1 - kk)).toFixed(3)})`; ctx.lineWidth = 6 * (1 - kk) + 1; ctx.beginPath(); ctx.arc(S(m0.x), Sy(m0.y), kk * Math.hypot(this.W, this.H) * 0.8, 0, TAU); ctx.stroke(); } ctx.restore(); if (fx) fx.redTint = (fx.redTint || 0) * (1 - k); }
     // (5.7.0) the title's dive: once it is deep, a long shape passes slowly under the view, and if nothing is touched
     // for a while, a red eye opens in the dark at the lower right and watches
     if (g.mode === 'menu') {

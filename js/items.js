@@ -11,6 +11,7 @@
 //   bag: slots, apart                     suit: press (m), air (×), speed (×), bite, warm, quiet, look
 // An owned thing is an instance in the locker: { u, id, sk: [[skill, level], ...], leg }.
 import { designFor } from './designs.js';
+import { ABILITY_DEFS, abilityId } from './abilities.js';
 import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, STATION_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
 export { RARITY, RARITIES, SKILLS, LEGEND, SETS } from './item_data.js';
 
@@ -147,6 +148,10 @@ for (const L of LEGENDARIES) add({ ...L, rarity: 'legendary', chest: true, bad: 
 // set pieces
 for (const [key, S] of Object.entries(SETS)) for (const [kind, arch] of Object.entries(S.archs)) add({ id: `set_${key}_${kind}`, kind, arch, rarity: S.rarity, chest: true, set: key, name: `${S.name} ${SET_PIECE[kind]}`, line: S.line, bad: '' });
 
+// (5.9.0) ability scrolls: items like the rest (chests, the Old One, the locker), with no rolled skills
+for (const [fam, T] of Object.entries(ABILITY_DEFS)) for (const [tier, d] of Object.entries(T)) {
+  const id = abilityId(fam, tier); ITEMS[id] = { id, kind: 'ability', arch: fam, fam, tier, rarity: tier, chest: true, name: d.name, line: d.line, good: d.line, bad: '', price: Math.round(VALUE[tier] * 0.8) };
+}
 export const ITEMS_OF = (kind, shop = null) => Object.values(ITEMS).filter((it) => it.kind === kind && (!shop || it.shop === shop));
 export const CHEST_POOL = Object.values(ITEMS).filter((it) => it.chest);
 
@@ -158,6 +163,7 @@ const ROLL = { common: [0, 1], uncommon: [1, 1], rare: [2, 2], exotic: [2, 3], l
 const LEVELS = { common: [1], uncommon: [0.7, 0.3], rare: [0.3, 0.4, 0.3], exotic: [0.1, 0.35, 0.55], legendary: [0.05, 0.2, 0.4, 0.35] };
 function rollLevel(rarity, rnd) { const w = LEVELS[rarity]; let r = rnd(); for (let i = 0; i < w.length; i++) { if (r < w[i]) return i + 1; r -= w[i]; } return w.length; }
 export function rollSkills(def, rnd = Math.random) {
+  if (def.kind === 'ability') return [];
   if (!def.chest) return def.sk ? [def.sk.slice()] : [];
   const [lo, hi] = ROLL[def.rarity], k = RARITY[def.rarity].k;
   let n = lo + Math.floor(rnd() * (hi - lo + 1));
@@ -187,6 +193,8 @@ export function kitOf(P) {
     for (const id of old) if (ITEMS[id] && !Object.values(FREE).includes(id) && P.kit.items.length < LOCKER) P.kit.items.push(mk(id));
     for (const k of SIDE_KINDS) if (P.kit.on[k] === undefined) P.kit.on[k] = null;
   }
+  // (5.9.0) every diver starts with a Sprint scroll on (once)
+  if (!P.abilInit) { P.abilInit = 1; if (!P.kit.on.ability) { const q = mk('ab_sprint_rare'); P.kit.items.push(q); P.kit.on.ability = q.u; } }
   // (5.0) a save from before 5.0: slurp guns and tag guns (and tag darts) are bought back at what they cost
   if (!P.retired5) {
     P.retired5 = 1;
