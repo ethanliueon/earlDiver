@@ -3,6 +3,7 @@
 // and a worn dark lip. The art is drawn here at a size of its own (no flat symbols): the net and the camera from
 // the player's own gear, the eye, the fins, the sub, the glove, the torch, the crab pot, the claw. Each look is
 // painted once into a picture and reused.
+import { drawEmblem, ABILITY_FAMILIES } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { drawNet, netLook } from './tools_draw.js';
 
@@ -456,6 +457,9 @@ const ART = {
     x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 1.4; for (const k of [-10, 0]) { x.beginPath(); x.moveTo(k, -14); x.quadraticCurveTo(k + 4, 0, k, 14); x.stroke(); }
   },
 };
+
+// (5.8.0) the ability buttons: the family's emblem on the coin (its face tinted by the scroll's rarity)
+for (const f of ABILITY_FAMILIES) ART['ab_' + f] = (x) => { x.save(); x.scale(1.45, 1.45); drawEmblem(x, f); x.restore(); };
 
 // the face for button `kind` (the art, if drawn here; else its symbol in bone), radius r, state 'on' | 'off' | 'down' | 'lit'
 // (5.6.9) a tool's coin tinted by its rarity: dark, muddy versions of the rarity colours (they sit in the olive and
