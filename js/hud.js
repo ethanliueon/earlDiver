@@ -326,18 +326,28 @@ e.inSub ? [
     const halo = (x, y, r, a0 = 1) => { const q = 0.5 + 0.5 * Math.sin(g.time * 4.2), hr = r * (1.55 + 0.25 * q);
       const hg = ctx.createRadialGradient(x, y, r * 0.6, x, y, hr); hg.addColorStop(0, `rgba(255,226,160,${(0.55 * a0 * (0.6 + 0.4 * q)).toFixed(3)})`); hg.addColorStop(1, 'rgba(255,210,140,0)');
       ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, hr, 0, TAU); ctx.fill(); };
-    const ring = (x, y, r) => {
+    // (5.8.1) the tutorial's mark: the ring breathing out and a large painted arrow (bronze, a dark edge, a cream lit
+    // side) bobbing in toward the button from the middle of the screen. With the spotlight (below) it is drawn again
+    // over the darkened screen
+    const ring = (x, y, r, spot = false) => {
+      if (!spot) { this.tutTarget = { x, y, r }; }
       halo(x, y, r);
       const k = (g.time * 0.6) % 1, rr = r * (1.1 + k * 0.45);
-      ctx.strokeStyle = `rgba(230,222,196,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (2.4 - 1.2 * k) * u; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
+      for (const kk of [k, (k + 0.5) % 1]) { const r2 = r * (1.1 + kk * 0.55); ctx.strokeStyle = `rgba(240,226,180,${(0.65 * (1 - kk)).toFixed(3)})`; ctx.lineWidth = (2.8 - 1.6 * kk) * u; ctx.beginPath(); ctx.arc(x, y, r2, 0, TAU); ctx.stroke(); }
+      void rr;
       ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
-      // the arrow: from the screen's middle toward the button, bobbing in
-      const ang = Math.atan2(y - H * 0.45, x - W * 0.5), bob = (0.5 + 0.5 * Math.sin(g.time * 5)) * 7 * u, d = (r > 32 * u ? r + 50 * u + 30 * u + 22 * u : r * 1.5 + 14 * u) + bob, /* the big button's arrow from outside the arc */ ax = x - Math.cos(ang) * d, ay = y - Math.sin(ang) * d, L = 16 * u;
+      ctx.strokeStyle = 'rgba(240,230,200,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
+      // motes of light drifting round it
+      for (let i = 0; i < 7; i++) { const a2 = g.time * (0.5 + i * 0.07) + i * 0.9, rr2 = r * (1.35 + 0.25 * Math.sin(g.time * 1.3 + i)), mx = x + Math.cos(a2) * rr2, my = y + Math.sin(a2) * rr2, ms = (1.4 + (i % 3)) * u, al = 0.45 + 0.4 * Math.sin(g.time * 2 + i);
+        const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3); mg.addColorStop(0, `rgba(255,236,190,${al.toFixed(3)})`); mg.addColorStop(1, 'rgba(255,220,150,0)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, TAU); ctx.fill(); }
+      // the arrow
+      const ang = Math.atan2(y - H * 0.45, x - W * 0.5), bob = (0.5 + 0.5 * Math.sin(g.time * 4)) * 9 * u, d = (r > 32 * u ? r + 50 * u + 30 * u + 26 * u : r * 1.55 + 18 * u) + bob, ax = x - Math.cos(ang) * d, ay = y - Math.sin(ang) * d, L = 24 * u;
       ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.lineJoin = 'round';
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-L, -L * 0.62); ctx.lineTo(-L * 0.62, 0); ctx.lineTo(-L, L * 0.62); ctx.closePath();
-      ctx.lineWidth = 5 * u; ctx.strokeStyle = 'rgba(18,22,12,0.8)'; ctx.stroke(); ctx.fillStyle = '#f0e6c8'; ctx.fill();
-      ctx.beginPath(); ctx.moveTo(-L * 0.7, 0); ctx.lineTo(-L * 1.9, 0); ctx.lineWidth = 6.5 * u; ctx.strokeStyle = 'rgba(18,22,12,0.8)'; ctx.stroke(); ctx.lineWidth = 3.2 * u; ctx.strokeStyle = '#f0e6c8'; ctx.lineCap = 'round'; ctx.stroke();
+      const ar = new Path2D(); ar.moveTo(0, 0); ar.lineTo(-L, -L * 0.66); ar.quadraticCurveTo(-L * 0.82, -L * 0.3, -L * 0.7, -L * 0.24); ar.lineTo(-L * 2, -L * 0.2); ar.quadraticCurveTo(-L * 2.12, 0, -L * 2, L * 0.2); ar.lineTo(-L * 0.7, L * 0.24); ar.quadraticCurveTo(-L * 0.82, L * 0.3, -L, L * 0.66); ar.closePath();
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6 * u; ctx.shadowOffsetY = 2 * u; ctx.fillStyle = '#2a2014'; ctx.fill(ar); ctx.shadowColor = 'transparent';
+      const bg = ctx.createLinearGradient(0, -L * 0.66, 0, L * 0.66); bg.addColorStop(0, '#e8c888'); bg.addColorStop(0.45, '#b48a48'); bg.addColorStop(1, '#5e4220'); ctx.fillStyle = bg; ctx.fill(ar);
+      ctx.save(); ctx.clip(ar); ctx.strokeStyle = 'rgba(255,244,214,0.75)'; ctx.lineWidth = 2.4 * u; ctx.beginPath(); ctx.moveTo(-L * 2, -L * 0.14); ctx.lineTo(-L * 0.72, -L * 0.18); ctx.lineTo(-L * 0.95, -L * 0.6); ctx.stroke(); ctx.restore();
+      ctx.lineWidth = 2.6 * u; ctx.strokeStyle = '#1a140c'; ctx.stroke(ar);
       ctx.restore();
     };
     // (5.6.9) a padlock over a coin that is locked: dark bronze, a cream edge
@@ -461,6 +471,13 @@ e.inSub ? [
       if (tutKey === 'sprint') ring(px2, py2, rs);
       hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'sprint');
     }
+    // (5.8.1) the spotlight: while the tutorial waits on a button, the screen darkens round it (the game is paused under
+    // it, main.js) and the button stands in a pool of light; its ring and arrow are drawn again over the dark
+    { const T = this.tutTarget; this.tutTarget = null; this.spotOn = !!(T && tutKey && this.spotWanted);
+      const vS = this.spotV = clamp((this.spotV || 0) + (this.spotOn ? 1 : -1) * dt * 4, 0, 1);
+      if (T && vS > 0.01) { const big = Math.hypot(W, H), sg = ctx.createRadialGradient(T.x, T.y, T.r * 1.5, T.x, T.y, T.r * 1.5 + big * 0.55);
+        sg.addColorStop(0, 'rgba(4,8,8,0)'); sg.addColorStop(0.08, `rgba(4,8,8,${(0.55 * vS).toFixed(3)})`); sg.addColorStop(1, `rgba(2,4,4,${(0.78 * vS).toFixed(3)})`);
+        ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H); if (vS > 0.5) ring(T.x, T.y, T.r, true); } }
     // (5.7.5) every button's picture in every state is painted once, now (during the loading screen), rather than the
     // first time each is needed, which showed as a button popping in a beat late
     if (!this.prewarmed) { this.prewarmed = true; const off = document.createElement('canvas').getContext('2d'), st = ['on', 'off', 'lit', 'press'];

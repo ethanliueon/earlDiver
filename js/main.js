@@ -1253,6 +1253,7 @@ window.addEventListener('keydown', (ev) => {
   if (/^(w|a|s|d|arrowup|arrowdown|arrowleft|arrowright)$/i.test(ev.key)) INPUT.mode = 'keys';
   if (ui.confirmOpen && ui.confirmOpen()) return; // an "are you sure?" is up: its own buttons only
   const k = ev.key.toLowerCase();
+  if (g && window.__hudTutKey != null && k === String(window.__hudTutKey).toLowerCase()) { g.tutGrace = 1.6; g.tutPressedKey = window.__hudTutKey; } // (5.8.1) the spotlit button pressed: the game runs on
   if (g && g.tutHidePrompts && g.tutAction && k === g.tutAction.key.toLowerCase() && !ev.repeat) { ev.preventDefault(); runTutAction(g.tutAction.id); return; } // (4.4.1)
   if (tutGated(k)) return; // (4.4.0)
   if (g.mode === 'menu' && (k === 'enter' || k === ' ')) {
@@ -1940,6 +1941,9 @@ function update(dt) {
     return;
   }
   if (g.paused) return;
+  // (5.8.1) the tutorial's spotlight holds the game still until its button is pressed; the press lets it run on
+  g.tutGrace = Math.max(0, (g.tutGrace || 0) - dt);
+  if (g.tutFreeze && !(g.tutGrace > 0) && g.mode === 'play') { updateBubbles(dt); return; }
 
   if (g.mode === 'play') {
     g.survival += dt;
@@ -2868,6 +2872,8 @@ function frame(now) {
   }
   lureAsk(); // (5.6.4)
   bookTabs(); // (5.6.7)
+  { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
+    hud.spotWanted = !!(hud.touch && profile && profile.tut === 'on' && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
