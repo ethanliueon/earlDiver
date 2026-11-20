@@ -1391,7 +1391,8 @@ export class UI {
     list.innerHTML = `<div class="jgrid">${entries.map(([id, info]) => { const sp = SPECIES_BY_ID[id], R = rarityOf(sp), c = rarityCol(sp);
       return `<button class="jcell${this.jSel === id ? ' on' : ''}" data-js="${id}" title="${sp.name.replace(/"/g, '')}" style="--rot:${((id * 37) % 7 - 3) * 0.5}deg"><img src="${this.allFishPic(sp, true)}" alt=""><b>${sp.name}</b><small class="jdep">${info && info.depth != null ? `${info.depth} m` : ''}</small>${R && !R.hidden && R.id !== 'common' ? `<em class="jstamp" style="--sc:${c}">${R.name}</em>` : ''}${caught.has(id) ? '<u class="jtick" title="Caught">✓</u>' : ''}</button>`; }).join('')}${'<div class="jcell blank"><span>?</span></div>'.repeat(blanks)}</div>`;
     list.querySelectorAll('[data-js]').forEach((b) => b.addEventListener('click', () => { const id = +b.dataset.js; this.jSel = this.jSel === id ? null : id; this.renderJournal(); }));
-    this.journalDetail(this.jSel && g.journal.has(this.jSel) ? this.jSel : null);
+    // (5.9.2) no notes page: the right page shows the animal chosen, or else the one met most recently
+    this.journalDetail(this.jSel && g.journal.has(this.jSel) ? this.jSel : entries[0][0]);
   }
   // the right page: one animal's entry, or the notes
   journalDetail(id) {

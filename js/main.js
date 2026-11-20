@@ -1147,7 +1147,7 @@ function tutor() {
       text = 'Your journal';
       spot = k === 0 ? { sel: ['#journal-list .jcell'], card: { id: 'jtour', text: 'Every animal you observe is drawn here. Tap one to read about it.' } }
         : k === 1 ? { sel: ['#journal .tabs'], card: { id: 'jtour', text: 'All shows every animal in the sea, the ones still to find in shadow.' } }
-        : { sel: ['#notes'], card: { id: 'jtour', text: 'This page is yours, for notes. It is kept.' } };
+        : { sel: ['#journal-detail'], card: { id: 'jtour', text: 'This page shows the animal you chose: where it lives, how big it grows, where you first saw it.' } }; /* (5.9.2) no notes page any more */
     }
     else if (jOpen) { text = 'Close the journal'; spot = { sel: ['#journal-close'], act: 'journal', say: 'Close the journal' }; }
     else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-act="sellone"]'], say: 'Sell all' }; }
@@ -2827,6 +2827,10 @@ function bookTabs() {
     document.body.appendChild(el);
   }
   el.hidden = !show;
+  // (5.9.2) Quests and the Chart open as pages in the same book: a shell (its cover and two blank pages) behind them
+  { let sh = document.getElementById('bookshell'); const inBook = hud.touch && (open.quests || open.chart);
+    if (!sh && inBook) { sh = document.createElement('div'); sh.id = 'bookshell'; sh.innerHTML = '<div class="bs-page l"></div><div class="bs-page r"></div>'; document.body.appendChild(sh); }
+    if (sh) sh.hidden = !inBook; document.body.classList.toggle('bookmode', !!inBook); }
   if (show) for (const b of el.children) { const on = !!open[b.dataset.t]; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
 }
 let lureNoUntil = 0;

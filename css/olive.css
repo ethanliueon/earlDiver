@@ -928,3 +928,44 @@ html.touch body #inventory .eq-stage .eq-col:not(#_a):not(#_b) { row-gap: 26px !
 #inventory .eq-slot[data-slot="ability"] img { object-fit: contain; }
 /* (5.9.1) the legendary sparks' canvas: over the panels, under nothing that takes a touch */
 #legendfx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9350; }
+/* ---------- (5.9.2) the journal, again: the game's own type, real paper, divider tabs on its edge ---------- */
+/* the pages: painted paper (assets/ui/book), browned at the edges and darker into the gutter */
+html body #journal .page.left:not(#_a):not(#_b):not(#_c), html body #bookshell .bs-page.l { background: #e4d8b8 url("../assets/ui/book/page_left.jpg") center / 100% 100% no-repeat !important; }
+html body #journal .page.right:not(#_a):not(#_b):not(#_c), html body #bookshell .bs-page.r { background: #e4d8b8 url("../assets/ui/book/page_right.jpg") center / 100% 100% no-repeat !important; }
+html body #journal .page::before:not(#_a) { content: none; }
+html body #journal .page.left::before, html body #journal .page.right::before { content: none !important; }
+/* the game's type everywhere in it: no handwriting, no italics, nothing tilted */
+html body #journal :is(#journal-count, .jcell b, .jcell .jdep, .tabs button, #journal-list .empty, .jd-rows dd, .jd-sci, .jd-desc):not(#_z) { font-family: var(--o-text) !important; font-style: normal !important; transform: none !important; }
+html body #journal #journal-count:not(#_a):not(#_b) { font: 600 15px var(--o-text) !important; color: rgba(60, 50, 34, 0.7) !important; }
+html body #journal .jcell:not(#_a):not(#_b):not(#_c) { transform: none !important; }
+html body #journal .jcell:not(#_a):not(#_b) b { font: 600 14px/1.1 var(--o-text) !important; color: #2e2618 !important; }
+html body #journal .jcell .jdep:not(#_a) { font: 500 12px var(--o-text) !important; color: rgba(60, 50, 34, 0.6) !important; }
+html body #journal .jcell .jstamp, html body #journal .jcell .jtick { display: none !important; }
+html body #journal .jcell:not(#_a):not(#_b) > i { display: block !important; left: 20%; right: 20%; bottom: 2px; height: 2px; }
+html body #journal .jcell.on:not(#_a):not(#_b):not(#_c) { border-radius: 4px !important; box-shadow: inset 0 0 0 1.5px rgba(70, 56, 30, 0.5) !important; background: rgba(120, 100, 60, 0.1) !important; }
+html body #journal .jcell.blank:not(#_a):not(#_b) span { font: 600 22px var(--o-text) !important; }
+html body #journal .tabs button:not(#_a):not(#_b):not(#_c):not(#_d) { font: 600 14px var(--o-text) !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
+html body #journal #journal-list .empty:not(#_a):not(#_b) { font: 500 16px/1.35 var(--o-text) !important; }
+html body #journal .jd-rows dd:not(#_a):not(#_b) { font: 600 16px var(--o-text) !important; }
+html body #journal .jd-pic:not(#_a):not(#_b) { transform: none; }
+/* no notes page: the right page is always an animal's */
+html body #journal #journal-notes:not(#_a):not(#_b) { display: none !important; }
+html body #journal .jd-back { display: none !important; }
+/* the tabs: cloth-bound divider tabs standing out of the book's right edge, one under another */
+html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a):not(#_b), html.touch body.bookmode #booktabs:not(#_a):not(#_b) { left: calc(50vw + min(520px, 46vw) - 22px); top: calc(50vh - min(320px, 41vh) + 34px); transform: none; flex-direction: column; gap: 6px; }
+html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button:not(#_b), html.touch body.bookmode #booktabs:not(#_a) button:not(#_b) { all: unset; cursor: pointer; display: block; box-sizing: border-box; width: 104px; height: 44px; padding: 0 0 0 28px; line-height: 44px; background: url("../assets/ui/book/tab.png") left center / 100% 100% no-repeat !important; color: #ecdcb8 !important; font: 600 14px var(--o-text) !important; letter-spacing: 0.04em; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7); box-shadow: none !important; border: 0 !important; border-image: none !important; transform: none !important; }
+html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button.on:not(#_b), html.touch body.bookmode #booktabs:not(#_a) button.on:not(#_b) { background-image: url("../assets/ui/book/tab_on.png") !important; color: #3a2a16 !important; text-shadow: none; width: 112px; }
+/* Quests and the Chart as pages of the same book: a shell (the cover, two pages) behind them, their panels set into it */
+#bookshell { position: fixed; z-index: 39; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-0.6deg); width: min(1040px, 92vw); height: min(640px, 82vh); display: grid; grid-template-columns: 1.25fr 1fr; gap: 0; padding: 12px 13px 13px; border-radius: 5px 9px 9px 5px; background: #2a3324; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), inset 0 0 0 2px rgba(0, 0, 0, 0.4); }
+#bookshell[hidden] { display: none; }
+#bookshell .bs-page { box-shadow: inset 0 0 30px rgba(110, 76, 30, 0.25); }
+html.touch body.bookmode #quests:not(#_a), html.touch body.bookmode #chart:not(#_a) { background: none !important; }
+html.touch body.bookmode #quests .qs-panel:not(#_a):not(#_b), html.touch body.bookmode #chart .ch-panel:not(#_a):not(#_b) { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-0.6deg); width: calc(min(1040px, 92vw) - 60px) !important; height: calc(min(640px, 82vh) - 50px) !important; max-height: none !important; border: 0 !important; border-image: none !important; background: none !important; box-shadow: none !important; color: #2e2618 !important; }
+html.touch body.bookmode #quests .qs-panel :is(h2, h3, h4, b, span, small, p, div):not(button):not(button *) { color: #2e2618 !important; text-shadow: none !important; }
+html.touch body.bookmode #quests .qs-plate:not(#_a), html.touch body.bookmode #chart .ch-plate:not(#_a) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; }
+html.touch body.bookmode #quests .qs-q:not(#_a):not(#_b) { background: rgba(120, 96, 60, 0.08) !important; border: 0 !important; border-image: none !important; border-bottom: 1px solid rgba(70, 56, 30, 0.25) !important; box-shadow: none !important; }
+html.touch body.bookmode #chart .ch-panel h2:not(#_a), html.touch body.bookmode #chart .ch-hint:not(#_a) { color: #2e2618 !important; text-shadow: none !important; }
+html.touch body.bookmode :is(#quests .qs-close, #chart .ch-close):not(#_a) { filter: invert(0.8) sepia(0.6); }
+/* (5.9.2) no faint boxes round the cells: the page is the ground; a met animal is just its picture and name */
+html body #journal .jcell:not(.on):not(#_a):not(#_b):not(#_c) { border: 0 !important; border-image: none !important; background: none !important; box-shadow: none !important; outline: 0 !important; }
+html body #journal .jcell:not(#_a)::before, html body #journal .jcell:not(#_a)::after { content: none !important; }
