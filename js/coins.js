@@ -14,7 +14,8 @@ const hsl = (h, s, l, a = 1) => `hsla(${h},${s}%,${l}%,${a})`;
 const HUE = {
   net: [100, 24, 15], eye: [186, 32, 13], sprint: [208, 26, 14], hand: [28, 26, 14], sub: [78, 18, 13], cam: [36, 38, 15],
   trap: [14, 32, 14], lamp: [34, 42, 14], claw: [200, 10, 14], leave: [78, 18, 13], tank: [190, 28, 13], auto: [78, 18, 13],
-  trawl: [100, 24, 15], air: [200, 14, 14], sell: [44, 30, 14], lure: [186, 32, 13], glow: [140, 30, 12], pet: [186, 32, 13], swap: [60, 8, 12],
+  trawl: [100, 24, 15], air: [200, 14, 14], sell: [44, 30, 14], lure: [170, 34, 10], glow: [120, 26, 11], pet: [186, 32, 13], swap: [60, 8, 12],
+  gear: [40, 18, 13], bag: [70, 16, 13], quest: [24, 26, 13], journal: [40, 20, 14], chart: [200, 18, 13],
 };
 
 function face(x, R, hue, seed) {
@@ -44,35 +45,39 @@ const ART = {
   // the head of the hand net, close: the hoop seen a little from above, the knotted bag hanging from it, the end of
   // the pole coming in from the lower left. Its colours are the player's own net's
   net(x, look) {
-    const hoop = look.hoop || '#8c9496', meshC = look.mesh || 'rgba(92,140,96,0.9)', h = look.h || ['#c4cacb', '#8a9294', '#4a5254'];
-    // the pole and its ferrule
-    x.lineCap = 'round';
-    x.strokeStyle = '#0d0f0e'; x.lineWidth = 11; x.beginPath(); x.moveTo(-46, 44); x.lineTo(-20, 14); x.stroke();
-    x.strokeStyle = h[1]; x.lineWidth = 8; x.stroke();
-    x.strokeStyle = h[0]; x.lineWidth = 2.4; x.beginPath(); x.moveTo(-45, 40); x.lineTo(-21, 12); x.stroke();
-    x.fillStyle = h[2]; x.save(); x.translate(-20, 13); x.rotate(-0.86); x.beginPath(); x.roundRect(-6, -6, 12, 12, 3); x.fill(); x.restore();
-    // the bag: its far side first (seen through the hoop), then the near side
-    const bag = new Path2D('M-14 -2C-16 16 -2 38 12 42C26 36 36 14 34 -8C26 4 -2 6 -14 -2Z');
-    x.save(); x.translate(4, 4);
-    x.fillStyle = 'rgba(0,0,0,0.35)'; x.fill(bag);
-    x.clip(bag);
-    x.strokeStyle = meshC; x.lineWidth = 1.5;
-    // a diamond mesh (lines at 45 degrees both ways, 8 apart) with a knot at every crossing
-    x.beginPath(); for (let c = -90; c < 90; c += 8) { x.moveTo(c - 30, -30); x.lineTo(c + 60, 60); x.moveTo(c + 60, -30); x.lineTo(c - 30, 60); } x.stroke();
-    x.fillStyle = meshC; for (let a = -90; a < 90; a += 8) for (let b = -90; b < 150; b += 8) { const kx = (a + b) / 2, ky = (b - a) / 2; if (kx > -25 && kx < 45 && ky > -15 && ky < 50) { x.beginPath(); x.arc(kx, ky, 1.25, 0, TAU); x.fill(); } } // the knots
-    // the bag's depth: darker towards its bottom and its back
-    x.fillStyle = 'rgba(0,0,0,0.28)'; x.beginPath(); x.ellipse(14, 34, 22, 14, 0, 0, TAU); x.fill();
+    // (5.6.2) the net, read at a glance: a round hoop seen almost face-on, a deep bag of big knotted mesh hanging
+    // out of it, the pole leaving at the lower left. Its colours are the player's own net's
+    const hoop = look.hoop || '#8c9496', meshC = look.mesh || 'rgba(120,170,120,0.95)', h = look.h || ['#c4cacb', '#8a9294', '#4a5254'];
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    // the pole
+    x.strokeStyle = '#0d0f0e'; x.lineWidth = 10; x.beginPath(); x.moveTo(-48, 46); x.lineTo(-22, 18); x.stroke();
+    x.strokeStyle = h[1]; x.lineWidth = 6.4; x.stroke();
+    x.strokeStyle = h[0]; x.lineWidth = 2; x.beginPath(); x.moveTo(-47, 43); x.lineTo(-23, 16); x.stroke();
+    // the bag: a sack hanging down out of the hoop, wider than the hoop's lower half, its mesh drawn as knotted
+    // diamonds that get smaller towards the bottom
+    const bag = new Path2D('M-22 -2C-28 18 -12 44 8 46C28 44 40 20 36 -2Z');
+    x.fillStyle = 'rgba(0,0,0,0.38)'; x.fill(bag);
+    x.save(); x.clip(bag);
+    const mc = typeof meshC === 'string' ? meshC : 'rgba(120,170,120,0.95)';
+    for (let row = 0; row < 7; row++) {
+      const y0 = -2 + row * 7.2, step = 9 - row * 0.5;
+      for (let k = -40; k < 50; k += step) {
+        const xx = k + (row % 2 ? step / 2 : 0);
+        x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 2.8; x.beginPath(); x.moveTo(xx, y0); x.lineTo(xx + step / 2, y0 + 7.2); x.lineTo(xx + step, y0); x.stroke();
+        x.strokeStyle = mc; x.lineWidth = 1.5; x.stroke();
+        x.fillStyle = mc; x.beginPath(); x.arc(xx + step / 2, y0 + 7.2, 1.3, 0, TAU); x.fill();
+      }
+    }
+    x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.ellipse(24, 26, 16, 22, 0, 0, TAU); x.fill(); // the bag's shadowed side
     x.restore();
-    x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 1.2; x.save(); x.translate(4, 4); x.stroke(bag); x.restore();
-    // the hoop: a dark edge, its metal, a bright line along its upper rim
-    x.save(); x.translate(10, -10); x.rotate(-0.32);
-    x.strokeStyle = '#0d0f0e'; x.lineWidth = 8.5; x.beginPath(); x.ellipse(0, 0, 28, 13, 0, 0, TAU); x.stroke();
-    x.strokeStyle = hoop; x.lineWidth = 5.5; x.stroke();
-    x.strokeStyle = 'rgba(255,255,255,0.5)'; x.lineWidth = 1.6; x.beginPath(); x.ellipse(0, -1, 27, 12, 0, Math.PI * 1.1, Math.PI * 1.85); x.stroke();
-    x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 1.6; x.beginPath(); x.ellipse(0, 1.2, 27, 12, 0, Math.PI * 0.15, Math.PI * 0.85); x.stroke();
-    x.restore();
-    // a drop running off the bag
-    x.fillStyle = 'rgba(210,235,240,0.55)'; x.beginPath(); x.ellipse(17, 47, 1.6, 2.4, 0, 0, TAU); x.fill();
+    x.strokeStyle = '#0d0f0e'; x.lineWidth = 2; x.stroke(bag);
+    // the hoop
+    x.strokeStyle = '#0d0f0e'; x.lineWidth = 9; x.beginPath(); x.ellipse(7, -6, 31, 15, -0.06, 0, TAU); x.stroke();
+    x.strokeStyle = hoop; x.lineWidth = 5.6; x.stroke();
+    x.strokeStyle = 'rgba(255,255,255,0.55)'; x.lineWidth = 1.6; x.beginPath(); x.ellipse(7, -7, 30, 14, -0.06, Math.PI * 1.08, Math.PI * 1.92); x.stroke();
+    // the ferrule where pole meets hoop
+    x.fillStyle = h[2]; x.strokeStyle = '#0d0f0e'; x.lineWidth = 2; x.beginPath(); x.arc(-22, 16, 4.6, 0, TAU); x.fill(); x.stroke();
+    x.fillStyle = 'rgba(210,235,240,0.6)'; x.beginPath(); x.ellipse(10, 49, 1.6, 2.6, 0, 0, TAU); x.fill(); // a drop
   },
   // an underwater camera in its housing, in the colour of the player's own: moulded, not a box. Bevelled edges, two
   // grips with their rubber, the big port of the lens with its rings and a reflection, the strobe on its arm, screws
@@ -251,6 +256,135 @@ const ART = {
     x.fillStyle = '#4c5256'; x.strokeStyle = '#0a0b0c'; x.lineWidth = 2.6; x.beginPath(); x.arc(-11, 2, 7, 0, TAU); x.fill(); x.stroke();
     x.fillStyle = '#b8bec0'; x.beginPath(); x.arc(-11, 2, 2.2, 0, TAU); x.fill();
   },
+  // the anglerfish's lure: the fleshy stalk curling up, the bulb at its end lit from within, a few specks drifting
+  lure(x) {
+    x.save(); x.scale(1.15, 1.15); x.translate(4, 4);
+    const gl = x.createRadialGradient(10, -18, 0, 10, -18, 30); gl.addColorStop(0, 'rgba(210,255,230,0.55)'); gl.addColorStop(1, 'rgba(120,220,190,0)');
+    x.fillStyle = gl; x.beginPath(); x.arc(10, -18, 30, 0, TAU); x.fill();
+    x.lineCap = 'round'; x.strokeStyle = '#0c0a08'; x.lineWidth = 9; x.beginPath(); x.moveTo(-30, 46); x.bezierCurveTo(-34, 10, -26, -26, 2, -24); x.stroke();
+    x.strokeStyle = '#6a4a3a'; x.lineWidth = 5.6; x.stroke();
+    x.strokeStyle = 'rgba(255,220,200,0.25)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(-33, 40); x.bezierCurveTo(-36, 8, -28, -24, 0, -26); x.stroke();
+    // little filaments off the bulb
+    x.strokeStyle = 'rgba(180,240,220,0.7)'; x.lineWidth = 1.2; for (const [a, l] of [[0.2, 14], [0.8, 11], [1.6, 12], [2.6, 9]]) { x.beginPath(); x.moveTo(10, -18); x.quadraticCurveTo(10 + Math.cos(a) * l * 0.6, -18 + Math.sin(a) * l * 0.2, 10 + Math.cos(a) * l, -18 + Math.sin(a) * l); x.stroke(); }
+    const bg = x.createRadialGradient(7, -21, 1, 10, -18, 12); bg.addColorStop(0, '#f4fff6'); bg.addColorStop(0.45, '#9ff0cc'); bg.addColorStop(1, '#2a7a64');
+    x.fillStyle = bg; x.strokeStyle = '#08100c'; x.lineWidth = 3; x.beginPath(); x.ellipse(10, -18, 11, 12, 0.2, 0, TAU); x.fill(); x.stroke();
+    x.fillStyle = 'rgba(255,255,255,0.9)'; x.beginPath(); x.ellipse(6, -23, 3, 2, -0.5, 0, TAU); x.fill();
+    x.fillStyle = 'rgba(200,250,230,0.7)'; for (const [a, b, r] of [[30, 6, 1.6], [26, 18, 1.1], [36, -6, 1.2], [-12, -40, 1]]) { x.beginPath(); x.arc(a, b, r, 0, TAU); x.fill(); }
+    x.restore();
+  },
+  // a glow stick: a cracked chemical light in a cord loop, its liquid shining green through the plastic
+  glow(x) {
+    x.save(); x.rotate(-0.6); x.scale(1.3, 1.3);
+    const gl = x.createRadialGradient(0, 0, 0, 0, 0, 40); gl.addColorStop(0, 'rgba(160,255,150,0.45)'); gl.addColorStop(1, 'rgba(120,255,120,0)');
+    x.fillStyle = gl; x.beginPath(); x.arc(0, 0, 40, 0, TAU); x.fill();
+    x.strokeStyle = '#0a0c0a'; x.lineWidth = 2.2; x.beginPath(); x.ellipse(-36, 0, 8, 6, 0, 0, TAU); x.stroke(); x.strokeStyle = '#c8402e'; x.lineWidth = 1.4; x.stroke(); // the cord
+    x.fillStyle = '#0a0c0a'; x.beginPath(); x.roundRect(-30, -8.5, 62, 17, 8.5); x.fill();
+    const lg = x.createLinearGradient(0, -7, 0, 7); lg.addColorStop(0, '#eaffd8'); lg.addColorStop(0.4, '#8cf070'); lg.addColorStop(1, '#2c8a30');
+    x.fillStyle = lg; x.beginPath(); x.roundRect(-27, -6, 56, 12, 6); x.fill();
+    x.strokeStyle = 'rgba(20,60,20,0.6)'; x.lineWidth = 1; x.beginPath(); x.moveTo(-2, -6); x.lineTo(1, -1); x.lineTo(-1, 2); x.lineTo(2, 6); x.stroke(); // the crack
+    x.fillStyle = '#3a3e3a'; x.beginPath(); x.roundRect(-31, -7, 6, 14, 2); x.fill(); x.beginPath(); x.roundRect(27, -7, 6, 14, 2); x.fill(); // the caps
+    x.fillStyle = 'rgba(255,255,255,0.6)'; x.fillRect(-22, -4, 40, 1.6);
+    x.restore();
+  },
+  // settings: a cog of old bronze, green with verdigris in its teeth, a bolt through it
+  gear(x) {
+    x.save(); x.rotate(0.15);
+    const teeth = 9, r0 = 30, r1 = 40;
+    const p = new Path2D();
+    for (let i = 0; i < teeth * 2; i++) { const a0 = i / (teeth * 2) * TAU, a1 = (i + 1) / (teeth * 2) * TAU, rr = i % 2 ? r0 : r1, pd = i % 2 ? 0 : 0.05; const pt = (a, r) => [Math.cos(a) * r, Math.sin(a) * r]; const [ax, ay] = pt(a0 + pd, rr), [bx, by] = pt(a1 - pd, rr); if (i) p.lineTo(ax, ay); else p.moveTo(ax, ay); p.lineTo(bx, by); }
+    p.closePath(); p.moveTo(13, 0); p.arc(0, 0, 13, 0, TAU, true);
+    x.lineWidth = 5; x.strokeStyle = '#0c0a06'; x.stroke(p); x.fillStyle = '#8a6a3c'; x.fill(p, 'evenodd');
+    x.save(); x.clip(p, 'evenodd'); x.fillStyle = 'rgba(0,0,0,0.3)'; x.fillRect(-50, 4, 100, 50); x.fillStyle = 'rgba(255,236,190,0.22)'; x.fillRect(-50, -50, 100, 24);
+    x.fillStyle = 'rgba(80,150,120,0.55)'; for (const [a, b, r] of [[20, 26, 7], [-28, 18, 6], [30, -12, 5], [-10, -32, 5]]) { x.beginPath(); x.arc(a, b, r, 0, TAU); x.fill(); }
+    x.restore();
+    x.fillStyle = '#4c3c24'; x.strokeStyle = '#0c0a06'; x.lineWidth = 3; x.beginPath(); x.arc(0, 0, 8, 0, TAU); x.fill(); x.stroke();
+    x.strokeStyle = '#0c0a06'; x.lineWidth = 2.4; x.beginPath(); x.moveTo(-5, 0); x.lineTo(5, 0); x.stroke();
+    x.restore();
+  },
+  // the bag: a canvas dive bag, its buckled flap and a strap
+  bag(x) {
+    x.lineJoin = 'round';
+    x.strokeStyle = '#0c0b08'; x.lineWidth = 5; x.beginPath(); x.moveTo(-14, -22); x.bezierCurveTo(-14, -42, 14, -42, 14, -22); x.stroke(); x.strokeStyle = '#4a3c28'; x.lineWidth = 3; x.stroke(); // the handle
+    const b = new Path2D('M-30 -22H30C34 -22 36 -19 36 -15V34C36 40 32 42 28 42H-28C-32 42 -36 40 -36 34V-15C-36 -19 -34 -22 -30 -22Z');
+    x.lineWidth = 4.4; x.strokeStyle = '#0c0b08'; x.stroke(b); x.fillStyle = '#5a5a3e'; x.fill(b);
+    x.save(); x.clip(b); x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(-40, 20, 80, 30); x.fillStyle = 'rgba(255,250,220,0.14)'; x.fillRect(-40, -22, 80, 8);
+    x.strokeStyle = 'rgba(0,0,0,0.18)'; x.lineWidth = 0.8; for (let k = -36; k < 40; k += 3) { x.beginPath(); x.moveTo(k, -22); x.lineTo(k, 42); x.stroke(); } x.restore(); // the weave
+    const flap = new Path2D('M-34 -18H34V6C34 10 30 12 26 12H-26C-30 12 -34 10 -34 6Z');
+    x.fillStyle = '#4c4c34'; x.fill(flap); x.strokeStyle = '#0c0b08'; x.lineWidth = 3; x.stroke(flap);
+    x.strokeStyle = 'rgba(230,222,196,0.35)'; x.lineWidth = 1; x.setLineDash([3, 3]); x.beginPath(); x.moveTo(-30, 8); x.lineTo(30, 8); x.stroke(); x.setLineDash([]); // stitching
+    for (const sx of [-16, 16]) { x.fillStyle = '#2a2418'; x.fillRect(sx - 4, 2, 8, 22); x.fillStyle = '#b89a5a'; x.strokeStyle = '#0c0b08'; x.lineWidth = 2; x.beginPath(); x.roundRect(sx - 6, 12, 12, 9, 1.5); x.fill(); x.stroke(); x.fillStyle = '#0c0b08'; x.fillRect(sx - 1, 13, 2, 7); }
+  },
+  // the quests: the Margaret's log, a worn hardback tied shut with string, a page-marker sticking out
+  quest(x) {
+    x.save(); x.rotate(-0.12);
+    x.fillStyle = '#0b0a08'; x.beginPath(); x.roundRect(-32, -40, 64, 80, 4); x.fill();
+    x.fillStyle = '#e6dcc0'; x.fillRect(-26, -36, 58, 74); // the pages' edge
+    x.strokeStyle = 'rgba(0,0,0,0.25)'; x.lineWidth = 0.8; for (let k = -32; k < 38; k += 3) { x.beginPath(); x.moveTo(28, k); x.lineTo(32, k); x.stroke(); }
+    const cov = new Path2D('M-30 -40H24C27 -40 28 -39 28 -36V36C28 39 27 40 24 40H-30Z');
+    x.fillStyle = '#4a3020'; x.fill(cov); x.save(); x.clip(cov); x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(-30, 10, 60, 40); x.fillStyle = 'rgba(255,230,200,0.12)'; x.fillRect(-30, -40, 60, 10);
+    x.fillStyle = 'rgba(30,20,10,0.3)'; for (const [a, b, r] of [[10, -20, 9], [-14, 18, 12]]) { x.beginPath(); x.arc(a, b, r, 0, TAU); x.fill(); } x.restore(); // water stains
+    x.strokeStyle = '#0b0a08'; x.lineWidth = 3; x.stroke(cov);
+    x.fillStyle = '#2a1a10'; x.fillRect(-30, -40, 8, 80); // the spine
+    x.fillStyle = '#d8ccaa'; x.strokeStyle = '#0b0a08'; x.lineWidth = 2; x.beginPath(); x.roundRect(-12, -16, 32, 18, 2); x.fill(); x.stroke(); // the label
+    x.strokeStyle = 'rgba(40,30,20,0.7)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(-8, -10); x.lineTo(16, -10); x.moveTo(-8, -4); x.lineTo(10, -4); x.stroke();
+    x.strokeStyle = '#c8b890'; x.lineWidth = 2; x.beginPath(); x.moveTo(-34, 22); x.bezierCurveTo(0, 18, 20, 26, 34, 22); x.stroke(); // the string
+    x.fillStyle = '#a02a20'; x.beginPath(); x.moveTo(14, 40); x.lineTo(14, 52); x.lineTo(18, 48); x.lineTo(22, 52); x.lineTo(22, 40); x.fill(); // the marker
+    x.restore();
+  },
+  // the journal (the quest group's): a field notebook, open, a sketched fish on its page, a pencil across it
+  journal(x) {
+    x.fillStyle = '#0b0a08'; x.beginPath(); x.moveTo(-44, -26); x.quadraticCurveTo(-22, -34, 0, -26); x.quadraticCurveTo(22, -34, 44, -26); x.lineTo(44, 32); x.quadraticCurveTo(22, 24, 0, 32); x.quadraticCurveTo(-22, 24, -44, 32); x.closePath(); x.fill();
+    x.fillStyle = '#e4d9bc'; x.beginPath(); x.moveTo(-40, -23); x.quadraticCurveTo(-20, -30, -1, -23); x.lineTo(-1, 28); x.quadraticCurveTo(-20, 21, -40, 28); x.closePath(); x.fill();
+    x.fillStyle = '#ddd2b4'; x.beginPath(); x.moveTo(1, -23); x.quadraticCurveTo(20, -30, 40, -23); x.lineTo(40, 28); x.quadraticCurveTo(20, 21, 1, 28); x.closePath(); x.fill();
+    x.strokeStyle = 'rgba(60,70,90,0.35)'; x.lineWidth = 0.8; for (let k = -14; k < 24; k += 5) { x.beginPath(); x.moveTo(6, k); x.lineTo(36, k - 2); x.stroke(); }
+    x.strokeStyle = 'rgba(40,40,40,0.75)'; x.lineWidth = 1.4; x.beginPath(); x.ellipse(-20, 0, 12, 6, 0, 0, TAU); x.moveTo(-32, 0); x.lineTo(-38, -5); x.lineTo(-38, 5); x.closePath(); x.stroke(); // a sketched fish
+    x.beginPath(); x.arc(-13, -1, 1, 0, TAU); x.stroke();
+    x.fillStyle = 'rgba(120,80,40,0.25)'; x.beginPath(); x.arc(28, 16, 7, 0, TAU); x.fill(); // a stain
+    x.save(); x.rotate(-0.5); x.fillStyle = '#c8a040'; x.strokeStyle = '#0b0a08'; x.lineWidth = 1.6; x.beginPath(); x.roundRect(-6, 20, 46, 5, 1); x.fill(); x.stroke(); x.fillStyle = '#e8c8a0'; x.beginPath(); x.moveTo(40, 20); x.lineTo(47, 22.5); x.lineTo(40, 25); x.fill(); x.restore(); // a pencil
+  },
+  // the chart: a sea chart, half unrolled, its contours and a red mark
+  chart(x) {
+    x.fillStyle = '#0b0a08'; x.beginPath(); x.roundRect(-42, -26, 84, 54, 3); x.fill();
+    x.fillStyle = '#d8ccaa'; x.fillRect(-38, -22, 72, 46);
+    x.strokeStyle = 'rgba(40,80,100,0.6)'; x.lineWidth = 1.2; for (const k of [0, 6, 12]) { x.beginPath(); x.moveTo(-38, 10 - k); x.bezierCurveTo(-14, -6 - k, 6, 18 - k, 34, 2 - k); x.stroke(); }
+    x.fillStyle = '#a02a20'; x.beginPath(); x.moveTo(10, -4); x.lineTo(14, -12); x.lineTo(18, -4); x.closePath(); x.fill();
+    x.fillStyle = '#b8a880'; x.strokeStyle = '#0b0a08'; x.lineWidth = 2.4; x.beginPath(); x.ellipse(36, 1, 7, 26, 0, 0, TAU); x.fill(); x.stroke(); // the roll
+  },
+  // a spare cylinder: scuffed steel, its valve and a pressure gauge
+  air(x) {
+    x.save(); x.rotate(-0.5);
+    x.fillStyle = '#0b0c0c'; x.beginPath(); x.roundRect(-14, -30, 28, 70, 13); x.fill();
+    const cg = x.createLinearGradient(-12, 0, 12, 0); cg.addColorStop(0, '#5a6266'); cg.addColorStop(0.35, '#a8b2b6'); cg.addColorStop(1, '#3a4044');
+    x.fillStyle = cg; x.beginPath(); x.roundRect(-11.5, -27, 23, 64, 11); x.fill();
+    x.fillStyle = '#d8c060'; x.fillRect(-11.5, -14, 23, 4);
+    x.fillStyle = '#2a2e30'; x.strokeStyle = '#0b0c0c'; x.lineWidth = 2; x.beginPath(); x.roundRect(-5, -40, 10, 12, 2); x.fill(); x.stroke();
+    x.fillStyle = '#d8d8cc'; x.beginPath(); x.arc(10, -38, 6, 0, TAU); x.fill(); x.stroke(); x.strokeStyle = '#c8402e'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(10, -38); x.lineTo(13, -41); x.stroke();
+    x.restore();
+  },
+  // the trawl: a bundle of net, corks strung along its head-rope
+  trawl(x) {
+    const b = new Path2D('M-40 -10C-30 -24 10 -26 40 -14C44 4 30 30 0 34C-26 32 -44 14 -40 -10Z');
+    x.fillStyle = 'rgba(0,0,0,0.4)'; x.fill(b); x.save(); x.clip(b); x.strokeStyle = 'rgba(140,170,120,0.85)'; x.lineWidth = 1.4;
+    x.beginPath(); for (let c = -90; c < 90; c += 8) { x.moveTo(c - 30, -30); x.lineTo(c + 60, 60); x.moveTo(c + 60, -30); x.lineTo(c - 30, 60); } x.stroke(); x.restore();
+    x.strokeStyle = '#0b0a08'; x.lineWidth = 2.4; x.stroke(b);
+    x.strokeStyle = '#c8b890'; x.lineWidth = 2.4; x.beginPath(); x.moveTo(-40, -10); x.bezierCurveTo(-30, -24, 10, -26, 40, -14); x.stroke();
+    for (let k = 0; k < 5; k++) { const t = k / 4, px = -38 + t * 76, py = -12 - Math.sin(t * Math.PI) * 9; x.fillStyle = '#c87a30'; x.strokeStyle = '#0b0a08'; x.lineWidth = 1.8; x.beginPath(); x.ellipse(px, py, 5, 3.6, 0, 0, TAU); x.fill(); x.stroke(); }
+  },
+  // selling: a canvas purse, open, coins spilling from it
+  sell(x) {
+    x.fillStyle = '#5a4a30'; x.strokeStyle = '#0b0a08'; x.lineWidth = 3; x.beginPath(); x.moveTo(-26, -6); x.quadraticCurveTo(-34, 34, 0, 36); x.quadraticCurveTo(34, 34, 26, -6); x.quadraticCurveTo(0, -16, -26, -6); x.fill(); x.stroke();
+    x.strokeStyle = '#c8b890'; x.lineWidth = 2; x.beginPath(); x.moveTo(-26, -6); x.quadraticCurveTo(0, 4, 26, -6); x.stroke();
+    for (const [a, b] of [[-14, -18], [4, -22], [20, -14], [32, 20], [24, 34]]) { x.fillStyle = '#d8b040'; x.strokeStyle = '#3a2a08'; x.lineWidth = 1.8; x.beginPath(); x.ellipse(a, b, 8, 6, 0.3, 0, TAU); x.fill(); x.stroke(); x.fillStyle = 'rgba(255,240,180,0.6)'; x.beginPath(); x.ellipse(a - 2, b - 2, 3, 1.6, 0.3, 0, TAU); x.fill(); }
+  },
+  // the pet: a small painted fish, turned towards you
+  pet(x) {
+    x.fillStyle = '#c86a3a'; x.strokeStyle = '#120c08'; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(-32, 0); x.bezierCurveTo(-20, -24, 22, -22, 34, 0); x.bezierCurveTo(22, 22, -20, 24, -32, 0); x.fill(); x.stroke();
+    x.beginPath(); x.moveTo(-28, 0); x.lineTo(-46, -16); x.lineTo(-42, 0); x.lineTo(-46, 16); x.closePath(); x.fill(); x.stroke();
+    x.fillStyle = 'rgba(255,230,200,0.25)'; x.beginPath(); x.ellipse(0, -8, 22, 6, 0, 0, TAU); x.fill();
+    x.fillStyle = '#f4f0e0'; x.beginPath(); x.arc(20, -4, 6, 0, TAU); x.fill(); x.stroke(); x.fillStyle = '#0a0806'; x.beginPath(); x.arc(21, -4, 3, 0, TAU); x.fill();
+    x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 1.4; for (const k of [-10, 0]) { x.beginPath(); x.moveTo(k, -14); x.quadraticCurveTo(k + 4, 0, k, 14); x.stroke(); }
+  },
 };
 
 // the face for button `kind` (the art, if drawn here; else its symbol in bone), radius r, state 'on' | 'off' | 'down' | 'lit'
@@ -279,3 +413,9 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null) {
   ctx.drawImage(t.c, cx - t.half, cy - t.half + (state === 'down' ? r * 0.04 : 0));
 }
 export const COIN_ART = Object.keys(ART);
+
+// (5.6.2) a coin as a picture, for the page's own buttons (the quest group's)
+export function coinURL(kind, px = 112, state = 'on') {
+  const c = document.createElement('canvas'); c.width = c.height = px; const x = c.getContext('2d');
+  drawCoin(x, px / 2, px / 2, px * 0.43, kind, state); return c.toDataURL('image/png');
+}

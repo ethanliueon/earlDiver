@@ -1,6 +1,7 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { setTouchText } from './touchtext.js';
 import { installFatFinger } from './fatfinger.js';
+import { coinURL } from './coins.js';
 installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
@@ -2751,6 +2752,11 @@ function frame(now) {
     hud.earlScreen = { x: sx(g.earl.x), y: sy(g.earl.y) };
     const ot = g.obsTarget, oc = ot && (ot.c || null);
     hud.obsScreen = ot ? { x: sx(oc ? oc.x : ot.x ?? g.earl.x), y: sy(oc ? oc.y : ot.y ?? g.earl.y), r: Math.max(34 * hud.c.width / innerWidth * (window.__fingerK || 1), (ot.sp.len || 0.3) * cm.ppm * k) } : null;
+  }
+  if (hud.touch) { // (5.6.2) the quest group under the settings coin, its pictures the coins'
+    const qh = document.getElementById('quests-hud');
+    if (qh && hud.topLeftBottom && Math.abs((qh.__top || 0) - hud.topLeftBottom) > 1) { qh.__top = hud.topLeftBottom; qh.style.setProperty('top', hud.topLeftBottom + 'px', 'important'); }
+    if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'quest'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = coinURL(k); } }
   }
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen()); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea

@@ -769,4 +769,6 @@ html body #quests-btn i:not(#_a):not(#_b) { background: #e6dcc4 !important; colo
   animation: qdot 2.4s ease-in-out infinite; }
 @keyframes qdot { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 /* (5.6.1) on a phone the journal is under the radar and settings sit under the clipboard (drawn on the HUD) */
-html.touch body #quests-hud #hud-journal:not(#_a):not(#_b) { visibility: hidden !important; pointer-events: none !important; }
+/* (5.6.2) the quest group's pictures are coins on a phone: no frame or plate round them */
+html.touch body #quests-hud .hud-ic:not(#_a):not(#_b) { background: none !important; box-shadow: none !important; border: 0 !important; }
+html.touch body #quests-hud { left: 4px !important; }

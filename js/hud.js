@@ -38,6 +38,7 @@ import { SETTINGS } from './settings.js';
 import { toolIcon, netLook } from './tools_draw.js';
 import { bagSlots, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf, tankUsed, BIG, hasBigTank, bigIn } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
+import { drawSpecies } from './creatures_draw.js';
 
 const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const HUDT = '"Barlow Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
@@ -138,8 +139,25 @@ export class Hud {
     let sx = W / 2 - rowW / 2 + step / 2;
     const sy = y - 18 * s;
     ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    if (!e.inSub) { ctx.save(); ctx.font = `600 ${17 * s}px ${HUDF}`; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * s; ctx.fillStyle = 'rgba(230,224,204,0.85)'; ctx.fillText('Bag', sx - step * 0.6 - 2 * s, sy); ctx.restore(); }
-    for (let i = 0; i < slots; i++, sx += step) {
+
+    // (5.6.2) on a touch screen the bag is a row of small wells, the animals kept drawn in theirs, a thin line
+    // under each in the colour of its condition; free places are empty wells
+    if (this.touch && !e.inSub && slots) {
+      const cw = 30 * s, gp = 6 * s, tot = slots * cw + (slots - 1) * gp; let wx = W / 2 - tot / 2; const wy = H - 20 * s - cw;
+      for (let i = 0; i < slots; i++, wx += cw + gp) {
+        const sp = list[i];
+        if (!oliveNine(ctx, 'well', wx, wy, cw, cw, 30, 6 * s)) { ctx.fillStyle = 'rgba(6,12,14,0.6)'; ctx.fillRect(wx, wy, cw, cw); }
+        if (sp && SPECIES_BY_ID[sp.id]) {
+          ctx.save(); ctx.beginPath(); ctx.rect(wx + 2 * s, wy + 2 * s, cw - 4 * s, cw - 4 * s); ctx.clip(); ctx.translate(wx + cw / 2, wy + cw / 2 - 1 * s);
+          try { drawSpecies(ctx, SPECIES_BY_ID[sp.id], cw * 0.72, g.time * 2 + i, 1, 0); } catch (err) { /* its colour, then */ ctx.fillStyle = SPECIES_BY_ID[sp.id].v.c[0]; ctx.beginPath(); ctx.arc(0, 0, cw * 0.22, 0, TAU); ctx.fill(); }
+          ctx.restore();
+          const c = sp.cond; ctx.fillStyle = c <= 0.05 ? 'rgba(140,140,140,0.9)' : c >= 0.8 ? 'rgba(120,200,130,0.9)' : c >= 0.5 ? 'rgba(232,176,64,0.95)' : 'rgba(230,80,60,0.95)';
+          ctx.fillRect(wx + 5 * s, wy + cw - 5 * s, cw - 10 * s, 2 * s);
+          if (c > 0.05 && sp.warnDying) { const q = (g.time * 1.2) % 1; ctx.strokeStyle = `rgba(255,90,60,${(0.8 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1.4 * s; ctx.strokeRect(wx - q * 4 * s, wy - q * 4 * s, cw + q * 8 * s, cw + q * 8 * s); }
+        }
+      }
+    }
+    for (let i = 0; i < (this.touch && !e.inSub ? 0 : slots); i++, sx += step) {
       const sp = list[i];
       ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU);
       ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.fill();
@@ -275,17 +293,16 @@ export class Hud {
       { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
     ] : [
       { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'Not on deck' },
-      { key: 'q', icon: 'lure', on: !aboard && (g.items.lure || 0) > 0, n: g.items.lure, why: (g.items.lure || 0) > 0 ? 'Not on deck' : 'No lure: the station and Dave sell them' },
+      { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'Not on deck' : 'No glow stick: the boat sells them' },
       { key: 'sprint', icon: 'sprint', on: !aboard, lit: !!g.sprintLock, why: 'Not on deck' },
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
-    const ROW = [{ key: 'j', icon: 'journal', on: true }, { key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
+    const ROW = [{ key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
       { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet, away: true },
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
       { key: 'u', icon: 'sell', on: !!partOf('u'), away: true },
     ] : aboard ? [] : [
-      { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, away: true },
       { key: 'h', icon: 'pet', on: !!P.pet, lit: P.pet && P.petStay, away: true },
     ]).filter((a) => !(a.away && !a.on));
     const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
@@ -319,10 +336,13 @@ export class Hud {
     A.forEach((a, i) => { const ang = [-90, -125, -160, -195][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
     { const rb = 15 * u, stepB = rb * 2 + 9 * u, ra = this.radarAt || { x: W - pad - 40 * u, y: 60 * u, r: 30 * u };
       const top = ra.y + ra.r + 12 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(1, Math.floor((last - top) / stepB) + 1);
-      ROW.slice(0, n).forEach((a, i) => btn({ ...a, row: true }, ra.x, top + i * stepB, rb)); }
-    // settings, at the top left under the quest clipboard (where the journal was); it opens the pause menu
-    { const q = document.getElementById('quests-btn'), qr = q && q.getBoundingClientRect(), rg = 15 * u;
-      if (qr && qr.width) btn({ key: 'escape', icon: 'gear', on: true, row: true }, (qr.left + qr.width / 2) / kx - this.safeL, (qr.bottom + 10) / kx - this.safeT + rg, rg); }
+      ROW.slice(0, n).forEach((a, i) => btn(a, ra.x, top + i * stepB, rb)); } // (5.6.2) small coins, as the arc's
+    // (5.6.2) the top left: settings first (the pause menu), the money beside it; the quest group sits below (CSS)
+    { const rg = 19 * u, gx = 14 * u + rg, gy = 12 * u + rg;
+      btn({ key: 'escape', icon: 'gear', on: true }, gx, gy, rg);
+      ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
+      ctx.fillStyle = '#efe8d2'; ctx.fillText(money(P.cash || 0), gx + rg + 12 * u, gy + 1 * u); ctx.restore();
+      this.topLeftBottom = (gy + rg + 8 * u) * kx; }
     // (5.6.1) what F does here, as a small olive tag above Earl (climb aboard, board the sub, pick up, enter the cabin):
     // a tap does it, a hold holds it. Observing is done by tapping the animal itself (render.js brackets it)
     { const fOn = !e.inSub && ((!!F && !/observe/i.test(F.label)) || ta === 'f');
@@ -675,7 +695,7 @@ export class Hud {
       const a = 1 - calm * 0.65;
       // (4.28) a real eye in the dark, not a sign: a wet dark lid line, an iris of deep amber going to blood red with
       // fibres in it, a slit that breathes, a point of light on the cornea; it opens slowly and blinks now and then
-      const ex = touch ? W - pad - 210 * s : pad + 46 * s, ey = touch ? pad + 30 * s : H - pad - 30 * s, ew = (touch ? 30 : 40) * s, eh = (touch ? 18 : 24) * s; // (5.1.1) on touch, by the depth: the bottom left is for a stick
+      const ex = touch ? W / 2 : pad + 46 * s, ey = touch ? pad + 22 * s : H - pad - 30 * s, ew = (touch ? 30 : 40) * s, eh = (touch ? 18 : 24) * s; // (5.1.1) on touch, by the depth: the bottom left is for a stick
       const blink = (g.time % 7.3) < 0.18 ? Math.abs(Math.sin((g.time % 7.3) / 0.18 * Math.PI)) : 0, open = (1 - blink) * (0.85 + 0.15 * Math.sin(g.time * 0.5));
       ctx.save();
       const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.7);
