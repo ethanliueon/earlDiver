@@ -471,8 +471,25 @@ export class UI {
     };
     { const n = Math.min(5, entries.length); el.style.setProperty('--gn', n); el.style.setProperty('--gh', [0, 45, 38, 32, 26, 26][n] + 'vh'); } // (4.17.0) sized from the screen: one big card, smaller as more come
     el.innerHTML = `<div class="g-row">${entries.slice(0, 5).map(card).join('')}</div>`;
+    // (5.5.6) on a phone, during play: the card comes out small beside the bag button and goes into it (the bag gives a
+    // tug), instead of standing in the middle of the screen over the sea
+    const bag = document.documentElement.classList.contains('touch') && !this.anyOpen() && (window.__hudHots || []).find((q) => q.key === 'b');
+    el.classList.toggle('dock', !!bag);
+    if (bag) { el.style.setProperty('--dx', (bag.x + bag.w + 10) + 'px'); el.style.setProperty('--dy', (bag.y + bag.h / 2) + 'px'); el.style.setProperty('--tx', (-(bag.w / 2 + 10)) + 'px'); }
     el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
-    clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), 2900);
+    clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), bag ? 2200 : 2900);
+  }
+  // (5.5.6) a quest done: a small olive tag slides out from the clipboard with what it paid, and goes again
+  questTag(text) {
+    const hudEl = document.getElementById('quests-hud'); if (!hudEl) return false;
+    let t = document.getElementById('qtag');
+    if (!t) { t = document.createElement('div'); t.id = 'qtag'; t.innerHTML = '<small>Quest done</small><b></b>'; document.body.appendChild(t); }
+    const r = document.getElementById('quests-btn').getBoundingClientRect();
+    t.style.left = (r.right + 8) + 'px'; t.style.top = (r.top + r.height * 0.15) + 'px';
+    t.querySelector('b').textContent = text;
+    t.classList.remove('in'); void t.offsetWidth; t.classList.add('in');
+    clearTimeout(this.qtagT); this.qtagT = setTimeout(() => t.classList.remove('in'), 2800);
+    return true;
   }
   // (4.11.0) N with more than one kind of net in the hatch: their cards in the middle of the screen, in the item
   // cards' look (picture, name, a number in a circle when there are two). Click one, or press its number; N or Esc
@@ -496,7 +513,7 @@ export class UI {
     this.netPickClose = close; el.hidden = false;
   }
   netPickOpen() { const el = document.getElementById('netpick'); return !!el && !el.hidden; }
-  hideGains() { const el = document.getElementById('gains'); if (!el) return; clearTimeout(this.gainT); el.classList.remove('in'); el.classList.add('out'); }
+  hideGains() { const el = document.getElementById('gains'); if (!el) return; clearTimeout(this.gainT); if (el.classList.contains('dock') && el.classList.contains('in')) window.__bagTug = performance.now() + 300; el.classList.remove('in'); el.classList.add('out'); }
   // (4.0.0) after a purchase confirmed in the dialog: whatever shop is open shows the new state
   refreshOpen() {
     const open = (id) => { const el = $(id); return el && !el.hidden; };

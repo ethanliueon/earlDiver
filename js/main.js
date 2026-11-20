@@ -293,7 +293,7 @@ const ui = new UI({
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
     const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id })));
     if (cards.length) ui.showGains(cards); // (4.6.0)
-    hud.toast(`Quest done: +${money(r.pay)}`, 'big');
+    if (!(hud.touch && !ui.anyOpen() && ui.questTag(`+${money(r.pay)}`))) hud.toast(`Quest done: +${money(r.pay)}`, 'big'); // (5.5.6) on a phone, a tag from the clipboard
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
