@@ -9,7 +9,8 @@ Being small and alone in water bigger than you, and slowly getting brave enough 
 animals, catch or photograph them, fill the journal, sell, buy better gear, go deeper) with the horror *under* it:
 the thing in the deep is a presence that marks you, stalks, and turns the water red. Fear comes from the dark, the
 depth, the air running low, and knowing something has noticed you. A collecting game in a place that does not want
-you there. It is played on phones held sideways; desktop is no longer a target.
+you there. It is strictly a mobile game, played on phones held sideways; there is no computer version to keep working (the
+last desktop build is kept on the branch `desktop-4.25.5`).
 
 ## The philosophy
 
@@ -44,7 +45,8 @@ you there. It is played on phones held sideways; desktop is no longer a target.
   showing it.
 - **Show, don't claim.** Send screenshots along the way (phone viewport, touch).
 - **Every change:** bump `js/version.js` (last number for small changes) and README line 3, run
-  `python3 tools/stamp.py`, test, commit, push to `claude/fish-mobile`. Never merge into main.
+  `python3 tools/stamp.py`, test, commit, push to `claude/fish-mobile`. Merge into `main` (a fast-forward) only when
+  the owner says a version is good.
 - **Every version, give both links:** the home-screen link
   https://raw.githack.com/ethanliueon/earlDiver/claude/fish-mobile/index.html and the pinned
   `https://rawcdn.githack.com/ethanliueon/earlDiver/<commit>/index.html`.
