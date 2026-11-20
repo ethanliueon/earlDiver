@@ -1226,7 +1226,7 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'sprinton', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
+const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'sprinton', 'leavesub', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
 function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
@@ -1952,6 +1952,8 @@ function update(dt) {
     g.obsTarget = hud.touch ? observeTarget() : null;
     // (5.5.3) the sprint button: a tap locks sprinting on (it costs air faster, as ever), another tap or letting go of the
     // stick for a moment ends it; never in the sub or on deck
+    // (5.7.1) the sub's leave button: always works (the tutorial's own leave step, if it is the one asked)
+    if (pressed.has('leavesub')) { pressed.delete('leavesub'); if (e.inSub) { if (!(g.tutAction && g.tutAction.id === 'leavesub' && runTutAction('leavesub'))) leaveSub(); } }
     if (pressed.has('sprinton')) { pressed.delete('sprinton'); if (!g.sprintLock) pressed.add('sprint'); } // (5.7.0) a thumb slid onto the sprint button
     if (pressed.has('sprint')) { pressed.delete('sprint'); g.sprintLock = !g.sprintLock; g.sprintIdle = 0; if (g.sprintLock && !profile.tipSprintBtn) { profile.tipSprintBtn = true; saveProfile(profile); hud.toast('Sprinting: your air goes faster', 'note'); } }
     if (g.sprintLock) { if (e.inSub) g.sprintLock = false; else { g.sprintIdle = touch && touch.vec.on ? 0 : (g.sprintIdle || 0) + dt; if (g.sprintIdle > 1.2) g.sprintLock = false; } }
@@ -1964,6 +1966,7 @@ function update(dt) {
     // (5.6.4) where the thing F acts on is, so its button can sit beside it (not over Earl)
     g.fAnchor = target ? (target.kind === 'board' ? { x: g.sub.x, y: g.sub.y } : target.kind === 'pickup' ? { x: target.p.x, y: target.p.y } : target.kind === 'trap' ? { x: target.t.x, y: target.t.y - 0.5 } : null) : null;
     const atAngler = nearAngler(), atDave = !atAngler && nearDave(), atStation = !atAngler && !atDave && nearStation();
+    g.subHandF = !!(e.inSub && (atDave || atStation || overTable(e.x, e.y))); // (5.7.1) the hand in the sub: the stores, Dave, the old one's table
     if (atStation) {
       g.prompt = 'F  Station stores' + (e.inSub ? '   ·   hold F  Leave sub' : '');
       if (!profile.stationFound) { profile.stationFound = true; saveProfile(profile); hud.toast('A research station, lit up on the summit', 'big'); hud.hint("The station's stores sell to visiting divers. The Margaret's yard now has more for the sub"); }

@@ -287,10 +287,14 @@ export class Hud {
     const ta = g.tutAction && !g.tutAction.cabinOnly ? String(g.tutAction.key).toLowerCase() : null;
     // (5.6) as a mobile RPG's skills: four fixed coins in an arc round the big button (one that cannot be used now is
     // dimmed, never moved), and a quiet row of small round icons along the bottom for the rest
+    // (5.7.1) the same four in the sub as in the water, each doing its own job there: the sub's slot lets him out (in
+    // the water it calls her), the glow stick, the hand (the station, Dave, selling when she is docked), the lamp.
+    // Leaving always works (it used to wait on the prompt, which hides itself after a few seconds)
+    const handSub = e.inSub ? (g.subHandF ? 'f' : sub.docked ? 'u' : null) : null;
     const A = e.inSub ? [
-      { key: 'f', icon: 'leave', on: !!F || ta === 'f', bar: true, why: 'Nothing to do here' },
-      { key: 't', icon: 'tank', on: true },
-      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
+      { key: 'leavesub', icon: 'leave', on: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
+      { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
+      { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach' },
       { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
     ] : [
       // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
@@ -307,7 +311,9 @@ export class Hud {
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
     const ROW = [{ key: 'journal', dom: true }, { key: 'b', icon: 'bag', on: true }].concat( // (5.6.9) the journal's coin (HTML) above the bag
 e.inSub ? [
-      { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet, away: true },
+      // (5.7.1) in the sub only: the tank room and the autopilot (out of the arc), then the spare air
+      { key: 't', icon: 'tank', on: true },
+      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
     ] : aboard ? [] : [
     ]).filter((a) => !(a.away && !a.on));
@@ -344,7 +350,7 @@ e.inSub ? [
       // one that comes and goes rises in (and sinks away) over a fifth of a second rather than blinking
       if (a.away) { const v0 = vis[a.key] ?? 0, v = vis[a.key] = clamp(v0 + (a.on ? 1 : -1) * dt * 6, 0, 1); if (v <= 0.01) return; r *= 0.7 + 0.3 * (1 - (1 - v) * (1 - v)); ctx.save(); ctx.globalAlpha *= v; }
       else ctx.save();
-      if (tutKey === a.key && a.on) ring(x, y, r);
+      if ((tutKey === a.key || (a.tutAlt && tutKey === a.tutAlt)) && a.on) ring(x, y, r);
       // (5.5.6) the bag gives a tug as something new goes into it
       if (a.key === 'b' && window.__bagTug) { const k = (performance.now() - window.__bagTug) / 450; if (k > 0 && k < 1) { const s2 = 1 + 0.22 * Math.sin(k * Math.PI) * (1 - k * 0.5); ctx.translate(x, y); ctx.scale(s2, s2); ctx.translate(-x, -y); } }
       if (a.row) { // the bottom row: a small dark round, its symbol in bone (as the menus' icons are)
@@ -392,6 +398,7 @@ e.inSub ? [
     const rarOf = (k) => { const it = k === 'net' ? gear(P, 'net') : k === 'cam' && owns(P, 'camera') ? gear(P, 'cam') : null; return it && it.rarity || null; }; // (5.6.9) the tool's rarity tints its coin
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
+    if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
     if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(230,222,196,${(0.25 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
@@ -403,6 +410,13 @@ e.inSub ? [
     // what it would go for: its name above the button, in its rarity's colour
     const nm = this.capWant && this.capWant[0] ? parsePrompt(this.capWant[0]).map((p) => p.label).join(' ') : '';
     if (nm && can) { ctx.save(); ctx.font = `600 ${16 * u}px ${HUDF}`; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillStyle = this.capWant[1] || '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.textBaseline = 'middle'; ctx.fillText(nm, cx - rho1 - r - 14 * u, cy + R * 0.3); ctx.restore(); }
+    // (5.7.1) in the sub the chip on the big button's rim is her trawl net: a tap lets it out or hauls it in (N); with no
+    // trawl net in the hatch, a padlock
+    if (e.inSub) {
+      const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1), hasN = !!g.subNet || netKinds(g.items).length > 0;
+      if (hasN) { drawCoin(ctx, sx2, sy2, rc, 'trawl', pressFx('n', sx2, sy2, rc) ? 'press' : g.subNet ? 'lit' : 'on'); hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'n'); }
+      else { drawCoin(ctx, sx2, sy2, rc, 'trawl', 'off'); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42); hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No trawl net: the yard sells them'); }
+    }
     // (5.6) the swap chip on the big button's rim: the next tool owned, a tap takes it in hand
     if (!e.inSub && !aboard) {
       const trs = P.traps || {}, owned = ['net'].concat(owns(P, 'camera') ? ['cam'] : [], ['pot', 'fish', 'steel', 'cage'].some((k) => trs[k] > 0) ? ['trap'] : []);
