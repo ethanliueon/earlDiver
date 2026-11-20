@@ -766,7 +766,7 @@ export class Renderer {
         this.boatK = { flip: bsx < 0, door, dim: dimB, docked: g.sub.docked, t };
       }
       const kB = ppm / REF; crane = this.boatCrane ? { craneTip: [this.boatCrane.craneTip[0] * kB, this.boatCrane.craneTip[1] * kB] } : null;
-      ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, -Rw * 0.45 * kB, -Rh * 0.82 * kB, Rw * kB, Rh * kB); ctx.restore(); // (3.0.0) turned with her heading
+      ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, -Rw * 0.45 * kB, -Rh * 0.82 * kB, Rw * kB, Rh * kB); this.boatWays(ctx, g, t, 0.14 * ppm, Math.sqrt(dayEff)); ctx.restore(); // (3.0.0) turned with her heading
       this.boatFrame = { x: boatX, y: boatY, roll, rock: boatRock(t), sx: bsx, k: 0.14 * ppm, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
       if (dayEff < 0.5) {
         // the cabin light stays on at night
@@ -1009,7 +1009,7 @@ export class Renderer {
       for (const f of g.captureFx || []) {
         if (!g.toolTip) break;
         const k = clamp(f.t / f.dur, 0, 1), ek = k * k;
-        const fx2 = f.x + (g.toolTip.x - f.x) * ek, fy2 = f.y + (g.toolTip.y - f.y) * ek;
+        const fx2 = f.x + (g.toolTip.x - f.x) * ek, fy2 = f.y + (g.toolTip.y - f.y) * ek - Math.sin(k * Math.PI) * clamp(Math.hypot(g.toolTip.x - f.x, g.toolTip.y - f.y) * 0.35, 0.1, 0.5); /* (5.9.3) flicked up and over into the net, not slid */
         const Lf = Math.max(4, fishDrawLen(f.len) * ppm * (1 - 0.4 * k));
         ctx.save(); ctx.translate(S(fx2), Sy(fy2)); if (f.dir > 0) ctx.scale(-1, 1);
         ctx.rotate(Math.sin(t * 30) * 0.4 * k); ctx.globalAlpha = 1 - k * 0.6;
@@ -1281,6 +1281,12 @@ export class Renderer {
     }
     // (5.7.0) drowning: as the breath-hold runs out the colour drains, the edges of sight close in and pulse with the
     // heartbeat, until only a small circle round him is left
+    // (5.9.3) on a phone the colour drains too, but by the browser's own filter on the game's canvas (done on the GPU when
+    // it composites the page), in steps of 5%, instead of a 'saturation' fill over every pixel (too slow on an iPhone)
+    if (this.phone) {
+      const want = g.noAir && g.mode === 'play' ? Math.round((1 - 0.85 * clamp(g.noAir / 15, 0, 1)) * 20) / 20 : 1;
+      if (want !== (this.satNow ?? 1)) { this.satNow = want; this.c.style.filter = want < 1 ? `saturate(${want})` : ''; }
+    }
     if (g.noAir && g.mode === 'play') {
       const k = clamp(g.noAir / 15, 0, 1), hb = Math.pow(Math.max(0, Math.sin(g.time * Math.PI * (1.6 - 0.8 * k))), 6);
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1288,7 +1294,7 @@ export class Renderer {
       const cx = S(g.earl.x), cy = Sy(g.earl.y), big = Math.hypot(this.W, this.H), inner = big * (0.55 - 0.47 * k) * (1 - 0.05 * hb), outer = inner + big * (0.35 - 0.2 * k);
       const vg = ctx.createRadialGradient(cx, cy, inner, cx, cy, outer); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${(0.55 + 0.43 * k).toFixed(3)})`);
       ctx.fillStyle = vg; ctx.fillRect(0, 0, this.W, this.H);
-      if (this.phone) { ctx.fillStyle = `rgba(30,32,34,${(0.35 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); }
+      if (this.phone) { ctx.fillStyle = `rgba(30,32,34,${(0.18 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); } /* (5.9.3) less of the grey wash now the filter drains it */
       ctx.restore();
     }
     // its red, crept into the water round him: the black of the deep turns a black-red
@@ -2114,6 +2120,33 @@ export class Renderer {
     this.kelpBack = layers;
   }
 
+  // (5.9.3) the ways aboard, live over the baked boat: from a distance now and then a slow glint runs down the
+  // ladder's rail (in the water) or the door's edge (on deck); close to them a warm lamp-glow gathers round them
+  boatWays(ctx, g, t, u, day) {
+    const e = g.earl; if (!e || g.kill || g.mode !== 'play' || e.inSub) return;
+    const onDeck = !!g.aboard, BU = 0.14, dx = e.x - (BOAT.x + (onDeck ? 19 : 9) * BU); /* as main.js's nearLadder measures it */
+    const d = Math.hypot(dx, onDeck ? 0 : Math.max(0, e.y - 1));
+    const near = clamp(1 - (d - 1.2) / 3.5, 0, 1); // 0 far .. 1 beside it
+    const [x0, y0, x1, y1] = onDeck ? [17, -24, 21, -11] : [7.7, -12.8, 10.3, 2.6];
+    const cx = (x0 + x1) / 2 * u, cy = (y0 + y1) / 2 * u;
+    ctx.save();
+    if (near > 0.01) { // the warm glow: a lamp held near it
+      const p = 0.85 + 0.15 * Math.sin(t * 2.2), R = (onDeck ? 10 : 11) * u;
+      const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+      gr.addColorStop(0, `rgba(255,196,120,${(0.32 * near * p).toFixed(3)})`); gr.addColorStop(0.5, `rgba(220,150,80,${(0.12 * near * p).toFixed(3)})`); gr.addColorStop(1, 'rgba(200,130,70,0)');
+      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
+    }
+    // the glint: every 5 s a bright bead slides down the edge, faint by day, plainer at dusk; less as he comes close
+    const ph = (t % 5) / 1.1;
+    if (ph < 1 && near < 0.95) {
+      const a = (0.55 + 0.35 * (1 - day)) * (1 - near) * Math.sin(ph * Math.PI);
+      const gx = onDeck ? x1 * u : (x0 - 0.12) * u, gy = (y0 + (y1 - y0) * ph) * u, R = 2.6 * u;
+      const gr = ctx.createRadialGradient(gx, gy, 0, gx, gy, R);
+      gr.addColorStop(0, `rgba(255,236,190,${a.toFixed(3)})`); gr.addColorStop(0.25, `rgba(240,200,130,${(a * 0.4).toFixed(3)})`); gr.addColorStop(1, 'rgba(240,200,130,0)');
+      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(gx - R, gy - R, 2 * R, 2 * R);
+    }
+    ctx.restore();
+  }
   boatWear(w, h, flip) {
     const key = w + 'x' + h + (flip ? 'f' : '');
     if (this.boatWearC && this.boatWearC.key === key) return this.boatWearC.c;

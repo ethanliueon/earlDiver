@@ -35,7 +35,16 @@ const NET_LOOK = [
 export const netLook = (tier) => (typeof tier === 'object' && tier ? { ...NET_LOOK[clamp(tier.base || 0, 0, 3)], ...tier } : NET_LOOK[clamp(tier || 0, 0, 3)]);
 // The net. ang is unused here (the caller rotates); flutter 0..1 moves the bag.
 // catchSp: {sp, len, t} shows a fish thrashing in the bag.
+// (5.9.3) the catch moment: the net snaps up a little as the fish goes in (a flick of the wrist) and settles back,
+// and its bag cinches tight round the fish then slowly gives (see netBody)
 export function drawNet(ctx, u, tier, t, flutter, catchSp) {
+  if (!catchSp) return netBody(ctx, u, tier, t, flutter, null, 0);
+  const k = clamp(catchSp.t / (catchSp.dur || 1.1), 0, 1), T = catchSp.t;
+  const flick = -0.32 * Math.exp(-T * 9) * Math.sin(Math.min(T * 22, Math.PI * 1.5) + 0.6) - 0.06 * Math.exp(-T * 3);
+  const cinch = T < 0.12 ? T / 0.12 : Math.max(0.35, 1 - (k - 0.1) * 0.8);
+  ctx.save(); ctx.rotate(flick); const r = netBody(ctx, u, tier, t, flutter, catchSp, cinch); ctx.restore(); return r;
+}
+function netBody(ctx, u, tier, t, flutter, catchSp, cinch) {
   // (2.8.1) tier may be a look of its own (an Exotic's or a Legendary's): see item_art.js
   const L = typeof tier === 'object' && tier ? { ...NET_LOOK[clamp(tier.base || 0, 0, 3)], ...tier } : NET_LOOK[clamp(tier, 0, 3)];
   const len = L.len * u, r = L.r * u;
@@ -58,12 +67,12 @@ export function drawNet(ctx, u, tier, t, flutter, catchSp) {
   const hx = len + r; // hoop centre
   const sway = Math.sin(t * 5) * 0.12 + flutter * 0.6;
   // the bag trails behind the sweep (+y side), drawn first so the hoop sits over it
-  const tipX = hx - r * 0.2 + sway * 4 * u, tipY = r * 0.3 + L.bag * u;
+  const ci = cinch || 0, tipX = hx - r * 0.2 + sway * 4 * u, tipY = (r * 0.3 + L.bag * u) * (1 - 0.18 * ci);
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(hx - r, 0);
-  ctx.bezierCurveTo(hx - r * 1.05, tipY * 0.55, tipX - r * 0.55, tipY, tipX, tipY);
-  ctx.bezierCurveTo(tipX + r * 0.6, tipY, hx + r * 1.05, tipY * 0.45, hx + r, 0);
+  ctx.bezierCurveTo(hx - r * (1.05 - 0.4 * ci), tipY * 0.55, tipX - r * (0.55 - 0.3 * ci), tipY, tipX, tipY); // (5.9.3) drawn in round the catch
+  ctx.bezierCurveTo(tipX + r * (0.6 - 0.32 * ci), tipY, hx + r * (1.05 - 0.4 * ci), tipY * 0.45, hx + r, 0);
   ctx.closePath();
   ctx.fillStyle = L.tint; ctx.fill();
   ctx.clip();
@@ -78,7 +87,7 @@ export function drawNet(ctx, u, tier, t, flutter, catchSp) {
     drawSpecies(ctx, catchSp.sp, fl, t * 3, 1, 0);
     ctx.restore();
   }
-  mesh(ctx, hx - r * 1.3, -2 * u, hx + r * 1.3, tipY + 2 * u, L.step * u, L.mesh, Math.max(0.5, 0.32 * u));
+  mesh(ctx, hx - r * 1.3, -2 * u, hx + r * 1.3, tipY + 2 * u, L.step * u * (1 - 0.3 * ci), L.mesh, Math.max(0.5, 0.32 * u * (1 + 0.25 * ci))); /* the mesh draws tight */
   ctx.restore();
   // seam down the bag
   ctx.strokeStyle = L.mesh; ctx.lineWidth = 0.5 * u;

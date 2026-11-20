@@ -973,15 +973,20 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
     ctx.fillStyle = '#141414'; ctx.beginPath(); ctx.ellipse(x * u, -6 * u, 1.4 * u, 2.2 * u, 0, 0, TAU); ctx.fill();
     ctx.fillStyle = '#2c2c2c'; ctx.beginPath(); ctx.ellipse(x * u, -6 * u, 0.6 * u, 1.1 * u, 0, 0, TAU); ctx.fill();
   }
-  // the boarding ladder over her side: hooked on the rail, its feet in the water
+  // the boarding ladder over her side: hooked on the rail, its feet in the water. (5.9.3) Painted the old ochre of
+  // working gear, chipped to the bronze under it, with dark edges, so it reads against the white hull from a distance
   {
     const lx = BOAT_LADDER * u, top = -11.6 * u, bot = 2.6 * u, w = 2.6 * u;
-    ctx.strokeStyle = '#2c2f30'; ctx.lineWidth = 0.55 * u; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(lx - w / 2, top); ctx.lineTo(lx - w / 2, bot); ctx.moveTo(lx + w / 2, top); ctx.lineTo(lx + w / 2, bot); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(lx - w / 2, top); ctx.quadraticCurveTo(lx - w / 2, top - 1.4 * u, lx - w / 2 + 0.9 * u, top - 1.2 * u); ctx.moveTo(lx + w / 2, top); ctx.quadraticCurveTo(lx + w / 2, top - 1.4 * u, lx + w / 2 + 0.9 * u, top - 1.2 * u); ctx.stroke(); // the hooks over the rail
-    ctx.strokeStyle = '#5a5e60'; ctx.lineWidth = 0.4 * u;
-    for (let y = top + 1.2 * u; y < bot; y += 1.7 * u) { ctx.beginPath(); ctx.moveTo(lx - w / 2, y); ctx.lineTo(lx + w / 2, y); ctx.stroke(); }
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.15 * u; ctx.beginPath(); ctx.moveTo(lx - w / 2 - 0.15 * u, top); ctx.lineTo(lx - w / 2 - 0.15 * u, bot); ctx.stroke();
+    ctx.lineCap = 'round';
+    const rails = () => { ctx.beginPath(); ctx.moveTo(lx - w / 2, top); ctx.lineTo(lx - w / 2, bot); ctx.moveTo(lx + w / 2, top); ctx.lineTo(lx + w / 2, bot);
+      ctx.moveTo(lx - w / 2, top); ctx.quadraticCurveTo(lx - w / 2, top - 1.4 * u, lx - w / 2 + 0.9 * u, top - 1.2 * u); ctx.moveTo(lx + w / 2, top); ctx.quadraticCurveTo(lx + w / 2, top - 1.4 * u, lx + w / 2 + 0.9 * u, top - 1.2 * u); };
+    const rungs = () => { ctx.beginPath(); for (let y = top + 1.2 * u; y < bot; y += 1.7 * u) { ctx.moveTo(lx - w / 2, y); ctx.lineTo(lx + w / 2, y); } };
+    ctx.strokeStyle = '#1e1a12'; ctx.lineWidth = 0.75 * u; rungs(); ctx.stroke(); ctx.lineWidth = 1.0 * u; rails(); ctx.stroke(); // dark edges
+    ctx.strokeStyle = '#8c6c2c'; ctx.lineWidth = 0.42 * u; rungs(); ctx.stroke();
+    ctx.strokeStyle = '#b48c3e'; ctx.lineWidth = 0.6 * u; rails(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(232,206,140,0.55)'; ctx.lineWidth = 0.16 * u; ctx.beginPath(); ctx.moveTo(lx - w / 2 - 0.12 * u, top); ctx.lineTo(lx - w / 2 - 0.12 * u, bot); ctx.stroke(); // worn bright where hands go
+    ctx.fillStyle = 'rgba(70,46,22,0.75)'; for (const [dx, dy] of [[-1, 2.3], [1, 5.6], [-1, 8.9], [1, 11.4]]) ctx.fillRect(lx + dx * w / 2 - 0.25 * u, top + dy * u, 0.5 * u, 0.7 * u); // chips and rust
+    ctx.fillStyle = 'rgba(20,30,26,0.55)'; ctx.fillRect(lx - w / 2 - 0.4 * u, -0.3 * u, w + 0.8 * u, 2.9 * u); // the waterline weed on its feet
     ctx.lineCap = 'butt';
   }
   // ---------- deck clutter ----------
@@ -1007,10 +1012,17 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
     ctx.fillStyle = wg; ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.moveTo(x + 0.8 * u, y + h - 0.8 * u); ctx.lineTo(x + w - 0.8 * u, y + 0.8 * u); ctx.stroke();
   }
-  // door with a porthole, life ring on the wall
-  ctx.fillStyle = '#b0aca0'; ctx.fillRect(17 * u, -24 * u, 4 * u, 13 * u);
-  ctx.strokeStyle = 'rgba(40,38,32,0.5)'; ctx.lineWidth = 0.3 * u; ctx.strokeRect(17 * u, -24 * u, 4 * u, 13 * u);
-  ctx.fillStyle = '#3a4a50'; ctx.beginPath(); ctx.arc(19 * u, -20.5 * u, 1 * u, 0, TAU); ctx.fill();
+  // door with a porthole, life ring on the wall. (5.9.3) A steel door painted deep olive in a dark frame, brass dogs
+  // and handle, its porthole lamp-lit from the cabin: the one dark, warm thing on the white wheelhouse
+  ctx.fillStyle = '#23261c'; ctx.fillRect(16.5 * u, -24.6 * u, 5 * u, 13.8 * u); // frame
+  ctx.fillStyle = '#4a5538'; ctx.beginPath(); ctx.roundRect(17 * u, -24 * u, 4 * u, 13 * u, 0.6 * u); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(17.3 * u, -23.6 * u, 0.5 * u, 12.2 * u);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(17 * u, -13.2 * u, 4 * u, 2.2 * u); // kick-worn foot
+  ctx.fillStyle = '#9a7a3e'; for (const y of [-22.6, -12.6]) ctx.fillRect(20.1 * u, y * u, 1.2 * u, 0.5 * u); // dogs
+  ctx.fillStyle = '#b8924a'; ctx.beginPath(); ctx.roundRect(19.7 * u, -17.8 * u, 0.7 * u, 2.2 * u, 0.3 * u); ctx.fill(); // handle
+  ctx.fillStyle = '#9a7a3e'; ctx.beginPath(); ctx.arc(19 * u, -20.5 * u, 1.35 * u, 0, TAU); ctx.fill(); // brass porthole ring
+  ctx.fillStyle = '#c99a5a'; ctx.beginPath(); ctx.arc(19 * u, -20.5 * u, 1 * u, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(255,226,170,0.6)'; ctx.beginPath(); ctx.arc(18.7 * u, -20.8 * u, 0.4 * u, 0, TAU); ctx.fill();
   // (4.3.5) the tutorial: the door lit up, a brass glow round it pulsing, so it is plain where the cabin is
   if (opts.tutDoor) {
     const p = 0.5 + 0.5 * Math.sin(t * 4);
