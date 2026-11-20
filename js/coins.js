@@ -4,6 +4,7 @@
 // the player's own gear, the eye, the fins, the sub, the glove, the torch, the crab pot, the claw. Each look is
 // painted once into a picture and reused.
 import { drawGlyph } from './glyphs.js';
+import { drawNet, netLook } from './tools_draw.js';
 
 const TAU = Math.PI * 2;
 const cache = new Map();
@@ -15,7 +16,7 @@ const HUE = {
   net: [100, 24, 15], eye: [186, 32, 13], sprint: [208, 26, 14], hand: [28, 26, 14], sub: [78, 18, 13], cam: [36, 38, 15],
   trap: [14, 32, 14], lamp: [34, 42, 14], claw: [200, 10, 14], leave: [78, 18, 13], tank: [190, 28, 13], auto: [78, 18, 13],
   trawl: [100, 24, 15], air: [200, 14, 14], sell: [44, 30, 14], lure: [170, 34, 10], glow: [120, 26, 11], pet: [186, 32, 13], swap: [60, 8, 12],
-  gear: [40, 18, 13], bag: [70, 16, 13], quest: [24, 26, 13], journal: [40, 20, 14], chart: [200, 18, 13],
+  gear: [40, 18, 13], bag: [70, 16, 13], quest: [30, 22, 13], journal: [24, 26, 13], chart: [190, 20, 13],
 };
 
 function face(x, R, hue, seed) {
@@ -45,39 +46,22 @@ const ART = {
   // the head of the hand net, close: the hoop seen a little from above, the knotted bag hanging from it, the end of
   // the pole coming in from the lower left. Its colours are the player's own net's
   net(x, look) {
-    // (5.6.2) the net, read at a glance: a round hoop seen almost face-on, a deep bag of big knotted mesh hanging
-    // out of it, the pole leaving at the lower left. Its colours are the player's own net's
-    const hoop = look.hoop || '#8c9496', meshC = look.mesh || 'rgba(120,170,120,0.95)', h = look.h || ['#c4cacb', '#8a9294', '#4a5254'];
-    x.lineCap = 'round'; x.lineJoin = 'round';
-    // the pole
-    x.strokeStyle = '#0d0f0e'; x.lineWidth = 10; x.beginPath(); x.moveTo(-48, 46); x.lineTo(-22, 18); x.stroke();
-    x.strokeStyle = h[1]; x.lineWidth = 6.4; x.stroke();
-    x.strokeStyle = h[0]; x.lineWidth = 2; x.beginPath(); x.moveTo(-47, 43); x.lineTo(-23, 16); x.stroke();
-    // the bag: a sack hanging down out of the hoop, wider than the hoop's lower half, its mesh drawn as knotted
-    // diamonds that get smaller towards the bottom
-    const bag = new Path2D('M-22 -2C-28 18 -12 44 8 46C28 44 40 20 36 -2Z');
-    x.fillStyle = 'rgba(0,0,0,0.38)'; x.fill(bag);
-    x.save(); x.clip(bag);
-    const mc = typeof meshC === 'string' ? meshC : 'rgba(120,170,120,0.95)';
-    for (let row = 0; row < 7; row++) {
-      const y0 = -2 + row * 7.2, step = 9 - row * 0.5;
-      for (let k = -40; k < 50; k += step) {
-        const xx = k + (row % 2 ? step / 2 : 0);
-        x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 2.8; x.beginPath(); x.moveTo(xx, y0); x.lineTo(xx + step / 2, y0 + 7.2); x.lineTo(xx + step, y0); x.stroke();
-        x.strokeStyle = mc; x.lineWidth = 1.5; x.stroke();
-        x.fillStyle = mc; x.beginPath(); x.arc(xx + step / 2, y0 + 7.2, 1.3, 0, TAU); x.fill();
-      }
-    }
-    x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.ellipse(24, 26, 16, 22, 0, 0, TAU); x.fill(); // the bag's shadowed side
-    x.restore();
-    x.strokeStyle = '#0d0f0e'; x.lineWidth = 2; x.stroke(bag);
-    // the hoop
-    x.strokeStyle = '#0d0f0e'; x.lineWidth = 9; x.beginPath(); x.ellipse(7, -6, 31, 15, -0.06, 0, TAU); x.stroke();
-    x.strokeStyle = hoop; x.lineWidth = 5.6; x.stroke();
-    x.strokeStyle = 'rgba(255,255,255,0.55)'; x.lineWidth = 1.6; x.beginPath(); x.ellipse(7, -7, 30, 14, -0.06, Math.PI * 1.08, Math.PI * 1.92); x.stroke();
-    // the ferrule where pole meets hoop
-    x.fillStyle = h[2]; x.strokeStyle = '#0d0f0e'; x.lineWidth = 2; x.beginPath(); x.arc(-22, 16, 4.6, 0, TAU); x.fill(); x.stroke();
-    x.fillStyle = 'rgba(210,235,240,0.6)'; x.beginPath(); x.ellipse(10, 49, 1.6, 2.6, 0, 0, TAU); x.fill(); // a drop
+    // (5.6.6) the player's own net, drawn by the game's own drawing of it (every net, whatever its shape: a hoop, a
+    // square frame, a teardrop, the eel's jaw, the bell). It is drawn once at a fixed size, its head found by what was
+    // drawn past the pole, and that head framed in the coin with a stub of pole leaving it
+    const L = look && typeof look === 'object' ? look : netLook(look || 0);
+    const u0 = 6, len = (L.len || 30) * u0, Wc = Math.ceil(len + 60 * u0), Hc = Math.ceil(80 * u0);
+    const c = document.createElement('canvas'); c.width = Wc; c.height = Hc; const cx = c.getContext('2d');
+    cx.translate(6 * u0, Hc * 0.45); drawNet(cx, u0, L, 0.6, 0, null);
+    const d = cx.getImageData(0, 0, Wc, Hc).data;
+    // where the head starts: the first column, from the grip outwards, where what is drawn is far thicker than a pole
+    let from = 0;
+    for (let xx = Math.floor(Wc * 0.15); xx < Wc; xx += 2) { let lo = -1, hi = -1; for (let yy = 0; yy < Hc; yy += 2) if (d[(yy * Wc + xx) * 4 + 3] > 20) { if (lo < 0) lo = yy; hi = yy; } if (lo >= 0 && hi - lo > 6 * u0) { from = Math.max(0, xx - 3 * u0); break; } }
+    let l = Wc, r2 = -1, t = Hc, b = -1;
+    for (let yy = 0; yy < Hc; yy += 2) for (let xx = from; xx < Wc; xx += 2) if (d[(yy * Wc + xx) * 4 + 3] > 20) { if (xx < l) l = xx; if (xx > r2) r2 = xx; if (yy < t) t = yy; if (yy > b) b = yy; }
+    if (r2 < 0) return;
+    const hw = r2 - l, hh = b - t, k = 76 / Math.max(hw, hh * 1.1), mx = (l + r2) / 2, my = (t + b) / 2;
+    x.save(); x.rotate(-0.55); x.scale(k, k); x.translate(-mx + hw * 0.08, -my); x.drawImage(c, 0, 0); x.restore();
   },
   // an underwater camera in its housing, in the colour of the player's own: moulded, not a box. Bevelled edges, two
   // grips with their rubber, the big port of the lens with its rings and a reflection, the strobe on its arm, screws
@@ -165,22 +149,16 @@ const ART = {
   },
   // a pair of long fins mid-kick, rails down their blades, a stream of bubbles behind
   sprint(x) {
-    const fin = (tx, ty, rot, tone) => {
-      x.save(); x.translate(tx, ty); x.rotate(rot);
-      const blade = new Path2D('M-6 -9L40 -15C44 -15 46 -12 46 -8L46 8C46 12 44 15 40 15L-6 9Z');
-      x.fillStyle = '#0c0e10'; x.save(); x.lineWidth = 4; x.strokeStyle = '#0c0e10'; x.stroke(blade); x.restore();
-      x.fillStyle = tone; x.fill(blade);
-      x.fillStyle = 'rgba(255,255,255,0.12)'; x.beginPath(); x.moveTo(-6, -9); x.lineTo(40, -15); x.lineTo(40, -10); x.lineTo(-6, -5); x.fill();
-      x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 3; x.beginPath(); x.moveTo(-4, -8); x.lineTo(44, -13); x.moveTo(-4, 8); x.lineTo(44, 13); x.stroke(); // the rails
-      x.strokeStyle = 'rgba(255,255,255,0.12)'; x.lineWidth = 1; for (const k of [-4, 0, 4]) { x.beginPath(); x.moveTo(8, k * 0.8); x.lineTo(42, k * 1.6); x.stroke(); }
-      x.fillStyle = '#16191b'; x.beginPath(); x.ellipse(-12, 0, 14, 11, 0, 0, TAU); x.fill(); // the foot pocket
-      x.strokeStyle = '#0a0b0c'; x.lineWidth = 2.4; x.stroke();
-      x.fillStyle = 'rgba(255,255,255,0.14)'; x.beginPath(); x.ellipse(-14, -4, 8, 3, -0.2, 0, TAU); x.fill();
-      x.restore();
-    };
-    fin(-10, -10, -0.38, '#2c4b62'); fin(-4, 12, 0.08, '#36586f');
-    x.strokeStyle = 'rgba(210,235,240,0.7)'; x.lineWidth = 1.4;
-    for (const [bx, by, br] of [[-38, -26, 4], [-44, -12, 2.6], [-40, 4, 3.2], [-46, 18, 2], [-36, 26, 2.6], [-48, -2, 1.6]]) { x.beginPath(); x.arc(bx, by, br, 0, TAU); x.stroke(); }
+    // (5.6.6) sprinting: a jagged bolt of rushing water, white at its core, a stream of bubbles torn along it
+    const bolt = new Path2D('M8 -46L-22 4H-2L-12 46L24 -8H4Z');
+    const gl = x.createRadialGradient(0, 0, 0, 0, 0, 46); gl.addColorStop(0, 'rgba(170,230,255,0.4)'); gl.addColorStop(1, 'rgba(120,200,255,0)');
+    x.fillStyle = gl; x.beginPath(); x.arc(0, 0, 46, 0, TAU); x.fill();
+    x.lineJoin = 'round'; x.lineWidth = 6; x.strokeStyle = '#06101a'; x.stroke(bolt);
+    const bg = x.createLinearGradient(-20, -40, 20, 40); bg.addColorStop(0, '#e8f8ff'); bg.addColorStop(0.5, '#7cc8ec'); bg.addColorStop(1, '#2a6890');
+    x.fillStyle = bg; x.fill(bolt);
+    x.save(); x.clip(bolt); x.strokeStyle = 'rgba(255,255,255,0.55)'; x.lineWidth = 1.4; for (let k = -40; k < 50; k += 7) { x.beginPath(); x.moveTo(-30, k); x.quadraticCurveTo(0, k - 6, 30, k - 2); x.stroke(); } x.restore(); // the current in it
+    x.strokeStyle = 'rgba(220,245,255,0.8)'; x.lineWidth = 1.4;
+    for (const [a, b, r] of [[-30, -22, 3.2], [-36, -8, 2], [-28, 18, 2.6], [-38, 28, 1.6], [26, 16, 2.4], [32, 28, 1.6], [30, -30, 2]]) { x.beginPath(); x.arc(a, b, r, 0, TAU); x.stroke(); }
   },
   // the B-7: a riveted hull, its rail and conning tower, the diving sphere slung under it with a warm port lit
   sub(x) {
@@ -323,6 +301,26 @@ const ART = {
   },
   // the quests: the Margaret's log, a worn hardback tied shut with string, a page-marker sticking out
   quest(x) {
+    // (5.6.6) the quests: a work order on a sheet of damp paper, hung on a nail through its corner, a list down it
+    // in pencil and two items ticked off
+    x.save(); x.rotate(0.06);
+    const sh = new Path2D('M-28 -38L30 -36L32 40L-30 42Z');
+    x.fillStyle = 'rgba(0,0,0,0.4)'; x.save(); x.translate(3, 4); x.fill(sh); x.restore();
+    x.fillStyle = '#ded3b4'; x.fill(sh); x.strokeStyle = '#100c08'; x.lineWidth = 2.6; x.stroke(sh);
+    x.save(); x.clip(sh); x.fillStyle = 'rgba(120,90,50,0.22)'; x.beginPath(); x.arc(18, 28, 14, 0, TAU); x.arc(-22, -24, 9, 0, TAU); x.fill(); x.restore(); // stains
+    x.fillStyle = '#2a1e12'; x.fillRect(-28, -38, 58, 9); x.fillStyle = '#ded3b4'; x.font = 'bold 7px sans-serif'; // a printed head band
+    x.strokeStyle = 'rgba(222,211,180,0.8)'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(-20, -34); x.lineTo(10, -34); x.stroke();
+    for (let k = 0; k < 4; k++) { const y = -18 + k * 14;
+      x.strokeStyle = '#3a2c1e'; x.lineWidth = 1.6; x.strokeRect(-20, y - 4, 8, 8); // a box
+      x.strokeStyle = 'rgba(50,40,30,0.7)'; x.lineWidth = 1.3; x.beginPath(); x.moveTo(-6, y); x.lineTo(20 - (k % 2) * 8, y); x.stroke(); // the line of pencil
+      if (k < 2) { x.strokeStyle = '#a02a20'; x.lineWidth = 2.4; x.beginPath(); x.moveTo(-21, y - 1); x.lineTo(-17, y + 4); x.lineTo(-9, y - 8); x.stroke(); } } // ticked
+    // the nail through the corner
+    x.fillStyle = '#5a5850'; x.strokeStyle = '#0c0b08'; x.lineWidth = 2; x.beginPath(); x.arc(-22, -30, 4, 0, TAU); x.fill(); x.stroke();
+    x.fillStyle = 'rgba(160,80,40,0.6)'; x.beginPath(); x.arc(-20, -26, 3, 0, TAU); x.fill(); // rust run from it
+    x.restore();
+  },
+  // the journal (the quest group's): a field notebook, open, a sketched fish on its page, a pencil across it
+  journal(x) {
     x.save(); x.rotate(-0.12);
     x.fillStyle = '#0b0a08'; x.beginPath(); x.roundRect(-32, -40, 64, 80, 4); x.fill();
     x.fillStyle = '#e6dcc0'; x.fillRect(-26, -36, 58, 74); // the pages' edge
@@ -338,24 +336,30 @@ const ART = {
     x.fillStyle = '#a02a20'; x.beginPath(); x.moveTo(14, 40); x.lineTo(14, 52); x.lineTo(18, 48); x.lineTo(22, 52); x.lineTo(22, 40); x.fill(); // the marker
     x.restore();
   },
-  // the journal (the quest group's): a field notebook, open, a sketched fish on its page, a pencil across it
-  journal(x) {
-    x.fillStyle = '#0b0a08'; x.beginPath(); x.moveTo(-44, -26); x.quadraticCurveTo(-22, -34, 0, -26); x.quadraticCurveTo(22, -34, 44, -26); x.lineTo(44, 32); x.quadraticCurveTo(22, 24, 0, 32); x.quadraticCurveTo(-22, 24, -44, 32); x.closePath(); x.fill();
-    x.fillStyle = '#e4d9bc'; x.beginPath(); x.moveTo(-40, -23); x.quadraticCurveTo(-20, -30, -1, -23); x.lineTo(-1, 28); x.quadraticCurveTo(-20, 21, -40, 28); x.closePath(); x.fill();
-    x.fillStyle = '#ddd2b4'; x.beginPath(); x.moveTo(1, -23); x.quadraticCurveTo(20, -30, 40, -23); x.lineTo(40, 28); x.quadraticCurveTo(20, 21, 1, 28); x.closePath(); x.fill();
-    x.strokeStyle = 'rgba(60,70,90,0.35)'; x.lineWidth = 0.8; for (let k = -14; k < 24; k += 5) { x.beginPath(); x.moveTo(6, k); x.lineTo(36, k - 2); x.stroke(); }
-    x.strokeStyle = 'rgba(40,40,40,0.75)'; x.lineWidth = 1.4; x.beginPath(); x.ellipse(-20, 0, 12, 6, 0, 0, TAU); x.moveTo(-32, 0); x.lineTo(-38, -5); x.lineTo(-38, 5); x.closePath(); x.stroke(); // a sketched fish
-    x.beginPath(); x.arc(-13, -1, 1, 0, TAU); x.stroke();
-    x.fillStyle = 'rgba(120,80,40,0.25)'; x.beginPath(); x.arc(28, 16, 7, 0, TAU); x.fill(); // a stain
-    x.save(); x.rotate(-0.5); x.fillStyle = '#c8a040'; x.strokeStyle = '#0b0a08'; x.lineWidth = 1.6; x.beginPath(); x.roundRect(-6, 20, 46, 5, 1); x.fill(); x.stroke(); x.fillStyle = '#e8c8a0'; x.beginPath(); x.moveTo(40, 20); x.lineTo(47, 22.5); x.lineTo(40, 25); x.fill(); x.restore(); // a pencil
-  },
   // the chart: a sea chart, half unrolled, its contours and a red mark
   chart(x) {
-    x.fillStyle = '#0b0a08'; x.beginPath(); x.roundRect(-42, -26, 84, 54, 3); x.fill();
-    x.fillStyle = '#d8ccaa'; x.fillRect(-38, -22, 72, 46);
-    x.strokeStyle = 'rgba(40,80,100,0.6)'; x.lineWidth = 1.2; for (const k of [0, 6, 12]) { x.beginPath(); x.moveTo(-38, 10 - k); x.bezierCurveTo(-14, -6 - k, 6, 18 - k, 34, 2 - k); x.stroke(); }
-    x.fillStyle = '#a02a20'; x.beginPath(); x.moveTo(10, -4); x.lineTo(14, -12); x.lineTo(18, -4); x.closePath(); x.fill();
-    x.fillStyle = '#b8a880'; x.strokeStyle = '#0b0a08'; x.lineWidth = 2.4; x.beginPath(); x.ellipse(36, 1, 7, 26, 0, 0, TAU); x.fill(); x.stroke(); // the roll
+    // (5.6.6) a chart: an aged sheet, its coast and islands inked brown, the soundings, a compass rose, a dotted course
+    // to a red cross
+    x.save(); x.rotate(-0.08);
+    const sh = new Path2D('M-42 -30L40 -32L42 30L-40 32Z');
+    x.fillStyle = 'rgba(0,0,0,0.4)'; x.save(); x.translate(3, 4); x.fill(sh); x.restore();
+    x.fillStyle = '#d8c89c'; x.fill(sh); x.strokeStyle = '#100c08'; x.lineWidth = 2.6; x.stroke(sh);
+    x.save(); x.clip(sh);
+    x.fillStyle = 'rgba(80,120,130,0.35)'; x.fillRect(-50, -40, 100, 80); // the sea, washed in
+    x.fillStyle = '#c8b480'; x.strokeStyle = '#5a3c20'; x.lineWidth = 1.6;
+    const land = new Path2D('M-44 -34L-10 -34C-14 -22 -26 -18 -30 -6C-34 4 -40 8 -44 10Z'); x.fill(land); x.stroke(land); // the coast
+    const isl = new Path2D('M10 4C16 -2 26 0 26 8C24 14 14 14 10 10Z'); x.fill(isl); x.stroke(isl); // an island
+    x.strokeStyle = 'rgba(40,60,80,0.45)'; x.lineWidth = 0.9; for (const k of [5, 10]) { x.beginPath(); x.moveTo(-44, 10 + k); x.bezierCurveTo(-30, 6 + k, -24, -14 + k, -8, -34 + k * 0.4); x.stroke(); } // depth lines
+    x.fillStyle = 'rgba(40,40,60,0.6)'; for (const [a, b] of [[-4, 14], [4, 22], [-16, 24], [32, -18]]) { x.beginPath(); x.arc(a, b, 0.9, 0, TAU); x.fill(); } // soundings
+    x.strokeStyle = '#5a2a18'; x.lineWidth = 1.6; x.setLineDash([3, 3]); x.beginPath(); x.moveTo(-26, 2); x.bezierCurveTo(-10, 20, 4, 24, 20, 22); x.stroke(); x.setLineDash([]); // the course
+    x.strokeStyle = '#a02a20'; x.lineWidth = 2.6; x.beginPath(); x.moveTo(17, 19); x.lineTo(24, 26); x.moveTo(24, 19); x.lineTo(17, 26); x.stroke(); // the cross
+    // the compass rose
+    x.save(); x.translate(28, -18); x.fillStyle = '#3a2a1a';
+    x.beginPath(); x.moveTo(0, -10); x.lineTo(2, 0); x.lineTo(0, 10); x.lineTo(-2, 0); x.closePath(); x.fill(); x.beginPath(); x.moveTo(-10, 0); x.lineTo(0, 2); x.lineTo(10, 0); x.lineTo(0, -2); x.closePath(); x.fill();
+    x.strokeStyle = '#3a2a1a'; x.lineWidth = 0.8; x.beginPath(); x.arc(0, 0, 6, 0, TAU); x.stroke(); x.fillStyle = '#a02a20'; x.beginPath(); x.moveTo(0, -10); x.lineTo(2, 0); x.lineTo(-2, 0); x.fill(); x.restore();
+    x.restore();
+    x.fillStyle = 'rgba(90,60,30,0.25)'; x.beginPath(); x.moveTo(40, -32); x.lineTo(42, -20); x.lineTo(30, -32); x.fill(); // a torn corner
+    x.restore();
   },
   // a spare cylinder: scuffed steel, its valve and a pressure gauge
   air(x) {
