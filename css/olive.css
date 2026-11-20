@@ -837,3 +837,5 @@ html.touch body #inventory .lk-head:not(#_a) h4, html.touch body #inventory .lk-
 /* (5.7.2) a new message waits until the last has gone (on a phone there is no blur to hide the two crossing) */
 html.touch body #msgs .msg.out:not(#_a) { transition-duration: 0.18s, 0.18s, 0.18s !important; }
 html.touch body #msgs .msg.in:not(#_a) { transition-delay: 0.2s !important; }
+/* (5.7.3) the journal (and the chart) open over the cabin too, as the quests do */
+#journal:not(#_a) { z-index: 40; }
