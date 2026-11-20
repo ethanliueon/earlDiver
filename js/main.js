@@ -30,6 +30,7 @@ import { oldStock, overTable, daysLeft } from './oldone.js';
 import { CHESTS, oddsText } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
 import { abilityOf, abilityState, whyNot, cooldownLeft } from './abilities.js';
+import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY } from './item_data.js';
 import { pictureOf } from './catalog.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
@@ -2995,6 +2996,7 @@ document.addEventListener('visibilitychange', () => {
   try { if (document.hidden) { if (ac.state === 'running') ac.suspend(); } else if (ac.state !== 'running' && ac.state !== 'closed' && !audio.muted) ac.resume(); } catch (e) { /* ignore */ }
 });
 ui.showTitle();
+startLegendFx(); // (5.9.1) gold sparks round legendary things wherever they are shown
 // (claude-polish) a phone turned upright shows "Turn your phone sideways" over the game: the game pauses under it
 { const mq = window.matchMedia && window.matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 700px)');
   const onTurn = () => { if (mq.matches && g.mode === 'play' && !g.paused) { g.paused = true; ui.setPaused(true); saveNow(); } };

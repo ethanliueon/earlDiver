@@ -4,6 +4,7 @@ import { drawToken } from './tokens.js';
 import { drawCoin, drawCash } from './coins.js';
 import { abilityState, whyNot, cooldownLeft } from './abilities.js';
 import { rarityOf } from './specimens.js';
+import { legendMotes } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
@@ -393,6 +394,7 @@ e.inSub ? [
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
       } else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
+      if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 2.2, r * 2.2, g.time, 7); // (5.9.1) a legendary's sparks
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
         if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'legendary' ? 'rgba(255,214,130,0.95)' : 'rgba(240,236,214,0.95)'; ctx.lineWidth = 3.4 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
@@ -439,6 +441,7 @@ e.inSub ? [
     const rarOf = (k) => { const it = k === 'net' ? gear(P, 'net') : k === 'cam' && owns(P, 'camera') ? gear(P, 'cam') : null; return it && it.rarity || null; }; // (5.6.9) the tool's rarity tints its coin
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
+    if (!aboard && !e.inSub && rarOf(sel || 'net') === 'legendary') legendMotes(ctx, cx, cy, R * 2.2, R * 2.2, g.time, 3); // (5.9.1)
     if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
     if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)

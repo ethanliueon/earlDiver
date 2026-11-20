@@ -926,3 +926,5 @@ html.touch body #tut-spot .ts-arrow.up:not(#_a) { border-left-width: 13px; borde
 #inventory .eq-stage .eq-col:not(#_a):not(#_b) { grid-template-rows: none; grid-auto-rows: auto; }
 html.touch body #inventory .eq-stage .eq-col:not(#_a):not(#_b) { row-gap: 26px !important; }
 #inventory .eq-slot[data-slot="ability"] img { object-fit: contain; }
+/* (5.9.1) the legendary sparks' canvas: over the panels, under nothing that takes a touch */
+#legendfx { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9350; }
