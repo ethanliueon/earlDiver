@@ -326,7 +326,7 @@ const ART = {
   // (so it reads at a glance on a dark face), a fish sketched on the left page, lines of pencil on the right, the dark
   // leather cover showing round it and a red ribbon hanging from the spine
   journal(x) {
-    x.save(); x.rotate(-0.08); x.lineJoin = 'round';
+    x.save(); x.translate(0, -3); x.lineJoin = 'round'; // (5.6.11) square and centred (it was tilted, and hung low with its ribbon)
     // the cover, a little larger than the pages, dark leather
     const cov = new Path2D('M-44 -26C-30 -32 -10 -32 0 -26C10 -32 30 -32 44 -26V30C30 24 10 24 0 30C-10 24 -30 24 -44 30Z');
     x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 5); x.fill(cov); x.restore();
@@ -350,7 +350,7 @@ const ART = {
     for (let k = 0; k < 5; k++) { const y = -16 + k * 8; x.beginPath(); x.moveTo(7, y); x.lineTo(33 - (k % 3) * 6, y); x.stroke(); }
     // the ribbon, out of the gutter and over the lower edge
     x.fillStyle = '#a3261c'; x.strokeStyle = '#2a0806'; x.lineWidth = 1.4;
-    x.beginPath(); x.moveTo(-2, -22); x.lineTo(3, -22); x.lineTo(6, 38); x.lineTo(3, 34); x.lineTo(0, 39); x.closePath(); x.fill(); x.stroke();
+    x.beginPath(); x.moveTo(-2.6, -22); x.lineTo(2.6, -22); x.lineTo(2.6, 38); x.lineTo(0, 34.5); x.lineTo(-2.6, 38); x.closePath(); x.fill(); x.stroke(); // straight down the gutter
     x.restore();
   },
   // the chart: a sea chart, half unrolled, its contours and a red mark
