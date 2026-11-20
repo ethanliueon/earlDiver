@@ -273,3 +273,90 @@ export function drawScroll2(ctx, cx, cy, size, fam, tier = 'rare') {
   if (!c) { c = document.createElement('canvas'); c.width = c.height = Math.ceil(size); const x = c.getContext('2d'), k = size / 104; x.translate(size / 2, size / 2); x.scale(k, k); paintScroll2(x, fam, tier); cache.set(key, c); }
   ctx.drawImage(c, cx - c.width / 2, cy - c.height / 2);
 }
+
+// ---------- (5.7.8) the third look: old and matte, like the references ----------
+// solid paint, softly shaded, faded and worn: dust in the grain, edges darkened by handling, paint chipped through to
+// the base, creases across the sheet. Rarity in the cloth and trim, not in shine: rare a muted sea blue, exotic a deep
+// plum with an extra pair of thin bands, legendary a near-black, very old scroll with dark bronze ends, a band of
+// painted wave pattern and its emblem in dull aged gold.
+const BODY3 = {
+  rare: { mid: '#3a5470', dark: '#22344a', light: '#557292', band: null },
+  exotic: { mid: '#553a5e', dark: '#33223a', light: '#71537a', band: null },
+  legendary: { mid: '#2e2829', dark: '#171314', light: '#463d3c', band: '#a8874a' },
+};
+const fade = (hex, k) => { const [r, g, b] = hexRgb(hex), gr = (r + g + b) / 3, f = (c) => Math.round(c + (gr - c) * k).toString(16).padStart(2, '0'); return `#${f(r)}${f(g)}${f(b)}`; };
+function paintScroll3(x, fam, tier) {
+  const B = BODY3[tier] || BODY3.rare, r = rnd(fam.length * 131 + tier.length * 17), plus = tier === 'exotic', leg = tier === 'legendary';
+  const acc0 = leg ? '#c4a05a' : (ACCENT[fam] || '#e8e0c8'), acc = fade(acc0, 0.28), bandCol = leg ? '#8a6a34' : fade(ACCENT[fam] || '#e8e0c8', 0.32);
+  const edgeCol = shade(B.dark, -0.4), grain = noisePattern(x);
+  x.lineJoin = 'round'; x.lineCap = 'round';
+  x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.ellipse(0, 46, 42, 5, 0, 0, TAU); x.fill();
+  const bandsX = [[-30, -23], [19, 26]].concat(plus ? [[-20, -18.5], [15.5, 17]] : []);
+  // dust and wear laid over a filled region: grain multiplied in, edges darkened, chips through to a pale base
+  const age = (clipPath, x0, y0, w, h, chips) => {
+    x.save(); x.clip(clipPath);
+    x.globalCompositeOperation = 'multiply'; x.globalAlpha = 0.5; x.fillStyle = grain; x.fillRect(x0, y0, w, h); x.globalAlpha = 1;
+    x.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < chips; i++) { const ex = r() < 0.5 ? r() * 0.18 : 1 - r() * 0.18, cx = x0 + (r() < 0.6 ? ex : r()) * w, cy = y0 + r() * h, cr = 0.4 + r() * 1.1; const ch = wobbly(Array.from({ length: 6 }, (_, k) => [cx + Math.cos(k / 6 * TAU) * cr * (0.6 + r() * 0.8), cy + Math.sin(k / 6 * TAU) * cr * (0.6 + r() * 0.8)]), r, 0.2); x.fillStyle = 'rgba(200,186,156,0.16)'; x.fill(ch); }
+    x.restore();
+  };
+  const roll = (x0, x1, y, rad, endAtLeft) => {
+    const top = along([x0 + rad * 0.3, y - rad], [x1 - rad * 0.3, y - rad * 1.04], 6), bot = along([x1 - rad * 0.3, y + rad * 1.03], [x0 + rad * 0.3, y + rad], 6);
+    const body = wobbly([...top, [x1, y], ...bot, [x0, y]], r, 0.4);
+    const g = x.createLinearGradient(0, y - rad, 0, y + rad); g.addColorStop(0, B.mid); g.addColorStop(0.3, B.light); g.addColorStop(0.62, B.mid); g.addColorStop(1, B.dark);
+    x.fillStyle = g; x.fill(body);
+    x.save(); x.clip(body);
+    for (const [a, b] of bandsX) { const bp = wobbly([[a, y - rad - 2], [b, y - rad - 2], [b + 0.5, y + rad + 2], [a - 0.3, y + rad + 2]], r, 0.35); const bg = x.createLinearGradient(0, y - rad, 0, y + rad); bg.addColorStop(0, shade(bandCol, -0.05)); bg.addColorStop(0.3, shade(bandCol, 0.12)); bg.addColorStop(1, shade(bandCol, -0.45)); x.fillStyle = bg; x.fill(bp); }
+    x.restore();
+    age(body, x0 - 2, y - rad - 2, x1 - x0 + 4, rad * 2 + 4, 10);
+    x.lineWidth = 1.1; x.strokeStyle = edgeCol; x.stroke(body);
+    const ex = endAtLeft ? x0 + 1 : x1 - 1, cap = wobbly(Array.from({ length: 10 }, (_, i) => [ex + Math.cos(i / 10 * TAU) * rad * 0.5, y + Math.sin(i / 10 * TAU) * rad * 0.97]), r, 0.3);
+    const capCol = leg ? '#5e4422' : shade(B.dark, 0.1); const cg = x.createRadialGradient(ex - rad * 0.15, y - rad * 0.3, 1, ex, y, rad); cg.addColorStop(0, shade(capCol, 0.3)); cg.addColorStop(1, shade(capCol, -0.3));
+    x.fillStyle = cg; x.fill(cap); age(cap, ex - rad, y - rad, rad * 2, rad * 2, 4); x.lineWidth = 1; x.strokeStyle = edgeCol; x.stroke(cap);
+    x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 0.9; x.beginPath();
+    for (let a = 0.3; a < TAU * 2.3; a += 0.16) { const rr = rad * (0.12 + a / (TAU * 2.7)); const px = ex + Math.cos(a + 1) * rr * 0.48, py = y + Math.sin(a + 1) * rr * 0.93; if (a === 0.3) x.moveTo(px, py); else x.lineTo(px, py); }
+    x.stroke();
+  };
+  roll(-36, 44, -32, 11, false);
+  const left = along([-37, -25], [-38, 28], 7).map(([a, b], i) => [a + 1.2 * Math.sin(Math.PI * i / 7), b]);
+  const right = along([33, 28], [35, -25], 7).map(([a, b], i) => [a - 1.2 * Math.sin(Math.PI * i / 7), b]);
+  const sheet = wobbly([...left, ...along([-38, 28], [33, 28], 5), ...right, ...along([35, -25], [-37, -25], 5)], r, 0.5);
+  const sg = x.createLinearGradient(-38, 0, 36, 0); sg.addColorStop(0, B.dark); sg.addColorStop(0.2, B.mid); sg.addColorStop(0.55, B.light); sg.addColorStop(0.85, B.mid); sg.addColorStop(1, B.dark);
+  x.fillStyle = sg; x.fill(sheet);
+  x.save(); x.clip(sheet);
+  for (const [a, b] of bandsX) { const band = wobbly([...along([a, -30], [a - 0.5, 32], 5), ...along([b + 0.3, 32], [b, -30], 5)], r, 0.35);
+    const bg = x.createLinearGradient(a, 0, b, 0); bg.addColorStop(0, shade(bandCol, -0.3)); bg.addColorStop(0.5, bandCol); bg.addColorStop(1, shade(bandCol, -0.3)); x.fillStyle = bg; x.fill(band);
+    // a legendary's bands carry a painted wave pattern, worn
+    if (leg && b - a > 4) { x.save(); x.clip(band); x.strokeStyle = 'rgba(40,26,10,0.7)'; x.lineWidth = 1; const mx = (a + b) / 2; for (let yy = -28; yy < 32; yy += 5) { x.beginPath(); x.moveTo(a, yy + 2); x.quadraticCurveTo(mx, yy - 2.5, b, yy + 2); x.stroke(); } x.restore(); }
+  }
+  // creases: a dark fold and its lit edge beside it
+  for (const [y0, y1] of [[-6 + r() * 4, 2 + r() * 4], [12 + r() * 3, 8 + r() * 4]]) { x.strokeStyle = 'rgba(0,0,0,0.28)'; x.lineWidth = 1.1; x.beginPath(); x.moveTo(-38, y0); x.bezierCurveTo(-12, y0 - 2, 10, y1 + 3, 36, y1); x.stroke(); x.strokeStyle = 'rgba(255,248,230,0.12)'; x.lineWidth = 0.9; x.beginPath(); x.moveTo(-38, y0 + 1.3); x.bezierCurveTo(-12, y0 - 0.7, 10, y1 + 4.3, 36, y1 + 1.3); x.stroke(); }
+  // handling: the edges and corners darker
+  const vg = x.createRadialGradient(-2, 2, 14, -2, 2, 46); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.42)'); x.fillStyle = vg; x.fillRect(-40, -28, 80, 60);
+  const tg = x.createLinearGradient(0, -25, 0, -14); tg.addColorStop(0, 'rgba(0,0,0,0.5)'); tg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = tg; x.fillRect(-40, -26, 80, 12);
+  const bgr = x.createLinearGradient(0, 28, 0, 17); bgr.addColorStop(0, 'rgba(0,0,0,0.42)'); bgr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = bgr; x.fillRect(-40, 17, 80, 12);
+  x.restore();
+  age(sheet, -40, -28, 80, 60, 26);
+  x.lineWidth = 1.1; x.strokeStyle = edgeCol; x.stroke(sheet);
+  // the emblem: painted on, solid, softly shaded, the paint worn in places
+  { const m = emblemMask(fam, 240), size = 46, c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d');
+    t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; const eg = t.createLinearGradient(0, 0, 0, c.height); eg.addColorStop(0, shade(acc, 0.16)); eg.addColorStop(0.55, acc); eg.addColorStop(1, shade(acc, -0.32)); t.fillStyle = eg; t.fillRect(0, 0, c.width, c.height);
+    t.globalCompositeOperation = 'destination-out'; const rr2 = rnd(fam.length * 7 + 3); for (let i = 0; i < 70; i++) { t.globalAlpha = 0.25 + rr2() * 0.6; t.beginPath(); t.arc(rr2() * c.width, rr2() * c.height, 1 + rr2() * 4, 0, TAU); t.fill(); } t.globalAlpha = 1;
+    x.save(); x.globalAlpha = 0.55; x.drawImage((() => { const d = document.createElement('canvas'); d.width = d.height = m.width; const u = d.getContext('2d'); u.drawImage(m, 0, 0); u.globalCompositeOperation = 'source-in'; u.fillStyle = 'rgba(0,0,0,1)'; u.fillRect(0, 0, d.width, d.height); return d; })(), -2 - size / 2 + 0.8, 1 - size / 2 + 1.2, size, size); x.restore(); // the paint's thickness: a soft shadow under it
+    x.drawImage(c, -2 - size / 2, 1 - size / 2, size, size); }
+  roll(-46, 34, 33, 12, true);
+}
+export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare') {
+  const key = `3|${fam}|${tier}|${Math.round(size)}`;
+  let c = cache.get(key);
+  if (!c) { c = document.createElement('canvas'); c.width = c.height = Math.ceil(size); const x = c.getContext('2d'), k = size / 104; x.translate(size / 2, size / 2); x.scale(k, k); paintScroll3(x, fam, tier); cache.set(key, c); }
+  ctx.drawImage(c, cx - c.width / 2, cy - c.height / 2);
+}
+// (5.7.8) a legendary's motes: slow sparks of old gold drifting up round it, wherever it is shown. Call each frame
+// with the time; state is a small array kept by the caller
+export function legendMotes(ctx, cx, cy, w, h, t, seed = 1) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i++) { const r = rnd(seed * 31 + i * 7), ph = (t * (0.18 + r() * 0.12) + r()) % 1, px = cx + (r() - 0.5) * w * 0.9 + Math.sin(t * 1.3 + i) * w * 0.04, py = cy + h * 0.45 - ph * h * 1.05, a = Math.sin(ph * Math.PI) * (0.55 + r() * 0.4), sz = (1 + r() * 1.8) * w / 100;
+    const g = ctx.createRadialGradient(px, py, 0, px, py, sz * 3); g.addColorStop(0, `rgba(255,226,150,${a.toFixed(3)})`); g.addColorStop(1, 'rgba(255,190,90,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, sz * 3, 0, TAU); ctx.fill(); }
+  ctx.restore();
+}
