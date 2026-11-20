@@ -16,7 +16,7 @@ const HUE = {
   net: [100, 24, 15], eye: [186, 32, 13], sprint: [208, 26, 14], hand: [28, 26, 14], sub: [78, 18, 13], cam: [36, 38, 15],
   trap: [14, 32, 14], lamp: [34, 42, 14], claw: [200, 10, 14], leave: [78, 18, 13], tank: [190, 28, 13], auto: [78, 18, 13],
   trawl: [100, 24, 15], air: [200, 14, 14], sell: [44, 30, 14], lure: [170, 34, 10], glow: [120, 26, 11], pet: [186, 32, 13], swap: [60, 8, 12],
-  gear: [40, 18, 13], bag: [96, 18, 11], quest: [30, 22, 13], journal: [150, 14, 11], chart: [190, 20, 13],
+  dive: [200, 26, 14], door: [96, 14, 12], gear: [40, 18, 13], bag: [96, 18, 11], quest: [30, 22, 13], journal: [150, 14, 11], chart: [190, 20, 13],
 };
 
 function face(x, R, hue, seed) {
@@ -283,6 +283,36 @@ const ART = {
     x.fillStyle = 'rgba(255,255,255,0.6)'; x.fillRect(-22, -4, 40, 1.6);
     x.restore();
   },
+  // (5.7.5) dive in: a diver going in head first off a rail, the splash rings below
+  dive(x) {
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    x.strokeStyle = '#0a0c0c'; x.lineWidth = 7; x.beginPath(); x.moveTo(-40, -6); x.lineTo(-6, -6); x.stroke(); x.strokeStyle = '#8a7650'; x.lineWidth = 3.5; x.stroke(); // the rail
+    x.strokeStyle = '#0a0c0c'; x.lineWidth = 4; x.beginPath(); x.moveTo(-36, -6); x.lineTo(-36, 10); x.moveTo(-14, -6); x.lineTo(-14, 10); x.stroke();
+    // the arc of the dive
+    x.setLineDash([4, 5]); x.strokeStyle = 'rgba(230,222,196,0.75)'; x.lineWidth = 2.4; x.beginPath(); x.moveTo(-20, -14); x.quadraticCurveTo(10, -46, 20, 4); x.stroke(); x.setLineDash([]);
+    // the diver, arms over head, going down
+    x.save(); x.translate(20, 6); x.rotate(0.35);
+    x.fillStyle = '#1c2124'; x.strokeStyle = '#0a0c0c'; x.lineWidth = 2.4; x.beginPath(); x.roundRect(-6, -26, 12, 30, 6); x.fill(); x.stroke();
+    x.fillStyle = '#c9b48c'; x.beginPath(); x.arc(0, 8, 5.5, 0, TAU); x.fill(); x.stroke(); // head
+    x.fillStyle = '#9aa2a6'; x.beginPath(); x.roundRect(-9, -20, 5, 16, 2); x.fill(); x.stroke(); // tank
+    x.restore();
+    // the water and the splash rings
+    x.strokeStyle = '#6aa6c4'; x.lineWidth = 3; x.beginPath(); x.moveTo(-44, 26); x.quadraticCurveTo(-30, 22, -16, 26); x.quadraticCurveTo(-2, 30, 12, 26); x.quadraticCurveTo(26, 22, 44, 26); x.stroke();
+    x.strokeStyle = 'rgba(220,240,250,0.85)'; x.lineWidth = 2; for (const [rx, ry] of [[10, 3], [18, 5.5]]) { x.beginPath(); x.ellipse(24, 30, rx, ry, 0, 0, TAU); x.stroke(); }
+  },
+  // (5.7.5) out on deck: the cabin's steel door, its porthole lit with daylight, the handle
+  door(x) {
+    x.lineJoin = 'round';
+    const d = new Path2D('M-22 -40H22C26 -40 28 -38 28 -34V40H-28V-34C-28 -38 -26 -40 -22 -40Z');
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 4); x.fill(d); x.restore();
+    x.fillStyle = '#4c5e4a'; x.fill(d); x.lineWidth = 4; x.strokeStyle = '#0a0c0a'; x.stroke(d);
+    x.save(); x.clip(d); x.fillStyle = 'rgba(255,255,230,0.12)'; x.fillRect(-28, -40, 14, 80); x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(14, -40, 14, 80); x.restore();
+    x.fillStyle = '#2a3428'; x.beginPath(); x.arc(0, -16, 12, 0, TAU); x.fill(); // porthole rim
+    const pg = x.createRadialGradient(-3, -19, 1, 0, -16, 10); pg.addColorStop(0, '#f2f4e0'); pg.addColorStop(1, '#8ab4c8'); x.fillStyle = pg; x.beginPath(); x.arc(0, -16, 8.5, 0, TAU); x.fill();
+    x.strokeStyle = '#c8a860'; x.lineWidth = 3; x.beginPath(); x.arc(0, -16, 11, 0, TAU); x.stroke();
+    x.fillStyle = '#c8a860'; x.strokeStyle = '#0a0c0a'; x.lineWidth = 2; x.beginPath(); x.roundRect(14, 2, 8, 18, 3); x.fill(); x.stroke(); // the handle
+    x.fillStyle = '#e8dcb8'; x.beginPath(); x.moveTo(-20, 22); x.lineTo(-8, 14); x.lineTo(-8, 19); x.lineTo(4, 19); x.lineTo(4, 25); x.lineTo(-8, 25); x.lineTo(-8, 30); x.closePath(); x.fill(); // an arrow out
+  },
   // settings: a cog of old bronze, green with verdigris in its teeth, a bolt through it
   gear(x) {
     x.save(); x.rotate(0.15);
@@ -456,7 +486,7 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint =
       const pg = x.createRadialGradient(0, 0, 0, 0, 0, R); pg.addColorStop(0, 'rgba(255,240,205,0.42)'); pg.addColorStop(0.7, 'rgba(255,230,180,0.14)'); pg.addColorStop(1, 'rgba(255,230,180,0.3)'); x.fillStyle = pg; x.fillRect(-R, -R, R * 2, R * 2); x.restore(); }
     lip(x, R, state === 'press' ? 'lit' : state);
     if (tint && TINT_LIP[tint] && state !== 'off') { x.lineWidth = R * 0.045; x.strokeStyle = TINT_LIP[tint]; x.beginPath(); x.arc(0, 0, R * 0.955, 0, TAU); x.stroke(); }
-    t = { c, half: size / 2 }; cache.set(key, t); if (cache.size > 80) cache.delete(cache.keys().next().value);
+    t = { c, half: size / 2 }; cache.set(key, t); if (cache.size > 320) cache.delete(cache.keys().next().value);
   }
   if (state === 'press') { const k = 0.92, hh = t.half * k; ctx.drawImage(t.c, cx - hh, cy - hh + r * 0.05, hh * 2, hh * 2); return; } // (5.7.0) pressed in: smaller and a little lower
   ctx.drawImage(t.c, cx - t.half, cy - t.half + (state === 'down' ? r * 0.04 : 0));

@@ -1201,6 +1201,15 @@ export class Renderer {
       }
       ctx.restore();
     }
+    // (5.7.5) a swing that missed: "Missed" beside the fish, rising and fading as it bolts
+    if (g.missLabels && g.missLabels.length) {
+      const dtM = Math.min(0.1, Math.max(0, g.time - (this.missT ?? g.time))); this.missT = g.time;
+      g.missLabels = g.missLabels.filter((L) => (L.t += dtM) < 1.4);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.font = '700 19px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
+      for (const L of g.missLabels) { if (L.c && !L.c.dead) { L.x = L.c.x; L.y = L.c.y; } const a = Math.min(1, L.t / 0.12) * Math.min(1, (1.4 - L.t) / 0.5), x = S(L.x), y = Sy(L.y) - Math.max(26, ppm * 0.7) - L.t * 22;
+        ctx.globalAlpha = a; ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillText('Missed', x + 1, y + 1); ctx.fillStyle = '#f4b8a0'; ctx.fillText('Missed', x, y); }
+      ctx.restore();
+    }
     // (5.5.3) an animal just observed: its name beside it in the water. Faint pale letters, widely spaced, rising in out
     // of the dark, drifting up a little and going again after a few seconds, a hairline down to the animal
     if (g.obsLabels && g.obsLabels.length) {

@@ -481,8 +481,9 @@ export class UI {
     // (5.5.6) on a phone, during play: the card comes out small beside the bag button and goes into it (the bag gives a
     // tug), instead of standing in the middle of the screen over the sea
     const bag = document.documentElement.classList.contains('touch') && !this.anyOpen() && (window.__hudHots || []).find((q) => q.key === 'b');
-    el.classList.toggle('dock', !!bag);
-    if (bag) { el.style.setProperty('--dx', (bag.x - 10) + 'px'); el.style.setProperty('--dy', (bag.y + bag.h / 2) + 'px'); el.style.setProperty('--tx', (bag.w / 2 + 70) + 'px'); } // (5.6.9) to the left of the bag (it sits at the right edge now), whole on the screen
+    // (5.7.5) on a phone: a small card at the top centre, under the messages (by the bag it crowded the radar column)
+    el.classList.toggle('topc', !!bag); el.classList.remove('dock');
+    if (false && bag) { el.style.setProperty('--dx', (bag.x - 10) + 'px'); el.style.setProperty('--dy', (bag.y + bag.h / 2) + 'px'); el.style.setProperty('--tx', (bag.w / 2 + 70) + 'px'); } // (5.6.9) to the left of the bag (it sits at the right edge now), whole on the screen
     el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
     clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), bag ? 2200 : 2900);
   }
@@ -493,8 +494,9 @@ export class UI {
     if (!t) { t = document.createElement('div'); t.id = 'qtag'; t.innerHTML = '<small>Quest done</small><b></b><i class="stamp">Paid</i>'; document.body.appendChild(t); }
     // (5.7.0) a paper tag stamped with the sum, out to the left of the journal's coin (it sits at the right edge), and
     // after a moment drawn back into it
-    const r = document.getElementById('quests-btn').getBoundingClientRect();
-    t.style.left = 'auto'; t.style.right = (innerWidth - r.left + 10) + 'px'; t.style.top = (r.top - 4) + 'px'; t.style.setProperty('--tx', (r.width / 2 + 40) + 'px');
+    // (5.7.5) under the money, top left (by the journal's coin at the top right it was hard to see)
+    const M = this.h.moneyAt && this.h.moneyAt(); if (M) { t.style.right = 'auto'; t.style.left = (M.x - 4) + 'px'; t.style.top = (M.y + 2) + 'px'; }
+    else { const r = document.getElementById('quests-btn').getBoundingClientRect(); t.style.left = 'auto'; t.style.right = (innerWidth - r.left + 10) + 'px'; t.style.top = (r.top - 4) + 'px'; }
     t.querySelector('b').textContent = text;
     t.classList.remove('in', 'go'); void t.offsetWidth; t.classList.add('in');
     clearTimeout(this.qtagT); this.qtagT = setTimeout(() => { t.classList.add('go'); setTimeout(() => t.classList.remove('in', 'go'), 500); }, 2600);

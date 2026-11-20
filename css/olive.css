@@ -898,3 +898,27 @@ html body #journal .jcell:not(#_a) b { white-space: normal !important; overflow:
 html body #journal #journal-notes:not(#_a) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 html body #journal #journal-notes[hidden] { display: none !important; }
 html body #journal #notes:not(#_a):not(#_b) { flex: 1; min-height: 60%; height: auto; resize: none; width: 100%; }
+/* (5.7.5) the quest's sum: big cream figures popping up under the money, top left, then drifting up and away */
+html body #qtag:not(#_a):not(#_b) { background: none; box-shadow: none; border-radius: 0; padding: 0; color: #f6e7b4; transform: translateY(8px) scale(0.9); text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85); }
+html body #qtag.in:not(#_a):not(#_b) { transform: none; }
+html body #qtag.in.go:not(#_a):not(#_b) { opacity: 0; transform: translateY(-22px); transition: opacity 0.5s ease-in, transform 0.5s ease-out; }
+html body #qtag:not(#_a):not(#_b) small { color: rgba(239, 232, 210, 0.8); font: 600 13px var(--o-text); letter-spacing: 0.14em; }
+html body #qtag:not(#_a):not(#_b) b { color: #f6e7b4; font: 700 34px/1 var(--o-text); }
+html body #qtag .stamp:not(#_a) { display: none; }
+html body #gains.topc:not(#_a) { top: 70px; transform: none; }
+html body #gains.topc:not(#_a) .gain { width: 118px; padding: 0; border-width: 14px !important; gap: 4px; }
+html body #gains.topc:not(#_a) .gain b { font-size: 15px !important; }
+html body #gains.topc:not(#_a) .g-plus { display: none; }
+html body #gains.topc.in:not(#_a) { animation: gain-top-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+html body #gains.topc.out:not(#_a) { animation: gain-top-out 0.4s ease-in forwards; }
+@keyframes gain-top-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+@keyframes gain-top-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-12px); } }
+/* (5.7.5) on a phone the tutorial's lit thing glows warm, pulsing, and its arrow is larger */
+html.touch body #tut-spot .ts-hole:not(#_a) { animation: ts-glow 1.5s ease-in-out infinite; }
+html.touch body #tut-spot .ts-hole.light:not(#_a) { animation-name: ts-glow-l; }
+@keyframes ts-glow { 0%, 100% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 10px 4px rgba(255, 220, 150, 0.5), 0 0 0 200vmax rgba(4, 8, 6, 0.42); } 50% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 24px 10px rgba(255, 220, 150, 0.8), 0 0 0 200vmax rgba(4, 8, 6, 0.42); } }
+@keyframes ts-glow-l { 0%, 100% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 10px 4px rgba(255, 220, 150, 0.5); } 50% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 24px 10px rgba(255, 220, 150, 0.8); } }
+html.touch body #tut-spot .ts-arrow.down:not(#_a) { border-left-width: 13px; border-right-width: 13px; border-top-width: 20px; }
+html.touch body #tut-spot .ts-arrow.up:not(#_a) { border-left-width: 13px; border-right-width: 13px; border-bottom-width: 20px; }
+/* (5.7.5) a newer version is out: a small plate at the top centre, tap to load it */
+#updbar { all: unset; position: fixed; z-index: 9900; left: 50%; top: 8px; transform: translateX(-50%); padding: 6px 16px; border-radius: 4px; background: rgba(30, 36, 28, 0.94); box-shadow: 0 0 0 1px rgba(230, 222, 196, 0.5), 0 4px 14px rgba(0, 0, 0, 0.5); color: #efe8d2; font: 600 15px "Barlow Semi Condensed", sans-serif; cursor: pointer; }

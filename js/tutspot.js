@@ -138,9 +138,9 @@ export class TutSpot {
         LOCK = { allow: new Set(['Shift', 'Control', 'Alt', 'Meta', 'F5', 'F11', 'F12', ...(k ? [k.length === 1 ? k.toLowerCase() : k] : []), ...(spot.keys || [])]) };
       }
       // the arrow and the line: above the thing when there is room, otherwise below it
-      const above = !spot.below && y > 100, cx = Math.max(110, Math.min(vw - 110, x + w / 2));
-      // (5.6.7) on a phone the ring round the lit thing is enough: no bobbing arrow landing on the words beside it
-      this.arrow.style.display = document.documentElement.classList.contains('touch') ? 'none' : 'block';
+      const touchUI = document.documentElement.classList.contains('touch'), above = !spot.below && y > 100, cx = touchUI ? Math.max(16, Math.min(vw - 16, x + w / 2)) : Math.max(110, Math.min(vw - 110, x + w / 2));
+      // (5.7.5) the arrow back on a phone too, now placed over the thing itself (it was pushed 110 px in, onto the words)
+      this.arrow.style.display = 'block';
       setClass(this.arrow, 'ts-arrow ' + (above ? 'down' : 'up'));
       this.arrow.style.left = cx + 'px';
       this.arrow.style.top = (above ? y - 30 : y + h + 8) + 'px';

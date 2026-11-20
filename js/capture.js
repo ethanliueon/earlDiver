@@ -207,7 +207,7 @@ export function updateCapture(g, dt) {
           }
         }
       } else {
-        ev.push({ type: 'missed', sp: tgt.sp, name: variantName(tgt.sp, tgt.variant) });
+        ev.push({ type: 'missed', sp: tgt.sp, name: variantName(tgt.sp, tgt.variant), c: tgt.c || null, x: tgt.x, y: tgt.y });
         // (5.0) a miss you can see: the fish flinches and bolts with a kick of speed and a puff of silt and bubbles
         // (now and then the rim clips it instead, and it hangs dazed a moment: a second chance)
         const c = tgt.c;

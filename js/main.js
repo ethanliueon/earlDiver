@@ -371,6 +371,7 @@ const ui = new UI({
   // (5.6.9) the belt: on (from the locker, as many as fit) or off (all of it into the locker)
   onBelt: (k, on) => { const P = profile; if (!P || !g) return; P.spare = P.spare || {}; if (on) { const m = Math.min(supplyMax(P, k) - (g.items[k] || 0), P.spare[k] || 0); if (m > 0) { g.items[k] = (g.items[k] || 0) + m; P.spare[k] -= m; } } else { P.spare[k] = (P.spare[k] || 0) + (g.items[k] || 0); g.items[k] = 0; } syncProfile(); saveProfile(P); audio.ready && audio.click(); },
   onMessage: (m) => hud.toast(m),
+  moneyAt: () => (hud.touch ? hud.moneyAt : null), // (5.7.5) where the money is on the HUD, for the quest's sum
   onEquip: (k) => { const ok = buy(k); return ok; },
   canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave() || nearStation())), // someone to sell to: the Margaret, the station, or Dave
 });
@@ -1202,6 +1203,8 @@ function startRun() {
     if (!seen) setTimeout(() => hud.toast('For full screen: Share, then Add to Home Screen, and open Earl from there', 'note'), 6000);
   }
   g.menuT0 = null; // (5.7.0) the title's dive starts again next time
+  // (5.7.5) the journal's pictures drawn ahead, a few at a time while he plays, so the book opens with them already there
+  setTimeout(() => { const ids = [...(g.journal ? g.journal.keys() : [])]; let i = 0; const step = () => { for (let k = 0; k < 6 && i < ids.length; k++, i++) { const sp = SPECIES_BY_ID[ids[i]]; if (sp) ui.allFishPic(sp, true); } if (i < ids.length) setTimeout(step, 40); }; step(); }, 2500);
   messages.clear(); // (5.5) a new dive starts with a clear line (no "Out of air" left over from the last)
   mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic();
@@ -1226,7 +1229,7 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'sprinton', 'leavesub', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
+const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'sprinton', 'leavesub', 'divein', 'outdeck', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
 function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
@@ -1954,6 +1957,9 @@ function update(dt) {
     // stick for a moment ends it; never in the sub or on deck
     // (5.7.1) the sub's leave button: always works (the tutorial's own leave step, if it is the one asked)
     if (pressed.has('leavesub')) { pressed.delete('leavesub'); if (e.inSub) { if (!(g.tutAction && g.tutAction.id === 'leavesub' && runTutAction('leavesub'))) leaveSub(); } }
+    // (5.7.5) the arc's own jobs aboard: Dive in (over the nearer rail) and Out on deck (from the cabin)
+    if (pressed.has('divein')) { pressed.delete('divein'); if (g.aboard && !ui.cabinOpen() && !g.helm) { const A = g.aboard, mid = (DECK_MIN + DECK_MAX) / 2; leaveDeck(A.x >= mid ? 1 : -1); } }
+    if (pressed.has('outdeck')) { pressed.delete('outdeck'); if (ui.cabinOpen()) ui.toggleCabin(false); }
     if (pressed.has('sprinton')) { pressed.delete('sprinton'); if (!g.sprintLock) pressed.add('sprint'); } // (5.7.0) a thumb slid onto the sprint button
     if (pressed.has('sprint')) { pressed.delete('sprint'); g.sprintLock = !g.sprintLock; g.sprintIdle = 0; if (g.sprintLock && !profile.tipSprintBtn) { profile.tipSprintBtn = true; saveProfile(profile); hud.toast('Sprinting: your air goes faster', 'note'); } }
     if (g.sprintLock) { if (e.inSub) g.sprintLock = false; else { g.sprintIdle = touch && touch.vec.on ? 0 : (g.sprintIdle || 0) + dt; if (g.sprintIdle > 1.2) g.sprintLock = false; } }
@@ -2238,7 +2244,7 @@ function update(dt) {
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       } else if (ev.type === 'missed') {
         if (g.tutForce === 'miss') { profile.tutMissed = true; saveProfile(profile); g.tutOops = g.time; } // (5.6.7) said once, by the quest line and beside the fish // (4.3.2) the tutorial's first swing
-        else hud.toast('Got away');
+        else (g.missLabels || (g.missLabels = [])).push({ c: ev.c || null, x: ev.x ?? e.x, y: ev.y ?? e.y, t: 0 }); // (5.7.5) said beside the fish, not at the top of the screen
       }
       else if (ev.type === 'miss' && ev.why) hud.toast(ev.why[0].toUpperCase() + ev.why.slice(1), 'warn');
     }
@@ -2903,6 +2909,13 @@ requestAnimationFrame(frame);
 
 // (5.7.0) any touch or key on the title: the eye in the dark closes again
 for (const ev0 of ['pointerdown', 'keydown']) window.addEventListener(ev0, () => { if (g && g.mode === 'menu') g.menuIdle0 = g.time; }, true);
+// (5.7.5) a new version pushed while the old one is open (or kept by the phone's home-screen copy): a note to tap to load it
+{ const mine = () => import('./version.js').then((m) => m.VERSION).catch(() => null);
+  const check = async () => { try { const cur = await mine(); const t = await (await fetch('js/version.js?t=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/VERSION\s*=\s*'([^']+)'/); const nv = m && m[1];
+    if (nv && cur && nv !== cur && !document.getElementById('updbar')) { const b = document.createElement('button'); b.id = 'updbar'; b.textContent = `Version ${nv} is out: tap to load it`; b.addEventListener('click', () => { location.replace(location.pathname + '?v=' + encodeURIComponent(nv)); }); document.body.appendChild(b); } } catch (e) { /* offline */ } };
+  setTimeout(check, 4000); setInterval(check, 10 * 60 * 1000); document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  // (5.7.5) the fonts loaded up front, so no text appears in a stand-in face and then changes
+  if (document.fonts && document.fonts.load) for (const f of ['400 16px "Barlow Semi Condensed"', '500 16px "Barlow Semi Condensed"', '600 16px "Barlow Semi Condensed"', '700 16px "Barlow Semi Condensed"', '500 20px "Caveat"', '600 20px "Caveat"', '700 20px "Caveat"']) document.fonts.load(f).catch(() => {}); }
 // (5.6.8) the settings coin (top right, on a phone): the pause menu, wherever he is (the cabin too), never closing it
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'settings') return; ev.stopImmediatePropagation();

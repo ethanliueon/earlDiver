@@ -304,8 +304,10 @@ export class Hud {
       { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'For the water' : (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
       // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
       // the winch to sell). Sprint moved beside the stick
-      (() => { const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = aboard ? !!this.handOn : hf || hu;
-        return { key: aboard ? 'f' : hu ? 'u' : 'f', icon: 'hand', on: hon, lit: hon && !aboard, why: aboard ? (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door') : 'Nothing in reach' }; })(),
+      // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin
+      (() => { if (aboard) return this.inCabin ? { key: 'outdeck', icon: 'door', on: true } : { key: 'divein', icon: 'dive', on: !(g.aboard && (g.aboard.jump || g.aboard.climb)) && !g.helm, why: 'Not now' };
+        const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
+        return { key: hu ? 'u' : 'f', icon: 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
       { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'For the water' },
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
@@ -319,11 +321,24 @@ e.inSub ? [
     ]).filter((a) => !(a.away && !a.on));
     const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
     const vis = this.btnVis || (this.btnVis = {});
-    const ring = (x, y, r) => { // (5.5.5) the tutorial's mark, as everywhere: the cream of the game's buttons on a dark olive edge, breathing out
+    // (5.7.5) the tutorial's mark: a warm halo pulsing behind the button, the cream ring breathing out, and a short arrow
+    // bobbing toward it from the middle of the screen, so there is no doubt which one
+    const halo = (x, y, r, a0 = 1) => { const q = 0.5 + 0.5 * Math.sin(g.time * 4.2), hr = r * (1.55 + 0.25 * q);
+      const hg = ctx.createRadialGradient(x, y, r * 0.6, x, y, hr); hg.addColorStop(0, `rgba(255,226,160,${(0.55 * a0 * (0.6 + 0.4 * q)).toFixed(3)})`); hg.addColorStop(1, 'rgba(255,210,140,0)');
+      ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, hr, 0, TAU); ctx.fill(); };
+    const ring = (x, y, r) => {
+      halo(x, y, r);
       const k = (g.time * 0.6) % 1, rr = r * (1.1 + k * 0.45);
       ctx.strokeStyle = `rgba(230,222,196,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (2.4 - 1.2 * k) * u; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
       ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
       ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
+      // the arrow: from the screen's middle toward the button, bobbing in
+      const ang = Math.atan2(y - H * 0.45, x - W * 0.5), bob = (0.5 + 0.5 * Math.sin(g.time * 5)) * 7 * u, d = (r > 32 * u ? r + 50 * u + 30 * u + 22 * u : r * 1.5 + 14 * u) + bob, /* the big button's arrow from outside the arc */ ax = x - Math.cos(ang) * d, ay = y - Math.sin(ang) * d, L = 16 * u;
+      ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-L, -L * 0.62); ctx.lineTo(-L * 0.62, 0); ctx.lineTo(-L, L * 0.62); ctx.closePath();
+      ctx.lineWidth = 5 * u; ctx.strokeStyle = 'rgba(18,22,12,0.8)'; ctx.stroke(); ctx.fillStyle = '#f0e6c8'; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-L * 0.7, 0); ctx.lineTo(-L * 1.9, 0); ctx.lineWidth = 6.5 * u; ctx.strokeStyle = 'rgba(18,22,12,0.8)'; ctx.stroke(); ctx.lineWidth = 3.2 * u; ctx.strokeStyle = '#f0e6c8'; ctx.lineCap = 'round'; ctx.stroke();
+      ctx.restore();
     };
     // (5.6.9) a padlock over a coin that is locked: dark bronze, a cream edge
     const padlock = (x, y, k) => {
@@ -340,7 +355,7 @@ e.inSub ? [
     const pressFx = (key, x, y, r) => {
       const dn = held.has(key); if (dn && !was.has(key)) pa[key] = nowT;
       const k = pa[key] ? (nowT - pa[key]) / 420 : 2;
-      if (k < 1) { ctx.save(); ctx.strokeStyle = `rgba(255,236,196,${(0.75 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (3.4 - 2.4 * k) * u; ctx.beginPath(); ctx.arc(x, y, r * (1 + 0.55 * k), 0, TAU); ctx.stroke(); ctx.restore(); }
+      if (k < 1) { ctx.save(); halo(x, y, r, 1 - k); ctx.strokeStyle = `rgba(255,236,196,${(0.75 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (3.4 - 2.4 * k) * u; ctx.beginPath(); ctx.arc(x, y, r * (1 + 0.55 * k), 0, TAU); ctx.stroke(); ctx.restore(); }
       return dn;
     };
     const LIT_ART = new Set(['lamp', 'glow', 'sprint']); // their pictures change when on
@@ -350,7 +365,9 @@ e.inSub ? [
       // one that comes and goes rises in (and sinks away) over a fifth of a second rather than blinking
       if (a.away) { const v0 = vis[a.key] ?? 0, v = vis[a.key] = clamp(v0 + (a.on ? 1 : -1) * dt * 6, 0, 1); if (v <= 0.01) return; r *= 0.7 + 0.3 * (1 - (1 - v) * (1 - v)); ctx.save(); ctx.globalAlpha *= v; }
       else ctx.save();
-      if ((tutKey === a.key || (a.tutAlt && tutKey === a.tutAlt)) && a.on) ring(x, y, r);
+      const want = (tutKey === a.key || (a.tutAlt && tutKey === a.tutAlt)) && a.on;
+      if (want) { ring(x, y, r); r *= 1 + 0.07 * (0.5 + 0.5 * Math.sin(g.time * 4.2)); } // (5.7.5) and it swells gently with the pulse
+      else if (!a.on && !a.row) { ctx.globalAlpha *= 0.62; r *= 0.88; } // (5.7.5) one that cannot be used now sits back: smaller and fainter
       // (5.5.6) the bag gives a tug as something new goes into it
       if (a.key === 'b' && window.__bagTug) { const k = (performance.now() - window.__bagTug) / 450; if (k > 0 && k < 1) { const s2 = 1 + 0.22 * Math.sin(k * Math.PI) * (1 - k * 0.5); ctx.translate(x, y); ctx.scale(s2, s2); ctx.translate(-x, -y); } }
       if (a.row) { // the bottom row: a small dark round, its symbol in bone (as the menus' icons are)
@@ -373,7 +390,10 @@ e.inSub ? [
     { const ch = 30 * u, mx = 12 * u + ch * 0.8, my = 12 * u + 19 * u;
       drawCash(ctx, mx, my, ch);
       ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
-      const txt = money(P.cash || 0), tx0 = mx + ch * 0.8 + 6 * u; ctx.fillStyle = '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
+      // (5.7.5) the sum counts up to a new total (a quest paid, a sale) instead of jumping
+      const cash = P.cash || 0; if (this.cashShown == null || cash < this.cashShown || cash - this.cashShown < 0.01) this.cashShown = cash; else this.cashShown += Math.max(0.01, (cash - this.cashShown) * Math.min(1, dt * 3.2));
+      const txt = money(Math.min(cash, this.cashShown)), tx0 = mx + ch * 0.8 + 6 * u; ctx.fillStyle = cash > this.cashShown ? '#f6e7b4' : '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
+      { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(money(cash)).width; ctx.restore(); this.moneyAt = { x: (tx0 + tw + 16 * u + this.safeL) * kx, y: (my - 16 * u + this.safeT) * kx }; } // (5.7.5) right of the sum, on its row
       ctx.restore();
       this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
       const rg = 17 * u, gx = W - 12 * u - rg, gy = 12 * u + rg;
@@ -441,6 +461,11 @@ e.inSub ? [
       if (tutKey === 'sprint') ring(px2, py2, rs);
       hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'sprint');
     }
+    // (5.7.5) every button's picture in every state is painted once, now (during the loading screen), rather than the
+    // first time each is needed, which showed as a button popping in a beat late
+    if (!this.prewarmed) { this.prewarmed = true; const off = document.createElement('canvas').getContext('2d'), st = ['on', 'off', 'lit', 'press'];
+      const sets = [[R, ['net', 'cam', 'trap', 'claw', 'hand']], [r, ['sub', 'glow', 'hand', 'lamp', 'leave', 'dive', 'door']], [19 * u, ['bag', 'tank', 'auto', 'air', 'cam', 'trap', 'net', 'trawl']], [18 * u, ['sprint']], [17 * u, ['gear']]];
+      for (const [sz, kinds] of sets) for (const kd of kinds) for (const s0 of st) { try { drawCoin(off, 0, 0, sz, kd, s0, kd === 'net' ? netLook(gear(P, 'net').look || 0) : (s0 === 'lit' && LIT_ART.has(kd)) ? { lit: true } : null, kd === 'net' ? (gear(P, 'net').rarity || null) : null); } catch (e) { /* skip */ } } }
     this.wasHeld = new Set(held); // (5.7.0) for the next frame's press rings
     hot(cx - R, cy - R, R * 2, R * 2, aboard ? (handOn ? 'f' : 'msg:' + (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door, or off the end to dive')) : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
   }
