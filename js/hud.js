@@ -274,18 +274,17 @@ export class Hud {
       { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
       { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
     ] : [
-      { key: 'obs', icon: 'eye', on: (!!g.obsTarget && !g.tutHidePrompts) || ta === 'obs', why: 'Nothing new to observe here' },
-      { key: 'f', icon: 'hand', on: (!!F && !/observe/i.test(F.label)) || ta === 'f', bar: true, why: 'Nothing within reach' },
+      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'Not on deck' },
+      { key: 'q', icon: 'lure', on: !aboard && (g.items.lure || 0) > 0, n: g.items.lure, why: (g.items.lure || 0) > 0 ? 'Not on deck' : 'No lure: the station and Dave sell them' },
       { key: 'sprint', icon: 'sprint', on: !aboard, lit: !!g.sprintLock, why: 'Not on deck' },
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
     ];
-    const ROW = [{ key: 'escape', icon: 'gear', on: true }, { key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
+    // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
+    const ROW = [{ key: 'j', icon: 'journal', on: true }, { key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
       { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet, away: true },
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
       { key: 'u', icon: 'sell', on: !!partOf('u'), away: true },
     ] : aboard ? [] : [
-      { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
-      { key: 'q', icon: 'lure', on: (g.items.lure || 0) > 0, n: g.items.lure, away: true },
       { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, away: true },
       { key: 'h', icon: 'pet', on: !!P.pet, lit: P.pet && P.petStay, away: true },
     ]).filter((a) => !(a.away && !a.on));
@@ -318,10 +317,36 @@ export class Hud {
     };
     const r = 21 * u, gap = 30 * u, rho0 = R + r + gap;
     A.forEach((a, i) => { const ang = [-90, -125, -160, -195][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
-    // the bottom row, from the stick's right towards the middle
-    { const rb = 16 * u, stepB = rb * 2 + 10 * u, fk = window.__fingerK || 1, sR = Math.max(40, Math.min(52, window.innerHeight / fk * 0.12)) * fk;
-      const x0 = (Math.max(sR + 28 * fk, window.innerWidth * 0.13) + sR + 24 * fk) / kx - this.safeL + rb, y0 = H - pad - rb;
-      ROW.forEach((a, i) => btn({ ...a, row: true }, x0 + i * stepB, y0, rb)); }
+    { const rb = 15 * u, stepB = rb * 2 + 9 * u, ra = this.radarAt || { x: W - pad - 40 * u, y: 60 * u, r: 30 * u };
+      const top = ra.y + ra.r + 12 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(1, Math.floor((last - top) / stepB) + 1);
+      ROW.slice(0, n).forEach((a, i) => btn({ ...a, row: true }, ra.x, top + i * stepB, rb)); }
+    // settings, at the top left under the quest clipboard (where the journal was); it opens the pause menu
+    { const q = document.getElementById('quests-btn'), qr = q && q.getBoundingClientRect(), rg = 15 * u;
+      if (qr && qr.width) btn({ key: 'escape', icon: 'gear', on: true, row: true }, (qr.left + qr.width / 2) / kx - this.safeL, (qr.bottom + 10) / kx - this.safeT + rg, rg); }
+    // (5.6.1) what F does here, as a small olive tag above Earl (climb aboard, board the sub, pick up, enter the cabin):
+    // a tap does it, a hold holds it. Observing is done by tapping the animal itself (render.js brackets it)
+    { const fOn = !e.inSub && ((!!F && !/observe/i.test(F.label)) || ta === 'f');
+      const words = ta === 'f' && g.tutAction ? g.tutAction.say : F ? String(F.label).replace(/^(Hold\s+)?/i, (m) => m) : '';
+      const vT = vis.tag = clamp((vis.tag ?? 0) + (fOn ? 1 : -1) * dt * 7, 0, 1);
+      if (vT > 0.01 && (words || this.tagWords)) {
+        if (fOn) this.tagWords = words;
+        const ew = this.earlScreen; // the HUD's position of Earl, set by main.js each frame
+        if (ew) {
+          ctx.save(); ctx.globalAlpha *= vT; ctx.font = `600 ${15 * u}px ${HUDF}`;
+          const tw = ctx.measureText(this.tagWords).width + 26 * u, th = 30 * u, tx = clamp(ew.x - tw / 2, 10 * u, W - tw - 10 * u), ty = clamp(ew.y - 74 * u - (1 - vT) * 8 * u, 10 * u, H - th - 10 * u);
+          const down = held.has('f');
+          if (!oliveNine(ctx, 'panel', tx, ty, tw, th, 60, 9 * u)) { ctx.fillStyle = 'rgba(40,46,36,0.92)'; ctx.fillRect(tx, ty, tw, th); }
+          if (down) { ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(tx, ty, tw, th); }
+          ctx.fillStyle = '#efe8d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 2 * u; ctx.fillText(this.tagWords, tx + tw / 2, ty + th / 2 + 1 * u);
+          if (g.promptBar != null && fOn) { ctx.fillStyle = 'rgba(239,232,210,0.85)'; ctx.fillRect(tx + 6 * u, ty + th - 5 * u, (tw - 12 * u) * clamp(g.promptBar, 0, 1), 2.4 * u); }
+          // a little point down towards him
+          ctx.fillStyle = 'rgba(46,52,40,0.95)'; ctx.beginPath(); ctx.moveTo(tx + tw / 2 - 6 * u, ty + th); ctx.lineTo(tx + tw / 2 + 6 * u, ty + th); ctx.lineTo(tx + tw / 2, ty + th + 7 * u); ctx.fill();
+          if (tutKey === 'f' && fOn) { const k = (g.time * 0.6) % 1; ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = `rgba(230,222,196,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 1.6 * u; ctx.strokeRect(tx - (4 + 10 * k) * u, ty - (4 + 10 * k) * u, tw + (8 + 20 * k) * u, th + (8 + 20 * k) * u); }
+          ctx.restore();
+          if (fOn) hot(tx - 6 * u, ty - 6 * u, tw + 12 * u, th + 16 * u, 'f');
+        }
+      }
+    }
     const rho1 = rho0;
     // ---- the big button: the main action ----
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
@@ -526,6 +551,7 @@ export class Hud {
     }
     // ---------- the radar: large, in the bottom right corner ----------
     const rr = touch ? rrT : 64 * s, rcx = rx0 - rr, rcy = touch ? rcyT : H - pad - rr;
+    this.radarAt = { x: rcx, y: rcy, r: rr }; // (5.6.1) the column under it hangs from here
     ctx.save();
     ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.fillStyle = 'rgba(4,20,16,0.6)'; ctx.fill();
     ctx.clip();

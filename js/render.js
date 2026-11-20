@@ -1101,6 +1101,18 @@ export class Renderer {
     }
     ctx.restore();
 
+    // (5.6.1) on a touch screen, an animal not yet observed and in reach: four cream corner marks round it, breathing,
+    // to say it can be tapped (observing is done by tapping it)
+    if (this.touch && g.obsTarget && g.mode === 'play' && !g.tutHidePrompts) {
+      const ot = g.obsTarget, oc = ot.c, ox = S(oc ? oc.x : ot.x ?? g.earl.x), oy = Sy(oc ? oc.y : ot.y ?? g.earl.y), rr = Math.max(14, (ot.sp.len || 0.3) * ppm * 0.75) * (1 + 0.06 * Math.sin(g.time * 3)), L = rr * 0.42;
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round';
+      for (const [w2, col] of [[3.6, 'rgba(18,22,12,0.7)'], [1.6, 'rgba(230,222,196,0.9)']]) {
+        ctx.strokeStyle = col; ctx.lineWidth = w2; ctx.beginPath();
+        for (const [sx2, sy2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.moveTo(ox + sx2 * rr, oy + sy2 * (rr - L)); ctx.lineTo(ox + sx2 * rr, oy + sy2 * rr); ctx.lineTo(ox + sx2 * (rr - L), oy + sy2 * rr); }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     // (5.5.3) an animal just observed: its name beside it in the water. Faint pale letters, widely spaced, rising in out
     // of the dark, drifting up a little and going again after a few seconds, a hairline down to the animal
     if (g.obsLabels && g.obsLabels.length) {

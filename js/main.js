@@ -1316,7 +1316,7 @@ window.addEventListener('mouseup', (ev) => {
 });
 // (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch. The first touch
 // in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
-const touch = new Touch(hudCanvas, { buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
   d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
@@ -2746,6 +2746,12 @@ function frame(now) {
   // phone's fill is better spent on the sea
   hudDt += dt; hudFrame++;
   { const on = !!(hud.touch && g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen()); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
+  if (hud.touch && renderer.cam && renderer.cam.ppm) { // (5.6.1) where Earl (and the animal to observe) are on the HUD, for its tag and taps
+    const cm = renderer.cam, k = hud.c.width / renderer.c.width, sx = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * k, sy = (wy) => ((wy - cm.y) * cm.ppm + renderer.c.height / 2) * k;
+    hud.earlScreen = { x: sx(g.earl.x), y: sy(g.earl.y) };
+    const ot = g.obsTarget, oc = ot && (ot.c || null);
+    hud.obsScreen = ot ? { x: sx(oc ? oc.x : ot.x ?? g.earl.x), y: sy(oc ? oc.y : ot.y ?? g.earl.y), r: Math.max(34 * hud.c.width / innerWidth * (window.__fingerK || 1), (ot.sp.len || 0.3) * cm.ppm * k) } : null;
+  }
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen()); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)

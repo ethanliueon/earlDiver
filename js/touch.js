@@ -7,8 +7,8 @@
 // drifts too far, so the stick never "runs out". The emulated mouse events a browser makes after a touch are
 // suppressed, so a tap never also counts as a click.
 export class Touch {
-  constructor(canvas, { buttonAt, active, onMessage }) {
-    this.c = canvas; this.buttonAt = buttonAt; this.active = active; this.onMessage = onMessage;
+  constructor(canvas, { buttonAt, active, onMessage, onTap }) {
+    this.c = canvas; this.buttonAt = buttonAt; this.active = active; this.onMessage = onMessage; this.onTap = onTap;
     this.stick = null; this.fingers = new Map();
     this.vec = { x: 0, y: 0, mag: 0, on: false, sprint: false };
     this.el = document.getElementById('stick');
@@ -33,8 +33,10 @@ export class Touch {
       const b = this.buttonAt(t.clientX, t.clientY);
       if (b && b.key.startsWith('msg:')) { this.fingers.set(t.identifier, {}); this.onMessage && this.onMessage(b.key.slice(4)); continue; } // a greyed button: why
       if (b) { this.fingers.set(t.identifier, { key: b.key }); this.key(b.key, true); if (this.vibe) navigator.vibrate(8); continue; }
-      if (!this.stick && t.clientX < window.innerWidth * 0.5) {
-        this.stick = { id: t.identifier, x: t.clientX, y: t.clientY };
+      // (5.6.1) the stick grows wherever a thumb lands that is not on a button (not only the left half); a quick tap
+      // that hardly moves is a tap on the world instead (an animal to observe)
+      if (!this.stick) {
+        this.stick = { id: t.identifier, x: t.clientX, y: t.clientY, x0: t.clientX, y0: t.clientY, t0: performance.now(), far: 0 };
         this.fingers.set(t.identifier, { stick: true });
         this.update(t.clientX, t.clientY);
       }
@@ -43,14 +45,14 @@ export class Touch {
   move(e) {
     if (!this.fingers.size) return;
     e.preventDefault();
-    for (const t of e.changedTouches) if (this.stick && t.identifier === this.stick.id) this.update(t.clientX, t.clientY);
+    for (const t of e.changedTouches) if (this.stick && t.identifier === this.stick.id) { this.stick.far = Math.max(this.stick.far, Math.hypot(t.clientX - this.stick.x0, t.clientY - this.stick.y0)); this.update(t.clientX, t.clientY); }
   }
   end(e) {
     for (const t of e.changedTouches) {
       const f = this.fingers.get(t.identifier); if (!f) continue;
       this.fingers.delete(t.identifier);
       if (f.key) this.key(f.key, false);
-      if (f.stick) this.clearStick();
+      if (f.stick) { const S = this.stick, k = window.__fingerK || 1; if (S && this.onTap && performance.now() - S.t0 < 280 && S.far < 12 * k) this.onTap(S.x0, S.y0); this.clearStick(); }
     }
     if (e.cancelable) e.preventDefault();
   }

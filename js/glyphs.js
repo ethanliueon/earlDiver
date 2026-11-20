@@ -54,6 +54,8 @@ const G = {
   claw: [P('M1.5 10.6h8.5v2.8H1.5z'), P('M9 12C11.5 5.5 17 3.6 22.5 5.4l-.9 2.6c-4.2-1.2-8.2.4-10 4z'), P('M9 12c2.5 6.5 8 8.4 13.5 6.6l-.9-2.6c-4.2 1.2-8.2-.4-10-4z'), P('M8 9.5a2.5 2.5 0 1 1 0 5a2.5 2.5 0 1 1 0-5z')],
 };
 Object.assign(G, {
+  // the journal: a field notebook, open, its pages lined, a ribbon down the middle
+  journal: [P('M2.5 5.5c3.2-1 6.4-.7 9.5 1.2v13.4c-3.1-1.9-6.3-2.2-9.5-1.2zM21.5 5.5c-3.2-1-6.4-.7-9.5 1.2v13.4c3.1-1.9 6.3-2.2 9.5-1.2z'), S('M4.6 9.2c1.8-.3 3.6 0 5.2.8M4.6 12.2c1.8-.3 3.6 0 5.2.8M14.2 10c1.6-.8 3.4-1.1 5.2-.8M14.2 13c1.6-.8 3.4-1.1 5.2-.8', 0.75), S('M12 6.7v14', 0.9)],
   // the B-7: a long hull with its rail and conning tower, the diving sphere slung under it, the tail and its screw
   sub: [P('M2 11.6c0-2 2.6-3.4 8.4-3.4h7.2c2.4 0 3.6 1.4 3.6 3.4s-1.2 3.4-3.6 3.4h-7.2C4.6 15 2 13.6 2 11.6z' + circle(6.2, 11.6, 0.8) + circle(9.4, 11.6, 0.8)), P('M9.4 8.2V5.6c0-.6.4-1 1-1h2.8c.6 0 1 .4 1 1v2.6zM11.4 4.6V2.6h.8v2z'), P(circle(11.8, 17.6, 3.2) + circle(11.8, 17.6, 1.3)), P('M21 9.6l2.4-1.6v7.2L21 13.6z'), S('M5 8.4h10', 0.7)],
   // an underwater camera: the housing with its two grips and the big round port of the lens, a strobe on top
