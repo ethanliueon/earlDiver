@@ -16,7 +16,7 @@ const HUE = {
   net: [100, 24, 15], eye: [186, 32, 13], sprint: [208, 26, 14], hand: [28, 26, 14], sub: [78, 18, 13], cam: [36, 38, 15],
   trap: [14, 32, 14], lamp: [34, 42, 14], claw: [200, 10, 14], leave: [78, 18, 13], tank: [190, 28, 13], auto: [78, 18, 13],
   trawl: [100, 24, 15], air: [200, 14, 14], sell: [44, 30, 14], lure: [170, 34, 10], glow: [120, 26, 11], pet: [186, 32, 13], swap: [60, 8, 12],
-  gear: [40, 18, 13], bag: [70, 16, 13], quest: [30, 22, 13], journal: [24, 26, 13], chart: [190, 20, 13],
+  gear: [40, 18, 13], bag: [96, 18, 11], quest: [30, 22, 13], journal: [150, 14, 11], chart: [190, 20, 13],
 };
 
 function face(x, R, hue, seed) {
@@ -286,18 +286,21 @@ const ART = {
     x.strokeStyle = '#0c0a06'; x.lineWidth = 2.4; x.beginPath(); x.moveTo(-5, 0); x.lineTo(5, 0); x.stroke();
     x.restore();
   },
-  // the bag: a canvas dive bag, its buckled flap and a strap
+  // the bag: a canvas dive bag, its buckled flap and a strap. (5.6.8) Pale washed khaki with a dark outline and
+  // bright buckles, so it stands off the coin's dark face instead of brown on brown
   bag(x) {
     x.lineJoin = 'round';
-    x.strokeStyle = '#0c0b08'; x.lineWidth = 5; x.beginPath(); x.moveTo(-14, -22); x.bezierCurveTo(-14, -42, 14, -42, 14, -22); x.stroke(); x.strokeStyle = '#4a3c28'; x.lineWidth = 3; x.stroke(); // the handle
+    x.strokeStyle = '#0c0b08'; x.lineWidth = 7; x.beginPath(); x.moveTo(-16, -22); x.bezierCurveTo(-16, -44, 16, -44, 16, -22); x.stroke(); x.strokeStyle = '#8a7a52'; x.lineWidth = 3.6; x.stroke(); // the handle
     const b = new Path2D('M-30 -22H30C34 -22 36 -19 36 -15V34C36 40 32 42 28 42H-28C-32 42 -36 40 -36 34V-15C-36 -19 -34 -22 -30 -22Z');
-    x.lineWidth = 4.4; x.strokeStyle = '#0c0b08'; x.stroke(b); x.fillStyle = '#5a5a3e'; x.fill(b);
-    x.save(); x.clip(b); x.fillStyle = 'rgba(0,0,0,0.28)'; x.fillRect(-40, 20, 80, 30); x.fillStyle = 'rgba(255,250,220,0.14)'; x.fillRect(-40, -22, 80, 8);
-    x.strokeStyle = 'rgba(0,0,0,0.18)'; x.lineWidth = 0.8; for (let k = -36; k < 40; k += 3) { x.beginPath(); x.moveTo(k, -22); x.lineTo(k, 42); x.stroke(); } x.restore(); // the weave
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 5); x.fill(b); x.restore();
+    x.fillStyle = '#b4a678'; x.fill(b);
+    x.save(); x.clip(b); x.fillStyle = 'rgba(40,30,10,0.32)'; x.fillRect(-40, 22, 80, 30); x.fillStyle = 'rgba(255,250,225,0.22)'; x.fillRect(-40, -22, 80, 8);
+    x.strokeStyle = 'rgba(60,50,20,0.16)'; x.lineWidth = 0.8; for (let k = -36; k < 40; k += 3) { x.beginPath(); x.moveTo(k, -22); x.lineTo(k, 42); x.stroke(); } x.restore(); // the weave
+    x.lineWidth = 4.6; x.strokeStyle = '#0c0b08'; x.stroke(b);
     const flap = new Path2D('M-34 -18H34V6C34 10 30 12 26 12H-26C-30 12 -34 10 -34 6Z');
-    x.fillStyle = '#4c4c34'; x.fill(flap); x.strokeStyle = '#0c0b08'; x.lineWidth = 3; x.stroke(flap);
-    x.strokeStyle = 'rgba(230,222,196,0.35)'; x.lineWidth = 1; x.setLineDash([3, 3]); x.beginPath(); x.moveTo(-30, 8); x.lineTo(30, 8); x.stroke(); x.setLineDash([]); // stitching
-    for (const sx of [-16, 16]) { x.fillStyle = '#2a2418'; x.fillRect(sx - 4, 2, 8, 22); x.fillStyle = '#b89a5a'; x.strokeStyle = '#0c0b08'; x.lineWidth = 2; x.beginPath(); x.roundRect(sx - 6, 12, 12, 9, 1.5); x.fill(); x.stroke(); x.fillStyle = '#0c0b08'; x.fillRect(sx - 1, 13, 2, 7); }
+    x.fillStyle = '#968a5e'; x.fill(flap); x.strokeStyle = '#0c0b08'; x.lineWidth = 3; x.stroke(flap);
+    x.strokeStyle = 'rgba(40,32,16,0.55)'; x.lineWidth = 1.2; x.setLineDash([3, 3]); x.beginPath(); x.moveTo(-30, 7); x.lineTo(30, 7); x.stroke(); x.setLineDash([]); // stitching
+    for (const sx of [-16, 16]) { x.fillStyle = '#3a3020'; x.fillRect(sx - 4, 2, 8, 24); x.fillStyle = '#e0c47a'; x.strokeStyle = '#0c0b08'; x.lineWidth = 2.2; x.beginPath(); x.roundRect(sx - 7, 12, 14, 10, 2); x.fill(); x.stroke(); x.fillStyle = '#0c0b08'; x.fillRect(sx - 1.2, 13.5, 2.4, 7); }
   },
   // the quests: the Margaret's log, a worn hardback tied shut with string, a page-marker sticking out
   quest(x) {
@@ -319,21 +322,35 @@ const ART = {
     x.fillStyle = 'rgba(160,80,40,0.6)'; x.beginPath(); x.arc(-20, -26, 3, 0, TAU); x.fill(); // rust run from it
     x.restore();
   },
-  // the journal (the quest group's): a field notebook, open, a sketched fish on its page, a pencil across it
+  // (5.6.8) the journal: an open field notebook seen from above, its two cream pages the lightest thing on the coin
+  // (so it reads at a glance on a dark face), a fish sketched on the left page, lines of pencil on the right, the dark
+  // leather cover showing round it and a red ribbon hanging from the spine
   journal(x) {
-    x.save(); x.rotate(-0.12);
-    x.fillStyle = '#0b0a08'; x.beginPath(); x.roundRect(-32, -40, 64, 80, 4); x.fill();
-    x.fillStyle = '#e6dcc0'; x.fillRect(-26, -36, 58, 74); // the pages' edge
-    x.strokeStyle = 'rgba(0,0,0,0.25)'; x.lineWidth = 0.8; for (let k = -32; k < 38; k += 3) { x.beginPath(); x.moveTo(28, k); x.lineTo(32, k); x.stroke(); }
-    const cov = new Path2D('M-30 -40H24C27 -40 28 -39 28 -36V36C28 39 27 40 24 40H-30Z');
-    x.fillStyle = '#4a3020'; x.fill(cov); x.save(); x.clip(cov); x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(-30, 10, 60, 40); x.fillStyle = 'rgba(255,230,200,0.12)'; x.fillRect(-30, -40, 60, 10);
-    x.fillStyle = 'rgba(30,20,10,0.3)'; for (const [a, b, r] of [[10, -20, 9], [-14, 18, 12]]) { x.beginPath(); x.arc(a, b, r, 0, TAU); x.fill(); } x.restore(); // water stains
-    x.strokeStyle = '#0b0a08'; x.lineWidth = 3; x.stroke(cov);
-    x.fillStyle = '#2a1a10'; x.fillRect(-30, -40, 8, 80); // the spine
-    x.fillStyle = '#d8ccaa'; x.strokeStyle = '#0b0a08'; x.lineWidth = 2; x.beginPath(); x.roundRect(-12, -16, 32, 18, 2); x.fill(); x.stroke(); // the label
-    x.strokeStyle = 'rgba(40,30,20,0.7)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(-8, -10); x.lineTo(16, -10); x.moveTo(-8, -4); x.lineTo(10, -4); x.stroke();
-    x.strokeStyle = '#c8b890'; x.lineWidth = 2; x.beginPath(); x.moveTo(-34, 22); x.bezierCurveTo(0, 18, 20, 26, 34, 22); x.stroke(); // the string
-    x.fillStyle = '#a02a20'; x.beginPath(); x.moveTo(14, 40); x.lineTo(14, 52); x.lineTo(18, 48); x.lineTo(22, 52); x.lineTo(22, 40); x.fill(); // the marker
+    x.save(); x.rotate(-0.08); x.lineJoin = 'round';
+    // the cover, a little larger than the pages, dark leather
+    const cov = new Path2D('M-44 -26C-30 -32 -10 -32 0 -26C10 -32 30 -32 44 -26V30C30 24 10 24 0 30C-10 24 -30 24 -44 30Z');
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 5); x.fill(cov); x.restore();
+    x.fillStyle = '#3b2416'; x.fill(cov); x.lineWidth = 3.4; x.strokeStyle = '#0b0806'; x.stroke(cov);
+    // the pages: two curved leaves meeting at the gutter
+    const L = new Path2D('M-39 -24C-27 -29 -10 -29 -1 -23V25C-10 20 -27 20 -39 25Z'), R = new Path2D('M39 -24C27 -29 10 -29 1 -23V25C10 20 27 20 39 25Z');
+    for (const pg of [L, R]) { x.fillStyle = '#e9dfc2'; x.fill(pg); x.lineWidth = 1.8; x.strokeStyle = '#2a1d12'; x.stroke(pg); }
+    // the pages darken into the gutter
+    const gg = x.createLinearGradient(-10, 0, 10, 0); gg.addColorStop(0, 'rgba(90,70,40,0)'); gg.addColorStop(0.5, 'rgba(90,70,40,0.45)'); gg.addColorStop(1, 'rgba(90,70,40,0)');
+    x.fillStyle = gg; x.fillRect(-10, -26, 20, 50);
+    // the page block's edges under the leaves (a thickness of paper)
+    x.strokeStyle = 'rgba(200,188,150,0.9)'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(-40, 27); x.bezierCurveTo(-27, 22, -10, 22, -1, 27); x.moveTo(40, 27); x.bezierCurveTo(27, 22, 10, 22, 1, 27); x.stroke();
+    // a fish in pencil on the left page
+    x.strokeStyle = '#3c3022'; x.lineWidth = 1.8; x.lineCap = 'round';
+    x.beginPath(); x.moveTo(-33, -4); x.quadraticCurveTo(-22, -15, -10, -5); x.quadraticCurveTo(-22, 6, -33, -4); x.stroke();
+    x.beginPath(); x.moveTo(-10, -5); x.lineTo(-5, -11); x.lineTo(-5, 1); x.closePath(); x.stroke();
+    x.fillStyle = '#3c3022'; x.beginPath(); x.arc(-28, -6, 1.5, 0, TAU); x.fill();
+    x.lineWidth = 1.1; x.beginPath(); x.moveTo(-32, 12); x.lineTo(-12, 12); x.stroke();
+    // lines of writing on the right
+    x.strokeStyle = 'rgba(60,48,34,0.8)'; x.lineWidth = 1.4;
+    for (let k = 0; k < 5; k++) { const y = -16 + k * 8; x.beginPath(); x.moveTo(7, y); x.lineTo(33 - (k % 3) * 6, y); x.stroke(); }
+    // the ribbon, out of the gutter and over the lower edge
+    x.fillStyle = '#a3261c'; x.strokeStyle = '#2a0806'; x.lineWidth = 1.4;
+    x.beginPath(); x.moveTo(-2, -22); x.lineTo(3, -22); x.lineTo(6, 38); x.lineTo(3, 34); x.lineTo(0, 39); x.closePath(); x.fill(); x.stroke();
     x.restore();
   },
   // the chart: a sea chart, half unrolled, its contours and a red mark
@@ -429,4 +446,48 @@ export const COIN_ART = Object.keys(ART);
 export function coinURL(kind, px = 112, state = 'on') {
   const c = document.createElement('canvas'); c.width = c.height = px; const x = c.getContext('2d');
   drawCoin(x, px / 2, px / 2, px * 0.43, kind, state); return c.toDataURL('image/png');
+}
+
+// (5.6.8) the money in the top left: a painted stack of old banknotes held by a paper band, no coin round it (only
+// buttons have coins). Drawn once per size and reused
+const cashCache = new Map();
+export function drawCash(ctx, cx, cy, h) {
+  const key = Math.round(h * 2);
+  let c = cashCache.get(key);
+  if (!c) {
+    const W = Math.ceil(h * 1.6), H = Math.ceil(h * 1.2); c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'), k = h / 60; x.translate(W / 2, H / 2); x.scale(k, k); x.lineJoin = 'round';
+    const ink = '#0d100a';
+    // one bundle: its top face (the top note) and its side (the edges of the notes under it)
+    const bundle = (ox, oy, rot, face) => {
+      x.save(); x.translate(ox, oy); x.rotate(rot);
+      const w = 66, d = 30, t = 9; // width, depth on screen, thickness
+      // the side: layered edges
+      x.fillStyle = '#c5c9a4'; x.beginPath(); x.moveTo(-w / 2, 0); x.lineTo(w / 2, 0); x.lineTo(w / 2, t); x.lineTo(-w / 2, t); x.closePath(); x.fill();
+      x.strokeStyle = 'rgba(70,84,52,0.75)'; x.lineWidth = 0.9; for (let i = 1; i < 5; i++) { x.beginPath(); x.moveTo(-w / 2, i * t / 5); x.lineTo(w / 2, i * t / 5); x.stroke(); }
+      x.strokeStyle = ink; x.lineWidth = 2.4; x.strokeRect(-w / 2, 0, w, t);
+      // the top note
+      const top = new Path2D(`M${-w / 2} 0L${-w / 2 + 8} ${-d}L${w / 2 + 8} ${-d}L${w / 2} 0Z`);
+      x.fillStyle = face; x.fill(top);
+      x.save(); x.clip(top);
+      x.strokeStyle = 'rgba(20,34,16,0.55)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(-w / 2 + 6, -3); x.lineTo(-w / 2 + 12, -d + 3); x.lineTo(w / 2 + 2, -d + 3); x.lineTo(w / 2 - 4, -3); x.closePath(); x.stroke(); // the printed border
+      x.fillStyle = 'rgba(222,230,196,0.55)'; x.beginPath(); x.ellipse(4, -d / 2, 9, 9, 0, 0, TAU); x.fill(); // the portrait's oval
+      x.strokeStyle = 'rgba(20,34,16,0.6)'; x.lineWidth = 1.2; x.stroke();
+      x.fillStyle = 'rgba(30,44,24,0.5)'; x.beginPath(); x.arc(4, -d / 2 - 1, 3.4, 0, TAU); x.fill();
+      x.fillStyle = 'rgba(255,255,230,0.14)'; x.fillRect(-w / 2, -d, w + 10, 8); // light along the far edge
+      x.restore();
+      x.strokeStyle = ink; x.lineWidth = 2.4; x.stroke(top);
+      // the paper band round the middle
+      x.fillStyle = '#ddd0a6'; x.beginPath(); x.moveTo(-10, t); x.lineTo(-10, 0); x.lineTo(-6, -d); x.lineTo(6, -d); x.lineTo(2, 0); x.lineTo(2, t); x.closePath(); x.fill();
+      x.strokeStyle = 'rgba(120,80,40,0.8)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(-4, t); x.lineTo(-4, 0); x.lineTo(0, -d); x.stroke();
+      x.strokeStyle = ink; x.lineWidth = 1.6; x.beginPath(); x.moveTo(-10, t); x.lineTo(-10, 0); x.lineTo(-6, -d); x.moveTo(6, -d); x.lineTo(2, 0); x.lineTo(2, t); x.stroke();
+      x.restore();
+    };
+    x.fillStyle = 'rgba(0,0,0,0.4)'; x.beginPath(); x.ellipse(2, 27, 44, 7, 0, 0, TAU); x.fill(); // its shadow
+    bundle(-4, 22, 0, '#5f7b4f');
+    bundle(2, 10, -0.04, '#67845a');
+    bundle(-2, -2, 0.07, '#6f8c5e');
+    cashCache.set(key, c);
+  }
+  ctx.drawImage(c, cx - c.width / 2, cy - c.height / 2);
 }

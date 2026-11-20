@@ -800,3 +800,8 @@ html.touch body #tut-spot .ts-line:not(#_a):not(#_b) { left: 80px !important; }
 #booktabs button { all: unset; cursor: pointer; padding: 4px 18px; border: 12px solid transparent; border-image: url("../assets/ui/olive/panel.png") 60 fill / 12px stretch;
   font: 600 16px var(--o-hud); color: rgba(239, 232, 210, 0.7); letter-spacing: 0.04em; }
 #booktabs button.on { color: #efe8d2; filter: brightness(1.25); }
+/* (5.6.8) in the cabin on a phone the HUD stays over it: the same stick, the same buttons, the money and the journal */
+html.touch.in-cabin #hud { z-index: 31; }
+html.touch.in-cabin #stick { z-index: 32; }
+/* (5.6.8) the pause menu opens from the cabin too (the settings coin): over the cabin (30) and the HUD, under settings (40) */
+#pause:not(#_a) { z-index: 38; }

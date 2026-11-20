@@ -1150,7 +1150,7 @@ function tutor() {
     else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; cabinTo('door', 'outdoor', 'Out on deck'); }
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; }
     else if (!zone('boat', nearBoat)) { text = 'Bring your catch up beside the Margaret'; to = ladder; }
-    else { text = 'Sell your catch'; offer('sell', 'Sell your catch', 'U'); }
+    else { text = hud.touch ? 'Tap the Margaret\'s winch to sell your catch' : 'Sell your catch'; offer('sell', 'Sell your catch', 'U'); }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
@@ -1167,8 +1167,8 @@ function tutor() {
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
     }
     else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
-    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) offer('cabin', 'Enter the cabin'); } // (4.3.5) the door itself lit up
-    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; if (ladderZone()) offer('climb', 'Climb aboard'); }
+    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); if (hud.touch) text = 'Tap the cabin door to go in'; } } // (4.3.5) the door itself lit up
+    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; if (ladderZone()) { offer('climb', 'Climb aboard'); if (hud.touch) text = 'Tap the ladder to climb aboard'; } }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
@@ -1319,15 +1319,17 @@ window.addEventListener('mouseup', (ev) => {
 // in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
 // (5.6.7) the cabin on a phone: the same stick (on its own canvas), a tap uses what he is at
 let cabinTouch = null;
-function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(hud.touch && !document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => cabinTouch.vec; }
+// (5.6.8) the thing tapped (renderer.tapRects, CSS pixels): the smallest that holds the point, a finger's slack round each
+function tapRectAt(x, y) { const sl = 10 * (window.__fingerK || 1); let best = null, ba = Infinity; for (const r of renderer.tapRects || []) { if (x >= r.x - sl && x <= r.x + r.w + sl && y >= r.y - sl && y <= r.y + r.h + sl && r.w * r.h < ba) { ba = r.w * r.h; best = r; } } return best; }
+function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(hud.touch && !document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
 setTimeout(wireCabinTouch, 0);
-const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
   d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
 }, { once: false, passive: true });
 // (5.1) the HUD button under the pointer, if any
-function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return null; }
+function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return hud.touch && !(ui.cabinOpen && ui.cabinOpen()) ? tapRectAt(x, y) : null; } // (5.6.8) a thing to tap is pressed as a button: a tap does it, a hold holds it (prying, cutting a net free)
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 hudCanvas.addEventListener('wheel', (ev) => {
   ev.preventDefault();
@@ -1943,7 +1945,7 @@ function update(dt) {
     // (5.5.3) the sprint button: a tap locks sprinting on (it costs air faster, as ever), another tap or letting go of the
     // stick for a moment ends it; never in the sub or on deck
     if (pressed.has('sprint')) { pressed.delete('sprint'); g.sprintLock = !g.sprintLock; g.sprintIdle = 0; if (g.sprintLock && !profile.tipSprintBtn) { profile.tipSprintBtn = true; saveProfile(profile); hud.toast('Sprinting: your air goes faster', 'note'); } }
-    if (g.sprintLock) { if (e.inSub || g.aboard) g.sprintLock = false; else { g.sprintIdle = touch && touch.vec.on ? 0 : (g.sprintIdle || 0) + dt; if (g.sprintIdle > 1.2) g.sprintLock = false; } }
+    if (g.sprintLock) { if (e.inSub) g.sprintLock = false; else { g.sprintIdle = touch && touch.vec.on ? 0 : (g.sprintIdle || 0) + dt; if (g.sprintIdle > 1.2) g.sprintLock = false; } }
     if (touch) touch.lock = !!g.sprintLock;
     // (5.6) the swap chip on the big button: the next tool owned into the hand (as its key would)
     if (pressed.has('swap')) { pressed.delete('swap'); const trs = profile.traps || {}, owned = ['net'].concat(owns(profile, 'camera') ? ['cam'] : [], TRAP_ORDER.some((k) => trs[k] > 0) ? ['trap'] : []); const cur = g.toolSel === 'none' ? 'net' : g.toolSel; const nx = owned[(owned.indexOf(cur) + 1) % owned.length]; pressed.add({ net: '1', cam: '2', trap: '3' }[nx]); }
@@ -2263,6 +2265,30 @@ function update(dt) {
     if (g.questT > 1) { g.questT = 0; g.chambersFull = pressSlots(g) > 0 && pressUsed(g) >= pressSlots(g); if (questTick(g, profile)) saveProfile(profile); }
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
     tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
+    // (5.6.8) on a phone, what F (or U) acts on is done by tapping the thing itself: the ladder, the cabin door, the sub,
+    // something to pick up, a trap; the Margaret when there is a catch to sell. The renderer brackets each (thin cream
+    // corners, as an animal to observe gets) and keeps where it drew them for the tap (renderer.tapRects)
+    g.tapMarks = [];
+    if (hud.touch && !g.kill && !g.helm) {
+      const e2 = g.earl, cabinOn = ui.cabinOpen && ui.cabinOpen(), bagN = (g.bag || []).length;
+      if (g.aboard && !cabinOn && !g.aboard.jump && !g.aboard.climb && g.aboard.near === 'door') g.tapMarks.push({ key: 'f', boat: [16.2, -24.8, 21.8, -10.4], what: 'door' });
+      if (!g.aboard && !e2.inSub) {
+        const T = findTarget();
+        if (T && T.kind === 'board') g.tapMarks.push({ key: 'f', w: [g.sub.x - 1.3, g.sub.y - 3.7, g.sub.x + 0.7, g.sub.y - 1.9], what: 'sub' }); // its hatch, the conning tower
+        else if (T && T.kind === 'pickup') g.tapMarks.push({ key: 'f', w: [T.p.x - 0.7, T.p.y - 0.7, T.p.x + 0.7, T.p.y + 0.7], what: 'pickup' });
+        else if (T && T.kind === 'trap') g.tapMarks.push({ key: 'f', w: [T.t.x - 0.9, T.t.y - 1.4, T.t.x + 0.9, T.t.y + 0.4], what: 'trap' });
+        if (nearLadder()) g.tapMarks.push({ key: 'f', boat: [6.8, -13.2, 11.2, 3.4], what: 'ladder' });
+      }
+      // anything else F does out here (the station's stores, Dave's Haul, the old one's table, planting coral, a kelp
+      // blade): the place itself where there is one, else a mark round Earl
+      if (!g.aboard && !e2.inSub && !g.tapMarks.some((m) => m.key === 'f') && g.prompt && /(^|·\s*)(Hold )?F  (?!Leave)/.test(g.prompt) && !/Observe/i.test(g.prompt)) {
+        const St = g.world.station, D = g.world.dave;
+        const at = /Station stores/.test(g.prompt) && St ? { x: St.x + STATION_COLLAR.dx + 1.5, y: St.y + STATION_COLLAR.dy, r: 2 } : /Dave's Haul/.test(g.prompt) && D ? { x: D.x + 6.5, y: D.y - 3.1, r: 2.4 } : { x: e2.x, y: e2.y, r: 0.9 };
+        g.tapMarks.push({ key: 'f', w: [at.x - at.r, at.y - at.r, at.x + at.r, at.y + at.r], what: 'other' });
+      }
+      const nearB = !g.aboard && ((Math.abs(e2.x - BOAT.x) < 14 && e2.y < 4 && !e2.inSub) || (e2.inSub && g.sub.docked));
+      if (nearB && (bagN || e2.inSub || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u'))) g.tapMarks.push({ key: 'u', boat: [28.5, -17.5, 35.5, -11.2], what: 'winch' }); // her winch at the stern: the catch is hauled up by it
+    }
     // (5.6.7) the tutorial's first dive cannot drown him: a miss, a chase and a sprint still leave a quarter of the tank
     if (firstDive(profile) && g.earl && !g.earl.inSub && g.earl.o2Max) g.earl.o2 = Math.max(g.earl.o2, g.earl.o2Max * 0.25);
     afterTips(dt); // (4.6.0)
@@ -2798,7 +2824,7 @@ function frame(now) {
   // (5.3) in lite mode the HUD (its text, its shadows) is drawn every second frame: it changes slowly, and a
   // phone's fill is better spent on the sea
   hudDt += dt; hudFrame++;
-  { const on = !!(hud.touch && g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen()); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
+  { const on = !!(hud.touch && g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen('cabin')); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
   if (hud.touch && renderer.cam && renderer.cam.ppm) { // (5.6.1) where Earl (and the animal to observe) are on the HUD, for its tag and taps
     const cm = renderer.cam, k = hud.c.width / renderer.c.width, sx = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * k, sy = (wy) => ((wy - cm.y) * cm.ppm + renderer.c.height / 2) * k;
     hud.earlScreen = { x: sx(g.earl.x), y: sy(g.earl.y) };
@@ -2807,16 +2833,18 @@ function frame(now) {
     hud.obsScreen = ot ? { x: sx(oc ? oc.x : ot.x ?? g.earl.x), y: sy(oc ? oc.y : ot.y ?? g.earl.y), r: Math.max(34 * hud.c.width / innerWidth * (window.__fingerK || 1), (ot.sp.len || 0.3) * cm.ppm * k) } : null;
   }
   if (hud.touch) { // (5.6.2) the quest group under the settings coin, its pictures the coins'
-    const qh = document.getElementById('quests-hud');
-    // (5.6.7) in the cabin the settings coin is not drawn: the group goes up to the corner, clear of the lit DECK sign
-    const cabEl = document.getElementById('cabin'), qTop = cabEl && !cabEl.hidden ? 10 : hud.topLeftBottom;
-    if (qh && qTop && Math.abs((qh.__top || 0) - qTop) > 1) { qh.__top = qTop; qh.style.setProperty('top', qTop + 'px', 'important'); }
-    { const tl = document.querySelector('#tut-spot .ts-line'); if (tl && qTop && tl.__top !== qTop) { tl.__top = qTop; tl.style.setProperty('top', (qTop + 4) + 'px', 'important'); } }
+    // (5.6.8) the journal's coin beside the money (hud.journalAt, its centre); the goal's line under that row. Placed by
+    // where they really are on the page, so the zoom the stylesheet gives them does not throw them off
+    const qh = document.getElementById('quests-hud'), qb = document.getElementById('quests-btn'), J = hud.journalAt;
+    if (qh && qb && J) { const r0 = qb.getBoundingClientRect(); if (r0.width) { const dx = J.x - (r0.left + r0.width / 2), dy = J.y - (r0.top + r0.height / 2); if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(qh), z = parseFloat(st.zoom) || 1; qh.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); qh.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
+    { const tl = document.querySelector('#tut-spot .ts-line'); if (tl && hud.topLeftBottom && tl.classList.contains('in')) { const r1 = tl.getBoundingClientRect(), dx = hud.topLeftX - r1.left, dy = hud.topLeftBottom - r1.top; if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(tl), z = parseFloat(st.zoom) || 1; tl.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); tl.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
     if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = coinURL(k); } }
   }
   lureAsk(); // (5.6.4)
   bookTabs(); // (5.6.7)
-  hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen()); // (5.4) on a phone the touch buttons step aside while a panel is open
+  hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
+  { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
+  hud.handOn = !!(g.aboard && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
@@ -2854,6 +2882,12 @@ requestAnimationFrame(frame);
   if (window.__bootDone) window.__bootDone();
 })();
 
+// (5.6.8) the settings coin (top right, on a phone): the pause menu, wherever he is (the cabin too), never closing it
+window.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'settings') return; ev.stopImmediatePropagation();
+  if (g.mode !== 'play' || g.paused) return;
+  g.paused = true; ui.setPaused(true);
+}, true);
 // Escape toggles pause; closing overlays first.
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'Escape' || ui.typing()) return;

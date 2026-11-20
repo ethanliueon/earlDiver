@@ -553,7 +553,8 @@ export class Renderer {
       drawPrompt(ctx, m.name, px, py + bob - pr * 3.4, 0.9, { size: 15, shade: false, col: '#ece6d2' });
     }
     const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : g.markGuide ? { to: g.markGuide } : null; // (4.9.0) or the developer's trail to a legend (X)
-    if (guide && g.mode === 'play') {
+    // (5.6.8) on a phone, once the thing to tap is in reach its brackets say it all: no trail or ring on top of them
+    if (guide && g.mode === 'play' && !(this.touch && g.tapMarks && g.tapMarks.some((m) => m.what !== 'winch' || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u')))) {
       const e = guide.from || g.earl, tx = guide.to.x, ty = guide.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
       const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));
       const sz = clamp(ppm * 0.22, 7, 16), flow = (g.time * 1.6) % 1;
@@ -755,7 +756,7 @@ export class Renderer {
       }
       const kB = ppm / REF; crane = this.boatCrane ? { craneTip: [this.boatCrane.craneTip[0] * kB, this.boatCrane.craneTip[1] * kB] } : null;
       ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, -Rw * 0.45 * kB, -Rh * 0.82 * kB, Rw * kB, Rh * kB); ctx.restore(); // (3.0.0) turned with her heading
-      this.boatFrame = { x: boatX, y: boatY, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
+      this.boatFrame = { x: boatX, y: boatY, roll, rock: boatRock(t), sx: bsx, k: 0.14 * ppm, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
       if (dayEff < 0.5) {
         // the cabin light stays on at night
         const a = (0.5 - dayEff) * 1.6;
@@ -1150,6 +1151,38 @@ export class Renderer {
         ctx.strokeStyle = col; ctx.lineWidth = w2; ctx.beginPath();
         for (const [sx2, sy2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.moveTo(ox + sx2 * rr, oy + sy2 * (rr - L)); ctx.lineTo(ox + sx2 * rr, oy + sy2 * rr); ctx.lineTo(ox + sx2 * (rr - L), oy + sy2 * rr); }
         ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // (5.6.8) on a phone, the things a tap acts on (the ladder, the cabin door, the sub, a thing to pick up, a trap, the
+    // Margaret when there is a catch to sell): thin cream corners round each, breathing, the same mark an animal to
+    // observe gets. Where each was drawn is kept for the tap (CSS pixels)
+    this.tapRects = [];
+    if (this.touch && g.tapMarks && g.tapMarks.length && g.mode === 'play') {
+      const fk = window.__fingerK || 1, kC = innerWidth / this.c.width / fk, BF = this.boatFrame, tk = g.tutAction ? String(g.tutAction.key).toLowerCase() : null;
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round';
+      for (const m of g.tapMarks) {
+        let pts;
+        if (m.boat) {
+          if (!BF) continue;
+          const [a0, b0, a1, b1] = m.boat, cr = Math.cos(BF.rock), sr = Math.sin(BF.rock), cR = Math.cos(BF.roll), sR = Math.sin(BF.roll);
+          pts = [[a0, b0], [a1, b0], [a1, b1], [a0, b1]].map(([u0, v0]) => { const x1 = u0 * BF.k * cr - v0 * BF.k * sr, y1 = u0 * BF.k * sr + v0 * BF.k * cr, x2 = x1 * BF.sx; return [BF.x + x2 * cR - y1 * sR, BF.y + x2 * sR + y1 * cR]; });
+        } else { const [x0, y0, x1, y1] = m.w; pts = [[S(x0), Sy(y0)], [S(x1), Sy(y1)]]; }
+        const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+        let L0 = Math.min(...xs), R0 = Math.max(...xs), T0 = Math.min(...ys), B0 = Math.max(...ys);
+        const mw = 30 / kC; if (R0 - L0 < mw) { const c0 = (L0 + R0) / 2; L0 = c0 - mw / 2; R0 = c0 + mw / 2; } if (B0 - T0 < mw) { const c0 = (T0 + B0) / 2; T0 = c0 - mw / 2; B0 = c0 + mw / 2; }
+        this.tapRects.push({ x: L0 * kC * fk, y: T0 * kC * fk, w: (R0 - L0) * kC * fk, h: (B0 - T0) * kC * fk, key: m.key, what: m.what });
+        const want = tk === m.key, q = 0.5 + 0.5 * Math.sin(g.time * 3), br = 2.4 / kC * (want ? 1.4 : 1) * (1 + 0.15 * q);
+        const L = Math.min(22 / kC, (R0 - L0) * 0.3, (B0 - T0) * 0.3), A = (m.faint && !want ? 0.4 : 0.75 + 0.25 * q);
+        const xL = L0 - br * 2, xR = R0 + br * 2, yT = T0 - br * 2, yB = B0 + br * 2;
+        for (const [w2, col] of [[br * 2.2, `rgba(14,18,10,${(A * 0.7).toFixed(3)})`], [br, `rgba(230,222,196,${A.toFixed(3)})`]]) {
+          ctx.strokeStyle = col; ctx.lineWidth = w2; ctx.beginPath();
+          ctx.moveTo(xL, yT + L); ctx.lineTo(xL, yT); ctx.lineTo(xL + L, yT);
+          ctx.moveTo(xR - L, yT); ctx.lineTo(xR, yT); ctx.lineTo(xR, yT + L);
+          ctx.moveTo(xR, yB - L); ctx.lineTo(xR, yB); ctx.lineTo(xR - L, yB);
+          ctx.moveTo(xL + L, yB); ctx.lineTo(xL, yB); ctx.lineTo(xL, yB - L);
+          ctx.stroke();
+        }
       }
       ctx.restore();
     }

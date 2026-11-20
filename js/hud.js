@@ -1,7 +1,7 @@
 import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
 import { drawToken } from './tokens.js';
-import { drawCoin } from './coins.js';
+import { drawCoin, drawCash } from './coins.js';
 import { drawGlyph } from './glyphs.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
@@ -293,10 +293,11 @@ export class Hud {
       { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
     ] : [
       // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
-      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
-      { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'Not on deck' : 'No glow stick: the boat sells them' },
-      { key: 'sprint', icon: 'sprint', on: !aboard, lit: !!g.sprintLock, why: 'Not on deck' },
-      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'Not on deck' },
+      // (5.6.8) the same four in the same places on deck and in the cabin: the sprint button runs there; the rest wait
+      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Call her from the water' },
+      { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'For the water' : 'No glow stick: the boat sells them' },
+      { key: 'sprint', icon: 'sprint', on: true, lit: !!g.sprintLock },
+      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'For the water' },
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
     const ROW = [{ key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
@@ -336,61 +337,33 @@ export class Hud {
     { const rb = 15 * u, stepB = rb * 2 + 9 * u, ra = this.radarAt || { x: W - pad - 40 * u, y: 60 * u, r: 30 * u };
       const top = ra.y + ra.r + 12 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(1, Math.floor((last - top) / stepB) + 1);
       ROW.slice(0, n).forEach((a, i) => btn(a, ra.x, top + i * stepB, rb)); } // (5.6.2) small coins, as the arc's
-    // (5.6.2) the top left: settings first (the pause menu), the money beside it; the quest group sits below (CSS)
-    { const rg = 19 * u, gx = 14 * u + rg, gy = 12 * u + rg;
-      btn({ key: 'escape', icon: 'gear', on: true }, gx, gy, rg);
+    // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
+    // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
+    // top right corner, where a phone game keeps it; the depth moves left to make room (this.gearSpace)
+    { const ch = 30 * u, mx = 12 * u + ch * 0.8, my = 12 * u + 19 * u;
+      drawCash(ctx, mx, my, ch);
       ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
-      ctx.fillStyle = '#efe8d2'; ctx.fillText(money(P.cash || 0), gx + rg + 12 * u, gy + 1 * u); ctx.restore();
-      this.topLeftBottom = (gy + rg + 8 * u) * kx; }
-    // (5.6.1) what F does here, as a small olive tag above Earl (climb aboard, board the sub, pick up, enter the cabin):
-    // a tap does it, a hold holds it. Observing is done by tapping the animal itself (render.js brackets it)
-    { const U = partOf('u'), fAct = !e.inSub && ((!!F && !/observe/i.test(F.label)) || ta === 'f'), uAct = !fAct && ((!!U && !g.tutHidePrompts) || ta === 'u'); // (5.6.3) or selling, alongside the boat
-      const fOn = fAct || uAct, tagKey = fAct ? 'f' : 'u';
-      const shorten = (t) => String(t).replace(/^Board the submersible$/i, 'Board').replace(/^Climb aboard$/i, 'Climb aboard').replace(/^Enter the cabin$/i, 'Enter').replace(/^Collect /i, 'Take ').replace(/^Leave the submersible$/i, 'Leave').replace(/^Sell your catch$/i, 'Sell').replace(/^Enter the cabin$/i, 'Enter');
-      const words = shorten((ta === 'f' || ta === 'u') && g.tutAction ? g.tutAction.say : fAct && F ? String(F.label) : uAct ? 'Sell' : '');
-      const vT = vis.tag = clamp((vis.tag ?? 0) + (fOn ? 1 : -1) * dt * 7, 0, 1);
-      if (vT > 0.01 && (words || this.tagWords)) {
-        if (fOn) this.tagWords = words;
-        const ew = this.earlScreen; // the HUD's position of Earl, set by main.js each frame
-        if (ew) {
-          // (5.6.4) small, and beside the thing it acts on (the sub, the ladder, the thing to pick up), pointing at it;
-          // with no such thing, a little above Earl
-          ctx.save(); ctx.globalAlpha *= vT; ctx.font = `600 ${12 * u}px ${HUDF}`;
-          const A2 = this.fAnchorScreen, tw = Math.max(46 * u, ctx.measureText(this.tagWords).width + 16 * u), th = 58 * u;
-          const side = A2 ? (A2.x > W * 0.62 ? -1 : 1) : 0;
-          const tx = clamp(A2 ? (side > 0 ? A2.x + A2.r + 10 * u : A2.x - A2.r - 10 * u - tw) : ew.x - tw / 2, 10 * u, W - tw - 10 * u);
-          const ty = clamp(A2 ? A2.y - th / 2 : ew.y - 58 * u - (1 - vT) * 6 * u, 10 * u, H - th - 10 * u);
-          const down = held.has(tagKey);
-          // (5.6.5) a small coin with the action's own picture, its word on a strip under it
-          const wd = this.tagWords.toLowerCase(), art = tagKey === 'u' ? 'sell' : /board/.test(wd) ? 'sub' : /climb|enter|leave/.test(wd) ? 'leave' : /trap|haul|winch|empty/.test(wd) ? 'trap' : 'hand';
-          drawCoin(ctx, tx + tw / 2, ty + 18 * u, 18 * u, art, down ? 'down' : 'on');
-          const ly = ty + 38 * u, lh = 18 * u;
-          if (!oliveNine(ctx, 'panel', tx, ly, tw, lh, 60, 6 * u)) { ctx.fillStyle = 'rgba(40,46,36,0.92)'; ctx.fillRect(tx, ly, tw, lh); }
-          ctx.fillStyle = '#efe8d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 2 * u; ctx.fillText(this.tagWords, tx + tw / 2, ly + lh / 2 + 0.5 * u); ctx.shadowBlur = 0;
-          if (g.promptBar != null && fOn) { ctx.strokeStyle = 'rgba(239,232,210,0.95)'; ctx.lineWidth = 2.6 * u; ctx.beginPath(); ctx.arc(tx + tw / 2, ty + 18 * u, 20 * u, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
-          // a little point towards what it acts on
-          ctx.fillStyle = 'rgba(46,52,40,0.95)'; ctx.beginPath();
-          const my = ty + 18 * u, cxT = tx + tw / 2;
-          if (A2 && side > 0) { ctx.moveTo(cxT - 19 * u, my - 5 * u); ctx.lineTo(cxT - 27 * u, my); ctx.lineTo(cxT - 19 * u, my + 5 * u); }
-          else if (A2) { ctx.moveTo(cxT + 19 * u, my - 5 * u); ctx.lineTo(cxT + 27 * u, my); ctx.lineTo(cxT + 19 * u, my + 5 * u); }
-          else { ctx.moveTo(cxT - 5 * u, ty + th); ctx.lineTo(cxT + 5 * u, ty + th); ctx.lineTo(cxT, ty + th + 6 * u); }
-          ctx.fill();
-          if (tutKey === tagKey && fOn) ring(tx + tw / 2, ty + 18 * u, 18 * u); // (5.6.7) the tutorial's ring round the coin, as on every button
-          ctx.restore();
-          if (fOn) hot(tx - 8 * u, ty - 6 * u, tw + 16 * u, th + 10 * u, tagKey);
-        }
-      }
-    }
+      const txt = money(P.cash || 0), tx0 = mx + ch * 0.8 + 6 * u; ctx.fillStyle = '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
+      const endX = tx0 + ctx.measureText(txt).width; ctx.restore();
+      const jr = 19 * u; this.journalAt = { x: (endX + 14 * u + jr) * kx + this.safeL * kx, y: (my + this.safeT) * kx, r: jr * kx };
+      this.topLeftBottom = (my + jr + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
+      const rg = 17 * u, gx = W - 12 * u - rg, gy = 12 * u + rg;
+      btn({ key: 'settings', icon: 'gear', on: true }, gx, gy, rg);
+      this.gearSpace = rg * 2 + 10 * u; }
+    // (5.6.8) what F does here is done by tapping the thing itself (render.js brackets it, main.js takes the tap): no tag
+    // laid over the scene, and no picture that could say the wrong thing
     const rho1 = rho0;
     // ---- the big button: the main action ----
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     const armT = e.inSub && owns(P, 'arm');
-    const can = aboard ? false : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
-    ctx.save(); ctx.globalAlpha = aboard || (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7; // (5.3.6) on deck: there, greyed
+    const handOn = aboard && !!this.handOn; // (5.6.8) aboard, the big button is his hand: the door, the computer, the bunk
+    const can = aboard ? handOn : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
+    ctx.save(); ctx.globalAlpha = aboard ? (handOn ? 1 : 0.7) : (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7; // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
-    { const kind = e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
-      drawCoin(ctx, cx, cy, R, kind, bdown ? 'down' : (aboard || (e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look); }
-    if (tutKey === ' ') ring(cx, cy, R);
+    const bKey = aboard ? 'f' : ' ';
+    { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
+      drawCoin(ctx, cx, cy, R, kind, held.has(bKey) ? 'down' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look); }
+    if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(230,222,196,${(0.25 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
     // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
@@ -411,7 +384,7 @@ export class Hud {
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'swap');
       }
     }
-    hot(cx - R, cy - R, R * 2, R * 2, aboard ? 'msg:Jump in first: walk off the end of the deck' : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
+    hot(cx - R, cy - R, R * 2, R * 2, aboard ? (handOn ? 'f' : 'msg:' + (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door, or off the end to dive')) : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
   }
 
   // A strip of sonar: the seabed profile 80 m each side of the sub, scaled to fit, with the sub at the
@@ -496,7 +469,7 @@ export class Hud {
     // pictures under the quest board at the left (HTML, #quests-hud).
     const pad = 26 * s;
     ctx.textBaseline = 'top'; ctx.textAlign = 'right';
-    const rx0 = W - pad, CW = 212 * s, cx0 = rx0 - CW, ccx = cx0 + CW / 2;
+    const rx0 = W - pad - (touch ? Math.max(0, (this.gearSpace || 0) - pad + 12 * s) : 0), CW = 212 * s, cx0 = rx0 - CW, ccx = cx0 + CW / 2;
     this.colX = ccx; this.journalHot = null; this.chartHot = null;
     const kx = window.innerWidth / this.c.width;
     const notes = []; // [text, colour]
