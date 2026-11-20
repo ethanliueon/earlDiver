@@ -828,14 +828,16 @@ e.inSub ? [
     // each good deed fades it a step
     if (g.entity && g.entity.marked && !dying) {
       const calm = clamp((g.entity.calm || 0) / 60, 0, 1);
-      const a = 1 - calm * 0.65;
+      const a = (1 - calm * 0.65) * (touch ? 0.8 : 1); // (5.9.7) dimmer on a phone
       // (4.28) a real eye in the dark, not a sign: a wet dark lid line, an iris of deep amber going to blood red with
       // fibres in it, a slit that breathes, a point of light on the cornea; it opens slowly and blinks now and then
-      const ex = touch ? W / 2 : pad + 46 * s, ey = touch ? H - 24 * s : H - pad - 30 * s, ew = (touch ? 30 : 40) * s, eh = (touch ? 18 : 24) * s; // (5.1.1) on touch, by the depth: the bottom left is for a stick
+      // (5.9.7) on touch: right under the money, larger, and dimmer (it sat bright and small on the bag's boxes)
+      const kxE = window.innerWidth / this.c.width, ewT = 40 * s, ehT = 24 * s, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
+      const ex = touch ? (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + ewT + 4 * s : pad + 46 * s, ey = touch ? tlB + ehT + 6 * s : H - pad - 30 * s, ew = touch ? ewT : 40 * s, eh = touch ? ehT : 24 * s;
       const blink = (g.time % 7.3) < 0.18 ? Math.abs(Math.sin((g.time % 7.3) / 0.18 * Math.PI)) : 0, open = (1 - blink) * (0.85 + 0.15 * Math.sin(g.time * 0.5));
       ctx.save();
       const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.7);
-      og.addColorStop(0, `rgba(160,20,10,${(0.22 * a).toFixed(3)})`); og.addColorStop(1, 'rgba(160,20,10,0)');
+      og.addColorStop(0, `rgba(160,20,10,${((touch ? 0.12 : 0.22) * a).toFixed(3)})`); og.addColorStop(1, 'rgba(160,20,10,0)');
       ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ex, ey, ew * 1.7, 0, TAU); ctx.fill();
       const lid = () => { ctx.beginPath(); ctx.moveTo(ex - ew, ey); ctx.bezierCurveTo(ex - ew * 0.45, ey - eh * 1.15 * open, ex + ew * 0.5, ey - eh * 1.05 * open, ex + ew, ey + eh * 0.05);
         ctx.bezierCurveTo(ex + ew * 0.5, ey + eh * 0.95 * open, ex - ew * 0.45, ey + eh * 1.0 * open, ex - ew, ey); ctx.closePath(); };
@@ -844,7 +846,7 @@ e.inSub ? [
       ctx.fillStyle = `rgba(52,14,10,${a.toFixed(3)})`; ctx.fillRect(ex - ew, ey - eh * 1.2, ew * 2, eh * 2.4);
       // the iris: amber in the middle, red, then almost black at its rim
       const ir = eh * 1.05, ig = ctx.createRadialGradient(ex + ew * 0.05, ey, 0, ex + ew * 0.05, ey, ir);
-      ig.addColorStop(0, `rgba(255,170,60,${a.toFixed(3)})`); ig.addColorStop(0.45, `rgba(214,52,22,${a.toFixed(3)})`); ig.addColorStop(0.85, `rgba(110,14,8,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(30,4,2,${a.toFixed(3)})`);
+      ig.addColorStop(0, touch ? `rgba(206,112,40,${a.toFixed(3)})` : `rgba(255,170,60,${a.toFixed(3)})`); ig.addColorStop(0.45, touch ? `rgba(168,36,16,${a.toFixed(3)})` : `rgba(214,52,22,${a.toFixed(3)})`); ig.addColorStop(0.85, `rgba(110,14,8,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(30,4,2,${a.toFixed(3)})`);
       ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex + ew * 0.05, ey, ir, 0, TAU); ctx.fill();
       ctx.strokeStyle = `rgba(255,190,110,${(0.22 * a).toFixed(3)})`; ctx.lineWidth = Math.max(1, 0.8 * s);
       for (let k = 0; k < 22; k++) { const an = k / 22 * TAU + 0.2 * Math.sin(k * 3.1); ctx.beginPath(); ctx.moveTo(ex + ew * 0.05 + Math.cos(an) * ir * 0.25, ey + Math.sin(an) * ir * 0.25); ctx.lineTo(ex + ew * 0.05 + Math.cos(an) * ir * (0.7 + 0.2 * Math.sin(k * 7.7)), ey + Math.sin(an) * ir * (0.7 + 0.2 * Math.sin(k * 7.7))); ctx.stroke(); }
