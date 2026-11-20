@@ -631,17 +631,22 @@ export class Renderer {
         ctx.fillText(`Pet ${Math.round(Math.hypot(pc.x - g.earl.x, pc.y - g.earl.y))} m`, ax - Math.cos(a2) * 32, ay - Math.sin(a2) * 32 + 4); ctx.restore();
       }
     }
-    const ctg = g.mode === 'play' && SETTINGS.brackets ? g.catchTarget : null;
+    // (5.8.0) the catch bracket: bold cream corners closing in snug round the fish the net will go for, a quick pulse
+    // as it comes in reach (always on a phone; a setting on a computer)
+    const ctg = g.mode === 'play' && (this.touch || SETTINGS.brackets) ? g.catchTarget : null;
     if (ctg) {
-      const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y;
-      const r = Math.max(ppm * 0.35, fishDrawLen(ctg.len) * ppm * 0.6), rh = Math.max(ppm * 0.28, r * 0.6), k = r * 0.3;
-      const cx = S(tx), cy = Sy(ty), a = 0.45 + 0.25 * Math.sin(t * 5);
-      ctx.strokeStyle = ctg.col || 'rgb(200,240,210)'; ctx.globalAlpha = Math.min(1, a + 0.15); ctx.lineWidth = Math.max(1.6, ppm * 0.05);
-      ctx.beginPath();
-      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-        ctx.moveTo(cx + sx * r, cy + sy * rh - sy * k); ctx.lineTo(cx + sx * r, cy + sy * rh); ctx.lineTo(cx + sx * r - sx * k, cy + sy * rh);
+      const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y, id = ctg.c || null;
+      if (this.ctgFor !== id) { this.ctgFor = id; this.ctgAt = t; }
+      const inK = Math.min(1, (t - this.ctgAt) / 0.22), close = 1 + 0.6 * (1 - inK) * (1 - inK);
+      const r = Math.max(ppm * 0.38, fishDrawLen(ctg.len) * ppm * 0.62) * close * (1 + 0.04 * Math.sin(t * 6)), rh = Math.max(ppm * 0.3, r * 0.62), k = r * 0.34;
+      const cx = S(tx), cy = Sy(ty);
+      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalAlpha = 0.35 + 0.65 * inK;
+      for (const [w, col] of [[Math.max(4.5, ppm * 0.12), 'rgba(16,20,12,0.65)'], [Math.max(2.4, ppm * 0.065), '#efe6c8']]) {
+        ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath();
+        for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.moveTo(cx + sx * r, cy + sy * rh - sy * k); ctx.lineTo(cx + sx * r, cy + sy * rh); ctx.lineTo(cx + sx * r - sx * k, cy + sy * rh); }
+        ctx.stroke();
       }
-      ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.restore();
     }
     // (5.0) the camera's viewfinder while the shutter is open: four thin corners along the aim, closing in on the
     // animal as the exposure runs, a line filling under them. (Gone in the last instant: the picture is cut from
@@ -985,13 +990,10 @@ export class Renderer {
       }
       // (5.7.0) the net's swing leaves a trace: a pale arc of stirred water where the hoop went, fading over half a
       // second, a few bubbles torn off it. A quick net draws a short, sharp arc; a slow one a long sweep
-      { const tr = this.swingTr || (this.swingTr = []);
-        if (g.capture && g.capture.kind === 'net' && g.toolTip && !e.inSub) { tr.push({ x: g.toolTip.x, y: g.toolTip.y, t }); if (g.bubbles && Math.random() < 0.35) g.bubbles.push({ x: g.toolTip.x, y: g.toolTip.y, r: 0.015 + Math.random() * 0.03, w: Math.random() * 6, t: 0 }); }
-        while (tr.length && t - tr[0].t > 0.55) tr.shift();
-        if (tr.length > 2) { ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-          for (let i = 1; i < tr.length; i++) { const a0 = tr[i - 1], a1 = tr[i], k = 1 - (t - a1.t) / 0.55; if (k <= 0) continue;
-            ctx.strokeStyle = `rgba(214,232,236,${(0.32 * k).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * (0.05 + 0.1 * k)); ctx.beginPath(); ctx.moveTo(S(a0.x), Sy(a0.y)); ctx.lineTo(S(a1.x), Sy(a1.y)); ctx.stroke(); }
-          ctx.restore(); } }
+      // (5.8.0) the net's swing: no drawn trail, only a few bubbles shed from the hoop as it sweeps (five or six a swing)
+      { const cap = g.capture;
+        if (cap && cap.kind === 'net' && g.toolTip && !e.inSub) { if (this.swingCap !== cap) { this.swingCap = cap; this.swingN = 0; }
+          const want = Math.floor((cap.t / cap.dur) * 6); while (this.swingN < want && this.swingN < 6 && g.bubbles) { this.swingN++; g.bubbles.push({ x: g.toolTip.x + (Math.random() - 0.5) * 0.25, y: g.toolTip.y + (Math.random() - 0.5) * 0.2, r: 0.02 + Math.random() * 0.05, w: Math.random() * 6, t: 0 }); } } }
       // tag darts in flight
       for (const d of g.darts || []) {
         ctx.save(); ctx.translate(S(d.x), Sy(d.y)); ctx.rotate(Math.atan2(d.vy, d.vx));
@@ -1158,7 +1160,7 @@ export class Renderer {
     }
     // (5.6.1) on a touch screen, an animal not yet observed and in reach: four cream corner marks round it, breathing,
     // to say it can be tapped (observing is done by tapping it)
-    if (this.touch && g.obsTarget && g.mode === 'play' && !g.tutHidePrompts) {
+    if (this.touch && g.obsTarget && g.mode === 'play' && !g.tutHidePrompts && !(g.catchTarget && g.catchTarget.c && g.catchTarget.c === g.obsTarget.c)) { // (5.8.0) the catch bracket wins if it is the same fish
       const ot = g.obsTarget, oc = ot.c, ox = S(oc ? oc.x : ot.x ?? g.earl.x), oy = Sy(oc ? oc.y : ot.y ?? g.earl.y), rr = Math.max(14, (ot.sp.len || 0.3) * ppm * 0.75) * (1 + 0.06 * Math.sin(g.time * 3)), L = rr * 0.42;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round';
       const rc = (rarityOf(ot.sp) || {}).col || '#c8ccc4'; // (5.6.3) thin, in its rarity's colour

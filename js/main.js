@@ -2218,6 +2218,7 @@ function update(dt) {
     const capEvs = updateCapture(g, dt);
     for (const ev of capEvs) {
       if (ev.type === 'caught') {
+        if (g.toolTip && g.bubbles) for (let i = 0; i < 7; i++) g.bubbles.push({ x: g.toolTip.x + (Math.random() - 0.5) * 0.5, y: g.toolTip.y + (Math.random() - 0.5) * 0.4, r: 0.02 + Math.random() * 0.06, w: Math.random() * 6, t: -Math.random() * 0.2 }); // (5.8.0) a catch stirs up a few more bubbles
         const sp = ev.sp, v = ev.spec.variant;
         questEvent(profile, 'catch', { id: sp.id, depth: ev.spec.from || e.y, alive: ev.spec.cond > 0.05 });
         // (4.3.1) the Log's 'observe' step, and he netted the fish before pressing F: a fish in the net has been
