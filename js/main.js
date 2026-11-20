@@ -1220,7 +1220,7 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
+const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
 function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
@@ -1935,6 +1935,8 @@ function update(dt) {
     if (pressed.has('sprint')) { pressed.delete('sprint'); g.sprintLock = !g.sprintLock; g.sprintIdle = 0; if (g.sprintLock && !profile.tipSprintBtn) { profile.tipSprintBtn = true; saveProfile(profile); hud.toast('Sprinting: your air goes faster', 'note'); } }
     if (g.sprintLock) { if (e.inSub || g.aboard) g.sprintLock = false; else { g.sprintIdle = touch && touch.vec.on ? 0 : (g.sprintIdle || 0) + dt; if (g.sprintIdle > 1.2) g.sprintLock = false; } }
     if (touch) touch.lock = !!g.sprintLock;
+    // (5.6) the swap chip on the big button: the next tool owned into the hand (as its key would)
+    if (pressed.has('swap')) { pressed.delete('swap'); const trs = profile.traps || {}, owned = ['net'].concat(owns(profile, 'camera') ? ['cam'] : [], TRAP_ORDER.some((k) => trs[k] > 0) ? ['trap'] : []); const cur = g.toolSel === 'none' ? 'net' : g.toolSel; const nx = owned[(owned.indexOf(cur) + 1) % owned.length]; pressed.add({ net: '1', cam: '2', trap: '3' }[nx]); }
     if (pressed.has('obs')) { pressed.delete('obs'); const ot = g.obsTarget || observeTarget(); if (ot) interact(ot, false); }
     g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);

@@ -31,6 +31,8 @@ const NET_LOOK = [
   { len: 56, r: 12, bag: 18, step: 1.2, mesh: 'rgba(200,215,214,0.55)', tint: 'rgba(190,210,212,0.28)', hoop: '#1a1c1e', h: ['#4a5056', '#24282c', '#0e1012'], grip: '#141618', collar: '#d6702a', dframe: true },
 ];
 
+// (5.6) a net's colours, for its picture on the button
+export const netLook = (tier) => (typeof tier === 'object' && tier ? { ...NET_LOOK[clamp(tier.base || 0, 0, 3)], ...tier } : NET_LOOK[clamp(tier || 0, 0, 3)]);
 // The net. ang is unused here (the caller rotates); flutter 0..1 moves the bag.
 // catchSp: {sp, len, t} shows a fish thrashing in the bag.
 export function drawNet(ctx, u, tier, t, flutter, catchSp) {
