@@ -565,16 +565,18 @@ export class Renderer {
         const wave = 0.5 + 0.5 * Math.cos((q * 4 - g.time * 2.2) * TAU * 0.5), a = (0.4 + 0.5 * wave) * Math.min(1, (m - 1.1) / 1.5);
         ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
         ctx.beginPath(); ctx.moveTo(-sz * 0.55, -sz * 0.7); ctx.lineTo(sz * 0.35, 0); ctx.lineTo(-sz * 0.55, sz * 0.7);
-        ctx.strokeStyle = `rgba(20,14,4,${(a * 0.6).toFixed(3)})`; ctx.lineWidth = sz * 0.42 + 2; ctx.stroke(); // a dark edge: readable on sky and water
-        ctx.strokeStyle = `rgba(244,246,240,${a.toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke();
+        ctx.strokeStyle = `rgba(18,22,12,${(a * 0.7).toFixed(3)})`; ctx.lineWidth = sz * 0.42 + 2; ctx.stroke(); // a dark olive edge: readable on sky and water
+        ctx.strokeStyle = `rgba(230,222,196,${(a * 0.85).toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke(); // (5.5.5) the cream of the game's own buttons, not white
         ctx.restore();
       }
       ctx.restore();
       const f = guide.fish, cx = S(f ? f.x : tx), cy = Sy(f ? f.y : ty);
       const r = (f ? Math.max(16, ppm * (f.len * 0.8 + 0.45)) : Math.max(14, ppm * 0.5)) * (1 + 0.1 * Math.sin(g.time * 4));
-      ctx.save(); ctx.shadowColor = 'rgba(244,246,240,0.8)'; ctx.shadowBlur = 10; if (guide.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
-      ctx.strokeStyle = 'rgba(244,246,240,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = `rgba(244,246,240,${(0.5 * (1 - ((g.time * 0.8) % 1))).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.8 * ((g.time * 0.8) % 1)), 0, TAU); ctx.stroke(); // a ripple going out
+      ctx.save(); if (guide.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
+      // (5.5.5) as every mark the tutorial makes: cream with a dark olive edge (no white glow), breathing out once a while
+      ctx.strokeStyle = 'rgba(18,22,12,0.7)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(230,222,196,0.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+      { const q = (g.time * 0.6) % 1; ctx.strokeStyle = `rgba(230,222,196,${(0.45 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, r * (1 + 0.5 * q), 0, TAU); ctx.stroke(); }
       ctx.restore();
       // (4.3.2) a prompt beside the fish, only where the game's own prompts don't already say it (swinging the net,
       // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words
@@ -602,9 +604,10 @@ export class Renderer {
       if (cx < 0 || cx > W2 || cy < 0 || cy > H2) {
         const ax = clamp(cx, 48, W2 - 48), ay = clamp(cy, 70, H2 - 70), a2 = Math.atan2(cy - H2 / 2, cx - W2 / 2), pulse = 1 + 0.12 * Math.sin(g.time * 5);
         ctx.save(); ctx.translate(ax, ay); ctx.rotate(a2); ctx.scale(pulse, pulse);
-        ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6; ctx.fillStyle = 'rgba(244,246,240,0.95)';
-        ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(-12, -16); ctx.lineTo(-4, 0); ctx.lineTo(-12, 16); ctx.closePath(); ctx.fill(); ctx.restore();
-        ctx.save(); ctx.font = '600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(236,230,210,0.85)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+        // (5.5.5) a smaller chevron in the tutorial's cream with its dark olive edge, not a white paper plane
+        ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -12); ctx.lineTo(-3, 0); ctx.lineTo(-8, 12); ctx.closePath();
+        ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = 'rgba(230,222,196,0.9)'; ctx.fill(); ctx.restore();
+        ctx.save(); ctx.font = '600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(230,222,196,0.85)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
         ctx.fillText(`${Math.round(d)} m`, ax - Math.cos(a2) * 34, ay - Math.sin(a2) * 34 + 4); ctx.restore();
       }
     }

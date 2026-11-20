@@ -56,8 +56,8 @@ function paint(r, kind, state) {
   x.strokeStyle = `rgba(150,190,180,${off ? 0.06 : 0.12})`; x.lineWidth = Math.max(0.8, r * 0.03); x.beginPath(); x.arc(m, m, fr - x.lineWidth, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke();
   // a gloss: one small curved glint at the top left of the glass-hard enamel
   if (!off) { x.strokeStyle = 'rgba(200,240,235,0.1)'; x.lineWidth = Math.max(1, r * 0.05); x.lineCap = 'round'; x.beginPath(); x.arc(m, m, fr * 0.78, 1.18 * Math.PI, 1.42 * Math.PI); x.stroke(); }
-  // on (a lamp burning, the sub coming): a cold ring of light round the inside of the bezel, as the deep's animals glow
-  if (lit) for (let i = 0; i < 4; i++) { x.strokeStyle = `rgba(110,236,214,${0.5 - i * 0.11})`; x.lineWidth = Math.max(1, r * 0.04); x.beginPath(); x.arc(m, m, fr - r * 0.03 - i * r * 0.035, 0, TAU); x.stroke(); }
+  // on (a lamp burning, the tool in hand): a ring of the game's cream round the inside of the bezel (5.5.5: not cyan)
+  if (lit) for (let i = 0; i < 4; i++) { x.strokeStyle = `rgba(230,214,170,${0.55 - i * 0.12})`; x.lineWidth = Math.max(1, r * 0.04); x.beginPath(); x.arc(m, m, fr - r * 0.03 - i * r * 0.035, 0, TAU); x.stroke(); }
   return { c, half: size / 2 };
 }
 

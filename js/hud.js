@@ -293,12 +293,11 @@ export class Hud {
     ]).filter((a) => !(a.away && !a.on));
     const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
     const vis = this.btnVis || (this.btnVis = {});
-    const ring = (x, y, r) => { // (5.5.2) two cold rings, as the deep's own light, breathing out from the button, one after the other
-      for (let i = 0; i < 2; i++) {
-        const k = ((g.time * 0.75) + i * 0.5) % 1, rr = r * (1.08 + k * 0.62);
-        ctx.strokeStyle = `rgba(120,236,216,${(0.85 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (3.2 - 1.8 * k) * u; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
-      }
-      ctx.strokeStyle = 'rgba(170,246,230,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.04, 0, TAU); ctx.stroke();
+    const ring = (x, y, r) => { // (5.5.5) the tutorial's mark, as everywhere: the cream of the game's buttons on a dark olive edge, breathing out
+      const k = (g.time * 0.6) % 1, rr = r * (1.1 + k * 0.45);
+      ctx.strokeStyle = `rgba(230,222,196,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (2.4 - 1.2 * k) * u; ctx.beginPath(); ctx.arc(x, y, rr, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
     };
     const btn = (a, x, y, r) => {
       const down = held.has(a.key);
@@ -350,7 +349,7 @@ export class Hud {
     plate(cx, cy, R, can || !(aboard || (e.inSub && !armT) || (!sel && !e.inSub)), bdown, false, true);
     if (tutKey === ' ') ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
-    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(110,236,214,${(0.3 + 0.5 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
+    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(230,222,196,${(0.25 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
     // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
     if (e.inSub) drawGlyph(ctx, 'claw', cx, cy + (bdown ? 2 * u : 0), R * 0.98);
     else drawGlyph(ctx, sel || 'net', cx, cy + (bdown ? 2 * u : 0), R * 0.98); // (5.3.6) never an empty button
