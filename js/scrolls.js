@@ -1,104 +1,165 @@
-// (5.8.0) Ability scrolls: an unrolled sheet of oiled, sea-stained vellum, its top rolled back and its foot rolled
-// forward, two stripe bands down it and the family's emblem in the middle, all in one accent colour. Its body is
-// coloured by rarity (rare a deep sea blue, exotic a dark plum, legendary a smoky bronze with gold leaf), kept muted
-// so it sits with the game's olive and bronze. A plus tier has double bands. Painted once per size and kept.
+// (5.8.0) Ability scrolls, (5.7.7) drawn rather than built from shapes: every edge carries a slight hand wobble, the
+// vellum has grain and wear, the rolls swell and taper, and each family's emblem is a small illustration (a flying
+// fish, a hand net, a sailfish, a lit flare, a conch shell, a roped anchor, an eye over a breaking wave), each shape
+// shaded in two tones with a cut highlight and a dark edge that thickens on its shadow side. The body's colour is the
+// rarity (rare a deep sea blue, exotic a dark plum, legendary a smoky bronze with gold leaf); a plus tier has double
+// bands. Painted once per size and kept.
 const TAU = Math.PI * 2;
 
 export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden'];
-export const ACCENT = { sprint: '#9fe4f2', vigor: '#93d68c', dash: '#efe2c0', flare: '#f4b860', echo: '#74dccb', ironhull: '#c2ccd2', tidewarden: '#82bdf4' };
+export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4' };
 const BODY = {
-  rare: { mid: '#2e4c70', dark: '#16273d', light: '#4a6f98' },
-  exotic: { mid: '#4c2d58', dark: '#26152e', light: '#6f4a80' },
-  legendary: { mid: '#7a5524', dark: '#3a240c', light: '#b48a46' },
+  rare: { mid: '#2e4c70', dark: '#15253a', light: '#4d739c' },
+  exotic: { mid: '#4c2d58', dark: '#25142c', light: '#714b83' },
+  legendary: { mid: '#7a5524', dark: '#38230c', light: '#b48a46' },
 };
-const INK = '#17131a'; // a soft dark edge, not pure black
+const INK = '#1a1418';
+let MASK = false; // (5.7.7) drawing an emblem as a stencil (one flat colour) for the foil stamping
 const rnd = (seed) => { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
-const shade = (hex, k) => { const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255, f = (c) => Math.round(k < 0 ? c * (1 + k) : c + (255 - c) * k); return `rgb(${f(r)},${f(g)},${f(b)})`; };
+const hexRgb = (hex) => { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const shade = (hex, k) => { const [r, g, b] = hexRgb(hex), f = (c) => Math.round(k < 0 ? c * (1 + k) : c + (255 - c) * k); return `rgb(${f(r)},${f(g)},${f(b)})`; };
 
-// the family's emblem, centred on 0,0 in a box of about ±24 units, in its accent with a dark cut edge
+// a closed outline through points, smoothed, every point nudged a little by hand
+function wobbly(pts, r, amt = 0.7) {
+  const q = pts.map(([a, b]) => [a + (r() - 0.5) * 2 * amt, b + (r() - 0.5) * 2 * amt]), p = new Path2D(), n = q.length;
+  const mid = (i) => [(q[i][0] + q[(i + 1) % n][0]) / 2, (q[i][1] + q[(i + 1) % n][1]) / 2];
+  const m0 = mid(n - 1); p.moveTo(m0[0], m0[1]);
+  for (let i = 0; i < n; i++) { const m = mid(i); p.quadraticCurveTo(q[i][0], q[i][1], m[0], m[1]); }
+  p.closePath(); return p;
+}
+// points along a straight run, so a long edge can wobble along its length
+const along = (a, b, steps) => Array.from({ length: steps }, (_, i) => [a[0] + (b[0] - a[0]) * i / steps, a[1] + (b[1] - a[1]) * i / steps]);
+
+// a shape painted as an illustrator would: a two-tone fill (light from the upper left), a soft highlight inside its
+// upper edge, a darker rim at its lower right, and the dark edge
+function paintShape(x, path, col, box = [-24, -24, 24, 24], edge = 2.6) {
+  if (MASK) { x.fillStyle = '#fff'; x.fill(path); return; }
+  const [x0, y0, x1, y1] = box, g = x.createLinearGradient(x0, y0, x1 * 0.6, y1);
+  g.addColorStop(0, shade(col, 0.32)); g.addColorStop(0.45, col); g.addColorStop(1, shade(col, -0.38));
+  x.save(); x.shadowColor = 'rgba(0,0,0,0.35)'; x.shadowBlur = 3; x.shadowOffsetY = 1.5; x.fillStyle = g; x.fill(path); x.restore();
+  x.save(); x.clip(path);
+  x.lineWidth = edge * 1.6; x.strokeStyle = 'rgba(255,252,236,0.5)'; x.translate(1.4, 1.6); x.stroke(path); x.translate(-1.4, -1.6); // the lit inner edge
+  x.lineWidth = edge * 2.2; x.strokeStyle = 'rgba(0,0,0,0.28)'; x.translate(-1.6, -1.8); x.stroke(path); // the shadowed inner edge
+  x.restore();
+  x.lineWidth = edge; x.strokeStyle = INK; x.stroke(path);
+}
+// a tapered crescent: a swoosh of moving water
+function swoosh(cx, cy, r, a0, a1, w) {
+  const p = new Path2D(), am = (a0 + a1) / 2;
+  p.moveTo(cx + Math.cos(a0) * r, cy + Math.sin(a0) * r);
+  p.quadraticCurveTo(cx + Math.cos(am) * (r + w) * 1.08, cy + Math.sin(am) * (r + w) * 1.08, cx + Math.cos(a1) * r, cy + Math.sin(a1) * r);
+  p.quadraticCurveTo(cx + Math.cos(am) * r * 1.02, cy + Math.sin(am) * r * 1.02, cx + Math.cos(a0) * r, cy + Math.sin(a0) * r);
+  p.closePath(); return p;
+}
+
+// the family's emblem, about ±24 units round 0,0
 export function drawEmblem(x, fam, col = ACCENT[fam] || '#e8e0c8') {
   x.save(); x.lineCap = 'round'; x.lineJoin = 'round';
-  const both = (path, w) => { x.lineWidth = w + 4.5; x.strokeStyle = INK; x.stroke(path); x.lineWidth = w; x.strokeStyle = col; x.stroke(path); };
-  const fillBoth = (path) => { x.lineWidth = 4.5; x.strokeStyle = INK; x.stroke(path); x.fillStyle = col; x.fill(path); };
-  if (fam === 'sprint') { // rushing current: three swept chevrons, streaks trailing behind
-    for (const [ox, a] of [[-12, 0.55], [-1, 0.8], [10, 1]]) { const p = new Path2D(); p.moveTo(ox - 6, -14); p.quadraticCurveTo(ox + 6, -6, ox + 8, 0); p.quadraticCurveTo(ox + 6, 6, ox - 6, 14); x.globalAlpha = a; both(p, 4.2); }
-    x.globalAlpha = 0.7; for (const y of [-20, 20]) { const p = new Path2D(); p.moveTo(-22, y * 0.55); p.lineTo(-10, y * 0.55); both(p, 2.2); }
-  } else if (fam === 'vigor') { // a net's hoop and mesh, its reach spreading out in two rings
-    for (const [r, a] of [[23, 0.45], [18, 0.7]]) { const p = new Path2D(); p.arc(0, 0, r, -0.9, 0.9); x.globalAlpha = a; both(p, 2.4); const q = new Path2D(); q.arc(0, 0, r, Math.PI - 0.9, Math.PI + 0.9); both(q, 2.4); }
-    x.globalAlpha = 1; const h = new Path2D(); h.arc(0, 0, 11, 0, TAU); both(h, 3.4);
-    x.save(); x.beginPath(); x.arc(0, 0, 10, 0, TAU); x.clip(); x.globalAlpha = 0.8; for (let k = -12; k <= 12; k += 5) { const m = new Path2D(); m.moveTo(k - 12, -12); m.lineTo(k + 12, 12); m.moveTo(k + 12, -12); m.lineTo(k - 12, 12); x.lineWidth = 1.3; x.strokeStyle = col; x.stroke(m); } x.restore();
-  } else if (fam === 'dash') { // a fish darting, its body an arrow, streaks behind
-    const f = new Path2D(); f.moveTo(20, 0); f.quadraticCurveTo(6, -11, -8, -5); f.lineTo(-17, -12); f.lineTo(-13, 0); f.lineTo(-17, 12); f.lineTo(-8, 5); f.quadraticCurveTo(6, 11, 20, 0); f.closePath(); fillBoth(f);
-    x.fillStyle = INK; x.beginPath(); x.arc(11, -2, 1.8, 0, TAU); x.fill();
-    x.globalAlpha = 0.65; for (const [y, l] of [[-8, 9], [0, 12], [8, 9]]) { const p = new Path2D(); p.moveTo(-21, y); p.lineTo(-21 - l, y); both(p, 2); }
-  } else if (fam === 'flare') { // a burst: eight rays round a bright core
-    const p = new Path2D(); for (let i = 0; i < 16; i++) { const a = i / 16 * TAU - Math.PI / 2, r = i % 2 ? 9 : (i % 4 ? 17 : 23); if (i) p.lineTo(Math.cos(a) * r, Math.sin(a) * r); else p.moveTo(Math.cos(a) * r, Math.sin(a) * r); } p.closePath(); fillBoth(p);
-    x.fillStyle = '#fff6dc'; x.beginPath(); x.arc(0, 0, 5, 0, TAU); x.fill();
-  } else if (fam === 'echo') { // a ping: a point and the rings going out from it
-    x.fillStyle = col; x.strokeStyle = INK; x.lineWidth = 3; x.beginPath(); x.arc(-12, 0, 4.5, 0, TAU); x.stroke(); x.fill();
-    for (const [r, a] of [[10, 1], [18, 0.75], [26, 0.5]]) { const p = new Path2D(); p.arc(-12, 0, r, -0.75, 0.75); x.globalAlpha = a; both(p, 3.2); }
-  } else if (fam === 'ironhull') { // a riveted hull plate, a spanner across it
-    const pl = new Path2D(); pl.roundRect(-17, -15, 34, 30, 4); fillBoth(pl);
-    x.fillStyle = INK; for (const [a, b] of [[-12, -10], [12, -10], [-12, 10], [12, 10]]) { x.beginPath(); x.arc(a, b, 2.2, 0, TAU); x.fill(); }
-    x.save(); x.rotate(-0.7); const w = new Path2D(); w.roundRect(-22, -3, 30, 6, 2); w.arc(13, 0, 7.5, 0, TAU); x.lineWidth = 4.5; x.strokeStyle = INK; x.stroke(w); x.fillStyle = shade(col, -0.35); x.fill(w, 'nonzero');
-    x.fillStyle = col === '#c2ccd2' ? shade(col, -0.05) : col; x.beginPath(); x.roundRect(-22, -2, 30, 4, 1.5); x.fill(); x.fillStyle = INK; x.beginPath(); x.moveTo(13, -3.5); x.lineTo(21, -3.5); x.lineTo(21, 3.5); x.lineTo(13, 3.5); x.closePath(); x.fill(); x.restore();
-  } else if (fam === 'tidewarden') { // an eye closing over a wave
-    const e = new Path2D(); e.moveTo(-20, -4); e.quadraticCurveTo(0, -20, 20, -4); e.quadraticCurveTo(0, 8, -20, -4); fillBoth(e);
-    x.fillStyle = INK; x.beginPath(); x.ellipse(0, -5, 4, 5.5, 0, 0, TAU); x.fill();
-    const lid = new Path2D(); lid.moveTo(-20, -4); lid.quadraticCurveTo(0, -14, 20, -4); x.lineWidth = 3; x.strokeStyle = INK; x.stroke(lid);
-    const wv = new Path2D(); wv.moveTo(-22, 14); wv.quadraticCurveTo(-15, 8, -8, 14); wv.quadraticCurveTo(-1, 20, 6, 14); wv.quadraticCurveTo(13, 8, 22, 14); both(wv, 3.4);
+  const r = rnd(fam.length * 31 + 5);
+  if (fam === 'sprint') { // a flying fish leaping clear, wings spread, water streaming off it
+    for (const [rr, a0, a1, w, al] of [[20, 2.5, 3.5, 4, 0.55], [14, 2.6, 3.6, 3.2, 0.75]]) { x.globalAlpha = al; paintShape(x, swoosh(4, 2, rr, a0, a1, w), shade(col, -0.1), undefined, 1.8); }
+    x.globalAlpha = 1;
+    const wing = new Path2D(); wing.moveTo(-2, -2); wing.bezierCurveTo(-8, -20, 6, -24, 12, -18); wing.bezierCurveTo(8, -12, 6, -6, 4, -1); wing.closePath(); paintShape(x, wing, shade(col, -0.15));
+    const body = new Path2D(); body.moveTo(20, -8); body.bezierCurveTo(12, -12, -2, -6, -12, 2); body.lineTo(-20, -2); body.lineTo(-17, 6); body.lineTo(-21, 12); body.lineTo(-11, 7); body.bezierCurveTo(0, 8, 12, 2, 20, -8); body.closePath(); paintShape(x, body, col);
+    x.fillStyle = INK; x.beginPath(); x.ellipse(14, -7.5, 1.6, 1.8, 0, 0, TAU); x.fill();
+  } else if (fam === 'vigor') { // a hand net held out, its mesh bag full of water, its reach rippling out
+    for (const [rr, al] of [[24, 0.4], [19, 0.65]]) { x.globalAlpha = al; paintShape(x, swoosh(-4, -6, rr, -0.9, 0.5, 3), shade(col, -0.05), undefined, 1.6); }
+    x.globalAlpha = 1;
+    const pole = new Path2D(); pole.moveTo(-22, 20); pole.quadraticCurveTo(-14, 10, -6, 3); pole.lineTo(-3.5, 5.5); pole.quadraticCurveTo(-11, 13, -19, 23); pole.closePath(); paintShape(x, pole, '#c9a874', undefined, 2);
+    const bag = new Path2D(); bag.moveTo(-6, -4); bag.bezierCurveTo(-8, 10, 4, 20, 12, 16); bag.bezierCurveTo(18, 12, 18, 0, 14, -8); bag.closePath(); paintShape(x, bag, shade(col, -0.2));
+    x.save(); x.clip(bag); x.strokeStyle = 'rgba(20,30,20,0.55)'; x.lineWidth = 1; for (let k = -20; k < 30; k += 4.5) { x.beginPath(); x.moveTo(k - 10, -10); x.quadraticCurveTo(k, 4, k + 6, 20); x.stroke(); x.beginPath(); x.moveTo(k + 16, -10); x.quadraticCurveTo(k + 6, 4, k, 20); x.stroke(); } x.restore();
+    const hoop = new Path2D(); hoop.ellipse(4, -6, 11.5, 6, -0.45, 0, TAU); hoop.ellipse(4, -6, 8.5, 3.6, -0.45, 0, TAU, true); paintShape(x, hoop, col, undefined, 2.2);
+  } else if (fam === 'dash') { // a sailfish lunging, its sail raised, its bill ahead
+    for (const [y0, l, al] of [[-6, 14, 0.5], [3, 18, 0.7], [11, 12, 0.5]]) { x.globalAlpha = al; const p = new Path2D(); p.moveTo(-14, y0 - 1.8); p.quadraticCurveTo(-14 - l * 0.6, y0 - 0.6, -14 - l, y0); p.quadraticCurveTo(-14 - l * 0.6, y0 + 0.6, -14, y0 + 1.8); p.closePath(); paintShape(x, p, shade(col, -0.1), undefined, 1.4); }
+    x.globalAlpha = 1;
+    const sail = new Path2D(); sail.moveTo(-8, -1); sail.bezierCurveTo(-10, -16, 2, -22, 10, -12); sail.lineTo(8, -2); sail.closePath(); paintShape(x, sail, shade(col, -0.25));
+    x.save(); x.clip(sail); x.strokeStyle = 'rgba(30,20,10,0.4)'; x.lineWidth = 1; for (let k = -8; k < 10; k += 3.5) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k + 3, -20); x.stroke(); } x.restore();
+    const body = new Path2D(); body.moveTo(25, 0); body.lineTo(14, -2.5); body.bezierCurveTo(6, -6, -6, -4, -14, 0); body.lineTo(-20, -6); body.lineTo(-17, 1); body.lineTo(-21, 8); body.lineTo(-13, 3); body.bezierCurveTo(-4, 6, 8, 5, 14, 1.5); body.closePath(); paintShape(x, body, col);
+    x.fillStyle = INK; x.beginPath(); x.ellipse(10, -1.2, 1.4, 1.5, 0, 0, TAU); x.fill();
+  } else if (fam === 'flare') { // a hand flare burning: the tube, the flame, the sparks thrown off it
+    const tube = new Path2D(); tube.moveTo(-10, 22); tube.quadraticCurveTo(-12, 10, -6, 2); tube.lineTo(1, 5); tube.quadraticCurveTo(-4, 13, -3, 24); tube.closePath(); paintShape(x, tube, '#c45a3e', undefined, 2.2);
+    const fl = new Path2D(); fl.moveTo(-2, 4); fl.bezierCurveTo(-16, -4, -6, -14, -4, -22); fl.bezierCurveTo(0, -14, 6, -18, 6, -24); fl.bezierCurveTo(14, -14, 14, -2, 2, 6); fl.closePath(); paintShape(x, fl, col);
+    const inner = new Path2D(); inner.moveTo(-1, 2); inner.bezierCurveTo(-8, -4, -3, -9, -2, -14); inner.bezierCurveTo(2, -9, 6, -10, 6, -14); inner.bezierCurveTo(9, -6, 7, -1, 1, 3); inner.closePath(); x.fillStyle = '#fff2c8'; x.fill(inner);
+    for (const [sx, sy, s] of [[12, -20, 2.4], [16, -10, 1.8], [-14, -16, 2], [10, -28, 1.4]]) { const p = new Path2D(); p.moveTo(sx, sy - s * 1.8); p.quadraticCurveTo(sx + s, sy, sx, sy + s); p.quadraticCurveTo(sx - s, sy, sx, sy - s * 1.8); x.fillStyle = col; x.fill(p); x.lineWidth = 1.2; x.strokeStyle = INK; x.stroke(p); }
+  } else if (fam === 'echo') { // a conch shell, held to the ear of the sea: the sound coming back out of it in soft rings
+    for (const [rr, al] of [[22, 0.4], [17, 0.65]]) { x.globalAlpha = al; paintShape(x, swoosh(-10, 6, rr, -1.3, -0.1, 3.2), '#bfe6e2', undefined, 1.6); }
+    x.globalAlpha = 1;
+    const sh = new Path2D(); sh.moveTo(-18, 14); sh.bezierCurveTo(-22, 0, -10, -18, 6, -20); sh.bezierCurveTo(14, -20, 22, -14, 20, -6); sh.bezierCurveTo(18, 4, 8, 6, 4, 14); sh.bezierCurveTo(0, 20, -12, 20, -18, 14); sh.closePath(); paintShape(x, sh, col);
+    x.save(); x.clip(sh); x.strokeStyle = 'rgba(120,60,40,0.55)'; x.lineWidth = 1.6; for (const [a, b, c2] of [[-12, 10, 6], [-6, 2, 9], [0, -6, 11], [6, -13, 9]]) { x.beginPath(); x.arc(a, b, c2, -2.4, 0.2); x.stroke(); } x.restore();
+    const mouth = new Path2D(); mouth.moveTo(-14, 12); mouth.bezierCurveTo(-10, 4, -2, 6, 0, 12); mouth.bezierCurveTo(-4, 16, -10, 16, -14, 12); mouth.closePath(); x.fillStyle = '#e88c78'; x.fill(mouth); x.lineWidth = 1.6; x.strokeStyle = INK; x.stroke(mouth);
+    for (const [kx, ky] of [[4, -21], [12, -20], [19, -12]]) { const p = new Path2D(); p.moveTo(kx - 2.4, ky + 1); p.lineTo(kx, ky - 4); p.lineTo(kx + 2.4, ky + 1); p.closePath(); x.fillStyle = shade(col, -0.1); x.fill(p); x.lineWidth = 1.2; x.strokeStyle = INK; x.stroke(p); }
+  } else if (fam === 'ironhull') { // an anchor with a rope wound round its shank
+    const ring = new Path2D(); ring.ellipse(0, -18, 5.5, 5.5, 0, 0, TAU); ring.ellipse(0, -18, 3, 3, 0, 0, TAU, true); paintShape(x, ring, col, undefined, 2);
+    const stock = new Path2D(); stock.moveTo(-12, -11); stock.quadraticCurveTo(0, -13.5, 12, -11); stock.lineTo(12, -7.5); stock.quadraticCurveTo(0, -10, -12, -7.5); stock.closePath(); paintShape(x, stock, shade(col, -0.1), undefined, 2);
+    const shank = new Path2D(); shank.moveTo(-2.6, -12); shank.lineTo(2.6, -12); shank.quadraticCurveTo(3.4, 4, 2.4, 16); shank.lineTo(-2.4, 16); shank.quadraticCurveTo(-3.4, 4, -2.6, -12); shank.closePath(); paintShape(x, shank, col, undefined, 2);
+    const crown = new Path2D(); crown.moveTo(-18, 6); crown.quadraticCurveTo(-14, 20, 0, 20); crown.quadraticCurveTo(14, 20, 18, 6); crown.lineTo(22, 10); crown.lineTo(20, 2); crown.lineTo(14, 4); crown.quadraticCurveTo(10, 15, 0, 15); crown.quadraticCurveTo(-10, 15, -14, 4); crown.lineTo(-20, 2); crown.lineTo(-22, 10); crown.closePath(); paintShape(x, crown, col);
+    const rope = new Path2D(); rope.moveTo(-6, -4); rope.bezierCurveTo(10, -2, 8, 4, -6, 5); rope.bezierCurveTo(-12, 6, 10, 10, 6, 13); x.lineWidth = 4.8; x.strokeStyle = INK; x.stroke(rope); x.lineWidth = 2.6; x.strokeStyle = '#d2b07a'; x.stroke(rope);
+    x.setLineDash([1.5, 2.5]); x.lineWidth = 2.6; x.strokeStyle = 'rgba(90,60,30,0.6)'; x.stroke(rope); x.setLineDash([]);
+  } else if (fam === 'tidewarden') { // an eye, its lid half down, over a breaking wave
+    const wave = new Path2D(); wave.moveTo(-24, 20); wave.bezierCurveTo(-18, 10, -8, 6, 2, 10); wave.bezierCurveTo(10, 13, 12, 6, 8, 3); wave.bezierCurveTo(16, 2, 22, 10, 24, 20); wave.closePath(); paintShape(x, wave, shade(col, -0.15));
+    x.save(); x.clip(wave); x.strokeStyle = 'rgba(255,255,255,0.45)'; x.lineWidth = 1.2; for (const k of [12, 16]) { x.beginPath(); x.moveTo(-24, k + 4); x.bezierCurveTo(-12, k - 2, 4, k + 2, 24, k + 1); x.stroke(); } x.restore();
+    const eye = new Path2D(); eye.moveTo(-21, -6); eye.bezierCurveTo(-10, -20, 10, -20, 21, -6); eye.bezierCurveTo(10, 4, -10, 4, -21, -6); eye.closePath(); paintShape(x, eye, '#efe8d4');
+    x.save(); x.clip(eye); const ir = x.createRadialGradient(-1, -9, 1, 0, -7, 9); ir.addColorStop(0, shade(col, 0.3)); ir.addColorStop(1, shade(col, -0.4)); x.fillStyle = ir; x.beginPath(); x.ellipse(0, -7, 8, 8, 0, 0, TAU); x.fill();
+    x.fillStyle = INK; x.beginPath(); x.ellipse(0, -7, 2.2, 5.4, 0, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,255,255,0.85)'; x.beginPath(); x.ellipse(-2.6, -10, 1.6, 1.3, 0, 0, TAU); x.fill();
+    const lid = new Path2D(); lid.moveTo(-22, -6); lid.bezierCurveTo(-10, -20, 10, -20, 22, -6); lid.bezierCurveTo(10, -12, -10, -12, -22, -6); lid.closePath(); x.fillStyle = shade(col, -0.45); x.fill(lid); x.restore();
+    const lash = new Path2D(); lash.moveTo(-21, -6); lash.bezierCurveTo(-10, -12, 10, -12, 21, -6); x.lineWidth = 2.6; x.strokeStyle = INK; x.stroke(lash); x.lineWidth = 2.6; x.stroke(eye);
   }
-  x.restore();
+  void r; x.restore();
 }
 
 // one scroll, painted into a box of ±50 units
 function paintScroll(x, fam, tier) {
-  const B = BODY[tier] || BODY.rare, acc = ACCENT[fam] || '#e8e0c8', r = rnd(fam.length * 97 + tier.length * 13), plus = tier === 'exotic';
+  const B = BODY[tier] || BODY.rare, acc = ACCENT[fam] || '#e8e0c8', r = rnd(fam.length * 97 + tier.length * 13), plus = tier === 'exotic', gold = tier === 'legendary';
   x.lineJoin = 'round'; x.lineCap = 'round';
-  // its shadow
-  x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(0, 47, 44, 5, 0, 0, TAU); x.fill();
-  // a cylinder (a roll): body with a highlight band along it, and its end showing the turns of the sheet
+  x.fillStyle = 'rgba(0,0,0,0.32)'; x.beginPath(); x.ellipse(0, 47, 42, 5.5, 0, 0, TAU); x.fill();
+  // a roll: it swells a little in the middle and its end shows the turns of the sheet
   const roll = (x0, x1, y, rad, endAtLeft) => {
-    const g = x.createLinearGradient(0, y - rad, 0, y + rad); g.addColorStop(0, shade(B.mid, 0.2)); g.addColorStop(0.35, B.light); g.addColorStop(0.6, B.mid); g.addColorStop(1, B.dark);
-    x.fillStyle = g; x.beginPath(); x.roundRect(x0, y - rad, x1 - x0, rad * 2, rad * 0.4); x.fill();
-    // the bands carry round the roll
-    for (const bx of bandsX) { x.fillStyle = shade(acc, -0.12); x.fillRect(bx[0], y - rad, bx[1] - bx[0], rad * 2); x.fillStyle = 'rgba(255,255,255,0.18)'; x.fillRect(bx[0], y - rad * 0.55, bx[1] - bx[0], rad * 0.35); }
-    x.fillStyle = 'rgba(255,255,255,0.16)'; x.fillRect(x0 + 2, y - rad * 0.55, x1 - x0 - 4, rad * 0.3);
-    x.lineWidth = 2.4; x.strokeStyle = INK; x.beginPath(); x.roundRect(x0, y - rad, x1 - x0, rad * 2, rad * 0.4); x.stroke();
-    // the end: an ellipse with the sheet's spiral in it
-    const ex = endAtLeft ? x0 : x1;
-    x.fillStyle = shade(B.dark, 0.1); x.beginPath(); x.ellipse(ex, y, rad * 0.55, rad, 0, 0, TAU); x.fill(); x.stroke();
-    x.strokeStyle = shade(B.light, 0.15); x.lineWidth = 1.3; x.beginPath(); for (let a = 0; a < TAU * 2.2; a += 0.2) { const rr = rad * (0.15 + a / (TAU * 2.6)); const px = ex + Math.cos(a) * rr * 0.55, py = y + Math.sin(a) * rr; if (a) x.lineTo(px, py); else x.moveTo(px, py); } x.stroke();
-    if (tier === 'legendary') { x.strokeStyle = '#d9b25e'; x.lineWidth = 1.6; x.beginPath(); x.ellipse(ex, y, rad * 0.55, rad, 0, 0, TAU); x.stroke(); }
+    const top = along([x0 + rad * 0.3, y - rad], [x1 - rad * 0.3, y - rad * 1.06], 6), bot = along([x1 - rad * 0.3, y + rad * 1.04], [x0 + rad * 0.3, y + rad], 6);
+    const body = wobbly([...top, [x1, y], ...bot, [x0, y]], r, 0.5);
+    const g = x.createLinearGradient(0, y - rad, 0, y + rad); g.addColorStop(0, shade(B.mid, 0.15)); g.addColorStop(0.3, shade(B.light, 0.18)); g.addColorStop(0.55, B.mid); g.addColorStop(1, B.dark);
+    x.fillStyle = g; x.fill(body);
+    x.save(); x.clip(body);
+    for (const [a, b] of bandsX) { const bandP = wobbly([[a, y - rad - 2], [b, y - rad - 2], [b + 0.6, y + rad + 2], [a - 0.4, y + rad + 2]], r, 0.4); x.fillStyle = shade(acc, -0.18); x.fill(bandP); }
+    const hl = x.createLinearGradient(0, y - rad, 0, y); hl.addColorStop(0, 'rgba(255,250,230,0)'); hl.addColorStop(0.5, 'rgba(255,250,230,0.28)'); hl.addColorStop(1, 'rgba(255,250,230,0)'); x.fillStyle = hl; x.fillRect(x0, y - rad * 0.8, x1 - x0, rad * 0.6);
+    x.restore();
+    x.lineWidth = 2.2; x.strokeStyle = INK; x.stroke(body);
+    const ex = endAtLeft ? x0 + 1 : x1 - 1, cap = wobbly(Array.from({ length: 10 }, (_, i) => [ex + Math.cos(i / 10 * TAU) * rad * 0.52, y + Math.sin(i / 10 * TAU) * rad * 0.98]), r, 0.35);
+    x.fillStyle = shade(gold ? '#c8a050' : B.light, -0.1); x.fill(cap); x.stroke(cap);
+    x.strokeStyle = shade(B.dark, 0.05); x.lineWidth = 1.4; x.beginPath();
+    for (let a = 0.3; a < TAU * 2.3; a += 0.18) { const rr = rad * (0.12 + a / (TAU * 2.7)); const px = ex + Math.cos(a + 1) * rr * 0.5, py = y + Math.sin(a + 1) * rr * 0.95; if (a === 0.3) x.moveTo(px, py); else x.lineTo(px, py); }
+    x.stroke();
   };
-  // the stripe bands (x ranges); a plus tier has a thin second band beside each
-  const bandsX = [[-30, -22], [20, 28]].concat(plus ? [[-19, -17], [15, 17]] : []);
-  // top roll, behind
+  const bandsX = [[-30, -23], [20, 27]].concat(plus ? [[-20, -18], [16, 18]] : []);
   roll(-36, 44, -32, 11, false);
-  // the sheet: its sides waisted a little, edges a touch frayed
-  const sheet = new Path2D(); sheet.moveTo(-37, -25); sheet.quadraticCurveTo(-34, 0, -38, 28); sheet.lineTo(33, 28); sheet.quadraticCurveTo(37, 0, 35, -25); sheet.closePath();
-  const sg = x.createLinearGradient(-38, 0, 36, 0); sg.addColorStop(0, B.dark); sg.addColorStop(0.16, B.mid); sg.addColorStop(0.42, shade(B.light, 0.12)); sg.addColorStop(0.55, B.light); sg.addColorStop(0.84, B.mid); sg.addColorStop(1, B.dark);
+  // the sheet: wobbly sides, a slight waist
+  const left = along([-37, -25], [-38, 28], 7).map(([a, b], i) => [a + Math.sin(i * 0.9) * 0.9 + 1.2 * Math.sin(Math.PI * i / 7), b]);
+  const right = along([33, 28], [35, -25], 7).map(([a, b], i) => [a - 1.2 * Math.sin(Math.PI * i / 7), b]);
+  const sheet = wobbly([...left, ...along([-38, 28], [33, 28], 5), ...right, ...along([35, -25], [-37, -25], 5)], r, 0.6);
+  const sg = x.createLinearGradient(-38, -10, 36, 10); sg.addColorStop(0, B.dark); sg.addColorStop(0.18, B.mid); sg.addColorStop(0.46, shade(B.light, 0.1)); sg.addColorStop(0.62, B.light); sg.addColorStop(0.86, B.mid); sg.addColorStop(1, B.dark);
   x.fillStyle = sg; x.fill(sheet);
   x.save(); x.clip(sheet);
-  for (const bx of bandsX) { const bg = x.createLinearGradient(bx[0], 0, bx[1], 0); bg.addColorStop(0, shade(acc, -0.25)); bg.addColorStop(0.5, acc); bg.addColorStop(1, shade(acc, -0.25)); x.fillStyle = bg; x.fillRect(bx[0], -40, bx[1] - bx[0], 80); x.fillStyle = 'rgba(255,255,255,0.22)'; x.fillRect(bx[0] + (bx[1] - bx[0]) * 0.25, -40, Math.max(0.8, (bx[1] - bx[0]) * 0.18), 80); }
-  // wear: salt stains and specks, a shadow under the top roll and above the foot
-  for (let i = 0; i < 18; i++) { x.fillStyle = r() < 0.5 ? 'rgba(255,250,235,0.06)' : 'rgba(0,0,0,0.09)'; x.beginPath(); x.ellipse(-34 + r() * 66, -24 + r() * 50, 1 + r() * 5, 0.6 + r() * 2.4, r() * 3, 0, TAU); x.fill(); }
-  const tg = x.createLinearGradient(0, -25, 0, -15); tg.addColorStop(0, 'rgba(0,0,0,0.42)'); tg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = tg; x.fillRect(-40, -25, 80, 10);
-  const bgr = x.createLinearGradient(0, 28, 0, 18); bgr.addColorStop(0, 'rgba(0,0,0,0.38)'); bgr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = bgr; x.fillRect(-40, 18, 80, 10);
+  // the vellum's grain: short fibres, a few creases
+  for (let i = 0; i < 90; i++) { const fx = -38 + r() * 74, fy = -26 + r() * 54, l = 2 + r() * 5; x.strokeStyle = r() < 0.5 ? 'rgba(255,248,226,0.08)' : 'rgba(0,0,0,0.1)'; x.lineWidth = 0.6; x.beginPath(); x.moveTo(fx, fy); x.lineTo(fx + (r() - 0.5) * 1.5, fy + l); x.stroke(); }
+  x.strokeStyle = 'rgba(0,0,0,0.12)'; x.lineWidth = 1; x.beginPath(); x.moveTo(-36, 4 + r() * 4); x.bezierCurveTo(-10, 0, 10, 10, 34, 6); x.stroke();
+  x.strokeStyle = 'rgba(255,250,230,0.1)'; x.beginPath(); x.moveTo(-36, 5.5); x.bezierCurveTo(-10, 1.5, 10, 11.5, 34, 7.5); x.stroke();
+  // the bands down it, their edges not quite straight
+  for (const [a, b] of bandsX) { const band = wobbly([...along([a, -30], [a - 0.6, 32], 5), ...along([b + 0.3, 32], [b, -30], 5)], r, 0.45);
+    const bg = x.createLinearGradient(a, 0, b, 0); bg.addColorStop(0, shade(acc, -0.3)); bg.addColorStop(0.45, acc); bg.addColorStop(1, shade(acc, -0.3)); x.fillStyle = bg; x.fill(band); }
+  // salt stains: soft blotches with a darker tide line
+  for (let i = 0; i < 4; i++) { const sx = -30 + r() * 60, sy = -18 + r() * 40, sr = 4 + r() * 6; const st = wobbly(Array.from({ length: 9 }, (_, k) => [sx + Math.cos(k / 9 * TAU) * sr * (0.8 + r() * 0.4), sy + Math.sin(k / 9 * TAU) * sr * 0.7 * (0.8 + r() * 0.4)]), r, 0.4); x.fillStyle = 'rgba(255,248,226,0.06)'; x.fill(st); x.lineWidth = 0.8; x.strokeStyle = 'rgba(0,0,0,0.12)'; x.stroke(st); }
+  const tg = x.createLinearGradient(0, -25, 0, -14); tg.addColorStop(0, 'rgba(0,0,0,0.45)'); tg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = tg; x.fillRect(-40, -26, 80, 12);
+  const bgr = x.createLinearGradient(0, 28, 0, 17); bgr.addColorStop(0, 'rgba(0,0,0,0.4)'); bgr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = bgr; x.fillRect(-40, 17, 80, 12);
+  // the emblem's place: a soft pale bloom, as if the ink sat on lighter vellum
+  const em = x.createRadialGradient(-2, 1, 2, -2, 1, 22); em.addColorStop(0, 'rgba(255,248,226,0.16)'); em.addColorStop(1, 'rgba(255,248,226,0)'); x.fillStyle = em; x.fillRect(-26, -22, 48, 46);
   x.restore();
-  x.lineWidth = 2.4; x.strokeStyle = INK; x.stroke(sheet);
-  // frayed nicks in its edges
-  x.fillStyle = INK; for (const [ex, ey, d] of [[-35.5, -6, 1], [-36.6, 12, 1], [35.4, -12, -1], [35.6, 8, -1]]) { x.beginPath(); x.moveTo(ex, ey - 2.4); x.lineTo(ex + d * 3.2, ey); x.lineTo(ex, ey + 2.4); x.closePath(); x.fill(); }
-  // gold leaf down the legendary's edges
-  if (tier === 'legendary') { x.save(); x.strokeStyle = '#d9b25e'; x.lineWidth = 1.8; x.setLineDash([]); const gl = new Path2D(); gl.moveTo(-34, -23); gl.quadraticCurveTo(-31, 0, -35, 26); gl.moveTo(30, 26); gl.quadraticCurveTo(34, 0, 32, -23); x.stroke(gl); x.restore(); }
-  // the emblem, on a faint disc of darker vellum
+  x.lineWidth = 2.2; x.strokeStyle = INK; x.stroke(sheet);
+  if (gold) { x.save(); x.clip(sheet); x.lineWidth = 3; x.strokeStyle = '#d6ae5a'; x.stroke(sheet); x.lineWidth = 1; x.strokeStyle = 'rgba(255,240,190,0.7)'; x.stroke(sheet); x.restore(); }
   x.save(); x.translate(-2, 1); x.scale(0.82, 0.82); drawEmblem(x, fam, acc); x.restore();
-  // the foot roll, in front
   roll(-46, 34, 33, 12, true);
 }
 
 const cache = new Map();
-// the scroll for an ability, size = its height in pixels
+// the scroll for an ability; size = its height in pixels
 export function drawScroll(ctx, cx, cy, size, fam, tier = 'rare') {
   const key = `${fam}|${tier}|${Math.round(size)}`;
   let c = cache.get(key);
@@ -106,3 +167,109 @@ export function drawScroll(ctx, cx, cy, size, fam, tier = 'rare') {
   ctx.drawImage(c, cx - c.width / 2, cy - c.height / 2);
 }
 export function scrollURL(fam, tier, px = 160) { const c = document.createElement('canvas'); c.width = c.height = px; drawScroll(c.getContext('2d'), px / 2, px / 2, px, fam, tier); return c.toDataURL('image/png'); }
+
+// ---------- (5.7.7) the second look: foil-stamped, no outlines, grained vellum, ornate legendaries ----------
+// the emblem as a stencil: everything drawn in one flat white (the details cut into it come out dark, then are knocked
+// out so they read as engraving in the foil)
+function emblemMask(fam, size) {
+  const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'); x.translate(size / 2, size / 2); x.scale(size / 60, size / 60);
+  MASK = true; try { drawEmblem(x, fam, '#ffffff'); } finally { MASK = false; }
+  // turn the drawing into a pure stencil: whatever is light becomes solid, dark details become holes
+  const d = x.getImageData(0, 0, size, size), a = d.data;
+  for (let i = 0; i < a.length; i += 4) { const lum = (a[i] + a[i + 1] + a[i + 2]) / 3, al = a[i + 3] / 255; const v = lum > 140 ? al : 0; a[i] = a[i + 1] = a[i + 2] = 255; a[i + 3] = Math.round(v * 255); }
+  x.putImageData(d, 0, 0); return c;
+}
+const FOIL = {
+  rare: ['#f0c49a', '#c47e4c', '#7a4424', '#f6d8b8'],      // copper
+  exotic: ['#f4f6fa', '#b8c0cc', '#6c7482', '#ffffff'],    // silver
+  legendary: ['#fff0b8', '#e2b450', '#8a5a18', '#fffbe6'], // gold
+};
+let NOISE = null;
+function noisePattern(x) {
+  if (!NOISE) { NOISE = document.createElement('canvas'); NOISE.width = NOISE.height = 96; const n = NOISE.getContext('2d'), d = n.createImageData(96, 96), r = rnd(4242); for (let i = 0; i < d.data.length; i += 4) { const v = 110 + r() * 50; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } n.putImageData(d, 0, 0); }
+  return x.createPattern(NOISE, 'repeat');
+}
+// stamp a stencil in foil: pressed in (a dark rim below it, a lit one above), metallic, with an optional glow
+function stampFoil(x, mask, cx, cy, w, tier, glow) {
+  const F = FOIL[tier] || FOIL.rare, s = w;
+  const tint = (cols) => { const c = document.createElement('canvas'); c.width = c.height = mask.width; const t = c.getContext('2d'); t.drawImage(mask, 0, 0); t.globalCompositeOperation = 'source-in';
+    if (Array.isArray(cols)) { const g = t.createLinearGradient(0, 0, mask.width * 0.7, mask.height); cols.forEach((col, i) => g.addColorStop(i / (cols.length - 1), col)); t.fillStyle = g; } else t.fillStyle = cols; t.fillRect(0, 0, c.width, c.height); return c; };
+  const dark = tint('rgba(10,6,4,0.75)'), lit = tint('rgba(255,250,235,0.55)'), metal = tint([F[3], F[0], F[1], F[2], F[1], F[0]]);
+  x.save();
+  if (glow) { x.shadowColor = glow; x.shadowBlur = s * 0.22; x.drawImage(tint(glow), cx - s / 2, cy - s / 2, s, s); x.shadowBlur = 0; }
+  x.drawImage(dark, cx - s / 2 + s * 0.012, cy - s / 2 + s * 0.022, s, s);   // pressed: shadow below
+  x.drawImage(lit, cx - s / 2 - s * 0.01, cy - s / 2 - s * 0.016, s, s);     // and a lit lip above
+  x.drawImage(metal, cx - s / 2, cy - s / 2, s, s);
+  // a sheen running across the metal
+  const sh = document.createElement('canvas'); sh.width = sh.height = mask.width; const t = sh.getContext('2d'); t.drawImage(mask, 0, 0); t.globalCompositeOperation = 'source-in';
+  const sg = t.createLinearGradient(0, 0, mask.width, mask.height); sg.addColorStop(0.3, 'rgba(255,255,255,0)'); sg.addColorStop(0.42, 'rgba(255,255,255,0.55)'); sg.addColorStop(0.5, 'rgba(255,255,255,0)'); t.fillStyle = sg; t.fillRect(0, 0, sh.width, sh.height);
+  x.drawImage(sh, cx - s / 2, cy - s / 2, s, s);
+  x.restore();
+}
+// gold filigree: curling tendrils along the inside of the sheet's border (the legendary's)
+function filigree(x, r) {
+  const curl = (sx, sy, dir, k) => { const p = new Path2D(); p.moveTo(sx, sy); p.bezierCurveTo(sx + dir * 6 * k, sy - 2 * k, sx + dir * 9 * k, sy + 5 * k, sx + dir * 5 * k, sy + 7 * k); p.bezierCurveTo(sx + dir * 2 * k, sy + 8 * k, sx + dir * 1 * k, sy + 4 * k, sx + dir * 3.5 * k, sy + 3.5 * k); return p; };
+  const vine = new Path2D(); vine.moveTo(-31, -20); vine.bezierCurveTo(-29, -6, -33, 8, -31, 22); vine.moveTo(27, -20); vine.bezierCurveTo(29, -6, 25, 8, 27, 22);
+  const paths = [vine]; for (const [sx, sy, dir] of [[-31, -16, 1], [-31.5, -4, 1], [-32, 8, 1], [-31, 18, 1], [27, -14, -1], [27.5, -2, -1], [26.5, 10, -1], [27, 19, -1]]) paths.push(curl(sx, sy, dir, 0.9 + r() * 0.3));
+  x.save(); x.lineCap = 'round';
+  x.lineWidth = 2.2; x.strokeStyle = 'rgba(20,10,0,0.45)'; x.translate(0.5, 0.8); for (const p of paths) x.stroke(p); x.translate(-0.5, -0.8);
+  const g = x.createLinearGradient(-35, -25, 30, 25); g.addColorStop(0, '#fff0b8'); g.addColorStop(0.4, '#e2b450'); g.addColorStop(0.7, '#9a6a20'); g.addColorStop(1, '#f2d27a');
+  x.lineWidth = 1.5; x.strokeStyle = g; x.shadowColor = 'rgba(255,214,120,0.6)'; x.shadowBlur = 3; for (const p of paths) x.stroke(p);
+  x.restore();
+}
+function paintScroll2(x, fam, tier) {
+  const B = BODY[tier] || BODY.rare, acc = ACCENT[fam] || '#e8e0c8', r = rnd(fam.length * 97 + tier.length * 13), plus = tier === 'exotic', gold = tier === 'legendary';
+  const edge = shade(B.dark, -0.35);
+  x.lineJoin = 'round'; x.lineCap = 'round';
+  // a halo behind a legendary
+  if (gold) { const hg = x.createRadialGradient(0, 0, 10, 0, 0, 52); hg.addColorStop(0, 'rgba(255,214,120,0.42)'); hg.addColorStop(0.6, 'rgba(255,200,100,0.12)'); hg.addColorStop(1, 'rgba(255,200,100,0)'); x.fillStyle = hg; x.fillRect(-52, -52, 104, 104); }
+  x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.ellipse(0, 46, 42, 5, 0, 0, TAU); x.fill();
+  const bandsX = [[-30, -24], [20, 26]].concat(plus ? [[-21, -19.5], [16.5, 18]] : []);
+  const grain = noisePattern(x);
+  const roll = (x0, x1, y, rad, endAtLeft) => {
+    const top = along([x0 + rad * 0.3, y - rad], [x1 - rad * 0.3, y - rad * 1.04], 6), bot = along([x1 - rad * 0.3, y + rad * 1.03], [x0 + rad * 0.3, y + rad], 6);
+    const body = wobbly([...top, [x1, y], ...bot, [x0, y]], r, 0.4);
+    const g = x.createLinearGradient(0, y - rad, 0, y + rad); g.addColorStop(0, shade(B.mid, 0.08)); g.addColorStop(0.28, shade(B.light, 0.22)); g.addColorStop(0.5, B.mid); g.addColorStop(0.85, B.dark); g.addColorStop(1, shade(B.dark, -0.3));
+    x.fillStyle = g; x.fill(body);
+    x.save(); x.clip(body);
+    for (const [a, b] of bandsX) { const bp = wobbly([[a, y - rad - 2], [b, y - rad - 2], [b + 0.5, y + rad + 2], [a - 0.3, y + rad + 2]], r, 0.35); const bg = x.createLinearGradient(0, y - rad, 0, y + rad); bg.addColorStop(0, shade(acc, -0.1)); bg.addColorStop(0.3, shade(acc, 0.2)); bg.addColorStop(1, shade(acc, -0.55)); x.fillStyle = bg; x.fill(bp); }
+    x.globalCompositeOperation = 'overlay'; x.globalAlpha = 0.5; x.fillStyle = grain; x.fillRect(x0 - 2, y - rad - 2, x1 - x0 + 4, rad * 2 + 4); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+    x.restore();
+    x.lineWidth = 1.2; x.strokeStyle = edge; x.stroke(body);
+    const ex = endAtLeft ? x0 + 1 : x1 - 1, cap = wobbly(Array.from({ length: 10 }, (_, i) => [ex + Math.cos(i / 10 * TAU) * rad * 0.5, y + Math.sin(i / 10 * TAU) * rad * 0.97]), r, 0.3);
+    const cg = x.createRadialGradient(ex - rad * 0.15, y - rad * 0.3, 1, ex, y, rad); if (gold) { cg.addColorStop(0, '#fff0b8'); cg.addColorStop(0.5, '#d8a848'); cg.addColorStop(1, '#6a4410'); } else { cg.addColorStop(0, shade(B.light, 0.25)); cg.addColorStop(1, shade(B.dark, -0.1)); }
+    x.fillStyle = cg; x.fill(cap); x.lineWidth = 1; x.strokeStyle = edge; x.stroke(cap);
+    x.strokeStyle = gold ? 'rgba(90,56,10,0.7)' : 'rgba(0,0,0,0.35)'; x.lineWidth = 0.9; x.beginPath();
+    for (let a = 0.3; a < TAU * 2.3; a += 0.16) { const rr = rad * (0.12 + a / (TAU * 2.7)); const px = ex + Math.cos(a + 1) * rr * 0.48, py = y + Math.sin(a + 1) * rr * 0.93; if (a === 0.3) x.moveTo(px, py); else x.lineTo(px, py); }
+    x.stroke();
+  };
+  roll(-36, 44, -32, 11, false);
+  const left = along([-37, -25], [-38, 28], 7).map(([a, b], i) => [a + 1.2 * Math.sin(Math.PI * i / 7), b]);
+  const right = along([33, 28], [35, -25], 7).map(([a, b], i) => [a - 1.2 * Math.sin(Math.PI * i / 7), b]);
+  const sheet = wobbly([...left, ...along([-38, 28], [33, 28], 5), ...right, ...along([35, -25], [-37, -25], 5)], r, 0.5);
+  const sg = x.createLinearGradient(-38, -12, 36, 14); sg.addColorStop(0, shade(B.dark, -0.2)); sg.addColorStop(0.16, B.mid); sg.addColorStop(0.44, shade(B.light, 0.06)); sg.addColorStop(0.6, B.light); sg.addColorStop(0.86, B.mid); sg.addColorStop(1, shade(B.dark, -0.2));
+  x.fillStyle = sg; x.fill(sheet);
+  x.save(); x.clip(sheet);
+  for (const [a, b] of bandsX) { const band = wobbly([...along([a, -30], [a - 0.5, 32], 5), ...along([b + 0.3, 32], [b, -30], 5)], r, 0.35);
+    const bg = x.createLinearGradient(a, 0, b, 0); bg.addColorStop(0, shade(acc, -0.45)); bg.addColorStop(0.4, shade(acc, -0.05)); bg.addColorStop(0.6, acc); bg.addColorStop(1, shade(acc, -0.45)); x.fillStyle = bg; x.fill(band); }
+  // the grain over everything, then soft light and shade: lit from the upper left, darker toward the rolls
+  x.globalCompositeOperation = 'overlay'; x.globalAlpha = 0.55; x.fillStyle = grain; x.fillRect(-40, -28, 80, 60); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over';
+  const lt = x.createRadialGradient(-10, -14, 4, -4, 0, 46); lt.addColorStop(0, 'rgba(255,250,232,0.16)'); lt.addColorStop(1, 'rgba(0,0,0,0.22)'); x.fillStyle = lt; x.fillRect(-40, -28, 80, 60);
+  for (let i = 0; i < 3; i++) { const sx = -26 + r() * 52, sy = -16 + r() * 36, sr = 5 + r() * 6; const st = wobbly(Array.from({ length: 9 }, (_, k) => [sx + Math.cos(k / 9 * TAU) * sr * (0.8 + r() * 0.4), sy + Math.sin(k / 9 * TAU) * sr * 0.7 * (0.8 + r() * 0.4)]), r, 0.4); x.fillStyle = 'rgba(255,246,222,0.05)'; x.fill(st); x.lineWidth = 0.7; x.strokeStyle = 'rgba(0,0,0,0.1)'; x.stroke(st); }
+  const tg = x.createLinearGradient(0, -25, 0, -13); tg.addColorStop(0, 'rgba(0,0,0,0.5)'); tg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = tg; x.fillRect(-40, -26, 80, 13);
+  const bgr = x.createLinearGradient(0, 28, 0, 16); bgr.addColorStop(0, 'rgba(0,0,0,0.45)'); bgr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = bgr; x.fillRect(-40, 16, 80, 13);
+  if (gold) filigree(x, r);
+  x.restore();
+  x.lineWidth = 1.2; x.strokeStyle = edge; x.stroke(sheet);
+  // the emblem, stamped in foil (copper, silver, gold); the exotic's and legendary's glowing in the family's colour
+  stampFoil(x, emblemMask(fam, 240), -2, 1, 44, tier, gold ? acc : plus ? 'rgba(220,200,255,0.55)' : null);
+  if (gold) for (let i = 0; i < 9; i++) { const a = r() * TAU, d = 16 + r() * 18, mx = -2 + Math.cos(a) * d, my = 1 + Math.sin(a) * d * 0.8, mr = 0.8 + r() * 1.6; const mg = x.createRadialGradient(mx, my, 0, mx, my, mr * 3); mg.addColorStop(0, 'rgba(255,246,210,0.95)'); mg.addColorStop(1, 'rgba(255,220,140,0)'); x.fillStyle = mg; x.beginPath(); x.arc(mx, my, mr * 3, 0, TAU); x.fill(); }
+  roll(-46, 34, 33, 12, true);
+}
+// (5.7.7) the second look is the one used
+export function drawScroll2(ctx, cx, cy, size, fam, tier = 'rare') {
+  const key = `2|${fam}|${tier}|${Math.round(size)}`;
+  let c = cache.get(key);
+  if (!c) { c = document.createElement('canvas'); c.width = c.height = Math.ceil(size); const x = c.getContext('2d'), k = size / 104; x.translate(size / 2, size / 2); x.scale(k, k); paintScroll2(x, fam, tier); cache.set(key, c); }
+  ctx.drawImage(c, cx - c.width / 2, cy - c.height / 2);
+}
