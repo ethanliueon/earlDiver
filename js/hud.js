@@ -143,7 +143,7 @@ export class Hud {
     // (5.6.2) on a touch screen the bag is a row of small wells, the animals kept drawn in theirs, a thin line
     // under each in the colour of its condition; free places are empty wells
     if (this.touch && !e.inSub && slots) {
-      const cw = 30 * s, gp = 6 * s, tot = slots * cw + (slots - 1) * gp; let wx = W / 2 - tot / 2; const wy = H - 20 * s - cw;
+      const cw = 30 * s, gp = 6 * s, tot = slots * cw + (slots - 1) * gp; let wx = W / 2 - tot / 2; const wy = H - 34 * s - cw; // (5.6.5) the beast's eye, when marked, sits under them
       for (let i = 0; i < slots; i++, wx += cw + gp) {
         const sp = list[i];
         if (!oliveNine(ctx, 'well', wx, wy, cw, cw, 30, 6 * s)) { ctx.fillStyle = 'rgba(6,12,14,0.6)'; ctx.fillRect(wx, wy, cw, cw); }
@@ -292,10 +292,11 @@ export class Hud {
       { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
       { key: 'l', icon: 'lamp', on: true, lit: !!e.lampOn },
     ] : [
-      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'Not on deck' },
+      // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
+      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
       { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'Not on deck' : 'No glow stick: the boat sells them' },
       { key: 'sprint', icon: 'sprint', on: !aboard, lit: !!g.sprintLock, why: 'Not on deck' },
-      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
+      { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'Not on deck' },
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
     const ROW = [{ key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
@@ -354,25 +355,29 @@ export class Hud {
         if (ew) {
           // (5.6.4) small, and beside the thing it acts on (the sub, the ladder, the thing to pick up), pointing at it;
           // with no such thing, a little above Earl
-          ctx.save(); ctx.globalAlpha *= vT; ctx.font = `600 ${12.5 * u}px ${HUDF}`;
-          const A2 = this.fAnchorScreen, tw = ctx.measureText(this.tagWords).width + 20 * u, th = 24 * u;
+          ctx.save(); ctx.globalAlpha *= vT; ctx.font = `600 ${12 * u}px ${HUDF}`;
+          const A2 = this.fAnchorScreen, tw = Math.max(46 * u, ctx.measureText(this.tagWords).width + 16 * u), th = 58 * u;
           const side = A2 ? (A2.x > W * 0.62 ? -1 : 1) : 0;
           const tx = clamp(A2 ? (side > 0 ? A2.x + A2.r + 10 * u : A2.x - A2.r - 10 * u - tw) : ew.x - tw / 2, 10 * u, W - tw - 10 * u);
           const ty = clamp(A2 ? A2.y - th / 2 : ew.y - 58 * u - (1 - vT) * 6 * u, 10 * u, H - th - 10 * u);
           const down = held.has(tagKey);
-          if (!oliveNine(ctx, 'panel', tx, ty, tw, th, 60, 9 * u)) { ctx.fillStyle = 'rgba(40,46,36,0.92)'; ctx.fillRect(tx, ty, tw, th); }
-          if (down) { ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(tx, ty, tw, th); }
-          ctx.fillStyle = '#efe8d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 2 * u; ctx.fillText(this.tagWords, tx + tw / 2, ty + th / 2 + 1 * u);
-          if (g.promptBar != null && fOn) { ctx.fillStyle = 'rgba(239,232,210,0.85)'; ctx.fillRect(tx + 6 * u, ty + th - 5 * u, (tw - 12 * u) * clamp(g.promptBar, 0, 1), 2.4 * u); }
+          // (5.6.5) a small coin with the action's own picture, its word on a strip under it
+          const wd = this.tagWords.toLowerCase(), art = tagKey === 'u' ? 'sell' : /board/.test(wd) ? 'sub' : /climb|enter|leave/.test(wd) ? 'leave' : /trap|haul|winch|empty/.test(wd) ? 'trap' : 'hand';
+          drawCoin(ctx, tx + tw / 2, ty + 18 * u, 18 * u, art, down ? 'down' : 'on');
+          const ly = ty + 38 * u, lh = 18 * u;
+          if (!oliveNine(ctx, 'panel', tx, ly, tw, lh, 60, 6 * u)) { ctx.fillStyle = 'rgba(40,46,36,0.92)'; ctx.fillRect(tx, ly, tw, lh); }
+          ctx.fillStyle = '#efe8d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 2 * u; ctx.fillText(this.tagWords, tx + tw / 2, ly + lh / 2 + 0.5 * u); ctx.shadowBlur = 0;
+          if (g.promptBar != null && fOn) { ctx.strokeStyle = 'rgba(239,232,210,0.95)'; ctx.lineWidth = 2.6 * u; ctx.beginPath(); ctx.arc(tx + tw / 2, ty + 18 * u, 20 * u, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
           // a little point towards what it acts on
           ctx.fillStyle = 'rgba(46,52,40,0.95)'; ctx.beginPath();
-          if (A2 && side > 0) { ctx.moveTo(tx, ty + th / 2 - 5 * u); ctx.lineTo(tx - 6 * u, ty + th / 2); ctx.lineTo(tx, ty + th / 2 + 5 * u); }
-          else if (A2) { ctx.moveTo(tx + tw, ty + th / 2 - 5 * u); ctx.lineTo(tx + tw + 6 * u, ty + th / 2); ctx.lineTo(tx + tw, ty + th / 2 + 5 * u); }
-          else { ctx.moveTo(tx + tw / 2 - 5 * u, ty + th); ctx.lineTo(tx + tw / 2 + 5 * u, ty + th); ctx.lineTo(tx + tw / 2, ty + th + 6 * u); }
+          const my = ty + 18 * u, cxT = tx + tw / 2;
+          if (A2 && side > 0) { ctx.moveTo(cxT - 19 * u, my - 5 * u); ctx.lineTo(cxT - 27 * u, my); ctx.lineTo(cxT - 19 * u, my + 5 * u); }
+          else if (A2) { ctx.moveTo(cxT + 19 * u, my - 5 * u); ctx.lineTo(cxT + 27 * u, my); ctx.lineTo(cxT + 19 * u, my + 5 * u); }
+          else { ctx.moveTo(cxT - 5 * u, ty + th); ctx.lineTo(cxT + 5 * u, ty + th); ctx.lineTo(cxT, ty + th + 6 * u); }
           ctx.fill();
           if (tutKey === 'f' && fOn) { const k = (g.time * 0.6) % 1; ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = `rgba(230,222,196,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 1.6 * u; ctx.strokeRect(tx - (4 + 10 * k) * u, ty - (4 + 10 * k) * u, tw + (8 + 20 * k) * u, th + (8 + 20 * k) * u); }
           ctx.restore();
-          if (fOn) hot(tx - 6 * u, ty - 6 * u, tw + 12 * u, th + 16 * u, tagKey);
+          if (fOn) hot(tx - 8 * u, ty - 6 * u, tw + 16 * u, th + 10 * u, tagKey);
         }
       }
     }
@@ -704,7 +709,7 @@ export class Hud {
       const a = 1 - calm * 0.65;
       // (4.28) a real eye in the dark, not a sign: a wet dark lid line, an iris of deep amber going to blood red with
       // fibres in it, a slit that breathes, a point of light on the cornea; it opens slowly and blinks now and then
-      const ex = touch ? W / 2 : pad + 46 * s, ey = touch ? pad + 22 * s : H - pad - 30 * s, ew = (touch ? 30 : 40) * s, eh = (touch ? 18 : 24) * s; // (5.1.1) on touch, by the depth: the bottom left is for a stick
+      const ex = touch ? W / 2 : pad + 46 * s, ey = touch ? H - 24 * s : H - pad - 30 * s, ew = (touch ? 30 : 40) * s, eh = (touch ? 18 : 24) * s; // (5.1.1) on touch, by the depth: the bottom left is for a stick
       const blink = (g.time % 7.3) < 0.18 ? Math.abs(Math.sin((g.time % 7.3) / 0.18 * Math.PI)) : 0, open = (1 - blink) * (0.85 + 0.15 * Math.sin(g.time * 0.5));
       ctx.save();
       const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.7);

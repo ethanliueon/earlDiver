@@ -1101,6 +1101,34 @@ export class Renderer {
     }
     ctx.restore();
 
+    // (5.6.5) marked: a vast eye in the dark behind him, following. Barely there: a slow pulse every few seconds, his
+    // lamp lifting it a little, and as the thing comes nearer it shows more, and longer, and opens wider
+    { const ent = g.entity;
+      if (ent && ent.marked && g.mode === 'play' && !g.kill) {
+        const near = clamp(1 - (ent.dist ?? 3000) / 1500, 0, 1), per = 6 - 2.5 * near, ph = (g.time % per) / per;
+        const pulse = Math.pow(Math.max(0, Math.sin(ph * Math.PI)), 3 - 1.6 * near);
+        const lamp = (g.earl.lampOn || (g.earl.inSub && g.sub.lightsOn)) ? 0.025 : 0;
+        const a = (0.05 + 0.13 * near) * pulse + lamp * pulse + 0.015 * near; // (5.6.5) faint: there in a pulse, gone between
+        if (a > 0.004) {
+          const Wd = this.W, Hd = this.H, face = g.earl.inSub ? (g.sub.facing || 1) : (g.earl.facing || 1);
+          this.eyeX = lerp(this.eyeX ?? Wd / 2, Wd / 2 - face * Wd * 0.18, 0.01); // it settles behind him, slowly
+          const ex = this.eyeX + Math.sin(g.time * 0.11) * Wd * 0.03, ey = Hd * 0.42 + Math.sin(g.time * 0.07) * Hd * 0.03;
+          // (5.6.5) the size of the thing's own eye: some 20 m across
+          const ew = ppm * 10 * (0.9 + 0.1 * near), open = (0.32 + 0.3 * near) * (1 - ((g.time % 11) < 0.25 ? Math.sin((g.time % 11) / 0.25 * Math.PI) : 0));
+          ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = Math.min(0.35, a);
+          ctx.beginPath(); ctx.moveTo(ex - ew, ey); ctx.bezierCurveTo(ex - ew * 0.4, ey - ew * open, ex + ew * 0.4, ey - ew * open, ex + ew, ey); ctx.bezierCurveTo(ex + ew * 0.4, ey + ew * open * 0.9, ex - ew * 0.4, ey + ew * open * 0.9, ex - ew, ey); ctx.closePath();
+          ctx.save(); ctx.clip();
+          const ir = ew * 0.36, ig = ctx.createRadialGradient(ex, ey, 0, ex, ey, ir);
+          ig.addColorStop(0, 'rgba(255,150,70,1)'); ig.addColorStop(0.4, 'rgba(190,40,20,1)'); ig.addColorStop(1, 'rgba(40,4,2,0)');
+          ctx.fillStyle = 'rgba(40,6,4,0.6)'; ctx.fillRect(ex - ew, ey - ew, ew * 2, ew * 2);
+          ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex, ey, ir, 0, TAU); ctx.fill();
+          ctx.fillStyle = 'rgba(0,0,0,0.95)'; const sw = ir * (0.12 + 0.06 * Math.sin(g.time * 0.6)); ctx.beginPath(); ctx.ellipse(ex, ey, sw, ir * 0.9, 0, 0, TAU); ctx.fill();
+          ctx.restore();
+          ctx.strokeStyle = 'rgba(120,20,12,0.9)'; ctx.lineWidth = Math.max(1, ew * 0.012); ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
     // (5.6.3) the sub's holes, outside her on a touch screen: each outlined in cream, breathing, to be tapped
     if (this.touch && g.patchMarks && g.mode === 'play') {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);

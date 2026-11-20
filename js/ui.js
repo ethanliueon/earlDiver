@@ -193,6 +193,13 @@ export class UI {
     $('restart').addEventListener('click', () => this.confirm('Start a new game?', 'A new diver, from nothing: no cash, no gear, an empty journal. This save is replaced.', 'Start over', 'Keep playing', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); }));
     // the title screen: Continue, the three slots, controls, full screen
     $('continue').addEventListener('click', () => { const n = lastSlot(); if (n) h.onSlot(n); });
+    // (5.6.5) on a phone, as on its home screen: a long press on a diver and they all jiggle, each with its delete
+    // mark; a tap anywhere else stops it
+    { let lpT = null; const sl = $('slots');
+      sl.addEventListener('touchstart', (ev) => { if (!ev.target.closest('.slot') || ev.target.closest('.del')) return; clearTimeout(lpT); lpT = setTimeout(() => { sl.classList.add('jiggle'); sl.__lp = true; navigator.vibrate && navigator.vibrate(12); }, 520); }, { passive: true });
+      for (const t of ['touchend', 'touchmove', 'touchcancel']) sl.addEventListener(t, () => clearTimeout(lpT), { passive: true });
+      document.addEventListener('pointerdown', (ev) => { if (sl.classList.contains('jiggle') && !ev.target.closest('#slots .del') && !sl.__lp) sl.classList.remove('jiggle'); sl.__lp = false; }, true);
+      sl.addEventListener('click', (ev) => { if (sl.classList.contains('jiggle') && !ev.target.closest('.del')) { ev.stopImmediatePropagation(); } }, true); }
     $('slots').addEventListener('click', (ev) => {
       const del = ev.target.closest('.del'), card = ev.target.closest('.slot');
       if (!card) return;

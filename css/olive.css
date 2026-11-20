@@ -782,3 +782,13 @@ html.touch body #quests-hud { left: 4px !important; }
 #lureask button { all: unset; cursor: pointer; font: 400 34px Arial, Helvetica, sans-serif; color: #ff1414; padding: 0.2em 0.6em; text-decoration: underline; }
 #lureask.in p { animation: lure-flicker 2.6s steps(1) infinite; }
 @keyframes lure-flicker { 0%, 100% { opacity: 1; } 47% { opacity: 1; } 48% { opacity: 0.25; transform: translateX(2px); } 50% { opacity: 1; transform: translateX(-3px); } 81% { opacity: 0.6; } 82% { opacity: 1; } }
+/* (5.6.5) diver slots on a phone: the delete marks hidden until a long press makes them jiggle */
+html.touch body #title .slot.tag .del:not(#_a):not(#_b):not(#_c) { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+html.touch body #title #slots.jiggle .slot.tag .del:not(#_a):not(#_b):not(#_c) { opacity: 1; pointer-events: auto; }
+html.touch body #title #slots.jiggle .slot.tag { animation: slot-jiggle 0.28s ease-in-out infinite alternate; }
+html.touch body #title #slots.jiggle .slot.tag:nth-child(2) { animation-delay: -0.1s; }
+html.touch body #title #slots.jiggle .slot.tag:nth-child(3) { animation-delay: -0.2s; }
+@keyframes slot-jiggle { from { transform: rotate(-1.4deg); } to { transform: rotate(1.4deg); } }
+/* the version, readable on a phone */
+html.touch body .version:not(#_a) { font-size: 13px !important; color: rgba(230, 236, 232, 0.7) !important; }
+html.touch body #title #slots.jiggle .slot.tag .del:not(#_a):not(#_b):not(#_c) { width: 34px; height: 34px; font-size: 20px; background: #a8402e !important; color: #fff6ea !important; border-radius: 17px !important; top: 8px; right: 8px; }

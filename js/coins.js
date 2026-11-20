@@ -244,18 +244,25 @@ const ART = {
   },
   // the sub's claw: two hooked steel jaws on a jointed wrist
   claw(x) {
+    // (5.6.5) the sub's grab arm: a jointed steel limb with its hydraulic ram, a wrist, and two hooked jaws lined with
+    // teeth, a bolt at each joint
     x.lineCap = 'round'; x.lineJoin = 'round';
-    x.strokeStyle = '#0a0b0c'; x.lineWidth = 12; x.beginPath(); x.moveTo(-46, 12); x.lineTo(-14, 2); x.stroke();
-    x.strokeStyle = '#6c7276'; x.lineWidth = 8; x.stroke();
-    x.strokeStyle = 'rgba(255,255,255,0.25)'; x.lineWidth = 2; x.beginPath(); x.moveTo(-44, 8); x.lineTo(-14, -1); x.stroke();
-    for (const s of [-1, 1]) {
-      x.strokeStyle = '#0a0b0c'; x.lineWidth = 9; x.beginPath(); x.moveTo(-10, 2); x.quadraticCurveTo(14, s * 26, 34, s * 10); x.stroke();
-      x.strokeStyle = '#8a9094'; x.lineWidth = 5.5; x.stroke();
-      x.strokeStyle = '#0a0b0c'; x.lineWidth = 6; x.beginPath(); x.moveTo(34, s * 10); x.lineTo(28, s * 3); x.stroke(); x.strokeStyle = '#8a9094'; x.lineWidth = 3; x.stroke();
+    const seg = (x0, y0, x1, y1, w, col) => { x.strokeStyle = '#0a0b0c'; x.lineWidth = w + 4; x.beginPath(); x.moveTo(x0, y0); x.lineTo(x1, y1); x.stroke(); x.strokeStyle = col; x.lineWidth = w; x.stroke(); x.strokeStyle = 'rgba(255,255,255,0.22)'; x.lineWidth = w * 0.25; x.beginPath(); x.moveTo(x0, y0 - w * 0.25); x.lineTo(x1, y1 - w * 0.25); x.stroke(); };
+    seg(-48, 34, -26, 10, 10, '#5a6064'); // the upper arm
+    seg(-40, 30, -24, 18, 3, '#9aa0a2'); // its ram
+    seg(-26, 10, -4, 2, 8, '#6c7276'); // the forearm
+    const bolt = (bx, by, r) => { x.fillStyle = '#3c4246'; x.strokeStyle = '#0a0b0c'; x.lineWidth = 2.4; x.beginPath(); x.arc(bx, by, r, 0, TAU); x.fill(); x.stroke(); x.fillStyle = '#c8ccc8'; x.beginPath(); x.arc(bx - r * 0.25, by - r * 0.25, r * 0.35, 0, TAU); x.fill(); };
+    bolt(-26, 10, 6);
+    // the jaws
+    for (const sg of [-1, 1]) {
+      const jaw = new Path2D(sg < 0 ? 'M-2 0C8 -16 26 -22 40 -12L36 -6C26 -12 12 -8 4 4Z' : 'M-2 4C8 18 26 24 40 14L36 8C26 14 12 10 4 0Z');
+      x.lineWidth = 4; x.strokeStyle = '#0a0b0c'; x.stroke(jaw); x.fillStyle = '#8a9094'; x.fill(jaw);
+      x.fillStyle = 'rgba(255,255,255,0.18)'; x.save(); x.clip(jaw); x.fillRect(-10, sg < 0 ? -24 : 2, 60, 6); x.restore();
+      x.fillStyle = '#d8dcd8'; for (let k = 0; k < 4; k++) { const tx2 = 12 + k * 7, ty2 = sg < 0 ? -9 + k * 0.6 : 10 - k * 0.6; x.beginPath(); x.moveTo(tx2, ty2); x.lineTo(tx2 + 2.4, ty2 + sg * 4); x.lineTo(tx2 + 4.8, ty2); x.fill(); }
     }
-    x.fillStyle = '#4c5256'; x.strokeStyle = '#0a0b0c'; x.lineWidth = 2.6; x.beginPath(); x.arc(-11, 2, 7, 0, TAU); x.fill(); x.stroke();
-    x.fillStyle = '#b8bec0'; x.beginPath(); x.arc(-11, 2, 2.2, 0, TAU); x.fill();
+    bolt(-2, 2, 7);
   },
+
   // the anglerfish's lure: the fleshy stalk curling up, the bulb at its end lit from within, a few specks drifting
   lure(x) {
     x.save(); x.scale(1.15, 1.15); x.translate(4, 4);
