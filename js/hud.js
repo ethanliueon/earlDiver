@@ -244,7 +244,8 @@ export class Hud {
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
     // (5.3) sized from the finger, not the screen: CSS pixels (about 0.18 mm each on a phone). The main button about
     // 2 cm across, the others about 1.4 cm, never below Apple's 44 pt
-    const u = this.c.width / window.innerWidth * (window.__fingerK || 1.3), pad = 16 * u, R = 36 * u, cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm // (5.4) a tablet (no page scaling): 1.3x, so the small buttons reach 44 pt
+    const u = this.c.width / window.innerWidth * (window.__fingerK || 1.3), pad = 16 * u, R = 41 * u, // (5.6.9) larger: 36 to 41
+      cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm // (5.4) a tablet (no page scaling): 1.3x, so the small buttons reach 44 pt
     const held = this.held || new Set();
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
     const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
@@ -295,12 +296,14 @@ export class Hud {
       // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
       // (5.6.8) the same four in the same places on deck and in the cabin: the sprint button runs there; the rest wait
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Call her from the water' },
-      { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'For the water' : 'No glow stick: the boat sells them' },
+      // (5.6.9) the glow sticks on his belt; with none on it, a padlock (and where to get one)
+      { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'For the water' : (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
       { key: 'sprint', icon: 'sprint', on: true, lit: !!g.sprintLock },
       { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'For the water' },
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
-    const ROW = [{ key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
+    const ROW = [{ key: 'journal', dom: true }, { key: 'b', icon: 'bag', on: true }].concat( // (5.6.9) the journal's coin (HTML) above the bag
+e.inSub ? [
       { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet, away: true },
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
     ] : aboard ? [] : [
@@ -313,7 +316,18 @@ export class Hud {
       ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
       ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
     };
+    // (5.6.9) a padlock over a coin that is locked: dark bronze, a cream edge
+    const padlock = (x, y, k) => {
+      ctx.save(); ctx.translate(x, y); ctx.lineJoin = 'round';
+      ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.beginPath(); ctx.arc(0, 0, k * 1.05, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#0c0b08'; ctx.lineWidth = k * 0.34; ctx.beginPath(); ctx.arc(0, -k * 0.18, k * 0.36, Math.PI, 0); ctx.stroke();
+      ctx.strokeStyle = '#b9ab84'; ctx.lineWidth = k * 0.16; ctx.stroke();
+      ctx.fillStyle = '#8a7650'; ctx.strokeStyle = '#0c0b08'; ctx.lineWidth = k * 0.1; ctx.beginPath(); ctx.roundRect(-k * 0.55, -k * 0.2, k * 1.1, k * 0.8, k * 0.12); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#1a1610'; ctx.beginPath(); ctx.arc(0, k * 0.12, k * 0.12, 0, TAU); ctx.fill(); ctx.fillRect(-k * 0.05, k * 0.12, k * 0.1, k * 0.26);
+      ctx.restore();
+    };
     const btn = (a, x, y, r) => {
+      if (a.dom) { this.journalAt = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, r: r * kx }; this.journalR = r * kx; return; } // (5.6.9) the journal's HTML coin is placed here by main.js
       const down = held.has(a.key);
       // one that comes and goes rises in (and sinks away) over a fifth of a second rather than blinking
       if (a.away) { const v0 = vis[a.key] ?? 0, v = vis[a.key] = clamp(v0 + (a.on ? 1 : -1) * dt * 6, 0, 1); if (v <= 0.01) return; r *= 0.7 + 0.3 * (1 - (1 - v) * (1 - v)); ctx.save(); ctx.globalAlpha *= v; }
@@ -325,17 +339,19 @@ export class Hud {
         ctx.fillStyle = down ? 'rgba(4,8,8,0.8)' : 'rgba(6,10,10,0.55)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
         ctx.strokeStyle = a.lit ? 'rgba(236,224,190,0.85)' : 'rgba(230,222,196,0.22)'; ctx.lineWidth = 1.4 * u; ctx.stroke();
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
-      } else drawCoin(ctx, x, y, r, a.icon, down ? 'down' : !a.on ? 'off' : a.lit ? 'lit' : 'on', a.look);
-      if (a.n > 1) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
+      } else drawCoin(ctx, x, y, r, a.icon, down ? 'down' : !a.on ? 'off' : a.lit ? 'lit' : 'on', a.look, a.tint);
+      if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
+      if (a.n > 1 && !a.lock) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
       ctx.restore();
       if (a.away && !a.on) return; // going: no longer pressable
       hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : 'msg:' + (a.why || 'Not now'));
     };
-    const r = 21 * u, gap = 30 * u, rho0 = R + r + gap;
+    const r = 25 * u, gap = 30 * u, rho0 = R + r + gap; // (5.6.9) the arc's coins larger: 21 to 25
     A.forEach((a, i) => { const ang = [-90, -125, -160, -195][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
-    { const rb = 15 * u, stepB = rb * 2 + 9 * u, ra = this.radarAt || { x: W - pad - 40 * u, y: 60 * u, r: 30 * u };
-      const top = ra.y + ra.r + 12 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(1, Math.floor((last - top) / stepB) + 1);
+    { const rb = 19 * u, stepB = rb * 2 + 9 * u, // (5.6.9) 15 to 19
+      ra = this.radarAt || { x: W - pad - 40 * u, y: 60 * u, r: 30 * u };
+      const top = ra.y + ra.r + 12 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(2, Math.floor((last - top) / stepB) + 1);
       ROW.slice(0, n).forEach((a, i) => btn(a, ra.x, top + i * stepB, rb)); } // (5.6.2) small coins, as the arc's
     // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
@@ -344,9 +360,8 @@ export class Hud {
       drawCash(ctx, mx, my, ch);
       ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
       const txt = money(P.cash || 0), tx0 = mx + ch * 0.8 + 6 * u; ctx.fillStyle = '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
-      const endX = tx0 + ctx.measureText(txt).width; ctx.restore();
-      const jr = 19 * u; this.journalAt = { x: (endX + 14 * u + jr) * kx + this.safeL * kx, y: (my + this.safeT) * kx, r: jr * kx };
-      this.topLeftBottom = (my + jr + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
+      ctx.restore();
+      this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
       const rg = 17 * u, gx = W - 12 * u - rg, gy = 12 * u + rg;
       btn({ key: 'settings', icon: 'gear', on: true }, gx, gy, rg);
       this.gearSpace = rg * 2 + 10 * u; }
@@ -361,8 +376,9 @@ export class Hud {
     ctx.save(); ctx.globalAlpha = aboard ? (handOn ? 1 : 0.7) : (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7; // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
     const bKey = aboard ? 'f' : ' ';
+    const rarOf = (k) => { const it = k === 'net' ? gear(P, 'net') : k === 'cam' && owns(P, 'camera') ? gear(P, 'cam') : null; return it && it.rarity || null; }; // (5.6.9) the tool's rarity tints its coin
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
-      drawCoin(ctx, cx, cy, R, kind, held.has(bKey) ? 'down' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look); }
+      drawCoin(ctx, cx, cy, R, kind, held.has(bKey) ? 'down' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
     if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(230,222,196,${(0.25 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
@@ -377,11 +393,16 @@ export class Hud {
     // (5.6) the swap chip on the big button's rim: the next tool owned, a tap takes it in hand
     if (!e.inSub && !aboard) {
       const trs = P.traps || {}, owned = ['net'].concat(owns(P, 'camera') ? ['cam'] : [], ['pot', 'fish', 'steel', 'cage'].some((k) => trs[k] > 0) ? ['trap'] : []);
+      // (5.6.9) larger, and always there: the tool it swaps to; with nothing to swap to, a camera behind a padlock
+      const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1);
       if (owned.length > 1) {
-        const nx = owned[(owned.indexOf(sel || 'net') + 1) % owned.length], rc = 14 * u, a2 = -38 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.15), sy2 = cy + Math.sin(a2) * (R + rc * 0.15);
-        drawCoin(ctx, sx2, sy2, rc, nx, held.has('swap') ? 'down' : 'on', nx === 'net' ? netLook(gear(P, 'net').look || 0) : nx === 'cam' ? gear(P, 'cam').look : null);
-        ctx.save(); ctx.translate(sx2 - rc * 0.7, sy2 + rc * 0.7); drawGlyph(ctx, 'swap', 0, 0, rc * 0.9); ctx.restore();
+        const nx = owned[(owned.indexOf(sel || 'net') + 1) % owned.length];
+        drawCoin(ctx, sx2, sy2, rc, nx, held.has('swap') ? 'down' : 'on', nx === 'net' ? netLook(gear(P, 'net').look || 0) : nx === 'cam' ? gear(P, 'cam').look : null, rarOf(nx));
+        ctx.save(); ctx.translate(sx2 - rc * 0.68, sy2 + rc * 0.68); ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.arc(0, 0, rc * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc * 0.8); ctx.restore();
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'swap');
+      } else {
+        drawCoin(ctx, sx2, sy2, rc, 'cam', 'off', null); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42);
+        hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No camera yet: the computer in the cabin sells them');
       }
     }
     hot(cx - R, cy - R, R * 2, R * 2, aboard ? (handOn ? 'f' : 'msg:' + (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door, or off the end to dive')) : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
@@ -524,7 +545,7 @@ export class Hud {
     const sec = Math.max(0, Math.floor(left));
     const flash = (a, b2) => (Math.sin(g.time * 8) > 0 ? a : b2);
     if (g.noAir && !e.atSurface) { /* (4.28) the message line says it; not twice */ }
-    else if (!e.atSurface && o2 < 0.25) notes.push([sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air` : `${sec} s of air`, '#f06a5c']);
+    else if (!e.atSurface && o2 < 0.25 && !g.firstDive) notes.push([sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air` : `${sec} s of air`, '#f06a5c']);
     // (4.28) no pressure multiplier: the air line draining faster says it
     if (e.inSub) {
       const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1);

@@ -416,16 +416,20 @@ const ART = {
 };
 
 // the face for button `kind` (the art, if drawn here; else its symbol in bone), radius r, state 'on' | 'off' | 'down' | 'lit'
-export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null) {
+// (5.6.9) a tool's coin tinted by its rarity: dark, muddy versions of the rarity colours (they sit in the olive and
+// bronze, not app-bright), and a thin lip in the rarity's own colour
+const TINT = { common: [110, 8, 13], uncommon: [112, 26, 13], rare: [208, 30, 14], exotic: [276, 22, 14], legendary: [36, 40, 13] };
+const TINT_LIP = { common: 'rgba(201,205,196,0.55)', uncommon: 'rgba(124,207,127,0.7)', rare: 'rgba(90,168,240,0.75)', exotic: 'rgba(194,122,240,0.75)', legendary: 'rgba(214,160,70,0.8)' };
+export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint = null) {
   const lk = look && typeof look === 'object' ? (look.id || JSON.stringify(look).slice(0, 40)) : String(look ?? '');
-  const key = `${kind}|${state}|${Math.round(r * 2)}|${lk}`;
+  const key = `${kind}|${state}|${Math.round(r * 2)}|${lk}|${tint || ''}`;
   let t = cache.get(key);
   if (!t) {
     const R = Math.round(r * 2) / 2, pad = Math.ceil(R * 0.14) + 2, size = Math.ceil(R * 2 + pad * 2), c = document.createElement('canvas');
     c.width = c.height = size; const x = c.getContext('2d'); x.translate(size / 2, size / 2);
     // its shadow on the water
     x.fillStyle = 'rgba(0,0,0,0.32)'; x.beginPath(); x.arc(0, R * 0.08, R * 1.03, 0, TAU); x.fill();
-    face(x, R, HUE[kind] || [190, 20, 13], kind.length * 31 + 7);
+    face(x, R, (tint && TINT[tint]) || HUE[kind] || [190, 20, 13], kind.length * 31 + 7);
     // a soft light behind the art
     const gl = x.createRadialGradient(0, 0, 0, 0, 0, R * 0.7); gl.addColorStop(0, 'rgba(230,236,220,0.13)'); gl.addColorStop(1, 'rgba(230,236,220,0)');
     x.fillStyle = gl; x.beginPath(); x.arc(0, 0, R * 0.7, 0, TAU); x.fill();
@@ -436,6 +440,7 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null) {
     if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.65; x.fillStyle = '#808080'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(6,8,8,0.22)'; x.fill(); }
     if (state === 'down') { x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); }
     lip(x, R, state);
+    if (tint && TINT_LIP[tint] && state !== 'off') { x.lineWidth = R * 0.045; x.strokeStyle = TINT_LIP[tint]; x.beginPath(); x.arc(0, 0, R * 0.955, 0, TAU); x.stroke(); }
     t = { c, half: size / 2 }; cache.set(key, t); if (cache.size > 80) cache.delete(cache.keys().next().value);
   }
   ctx.drawImage(t.c, cx - t.half, cy - t.half + (state === 'down' ? r * 0.04 : 0));

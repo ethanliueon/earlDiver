@@ -367,6 +367,9 @@ const ui = new UI({
   getProfile: () => profile,
   onSaveProfile: () => saveProfile(profile),
   canChangeGear: () => !!(g && g.mode === 'play' && (g.aboard || g.earl.inSub || ui.cabinOpen())),
+  // (5.6.9) the belt: on (from the locker, as many as fit) or off (all of it into the locker)
+  onBelt: (k, on) => { const P = profile; if (!P || !g) return; P.spare = P.spare || {}; if (on) { const m = Math.min(supplyMax(P, k) - (g.items[k] || 0), P.spare[k] || 0); if (m > 0) { g.items[k] = (g.items[k] || 0) + m; P.spare[k] -= m; } } else { P.spare[k] = (P.spare[k] || 0) + (g.items[k] || 0); g.items[k] = 0; } syncProfile(); saveProfile(P); audio.ready && audio.click(); },
+  onMessage: (m) => hud.toast(m),
   onEquip: (k) => { const ok = buy(k); return ok; },
   canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave() || nearStation())), // someone to sell to: the Margaret, the station, or Dave
 });
@@ -922,7 +925,7 @@ function buy(kind) {
     P.addons = Object.assign({}, P.addons, { [kind]: true }); g.addons = P.addons; ok = true;
     if (kind === 'airBank') { const was = g.sub.o2Max; applySub(g.sub, P); g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + Math.max(0, g.sub.o2Max - was)); } // the new bottles come full
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
-  } else if (SUPPLIES[kind] && (g.items[kind] || 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) {
+  } else if (SUPPLIES[kind] && (g.items[kind] || 0) + ((P.spare && P.spare[kind]) || 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) { // (5.6.9) what is on the belt and what waits in the locker
     g.items[kind] = g.items[kind] || 0;
     g.items[kind]++; ok = true;
     ui.showGains([{ kind: 'supply', id: kind }]);
@@ -1103,7 +1106,7 @@ function tutor() {
     if (!zone('fish', bd < 2.6)) {
       text = 'Swim to the orange fish';
       // (4.3.5) how to sprint, until he has: the right mouse button held, or Shift
-      if (!P.tutSprinted) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; // (4.3.9) the whole swim there
+      // (5.6.9) sprint is taught once, on the way back up (it was ringed through the whole swim down, while the air was the worry)
       return;
     }
     doWhat(tf);
@@ -1117,7 +1120,7 @@ function tutor() {
       text = 'Done. Claim it in your quests';
       spot = { sel: ['#catalog .cat-off', '#workshop-close', '#inventory .inv-close', '#journal-close', '#quests-btn'] }; // (the Quests button shows in the cabin)
     }
-    else { text = 'Done. Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Claim it here', light: true }; }
+    else { text = hud.touch ? 'Done. Open your journal and claim it' : 'Done. Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Claim it here', light: true }; }
   } else if (m.id === 'firstfish') {
     // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
     // The step is only done at the surface, so the claim is never made underwater.
@@ -1163,7 +1166,7 @@ function tutor() {
     } else if (catOpen) {
       const sel = ['#catalog button[data-buy^="item:"]:not([disabled])', '#catalog [data-cart="checkout"]:not([disabled])'];
       if (pick) sel.push(`#catalog .cat-main [data-go="item:${pick.id}"]`, `#catalog .cat-nav [data-go="${pick.kind}"]`);
-      text = pick ? `Buy some gear: the ${pick.name.toLowerCase()} is ${money(pick.price, false)}` : 'Not enough cash yet: sell more catch first';
+      text = pick ? (hud.touch ? `Buy the ${pick.name.toLowerCase()} for ${money(pick.price, false)}: it is lit below` : `Buy some gear: the ${pick.name.toLowerCase()} is ${money(pick.price, false)}`) : 'Not enough cash yet: sell more catch first';
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
     }
     else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
@@ -1185,7 +1188,7 @@ function tutor() {
   g.tut = { text, to, fish, prompt, spot, door };
   // (4.3.8) the instruction has its own line at the left (tutspot.js), so the game's own messages at the top are
   // never held back by it. None while the quests are open: the arrow at Claim is enough.
-  if (ui.anyOpen('cabin')) g.tut.text = null; // (4.4.1) nor over any open screen (the journal, the shop, ...): its arrow says it
+  if (ui.anyOpen('cabin') && !(hud.touch && catOpen && m && m.id === 'buy')) g.tut.text = null; // (4.4.1) nor over any open screen (the journal, the shop, ...): its arrow says it; (5.6.9) the shop on a phone keeps a short line over it, as nothing else says why
   g.tutAction = action;
 }
 const tutSpot = new TutSpot();
@@ -1593,7 +1596,7 @@ function interact(t, exitSub) {
     // taking things from the deep draws its attention
     if (p.y > 200) g.entity.disturb(g, p.type === 'necklace' ? 0.3 : p.type === 'lure' ? 0.2 : p.type === 'sapphire' ? 0.25 : 0.04);
     if (p.type === 'lure' || p.type === 'necklace') {
-      if (g.items[p.type] >= 1) { hud.toast(p.type === 'lure' ? 'You already carry a lure' : 'You already carry a glow stick', 'warn'); return; }
+      if (g.items[p.type] >= supplyMax(profile, p.type)) { hud.toast(p.type === 'lure' ? 'You already carry a lure' : 'Your belt is full of glow sticks', 'warn'); return; }
       g.items[p.type]++;
       ui.showGains([{ kind: 'supply', id: p.type }]);
     } else if (p.type === 'sapphire') {
@@ -2288,9 +2291,13 @@ function update(dt) {
       }
       const nearB = !g.aboard && ((Math.abs(e2.x - BOAT.x) < 14 && e2.y < 4 && !e2.inSub) || (e2.inSub && g.sub.docked));
       if (nearB && (bagN || e2.inSub || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u'))) g.tapMarks.push({ key: 'u', boat: [28.5, -17.5, 35.5, -11.2], what: 'winch' }); // her winch at the stern: the catch is hauled up by it
+      // (5.6.9) during the tutorial only the step's own thing is marked (the door on the first step, the hatch on the
+      // swim down and the ladder while the winch is wanted all pulled the eye the wrong way)
+      if (profile.tut === 'on') { const id = g.tutAction && g.tutAction.id, want = { climb: 'ladder', cabin: 'door', sell: 'winch' }[id]; g.tapMarks = want ? g.tapMarks.filter((m) => m.what === want) : []; }
     }
     // (5.6.7) the tutorial's first dive cannot drown him: a miss, a chase and a sprint still leave a quarter of the tank
-    if (firstDive(profile) && g.earl && !g.earl.inSub && g.earl.o2Max) g.earl.o2 = Math.max(g.earl.o2, g.earl.o2Max * 0.25);
+    g.firstDive = firstDive(profile); // (5.6.9) the HUD keeps the red air figures out of it
+    if (g.firstDive && g.earl && !g.earl.inSub && g.earl.o2Max) g.earl.o2 = Math.max(g.earl.o2, g.earl.o2Max * 0.25);
     afterTips(dt); // (4.6.0)
     g.autosaveT = (g.autosaveT || 0) + dt; if (g.autosaveT > 10 && profile && !g.kill) { g.autosaveT = 0; syncProfile(); saveProfile(profile); } // (4.12.6) the dive saved every 10 s
     lessons(); // (4.7.0)
@@ -2833,18 +2840,19 @@ function frame(now) {
     hud.obsScreen = ot ? { x: sx(oc ? oc.x : ot.x ?? g.earl.x), y: sy(oc ? oc.y : ot.y ?? g.earl.y), r: Math.max(34 * hud.c.width / innerWidth * (window.__fingerK || 1), (ot.sp.len || 0.3) * cm.ppm * k) } : null;
   }
   if (hud.touch) { // (5.6.2) the quest group under the settings coin, its pictures the coins'
-    // (5.6.8) the journal's coin beside the money (hud.journalAt, its centre); the goal's line under that row. Placed by
+    // (5.6.8) the journal's coin (hud.journalAt, its centre; 5.6.9: in the column under the radar, above the bag); the goal's line under the money. Placed by
     // where they really are on the page, so the zoom the stylesheet gives them does not throw them off
     const qh = document.getElementById('quests-hud'), qb = document.getElementById('quests-btn'), J = hud.journalAt;
+    if (qb && J && J.r && Math.abs((qb.__r || 0) - J.r) > 0.5) { qb.__r = J.r; const im = qb.querySelector('img'), z = parseFloat(getComputedStyle(qh).zoom) || 1, sz = (2 * J.r / 0.86 / z).toFixed(1) + 'px'; if (im) { im.style.setProperty('width', sz, 'important'); im.style.setProperty('height', sz, 'important'); } } // (5.6.9) the size of the column's coins
     if (qh && qb && J) { const r0 = qb.getBoundingClientRect(); if (r0.width) { const dx = J.x - (r0.left + r0.width / 2), dy = J.y - (r0.top + r0.height / 2); if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(qh), z = parseFloat(st.zoom) || 1; qh.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); qh.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
-    { const tl = document.querySelector('#tut-spot .ts-line'); if (tl && hud.topLeftBottom && tl.classList.contains('in')) { const r1 = tl.getBoundingClientRect(), dx = hud.topLeftX - r1.left, dy = hud.topLeftBottom - r1.top; if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(tl), z = parseFloat(st.zoom) || 1; tl.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); tl.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
+    { const tl = document.querySelector('#tut-spot .ts-line'), catO = ui.catalogOpen && ui.catalogOpen(); if (tl && catO && tl.style.left) { tl.style.removeProperty('left'); tl.style.removeProperty('top'); } if (tl && hud.topLeftBottom && tl.classList.contains('in') && !catO) { const r1 = tl.getBoundingClientRect(), dx = hud.topLeftX - r1.left, dy = hud.topLeftBottom - r1.top; if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(tl), z = parseFloat(st.zoom) || 1; tl.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); tl.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
     if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = coinURL(k); } }
   }
   lureAsk(); // (5.6.4)
   bookTabs(); // (5.6.7)
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
-  hud.handOn = !!(g.aboard && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
+  hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);

@@ -107,10 +107,10 @@ export class Catalog {
       return ['pot', 'fish'].map((k, i) => { const T = TRAPS[k], have = tr[k] || 0; return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, price: T.price, line: k === 'pot' ? 'A galvanised box with one funnel.' : 'A mesh box with a funnel at each end.', good: `To ${T.maxDepth} m; up to ${T.holds} animals`, count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', i] }; });
     }
     // (4.0.0) the anglerfish lure: not at Bayside, only at the station and Dave's, and dear
-    if (cat === 'lure') { const S = SUPPLIES.lure, have = (g && g.items.lure) || 0, mx = supplyMax(P, 'lure');
+    if (cat === 'lure') { const S = SUPPLIES.lure, have = ((g && g.items.lure) || 0) + ((P.spare && P.spare.lure) || 0), mx = supplyMax(P, 'lure');
       return [{ key: 'lure', id: 'lure', kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you carry ${have} of ${mx}`, full: have >= mx, pic: ['supply', 'lure'] }]; }
     if (cat === 'supply') {
-      return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = (g && g.items[k]) || 0, mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc, count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
+      return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = ((g && g.items[k]) || 0) + ((P.spare && P.spare[k]) || 0), mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc, count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
     }
     return [];
   }

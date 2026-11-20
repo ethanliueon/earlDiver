@@ -211,7 +211,9 @@ export function updateCapture(g, dt) {
         // (5.0) a miss you can see: the fish flinches and bolts with a kick of speed and a puff of silt and bubbles
         // (now and then the rim clips it instead, and it hangs dazed a moment: a second chance)
         const c = tgt.c;
-        if (c && !(c.tired > 0) && Math.random() < 0.22) { c.dazed = 1.3; c.fleeT = 0; }
+        // (5.6.9) the tutorial's scripted miss: a short dart of 2 or 3 m and it hangs there, dazed, for the second swing
+        if (c && force === 'miss') { const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.1; c.tired = 0; c.fleeT = 0; c.dazed = 3; c.startle = 0.32; c.vx = dx / dd * 3.2; c.vy = dy / dd * 1.4; }
+        else if (c && !(c.tired > 0) && Math.random() < 0.22) { c.dazed = 1.3; c.fleeT = 0; }
         else if (c) {
           c.tired = 0; c.dazed = 0; c.fleeT = 2.2; c.startle = 0.32;
           const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.1, f = Math.max(1.5, (c.flee || 1.2) * 1.4);

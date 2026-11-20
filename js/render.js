@@ -48,6 +48,7 @@ const WATER_LIT = [60, 150, 180];
 // (kelp, seagrass, branching corals, sea fans, sponges, tube worms) stays upright, as it does in life,
 // and is set a little into the uphill side so neither edge of its base floats. The slope is taken
 // across the thing's own width, so small bumps don't make it wobble.
+const FISHY = new Set(['fish', 'shark', 'billfish', 'hatchet', 'angler', 'viper', 'dolphin', 'swallower', 'eel']); // (5.6.9) shapes whose far silhouette has a tail
 const LIES = new Set(['abalone', 'angler', 'basketstar', 'blob', 'bobbit', 'clam', 'conch', 'crab', 'cucumber', 'fish', 'flat', 'frog', 'isopod',
   'lobster', 'mussel', 'octopus', 'oyster', 'scallop', 'seapig', 'shrimp', 'star', 'stone', 'tripod', 'urchin', 'brain', 'dumbo', 'nudibranch']);
 export function seabedPose(W, x, halfW, lies) {
@@ -386,11 +387,15 @@ export class Renderer {
       // he was close enough for its own drawing. Kept, switched off, in case a slow machine ever needs it back.
       // (4.26) the smallest animals (krill, larvae, a far school) are one flat silhouette each, in the species' own
       // colour under the water's tint: at a few pixels the full drawing only shimmered, and it cost the most
-      if (Ld < 12 && !c.variant && !LEGENDARY.has(c.sp.id)) {
+      // (5.6.9) on a phone (drawn at 1x) the cut-off is lower, so fish a few millimetres long on its screen are drawn as
+      // themselves; and the silhouettes of fish keep a forked tail, so even the tiniest read as fish, not ovals
+      if (Ld < (this.phone ? 7 : 12) && !c.variant && !LEGENDARY.has(c.sp.id)) {
         let fb = flatB.get(c.sp.id);
         if (!fb) { fb = { sp: c.sp, path: new Path2D() }; flatB.set(c.sp.id, fb); }
         const x = S(c.x), y = Sy(c.y), rot = c.dir > 0 ? tilt : Math.PI - tilt, hl = Math.max(1.2, Ld * 0.5), hh = Math.max(0.8, Ld * Math.min(0.22, c.sp.v.h * 0.5 + 0.06));
         fb.path.moveTo(x + Math.cos(rot) * hl, y + Math.sin(rot) * hl); fb.path.ellipse(x, y, hl, hh, rot, 0, TAU);
+        if (FISHY.has(shape)) { const cx2 = Math.cos(rot), sy2 = Math.sin(rot), bx2 = x - cx2 * hl * 0.8, by2 = y - sy2 * hl * 0.8, ex = x - cx2 * hl * 1.6, ey = y - sy2 * hl * 1.6, w2 = hh * 1.15;
+          fb.path.moveTo(bx2, by2); fb.path.lineTo(ex - sy2 * w2, ey + cx2 * w2); fb.path.lineTo(x - cx2 * hl * 1.35, y - sy2 * hl * 1.35); fb.path.lineTo(ex + sy2 * w2, ey - cx2 * w2); fb.path.closePath(); }
         if (c.sp.v.glow && (glowSkip++ % 6 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.35), 0.4, 0.7]);
         continue;
       }
@@ -1200,7 +1205,7 @@ export class Renderer {
         ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
         const tw = ctx.measureText(L.text.toUpperCase()).width + 8, off = Math.max(30, ppm * 0.7);
         if (side < 0 && ax - off - tw < 8) side = 1; else if (side > 0 && ax + off + tw > this.W - 8) side = -1;
-        const tx = ax + side * off, ty = Math.max(70, ay - Math.max(44, ppm * 1.5) - rise); // above it, clear of words beside it
+        const tx = ax + side * off, ty = Math.min(Math.max(70, ay - Math.max(44, ppm * 1.5) - rise), this.touch && (side > 0 ? tx : tx - tw) < this.W * 0.3 ? this.H * 0.55 : Infinity); // above it, clear of words beside it; (5.6.9) on a phone, never down in the stick's corner
         if (tx < -200 || tx > this.W + 200) continue;
         ctx.globalAlpha = a * 0.9; ctx.strokeStyle = 'rgba(205,215,200,0.5)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(ax + side * ppm * 0.25, ay - ppm * 0.1); ctx.lineTo(tx - side * 4, ty + 6); ctx.stroke();

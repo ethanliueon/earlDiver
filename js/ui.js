@@ -193,10 +193,10 @@ export class UI {
     $('restart').addEventListener('click', () => this.confirm('Start a new game?', 'A new diver, from nothing: no cash, no gear, an empty journal. This save is replaced.', 'Start over', 'Keep playing', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onNewGame(); }));
     // the title screen: Continue, the three slots, controls, full screen
     $('continue').addEventListener('click', () => { const n = lastSlot(); if (n) h.onSlot(n); });
-    // (5.6.5) on a phone, as on its home screen: a long press on a diver and they all jiggle, each with its delete
-    // mark; a tap anywhere else stops it
+    // (5.6.5) on a phone, a long press on a diver: (5.6.9) that diver alone wobbles, with its delete mark; a tap
+    // anywhere else stops it
     { let lpT = null; const sl = $('slots');
-      sl.addEventListener('touchstart', (ev) => { if (!ev.target.closest('.slot') || ev.target.closest('.del')) return; clearTimeout(lpT); lpT = setTimeout(() => { sl.classList.add('jiggle'); sl.__lp = true; navigator.vibrate && navigator.vibrate(12); }, 520); }, { passive: true });
+      sl.addEventListener('touchstart', (ev) => { if (!ev.target.closest('.slot') || ev.target.closest('.del')) return; clearTimeout(lpT); const held = ev.target.closest('.slot'); lpT = setTimeout(() => { sl.querySelectorAll('.slot.held').forEach((q) => q.classList.remove('held')); held.classList.add('held'); sl.classList.add('jiggle'); sl.__lp = true; navigator.vibrate && navigator.vibrate(12); }, 520); }, { passive: true });
       for (const t of ['touchend', 'touchmove', 'touchcancel']) sl.addEventListener(t, () => clearTimeout(lpT), { passive: true });
       document.addEventListener('pointerdown', (ev) => { if (sl.classList.contains('jiggle') && !ev.target.closest('#slots .del') && !sl.__lp) sl.classList.remove('jiggle'); sl.__lp = false; }, true);
       sl.addEventListener('click', (ev) => { if (sl.classList.contains('jiggle') && !ev.target.closest('.del')) { ev.stopImmediatePropagation(); } }, true); }
@@ -482,7 +482,7 @@ export class UI {
     // tug), instead of standing in the middle of the screen over the sea
     const bag = document.documentElement.classList.contains('touch') && !this.anyOpen() && (window.__hudHots || []).find((q) => q.key === 'b');
     el.classList.toggle('dock', !!bag);
-    if (bag) { el.style.setProperty('--dx', (bag.x + bag.w + 10) + 'px'); el.style.setProperty('--dy', (bag.y + bag.h / 2) + 'px'); el.style.setProperty('--tx', (-(bag.w / 2 + 10)) + 'px'); }
+    if (bag) { el.style.setProperty('--dx', (bag.x - 10) + 'px'); el.style.setProperty('--dy', (bag.y + bag.h / 2) + 'px'); el.style.setProperty('--tx', (bag.w / 2 + 70) + 'px'); } // (5.6.9) to the left of the bag (it sits at the right edge now), whole on the screen
     el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
     clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), bag ? 2200 : 2900);
   }
@@ -951,12 +951,18 @@ export class UI {
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
       return `<div class="lk-tile r-${it.rarity}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${q.isNew ? '<i class="new">new</i>' : ''}${it.rarity === 'legendary' ? `<span class="glint" style="--d:${(q.u.length * 7 % 23) / 10}s;--x:${20 + q.u.charCodeAt(1) % 60}%;--y:${18 + q.u.charCodeAt(2) % 50}%"></span><span class="glint b" style="--d:${(q.u.length * 13 % 31) / 10 + 1.4}s;--x:${30 + q.u.charCodeAt(3) % 50}%;--y:${40 + q.u.charCodeAt(4) % 40}%"></span>` : ''}</div>`; }).join('');
+    // (5.6.9) the belt: glow sticks (up to 5) and the lure, what he takes into the water; the rest wait in the locker
+    const SP = P.spare || {}, SUPN = { necklace: 'Glow', lure: 'Lure' };
+    const beltSlot = (k) => { const n = (g.items && g.items[k]) || 0;
+      return `<div class="eq-slot sq belt${n ? ' r-common' : ' empty'}" data-belt="${k}" title="${SUPN[k]}">${n ? `<img src="${pictureOf('supply', k, 120, 72, true)}" alt="">${k === 'necklace' ? `<b class="belt-n">${n}/5</b>` : ''}` : `<span>${SUPN[k]}</span>`}<small class="slot-nm">${SUPN[k]}</small></div>`; };
+    const spare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).map((k) => `<div class="lk-tile r-common sup" data-sup="${k}" title="${SUPN[k]}: tap to put on the belt"><img src="${pictureOf('supply', k, 120, 72, true)}" alt=""><b class="belt-n">×${SP[k]}</b></div>`).join('');
+    const nSpare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).length;
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}</div></div>`
+      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 4).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(4).map(slot).join('')}${beltSlot('necklace')}${beltSlot('lure')}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       + this.airHtml(P, g)
-      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length))}</div></div></div>${pop}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}`;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
@@ -1057,7 +1063,11 @@ export class UI {
     // a card's buttons, and clicking a tile (or a slot's item) to open its card
     const box = $('inventory').querySelector('.inv-body');
     box.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); this.lkSel = null; this.renderInventory(); }));
-    root.querySelectorAll('.lk-tile:not(.empty), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
+    root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
+    // (5.6.9) the belt: a tap on a slot takes it off (into the locker), a tap on a locker stack puts it on
+    const beltMsg = () => this.h.onMessage && this.h.onMessage('Change gear on deck, in the cabin or in the sub');
+    root.querySelectorAll('[data-belt]').forEach((el) => el.addEventListener('click', () => { if (!this.h.canChangeGear()) return beltMsg(); if (this.h.onBelt) { this.h.onBelt(el.dataset.belt, false); this.renderInventory(); } }));
+    root.querySelectorAll('[data-sup]').forEach((el) => el.addEventListener('click', () => { if (!this.h.canChangeGear()) return beltMsg(); if (this.h.onBelt) { this.h.onBelt(el.dataset.sup, true); this.renderInventory(); } }));
     const pop = box.querySelector('.item-pop');
     if (pop) { pop.addEventListener('click', (ev) => { if (ev.target === pop || ev.target.closest('.ip-close')) { this.lkSel = null; this.renderInventory(); } }); }
     if (!this.h.canChangeGear()) return;

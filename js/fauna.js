@@ -392,7 +392,7 @@ export class Fauna {
       const a = rng() * Math.PI * 2, rr = Math.pow(rng(), 0.75);
       const c = this.makeFish(sp, x + Math.cos(a) * rr * baseR * 1.8, y + Math.sin(a) * rr * baseR, dir, gid, false);
       c.ox = Math.cos(a) * rr; c.oy = Math.sin(a) * rr;
-      c.speed = clamp(0.6 + sp.len * 3, 0.6, 1.8);
+      c.speed = clamp(0.35 + sp.len * 2, 0.35, 1.3); // (5.6.9) slower: a school of finger-long fish went 9 body lengths a second
       c.hvy = 0; c.flash = 0; c.turnedAt = -99;
       this.list.push(c);
     }
@@ -403,7 +403,7 @@ export class Fauna {
     const sz = Math.min(rng.range(0.6, 1.15), rng.range(0.6, 1.15)) + (rng.range(0, 1) < 0.08 ? rng.range(0.1, 0.2) : 0); // (3.7.1) sizes from 0.6 to 1.35 of the usual: most a bit under, now and then a big one
     const len = sp.len * sz, hab = sp.v.hab;
     // cruising at roughly one body length a second (bounded), much slower for drifters
-    let cruise = clamp(len * 0.8, 0.3, 1.6);
+    let cruise = clamp(len * 0.6, 0.2, 1.3); // (5.6.9) a calmer cruise; fleeing is unchanged
     if (hab === 'drift' || hab === 'drift-low') cruise = 0.12;
     if (sp.id === 185 || sp.id === 186) cruise = 2.4; if (sp.id === 187) cruise = 2.2; if (sp.id === 184) cruise = 1.4;
     // escape speed: 0.7-1.3x Earl's swimming speed, small fish fastest; some never flee
@@ -575,7 +575,7 @@ export class Fauna {
         if (dd < hz) { const k = (1 - dd / hz) * 4; ax += dx / dd * k; ay += dy / dd * k * 0.6; }
       }
       s.vx += ax * dt; s.vy += ay * dt;
-      const sp = 0.6 + s.threat * 2.4 + dread * 0.8; // a scared school moves off together, about as fast as a diver
+      const sp = 0.4 + s.threat * 2.4 + dread * 0.8; // (5.6.9: a calmer drift, 0.6 to 0.4) a scared school moves off together, about as fast as a diver
       const v = Math.hypot(s.vx, s.vy);
       if (v > sp) { s.vx *= sp / v; s.vy *= sp / v; }
       s.x += s.vx * dt; s.y += s.vy * dt;
