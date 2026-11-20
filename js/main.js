@@ -1127,7 +1127,7 @@ function tutor() {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
         if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe', hud.touch ? 'obs' : 'F'); } // (5.5) on a phone, its own eye button
-        else if (g.tutOops && g.time - g.tutOops < 3) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
+        else if (g.tutOops && g.time - g.tutOops < 3.5) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
         else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
@@ -1317,6 +1317,10 @@ window.addEventListener('mouseup', (ev) => {
 });
 // (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch. The first touch
 // in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
+// (5.6.7) the cabin on a phone: the same stick (on its own canvas), a tap uses what he is at
+let cabinTouch = null;
+function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(hud.touch && !document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => cabinTouch.vec; }
+setTimeout(wireCabinTouch, 0);
 const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
@@ -2219,7 +2223,7 @@ function update(dt) {
         if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); }
         profile.journal = [...g.journal.entries()]; saveProfile(profile);
       } else if (ev.type === 'missed') {
-        if (g.tutForce === 'miss') { profile.tutMissed = true; saveProfile(profile); g.tutOops = g.time; } // (4.3.2) the tutorial's first swing
+        if (g.tutForce === 'miss') { profile.tutMissed = true; saveProfile(profile); g.tutOops = g.time; } // (5.6.7) said once, by the quest line and beside the fish // (4.3.2) the tutorial's first swing
         else hud.toast('Got away');
       }
       else if (ev.type === 'miss' && ev.why) hud.toast(ev.why[0].toUpperCase() + ev.why.slice(1), 'warn');
@@ -2259,6 +2263,8 @@ function update(dt) {
     if (g.questT > 1) { g.questT = 0; g.chambersFull = pressSlots(g) > 0 && pressUsed(g) >= pressSlots(g); if (questTick(g, profile)) saveProfile(profile); }
     if (profile.tut === 'on' && !profile.tutJournal && !document.getElementById('journal').hidden) { profile.tutJournal = true; saveProfile(profile); }
     tutor(); refreshAir(); // (4.2.0; 4.3.4: the first dive's extra air, and back to normal after it)
+    // (5.6.7) the tutorial's first dive cannot drown him: a miss, a chase and a sprint still leave a quarter of the tank
+    if (firstDive(profile) && g.earl && !g.earl.inSub && g.earl.o2Max) g.earl.o2 = Math.max(g.earl.o2, g.earl.o2Max * 0.25);
     afterTips(dt); // (4.6.0)
     g.autosaveT = (g.autosaveT || 0) + dt; if (g.autosaveT > 10 && profile && !g.kill) { g.autosaveT = 0; syncProfile(); saveProfile(profile); } // (4.12.6) the dive saved every 10 s
     lessons(); // (4.7.0)
@@ -2711,6 +2717,21 @@ let workEma = 8, slow30 = false, quickT = 0, overT = 0;
 // (5.6.4) the lure, offered only when it matters: the thing is hunting him, close, and the water is turning red round
 // him. Not part of the game's look at all: plain red words laid over everything, as if from somewhere else, and a
 // yes or a no. Yes throws it; no (or waiting) and it goes, and is not asked again for a while
+// (5.6.7) on a phone the journal, the quests and the chart are one book: tabs along its top move between them
+function bookTabs() {
+  const open = { journal: !document.getElementById('journal').hidden, quests: !document.getElementById('quests').hidden, chart: !!(ui.chart && ui.chart.isOpen && ui.chart.isOpen()) };
+  const show = hud.touch && (open.journal || open.quests || open.chart);
+  let el = document.getElementById('booktabs');
+  if (!el) {
+    if (!show) return;
+    el = document.createElement('div'); el.id = 'booktabs'; el.hidden = true;
+    el.innerHTML = '<button data-t="journal">Journal</button><button data-t="quests">Quests</button><button data-t="chart">Chart</button>';
+    el.addEventListener('click', (ev) => { const b = ev.target.closest('button'); if (!b) return; const t = b.dataset.t; ui.closeAll(); if (t === 'journal') ui.toggleJournal(true); else if (t === 'quests') ui.toggleQuests(true); else ui.chart.toggle(true); audio.ready && audio.journalPage && audio.journalPage(); });
+    document.body.appendChild(el);
+  }
+  el.hidden = !show;
+  if (show) for (const b of el.children) { const on = !!open[b.dataset.t]; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
+}
 let lureNoUntil = 0;
 function lureAsk() {
   let el = document.getElementById('lureask');
@@ -2787,10 +2808,14 @@ function frame(now) {
   }
   if (hud.touch) { // (5.6.2) the quest group under the settings coin, its pictures the coins'
     const qh = document.getElementById('quests-hud');
-    if (qh && hud.topLeftBottom && Math.abs((qh.__top || 0) - hud.topLeftBottom) > 1) { qh.__top = hud.topLeftBottom; qh.style.setProperty('top', hud.topLeftBottom + 'px', 'important'); }
-    if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'quest'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = coinURL(k); } }
+    // (5.6.7) in the cabin the settings coin is not drawn: the group goes up to the corner, clear of the lit DECK sign
+    const cabEl = document.getElementById('cabin'), qTop = cabEl && !cabEl.hidden ? 10 : hud.topLeftBottom;
+    if (qh && qTop && Math.abs((qh.__top || 0) - qTop) > 1) { qh.__top = qTop; qh.style.setProperty('top', qTop + 'px', 'important'); }
+    { const tl = document.querySelector('#tut-spot .ts-line'); if (tl && qTop && tl.__top !== qTop) { tl.__top = qTop; tl.style.setProperty('top', (qTop + 4) + 'px', 'important'); } }
+    if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = coinURL(k); } }
   }
   lureAsk(); // (5.6.4)
+  bookTabs(); // (5.6.7)
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen()); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)

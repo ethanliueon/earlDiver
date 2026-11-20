@@ -105,7 +105,7 @@ export class TutSpot {
   }
   hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
-  update(on, spot, text = null) { this.update0(on, spot, text); flushStyles(); }
+  update(on, spot, text = null) { this.update0(on, spot, text); if (INPUT.mode === 'touch') this.keyBox.style.display = 'none'; flushStyles(); } // (5.6.7) a phone: the line at the top says it, once
   update0(on, spot, text = null) {
     window.__hudTutKey = null;
     if (!on) { // (4.12.2) the spotlight fades out rather than vanishing (no bright flash when a step ends)
@@ -128,7 +128,7 @@ export class TutSpot {
       if (t !== this.lastTarget) { this.lastTarget = t; try { t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* old browsers */ } }
       const r = t.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
       const x = r.left - PAD, y = r.top - PAD, w = r.width + PAD * 2, h = r.height + PAD * 2; this.lastRect = { x, y, w, h }; this.lastSeen = performance.now();
-      Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+      Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', borderRadius: t.closest('.hud-ic, .slot') && t.closest('.hud-ic') ? '50%' : '' });
       if (this.hole.classList.contains('light') !== !!spot.light) this.hole.classList.toggle('light', !!spot.light); // over the sea, a lighter shade: he may still be swimming
       // (4.3.6) on a screen (not over the sea while he plays): only the lit thing can be used
       if (!spot.light) {
@@ -139,7 +139,8 @@ export class TutSpot {
       }
       // the arrow and the line: above the thing when there is room, otherwise below it
       const above = !spot.below && y > 100, cx = Math.max(110, Math.min(vw - 110, x + w / 2));
-      this.arrow.style.display = 'block';
+      // (5.6.7) on a phone the ring round the lit thing is enough: no bobbing arrow landing on the words beside it
+      this.arrow.style.display = document.documentElement.classList.contains('touch') ? 'none' : 'block';
       setClass(this.arrow, 'ts-arrow ' + (above ? 'down' : 'up'));
       this.arrow.style.left = cx + 'px';
       this.arrow.style.top = (above ? y - 30 : y + h + 8) + 'px';

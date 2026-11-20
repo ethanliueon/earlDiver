@@ -311,7 +311,7 @@ export class UI {
       this.qWired = true;
       // (4.28) the group folds away: only the quest board's picture shows; a tap opens it out (the next step, the
       // journal, the chart) and it folds again after a few seconds. With a quest ready to claim, the tap opens the board.
-      b.addEventListener('click', () => { const n0 = this.h.questsReady ? this.h.questsReady() : 0; if (n0) { this.toggleQuests(); return; } this.hudGroup(!$('quests-hud').classList.contains('open')); });
+      b.addEventListener('click', () => { const n0 = this.h.questsReady ? this.h.questsReady() : 0; if (document.documentElement.classList.contains('touch')) { if (n0) this.toggleQuests(); else this.toggleJournal(); return; } /* (5.6.7) a phone: one book; its tabs lead to the quests and the chart */ if (n0) { this.toggleQuests(); return; } this.hudGroup(!$('quests-hud').classList.contains('open')); });
       $('quests-hud').querySelector('.qh-step').addEventListener('click', () => this.toggleQuests());
       // (4.27) the journal and the chart: under the quest board, at the left, as pictures
       $('hud-journal').addEventListener('click', () => this.toggleJournal());

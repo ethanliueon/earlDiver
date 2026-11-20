@@ -602,7 +602,8 @@ export class Renderer {
       // off-screen: a bigger arrow at the edge of the screen pointing the way, with how far
       const W2 = this.W, H2 = this.H;
       if (cx < 0 || cx > W2 || cy < 0 || cy > H2) {
-        const ax = clamp(cx, 48, W2 - 48), ay = clamp(cy, 70, H2 - 70), a2 = Math.atan2(cy - H2 / 2, cx - W2 / 2), pulse = 1 + 0.12 * Math.sin(g.time * 5);
+        const ax = clamp(cx, 48, W2 - 48), ay = clamp(cy, 70, this.touch ? H2 * 0.56 : H2 - 70), // (5.6.7) on a phone, kept above the stick and the buttons
+           a2 = Math.atan2(cy - H2 / 2, cx - W2 / 2), pulse = 1 + 0.12 * Math.sin(g.time * 5);
         ctx.save(); ctx.translate(ax, ay); ctx.rotate(a2); ctx.scale(pulse, pulse);
         // (5.5.5) a smaller chevron in the tutorial's cream with its dark olive edge, not a white paper plane
         ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -12); ctx.lineTo(-3, 0); ctx.lineTo(-8, 12); ctx.closePath();
@@ -746,7 +747,7 @@ export class Renderer {
         const bctx = bc.getContext('2d');
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, Rw, Rh); bctx.globalCompositeOperation = 'source-over';
         bctx.translate(Rw * 0.45, Rh * 0.82);
-        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { tutDoor: door, noRoll: true });
+        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { tutDoor: door && !this.touch, noRoll: true });
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(Rw, Rh, bsx < 0), 0, 0);
         if (dimB > 0.01) { bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, Rw, Rh); }
         bctx.globalCompositeOperation = 'source-over';
@@ -1161,7 +1162,12 @@ export class Renderer {
       for (const L of g.obsLabels) {
         if (L.c && !L.c.dead) { L.x = L.c.x; L.y = L.c.y; }
         const a = Math.min(1, L.t / 0.7) * Math.min(1, (4.2 - L.t) / 1.1), ax = S(L.x), ay = Sy(L.y), rise = L.t * 5;
-        const side = S(g.earl.x) > ax ? -1 : 1, tx = ax + side * Math.max(30, ppm * 0.7), ty = ay - Math.max(44, ppm * 1.5) - rise; // above it, clear of words beside it
+        let side = S(g.earl.x) > ax ? -1 : 1;
+        // (5.6.7) the name is turned to the side it fits on, so it never runs off the screen
+        ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
+        const tw = ctx.measureText(L.text.toUpperCase()).width + 8, off = Math.max(30, ppm * 0.7);
+        if (side < 0 && ax - off - tw < 8) side = 1; else if (side > 0 && ax + off + tw > this.W - 8) side = -1;
+        const tx = ax + side * off, ty = Math.max(70, ay - Math.max(44, ppm * 1.5) - rise); // above it, clear of words beside it
         if (tx < -200 || tx > this.W + 200) continue;
         ctx.globalAlpha = a * 0.9; ctx.strokeStyle = 'rgba(205,215,200,0.5)'; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(ax + side * ppm * 0.25, ay - ppm * 0.1); ctx.lineTo(tx - side * 4, ty + 6); ctx.stroke();

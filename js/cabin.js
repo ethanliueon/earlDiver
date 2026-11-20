@@ -106,6 +106,7 @@ export class Cabin {
     // (2.6.2) the mouse: click to walk there; click on a thing (or where he stands at it) to use it
     this.c.addEventListener('mousedown', (ev) => {
       if (this.root.hidden || this.h.blocked() || ev.button !== 0) return;
+      if (document.documentElement.classList.contains('touch')) return; // (5.6.7) a phone walks him with the stick (tapAt uses things)
       const W = window.innerWidth, camX = this.camX || 0, fx = (ev.clientX + camX) / W;
       const st = STATIONS.find((q) => Math.abs(fx - q.x) < 0.09 || (q.id === 'desk' && Math.abs(fx - ROOM.desk) < 0.12) || (q.id === 'wheel' && Math.abs(fx - ROOM.wheel) < 0.06));
       if (st && this.near() === st.id) { this.use(); return; }
@@ -129,9 +130,17 @@ export class Cabin {
     if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'tank' ? 'gallery' : n); }
   atTank() { this.x = ROOM.tank; this.face = 1; this.keys.clear(); this.goal = null; }
   atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; this.keys.clear(); }
+  // (5.6.7) a tap on a phone: whatever he stands at is used (the station tapped, or anywhere near him)
+  tapAt(clientX) {
+    if (this.root.hidden || this.h.blocked()) return;
+    const fx = (clientX + (this.camX || 0)) / window.innerWidth, n = this.near();
+    if (n) { const st = STATIONS.find((q) => q.id === n); if (!st || Math.abs(fx - st.x) < 0.16 || Math.abs(fx - this.x) < 0.12) this.use(); }
+  }
   update(dt) {
     this.t += dt;
     let dir = (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0);
+    const sv = this.stick ? this.stick() : null; // (5.6.7) the phone's stick, as in the water
+    if (!dir && sv && sv.on && Math.abs(sv.x) > 0.25) { dir = Math.sign(sv.x); this.goal = null; this.stickRun = !!sv.sprint; } else this.stickRun = false;
     if (!dir && this.goal != null) { const d = this.goal - this.x; if (Math.abs(d) < 0.006) { this.x = this.goal; this.goal = null; if (this.goalUse) { this.goalUse = false; if (this.near()) this.use(); } } else dir = Math.sign(d); }
     // (2.6.2) the same walk as on deck: the stride, footsteps; Shift runs
     // following the cursor: a dead zone round him, a run when it is far
@@ -140,7 +149,7 @@ export class Cabin {
       const d = clamp((this.mcx + (this.camX || 0)) / window.innerWidth, ROOM.min, ROOM.max) - this.x;
       if (Math.abs(d) > 0.05) dir = Math.sign(d); // (4.0.4) past the dead zone round him: his full walk at once, however far the cursor is; Shift runs
     }
-    const run = this.keys.has('shift') || mRun, pace = run ? 0.32 : 0.2; // (4.0.0) his own pace, and Shift runs
+    const run = this.keys.has('shift') || mRun || this.stickRun, pace = run ? 0.32 : 0.2; // (4.0.0) his own pace, and Shift runs
     if (!this.h.blocked()) {
       const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);

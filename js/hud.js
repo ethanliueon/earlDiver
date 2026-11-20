@@ -344,10 +344,10 @@ export class Hud {
       this.topLeftBottom = (gy + rg + 8 * u) * kx; }
     // (5.6.1) what F does here, as a small olive tag above Earl (climb aboard, board the sub, pick up, enter the cabin):
     // a tap does it, a hold holds it. Observing is done by tapping the animal itself (render.js brackets it)
-    { const U = partOf('u'), fAct = !e.inSub && ((!!F && !/observe/i.test(F.label)) || ta === 'f'), uAct = !fAct && !!U && !g.tutHidePrompts; // (5.6.3) or selling, alongside the boat
+    { const U = partOf('u'), fAct = !e.inSub && ((!!F && !/observe/i.test(F.label)) || ta === 'f'), uAct = !fAct && ((!!U && !g.tutHidePrompts) || ta === 'u'); // (5.6.3) or selling, alongside the boat
       const fOn = fAct || uAct, tagKey = fAct ? 'f' : 'u';
-      const shorten = (t) => String(t).replace(/^Board the submersible$/i, 'Board').replace(/^Climb aboard$/i, 'Climb aboard').replace(/^Enter the cabin$/i, 'Enter').replace(/^Collect /i, 'Take ').replace(/^Leave the submersible$/i, 'Leave');
-      const words = shorten(ta === 'f' && g.tutAction ? g.tutAction.say : fAct && F ? String(F.label) : uAct ? 'Sell' : '');
+      const shorten = (t) => String(t).replace(/^Board the submersible$/i, 'Board').replace(/^Climb aboard$/i, 'Climb aboard').replace(/^Enter the cabin$/i, 'Enter').replace(/^Collect /i, 'Take ').replace(/^Leave the submersible$/i, 'Leave').replace(/^Sell your catch$/i, 'Sell').replace(/^Enter the cabin$/i, 'Enter');
+      const words = shorten((ta === 'f' || ta === 'u') && g.tutAction ? g.tutAction.say : fAct && F ? String(F.label) : uAct ? 'Sell' : '');
       const vT = vis.tag = clamp((vis.tag ?? 0) + (fOn ? 1 : -1) * dt * 7, 0, 1);
       if (vT > 0.01 && (words || this.tagWords)) {
         if (fOn) this.tagWords = words;
@@ -375,7 +375,7 @@ export class Hud {
           else if (A2) { ctx.moveTo(cxT + 19 * u, my - 5 * u); ctx.lineTo(cxT + 27 * u, my); ctx.lineTo(cxT + 19 * u, my + 5 * u); }
           else { ctx.moveTo(cxT - 5 * u, ty + th); ctx.lineTo(cxT + 5 * u, ty + th); ctx.lineTo(cxT, ty + th + 6 * u); }
           ctx.fill();
-          if (tutKey === 'f' && fOn) { const k = (g.time * 0.6) % 1; ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = `rgba(230,222,196,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 1.6 * u; ctx.strokeRect(tx - (4 + 10 * k) * u, ty - (4 + 10 * k) * u, tw + (8 + 20 * k) * u, th + (8 + 20 * k) * u); }
+          if (tutKey === tagKey && fOn) ring(tx + tw / 2, ty + 18 * u, 18 * u); // (5.6.7) the tutorial's ring round the coin, as on every button
           ctx.restore();
           if (fOn) hot(tx - 8 * u, ty - 6 * u, tw + 16 * u, th + 10 * u, tagKey);
         }
