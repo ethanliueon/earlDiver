@@ -21,7 +21,7 @@ import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
-import { LEGENDARY } from './specimens.js';
+import { LEGENDARY, rarityOf } from './specimens.js';
 import { SETTINGS } from './settings.js';
 import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
@@ -1101,12 +1101,23 @@ export class Renderer {
     }
     ctx.restore();
 
+    // (5.6.3) the sub's holes, outside her on a touch screen: each outlined in cream, breathing, to be tapped
+    if (this.touch && g.patchMarks && g.mode === 'play') {
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const q = 0.5 + 0.5 * Math.sin(g.time * 3), rr = Math.max(12, ppm * 0.55);
+      for (const w of g.patchMarks) { const hx = S(w.x), hy = Sy(w.y);
+        ctx.setLineDash([4, 4]); ctx.lineDashOffset = -g.time * 8;
+        ctx.strokeStyle = 'rgba(8,12,10,0.6)'; ctx.lineWidth = 3.2; ctx.beginPath(); ctx.arc(hx, hy, rr, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = `rgba(230,222,196,${(0.6 + 0.35 * q).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.stroke(); }
+      ctx.setLineDash([]); ctx.restore();
+    }
     // (5.6.1) on a touch screen, an animal not yet observed and in reach: four cream corner marks round it, breathing,
     // to say it can be tapped (observing is done by tapping it)
     if (this.touch && g.obsTarget && g.mode === 'play' && !g.tutHidePrompts) {
       const ot = g.obsTarget, oc = ot.c, ox = S(oc ? oc.x : ot.x ?? g.earl.x), oy = Sy(oc ? oc.y : ot.y ?? g.earl.y), rr = Math.max(14, (ot.sp.len || 0.3) * ppm * 0.75) * (1 + 0.06 * Math.sin(g.time * 3)), L = rr * 0.42;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round';
-      for (const [w2, col] of [[3.6, 'rgba(18,22,12,0.7)'], [1.6, 'rgba(230,222,196,0.9)']]) {
+      const rc = (rarityOf(ot.sp) || {}).col || '#c8ccc4'; // (5.6.3) thin, in its rarity's colour
+      for (const [w2, col] of [[2.6, 'rgba(8,12,10,0.55)'], [1.1, rc]]) {
         ctx.strokeStyle = col; ctx.lineWidth = w2; ctx.beginPath();
         for (const [sx2, sy2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.moveTo(ox + sx2 * rr, oy + sy2 * (rr - L)); ctx.lineTo(ox + sx2 * rr, oy + sy2 * rr); ctx.lineTo(ox + sx2 * (rr - L), oy + sy2 * rr); }
         ctx.stroke();

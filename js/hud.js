@@ -301,9 +301,7 @@ export class Hud {
     const ROW = [{ key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [
       { key: 'n', icon: 'trawl', on: !!g.subNet || netKinds(g.items).length > 0, lit: !!g.subNet, away: true },
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
-      { key: 'u', icon: 'sell', on: !!partOf('u'), away: true },
     ] : aboard ? [] : [
-      { key: 'h', icon: 'pet', on: !!P.pet, lit: P.pet && P.petStay, away: true },
     ]).filter((a) => !(a.away && !a.on));
     const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
     const vis = this.btnVis || (this.btnVis = {});
@@ -345,8 +343,9 @@ export class Hud {
       this.topLeftBottom = (gy + rg + 8 * u) * kx; }
     // (5.6.1) what F does here, as a small olive tag above Earl (climb aboard, board the sub, pick up, enter the cabin):
     // a tap does it, a hold holds it. Observing is done by tapping the animal itself (render.js brackets it)
-    { const fOn = !e.inSub && ((!!F && !/observe/i.test(F.label)) || ta === 'f');
-      const words = ta === 'f' && g.tutAction ? g.tutAction.say : F ? String(F.label).replace(/^(Hold\s+)?/i, (m) => m) : '';
+    { const U = partOf('u'), fAct = !e.inSub && ((!!F && !/observe/i.test(F.label)) || ta === 'f'), uAct = !fAct && !!U && !g.tutHidePrompts; // (5.6.3) or selling, alongside the boat
+      const fOn = fAct || uAct, tagKey = fAct ? 'f' : 'u';
+      const words = ta === 'f' && g.tutAction ? g.tutAction.say : fAct && F ? String(F.label) : uAct ? 'Sell your catch' : '';
       const vT = vis.tag = clamp((vis.tag ?? 0) + (fOn ? 1 : -1) * dt * 7, 0, 1);
       if (vT > 0.01 && (words || this.tagWords)) {
         if (fOn) this.tagWords = words;
@@ -354,7 +353,7 @@ export class Hud {
         if (ew) {
           ctx.save(); ctx.globalAlpha *= vT; ctx.font = `600 ${15 * u}px ${HUDF}`;
           const tw = ctx.measureText(this.tagWords).width + 26 * u, th = 30 * u, tx = clamp(ew.x - tw / 2, 10 * u, W - tw - 10 * u), ty = clamp(ew.y - 74 * u - (1 - vT) * 8 * u, 10 * u, H - th - 10 * u);
-          const down = held.has('f');
+          const down = held.has(tagKey);
           if (!oliveNine(ctx, 'panel', tx, ty, tw, th, 60, 9 * u)) { ctx.fillStyle = 'rgba(40,46,36,0.92)'; ctx.fillRect(tx, ty, tw, th); }
           if (down) { ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(tx, ty, tw, th); }
           ctx.fillStyle = '#efe8d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 2 * u; ctx.fillText(this.tagWords, tx + tw / 2, ty + th / 2 + 1 * u);
@@ -363,7 +362,7 @@ export class Hud {
           ctx.fillStyle = 'rgba(46,52,40,0.95)'; ctx.beginPath(); ctx.moveTo(tx + tw / 2 - 6 * u, ty + th); ctx.lineTo(tx + tw / 2 + 6 * u, ty + th); ctx.lineTo(tx + tw / 2, ty + th + 7 * u); ctx.fill();
           if (tutKey === 'f' && fOn) { const k = (g.time * 0.6) % 1; ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = `rgba(230,222,196,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 1.6 * u; ctx.strokeRect(tx - (4 + 10 * k) * u, ty - (4 + 10 * k) * u, tw + (8 + 20 * k) * u, th + (8 + 20 * k) * u); }
           ctx.restore();
-          if (fOn) hot(tx - 6 * u, ty - 6 * u, tw + 12 * u, th + 16 * u, 'f');
+          if (fOn) hot(tx - 6 * u, ty - 6 * u, tw + 12 * u, th + 16 * u, tagKey);
         }
       }
     }

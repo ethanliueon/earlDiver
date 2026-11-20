@@ -1317,7 +1317,7 @@ window.addEventListener('mouseup', (ev) => {
 });
 // (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch. The first touch
 // in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
-const touch = new Touch(hudCanvas, { onTap: (x, y) => { const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
   d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
@@ -1347,6 +1347,11 @@ function readMove() {
   if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
   if (holdingWork()) return { x: 0, y: 0, sprint: false }; // (4.12.3) a long hold (welding, cutting a net free, prying, planting, fitting a tank): he stays put
   if (g.homeRun) return { x: 0, y: 0, sprint: false }; // on autopilot the keys and the mouse leave the helm alone (C hands it back)
+  // (5.6.3) a hole tapped: he swims to it by himself (the stick takes over if used)
+  if (g.repairTap != null && !(touch && touch.vec.on) && g.sub.patches && g.sub.patches[g.repairTap] && !g.earl.inSub) {
+    const w = patchWorld(g.sub, g.sub.patches[g.repairTap]), dx = w.x - g.earl.x, dy = w.y + 0.6 - g.earl.y, d = Math.hypot(dx, dy);
+    if (d > 0.9) return { x: dx / d * Math.min(1, d / 2), y: dy / d * Math.min(1, d / 2), sprint: false, stick: true };
+  }
   if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: touch.vec.sprint || !!g.sprintLock, stick: true }; // (5.3) the joystick; (5.5.3) or the sprint button's lock
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
@@ -1977,7 +1982,13 @@ function update(dt) {
       g.pry.t += dt;
       if (g.pry.t >= HOLD_TIME[target.p.type]) { g.pry = null; interact(target, false); }
     } else g.pry = null;
-    repairs(dt, target, keys.has('r')); // mending the hull: hold R at a damaged patch (outside)
+    // (5.6.3) on a touch screen a hole is tapped to mend it: he works at it while he stays by it, until it is done
+    g.patchMarks = hud.touch && !e.inSub && !g.sub.imploded && (g.sub.patches || []).length && dist(e.x, e.y, g.sub.x, g.sub.y) < 14 ? g.sub.patches.map((q) => patchWorld(g.sub, q)) : null;
+    if (g.repairTap != null) {
+      const n = (g.sub.patches || []).length;
+      if (e.inSub || !n || n < g.repairTapCount || !g.patchMarks || g.repairTap >= n) g.repairTap = null; // that hole is mended (or he left)
+    } else g.repairSaid = false;
+    repairs(dt, target, keys.has('r') || (g.repairTap != null && patchNear() >= 0)); // mending the hull: hold R at a damaged patch (outside)
     // planting a coral fragment on bare shallow seabed
     if (planting && holding) {
       g.plant = (g.plant || 0) + dt;
