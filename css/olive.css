@@ -834,3 +834,6 @@ html.touch body #inventory .eq-stage .eq-slot.sq:not(#_a) { transform: scale(1.1
 html.touch body #inventory .eq-stage .eq-col:not(#_a) { row-gap: 34px !important; }
 html.touch body #inventory .belt-n:not(#_a) { font-size: 18px; }
 html.touch body #inventory .lk-head:not(#_a) h4, html.touch body #inventory .lk-head:not(#_a) small, html.touch body #inventory .lk-head:not(#_a) span { font-size: 16px !important; }
+/* (5.7.2) a new message waits until the last has gone (on a phone there is no blur to hide the two crossing) */
+html.touch body #msgs .msg.out:not(#_a) { transition-duration: 0.18s, 0.18s, 0.18s !important; }
+html.touch body #msgs .msg.in:not(#_a) { transition-delay: 0.2s !important; }

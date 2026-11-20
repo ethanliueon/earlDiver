@@ -382,7 +382,7 @@ e.inSub ? [
       // coin, at the very right edge; the depth and the radar sit to the left of that column
       const rb = 19 * u, stepB = rb * 2 + 9 * u, top = gy + rg + 10 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(2, Math.floor((last - top) / stepB) + 1);
       ROW.slice(0, n).forEach((a, i) => btn(a, gx, top + i * stepB, rb));
-      { const ra = this.radarAt, rest = ROW.slice(n); if (ra) rest.forEach((a, i) => btn(a, ra.x + (i - (rest.length - 1) / 2) * stepB, ra.y + ra.r + 10 * u + rb, rb)); } // (5.7.0) a short screen: the rest in a row under the radar
+      { const ra = this.radarAt, rest = ROW.slice(n); this.underRadarH = rest.length && ra ? 2 * rb + 18 * u : 0; if (ra) rest.forEach((a, i) => btn(a, ra.x + (i - (rest.length - 1) / 2) * stepB, ra.y + ra.r + 10 * u + rb, rb)); } // (5.7.0) a short screen: the rest in a row under the radar
       this.gearSpace = Math.max(rg, rb) * 2 + 22 * u; }
     // (5.6.8) what F does here is done by tapping the thing itself (render.js brackets it, main.js takes the tap): no tag
     // laid over the scene, and no picture that could say the wrong thing
@@ -432,20 +432,15 @@ e.inSub ? [
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No camera yet: the computer in the cabin sells them');
       }
     }
-    // (5.7.0) sprint beside the stick: above and to the right of its ring, following it while he steers (faint where the
-    // stick rests); a tap, or the steering thumb slid onto it, locks sprinting on. Not in the sub
-    { const T0 = this.touchRef, A0 = T0 && T0.anchor;
-      if (A0 && !e.inSub) {
-        const ang = -52 * Math.PI / 180, dd = A0.R * 1.62, sxC = A0.x + Math.cos(ang) * dd, syC = A0.y + Math.sin(ang) * dd, rs = 21 * u;
-        const px2 = sxC / kx - this.safeL, py2 = syC / kx - this.safeT;
-        ctx.save(); ctx.globalAlpha *= A0.on || g.sprintLock ? 1 : 0.6;
-        const dn = pressFx('sprint', px2, py2, rs);
-        drawCoin(ctx, px2, py2, rs, 'sprint', dn ? 'press' : g.sprintLock ? 'lit' : 'on', g.sprintLock ? { lit: true } : null);
-        if (tutKey === 'sprint') ring(px2, py2, rs);
-        ctx.restore();
-        hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'sprint');
-        T0.sprintAt = { x: sxC, y: syC, r: rs * kx };
-      } else if (T0) T0.sprintAt = null; }
+    // (5.7.2) sprint in the bottom left corner, fixed (it floated above the stick and stuck out): smaller, snug in the
+    // corner inside the safe edge, the stick's resting ring moved over to leave a gap. A tap locks sprinting on. Not in the sub
+    if (!e.inSub) {
+      const rs = 18 * u, px2 = 12 * u + rs, py2 = H - 12 * u - rs;
+      const dn = pressFx('sprint', px2, py2, rs);
+      drawCoin(ctx, px2, py2, rs, 'sprint', dn ? 'press' : g.sprintLock ? 'lit' : 'on', g.sprintLock ? { lit: true } : null);
+      if (tutKey === 'sprint') ring(px2, py2, rs);
+      hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'sprint');
+    }
     this.wasHeld = new Set(held); // (5.7.0) for the next frame's press rings
     hot(cx - R, cy - R, R * 2, R * 2, aboard ? (handOn ? 'f' : 'msg:' + (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door, or off the end to dive')) : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
   }
@@ -625,7 +620,7 @@ e.inSub ? [
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {
-      let ny = yy;
+      let ny = yy + (touch ? this.underRadarH || 0 : 0); // (5.7.2) below the row of buttons under the radar, when there is one
       ctx.save(); ctx.font = `600 ${19 * s}px ${HUDF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
       ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.shadowOffsetY = 1;
       for (const [t, c] of notes) { ctx.fillStyle = c; ctx.fillText(t, ccx, ny); ny += 24 * s; }

@@ -64,10 +64,7 @@ export class Touch {
     const m = Math.min(1, d / R), dead = 0.12, mag = m < dead ? 0 : (m - dead) / (1 - dead);
     this.vec = { x: d ? dx / d * mag : 0, y: d ? dy / d * mag : 0, mag, on: true, sprint: d > R * 1.08 };
     this.paint(S.x, S.y, S.x + (d ? dx / d : 0) * Math.min(d, R), S.y + (d ? dy / d : 0) * Math.min(d, R), R);
-    this.anchor = { x: S.x, y: S.y, R, on: true };
-    // (5.7.0) the sprint button rides beside the stick: a thumb slid onto it turns sprinting on (as a tap does)
-    const sa = this.sprintAt;
-    if (sa) { const ds = Math.hypot(x - sa.x, y - sa.y); if (ds < sa.r * 1.25 && !this.slid) { this.slid = true; this.key('sprinton', true); this.key('sprinton', false); if (this.vibe) navigator.vibrate(10); } else if (ds > sa.r * 2) this.slid = false; }
+
   }
   clearStick() { this.stick = null; this.vec = { x: 0, y: 0, mag: 0, on: false, sprint: false }; if (this.el) { this.el.classList.remove('on'); this.rest(true); } }
   // at rest: the faint ring in the lower left, where a thumb would go (hidden off the game)
@@ -75,8 +72,8 @@ export class Touch {
     if (!this.el) return;
     if (!show) { this.el.hidden = true; return; }
     if (this.stick) return;
-    const R = this.radius(), k = window.__fingerK || 1, x = Math.max(R + 28 * k, window.innerWidth * 0.13), y = window.innerHeight - R - 28 * k;
-    this.el.hidden = false; this.el.style.setProperty('--r', R + 'px'); this.anchor = { x, y, R, on: false }; this.slid = false;
+    const R = this.radius(), k = window.__fingerK || 1, x = Math.max(R + 28 * k, window.innerWidth * 0.13) + 40 * k, y = window.innerHeight - R - 34 * k; // (5.7.2) over a little: the sprint button has the corner
+    this.el.hidden = false; this.el.style.setProperty('--r', R + 'px');
     this.base.style.transform = `translate(${x}px, ${y}px)`; this.knob.style.transform = `translate(${x}px, ${y}px)`;
   }
   paint(bx, by, kx, ky, R) {
