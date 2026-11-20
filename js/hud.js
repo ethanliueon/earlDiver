@@ -349,10 +349,6 @@ e.inSub ? [
     };
     const r = 25 * u, gap = 30 * u, rho0 = R + r + gap; // (5.6.9) the arc's coins larger: 21 to 25
     A.forEach((a, i) => { const ang = [-90, -125, -160, -195][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
-    { const rb = 19 * u, stepB = rb * 2 + 9 * u, // (5.6.9) 15 to 19
-      ra = this.radarAt || { x: W - pad - 40 * u, y: 60 * u, r: 30 * u };
-      const top = ra.y + ra.r + 12 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(2, Math.floor((last - top) / stepB) + 1);
-      ROW.slice(0, n).forEach((a, i) => btn(a, ra.x, top + i * stepB, rb)); } // (5.6.2) small coins, as the arc's
     // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
     // top right corner, where a phone game keeps it; the depth moves left to make room (this.gearSpace)
@@ -364,7 +360,11 @@ e.inSub ? [
       this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
       const rg = 17 * u, gx = W - 12 * u - rg, gy = 12 * u + rg;
       btn({ key: 'settings', icon: 'gear', on: true }, gx, gy, rg);
-      this.gearSpace = rg * 2 + 10 * u; }
+      // (5.6.9b) the journal and the bag (and in the sub what else is carried) hang in a column right under the settings
+      // coin, at the very right edge; the depth and the radar sit to the left of that column
+      const rb = 19 * u, stepB = rb * 2 + 9 * u, top = gy + rg + 10 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(2, Math.floor((last - top) / stepB) + 1);
+      ROW.slice(0, n).forEach((a, i) => btn(a, gx, top + i * stepB, rb));
+      this.gearSpace = Math.max(rg, rb) * 2 + 22 * u; }
     // (5.6.8) what F does here is done by tapping the thing itself (render.js brackets it, main.js takes the tap): no tag
     // laid over the scene, and no picture that could say the wrong thing
     const rho1 = rho0;
@@ -567,7 +567,7 @@ e.inSub ? [
     // the seafloor sonar (a fitted extra): under the instrument, the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy + 4 * s, s); yy += 88 * s; }
     // (5.1.1) on a touch screen the radar sits under the instrument; the bottom right is the actions'
-    const rrT = 44 * s, rcyT = yy + 6 * s + rrT;
+    const rrT = 56 * s, rcyT = yy + 6 * s + rrT; // (5.6.9b) larger: 44 to 56
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {
