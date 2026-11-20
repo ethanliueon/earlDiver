@@ -1700,7 +1700,7 @@ function killUpdate(dt) {
     return;
   }
   // the moment to get free (swimming only)
-  if (K.window && K.t > K.window[0] && K.t < K.window[1]) {
+  if ((K.window && K.t > K.window[0] && K.t < K.window[1]) || (pressed.has('q') && K.t < (K.window ? K.window[1] : 99))) { // (5.6.4) the lure answers any time before the jaws shut
     let how = null;
     if (pressed.has('l')) { if (!ent.flashed) { how = 'flash'; ent.flashed = true; } else hud.toast('It no longer flinches from the light', 'warn'); }
     if (!how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { if ((profile.oldLures || 0) > 0) profile.oldLures--; else g.items.lure--; how = 'lure'; }
@@ -1946,6 +1946,8 @@ function update(dt) {
     if (pressed.has('obs')) { pressed.delete('obs'); const ot = g.obsTarget || observeTarget(); if (ot) interact(ot, false); }
     g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);
+    // (5.6.4) where the thing F acts on is, so its button can sit beside it (not over Earl)
+    g.fAnchor = target ? (target.kind === 'board' ? { x: g.sub.x, y: g.sub.y } : target.kind === 'pickup' ? { x: target.p.x, y: target.p.y } : target.kind === 'trap' ? { x: target.t.x, y: target.t.y - 0.5 } : null) : null;
     const atAngler = nearAngler(), atDave = !atAngler && nearDave(), atStation = !atAngler && !atDave && nearStation();
     if (atStation) {
       g.prompt = 'F  Station stores' + (e.inSub ? '   ·   hold F  Leave sub' : '');
@@ -2706,6 +2708,24 @@ let seaDrawnAt = 0, hudDrawnAt = 0;
 // (5.4) and on its own: a phone whose frames take longer than ~14 ms of work goes to an even 30 (steadier than a
 // juddering 40-50, and cooler); back to 60 once the work has stayed under 9 ms for 8 s
 let workEma = 8, slow30 = false, quickT = 0, overT = 0;
+// (5.6.4) the lure, offered only when it matters: the thing is hunting him, close, and the water is turning red round
+// him. Not part of the game's look at all: plain red words laid over everything, as if from somewhere else, and a
+// yes or a no. Yes throws it; no (or waiting) and it goes, and is not asked again for a while
+let lureNoUntil = 0;
+function lureAsk() {
+  let el = document.getElementById('lureask');
+  const ent = g.entity, have = (g.items && g.items.lure > 0) || (profile && profile.oldLures > 0);
+  const want = !!(hud.touch && g.mode === 'play' && !g.paused && have && !g.lure && ent && ent.marked && ((ent.dist ?? 1e9) < 220 || (g.fx.redTint || 0) > 0.04 || g.kill) && performance.now() > lureNoUntil && !(ui.anyOpen && ui.anyOpen()));
+  if (!el) {
+    if (!want) return;
+    el = document.createElement('div'); el.id = 'lureask'; el.hidden = true;
+    el.innerHTML = '<p>Throw it the lure?</p><div><button data-a="yes">Yes</button><button data-a="no">No</button></div>';
+    el.addEventListener('pointerdown', (ev) => { const b = ev.target.closest('button'); if (!b) return; ev.preventDefault(); ev.stopPropagation(); el.hidden = true;
+      if (b.dataset.a === 'yes') { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'q', bubbles: true })); setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'q', bubbles: true })), 60); } else lureNoUntil = performance.now() + 25000; }, true);
+    document.body.appendChild(el);
+  }
+  if (el.hidden === want) { el.hidden = !want; if (want) { el.classList.remove('in'); void el.offsetWidth; el.classList.add('in'); } }
+}
 function phoneCap(now) {
   if (!hud.touch) return 0;
   return (SETTINGS.fast || g.mode === 'menu' || slow30) ? 1000 / 30 : 1000 / 60;
@@ -2761,6 +2781,7 @@ function frame(now) {
   if (hud.touch && renderer.cam && renderer.cam.ppm) { // (5.6.1) where Earl (and the animal to observe) are on the HUD, for its tag and taps
     const cm = renderer.cam, k = hud.c.width / renderer.c.width, sx = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * k, sy = (wy) => ((wy - cm.y) * cm.ppm + renderer.c.height / 2) * k;
     hud.earlScreen = { x: sx(g.earl.x), y: sy(g.earl.y) };
+    { const A = g.aboard ? null : g.fAnchor; hud.fAnchorScreen = A ? { x: sx(A.x), y: sy(A.y), r: (A === g.fAnchor && g.fAnchor.x === g.sub.x ? 3.2 : 0.6) * cm.ppm * k } : null; }
     const ot = g.obsTarget, oc = ot && (ot.c || null);
     hud.obsScreen = ot ? { x: sx(oc ? oc.x : ot.x ?? g.earl.x), y: sy(oc ? oc.y : ot.y ?? g.earl.y), r: Math.max(34 * hud.c.width / innerWidth * (window.__fingerK || 1), (ot.sp.len || 0.3) * cm.ppm * k) } : null;
   }
@@ -2769,6 +2790,7 @@ function frame(now) {
     if (qh && hud.topLeftBottom && Math.abs((qh.__top || 0) - hud.topLeftBottom) > 1) { qh.__top = hud.topLeftBottom; qh.style.setProperty('top', hud.topLeftBottom + 'px', 'important'); }
     if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'quest'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = coinURL(k); } }
   }
+  lureAsk(); // (5.6.4)
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen()); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)

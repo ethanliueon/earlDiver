@@ -345,21 +345,31 @@ export class Hud {
     // a tap does it, a hold holds it. Observing is done by tapping the animal itself (render.js brackets it)
     { const U = partOf('u'), fAct = !e.inSub && ((!!F && !/observe/i.test(F.label)) || ta === 'f'), uAct = !fAct && !!U && !g.tutHidePrompts; // (5.6.3) or selling, alongside the boat
       const fOn = fAct || uAct, tagKey = fAct ? 'f' : 'u';
-      const words = ta === 'f' && g.tutAction ? g.tutAction.say : fAct && F ? String(F.label) : uAct ? 'Sell your catch' : '';
+      const shorten = (t) => String(t).replace(/^Board the submersible$/i, 'Board').replace(/^Climb aboard$/i, 'Climb aboard').replace(/^Enter the cabin$/i, 'Enter').replace(/^Collect /i, 'Take ').replace(/^Leave the submersible$/i, 'Leave');
+      const words = shorten(ta === 'f' && g.tutAction ? g.tutAction.say : fAct && F ? String(F.label) : uAct ? 'Sell' : '');
       const vT = vis.tag = clamp((vis.tag ?? 0) + (fOn ? 1 : -1) * dt * 7, 0, 1);
       if (vT > 0.01 && (words || this.tagWords)) {
         if (fOn) this.tagWords = words;
         const ew = this.earlScreen; // the HUD's position of Earl, set by main.js each frame
         if (ew) {
-          ctx.save(); ctx.globalAlpha *= vT; ctx.font = `600 ${15 * u}px ${HUDF}`;
-          const tw = ctx.measureText(this.tagWords).width + 26 * u, th = 30 * u, tx = clamp(ew.x - tw / 2, 10 * u, W - tw - 10 * u), ty = clamp(ew.y - 74 * u - (1 - vT) * 8 * u, 10 * u, H - th - 10 * u);
+          // (5.6.4) small, and beside the thing it acts on (the sub, the ladder, the thing to pick up), pointing at it;
+          // with no such thing, a little above Earl
+          ctx.save(); ctx.globalAlpha *= vT; ctx.font = `600 ${12.5 * u}px ${HUDF}`;
+          const A2 = this.fAnchorScreen, tw = ctx.measureText(this.tagWords).width + 20 * u, th = 24 * u;
+          const side = A2 ? (A2.x > W * 0.62 ? -1 : 1) : 0;
+          const tx = clamp(A2 ? (side > 0 ? A2.x + A2.r + 10 * u : A2.x - A2.r - 10 * u - tw) : ew.x - tw / 2, 10 * u, W - tw - 10 * u);
+          const ty = clamp(A2 ? A2.y - th / 2 : ew.y - 58 * u - (1 - vT) * 6 * u, 10 * u, H - th - 10 * u);
           const down = held.has(tagKey);
           if (!oliveNine(ctx, 'panel', tx, ty, tw, th, 60, 9 * u)) { ctx.fillStyle = 'rgba(40,46,36,0.92)'; ctx.fillRect(tx, ty, tw, th); }
           if (down) { ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(tx, ty, tw, th); }
           ctx.fillStyle = '#efe8d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 2 * u; ctx.fillText(this.tagWords, tx + tw / 2, ty + th / 2 + 1 * u);
           if (g.promptBar != null && fOn) { ctx.fillStyle = 'rgba(239,232,210,0.85)'; ctx.fillRect(tx + 6 * u, ty + th - 5 * u, (tw - 12 * u) * clamp(g.promptBar, 0, 1), 2.4 * u); }
-          // a little point down towards him
-          ctx.fillStyle = 'rgba(46,52,40,0.95)'; ctx.beginPath(); ctx.moveTo(tx + tw / 2 - 6 * u, ty + th); ctx.lineTo(tx + tw / 2 + 6 * u, ty + th); ctx.lineTo(tx + tw / 2, ty + th + 7 * u); ctx.fill();
+          // a little point towards what it acts on
+          ctx.fillStyle = 'rgba(46,52,40,0.95)'; ctx.beginPath();
+          if (A2 && side > 0) { ctx.moveTo(tx, ty + th / 2 - 5 * u); ctx.lineTo(tx - 6 * u, ty + th / 2); ctx.lineTo(tx, ty + th / 2 + 5 * u); }
+          else if (A2) { ctx.moveTo(tx + tw, ty + th / 2 - 5 * u); ctx.lineTo(tx + tw + 6 * u, ty + th / 2); ctx.lineTo(tx + tw, ty + th / 2 + 5 * u); }
+          else { ctx.moveTo(tx + tw / 2 - 5 * u, ty + th); ctx.lineTo(tx + tw / 2 + 5 * u, ty + th); ctx.lineTo(tx + tw / 2, ty + th + 6 * u); }
+          ctx.fill();
           if (tutKey === 'f' && fOn) { const k = (g.time * 0.6) % 1; ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = 'rgba(230,222,196,0.95)'; ctx.lineWidth = 2.2 * u; ctx.strokeRect(tx - 4 * u, ty - 4 * u, tw + 8 * u, th + 8 * u); ctx.strokeStyle = `rgba(230,222,196,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 1.6 * u; ctx.strokeRect(tx - (4 + 10 * k) * u, ty - (4 + 10 * k) * u, tw + (8 + 20 * k) * u, th + (8 + 20 * k) * u); }
           ctx.restore();
           if (fOn) hot(tx - 6 * u, ty - 6 * u, tw + 12 * u, th + 16 * u, tagKey);
