@@ -1378,12 +1378,16 @@ export class UI {
     this.journalCount(g);
     const list = $('journal-list');
     if (g.journal.size === 0) {
-      list.innerHTML = '<p class="empty">Nothing recorded yet.<br>Swim close to a creature and press F to observe it.</p>';
+      list.innerHTML = `<p class="empty">Nothing in the book yet.<br>${document.documentElement.classList.contains('touch') ? 'Swim close to an animal and tap it to observe it.' : 'Swim close to a creature and press F to observe it.'}</p><div class="jgrid">${'<div class="jcell blank"><span>?</span></div>'.repeat(6)}</div>`;
       this.journalDetail(null); return;
     }
     const entries = [...g.journal.entries()].sort((a, b) => ((b[1].at || 0) - (a[1].at || 0)) || (b[1].time - a[1].time)); // (4.12.4) newest found first, across dives
-    list.innerHTML = `<div class="jgrid">${entries.map(([id]) => { const sp = SPECIES_BY_ID[id], c = rarityCol(sp);
-      return `<button class="jcell${this.jSel === id ? ' on' : ''}" data-js="${id}" title="${sp.name.replace(/"/g, '')}"><img src="${this.allFishPic(sp, true)}" alt=""><b>${sp.name}</b>${c ? `<i style="background:${c}"></i>` : ''}</button>`; }).join('')}</div>`;
+    // (5.7.4) a field notebook: each animal sketched in, its name and the depth he met it in pencil, its rarity as a
+    // small ink stamp, a tick if one has been caught; then a few empty outlines still to fill
+    const P0 = this.h.getProfile && this.h.getProfile(), caught = new Set((P0 && P0.caught) || []);
+    const blanks = Math.max(3, (3 - (entries.length % 3)) % 3 + 3);
+    list.innerHTML = `<div class="jgrid">${entries.map(([id, info]) => { const sp = SPECIES_BY_ID[id], R = rarityOf(sp), c = rarityCol(sp);
+      return `<button class="jcell${this.jSel === id ? ' on' : ''}" data-js="${id}" title="${sp.name.replace(/"/g, '')}" style="--rot:${((id * 37) % 7 - 3) * 0.5}deg"><img src="${this.allFishPic(sp, true)}" alt=""><b>${sp.name}</b><small class="jdep">${info && info.depth != null ? `${info.depth} m` : ''}</small>${R && !R.hidden && R.id !== 'common' ? `<em class="jstamp" style="--sc:${c}">${R.name}</em>` : ''}${caught.has(id) ? '<u class="jtick" title="Caught">✓</u>' : ''}</button>`; }).join('')}${'<div class="jcell blank"><span>?</span></div>'.repeat(blanks)}</div>`;
     list.querySelectorAll('[data-js]').forEach((b) => b.addEventListener('click', () => { const id = +b.dataset.js; this.jSel = this.jSel === id ? null : id; this.renderJournal(); }));
     this.journalDetail(this.jSel && g.journal.has(this.jSel) ? this.jSel : null);
   }
@@ -1958,7 +1962,7 @@ export class UI {
 
   // (4.4.1) the time into the dive, at the top of the journal: kept ticking while it is open (it froze when opened)
   journalCount(g) {
-    const t = `${g.journal.size} of ${SPECIES_COUNT} found`; // (5.1) one line: how much of the sea is in the book
+    const t = `${g.journal.size} of ${SPECIES_COUNT} met`; // (5.1) one line: how much of the sea is in the book; (5.7.4) pencilled
     const el = $('journal-count'); if (el.textContent !== t) el.textContent = t;
   }
   update(g, dt) {

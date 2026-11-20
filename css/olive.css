@@ -839,3 +839,62 @@ html.touch body #msgs .msg.out:not(#_a) { transition-duration: 0.18s, 0.18s, 0.1
 html.touch body #msgs .msg.in:not(#_a) { transition-delay: 0.2s !important; }
 /* (5.7.3) the journal (and the chart) open over the cabin too, as the quests do */
 #journal:not(#_a) { z-index: 40; }
+/* ---------- (5.7.4) the journal as Earl's working field notebook ---------- */
+/* the paper: a faint survey grid, water stains, darker damp edges; the pages darken into the gutter */
+html body #journal .page:not(#_a) {
+  background:
+    radial-gradient(ellipse 150px 95px at 80% 20%, rgba(140, 100, 50, 0.12), rgba(140, 100, 50, 0) 70%),
+    radial-gradient(ellipse 190px 120px at 16% 84%, rgba(120, 90, 40, 0.10), rgba(120, 90, 40, 0) 70%),
+    repeating-linear-gradient(0deg, rgba(80, 110, 120, 0.11) 0 1px, transparent 1px 24px),
+    repeating-linear-gradient(90deg, rgba(80, 110, 120, 0.07) 0 1px, transparent 1px 24px),
+    var(--paper-grain, none), linear-gradient(180deg, #ece3c8, #e0d3b0) !important; }
+html body #journal .page.left:not(#_a) { box-shadow: inset -40px 0 34px -24px rgba(70, 45, 10, 0.55), inset 0 0 46px rgba(110, 76, 30, 0.26) !important; }
+html body #journal .page.right:not(#_a) { box-shadow: inset 40px 0 34px -24px rgba(70, 45, 10, 0.5), inset 0 0 46px rgba(110, 76, 30, 0.26) !important; }
+/* page numbers, in pencil */
+html body #journal .page.left::before, html body #journal .page.right::before { position: absolute; bottom: 10px; font: 500 16px 'Caveat', cursive; color: rgba(70, 58, 38, 0.5); pointer-events: none; }
+html body #journal .page.left::before { content: '14'; left: 18px; }
+html body #journal .page.right::before { content: '15'; right: 18px; }
+/* headings and the count: the heading printed, the count pencilled in beside it */
+html body #journal #journal-count:not(#_a) { font: 500 21px 'Caveat', cursive !important; color: rgba(60, 50, 34, 0.75) !important; transform: rotate(-1.5deg); display: inline-block; }
+/* each animal: sketched in (its colours faded and warmed into the paper), its name and depth in handwriting, a little askew */
+html body #journal .jgrid:not(#_a) { gap: 14px 10px; }
+html body #journal .jcell:not(#_a) { background: none !important; transform: rotate(var(--rot, 0deg)); padding: 8px 4px 6px !important; overflow: visible; }
+html body #journal .jcell:not(#_a) img { filter: sepia(0.6) saturate(0.75) contrast(1.08) brightness(0.98); }
+html body #journal .jcell:not(#_a) b { font: 600 20px/1 'Caveat', cursive !important; color: #2e2618 !important; }
+html body #journal .jcell .jdep { font: 500 16px/1 'Caveat', cursive !important; color: rgba(60, 50, 34, 0.7) !important; }
+html body #journal .jcell:not(#_a) > i { display: none; }
+html body #journal .jcell.on:not(#_a) { background: rgba(120, 100, 60, 0.14) !important; box-shadow: 0 0 0 2px rgba(70, 56, 30, 0.45) !important; border-radius: 40% 46% 38% 44% / 46% 40% 48% 42% !important; } /* ringed in pencil */
+/* its rarity as a small rubber stamp in the rarity's ink */
+html body #journal .jstamp { position: absolute; top: 2px; right: 0; font: 700 10px var(--o-text); letter-spacing: 0.12em; text-transform: uppercase; font-style: normal; color: var(--sc); border: 1.6px solid var(--sc); border-radius: 3px; padding: 0 4px; transform: rotate(-12deg); opacity: 0.8; mix-blend-mode: multiply; filter: brightness(0.75) saturate(1.3); }
+/* caught: a pencil tick */
+html body #journal .jtick { position: absolute; top: -2px; left: 4px; font: 700 26px/1 'Caveat', cursive; text-decoration: none; color: #7a3a22; transform: rotate(-8deg); }
+/* the empty places still to fill: a dashed outline and a question mark */
+html body #journal .jcell.blank:not(#_a) { display: flex; align-items: center; justify-content: center; min-height: 92px; border: 1.6px dashed rgba(90, 70, 40, 0.3) !important; border-radius: 6px !important; transform: none; }
+html body #journal .jcell.blank span { font: 600 34px 'Caveat', cursive; color: rgba(90, 70, 40, 0.32); }
+html body #journal #journal-list .empty:not(#_a) { font: 500 22px/1.25 'Caveat', cursive !important; color: rgba(60, 50, 34, 0.75) !important; }
+/* an animal's page: its picture pinned in with two strips of tape, the facts written in */
+html body #journal .jd-pic:not(#_a) { position: relative; background: #f2ebd6 !important; padding: 10px; border-radius: 1px !important; transform: rotate(-1.2deg); box-shadow: 0 2px 6px rgba(60, 40, 10, 0.3); margin: 8px 10px 4px; }
+html body #journal .jd-pic::before, html body #journal .jd-pic::after { content: ''; position: absolute; top: -9px; width: 64px; height: 20px; background: rgba(230, 220, 180, 0.72); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+html body #journal .jd-pic::before { left: 14px; transform: rotate(-8deg); }
+html body #journal .jd-pic::after { right: 14px; transform: rotate(7deg); }
+html body #journal .jd-rows div:not(#_a) { background: none !important; border-bottom: 1px solid rgba(70, 58, 38, 0.25); border-radius: 0 !important; }
+html body #journal .jd-rows dd:not(#_a) { font: 600 21px 'Caveat', cursive !important; color: #2e2618 !important; }
+/* the notes page: ruled paper and a pen */
+html body #journal #notes:not(#_a) { background: repeating-linear-gradient(180deg, transparent 0 29px, rgba(70, 100, 140, 0.28) 29px 30px) !important; background-attachment: local !important; line-height: 30px !important; font: 500 23px/30px 'Caveat', cursive !important; color: #23324a !important; border: 0 !important; box-shadow: none !important; padding: 2px 4px !important; }
+html body #journal #notes::placeholder { color: rgba(35, 50, 74, 0.4); }
+html body #journal #journal-notes .small:not(#_a) { font: 500 17px 'Caveat', cursive !important; color: rgba(60, 50, 34, 0.55) !important; }
+/* the tabs: paper tabs standing up from the book's top edge when the journal is open */
+body:has(#journal:not([hidden])) #booktabs:not(#_a) { top: calc(50vh - min(320px, 41vh) - 30px); gap: 4px; }
+body:has(#journal:not([hidden])) #booktabs:not(#_a) button { background: linear-gradient(180deg, #ddd0aa, #cfc096) !important; color: #3a2e1c !important; border: 0 !important; border-radius: 7px 7px 0 0 !important; box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 250, 230, 0.6) !important; padding: 6px 18px 12px !important; font: 600 15px var(--o-text) !important; }
+body:has(#journal:not([hidden])) #booktabs:not(#_a) button.on { background: linear-gradient(180deg, #ece3c8, #e2d6b4) !important; box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.35), inset 0 3px 0 #9a3a28 !important; padding-bottom: 16px !important; transform: translateY(-3px); }
+body:has(#journal:not([hidden])) #booktabs:not(#_a) button { border-image: none !important; }
+/* Found / All: two words in pencil, the one in use underlined */
+html body #journal .tabs button:not(#_a):not(#_b):not(#_c) { background: none !important; color: rgba(60, 50, 34, 0.6) !important; font: 600 22px 'Caveat', cursive !important; letter-spacing: 0 !important; text-transform: none !important; padding: 0 6px 2px !important; box-shadow: none !important; border: 0 !important; }
+html body #journal .tabs button.on:not(#_a):not(#_b):not(#_c) { color: #2e2618 !important; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; padding-bottom: 2px !important; }
+html body #journal .page.left:not(#_a):not(#_b) { background-image: radial-gradient(circle at 58% 92%, rgba(110, 80, 40, 0.05) 0 30px, rgba(110, 80, 40, 0.12) 31px, rgba(110, 80, 40, 0) 34px), radial-gradient(ellipse 150px 95px at 80% 20%, rgba(140, 100, 50, 0.12), rgba(140, 100, 50, 0) 70%), radial-gradient(ellipse 190px 120px at 16% 84%, rgba(120, 90, 40, 0.10), rgba(120, 90, 40, 0) 70%), repeating-linear-gradient(0deg, rgba(80, 110, 120, 0.11) 0 1px, transparent 1px 24px), repeating-linear-gradient(90deg, rgba(80, 110, 120, 0.07) 0 1px, transparent 1px 24px), linear-gradient(180deg, #ece3c8, #e0d3b0) !important; } /* a mug's ring on the left page only */
+html body #journal .jcell:not(#_a):not(#_b) { border: 0 !important; outline: 0 !important; box-shadow: none; }
+html body #journal .jcell.on:not(#_a):not(#_b) { box-shadow: 0 0 0 2px rgba(70, 56, 30, 0.45) !important; }
+html body #journal .jcell:not(#_a) b { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; font-size: 18px !important; line-height: 0.95 !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+html body #journal #journal-notes:not(#_a) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+html body #journal #journal-notes[hidden] { display: none !important; }
+html body #journal #notes:not(#_a):not(#_b) { flex: 1; min-height: 60%; height: auto; resize: none; width: 100%; }
