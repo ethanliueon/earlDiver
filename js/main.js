@@ -955,8 +955,8 @@ function refreshAir() { if (!g || !g.earl || !profile) return; const e = g.earl,
 function afterTips(dt) {
   const P = profile, e = g.earl; if (!P || P.tut === 'on' || !P.tut || P.tut === 'skip') return;
   if (!P.tipSprint) {
-    if (!e.inSub && !g.aboard && e.y > 1.5 && !(keys.has('shift') || mouse.rdown || (touch && touch.vec.sprint))) g.noSprintT = (g.noSprintT || 0) + dt; else g.noSprintT = 0;
-    if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast(hud.touch ? 'Push the stick out to its rim to sprint' : keyFor('sprint') === 'RMB' ? 'Hold the right mouse button to sprint' : 'Hold Shift to sprint', 'note'); }
+    if (!e.inSub && !g.aboard && e.y > 1.5 && !(keys.has('shift') || mouse.rdown || (touch && touch.vec.sprint) || g.sprintLock)) g.noSprintT = (g.noSprintT || 0) + dt; else g.noSprintT = 0;
+    if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast(hud.touch ? 'Tap the sprint button (the two arrows) to sprint' : keyFor('sprint') === 'RMB' ? 'Hold the right mouse button to sprint' : 'Hold Shift to sprint', 'note'); }
   }
 }
 function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === 'skip' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => messages.show(`Press ${keyFor('inventory')} to put it on`, 'note', 3.5), 3000); } // (4.12.0) up for 3.5 s
@@ -1127,7 +1127,7 @@ function tutor() {
       fishStep(() => {
         if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe', hud.touch ? 'obs' : 'F'); } // (5.5) on a phone, its own eye button
         else if (g.tutOops && g.time - g.tutOops < 3) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
-        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(); }
+        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
     }
@@ -1144,7 +1144,7 @@ function tutor() {
     else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-act="sellone"]'], say: 'Sell all' }; }
     else if (!g.bag.length && !g.subTank.length) {
       // sold already, or lost it: another fish, then sell that one
-      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); spot = spot || netSpot(); });
+      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ });
     }
     else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; cabinTo('door', 'outdoor', 'Out on deck'); }
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; }
@@ -1154,7 +1154,7 @@ function tutor() {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
     if (!pick && !catOpen && !g.bag.length) {
-      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = netPrompt(); spot = spot || netSpot(); });
+      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ });
     } else if (!pick && !catOpen) {
       if (g.aboard || !zone('boat', nearBoat)) { text = 'Not enough cash for gear yet: sell your catch first'; to = ladder; }
       else if (shopOpen) spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])'], say: 'Sell all' };
@@ -1220,7 +1220,7 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
+const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
 function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
@@ -1346,7 +1346,7 @@ function readMove() {
   if (ui.trapSetOpen && ui.trapSetOpen()) return { x: 0, y: 0, sprint: false }; // treading water while he chooses the depth
   if (holdingWork()) return { x: 0, y: 0, sprint: false }; // (4.12.3) a long hold (welding, cutting a net free, prying, planting, fitting a tank): he stays put
   if (g.homeRun) return { x: 0, y: 0, sprint: false }; // on autopilot the keys and the mouse leave the helm alone (C hands it back)
-  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: touch.vec.sprint, stick: true }; // (5.3) the joystick
+  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: touch.vec.sprint || !!g.sprintLock, stick: true }; // (5.3) the joystick; (5.5.3) or the sprint button's lock
   let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
   const now = performance.now();
@@ -1608,7 +1608,9 @@ function interact(t, exitSub) {
       g.journal.set(t.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() });
       questEvent(profile, 'observe'); // (4.0.6)
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
-      hud.toast(`${t.sp.name} · ${t.sp.sci}`, 'note');
+      // (5.5.3) its name written beside it in the water, faint, and gone again (no scientific name, no line at the top
+      // of the screen); the rarity under it only when it is better than common
+      { const R = rarityOf(t.sp); (g.obsLabels || (g.obsLabels = [])).push({ c: t.c || null, x: t.c ? t.c.x : (t.x ?? e.x), y: t.c ? t.c.y : (t.y ?? e.y), text: t.sp.name, rar: R && R.id !== 'common' ? R.name : null, col: R ? R.col : null, t: 0 }); if (g.obsLabels.length > 3) g.obsLabels.shift(); }
       audio.ready && audio.note();
       ui.journalDirty = true;
     } else if (!e.inSub && (QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && firstFishPart(profile) <= 1) {
@@ -1928,6 +1930,11 @@ function update(dt) {
     const target = findTarget();
     // (5.5) the observe button (touch): the nearest animal in reach not yet in the journal, and its press
     g.obsTarget = hud.touch ? observeTarget() : null;
+    // (5.5.3) the sprint button: a tap locks sprinting on (it costs air faster, as ever), another tap or letting go of the
+    // stick for a moment ends it; never in the sub or on deck
+    if (pressed.has('sprint')) { pressed.delete('sprint'); g.sprintLock = !g.sprintLock; g.sprintIdle = 0; if (g.sprintLock && !profile.tipSprintBtn) { profile.tipSprintBtn = true; saveProfile(profile); hud.toast('Sprinting: your air goes faster', 'note'); } }
+    if (g.sprintLock) { if (e.inSub || g.aboard) g.sprintLock = false; else { g.sprintIdle = touch && touch.vec.on ? 0 : (g.sprintIdle || 0) + dt; if (g.sprintIdle > 1.2) g.sprintLock = false; } }
+    if (touch) touch.lock = !!g.sprintLock;
     if (pressed.has('obs')) { pressed.delete('obs'); const ot = g.obsTarget || observeTarget(); if (ot) interact(ot, false); }
     g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);

@@ -272,10 +272,12 @@ export class Hud {
       { key: 't', icon: 'tank', on: true },
       { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
     ] : [
-      { key: 'f', icon: 'hand', on: (!!F && !/observe/i.test(F.label)) || ta === 'f', bar: true, away: true },
+      { key: 'sprint', icon: 'sprint', on: !aboard, lit: !!g.sprintLock, why: 'Not on deck' }, // (5.5.3) a tap locks sprinting on
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Not from the boat' },
       // observing is done to every new animal: the eye larger, low beside the net, where the thumb already is
       { key: 'obs', icon: 'eye', on: (!!g.obsTarget && !g.tutHidePrompts) || ta === 'obs', away: true, ang: -186, k: 1.25, out: 16 },
+      // the hand (something to take, board or open) on an outer place above the ring, when there is something
+      { key: 'f', icon: 'hand', on: (!!F && !/observe/i.test(F.label)) || ta === 'f', bar: true, away: true, ang: -114, out: 56 },
     ];
     // the column: pause, the bag, the lamp, then the things carried, each only while there is one to use
     const TOP = [{ key: 'escape', icon: 'pause', on: true }, { key: 'b', icon: 'bag', on: true }].concat(e.inSub ? [

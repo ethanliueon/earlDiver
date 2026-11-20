@@ -1098,6 +1098,28 @@ export class Renderer {
     }
     ctx.restore();
 
+    // (5.5.3) an animal just observed: its name beside it in the water. Faint pale letters, widely spaced, rising in out
+    // of the dark, drifting up a little and going again after a few seconds, a hairline down to the animal
+    if (g.obsLabels && g.obsLabels.length) {
+      const dtL = Math.min(0.1, Math.max(0, g.time - (this.obsT ?? g.time))); this.obsT = g.time;
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      g.obsLabels = g.obsLabels.filter((L) => (L.t += dtL) < 4.2);
+      for (const L of g.obsLabels) {
+        if (L.c && !L.c.dead) { L.x = L.c.x; L.y = L.c.y; }
+        const a = Math.min(1, L.t / 0.7) * Math.min(1, (4.2 - L.t) / 1.1), ax = S(L.x), ay = Sy(L.y), rise = L.t * 5;
+        const side = S(g.earl.x) > ax ? -1 : 1, tx = ax + side * Math.max(30, ppm * 0.7), ty = ay - Math.max(44, ppm * 1.5) - rise; // above it, clear of words beside it
+        if (tx < -200 || tx > this.W + 200) continue;
+        ctx.globalAlpha = a * 0.9; ctx.strokeStyle = 'rgba(205,215,200,0.5)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(ax + side * ppm * 0.25, ay - ppm * 0.1); ctx.lineTo(tx - side * 4, ty + 6); ctx.stroke();
+        ctx.textAlign = side > 0 ? 'left' : 'right'; ctx.textBaseline = 'alphabetic';
+        ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
+        ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(L.text.toUpperCase(), tx + 1, ty + 1);
+        ctx.fillStyle = 'rgba(214,222,210,0.92)'; ctx.fillText(L.text.toUpperCase(), tx, ty);
+        if (L.rar) { ctx.font = '500 11px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '3px'; ctx.globalAlpha = a * 0.8; ctx.fillStyle = L.col || '#9aa0a6'; ctx.fillText(L.rar.toUpperCase(), tx, ty + 15); }
+        ctx.letterSpacing = '0px';
+      }
+      ctx.restore();
+    }
     // ================= POST =================
     // its red, crept into the water round him: the black of the deep turns a black-red
     if ((fx.redTint || 0) > 0.01) {

@@ -79,6 +79,6 @@ export class Touch {
     this.el.style.setProperty('--r', R + 'px');
     this.base.style.transform = `translate(${bx}px, ${by}px)`;
     this.knob.style.transform = `translate(${kx}px, ${ky}px)`;
-    this.el.classList.toggle('sprint', this.vec.sprint);
+    this.el.classList.toggle('sprint', this.vec.sprint || !!this.lock); // (5.5.3) the sprint button's lock lights the ring too
   }
 }
