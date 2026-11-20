@@ -63,6 +63,8 @@ export class Hud {
     this.s = Math.min(1.6 * dpr, Math.max(h / 780, 0.8 * dpr)); // (4.26) larger: readable at a glance // (claude-polish) as the comment above says: the clamp was never applied, so a phone's instruments were drawn at 0.43 and unreadable
     if (window.__fingerK) this.s *= 1.15; // (5.4) a phone's screen is smaller than a laptop's: the instruments' words a little larger (as the quest line)
     if (!this.safeEl) { this.safeEl = document.createElement('div'); this.safeEl.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(this.safeEl); }
+    let ps = null; try { ps = window.parent !== window && window.parent.__safeFor ? window.parent.__safeFor() : null; } catch (e) { /* not ours */ }
+    if (ps) { this.safe = { l: ps.l * dpr, r: ps.r * dpr, t: ps.t * dpr, b: ps.b * dpr }; return; } // (5.9.5) in the shell's frame: the phone's notch, from the page outside, turned with the frame
     const cs = getComputedStyle(this.safeEl); this.safe = { l: parseFloat(cs.paddingLeft) * dpr || 0, r: parseFloat(cs.paddingRight) * dpr || 0, t: parseFloat(cs.paddingTop) * dpr || 0, b: parseFloat(cs.paddingBottom) * dpr || 0 };
   }
   // explanations: only when hints are on (H)

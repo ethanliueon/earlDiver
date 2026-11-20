@@ -13,7 +13,7 @@ ver = re.search(r"VERSION = '([^']+)'", open(os.path.join(ROOT, 'js', 'version.j
 mods = [f'js/{f}' for f in sorted(os.listdir(os.path.join(ROOT, 'js'))) if f.endswith('.js')] + \
        [f'data/{f}' for f in sorted(os.listdir(os.path.join(ROOT, 'data'))) if f.endswith('.js')]
 lines = ',\n'.join(f'    "./{m}": "./{m}?v={ver}"' for m in mods)
-block = f'<!-- stamp:start (tools/stamp.py) -->\n  <script type="importmap">\n  {{ "imports": {{\n{lines}\n  }} }}\n  </script>\n  <script type="module" src="js/main.js?v={ver}"></script>\n  <!-- stamp:end -->'
+block = f'<!-- stamp:start (tools/stamp.py) -->\n  <script type="importmap">\n  {{ "imports": {{\n{lines}\n  }} }}\n  </script>\n  <script type="module">if (!window.__shell) import("./js/main.js");</script>\n  <!-- stamp:end -->'
 p = os.path.join(ROOT, 'index.html')
 html = open(p).read()
 if '<!-- stamp:start' in html:

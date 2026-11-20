@@ -973,3 +973,5 @@ html body #journal .jcell:not(#_a)::before, html body #journal .jcell:not(#_a)::
    corner, so it sat right of and below the settings coin and the bag) */
 html.touch body #quests-hud #quests-btn:not(#_a) { position: relative; overflow: visible; }
 html.touch body #quests-hud #quests-btn:not(#_a) img { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; margin: 0 !important; max-width: none !important; }
+/* (5.9.5) no "turn your phone sideways" card: held upright, the game is shown turned (index.html's shell) */
+html body #rotate, html body #turn-phone { display: none !important; }
