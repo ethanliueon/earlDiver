@@ -41,7 +41,7 @@ import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
 
 const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
-const HUDT = '"Barlow Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
+const HUDT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
 const GAME = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'; // (4.27) the HUD face
 
 export class Hud {
@@ -298,7 +298,10 @@ export class Hud {
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Call her from the water' },
       // (5.6.9) the glow sticks on his belt; with none on it, a padlock (and where to get one)
       { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'For the water' : (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
-      { key: 'sprint', icon: 'sprint', on: true, lit: !!g.sprintLock },
+      // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
+      // the winch to sell). Sprint moved beside the stick
+      (() => { const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = aboard ? !!this.handOn : hf || hu;
+        return { key: aboard ? 'f' : hu ? 'u' : 'f', icon: 'hand', on: hon, lit: hon && !aboard, why: aboard ? (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door') : 'Nothing in reach' }; })(),
       { key: 'l', icon: 'lamp', on: !aboard, lit: !!e.lampOn, why: 'For the water' },
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
@@ -326,9 +329,18 @@ e.inSub ? [
       ctx.fillStyle = '#1a1610'; ctx.beginPath(); ctx.arc(0, k * 0.12, k * 0.12, 0, TAU); ctx.fill(); ctx.fillRect(-k * 0.05, k * 0.12, k * 0.1, k * 0.26);
       ctx.restore();
     };
+    // (5.7.0) a press you can see: the coin sinks and lights up (coins.js 'press'), and a ring of light runs out from it
+    const pa = this.pressAt || (this.pressAt = {}), was = this.wasHeld || (this.wasHeld = new Set()), nowT = performance.now();
+    const pressFx = (key, x, y, r) => {
+      const dn = held.has(key); if (dn && !was.has(key)) pa[key] = nowT;
+      const k = pa[key] ? (nowT - pa[key]) / 420 : 2;
+      if (k < 1) { ctx.save(); ctx.strokeStyle = `rgba(255,236,196,${(0.75 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (3.4 - 2.4 * k) * u; ctx.beginPath(); ctx.arc(x, y, r * (1 + 0.55 * k), 0, TAU); ctx.stroke(); ctx.restore(); }
+      return dn;
+    };
+    const LIT_ART = new Set(['lamp', 'glow', 'sprint']); // their pictures change when on
     const btn = (a, x, y, r) => {
       if (a.dom) { this.journalAt = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, r: r * kx }; this.journalR = r * kx; return; } // (5.6.9) the journal's HTML coin is placed here by main.js
-      const down = held.has(a.key);
+      const down = pressFx(a.key, x, y, r);
       // one that comes and goes rises in (and sinks away) over a fifth of a second rather than blinking
       if (a.away) { const v0 = vis[a.key] ?? 0, v = vis[a.key] = clamp(v0 + (a.on ? 1 : -1) * dt * 6, 0, 1); if (v <= 0.01) return; r *= 0.7 + 0.3 * (1 - (1 - v) * (1 - v)); ctx.save(); ctx.globalAlpha *= v; }
       else ctx.save();
@@ -339,7 +351,7 @@ e.inSub ? [
         ctx.fillStyle = down ? 'rgba(4,8,8,0.8)' : 'rgba(6,10,10,0.55)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
         ctx.strokeStyle = a.lit ? 'rgba(236,224,190,0.85)' : 'rgba(230,222,196,0.22)'; ctx.lineWidth = 1.4 * u; ctx.stroke();
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
-      } else drawCoin(ctx, x, y, r, a.icon, down ? 'down' : !a.on ? 'off' : a.lit ? 'lit' : 'on', a.look, a.tint);
+      } else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.n > 1 && !a.lock) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
@@ -364,6 +376,7 @@ e.inSub ? [
       // coin, at the very right edge; the depth and the radar sit to the left of that column
       const rb = 19 * u, stepB = rb * 2 + 9 * u, top = gy + rg + 10 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(2, Math.floor((last - top) / stepB) + 1);
       ROW.slice(0, n).forEach((a, i) => btn(a, gx, top + i * stepB, rb));
+      { const ra = this.radarAt, rest = ROW.slice(n); if (ra) rest.forEach((a, i) => btn(a, ra.x + (i - (rest.length - 1) / 2) * stepB, ra.y + ra.r + 10 * u + rb, rb)); } // (5.7.0) a short screen: the rest in a row under the radar
       this.gearSpace = Math.max(rg, rb) * 2 + 22 * u; }
     // (5.6.8) what F does here is done by tapping the thing itself (render.js brackets it, main.js takes the tap): no tag
     // laid over the scene, and no picture that could say the wrong thing
@@ -378,7 +391,7 @@ e.inSub ? [
     const bKey = aboard ? 'f' : ' ';
     const rarOf = (k) => { const it = k === 'net' ? gear(P, 'net') : k === 'cam' && owns(P, 'camera') ? gear(P, 'cam') : null; return it && it.rarity || null; }; // (5.6.9) the tool's rarity tints its coin
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
-      drawCoin(ctx, cx, cy, R, kind, held.has(bKey) ? 'down' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
+      drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
     if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(230,222,196,${(0.25 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
@@ -397,7 +410,7 @@ e.inSub ? [
       const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1);
       if (owned.length > 1) {
         const nx = owned[(owned.indexOf(sel || 'net') + 1) % owned.length];
-        drawCoin(ctx, sx2, sy2, rc, nx, held.has('swap') ? 'down' : 'on', nx === 'net' ? netLook(gear(P, 'net').look || 0) : nx === 'cam' ? gear(P, 'cam').look : null, rarOf(nx));
+        drawCoin(ctx, sx2, sy2, rc, nx, pressFx('swap', sx2, sy2, rc) ? 'press' : 'on', nx === 'net' ? netLook(gear(P, 'net').look || 0) : nx === 'cam' ? gear(P, 'cam').look : null, rarOf(nx));
         ctx.save(); ctx.translate(sx2 - rc * 0.68, sy2 + rc * 0.68); ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.arc(0, 0, rc * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc * 0.8); ctx.restore();
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'swap');
       } else {
@@ -405,6 +418,21 @@ e.inSub ? [
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No camera yet: the computer in the cabin sells them');
       }
     }
+    // (5.7.0) sprint beside the stick: above and to the right of its ring, following it while he steers (faint where the
+    // stick rests); a tap, or the steering thumb slid onto it, locks sprinting on. Not in the sub
+    { const T0 = this.touchRef, A0 = T0 && T0.anchor;
+      if (A0 && !e.inSub) {
+        const ang = -52 * Math.PI / 180, dd = A0.R * 1.62, sxC = A0.x + Math.cos(ang) * dd, syC = A0.y + Math.sin(ang) * dd, rs = 21 * u;
+        const px2 = sxC / kx - this.safeL, py2 = syC / kx - this.safeT;
+        ctx.save(); ctx.globalAlpha *= A0.on || g.sprintLock ? 1 : 0.6;
+        const dn = pressFx('sprint', px2, py2, rs);
+        drawCoin(ctx, px2, py2, rs, 'sprint', dn ? 'press' : g.sprintLock ? 'lit' : 'on', g.sprintLock ? { lit: true } : null);
+        if (tutKey === 'sprint') ring(px2, py2, rs);
+        ctx.restore();
+        hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'sprint');
+        T0.sprintAt = { x: sxC, y: syC, r: rs * kx };
+      } else if (T0) T0.sprintAt = null; }
+    this.wasHeld = new Set(held); // (5.7.0) for the next frame's press rings
     hot(cx - R, cy - R, R * 2, R * 2, aboard ? (handOn ? 'f' : 'msg:' + (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door, or off the end to dive')) : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
   }
 
@@ -511,7 +539,15 @@ e.inSub ? [
       ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 1;
       const base = pad + 44 * s;
       ctx.font = `600 ${24 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText('m', rx0, base);
-      ctx.font = `600 ${58 * s}px ${HUDT}`; ctx.fillStyle = ink(1); ctx.fillText(String(Math.round(Math.max(0, e.y))), rx0 - 24 * s, base);
+      // (5.7.0) the figures roll like a dive computer's: the last digit turns smoothly to the next as he goes
+      { ctx.font = `600 ${58 * s}px ${HUDT}`; ctx.fillStyle = ink(1);
+        const v = Math.max(0, e.y), n = Math.floor(v), fr = v - n, dw = ctx.measureText('0').width, xr = rx0 - 24 * s, last = n % 10, lh = 58 * s * 0.86;
+        const pre = n >= 10 ? String(Math.floor(n / 10) + (last === 9 && fr > 0.5 ? 0 : 0)) : '';
+        if (pre) ctx.fillText(pre, xr - dw, base);
+        ctx.save(); ctx.beginPath(); ctx.rect(xr - dw - 2 * s, base - lh, dw + 4 * s, lh + 10 * s); ctx.clip(); ctx.textAlign = 'center';
+        const ease = fr < 0.86 ? 0 : (fr - 0.86) / 0.14, off = ease * ease * (3 - 2 * ease) * lh; // it holds, then clicks over in the last quarter metre
+        ctx.fillText(String(last), xr - dw / 2, base - off); ctx.fillText(String((last + 1) % 10), xr - dw / 2, base - off + lh);
+        ctx.restore(); }
       ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
       // a thin line with its painted icon at the left
       // (5.0) a short line with its mark in the same letters as the depth: O2 for his air, HULL for the sub's
@@ -529,7 +565,11 @@ e.inSub ? [
       };
       const oc = o2 > 0.25 ? [96, 172, 226] : [226, 66, 52]; // (5.0) blue, then red: no orange
       const ay = base + 16 * s;
-      line('air', ay, o2, oc, o2 < 0.1 || g.noAir ? 0.55 + 0.45 * Math.sin(g.time * 10) : 1);
+      const spr = !!(e.sprint && !e.inSub && !aboard && e.speedNow > 0.5); // (5.7.0) sprinting: the air is seen going
+      line('air', ay, o2, oc, o2 < 0.1 || g.noAir ? 0.55 + 0.45 * Math.sin(g.time * 10) : spr ? 0.78 + 0.22 * Math.sin(g.time * 22) : 1);
+      if (spr) { // a bright bead running back along the bar toward the empty end, again and again: air pouring out
+        const fw = (lineW - 2) * clamp(o2, 0, 1), k2 = (g.time * 1.6) % 1, bx = lx + 1 + fw * (1 - k2);
+        ctx.save(); ctx.globalAlpha = 0.85 * (1 - k2); ctx.fillStyle = '#eaf6ff'; ctx.shadowColor = 'rgba(200,235,255,0.9)'; ctx.shadowBlur = 8 * s; ctx.beginPath(); ctx.arc(bx, ay + lh / 2, lh * 0.55, 0, TAU); ctx.fill(); ctx.restore(); }
       if (e.inSub) { const hi = clamp(g.sub.hull, 0, 1); line('hull', ay + 22 * s, hi, hi < 0.5 ? [226, 66, 52] : [130, 196, 164]); }
       yy = ay + (e.inSub ? 22 * s : 0) + lh + 18 * s;
       if ((g.loadKg || 0) > 10 && !e.inSub) notes.push([`Heavy: ${Math.round(g.loadKg)} kg`, '#f06a5c']);

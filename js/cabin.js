@@ -241,11 +241,11 @@ export class Cabin {
     ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(dx, gy0, gr0, 0, TAU); ctx.fill();
     ctx.strokeStyle = brass(dx - gr0, gy0 - gr0, dx + gr0, gy0 + gr0); ctx.lineWidth = 6 * k; ctx.stroke();
     // the sign over it: an enamel plate, lit, "DECK" and an arrow out
-    const sgW = 96 * k, sgH = 26 * k, sgY = dTopY - 46 * k;
+    const sgW = 96 * k, sgH = 26 * k, sgY = gy0 + gr0 + 18 * k; // (5.7.0) on the door under its porthole: over the door it sat under the goal line
     ctx.fillStyle = '#0a0705'; ctx.fillRect(dx - sgW / 2 + 2 * k, sgY + 3 * k, sgW, sgH);
     ctx.fillStyle = '#1e6a3a'; ctx.beginPath(); ctx.roundRect(dx - sgW / 2, sgY, sgW, sgH, 4 * k); ctx.fill();
     ctx.strokeStyle = '#e6d8b8'; ctx.lineWidth = 1.6 * k; ctx.beginPath(); ctx.roundRect(dx - sgW / 2 + 3 * k, sgY + 3 * k, sgW - 6 * k, sgH - 6 * k, 3 * k); ctx.stroke();
-    ctx.fillStyle = '#f2e6c8'; ctx.font = `700 ${13 * k}px ui-monospace, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('\u2190 DECK', dx, sgY + sgH / 2 + 1); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#f2e6c8'; ctx.font = `700 ${14 * k}px "Barlow Semi Condensed", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('\u2190 DECK', dx, sgY + sgH / 2 + 1); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
     this.doorSign = [dx, sgY + sgH / 2];
     // ---------- oilskins and a sou'wester on a hook by the door ----------
     const ox = X(0.165), oy = ceil + RH * 0.24;
@@ -534,24 +534,7 @@ export class Cabin {
     ctx.save(); ctx.translate(ex, floor - eh * 0.5 - hopY); ctx.scale(this.face, 1); ctx.rotate(-Math.PI / 2);
     drawEarl(ctx, eh, this.step || 0, 0, null, null, { kind: 'none', tier: 0, t, suit: this.h.suit(), bag: [], land: true, noTank: true, noMask: true, walk: this.walk || 0 });
     ctx.restore();
-    // (4.2.1, 4.3.3) the tutorial's mark: a bouncing brass arrow over where to go (the computer, or the door), and
-    // brass chevrons flowing to it along the floor, like the trail in the sea
-    if (this.tutMark && ROOM[this.tutMark] !== undefined) {
-      const kx2 = X(ROOM[this.tutMark]), ay = floor - RH * (this.tutMark === 'door' ? 0.49 : 0.34) - 150 * k + Math.sin(t * 4) * 8 * k;
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 6;
-      ctx.fillStyle = 'rgba(230,222,196,0.92)'; // (5.5.5) the tutorial's cream ctx.beginPath(); ctx.moveTo(kx2, ay + 22 * k); ctx.lineTo(kx2 - 14 * k, ay); ctx.lineTo(kx2 - 5 * k, ay); ctx.lineTo(kx2 - 5 * k, ay - 18 * k); ctx.lineTo(kx2 + 5 * k, ay - 18 * k); ctx.lineTo(kx2 + 5 * k, ay); ctx.lineTo(kx2 + 14 * k, ay); ctx.closePath(); ctx.fill();
-      ctx.restore();
-      const dir = Math.sign(kx2 - ex) || 1, len = Math.abs(kx2 - ex), gap = 34 * k, sz = 9 * k, flow = (t * 1.6) % 1;
-      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      for (let i = 1; i * gap < len + gap; i++) {
-        const m = (i - flow) * gap; if (m < 30 * k || m > len - 20 * k) continue;
-        const x = ex + dir * m, y = floor + 10 * k, a = (0.45 + 0.45 * (0.5 + 0.5 * Math.cos((m / len * 4 - t * 2.2) * Math.PI))) * Math.min(1, (m - 30 * k) / (40 * k));
-        ctx.beginPath(); ctx.moveTo(x - dir * sz * 0.55, y - sz * 0.7); ctx.lineTo(x + dir * sz * 0.35, y); ctx.lineTo(x - dir * sz * 0.55, y + sz * 0.7);
-        ctx.strokeStyle = `rgba(18,22,12,${(a * 0.7).toFixed(3)})`; ctx.lineWidth = sz * 0.42 + 2; ctx.stroke();
-        ctx.strokeStyle = `rgba(230,222,196,${(a * 0.85).toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke();
-      }
-      ctx.restore();
-    }
+    // (5.7.0) the tutorial's mark is the thing itself lit up (its light, below): no arrow, no chevrons on the floor
     // ---------- the light: dim everywhere, warm under the lamp, cool by the porthole and door, green at the screen ----------
     const q = 0.5, lw = Math.ceil(W * q), lh = Math.ceil(H * q), lc = this.lc;
     if (lc.width !== lw || lc.height !== lh) { lc.width = lw; lc.height = lh; }
@@ -569,6 +552,9 @@ export class Cabin {
     if (this.tankAt) { const [tx, gt, tw, gh] = this.tankAt; pool(tx, gt + gh * 0.5, tw * 1.1, '120,200,230', 0.75, 0.75); pool(tx, gt + gh * 0.5, tw * 0.55, '160,220,240', 0.5, 0.6); } // (2.6.8) the aquarium's own light
     if (this.doorSign) pool(this.doorSign[0], this.doorSign[1], 70 * k, '140,230,170', 0.45, 0.6); // the lit DECK sign
     pool(kx, dTop - 56 * k, 150 * k, '90,210,130', on ? 0.5 : 0.36); // the screen
+    // (5.7.0) the tutorial's goal glows: the computer's screen brightens and flickers; the door's frame warms with deck light
+    if (this.tutMark === 'desk') { const fl = 0.8 + 0.2 * Math.sin(t * 23) * Math.sin(t * 7.3); pool(kx, dTop - 56 * k, 260 * k, '130,245,170', 0.6 * fl); pool(kx, floor + 8 * k, 140 * k, '110,230,150', 0.35 * fl, 0.3); }
+    if (this.tutMark === 'door') { const pu = 0.5 + 0.5 * Math.sin(t * 2.4); pool(dx, floor - dh * 0.45, dw * 2.6, '255,214,150', 0.45 + 0.25 * pu, 1.6); pool(dx, floor + 8 * k, dw * 2, '255,214,150', 0.3 + 0.15 * pu, 0.3); }
     pool(kx + 78 * k, dTop - 10 * k, 120 * k, '255,200,130', 0.55, 0.6); // the desk lamp on the desktop
     pool(lx2, ly + RH * 0.4, RH * 0.85, '255,190,120', 0.6, 0.8); pool(lx2, ly + 20 * k, RH * 0.25, '255,206,150', 0.4); // the lamp over the wheel
     pool((X(1.18) + X(1.43)) / 2, ceil + RH * 0.25, RH * 0.75, '150,180,215', dl * 1.1, 0.8); // daylight through the front windows

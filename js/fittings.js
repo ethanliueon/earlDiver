@@ -4,7 +4,7 @@
 // job: paint names places, brass is what you operate, paper and chalk tell you things, red is only for alarms.
 import { clamp, lerp, TAU } from './util.js';
 
-const STENCIL = '"Allerta Stencil", "Barlow Semi Condensed", "Arial Narrow", sans-serif';
+const STENCIL = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const HAND = '"Caveat", "Segoe Print", cursive';
 const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const ease = (q) => 1 - Math.pow(1 - clamp(q, 0, 1), 3);

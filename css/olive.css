@@ -356,7 +356,7 @@ body:has(#settings:not([hidden])) #quests-hud, body:has(#chart:not([hidden])) #q
 
 /* ================= (4.28) one family: Barlow. Condensed for names on panels, Semi Condensed for everything else,
    figures in the same face (tabular). No italics, no small capitals anywhere in the interface. ================= */
-:root { --o-text: "Barlow Semi Condensed", "Arial Narrow", sans-serif; --o-num: "Barlow Semi Condensed", "Arial Narrow", sans-serif; --o-title: "Barlow Condensed", "Arial Narrow", sans-serif;
+:root { --o-text: "Barlow Semi Condensed", "Arial Narrow", sans-serif; --o-num: "Barlow Semi Condensed", "Arial Narrow", sans-serif; --o-title: "Barlow Semi Condensed", "Arial Narrow", sans-serif; /* (5.7.0) one family: the titles its heaviest weight */
   --serif: var(--o-text); --mono: var(--o-text); --stencil: var(--o-text); --game: var(--o-text); --game-sc: var(--o-text); }
 html body { font-variant-numeric: tabular-nums; }
 html body *:not(.dv-root *):not(#dave *) { font-style: normal !important; font-variant-caps: normal !important; }
@@ -660,7 +660,7 @@ html body textarea, html body input { -webkit-user-select: text; user-select: te
 #rotate { display: none; }
 @media (orientation: portrait) and (pointer: coarse) {
   #rotate { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; background: #050b0e; color: #efe8d2; }
-  #rotate p { margin: 0; font: 700 20px "Barlow Condensed", sans-serif; letter-spacing: 0.18em; text-transform: uppercase; }
+  #rotate p { margin: 0; font: 700 20px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.18em; text-transform: uppercase; }
   #rotate .rt-phone { width: 54px; height: 92px; border: 4px solid #efe8d2; border-radius: 10px; position: relative; animation: rt-turn 2.4s ease-in-out infinite; }
   #rotate .rt-phone i { position: absolute; left: 50%; bottom: 6px; width: 14px; height: 3px; margin-left: -7px; border-radius: 2px; background: #efe8d2; }
 }
@@ -815,3 +815,22 @@ html body #gains.dock.in:not(#_a) { animation-name: gain-dock-in; }
 @keyframes gain-dock-in { from { opacity: 0; transform: translate(-100%, calc(-50% + 10px)); } to { opacity: 1; transform: translate(-100%, -50%); } }
 /* (5.6.9) the shop on a phone during the tutorial: its line in the gap above the shop's screen, centred */
 html.touch body:has(#catalog:not([hidden])) #tut-spot .ts-line:not(#_a):not(#_b):not(#_c) { left: 50% !important; top: 0 !important; transform: translateX(-50%) !important; font-size: 19px !important; max-width: 80vw; padding: 2px 14px 3px; border-left: 0; background: rgba(4, 8, 10, 0.75); border-radius: 0 0 4px 4px; white-space: nowrap; }
+/* (5.7.0) danger lines (out of air, crush depth, air critical) shake as they come and flicker while they stand */
+html body #msgs .msg-danger .msg-t { animation: msg-shake 0.5s cubic-bezier(.36,.07,.19,.97) both, msg-flicker 1.7s 0.5s infinite; display: inline-block; }
+@keyframes msg-shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(3px); } 30%, 50%, 70% { transform: translateX(-5px); } 40%, 60% { transform: translateX(5px); } }
+@keyframes msg-flicker { 0%, 100% { opacity: 1; } 46% { opacity: 1; } 48% { opacity: 0.45; } 50% { opacity: 0.95; } 52% { opacity: 0.6; } 54% { opacity: 1; } }
+/* (5.7.0) the quest's tag: a slip of damp paper, ink, a red rubber stamp across it; drawn back into the journal's coin */
+html body #qtag:not(#_a) { border: 0; border-image: none; background: #ddd1ae; color: #2a2116; padding: 6px 14px 7px; border-radius: 2px; box-shadow: 0 3px 10px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(60,40,20,0.35); transform: translateX(16px) rotate(-2deg); }
+html body #qtag.in:not(#_a) { transform: rotate(-2deg); }
+html body #qtag.in.go:not(#_a) { opacity: 0; transform: translateX(var(--tx, 60px)) scale(0.2); transition: opacity 0.45s ease-in, transform 0.45s cubic-bezier(0.5, 0, 0.9, 0.4); }
+html body #qtag:not(#_a) small { color: rgba(42, 33, 22, 0.65); }
+html body #qtag:not(#_a) b { color: #2a2116; }
+html body #qtag .stamp { position: absolute; right: -10px; bottom: -8px; font: 700 13px var(--o-hud); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(170, 38, 28, 0.85); border: 2px solid rgba(170, 38, 28, 0.8); border-radius: 3px; padding: 0 5px; transform: rotate(-14deg) scale(1.6); opacity: 0; }
+html body #qtag.in .stamp { animation: qstamp 0.25s 0.45s ease-in forwards; }
+@keyframes qstamp { to { transform: rotate(-14deg) scale(1); opacity: 1; } }
+/* (5.7.0) the inventory on a phone (drawn at about 0.6 of its size): the slots' names and counts large enough to read */
+html.touch body #inventory .eq-stage .eq-slot .slot-nm:not(#_a):not(#_b) { font: 600 15px var(--o-text) !important; letter-spacing: 0.08em !important; color: #efe8d2 !important; bottom: -24px; }
+html.touch body #inventory .eq-stage .eq-slot.sq:not(#_a) { transform: scale(1.18); }
+html.touch body #inventory .eq-stage .eq-col:not(#_a) { row-gap: 34px !important; }
+html.touch body #inventory .belt-n:not(#_a) { font-size: 18px; }
+html.touch body #inventory .lk-head:not(#_a) h4, html.touch body #inventory .lk-head:not(#_a) small, html.touch body #inventory .lk-head:not(#_a) span { font-size: 16px !important; }

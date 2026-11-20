@@ -85,6 +85,6 @@ export function lockerTexture(w = 1200, h = 800, L = {}) {
   // the light: a lamp above, falling unevenly
   { const lg = x.createRadialGradient(w * 0.42, -h * 0.1, 0, w * 0.42, -h * 0.1, h * 1.1); lg.addColorStop(0, 'rgba(255,240,210,0.12)'); lg.addColorStop(0.5, 'rgba(255,240,210,0.03)'); lg.addColorStop(1, 'rgba(0,0,0,0.18)'); x.fillStyle = lg; x.fillRect(0, 0, w, h); }
   // a stencilled 07, faded, low on the right plate
-  x.save(); x.globalAlpha = 0.06; x.fillStyle = '#e8e4d0'; x.font = `bold ${Math.round(h * 0.18)}px "Allerta Stencil", monospace`; x.textAlign = 'right'; x.fillText('07', w - 40, h - 56); x.restore();
+  x.save(); x.globalAlpha = 0.06; x.fillStyle = '#e8e4d0'; x.font = `bold ${Math.round(h * 0.18)}px "Barlow Semi Condensed", monospace`; x.textAlign = 'right'; x.fillText('07', w - 40, h - 56); x.restore();
   const url = c.toDataURL('image/jpeg', 0.86); CACHE.set(key, url); return url;
 }

@@ -490,12 +490,14 @@ export class UI {
   questTag(text) {
     const hudEl = document.getElementById('quests-hud'); if (!hudEl) return false;
     let t = document.getElementById('qtag');
-    if (!t) { t = document.createElement('div'); t.id = 'qtag'; t.innerHTML = '<small>Quest done</small><b></b>'; document.body.appendChild(t); }
+    if (!t) { t = document.createElement('div'); t.id = 'qtag'; t.innerHTML = '<small>Quest done</small><b></b><i class="stamp">Paid</i>'; document.body.appendChild(t); }
+    // (5.7.0) a paper tag stamped with the sum, out to the left of the journal's coin (it sits at the right edge), and
+    // after a moment drawn back into it
     const r = document.getElementById('quests-btn').getBoundingClientRect();
-    t.style.left = (r.right + 8) + 'px'; t.style.top = (r.top + r.height * 0.15) + 'px';
+    t.style.left = 'auto'; t.style.right = (innerWidth - r.left + 10) + 'px'; t.style.top = (r.top - 4) + 'px'; t.style.setProperty('--tx', (r.width / 2 + 40) + 'px');
     t.querySelector('b').textContent = text;
-    t.classList.remove('in'); void t.offsetWidth; t.classList.add('in');
-    clearTimeout(this.qtagT); this.qtagT = setTimeout(() => t.classList.remove('in'), 2800);
+    t.classList.remove('in', 'go'); void t.offsetWidth; t.classList.add('in');
+    clearTimeout(this.qtagT); this.qtagT = setTimeout(() => { t.classList.add('go'); setTimeout(() => t.classList.remove('in', 'go'), 500); }, 2600);
     return true;
   }
   // (4.11.0) N with more than one kind of net in the hatch: their cards in the middle of the screen, in the item

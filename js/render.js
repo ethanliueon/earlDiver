@@ -192,7 +192,8 @@ export class Renderer {
     const lookX = e.vx * 0.9, lookY = e.vy * 0.6;
     let tx = e.x + lookX, ty = e.y + lookY;
     ty = Math.max(ty, -cam.h * 0.18); // let a little sky show near the surface
-    if (g.mode === 'menu') { tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3; ty = 5.5; }
+    // (5.7.0) the title: the camera starts at the boat and sinks slowly past her keel into the dark, over a minute
+    if (g.mode === 'menu') { const T = g.time - (g.menuT0 ?? g.time), k = smoothstep(6, 62, T); tx = BOAT.x - 7 + Math.sin(g.time * 0.05) * 3 + k * 10; ty = lerp(5.5, 78, k); }
     if (g.helm) { tx = BOAT.x + 3 * Math.cos(BOAT.yaw || 0) + clamp(g.boatV || 0, -5, 5) * 1.6; ty = -2.5; } // at the wheel: the whole Margaret and the sub in her cradle, looking a little ahead the way she goes
     if (lk > 0 && g.legend && g.legend.c) { const q = 0.35 * lk; tx = lerp(tx, g.legend.c.x, q); ty = lerp(ty, g.legend.c.y, q); this.legendAt = g.legend.c; }
     // a jump (new dive, respawn) cuts straight there instead of sweeping across the map
@@ -563,19 +564,19 @@ export class Renderer {
       const e = guide.from || g.earl, tx = guide.to.x, ty = guide.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
       const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));
       const sz = clamp(ppm * 0.22, 7, 16), flow = (g.time * 1.6) % 1;
-      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      for (let i = 1; i <= n; i++) {
-        const m = (i - flow) * gap; if (m < 1.1 || m > d - 1.2) continue; // clear of Earl and of the target
-        const q = m / d, x = S(lerp(e.x, tx, q)), y = Sy(lerp(e.y, ty, q));
-        // a wave of light runs along them towards the target; they fade in from Earl
-        const wave = 0.5 + 0.5 * Math.cos((q * 4 - g.time * 2.2) * TAU * 0.5), a = (0.4 + 0.5 * wave) * Math.min(1, (m - 1.1) / 1.5);
-        ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-        ctx.beginPath(); ctx.moveTo(-sz * 0.55, -sz * 0.7); ctx.lineTo(sz * 0.35, 0); ctx.lineTo(-sz * 0.55, sz * 0.7);
-        ctx.strokeStyle = `rgba(18,22,12,${(a * 0.7).toFixed(3)})`; ctx.lineWidth = sz * 0.42 + 2; ctx.stroke(); // a dark olive edge: readable on sky and water
-        ctx.strokeStyle = `rgba(230,222,196,${(a * 0.85).toFixed(3)})`; ctx.lineWidth = sz * 0.42; ctx.stroke(); // (5.5.5) the cream of the game's own buttons, not white
-        ctx.restore();
+      // (5.7.0) not chevrons but a thread of living light: motes of plankton drifting along the way, each wandering a
+      // little off the line, brighter and thicker near the goal, a slow wave of glow running toward it
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const motes = Math.min(70, Math.floor(d / 0.45)), px = -Math.sin(Math.atan2(ty - e.y, tx - e.x)), py = Math.cos(Math.atan2(ty - e.y, tx - e.x));
+      for (let i = 0; i < motes; i++) {
+        const seed = i * 12.9898, jit = (Math.sin(seed) * 43758.5453) % 1, q0 = ((i + 0.5) / motes + g.time * 0.035) % 1, m = q0 * d; if (m < 1.0 || m > d - 0.9) continue;
+        const wob = Math.sin(g.time * (0.7 + jit) + seed) * 0.35 * (1 - q0 * 0.6), wx = lerp(e.x, tx, q0) + px * wob, wy = lerp(e.y, ty, q0) + py * wob;
+        const wave = 0.5 + 0.5 * Math.cos((q0 * 3 - g.time * 0.9) * TAU), a = (0.18 + 0.5 * wave) * (0.45 + 0.55 * q0) * Math.min(1, (m - 1.0) / 1.5);
+        const rr = Math.max(1.2, ppm * (0.035 + 0.04 * q0)) * (0.7 + 0.6 * Math.abs(jit));
+        const gx = S(wx), gy = Sy(wy), spr = this.moteSpr || (this.moteSpr = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(200,236,214,1)'); gr.addColorStop(0.3, 'rgba(120,210,180,0.45)'); gr.addColorStop(1, 'rgba(60,160,140,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return c; })());
+        ctx.globalAlpha = a; ctx.drawImage(spr, gx - rr * 4, gy - rr * 4, rr * 8, rr * 8);
       }
-      ctx.restore();
+      ctx.restore(); void ang; void sz; void flow; void n;
       const f = guide.fish, cx = S(f ? f.x : tx), cy = Sy(f ? f.y : ty);
       const r = (f ? Math.max(16, ppm * (f.len * 0.8 + 0.45)) : Math.max(14, ppm * 0.5)) * (1 + 0.1 * Math.sin(g.time * 4));
       ctx.save(); if (guide.door) ctx.globalAlpha = 0; // (4.3.5) the door glows itself
@@ -982,6 +983,15 @@ export class Renderer {
         const ca2 = Math.cos(e.angle), sa2 = Math.sin(e.angle);
         g.toolTip = { x: e.x + e.facing * (h.tip.x * ca2 - h.tip.y * sa2) / ppm, y: e.y + (h.tip.x * sa2 + h.tip.y * ca2) / ppm };
       }
+      // (5.7.0) the net's swing leaves a trace: a pale arc of stirred water where the hoop went, fading over half a
+      // second, a few bubbles torn off it. A quick net draws a short, sharp arc; a slow one a long sweep
+      { const tr = this.swingTr || (this.swingTr = []);
+        if (g.capture && g.capture.kind === 'net' && g.toolTip && !e.inSub) { tr.push({ x: g.toolTip.x, y: g.toolTip.y, t }); if (g.bubbles && Math.random() < 0.35) g.bubbles.push({ x: g.toolTip.x, y: g.toolTip.y, r: 0.015 + Math.random() * 0.03, w: Math.random() * 6, t: 0 }); }
+        while (tr.length && t - tr[0].t > 0.55) tr.shift();
+        if (tr.length > 2) { ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          for (let i = 1; i < tr.length; i++) { const a0 = tr[i - 1], a1 = tr[i], k = 1 - (t - a1.t) / 0.55; if (k <= 0) continue;
+            ctx.strokeStyle = `rgba(214,232,236,${(0.32 * k).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * (0.05 + 0.1 * k)); ctx.beginPath(); ctx.moveTo(S(a0.x), Sy(a0.y)); ctx.lineTo(S(a1.x), Sy(a1.y)); ctx.stroke(); }
+          ctx.restore(); } }
       // tag darts in flight
       for (const d of g.darts || []) {
         ctx.save(); ctx.translate(S(d.x), Sy(d.y)); ctx.rotate(Math.atan2(d.vy, d.vx));
@@ -1219,6 +1229,34 @@ export class Renderer {
       ctx.restore();
     }
     // ================= POST =================
+    // (5.7.0) the title's dive: once it is deep, a long shape passes slowly under the view, and if nothing is touched
+    // for a while, a red eye opens in the dark at the lower right and watches
+    if (g.mode === 'menu') {
+      const T = g.time - (g.menuT0 ?? g.time), idle = g.time - (g.menuIdle0 ?? g.time);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (T > 38 && T < 70) { const k = (T - 38) / 32, x = this.W * (1.25 - 1.6 * k), y = this.H * 0.8, L = this.W * 0.55;
+        ctx.globalAlpha = 0.55 * Math.sin(Math.PI * k); ctx.fillStyle = '#020405'; ctx.beginPath(); ctx.ellipse(x, y, L * 0.5, L * 0.075, 0, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x + L * 0.46, y); ctx.lineTo(x + L * 0.66, y - L * 0.09 + Math.sin(g.time * 1.4) * L * 0.02); ctx.lineTo(x + L * 0.63, y); ctx.lineTo(x + L * 0.66, y + L * 0.08 + Math.sin(g.time * 1.4) * L * 0.02); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x - L * 0.05, y - L * 0.07); ctx.lineTo(x + L * 0.06, y - L * 0.15); ctx.lineTo(x + L * 0.1, y - L * 0.06); ctx.fill(); }
+      if (T > 50 && idle > 22) { const o = smoothstep(22, 26, idle) * (1 - 0.15 * Math.pow(Math.max(0, Math.sin(g.time * 0.9)), 30)), ex = this.W * 0.88, ey = this.H * 0.9, r = Math.min(this.W, this.H) * 0.04;
+        const gl = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 4); gl.addColorStop(0, `rgba(170,20,14,${(0.35 * o).toFixed(3)})`); gl.addColorStop(1, 'rgba(120,10,8,0)'); ctx.globalAlpha = 1; ctx.fillStyle = gl; ctx.fillRect(ex - r * 4, ey - r * 4, r * 8, r * 8);
+        ctx.save(); ctx.beginPath(); ctx.ellipse(ex, ey, r * 1.5, r * 0.75 * o + 0.5, 0, 0, TAU); ctx.clip();
+        const ir = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 1.5); ir.addColorStop(0, '#ffb070'); ir.addColorStop(0.35, '#e0301c'); ir.addColorStop(1, '#3a0604'); ctx.fillStyle = ir; ctx.fillRect(ex - r * 1.6, ey - r, r * 3.2, r * 2);
+        ctx.fillStyle = '#050101'; ctx.beginPath(); ctx.ellipse(ex + Math.sin(g.time * 0.3) * r * 0.25, ey, r * 0.16, r * 0.62, 0, 0, TAU); ctx.fill(); ctx.restore(); }
+      ctx.restore();
+    }
+    // (5.7.0) drowning: as the breath-hold runs out the colour drains, the edges of sight close in and pulse with the
+    // heartbeat, until only a small circle round him is left
+    if (g.noAir && g.mode === 'play') {
+      const k = clamp(g.noAir / 15, 0, 1), hb = Math.pow(Math.max(0, Math.sin(g.time * Math.PI * (1.6 - 0.8 * k))), 6);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (!this.phone) { ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = 0.85 * k; ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, this.W, this.H); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
+      const cx = S(g.earl.x), cy = Sy(g.earl.y), big = Math.hypot(this.W, this.H), inner = big * (0.55 - 0.47 * k) * (1 - 0.05 * hb), outer = inner + big * (0.35 - 0.2 * k);
+      const vg = ctx.createRadialGradient(cx, cy, inner, cx, cy, outer); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${(0.55 + 0.43 * k).toFixed(3)})`);
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, this.W, this.H);
+      if (this.phone) { ctx.fillStyle = `rgba(30,32,34,${(0.35 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); }
+      ctx.restore();
+    }
     // its red, crept into the water round him: the black of the deep turns a black-red
     if ((fx.redTint || 0) > 0.01) {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen';

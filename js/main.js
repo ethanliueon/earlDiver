@@ -84,7 +84,8 @@ audio.musicAllowed = true; // (5.5) the title too: the theme was only allowed fr
 const beacon = new Beacon(audio); beacon.say = (text, kind) => messages.show(text, kind); // (4.0.2) the alarms on the message line
 
 const keys = new Set();
-hud.held = keys; // (5.3) the keys held, so a touch button shows pushed in
+hud.held = keys; hud.touchRef = null; // (5.7.0) set once the Touch exists, below
+ // (5.3) the keys held, so a touch button shows pushed in
 // (5.3.2) a phone: lite mode for good, and the effects Safari draws in software switched off: blurred shadows (on
 // every context the game draws on), soft-light and multiply-heavy extras, high-quality scaling. ?full keeps them
 if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !/[?&]full\b/.test(location.search)) {
@@ -294,7 +295,7 @@ const ui = new UI({
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
     const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id })));
     if (cards.length) ui.showGains(cards); // (4.6.0)
-    if (!(hud.touch && !ui.anyOpen() && ui.questTag(`+${money(r.pay)}`))) hud.toast(`Quest done: +${money(r.pay)}`, 'big'); // (5.5.6) on a phone, a tag from the clipboard
+    if (!(hud.touch && ui.questTag(`+${money(r.pay)}`))) hud.toast(`Quest done: +${money(r.pay)}`, 'big'); // (5.7.0) on a phone always the stamped tag, panel open or not // (5.5.6) on a phone, a tag from the clipboard
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
@@ -1200,6 +1201,7 @@ function startRun() {
     let seen = false; try { seen = !!localStorage.getItem('earl.iosFsTip'); localStorage.setItem('earl.iosFsTip', '1'); } catch (e) { seen = true; }
     if (!seen) setTimeout(() => hud.toast('For full screen: Share, then Add to Home Screen, and open Earl from there', 'note'), 6000);
   }
+  g.menuT0 = null; // (5.7.0) the title's dive starts again next time
   messages.clear(); // (5.5) a new dive starts with a clear line (no "Out of air" left over from the last)
   mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic();
@@ -1224,7 +1226,7 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
+const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'sprinton', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
 function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
@@ -1327,6 +1329,7 @@ function tapRectAt(x, y) { const sl = 10 * (window.__fingerK || 1); let best = n
 function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(hud.touch && !document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
 setTimeout(wireCabinTouch, 0);
 const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
+hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stick
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
   d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
@@ -1925,6 +1928,8 @@ function update(dt) {
 
   if (g.mode === 'menu') {
     g.dayEff = g.day.light; g.fx.dread = 0;
+    // (5.7.0) the title is a slow dive: the clock for the camera's drift down, and for how long nothing has been touched
+    if (g.menuT0 == null) { g.menuT0 = g.time; g.menuIdle0 = g.time; }
     e.x = BOAT.x - 12; e.y = 8;
     g.fauna.surfY = g.surfY;
   g.fauna.update(dt, renderer.cam, { x: -999, y: -999, speedNow: 0 }, null, 0, g.time);
@@ -1947,6 +1952,7 @@ function update(dt) {
     g.obsTarget = hud.touch ? observeTarget() : null;
     // (5.5.3) the sprint button: a tap locks sprinting on (it costs air faster, as ever), another tap or letting go of the
     // stick for a moment ends it; never in the sub or on deck
+    if (pressed.has('sprinton')) { pressed.delete('sprinton'); if (!g.sprintLock) pressed.add('sprint'); } // (5.7.0) a thumb slid onto the sprint button
     if (pressed.has('sprint')) { pressed.delete('sprint'); g.sprintLock = !g.sprintLock; g.sprintIdle = 0; if (g.sprintLock && !profile.tipSprintBtn) { profile.tipSprintBtn = true; saveProfile(profile); hud.toast('Sprinting: your air goes faster', 'note'); } }
     if (g.sprintLock) { if (e.inSub) g.sprintLock = false; else { g.sprintIdle = touch && touch.vec.on ? 0 : (g.sprintIdle || 0) + dt; if (g.sprintIdle > 1.2) g.sprintLock = false; } }
     if (touch) touch.lock = !!g.sprintLock;
@@ -2700,6 +2706,8 @@ function updateDebris(dt) {
 }
 function smoothSky(v) { return v * v * (3 - 2 * v); }
 function updateBubbles(dt) {
+  // (5.7.0) sprinting: a stream of bubbles kicked off his fins, behind him
+  { const e = g.earl; if (g.mode === 'play' && e && e.sprint && !e.inSub && !g.aboard && e.y > 0.6 && e.speedNow > 0.8) { g.wakeT = (g.wakeT || 0) - dt; if (g.wakeT <= 0) { g.wakeT = 0.045; const a = e.angle || 0, bx = e.x - Math.cos(a) * 0.95, by = e.y - Math.sin(a) * 0.95; for (let i = 0; i < 2; i++) g.bubbles.push({ x: bx + (Math.random() - 0.5) * 0.3, y: by + (Math.random() - 0.5) * 0.3, r: 0.02 + Math.random() * 0.045, w: Math.random() * 6, t: 0 }); } } }
   for (let i = g.bubbles.length - 1; i >= 0; i--) {
     const b = g.bubbles[i];
     b.t += dt;
@@ -2890,6 +2898,8 @@ requestAnimationFrame(frame);
   if (window.__bootDone) window.__bootDone();
 })();
 
+// (5.7.0) any touch or key on the title: the eye in the dark closes again
+for (const ev0 of ['pointerdown', 'keydown']) window.addEventListener(ev0, () => { if (g && g.mode === 'menu') g.menuIdle0 = g.time; }, true);
 // (5.6.8) the settings coin (top right, on a phone): the pause menu, wherever he is (the cabin too), never closing it
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'settings') return; ev.stopImmediatePropagation();

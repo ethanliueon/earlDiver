@@ -4,7 +4,7 @@
 // from the middle. About three seconds each (danger a little longer); the same line again only counts up (x2).
 // kinds: '' (plain), 'note' (a hint, pale gold), 'good', 'warn' (amber), 'danger' (red), 'big' (a moment worth
 // marking, larger), or 'rar:#col' (a find, in its rarity's colour)
-const DANGER = /died|dying|no air|crush|implod|torn|taken|out of air|lost/i;
+const DANGER = /died|dying|no air|crush|implod|torn|taken|out of air|lost|critical/i; // (5.7.0) air critical is danger too
 const HOLD = { '': 3, note: 3, good: 3, warn: 3, danger: 4.2, big: 4 };
 
 // (4.5.0) Nothing waits its turn: a message is said the moment it happens, or not at all. The most important one

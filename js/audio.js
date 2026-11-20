@@ -486,7 +486,9 @@ export class Audio {
     // heartbeat
     if (fx.dread > 0.15 || g.injury >= 2 || g.threat || g.noAir || (!e.inSub && e.o2 / e.o2Max < 0.15)) {
       this.beatT -= dt;
-      if (this.beatT <= 0) { this.beatT = 60 / e.hr; this.heartbeat(0.12 + fx.dread * 0.35); }
+      // (5.7.0) drowning: the beat louder and slowing as the breath-hold runs out
+      const dk = g.noAir ? clamp(g.noAir / 15, 0, 1) : 0;
+      if (this.beatT <= 0) { this.beatT = 60 / e.hr * (1 + dk * 1.2); this.heartbeat(0.12 + fx.dread * 0.35 + dk * 0.35); }
     }
     // distant groans when it is within range
     if (g.entity && g.entity.dist < 320) {

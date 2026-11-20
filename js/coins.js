@@ -61,7 +61,11 @@ const ART = {
     for (let yy = 0; yy < Hc; yy += 2) for (let xx = from; xx < Wc; xx += 2) if (d[(yy * Wc + xx) * 4 + 3] > 20) { if (xx < l) l = xx; if (xx > r2) r2 = xx; if (yy < t) t = yy; if (yy > b) b = yy; }
     if (r2 < 0) return;
     const hw = r2 - l, hh = b - t, k = 76 / Math.max(hw, hh * 1.1), mx = (l + r2) / 2, my = (t + b) / 2;
-    x.save(); x.rotate(-0.55); x.scale(k, k); x.translate(-mx + hw * 0.08, -my); x.drawImage(c, 0, 0); x.restore();
+    // (5.7.0) a pale halo round the net's own shape first, so a dark net still stands off a dark face of any rarity
+    const hc = document.createElement('canvas'); hc.width = Wc; hc.height = Hc; const hx = hc.getContext('2d'); hx.drawImage(c, 0, 0); hx.globalCompositeOperation = 'source-in'; hx.fillStyle = 'rgba(232,226,204,1)'; hx.fillRect(0, 0, Wc, Hc);
+    x.save(); x.rotate(-0.55); x.scale(k, k); x.translate(-mx + hw * 0.08, -my);
+    x.globalAlpha = 0.5; x.filter = `blur(${(2.2 / k).toFixed(1)}px)`; for (const [ox, oy] of [[-1.6, 0], [1.6, 0], [0, -1.6], [0, 1.6]]) x.drawImage(hc, ox / k, oy / k);
+    x.filter = 'none'; x.globalAlpha = 1; x.drawImage(c, 0, 0); x.restore();
   },
   // an underwater camera in its housing, in the colour of the player's own: moulded, not a box. Bevelled edges, two
   // grips with their rubber, the big port of the lens with its rings and a reflection, the strobe on its arm, screws
@@ -148,7 +152,10 @@ const ART = {
     x.fillStyle = 'rgba(255,255,250,0.45)'; x.beginPath(); x.arc(5, 8, 1.5, 0, TAU); x.fill();
   },
   // a pair of long fins mid-kick, rails down their blades, a stream of bubbles behind
-  sprint(x) {
+  sprint(x, look) {
+    // (5.7.0) on (locked): streaks of water rushing past behind it and a stronger light
+    if (look && look.lit) { const g2 = x.createRadialGradient(0, 0, 0, 0, 0, 50); g2.addColorStop(0, 'rgba(200,240,255,0.55)'); g2.addColorStop(1, 'rgba(120,200,255,0)'); x.fillStyle = g2; x.beginPath(); x.arc(0, 0, 50, 0, TAU); x.fill();
+      x.strokeStyle = 'rgba(220,245,255,0.7)'; x.lineCap = 'round'; for (const [y0, l, w] of [[-26, 30, 2.4], [-8, 40, 3], [12, 34, 2.6], [30, 24, 2]]) { x.lineWidth = w; x.beginPath(); x.moveTo(-48, y0); x.lineTo(-48 + l, y0 - 4); x.stroke(); } }
     // (5.6.6) sprinting: a jagged bolt of rushing water, white at its core, a stream of bubbles torn along it
     const bolt = new Path2D('M8 -46L-22 4H-2L-12 46L24 -8H4Z');
     const gl = x.createRadialGradient(0, 0, 0, 0, 0, 46); gl.addColorStop(0, 'rgba(170,230,255,0.4)'); gl.addColorStop(1, 'rgba(120,200,255,0)');
@@ -193,9 +200,12 @@ const ART = {
     x.fillStyle = 'rgba(200,170,90,0.6)'; x.fillRect(-12, 26, 36, 2.4);
   },
   // the torch: a ribbed grip, the head, and a cone of warm light going out into the water
-  lamp(x) {
-    const beam = x.createLinearGradient(4, 0, 50, 0); beam.addColorStop(0, 'rgba(255,214,140,0.55)'); beam.addColorStop(1, 'rgba(255,214,140,0)');
-    x.fillStyle = beam; x.beginPath(); x.moveTo(6, -9); x.lineTo(50, -26); x.lineTo(50, 26); x.lineTo(6, 9); x.closePath(); x.fill();
+  lamp(x, look) {
+    // (5.7.0) on: the beam thrown wide and bright, a warm halo at the glass
+    const on = look && look.lit;
+    if (on) { const h = x.createRadialGradient(8, 0, 0, 8, 0, 30); h.addColorStop(0, 'rgba(255,236,190,0.7)'); h.addColorStop(1, 'rgba(255,214,140,0)'); x.fillStyle = h; x.beginPath(); x.arc(8, 0, 30, 0, TAU); x.fill(); }
+    const beam = x.createLinearGradient(4, 0, 50, 0); beam.addColorStop(0, on ? 'rgba(255,236,180,0.95)' : 'rgba(255,214,140,0.55)'); beam.addColorStop(1, 'rgba(255,214,140,0)');
+    x.fillStyle = beam; x.beginPath(); x.moveTo(6, -9); x.lineTo(50, on ? -40 : -26); x.lineTo(50, on ? 40 : 26); x.lineTo(6, 9); x.closePath(); x.fill();
     x.save(); x.rotate(0); x.lineWidth = 3; x.strokeStyle = '#0a0b0c';
     x.fillStyle = '#3a3e40'; x.beginPath(); x.roundRect(-40, -6.5, 34, 13, 4); x.fill(); x.stroke();
     x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 1.2; for (let k = -34; k < -10; k += 4) { x.beginPath(); x.moveTo(k, -6); x.lineTo(k, 6); x.stroke(); }
@@ -258,8 +268,10 @@ const ART = {
     x.restore();
   },
   // a glow stick: a cracked chemical light in a cord loop, its liquid shining green through the plastic
-  glow(x) {
+  glow(x, look) {
     x.save(); x.rotate(-0.6); x.scale(1.3, 1.3);
+    // (5.7.0) snapped and burning: a warm amber flood round it (the stick burns amber in the water)
+    if (look && look.lit) { const a = x.createRadialGradient(0, 0, 0, 0, 0, 44); a.addColorStop(0, 'rgba(255,200,110,0.8)'); a.addColorStop(0.5, 'rgba(255,170,80,0.35)'); a.addColorStop(1, 'rgba(255,160,70,0)'); x.fillStyle = a; x.beginPath(); x.arc(0, 0, 44, 0, TAU); x.fill(); }
     const gl = x.createRadialGradient(0, 0, 0, 0, 0, 40); gl.addColorStop(0, 'rgba(160,255,150,0.45)'); gl.addColorStop(1, 'rgba(120,255,120,0)');
     x.fillStyle = gl; x.beginPath(); x.arc(0, 0, 40, 0, TAU); x.fill();
     x.strokeStyle = '#0a0c0a'; x.lineWidth = 2.2; x.beginPath(); x.ellipse(-36, 0, 8, 6, 0, 0, TAU); x.stroke(); x.strokeStyle = '#c8402e'; x.lineWidth = 1.4; x.stroke(); // the cord
@@ -439,10 +451,14 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint =
     x.restore();
     if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.65; x.fillStyle = '#808080'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(6,8,8,0.22)'; x.fill(); }
     if (state === 'down') { x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); }
-    lip(x, R, state);
+    // (5.7.0) pressed: the face lights up and its colours deepen, as if a lamp came on behind it
+    if (state === 'press') { x.save(); x.beginPath(); x.arc(0, 0, R * 0.95, 0, TAU); x.clip(); x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.35; x.fillStyle = 'hsl(40,100%,50%)'; x.fill(); x.globalCompositeOperation = 'screen'; x.globalAlpha = 1;
+      const pg = x.createRadialGradient(0, 0, 0, 0, 0, R); pg.addColorStop(0, 'rgba(255,240,205,0.42)'); pg.addColorStop(0.7, 'rgba(255,230,180,0.14)'); pg.addColorStop(1, 'rgba(255,230,180,0.3)'); x.fillStyle = pg; x.fillRect(-R, -R, R * 2, R * 2); x.restore(); }
+    lip(x, R, state === 'press' ? 'lit' : state);
     if (tint && TINT_LIP[tint] && state !== 'off') { x.lineWidth = R * 0.045; x.strokeStyle = TINT_LIP[tint]; x.beginPath(); x.arc(0, 0, R * 0.955, 0, TAU); x.stroke(); }
     t = { c, half: size / 2 }; cache.set(key, t); if (cache.size > 80) cache.delete(cache.keys().next().value);
   }
+  if (state === 'press') { const k = 0.92, hh = t.half * k; ctx.drawImage(t.c, cx - hh, cy - hh + r * 0.05, hh * 2, hh * 2); return; } // (5.7.0) pressed in: smaller and a little lower
   ctx.drawImage(t.c, cx - t.half, cy - t.half + (state === 'down' ? r * 0.04 : 0));
 }
 export const COIN_ART = Object.keys(ART);
