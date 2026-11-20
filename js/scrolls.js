@@ -317,7 +317,7 @@ function paintScroll3(x, fam, tier) {
     for (let a = 0.3; a < TAU * 2.3; a += 0.16) { const rr = rad * (0.12 + a / (TAU * 2.7)); const px = ex + Math.cos(a + 1) * rr * 0.48, py = y + Math.sin(a + 1) * rr * 0.93; if (a === 0.3) x.moveTo(px, py); else x.lineTo(px, py); }
     x.stroke();
   };
-  roll(-36, 44, -32, 11, false);
+  roll(-36, 44, -33, 11.5, false);
   const left = along([-37, -25], [-38, 28], 7).map(([a, b], i) => [a + 1.2 * Math.sin(Math.PI * i / 7), b]);
   const right = along([33, 28], [35, -25], 7).map(([a, b], i) => [a - 1.2 * Math.sin(Math.PI * i / 7), b]);
   const sheet = wobbly([...left, ...along([-38, 28], [33, 28], 5), ...right, ...along([35, -25], [-37, -25], 5)], r, 0.5);
@@ -339,12 +339,12 @@ function paintScroll3(x, fam, tier) {
   age(sheet, -40, -28, 80, 60, 26);
   x.lineWidth = 1.1; x.strokeStyle = edgeCol; x.stroke(sheet);
   // the emblem: painted on, solid, softly shaded, the paint worn in places
-  { const m = emblemMask(fam, 240), size = 46, c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d');
+  { const m = emblemMask2(fam, tier, 288), size = 58, c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d');
     t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; const eg = t.createLinearGradient(0, 0, 0, c.height); eg.addColorStop(0, shade(acc, 0.16)); eg.addColorStop(0.55, acc); eg.addColorStop(1, shade(acc, -0.32)); t.fillStyle = eg; t.fillRect(0, 0, c.width, c.height);
     t.globalCompositeOperation = 'destination-out'; const rr2 = rnd(fam.length * 7 + 3); for (let i = 0; i < 70; i++) { t.globalAlpha = 0.25 + rr2() * 0.6; t.beginPath(); t.arc(rr2() * c.width, rr2() * c.height, 1 + rr2() * 4, 0, TAU); t.fill(); } t.globalAlpha = 1;
     x.save(); x.globalAlpha = 0.55; x.drawImage((() => { const d = document.createElement('canvas'); d.width = d.height = m.width; const u = d.getContext('2d'); u.drawImage(m, 0, 0); u.globalCompositeOperation = 'source-in'; u.fillStyle = 'rgba(0,0,0,1)'; u.fillRect(0, 0, d.width, d.height); return d; })(), -2 - size / 2 + 0.8, 1 - size / 2 + 1.2, size, size); x.restore(); // the paint's thickness: a soft shadow under it
     x.drawImage(c, -2 - size / 2, 1 - size / 2, size, size); }
-  roll(-46, 34, 33, 12, true);
+  roll(-46, 34, 35, 12.5, true);
 }
 export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare') {
   const key = `3|${fam}|${tier}|${Math.round(size)}`;
@@ -360,3 +360,114 @@ export function legendMotes(ctx, cx, cy, w, h, t, seed = 1) {
     const g = ctx.createRadialGradient(px, py, 0, px, py, sz * 3); g.addColorStop(0, `rgba(255,226,150,${a.toFixed(3)})`); g.addColorStop(1, 'rgba(255,190,90,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, sz * 3, 0, TAU); ctx.fill(); }
   ctx.restore();
 }
+
+// ---------- (5.7.9) emblems by tier: the same idea, richer as the rarity rises ----------
+// drawn as a stencil: white is paint, black lines are cut through it (engraving). Rare: one bold silhouette.
+// Exotic: the motif with a second element and inner detail, in a painted ring. Legendary: a small composition in an
+// ornamented medallion (a rope border, flourishes), the motif engraved in fine detail.
+function emblemTier(x, fam, tier) {
+  const W = '#ffffff', K = '#000000', exo = tier === 'exotic', leg = tier === 'legendary';
+  const F = (p) => { x.fillStyle = W; x.fill(p); };
+  const D = (p, w = 1.4) => { x.lineWidth = w; x.strokeStyle = K; x.stroke(p); };
+  const S = (p, w = 2) => { x.lineWidth = w; x.strokeStyle = W; x.stroke(p); };
+  const P = () => new Path2D();
+  x.save(); x.lineCap = 'round'; x.lineJoin = 'round';
+  const ring = () => { const p = P(); p.arc(0, 0, 25.5, 0, TAU); S(p, 2.4); };
+  const medallion = () => {
+    const o = P(); o.arc(0, 0, 27, 0, TAU); S(o, 3.4);
+    for (let i = 0; i < 36; i++) { const a = i / 36 * TAU, t = P(); t.moveTo(Math.cos(a) * 25.6, Math.sin(a) * 25.6); t.lineTo(Math.cos(a + 0.07) * 28.4, Math.sin(a + 0.07) * 28.4); D(t, 0.9); } // the rope's twist
+    const i2 = P(); i2.arc(0, 0, 23, 0, TAU); S(i2, 1.1);
+    for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) { x.save(); x.rotate(a); const l = P(); l.moveTo(0, -27); l.bezierCurveTo(-3.5, -30, -2, -33, 0, -33.5); l.bezierCurveTo(2, -33, 3.5, -30, 0, -27); F(l); x.restore(); } // small leaf flourishes
+  };
+  const fish = (sx = 1, detail = 0) => { // a flying fish's body and wing, facing right
+    const wing = P(); wing.moveTo(-2, -2); wing.bezierCurveTo(-8, -20 * sx, 6, -24 * sx, 13, -18 * sx); wing.bezierCurveTo(9, -12, 6, -6, 4, -1); wing.closePath(); F(wing);
+    const b = P(); b.moveTo(21, -8); b.bezierCurveTo(12, -13, -2, -7, -12, 2); b.lineTo(-21, -3); b.lineTo(-17, 6); b.lineTo(-22, 13); b.lineTo(-11, 7); b.bezierCurveTo(0, 9, 13, 2, 21, -8); b.closePath(); F(b);
+    const eye = P(); eye.arc(15, -7.5, 1.6, 0, TAU); x.fillStyle = K; x.fill(eye);
+    if (detail >= 1) { for (let k = 0; k < 4; k++) { const v = P(); v.moveTo(0, -2); v.quadraticCurveTo(2 + k * 2.5, -10 - k, 6 + k * 2.2, -16 - k * 0.5); D(v, 0.9); } const gl = P(); gl.moveTo(11, -11); gl.quadraticCurveTo(10, -6, 12, -3); D(gl, 1.1); }
+    if (detail >= 2) { for (let k = 0; k < 5; k++) { const sc = P(); sc.arc(4 - k * 3.4, -1.5 + k * 0.6, 2.4, -1, 1); D(sc, 0.8); } const ln = P(); ln.moveTo(10, -4); ln.bezierCurveTo(2, -1, -6, 2, -12, 4); D(ln, 0.7); }
+  };
+  const swoosh2 = (cx, cy, rr, a0, a1, w) => { const p = swoosh(cx, cy, rr, a0, a1, w); F(p); };
+  if (fam === 'sprint') {
+    if (tier === 'rare') { x.scale(1.15, 1.15); fish(1, 0); }
+    else if (exo) { ring(); x.save(); x.scale(0.95, 0.95); fish(1, 1); x.restore(); swoosh2(2, 4, 19, 2.3, 3.5, 3.6); swoosh2(2, 4, 13, 2.4, 3.6, 2.8); }
+    else { medallion(); const wv = P(); wv.moveTo(-22, 20); wv.bezierCurveTo(-16, 8, -2, 4, 6, 10); wv.bezierCurveTo(12, 14, 14, 6, 9, 3); wv.bezierCurveTo(18, 2, 22, 12, 22, 20); wv.closePath(); F(wv);
+      for (const k of [13, 17]) { const fl = P(); fl.moveTo(-20, k + 3); fl.bezierCurveTo(-10, k - 3, 4, k + 1, 21, k); D(fl, 0.9); }
+      for (const [sx, sy, s] of [[-10, 2, 1.8], [-4, -2, 1.4], [-15, -2, 1.2], [16, -1, 1.5]]) { const d = P(); d.arc(sx, sy, s, 0, TAU); F(d); }
+      x.save(); x.translate(2, -6); x.rotate(-0.25); x.scale(0.78, 0.78); fish(1, 2); x.restore(); }
+  } else if (fam === 'vigor') {
+    const hoop = (sc, mesh, fishIn) => { x.save(); x.scale(sc, sc);
+      const pole = P(); pole.moveTo(-22, 21); pole.quadraticCurveTo(-14, 11, -7, 4); pole.lineTo(-3.5, 6.5); pole.quadraticCurveTo(-11, 14, -18.5, 24); pole.closePath(); F(pole);
+      if (mesh) { const bag = P(); bag.moveTo(-6, -3); bag.bezierCurveTo(-8, 11, 4, 21, 12, 17); bag.bezierCurveTo(19, 13, 19, 1, 15, -7); bag.closePath(); F(bag);
+        x.save(); x.clip(bag); for (let k = -20; k < 30; k += 4.2) { const m1 = P(); m1.moveTo(k - 10, -10); m1.quadraticCurveTo(k, 4, k + 6, 22); D(m1, 0.9); const m2 = P(); m2.moveTo(k + 16, -10); m2.quadraticCurveTo(k + 6, 4, k, 22); D(m2, 0.9); } x.restore();
+        if (fishIn) { const f = P(); f.moveTo(12, 8); f.bezierCurveTo(8, 4, 2, 6, -1, 9); f.lineTo(-4, 6); f.lineTo(-3, 11); f.lineTo(-4, 15); f.lineTo(-1, 12); f.bezierCurveTo(2, 15, 8, 13, 12, 8); f.closePath(); x.fillStyle = K; x.fill(f); } }
+      const h = P(); h.ellipse(4, -6, 12, 6.4, -0.45, 0, TAU); h.ellipse(4, -6, 8.6, 3.6, -0.45, 0, TAU, true); F(h); x.restore(); };
+    if (tier === 'rare') hoop(1.15, false, false);
+    else if (exo) { ring(); hoop(0.92, true, false); swoosh2(-2, -8, 21, -0.9, 0.4, 3); }
+    else { medallion(); hoop(0.8, true, true); swoosh2(-2, -8, 20, -0.9, 0.4, 2.6); swoosh2(-2, -8, 15.5, -0.85, 0.35, 2.2); }
+  } else if (fam === 'dash') {
+    const sailfish = (detail) => {
+      if (detail) { const sail = P(); sail.moveTo(-8, -1); sail.bezierCurveTo(-10, -17, 2, -23, 10, -12); sail.lineTo(8, -2); sail.closePath(); F(sail); for (let k = -6; k < 9; k += 3.2) { const ry = P(); ry.moveTo(k, -1); ry.lineTo(k + 2.4, -17 + Math.abs(k) * 0.5); D(ry, 0.8); } }
+      const b = P(); b.moveTo(26, 0); b.lineTo(14, -2.6); b.bezierCurveTo(6, -6.5, -6, -4.5, -14, 0); b.lineTo(-20, -7); b.lineTo(-17, 1); b.lineTo(-21, 9); b.lineTo(-13, 3); b.bezierCurveTo(-4, 6.5, 8, 5.5, 14, 1.5); b.closePath(); F(b);
+      const e = P(); e.arc(10, -1, 1.3, 0, TAU); x.fillStyle = K; x.fill(e);
+      if (detail > 1) { const ln = P(); ln.moveTo(10, 1); ln.bezierCurveTo(2, 3, -6, 2.5, -13, 1); D(ln, 0.7); for (let k = 0; k < 4; k++) { const st = P(); st.moveTo(4 - k * 4, -3); st.lineTo(4 - k * 4, 2.5); D(st, 0.6); } } };
+    if (tier === 'rare') { x.scale(1.1, 1.1); sailfish(0); for (const [y0, l] of [[-5, 10], [5, 12]]) { const st = P(); st.moveTo(-16, y0); st.lineTo(-16 - l, y0); S(st, 2.4); } }
+    else if (exo) { ring(); x.save(); x.scale(0.92, 0.92); sailfish(1); x.restore(); for (const [y0, l] of [[-7, 8], [2, 10], [10, 7]]) { const st = P(); st.moveTo(-17, y0); st.lineTo(-17 - l, y0); S(st, 1.8); } }
+    else { medallion(); const sp = P(); for (let a = 0; a < TAU * 1.6; a += 0.1) { const rr = 21 - a * 2.2; const px = Math.cos(a) * rr, py = Math.sin(a) * rr * 0.75; if (a === 0) sp.moveTo(px, py); else sp.lineTo(px, py); } S(sp, 1.6);
+      for (const [fx, fy, fr] of [[-15, -12, 0.6], [14, 13, 2.4], [-17, 10, 3.6], [6, -16, 5.2]]) { x.save(); x.translate(fx, fy); x.rotate(fr); const sf = P(); sf.moveTo(4, 0); sf.quadraticCurveTo(0, -2, -3, 0); sf.lineTo(-5, -2); sf.lineTo(-4.5, 0); sf.lineTo(-5, 2); sf.lineTo(-3, 0); sf.quadraticCurveTo(0, 2, 4, 0); F(sf); x.restore(); }
+      x.save(); x.scale(0.72, 0.72); sailfish(2); x.restore(); }
+  } else if (fam === 'flare') {
+    const flame = (sc, inner) => { x.save(); x.scale(sc, sc); const fl = P(); fl.moveTo(0, 8); fl.bezierCurveTo(-14, 0, -6, -12, -4, -22); fl.bezierCurveTo(0, -14, 6, -18, 6, -25); fl.bezierCurveTo(15, -14, 14, -1, 0, 8); fl.closePath(); F(fl);
+      if (inner) { const ip = P(); ip.moveTo(0, 4); ip.bezierCurveTo(-7, -1, -3, -8, -2, -13); ip.bezierCurveTo(1, -8, 5, -10, 5, -14); ip.bezierCurveTo(8, -6, 6, -1, 0, 4); D(ip, 1.1); } x.restore(); };
+    if (tier === 'rare') { x.translate(0, 6); flame(1.25, false); }
+    else if (exo) { ring(); const tube = P(); tube.moveTo(-9, 21); tube.quadraticCurveTo(-11, 11, -5, 3); tube.lineTo(1.5, 6); tube.quadraticCurveTo(-3, 13, -2.5, 22); tube.closePath(); F(tube); const bd = P(); bd.moveTo(-9, 15); bd.lineTo(-2.5, 16); D(bd, 1); x.save(); x.translate(-1, 2); flame(0.9, true); x.restore();
+      for (const [sx, sy] of [[12, -16], [15, -6], [-13, -14]]) { const sk = P(); sk.moveTo(sx, sy - 3); sk.quadraticCurveTo(sx + 1.5, sy, sx, sy + 1.5); sk.quadraticCurveTo(sx - 1.5, sy, sx, sy - 3); F(sk); } }
+    else { medallion(); // a lighthouse on its rock, two beams out across the sea
+      for (const s of [-1, 1]) { const bm = P(); bm.moveTo(0, -12); bm.lineTo(s * 24, -20); bm.lineTo(s * 24, -6); bm.closePath(); x.globalAlpha = 0.85; F(bm); x.globalAlpha = 1; }
+      const tw = P(); tw.moveTo(-5, 12); tw.lineTo(-3, -9); tw.lineTo(3, -9); tw.lineTo(5, 12); tw.closePath(); F(tw); for (const yy of [-3, 4]) { const st = P(); st.moveTo(-4.4, yy); st.lineTo(4.4, yy + 0.4); D(st, 2); }
+      const lr = P(); lr.roundRect(-4, -15, 8, 6, 1); F(lr); const lw = P(); lw.rect(-2.2, -13.8, 4.4, 3.4); x.fillStyle = K; x.fill(lw); const cap = P(); cap.moveTo(-5, -15); cap.lineTo(0, -19); cap.lineTo(5, -15); F(cap);
+      const rock = P(); rock.moveTo(-13, 16); rock.quadraticCurveTo(-8, 9, -3, 11); rock.lineTo(4, 10); rock.quadraticCurveTo(10, 10, 13, 16); rock.closePath(); F(rock);
+      const sea = P(); sea.moveTo(-22, 17); sea.quadraticCurveTo(-16, 14, -11, 17); sea.moveTo(11, 17); sea.quadraticCurveTo(16, 14, 22, 17); S(sea, 1.6); }
+  } else if (fam === 'echo') {
+    const conch = (sc, detail) => { x.save(); x.scale(sc, sc); const sh = P(); sh.moveTo(-18, 14); sh.bezierCurveTo(-22, 0, -10, -18, 6, -20); sh.bezierCurveTo(14, -20, 22, -14, 20, -6); sh.bezierCurveTo(18, 4, 8, 6, 4, 14); sh.bezierCurveTo(0, 20, -12, 20, -18, 14); sh.closePath(); F(sh);
+      const mouth = P(); mouth.moveTo(-14, 12); mouth.bezierCurveTo(-10, 4, -2, 6, 0, 12); mouth.bezierCurveTo(-4, 16, -10, 16, -14, 12); mouth.closePath(); x.fillStyle = K; x.fill(mouth);
+      if (detail) { for (const [a, b, c2] of [[-6, 2, 9], [0, -6, 11], [6, -13, 9]]) { const sp = P(); sp.arc(a, b, c2, -2.4, 0.2); D(sp, 1.1); } for (const [kx, ky] of [[4, -21], [12, -20], [19, -12]]) { const k2 = P(); k2.moveTo(kx - 2.4, ky + 1); k2.lineTo(kx, ky - 4.5); k2.lineTo(kx + 2.4, ky + 1); k2.closePath(); F(k2); } }
+      x.restore(); };
+    if (tier === 'rare') conch(1.15, false);
+    else if (exo) { ring(); conch(0.85, true); swoosh2(-14, 8, 21, -1.2, -0.2, 2.6); swoosh2(-14, 8, 16, -1.15, -0.25, 2.2); }
+    else { medallion(); // a compass rose behind it, depth rings
+      for (let i = 0; i < 8; i++) { const a = i / 8 * TAU - Math.PI / 2, rr = i % 2 ? 15 : 22, pt = P(); pt.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); pt.lineTo(Math.cos(a + 0.22) * 5, Math.sin(a + 0.22) * 5); pt.lineTo(Math.cos(a - 0.22) * 5, Math.sin(a - 0.22) * 5); pt.closePath(); F(pt); const ml = P(); ml.moveTo(0, 0); ml.lineTo(Math.cos(a) * rr * 0.9, Math.sin(a) * rr * 0.9); D(ml, 0.7); }
+      const dr = P(); dr.arc(0, 0, 18.5, 0, TAU); D(dr, 0.8); x.save(); x.translate(1, 2); conch(0.62, true); x.restore(); }
+  } else if (fam === 'ironhull') {
+    const anchor = (sc, rope, cut) => { x.save(); x.scale(sc, sc); const fill = cut ? (p) => { x.fillStyle = K; x.fill(p); } : F;
+      const rg = P(); rg.arc(0, -18, 5.5, 0, TAU); rg.arc(0, -18, 2.8, 0, TAU, true); fill(rg);
+      const stock = P(); stock.moveTo(-12, -11.5); stock.quadraticCurveTo(0, -14, 12, -11.5); stock.lineTo(12, -7.5); stock.quadraticCurveTo(0, -10, -12, -7.5); stock.closePath(); fill(stock);
+      const sk = P(); sk.moveTo(-2.8, -12); sk.lineTo(2.8, -12); sk.quadraticCurveTo(3.6, 4, 2.6, 16); sk.lineTo(-2.6, 16); sk.quadraticCurveTo(-3.6, 4, -2.8, -12); sk.closePath(); fill(sk);
+      const cr = P(); cr.moveTo(-18, 6); cr.quadraticCurveTo(-14, 20, 0, 20); cr.quadraticCurveTo(14, 20, 18, 6); cr.lineTo(22, 10); cr.lineTo(20, 1.5); cr.lineTo(14, 4); cr.quadraticCurveTo(10, 15, 0, 15); cr.quadraticCurveTo(-10, 15, -14, 4); cr.lineTo(-20, 1.5); cr.lineTo(-22, 10); cr.closePath(); fill(cr);
+      if (rope) { const rp = P(); rp.moveTo(-6, -4); rp.bezierCurveTo(10, -2, 8, 4, -6, 5); rp.bezierCurveTo(-12, 6, 10, 10, 6, 13); x.lineWidth = 3.6; x.strokeStyle = K; x.stroke(rp); x.lineWidth = 2; x.strokeStyle = W; x.stroke(rp); x.setLineDash([1.2, 1.8]); D(rp, 2); x.setLineDash([]); }
+      x.restore(); };
+    if (exo) { ring(); anchor(0.92, true, false); }
+    else { medallion(); // a riveted shield, the anchor cut into it, two spanners crossed behind
+      for (const s of [-1, 1]) { x.save(); x.rotate(s * 0.75); const sp = P(); sp.roundRect(-2, -24, 4, 30, 1.5); sp.arc(0, -24, 5, 0, TAU); F(sp); const jaw = P(); jaw.rect(-1.6, -30, 3.2, 6); x.fillStyle = K; x.fill(jaw); x.restore(); }
+      const shd = P(); shd.moveTo(-14, -16); shd.lineTo(14, -16); shd.lineTo(14, 2); shd.quadraticCurveTo(14, 14, 0, 20); shd.quadraticCurveTo(-14, 14, -14, 2); shd.closePath(); F(shd);
+      for (const [a, b] of [[-11, -13], [11, -13], [-11, 1], [11, 1], [0, 16.5]]) { const rv = P(); rv.arc(a, b, 1.2, 0, TAU); x.fillStyle = K; x.fill(rv); }
+      x.save(); x.translate(0, 1); anchor(0.5, false, true); x.restore(); }
+  } else if (fam === 'tidewarden') {
+    medallion();
+    for (let i = 0; i < 7; i++) { const a = -Math.PI / 2 + (i - 3) * 0.28, ry = P(); ry.moveTo(Math.cos(a - 0.05) * 13, Math.sin(a - 0.05) * 13 - 2); ry.lineTo(Math.cos(a) * 21, Math.sin(a) * 21 - 2); ry.lineTo(Math.cos(a + 0.05) * 13, Math.sin(a + 0.05) * 13 - 2); ry.closePath(); F(ry); } // sun rays above
+    const eye = P(); eye.moveTo(-17, -4); eye.bezierCurveTo(-8, -16, 8, -16, 17, -4); eye.bezierCurveTo(8, 5, -8, 5, -17, -4); eye.closePath(); F(eye);
+    const ir = P(); ir.arc(0, -5, 6.2, 0, TAU); D(ir, 2.2); const pu = P(); pu.ellipse(0, -5, 1.8, 4.2, 0, 0, TAU); x.fillStyle = K; x.fill(pu);
+    const lid = P(); lid.moveTo(-17, -4); lid.bezierCurveTo(-8, -11, 8, -11, 17, -4); D(lid, 1.3);
+    for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { const ls = P(); const lx = s * (6 + k * 4); ls.moveTo(lx, -12 + k * 1.6); ls.lineTo(lx + s * 1.6, -15 + k * 1.6); S(ls, 1.2); }
+    const wv = P(); wv.moveTo(-22, 19); wv.bezierCurveTo(-16, 9, -6, 6, 2, 10); wv.bezierCurveTo(9, 13, 11, 7, 7, 4.5); wv.bezierCurveTo(15, 3.5, 21, 11, 22, 19); wv.closePath(); F(wv);
+    for (const k of [12.5, 16]) { const fl = P(); fl.moveTo(-21, k + 3); fl.bezierCurveTo(-10, k - 2, 4, k + 2, 21, k + 1); D(fl, 0.9); }
+  }
+  x.restore();
+}
+function emblemMask2(fam, tier, size) {
+  const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d'); x.translate(size / 2, size / 2); x.scale(size / 72, size / 72);
+  emblemTier(x, fam, tier);
+  const d = x.getImageData(0, 0, size, size), a = d.data;
+  for (let i = 0; i < a.length; i += 4) { const lum = (a[i] + a[i + 1] + a[i + 2]) / 3, al = a[i + 3] / 255; a[i + 3] = Math.round((lum > 128 ? al : 0) * 255); a[i] = a[i + 1] = a[i + 2] = 255; }
+  x.putImageData(d, 0, 0); return c;
+}
+export function drawTierEmblemMask(fam, tier, size) { return emblemMask2(fam, tier, size); }
