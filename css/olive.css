@@ -969,3 +969,7 @@ html.touch body.bookmode :is(#quests .qs-close, #chart .ch-close):not(#_a) { fil
 /* (5.9.2) no faint boxes round the cells: the page is the ground; a met animal is just its picture and name */
 html body #journal .jcell:not(.on):not(#_a):not(#_b):not(#_c) { border: 0 !important; border-image: none !important; background: none !important; box-shadow: none !important; outline: 0 !important; }
 html body #journal .jcell:not(#_a)::before, html body #journal .jcell:not(#_a)::after { content: none !important; }
+/* (5.9.4) the journal's coin centred on its button (it is drawn a little larger than the button and hung off its top-left
+   corner, so it sat right of and below the settings coin and the bag) */
+html.touch body #quests-hud #quests-btn:not(#_a) { position: relative; overflow: visible; }
+html.touch body #quests-hud #quests-btn:not(#_a) img { position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; margin: 0 !important; max-width: none !important; }

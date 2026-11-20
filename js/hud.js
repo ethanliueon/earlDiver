@@ -419,11 +419,11 @@ e.inSub ? [
       { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(money(cash)).width; ctx.restore(); this.moneyAt = { x: (tx0 + tw + 16 * u + this.safeL) * kx, y: (my - 16 * u + this.safeT) * kx }; } // (5.7.5) right of the sum, on its row
       ctx.restore();
       this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
-      const rg = 17 * u, gx = W - 12 * u - rg, gy = 12 * u + rg;
+      const rg = 19 * u, gx = W - 12 * u - rg, gy = 12 * u + rg; /* (5.9.4) the same size as the journal and the bag under it */
       btn({ key: 'settings', icon: 'gear', on: true }, gx, gy, rg);
       // (5.6.9b) the journal and the bag (and in the sub what else is carried) hang in a column right under the settings
       // coin, at the very right edge; the depth and the radar sit to the left of that column
-      const rb = 19 * u, stepB = rb * 2 + 9 * u, top = gy + rg + 10 * u + rb, last = cy - rho0 - r - 10 * u - rb, n = Math.max(2, Math.floor((last - top) / stepB) + 1);
+      const rb = 19 * u, stepB = rb * 2 + 9 * u, top = gy + stepB /* (5.9.4) evenly spaced from the settings coin */, last = cy - rho0 - r - 10 * u - rb, n = Math.max(2, Math.floor((last - top) / stepB) + 1);
       ROW.slice(0, n).forEach((a, i) => btn(a, gx, top + i * stepB, rb));
       { const ra = this.radarAt, rest = ROW.slice(n); this.underRadarH = rest.length && ra ? 2 * rb + 18 * u : 0; if (ra) rest.forEach((a, i) => btn(a, ra.x + (i - (rest.length - 1) / 2) * stepB, ra.y + ra.r + 10 * u + rb, rb)); } // (5.7.0) a short screen: the rest in a row under the radar
       this.gearSpace = Math.max(rg, rb) * 2 + 22 * u; }
