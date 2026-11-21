@@ -365,3 +365,37 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
     });
   }
 }
+// (5.12.5) tanks, bags, nets and cameras by rarity (owner-agreed): even steps from Common to Exotic, then a large jump to
+// Legendary so the best is obviously the best. Items keep their order within a rarity; their words follow the numbers.
+{
+  const order = (kind, r, key) => Object.values(ITEMS).filter((it) => it.kind === kind && (it.rarity || 'common') === r && typeof it[key] === 'number').sort((a, b) => a[key] - b[key] || String(a.id).localeCompare(String(b.id)));
+  const spread = (list, lo, hi, round) => list.forEach((it, i) => round(it, list.length < 2 ? (lo + hi) / 2 : lo + (hi - lo) * i / (list.length - 1)));
+  const TANK = { common: [20, 30], uncommon: [45, 65], rare: [75, 105], exotic: [120, 155], legendary: [190, 200] };
+  for (const [r, [lo, hi]] of Object.entries(TANK)) spread(order('tank', r, 'air'), lo, hi, (it, v) => { const was = it.air, now = it.id === 'al80' ? 20 : Math.round(v); it.air = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} s\\b`, 'g'), `${now} s`)); });
+  const BAG = { common: [2, 3], uncommon: [4, 5], rare: [6, 7], exotic: [8, 9], legendary: [12, 14] };
+  for (const [r, [lo, hi]] of Object.entries(BAG)) spread(order('bag', r, 'slots'), lo, hi, (it, v) => { const was = it.slots, now = it.id === 'mesh' ? 2 : Math.round(v); it.slots = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} animals`, 'g'), `${now} animals`)); });
+  const CAM = { common: [9, 11.5], uncommon: [14, 17], rare: [20, 23], exotic: [26, 29], legendary: [40, 45] };
+  for (const [r, [lo, hi]] of Object.entries(CAM)) spread(order('cam', r, 'idx'), lo, hi, (it, v) => { it.idx = +v.toFixed(2); if (it.chest || /Quality/.test(it.good || '')) it.good = goodOf('cam', it); });
+  // nets: each kind keeps what it is for (its own size, reach and swing); rarity multiplies them, with the jump at the top
+  const NM = { common: 1, uncommon: 1.15, rare: 1.3, exotic: 1.45, legendary: 1.9 };
+  for (const it of Object.values(ITEMS)) {
+    if (it.kind !== 'net' || it.id === 'hand' || !ARCH.net[it.arch]) continue;
+    const b = ARCH.net[it.arch], m = NM[it.rarity || 'common'] || 1, cm = (v) => Math.round(v * 100);
+    const was = it.maxLen;
+    it.maxLen = +(b.maxLen * m).toFixed(2); it.range = +(b.range * Math.pow(m, 0.8)).toFixed(2); it.time = +(b.time / Math.pow(m, 0.7)).toFixed(2);
+    it.success = +(1 - (1 - b.success) / Math.pow(m, 1.6)).toFixed(3); it.harm = +(b.harm / Math.pow(m, 1.5)).toFixed(3);
+    if (b.minLen) it.minLen = b.minLen;
+    if (it.chest || /up to|cm|reach/.test(it.good || '')) it.good = goodOf('net', it);
+    if (was !== it.maxLen) reword(it, (t) => t.replace(new RegExp(`\\b${cm(was)} cm\\b`, 'g'), `${cm(it.maxLen)} cm`));
+  }
+  for (const it of Object.values(ITEMS)) if ((it.kind === 'tank' || it.kind === 'bag') && it.chest) it.good = goodOf(it.kind, it);
+}
+// (5.12.5) whatever a description says about air or pockets, it says the real number (shop words were written by hand)
+{
+  const WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen'];
+  for (const it of Object.values(ITEMS)) {
+    if (it.kind === 'tank') reword(it, (t) => t.replace(/\b\d+ s of air/g, `${it.air} s of air`));
+    if (it.kind === 'bag') reword(it, (t) => t.replace(/\b\d+ animals/g, `${it.slots} animals`).replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) pockets\b/g, `${WORD[it.slots] || it.slots} pockets`));
+  }
+}
+for (const it of Object.values(ITEMS)) if (it.kind === 'fins' && /no faster cruising/i.test(it.bad || '')) it.bad = 'Cruising barely faster than rubber'; // (5.12.5) they are a little faster now
