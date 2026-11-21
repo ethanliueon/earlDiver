@@ -28,7 +28,7 @@ import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
-import { Catalog, pictureOf, MEASURES } from './catalog.js';
+import { Catalog, pictureOf, MEASURES, measureHtml, crossBoosts } from './catalog.js';
 import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS } from './items.js';
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
@@ -1035,6 +1035,7 @@ export class UI {
       + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span></div>` : '');
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
     return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ', net of legend' : ''}</span><p>${it.line || ''}</p>
+      ${(() => { const M2 = MEASURES[it.kind]; if (!M2) return ''; const rows2 = M2.map((r) => `<div class="ip-st"><span>${r[0]}</span><b>${measureHtml(it.kind, r, it, q.sk)}</b></div>`).concat(crossBoosts(it.kind, q.sk).map(([a, b]) => `<div class="ip-st"><span>${a}</span><b><span class="boost">${b}</span></b></div>`)).join(''); return `<div class="ip-stats">${rows2}</div>`; })() /* (5.12.0) its numbers on its own card */}
       <div class="ip-sks">${skills || '<span class="none">No skills</span>'}</div>${S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b>, ${have >= 3 ? 'on' : `worn (${have}/3)`}<span>${S.trait}</span></div>` : ''}</div>`;
   }
   // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind
@@ -1052,8 +1053,8 @@ export class UI {
       // the numbers, a row each: his now, this one, which is better
       let rows = '';
       if (M) rows = M.map(([label, txt, num, hi]) => {
-        const b2 = txt(it); if (!cur) return `<tr><th>${label}</th><td>—</td><td>${b2}</td></tr>`;
-        const a2 = txt(cur); if (a2 === b2) return `<tr class="same"><th>${label}</th><td>${a2}</td><td>${b2}</td></tr>`;
+        const b2 = measureHtml(it.kind, [label, txt], it, q.sk); if (!cur) return `<tr><th>${label}</th><td>—</td><td>${b2}</td></tr>`; // (5.12.0) a skill's boost in green
+        const a2 = measureHtml(cur.kind, [label, txt], cur, curQ.sk); if (a2 === b2) return `<tr class="same"><th>${label}</th><td>${a2}</td><td>${b2}</td></tr>`;
         const d = num(it) - num(cur), up = hi ? d > 0 : d < 0;
         return `<tr><th>${label}</th><td>${a2}</td><td class="${up ? 'up' : 'down'}">${b2} ${up ? '▲' : '▼'}</td></tr>`;
       }).join('');

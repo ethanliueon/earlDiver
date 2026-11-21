@@ -1075,3 +1075,11 @@ html body #inventory .eq-stage .eq-slot.locked .lock { position: absolute; left:
 html body #inventory .eq-stage .eq-col:not(#_a):not(#_b):not(#_c) { row-gap: 12px !important; }
 html body #inventory .eq-stage .eq-slot.belt .belt-n:not(#_a) { top: 4px; right: 6px; }
 html body #inventory .eq-stage .eq-col:not(#_a):not(#_b):not(#_c) { align-self: start; margin-top: 6px; } /* (5.11.7) both columns start on one line */
+
+/* ---------- (5.12.0) a skill's boost on a number: the figure in a quiet green, what it adds in brackets; an item's own
+   numbers on its card, a line each ---------- */
+html body :is(#inventory, #catalog) .boost { color: #7fae6a !important; font-weight: 600; }
+html body :is(#inventory, #catalog) .boost small { font-size: 0.85em; opacity: 0.85; font-weight: 500; }
+html body #inventory .ip-stats { display: grid; gap: 2px; margin: 6px 0 8px; }
+html body #inventory .ip-st { display: flex; justify-content: space-between; gap: 12px; font: 500 14px "Barlow Semi Condensed", sans-serif; color: rgba(230, 223, 202, 0.7); }
+html body #inventory .ip-st b { color: #efe8d2; font-weight: 600; }

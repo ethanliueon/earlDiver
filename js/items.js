@@ -93,10 +93,10 @@ function goodOf(kind, s) {
   if (kind === 'net' || kind === 'slurp') return `${s.multi ? `Up to ${s.multi} from a school at once; ` : ''}fish ${s.minLen ? `${cm(s.minLen)}–${cm(s.maxLen)} cm` : `up to ${cm(s.maxLen)} cm`}, reach ${s.range} m`;
   if (kind === 'tag') return `Tagging from ${s.range} m`;
   if (kind === 'cam') return `Quality ${(s.idx || 10).toFixed(2)}; holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
-  if (kind === 'fins') return `Cruising ×${s.swim}, sprint ×${s.sprint}`;
+  if (kind === 'fins') return `Speed ${+(s.swim / 2).toFixed(2)}, sprint ${+(s.sprint / 2).toFixed(2)}`; // (5.12.0) shown at half the in-game figure
   if (kind === 'tank') return `About ${s.air} s of air${s.quiet ? ', no bubbles' : ''}`;
   if (kind === 'bag') return `${s.slots} animals${s.apart ? ', kept apart' : ''}`;
-  if (kind === 'suit') return `Pressure starts at ${s.press} m${s.warm ? '; keeps out the cold' : ''}${s.bite ? '; turns a bite' : ''}`;
+  if (kind === 'suit') return `Pressure starts at ${s.press} m${s.air < 1 ? `; air use ×${s.air}` : ''}${s.warm ? '; keeps out the cold' : ''}${s.bite ? '; turns a bite' : ''}`;
   return '';
 }
 // Rare things have their own colours (a hue from their name); Exotics and Legendaries their own look
@@ -327,5 +327,41 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
         if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was}${unit}`, 'g'), `${now}${unit}`));
       });
     }
+  }
+}
+// (5.12.0) the suit and fin ladders (owner-agreed). A suit is about depth: the pressure starts at real metres that grow
+// with its rarity (the wetsuit 20 m, a legendary past 1,000 m), and from Rare up it also saves air (down to x0.5 at the
+// top); suits no longer change his speed. Speed is the fins' alone, shown at half the in-game figure, so the rubber fins
+// read 0.5 and a legendary pair about 1.5. Within a rarity each kind keeps a role: a skin is the lightest and cheapest,
+// weakest against pressure; chain mail turns bites; a rebreather is silent and the easiest on air; a drysuit goes deeper
+// and keeps out the cold; a hardsuit goes deepest but is the hungriest for air. Items keep their order within a rarity.
+{
+  const PB = { common: [20, 40], uncommon: [60, 120], rare: [150, 300], exotic: [400, 800], legendary: [1000, 1300] };
+  const AB = { rare: [0.9, 0.8], exotic: [0.75, 0.6], legendary: [0.55, 0.5] };
+  const DEEP = { skin: 0, wet: 0.25, chain: 0.4, rebreather: 0.55, dry: 0.75, hard: 1 }, EASY = { rebreather: 1, skin: 0.75, wet: 0.5, chain: 0.4, dry: 0.3, hard: 0 };
+  const jit = (id, amp) => { let h = 2166136261; for (const c of String(id)) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return (((h >>> 0) % 1000) / 1000 - 0.5) * 2 * amp; };
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  for (const it of Object.values(ITEMS)) {
+    if (it.kind !== 'suit') continue;
+    const r = it.rarity || 'common', [lo, hi] = PB[r] || PB.common, was = it.press;
+    it.press = it.id === 'wet' ? 20 : Math.round((lo + (hi - lo) * clamp01((DEEP[it.arch] ?? 0.4) + jit(it.id, 0.1))) / 10) * 10 || lo;
+    if (r === 'common') it.press = Math.max(20, Math.round((lo + (hi - lo) * clamp01((DEEP[it.arch] ?? 0.4) + jit(it.id, 0.1))) / 5) * 5); if (it.id === 'wet') it.press = 20;
+    const A = AB[r]; it.air = A ? +(A[0] - (A[0] - A[1]) * clamp01((EASY[it.arch] ?? 0.4) + jit(it.id + 'a', 0.1))).toFixed(2) : 1;
+    it.speed = 1;
+    if (was !== it.press) reword(it, (t) => t.replace(new RegExp(`\\b${was} m\\b`, 'g'), `${it.press} m`));
+    // its words no longer promise speed (suits do not give it), and a hardsuit is no longer slow
+    if (/speed|faster|quick/i.test(it.good || '')) it.good = it.arch === 'skin' ? 'Light, and cheap' : goodOf('suit', it);
+    if (it.chest) it.good = goodOf('suit', it); // a chest suit's line is worked out from its numbers: say the new ones
+    if (it.air >= 1 && /air/i.test(it.bad || '')) it.bad = it.arch === 'skin' ? 'Pressure bites early' : ''; // no air cost any more below Rare
+    if (/slow|heavy/i.test(it.bad || '')) it.bad = it.bad.replace(/slow,? and /i, '').replace(/^(slow|heavy)$/i, '').replace(/^\w/, (c) => c.toUpperCase());
+  }
+  const SB = { common: [0.5, 0.6], uncommon: [0.65, 0.75], rare: [0.8, 0.95], exotic: [1.0, 1.2], legendary: [1.3, 1.5] }; // shown (half the in-game figure)
+  for (const r of Object.keys(SB)) {
+    const list = Object.values(ITEMS).filter((it) => it.kind === 'fins' && (it.rarity || 'common') === r).sort((a, b) => a.swim - b.swim || String(a.id).localeCompare(String(b.id)));
+    list.forEach((it, i) => {
+      const [lo, hi] = SB[r], shown = it.id === 'rubber' ? 0.5 : lo + (hi - lo) * (list.length < 2 ? 0.5 : i / (list.length - 1)), ratio = it.sprint / it.swim;
+      it.swim = +(shown * 2).toFixed(2); it.sprint = +(it.swim * ratio).toFixed(2);
+      it.good = it.chest || /cruis|sprint|speed|×/i.test(it.good || '') || !it.good ? goodOf('fins', it) : it.good;
+    });
   }
 }

@@ -44,16 +44,36 @@ const cm = (m) => `${Math.round(m * 100)} cm`;
 const sizeOf = (it) => (it.minLen ? `${cm(it.minLen)}–${cm(it.maxLen)}` : `up to ${cm(it.maxLen)}`);
 const secs = (s) => (s >= 60 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.round(s)} s`);
 const x = (v) => `×${(Math.round(v * 100) / 100).toString()}`;
+const n2 = (v) => String(+(+v).toFixed(2));
+// (5.12.0) a skill that raises one of an item's numbers directly shows on that number, in green: the boosted figure, and
+// in brackets what the skill adds. Haste on fins: speed (6 % a level); Rebreathing on a tank: air (10 % a level); Deep
+// Pockets on a bag: animals (one a level). sk: the skills on that very item ([[skill, level], ...])
+export function boostOf(kind, label, it, sk) {
+  const lv = (k) => (sk || []).reduce((a, q) => a + (q && q[0] === k ? q[1] : 0), 0);
+  if (kind === 'fins' && label === 'Speed' && lv('haste')) { const b = it.swim / 2, add = b * 0.06 * lv('haste'); return { txt: n2(b + add), add: '+' + n2(add) }; }
+  if (kind === 'tank' && label === 'Air' && lv('rebreathing')) { const add = Math.round(it.air * 0.1 * lv('rebreathing')); return { txt: `about ${secs(it.air + add)}`, add: `+${add} s` }; }
+  if (kind === 'bag' && label === 'Animals' && lv('pockets')) { const add = lv('pockets'); return { txt: String(it.slots + add), add: `+${add}` }; }
+  return null;
+}
+export function measureHtml(kind, row, it, sk) { const B = boostOf(kind, row[0], it, sk); return B ? `<span class="boost">${B.txt} <small>(${B.add})</small></span>` : row[1](it); }
+// the same skills on another kind of item raise the stat of what they lift (Haste on a suit: his speed), shown as its own green line
+export function crossBoosts(kind, sk) {
+  const lv = (k) => (sk || []).reduce((a, q) => a + (q && q[0] === k ? q[1] : 0), 0), out = [];
+  if (kind !== 'fins' && lv('haste')) out.push(['Speed', `+${6 * lv('haste')} %`]);
+  if (kind !== 'tank' && lv('rebreathing')) out.push(['Air', `+${10 * lv('rebreathing')} %`]);
+  if (kind !== 'bag' && lv('pockets')) out.push(['Animals', `+${lv('pockets')}`]);
+  return out;
+}
 // the numbers compared, per kind: [label, value as text, a number to compare, higher is better?]
 export const MEASURES = {
   net: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Swing', (it) => `${it.time.toFixed(2)} s, ${it.time <= 0.85 ? 'quick' : it.time <= 1.2 ? 'steady' : 'slow'}`, (it) => -it.time, true]],
   slurp: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   tag: [['Range', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   cam: [['Quality', (it) => (it.idx || 10).toFixed(2), (it) => it.idx || 10, true], /* (5.10.10) */ ['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
-  fins: [['Cruising', (it) => x(it.swim), (it) => it.swim, true], ['Sprint', (it) => x(it.sprint), (it) => it.sprint, true]],
+  fins: [['Speed', (it) => n2(it.swim / 2), (it) => it.swim, true], ['Sprint', (it) => n2(it.sprint / 2), (it) => it.sprint, true]], // (5.12.0) half the in-game figure: the rubber fins 0.5
   tank: [['Air', (it) => `about ${secs(it.air)}`, (it) => it.air, true], ['Speed', (it) => (it.speed >= 1 ? 'no slower' : it.speed >= 0.96 ? 'a little slower' : 'slower'), (it) => it.speed, true]],
   bag: [['Animals', (it) => `${it.slots}`, (it) => it.slots, true]],
-  suit: [['Speed', (it) => x(it.speed), (it) => it.speed, true], ['Air use', (it) => x(it.air), (it) => -it.air, true], ['Pressure starts', (it) => `at ${it.press} m`, (it) => it.press, true]],
+  suit: [['Pressure starts', (it) => `at ${it.press} m`, (it) => it.press, true], ['Air use', (it) => (it.air < 1 ? x(it.air) : 'normal'), (it) => -it.air, true]], // (5.12.0) no speed: fins alone give it
 };
 
 export class Catalog {
@@ -145,7 +165,7 @@ export class Catalog {
       if (pick.length) html += `<h4>${this.id === 'dave' ? 'Just in' : this.id === 'station' ? 'Recently released' : 'New in'}</h4><div class="cat-grid">${pick.map((q) => this.card(q.e)).join('')}</div>`;
       // (4.18.1) for each thing he has on, the cheapest step up this shop sells (by what matters most for it: a
       // net's fish size, the air in a tank, a bag's room, fins' speed, the depth a suit holds out to)
-      const KEY = { net: 0, tank: 0, bag: 0, fins: 0, suit: 2 }, shown = new Set(pick.map((q) => q.e.key));
+      const KEY = { net: 0, tank: 0, bag: 0, fins: 0, suit: 0 /* (5.12.0) pressure is first now */ }, shown = new Set(pick.map((q) => q.e.key));
       const ups = Object.entries(KEY).map(([cat, i]) => {
         const M = MEASURES[cat], cur = wornItem(P, cat); if (!M || !cur) return null;
         const better = this.entries(cat).filter((e) => !e.owned && !shown.has(e.key) && e.it && M[i][2](e.it) > M[i][2](cur));
@@ -200,7 +220,7 @@ export class Catalog {
     if (M && !e.on) {
       const cur = wornItem(P, cat);
       const rows = M.map(([label, txt, num, hi]) => {
-        const b = txt(e.it); if (!cur) return `<div class="row"><span>${label}</span><span>${b}</span></div>`;
+        const b = measureHtml(cat, [label, txt], e.it, e.it.sk ? [e.it.sk] : null); if (!cur) return `<div class="row"><span>${label}</span><span>${b}</span></div>`;
         const a = txt(cur); if (a === b) return '';
         const d = num(e.it) - num(cur), up = hi ? d > 0 : d < 0;
         return `<div class="row"><span>${label}</span><span>${a} → ${b} <b class="${up ? 'up' : 'down'}">${up ? '▲' : '▼'}</b></span></div>`;

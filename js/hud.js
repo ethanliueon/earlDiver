@@ -612,8 +612,8 @@ e.inSub ? [
       // (4.28) no plate: the depth as bare figures, a dive computer's readout, and the air (in the sub, the hull) as
       // thin lines under it. It cools and dims as he goes down: bright in the sunlit water, a faint cold grey in the
       // dark, and it flickers when he is past what he (or the sub) is built for. Red only for danger.
-      const warnD = e.inSub ? g.sub.y / g.sub.rated > 0.9 : e.y > (e.pressStart || 300);
-      const past = e.inSub ? g.sub.y > g.sub.rated : e.y > (e.pressStart || 300) * 1.6;
+      const warnD = e.inSub ? g.sub.y / g.sub.rated > 0.9 : e.y > (e.pressStart || 300) * 2; // (5.12.0) the diver's red: past twice his suit's depth
+      const past = e.inSub ? g.sub.y > g.sub.rated : e.y > (e.pressStart || 300) * 2.5;
       const dm = clamp((e.y - 120) / 1400, 0, 1), lit = 1 - dm * 0.42;
       const fl = past && Math.random() < 0.06 ? 0.35 : 1;
       const cr = Math.round(lerp(239, 170, dm)), cg = Math.round(lerp(232, 192, dm)), cb = Math.round(lerp(212, 204, dm));

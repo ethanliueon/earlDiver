@@ -206,14 +206,14 @@ export class Audio {
     // played a minute (a piece just begun plays on through). Lesser trouble (out of air, hurt, deep outside
     // the sub) never stops it; it only keeps a new piece from starting.
     const serious = playing && ((ent && ent.marked) || g.fx.dread > 0.35 || !!g.threat || !!g.reveal || !!g.legend);
-    const mild = playing && (g.fx.dread > 0.02 || !!g.noAir || (g.injury || 0) > 0 || (!e.inSub && e.y > (e.pressStart || 300))); // (3.0.17) the suit's own limit
+    const mild = playing && (g.fx.dread > 0.02 || !!g.noAir || (g.injury || 0) > 0 || (!e.inSub && e.y > (e.pressStart || 300) * 2)); // (3.0.17) the suit's own limit
     const stress = serious || mild;
     this.calm = playing && !stress;
     if (stress) m.sinceStress = 0; else m.sinceStress += dt;
     if (m.on) m.playedT = (m.playedT || 0) + dt; else m.playedT = 0;
     if (m.on && m.playLen && m.playedT > m.playLen) { m.cutBySerious = false; this.stopPiece(); } // its time is up: a slow fade (about 20 s)
     // (3.0.24) danger fades it at once: the thing noticing him or closing in, the pressure past his limit, death
-    if (g.mode === 'dying' || serious || (playing && !e.inSub && e.y > (e.pressStart || 300))) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
+    if (g.mode === 'dying' || serious || (playing && !e.inSub && e.y > (e.pressStart || 300) * 2)) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
     // (3.0.13) the hull: past the sub's rated depth, or on course to pass it within 10 s at the speed it is diving
     if (playing && e.inSub && g.sub && !g.sub.imploded && (g.sub.y > g.sub.rated || (g.sub.vy > 0 && g.sub.y + g.sub.vy * 10 > g.sub.rated))) { m.cutBySerious = true; this.musicWanted = null; this.stopPiece(); }
     if (m.on) m.cutBySerious = false;
