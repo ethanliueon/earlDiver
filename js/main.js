@@ -77,6 +77,8 @@ function airOver(g) {
     else if (e.inSub && subAir <= 0.001) txt = own < 0.5 ? `Cabin out of air · your tank: ${Math.ceil(e.o2)} s` : 'Cabin out of air: breathing from your tank';
     else if (e.inSub && subAir < 0.25) txt = `Sub air low: ${Math.round(subAir * 100)} %`;
   }
+  // (5.15.6) not twice: while the message line still shows the same words, the note over the panel waits
+  { const ml = document.getElementById('msgs'); if (txt && ml && ml.textContent.includes(txt)) txt = ''; }
   if (el.textContent !== txt) el.textContent = txt;
   el.classList.toggle('on', !!txt);
   // (5.14.1) low air, felt rather than read: under 10 s of his own air the edges of the screen (and of any open panel,
@@ -2907,6 +2909,11 @@ function frame(now) {
     // where they really are on the page, so the zoom the stylesheet gives them does not throw them off
     const qh = document.getElementById('quests-hud'), qb = document.getElementById('quests-btn'), J = hud.journalAt;
     if (qb && J && J.r && Math.abs((qb.__r || 0) - J.r) > 0.5) { qb.__r = J.r; const im = qb.querySelector('img'), z = parseFloat(getComputedStyle(qh).zoom) || 1, sz = (2 * J.r / 0.86 / z).toFixed(1) + 'px'; if (im) { im.style.setProperty('width', sz, 'important'); im.style.setProperty('height', sz, 'important'); } } // (5.6.9) the size of the column's coins
+    // (5.15.6) the journal's red "!" sits on the coin's rim at its top right, touching it, as a phone game's badge does
+    { const dot = qb && qb.querySelector('i'), im = qb && qb.querySelector('img'); if (dot && im && im.offsetWidth && dot.__w !== im.offsetWidth) { dot.__w = im.offsetWidth;
+      const ri = im.getBoundingClientRect(), rb2 = qb.getBoundingClientRect(), z = (rb2.width / (qb.offsetWidth || rb2.width)) || 1;
+      const c0x = (ri.left - rb2.left + ri.width / 2) / z, c0y = (ri.top - rb2.top + ri.height / 2) / z, rim = (ri.width / z) * 0.43 * 0.72, bw = 18;
+      for (const [k, v] of [['left', `${(c0x + rim - bw / 2).toFixed(1)}px`], ['top', `${(c0y - rim - bw / 2).toFixed(1)}px`], ['right', 'auto'], ['min-width', `${bw}px`], ['height', `${bw}px`], ['line-height', `${bw}px`]]) dot.style.setProperty(k, v, 'important'); } }
     if (qh && qb && J) { const r0 = qb.getBoundingClientRect(); if (r0.width) { const dx = J.x - (r0.left + r0.width / 2), dy = J.y - (r0.top + r0.height / 2); if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(qh), z = parseFloat(st.zoom) || 1; qh.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); qh.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
     { const tl = document.querySelector('#tut-spot .ts-line'), catO = ui.catalogOpen && ui.catalogOpen(); if (tl && catO && tl.style.left) { tl.style.removeProperty('left'); tl.style.removeProperty('top'); } if (tl && hud.topLeftBottom && tl.classList.contains('in') && !catO) { const r1 = tl.getBoundingClientRect(), dx = hud.topLeftX - r1.left, dy = hud.topLeftBottom - r1.top; if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(tl), z = parseFloat(st.zoom) || 1; tl.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); tl.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
     if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = coinURL(k); } }

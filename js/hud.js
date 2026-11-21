@@ -1,3 +1,4 @@
+import { drawBagIcon } from './coin_art.js';
 import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
 import { drawToken } from './tokens.js';
@@ -156,7 +157,7 @@ export class Hud {
       this.bagN = list.length;
       ctx.save(); ctx.textBaseline = 'middle'; ctx.font = `700 ${22 * s}px ${HUDF}`;
       const txt = `${used} / ${slots}`, tw = ctx.measureText(txt).width, x0 = cx0 - (sz + 8 * s + tw) / 2;
-      ctx.globalAlpha = 0.95; drawGlyph(ctx, 'bag', x0 + sz / 2, wy, sz * 1.15);
+      ctx.globalAlpha = 1; drawBagIcon(ctx, x0 + sz / 2, wy, sz * 1.25); // (5.15.6) Earl's own mesh catch bag, painted
       ctx.textAlign = 'left'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5 * s;
       ctx.fillStyle = over ? `rgba(240,84,72,${(0.75 + 0.25 * Math.sin(g.time * 6)).toFixed(3)})` : '#efe8d2'; ctx.fillText(txt, x0 + sz + 8 * s, wy + 1 * s);
       const P2 = this.bagPop; if (P2 && SPECIES_BY_ID[P2.sp.id]) { P2.t += dt; const k = P2.t < 0.25 ? P2.t / 0.25 : P2.t > 1.6 ? Math.max(0, 1 - (P2.t - 1.6) / 0.4) : 1;
@@ -254,7 +255,10 @@ export class Hud {
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
     // (5.3) sized from the finger, not the screen: CSS pixels (about 0.18 mm each on a phone). The main button about
     // 2 cm across, the others about 1.4 cm, never below Apple's 44 pt
-    const u = this.c.width / window.innerWidth * (window.__fingerK || 1.3), pad = 16 * u, R = 41 * u, // (5.6.9) larger: 36 to 41
+    // (5.15.6) and never more than fits: the corner of buttons (big button plus its arc, 178 units tall) takes at most
+    // 47 % of the screen's height, so on a short phone it shrinks a little instead of running into the radar
+    const fitK = Math.min(window.__fingerK || 1.3, (window.innerHeight * 0.47) / 178);
+    const u = this.c.width / window.innerWidth * fitK, pad = 16 * u, R = 41 * u, // (5.6.9) larger: 36 to 41
       cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm // (5.4) a tablet (no page scaling): 1.3x, so the small buttons reach 44 pt
     const held = this.held || new Set();
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
@@ -424,6 +428,7 @@ e.inSub ? [
       hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : 'msg:' + (a.why || 'Not now'));
     };
     const r = 25 * u, gap = 30 * u, rho0 = R + r + gap; // (5.6.9) the arc's coins larger: 21 to 25
+    this.arcTop = cy - rho0 - r; // (5.15.6) where the corner of buttons begins: the radar stops above it
     A.forEach((a, i) => { const ang = [-90, -125, -160, -195][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
     // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
@@ -441,10 +446,14 @@ e.inSub ? [
       btn({ key: 'settings', icon: 'gear', on: true }, gx, gy, rg);
       // (5.6.9b) the journal and the bag (and in the sub what else is carried) hang in a column right under the settings
       // coin, at the very right edge; the depth and the radar sit to the left of that column
-      const rb = 19 * u, stepB = rb * 2 + 9 * u, top = gy + stepB /* (5.9.4) evenly spaced from the settings coin */, last = cy - rho0 - r - 10 * u - rb, n = Math.max(2, Math.floor((last - top) / stepB) + 1);
-      ROW.slice(0, n).forEach((a, i) => btn(a, gx, top + i * stepB, rb));
-      { const ra = this.radarAt, rest = ROW.slice(n); this.underRadarH = rest.length && ra ? 2 * rb + 18 * u : 0; if (ra) rest.forEach((a, i) => btn(a, ra.x + (i - (rest.length - 1) / 2) * stepB, ra.y + ra.r + 10 * u + rb, rb)); } // (5.7.0) a short screen: the rest in a row under the radar
-      this.gearSpace = Math.max(rg, rb) * 2 + 22 * u; }
+      // (5.15.6) the journal, the bag (and in the sub the tank room, the autopilot, the spare air) in a row under the
+      // money, top left, where a phone game keeps its menus: the right side is left to the depth, the radar and the
+      // actions, and the row never reaches the messages in the middle
+      const rb = 19 * u, stepB = rb * 2 + 10 * u, rowY = my + ch * 0.55 + 10 * u + rb;
+      ROW.forEach((a, i) => btn(a, 12 * u + rb + i * stepB, rowY, rb));
+      this.underRadarH = 0;
+      this.topLeftBottom = (rowY + rb + 8 * u + this.safeT) * kx; // (the goal's line goes under the row)
+      this.gearSpace = rg * 2 + 22 * u; }
     // (5.6.8) what F does here is done by tapping the thing itself (render.js brackets it, main.js takes the tap): no tag
     // laid over the scene, and no picture that could say the wrong thing
     const rho1 = rho0;
@@ -768,14 +777,17 @@ e.inSub ? [
     // the seafloor sonar (a fitted extra): under the instrument, the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy + 4 * s, s); yy += 88 * s; }
     // (5.1.1) on a touch screen the radar sits under the instrument; the bottom right is the actions'
-    const rrT = 88 * s, rcyT = yy + 8 * s + rrT; // (5.6.9b) larger: 44 to 56; (5.9.6) 66; (5.13.0) 88: from the O2 mark to the air bar's end
+    // (5.15.6) as large as fits between the air bar and the corner of buttons (88 at most, as the owner asked), so the two
+    // never overlap whatever the phone
+    const room = this.arcTop ? (this.arcTop - (yy + 8 * s) - 10 * s) / 2 : 88 * s, rrT = Math.max(40 * s, Math.min(88 * s, room)), rcyT = yy + 8 * s + rrT; // (5.6.9b) 44 to 56; (5.9.6) 66; (5.13.0) 88
+    const notesAt = touch ? { x: rx0 - 2 * rrT - 14 * s, y: yy + 8 * s } : null; // (5.15.6) on a phone the notes stand to the left of the radar, clear of the buttons
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {
-      let ny = yy + (touch ? this.underRadarH || 0 : 0); // (5.7.2) below the row of buttons under the radar, when there is one
-      ctx.save(); ctx.font = `600 ${19 * s}px ${HUDF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      let ny = notesAt ? notesAt.y : yy;
+      ctx.save(); ctx.font = `600 ${19 * s}px ${HUDF}`; ctx.textAlign = notesAt ? 'right' : 'center'; ctx.textBaseline = 'top';
       ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.shadowOffsetY = 1;
-      for (const [t, c] of notes) { ctx.fillStyle = c; ctx.fillText(t, ccx, ny); ny += 24 * s; }
+      for (const [t, c] of notes) { ctx.fillStyle = c; ctx.fillText(t, notesAt ? notesAt.x : ccx, ny); ny += 24 * s; }
       ctx.restore();
     }
     // ---------- the radar: large, in the bottom right corner ----------

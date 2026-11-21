@@ -1179,3 +1179,5 @@ html body #catalog .cat-x { position: absolute; right: calc(12px + env(safe-area
 html body #catalog .cat-x::before, html body #catalog .cat-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 22px; height: 4px; border-radius: 2px; background: #e8dcc0; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); transform: translate(-50%, -50%) rotate(45deg); }
 html body #catalog .cat-x::after { transform: translate(-50%, -50%) rotate(-45deg); }
 html body #catalog .cat-x:active { transform: translateY(1px); filter: brightness(0.92); }
+/* (5.15.6) on a phone the journal's badge is the same red "!" as the bag's, on the coin's rim */
+html.touch body #quests-btn i.bang:not(#_a):not(#_b) { background: #c8402e !important; color: #fff6ea !important; border-radius: 50% !important; box-shadow: 0 0 0 2px #181a14 !important; font: 700 13px/18px "Barlow Semi Condensed", sans-serif !important; padding: 0 !important; text-align: center; }
