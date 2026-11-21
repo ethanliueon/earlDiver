@@ -16,6 +16,11 @@ order of work), then this file. The illustrated guide for a new Claude is `docs/
 
 ## Owner decisions since the proposal (latest first; these override anything below)
 
+- **5.11.2 (built on the owner's go):** the shop's rarity is now the small word already on each card and page, in its
+  rarity's ink; the stamps are gone. The money is out of the website; it shows above the monitor, top left, drawn as
+  the HUD draws it in play (the monitor stands a little lower to make room). Two new suit samples are in
+  `docs/poc/suits_samples.png` (+ `.html`), waiting for the owner's verdict before any suit goes into the game.
+
 - **Chest prices stay as they are.** Do not reopen it. (The table below is kept only as a record.)
 - **The Bayside mock (docs/poc/bayside_page.png) is REJECTED**: "a massive step down", "everything about this looks
   completely AI". The current shop layout stays, and the rest of the site (header, Cart, Log off, navigation) needs

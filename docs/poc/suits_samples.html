@@ -1,0 +1,276 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#111"><canvas id="c" width="1600" height="900"></canvas>
+<script>
+// (5.11.2) Two sample suits for the shop, drawn as a dive shop would photograph them: upright on a stand, turned about
+// 35 degrees away, lit from the upper left on a plain studio sweep. Not wired into the game: for the owner to judge.
+//   Left: a common wetsuit on a torso stand. The stand fills the chest and shoulders; the sleeves and legs hang empty,
+//         flattened, slack at the armpits, elbows, waist and knees.
+//   Right: a brass atmospheric hardsuit standing on its own feet, built from its real parts: a domed helmet with ports,
+//         a barrel hull with a bolted waist flange, stacked joint rings at shoulders, elbows, hips, knees and ankles,
+//         pincer hands, heavy boots. Weathered bronze, verdigris in the seams; nothing shiny.
+const C = document.getElementById('c'), x = C.getContext('2d'), TAU = Math.PI * 2;
+let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+// ---------- the studio: a seamless paper sweep, warm grey, a soft pool of light upper left, fine grain ----------
+function studio(ox, w, h) {
+  x.save(); x.beginPath(); x.rect(ox, 0, w, h); x.clip();
+  const wall = x.createLinearGradient(0, 0, 0, h); wall.addColorStop(0, '#bcb4a1'); wall.addColorStop(0.62, '#aea692'); wall.addColorStop(0.8, '#a09884'); wall.addColorStop(1, '#8c846f');
+  x.fillStyle = wall; x.fillRect(ox, 0, w, h);
+  const pool = x.createRadialGradient(ox + w * 0.36, h * 0.3, 20, ox + w * 0.4, h * 0.45, w * 0.75); pool.addColorStop(0, 'rgba(255,248,232,0.28)'); pool.addColorStop(1, 'rgba(255,248,232,0)');
+  x.fillStyle = pool; x.fillRect(ox, 0, w, h);
+  const vig = x.createRadialGradient(ox + w / 2, h * 0.5, w * 0.3, ox + w / 2, h * 0.5, w * 0.85); vig.addColorStop(0, 'rgba(30,24,16,0)'); vig.addColorStop(1, 'rgba(30,24,16,0.42)');
+  x.fillStyle = vig; x.fillRect(ox, 0, w, h);
+  grain(ox, 0, w, h, 9000, 0.035);
+  x.restore();
+}
+function grain(x0, y0, w, h, n, a) { for (let i = 0; i < n; i++) { x.fillStyle = rnd() < 0.5 ? `rgba(40,32,20,${rnd() * a})` : `rgba(255,250,238,${rnd() * a})`; x.fillRect(x0 + rnd() * w, y0 + rnd() * h, 1.2, 1.2); } }
+// a shadow on the floor: tight and dark where it touches, a wider soft one thrown to the right (the light is upper left)
+function contact(cx, cy, rw, soft = 1) {
+  let g = x.createRadialGradient(cx + rw * 0.35, cy + 2, 2, cx + rw * 0.35, cy + 2, rw * 1.6 * soft);
+  g.addColorStop(0, 'rgba(36,28,18,0.38)'); g.addColorStop(1, 'rgba(36,28,18,0)');
+  x.save(); x.translate(0, cy); x.scale(1, 0.16); x.translate(0, -cy); x.fillStyle = g; x.beginPath(); x.arc(cx + rw * 0.35, cy + 2, rw * 1.6 * soft, 0, TAU); x.fill(); x.restore();
+  g = x.createRadialGradient(cx, cy, 1, cx, cy, rw * 0.62);
+  g.addColorStop(0, 'rgba(20,15,9,0.75)'); g.addColorStop(1, 'rgba(20,15,9,0)');
+  x.save(); x.translate(0, cy); x.scale(1, 0.2); x.translate(0, -cy); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, rw * 0.62, 0, TAU); x.fill(); x.restore();
+}
+// fill a path, then shade it inside: a gradient across the form, and its edges rolled into shadow
+function form(path, base, across, edge = 0.5, edgeW = 18) {
+  x.save(); path(); x.fillStyle = base; x.fill(); x.clip();
+  if (across) { x.fillStyle = across; x.fillRect(0, 0, C.width, C.height); }
+  if (edge) { path(); x.strokeStyle = `rgba(6,7,8,${edge})`; x.lineWidth = edgeW; x.filter = 'blur(6px)'; x.stroke(); x.filter = 'none'; }
+  x.restore();
+}
+function lin(x0, y0, x1, y1, stops) { const g = x.createLinearGradient(x0, y0, x1, y1); for (const [k, c] of stops) g.addColorStop(k, c); return g; }
+// a fold in cloth: a soft dark valley with a lit ridge beside it, on the side the light comes from
+function fold(pts, w = 5, dark = 0.5, lite = 0.12, clip) {
+  x.save(); if (clip) { clip(); x.clip(); }
+  const line = (dx, dy) => { x.beginPath(); x.moveTo(pts[0][0] + dx, pts[0][1] + dy); for (let i = 1; i < pts.length; i += 3) x.bezierCurveTo(pts[i][0] + dx, pts[i][1] + dy, pts[i + 1][0] + dx, pts[i + 1][1] + dy, pts[i + 2][0] + dx, pts[i + 2][1] + dy); };
+  x.lineCap = 'round'; x.filter = `blur(${Math.max(1, w * 0.45)}px)`;
+  line(0, 0); x.strokeStyle = `rgba(4,5,6,${dark})`; x.lineWidth = w; x.stroke();
+  line(-w * 0.75, -w * 0.25); x.strokeStyle = `rgba(150,160,166,${lite})`; x.lineWidth = w * 0.55; x.stroke();
+  x.filter = 'none'; x.restore();
+}
+function stitch(pts, clip, a = 0.28) {
+  x.save(); if (clip) { clip(); x.clip(); }
+  x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i += 3) x.bezierCurveTo(...pts[i], ...pts[i + 1], ...pts[i + 2]);
+  x.setLineDash([3, 3]); x.strokeStyle = `rgba(170,176,178,${a})`; x.lineWidth = 1.1; x.stroke();
+  x.setLineDash([]); x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 2.2; x.globalCompositeOperation = 'multiply'; x.stroke();
+  x.restore();
+}
+
+// =====================================================================================================================
+// THE WETSUIT, on a torso stand
+// =====================================================================================================================
+function wetsuit(ox) {
+  const X = (v) => ox + v; // panel coordinates
+  const N = { base: '#272b2d', lite: '#4a5054', dark: '#121415' };
+  // --- the stand: a cast iron foot and a steel pole (seen between the legs) ---
+  contact(X(392), 822, 96);
+  x.save(); x.fillStyle = lin(X(320), 0, X(470), 0, [[0, '#3a3936'], [0.35, '#6e6c66'], [0.55, '#4a4844'], [1, '#1e1d1b']]);
+  x.beginPath(); x.ellipse(X(392), 812, 74, 15, 0, 0, TAU); x.fill();
+  x.fillStyle = '#1a1917'; x.beginPath(); x.ellipse(X(392), 816, 74, 13, 0, 0, Math.PI); x.fill();
+  x.fillStyle = lin(X(384), 0, X(400), 0, [[0, '#4a4945'], [0.4, '#a6a49c'], [1, '#2a2927']]); x.fillRect(X(386), 470, 12, 342);
+  x.restore();
+
+  // --- the far leg (left): empty, flattened, hanging; behind the near leg, a little darker ---
+  const farLeg = () => { x.beginPath(); x.moveTo(X(316), 488); x.bezierCurveTo(X(318), 560, X(326), 640, X(322), 712); x.bezierCurveTo(X(320), 750, X(318), 776, X(320), 790);
+    x.bezierCurveTo(X(334), 796, X(352), 796, X(366), 790); x.bezierCurveTo(X(364), 770, X(368), 720, X(372), 660); x.bezierCurveTo(X(376), 600, X(380), 560, X(384), 520); x.closePath(); };
+  form(farLeg, '#1e2123', lin(X(316), 0, X(380), 0, [[0, 'rgba(70,76,80,0.55)'], [0.4, 'rgba(40,44,46,0.2)'], [1, 'rgba(0,0,0,0.5)']]), 0.55, 14);
+  fold([[X(344), 540], [X(340), 600], [X(350), 650], [X(346), 720]], 4, 0.45, 0.08, farLeg);
+  fold([[X(330), 650], [X(338), 664], [X(352), 668], [X(364), 660]], 4, 0.55, 0.1, farLeg); // the knee, slack
+  fold([[X(326), 768], [X(338), 774], [X(352), 776], [X(364), 770]], 3, 0.5, 0.1, farLeg);
+
+  // --- the near leg (right): larger, in front ---
+  const nearLeg = () => { x.beginPath(); x.moveTo(X(380), 518); x.bezierCurveTo(X(392), 560, X(396), 620, X(398), 700); x.bezierCurveTo(X(398), 746, X(400), 776, X(402), 796);
+    x.bezierCurveTo(X(418), 802, X(438), 802, X(452), 794); x.bezierCurveTo(X(448), 760, X(450), 700, X(456), 640); x.bezierCurveTo(X(460), 590, X(466), 540, X(468), 500); x.closePath(); };
+  form(nearLeg, N.base, lin(X(384), 0, X(468), 0, [[0, 'rgba(92,100,104,0.55)'], [0.35, 'rgba(60,66,70,0.25)'], [0.7, 'rgba(0,0,0,0.15)'], [1, 'rgba(0,0,0,0.55)']]), 0.5, 16);
+  // knee pad: a slightly paler, pebbled panel, creased because nothing is inside
+  const pad = () => { x.beginPath(); x.moveTo(X(402), 628); x.bezierCurveTo(X(414), 620, X(440), 620, X(452), 628); x.lineTo(X(450), 692); x.bezierCurveTo(X(436), 700, X(414), 700, X(401), 692); x.closePath(); };
+  x.save(); pad(); x.clip(); x.fillStyle = 'rgba(0,0,0,0.3)'; x.fillRect(X(390), 610, 80, 100); x.strokeStyle = 'rgba(120,124,120,0.16)'; x.lineWidth = 1; for (let i = -10; i < 20; i++) { x.beginPath(); x.moveTo(X(380 + i * 6), 610); x.lineTo(X(380 + i * 6 + 90), 710); x.stroke(); x.beginPath(); x.moveTo(X(380 + i * 6 + 90), 610); x.lineTo(X(380 + i * 6), 710); x.stroke(); } x.restore();
+  stitch([[X(402), 628], [X(414), 620], [X(440), 620], [X(452), 628]], nearLeg); stitch([[X(401), 692], [X(414), 700], [X(436), 700], [X(450), 692]], nearLeg);
+  fold([[X(404), 650], [X(418), 662], [X(436), 664], [X(452), 652]], 5, 0.6, 0.12, nearLeg);
+  fold([[X(410), 676], [X(424), 670], [X(438), 672], [X(450), 680]], 3, 0.45, 0.1, nearLeg);
+  fold([[X(430), 530], [X(424), 570], [X(434), 600], [X(428), 622]], 5, 0.4, 0.1, nearLeg);
+  fold([[X(426), 704], [X(420), 740], [X(430), 770], [X(424), 800]], 5, 0.4, 0.1, nearLeg);
+  fold([[X(404), 776], [X(418), 784], [X(434), 784], [X(450), 778]], 3, 0.5, 0.1, nearLeg);
+  stitch([[X(462), 540], [X(458), 620], [X(452), 720], [X(450), 806]], nearLeg, 0.18); // the outside seam
+
+  // --- the far sleeve (left): behind the torso, only its outer edge and cuff show ---
+  const farArm = () => { x.beginPath(); x.moveTo(X(318), 214); x.bezierCurveTo(X(300), 214, X(286), 232, X(282), 262); x.bezierCurveTo(X(279), 284, X(278), 300, X(280), 320); x.bezierCurveTo(X(282), 380, X(286), 430, X(288), 470);
+    x.bezierCurveTo(X(298), 476, X(310), 476, X(318), 470); x.lineTo(X(318), 260); x.closePath(); };
+  form(farArm, '#1b1e20', lin(X(278), 0, X(318), 0, [[0, 'rgba(80,86,90,0.45)'], [1, 'rgba(0,0,0,0.5)']]), 0.5, 12);
+  fold([[X(282), 350], [X(292), 360], [X(304), 362], [X(316), 356]], 4, 0.5, 0.1, farArm);
+  fold([[X(286), 456], [X(296), 462], [X(308), 462], [X(318), 456]], 3, 0.45, 0.08, farArm);
+
+  // --- the torso, filled by the stand: a lit front plane (left) and a darker side plane (right) ---
+  const torso = () => { x.beginPath(); x.moveTo(X(303), 232); x.bezierCurveTo(X(304), 220, X(312), 210, X(326), 202); x.bezierCurveTo(X(344), 190, X(356), 181, X(366), 178); x.bezierCurveTo(X(384), 184, X(404), 186, X(420), 184);
+    x.bezierCurveTo(X(444), 196, X(464), 210, X(476), 226); x.bezierCurveTo(X(482), 250, X(480), 270, X(476), 290); x.bezierCurveTo(X(470), 340, X(460), 384, X(460), 424);
+    x.bezierCurveTo(X(464), 456, X(470), 480, X(468), 502); x.bezierCurveTo(X(440), 512, X(410), 524, X(382), 524); x.bezierCurveTo(X(360), 516, X(334), 498, X(314), 490);
+    x.bezierCurveTo(X(316), 460, X(326), 440, X(328), 418); x.bezierCurveTo(X(320), 360, X(308), 310, X(306), 280); x.bezierCurveTo(X(303), 260, X(302), 246, X(303), 232); x.closePath(); };
+  form(torso, N.base, lin(X(300), 0, X(482), 0, [[0, 'rgba(98,106,110,0.5)'], [0.28, 'rgba(78,86,90,0.42)'], [0.56, 'rgba(36,40,42,0.1)'], [0.66, 'rgba(0,0,0,0.32)'], [1, 'rgba(0,0,0,0.55)']]), 0.45, 18);
+  // the chest's roundness on the form, catching the light
+  x.save(); torso(); x.clip(); let g = x.createRadialGradient(X(352), 262, 6, X(360), 280, 90); g.addColorStop(0, 'rgba(150,158,162,0.22)'); g.addColorStop(1, 'rgba(150,158,162,0)'); x.fillStyle = g; x.fillRect(X(280), 180, 220, 200); x.restore();
+  // shoulder panels: a slightly different neoprene, seamed across the chest
+  stitch([[X(304), 250], [X(344), 262], [X(400), 262], [X(450), 246]], torso); stitch([[X(450), 246], [X(462), 300], [X(462), 380], [X(466), 500]], torso, 0.2);
+  x.save(); torso(); x.clip(); x.beginPath(); x.moveTo(X(296), 196); x.lineTo(X(304), 250); x.bezierCurveTo(X(344), 262, X(400), 262, X(450), 246); x.lineTo(X(486), 210); x.lineTo(X(420), 170); x.closePath(); x.fillStyle = 'rgba(96,96,86,0.34)'; x.fill(); x.restore();
+  // the waist: the stand narrows, the suit goes slack
+  fold([[X(322), 420], [X(350), 432], [X(390), 434], [X(436), 424]], 5, 0.42, 0.1, torso);
+  fold([[X(330), 448], [X(362), 456], [X(398), 456], [X(440), 446]], 4, 0.35, 0.08, torso);
+  fold([[X(330), 478], [X(350), 492], [X(368), 506], [X(384), 520]], 5, 0.5, 0.1, torso); // into the crotch
+  fold([[X(454), 480], [X(436), 494], [X(412), 508], [X(390), 520]], 5, 0.55, 0.06, torso);
+  // the neck: a smooth glide-skin collar, dark inside
+  x.save(); x.fillStyle = lin(X(360), 0, X(424), 0, [[0, '#596064'], [0.4, '#3a4044'], [1, '#141617']]); x.beginPath(); x.ellipse(X(393), 176, 34, 12, -0.08, 0, TAU); x.fill();
+  x.fillStyle = '#060707'; x.beginPath(); x.ellipse(X(394), 174, 26, 8, -0.08, 0, TAU); x.fill();
+  x.fillStyle = 'rgba(160,166,170,0.25)'; x.beginPath(); x.ellipse(X(380), 172, 12, 3, -0.2, Math.PI, TAU); x.fill();
+  x.fillStyle = lin(X(408), 0, X(432), 0, [[0, '#3c4244'], [1, '#191c1d']]); x.beginPath(); x.moveTo(X(406), 178); x.lineTo(X(430), 182); x.lineTo(X(432), 194); x.lineTo(X(408), 192); x.closePath(); x.fill();
+  x.strokeStyle = 'rgba(150,156,158,0.3)'; x.setLineDash([2, 2]); x.lineWidth = 1; x.stroke(); x.setLineDash([]); x.restore(); // the collar's closure tab
+
+  // --- the near sleeve (right): over the side plane, hanging empty from the stand's shoulder ---
+  const nearArm = () => { x.beginPath(); x.moveTo(X(446), 202); x.bezierCurveTo(X(474), 202, X(498), 216, X(503), 246); x.bezierCurveTo(X(508), 290, X(506), 350, X(502), 400);
+    x.bezierCurveTo(X(500), 430, X(498), 460, X(496), 482); x.bezierCurveTo(X(486), 490, X(472), 490, X(464), 484); x.bezierCurveTo(X(466), 440, X(466), 380, X(466), 330); x.bezierCurveTo(X(466), 290, X(462), 250, X(450), 206); x.closePath(); };
+  form(nearArm, N.base, lin(X(466), 0, X(516), 0, [[0, 'rgba(96,104,108,0.5)'], [0.45, 'rgba(60,66,70,0.2)'], [1, 'rgba(0,0,0,0.55)']]), 0.5, 14);
+  x.save(); nearArm(); x.clip(); x.beginPath(); x.moveTo(X(440), 196); x.lineTo(X(520), 236); x.lineTo(X(520), 318); x.bezierCurveTo(X(500), 326, X(480), 324, X(460), 314); x.closePath(); x.fillStyle = 'rgba(96,96,86,0.34)'; x.fill(); x.restore();
+  stitch([[X(460), 314], [X(480), 324], [X(500), 326], [X(510), 320]], nearArm); stitch([[X(452), 210], [X(474), 216], [X(492), 226], [X(502), 244]], nearArm); // the panel and the shoulder seam
+  // where the shoulder of the stand ends, the sleeve drapes: diagonal pulls from the shoulder, a bunch at the elbow
+  fold([[X(470), 236], [X(486), 250], [X(498), 270], [X(504), 296]], 5, 0.5, 0.12, nearArm);
+  fold([[X(474), 278], [X(486), 290], [X(494), 306], [X(498), 326]], 4, 0.4, 0.1, nearArm);
+  fold([[X(472), 360], [X(484), 370], [X(498), 372], [X(510), 364]], 5, 0.6, 0.14, nearArm);
+  fold([[X(474), 378], [X(486), 386], [X(498), 388], [X(508), 382]], 3, 0.45, 0.1, nearArm);
+  fold([[X(470), 466], [X(482), 472], [X(494), 472], [X(504), 466]], 3, 0.5, 0.1, nearArm);
+
+  // cuffs: a smooth seal band, a dull sheen
+  for (const [cx, cy, rx] of [[X(485), 484, 18], [X(303), 472, 15]]) { x.save(); x.fillStyle = 'rgba(120,128,132,0.18)'; x.beginPath(); x.ellipse(cx, cy - 6, rx, 5, 0, 0, TAU); x.fill(); x.restore(); }
+  // the neoprene's surface: very fine, not a texture you notice
+  x.save(); x.globalCompositeOperation = 'overlay'; grain(X(270), 170, 260, 650, 7000, 0.06); x.restore();
+}
+
+// =====================================================================================================================
+// THE HARDSUIT, standing on its own feet
+// =====================================================================================================================
+const BR = { deep: '#261c10', dark: '#423118', mid: '#6c5330', warm: '#87693f', lite: '#b08f5f', pale: '#c9ad80' };
+// a metal band across a round form: dark, a broad body, one soft highlight off left of centre, a dark falloff, a little bounce
+function metal(x0, x1, k = 1) { return lin(x0, 0, x1, 0, [[0, BR.deep], [0.1, BR.dark], [0.26, BR.mid], [0.36, k > 0.5 ? BR.lite : BR.warm], [0.44, BR.warm], [0.7, BR.dark], [0.9, BR.deep], [1, '#3a2c18']]); }
+// a vertical cylinder in local space (after a translate/rotate): from y0 to y1, radius r, its ends seen as ellipses
+function cyl(cx, y0, y1, r, k = 1, endK = 0.32) {
+  x.fillStyle = metal(cx - r, cx + r, k); x.beginPath(); x.moveTo(cx - r, y0); x.lineTo(cx - r, y1); x.ellipse(cx, y1, r, r * endK, 0, Math.PI, 0, true); x.lineTo(cx + r, y0); x.ellipse(cx, y0, r, r * endK, 0, 0, Math.PI, false); x.fill();
+  x.strokeStyle = 'rgba(20,14,6,0.55)'; x.lineWidth = 1.2; x.beginPath(); x.ellipse(cx, y1, r, r * endK, 0, 0, Math.PI); x.stroke();
+}
+// a joint ring: a short, wider cylinder with its top face lit, a groove under it
+function ring(cx, y, r, h, k = 1, endK = 0.32) {
+  cyl(cx, y, y + h, r, k, endK);
+  x.fillStyle = lin(cx - r, 0, cx + r, 0, [[0, BR.dark], [0.3, BR.pale], [0.6, BR.warm], [1, BR.dark]]); x.beginPath(); x.ellipse(cx, y, r, r * endK, 0, 0, TAU); x.fill();
+  x.strokeStyle = 'rgba(20,14,6,0.6)'; x.lineWidth = 1; x.stroke();
+}
+function bolt(bx, by, s = 3.2) {
+  x.fillStyle = 'rgba(20,14,6,0.7)'; x.beginPath(); x.arc(bx + 0.8, by + 0.9, s, 0, TAU); x.fill();
+  x.fillStyle = lin(bx - s, by - s, bx + s, by + s, [[0, BR.pale], [0.5, BR.warm], [1, BR.dark]]); x.beginPath(); x.arc(bx, by, s * 0.85, 0, TAU); x.fill();
+}
+function boltsOn(cx, cy, rx, ry, n, a0, a1, s) { for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * (i + 0.5) / n; bolt(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, s * (0.75 + 0.25 * Math.sin(a))); } }
+// verdigris and dark oxide where water sat: in grooves and under flanges
+function patina(cx, cy, rx, ry, n = 40) { for (let i = 0; i < n; i++) { const a = rnd() * Math.PI, rr = 0.85 + rnd() * 0.2; x.fillStyle = rnd() < 0.55 ? `rgba(84,112,92,${0.12 + rnd() * 0.22})` : `rgba(26,20,10,${0.15 + rnd() * 0.25})`; x.beginPath(); x.ellipse(cx + Math.cos(a) * rx * rr, cy + Math.sin(a) * ry * rr + 2, 2 + rnd() * 5, 1 + rnd() * 2, 0, 0, TAU); x.fill(); } }
+// a limb: upper segment, a joint (two rings and the ball between), lower segment; drawn down from (jx, jy) at angle a
+function limb(jx, jy, a, r, upper, lower, bend, end, k) {
+  x.save(); x.translate(jx, jy); x.rotate(a);
+  cyl(0, 0, upper, r, k); ring(0, -4, r + 5, 12, k); patina(0, 6, r + 4, (r + 4) * 0.32, 12);
+  x.save(); x.translate(0, upper + 8); x.rotate(bend);
+  ring(0, -12, r + 6, 12, k);
+  x.fillStyle = lin(-r, 0, r, 0, [[0, BR.deep], [0.3, BR.mid], [0.4, BR.lite], [0.7, BR.dark], [1, BR.deep]]); x.beginPath(); x.ellipse(0, 4, r + 2, r * 0.6, 0, 0, TAU); x.fill(); // the ball
+  ring(0, 8, r + 6, 12, k); patina(0, 20, r + 5, (r + 5) * 0.32, 14);
+  cyl(0, 20, 20 + lower, r * 0.94, k);
+  for (let i = 0; i < 5; i++) bolt(-r * 0.62 + i * r * 0.31, 26 + Math.abs(i - 2) * 1.5, 2.2);
+  x.translate(0, 20 + lower); end(r); x.restore();
+  x.restore();
+}
+function claw(r) { // a two-finger pincer on a wrist ring
+  ring(0, -4, r * 0.85, 12, 1); cyl(0, 8, 24, r * 0.7);
+  for (const s of [-1, 1]) { x.save(); x.translate(s * r * 0.3, 24); x.rotate(s * -0.18);
+    x.fillStyle = metal(-10, 10); x.beginPath(); x.moveTo(-9, 0); x.bezierCurveTo(-12, 16, s * 4 - 8, 34, s * 8, 46); x.lineTo(s * 16, 44); x.bezierCurveTo(s * 12, 30, 12, 16, 9, 0); x.closePath(); x.fill();
+    x.strokeStyle = 'rgba(20,14,6,0.6)'; x.lineWidth = 1; x.stroke(); bolt(0, 6, 2.4); x.restore(); }
+}
+function boot(r, toe) { // a heavy cast boot: ankle ring, a rounded cap, a thick flat sole running forward (left)
+  ring(0, -2, r + 4, 10, 1);
+  x.fillStyle = metal(-r - 12 * toe, r + 4); x.beginPath(); x.moveTo(-r, 8); x.bezierCurveTo(-r - 4, 22, -r - 22 * toe, 26, -r - 26 * toe, 40); x.lineTo(r + 6, 40); x.bezierCurveTo(r + 8, 26, r + 4, 16, r, 8); x.closePath(); x.fill();
+  x.fillStyle = '#1e160b'; x.beginPath(); x.moveTo(-r - 28 * toe, 38); x.lineTo(r + 8, 38); x.lineTo(r + 8, 48); x.lineTo(-r - 30 * toe, 48); x.closePath(); x.fill();
+  x.fillStyle = 'rgba(220,190,140,0.18)'; x.fillRect(-r - 26 * toe, 38, r * 1.2, 2);
+}
+function hardsuit(ox) {
+  const X = (v) => ox + v, FLOOR = 822;
+  // a thin rotary joint ring: what lets a hardsuit's limb turn at depth (several at each joint)
+  const rr = (cx, y, r, k) => ring(cx, y, r, 7, k, 0.3);
+  // a limb segment with its rings, drawn downward from a joint in local space
+  const seg = (len, r0, r1, k) => {
+    x.fillStyle = metal(-r0, r0, k); x.beginPath(); x.moveTo(-r0, 0); x.lineTo(-r1, len); x.ellipse(0, len, r1, r1 * 0.3, 0, Math.PI, 0, true); x.lineTo(r0, 0); x.closePath(); x.fill();
+    x.strokeStyle = 'rgba(16,10,4,0.5)'; x.lineWidth = 1; x.beginPath(); x.ellipse(0, len, r1, r1 * 0.3, 0, 0, Math.PI); x.stroke();
+  };
+  const ball = (r, k) => { x.fillStyle = lin(-r, -r, r, r, [[0, BR.lite], [0.35, BR.warm], [0.75, BR.dark], [1, BR.deep]]); x.beginPath(); x.ellipse(0, 0, r, r * 0.8, 0, 0, TAU); x.fill(); x.strokeStyle = 'rgba(16,10,4,0.5)'; x.stroke(); };
+  // an arm out of a shoulder housing: two rings, upper arm, an elbow ball with rings both sides, forearm, rings, pincer
+  const arm = (jx, jy, a, bend, r, k) => {
+    x.save(); x.translate(jx, jy); x.rotate(a);
+    rr(0, 0, r + 4, k); rr(0, 8, r + 3, k); x.translate(0, 15); seg(70, r, r * 0.92, k); patina(0, 2, r + 3, (r + 3) * 0.3, 10);
+    x.translate(0, 72); rr(0, 0, r + 2, k); x.translate(0, 16); ball(r * 0.95, k); x.rotate(bend); x.translate(0, 8); rr(0, 0, r + 1, k); rr(0, 8, r, k);
+    x.translate(0, 15); seg(66, r * 0.88, r * 0.78, k); x.translate(0, 66); rr(0, 0, r * 0.84, k); x.translate(0, 8); claw(r * 0.9);
+    x.restore();
+  };
+  // a leg from a hip housing: rings, a short thick thigh, a knee ball, the shin, an ankle ring, the boot on the floor
+  const leg = (jx, jy, r, k, toe, len = 1) => {
+    x.save(); x.translate(jx, jy);
+    rr(0, 0, r + 4, k); rr(0, 8, r + 3, k); x.translate(0, 15); seg(80 * len, r, r * 0.95, k); patina(0, 2, r + 3, (r + 3) * 0.3, 10);
+    x.translate(0, 80 * len); rr(0, 0, r + 3, k); x.translate(0, 18); ball(r * 0.98, k); x.translate(0, 10); rr(0, 0, r + 3, k); rr(0, 8, r + 2, k);
+    x.translate(0, 15); seg(92 * len, r * 0.94, r * 0.86, k); for (let i = 0; i < 6; i++) bolt(-r * 0.7 + i * r * 0.28, 8 + Math.abs(i - 2.5) * 1.2, 2);
+    x.translate(0, 92 * len); boot(r * 0.9, toe);
+    x.restore();
+  };
+  // where the boots must land: the hip at y 486, then 15+80+18+10+15+92 = 230 to the ankle, the boot 48 deep
+  contact(X(356), FLOOR, 74); contact(X(462), FLOOR + 3, 82);
+  // --- far side first, falling into shadow ---
+  x.save(); x.filter = 'brightness(0.7) saturate(0.9)'; arm(X(318), 300, 0.32, -0.22, 21, 0.4); x.restore();
+  // the legs are long enough that the hips tuck up under the barrel: 15+100+18+10+15+115 = 273 to the ankle, the boot 48
+  x.save(); x.filter = 'brightness(0.8)'; leg(X(362), FLOOR - 273 - 48 - 2, 31, 0.6, 1, 1.25); x.restore();
+  leg(X(458), FLOOR - 273 - 48 + 1, 34, 1, 1.1, 1.25);
+
+  // --- the body: one barrel, its top a dome with the ports in a band; a bolted flange where dome meets barrel ---
+  const body = () => { x.beginPath(); x.moveTo(X(326), 250); x.bezierCurveTo(X(312), 310, X(308), 380, X(318), 440); x.bezierCurveTo(X(330), 490, X(372), 512, X(410), 512);
+    x.bezierCurveTo(X(450), 512, X(492), 490, X(502), 440); x.bezierCurveTo(X(512), 380, X(508), 310, X(494), 250);
+    x.bezierCurveTo(X(494), 180, X(456), 128, X(410), 128); x.bezierCurveTo(X(364), 128, X(326), 180, X(326), 250); x.closePath(); };
+  x.save(); body(); x.fillStyle = metal(X(308), X(512)); x.fill(); x.clip();
+  let g = x.createRadialGradient(X(372), 190, 6, X(384), 230, 150); g.addColorStop(0, 'rgba(232,200,142,0.42)'); g.addColorStop(1, 'rgba(232,200,142,0)'); x.fillStyle = g; x.fillRect(X(300), 120, 220, 300);
+  g = x.createLinearGradient(0, 440, 0, 512); g.addColorStop(0, 'rgba(16,10,4,0)'); g.addColorStop(1, 'rgba(16,10,4,0.6)'); x.fillStyle = g; x.fillRect(X(300), 430, 220, 90);
+  // dark oxide in the lower body, where water lay longest
+  for (let i = 0; i < 300; i++) { x.fillStyle = `rgba(28,22,12,${rnd() * 0.12})`; x.beginPath(); x.arc(X(318 + rnd() * 186), 330 + rnd() * 180, 2 + rnd() * 6, 0, TAU); x.fill(); }
+  // the dome flange (curving round the barrel) and the waist flange
+  for (const [cy, ry] of [[262, 24], [408, 26]]) {
+    x.beginPath(); x.ellipse(X(410), cy, 92, ry, 0, 0, Math.PI); x.strokeStyle = BR.deep; x.lineWidth = 15; x.stroke();
+    x.beginPath(); x.ellipse(X(410), cy - 4, 92, ry, 0, 0.08, Math.PI - 0.08); x.strokeStyle = 'rgba(210,176,120,0.5)'; x.lineWidth = 2.5; x.stroke();
+    boltsOn(X(410), cy, 89, ry, 14, 0.14, Math.PI - 0.14, 3); patina(X(410), cy + 3, 92, ry, 70);
+  }
+  // a seam plate on the front and its rivets
+  x.beginPath(); x.moveTo(X(384), 290); x.bezierCurveTo(X(378), 330, X(377), 360, X(380), 398); x.strokeStyle = 'rgba(16,10,4,0.4)'; x.lineWidth = 2; x.stroke();
+  for (let i = 0; i < 6; i++) bolt(X(392 - i * 1.2), 300 + i * 17, 2);
+  body(); x.strokeStyle = 'rgba(12,8,3,0.62)'; x.lineWidth = 16; x.filter = 'blur(6px)'; x.stroke(); x.filter = 'none';
+  x.restore();
+  // the lifting eye on top, where the crane takes it
+  x.save(); x.translate(X(412), 128); x.lineWidth = 7; x.strokeStyle = BR.dark; x.beginPath(); x.ellipse(0, -14, 13, 14, 0, Math.PI * 0.9, Math.PI * 2.1); x.stroke(); x.lineWidth = 2; x.strokeStyle = 'rgba(220,190,136,0.6)'; x.beginPath(); x.ellipse(-1, -15, 12, 13, 0, Math.PI * 1.05, Math.PI * 1.6); x.stroke(); ring(0, -4, 16, 8, 1, 0.3); x.restore();
+  // the ports: a big one looking ahead (turned left with the suit), one at the side facing us, one high up
+  const port = (cx, cy, rx, ry, rot, bolts) => {
+    x.save(); x.translate(cx, cy); x.rotate(rot);
+    x.fillStyle = 'rgba(14,9,3,0.55)'; x.beginPath(); x.ellipse(2, 3, rx + 9, ry + 9, 0, 0, TAU); x.fill();
+    x.fillStyle = lin(-rx, -ry, rx, ry, [[0, BR.pale], [0.4, BR.warm], [1, BR.deep]]); x.beginPath(); x.ellipse(0, 0, rx + 7, ry + 7, 0, 0, TAU); x.fill();
+    x.fillStyle = lin(-rx, -ry, rx, ry, [[0, '#3a4644'], [0.55, '#0d1313'], [1, '#040606']]); x.beginPath(); x.ellipse(0, 0, rx, ry, 0, 0, TAU); x.fill();
+    x.fillStyle = 'rgba(210,220,208,0.26)'; x.beginPath(); x.ellipse(-rx * 0.35, -ry * 0.42, rx * 0.3, ry * 0.16, -0.6, 0, TAU); x.fill();
+    if (bolts) boltsOn(0, 0, rx + 3.5, ry + 3.5, bolts, 0, TAU, 2);
+    x.restore();
+  };
+  port(X(378), 212, 21, 27, 0.04, 8); port(X(458), 214, 13, 17, 0.08, 6); port(X(402), 160, 12, 6, -0.04, 0);
+  // --- shoulder housings: short cylinders on the barrel's sides, their faces turned out ---
+  x.save(); x.translate(X(500), 296); x.rotate(-1.35); ring(0, -2, 26, 18, 1, 0.45); x.restore();
+  // --- the near arm, in front ---
+  arm(X(506), 306, -0.2, 0.3, 23, 1);
+  // wear: fine scratches catch the light
+  x.save(); x.strokeStyle = 'rgba(228,204,156,0.2)'; x.lineWidth = 0.8; for (let i = 0; i < 30; i++) { const sx = X(320 + rnd() * 180), sy = 160 + rnd() * 330; x.beginPath(); x.moveTo(sx, sy); x.lineTo(sx + 4 + rnd() * 10, sy + (rnd() - 0.5) * 4); x.stroke(); } x.restore();
+  x.save(); x.globalCompositeOperation = 'overlay'; grain(X(270), 100, 300, 740, 7000, 0.07); x.restore();
+}
+
+studio(0, 800, 900); studio(800, 800, 900);
+wetsuit(0); hardsuit(800);
+x.fillStyle = 'rgba(0,0,0,0.6)'; x.fillRect(799, 0, 2, 900);
+window.done = true;
+</script>
