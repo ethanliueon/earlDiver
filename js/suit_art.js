@@ -1,6 +1,6 @@
 // (5.11.4) The shop's suits as a supplier photographs them: each suit upright as if worn (no stand, no one in it),
 // turned about 35 degrees away and lit from one side, then cut out and turned on its side, head to the left, to lie
-// across the picture. No floor shadow (it is a turned photograph), only a faint shadow round its own outline.
+// across the picture (mirrored before turning, so the light falls from the top). No floor shadow (it is a turned photograph), only a faint shadow round its own outline.
 // Samples for the owner first: the Wetsuit and the Iron Lung; every other suit is still drawn by drawSuitFlat.
 // The drawing is the approved proof of concept (docs/poc/suits_samples.html, hardsuit_A.html), on an 800 x 900 page.
 const TAU = Math.PI * 2;
@@ -83,8 +83,8 @@ function wetsuit(ox) {
   fold([[X(330), 478], [X(350), 492], [X(368), 506], [X(384), 520]], 5, 0.5, 0.1, torso); // into the crotch
   fold([[X(454), 480], [X(436), 494], [X(412), 508], [X(390), 520]], 5, 0.55, 0.06, torso);
   // the neck: a smooth glide-skin collar, dark inside
-  x.save(); x.fillStyle = lin(X(360), 0, X(424), 0, [[0, '#596064'], [0.4, '#3a4044'], [1, '#141617']]); x.beginPath(); x.ellipse(X(393), 176, 34, 12, -0.08, 0, TAU); x.fill();
-  x.fillStyle = '#060707'; x.beginPath(); x.ellipse(X(394), 174, 26, 8, -0.08, 0, TAU); x.fill();
+  x.save(); x.fillStyle = lin(X(360), 0, X(424), 0, [[0, '#596064'], [0.4, '#3a4044'], [1, '#141617']]); x.beginPath(); x.ellipse(X(393), 178, 33, 8, -0.08, 0, TAU); x.fill();
+  x.fillStyle = 'rgba(6,7,7,0.85)'; x.beginPath(); x.ellipse(X(394), 177, 24, 4.5, -0.08, 0, TAU); x.fill(); // (5.11.5) a flatter, softer opening: turned on its side it read as a bottle's mouth
   x.fillStyle = 'rgba(160,166,170,0.25)'; x.beginPath(); x.ellipse(X(380), 172, 12, 3, -0.2, Math.PI, TAU); x.fill();
   x.fillStyle = lin(X(408), 0, X(432), 0, [[0, '#3c4244'], [1, '#191c1d']]); x.beginPath(); x.moveTo(X(406), 178); x.lineTo(X(430), 182); x.lineTo(X(432), 194); x.lineTo(X(408), 192); x.closePath(); x.fill();
   x.strokeStyle = 'rgba(150,156,158,0.3)'; x.setLineDash([2, 2]); x.lineWidth = 1; x.stroke(); x.setLineDash([]); x.restore(); // the collar's closure tab
@@ -203,7 +203,7 @@ export function drawSuit3q(ctx, w, h, def) {
   const pg = page(kind), [x0, y0, x1, y1] = FIG[kind].box, fw = x1 - x0, fh = y1 - y0;
   // turned on its side: the figure's height runs across the picture; fit it with a margin
   const k = Math.min((w * 0.86) / fh, (h * 0.84) / fw);
-  const draw = (c2, sh) => { c2.save(); c2.translate(w / 2 + (sh ? sh[0] : 0), h / 2 + (sh ? sh[1] : 0)); c2.rotate(-Math.PI / 2); c2.scale(k, k); c2.drawImage(pg, x0, y0, fw, fh, -fw / 2, -fh / 2, fw, fh); c2.restore(); };
+  const draw = (c2, sh) => { c2.save(); c2.translate(w / 2 + (sh ? sh[0] : 0), h / 2 + (sh ? sh[1] : 0)); c2.rotate(-Math.PI / 2); c2.scale(-k, k); /* (5.11.5) mirrored first, so once turned the light falls from the top */ c2.drawImage(pg, x0, y0, fw, fh, -fw / 2, -fh / 2, fw, fh); c2.restore(); };
   // the faint shadow round its outline: the figure itself, darkened and softened, a touch below
   const sc = document.createElement('canvas'); sc.width = Math.ceil(w); sc.height = Math.ceil(h); const sx = sc.getContext('2d');
   draw(sx); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(20,24,28,1)'; sx.fillRect(0, 0, w, h);
