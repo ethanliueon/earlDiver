@@ -1013,14 +1013,6 @@ html body #inventory .ph-stars .st.on path { fill: #957444; stroke: #33240f; str
 html body #inventory .ph-stars .st.on { filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6)) drop-shadow(0 -0.5px 0 rgba(236, 214, 170, 0.25)); }
 html body #inventory .photo-pop .ph-stars { right: 12px; top: 10px; gap: 3px; }
 html body #inventory .photo-pop .ph-stars .st { width: 26px; height: 26px; }
-/* (5.10.10) the rarity, stamped on every item's photograph in the shop: a worn ink stamp in the rarity's ink, set
-   a little crooked in the top right corner, as a supplier grades a catalogue picture. Common is plain grey ink */
-html body #catalog .cat-stamp { position: absolute; right: 7px; top: 7px; z-index: 1; padding: 1px 6px 0; border: 1.5px solid currentColor; border-radius: 2px;
-  font: 700 10px/1.35 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; transform: rotate(-3deg); opacity: 0.82; mix-blend-mode: multiply;
-  -webkit-mask-image: repeating-linear-gradient(115deg, #000 0 3px, rgba(0,0,0,0.7) 3px 4px, #000 4px 9px); mask-image: repeating-linear-gradient(115deg, #000 0 3px, rgba(0,0,0,0.7) 3px 4px, #000 4px 9px); pointer-events: none; }
-html body #catalog .cat-stamp.big { right: 12px; top: 12px; font-size: 14px; padding: 2px 9px 1px; border-width: 2px; }
-html body #catalog .cat-stamp.r-common { color: #66665e; } html body #catalog .cat-stamp.r-uncommon { color: #3c6e42; } html body #catalog .cat-stamp.r-rare { color: #2c5884; }
-html body #catalog .cat-stamp.r-exotic { color: #66387e; } html body #catalog .cat-stamp.r-legendary { color: #85601c; border-style: double; border-width: 3px; }
 html body #catalog .cat-photo { position: relative; }
 html body #catalog .cat-photo > img { display: block; width: 100%; }
 /* (5.10.11) a photograph's card: small, the print as one frame cut from a roll of film (dark rebate, sprocket holes,
@@ -1055,3 +1047,17 @@ html body #inventory .trap-pop .tp-row { display: flex; justify-content: space-b
 html body #inventory .trap-pop .tp-row b { font-weight: 600; color: #efe8d2; }
 html body #inventory .trap-pop .lk-acts { margin-top: auto; padding-top: 10px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; flex-direction: row-reverse; }
 html body #inventory .trap-pop .tp-note { font: 500 12px 'Barlow Semi Condensed', sans-serif; color: #8a846e; }
+
+/* ---------- (5.11.2) the shops: the rarity is the small word already on each card and page, in its rarity's ink (the
+   stamps on the photographs are gone: they read as made-up props). The money is out of the website (the supplier
+   does not know the player): the monitor stands a little lower, and the game's own money sits above it, top left,
+   where the HUD keeps it in play ---------- */
+html body #catalog .cat-card .tag.r-uncommon em { color: #3c6e42 !important; } html body #catalog .cat-card .tag.r-rare em { color: #2c5884 !important; }
+html body #catalog .cat-card .tag.r-exotic em { color: #66387e !important; } html body #catalog .cat-card .tag.r-legendary em { color: #85601c !important; }
+html body #catalog .rr.r-common { color: #66665e; } html body #catalog .rr.r-uncommon { color: #3c6e42; } html body #catalog .rr.r-rare { color: #2c5884; }
+html body #catalog .rr.r-exotic { color: #66387e; } html body #catalog .rr.r-legendary { color: #85601c; }
+html body #catalog .cat-wallet { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); top: 12px; z-index: 2; display: flex; align-items: center; gap: 6px; pointer-events: none; zoom: var(--fk, 1); }
+html body #catalog .cat-wallet canvas { position: static; inset: auto; width: 48px; height: 38px; display: block; }
+html body #catalog .cat-wallet b { font: 700 21px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: #efe8d2; text-shadow: 0 0 4px rgba(0, 0, 0, 0.85); margin-top: 1px; }
+/* the monitor's top edge clears the money (the HUD's size: 12 + 38 points and a little air), its bottom where it was */
+html body #catalog .cat-bezel:not(#_a) { align-self: end; margin-bottom: 35px; height: min(680px, calc(100vh - 35px - 58px * var(--fk, 1))) !important; }

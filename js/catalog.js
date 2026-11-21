@@ -13,6 +13,7 @@ import { drawSpecialPicture, drawSuitFlat } from './item_art.js';
 import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
+import { drawCash } from './coins.js';
 
 // the shops with a website: their names, look and stock. cats: the categories in the side bar (null: a gap)
 export const WEBSHOPS = {
@@ -58,7 +59,7 @@ export const MEASURES = {
 export class Catalog {
   constructor(root, hooks) {
     this.root = root; this.h = hooks; this.page = 'home'; this.pics = new Map(); this.carts = {}; this.id = 'bayside'; this.cfg = WEBSHOPS.bayside;
-    root.innerHTML = `<div class="cat-bezel"><div class="cat-glass"><header><h1></h1><span class="sub"></span><div class="right"><a class="cat-cart" href="#" data-go="cart"></a><span class="cat-cash"></span><a class="cat-off" href="#">Log off</a></div></header><div class="cat-wrap"><nav class="cat-nav"></nav><main class="cat-main"></main></div></div></div>`;
+    root.innerHTML = `<div class="cat-wallet"><canvas width="96" height="76"></canvas><b></b></div><div class="cat-bezel"><div class="cat-glass"><header><h1></h1><span class="sub"></span><div class="right"><a class="cat-cart" href="#" data-go="cart"></a><a class="cat-off" href="#">Log off</a></div></header><div class="cat-wrap"><nav class="cat-nav"></nav><main class="cat-main"></main></div></div></div>`;
     this.nav = root.querySelector('.cat-nav'); this.main = root.querySelector('.cat-main');
     root.querySelector('.cat-off').addEventListener('click', (ev) => { ev.preventDefault(); this.h.close(); });
     root.addEventListener('click', (ev) => {
@@ -115,12 +116,19 @@ export class Catalog {
     }
     return [];
   }
+  wallet(cash) {
+    const w = this.root.querySelector('.cat-wallet'); if (!w) return;
+    const b = w.querySelector('b'), txt = money(cash); if (b.textContent !== txt) b.textContent = txt;
+    if (!w.drawn) { const c = w.querySelector('canvas'), ctx = c.getContext('2d'); ctx.setTransform(2, 0, 0, 2, 0, 0); drawCash(ctx, 24, 19, 30); w.drawn = true; } // the HUD's own banknotes, at its size
+  }
   find(key) { for (const c of this.cats) if (c && !['home', 'yard', 'chest', 'sell', 'finds'].includes(c[0])) { const e = this.entries(c[0]).find((q) => q.key === key); if (e) return { e, cat: c[0] }; } return null; }
   catName(cat) { return (this.cats.find((c) => c && c[0] === cat) || [, ''])[1]; }
   render() {
     const P = this.h.getProfile(); if (!P) return;
     const cart = this.cart();
-    this.root.querySelector('.cat-cash').textContent = `Cash ${money(P.cash)}`;
+    // (5.11.2) the money is the game's, not the website's: the supplier does not know the player. It sits outside the
+    // monitor, top left, drawn as the HUD draws it in play (the painted banknotes and the sum)
+    this.wallet(P.cash || 0);
     this.root.querySelector('.cat-cart').textContent = `Cart (${cart.length})`;
     const cur = this.page.includes(':') ? (this.find(this.page) || {}).cat : this.page;
     this.nav.innerHTML = this.cats.map((c) => (c ? `<a href="#" data-go="${c[0]}" class="${c[0] === cur ? 'on' : ''}">${c[1]}</a>` : '<div class="gap"></div>')).join('');
@@ -183,8 +191,7 @@ export class Catalog {
     const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag${e.rarity ? ' r-' + e.rarity : ''}">${e.good ? `<span class="good">${e.good}</span>` : ''}${e.rarity && e.rarity !== 'common' ? `<em>${e.tag}</em>` : !e.good ? e.tag || '' : ''}</div>`; // (4.28) what it does on the card; the rarity only when it is not common
     const go = `data-go="${e.key}"`; // (4.16.9) supplies open their own page too
     const buy = e.kind === 'supply' ? `<button class="cat-mini" data-buy="${e.key}" ${e.full || this.h.getProfile().cash < e.price ? 'disabled' : ''}>${e.full ? 'Full' : 'Buy'}</button>` : '';
-    const stamp = e.rarity ? `<span class="cat-stamp r-${e.rarity}">${RARITY[e.rarity].name}</span>` : ''; // (5.10.10) the grade stamped on the photograph, in its rarity's ink
-    return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt="">${stamp}<div class="t"><b>${e.name}</b><span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
+    return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t"><b>${e.name}</b><span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
   }
   itemPage({ e, cat }) {
     const P = this.h.getProfile(), cash = P.cash || 0;
@@ -208,7 +215,7 @@ export class Catalog {
     else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)}, not enough cash` : `Buy now, ${money(e.price, false)}`}</button>`
       + (item ? (inCart ? `<a href="#" class="cat-save" data-go="cart">In your cart ✓</a>` : `<a href="#" class="cat-btn2" data-cart="add|${e.key}">Add to cart</a>`) : '')
       ; // (4.5.0) no 'Save for this'
-    return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><div class="cat-photo"><img src="${this.pic(e, 640, 420)}" alt="">${e.rarity ? `<span class="cat-stamp big r-${e.rarity}">${RARITY[e.rarity].name}</span>` : ''}</div><div>
+    return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><div class="cat-photo"><img src="${this.pic(e, 640, 420)}" alt=""></div><div>
       <h2>${e.name}</h2>${e.rarity ? `<div class="rr r-${e.rarity}">${RARITY[e.rarity].name}</div>` : ''}<div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
       <div class="gf">${e.good ? `<div class="g">${e.good}</div>` : ''}${e.bad ? `<div class="b">${e.bad}</div>` : ''}</div>${vs}<div class="buy">${btn}</div></div></div>`;
   }
