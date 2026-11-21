@@ -1,0 +1,37 @@
+<!doctype html><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=block" rel="stylesheet">
+<style>
+body { margin: 0; width: 844px; height: 390px; background: #1b1a16; font-family: 'Barlow Semi Condensed', sans-serif; overflow: hidden; }
+.page { position: absolute; inset: 14px 22px; background: #ece4cf; color: #2b2a24; padding: 14px 22px; box-shadow: 0 0 0 1px #8a7f63, 0 10px 30px rgba(0,0,0,0.6);
+  background-image: radial-gradient(ellipse at 30% 20%, rgba(255,255,245,0.5), transparent 60%), url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0.10 0'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>"); }
+.mast { display: flex; align-items: baseline; gap: 12px; border-bottom: 3px double #2b2a24; padding-bottom: 6px; }
+.mast svg { width: 30px; height: 30px; align-self: center; }
+.mast h1 { margin: 0; font-weight: 700; font-size: 25px; letter-spacing: 0.02em; text-transform: uppercase; }
+.mast small { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #6a6250; }
+.mast .cash { margin-left: auto; font-size: 13px; color: #6a6250; }
+.nav { display: flex; gap: 18px; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 0; border-bottom: 1px solid #b9ae92; }
+.nav b { border-bottom: 2px solid #2b2a24; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 10px; }
+.item { padding: 0 14px; border-right: 1px solid #c9bea2; position: relative; }
+.item:last-child { border-right: 0; }
+.ph { height: 170px; background: linear-gradient(90deg, #cdc4ad, #b3aa93 50%, #a1987f); overflow: hidden; display: flex; justify-content: center; align-items: flex-end; box-shadow: inset 0 0 0 4px #f2ecdc, inset 0 0 0 5px #a59a7e; }
+.ph img { width: 100%; height: 100%; object-fit: contain; filter: sepia(0.15) contrast(1.02); }
+.name { font-weight: 600; font-size: 17px; margin-top: 6px; }
+.line { font-size: 13px; color: #5a5446; }
+.tag { position: absolute; right: 22px; top: 140px; background: #f4ecd4; padding: 2px 8px 2px 14px; font-weight: 700; font-size: 15px; clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%); box-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+.tag::before { content: ''; position: absolute; left: 5px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: #6a6250; }
+.stamp { position: absolute; right: 22px; top: 10px; border: 1.5px solid currentColor; padding: 0 6px; font-weight: 700; font-size: 10px; letter-spacing: 0.12em; transform: rotate(-3deg); opacity: 0.85; }
+.r-ex { color: #66387e; } .r-ra { color: #2c5884; } .r-co { color: #66665e; }
+.foot { position: absolute; left: 22px; right: 22px; bottom: 10px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #8a8068; border-top: 1px solid #b9ae92; padding-top: 4px; display: flex; justify-content: space-between; }
+</style>
+<div class="page">
+  <div class="mast"><svg viewBox="0 0 30 30"><g fill="none" stroke="#2b2a24" stroke-width="1.8" stroke-linecap="round"><circle cx="15" cy="5" r="2.5"/><path d="M15 7.5v18M9 11h12M5 18c1 5 5 7.5 10 7.5S24 23 25 18"/><path d="M4 18l1.5-2.5L7 18M23 18l1.5-2.5L26 18"/></g></svg>
+    <h1>Bayside Marine Supply</h1><small>Harbour Road · since 1974</small><span class="cash">Account $250,000</span></div>
+  <div class="nav"><span>Nets</span><span>Cameras</span><span>Trawls</span><span>Traps</span><b>Suits</b><span>Fins</span><span>Air</span><span>Bags</span></div>
+  <div class="grid">
+    <div class="item"><div class="ph"><img src="wet.png"></div><span class="stamp r-co">COMMON</span><span class="tag">$160</span><div class="name">Wetsuit</div><div class="line">Five millimetres of neoprene. Warm enough.</div></div>
+    <div class="item"><div class="ph"><img src="wet.png"></div><span class="stamp r-ra">RARE</span><span class="tag">$2,400</span><div class="name">Coldwater wetsuit</div><div class="line">Lined, taped seams, a trim of old brass.</div></div>
+    <div class="item"><div class="ph"><img src="hard.png"></div><span class="stamp r-ex">EXOTIC</span><span class="tag">$38,000</span><div class="name">Iron Lung hardsuit</div><div class="line">Pressure barely matters. Slow, and costly.</div></div>
+  </div>
+  <div class="foot"><span>Orders delivered to the Margaret the same day</span><span>Page 3 of 9</span></div>
+</div>

@@ -1,0 +1,74 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0;background:#222"><canvas id="c" width="1200" height="620"></canvas>
+<script>
+const c = document.getElementById('c'), x = c.getContext('2d');
+const TAU = Math.PI * 2;
+// a photographer's backdrop: worn canvas sweep, lit from the left, a floor line
+function backdrop(ox, w, h) {
+  const g = x.createLinearGradient(ox, 0, ox + w, 0); g.addColorStop(0, '#cfc6b0'); g.addColorStop(1, '#9c937e'); x.fillStyle = g; x.fillRect(ox, 0, w, h);
+  const f = x.createLinearGradient(0, h * 0.78, 0, h); f.addColorStop(0, 'rgba(60,50,35,0)'); f.addColorStop(1, 'rgba(60,50,35,0.35)'); x.fillStyle = f; x.fillRect(ox, h * 0.7, w, h * 0.3);
+  for (let i = 0; i < 2600; i++) { x.fillStyle = `rgba(${Math.random() < 0.5 ? '60,50,30' : '255,250,235'},${Math.random() * 0.06})`; x.fillRect(ox + Math.random() * w, Math.random() * h, 1.5, 1.5); }
+  x.strokeStyle = 'rgba(80,70,50,0.12)'; for (let i = 0; i < 40; i++) { const y = Math.random() * h; x.beginPath(); x.moveTo(ox, y); x.lineTo(ox + w, y + (Math.random() - 0.5) * 6); x.stroke(); }
+}
+// a tube between two points, shaded as a round form lit from the left
+function tube(ax, ay, bx, by, ra, rb, c0, c1, c2) {
+  const a = Math.atan2(by - ay, bx - ax), nx = -Math.sin(a), ny = Math.cos(a);
+  const g = x.createLinearGradient(ax - nx * ra, ay - ny * ra, ax + nx * ra, ay + ny * ra);
+  const lightLeft = nx < 0; g.addColorStop(0, lightLeft ? c0 : c2); g.addColorStop(0.45, c1); g.addColorStop(1, lightLeft ? c2 : c0);
+  x.fillStyle = g; x.beginPath(); x.moveTo(ax + nx * ra, ay + ny * ra); x.lineTo(bx + nx * rb, by + ny * rb); x.arc(bx, by, rb, a + Math.PI / 2, a - Math.PI / 2, true); x.lineTo(ax - nx * ra, ay - ny * ra); x.arc(ax, ay, ra, a - Math.PI / 2, a + Math.PI / 2, true); x.fill();
+}
+function stand(cx, top, floor) { // a steel suit stand: a T at the shoulders, a pole, a cast base
+  x.fillStyle = 'rgba(30,24,14,0.45)'; x.beginPath(); x.ellipse(cx + 14, floor + 4, 62, 9, 0, 0, TAU); x.fill();
+  x.fillStyle = 'rgba(20,16,10,0.7)'; x.beginPath(); x.ellipse(cx + 4, floor + 1, 40, 5, 0, 0, TAU); x.fill();
+  const g = x.createLinearGradient(cx - 40, 0, cx + 40, 0); g.addColorStop(0, '#5a5a56'); g.addColorStop(0.4, '#8a8a84'); g.addColorStop(1, '#2e2e2c');
+  x.fillStyle = g; x.beginPath(); x.ellipse(cx, floor - 4, 40, 9, 0, 0, TAU); x.fill(); x.fillRect(cx - 4, top, 8, floor - top);
+}
+// the wetsuit: turned ~35 deg away (we see its front-left); near limbs bigger and in front, far ones behind and darker
+function wetsuit(ox) {
+  const cx = ox + 300, sh = 140, P = ['#4a5258', '#2c3236', '#15181a'], Pf = ['#363c40', '#202426', '#0e1012'], trim = '#7a5a30';
+  stand(cx + 6, 120, 560);
+  // far side first: far leg, far arm (behind the torso, smaller, cooler)
+  tube(cx + 30, 330, cx + 44, 445, 22, 18, ...Pf); tube(cx + 44, 445, cx + 46, 540, 18, 14, ...Pf);
+  x.fillStyle = '#0c0d0e'; x.beginPath(); x.ellipse(cx + 54, 546, 22, 9, 0.1, 0, TAU); x.fill();
+  tube(cx + 52, 160, cx + 66, 245, 15, 12, ...Pf); tube(cx + 66, 245, cx + 60, 318, 12, 10, ...Pf); // the far arm hangs a little forward
+  // the torso: a turned barrel, the chest's front plane toward the left
+  const g = x.createLinearGradient(cx - 60, 0, cx + 70, 0); g.addColorStop(0, P[0]); g.addColorStop(0.35, P[1]); g.addColorStop(1, P[2]);
+  x.fillStyle = g; x.beginPath(); x.moveTo(cx - 48, 150); x.bezierCurveTo(cx - 20, 136, cx + 40, 136, cx + 62, 152); x.bezierCurveTo(cx + 66, 220, cx + 54, 280, cx + 50, 330);
+  x.bezierCurveTo(cx + 20, 345, cx - 30, 345, cx - 46, 330); x.bezierCurveTo(cx - 54, 270, cx - 58, 200, cx - 48, 150); x.fill();
+  // the front zip, curving round the turned chest, and a panel seam
+  x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 3; x.beginPath(); x.moveTo(cx - 14, 148); x.bezierCurveTo(cx - 22, 220, cx - 22, 280, cx - 16, 338); x.stroke();
+  x.strokeStyle = 'rgba(220,210,190,0.22)'; x.lineWidth = 1.2; x.setLineDash([4, 3]); x.beginPath(); x.moveTo(cx + 24, 150); x.bezierCurveTo(cx + 34, 220, cx + 30, 290, cx + 26, 338); x.stroke(); x.setLineDash([]);
+  x.strokeStyle = trim; x.lineWidth = 4; x.beginPath(); x.moveTo(cx - 47, 205); x.bezierCurveTo(cx - 10, 214, cx + 30, 212, cx + 62, 200); x.stroke();
+  // the collar: an empty neck opening, seen in three quarters
+  x.fillStyle = P[1]; x.beginPath(); x.ellipse(cx + 2, 146, 34, 12, -0.06, 0, TAU); x.fill(); x.fillStyle = '#060707'; x.beginPath(); x.ellipse(cx + 4, 146, 22, 7, -0.06, 0, TAU); x.fill();
+  // near leg and near arm, in front
+  tube(cx - 26, 330, cx - 36, 450, 27, 22, ...P); tube(cx - 36, 450, cx - 30, 548, 22, 17, ...P);
+  x.fillStyle = '#121416'; x.beginPath(); x.ellipse(cx - 34, 556, 30, 11, -0.05, 0, TAU); x.fill();
+  x.fillStyle = 'rgba(255,255,255,0.08)'; x.beginPath(); x.ellipse(cx - 44, 448, 9, 16, 0, 0, TAU); x.fill(); // the knee pad's worn sheen
+  tube(cx - 50, 162, cx - 74, 252, 19, 15, ...P); tube(cx - 74, 252, cx - 64, 335, 15, 12, ...P); // the near arm, elbow a little bent
+  x.fillStyle = '#121416'; x.beginPath(); x.ellipse(cx - 62, 346, 13, 17, 0.2, 0, TAU); x.fill();
+  // creases at the elbow, the waist, behind the knee
+  x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 1.6; for (const [a, b, c2, d] of [[-84, 246, -62, 254], [-80, 258, -64, 262], [-40, 300, -8, 306], [-52, 440, -24, 446]]) { x.beginPath(); x.moveTo(cx + a, b); x.quadraticCurveTo(cx + (a + c2) / 2, b + 6, cx + c2, d); x.stroke(); }
+  // a little wear: scuffed knees, salt bloom near the hem
+  for (let i = 0; i < 160; i++) { x.fillStyle = `rgba(230,225,210,${Math.random() * 0.06})`; x.beginPath(); x.arc(cx - 70 + Math.random() * 140, 150 + Math.random() * 400, Math.random() * 2, 0, TAU); x.fill(); }
+}
+// the hardsuit: a brass atmospheric suit standing on its own feet, segmented, a dome with three ports
+function hardsuit(ox) {
+  const cx = ox + 300, B = ['#e2c070', '#a8822e', '#4a3610'], Bf = ['#b8963e', '#7a5c1c', '#30220a'];
+  x.fillStyle = 'rgba(30,24,14,0.5)'; x.beginPath(); x.ellipse(cx + 20, 566, 110, 13, 0, 0, TAU); x.fill();
+  const seg = (ax, ay, bx, by, r, n, pal) => { for (let i = 0; i < n; i++) { const t0 = i / n, t1 = (i + 0.92) / n; tube(ax + (bx - ax) * t0, ay + (by - ay) * t0, ax + (bx - ax) * t1, ay + (by - ay) * t1, r * (1 - 0.06 * i), r * (1 - 0.06 * i), ...pal); x.strokeStyle = 'rgba(30,20,6,0.6)'; x.lineWidth = 2; const mx = ax + (bx - ax) * t1, my = ay + (by - ay) * t1, a = Math.atan2(by - ay, bx - ax); x.beginPath(); x.moveTo(mx - Math.sin(a) * r, my + Math.cos(a) * r); x.lineTo(mx + Math.sin(a) * r, my - Math.cos(a) * r); x.stroke(); } };
+  seg(cx + 40, 350, cx + 56, 548, 26, 4, Bf); seg(cx + 64, 190, cx + 84, 330, 20, 4, Bf); // far leg, far arm
+  x.fillStyle = '#3a2a0c'; x.beginPath(); x.ellipse(cx + 58, 554, 34, 12, 0, 0, TAU); x.fill();
+  const g = x.createRadialGradient(cx - 30, 230, 10, cx + 10, 260, 120); g.addColorStop(0, B[0]); g.addColorStop(0.5, B[1]); g.addColorStop(1, B[2]);
+  x.fillStyle = g; x.beginPath(); x.ellipse(cx + 6, 262, 80, 98, 0.05, 0, TAU); x.fill(); // the hull: one barrel of cast brass
+  x.strokeStyle = 'rgba(30,20,6,0.6)'; x.lineWidth = 3; x.beginPath(); x.ellipse(cx + 6, 300, 78, 22, 0.05, 0.1, Math.PI - 0.1); x.stroke(); // the waist ring
+  x.fillStyle = 'rgba(30,20,6,0.7)'; for (let i = 0; i < 9; i++) { const a = 0.25 + i * 0.3; x.beginPath(); x.arc(cx + 6 + Math.cos(a) * 74, 300 + Math.sin(a) * 20, 2.6, 0, TAU); x.fill(); }
+  const hg = x.createRadialGradient(cx - 18, 120, 6, cx, 140, 62); hg.addColorStop(0, B[0]); hg.addColorStop(0.6, B[1]); hg.addColorStop(1, B[2]); x.fillStyle = hg; x.beginPath(); x.arc(cx + 2, 142, 56, 0, TAU); x.fill(); // the dome
+  for (const [px, py, r] of [[-16, 144, 18], [24, 132, 10], [-36, 118, 8]]) { x.fillStyle = '#5a3e10'; x.beginPath(); x.arc(cx + px, py, r + 5, 0, TAU); x.fill(); const pg = x.createRadialGradient(cx + px - r * 0.4, py - r * 0.4, 1, cx + px, py, r); pg.addColorStop(0, '#5a6a6a'); pg.addColorStop(1, '#0a0f10'); x.fillStyle = pg; x.beginPath(); x.arc(cx + px, py, r, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,255,240,0.35)'; x.beginPath(); x.ellipse(cx + px - r * 0.35, py - r * 0.4, r * 0.25, r * 0.15, -0.6, 0, TAU); x.fill(); }
+  seg(cx - 30, 350, cx - 42, 548, 30, 4, B); seg(cx - 60, 190, cx - 90, 330, 23, 4, B); // near leg, near arm
+  x.fillStyle = '#4a3410'; x.beginPath(); x.ellipse(cx - 44, 556, 40, 13, 0, 0, TAU); x.fill();
+  x.strokeStyle = '#3a2a0c'; x.lineWidth = 6; x.lineCap = 'round'; x.beginPath(); x.moveTo(cx - 92, 336); x.lineTo(cx - 104, 360); x.moveTo(cx - 92, 336); x.lineTo(cx - 82, 364); x.stroke(); // the claw
+  for (let i = 0; i < 300; i++) { x.fillStyle = `rgba(${Math.random() < 0.6 ? '40,60,40' : '250,240,200'},${Math.random() * 0.08})`; x.beginPath(); x.arc(cx - 90 + Math.random() * 180, 90 + Math.random() * 460, Math.random() * 2.2, 0, TAU); x.fill(); } // verdigris and scratches
+}
+backdrop(0, 600, 620); backdrop(600, 600, 620); wetsuit(0); hardsuit(600);
+x.fillStyle = 'rgba(40,32,20,0.75)'; x.font = '600 18px sans-serif'; x.fillText('Proof of concept: wetsuit on a stand, turned away', 20, 30); x.fillText('Proof of concept: brass hardsuit, turned away', 620, 30);
+</script>
