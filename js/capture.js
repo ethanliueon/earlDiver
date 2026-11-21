@@ -5,7 +5,7 @@ import { clamp, dist } from './util.js';
 import { pressureTolerance } from './specimens.js';
 import { SPECIES_BY_ID } from './species.js';
 import { WEIGHT, gear, owns, statValue } from './economy.js';
-import { canTakeLive, isSessile, isTagOnly, liveValue, deepPremium, fragile, conditionName } from './specimens.js';
+import { canTakeLive, isTagOnly, liveValue, deepPremium, fragile, conditionName } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 
 export const bagSlots = (g) => Math.round(statValue(g.profile, 'bag'));
@@ -98,13 +98,12 @@ export function findCatch(g) {
     if ((x - h.x) * h.fx < -0.8) return; // behind him
     // to the edge of the animal, and the sweep covers a little more height than length
     // (5.10.8) bottom things (octopus, crabs, corals): the net only has to touch them, so it reaches over them more kindly
-    const ground = isSessile(sp) || /floor|plant/.test(sp.v.hab || '') || /octopus|crab|lobster|star|urchin|cucumber|isopod|nudibranch/.test(sp.v.s);
+    const ground = /^floor$/.test(sp.v.hab || '') || /octopus|crab|lobster|star|urchin|cucumber|isopod|nudibranch/.test(sp.v.s);
     const d = Math.hypot(x - h.x, (y - h.y) * (ground ? 0.6 : 0.75)) - len * (ground ? 0.75 : 0.5) - (ground ? 0.35 : 0);
     if (d > reach) return;
-    if (isSessile(sp) && len > def.maxLen) { ref = { ...ref, frag: true }; len = def.maxLen * 0.9; } // a piece of a big colony
     let why = null;
-    if (!canTakeLive(sp)) why = null;
-    else if (len > def.maxLen * OVER) why = 'too big';
+    if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'needs a tag' : null;
+    else if (len > def.maxLen * OVER) why = isTagOnly(sp) && len > 1.1 ? 'needs a tag' : 'too big';
     else if (def.minLen && len < def.minLen) why = 'slips through';
     if (why === null && !canTakeLive(sp)) return; // plants, corals: not even worth mentioning
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
@@ -189,7 +188,7 @@ export function updateCapture(g, dt) {
         const spec = { id: tgt.sp.id, len: tgt.len, cond: clamp(1 - harm, 0.05, 1), from: Math.round(Math.max(e.y, tgt.y)), t: g.time };
         if (tgt.variant) { spec.variant = tgt.variant; spec.mult = variantMult(tgt.variant); if (tgt.variant === 'crimson') g.entity.disturb(g, 0.08); }
         if (tgt.c) tgt.c.dead = true;
-        if (tgt.s && !tgt.frag) { g.world.statics.splice(g.world.statics.indexOf(tgt.s), 1); g.world.staticsVer = (g.world.staticsVer || 0) + 1; } // (5.10.8) a piece of a colony leaves the colony
+        if (tgt.s) { g.world.statics.splice(g.world.statics.indexOf(tgt.s), 1); g.world.staticsVer = (g.world.staticsVer || 0) + 1; }
         g.bag.push(spec);
         g.captureFx.push({ sp: tgt.sp, len: tgt.len, x: tgt.x, y: tgt.y, dir: tgt.c ? tgt.c.dir : 1, t: 0, dur: kind === 'slurp' ? 0.25 : 0.3, kind });
         // (5.0) it fights the net: a pull on Earl the way it was swimming, as strong as it is big

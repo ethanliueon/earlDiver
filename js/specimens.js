@@ -98,13 +98,11 @@ for (const m of MORE_SPECIES) { if (m.x.tag) TAG[m.id] = m.x.tag; if (m.x.protec
 
 // can a net / slurp gun take it at all (ignoring tool size limits)?
 export function canTakeLive(sp) {
-  if (PROTECTED.has(sp.id)) return false;
-  if (sp.cat === 'Corals, Anemones & Sponges') return true; // (5.10.8) animals that do not move: the net breaks off a piece
-  if (NEVER.has(sp.cat)) return false;
+  if (NEVER.has(sp.cat) || PROTECTED.has(sp.id)) return false; // (5.10.9) corals, anemones, sponges and plants are never netted
   const h = sp.v.hab;
   return h !== 'plant' && h !== 'surface-plant';
 }
-// (5.10.8) things fixed to the bottom (corals, sponges, anemones): a net takes a piece of one, and the rest stays
+// (5.10.8) things fixed to the bottom (corals, sponges, anemones): they stay put in a tank
 export const isSessile = (sp) => sp.cat === 'Corals, Anemones & Sponges';
 // (5.10.8) what lives on the bottom: in an open tank or the aquarium it rests or walks on the sand, never floats
 // (only a pressure chamber holds an animal suspended)

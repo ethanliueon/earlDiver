@@ -40,6 +40,11 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
+- **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build
+  only on a clear go ahead ("go ahead", "do it", "yes"). Being told to work autonomously covers the agreed plan, not
+  new ideas raised later.
+- **Push back** when a request, or my reading of it, does not fit the philosophy or the game; say so before building,
+  and check an ambiguous request instead of guessing (e.g. "catch coral" did not mean the net should take coral).
 - **Do exactly what was asked**; anything said "do not do" stays out.
 - **Art must meet the bar on the first try**: aim for old, intentional, designed. Look at it in a screenshot before
   showing it.
