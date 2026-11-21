@@ -663,7 +663,20 @@ function drawAngler(ctx, L, v, t, swim = 1) {
   for (let k = 0; k < 7; k++) { const a = 0.9 + k * 0.32; ctx.beginPath(); ctx.arc(-L * 0.3 + Math.cos(a) * L * 0.09, -H * 0.12 + Math.sin(a) * H * 0.2, Math.max(0.5, L * 0.005), 0, TAU); ctx.fill(); }
   ctx.strokeStyle = rgba(shade(c0, -0.6), 0.4); ctx.lineWidth = lw;
   for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(-L * 0.12 + k * L * 0.03, H * 0.08, H * (0.28 + k * 0.05), 1.7, 2.6); ctx.stroke(); }
+  // (5.10.0) each angler's own skin: warts (the footballfish's), old scars (the legend's), lights along the flank
+  if (v.warty) for (let i = 0; i < 70; i++) { const x = -L * 0.42 + hashN(i, 31) * L * 0.72, y = -H * 0.55 + hashN(i, 32) * H * 1.1, r = Math.max(0.6, L * (0.006 + hashN(i, 33) * 0.008));
+    ctx.fillStyle = rgba(shade(c1, 0.25), 0.55); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.fillStyle = rgba(shade(c0, -0.5), 0.5); ctx.beginPath(); ctx.arc(x + r * 0.3, y + r * 0.35, r * 0.6, 0, TAU); ctx.fill(); }
+  if (v.scars) { ctx.strokeStyle = 'rgba(200,190,175,0.22)'; ctx.lineWidth = Math.max(0.6, L * 0.004); for (let k = 0; k < 5; k++) { const x = -L * 0.25 + hashN(k, 41) * L * 0.4, y = -H * 0.4 + hashN(k, 42) * H * 0.7; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + L * 0.04, y + H * 0.05, x + L * (0.06 + hashN(k, 43) * 0.06), y + H * (hashN(k, 44) - 0.3) * 0.2); ctx.stroke(); } }
+  if (v.flank) { for (let k = 0; k < 9; k++) { const u = k / 8, x = -L * 0.16 + u * L * 0.42, y = H * 0.12 + Math.sin(u * PI) * H * 0.12; const hg = ctx.createRadialGradient(x, y, 0, x, y, L * 0.02); hg.addColorStop(0, rgba(v.flank, 0.9)); hg.addColorStop(1, rgba(v.flank, 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, L * 0.02, 0, TAU); ctx.fill(); } }
   ctx.restore();
+  // the hairy angler's whiskers: long, fine fin rays out from the back, belly and tail
+  if (v.whiskers) { ctx.strokeStyle = rgba(shade(c1, 0.25), 0.42); ctx.lineWidth = Math.max(0.4, L * 0.0025);
+    for (let k = 0; k < 18; k++) { const side = k % 2 ? 1 : -1, u = (k >> 1) / 9, x = -L * 0.15 + u * L * 0.45, y0 = side * H * (0.5 - u * 0.25), a = side * (1.0 - u * 0.6) + Math.sin(t * 1.5 + k) * 0.06, len = L * (0.18 + hashN(k, 51) * 0.16);
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.quadraticCurveTo(x + Math.cos(a) * len * 0.5 + L * 0.05, y0 + Math.sin(a) * len * 0.5, x + Math.cos(a) * len + L * 0.12, y0 + Math.sin(a) * len); ctx.stroke(); } }
+  // the legend's back: a ridge of crooked spines
+  if (v.spikes) { ctx.fillStyle = shade(c0, 0.15); for (let k = 0; k < 7; k++) { const x = -L * 0.2 + k * L * 0.05, y = top * (0.98 - Math.abs(k - 2) * 0.03); ctx.beginPath(); ctx.moveTo(x - L * 0.012, y + H * 0.04); ctx.lineTo(x + L * 0.008, y - H * (0.12 + hashN(k, 61) * 0.08)); ctx.lineTo(x + L * 0.014, y + H * 0.04); ctx.fill(); } }
+  // the monkfish's fringe of skin flaps along its jaw
+  if (v.fringe) { ctx.strokeStyle = rgba(shade(c0, -0.1), 0.85); ctx.lineWidth = Math.max(0.6, L * 0.006); for (let k = 0; k < 10; k++) { const x = -L * 0.48 + k * L * 0.035, y = bot * (0.6 + k * 0.03); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - L * 0.006, y + H * (0.07 + (k % 3) * 0.03)); ctx.stroke(); } }
   // ---- the mouth: wide open, the gape running back under the eye; a dark throat
   const gape = new Path2D();
   gape.moveTo(-L * 0.45, -H * 0.04);
@@ -683,10 +696,12 @@ function drawAngler(ctx, L, v, t, swim = 1) {
     ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = Math.max(0.3, w * 0.3); ctx.beginPath(); ctx.moveTo(x - w * 0.4, y + dir * len * 0.1); ctx.quadraticCurveTo(x - w * 0.1, y + dir * len * 0.55, tipx, tipy); ctx.stroke();
   };
   const UP = [0.17, 0.08, 0.2, 0.06, 0.13, 0.05], DN = [0.24, 0.1, 0.27, 0.08, 0.18, 0.07, 0.11];
+  const fk = v.fangk || 1;
+  if (v.fangs2) DN.forEach((len, k) => { const u = k / (DN.length - 1), x = -L * 0.47 + u * L * 0.24, y = H * 0.22 - u * H * 0.12; fang(x + L * 0.01, y, H * len * 0.7 * fk, -1, L * (0.007 + len * 0.02)); }); // a second row behind
   UP.forEach((len, k) => { const u = k / (UP.length - 1), x = -L * 0.44 + u * L * 0.22, y = -H * 0.035 + u * H * 0.12;
-    fang(x, y, H * len * (1 - u * 0.4), 1, L * (0.008 + len * 0.03)); });
+    fang(x, y, H * len * (1 - u * 0.4) * fk, 1, L * (0.008 + len * 0.03)); });
   DN.forEach((len, k) => { const u = k / (DN.length - 1), x = -L * 0.5 + u * L * 0.28, y = H * 0.25 - u * H * 0.13 + Math.sin(u * PI) * H * 0.06;
-    fang(x, y, H * len * (1 - u * 0.35), -1, L * (0.009 + len * 0.03)); });
+    fang(x, y, H * len * (1 - u * 0.35) * fk, -1, L * (0.009 + len * 0.03)); });
   // ---- the pectoral fin, a rounded paddle behind the gill opening
   ctx.strokeStyle = rgba(shade(c0, -0.6), 0.6); ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(-L * 0.06, -H * 0.02); ctx.quadraticCurveTo(-L * 0.03, H * 0.14, -L * 0.07, H * 0.26); ctx.stroke();
   const pw = Math.sin(t * 3 + 1) * swim * H * 0.04;
@@ -694,19 +709,25 @@ function drawAngler(ctx, L, v, t, swim = 1) {
   // ---- the eye: small, dark, ringed, with a cold glint
   const ex = -L * 0.29, ey = -H * 0.22, er = Math.max(1, Math.min(L * 0.028, H * 0.06));
   ctx.fillStyle = rgba(shade(c0, -0.6), 0.9); ctx.beginPath(); ctx.arc(ex, ey, er * 1.6, 0, TAU); ctx.fill();
-  eye(ctx, ex, ey, er, pale ? '#3a4a58' : '#4a6a80');
+  if (v.eyeglow) { const eg = ctx.createRadialGradient(ex, ey, er, ex, ey, er * 3); eg.addColorStop(0, rgba(v.eyeglow, 0.5)); eg.addColorStop(1, rgba(v.eyeglow, 0)); ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, er * 3, 0, TAU); ctx.fill(); }
+  eye(ctx, ex, ey, er, v.eyec || (pale ? '#3a4a58' : '#4a6a80'));
   // ---- the rod and its glowing bait
-  const base = [-L * 0.33, top * 0.78], rodL = L * (v.h < 0.5 ? 0.95 : 0.42);
+  if (v.nolure) return null; // the ghostly seadevil: no lure at all
+  if (v.warts3) for (let k = 0; k < 3; k++) { const x = -L * (0.27 - k * 0.05), y = top * (0.9 - k * 0.02); const hg = ctx.createRadialGradient(x, y, 0, x, y, L * 0.03); hg.addColorStop(0, rgba(v.glow || '#7ad8ff', 0.9)); hg.addColorStop(1, rgba(v.glow || '#7ad8ff', 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, L * 0.03, 0, TAU); ctx.fill(); ctx.fillStyle = shade(c1, 0.3); ctx.beginPath(); ctx.arc(x, y, L * 0.009, 0, TAU); ctx.fill(); } // the triplewart's three glowing warts
+  const base = [-L * 0.33, top * 0.78], rodL = L * (v.h < 0.5 ? 0.95 : 0.42) * (v.whip || 1);
   const lx = base[0] - rodL * 0.5 + Math.sin(t * 1.3) * L * 0.03, ly = base[1] - rodL * (v.h < 0.5 ? 0.12 : 0.55) + Math.cos(t * 1.1) * L * 0.015;
   const cx = base[0] - rodL * 0.05, cy = base[1] - rodL * 0.75;
-  ctx.strokeStyle = shade(c0, pale ? -0.1 : 0.18); ctx.lineWidth = Math.max(1, L * 0.012); ctx.lineCap = 'round';
+  ctx.strokeStyle = shade(c0, pale ? -0.1 : 0.18); ctx.lineWidth = Math.max(1, L * 0.012 * (v.whip ? 0.45 : v.rodk || 1)); ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(base[0], base[1]); ctx.quadraticCurveTo(cx, cy, lx, ly); ctx.stroke();
   // the joints along it
   ctx.fillStyle = shade(c0, pale ? -0.2 : 0.3);
   for (const u of [0.25, 0.5, 0.75]) { const x = (1 - u) * (1 - u) * base[0] + 2 * (1 - u) * u * cx + u * u * lx, y = (1 - u) * (1 - u) * base[1] + 2 * (1 - u) * u * cy + u * u * ly; ctx.beginPath(); ctx.arc(x, y, Math.max(0.6, L * 0.007), 0, TAU); ctx.fill(); }
   ctx.lineCap = 'butt';
   // the bulb: a halo, a translucent sac and a bright core; filaments trailing below
-  const er2 = Math.max(1.8, L * 0.032), glow = v.glow || null;
+  const er2 = Math.max(1.8, L * 0.032 * (v.bulbk || 1)), glow = v.glow || null;
+  if (v.branch) { ctx.strokeStyle = rgba(shade(c0, 0.2), 0.9); ctx.lineWidth = Math.max(0.6, L * 0.005); for (let k = 0; k < 5; k++) { const a = -2.4 + k * 0.6 + Math.sin(t * 1.4 + k) * 0.1, l2 = er2 * (2.2 + (k % 2)); ctx.beginPath(); ctx.moveTo(lx, ly); ctx.quadraticCurveTo(lx + Math.cos(a) * l2 * 0.6, ly + Math.sin(a) * l2 * 0.4, lx + Math.cos(a) * l2, ly + Math.sin(a) * l2); ctx.stroke(); if (glow) { ctx.fillStyle = rgba(glow, 0.8); ctx.beginPath(); ctx.arc(lx + Math.cos(a) * l2, ly + Math.sin(a) * l2, er2 * 0.3, 0, TAU); ctx.fill(); } } } // the footballfish's branching lure
+  if (v.hooks) { ctx.strokeStyle = shade(c1, 0.35); ctx.lineWidth = Math.max(0.6, L * 0.006); for (let k = 0; k < 3; k++) { const a = 1.0 + k * 0.55; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + Math.cos(a) * er2 * 2, ly + Math.sin(a) * er2 * 2); ctx.lineTo(lx + Math.cos(a - 0.9) * er2 * 1.6, ly + Math.sin(a - 0.9) * er2 * 1.6 + er2 * 0.4); ctx.stroke(); } } // the wolftrap's three bony hooks
+  if (v.legendLure && glow) { for (let k = 0; k < 3; k++) { const r2 = er2 * (6 + k * 3) * (0.9 + 0.1 * Math.sin(t * 2 + k)); const hg2 = ctx.createRadialGradient(lx, ly, 0, lx, ly, r2); hg2.addColorStop(0, rgba(glow, 0.22 - k * 0.05)); hg2.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = hg2; ctx.beginPath(); ctx.arc(lx, ly, r2, 0, TAU); ctx.fill(); } } // the legend's lure: a light you see from far off
   if (glow) { const hg = ctx.createRadialGradient(lx, ly, 0, lx, ly, er2 * 4.5); hg.addColorStop(0, rgba(glow, 0.55)); hg.addColorStop(0.4, rgba(glow, 0.16)); hg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(lx, ly, er2 * 4.5, 0, TAU); ctx.fill(); }
   ctx.strokeStyle = glow ? rgba(glow, 0.55) : rgba(shade(c1, 0.2), 0.6); ctx.lineWidth = Math.max(0.4, L * 0.003);
   for (let k = 0; k < 4; k++) { const a = 1.2 + k * 0.25 + Math.sin(t * 2 + k) * 0.1; ctx.beginPath(); ctx.moveTo(lx, ly + er2 * 0.6); ctx.quadraticCurveTo(lx + Math.cos(a) * er2 * 1.5, ly + er2 * 1.6, lx + Math.cos(a) * er2 * 2.2 + Math.sin(t * 1.7 + k) * er2 * 0.4, ly + er2 * (2.4 + k * 0.4)); ctx.stroke(); }
@@ -2620,17 +2641,26 @@ function drawDragon(ctx, L, v, t, swim = 1) {
     rayFin(ctx, [[x - L * 0.06, y + h], [x + L * 0.05, y + h * 0.8]], [[x - L * 0.04, y + h + H * 1.1], [x + L * 0.04, y + h + H * 0.9]], fin, 0.5); }
   const bg = ctx.createLinearGradient(0, -H, 0, H); bg.addColorStop(0, shade(c0, -0.3)); bg.addColorStop(0.5, shade(c1, 0.08)); bg.addColorStop(1, shade(c0, -0.2));
   ctx.fillStyle = bg; ctx.fill(B.path);
-  ctx.save(); ctx.clip(B.path); ctx.fillStyle = 'rgba(160,180,200,0.06)'; for (let i = 0; i < 40; i++) { const [x, y, h] = B.at(i / 40); ctx.fillRect(x, y - h, L * 0.004, h * 0.6); } ctx.restore();
+  ctx.save(); ctx.clip(B.path); ctx.fillStyle = 'rgba(160,180,200,0.06)'; for (let i = 0; i < 40; i++) { const [x, y, h] = B.at(i / 40); ctx.fillRect(x, y - h, L * 0.004, h * 0.6); }
+  if (v.hexscale) { ctx.strokeStyle = 'rgba(150,200,210,0.22)'; ctx.lineWidth = Math.max(0.4, L * 0.0015); for (let i = 0; i < 48; i++) { const [x, y, h] = B.at(0.05 + i * 0.018); for (const d of [-0.5, 0, 0.5]) { ctx.beginPath(); for (let k = 0; k < 7; k++) { const a = k / 6 * TAU; const px = x + Math.cos(a) * h * 0.28, py = y + d * h + Math.sin(a) * h * 0.28; k ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke(); } } } // (5.10.0) the scaly dragonfish's hexagons
+  ctx.restore();
+  if (v.pelthreads) { const [x, y, h] = B.at(0.42); ctx.strokeStyle = rgba(shade(c1, 0.4), 0.6); ctx.lineWidth = Math.max(0.4, L * 0.002); for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x, y + h); ctx.quadraticCurveTo(x + L * 0.05, y + h + H * 3, x + L * (0.12 + k * 0.04) + Math.sin(t + k) * L * 0.02, y + h + H * (5 + k)); ctx.stroke(); } } // the highfin's thread-like pelvic fins
   const P = photophores(ctx, B, 0.06, 0.82, 22, 0.75, Math.max(0.5, L * 0.003), rgba(shade(glow, 0.2), 0.75));
+  if (v.rows2) P.push(...photophores(ctx, B, 0.1, 0.8, 18, -0.3, Math.max(0.5, L * 0.0028), rgba(shade(v.glow2 || glow, 0.2), 0.7))); // the legend: a second row of lights along its back
   // the head, the jaw open, fangs
   const [hx, hy, hh] = B.at(0.03);
   ctx.fillStyle = '#050304'; ctx.beginPath(); ctx.moveTo(-L * 0.5, hy - hh * 0.15); ctx.lineTo(-L * 0.42, hy + hh * 0.15); ctx.lineTo(-L * 0.505, hy + hh * 0.8); ctx.closePath(); ctx.fill();
-  for (let k = 0; k < 4; k++) { glassFang(ctx, -L * 0.498 + k * L * 0.018, hy - hh * 0.1, hh * (0.5 + (k % 2) * 0.4), 1, Math.max(0.4, L * 0.0025), 0.2); glassFang(ctx, -L * 0.5 + k * L * 0.018, hy + hh * 0.78, hh * (0.6 + (k % 2) * 0.5), -1, Math.max(0.4, L * 0.0025), 0.2); }
+  const fk = v.fangk || 1;
+  if (v.nofloor) { ctx.strokeStyle = rgba(shade(c1, 0.3), 0.6); ctx.lineWidth = Math.max(0.4, L * 0.002); ctx.beginPath(); ctx.moveTo(-L * 0.42, hy + hh * 0.15); ctx.lineTo(-L * 0.53, hy + hh * 1.4); ctx.stroke(); } // the loosejaw: a jaw with no floor, a hinge of bone
+  for (let k = 0; k < 4; k++) { glassFang(ctx, -L * 0.498 + k * L * 0.018, hy - hh * 0.1, hh * (0.5 + (k % 2) * 0.4) * fk, 1, Math.max(0.4, L * 0.0025), 0.2 + (v.snag ? (k % 2 ? 0.4 : -0.3) : 0)); glassFang(ctx, -L * 0.5 + k * L * 0.018, hy + hh * 0.78, hh * (0.6 + (k % 2) * 0.5) * fk, -1, Math.max(0.4, L * 0.0025), 0.2 + (v.snag ? (k % 2 ? -0.35 : 0.3) : 0)); }
   eye(ctx, -L * 0.475, hy - hh * 0.5, Math.max(0.9, hh * 0.32), '#6a7a80');
   // the light under the eye
-  ctx.fillStyle = rgba(glow, 0.9); ctx.beginPath(); ctx.ellipse(-L * 0.468, hy + hh * 0.05, Math.max(0.8, hh * 0.18), Math.max(0.6, hh * 0.1), 0, 0, TAU); ctx.fill();
+  { const ck = v.cheek || 1, cc = v.cheekc || glow; if (ck > 1) { const cg = ctx.createRadialGradient(-L * 0.468, hy + hh * 0.05, 0, -L * 0.468, hy + hh * 0.05, hh * 0.6 * ck); cg.addColorStop(0, rgba(cc, 0.6)); cg.addColorStop(1, rgba(cc, 0)); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(-L * 0.468, hy + hh * 0.05, hh * 0.6 * ck, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = rgba(cc, 0.9); ctx.beginPath(); ctx.ellipse(-L * 0.468, hy + hh * 0.05, Math.max(0.8, hh * 0.18 * ck), Math.max(0.6, hh * 0.1 * ck), 0, 0, TAU); ctx.fill(); }
   // the chin barbel, long and drifting, with its glowing bulb and a few filaments
-  const bx = -L * 0.49, by = hy + hh * 0.85, sway = Math.sin(t * 1.1) * L * 0.03, ex = -L * 0.44 + sway, ey = by + H * 4.5;
+  if (v.barbelk === 0) return [[-L * 0.468, hy + hh * 0.05, 0.8], ...P];
+  const bx = -L * 0.49, by = hy + hh * 0.85, sway = Math.sin(t * 1.1) * L * 0.03, ex = -L * 0.44 + sway, ey = by + H * 4.5 * (v.barbelk || 1);
+  if (v.barbels2) { ctx.strokeStyle = rgba(shade(c1, 0.35), 0.6); ctx.lineWidth = Math.max(0.4, L * 0.002); for (let k = 0; k < 4; k++) { const ex2 = ex + (k - 1.5) * L * 0.03 + Math.sin(t * 1.3 + k) * L * 0.01, ey2 = by + H * (2.5 + k * 0.8); ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx, by + H * 1.2, ex2, ey2); ctx.stroke(); ctx.fillStyle = rgba(glow, 0.8); ctx.beginPath(); ctx.arc(ex2, ey2, Math.max(1, L * 0.006), 0, TAU); ctx.fill(); } } // the legend's beard of glowing barbels
   ctx.strokeStyle = rgba(shade(c1, 0.35), 0.75); ctx.lineWidth = Math.max(0.4, L * 0.0025);
   ctx.beginPath(); ctx.moveTo(bx, by); ctx.bezierCurveTo(bx - L * 0.02, by + H * 1.5, ex + L * 0.03, ey - H * 1.5, ex, ey); ctx.stroke();
   const hg = ctx.createRadialGradient(ex, ey, 0, ex, ey, Math.max(3, L * 0.016)); hg.addColorStop(0, rgba(glow, 0.95)); hg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(ex, ey, Math.max(3, L * 0.016), 0, TAU); ctx.fill();
@@ -3142,9 +3172,15 @@ function drawPerch(ctx, L, v0, t, swim) {
   ctx.lineCap = 'butt';
   if (v.cirri) { ctx.strokeStyle = rgba(v.cirri, 0.9); ctx.lineWidth = Math.max(0.6, H * 0.02); ctx.beginPath(); ctx.moveTo(ex, ey - H * 0.08); ctx.lineTo(ex - H * 0.04, ey - H * 0.22); ctx.moveTo(ex + H * 0.02, ey - H * 0.08); ctx.lineTo(ex + H * 0.03, ey - H * 0.2); ctx.stroke(); } // the blenny's tufts over the eye
   const er = Math.max(1.2, Math.min(H * 0.1, L * 0.036)) * (v.eyek || F.eyek || 1);
+  if (v.tubeeye) { const up = v.tubeeye === 'up', tl2 = er * 2.2; ctx.save(); ctx.translate(ex, ey); ctx.rotate(up ? -PI / 2 : PI); ctx.fillStyle = 'rgba(214,226,230,0.55)'; ctx.strokeStyle = 'rgba(40,50,56,0.6)'; ctx.lineWidth = Math.max(0.5, er * 0.15); ctx.beginPath(); ctx.roundRect(-er * 0.3, -er * 1.05, tl2 + er * 0.3, er * 2.1, er * 0.5); ctx.fill(); ctx.stroke(); ctx.restore(); // glassy tubes // (5.10.0) tube eyes, pointing up or forward
+    eye(ctx, ex + (up ? 0 : -tl2), ey - (up ? tl2 : 0), er * 0.95, v.eyec || '#cfd8d0'); }
+  else {
   ctx.fillStyle = rgba(shade(v.c[0], -0.4), 0.3); ctx.beginPath(); ctx.arc(ex, ey, er * 1.4, 0, TAU); ctx.fill();
   if (v.eyering) { ctx.strokeStyle = v.eyering; ctx.lineWidth = er * 0.35; ctx.beginPath(); ctx.arc(ex, ey, er * 1.3, 0, TAU); ctx.stroke(); }
-  eye(ctx, ex, ey, er, v.eyec || '#cfc6a4');
+  eye(ctx, ex, ey, er, v.eyec || '#cfc6a4'); }
+  // photophores along the belly (lanternfish, bristlemouths): drawn as pale dots, lit by the renderer where it is dark
+  if (v.photo) { ctx.fillStyle = 'rgba(170,220,255,0.65)'; for (let k = 0; k < 10; k++) { const x = X(0.12 + k * 0.08), y = edgeAt(og, x, 1) - H * 0.12; ctx.beginPath(); ctx.arc(x, y, Math.max(0.6, H * 0.04), 0, TAU); ctx.fill(); } }
+  if (v.glow) { const Pp = [[ex, ey + H * 0.1, 0.6]]; for (let k = 0; k < 10; k += 2) { const x = X(0.12 + k * 0.08); Pp.push([x, edgeAt(og, x, 1) - H * 0.12, 0.45]); } return Pp; }
 }
 const PERCH = (o) => ({ draw: drawPerch, tailk: 0.6, taill: 1, ...o });
 Object.assign(FAM, {

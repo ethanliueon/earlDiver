@@ -303,4 +303,41 @@ export const LOOKS = {
     marks: [{ k: 'dots', c: 'rgba(40,60,50,0.55)', n: 40, r: 0.04 }, { k: 'lower', y: 0.2, c: 'rgba(220,200,120,0.6)', soft: 0.1 }] }, // Lumpsucker
   305: { fam: 'goby', h: 0.18, t: 'round', c: ['#5a4a5a', '#d8b860'], f: '#5a4a5a', eyek: 1.1, p: 'none', dors: [{ a: 0.2, b: 0.26, s: 'spike', h: 0.25, r: 0.1, n: 4 }, { a: 0.3, b: 0.92, s: 'even', h: 0.25, r: 0.1, n: 22 }],
     marks: [...[0.15, 0.22, 0.29, 0.36, 0.43, 0.5, 0.57, 0.64, 0.71, 0.78].map((x) => ({ k: 'spot', x, y: 0.32, r: 0.03, c: '#e8e0c8' }))] }, // Plainfin Midshipman
+
+  // ---------- batch 5: the deep ----------
+  // anglers: one family, each with what makes it itself; the legend with its own body
+  100: { c: ['#0a0808', '#1a1310'], glow: '#d8f4ff', fangk: 1.35, fangs2: 1, spikes: 1, scars: 1, flank: '#6ad0ff', eyeglow: '#6ad0ff', eyec: '#9ae0ff', rodk: 1.5, bulbk: 1.5, legendLure: 1, warty: 0 }, // the Anglerfish (legendary)
+  67: { fringe: 1 }, // Monkfish
+  323: { warts3: 1, glow: '#7ad8ff' }, // Triplewart Seadevil
+  324: { warty: 1, branch: 1, glow: '#9affd8' }, // Atlantic Footballfish
+  325: { whiskers: 1, glow: '#c8b0ff', c: ['#4a3628', '#5e4836'] }, // Hairy Angler
+  326: { whip: 1.35, glow: '#9affd8' }, // Whipnose Angler
+  452: { hooks: 1, glow: '#9affd8', fangk: 1.2 }, // Wolftrap Angler
+  453: { nolure: 1 }, // Ghostly Seadevil
+  // dragonfish: each its own barbel, lights and teeth; the legend a heavier, brighter animal
+  103: { barbelk: 1, cheek: 1.2 }, // Black Dragonfish
+  320: { barbelk: 0.35, cheek: 2.4, cheekc: '#ff2a1a', nofloor: 1, fangk: 1.4 }, // Stoplight Loosejaw
+  321: { hexscale: 1, barbelk: 0.6, c: ['#121a1a', '#26383a'] }, // Scaly Dragonfish
+  322: { barbelk: 1.4, fangk: 1.3, h: 0.045 }, // Pacific Blackdragon
+  447: { barbelk: 2.2, glow: '#ff7a4a' }, // Threadfin Dragonfish
+  487: { pelthreads: 1, barbelk: 0.5 }, // Highfin Dragonfish
+  488: { snag: 1, fangk: 1.5, h: 0.12, barbelk: 0.45 }, // Snaggletooth
+  2103: { c: ['#080606', '#1a1010'], glow: '#ff5a4a', glow2: '#6ad0ff', rows2: 1, barbels2: 1, fangk: 1.6, cheek: 2, cheekc: '#ff4a3a', hexscale: 1, h: 0.075 }, // the Dragonfish (legendary)
+  // the deep fish that were on the plain body
+  98: { fam: 'herring', h: 0.24, t: 'fork', c: ['#2e3a46', '#8a96a0'], f: '#2e3a46', eyek: 1.7, photo: 1, mouth: 'big', mouthy: 0.03, p: 'none' }, // Spotted Lanternfish
+  450: { fam: 'herring', h: 0.22, t: 'fork', c: ['#3a4a5a', '#a8b4bc'], f: '#3a4a5a', eyek: 1.8, photo: 1, mouth: 'big', mouthy: 0.03, p: 'none' }, // Glacier Lanternfish
+  327: { fam: 'herring', h: 0.12, t: 'fork', c: ['#2a2a2a', '#4a4a4a'], f: '#2a2a2a', photo: 1, mouth: 'big', teeth: 1, eyek: 0.8, p: 'none' }, // Bristlemouth
+  328: { fam: 'needle', h: 0.05, t: 'fork', c: ['#c8ccd2', '#e6e8ea'], f: '#d0322a', mouth: 'small', tubeeye: 'fwd', p: 'none', dors: [{ a: 0.18, b: 0.32, s: 'tri', h: 3, r: 0.3, op: 0.8 }] }, // Tube-eye
+  331: { fam: 'pike', h: 0.15, t: 'trunc', c: ['#4a4a42', '#7a7a6a'], f: '#4a4a42', teeth: 1, eyek: 1.2, topc: [[0, 0.3], [0.05, 0.6], [0.2, 0.85], [0.5, 1], [0.8, 0.7], [1, 0.4]], p: 'none', dors: [{ a: 0.4, b: 0.5, s: 'tri', h: 0.6, r: 0.3 }], marks: [{ k: 'dots', c: 'rgba(30,30,24,0.4)', n: 16, r: 0.08 }] }, // Deep-sea Lizardfish
+  492: { fam: 'pike', h: 0.14, t: 'trunc', c: ['#a8a090', '#d0c8b8'], f: '#a8a090', teeth: 1, eyek: 0.7, p: 'none', dors: [{ a: 0.38, b: 0.5, s: 'tri', h: 1.0, r: 0.35 }], anal: [{ a: 0.7, b: 0.8, s: 'tri', h: 0.4, r: 0.3 }] }, // Highfin Lizardfish
+  335: { fam: 'wolf', h: 0.07, t: 'fork', c: ['#1a1a1e', '#2a2a30'], f: '#1a1a1e', teeth: 1, eyek: 1.8, mouth: 'big', mouthy: 0.0, topc: [[0, 0.2], [0.04, 0.6], [0.12, 1], [0.5, 0.95], [0.85, 0.6], [1, 0.3]], p: 'none' }, // Black Scabbardfish
+  336: { fam: 'herring', h: 0.16, t: 'fork', c: ['#a8b4bc', '#d8e0e4'], f: '#a8b4bc', tubeeye: 'fwd', eyek: 1.6, mouth: 'big', p: 'none' }, // Telescopefish
+  338: { fam: 'herring', h: 0.22, t: 'fork', c: ['#5a5e64', '#8a8e94'], f: '#5a5e64', eyek: 1.8, scale0: 0.3, p: 'none' }, // Smallscale Slickhead
+  448: { fam: 'herring', h: 0.1, t: 'fork', c: ['#a89a8a', '#d8d0c4'], f: '#c8bcae', tubeeye: 'up', eyek: 1.7, p: 'none', marks: [{ k: 'face', c: '#7a5a40', to: 0.08 }] }, // Brownsnout Spookfish
+  456: { fam: 'pike', h: 0.07, t: 'fork', c: ['#9aa4ac', '#d8dee2'], f: '#8a949c', teeth: 1, eyek: 1.3, p: 'none' }, // Daggertooth
+  457: { fam: 'herring', h: 0.16, t: 'fork', c: ['#4a4a46', '#8a8a80'], f: '#4a4a46', tubeeye: 'up', eyek: 1.5, teeth: 1, mouth: 'big', p: 'none' }, // Sabertooth Fish
+  458: { fam: 'herring', h: 0.15, t: 'fork', c: ['#9aa0a4', '#dce0e2'], f: '#9aa0a4', tubeeye: 'up', eyek: 1.6, eyec: '#e8f0f0', p: 'none' }, // Pearleye
+  482: { fam: 'wolf', h: 0.12, t: 'round', c: ['#c0c6ca', '#e4e8ea'], f: '#d03a2a', dfc: '#d03a2a', mouth: 'small', p: 'none', dors: [{ a: 0.02, b: 0.96, s: 'even', h: 0.45, r: 0.1, n: 30 }], topc: [[0, 0.6], [0.04, 1.1], [0.1, 1], [0.5, 0.85], [0.85, 0.5], [1, 0.25]] }, // Crestfish
+  485: { fam: 'squirrel', h: 0.3, t: 'fork', c: ['#2a2420', '#4a3e36'], f: '#2a2420', bigscale: 1, eyek: 0.7, topc: [[0, 0.5], [0.05, 0.85], [0.15, 1.05], [0.35, 1], [0.6, 0.88], [0.8, 0.55], [1, 0.28]], p: 'none' }, // Crested Bigscale
+  486: { fam: 'herring', h: 0.2, t: 'fork', c: ['#1e1e24', '#3a3a42'], f: '#1e1e24', eyek: 1.7, p: 'none', marks: [{ k: 'spot', x: 0.3, y: -0.15, r: 0.06, c: '#5ac8ff' }] }, // Shining Tubeshoulder
 };
