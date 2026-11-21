@@ -1,3 +1,4 @@
+import { tankWater } from './tankroom.js';
 import { rarityStars, rarityCls, rarityCol, livesOnBottom, isSessile } from './specimens.js';
 // The aquarium gallery, walked aboard the Margaret: one big lit tank, every animal in it together (a deep
 // one lives here well enough if it came up healthy). Tap one for its brass tag: its name, how it is doing (Happy after five
@@ -263,10 +264,10 @@ export class Gallery {
       ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
       const wg = ctx.createLinearGradient(0, r.y, 0, base); wg.addColorStop(0, water[0]); wg.addColorStop(1, water[1]);
       ctx.fillStyle = wg; ctx.fillRect(r.x, r.y, r.w, r.h);
-      if (!press && A.light !== 'red') { ctx.globalAlpha = A.light === 'dim' ? 0.03 : 0.07; ctx.fillStyle = '#e8f8ff'; for (let k = 0; k < 5; k++) { const x = r.x + r.w * (0.08 + k * 0.2) + Math.sin(this.t * 0.4 + k) * 10; ctx.beginPath(); ctx.moveTo(x, r.y); ctx.lineTo(x + 24, r.y); ctx.lineTo(x + 60, base); ctx.lineTo(x + 30, base); ctx.fill(); } ctx.globalAlpha = 1; }
+      if (!press) { ctx.save(); ctx.translate(r.x, r.y); tankWater(ctx, r.w, r.h, 6, r.h - 4, this.t, A.light === 'red' ? 0.15 : A.light === 'dim' ? 0.35 : 1); ctx.restore(); } // (5.14.2) the same polished water as the sub's tank
       // the floor: sand in the open tank; grey ooze and a scatter of pale nodules in the deep one
       if (press) this.deepFloor(ctx, r);
-      else { ctx.fillStyle = '#5e5444'; ctx.beginPath(); ctx.moveTo(r.x, base); for (let x = 0; x <= r.w; x += 10) ctx.lineTo(r.x + x, base - 8 - Math.sin(x * 0.07) * 3); ctx.lineTo(r.x + r.w, base); ctx.fill(); this.decor(ctx, r); }
+      else { this.decor(ctx, r); }
       const shown = shownAll.filter(([, d]) => { const sp = SPECIES_BY_ID[d.id]; return sp && deepKeeper(sp) === press; });
       const maxL = clamp(Math.min(r.h * 0.4, r.w * 0.38), 40, 240);
       // (4.1.3) one true scale for the whole aquarium, both tanks: its biggest animal (at least 1.2 m) spans 90 % of

@@ -675,7 +675,8 @@ export class UI {
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
-      + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank <i>not fitted</i></h4>`)
+      // (5.14.2) the large pressure tank always has its place: a strip under the chambers, its outline padlocked until fitted
+      + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank</h4><canvas class="ct-big off"></canvas>`)
       + `<p class="ct-cap">${elsewhere}Click an animal for its card; drag it to move it${g.earl && g.earl.inSub ? '' : ' (in the sub)'}</p></div></div></div>`
       + (this.fishSel ? this.fishPop(P, g) : '') + (this.petSel ? this.petPop(P) : '') + (this.phSel != null ? this.photoPop(P, g) : '');
   }
@@ -973,7 +974,12 @@ export class UI {
     const held = this.cDrag && this.cDrag.moved ? this.cDrag.s : null; this.tankRoom.drag = held ? { s: held } : null;
     const [a, aw, ah] = fit(tv); this.tankHits = this.tankRoom.drawMiniTank(a, g, aw, ah, dt);
     const [b, bw, bh] = fit(cv); this.chHits = this.tankRoom.drawMiniChambers(b, g, bw, bh, 0, this.catchShown || 5);
-    if (bv) { const [c, cw, ch] = fit(bv); this.bigHits = this.tankRoom.drawMiniBig(c, g, cw, ch, 0); }
+    if (bv && hasBigTank(g)) { const [c, cw, ch] = fit(bv); this.bigHits = this.tankRoom.drawMiniBig(c, g, cw, ch, 0); }
+    else if (bv) { const [c, cw, ch] = fit(bv); this.bigHits = []; // (5.14.2) not fitted: the cylinder's outline in the strip, a padlock and its words
+      c.clearRect(0, 0, cw, ch); const x0 = cw * 0.08, x1 = cw * 0.92, cy = ch / 2, r = Math.min(ch * 0.36, 26);
+      c.setLineDash([6, 5]); c.strokeStyle = 'rgba(200,196,176,0.28)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x0 + r, cy - r); c.lineTo(x1 - r, cy - r); c.arc(x1 - r, cy, r, -Math.PI / 2, Math.PI / 2); c.lineTo(x0 + r, cy + r); c.arc(x0 + r, cy, r, Math.PI / 2, Math.PI * 1.5); c.stroke(); c.setLineDash([]);
+      const lx = cw / 2 - 52, ly = cy; c.fillStyle = 'rgba(200,196,176,0.35)'; c.strokeStyle = 'rgba(200,196,176,0.35)'; c.lineWidth = 3; c.beginPath(); c.arc(lx, ly - 4, 6, Math.PI, 0); c.stroke(); c.fillRect(lx - 9, ly - 4, 18, 14);
+      c.font = '600 14px "Barlow Semi Condensed", sans-serif'; c.textBaseline = 'middle'; c.fillStyle = 'rgba(220,214,190,0.55)'; c.fillText('Not fitted', lx + 18, ly + 2); }
     this.tankRoom.drag = null;
   }
   // ---------- the locker (2.8.0): Earl and his eight slots; everything he owns in rarity frames ----------

@@ -68,6 +68,43 @@ function stateOf(g, s, inBag) {
   return ['healthy', '#78dc8c'];
 }
 
+// (5.14.2) a tank's water, polished: light that falls in soft, uneven shafts and slowly drifts and breathes (no hard
+// edges), a sandy floor with pebbles and a shell or two, light rippling over the sand, fine sediment hanging in the
+// water, and a faint reflection on the glass. lit: 0 dark to 1 full (the tank's light setting)
+export function tankWater(ctx, w, h, top, bot, t, lit = 1) {
+  ctx.save();
+  // the shafts: tall soft wedges of light, each its own width and lean, drawn on their own layer, then faded downward
+  { const L = tankWater.layer || (tankWater.layer = document.createElement('canvas')), tr = ctx.getTransform(), sc = Math.hypot(tr.a, tr.b) || 1;
+    const lw = Math.max(1, Math.round(w * sc)), lh = Math.max(1, Math.round(h * sc)); if (L.width !== lw || L.height !== lh) { L.width = lw; L.height = lh; }
+    const lx = L.getContext('2d'); lx.setTransform(sc, 0, 0, sc, 0, 0); lx.globalCompositeOperation = 'source-over'; lx.clearRect(0, 0, w, h);
+    for (let k = 0; k < 5; k++) {
+      const sx = w * (0.08 + k * 0.21) + Math.sin(t * 0.13 + k * 1.7) * w * 0.04, sw = w * (0.05 + 0.05 * ((k * 37) % 5) / 5), lean = w * 0.1;
+      const a = (0.07 + 0.05 * Math.sin(t * 0.35 + k * 2.1)) * lit; if (a <= 0.005) continue;
+      lx.save(); lx.transform(1, 0, lean / bot, 1, 0, 0); // lean the whole shaft, its edges soft from side to side
+      const g1 = lx.createLinearGradient(sx - sw, 0, sx + sw, 0); g1.addColorStop(0, 'rgba(210,236,240,0)'); g1.addColorStop(0.5, `rgba(210,236,240,${a.toFixed(3)})`); g1.addColorStop(1, 'rgba(210,236,240,0)');
+      lx.fillStyle = g1; lx.fillRect(sx - sw, 0, sw * 2, bot); lx.restore();
+    }
+    const fade = lx.createLinearGradient(0, 0, 0, bot); fade.addColorStop(0, 'rgba(0,0,0,1)'); fade.addColorStop(0.75, 'rgba(0,0,0,0.35)'); fade.addColorStop(1, 'rgba(0,0,0,0)');
+    lx.globalCompositeOperation = 'destination-in'; lx.fillStyle = fade; lx.fillRect(0, 0, w, h);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(L, 0, 0, w, h); ctx.restore(); }
+  // sediment: fine motes drifting slowly, a few catching the light
+  for (let k = 0; k < 40; k++) { const px = ((k * 97.13 + t * (3 + (k % 5))) % (w + 20)) - 10, py = top + ((k * 53.7 + Math.sin(t * 0.3 + k) * 6) % (bot - top));
+    ctx.fillStyle = `rgba(220,230,210,${((0.08 + 0.12 * ((k * 13) % 7) / 7) * (0.4 + 0.6 * lit)).toFixed(3)})`; ctx.fillRect(px, py, 1.2 + (k % 3) * 0.4, 1.2 + (k % 3) * 0.4); }
+  // the floor: sand banked a little, darker below, pebbles and a shell or two
+  const sandTop = (x) => bot - 12 - Math.sin(x * 0.05) * 4 - Math.sin(x * 0.17) * 2;
+  const sg = ctx.createLinearGradient(0, bot - 18, 0, h); sg.addColorStop(0, '#7a705a'); sg.addColorStop(0.4, '#5e5644'); sg.addColorStop(1, '#3a3428');
+  ctx.fillStyle = sg; ctx.beginPath(); ctx.moveTo(0, bot); for (let x = 0; x <= w; x += 8) ctx.lineTo(x, sandTop(x)); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
+  for (let k = 0; k < Math.round(w / 9); k++) { const px = (k * 41.7) % w, py = sandTop(px) + 4 + ((k * 17) % 9); ctx.fillStyle = ['#4a4438', '#6a6250', '#8a8270', '#3e382e'][k % 4]; ctx.beginPath(); ctx.ellipse(px, py, 1.4 + (k % 3), 1 + (k % 2), 0, 0, Math.PI * 2); ctx.fill(); }
+  for (const fx of [0.3, 0.72]) { const px = w * fx, py = sandTop(px) + 3; ctx.fillStyle = '#d8ccb0'; ctx.beginPath(); ctx.moveTo(px - 5, py + 2); ctx.quadraticCurveTo(px, py - 6, px + 5, py + 2); ctx.closePath(); ctx.fill(); ctx.strokeStyle = 'rgba(120,100,70,0.6)'; ctx.lineWidth = 0.7; for (const d of [-2.5, 0, 2.5]) { ctx.beginPath(); ctx.moveTo(px, py - 3); ctx.lineTo(px + d, py + 2); ctx.stroke(); } }
+  // light rippling over the sand: thin bright threads that wander
+  ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(200,230,220,${(0.1 * lit).toFixed(3)})`; ctx.lineWidth = 1.1;
+  for (let k = 0; k < 10; k++) { const cx = (k * w / 9 + Math.sin(t * 0.5 + k) * 10) % w, cy = sandTop(cx) + 3; ctx.beginPath(); ctx.ellipse(cx, cy, 10 + (k % 3) * 4, 2.2, Math.sin(t * 0.4 + k) * 0.3, 0, Math.PI * 1.4); ctx.stroke(); }
+  ctx.globalCompositeOperation = 'source-over';
+  // the glass: a faint long reflection across one corner
+  const rg = ctx.createLinearGradient(0, 0, w * 0.35, h); rg.addColorStop(0, 'rgba(255,255,255,0.06)'); rg.addColorStop(0.5, 'rgba(255,255,255,0.015)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = rg; ctx.beginPath(); ctx.moveTo(w * 0.04, 0); ctx.lineTo(w * 0.16, 0); ctx.lineTo(w * 0.02, h * 0.7); ctx.lineTo(0, h * 0.7); ctx.lineTo(0, h * 0.1); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
 export class TankRoom {
   constructor(root, hooks) {
     this.root = root; this.h = hooks;
@@ -782,12 +819,7 @@ export class TankRoom {
     const wg = ctx.createLinearGradient(0, top, 0, bot);
     wg.addColorStop(0, L0.water[0]); wg.addColorStop(1, L0.water[1]);
     ctx.fillStyle = wg; ctx.fillRect(0, 0, w, h);
-    ctx.globalAlpha = 0.08; ctx.fillStyle = '#cfefff';
-    for (let k = 0; k < 4; k++) { const x = w * (0.15 + k * 0.23) + Math.sin(t * 0.4 + k) * 12; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + 30, 0); ctx.lineTo(x + 70, bot); ctx.lineTo(x + 20, bot); ctx.fill(); }
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#5a5244'; ctx.beginPath(); ctx.moveTo(0, bot);
-    for (let x = 0; x <= w; x += 12) ctx.lineTo(x, bot - 12 - Math.sin(x * 0.05) * 4 - Math.sin(x * 0.17) * 2);
-    ctx.lineTo(w, bot); ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.fill();
+    tankWater(ctx, w, h, top, bot, t, L0.glow ? 0.35 : 1);
     ctx.strokeStyle = '#2f6a3a'; ctx.lineWidth = 3; ctx.lineCap = 'round';
     for (const fx of [0.05, 0.09, 0.91, 0.95]) { const x = w * fx; ctx.beginPath(); ctx.moveTo(x, bot - 8); ctx.quadraticCurveTo(x + Math.sin(t * 0.8 + fx * 9) * 10, bot - h * 0.35, x + Math.sin(t * 0.6 + fx * 7) * 14, bot - h * 0.6); ctx.stroke(); }
     ctx.lineCap = 'butt';

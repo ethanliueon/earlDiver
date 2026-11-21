@@ -1145,3 +1145,7 @@ html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish.over:not(.locked):not(#
 html body .r-stars.rs-rare:not(#_a) :is(b, svg) { color: #5a92e0 !important; fill: #5a92e0 !important; } html body .r-stars.rs-exotic:not(#_a) :is(b, svg) { color: #a46ad8 !important; fill: #a46ad8 !important; }
 html body .r-stars.rs-legendary:not(#_a) :is(b, svg) { color: #c99a4e !important; fill: #c99a4e !important; }
 html body .r-stars:not(#_a) svg path { fill: currentColor !important; }
+
+/* (5.14.2) the large tank's strip, always there under the chambers; the open tank a little shorter to make room */
+html body #inventory .inv-catch2 canvas.ct-big { display: block; width: 100% !important; height: 64px !important; margin-top: 2px; }
+html body #inventory .inv-catch2 .sub-bay .tank-win { min-height: 120px; }
