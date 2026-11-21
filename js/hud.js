@@ -614,7 +614,6 @@ e.inSub ? [
     const mk = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
     const A = mk(), a = A.getContext('2d'); a.font = font; a.textAlign = 'right'; a.textBaseline = 'alphabetic'; a.fillStyle = '#fff';
     a.filter = `blur(${(size * 0.022).toFixed(1)}px)`; a.fillText(text, bx, by); a.filter = 'none';
-    a.beginPath(); a.arc(bx - tw * 0.5, by + size * 0.05, size * 0.035, 0, Math.PI * 2); a.fill(); // one bead gathering at a stroke's foot
     const N = noise(w, h, size * 0.12), N2 = noise(w, h, size * 0.035), im = a.getImageData(0, 0, w, h), px = im.data;
     for (let i = 0; i < w * h; i++) { const v = px[i * 4 + 3] / 255 + (N[i] - 0.5) * 0.12 + (N2[i] - 0.5) * 0.08, t = Math.max(0, Math.min(1, (v - 0.44) / 0.14)); px[i * 4 + 3] = Math.round(t * t * (3 - 2 * t) * 255); }
     a.putImageData(im, 0, 0);
