@@ -6,6 +6,7 @@ import { abilityState, whyNot, cooldownLeft } from './abilities.js';
 import { rarityOf } from './specimens.js';
 import { legendMotes } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
+import { touchWords } from './touchtext.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
 function steelPlate(ctx, x, y, w, h, s) {
@@ -71,6 +72,7 @@ export class Hud {
   // explanations: only when hints are on (H)
   hint(text) { if (this.hints) this.toast(text, 'note'); }
   toast(text, kind = '') {
+    if (typeof text === 'string') text = touchWords(text); // (5.10.10) a phone game: no key names in what it says
     text = titled(String(text).replace(/\s+·\s+/g, ', ')); // (4.26) no middle dots in what the game says
     // the same line again while it is still up: count it ("x2") instead of stacking a copy
     const same = this.toasts.find((tt) => tt.text === text && tt.kind === kind && tt.t < 3.5);
@@ -247,13 +249,6 @@ export class Hud {
   // greyed, never moved or hidden, so nothing jumps about. A picture and a word on each; no key letters.
   // (5.10.8) in the jaws: no lamp (the light no longer drives it off). If the Tidewarden is carried and ready, its
   // coin waits where the big button was, quietly; a lure, if carried, is asked for by its own card
-  drawKillLamp(g, W, H) {
-    if (!this.killTide) return;
-    const ctx = this.ctx, kx = window.innerWidth / this.c.width, u = this.c.width / window.innerWidth * (window.__fingerK || 1.3), K = g.kill;
-    const R = 44 * u, cx = W - 16 * u - R, cy = H - 16 * u - R, open = !!(K.window && K.t < K.window[1]);
-    drawCoin(this.ctx, cx, cy, R, 'ab_tidewarden', open ? 'on' : 'off', { tier: 'legendary' }, 'legendary');
-    this.hots.push({ x: (cx - R * 1.2 + this.safeL) * kx, y: (cy - R * 1.2 + this.safeT) * kx, w: R * 2.4 * kx, h: R * 2.4 * kx, key: 'ability' });
-  }
   drawActions(g, W, H, s, dt, aboard) {
     const ctx = this.ctx, P = g.profile, e = g.earl, kx = window.innerWidth / this.c.width;
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
@@ -398,13 +393,20 @@ e.inSub ? [
       const want = (tutKey === a.key || (a.tutAlt && tutKey === a.tutAlt)) && a.on;
       if (want) { ring(x, y, r); r *= 1 + 0.07 * (0.5 + 0.5 * Math.sin(g.time * 4.2)); } // (5.7.5) and it swells gently with the pulse
       else if (!a.on && !a.row) { ctx.globalAlpha *= 0.62; r *= 0.88; } // (5.7.5) one that cannot be used now sits back: smaller and fainter
+      // (5.10.10) in its jaws the layout stays put: everything that cannot help goes dim, and a ready Tidewarden wakes:
+      // saturated, a slow warm swell behind it. The same swell shows whenever the Tidewarden can be used.
+      const tideReady = a.abil && AB && AB.tide && (this.inKill ? this.killTide : a.on && !a.lit);
+      if (this.inKill && !tideReady) { ctx.globalAlpha *= 0.32; }
+      if (tideReady) { const q = 0.5 + 0.5 * Math.sin(g.time * 3.4), gr = r * (1.25 + 0.12 * q);
+        const tg = ctx.createRadialGradient(x, y, r * 0.8, x, y, gr); tg.addColorStop(0, `rgba(196,150,86,${(0.28 + 0.22 * q).toFixed(3)})`); tg.addColorStop(1, 'rgba(196,150,86,0)');
+        ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(x, y, gr, 0, TAU); ctx.fill(); r *= 1 + 0.05 * q; }
       // (5.5.6) the bag gives a tug as something new goes into it
       if (a.key === 'b' && window.__bagTug) { const k = (performance.now() - window.__bagTug) / 450; if (k > 0 && k < 1) { const s2 = 1 + 0.22 * Math.sin(k * Math.PI) * (1 - k * 0.5); ctx.translate(x, y); ctx.scale(s2, s2); ctx.translate(-x, -y); } }
       if (a.row) { // the bottom row: a small dark round, its symbol in bone (as the menus' icons are)
         ctx.fillStyle = down ? 'rgba(4,8,8,0.8)' : 'rgba(6,10,10,0.55)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
         ctx.strokeStyle = a.lit ? 'rgba(236,224,190,0.85)' : 'rgba(230,222,196,0.22)'; ctx.lineWidth = 1.4 * u; ctx.stroke();
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
-      } else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
+      } else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do
         const bx = x + r * 0.74, by = y - r * 0.74, br = Math.max(8 * u, r * 0.4), pq = 1 + 0.08 * Math.sin(g.time * 5);
@@ -451,7 +453,7 @@ e.inSub ? [
     const armT = e.inSub && owns(P, 'arm');
     const handOn = aboard && !!this.handOn; // (5.6.8) aboard, the big button is his hand: the door, the computer, the bunk
     const can = aboard ? handOn : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
-    ctx.save(); ctx.globalAlpha = aboard ? (handOn ? 1 : 0.7) : (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7; // (5.3.6) on deck: there, greyed
+    ctx.save(); ctx.globalAlpha *= (this.inKill ? 0.32 : 1) * (aboard ? (handOn ? 1 : 0.7) : (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7); /* (5.10.10) dim in its jaws */ // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
     const bKey = aboard ? 'f' : ' ';
     const rarOf = () => null; // (5.9.6) no rarity colours on the tool buttons: only the ability's button carries one
@@ -477,7 +479,7 @@ e.inSub ? [
       else { drawCoin(ctx, sx2, sy2, rc, 'trawl', 'off'); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42); hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No trawl net: the yard sells them'); }
     }
     // (5.6) the swap chip on the big button's rim: the next tool owned, a tap takes it in hand
-    if (!e.inSub && !aboard) {
+    if (!e.inSub && !aboard) { ctx.save(); if (this.inKill) ctx.globalAlpha *= 0.32; // (5.10.10) dim in its jaws
       const owned = ['net'].concat(owns(P, 'camera') ? ['cam'] : []); /* (5.9.6) net and camera only */
       // (5.6.9) larger, and always there: the tool it swaps to; with nothing to swap to, a camera behind a padlock
       const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1);
@@ -490,12 +492,13 @@ e.inSub ? [
         drawCoin(ctx, sx2, sy2, rc, 'cam', 'off', null); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42);
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No camera yet: the computer in the cabin sells them');
       }
-    }
+      ctx.restore(); }
     // (5.9.0) the lamp in the bottom left corner (the arc's last place is the ability now), in the water and the sub
     if (!aboard) {
       const rs = 18 * u, px2 = 12 * u + rs, py2 = H - 12 * u - rs;
       const dn = pressFx('l', px2, py2, rs);
-      drawCoin(ctx, px2, py2, rs, 'lamp', dn ? 'press' : e.lampOn ? 'lit' : 'on', e.lampOn ? { lit: true } : null);
+      ctx.save(); if (this.inKill) ctx.globalAlpha *= 0.32; // (5.10.10) dim in its jaws, as the rest
+      drawCoin(ctx, px2, py2, rs, 'lamp', dn ? 'press' : e.lampOn ? 'lit' : 'on', e.lampOn ? { lit: true } : null); ctx.restore();
       if (tutKey === 'l') ring(px2, py2, rs);
       hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'l');
     }
@@ -833,42 +836,39 @@ e.inSub ? [
     // ---------- tools and specimens, bottom centre ----------
     if (g.profile && g.mode === 'play' && !dying && !this.panel) this.drawGear(g, W, H, s, dt); // (5.4) touch: not under an open panel
 
-    // ---------- marked: a symbol, the red eye, bottom left ----------
-    // each good deed fades it a step
+    // ---------- marked: the thing's eye, under the money ----------
+    // (5.10.10) the one sign of being marked (the vast eye in the water is gone): larger, matte (no halo, no wet
+    // shine), darker and bloodshot. It watches: as the thing comes nearer the lids part wider and the slit narrows.
+    // Each good deed fades it a step.
     if (g.entity && g.entity.marked && !dying) {
-      const calm = clamp((g.entity.calm || 0) / 60, 0, 1);
-      const a = (1 - calm * 0.65) * (touch ? 0.8 : 1); // (5.9.7) dimmer on a phone
-      // (4.28) a real eye in the dark, not a sign: a wet dark lid line, an iris of deep amber going to blood red with
-      // fibres in it, a slit that breathes, a point of light on the cornea; it opens slowly and blinks now and then
-      // (5.9.7) on touch: right under the money, larger, and dimmer (it sat bright and small on the bag's boxes)
-      const kxE = window.innerWidth / this.c.width, ewT = 40 * s, ehT = 24 * s, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
-      const ex = touch ? (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + ewT + 4 * s : pad + 46 * s, ey = touch ? tlB + ehT + 6 * s : H - pad - 30 * s, ew = touch ? ewT : 40 * s, eh = touch ? ehT : 24 * s;
-      const blink = (g.time % 7.3) < 0.18 ? Math.abs(Math.sin((g.time % 7.3) / 0.18 * Math.PI)) : 0, open = (1 - blink) * (0.85 + 0.15 * Math.sin(g.time * 0.5));
+      const calm = clamp((g.entity.calm || 0) / 60, 0, 1), near = clamp(1 - (g.entity.dist ?? 2000) / 900, 0, 1);
+      const a = 1 - calm * 0.6;
+      const kxE = window.innerWidth / this.c.width, ew = 50 * s, eh = 30 * s, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
+      const ex = (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + ew + 6 * s, ey = tlB + eh + 4 * s;
+      const per = 9 - 3 * near, bt = g.time % per, blink = bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0; // a slow, heavy blink
+      const open = (1 - blink) * (0.38 + 0.6 * near + 0.05 * Math.sin(g.time * 0.4));
       ctx.save();
-      const og = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.7);
-      og.addColorStop(0, `rgba(160,20,10,${((touch ? 0.12 : 0.22) * a).toFixed(3)})`); og.addColorStop(1, 'rgba(160,20,10,0)');
-      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(ex, ey, ew * 1.7, 0, TAU); ctx.fill();
-      const lid = () => { ctx.beginPath(); ctx.moveTo(ex - ew, ey); ctx.bezierCurveTo(ex - ew * 0.45, ey - eh * 1.15 * open, ex + ew * 0.5, ey - eh * 1.05 * open, ex + ew, ey + eh * 0.05);
-        ctx.bezierCurveTo(ex + ew * 0.5, ey + eh * 0.95 * open, ex - ew * 0.45, ey + eh * 1.0 * open, ex - ew, ey); ctx.closePath(); };
+      const lid = (k = 1) => { ctx.beginPath(); ctx.moveTo(ex - ew * k, ey + eh * 0.06); ctx.bezierCurveTo(ex - ew * 0.5 * k, ey - eh * 1.2 * open * k, ex + ew * 0.42 * k, ey - eh * 1.1 * open * k, ex + ew * k, ey - eh * 0.04);
+        ctx.bezierCurveTo(ex + ew * 0.5 * k, ey + eh * 0.9 * open * k, ex - ew * 0.42 * k, ey + eh * 0.95 * open * k, ex - ew * k, ey + eh * 0.06); ctx.closePath(); };
+      // a shadow of hide round it, so it reads as an eye set in something, not a sticker
+      ctx.fillStyle = `rgba(6,3,3,${(0.3 * a).toFixed(3)})`; lid(1.08); ctx.fill();
       lid(); ctx.save(); ctx.clip();
-      // the white of it, dark and bloodshot
-      ctx.fillStyle = `rgba(52,14,10,${a.toFixed(3)})`; ctx.fillRect(ex - ew, ey - eh * 1.2, ew * 2, eh * 2.4);
-      // the iris: amber in the middle, red, then almost black at its rim
-      const ir = eh * 1.05, ig = ctx.createRadialGradient(ex + ew * 0.05, ey, 0, ex + ew * 0.05, ey, ir);
-      ig.addColorStop(0, touch ? `rgba(206,112,40,${a.toFixed(3)})` : `rgba(255,170,60,${a.toFixed(3)})`); ig.addColorStop(0.45, touch ? `rgba(168,36,16,${a.toFixed(3)})` : `rgba(214,52,22,${a.toFixed(3)})`); ig.addColorStop(0.85, `rgba(110,14,8,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(30,4,2,${a.toFixed(3)})`);
-      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex + ew * 0.05, ey, ir, 0, TAU); ctx.fill();
-      ctx.strokeStyle = `rgba(255,190,110,${(0.22 * a).toFixed(3)})`; ctx.lineWidth = Math.max(1, 0.8 * s);
-      for (let k = 0; k < 22; k++) { const an = k / 22 * TAU + 0.2 * Math.sin(k * 3.1); ctx.beginPath(); ctx.moveTo(ex + ew * 0.05 + Math.cos(an) * ir * 0.25, ey + Math.sin(an) * ir * 0.25); ctx.lineTo(ex + ew * 0.05 + Math.cos(an) * ir * (0.7 + 0.2 * Math.sin(k * 7.7)), ey + Math.sin(an) * ir * (0.7 + 0.2 * Math.sin(k * 7.7))); ctx.stroke(); }
-      // the slit
-      const sw = eh * (0.16 + 0.07 * Math.sin(g.time * 0.9));
-      ctx.fillStyle = `rgba(4,1,1,${a.toFixed(3)})`; ctx.beginPath(); ctx.moveTo(ex + ew * 0.05, ey - ir * 0.92); ctx.quadraticCurveTo(ex + ew * 0.05 + sw, ey, ex + ew * 0.05, ey + ir * 0.92); ctx.quadraticCurveTo(ex + ew * 0.05 - sw, ey, ex + ew * 0.05, ey - ir * 0.92); ctx.fill();
-      // shadow from the upper lid, and a point of wet light
-      const sh = ctx.createLinearGradient(0, ey - eh, 0, ey); sh.addColorStop(0, 'rgba(0,0,0,0.75)'); sh.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = sh; ctx.fillRect(ex - ew, ey - eh * 1.2, ew * 2, eh * 1.2);
-      ctx.fillStyle = `rgba(255,240,220,${(0.75 * a).toFixed(3)})`; ctx.beginPath(); ctx.ellipse(ex - ew * 0.18, ey - eh * 0.38, 2.4 * s, 1.6 * s, -0.4, 0, TAU); ctx.fill();
+      ctx.fillStyle = `rgba(40,12,9,${a.toFixed(3)})`; ctx.fillRect(ex - ew, ey - eh * 1.3, ew * 2, eh * 2.6); // the white: dark, bloodshot
+      ctx.strokeStyle = `rgba(92,18,12,${(0.7 * a).toFixed(3)})`; ctx.lineWidth = Math.max(0.6, 0.6 * s); // veins running in from the corners
+      for (let k = 0; k < 7; k++) { const side = k % 2 ? 1 : -1, y0 = ey + (k - 3) * eh * 0.14; ctx.beginPath(); ctx.moveTo(ex + side * ew, y0); ctx.quadraticCurveTo(ex + side * ew * 0.75, y0 + Math.sin(k * 2.3) * eh * 0.2, ex + side * ew * (0.5 + 0.06 * (k % 3)), y0 + Math.cos(k * 1.7) * eh * 0.25); ctx.stroke(); }
+      const ix = ex + ew * 0.04 + Math.sin(g.time * 0.23) * ew * 0.06, ir = eh * 1.0; // the iris drifts a little: it looks about
+      const ig = ctx.createRadialGradient(ix, ey, 0, ix, ey, ir);
+      ig.addColorStop(0, `rgba(150,82,30,${a.toFixed(3)})`); ig.addColorStop(0.4, `rgba(118,34,16,${a.toFixed(3)})`); ig.addColorStop(0.82, `rgba(58,10,6,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(16,3,2,${a.toFixed(3)})`);
+      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ix, ey, ir, 0, TAU); ctx.fill();
+      ctx.strokeStyle = `rgba(170,96,52,${(0.18 * a).toFixed(3)})`; ctx.lineWidth = Math.max(0.6, 0.7 * s); // fibres, dull
+      for (let k = 0; k < 26; k++) { const an = k / 26 * TAU + 0.2 * Math.sin(k * 3.1), r1 = ir * (0.3 + 0.05 * Math.sin(k * 5.3)), r2 = ir * (0.68 + 0.2 * Math.sin(k * 7.7)); ctx.beginPath(); ctx.moveTo(ix + Math.cos(an) * r1, ey + Math.sin(an) * r1); ctx.lineTo(ix + Math.cos(an) * r2, ey + Math.sin(an) * r2); ctx.stroke(); }
+      const sw = eh * (0.2 - 0.13 * near) * (1 + 0.08 * Math.sin(g.time * 0.7)); // the slit: wide when far, a thread when close
+      ctx.fillStyle = `rgba(2,0,0,${a.toFixed(3)})`; ctx.beginPath(); ctx.moveTo(ix, ey - ir * 0.95); ctx.quadraticCurveTo(ix + sw, ey, ix, ey + ir * 0.95); ctx.quadraticCurveTo(ix - sw, ey, ix, ey - ir * 0.95); ctx.fill();
+      const sh = ctx.createLinearGradient(0, ey - eh * 1.2, 0, ey + eh * 0.2); sh.addColorStop(0, 'rgba(0,0,0,0.85)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); // the upper lid's shadow
+      ctx.fillStyle = sh; ctx.fillRect(ex - ew, ey - eh * 1.3, ew * 2, eh * 1.5);
       ctx.restore();
-      // the lid line: dark and wet
-      lid(); ctx.strokeStyle = `rgba(10,3,2,${a.toFixed(3)})`; ctx.lineWidth = 2.2 * s; ctx.stroke();
+      lid(); ctx.strokeStyle = `rgba(34,14,10,${(0.9 * a).toFixed(3)})`; ctx.lineWidth = 5 * s; ctx.stroke(); // (5.10.10) the lids: thick hide, then a dark wet line inside
+      lid(); ctx.strokeStyle = `rgba(4,1,1,${a.toFixed(3)})`; ctx.lineWidth = 1.8 * s; ctx.stroke();
       ctx.restore();
     }
 
@@ -907,8 +907,8 @@ e.inSub ? [
       }
     }
     // (5.1.1) a touch screen: the actions, bottom right (on deck too: the F action is how he goes in)
-    if (touch && !this.panel && g.profile && g.mode === 'play' && !dying && !g.kill && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) { const dk = aboard ? 0 : clamp(((g.earl.y || 0) - 120) / 700, 0, 1); ctx.save(); ctx.globalAlpha = 1 - 0.28 * dk; this.drawActions(g, W, H, s, dt, aboard); ctx.restore(); } // (5.10.8) the controls dim gently in the dark
-    else if (touch && g.kill && !g.kill.inSub && !g.kill.esc && g.mode === 'play' && !dying) this.drawKillLamp(g, W, H); // (5.10.1) the one way out, by touch
+    this.inKill = !!(touch && g.kill && !g.kill.inSub && !g.kill.esc); // (5.10.10) the controls stay where they are in its jaws, dimmed
+    if (touch && !this.panel && g.profile && g.mode === 'play' && !dying && (!g.kill || this.inKill) && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) { const dk = aboard ? 0 : clamp(((g.earl.y || 0) - 120) / 700, 0, 1); ctx.save(); ctx.globalAlpha = 1 - 0.28 * dk; const h0 = this.hots.length; this.drawActions(g, W, H, s, dt, aboard); ctx.restore(); if (this.inKill) this.hots.splice(h0, this.hots.length - h0, ...this.hots.slice(h0).filter((h) => h.key === 'ability' && this.killTide)); } // (5.10.8) the controls dim gently in the dark
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
     if (false && step && step.on && g.mode === 'play' && !dying && !g.kill && !g.hideQuest) { // (3.0.1: shown beside the Quests button instead)

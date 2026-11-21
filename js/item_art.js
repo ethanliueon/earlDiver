@@ -3,7 +3,7 @@
 // wood, hide); only a bioluminescent part shows any light, and softly. The things use the same looks as on
 // Earl (item_data.js LOOKS); the Legendaries that aren't nets are drawn one by one here.
 import { toolIcon, drawSlurp, drawTagger, drawCamera } from './tools_draw.js';
-import { drawEarl, drawSpecialTank } from './earl_draw.js';
+import { drawEarl, drawSpecialTank, SUIT_LOOK } from './earl_draw.js';
 import { TAU, clamp } from './util.js';
 
 const rgb = (hex) => { const h = hex.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; };
@@ -148,10 +148,56 @@ function designedBag(ctx, w, h, cx, cy, bw, bh, L) {
   }
 }
 const rgbaOf = (c, a) => { const [r, g, b] = rgb(c); return `rgba(${r},${g},${b},${a})`; };
-function suitPic(ctx, w, h, def, legend) {
-  // the suit, standing, in its own colours (a Legendary's seams glowing)
-  ctx.save(); ctx.translate(w / 2, h * 0.36); ctx.rotate(-Math.PI / 2);
-  drawEarl(ctx, h * 0.62, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: def.pal || def.look, bag: [], noTank: true, suitGlow: def.suitGlow });
+function suitPic(ctx, w, h, def, legend) { drawSuitFlat(ctx, w, h, def); }
+// (5.10.10) a suit as gear is photographed: laid out flat on its side, empty (no Earl in it), filling the frame.
+// The cut is the suit's kind (neoprene, drysuit with its brass zip, chain mail, rebreather harness, an atmospheric
+// hardsuit's joints and dome); rarity adds the work in it: trim, then piping and a patch, then glowing seams.
+export function drawSuitFlat(ctx, w, h, def) {
+  const arch = (def && (def.arch || (typeof def.look === 'string' ? def.look : null))) || 'wet', r = (def && def.rarity) || 'common';
+  const P = Array.isArray(def && def.pal) ? def.pal : SUIT_LOOK[arch] || SUIT_LOOK.wet, k = { common: 0, uncommon: 1, rare: 2, exotic: 3, legendary: 4 }[r] || 0;
+  const u = Math.min(w / 1.0, h / 0.52), cx = w / 2, cy = h / 2 + u * 0.02, X = (x) => cx + x * u, Y = (y) => cy + y * u, lw = Math.max(0.8, u * 0.006);
+  const hard = arch === 'hard', base = P[0], hi = P[1], mid = P[2], acc = P[3], dk = P[4];
+  ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // a soft shadow under it, as on a table
+  ctx.fillStyle = 'rgba(30,24,16,0.18)'; ctx.beginPath(); ctx.ellipse(cx + u * 0.02, cy + u * 0.17, u * 0.44, u * 0.06, 0, 0, TAU); ctx.fill();
+  const limb = (x0, y0, x1, y1, r0, r1, col) => { const a = Math.atan2(y1 - y0, x1 - x0), nx = -Math.sin(a), ny = Math.cos(a); ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(X(x0 + nx * r0), Y(y0 + ny * r0)); ctx.lineTo(X(x1 + nx * r1), Y(y1 + ny * r1)); ctx.arc(X(x1), Y(y1), r1 * u, a + Math.PI / 2, a - Math.PI / 2, true); ctx.lineTo(X(x0 - nx * r0), Y(y0 - ny * r0)); ctx.closePath(); ctx.fill();
+    if (hard) { ctx.strokeStyle = 'rgba(30,22,8,0.55)'; ctx.lineWidth = lw * 1.4; for (let q = 0.2; q < 1; q += 0.27) { const x = x0 + (x1 - x0) * q, y = y0 + (y1 - y0) * q, rr = r0 + (r1 - r0) * q; ctx.beginPath(); ctx.moveTo(X(x + nx * rr), Y(y + ny * rr)); ctx.lineTo(X(x - nx * rr), Y(y - ny * rr)); ctx.stroke(); } } };
+  const grad = (c1, c2) => { const g = ctx.createLinearGradient(0, Y(-0.16), 0, Y(0.16)); g.addColorStop(0, c1); g.addColorStop(1, c2); return g; };
+  // legs (to the right), arms (out from the shoulders), the torso, the hood (or helmet) at the left
+  const legC = grad(hi, base), r0 = hard ? 0.055 : 0.042;
+  limb(0.08, -0.045, 0.4, -0.06, r0, r0 * 0.8, legC); limb(0.08, 0.045, 0.4, 0.07, r0, r0 * 0.8, legC);
+  for (const sy of [-1, 1]) { ctx.fillStyle = hard ? mid : dk; ctx.beginPath(); ctx.ellipse(X(0.43), Y(sy * 0.065), u * 0.045, u * (hard ? 0.05 : 0.03), 0, 0, TAU); ctx.fill(); } // boots
+  for (const sy of [-1, 1]) { limb(-0.18, sy * 0.07, -0.13, sy * 0.17, r0 * 0.85, r0 * 0.72, legC); limb(-0.13, sy * 0.17, -0.02, sy * 0.21, r0 * 0.72, r0 * 0.62, legC); } // arms, bent a little at the elbow
+  for (const sy of [-1, 1]) { ctx.fillStyle = hard ? mid : dk; ctx.beginPath(); ctx.ellipse(X(0.005), Y(sy * 0.215), u * 0.03, u * 0.024, 0.2 * sy, 0, TAU); ctx.fill(); } // gloves (or claws)
+  ctx.fillStyle = grad(hi, base); ctx.beginPath(); ctx.moveTo(X(-0.22), Y(-0.085)); ctx.quadraticCurveTo(X(-0.05), Y(-0.105), X(0.1), Y(-0.08)); ctx.lineTo(X(0.12), Y(0.085)); ctx.quadraticCurveTo(X(-0.05), Y(0.105), X(-0.22), Y(0.085)); ctx.closePath(); ctx.fill();
+  if (hard) { // an atmospheric suit: a dome of brass with portholes, a belly ring, bolts round every joint
+    ctx.fillStyle = grad(hi, mid); ctx.beginPath(); ctx.arc(X(-0.3), Y(0), u * 0.1, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(30,22,8,0.6)'; ctx.lineWidth = lw * 1.5; ctx.stroke();
+    for (const [px, py, pr] of [[-0.34, 0, 0.04], [-0.29, -0.06, 0.022], [-0.29, 0.06, 0.022]]) { ctx.fillStyle = '#1a2224'; ctx.beginPath(); ctx.arc(X(px), Y(py), u * pr, 0, TAU); ctx.fill(); ctx.strokeStyle = acc; ctx.lineWidth = lw * 1.6; ctx.stroke(); ctx.fillStyle = 'rgba(220,235,235,0.25)'; ctx.beginPath(); ctx.arc(X(px - pr * 0.3), Y(py - pr * 0.3), u * pr * 0.35, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(30,22,8,0.6)'; ctx.lineWidth = lw * 2; ctx.beginPath(); ctx.moveTo(X(-0.02), Y(-0.1)); ctx.lineTo(X(-0.02), Y(0.1)); ctx.stroke();
+    ctx.fillStyle = 'rgba(40,30,10,0.7)'; for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.arc(X(-0.02), Y(-0.085 + i * 0.028), u * 0.005, 0, TAU); ctx.fill(); }
+  } else { // the hood, empty: its face opening dark
+    ctx.fillStyle = grad(hi, base); ctx.beginPath(); ctx.ellipse(X(-0.28), Y(0), u * 0.075, u * 0.065, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(8,8,8,0.7)'; ctx.beginPath(); ctx.ellipse(X(-0.31), Y(0), u * 0.032, u * 0.04, 0, 0, TAU); ctx.fill();
+    // side panels in the lighter colour, and the stitching round them
+    ctx.fillStyle = mid; ctx.beginPath(); ctx.moveTo(X(-0.18), Y(0.05)); ctx.quadraticCurveTo(X(-0.04), Y(0.075), X(0.11), Y(0.055)); ctx.lineTo(X(0.115), Y(0.085)); ctx.quadraticCurveTo(X(-0.05), Y(0.105), X(-0.2), Y(0.085)); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(230,224,206,0.32)'; ctx.lineWidth = lw * 0.8; ctx.setLineDash([u * 0.008, u * 0.007]); ctx.beginPath(); ctx.moveTo(X(-0.2), Y(0.048)); ctx.quadraticCurveTo(X(-0.04), Y(0.07), X(0.11), Y(0.052)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(-0.2), Y(-0.03)); ctx.lineTo(X(0.1), Y(-0.03)); ctx.stroke(); ctx.setLineDash([]);
+    for (const sy of [-1, 1]) { ctx.fillStyle = mid; ctx.beginPath(); ctx.ellipse(X(0.24), Y(sy * 0.055), u * 0.035, u * 0.028, 0, 0, TAU); ctx.fill(); } // knee pads
+    if (arch === 'dry') { ctx.strokeStyle = '#b08a3a'; ctx.lineWidth = lw * 2.2; ctx.beginPath(); ctx.moveTo(X(-0.17), Y(-0.08)); ctx.quadraticCurveTo(X(-0.05), Y(-0.02), X(0.08), Y(-0.075)); ctx.stroke(); ctx.strokeStyle = 'rgba(40,30,10,0.6)'; ctx.lineWidth = lw * 0.6; ctx.setLineDash([u * 0.004, u * 0.004]); ctx.stroke(); ctx.setLineDash([]); } // the brass zip across the shoulders
+    if (arch === 'chain') { ctx.save(); ctx.beginPath(); ctx.rect(X(-0.22), Y(-0.11), u * 0.34, u * 0.22); ctx.clip(); ctx.strokeStyle = 'rgba(200,205,210,0.35)'; ctx.lineWidth = lw * 0.7; for (let yy = -0.11; yy < 0.11; yy += 0.012) for (let xx = -0.22 + ((yy * 1000) % 2 ? 0.006 : 0); xx < 0.12; xx += 0.012) { ctx.beginPath(); ctx.arc(X(xx), Y(yy), u * 0.005, 0, TAU); ctx.stroke(); } ctx.restore(); }
+    if (arch === 'rebreather') { ctx.fillStyle = '#2a2e2c'; ctx.beginPath(); ctx.roundRect(X(-0.14), Y(-0.06), u * 0.18, u * 0.05, u * 0.01); ctx.fill(); ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(X(-0.12), Y(-0.035), u * 0.012, 0, TAU); ctx.fill(); ctx.strokeStyle = '#1a1a18'; ctx.lineWidth = lw * 2; ctx.beginPath(); ctx.moveTo(X(-0.14), Y(-0.035)); ctx.quadraticCurveTo(X(-0.24), Y(-0.07), X(-0.28), Y(-0.04)); ctx.stroke(); }
+  }
+  // the rarity's work: a trim stripe; piping and a maker's patch; seams that glow
+  if (k >= 1 && !hard) { ctx.strokeStyle = acc; ctx.lineWidth = lw * (k >= 2 ? 2.4 : 1.6); ctx.beginPath(); ctx.moveTo(X(-0.21), Y(-0.06)); ctx.quadraticCurveTo(X(-0.05), Y(-0.08), X(0.1), Y(-0.058)); ctx.stroke(); }
+  if (k >= 2) { ctx.strokeStyle = acc; ctx.lineWidth = lw * 1.4; for (const sy of [-1, 1]) { ctx.beginPath(); ctx.moveTo(X(0.12), Y(sy * 0.02 + sy * 0.03)); ctx.lineTo(X(0.38), Y(sy * 0.065 + sy * -0.03)); ctx.stroke(); } }
+  if (k >= 3) { ctx.fillStyle = 'rgba(214,198,160,0.85)'; ctx.beginPath(); ctx.roundRect(X(-0.12), Y(0.0), u * 0.06, u * 0.04, u * 0.005); ctx.fill(); ctx.strokeStyle = acc; ctx.lineWidth = lw; ctx.stroke(); ctx.fillStyle = 'rgba(40,30,20,0.7)'; ctx.fillRect(X(-0.11), Y(0.015), u * 0.04, u * 0.004); ctx.fillRect(X(-0.11), Y(0.025), u * 0.03, u * 0.004); }
+  const glow = def && (def.suitGlow || (k >= 4 ? acc : null));
+  if (k >= 4 && glow) { ctx.strokeStyle = glow; ctx.lineWidth = lw * 1.6; ctx.shadowColor = glow; ctx.shadowBlur = u * 0.02; ctx.beginPath(); ctx.moveTo(X(-0.2), Y(0.0)); ctx.quadraticCurveTo(X(-0.05), Y(0.02), X(0.1), Y(0.0)); ctx.lineTo(X(0.38), Y(-0.05)); ctx.stroke(); ctx.beginPath(); ctx.moveTo(X(0.1), Y(0.0)); ctx.lineTo(X(0.38), Y(0.06)); ctx.stroke(); ctx.shadowBlur = 0; }
+  if (!hard) { ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = lw; // creases where it lies folded: across the knees, the elbows, the waist
+    for (const [x, y, a, l] of [[0.24, -0.06, 1.3, 0.03], [0.24, 0.07, 1.8, 0.03], [-0.13, -0.165, 0.4, 0.025], [-0.13, 0.165, -0.4, 0.025], [0.06, -0.05, 1.6, 0.05], [0.06, 0.04, 1.5, 0.05], [0.33, -0.06, 1.4, 0.02], [0.33, 0.065, 1.7, 0.02]]) { ctx.beginPath(); ctx.moveTo(X(x - Math.cos(a) * l), Y(y - Math.sin(a) * l)); ctx.quadraticCurveTo(X(x + 0.008), Y(y), X(x + Math.cos(a) * l), Y(y + Math.sin(a) * l)); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = lw * 3; ctx.beginPath(); ctx.moveTo(X(-0.2), Y(-0.07)); ctx.quadraticCurveTo(X(-0.05), Y(-0.09), X(0.1), Y(-0.065)); ctx.lineTo(X(0.38), Y(-0.08)); ctx.stroke(); } // the sheen along the top edge
+  // wear: scuffs and a faded patch, whatever its rarity
+  ctx.fillStyle = 'rgba(235,228,210,0.08)'; for (let i = 0; i < 26; i++) { const sx = Math.sin(i * 12.9898 + (def && def.id ? def.id.length : 3)) * 43758.5453, fx = sx - Math.floor(sx), sy2 = Math.sin(i * 78.233) * 12345.678, fy = sy2 - Math.floor(sy2); ctx.beginPath(); ctx.arc(X(-0.2 + fx * 0.55), Y(-0.08 + fy * 0.16), u * (0.003 + fx * 0.006), 0, TAU); ctx.fill(); }
   ctx.restore();
 }
 function sideToolPic(ctx, w, h, def, legend) {

@@ -1,6 +1,6 @@
 // Catching animals alive: the net and the slurp gun, the specimen bag, the sub's tank, and what
 // happens to an animal between the catch and the sale (handling, time, coming up too fast).
-import { LEGENDARY } from './specimens.js';
+import { LEGENDARY, PROTECTED } from './specimens.js';
 import { clamp, dist } from './util.js';
 import { pressureTolerance } from './specimens.js';
 import { SPECIES_BY_ID } from './species.js';
@@ -97,13 +97,13 @@ export function findCatch(g) {
   const consider = (sp, x, y, len, ref) => { // (5.10.8: len and ref may be changed for a colony's piece)
     if ((x - h.x) * h.fx < -0.8) return; // behind him
     // to the edge of the animal, and the sweep covers a little more height than length
-    // (5.10.8) bottom things (octopus, crabs, corals): the net only has to touch them, so it reaches over them more kindly
-    const ground = /^floor$/.test(sp.v.hab || '') || /octopus|crab|lobster|star|urchin|cucumber|isopod|nudibranch/.test(sp.v.s);
-    const d = Math.hypot(x - h.x, (y - h.y) * (ground ? 0.6 : 0.75)) - len * (ground ? 0.75 : 0.5) - (ground ? 0.35 : 0);
+    const d = Math.hypot(x - h.x, (y - h.y) * 0.75) - len * 0.5; // (5.10.10) the hand net's reach is back as it was before 5.10.8
     if (d > reach) return;
     let why = null;
-    if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'needs a tag' : null;
-    else if (len > def.maxLen * OVER) why = isTagOnly(sp) && len > 1.1 ? 'needs a tag' : 'too big';
+    // (5.10.10) no tags any more: an animal no net can hold is 'too big for the net' (a photograph is how it pays);
+    // one a better net could hold is 'too big for this net'
+    if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'too big for the net' : null;
+    else if (len > def.maxLen * OVER) why = isTagOnly(sp) && len > 1.1 ? 'too big for the net' : 'too big for this net';
     else if (def.minLen && len < def.minLen) why = 'slips through';
     if (why === null && !canTakeLive(sp)) return; // plants, corals: not even worth mentioning
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
@@ -369,9 +369,9 @@ export { conditionName };
 // too big for the net may tear it: the net is lost, and everything in it swims free. Loud below 200 m.
 export const NETS_SUB = {
   basic: { name: 'Beginner trawl net', short: 'NET', price: 50, /* (claude-polish) was 120: a net used up in one haul cost more than a first sub's haul was worth, and one empty net left a new diver broke */ tow: 8, max: 6, maxLen: 2.0, mouth: 1.6, tear: 0.5, slip: 0.15, cap: 2, legendOut: 0.9,
-    desc: 'A light trawl for the hatch under the sub: room for six animals, open for 8 seconds, and it holds fish up to 2 m. Anything bigger, small sharks too, may still be caught, but the bigger it is the likelier it breaks out, and a break can tear the net and lose the whole haul. Nine legends in ten escape it. Used up in one haul; carry up to two.' },
+    desc: 'A light trawl for the hatch under the sub. It takes whatever its mouth touches, and dragged along the bottom it scoops up corals, sponges and anemones whole: room for six animals, open for 8 seconds, and it holds fish up to 2 m. Anything bigger, small sharks too, may still be caught, but the bigger it is the likelier it breaks out, and a break can tear the net and lose the whole haul. Nine legends in ten escape it. Used up in one haul; carry up to two.' },
   adv: { name: 'Advanced trawl net', short: 'BIG NET', price: 1200, tow: 11, max: 10, maxLen: 4.0, mouth: 2.6, tear: 0.2, slip: 0.03, cap: 1, legendOut: 0,
-    desc: 'The net for big game. Its mouth is over half again as wide and it stays open 11 seconds, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
+    desc: 'The net for big game, and it takes whatever its mouth touches, the bottom too. Its mouth is over half again as wide and it stays open 11 seconds, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
 };
 // (4.11.1) the chance an animal too big for a net breaks out of it (legends by the net's own odds): more the bigger it is
 export const escapeOdds = (T, c) => LEGENDARY.has(c.sp.id) ? T.legendOut : c.len <= T.maxLen ? 0 : Math.min(0.95, 0.35 + 0.6 * (c.len - T.maxLen) / T.maxLen);
@@ -423,30 +423,43 @@ export function updateSubNet(g, dt, canTake) {
     if (k >= 1) { n.phase = 'tow'; n.pt = 0; }
   } else if (n.phase === 'tow') {
     n.mx += (tgt.x - n.mx) * Math.min(1, dt * 1.5); n.my += (tgt.y - n.my) * Math.min(1, dt * 1.5);
+    if (g.world.floorAt) n.my = Math.min(n.my, g.world.floorAt(n.mx) - T.mouth * Math.max(0.5, n.open)); // (5.10.10) it rides on the bottom, never through it
     const want = clamp(speed / 1.2, 0.25, 1); // moving, the mouth stands open; stopped, it sags
     n.open += (want - n.open) * Math.min(1, dt * 2);
     n.dir = sub.facing || n.dir;
     if (n.open > 0.6) {
-      // (4.0.0) only what goes in at the mouth: an animal is caught when it crosses the mouth's opening
-      // (from the sub's side to the bag's side, within the hoop), not anything near the net
-      const r = T.mouth * n.open, prev = n.prev || (n.prev = new Map()), seen = new Map();
-      for (const c of g.fauna.list) {
-        if (c.dead || c.hidden || c.pet || c.companion || n.got.includes(c)) continue;
-        const rel = (c.x - n.mx) * n.dir; // + ahead of the mouth (toward the sub), - inside the bag
-        if (Math.abs(rel) > 4 || Math.abs(c.y - n.my) > r + 1) continue;
-        seen.set(c, rel);
-        const was = prev.get(c);
-        if (!(was !== undefined && was > 0 && rel <= 0 && Math.abs(c.y - n.my) < r)) continue;
-        if (!canTake(c.sp)) continue;
-        // (4.11.1) too big for the net: it may break out, and breaking out may tear the net, losing everything in it
-        if (Math.random() < escapeOdds(T, c)) {
-          if (Math.random() < T.tear) { tearNet(g, c); return { torn: c.sp }; }
-          n.broke = (n.broke || 0) + 1; c.vx = (c.vx || 0) + n.dir * 4; c.vy = (c.vy || 0) + (Math.random() - 0.5) * 2; g.netEscape = c.sp; continue; // it bursts back out through the mouth, a kick of speed away; the net holds
+      // (5.10.10) anything the mouth touches is taken: fish, octopuses and crabs, and on the bottom corals, sponges
+      // and anemones too (a coral is taken whole and is gone from that spot). The mouth reaches generously: an
+      // animal counts as soon as any part of it is in the hoop or just inside the bag, not only its middle.
+      const r = T.mouth * n.open, x0 = n.mx - n.dir * 3.2, x1 = n.mx + n.dir * 1.2, lo = Math.min(x0, x1), hi = Math.max(x0, x1);
+      const take = (sp, len, variant, c) => {
+        if (n.got.length >= T.max) return false;
+        if (c && Math.random() < escapeOdds(T, c)) { // (4.11.1) too big for the net: it may break out, and that may tear the net
+          if (Math.random() < T.tear) { tearNet(g, c); return 'torn'; }
+          n.broke = (n.broke || 0) + 1; c.vx = (c.vx || 0) + n.dir * 4; c.vy = (c.vy || 0) + (Math.random() - 0.5) * 2; g.netEscape = c.sp; c.netOut = g.time; return false;
         }
-        if (n.got.length >= T.max) continue;
+        return true;
+      };
+      for (const c of g.fauna.list) {
+        if (c.dead || c.hidden || c.pet || c.companion || n.got.includes(c) || (c.netOut && g.time - c.netOut < 2)) continue;
+        const reach = r + 0.5 + c.len * 0.4;
+        if (c.x + c.len * 0.5 < lo || c.x - c.len * 0.5 > hi || Math.abs(c.y - n.my) > reach) continue;
+        if (!canTake(c.sp)) continue;
+        const ok = take(c.sp, c.len, c.variant, c);
+        if (ok === 'torn') return { torn: c.sp };
+        if (!ok) continue;
         n.got.push(c); c.dead = true; c.netted = true;
       }
-      n.prev = seen;
+      // the bottom: what grows there is scooped up when the mouth drags through it (too big for the net, it stays)
+      for (let k = g.world.statics.length - 1; k >= 0; k--) {
+        const st = g.world.statics[k], sp = st.sp, len = sp.len * st.scale;
+        if (st.x + len * 0.5 < lo || st.x - len * 0.5 > hi) continue;
+        if (!(st.y - len < n.my + r + 0.6 && st.y > n.my - r - 0.6)) continue; // it stands from the floor (st.y) up to st.y - len
+        if (sp.cat === 'Kelp & Plants' || PROTECTED.has(sp.id) || len > T.maxLen) continue; /* kelp and seagrass stay; corals and anemones carry hab 'plant' too, but they are taken */
+        if (n.got.length >= T.max) break;
+        g.world.statics.splice(k, 1); g.world.staticsVer = (g.world.staticsVer || 0) + 1;
+        n.got.push({ sp, len, variant: st.variant, y: st.y, fromFloor: true });
+      }
     }
     if (n.pt >= (n.T.tow || TOW_MAX) && !(g.lesson && g.lesson.kind === 'trawl')) { n.phase = 'purse'; n.pt = 0; } // (4.12.2) in the lesson it stays out until it is closed
   } else if (n.phase === 'purse') {
@@ -480,6 +493,7 @@ export function updateSubNet(g, dt, canTake) {
 function tearNet(g, big) {
   const n = g.subNet;
   for (const c of n.got) {
+    if (c.fromFloor) continue; // (5.10.10) a coral torn loose sinks away; it does not swim off
     const f = g.fauna.makeFish(c.sp, n.mx + (Math.random() - 0.5) * 2, n.my + (Math.random() - 0.5) * 2, Math.random() < 0.5 ? -1 : 1, g.fauna.groupId++, true);
     if (c.variant) f.variant = c.variant;
     g.fauna.list.push(f);

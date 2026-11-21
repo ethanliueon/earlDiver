@@ -2745,8 +2745,13 @@ function drawSperm(ctx, L, v, t, swim) {
   flukes(ctx, L, fx, fy, Math.cos(b.phase * 0.6 - 1.9) * 0.35, L * 0.15, shade(v.c[0], -0.15));
 }
 function drawDolphin(ctx, L, v, t, swim) {
-  const top = [[0.0, 0.004], [0.05, 0.012], [0.09, 0.03], [0.13, 0.07], [0.2, 0.09], [0.35, 0.1], [0.5, 0.09], [0.62, 0.07], [0.72, 0.045], [0.82, 0.022], [0.86, 0.016]];
-  const bot = [[0.0, 0.006], [0.07, 0.016], [0.12, 0.04], [0.2, 0.075], [0.35, 0.095], [0.5, 0.085], [0.6, 0.06], [0.72, 0.035], [0.86, 0.015]];
+  // (5.10.10) each its own head: Risso's has no beak at all, a blunt creased melon; the spinner a long thin beak
+  const top = v.blunt ? [[0.0, 0.0], [0.012, 0.04], [0.04, 0.07], [0.08, 0.088], [0.14, 0.098], [0.2, 0.1], [0.35, 0.105], [0.5, 0.09], [0.62, 0.07], [0.72, 0.045], [0.82, 0.022], [0.86, 0.016]]
+    : v.longbeak ? [[0.0, 0.003], [0.07, 0.008], [0.11, 0.025], [0.15, 0.06], [0.22, 0.08], [0.36, 0.088], [0.5, 0.08], [0.62, 0.062], [0.72, 0.04], [0.82, 0.02], [0.86, 0.014]]
+    : [[0.0, 0.004], [0.05, 0.012], [0.09, 0.03], [0.13, 0.07], [0.2, 0.09], [0.35, 0.1], [0.5, 0.09], [0.62, 0.07], [0.72, 0.045], [0.82, 0.022], [0.86, 0.016]];
+  const bot = v.blunt ? [[0.0, 0.0], [0.015, 0.03], [0.05, 0.055], [0.12, 0.072], [0.2, 0.085], [0.35, 0.1], [0.5, 0.085], [0.6, 0.06], [0.72, 0.035], [0.86, 0.015]]
+    : v.longbeak ? [[0.0, 0.004], [0.09, 0.01], [0.14, 0.035], [0.22, 0.065], [0.36, 0.085], [0.5, 0.075], [0.6, 0.055], [0.72, 0.032], [0.86, 0.013]]
+    : [[0.0, 0.006], [0.07, 0.016], [0.12, 0.04], [0.2, 0.075], [0.35, 0.095], [0.5, 0.085], [0.6, 0.06], [0.72, 0.035], [0.86, 0.015]];
   const b = cetaceanBody(L, t, swim, top, bot, 0.18);
   ctx.beginPath(); smoothPath(ctx, b.top, true);
   for (let i = b.bot.length - 1; i >= 0; i--) ctx.lineTo(b.bot[i][0], b.bot[i][1]);
@@ -2762,8 +2767,16 @@ function drawDolphin(ctx, L, v, t, swim) {
     ctx.fillStyle = 'rgba(150,150,150,0.45)';
     ctx.beginPath(); ctx.ellipse(L * 0.17, L * 0.02 + b.bend(0.67), L * 0.14, L * 0.03, 0.15, 0, TAU); ctx.fill();
   }
+  if (v.tri) { // the spinner: a dark cape over the back, a grey flank band, a pale belly
+    ctx.fillStyle = rgba(shade(v.c[0], -0.35), 0.7); ctx.beginPath(); ctx.moveTo(-L * 0.4, -L * 0.03); ctx.quadraticCurveTo(-L * 0.05, -L * 0.03, L * 0.25, -L * 0.03 + b.bend(0.75)); ctx.lineTo(L * 0.4, -L * 0.1); ctx.lineTo(-L * 0.4, -L * 0.1); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(30,30,34,0.45)'; ctx.lineWidth = Math.max(1, L * 0.006); ctx.beginPath(); ctx.moveTo(-L * 0.36, -L * 0.005); ctx.quadraticCurveTo(-L * 0.25, L * 0.04, -L * 0.17, L * 0.06); ctx.stroke(); } // the dark line from eye to flipper
+  if (v.scars) { // Risso's: grey going to white with age, criss-crossed with pale scratches from squid and other Risso's
+    ctx.strokeStyle = 'rgba(235,235,230,0.6)'; ctx.lineWidth = Math.max(0.6, L * 0.003);
+    for (let i = 0; i < 26; i++) { const x = -L * 0.42 + hashN(i, 61) * L * 0.75, y = -L * 0.08 + hashN(i, 62) * L * 0.13, a = (hashN(i, 63) - 0.5) * 1.2, l2 = L * (0.03 + hashN(i, 64) * 0.08); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * l2, y + Math.sin(a) * l2); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(240,240,236,0.35)'; ctx.beginPath(); ctx.ellipse(-L * 0.42, -L * 0.01, L * 0.07, L * 0.05, 0, 0, TAU); ctx.fill(); }
   ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(-L / 2, -L * 0.1, L, L * 0.04);
   ctx.restore();
+  if (v.blunt) { ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = Math.max(1, L * 0.004); ctx.beginPath(); ctx.moveTo(-L * 0.47, -L * 0.045); ctx.quadraticCurveTo(-L * 0.45, -L * 0.01, -L * 0.49, L * 0.02); ctx.stroke(); } // the crease down the front of the melon
   // melon crease, mouth line
   ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = Math.max(1, L * 0.004);
   ctx.beginPath(); ctx.moveTo(-L * 0.45, L * 0.005); ctx.quadraticCurveTo(-L * 0.4, -L * 0.02, -L * 0.37, -L * 0.04); ctx.stroke();
@@ -3560,3 +3573,193 @@ export function fittedIcon(sp, w = 240, h = 150, pad = 0.08) {
   try { drawSpecies(x, sp, L, 1.3, 0.4, 0); } catch (e) { /* ignore */ }
   return c;
 }
+
+// ---------------- (5.10.10) fish pass batch 8: the jellies that shared the moon jelly's bell, the frilled shark,
+// the flat octopuses, the geoduck, the oysters and the brain coral. Each its own body, from life.
+function drawJelly2(ctx, L, v, t) {
+  const k = v.jk, c0 = v.c[0], c1 = v.c[1], ph = (t * 0.5) % 1;
+  const pulse = ph < 0.3 ? Math.sin(ph / 0.3 * PI / 2) : 1 - (ph - 0.3) / 0.7, lw = Math.max(0.5, L * 0.005);
+  const strands = (n, x0, x1, y0, len, col, a, w = lw, wav = 0.08) => { for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) : 0.5, x = x0 + (x1 - x0) * u, l2 = len * (0.65 + hashN(i, 7) * 0.35);
+    const g = ctx.createLinearGradient(0, y0, 0, y0 + l2); g.addColorStop(0, rgba(col, a)); g.addColorStop(1, rgba(col, 0)); ctx.strokeStyle = g; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x, y0);
+    for (let s = 1; s <= 10; s++) { const q = s / 10; ctx.lineTo(x + Math.sin(t * 1.1 + i * 0.9 + q * 5) * L * wav * q, y0 + q * l2); } ctx.stroke(); } };
+  const dome = (bw, bh, peak = 1, hem = 0) => { const p = new Path2D(); p.moveTo(-bw, 0); p.bezierCurveTo(-bw * 1.02, -bh * 0.8 * peak, -bw * 0.5, -bh * peak, 0, -bh * peak); p.bezierCurveTo(bw * 0.5, -bh * peak, bw * 1.02, -bh * 0.8 * peak, bw, 0);
+    for (let i = 20; i >= 0; i--) { const x = -bw + i / 20 * bw * 2; p.lineTo(x, (i % 2 ? hem : 0) + Math.sin(t * 2 + i) * bh * 0.015); } p.closePath(); return p; };
+  const glass = (p, bw, bh, a0, a1, col = c0) => { const g = ctx.createRadialGradient(-bw * 0.3, -bh * 0.8, 0, 0, -bh * 0.4, bw * 1.3); g.addColorStop(0, rgba(shade(col, 0.4), a0)); g.addColorStop(1, rgba(col, a1)); ctx.fillStyle = g; ctx.fill(p); };
+  if (k === 'cassio') { // the upside-down jelly: a saucer lying on its back on the sand, its frilled arms reaching up like a little bush
+    const bw = L * 0.42, bh = L * 0.07 * (1 - pulse * 0.25);
+    for (let a = 0; a < 8; a++) { const ax = (a - 3.5) * L * 0.075, top = -L * (0.26 + hashN(a, 3) * 0.12);
+      ctx.strokeStyle = rgba(shade(c0, -0.1), 0.85); ctx.lineWidth = Math.max(1, L * 0.022); ctx.beginPath(); ctx.moveTo(ax * 0.4, -bh); ctx.quadraticCurveTo(ax * 0.8, top * 0.5, ax + Math.sin(t + a) * L * 0.02, top); ctx.stroke();
+      for (let b = 0; b < 5; b++) { const q = 0.35 + b * 0.15, x = ax * (0.4 + 0.6 * q), y = -bh + (top + bh) * q; ctx.fillStyle = rgba(b % 2 ? c1 : shade(c0, 0.15), 0.9); ctx.beginPath(); ctx.ellipse(x + (b % 2 ? 1 : -1) * L * 0.025, y, L * 0.03, L * 0.018, b, 0, TAU); ctx.fill(); }
+      ctx.fillStyle = 'rgba(230,240,220,0.75)'; ctx.beginPath(); ctx.arc(ax + L * 0.01, top + L * 0.04, Math.max(0.8, L * 0.008), 0, TAU); ctx.fill(); }
+    const p = new Path2D(); p.ellipse(0, -bh * 0.5, bw, bh, 0, 0, TAU); glass(p, bw, bh, 0.9, 0.8, shade(c0, 0.05));
+    ctx.strokeStyle = rgba(shade(c0, 0.35), 0.6); ctx.lineWidth = lw; ctx.stroke(p);
+    ctx.fillStyle = 'rgba(225,235,215,0.6)'; for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.arc(-bw * 0.8 + i * bw * 0.2, -bh * 0.5 + Math.sin(i * 2.1) * bh * 0.35, Math.max(0.7, L * 0.008), 0, TAU); ctx.fill(); }
+    return null;
+  }
+  if (k === 'egg') { // the fried egg: a wide flat white bell, a raised golden yolk in the middle, short purple-tipped arms
+    const bw = L * 0.42 * (1 - pulse * 0.1), bh = L * 0.17 * (1 + pulse * 0.2);
+    strands(18, -bw * 0.9, bw * 0.9, 0, L * 0.5, '#e8e0c8', 0.35, Math.max(0.4, L * 0.003));
+    for (let a = 0; a < 7; a++) { const ax = (a - 3) * L * 0.06, len = L * (0.18 + hashN(a, 5) * 0.08); ctx.fillStyle = rgba(a % 2 ? '#c8a8c8' : '#e8d8a8', 0.85); ctx.beginPath(); ctx.ellipse(ax + Math.sin(t + a) * L * 0.01, len * 0.55, L * 0.032, len * 0.55, 0, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(150,90,150,0.8)'; ctx.beginPath(); ctx.arc(ax + Math.sin(t + a) * L * 0.01, len, L * 0.016, 0, TAU); ctx.fill(); }
+    const p = dome(bw, bh, 1, bh * 0.06); glass(p, bw, bh, 0.85, 0.55, c0);
+    const yg = ctx.createRadialGradient(-bw * 0.08, -bh * 0.95, 0, 0, -bh * 0.6, bw * 0.4); yg.addColorStop(0, '#f6cc6a'); yg.addColorStop(0.75, c1); yg.addColorStop(1, rgba(c1, 0.35)); ctx.fillStyle = yg;
+    ctx.beginPath(); ctx.ellipse(0, -bh * 0.42, bw * 0.38, bh * 0.62, 0, PI, TAU); ctx.quadraticCurveTo(0, -bh * 0.3, -bw * 0.38, -bh * 0.42); ctx.fill(); // the yolk: a raised dome in the bell's middle
+    ctx.strokeStyle = rgba('#fff8e8', 0.4); ctx.lineWidth = lw; ctx.stroke(p);
+    return null;
+  }
+  if (k === 'crystal') { // the crystal jelly: clear as glass, a hundred fine canals, a ring of green light round the rim
+    const bw = L * 0.4 * (1 - pulse * 0.12), bh = L * 0.16 * (1 + pulse * 0.15);
+    strands(40, -bw * 0.95, bw * 0.95, 0, L * 0.9, '#d8e8f0', 0.28, Math.max(0.3, L * 0.002), 0.05);
+    const p = dome(bw, bh, 1, bh * 0.03); glass(p, bw, bh, 0.22, 0.08, '#c8dce8');
+    ctx.save(); ctx.clip(p); ctx.strokeStyle = 'rgba(220,235,245,0.35)'; ctx.lineWidth = Math.max(0.3, L * 0.002);
+    for (let i = 0; i < 40; i++) { const a = PI + i / 39 * PI; ctx.beginPath(); ctx.moveTo(0, -bh * 0.35); ctx.lineTo(Math.cos(a) * bw * 1.05, -bh * 0.05 + Math.sin(a) * bh * 1.1); ctx.stroke(); } ctx.restore();
+    ctx.fillStyle = 'rgba(220,230,240,0.3)'; ctx.beginPath(); ctx.ellipse(0, -bh * 0.3, bw * 0.22, bh * 0.25, 0, 0, TAU); ctx.fill();
+    const pts = []; for (let i = 0; i < 22; i++) { const x = -bw * 0.95 + i / 21 * bw * 1.9; ctx.fillStyle = rgba(v.glow || '#7ae8b0', 0.85); ctx.beginPath(); ctx.arc(x, -bh * 0.02, Math.max(0.7, L * 0.008), 0, TAU); ctx.fill(); if (i % 4 === 0) pts.push([x, -bh * 0.02]); }
+    ctx.strokeStyle = 'rgba(240,248,255,0.4)'; ctx.lineWidth = lw; ctx.stroke(p);
+    return pts;
+  }
+  if (k === 'deepstaria') { // deepstaria: no tentacles, only a vast thin veil, a sack that billows and folds, netted with canals
+    const bw = L * 0.42, bh = L * 0.36, fl = Math.sin(t * 0.7) * L * 0.03;
+    const p = new Path2D(); p.moveTo(-bw * 0.7, -bh * 0.9); p.bezierCurveTo(-bw * 0.6, -bh * 1.35, bw * 0.6, -bh * 1.35, bw * 0.7, -bh * 0.9);
+    p.bezierCurveTo(bw * 1.05, -bh * 0.4, bw * 0.9 + fl, bh * 0.35, bw * 0.55, bh * 0.55); for (let i = 0; i <= 12; i++) { const u = i / 12; p.lineTo(bw * 0.55 - u * bw * 1.1, bh * 0.55 + Math.sin(u * 9 + t) * bh * 0.08 + (i % 2 ? bh * 0.04 : 0)); }
+    p.bezierCurveTo(-bw * 0.9 - fl, bh * 0.35, -bw * 1.05, -bh * 0.4, -bw * 0.7, -bh * 0.9); p.closePath();
+    glass(p, bw, bh, 0.32, 0.18, c0);
+    ctx.save(); ctx.clip(p); ctx.strokeStyle = rgba(c1, 0.18); ctx.lineWidth = Math.max(0.4, L * 0.0022); const cell = L * 0.06;
+    for (let r = -8; r < 12; r++) for (let q = -8; q < 8; q++) { const cx = q * cell * 1.5, cy = -bh * 1.3 + r * cell * 0.87 + (q % 2 ? cell * 0.43 : 0); ctx.beginPath(); for (let s = 0; s <= 6; s++) { const a = s / 6 * TAU; ctx.lineTo(cx + Math.cos(a) * cell * 0.5, cy + Math.sin(a) * cell * 0.5); } ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(-bw, -bh * 1.3, bw * 0.6, bh * 2); ctx.restore();
+    ctx.strokeStyle = rgba(shade(c0, 0.4), 0.45); ctx.lineWidth = lw; ctx.stroke(p);
+    return null;
+  }
+  if (k === 'helmet') { // the helmet jelly: a tall dark-red cone, a deeper purple stomach inside, stiff tentacles held out
+    const bw = L * 0.26 * (1 - pulse * 0.08), bh = L * 0.62;
+    for (let i = 0; i < 12; i++) { const x = -bw + i / 11 * bw * 2, a = (i / 11 - 0.5) * 1.6; ctx.strokeStyle = rgba(shade(c0, 0.1), 0.8); ctx.lineWidth = Math.max(0.8, L * 0.012); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x + Math.sin(a) * L * 0.12, L * 0.08, x + Math.sin(a) * L * 0.2, L * 0.02 + Math.cos(t + i) * L * 0.02); ctx.stroke(); } ctx.lineCap = 'butt';
+    const p = new Path2D(); p.moveTo(-bw, 0); p.bezierCurveTo(-bw * 1.05, -bh * 0.5, -bw * 0.45, -bh, 0, -bh); p.bezierCurveTo(bw * 0.45, -bh, bw * 1.05, -bh * 0.5, bw, 0); p.closePath(); glass(p, bw, bh, 0.55, 0.45, c0);
+    ctx.fillStyle = rgba(c1, 0.85); ctx.beginPath(); ctx.moveTo(-bw * 0.5, -bh * 0.15); ctx.bezierCurveTo(-bw * 0.55, -bh * 0.6, -bw * 0.2, -bh * 0.82, 0, -bh * 0.82); ctx.bezierCurveTo(bw * 0.2, -bh * 0.82, bw * 0.55, -bh * 0.6, bw * 0.5, -bh * 0.15); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(40,0,10,0.5)'; ctx.lineWidth = Math.max(1, L * 0.012); ctx.beginPath(); ctx.moveTo(-bw * 0.98, -bh * 0.12); ctx.quadraticCurveTo(0, -bh * 0.02, bw * 0.98, -bh * 0.12); ctx.stroke(); // the coronal groove
+    ctx.strokeStyle = 'rgba(255,220,220,0.25)'; ctx.lineWidth = lw; ctx.stroke(p);
+    return v.glow ? [[0, -bh * 0.5]] : null;
+  }
+  if (k === 'salp') { // the giant salp: a clear barrel, bands of muscle ringing it, a small amber gut at one end
+    const w = L * 0.5, h = L * 0.17 * (1 + pulse * 0.08);
+    const p = new Path2D(); p.moveTo(-w, -h * 0.75); p.bezierCurveTo(-w * 0.3, -h * 1.1, w * 0.3, -h * 1.05, w * 0.92, -h * 0.6); p.lineTo(w, h * 0.6); p.bezierCurveTo(w * 0.3, h * 1.05, -w * 0.3, h * 1.1, -w, h * 0.75); p.closePath();
+    glass(p, w, h, 0.28, 0.12, '#d0e4ec'); ctx.save(); ctx.clip(p);
+    ctx.strokeStyle = 'rgba(225,240,248,0.5)'; ctx.lineWidth = Math.max(0.6, L * 0.007); for (let i = 0; i < 7; i++) { const x = -w * 0.75 + i * w * 0.25; ctx.beginPath(); ctx.ellipse(x, 0, w * 0.05, h * 1.1, 0.08 * (i - 3), 0, TAU); ctx.stroke(); }
+    ctx.restore(); ctx.strokeStyle = 'rgba(235,245,250,0.45)'; ctx.lineWidth = lw; ctx.stroke(p);
+    ctx.fillStyle = rgba(c1, 0.9); ctx.beginPath(); ctx.ellipse(w * 0.62, h * 0.1, w * 0.09, h * 0.32, 0.2, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(8,16,20,0.5)'; ctx.beginPath(); ctx.ellipse(-w * 0.98, 0, w * 0.03, h * 0.6, 0, 0, TAU); ctx.fill();
+    return null;
+  }
+  if (k === 'larvacean') { // the giant larvacean: a little tadpole inside a vast house of mucus, a filter like a fan in its middle
+    const R = L * 0.45;
+    const p = new Path2D(); p.ellipse(0, -R * 0.1, R, R * 0.8, 0, 0, TAU); glass(p, R, R, 0.16, 0.06, '#d8e4e8');
+    ctx.strokeStyle = 'rgba(225,235,240,0.25)'; ctx.lineWidth = Math.max(0.4, L * 0.003); ctx.stroke(p);
+    ctx.save(); ctx.clip(p); ctx.strokeStyle = 'rgba(220,232,236,0.22)'; for (let i = 0; i < 14; i++) { const a = -PI * 0.85 + i * 0.13; ctx.beginPath(); ctx.moveTo(-R * 0.1, R * 0.05); ctx.quadraticCurveTo(Math.cos(a) * R * 0.4, Math.sin(a) * R * 0.3, Math.cos(a) * R * 0.75, Math.sin(a) * R * 0.6); ctx.stroke(); } ctx.restore();
+    const fx = R * 0.15, fy = R * 0.15; ctx.fillStyle = rgba(c1, 0.95); ctx.beginPath(); ctx.ellipse(fx, fy, R * 0.07, R * 0.05, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = rgba(c0, 0.8); ctx.lineWidth = Math.max(0.6, L * 0.008); ctx.beginPath(); ctx.moveTo(fx + R * 0.06, fy); for (let s = 1; s <= 8; s++) { const q = s / 8; ctx.lineTo(fx + R * 0.06 + q * R * 0.3, fy + Math.sin(t * 6 + q * 6) * R * 0.04 * q); } ctx.stroke();
+    return null;
+  }
+  // big red and the giant phantom: a broad dark bell, no tentacles, a few thick arms (short and fleshy, or long ribbons)
+  const phantom = k === 'phantom', bw = L * (phantom ? 0.3 : 0.4) * (1 - pulse * 0.08), bh = L * (phantom ? 0.2 : 0.22);
+  const na = phantom ? 4 : 6;
+  for (let a = 0; a < na; a++) { const ax = (a - (na - 1) / 2) * bw * (phantom ? 0.35 : 0.28), len = phantom ? L * (0.75 + hashN(a, 9) * 0.2) : L * (0.16 + hashN(a, 4) * 0.08), wid = phantom ? L * 0.035 : L * 0.05;
+    ctx.fillStyle = rgba(shade(c0, phantom ? -0.05 : 0.08), 0.92); ctx.beginPath(); ctx.moveTo(ax - wid, -bh * 0.05);
+    const pts = []; for (let s = 0; s <= 16; s++) { const q = s / 16; pts.push([ax + Math.sin(t * 0.8 + a * 1.3 + q * (phantom ? 5 : 2)) * L * (phantom ? 0.09 : 0.02) * q, q * len]); }
+    for (const [x, y] of pts) ctx.lineTo(x - wid * (1 - (y / len) * 0.5) + Math.sin((y / len) * 20 + a) * wid * 0.15, y); for (let i = pts.length - 1; i >= 0; i--) { const [x, y] = pts[i]; ctx.lineTo(x + wid * (1 - (y / len) * 0.5), y); } ctx.closePath(); ctx.fill(); }
+  const p = dome(bw, bh, 1, bh * 0.05); glass(p, bw, bh, 0.95, 0.85, c0);
+  ctx.save(); ctx.clip(p); ctx.fillStyle = rgba(shade(c0, -0.3), 0.6); ctx.beginPath(); ctx.ellipse(0, -bh * 0.55, bw * 0.55, bh * 0.45, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = rgba(shade(c0, -0.35), 0.5); ctx.lineWidth = lw; for (let i = 0; i < 12; i++) { const a = PI + i / 11 * PI; ctx.beginPath(); ctx.moveTo(Math.cos(a) * bw * 0.5, -bh * 0.5 + Math.sin(a) * bh * 0.4); ctx.lineTo(Math.cos(a) * bw * 1.05, -bh * 0.05 + Math.sin(a) * bh * 1.05); ctx.stroke(); } ctx.restore();
+  ctx.strokeStyle = 'rgba(255,200,190,0.18)'; ctx.lineWidth = Math.max(1, L * 0.012); ctx.beginPath(); ctx.ellipse(-bw * 0.25, -bh * 0.75, bw * 0.4, bh * 0.3, -0.3, PI * 1.1, PI * 1.6); ctx.stroke();
+  return null;
+}
+// the frilled shark: long as an eel, a flat snake-like head with its mouth at the very front, six frilled gill slits,
+// every fin pushed far back beside a long tail
+function drawFrilled(ctx, L, v, t, swim = 1) {
+  const c0 = v.c[0], c1 = v.c[1], N = 26, pts = [];
+  for (let i = 0; i <= N; i++) { const u = i / N, x = -L / 2 + u * L, y = Math.sin(t * 2.2 * swim - u * 6) * L * 0.035 * u; pts.push([x, y]); }
+  const half = (u) => L * (u < 0.08 ? 0.03 + u * 0.35 : u < 0.6 ? 0.058 - (u - 0.08) * 0.02 : Math.max(0.006, 0.048 - (u - 0.6) * 0.1));
+  ctx.beginPath(); for (let i = 0; i <= N; i++) { const [x, y] = pts[i]; ctx.lineTo(x, y - half(i / N)); } for (let i = N; i >= 0; i--) { const [x, y] = pts[i]; ctx.lineTo(x, y + half(i / N) * 0.9); } ctx.closePath();
+  const g = ctx.createLinearGradient(0, -L * 0.06, 0, L * 0.06); g.addColorStop(0, shade(c0, -0.15)); g.addColorStop(0.6, c0); g.addColorStop(1, c1); ctx.fillStyle = g; ctx.fill();
+  const at = (u) => pts[Math.min(N, Math.round(u * N))];
+  // fins, far back: dorsal over the anal, pelvics before them, a long tail with a big lower lobe
+  ctx.fillStyle = shade(c0, -0.2); const fin = (u, up, h, w) => { const [x, y] = at(u); ctx.beginPath(); ctx.moveTo(x - w, y + up * half(u) * 0.9); ctx.quadraticCurveTo(x, y + up * (half(u) + h), x + w * 0.8, y + up * half(u) * 0.8); ctx.closePath(); ctx.fill(); };
+  fin(0.74, -1, L * 0.035, L * 0.05); fin(0.7, 1, L * 0.04, L * 0.06); fin(0.58, 1, L * 0.03, L * 0.04); fin(0.15, 1, L * 0.035, L * 0.03);
+  { const [x, y] = at(0.88); ctx.beginPath(); ctx.moveTo(x - L * 0.04, y + half(0.88)); ctx.quadraticCurveTo(x + L * 0.06, y + L * 0.05, x + L * 0.13, y + L * 0.005); ctx.lineTo(x + L * 0.11, y - L * 0.01); ctx.closePath(); ctx.fill(); }
+  // six frilled gill slits, the first meeting under the throat
+  for (let s = 0; s < 6; s++) { const [x, y] = at(0.09 + s * 0.014), h = half(0.1) * 1.7; ctx.strokeStyle = rgba(shade(c0, -0.45), 0.85); ctx.lineWidth = Math.max(0.7, L * 0.004); ctx.beginPath();
+    for (let q = 0; q <= 8; q++) ctx.lineTo(x + (q % 2 ? L * 0.004 : 0), y - h * 0.5 + q / 8 * h); ctx.stroke();
+    ctx.strokeStyle = rgba('#b07a78', 0.45); ctx.beginPath(); ctx.moveTo(x + L * 0.004, y - h * 0.4); ctx.lineTo(x + L * 0.004, y + h * 0.45); ctx.stroke(); }
+  // the head: flat, the mouth at its tip, rows of small three-pointed teeth
+  const [hx, hy] = pts[0]; ctx.strokeStyle = rgba('#1a1210', 0.8); ctx.lineWidth = Math.max(0.8, L * 0.004); ctx.beginPath(); ctx.moveTo(hx, hy + L * 0.004); ctx.lineTo(hx + L * 0.045, hy + L * 0.008); ctx.stroke();
+  ctx.fillStyle = '#e8e0cc'; for (let i = 0; i < 6; i++) { const x = hx + L * 0.006 + i * L * 0.006; ctx.beginPath(); ctx.moveTo(x, hy + L * 0.002); ctx.lineTo(x + L * 0.002, hy + L * 0.009); ctx.lineTo(x + L * 0.004, hy + L * 0.002); ctx.fill(); }
+  eye(ctx, hx + L * 0.03, hy - L * 0.012, Math.max(1, L * 0.007), '#2a3a2a', true);
+  return null;
+}
+// the flat octopuses: the flapjack is a soft orange pancake with two little ear fins; the glowing sucker octopus a
+// wine-dark, glassy bell of webbed arms, a single row of its suckers lit blue
+function drawFlatOcto(ctx, L, v, t) {
+  const c0 = v.c[0], c1 = v.c[1], glow = v.ok === 'glow', ph = Math.sin(t * 1.2);
+  if (!glow) {
+    const w = L * 0.46, h = L * 0.17 * (1 + ph * 0.04);
+    for (const sd of [-1, 1]) { ctx.fillStyle = rgba(shade(c0, 0.1), 0.85); ctx.beginPath(); ctx.ellipse(sd * w * 0.32, -h * 1.3, L * 0.07, L * 0.035, sd * (0.5 + ph * 0.25), 0, TAU); ctx.fill(); }
+    const p = new Path2D(); p.moveTo(-w, 0); p.bezierCurveTo(-w * 1.02, -h * 0.9, -w * 0.5, -h * 1.45, 0, -h * 1.45); p.bezierCurveTo(w * 0.5, -h * 1.45, w * 1.02, -h * 0.9, w, 0);
+    for (let i = 8; i >= 0; i--) { const x = -w + i / 8 * w * 2; p.quadraticCurveTo(x + w * 0.125, h * 0.35 + Math.sin(t * 2 + i) * h * 0.05, x, h * 0.12); } p.closePath();
+    const g = ctx.createRadialGradient(-w * 0.2, -h * 1.1, 0, 0, -h * 0.4, w * 1.1); g.addColorStop(0, shade(c0, 0.3)); g.addColorStop(0.6, c0); g.addColorStop(1, shade(c0, -0.25)); ctx.fillStyle = g; ctx.fill(p);
+    ctx.save(); ctx.clip(p); ctx.fillStyle = rgba(shade(c0, -0.3), 0.35); for (let i = 0; i < 30; i++) { ctx.beginPath(); ctx.arc((hashN(i, 21) - 0.5) * w * 1.9, -hashN(i, 22) * h * 1.4, Math.max(0.6, L * 0.006), 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = rgba(shade(c0, -0.3), 0.4); ctx.lineWidth = Math.max(0.5, L * 0.004); for (let i = 1; i < 8; i++) { const x = -w + i / 8 * w * 2; ctx.beginPath(); ctx.moveTo(x * 0.6, -h * 0.35); ctx.lineTo(x, h * 0.15); ctx.stroke(); } ctx.restore();
+    for (const sd of [-1, 1]) eye(ctx, sd * w * 0.26, -h * 0.95, Math.max(1.2, L * 0.03), '#1a0e0a', true);
+    return null;
+  }
+  const w = L * 0.22, h = L * 0.3, fl = 1 + 0.12 * ph; // the mantle a small dome; the web below it flares like a bell's skirt
+  const skirt = new Path2D(); skirt.moveTo(-w * 0.8, -h * 0.55); skirt.bezierCurveTo(-w * 1.5 * fl, -h * 0.1, -w * 1.9 * fl, h * 0.35, -w * 1.9 * fl, h * 0.55);
+  for (let i = 0; i < 8; i++) { const x0 = -w * 1.9 * fl + i * w * 3.8 * fl / 8, x1 = x0 + w * 3.8 * fl / 8; skirt.quadraticCurveTo((x0 + x1) / 2, h * 0.38 + Math.sin(t * 1.5 + i) * h * 0.04, x1, h * 0.55); }
+  skirt.bezierCurveTo(w * 1.9 * fl, h * 0.35, w * 1.5 * fl, -h * 0.1, w * 0.8, -h * 0.55); skirt.closePath();
+  const sg = ctx.createLinearGradient(0, -h * 0.6, 0, h * 0.6); sg.addColorStop(0, rgba(c0, 0.9)); sg.addColorStop(1, rgba(shade(c0, 0.15), 0.45)); ctx.fillStyle = sg; ctx.fill(skirt);
+  ctx.strokeStyle = rgba(shade(c0, 0.35), 0.35); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.stroke(skirt);
+  const mg = ctx.createRadialGradient(-w * 0.3, -h * 1.0, 0, 0, -h * 0.7, w * 1.1); mg.addColorStop(0, shade(c1, 0.15)); mg.addColorStop(1, c0); ctx.fillStyle = mg; ctx.beginPath(); ctx.ellipse(0, -h * 0.7, w, h * 0.55, 0, 0, TAU); ctx.fill();
+  for (const sd of [-1, 1]) { ctx.fillStyle = rgba(c0, 0.85); ctx.beginPath(); ctx.ellipse(sd * w * 1.0, -h * 0.85, L * 0.05, L * 0.02, sd * 0.5, 0, TAU); ctx.fill(); }
+  const pts = []; for (let a2 = 0; a2 < 8; a2++) { const xe = -w * 1.75 * fl + a2 * w * 3.5 * fl / 7; ctx.strokeStyle = rgba(shade(c0, -0.2), 0.45); ctx.lineWidth = Math.max(0.5, L * 0.005); ctx.beginPath(); ctx.moveTo(xe * 0.25, -h * 0.4); ctx.lineTo(xe, h * 0.5); ctx.stroke();
+    for (let s2 = 1; s2 <= 5; s2++) { const q = s2 / 5.5, x = xe * (0.25 + 0.75 * q), y = -h * 0.4 + h * 0.9 * q; ctx.fillStyle = rgba(v.glow || '#7ab8ff', 0.9); ctx.beginPath(); ctx.arc(x, y, Math.max(0.7, L * 0.008), 0, TAU); ctx.fill(); if (s2 === 3) pts.push([x, y]); } }
+  for (const sd of [-1, 1]) eye(ctx, sd * w * 0.45, -h * 0.55, Math.max(1, L * 0.018), '#0a0408', true);
+  return pts;
+}
+// the geoduck: a small shell sunk in the sand, and out of it a long, thick, wrinkled neck (the siphon), its two holes at the tip
+function drawGeoduck(ctx, L, v, t) {
+  const c0 = v.c[0], c1 = v.c[1], sway = Math.sin(t * 0.6) * L * 0.05, sh = L * 0.42;
+  const sg = ctx.createLinearGradient(0, -sh * 0.6, 0, 0); sg.addColorStop(0, shade(c1, 0.1)); sg.addColorStop(1, shade(c1, -0.2)); ctx.fillStyle = sg;
+  ctx.beginPath(); ctx.ellipse(0, -sh * 0.12, sh * 0.62, sh * 0.32, 0, PI, TAU); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rgba(shade(c1, -0.35), 0.55); ctx.lineWidth = Math.max(0.5, L * 0.004); for (let r = 0.25; r < 0.62; r += 0.09) { ctx.beginPath(); ctx.ellipse(0, -sh * 0.12, sh * r, sh * r * 0.5, 0, PI * 1.05, PI * 1.95); ctx.stroke(); }
+  const N = 12, top = -L * 0.62, pts = []; for (let i = 0; i <= N; i++) { const u = i / N; pts.push([sway * u * u + Math.sin(u * 3 + t * 0.5) * L * 0.02 * u, -sh * 0.3 + (top + sh * 0.3) * u]); }
+  const wid = (u) => L * (0.075 - u * 0.02);
+  ctx.beginPath(); for (let i = 0; i <= N; i++) { const [x, y] = pts[i]; ctx.lineTo(x - wid(i / N), y); } for (let i = N; i >= 0; i--) { const [x, y] = pts[i]; ctx.lineTo(x + wid(i / N), y); } ctx.closePath();
+  const ng = ctx.createLinearGradient(-L * 0.1, 0, L * 0.1, 0); ng.addColorStop(0, shade(c0, -0.2)); ng.addColorStop(0.45, shade(c0, 0.12)); ng.addColorStop(1, shade(c0, -0.25)); ctx.fillStyle = ng; ctx.fill();
+  ctx.strokeStyle = rgba(shade(c0, -0.35), 0.5); ctx.lineWidth = Math.max(0.5, L * 0.005); for (let i = 1; i < 30; i++) { const u = i / 30, k2 = u * N, i0 = Math.floor(k2), [x, y] = pts[Math.min(N, i0)], w2 = wid(u) * 0.95; ctx.beginPath(); ctx.moveTo(x - w2, y + Math.sin(i) * L * 0.004); ctx.quadraticCurveTo(x, y + L * 0.012, x + w2, y - Math.sin(i * 1.3) * L * 0.004); ctx.stroke(); }
+  const [tx, ty] = pts[N]; ctx.fillStyle = shade(c0, -0.45); ctx.beginPath(); ctx.ellipse(tx, ty, wid(1), L * 0.025, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#1a120c'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(tx + sd * wid(1) * 0.45, ty, wid(1) * 0.28, L * 0.012, 0, 0, TAU); ctx.fill(); }
+  return null;
+}
+// an oyster, lying on the bottom: a rough, irregular cup of layered shell, its plates lifting in frills at the edge
+function drawOyster2(ctx, L, v) {
+  const c0 = v.c[0], c1 = v.c[1], lw = Math.max(0.5, L * 0.005), rr = (a, k) => L * 0.42 * (1 + 0.12 * Math.sin(a * 3 + k) + 0.08 * Math.sin(a * 7 + k * 2)) * (a > PI ? 0.62 : 1);
+  ctx.fillStyle = shade(c0, -0.25); ctx.beginPath(); ctx.ellipse(0, -L * 0.02, L * 0.46, L * 0.06, 0, 0, TAU); ctx.fill();
+  for (let layer = 0; layer < 5; layer++) { const s2 = 1 - layer * 0.15, yo = -L * 0.03 - layer * L * 0.028;
+    ctx.fillStyle = shade(layer % 2 ? c1 : c0, -0.08 + layer * 0.05); ctx.beginPath();
+    for (let i = 0; i <= 40; i++) { const a = i / 40 * TAU, r = rr(a, layer) * s2; ctx.lineTo(Math.cos(a) * r, yo + Math.sin(a) * r * 0.24 + (i % 3 ? 0 : L * 0.006)); } ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = rgba(shade(c0, -0.4), 0.5); ctx.lineWidth = lw; ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(120,90,130,0.45)'; ctx.lineWidth = Math.max(0.8, L * 0.01); ctx.beginPath(); ctx.ellipse(0, -L * 0.03, L * 0.44, L * 0.1, 0, PI * 0.05, PI * 0.95); ctx.stroke(); // a purple lip at the gape
+  ctx.fillStyle = 'rgba(240,236,228,0.35)'; ctx.beginPath(); ctx.ellipse(-L * 0.06, -L * 0.15, L * 0.08, L * 0.02, -0.1, 0, TAU); ctx.fill();
+  return null;
+}
+// the brain coral: a lumpy dome, its surface one long maze of ridges and valleys
+function drawBrain2(ctx, L, v) {
+  const c0 = v.c[0], c1 = v.c[1], R = L * 0.5, H = L * 0.36;
+  const p = new Path2D(); p.moveTo(-R, 0); for (let i = 0; i <= 60; i++) { const a = PI + i / 60 * PI, bump = 1 + 0.04 * Math.sin(a * 5 + 1) + 0.025 * Math.sin(a * 11); p.lineTo(Math.cos(a) * R * bump, Math.sin(a) * H * bump); } p.closePath(); // lumpy, but smooth
+  const g = ctx.createRadialGradient(-R * 0.3, -H * 0.8, 0, 0, -H * 0.3, R * 1.1); g.addColorStop(0, shade(c1, 0.15)); g.addColorStop(0.6, c0); g.addColorStop(1, shade(c0, -0.3)); ctx.fillStyle = g; ctx.fill(p);
+  ctx.save(); ctx.clip(p);
+  for (let ring = 3; ring <= 11; ring++) { const sc = ring / 11.3, k = ring * 2.3; // contours of the dome, each wriggling: the valleys of the maze
+    const path = (dy) => { ctx.beginPath(); for (let i = 0; i <= 90; i++) { const a = PI + i / 90 * PI, w = Math.sin(a * (9 + ring) + k) * 0.045 + Math.sin(a * 23 + k * 1.7) * 0.015; const x = Math.cos(a) * R * (sc + w), y = Math.sin(a) * H * (sc + w) + dy; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); };
+    ctx.strokeStyle = rgba(shade(c0, -0.45), 0.6); ctx.lineWidth = Math.max(0.8, L * 0.013); path(0);
+    ctx.strokeStyle = rgba(shade(c1, 0.3), 0.32); ctx.lineWidth = Math.max(0.5, L * 0.006); path(-H * 0.03); }
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fillRect(-R, -H * 0.25, R * 2, H * 0.3); ctx.restore();
+  ctx.strokeStyle = rgba(shade(c0, -0.4), 0.5); ctx.lineWidth = Math.max(0.5, L * 0.005); ctx.stroke(p);
+  return null;
+}
+Object.assign(FAM, { jelly2: { draw: drawJelly2 }, frilled: { draw: drawFrilled }, flatocto: { draw: drawFlatOcto }, geoduck: { draw: drawGeoduck }, oyster2: { draw: drawOyster2 }, brain2: { draw: drawBrain2 } });

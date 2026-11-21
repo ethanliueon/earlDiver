@@ -6,7 +6,7 @@ import { drawSpecies } from './creatures_draw.js';
 let SUIT = '#141619', SUIT_HI = '#2a2f35', SUIT_PANEL = '#24282d', SUIT_SEAM = '#33383e';
 let GLOVE = '#0d0e10', BCD = '#23272c', WEBBING = '#3a3d41';
 // each suit's colours: [suit, highlight, panel, seam, glove]
-const SUIT_LOOK = {
+export const SUIT_LOOK = {
   wet: ['#1a1d21', '#3c434b', '#2d3339', '#2f7480', '#0f1012'], // charcoal neoprene, grey panels, a teal trim
   skin: ['#10223a', '#2a4a6e', '#163050', '#3a5a80', '#0b1626'],
   dry: ['#1a1b1d', '#34363a', '#b8501e', '#c86a30', '#121314'],

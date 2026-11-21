@@ -693,7 +693,7 @@ export class TankRoom {
     const body = new Path2D();
     body.moveTo(X0, TOP); body.lineTo(X1, TOP); body.lineTo(X1, BOT - 12); body.quadraticCurveTo(X1, BOT, X1 - 12, BOT); body.lineTo(X0 + 12, BOT); body.quadraticCurveTo(X0, BOT, X0, BOT - 12); body.closePath();
     const wg = ctx.createLinearGradient(X0, 0, X1, 0);
-    wg.addColorStop(0, 'rgba(28,30,110,0.95)'); wg.addColorStop(0.35, 'rgba(70,80,190,0.78)'); wg.addColorStop(0.6, 'rgba(84,96,205,0.74)'); wg.addColorStop(1, 'rgba(24,26,96,0.95)');
+    wg.addColorStop(0, 'rgba(12,34,40,0.95)'); wg.addColorStop(0.35, 'rgba(38,80,86,0.8)'); wg.addColorStop(0.6, 'rgba(46,92,96,0.76)'); wg.addColorStop(1, 'rgba(10,28,34,0.95)'); /* (5.10.10) the sea's own deep green-blue, not a violet */
     ctx.fillStyle = wg; ctx.fill(body);
     ctx.save(); ctx.clip(body);
     ctx.fillStyle = 'rgba(40,40,48,0.8)'; ctx.beginPath(); ctx.arc(cx, BOT - 76, 9, 0, TAU); ctx.fill();
@@ -915,7 +915,7 @@ export class TankRoom {
     const body = new Path2D();
     body.moveTo(X0, TOP); body.lineTo(X1 - r, TOP); body.quadraticCurveTo(X1, TOP, X1, TOP + r); body.lineTo(X1, BOT - r); body.quadraticCurveTo(X1, BOT, X1 - r, BOT); body.lineTo(X0, BOT); body.closePath();
     const wg = ctx.createLinearGradient(0, TOP, 0, BOT);
-    wg.addColorStop(0, 'rgba(28,30,110,0.95)'); wg.addColorStop(0.35, 'rgba(70,80,190,0.78)'); wg.addColorStop(0.6, 'rgba(84,96,205,0.74)'); wg.addColorStop(1, 'rgba(24,26,96,0.95)');
+    wg.addColorStop(0, 'rgba(12,34,40,0.95)'); wg.addColorStop(0.35, 'rgba(38,80,86,0.8)'); wg.addColorStop(0.6, 'rgba(46,92,96,0.76)'); wg.addColorStop(1, 'rgba(10,28,34,0.95)'); /* (5.10.10) the sea's own deep green-blue, not a violet */
     ctx.fillStyle = wg; ctx.fill(body);
     ctx.save(); ctx.clip(body);
     const pumping = inn.some((s) => (s.press || 0) < Math.min(homeOf(s), cmax) - 1);

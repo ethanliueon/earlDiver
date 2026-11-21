@@ -182,7 +182,7 @@ export function newQuest(P, rnd = Math.random, taken = new Set()) {
       const q = opts[Math.floor(rnd() * opts.length)];
       return { ...base, key: q.key, kind: q.kind, g: q.g, d: q.d, n: q.n, pay: q.pay, text: q.text };
     }
-    const kinds = ['group', 'group', 'group', 'deep', 'catch', 'sell', 'species'].concat(ownsKind(P, 'cam') ? ['photo'] : []).concat(ownsKind(P, 'tag') ? ['tag'] : []).concat(P.lessonTrawl ? ['trawl'] : []);
+    const kinds = ['group', 'group', 'group', 'deep', 'catch', 'sell', 'species'].concat(ownsKind(P, 'cam') ? ['photo'] : []).concat(P.lessonTrawl ? ['trawl'] : []);
     const kind = kinds[Math.floor(rnd() * kinds.length)];
     let q;
     if (kind === 'group') {

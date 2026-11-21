@@ -127,6 +127,31 @@ There are also real bugs: one makes escaping the thing impossible by touch.
 - **Glows are quiet**: lit coins a soft rim, rarity rims muted, presses a soft ripple, the controls dimming in the
   dark (5.10.8).
 
+- **(5.10.10) The trawl takes whatever its mouth touches**: fish, octopuses, crabs, and on the bottom corals,
+  sponges and anemones (a coral whole, gone from that spot); kelp stays. It rides on the bottom. Too big stays out.
+- **The hand net is as it was before 5.10.8**; a wider reach is only the trawl's.
+- **In the jaws the layout stays**: everything that cannot help dims; a ready Tidewarden turns saturated and swells
+  (it does that whenever it can be used). The lure stays a card, not a button.
+- **The lure**: one in all (an old lure counts); 10 s of light (old: 20 s), then about 20 s away, then it hunts again.
+  In the jaws it is pushed into the mouth. The Tidewarden is the real escape.
+- **Photos**: pay = the animal's worth x the camera's Quality (shown as "Quality 22.16") x the grade (Poor 0.5,
+  Good 1, Excellent 2, as 1 to 3 stamped stars); at least $1; each single animal pays once. Every species has a
+  worth, the uncatchable ones too.
+- **No tags**: "needs a tag" is "too big for the net"; photos are how big animals pay.
+- **Rarity price bands**: common $25-300, uncommon $300-1,500, rare $1,500-8,000, exotic $8,000-40,000,
+  legendary $45,000+. Gear priced above its band was promoted a rarity (Dave's deep suits to exotic); the Iron Lung
+  is exotic at $38,000. Legendaries only from the old one and chests.
+- **Chests never pay back more than they cost** (selling gear returns 30 %). Chest prices to be set near the average
+  shop worth of what is inside: the table waits for the owner (it would make legendaries much cheaper to reach).
+- **Shop**: the rarity is stamped on each photograph; suits are shown laid flat, no Earl in them.
+- **No developer key** (X removed). **No keys page**: the game is touch only.
+- **Text stays its size** (owner: it reads fine); only the tiniest labels may go up a step, if wanted.
+- **The marked eye** under the money is the one sign of being marked (the vast eye in the water is gone); the red
+  water when it is close stays exactly as it is.
+- **Parked for later**: journal milestones (every 25 species, each zone). Revamping all 411 item pictures comes last.
+- **Retracted**: "the deep is a black screen below 600 m" (A14, D1) came from a test that crushed the sub; the lights
+  work. The deep's polish (zones, landmarks lit, death cards) stays a later phase.
+
 ## Order of work (revised)
 
 1. Fish pass (batches by family), with the legendaries' own bodies

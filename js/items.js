@@ -74,14 +74,25 @@ function statsOf(kind, arch, rarity) {
   if (kind === 'suit') s.look = arch;
   return s;
 }
+// (5.10.10) a camera's Quality number, shown on its card ("Quality 22.16"): the per cent of an animal's worth a
+// photograph from it earns before the photo's grade. Each rarity has its band, and each model its own exact figure
+// inside it (from its id), so two cameras compare at a glance without a round rule showing through.
+const CAM_BAND = { common: [9, 11.5], uncommon: [13.5, 16.5], rare: [20, 24.5], exotic: [27.5, 32.5], legendary: [37.5, 42] };
+export function camIndex(def) {
+  const [a, b] = CAM_BAND[def.rarity] || CAM_BAND.common; let h = 2166136261;
+  for (const ch of String(def.id)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return +(a + ((h >>> 0) % 10000) / 10000 * (b - a)).toFixed(2);
+}
 // what a thing is worth (a chest item's value, before its skills; selling pays about a third)
+// (5.10.10) each rarity's price band starts here (common $25-300, uncommon $300-1,500, rare $1,500-8,000, exotic $8,000-40,000, legendary $45,000 up)
+export const BAND_MIN = { common: 25, uncommon: 300, rare: 1500, exotic: 8000, legendary: 45000 };
 const VALUE = { common: 120, uncommon: 450, rare: 1800, exotic: 15000, legendary: 90000 }; // (3.7.0) the top two raised with what the deep pays
 // the "good for" line, worked out from the stats
 function goodOf(kind, s) {
   const cm = (m) => Math.round(m * 100);
   if (kind === 'net' || kind === 'slurp') return `${s.multi ? `Up to ${s.multi} from a school at once; ` : ''}fish ${s.minLen ? `${cm(s.minLen)}–${cm(s.maxLen)} cm` : `up to ${cm(s.maxLen)} cm`}, reach ${s.range} m`;
   if (kind === 'tag') return `Tagging from ${s.range} m`;
-  if (kind === 'cam') return `Holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
+  if (kind === 'cam') return `Quality ${(s.idx || 10).toFixed(2)}; holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
   if (kind === 'fins') return `Cruising ×${s.swim}, sprint ×${s.sprint}`;
   if (kind === 'tank') return `About ${s.air} s of air${s.quiet ? ', no bubbles' : ''}`;
   if (kind === 'bag') return `${s.slots} animals${s.apart ? ', kept apart' : ''}`;
@@ -102,8 +113,10 @@ export const ITEMS = {};
 function add(def) {
   if (RETIRED_KINDS.has(def.kind)) { RETIRED[def.id] = def.price != null ? def.price : Math.round(VALUE[def.rarity] * 0.6); return; }
   Object.assign(def, statsOf(def.kind, def.arch, def.rarity));
+  if (def.kind === 'cam') def.idx = camIndex(def); // (5.10.10) the camera's Quality: what share of an animal's worth its photographs earn
   if (!def.good) def.good = goodOf(def.kind, def);
   if (def.price == null) def.price = Math.round(VALUE[def.rarity] * (SIDE_KINDS.includes(def.kind) ? 0.6 : 1));
+  def.price = Math.max(def.price, BAND_MIN[def.rarity] || 0); // (5.10.10) never below its rarity's band, so the colour means the price
   def.pal = paletteOf(def);
   // (2.8.1) the special looks: a Legendary's own, or the old-expedition look of an Exotic
   const Lk = LOOKS[def.id], ex = def.rarity === 'exotic';
@@ -150,7 +163,7 @@ for (const [key, S] of Object.entries(SETS)) for (const [kind, arch] of Object.e
 
 // (5.9.0) ability scrolls: items like the rest (chests, the Old One, the locker), with no rolled skills
 for (const [fam, T] of Object.entries(ABILITY_DEFS)) for (const [tier, d] of Object.entries(T)) {
-  const id = abilityId(fam, tier); ITEMS[id] = { id, kind: 'ability', arch: fam, fam, tier, rarity: tier, chest: true, name: d.name, line: d.line, good: d.line, bad: '', price: Math.round(VALUE[tier] * 0.8) };
+  const id = abilityId(fam, tier); ITEMS[id] = { id, kind: 'ability', arch: fam, fam, tier, rarity: tier, chest: true, name: d.name, line: d.line, good: d.line, bad: '', price: Math.max(BAND_MIN[tier] || 0, Math.round(VALUE[tier] * 0.8)) }; // (5.10.10) within its band
 }
 export const ITEMS_OF = (kind, shop = null) => Object.values(ITEMS).filter((it) => it.kind === kind && (!shop || it.shop === shop));
 export const CHEST_POOL = Object.values(ITEMS).filter((it) => it.chest);

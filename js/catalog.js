@@ -9,7 +9,7 @@ import { drawScroll3 } from './scrolls.js';
 import { SUITS, TRAPS, SUPPLIES, supplyMax, money, owns, kit } from './economy.js';
 import { NETS_SUB, netsOf } from './capture.js';
 import { toolIcon } from './tools_draw.js';
-import { drawSpecialPicture } from './item_art.js';
+import { drawSpecialPicture, drawSuitFlat } from './item_art.js';
 import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
@@ -35,7 +35,7 @@ export const WEBSHOPS = {
 const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];
 const LEDE = {
   net: 'Key 1 under water. You carry one; change it in your inventory (B) on deck or in the sub.',
-  cam: 'Key 2. Hold still while the shutter is open; sell the pictures at the boat. Film is bought by the exposure.', trawl: "One in the sub's belly hatch (N); used up in one haul.",
+  cam: 'Hold still while the shutter is open; sell the pictures at the boat. The higher its Quality, the more each picture earns. Film is bought by the exposure.', trawl: "One in the sub's belly hatch (N); used up in one haul.",
   trap: 'Set from the surface, on a line from a buoy (key 3).', suit: 'One worn at a time.', fins: 'How fast he swims, and sprints.',
   tank: 'How long he can stay down.', bag: 'How many animals he can carry.', supply: 'Bought by the number.',
 };
@@ -48,7 +48,7 @@ export const MEASURES = {
   net: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Swing', (it) => `${it.time.toFixed(2)} s, ${it.time <= 0.85 ? 'quick' : it.time <= 1.2 ? 'steady' : 'slow'}`, (it) => -it.time, true]],
   slurp: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   tag: [['Range', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
-  cam: [['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
+  cam: [['Quality', (it) => (it.idx || 10).toFixed(2), (it) => it.idx || 10, true], /* (5.10.10) */ ['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
   fins: [['Cruising', (it) => x(it.swim), (it) => it.swim, true], ['Sprint', (it) => x(it.sprint), (it) => it.sprint, true]],
   tank: [['Air', (it) => `about ${secs(it.air)}`, (it) => it.air, true], ['Speed', (it) => (it.speed >= 1 ? 'no slower' : it.speed >= 0.96 ? 'a little slower' : 'slower'), (it) => it.speed, true]],
   bag: [['Animals', (it) => `${it.slots}`, (it) => it.slots, true]],
@@ -96,7 +96,7 @@ export class Catalog {
     if (ITEM_CATS.includes(cat)) {
       // (2.8.0) items, suits included; a bought one goes into the locker, and is put on in the inventory (B)
       const on = wornItem(P, cat);
-      return ITEMS_OF(cat, this.cfg.stock).map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad, tag: RARITY[it.rarity].name, rarity: it.rarity,
+      return ITEMS_OF(cat, this.cfg.stock).map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.kind === 'cam' && it.idx && !/^Quality/.test(it.good || '') ? `Quality ${it.idx.toFixed(2)} · ${it.good || ''}` : it.good, bad: it.bad, /* (5.10.10) a camera shows its Quality */ tag: RARITY[it.rarity].name, rarity: it.rarity,
         owned: ownsItem(P, it.id), on: !!on && on.id === it.id, pic: [cat, it] }));
     }
     if (this.id !== 'bayside') return [];
@@ -108,7 +108,7 @@ export class Catalog {
       return ['pot', 'fish'].map((k, i) => { const T = TRAPS[k], have = tr[k] || 0; return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, price: T.price, line: k === 'pot' ? 'A galvanised box with one funnel.' : 'A mesh box with a funnel at each end.', good: `To ${T.maxDepth} m; up to ${T.holds} animals`, count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', i] }; });
     }
     // (4.0.0) the anglerfish lure: not at Bayside, only at the station and Dave's, and dear
-    if (cat === 'lure') { const S = SUPPLIES.lure, have = ((g && g.items.lure) || 0) + ((P.spare && P.spare.lure) || 0), mx = supplyMax(P, 'lure');
+    if (cat === 'lure') { const S = SUPPLIES.lure, have = ((g && g.items.lure) || 0) + ((P.spare && P.spare.lure) || 0) + (P.oldLures || 0), mx = supplyMax(P, 'lure');
       return [{ key: 'lure', id: 'lure', kind: 'supply', name: S.name, price: S.price, line: S.desc.split(/[.:]/)[0] + '.', count: `you carry ${have} of ${mx}`, full: have >= mx, pic: ['supply', 'lure'] }]; }
     if (cat === 'supply') {
       return Object.entries(SUPPLIES).filter(([k, S]) => k !== 'lure' && (!S.needs || owns(P, S.needs))).map(([k, S]) => { const have = ((g && g.items[k]) || 0) + ((P.spare && P.spare[k]) || 0), mx = supplyMax(P, k); return { key: k, id: k, kind: 'supply', name: S.name, price: S.price, line: S.desc, count: `you have (${have}/${mx})`, full: have >= mx, pic: ['supply', k] }; });
@@ -183,7 +183,8 @@ export class Catalog {
     const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag${e.rarity ? ' r-' + e.rarity : ''}">${e.good ? `<span class="good">${e.good}</span>` : ''}${e.rarity && e.rarity !== 'common' ? `<em>${e.tag}</em>` : !e.good ? e.tag || '' : ''}</div>`; // (4.28) what it does on the card; the rarity only when it is not common
     const go = `data-go="${e.key}"`; // (4.16.9) supplies open their own page too
     const buy = e.kind === 'supply' ? `<button class="cat-mini" data-buy="${e.key}" ${e.full || this.h.getProfile().cash < e.price ? 'disabled' : ''}>${e.full ? 'Full' : 'Buy'}</button>` : '';
-    return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t"><b>${e.name}</b><span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
+    const stamp = e.rarity ? `<span class="cat-stamp r-${e.rarity}">${RARITY[e.rarity].name}</span>` : ''; // (5.10.10) the grade stamped on the photograph, in its rarity's ink
+    return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt="">${stamp}<div class="t"><b>${e.name}</b><span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
   }
   itemPage({ e, cat }) {
     const P = this.h.getProfile(), cash = P.cash || 0;
@@ -207,7 +208,7 @@ export class Catalog {
     else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)}, not enough cash` : `Buy now, ${money(e.price, false)}`}</button>`
       + (item ? (inCart ? `<a href="#" class="cat-save" data-go="cart">In your cart ✓</a>` : `<a href="#" class="cat-btn2" data-cart="add|${e.key}">Add to cart</a>`) : '')
       ; // (4.5.0) no 'Save for this'
-    return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><img src="${this.pic(e, 640, 420)}" alt=""><div>
+    return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><div class="cat-photo"><img src="${this.pic(e, 640, 420)}" alt="">${e.rarity ? `<span class="cat-stamp big r-${e.rarity}">${RARITY[e.rarity].name}</span>` : ''}</div><div>
       <h2>${e.name}</h2>${e.rarity ? `<div class="rr r-${e.rarity}">${RARITY[e.rarity].name}</div>` : ''}<div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
       <div class="gf">${e.good ? `<div class="g">${e.good}</div>` : ''}${e.bad ? `<div class="b">${e.bad}</div>` : ''}</div>${vs}<div class="buy">${btn}</div></div></div>`;
   }
@@ -237,7 +238,7 @@ export function pictureOf(kind, v, w, h, plain = false) {
         const dw = w * 0.8 * k, dh = h * 0.8 * k; ctx.drawImage(tc, (w - dw) / 2, (h - dh) / 2, dw, dh);
       } else ctx.drawImage(ic, w * 0.1, h * 0.1);
     }
-    else if (kind === 'suit') { ctx.save(); ctx.translate(w / 2, h * 0.36); ctx.rotate(-Math.PI / 2); drawEarl(ctx, h * 0.62, 0, 0, null, null, { kind: 'none', tier: 0, t: 0, suit: v && typeof v === 'object' ? v.pal || v.look : v, bag: [], noTank: true }); ctx.restore(); }
+    else if (kind === 'suit') drawSuitFlat(ctx, w, h, v && typeof v === 'object' ? v : { look: v }); // (5.10.10) the suit laid out on its own, no Earl in it
     else if (kind === 'fins') drawFins(ctx, w, h, v);
     else if (kind === 'tank') drawTank(ctx, w, h, v);
     else if (kind === 'bag') drawBag(ctx, w, h, v);

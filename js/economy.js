@@ -149,7 +149,7 @@ export function replacementPrice(P) {
 }
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
-    desc: 'Thrown (Q). The thing in the deep follows its light for a while. You carry one.' },
+    desc: 'The thing in the deep follows its light for 10 s, then loses interest for a little while. Offered when it comes for you, even in its jaws. You carry one lure in all.' },
   necklace: { name: 'Glow stick', price: 370, max: 5, desc: 'A chemical glow stick on a lanyard, snapped to light (E): 90 s of warm amber light around Earl, and in the sub it lights her and the water round her. It does not keep anything away, and a light can be seen. Used up once snapped.' },
   film: { name: 'Film', price: 4, max: 5, needs: 'camera', desc: 'One exposure each. The camera holds as many as it takes; every picture uses one, sharp or not.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
@@ -345,7 +345,7 @@ function upgradeCoinsOld(P, id) {
 }
 // what the old one keeps in her cave, for coins
 export const WARES = {
-  oldlure: { name: 'An old lure', coins: 2, max: 3, line: 'A lure that has hung in the dark longer than the boat has floated.', desc: 'Burns two and a half times as long as a common lure (25 s), and the deep follows it farther. Thrown first with Q.' },
+  oldlure: { name: 'An old lure', coins: 2, max: 1, line: 'A lure that has hung in the dark longer than the boat has floated.', desc: 'Burns twice as long as a common lure (20 s). You carry one lure in all, old or common. Offered first when the thing comes for you.' },
   blessing: { name: 'The old one\'s blessing', coins: 2, line: 'The old one breathes on you. The deep looks away, for a while.', desc: 'For the rest of this dive, the entity notices you half as fast.' },
   eye: { name: 'A sapphire eye', coins: 8, once: true, line: 'A blue stone that turns toward its own kind.', desc: 'Deep sapphires within 150 m show on the sonar as blue points. Kept for good.' },
 };

@@ -2,7 +2,7 @@
 // fork every sentence, the words shown on the page are rewritten as they appear: "press F" becomes "tap", a key in
 // brackets is dropped, and key caps in the HTML are hidden by css/olive.css (html.touch kbd). Only text nodes are
 // touched, and only while the page is in touch mode.
-const KEY = '(?:[A-Z]|Esc|Space|Shift|Enter|Tab|RMB|LMB)';
+const KEY = '(?:[A-Z]|[0-9]|Esc|Space|Shift|Enter|Tab|RMB|LMB)'; // (5.10.10) the number keys too
 const RULES = [
   [new RegExp(`\\b[Pp]ress(?:ing)? ${KEY}\\b(?: (?:again|twice))?`, 'g'), (m) => (m[0] === 'P' ? 'Tap' : 'tap')],
   [new RegExp(`\\b([Hh]old) ${KEY}\\b`, 'g'), (m, h) => `${h} the button`],

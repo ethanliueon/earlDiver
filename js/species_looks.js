@@ -363,8 +363,8 @@ export const LOOKS = {
   417: { fam: 'coral2', coral: 'mushroom', c: ['#8a7a6a', '#c8bc9a'] }, // Mushroom Coral
   418: { fam: 'coral2', coral: 'bubble', c: ['#c8c0a0', '#f0ecdc'] }, // Bubble Coral
   495: { fam: 'coral2', coral: 'xeno', c: ['#a89a84', '#c8bca8'] }, // Xenophyophore
-  136: { fam: 'bivalve', biv: 'oyster', c: ['#7a7468', '#a8a092'] }, // Eastern Oyster
-  392: { fam: 'bivalve', biv: 'oyster', c: ['#6a6a62', '#9a948a'] }, // Pacific Oyster
+  136: { fam: 'oyster2', c: ['#7a7468', '#a8a092'] }, // Eastern Oyster (5.10.10)
+  392: { fam: 'oyster2', c: ['#6a6a62', '#9a948a'] }, // Pacific Oyster (5.10.10)
   135: { fam: 'bivalve', biv: 'mussel', c: ['#1e2430', '#3a4a6a'] }, // Blue Mussel
   480: { fam: 'bivalve', biv: 'mussel', c: ['#4a3a2a', '#7a6a58'] }, // Deep-sea Mussel
   389: { fam: 'bivalve', biv: 'pen', c: ['#8a6a4a', '#b89a7a'] }, // Noble Pen Shell
@@ -377,4 +377,21 @@ export const LOOKS = {
   483: { fam: 'feather', feather: 'sealily', c: ['#c8a06a', '#ecd0a0'] }, // Sea Lily
   420: { fam: 'feather', feather: 'seafan', c: ['#8a3a8a', '#c87ac8'] }, // Common Sea Fan
   421: { fam: 'feather', feather: 'black', c: ['#ece0c0', '#f4ead0'] }, // Black Coral
+  // (5.10.10) batch 8: the jellies that shared a bell, the frilled shark, the flat octopuses, the geoduck, the brain coral, the dolphins
+  280: { longbeak: 1, tri: 1, c: ['#5a6068', '#e2e2dc'] }, // Spinner Dolphin
+  281: { blunt: 1, scars: 1, c: ['#6e7276', '#d8d8d2'] }, // Risso's Dolphin
+  87: { fam: 'frilled', c: ['#5a4a42', '#8a766a'] }, // Frilled Shark
+  349: { fam: 'flatocto', ok: 'flap', c: ['#d8704a', '#f0a080'] }, // Flapjack Octopus
+  474: { fam: 'flatocto', ok: 'glow', c: ['#6a2a48', '#a05070'], glow: '#7ab8ff' }, // Glowing Sucker Octopus
+  390: { fam: 'geoduck', c: ['#d4b48c', '#b8a888'] }, // Pacific Geoduck
+  127: { fam: 'brain2', c: ['#8a7a4a', '#c8b878'] }, // Grooved Brain Coral
+  398: { fam: 'jelly2', jk: 'cassio', c: ['#7a7a4a', '#b8c898'] }, // Upside-down Jellyfish
+  399: { fam: 'jelly2', jk: 'egg', c: ['#e8e0c8', '#e8a830'] }, // Fried Egg Jellyfish
+  403: { fam: 'jelly2', jk: 'crystal', c: ['#c8dce8', '#e0f0f8'], glow: '#7ae8b0' }, // Crystal Jelly
+  406: { fam: 'jelly2', jk: 'deepstaria', c: ['#d8c8a8', '#f0e0c0'] }, // Deepstaria
+  407: { fam: 'jelly2', jk: 'helmet', c: ['#7a1a26', '#4a0a30'] }, // Helmet Jellyfish
+  411: { fam: 'jelly2', jk: 'salp', c: ['#d0e4ec', '#c8823a'] }, // Giant Salp
+  438: { fam: 'jelly2', jk: 'larvacean', c: ['#e0cfc0', '#c88a6a'] }, // Giant Larvacean
+  475: { fam: 'jelly2', jk: 'bigred', c: ['#7a161c', '#4a080e'] }, // Big Red Jelly
+  476: { fam: 'jelly2', jk: 'phantom', c: ['#4e1816', '#2e0808'] }, // Giant Phantom Jelly
 };

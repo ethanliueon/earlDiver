@@ -86,7 +86,7 @@ export const TAG = {
 };
 
 const NEVER = new Set(['Kelp & Plants', 'Corals, Anemones & Sponges', 'Marine Mammals']);
-const PROTECTED = new Set([183]); // sea turtles: tag only, never taken
+export const PROTECTED = new Set([183]); // sea turtles: tag only, never taken
 // the species added since: their tag values, and which are protected
 // v2: the everyday crowd of each deep zone is the deep's "common": rare at most, never exotic
 Object.assign(PRICE, {

@@ -22,14 +22,13 @@ export function tagValue(sp, variant, pay) {
   const base = isTagOnlyId(sp) ? tagPrice(sp.id) : Math.min(2, Math.max(0.5, rarityPrice(sp) * 0.25));
   return base * variantMult(variant) * pay;
 }
-// what the institute pays for a first photograph
-export function photoValue(sp, variant) {
-  let v;
-  if (TAG[sp.id]) v = tagPrice(sp.id) * 0.35;
-  else if (sp.cat === 'Kelp & Plants' || sp.cat === 'Corals, Anemones & Sponges') v = 0.05 + sp.dmin * 0.002;
-  else v = liveValue(sp) * 0.3;
-  return clamp(v, 0.02, 100) * variantMult(variant);
-}
+// (5.10.10) what an animal is worth to a photograph: the same worth it has alive, for every species, the ones no net
+// can take (whale sharks, corals, kelp) included. A photo pays a share of it: the camera's Quality (per cent), then
+// the grade (Poor x0.5, Good x1, Excellent x2). The same for a second picture of the species as the first; each single
+// animal pays once (a fish followed and shot again is worth nothing more).
+export function photoValue(sp, variant) { return liveValue(sp) * variantMult(variant); }
+export const GRADES = { Poor: 0.5, Good: 1, Excellent: 2 };
+export const gradeStars = (gr) => (gr === 'Excellent' ? 3 : gr === 'Good' ? 2 : 1);
 export const photoKey = (sp, variant) => sp.id + (variant ? ':' + variant : '');
 
 // which way he is aiming (the cursor, if he uses the mouse; otherwise straight ahead)
@@ -181,14 +180,16 @@ export function updatePhoto(g, dt) {
   const sharp = 1 - Math.min(1, Math.max(0, (P.moved * (1 - assist * 0.5)) / (0.25 + S.len * 0.8) - 0.3));
   const size = Math.min(1, Math.max(0.25, S.len / (d * 0.18 + 0.05)));
   const q = Math.round((centre * 0.4 + sharp * 0.4 + size * 0.2) * 100) / 100;
-  const grade = q >= 0.72 ? 'Good' : sharp < centre ? 'Blurry' : 'Off-centre';
+  // (5.10.10) three grades, never a percentage: centred, sharp and filling the frame is Excellent
+  const grade = q >= 0.78 ? 'Excellent' : q >= 0.5 ? 'Good' : 'Poor';
   const sk = photoKey(S.sp, S.variant), have = new Set(g.profile.photos || []), first = !have.has(sk) && !g.photos.some((p) => p.sk === sk);
-  let value = photoValue(S.sp, S.variant) * (0.3 + 0.7 * q) * (first ? 1 : 0.35);
-  if (def.small && S.sp.len < 0.15) value *= def.small; // the macro camera: small animals pay more
-  value = Math.max(0.05, Math.round(value * 100) / 100);
+  const who = S.c || S.st, again = !!(who && who.photoPaid); // this very animal has been paid for already
+  let value = again ? 0 : photoValue(S.sp, S.variant) * (def.idx || 10) / 100 * GRADES[grade];
+  if (!again && def.small && S.sp.len < 0.15) value *= def.small; // the macro camera: small animals pay more
+  if (!again) { value = Math.max(1, Math.round(value * 100) / 100); if (who) who.photoPaid = true; } // a photo always pays at least a dollar
   // where the frame was: along the aim at the animal's distance, steadied toward it by the camera
   const fx = ox + Math.cos(a) * Math.hypot(dx, dy), fy = oy + Math.sin(a) * Math.hypot(dx, dy);
-  return { type: 'photo', sp: S.sp, variant: S.variant, name: S.name, sk, first, q, grade, sharp, value,
+  return { type: 'photo', sp: S.sp, variant: S.variant, name: S.name, sk, first, again, q, grade, sharp, value,
     frame: { x: fx + (q0.x - fx) * Math.max(assist, 0.35), y: fy + (q0.y - fy) * Math.max(assist, 0.35), len: S.len, d,
       sub: { x: q0.x, y: q0.y, sp: S.sp, variant: S.variant, len: S.len, dir: S.c ? S.c.dir || 1 : 1, tilt: S.c ? Math.max(-0.5, Math.min(0.5, Math.atan2(S.c.vy || 0, Math.abs(S.c.vx || 0) + 0.2))) - (S.c.tired > 0 ? -0.3 : 0) : 0, phase: S.c ? S.c.phase || 0 : 0, still: !S.c, flash: !!def.flash } } };
 }

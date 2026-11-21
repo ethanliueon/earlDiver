@@ -59,18 +59,18 @@ import { subLook } from './render.js';
 
 // the figures for the shop's cards, as dot points
 const ADDON_SPECS = {
-  recall: [['use', 'C calls the sub'], ['sub comes', '1.5× faster', 'good']],
+  recall: [['use', 'the sub button calls her'], ['sub comes', '1.5× faster', 'good']],
   quiet: [['sub noise', '−50 %', 'good'], ['the deep', 'hears it less', 'good']],
 };
 const SUPPLY_SPECS = {
-  lure: [['use', 'Q throws it'], ['effect', 'the deep thing follows its light', 'good'], ['lasts', 'a while']],
-  necklace: [['use', 'E snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round Earl, or round the sub while he is in her', 'good'], ['but', 'a light can be seen', 'bad']],
-  film: [['use', 'the camera (2)'], ['one each', 'every picture, sharp or not'], ['pays', 'a sharp, close picture most', 'good']],
-  airTank: [['use', 'R, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
+  lure: [['use', 'offered when the thing comes for you, in its jaws too'], ['effect', 'it follows the light for 10 s', 'good'], ['then', 'it loses you for about 20 s, and comes back'], ['carry', 'one lure in all']],
+  necklace: [['use', 'the glow stick button snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round Earl, or round the sub while he is in her', 'good'], ['but', 'a light can be seen', 'bad']],
+  film: [['use', 'the camera'], ['one each', 'every picture, sharp or not'], ['pays', 'Poor, Good or Excellent: an Excellent picture twice a Good one', 'good']],
+  airTank: [['use', 'the air tank button, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
 };
 const GEAR_SPECS = {
-  camera: [['key', '2'], ['pays', 'for every picture, the first of a species most', 'good']],
-  arm: [['use', 'Space, from inside the sub'], ['catches', 'time the grip']],
+  camera: [['use', 'the swap button by the net'], ['pays', 'a share of the animal\'s worth, by the camera\'s Quality and the picture\'s grade', 'good']],
+  arm: [['use', 'the claw button, from inside the sub'], ['catches', 'time the grip']],
 };
 const $ = (id) => document.getElementById(id);
 const COIN = '<i class="coin"></i>';
@@ -84,6 +84,12 @@ function weightOf(sp, len) {
   const B = speciesBox(sp), shape = clamp((B.h / B.w) / 0.36, 0.35, 2.4), cm = len * 100;
   return (0.012 * shape * cm * cm * cm) / 1000;
 }
+// (5.10.10) a photograph's grade: Poor, Good or Excellent (an older picture's Blurry or Off-centre reads as Poor), and
+// its stars: one to three small bronze stamps pressed into the print's top right corner, the empty ones a faint dent
+const gradeOf = (ph) => (ph.grade === 'Excellent' || ph.grade === 'Good' || ph.grade === 'Poor' ? ph.grade : ph.grade ? 'Poor' : 'Good');
+const STAR = '<svg viewBox="0 0 20 20"><path d="M10 1.6l2.5 5.5 6 .6-4.5 4 1.3 5.9L10 14.6l-5.3 3 1.3-5.9-4.5-4 6-.6z"/></svg>';
+const photoStars = (ph) => { const n = gradeOf(ph) === 'Excellent' ? 3 : gradeOf(ph) === 'Good' ? 2 : 1; return `<span class="ph-stars" aria-label="${gradeOf(ph)}">${[0, 1, 2].map((k) => `<span class="st${k < n ? ' on' : ''}">${STAR}</span>`).join('')}</span>`; };
+
 export class UI {
   constructor(h) {
     this.h = h;
@@ -186,7 +192,7 @@ export class UI {
         // (5.3) an iPhone's browser has no full screen for a page: the way is Add to Home Screen
         const ios = /iPhone|iPod/.test(navigator.userAgent);
         if (ios) this.confirm('Full screen on iPhone', 'Tap the Share button, then Add to Home Screen. Opened from there, Earl plays full screen and sideways, with no browser bars.', 'OK', 'Close', () => {});
-        else $('fullscreen').textContent = 'Full screen: press F11';
+        else $('fullscreen').textContent = 'Full screen: add the game to your home screen';
       });
     });
     document.addEventListener('fullscreenchange', () => { $('fullscreen').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; });
@@ -362,7 +368,7 @@ export class UI {
         body = (onBed ? `<p>Any of ${L.length} kinds counts. They live on the seabed: the lit stretches of the bottom on the map are where they are found. Some of them:</p>` : `<p>Any of ${L.length} kinds counts. The shallowest of them are usually met from about ${lo.toLocaleString()} m. Some of them:</p>`) + ex.map(card).join('');
         if (onBed) bed = L.map((s2) => usualDepth(s2)); else map = lo; }
     } else if (q.kind === 'deep' || q.kind === 'depth') { body = `<p>${q.kind === 'depth' ? 'Take the sub down past' : 'Catch your animals below'} ${q.d.toLocaleString()} m. The map shows where you are, that depth, and the nearest place the seafloor is deep enough.</p>`; map = q.d; }
-    else body = `<p>${{ catch: 'Any animal counts, caught any way: net, claw, trawl or trap.', sell: 'Everything sold counts: at the Margaret, at the station, or to Dave.', photo: 'Take out the camera (2) and photograph animals you have not photographed before. Hold still while it takes the picture.', tag: 'Take out the tag gun (3) and tag animals as they swim.', trawl: 'Let the trawl net out from the sub (N), drive through fish, and bring it in. Every animal it hauls up counts.', divecatch: 'Every animal caught in one dive counts; the count starts again each dive.', lureMonster: 'Throw a lure (Q) while the thing in the deep is close. It is far below, and it is dangerous.', chambers: 'Have every pressure chamber in the sub holding an animal at the same time.' }[q.kind] || ''}</p>`;
+    else body = `<p>${{ catch: 'Any animal counts, caught any way: net, claw, trawl or trap.', sell: 'Everything sold counts: at the Margaret, at the station, or to Dave.', photo: 'Take out the camera (2) and photograph animals you have not photographed before. Hold still while it takes the picture.', trawl: 'Let the trawl net out from the sub (N), drive through fish, and bring it in. Every animal it hauls up counts.', divecatch: 'Every animal caught in one dive counts; the count starts again each dive.', lureMonster: 'Use a lure while the thing in the deep is close: it is offered when it comes for you. It is far below, and it is dangerous.', chambers: 'Have every pressure chamber in the sub holding an animal at the same time.' }[q.kind] || ''}</p>`;
     if (map != null && map < 50) map = null; // (shallow open water: no map needed)
     pop.innerHTML = `<div class="qp-box"><button class="qp-close" aria-label="Close">×</button><h4>${esc2(q.text)}</h4>${body}${map != null || bed ? '<canvas class="qp-map" width="520" height="190"></canvas>' : ''}</div>`;
     pop.hidden = false;
@@ -673,14 +679,14 @@ export class UI {
   // click one and it fills the view with its name, how it came out and what it pays
   photoBoxes(P, g) {
     const roll = g.photos || [], cam = owns(P, 'camera') ? gear(P, 'cam') : null;
-    const cells = roll.map((ph, i) => `<button class="ph-cell" data-ph="${i}" title="${ph.name}">${ph.img ? `<img src="${ph.img}" alt="">` : '<span></span>'}<b>${String(i + 1).padStart(2, '0')}</b>${ph.grade && ph.grade !== 'Good' ? `<i>${ph.grade}</i>` : ''}</button>`).join('');
+    const cells = roll.map((ph, i) => `<button class="ph-cell" data-ph="${i}" title="${ph.name}">${ph.img ? `<img src="${ph.img}" alt="">` : '<span></span>'}<b>${String(i + 1).padStart(2, '0')}</b>${photoStars(ph)}</button>`).join('');
     return `<h4 class="ph-h">Photos <i>(${roll.length})</i>${cam ? `<span>Film ${g.items.film || 0}/${cam.shots}</span>` : ''}</h4><div class="ph-grid">${cells}${'<div class="ph-cell empty"></div>'.repeat(Math.max(0, 10 - roll.length))}</div>`;
   }
   // (5.0) a photograph, large
   photoPop(P, g) {
     const ph = (g.photos || [])[this.phSel]; if (!ph) { this.phSel = null; return ''; }
     return `<div class="item-pop photo-pop"><div class="ph-panel"><button class="ip-close" aria-label="Close">×</button>${ph.img ? `<img src="${ph.img}" alt="">` : ''}
-      <div class="ph-cap"><b>${ph.name}</b><span>${ph.grade || 'Good'}${ph.first ? ', first of its kind' : ''}</span><em>${money(ph.value * statValue(P, 'payFish'))}</em></div></div></div>`;
+      ${photoStars(ph)}<div class="ph-cap"><b>${ph.name}</b><span>${gradeOf(ph)}${ph.again ? ', this one was paid for already' : ph.first ? ', first of its kind' : ''}</span><em>${money(ph.value * statValue(P, 'payFish'))}</em></div></div></div>`;
   }
   // (3.2.0) where an animal is: { list: 'bag' | 'tank' (the index space tankAction uses), i, place, n }
   fishWhere(g, s2) {
@@ -1484,8 +1490,8 @@ export class UI {
         row('Lures', String(g.items.lure)) + row('Glow sticks', String(g.items.necklace));
     } else {
       this.journalCount(g);
-      const keys = [['W A S D / arrows', 'swim, steer the sub'], ['Shift', 'faster, more air (sub: ×1.5, air ×3)'], ['F', 'interact; hold to pry loose, cut nets, plant coral'], ['hold F', 'leave the submersible'], ['Mouse', 'Earl swims to the cursor; click swings the net (or uses the tool); hold right to sprint; wheel zooms'], ['L', 'lights on / off (flash it at a charging animal)'], ['C / hold C', 'call the submersible to you / send it back to the boat'], ['1 / 2 / Space', 'net / camera / use it; press a tool\'s number again to put it away'], ['5', 'traps: Space at the surface, choose the depth (↑ ↓); F at the buoy hauls it up (the big ones need the boat\'s winch); F beside it empties it'], ['Space (in the sub)', 'the manipulator arm, once fitted: reach, then close the claw in the green'], ['Q / E', 'throw a lure / snap a glow stick (warm amber, 90 s; in the sub it lights her up)'], ['R (in the sub)', 'connect a backup air tank (3 s): the cabin air fills to full'], ['hold R (outside, at a damaged patch)', 'mend the sub\'s hull: 5 s a patch, +15 %'], ['N (in the sub)', 'let out a trawl net (choose which: up to two beginner nets and one advanced)'], ['G', 'offer something back to the deep (only while it hunts you, within 1,000 m)'], ['U', 'the boat: sell your haul, buy gear (at the boat)'], ['B', 'inventory'], ['V', 'take the helm and drive the Margaret (A / D); G lets the anchor go or winds it in'], ['J', 'this journal'], ['P', 'the yard (at the Margaret); anywhere else, frames per second'], ['O', 'quests'], ['L (on the Margaret)', 'the sub\'s lights on / off'], ['X', 'developer: the deepest sub and $500,000, then a legend to find'], ['Esc / M', 'pause / mute']];
-      list.innerHTML = keys.map(([k, v]) => row(k, '', v)).join('');
+      // (5.10.10) the desktop keys page is gone: a phone game has no keys. Any other tab shows the status page
+      return this.renderJournalTab('status');
     }
   }
 
@@ -1544,7 +1550,7 @@ export class UI {
       const tg = new Map();
       for (const t of g.tags) { if (!tg.has(t.key)) tg.set(t.key, []); tg.get(t.key).push(t); }
       for (const [k, list] of tg) items.push({ key: 'tag:' + k, value: list[0].value * list.length * statValue(P, 'payFish'), html: `<span class="sell-name">Tag data: ${list[0].name}</span>` + (list.length > 1 ? `<span class="sell-n">×${list.length}</span>` : '') });
-      for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, photo: ph.img, name: ph.name, n: 1, cond: ph.grade && ph.grade !== 'Good' ? ph.grade.toLowerCase() : '', value: ph.value * statValue(P, 'payFish'), html: `${ph.img ? `<img class="sell-photo" src="${ph.img}" alt="">` : ''}<span class="sell-name">Photo: ${ph.name}${ph.grade && ph.grade !== 'Good' ? ` <em class="cond">${ph.grade.toLowerCase()}</em>` : ''}</span>` });
+      for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, photo: ph.img, name: ph.name, n: 1, cond: gradeOf(ph).toLowerCase(), value: ph.value * statValue(P, 'payFish'), html: `${ph.img ? `<img class="sell-photo" src="${ph.img}" alt="">` : ''}<span class="sell-name">Photo: ${ph.name}${ph.grade && ph.grade !== 'Good' ? ` <em class="cond">${ph.grade.toLowerCase()}</em>` : ''}</span>` });
       for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k] && k !== 'coral') items.push({ key: 'good:' + k, name: GOODS[k].name, n, value: GOODS[k].price * n * statValue(P, 'paySalvage'), html: `<span class="sell-name">${GOODS[k].name}</span>` + (n > 1 ? `<span class="sell-n">×${n}</span>` : '') });
       for (const k of [...pick]) if (!items.some((it) => it.key === k && !it.kept)) pick.delete(k);
       if (!items.length) html = `<p class="shop-empty">Nothing aboard to sell.</p>`;

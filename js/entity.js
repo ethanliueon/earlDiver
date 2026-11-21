@@ -278,7 +278,7 @@ export class Entity {
         this.state = 'lured';
         tx = this.lure.x; ty = this.lure.y; speed = ENTITY_SPEED * 0.9;
         // the lure burns out: it has lost him, and wanders off a long way before it looks again
-        if (this.lureT <= 0) { this.goAway(this.lure.x, this.lure.y, bandLo); this.lure = null; }
+        if (this.lureT <= 0) { this.goAway(this.lure.x, this.lure.y, bandLo, 20); this.lure = null; } // (5.10.10) then it gives up on it for about 20 s, and comes back hunting: a lure buys half a minute, the Tidewarden minutes
       } else if (away) {
         // gone off: it does not wait outside a safe place for him, it leaves for a while
         this.awayT -= dt;
@@ -456,7 +456,7 @@ export class Entity {
   }
 
   // give up on him for a while: head far off, away from (fx, fy), and deeper
-  goAway(fx, fy, bandLo) {
+  goAway(fx, fy, bandLo, T = null) {
     if (this.ap) this.ap.phase = null;
     const side = Math.sign(this.x - fx) || (this.rng() < 0.5 ? -1 : 1);
     let ax = this.x + side * this.rng.range(350, 500);
@@ -464,7 +464,7 @@ export class Entity {
     ax = clamp(ax, 20, 4980);
     const fl = this.world ? this.world.floorAt(ax) - 15 : 3900;
     this.awayX = ax; this.awayY = Math.min(fl, Math.max(bandLo, this.y, fy) + this.rng.range(150, 350));
-    this.awayT = this.rng.range(90, 150);
+    this.awayT = T ?? this.rng.range(90, 150);
     this.state = 'away'; this.knows = 0; this.searchT = 0;
   }
 

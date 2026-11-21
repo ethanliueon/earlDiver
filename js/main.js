@@ -149,38 +149,7 @@ function applySub(sub, P) {
   sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.13.0) the engine alone sets her speed: 50 steps to 3x
   sub.level = lv(P, 'depth');
 }
-// (4.9.0) X (a developer's key): the first press, the deepest submersible and half a million dollars; each press
-// after, the next legend turned loose at its usual depth somewhere sensible, with the tutorial's trail to it
-let devPresses = 0, devLegendI = 0;
-const DEV_LEGENDS = [100, 108, 104, 107, 101, 105, 54, 2150, 2146, 2162, 2110, 2109, 2102, 2103, 2106];
-function devMaxAll() {
-  const P = profile; if (!P || !g || g.mode !== 'play') return;
-  if (devPresses++ === 0) {
-    P.tlv = P.tlv || {}; P.tlv.tHull = TRACKS.tHull.max;
-    P.cash = Math.round(((P.cash || 0) + 500000) * 100) / 100;
-    saveProfile(P); applySub(g.sub, P);
-    hud.toast('Developer: the deepest sub, +$500,000', 'big'); audio.ready && audio.click();
-    return;
-  }
-  const sp = SPECIES_BY_ID[DEV_LEGENDS[devLegendI++ % DEV_LEGENDS.length]]; if (!sp) return;
-  const e = g.earl, W = g.world, hab = sp.v && sp.v.hab, onFloor = hab === 'floor' || hab === 'demersal';
-  const [uLo, uHi] = usualDepth(sp); // (4.16.4) where it is really met, as the sea's own spawning places it
-  const want = clamp(Math.round((uLo + uHi) / 2), sp.dmin + 5, Math.min(sp.dmax, (g.sub.ratedV || 4000) - 50));
-  // the nearest column of sea where it would live: deep enough water for a swimmer, a floor in its range for a bottom animal
-  let at = null;
-  for (let r = 30; r < WORLD_W && !at; r += 6) for (const x of [e.x + r * (e.facing || 1), e.x - r * (e.facing || 1)]) {
-    if (x < 30 || x > WORLD_W - 30) continue;
-    const fl = W.floorAt(x);
-    if (onFloor ? (fl >= uLo && fl <= Math.min(uHi, (g.sub.ratedV || 4000) - 20)) : fl > want + 25) { // (bottom animals on a seabed within their usual depths)
-      const y = onFloor ? fl - 0.6 : want;
-      if (!W.rockAt(x, y, 1)) { at = { x, y }; break; }
-    }
-  }
-  if (!at) { hud.toast(`Developer: nowhere for ${TITLES[sp.id] || sp.name}`); return; }
-  const f = g.fauna.makeFish(sp, at.x, at.y, Math.random() < 0.5 ? 1 : -1, g.fauna.groupId++, true);
-  f.devKeep = true; g.fauna.list.push(f); g.devGuide = { c: f };
-  hud.toast(`Developer: a legend at ${Math.round(at.y)} m`); audio.ready && audio.click();
-}
+// (5.10.10) the X developer key is gone (the owner's call): nothing in a phone game is reached by a key
 // the 'reduce flashing' setting (pause menu): kept in this browser
 function readReduceFlash() { try { return localStorage.getItem('earl.reduceFlash') === '1'; } catch (e) { return false; } }
 function newGame(mode) {
@@ -663,7 +632,7 @@ function caveTrade(keys) {
 function wareBuy(k) {
   const P = profile, W = WARES[k];
   if (!W || (P.coins || 0) < W.coins) return false;
-  if (k === 'oldlure') { if ((P.oldLures || 0) >= W.max) return false; P.oldLures = (P.oldLures || 0) + 1; hud.toast('Old lure (Q)', 'big'); }
+  if (k === 'oldlure') { if ((P.oldLures || 0) + ((g.items && g.items.lure) || 0) + ((P.spare && P.spare.lure) || 0) >= W.max) { hud.toast('You can carry only one lure', 'warn'); return false; } P.oldLures = (P.oldLures || 0) + 1; hud.toast('An old lure', 'big'); } // (5.10.10) one lure in all
   else if (k === 'blessing') { if (g.blessed) return false; g.blessed = true; hud.toast('Blessed: the deep looks away', 'big'); }
   else if (k === 'eye') { if (P.eye) return false; P.eye = true; hud.toast('Sapphires now show on sonar', 'big'); }
   P.coins -= W.coins;
@@ -934,7 +903,7 @@ function buy(kind) {
     P.addons = Object.assign({}, P.addons, { [kind]: true }); g.addons = P.addons; ok = true;
     if (kind === 'airBank') { const was = g.sub.o2Max; applySub(g.sub, P); g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + Math.max(0, g.sub.o2Max - was)); } // the new bottles come full
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
-  } else if (SUPPLIES[kind] && (g.items[kind] || 0) + ((P.spare && P.spare[kind]) || 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) { // (5.6.9) what is on the belt and what waits in the locker
+  } else if (SUPPLIES[kind] && (g.items[kind] || 0) + ((P.spare && P.spare[kind]) || 0) + (kind === 'lure' ? (P.oldLures || 0) : 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) { // (5.10.10) one lure in all, an old one included // (5.6.9) what is on the belt and what waits in the locker
     g.items[kind] = g.items[kind] || 0;
     g.items[kind]++; ok = true;
     ui.showGains([{ kind: 'supply', id: kind }]);
@@ -1611,7 +1580,7 @@ function interact(t, exitSub) {
     // taking things from the deep draws its attention
     if (p.y > 200) g.entity.disturb(g, p.type === 'necklace' ? 0.3 : p.type === 'lure' ? 0.2 : p.type === 'sapphire' ? 0.25 : 0.04);
     if (p.type === 'lure' || p.type === 'necklace') {
-      if (g.items[p.type] >= supplyMax(profile, p.type)) { hud.toast(p.type === 'lure' ? 'You already carry a lure' : 'Your belt is full of glow sticks', 'warn'); return; }
+      if (g.items[p.type] + (p.type === 'lure' ? (profile.oldLures || 0) : 0) >= supplyMax(profile, p.type)) { hud.toast(p.type === 'lure' ? 'You already carry a lure' : 'Your belt is full of glow sticks', 'warn'); return; }
       g.items[p.type]++;
       ui.showGains([{ kind: 'supply', id: p.type }]);
     } else if (p.type === 'sapphire') {
@@ -1728,7 +1697,7 @@ function killUpdate(dt) {
     let how = null;
     // (5.10.8) no escape by the lamp: only a lure, or the Tidewarden's ward, gets him out of the jaws
     if (pressed.has('ability')) { const A = currentAbility(), why = A && A.tide ? whyNot(g, profile, A) : 'no'; if (!why || why === 'Only when the thing is close') { useAbility(); how = 'tide'; } }
-    if (!how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { if ((profile.oldLures || 0) > 0) profile.oldLures--; else g.items.lure--; how = 'lure'; }
+    if (!how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { g.lureOld = (profile.oldLures || 0) > 0; if (g.lureOld) profile.oldLures--; else g.items.lure--; how = 'lure'; }
     if (how) { escapeKill(how); for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k); return; }
   }
   for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k);
@@ -1750,7 +1719,7 @@ function escapeKill(how) {
   K.esc = true; K.escT = 0;
   audio.ready && audio.restore(0.25);
   if (how === 'flash') { g.fx.flash = 0.7; g.lampFlashT = g.time; }
-  if (how === 'lure') { const dir = -K.s; g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1, old: false }; ent.throwLure(g.lure.x, g.lure.y, 10); }
+  if (how === 'lure') { const old = !!g.lureOld; g.lure = { x: e.x, y: e.y, vx: 0, vy: 0, old, eaten: 0 }; ent.throwLure(e.x, e.y, old ? 20 : 10); } // (5.10.10) pushed into its mouth: the jaws close on the light, and it dims behind the teeth
   // it lets go, but not before it has done its damage (never enough, on its own, to kill)
   if (K.inSub) {
     g.sub.hull = Math.max(0, g.sub.hull - 0.35); audio.ready && audio.ram();
@@ -2111,7 +2080,7 @@ function update(dt) {
         if (old) profile.oldLures--; else g.items.lure--;
         const dir = e.inSub ? g.sub.facing : e.facing;
         g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1.0, old };
-        ent.throwLure(g.lure.x, g.lure.y, old ? 25 : 10);
+        ent.throwLure(g.lure.x, g.lure.y, old ? 20 : 10); // (5.10.10) the old lure 20 s
         hud.toast(old ? 'The old lure drifts away' : 'The lure drifts away');
         if (g.entity && (g.entity.dist ?? Infinity) < 300) questEvent(profile, 'lureMonster'); // (4.8.0)
       } else if (!g.lure) hud.toast('No lures', 'warn');
@@ -2162,7 +2131,6 @@ function update(dt) {
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
     if (pressed.has('`')) { hud.showFps = !hud.showFps; } // (4.0.0: P is the shipyard now)
-    if (pressed.has('x')) devMaxAll();
     // the aquarium's day: tickets in, upkeep out
     tickGallery(profile, dt);
     for (const d of Object.values(aquariumOf(profile).display)) if (d.justFamous) { d.justFamous = false; saveProfile(profile); hud.toast(`${d.name || 'Your ' + SPECIES_BY_ID[d.id].name.toLowerCase()} is Famous now`, 'big'); }
@@ -2257,10 +2225,10 @@ function update(dt) {
       audio.ready && audio.click();
       if (ph.empty) hud.toast('Nothing in frame');
       else {
-        const pic = { key: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), sk: ph.sk, id: ph.sp.id, variant: ph.variant || null, name: ph.name, q: ph.q, grade: ph.grade, value: ph.value, first: ph.first, at: Math.round(e.y), img: renderer.snapshot(ph.frame, 1 - ph.sharp) };
+        const pic = { key: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), sk: ph.sk, id: ph.sp.id, variant: ph.variant || null, name: ph.name, q: ph.q, grade: ph.grade, value: ph.value, first: ph.first, again: ph.again, at: Math.round(e.y), img: renderer.snapshot(ph.frame, 1 - ph.sharp) };
         g.photos.push(pic); profile.roll = g.photos.slice(); saveProfile(profile);
         audio.calmBoost && audio.calmBoost(0.08);
-        hud.toast(ph.grade === 'Good' ? ph.name : `${ph.name}, ${ph.grade.toLowerCase()}`, 'note');
+        hud.toast(ph.again ? `${ph.name}: this one is photographed already` : `${ph.name} · ${ph.grade}`, 'note'); // (5.10.10)
         questEvent(profile, 'photo', { id: ph.sp.id });
         if (!g.journal.has(ph.sp.id)) { g.journal.set(ph.sp.id, { depth: Math.round(e.y), time: g.survival, at: Date.now() }); ui.journalDirty = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); }
       }
@@ -2559,6 +2527,7 @@ function update(dt) {
     // lure physics
     if (g.lure) {
       const L = g.lure;
+      if (L.eaten != null) { L.eaten += dt; const mx = ent.x + Math.cos(ent.heading || 0) * 6, my = ent.y + Math.sin(ent.heading || 0) * 6; L.x += (mx - L.x) * Math.min(1, dt * 3); L.y += (my - L.y) * Math.min(1, dt * 3); L.vx = L.vy = 0; } // (5.10.10) it has the lure in its mouth
       L.vx *= Math.exp(-dt * 0.85); L.vy = lerp(L.vy, 0.35, dt);
       if (ent.lure) { ent.lure.x = L.x; ent.lure.y = L.y; }
       L.x += L.vx * dt; L.y += L.vy * dt;
@@ -2943,7 +2912,7 @@ function frame(now) {
   lureAsk(); // (5.6.4)
   bookTabs(); // (5.6.7)
   dangerStrip(); // (5.10.1)
-  { const off = !!(g.kill || g.mode === 'dying'); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); }
+  { const off = !!((g.kill && (g.kill.inSub || g.kill.esc)) || g.mode === 'dying'), dim = !!(g.kill && !off); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); if (document.body.classList.contains('hud-dim') !== dim) document.body.classList.toggle('hud-dim', dim); } // (5.10.10) in its jaws the journal stays, dimmed
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
     hud.spotWanted = !!(hud.touch && profile && profile.tut === 'on' && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game

@@ -543,7 +543,7 @@ export class Renderer {
           : `${n} inside · ${left > 0 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : tr.age > 420 ? 'left too long!' : 'ready'}`]);
       }
     }
-    if (g.lure) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
+    if (g.lure && !(g.lure.eaten > 0.5)) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
 
     // brackets around what the net, slurp gun or claw will go for (a setting: pause menu)
     // (4.2.0, 4.3.1) the tutorial: a stream of brass chevrons flowing from Earl to where to go, a ring pulsing round
@@ -1120,34 +1120,7 @@ export class Renderer {
     }
     ctx.restore();
 
-    // (5.6.5) marked: a vast eye in the dark behind him, following. Barely there: a slow pulse every few seconds, his
-    // lamp lifting it a little, and as the thing comes nearer it shows more, and longer, and opens wider
-    { const ent = g.entity;
-      if (ent && ent.marked && g.mode === 'play' && !g.kill) {
-        const near = clamp(1 - (ent.dist ?? 3000) / 1500, 0, 1), per = 6 - 2.5 * near, ph = (g.time % per) / per;
-        const pulse = Math.pow(Math.max(0, Math.sin(ph * Math.PI)), 3 - 1.6 * near);
-        const lamp = (g.earl.lampOn || (g.earl.inSub && g.sub.lightsOn)) ? 0.025 : 0;
-        const a = (0.05 + 0.13 * near) * pulse + lamp * pulse + 0.015 * near; // (5.6.5) faint: there in a pulse, gone between
-        if (a > 0.004) {
-          const Wd = this.W, Hd = this.H, face = g.earl.inSub ? (g.sub.facing || 1) : (g.earl.facing || 1);
-          this.eyeX = lerp(this.eyeX ?? Wd / 2, Wd / 2 - face * Wd * 0.18, 0.01); // it settles behind him, slowly
-          const ex = this.eyeX + Math.sin(g.time * 0.11) * Wd * 0.03, ey = Hd * 0.42 + Math.sin(g.time * 0.07) * Hd * 0.03;
-          // (5.6.5) the size of the thing's own eye: some 20 m across
-          const ew = ppm * 10 * (0.9 + 0.1 * near), open = (0.32 + 0.3 * near) * (1 - ((g.time % 11) < 0.25 ? Math.sin((g.time % 11) / 0.25 * Math.PI) : 0));
-          ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = Math.min(0.35, a);
-          ctx.beginPath(); ctx.moveTo(ex - ew, ey); ctx.bezierCurveTo(ex - ew * 0.4, ey - ew * open, ex + ew * 0.4, ey - ew * open, ex + ew, ey); ctx.bezierCurveTo(ex + ew * 0.4, ey + ew * open * 0.9, ex - ew * 0.4, ey + ew * open * 0.9, ex - ew, ey); ctx.closePath();
-          ctx.save(); ctx.clip();
-          const ir = ew * 0.36, ig = ctx.createRadialGradient(ex, ey, 0, ex, ey, ir);
-          ig.addColorStop(0, 'rgba(255,150,70,1)'); ig.addColorStop(0.4, 'rgba(190,40,20,1)'); ig.addColorStop(1, 'rgba(40,4,2,0)');
-          ctx.fillStyle = 'rgba(40,6,4,0.6)'; ctx.fillRect(ex - ew, ey - ew, ew * 2, ew * 2);
-          ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex, ey, ir, 0, TAU); ctx.fill();
-          ctx.fillStyle = 'rgba(0,0,0,0.95)'; const sw = ir * (0.12 + 0.06 * Math.sin(g.time * 0.6)); ctx.beginPath(); ctx.ellipse(ex, ey, sw, ir * 0.9, 0, 0, TAU); ctx.fill();
-          ctx.restore();
-          ctx.strokeStyle = 'rgba(120,20,12,0.9)'; ctx.lineWidth = Math.max(1, ew * 0.012); ctx.stroke();
-          ctx.restore();
-        }
-      }
-    }
+    // (5.10.10) the vast faint eye behind him when marked is gone: it read as tinted water. Being marked is shown by the eye under the money.
     // (5.6.3) the sub's holes, outside her on a touch screen: each outlined in cream, breathing, to be tapped
     if (this.touch && g.patchMarks && g.mode === 'play') {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -2912,7 +2885,7 @@ export class Renderer {
         radial(x, y, (p.type === 'lure' ? 2.5 : 1.6 * (1 + 0.8 * (e.prospector || 0))) * ppm, p.type === 'lure' ? [170, 230, 255] : [80, 120, 255], p.type === 'lure' ? 0.5 : 0.5 + 0.1 * (e.prospector || 0)); // (Prospector: sapphires shine from farther off)
       }
     }
-    if (g.lure) radial(S(g.lure.x), Sy(g.lure.y), (g.lure.old ? 12 : 8) * ppm, g.lure.old ? [120, 170, 255] : [170, 230, 255], 0.9);
+    if (g.lure) { const f = g.lure.eaten != null ? Math.max(0.12, 1 - g.lure.eaten / 0.9) : 1; radial(S(g.lure.x), Sy(g.lure.y), (g.lure.old ? 12 : 8) * ppm * (0.5 + 0.5 * f), g.lure.old ? [120, 170, 255] : [170, 230, 255], 0.9 * f); } // (5.10.10) swallowed, its light dims behind the teeth
     if (this.escaW) { radial(S(this.escaW.x), Sy(this.escaW.y), 16 * ppm, [150, 220, 255], 0.75 + 0.15 * Math.sin(g.time * 1.7)); radial(S(this.escaW.x + 4), Sy(this.escaW.y + 6), 30 * ppm, [120, 190, 230], 0.35); radial(S(TABLE.x0 + 10), Sy(TABLE.y - 3), 18 * ppm, [140, 200, 225], 0.45); lamps.push({ x: S(TABLE.x0 + 10), y: Sy(TABLE.y - 3), r: 18 * ppm, a: 0.45 }); } // (3.0.0) and further: the sea round her, and her table
     for (const v of g.world.vents) {
       const x = S(v.x), y = Sy(v.y - v.h);
@@ -3134,7 +3107,7 @@ export class Renderer {
       ctx.fillStyle = rgbStr(mixRgb(c, [255, 255, 255], 0.45), Math.min(1, 0.85 * k * fx.bioPulse) * BIO_BRIGHT * (0.3 + 0.7 * dim));
       ctx.beginPath(); ctx.arc(x, y, core, 0, TAU); ctx.fill();
     }
-    if (g.lure) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
+    if (g.lure && g.lure.eaten == null) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
     if (this.escaW) halo(S(this.escaW.x), Sy(this.escaW.y), ppm * 2.2, [170, 230, 255], 0.7 * haze);
     for (const p of g.world.pickups) {
       if (p.taken || (p.type !== 'sapphire' && p.type !== 'lure')) continue;
