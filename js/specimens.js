@@ -98,10 +98,17 @@ for (const m of MORE_SPECIES) { if (m.x.tag) TAG[m.id] = m.x.tag; if (m.x.protec
 
 // can a net / slurp gun take it at all (ignoring tool size limits)?
 export function canTakeLive(sp) {
-  if (NEVER.has(sp.cat) || PROTECTED.has(sp.id)) return false;
+  if (PROTECTED.has(sp.id)) return false;
+  if (sp.cat === 'Corals, Anemones & Sponges') return true; // (5.10.8) animals that do not move: the net breaks off a piece
+  if (NEVER.has(sp.cat)) return false;
   const h = sp.v.hab;
   return h !== 'plant' && h !== 'surface-plant';
 }
+// (5.10.8) things fixed to the bottom (corals, sponges, anemones): a net takes a piece of one, and the rest stays
+export const isSessile = (sp) => sp.cat === 'Corals, Anemones & Sponges';
+// (5.10.8) what lives on the bottom: in an open tank or the aquarium it rests or walks on the sand, never floats
+// (only a pressure chamber holds an animal suspended)
+export const livesOnBottom = (sp) => isSessile(sp) || /^floor$|plant/.test(sp.v.hab || '') || /octopus|crab|lobster|^star$|urchin|cucumber|isopod|conch|clam|mussel|oyster|scallop|abalone|nudibranch|seapig|basketstar|frog|stone/.test(sp.v.s || '') || /shell|coral2|bivalve|feather/.test(sp.v.fam || '');
 // swimming animals too big for any net can be tagged instead
 export function isTagOnly(sp) { return TAG[sp.id] !== undefined && TAG[sp.id] > 0; }
 // what the research program pays for a tag (the swordfish is the benchmark: $100)

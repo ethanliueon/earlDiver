@@ -118,6 +118,14 @@ There are also real bugs: one makes escaping the thing impossible by touch.
   game font only (Dave's script font goes).
 - **Time keeps running** in every in-world panel; only Settings and Pause stop it (see A3).
 - **Death keeps its cost**; it gets a proper card showing what was lost.
+- **No escape by the lamp.** In the jaws only a lure or the Tidewarden gets him out (5.10.8).
+- **The tools are the net and the camera** (with traps from the bag and the sub's claw). No tag gun, no collecting kit.
+  The net takes bottom animals more kindly (it only has to touch an octopus or a crab), and breaks a piece off a coral,
+  sponge or anemone, leaving the colony (5.10.8). Traps take bottom animals only when they rest on the bottom.
+- **Bottom animals rest and walk on the sand** in the open tank and the aquarium; only a pressure chamber holds an
+  animal suspended (5.10.8).
+- **Glows are quiet**: lit coins a soft rim, rarity rims muted, presses a soft ripple, the controls dimming in the
+  dark (5.10.8).
 
 ## Order of work (revised)
 

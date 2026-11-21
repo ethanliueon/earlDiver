@@ -245,18 +245,14 @@ export class Hud {
   // whatever F does here, call the sub, the lamp, the lure, the glow stick, the pet; in the sub: leave, the tank room,
   // the autopilot, the trawl, the spare air, sell, the lamp). Each keeps its place: one that can't be used now is
   // greyed, never moved or hidden, so nothing jumps about. A picture and a word on each; no key letters.
-  // (5.10.1) in the jaws: every control is gone but the lamp, large where the big button was, burning bright while a
-  // flash can still make it flinch (the kill's short window); a lure, if carried, is asked for by its own card
+  // (5.10.8) in the jaws: no lamp (the light no longer drives it off). If the Tidewarden is carried and ready, its
+  // coin waits where the big button was, quietly; a lure, if carried, is asked for by its own card
   drawKillLamp(g, W, H) {
+    if (!this.killTide) return;
     const ctx = this.ctx, kx = window.innerWidth / this.c.width, u = this.c.width / window.innerWidth * (window.__fingerK || 1.3), K = g.kill;
-    const R = 48 * u, cx = W - 16 * u - R, cy = H - 16 * u - R, open = !!(K.window && K.t < K.window[1]) && !(g.entity && g.entity.flashed), q = 0.5 + 0.5 * Math.sin(g.time * 14);
-    ctx.save();
-    if (open) { const hg = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 2.2); hg.addColorStop(0, `rgba(255,226,160,${(0.55 + 0.35 * q).toFixed(3)})`); hg.addColorStop(1, 'rgba(255,210,140,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(cx, cy, R * 2.2, 0, TAU); ctx.fill(); }
-    drawCoin(ctx, cx, cy, R, 'lamp', open ? 'lit' : 'off', open ? { lit: true } : null);
-    if (open) { ctx.strokeStyle = `rgba(255,240,210,${(0.7 + 0.3 * q).toFixed(3)})`; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * (1.08 + 0.06 * q), 0, TAU); ctx.stroke();
-      ctx.font = `700 ${22 * u}px ${HUDF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = '#f6ecd0'; ctx.shadowColor = '#000'; ctx.shadowBlur = 8 * u; ctx.fillText('FLASH IT', cx, cy - R - 12 * u); }
-    ctx.restore();
-    this.hots.push({ x: (cx - R * 1.3 + this.safeL) * kx, y: (cy - R * 1.3 + this.safeT) * kx, w: R * 2.6 * kx, h: R * 2.6 * kx, key: 'l' });
+    const R = 44 * u, cx = W - 16 * u - R, cy = H - 16 * u - R, open = !!(K.window && K.t < K.window[1]);
+    drawCoin(this.ctx, cx, cy, R, 'ab_tidewarden', open ? 'on' : 'off', { tier: 'legendary' }, 'legendary');
+    this.hots.push({ x: (cx - R * 1.2 + this.safeL) * kx, y: (cy - R * 1.2 + this.safeT) * kx, w: R * 2.4 * kx, h: R * 2.4 * kx, key: 'ability' });
   }
   drawActions(g, W, H, s, dt, aboard) {
     const ctx = this.ctx, P = g.profile, e = g.earl, kx = window.innerWidth / this.c.width;
@@ -388,8 +384,8 @@ e.inSub ? [
     const pa = this.pressAt || (this.pressAt = {}), was = this.wasHeld || (this.wasHeld = new Set()), nowT = performance.now();
     const pressFx = (key, x, y, r) => {
       const dn = held.has(key); if (dn && !was.has(key)) pa[key] = nowT;
-      const k = pa[key] ? (nowT - pa[key]) / 420 : 2;
-      if (k < 1) { ctx.save(); halo(x, y, r, 1 - k); ctx.strokeStyle = `rgba(255,236,196,${(0.75 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (3.4 - 2.4 * k) * u; ctx.beginPath(); ctx.arc(x, y, r * (1 + 0.55 * k), 0, TAU); ctx.stroke(); ctx.restore(); }
+      const k = pa[key] ? (nowT - pa[key]) / 320 : 2;
+      if (k < 1) { ctx.save(); halo(x, y, r, 0.35 * (1 - k)); ctx.strokeStyle = `rgba(255,236,196,${(0.4 * (1 - k)).toFixed(3)})`; ctx.lineWidth = (2.2 - 1.6 * k) * u; ctx.beginPath(); ctx.arc(x, y, r * (1 + 0.35 * k), 0, TAU); ctx.stroke(); ctx.restore(); } // (5.10.8) a soft ripple, not a flash
       return dn;
     };
     const LIT_ART = new Set(['lamp', 'glow', 'sprint']); // their pictures change when on
@@ -414,9 +410,9 @@ e.inSub ? [
         const bx = x + r * 0.74, by = y - r * 0.74, br = Math.max(8 * u, r * 0.4), pq = 1 + 0.08 * Math.sin(g.time * 5);
         ctx.save(); ctx.globalAlpha = 1; ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.arc(bx, by, br * pq, 0, TAU); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#fff6ea'; ctx.font = `700 ${br * 1.45}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + br * 0.06); ctx.restore(); }
-      if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 2.2, r * 2.2, g.time, 7); // (5.9.1) a legendary's sparks
+      if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 1.8, r * 1.8, g.time, 3); // (5.9.1) a legendary's sparks; (5.10.8) fewer, closer
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
-        if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'legendary' ? 'rgba(255,214,130,0.95)' : 'rgba(240,236,214,0.95)'; ctx.lineWidth = 3.4 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
+        if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
           ctx.font = `700 ${11 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(cdl >= 90 ? Math.ceil(cdl / 60) + 'm' : String(Math.ceil(cdl)), x, y + r * 0.62); ctx.shadowBlur = 0; } }
       if (a.n > 1 && !a.lock) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
@@ -911,7 +907,7 @@ e.inSub ? [
       }
     }
     // (5.1.1) a touch screen: the actions, bottom right (on deck too: the F action is how he goes in)
-    if (touch && !this.panel && g.profile && g.mode === 'play' && !dying && !g.kill && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) this.drawActions(g, W, H, s, dt, aboard);
+    if (touch && !this.panel && g.profile && g.mode === 'play' && !dying && !g.kill && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) { const dk = aboard ? 0 : clamp(((g.earl.y || 0) - 120) / 700, 0, 1); ctx.save(); ctx.globalAlpha = 1 - 0.28 * dk; this.drawActions(g, W, H, s, dt, aboard); ctx.restore(); } // (5.10.8) the controls dim gently in the dark
     else if (touch && g.kill && !g.kill.inSub && !g.kill.esc && g.mode === 'play' && !dying) this.drawKillLamp(g, W, H); // (5.10.1) the one way out, by touch
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
@@ -953,7 +949,7 @@ e.inSub ? [
     const K = g.kill;
     if (K && K.window && !K.esc && K.t > K.window[0] && K.t < K.window[1] && g.mode === 'play') {
       const opts = [];
-      if (!g.entity.flashed) opts.push(['L', 'FLASH IT']);
+      if (this.killTide) opts.push(['1', 'TIDEWARDEN']); // (5.10.8) no lamp: a lure or the Tidewarden
       if (g.items.lure > 0 || (g.profile.oldLures || 0) > 0) opts.push(['Q', 'LURE']);
       const left = 1 - (K.t - K.window[0]) / (K.window[1] - K.window[0]);
       const pulse = 0.75 + 0.25 * Math.sin(K.t * 22);

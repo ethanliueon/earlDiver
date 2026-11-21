@@ -22,7 +22,7 @@ import { usualDepth } from './fauna.js';
 import { RESOURCES, BOAT } from './world.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
-import { specimenValue, deepPremium, conditionName, rarityOf, rarityStars, rarityCls, rarityCol } from './specimens.js';
+import { livesOnBottom, isSessile, specimenValue, deepPremium, conditionName, rarityOf, rarityStars, rarityCls, rarityCol } from './specimens.js';
 const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
@@ -781,9 +781,11 @@ export class UI {
     const midX = (x0 + x1) / 2, spanX = Math.max(0, (x1 - x0) / 2);
     const fx = dead ? midX + Math.sin(t * 0.25) * Math.min(8, spanX) : midX + Math.sin(ph) * spanX;
     const want = dead ? 0 : dyingNow ? 1 : stressed ? 0.75 : 0.45 + Math.sin(t * 0.9) * 0.12;
-    const fy = y0 + (Math.max(0, y1 - y0)) * Math.max(0, Math.min(1, want));
+    const onBot = !dead && livesOnBottom(A.sp); // (5.10.8) bottom animals rest and walk on the sand
+    const fy = onBot ? y1 + ey * 0.6 : y0 + (Math.max(0, y1 - y0)) * Math.max(0, Math.min(1, want));
+    const fx2 = onBot ? (isSessile(A.sp) ? midX : midX + Math.sin(ph * 0.35) * spanX) : fx;
     x.save(); x.beginPath(); x.rect(glass.x, glass.y, glass.w, glass.h); x.clip();
-    x.translate(fx, fy); x.rotate(list * face);
+    x.translate(fx2, fy); x.rotate(onBot ? 0 : list * face);
     x.scale(-face, Math.abs(flipY) < 0.08 ? 0.08 * Math.sign(flipY || 1) : flipY);
     x.translate(-(B.x0 + B.w / 2) * L, -(B.y0 + B.h / 2) * L);
     if (dead) x.filter = 'saturate(0.35) brightness(0.8)'; else if (dyingNow) x.filter = 'saturate(0.55)'; else if (stressed) x.filter = 'saturate(0.8)';

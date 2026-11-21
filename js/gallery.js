@@ -1,4 +1,4 @@
-import { rarityStars, rarityCls, rarityCol } from './specimens.js';
+import { rarityStars, rarityCls, rarityCol, livesOnBottom, isSessile } from './specimens.js';
 // The aquarium gallery, walked aboard the Margaret: one big lit tank, every animal in it together (a deep
 // one lives here well enough if it came up healthy). Tap one for its brass tag: its name, how it is doing (Happy after five
 // minutes healthy, Famous fifteen minutes after that), and what can be done: pet it, feed it, sell
@@ -278,14 +278,14 @@ export class Gallery {
         // oarfish is a long ribbon right across it)
         const len0 = d.len || sp.len, L = Math.max(26, len0 * pxm);
         let a = this.anim.get(k);
-        const onSand = /floor/.test(sp.v.hab) && !/swim/.test(sp.v.hab);
+        const onSand = (/floor/.test(sp.v.hab) && !/swim/.test(sp.v.hab)) || livesOnBottom(sp); // (5.10.8)
         if (!a) { a = { x: lerp(0.1, 0.9, Math.random()), y: onSand ? 0.91 : lerp(0.25, 0.75, Math.random()), tx: Math.random(), ty: 0.5, face: Math.random() < 0.5 ? -1 : 1, ph: Math.random() * 6, rt: 0 }; this.anim.set(k, a); }
         a.alive = true; a.L = L;
         if (dead) { a.y = lerp(a.y, 0.12, dt * 0.3); }
         else {
           const low = /floor/.test(sp.v.hab);
           a.rt -= dt; if (a.rt <= 0 || Math.abs(a.tx - a.x) < 0.02) { a.tx = Math.random(); a.ty = onSand ? 0.91 : low ? lerp(0.8, 0.9, Math.random()) : lerp(0.15, 0.82, Math.random()); a.rt = 3 + Math.random() * 5; }
-          const sp2 = (0.03 + 0.05 * (d.cond || 1)) * (onSand ? 0.3 : 1) * (press ? 0.6 : 1); // the deep ones move slowly
+          const sp2 = isSessile(sp) ? 0 : (0.03 + 0.05 * (d.cond || 1)) * (onSand ? 0.3 : 1) * (press ? 0.6 : 1); // the deep ones move slowly; (5.10.8) corals do not move
           a.x += clamp(a.tx - a.x, -sp2 * dt, sp2 * dt); a.y += clamp(a.ty - a.y, -sp2 * dt * 0.5, sp2 * dt * 0.5);
           if (Math.abs(a.tx - a.x) > 0.01) a.face = lerp(a.face, a.tx > a.x ? 1 : -1, dt * 3);
           a.ph += dt * (0.6 + d.cond);

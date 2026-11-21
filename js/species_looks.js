@@ -219,15 +219,15 @@ export const LOOKS = {
   343: { fam: 'sleeper2', h: 0.24, c: ['#5a4e44', '#7a6e62'], belly: '#7a6e62', f: '#524640', thorns: '#d8ccb8' }, // Prickly Shark
   468: { fam: 'sleeper2', h: 0.24, c: ['#5a5650', '#7a766c'], belly: '#7a766c', f: '#524e48', thorns: '#e8e0cc', sp: { anal: 0 } }, // Bramble Shark
   312: { fam: 'dogfish', h: 0.16, c: ['#6a6e72', '#e8e6e2'], belly: '#e8e6e2', f: '#62666a', marks: [{ k: 'dots', c: '#ece8e0', n: 18, r: 0.04, from: 0.2, to: 0.9, spread: 0.4, y: -0.15 }] }, // Spiny Dogfish
-  340: { fam: 'dogfish', h: 0.16, c: ['#2a2a2e', '#121214'], belly: '#121214', f: '#26262a', eyec: '#4ad8a0', glow: 1 }, // Velvet Belly Lanternshark
-  464: { fam: 'dogfish', h: 0.15, c: ['#121214', '#0c0c0e'], belly: '#0c0c0e', f: '#141416', eyec: '#3ae890', eyek: 1.8, glow: 1 }, // Ninja Lanternshark
-  341: { fam: 'dogfish', h: 0.17, c: ['#3a2e28', '#2a2220'], belly: '#2a2220', f: '#342a24', glow: 1, sp: { dspine: 0 } }, // Kitefin Shark
+  340: { fam: 'dogfish', h: 0.16, c: ['#2a2a2e', '#121214'], belly: '#121214', f: '#26262a', eyec: '#4ad8a0', glow: '#6ad0ff' }, // Velvet Belly Lanternshark
+  464: { fam: 'dogfish', h: 0.15, c: ['#121214', '#0c0c0e'], belly: '#0c0c0e', f: '#141416', eyec: '#3ae890', eyek: 1.8, glow: '#6ad0ff' }, // Ninja Lanternshark
+  341: { fam: 'dogfish', h: 0.17, c: ['#3a2e28', '#2a2220'], belly: '#2a2220', f: '#342a24', glow: '#6ad0ff', sp: { dspine: 0 } }, // Kitefin Shark
   342: { fam: 'dogfish', h: 0.17, c: ['#3e302a', '#4e4038'], belly: '#4e4038', f: '#382c26', eyec: '#3ad890', eyek: 1.7 }, // Portuguese Dogfish
   467: { fam: 'dogfish', h: 0.16, c: ['#6a6a66', '#a8a6a0'], belly: '#a8a6a0', f: '#62625e', eyec: '#3ae890', eyek: 2.2 }, // Gulper Shark
-  465: { fam: 'dogfish', h: 0.14, c: ['#2a2a30', '#1a1a1e'], belly: '#1a1a1e', f: '#26262c', teeth: 1, eyek: 1.6, eyec: '#3ad8a0', glow: 1 }, // Viper Dogfish
-  463: { fam: 'dogfish', h: 0.24, c: ['#3a3a3e', '#2a2a2e'], belly: '#2a2a2e', f: '#363638', glow: 1, sp: { top: [[0, 0.5], [0.05, 0.85], [0.15, 1], [0.35, 1], [0.6, 0.85], [0.82, 0.5], [1, 0.22]], dspine: 0 } }, // Pocket Shark
+  465: { fam: 'dogfish', h: 0.14, c: ['#2a2a30', '#1a1a1e'], belly: '#1a1a1e', f: '#26262c', teeth: 1, eyek: 1.6, eyec: '#3ad8a0', glow: '#6ad0ff' }, // Viper Dogfish
+  463: { fam: 'dogfish', h: 0.24, c: ['#3a3a3e', '#2a2a2e'], belly: '#2a2a2e', f: '#363638', glow: '#6ad0ff', sp: { top: [[0, 0.5], [0.05, 0.85], [0.15, 1], [0.35, 1], [0.6, 0.85], [0.82, 0.5], [1, 0.22]], dspine: 0 } }, // Pocket Shark
   466: { fam: 'dogfish', h: 0.18, c: ['#4a4038', '#6a5e54'], belly: '#6a5e54', f: '#443a32', sp: { d1: { x: 0.45, w: 0.32, h: 0.25, s: 'low' }, d2: { x: 0.8, w: 0.08, h: 0.3 }, dspine: 0, anal: 0.84 } }, // False Catshark
-  90: { fam: 'dogfish', h: 0.17, c: ['#6a5a48', '#8a7a64'], belly: '#8a7a64', f: '#62523e', glow: 1, eyek: 1.6, sp: { d1: { x: 0.68, w: 0.05, h: 0.2 }, d2: { x: 0.78, w: 0.05, h: 0.2 }, dspine: 0 }, marks: [{ k: 'band', x: 0.24, w: 0.05, c: '#2a2018', top: 0.2, bot: 0.6 }] }, // Cookiecutter Shark
+  90: { fam: 'dogfish', h: 0.17, c: ['#6a5a48', '#8a7a64'], belly: '#8a7a64', f: '#62523e', glow: '#6ad0ff', eyek: 1.6, sp: { d1: { x: 0.68, w: 0.05, h: 0.2 }, d2: { x: 0.78, w: 0.05, h: 0.2 }, dspine: 0 }, marks: [{ k: 'band', x: 0.24, w: 0.05, c: '#2a2018', top: 0.2, bot: 0.6 }] }, // Cookiecutter Shark
 
   // ---------- batch 4: open ocean and cold water ----------
   39: { fam: 'tuna', h: 0.3, t: 'lunate', c: ['#14243e', '#c8d2d8'], f: '#1a2a40', finletc: '#d8b830', p: 'none', marks: [{ k: 'lower', y: 0.05, c: '#d0d8de', soft: 0.1 }] }, // Atlantic Bluefin Tuna

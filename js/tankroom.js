@@ -9,7 +9,7 @@
 import { SPECIES_BY_ID } from './species.js';
 import { usualDepth } from './fauna.js';
 import { drawSpecies, speciesIcon, speciesBox, fittedIcon } from './creatures_draw.js';
-import { rarityOf, specimenValue, rarityStars, rarityCls } from './specimens.js';
+import { rarityOf, specimenValue, rarityStars, rarityCls, livesOnBottom, isSessile } from './specimens.js';
 import { money } from './economy.js';
 import { xEyes } from './gallery.js';
 import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf, chamberRoom } from './capture.js';
@@ -1028,6 +1028,11 @@ export class TankRoom {
     }
     const vit = clamp((s.cond - 0.05) / 0.95, 0, 1), dying = gapOf(g, s, inBag) > SAFE_GAP;
     a.dying = dying; a.vit = vit;
+    { const sp0 = SPECIES_BY_ID[s.id]; if (sp0 && livesOnBottom(sp0)) { // (5.10.8) on the bottom: it rests on the sand and walks slowly along it (corals stay put)
+      a.y = lerp(a.y, box.y1, Math.min(1, dt * 2)); a.vy = 0; a.roll = 0; a.flipT = 0;
+      if (!isSessile(sp0)) { a.retT -= dt; if (a.retT <= 0 || Math.abs(a.tx - a.x) < 3) { a.tx = lerp(x0, x1, Math.random()); a.retT = 4 + Math.random() * 6; }
+        const v2 = clamp(a.tx - a.x, -6 * vit, 6 * vit); a.vx = lerp(a.vx, v2, dt * 2); a.x = clamp(a.x + a.vx * dt, x0, x1); if (Math.abs(a.vx) > 0.5) a.want = a.vx > 0 ? 1 : -1; a.face = clamp(a.face + Math.sign(a.want - a.face) * dt * 2, -1, 1); }
+      a.phase += dt * 0.5; return a; } }
     a.retT -= dt;
     if (a.retT <= 0 || Math.hypot(a.tx - a.x, a.ty - a.y) < 4) {
       a.tx = lerp(x0, x1, Math.random());

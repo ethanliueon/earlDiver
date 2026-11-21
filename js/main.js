@@ -1705,7 +1705,7 @@ function startKill() {
   ent.x = x0; ent.y = y0; ent.vx = ent.vy = 0; ent.faceLock = -flip; ent.eyeOpen = 1;
   ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
   const s = flip;
-  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0, y0, x1, y1, dx, dy, rot, flip, window: inSub ? null : [0, hud.touch ? 0.9 : KILL_WINDOW] }; // (5.10.1) a thumb needs a moment longer to find the lamp than a key does
+  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0, y0, x1, y1, dx, dy, rot, flip, window: inSub ? null : [0, hud.touch ? 0.9 : KILL_WINDOW] }; // (5.10.1) a thumb needs a moment longer than a key
   ui.closeAll && ui.closeAll();
   audio.ready && audio.drop();
   g.fx.shake = Math.max(g.fx.shake, 1.2);
@@ -1720,17 +1720,18 @@ function killUpdate(dt) {
     // it veers off the way it came
     ent.x += K.dx * dt * 20; ent.y += K.dy * dt * 20; K.open = Math.max(0, K.open - dt * 3);
     if (K.escT > 0.6) { g.kill = null; ent.faceLock = null; }
-    for (const k of ['l', 'q', 'e']) pressed.delete(k);
+    for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k);
     return;
   }
   // the moment to get free (swimming only)
   if ((K.window && K.t > K.window[0] && K.t < K.window[1]) || (pressed.has('q') && K.t < (K.window ? K.window[1] : 99))) { // (5.6.4) the lure answers any time before the jaws shut
     let how = null;
-    if (pressed.has('l')) { if (!ent.flashed) { how = 'flash'; ent.flashed = true; } else hud.toast('It no longer flinches from the light', 'warn'); }
+    // (5.10.8) no escape by the lamp: only a lure, or the Tidewarden's ward, gets him out of the jaws
+    if (pressed.has('ability')) { const A = currentAbility(), why = A && A.tide ? whyNot(g, profile, A) : 'no'; if (!why || why === 'Only when the thing is close') { useAbility(); how = 'tide'; } }
     if (!how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { if ((profile.oldLures || 0) > 0) profile.oldLures--; else g.items.lure--; how = 'lure'; }
-    if (how) { escapeKill(how); for (const k of ['l', 'q', 'e']) pressed.delete(k); return; }
+    if (how) { escapeKill(how); for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k); return; }
   }
-  for (const k of ['l', 'q', 'e']) pressed.delete(k);
+  for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k);
   // the lunge: it comes across the screen, the jaw dropping as it comes, until he is well inside the
   // gape (about 10 m behind its snout); then the jaws shut
   const k = clamp(K.t / KILL_LUNGE, 0, 1), ease = 1 - Math.pow(1 - k, 2.2);
@@ -1753,7 +1754,7 @@ function escapeKill(how) {
   // it lets go, but not before it has done its damage (never enough, on its own, to kill)
   if (K.inSub) {
     g.sub.hull = Math.max(0, g.sub.hull - 0.35); audio.ready && audio.ram();
-    hud.toast(`${how === 'flash' ? 'The light burns it' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it lets go · hull ${Math.round(g.sub.hull * 100)} %`, 'warn');
+    hud.toast(`${how === 'tide' ? 'The water turns blue' : how === 'lure' ? 'It goes for the lure' : 'The necklace burns it'}: it lets go · hull ${Math.round(g.sub.hull * 100)} %`, 'warn');
   } else {
     g.injury = Math.min(4, g.injury + 2); g.healT = 0; g.fx.redFlash = 1; // its teeth caught him as it turned
     for (let i = 0; i < 30; i++) g.blood.push({ x: e.x + (Math.random() - 0.5) * 0.8, y: e.y + (Math.random() - 0.5) * 0.8, vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2, r: 0.3 + Math.random() * 0.5, t: 0, life: 6 });
@@ -2948,6 +2949,7 @@ function frame(now) {
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
+  { const A = hud.abilDef; hud.killTide = !!(g.kill && A && A.tide && (() => { const w = whyNot(g, profile, A); return !w || w === 'Only when the thing is close'; })()); } // (5.10.8) the Tidewarden, offered in the jaws
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)

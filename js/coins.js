@@ -35,7 +35,7 @@ function face(x, R, hue, seed) {
 }
 function lip(x, R, state) {
   x.lineWidth = R * 0.085; x.strokeStyle = '#15130f'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.stroke();
-  x.lineWidth = R * 0.028; x.strokeStyle = state === 'lit' ? 'rgba(236,224,190,0.9)' : 'rgba(190,172,132,0.35)';
+  x.lineWidth = R * (state === 'lit' ? 0.022 : 0.028); x.strokeStyle = state === 'lit' ? 'rgba(226,212,176,0.55)' : 'rgba(190,172,132,0.35)'; // (5.10.8) lit: a quiet cream rim, not a glowing ring
   if (state === 'lit') { x.beginPath(); x.arc(0, 0, R * 0.95, 0, TAU); x.stroke(); }
   else { x.beginPath(); x.arc(0, 0, R * 0.95, Math.PI * 1.12, Math.PI * 1.88); x.stroke(); }
 }
@@ -467,7 +467,7 @@ for (const f of ABILITY_FAMILIES) ART['ab_' + f] = (x, look) => { // (5.9.0) the
 // (5.6.9) a tool's coin tinted by its rarity: dark, muddy versions of the rarity colours (they sit in the olive and
 // bronze, not app-bright), and a thin lip in the rarity's own colour
 const TINT = { common: [110, 8, 13], uncommon: [112, 26, 13], rare: [208, 30, 14], exotic: [276, 22, 14], legendary: [36, 40, 13] };
-const TINT_LIP = { common: 'rgba(201,205,196,0.55)', uncommon: 'rgba(124,207,127,0.7)', rare: 'rgba(90,168,240,0.75)', exotic: 'rgba(194,122,240,0.75)', legendary: 'rgba(214,160,70,0.8)' };
+const TINT_LIP = { common: 'rgba(201,205,196,0.35)', uncommon: 'rgba(110,170,112,0.45)', rare: 'rgba(80,140,200,0.45)', exotic: 'rgba(160,110,200,0.45)', legendary: 'rgba(190,146,70,0.55)' }; // (5.10.8) the rarity's rim, muted
 export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint = null) {
   const lk = look && typeof look === 'object' ? (look.id || JSON.stringify(look).slice(0, 40)) : String(look ?? '');
   const key = `${kind}|${state}|${Math.round(r * 2)}|${lk}|${tint || ''}`;
@@ -489,9 +489,9 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint =
     if (state === 'down') { x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); }
     // (5.7.0) pressed: the face lights up and its colours deepen, as if a lamp came on behind it
     if (state === 'press') { x.save(); x.beginPath(); x.arc(0, 0, R * 0.95, 0, TAU); x.clip(); x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.35; x.fillStyle = 'hsl(40,100%,50%)'; x.fill(); x.globalCompositeOperation = 'screen'; x.globalAlpha = 1;
-      const pg = x.createRadialGradient(0, 0, 0, 0, 0, R); pg.addColorStop(0, 'rgba(255,240,205,0.42)'); pg.addColorStop(0.7, 'rgba(255,230,180,0.14)'); pg.addColorStop(1, 'rgba(255,230,180,0.3)'); x.fillStyle = pg; x.fillRect(-R, -R, R * 2, R * 2); x.restore(); }
+      const pg = x.createRadialGradient(0, 0, 0, 0, 0, R); pg.addColorStop(0, 'rgba(255,240,205,0.24)'); pg.addColorStop(0.7, 'rgba(255,230,180,0.08)'); pg.addColorStop(1, 'rgba(255,230,180,0.16)'); /* (5.10.8) softer */ x.fillStyle = pg; x.fillRect(-R, -R, R * 2, R * 2); x.restore(); }
     lip(x, R, state === 'press' ? 'lit' : state);
-    if (tint && TINT_LIP[tint] && state !== 'off') { x.lineWidth = R * 0.045; x.strokeStyle = TINT_LIP[tint]; x.beginPath(); x.arc(0, 0, R * 0.955, 0, TAU); x.stroke(); }
+    if (tint && TINT_LIP[tint] && state !== 'off') { x.lineWidth = R * 0.03; x.strokeStyle = TINT_LIP[tint]; x.beginPath(); x.arc(0, 0, R * 0.955, 0, TAU); x.stroke(); }
     t = { c, half: size / 2 }; cache.set(key, t); if (cache.size > 320) cache.delete(cache.keys().next().value);
   }
   if (state === 'press') { const k = 0.92, hh = t.half * k; ctx.drawImage(t.c, cx - hh, cy - hh + r * 0.05, hh * 2, hh * 2); return; } // (5.7.0) pressed in: smaller and a little lower
