@@ -340,4 +340,16 @@ export const LOOKS = {
   482: { fam: 'wolf', h: 0.12, t: 'round', c: ['#c0c6ca', '#e4e8ea'], f: '#d03a2a', dfc: '#d03a2a', mouth: 'small', p: 'none', dors: [{ a: 0.02, b: 0.96, s: 'even', h: 0.45, r: 0.1, n: 30 }], topc: [[0, 0.6], [0.04, 1.1], [0.1, 1], [0.5, 0.85], [0.85, 0.5], [1, 0.25]] }, // Crestfish
   485: { fam: 'squirrel', h: 0.3, t: 'fork', c: ['#2a2420', '#4a3e36'], f: '#2a2420', bigscale: 1, eyek: 0.7, topc: [[0, 0.5], [0.05, 0.85], [0.15, 1.05], [0.35, 1], [0.6, 0.88], [0.8, 0.55], [1, 0.28]], p: 'none' }, // Crested Bigscale
   486: { fam: 'herring', h: 0.2, t: 'fork', c: ['#1e1e24', '#3a3a42'], f: '#1e1e24', eyek: 1.7, p: 'none', marks: [{ k: 'spot', x: 0.3, y: -0.15, r: 0.06, c: '#5ac8ff' }] }, // Shining Tubeshoulder
+
+  // ---------- batch 6: the legends' own bodies ----------
+  2102: { c: ['#1a1428', '#3a2e52'], glow: '#c8a8ff', lures: 3, streamers: 4, streamc: '#8a7ab8', crestL: [0.12, 0.45, 0.9], crestc: '#2a2240' }, // the Viperfish
+  2106: { c: ['#0e0c0c', '#2a1e1a'], lures: 1, glow: '#ff8a5a', streamers: 3, streamc: '#5a4a44', crestL: [0.14, 0.42, 0.75], crestc: '#2a201c' }, // the Swallower
+  2109: { c: ['#8a847a', '#bdb6a8'], crestL: [0.04, 0.24, 1.3], glowbarbel: 1, glow: '#9ae8c8', streamers: 1, streamc: '#bdb6a8' }, // the Grenadier
+  54: { paddles: 1, streamers: 3, streamc: '#d0322a', crestL: [0.0, 0.08, 2.4], crestc: '#d0322a' }, // the Oarfish
+
+  2162: { legendOver: { spikes: [0.42, 0.2, 14, 0.07, '#d8ccb4'], speckle: [0.35, 0.15, 30, '#efe6d0'] } }, // the Isopod
+  2150: { legendOver: { lights: [0.32, 0.26, 8, '#7ad8ff'], speckle: [0.2, 0.2, 20, '#ff7a6a'] } }, // the Vampire Squid
+  2146: { legendOver: { speckle: [0.3, 0.25, 40, '#f0e0ff'], lights: [0.38, 0.22, 4, '#c8b0ff'] } }, // the Dumbo
+  2110: { legendOver: { threads: [-0.1, -0.05, 5, 0.3, '#c8e8f0'], speckle: [0.3, 0.06, 20, '#bfe8ff'] } }, // the Tripod
+  107: { legendOver: { speckle: [0.3, 0.22, 30, '#ffd8e0'], spikes: [0.33, 0.25, 9, 0.035, '#c89a94'] } }, // the Blobfish
 };

@@ -832,6 +832,7 @@ function drawViper(ctx, L, v, t, swim = 1) {
   ctx.strokeStyle = rgba(fin, 0.8); ctx.lineWidth = Math.max(0.5, L * 0.0035); ctx.beginPath(); ctx.moveTo(dx, dy - dh); ctx.quadraticCurveTo(dx - L * 0.02, ly - H * 0.6, lx, ly); ctx.stroke();
   const hg = ctx.createRadialGradient(lx, ly, 0, lx, ly, Math.max(3, L * 0.02)); hg.addColorStop(0, rgba(glow, 0.9)); hg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(lx, ly, Math.max(3, L * 0.02), 0, TAU); ctx.fill();
   P.push([lx, ly, 1.3]);
+  legendExtras(ctx, B, L, H, v, t, P);
   return P;
 }
 // (3.7.5) the barreleye: a small dark fish whose head is a clear, fluid-filled dome; inside it two green tubular eyes
@@ -1093,6 +1094,7 @@ function drawRattail(ctx, L, v, t, swim = 1) {
   const er = Math.max(1, hh * 0.42); ctx.fillStyle = rgba(shade(c0, -0.4), 0.8); ctx.beginPath(); ctx.arc(-L * 0.4, hy - hh * 0.3, er * 1.3, 0, TAU); ctx.fill();
   eye(ctx, -L * 0.4, hy - hh * 0.3, er, '#b8c4c4');
   rayFin(ctx, [[-L * 0.31, hy + hh * 0.1], [-L * 0.3, hy + hh * 0.35]], [[-L * 0.2, hy + hh * 0.2], [-L * 0.2, hy + hh * 0.6], [-L * 0.27, hy + hh * 0.75]], fin, 0.5);
+  legendExtras(ctx, B, L, H, v, t, null); // (5.10.0) a legend's own body
 }
 function drawRatfish(ctx, L, v, t, swim) {
   drawRattail(ctx, L, v, t, swim);
@@ -1182,6 +1184,7 @@ function drawOarfish(ctx, L, v, t, swim = 1) {
   for (const k of [0, 1]) { const [px, py, ph] = B.at(0.045), sway = Math.sin(t * 1.1 + k) * L * 0.02, ex = px + L * 0.04 + k * L * 0.02 + sway, ey = py + ph + H * (5 + k);
     ctx.strokeStyle = rgba(red, 0.85); ctx.lineWidth = Math.max(0.5, L * 0.0022); ctx.beginPath(); ctx.moveTo(px, py + ph); ctx.quadraticCurveTo(px + L * 0.01, py + ph + H * 3, ex, ey); ctx.stroke();
     ctx.fillStyle = rgba(red, 0.9); ctx.beginPath(); ctx.ellipse(ex, ey, Math.max(1, L * 0.006), Math.max(1.6, L * 0.011), 0.3, 0, TAU); ctx.fill(); }
+  legendExtras(ctx, B, L, H, v, t, null); // (5.10.0) a legend's own body
 }
 function drawBox(ctx, L, v, t, swim) {
   const H = L * v.h;
@@ -2629,6 +2632,7 @@ function drawSwallower(ctx, L, v, t, swim = 1) {
   ctx.fillStyle = '#060404'; ctx.beginPath(); ctx.moveTo(-L * 0.5, hy - hh * 0.05); ctx.lineTo(-L * 0.36, hy + hh * 0.3); ctx.lineTo(-L * 0.5, hy + hh * 0.7); ctx.closePath(); ctx.fill();
   for (let k = 0; k < 6; k++) { glassFang(ctx, -L * 0.49 + k * L * 0.022, hy + hh * 0.02, hh * 0.35, 1, Math.max(0.4, L * 0.003), 0.25); glassFang(ctx, -L * 0.49 + k * L * 0.022, hy + hh * 0.68, hh * 0.32, -1, Math.max(0.4, L * 0.003), 0.25); }
   eye(ctx, -L * 0.44, hy - hh * 0.45, Math.max(1, hh * 0.3), '#7a8a8a');
+  legendExtras(ctx, B, L, H, v, t, null); // (5.10.0) a legend's own body
 }
 // (3.7.5) a dragonfish: long, black, velvet-skinned, a long barbel from the chin with a glowing bulb, fangs in a
 // jaw that opens wide, rows of small lights along the belly, the dorsal and anal fins far back by the tail
@@ -3377,9 +3381,33 @@ Object.assign(FAM, {
     dors: [{ a: 0.14, b: 0.96, s: 'even', h: 0.2, r: 0.1, n: 26 }], anal: [{ a: 0.48, b: 0.96, s: 'even', h: 0.15, r: 0.1, n: 14 }] }),
 });
 
+
+// (5.10.0) what makes a legend its own animal, on any long bending body (B: its centreline and half-heights):
+// a spined crest, long streamers off the tail, a crown of lures, the oarfish's paddle-tipped streamers, a belly
+// swollen round its last meal, a glowing chin barbel. Never only a colour.
+function legendExtras(ctx, B, L, H, v, t, P) {
+  if (v.crestL) { const [a, b, hk] = v.crestL; ctx.fillStyle = v.crestc || shade(v.c[0], 0.12); for (let k = 0; k <= 16; k++) { const u = a + (b - a) * k / 16, [x, y, h] = B.at(u), sp = H * hk * (0.6 + 0.4 * Math.sin(k * 1.7)) * (1 - Math.abs(k - 5) / 22); ctx.beginPath(); ctx.moveTo(x - L * 0.006, y - h * 0.8); ctx.lineTo(x + L * 0.004, y - h - sp); ctx.lineTo(x + L * 0.01, y - h * 0.8); ctx.fill(); } }
+  if (v.streamers) { const [x, y] = B.at(1); ctx.strokeStyle = rgba(v.streamc || shade(v.c[1], 0.3), 0.7); ctx.lineWidth = Math.max(0.5, L * 0.003); ctx.lineCap = 'round'; for (let k = 0; k < v.streamers; k++) { const sp = (k - (v.streamers - 1) / 2) * 0.3, len = L * (0.25 + (k % 2) * 0.1); ctx.beginPath(); ctx.moveTo(x, y); ctx.bezierCurveTo(x + len * 0.3, y + sp * H * 2, x + len * 0.6, y + sp * H * 4 + Math.sin(t * 1.5 + k) * H, x + len, y + sp * H * 5 + Math.sin(t * 1.2 + k) * H * 2); ctx.stroke(); } ctx.lineCap = 'butt'; }
+  if (v.lures) { const [x, y, h] = B.at(0.08), glow = v.glow || '#6ad0ff'; for (let k = 0; k < v.lures; k++) { const lx = x - L * (0.04 + k * 0.05) + Math.sin(t * 1.1 + k) * L * 0.015, ly = y - h - H * (2.6 + k * 0.9); ctx.strokeStyle = rgba(shade(v.c[1], 0.3), 0.7); ctx.lineWidth = Math.max(0.5, L * 0.003); ctx.beginPath(); ctx.moveTo(x, y - h); ctx.quadraticCurveTo(x - L * 0.02, ly - H * 0.5, lx, ly); ctx.stroke(); const hg = ctx.createRadialGradient(lx, ly, 0, lx, ly, Math.max(3, L * 0.022)); hg.addColorStop(0, rgba(glow, 0.95)); hg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(lx, ly, Math.max(3, L * 0.022), 0, TAU); ctx.fill(); P && P.push([lx, ly, 1.2]); } }
+  if (v.paddles) { ctx.lineCap = 'round'; for (let k = 0; k < 3; k++) { const [x, y, h] = B.at(0.06 + k * 0.012), len = L * (0.18 + k * 0.05), ex = x + len * 0.55 + Math.sin(t * 1.3 + k) * L * 0.02, ey = y + h + len * 0.7; ctx.strokeStyle = rgba('#c8302a', 0.85); ctx.lineWidth = Math.max(0.6, L * 0.003); ctx.beginPath(); ctx.moveTo(x, y + h); ctx.quadraticCurveTo(x + len * 0.1, y + h + len * 0.5, ex, ey); ctx.stroke(); ctx.fillStyle = '#d8382e'; ctx.beginPath(); ctx.ellipse(ex, ey, L * 0.012, L * 0.022, 0.5, 0, TAU); ctx.fill(); } ctx.lineCap = 'butt'; }
+  if (v.belly) { const [x, y, h] = B.at(v.belly), r = H * 1.1; ctx.fillStyle = rgba(shade(v.c[1], 0.15), 0.85); ctx.beginPath(); ctx.ellipse(x, y + h * 0.6, L * 0.09, r, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = rgba(shade(v.c[0], -0.4), 0.5); ctx.lineWidth = Math.max(0.5, L * 0.003); ctx.stroke();
+    ctx.save(); ctx.globalAlpha = 0.45; ctx.fillStyle = '#0a0808'; ctx.beginPath(); ctx.ellipse(x, y + h * 0.6, L * 0.07, r * 0.4, 0.1, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.moveTo(x + L * 0.06, y + h * 0.6); ctx.lineTo(x + L * 0.09, y + h * 0.6 - r * 0.35); ctx.lineTo(x + L * 0.09, y + h * 0.6 + r * 0.35); ctx.fill(); ctx.restore(); } // its stretched belly, the shape of the fish inside it showing through
+  if (v.glowbarbel) { const [x, y, h] = B.at(0.03), glow = v.glow || '#6ad0ff', ex = x + Math.sin(t) * L * 0.01, ey = y + h + H * 2.5; ctx.strokeStyle = rgba(shade(v.c[1], 0.3), 0.7); ctx.lineWidth = Math.max(0.4, L * 0.0025); ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(ex, ey); ctx.stroke(); const hg = ctx.createRadialGradient(ex, ey, 0, ex, ey, Math.max(3, L * 0.018)); hg.addColorStop(0, rgba(glow, 0.9)); hg.addColorStop(1, rgba(glow, 0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(ex, ey, Math.max(3, L * 0.018), 0, TAU); ctx.fill(); P && P.push([ex, ey, 1]); }
+  if (v.eyeglow2) { /* the caller's eye glows; nothing here */ }
+}
+
+// (5.10.0) a legend's own marks on bodies drawn whole (the isopod, the vampire squid, the dumbo, the tripod, the
+// blobfish): a row of armour spikes along the back, lights at the arm tips, luminous speckles, ragged filaments
+function legendOver(ctx, o, L, t) {
+  if (o.spikes) { const [rx, ry, n, len, col] = o.spikes; ctx.fillStyle = col; for (let k = 0; k < n; k++) { const a = PI + (k + 0.5) / n * PI, x = Math.cos(a) * L * rx, y = Math.sin(a) * L * ry, nx2 = Math.cos(a), ny2 = Math.sin(a); ctx.beginPath(); ctx.moveTo(x - ny2 * L * 0.012, y + nx2 * L * 0.012); ctx.lineTo(x + nx2 * L * len * (0.7 + 0.3 * Math.sin(k * 2.1)), y + ny2 * L * len * (0.7 + 0.3 * Math.sin(k * 2.1))); ctx.lineTo(x + ny2 * L * 0.012, y - nx2 * L * 0.012); ctx.fill(); } }
+  if (o.lights) { const [rx, ry, n, col] = o.lights; for (let k = 0; k < n; k++) { const a = k / n * TAU + t * 0.2, x = Math.cos(a) * L * rx, y = Math.sin(a) * L * ry, r = L * 0.03 * (0.8 + 0.2 * Math.sin(t * 2 + k)); const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, rgba(col, 0.9)); g.addColorStop(1, rgba(col, 0)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); } }
+  if (o.speckle) { const [rx, ry, n, col] = o.speckle; ctx.fillStyle = rgba(col, 0.75); for (let k = 0; k < n; k++) { const a = hashN(k, 71) * TAU, d = Math.sqrt(hashN(k, 72)); ctx.beginPath(); ctx.arc(Math.cos(a) * L * rx * d, Math.sin(a) * L * ry * d, Math.max(0.6, L * 0.004), 0, TAU); ctx.fill(); } }
+  if (o.threads) { const [x0, y0, n, len, col] = o.threads; ctx.strokeStyle = rgba(col, 0.6); ctx.lineWidth = Math.max(0.5, L * 0.003); for (let k = 0; k < n; k++) { const x = L * x0 + k * L * 0.03, y = L * y0; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + L * 0.05, y - L * len * 0.5, x + L * (0.1 + k * 0.02) + Math.sin(t + k) * L * 0.02, y - L * len); ctx.stroke(); } }
+}
 export function drawSpecies(ctx, sp, L, t, swim = 1, phase = 0) {
   const fn = sp.v.fam && FAM[sp.v.fam] && FAM[sp.v.fam].draw ? FAM[sp.v.fam].draw : sp.v.t === 'coel' ? drawCoelacanth : RENDERERS[sp.v.s] || drawFish; // (3.7.5) the coelacanth has its own; (5.10.0) a body family first
   const r = fn(ctx, L, sp.v, t, swim, phase);
+  if (sp.v.legendOver) legendOver(ctx, sp.v.legendOver, L, t);
   return r || null;
 }
 
