@@ -23,7 +23,7 @@ There are also real bugs: one makes escaping the thing impossible by touch.
 |---|---|---|
 | A1 | **The flash escape is impossible on a phone.** In the kill window (0.7 s) the escape is a lamp flash or a lure. All touch controls hide while it runs, so the lamp cannot be pressed. Only the lure (if carried) is offered | During the kill keep one large lamp button (and the lure) on screen, lit and pulsing in the window |
 | A2 | **Dave's shop cannot be closed by the game.** Closing Dave does nothing once his computer is up, and "close everything" (used on death) never closes a shop. It stayed open through night, the hunt and death | Close the shop panels in closeAll and in toggleDave(false) |
-| A3 | **The sea runs under the shops.** Shopping at Dave's (1,200 m) the cabin air ran out and the thing could hunt | Hold time while a shop or the inventory is open underwater (the tutorial already freezes the world this way) |
+| A3 | **The sea runs under the shops and the bag** (the cabin air ran out while shopping at Dave's). This is wanted: the time pressure is part of the fear | Keep the clock running in every in-world panel (shops, bag, tank room, journal). Only Settings and Pause stop time. Make sure the danger reaches you through any panel: the air bar and depth stay visible, the alarms and red edges show over panels, warnings are never hidden behind them, and the thing's arrival closes the panel |
 | A4 | **Keyboard words reach the phone.** "Press null to put it on" after buying. Also "Press 5, then Space", "Press 2 for the camera", "Hold R at a hole", "Press C to take the helm", "Space reaches for an animal", about 15 in all | Sweep every hint and toast; on touch name the button by its picture, never a key |
 | A5 | The journal's coin (a page element) stays on screen when the HUD hides (the hunt, cinematics) | Hide it with the HUD |
 | A6 | Settings opened from the title appear under the "Welcome to the tutorial" box | Order the layers; the welcome waits |
@@ -113,6 +113,5 @@ There are also real bugs: one makes escaping the thing impossible by touch.
 1. Items: cut from 411 to about 60 to 80 hand-made ones? Old saves would map each removed item to its nearest new one.
 2. The shop: a paper mail-order catalogue on the cabin desk, or a green terminal? (I lean to the catalogue: paper,
    photographs, worn, and it matches the journal.)
-3. Should the world stop while a panel is open underwater, or only shops and the inventory (the journal and chart
-   keep time running)?
+3. (Answered: time keeps running in every in-world panel; only Settings and Pause stop it.)
 4. The death card: should death keep its current cost (unsold catch, a hospital bill, gear the thing took)?
