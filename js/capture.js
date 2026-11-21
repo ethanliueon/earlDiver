@@ -195,6 +195,7 @@ export function updateCapture(g, dt) {
         if (tgt.variant) { spec.variant = tgt.variant; spec.mult = variantMult(tgt.variant); if (tgt.variant === 'crimson') g.entity.disturb(g, 0.08); }
         if (tgt.c) tgt.c.dead = true;
         if (tgt.s) { g.world.statics.splice(g.world.statics.indexOf(tgt.s), 1); g.world.staticsVer = (g.world.staticsVer || 0) + 1; }
+        if (g.blessCatch) { spec.cond = 1; spec.blessed = true; } // (5.16.0) Apex: what it catches comes back whole, and Blessed
         g.bag.push(spec);
         g.captureFx.push({ sp: tgt.sp, len: tgt.len, x: tgt.x, y: tgt.y, dir: tgt.c ? tgt.c.dir : 1, t: 0, dur: kind === 'slurp' ? 0.25 : 0.3, kind });
         // (5.0) it fights the net: a pull on Earl the way it was swimming, as strong as it is big
@@ -313,7 +314,7 @@ export function updateSpecimens(g, dt) {
     // the comfort zones, measured from the depth it lives at and scaled by what it can take
     // (pressureTolerance): within 50 m healthy; to 150 m stressed; to 250 m dying; to 350 m dying
     // fast; beyond, dead
-    if (!s.tol) { const sp = SPECIES_BY_ID[s.id]; s.tol = sp ? pressureTolerance(sp, homeOf(s)).k : 1; }
+    if (!s.tol) { const sp = SPECIES_BY_ID[s.id]; s.tol = (sp ? pressureTolerance(sp, homeOf(s)).k : 1) * (s.blessed ? 2 : 1); } // (5.16.0) Blessed: twice the safe range
     const gap = s.pressed && s.shareHome != null ? Math.min(gapOf(g, s, inBag) / s.tol, ZONE.ok) : gapOf(g, s, inBag) / s.tol; // (sharing: kept healthy)
     // in the net there is nothing to protect it: say so, once as it starts to suffer, once as it dies
     const deeper = gapSigned(g, s, inBag) < 0;

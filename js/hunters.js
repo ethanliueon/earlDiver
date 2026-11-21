@@ -54,9 +54,9 @@ export function directEncounters(g, dt, SPECIES_BY_ID) {
   // (3.0.37) below 3,000 m, anywhere, belongs to the abyssal sleeper shark (in the sub or out of it)
   if (e.y > 2950) { rate = 0.14; pool = [188]; }
   if (g.injury > 0) rate *= 1 + g.injury * 0.6;   // blood in the water
-  if (g.concealed || g.protection) rate *= 0.1;
+  if (g.concealed || g.protection || g.hunterWard) rate *= 0.1;
+  if (e.legends && e.legends.has('faithless')) rate = 0; // (5.16.0) Faithless: no hunter comes for you, in the water or the sub
   rate *= g.stillMul || 1;                         // still water: they are slow to come
-  if (e.legends && e.legends.has('faithless')) rate *= 0.4; // (2.8.0) Faithless: fewer come for him
   if (active >= 2) rate = 0;                        // one or two at a time
   g.encT = (g.encT ?? 20) - dt * rate / 0.5;         // a countdown that runs faster in dangerous water
   if (g.encT > 0 || !pool.length) return;
@@ -85,7 +85,7 @@ export function updateHunters(g, dt) {
   const night = g.day.light < 0.3;
   // (claude-polish) the Margaret's own water is safe: near her (60 m) and above 40 m nothing starts an attack, and one under
   // way breaks off (a great white took a new diver at 6 m beside her, an orca stove in the first sub at 30 m)
-  const protectedNow = !!g.protection || !!g.homeSafe;
+  const protectedNow = !!g.protection || !!g.hunterWard || !!g.homeSafe || !!(g.earl.legends && g.earl.legends.has('faithless')); // (5.16.0)
   const dolphinsNear = list.some((c) => DOLPHINS.has(c.sp.id) && dist(c.x, c.y, e.x, e.y) < 25);
   const frenzy = g.fauna.puffs.some((p) => dist(p.x, p.y, e.x, e.y) < 35);
   const hidden = g.concealed;

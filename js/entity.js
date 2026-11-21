@@ -103,11 +103,11 @@ export class Entity {
     if (e.inSub) {
       const A = this.ap || (this.ap = { n: 0, phase: null, t: 0, wait: 0, side: 1, still: 0 });
       A.phase = 'stare2'; A.t = 0; A.side = Math.sign(this.x - e.x) || 1; A.n = Math.max(A.n, 1); A.wait = 0;
-      this.state = 'hunt'; this.lastX = e.x; this.lastY = e.y; this.knows = 1;
+      this.state = 'hunt'; this.lastX = e.x; this.lastY = e.y; this.knows = 1; if (!this.darkTried) g.events.push('glare');
       return;
     }
     this.state = 'hunt'; this.lastX = e.x; this.lastY = e.y; this.knows = 1;
-    this.hunt = { phase: 'glare', t: 0, ang: Math.atan2(this.y - e.y, this.x - e.x), passes: 1, still: 0, run: 0, dir: this.rng() < 0.5 ? -1 : 1 };
+    this.hunt = { phase: 'glare', t: 0, ang: Math.atan2(this.y - e.y, this.x - e.x), passes: 1, still: 0, run: 0, dir: this.rng() < 0.5 ? -1 : 1 }; if (!this.darkTried) g.events.push('glare'); // (5.16.0) so the way out can be said, once
   }
 
   // Once a run, when Earl is down in its water (below 100 m) and it is far off, it is suddenly 500 m
@@ -154,7 +154,7 @@ export class Entity {
   }
   mark(g) {
     if (this.marked) return;
-    this.marked = true; this.attn = 1; this.shallowT = 0; this.calm = 0;
+    this.marked = true; this.attn = 1; this.shallowT = 0; this.calm = 0; this.darkTried = false; this.slip = null; // (5.16.0) a new hunt: going dark may be tried once more
     this.lastX = g.earl.x; this.lastY = g.earl.y;
     this.state = 'search'; this.searchT = 0; this.senseT = this.rng.range(6, 12);
     g.events.push('marked');
@@ -170,14 +170,13 @@ export class Entity {
       if (g.sub.lightsOn && g.ambient < 0.3) r += 60;
       return r;
     }
-    if (e.legends && e.legends.has('phantom') && e.speedNow < 0.3) { g.concealed = true; return 2; } // (2.8.0) Phantom: still, he is not there
     const hidden = g.world.inKelp(e.x, e.y) || g.world.underLedge(e.x, e.y);
     // (5.12.4) Earl's speed no longer matters to it, and a glow stick is not a light to it, however bright
     g.concealed = hidden && !e.lampOn;
     if (hidden) return e.lampOn ? 14 : 6;
     let r = 45;
     if (e.lampOn) r += 70;
-    if (g.abilLight) r += 25 * g.abilLight; // (5.9.0) a Flare is seen too // the necklace's glow is a light too, if a dim one
+    // (5.16.0) a Flare, Lighthouse or glow stick is not a light to it: only the lamp and the sub's floodlight
     if (e.suitQuiet) r *= 0.7; // no bubbles: much less to hear
     if (e.atSurface) r += 30; // splashing
     return r;
@@ -217,7 +216,7 @@ export class Entity {
     const ap = g.autopilot;
     if (ap && ap.active && !e.inSub && g.sub.y > 200 && ap.speed > 0.5) rate += 0.008 * (1 + (g.sub.y - 200) / 400) * (g.addons && g.addons.quiet ? 0.5 : 1);
     if (d < per) rate += 0.35;                                       // it has noticed him
-    if (rate > 0) rate *= (g.stillMul || 1) * (g.blessed ? 0.5 : 1) * (e.legends && e.legends.has('faithless') ? 0.6 : 1) * (e.triesteSet ? 0.5 : 1); // still water, a blessing, Faithless, the Trieste set: it is slow to notice
+    if (rate > 0) rate *= (g.stillMul || 1) * (g.blessed ? 0.5 : 1) * (e.legends && e.legends.has('faithless') ? 0.5 : 1) * (e.triesteSet ? 0.5 : 1); // still water, a blessing, Faithless, the Trieste set: it is slow to notice
     this.attn = clamp(this.attn + rate * dt, 0, 1);
     if (this.attn >= 1) this.mark(g);
   }
@@ -238,6 +237,23 @@ export class Entity {
 
     let tx = this.x, ty = this.y, speed = ENTITY_SPEED * 0.35;
 
+    if (this.offRadarT > 0) this.offRadarT = Math.max(0, this.offRadarT - dt);
+    if (this.marked && this.slip) {
+      // (5.16.0) fooled by the dark: it turns and swims slowly off. For 15 s any light of his brings it straight back
+      // (and the dark will not fool it again this hunt); after that the mark lifts, and it lingers out past the radar's
+      // reach, a little deeper, for a minute and more, never far off
+      const S = this.slip, lit = e.inSub ? !!g.sub.lightsOn : !!e.lampOn;
+      S.t -= dt;
+      if (lit) { this.slip = null; this.state = 'hunt'; this.lastX = e.x; this.lastY = e.y; this.knows = 1; g.events.push('turnsBack'); }
+      else if (S.t <= 0) {
+        this.slip = null; this.marked = false; this.ap = null; this.hunt = null; this.flick = 0; this.attn = 0.5; this.offRadarT = 60;
+        this.lingerT = 90; this.lingerX = clamp(e.x + S.dir * 240, 20, 4980); this.lingerY = Math.max(e.y + 60, this.y); this.state = 'linger'; g.events.push('unmarked');
+      }
+      if (this.slip) { tx = clamp(e.x + S.dir * 240, 20, 4980); ty = Math.max(e.y + 60, this.y); speed = ENTITY_SPEED * 0.12; this.state = 'away';
+        ty = Math.min(ty, floorY); const dx0 = tx - this.x, dy0 = ty - this.y, dl0 = Math.hypot(dx0, dy0) || 1, w0 = Math.min(speed * ENTITY_PACE, dl0);
+        this.vx = lerp(this.vx, dx0 / dl0 * w0, 1 - Math.exp(-dt * 1.4)); this.vy = lerp(this.vy, dy0 / dl0 * w0, 1 - Math.exp(-dt * 1.4)); this.x += this.vx * dt; this.y += this.vy * dt;
+        if (Math.abs(this.vx) > 0.2) this.heading = Math.atan2(this.vy, this.vx); this.eyeOpen = lerp(this.eyeOpen, 0, dt); this.lights(g, dt); return; }
+    }
     if (!this.marked && this.lingerT > 0) {
       // (5.12.4) waiting where it lost him: a slow drift round that spot, in the dark
       tx = this.lingerX + Math.sin(g.time * 0.05) * 20; ty = this.lingerY + Math.cos(g.time * 0.04) * 10; speed = ENTITY_SPEED * 0.15; this.state = 'linger';
@@ -332,14 +348,14 @@ export class Entity {
           // seen in his lamp: it hangs off at the edge of what he can see, its eyes coming up. Dark and
           // still, or hidden, and it may lose him; run and it comes at once.
           H.t += dt;
-          const dark = e.inSub ? !g.sub.lightsOn : !e.lampOn, still = (e.speedNow || 0) < 0.4;
-          H.still = still && dark ? (H.still || 0) + dt : 0;
-          H.run = (e.speedNow || 0) > 2.5 ? (H.run || 0) + dt : Math.max(0, (H.run || 0) - dt);
+          const dark = e.inSub ? !g.sub.lightsOn : !e.lampOn; // (5.16.0) only light matters to it, never how he moves
+          H.still = dark ? (H.still || 0) + dt : 0;
           const V = g.viewBox, half = V ? Math.min(V[1] - V[0], (V[3] - V[2]) * 1.6) / 2 : 20;
           const ux = (this.x - e.x) / (d || 1), uy = (this.y - e.y) / (d || 1), hold = clamp(half - 5, 7, e.inSub ? 17 : 12);
           tx = e.x + ux * hold; ty = e.y + uy * hold * 0.6; speed = 2.5;
-          if (H.still > 3.5 || g.concealed) { this.goAway(e.x, e.y, bandLo); this.hunt = null; g.events.push('lost'); }
-          else if (H.run > 2.5 || H.t > GLARE_TIME) { this.hunt = null; this.swallowNow = true; }
+          if (g.concealed) { this.goAway(e.x, e.y, bandLo); this.hunt = null; g.events.push('lost'); }
+          else if (H.still > 3.5 && this.tryDark(g)) { this.hunt = null; }
+          else if (H.t > GLARE_TIME) { this.hunt = null; this.swallowNow = true; }
         } else if (d < 80) { this.hunt = null; this.swallowNow = true; }
       } else if (!e.inSub || cramped) this.hunt = this.hunt && this.hunt.phase === 'glare' && this.state === 'hunt' ? this.hunt : null;
       // how high it will come: up toward 120 m only in a live chase, otherwise it keeps below 200 m
@@ -351,7 +367,7 @@ export class Entity {
     ty = Math.min(ty, floorY);
     let dx = tx - this.x, dy = ty - this.y;
     const dl = Math.hypot(dx, dy) || 1;
-    const want = Math.min(speed * ENTITY_PACE, dl * 1.2);
+    const want = Math.min(speed * ENTITY_PACE * (this.marked && g.earl.legends && g.earl.legends.has('faithless') ? 0.5 : 1), dl * 1.2); // (5.16.0) Faithless: hunting him, at half its pace
     let tvx = (dx / dl) * want, tvy = (dy / dl) * want;
     // rising into shallower water it slows down: no sharp ceiling, a growing reluctance
     if (tvy < 0 && this.y < 170) tvy *= clamp((this.y - SAFE_DEPTH) / 50, 0.12, 1);
@@ -440,10 +456,10 @@ export class Entity {
         // it holds there, looking at him (the lights do the rest: see lights)
         const px = e.x + A.side * (half - 3), py = e.y + 1;
         this.faceLock = -A.side;
-        const dark = !g.sub.lightsOn, still = (e.speedNow || 0) < 0.4;
-        A.still = dark && still ? A.still + dt : 0;
+        const dark = !g.sub.lightsOn; // (5.16.0) only her light matters, not whether she moves
+        A.still = dark ? A.still + dt : 0;
         if (A.phase === 'stare2') {
-          if (A.still > 3.5) { A.phase = null; this.goAway(e.x, e.y, bandLo); g.events.push('lost'); return null; }
+          if (A.still > 3.5 && this.tryDark(g)) { A.phase = null; return null; }
           if (A.t > GLARE_TIME) { A.phase = null; A.n = 2; A.wait = this.rng.range(10, 16); }
         } else if (A.t > 6) { A.phase = 'stare2'; A.t = 0; } // (if the lights never went through the sequence)
         return { tx: px, ty: py, speed: 1.5 };
@@ -472,6 +488,14 @@ export class Entity {
     this.state = 'away'; this.knows = 0; this.searchT = 0;
   }
 
+  // (5.16.0) going dark: once a hunt, an even chance it loses him. Fooled, it turns away (see the slip in update); not
+  // fooled, its eye stays on him and it keeps coming. Returns true when it was fooled
+  tryDark(g) {
+    if (this.darkTried) return false;
+    this.darkTried = true;
+    if (this.rng.next ? this.rng.next() < 0.5 : Math.random() < 0.5) { this.slip = { t: 15, dir: Math.sign(this.x - g.earl.x) || 1 }; g.events.push('fooled'); return true; }
+    g.events.push('notFooled'); return false;
+  }
   throwLure(x, y, T = 10) { this.lure = { x, y }; this.lureT = T; }
 }
 

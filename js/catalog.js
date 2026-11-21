@@ -26,12 +26,12 @@ export const WEBSHOPS = {
   station: { title: 'Station Stores', sub: 'Abyssal Research Station, 280 m, requisitions', stock: 'station', theme: 'station',
     lede: 'Surplus and spare equipment from the station stores, released to visiting divers. Delivered to your locker.', newIn: [],
     cats: [['home', 'Index'], null, ['cam', 'Cameras'], ['suit', 'Cold-water suits'], null,
-      ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['lure', 'Lures'], ['chest', 'Equipment cases'], ['sell', 'Return equipment']],
+      ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['chest', 'Equipment cases'], ['sell', 'Return equipment']],
     chestTitle: 'Equipment cases', chestLede: 'Sealed cases of kit the scientists stopped using. One item in each, unlisted.' },
   dave: { title: "Dave's Haul", sub: '1,200 m down, cash only, no refunds', stock: 'dave', theme: 'dave',
     lede: "Deep gear, second hand and first rate. If it's on here, I've got it. If it isn't, I haven't. — Dave", newIn: [],
     cats: [['home', 'Front page'], null, ['tank', 'Air'], ['suit', 'Deep suits'], ['net', 'Big-game nets'], null,
-      ['fins', 'Fins'], ['bag', 'Bags'], ['cam', 'Cameras'], null, ['lure', 'Lures'], ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
+      ['fins', 'Fins'], ['bag', 'Bags'], ['cam', 'Cameras'], null, ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
     chestTitle: 'Boxes, unopened', chestLede: "Whatever came down on the rope. I haven't looked. I say." },
 };
 const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];

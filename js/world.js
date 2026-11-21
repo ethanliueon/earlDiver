@@ -318,10 +318,8 @@ export function generateWorld(seed) {
     }
   };
   scatter('necklace', 6, 300, 3000, 0.3);
-  scatter('lure', 6, 1500, 4000, 0.4);
-  // Good deeds: animals caught in lost fishing nets (fixed places), and broken coral to replant
-  for (const [x, an] of [[EAST + 938, 'turtle'], [EAST + 905, 'fish'], [EAST + 872, 'turtle'], [EAST + 826, 'fish'], [EAST + 778, 'turtle'], [EAST + 736, 'fish']]) addPickup('net', x, W.floorAt(x) - 0.7, { animal: an });
-  for (let i = 0; i < 12; i++) { const x = rng.range(EAST + 880, EAST + 968); addPickup('coral', x, onFloor(x)); }
+  // (5.16.0) no lures lying in the deep, no animals to cut free and no coral to replant: escaping the thing is done by
+  // what you do (going dark, a refuge, the shallows), and the good deeds that only fed its calm are gone
   // Sapphires: random deep spots, spread apart
   const spots = [];
   for (let tries = 0; spots.length < SAPPHIRE_COUNT && tries < 400; tries++) {

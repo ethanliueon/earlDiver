@@ -744,10 +744,14 @@ export class Fauna {
       const de = dist(c.x, c.y, earl.x, earl.y);
       if (school) {
         // school fish don't break ranks: the whole school moves off (see the school centres)
-      } else if (!c.prey && !c.ctrl && !earl.inSub) {
-        // (5.12.2) fish no longer bolt from Earl or the sub: each swims its own fixed pace and pattern whatever he does. Only
-        // the Magnetic legend still draws them to him
-        if (earl.legends && earl.legends.has('magnetic') && !c.predator && de < 12 && de > 1.2) { ax += (earl.x - c.x) / de * 4; ay += (earl.y - c.y) / de * 3; } // fish come to him
+      } else if (!c.prey && !c.ctrl) {
+        // (5.12.2) fish no longer bolt from Earl or the sub: each swims its own fixed pace and pattern whatever he does.
+        // (5.16.0) Magnetic (Gulper's Throat): exotic and legendary fish within 50 m slowly swim toward him (or the sub he is
+        // in); the rest pay him no mind. Without the net they go back to their own water (their usual pull home)
+        if (earl.legends && earl.legends.has('magnetic') && !c.predator) {
+          const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'), mx = earl.x, my = earl.y /* (in the sub he is where she is) */, dm = dist(c.x, c.y, mx, my);
+          if ((R === 'exotic' || R === 'legendary') && dm < 50 && dm > (earl.inSub ? 6 : 1.6)) { ax += (mx - c.x) / dm * 1.6; ay += (my - c.y) / dm * 1.2; }
+        }
       }
       if (c.startle > 0) c.startle -= dt;
       // (5.7.3) back to version 4: no tiring in a chase. Kept only the daze after a net's miss (the tutorial's second

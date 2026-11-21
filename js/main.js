@@ -1320,7 +1320,7 @@ let cabinTouch = null;
 function tapRectAt(x, y) { const sl = 10 * (window.__fingerK || 1); let best = null, ba = Infinity; for (const r of renderer.tapRects || []) { if (x >= r.x - sl && x <= r.x + r.w + sl && y >= r.y - sl && y <= r.y + r.h + sl && r.w * r.h < ba) { ba = r.w * r.h; best = r; } } return best; }
 function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(hud.touch && !document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
 setTimeout(wireCabinTouch, 0);
-const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
 hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stick
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
@@ -1524,7 +1524,7 @@ function findTarget() {
 // an offering to the deep only means something when it is hunting him, and near (within 1,000 m)
 function canOffer() {
   const e = g.earl, ent = g.entity;
-  return !e.inSub && e.y > 100 && (g.items.lure > 0 || g.items.necklace > 0) && ent && ent.marked && (ent.dist ?? Infinity) < 1000;
+  return false; /* (5.16.0) no offerings to the deep: lures are gone, and glow sticks are only lights */ void e; void ent;
 }
 function promptFor(t) {
   g.promptName = null; g.promptBar = null; // (4.5.0) a hold in progress: a small bar under the words, not a counting percentage
@@ -1708,7 +1708,7 @@ function killUpdate(dt) {
     let how = null;
     // (5.10.8) no escape by the lamp: only a lure, or the Tidewarden's ward, gets him out of the jaws
     if (pressed.has('ability')) { const A = currentAbility(), why = A && A.tide ? whyNot(g, profile, A) : 'no'; if (!why || why === 'Only when the thing is close') { useAbility(); how = 'tide'; } }
-    if (!how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { g.lureOld = (profile.oldLures || 0) > 0; if (g.lureOld) profile.oldLures--; else g.items.lure--; how = 'lure'; }
+    if (false && !how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { /* (5.16.0) no lure in the jaws */ g.lureOld = (profile.oldLures || 0) > 0; if (g.lureOld) profile.oldLures--; else g.items.lure--; how = 'lure'; }
     if (how) { escapeKill(how); for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k); return; }
   }
   for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k);
@@ -1844,8 +1844,26 @@ function crushDepth(dt) {
   }
 }
 
+// (5.16.0) the legendary powers that trigger, and when each can trigger again (real time, ms)
+const POWER_CD = { secondwind: 2 * 3600, rebirth: 6 * 3600 };
+const powerReady = (k) => !(profile && profile.powerReadyAt && profile.powerReadyAt[k] > Date.now());
+const spendPower = (k) => { profile.powerReadyAt = Object.assign({}, profile.powerReadyAt, { [k]: Date.now() + POWER_CD[k] * 1000 }); saveProfile(profile); };
+// (5.16.0) Rebirth (Jonah's Seine): any death, an even chance the sea gives him back: air full, lifted to his suit's safe
+// depth, the thing gone (back later along its route), the mark lifted; out of a lost sub, floating where she was. Then
+// three seconds in which nothing can kill him
+function rebirth(kind) {
+  const e = g.earl, ent = g.entity;
+  spendPower('rebirth');
+  if (kind === 'implode' || e.inSub) { e.inSub = false; e.x = g.sub.x; e.y = g.sub.y; }
+  e.o2 = e.o2Max; g.noAir = 0; g.injury = 0; g.kill = null;
+  const safe = (e.pressStart || 300) - 5; if (e.y > safe) e.y = Math.max(2, safe);
+  if (ent) { ent.marked = false; ent.hunt = null; ent.ap = null; ent.slip = null; ent.sleepT = 90; ent.x = 20 + Math.random() * 4960; ent.y = ent.band(g)[0] + Math.random() * 400; }
+  g.rebirthT = 3; g.fx.flash = 0.55; hud.toast('The sea gives you back.', 'big'); audio.ready && audio.gasp && audio.gasp();
+}
 function die(cause, kind = 'normal') {
   if (g.mode !== 'play' || g.noDeath) return;
+  if ((g.rebirthT || 0) > 0 && kind !== 'quit') return; // (5.16.0) the grace after a Rebirth
+  if (kind !== 'quit' && g.earl.legends && g.earl.legends.has('rebirth') && powerReady('rebirth') && Math.random() < 0.5) { rebirth(kind); return; }
   if (profile) profile.resume = null; // (4.12.6) a death ends the dive: the next one starts at the boat
   g.mode = 'dying'; g.deathT = 0; g.deathCause = cause; g.deathKind = kind;
   ui.closeAll();
@@ -1917,29 +1935,52 @@ function causeText(kind) {
 function currentAbility() { const q = profile && wornInst(profile, 'ability'); return q ? abilityOf(q.id) : null; }
 function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A); if (why) { hud.toast(why, 'note'); return; }
+  // (5.16.0) Dash on a phone: pressed, it waits for a tap where to go (time slowed, the screen greyed, the view opened by
+  // its tier); pressed again, or 3 s with no tap, and it is put away unspent
+  if (A.dash && hud.touch) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A }; renderer.aimZoom = A.zoom || 1; } return; }
   const S = abilityState(g), e = g.earl, P = profile;
   S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
-  if (A.charges) { S.charges = (S.charges == null ? A.charges : S.charges) - 1; if (S.charges <= 0) { P.abilReady = (P.playT || 0) + A.dur + A.cd; S.charges = A.charges; } }
-  else P.abilReady = (P.playT || 0) + A.dur + A.cd;
-  if (A.perDive) g.abilUsed = (g.abilUsed || 0) + 1;
+  P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; // (5.16.0) real time
   saveProfile(P);
   audio.ready && audio.click && audio.click();
-  if (A.dash) { const v = touch && touch.vec.on ? [touch.vec.x, touch.vec.y] : [e.facing || 1, 0], m = Math.hypot(v[0], v[1]) || 1, tgt = e.inSub ? g.sub : e; tgt.vx = (tgt.vx || 0) + v[0] / m * A.dash; tgt.vy = (tgt.vy || 0) + v[1] / m * A.dash * 0.8;
+  if (A.dash) { const v = [e.facing || 1, 0], m = 1, tgt = e.inSub ? g.sub : e; tgt.vx = (tgt.vx || 0) + v[0] * 11; tgt.vy = (tgt.vy || 0) + v[1] * 9; /* (a keyboard: a lunge the way he faces) */
     for (let i = 0; i < 14; i++) g.bubbles.push({ x: tgt.x - v[0] / m * Math.random() * 1.5, y: tgt.y - v[1] / m * Math.random() * 1.5, r: 0.03 + Math.random() * 0.07, w: Math.random() * 6, t: 0 });
-    if (A.pull) for (const c of g.fauna.list) { if (c.dead || c.len > 0.7 || dist(c.x, c.y, tgt.x, tgt.y) > 7) continue; c.fleeT = 0; c.vx = v[0] / m * A.dash * 0.85; c.vy = v[1] / m * A.dash * 0.6; c.pulledT = 1.2; } }
+  }
   if (A.repair) { const sub = g.sub; sub.hull = 1; if (sub.patches) sub.patches.length = 0; g.fx.flash = 0.35; hud.toast(`${A.name}: the hull is whole`, 'big'); if (A.guard) g.subGuardT = A.dur; }
-  if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time;
-    if (A.echo >= 3) { const marks = (P.markers || (P.markers = [])).filter((m) => !m.auto); const found = g.fauna.list.filter((c) => !c.dead && (rarityOf(c.sp) || {}).id !== 'common' && dist(c.x, c.y, e.x, e.y) < 1000).slice(0, 4); for (const c of found) { const R = rarityOf(c.sp); marks.push({ x: c.x, y: c.y, name: c.sp.name, col: R ? R.col : '#f2c868', auto: true }); } P.markers = marks; if (found.length) hud.toast(`${A.name}: ${found.length} marked on the chart`, 'note'); } }
+  if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; } // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
   if (A.tide) { g.tideFx = { t: 0 }; }
 }
+// (5.16.0) a tap while Dash waits: there in a fraction of a second (stopped short of rock), and only now is it spent
+function dashTo(wx, wy) {
+  const D = g.dashAim; if (!D) return false;
+  const A = D.A, e = g.earl, M = e.inSub ? g.sub : e, P = profile;
+  let x1 = wx, y1 = Math.max(e.inSub ? 3 : 0.5, wy); const dx = x1 - M.x, dy = y1 - M.y, L = Math.hypot(dx, dy) || 1, r = e.inSub ? 2.2 : 0.5;
+  for (let d = 0.4; d <= L; d += 0.4) { const px = M.x + dx / L * d, py = M.y + dy / L * d; if (g.world.rockAt(px, py, r) || py > g.world.floorAt(px) - r) { x1 = M.x + dx / L * Math.max(0, d - 0.8); y1 = M.y + dy / L * Math.max(0, d - 0.8); break; } }
+  g.dashAim = null; renderer.aimZoom = 1;
+  const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
+  P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; saveProfile(P);
+  g.dashMove = { x0: M.x, y0: M.y, x1, y1, t: 0, dur: A.dur, tier: A.dash };
+  g.dashFx = { x0: M.x, y0: M.y, x1, y1, t: 0, tier: A.dash };
+  e.facing = Math.sign(x1 - M.x) || e.facing; if (e.inSub) g.sub.facing = e.facing;
+  for (let i = 0; i < 10 + A.dash * 8; i++) { const k = Math.random(); g.bubbles.push({ x: M.x + (x1 - M.x) * k + (Math.random() - 0.5), y: M.y + (y1 - M.y) * k + (Math.random() - 0.5), r: 0.03 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); }
+  audio.ready && audio.click && audio.click(); return true;
+}
 function tickAbility(dt) {
+  // (5.16.0) Dash waiting for its tap (counted in real time: the world is slowed meanwhile), and the dash under way
+  if (g.dashAim) { g.dashAim.t -= dt / 0.2; if (g.dashAim.t <= 0) { g.dashAim = null; renderer.aimZoom = 1; hud.toast('Dash put away', 'note'); } }
+  if (g.dashMove) { const D = g.dashMove, M = g.earl.inSub ? g.sub : g.earl; D.t += dt; const k = Math.min(1, D.t / D.dur), q = 1 - Math.pow(1 - k, 3);
+    M.x = D.x0 + (D.x1 - D.x0) * q; M.y = D.y0 + (D.y1 - D.y0) * q; M.vx = (D.x1 - D.x0) / D.dur * 0.15; M.vy = (D.y1 - D.y0) / D.dur * 0.15;
+    if (g.earl.inSub) { g.earl.x = M.x; g.earl.y = M.y; } if (k >= 1) g.dashMove = null; }
+  if (g.dashFx) { g.dashFx.t += dt; if (g.dashFx.t > 1.2) g.dashFx = null; }
   const S = abilityState(g), e = g.earl, A = S.def;
   if (S.activeT > 0) S.activeT = Math.max(0, S.activeT - dt);
   const on = S.activeT > 0 && A;
   e.abilSpeed = on && A.speed ? A.speed : 1; e.abilNoAir = !!(on && A.noAir);
-  g.reachMul = on && A.reach ? A.reach : 1; g.swingMul = on && A.swing ? A.swing : 1; g.sureCatch = !!(on && A.sure);
-  g.abilLight = on && A.light ? A.light : 0; g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!(on && A.ward && !A.tide);
+  g.reachMul = on && A.reach ? A.reach : 1; g.swingMul = on && A.swing ? A.swing : 1; g.sureCatch = !!(on && A.sure); g.blessCatch = !!(on && A.bless);
+  g.abilLight = on && A.light ? A.light : 0;
+  { const lh = !!(on && A.light >= 2 && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } // (5.16.0) Lighthouse: the HUD comes to life g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!(on && A.ward && !A.tide);
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
+  if (g.echoSweep != null) { g.echoSweep += dt; if (g.echoSweep > 3) g.echoSweep = null; } // (5.16.0) Echo's sweep over the whole screen, 3 s
   if (g.subGuardT > 0) g.subGuardT = Math.max(0, g.subGuardT - dt);
   // Tidewarden: the red washes to blue, the thing's light turns blue, it freezes, fades, and is gone for 5 minutes
   if (g.tideFx) { const T = g.tideFx, ent = g.entity; T.t += dt;
@@ -2087,14 +2128,14 @@ function update(dt) {
     if (pressed.has('v') && g.helm) { leaveHelm(); audio.ready && audio.click(); } // (the helm is taken aboard, at the wheel)
     if (pressed.has('q')) {
       const old = (profile.oldLures || 0) > 0;
-      if ((old || g.items.lure > 0) && !g.lure) {
+      if (false && (old || g.items.lure > 0) && !g.lure) { /* (5.16.0) lures are gone */
         if (old) profile.oldLures--; else g.items.lure--;
         const dir = e.inSub ? g.sub.facing : e.facing;
         g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1.0, old };
         ent.throwLure(g.lure.x, g.lure.y, old ? 20 : 10); // (5.10.10) the old lure 20 s
         hud.toast(old ? 'The old lure drifts away' : 'The lure drifts away');
         if (g.entity && (g.entity.dist ?? Infinity) < 300) questEvent(profile, 'lureMonster'); // (4.8.0)
-      } else if (!g.lure) hud.toast('No lures', 'warn');
+      }
     }
     if (pressed.has('r')) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
@@ -2512,9 +2553,9 @@ function update(dt) {
     // the cabin is out of air: he stays in, breathing from his own tank (no depth effect in the cabin)
     if (res === 'cabin-empty' && !g.cabinWarned) { g.cabinWarned = true; hud.toast('Cabin out of air: breathing from your tank', 'warn'); }
     if (g.sub.o2 > 1) g.cabinWarned = false;
-    if (res === 'o2' && !g.noAir && !e.inSub && e.legends && e.legends.has('secondwind') && !g.secondWindUsed) {
-      // (2.8.0) Second Wind: once a dive, when the air runs out, it fills again
-      g.secondWindUsed = true; e.o2 = e.o2Max; g.fx.flash = 0.25; hud.toast('Second Wind: the air comes back', 'big'); audio.ready && audio.gasp && audio.gasp();
+    if (res === 'o2' && !g.noAir && !e.inSub && e.legends && e.legends.has('secondwind') && powerReady('secondwind')) {
+      // (2.8.0) Second Wind: when the air runs out, it fills again; (5.16.0) then two hours (real time) before it can again
+      spendPower('secondwind'); e.o2 = e.o2Max; g.fx.flash = 0.25; hud.toast('Second Wind: the air comes back', 'big'); audio.ready && audio.gasp && audio.gasp();
     } else if (res === 'o2') {
       if (!g.noAir) { g.noAir = 0.001; g.noAirCause = e.inSub ? 'sub-o2' : 'o2'; hud.toast(e.inSub ? 'Your tank is empty: surface, or R' : 'Out of air: surface!', 'warn'); }
       // under pressure air hunger comes on far faster: ~15 s above 300 m, ~9 s at 500 m, ~3 s at 1000 m
@@ -2552,7 +2593,7 @@ function update(dt) {
     }
     // protection: necklace or a nearby lantern
     if (g.necklaceOn) { g.glowT = (g.glowT || 0) - dt; if (g.glowT <= 0) { g.necklaceOn = false; g.glowT = 0; hud.toast('The glow stick has faded'); } }
-    g.protection = g.wardOn ? { x: e.x, y: e.y } : null; // (5.9.0) Lighthouse: hunters will not come into its light
+    g.protection = null; g.hunterWard = g.wardOn && (g.lightFade ?? 1) > 0.5 ? { x: e.x, y: e.y } : null; // (5.16.0) Lighthouse keeps hunters out of its light (while it burns), never the thing
     for (const l of W.lanterns) {
       const d = dist(e.x, e.y, l.x, l.y);
       const inside = d < (e.inSub ? LANTERN_RADIUS + 3 : LANTERN_RADIUS) && l.charge > 0.05;
@@ -2587,7 +2628,7 @@ function update(dt) {
         hud.toast('Something noticed you.', 'note'); // (2.9.1) back
         g.notes = (g.notes ? g.notes + '\n' : '') + `[${formatTime(g.survival)}, ${Math.round(e.y)} m] Something noticed me.`;
       } else if (ev === 'appeased') { hud.toast('The water feels lighter.', 'note');
-      } else if (ev === 'unmarked') { hud.toast('The feeling of being watched fades.', 'note');
+      } else if (ev === 'unmarked') { hud.toast('It has lost you. The feeling of being watched fades.', 'note');
       }
       else if (ev === 'pass') {
         // it sweeps by, close: the water shoves the sub, a long low rush
@@ -2602,6 +2643,10 @@ function update(dt) {
       }
       else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); hud.toast('Something bumped you', 'warn'); }
       else if (ev === 'lost') hud.toast('It has lost you in the dark.', 'note');
+      else if (ev === 'glare') { const lit0 = e.inSub ? g.sub.lightsOn : e.lampOn; if (lit0) hud.toast(e.inSub ? 'It is looking at the sub. Lights off, and it may lose you.' : 'It is looking at you. Your lamp off, and it may lose you.', 'warn'); } // (5.16.0)
+      else if (ev === 'fooled') hud.toast('Its eye slides off you. Keep every light off.', 'note'); // (5.16.0) the dark fooled it: 15 s to keep it so
+      else if (ev === 'notFooled') hud.toast('It is still looking at you.', 'warn'); // (5.16.0) not fooled: run for a refuge
+      else if (ev === 'turnsBack') hud.toast('Your light: it turns back.', 'warn');
       else if (ev === 'charge') { audio.ready && audio.whoosh(); }
       else if (ev === 'clicks') { audio.ready && audio.clicks(6); }
       else if (ev === 'orca') { audio.ready && audio.orcaCall(); }
@@ -2642,6 +2687,12 @@ function update(dt) {
   fx.redTint = lerp(fx.redTint || 0, g.mode === 'menu' ? 0 : (ent.lit ? ent.lit.tint : 0) * clamp((150 - (ent.dist ?? 999)) / 100, 0, 1), 1 - Math.exp(-dt * 2));
   fx.hush = lerp(fx.hush || 0, g.kill || (ent.marked && ent.hunt) ? 1 : ent.marked && d < 120 ? 0.45 : 0, 1 - Math.exp(-dt * 0.8));
   fx.torchShift = clamp(fx.dread * 1.5, 0, 1) * (0.35 + 0.65 * clamp((g.earl.y - 100) / 60, 0, 1));
+  // (5.16.0) its dark rolling in round him (as render.js draws it: within 260 m): flares, Lighthouse and glow sticks fade
+  // out over 3 s (their time keeps running, and what is left comes back over 3 s if it goes), and the lamp and the
+  // floodlight weaken, flicker and slide from amber toward red with the water
+  g.entDark = g.mode === 'menu' || !(ent.dist < 260) ? 0 : clamp((260 - ent.dist) / 230, 0, 1) * (fx.safeK ?? 1);
+  g.lightFade = clamp((g.lightFade ?? 1) + (g.entDark > 0.04 ? -dt / 3 : dt / 3), 0, 1);
+  fx.torchShift = Math.max(fx.torchShift, g.entDark);
   // in the safe zone you still hear and sense it (sonar, heartbeat), but the water stays the water
   const deepK = clamp((e.y - 100) / 60, 0, 1);
   fx.safeK = deepK;
@@ -2831,7 +2882,7 @@ function bookTabs() {
 // panel when the air is low or gone, or the thing is hunting close
 // (5.10.11) the boxed danger strip over panels is gone (it doubled the HUD's own air warning and looked like a web badge)
 let lureNoUntil = 0;
-function lureAsk() {
+function lureAsk() { if (true) return; /* (5.16.0) lures are gone: never asked */
   let el = document.getElementById('lureask');
   const ent = g.entity, have = (g.items && g.items.lure > 0) || (profile && profile.oldLures > 0);
   const want = !!(hud.touch && g.mode === 'play' && !g.paused && have && !g.lure && ent && ent.marked && ((ent.dist ?? 1e9) < 220 || (g.fx.redTint || 0) > 0.04 || g.kill) && performance.now() > lureNoUntil && !(ui.anyOpen && ui.anyOpen()));
@@ -2873,6 +2924,7 @@ function frame(now) {
     const k = smooth01(L.rt / 0.9) * (1 - smooth01((L.rt - 3.6) / 1.6));
     g.legendK = k; ts = 1 - 0.67 * k;
   } else if (g && g.legendK) g.legendK = Math.max(0, g.legendK - dt / 1.2);
+  if (g && g.dashAim && !g.paused) ts = Math.min(ts, 0.2); // (5.16.0) Dash waiting for a tap: the world slowed to a fifth
   if (!(ui.confirmOpen && ui.confirmOpen() && ui.confirmModal)) update(dt * ts); // (5.5) a question that must be answered (the tutorial's welcome) holds the world still
   renderer.updateCamera(g, dt);
   // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
@@ -2932,7 +2984,7 @@ function frame(now) {
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
-  g.realDt = dt; airOver(g);
+  g.realDt = dt; airOver(g); if (g.rebirthT > 0) g.rebirthT = Math.max(0, g.rebirthT - dt); // (5.16.0) Rebirth's grace
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
   { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && ui.anyOpen && ui.anyOpen(); tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)

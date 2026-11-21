@@ -1186,3 +1186,13 @@ html body #settings .set-row .set-pick { flex: none; min-width: 78px; padding: 6
 /* (5.15.7) on a phone only the journal's picture takes a tap: its button's empty margin no longer covers the menu's tab above it */
 html.touch body #quests-hud, html.touch body #quests-btn { pointer-events: none !important; }
 html.touch body #quests-btn img { pointer-events: auto !important; }
+/* (5.16.0) Lighthouse: the HUD comes to life in one slow pulse, then stays richer in colour while it burns (and eases back) */
+html body canvas#hud { transition: filter 1.4s ease; }
+html.lighthouse body canvas#hud { filter: saturate(1.45) brightness(1.04); animation: lhPulse 1.2s ease-out 1; }
+@keyframes lhPulse { 0% { filter: saturate(1) brightness(1); } 35% { filter: saturate(1.9) brightness(1.16); } 100% { filter: saturate(1.45) brightness(1.04); } }
+/* (5.16.0) a legendary power's state on its card: "ready", or a small hourglass and the time left */
+html body .lk-sk .pw-st { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font: 600 13px "Barlow Semi Condensed", sans-serif; font-style: normal; color: #d8ccaa; }
+html body .lk-sk .pw-st img { width: 15px; height: 15px; }
+html body .lk-sk .pw-st.pw-ready { color: #9ab884; }
+/* (5.16.0) Blessed (caught with Apex): its bronze sunburst at the card's top left */
+html body #inventory .fc .fc-bless { position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; background: var(--bless) center / contain no-repeat; z-index: 2; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.6)); }

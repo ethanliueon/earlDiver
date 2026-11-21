@@ -345,7 +345,7 @@ function upgradeCoinsOld(P, id) {
 }
 // what the old one keeps in her cave, for coins
 export const WARES = {
-  oldlure: { name: 'An old lure', coins: 2, max: 1, line: 'A lure that has hung in the dark longer than the boat has floated.', desc: 'Burns twice as long as a common lure (20 s). You carry one lure in all, old or common. Offered first when the thing comes for you.' },
+  // (5.16.0) no old lure: lures are gone; her blessing and the sapphire eye remain
   blessing: { name: 'The old one\'s blessing', coins: 2, line: 'The old one breathes on you. The deep looks away, for a while.', desc: 'For the rest of this dive, the entity notices you half as fast.' },
   eye: { name: 'A sapphire eye', coins: 8, once: true, line: 'A blue stone that turns toward its own kind.', desc: 'Deep sapphires within 150 m show on the sonar as blue points. Kept for good.' },
 };

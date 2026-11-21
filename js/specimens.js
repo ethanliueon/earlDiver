@@ -231,7 +231,7 @@ export const deepPremium = (y) => 1 + Math.min(1.4, Math.max(0, ((y || 0) - 1500
 export function specimenValue(s) {
   const sp = SPECIES_BY_ID[s.id], dk = deepPremium(s.from);
   if (isDead(s)) return liveValue(sp, s.len) * 0.5 * dk;
-  return liveValue(sp, s.len) * conditionMult(s.cond) * (s.mult || 1) * (s.acc ? 1.25 : 1) * dk;
+  return liveValue(sp, s.len) * conditionMult(s.cond) * (s.mult || 1) * (s.acc ? 1.25 : 1) * (s.blessed ? 2 : 1) * dk; // (5.16.0) Blessed: worth twice as much
 }
 // fragile animals (jellies, comb jellies) take more harm from a net
 export const fragile = (sp) => sp.cat === 'Jellyfish & Drifters';

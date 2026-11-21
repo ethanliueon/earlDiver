@@ -186,7 +186,7 @@ export class Renderer {
     // 120 m), and in the sub in the deep, where the animals are small lights (46 m across near the surface,
     // 38 m below 400 m)
     const dv = clamp((e.y - 40) / 80, 0, 1), ds = clamp((e.y - 150) / 250, 0, 1);
-    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1)); // (3.0.0) only the wheel changes the view; on deck it is the same as in the water
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1) * (this.aimZoom || 1)); /* (5.16.0) Dash's aim opens the view by its tier */ // (3.0.0) only the wheel changes the view; on deck it is the same as in the water
     const lk = g.legendK || 0; // (4.9.0) the legendary moment: the view leans in on it, about a tenth, and back
     this.viewW = lerp(this.viewW, targetView * (1 - 0.1 * lk), 1 - Math.exp(-dt * 1.2));
     const ppm = this.W / this.viewW;
@@ -1251,7 +1251,7 @@ export class Renderer {
           const big = Math.hypot(this.W, this.H), vg = ctx.createRadialGradient(this.W / 2, this.H / 2, big * 0.32, this.W / 2, this.H / 2, big * 0.6); vg.addColorStop(0, 'rgba(255,190,90,0)'); vg.addColorStop(1, `rgba(255,190,90,${(0.1 + 0.08 * pu).toFixed(3)})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, this.W, this.H); }
       }
       if (A.reach && !e.inSub) { const r0 = ((g.netRange || 1.2) * (A.reach || 1) + 0.7) * ppm, fx2 = e.facing || 1; ctx.strokeStyle = `rgba(214,236,226,${(0.22 + 0.08 * Math.sin(g.time * 3)).toFixed(3)})`; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.arc(ex, ey, r0, fx2 > 0 ? -0.9 : Math.PI - 0.9, fx2 > 0 ? 0.9 : Math.PI + 0.9); ctx.stroke(); ctx.setLineDash([]); }
-      if (A.light) { const rr = ppm * (3 + A.light * 2.2), lg = ctx.createRadialGradient(ex, ey, 0, ex, ey, rr); lg.addColorStop(0, `rgba(255,236,200,${(0.22 + 0.08 * A.light).toFixed(3)})`); lg.addColorStop(1, 'rgba(255,220,170,0)'); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = lg; ctx.fillRect(ex - rr, ey - rr, rr * 2, rr * 2); ctx.globalCompositeOperation = 'source-over'; }
+      /* (5.16.0) a Flare's light is drawn in the light map now (30 m round him) */
       ctx.restore();
     }
     if (g.mode === 'play' && g.echoAt != null && g.time - g.echoAt < 1.6) { const k = (g.time - g.echoAt) / 1.6, e = g.earl, m = e.inSub ? g.sub : e; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = `rgba(150,230,214,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 3 * (1 - k) + 1; ctx.beginPath(); ctx.arc(S(m.x), Sy(m.y), k * Math.max(this.W, this.H) * 0.7, 0, TAU); ctx.stroke(); ctx.restore(); }
@@ -2809,17 +2809,26 @@ export class Renderer {
     };
     const e = g.earl;
     const beamCol = mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift);
-    const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse;
+    const flick = (fx.torchShift > 0.6 ? (Math.random() < 0.06 ? 0.3 : 1) : 1) * fx.lightPulse * (1 - 0.5 * (g.entDark || 0)) * ((g.entDark || 0) > 0.15 && Math.random() < 0.1 * g.entDark ? 0.45 : 1); // (5.16.0) weaker and flickering as its dark comes
     if (head && e.lampOn) {
       const ang = this.lampAngle(g, e, head);
       cone(head.x, head.y, ang, 17 * ppm * (e.nightSet ? 1.5 : 1), 0.32 * (e.nightSet ? 1.2 : 1), beamCol, 0.95 * TORCH * flick); // (the Night Shift set: half as far again)
       radial(head.x, head.y, 3.2 * ppm, beamCol, 0.3 * TORCH * flick); lamps.push({ x: head.x, y: head.y, r: 3.2 * ppm, a: 0.3 * TORCH * flick });
     }
     if (g.necklaceOn) { // (4.0.0) the glow stick: warm amber, wide; in the sub it fills the cabin and lights the water round her
-      const fade = Math.min(1, (g.glowT || 0) / 8), fl = 0.94 + 0.06 * Math.sin(g.time * 7.3) * Math.sin(g.time * 2.1);
+      const fade = Math.min(1, (g.glowT || 0) / 8) * (g.lightFade ?? 1), fl = 0.94 + 0.06 * Math.sin(g.time * 7.3) * Math.sin(g.time * 2.1); // (5.16.0) it dies away when the thing's dark comes
       const gx = e.inSub ? S(g.sub.x) : S(e.x), gy = e.inSub ? Sy(g.sub.y) : Sy(e.y), gr = (e.inSub ? 13 : 10) * ppm;
       radial(gx, gy, gr, [255, 178, 92], 0.75 * fade * fl); radial(gx, gy, gr * 0.35, [255, 205, 140], 0.45 * fade * fl);
       lamps.push({ x: gx, y: gy, r: gr, a: 0.75 * fade });
+    }
+    // (5.16.0) a Flare: 30 m round him (or the sub), as bright near him as 100 m deep, still at the 200 m level 20 m out, gone by
+    // 30 m; Flare+ brighter (as 70 m); Lighthouse as if he were at 20 m. It fades with the thing's dark (g.lightFade)
+    if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) {
+      const L = g.abilLight, lh = L >= 2, a0 = (L >= 2 ? 0.93 : L >= 1.5 ? 0.78 : 0.7) * (g.lightFade ?? 1), col = lh ? [255, 244, 226] : [255, 226, 196];
+      const fxp = e.inSub ? S(g.sub.x) : S(e.x), fyp = e.inSub ? Sy(g.sub.y) : Sy(e.y), R = 30 * ppm;
+      const gg = l.createRadialGradient(fxp * k, fyp * k, 0, fxp * k, fyp * k, R * k);
+      gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.17, rgbStr(col, a0 * 0.95)); gg.addColorStop(0.67, rgbStr(col, a0 * 0.7)); gg.addColorStop(1, rgbStr(col, 0));
+      l.fillStyle = gg; l.beginPath(); l.arc(fxp * k, fyp * k, R * k, 0, TAU); l.fill(); visR.push(fxp, fyp, R); lamps.push({ x: fxp, y: fyp, r: R, a: a0 });
     }
     if (e.biolum && e.lampOn && !e.inSub) { const gc = hexToRgb(e.glows && e.glows[0] || '#8af0d0'), br = (4 + 1.5 * e.biolum) * ppm, pulse = 0.85 + 0.15 * Math.sin(g.time * 1.3); radial(S(e.x), Sy(e.y), br, gc, 0.45 * pulse); lamps.push({ x: S(e.x), y: Sy(e.y), r: br, a: 0.45 }); } // (2.8.0) Bioluminescence: his gear glows while his light is on
     if (g.legend) { // the legendary moment: a pale light comes up on it, and fades
@@ -2992,6 +3001,28 @@ export class Renderer {
 
   drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff) {
     const ctx = this.ctx, cam = this.cam, fx = g.fx, t = g.time;
+    // (5.16.0) Dash: while it waits the screen greys (the world slowed), and after it the water shows where he went: a pale
+    // streak (Dash), with swirls curling off it and a trail of bubbles (Dash+), the water bent round the path and motes
+    // drifting in it (Undertow)
+    if (g.dashAim) { ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = 'rgba(36,40,40,0.38)'; ctx.fillRect(0, 0, this.W, this.H); ctx.restore(); }
+    if (g.dashFx) { const D = g.dashFx, a = Math.max(0, 1 - D.t / 1.2), x0 = S(D.x0), y0 = Sy(D.y0), x1 = S(D.x1), y1 = Sy(D.y1), Lp = Math.hypot(x1 - x0, y1 - y0) || 1, nx = -(y1 - y0) / Lp, ny = (x1 - x0) / Lp;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+      const wid = ppm * (0.35 + 0.25 * D.tier), gs = ctx.createLinearGradient(x0, y0, x1, y1); gs.addColorStop(0, 'rgba(200,214,200,0)'); gs.addColorStop(1, `rgba(214,226,210,${(0.5 * a).toFixed(3)})`);
+      ctx.strokeStyle = gs; ctx.lineWidth = wid; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      if (D.tier >= 2) { for (let i = 1; i <= 5; i++) { const k = i / 6, px = x0 + (x1 - x0) * k, py = y0 + (y1 - y0) * k, sd = (i % 2 ? 1 : -1), rr = ppm * (0.6 + 0.5 * D.tier) * (0.6 + D.t * 1.2);
+        ctx.strokeStyle = `rgba(190,206,196,${(0.32 * a * k).toFixed(3)})`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(px + nx * sd * rr * 0.6, py + ny * sd * rr * 0.6, rr, Math.atan2(ny * sd, nx * sd) + Math.PI * 0.6, Math.atan2(ny * sd, nx * sd) + Math.PI * 1.7); ctx.stroke(); } }
+      if (D.tier >= 3) { for (let i = 0; i < 26; i++) { const k = (i * 0.618) % 1, sp = Math.sin(i * 12.9898) * 0.5 + 0.5, px = x0 + (x1 - x0) * k + nx * (sp - 0.5) * ppm * 4 * (0.5 + D.t), py = y0 + (y1 - y0) * k + ny * (sp - 0.5) * ppm * 4 * (0.5 + D.t);
+          const gm = ctx.createRadialGradient(px, py, 0, px, py, ppm * 0.35); gm.addColorStop(0, `rgba(226,214,170,${(0.7 * a).toFixed(3)})`); gm.addColorStop(1, 'rgba(226,214,170,0)'); ctx.fillStyle = gm; ctx.beginPath(); ctx.arc(px, py, ppm * 0.35, 0, TAU); ctx.fill(); }
+        ctx.strokeStyle = `rgba(170,190,180,${(0.18 * a).toFixed(3)})`; ctx.lineWidth = 2; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo((x0 + x1) / 2 + nx * sd * ppm * 3, (y0 + y1) / 2 + ny * sd * ppm * 3, x1, y1); ctx.stroke(); } }
+      ctx.restore(); }
+    // (5.16.0) Echo: for 3 s the whole sea becomes one great sonar scope round him: the water dims a little, range rings
+    // spread out from him, and a sweep goes round once, in the scope's own dim olive phosphor
+    if (g.echoSweep != null) { const T0 = g.echoSweep, ex0 = S(g.earl.x), ey0 = Sy(g.earl.y), Rm = Math.hypot(this.W, this.H), a = Math.min(1, T0 / 0.4) * Math.min(1, (3 - T0) / 0.8);
+      ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = `rgba(4,10,8,${(0.32 * a).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H);
+      for (let i = 1; i <= 6; i++) { const rr = ((T0 / 3) * 1.4 + i / 6 - 0.2) % 1.2 * Rm * 0.8; if (rr <= 0) continue; ctx.strokeStyle = `rgba(150,190,130,${(0.22 * a * (1 - rr / Rm)).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(ex0, ey0, rr, 0, TAU); ctx.stroke(); }
+      const ang = -Math.PI / 2 + (T0 / 3) * TAU, sw = ctx.createRadialGradient(ex0, ey0, 0, ex0, ey0, Rm); sw.addColorStop(0, `rgba(170,210,140,${(0.11 * a).toFixed(3)})`); sw.addColorStop(1, 'rgba(170,210,140,0)');
+      ctx.fillStyle = sw; ctx.beginPath(); ctx.moveTo(ex0, ey0); ctx.arc(ex0, ey0, Rm, ang - 0.5, ang); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = `rgba(200,230,170,${(0.28 * a).toFixed(3)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ex0, ey0); ctx.lineTo(ex0 + Math.cos(ang) * Rm, ey0 + Math.sin(ang) * Rm); ctx.stroke(); ctx.restore(); }
     // (5.15.5) the landmarks' light in the water itself: a soft haze, as the lamps' beams make, so the lit water round
     // Dave's, the station and the old one's place shows from a way off (the light map only lights what is drawn there)
     { const haze = (wx, wy, R, col, a) => { const x = S(wx), y = Sy(wy), r = R * ppm; if (x < -r || x > this.W + r || y < -r || y > this.H + r) return;
@@ -3000,7 +3031,8 @@ export class Renderer {
       const Dh = g.world.dave, Sn = g.world.station;
       if (Dh) haze(Dh.x, Dh.y - 4, 50, [70, 66, 52], 0.5);
       if (Sn && Sn.y > 250) haze(Sn.x, Sn.y - STATION_TOP, 50, [50, 70, 74], 0.45);
-      haze(CAVE.x + 14, CAVE.y, 50, [34, 48, 54], 0.4); }
+      haze(CAVE.x + 14, CAVE.y, 50, [34, 48, 54], 0.4);
+      if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) { const e0 = g.earl, L = g.abilLight; haze(e0.inSub ? g.sub.x : e0.x, e0.inSub ? g.sub.y : e0.y, 30, L >= 2 ? [74, 72, 62] : [70, 60, 50], (L >= 2 ? 0.6 : L >= 1.5 ? 0.5 : 0.42) * (g.lightFade ?? 1)); } } // (5.16.0) the Flare's light in the water itself
     // god rays near the surface
     const rayStrength = this.phone ? 0 : dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7); // (5.3.2) no god rays on a phone
     if (rayStrength > 0.01) {

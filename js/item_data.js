@@ -40,10 +40,10 @@ export const SKILLS = {
 };
 export const LEGEND = {
   eye: { name: 'Eye of the Sea', what: 'rare forms glow, and are easy to spot' },
-  magnetic: { name: 'Magnetic', what: 'fish come toward you instead of fleeing' },
-  faithless: { name: 'Faithless', what: 'fewer creatures come for you, the thing in the deep included' },
-  secondwind: { name: 'Second Wind', what: 'once a dive, when your air runs out, it fills again' },
-  phantom: { name: 'Phantom', what: 'while you hold still, the thing in the deep cannot find you' },
+  magnetic: { name: 'Magnetic', what: 'exotic and legendary fish within 50 m slowly swim toward you; the rest pay you no mind' },
+  faithless: { name: 'Faithless', what: 'no hunter attacks you or the sub; the thing is slower to mark you, and hunts you at half its pace' },
+  secondwind: { name: 'Second Wind', what: 'when your air runs out, it fills again', cd: 7200 },
+  rebirth: { name: 'Rebirth', what: 'when you die, sometimes the sea gives you back', cd: 21600 },
   kinship: { name: 'Kinship', what: 'animals in your bag are never stressed and never die there' },
 };
 
@@ -354,8 +354,8 @@ export const LEGENDARIES = [
     line: 'Woven from the lure-threads of a hundred anglerfish. In the dark it shows you which fish are not like the others.' },
   { id: 'hagnet', kind: 'net', arch: 'reach', name: "The Hagfish's Knot", legend: 'secondwind', glow: '#d8c8a0',
     line: 'A long net of hagfish slime, dried hard on a whalebone pole. The slime remembers air, and once a dive it gives it back.' },
-  { id: 'stillwater', kind: 'net', arch: 'quick', name: 'Stillwater Seine', legend: 'phantom', glow: '#7a9aff',
-    line: 'Black mesh that drinks the light. Holding it, and holding still, you are simply not there.' },
+  { id: 'stillwater', kind: 'net', arch: 'quick', name: "Jonah's Seine", legend: 'rebirth', glow: '#9ab0c4', // (5.16.0) was the Stillwater Seine (Phantom)
+    line: 'Black mesh, cold as the inside of something. A few who carried it came back from where no one comes back.' },
   { id: 'oldnet', kind: 'net', arch: 'school', name: "The Old One's Tithe", legend: 'faithless', glow: '#ffcf7a',
     line: 'Left in the cave in the west wall, as if for someone. What hunts in the deep smells the old one on it, and keeps away.' },
   // the rest: the best of their kind, with no legendary skill

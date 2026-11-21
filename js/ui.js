@@ -1,3 +1,5 @@
+import { drawHourglass, blessedURL } from './coin_art.js';
+import { fmtLeft } from './abilities.js';
 // DOM overlays: home screen, journal, boat workshop, pause, run log.
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
@@ -89,6 +91,16 @@ function weightOf(sp, len) {
 const gradeOf = (ph) => (ph.grade === 'Excellent' || ph.grade === 'Good' || ph.grade === 'Poor' ? ph.grade : ph.grade ? 'Poor' : 'Good');
 const STAR = '<svg viewBox="0 0 20 20"><path d="M10 1.6l2.5 5.5 6 .6-4.5 4 1.3 5.9L10 14.6l-5.3 3 1.3-5.9-4.5-4 6-.6z"/></svg>';
 const photoStars = (ph) => { const n = gradeOf(ph) === 'Excellent' ? 3 : gradeOf(ph) === 'Good' ? 2 : 1; return `<span class="ph-stars" aria-label="${gradeOf(ph)}">${[0, 1, 2].map((k) => `<span class="st${k < n ? ' on' : ''}">${STAR}</span>`).join('')}</span>`; };
+
+// (5.16.0) a triggering power's state for its card: "ready", or a small painted hourglass and the real time left
+let HG_URL = null;
+try { document.documentElement.style.setProperty('--bless', `url(${blessedURL()})`); } catch (e) { /* no canvas */ }
+function powerStatus(P, key) {
+  const at = P.powerReadyAt && P.powerReadyAt[key], left = at ? (at - Date.now()) / 1000 : 0;
+  if (left <= 0) return '<em class="pw-st pw-ready">ready</em>';
+  if (!HG_URL) { const c = document.createElement('canvas'); c.width = c.height = 40; drawHourglass(c.getContext('2d'), 20, 20, 14); HG_URL = c.toDataURL(); }
+  return `<em class="pw-st"><img src="${HG_URL}" alt="">${fmtLeft(left)}</em>`;
+}
 
 export class UI {
   constructor(h) {
@@ -667,7 +679,7 @@ export class UI {
     let cells = '';
     for (let k = 0; k < rows * COLS; k++) if (!occ[k]) cells += `<div class="bs-cell${k < cap ? '' : ' locked'}" style="grid-row:${Math.floor(k / COLS) + 1};grid-column:${(k % COLS) + 1}">${k < cap ? '' : '<i></i>'}</div>`;
     const fishCells = placed.map((q) => { const sp = SPECIES_BY_ID[q.s2.id]; if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
-      return `<div class="fc bs-fish ${hab(sp)}${inTrouble(q.s2, true) ? ' trouble' : ''}${q.over ? ' over' : ''}${rarityCls(sp)}" data-b="${q.i}" style="grid-row:${q.r + 1} / span ${q.h};grid-column:${q.c + 1} / span ${q.w}" title="${sp.name}, ${state(q.s2)}">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}"><i class="fc-dot" style="background:${dot(q.s2)}"></i></div>`; }).join('');
+      return `<div class="fc bs-fish ${hab(sp)}${inTrouble(q.s2, true) ? ' trouble' : ''}${q.over ? ' over' : ''}${rarityCls(sp)}" data-b="${q.i}" style="grid-row:${q.r + 1} / span ${q.h};grid-column:${q.c + 1} / span ${q.w}" title="${sp.name}, ${state(q.s2)}">${q.s2.blessed ? '<i class="fc-bless" title="Blessed"></i>' : ''}${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}"><i class="fc-dot" style="background:${dot(q.s2)}"></i></div>`; }).join('');
     const over = usedSp > cap;
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag${over ? ' <i class="over">overencumbered</i>' : ''}</h4><div class="bag-spaces" style="--cols:${COLS};--rows:${rows}">${cells}${fishCells}</div>`
       + this.photoBoxes(P, g)
@@ -1080,7 +1092,7 @@ export class UI {
   itemCol(P, q, head) {
     const it = ITEMS[q.id], R = RARITY[it.rarity], T = totals(P), roman = ['', 'I', 'II', 'III', 'IV'];
     const skills = (q.sk || []).map(([k, l]) => `<div class="lk-sk"><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + roman[l]}</b><span>${SKILLS[k].what}</span></div>`).join('')
-      + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span></div>` : '');
+      + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span>${LEGEND[q.leg].cd ? powerStatus(P, q.leg) : ''}</div>` : ''); // (5.16.0) a power that triggers: ready, or its hourglass and time left
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
     return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ', net of legend' : ''}</span><p>${it.line || ''}</p>
       ${(() => { const M2 = MEASURES[it.kind]; if (!M2) return ''; const rows2 = M2.map((r) => `<div class="ip-st"><span>${r[0]}</span><b>${measureHtml(it.kind, r, it, q.sk)}</b></div>`).concat(crossBoosts(it.kind, q.sk).map(([a, b]) => `<div class="ip-st"><span>${a}</span><b><span class="boost">${b}</span></b></div>`)).join(''); return `<div class="ip-stats">${rows2}</div>`; })() /* (5.12.0) its numbers on its own card */}
@@ -1557,7 +1569,7 @@ export class UI {
         row('Deep sapphires found', `${g.sapphires}`, 'this dive') +
         row('Deepest so far', `${Math.round(e.maxDepth)} m`) +
         row('Condition', lvl) +
-        row('The thing in the deep', ent.marked ? 'it has marked me' : 'unaware of me', ent.marked ? `calmed ${Math.round((ent.calm || 0) / 60 * 100)} % - free animals from nets, plant coral, give something back (G)` : '') +
+        row('The thing in the deep', ent.marked ? 'it has marked me' : 'unaware of me', ent.marked ? 'turn every light off: it may lose you' : '' /* (5.16.0) going dark is the way out now */) +
         row('Submersible', sub.imploded ? 'lost' : `rated ${sub.rated} m`, sub.imploded ? 'a replacement can be bought at the boat' : `hull ${Math.round(sub.hull * 100)} %`) +
         row('Carrying', items) +
         row('Lures', String(g.items.lure)) + row('Glow sticks', String(g.items.necklace));

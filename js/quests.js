@@ -170,7 +170,6 @@ const LEGEND_QUESTS = [
   { key: 'L-viper10', text: 'Catch 10 viperfish', kind: 'group', g: 'viper', n: 10, pay: 50000, ok: (P) => groupOk('viper', P) },
   { key: 'L-dive100', text: 'Catch 100 animals in one dive', kind: 'divecatch', n: 100, pay: 50000, ok: () => true },
   { key: 'L-depth4000', text: 'Dive below 4,000 m', kind: 'depth', d: 4000, n: 1, pay: 75000, ok: (P) => reachOf(P) >= 3300 },
-  { key: 'L-lure', text: 'Throw a lure while the thing in the deep is near', kind: 'lureMonster', n: 1, pay: 55000, ok: (P) => (P.deepest || 0) >= 1000 },
   { key: 'L-chambers', text: 'Fill every pressure chamber at once', kind: 'chambers', n: 1, pay: 50000, ok: () => true },
 ];
 export function newQuest(P, rnd = Math.random, taken = new Set()) {

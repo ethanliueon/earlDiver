@@ -4,7 +4,8 @@ import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, br
 import { lockerTexture } from './textures.js';
 import { drawToken } from './tokens.js';
 import { drawCoin, drawCash, drawTile } from './coins.js';
-import { abilityState, whyNot, cooldownLeft } from './abilities.js';
+import { abilityState, whyNot, cooldownLeft, fmtLeft } from './abilities.js';
+import { drawHourglass } from './coin_art.js';
 import { rarityOf } from './specimens.js';
 import { legendMotes } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
@@ -422,7 +423,8 @@ e.inSub ? [
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
         if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
-          ctx.font = `700 ${11 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(cdl >= 90 ? Math.ceil(cdl / 60) + 'm' : String(Math.ceil(cdl)), x, y + r * 0.62); ctx.shadowBlur = 0; } }
+          // (5.16.0) a small painted hourglass and the time left in the middle of the greyed coin ("7h 42m", "38s")
+          drawHourglass(ctx, x, y - r * 0.2, r * 0.3); ctx.font = `700 ${Math.max(10 * u, r * 0.38)}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(fmtLeft(cdl), x, y + r * 0.34); ctx.shadowBlur = 0; } }
       if (a.n > 1 && !a.lock) { ctx.font = `700 ${12 * u}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(String(a.n), x + r * 0.72, y - r * 0.72); }
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
       ctx.restore();
@@ -846,10 +848,17 @@ e.inSub ? [
       ctx.fillStyle = 'rgba(240,190,90,0.9)'; ctx.beginPath(); ctx.arc(rcx + dx / (d || 1) * k, rcy + dy / (d || 1) * k, 2 * s, 0, TAU); ctx.fill();
     }
     // (5.9.0) Echo: every animal within the radar's 200 m as a dot while it lasts (rare and better in their colours at Echo+)
-    if (g.echoT > 0 && g.fauna) { const al = Math.min(1, g.echoT / 1.5); for (const c of g.fauna.list) { if (c.dead) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > 200) continue; const k = rr * d / 200, R = g.echoLv >= 2 ? rarityOf(c.sp) : null, rare = R && R.id !== 'common' && R.id !== 'uncommon';
-      ctx.globalAlpha = al; ctx.fillStyle = rare ? R.col : 'rgba(170,236,210,0.85)'; ctx.beginPath(); ctx.arc(rcx + dx / (d || 1) * k, rcy + dy / (d || 1) * k, (rare ? 2.6 : 1.5) * s, 0, TAU); ctx.fill(); } ctx.globalAlpha = 1; }
+    // (5.16.0) Echo: for its time, every exotic and legendary animal in reach shows as the same pale bone pip with a soft ring
+    // (no telling which is which); Fathom reaches three times as far (the radar's edge stands for its reach then)
+    if (g.echoT > 0 && g.fauna) { const al = Math.min(1, g.echoT / 1.5), reach = g.echoLv >= 3 ? 600 : 200;
+      for (const c of g.fauna.list) { if (c.dead) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > reach) continue;
+        const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'); if (R !== 'exotic' && R !== 'legendary') continue;
+        const k = rr * Math.min(1, d / reach), px = rcx + dx / (d || 1) * k, py = rcy + dy / (d || 1) * k, q = 0.5 + 0.5 * Math.sin(g.time * 3 + c.x);
+        ctx.globalAlpha = al * (0.35 + 0.3 * q); ctx.strokeStyle = '#e6dcc0'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.arc(px, py, 5.5 * s, 0, TAU); ctx.stroke();
+        ctx.globalAlpha = al; ctx.fillStyle = '#ece4cc'; ctx.beginPath(); ctx.arc(px, py, 2.4 * s, 0, TAU); ctx.fill(); }
+      ctx.globalAlpha = 1; }
     const ent = g.entity;
-    if (ent && ent.dist < 200 && !dying) {
+    if (ent && ent.dist < 200 && !dying && !(ent.offRadarT > 0)) { // (5.16.0) after it loses you in the dark it stays off the radar a minute
       const a = Math.atan2(ent.y - e.y, ent.x - e.x);
       const da = ((this.sweep - a) % TAU + TAU) % TAU;
       if (da < dt * 1.7 + 0.001) { this.blip = { a, d: ent.dist, life: 1 }; g.audio && g.audio.sonar(0.03 + fx.dread * 0.04); }
@@ -918,7 +927,6 @@ e.inSub ? [
     const glass = (x, y, w, h) => { if (!oliveNine(ctx, 'btn-olive', x - 3 * s, y - 3 * s, w + 6 * s, h + 6 * s, 28, 10 * s)) { ctx.fillStyle = 'rgba(44,48,42,0.9)'; ctx.fillRect(x, y, w, h); } oliveNine(ctx, 'well', x + 4 * s, y + 4 * s, w - 8 * s, h - 8 * s, 30, 6 * s); };
     const sz = 46 * s;
     const slots = [];
-    if (g.items.lure > 0 || g.lure) slots.push(['q', 'Q', 'LURE', g.items.lure, '#bfeaff', g.lure ? g.entity.lureT / 10 : 0]);
     if (e.inSub && (g.items.airTank > 0 || g.tankFit)) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', g.tankFit ? g.tankFit / 3 : 0]);
     if (g.items.necklace > 0 || g.necklaceOn) slots.push(['e', 'E', g.necklaceOn ? `GLOW ${Math.ceil(g.glowT || 0)} S` : 'GLOW STICK', g.items.necklace, '#ffc070', g.necklaceOn ? 1 : 0]);
     // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
@@ -956,7 +964,7 @@ e.inSub ? [
     // shine), darker and bloodshot. It watches: as the thing comes nearer the lids part wider and the slit narrows.
     // Each good deed fades it a step.
     if (g.entity && g.entity.marked && !dying) {
-      const calm = clamp((g.entity.calm || 0) / 60, 0, 1), near = clamp(1 - (g.entity.dist ?? 2000) / 900, 0, 1);
+      const calm = 0 /* (5.16.0) no calm meter */, near = clamp(1 - (g.entity.dist ?? 2000) / 900, 0, 1);
       const a = 1 - calm * 0.6;
       const kxE = window.innerWidth / this.c.width, ew = 50 * s, eh = 30 * s, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
       const ex = (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + ew + 6 * s, ey = tlB + eh + 4 * s;
@@ -1065,7 +1073,6 @@ e.inSub ? [
     if (K && K.window && !K.esc && K.t > K.window[0] && K.t < K.window[1] && g.mode === 'play') {
       const opts = [];
       if (this.killTide) opts.push(['1', 'TIDEWARDEN']); // (5.10.8) no lamp: a lure or the Tidewarden
-      if (g.items.lure > 0 || (g.profile.oldLures || 0) > 0) opts.push(['Q', 'LURE']);
       const left = 1 - (K.t - K.window[0]) / (K.window[1] - K.window[0]);
       const pulse = 0.75 + 0.25 * Math.sin(K.t * 22);
       ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

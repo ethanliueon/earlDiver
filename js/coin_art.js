@@ -185,3 +185,28 @@ export function drawBagIcon(ctx, cx, cy, size) {
   }
   ctx.drawImage(c, cx - c.width / 2, cy - c.width / 2);
 }
+
+// (5.16.0) the cooldown's hourglass: two worn brass caps, glass bulbs with the sand run partly through, small and painted
+export function drawHourglass(ctx, cx, cy, h) {
+  ctx.save(); ctx.translate(cx, cy); const w = h * 0.62;
+  const glass = new Path2D(); glass.moveTo(-w * 0.8, -h * 0.8); glass.bezierCurveTo(-w * 0.8, -h * 0.2, -w * 0.12, -h * 0.12, -w * 0.12, 0); glass.bezierCurveTo(-w * 0.12, h * 0.12, -w * 0.8, h * 0.2, -w * 0.8, h * 0.8);
+  glass.lineTo(w * 0.8, h * 0.8); glass.bezierCurveTo(w * 0.8, h * 0.2, w * 0.12, h * 0.12, w * 0.12, 0); glass.bezierCurveTo(w * 0.12, -h * 0.12, w * 0.8, -h * 0.2, w * 0.8, -h * 0.8); glass.closePath();
+  ctx.fillStyle = 'rgba(214,226,220,0.18)'; ctx.fill(glass);
+  ctx.save(); ctx.clip(glass); ctx.fillStyle = '#c8a86a'; ctx.beginPath(); ctx.moveTo(-w, h * 0.8); ctx.lineTo(w, h * 0.8); ctx.lineTo(w, h * 0.42); ctx.quadraticCurveTo(0, h * 0.2, -w, h * 0.42); ctx.closePath(); ctx.fill();
+  ctx.fillRect(-w, -h * 0.35, w * 2, h * 0.3); ctx.fillRect(-h * 0.03, -h * 0.1, h * 0.06, h * 0.6); ctx.restore(); // sand below, a little left above, the thread running
+  ctx.lineWidth = Math.max(1, h * 0.09); ctx.strokeStyle = 'rgba(236,228,206,0.85)'; ctx.stroke(glass);
+  for (const sy of [-1, 1]) { ctx.fillStyle = '#8a6a3a'; ctx.beginPath(); ctx.roundRect(-w, sy * h * 0.8 - h * 0.13, w * 2, h * 0.26, h * 0.08); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = Math.max(0.8, h * 0.06); ctx.stroke(); }
+  ctx.restore();
+}
+
+// (5.16.0) the Blessed mark: a small bronze sunburst, eight worn rays round a domed boss, as a fish's card shows it
+let BLESS_URL = null;
+export function blessedURL() {
+  if (BLESS_URL) return BLESS_URL;
+  const c = document.createElement('canvas'); c.width = c.height = 48; const x = c.getContext('2d'); x.translate(24, 24);
+  for (let i = 0; i < 8; i++) { x.save(); x.rotate(i * Math.PI / 4); const long = i % 2 === 0, L = long ? 21 : 15;
+    x.beginPath(); x.moveTo(-3.2, -6); x.quadraticCurveTo(0, -L - 2, 3.2, -6); x.closePath(); x.fillStyle = long ? '#b08a4e' : '#8a6a3a'; x.fill(); x.strokeStyle = 'rgba(20,14,6,0.8)'; x.lineWidth = 1.4; x.stroke(); x.restore(); }
+  const g = x.createRadialGradient(-2.5, -2.5, 0.5, 0, 0, 8); g.addColorStop(0, '#f0d8a0'); g.addColorStop(0.55, '#b08a4e'); g.addColorStop(1, '#5a4020');
+  x.fillStyle = g; x.beginPath(); x.arc(0, 0, 7.5, 0, Math.PI * 2); x.fill(); x.strokeStyle = 'rgba(20,14,6,0.85)'; x.lineWidth = 1.6; x.stroke();
+  BLESS_URL = c.toDataURL(); return BLESS_URL;
+}

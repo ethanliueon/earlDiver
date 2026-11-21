@@ -8,8 +8,8 @@ import { uiUnit } from './settings.js';
 // drifts too far, so the stick never "runs out". The emulated mouse events a browser makes after a touch are
 // suppressed, so a tap never also counts as a click.
 export class Touch {
-  constructor(canvas, { buttonAt, active, onMessage, onTap }) {
-    this.c = canvas; this.buttonAt = buttonAt; this.active = active; this.onMessage = onMessage; this.onTap = onTap;
+  constructor(canvas, { buttonAt, active, onMessage, onTap, aim }) {
+    this.c = canvas; this.buttonAt = buttonAt; this.active = active; this.onMessage = onMessage; this.onTap = onTap; this.aim = aim; // (5.16.0) aim: a tap that Dash is waiting for
     this.stick = null; this.fingers = new Map();
     this.vec = { x: 0, y: 0, mag: 0, on: false, sprint: false };
     this.el = document.getElementById('stick');
@@ -32,6 +32,7 @@ export class Touch {
     if (navigator.vibrate) this.vibe = true;
     for (const t of e.changedTouches) {
       const b = this.buttonAt(t.clientX, t.clientY);
+      if (!b && this.aim && this.aim(t.clientX, t.clientY)) { this.fingers.set(t.identifier, {}); continue; } // (5.16.0) Dash's tap: taken, no stick
       if (b && b.key.startsWith('msg:')) { this.fingers.set(t.identifier, {}); this.onMessage && this.onMessage(b.key.slice(4)); continue; } // a greyed button: why
       if (b) { this.fingers.set(t.identifier, { key: b.key }); this.key(b.key, true); if (this.vibe) navigator.vibrate(8); continue; }
       // (5.6.1) the stick grows wherever a thumb lands that is not on a button (not only the left half); a quick tap
