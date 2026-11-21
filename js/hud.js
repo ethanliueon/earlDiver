@@ -1,8 +1,9 @@
+import { uiUnit } from './settings.js';
 import { drawBagIcon } from './coin_art.js';
 import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
 import { drawToken } from './tokens.js';
-import { drawCoin, drawCash } from './coins.js';
+import { drawCoin, drawCash, drawTile } from './coins.js';
 import { abilityState, whyNot, cooldownLeft } from './abilities.js';
 import { rarityOf } from './specimens.js';
 import { legendMotes } from './scrolls.js';
@@ -63,8 +64,10 @@ export class Hud {
     if (this.c.width !== w || this.c.height !== h) { this.c.width = w; this.c.height = h; }
     // (4.17.0) the UI scale: from the screen's height, but never below 0.7 of the design (a phone held sideways is
     // only ~390 px tall) nor above 1.5; and the notch's safe areas kept clear
-    this.s = Math.min(1.6 * dpr, Math.max(h / 780, 0.8 * dpr)); // (4.26) larger: readable at a glance // (claude-polish) as the comment above says: the clamp was never applied, so a phone's instruments were drawn at 0.43 and unreadable
-    if (window.__fingerK) this.s *= 1.15; // (5.4) a phone's screen is smaller than a laptop's: the instruments' words a little larger (as the quest line)
+    // (5.15.7) the instruments in the one unit (settings.js uiUnit): canvas pixels per point, times the unit; 0.575 keeps
+    // them as they were on the 844 x 390 phone they were laid out on
+    this.pxPt = h / (window.innerHeight / (window.__fingerK || 1)); this.U = uiUnit();
+    this.s = 0.575 * this.pxPt * this.U;
     if (!this.safeEl) { this.safeEl = document.createElement('div'); this.safeEl.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'; document.body.appendChild(this.safeEl); }
     let ps = null; try { ps = window.parent !== window && window.parent.__safeFor ? window.parent.__safeFor() : null; } catch (e) { /* not ours */ }
     if (ps) { this.safe = { l: ps.l * dpr, r: ps.r * dpr, t: ps.t * dpr, b: ps.b * dpr }; return; } // (5.9.5) in the shell's frame: the phone's notch, from the page outside, turned with the frame
@@ -255,10 +258,8 @@ export class Hud {
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
     // (5.3) sized from the finger, not the screen: CSS pixels (about 0.18 mm each on a phone). The main button about
     // 2 cm across, the others about 1.4 cm, never below Apple's 44 pt
-    // (5.15.6) and never more than fits: the corner of buttons (big button plus its arc, 178 units tall) takes at most
-    // 47 % of the screen's height, so on a short phone it shrinks a little instead of running into the radar
-    const fitK = Math.min(window.__fingerK || 1.3, (window.innerHeight * 0.47) / 178);
-    const u = this.c.width / window.innerWidth * fitK, pad = 16 * u, R = 41 * u, // (5.6.9) larger: 36 to 41
+    const u = (this.pxPt || 1.5) * (this.U || 1), pad = 16 * u, R = 41 * u; // (5.15.7) the buttons in the one unit: proportional on every screen
+    const
       cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm // (5.4) a tablet (no page scaling): 1.3x, so the small buttons reach 44 pt
     const held = this.held || new Set();
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
@@ -318,13 +319,13 @@ export class Hud {
     ] : [
       // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
       // (5.6.8) the same four in the same places on deck and in the cabin: the sprint button runs there; the rest wait
-      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Call her from the water' },
+      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Call the sub from the water' },
       // (5.6.9) the glow sticks on his belt; with none on it, a padlock (and where to get one)
       { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'For the water' : (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
       // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
       // the winch to sell). Sprint moved beside the stick
       // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin
-      (() => { if (aboard) return this.inCabin ? { key: 'outdeck', icon: 'door', on: true } : { key: 'divein', icon: 'dive', on: !(g.aboard && (g.aboard.jump || g.aboard.climb)) && !g.helm, why: 'Not now' };
+      (() => { if (aboard) return this.inCabin ? { key: 'outdeck', icon: 'door', on: true } : null; /* (5.15.7) no Dive in button: he walks off either end of the deck */
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
         return { key: hu ? 'u' : 'f', icon: 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
       abil(),
@@ -334,7 +335,7 @@ export class Hud {
 e.inSub ? [
       // (5.7.1) in the sub only: the tank room and the autopilot (out of the arc), then the spare air
       { key: 't', icon: 'tank', on: true },
-      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'She is at the boat' },
+      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'The sub is at the boat' },
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
     ] : aboard ? [] : [
     ]).filter((a) => !(a.away && !a.on));
@@ -410,7 +411,8 @@ e.inSub ? [
         ctx.fillStyle = down ? 'rgba(4,8,8,0.8)' : 'rgba(6,10,10,0.55)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
         ctx.strokeStyle = a.lit ? 'rgba(236,224,190,0.85)' : 'rgba(230,222,196,0.22)'; ctx.lineWidth = 1.4 * u; ctx.stroke();
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
-      } else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
+      } else if (a.tile) drawTile(ctx, x, y, r, a.icon, down ? 'press' : this.inKill || !a.on ? 'off' : 'on'); // (5.15.7) the menu's square tiles
+      else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do
         const bx = x + r * 0.74, by = y - r * 0.74, br = Math.max(8 * u, r * 0.4), pq = 1 + 0.08 * Math.sin(g.time * 5);
@@ -429,6 +431,7 @@ e.inSub ? [
     };
     const r = 25 * u, gap = 30 * u, rho0 = R + r + gap; // (5.6.9) the arc's coins larger: 21 to 25
     this.arcTop = cy - rho0 - r; // (5.15.6) where the corner of buttons begins: the radar stops above it
+    { const kept = A.filter(Boolean); A.length = 0; A.push(...kept); } // (5.15.7) an empty place (the deck's old Dive in) leaves no gap
     A.forEach((a, i) => { const ang = [-90, -125, -160, -195][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
     // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
@@ -449,10 +452,21 @@ e.inSub ? [
       // (5.15.6) the journal, the bag (and in the sub the tank room, the autopilot, the spare air) in a row under the
       // money, top left, where a phone game keeps its menus: the right side is left to the depth, the radar and the
       // actions, and the row never reaches the messages in the middle
-      const rb = 19 * u, stepB = rb * 2 + 10 * u, rowY = my + ch * 0.55 + 10 * u + rb;
-      ROW.forEach((a, i) => btn(a, 12 * u + rb + i * stepB, rowY, rb));
+      // (5.15.7) as the owner sketched it: a column down the left edge under the money, stopping above the lamp; the
+      // goal's line and the marked eye start to the right of it
+      // (5.15.7) smaller square tiles that fold away under a tab (a chevron), as the owner asked: open unless folded
+      // (remembered), opened by itself when the tutorial points at something in it; folded, the tab carries the red "!"
+      // when something in it wants him
+      const rb = 15 * u, stepB = rb * 2 + 7 * u, tabY = my + ch * 0.55 + 10 * u + rb * 0.8, colX = 12 * u + rb;
+      if (this.menuOpen == null) { try { this.menuOpen = localStorage.getItem('earl.menuOpen') !== '0'; } catch (err) { this.menuOpen = true; } }
+      const tutIn = ROW.some((a) => a.key === tutKey || (a.dom && (tutKey === 'j' || tutKey === 'journal'))), open = this.menuOpen || tutIn;
+      const wants = (P.bagGot || 0) > (P.bagSeenAt || 0) || !!window.__journalBadge;
+      { const th = rb * 0.8, dn = pressFx('menu', colX, tabY, th); drawTile(ctx, colX, tabY, th, open ? 'menu-open' : 'menu-shut', dn ? 'press' : 'on', !open && wants); if (!tutIn) hot(colX - th, tabY - th, th * 2, th * 2, 'menu'); }
+      this.journalAt = null; this.menuShown = open;
+      if (open) { const y0 = tabY + rb * 0.8 + 8 * u + rb, colEnd = H - 12 * u - 36 * u - 10 * u - rb, step = ROW.length > 1 ? Math.min(stepB, (colEnd - y0) / (ROW.length - 1)) : stepB;
+        ROW.forEach((a, i) => btn({ ...a, tile: true }, colX, y0 + i * step, rb)); }
       this.underRadarH = 0;
-      this.topLeftBottom = (rowY + rb + 8 * u + this.safeT) * kx; // (the goal's line goes under the row)
+      this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + rb * 2 + 14 * u + this.safeL) * kx;
       this.gearSpace = rg * 2 + 22 * u; }
     // (5.6.8) what F does here is done by tapping the thing itself (render.js brackets it, main.js takes the tap): no tag
     // laid over the scene, and no picture that could say the wrong thing
@@ -466,12 +480,14 @@ e.inSub ? [
     const bdown = held.has(' ');
     const bKey = aboard ? 'f' : ' ';
     const rarOf = () => null; // (5.9.6) no rarity colours on the tool buttons: only the ability's button carries one
+    // (5.15.7) able to act: a warm light behind the coin, round its rim, breathing slowly (nothing drawn over its picture)
+    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(240,214,160,${(0.34 + 0.18 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(240,214,160,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); }
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
     if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
     if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
-    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 4); ctx.strokeStyle = `rgba(230,222,196,${(0.25 + 0.45 * q).toFixed(3)})`; ctx.lineWidth = 2.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, TAU); ctx.stroke(); }
+    /* (5.15.7) the ring that was drawn across the picture here is gone: the light behind the coin says it */
     // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
 
     const prog = g.photo ? g.photo.t / g.photo.dur : g.capture && g.capture.dur ? g.capture.t / g.capture.dur : 0;
@@ -780,7 +796,7 @@ e.inSub ? [
     // (5.15.6) as large as fits between the air bar and the corner of buttons (88 at most, as the owner asked), so the two
     // never overlap whatever the phone
     const room = this.arcTop ? (this.arcTop - (yy + 8 * s) - 10 * s) / 2 : 88 * s, rrT = Math.max(40 * s, Math.min(88 * s, room)), rcyT = yy + 8 * s + rrT; // (5.6.9b) 44 to 56; (5.9.6) 66; (5.13.0) 88
-    const notesAt = touch ? { x: rx0 - 2 * rrT - 14 * s, y: yy + 8 * s } : null; // (5.15.6) on a phone the notes stand to the left of the radar, clear of the buttons
+    const notesAt = touch ? { x: W - 12 * (this.pxPt || 1.5) * (this.U || 1) - 2 * rrT - 14 * s, y: yy + 8 * s } : null; // (5.15.6) on a phone the notes stand to the left of the radar, clear of the buttons
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {
@@ -791,7 +807,7 @@ e.inSub ? [
       ctx.restore();
     }
     // ---------- the radar: large, in the bottom right corner ----------
-    const rr = touch ? rrT : 64 * s, rcx = rx0 - rr, rcy = touch ? rcyT : H - pad - rr;
+    const rr = touch ? rrT : 64 * s, rcx = touch ? W - 12 * (this.pxPt || 1.5) * (this.U || 1) - rr : rx0 - rr, rcy = touch ? rcyT : H - pad - rr; // (5.15.7) on a phone, out to the right edge under the settings coin
     this.radarAt = { x: rcx, y: rcy, r: rr }; // (5.6.1) the column under it hangs from here
     ctx.save();
     // (5.13.0) a real sonar scope (the owner's reference): dark green glass with a faint grid behind, four range rings, a

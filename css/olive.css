@@ -1181,3 +1181,8 @@ html body #catalog .cat-x::after { transform: translate(-50%, -50%) rotate(-45de
 html body #catalog .cat-x:active { transform: translateY(1px); filter: brightness(0.92); }
 /* (5.15.6) on a phone the journal's badge is the same red "!" as the bag's, on the coin's rim */
 html.touch body #quests-btn i.bang:not(#_a):not(#_b) { background: #c8402e !important; color: #fff6ea !important; border-radius: 50% !important; box-shadow: 0 0 0 2px #181a14 !important; font: 700 13px/18px "Barlow Semi Condensed", sans-serif !important; padding: 0 !important; text-align: center; }
+/* (5.15.7) Button size: its current choice in a small worn plate where the other rows have their switch */
+html body #settings .set-row .set-pick { flex: none; min-width: 78px; padding: 6px 12px; border-radius: 4px; background: #3a3628; color: #efe6cc; font: 700 15px "Barlow Semi Condensed", sans-serif; text-align: center; box-shadow: inset 0 1px 0 rgba(255,240,210,0.15), 0 0 0 1px rgba(14,12,8,0.85); }
+/* (5.15.7) on a phone only the journal's picture takes a tap: its button's empty margin no longer covers the menu's tab above it */
+html.touch body #quests-hud, html.touch body #quests-btn { pointer-events: none !important; }
+html.touch body #quests-btn img { pointer-events: auto !important; }

@@ -1,7 +1,7 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { setTouchText } from './touchtext.js';
 import { installFatFinger } from './fatfinger.js';
-import { coinURL } from './coins.js';
+import { coinURL, tileURL } from './coins.js';
 installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
@@ -428,7 +428,7 @@ function showOldCard(H) {
   const it = st.items[H.i]; if (!it || it.sold) return;
   const def = ITEMS[it.id], sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
   ui.oldCard(`<div class="oc-top r-${def.rarity}"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""><div class="oc-t"><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><span>${def.line || ''}</span>${def.good ? `<i>${def.good}</i>` : ''}<div class="oc-sk">${sk}</div></div></div>
-    <div class="oc-buy"><small>${daysLeft(P) <= 1 ? 'She takes it all away soon.' : `She keeps these out another ${daysLeft(P)} days.`}</small><em>${money(it.price, false)}</em><button data-oc="item:${H.i}" ${P.cash < it.price ? 'disabled' : ''}>Take it</button></div>`);
+    <div class="oc-buy"><small>${daysLeft(P) <= 1 ? 'It all goes away soon.' : `She keeps these out another ${daysLeft(P)} days.`}</small><em>${money(it.price, false)}</em><button data-oc="item:${H.i}" ${P.cash < it.price ? 'disabled' : ''}>Take it</button></div>`);
 }
 // (4.0.0) anything that costs more than a fifth of the cash on hand is asked about first
 const needsConfirm = (price) => !!profile && price > 0 && price <= profile.cash && price > 0.2 * profile.cash;
@@ -1160,7 +1160,7 @@ function tutor() {
     }
     else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
     else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); if (hud.touch) text = 'Tap the cabin door to go in'; } } // (4.3.5) the door itself lit up
-    else { text = 'Climb aboard the Margaret at her ladder'; to = ladder; if (ladderZone()) { offer('climb', 'Climb aboard'); if (hud.touch) text = 'Tap the ladder to climb aboard'; } }
+    else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; if (ladderZone()) { offer('climb', 'Climb aboard'); if (hud.touch) text = 'Tap the ladder to climb aboard'; } }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
@@ -1540,7 +1540,7 @@ function promptFor(t) {
       p = 'F  Board the submersible';
     }
     else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
-      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use her winch`
+      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use its winch`
       : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your aquarium`;
@@ -2908,15 +2908,16 @@ function frame(now) {
     // (5.6.8) the journal's coin (hud.journalAt, its centre; 5.6.9: in the column under the radar, above the bag); the goal's line under the money. Placed by
     // where they really are on the page, so the zoom the stylesheet gives them does not throw them off
     const qh = document.getElementById('quests-hud'), qb = document.getElementById('quests-btn'), J = hud.journalAt;
-    if (qb && J && J.r && Math.abs((qb.__r || 0) - J.r) > 0.5) { qb.__r = J.r; const im = qb.querySelector('img'), z = parseFloat(getComputedStyle(qh).zoom) || 1, sz = (2 * J.r / 0.86 / z).toFixed(1) + 'px'; if (im) { im.style.setProperty('width', sz, 'important'); im.style.setProperty('height', sz, 'important'); } } // (5.6.9) the size of the column's coins
+    if (qh) { const vis = J ? '' : 'hidden'; if (qh.style.visibility !== vis) qh.style.visibility = vis; } // (5.15.7) folded away with the menu
+    if (qb && J && J.r && Math.abs((qb.__r || 0) - J.r) > 0.5) { qb.__r = J.r; const im = qb.querySelector('img'), z = parseFloat(getComputedStyle(qh).zoom) || 1, sz = (2 * J.r / 0.8 / z).toFixed(1) + 'px'; if (im) { im.style.setProperty('width', sz, 'important'); im.style.setProperty('height', sz, 'important'); } } // (5.6.9) the size of the column's coins
     // (5.15.6) the journal's red "!" sits on the coin's rim at its top right, touching it, as a phone game's badge does
     { const dot = qb && qb.querySelector('i'), im = qb && qb.querySelector('img'); if (dot && im && im.offsetWidth && dot.__w !== im.offsetWidth) { dot.__w = im.offsetWidth;
       const ri = im.getBoundingClientRect(), rb2 = qb.getBoundingClientRect(), z = (rb2.width / (qb.offsetWidth || rb2.width)) || 1;
-      const c0x = (ri.left - rb2.left + ri.width / 2) / z, c0y = (ri.top - rb2.top + ri.height / 2) / z, rim = (ri.width / z) * 0.43 * 0.72, bw = 18;
+      const c0x = (ri.left - rb2.left + ri.width / 2) / z, c0y = (ri.top - rb2.top + ri.height / 2) / z, rim = (ri.width / z) * 0.4 * 0.82, bw = 18; /* (5.15.7) at the tile's corner */
       for (const [k, v] of [['left', `${(c0x + rim - bw / 2).toFixed(1)}px`], ['top', `${(c0y - rim - bw / 2).toFixed(1)}px`], ['right', 'auto'], ['min-width', `${bw}px`], ['height', `${bw}px`], ['line-height', `${bw}px`]]) dot.style.setProperty(k, v, 'important'); } }
     if (qh && qb && J) { const r0 = qb.getBoundingClientRect(); if (r0.width) { const dx = J.x - (r0.left + r0.width / 2), dy = J.y - (r0.top + r0.height / 2); if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(qh), z = parseFloat(st.zoom) || 1; qh.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); qh.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
     { const tl = document.querySelector('#tut-spot .ts-line'), catO = ui.catalogOpen && ui.catalogOpen(); if (tl && catO && tl.style.left) { tl.style.removeProperty('left'); tl.style.removeProperty('top'); } if (tl && hud.topLeftBottom && tl.classList.contains('in') && !catO) { const r1 = tl.getBoundingClientRect(), dx = hud.topLeftX - r1.left, dy = hud.topLeftBottom - r1.top; if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(tl), z = parseFloat(st.zoom) || 1; tl.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); tl.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
-    if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = coinURL(k); } }
+    if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = id === 'quests-btn' ? tileURL(k) : coinURL(k); } /* (5.15.7) the journal a tile, as the menu's others */ }
   }
   lureAsk(); // (5.6.4)
   bookTabs(); // (5.6.7)
@@ -2979,6 +2980,11 @@ window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'settings') return; ev.stopImmediatePropagation();
   if (g.mode !== 'play' || g.paused) return;
   g.paused = true; ui.setPaused(true);
+}, true);
+// (5.15.7) the menu's tab (under the money): folds the journal, the bag and the rest away, or opens them; remembered
+window.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'menu') return; ev.stopImmediatePropagation();
+  hud.menuOpen = !hud.menuShown; try { localStorage.setItem('earl.menuOpen', hud.menuOpen ? '1' : '0'); } catch (e) { /* not kept */ } audio.ready && audio.click();
 }, true);
 // Escape toggles pause; closing overlays first.
 window.addEventListener('keydown', (ev) => {

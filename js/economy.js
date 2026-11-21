@@ -14,7 +14,7 @@ const BEST_KEY = 'earlDiver.best.v1';
 // ---------------- upgrades ----------------
 // Diver tanks: seconds of air at the surface rate.
 export const TANKS = [
-  { name: 'Aluminium 80', air: 50, price: 0, desc: 'The tank he started with. Dented, honest.' },
+  { name: 'Aluminium 80', air: 50, price: 0, desc: 'The tank you started with. Dented, honest.' },
   { name: 'Steel 100', air: 90, price: 280, desc: 'Heavier steel cylinder, more gas.' },
   { name: 'Steel 130', air: 140, price: 5000, desc: 'A big high-pressure steel tank.' },
   { name: 'Twin set', air: 200, price: 59000, desc: 'Two cylinders on a manifold.' },
@@ -113,7 +113,7 @@ export const TRAPS = {
     desc: 'A tall weighted cage with a lit lure, on a heavy rope.. The light draws deep animals, and other things.' },
 };
 export const BAGS = [
-  { name: 'Mesh goody bag', slots: 3, price: 0, desc: 'Clipped to his belt.' },
+  { name: 'Mesh goody bag', slots: 3, price: 0, desc: 'Clipped to your belt.' },
   { name: 'Large catch bag', slots: 5, price: 220, desc: 'A bigger mesh bag with a spring-loaded mouth.' },
   { name: 'Divided specimen bag', slots: 8, price: 5000, desc: 'Separate pockets, so nothing eats anything else.' },
 ];
@@ -150,7 +150,7 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
     desc: 'The thing in the deep follows its light for 10 s, then loses interest for a little while. Offered when it comes for you, even in its jaws. You carry one lure in all.' },
-  necklace: { name: 'Glow stick', price: 370, max: 5, desc: 'A chemical glow stick on a lanyard, snapped to light: 90 s of warm amber light around Earl, and in the sub it lights her and the water round her. It does not keep anything away, and a light can be seen. Used up once snapped.' },
+  necklace: { name: 'Glow stick', price: 370, max: 5, desc: 'A chemical glow stick on a lanyard, snapped to light: 90 s of warm amber light around Earl, and in the sub it lights the sub and the water round it. It does not keep anything away, and a light can be seen. Used up once snapped.' },
   film: { name: 'Film', price: 4, max: 5, needs: 'camera', desc: 'One exposure each. The camera holds as many as it takes; every picture uses one, sharp or not.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub: three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };
@@ -237,12 +237,12 @@ export const SUB_AIR = [170, 180, 195, 210, 225, 240, 260, 280]; // (4.5.0) two 
 // bite: injury taken off a shark or billfish bite · quiet: no bubbles (the entity hears less) ·
 // warm: keeps out the cold (deep and upwelling water) · col: how it is drawn
 export const SUITS = {
-  wet: { line: "Black neoprene, salt-stiff at the seams.", name: 'Wetsuit', price: 0, press: 100, air: 1, speed: 1, desc: 'Black neoprene. What he started with.' },
-  skin: { line: "Thin as a seal's hide: quick, and hungry for breath.", name: 'Freediving skin', price: 160, press: 100, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works him harder.' },
+  wet: { line: "Black neoprene, salt-stiff at the seams.", name: 'Wetsuit', price: 0, press: 100, air: 1, speed: 1, desc: 'Black neoprene. What you started with.' },
+  skin: { line: "Thin as a seal's hide: quick, and hungry for breath.", name: 'Freediving skin', price: 160, press: 100, air: 1.1, speed: 1.15, desc: 'A thin, slick suit: much faster through the water, but it works you harder.' },
   dry: { line: "Sealed against the cold that lives below the light.", name: 'Drysuit', price: 1200, press: 130, air: 1, speed: 1.06, warm: true, desc: 'Sealed and dry inside, with a little air in it. Pressure starts to bite 100 m deeper, and it keeps out the cold.' },
   chain: { line: "Steel rings, borrowed from the men who feed sharks.", name: 'Chain-mail shark suit', price: 2400, press: 100, air: 1, speed: 1.04, bite: 1, desc: 'Steel mesh over neoprene, as shark feeders wear. A bite does one less injury, and the weight gives each kick a little more drive.' },
-  rebreather: { line: "He breathes his air twice, and leaves no bubbles to follow.", name: 'Rebreather suit', price: 19000, press: 100, air: 0.75, speed: 1.1, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears him less.' },
-  hard: { line: "A small iron room in the shape of a man.", name: 'Atmospheric hardsuit', price: 59000, press: 230, air: 0.9, speed: 1.02, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on him to 700 m, and small thrusters on its back push him along.' },
+  rebreather: { line: "You breathe your air twice, and leave no bubbles to follow.", name: 'Rebreather suit', price: 19000, press: 100, air: 0.75, speed: 1.1, quiet: true, desc: 'A closed-circuit rig built into the suit: a quarter less air used, and no bubbles: the deep hears you less.' },
+  hard: { line: "A small iron room in the shape of a man.", name: 'Atmospheric hardsuit', price: 59000, press: 230, air: 0.9, speed: 1.02, bite: 1, warm: true, desc: 'A walking pressure vessel with jointed limbs. No pressure on you to 700 m, and small thrusters on its back push you along.' },
 };
 // (2.8.0) the suit he has on, as an item: press (m), air (×), speed (×), bite, warm, quiet, look
 export const suitOf = (P) => { const S = (P && worn(P, 'suit')) || ITEMS.wet; return setOn(P, 'bathysphere') ? { ...S, press: S.press + 130 } : S; }; // (3.0.12: +130 m, scaled with the suits)
@@ -286,8 +286,8 @@ export const UPGRADE_DESC = {
 export const UPGRADE_LINE = {
   payFish: 'A better buyer waiting on the quay.',
   paySalvage: 'Friends in the scrapyard.',
-  air: 'A deeper breath, carried on his back.',
-  sprint: 'Harder kicks, for when something is behind him.',
+  air: 'A deeper breath, carried on your back.',
+  sprint: 'Harder kicks, for when something is behind you.',
   swim: 'Longer fins, easier water.',
   bag: 'One more pocket for a living thing.',
   netSize: 'A wider mouth for bigger fish.',
@@ -305,7 +305,7 @@ export const UPGRADE_LINE = {
   camShots: 'Room for one more face from the dark.',
   camRange: 'Glass that sees farther into the blue.',
   ballast: 'Iron lungs: the sub sinks and climbs like a stone, then a cork.',
-  depth: 'Thicker steel between him and the weight of the sea.',
+  depth: 'Thicker steel between you and the weight of the sea.',
   subSpeed: 'A stronger heart in the engine room.',
   subTank: 'A longer tank, and room for three or four more.',
   airTanks: 'Another steel bottle strapped behind the seat.',
@@ -358,9 +358,9 @@ export const WARES = {
 // are short (4-6 steps): each step moves its stats about two levels, so every purchase is felt.
 export const TRACKS = {
   tTank:     { group: 'Diver', name: 'Air tank', stats: ['air'], max: 5, line: 'More air for every dive' },
-  tFins:     { group: 'Diver', name: 'Fins', stats: ['swim', 'sprint'], max: 5, line: 'He swims and sprints faster' },
+  tFins:     { group: 'Diver', name: 'Fins', stats: ['swim', 'sprint'], max: 5, line: 'Swim and sprint faster' },
   tBag:      { group: 'Diver', name: 'Catch bag', stats: ['bag'], max: 6, line: 'Room for more animals' },
-  tBuyers:   { group: 'Buyers', name: 'Buyers', stats: ['payFish', 'paySalvage'], max: 5, line: 'Better prices for everything he sells' },
+  tBuyers:   { group: 'Buyers', name: 'Buyers', stats: ['payFish', 'paySalvage'], max: 5, line: 'Better prices for everything you sell' },
   tNet:      { group: 'Net', name: 'Hand net', stats: ['netSize', 'netReach', 'netSpeed', 'netGrip', 'netSoft'], max: 5, line: 'Bigger, longer, quicker, surer, gentler' },
   tSlurp:    { group: 'Slurp gun', needs: 'slurp', name: 'Slurp gun', stats: ['slurpSize', 'slurpReach', 'slurpSpeed'], max: 4, line: 'Bigger catches, longer reach, faster reload' },
   tTag:      { group: 'Tag gun', needs: 'tagger', name: 'Tag gun', stats: ['tagReach', 'tagReload', 'tagPay', 'tagCalm'], max: 5, line: 'Range, reload, better-paying tags, cleaner shots' },

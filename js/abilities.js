@@ -15,23 +15,23 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Apex', dur: 10, cd: 150, reach: 2.5, sure: true, line: 'For 10 s the net reaches two and a half times as far, and a swing at a fish in reach cannot miss.' },
   },
   dash: {
-    rare: { name: 'Dash', dur: 0.45, cd: 10, dash: 11, line: 'A hard lunge the way he is swimming.' },
+    rare: { name: 'Dash', dur: 0.45, cd: 10, dash: 11, line: 'A hard lunge the way you are swimming.' },
     exotic: { name: 'Dash+', dur: 0.6, cd: 12, dash: 14, charges: 2, line: 'A longer lunge, twice before it needs to recover.' },
-    legendary: { name: 'Undertow', dur: 0.8, cd: 20, dash: 16, pull: true, line: 'A lunge that drags the small fish round him along in its wake.' },
+    legendary: { name: 'Undertow', dur: 0.8, cd: 20, dash: 16, pull: true, line: 'A lunge that drags the small fish round you along in its wake.' },
   },
   flare: {
-    rare: { name: 'Flare', dur: 20, cd: 60, light: 1, line: '20 s of light round him. The deep can see it.' },
+    rare: { name: 'Flare', dur: 20, cd: 60, light: 1, line: '20 s of light round you. The deep does not see it.' },
     exotic: { name: 'Flare+', dur: 40, cd: 60, light: 1.6, line: '40 s of brighter light. The deep can see it.' },
     legendary: { name: 'Lighthouse', dur: 30, cd: 120, light: 2.4, ward: true, line: 'A blaze of light for 30 s that hunters will not come into.' },
   },
   echo: {
-    rare: { name: 'Echo', dur: 10, cd: 45, echo: 1, line: 'A ping: every animal near him shows on the radar for 10 s.' },
+    rare: { name: 'Echo', dur: 10, cd: 45, echo: 1, line: 'A ping: every animal near you shows on the radar for 10 s.' },
     exotic: { name: 'Echo+', dur: 12, cd: 45, echo: 2, line: 'A ping that marks the rare animals on the radar in their colours.' },
     legendary: { name: 'Fathom', dur: 15, cd: 120, echo: 3, line: 'A deep ping: rare animals within a kilometre are marked on the chart.' },
   },
   ironhull: {
     exotic: { name: 'Ironhull', dur: 0.5, cd: 0, repair: true, perDive: 1, sub: true, line: 'Mends the sub completely. Once a dive.' },
-    legendary: { name: 'Bulwark', dur: 30, cd: 0, repair: true, guard: true, perDive: 1, sub: true, line: 'Mends the sub completely, and nothing can hurt her for 30 s. Once a dive.' },
+    legendary: { name: 'Bulwark', dur: 30, cd: 0, repair: true, guard: true, perDive: 1, sub: true, line: 'Mends the sub completely, and nothing can hurt it for 30 s. Once a dive.' },
   },
   tidewarden: {
     legendary: { name: 'Tidewarden', dur: 4, cd: 3600, ward: true, tide: true, perDive: 1, line: 'When the thing is close: the water turns from red to blue, it freezes, fades, and is gone for 5 minutes. Once a dive; an hour to recover.' },

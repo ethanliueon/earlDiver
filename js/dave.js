@@ -62,9 +62,9 @@ export class DaveShop {
     const pay = this.h.payFinds ? this.h.payFinds() : 1;
     const finds = DAVE_FINDS.filter((k) => (g.inv[k] || 0) > 0);
     let html = `<h2>Dave buys</h2><p class="cat-lede">Pearls, sapphires, whalebone, glass sponge, nodules. Whatever odd thing you find down here, I pay a quarter more than that boat of yours.</p>`;
-    if (!finds.length) return html + '<p class="cat-lede">Nothing on you he wants, right now.</p>';
+    if (!finds.length) return html + '<p class="cat-lede">Nothing on you Dave wants, right now.</p>';
     html += `<table class="cat-cartlist">${finds.map((k) => { const n = g.inv[k], each = GOODS[k].price * DAVE_RATE * pay; return `<tr><td>${esc(GOODS[k].name)}${n > 1 ? ` ×${n}` : ''}<small>${money(each)} each</small></td><td class="pr">${money(each * n, false)}</td><td><button class="cat-mini" data-sellfind="${k}">Sell</button></td></tr>`; }).join('')}</table>`;
-    if (finds.length > 1) { const tot = finds.reduce((a, k) => a + GOODS[k].price * DAVE_RATE * pay * g.inv[k], 0); html += `<button class="cat-btn" data-sellfind="all">Sell him the lot · ${money(tot, false)}</button>`; }
+    if (finds.length > 1) { const tot = finds.reduce((a, k) => a + GOODS[k].price * DAVE_RATE * pay * g.inv[k], 0); html += `<button class="cat-btn" data-sellfind="all">Sell Dave the lot · ${money(tot, false)}</button>`; }
     return html;
   }
   wares(P) {
@@ -85,8 +85,8 @@ export class DaveShop {
     const pay = this.h.payFinds ? this.h.payFinds() : 1;
     const finds = DAVE_FINDS.filter((k) => (g.inv[k] || 0) > 0);
     let html = finds.map((k) => { const n = g.inv[k], each = GOODS[k].price * DAVE_RATE * pay; return `<div class="dv-find"><span>${esc(GOODS[k].name)}${n > 1 ? ` ×${n}` : ''}</span><i>${money(each)} each</i><button data-dv="sell|${k}">Sell ${money(each * n, false)}</button></div>`; }).join('');
-    if (finds.length > 1) { const tot = finds.reduce((a, k) => a + GOODS[k].price * DAVE_RATE * pay * g.inv[k], 0); html += `<button class="dv-all" data-dv="sell|all">Sell him the lot · ${money(tot, false)}</button>`; }
-    if (!finds.length) html = `<p class="dv-none">Pearls, sapphires, whalebone, glass sponge, nodules. Whatever odd thing you find down here, he pays a quarter more than the boat.</p>`;
+    if (finds.length > 1) { const tot = finds.reduce((a, k) => a + GOODS[k].price * DAVE_RATE * pay * g.inv[k], 0); html += `<button class="dv-all" data-dv="sell|all">Sell Dave the lot · ${money(tot, false)}</button>`; }
+    if (!finds.length) html = `<p class="dv-none">Pearls, sapphires, whalebone, glass sponge, nodules. Whatever odd thing you find down here, Dave pays a quarter more than the boat.</p>`;
     this.root.querySelector('.dv-finds').innerHTML = html;
   }
 }

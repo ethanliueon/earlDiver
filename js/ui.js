@@ -33,7 +33,7 @@ import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sell
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
 import { drawEarl } from './earl_draw.js';
-import { SETTINGS, setSetting } from './settings.js';
+import { SETTINGS, setSetting, uiSizeName, setUiSize } from './settings.js';
 import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy, DAY } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
@@ -59,12 +59,12 @@ import { subLook } from './render.js';
 
 // the figures for the shop's cards, as dot points
 const ADDON_SPECS = {
-  recall: [['use', 'the sub button calls her'], ['sub comes', '1.5× faster', 'good']],
+  recall: [['use', 'the sub button calls it'], ['sub comes', '1.5× faster', 'good']],
   quiet: [['sub noise', '−50 %', 'good'], ['the deep', 'hears it less', 'good']],
 };
 const SUPPLY_SPECS = {
   lure: [['use', 'offered when the thing comes for you, in its jaws too'], ['effect', 'it follows the light for 10 s', 'good'], ['then', 'it loses you for about 20 s, and comes back'], ['carry', 'one lure in all']],
-  necklace: [['use', 'the glow stick button snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round Earl, or round the sub while he is in her', 'good'], ['but', 'a light can be seen', 'bad']],
+  necklace: [['use', 'the glow stick button snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round you, or round the sub while you are in it', 'good'], ['but', 'a light can be seen', 'bad']],
   film: [['use', 'the camera'], ['one each', 'every picture, sharp or not'], ['pays', 'Poor, Good or Excellent: an Excellent picture twice a Good one', 'good']],
   airTank: [['use', 'the air tank button, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
 };
@@ -263,6 +263,7 @@ export class UI {
     document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
     $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory') && performance.now() - (this.dragEndAt || 0) > 400) this.toggleInventory(false); }); // (5.15.3) not the click that ends a drag off the panel
     $('set-graphics').addEventListener('click', () => { setSetting('fast', !SETTINGS.fast); this.renderSettings(); });
+    $('set-uisize').addEventListener('click', () => { const order = ['small', 'normal', 'large'], i = order.indexOf(uiSizeName()); setUiSize(order[(i + 1) % 3]); this.renderSettings(); }); // (5.15.7)
     $('set-fullscreen').addEventListener('click', () => { $('fullscreen').click(); setTimeout(() => this.renderSettings(), 250); });
     document.addEventListener('fullscreenchange', () => { if (this.settingsOpen()) this.renderSettings(); });
     // the gear (title screen, journal, pause menu) opens the settings and controls
@@ -341,7 +342,7 @@ export class UI {
     const gJ = this.h.getGame && this.h.getGame(), jNew = !!(P0 && gJ && gJ.journal && gJ.journal.size > (P0.jSeenN ?? gJ.journal.size));
     if (P0 && gJ && gJ.journal && P0.jSeenN == null) P0.jSeenN = gJ.journal.size;
     const touch = document.documentElement.classList.contains('touch'), want = n > 0 || (touch && jNew), txt = touch ? '!' : String(n);
-    dot.hidden = !want; if (want && dot.textContent !== txt) dot.textContent = txt; dot.classList.toggle('bang', touch);
+    dot.hidden = !want; window.__journalBadge = !!want; // (5.15.7) the folded menu's tab shows it too if (want && dot.textContent !== txt) dot.textContent = txt; dot.classList.toggle('bang', touch);
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
   }
   // (4.28) open or fold the left-hand group; open for `ms` then fold again on its own
@@ -1093,7 +1094,7 @@ export class UI {
     const curQ = !on && K.on[it.kind] ? K.items.find((x) => x.u === K.on[it.kind]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
     let body, acts = '';
     if (on) {
-      body = `<div class="ip-cols one">${this.itemCol(P, q, 'He has it on')}</div>`;
+      body = `<div class="ip-cols one">${this.itemCol(P, q, 'You have it on')}</div>`;
       const starter = FREE_IDS[it.kind];
       if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${it.kind}">Take off${starter ? ` <small>(the ${ITEMS[starter].name.toLowerCase()} goes back on)</small>` : ''}</button>`;
     } else {
@@ -1196,6 +1197,7 @@ export class UI {
     row('set-catchtags', 'Show fish names', SETTINGS.catchTags, 'the name of the fish your net can reach');
     row('set-brackets', 'Mark what the net will catch', SETTINGS.brackets, 'corners round the fish');
     row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
+    { const nm = uiSizeName(); $('set-uisize').innerHTML = `<span>Button size<em>the controls on screen, larger or smaller</em></span><b class="set-pick">${nm[0].toUpperCase() + nm.slice(1)}</b>`; } // (5.15.7) Small / Normal / Large, a tap steps through them
     $('set-graphics').innerHTML = `<span>Smoother on slow devices<em>${document.documentElement.classList.contains('touch') ? 'battery saver: 30 frames a second, cooler and longer' : 'a softer picture, fewer extras'}</em></span>${sw(!!SETTINGS.fast)}`;
   }
   galleryOpen() { return !$('gallery').hidden; }
@@ -1694,7 +1696,7 @@ export class UI {
       const ruler = (S) => { const Y = (dd) => (Math.sqrt(dd / 4500) * 100).toFixed(2) + '%';
         if (!this.rulerPics) this.rulerPics = new Map();
         const pic = (id) => { if (!this.rulerPics.has(id)) { const sp = SPECIES_BY_ID[id]; this.rulerPics.set(id, sp ? fittedIcon(sp, 120, 60).toDataURL() : ''); } return this.rulerPics.get(id); };
-        return `<div class="yd-ruler" title="How deep she can go"><div class="ru-zones"><i style="top:0;height:${Y(200)}" class="z1"></i><i style="top:${Y(200)};height:calc(${Y(1000)} - ${Y(200)})" class="z2"></i><i style="top:${Y(1000)};height:calc(${Y(4500)} - ${Y(1000)})" class="z3"></i></div>
+        return `<div class="yd-ruler" title="How deep it can go"><div class="ru-zones"><i style="top:0;height:${Y(200)}" class="z1"></i><i style="top:${Y(200)};height:calc(${Y(1000)} - ${Y(200)})" class="z2"></i><i style="top:${Y(1000)};height:calc(${Y(4500)} - ${Y(1000)})" class="z3"></i></div>
           ${[0, 200, 1000, 2000, 3000, 4500].map((dd) => `<span class="ru-tick" style="top:${Y(dd)}">${dd.toLocaleString()}</span>`).join('')}
           <div class="ru-reach" style="height:${Y(S.rated)}"></div><div class="ru-mark" style="top:${Y(S.rated)}"><b>${S.rated.toLocaleString()} m</b></div>
           ${RULER.map(([id, dd]) => `<img class="ru-fish${dd <= S.rated ? ' in' : ''}" src="${pic(id)}" style="top:${Y(dd)}" alt="">`).join('')}</div>`; };
@@ -1706,7 +1708,7 @@ export class UI {
       const statusOf = (k) => {
         if (k === hl && !sub.imploded) return '';
         if (k < hl) return '<span class="yd-tag past">Had it</span>';
-        if (k === hl + 1 && k <= cap) return `<button class="pay-tag" data-act="buy" data-arg="up:tHull" ${can(SUBS[k].price) ? '' : 'disabled'} title="Buy her">${money(SUBS[k].price, false)}</button>`;
+        if (k === hl + 1 && k <= cap) return `<button class="pay-tag" data-act="buy" data-arg="up:tHull" ${can(SUBS[k].price) ? '' : 'disabled'} title="Buy it">${money(SUBS[k].price, false)}</button>`;
         return '';
       };
       const open = this.ydSub != null && this.ydSub <= Math.min(hl + 1, cap) ? this.ydSub : null;
@@ -1732,7 +1734,7 @@ export class UI {
         html += '</div></div>';
       } else {
         if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
-        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ', damaged: swim out and hold R at each hole to repair her' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
+        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ', damaged: swim out and hold R at each hole to repair it' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
           <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i><svg class="yd-lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15 L21 21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` (next ${money(SUBS[hl + 1].price, false)})` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, 'Works the claw under the sphere: from inside, Space grabs an animal.', GEAR.arm.price, owns(P, 'arm')]]
           .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, { quiet: 'Half the noise down there: the deep notices her less.', sonar: 'A strip under the radar draws the seafloor around her.', airBank: 'Bottles strapped behind the sphere: half as much cabin air again, on every sub.' }[k] || a.desc, a.price, !!(P.addons || {})[k]]));

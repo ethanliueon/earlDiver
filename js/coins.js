@@ -542,3 +542,37 @@ export function drawCash(ctx, cx, cy, h) {
   }
   ctx.drawImage(c, cx - c.width / 2, cy - c.height / 2);
 }
+
+// (5.15.7) the menu's tiles: the same worn paint and the same pictures as the coins, on a square with rounded corners
+// (smaller than a coin for the same reach, so the menu down the left takes less of the screen)
+export function drawTile(ctx, cx, cy, h, kind, state = 'on', badge = false) {
+  const key = `tile|${kind}|${state}|${Math.round(h * 2)}`;
+  let t = cache.get(key);
+  if (!t) {
+    const H2 = Math.round(h * 2) / 2, pad = Math.ceil(H2 * 0.16) + 2, size = Math.ceil(H2 * 2 + pad * 2), c = document.createElement('canvas');
+    c.width = c.height = size; const x = c.getContext('2d'); x.translate(size / 2, size / 2);
+    const rr = H2 * 0.34, plate = () => { x.beginPath(); x.roundRect(-H2, -H2, H2 * 2, H2 * 2, rr); };
+    x.fillStyle = 'rgba(0,0,0,0.32)'; x.beginPath(); x.roundRect(-H2, -H2 + H2 * 0.1, H2 * 2, H2 * 2, rr); x.fill(); // its shadow on the water
+    const [hh, ss, l0] = HUE[kind], l = l0 + 4, g = x.createLinearGradient(-H2, -H2, H2, H2);
+    g.addColorStop(0, hsl(hh, ss + 6, l + 12)); g.addColorStop(0.55, hsl(hh, ss, l + 2)); g.addColorStop(1, hsl(hh, Math.max(0, ss - 10), Math.max(3, l - 9)));
+    x.fillStyle = g; plate(); x.fill();
+    const r = rnd(kind.length * 17 + 3); x.save(); plate(); x.clip();
+    for (let i = 0; i < 70; i++) { x.fillStyle = r() < 0.5 ? 'rgba(255,244,220,0.045)' : 'rgba(0,0,0,0.06)'; x.beginPath(); x.ellipse((r() - 0.5) * H2 * 2, (r() - 0.5) * H2 * 2, H2 * (0.1 + r() * 0.12), H2 * 0.03, r() * Math.PI, 0, TAU); x.fill(); }
+    if (kind === 'menu-open' || kind === 'menu-shut') { // the fold: a chevron pointing the way it will go
+      const up = kind === 'menu-open'; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.strokeStyle = '#0c0b08'; x.lineWidth = H2 * 0.26; x.beginPath(); x.moveTo(-H2 * 0.42, up ? H2 * 0.18 : -H2 * 0.18); x.lineTo(0, up ? -H2 * 0.24 : H2 * 0.24); x.lineTo(H2 * 0.42, up ? H2 * 0.18 : -H2 * 0.18); x.stroke();
+      x.strokeStyle = '#d8ceb0'; x.lineWidth = H2 * 0.14; x.stroke();
+    } else if (ART[kind]) { const k = H2 * 0.78 / 50; x.save(); x.scale(k, k); ART[kind](x, {}); x.restore(); }
+    else drawGlyph(x, kind, 0, 0, H2 * 1.1);
+    x.restore();
+    if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.65; x.fillStyle = '#808080'; plate(); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(0,0,0,0.25)'; plate(); x.fill(); }
+    if (state === 'press') { x.fillStyle = 'rgba(255,236,200,0.16)'; plate(); x.fill(); }
+    x.lineWidth = H2 * 0.09; x.strokeStyle = '#15130f'; plate(); x.stroke();
+    x.lineWidth = H2 * 0.04; x.strokeStyle = 'rgba(190,172,132,0.35)'; x.beginPath(); x.moveTo(-H2 + rr, -H2 + H2 * 0.07); x.lineTo(H2 - rr, -H2 + H2 * 0.07); x.stroke(); // the top edge catching the light
+    t = { c, half: size / 2 }; cache.set(key, t); if (cache.size > 320) cache.delete(cache.keys().next().value);
+  }
+  const k = state === 'press' ? 0.94 : 1, hh2 = t.half * k; ctx.drawImage(t.c, cx - hh2, cy - hh2 + (state === 'press' ? h * 0.04 : 0), hh2 * 2, hh2 * 2);
+  if (badge) { const bx = cx + h * 0.82, by = cy - h * 0.82, br = Math.max(h * 0.36, 6); ctx.save(); ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = br * 0.25; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff6ea'; ctx.font = `700 ${br * 1.45}px "Barlow Semi Condensed", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + br * 0.06); ctx.restore(); }
+}
+export function tileURL(kind, px = 112) { const c = document.createElement('canvas'); c.width = c.height = px; drawTile(c.getContext('2d'), px / 2, px / 2, px * 0.4, kind); return c.toDataURL('image/png'); }

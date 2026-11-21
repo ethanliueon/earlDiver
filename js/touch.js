@@ -1,3 +1,4 @@
+import { uiUnit } from './settings.js';
 // (5.3) Touch: a floating joystick and the HUD's buttons, for phones and tablets.
 //
 // Every finger is followed on its own. One that lands on a HUD button presses that button's key (a real keydown,
@@ -24,7 +25,7 @@ export class Touch {
     const key = k === ' ' ? ' ' : k === 'escape' ? 'Escape' : k;
     window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { key, bubbles: true }));
   }
-  radius() { const k = window.__fingerK || 1; return Math.max(40, Math.min(52, window.innerHeight / k * 0.12)) * k; } // (5.4) in real points, on a page laid out wider than the screen // (5.3.1) CSS px centre to rim: about 1.6 cm across
+  radius() { const k = window.__fingerK || 1; return 46 * uiUnit() * k; } // (5.15.7) in the one unit, as the HUD: proportional on every screen // (5.4) in real points, on a page laid out wider than the screen // (5.3.1) CSS px centre to rim: about 1.6 cm across
   start(e) {
     if (!this.active()) return;
     e.preventDefault();
@@ -72,7 +73,7 @@ export class Touch {
     if (!this.el) return;
     if (!show) { this.el.hidden = true; return; }
     if (this.stick) return;
-    const R = this.radius(), k = window.__fingerK || 1, x = Math.max(R + 28 * k, window.innerWidth * 0.13) + 40 * k, y = window.innerHeight - R - 34 * k; // (5.7.2) over a little: the sprint button has the corner
+    const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(), x = Math.max(R + 28 * k, window.innerWidth * 0.13) + 40 * k, y = window.innerHeight - R - 34 * k; // (5.7.2) over a little: the sprint button has the corner
     this.el.hidden = false; this.el.style.setProperty('--r', R + 'px');
     this.base.style.transform = `translate(${x}px, ${y}px)`; this.knob.style.transform = `translate(${x}px, ${y}px)`;
   }

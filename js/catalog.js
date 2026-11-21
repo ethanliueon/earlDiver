@@ -38,8 +38,8 @@ const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];
 const LEDE = {
   net: 'You carry one; change it in your bag on deck or in the sub.',
   cam: 'Hold still while the shutter is open; sell the pictures at the boat. The higher its Quality, the more each picture earns. Film is bought by the exposure.', trawl: "One in the sub's belly hatch; used up in one haul.",
-  trap: 'Set from the surface, on a line from a buoy.', suit: 'One worn at a time.', fins: 'How fast he swims, and sprints.',
-  tank: 'How long he can stay down.', bag: 'How many animals he can carry.', supply: 'Bought by the number.',
+  trap: 'Set from the surface, on a line from a buoy.', suit: 'One worn at a time.', fins: 'How fast you swim, and sprint.',
+  tank: 'How long you can stay down.', bag: 'How many animals you can carry.', supply: 'Bought by the number.',
 };
 const cm = (m) => `${Math.round(m * 100)} cm`;
 const sizeOf = (it) => (it.minLen ? `${cm(it.minLen)}–${cm(it.maxLen)}` : `up to ${cm(it.maxLen)}`);
@@ -207,8 +207,8 @@ export class Catalog {
   sellPage(P) {
     const can = this.h.canSell ? this.h.canSell() : true;
     const list = kitOf(P).items.filter((q) => !isOn(P, q) && ITEMS[q.id] && !ITEMS[q.id].free);
-    let html = `<h2>${this.catName('sell')}</h2><p class="cat-lede">${this.id === 'dave' ? "I'll take it off your hands. Not for much." : 'About a third of what it is worth. What he has on is not for sale.'}</p>`;
-    if (!list.length) return html + '<p class="cat-lede">Nothing to sell: everything in the locker is on him.</p>';
+    let html = `<h2>${this.catName('sell')}</h2><p class="cat-lede">${this.id === 'dave' ? "I'll take it off your hands. Not for much." : 'About a third of what it is worth. What you have on is not for sale.'}</p>`;
+    if (!list.length) return html + '<p class="cat-lede">Nothing to sell: everything in the locker is on you.</p>';
     return html + `<table class="cat-cartlist">${list.map((q) => { const it = ITEMS[q.id]; return `<tr><td><img src="${pictureOf(it.kind, it, 120, 60)}" alt=""></td><td>${it.name}<small class="r-${it.rarity}">${RARITY[it.rarity].name}</small></td><td class="pr">${money(sellValue(q), false)}</td><td><button class="cat-mini" data-buy="sellgear:${q.u}" ${can ? '' : 'disabled'}>Sell</button></td></tr>`; }).join('')}</table>`;
   }
   card(e) {
