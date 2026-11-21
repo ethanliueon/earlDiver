@@ -166,20 +166,17 @@ export class Entity {
     g.concealed = false;
     if (e.inSub) {
       const q = g.addons && g.addons.quiet ? 0.5 : 1;
-      let r = 120 + ((e.speedNow > 1 ? 120 : 0) + (e.sprint && e.speedNow > 1 ? 100 : 0)) * q;
+      let r = 120 * (q < 1 ? 0.85 : 1); // (5.12.4) how fast she goes no longer carries: only her lights and how close she is
       if (g.sub.lightsOn && g.ambient < 0.3) r += 60;
       return r;
     }
     if (e.legends && e.legends.has('phantom') && e.speedNow < 0.3) { g.concealed = true; return 2; } // (2.8.0) Phantom: still, he is not there
     const hidden = g.world.inKelp(e.x, e.y) || g.world.underLedge(e.x, e.y);
-    const fast = e.sprint && e.speedNow > 1;
-    g.concealed = hidden && !fast && !e.lampOn && e.speedNow < 2.5;
-    if (hidden && !fast) return e.lampOn ? 14 : 6;
+    // (5.12.4) Earl's speed no longer matters to it, and a glow stick is not a light to it, however bright
+    g.concealed = hidden && !e.lampOn;
+    if (hidden) return e.lampOn ? 14 : 6;
     let r = 45;
-    if (e.speedNow > 2) r += 25;
-    if (fast) r += 90;
     if (e.lampOn) r += 70;
-    if (g.necklaceOn) r += 25;
     if (g.abilLight) r += 25 * g.abilLight; // (5.9.0) a Flare is seen too // the necklace's glow is a light too, if a dim one
     if (e.suitQuiet) r *= 0.7; // no bubbles: much less to hear
     if (e.atSurface) r += 30; // splashing
@@ -189,7 +186,12 @@ export class Entity {
   // the attention meter: what Earl is doing in the deep, every frame
   attend(g, dt, d, per) {
     const e = g.earl;
+    const lit = e.inSub ? !!g.sub.lightsOn : !!e.lampOn; // (5.12.4) his light: the sub's floodlight in her, his lamp out of her; never a glow stick
     if (this.marked) {
+      // (5.12.4) losing it in the dark: only when it is more than 1,000 m off and he has kept it dark for 30 s; then it
+      // stops where it lost him and waits there (it does not go home). Nearer than that, nothing he does shakes it
+      if (!lit && d > 1000) { this.darkT = (this.darkT || 0) + dt; if (this.darkT >= 30) { this.marked = false; this.ap = null; this.flick = 0; this.attn = 0.6; this.state = 'linger'; this.lingerT = 240; this.lingerX = this.x; this.lingerY = this.y; this.darkT = 0; g.events.push('unmarked'); return; } }
+      else this.darkT = 0;
       // a mark fades if he stays above its reach long enough
       if (e.y < SAFE_DEPTH) { this.shallowT += dt; if (this.shallowT > FORGET_TIME) { this.marked = false; this.ap = null; this.flick = 0; this.attn = 0.35; this.state = 'roam'; g.events.push('unmarked'); } }
       else this.shallowT = 0;
@@ -201,15 +203,14 @@ export class Entity {
       this.attn = Math.max(0, Math.min(this.attn, 0.5) - dt * 0.004);
       return;
     }
+    if (this.lingerT > 0) { this.lingerT -= dt; if (lit && e.y > 200) { this.lingerT = 0; this.mark(g); return; } } // (5.12.4) it was waiting: a light, and it is back on him
     // going below 500 m without the submersible marks him outright
     if (!e.inSub && e.y > 500) { if (this.deepMarkArmed) { this.deepMarkArmed = false; this.mark(g); } return; }
     if (e.y < 480 || e.inSub) this.deepMarkArmed = true;
     let rate = 0;
     if (e.y > 200) {
       rate += 0.002 + 0.002 * (e.y - 200) / 100;                    // just being down here
-      let noisy = e.inSub ? (e.speedNow > 1 ? 1 : 0.3) : (e.sprint && e.speedNow > 1 ? 1 : 0);
-      if (e.inSub && g.addons && g.addons.quiet) noisy *= 0.5;
-      rate += noisy * 0.01 * (1 + (e.y - 200) / 400);               // engines, thrashing
+      // (5.12.4) no more noise from his speed (sprinting, the engine at full): it notices light, and him near it
       if ((e.inSub ? g.sub.lightsOn : e.lampOn) && e.y > 300) rate += 0.006; // light
     } else rate -= e.y < SAFE_DEPTH ? 0.012 : 0.006;                 // quiet water calms it
     // the empty sub driving itself in the deep: engine noise travels
@@ -237,7 +238,10 @@ export class Entity {
 
     let tx = this.x, ty = this.y, speed = ENTITY_SPEED * 0.35;
 
-    if (!this.marked) {
+    if (!this.marked && this.lingerT > 0) {
+      // (5.12.4) waiting where it lost him: a slow drift round that spot, in the dark
+      tx = this.lingerX + Math.sin(g.time * 0.05) * 20; ty = this.lingerY + Math.cos(g.time * 0.04) * 10; speed = ENTITY_SPEED * 0.15; this.state = 'linger';
+    } else if (!this.marked) {
       // ---------- roaming its range, not hunting ----------
       this.roamT -= dt;
       if (this.roamT <= 0 || dist(this.x, this.y, this.roamX, this.roamY) < 15) {
