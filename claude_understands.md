@@ -16,6 +16,16 @@ order of work), then this file. The illustrated guide for a new Claude is `docs/
 
 ## Owner decisions since the proposal (latest first; these override anything below)
 
+- **5.12.x (built on the owner's go):** suits are about depth (pressure 20 m to 1,000 m+, air saved only from Rare up,
+  no speed); speed is the fins' alone, shown at half; a skill that raises a number shows it green with (+boost); fish
+  swim their own fixed pace (no bolting, startle, tiring or daze); past the suit's depth the HUD slowly loses up to 40 %
+  colour and past twice it the depth turns to blood; the thing in the deep goes by light and nearness only (not speed,
+  not glow sticks), a mark lost only beyond 1,000 m after 30 s dark, then it waits there; tanks/bags/nets/cameras have
+  even steps to Exotic and a large jump to Legendary; every item kind is drawn as a solid photographed object
+  (js/suit_art.js, js/gear_art.js). Health and food are parked.
+- **Waiting on the owner:** docs/PROPOSAL_prices.md (prices on the new stats) and docs/poc/shops/*.png (three shop
+  identities inside the same layout, and a studio-lit photo backdrop). Nothing of either is applied.
+
 - **5.11.2 (built on the owner's go):** the shop's rarity is now the small word already on each card and page, in its
   rarity's ink; the stamps are gone. The money is out of the website; it shows above the monitor, top left, drawn as
   the HUD draws it in play (the monitor stands a little lower to make room). Two new suit samples are in
