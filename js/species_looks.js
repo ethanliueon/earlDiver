@@ -57,4 +57,121 @@ export const LOOKS = {
     marks: [{ k: 'dots', c: '#f0ece6', n: 46, r: 0.028, from: 0.15, to: 0.95 }] }, // Opah
   337: { fam: 'disc', h: 0.7, t: 'trunc', c: ['#4a4a46', '#6a6a62'], dfc: '#3a3a36', afc: '#3a3a36', tailc: 'rgba(58,58,54,0.85)', eyek: 1.5, p: 'none',
     marks: [{ k: 'dots', c: 'rgba(30,30,28,0.4)', n: 18, r: 0.05, from: 0.3, to: 0.9 }] }, // Smooth Oreo
+
+  // ---------- batch 2: the rest of the reef ----------
+  // damselfish and their kin: an oval with a notched dorsal, a small mouth
+  1: { fam: 'damsel', h: 0.48, t: 'round', c: ['#e2601c', '#ee8a40'], f: '#e2601c', finedge: K, tailedge: K, p: 'none',
+    marks: [{ k: 'band', x: 0.2, w: 0.09, c: W, edge: K, ew: 0.01, tilt: 0.05 }, { k: 'band', x: 0.52, w: 0.1, c: W, edge: K, ew: 0.01, tilt: -0.2, top: 0.6, bot: 0.6 }, { k: 'band', x: 0.88, w: 0.06, c: W, edge: K, ew: 0.01 }] }, // Ocellaris Clownfish
+  207: { fam: 'damsel', h: 0.48, t: 'round', c: ['#e8a07a', '#f0b896'], f: '#e8a07a', p: 'none',
+    marks: [{ k: 'upper', y: -0.38, c: W, soft: 0.04 }, { k: 'band', x: 0.21, w: 0.035, c: W }] }, // Pink Skunk Clownfish
+  208: { fam: 'damsel', h: 0.5, t: 'round', c: ['#c8341a', '#e8641e'], f: '#e8501e', p: 'none',
+    marks: [{ k: 'blush', x: 0.55, y: 0.05, r: 0.5, c: 'rgba(60,14,10,0.55)' }, { k: 'band', x: 0.21, w: 0.09, c: W, edge: K, ew: 0.008 }] }, // Tomato Clownfish
+  209: { fam: 'damsel', h: 0.5, t: 'round', c: ['#5e1414', '#7a1c18'], f: '#6a1616', spine: W, p: 'none',
+    marks: [{ k: 'band', x: 0.2, w: 0.035, c: '#efe4cc' }, { k: 'band', x: 0.52, w: 0.035, c: '#efe4cc' }, { k: 'band', x: 0.88, w: 0.03, c: '#efe4cc' }] }, // Maroon Clownfish
+  27: { fam: 'damsel', h: 0.52, t: 'fork', c: ['#d8c44a', '#e8e8de'], f: '#a8a89a', p: 'none',
+    marks: [{ k: 'upper', y: -0.2, c: '#d8c44a', soft: 0.12 }, ...[0.24, 0.4, 0.56, 0.72, 0.88].map((x) => ({ k: 'band', x, w: 0.05, c: '#1a1a1a', top: 0.6, bot: 0.55 }))] }, // Sergeant Major
+  28: { fam: 'damsel', h: 0.48, t: 'fork', c: ['#1e5ec8', '#3a86dc'], f: '#2c6fd0', tailedge: '#0e2a5a', p: 'none' }, // Blue Chromis
+  204: { fam: 'damsel', h: 0.55, t: 'trunc', c: ['#242422', '#33322e'], f: '#2a2a28', p: 'none',
+    marks: [{ k: 'spot', x: 0.5, y: -0.38, r: 0.08, c: W }, { k: 'spot', x: 0.16, y: -0.38, r: 0.05, c: W }] }, // Threespot Damselfish
+  205: { fam: 'damsel', h: 0.6, t: 'fork', c: ['#f0ede4', '#f4f1ea'], f: '#f0ede4', dfc: K, pelc: K, tailc: 'rgba(240,237,228,0.85)', p: 'none',
+    marks: [{ k: 'band', x: 0.15, w: 0.12, c: K, tilt: 0.25 }, { k: 'band', x: 0.48, w: 0.15, c: K, tilt: 0.2 }, { k: 'band', x: 0.8, w: 0.11, c: K, tilt: 0.1 }] }, // Humbug Damselfish
+  206: { fam: 'damsel', h: 0.5, t: 'fork', c: ['#121a3a', '#1a2448'], f: '#121a3a', tailc: '#f0c428', p: 'none',
+    marks: [{ k: 'dots', c: '#5aa8f0', n: 26, r: 0.025, from: 0.12, to: 0.85, spread: 0.7 }] }, // Yellowtail Damselfish
+  72: { fam: 'damsel', h: 0.55, t: 'lunate', c: ['#e8641a', '#f0802a'], f: '#e06018', p: 'none' }, // Garibaldi
+  233: { fam: 'damsel', h: 0.42, t: 'lyre', c: ['#e88a2a', '#f0a840'], f: '#e8902a', dfil: 1, dfilc: '#e85a2a', tailc: '#e88a2a', p: 'none',
+    marks: [{ k: 'hlines', c: '#a87ad8', n: 1, y0: 0.05, y1: 0.05, from: 0.0, to: 0.3, lw: 0.035 }] }, // Lyretail Anthias
+  17: { fam: 'damsel', h: 0.4, t: 'trunc', c: ['#7a3aa0', '#8a46aa'], f: '#8a46aa', p: 'none', dfc: '#8a46aa',
+    marks: [{ k: 'rear', from: 0.5, c: '#e6c02a', soft: 0.1 }, { k: 'eyeband', c: '#1a1020', w: 0.012, tilt: 1.2, up: 0.2, down: 0.2 }] }, // Royal Gramma
+  // wrasses: long, a small pointed mouth, one long low dorsal
+  16: { fam: 'wrasse', h: 0.22, t: 'trunc', c: ['#e8d8a0', '#ece4c8'], f: '#3d7cc4', p: 'none',
+    marks: [{ k: 'rear', from: 0.45, c: '#3d7cc4', soft: 0.2 }, { k: 'hlines', c: '#12161e', n: 1, y0: 0, y1: 0, from: 0.0, to: 1.05, lw: 0.2 }] }, // Bluestreak Cleaner Wrasse
+  210: { fam: 'wrasse', h: 0.26, t: 'lunate', c: ['#1e7a5a', '#3a9a7a'], f: '#2a8a6a', snout: 1.4, snoutc: '#2a8a6a', p: 'none',
+    marks: [{ k: 'diag', c: 'rgba(20,60,50,0.35)', a: 0, lw: 0.02, sp: 0.06 }] }, // Bird Wrasse
+  211: { fam: 'wrasse', h: 0.28, t: 'lunate', c: ['#2a8a6a', '#4a9a7a'], f: '#3a8a8a', tailc: '#e8c43a', finedge: '#d860a0', tailedge: '#d860a0', p: 'none',
+    marks: [{ k: 'face', c: 'rgba(120,90,180,0.7)', to: 0.2 }, { k: 'hlines', c: '#d860a0', n: 3, y0: -0.1, y1: 0.12, from: 0.0, to: 0.2, lw: 0.03 }, { k: 'diag', c: 'rgba(216,96,160,0.5)', a: 0.0, lw: 0.018, sp: 0.05, x: 0.6 }] }, // Moon Wrasse
+  212: { fam: 'wrasse', h: 0.26, t: 'lunate', c: ['#3a9a5a', '#5aae6a'], f: '#3a9a5a', p: 'none',
+    marks: [{ k: 'face', c: '#2a5ad8', to: 0.27 }, { k: 'band', x: 0.3, w: 0.04, c: K }, { k: 'band', x: 0.36, w: 0.07, c: '#e8e8e0' }, { k: 'band', x: 0.42, w: 0.04, c: K }] }, // Bluehead Wrasse
+  213: { fam: 'wrasse', h: 0.32, t: 'trunc', c: ['#5a3a9a', '#e8c02a'], f: '#e8c02a', dfc: '#6a3a9a', p: 'none',
+    marks: [{ k: 'upper', y: 0.0, c: '#5a3a9a', soft: 0.1 }, { k: 'rear', from: 0.62, c: '#e8c02a', soft: 0.06 }] }, // Spanish Hogfish
+  214: { fam: 'wrasse', h: 0.38, t: 'lunate', c: ['#c88a7a', '#ead0c0'], f: '#c88a7a', snout: 0.9, snoutc: '#c88a7a', dfil: 3, dfilh: 1.3, p: 'none',
+    marks: [{ k: 'topface', c: 'rgba(90,50,40,0.55)', to: 0.25, y0: -0.05 }, { k: 'spot', x: 0.8, y: -0.4, r: 0.07, c: K }, { k: 'blush', x: 0.5, y: 0, r: 0.4, c: 'rgba(150,90,80,0.3)' }] }, // Hogfish
+  15: { fam: 'wrasse', h: 0.42, t: 'round', c: ['#2f6e68', '#5c938a'], f: '#2f6e68', mouth: 'lips', lipc: '#4a8a80', topc: [[0, 0.3], [0.04, 0.75], [0.1, 1.08], [0.18, 1.12], [0.3, 1.02], [0.5, 1], [0.7, 0.86], [0.88, 0.52], [1, 0.4]], p: 'none',
+    marks: [{ k: 'diag', c: 'rgba(20,50,46,0.4)', a: 0, lw: 0.016, sp: 0.04 }, { k: 'hlines', c: '#1a3a36', n: 2, y0: -0.2, y1: -0.05, from: 0.02, to: 0.22, lw: 0.02 }] }, // Humphead Wrasse
+  // parrotfish: a blunt head, big scales, the beak
+  13: { fam: 'parrot', h: 0.38, t: 'lunate', c: ['#2f7c5c', '#6fae86'], f: '#3b8a6a', beakc: '#b8d8c0', tailc: '#3b8a6a', p: 'none',
+    marks: [{ k: 'spot', x: 0.27, y: -0.38, r: 0.07, c: '#e8c43a' }, { k: 'band', x: 0.97, w: 0.06, c: '#e8a83a' }, { k: 'hlines', c: '#e88a6a', n: 2, y0: -0.05, y1: 0.08, from: 0.02, to: 0.2, lw: 0.025 }] }, // Stoplight Parrotfish
+  14: { fam: 'parrot', h: 0.45, t: 'trunc', c: ['#4a6560', '#6d857c'], f: '#4a6560', beakc: '#e8e4d8', hump: 1, topc: [[0, 0.5], [0.04, 0.9], [0.12, 1.08], [0.25, 1.02], [0.55, 0.97], [0.75, 0.78], [0.9, 0.5], [1, 0.42]], p: 'none',
+    marks: [{ k: 'face', c: 'rgba(200,200,150,0.35)', to: 0.15 }] }, // Bumphead Parrotfish
+  215: { fam: 'parrot', h: 0.36, t: 'lunate', c: ['#2a8a8a', '#5ab09a'], f: '#2a8a8a', finedge: '#e88a5a', tailedge: '#e88a5a', beakc: '#a8d8d0', p: 'none',
+    marks: [{ k: 'hlines', c: '#e8905a', n: 2, y0: -0.1, y1: 0.1, from: 0.0, to: 0.22, lw: 0.03 }, { k: 'lower', y: 0.25, c: 'rgba(232,140,90,0.45)', soft: 0.06 }] }, // Queen Parrotfish
+  216: { fam: 'parrot', h: 0.38, t: 'trunc', c: ['#3a7a3a', '#5a9a4a'], f: '#3a7a3a', beakc: '#5ab0a0', p: 'none',
+    marks: [{ k: 'face', c: '#c8702a', to: 0.3 }] }, // Rainbow Parrotfish
+  // puffers and porcupinefish
+  19: { fam: 'puffer', h: 0.55, t: 'round', c: ['#a08a62', '#e8e0cc'], f: '#a89470', spines: 1, eyek: 1.6, p: 'none',
+    marks: [{ k: 'dots', c: '#3a3024', n: 28, r: 0.04, from: 0.15, to: 0.9, spread: 0.7 }, { k: 'lower', y: 0.15, c: '#ece6d4', soft: 0.1 }] }, // Porcupinefish
+  221: { fam: 'puffer', h: 0.55, t: 'round', c: ['#1a1a1c', '#222226'], f: '#1a1a1c', tailc: '#1a1a1c', p: 'none',
+    marks: [{ k: 'dots', c: '#ece8dc', n: 70, r: 0.02, from: 0.05, to: 1 }] }, // Guineafowl Puffer
+  222: { fam: 'puffer', h: 0.5, t: 'round', c: ['#cfc6a8', '#e4dcc4'], f: '#a89a7a', p: 'none',
+    marks: [{ k: 'maze', c: '#2a2620', n: 34, lw: 0.018, from: 0.08, to: 0.95 }] }, // Map Puffer
+  // triggerfish: a diamond body, the eye set far back, a trigger spine
+  20: { fam: 'trigger', h: 0.5, t: 'trunc', c: ['#b8ad92', '#ece8dc'], f: '#8a8070', lipc: '#e8c43a', p: 'none',
+    marks: [{ k: 'lower', y: 0.1, c: '#f0ece2', soft: 0.06 }, { k: 'hlines', c: '#2b5e9a', n: 3, y0: -0.26, y1: -0.08, from: 0.15, to: 0.42, lw: 0.025 }, { k: 'band', x: 0.62, w: 0.12, c: '#5a4a3a', tilt: -0.6, top: 0.1, bot: 0.6 }, { k: 'hlines', c: '#1a1a1a', n: 3, y0: -0.05, y1: 0.08, from: 0.85, to: 1, lw: 0.03 }] }, // Picasso Triggerfish
+  21: { fam: 'trigger', h: 0.52, t: 'trunc', c: ['#5f6a42', '#b8a65a'], f: '#6a5a2a', p: 'none',
+    marks: [{ k: 'maze', c: 'rgba(40,46,30,0.6)', n: 30, lw: 0.03, from: 0.2, to: 0.95 }, { k: 'band', x: 0.06, w: 0.08, c: '#2a2a1a', top: 0.2, bot: 0.1 }] }, // Titan Triggerfish
+  22: { fam: 'trigger', h: 0.5, t: 'trunc', c: ['#15171a', '#1c1e22'], f: '#18191c', lipc: '#e8c43a', p: 'none',
+    marks: [{ k: 'upper', y: -0.28, c: '#c8a83a', soft: 0.04 }, { k: 'maze', c: K, n: 18, lw: 0.025, y0: -0.6, y1: -0.3, from: 0.3, to: 0.7 }, { k: 'dots', c: '#ecebe4', n: 9, r: 0.085, from: 0.25, to: 0.85, spread: 0.35, y: 0.22, seed: 9 }] }, // Clown Triggerfish
+  217: { fam: 'trigger', h: 0.48, t: 'lyre', c: ['#3a7a7a', '#a8b088'], f: '#3a6a8a', dk: 1.3, ak: 1.3, finedge: '#5ab0e8', p: 'none',
+    marks: [{ k: 'hlines', c: '#5ab0e8', n: 2, y0: -0.05, y1: 0.1, from: 0.02, to: 0.36, lw: 0.035 }] }, // Queen Triggerfish
+  218: { fam: 'trigger', h: 0.48, t: 'trunc', c: ['#1e3a2e', '#26443a'], f: '#e8701e', tailc: '#e8701e', p: 'none',
+    marks: [{ k: 'diag', c: '#e8801e', a: -0.4, lw: 0.025, sp: 0.06 }] }, // Orange-lined Triggerfish
+  // snappers, grunts, sweetlips
+  29: { fam: 'snapper', h: 0.38, t: 'fork', c: ['#3e5f9a', '#a8b0b8'], f: '#d8b83a', p: 'none', mouthy: 0.06,
+    marks: [{ k: 'hlines', c: '#e8c43a', n: 7, y0: -0.38, y1: 0.36, from: 0.0, to: 1, lw: 0.035 }] }, // French Grunt
+  30: { fam: 'snapper', h: 0.38, t: 'fork', c: ['#c44a4a', '#e8a8a0'], f: '#c45050', eyec: '#e85a3a', p: 'none' }, // Red Snapper
+  224: { fam: 'snapper', h: 0.36, t: 'fork', c: ['#e8c42a', '#f0d44a'], f: '#e8c42a', p: 'none',
+    marks: [{ k: 'hlines', c: '#3a8ad8', n: 4, y0: -0.3, y1: 0.12, from: 0.0, to: 1, lw: 0.035, rise: 0 }, { k: 'lower', y: 0.25, c: '#f0ece0', soft: 0.06 }] }, // Bluestripe Snapper
+  225: { fam: 'snapper', h: 0.32, t: 'fork', taill: 1.2, c: ['#5a6a8a', '#d8dce0'], f: '#e8c42a', tailc: '#e8c42a', p: 'none',
+    marks: [{ k: 'hlines', c: '#e8c42a', n: 1, y0: 0.02, y1: 0.02, from: 0.0, to: 1.05, lw: 0.08 }, { k: 'dots', c: 'rgba(232,196,42,0.6)', n: 18, r: 0.025, from: 0.3, to: 0.95, spread: 0.4 }] }, // Yellowtail Snapper
+  226: { fam: 'snapper', h: 0.38, t: 'fork', c: ['#7a6a4a', '#d89a8a'], f: '#c87060', p: 'none',
+    marks: [{ k: 'spot', x: 0.62, y: -0.12, r: 0.05, c: K }, { k: 'hlines', c: '#5aa8e8', n: 2, y0: -0.1, y1: 0.05, from: 0.0, to: 0.18, lw: 0.02 }] }, // Mutton Snapper
+  223: { fam: 'snapper', h: 0.4, t: 'trunc', c: ['#ece6d6', '#f0ece0'], f: '#e0d8c4', mouth: 'lips', lipc: '#d8a890', p: 'none',
+    marks: [{ k: 'dots', c: '#1a1814', n: 40, r: 0.035, from: 0.05, to: 1 }] }, // Harlequin Sweetlips
+  // groupers: a big head and a bigger mouth
+  31: { fam: 'grouper', h: 0.38, t: 'round', c: ['#8a6a4a', '#d2c0a4'], f: '#7a5a3c', p: 'none',
+    marks: [...[0.3, 0.46, 0.62, 0.78].map((x) => ({ k: 'band', x, w: 0.06, c: 'rgba(74,54,36,0.75)', tilt: 0.1 })), { k: 'saddle', x: 0.95, y: 0.35, w: 0.05, h: 0.12, c: K }, { k: 'eyeband', c: 'rgba(74,54,36,0.7)', w: 0.03, tilt: 0.8 }] }, // Nassau Grouper
+  32: { fam: 'grouper', h: 0.4, t: 'round', c: ['#3c3c36', '#7a7462'], f: '#c8b64a', dfc: '#3a3a30', p: 'none', eyek: 0.85,
+    marks: [{ k: 'maze', c: 'rgba(200,182,74,0.45)', n: 30, lw: 0.03, from: 0.1, to: 0.95 }] }, // Giant Grouper
+  33: { fam: 'grouper', h: 0.42, t: 'round', c: ['#6a5a3e', '#9a8a68'], f: '#5a4a32', p: 'none', eyek: 0.75,
+    marks: [{ k: 'dots', c: 'rgba(40,32,20,0.5)', n: 50, r: 0.03, from: 0.08, to: 1 }] }, // Atlantic Goliath Grouper
+  34: { fam: 'grouper', h: 0.34, t: 'trunc', c: ['#b83a32', '#d86a5a'], f: '#a8322c', p: 'none',
+    marks: [{ k: 'dots', c: '#5ab4e8', n: 70, r: 0.016, from: 0.0, to: 1 }] }, // Leopard Coral Grouper
+  227: { fam: 'grouper', h: 0.36, t: 'round', c: ['#3a2a20', '#5a4030'], f: '#3a2a20', tailedge: '#ece8dc', p: 'none',
+    marks: [{ k: 'dots', c: '#4a9ae8', n: 80, r: 0.018, from: 0.0, to: 1 }] }, // Peacock Grouper
+  228: { fam: 'grouper', h: 0.36, t: 'round', c: ['#b8462a', '#d87a4a'], f: '#b8462a', p: 'none',
+    marks: [{ k: 'dots', c: '#5ab4e8', n: 40, r: 0.016, from: 0.0, to: 0.9 }, { k: 'spot', x: 0.96, y: -0.2, r: 0.05, c: K }, { k: 'spot', x: 0.96, y: 0.2, r: 0.05, c: K }] }, // Coney
+  // squirrelfish, sweepers, bigeyes, drums
+  229: { fam: 'squirrel', h: 0.38, t: 'fork', taill: 1.2, c: ['#c83a2a', '#e8806a'], f: '#e84a3a', dfc: '#e8c43a', eyec: '#c83a2a', p: 'none',
+    marks: [{ k: 'hlines', c: 'rgba(240,230,220,0.7)', n: 5, y0: -0.3, y1: 0.3, from: 0.15, to: 1, lw: 0.025 }] }, // Squirrelfish
+  230: { fam: 'squirrel', h: 0.45, t: 'fork', c: ['#c88a4a', '#e8b880'], f: '#c88a4a', p: 'none', finop: 0.5, ak: 1.4, eyek: 1.4,
+    botc: [[0, 0.2], [0.1, 0.7], [0.3, 1.1], [0.5, 0.9], [0.8, 0.4], [1, 0.25]], anal: [{ a: 0.42, b: 0.92, s: 'even', h: 0.14, r: 0.15, n: 16 }] }, // Glassy Sweeper
+  231: { fam: 'squirrel', h: 0.4, t: 'trunc', c: ['#a8241e', '#c8402e'], f: '#a8241e', eyec: '#d84a2a', eyek: 1.9, mouth: 'up', p: 'none' }, // Bigeye
+  232: { fam: 'snapper', h: 0.34, t: 'round', c: ['#f2eee4', '#f4f1ea'], f: K, dfil: 2, dfilh: 1.8, dfilc: K, p: 'none',
+    marks: [{ k: 'hlines', c: K, n: 4, y0: -0.3, y1: 0.25, from: 0.1, to: 1, lw: 0.06 }, { k: 'eyeband', c: K, w: 0.05 }] }, // Spotted Drum
+  // gobies, blennies, jawfish, dragonets
+  234: { fam: 'goby', h: 0.2, t: 'round', c: ['#f0ece4', '#f2ede6'], f: '#e8401e', dk: 1.6, p: 'none',
+    marks: [{ k: 'rear', from: 0.45, c: '#e8401e', soft: 0.2 }, { k: 'face', c: 'rgba(232,196,58,0.6)', to: 0.12 }] }, // Fire Goby
+  235: { fam: 'goby', h: 0.16, t: 'round', c: ['#1a1c20', '#24262a'], f: '#1a1c20', p: 'none',
+    marks: [{ k: 'hlines', c: '#4ac0f0', n: 1, y0: -0.12, y1: -0.12, from: 0.0, to: 1.05, lw: 0.15 }] }, // Neon Goby
+  236: { fam: 'blenny', h: 0.22, t: 'round', c: ['#2a2a3a', '#33334a'], f: '#e8781e', cirri: '#3a3a4a', p: 'none',
+    marks: [{ k: 'rear', from: 0.42, c: '#e8781e', soft: 0.06 }] }, // Bicolor Blenny
+  237: { fam: 'blenny', h: 0.22, t: 'round', c: ['#3a2e26', '#4a3a30'], f: '#3a2e26', lipc: '#d8302a', cirri: '#3a2e26', p: 'none',
+    marks: [{ k: 'dots', c: 'rgba(20,14,10,0.4)', n: 20, r: 0.05 }] }, // Redlip Blenny
+  238: { fam: 'goby', h: 0.2, t: 'round', c: ['#a8c8e0', '#c8dcea'], f: '#a8c8e0', eyek: 1.5, p: 'none', dors: [{ a: 0.24, b: 0.92, s: 'even', h: 0.3, r: 0.12, n: 18 }],
+    marks: [{ k: 'face', c: '#f0c832', to: 0.25 }] }, // Yellowhead Jawfish
+  9: { fam: 'goby', h: 0.3, t: 'round', c: ['#1f5aa8', '#2565b0'], f: '#e2752a', dk: 1.2, fan: 1, fanc: '#1f3a88', p: 'swirl', pc: '#e2752a',
+    marks: [{ k: 'maze', c: 'rgba(80,200,120,0.5)', n: 16, lw: 0.03 }] }, // Mandarinfish
+  // scorpionfish
+  10: { fam: 'scorp', h: 0.42, t: 'round', c: ['#b8402c', '#e6cfc0'], f: '#d8b0a0', lion: 1, fan: 1, fanc: '#8a2a1e', dfc: 'rgba(216,176,160,0.4)', pecc: '#e8d0c0', p: 'bands', pc: '#f2e6dc', n: 12 }, // Red Lionfish
+  246: { fam: 'scorp', h: 0.62, t: 'round', c: ['#c8b080', '#e0cc9a'], f: '#c8b080', dk: 1.6, fan: 0, p: 'none', eyek: 1.1,
+    marks: [{ k: 'maze', c: 'rgba(120,90,50,0.45)', n: 18, lw: 0.02 }, { k: 'eyeband', c: 'rgba(90,60,30,0.6)', w: 0.04, tilt: 0.4 }] }, // Leaf Scorpionfish
 };

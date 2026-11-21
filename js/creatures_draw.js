@@ -2923,8 +2923,13 @@ function drawMarks(ctx, o, L, v, H, eyeX, eyeY) {
       case 'saddle': { ctx.fillStyle = m.c; ctx.beginPath(); ctx.ellipse(X(m.x), -H * (m.y ?? 0.45), bl * (m.w || 0.08), H * (m.h || 0.18), m.tilt || 0, 0, TAU); ctx.fill(); break; }
       case 'tear': { // a teardrop patch (the Achilles tang's, round its tail spine)
         const x = X(m.x ?? 0.9), r = H * (m.r || 0.14); ctx.fillStyle = m.c; ctx.beginPath(); ctx.moveTo(x - r * 2.4, 0); ctx.quadraticCurveTo(x - r, -r * 1.1, x + r * 0.4, -r * 0.9); ctx.arc(x + r * 0.4, 0, r * 0.9, -PI / 2, PI / 2); ctx.quadraticCurveTo(x - r, r * 1.1, x - r * 2.4, 0); ctx.fill(); break; }
+      case 'maze': { // wandering lines, like an old map's coasts (the map puffer, the clown triggerfish's saddle)
+        let sd = m.seed || 11; const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280); ctx.strokeStyle = m.c; ctx.lineWidth = H * (m.lw || 0.02); ctx.lineJoin = 'round'; ctx.beginPath();
+        for (let i = 0; i < (m.n || 26); i++) { let x = X((m.from ?? 0.1) + rnd() * ((m.to ?? 1) - (m.from ?? 0.1))), y = H * ((m.y0 ?? -0.5) + rnd() * ((m.y1 ?? 0.5) - (m.y0 ?? -0.5))); ctx.moveTo(x, y);
+          for (let k = 0; k < 5; k++) { x += (rnd() - 0.4) * H * 0.16; y += (rnd() - 0.5) * H * 0.16; ctx.lineTo(x, y); } }
+        ctx.stroke(); break; }
       case 'dots': { let sd = m.seed || 5; const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280); ctx.fillStyle = m.c;
-        for (let i = 0; i < (m.n || 40); i++) { const x = X((m.from ?? 0.1) + rnd() * ((m.to ?? 1) - (m.from ?? 0.1))), y = (rnd() - 0.5) * H * (m.spread || 1); ctx.beginPath(); ctx.arc(x, y, H * (m.r || 0.025) * (0.7 + rnd() * 0.6), 0, TAU); ctx.fill(); } break; }
+        for (let i = 0; i < (m.n || 40); i++) { const x = X((m.from ?? 0.1) + rnd() * ((m.to ?? 1) - (m.from ?? 0.1))), y = (rnd() - 0.5) * H * (m.spread || 1) + H * (m.y || 0); ctx.beginPath(); ctx.arc(x, y, H * (m.r || 0.025) * (0.7 + rnd() * 0.6), 0, TAU); ctx.fill(); } break; }
     }
     ctx.restore();
   }
@@ -3037,6 +3042,134 @@ const FAM = {
     top: [[0, 0.16], [0.04, 0.38], [0.12, 0.76], [0.26, 0.96], [0.45, 1], [0.65, 0.88], [0.82, 0.5], [0.93, 0.22], [1, 0.16]],
     bot: [[0, 0.12], [0.08, 0.4], [0.22, 0.82], [0.42, 0.97], [0.62, 0.88], [0.8, 0.5], [0.93, 0.22], [1, 0.16]] },
 };
+
+
+// ---------- (5.10.0) the reef's other shapes: one renderer, many families ----------
+// A fin's height along its base (u 0..1), as a share of its height h
+const FINS = {
+  spiny: (u) => 0.62 + 0.38 * Math.sin(Math.min(1, u * 1.7) * PI * 0.5) - (u > 0.72 ? (u - 0.72) * 1.5 : 0) + ((Math.round(u * 15) % 2) ? -0.09 : 0.09),
+  soft: (u) => 0.42 + 0.68 * Math.sin(u * PI) * (1 - u * 0.2),
+  lobe: (u) => 0.25 + 0.95 * Math.sin(Math.pow(u, 0.75) * PI),
+  tri: (u) => u < 0.2 ? 0.55 + u * 2.25 : Math.max(0.12, 1 - (u - 0.2) * 1.1),
+  even: (u) => 0.85 + 0.15 * Math.sin(u * PI),
+  flag: (u) => u < 0.22 ? 0.75 + u * 1.1 : Math.max(0.2, 0.95 - (u - 0.22) * 1.2),
+  spike: (u) => 0.3 + 0.7 * Math.max(0, 1 - Math.abs(u - 0.2) * 3),
+};
+function drawPerch(ctx, L, v0, t, swim) {
+  const F = FAM[v0.fam], v = { tailk: F.tailk, taill: F.taill, ...v0 }, H = L * v.h;
+  const og = fishOutline(null, L, v, t, swim), bl = og.bodyL, X = (f) => og.x0 + bl * f;
+  const dc = v.dfc || v.f, ac = v.afc || v.dfc || v.f, ew = Math.max(0.6, H * 0.02), op = v.finop ?? F.finop ?? 0.84;
+  const fin = (side, d, col) => { const fn = FINS[d.s] || FINS.soft, hh = H * d.h * (side < 0 ? v.dk || 1 : v.ak || 1);
+    return membraneFin(ctx, og, side, X(d.a), X(d.b), (u) => hh * fn(u), d.r ?? 0.28, d.c || col, t, d.p || (side < 0 ? 0 : 2), d.n || 12, d.op ?? op); };
+  const pelX = X(F.pel ?? 0.3);
+  const pelvic = (near) => { if (F.nopel) return; const px = pelX, py = edgeAt(og, px, 1) - H * 0.05, pl = H * (v.pelv || F.pelv || 0.22), sw2 = Math.sin(t * 2.6 + (near ? 0 : 1)) * 0.08;
+    ctx.save(); ctx.translate(px, py); ctx.rotate((F.disc ? 1.5 : 1.0) + sw2 + (near ? 0 : 0.2)); const c = hexToRgb(v.pelc || ac); ctx.fillStyle = rgbStr(c, near ? 0.82 : 0.45);
+    ctx.beginPath(); ctx.moveTo(0, -pl * 0.1); ctx.quadraticCurveTo(pl * 0.6, -pl * 0.16, pl, 0); ctx.quadraticCurveTo(pl * 0.5, pl * 0.14, 0, pl * 0.12); ctx.fill(); ctx.restore(); };
+  pelvic(false);
+  const dt = (v.dors || F.dors).map((d) => fin(-1, d, dc)), at = (v.anal || F.anal).map((d) => fin(1, d, ac));
+  if (v.finedge) for (const tp of dt.concat(at)) finEdge(ctx, tp, v.finedge, ew * 0.9);
+  // filaments off the dorsal's front spines (the hogfish's, the anthias's, the spotted drum's tall fin)
+  if (v.dfil && dt[0]) { ctx.strokeStyle = rgba(v.dfilc || dc, 0.85); ctx.lineWidth = Math.max(0.6, H * 0.02); ctx.lineCap = 'round';
+    for (let k = 0; k < v.dfil; k++) { const tp = dt[0][Math.min(dt[0].length - 1, 1 + k)]; ctx.beginPath(); ctx.moveTo(tp[0], tp[1]); ctx.quadraticCurveTo(tp[0] + L * 0.04, tp[1] - H * 0.35, tp[0] + L * (0.12 + k * 0.03) + Math.sin(t * 2 + k) * L * 0.01, tp[1] - H * (0.32 + k * 0.05) * (v.dfilh || 1)); ctx.stroke(); } ctx.lineCap = 'butt'; }
+  // the lionfish: long separate spines, banded, and fans of pectoral rays
+  if (v.lion) {
+    for (let k = 0; k < 12; k++) { const x = X(0.18 + k * 0.035), y = edgeAt(og, x, -1), len = H * (1.1 - Math.abs(k - 3) * 0.06) * (k > 9 ? 0.5 : 1), a = -1.25 + k * 0.05 + Math.sin(t * 1.8 + k) * 0.03;
+      ctx.strokeStyle = rgba('#efe2d6', 0.85); ctx.lineWidth = Math.max(0.8, H * 0.025); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); ctx.stroke();
+      ctx.strokeStyle = rgba('#a8301e', 0.9); ctx.setLineDash([H * 0.06, H * 0.06]); ctx.stroke(); ctx.setLineDash([]); }
+  }
+  // the body
+  const o = fishOutline(ctx, L, v, t, swim);
+  ctx.fillStyle = bodyGradient(ctx, -H / 2, H / 2, v.c[0], v.c[1]); ctx.fill();
+  const ex = X(v.eyex ?? F.eye[0]), ey = H * (v.eyey ?? F.eye[1]);
+  ctx.save(); ctx.clip();
+  patternFish(ctx, o, L, v); drawMarks(ctx, o, L, v, H, ex, ey);
+  if (L > 30) { const sc = L * (v.bigscale || F.bigscale ? 0.032 : 0.018); ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let x = X(F.scale0 ?? 0.24); x < o.tailX; x += sc) for (let y = -H / 2; y < H / 2; y += sc) { ctx.moveTo(x + sc * 0.5, y); ctx.arc(x, y + (Math.floor(x / sc) % 2) * sc * 0.5, sc * 0.5, -0.9, 0.9); } ctx.stroke(); }
+  ctx.fillStyle = overlayShading(ctx, -H / 2, H / 2); ctx.fillRect(-L, -H, L * 2, H * 2);
+  { const sh = ctx.createLinearGradient(0, -H * 0.1, 0, H * 0.35); sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.5, 'rgba(255,255,255,0.06)'); sh.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = sh; ctx.fillRect(X(0.15), -H * 0.1, bl * 0.75, H * 0.45); }
+  if (!F.noline) { ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = Math.max(0.5, H * 0.015); ctx.beginPath(); ctx.moveTo(X(0.22), -H * 0.18); ctx.quadraticCurveTo(X(0.55), -H * 0.28, o.tailX, -H * 0.02); ctx.stroke(); }
+  ctx.restore();
+  if (v.tailedge) { drawTail(ctx, o, L, v, t, swim, v.tailedge); drawTail(ctx, o, L, { ...v, tailk: (v.tailk || 1) * 0.86, taill: (v.taill || 1) * 0.9 }, t, swim, v.tailc || rgba(dc, 0.95)); } // (a dark rim: the tail drawn again, smaller, over its edge colour)
+  else drawTail(ctx, o, L, v, t, swim, v.tailc || rgba(dc, 0.85));
+  ctx.save(); fishOutline(ctx, L, v, t, swim); ctx.strokeStyle = rgba(shade(v.c[0], -0.5), 0.35); ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.stroke(); ctx.restore();
+  // porcupinefish spines, laid back along the body
+  if (v.spines) { ctx.strokeStyle = rgba(v.spinec || '#4a3a28', 0.8); ctx.lineWidth = Math.max(0.6, H * 0.018); ctx.beginPath(); let sd = 3; const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
+    for (let k = 0; k < 46; k++) { const x = X(0.12 + rnd() * 0.8), y = (rnd() - 0.5) * H * 0.85; ctx.moveTo(x, y); ctx.lineTo(x + H * 0.12, y + (y > 0 ? 1 : -1) * H * 0.02); } ctx.stroke(); }
+  // gill cover
+  const gx = X(F.gill ?? 0.26);
+  ctx.strokeStyle = 'rgba(0,0,0,0.26)'; ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.beginPath(); ctx.arc(gx - H * 0.3, H * 0.02, H * 0.36, -0.9, 0.95); ctx.stroke();
+  if (v.gillspot) { ctx.fillStyle = v.gillspot; ctx.beginPath(); ctx.arc(gx, -H * 0.12, H * 0.05, 0, TAU); ctx.fill(); }
+  // the pectoral
+  { const big = v.fan || F.fan, pl = L * (big ? 0.24 : 0.12), pw = H * (big ? 0.5 : 0.16), beat = Math.sin(t * (big ? 2 : 5)) * (big ? 0.1 : 0.2); ctx.save(); ctx.translate(gx + L * 0.01, H * (F.pecy ?? 0.08)); ctx.rotate((big ? 0.45 : 0.32) + beat); const c = hexToRgb(v.pecc || v.f);
+    const pg = ctx.createLinearGradient(0, 0, pl, 0); pg.addColorStop(0, rgbStr(c, 0.8)); pg.addColorStop(1, rgbStr(c, big ? 0.55 : 0.2)); ctx.fillStyle = pg;
+    ctx.beginPath(); ctx.moveTo(0, -pw * 0.3); ctx.quadraticCurveTo(pl * 0.7, -pw * 0.8, pl, -pw * 0.05); ctx.quadraticCurveTo(pl * 0.8, pw * 0.7, 0, pw * 0.35); ctx.closePath(); ctx.fill();
+    if (big) { ctx.strokeStyle = rgba(v.fanc || '#3a1a14', 0.6); ctx.lineWidth = Math.max(0.5, H * 0.015); ctx.beginPath(); for (let k = 0; k < 8; k++) { const a = -0.55 + k * 0.15; ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * pl, Math.sin(a) * pl * 0.9); } ctx.stroke(); }
+    ctx.restore(); }
+  pelvic(true);
+  // the head: the mouth by its kind, and the eye
+  const nx = og.x0, mt = v.mouth || F.mouth || 'small', my = H * (v.mouthy ?? F.mouthy ?? 0.04);
+  ctx.lineCap = 'round';
+  if (mt === 'big' || mt === 'up') { // a wide gape, the lower jaw jutting (groupers, snappers, bass; upturned: bigeye, scorpionfish)
+    const up = mt === 'up' ? -1 : 1; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(0.7, L * 0.008);
+    ctx.beginPath(); ctx.moveTo(nx - L * 0.008, my - up * H * 0.02); ctx.quadraticCurveTo(nx + L * 0.06, my + up * H * 0.08, nx + L * 0.12, my + up * H * 0.05); ctx.stroke();
+    ctx.fillStyle = rgba(shade(v.c[1], -0.15), 0.9); ctx.beginPath(); ctx.moveTo(nx - L * 0.012, my); ctx.quadraticCurveTo(nx + L * 0.04, my + H * 0.14, nx + L * 0.11, my + H * 0.1); ctx.lineTo(nx + L * 0.1, my + H * 0.06); ctx.quadraticCurveTo(nx + L * 0.04, my + H * 0.08, nx - L * 0.012, my); ctx.fill();
+  } else if (mt === 'beak') { // the parrotfish's fused teeth: two pale plates
+    const bc = v.beakc || '#d8e0d0'; ctx.fillStyle = bc; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = ew * 0.6;
+    ctx.beginPath(); ctx.ellipse(nx + L * 0.01, my - H * 0.035, L * 0.022, H * 0.05, 0.2, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(nx + L * 0.012, my + H * 0.04, L * 0.02, H * 0.045, -0.2, 0, TAU); ctx.fill(); ctx.stroke();
+  } else if (mt === 'lips') { // thick lips (sweetlips, the humphead wrasse)
+    ctx.fillStyle = v.lipc || shade(v.c[1], -0.15); ctx.beginPath(); ctx.ellipse(nx + L * 0.012, my - H * 0.03, L * 0.024, H * 0.045, 0, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(nx + L * 0.015, my + H * 0.045, L * 0.022, H * 0.04, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.beginPath(); ctx.moveTo(nx - L * 0.01, my + H * 0.005); ctx.lineTo(nx + L * 0.04, my + H * 0.01); ctx.stroke();
+  } else if (mt === 'puff') { // a puffer's small beak
+    ctx.fillStyle = v.beakc || '#e8e0c8'; ctx.beginPath(); ctx.ellipse(nx + L * 0.008, my, L * 0.016, H * 0.06, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(0.5, L * 0.005); ctx.beginPath(); ctx.moveTo(nx - L * 0.006, my); ctx.lineTo(nx + L * 0.02, my); ctx.stroke();
+  } else { // small and pointed (damselfish, wrasse, goby)
+    if (v.snout) { const sl = L * 0.07 * v.snout; ctx.fillStyle = v.snoutc || v.c[0]; ctx.beginPath(); ctx.moveTo(nx + L * 0.04, my - H * 0.12); ctx.quadraticCurveTo(nx - sl * 0.4, my - H * 0.05, nx - sl, my - H * 0.012); ctx.lineTo(nx - sl, my + H * 0.012); ctx.quadraticCurveTo(nx - sl * 0.4, my + H * 0.06, nx + L * 0.04, my + H * 0.12); ctx.closePath(); ctx.fill(); }
+    const tx = nx - (v.snout ? L * 0.07 * v.snout : 0); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.beginPath(); ctx.moveTo(tx + L * 0.003, my); ctx.quadraticCurveTo(tx + L * 0.02, my + H * 0.03, tx + L * 0.035, my + H * 0.02); ctx.stroke();
+    if (v.lipc) { ctx.fillStyle = v.lipc; ctx.beginPath(); ctx.ellipse(tx + L * 0.008, my, L * 0.012, H * 0.04, 0, 0, TAU); ctx.fill(); }
+  }
+  ctx.lineCap = 'butt';
+  if (v.cirri) { ctx.strokeStyle = rgba(v.cirri, 0.9); ctx.lineWidth = Math.max(0.6, H * 0.02); ctx.beginPath(); ctx.moveTo(ex, ey - H * 0.08); ctx.lineTo(ex - H * 0.04, ey - H * 0.22); ctx.moveTo(ex + H * 0.02, ey - H * 0.08); ctx.lineTo(ex + H * 0.03, ey - H * 0.2); ctx.stroke(); } // the blenny's tufts over the eye
+  const er = Math.max(1.2, Math.min(H * 0.1, L * 0.036)) * (v.eyek || F.eyek || 1);
+  ctx.fillStyle = rgba(shade(v.c[0], -0.4), 0.3); ctx.beginPath(); ctx.arc(ex, ey, er * 1.4, 0, TAU); ctx.fill();
+  if (v.eyering) { ctx.strokeStyle = v.eyering; ctx.lineWidth = er * 0.35; ctx.beginPath(); ctx.arc(ex, ey, er * 1.3, 0, TAU); ctx.stroke(); }
+  eye(ctx, ex, ey, er, v.eyec || '#cfc6a4');
+}
+const PERCH = (o) => ({ draw: drawPerch, tailk: 0.6, taill: 1, ...o });
+Object.assign(FAM, {
+  damsel: PERCH({ body: 0.79, bend: 0.6, eye: [0.13, -0.16], eyek: 1.15, mouth: 'small', mouthy: 0.02, gill: 0.27, tailk: 0.62,
+    top: [[0, 0.22], [0.06, 0.5], [0.18, 0.85], [0.35, 1], [0.55, 0.95], [0.75, 0.62], [0.9, 0.36], [1, 0.3]], bot: [[0, 0.2], [0.08, 0.55], [0.25, 0.92], [0.45, 0.98], [0.65, 0.78], [0.85, 0.42], [1, 0.3]],
+    dors: [{ a: 0.2, b: 0.62, s: 'spiny', h: 0.15, r: 0.12, n: 14 }, { a: 0.6, b: 0.93, s: 'lobe', h: 0.24, r: 0.38 }], anal: [{ a: 0.58, b: 0.9, s: 'lobe', h: 0.24, r: 0.38 }] }),
+  wrasse: PERCH({ body: 0.8, bend: 0.9, eye: [0.1, -0.18], mouth: 'small', mouthy: 0.03, gill: 0.23, tailk: 0.75, bigscale: 1,
+    top: [[0, 0.12], [0.05, 0.36], [0.15, 0.72], [0.3, 0.95], [0.5, 1], [0.7, 0.86], [0.88, 0.52], [1, 0.4]], bot: [[0, 0.1], [0.08, 0.42], [0.22, 0.82], [0.45, 0.98], [0.7, 0.82], [0.88, 0.5], [1, 0.4]],
+    dors: [{ a: 0.22, b: 0.93, s: 'even', h: 0.12, r: 0.12, n: 20 }], anal: [{ a: 0.55, b: 0.92, s: 'even', h: 0.12, r: 0.12, n: 12 }] }),
+  parrot: PERCH({ body: 0.8, bend: 0.7, eye: [0.12, -0.2], mouth: 'beak', mouthy: 0.06, gill: 0.25, tailk: 0.7, bigscale: 1,
+    top: [[0, 0.3], [0.06, 0.62], [0.16, 0.88], [0.32, 1], [0.55, 0.97], [0.75, 0.78], [0.9, 0.5], [1, 0.42]], bot: [[0, 0.25], [0.08, 0.6], [0.25, 0.95], [0.5, 0.98], [0.75, 0.75], [0.9, 0.48], [1, 0.42]],
+    dors: [{ a: 0.24, b: 0.92, s: 'even', h: 0.11, r: 0.12, n: 20 }], anal: [{ a: 0.6, b: 0.92, s: 'even', h: 0.11, r: 0.12, n: 10 }] }),
+  grouper: PERCH({ body: 0.8, bend: 0.5, eye: [0.13, -0.25], mouth: 'big', mouthy: 0.05, gill: 0.3, tailk: 0.62,
+    top: [[0, 0.16], [0.06, 0.5], [0.2, 0.86], [0.4, 1], [0.6, 0.95], [0.8, 0.7], [0.92, 0.5], [1, 0.44]], bot: [[0, 0.34], [0.1, 0.72], [0.3, 0.97], [0.55, 0.95], [0.78, 0.68], [0.92, 0.48], [1, 0.44]],
+    dors: [{ a: 0.26, b: 0.62, s: 'spiny', h: 0.13, r: 0.1, n: 14 }, { a: 0.6, b: 0.9, s: 'soft', h: 0.19, r: 0.25 }], anal: [{ a: 0.62, b: 0.88, s: 'soft', h: 0.18, r: 0.25 }] }),
+  snapper: PERCH({ body: 0.79, bend: 0.8, eye: [0.13, -0.2], eyek: 1.05, mouth: 'big', mouthy: 0.04, gill: 0.27, tailk: 0.8,
+    top: [[0, 0.12], [0.06, 0.42], [0.2, 0.82], [0.38, 1], [0.6, 0.92], [0.8, 0.6], [0.93, 0.38], [1, 0.32]], bot: [[0, 0.16], [0.1, 0.52], [0.3, 0.92], [0.55, 0.9], [0.78, 0.58], [0.92, 0.36], [1, 0.32]],
+    dors: [{ a: 0.24, b: 0.62, s: 'spiny', h: 0.15, r: 0.12, n: 14 }, { a: 0.62, b: 0.9, s: 'soft', h: 0.14, r: 0.22 }], anal: [{ a: 0.62, b: 0.88, s: 'soft', h: 0.16, r: 0.22 }] }),
+  squirrel: PERCH({ body: 0.79, bend: 0.7, eye: [0.13, -0.16], eyek: 1.75, mouth: 'up', mouthy: 0.0, gill: 0.28, tailk: 0.85,
+    top: [[0, 0.2], [0.06, 0.52], [0.2, 0.86], [0.38, 1], [0.6, 0.9], [0.8, 0.56], [0.93, 0.34], [1, 0.28]], bot: [[0, 0.2], [0.1, 0.6], [0.3, 0.95], [0.55, 0.9], [0.78, 0.55], [0.92, 0.34], [1, 0.28]],
+    dors: [{ a: 0.22, b: 0.64, s: 'spiny', h: 0.22, r: 0.12, n: 16 }, { a: 0.64, b: 0.88, s: 'soft', h: 0.18, r: 0.3 }], anal: [{ a: 0.62, b: 0.86, s: 'soft', h: 0.2, r: 0.3 }] }),
+  trigger: PERCH({ body: 0.8, bend: 0.4, eye: [0.32, -0.26], eyek: 1.1, mouth: 'small', mouthy: -0.04, gill: 0.36, pel: 0.5, nopel: 1, tailk: 0.6, noline: 1,
+    top: [[0, 0.12], [0.08, 0.36], [0.25, 0.76], [0.42, 1], [0.6, 0.95], [0.78, 0.6], [0.92, 0.32], [1, 0.26]], bot: [[0, 0.1], [0.1, 0.45], [0.3, 0.86], [0.5, 1], [0.68, 0.82], [0.85, 0.46], [1, 0.26]],
+    dors: [{ a: 0.4, b: 0.5, s: 'spike', h: 0.3, r: 0.25, n: 6 }, { a: 0.6, b: 0.92, s: 'tri', h: 0.32, r: 0.3 }], anal: [{ a: 0.6, b: 0.92, s: 'tri', h: 0.3, r: 0.3 }] }),
+  puffer: PERCH({ body: 0.82, bend: 0.3, eye: [0.2, -0.22], eyek: 1.35, mouth: 'puff', mouthy: 0.06, gill: 0.32, nopel: 1, tailk: 0.55, noline: 1, scale0: 9,
+    top: [[0, 0.3], [0.08, 0.7], [0.25, 0.95], [0.45, 1], [0.65, 0.9], [0.82, 0.6], [0.93, 0.38], [1, 0.32]], bot: [[0, 0.26], [0.1, 0.7], [0.3, 1], [0.55, 0.98], [0.75, 0.72], [0.92, 0.4], [1, 0.32]],
+    dors: [{ a: 0.72, b: 0.87, s: 'lobe', h: 0.24, r: 0.3, n: 8 }], anal: [{ a: 0.72, b: 0.87, s: 'lobe', h: 0.22, r: 0.3, n: 8 }] }),
+  goby: PERCH({ finop: 0.6, body: 0.82, bend: 1.0, eye: [0.08, -0.3], eyek: 1.3, mouth: 'small', mouthy: 0.08, gill: 0.18, disc: 1, tailk: 1.2, taill: 0.9, noline: 1,
+    top: [[0, 0.5], [0.06, 0.85], [0.18, 1], [0.5, 0.9], [0.8, 0.62], [1, 0.48]], bot: [[0, 0.45], [0.1, 0.82], [0.3, 1], [0.6, 0.86], [0.85, 0.56], [1, 0.48]],
+    dors: [{ a: 0.24, b: 0.42, s: 'flag', h: 0.5, r: 0.2, n: 7 }, { a: 0.48, b: 0.9, s: 'soft', h: 0.28, r: 0.2 }], anal: [{ a: 0.52, b: 0.9, s: 'soft', h: 0.24, r: 0.2 }] }),
+  blenny: PERCH({ finop: 0.6, body: 0.84, bend: 1.0, eye: [0.06, -0.32], eyek: 1.35, mouth: 'small', mouthy: 0.12, gill: 0.16, tailk: 1.1, taill: 0.85, noline: 1, scale0: 9,
+    top: [[0, 0.75], [0.04, 0.95], [0.15, 1], [0.5, 0.88], [0.8, 0.62], [1, 0.48]], bot: [[0, 0.5], [0.08, 0.85], [0.3, 1], [0.6, 0.86], [0.85, 0.56], [1, 0.48]],
+    dors: [{ a: 0.16, b: 0.92, s: 'soft', h: 0.3, r: 0.12, n: 22 }], anal: [{ a: 0.5, b: 0.9, s: 'soft', h: 0.24, r: 0.15 }] }),
+  scorp: PERCH({ body: 0.8, bend: 0.5, eye: [0.15, -0.26], eyek: 1.2, mouth: 'up', mouthy: 0.06, gill: 0.3, tailk: 0.7, fan: 1, noline: 1,
+    top: [[0, 0.25], [0.08, 0.6], [0.2, 0.92], [0.38, 1], [0.6, 0.85], [0.8, 0.56], [1, 0.4]], bot: [[0, 0.36], [0.12, 0.8], [0.3, 1], [0.55, 0.9], [0.8, 0.56], [1, 0.4]],
+    dors: [{ a: 0.18, b: 0.62, s: 'spiny', h: 0.32, r: 0.12, n: 14 }, { a: 0.62, b: 0.88, s: 'soft', h: 0.22, r: 0.25 }], anal: [{ a: 0.62, b: 0.86, s: 'soft', h: 0.2, r: 0.25 }] }),
+});
 
 export function drawSpecies(ctx, sp, L, t, swim = 1, phase = 0) {
   const fn = sp.v.t === 'coel' ? drawCoelacanth : RENDERERS[sp.v.s] || drawFish; // (3.7.5) the coelacanth has its own
