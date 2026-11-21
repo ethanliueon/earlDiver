@@ -177,7 +177,7 @@ const RENAMES = {
   lowlight: 'Navy low-light camera, 1971', rebreather: "Clearance diver's rebreather suit", dv_quietsuit: "Combat swimmer's drysuit", dv_hot: 'North Sea heated suit',
   dv_monster: 'Grand Banks trawl-wing net', st_lander: 'Deep lander optic, 1985', st_bathy: 'Bathythermal prototype suit', dv_hard1: 'Gulf oilfield hardsuit',
   // no two things share a name (owner: change whichever clashes)
-  dv_big: 'Steel 130, refilled', dv_side: 'Deep sidemount pair', lightbag: 'Mesh pouch',
+  dv_big: 'Steel 130, refilled', dv_side: 'Deep sidemount pair', lightbag: 'Mesh pouch', x_fins_2: "Sealab II diver's fins",
 };
 for (const [id, nm] of Object.entries(RENAMES)) if (ITEMS[id]) ITEMS[id].name = nm;
 export const ITEMS_OF = (kind, shop = null) => Object.values(ITEMS).filter((it) => it.kind === kind && (!shop || it.shop === shop));
