@@ -507,7 +507,7 @@ export function gear(P, kind) {
   }
   if (kind === 'cam') {
     const n = sumLv(P, ['camShots', 'camRange']);
-    return { name: owns(P, 'lowlight') ? 'Low-light camera' : n >= 10 ? 'Housed camera' : 'Waterproof compact', look: owns(P, 'lowlight') ? 2 : n >= 10 ? 1 : 0,
+    return { name: owns(P, 'lowlight') ? 'Navy low-light camera, 1971' : n >= 10 ? 'Housed camera' : 'Waterproof compact', look: owns(P, 'lowlight') ? 2 : n >= 10 ? 1 : 0,
       range: v('camRange'), shots: Math.round(v('camShots')), flash: !owns(P, 'lowlight') };
   }
   if (kind === 'arm') {

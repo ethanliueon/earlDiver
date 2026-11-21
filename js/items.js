@@ -165,6 +165,19 @@ for (const [key, S] of Object.entries(SETS)) for (const [kind, arch] of Object.e
 for (const [fam, T] of Object.entries(ABILITY_DEFS)) for (const [tier, d] of Object.entries(T)) {
   const id = abilityId(fam, tier); ITEMS[id] = { id, kind: 'ability', arch: fam, fam, tier, rarity: tier, chest: true, name: d.name, line: d.line, good: d.line, bad: '', price: Math.max(BAND_MIN[tier] || 0, Math.round(VALUE[tier] * 0.8)) }; // (5.10.10) within its band
 }
+// (5.11.8) names that grow with rarity (owner-approved): a common is plain, with no maker; an exotic has a history or an
+// owner. Uncommon, rare and legendary names stay as they were. Applied after every item is built, because the looks
+// (designs.js) are found by the old names; the ids are unchanged, so saves are not affected
+const RENAMES = {
+  c_net_0: 'Hoop net', c_net_1: 'Game net', c_net_2: 'Dip net', c_net_3: 'Seine net', c_net_4: 'Pole net', c_cam_0: 'Pocket compact', c_cam_1: 'Plastic compact',
+  c_suit_0: 'Hire wetsuit', c_suit_1: 'Training rebreather suit', c_suit_2: 'Patched drysuit', c_suit_3: 'Old wetsuit', c_suit_4: 'Old rebreather suit',
+  c_fins_0: 'Old rubber fins', c_fins_1: 'Freediving fins', c_fins_2: 'Hire jet fins', c_fins_3: 'Plastic blades', c_fins_4: 'Short split fins',
+  c_tank_0: 'Hire cylinder', c_tank_1: 'Small sidemount pair', c_tank_2: 'Big steel cylinder', c_tank_3: 'Old cylinder', c_tank_4: 'Pony sidemount pair',
+  c_bag_0: 'Canvas pouch', c_bag_1: 'Net pouch', c_bag_2: 'Belt pouch', c_bag_3: 'Rubber pouch', c_bag_4: 'Old pouch',
+  lowlight: 'Navy low-light camera, 1971', rebreather: "Clearance diver's rebreather suit", dv_quietsuit: "Combat swimmer's drysuit", dv_hot: 'North Sea heated suit',
+  dv_monster: 'Grand Banks trawl-wing net', st_lander: 'Deep lander optic, 1985', st_bathy: 'Bathythermal prototype suit', dv_hard1: 'Gulf oilfield hardsuit',
+};
+for (const [id, nm] of Object.entries(RENAMES)) if (ITEMS[id]) ITEMS[id].name = nm;
 export const ITEMS_OF = (kind, shop = null) => Object.values(ITEMS).filter((it) => it.kind === kind && (!shop || it.shop === shop));
 export const CHEST_POOL = Object.values(ITEMS).filter((it) => it.chest);
 

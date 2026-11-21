@@ -1,6 +1,8 @@
 # Item names that grow with rarity: proposal for approval
 
-Nothing has been changed yet. Each item keeps its id, so saves are not affected; only the name shown changes.
+**Owner's decision (5.11.8): the Common and Exotic renames are applied; Uncommon, Rare and Legendary names stay as they were.** One change on applying: the common jet fins are *Hire jet fins*, as the uncommon *Jet fins* keeps its name. The three names used twice (*Steel 130, Sidemount pair, Light mesh bag*) are still open.
+
+The proposal as it was put: Each item keeps its id, so saves are not affected; only the name shown changes.
 
 **The rule**
 - **Common**: plain, no maker. *Wetsuit, Hoop net, Canvas pouch.*
