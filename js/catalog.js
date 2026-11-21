@@ -10,7 +10,7 @@ import { SUITS, TRAPS, SUPPLIES, supplyMax, money, owns, kit } from './economy.j
 import { NETS_SUB, netsOf } from './capture.js';
 import { toolIcon } from './tools_draw.js';
 import { drawSpecialPicture, drawSuitFlat } from './item_art.js';
-import { drawFins3, drawCam3 } from './gear_art.js';
+import { drawFins3, drawCam3, drawTank3, drawBag3, drawNet3 } from './gear_art.js';
 import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
@@ -251,6 +251,8 @@ export function pictureOf(kind, v, w, h, plain = false) {
     const c = document.createElement('canvas'); c.width = w; c.height = h; const ctx = c.getContext('2d');
     if (!plain) { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#cfdadf'); bg.addColorStop(1, '#b4c3ca'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
     if (v && typeof v === 'object' && v.kind === 'ability') { drawScroll3(ctx, w / 2, h / 2, Math.min(w, h) * 0.98, v.fam, v.tier); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.9.0) an ability's scroll
+    if (v && typeof v === 'object' && v.id && kind === 'net') { drawNet3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.9)
+    if (v && typeof v === 'object' && v.id && (kind === 'tank' || kind === 'bag')) { (kind === 'tank' ? drawTank3 : drawBag3)(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.8)
     if (v && typeof v === 'object' && v.id && kind === 'cam') { drawCam3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.7)
     if (v && typeof v === 'object' && v.id && kind === 'fins') { drawFins3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.6) fins photographed as a solid pair
     if (v && typeof v === 'object' && (v.rarity === 'legendary' || v.rarity === 'exotic' || v.finLook || v.tankLook || v.bagLook) && v.id) { drawSpecialPicture(ctx, v, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; } // (2.8.1) their own drawings, on the usual background

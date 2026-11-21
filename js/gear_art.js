@@ -150,3 +150,147 @@ export function drawCam3(ctx, w, h, def) {
   });
   return true;
 }
+
+// ---------------------------------------------------------------- tanks ----------------------------------------------------------------
+// (5.12.8) Cylinders laid on their side, valve to the right: a round body lit from the top, the domed shoulder, a pillar
+// valve with its handwheel, a rubber boot on the base. A twin set rides on a manifold, a sidemount pair is strapped one
+// behind the other, a rebreather is its compact unit with two small bottles and its hoses.
+function cylinder(x, X, Y, L, R, body, band, valve, k) {
+  x.fillStyle = 'rgba(0,0,0,0.25)'; x.beginPath(); x.ellipse(X + L / 2, Y + R + 6, L / 2, 8, 0, 0, TAU); x.fill();
+  const g = lin(x, 0, Y - R, 0, Y + R, [[0, mix(body[1], '#fff', 0.25)], [0.18, body[0]], [0.42, body[1]], [0.8, body[2]], [1, mix(body[2], '#000', 0.4)]]);
+  x.fillStyle = g; x.beginPath(); x.moveTo(X + R * 0.4, Y - R); x.lineTo(X + L - R * 0.9, Y - R); x.bezierCurveTo(X + L, Y - R, X + L + R * 0.25, Y - R * 0.45, X + L + R * 0.3, Y);
+  x.bezierCurveTo(X + L + R * 0.25, Y + R * 0.45, X + L, Y + R, X + L - R * 0.9, Y + R); x.lineTo(X + R * 0.4, Y + R); x.quadraticCurveTo(X, Y + R, X, Y); x.quadraticCurveTo(X, Y - R, X + R * 0.4, Y - R); x.fill();
+  x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 3; x.stroke();
+  x.strokeStyle = 'rgba(255,255,255,0.35)'; x.lineWidth = 3; x.beginPath(); x.moveTo(X + R * 0.5, Y - R * 0.62); x.lineTo(X + L - R, Y - R * 0.62); x.stroke(); // a long highlight
+  // the rubber boot on the base, the band (rarity's colour from Uncommon), the valve
+  x.fillStyle = lin(x, 0, Y - R, 0, Y + R, [[0, '#3a3a38'], [0.4, '#1c1c1b'], [1, '#0a0a0a']]); x.beginPath(); x.roundRect(X - 4, Y - R - 2, R * 0.55, R * 2 + 4, 10); x.fill();
+  if (band) { x.fillStyle = lin(x, 0, Y - R, 0, Y + R, [[0, mix(band, '#fff', 0.2)], [0.5, band], [1, mix(band, '#000', 0.45)]]); x.fillRect(X + L * 0.62, Y - R, L * 0.05, R * 2); }
+  const vx = X + L + R * 0.28;
+  x.fillStyle = lin(x, 0, Y - R * 0.3, 0, Y + R * 0.3, [[0, mix(valve, '#fff', 0.45)], [0.5, valve], [1, mix(valve, '#000', 0.5)]]); x.beginPath(); x.roundRect(vx, Y - R * 0.26, R * 0.55, R * 0.52, 6); x.fill();
+  x.fillStyle = lin(x, 0, Y - R * 0.6, 0, Y + R * 0.6, [[0, '#3a3c3e'], [1, '#101112']]); x.beginPath(); x.roundRect(vx + R * 0.5, Y - R * 0.62, R * 0.28, R * 1.24, 8); x.fill(); // the handwheel, edge-on
+  for (let i = -2; i <= 2; i++) { x.strokeStyle = 'rgba(255,255,255,0.12)'; x.lineWidth = 2; x.beginPath(); x.moveTo(vx + R * 0.52, Y + i * R * 0.22); x.lineTo(vx + R * 0.76, Y + i * R * 0.22); x.stroke(); }
+}
+function tankColours(def) {
+  const T = def.tankLook, arch = def.arch || 'al';
+  const D = { al: ['#b8bec1', '#8a9296', '#4e5559'], steel: ['#5a6064', '#3e4448', '#1c2022'], big: ['#6e6a4e', '#4e4a34', '#26241a'], twin: ['#5a6064', '#3e4448', '#1c2022'], side: ['#6a7074', '#484e52', '#24282a'], rebreather: ['#3a3c3e', '#24262a', '#0e0f10'] }[arch] || ['#5a6064', '#3e4448', '#1c2022'];
+  const mute = (c) => mix(c, '#6a675c', 0.4); // (painted cylinders weathered, never bright)
+  return { body: T && T.body ? T.body.map(mute) : D, band: T && T.band ? T.band : null };
+}
+export function drawTank3(ctx, w, h, def) {
+  const arch = def.arch || 'al', k = RK[def.rarity] || 0, C = tankColours(def), valve = k >= 3 ? '#a8864e' : k >= 2 ? '#c8ccce' : '#8e9396', band = k >= 1 ? C.band || '#7a6040' : null;
+  fitted(ctx, w, h, (x, W, H) => {
+    const big = (def.air || 20) > 90, L = big ? 640 : 560, R = big ? 70 : 62, X = W / 2 - L / 2 - 40;
+    if (arch === 'twin') { cylinder(x, X + 20, H / 2 - R * 0.9, L, R * 0.9, C.body, band, valve, k); cylinder(x, X, H / 2 + R * 0.95, L, R * 0.9, C.body, band, valve, k);
+      x.fillStyle = valve; x.fillRect(X + L + R * 0.6, H / 2 - R * 0.9, 18, R * 1.85); x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 2; x.strokeRect(X + L + R * 0.6, H / 2 - R * 0.9, 18, R * 1.85); // the manifold
+      for (const yy of [H / 2 - R * 0.9, H / 2 + R * 0.95]) { x.fillStyle = '#2a2a28'; x.fillRect(X + L * 0.28, yy - R * 0.92, 22, R * 1.84); x.fillRect(X + L * 0.55, yy - R * 0.92, 22, R * 1.84); } } // the bands
+    else if (arch === 'side') { cylinder(x, X + 60, H / 2 - R * 0.75, L, R * 0.85, C.body, band, valve, k); cylinder(x, X, H / 2 + R * 0.85, L, R * 0.85, C.body, band, valve, k);
+      for (const [xx, yy] of [[X + 60, H / 2 - R * 0.75], [X, H / 2 + R * 0.85]]) { x.fillStyle = '#1a1a19'; x.fillRect(xx + L * 0.2, yy - R * 0.9, 14, R * 1.8); x.fillRect(xx + L * 0.7, yy - R * 0.9, 14, R * 1.8); } } // bungees
+    else if (arch === 'rebreather') { // the unit: a moulded case, two small bottles beside it, the loop's hoses
+      cylinder(x, X + 360, H / 2 + 70, 300, 40, C.body.map((c) => mix(c, '#8a9296', 0.3)), band, valve, k); cylinder(x, X + 360, H / 2 - 70, 300, 40, C.body.map((c) => mix(c, '#8a9296', 0.3)), band, valve, k);
+      x.fillStyle = lin(x, 0, H / 2 - 120, 0, H / 2 + 120, [[0, mix(C.body[0], '#fff', 0.1)], [0.5, C.body[1]], [1, C.body[2]]]); x.beginPath(); x.roundRect(X, H / 2 - 120, 330, 240, 28); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 4; x.stroke();
+      x.strokeStyle = 'rgba(255,255,255,0.18)'; x.lineWidth = 3; x.beginPath(); x.moveTo(X + 20, H / 2 - 116); x.lineTo(X + 310, H / 2 - 116); x.stroke();
+      x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.roundRect(X + 40, H / 2 - 70, 250, 26, 8); x.fill(); x.beginPath(); x.roundRect(X + 40, H / 2 + 40, 250, 26, 8); x.fill(); // the lid's seams
+      x.strokeStyle = '#111'; x.lineWidth = 18; x.lineCap = 'round'; x.beginPath(); x.moveTo(X + 80, H / 2 - 120); x.bezierCurveTo(X + 60, H / 2 - 190, X + 260, H / 2 - 200, X + 250, H / 2 - 120); x.stroke(); // the breathing loop
+      x.strokeStyle = 'rgba(255,255,255,0.1)'; x.lineWidth = 5; x.stroke(); }
+    else cylinder(x, X, H / 2, L, R, C.body, band, valve, k);
+    if (k >= 4) sparks(x, W, H, C.band || '#c8a868', 13 + (hash(def.id) % 97));
+  });
+  return true;
+}
+
+// ---------------------------------------------------------------- bags ----------------------------------------------------------------
+// (5.12.8) A catch bag lying on its side, opening to the left: a mesh sack (its diamond weave shaded round the bulge), a
+// drawstring or a hard collar with its spring flap, a handle loop; a divided specimen bag is a hard case, lid and
+// compartments; a light bag fine, pale mesh.
+function bagColours(def) {
+  const B = def.bagLook, arch = def.arch || 'mesh';
+  const D = { mesh: ['#3a4a3e', '#6e7a5e'], large: ['#2e3a34', '#5e6e5a'], divided: ['#3a3e40', '#7a8084'], light: ['#5a6252', '#9aa088'] }[arch] || ['#3a4a3e', '#6e7a5e'];
+  const mute = (c) => mix(c, '#6a675c', 0.25);
+  return { body: B && B.body ? mute(B.body) : D[0], acc: B && B.accent ? B.accent : D[1] };
+}
+export function drawBag3(ctx, w, h, def) {
+  const arch = def.arch || 'mesh', k = RK[def.rarity] || 0, C = bagColours(def), metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#6a6e70';
+  const sz = 0.8 + Math.min(1, ((def.slots || 3) - 2) / 12) * 0.35;
+  fitted(ctx, w, h, (x, W, H) => {
+    x.save(); x.translate(W / 2, H / 2 + 10); x.scale(sz, sz);
+    if (arch === 'divided') { // a hard case: lid, a body, compartments showing through a window, latches and a handle
+      const bw = 520, bh = 230;
+      x.fillStyle = mix(C.body, '#fff', 0.15); x.beginPath(); x.moveTo(-bw / 2 + 20, -bh / 2); x.lineTo(bw / 2 - 20, -bh / 2); x.lineTo(bw / 2 + 50, -bh / 2 - 40); x.lineTo(-bw / 2 + 90, -bh / 2 - 40); x.closePath(); x.fill();
+      x.fillStyle = mix(C.body, '#000', 0.35); x.beginPath(); x.moveTo(bw / 2, -bh / 2 + 10); x.lineTo(bw / 2 + 70, -bh / 2 - 30); x.lineTo(bw / 2 + 70, bh / 2 - 40); x.lineTo(bw / 2, bh / 2); x.closePath(); x.fill();
+      x.fillStyle = lin(x, 0, -bh / 2, 0, bh / 2, [[0, mix(C.body, '#fff', 0.08)], [1, mix(C.body, '#000', 0.3)]]); x.beginPath(); x.roundRect(-bw / 2, -bh / 2, bw, bh, 16); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 4; x.stroke();
+      x.fillStyle = 'rgba(14,18,20,0.7)'; x.beginPath(); x.roundRect(-bw / 2 + 40, -bh / 2 + 50, bw - 80, bh - 100, 8); x.fill();
+      const n = Math.max(2, Math.min(6, Math.round((def.slots || 4) / 2))); for (let i = 1; i < n; i++) { const xx = -bw / 2 + 40 + (bw - 80) * i / n; x.fillStyle = 'rgba(200,210,200,0.25)'; x.fillRect(xx - 3, -bh / 2 + 50, 6, bh - 100); } // the dividers
+      x.fillStyle = 'rgba(230,236,230,0.16)'; x.beginPath(); x.moveTo(-bw / 2 + 50, -bh / 2 + 56); x.lineTo(-bw / 2 + 140, -bh / 2 + 56); x.lineTo(-bw / 2 + 90, bh / 2 - 56); x.lineTo(-bw / 2 + 50, bh / 2 - 56); x.fill(); // glare on the window
+      for (const lx of [-bw / 2 + 60, bw / 2 - 100]) { x.fillStyle = metal; x.beginPath(); x.roundRect(lx, -bh / 2 - 8, 40, 26, 5); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 2; x.stroke(); }
+      x.strokeStyle = '#1a1b1c'; x.lineWidth = 16; x.lineCap = 'round'; x.beginPath(); x.moveTo(-70, -bh / 2 - 30); x.quadraticCurveTo(0, -bh / 2 - 90, 70, -bh / 2 - 30); x.stroke();
+      if (k >= 1) { x.fillStyle = C.acc; x.fillRect(-bw / 2, bh / 2 - 26, bw, 10); }
+    } else { // a mesh sack on its side, the opening to the left
+      const L = arch === 'large' ? 560 : 500, R = arch === 'large' ? 120 : 100, light = arch === 'light';
+      const sack = () => { x.beginPath(); x.moveTo(-L / 2 + 40, -R * 0.75); x.bezierCurveTo(-L / 2 + 160, -R * 1.15, L / 2 - 120, -R * 1.05, L / 2, -R * 0.15); x.quadraticCurveTo(L / 2 + 14, 0, L / 2, R * 0.15); x.bezierCurveTo(L / 2 - 120, R * 1.05, -L / 2 + 160, R * 1.15, -L / 2 + 40, R * 0.75); x.closePath(); };
+      x.save(); sack(); x.fillStyle = rgba(C.body, light ? 0.55 : 0.85); x.fill(); x.clip();
+      x.fillStyle = lin(x, 0, -R, 0, R, [[0, 'rgba(255,255,255,0.18)'], [0.45, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,0.45)']]); x.fillRect(-L, -R * 1.4, L * 2, R * 2.8);
+      const step = light ? 14 : 22; x.lineWidth = light ? 1.6 : 2.6; // the diamond weave, darker where the mesh turns away
+      for (let i = -40; i < 40; i++) { for (const sg of [1, -1]) { x.strokeStyle = 'rgba(10,12,10,0.55)'; x.beginPath(); x.moveTo(-L / 2 + i * step, -R * 1.2); x.lineTo(-L / 2 + i * step + sg * R * 1.6, R * 1.2); x.stroke(); x.strokeStyle = rgba(C.acc, 0.25); x.beginPath(); x.moveTo(-L / 2 + i * step + 1, -R * 1.2 - 1); x.lineTo(-L / 2 + i * step + sg * R * 1.6 + 1, R * 1.2 - 1); x.stroke(); } }
+      x.restore(); x.save(); sack(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 4; x.stroke(); x.restore();
+      if (arch === 'large') { // the hard collar with its spring flap
+        x.fillStyle = lin(x, -L / 2, 0, -L / 2 + 70, 0, [[0, '#2a2c2e'], [0.5, '#4a4e50'], [1, '#1a1b1c']]); x.beginPath(); x.ellipse(-L / 2 + 40, 0, 34, R * 0.82, 0, 0, TAU); x.fill();
+        x.fillStyle = 'rgba(6,6,6,0.85)'; x.beginPath(); x.ellipse(-L / 2 + 36, 0, 18, R * 0.62, 0, 0, TAU); x.fill();
+        x.fillStyle = metal; x.beginPath(); x.roundRect(-L / 2 + 10, -R * 0.9, 50, 16, 5); x.fill(); }
+      else { // the drawstring gathered at the opening
+        x.fillStyle = rgba(C.body, 0.95); x.beginPath(); x.ellipse(-L / 2 + 40, 0, 16, R * 0.7, 0, 0, TAU); x.fill();
+        x.strokeStyle = mix(C.acc, '#d8d0b8', 0.4); x.lineWidth = 6; x.beginPath(); x.moveTo(-L / 2 + 40, -R * 0.6); x.bezierCurveTo(-L / 2 - 40, -R * 0.4, -L / 2 - 50, R * 0.5, -L / 2 - 10, R * 0.9); x.stroke();
+        x.fillStyle = metal; x.beginPath(); x.roundRect(-L / 2 - 26, R * 0.78, 30, 22, 6); x.fill(); } // the toggle
+      x.strokeStyle = '#1a1b1c'; x.lineWidth = 14; x.lineCap = 'round'; x.beginPath(); x.moveTo(-L / 2 + 120, -R * 0.95); x.quadraticCurveTo(-L / 2 + 190, -R * 1.6, -L / 2 + 270, -R * 1.0); x.stroke(); // the handle loop
+      x.strokeStyle = 'rgba(255,255,255,0.12)'; x.lineWidth = 4; x.stroke();
+      if (k >= 1) { x.save(); sack(); x.clip(); x.strokeStyle = C.acc; x.lineWidth = k >= 2 ? 12 : 8; x.beginPath(); x.moveTo(-L / 2 + 60, -R * 0.9); x.bezierCurveTo(-L / 2 + 80, -R * 0.3, -L / 2 + 80, R * 0.3, -L / 2 + 60, R * 0.9); x.stroke(); x.restore(); } // a webbing band
+      if (k >= 3) { x.setLineDash([7, 6]); x.strokeStyle = rgba('#e8d8b0', 0.7); x.lineWidth = 2.5; x.beginPath(); x.moveTo(-L / 2 + 52, -R * 0.85); x.bezierCurveTo(-L / 2 + 70, -R * 0.3, -L / 2 + 70, R * 0.3, -L / 2 + 52, R * 0.85); x.stroke(); x.setLineDash([]); }
+    }
+    x.restore();
+    if (k >= 4) sparks(x, W, H, C.acc, 17 + (hash(def.id) % 97));
+  });
+  return true;
+}
+
+// ---------------------------------------------------------------- nets ----------------------------------------------------------------
+// (5.12.9) A hand net lying across the frame, handle to the left: a real pole with its grip and end cap, a frame seen at
+// an angle at the far end, and the mesh bag hanging behind it in a soft cone, its knots catching the light. Each kind its
+// frame: a round hoop (everyday, sure), a square dip frame (gentle), a long pole and a teardrop (reach), a short quick
+// net, a big D-frame (big game), a wide seine frame (school).
+const NET_SHAPE = { everyday: { pole: 430, r: 90, f: 'round' }, sure: { pole: 440, r: 100, f: 'round', deep: 1.3 }, gentle: { pole: 420, r: 90, f: 'square' }, reach: { pole: 600, r: 78, f: 'tear' },
+  quick: { pole: 320, r: 74, f: 'round' }, big: { pole: 500, r: 120, f: 'd' }, school: { pole: 440, r: 100, f: 'wide' } };
+export function drawNet3(ctx, w, h, def) {
+  const S = NET_SHAPE[def.arch] || NET_SHAPE.everyday, k = RK[def.rarity] || 0, L = typeof def.look === 'object' && def.look ? def.look : {};
+  const mute = (c) => mix(c, '#6a675c', 0.25), hoop = L.hoop ? mute(L.hoop) : k >= 3 ? '#8a6a34' : '#3e4448', handle = L.h ? L.h.map(mute) : k >= 3 ? ['#a07a48', '#6e5030', '#3a2a18'] : ['#7a8288', '#4a5258', '#22272a'];
+  const mesh = k >= 3 ? '#5a5a46' : '#3a4a3a', metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#5a5e60';
+  fitted(ctx, w, h, (x, W, H) => {
+    const tot = S.pole + S.r * 2.2, sc = Math.min(1, 900 / tot); x.save(); x.translate(W / 2 - (tot * sc) / 2, H / 2 + 20); x.scale(sc, sc); x.rotate(-0.06);
+    const fx = S.pole + S.r, fy = -10, rx = S.r * 0.55, ry = S.r; // the frame's centre; seen at an angle, it is an upright ellipse
+    // the mesh bag behind the frame: a cone hanging down and back, shaded, its weave
+    const depth = S.r * 1.9 * (S.deep || 1);
+    const bag = () => { x.beginPath(); x.moveTo(fx, fy - ry); x.bezierCurveTo(fx + rx * 2.2, fy - ry * 0.6, fx + depth * 0.9, fy + ry * 0.6, fx + depth * 0.55, fy + ry * 1.25); x.bezierCurveTo(fx + depth * 0.3, fy + ry * 1.5, fx + rx * 0.4, fy + ry * 1.3, fx, fy + ry); x.closePath(); };
+    x.save(); bag(); x.fillStyle = rgba(mesh, 0.35); x.fill(); x.clip();
+    x.lineWidth = 2; for (let i = -30; i < 30; i++) for (const sg of [1, -1]) { x.strokeStyle = rgba(mix(mesh, '#000', 0.3), 0.75); x.beginPath(); x.moveTo(fx - 100 + i * 16, fy - ry * 1.4); x.lineTo(fx - 100 + i * 16 + sg * ry * 2.6, fy + ry * 1.8); x.stroke(); }
+    x.fillStyle = lin(x, fx, 0, fx + depth, 0, [[0, 'rgba(0,0,0,0.25)'], [1, 'rgba(0,0,0,0.05)']]); x.fillRect(fx - 50, fy - ry * 2, depth + 100, ry * 4); x.restore();
+    x.save(); bag(); x.strokeStyle = rgba(mix(mesh, '#000', 0.4), 0.8); x.lineWidth = 3; x.stroke(); x.restore();
+    // the frame
+    const frame = () => { x.beginPath();
+      if (S.f === 'square') x.roundRect(fx - rx, fy - ry, rx * 2, ry * 2, 10);
+      else if (S.f === 'tear') { x.moveTo(fx - rx * 1.3, fy); x.bezierCurveTo(fx - rx * 0.6, fy - ry * 1.1, fx + rx, fy - ry * 1.05, fx + rx, fy); x.bezierCurveTo(fx + rx, fy + ry * 1.05, fx - rx * 0.6, fy + ry * 1.1, fx - rx * 1.3, fy); }
+      else if (S.f === 'd') { x.moveTo(fx - rx * 0.7, fy - ry); x.lineTo(fx - rx * 0.7, fy + ry); x.bezierCurveTo(fx + rx * 1.5, fy + ry, fx + rx * 1.5, fy - ry, fx - rx * 0.7, fy - ry); }
+      else if (S.f === 'wide') x.ellipse(fx, fy, rx * 0.8, ry * 1.25, 0, 0, TAU);
+      else x.ellipse(fx, fy, rx, ry, 0, 0, TAU); };
+    x.save(); frame(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 16; x.stroke(); x.strokeStyle = hoop; x.lineWidth = 11; x.stroke(); x.restore();
+    x.save(); x.beginPath(); x.ellipse(fx, fy, rx, ry, 0, Math.PI * 1.1, Math.PI * 1.6); x.strokeStyle = rgba('#ffffff', 0.3); x.lineWidth = 3; x.stroke(); x.restore();
+    // the pole: lit from the top, its grip near the end, an end cap, a ferrule where it meets the frame
+    const R0 = 13, x0 = 0, x1 = fx - (S.f === 'tear' ? rx * 1.3 : S.f === 'd' ? rx * 0.7 : rx);
+    x.fillStyle = lin(x, 0, -R0, 0, R0, [[0, mix(handle[0], '#fff', 0.2)], [0.3, handle[0]], [0.65, handle[1]], [1, handle[2]]]); x.beginPath(); x.roundRect(x0, -R0, x1 - x0, R0 * 2, R0); x.fill();
+    x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 3; x.stroke();
+    const gripC = k >= 1 && L.h ? mix(handle[2], '#000', 0.3) : '#1a1b1c'; x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(gripC, '#fff', 0.15)], [1, mix(gripC, '#000', 0.4)]]); x.beginPath(); x.roundRect(x0 + 10, -R0 - 3, 120, R0 * 2 + 6, R0); x.fill(); // the grip
+    for (let i = 0; i < 9; i++) { x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 2; x.beginPath(); x.moveTo(x0 + 18 + i * 13, -R0); x.lineTo(x0 + 24 + i * 13, R0); x.stroke(); }
+    x.fillStyle = metal; x.beginPath(); x.roundRect(x1 - 30, -R0 - 2, 30, R0 * 2 + 4, 4); x.fill(); x.fillStyle = '#121314'; x.beginPath(); x.roundRect(x0 - 8, -R0 - 1, 14, R0 * 2 + 2, 5); x.fill(); // the ferrule, the end cap
+    if (k >= 1 && !L.h) { x.fillStyle = '#7a6040'; x.fillRect(x0 + 140, -R0, 16, R0 * 2); } // a band of colour below the grip
+    x.restore();
+    if (k >= 4) sparks(x, W, H, hoop, 19 + (hash(def.id) % 97));
+  });
+  return true;
+}
