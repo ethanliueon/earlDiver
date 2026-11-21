@@ -1,0 +1,76 @@
+<!doctype html><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&display=block" rel="stylesheet">
+<body style="margin:0;background:#0b0f12"><canvas id="c" width="1688" height="780"></canvas>
+<script>
+// (5.11.10) Sample, not wired in: Earl past twice his suit's rated depth. The HUD has slowly lost some of its colour
+// (about 40 % at most, never grey), the water and the world are untouched, and the depth figure is no longer flat red:
+// it is dark blood soaked into the glass of the readout, ragged at the edges where it bled, a couple of drips.
+const TAU = Math.PI * 2, F = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
+const load = (src) => new Promise((r) => { const i = new Image(); i.onload = () => r(i); i.src = src; });
+let seed = 11; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+
+// value noise, smooth, for the blood's uneven soak
+function noiseField(w, h, cell) {
+  const gw = Math.ceil(w / cell) + 2, gh = Math.ceil(h / cell) + 2, g = new Float32Array(gw * gh); for (let i = 0; i < g.length; i++) g[i] = rnd();
+  const f = new Float32Array(w * h), sm = (t) => t * t * (3 - 2 * t);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const gx = x / cell, gy = y / cell, x0 = gx | 0, y0 = gy | 0, tx = sm(gx - x0), ty = sm(gy - y0);
+    const a = g[y0 * gw + x0], b = g[y0 * gw + x0 + 1], c = g[(y0 + 1) * gw + x0], d = g[(y0 + 1) * gw + x0 + 1];
+    f[y * w + x] = (a + (b - a) * tx) * (1 - ty) + (c + (d - c) * tx) * ty;
+  }
+  return f;
+}
+// the figure in blood: right-aligned at (xr, base), size px tall glyphs; drip (0..1) how far the drips have run
+function bloodText(ctx, text, xr, base, size, drip = 1) {
+  const pad = Math.ceil(size * 0.6), w = Math.ceil(size * 0.62 * text.length + pad * 2), h = Math.ceil(size * 1.9);
+  const ox = xr - w + pad, oy = base - size * 0.95 - pad * 0.4;
+  const mk = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  // the shape: the figure, softened, then cut again at an uneven level so its edge is ragged where it soaked
+  const A = mk(), a = A.getContext('2d'); a.font = `600 ${size}px ${F}`; a.textAlign = 'right'; a.textBaseline = 'alphabetic'; a.fillStyle = '#fff';
+  a.filter = `blur(${(size * 0.022).toFixed(1)}px)`; a.fillText(text, w - pad, base - oy); a.filter = 'none';
+  // the drips: thin runs from the bottoms of a few strokes, each ending in a bead
+  const runs = drip > 0 ? [[0.5, 0.12]] : []; // (one bead gathering at the foot of a stroke, no running drips: they read as a horror font and crossed the air line)
+  const tw = a.measureText(text).width;
+  for (const [fx, len] of runs) { const x = w - pad - tw + tw * fx, y0 = base - oy - size * 0.02, L = size * 0.42 * len * drip;
+    a.strokeStyle = '#fff'; a.lineCap = 'round'; a.lineWidth = size * 0.045; a.beginPath(); a.moveTo(x, y0); a.bezierCurveTo(x + 1, y0 + L * 0.4, x - 1, y0 + L * 0.7, x, y0 + L); a.stroke();
+    a.beginPath(); a.arc(x, y0 + L, size * 0.04, 0, TAU); a.fill(); }
+  const N = noiseField(w, h, size * 0.12), N2 = noiseField(w, h, size * 0.035), im = a.getImageData(0, 0, w, h), px = im.data;
+  for (let i = 0; i < w * h; i++) { const v = px[i * 4 + 3] / 255 + (N[i] - 0.5) * 0.12 + (N2[i] - 0.5) * 0.08; const t = Math.max(0, Math.min(1, (v - 0.44) / 0.14)); px[i * 4 + 3] = Math.round(t * t * (3 - 2 * t) * 255); }
+  a.putImageData(im, 0, 0);
+  // the colour: deep red, darker where it pooled low and in clots, almost black at the bottom of each figure
+  const B = mk(), b = B.getContext('2d'); b.drawImage(A, 0, 0); b.globalCompositeOperation = 'source-in';
+  const gr = b.createLinearGradient(0, base - oy - size * 0.9, 0, base - oy + size * 0.3); gr.addColorStop(0, '#6e0f0c'); gr.addColorStop(0.6, '#480605'); gr.addColorStop(1, '#220201');
+  b.fillStyle = gr; b.fillRect(0, 0, w, h);
+  const cl = b.getImageData(0, 0, w, h), q = cl.data; for (let i = 0; i < w * h; i++) { if (!q[i * 4 + 3]) continue; const k = 0.72 + 0.5 * N2[i] - 0.25 * N[i]; q[i * 4] = Math.min(255, q[i * 4] * k); q[i * 4 + 1] *= k * 0.9; q[i * 4 + 2] *= k * 0.9; } b.putImageData(cl, 0, 0);
+  // where it soaked into the glass round the figure: a dark, soft stain
+  const S = mk(), sx = S.getContext('2d'); sx.filter = `blur(${(size * 0.16).toFixed(1)}px)`; sx.drawImage(A, 0, 0); sx.filter = 'none'; sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(40,2,2,1)'; sx.fillRect(0, 0, w, h); sx.globalCompositeOperation = 'destination-in'; { const r = sx.createRadialGradient(w - pad - tw / 2, base - oy - size * 0.4, size * 0.2, w - pad - tw / 2, base - oy - size * 0.4, Math.max(tw, size) * 0.75); r.addColorStop(0, '#000'); r.addColorStop(1, 'rgba(0,0,0,0)'); sx.fillStyle = r; sx.fillRect(0, 0, w, h); } // faded out round, never a box
+  ctx.save(); ctx.globalAlpha = 0.9; ctx.drawImage(S, ox, oy); ctx.drawImage(S, ox, oy); ctx.globalAlpha = 1; ctx.drawImage(B, ox, oy);
+  // still wet: a thin, dull sheen along the top edges
+  const H = mk(), hx = H.getContext('2d'); hx.drawImage(A, 0, 0); hx.globalCompositeOperation = 'destination-out'; hx.drawImage(A, 0, size * 0.03); hx.globalCompositeOperation = 'source-in'; hx.fillStyle = 'rgba(200,96,86,0.38)'; hx.fillRect(0, 0, w, h);
+  ctx.drawImage(H, ox, oy); ctx.restore();
+}
+
+(async () => {
+  await document.fonts.load(`600 100px ${F}`);
+  const [full, game] = await Promise.all([load('blood/full.png'), load('blood/game.png')]);
+  const c = document.getElementById('c'), x = c.getContext('2d'), W = c.width, H = c.height;
+  x.drawImage(full, 0, 0, W, H);
+  const fi = x.getImageData(0, 0, W, H);
+  const t2 = document.createElement('canvas'); t2.width = W; t2.height = H; const gx = t2.getContext('2d'); gx.drawImage(game, 0, 0, W, H); const gi = gx.getImageData(0, 0, W, H);
+  // the HUD is what differs from the bare scene: only those pixels lose colour (40 %), the water does not
+  const k = 0.4, f = fi.data, gd = gi.data;
+  for (let i = 0; i < f.length; i += 4) {
+    const d = Math.abs(f[i] - gd[i]) + Math.abs(f[i + 1] - gd[i + 1]) + Math.abs(f[i + 2] - gd[i + 2]); if (d < 18) continue;
+    const L = 0.3 * f[i] + 0.59 * f[i + 1] + 0.11 * f[i + 2]; f[i] += (L - f[i]) * k; f[i + 1] += (L - f[i + 1]) * k; f[i + 2] += (L - f[i + 2]) * k;
+  }
+  x.putImageData(fi, 0, 0);
+  // the old flat red figure and its "m" taken out (the bare scene put back there), then the figure in blood
+  { const P = document.createElement('canvas'); P.width = 190; P.height = 76; const pc = P.getContext('2d'); // the bare scene put back over the old figure only (not the air line), its edges feathered
+    pc.drawImage(game, 1395 / 1688 * game.width, 16 / 780 * game.height, 190 / 1688 * game.width, 76 / 780 * game.height, 0, 0, 190, 76);
+    pc.globalCompositeOperation = 'destination-in'; const fx = pc.createLinearGradient(0, 0, 190, 0); fx.addColorStop(0, 'rgba(0,0,0,0)'); fx.addColorStop(0.12, '#000'); fx.addColorStop(0.88, '#000'); fx.addColorStop(1, 'rgba(0,0,0,0)'); pc.fillStyle = fx; pc.fillRect(0, 0, 190, 76);
+    const fy = pc.createLinearGradient(0, 0, 0, 76); fy.addColorStop(0, 'rgba(0,0,0,0)'); fy.addColorStop(0.15, '#000'); fy.addColorStop(0.85, '#000'); fy.addColorStop(1, 'rgba(0,0,0,0)'); pc.fillStyle = fy; pc.fillRect(0, 0, 190, 76); x.drawImage(P, 1395, 16); }
+  bloodText(x, '245', 1530, 80, 66, 1);
+  x.font = `600 27px ${F}`; x.textAlign = 'left'; x.fillStyle = 'rgba(96,14,12,0.95)'; x.fillText('m', 1536, 80);
+  window.done = true;
+})();
+</script>
