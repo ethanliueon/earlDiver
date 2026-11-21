@@ -686,7 +686,7 @@ function galleryAction(act, key, v) {
 // the tank room: move animals between the bag, the open tank and the pressure tanks, or let one go
 function tankAction(act, where, i, to = -1) {
   const e = g.earl;
-  if (!e.inSub) return false;
+  if (!e.inSub && !(act === 'release' && where === 'bag')) return false; // (5.15.3) a fish in the bag can be thrown back anywhere
   const L = where === 'bag' ? g.bag : g.subTank, s = L[i];
   if (!s) return false;
   if (act === 'press') {
@@ -741,7 +741,9 @@ function tankAction(act, where, i, to = -1) {
     }
     L.splice(i, 1);
     if (s.cond > 0.05) {
-      const c = g.fauna.makeFish(SPECIES_BY_ID[s.id], g.sub.x + g.sub.facing * 3, g.sub.y + 1, g.sub.facing, g.fauna.groupId++, true);
+      // (5.15.3) thrown back from the bag while swimming (or from the deck), it goes back in beside Earl, not the sub
+      const e = g.earl, out = where === 'bag' && !e.inSub, fc = out ? (e.facing || 1) : g.sub.facing;
+      const c = g.fauna.makeFish(SPECIES_BY_ID[s.id], out ? e.x + fc * 2 : g.sub.x + g.sub.facing * 3, out ? Math.max(1.5, e.y + 0.5) : g.sub.y + 1, fc, g.fauna.groupId++, true);
       if (s.variant) c.variant = s.variant;
       g.fauna.list.push(c);
       hud.toast(`The ${SPECIES_BY_ID[s.id].name.toLowerCase()} goes back into the dark`);

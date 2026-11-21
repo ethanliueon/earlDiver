@@ -416,3 +416,14 @@ for (const it of Object.values(ITEMS)) if (it.kind === 'fins' && /no faster crui
 // (5.14.0) Deep Pockets: spaces by its level, on a bag or a suit (both add up): I +2, II +5, III +10, IV +20
 export const POCKETS_BY_LV = [0, 2, 5, 10, 20];
 export function pocketsBonus(P) { const K = kitOf(P); let n = 0; for (const u of Object.values(K.on)) { const q = u && instOf(P, u); if (!q) continue; for (const [k, l] of q.sk || []) if (k === 'pockets') n += POCKETS_BY_LV[Math.min(4, l)] || 0; } return n; }
+// (5.15.3) a suit's line on its card says what it actually does, short and its own (hand-written lines had grown alike:
+// "pressure barely matters", "pressure hardly reaches him"): its depth, then what sets it apart
+for (const it of Object.values(ITEMS)) {
+  if (it.kind !== 'suit') continue;
+  const bits = [`Safe to ${it.press} m`];
+  if (it.air < 1) bits.push(`air lasts ×${+(1 / it.air).toFixed(2)}`);
+  if (it.bite) bits.push('turns a bite'); if (it.warm) bits.push('keeps out the cold'); if (it.quiet) bits.push('no bubbles');
+  if (it.arch === 'skin' && bits.length === 1) bits.push('light and cheap');
+  it.good = bits.join(', ');
+  if (/^(costly|slow|heavy|air)$/i.test(it.bad || '')) it.bad = '';
+}

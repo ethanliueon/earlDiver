@@ -308,33 +308,69 @@ export function drawNet3(ctx, w, h, def) {
   const poleR = 10 + pick(5, 14) * 1.5, hoopW = 8 + pick(4, 17) * 2.5, meshStep = [12, 16, 22][pick(3, 20)];
   const mute = (c) => mix(c, '#6a675c', 0.25), hoop = L.hoop ? mute(L.hoop) : k >= 3 ? '#8a6a34' : '#3e4448', handle = L.h ? L.h.map(mute) : k >= 3 ? ['#a07a48', '#6e5030', '#3a2a18'] : MAT;
   const mesh = k >= 3 ? '#5a5a46' : '#3a4a3a', metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#5a5e60';
+  // (5.15.3) drawn in 3D, as a real landing net is seen: the hoop a tilted ring, the bag hanging from the whole rim and
+  // lashed to it, its diamond mesh following the bag's curve and closing in towards the rounded bottom (lines on the far
+  // side darker, seen through the near side), the pole meeting the rim through a collar and a split yoke
+  const V = (a0, a1, a2) => [a0, a1, a2], add = (p, q) => [p[0] + q[0], p[1] + q[1], p[2] + q[2]], mul = (p, s0) => [p[0] * s0, p[1] * s0, p[2] * s0];
+  const dot = (p, q) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2], nrm = (p) => mul(p, 1 / Math.hypot(...p)), cross = (p, q) => [p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0]];
+  const n = nrm(V(-0.28, 0.78, 0.56)), out = V(1, 0.1, 0), e1 = nrm(add(out, mul(n, -dot(out, n)))), e2 = cross(n, e1);
+  const R = S.r * 1.25, D = R * 1.75 * S.deep, ext = S.f === 'wide' ? [0.8, 1.35] : [1, 1];
+  const rimAB = (u) => { const c = Math.cos(u), sn = Math.sin(u);
+    if (S.f === 'square') return [R * Math.sign(c) * Math.abs(c) ** 0.45, R * Math.sign(sn) * Math.abs(sn) ** 0.45];
+    if (S.f === 'tear') return [R * c, R * sn * (0.25 + 0.75 * Math.sqrt((1 + c) / 2))];
+    if (S.f === 'd') return [Math.min(R * c, R * 0.62), R * sn];
+    return [R * c * ext[0], R * sn * ext[1]]; };
+  const sag = V(0.25, -1, 0); // the bag sags with its own weight, away from the pole
+  const at = (u, v) => { const [a0, b0] = rimAB(u), s0 = Math.max(0.035, Math.cos(v * Math.PI / 2) ** 0.6), c = add(mul(n, -D * v), mul(sag, R * 0.45 * v * v));
+    return add(c, add(mul(e1, a0 * s0), mul(e2, b0 * s0))); };
+  const ctrZ = (v) => add(mul(n, -D * v), mul(sag, R * 0.45 * v * v))[2];
+  const P2 = (p) => [p[0], -p[1]]; // to the page (y down)
+  const A = at(Math.PI, 0), A2 = P2(A), ang = Math.PI + 0.1, Lp = S.pole * 0.62, E = [A2[0] + Math.cos(ang) * Lp, A2[1] + Math.sin(ang) * Lp];
+  // fit it all into the frame
+  let x0 = E[0], x1 = E[0], y0 = E[1], y1 = E[1]; const grow = (q) => { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); };
+  for (let i = 0; i <= 48; i++) for (let j = 0; j <= 10; j++) grow(P2(at(i / 48 * TAU, j / 10)));
+  const M = Math.max(18, Math.round((TAU * R) / (meshStep * 2.1))), du = TAU / M, ROWS = Math.max(4, Math.round(D / (meshStep * 1.9))), K = du * ROWS;
   fitted(ctx, w, h, (x, W, H) => {
-    const tot = S.pole + S.r * 2.2, sc = Math.min(1, 900 / tot); x.save(); x.translate(W / 2 - (tot * sc) / 2, H / 2 + 20); x.scale(sc, sc); x.rotate(-0.06);
-    const fx = S.pole + S.r, fy = -10, rx = S.r * 0.55, ry = S.r; // the frame's centre; seen at an angle, it is an upright ellipse
-    // the mesh bag behind the frame: a cone hanging down and back, shaded, its weave
-    const depth = S.r * 1.9 * (S.deep || 1);
-    const bag = () => { x.beginPath(); x.moveTo(fx, fy - ry); x.bezierCurveTo(fx + rx * 2.2, fy - ry * 0.6, fx + depth * 0.9, fy + ry * 0.6, fx + depth * 0.55, fy + ry * 1.25); x.bezierCurveTo(fx + depth * 0.3, fy + ry * 1.5, fx + rx * 0.4, fy + ry * 1.3, fx, fy + ry); x.closePath(); };
-    x.save(); bag(); x.fillStyle = rgba(mesh, 0.35); x.fill(); x.clip();
-    x.lineWidth = meshStep > 18 ? 2.6 : 1.8; for (let i = -40; i < 40; i++) for (const sg of [1, -1]) { x.strokeStyle = rgba(mix(mesh, '#000', 0.3), 0.75); x.beginPath(); x.moveTo(fx - 100 + i * meshStep, fy - ry * 1.4); x.lineTo(fx - 100 + i * meshStep + sg * ry * 2.6, fy + ry * 1.8); x.stroke(); }
-    x.fillStyle = lin(x, fx, 0, fx + depth, 0, [[0, 'rgba(0,0,0,0.25)'], [1, 'rgba(0,0,0,0.05)']]); x.fillRect(fx - 50, fy - ry * 2, depth + 100, ry * 4); x.restore();
-    x.save(); bag(); x.strokeStyle = rgba(mix(mesh, '#000', 0.4), 0.8); x.lineWidth = 3; x.stroke(); x.restore();
-    // the frame
-    const frame = () => { x.beginPath();
-      if (S.f === 'square') x.roundRect(fx - rx, fy - ry, rx * 2, ry * 2, 10);
-      else if (S.f === 'tear') { x.moveTo(fx - rx * 1.3, fy); x.bezierCurveTo(fx - rx * 0.6, fy - ry * 1.1, fx + rx, fy - ry * 1.05, fx + rx, fy); x.bezierCurveTo(fx + rx, fy + ry * 1.05, fx - rx * 0.6, fy + ry * 1.1, fx - rx * 1.3, fy); }
-      else if (S.f === 'd') { x.moveTo(fx - rx * 0.7, fy - ry); x.lineTo(fx - rx * 0.7, fy + ry); x.bezierCurveTo(fx + rx * 1.5, fy + ry, fx + rx * 1.5, fy - ry, fx - rx * 0.7, fy - ry); }
-      else if (S.f === 'wide') x.ellipse(fx, fy, rx * 0.8, ry * 1.25, 0, 0, TAU);
-      else x.ellipse(fx, fy, rx, ry, 0, 0, TAU); };
-    x.save(); frame(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = hoopW + 5; x.stroke(); x.strokeStyle = hoop; x.lineWidth = hoopW; x.stroke(); x.restore();
-    x.save(); x.beginPath(); x.ellipse(fx, fy, rx, ry, 0, Math.PI * 1.1, Math.PI * 1.6); x.strokeStyle = rgba('#ffffff', 0.3); x.lineWidth = 3; x.stroke(); x.restore();
-    // the pole: lit from the top, its grip near the end, an end cap, a ferrule where it meets the frame
-    const R0 = poleR, x0 = 0, x1 = fx - (S.f === 'tear' ? rx * 1.3 : S.f === 'd' ? rx * 0.7 : rx);
-    x.fillStyle = lin(x, 0, -R0, 0, R0, [[0, mix(handle[0], '#fff', 0.2)], [0.3, handle[0]], [0.65, handle[1]], [1, handle[2]]]); x.beginPath(); x.roundRect(x0, -R0, x1 - x0, R0 * 2, R0); x.fill();
+    const sc = Math.min((W - 80) / (x1 - x0), (H - 60) / (y1 - y0)); x.save(); x.translate(W / 2 - ((x0 + x1) / 2) * sc, H / 2 - ((y0 + y1) / 2) * sc); x.scale(sc, sc);
+    const lw = 1 / sc, twine = mesh, far = mix(twine, '#000', 0.45), near = mix(twine, '#d8d0b6', 0.18);
+    // the bag's body: thin panels, so where the near and far sides overlap the net reads denser, as netting does
+    for (let j = 0; j < 12; j++) for (let i = 0; i < 40; i++) { const u0 = i / 40 * TAU, u1 = (i + 1) / 40 * TAU, v0 = j / 12, v1 = (j + 1) / 12, q = [at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)].map(P2);
+      x.fillStyle = rgba(twine, 0.07); x.beginPath(); x.moveTo(...q[0]); for (let k2 = 1; k2 < 4; k2++) x.lineTo(...q[k2]); x.closePath(); x.fill(); }
+    // the mesh, the two families of the diamond, split into far (behind) and near segments
+    const segs = [[], []];
+    for (const sg of [1, -1]) for (let i = 0; i < M; i++) { let prev = null;
+      for (let t = 0; t <= 60; t++) { const v = t / 60, u = i * du + sg * v * K, p = at(u, v), fr = p[2] - ctrZ(v) > 0 ? 1 : 0, q = P2(p);
+        if (prev) segs[fr && prev[1] ? 1 : 0].push([prev[0], q]); prev = [q, fr]; } }
+    const stroke = (L2, col, wd) => { x.strokeStyle = col; x.lineWidth = wd; x.lineCap = 'round'; x.beginPath(); for (const [p, q] of L2) { x.moveTo(...p); x.lineTo(...q); } x.stroke(); };
+    stroke(segs[0], rgba(far, 0.8), (meshStep > 18 ? 2.2 : 1.6) * lw * 1.4);
+    // the hoop: the far half first, behind the near mesh
+    const rimPts = (from, to) => { const r2 = []; for (let i = 0; i <= 80; i++) { const u = from + (to - from) * i / 80; r2.push([P2(at(u, 0)), at(u, 0)[2] > 0]); } return r2; };
+    const ring = rimPts(0, TAU), hoopStroke = (front) => { x.lineCap = 'round';
+      for (const [col, wd] of [['rgba(0,0,0,0.55)', hoopW + 5], [front ? hoop : mix(hoop, '#000', 0.35), hoopW]]) { x.strokeStyle = col; x.lineWidth = wd; x.beginPath(); let on = false;
+        for (const [q, f] of ring) { if (f === front) { on ? x.lineTo(...q) : x.moveTo(...q); on = true; } else on = false; } x.stroke(); } };
+    hoopStroke(false);
+    stroke(segs[1], rgba(near, 0.9), (meshStep > 18 ? 2.4 : 1.8) * lw * 1.5);
+    // the knots, on the near side
+    x.fillStyle = rgba(mix(twine, '#000', 0.2), 0.95);
+    for (let m = 1; m < ROWS * 2; m++) { const v = m / (ROWS * 2); for (let i = 0; i < M; i++) { const u = i * du + m * du / 2, p = at(u, v); if (p[2] - ctrZ(v) <= 0) continue; const q = P2(p); x.beginPath(); x.arc(q[0], q[1], (meshStep > 18 ? 2.6 : 2) * lw * 1.3, 0, TAU); x.fill(); } }
+    hoopStroke(true);
+    // the rim's highlight and the cord lashing the bag to it
+    x.strokeStyle = rgba('#ffffff', 0.28); x.lineWidth = 2.5 * lw * 1.3; x.beginPath(); let on = false; for (const [q, f] of ring) { if (f) { on ? x.lineTo(q[0], q[1] - hoopW * 0.25) : x.moveTo(q[0], q[1] - hoopW * 0.25); on = true; } else on = false; } x.stroke();
+    for (let i = 0; i < M; i++) { const u = i * du, p = at(u, 0); if (p[2] <= 0) continue; const q = P2(p); x.strokeStyle = rgba(mix(twine, '#000', 0.3), 0.85); x.lineWidth = 2.2 * lw * 1.3; x.beginPath(); x.moveTo(q[0] - hoopW * 0.3, q[1] - hoopW * 0.55); x.lineTo(q[0] + hoopW * 0.3, q[1] + hoopW * 0.55); x.stroke(); }
+    // the pole: along its own line, lit from the top, a grip at its end, an end cap, a collar and the yoke at the rim
+    const Lr = Math.hypot(E[0] - A2[0], E[1] - A2[1]) - R * 0.32, R0 = poleR;
+    x.save(); x.translate(...E); x.rotate(Math.atan2(A2[1] - E[1], A2[0] - E[0]));
+    x.fillStyle = lin(x, 0, -R0, 0, R0, [[0, mix(handle[0], '#fff', 0.2)], [0.3, handle[0]], [0.65, handle[1]], [1, handle[2]]]); x.beginPath(); x.roundRect(0, -R0, Lr, R0 * 2, R0); x.fill();
     x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 3; x.stroke();
-    const gripC = k >= 1 && L.h ? mix(handle[2], '#000', 0.3) : '#1a1b1c'; x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(gripC, '#fff', 0.15)], [1, mix(gripC, '#000', 0.4)]]); x.beginPath(); x.roundRect(x0 + 10, -R0 - 3, 120, R0 * 2 + 6, R0); x.fill(); // the grip
-    for (let i = 0; i < 9; i++) { x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 2; x.beginPath(); x.moveTo(x0 + 18 + i * 13, -R0); x.lineTo(x0 + 24 + i * 13, R0); x.stroke(); }
-    x.fillStyle = metal; x.beginPath(); x.roundRect(x1 - 30, -R0 - 2, 30, R0 * 2 + 4, 4); x.fill(); x.fillStyle = '#121314'; x.beginPath(); x.roundRect(x0 - 8, -R0 - 1, 14, R0 * 2 + 2, 5); x.fill(); // the ferrule, the end cap
-    if (k >= 1 && !L.h) { x.fillStyle = '#7a6040'; x.fillRect(x0 + 140, -R0, 16, R0 * 2); } // a band of colour below the grip
+    const gripC = k >= 1 && L.h ? mix(handle[2], '#000', 0.3) : '#1a1b1c'; x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(gripC, '#fff', 0.15)], [1, mix(gripC, '#000', 0.4)]]); x.beginPath(); x.roundRect(10, -R0 - 3, 120, R0 * 2 + 6, R0); x.fill();
+    for (let i = 0; i < 9; i++) { x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 2; x.beginPath(); x.moveTo(18 + i * 13, -R0); x.lineTo(24 + i * 13, R0); x.stroke(); }
+    if (k >= 1 && !L.h) { x.fillStyle = '#7a6040'; x.fillRect(140, -R0, 16, R0 * 2); }
+    x.fillStyle = '#121314'; x.beginPath(); x.roundRect(-8, -R0 - 1, 14, R0 * 2 + 2, 5); x.fill();
+    x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(metal, '#fff', 0.3)], [0.5, metal], [1, mix(metal, '#000', 0.45)]]); x.beginPath(); x.roundRect(Lr - 40, -R0 - 3, 40, R0 * 2 + 6, 4); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 2; x.stroke();
+    x.restore();
+    // the yoke: two arms from the collar out to the rim either side of where it meets
+    const C2 = [A2[0] + Math.cos(ang) * R * 0.32, A2[1] + Math.sin(ang) * R * 0.32];
+    for (const du2 of [-0.42, 0.42]) { const q = P2(at(Math.PI + du2, 0)); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = hoopW * 0.8 + 4; x.beginPath(); x.moveTo(...C2); x.lineTo(...q); x.stroke(); x.strokeStyle = hoop; x.lineWidth = hoopW * 0.8; x.stroke(); }
     x.restore();
     if (k >= 4) sparks(x, W, H, hoop, 19 + (hash(def.id) % 97));
   });

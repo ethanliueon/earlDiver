@@ -1167,3 +1167,8 @@ html body #catalog.th-dave .cat-card .t { flex-wrap: wrap; }
 html body #catalog.th-dave .lot { display: block; flex-basis: 100%; font: 600 11px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #6a704e; margin-bottom: 1px; }
 html body #catalog.th-station header h1:not(#_a):not(#_b) { font: 600 20px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.22em; text-transform: uppercase; }
 html body #catalog.th-station .scode { font: 500 12px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.08em; color: #5e6a68; margin-left: 6px; white-space: nowrap; }
+/* (5.15.3) a fish dragged off the panel to be thrown back: it fades as if already in the water, a small worn tag under it */
+.fish-ghost.letgo { opacity: 0.55; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)) saturate(0.7) !important; transition: opacity 0.15s; }
+.ghost-tag { position: fixed; z-index: 101; transform: translateX(-50%); pointer-events: none; padding: 3px 10px 4px; border-radius: 3px;
+  background: #3a3529; color: #e6dcc0; font: 600 13px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.04em; box-shadow: 0 0 0 1px rgba(16,14,10,0.9), 0 3px 6px rgba(0,0,0,0.45); }
+.ghost-tag[hidden] { display: none; }

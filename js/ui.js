@@ -261,7 +261,7 @@ export class UI {
     $('set-catchtags').addEventListener('click', () => { setSetting('catchTags', !SETTINGS.catchTags); this.renderSettings(); });
     $('set-sound').addEventListener('click', () => { h.onMute && h.onMute(); this.renderSettings(); });
     document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
-    $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory')) this.toggleInventory(false); });
+    $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory') && performance.now() - (this.dragEndAt || 0) > 400) this.toggleInventory(false); }); // (5.15.3) not the click that ends a drag off the panel
     $('set-graphics').addEventListener('click', () => { setSetting('fast', !SETTINGS.fast); this.renderSettings(); });
     $('set-fullscreen').addEventListener('click', () => { $('fullscreen').click(); setTimeout(() => this.renderSettings(), 250); });
     document.addEventListener('fullscreenchange', () => { if (this.settingsOpen()) this.renderSettings(); });
@@ -677,7 +677,7 @@ export class UI {
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
       // (5.14.2) the large pressure tank always has its place: a strip under the chambers, its outline padlocked until fitted
       + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank</h4><canvas class="ct-big off"></canvas>`)
-      + `<p class="ct-cap">${elsewhere}Click an animal for its card; drag it to move it${g.earl && g.earl.inSub ? '' : ' (in the sub)'}</p></div></div></div>`
+      + `<p class="ct-cap">${elsewhere}Click an animal for its card; ${g.earl && g.earl.inSub ? 'drag it to move it' : 'drag it off the panel to throw it back'}</p></div></div></div>`
       + (this.fishSel ? this.fishPop(P, g) : '') + (this.petSel ? this.petPop(P) : '') + (this.phSel != null ? this.photoPop(P, g) : '');
   }
   // (5.0) the pet's card: what it is, and the way out of the slot (the aquarium, or the sea), with a warning
@@ -896,15 +896,18 @@ export class UI {
         const tgt = this.catchDropAt(ev.clientX, ev.clientY);
         root.querySelectorAll('.drop-on').forEach((el) => el.classList.remove('drop-on'));
         if (tgt && tgt.el) tgt.el.classList.add('drop-on');
+        const out = !!(tgt && tgt.kind === 'out'); d.ghost.classList.toggle('letgo', out); // (5.15.3) off the panel: it will be let go
+        if (out && !d.tag) { d.tag = document.createElement('div'); d.tag.className = 'ghost-tag'; d.tag.textContent = 'Throw back'; document.body.appendChild(d.tag); }
+        if (d.tag) { d.tag.hidden = !out; d.tag.style.left = ev.clientX + 'px'; d.tag.style.top = (ev.clientY + 40) + 'px'; }
       }
     });
     const end = (ev) => {
-      const d = this.cDrag; if (!d) return; this.cDrag = null;
-      if (d.ghost) d.ghost.remove();
+      const d = this.cDrag; if (!d) return; this.cDrag = null; if (d.moved) this.dragEndAt = performance.now();
+      if (d.ghost) d.ghost.remove(); if (d.tag) d.tag.remove();
       root.querySelectorAll('.drop-on').forEach((el) => el.classList.remove('drop-on'));
       const g2 = game(); if (!g2 || ev.type === 'pointercancel') return;
       if (!d.moved) { this.fishSel = d.s; this.renderInventory(); return; } // a click: its card
-      const tgt = this.catchDropAt(ev.clientX, ev.clientY); if (!tgt) return;
+      const tgt = this.catchDropAt(ev.clientX, ev.clientY, d.s); if (!tgt) return;
       this.catchMove(g2, d.s, tgt);
     };
     window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
@@ -924,8 +927,12 @@ export class UI {
     return null;
   }
   // where a dragged animal would land: { kind: 'bag' | 'open' | 'chamber' | 'big', n, el }
-  catchDropAt(cx, cy) {
-    const root = $('inventory'), el = document.elementFromPoint(cx, cy); if (!el || !root.contains(el)) return null;
+  catchDropAt(cx, cy, held = this.cDrag && this.cDrag.s) {
+    const root = $('inventory'), el = document.elementFromPoint(cx, cy);
+    // (5.15.3) off the panel altogether: thrown back into the sea (only from the bag)
+    const pr = root.querySelector('.inv-panel'), r0 = pr && pr.getBoundingClientRect();
+    if (r0 && (cx < r0.left || cx > r0.right || cy < r0.top || cy > r0.bottom)) return held && this.fishWhere(this.h.getGame(), held)?.place === 'bag' ? { kind: 'out' } : null;
+    if (!el || !root.contains(el)) return null;
     const ps = el.closest('.inv-catch2 .pet-slot'); if (ps) return { kind: 'pet', el: ps };
     const left = el.closest('.inv-catch2 .inv-left'); if (left) return { kind: 'bag', el: left.querySelector('.fc-grid') };
     const tank = el.closest('.tank-win'); if (tank) return { kind: 'open', el: tank };
@@ -939,6 +946,12 @@ export class UI {
     const same = (tgt.kind === 'bag' && at.place === 'bag') || (tgt.kind === 'open' && at.place === 'open') || (tgt.kind === 'big' && at.place === 'big') || (tgt.kind === 'chamber' && at.place === 'chamber' && at.n === tgt.n);
     if (same) return;
     const sp = SPECIES_BY_ID[s2.id], say = (t) => this.h.toast && this.h.toast(t, 'warn');
+    if (tgt.kind === 'out') { // (5.15.3) thrown back: at once, but a rare-and-up animal is asked about first
+      if (at.place !== 'bag') return;
+      const go = () => { this.tankDo('release', 'bag', at.i, -1); if (this.fishSel === s2) this.fishSel = null; this.renderInventory(); };
+      const R = rarityOf(sp); if (R && ['rare', 'exotic', 'legendary'].includes(R.id)) this.confirm(`Throw back ${this.theName(sp).replace(/^The/, 'the')}?`, 'It swims off and is gone.', 'Throw back', 'Keep it', go); else go();
+      return;
+    }
     if (tgt.kind === 'pet') { const r = this.h.onPet('set', at.where, at.i); this.renderInventory(); return r; }
     if (!(this.h.inSub && this.h.inSub())) {
       say(at.place === 'bag' ? `You aren't in the sub: get in to put ${this.theName(sp).replace(/^The/, 'the')} in a tank` : `${this.theName(sp)} is in the sub: get in to move it`);
