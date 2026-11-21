@@ -633,7 +633,6 @@ export class UI {
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
     const cap = Math.round(statValue(P, 'bag'));
     const inTrouble = (s2, inBag) => s2.cond > 0.05 && (s2.cond < 0.3 || gapOf(g, s2, inBag) > SAFE_GAP);
-    const bag = g.bag.map((s2, i) => card(inTrouble(s2, true) ? 'fc trouble' : 'fc', s2).replace(/^<div class="fc[^"]*"/, (m) => `${m} data-b="${i}"`)).join('') ; // (5.14.0) one card for each animal; the room is in spaces, shown in the heading (the sorting tray comes next)
     const usedSp = g.bag.reduce((t2, s2) => t2 + slotsOf(s2), 0);
     const all = g.bag.concat(g.subTank || []), total = all.reduce((t, s2) => t + worth(s2), 0);
     // the sub: the open tank itself, its animals swimming as they do in the sub, and the chambers as they hang there
@@ -649,9 +648,29 @@ export class UI {
     const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
     if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
     const petSlot = `<div class="pet-slot${pet ? ' on' : ''}" title="${pet ? psp.name + ': click for its card' : 'At the surface, drag a fish here: 60 cm to 1.5 m, or any legend'}"><span class="ps-lbl">Pet</span>${pet ? `<img src="${this.fitPics.get(psp.id)}" alt=""><b>${psp.name}</b><small>${P.petStay ? 'Staying (H)' : 'Following (H)'}</small>` : '<em>Drag a fish here at the surface</em>'}</div>`;
-    return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i class="${usedSp > cap ? 'over' : ''}">(${usedSp}/${cap} spaces${usedSp > cap ? ', overencumbered' : ''})</i></h4><div class="fc-grid g4">${bag}</div>`
-      + `<div class="catch-row">${petSlot}<div class="worth-paint" style="--wp:${Math.min(104, Math.floor(400 / (money(total).length * 0.52)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
-      + (hasPh ? this.photoBoxes(P, g) : '') + `</div>`
+    // (5.14.1) the bag as a fixed grid of spaces, ten across: the spaces his bag has are open wells, the rest padlocked, so
+    // nothing moves as he changes bags or fills it. An animal lies across as many spaces as it takes, left to right
+    // (1, 2, 4, then 8 and 16 over two rows), drawn bigger the more it takes, on a wash of the water it lives in; one that
+    // runs past the bag's room is edged red. Then the photo boxes (padlocked until he has a camera), and what it is all
+    // worth, always bottom left
+    const COLS = 10, frame = cap <= 50 ? 50 : Math.ceil(cap / COLS) * COLS, shape = (n) => (n <= 4 ? [n, 1] : n === 8 ? [4, 2] : [8, 2]);
+    const occ = [], at = (r, c) => occ[r * COLS + c];
+    const placed = g.bag.map((s2, i) => ({ s2, i, n: slotsOf(s2) })).sort((a2, b2) => b2.n - a2.n).map((q) => {
+      const [w, h] = shape(q.n);
+      for (let r = 0; ; r++) for (let c = 0; c + w <= COLS; c++) {
+        let free = true; for (let y = 0; y < h && free; y++) for (let x2 = 0; x2 < w; x2++) if (at(r + y, c + x2)) { free = false; break; }
+        if (free) { let over = false; for (let y = 0; y < h; y++) for (let x2 = 0; x2 < w; x2++) { occ[(r + y) * COLS + c + x2] = true; if ((r + y) * COLS + c + x2 >= cap) over = true; } return { ...q, r, c, w, h, over }; }
+      } });
+    const rows = Math.max(frame / COLS, ...placed.map((q) => q.r + q.h));
+    const hab = (sp) => { const [a2] = usualDepth(sp), hb = (sp.v && sp.v.hab) || ''; return /kelp/.test(hb) ? 'hb-kelp' : /reef|coral/.test(hb) ? 'hb-reef' : a2 < 60 ? 'hb-sun' : a2 < 300 ? 'hb-blue' : a2 < 1000 ? 'hb-twi' : 'hb-deep'; };
+    let cells = '';
+    for (let k = 0; k < rows * COLS; k++) if (!occ[k]) cells += `<div class="bs-cell${k < cap ? '' : ' locked'}" style="grid-row:${Math.floor(k / COLS) + 1};grid-column:${(k % COLS) + 1}">${k < cap ? '' : '<i></i>'}</div>`;
+    const fishCells = placed.map((q) => { const sp = SPECIES_BY_ID[q.s2.id]; if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
+      return `<div class="fc bs-fish ${hab(sp)}${inTrouble(q.s2, true) ? ' trouble' : ''}${q.over ? ' over' : ''}${rarityCls(sp)}" data-b="${q.i}" style="grid-row:${q.r + 1} / span ${q.h};grid-column:${q.c + 1} / span ${q.w}" title="${sp.name}, ${state(q.s2)}">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}"><i class="fc-dot" style="background:${dot(q.s2)}"></i></div>`; }).join('');
+    const over = usedSp > cap;
+    return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag${over ? ' <i class="over">overencumbered</i>' : ''}</h4><div class="bag-spaces" style="--cols:${COLS};--rows:${rows}">${cells}${fishCells}</div>`
+      + this.photoBoxes(P, g)
+      + `<div class="worth-paint" style="--wp:${Math.min(104, Math.floor(400 / (money(total).length * 0.52)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
@@ -679,6 +698,7 @@ export class UI {
   // click one and it fills the view with its name, how it came out and what it pays
   photoBoxes(P, g) {
     const roll = g.photos || [], cam = owns(P, 'camera') ? gear(P, 'cam') : null;
+    if (!cam && !roll.length) return `<h4 class="ph-h off">Photos <span>no camera yet</span></h4><div class="ph-grid">${'<div class="ph-cell empty locked"><i></i></div>'.repeat(10)}</div>`; // (5.14.1) always there, padlocked
     const cells = roll.map((ph, i) => `<button class="ph-cell" data-ph="${i}" title="${ph.name}">${ph.img ? `<img src="${ph.img}" alt="">` : '<span></span>'}<b>${String(i + 1).padStart(2, '0')}</b>${photoStars(ph)}</button>`).join('');
     return `<h4 class="ph-h">Photos <i>(${roll.length})</i>${cam ? `<span>Film ${g.items.film || 0}/${cam.shots}</span>` : ''}</h4><div class="ph-grid">${cells}${'<div class="ph-cell empty"></div>'.repeat(Math.max(0, 10 - roll.length))}</div>`;
   }
@@ -993,13 +1013,21 @@ export class UI {
         <div class="tp-txt"><h4>${T.name}</h4><p class="tp-kind">Trap · ${TR[k]} in the locker</p><p class="tp-desc">${desc}</p>
           ${fact('Sets down to', `${T.maxDepth} m`)}${fact('Holds', `${T.holds} animals`)}${fact('Takes', `up to ${Math.round(T.maxLen * 100)} cm`)}${T.winch ? fact('Hauled up', "by the Margaret's winch") : ''}
           <div class="lk-acts"><button data-trapuse="${k}">Use</button><small class="tp-note">at the surface</small></div></div></div></div>`; })();
+    // (5.14.1) the pet: a slot with his gear (it goes where he goes), not in the catch. Tap it: its card, or, when it is
+    // empty, the animals in the bag and the sub to choose from (only at the surface; it has to be 60 cm to 1.5 m, or a legend)
+    const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
+    if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
+    const petGear = `<div class="eq-slot sq petg${pet ? ' r-common' : ' empty'}" data-petslot title="${pet ? psp.name : 'Pet: empty'}">${pet ? `<img src="${this.fitPics.get(psp.id)}" alt="">` : ''}<small class="slot-nm">Pet</small></div>`;
+    const petPick = this.petPick ? (() => { const L = g.bag.map((s3, i) => ['bag', i, s3]).concat((g.subTank || []).map((s3, i) => ['tank', i, s3]));
+      const rows = L.map(([w2, i, s3]) => { const sp3 = SPECIES_BY_ID[s3.id]; if (!this.fitPics.has(sp3.id)) this.fitPics.set(sp3.id, fittedIcon(sp3, 300, 180).toDataURL()); return `<button class="pp-fish" data-petpick="${w2}:${i}"><img src="${this.fitPics.get(sp3.id)}" alt=""><b>${sp3.name}</b><small>${(s3.len || 0).toFixed(2)} m</small></button>`; }).join('');
+      return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">At the surface: an animal 60 cm to 1.5 m long, or any legend.</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing in the bag or the sub.</p>'}</div></div></div>`; })() : '';
     const nSpare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length;
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot('necklace')}${beltSlot('lure')}</div></div>`
+      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot('necklace')}${beltSlot('lure')}${petGear}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
-      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
@@ -1101,6 +1129,14 @@ export class UI {
     // a card's buttons, and clicking a tile (or a slot's item) to open its card
     const box = $('inventory').querySelector('.inv-body');
     box.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); this.lkSel = null; this.renderInventory(); }));
+    // (5.14.1) the pet's slot on the Gear page: its card, or the choice of an animal for it
+    const pslotG = root.querySelector('.eq-slot[data-petslot]'); if (pslotG) pslotG.addEventListener('click', () => { if (P.pet) this.petSel = true; else this.petPick = true; this.lkSel = null; this.renderInventory(); });
+    const pick = root.querySelector('.pet-pick'); if (pick) pick.addEventListener('click', (ev) => { const b = ev.target.closest('[data-petpick]');
+      if (b) { const [w2, i] = b.dataset.petpick.split(':'); if (this.h.onPet('set', w2, +i) !== false) this.petPick = false; this.renderInventory(); return; }
+      if (ev.target === pick || ev.target.closest('.ip-close')) { this.petPick = false; this.renderInventory(); } });
+    const ppopG = root.querySelector('.inv-split:not(.inv-catch2) ~ .pet-pop, .pet-pop'); if (ppopG && !root.querySelector('.inv-catch2')) ppopG.addEventListener('click', (ev) => { const b = ev.target.closest('button[data-pet]');
+      if (b) { const go = () => { if (this.h.onPet(b.dataset.pet) !== false) this.petSel = false; this.renderInventory(); }; if (b.dataset.pet === 'release') this.confirm('Release your pet?', 'It swims off into the sea and won\'t come back.', 'Release', 'Keep it', go); else go(); return; }
+      if (ev.target === ppopG || ev.target.closest('.ip-close')) { this.petSel = false; this.renderInventory(); } });
     root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
     // (5.6.9) the belt: a tap on a slot takes it off (into the locker), a tap on a locker stack puts it on
     const beltMsg = () => this.h.onMessage && this.h.onMessage('Change gear on deck, in the cabin or in the sub');

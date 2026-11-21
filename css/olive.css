@@ -1089,3 +1089,59 @@ html body #inventory .ip-st b { color: #efe8d2; font-weight: 600; }
 html body #catalog .cat-main:not(#_a) { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 34px), transparent); padding-bottom: 48px !important; }
 
 html body #inventory .inv-catch2 h4 i.over { color: #f05448 !important; font-style: normal; } /* (5.14.0) overencumbered */
+
+/* (5.14.1) low air: a red vignette round the edges of the screen, over the panels too; its strength set by main.js */
+#lowair { position: fixed; inset: 0; z-index: 9600; pointer-events: none; opacity: 0; transition: opacity 0.12s linear;
+  background: radial-gradient(ellipse 85% 80% at 50% 50%, rgba(140, 10, 6, 0) 68%, rgba(150, 12, 8, calc(var(--la, 0.5) * 0.55)) 90%, rgba(110, 4, 2, var(--la, 0.5)) 100%);
+  box-shadow: inset 0 0 50px 6px rgba(160, 14, 8, 0.5); }
+/* the sub's air messages over a panel: the HUD's danger red, no gold, no diamond */
+html body #overair:not(#_a) { --mc: #f05448; color: #f05448 !important; font: 600 18px/1.2 "Barlow Semi Condensed", sans-serif !important; }
+html body #overair:not(#_a)::before { display: none !important; }
+
+/* ---------- (5.14.1) the Catch page, fixed in place ---------- */
+/* the bag: a grid of spaces, ten across; open wells, padlocked spaces beyond his bag; an animal spans its spaces */
+html body #inventory .bag-spaces { display: grid; grid-template-columns: repeat(var(--cols), 1fr); grid-auto-rows: 46px; gap: 4px; margin: 6px 0 14px; }
+html body #inventory .bag-spaces .bs-cell { border-radius: 4px; background: rgba(4, 8, 6, 0.55); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 240, 0.05); position: relative; }
+html body #inventory .bag-spaces .bs-cell.locked { background: rgba(18, 22, 16, 0.55); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4); }
+html body #inventory .bag-spaces .bs-cell.locked i { position: absolute; left: 50%; top: 50%; width: 12px; height: 14px; transform: translate(-50%, -50%); opacity: 0.22;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 30'%3E%3Cpath d='M7 13V9a6 6 0 0 1 12 0v4' fill='none' stroke='%23c8c4b0' stroke-width='2.6'/%3E%3Crect x='3' y='13' width='20' height='15' rx='2' fill='%23c8c4b0'/%3E%3C/svg%3E") center / contain no-repeat; }
+html body #inventory .bag-spaces .bs-fish:not(#_a) { position: relative; min-height: 0; margin: 0; padding: 0; border-radius: 5px; display: grid; place-items: center; overflow: hidden; cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55), inset 0 -10px 18px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.5); background-image: none; }
+html body #inventory .bag-spaces .bs-fish img { width: 86%; height: 86%; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.55)); }
+html body #inventory .bag-spaces .bs-fish.over { box-shadow: inset 0 0 0 2px rgba(240, 84, 72, 0.9), 0 0 8px rgba(240, 84, 72, 0.35); }
+/* the water each animal lives in: a soft wash with a little light from above */
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish.hb-sun:not(.locked):not(#_a):not(#_b):not(#_c) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(140, 200, 210, 0.45), rgba(0, 0, 0, 0) 70%), #2c6a78 !important; }
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish.hb-reef:not(.locked):not(#_a):not(#_b):not(#_c) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(150, 210, 200, 0.42), rgba(0, 0, 0, 0) 70%), linear-gradient(180deg, #2a7078, #3a6650 85%, #6a6248) !important; }
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish.hb-kelp:not(.locked):not(#_a):not(#_b):not(#_c) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(170, 200, 140, 0.38), rgba(0, 0, 0, 0) 70%), #34503a !important; }
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish.hb-blue:not(.locked):not(#_a):not(#_b):not(#_c) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(110, 160, 200, 0.32), rgba(0, 0, 0, 0) 70%), #1c3e5a !important; }
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish.hb-twi:not(.locked):not(#_a):not(#_b):not(#_c) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(80, 110, 160, 0.25), rgba(0, 0, 0, 0) 70%), #142438 !important; }
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish.hb-deep:not(.locked):not(#_a):not(#_b):not(#_c) { background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(60, 80, 110, 0.18), rgba(0, 0, 0, 0) 70%), #0a1018 !important; }
+html body #inventory .bs-fish .fc-dot { position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+html body #inventory .bs-fish .r-stars { position: absolute; right: 4px; top: 3px; font-size: 10px; }
+html body #inventory .inv-catch2 h4 i.over { color: #f05448 !important; font-style: normal; margin-left: 6px; }
+/* stars in the colour of what they mark: rare blue, exotic purple, legendary bronze */
+html body .r-stars.rs-rare:not(#_a) { color: #5a92e0 !important; } html body .r-stars.rs-exotic:not(#_a) { color: #a46ad8 !important; } html body .r-stars.rs-legendary:not(#_a) { color: #c99a4e !important; }
+/* the photos, padlocked until he has a camera */
+html body #inventory .ph-cell.locked { position: relative; } html body #inventory .ph-cell.locked i { position: absolute; inset: 0; margin: auto; width: 14px; height: 16px; opacity: 0.25;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 30'%3E%3Cpath d='M7 13V9a6 6 0 0 1 12 0v4' fill='none' stroke='%23c8c4b0' stroke-width='2.6'/%3E%3Crect x='3' y='13' width='20' height='15' rx='2' fill='%23c8c4b0'/%3E%3C/svg%3E") center / contain no-repeat; }
+html body #inventory .ph-h.off span { margin-left: 8px; opacity: 0.55; font-size: 0.85em; }
+/* what it is worth: always in the same place, bottom left of the page */
+html body #inventory .inv-catch2 .inv-left { position: relative; padding-bottom: 96px !important; }
+html body #inventory .inv-catch2 .worth-paint:not(#_a) { position: absolute; left: 8px; bottom: 6px; margin: 0; line-height: 0.9; }
+/* the pet's slot on the Gear page, and choosing one */
+html body #inventory .pet-pick .ip-box { max-width: 560px; } html body #inventory .pp-note { opacity: 0.7; margin: 0 0 10px; font-size: 14px; }
+html body #inventory .pp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 300px; overflow: auto; }
+html body #inventory .pp-fish { display: grid; justify-items: center; gap: 2px; padding: 6px; border-radius: 5px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); color: #e6dfca; cursor: pointer; }
+html body #inventory .pp-fish img { width: 100%; height: 54px; object-fit: contain; } html body #inventory .pp-fish small { opacity: 0.6; }
+/* Gear / Catch: the page you are on stands out (lit, an outline, pressed in); the other is dim and raised */
+html body #inventory .inv-tabs button:not(#_a):not(#_b) { opacity: 0.62; }
+html body #inventory .inv-tabs button.on:not(#_a):not(#_b) { opacity: 1; outline: 2px solid rgba(239, 232, 210, 0.9); outline-offset: 2px; transform: translateY(1px); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45) !important; }
+html body #inventory .inv-catch2 .bag-spaces .bs-fish::after, html body #inventory .inv-catch2 .bag-spaces .bs-fish::before { display: none !important; content: none !important; } /* no number badge, no mesh */
+html body #inventory .inv-catch2 .bag-spaces .bs-fish:not(#_a):not(#_b) { border: 0 !important; border-image: none !important; }
+html body #inventory .inv-catch2 .worth-paint:not(#_a):not(#_b) { font-size: 64px !important; }
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish img:not(#_a):not(#_b) { width: 92% !important; height: 92% !important; max-width: none !important; max-height: none !important; object-fit: contain; position: static !important; }
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish:not(.locked):not(#_a):not(#_b):not(#_c) { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55), inset 0 -10px 18px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.5) !important; }
+html body #inventory .inv-catch2 .bag-spaces .fc.bs-fish.over:not(.locked):not(#_a):not(#_b):not(#_c) { box-shadow: inset 0 0 0 2px rgba(240, 84, 72, 0.95), 0 0 8px rgba(240, 84, 72, 0.4) !important; }
+html body .r-stars.rs-rare:not(#_a) :is(b, svg) { color: #5a92e0 !important; fill: #5a92e0 !important; } html body .r-stars.rs-exotic:not(#_a) :is(b, svg) { color: #a46ad8 !important; fill: #a46ad8 !important; }
+html body .r-stars.rs-legendary:not(#_a) :is(b, svg) { color: #c99a4e !important; fill: #c99a4e !important; }
+html body .r-stars:not(#_a) svg path { fill: currentColor !important; }

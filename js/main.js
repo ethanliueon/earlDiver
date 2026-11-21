@@ -76,10 +76,17 @@ function airOver(g) {
     if (g.noAir) txt = 'Out of air: surface!';
     else if (e.inSub && subAir <= 0.001) txt = own < 0.5 ? `Cabin out of air · your tank: ${Math.ceil(e.o2)} s` : 'Cabin out of air: breathing from your tank';
     else if (e.inSub && subAir < 0.25) txt = `Sub air low: ${Math.round(subAir * 100)} %`;
-    else if (!e.inSub && own < 0.35) txt = `${Math.ceil(e.o2)} s of air left`;
   }
   if (el.textContent !== txt) el.textContent = txt;
   el.classList.toggle('on', !!txt);
+  // (5.14.1) low air, felt rather than read: under 10 s of his own air the edges of the screen (and of any open panel,
+  // as it sits over them) shade red and pulse, slowly at first, faster as it runs out, near solid in the last seconds
+  let v = document.getElementById('lowair'); if (!v) { v = document.createElement('div'); v.id = 'lowair'; document.body.appendChild(v); }
+  const breathing = g.mode === 'play' && !g.aboard && (!e.inSub || (sub && sub.o2 <= 0.001));
+  const left = breathing && !e.atSurface ? (g.noAir ? 0 : e.o2) : 99, k = left < 10 ? 1 - left / 10 : 0;
+  if (k > 0) { const rate = 0.9 + k * 2.6; g.lowAirPh = ((g.lowAirPh || 0) + (g.realDt || 0.016) * rate) % 1; const beat = 0.5 - 0.5 * Math.cos(g.lowAirPh * Math.PI * 2);
+    v.style.opacity = (0.25 + 0.55 * k + (0.2 + 0.25 * k) * beat * (1 - Math.max(0, k - 0.8) * 2.5)).toFixed(3); v.style.setProperty('--la', (0.35 + 0.4 * k).toFixed(3)); }
+  else if (v.style.opacity !== '0') v.style.opacity = '0';
 }
 const audio = new Audio(); window.__earlAudio = audio; // (for testing)
 audio.musicAllowed = true; // (5.5) the title too: the theme was only allowed from the first dive on, so the title stayed silent
@@ -2401,7 +2408,7 @@ function update(dt) {
     // (5.14.0) overencumbered (more in the bag than it holds), out of the sub: half speed, air three times as fast, and no
     // more catching until the bag is lightened. The sub is never overencumbered
     { const over = !e.inSub && !g.aboard && overencumbered(g); if (over) { e.speedMul *= 0.5; e.o2Mul *= 3; }
-      if (over && !g.overTold) { g.overTold = true; hud.toast('Overencumbered', 'warn'); } else if (!over) g.overTold = false; g.overenc = over; }
+      g.overenc = over; } // (5.14.1) shown only by the bag counter turning red
     if (cold > 1.05 && !g.coldTold) { g.coldTold = true; hud.toast('Cold water: air goes faster', 'note'); } // (3.0.0) back
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
@@ -2915,7 +2922,7 @@ function frame(now) {
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
-  airOver(g);
+  g.realDt = dt; airOver(g);
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
   { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && ui.anyOpen && ui.anyOpen(); tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)

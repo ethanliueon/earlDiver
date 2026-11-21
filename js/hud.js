@@ -159,7 +159,6 @@ export class Hud {
       ctx.globalAlpha = 0.95; drawGlyph(ctx, 'bag', x0 + sz / 2, wy, sz * 1.15);
       ctx.textAlign = 'left'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5 * s;
       ctx.fillStyle = over ? `rgba(240,84,72,${(0.75 + 0.25 * Math.sin(g.time * 6)).toFixed(3)})` : '#efe8d2'; ctx.fillText(txt, x0 + sz + 8 * s, wy + 1 * s);
-      if (over) { ctx.font = `600 ${15 * s}px ${HUDF}`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(240,84,72,0.95)'; ctx.fillText('Overencumbered', cx0, wy - 26 * s); }
       const P2 = this.bagPop; if (P2 && SPECIES_BY_ID[P2.sp.id]) { P2.t += dt; const k = P2.t < 0.25 ? P2.t / 0.25 : P2.t > 1.6 ? Math.max(0, 1 - (P2.t - 1.6) / 0.4) : 1;
         if (k <= 0) this.bagPop = null; else { ctx.shadowBlur = 0; ctx.globalAlpha = k; ctx.translate(x0 + sz + 8 * s + tw + 34 * s, wy); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
           try { drawSpecies(ctx, SPECIES_BY_ID[P2.sp.id], 44 * s, g.time * 2, 1, 0); } catch (err) { /* only the count, then */ } } }
