@@ -3095,23 +3095,32 @@ function drawPerch(ctx, L, v0, t, swim) {
   // porcupinefish spines, laid back along the body
   if (v.spines) { ctx.strokeStyle = rgba(v.spinec || '#4a3a28', 0.8); ctx.lineWidth = Math.max(0.6, H * 0.018); ctx.beginPath(); let sd = 3; const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280);
     for (let k = 0; k < 46; k++) { const x = X(0.12 + rnd() * 0.8), y = (rnd() - 0.5) * H * 0.85; ctx.moveTo(x, y); ctx.lineTo(x + H * 0.12, y + (y > 0 ? 1 : -1) * H * 0.02); } ctx.stroke(); }
+  // (5.10.0) the open-water parts: finlets, keels, scutes, the adipose fin, a chin barbel
+  if (v.finlets || F.finlets) { ctx.fillStyle = v.finletc || '#c8a82a'; for (let k = 0; k < 6; k++) { const x = X(0.74 + k * 0.035); for (const sd of [-1, 1]) { const ey2 = edgeAt(og, x, sd); ctx.beginPath(); ctx.moveTo(x - L * 0.006, ey2 - sd * H * 0.02); ctx.lineTo(x + L * 0.012, ey2 + sd * H * 0.09); ctx.lineTo(x + L * 0.014, ey2 - sd * H * 0.02); ctx.fill(); } } }
+  if (F.keel || v.keel) { ctx.fillStyle = shade(v.c[0], -0.25); ctx.beginPath(); ctx.ellipse(X(0.96), o.tailY, bl * 0.05, H * 0.04, 0, 0, TAU); ctx.fill(); }
+  if (v.scutes) { ctx.strokeStyle = rgba(v.scutes, 0.45); ctx.lineWidth = Math.max(0.5, H * 0.018); for (let k = 0; k < 11; k++) { const u = 0.66 + k * 0.032, x = X(u), y = (edgeAt(og, x, -1) + edgeAt(og, x, 1)) / 2 - H * 0.02; ctx.beginPath(); ctx.moveTo(x - bl * 0.012, y - H * 0.03); ctx.lineTo(x + bl * 0.012, y); ctx.lineTo(x - bl * 0.012, y + H * 0.03); ctx.stroke(); } } // bony scutes: a row of small chevrons along the rear lateral line
+  if (F.adipose || v.adipose) { const x = X(0.88), y = edgeAt(og, x, -1); ctx.fillStyle = shade(v.c[0], -0.1); ctx.beginPath(); ctx.moveTo(x - bl * 0.03, y + H * 0.02); ctx.quadraticCurveTo(x, y - H * 0.16, x + bl * 0.03, y + H * 0.01); ctx.fill(); }
+  if (v.barbel || F.barbel) { ctx.strokeStyle = rgba(shade(v.c[1], -0.25), 0.9); ctx.lineWidth = Math.max(0.6, H * 0.025); ctx.beginPath(); ctx.moveTo(og.x0 + bl * 0.05, edgeAt(og, og.x0 + bl * 0.05, 1) - H * 0.03); ctx.lineTo(og.x0 + bl * 0.045, edgeAt(og, og.x0 + bl * 0.05, 1) + H * 0.14); ctx.stroke(); }
   // gill cover
   const gx = X(F.gill ?? 0.26);
   ctx.strokeStyle = 'rgba(0,0,0,0.26)'; ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.beginPath(); ctx.arc(gx - H * 0.3, H * 0.02, H * 0.36, -0.9, 0.95); ctx.stroke();
   if (v.gillspot) { ctx.fillStyle = v.gillspot; ctx.beginPath(); ctx.arc(gx, -H * 0.12, H * 0.05, 0, TAU); ctx.fill(); }
   // the pectoral
-  { const big = v.fan || F.fan, pl = L * (big ? 0.24 : 0.12), pw = H * (big ? 0.5 : 0.16), beat = Math.sin(t * (big ? 2 : 5)) * (big ? 0.1 : 0.2); ctx.save(); ctx.translate(gx + L * 0.01, H * (F.pecy ?? 0.08)); ctx.rotate((big ? 0.45 : 0.32) + beat); const c = hexToRgb(v.pecc || v.f);
+  { const big = v.fan || F.fan, wg = v.wings, pl = L * (wg ? 0.48 : big ? 0.24 : 0.12) * (v.peck || 1), pw = H * (wg ? 0.6 : big ? 0.5 : 0.16), beat = Math.sin(t * (big || wg ? 2 : 5)) * (big ? 0.1 : 0.2); ctx.save(); ctx.translate(gx + L * 0.01, H * (F.pecy ?? 0.08)); ctx.rotate((wg ? -0.42 : big ? 0.45 : v.peck ? 0.22 : 0.32) + beat); const c = hexToRgb(v.pecc || v.f);
     const pg = ctx.createLinearGradient(0, 0, pl, 0); pg.addColorStop(0, rgbStr(c, 0.8)); pg.addColorStop(1, rgbStr(c, big ? 0.55 : 0.2)); ctx.fillStyle = pg;
     ctx.beginPath(); ctx.moveTo(0, -pw * 0.3); ctx.quadraticCurveTo(pl * 0.7, -pw * 0.8, pl, -pw * 0.05); ctx.quadraticCurveTo(pl * 0.8, pw * 0.7, 0, pw * 0.35); ctx.closePath(); ctx.fill();
+    if (wg) { ctx.strokeStyle = 'rgba(30,40,60,0.45)'; ctx.lineWidth = Math.max(0.5, H * 0.015); ctx.beginPath(); for (let k = 0; k < 9; k++) { const a = -0.5 + k * 0.11; ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * pl * 0.98, Math.sin(a) * pl * 0.6); } ctx.stroke(); } // the wing's rays
     if (big) { ctx.strokeStyle = rgba(v.fanc || '#3a1a14', 0.6); ctx.lineWidth = Math.max(0.5, H * 0.015); ctx.beginPath(); for (let k = 0; k < 8; k++) { const a = -0.55 + k * 0.15; ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * pl, Math.sin(a) * pl * 0.9); } ctx.stroke(); }
     ctx.restore(); }
   pelvic(true);
+  if (v.sucker) { const x = X(0.1), y = edgeAt(og, x, -1); ctx.fillStyle = shade(v.c[0], -0.2); ctx.beginPath(); ctx.ellipse(x + bl * 0.06, y + H * 0.02, bl * 0.11, H * 0.12, 0, PI, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = Math.max(0.5, H * 0.02); ctx.beginPath(); for (let k = 0; k < 9; k++) { const xx = x - bl * 0.04 + k * bl * 0.024; ctx.moveTo(xx, y + H * 0.02); ctx.lineTo(xx + bl * 0.006, y - H * 0.08); } ctx.stroke(); } // the remora's sucker disc
   // the head: the mouth by its kind, and the eye
   const nx = og.x0, mt = v.mouth || F.mouth || 'small', my = H * (v.mouthy ?? F.mouthy ?? 0.04);
   ctx.lineCap = 'round';
   if (mt === 'big' || mt === 'up') { // a wide gape, the lower jaw jutting (groupers, snappers, bass; upturned: bigeye, scorpionfish)
     const up = mt === 'up' ? -1 : 1; ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(0.7, L * 0.008);
     ctx.beginPath(); ctx.moveTo(nx - L * 0.008, my - up * H * 0.02); ctx.quadraticCurveTo(nx + L * 0.06, my + up * H * 0.08, nx + L * 0.12, my + up * H * 0.05); ctx.stroke();
+    if (v.teeth) { ctx.fillStyle = '#ece6d4'; for (let k = 0; k < 6; k++) { const x = nx + L * (0.01 + k * 0.016); ctx.beginPath(); ctx.moveTo(x, my); ctx.lineTo(x + L * 0.005, my - H * 0.07); ctx.lineTo(x + L * 0.01, my); ctx.fill(); } }
     ctx.fillStyle = rgba(shade(v.c[1], -0.15), 0.9); ctx.beginPath(); ctx.moveTo(nx - L * 0.012, my); ctx.quadraticCurveTo(nx + L * 0.04, my + H * 0.14, nx + L * 0.11, my + H * 0.1); ctx.lineTo(nx + L * 0.1, my + H * 0.06); ctx.quadraticCurveTo(nx + L * 0.04, my + H * 0.08, nx - L * 0.012, my); ctx.fill();
   } else if (mt === 'beak') { // the parrotfish's fused teeth: two pale plates
     const bc = v.beakc || '#d8e0d0'; ctx.fillStyle = bc; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = ew * 0.6;
@@ -3120,6 +3129,9 @@ function drawPerch(ctx, L, v0, t, swim) {
   } else if (mt === 'lips') { // thick lips (sweetlips, the humphead wrasse)
     ctx.fillStyle = v.lipc || shade(v.c[1], -0.15); ctx.beginPath(); ctx.ellipse(nx + L * 0.012, my - H * 0.03, L * 0.024, H * 0.045, 0, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(nx + L * 0.015, my + H * 0.045, L * 0.022, H * 0.04, 0, 0, TAU); ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.beginPath(); ctx.moveTo(nx - L * 0.01, my + H * 0.005); ctx.lineTo(nx + L * 0.04, my + H * 0.01); ctx.stroke();
+  } else if (mt === 'needle') { // a beak of long, thin jaws (houndfish, saury), the lower a little longer
+    const jl = L * (v.jaw || 0.16); ctx.fillStyle = shade(v.c[0], -0.1); ctx.beginPath(); ctx.moveTo(nx + L * 0.03, my - H * 0.1); ctx.lineTo(nx - jl, my - H * 0.01); ctx.lineTo(nx + L * 0.03, my + H * 0.02); ctx.fill();
+    ctx.fillStyle = shade(v.c[1], -0.1); ctx.beginPath(); ctx.moveTo(nx + L * 0.03, my + H * 0.02); ctx.lineTo(nx - jl * 1.12, my + H * 0.01); ctx.lineTo(nx + L * 0.03, my + H * 0.12); ctx.fill();
   } else if (mt === 'puff') { // a puffer's small beak
     ctx.fillStyle = v.beakc || '#e8e0c8'; ctx.beginPath(); ctx.ellipse(nx + L * 0.008, my, L * 0.016, H * 0.06, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(0.5, L * 0.005); ctx.beginPath(); ctx.moveTo(nx - L * 0.006, my); ctx.lineTo(nx + L * 0.02, my); ctx.stroke();
   } else { // small and pointed (damselfish, wrasse, goby)
@@ -3288,6 +3300,45 @@ Object.assign(FAM, {
   // the dogfish and lanternsharks: slim, a spine before each dorsal, no anal fin, big eyes
   dogfish: SHARK({ body: 0.76, top: [[0, 0.16], [0.05, 0.5], [0.15, 0.82], [0.32, 1], [0.6, 0.86], [0.82, 0.5], [1, 0.22]], bot: [[0, 0.1], [0.06, 0.45], [0.2, 0.85], [0.4, 1], [0.66, 0.72], [0.86, 0.38], [1, 0.22]],
     d1: { x: 0.35, w: 0.1, h: 0.55 }, d2: { x: 0.7, w: 0.08, h: 0.45 }, anal: 0, dspine: 1, pec: [0.13, 0.07, 0.8], eye: [0.08, -0.14], eyek: 1.5, mouthx: 0.05, gills: 5, gx: 0.17, gsp: 0.016, tail: { up: 0.27, low: 0.1, a: -0.45, b: 0.85 } }),
+});
+
+
+Object.assign(FAM, {
+  // tunas, mackerels, wahoo: a spindle, two dorsals (the second a sickle), finlets, keels, a crescent tail
+  tuna: PERCH({ body: 0.8, bend: 0.5, eye: [0.1, -0.08], mouth: 'small', mouthy: 0.06, gill: 0.22, tailk: 1.25, finlets: 1, keel: 1, noline: 1, finop: 0.9,
+    top: [[0, 0.14], [0.05, 0.48], [0.15, 0.8], [0.32, 1], [0.5, 0.95], [0.7, 0.6], [0.88, 0.22], [1, 0.1]], bot: [[0, 0.14], [0.06, 0.46], [0.18, 0.82], [0.38, 1], [0.58, 0.88], [0.76, 0.5], [0.9, 0.2], [1, 0.1]],
+    dors: [{ a: 0.22, b: 0.4, s: 'tri', h: 0.34, r: 0.2, n: 10 }, { a: 0.5, b: 0.6, s: 'tri', h: 0.45, r: 0.45, n: 6 }], anal: [{ a: 0.52, b: 0.62, s: 'tri', h: 0.42, r: 0.45, n: 6 }] }),
+  // jacks: deeper, a short spiny dorsal then a long soft one, bony scutes toward a deeply forked tail
+  jack: PERCH({ body: 0.79, bend: 0.6, eye: [0.11, -0.12], eyek: 1.1, mouth: 'small', mouthy: 0.05, gill: 0.24, tailk: 1.15, noline: 1,
+    top: [[0, 0.2], [0.05, 0.55], [0.18, 0.88], [0.35, 1], [0.55, 0.9], [0.75, 0.5], [0.9, 0.18], [1, 0.12]], bot: [[0, 0.16], [0.08, 0.55], [0.25, 0.92], [0.45, 1], [0.65, 0.8], [0.82, 0.42], [1, 0.12]],
+    dors: [{ a: 0.24, b: 0.36, s: 'spiny', h: 0.16, r: 0.12, n: 8 }, { a: 0.4, b: 0.8, s: 'tri', h: 0.3, r: 0.35 }], anal: [{ a: 0.48, b: 0.8, s: 'tri', h: 0.28, r: 0.35 }] }),
+  // herrings, sardines, anchovies: slim and silver, one dorsal in the middle, a deep fork, big eyes
+  herring: PERCH({ body: 0.79, bend: 1.0, eye: [0.1, -0.08], eyek: 1.3, mouth: 'small', mouthy: 0.04, gill: 0.22, tailk: 1.1, noline: 1, scale0: 9,
+    top: [[0, 0.22], [0.06, 0.6], [0.2, 0.92], [0.4, 1], [0.6, 0.9], [0.8, 0.5], [0.95, 0.3], [1, 0.25]], bot: [[0, 0.2], [0.08, 0.62], [0.25, 0.95], [0.45, 1], [0.66, 0.85], [0.85, 0.45], [1, 0.25]],
+    dors: [{ a: 0.4, b: 0.54, s: 'tri', h: 0.38, r: 0.3, n: 8 }], anal: [{ a: 0.7, b: 0.84, s: 'even', h: 0.12, r: 0.2 }] }),
+  salmon: PERCH({ body: 0.8, bend: 0.8, eye: [0.11, -0.14], mouth: 'big', mouthy: 0.03, gill: 0.24, tailk: 0.95, adipose: 1, noline: 1,
+    top: [[0, 0.2], [0.06, 0.55], [0.18, 0.88], [0.38, 1], [0.6, 0.88], [0.8, 0.48], [0.95, 0.3], [1, 0.28]], bot: [[0, 0.22], [0.08, 0.6], [0.25, 0.92], [0.45, 1], [0.66, 0.8], [0.85, 0.42], [1, 0.28]],
+    dors: [{ a: 0.4, b: 0.54, s: 'tri', h: 0.32, r: 0.3, n: 9 }], anal: [{ a: 0.7, b: 0.82, s: 'tri', h: 0.24, r: 0.3 }] }),
+  // the cods: three dorsals, two anals, a chin barbel
+  cod: PERCH({ body: 0.8, bend: 0.8, eye: [0.11, -0.16], mouth: 'big', mouthy: 0.04, gill: 0.25, tailk: 0.85, barbel: 1,
+    top: [[0, 0.25], [0.06, 0.6], [0.2, 0.9], [0.38, 1], [0.6, 0.82], [0.85, 0.42], [1, 0.3]], bot: [[0, 0.3], [0.08, 0.66], [0.25, 0.95], [0.45, 1], [0.7, 0.75], [0.88, 0.4], [1, 0.3]],
+    dors: [{ a: 0.26, b: 0.4, s: 'soft', h: 0.3, r: 0.25 }, { a: 0.44, b: 0.62, s: 'soft', h: 0.24, r: 0.25 }, { a: 0.66, b: 0.86, s: 'soft', h: 0.2, r: 0.25 }], anal: [{ a: 0.46, b: 0.63, s: 'soft', h: 0.2, r: 0.25 }, { a: 0.67, b: 0.86, s: 'soft', h: 0.18, r: 0.25 }] }),
+  // barracuda: a long pike with a jutting jaw, its two dorsals far apart
+  pike: PERCH({ body: 0.82, bend: 0.6, eye: [0.12, -0.12], mouth: 'big', mouthy: 0.05, gill: 0.22, tailk: 1.3,
+    top: [[0, 0.1], [0.05, 0.4], [0.15, 0.75], [0.3, 0.95], [0.55, 1], [0.8, 0.7], [1, 0.4]], bot: [[0, 0.2], [0.05, 0.5], [0.18, 0.82], [0.4, 1], [0.7, 0.78], [1, 0.4]],
+    dors: [{ a: 0.32, b: 0.42, s: 'spiny', h: 0.45, r: 0.15, n: 6 }, { a: 0.68, b: 0.76, s: 'tri', h: 0.5, r: 0.3, n: 6 }], anal: [{ a: 0.7, b: 0.78, s: 'tri', h: 0.45, r: 0.3, n: 6 }] }),
+  // needlefish and sauries: long beaks, the fins far back
+  needle: PERCH({ body: 0.82, bend: 1.0, eye: [0.06, -0.15], eyek: 1.2, mouth: 'needle', mouthy: 0.0, gill: 0.12, tailk: 1.4, noline: 1,
+    top: [[0, 0.4], [0.05, 0.85], [0.15, 1], [0.6, 0.9], [0.85, 0.6], [1, 0.4]], bot: [[0, 0.4], [0.05, 0.85], [0.15, 1], [0.6, 0.9], [0.85, 0.6], [1, 0.4]],
+    dors: [{ a: 0.72, b: 0.88, s: 'tri', h: 0.6, r: 0.3, n: 8 }], anal: [{ a: 0.7, b: 0.88, s: 'tri', h: 0.55, r: 0.3, n: 8 }] }),
+  // sculpins, greenlings, lingcod: a big flat head, fan pectorals, a long dorsal
+  sculpin: PERCH({ body: 0.8, bend: 0.7, eye: [0.12, -0.3], eyek: 1.1, mouth: 'big', mouthy: 0.08, gill: 0.28, tailk: 0.8, fan: 1, noline: 1,
+    top: [[0, 0.35], [0.06, 0.75], [0.18, 1], [0.4, 0.95], [0.7, 0.6], [1, 0.32]], bot: [[0, 0.45], [0.08, 0.85], [0.25, 1], [0.5, 0.88], [0.78, 0.55], [1, 0.32]],
+    dors: [{ a: 0.22, b: 0.5, s: 'spiny', h: 0.3, r: 0.12, n: 12 }, { a: 0.52, b: 0.92, s: 'soft', h: 0.28, r: 0.2 }], anal: [{ a: 0.55, b: 0.9, s: 'soft', h: 0.24, r: 0.2 }] }),
+  // the wolffish: long and heavy, one long dorsal, a crusher's jaws
+  wolf: PERCH({ body: 0.86, bend: 1.0, eye: [0.1, -0.24], mouth: 'big', mouthy: 0.08, gill: 0.2, tailk: 0.9, noline: 1,
+    top: [[0, 0.55], [0.05, 0.88], [0.15, 1], [0.5, 0.82], [0.85, 0.42], [1, 0.25]], bot: [[0, 0.5], [0.06, 0.85], [0.2, 1], [0.55, 0.8], [0.88, 0.4], [1, 0.25]],
+    dors: [{ a: 0.14, b: 0.96, s: 'even', h: 0.2, r: 0.1, n: 26 }], anal: [{ a: 0.48, b: 0.96, s: 'even', h: 0.15, r: 0.1, n: 14 }] }),
 });
 
 export function drawSpecies(ctx, sp, L, t, swim = 1, phase = 0) {
