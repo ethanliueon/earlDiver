@@ -108,10 +108,24 @@ There are also real bugs: one makes escaping the thing impossible by touch.
 | 7. The shop | B3 (needs a decision: catalogue or terminal) | One to two versions |
 | 8. Progression | E3 to E7, B12 | Two versions |
 
-## Questions for the owner
+## Decisions (owner, 2026-11-21)
 
-1. Items: cut from 411 to about 60 to 80 hand-made ones? Old saves would map each removed item to its nearest new one.
-2. The shop: a paper mail-order catalogue on the cabin desk, or a green terminal? (I lean to the catalogue: paper,
-   photographs, worn, and it matches the journal.)
-3. (Answered: time keeps running in every in-world panel; only Settings and Pause stop it.)
-4. The death card: should death keep its current cost (unsold catch, a hospital bill, gear the thing took)?
+- **Fish pass first.** Real body families and each species' own features; sizes stay (legendaries oversized and
+  dramatic, small animals scaled up to be seen); every legendary its own body. Reviewed family by family.
+- **Items keep their variety** (all 411 stay); their pictures are redrawn alongside the fish: each brand or model line
+  its own shape, rarity in the detail and finish, drawn on a real surface instead of the pale gradient.
+- **The shop stays a website**, made period-true and worn: photographed gear, a dated marine supplier's layout, the
+  game font only (Dave's script font goes).
+- **Time keeps running** in every in-world panel; only Settings and Pause stop it (see A3).
+- **Death keeps its cost**; it gets a proper card showing what was lost.
+
+## Order of work (revised)
+
+1. Fish pass (batches by family), with the legendaries' own bodies
+2. Phase-1 fixes (A1 to A14)
+3. Coins and small art (B5, B6, B9, B10, B11)
+4. Item pictures (B1), shop look (B3)
+5. Phone panels (C)
+6. Chests (B2)
+7. The deep (D, A14, B7, B8)
+8. Progression and economy (E2 to E7)
