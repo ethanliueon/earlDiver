@@ -1,8 +1,0 @@
-<!doctype html><meta charset="utf-8"><body style="margin:0;background:#20262a;font:11px sans-serif;color:#ccc"><div id="g" style="display:grid;grid-template-columns:repeat(5,300px);gap:6px;padding:6px"></div><script type="module">
-import { pictureOf } from '../js/catalog.js'; import { ITEMS } from '../js/items.js';
-const kind = new URLSearchParams(location.search).get('k') || 'fins';
-const g = document.getElementById('g'); const xs = Object.values(ITEMS).filter((i) => i.kind === kind);
-const order = ['common', 'uncommon', 'rare', 'exotic', 'legendary']; xs.sort((a, b) => order.indexOf(a.rarity) - order.indexOf(b.rarity) || String(a.arch).localeCompare(b.arch));
-for (const it of xs) { const d = document.createElement('div'); d.innerHTML = `<img src="${pictureOf(kind, it, 300, 118)}" style="display:block"><div>${it.name} · ${it.arch} · ${it.rarity}</div>`; g.appendChild(d); }
-window.done = true;
-</script>
