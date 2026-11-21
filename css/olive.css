@@ -1157,3 +1157,13 @@ html body #inventory .inv-tabs button.on:not(#_a):not(#_b) { outline: none !impo
 html body #inventory .inv-split.inv-catch2:not(#_a) { position: relative; }
 html body #inventory .inv-catch2 .inv-left:not(#_a):not(#_b) { position: static !important; }
 html body #inventory .inv-catch2 .worth-paint:not(#_a):not(#_b):not(#_c) { position: absolute !important; left: 14px !important; bottom: 4px !important; top: auto !important; }
+
+/* ---------- (5.15.1) the three shops told apart inside one layout ---------- */
+html body #catalog header h1 { display: flex; align-items: center; gap: 12px; }
+html body #catalog .smark { width: 30px; height: 30px; flex: none; color: #efe8d2; }
+html body #catalog:not(.th-dave):not(.th-station) header:not(#_a) { box-shadow: inset 0 -3px 0 rgba(239, 232, 210, 0.18), inset 0 -6px 0 rgba(0, 0, 0, 0.25); }
+html body #catalog.th-dave header h1:not(#_a):not(#_b) { font: 700 30px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.06em; text-transform: uppercase; }
+html body #catalog.th-dave .cat-card .t { flex-wrap: wrap; }
+html body #catalog.th-dave .lot { display: block; flex-basis: 100%; font: 600 11px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #6a704e; margin-bottom: 1px; }
+html body #catalog.th-station header h1:not(#_a):not(#_b) { font: 600 20px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.22em; text-transform: uppercase; }
+html body #catalog.th-station .scode { font: 500 12px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.08em; color: #5e6a68; margin-left: 6px; white-space: nowrap; }

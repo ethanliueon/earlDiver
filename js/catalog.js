@@ -106,7 +106,9 @@ export class Catalog {
   show(id = 'bayside') {
     this.id = WEBSHOPS[id] ? id : 'bayside'; this.cfg = WEBSHOPS[this.id];
     this.root.className = 'webshop th-' + this.cfg.theme;
-    this.root.querySelector('h1').textContent = this.cfg.title; this.root.querySelector('.sub').textContent = this.cfg.sub;
+    // (5.15.1) each shop its own business: Bayside's anchor-and-net mark; Dave's plain heavy name; the Station's spaced masthead
+    const h1 = this.root.querySelector('h1'); h1.textContent = this.cfg.title; this.root.querySelector('.sub').textContent = this.cfg.sub;
+    if (this.id === 'bayside') h1.insertAdjacentHTML('afterbegin', '<svg class="smark" viewBox="0 0 30 30" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="15" cy="5" r="2.5"/><path d="M15 7.5v18M9 11h12M5 18c1 5 5 7.5 10 7.5S24 23 25 18"/><path d="M4 18l1.5-2.5L7 18M23 18l1.5-2.5L26 18"/></g><g stroke="currentColor" stroke-width="0.8" opacity="0.7"><path d="M9 21h12M10 23h10M12 25h6M11 19l2 6M15 19v6M19 19l-2 6"/></g></svg>');
     this.go('home');
   }
   cart() { return this.carts[this.id] || (this.carts[this.id] = []); }
@@ -212,7 +214,9 @@ export class Catalog {
     const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag${e.rarity ? ' r-' + e.rarity : ''}">${e.good ? `<span class="good">${e.good}</span>` : ''}${e.rarity && e.rarity !== 'common' ? `<em>${e.tag}</em>` : !e.good ? e.tag || '' : ''}</div>`; // (4.28) what it does on the card; the rarity only when it is not common
     const go = `data-go="${e.key}"`; // (4.16.9) supplies open their own page too
     const buy = e.kind === 'supply' ? `<button class="cat-mini" data-buy="${e.key}" ${e.full || this.h.getProfile().cash < e.price ? 'disabled' : ''}>${e.full ? 'Full' : 'Buy'}</button>` : '';
-    return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t"><b>${e.name}</b><span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
+    let hk = 7; for (const ch of String(e.key)) hk = (hk * 31 + ch.charCodeAt(0)) >>> 0; // (5.15.1) Dave numbers his lots; the Station its stock
+    const lot = this.id === 'dave' ? `<span class="lot">Lot ${10 + (hk % 89)}</span>` : '', code = this.id === 'station' ? `<span class="scode">ST-${String(100 + (hk % 900)).padStart(4, '0')}</span>` : '';
+    return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t">${lot}<b>${e.name}</b>${code}<span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
   }
   itemPage({ e, cat }) {
     const P = this.h.getProfile(), cash = P.cash || 0;
@@ -249,7 +253,11 @@ export function pictureOf(kind, v, w, h, plain = false) {
     const key = kind + ':' + (v && v.id ? v.id : v) + ':' + w + 'x' + h + (plain ? 'p' : '');
     if (PICS.has(key)) return PICS.get(key);
     const c = document.createElement('canvas'); c.width = w; c.height = h; const ctx = c.getContext('2d');
-    if (!plain) { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#cfdadf'); bg.addColorStop(1, '#b4c3ca'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
+    if (!plain) { // (5.15.1) a photographer's sweep, not a flat gradient: light pooled from the upper left, the floor darker, a fine grain
+      ctx.fillStyle = '#c4d0d5'; ctx.fillRect(0, 0, w, h);
+      const pool = ctx.createRadialGradient(w * 0.32, h * 0.12, 2, w * 0.42, h * 0.38, w * 0.78); pool.addColorStop(0, 'rgba(248,250,246,0.75)'); pool.addColorStop(0.55, 'rgba(220,228,228,0.2)'); pool.addColorStop(1, 'rgba(120,136,144,0.35)'); ctx.fillStyle = pool; ctx.fillRect(0, 0, w, h);
+      const fl = ctx.createLinearGradient(0, h * 0.62, 0, h); fl.addColorStop(0, 'rgba(90,104,112,0)'); fl.addColorStop(1, 'rgba(90,104,112,0.32)'); ctx.fillStyle = fl; ctx.fillRect(0, h * 0.62, w, h * 0.38);
+      let sd = 7; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647); for (let i = 0; i < w * h / 70; i++) { ctx.fillStyle = `rgba(${rnd() < 0.5 ? '40,48,52' : '255,255,250'},${(rnd() * 0.05).toFixed(3)})`; ctx.fillRect(rnd() * w, rnd() * h, 1, 1); } }
     if (v && typeof v === 'object' && v.kind === 'ability') { drawScroll3(ctx, w / 2, h / 2, Math.min(w, h) * 0.98, v.fam, v.tier); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.9.0) an ability's scroll
     if (v && typeof v === 'object' && v.id && kind === 'net') { drawNet3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.9)
     if (v && typeof v === 'object' && v.id && (kind === 'tank' || kind === 'bag')) { (kind === 'tank' ? drawTank3 : drawBag3)(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.8)
