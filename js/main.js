@@ -2225,7 +2225,7 @@ function update(dt) {
       audio.ready && audio.click();
       if (ph.empty) hud.toast('Nothing in frame');
       else {
-        const pic = { key: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), sk: ph.sk, id: ph.sp.id, variant: ph.variant || null, name: ph.name, q: ph.q, grade: ph.grade, value: ph.value, first: ph.first, again: ph.again, at: Math.round(e.y), img: renderer.snapshot(ph.frame, 1 - ph.sharp) };
+        const pic = { key: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), sk: ph.sk, id: ph.sp.id, variant: ph.variant || null, name: ph.name, q: ph.q, grade: ph.grade, value: ph.value, first: ph.first, again: ph.again, dist: ph.frame ? Math.round(ph.frame.d * 10) / 10 : null, at: Math.round(e.y), img: renderer.snapshot(ph.frame, 1 - ph.sharp) };
         g.photos.push(pic); profile.roll = g.photos.slice(); saveProfile(profile);
         audio.calmBoost && audio.calmBoost(0.08);
         hud.toast(ph.again ? `${ph.name}: this one is photographed already` : `${ph.name} · ${ph.grade}`, 'note'); // (5.10.10)
@@ -2813,19 +2813,7 @@ function bookTabs() {
 }
 // (5.10.1) time keeps running under every panel down there; so the danger reaches through them: a strip over the
 // panel when the air is low or gone, or the thing is hunting close
-function dangerStrip() {
-  let el = document.getElementById('danger');
-  const e = g.earl, ent = g.entity, under = g.mode === 'play' && !g.aboard && e && e.y > 1.5 && !g.kill;
-  let msg = '';
-  if (under && hud.touch && ui.anyOpen && ui.anyOpen('cabin')) {
-    const inS = e.inSub && !g.sub.imploded, o2 = inS ? g.sub.o2 / Math.max(1, g.sub.o2Max) : e.o2 / Math.max(1, e.o2Max);
-    if (g.noAir) msg = inS ? 'The cabin is out of air' : 'Out of air: surface!'; else if (o2 < 0.3) msg = `Air at ${Math.max(1, Math.round(o2 * 100))}%`;
-    if (ent && ent.state === 'hunt' && (ent.dist ?? 1e9) < 140) msg = (msg ? msg + ', and ' : '') + 'something is coming';
-  }
-  if (!el) { if (!msg) return; el = document.createElement('div'); el.id = 'danger'; document.body.appendChild(el); }
-  if (el.textContent !== msg) el.textContent = msg;
-  el.hidden = !msg;
-}
+// (5.10.11) the boxed danger strip over panels is gone (it doubled the HUD's own air warning and looked like a web badge)
 let lureNoUntil = 0;
 function lureAsk() {
   let el = document.getElementById('lureask');
@@ -2911,7 +2899,6 @@ function frame(now) {
   }
   lureAsk(); // (5.6.4)
   bookTabs(); // (5.6.7)
-  dangerStrip(); // (5.10.1)
   { const off = !!((g.kill && (g.kill.inSub || g.kill.esc)) || g.mode === 'dying'), dim = !!(g.kill && !off); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); if (document.body.classList.contains('hud-dim') !== dim) document.body.classList.toggle('hud-dim', dim); } // (5.10.10) in its jaws the journal stays, dimmed
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
     hud.spotWanted = !!(hud.touch && profile && profile.tut === 'on' && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }

@@ -991,8 +991,6 @@ html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a):not(#_b):not(#_c)
 html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button:not(#_b):not(#_c), html.touch body.bookmode #booktabs:not(#_a) button:not(#_b):not(#_c) { width: 122px !important; padding: 0 0 0 50px !important; text-align: left !important; color: #e2d9bc !important; }
 html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button.on:not(#_b):not(#_c), html.touch body.bookmode #booktabs:not(#_a) button.on:not(#_b):not(#_c) { width: 130px !important; color: #2e2618 !important; }
 /* (5.10.1) the danger strip: over any panel when the air is low or the thing is coming (time keeps running) */
-#danger { position: fixed; z-index: 9600; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); transform: translateX(-50%); pointer-events: none; padding: 7px 18px; border-radius: 4px; background: rgba(28, 8, 6, 0.88); box-shadow: 0 0 0 1.5px rgba(200, 60, 44, 0.8), 0 6px 18px rgba(0, 0, 0, 0.6); color: #f4d8c8; font: 700 16px var(--o-text); letter-spacing: 0.04em; animation: danger-pulse 1s ease-in-out infinite; white-space: nowrap; }
-#danger[hidden] { display: none; }
 @keyframes danger-pulse { 50% { box-shadow: 0 0 0 1.5px rgba(240, 90, 70, 1), 0 0 22px rgba(220, 60, 40, 0.55); } }
 /* (5.10.1) the journal's coin hides with the rest of the controls (the jaws, the death, the cinematics) */
 html.touch body.hud-off #quests-hud { visibility: hidden !important; }
@@ -1025,3 +1023,35 @@ html body #catalog .cat-stamp.r-common { color: #66665e; } html body #catalog .c
 html body #catalog .cat-stamp.r-exotic { color: #66387e; } html body #catalog .cat-stamp.r-legendary { color: #85601c; border-style: double; border-width: 3px; }
 html body #catalog .cat-photo { position: relative; }
 html body #catalog .cat-photo > img { display: block; width: 100%; }
+/* (5.10.11) a photograph's card: small, the print as one frame cut from a roll of film (dark rebate, sprocket holes,
+   the frame number printed on the edge), then its name, stars, grade, where it was taken and what it pays */
+html body #inventory .photo-pop .pd-box { width: min(380px, calc(100% - 32px)); padding: 16px 18px 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+html body #inventory .pd-film { position: relative; padding: 14px 10px; background: #15120d; border-radius: 2px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  background-image: repeating-linear-gradient(90deg, transparent 0 7px, #d9cfb4 7px 13px, transparent 13px 20px), repeating-linear-gradient(90deg, transparent 0 7px, #d9cfb4 7px 13px, transparent 13px 20px);
+  background-size: 100% 5px, 100% 5px; background-position: 0 4px, 0 calc(100% - 4px); background-repeat: no-repeat; }
+html body #inventory .pd-film .pd-frame { width: 186px; aspect-ratio: 3 / 2; overflow: hidden; box-shadow: 0 0 0 1px #000; }
+html body #inventory .pd-film .pd-frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+html body #inventory .pd-film .pd-no { position: absolute; right: 12px; bottom: -1px; font: 600 9px 'Barlow Semi Condensed', sans-serif; font-style: normal; letter-spacing: 0.1em; color: #a2793a; }
+html body #inventory .pd-txt { width: 100%; text-align: center; }
+html body #inventory .pd-txt h4 { margin: 0 0 4px; font: 600 19px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
+html body #inventory .pd-txt .ph-stars { position: static; justify-content: center; gap: 4px; margin: 0 0 4px; }
+html body #inventory .pd-txt .ph-stars .st { width: 24px; height: 24px; }
+html body #inventory .pd-txt .pd-grade { margin: 0 0 8px; font: 500 14px 'Barlow Semi Condensed', sans-serif; color: var(--o-cream-dim, #c8c0a8); }
+html body #inventory .pd-txt .pd-row { display: flex; justify-content: space-between; padding: 4px 2px; border-top: 1px solid rgba(255, 255, 255, 0.07); font: 500 14px 'Barlow Semi Condensed', sans-serif; color: #c8c0a8; }
+html body #inventory .pd-txt .pd-row b { font-weight: 600; color: #efe8d2; }
+/* the roll's own frames: stars stamped larger, and a film edge round each frame */
+html body #inventory .inv-catch2 .ph-cell[data-ph] { box-shadow: 0 0 0 2px #15120d, 0 0 0 3px rgba(0, 0, 0, 0.6); }
+html body #inventory .inv-catch2 .ph-stars { right: 3px; top: 3px; }
+html body #inventory .inv-catch2 .ph-stars .st { width: 15px; height: 15px; }
+/* (5.10.11) a trap's card: the picture in a dark recess on the left, the words on the right, as the gear cards */
+html body #inventory .trap-pop .tp-box { width: min(560px, calc(100% - 32px)); display: flex; gap: 16px; align-items: stretch; padding: 16px 18px 14px; }
+html body #inventory .trap-pop .tp-pic { flex: 0 0 44%; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.32); border-radius: 3px; box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.05); }
+html body #inventory .trap-pop .tp-pic img { width: 100%; height: auto; display: block; }
+html body #inventory .trap-pop .tp-txt { flex: 1; display: flex; flex-direction: column; }
+html body #inventory .trap-pop .tp-txt h4 { margin: 0; font: 600 20px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
+html body #inventory .trap-pop .tp-kind { margin: 2px 0 8px; font: 600 11px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #9a947e; }
+html body #inventory .trap-pop .tp-desc { margin: 0 0 8px; font: 500 14px/1.35 'Barlow Semi Condensed', sans-serif; color: #c8c0a8; }
+html body #inventory .trap-pop .tp-row { display: flex; justify-content: space-between; padding: 4px 0; border-top: 1px solid rgba(255, 255, 255, 0.07); font: 500 14px 'Barlow Semi Condensed', sans-serif; color: #b8b09a; }
+html body #inventory .trap-pop .tp-row b { font-weight: 600; color: #efe8d2; }
+html body #inventory .trap-pop .lk-acts { margin-top: auto; padding-top: 10px; display: flex; align-items: center; justify-content: flex-start; gap: 10px; flex-direction: row-reverse; }
+html body #inventory .trap-pop .tp-note { font: 500 12px 'Barlow Semi Condensed', sans-serif; color: #8a846e; }

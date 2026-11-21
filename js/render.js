@@ -170,7 +170,11 @@ export class Renderer {
       }
       const v = x.createRadialGradient(OW / 2, OH / 2, OH * 0.3, OW / 2, OH / 2, OW * 0.62); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.38)');
       x.fillStyle = v; x.fillRect(0, 0, OW, OH);
-      return o.toDataURL('image/jpeg', 0.84);
+      // (5.10.11) developed like film: the colour almost gone, a warm tone, a little contrast, and grain
+      const f = document.createElement('canvas'); f.width = OW; f.height = OH; const fx = f.getContext('2d');
+      fx.filter = 'grayscale(0.82) sepia(0.28) contrast(1.12) brightness(0.96)'; fx.drawImage(o, 0, 0); fx.filter = 'none';
+      const gr = fx.getImageData(0, 0, OW, OH), d = gr.data; for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * 22; d[i] += n; d[i + 1] += n; d[i + 2] += n; } fx.putImageData(gr, 0, 0);
+      return f.toDataURL('image/jpeg', 0.84);
     } catch (e) { return null; }
   }
   get W() { return this.c.width; }

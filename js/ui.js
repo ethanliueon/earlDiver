@@ -685,8 +685,12 @@ export class UI {
   // (5.0) a photograph, large
   photoPop(P, g) {
     const ph = (g.photos || [])[this.phSel]; if (!ph) { this.phSel = null; return ''; }
-    return `<div class="item-pop photo-pop"><div class="ph-panel"><button class="ip-close" aria-label="Close">×</button>${ph.img ? `<img src="${ph.img}" alt="">` : ''}
-      ${photoStars(ph)}<div class="ph-cap"><b>${ph.name}</b><span>${gradeOf(ph)}${ph.again ? ', this one was paid for already' : ph.first ? ', first of its kind' : ''}</span><em>${money(ph.value * statValue(P, 'payFish'))}</em></div></div></div>`;
+    // (5.10.11) not the picture blown up: a small card, the print as a frame of film at the top, then what is in it
+    const i = this.phSel, row = (k, v) => `<div class="pd-row"><span>${k}</span><b>${v}</b></div>`;
+    return `<div class="item-pop photo-pop"><div class="ip-box pd-box"><button class="ip-close" aria-label="Close">×</button>
+      <div class="pd-film"><div class="pd-frame">${ph.img ? `<img src="${ph.img}" alt="">` : ''}</div><i class="pd-no">${String(i + 1).padStart(2, '0')}</i></div>
+      <div class="pd-txt"><h4>${ph.name}</h4>${photoStars(ph)}<p class="pd-grade">${gradeOf(ph)}${ph.again ? ': this one was paid for already' : ph.first ? ': the first of its kind' : ''}</p>
+      ${row('Depth', ph.at != null ? `${ph.at} m` : '—')}${row('Distance', ph.dist != null ? `${ph.dist} m` : '—')}${row('Pays', money(ph.value * statValue(P, 'payFish')))}</div></div></div>`;
   }
   // (3.2.0) where an animal is: { list: 'bag' | 'tank' (the index space tankAction uses), i, place, n }
   fishWhere(g, s2) {
@@ -977,7 +981,15 @@ export class UI {
     // (5.9.6) traps live in the bag, not on the swap chip: a tile each kind with its number; a tap opens a card with Use
     const TR = P.traps || {}, trapKinds = Object.keys(TRAPS).filter((k) => (TR[k] || 0) > 0);
     const trapTiles = trapKinds.map((k) => `<div class="lk-tile r-common sup trp" data-trap="${k}" title="${TRAPS[k].name}: tap to use"><img src="${pictureOf('trap', k, 120, 72, true)}" alt=""><b class="belt-n">×${TR[k]}</b></div>`).join('');
-    const trapPop = this.trapSel && TRAPS[this.trapSel] && (TR[this.trapSel] || 0) > 0 ? `<div class="item-pop trap-pop"><div class="ip-box r-common"><button class="ip-close" aria-label="Close">×</button><div class="ip-cols one"><img class="ip-pic" src="${pictureOf('trap', this.trapSel, 240, 144, true)}" alt=""><h4>${TRAPS[this.trapSel].name}</h4><p>${TR[this.trapSel]} owned. Set from the water, at the surface: it is lowered on a line with a buoy, and fills while you are away.</p></div><div class="lk-acts"><button data-trapuse="${this.trapSel}">Use</button></div></div></div>` : '';
+    // (5.10.11) a trap's card, laid out like the gear cards: its picture large in a recess, its name, what it is, a few
+    // plain facts, and Use (which only works at the surface)
+    const trapPop = (() => { const k = this.trapSel, T = k && TRAPS[k]; if (!T || !((TR[k] || 0) > 0)) return '';
+      const fact = (a, b) => `<div class="tp-row"><span>${a}</span><b>${b}</b></div>`, desc = String(T.desc || '').replace(/\.\./g, '.');
+      return `<div class="item-pop trap-pop"><div class="ip-box r-common tp-box"><button class="ip-close" aria-label="Close">×</button>
+        <div class="tp-pic"><img src="${pictureOf('trap', k, 360, 216, true)}" alt=""></div>
+        <div class="tp-txt"><h4>${T.name}</h4><p class="tp-kind">Trap · ${TR[k]} in the locker</p><p class="tp-desc">${desc}</p>
+          ${fact('Sets down to', `${T.maxDepth} m`)}${fact('Holds', `${T.holds} animals`)}${fact('Takes', `up to ${Math.round(T.maxLen * 100)} cm`)}${T.winch ? fact('Hauled up', "by the Margaret's winch") : ''}
+          <div class="lk-acts"><button data-trapuse="${k}">Use</button><small class="tp-note">at the surface</small></div></div></div></div>`; })();
     const nSpare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length;
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
