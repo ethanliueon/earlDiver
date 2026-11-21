@@ -27,13 +27,68 @@ function sparks(x, W, H, col, seed) {
     g.addColorStop(0, lt); g.addColorStop(0.35, lt.replace('rgb(', 'rgba(').replace(')', ',0.35)')); g.addColorStop(1, lt.replace('rgb(', 'rgba(').replace(')', ',0)')); x.fillStyle = g; x.beginPath(); x.arc(px, py, r * 3, 0, TAU); x.fill(); }
 }
 
+// ---------------------------------------------------------------- exotics: the expeditions ----------------------------------------------------------------
+// (5.15.4) An exotic is a piece of a real expedition's kit and looks its age, beyond its colour: Victorian survey gear
+// (the 1870s to 1900s) is varnished wood, brass, copper, leather and tarred hemp; interwar gear (the 1920s to 1940s)
+// black-painted riveted iron, brass fittings and canvas; post-war gear (the 1950s to 1980s) steel painted in the
+// expedition's own colour, stainless fittings, black rubber and nylon. Each carries its expedition's name: a brass plate
+// on the old ones, a stencil on the post-war ones, moulded into the rubber on fins.
+const ERA_MAT = {
+  victorian: { metal: '#a8864e', wood: ['#9a6a3e', '#6a4222', '#2e1a0c'], body: '#9a6040', leather: '#5a3a22', twine: '#7a6440', cloth: '#7a6040', grip: '#4a2e1a' },
+  interwar: { metal: '#9a7840', wood: ['#46463f', '#2a2a27', '#0e0e0c'], body: '#3a3a36', leather: '#4a3020', twine: '#4e4432', cloth: '#6e6850', grip: '#8a8068' },
+  postwar: { metal: '#b0b4b4', leather: '#1c1c1c', twine: '#7a8a78', grip: '#1a1b1c' },
+};
+const ERA_KEYS = [
+  [/Challenger|Valdivia|Albatross|Hirondelle|Siboga|Pearl lugger|Kalymnos|Standard diving dress/, 'victorian'],
+  [/Bathysphere|Meteor|Discovery|Dana|Carnegie|Atlantis|Grand Banks|Argonaut|Ligurian|Spearfisher|Frogman|Naval oxygen|Aqualung/, 'interwar'],
+  [/Trieste/, 'postwar', '#5a6a78'], [/Sealab/, 'postwar', '#a8843a'], [/Conshelf/, 'postwar', '#b0943e'], [/Tektite/, 'postwar', '#9a9a8c'], [/Hydrolab/, 'postwar', '#9a5232'],
+  [/Navy/, 'postwar', '#5e666a'], [/Deep Quest/, 'postwar', '#a89a6a'], [/Polar|Arctic/, 'postwar', '#8a3a2e'], [/Galathea/, 'postwar', '#3e5a4a'], [/Vitiaz/, 'postwar', '#5a6650'],
+  [/Gulf|North Sea|Salvage|Iron Lung/, 'postwar', '#a08a3a'], [/Bikini/, 'postwar', '#5a5a3a'], [/La Jolla/, 'postwar', '#6a7470'], [/Lake Zurich/, 'postwar', '#a8a49a'],
+  [/Combat|Clearance/, 'postwar', '#3a4038'], [/Shark/, 'postwar', '#7a7e7e'], [/Deep lander|Abyssal/, 'postwar', '#2a2c2c'], [/Bathythermal/, 'postwar', '#6a5a48'],
+];
+export function eraOf(def) {
+  if (!def || RK[def.rarity] !== 3 || !def.name) return null;
+  for (const [re, era, paint] of ERA_KEYS) { const m = re.exec(def.name); if (!m) continue;
+    const yr = /\b(18|19)\d\d\b/.exec(def.name), word = m[0].replace('Standard diving dress', 'Standard').replace(/^(Gulf|Polar|Arctic|Combat|Clearance|Shark)$/, (w2) => w2);
+    return { era, paint: paint || ERA_MAT[era].body, label: (word + (yr ? ' ' + yr[0] : '')).toUpperCase(), ...ERA_MAT[era] }; }
+  return { era: 'postwar', paint: '#5e666a', label: '', ...ERA_MAT.postwar };
+}
+const shade3 = (c) => [mix(c, '#fff', 0.14), c, mix(c, '#000', 0.5)];
+// the expedition's name: engraved on a small brass plate held by two screws (the old eras), or stencilled in worn paint
+function eraMark(x, E, cx, cy, size, rot = 0, on = '#444') {
+  if (!E || !E.label) return;
+  x.save(); x.translate(cx, cy); x.rotate(rot); x.font = `600 ${size}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  const tw = x.measureText(E.label).width;
+  if (E.era === 'postwar') { // stencilled: letters a little spaced, paint worn at the edges (worn on its own layer, so only the paint chips)
+    const light = hex(on).reduce((a, v) => a + v, 0) < 360, cw = Math.ceil(tw * 1.4 + size * 2), ch = Math.ceil(size * 2), L2 = document.createElement('canvas'); L2.width = cw; L2.height = ch;
+    const l = L2.getContext('2d'); l.font = x.font; l.textAlign = 'center'; l.textBaseline = 'middle'; if (l.letterSpacing !== undefined) l.letterSpacing = `${(size * 0.12).toFixed(1)}px`;
+    l.fillStyle = light ? 'rgba(226,220,198,0.72)' : 'rgba(20,20,18,0.7)'; l.fillText(E.label, cw / 2, ch / 2);
+    l.globalCompositeOperation = 'destination-out'; let sd = hash(E.label); const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 26; i++) { l.fillStyle = `rgba(0,0,0,${0.25 + rnd() * 0.5})`; l.beginPath(); l.arc(cw / 2 + (rnd() - 0.5) * tw * 1.2, ch / 2 + (rnd() - 0.5) * size, 1 + rnd() * size * 0.1, 0, TAU); l.fill(); }
+    x.drawImage(L2, -cw / 2, -ch / 2);
+  } else { // a brass plate, its engraving dark, a screw at each end, its edge catching the light
+    const pw = tw + size * 2.2, ph = size * 1.55;
+    x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.roundRect(-pw / 2 + 2, -ph / 2 + 3, pw, ph, 4); x.fill();
+    x.fillStyle = lin(x, 0, -ph / 2, 0, ph / 2, [[0, mix(E.metal, '#fff', 0.35)], [0.45, E.metal], [1, mix(E.metal, '#000', 0.45)]]); x.beginPath(); x.roundRect(-pw / 2, -ph / 2, pw, ph, 4); x.fill();
+    x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 1.5; x.stroke();
+    x.fillStyle = 'rgba(40,26,8,0.85)'; x.fillText(E.label, 0, 1); x.fillStyle = 'rgba(255,240,200,0.25)'; x.fillText(E.label, 0, 2.2);
+    for (const sx of [-pw / 2 + size * 0.55, pw / 2 - size * 0.55]) { x.fillStyle = mix(E.metal, '#000', 0.35); x.beginPath(); x.arc(sx, 0, size * 0.22, 0, TAU); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(sx - size * 0.15, -size * 0.1); x.lineTo(sx + size * 0.15, size * 0.1); x.stroke(); }
+  }
+  x.restore();
+}
+function rivetRow(x, pts, r, col) { for (const [px, py, a = 1] of pts) { x.fillStyle = `rgba(0,0,0,${0.45 * a})`; x.beginPath(); x.arc(px + r * 0.3, py + r * 0.4, r, 0, TAU); x.fill(); x.fillStyle = lin(x, px - r, py - r, px + r, py + r, [[0, mix(col, '#fff', 0.35)], [1, mix(col, '#000', 0.4)]]); x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill(); } }
+let CYL_ERA = null; // (set while a tank is drawn: its cylinders are riveted, seamed, strapped for their era)
+
 // ---------------------------------------------------------------- fins ----------------------------------------------------------------
 const FIN_SHAPE = { // L: blade length; r0: half width at the root; r1: half width at the tip; flare: how the edge bows out
   rubber: { L: 560, r0: 62, r1: 112, flare: 0.25 }, split: { L: 600, r0: 62, r1: 104, flare: 0.15, split: true }, long: { L: 700, r0: 56, r1: 78, flare: 0.05 },
   free: { L: 790, r0: 52, r1: 70, flare: 0.02, carbon: true }, jet: { L: 450, r0: 72, r1: 118, flare: 0, vents: true, square: true },
 };
 function finColours(def) {
-  const L = def.finLook, arch = def.arch || 'rubber';
+  const L = def.finLook, arch = def.arch || 'rubber', E = eraOf(def);
+  // (5.15.4) an exotic's rubber is its era's: wooden paddles on the old pearl and sponge boats, red-brown gum rubber
+  // between the wars, black rubber after, with the expedition's colour as its stripe
+  if (E) return E.era === 'victorian' ? { body: '#6a4a2a', mid: '#9a7448', acc: E.leather, fx: null, glass: false, E } : E.era === 'interwar' ? { body: '#5a2e22', mid: '#8a4a34', acc: '#9a7840', fx: null, glass: false, E } : { body: '#1c1e20', mid: '#3a3e42', acc: mix(E.paint, '#6a675c', 0.2), fx: null, glass: false, E };
   // (5.12.6) plain fins in real moulded-rubber colours, all muted: most commons black, the rest a quiet colour of their own
   const QUIET = [['#1d2023', '#3a3f43'], ['#2a2c2e', '#4a4e52'], ['#2e3324', '#55603e'], ['#3e2a20', '#6e4a34'], ['#1e2633', '#3a4a60'], ['#5a5548', '#8a8470']];
   if (!(L && L.c)) { const hh = hash(def.id || arch), r = RK[def.rarity] || 0; if (r >= 1 || hh % 10 >= 7) { const q = QUIET[r === 0 ? 1 : (hh >>> 3) % QUIET.length]; return { body: q[0], mid: q[1], acc: '#7a6040', fx: null, glass: false }; } }
@@ -73,6 +128,8 @@ function oneFin(x, S, C, k, far) {
   x.strokeStyle = mix(C.body, '#000', 0.3); x.lineWidth = 16; x.lineCap = 'round'; x.beginPath(); x.moveTo(70, -r0 + 6); x.bezierCurveTo(-10, -r0 + 10, -10, r0 - 10, 70, r0 - 6); x.stroke(); // the heel strap
   x.strokeStyle = rgba('#ffffff', 0.12); x.lineWidth = 4; x.beginPath(); x.moveTo(66, -r0 + 2); x.bezierCurveTo(-6, -r0 + 6, -6, 0, 0, 10); x.stroke();
   x.fillStyle = lin(x, 64, -r0 - 6, 92, -r0 + 22, [[0, metal[0]], [1, metal[1]]]); x.beginPath(); x.roundRect(62, -r0 - 6, 34, 26, 5); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 2; x.stroke(); // the buckle
+  if (!far && C.E && C.E.label) { x.save(); blade(); x.clip(); x.font = '600 34px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; if (x.letterSpacing !== undefined) x.letterSpacing = '3px';
+    x.fillStyle = 'rgba(0,0,0,0.35)'; x.fillText(C.E.label, rootX + L * 0.5, 2); x.fillStyle = 'rgba(255,255,255,0.13)'; x.fillText(C.E.label, rootX + L * 0.5, 0); x.restore(); } // (5.15.4) the name moulded into the rubber
   if (far) { x.save(); x.globalCompositeOperation = 'source-atop'; x.fillStyle = 'rgba(10,12,14,0.32)'; x.fillRect(-100, -300, 1400, 600); x.restore(); }
 }
 export function drawFins3(ctx, w, h, def) {
@@ -128,8 +185,9 @@ function camColours(def) {
 }
 export function drawCam3(ctx, w, h, def) {
   if (drawLegend(ctx, w, h, def)) return true;
-  const arch = def.arch || 'compact', k = RK[def.rarity] || 0, C = camColours(def), clear = arch === 'compact' || arch === 'macro';
-  const metal = k >= 3 ? '#a8864e' : k >= 1 ? '#9aa0a2' : '#5a5e60';
+  const arch = def.arch || 'compact', k = RK[def.rarity] || 0, C = camColours(def), E = eraOf(def), clear = !E && (arch === 'compact' || arch === 'macro');
+  let metal = k >= 3 ? '#a8864e' : k >= 1 ? '#9aa0a2' : '#5a5e60';
+  if (E) { C.body = E.era === 'postwar' ? E.paint : E.era === 'interwar' ? '#4a4a42' : '#7a4e2a'; C.body2 = mix(C.body, '#000', 0.4); C.acc = E.metal; metal = E.metal; } // (5.15.4) its era's housing
   // (5.15.2) each kind its own shape: a compact is a slim clamshell, a macro a small body with a long snout of a port,
   // a low-light camera a long tube housing; a housed camera keeps its square housing with handles and a dome port.
   // Within a kind, each model a little longer or squatter, its port a little bigger (from its id)
@@ -160,8 +218,11 @@ export function drawCam3(ctx, w, h, def) {
       for (const rx2 of [X + L * 0.3, X + L * 0.62]) { x.fillStyle = 'rgba(0,0,0,0.45)'; x.fillRect(rx2, cy - R, 8, R * 2); x.fillStyle = 'rgba(255,255,255,0.08)'; x.fillRect(rx2 - 2, cy - R, 2, R * 2); }
       for (const hx of [X + L * 0.25, X + L * 0.6]) { x.strokeStyle = '#1a1b1c'; x.lineWidth = 14; x.lineCap = 'round'; x.beginPath(); x.moveTo(hx, cy - R); x.quadraticCurveTo(hx + 50, cy - R - 70, hx + 100, cy - R); x.stroke(); }
       x.fillStyle = lin(x, 0, cy - R, 0, cy + R, [[0, '#3a3c3e'], [1, '#0e0f10']]); x.beginPath(); x.roundRect(X + L - 10, cy - R + 10, 40, R * 2 - 20, 10); x.fill();
-      x.fillStyle = mix(C.body, '#000', 0.3); x.beginPath(); x.ellipse(X, cy, R * 0.32, R, 0, 0, TAU); x.fill(); port(x, X - 4, cy, R * 0.86, '#2a2c2e', ['#1c2a2a', '#08100f'], false);
+      x.fillStyle = mix(C.body, '#000', 0.3); x.beginPath(); x.ellipse(X, cy, R * 0.32, R, 0, 0, TAU); x.fill(); port(x, X - 4, cy, R * 0.86, E ? E.metal : '#2a2c2e', ['#1c2a2a', '#08100f'], false);
+      if (E) { if (E.era !== 'postwar') { const pts = []; for (let a = 0; a < TAU - 0.01; a += TAU / 12) pts.push([X - 4 + Math.cos(a) * R * 0.33, cy + Math.sin(a) * R * 0.98, 1]); rivetRow(x, pts, 4, E.metal); }
+        eraMark(x, E, X + L * 0.46, cy + R * 0.45, 24, 0, C.body); }
     }
+    if (E && arch === 'macro') eraMark(x, E, W / 2 + 40 + 115 * var1, H / 2 + 60 * var2, 18, 0, C.body);
     if (k >= 3) { x.strokeStyle = rgba(C.acc, 0.8); x.lineWidth = 3; x.beginPath(); x.moveTo(W * 0.2, H * 0.8); x.lineTo(W * 0.8, H * 0.8); x.stroke(); }
     if (k >= 4) sparks(x, W, H, C.acc, 11 + (hv % 97));
   }); return true; }
@@ -182,7 +243,11 @@ export function drawCam3(ctx, w, h, def) {
     if (arch === 'macro') { x.fillStyle = lin(x, 0, pcy - pr, 0, pcy + pr, [[0, '#5a5e60'], [0.5, '#2a2c2e'], [1, '#121314']]); x.beginPath(); x.roundRect(pcx - pr - 60, pcy - pr * 0.95, 70, pr * 1.9, 10); x.fill(); }
     port(x, arch === 'macro' ? pcx - 60 : pcx, pcy, pr, arch === 'lowlight' ? '#2a2c2e' : metal, arch === 'lowlight' ? ['#1c2a2a', '#08100f'] : ['#2e3a3c', '#0c1214'], arch === 'housed');
     if (arch === 'macro') { x.fillStyle = '#e8e2c8'; x.beginPath(); x.arc(X + bw - 34, Y + 34, 12, 0, TAU); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 3; x.stroke(); } // the focus light
-    if (k >= 3) { x.strokeStyle = rgba(C.acc, 0.85); x.lineWidth = 3; x.setLineDash([]); x.beginPath(); x.roundRect(X + 10, Y + 10, bw - 20, bh - 20, 6); x.stroke(); } // a fine brass bead round the front
+    if (k >= 3 && !E) { x.strokeStyle = rgba(C.acc, 0.85); x.lineWidth = 3; x.setLineDash([]); x.beginPath(); x.roundRect(X + 10, Y + 10, bw - 20, bh - 20, 6); x.stroke(); } // a fine brass bead round the front
+    if (E) { // (5.15.4) the old eras: a riveted housing, the port bolted on; the post-war one painted, its name stencilled
+      if (E.era !== 'postwar') { const pts = []; for (let i = 0; i <= 8; i++) { pts.push([X + 14 + (bw - 28) * i / 8, Y + 12, 1], [X + 14 + (bw - 28) * i / 8, Y + bh - 12, 0.8]); } for (let i = 1; i < 5; i++) pts.push([X + 12, Y + 12 + (bh - 24) * i / 5, 0.9], [X + bw - 12, Y + 12 + (bh - 24) * i / 5, 0.9]); rivetRow(x, pts, 5, E.era === 'victorian' ? E.metal : '#8a8a7e');
+        const pcx2 = arch === 'macro' ? pcx - 60 : pcx, pts2 = []; for (let a = 0; a < TAU - 0.01; a += TAU / 10) pts2.push([pcx2 + Math.cos(a) * (pr * 0.88 + 16), pcy + Math.sin(a) * (pr + 16), 1]); rivetRow(x, pts2, 5, E.metal); }
+      eraMark(x, E, X + bw * 0.78, Y + bh - 32, 18, 0, C.body); }
     if (k >= 4) sparks(x, W, H, C.acc, 11 + (hash(def.id) % 97));
   });
   return true;
@@ -206,6 +271,17 @@ function cylinder(x, X, Y, L, R, body, band, valve, k) {
   x.fillStyle = lin(x, 0, Y - R * 0.3, 0, Y + R * 0.3, [[0, mix(valve, '#fff', 0.45)], [0.5, valve], [1, mix(valve, '#000', 0.5)]]); x.beginPath(); x.roundRect(vx, Y - R * 0.26, R * 0.55, R * 0.52, 6); x.fill();
   x.fillStyle = lin(x, 0, Y - R * 0.6, 0, Y + R * 0.6, [[0, '#3a3c3e'], [1, '#101112']]); x.beginPath(); x.roundRect(vx + R * 0.5, Y - R * 0.62, R * 0.28, R * 1.24, 8); x.fill(); // the handwheel, edge-on
   for (let i = -2; i <= 2; i++) { x.strokeStyle = 'rgba(255,255,255,0.12)'; x.lineWidth = 2; x.beginPath(); x.moveTo(vx + R * 0.52, Y + i * R * 0.22); x.lineTo(vx + R * 0.76, Y + i * R * 0.22); x.stroke(); }
+  // (5.15.4) the old eras: a riveted ring at the base and the shoulder; a copper flask is also seamed along its length
+  // and carried in leather straps with brass buckles
+  const E = CYL_ERA; if (E && E.era !== 'postwar') {
+    const ring = (rx) => { const pts = []; for (let t = -0.8; t <= 0.81; t += 0.2) pts.push([rx + Math.abs(t) * R * 0.08, Y + t * R, 1 - Math.abs(t) * 0.5]); rivetRow(x, pts, Math.max(3.5, R * 0.065), E.era === 'victorian' ? '#b07850' : '#8a8a7e'); };
+    ring(X + R * 0.75); ring(X + L - R * 1.05);
+    if (E.era === 'victorian') { x.strokeStyle = 'rgba(30,14,6,0.5)'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(X + R * 0.8, Y + R * 0.12); x.lineTo(X + L - R * 1.1, Y + R * 0.12); x.stroke();
+      const pts = []; for (let px = X + R * 1.1; px < X + L - R * 1.2; px += R * 0.42) pts.push([px, Y + R * 0.12, 0.9]); rivetRow(x, pts, Math.max(2, R * 0.04), '#b07850');
+      for (const fx2 of [0.3, 0.62]) { const sx = X + L * fx2; x.fillStyle = lin(x, 0, Y - R, 0, Y + R, [[0, mix(E.leather, '#fff', 0.2)], [0.5, E.leather], [1, mix(E.leather, '#000', 0.5)]]); x.fillRect(sx, Y - R - 1, R * 0.32, R * 2 + 2);
+        x.setLineDash([5, 4]); x.strokeStyle = 'rgba(220,200,160,0.4)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(sx + 4, Y - R); x.lineTo(sx + 4, Y + R); x.moveTo(sx + R * 0.32 - 4, Y - R); x.lineTo(sx + R * 0.32 - 4, Y + R); x.stroke(); x.setLineDash([]);
+        x.fillStyle = lin(x, sx - 4, 0, sx + R * 0.36, 0, [[0, mix(E.metal, '#fff', 0.3)], [1, mix(E.metal, '#000', 0.4)]]); x.fillRect(sx - 3, Y - R * 0.28, R * 0.38, R * 0.36); x.fillStyle = mix(E.leather, '#000', 0.4); x.fillRect(sx + R * 0.06, Y - R * 0.18, R * 0.2, R * 0.16); } }
+  }
 }
 function tankColours(def) {
   const T = def.tankLook, arch = def.arch || 'al';
@@ -215,7 +291,10 @@ function tankColours(def) {
 }
 export function drawTank3(ctx, w, h, def) {
   if (drawLegend(ctx, w, h, def)) return true;
-  const arch = def.arch || 'al', k = RK[def.rarity] || 0, C = tankColours(def), valve = k >= 3 ? '#a8864e' : k >= 2 ? '#c8ccce' : '#8e9396', band = k >= 1 ? C.band || '#7a6040' : null;
+  const arch = def.arch || 'al', k = RK[def.rarity] || 0, C = tankColours(def), E = eraOf(def);
+  let valve = k >= 3 ? '#a8864e' : k >= 2 ? '#c8ccce' : '#8e9396', band = k >= 1 ? C.band || '#7a6040' : null;
+  if (E) { C.body = shade3(E.era === 'postwar' ? E.paint : E.body); valve = E.metal; band = E.era === 'postwar' ? mix(E.paint, '#e2dcc6', 0.55) : null; } // (5.15.4) its era's metal and paint
+  CYL_ERA = E;
   fitted(ctx, w, h, (x, W, H) => {
     const big = (def.air || 20) > 90, L = big ? 640 : 560, R = big ? 70 : 62, X = W / 2 - L / 2 - 40;
     if (arch === 'twin') { cylinder(x, X + 20, H / 2 - R * 0.9, L, R * 0.9, C.body, band, valve, k); cylinder(x, X, H / 2 + R * 0.95, L, R * 0.9, C.body, band, valve, k);
@@ -231,8 +310,11 @@ export function drawTank3(ctx, w, h, def) {
       x.strokeStyle = '#111'; x.lineWidth = 18; x.lineCap = 'round'; x.beginPath(); x.moveTo(X + 80, H / 2 - 120); x.bezierCurveTo(X + 60, H / 2 - 190, X + 260, H / 2 - 200, X + 250, H / 2 - 120); x.stroke(); // the breathing loop
       x.strokeStyle = 'rgba(255,255,255,0.1)'; x.lineWidth = 5; x.stroke(); }
     else cylinder(x, X, H / 2, L, R, C.body, band, valve, k);
+    if (E) { const my = arch === 'twin' ? H / 2 - R * 0.9 : arch === 'side' ? H / 2 - R * 0.75 : H / 2, mx = arch === 'rebreather' ? X + 165 : arch === 'side' ? X + 60 + L * 0.46 : X + L * 0.46;
+      eraMark(x, E, mx, arch === 'rebreather' ? H / 2 - 6 : my + (E.era === 'victorian' ? -R * 0.45 : 0), E.era === 'postwar' ? 30 : 26, 0, arch === 'rebreather' ? C.body[1] : C.body[1]); }
     if (k >= 4) sparks(x, W, H, C.band || '#c8a868', 13 + (hash(def.id) % 97));
   });
+  CYL_ERA = null;
   return true;
 }
 
@@ -248,7 +330,10 @@ function bagColours(def) {
 }
 export function drawBag3(ctx, w, h, def) {
   if (drawLegend(ctx, w, h, def)) return true;
-  const arch = def.arch || 'mesh', k = RK[def.rarity] || 0, C = bagColours(def), metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#6a6e70';
+  const arch = def.arch || 'mesh', k = RK[def.rarity] || 0, C = bagColours(def), E = eraOf(def); let metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#6a6e70';
+  // (5.15.4) an exotic bag in its era's stuff: a varnished wooden case or tarred hemp with leather straps; canvas with
+  // leather; rubberised cloth in the expedition's colour with steel clips
+  if (E) { C.body = E.era === 'postwar' ? E.paint : arch === 'divided' ? (E.era === 'victorian' ? '#7a4e2a' : '#4a4a42') : E.era === 'victorian' ? '#5a4a30' : E.cloth; C.acc = E.era === 'postwar' ? '#2a2a28' : E.leather; metal = E.metal; }
   const sz = 0.8 + Math.min(1, ((def.slots || 3) - 2) / 12) * 0.35;
   fitted(ctx, w, h, (x, W, H) => {
     x.save(); x.translate(W / 2, H / 2 + 10); x.scale(sz, sz);
@@ -284,6 +369,7 @@ export function drawBag3(ctx, w, h, def) {
       if (k >= 1) { x.save(); sack(); x.clip(); x.strokeStyle = C.acc; x.lineWidth = k >= 2 ? 12 : 8; x.beginPath(); x.moveTo(-L / 2 + 60, -R * 0.9); x.bezierCurveTo(-L / 2 + 80, -R * 0.3, -L / 2 + 80, R * 0.3, -L / 2 + 60, R * 0.9); x.stroke(); x.restore(); } // a webbing band
       if (k >= 3) { x.setLineDash([7, 6]); x.strokeStyle = rgba('#e8d8b0', 0.7); x.lineWidth = 2.5; x.beginPath(); x.moveTo(-L / 2 + 52, -R * 0.85); x.bezierCurveTo(-L / 2 + 70, -R * 0.3, -L / 2 + 70, R * 0.3, -L / 2 + 52, R * 0.85); x.stroke(); x.setLineDash([]); }
     }
+    if (E) eraMark(x, E, arch === 'divided' ? 150 : 60, arch === 'divided' ? 80 : (arch === 'large' ? 40 : 30), 22, 0, C.body);
     x.restore();
     if (k >= 4) sparks(x, W, H, C.acc, 17 + (hash(def.id) % 97));
   });
@@ -306,11 +392,16 @@ export function drawNet3(ctx, w, h, def) {
   const S = { ...S0, pole: S0.pole * (0.85 + pick(5, 2) * 0.08), r: S0.r * (0.9 + pick(4, 5) * 0.06), deep: (S0.deep || 1) * (0.8 + pick(5, 8) * 0.1) };
   const MAT = [['#7a8288', '#4a5258', '#22272a'], ['#a07a48', '#6e5030', '#3a2a18'], ['#c8b878', '#8a7a48', '#4a4020'], ['#5a6448', '#3a4430', '#1c2216']][pick(4, 11)];
   const poleR = 10 + pick(5, 14) * 1.5, hoopW = 8 + pick(4, 17) * 2.5, meshStep = [12, 16, 22][pick(3, 20)];
-  const mute = (c) => mix(c, '#6a675c', 0.25), hoop = L.hoop ? mute(L.hoop) : k >= 3 ? '#8a6a34' : '#3e4448', handle = L.h ? L.h.map(mute) : k >= 3 ? ['#a07a48', '#6e5030', '#3a2a18'] : MAT;
-  const mesh = k >= 3 ? '#5a5a46' : '#3a4a3a', metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#5a5e60';
+  const mute = (c) => mix(c, '#6a675c', 0.25), hoop0 = L.hoop ? mute(L.hoop) : k >= 3 ? '#8a6a34' : '#3e4448', handle0 = L.h ? L.h.map(mute) : k >= 3 ? ['#a07a48', '#6e5030', '#3a2a18'] : MAT;
+  let mesh = k >= 3 ? '#5a5a46' : '#3a4a3a', metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#5a5e60';
+  // (5.15.4) an exotic net in its era's make: a varnished wood pole, brass hoop and tarred hemp; a black iron pole bound
+  // with canvas tape; a painted alloy pole with a stainless hoop, a rubber grip and nylon mesh
+  const E = eraOf(def); let hoopE = null, handleE = null;
+  if (E) { handleE = E.era === 'postwar' ? shade3(E.paint) : E.wood; hoopE = E.era === 'victorian' ? E.metal : E.era === 'interwar' ? '#34342f' : E.metal; mesh = E.twine; metal = E.metal; }
   // (5.15.3) drawn in 3D, as a real landing net is seen: the hoop a tilted ring, the bag hanging from the whole rim and
   // lashed to it, its diamond mesh following the bag's curve and closing in towards the rounded bottom (lines on the far
   // side darker, seen through the near side), the pole meeting the rim through a collar and a split yoke
+  const hoop = hoopE || hoop0, handle = handleE || handle0;
   const V = (a0, a1, a2) => [a0, a1, a2], add = (p, q) => [p[0] + q[0], p[1] + q[1], p[2] + q[2]], mul = (p, s0) => [p[0] * s0, p[1] * s0, p[2] * s0];
   const dot = (p, q) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2], nrm = (p) => mul(p, 1 / Math.hypot(...p)), cross = (p, q) => [p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0]];
   const n = nrm(V(-0.28, 0.78, 0.56)), out = V(1, 0.1, 0), e1 = nrm(add(out, mul(n, -dot(out, n)))), e2 = cross(n, e1);
@@ -325,9 +416,9 @@ export function drawNet3(ctx, w, h, def) {
     return add(c, add(mul(e1, a0 * s0), mul(e2, b0 * s0))); };
   const ctrZ = (v) => add(mul(n, -D * v), mul(sag, R * 0.45 * v * v))[2];
   const P2 = (p) => [p[0], -p[1]]; // to the page (y down)
-  const A = at(Math.PI, 0), A2 = P2(A), ang = Math.PI + 0.1, Lp = S.pole * 0.62, E = [A2[0] + Math.cos(ang) * Lp, A2[1] + Math.sin(ang) * Lp];
+  const A = at(Math.PI, 0), A2 = P2(A), ang = Math.PI + 0.1, Lp = S.pole * 0.62, PE = [A2[0] + Math.cos(ang) * Lp, A2[1] + Math.sin(ang) * Lp];
   // fit it all into the frame
-  let x0 = E[0], x1 = E[0], y0 = E[1], y1 = E[1]; const grow = (q) => { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); };
+  let x0 = PE[0], x1 = PE[0], y0 = PE[1], y1 = PE[1]; const grow = (q) => { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); };
   for (let i = 0; i <= 48; i++) for (let j = 0; j <= 10; j++) grow(P2(at(i / 48 * TAU, j / 10)));
   const M = Math.max(18, Math.round((TAU * R) / (meshStep * 2.1))), du = TAU / M, ROWS = Math.max(4, Math.round(D / (meshStep * 1.9))), K = du * ROWS;
   fitted(ctx, w, h, (x, W, H) => {
@@ -358,13 +449,16 @@ export function drawNet3(ctx, w, h, def) {
     x.strokeStyle = rgba('#ffffff', 0.28); x.lineWidth = 2.5 * lw * 1.3; x.beginPath(); let on = false; for (const [q, f] of ring) { if (f) { on ? x.lineTo(q[0], q[1] - hoopW * 0.25) : x.moveTo(q[0], q[1] - hoopW * 0.25); on = true; } else on = false; } x.stroke();
     for (let i = 0; i < M; i++) { const u = i * du, p = at(u, 0); if (p[2] <= 0) continue; const q = P2(p); x.strokeStyle = rgba(mix(twine, '#000', 0.3), 0.85); x.lineWidth = 2.2 * lw * 1.3; x.beginPath(); x.moveTo(q[0] - hoopW * 0.3, q[1] - hoopW * 0.55); x.lineTo(q[0] + hoopW * 0.3, q[1] + hoopW * 0.55); x.stroke(); }
     // the pole: along its own line, lit from the top, a grip at its end, an end cap, a collar and the yoke at the rim
-    const Lr = Math.hypot(E[0] - A2[0], E[1] - A2[1]) - R * 0.32, R0 = poleR;
-    x.save(); x.translate(...E); x.rotate(Math.atan2(A2[1] - E[1], A2[0] - E[0]));
+    const Lr = Math.hypot(PE[0] - A2[0], PE[1] - A2[1]) - R * 0.32, R0 = poleR;
+    x.save(); x.translate(...PE); x.rotate(Math.atan2(A2[1] - PE[1], A2[0] - PE[0]));
     x.fillStyle = lin(x, 0, -R0, 0, R0, [[0, mix(handle[0], '#fff', 0.2)], [0.3, handle[0]], [0.65, handle[1]], [1, handle[2]]]); x.beginPath(); x.roundRect(0, -R0, Lr, R0 * 2, R0); x.fill();
     x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 3; x.stroke();
-    const gripC = k >= 1 && L.h ? mix(handle[2], '#000', 0.3) : '#1a1b1c'; x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(gripC, '#fff', 0.15)], [1, mix(gripC, '#000', 0.4)]]); x.beginPath(); x.roundRect(10, -R0 - 3, 120, R0 * 2 + 6, R0); x.fill();
-    for (let i = 0; i < 9; i++) { x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 2; x.beginPath(); x.moveTo(18 + i * 13, -R0); x.lineTo(24 + i * 13, R0); x.stroke(); }
-    if (k >= 1 && !L.h) { x.fillStyle = '#7a6040'; x.fillRect(140, -R0, 16, R0 * 2); }
+    const gripC = E ? (E.era === 'victorian' ? E.leather : E.grip) : k >= 1 && L.h ? mix(handle[2], '#000', 0.3) : '#1a1b1c'; x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(gripC, '#fff', 0.15)], [1, mix(gripC, '#000', 0.4)]]); x.beginPath(); x.roundRect(10, -R0 - 3, 120, R0 * 2 + 6, R0); x.fill();
+    if (E && E.era !== 'postwar') for (let i = 0; i < 10; i++) { x.strokeStyle = E.era === 'interwar' ? 'rgba(40,36,24,0.5)' : 'rgba(230,200,160,0.3)'; x.lineWidth = E.era === 'interwar' ? 3 : 1.5; x.beginPath(); x.moveTo(14 + i * 12, -R0 - 3); x.lineTo(26 + i * 12, R0 + 3); x.stroke(); } // the binding: canvas tape, or stitched leather
+    else for (let i = 0; i < 9; i++) { x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 2; x.beginPath(); x.moveTo(18 + i * 13, -R0); x.lineTo(24 + i * 13, R0); x.stroke(); }
+    if (E && E.era === 'victorian') for (const fp of [0.42, 0.7]) { const fx2 = Lr * fp; x.fillStyle = lin(x, 0, -R0 - 2, 0, R0 + 2, [[0, mix(E.metal, '#fff', 0.35)], [0.5, E.metal], [1, mix(E.metal, '#000', 0.45)]]); x.fillRect(fx2, -R0 - 2, 14, R0 * 2 + 4); } // brass ferrules on the wood
+    if (E) eraMark(x, E, Lr * 0.56, 0, Math.max(13, R0 * 0.9), 0, handle[1]);
+    if (k >= 1 && !L.h && !E) { x.fillStyle = '#7a6040'; x.fillRect(140, -R0, 16, R0 * 2); }
     x.fillStyle = '#121314'; x.beginPath(); x.roundRect(-8, -R0 - 1, 14, R0 * 2 + 2, 5); x.fill();
     x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(metal, '#fff', 0.3)], [0.5, metal], [1, mix(metal, '#000', 0.45)]]); x.beginPath(); x.roundRect(Lr - 40, -R0 - 3, 40, R0 * 2 + 6, 4); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 2; x.stroke();
     x.restore();

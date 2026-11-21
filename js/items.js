@@ -427,3 +427,12 @@ for (const it of Object.values(ITEMS)) {
   it.good = bits.join(', ');
   if (/^(costly|slow|heavy|air)$/i.test(it.bad || '')) it.bad = '';
 }
+// (5.15.3) the "not for" lines checked against what the gear does now: speed lives only on fins, so a tank or a suit
+// is never "slower"; the price is on the card, so "costly" says nothing; a bare word becomes a reason
+{ const RE = { 'Range': 'Short reach', 'Small': 'Small fish only', 'Costly, slow': 'Slow to swing', 'Cruising barely faster than rubber': 'Hardly quicker at a cruise', 'Heavy': '' };
+  for (const it of Object.values(ITEMS)) {
+    if (!it.bad) continue;
+    if ((it.kind === 'tank' || it.kind === 'suit') && /slower/i.test(it.bad)) it.bad = '';
+    else if (/^costly$/i.test(it.bad)) it.bad = '';
+    else if (it.bad in RE) it.bad = RE[it.bad];
+  } }
