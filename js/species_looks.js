@@ -174,4 +174,58 @@ export const LOOKS = {
   10: { fam: 'scorp', h: 0.42, t: 'round', c: ['#b8402c', '#e6cfc0'], f: '#d8b0a0', lion: 1, fan: 1, fanc: '#8a2a1e', dfc: 'rgba(216,176,160,0.4)', pecc: '#e8d0c0', p: 'bands', pc: '#f2e6dc', n: 12 }, // Red Lionfish
   246: { fam: 'scorp', h: 0.62, t: 'round', c: ['#c8b080', '#e0cc9a'], f: '#c8b080', dk: 1.6, fan: 0, p: 'none', eyek: 1.1,
     marks: [{ k: 'maze', c: 'rgba(120,90,50,0.45)', n: 18, lw: 0.02 }, { k: 'eyeband', c: 'rgba(90,60,30,0.6)', w: 0.04, tilt: 0.4 }] }, // Leaf Scorpionfish
+
+  // ---------- batch 3: sharks ----------
+  76: { fam: 'mackshark', h: 0.24, c: ['#5c666e', '#ecebe6'], belly: '#ecebe6', cs: 'sharp', f: '#525c64', pectip: '#1a1c1e', eyec: '#0c0c0c', teeth: 1 }, // Great White Shark
+  82: { fam: 'mackshark', h: 0.2, c: ['#2a4a8a', '#e8ecf0'], belly: '#e8ecf0', cs: 'sharp', f: '#2a4a8a', eyek: 1.5, teeth: 1, sp: { pec: [0.18, 0.08, 0.7] } }, // Shortfin Mako
+  277: { fam: 'mackshark', h: 0.2, c: ['#1e2a40', '#cfd4dc'], belly: '#cfd4dc', cs: 'sharp', f: '#1e2a40', eyek: 1.8, sp: { pec: [0.3, 0.1, 0.65] } }, // Longfin Mako
+  313: { fam: 'mackshark', h: 0.27, c: ['#3a3e44', '#e8e4dc'], belly: '#e8e4dc', cs: 'sharp', f: '#34383e', marks: [{ k: 'dots', c: 'rgba(40,40,44,0.6)', n: 16, r: 0.05, y: 0.32, spread: 0.2, from: 0.3, to: 0.8 }] }, // Salmon Shark
+  314: { fam: 'mackshark', h: 0.26, c: ['#4a5260', '#ecece8'], belly: '#ecece8', cs: 'sharp', f: '#444c58', dtip: null, sp: { d1: { x: 0.35, w: 0.15, h: 0.95, r: 0.7 } }, marks: [{ k: 'spot', x: 0.42, y: -0.42, r: 0.06, c: '#ecece8' }] }, // Porbeagle
+  78: { fam: 'reqshark', h: 0.22, c: ['#6a6656', '#ece6d6'], belly: '#e8e2d2', f: '#625e50', sp: { top: [[0, 0.3], [0.04, 0.62], [0.12, 0.85], [0.3, 1], [0.5, 0.92], [0.75, 0.55], [0.92, 0.3], [1, 0.22]], tail: { up: 0.34, low: 0.13, a: -0.6, b: 0.95 } },
+    marks: [0.3, 0.38, 0.46, 0.54, 0.62, 0.7, 0.78, 0.86].map((x) => ({ k: 'band', x, w: 0.022, c: 'rgba(40,36,28,0.55)', top: 0.6, bot: 0.05, tilt: -0.15 })) }, // Tiger Shark
+  80: { fam: 'reqshark', h: 0.2, c: ['#8a8a82', '#f0ece4'], belly: '#f0ece4', f: '#7e7e76', dtip: '#141414', tailtip: '#141414', pectip: '#141414', marks: [{ k: 'hlines', c: 'rgba(240,236,228,0.5)', n: 1, y0: 0.08, y1: 0.08, from: 0.4, to: 0.8, lw: 0.06 }] }, // Blacktip Reef Shark
+  248: { fam: 'reqshark', h: 0.18, c: ['#7a7a74', '#e8e6de'], belly: '#e8e6de', f: '#74746e', tips: '#f2efe6', sp: { top: [[0, 0.32], [0.04, 0.6], [0.12, 0.82], [0.3, 1], [0.5, 0.92], [0.75, 0.55], [0.92, 0.3], [1, 0.22]], d1: { x: 0.4, w: 0.12, h: 0.75, r: 0.7 } }, marks: [{ k: 'dots', c: 'rgba(40,40,36,0.4)', n: 10, r: 0.035, from: 0.25, to: 0.8, spread: 0.4, y: -0.1 }] }, // Whitetip Reef Shark
+  249: { fam: 'reqshark', h: 0.21, c: ['#6c7276', '#ecebe6'], belly: '#ecebe6', f: '#62686c', tailedge: '#141414' }, // Grey Reef Shark
+  250: { fam: 'reqshark', h: 0.22, c: ['#6a6a5e', '#ece8dc'], belly: '#ece8dc', f: '#626256' }, // Caribbean Reef Shark
+  254: { fam: 'reqshark', h: 0.21, c: ['#a89a6a', '#ece2c4'], belly: '#ece2c4', f: '#9c8e60', sp: { d2: { x: 0.73, w: 0.11, h: 0.75 } } }, // Lemon Shark
+  256: { fam: 'reqshark', h: 0.25, c: ['#7a7a74', '#ecebe4'], belly: '#ecebe4', f: '#72726c', sp: { top: [[0, 0.38], [0.03, 0.7], [0.12, 0.92], [0.3, 1], [0.5, 0.92], [0.75, 0.55], [0.92, 0.3], [1, 0.22]] } }, // Bull Shark
+  83: { fam: 'reqshark', h: 0.15, c: ['#2a4aa0', '#e8ecf2'], belly: '#e8ecf2', cs: 'sharp', f: '#2a4aa0', sp: { top: [[0, 0.08], [0.05, 0.35], [0.14, 0.7], [0.32, 1], [0.5, 0.9], [0.75, 0.55], [0.92, 0.3], [1, 0.22]], d1: { x: 0.42, w: 0.1, h: 0.75, r: 0.72 }, pec: [0.36, 0.08, 0.6] } }, // Blue Shark
+  273: { fam: 'reqshark', h: 0.18, c: ['#5a5e6a', '#e8e6e2'], belly: '#e8e6e2', f: '#525662', sp: { d1: { x: 0.4, w: 0.1, h: 0.6, r: 0.72 }, pec: [0.28, 0.08, 0.65] } }, // Silky Shark
+  274: { fam: 'reqshark', h: 0.22, c: ['#7a786a', '#e8e4d8'], belly: '#e8e4d8', f: '#706e60', tips: '#f2eee4', tipsAll: 1, sp: { d1: { x: 0.37, w: 0.16, h: 1.05, r: 0.62, s: 'round' }, pec: [0.34, 0.12, 0.6], pecRound: 1 } }, // Oceanic Whitetip Shark
+  255: { fam: 'reqshark', h: 0.24, c: ['#8a7a5e', '#e8e0cc'], belly: '#e8e0cc', f: '#827258', teeth: 1, sp: { top: [[0, 0.06], [0.05, 0.4], [0.15, 0.8], [0.35, 1], [0.6, 0.9], [0.8, 0.55], [1, 0.25]], d1: { x: 0.5, w: 0.1, h: 0.55, r: 0.7 }, d2: { x: 0.7, w: 0.1, h: 0.5 }, tail: { up: 0.3, low: 0.1, a: -0.5, b: 0.9 } },
+    marks: [{ k: 'dots', c: 'rgba(110,70,40,0.55)', n: 30, r: 0.035, from: 0.3, to: 0.95, spread: 0.6 }] }, // Sand Tiger Shark
+  339: { fam: 'reqshark', h: 0.24, c: ['#8a7a68', '#e6dccc'], belly: '#e6dccc', f: '#827260', teeth: 1, sp: { top: [[0, 0.06], [0.05, 0.4], [0.15, 0.8], [0.35, 1], [0.6, 0.9], [0.8, 0.55], [1, 0.25]], d1: { x: 0.48, w: 0.1, h: 0.65, r: 0.7 }, d2: { x: 0.7, w: 0.09, h: 0.45 } },
+    marks: [{ k: 'dots', c: 'rgba(160,70,50,0.6)', n: 34, r: 0.04, from: 0.2, to: 0.95, spread: 0.7 }] }, // Smalltooth Sand Tiger
+  317: { fam: 'reqshark', h: 0.17, c: ['#8a8a84', '#e8e6de'], belly: '#e8e6de', f: '#828078', sp: { d1: { x: 0.42, w: 0.1, h: 0.6 }, d2: { x: 0.7, w: 0.08, h: 0.45 } },
+    marks: [...[0.15, 0.27, 0.39, 0.51, 0.63, 0.75, 0.87].map((x) => ({ k: 'saddle', x, y: 0.4, w: 0.04, h: 0.2, c: '#2a2a28' })), { k: 'dots', c: '#2a2a28', n: 16, r: 0.04, from: 0.15, to: 0.9, spread: 0.4, y: 0.05 }] }, // Leopard Shark
+  275: { fam: 'thresher', h: 0.24, c: ['#5a5a7a', '#ecebe6'], belly: '#ecebe6', cs: 'sharp', f: '#525272' }, // Common Thresher Shark
+  276: { fam: 'thresher', h: 0.24, c: ['#6a5a6a', '#e6e2de'], belly: '#e6e2de', cs: 'sharp', f: '#625262', eyek: 2.3, sp: { eye: [0.09, -0.18] }, marks: [{ k: 'hlines', c: 'rgba(30,24,30,0.4)', n: 1, y0: -0.3, y1: -0.3, from: 0.02, to: 0.25, lw: 0.04 }] }, // Bigeye Thresher
+  79: { fam: 'hammer', h: 0.2, c: ['#7a8078', '#ecece6'], belly: '#ecece6', f: '#727870' }, // Scalloped Hammerhead
+  81: { fam: 'carpet', h: 0.2, c: ['#8a6a44', '#c8a878'], belly: '#c8a878', f: '#7e6040', barbels: 1 }, // Nurse Shark
+  251: { fam: 'carpet', h: 0.16, c: ['#c8b080', '#e8dcc0'], belly: '#e8dcc0', f: '#bca474', sp: { body: 0.55, tail: { up: 0.45, low: 0.38, a: -0.07, b: 0.16, root: 0.16, fork: 0.9 } },
+    marks: [{ k: 'dots', c: '#3a2c1e', n: 60, r: 0.04, from: 0.05, to: 1 }, { k: 'hlines', c: 'rgba(80,60,40,0.4)', n: 3, y0: -0.35, y1: 0.05, from: 0.15, to: 1, lw: 0.03 }] }, // Zebra Shark
+  252: { fam: 'carpet', h: 0.16, c: ['#8a7a5a', '#a89a7a'], belly: '#a89a7a', f: '#827252', tassels: 1, sp: { top: [[0, 0.5], [0.06, 0.8], [0.18, 0.95], [0.4, 1], [0.65, 0.8], [0.88, 0.45], [1, 0.3]], bot: [[0, 0.5], [0.08, 0.85], [0.25, 1], [0.45, 1], [0.7, 0.7], [0.9, 0.4], [1, 0.3]], eye: [0.08, -0.25] },
+    marks: [{ k: 'maze', c: 'rgba(50,40,26,0.55)', n: 40, lw: 0.04 }, { k: 'dots', c: 'rgba(220,210,180,0.45)', n: 30, r: 0.03 }] }, // Tasselled Wobbegong
+  253: { fam: 'carpet', h: 0.14, c: ['#c8b494', '#e4d8c0'], belly: '#e4d8c0', f: '#bca888', sp: { body: 0.62, tail: { up: 0.38, low: 0.3, a: -0.08, b: 0.18, root: 0.14, fork: 0.9 } },
+    marks: [{ k: 'dots', c: 'rgba(60,44,30,0.6)', n: 40, r: 0.03 }, { k: 'spot', x: 0.47, y: -0.12, r: 0.2, c: '#141210', ring: '#f2ece0' }] }, // Epaulette Shark
+  77: { fam: 'whale', h: 0.17, c: ['#3a4a5a', '#dfe4e6'], belly: '#dfe4e6', f: '#34424e',
+    marks: [{ k: 'dots', c: '#e8ece8', n: 120, r: 0.03, from: 0.05, to: 1, spread: 0.9, y: -0.08 }, ...[0.3, 0.42, 0.54, 0.66, 0.78].map((x) => ({ k: 'band', x, w: 0.01, c: 'rgba(232,236,232,0.5)', top: 0.6, bot: 0.1 })), { k: 'hlines', c: 'rgba(232,236,232,0.4)', n: 3, y0: -0.4, y1: -0.05, from: 0.2, to: 1, lw: 0.02 }] }, // Whale Shark
+  84: { fam: 'filter', h: 0.2, c: ['#5a564e', '#a8a294'], belly: '#a8a294', f: '#524e46', lipc: '#d8d0c4' }, // Basking Shark
+  88: { fam: 'filter', h: 0.2, c: ['#2a2a30', '#5a5660'], belly: '#5a5660', f: '#26262c', lipc: '#e8e2d8', sp: { top: [[0, 0.4], [0.05, 0.7], [0.15, 0.92], [0.32, 1], [0.55, 0.9], [0.8, 0.45], [0.94, 0.2], [1, 0.15]], d1: { x: 0.45, w: 0.1, h: 0.55 } } }, // Megamouth Shark
+  89: { fam: 'cowshark', h: 0.2, c: ['#4a4840', '#8a8676'], belly: '#8a8676', f: '#444238', eyec: '#3ad87a', eyek: 1.5 }, // Bluntnose Sixgill Shark
+  316: { fam: 'cowshark', h: 0.19, c: ['#7a7468', '#d8d2c4'], belly: '#d8d2c4', f: '#726c60', sp: { gills: 7, gsp: 0.016, top: [[0, 0.08], [0.05, 0.42], [0.15, 0.8], [0.35, 1], [0.6, 0.88], [0.8, 0.55], [1, 0.25]] },
+    marks: [{ k: 'dots', c: 'rgba(30,26,22,0.6)', n: 40, r: 0.03, from: 0.1, to: 0.95, spread: 0.8, y: -0.1 }] }, // Broadnose Sevengill Shark
+  85: { fam: 'sleeper2', h: 0.2, c: ['#4a4a44', '#6a6860'], belly: '#6a6860', f: '#44443e', eyec: '#8ac8a8', eyek: 0.8, marks: [{ k: 'dots', c: 'rgba(20,20,18,0.3)', n: 30, r: 0.04 }] }, // Greenland Shark
+  343: { fam: 'sleeper2', h: 0.24, c: ['#5a4e44', '#7a6e62'], belly: '#7a6e62', f: '#524640', thorns: '#d8ccb8' }, // Prickly Shark
+  468: { fam: 'sleeper2', h: 0.24, c: ['#5a5650', '#7a766c'], belly: '#7a766c', f: '#524e48', thorns: '#e8e0cc', sp: { anal: 0 } }, // Bramble Shark
+  312: { fam: 'dogfish', h: 0.16, c: ['#6a6e72', '#e8e6e2'], belly: '#e8e6e2', f: '#62666a', marks: [{ k: 'dots', c: '#ece8e0', n: 18, r: 0.04, from: 0.2, to: 0.9, spread: 0.4, y: -0.15 }] }, // Spiny Dogfish
+  340: { fam: 'dogfish', h: 0.16, c: ['#2a2a2e', '#121214'], belly: '#121214', f: '#26262a', eyec: '#4ad8a0', glow: 1 }, // Velvet Belly Lanternshark
+  464: { fam: 'dogfish', h: 0.15, c: ['#121214', '#0c0c0e'], belly: '#0c0c0e', f: '#141416', eyec: '#3ae890', eyek: 1.8, glow: 1 }, // Ninja Lanternshark
+  341: { fam: 'dogfish', h: 0.17, c: ['#3a2e28', '#2a2220'], belly: '#2a2220', f: '#342a24', glow: 1, sp: { dspine: 0 } }, // Kitefin Shark
+  342: { fam: 'dogfish', h: 0.17, c: ['#3e302a', '#4e4038'], belly: '#4e4038', f: '#382c26', eyec: '#3ad890', eyek: 1.7 }, // Portuguese Dogfish
+  467: { fam: 'dogfish', h: 0.16, c: ['#6a6a66', '#a8a6a0'], belly: '#a8a6a0', f: '#62625e', eyec: '#3ae890', eyek: 2.2 }, // Gulper Shark
+  465: { fam: 'dogfish', h: 0.14, c: ['#2a2a30', '#1a1a1e'], belly: '#1a1a1e', f: '#26262c', teeth: 1, eyek: 1.6, eyec: '#3ad8a0', glow: 1 }, // Viper Dogfish
+  463: { fam: 'dogfish', h: 0.24, c: ['#3a3a3e', '#2a2a2e'], belly: '#2a2a2e', f: '#363638', glow: 1, sp: { top: [[0, 0.5], [0.05, 0.85], [0.15, 1], [0.35, 1], [0.6, 0.85], [0.82, 0.5], [1, 0.22]], dspine: 0 } }, // Pocket Shark
+  466: { fam: 'dogfish', h: 0.18, c: ['#4a4038', '#6a5e54'], belly: '#6a5e54', f: '#443a32', sp: { d1: { x: 0.45, w: 0.32, h: 0.25, s: 'low' }, d2: { x: 0.8, w: 0.08, h: 0.3 }, dspine: 0, anal: 0.84 } }, // False Catshark
+  90: { fam: 'dogfish', h: 0.17, c: ['#6a5a48', '#8a7a64'], belly: '#8a7a64', f: '#62523e', glow: 1, eyek: 1.6, sp: { d1: { x: 0.68, w: 0.05, h: 0.2 }, d2: { x: 0.78, w: 0.05, h: 0.2 }, dspine: 0 }, marks: [{ k: 'band', x: 0.24, w: 0.05, c: '#2a2018', top: 0.2, bot: 0.6 }] }, // Cookiecutter Shark
 };

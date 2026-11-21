@@ -3171,8 +3171,127 @@ Object.assign(FAM, {
     dors: [{ a: 0.18, b: 0.62, s: 'spiny', h: 0.32, r: 0.12, n: 14 }, { a: 0.62, b: 0.88, s: 'soft', h: 0.22, r: 0.25 }], anal: [{ a: 0.62, b: 0.86, s: 'soft', h: 0.2, r: 0.25 }] }),
 });
 
+
+// ---------- (5.10.0) sharks by family ----------
+// A shark fin: a stiff blade rising from the body's edge, its leading edge convex, its trailing edge cut back
+// (falcate) to a free rear tip; 'round' for the oceanic whitetip's broad paddles, 'low' for a long low fin
+function sharkFin(ctx, bx, by, w, h, rake, col, side, shape = 'falcate', tip = null) {
+  const ax = bx + w * (rake - 0.5) + w * 0.3, ay = by + side * h, p = new Path2D();
+  p.moveTo(bx - w * 0.5, by);
+  if (shape === 'round') { p.quadraticCurveTo(bx - w * 0.35, by + side * h * 0.9, ax, ay); p.quadraticCurveTo(ax + w * 0.35, ay - side * h * 0.05, ax + w * 0.25, ay - side * h * 0.4); p.quadraticCurveTo(bx + w * 0.3, by + side * h * 0.2, bx + w * 0.5, by); }
+  else if (shape === 'low') { p.quadraticCurveTo(bx - w * 0.3, by + side * h, bx, by + side * h); p.lineTo(bx + w * 0.42, by + side * h * 0.8); p.quadraticCurveTo(bx + w * 0.55, by + side * h * 0.3, bx + w * 0.5, by); }
+  else { p.quadraticCurveTo(bx - w * 0.22, by + side * h * 0.55, ax, ay); p.quadraticCurveTo(bx + w * 0.12, by + side * h * 0.3, bx + w * 0.62, by + side * h * 0.06); p.lineTo(bx + w * 0.42, by); }
+  p.closePath(); ctx.fillStyle = col; ctx.fill(p);
+  if (tip) { ctx.save(); ctx.clip(p); const g = ctx.createLinearGradient(0, ay, 0, by); g.addColorStop(0, tip); g.addColorStop(0.32, tip); g.addColorStop(0.45, rgba(tip, 0)); ctx.fillStyle = g; ctx.fillRect(bx - w, Math.min(ay, by) - h, w * 3, h * 3); ctx.restore(); }
+  ctx.save(); ctx.strokeStyle = rgba(shade(col, -0.45), 0.35); ctx.lineWidth = Math.max(0.5, w * 0.03); ctx.stroke(p); ctx.restore();
+  return p;
+}
+function drawShark2(ctx, L, v0, t, swim) {
+  const F = FAM[v0.fam], v = { ...v0 }, P = { ...F, ...(v.sp || {}) }, H = L * v.h;
+  const og = fishOutline(null, L, v, t, swim), bl = og.bodyL, X = (f) => og.x0 + bl * f, eT = (f) => edgeAt(og, X(f), -1), eB = (f) => edgeAt(og, X(f), 1);
+  const c0 = v.c[0], c1 = v.c[1], fc = v.f || c0, sway = Math.sin(t * 3 * swim), ew = Math.max(0.6, L * 0.004);
+  // the tail, behind everything: its upper lobe and lower lobe from the root of the tail
+  { const tx = og.tailX, ty = og.tailY, T = P.tail, hb = H * (T.root ?? 0.1), Lu = L * T.up, Ll = L * T.low, a = (T.a ?? -0.62) + sway * 0.06, b = (T.b ?? 0.95) + sway * 0.06;
+    const ux = tx + Math.cos(a) * Lu, uy = ty + Math.sin(a) * Lu, lx = tx + Math.cos(b) * Ll, ly = ty + Math.sin(b) * Ll, fx = tx + Lu * (T.fork ?? 0.2), fy = ty + H * 0.04;
+    const p = new Path2D(); p.moveTo(tx - L * 0.02, ty - hb);
+    p.quadraticCurveTo(tx + Lu * 0.45 * Math.cos(a) - H * 0.05, ty + Lu * 0.45 * Math.sin(a) - H * 0.06, ux, uy); // the upper lobe's leading edge
+    if (T.notch !== false) { const nx = ux - Math.cos(a) * Lu * 0.18, ny = uy - Math.sin(a) * Lu * 0.18; p.lineTo(nx + H * 0.02, ny + H * 0.07); } // the notch below its tip
+    p.quadraticCurveTo(tx + Lu * 0.35 * Math.cos(a) + H * 0.06, ty + Lu * 0.3 * Math.sin(a) + H * 0.08, fx, fy);
+    if (Ll > 0) { p.quadraticCurveTo(lx - H * 0.04, ly - H * 0.1, lx, ly); p.quadraticCurveTo(tx + Ll * 0.25, ty + Ll * 0.3, tx - L * 0.02, ty + hb); }
+    else p.lineTo(tx - L * 0.02, ty + hb);
+    p.closePath(); ctx.fillStyle = v.tailc || shade(c0, -0.04); ctx.fill(p);
+    if (v.tips || v.tailtip) { ctx.save(); ctx.clip(p); ctx.fillStyle = v.tailtip || v.tips; ctx.beginPath(); ctx.arc(ux, uy, Lu * 0.22, 0, TAU); ctx.fill(); if (v.tailtip && Ll > 0) { ctx.beginPath(); ctx.arc(lx, ly, Ll * 0.25, 0, TAU); ctx.fill(); } ctx.restore(); }
+    if (v.tailedge) { ctx.save(); ctx.strokeStyle = v.tailedge; ctx.lineWidth = H * 0.04; ctx.beginPath(); ctx.moveTo(ux, uy); ctx.quadraticCurveTo(tx + Lu * 0.35 * Math.cos(a) + H * 0.06, ty + Lu * 0.3 * Math.sin(a) + H * 0.08, fx, fy); if (Ll > 0) ctx.quadraticCurveTo(lx - H * 0.04, ly - H * 0.1, lx, ly); ctx.stroke(); ctx.restore(); }
+    ctx.save(); ctx.strokeStyle = rgba(shade(c0, -0.45), 0.3); ctx.lineWidth = ew; ctx.stroke(p); ctx.restore(); }
+  // the far pectoral, behind the body
+  const pec = (near) => { const px = X(P.pecx ?? 0.27), py = eB(P.pecx ?? 0.27) - H * 0.12, len = L * P.pec[0], w = L * P.pec[1], a = -(0.35 + (P.pec[2] ?? 0.75) * 0.75) + sway * 0.04 + (near ? 0 : 0.15); // (swept back and down, not hanging)
+    ctx.save(); ctx.translate(px, py); ctx.rotate(a); const p = new Path2D(); p.moveTo(-w * 0.5, 0);
+    if (P.pecRound) { p.quadraticCurveTo(-w * 0.3, len * 0.9, w * 0.1, len); p.quadraticCurveTo(w * 0.7, len * 0.95, w * 0.5, len * 0.5); p.quadraticCurveTo(w * 0.55, len * 0.15, w * 0.5, 0); }
+    else { p.quadraticCurveTo(-w * 0.35, len * 0.6, w * 0.15, len); p.quadraticCurveTo(w * 0.2, len * 0.5, w * 0.5, 0); }
+    p.closePath(); ctx.fillStyle = near ? fc : shade(fc, -0.25); ctx.fill(p);
+    if (v.tips || v.pectip) { ctx.save(); ctx.clip(p); ctx.fillStyle = v.pectip || v.tips; ctx.beginPath(); ctx.arc(w * 0.12, len, len * 0.3, 0, TAU); ctx.fill(); ctx.restore(); }
+    ctx.strokeStyle = rgba(shade(fc, -0.5), 0.3); ctx.lineWidth = ew; ctx.stroke(p); ctx.restore(); };
+  pec(false);
+  // the dorsal fins, the anal and pelvic fins: rooted behind the body's outline
+  const fins = [];
+  if (P.d1) fins.push(sharkFin(ctx, X(P.d1.x), eT(P.d1.x) + H * 0.08, bl * P.d1.w, H * P.d1.h, P.d1.r ?? 0.75, fc, -1, P.d1.s, v.tips || v.dtip));
+  if (P.d2) sharkFin(ctx, X(P.d2.x), eT(P.d2.x) + H * 0.06, bl * P.d2.w, H * P.d2.h, P.d2.r ?? 0.7, fc, -1, P.d2.s, v.d2tip);
+  if (P.pelv !== false) sharkFin(ctx, X(P.pelx ?? 0.58), eB(P.pelx ?? 0.58) - H * 0.06, bl * 0.07, H * 0.32, 0.8, shade(fc, -0.05), 1, 'falcate', v.tipsAll ? v.tips : null);
+  if (P.anal) sharkFin(ctx, X(P.anal), eB(P.anal) - H * 0.05, bl * 0.06, H * 0.24, 0.8, shade(fc, -0.05), 1);
+  // the body: countershaded, sharply or softly, under its markings
+  const o = fishOutline(ctx, L, v, t, swim);
+  ctx.fillStyle = bodyGradient(ctx, -H / 2, H / 2, c0, shade(c0, 0.06)); ctx.fill();
+  ctx.save(); ctx.clip();
+  { const bc = v.belly || c1, sharp = v.cs === 'sharp', line = (k) => { ctx.beginPath(); ctx.moveTo(og.x0 - L * 0.05, H * (P.csNose ?? 0.12)); ctx.bezierCurveTo(X(0.25), H * (0.12 - k), X(0.6), H * (0.1 - k), o.tailX + L * 0.02, o.tailY + H * 0.02); ctx.lineTo(o.tailX + L * 0.02, H); ctx.lineTo(og.x0 - L * 0.05, H); ctx.closePath(); };
+    if (sharp) { ctx.fillStyle = bc; line(0.06); ctx.fill(); if (v.csedge) { ctx.strokeStyle = v.csedge; ctx.lineWidth = H * 0.03; ctx.stroke(); } }
+    else { const g = ctx.createLinearGradient(0, -H * 0.05, 0, H * 0.3); g.addColorStop(0, rgba(bc, 0)); g.addColorStop(0.6, bc); g.addColorStop(1, bc); ctx.fillStyle = g; line(0.02); ctx.fill(); } }
+  patternFish(ctx, o, L, v); drawMarks(ctx, o, L, v, H, X(P.eye[0]), H * P.eye[1]);
+  if (v.thorns) { ctx.fillStyle = rgba(v.thorns, 0.85); let sd = 7; const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280); for (let k = 0; k < 60; k++) { ctx.beginPath(); ctx.arc(X(0.08 + rnd() * 0.9), (rnd() - 0.5) * H * 0.9, H * (0.015 + rnd() * 0.02), 0, TAU); ctx.fill(); } }
+  ctx.fillStyle = overlayShading(ctx, -H / 2, H / 2); ctx.fillRect(-L, -H, L * 2, H * 2);
+  ctx.restore();
+  ctx.save(); fishOutline(ctx, L, v, t, swim); ctx.strokeStyle = rgba(shade(c0, -0.5), 0.35); ctx.lineWidth = ew * 1.2; ctx.stroke(); ctx.restore();
+  // keels at the root of the tail (mackerel sharks)
+  if (P.keel) { ctx.fillStyle = shade(c0, -0.2); ctx.beginPath(); ctx.ellipse(X(0.95), og.tailY, bl * 0.06, H * 0.035, 0, 0, TAU); ctx.fill(); }
+  // spines before the dorsals (dogfish)
+  if (P.dspine) for (const d of [P.d1, P.d2]) { if (!d) continue; const x = X(d.x) - bl * d.w * 0.5, y = eT(d.x) + H * 0.04; ctx.strokeStyle = rgba('#e8e2d0', 0.9); ctx.lineWidth = Math.max(0.6, H * 0.03); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + bl * 0.02, y - H * d.h * 0.8); ctx.stroke(); }
+  // the gill slits: long in the filter feeders, round the head
+  { const n = P.gills || 5, g0 = P.gx ?? 0.17, sp = P.gsp ?? 0.022; ctx.strokeStyle = rgba(shade(c0, -0.6), 0.55); ctx.lineWidth = Math.max(0.6, L * 0.004 * (P.gw || 1));
+    for (let k = 0; k < n; k++) { const x = X(g0 + k * sp), yt = eT(g0 + k * sp) * (P.glen ?? 0.35), yb = eB(g0 + k * sp) * (P.glen ?? 0.35) + H * 0.06; ctx.beginPath(); ctx.moveTo(x, yt); ctx.quadraticCurveTo(x + L * 0.008, (yt + yb) / 2, x, yb); ctx.stroke(); } }
+  pec(true);
+  // the head
+  const nx = og.x0;
+  if (P.hammer) { // the hammer: a wide, flat blade across the head, an eye at each end, its front edge scalloped
+    const hx = nx + bl * 0.035, hw = bl * 0.05, hh = H * 1.75; const g = ctx.createLinearGradient(hx - hw, 0, hx + hw, 0); g.addColorStop(0, shade(c0, 0.08)); g.addColorStop(1, shade(c0, -0.08)); ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(hx + hw, -hh * 0.5); ctx.quadraticCurveTo(hx - hw * 1.2, -hh * 0.55, hx - hw, -hh * 0.2); ctx.quadraticCurveTo(hx - hw * 1.3, 0, hx - hw, hh * 0.2); ctx.quadraticCurveTo(hx - hw * 1.2, hh * 0.55, hx + hw, hh * 0.5); ctx.quadraticCurveTo(hx + hw * 2, 0, hx + hw, -hh * 0.5); ctx.fill();
+    ctx.strokeStyle = rgba(shade(c0, -0.5), 0.4); ctx.lineWidth = ew; ctx.stroke(); eye(ctx, hx - hw * 0.4, -hh * 0.44, Math.max(1, H * 0.06), '#141414', true); eye(ctx, hx - hw * 0.4, hh * 0.44, Math.max(1, H * 0.05), '#141414', true);
+  }
+  const ex = X(P.eye[0]), ey = H * P.eye[1], er = Math.max(1.1, H * 0.055) * (v.eyek || P.eyek || 1);
+  if (!P.hammer) { if (v.eyec2) { ctx.fillStyle = v.eyec2; ctx.beginPath(); ctx.arc(ex, ey, er * 1.25, 0, TAU); ctx.fill(); } eye(ctx, ex, ey, er, v.eyec || '#151515', true); }
+  // the mouth: slung beneath the snout, or straight across the front (whale shark, megamouth, basking shark)
+  const M = P.mouth || 'under';
+  ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = Math.max(0.7, L * 0.005); ctx.lineCap = 'round';
+  if (M === 'front' || M === 'mega') { const mw = bl * (M === 'mega' ? 0.12 : 0.08), my2 = H * (P.mouthy ?? 0.05); if (v.lipc) { ctx.fillStyle = v.lipc; ctx.beginPath(); ctx.ellipse(nx + mw * 0.5, my2, mw * 0.55, H * 0.05, 0, 0, TAU); ctx.fill(); } ctx.beginPath(); ctx.moveTo(nx + L * 0.002, my2); ctx.quadraticCurveTo(nx + mw * 0.6, my2 + H * 0.05, nx + mw, my2 - H * 0.01); ctx.stroke(); }
+  else { const mx0 = nx + bl * (P.mouthx ?? 0.06), my2 = eB(P.mouthx ?? 0.06) - H * 0.07; ctx.beginPath(); ctx.moveTo(mx0, my2); ctx.quadraticCurveTo(mx0 + bl * 0.04, my2 + H * 0.05, mx0 + bl * 0.08, my2 - H * 0.02); ctx.stroke();
+    if (v.teeth) { ctx.fillStyle = '#ece6d4'; for (let k = 0; k < 7; k++) { const x = mx0 + bl * 0.01 * k, y = my2 + H * 0.01; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + bl * 0.004, y + H * 0.06); ctx.lineTo(x + bl * 0.008, y); ctx.fill(); } } }
+  ctx.lineCap = 'butt';
+  if (v.barbels) { ctx.strokeStyle = rgba(shade(c0, -0.3), 0.9); ctx.lineWidth = Math.max(0.7, H * 0.025); ctx.beginPath(); ctx.moveTo(nx + bl * 0.012, H * 0.08); ctx.lineTo(nx + bl * 0.005, H * 0.24); ctx.stroke(); }
+  if (v.tassels) { ctx.strokeStyle = rgba(shade(c0, -0.15), 0.9); ctx.lineWidth = Math.max(0.6, H * 0.02); ctx.beginPath(); for (let k = 0; k < 9; k++) { const x = nx + bl * (0.005 + k * 0.012), y = eB(0.005 + k * 0.012) - H * 0.02; ctx.moveTo(x, y); ctx.lineTo(x - bl * 0.006 + (k % 2) * bl * 0.008, y + H * (0.14 + (k % 3) * 0.05)); } ctx.stroke(); }
+  if (v.glow) { const Pp = []; for (let k = 0; k < 5; k++) Pp.push([X(0.3 + k * 0.12), eB(0.3 + k * 0.12) - H * 0.12, 0.5]); return Pp; }
+}
+const SHARK = (o) => ({ draw: drawShark2, body: 0.78, bend: 0.9, ...o });
+Object.assign(FAM, {
+  // the requiem sharks: a rounded snout, a tall first dorsal, a long upper tail lobe
+  reqshark: SHARK({ top: [[0, 0.2], [0.04, 0.5], [0.12, 0.8], [0.3, 1], [0.5, 0.92], [0.75, 0.55], [0.92, 0.3], [1, 0.22]], bot: [[0, 0.1], [0.05, 0.42], [0.15, 0.78], [0.35, 1], [0.6, 0.78], [0.82, 0.42], [1, 0.22]],
+    d1: { x: 0.36, w: 0.14, h: 0.95, r: 0.72 }, d2: { x: 0.74, w: 0.05, h: 0.28 }, anal: 0.78, pec: [0.22, 0.09, 0.75], eye: [0.07, -0.12], mouthx: 0.05, gills: 5, gx: 0.17, tail: { up: 0.3, low: 0.15, a: -0.68, b: 0.95 } }),
+  // the mackerel sharks: a conical snout, a deep body, a near-symmetric crescent tail with keels
+  mackshark: SHARK({ body: 0.76, top: [[0, 0.06], [0.05, 0.4], [0.14, 0.78], [0.32, 1], [0.52, 0.92], [0.76, 0.5], [0.92, 0.22], [1, 0.16]], bot: [[0, 0.04], [0.06, 0.36], [0.18, 0.8], [0.38, 1], [0.62, 0.78], [0.84, 0.36], [1, 0.16]],
+    d1: { x: 0.35, w: 0.15, h: 1.0, r: 0.7 }, d2: { x: 0.8, w: 0.03, h: 0.14 }, anal: 0.82, pec: [0.24, 0.1, 0.7], eye: [0.08, -0.1], eyek: 1.2, mouthx: 0.04, gills: 5, gx: 0.16, keel: 1, csNose: 0.05, tail: { up: 0.27, low: 0.24, a: -0.95, b: 0.95, root: 0.07, fork: 0.12 } }),
+  // threshers: the upper lobe of the tail as long again as the body
+  thresher: SHARK({ body: 0.56, bend: 0.6, top: [[0, 0.2], [0.05, 0.55], [0.15, 0.85], [0.32, 1], [0.55, 0.88], [0.78, 0.45], [0.94, 0.16], [1, 0.12]], bot: [[0, 0.12], [0.06, 0.45], [0.2, 0.85], [0.4, 1], [0.65, 0.72], [0.85, 0.3], [1, 0.12]],
+    d1: { x: 0.42, w: 0.15, h: 0.9 }, d2: { x: 0.88, w: 0.03, h: 0.12 }, anal: 0.9, pec: [0.2, 0.08, 0.7], eye: [0.08, -0.12], eyek: 1.5, mouthx: 0.05, gills: 5, gx: 0.18, gsp: 0.03, tail: { up: 0.52, low: 0.06, a: -0.22, b: 0.9, root: 0.06, fork: 0.06 } }),
+  hammer: SHARK({ top: [[0, 0.14], [0.04, 0.4], [0.12, 0.72], [0.3, 1], [0.5, 0.9], [0.75, 0.52], [0.92, 0.28], [1, 0.2]], bot: [[0, 0.1], [0.05, 0.36], [0.15, 0.72], [0.35, 1], [0.6, 0.75], [0.82, 0.4], [1, 0.2]],
+    d1: { x: 0.35, w: 0.12, h: 1.35, r: 0.62 }, d2: { x: 0.75, w: 0.05, h: 0.3 }, anal: 0.76, pec: [0.18, 0.08, 0.8], eye: [0.03, -0.3], mouthx: 0.06, gills: 5, gx: 0.15, hammer: 1, tail: { up: 0.3, low: 0.12, a: -0.62, b: 0.95 } }),
+  // carpet sharks: a flat, blunt head, barbels, the dorsals far back, a long low tail without a lower lobe
+  carpet: SHARK({ body: 0.68, bend: 1.0, top: [[0, 0.3], [0.05, 0.62], [0.15, 0.88], [0.35, 1], [0.6, 0.85], [0.85, 0.5], [1, 0.3]], bot: [[0, 0.25], [0.06, 0.62], [0.2, 0.95], [0.4, 1], [0.65, 0.75], [0.88, 0.4], [1, 0.3]],
+    d1: { x: 0.56, w: 0.12, h: 0.6, r: 0.6, s: 'low' }, d2: { x: 0.76, w: 0.1, h: 0.45, s: 'low' }, anal: 0.82, pecRound: 1, pec: [0.14, 0.1, 0.9], eye: [0.06, -0.2], mouthx: 0.01, gills: 5, gx: 0.15, gsp: 0.018, csNose: 0.25, tail: { up: 0.34, low: 0.26, a: -0.1, b: 0.2, root: 0.14, fork: 0.88 } }),
+  whale: SHARK({ body: 0.76, bend: 0.5, top: [[0, 0.32], [0.04, 0.62], [0.14, 0.88], [0.32, 1], [0.55, 0.9], [0.8, 0.5], [0.94, 0.25], [1, 0.18]], bot: [[0, 0.3], [0.05, 0.6], [0.18, 0.92], [0.4, 1], [0.66, 0.72], [0.88, 0.32], [1, 0.18]],
+    d1: { x: 0.52, w: 0.14, h: 0.65, r: 0.7 }, d2: { x: 0.78, w: 0.05, h: 0.2 }, anal: 0.8, pec: [0.2, 0.1, 0.8], eye: [0.05, -0.05], eyek: 0.7, mouth: 'front', mouthy: 0.02, gills: 5, gx: 0.12, gsp: 0.025, glen: 0.6, keel: 1, tail: { up: 0.27, low: 0.18, a: -0.9, b: 0.9, root: 0.08 } }),
+  // the basking shark and megamouth: open mouths, gills ringing the head
+  filter: SHARK({ body: 0.76, top: [[0, 0.1], [0.05, 0.45], [0.15, 0.8], [0.32, 1], [0.55, 0.9], [0.8, 0.45], [0.94, 0.2], [1, 0.15]], bot: [[0, 0.25], [0.06, 0.62], [0.2, 0.92], [0.4, 1], [0.66, 0.72], [0.88, 0.32], [1, 0.15]],
+    d1: { x: 0.42, w: 0.14, h: 0.8 }, d2: { x: 0.8, w: 0.04, h: 0.16 }, anal: 0.82, pec: [0.2, 0.09, 0.8], eye: [0.06, -0.18], eyek: 0.7, mouth: 'mega', mouthy: 0.12, gills: 5, gx: 0.12, gsp: 0.045, glen: 0.9, gw: 1.6, keel: 1, tail: { up: 0.27, low: 0.18, a: -0.85, b: 0.9 } }),
+  // the cowsharks: six or seven gills, one dorsal far back
+  cowshark: SHARK({ body: 0.72, top: [[0, 0.22], [0.05, 0.55], [0.15, 0.85], [0.35, 1], [0.6, 0.88], [0.8, 0.55], [1, 0.25]], bot: [[0, 0.15], [0.06, 0.5], [0.2, 0.88], [0.4, 1], [0.65, 0.75], [0.85, 0.4], [1, 0.25]],
+    d1: { x: 0.68, w: 0.1, h: 0.5 }, d2: null, anal: 0.76, pec: [0.15, 0.08, 0.8], eye: [0.07, -0.12], eyek: 1.3, mouthx: 0.04, gills: 6, gx: 0.15, gsp: 0.018, tail: { up: 0.32, low: 0.08, a: -0.3, b: 0.8, root: 0.1 } }),
+  // the sleepers: blunt, slow, small low fins, no anal fin
+  sleeper2: SHARK({ body: 0.76, bend: 0.5, top: [[0, 0.3], [0.05, 0.62], [0.15, 0.88], [0.35, 1], [0.6, 0.9], [0.82, 0.5], [1, 0.26]], bot: [[0, 0.22], [0.06, 0.6], [0.2, 0.95], [0.4, 1], [0.66, 0.78], [0.88, 0.4], [1, 0.26]],
+    d1: { x: 0.45, w: 0.08, h: 0.28, s: 'low' }, d2: { x: 0.66, w: 0.08, h: 0.26, s: 'low' }, anal: 0, pec: [0.13, 0.08, 0.85], eye: [0.06, -0.14], eyek: 0.7, mouthx: 0.03, gills: 5, gx: 0.15, tail: { up: 0.27, low: 0.1, a: -0.4, b: 0.85, root: 0.12 } }),
+  // the dogfish and lanternsharks: slim, a spine before each dorsal, no anal fin, big eyes
+  dogfish: SHARK({ body: 0.76, top: [[0, 0.16], [0.05, 0.5], [0.15, 0.82], [0.32, 1], [0.6, 0.86], [0.82, 0.5], [1, 0.22]], bot: [[0, 0.1], [0.06, 0.45], [0.2, 0.85], [0.4, 1], [0.66, 0.72], [0.86, 0.38], [1, 0.22]],
+    d1: { x: 0.35, w: 0.1, h: 0.55 }, d2: { x: 0.7, w: 0.08, h: 0.45 }, anal: 0, dspine: 1, pec: [0.13, 0.07, 0.8], eye: [0.08, -0.14], eyek: 1.5, mouthx: 0.05, gills: 5, gx: 0.17, gsp: 0.016, tail: { up: 0.27, low: 0.1, a: -0.45, b: 0.85 } }),
+});
+
 export function drawSpecies(ctx, sp, L, t, swim = 1, phase = 0) {
-  const fn = sp.v.t === 'coel' ? drawCoelacanth : RENDERERS[sp.v.s] || drawFish; // (3.7.5) the coelacanth has its own
+  const fn = sp.v.fam && FAM[sp.v.fam] && FAM[sp.v.fam].draw ? FAM[sp.v.fam].draw : sp.v.t === 'coel' ? drawCoelacanth : RENDERERS[sp.v.s] || drawFish; // (3.7.5) the coelacanth has its own; (5.10.0) a body family first
   const r = fn(ctx, L, sp.v, t, swim, phase);
   return r || null;
 }
