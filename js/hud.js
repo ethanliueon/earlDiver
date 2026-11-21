@@ -40,7 +40,7 @@ import { VARIANTS } from './variants.js';
 import { speciesIcon } from './creatures_draw.js';
 import { SETTINGS } from './settings.js';
 import { toolIcon, netLook } from './tools_draw.js';
-import { bagSlots, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf, tankUsed, BIG, hasBigTank, bigIn } from './capture.js';
+import { bagSlots, bagUsed, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, netsOf, tankUsed, BIG, hasBigTank, bigIn } from './capture.js';
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
 
@@ -148,24 +148,25 @@ export class Hud {
     const sy = y - 18 * s;
     ctx.font = `${9 * s}px ${MONO}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
 
-    // (5.6.2) on a touch screen the bag is a row of small wells, the animals kept drawn in theirs, a thin line
-    // under each in the colour of its condition; free places are empty wells
-    if (this.touch && !e.inSub && slots) {
-      const cw = 30 * s, gp = 6 * s, tot = slots * cw + (slots - 1) * gp; let wx = W / 2 - tot / 2; const wy = H - 34 * s - cw; // (5.6.5) the beast's eye, when marked, sits under them
-      for (let i = 0; i < slots; i++, wx += cw + gp) {
-        const sp = list[i];
-        if (!oliveNine(ctx, 'well', wx, wy, cw, cw, 30, 6 * s)) { ctx.fillStyle = 'rgba(6,12,14,0.6)'; ctx.fillRect(wx, wy, cw, cw); }
-        if (sp && SPECIES_BY_ID[sp.id]) {
-          ctx.save(); ctx.beginPath(); ctx.rect(wx + 2 * s, wy + 2 * s, cw - 4 * s, cw - 4 * s); ctx.clip(); ctx.translate(wx + cw / 2, wy + cw / 2 - 1 * s);
-          try { drawSpecies(ctx, SPECIES_BY_ID[sp.id], cw * 0.72, g.time * 2 + i, 1, 0); } catch (err) { /* its colour, then */ ctx.fillStyle = SPECIES_BY_ID[sp.id].v.c[0]; ctx.beginPath(); ctx.arc(0, 0, cw * 0.22, 0, TAU); ctx.fill(); }
-          ctx.restore();
-          const c = sp.cond; ctx.fillStyle = c <= 0.05 ? 'rgba(140,140,140,0.9)' : c >= 0.8 ? 'rgba(120,200,130,0.9)' : c >= 0.5 ? 'rgba(232,176,64,0.95)' : 'rgba(230,80,60,0.95)';
-          ctx.fillRect(wx + 5 * s, wy + cw - 5 * s, cw - 10 * s, 2 * s);
-          if (c > 0.05 && sp.warnDying) { const q = (g.time * 1.2) % 1; ctx.strokeStyle = `rgba(255,90,60,${(0.8 * (1 - q)).toFixed(3)})`; ctx.lineWidth = 1.4 * s; ctx.strokeRect(wx - q * 4 * s, wy - q * 4 * s, cw + q * 8 * s, cw + q * 8 * s); }
-        }
-      }
+    // (5.14.0) the bag as one quiet counter, bottom centre: a bag and its spaces used of its room ("7 / 12"), red when he
+    // is overencumbered; the animal just caught shows beside it for a moment, then settles into the count
+    if (!e.inSub && slots) {
+      const used = bagUsed(g), over = used > slots, wy = H - 52 * s, cx0 = W / 2, sz = 30 * s;
+      if ((this.bagN ?? list.length) < list.length) this.bagPop = { sp: list[list.length - 1], t: 0 };
+      this.bagN = list.length;
+      ctx.save(); ctx.textBaseline = 'middle'; ctx.font = `700 ${22 * s}px ${HUDF}`;
+      const txt = `${used} / ${slots}`, tw = ctx.measureText(txt).width, x0 = cx0 - (sz + 8 * s + tw) / 2;
+      ctx.globalAlpha = 0.95; drawGlyph(ctx, 'bag', x0 + sz / 2, wy, sz * 1.15);
+      ctx.textAlign = 'left'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5 * s;
+      ctx.fillStyle = over ? `rgba(240,84,72,${(0.75 + 0.25 * Math.sin(g.time * 6)).toFixed(3)})` : '#efe8d2'; ctx.fillText(txt, x0 + sz + 8 * s, wy + 1 * s);
+      if (over) { ctx.font = `600 ${15 * s}px ${HUDF}`; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(240,84,72,0.95)'; ctx.fillText('Overencumbered', cx0, wy - 26 * s); }
+      const P2 = this.bagPop; if (P2 && SPECIES_BY_ID[P2.sp.id]) { P2.t += dt; const k = P2.t < 0.25 ? P2.t / 0.25 : P2.t > 1.6 ? Math.max(0, 1 - (P2.t - 1.6) / 0.4) : 1;
+        if (k <= 0) this.bagPop = null; else { ctx.shadowBlur = 0; ctx.globalAlpha = k; ctx.translate(x0 + sz + 8 * s + tw + 34 * s, wy); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
+          try { drawSpecies(ctx, SPECIES_BY_ID[P2.sp.id], 44 * s, g.time * 2, 1, 0); } catch (err) { /* only the count, then */ } } }
+      ctx.restore();
+      if (this.touch && this.hots) this.hots.push({ x: (x0 + this.safeL) * (window.innerWidth / this.c.width), y: (wy - sz / 2 + this.safeT) * (window.innerWidth / this.c.width), w: (sz + 8 * s + tw) * (window.innerWidth / this.c.width), h: sz * (window.innerWidth / this.c.width), key: 'b' }); // a tap opens the bag
     }
-    for (let i = 0; i < (this.touch && !e.inSub ? 0 : slots); i++, sx += step) {
+    for (let i = 0; i < 0; i++, sx += step) { // (5.14.0) the old row of dots, retired
       const sp = list[i];
       ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU);
       ctx.fillStyle = 'rgba(6,12,14,0.55)'; ctx.fill();

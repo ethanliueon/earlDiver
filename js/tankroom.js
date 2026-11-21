@@ -12,7 +12,7 @@ import { drawSpecies, speciesIcon, speciesBox, fittedIcon } from './creatures_dr
 import { rarityOf, specimenValue, rarityStars, rarityCls, livesOnBottom, isSessile } from './specimens.js';
 import { money } from './economy.js';
 import { xEyes } from './gallery.js';
-import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf, chamberRoom } from './capture.js';
+import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf, chamberRoom, bagUsed, spacesOf } from './capture.js';
 import { UPGRADES, SUB_ADDONS } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
 import { paintedText, depthCounter, hatchRim, paperTag, instructionPlate, cleanPatch, cappedFlange, hoseCoil, hazardTape, toggleSwitch, brassTag, ease } from './fittings.js';
@@ -255,7 +255,7 @@ export class TankRoom {
       else if (pressSlots(g) > 0) acts += btn('Swap with a chamber…', `swaps:${where}:${i}`);
     }
     if (!inOpen) acts += btn('Into the open tank', `open:${where}:${i}`, tankFits(g, { ...s, pressed: false, pile: false }));
-    if (where !== 'bag') acts += btn('Into the bag', `tobag:${where}:${i}`, g.bag.length < bagSlots(g));
+    if (where !== 'bag') acts += btn('Into the bag', `tobag:${where}:${i}`, bagUsed(g) + spacesOf(s) <= bagSlots(g));
     acts += btn('Let go', `release:${where}:${i}`);
     let swaps = '';
     if (C.swaps) {
@@ -311,7 +311,7 @@ export class TankRoom {
     const g = this.h.getGame(), G = this.geometry();
     if (!g || !this.drag) return null;
     const r = this.bagBox;
-    if (r && cx > r.x0 - 20 && cx < r.x1 + 20 && cy > r.y0 - 20 && cy < r.y1 + 20 && this.drag.where !== 'bag' && g.bag.length < bagSlots(g)) return { kind: 'bag' };
+    if (r && cx > r.x0 - 20 && cx < r.x1 + 20 && cy > r.y0 - 20 && cy < r.y1 + 20 && this.drag.where !== 'bag' && bagUsed(g) + spacesOf(this.drag.s || {}) <= bagSlots(g)) return { kind: 'bag' };
     if (this.room === 'chambers') {
       const ps = pressSlots(g);
       for (const [n, c] of G.chambers.entries()) {

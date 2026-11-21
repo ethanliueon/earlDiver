@@ -95,7 +95,7 @@ function goodOf(kind, s) {
   if (kind === 'cam') return `Quality ${(s.idx || 10).toFixed(2)}; holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
   if (kind === 'fins') return `Speed ${+(s.swim / 2).toFixed(2)}, sprint ${+(s.sprint / 2).toFixed(2)}`; // (5.12.0) shown at half the in-game figure
   if (kind === 'tank') return `About ${s.air} s of air${s.quiet ? ', no bubbles' : ''}`;
-  if (kind === 'bag') return `${s.slots} animals${s.apart ? ', kept apart' : ''}`;
+  if (kind === 'bag') return `${s.slots} spaces${s.apart ? ', kept apart' : ''}`;
   if (kind === 'suit') return `Pressure starts at ${s.press} m${s.air < 1 ? `; air use ×${s.air}` : ''}${s.warm ? '; keeps out the cold' : ''}${s.bite ? '; turns a bite' : ''}`;
   return '';
 }
@@ -188,7 +188,7 @@ const ROLL = { common: [0, 1], uncommon: [1, 1], rare: [2, 2], exotic: [2, 3], l
 // the chance of each level (I, II, III, IV) by rarity (decided 7 Nov): a Common's one skill (half have one)
 // is always I; an Uncommon's 70 % I, 30 % II; a Rare's 30 / 40 / 30 up to III; an Exotic's 10 / 35 / 55;
 // a Legendary's 5 / 20 / 40 / 35, the only rarity with level IV
-const LEVELS = { common: [1], uncommon: [0.7, 0.3], rare: [0.3, 0.4, 0.3], exotic: [0.1, 0.35, 0.55], legendary: [0.05, 0.2, 0.4, 0.35] };
+const LEVELS = { common: [1], uncommon: [0.7, 0.3], rare: [0.25, 0.5, 0.25], exotic: [0, 0.15, 0.85], legendary: [0, 0, 0.5, 0.5] }; // (5.14.0) rare about II, exotic about III, legendary III or IV evenly
 function rollLevel(rarity, rnd) { const w = LEVELS[rarity]; let r = rnd(); for (let i = 0; i < w.length; i++) { if (r < w[i]) return i + 1; r -= w[i]; } return w.length; }
 export function rollSkills(def, rnd = Math.random) {
   if (def.kind === 'ability') return [];
@@ -372,8 +372,8 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
   const spread = (list, lo, hi, round) => list.forEach((it, i) => round(it, list.length < 2 ? (lo + hi) / 2 : lo + (hi - lo) * i / (list.length - 1)));
   const TANK = { common: [20, 30], uncommon: [45, 65], rare: [75, 105], exotic: [120, 155], legendary: [190, 200] };
   for (const [r, [lo, hi]] of Object.entries(TANK)) spread(order('tank', r, 'air'), lo, hi, (it, v) => { const was = it.air, now = it.id === 'al80' ? 20 : Math.round(v); it.air = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} s\\b`, 'g'), `${now} s`)); });
-  const BAG = { common: [2, 3], uncommon: [4, 5], rare: [6, 7], exotic: [8, 9], legendary: [11, 12] }; // (5.12.9) the bag shows 12 pockets at most
-  for (const [r, [lo, hi]] of Object.entries(BAG)) spread(order('bag', r, 'slots'), lo, hi, (it, v) => { const was = it.slots, now = it.id === 'mesh' ? 2 : Math.round(v); it.slots = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} animals`, 'g'), `${now} animals`)); });
+  const BAG = { common: [5, 7], uncommon: [9, 12], rare: [14, 18], exotic: [20, 26], legendary: [40, 50] }; // (5.14.0) spaces (an animal takes 1 to 16 by its length)
+  for (const [r, [lo, hi]] of Object.entries(BAG)) spread(order('bag', r, 'slots'), lo, hi, (it, v) => { const was = it.slots, now = it.id === 'mesh' ? 5 : Math.round(v); it.slots = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} animals`, 'g'), `${now} animals`)); });
   const CAM = { common: [9, 11.5], uncommon: [14, 17], rare: [20, 23], exotic: [26, 29], legendary: [40, 45] };
   for (const [r, [lo, hi]] of Object.entries(CAM)) spread(order('cam', r, 'idx'), lo, hi, (it, v) => { it.idx = +v.toFixed(2); if (it.chest || /Quality/.test(it.good || '')) it.good = goodOf('cam', it); });
   // nets: each kind keeps what it is for (its own size, reach and swing); rarity multiplies them, with the jump at the top
@@ -395,7 +395,7 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
   const WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen'];
   for (const it of Object.values(ITEMS)) {
     if (it.kind === 'tank') reword(it, (t) => t.replace(/\b\d+ s of air/g, `${it.air} s of air`));
-    if (it.kind === 'bag') reword(it, (t) => t.replace(/\b\d+ animals/g, `${it.slots} animals`).replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) pockets\b/g, `${WORD[it.slots] || it.slots} pockets`));
+    if (it.kind === 'bag') reword(it, (t) => t.replace(/\b\d+ animals/g, `${it.slots} spaces`).replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) pockets\b/g, 'room inside'));
   }
 }
 for (const it of Object.values(ITEMS)) if (it.kind === 'fins' && /no faster cruising/i.test(it.bad || '')) it.bad = 'Cruising barely faster than rubber'; // (5.12.5) they are a little faster now
@@ -413,3 +413,6 @@ for (const it of Object.values(ITEMS)) if (it.kind === 'fins' && /no faster crui
     xs.forEach((it, j) => { const pos = hi > lo ? (sc[j] - lo) / (hi - lo) : 0.5; it.price = nice(a + (b - a) * Math.pow(pos, 1.3)); });
   }
 }
+// (5.14.0) Deep Pockets: spaces by its level, on a bag or a suit (both add up): I +2, II +5, III +10, IV +20
+export const POCKETS_BY_LV = [0, 2, 5, 10, 20];
+export function pocketsBonus(P) { const K = kitOf(P); let n = 0; for (const u of Object.values(K.on)) { const q = u && instOf(P, u); if (!q) continue; for (const [k, l] of q.sk || []) if (k === 'pockets') n += POCKETS_BY_LV[Math.min(4, l)] || 0; } return n; }

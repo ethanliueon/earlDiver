@@ -53,7 +53,7 @@ export function boostOf(kind, label, it, sk) {
   const lv = (k) => (sk || []).reduce((a, q) => a + (q && q[0] === k ? q[1] : 0), 0);
   if (kind === 'fins' && label === 'Speed' && lv('haste')) { const b = it.swim / 2, add = b * 0.06 * lv('haste'); return { txt: n2(b + add), add: '+' + n2(add) }; }
   if (kind === 'tank' && label === 'Air' && lv('rebreathing')) { const add = Math.round(it.air * 0.1 * lv('rebreathing')); return { txt: `about ${secs(it.air + add)}`, add: `+${add} s` }; }
-  if (kind === 'bag' && label === 'Animals' && lv('pockets')) { const add = lv('pockets'); return { txt: String(it.slots + add), add: `+${add}` }; }
+  if (kind === 'bag' && label === 'Spaces' && lv('pockets')) { const add = [0, 2, 5, 10, 20][Math.min(4, lv('pockets'))]; return { txt: String(it.slots + add), add: `+${add}` }; }
   return null;
 }
 export function measureHtml(kind, row, it, sk) { const B = boostOf(kind, row[0], it, sk); return B ? `<span class="boost">${B.txt} <small>(${B.add})</small></span>` : row[1](it); }
@@ -62,7 +62,7 @@ export function crossBoosts(kind, sk) {
   const lv = (k) => (sk || []).reduce((a, q) => a + (q && q[0] === k ? q[1] : 0), 0), out = [];
   if (kind !== 'fins' && lv('haste')) out.push(['Speed', `+${6 * lv('haste')} %`]);
   if (kind !== 'tank' && lv('rebreathing')) out.push(['Air', `+${10 * lv('rebreathing')} %`]);
-  if (kind !== 'bag' && lv('pockets')) out.push(['Animals', `+${lv('pockets')}`]);
+  if (kind !== 'bag' && lv('pockets')) out.push(['Spaces', `+${[0, 2, 5, 10, 20][Math.min(4, lv('pockets'))]}`]);
   return out;
 }
 // the numbers compared, per kind: [label, value as text, a number to compare, higher is better?]
@@ -73,7 +73,7 @@ export const MEASURES = {
   cam: [['Quality', (it) => (it.idx || 10).toFixed(2), (it) => it.idx || 10, true], /* (5.10.10) */ ['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
   fins: [['Speed', (it) => n2(it.swim / 2), (it) => it.swim, true], ['Sprint', (it) => n2(it.sprint / 2), (it) => it.sprint, true]], // (5.12.0) half the in-game figure: the rubber fins 0.5
   tank: [['Air', (it) => `about ${secs(it.air)}`, (it) => it.air, true], ['Speed', (it) => (it.speed >= 1 ? 'no slower' : it.speed >= 0.96 ? 'a little slower' : 'slower'), (it) => it.speed, true]],
-  bag: [['Animals', (it) => `${it.slots}`, (it) => it.slots, true]],
+  bag: [['Spaces', (it) => `${it.slots}`, (it) => it.slots, true]], // (5.14.0)
   suit: [['Pressure starts', (it) => `at ${it.press} m`, (it) => it.press, true], ['Air use', (it) => (it.air < 1 ? x(it.air) : 'normal'), (it) => -it.air, true]], // (5.12.0) no speed: fins alone give it
 };
 

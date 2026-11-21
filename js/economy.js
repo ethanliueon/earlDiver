@@ -1,5 +1,5 @@
 import { VERSION as GAME_VERSION } from './version.js';
-import { ITEMS, kitOf, worn as wornItem, skillLv, hasLegend, setOn } from './items.js';
+import { ITEMS, kitOf, worn as wornItem, skillLv, hasLegend, setOn, pocketsBonus } from './items.js';
 // The money side of the game: the save (what survives death), prices, the market, and the
 // catalogue of things Earl can buy at the boat.
 //
@@ -434,7 +434,7 @@ function itemStat(P, id) {
   if (id === 'air') return Math.min(300, worn(P, 'tank').air * (1 + 0.1 * skillLv(P, 'rebreathing')) * (setOn(P, 'sealab') ? 1.5 : 1));
   if (id === 'swim') return worn(P, 'fins').swim * (worn(P, 'tank').speed || 1) * (1 + 0.06 * skillLv(P, 'haste'));
   if (id === 'sprint') return worn(P, 'fins').sprint;
-  return worn(P, 'bag').slots + skillLv(P, 'pockets');
+  return worn(P, 'bag').slots + pocketsBonus(P); // (5.14.0) Deep Pockets in spaces
 }
 const roundCost = (c) => (c < 10 ? Math.round(c * 100) / 100 : c < 100 ? Math.round(c * 4) / 4 : Math.round(c));
 const statStepCost = (id, l) => { const U = UPGRADES[id]; return U.costs ? U.costs[Math.min(l, U.costs.length - 1)] : U.cost * Math.pow(U.growth, l); };

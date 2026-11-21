@@ -27,7 +27,7 @@ export const SKILLS = {
   haste: { name: 'Haste', what: 'he swims faster', fits: ['fins', 'suit'] },
   rebreathing: { name: 'Rebreathing', what: 'his air lasts longer', fits: ['tank', 'suit'] },
   ambush: { name: 'Ambush', what: "fish don't bolt as easily", fits: ['suit', 'fins', 'net'] },
-  pockets: { name: 'Deep Pockets', what: 'room for more animals', fits: ['bag', 'suit'] },
+  pockets: { name: 'Deep Pockets', what: 'more spaces in the bag', fits: ['bag', 'suit'] },
   feather: { name: 'Featherweight', what: 'a full bag slows him less', fits: ['bag', 'tank'] },
   warmth: { name: 'Warmth', what: 'the deep cold costs less air', fits: ['suit', 'tank'] },
   hardened: { name: 'Hardened', what: 'bites do less harm', fits: ['suit'] },

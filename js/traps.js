@@ -9,7 +9,7 @@ import { TRAPS, TRAP_ORDER } from './economy.js';
 import { SPECIES } from './species.js';
 import { canTakeLive } from './specimens.js';
 import { rollVariant, variantMult, canBeRare } from './variants.js';
-import { bagSlots } from './capture.js';
+import { bagSlots, bagUsed } from './capture.js';
 import { BOAT } from './world.js';
 import { climateOk } from './fauna.js';
 
@@ -166,7 +166,7 @@ export function trapNear(g) {
 // into the bag, whatever fits; the trap stays set and its bait keeps working
 export function emptyTrap(g, t) {
   let n = 0;
-  while (t.catch.length && g.bag.length < bagSlots(g)) { g.bag.push(t.catch.shift()); n++; }
+  while (t.catch.length && bagUsed(g) < bagSlots(g)) { g.bag.push(t.catch.shift()); n++; }
   return n;
 }
 // on death the traps are lost with him

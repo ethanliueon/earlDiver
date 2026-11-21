@@ -8,14 +8,20 @@ import { WEIGHT, gear, owns, statValue } from './economy.js';
 import { canTakeLive, isTagOnly, liveValue, deepPremium, fragile, conditionName } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
 
+// (5.14.0) the bag and the sub's open tank are measured in spaces, and an animal takes spaces by its length (owner's
+// scale): under 20 cm 1, under 50 cm 2, under 1 m 4, under 2 m 8, bigger 16. The tank's room is three times its old count
+export const spacesOf = (s) => { const L = (s && s.len) || 0; return L < 0.2 ? 1 : L < 0.5 ? 2 : L < 1 ? 4 : L < 2 ? 8 : 16; };
 export const bagSlots = (g) => Math.round(statValue(g.profile, 'bag'));
-export const tankSlots = (g) => Math.round(statValue(g.profile, 'subTank'));
+export const bagUsed = (g) => (g.bag || []).reduce((a, s) => a + spacesOf(s), 0);
+// overencumbered: more in the bag than it holds (a catch is never refused for room; it is the player's to judge)
+export const overencumbered = (g) => bagUsed(g) > bagSlots(g);
+export const tankSlots = (g) => Math.round(statValue(g.profile, 'subTank') * 3);
 // the sealed pressure tanks: separate places in the sub (specimens in them carry pressed: true)
 export const pressSlots = (g) => Math.round(statValue(g.profile, 'pressTanks'));
 // a big animal takes more of the open tank: one place to 60 cm, two to 1.2 m, three beyond
 // (4.12.6) a tiny animal (under 20 cm) takes half a place, in the open tank or in a chamber
 export const TINY = 0.2;
-export const slotsOf = (s) => ((s.len || 0) < TINY ? 0.5 : s.len < 0.6 ? 1 : s.len < 1.2 ? 2 : 3);
+export const slotsOf = (s) => spacesOf(s); // (5.14.0) spaces, as the bag
 // how full an ordinary chamber is: one place each, a tiny animal half (two tiny ones share a chamber)
 export const chamberLoad = (g, n, except = null) => g.subTank.reduce((a, q) => a + (q.pressed && q.chamber === n && q !== except ? ((q.len || 0) < TINY ? 0.5 : 1) : 0), 0);
 export const chamberRoom = (g, n, spec) => chamberLoad(g, n, spec) + ((spec.len || 0) < TINY ? 0.5 : 1) <= 1;
@@ -141,8 +147,8 @@ export function useTool(g) {
   if (e.inSub) return 'Not from inside the submersible';
   if (g.capture) return null; // already mid-swing
   if ((g.toolCool || 0) > 0) return null;
-  if (g.bag.length >= bagSlots(g)) return 'Bag full: get to the sub or the boat';
   const { kind, def, tier } = activeTool(g);
+  if (overencumbered(g) && kind !== 'cam') return 'Overencumbered: lighten the bag'; // (5.14.0) one catch too many is allowed; nothing more after it (a photograph is not carried)
   const lock = findCatch(g);
   g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1), resolveAt: kind === 'net' ? 0.35 : 0.12, done: false, lock: lock && lock.ok ? lock : null };
   if (e.y > 200) g.entity.disturb(g, def.noise);
@@ -200,7 +206,7 @@ export function updateCapture(g, dt) {
         if (def.multi > 1 && tgt.c && tgt.c.gid != null) {
           let more = def.multi - 1;
           for (const c of g.fauna.list) {
-            if (more <= 0 || g.bag.length >= bagSlots(g)) break;
+            if (more <= 0 || bagUsed(g) >= bagSlots(g)) break;
             if (c === tgt.c || c.dead || c.pet || c.gid !== tgt.c.gid || c.len > def.maxLen * 1.1 || dist(c.x, c.y, tgt.x, tgt.y) > 1.8) continue;
             c.dead = true; more--;
             const s2 = { id: c.sp.id, len: c.len, cond: clamp(1 - def.harm * (fragile(c.sp) ? 2 : 1) - Math.random() * 0.05, 0.05, 1), from: Math.round(Math.max(e.y, c.y)), t: g.time };

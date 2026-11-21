@@ -11,7 +11,7 @@ import { Chart } from './chart.js';
 import { Fauna, usualDepth } from './fauna.js';
 import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
 import { Autopilot } from './autopilot.js';
-import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, canFireSubNet, netsOf, netKinds, netTotal, NETS_SUB, updateSubNet, tankFits, BIG, tooBig } from './capture.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, canFireSubNet, netsOf, netKinds, netTotal, NETS_SUB, updateSubNet, tankFits, BIG, tooBig, bagUsed, spacesOf, overencumbered } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
 import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
 import { SETTINGS } from './settings.js';
@@ -716,7 +716,7 @@ function tankAction(act, where, i, to = -1) {
   } else if (act === 'tobag') {
     // back into the catch bag (to carry it to the other room, or out)
     if (where === 'bag') return false;
-    if (g.bag.length >= bagSlots(g)) { hud.toast('The catch bag is full', 'warn'); return false; }
+    if (bagUsed(g) + spacesOf(s) > bagSlots(g)) { hud.toast('Not enough room in the bag', 'warn'); return false; }
     L.splice(i, 1); s.pressed = false; delete s.chamber; delete s.pile; g.bag.push(s);
     audio.ready && audio.uiSoft();
   } else if (act === 'release') {
@@ -2398,6 +2398,10 @@ function update(dt) {
     e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg * (e.featherK ?? 1)) * (e.suitSpeed || 1);
     const cold = !e.inSub && !suitOf(profile).warm && e.y > 200 ? 1 + clamp((e.y - 200) / 800, 0, 1) * 0.35 * (e.warmK ?? 1) : 1;
     e.o2Mul = INJURY.air[lvl] * loadAir(kg * (e.featherK ?? 1)) * (e.suitAir || 1) * cold;
+    // (5.14.0) overencumbered (more in the bag than it holds), out of the sub: half speed, air three times as fast, and no
+    // more catching until the bag is lightened. The sub is never overencumbered
+    { const over = !e.inSub && !g.aboard && overencumbered(g); if (over) { e.speedMul *= 0.5; e.o2Mul *= 3; }
+      if (over && !g.overTold) { g.overTold = true; hud.toast('Overencumbered', 'warn'); } else if (!over) g.overTold = false; g.overenc = over; }
     if (cold > 1.05 && !g.coldTold) { g.coldTold = true; hud.toast('Cold water: air goes faster', 'note'); } // (3.0.0) back
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input

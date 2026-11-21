@@ -4,7 +4,7 @@
 import { clamp, dist } from './util.js';
 import { canTakeLive, liveValue, deepPremium } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
-import { bagSlots } from './capture.js';
+import { bagSlots, overencumbered } from './capture.js';
 import { gear, owns } from './economy.js';
 
 const GRIP_TIMEOUT = 4;
@@ -37,7 +37,7 @@ export function findArmTarget(g) {
 }
 
 export function startArm(g) {
-  if (g.bag.length >= bagSlots(g)) return 'The catch bag is full: empty it in the tank room (T)';
+  if (overencumbered(g)) return 'The catch bag is full: empty it in the tank room (T)';
   const tgt = findArmTarget(g);
   if (!tgt) return 'Nothing in reach of the arm';
   const D = armDef(g);

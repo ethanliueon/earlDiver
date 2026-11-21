@@ -1087,3 +1087,5 @@ html body #inventory .ip-st b { color: #efe8d2; font-weight: 600; }
 /* (5.13.0) the shop's pages fade out at the foot when there is more below, and leave room to bring the last row fully up:
    no card is ever left cut through its name */
 html body #catalog .cat-main:not(#_a) { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 34px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 34px), transparent); padding-bottom: 48px !important; }
+
+html body #inventory .inv-catch2 h4 i.over { color: #f05448 !important; font-style: normal; } /* (5.14.0) overencumbered */

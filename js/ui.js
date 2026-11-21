@@ -631,10 +631,10 @@ export class UI {
       if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
       return `<div class="${cls}${rarityCls(sp)} pic-only"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}, ${state(s2)}">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}" style="width:${Math.round(Math.min(100, 46 + pct * 0.6))}%"><i class="fc-dot" style="background:${dot(s2)}"></i></div>`; };
     const rep2 = (h, n) => h.repeat(Math.max(0, n));
-    // the bag: eleven cubbies, the ones beyond his bag padlocked
-    const BAG_MAX = 12, cap = Math.round(statValue(P, 'bag')), shown = Math.max(BAG_MAX, cap);
+    const cap = Math.round(statValue(P, 'bag'));
     const inTrouble = (s2, inBag) => s2.cond > 0.05 && (s2.cond < 0.3 || gapOf(g, s2, inBag) > SAFE_GAP);
-    const bag = g.bag.map((s2, i) => card(inTrouble(s2, true) ? 'fc trouble' : 'fc', s2).replace(/^<div class="fc[^"]*"/, (m) => `${m} data-b="${i}"`)).join('') + rep2('<div class="fc empty"></div>', cap - g.bag.length) + rep2('<div class="fc locked"><i></i></div>', shown - Math.max(cap, g.bag.length));
+    const bag = g.bag.map((s2, i) => card(inTrouble(s2, true) ? 'fc trouble' : 'fc', s2).replace(/^<div class="fc[^"]*"/, (m) => `${m} data-b="${i}"`)).join('') ; // (5.14.0) one card for each animal; the room is in spaces, shown in the heading (the sorting tray comes next)
+    const usedSp = g.bag.reduce((t2, s2) => t2 + slotsOf(s2), 0);
     const all = g.bag.concat(g.subTank || []), total = all.reduce((t, s2) => t + worth(s2), 0);
     // the sub: the open tank itself, its animals swimming as they do in the sub, and the chambers as they hang there
     const M = SUB_MARKS[markOf(statValue(P, 'depth'))], tank = g.subTank || [];
@@ -649,7 +649,7 @@ export class UI {
     const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
     if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
     const petSlot = `<div class="pet-slot${pet ? ' on' : ''}" title="${pet ? psp.name + ': click for its card' : 'At the surface, drag a fish here: 60 cm to 1.5 m, or any legend'}"><span class="ps-lbl">Pet</span>${pet ? `<img src="${this.fitPics.get(psp.id)}" alt=""><b>${psp.name}</b><small>${P.petStay ? 'Staying (H)' : 'Following (H)'}</small>` : '<em>Drag a fish here at the surface</em>'}</div>`;
-    return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i>(${g.bag.length}/${cap})</i></h4><div class="fc-grid g4">${bag}</div>`
+    return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i class="${usedSp > cap ? 'over' : ''}">(${usedSp}/${cap} spaces${usedSp > cap ? ', overencumbered' : ''})</i></h4><div class="fc-grid g4">${bag}</div>`
       + `<div class="catch-row">${petSlot}<div class="worth-paint" style="--wp:${Math.min(104, Math.floor(400 / (money(total).length * 0.52)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
       + (hasPh ? this.photoBoxes(P, g) : '') + `</div>`
       + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
