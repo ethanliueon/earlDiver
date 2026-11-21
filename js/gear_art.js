@@ -87,3 +87,66 @@ export function drawFins3(ctx, w, h, def) {
   });
   return true;
 }
+
+// ---------------------------------------------------------------- cameras ----------------------------------------------------------------
+// (5.12.7) A camera in its underwater housing, seen from the front and a little above, turned to the left: a box with a
+// lit top, a front and a darker side, its lens port, the controls on top. A compact sits in a clear polycarbonate case;
+// a macro has a short port and a focus light; a housed camera is a solid metal housing with grip handles (and strobe
+// arms from Rare up); a low-light camera a matte housing with a big flat port and no strobes.
+function box(x, X, Y, w, h, d, cols) { // front face (X..X+w, Y..Y+h), the side and top drawn back by d at 30 degrees
+  const dx = d * 0.85, dy = -d * 0.5;
+  x.fillStyle = cols.top; x.beginPath(); x.moveTo(X + 6, Y); x.lineTo(X + w - 6, Y); x.lineTo(X + w + dx - 6, Y + dy); x.lineTo(X + dx + 6, Y + dy); x.closePath(); x.fill();
+  x.fillStyle = cols.side; x.beginPath(); x.moveTo(X + w, Y + 6); x.lineTo(X + w + dx, Y + dy + 6); x.lineTo(X + w + dx, Y + h + dy - 6); x.lineTo(X + w, Y + h - 6); x.closePath(); x.fill();
+  x.fillStyle = cols.front; x.beginPath(); x.roundRect(X, Y, w, h, 10); x.fill();
+  x.fillStyle = lin(x, 0, Y, 0, Y + h, [[0, 'rgba(255,255,255,0.14)'], [0.4, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,0.35)']]); x.beginPath(); x.roundRect(X, Y, w, h, 10); x.fill();
+  x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 4; x.beginPath(); x.roundRect(X, Y, w, h, 10); x.stroke();
+  x.strokeStyle = 'rgba(255,255,255,0.22)'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(X + 8, Y + 2); x.lineTo(X + w - 8, Y + 2); x.stroke();
+}
+function port(x, cx, cy, r, ring, glass, dome) { // a round lens port seen nearly face-on, a little to the left
+  x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(cx + 4, cy + 5, r * 0.88 + 8, r + 8, 0, 0, TAU); x.fill();
+  x.fillStyle = lin(x, cx - r, cy - r, cx + r, cy + r, [[0, mix(ring, '#fff', 0.35)], [0.5, ring], [1, mix(ring, '#000', 0.5)]]); x.beginPath(); x.ellipse(cx, cy, r * 0.88 + 7, r + 7, 0, 0, TAU); x.fill();
+  x.fillStyle = lin(x, cx - r, cy - r, cx + r, cy + r, [[0, glass[0]], [0.6, glass[1]], [1, '#030405']]); x.beginPath(); x.ellipse(cx, cy, r * 0.88, r, 0, 0, TAU); x.fill();
+  x.fillStyle = 'rgba(8,10,12,0.9)'; x.beginPath(); x.ellipse(cx + 2, cy + 2, r * 0.4, r * 0.46, 0, 0, TAU); x.fill(); // the lens within
+  x.fillStyle = `rgba(230,236,232,${dome ? 0.32 : 0.22})`; x.beginPath(); x.ellipse(cx - r * 0.3, cy - r * 0.38, r * 0.3, r * 0.14, -0.6, 0, TAU); x.fill();
+}
+function strobeArm(x, sx, sy, ex, ey, metal, k) {
+  x.lineCap = 'round'; x.strokeStyle = mix(metal, '#000', 0.4); x.lineWidth = 16; x.beginPath(); x.moveTo(sx, sy); x.lineTo((sx + ex) / 2, (sy + ey) / 2 - 30); x.lineTo(ex, ey); x.stroke();
+  x.strokeStyle = metal; x.lineWidth = 10; x.stroke(); x.strokeStyle = 'rgba(255,255,255,0.25)'; x.lineWidth = 3; x.beginPath(); x.moveTo(sx, sy - 3); x.lineTo((sx + ex) / 2, (sy + ey) / 2 - 33); x.lineTo(ex, ey - 3); x.stroke();
+  for (const [bx, by] of [[sx, sy], [(sx + ex) / 2, (sy + ey) / 2 - 30]]) { x.fillStyle = lin(x, bx - 10, by - 10, bx + 10, by + 10, [[0, mix(metal, '#fff', 0.4)], [1, mix(metal, '#000', 0.5)]]); x.beginPath(); x.arc(bx, by, 11, 0, TAU); x.fill(); }
+  // the strobe head: a short cylinder, its diffuser facing forward
+  x.fillStyle = lin(x, 0, ey - 44, 0, ey + 44, [[0, '#4a4c4e'], [0.35, '#2a2c2e'], [1, '#0e0f10']]); x.beginPath(); x.roundRect(ex - 50, ey - 44, 96, 88, 18); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 3; x.stroke();
+  for (let i = 1; i < 4; i++) { x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 2; x.beginPath(); x.moveTo(ex - 40 + i * 22, ey - 40); x.lineTo(ex - 40 + i * 22, ey + 40); x.stroke(); } // ribs on its body
+  x.fillStyle = lin(x, 0, ey - 40, 0, ey + 40, [[0, '#5a5c5e'], [1, '#1a1b1c']]); x.beginPath(); x.ellipse(ex - 50, ey, 20, 42, 0, 0, TAU); x.fill();
+  x.fillStyle = lin(x, ex - 66, ey - 34, ex - 40, ey + 34, [[0, '#efebe0'], [0.6, '#c8c4b6'], [1, '#8e8a7e']]); x.beginPath(); x.ellipse(ex - 52, ey, 15, 34, 0, 0, TAU); x.fill(); // the diffuser
+}
+function camColours(def) {
+  const L = typeof def.look === 'object' && def.look ? def.look : null, arch = def.arch || 'compact';
+  const D = { compact: ['#c9d1d4', '#8e989c'], macro: ['#b9c2c4', '#7e888c'], housed: ['#4a5258', '#2c3236'], lowlight: ['#2a2c2e', '#17191a'] }[arch] || ['#4a5258', '#2c3236'];
+  const mute = (c) => mix(c, '#6a675c', 0.32); // (one mood: a housing's paint is weathered, never bright)
+  return { body: L && L.body ? mute(L.body) : D[0], body2: L && L.body2 ? mute(L.body2) : D[1], acc: (L && L.accent) || '#b8955a' };
+}
+export function drawCam3(ctx, w, h, def) {
+  const arch = def.arch || 'compact', k = RK[def.rarity] || 0, C = camColours(def), clear = arch === 'compact' || arch === 'macro';
+  const metal = k >= 3 ? '#a8864e' : k >= 1 ? '#9aa0a2' : '#5a5e60';
+  fitted(ctx, w, h, (x, W, H) => {
+    const big = arch === 'housed' || arch === 'lowlight', bw = big ? 360 : 330, bh = big ? 250 : 230, bd = big ? 130 : 110, X = W / 2 - bw / 2 - 50, Y = H / 2 - bh / 2 + 36;
+    if (big && k >= 2 && arch === 'housed') { strobeArm(x, X - 14, Y + 60, X - 190, Y - 20, metal, k); strobeArm(x, X + bw + bd * 0.85 + 16, Y + 50, X + bw + bd * 0.85 + 200, Y - 30, metal, k); }
+    // grip handles either side of a big housing
+    if (big) for (const hx of [X - 26, X + bw + bd * 0.85 + 4]) { x.fillStyle = '#1a1b1c'; x.beginPath(); x.roundRect(hx, Y + 20, 26, bh - 30, 12); x.fill(); x.fillStyle = lin(x, hx, 0, hx + 26, 0, [[0, '#4a4c4e'], [0.4, '#2a2c2e'], [1, '#0e0f10']]); x.beginPath(); x.roundRect(hx + 3, Y + 24, 20, bh - 38, 10); x.fill(); }
+    const cols = clear ? { front: rgba(C.body, 0.85), side: rgba(mix(C.body, '#000', 0.25), 0.9), top: rgba(mix(C.body, '#fff', 0.25), 0.9) } : { front: C.body, side: mix(C.body, '#000', 0.35), top: mix(C.body, '#fff', 0.18) };
+    box(x, X, Y, bw, bh, bd, cols);
+    if (clear) { x.fillStyle = 'rgba(20,22,24,0.55)'; x.beginPath(); x.roundRect(X + 30, Y + 30, bw - 60, bh - 60, 8); x.fill(); } // the camera seen through the clear case
+    // controls on top: the shutter lever, knobs; a latch on the side
+    x.fillStyle = '#1c1d1e'; x.beginPath(); x.roundRect(X + bw * 0.62, Y - 30, 46, 22, 6); x.fill(); x.fillStyle = metal; x.beginPath(); x.roundRect(X + bw * 0.62 + 4, Y - 26, 38, 8, 4); x.fill();
+    for (const kx of [X + bw * 0.2, X + bw * 0.36]) { x.fillStyle = lin(x, kx - 12, 0, kx + 12, 0, [[0, mix(metal, '#fff', 0.3)], [1, mix(metal, '#000', 0.45)]]); x.beginPath(); x.roundRect(kx - 12, Y - 22, 24, 18, 5); x.fill(); }
+    x.fillStyle = metal; x.beginPath(); x.roundRect(X + bw + 20, Y + bh * 0.4, 18, 40, 5); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 2; x.stroke();
+    // the port: big and flat for low light, short and forward for macro, domed on a housing
+    const pr = arch === 'lowlight' ? bh * 0.4 : arch === 'macro' ? bh * 0.26 : bh * 0.34, pcx = X + bw * 0.42, pcy = Y + bh * 0.55;
+    if (arch === 'macro') { x.fillStyle = lin(x, 0, pcy - pr, 0, pcy + pr, [[0, '#5a5e60'], [0.5, '#2a2c2e'], [1, '#121314']]); x.beginPath(); x.roundRect(pcx - pr - 60, pcy - pr * 0.95, 70, pr * 1.9, 10); x.fill(); }
+    port(x, arch === 'macro' ? pcx - 60 : pcx, pcy, pr, arch === 'lowlight' ? '#2a2c2e' : metal, arch === 'lowlight' ? ['#1c2a2a', '#08100f'] : ['#2e3a3c', '#0c1214'], arch === 'housed');
+    if (arch === 'macro') { x.fillStyle = '#e8e2c8'; x.beginPath(); x.arc(X + bw - 34, Y + 34, 12, 0, TAU); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 3; x.stroke(); } // the focus light
+    if (k >= 3) { x.strokeStyle = rgba(C.acc, 0.85); x.lineWidth = 3; x.setLineDash([]); x.beginPath(); x.roundRect(X + 10, Y + 10, bw - 20, bh - 20, 6); x.stroke(); } // a fine brass bead round the front
+    if (k >= 4) sparks(x, W, H, C.acc, 11 + (hash(def.id) % 97));
+  });
+  return true;
+}
