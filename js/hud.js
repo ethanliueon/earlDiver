@@ -619,12 +619,12 @@ e.inSub ? [
     for (let i = 0; i < w * h; i++) { const v = px[i * 4 + 3] / 255 + (N[i] - 0.5) * 0.12 + (N2[i] - 0.5) * 0.08, t = Math.max(0, Math.min(1, (v - 0.44) / 0.14)); px[i * 4 + 3] = Math.round(t * t * (3 - 2 * t) * 255); }
     a.putImageData(im, 0, 0);
     const B = mk(), b = B.getContext('2d'); b.drawImage(A, 0, 0); b.globalCompositeOperation = 'source-in';
-    const gr = b.createLinearGradient(0, by - size * 0.9, 0, by + size * 0.3); gr.addColorStop(0, '#6e0f0c'); gr.addColorStop(0.6, '#480605'); gr.addColorStop(1, '#220201'); b.fillStyle = gr; b.fillRect(0, 0, w, h);
+    const gr = b.createLinearGradient(0, by - size * 0.9, 0, by + size * 0.3); gr.addColorStop(0, '#a8170f'); gr.addColorStop(0.6, '#7a0c08'); gr.addColorStop(1, '#420503'); b.fillStyle = gr; b.fillRect(0, 0, w, h); /* (5.13.0) brighter */
     const cl = b.getImageData(0, 0, w, h), q = cl.data; for (let i = 0; i < w * h; i++) { if (!q[i * 4 + 3]) continue; const k = 0.72 + 0.5 * N2[i] - 0.25 * N[i]; q[i * 4] = Math.min(255, q[i * 4] * k); q[i * 4 + 1] *= k * 0.9; q[i * 4 + 2] *= k * 0.9; } b.putImageData(cl, 0, 0);
     const S = mk(), sx = S.getContext('2d'); sx.filter = `blur(${(size * 0.16).toFixed(1)}px)`; sx.drawImage(A, 0, 0); sx.filter = 'none'; sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(40,2,2,1)'; sx.fillRect(0, 0, w, h);
     sx.globalCompositeOperation = 'destination-in'; { const r = sx.createRadialGradient(bx - tw / 2, by - size * 0.4, size * 0.2, bx - tw / 2, by - size * 0.4, Math.max(tw, size) * 0.75); r.addColorStop(0, '#000'); r.addColorStop(1, 'rgba(0,0,0,0)'); sx.fillStyle = r; sx.fillRect(0, 0, w, h); }
     const Hc = mk(), hx = Hc.getContext('2d'); hx.drawImage(A, 0, 0); hx.globalCompositeOperation = 'destination-out'; hx.drawImage(A, 0, size * 0.03); hx.globalCompositeOperation = 'source-in'; hx.fillStyle = 'rgba(200,96,86,0.38)'; hx.fillRect(0, 0, w, h);
-    const out = mk(), o = out.getContext('2d'); o.globalAlpha = 0.9; o.drawImage(S, 0, 0); o.drawImage(S, 0, 0); o.globalAlpha = 1; o.drawImage(B, 0, 0); o.drawImage(Hc, 0, 0);
+    const out = mk(), o = out.getContext('2d'); o.drawImage(B, 0, 0); o.drawImage(Hc, 0, 0); // (5.13.0) no dark stain under it: it made the figure hard to read
     const res = { c: out, dx: -bx, dy: -by }; this.bloodCache.set(key, res); if (this.bloodCache.size > 24) this.bloodCache.delete(this.bloodCache.keys().next().value);
     return res;
   }
@@ -685,7 +685,11 @@ e.inSub ? [
         ctx.globalAlpha = ek; ctx.fillStyle = ink(1); ctx.fillText(String(this.dShown), xr, base + this.dDir * sl * (1 - ek));
         if (k >= 1) this.dPrev = null;
         ctx.restore();
-        if (this.bloodK > 0.01) { const Bf = this.bloodFigure(String(this.dShown), 58 * s); ctx.save(); ctx.globalAlpha = this.bloodK; ctx.shadowColor = 'transparent'; ctx.drawImage(Bf.c, xr + Bf.dx, base + Bf.dy); ctx.restore(); }
+        if (this.bloodK > 0.01) { const Bf = this.bloodFigure(String(this.dShown), 58 * s); ctx.save(); ctx.globalAlpha = this.bloodK; ctx.shadowColor = 'transparent'; ctx.drawImage(Bf.c, xr + Bf.dx, base + Bf.dy);
+          // (5.13.0) a heartbeat: two quick swells (lub, dub) and a rest, about once a second; the figure brightens on each
+          const ph = (g.time * 1.15) % 1, beat = Math.exp(-Math.pow((ph - 0.06) / 0.05, 2)) + 0.6 * Math.exp(-Math.pow((ph - 0.24) / 0.05, 2));
+          if (beat > 0.02) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = this.bloodK * 0.45 * beat; ctx.drawImage(Bf.c, xr + Bf.dx, base + Bf.dy); ctx.globalCompositeOperation = 'source-over'; }
+          ctx.restore(); }
         const tw0 = ctx.measureText(String(this.dShown)).width; this.depthRect = { x: xr - tw0 - 26 * s, y: base - lh - 18 * s, w: tw0 + 26 * s + (rx0 - xr) + 8 * s, h: lh + 34 * s }; }
       ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
       // a thin line with its painted icon at the left
@@ -765,7 +769,7 @@ e.inSub ? [
     // the seafloor sonar (a fitted extra): under the instrument, the bottom below and around the sub, 160 m across
     if (e.inSub && g.addons && g.addons.sonar && !dying && !g.sub.imploded) { this.drawSonar(ctx, g, rx0, yy + 4 * s, s); yy += 88 * s; }
     // (5.1.1) on a touch screen the radar sits under the instrument; the bottom right is the actions'
-    const rrT = 66 * s, rcyT = yy + 6 * s + rrT; // (5.6.9b) larger: 44 to 56; (5.9.6) 66: as wide as the air bar over it
+    const rrT = 88 * s, rcyT = yy + 8 * s + rrT; // (5.6.9b) larger: 44 to 56; (5.9.6) 66; (5.13.0) 88: from the O2 mark to the air bar's end
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {
@@ -779,13 +783,23 @@ e.inSub ? [
     const rr = touch ? rrT : 64 * s, rcx = rx0 - rr, rcy = touch ? rcyT : H - pad - rr;
     this.radarAt = { x: rcx, y: rcy, r: rr }; // (5.6.1) the column under it hangs from here
     ctx.save();
-    ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.fillStyle = 'rgba(4,20,16,0.6)'; ctx.fill();
+    // (5.13.0) a real sonar scope (the owner's reference): dark green glass with a faint grid behind, four range rings, a
+    // bearing ring of ticks (longer each 30 degrees, longest at the quarters), and a sweep in a dim olive phosphor with a
+    // bright leading edge and a long fading tail; the contacts it passes glow, then fade until it comes round again
+    { const gl = ctx.createRadialGradient(rcx - rr * 0.25, rcy - rr * 0.3, rr * 0.1, rcx, rcy, rr); gl.addColorStop(0, 'rgba(18,34,22,0.88)'); gl.addColorStop(1, 'rgba(4,10,6,0.9)');
+      ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.fillStyle = gl; ctx.fill(); }
     ctx.clip();
-    ctx.strokeStyle = 'rgba(80,200,150,0.15)'; ctx.lineWidth = 1;
-    for (const k of [0.5, 1]) { ctx.beginPath(); ctx.arc(rcx, rcy, rr * k, 0, TAU); ctx.stroke(); }
+    { const PH = (a) => `rgba(160,200,120,${a})`, gs = rr / 4.5; ctx.strokeStyle = PH(0.05); ctx.lineWidth = 1;
+      for (let gx = rcx - rr; gx <= rcx + rr; gx += gs) { ctx.beginPath(); ctx.moveTo(gx, rcy - rr); ctx.lineTo(gx, rcy + rr); ctx.stroke(); }
+      for (let gy = rcy - rr; gy <= rcy + rr; gy += gs) { ctx.beginPath(); ctx.moveTo(rcx - rr, gy); ctx.lineTo(rcx + rr, gy); ctx.stroke(); }
+      ctx.strokeStyle = PH(0.2); ctx.lineWidth = 1.1 * s; for (const k of [0.25, 0.5, 0.75]) { ctx.beginPath(); ctx.arc(rcx, rcy, rr * k, 0, TAU); ctx.stroke(); }
+      ctx.strokeStyle = PH(0.12); ctx.beginPath(); ctx.moveTo(rcx - rr, rcy); ctx.lineTo(rcx + rr, rcy); ctx.moveTo(rcx, rcy - rr); ctx.lineTo(rcx, rcy + rr); ctx.stroke();
+      for (let i = 0; i < 72; i++) { const a = i / 72 * TAU, big = i % 18 === 0, mid = i % 6 === 0, L = (big ? 9 : mid ? 6 : 3) * s; ctx.strokeStyle = PH(big ? 0.55 : mid ? 0.4 : 0.22); ctx.lineWidth = (big ? 1.6 : 1) * s;
+        ctx.beginPath(); ctx.moveTo(rcx + Math.cos(a) * (rr - 2 * s), rcy + Math.sin(a) * (rr - 2 * s)); ctx.lineTo(rcx + Math.cos(a) * (rr - 2 * s - L), rcy + Math.sin(a) * (rr - 2 * s - L)); ctx.stroke(); } }
     this.sweep = (this.sweep + dt * 1.6) % TAU;
-    const sg = ctx.createConicGradient ? ctx.createConicGradient(this.sweep - 0.9, rcx, rcy) : null;
-    if (sg) { sg.addColorStop(0, 'rgba(80,220,160,0)'); sg.addColorStop(0.14, 'rgba(80,220,160,0.22)'); sg.addColorStop(0.145, 'rgba(80,220,160,0)'); ctx.fillStyle = sg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
+    const sg = ctx.createConicGradient ? ctx.createConicGradient(this.sweep - 1.1, rcx, rcy) : null;
+    if (sg) { sg.addColorStop(0, 'rgba(160,200,120,0)'); sg.addColorStop(0.17, 'rgba(160,200,120,0.3)'); sg.addColorStop(0.175, 'rgba(160,200,120,0)'); ctx.fillStyle = sg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2);
+      ctx.strokeStyle = 'rgba(196,226,150,0.65)'; ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.moveTo(rcx, rcy); ctx.lineTo(rcx + Math.cos(this.sweep) * rr, rcy + Math.sin(this.sweep) * rr); ctx.stroke(); }
     // his traps: small amber marks where their lines are
     for (const tr of g.traps || []) {
       const dx = tr.x - e.x, dy = tr.y - e.y, d = Math.hypot(dx, dy);
@@ -811,6 +825,8 @@ e.inSub ? [
         const bg2 = ctx.createRadialGradient(bxp, byp, 0, bxp, byp, 6 * s);
         bg2.addColorStop(0, `rgba(255,90,70,${this.blip.life})`); bg2.addColorStop(1, 'rgba(255,90,70,0)');
         ctx.fillStyle = bg2; ctx.beginPath(); ctx.arc(bxp, byp, 6 * s, 0, TAU); ctx.fill();
+        if (ent && ent.marked) { const q = 7 * s, c = 3 * s; ctx.strokeStyle = `rgba(230,80,64,${Math.min(1, this.blip.life * 1.4).toFixed(3)})`; ctx.lineWidth = 1.4 * s; // (5.13.0) it has marked him: a bracketed contact
+          for (const [sx2, sy2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.beginPath(); ctx.moveTo(bxp + sx2 * q, byp + sy2 * (q - c)); ctx.lineTo(bxp + sx2 * q, byp + sy2 * q); ctx.lineTo(bxp + sx2 * (q - c), byp + sy2 * q); ctx.stroke(); } }
       }
     }
     // the sapphire eye: sapphires within 150 m are blue points

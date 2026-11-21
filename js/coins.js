@@ -367,31 +367,21 @@ const ART = {
   // (so it reads at a glance on a dark face), a fish sketched on the left page, lines of pencil on the right, the dark
   // leather cover showing round it and a red ribbon hanging from the spine
   journal(x) {
-    x.save(); x.translate(0, -3); x.lineJoin = 'round'; // (5.6.11) square and centred (it was tilted, and hung low with its ribbon)
-    // the cover, a little larger than the pages, dark leather
-    const cov = new Path2D('M-44 -26C-30 -32 -10 -32 0 -26C10 -32 30 -32 44 -26V30C30 24 10 24 0 30C-10 24 -30 24 -44 30Z');
-    x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 5); x.fill(cov); x.restore();
-    x.fillStyle = '#3b2416'; x.fill(cov); x.lineWidth = 3.4; x.strokeStyle = '#0b0806'; x.stroke(cov);
-    // the pages: two curved leaves meeting at the gutter
-    const L = new Path2D('M-39 -24C-27 -29 -10 -29 -1 -23V25C-10 20 -27 20 -39 25Z'), R = new Path2D('M39 -24C27 -29 10 -29 1 -23V25C10 20 27 20 39 25Z');
-    for (const pg of [L, R]) { x.fillStyle = '#e9dfc2'; x.fill(pg); x.lineWidth = 1.8; x.strokeStyle = '#2a1d12'; x.stroke(pg); }
-    // the pages darken into the gutter
-    const gg = x.createLinearGradient(-10, 0, 10, 0); gg.addColorStop(0, 'rgba(90,70,40,0)'); gg.addColorStop(0.5, 'rgba(90,70,40,0.45)'); gg.addColorStop(1, 'rgba(90,70,40,0)');
-    x.fillStyle = gg; x.fillRect(-10, -26, 20, 50);
-    // the page block's edges under the leaves (a thickness of paper)
-    x.strokeStyle = 'rgba(200,188,150,0.9)'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(-40, 27); x.bezierCurveTo(-27, 22, -10, 22, -1, 27); x.moveTo(40, 27); x.bezierCurveTo(27, 22, 10, 22, 1, 27); x.stroke();
-    // a fish in pencil on the left page
-    x.strokeStyle = '#3c3022'; x.lineWidth = 1.8; x.lineCap = 'round';
-    x.beginPath(); x.moveTo(-33, -4); x.quadraticCurveTo(-22, -15, -10, -5); x.quadraticCurveTo(-22, 6, -33, -4); x.stroke();
-    x.beginPath(); x.moveTo(-10, -5); x.lineTo(-5, -11); x.lineTo(-5, 1); x.closePath(); x.stroke();
-    x.fillStyle = '#3c3022'; x.beginPath(); x.arc(-28, -6, 1.5, 0, TAU); x.fill();
-    x.lineWidth = 1.1; x.beginPath(); x.moveTo(-32, 12); x.lineTo(-12, 12); x.stroke();
-    // lines of writing on the right
-    x.strokeStyle = 'rgba(60,48,34,0.8)'; x.lineWidth = 1.4;
-    for (let k = 0; k < 5; k++) { const y = -16 + k * 8; x.beginPath(); x.moveTo(7, y); x.lineTo(33 - (k % 3) * 6, y); x.stroke(); }
-    // the ribbon, out of the gutter and over the lower edge
-    x.fillStyle = '#a3261c'; x.strokeStyle = '#2a0806'; x.lineWidth = 1.4;
-    x.beginPath(); x.moveTo(-2.6, -22); x.lineTo(2.6, -22); x.lineTo(2.6, 38); x.lineTo(0, 34.5); x.lineTo(-2.6, 38); x.closePath(); x.fill(); x.stroke(); // straight down the gutter
+    // (5.13.0) a closed field logbook, cloth-bound, seen a little turned: an olive cover worn pale at the corners, raised
+    // bands across the spine, an elastic strap, the cream page block showing at the fore-edge and foot, and a frayed red
+    // ribbon hanging out. Drawn, no lettering
+    x.save(); x.rotate(-0.12); x.lineJoin = 'round';
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.beginPath(); x.roundRect(-30, -38, 66, 82, 6); x.fill(); // its shadow
+    x.fillStyle = '#e4d8b8'; x.beginPath(); x.moveTo(-28, 36); x.lineTo(34, 36); x.lineTo(38, 30); x.lineTo(38, -36); x.lineTo(32, -40); x.lineTo(32, 32); x.closePath(); x.fill(); // the page block
+    x.strokeStyle = 'rgba(120,104,72,0.6)'; x.lineWidth = 0.8; for (let i = 0; i < 6; i++) { x.beginPath(); x.moveTo(33 + i * 0.8, -38 + i); x.lineTo(33 + i * 0.8, 33 - i * 0.4); x.stroke(); }
+    const cov = new Path2D('M-34 -42H28Q32 -42 32 -38V30Q32 34 28 34H-34Z');
+    const cg = x.createLinearGradient(-34, -42, 32, 34); cg.addColorStop(0, '#5a6440'); cg.addColorStop(0.5, '#3e4a2c'); cg.addColorStop(1, '#2a321e');
+    x.fillStyle = cg; x.fill(cov); x.lineWidth = 3; x.strokeStyle = '#10140a'; x.stroke(cov);
+    x.save(); x.clip(cov); x.strokeStyle = 'rgba(255,255,240,0.05)'; x.lineWidth = 1; for (let i = -80; i < 80; i += 3) { x.beginPath(); x.moveTo(i, -42); x.lineTo(i + 40, 34); x.stroke(); } x.restore(); // the cloth's weave
+    for (const [cx, cy] of [[28, -38], [28, 30]]) { x.fillStyle = 'rgba(190,180,140,0.45)'; x.beginPath(); x.arc(cx, cy, 5, 0, TAU); x.fill(); } // corners worn pale
+    x.fillStyle = '#26301a'; x.fillRect(-34, -42, 12, 76); for (const yy of [-30, -6, 18]) { x.fillStyle = 'rgba(255,255,230,0.12)'; x.fillRect(-34, yy, 12, 3); x.fillStyle = 'rgba(0,0,0,0.35)'; x.fillRect(-34, yy + 3, 12, 2); } // the spine and its bands
+    x.fillStyle = '#16180f'; x.fillRect(16, -42, 6, 76); x.fillStyle = 'rgba(255,255,240,0.1)'; x.fillRect(16, -42, 1.5, 76); // the strap
+    x.fillStyle = '#9a2a1e'; x.strokeStyle = '#2a0806'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(-6, 34); x.lineTo(0, 34); x.lineTo(1, 48); x.lineTo(-2.5, 45); x.lineTo(-6, 49); x.closePath(); x.fill(); x.stroke(); // the ribbon
     x.restore();
   },
   // the chart: a sea chart, half unrolled, its contours and a red mark
