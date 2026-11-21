@@ -150,9 +150,9 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
     desc: 'The thing in the deep follows its light for 10 s, then loses interest for a little while. Offered when it comes for you, even in its jaws. You carry one lure in all.' },
-  necklace: { name: 'Glow stick', price: 370, max: 5, desc: 'A chemical glow stick on a lanyard, snapped to light (E): 90 s of warm amber light around Earl, and in the sub it lights her and the water round her. It does not keep anything away, and a light can be seen. Used up once snapped.' },
+  necklace: { name: 'Glow stick', price: 370, max: 5, desc: 'A chemical glow stick on a lanyard, snapped to light: 90 s of warm amber light around Earl, and in the sub it lights her and the water round her. It does not keep anything away, and a light can be seen. Used up once snapped.' },
   film: { name: 'Film', price: 4, max: 5, needs: 'camera', desc: 'One exposure each. The camera holds as many as it takes; every picture uses one, sharp or not.' },
-  airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub (R): three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
+  airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub: three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
 export const supplyMax = (P, k) => k === 'film' ? (owns(P, 'camera') ? gear(P, 'cam').shots : 0) : k === 'airTank' ? 2 : Math.min(99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.12.0) two backup tanks, always // (4.5.0) two backup tanks at most
@@ -319,7 +319,7 @@ export const UPGRADE_LINE = {
 
 // one-off gear: bought once, then its stats are levelled above
 export const GEAR = {
-  camera: { name: 'Camera', price: 50, desc: 'Hold still, keep the animal in frame, and sell the picture at the boat. Key 2.' },
+  camera: { name: 'Camera', price: 50, desc: 'Hold still, keep the animal in frame, and sell the picture at the boat.' },
   lowlight: { line: 'See in the dark without being seen.', name: 'Low-light sensor', price: 2400, needs: 'camera', desc: 'No flash any more: nothing in the dark sees you take the picture.' },
   arm: { name: 'Claw hydraulics', price: 2400, desc: 'Works the old claw under the sub: from inside, Space reaches for an animal; time the grip.' },
 };

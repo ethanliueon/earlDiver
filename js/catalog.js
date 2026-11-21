@@ -35,9 +35,9 @@ export const WEBSHOPS = {
 };
 const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];
 const LEDE = {
-  net: 'Key 1 under water. You carry one; change it in your inventory (B) on deck or in the sub.',
-  cam: 'Hold still while the shutter is open; sell the pictures at the boat. The higher its Quality, the more each picture earns. Film is bought by the exposure.', trawl: "One in the sub's belly hatch (N); used up in one haul.",
-  trap: 'Set from the surface, on a line from a buoy (key 3).', suit: 'One worn at a time.', fins: 'How fast he swims, and sprints.',
+  net: 'You carry one; change it in your bag on deck or in the sub.',
+  cam: 'Hold still while the shutter is open; sell the pictures at the boat. The higher its Quality, the more each picture earns. Film is bought by the exposure.', trawl: "One in the sub's belly hatch; used up in one haul.",
+  trap: 'Set from the surface, on a line from a buoy.', suit: 'One worn at a time.', fins: 'How fast he swims, and sprints.',
   tank: 'How long he can stay down.', bag: 'How many animals he can carry.', supply: 'Bought by the number.',
 };
 const cm = (m) => `${Math.round(m * 100)} cm`;
@@ -176,7 +176,7 @@ export class Catalog {
     const total = rows.reduce((a, q) => a + q.e.price, 0), room = lockerFree(P), short = (P.cash || 0) < total, full = rows.length > room;
     return `<h2>Your cart</h2><table class="cat-cartlist">${rows.map((q) => `<tr><td><img src="${this.pic(q.e, 120, 60)}" alt=""></td><td><a href="#" data-go="${q.e.key}">${q.e.name}</a><small>${q.e.tag || ''}</small></td><td class="pr">${money(q.e.price, false)}</td><td><a href="#" class="rm" data-cart="rm|${q.e.key}">Remove</a></td></tr>`).join('')}
       <tr class="tot"><td></td><td>Total</td><td class="pr">${money(total, false)}</td><td></td></tr></table>
-      <p class="cat-lede">${full ? `Your locker has room for ${room} more (${LOCKER} in all). Sell something first.` : `Delivered to your locker: put things on in your inventory (B).`}</p>
+      <p class="cat-lede">${full ? `Your locker has room for ${room} more (${LOCKER} in all). Sell something first.` : `Delivered to your locker: put things on from your bag.`}</p>
       <button class="cat-btn" data-cart="checkout" ${short || full ? 'disabled' : ''}>${short ? `${money(total, false)}, not enough cash` : `Check out, ${money(total, false)}`}</button>`;
   }
   // selling gear back: anything in the locker that isn't on him
@@ -210,7 +210,7 @@ export class Catalog {
     let btn;
     const inCart = this.cart().includes(e.key), item = e.key.startsWith('item:');
     if (e.on) btn = `<span class="cat-have">${e.onText || 'You have it on'}</span>`;
-    else if (e.owned && e.kind !== 'trawl') btn = `<span class="cat-have">In your locker (B)</span>`;
+    else if (e.owned && e.kind !== 'trawl') btn = `<span class="cat-have">In your locker</span>`;
     else if (e.full) btn = `<span class="cat-have">${e.count}</span>`;
     else btn = `<button class="cat-btn" data-buy="${e.key}" ${cash < e.price ? 'disabled' : ''}>${cash < e.price ? `${money(e.price, false)}, not enough cash` : `Buy now, ${money(e.price, false)}`}</button>`
       + (item ? (inCart ? `<a href="#" class="cat-save" data-go="cart">In your cart ✓</a>` : `<a href="#" class="cat-btn2" data-cart="add|${e.key}">Add to cart</a>`) : '')
