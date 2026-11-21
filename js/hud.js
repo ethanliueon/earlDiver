@@ -457,14 +457,25 @@ e.inSub ? [
       // (5.15.7) smaller square tiles that fold away under a tab (a chevron), as the owner asked: open unless folded
       // (remembered), opened by itself when the tutorial points at something in it; folded, the tab carries the red "!"
       // when something in it wants him
-      const rb = 15 * u, stepB = rb * 2 + 7 * u, tabY = my + ch * 0.55 + 10 * u + rb * 0.8, colX = 12 * u + rb;
+      // (5.15.8) as the owner's reference: the tiles sit on one soft dark strip (feathered, no hard edge), so they read as
+      // one group; its fold is a chevron engraved into the strip's lower end (a mark on it, not a button of its own).
+      // Folded, the strip is a short stub under the money with only the chevron, and the red dot when something waits
+      const rb = 15 * u, stepB = rb * 2 + 7 * u, top = my + ch * 0.55 + 10 * u, colX = 12 * u + rb, sw = rb * 2 + 12 * u, chevH = 20 * u;
       if (this.menuOpen == null) { try { this.menuOpen = localStorage.getItem('earl.menuOpen') !== '0'; } catch (err) { this.menuOpen = true; } }
       const tutIn = ROW.some((a) => a.key === tutKey || (a.dom && (tutKey === 'j' || tutKey === 'journal'))), open = this.menuOpen || tutIn;
       const wants = (P.bagGot || 0) > (P.bagSeenAt || 0) || !!window.__journalBadge;
-      { const th = rb * 0.8, dn = pressFx('menu', colX, tabY, th); drawTile(ctx, colX, tabY, th, open ? 'menu-open' : 'menu-shut', dn ? 'press' : 'on', !open && wants); if (!tutIn) hot(colX - th, tabY - th, th * 2, th * 2, 'menu'); }
+      let y0 = top + 6 * u + rb, step = stepB;
+      if (open) { const colEnd = H - 12 * u - 36 * u - 14 * u - chevH - rb; step = ROW.length > 1 ? Math.min(stepB, (colEnd - y0) / (ROW.length - 1)) : stepB; }
+      const stripBot = open ? y0 + (ROW.length - 1) * step + rb + 4 * u + chevH : top + chevH + 4 * u, chevY = stripBot - chevH * 0.55;
+      { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 10 * u; ctx.fillStyle = 'rgba(10,14,14,0.42)';
+        ctx.beginPath(); ctx.roundRect(colX - sw / 2, top, sw, stripBot - top, 9 * u); ctx.fill(); ctx.restore(); // the strip, its edge feathered by its own shadow
+        const down = pressFx('menu', colX, chevY, rb), dy = down ? 1 * u : 0, up = open, w = 7 * u, hgt = 4 * u;
+        const chev = (col, lw, oy) => { ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(colX - w, chevY + oy + dy + (up ? hgt : -hgt)); ctx.lineTo(colX, chevY + oy + dy + (up ? -hgt : hgt)); ctx.lineTo(colX + w, chevY + oy + dy + (up ? hgt : -hgt)); ctx.stroke(); };
+        chev('rgba(0,0,0,0.6)', 2.6 * u, -0.8 * u); chev('rgba(222,212,184,0.85)', 1.8 * u, 0); // engraved: a dark cut above, the bone line in it
+        if (!open && wants) { const bx = colX + sw / 2 - 2 * u, by = top + 2 * u, br = 4.5 * u; ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); ctx.stroke(); }
+        if (!tutIn) hot(colX - sw / 2, stripBot - chevH - 4 * u, sw, chevH + 8 * u, 'menu'); }
       this.journalAt = null; this.menuShown = open;
-      if (open) { const y0 = tabY + rb * 0.8 + 8 * u + rb, colEnd = H - 12 * u - 36 * u - 10 * u - rb, step = ROW.length > 1 ? Math.min(stepB, (colEnd - y0) / (ROW.length - 1)) : stepB;
-        ROW.forEach((a, i) => btn({ ...a, tile: true }, colX, y0 + i * step, rb)); }
+      if (open) ROW.forEach((a, i) => btn({ ...a, tile: true }, colX, y0 + i * step, rb));
       this.underRadarH = 0;
       this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + rb * 2 + 14 * u + this.safeL) * kx;
       this.gearSpace = rg * 2 + 22 * u; }
