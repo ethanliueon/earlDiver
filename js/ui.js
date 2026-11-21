@@ -416,7 +416,7 @@ export class UI {
     let html = '<div class="qs-pg l">'; // (5.9.6) two pages: the log (and the refresh) on the left, the board on the right
     if (m) {
       const ok = S.mainProg >= m.need;
-      html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
+      html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${document.documentElement.classList.contains('touch') && m.touchHelp ? m.touchHelp : m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
         <div class="qs-pay">${m.gift ? 'a gift' : money(m.pay, false)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
     const footAt = html.length; html += `</div><div class="qs-pg r"><h3>The board</h3>`;
@@ -440,11 +440,12 @@ export class UI {
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
   anyOpen(except) { return (this.chart && this.chart.isOpen()) || this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || (except !== 'cabin' && !$('cabin').hidden) || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
-  closeAll() { this.chart && this.chart.toggle(false); this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
+  closeAll() { if (this.catalogOpen && this.catalogOpen()) this.toggleCatalog(false); if (this.inventoryOpen && this.inventoryOpen()) this.toggleInventory(false); this.chart && this.chart.toggle(false); // (5.10.1) the shops and the bag too (a death, the thing's arrival)
+    this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
   // a brass "are you sure?" plate: yes runs onYes; no, Esc or a click outside just closes it
-  confirm(title, body, yes, no, onYes, onNo = null) {
+  confirm(title, body, yes, no, onYes, onNo = null) { { const c0 = document.getElementById('confirm'); if (c0) c0.style.zIndex = !$('settings').hidden ? '70' : ''; } // (5.10.1) asked from Settings: above it
     const modal = !!this.confirmModal; this.confirmModal = false; // (5.5) set just before by a question that must be answered
     const el = $('confirm'), close = () => { el.hidden = true; el.classList.remove('modal'); this.confirmModal = false; window.removeEventListener('keydown', key, true); };
     const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); if (!modal) close(); } };
@@ -1206,6 +1207,7 @@ export class UI {
   daveOpen() { return !$('dave').hidden; }
   toggleDave(force) {
     const el = $('dave'), open = force === undefined ? el.hidden : force;
+    if (!open && this.catalogOpen && this.catalogOpen()) this.toggleCatalog(false); // (5.10.1) his shop is the catalogue in his colours: closing Dave closes it
     if (open === !el.hidden) return;
     el.hidden = !open;
     if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.dave.open(); el.hidden = true; this.toggleCatalog(true, 'dave'); } // (3.0.0) his own computer, not the chalkboard
@@ -1411,7 +1413,9 @@ export class UI {
   // the right page: one animal's entry, or the notes
   journalDetail(id) {
     const det = $('journal-detail'), notes = $('journal-notes'), title = $('jr-title'); if (!det) return;
-    if (id == null) { det.hidden = true; notes.hidden = false; title.textContent = 'Notes'; return; }
+    if (id == null) { // (5.10.1) nothing met yet: the right page says how a page gets filled, not a blank "Notes"
+      notes.hidden = true; det.hidden = false; title.textContent = 'The first page';
+      det.innerHTML = `<p class="jd-empty">Every animal you observe is drawn into this book: where it lives, how big it grows, the depth you first saw it at.<br><br>${document.documentElement.classList.contains('touch') ? 'Swim close to one and tap it to observe it.' : 'Swim close to one and press F to observe it.'}</p>`; return; }
     const g = this.h.getGame(), sp = SPECIES_BY_ID[id], info = g.journal.get(id) || {}, R = rarityOf(sp), hab = usualDepth(sp);
     if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
     const ph = (g.photos || []).filter((p) => p.id === id && p.img).sort((a, b) => b.q - a.q)[0];

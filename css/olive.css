@@ -990,3 +990,17 @@ html.touch body.bookmode #quests .qs-locked:not(#_a) { font: 500 16px/1.4 var(--
 html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a):not(#_b):not(#_c), html.touch body.bookmode #booktabs:not(#_a):not(#_b):not(#_c) { z-index: 38 !important; left: calc(50vw + min(520px, 46vw) - 40px); top: calc(50vh - min(320px, 41vh) + 30px); gap: 4px; }
 html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button:not(#_b):not(#_c), html.touch body.bookmode #booktabs:not(#_a) button:not(#_b):not(#_c) { width: 122px !important; padding: 0 0 0 50px !important; text-align: left !important; color: #e2d9bc !important; }
 html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button.on:not(#_b):not(#_c), html.touch body.bookmode #booktabs:not(#_a) button.on:not(#_b):not(#_c) { width: 130px !important; color: #2e2618 !important; }
+/* (5.10.1) the danger strip: over any panel when the air is low or the thing is coming (time keeps running) */
+#danger { position: fixed; z-index: 9600; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); transform: translateX(-50%); pointer-events: none; padding: 7px 18px; border-radius: 4px; background: rgba(28, 8, 6, 0.88); box-shadow: 0 0 0 1.5px rgba(200, 60, 44, 0.8), 0 6px 18px rgba(0, 0, 0, 0.6); color: #f4d8c8; font: 700 16px var(--o-text); letter-spacing: 0.04em; animation: danger-pulse 1s ease-in-out infinite; white-space: nowrap; }
+#danger[hidden] { display: none; }
+@keyframes danger-pulse { 50% { box-shadow: 0 0 0 1.5px rgba(240, 90, 70, 1), 0 0 22px rgba(220, 60, 40, 0.55); } }
+/* (5.10.1) the journal's coin hides with the rest of the controls (the jaws, the death, the cinematics) */
+html.touch body.hud-off #quests-hud { visibility: hidden !important; }
+/* (5.10.1) a gain card never sits over a panel: the bag's "!" says it instead */
+body:has(#workshop:not([hidden])) #gains, body:has(#inventory:not([hidden])) #gains, body:has(#catalog:not([hidden])) #gains, body:has(#journal:not([hidden])) #gains, body:has(#settings:not([hidden])) #gains { display: none !important; }
+/* (5.10.1) settings opened over the title's welcome box sit above it */
+#settings:not(#_a) { z-index: 65; }
+/* (5.10.1) the Margaret's panel keeps one size whichever tab is open */
+html.touch body #workshop .shop-main:not(#ts_a):not(.ts-main) { width: min(1000px, 92vw) !important; height: min(560px, 86vh) !important; max-height: none !important; }
+html.touch body #workshop .shop-main:not(.ts-main) > :last-child { overflow: auto; }
+html body #journal .jd-empty:not(#_a) { font: 500 17px/1.45 var(--o-text) !important; color: rgba(46, 38, 24, 0.75) !important; margin: 18px 6px; }

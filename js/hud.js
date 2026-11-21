@@ -133,7 +133,7 @@ export class Hud {
       if (g.bag.length) parts.push(['Bag', `${g.bag.length}`]); // (4.28) what is still outside the tank, in the row (it was printed over it)
       if (hasBigTank(g)) parts.push(['Large tank', `${bigIn(g).length}/3`]);
       ctx.textBaseline = 'middle';
-      const lab = `600 ${17 * s}px ${HUDF}`, val = `600 ${15 * s}px ${MONO}`, gapP = 26 * s;
+      const tk = this.touch ? 1.3 : 1, lab = `600 ${17 * s * tk}px ${HUDF}`, val = `600 ${15 * s * tk}px ${MONO}`, gapP = 26 * s * tk; // (5.10.1) readable on a phone
       const widths = parts.map(([l, v]) => { ctx.font = lab; const a2 = ctx.measureText(l).width; ctx.font = val; return a2 + 6 * s + ctx.measureText(v).width; });
       let px = W / 2 - (widths.reduce((a2, b2) => a2 + b2, 0) + gapP * (parts.length - 1)) / 2;
       parts.forEach(([l, v], i) => { ctx.textAlign = 'left'; ctx.font = lab; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * s; ctx.fillStyle = 'rgba(230,224,204,0.85)'; ctx.fillText(l, px, sy0); const lw = ctx.measureText(l).width;
@@ -245,6 +245,19 @@ export class Hud {
   // whatever F does here, call the sub, the lamp, the lure, the glow stick, the pet; in the sub: leave, the tank room,
   // the autopilot, the trawl, the spare air, sell, the lamp). Each keeps its place: one that can't be used now is
   // greyed, never moved or hidden, so nothing jumps about. A picture and a word on each; no key letters.
+  // (5.10.1) in the jaws: every control is gone but the lamp, large where the big button was, burning bright while a
+  // flash can still make it flinch (the kill's short window); a lure, if carried, is asked for by its own card
+  drawKillLamp(g, W, H) {
+    const ctx = this.ctx, kx = window.innerWidth / this.c.width, u = this.c.width / window.innerWidth * (window.__fingerK || 1.3), K = g.kill;
+    const R = 48 * u, cx = W - 16 * u - R, cy = H - 16 * u - R, open = !!(K.window && K.t < K.window[1]) && !(g.entity && g.entity.flashed), q = 0.5 + 0.5 * Math.sin(g.time * 14);
+    ctx.save();
+    if (open) { const hg = ctx.createRadialGradient(cx, cy, R * 0.6, cx, cy, R * 2.2); hg.addColorStop(0, `rgba(255,226,160,${(0.55 + 0.35 * q).toFixed(3)})`); hg.addColorStop(1, 'rgba(255,210,140,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(cx, cy, R * 2.2, 0, TAU); ctx.fill(); }
+    drawCoin(ctx, cx, cy, R, 'lamp', open ? 'lit' : 'off', open ? { lit: true } : null);
+    if (open) { ctx.strokeStyle = `rgba(255,240,210,${(0.7 + 0.3 * q).toFixed(3)})`; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(cx, cy, R * (1.08 + 0.06 * q), 0, TAU); ctx.stroke();
+      ctx.font = `700 ${22 * u}px ${HUDF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillStyle = '#f6ecd0'; ctx.shadowColor = '#000'; ctx.shadowBlur = 8 * u; ctx.fillText('FLASH IT', cx, cy - R - 12 * u); }
+    ctx.restore();
+    this.hots.push({ x: (cx - R * 1.3 + this.safeL) * kx, y: (cy - R * 1.3 + this.safeT) * kx, w: R * 2.6 * kx, h: R * 2.6 * kx, key: 'l' });
+  }
   drawActions(g, W, H, s, dt, aboard) {
     const ctx = this.ctx, P = g.profile, e = g.earl, kx = window.innerWidth / this.c.width;
     const hot = (x, y, w, h, key) => this.hots.push({ x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: w * kx, h: h * kx, key });
@@ -899,6 +912,7 @@ e.inSub ? [
     }
     // (5.1.1) a touch screen: the actions, bottom right (on deck too: the F action is how he goes in)
     if (touch && !this.panel && g.profile && g.mode === 'play' && !dying && !g.kill && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) this.drawActions(g, W, H, s, dt, aboard);
+    else if (touch && g.kill && !g.kill.inSub && !g.kill.esc && g.mode === 'play' && !dying) this.drawKillLamp(g, W, H); // (5.10.1) the one way out, by touch
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
     if (false && step && step.on && g.mode === 'play' && !dying && !g.kill && !g.hideQuest) { // (3.0.1: shown beside the Quests button instead)
@@ -946,7 +960,7 @@ e.inSub ? [
       ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `600 ${30 * s}px ${MONO}`; ctx.fillStyle = `rgba(255,236,220,${pulse.toFixed(3)})`;
       ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 12 * s;
-      ctx.fillText(opts.length ? opts.map(([k, n]) => `${k}  ${n}`).join('     ') : 'NOTHING LEFT TO GIVE IT', W / 2, H * 0.72);
+      ctx.fillText(opts.length ? opts.map(([k, n]) => (touch ? n : `${k}  ${n}`)).join('     ') : 'NOTHING LEFT TO GIVE IT', W / 2, H * 0.72); // (5.10.1) no key letters on a phone: the lamp button is lit below
       ctx.shadowBlur = 0;
       const bw = 360 * s, bx = W / 2 - bw / 2, by = H * 0.72 + 30 * s;
       ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(bx, by, bw, 5 * s);

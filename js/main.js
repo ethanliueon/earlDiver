@@ -873,7 +873,7 @@ function buy(kind) {
   } else if (kind.startsWith('on:')) {
     // (2.8.0) on:<uid> puts on a thing from the locker
     const q = instOf(P, kind.slice(3));
-    if (q && putOn(P, q.u)) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Press ${key} for the ${ITEMS[q.id].name.toLowerCase()}`); }
+    if (q && putOn(P, q.u)) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(hud.touch ? `Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}` : `Press ${key} for the ${ITEMS[q.id].name.toLowerCase()}`); }
   } else if (kind.startsWith('sellgear:')) {
     // (2.8.0) selling gear back, for about a third of what it is worth; never what he has on
     const q = instOf(P, kind.slice(9));
@@ -908,8 +908,8 @@ function buy(kind) {
     if (G && !owns(P, k) && (!G.needs || owns(P, G.needs)) && spend(P, G.price)) {
       P.gear = Object.assign({}, P.gear, { [k]: true }); ok = true;
       hud.toast(G.name, 'big');
-      if (k === 'camera') { g.toolSel = 'cam'; hud.hint('Press 2 for the camera, hold still while it takes the picture'); }
-      if (k === 'arm') hud.hint('In the sub, Space reaches for an animal; Space again in the green closes the claw');
+      if (k === 'camera') { g.toolSel = 'cam'; hud.hint(hud.touch ? 'Tap the swap button by the net for the camera; hold still while it takes the picture' : 'Press 2 for the camera, hold still while it takes the picture'); }
+      if (k === 'arm') hud.hint(hud.touch ? 'In the sub, the claw button reaches for an animal; tap it again in the green to close the claw' : 'In the sub, Space reaches for an animal; Space again in the green closes the claw');
     }
   } else if (kind === 'patch' && !sub.imploded && sub.hull < 0.999 && spend(P, PATCH_PRICE)) {
     sub.hull = Math.min(1, sub.hull + 0.4); ok = true;
@@ -920,7 +920,7 @@ function buy(kind) {
   } else if (kind.startsWith('trap:') && TRAPS[kind.slice(5)] && (convertOldTraps(P), (P.traps[kind.slice(5)] || 0) < TRAPS[kind.slice(5)].max) && spend(P, TRAPS[kind.slice(5)].price)) {
     const tk = kind.slice(5);
     P.traps[tk] = (P.traps[tk] || 0) + 1; ok = true;
-    ui.showGains([{ kind: 'trap', id: tk }]); hud.hint('Press 5, then Space at the surface to set a trap at the depth you choose');
+    ui.showGains([{ kind: 'trap', id: tk }]); hud.hint(hud.touch ? 'At the surface, open your bag and tap the trap, then Use, to set it at the depth you choose' : 'Press 5, then Space at the surface to set a trap at the depth you choose');
   } else if (kind.startsWith('subnet:') && NETS_SUB[kind.slice(7)] && netsOf(g.items)[kind.slice(7)] < NETS_SUB[kind.slice(7)].cap && spend(P, NETS_SUB[kind.slice(7)].price)) {
     netsOf(g.items)[kind.slice(7)]++; ok = true; // (4.11.0) up to two beginner nets and one advanced
     ui.showGains([{ kind: 'trawl', id: kind.slice(7) }]);
@@ -972,7 +972,7 @@ function afterTips(dt) {
     if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast(hud.touch ? 'Tap the sprint button (the two arrows) to sprint' : keyFor('sprint') === 'RMB' ? 'Hold the right mouse button to sprint' : 'Hold Shift to sprint', 'note'); }
   }
 }
-function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === 'skip' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => messages.show(`Press ${keyFor('inventory')} to put it on`, 'note', 3.5), 3000); } // (4.12.0) up for 3.5 s
+function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === 'skip' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => messages.show(hud.touch ? 'Open your bag to put it on' : `Press ${keyFor('inventory')} to put it on`, 'note', 3.5), 3000); } // (4.12.0) up for 3.5 s
 // (4.7.0) the lessons after the tutorial, in the tutorial's own way: the sea is held still (the animals, the thing in
 // the deep, the sub's air and hull, the catch's suffering all wait), only what the lesson teaches works, its line
 // says what to do and its key-cap lights; a trail leads where to go.
@@ -1087,7 +1087,7 @@ function tutor() {
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
   g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
-  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast('Tutorial done. The quest board is open (O)', 'big'); setTimeout(() => hud.toast(`If you need help: controls are in your journal (${keyFor('journal')}), settings in the pause menu (Esc)`, 'note'), 4500); } return; }
+  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast(hud.touch ? 'Tutorial done. The quest board is open in your journal' : 'Tutorial done. The quest board is open (O)', 'big'); setTimeout(() => hud.toast(`If you need help: controls are in your journal (${keyFor('journal')}), settings in the pause menu (Esc)`, 'note'), 4500); } return; }
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
@@ -1705,7 +1705,7 @@ function startKill() {
   ent.x = x0; ent.y = y0; ent.vx = ent.vy = 0; ent.faceLock = -flip; ent.eyeOpen = 1;
   ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
   const s = flip;
-  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0, y0, x1, y1, dx, dy, rot, flip, window: inSub ? null : [0, KILL_WINDOW] };
+  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0, y0, x1, y1, dx, dy, rot, flip, window: inSub ? null : [0, hud.touch ? 0.9 : KILL_WINDOW] }; // (5.10.1) a thumb needs a moment longer to find the lamp than a key does
   ui.closeAll && ui.closeAll();
   audio.ready && audio.drop();
   g.fx.shake = Math.max(g.fx.shake, 1.2);
@@ -1818,7 +1818,7 @@ const PATCH_SHARE = 0.3, REPAIR_TIME = 3; // (4.5.0) three seconds a hole
 function syncPatches(sub) {
   if (!sub.patches) sub.patches = [];
   const n = sub.imploded ? 0 : Math.min(3, Math.max(0, Math.ceil((1 - sub.hull) / PATCH_SHARE - 0.02)));
-  if (n > (g.patchCount || 0) && !sub.imploded) { if (!g.repairHinted) { g.repairHinted = true; hud.hint('Swim to a hole in the sub\'s hull and hold R to repair it'); } }
+  if (n > (g.patchCount || 0) && !sub.imploded) { if (!g.repairHinted) { g.repairHinted = true; hud.hint(hud.touch ? 'Swim to a hole in the sub\'s hull and tap it to mend it' : 'Swim to a hole in the sub\'s hull and hold R to repair it'); } }
   g.patchCount = n;
   while (sub.patches.length > n) sub.patches.pop();
   for (let tries = 0; sub.patches.length < n && tries < 40; tries++) {
@@ -2117,7 +2117,7 @@ function update(dt) {
     }
     if (pressed.has('r')) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
-      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast('Hold R at a hole in the hull', 'warn'); }
+      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast(hud.touch ? 'Swim to a hole in the hull and tap it' : 'Hold R at a hole in the hull', 'warn'); }
       else if (!g.items.airTank) hud.toast('No backup air tanks', 'warn');
       else if (g.tankFit) { /* already being connected */ }
       else if (g.sub.o2 >= g.sub.o2Max - 1) hud.toast('The cabin air is full');
@@ -2191,7 +2191,7 @@ function update(dt) {
     if (pressed.has('c-tap')) {
       if (e.inSub && g.homeRun) { g.homeRun = false; ap.cancel(); hud.toast('Autopilot off'); }
       else if (e.inSub && g.sub.docked) hud.toast('Already at the boat');
-      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: heading home'); hud.hint('It steers itself to the boat using less air. Press C to take the helm back; if something hits or comes near, it lets go'); audio.ready && audio.sonar(0.05); }
+      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: heading home'); hud.hint(hud.touch ? 'It steers itself to the boat using less air. Tap the autopilot button to take the helm back' : 'It steers itself to the boat using less air. Press C to take the helm back; if something hits or comes near, it lets go'); audio.ready && audio.sonar(0.05); }
       else if (g.sub.imploded) hud.toast('The submersible is gone', 'warn');
       else if (ap.state === 'coming') { ap.cancel(); g.sub.vx *= 0.5; hud.toast('Sub stopped'); }
       else { ap.call(g); hud.toast(`Calling the sub · ${Math.round(dist(e.x, e.y, g.sub.x, g.sub.y))} m`); audio.ready && audio.sonar(0.05); }
@@ -2306,7 +2306,7 @@ function update(dt) {
         const why = fireSubNet(g, tier);
         if (why === 'closing') { hud.toast('Closing the net…'); audio.ready && audio.click(); }
         else if (why && why !== 'busy') hud.toast(why, 'warn');
-        else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? `${NETS_SUB[g.subNet.tier].name} out` : `${NETS_SUB[g.subNet.tier].name} out (N to close)`); audio.ready && audio.whoosh(); }
+        else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? `${NETS_SUB[g.subNet.tier].name} out` : `${NETS_SUB[g.subNet.tier].name} out (${hud.touch ? 'the trawl button closes it' : 'N to close'})`); audio.ready && audio.whoosh(); }
       };
       const kinds = netKinds(g.items);
       if (g.subNet || canFireSubNet(g)) letOut(null);
@@ -2441,7 +2441,7 @@ function update(dt) {
         if (mv.x && !g.sub.docked && !g.sub.imploded) {
           const alongside = Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6) < 16 && !(g.autopilot && g.autopilot.active);
           if (alongside) { g.sub.docked = true; hud.toast('The sub is lifted into the Margaret\'s cradle'); audio.ready && audio.thud(0.2); }
-          else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast('The sub is still out (hold C)', 'warn'); } }
+          else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast(hud.touch ? 'The sub is still out: the sub button calls it' : 'The sub is still out (hold C)', 'warn'); } }
         }
         if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast(g.anchorDir < 0 ? 'Anchor still coming up' : 'Anchor down (G)', 'warn'); } }
         // (3.1.1) slower, heavier: 3.5 m/s flat out, about twice as long to get under way and to stop
@@ -2841,6 +2841,21 @@ function bookTabs() {
     const R = bk && bk.getBoundingClientRect(); if (R && R.width) { const z = parseFloat(getComputedStyle(el).zoom) || 1, L = (R.right - 40) / z + 'px', T = (R.top + 30) / z + 'px';
       if (el.style.left !== L) el.style.setProperty('left', L, 'important'); if (el.style.top !== T) el.style.setProperty('top', T, 'important'); } }
 }
+// (5.10.1) time keeps running under every panel down there; so the danger reaches through them: a strip over the
+// panel when the air is low or gone, or the thing is hunting close
+function dangerStrip() {
+  let el = document.getElementById('danger');
+  const e = g.earl, ent = g.entity, under = g.mode === 'play' && !g.aboard && e && e.y > 1.5 && !g.kill;
+  let msg = '';
+  if (under && hud.touch && ui.anyOpen && ui.anyOpen('cabin')) {
+    const inS = e.inSub && !g.sub.imploded, o2 = inS ? g.sub.o2 / Math.max(1, g.sub.o2Max) : e.o2 / Math.max(1, e.o2Max);
+    if (g.noAir) msg = inS ? 'The cabin is out of air' : 'Out of air: surface!'; else if (o2 < 0.3) msg = `Air at ${Math.max(1, Math.round(o2 * 100))}%`;
+    if (ent && ent.state === 'hunt' && (ent.dist ?? 1e9) < 140) msg = (msg ? msg + ', and ' : '') + 'something is coming';
+  }
+  if (!el) { if (!msg) return; el = document.createElement('div'); el.id = 'danger'; document.body.appendChild(el); }
+  if (el.textContent !== msg) el.textContent = msg;
+  el.hidden = !msg;
+}
 let lureNoUntil = 0;
 function lureAsk() {
   let el = document.getElementById('lureask');
@@ -2926,6 +2941,8 @@ function frame(now) {
   }
   lureAsk(); // (5.6.4)
   bookTabs(); // (5.6.7)
+  dangerStrip(); // (5.10.1)
+  { const off = !!(g.kill || g.mode === 'dying'); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); }
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
     hud.spotWanted = !!(hud.touch && profile && profile.tut === 'on' && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
