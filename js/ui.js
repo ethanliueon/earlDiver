@@ -968,7 +968,10 @@ export class UI {
     const SLOTS = [['suit', 'Suit'], ['fins', 'Fins'], ['tank', 'Tank'], ['bag', 'Bag'], ['ability', 'Ability'], ['net', '1  Net'], ['cam', '2  Camera']]; // (5.9.0) the Ability slot: the scroll he carries
     const pic = (q) => { const it = ITEMS[q.id]; return pictureOf(it.kind, it, 120, 72, true); };
     const slot = ([kind, label]) => { const q = K.on[kind] && K.items.find((x) => x.u === K.on[kind]); const it = q && ITEMS[q.id], nm = label.replace(/^\d\s+/, '');
-      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}" data-slot="${kind}" title="${q ? it.name : nm + ': nothing on'}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : `<span>${nm}</span>`}${/^\d/.test(label) ? `<i class="key">${label[0]}</i>` : ''}<small class="slot-nm">${nm}</small><i class="glyph g-${kind}"></i></div>`; };
+      // (5.11.7) the name inside the box, under the picture (it no longer hangs below and gets cut off); no key numbers (touch
+      // only); an empty slot is just its name; a slot for something he does not own yet (the camera) carries a padlock
+      const lockedSlot = !q && kind === 'cam' && !K.items.some((x2) => ITEMS[x2.id] && ITEMS[x2.id].kind === 'cam');
+      return `<div class="eq-slot sq${q ? ' r-' + it.rarity : ' empty'}${lockedSlot ? ' locked' : ''}" data-slot="${kind}" title="${q ? it.name : nm + (lockedSlot ? ': not bought yet' : ': nothing on')}">${q ? `<img src="${pic(q)}" alt="" draggable="${free}" data-kind="${kind}" data-u="${q.u}">` : lockedSlot ? '<i class="lock"></i>' : ''}<small class="slot-nm">${nm}</small></div>`; };
     const order = ['net', 'cam', 'suit', 'fins', 'tank', 'bag'], rk = (q) => RARITY[ITEMS[q.id].rarity].k;
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
@@ -976,7 +979,7 @@ export class UI {
     // (5.6.9) the belt: glow sticks (up to 5) and the lure, what he takes into the water; the rest wait in the locker
     const SP = P.spare || {}, SUPN = { necklace: 'Glow', lure: 'Lure' };
     const beltSlot = (k) => { const n = (g.items && g.items[k]) || 0;
-      return `<div class="eq-slot sq belt${n ? ' r-common' : ' empty'}" data-belt="${k}" title="${SUPN[k]}">${n ? `<img src="${pictureOf('supply', k, 120, 72, true)}" alt="">${k === 'necklace' ? `<b class="belt-n">${n}/5</b>` : ''}` : `<span>${SUPN[k]}</span>`}<small class="slot-nm">${SUPN[k]}</small></div>`; };
+      return `<div class="eq-slot sq belt${n ? ' r-common' : ' empty'}" data-belt="${k}" title="${SUPN[k]}">${n ? `<img src="${pictureOf('supply', k, 120, 72, true)}" alt="">${k === 'necklace' ? `<b class="belt-n">${n}/5</b>` : ''}` : ''}<small class="slot-nm">${SUPN[k]}</small></div>`; };
     const spare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).map((k) => `<div class="lk-tile r-common sup" data-sup="${k}" title="${SUPN[k]}: tap to put on the belt"><img src="${pictureOf('supply', k, 120, 72, true)}" alt=""><b class="belt-n">×${SP[k]}</b></div>`).join('');
     // (5.9.6) traps live in the bag, not on the swap chip: a tile each kind with its number; a tap opens a card with Use
     const TR = P.traps || {}, trapKinds = Object.keys(TRAPS).filter((k) => (TR[k] || 0) > 0);
@@ -995,7 +998,7 @@ export class UI {
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot('necklace')}${beltSlot('lure')}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
-      + this.airHtml(P, g)
+      /* (5.11.7) no tank panel under him: the tank's slot already shows it */
       + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}`;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a

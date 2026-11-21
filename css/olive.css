@@ -1061,3 +1061,17 @@ html body #catalog .cat-wallet canvas { position: static; inset: auto; width: 48
 html body #catalog .cat-wallet b { font: 700 21px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: #efe8d2; text-shadow: 0 0 4px rgba(0, 0, 0, 0.85); margin-top: 1px; }
 /* the monitor's top edge clears the money (the HUD's size: 12 + 38 points and a little air), its bottom where it was */
 html body #catalog .cat-bezel:not(#_a) { align-self: end; margin-bottom: 35px; height: min(680px, calc(100vh - 35px - 58px * var(--fk, 1))) !important; }
+
+/* ---------- (5.11.7) the bag's slots: taller boxes with the name inside under the picture, so nothing is cut off; the
+   room the tank panel took is given to them. No key numbers, no outline icons; an empty slot is its name alone; a slot
+   for something not bought yet is shut with the same padlock as the bag's locked pockets ---------- */
+html body #inventory .eq-stage .eq-slot.sq:not(#_a):not(#_b) { width: 84px !important; height: 104px !important; transform: none !important; display: flex !important; flex-direction: column; align-items: center; justify-content: flex-start; padding: 6px 4px 0 !important; }
+html body #inventory .eq-stage .eq-slot.sq:not(#_a):not(#_b) img { width: 74px !important; height: 62px !important; flex: none; object-fit: contain; }
+html body #inventory .eq-stage .eq-slot .slot-nm:not(#_a):not(#_b):not(#_c) { position: absolute !important; left: 2px !important; right: 2px !important; bottom: 7px !important; top: auto !important; display: block !important;
+  font: 600 13px var(--o-text, "Barlow Semi Condensed", sans-serif) !important; letter-spacing: 0.08em !important; text-transform: uppercase; color: #e6dfca !important; text-align: center; white-space: nowrap; overflow: hidden; }
+html body #inventory .eq-stage .eq-slot.sq.empty .slot-nm:not(#_a):not(#_b):not(#_c) { color: rgba(230, 223, 202, 0.55) !important; }
+html body #inventory .eq-stage .eq-slot .glyph, html body #inventory .eq-stage .eq-slot .key, html body #inventory .eq-stage .eq-slot.sq > span { display: none !important; }
+html body #inventory .eq-stage .eq-slot.locked .lock { position: absolute; left: 50%; top: 38%; width: 26px; height: 30px; transform: translate(-50%, -50%); opacity: 0.45; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 30'%3E%3Cpath d='M7 13V9a6 6 0 0 1 12 0v4' fill='none' stroke='%23c8c4b0' stroke-width='2.6'/%3E%3Crect x='3' y='13' width='20' height='15' rx='2' fill='%23c8c4b0'/%3E%3Ccircle cx='13' cy='19.5' r='2.2' fill='%23222'/%3E%3Crect x='12' y='20' width='2' height='5' fill='%23222'/%3E%3C/svg%3E") center / contain no-repeat; }
+html body #inventory .eq-stage .eq-col:not(#_a):not(#_b):not(#_c) { row-gap: 12px !important; }
+html body #inventory .eq-stage .eq-slot.belt .belt-n:not(#_a) { top: 4px; right: 6px; }
+html body #inventory .eq-stage .eq-col:not(#_a):not(#_b):not(#_c) { align-self: start; margin-top: 6px; } /* (5.11.7) both columns start on one line */
