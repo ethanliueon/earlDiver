@@ -2,6 +2,7 @@
 // chest reveal, on the same background as everything else. Natural materials and colours (bone, rope, brass,
 // wood, hide); only a bioluminescent part shows any light, and softly. The things use the same looks as on
 // Earl (item_data.js LOOKS); the Legendaries that aren't nets are drawn one by one here.
+import { drawSuit3q } from './suit_art.js';
 import { toolIcon, drawSlurp, drawTagger, drawCamera } from './tools_draw.js';
 import { drawEarl, drawSpecialTank, SUIT_LOOK } from './earl_draw.js';
 import { TAU, clamp } from './util.js';
@@ -153,6 +154,7 @@ function suitPic(ctx, w, h, def, legend) { drawSuitFlat(ctx, w, h, def); }
 // The cut is the suit's kind (neoprene, drysuit with its brass zip, chain mail, rebreather harness, an atmospheric
 // hardsuit's joints and dome); rarity adds the work in it: trim, then piping and a patch, then glowing seams.
 export function drawSuitFlat(ctx, w, h, def) {
+  if (drawSuit3q(ctx, w, h, def)) return; // (5.11.4) the turned photograph, where a suit has one
   const arch = (def && (def.arch || (typeof def.look === 'string' ? def.look : null))) || 'wet', r = (def && def.rarity) || 'common';
   const P = Array.isArray(def && def.pal) ? def.pal : SUIT_LOOK[arch] || SUIT_LOOK.wet, k = { common: 0, uncommon: 1, rare: 2, exotic: 3, legendary: 4 }[r] || 0;
   const u = Math.min(w / 1.0, h / 0.52), cx = w / 2, cy = h / 2 + u * 0.02, X = (x) => cx + x * u, Y = (y) => cy + y * u, lw = Math.max(0.8, u * 0.006);

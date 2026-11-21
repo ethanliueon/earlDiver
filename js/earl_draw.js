@@ -12,7 +12,7 @@ export const SUIT_LOOK = {
   dry: ['#1a1b1d', '#34363a', '#b8501e', '#c86a30', '#121314'],
   chain: ['#1a1c1f', '#4a4e54', '#2a2d31', '#3a3e44', '#121315'],
   rebreather: ['#16191a', '#2c3236', '#2e3a2a', '#42503a', '#0e1011'],
-  hard: ['#c8a23a', '#ecd27a', '#8a6a1e', '#6a5014', '#3a3a3a'],
+  hard: ['#8c6c36', '#b39258', '#6a5028', '#4e3a1a', '#3a3a3a'], // (5.11.4) aged brass, not bright gold
 };
 
 // (2.8.1) a Legendary tank on his back: a living swim bladder, two cylinders of whalebone, or a warm vent-stone
@@ -407,7 +407,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     ctx.strokeStyle = 'rgba(60,44,10,0.75)'; ctx.lineWidth = 1 * u;
     for (const [x, y] of [[4, -6], [4, 6], [12, -6.5], [12, 6.5], [20, -7], [20, 7], [28, -6], [28, 6]]) { ctx.beginPath(); ctx.moveTo(x * u, y * u); ctx.lineTo(x * u, 0); ctx.stroke(); }
     const dg = ctx.createRadialGradient(43 * u, 1 * u, 1 * u, 42 * u, 0, 9 * u);
-    dg.addColorStop(0, '#f0d27a'); dg.addColorStop(1, '#7a5a18');
+    dg.addColorStop(0, '#c8a868'); dg.addColorStop(1, '#5a4214'); /* (5.11.4) aged brass */
     ctx.fillStyle = dg; ctx.beginPath(); ctx.arc(42 * u, -0.5 * u, 8.6 * u, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#0e1a20'; ctx.beginPath(); ctx.arc(45 * u, 2.5 * u, 4.6 * u, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(220,240,250,0.45)'; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.arc(45 * u, 2 * u, 3.4 * u, 3.6, 4.6); ctx.stroke();
