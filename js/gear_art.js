@@ -126,6 +126,7 @@ function camColours(def) {
   return { body: L && L.body ? mute(L.body) : D[0], body2: L && L.body2 ? mute(L.body2) : D[1], acc: (L && L.accent) || '#b8955a' };
 }
 export function drawCam3(ctx, w, h, def) {
+  if (drawLegend(ctx, w, h, def)) return true;
   const arch = def.arch || 'compact', k = RK[def.rarity] || 0, C = camColours(def), clear = arch === 'compact' || arch === 'macro';
   const metal = k >= 3 ? '#a8864e' : k >= 1 ? '#9aa0a2' : '#5a5e60';
   fitted(ctx, w, h, (x, W, H) => {
@@ -177,6 +178,7 @@ function tankColours(def) {
   return { body: T && T.body ? T.body.map(mute) : D, band: T && T.band ? T.band : null };
 }
 export function drawTank3(ctx, w, h, def) {
+  if (drawLegend(ctx, w, h, def)) return true;
   const arch = def.arch || 'al', k = RK[def.rarity] || 0, C = tankColours(def), valve = k >= 3 ? '#a8864e' : k >= 2 ? '#c8ccce' : '#8e9396', band = k >= 1 ? C.band || '#7a6040' : null;
   fitted(ctx, w, h, (x, W, H) => {
     const big = (def.air || 20) > 90, L = big ? 640 : 560, R = big ? 70 : 62, X = W / 2 - L / 2 - 40;
@@ -259,6 +261,7 @@ export function drawBag3(ctx, w, h, def) {
 const NET_SHAPE = { everyday: { pole: 430, r: 90, f: 'round' }, sure: { pole: 440, r: 100, f: 'round', deep: 1.3 }, gentle: { pole: 420, r: 90, f: 'square' }, reach: { pole: 600, r: 78, f: 'tear' },
   quick: { pole: 320, r: 74, f: 'round' }, big: { pole: 500, r: 120, f: 'd' }, school: { pole: 440, r: 100, f: 'wide' } };
 export function drawNet3(ctx, w, h, def) {
+  if (drawLegend(ctx, w, h, def)) return true;
   const S = NET_SHAPE[def.arch] || NET_SHAPE.everyday, k = RK[def.rarity] || 0, L = typeof def.look === 'object' && def.look ? def.look : {};
   const mute = (c) => mix(c, '#6a675c', 0.25), hoop = L.hoop ? mute(L.hoop) : k >= 3 ? '#8a6a34' : '#3e4448', handle = L.h ? L.h.map(mute) : k >= 3 ? ['#a07a48', '#6e5030', '#3a2a18'] : ['#7a8288', '#4a5258', '#22272a'];
   const mesh = k >= 3 ? '#5a5a46' : '#3a4a3a', metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#5a5e60';
@@ -292,5 +295,89 @@ export function drawNet3(ctx, w, h, def) {
     x.restore();
     if (k >= 4) sparks(x, W, H, hoop, 19 + (hash(def.id) % 97));
   });
+  return true;
+}
+
+// ---------------------------------------------------------------- legendaries ----------------------------------------------------------------
+// (5.14.4) A legendary is not gear made better: it is a thing from the deep, drawn from its own story, each one of a
+// kind. Samples first (the Barreleye Lens, Gulper's Throat, the Black Lung); the rest follow once approved.
+const LEGEND_ART = {
+  // a camera whose housing is the barreleye's head: a dark scaled body, and over its front a clear dome of living
+  // tissue with the two green tube eyes inside, looking up; a faint green light in them
+  barreleye(x, W, H, t) {
+    const cx = W * 0.47, cy = H * 0.7;
+    // the body: a rounded fish-head housing, dark bronze-black, scaled, a bone lip at the front
+    const body = () => { x.beginPath(); x.moveTo(cx - 300, cy - 20); x.bezierCurveTo(cx - 290, cy - 120, cx - 120, cy - 140, cx + 40, cy - 110); x.bezierCurveTo(cx + 170, cy - 90, cx + 250, cy - 30, cx + 260, cy + 40);
+      x.bezierCurveTo(cx + 250, cy + 110, cx + 120, cy + 130, cx - 60, cy + 120); x.bezierCurveTo(cx - 220, cy + 110, cx - 305, cy + 70, cx - 300, cy - 20); x.closePath(); };
+    x.save(); body(); x.fillStyle = lin(x, 0, cy - 140, 0, cy + 130, [[0, '#4a4234'], [0.45, '#2a241c'], [1, '#100d0a']]); x.fill(); x.clip();
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 18; c++) { const sx = cx - 300 + c * 33 + (r % 2) * 16, sy = cy - 120 + r * 28; x.strokeStyle = 'rgba(220,190,140,0.12)'; x.lineWidth = 2; x.beginPath(); x.arc(sx, sy, 15, Math.PI * 0.15, Math.PI * 0.85); x.stroke(); x.strokeStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.arc(sx, sy + 2, 15, Math.PI * 0.2, Math.PI * 0.8); x.stroke(); }
+    x.fillStyle = lin(x, 0, cy - 140, 0, cy, [[0, 'rgba(255,240,210,0.16)'], [1, 'rgba(255,240,210,0)']]); x.fillRect(cx - 320, cy - 150, 600, 160);
+    x.restore(); x.save(); body(); x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 5; x.stroke(); x.restore();
+    // the lens: a small dark eye at the front lip, ringed in bone
+    x.fillStyle = lin(x, cx + 200, cy + 10, cx + 260, cy + 70, [[0, '#e8dcc0'], [1, '#8a7a5a']]); x.beginPath(); x.ellipse(cx + 214, cy + 46, 30, 34, -0.2, 0, TAU); x.fill();
+    x.fillStyle = '#050606'; x.beginPath(); x.ellipse(cx + 216, cy + 46, 20, 24, -0.2, 0, TAU); x.fill(); x.fillStyle = 'rgba(200,230,210,0.35)'; x.beginPath(); x.ellipse(cx + 209, cy + 38, 6, 4, -0.6, 0, TAU); x.fill();
+    // the dome: clear, faintly green, over the top of the head
+    const dome = () => { x.beginPath(); x.moveTo(cx - 190, cy - 112); x.bezierCurveTo(cx - 200, cy - 262, cx + 150, cy - 272, cx + 150, cy - 96); x.closePath(); };
+    x.save(); dome(); x.fillStyle = 'rgba(170,220,200,0.18)'; x.fill(); x.clip();
+    // the eyes: two green tubes rising, their lenses bright at the top
+    // the eyes: soft green barrels, wider at the top, with a darker ring and a bright lens looking straight up
+    for (const [ex, ew] of [[cx - 66, 46], [cx + 14, 50]]) { const top = cy - 222, bot2 = cy - 104;
+      x.fillStyle = lin(x, ex - ew, 0, ex + ew, 0, [[0, 'rgba(20,50,30,0.95)'], [0.35, 'rgba(70,150,90,0.95)'], [0.55, 'rgba(120,200,130,0.95)'], [1, 'rgba(20,50,30,0.95)']]);
+      x.beginPath(); x.moveTo(ex - ew * 0.34, bot2); x.bezierCurveTo(ex - ew * 0.42, top + 40, ex - ew * 0.56, top + 14, ex - ew * 0.5, top); x.lineTo(ex + ew * 0.5, top); x.bezierCurveTo(ex + ew * 0.56, top + 14, ex + ew * 0.42, top + 40, ex + ew * 0.34, bot2); x.closePath(); x.fill();
+      x.strokeStyle = 'rgba(10,30,16,0.6)'; x.lineWidth = 2; x.stroke();
+      const gl = x.createRadialGradient(ex, top, 2, ex, top, 54); gl.addColorStop(0, `rgba(190,255,180,${0.8 + 0.15 * Math.sin(t * 2)})`); gl.addColorStop(0.3, 'rgba(120,220,130,0.38)'); gl.addColorStop(1, 'rgba(120,220,130,0)'); x.fillStyle = gl; x.beginPath(); x.arc(ex, top, 54, 0, TAU); x.fill();
+      x.fillStyle = '#1e4a2a'; x.beginPath(); x.ellipse(ex, top, ew * 0.5, ew * 0.2, 0, 0, TAU); x.fill(); x.fillStyle = '#d8ffd0'; x.beginPath(); x.ellipse(ex, top, ew * 0.36, ew * 0.13, 0, 0, TAU); x.fill(); }
+    x.restore();
+    x.save(); dome(); x.strokeStyle = 'rgba(200,240,220,0.5)'; x.lineWidth = 3; x.stroke(); x.beginPath(); x.moveTo(cx - 150, cy - 150); x.bezierCurveTo(cx - 140, cy - 220, cx - 60, cy - 246, cx + 10, cy - 248); x.strokeStyle = 'rgba(255,255,255,0.4)'; x.lineWidth = 6; x.stroke(); x.restore(); // the dome's rim and its glint
+    return '#8ae08a';
+  },
+  // a net of the gulper eel itself: a ring of its own vertebrae, the stretched black jaw-skin as the bag, veined, and its
+  // long whip of a tail trailing behind with the pink light at the tip; a bone pole wound with cord
+  gulper(x, W, H, t) {
+    const fx = W * 0.58, fy = H * 0.48, rx = 70, ry = 140;
+    // the bag: a great slack mouth of skin, translucent at the edges, veined
+    const bag = () => { x.beginPath(); x.moveTo(fx, fy - ry); x.bezierCurveTo(fx + 220, fy - ry * 1.2, fx + 330, fy - 10, fx + 300, fy + 70); x.bezierCurveTo(fx + 270, fy + 130, fx + 120, fy + ry * 1.05, fx, fy + ry); x.closePath(); };
+    x.save(); bag(); x.fillStyle = lin(x, fx, 0, fx + 320, 0, [[0, 'rgba(40,26,34,0.92)'], [0.7, 'rgba(26,16,22,0.85)'], [1, 'rgba(60,40,48,0.6)']]); x.fill(); x.clip();
+    x.strokeStyle = 'rgba(150,60,70,0.35)'; x.lineWidth = 2; for (let k = 0; k < 9; k++) { x.beginPath(); x.moveTo(fx + 4, fy - ry + k * 34); x.bezierCurveTo(fx + 90, fy - ry + k * 30 + 10, fx + 180, fy - 40 + k * 18, fx + 290, fy + 40); x.stroke(); }
+    x.fillStyle = 'rgba(255,220,230,0.12)'; x.beginPath(); x.ellipse(fx + 120, fy - 70, 90, 26, -0.25, 0, TAU); x.fill(); x.restore();
+    // the tail: a long thin whip curling away behind, its tip a pink glowing organ
+    x.strokeStyle = '#2a1a22'; x.lineWidth = 9; x.lineCap = 'round'; x.beginPath(); x.moveTo(fx + 295, fy + 60); x.bezierCurveTo(fx + 360, fy + 110, fx + 330, fy + 180, fx + 400, fy + 150); x.bezierCurveTo(fx + 440, fy + 130, fx + 430, fy + 60, fx + 470, fy + 40); x.stroke();
+    x.lineWidth = 4; x.strokeStyle = 'rgba(160,90,110,0.5)'; x.stroke();
+    const tg = x.createRadialGradient(fx + 470, fy + 40, 1, fx + 470, fy + 40, 34); tg.addColorStop(0, `rgba(255,190,210,${0.9 + 0.1 * Math.sin(t * 3)})`); tg.addColorStop(0.3, 'rgba(240,110,150,0.55)'); tg.addColorStop(1, 'rgba(240,110,150,0)'); x.fillStyle = tg; x.beginPath(); x.arc(fx + 470, fy + 40, 34, 0, TAU); x.fill();
+    // the ring of vertebrae: pale bone knuckles round the mouth, each shaded, joined
+    for (let k = 0; k < 22; k++) { const a = k / 22 * TAU, vx = fx + Math.cos(a) * rx, vy = fy + Math.sin(a) * ry, s2 = 15;
+      x.fillStyle = lin(x, vx - s2, vy - s2, vx + s2, vy + s2, [[0, '#f2e8d0'], [0.6, '#c8b890'], [1, '#6e6248']]); x.beginPath(); x.ellipse(vx, vy, s2, s2 * 0.75, a, 0, TAU); x.fill(); x.strokeStyle = 'rgba(40,30,20,0.5)'; x.lineWidth = 2; x.stroke(); x.fillStyle = 'rgba(40,30,20,0.35)'; x.beginPath(); x.arc(vx, vy, 4, 0, TAU); x.fill(); }
+    // the pole: a long bone, cord wound round its grip
+    const x1 = fx - rx - 6; x.fillStyle = lin(x, 0, fy - 14, 0, fy + 14, [[0, '#efe4c8'], [0.5, '#c4b48c'], [1, '#6a5e44']]); x.beginPath(); x.roundRect(60, fy - 13, x1 - 60, 26, 13); x.fill(); x.strokeStyle = 'rgba(40,30,20,0.5)'; x.lineWidth = 2.5; x.stroke();
+    for (let k = 0; k < 7; k++) { x.fillStyle = 'rgba(80,60,40,0.35)'; x.beginPath(); x.ellipse(110 + k * 70, fy, 10, 14, 0, 0, TAU); x.fill(); } // its joints
+    x.fillStyle = '#3a2418'; x.beginPath(); x.roundRect(70, fy - 16, 140, 32, 14); x.fill(); x.strokeStyle = 'rgba(255,220,180,0.15)'; x.lineWidth = 2; for (let k = 0; k < 14; k++) { x.beginPath(); x.moveTo(76 + k * 10, fy - 15); x.lineTo(82 + k * 10, fy + 15); x.stroke(); }
+    return '#f08aa8';
+  },
+  // not a tank: a swim bladder the size of a man's back, two dark glossy lobes that slowly swell and ease as it
+  // breathes on its own, veins under its skin, worn on a leather harness, a bone mouthpiece on a sinew hose
+  blacklung(x, W, H, t) {
+    const cx = W * 0.47, cy = H * 0.52, br = 1 + 0.03 * Math.sin(t * 1.1);
+    // the harness behind: two leather straps across, brass buckles
+    for (const sy of [-70, 70]) { x.fillStyle = lin(x, 0, cy + sy - 16, 0, cy + sy + 16, [[0, '#6a4a2e'], [0.5, '#4a3220'], [1, '#2a1c12']]); x.fillRect(cx - 360, cy + sy - 16, 720, 32);
+      x.strokeStyle = 'rgba(255,220,170,0.25)'; x.setLineDash([7, 6]); x.lineWidth = 2; x.beginPath(); x.moveTo(cx - 360, cy + sy - 11); x.lineTo(cx + 360, cy + sy - 11); x.moveTo(cx - 360, cy + sy + 11); x.lineTo(cx + 360, cy + sy + 11); x.stroke(); x.setLineDash([]);
+      x.fillStyle = lin(x, cx + 300, cy + sy - 20, cx + 340, cy + sy + 20, [[0, '#c8a868'], [1, '#6a4e22']]); x.beginPath(); x.roundRect(cx + 296, cy + sy - 22, 44, 44, 6); x.fill(); x.fillStyle = '#2a1c12'; x.fillRect(cx + 306, cy + sy - 12, 24, 24); }
+    // the two lobes
+    for (const [lx, ly, lw, lh] of [[cx - 110, cy - 6, 200 * br, 128 * br], [cx + 110, cy + 6, 190 * br, 122 * br]]) {
+      x.save(); x.beginPath(); x.ellipse(lx, ly, lw, lh, 0, 0, TAU);
+      x.fillStyle = (() => { const g = x.createRadialGradient(lx - lw * 0.35, ly - lh * 0.4, 6, lx, ly, lw); g.addColorStop(0, '#5a4a5e'); g.addColorStop(0.35, '#241a28'); g.addColorStop(1, '#08060a'); return g; })(); x.fill(); x.clip();
+      x.strokeStyle = 'rgba(140,40,50,0.35)'; x.lineWidth = 3; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(lx - lw + k * lw * 0.3, ly + lh * 0.9); x.bezierCurveTo(lx - lw * 0.5 + k * 30, ly, lx - lw * 0.2 + k * 25, ly - lh * 0.4, lx + k * 20, ly - lh); x.stroke(); }
+      x.fillStyle = 'rgba(230,220,240,0.22)'; x.beginPath(); x.ellipse(lx - lw * 0.38, ly - lh * 0.5, lw * 0.32, lh * 0.14, -0.35, 0, TAU); x.fill(); // its wet sheen
+      x.restore(); x.save(); x.beginPath(); x.ellipse(lx, ly, lw, lh, 0, 0, TAU); x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 4; x.stroke(); x.restore(); }
+    // the waist between the lobes, a sinew hose up and over, a bone mouthpiece
+    x.fillStyle = '#140e16'; x.beginPath(); x.ellipse(cx, cy, 34, 64, 0, 0, TAU); x.fill();
+    x.strokeStyle = '#3a2830'; x.lineWidth = 22; x.lineCap = 'round'; x.beginPath(); x.moveTo(cx, cy - 60); x.bezierCurveTo(cx - 20, cy - 190, cx + 230, cy - 210, cx + 280, cy - 130); x.stroke();
+    x.strokeStyle = 'rgba(200,120,130,0.18)'; x.lineWidth = 6; for (let k = 0; k < 12; k++) { const u = k / 12; x.beginPath(); x.arc(cx + u * 280 - 10 * Math.sin(u * 3), cy - 60 - Math.sin(u * Math.PI) * 140, 9, 0.4, 2.4); x.stroke(); } // its rings
+    x.fillStyle = lin(x, cx + 260, cy - 160, cx + 320, cy - 100, [[0, '#f2e8d0'], [1, '#8a7a5a']]); x.beginPath(); x.roundRect(cx + 262, cy - 150, 54, 40, 12); x.fill(); x.fillStyle = '#1a1210'; x.beginPath(); x.ellipse(cx + 304, cy - 130, 8, 12, 0, 0, TAU); x.fill();
+    return '#b06a8a';
+  },
+};
+function drawLegend(ctx, w, h, def) {
+  const f = LEGEND_ART[def.id]; if (!f) return false;
+  fitted(ctx, w, h, (x, W, H) => { const glow = f(x, W, H, 0); sparks(x, W, H, glow, 23 + (hash(def.id) % 97)); });
   return true;
 }
