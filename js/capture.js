@@ -214,13 +214,10 @@ export function updateCapture(g, dt) {
         // (now and then the rim clips it instead, and it hangs dazed a moment: a second chance)
         const c = tgt.c;
         // (5.6.9) the tutorial's scripted miss: a short dart of 2 or 3 m and it hangs there, dazed, for the second swing
-        if (c && force === 'miss') { const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.1; c.tired = 0; c.fleeT = 0; c.dazed = 3; c.startle = 0.32; c.vx = dx / dd * 3.2; c.vy = dy / dd * 1.4; }
-        else if (c && !(c.tired > 0) && Math.random() < 0.22) { c.dazed = 1.3; c.fleeT = 0; }
-        else if (c) {
-          c.tired = 0; c.dazed = 0; c.fleeT = 2.2; c.startle = 0.32;
-          const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.1, f = Math.max(1.5, (c.flee || 1.2) * 1.4);
-          c.vx = dx / dd * f; c.vy = dy / dd * f * 0.6;
-        }
+        // (5.12.2) a miss no longer sends it bolting or leaves it hanging dazed: it swims on at its own pace (the puff of
+        // silt and bubbles still shows the miss). The tutorial's scripted miss is only a short nudge on, for the second swing
+        if (c && force === 'miss') { const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.1; c.tired = 0; c.fleeT = 0; c.dazed = 0; c.vx = dx / dd * 1.2; c.vy = dy / dd * 0.5; }
+        else if (c) { c.tired = 0; c.dazed = 0; c.fleeT = 0; }
         if (g.bubbles) for (let i = 0; i < 8; i++) g.bubbles.push({ x: tgt.x + (Math.random() - 0.5) * 0.4, y: tgt.y + (Math.random() - 0.5) * 0.3, r: 0.02 + Math.random() * 0.05, w: Math.random() * 6, t: 0 });
       }
       // the commotion scares off whatever else is close

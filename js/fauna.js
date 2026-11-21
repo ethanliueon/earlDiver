@@ -559,15 +559,10 @@ export class Fauna {
       const sTop = (this.surfY ? Math.max(this.surfY(s.x - sw), this.surfY(s.x), this.surfY(s.x + sw)) : 0) + s.baseR;
       if (s.y < sTop + 2) ay += 2 + (sTop + 2 - s.y) * 1.5;
       if (s.y < sTop + 1) s.y = sTop + 1;
-      // the whole school moves off from a diver who comes close (faster if he comes fast), and
-      // closes up tighter while he is near - instead of individual fish piling up around him
-      const de = dist(s.x, s.y, earl.x, earl.y) + 0.01;
-      const zone = s.r * 1.8 + 5 + (earl.speedNow > 2.5 ? 4 : 0);
-      if (de < zone && !earl.inSub) {
-        const push = (1 - de / zone) * (earl.speedNow > 2.5 ? 5 : 2.5);
-        ax += (s.x - earl.x) / de * push; ay += (s.y - earl.y) / de * push * 0.7;
-        s.threat = Math.min(1.2, s.threat + dt * (1 - de / zone) * 1.5);
-      }
+      // (5.12.2) Earl is his own thing: a school only eases round him, at its own pace (it neither speeds up nor balls up
+      // for him, however fast he swims); predators and the thing in the deep still scatter it
+      const de = dist(s.x, s.y, earl.x, earl.y) + 0.01, zone = s.r * 1.4 + 3;
+      if (de < zone && !earl.inSub) { const push = (1 - de / zone) * 1.2; ax += (s.x - earl.x) / de * push; ay += (s.y - earl.y) / de * push * 0.7; }
       if (entity && dread > 0.05) { const dx = s.x - entity.x, dy = s.y - entity.y, dd = Math.hypot(dx, dy) + 1; ax += dx / dd * dread * 6; ay += dy / dd * dread * 3; }
       // a hunter closing in: the whole school veers away from it
       for (const h of hunting) {
@@ -749,21 +744,15 @@ export class Fauna {
       const de = dist(c.x, c.y, earl.x, earl.y);
       if (school) {
         // school fish don't break ranks: the whole school moves off (see the school centres)
-      } else if (c.flee > 0 && !c.prey && !c.ctrl && !earl.inSub && !c.tutor) { // (claude-polish: the tutorial's fish never bolts from him: chased straight on, as the step says, it used to flee for good and he drowned)
-        const closing = ((c.x - earl.x) * earl.vx + (c.y - earl.y) * earl.vy) / (de + 0.01);
-        // hanging still he can come very close; drifting slowly, a little less; fast, not at all
-        const threat = (earl.speedNow < 0.4 ? 0.9 : earl.speedNow < 1.3 ? 1.4 : (3 + c.len * 1.5) * (earl.sprint ? 1.6 : 1) * (closing > 1 ? 1.4 : 1)) * (1 - (earl.ambush || 0));
-        const unseen = (earl.kelpSet && W.inKelp(earl.x, earl.y)) || (earl.legends && earl.legends.has('magnetic')); // (2.8.0) the Kelp Runner set; Magnetic
-        if (de < threat && !unseen && !(c.dazed > 0)) c.fleeT = 1.2 + c.len * 0.5; // (5.7.3) version 4's: no flinch, it simply runs
+      } else if (!c.prey && !c.ctrl && !earl.inSub) {
+        // (5.12.2) fish no longer bolt from Earl or the sub: each swims its own fixed pace and pattern whatever he does. Only
+        // the Magnetic legend still draws them to him
         if (earl.legends && earl.legends.has('magnetic') && !c.predator && de < 12 && de > 1.2) { ax += (earl.x - c.x) / de * 4; ay += (earl.y - c.y) / de * 3; } // fish come to him
-      } else if (c.flee > 0 && earl.inSub && de < 10) c.fleeT = 1.5; // the sub is loud
+      }
       if (c.startle > 0) c.startle -= dt;
       // (5.7.3) back to version 4: no tiring in a chase. Kept only the daze after a net's miss (the tutorial's second
       // swing waits on it): the fish hangs a moment, then swims on
-      if (c.dazed > 0) {
-        c.fleeT = 0; c.dazed -= dt;
-        if (!c.ctrl && !c.prey) { ax = -c.vx * 1.6; ay = -c.vy * 1.2 + Math.sin(time * 5 + c.wob) * 0.6; sp = c.speed * 0.3; }
-      }
+      c.dazed = 0; /* (5.12.2) no hanging dazed: a fish always keeps swimming */
       if (c.fleeT > 0) {
         c.fleeT -= dt;
         if (c.home && c.hide) {
@@ -785,7 +774,7 @@ export class Fauna {
       // tucked into its home: it waits there while the diver is close, then creeps back out
       if (c.hideT > 0) {
         c.hideT -= dt;
-        if (de < 3 && earl.speedNow > 0.4) c.hideT = Math.max(c.hideT, 1.5);
+        // (5.12.2) it no longer waits on how fast Earl moves near it
         const h = c.home;
         ax = (h.x + Math.sin(time * 1.7 + c.wob) * 0.12 - c.x) * 5 - c.vx * 2; ay = (h.y - c.y) * 5 - c.vy * 2;
         sp = Math.max(0.25, c.speed * 0.4);
