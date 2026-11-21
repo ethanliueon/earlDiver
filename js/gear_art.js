@@ -130,6 +130,41 @@ export function drawCam3(ctx, w, h, def) {
   if (drawLegend(ctx, w, h, def)) return true;
   const arch = def.arch || 'compact', k = RK[def.rarity] || 0, C = camColours(def), clear = arch === 'compact' || arch === 'macro';
   const metal = k >= 3 ? '#a8864e' : k >= 1 ? '#9aa0a2' : '#5a5e60';
+  // (5.15.2) each kind its own shape: a compact is a slim clamshell, a macro a small body with a long snout of a port,
+  // a low-light camera a long tube housing; a housed camera keeps its square housing with handles and a dome port.
+  // Within a kind, each model a little longer or squatter, its port a little bigger (from its id)
+  const hv = hash(def.id || arch), var1 = 0.9 + ((hv >>> 3) % 5) * 0.05, var2 = 0.9 + ((hv >>> 7) % 5) * 0.05;
+  if (arch !== 'housed') { fitted(ctx, w, h, (x, W, H) => { lsd = 11 + (hv % 97);
+    const body = (X, Y, bw, bh, r, fill) => { const p = () => { x.beginPath(); x.roundRect(X, Y, bw, bh, r); }; x.fillStyle = fill; p(); x.fill(); mottle(x, p, ['rgba(255,255,255,0.04)', 'rgba(0,0,0,0.12)'], 160, 1, 4); shade(x, p, Y, Y + bh, 0.4, 0.5, 12); return p; };
+    if (arch === 'compact') { // a slim clamshell of clear polycarbonate, the camera dark inside it, clips top and bottom, a lanyard loop
+      const bw = 420 * var1, bh = 170 * var2, X = W / 2 - bw / 2, Y = H / 2 - bh / 2;
+      body(X, Y, bw, bh, 34, rgba(C.body, 0.9));
+      x.fillStyle = 'rgba(20,22,24,0.7)'; x.beginPath(); x.roundRect(X + 26, Y + 24, bw - 52, bh - 48, 18); x.fill(); // the camera within
+      x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 3; x.beginPath(); x.moveTo(X + 10, Y + bh / 2); x.lineTo(X + bw - 10, Y + bh / 2); x.stroke(); // the clamshell's seam
+      for (const cxp of [X + bw * 0.3, X + bw * 0.7]) for (const cyp of [Y - 4, Y + bh - 10]) { x.fillStyle = lin(x, 0, cyp, 0, cyp + 14, [[0, mix(metal, '#fff', 0.3)], [1, mix(metal, '#000', 0.4)]]); x.beginPath(); x.roundRect(cxp - 18, cyp, 36, 14, 4); x.fill(); }
+      port(x, X + bw - 96, Y + bh / 2, 46 * var2, metal, ['#2e3a3c', '#0c1214'], false);
+      x.fillStyle = '#e8e2c8'; x.beginPath(); x.roundRect(X + 40, Y + 30, 30, 16, 4); x.fill(); // the flash window
+      x.strokeStyle = '#2a2a28'; x.lineWidth = 6; x.beginPath(); x.moveTo(X - 6, Y + 40); x.bezierCurveTo(X - 60, Y + 50, X - 60, Y + bh + 30, X + 10, Y + bh - 20); x.stroke(); // the lanyard
+      gloss(x, X + bw * 0.3, Y + 20, bw * 0.25, 8, -0.02, 0.5);
+    } else if (arch === 'macro') { // a small body and, in front, a long snout of a port, ringed, a focus light on top
+      const bw = 230 * var1, bh = 190 * var2, X = W / 2 + 40, Y = H / 2 - bh / 2;
+      const sl = 210 * var1, sr = 56 * var2; x.fillStyle = lin(x, 0, H / 2 - sr, 0, H / 2 + sr, [[0, '#6a6e70'], [0.35, '#3a3c3e'], [1, '#121314']]); x.beginPath(); x.roundRect(X - sl, H / 2 - sr, sl + 20, sr * 2, 12); x.fill();
+      for (let k2 = 1; k2 < 5; k2++) { x.fillStyle = 'rgba(0,0,0,0.4)'; x.fillRect(X - sl + k2 * sl / 5, H / 2 - sr, 5, sr * 2); x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(X - sl + k2 * sl / 5 - 2, H / 2 - sr, 2, sr * 2); }
+      port(x, X - sl, H / 2, sr * 0.9, metal, ['#2e3a3c', '#0c1214'], false);
+      body(X, Y, bw, bh, 22, clear ? rgba(C.body, 0.9) : C.body); x.fillStyle = 'rgba(20,22,24,0.6)'; x.beginPath(); x.roundRect(X + 24, Y + 26, bw - 48, bh - 52, 12); x.fill();
+      x.fillStyle = lin(x, 0, Y - 50, 0, Y, [[0, '#4a4c4e'], [1, '#1a1b1c']]); x.beginPath(); x.roundRect(X + bw * 0.3, Y - 46, 50, 50, 8); x.fill(); halo(x, X + bw * 0.3 + 25, Y - 40, 30, '#f0ead0', 0.5); x.fillStyle = '#f4efd8'; x.beginPath(); x.arc(X + bw * 0.3 + 25, Y - 40, 10, 0, TAU); x.fill();
+    } else { // low light: a long matte tube of a housing, its big flat port at the front end, handles on top, an end cap
+      const L = 560 * var1, R = 92 * var2, X = W / 2 - L / 2 + 30, cy = H / 2 + 10;
+      x.fillStyle = lin(x, 0, cy - R, 0, cy + R, [[0, mix(C.body, '#fff', 0.15)], [0.3, C.body], [0.8, mix(C.body, '#000', 0.5)], [1, mix(C.body, '#000', 0.7)]]); x.beginPath(); x.roundRect(X, cy - R, L, R * 2, 18); x.fill();
+      mottle(x, () => { x.beginPath(); x.roundRect(X, cy - R, L, R * 2, 18); }, ['rgba(255,255,255,0.03)', 'rgba(0,0,0,0.15)'], 200, 1, 4);
+      for (const rx2 of [X + L * 0.3, X + L * 0.62]) { x.fillStyle = 'rgba(0,0,0,0.45)'; x.fillRect(rx2, cy - R, 8, R * 2); x.fillStyle = 'rgba(255,255,255,0.08)'; x.fillRect(rx2 - 2, cy - R, 2, R * 2); }
+      for (const hx of [X + L * 0.25, X + L * 0.6]) { x.strokeStyle = '#1a1b1c'; x.lineWidth = 14; x.lineCap = 'round'; x.beginPath(); x.moveTo(hx, cy - R); x.quadraticCurveTo(hx + 50, cy - R - 70, hx + 100, cy - R); x.stroke(); }
+      x.fillStyle = lin(x, 0, cy - R, 0, cy + R, [[0, '#3a3c3e'], [1, '#0e0f10']]); x.beginPath(); x.roundRect(X + L - 10, cy - R + 10, 40, R * 2 - 20, 10); x.fill();
+      x.fillStyle = mix(C.body, '#000', 0.3); x.beginPath(); x.ellipse(X, cy, R * 0.32, R, 0, 0, TAU); x.fill(); port(x, X - 4, cy, R * 0.86, '#2a2c2e', ['#1c2a2a', '#08100f'], false);
+    }
+    if (k >= 3) { x.strokeStyle = rgba(C.acc, 0.8); x.lineWidth = 3; x.beginPath(); x.moveTo(W * 0.2, H * 0.8); x.lineTo(W * 0.8, H * 0.8); x.stroke(); }
+    if (k >= 4) sparks(x, W, H, C.acc, 11 + (hv % 97));
+  }); return true; }
   fitted(ctx, w, h, (x, W, H) => {
     const big = arch === 'housed' || arch === 'lowlight', bw = big ? 360 : 330, bh = big ? 250 : 230, bd = big ? 130 : 110, X = W / 2 - bw / 2 - 50, Y = H / 2 - bh / 2 + 36;
     if (big && k >= 2 && arch === 'housed') { strobeArm(x, X - 14, Y + 60, X - 190, Y - 20, metal, k); strobeArm(x, X + bw + bd * 0.85 + 16, Y + 50, X + bw + bd * 0.85 + 200, Y - 30, metal, k); }
@@ -264,8 +299,14 @@ const NET_SHAPE = { everyday: { pole: 430, r: 90, f: 'round' }, sure: { pole: 44
   quick: { pole: 320, r: 74, f: 'round' }, big: { pole: 500, r: 120, f: 'd' }, school: { pole: 440, r: 100, f: 'wide' } };
 export function drawNet3(ctx, w, h, def) {
   if (drawLegend(ctx, w, h, def)) return true;
-  const S = NET_SHAPE[def.arch] || NET_SHAPE.everyday, k = RK[def.rarity] || 0, L = typeof def.look === 'object' && def.look ? def.look : {};
-  const mute = (c) => mix(c, '#6a675c', 0.25), hoop = L.hoop ? mute(L.hoop) : k >= 3 ? '#8a6a34' : '#3e4448', handle = L.h ? L.h.map(mute) : k >= 3 ? ['#a07a48', '#6e5030', '#3a2a18'] : ['#7a8288', '#4a5258', '#22272a'];
+  const S0 = NET_SHAPE[def.arch] || NET_SHAPE.everyday, k = RK[def.rarity] || 0, L = typeof def.look === 'object' && def.look ? def.look : {};
+  // (5.15.2) each net its own build within its kind: the pole's length and thickness, what it is made of (aluminium,
+  // varnished wood, fibreglass), the hoop's thickness, the mesh fine or coarse, the bag deep or shallow (from its id)
+  const hv = hash(def.id || def.arch), pick = (n, sh) => (hv >>> sh) % n;
+  const S = { ...S0, pole: S0.pole * (0.85 + pick(5, 2) * 0.08), r: S0.r * (0.9 + pick(4, 5) * 0.06), deep: (S0.deep || 1) * (0.8 + pick(5, 8) * 0.1) };
+  const MAT = [['#7a8288', '#4a5258', '#22272a'], ['#a07a48', '#6e5030', '#3a2a18'], ['#c8b878', '#8a7a48', '#4a4020'], ['#5a6448', '#3a4430', '#1c2216']][pick(4, 11)];
+  const poleR = 10 + pick(5, 14) * 1.5, hoopW = 8 + pick(4, 17) * 2.5, meshStep = [12, 16, 22][pick(3, 20)];
+  const mute = (c) => mix(c, '#6a675c', 0.25), hoop = L.hoop ? mute(L.hoop) : k >= 3 ? '#8a6a34' : '#3e4448', handle = L.h ? L.h.map(mute) : k >= 3 ? ['#a07a48', '#6e5030', '#3a2a18'] : MAT;
   const mesh = k >= 3 ? '#5a5a46' : '#3a4a3a', metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#5a5e60';
   fitted(ctx, w, h, (x, W, H) => {
     const tot = S.pole + S.r * 2.2, sc = Math.min(1, 900 / tot); x.save(); x.translate(W / 2 - (tot * sc) / 2, H / 2 + 20); x.scale(sc, sc); x.rotate(-0.06);
@@ -274,7 +315,7 @@ export function drawNet3(ctx, w, h, def) {
     const depth = S.r * 1.9 * (S.deep || 1);
     const bag = () => { x.beginPath(); x.moveTo(fx, fy - ry); x.bezierCurveTo(fx + rx * 2.2, fy - ry * 0.6, fx + depth * 0.9, fy + ry * 0.6, fx + depth * 0.55, fy + ry * 1.25); x.bezierCurveTo(fx + depth * 0.3, fy + ry * 1.5, fx + rx * 0.4, fy + ry * 1.3, fx, fy + ry); x.closePath(); };
     x.save(); bag(); x.fillStyle = rgba(mesh, 0.35); x.fill(); x.clip();
-    x.lineWidth = 2; for (let i = -30; i < 30; i++) for (const sg of [1, -1]) { x.strokeStyle = rgba(mix(mesh, '#000', 0.3), 0.75); x.beginPath(); x.moveTo(fx - 100 + i * 16, fy - ry * 1.4); x.lineTo(fx - 100 + i * 16 + sg * ry * 2.6, fy + ry * 1.8); x.stroke(); }
+    x.lineWidth = meshStep > 18 ? 2.6 : 1.8; for (let i = -40; i < 40; i++) for (const sg of [1, -1]) { x.strokeStyle = rgba(mix(mesh, '#000', 0.3), 0.75); x.beginPath(); x.moveTo(fx - 100 + i * meshStep, fy - ry * 1.4); x.lineTo(fx - 100 + i * meshStep + sg * ry * 2.6, fy + ry * 1.8); x.stroke(); }
     x.fillStyle = lin(x, fx, 0, fx + depth, 0, [[0, 'rgba(0,0,0,0.25)'], [1, 'rgba(0,0,0,0.05)']]); x.fillRect(fx - 50, fy - ry * 2, depth + 100, ry * 4); x.restore();
     x.save(); bag(); x.strokeStyle = rgba(mix(mesh, '#000', 0.4), 0.8); x.lineWidth = 3; x.stroke(); x.restore();
     // the frame
@@ -284,10 +325,10 @@ export function drawNet3(ctx, w, h, def) {
       else if (S.f === 'd') { x.moveTo(fx - rx * 0.7, fy - ry); x.lineTo(fx - rx * 0.7, fy + ry); x.bezierCurveTo(fx + rx * 1.5, fy + ry, fx + rx * 1.5, fy - ry, fx - rx * 0.7, fy - ry); }
       else if (S.f === 'wide') x.ellipse(fx, fy, rx * 0.8, ry * 1.25, 0, 0, TAU);
       else x.ellipse(fx, fy, rx, ry, 0, 0, TAU); };
-    x.save(); frame(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 16; x.stroke(); x.strokeStyle = hoop; x.lineWidth = 11; x.stroke(); x.restore();
+    x.save(); frame(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = hoopW + 5; x.stroke(); x.strokeStyle = hoop; x.lineWidth = hoopW; x.stroke(); x.restore();
     x.save(); x.beginPath(); x.ellipse(fx, fy, rx, ry, 0, Math.PI * 1.1, Math.PI * 1.6); x.strokeStyle = rgba('#ffffff', 0.3); x.lineWidth = 3; x.stroke(); x.restore();
     // the pole: lit from the top, its grip near the end, an end cap, a ferrule where it meets the frame
-    const R0 = 13, x0 = 0, x1 = fx - (S.f === 'tear' ? rx * 1.3 : S.f === 'd' ? rx * 0.7 : rx);
+    const R0 = poleR, x0 = 0, x1 = fx - (S.f === 'tear' ? rx * 1.3 : S.f === 'd' ? rx * 0.7 : rx);
     x.fillStyle = lin(x, 0, -R0, 0, R0, [[0, mix(handle[0], '#fff', 0.2)], [0.3, handle[0]], [0.65, handle[1]], [1, handle[2]]]); x.beginPath(); x.roundRect(x0, -R0, x1 - x0, R0 * 2, R0); x.fill();
     x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 3; x.stroke();
     const gripC = k >= 1 && L.h ? mix(handle[2], '#000', 0.3) : '#1a1b1c'; x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(gripC, '#fff', 0.15)], [1, mix(gripC, '#000', 0.4)]]); x.beginPath(); x.roundRect(x0 + 10, -R0 - 3, 120, R0 * 2 + 6, R0); x.fill(); // the grip
