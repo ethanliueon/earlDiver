@@ -14,28 +14,26 @@ order of work), then this file. The illustrated guide for a new Claude is `docs/
   Quality; photos developed like film and opened as a small card, never full screen; rarity price bands; rarity
   stamps in the shops; fish pass batch 8; the marked eye; no developer key; no boxed danger strip; the trap card.
 
-## Waiting on the owner
+## Owner decisions since the proposal (latest first; these override anything below)
 
-1. **Chest prices.** Chests never pay back more than they cost (gear sells back at 30 %). Matching prices to the
-   average shop worth of the contents:
+- **Chest prices stay as they are.** Do not reopen it. (The table below is kept only as a record.)
+- **The Bayside mock (docs/poc/bayside_page.png) is REJECTED**: "a massive step down", "everything about this looks
+  completely AI". The current shop layout stays, and the rest of the site (header, Cart, Log off, navigation) needs
+  no change. Only the anchor-and-net logo was liked.
+- **Fake-vintage props read as AI**: rubber stamps, "printed" price tags, faux paper textures, neat one-line
+  "flavour" descriptions. Do not use them anywhere.
+- **The rarity stamps in the live shop (5.11.0) look AI-made.** The owner flagged them; if they are changed, make the
+  rarity part of what is already there (e.g. colour the existing small rarity word), never a new badge or shape.
+  Not changed yet: ask before building.
+- **The website does not know the player.** Showing the player's cash inside the supplier's site was questioned
+  ("the website does not belong to the player"). Not changed yet: ask before building.
+- **The concept suits are far from finished**: they are cylinders, and the Iron Lung hardsuit looks wrong. Real suits
+  need shape (shoulders, slack fabric, folds where they hang; a hardsuit built from its real joints), two samples
+  shown first.
 
-   | Chest | Now | Contents worth (avg) | Proposed |
-   |---|---|---|---|
-   | Surplus crate | $900 | $506 | $600 |
-   | Equipment case | $3,000 | $1,262 | $1,450 |
-   | Tea chest | $2,000 | $1,413 | $1,600 |
-   | Strongbox | $6,000 | $2,649 | $3,000 |
-   | Bosun's footlocker | $15,000 | $4,430 | $5,000 |
-   | Expedition trunk | $32,000 | $5,944 | $6,800 |
-   | Offering | $25,000 | $6,882 | $7,900 |
-   | Reliquary | $90,000 | $24,765 | $28,000 |
+## Chest prices (decided: unchanged; kept as a record)
 
-   Concern: the top rows make legendaries (and Tidewardens) about three times cheaper. Options: only the bottom four
-   rows, or all of them with a lower legendary chance in the top chests.
-
-2. **The suits and the shop websites** (the owner liked the direction: "Nice, you got it"; build after their go).
-
-## The last proposal, in full (the owner's reply: "Nice, you got it")
+## The earlier proposal, in full (the owner liked the direction, then rejected the shop mock; see the decisions above)
 
 You're right, and I'd push it further: the shop pages are a generic web template (white boxes, gradient picture
 backgrounds, a soft blurred oval for a shadow). Those are exactly the things your philosophy rules out. The website
@@ -71,13 +69,13 @@ a stand:
 Order: the two sample suits, then all suits, then the three shops' new look one shop at a time (Bayside first),
 with screenshots.
 
-## Proofs of concept (in `docs/poc/`, drawn outside the game, not wired in)
+## Proofs of concept (in `docs/poc/`, drawn outside the game, not wired in; FAR FROM FINISHED)
 
 - `suits_three_quarter.png` (+ `.html`): a wetsuit on a steel stand and a brass hardsuit, both turned away, round
   shading lit from the left, near limbs in front, far limbs darker behind, a contact shadow on a canvas sweep.
   Weak points to fix when building: the backdrop's horizontal streaks read a little like scanlines; the wetsuit's
   legs are a touch wide; poses need per-suit variation.
-- `bayside_page.png` (+ `.html`, uses `wet.png`, `hard.png`): Bayside as a printed catalogue page: paper, a double
+- `bayside_page.png` (+ `.html`, uses `wet.png`, `hard.png`): **REJECTED by the owner, do not build or copy it.** Bayside as a printed catalogue page: paper, a double
   rule under the masthead, the anchor mark, spaced-capital navigation, rules between items instead of boxes, printed
   price tags, rarity stamps. In the game each photograph would be drawn to fill its frame.
 
