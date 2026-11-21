@@ -2875,6 +2875,15 @@ export class Renderer {
         radial(S(Dh.x + 0.7), Sy(Dh.y - 8.5), 4.5 * ppm, [255, 230, 180], 0.45);
         if ((g.time || 0) % 2.4 < 0.25) radial(S(Dh.x - 3.2), Sy(Dh.y - 9.2), 4 * ppm, [255, 70, 50], 0.6);
       } }
+    // (5.15.5) each landmark lights its own water: within about 50 m the dark lifts to roughly the 350 m level (Dave's
+    // warm, the station cool white), fading smoothly to nothing at the edge so it can be seen from further off; the old
+    // one's place is lit less, nearer the 600 m level, and colder, so it never feels welcoming
+    const pool = (wx, wy, R, col, a) => { const x = S(wx), y = Sy(wy), r = R * ppm; if (x < -r || x > this.W + r || y < -r || y > this.H + r) return;
+      const gg = l.createRadialGradient(x * k, y * k, 0, x * k, y * k, r * k); gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(0.4, rgbStr(col, a * 0.8)); gg.addColorStop(0.75, rgbStr(col, a * 0.32)); gg.addColorStop(1, rgbStr(col, 0));
+      l.fillStyle = gg; l.beginPath(); l.arc(x * k, y * k, r * k, 0, TAU); l.fill(); visR.push(x, y, r * 0.6); };
+    if (Dh) pool(Dh.x, Dh.y - 4, 50, [255, 214, 165], 0.42);
+    if (Sn) pool(Sn.x, Sn.y - STATION_TOP, 50, [205, 228, 226], 0.42);
+    pool(CAVE.x + 14, CAVE.y, 50, [150, 178, 190], 0.2);
     for (const lt of g.world.lanterns) {
       const x = S(lt.x), y = Sy(lt.y);
       if (x < -400 || x > this.W + 400 || y < -400 || y > this.H + 400) continue;
@@ -2983,6 +2992,15 @@ export class Renderer {
 
   drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff) {
     const ctx = this.ctx, cam = this.cam, fx = g.fx, t = g.time;
+    // (5.15.5) the landmarks' light in the water itself: a soft haze, as the lamps' beams make, so the lit water round
+    // Dave's, the station and the old one's place shows from a way off (the light map only lights what is drawn there)
+    { const haze = (wx, wy, R, col, a) => { const x = S(wx), y = Sy(wy), r = R * ppm; if (x < -r || x > this.W + r || y < -r || y > this.H + r) return;
+        const gg = ctx.createRadialGradient(x, y, 0, x, y, r); gg.addColorStop(0, rgbStr(col, a)); gg.addColorStop(0.4, rgbStr(col, a * 0.6)); gg.addColorStop(0.8, rgbStr(col, a * 0.15)); gg.addColorStop(1, rgbStr(col, 0));
+        ctx.fillStyle = gg; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
+      const Dh = g.world.dave, Sn = g.world.station;
+      if (Dh) haze(Dh.x, Dh.y - 4, 50, [70, 66, 52], 0.5);
+      if (Sn && Sn.y > 250) haze(Sn.x, Sn.y - STATION_TOP, 50, [50, 70, 74], 0.45);
+      haze(CAVE.x + 14, CAVE.y, 50, [34, 48, 54], 0.4); }
     // god rays near the surface
     const rayStrength = this.phone ? 0 : dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7); // (5.3.2) no god rays on a phone
     if (rayStrength > 0.01) {

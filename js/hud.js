@@ -751,7 +751,7 @@ e.inSub ? [
     if (e.inSub) {
       const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1);
       if (g.sub.failing != null) notes.push(['Hull failing!', flash('#ff4a3a', '#a02a20')]);
-      else if (r > 0.9) notes.push([`Near her ${g.sub.rated} m`, '#f06a5c']);
+      /* (5.15.5) no "near her rated depth" note: the red depth, the hull bar and the crush message say it */
       else if (hi < 0.99) notes.push(['Hull leaking', '#f06a5c']);
     }
     const ap = g.autopilot;

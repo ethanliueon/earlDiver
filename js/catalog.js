@@ -80,9 +80,10 @@ export const MEASURES = {
 export class Catalog {
   constructor(root, hooks) {
     this.root = root; this.h = hooks; this.page = 'home'; this.pics = new Map(); this.carts = {}; this.id = 'bayside'; this.cfg = WEBSHOPS.bayside;
-    root.innerHTML = `<div class="cat-wallet"><canvas width="96" height="76"></canvas><b></b></div><div class="cat-bezel"><div class="cat-glass"><header><h1></h1><span class="sub"></span><div class="right"><a class="cat-cart" href="#" data-go="cart"></a><a class="cat-off" href="#">Log off</a></div></header><div class="cat-wrap"><nav class="cat-nav"></nav><main class="cat-main"></main></div></div></div>`;
+    root.innerHTML = `<div class="cat-wallet"><canvas width="96" height="76"></canvas><b></b></div><button class="cat-x" aria-label="Close"></button><div class="cat-bezel"><div class="cat-glass"><header><h1></h1><span class="sub"></span><div class="right"><a class="cat-cart" href="#" data-go="cart"></a><a class="cat-off" href="#">Log off</a></div></header><div class="cat-wrap"><nav class="cat-nav"></nav><main class="cat-main"></main></div></div></div>`;
     this.nav = root.querySelector('.cat-nav'); this.main = root.querySelector('.cat-main');
     root.querySelector('.cat-off').addEventListener('click', (ev) => { ev.preventDefault(); this.h.close(); });
+    root.querySelector('.cat-x').addEventListener('click', (ev) => { ev.preventDefault(); this.h.close(); }); // (5.15.5) the game's own close, top right, level with the money; Log off still works
     root.addEventListener('click', (ev) => {
       const a = ev.target.closest('[data-go], [data-buy], [data-wish], [data-cart], [data-sellfind]');
       if (!a) { if (ev.target === root) this.h.close(); return; }

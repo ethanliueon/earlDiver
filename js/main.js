@@ -765,21 +765,21 @@ function sayFish(FM, whereOf) {
   }
   const one = {
     air: (ev) => `The ${nm(ev.s)} is about to suffocate`, // (4.1.1)
-    bagStress: (ev) => `The ${nm(ev.s)} feels the pressure`,
+    bagStress: (ev) => `The ${nm(ev.s)} is too ${ev.deeper ? 'deep' : 'shallow'}`, // (5.15.5) which way it suffers, so you know whether to go down or up
     bagDying: (ev) => `The ${nm(ev.s)} is dying of barotrauma`,
     stressed: (ev) => `The ${nm(ev.s)} is stressed`,
     dying: (ev) => ev.s.pile ? `The ${nm(ev.s)} is suffocating` : `The ${nm(ev.s)} is dying${ev.press ? ' of barotrauma' : ''}`,
   };
   const many = {
     air: (n) => `${n} animals are about to suffocate`,
-    bagStress: (n) => `${n} animals feel the pressure`,
+    bagStress: (n, L) => L && L.every((e) => e.deeper) ? `${n} animals are too deep` : L && L.every((e) => !e.deeper) ? `${n} animals are too shallow` : `${n} animals are at the wrong depth`,
     bagDying: (n) => `${n} animals are dying of barotrauma`,
     stressed: (n) => `${n} animals are stressed`,
     dying: (n) => `${n} animals are dying`,
   };
   for (const type of ['air', 'bagDying', 'dying', 'bagStress']) { // (5.5) not 'stressed': the bag's coloured dot already says it, at once after every catch
     const L = by[type]; if (!L) continue;
-    hud.toast(L.length === 1 ? one[type](L[0]) : many[type](L.length), 'warn');
+    hud.toast(L.length === 1 ? one[type](L[0]) : many[type](L.length, L), 'warn');
   }
 }
 function spawnReleased(r) {

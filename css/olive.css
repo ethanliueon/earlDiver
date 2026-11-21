@@ -1172,3 +1172,10 @@ html body #catalog.th-station .scode { font: 500 12px "Barlow Semi Condensed", s
 .ghost-tag { position: fixed; z-index: 101; transform: translateX(-50%); pointer-events: none; padding: 3px 10px 4px; border-radius: 3px;
   background: #3a3529; color: #e6dcc0; font: 600 13px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.04em; box-shadow: 0 0 0 1px rgba(16,14,10,0.9), 0 3px 6px rgba(0,0,0,0.45); }
 .ghost-tag[hidden] { display: none; }
+/* (5.15.5) the shop screens' close: a worn rust-red plate at the top right of the screen, level with the money (the
+   site's own Log off closes it too). Its X is two painted strokes, not a glyph */
+html body #catalog .cat-x { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: 12px; z-index: 3; width: 40px; height: 40px; border-radius: 7px; border: 0; padding: 0; cursor: pointer; zoom: var(--fk, 1);
+  background: radial-gradient(120% 90% at 35% 25%, #84402e 0%, #6a2e22 55%, #4a1c14 100%); box-shadow: inset 0 1px 0 rgba(255, 210, 180, 0.25), inset 0 -2px 3px rgba(0, 0, 0, 0.45), 0 0 0 1.5px rgba(20, 8, 6, 0.9), 0 3px 6px rgba(0, 0, 0, 0.5); }
+html body #catalog .cat-x::before, html body #catalog .cat-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 22px; height: 4px; border-radius: 2px; background: #e8dcc0; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); transform: translate(-50%, -50%) rotate(45deg); }
+html body #catalog .cat-x::after { transform: translate(-50%, -50%) rotate(-45deg); }
+html body #catalog .cat-x:active { transform: translateY(1px); filter: brightness(0.92); }
