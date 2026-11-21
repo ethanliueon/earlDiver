@@ -6,7 +6,7 @@
 import { drawEmblem, ABILITY_FAMILIES, drawTierEmblemMask, ACCENT } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { drawNet, netLook } from './tools_draw.js';
-import { PAINTED, paintSprint, paintMask } from './coin_art.js';
+import { PAINTED, paintSprint, paintMask, paintAbility } from './coin_art.js';
 
 const TAU = Math.PI * 2;
 const cache = new Map();
@@ -71,7 +71,8 @@ const ART = {
   // grips with their rubber, the big port of the lens with its rings and a reflection, the strobe on its arm, screws
   cam(x, look) {
     const base = look && typeof look === 'object' ? look.base || 0 : look || 0;
-    const body = (look && look.body) || ['#d6aa26', '#8a9296', '#2c3034'][base] || '#d6aa26', trim = (look && look.accent) || ['#2a2a26', '#a02a20', '#a02a20'][base] || '#2a2a26';
+    const body0 = (look && look.body) || ['#8a7a44', '#8a9296', '#2c3034'][base] || '#8a7a44', trim = (look && look.accent) || ['#2a2a26', '#7a3a28', '#7a3a28'][base] || '#2a2a26';
+    const body = (() => { const m = /^#([0-9a-f]{6})$/i.exec(body0); if (!m) return body0; const n = parseInt(m[1], 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (106 - v) * 0.35)); return `rgb(${c.join(',')})`; })(); // (5.16.0) the housing's paint weathered on the button: no bright yellow
     // the strobe on its jointed arm
     x.lineCap = 'round'; x.strokeStyle = '#0b0c0c'; x.lineWidth = 6; x.beginPath(); x.moveTo(-18, -16); x.lineTo(-28, -32); x.lineTo(-10, -40); x.stroke();
     x.strokeStyle = '#4a5054'; x.lineWidth = 3.4; x.stroke();
@@ -452,7 +453,8 @@ for (const f of ABILITY_FAMILIES) ART['ab_' + f] = (x, look) => { // (5.9.0) the
   const tier = (look && look.tier) || 'rare', m = drawTierEmblemMask(f, tier, 220), col = tier === 'legendary' ? '#d8b066' : (ACCENT[f] || '#e8e0c8');
   const tint = (c0) => { const c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d'); t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = c0; t.fillRect(0, 0, c.width, c.height); return c; };
   void tint; void col;
-  if (f === 'sprint') { x.save(); x.scale(1.2, 1.2); paintSprint(x, tier); x.restore(); return; } // (5.15.6) fins mid-kick with their wake, painted
+  if (paintAbility(x, f, tier)) return; // (5.16.0) every skill painted, its tier told by craft (coin_art.js)
+  void paintSprint;
   paintMask(x, m, tier === 'legendary'); // (5.15.6) the others' emblems in lit bone (bronze for a legendary), larger
 };
 for (const [k, f] of Object.entries(PAINTED)) ART[k] = (x, look) => { x.save(); if (k === 'dive') { x.translate(0, 6); x.scale(1.08, 1.08); } else x.scale(1.32, 1.32); f(x, look); x.restore(); }; // (5.15.6) the glove, the claw, the hatch and the dive painted as objects (coin_art.js), filling the coin

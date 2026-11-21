@@ -210,3 +210,193 @@ export function blessedURL() {
   x.fillStyle = g; x.beginPath(); x.arc(0, 0, 7.5, 0, Math.PI * 2); x.fill(); x.strokeStyle = 'rgba(20,14,6,0.85)'; x.lineWidth = 1.6; x.stroke();
   BLESS_URL = c.toDataURL(); return BLESS_URL;
 }
+
+// ---------------------------------------------------------------- (5.16.0) the ability coins ----------------------------------------------------------------
+// One painted picture per skill, on the coin's +/-50 box, and the tier told by craft as well as the face's colour: a rare
+// coin plain; an exotic one with an engraved ring round its rim; a legendary one with a bronze filigree rim and its picture
+// in old gilt (the HUD adds its drifting sparks). Pictures: Sprint, your fins in a scissor kick with streaks and a wake;
+// Dash, a spear thrown to the right, crackling; Vigor, the net thrust out with power running up its pole; Flare, a hand
+// flare burning (Lighthouse, a lighthouse); Echo, a sonar scope; Ironhull, a riveted plate and a weld closing a crack;
+// Tidewarden, a wave of blue turning back the red
+const BONE = '#d8ceb0', GILT = '#c09a5c';
+function arc2(x, pts, col, w) { x.strokeStyle = col; x.lineWidth = w; x.lineCap = 'round'; x.lineJoin = 'round'; x.beginPath(); x.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) x.lineTo(pts[i][0], pts[i][1]); x.stroke(); }
+function zap(x, x0, y0, x1, y1, seed, col, w = 1.6, seg = 6, amp = 4) { // a small jagged arc of light between two points
+  const r = rnd(seed), pts = [[x0, y0]]; for (let i = 1; i < seg; i++) { const k = i / seg; pts.push([x0 + (x1 - x0) * k + (r() - 0.5) * amp * 2, y0 + (y1 - y0) * k + (r() - 0.5) * amp * 2]); } pts.push([x1, y1]);
+  x.save(); x.shadowColor = col; x.shadowBlur = 6; arc2(x, pts, col, w); x.restore(); arc2(x, pts, 'rgba(255,250,236,0.9)', w * 0.45);
+}
+function tierRim(x, tier) {
+  if (tier === 'exotic') { x.strokeStyle = 'rgba(226,214,186,0.55)'; x.lineWidth = 1.6; x.beginPath(); x.arc(0, 0, 47, 0, TAU); x.stroke(); x.lineWidth = 0.9; x.beginPath(); x.arc(0, 0, 43.5, 0, TAU); x.stroke();
+    for (let i = 0; i < 24; i++) { const a = i / 24 * TAU; x.beginPath(); x.moveTo(Math.cos(a) * 43.5, Math.sin(a) * 43.5); x.lineTo(Math.cos(a) * 47, Math.sin(a) * 47); x.stroke(); } }
+  if (tier === 'legendary') { x.lineWidth = 3; x.strokeStyle = '#6e5028'; x.beginPath(); x.arc(0, 0, 46, 0, TAU); x.stroke(); x.lineWidth = 1.6; x.strokeStyle = GILT; x.stroke();
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; x.save(); x.rotate(a); x.strokeStyle = GILT; x.lineWidth = 1.4; x.beginPath(); x.moveTo(-6, -46); x.quadraticCurveTo(-3, -41, 0, -43.5); x.quadraticCurveTo(3, -46, 6, -41.5); x.stroke();
+      x.fillStyle = '#e8cc90'; x.beginPath(); x.arc(0, -46, 1.6, 0, TAU); x.fill(); x.restore(); } }
+}
+const ABIL_ART = {
+  sprint(x, tier) {
+    const leg = tier === 'legendary', exo = tier !== 'rare', col = leg ? GILT : BONE;
+    // speed: long streaks running back from the fins, and a wake curling off their tips
+    for (const [y0, l, w, a] of [[-22, 34, 2.2, 0.5], [-8, 44, 2.6, 0.6], [6, 38, 2.4, 0.55], [20, 30, 2, 0.45]].concat(exo ? [[-30, 22, 1.6, 0.35], [28, 22, 1.6, 0.35]] : [])) arc2(x, [[-6 - l, y0], [-6, y0]], `rgba(222,232,220,${a})`, w);
+    x.strokeStyle = 'rgba(214,226,214,0.6)'; x.lineWidth = 1.6; x.beginPath(); x.arc(-40, -10, 6, Math.PI * 0.5, Math.PI * 1.9); x.stroke(); x.beginPath(); x.arc(-44, 12, 5, Math.PI * 0.1, Math.PI * 1.5); x.stroke();
+    if (exo) for (const [bx, by, br] of [[-30, -16, 2], [-38, 2, 1.6], [-26, 14, 1.8], [-44, -4, 1.2]]) { x.beginPath(); x.arc(bx, by, br, 0, TAU); x.stroke(); }
+    // the fins, both from one point (the ankles) at the right: one swung up, one down, blades fanning left
+    for (const [a, far] of [[-0.42, true], [0.42, false]]) {
+      x.save(); x.translate(32, 2); x.rotate(Math.PI + a); if (far) x.globalAlpha = 0.86;
+      const blade = new Path2D('M8 -5C22 -6 36 -9 52 -11C55 -4 55 4 52 11C36 9 22 6 8 5Z');
+      solid(x, blade, col, { from: [8, -16], to: [52, 16], hi: 0.3, wear: 18, seed: far ? 5 : 6, line: 2.2 });
+      x.strokeStyle = 'rgba(0,0,0,0.38)'; x.lineWidth = 1.2; for (const k of [-1, 1]) { x.beginPath(); x.moveTo(10, k * 2.5); x.lineTo(50, k * 7); x.stroke(); }
+      const pocket = new Path2D(); pocket.roundRect(-6, -7.5, 18, 15, 6); solid(x, pocket, mix(col, '#000', 0.5), { from: [-6, -9], to: [12, 9], line: 2.2 });
+      x.fillStyle = '#0c0d0b'; x.beginPath(); x.ellipse(0, 0, 4, 5, 0, 0, TAU); x.fill();
+      if (exo) { x.setLineDash([2, 2]); x.strokeStyle = 'rgba(232,220,190,0.7)'; x.lineWidth = 1; x.beginPath(); x.moveTo(-4, -7); x.lineTo(10, -7); x.stroke(); x.setLineDash([]); }
+      x.restore();
+    }
+  },
+  dash(x, tier) {
+    const leg = tier === 'legendary', exo = tier !== 'rare';
+    x.save(); x.rotate(-0.32); x.scale(1.18, 1.35);
+    // the shaft, ash-wood, a cord binding at the head and a grip wrap
+    bar(x, -46, 0, 18, 0, 5.4, leg ? '#8a6a3e' : '#7a6448', { hi: 0.35 });
+    for (let i = 0; i < 4; i++) { x.strokeStyle = '#2a2016'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(10 + i * 2.4, -3); x.lineTo(12 + i * 2.4, 3); x.stroke(); }
+    for (let i = 0; i < 5; i++) { x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(-34 + i * 3, -2.8); x.lineTo(-32 + i * 3, 2.8); x.stroke(); }
+    // the head, a long leaf of steel (gilt on a legendary), a ridge down its middle
+    const head = new Path2D('M16 0C22 -10 34 -12 52 0C34 12 22 10 16 0Z'); solid(x, head, leg ? GILT : '#b8bcb8', { from: [18, -8], to: [50, 8], hi: 0.45, wear: 10, seed: 4, line: 2 });
+    x.strokeStyle = 'rgba(255,255,255,0.4)'; x.lineWidth = 1; x.beginPath(); x.moveTo(20, -0.5); x.lineTo(48, -0.5); x.stroke();
+    // the crackle: arcs of light round the head and running down the shaft
+    const zc = leg ? 'rgba(236,206,140,0.9)' : 'rgba(214,226,214,0.85)', n = tier === 'rare' ? 3 : tier === 'exotic' ? 5 : 8;
+    for (let i = 0; i < n; i++) { const a = -1.2 + i * (2.4 / Math.max(1, n - 1)), r0 = 9, r1 = 14 + (i % 2) * 6; zap(x, 34 + Math.cos(a) * r0, Math.sin(a) * r0, 34 + Math.cos(a) * r1 + 6, Math.sin(a) * r1, 11 + i * 7, zc, 1.4, 4, 2.5); }
+    if (exo) { zap(x, 14, -5, -20, -8, 91, zc, 1.2, 7, 3); zap(x, 14, 5, -16, 9, 93, zc, 1.2, 7, 3); }
+    if (leg) zap(x, -2, -6, -40, -2, 95, zc, 1.4, 8, 4);
+    x.restore();
+  },
+  vigor(x, tier) {
+    const leg = tier === 'legendary', exo = tier !== 'rare', col = leg ? GILT : BONE;
+    // the pole, from the lower left up to the hoop at the upper right
+    bar(x, -44, 40, 4, -2, 5.6, leg ? '#8a6a3e' : '#6e6a58', { hi: 0.35 });
+    // the hoop, seen at an angle, its bag behind
+    const bag = new Path2D('M2 -6C-2 14 14 34 26 30C38 26 42 6 36 -14Z'); x.fillStyle = 'rgba(40,46,38,0.55)'; x.fill(bag);
+    x.save(); x.clip(bag); x.strokeStyle = 'rgba(214,206,176,0.5)'; x.lineWidth = 1; for (let k = -30; k < 60; k += 6) { x.beginPath(); x.moveTo(k - 20, -20); x.lineTo(k + 10, 40); x.stroke(); x.beginPath(); x.moveTo(k + 20, -20); x.lineTo(k - 10, 40); x.stroke(); } x.restore();
+    x.save(); x.shadowColor = leg ? 'rgba(236,200,130,0.9)' : 'rgba(214,232,214,0.8)'; x.shadowBlur = exo ? 10 : 6; x.strokeStyle = col; x.lineWidth = 4.5; x.beginPath(); x.ellipse(20, -10, 18, 10, -0.5, 0, TAU); x.stroke(); x.restore();
+    x.strokeStyle = '#1a1a14'; x.lineWidth = 1.2; x.beginPath(); x.ellipse(20, -10, 20, 12, -0.5, 0, TAU); x.stroke();
+    // power running up the pole in arcs, and a ripple ahead of the hoop
+    const zc = leg ? 'rgba(236,206,140,0.9)' : 'rgba(214,232,214,0.85)';
+    zap(x, -40, 34, -6, 4, 21, zc, 1.6, 8, 3.5); if (exo) zap(x, -34, 38, -2, 8, 23, zc, 1.3, 8, 3); if (leg) zap(x, -44, 30, -10, 0, 25, zc, 1.3, 8, 4);
+    x.strokeStyle = 'rgba(222,232,220,0.45)'; x.lineWidth = 1.6; for (const r of exo ? [26, 32, 38] : [28, 34]) { x.beginPath(); x.arc(20, -10, r, -1.3, 0.2); x.stroke(); }
+  },
+  flare(x, tier) {
+    if (tier === 'legendary') { // Lighthouse: a stone tower on its rock, the lantern lit, two beams going out
+      for (const s of [-1, 1]) { const g = x.createLinearGradient(0, -26, s * 50, -40); g.addColorStop(0, 'rgba(255,236,190,0.55)'); g.addColorStop(1, 'rgba(255,236,190,0)'); x.fillStyle = g; x.beginPath(); x.moveTo(0, -26); x.lineTo(s * 52, -46); x.lineTo(s * 52, -20); x.closePath(); x.fill(); }
+      const rock = new Path2D('M-34 44C-30 34 -18 30 -8 32C4 28 18 30 34 44Z'); solid(x, rock, '#4a4a40', { from: [0, 28], to: [0, 44], wear: 20, seed: 3 });
+      const tower = new Path2D('M-9 34L-6 -14L6 -14L9 34Z'); solid(x, tower, '#c8beaa', { from: [-9, -14], to: [9, 34], hi: 0.3, wear: 24, seed: 5 });
+      for (const y of [4, 18]) { x.fillStyle = '#7a3a2a'; x.beginPath(); x.moveTo(-7.4 - (y + 14) * 0.03, y); x.lineTo(7.4 + (y + 14) * 0.03, y); x.lineTo(7.8 + (y + 14) * 0.035, y + 6); x.lineTo(-7.8 - (y + 14) * 0.035, y + 6); x.fill(); } // its red bands
+      bar(x, -10, -14, 10, -14, 3, '#3a3a34', { line: 1.4 });
+      const lamp = x.createRadialGradient(0, -21, 0, 0, -21, 14); lamp.addColorStop(0, '#fff6dc'); lamp.addColorStop(0.4, 'rgba(255,226,160,0.8)'); lamp.addColorStop(1, 'rgba(255,226,160,0)'); x.fillStyle = lamp; x.beginPath(); x.arc(0, -21, 14, 0, TAU); x.fill();
+      x.strokeStyle = '#1a1a14'; x.lineWidth = 1.6; x.strokeRect(-5, -27, 10, 12); const cap = new Path2D('M-7 -27L0 -35L7 -27Z'); solid(x, cap, '#3a3a34', { line: 1.4 });
+      return;
+    }
+    const exo = tier === 'exotic';
+    // a marine hand flare: a short red-brown tube, its cap end, the tip burning white into red, sparks and smoke
+    x.save(); x.rotate(-0.5);
+    bar(x, -40, 0, 12, 0, 11, '#8a3a28', { hi: 0.3 }); x.fillStyle = '#d8ceb0'; x.fillRect(-26, -5.5, 12, 11); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 1; x.strokeRect(-26, -5.5, 12, 11); // its paper label
+    const glow = x.createRadialGradient(18, 0, 0, 18, 0, exo ? 32 : 24); glow.addColorStop(0, 'rgba(255,244,224,0.95)'); glow.addColorStop(0.25, 'rgba(255,170,120,0.7)'); glow.addColorStop(1, 'rgba(255,120,80,0)'); x.fillStyle = glow; x.beginPath(); x.arc(18, 0, exo ? 32 : 24, 0, TAU); x.fill();
+    x.fillStyle = '#fffaf0'; x.beginPath(); x.ellipse(15, 0, 4, 6, 0, 0, TAU); x.fill();
+    const r = rnd(7); x.fillStyle = 'rgba(255,220,170,0.95)'; for (let i = 0; i < (exo ? 16 : 9); i++) { const a = (r() - 0.5) * 2.2, d = 10 + r() * (exo ? 26 : 18); x.beginPath(); x.arc(18 + Math.cos(a) * d, Math.sin(a) * d, 0.8 + r() * 1.3, 0, TAU); x.fill(); }
+    x.restore();
+    x.strokeStyle = 'rgba(200,196,184,0.35)'; x.lineWidth = 5; x.lineCap = 'round'; x.beginPath(); x.moveTo(14, -18); x.bezierCurveTo(4, -30, 22, -36, 12, -48); x.stroke(); // smoke
+  },
+  echo(x, tier) {
+    const exo = tier !== 'rare', leg = tier === 'legendary';
+    const glass = x.createRadialGradient(-8, -8, 2, 0, 0, 38); glass.addColorStop(0, '#2c3a26'); glass.addColorStop(1, '#0e140c'); x.fillStyle = glass; x.beginPath(); x.arc(0, 0, 36, 0, TAU); x.fill();
+    x.strokeStyle = 'rgba(150,190,120,0.45)'; x.lineWidth = 1; for (const r of exo ? [9, 18, 27] : [12, 24]) { x.beginPath(); x.arc(0, 0, r, 0, TAU); x.stroke(); }
+    if (exo) { for (let i = 0; i < 36; i++) { const a = i / 36 * TAU, l = i % 3 === 0 ? 5 : 2.5; x.beginPath(); x.moveTo(Math.cos(a) * 36, Math.sin(a) * 36); x.lineTo(Math.cos(a) * (36 - l), Math.sin(a) * (36 - l)); x.stroke(); } }
+    const sw = x.createRadialGradient(0, 0, 0, 0, 0, 36); sw.addColorStop(0, 'rgba(180,220,150,0.55)'); sw.addColorStop(1, 'rgba(180,220,150,0.05)'); x.fillStyle = sw; x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, 36, -1.9, -0.9); x.closePath(); x.fill();
+    arc2(x, [[0, 0], [Math.cos(-0.9) * 36, Math.sin(-0.9) * 36]], 'rgba(214,240,190,0.85)', 1.6);
+    for (const [px, py] of [[14, -20], [-18, 10], [22, 12]].concat(leg ? [[-8, -26], [6, 26]] : [])) { x.fillStyle = '#ece4cc'; x.beginPath(); x.arc(px, py, 2.4, 0, TAU); x.fill(); x.strokeStyle = 'rgba(236,228,204,0.5)'; x.beginPath(); x.arc(px, py, 5, 0, TAU); x.stroke(); }
+    x.strokeStyle = leg ? GILT : '#5a5e44'; x.lineWidth = 4; x.beginPath(); x.arc(0, 0, 37, 0, TAU); x.stroke(); x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 1.2; x.beginPath(); x.arc(0, 0, 39.5, 0, TAU); x.stroke();
+  },
+  ironhull(x) {
+    const plate = new Path2D('M-40 -24L36 -30L40 24L-36 30Z'); solid(x, plate, '#5a5e44', { from: [-40, -30], to: [40, 30], wear: 40, seed: 9 });
+    const r = rnd(5); for (let i = 0; i < 9; i++) { const k = i / 8; bolt(x, -36 + 72 * k, -25 - 4 * k + 2, 2.2, '#7a7e66'); bolt(x, -32 + 72 * k, 25 + 4 * (1 - k) - 1, 2.2, '#7a7e66'); }
+    // the crack across it, and the weld closing it from the left: a glowing bead, then cooling to a dark seam
+    const crack = [[-24, -10], [-12, -4], [-4, -12], [8, 0], [16, -6], [28, 8]];
+    arc2(x, crack, '#0a0b09', 2.4);
+    x.save(); x.shadowColor = 'rgba(255,190,120,0.9)'; x.shadowBlur = 10; arc2(x, crack.slice(0, 4), '#ffcf8a', 3.2); x.restore(); arc2(x, crack.slice(0, 4), '#fff4dc', 1.4);
+    // the welding torch at the bead: a brass nozzle on its hose, the arc's white point at its tip
+    x.save(); x.translate(8, 0); x.rotate(-0.9); bar(x, 4, 0, 30, 0, 6, '#9a8050', { hi: 0.45, line: 1.6 }); bar(x, 30, 0, 50, 0, 8, '#2a2a26', { line: 1.6 }); x.restore();
+    { const gl = x.createRadialGradient(8, 0, 0, 8, 0, 14); gl.addColorStop(0, 'rgba(255,252,240,1)'); gl.addColorStop(0.3, 'rgba(255,214,150,0.7)'); gl.addColorStop(1, 'rgba(255,190,120,0)'); x.fillStyle = gl; x.beginPath(); x.arc(8, 0, 14, 0, TAU); x.fill(); }
+    const sp = rnd(3); x.fillStyle = 'rgba(255,214,150,0.95)'; for (let i = 0; i < 16; i++) { const a = -Math.PI * 0.9 + sp() * Math.PI * 0.8, d = 4 + sp() * 16; x.beginPath(); x.arc(8 + Math.cos(a) * d, Math.sin(a) * d, 0.8 + sp() * 1.1, 0, TAU); x.fill(); }
+    void r;
+  },
+  tidewarden(x) {
+    // the red water at the left, and a great wave of deep blue rising and curling over it from the right
+    { const rd = x.createRadialGradient(-30, 6, 2, -24, 6, 44); rd.addColorStop(0, 'rgba(140,26,20,0.9)'); rd.addColorStop(0.6, 'rgba(110,18,14,0.55)'); rd.addColorStop(1, 'rgba(110,18,14,0)'); x.fillStyle = rd;
+      x.beginPath(); x.moveTo(-50, -40); for (let k = 0; k <= 10; k++) x.lineTo(-50 + 30 + Math.sin(k * 1.7) * 8, -40 + k * 9); x.lineTo(-50, 50); x.closePath(); x.fill();
+      x.fillStyle = 'rgba(160,40,30,0.5)'; for (const [px, py, pr] of [[-36, -14, 3], [-28, 20, 2.4], [-40, 30, 2], [-20, -2, 1.6]]) { x.beginPath(); x.arc(px, py, pr, 0, TAU); x.fill(); } } // the red water, ragged where the blue meets it
+    const wave = new Path2D('M50 44L50 -6C40 -38 6 -46 -14 -30C-26 -20 -24 -4 -12 -4C-2 -4 -2 -18 8 -18C22 -18 26 4 14 18C4 30 -20 34 -48 44Z');
+    solid(x, wave, '#3a6a8a', { from: [-20, -40], to: [40, 40], hi: 0.35, wear: 14, seed: 4, line: 2.4 });
+    x.strokeStyle = 'rgba(226,240,246,0.75)'; x.lineWidth = 2; x.beginPath(); x.moveTo(-12, -4); x.bezierCurveTo(-24, -6, -24, -22, -12, -30); x.bezierCurveTo(4, -42, 34, -38, 46, -10); x.stroke(); // the crest's foam
+    for (const [fx, fy, fr] of [[-16, -32, 2.4], [-6, -38, 1.8], [10, -40, 2], [28, -34, 1.6]]) { x.fillStyle = 'rgba(236,246,250,0.85)'; x.beginPath(); x.arc(fx, fy, fr, 0, TAU); x.fill(); }
+    x.strokeStyle = 'rgba(200,226,236,0.4)'; x.lineWidth = 1.4; for (const k of [10, 20, 30]) { x.beginPath(); x.moveTo(-40, 44 - k * 0.2); x.quadraticCurveTo(0, 30 - k * 0.5, 46, 26 - k); x.stroke(); }
+  },
+};
+export function paintAbility(x, fam, tier) {
+  const f = ABIL_ART[fam]; if (!f) return false;
+  x.save(); x.scale(1.06, 1.06); f(x, tier); x.restore(); tierRim(x, tier); return true;
+}
+
+// (5.16.0) the rest of the buttons repainted as objects: the glow stick amber (as it lights the water), the dive lamp, the
+// settings cog in worn brass, the pet a muted reef fish, the eye a deep sea-grey, the chart a folded sea chart, the spare
+// air a small steel bottle, the tank room a glass tank with its water lit
+Object.assign(PAINTED, {
+  glow(x, look) {
+    const on = look && look.lit, gl = x.createRadialGradient(0, 0, 2, 0, 0, on ? 46 : 34); gl.addColorStop(0, on ? 'rgba(255,196,110,0.55)' : 'rgba(255,190,110,0.28)'); gl.addColorStop(1, 'rgba(255,170,90,0)'); x.fillStyle = gl; x.beginPath(); x.arc(0, 0, 46, 0, TAU); x.fill();
+    x.save(); x.rotate(-0.7);
+    const tube = new Path2D(); tube.roundRect(-30, -7, 54, 14, 7); const tg = x.createLinearGradient(0, -7, 0, 7); tg.addColorStop(0, '#fff0c8'); tg.addColorStop(0.4, on ? '#ffc070' : '#d8a060'); tg.addColorStop(1, on ? '#c87a30' : '#8a6030'); x.fillStyle = tg; x.fill(tube); x.lineWidth = 2; x.strokeStyle = '#2a1a0c'; x.stroke(tube);
+    x.strokeStyle = 'rgba(255,255,240,0.6)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(-26, -3.5); x.lineTo(20, -3.5); x.stroke();
+    const cap = new Path2D(); cap.roundRect(22, -8, 10, 16, 3); solid(x, cap, '#3a3a34', { line: 1.8 });
+    x.strokeStyle = '#1a1a14'; x.lineWidth = 2.4; x.beginPath(); x.arc(38, 0, 6, -1.2, 1.2); x.stroke(); x.restore(); // the lanyard loop
+  },
+  lamp(x, look) {
+    const on = !look || look.lit !== false;
+    const beam = x.createLinearGradient(6, 0, 50, 0); beam.addColorStop(0, 'rgba(255,240,206,0.55)'); beam.addColorStop(1, 'rgba(255,240,206,0)'); x.fillStyle = beam; x.beginPath(); x.moveTo(8, -7); x.lineTo(50, -24); x.lineTo(50, 24); x.lineTo(8, 7); x.closePath(); x.fill();
+    bar(x, -40, 2, -4, 2, 13, '#6a6e66', { hi: 0.4 }); for (let i = 0; i < 6; i++) { x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(-34 + i * 4.5, -4); x.lineTo(-34 + i * 4.5, 8); x.stroke(); } // the ribbed grip
+    const head = new Path2D('M-6 -9L8 -12L8 16L-6 13Z'); solid(x, head, '#2a2c2a', { from: [-6, -12], to: [8, 16], line: 2 });
+    const lens = x.createRadialGradient(8, 2, 0, 8, 2, 10); lens.addColorStop(0, on ? '#fffaf0' : '#8a9090'); lens.addColorStop(1, on ? 'rgba(255,224,170,0.7)' : '#3a3e3e'); x.fillStyle = lens; x.beginPath(); x.ellipse(8.5, 2, 3.5, 12.5, 0, 0, TAU); x.fill(); x.strokeStyle = '#111'; x.lineWidth = 1.4; x.stroke();
+    const sw = new Path2D(); sw.roundRect(-22, -7, 8, 4, 1.5); solid(x, sw, '#8a3a28', { line: 1 }); // the switch
+  },
+  gear(x) {
+    const g = new Path2D(); const n = 10; for (let i = 0; i < n * 2; i++) { const a = i / (n * 2) * TAU, r = i % 2 ? 26 : 34, a2 = a + TAU / (n * 2); g.lineTo(Math.cos(a) * r, Math.sin(a) * r); g.lineTo(Math.cos(a2) * r, Math.sin(a2) * r); } g.closePath(); g.arc(0, 0, 11, 0, TAU, true);
+    solid(x, g, '#9a7a48', { from: [-34, -34], to: [34, 34], hi: 0.4, wear: 40, seed: 6, line: 2.4 });
+    x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 2; x.beginPath(); x.arc(0, 0, 20, 0, TAU); x.stroke(); x.strokeStyle = 'rgba(255,240,200,0.25)'; x.lineWidth = 1.2; x.beginPath(); x.arc(0, 0, 21.5, Math.PI * 1.1, Math.PI * 1.8); x.stroke();
+    for (let i = 0; i < 4; i++) { const a = i / 4 * TAU + 0.4; bolt(x, Math.cos(a) * 16, Math.sin(a) * 16, 2, '#7a6a48'); }
+  },
+  pet(x) { // a reef fish of its own, muted: a striped grunt, side on
+    const body = new Path2D('M-30 0C-22 -16 6 -20 24 -8C30 -4 32 0 30 4C24 14 0 20 -22 10L-38 20L-34 0L-38 -20Z'); solid(x, body, '#a8905c', { from: [-30, -18], to: [30, 18], hi: 0.3, wear: 30, seed: 5, line: 2.2 });
+    x.save(); x.clip(body); x.strokeStyle = 'rgba(60,70,60,0.55)'; x.lineWidth = 3; for (const k of [-10, -2, 6]) { x.beginPath(); x.moveTo(-26, k - 6); x.quadraticCurveTo(0, k - 12, 26, k - 2); x.stroke(); } x.restore();
+    const fin = new Path2D('M-8 -14C-2 -26 10 -24 14 -12Z'); solid(x, fin, '#8a7448', { line: 1.6 });
+    x.fillStyle = '#0c0d0b'; x.beginPath(); x.arc(18, -4, 3.4, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,255,240,0.8)'; x.beginPath(); x.arc(17, -5, 1.1, 0, TAU); x.fill();
+  },
+  eye(x) {
+    const lid = new Path2D('M-40 0C-24 -22 24 -22 40 0C24 22 -24 22 -40 0Z'); solid(x, lid, '#d8ceb4', { from: [-40, -20], to: [40, 20], hi: 0.2, line: 2.4 });
+    const ir = x.createRadialGradient(-3, -3, 1, 0, 0, 15); ir.addColorStop(0, '#7a8a80'); ir.addColorStop(0.7, '#3a4a44'); ir.addColorStop(1, '#1a2220'); x.fillStyle = ir; x.beginPath(); x.arc(0, 0, 15, 0, TAU); x.fill();
+    x.fillStyle = '#060707'; x.beginPath(); x.ellipse(0, 0, 4, 9, 0, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,255,245,0.85)'; x.beginPath(); x.arc(-5, -6, 2.6, 0, TAU); x.fill();
+    x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 3; x.beginPath(); x.moveTo(-40, 0); x.bezierCurveTo(-24, -22, 24, -22, 40, 0); x.stroke();
+  },
+  chart(x) {
+    const sheet = new Path2D('M-38 -26L-12 -30L12 -24L38 -28L38 26L12 30L-12 24L-38 28Z'); solid(x, sheet, '#cfc2a0', { from: [-38, -30], to: [38, 30], hi: 0.15, wear: 40, seed: 8, line: 2 });
+    x.strokeStyle = 'rgba(60,50,30,0.35)'; x.lineWidth = 1; for (const fx of [-12, 12]) { x.beginPath(); x.moveTo(fx, -28); x.lineTo(fx, 28); x.stroke(); } // the folds
+    x.strokeStyle = 'rgba(70,90,80,0.7)'; x.lineWidth = 1.3; for (const [k, a] of [[0, 1], [6, 0.7], [12, 0.5]]) { x.globalAlpha = a; x.beginPath(); x.moveTo(-34, 4 + k); x.bezierCurveTo(-14, -14 + k, 6, 16 + k, 34, -4 + k); x.stroke(); } x.globalAlpha = 1; // depth contours
+    x.fillStyle = 'rgba(60,40,24,0.85)'; for (const [px, py] of [[-20, -12], [14, 10], [26, -14]]) { x.beginPath(); x.arc(px, py, 1.8, 0, TAU); x.fill(); } // soundings
+    x.strokeStyle = '#7a3a28'; x.lineWidth = 2; x.beginPath(); x.arc(14, 10, 5, 0, TAU); x.stroke(); // a ringed spot
+  },
+  air(x) {
+    x.save(); x.rotate(-0.5); bar(x, -30, 0, 22, 0, 18, '#7a8084', { hi: 0.45 }); x.fillStyle = '#c8a050'; x.fillRect(-4, -9, 5, 18);
+    const valve = new Path2D(); valve.roundRect(22, -5, 9, 10, 2); solid(x, valve, '#b8bcbc', { line: 1.6 }); bar(x, 30, -9, 30, 9, 4, '#3a3c3e', { line: 1.4 }); x.restore();
+  },
+  tank(x) {
+    const box = new Path2D(); box.roundRect(-36, -24, 72, 48, 3); const wg = x.createLinearGradient(0, -24, 0, 24); wg.addColorStop(0, '#5a8a84'); wg.addColorStop(1, '#1e3836'); x.fillStyle = wg; x.fill(box);
+    x.fillStyle = '#6a5e48'; x.beginPath(); x.moveTo(-36, 24); for (let k = -36; k <= 36; k += 9) x.lineTo(k, 16 - Math.sin(k * 0.2) * 2); x.lineTo(36, 24); x.fill();
+    x.strokeStyle = '#4a6a3a'; x.lineWidth = 2; for (const kx of [-24, -18, 26]) { x.beginPath(); x.moveTo(kx, 18); x.quadraticCurveTo(kx - 4, 4, kx + 2, -10); x.stroke(); }
+    const fish = new Path2D('M-4 0C0 -6 10 -6 14 0C10 6 0 6 -4 0L-10 -5L-10 5Z'); solid(x, fish, '#a8905c', { line: 1.4 });
+    x.fillStyle = 'rgba(255,255,255,0.12)'; x.beginPath(); x.moveTo(-30, -24); x.lineTo(-20, -24); x.lineTo(-34, 20); x.lineTo(-36, 20); x.fill(); // glare on the glass
+    x.lineWidth = 3; x.strokeStyle = '#2a2c28'; x.stroke(box); x.fillStyle = '#3a3c36'; x.fillRect(-38, -28, 76, 5); x.fillRect(-38, 23, 76, 5);
+  },
+});
