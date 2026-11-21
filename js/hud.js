@@ -579,6 +579,54 @@ e.inSub ? [
     this.ctx.clearRect(0, 0, this.c.width, this.c.height);
     this.ctx.save(); this.ctx.translate(sf.l, sf.t);
     try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }
+    this.pressureFx(g, dt, sf);
+  }
+  // (5.12.3) past what his suit is built for, the game itself seems to change: the whole HUD slowly loses some of its
+  // colour (none at the suit's depth, about 40 % at twice it; never grey), all but the depth figure, which turns to
+  // blood (see bloodFigure). It eases in and out over a second or so, never a snap. Only for the diver in the water
+  pressureFx(g, dt, sf) {
+    const e = g && g.earl, P = (e && e.pressStart) || 300;
+    const on = !!(e && g.mode === 'play' && !e.inSub && !g.aboard && !g.dying);
+    const want = on ? Math.max(0, Math.min(1, (e.y - P) / P)) * 0.4 : 0;
+    this.desat = (this.desat || 0) + (want - (this.desat || 0)) * (1 - Math.exp(-dt / 0.7));
+    if (this.desat < 0.01) return;
+    const c = this.c, W = c.width, H = c.height;
+    if (!this.desatC || this.desatC.width !== W || this.desatC.height !== H) { this.desatC = document.createElement('canvas'); this.desatC.width = W; this.desatC.height = H; }
+    const d = this.desatC.getContext('2d'); d.globalCompositeOperation = 'copy'; d.drawImage(c, 0, 0);
+    d.globalCompositeOperation = 'saturation'; d.fillStyle = `rgba(128,128,128,${this.desat.toFixed(3)})`; d.fillRect(0, 0, W, H);
+    d.globalCompositeOperation = 'destination-in'; d.drawImage(c, 0, 0); d.globalCompositeOperation = 'source-over';
+    const ctx = this.ctx, R = this.depthRect; ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H);
+    if (R) ctx.rect(R.x + sf.l, R.y + sf.t, R.w, R.h); ctx.clip('evenodd'); ctx.globalCompositeOperation = 'copy'; ctx.drawImage(this.desatC, 0, 0); ctx.restore();
+  }
+  // (5.12.3) the depth figure in blood (the owner-approved sample): dark red soaked into the readout's glass, a soft stain
+  // round it, edges only a little uneven, a dull wet sheen on top; no running drips. Made once per figure and size
+  bloodFigure(text, size) {
+    const key = text + '|' + Math.round(size); this.bloodCache = this.bloodCache || new Map();
+    if (this.bloodCache.has(key)) return this.bloodCache.get(key);
+    let seed = 11 + text.length * 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const noise = (w, h, cell) => { const gw = Math.ceil(w / cell) + 2, gh = Math.ceil(h / cell) + 2, gr = new Float32Array(gw * gh); for (let i = 0; i < gr.length; i++) gr[i] = rnd();
+      const f = new Float32Array(w * h), sm = (t) => t * t * (3 - 2 * t);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const gx = x / cell, gy = y / cell, x0 = gx | 0, y0 = gy | 0, tx = sm(gx - x0), ty = sm(gy - y0);
+        const a = gr[y0 * gw + x0], b = gr[y0 * gw + x0 + 1], c2 = gr[(y0 + 1) * gw + x0], d2 = gr[(y0 + 1) * gw + x0 + 1]; f[y * w + x] = (a + (b - a) * tx) * (1 - ty) + (c2 + (d2 - c2) * tx) * ty; } return f; };
+    const pad = Math.ceil(size * 0.5), font = `600 ${size}px ${HUDT}`;
+    const m0 = document.createElement('canvas').getContext('2d'); m0.font = font; const tw = m0.measureText(text).width;
+    const w = Math.ceil(tw + pad * 2), h = Math.ceil(size * 1.5 + pad), bx = w - pad, by = Math.round(size * 0.95 + pad * 0.5);
+    const mk = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+    const A = mk(), a = A.getContext('2d'); a.font = font; a.textAlign = 'right'; a.textBaseline = 'alphabetic'; a.fillStyle = '#fff';
+    a.filter = `blur(${(size * 0.022).toFixed(1)}px)`; a.fillText(text, bx, by); a.filter = 'none';
+    a.beginPath(); a.arc(bx - tw * 0.5, by + size * 0.05, size * 0.035, 0, Math.PI * 2); a.fill(); // one bead gathering at a stroke's foot
+    const N = noise(w, h, size * 0.12), N2 = noise(w, h, size * 0.035), im = a.getImageData(0, 0, w, h), px = im.data;
+    for (let i = 0; i < w * h; i++) { const v = px[i * 4 + 3] / 255 + (N[i] - 0.5) * 0.12 + (N2[i] - 0.5) * 0.08, t = Math.max(0, Math.min(1, (v - 0.44) / 0.14)); px[i * 4 + 3] = Math.round(t * t * (3 - 2 * t) * 255); }
+    a.putImageData(im, 0, 0);
+    const B = mk(), b = B.getContext('2d'); b.drawImage(A, 0, 0); b.globalCompositeOperation = 'source-in';
+    const gr = b.createLinearGradient(0, by - size * 0.9, 0, by + size * 0.3); gr.addColorStop(0, '#6e0f0c'); gr.addColorStop(0.6, '#480605'); gr.addColorStop(1, '#220201'); b.fillStyle = gr; b.fillRect(0, 0, w, h);
+    const cl = b.getImageData(0, 0, w, h), q = cl.data; for (let i = 0; i < w * h; i++) { if (!q[i * 4 + 3]) continue; const k = 0.72 + 0.5 * N2[i] - 0.25 * N[i]; q[i * 4] = Math.min(255, q[i * 4] * k); q[i * 4 + 1] *= k * 0.9; q[i * 4 + 2] *= k * 0.9; } b.putImageData(cl, 0, 0);
+    const S = mk(), sx = S.getContext('2d'); sx.filter = `blur(${(size * 0.16).toFixed(1)}px)`; sx.drawImage(A, 0, 0); sx.filter = 'none'; sx.globalCompositeOperation = 'source-in'; sx.fillStyle = 'rgba(40,2,2,1)'; sx.fillRect(0, 0, w, h);
+    sx.globalCompositeOperation = 'destination-in'; { const r = sx.createRadialGradient(bx - tw / 2, by - size * 0.4, size * 0.2, bx - tw / 2, by - size * 0.4, Math.max(tw, size) * 0.75); r.addColorStop(0, '#000'); r.addColorStop(1, 'rgba(0,0,0,0)'); sx.fillStyle = r; sx.fillRect(0, 0, w, h); }
+    const Hc = mk(), hx = Hc.getContext('2d'); hx.drawImage(A, 0, 0); hx.globalCompositeOperation = 'destination-out'; hx.drawImage(A, 0, size * 0.03); hx.globalCompositeOperation = 'source-in'; hx.fillStyle = 'rgba(200,96,86,0.38)'; hx.fillRect(0, 0, w, h);
+    const out = mk(), o = out.getContext('2d'); o.globalAlpha = 0.9; o.drawImage(S, 0, 0); o.drawImage(S, 0, 0); o.globalAlpha = 1; o.drawImage(B, 0, 0); o.drawImage(Hc, 0, 0);
+    const res = { c: out, dx: -bx, dy: -by }; this.bloodCache.set(key, res); if (this.bloodCache.size > 24) this.bloodCache.delete(this.bloodCache.keys().next().value);
+    return res;
   }
   drawIn(g, dt, W, H) {
     const touch = !!this.touch, ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = []; window.__hudHots = this.hots; // (5.4) for the tutorial's pointing on touch (5.3.1) the HUD keeps its size on a phone: only the controls are added
@@ -617,10 +665,13 @@ e.inSub ? [
       const dm = clamp((e.y - 120) / 1400, 0, 1), lit = 1 - dm * 0.42;
       const fl = past && Math.random() < 0.06 ? 0.35 : 1;
       const cr = Math.round(lerp(239, 170, dm)), cg = Math.round(lerp(232, 192, dm)), cb = Math.round(lerp(212, 204, dm));
-      const ink = (a) => warnD ? `rgba(240,84,72,${(a * fl).toFixed(3)})` : `rgba(${cr},${cg},${cb},${(a * lit * fl).toFixed(3)})`;
+      const bloodOn = !e.inSub && warnD; // (5.12.3) the diver past twice his suit's depth: blood, not flat red
+      this.bloodK = (this.bloodK || 0) + ((bloodOn ? 1 : 0) - (this.bloodK || 0)) * (1 - Math.exp(-dt / 0.6));
+      const ink = (a) => warnD && e.inSub ? `rgba(240,84,72,${(a * fl).toFixed(3)})` : `rgba(${cr},${cg},${cb},${(a * lit * fl * (1 - (this.bloodK || 0))).toFixed(3)})`;
       ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 1;
       const base = pad + 44 * s;
       ctx.font = `600 ${24 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText('m', rx0, base);
+      if (this.bloodK > 0.01) { ctx.save(); ctx.shadowColor = 'transparent'; ctx.fillStyle = `rgba(96,14,12,${(0.95 * this.bloodK).toFixed(3)})`; ctx.fillText('m', rx0, base); ctx.restore(); }
       // (5.9.6) the figure changes calmly: a small dead zone so it does not flicker as he bobs on a metre's line, and
       // the new number slides in a little and fades up over a quarter second while the old one fades out (the last digit
       // used to snap over in the last quarter metre, and the next digit's top showed under the window)
@@ -633,7 +684,9 @@ e.inSub ? [
         if (k < 1) { ctx.globalAlpha = 1 - ek; ctx.fillStyle = ink(1); ctx.fillText(String(this.dPrev), xr, base - this.dDir * sl * ek); }
         ctx.globalAlpha = ek; ctx.fillStyle = ink(1); ctx.fillText(String(this.dShown), xr, base + this.dDir * sl * (1 - ek));
         if (k >= 1) this.dPrev = null;
-        ctx.restore(); }
+        ctx.restore();
+        if (this.bloodK > 0.01) { const Bf = this.bloodFigure(String(this.dShown), 58 * s); ctx.save(); ctx.globalAlpha = this.bloodK; ctx.shadowColor = 'transparent'; ctx.drawImage(Bf.c, xr + Bf.dx, base + Bf.dy); ctx.restore(); }
+        const tw0 = ctx.measureText(String(this.dShown)).width; this.depthRect = { x: xr - tw0 - 26 * s, y: base - lh - 18 * s, w: tw0 + 26 * s + (rx0 - xr) + 8 * s, h: lh + 34 * s }; }
       ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
       // a thin line with its painted icon at the left
       // (5.0) a short line with its mark in the same letters as the depth: O2 for his air, HULL for the sub's
