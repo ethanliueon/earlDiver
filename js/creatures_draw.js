@@ -46,18 +46,19 @@ function profile(u, v) {
   return Math.max(0.06, nose * tail * 0.95 + 0.05);
 }
 function fishOutline(ctx, L, v, t, swim) {
-  const H = L * v.h;
-  const bodyL = L * 0.78; // tail fin takes the rest
-  const x0 = -L / 2, steps = 22;
+  const H = L * v.h, F = v.fam && FAM[v.fam];
+  const bodyL = L * (F ? F.body : 0.78); // tail fin takes the rest
+  const x0 = -L / 2, steps = F ? 30 : 22;
   const top = [], bot = [];
   for (let i = 0; i <= steps; i++) {
     const u = i / steps;
-    let p = profile(u, v);
-    if (v.hump && u < 0.3) p *= 1 + 0.18 * Math.sin((u / 0.3) * PI);
-    const bend = Math.sin(t * 6 * swim - u * 3) * u * u * L * 0.025 * swim;
+    let p = profile(u, v), pt = p * 1.02, pb = p * (v.belly ? 1.15 : 0.98);
+    if (F) { pt = curve(v.topc || F.top, u); pb = curve(v.botc || F.bot, u) * (v.belly ? 1.1 : 1); } // (5.10.0) the family's own outline
+    if (v.hump && u < 0.3) { const k = 1 + 0.18 * Math.sin((u / 0.3) * PI); pt *= k; if (!F) pb *= k; }
+    const bend = Math.sin(t * 6 * swim - u * 3) * u * u * L * 0.025 * swim * (F ? F.bend || 1 : 1);
     const x = x0 + u * bodyL;
-    top.push([x, -H / 2 * p * 1.02 + bend]);
-    bot.push([x, H / 2 * p * (v.belly ? 1.15 : 0.98) + bend]);
+    top.push([x, -H / 2 * pt + bend]);
+    bot.push([x, H / 2 * pb + bend]);
   }
   if (ctx) {
     ctx.beginPath();
@@ -83,7 +84,7 @@ function edgeAt(o, x, side) {
 // A fin growing out of the body edge between xa and xb: its base runs along (and slightly inside)
 // the body, so it stays attached as the body bends; a translucent membrane with visible rays.
 // side -1 = top, +1 = bottom; h(u) = height along the base; rake = how far tips sweep back.
-function membraneFin(ctx, o, side, xa, xb, h, rake, col, t, phase = 0, n = 9) {
+function membraneFin(ctx, o, side, xa, xb, h, rake, col, t, phase = 0, n = 9, op = null) { // (5.10.0) op: an opaque fin (the disc fish's), its tip barely lighter
   const H = o.H, inset = H * 0.07;
   const base = [], tip = [];
   for (let i = 0; i <= n; i++) {
@@ -94,7 +95,8 @@ function membraneFin(ctx, o, side, xa, xb, h, rake, col, t, phase = 0, n = 9) {
   }
   const g = ctx.createLinearGradient(0, edgeAt(o, (xa + xb) / 2, side), 0, edgeAt(o, (xa + xb) / 2, side) + side * h(0.3));
   const c = hexToRgb(col);
-  g.addColorStop(0, rgbStr(c, 0.85)); g.addColorStop(1, rgbStr(mixRgb(c, [255, 255, 255], 0.15), 0.4));
+  if (op) { g.addColorStop(0, rgbStr(c, op)); g.addColorStop(1, rgbStr(mixRgb(c, [255, 255, 255], 0.06), op * 0.78)); }
+  else { g.addColorStop(0, rgbStr(c, 0.85)); g.addColorStop(1, rgbStr(mixRgb(c, [255, 255, 255], 0.15), 0.4)); }
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.moveTo(base[0][0], base[0][1]);
@@ -115,8 +117,8 @@ function drawTail(ctx, o, L, v, t, swim, col) {
   // the tail follows the angle of the bending body where it joins
   ctx.save(); ctx.translate(tx, ty); ctx.rotate((o.tailA || 0) * 1.6); ctx.translate(-tx, -ty);
   const flex = 0.55 + 0.45 * Math.abs(Math.cos(t * 6 * swim)); // foreshortening as it sweeps
-  const tl = L * 0.24 * flex;
-  const th = L * Math.max(v.h, 0.22) * 0.55 * (v.t === 'lunate' ? 1.15 : 1);
+  const tl = L * 0.24 * flex * (v.taill || 1);
+  const th = L * Math.max(v.h, 0.22) * 0.55 * (v.t === 'lunate' ? 1.15 : 1) * (v.tailk || 1); // (5.10.0) tailk: a family's tail is smaller or larger for its depth
   ctx.fillStyle = col;
   ctx.beginPath();
   ctx.moveTo(tx - L * 0.02, ty - th * 0.12);
@@ -131,6 +133,12 @@ function drawTail(ctx, o, L, v, t, swim, col) {
       ctx.quadraticCurveTo(tx + tl * 0.6, ty - th * 0.3, tx + tl * 1.05, ty - th * 0.75);
       ctx.quadraticCurveTo(tx + tl * 0.55, ty - th * 0.1, tx + tl * 0.35, ty);
       ctx.quadraticCurveTo(tx + tl * 0.55, ty + th * 0.1, tx + tl * 1.05, ty + th * 0.75);
+      ctx.quadraticCurveTo(tx + tl * 0.6, ty + th * 0.3, tx - L * 0.02, ty + th * 0.12);
+      break;
+    case 'lyre': // (5.10.0) a crescent whose tips run out into long streamers (lyretail tangs, anthias)
+      ctx.quadraticCurveTo(tx + tl * 0.6, ty - th * 0.3, tx + tl * 1.5, ty - th * 0.85);
+      ctx.quadraticCurveTo(tx + tl * 0.6, ty - th * 0.25, tx + tl * 0.42, ty);
+      ctx.quadraticCurveTo(tx + tl * 0.6, ty + th * 0.25, tx + tl * 1.5, ty + th * 0.85);
       ctx.quadraticCurveTo(tx + tl * 0.6, ty + th * 0.3, tx - L * 0.02, ty + th * 0.12);
       break;
     case 'round':
@@ -270,6 +278,7 @@ function patternFish(ctx, o, L, v) {
 }
 
 function drawFish(ctx, L, v, t, swim) {
+  if (v.fam && FAM[v.fam] && FAM[v.fam].draw) return FAM[v.fam].draw(ctx, L, v, t, swim); // (5.10.0) a body family of its own
   const H = L * v.h;
   // body geometry first (bend included), so every fin can be rooted on the actual outline
   const og = fishOutline(null, L, v, t, swim);
@@ -2862,6 +2871,173 @@ function drawCoelacanth(ctx, L, v, t, swim = 1) {
   const er = Math.max(1.2, H * 0.1); ctx.fillStyle = rgba(shade(c0, -0.5), 0.8); ctx.beginPath(); ctx.arc(-L * 0.36, -H * 0.12, er * 1.4, 0, TAU); ctx.fill();
   eye(ctx, -L * 0.36, -H * 0.12, er, '#d8c878'); // (the eye shines yellow-green in a light, from the mirror at its back)
 }
+
+// ---------- (5.10.0) body families ----------
+// The generic bony fish was one body for 157 species. A family gives a species its real outline (top and bottom
+// half-heights along the body), its own fins, head and eye, and room for its real markings (v.marks).
+// A smooth line through [u, value] points (Catmull-Rom), for the outlines
+function curve(pts, u) {
+  const n = pts.length; if (u <= pts[0][0]) return pts[0][1]; if (u >= pts[n - 1][0]) return pts[n - 1][1];
+  let i = 1; while (pts[i][0] < u) i++;
+  const p0 = pts[Math.max(0, i - 2)][1], p1 = pts[i - 1][1], p2 = pts[i][1], p3 = pts[Math.min(n - 1, i + 1)][1], k = (u - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]);
+  return 0.5 * (2 * p1 + (-p0 + p2) * k + (2 * p0 - 5 * p1 + 4 * p2 - p3) * k * k + (-p0 + 3 * p1 - 3 * p2 + p3) * k * k * k);
+}
+// markings, painted inside the body's outline (the caller has clipped to it)
+function drawMarks(ctx, o, L, v, H, eyeX, eyeY) {
+  const bl = o.bodyL, X = (f) => o.x0 + bl * f;
+  for (const m of v.marks || []) {
+    ctx.save(); ctx.globalAlpha = m.a ?? 1;
+    switch (m.k) {
+      case 'band': case 'eyeband': { // a vertical band (tilted by m.tilt), with an optional edge colour round it
+        const cx = m.k === 'eyeband' ? eyeX + (m.dx || 0) * bl : X(m.x), w = (m.w || 0.08) * bl;
+        ctx.translate(cx, m.k === 'eyeband' ? eyeY : 0); ctx.rotate(m.tilt || 0);
+        const y0 = m.k === 'eyeband' ? -H * (m.up ?? 0.7) : -H * (m.top ?? 0.6), y1 = m.k === 'eyeband' ? H * (m.down ?? 0.7) : H * (m.bot ?? 0.6);
+        if (m.edge) { ctx.fillStyle = m.edge; ctx.fillRect(-w / 2 - (m.ew || 0.012) * bl, y0, w + 2 * (m.ew || 0.012) * bl, y1 - y0); }
+        ctx.fillStyle = m.c; ctx.fillRect(-w / 2, y0, w, y1 - y0); break;
+      }
+      case 'spot': case 'ring': { const x = X(m.x), y = H * (m.y || 0), r = H * (m.r || 0.08);
+        if (m.ring) { ctx.fillStyle = m.ring; ctx.beginPath(); ctx.arc(x, y, r * 1.35, 0, TAU); ctx.fill(); }
+        if (m.k === 'ring') { ctx.strokeStyle = m.c; ctx.lineWidth = H * (m.lw || 0.03); ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); }
+        else { ctx.fillStyle = m.c; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); } break; }
+      case 'face': { const x1 = X(m.to || 0.25); const g = ctx.createLinearGradient(x1 - bl * 0.04, 0, x1 + bl * 0.03, 0); g.addColorStop(0, m.c); g.addColorStop(1, rgba(m.c, 0)); ctx.fillStyle = g; ctx.fillRect(o.x0 - L * 0.2, -H, x1 + bl * 0.03 - o.x0 + L * 0.2, H * 2); break; }
+      case 'topface': { // the upper head, above a line from the snout to the dorsal's start
+        ctx.fillStyle = m.c; ctx.beginPath(); ctx.moveTo(o.x0 - L * 0.2, H * (m.y0 ?? -0.02)); ctx.lineTo(X(m.to || 0.4), -H * 0.75); ctx.lineTo(o.x0 - L * 0.2, -H); ctx.closePath(); ctx.fill(); break; }
+      case 'rear': { const x1 = X(m.from || 0.6), sw = (m.soft ?? 0.06) * bl; const g = ctx.createLinearGradient(x1 - sw, 0, x1 + sw, 0); g.addColorStop(0, rgba(m.c, 0)); g.addColorStop(1, m.c); ctx.fillStyle = g; ctx.fillRect(x1 - sw, -H, L, H * 2); break; }
+      case 'upper': case 'lower': { // the back (or the belly) in its own colour, its edge soft
+        const y = H * (m.y ?? 0), sw = H * (m.soft ?? 0.08), dir = m.k === 'upper' ? -1 : 1; const g = ctx.createLinearGradient(0, y - dir * sw, 0, y + dir * sw); g.addColorStop(0, rgba(m.c, 0)); g.addColorStop(1, m.c);
+        ctx.fillStyle = g; ctx.fillRect(o.x0 - L * 0.2, dir < 0 ? -H : y - sw, L * 1.4, dir < 0 ? y + sw + H : H); break; }
+      case 'scalerim': { // every scale rimmed: small bright crescents on a staggered grid
+        ctx.strokeStyle = m.c; ctx.lineWidth = Math.max(0.5, H * (m.lw || 0.012)); const sc = bl * (m.s || 0.045); ctx.beginPath();
+        for (let x = X(m.from ?? 0.22), i = 0; x < X(0.98); x += sc, i++) for (let y = -H * 0.55 + (i % 2) * sc * 0.5; y < H * 0.55; y += sc) { ctx.moveTo(x + sc * 0.42, y - sc * 0.22); ctx.arc(x, y, sc * 0.48, -0.5, 0.5); }
+        ctx.stroke(); break; }
+      case 'curves': { // sweeping arcs that fan back over the flank (blue ring angelfish)
+        ctx.strokeStyle = m.c; ctx.lineWidth = H * (m.lw || 0.025);
+        for (let i = 0; i < (m.n || 6); i++) { const k = i / Math.max(1, (m.n || 6) - 1), cx = X(0.95), cy = H * (0.2 - k * 0.9); ctx.beginPath(); ctx.ellipse(cx, cy, bl * (0.55 + k * 0.1), H * (0.45 + k * 0.15), 0.15, PI * 0.75, PI * 1.2); ctx.stroke(); } break; }
+      case 'diag': { // parallel stripes at an angle
+        ctx.strokeStyle = m.c; ctx.lineWidth = H * (m.lw || 0.05); const n = m.n || 10, a = m.a ?? -0.6, sp = bl * (m.sp || 0.07);
+        ctx.translate(X(m.x ?? 0.55), 0); ctx.rotate(a); ctx.beginPath(); for (let i = -n; i <= n; i++) { ctx.moveTo(i * sp, -H * 1.5); ctx.lineTo(i * sp, H * 1.5); } ctx.stroke(); break; }
+      case 'hlines': { // lines along the body
+        ctx.strokeStyle = m.c; ctx.lineWidth = H * (m.lw || 0.03); const n = m.n || 3;
+        for (let i = 0; i < n; i++) { const y = H * ((m.y0 ?? -0.25) + ((m.y1 ?? 0.25) - (m.y0 ?? -0.25)) * (n > 1 ? i / (n - 1) : 0.5)); ctx.beginPath(); ctx.moveTo(X(m.from ?? 0.1), y + H * (m.rise || 0)); ctx.quadraticCurveTo(X(0.55), y - H * 0.03, X(m.to ?? 1), y * 0.4); ctx.stroke(); } break; }
+      case 'blush': { const g = ctx.createRadialGradient(X(m.x ?? 0.5), H * (m.y || 0), 0, X(m.x ?? 0.5), H * (m.y || 0), H * (m.r || 0.4)); g.addColorStop(0, m.c); g.addColorStop(1, rgba(m.c, 0)); ctx.fillStyle = g; ctx.fillRect(o.x0 - L * 0.2, -H, L * 1.4, H * 2); break; }
+      case 'saddle': { ctx.fillStyle = m.c; ctx.beginPath(); ctx.ellipse(X(m.x), -H * (m.y ?? 0.45), bl * (m.w || 0.08), H * (m.h || 0.18), m.tilt || 0, 0, TAU); ctx.fill(); break; }
+      case 'tear': { // a teardrop patch (the Achilles tang's, round its tail spine)
+        const x = X(m.x ?? 0.9), r = H * (m.r || 0.14); ctx.fillStyle = m.c; ctx.beginPath(); ctx.moveTo(x - r * 2.4, 0); ctx.quadraticCurveTo(x - r, -r * 1.1, x + r * 0.4, -r * 0.9); ctx.arc(x + r * 0.4, 0, r * 0.9, -PI / 2, PI / 2); ctx.quadraticCurveTo(x - r, r * 1.1, x - r * 2.4, 0); ctx.fill(); break; }
+      case 'dots': { let sd = m.seed || 5; const rnd = () => ((sd = (sd * 9301 + 49297) % 233280) / 233280); ctx.fillStyle = m.c;
+        for (let i = 0; i < (m.n || 40); i++) { const x = X((m.from ?? 0.1) + rnd() * ((m.to ?? 1) - (m.from ?? 0.1))), y = (rnd() - 0.5) * H * (m.spread || 1); ctx.beginPath(); ctx.arc(x, y, H * (m.r || 0.025) * (0.7 + rnd() * 0.6), 0, TAU); ctx.fill(); } break; }
+    }
+    ctx.restore();
+  }
+}
+// a fin's free edge, in a colour of its own (a blue rim, a white tip)
+function finEdge(ctx, tips, col, w) { if (!col || !tips) return; ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); smoothPath(ctx, tips, true); ctx.stroke(); ctx.restore(); }
+
+// Tall, flat-sided reef fish: butterflyfish, angelfish, the Moorish Idol, batfish, dories (fam 'disc'), and the
+// surgeonfish and tangs (fam 'tang': an oval with a steep brow, a small high mouth, an eye set high and back, long
+// low fins, and the scalpel at the root of the tail)
+function drawDiscFish(ctx, L, v0, t, swim) {
+  const F = FAM[v0.fam], v = { tailk: F.tailk, taill: F.taill, ...v0 }, H = L * v.h, tang = v.fam === 'tang';
+  const og = fishOutline(null, L, v, t, swim), bl = og.bodyL, X = (f) => og.x0 + bl * f;
+  const dc = v.dfc || v.f, ac = v.afc || v.dfc || v.f, ew = Math.max(0.6, H * 0.02);
+  const pel = (near) => { // the pelvic fin: long and pointed in angelfish and batfish
+    const px = X(0.3), py = edgeAt(og, px, 1) - H * 0.04, pl = H * (v.pelv || 0.2), sw2 = Math.sin(t * 2.4 + (near ? 0 : 1)) * 0.08;
+    ctx.save(); ctx.translate(px, py); ctx.rotate(1.05 + sw2 + (near ? 0 : 0.18)); const c = hexToRgb(v.pelc || ac);
+    ctx.fillStyle = rgbStr(c, near ? 0.85 : 0.5); ctx.beginPath(); ctx.moveTo(0, -pl * 0.08); ctx.quadraticCurveTo(pl * 0.55, -pl * 0.12, pl, 0); ctx.quadraticCurveTo(pl * 0.5, pl * 0.1, 0, pl * 0.1); ctx.fill(); ctx.restore(); };
+  pel(false);
+  // the dorsal and anal fins, behind the body
+  let dt2, at2;
+  if (tang) {
+    const dh = H * (v.sail ? 0.32 : v.dh || 0.13), ah = H * (v.sail ? 0.27 : v.ah || 0.11);
+    dt2 = membraneFin(ctx, og, -1, X(0.17), X(0.94), (u) => dh * (v.sail ? 0.35 + 0.95 * Math.sin(Math.min(1, u * 1.15) * PI) : 0.75 + 0.35 * Math.sin(u * PI)), v.sail ? 0.12 : 0.1, dc, t, 0, 20, 0.92);
+    at2 = membraneFin(ctx, og, 1, X(0.46), X(0.94), (u) => ah * (v.sail ? 0.35 + 0.95 * Math.sin(u * PI) : 0.75 + 0.35 * Math.sin(u * PI)), v.sail ? 0.12 : 0.1, ac, t, 2, 14, 0.92);
+  } else {
+    const dh = H * (v.dh || 0.17), ah = H * (v.ah || 0.15), trail = v.d === 'trail';
+    // the spiny front of the dorsal, then the soft rear: taller and rounded, or drawn out to a point (angelfish)
+    const soft = v.d === 'sickle' ? (u, h) => u < 0.16 ? h * (0.7 + u * 9) : h * Math.max(0.28, 2.15 - (u - 0.16) * 3.2) // (the opah: a tall sickle at the front, low behind)
+      : (u, h) => u < 0.42 ? h * (0.55 + u * 0.55) : trail ? h * (0.78 + (u - 0.42) * 1.9) : h * (0.78 + 0.55 * Math.sin((u - 0.42) / 0.58 * PI * 0.9));
+    dt2 = membraneFin(ctx, og, -1, X(0.24), X(0.97), (u) => soft(u, dh), trail ? 0.6 : 0.22, dc, t, 0, 18, 0.9);
+    at2 = membraneFin(ctx, og, 1, X(0.48), X(0.97), (u) => v.d === 'sickle' ? ah * (0.9 - u * 0.5) : soft(Math.max(u, 0.3), ah), trail ? 0.6 : 0.22, ac, t, 2, 12, 0.9);
+    if (v.spinefil && dt2) { // the dory's dorsal spines run out into long filaments
+      ctx.strokeStyle = rgba(dc, 0.8); ctx.lineWidth = Math.max(0.6, H * 0.012); ctx.lineCap = 'round';
+      for (let k = 1; k < 7; k++) { const [fx, fy] = dt2[k]; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.quadraticCurveTo(fx + L * 0.05, fy - H * 0.2, fx + L * (0.1 + k * 0.025) + Math.sin(t * 2 + k) * L * 0.015, fy - H * (0.18 + k * 0.03)); ctx.stroke(); }
+      ctx.lineCap = 'butt';
+    }
+  }
+  finEdge(ctx, dt2, v.finedge, ew * 0.9); finEdge(ctx, at2, v.finedge, ew * 0.9);
+  if (v.dspot && dt2) { const p = dt2[Math.round(dt2.length * (v.dspot.at ?? 0.75))] || dt2[dt2.length - 2]; ctx.fillStyle = v.dspot.ring || '#e8e2d0'; ctx.beginPath(); ctx.arc(p[0] - H * 0.02, p[1] + H * 0.06, H * 0.055, 0, TAU); ctx.fill(); ctx.fillStyle = v.dspot.c || '#111'; ctx.beginPath(); ctx.arc(p[0] - H * 0.02, p[1] + H * 0.06, H * 0.04, 0, TAU); ctx.fill(); }
+  // a pennant (the Moorish Idol's, the bannerfish's): a long white streamer rising from the dorsal's front and
+  // curving back over the tail
+  if (v.pennant) {
+    const bx0 = X(0.28), bx1 = X(0.46), by0 = edgeAt(og, bx0, -1), by1 = edgeAt(og, bx1, -1), len = L * (v.pennant.len || 0.9), sway = Math.sin(t * 1.6) * L * 0.03;
+    const tx2 = bx0 + len * 0.7 + sway, ty2 = by0 - H * (v.pennant.rise ?? 0.75);
+    ctx.fillStyle = rgba(v.pennant.c || '#f2ede0', 0.95); ctx.beginPath(); ctx.moveTo(bx0, by0 + H * 0.02);
+    ctx.bezierCurveTo(bx0 + len * 0.05, by0 - H * 0.5, bx0 + len * 0.3, ty2 - H * 0.05, tx2, ty2);
+    ctx.bezierCurveTo(bx0 + len * 0.42, ty2 + H * 0.16, bx1 + len * 0.08, by1 - H * 0.22, bx1, by1 + H * 0.02); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)'; ctx.lineWidth = ew * 0.5; ctx.stroke();
+  }
+  if (v.d === 'filament' && dt2) { const [fx, fy] = dt2[dt2.length - 3]; ctx.strokeStyle = rgba(dc, 0.85); ctx.lineWidth = Math.max(0.7, H * 0.016); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.bezierCurveTo(fx + L * 0.12, fy - H * 0.1, fx + L * 0.25 + Math.sin(t * 2) * L * 0.04, fy + H * 0.05, fx + L * 0.36 + Math.sin(t * 2.3) * L * 0.06, fy + H * 0.12); ctx.stroke(); ctx.lineCap = 'butt'; }
+  // the body
+  const o = fishOutline(ctx, L, v, t, swim);
+  ctx.fillStyle = bodyGradient(ctx, -H / 2, H / 2, v.c[0], v.c[1]); ctx.fill();
+  const ex = X(tang ? 0.2 : 0.155) + (v.eyedx || 0) * bl, ey = -H * (v.eyey ?? (tang ? 0.2 : 0.13));
+  ctx.save(); ctx.clip();
+  patternFish(ctx, o, L, v); drawMarks(ctx, o, L, v, H, ex, ey);
+  if (L > 30) { // fine scales
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 1; const sc = L * (tang ? 0.016 : 0.02); ctx.beginPath();
+    for (let x = X(0.26); x < o.tailX; x += sc) for (let y = -H / 2; y < H / 2; y += sc) { ctx.moveTo(x + sc * 0.5, y); ctx.arc(x, y + (Math.floor(x / sc) % 2) * sc * 0.5, sc * 0.5, -0.9, 0.9); }
+    ctx.stroke();
+  }
+  ctx.fillStyle = overlayShading(ctx, -H / 2, H / 2); ctx.fillRect(-L, -H, L * 2, H * 2);
+  { const g = ctx.createRadialGradient(X(0.55), -H * 0.15, H * 0.05, X(0.55), 0, H * 0.7); g.addColorStop(0, 'rgba(255,255,255,0.07)'); g.addColorStop(1, 'rgba(0,0,0,0.12)'); ctx.fillStyle = g; ctx.fillRect(-L, -H, L * 2, H * 2); } // the flat side catches the light in the middle
+  ctx.restore();
+  drawTail(ctx, o, L, v, t, swim, v.tailc || rgba(dc, 0.85));
+  if (v.tailband) { ctx.save(); ctx.translate(o.tailX, o.tailY); ctx.rotate((o.tailA || 0) * 1.6); ctx.fillStyle = v.tailband; ctx.fillRect(L * 0.005, -H * 0.12 * (v.tailk || 1) * 2, L * 0.03, H * 0.24 * (v.tailk || 1) * 2); ctx.restore(); }
+  ctx.save(); fishOutline(ctx, L, v, t, swim); ctx.strokeStyle = rgba(shade(v.c[0], -0.5), 0.35); ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.stroke(); ctx.restore();
+  // the tang's scalpel at the root of the tail (two plates on a unicornfish), in its warning colour
+  if (tang) for (let k = 0; k < (v.spines2 ? 2 : 1); k++) {
+    const sx = X(0.9 - k * 0.07), sy = (edgeAt(og, sx, -1) + edgeAt(og, sx, 1)) / 2, sl = L * 0.045;
+    ctx.fillStyle = v.spinec || '#e8e2d0'; ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = ew * 0.6;
+    ctx.beginPath(); ctx.moveTo(sx - sl * 0.6, sy); ctx.quadraticCurveTo(sx, sy - H * 0.035, sx + sl * 0.5, sy - H * 0.005); ctx.quadraticCurveTo(sx, sy + H * 0.03, sx - sl * 0.6, sy); ctx.fill(); ctx.stroke();
+  }
+  // gill cover
+  const gx = X(tang ? 0.3 : 0.29);
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = Math.max(0.6, L * 0.007); ctx.beginPath(); ctx.arc(gx - H * 0.24, H * 0.04, H * 0.3, -0.85, 0.95); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = Math.max(0.4, L * 0.004); ctx.beginPath(); ctx.arc(gx - H * 0.245 - L * 0.005, H * 0.04, H * 0.3, -0.8, 0.1); ctx.stroke();
+  if (v.gillbar) { ctx.strokeStyle = v.gillbar; ctx.lineWidth = H * 0.035; ctx.beginPath(); ctx.arc(gx - H * 0.2, H * 0.06, H * 0.3, -0.7, 0.8); ctx.stroke(); }
+  if (v.spine) { ctx.fillStyle = v.spine; ctx.beginPath(); ctx.moveTo(gx - H * 0.08, H * 0.22); ctx.lineTo(gx + L * 0.07, H * 0.3); ctx.lineTo(gx - H * 0.04, H * 0.3); ctx.fill(); } // the angelfish's cheek spine
+  // the pectoral: clear, with a coloured base
+  { const pl = L * 0.13, pw = H * 0.12, beat = Math.sin(t * 5) * 0.2; ctx.save(); ctx.translate(gx + L * 0.01, H * 0.06); ctx.rotate(0.35 + beat); const c = hexToRgb(v.pecc || v.f);
+    const pg = ctx.createLinearGradient(0, 0, pl, 0); pg.addColorStop(0, rgbStr(c, 0.75)); pg.addColorStop(1, rgbStr(c, 0.18)); ctx.fillStyle = pg;
+    ctx.beginPath(); ctx.moveTo(0, -pw * 0.3); ctx.quadraticCurveTo(pl * 0.6, -pw * 0.7, pl, -pw * 0.1); ctx.quadraticCurveTo(pl * 0.7, pw * 0.5, 0, pw * 0.3); ctx.closePath(); ctx.fill(); ctx.restore(); }
+  pel(true);
+  // the snout: a tube for the butterflyfish that pick in crevices, and the mouth at its end
+  const nx = og.x0, my = H * (v.mouthy ?? (tang ? -0.03 : 0.02));
+  let tipX = nx;
+  if (v.snout) {
+    const sl = L * 0.075 * v.snout, sh = H * 0.05; tipX = nx - sl; const sc = v.snoutc || v.c[0];
+    ctx.fillStyle = sc; ctx.beginPath(); ctx.moveTo(nx + L * 0.05, my - sh * 1.9); ctx.quadraticCurveTo(nx - sl * 0.15, my - sh * 0.6, tipX, my - sh * 0.32); ctx.lineTo(tipX, my + sh * 0.32); ctx.quadraticCurveTo(nx - sl * 0.15, my + sh * 0.75, nx + L * 0.05, my + sh * 2.0); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = rgba(shade(sc, -0.5), 0.35); ctx.lineWidth = ew * 0.6; ctx.stroke();
+  }
+  if (v.lipc) { ctx.fillStyle = v.lipc; ctx.beginPath(); ctx.ellipse(tipX + L * 0.008, my, L * 0.014, H * 0.035, 0, 0, TAU); ctx.fill(); }
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(0.6, L * 0.006); ctx.lineCap = 'round'; ctx.beginPath();
+  if (v.bigmouth) { ctx.moveTo(tipX - L * 0.01, my - H * 0.06); ctx.quadraticCurveTo(tipX + L * 0.03, my + H * 0.02, tipX + L * 0.09, my + H * 0.04); } // a big, upturned mouth that shoots out (the dory)
+  else { ctx.moveTo(tipX + L * 0.003, my); ctx.lineTo(tipX + L * 0.022, my + H * 0.012); }
+  ctx.stroke(); ctx.lineCap = 'butt';
+  if (v.crown) { ctx.fillStyle = v.crown; ctx.beginPath(); ctx.arc(X(0.25), -H * 0.3, H * 0.055, 0, TAU); ctx.fill(); ctx.strokeStyle = v.crownring || '#2a6ab0'; ctx.lineWidth = H * 0.018; ctx.stroke(); } // the queen angelfish's crown
+  const er = Math.max(1.2, Math.min(H * 0.075, L * 0.042)) * (v.eyek || 1);
+  ctx.fillStyle = rgba(shade(v.c[0], -0.4), 0.3); ctx.beginPath(); ctx.arc(ex, ey, er * 1.45, 0, TAU); ctx.fill();
+  if (v.eyering) { ctx.strokeStyle = v.eyering; ctx.lineWidth = er * 0.35; ctx.beginPath(); ctx.arc(ex, ey, er * 1.3, 0, TAU); ctx.stroke(); }
+  eye(ctx, ex, ey, er, v.eyec || '#cfc6a4');
+}
+const FAM = {
+  disc: { body: 0.8, bend: 0.35, tailk: 0.5, taill: 0.95, draw: drawDiscFish,
+    top: [[0, 0.1], [0.05, 0.26], [0.14, 0.64], [0.28, 0.92], [0.45, 1], [0.62, 0.9], [0.78, 0.56], [0.9, 0.26], [1, 0.15]],
+    bot: [[0, 0.08], [0.07, 0.28], [0.2, 0.7], [0.38, 0.95], [0.55, 0.94], [0.72, 0.64], [0.88, 0.3], [1, 0.15]] },
+  tang: { body: 0.8, bend: 0.45, tailk: 0.5, taill: 0.95, draw: drawDiscFish,
+    top: [[0, 0.16], [0.04, 0.38], [0.12, 0.76], [0.26, 0.96], [0.45, 1], [0.65, 0.88], [0.82, 0.5], [0.93, 0.22], [1, 0.16]],
+    bot: [[0, 0.12], [0.08, 0.4], [0.22, 0.82], [0.42, 0.97], [0.62, 0.88], [0.8, 0.5], [0.93, 0.22], [1, 0.16]] },
+};
+
 export function drawSpecies(ctx, sp, L, t, swim = 1, phase = 0) {
   const fn = sp.v.t === 'coel' ? drawCoelacanth : RENDERERS[sp.v.s] || drawFish; // (3.7.5) the coelacanth has its own
   const r = fn(ctx, L, sp.v, t, swim, phase);

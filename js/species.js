@@ -1,6 +1,7 @@
 // Visual + behaviour descriptors for each species. Drawing lives in creatures_draw.js.
 // Colours are chosen from the reference photos: natural, slightly muted.
 import { SPECIES_DATA } from '../data/species_data.js';
+import { LOOKS } from './species_looks.js';
 import { MORE_SPECIES } from '../data/species_more.js';
 
 // s = shape renderer, h = body height / length, t = tail type, d = dorsal style,
@@ -231,7 +232,7 @@ export const LEGEND_IDS = Object.keys(LEGEND_OF).map((id) => 2000 + +id);
 const UNDOC_ALSO = new Set([188]);
 // the reference list and the species added since (data/species_more.js, which carry their own look)
 export const SPECIES = SPECIES_DATA.concat(MORE_SPECIES).map((d) => {
-  const v = Object.assign({ s: 'fish', h: 0.3, t: 'fork', c: ['#555', '#999'], f: null, hab: 'pelagic', sch: 1 }, V[d.id] || d.v || {});
+  const v = Object.assign({ s: 'fish', h: 0.3, t: 'fork', c: ['#555', '#999'], f: null, hab: 'pelagic', sch: 1 }, V[d.id] || d.v || {}, LOOKS[d.id] || {}); // (5.10.0) the fish pass's looks last
   v.f = v.f || v.c[0];
   const len = GIANT_FORMS[d.id] || parseSize(d.size, v);
   return { ...d, ...(TITLES[d.id] ? { name: TITLES[d.id], species: d.name } : {}), v, len, giant: !!GIANT_FORMS[d.id], undoc: !!(d.x && d.x.undoc) || UNDOC_ALSO.has(d.id) };
