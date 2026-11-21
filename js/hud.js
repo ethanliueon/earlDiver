@@ -657,16 +657,24 @@ e.inSub ? [
         const fw = (lineW - 2) * clamp(o2, 0, 1), k2 = (g.time * 1.6) % 1, bx = lx + 1 + fw * (1 - k2);
         ctx.save(); ctx.globalAlpha = 0.85 * (1 - k2); ctx.fillStyle = '#eaf6ff'; ctx.shadowColor = 'rgba(200,235,255,0.9)'; ctx.shadowBlur = 8 * s; ctx.beginPath(); ctx.arc(bx, ay + lh / 2, lh * 0.55, 0, TAU); ctx.fill(); ctx.restore(); }
       if (e.inSub) { const hi = clamp(g.sub.hull, 0, 1); line('hull', ay + 22 * s, hi, hi < 0.5 ? [226, 66, 52] : [130, 196, 164]); }
-      // (5.9.6) the first time under, a callout on the air bar: a pulsing cream frame round it and words to its left
+      // (5.9.6) the first time under, a callout on the air bar: (5.12.1) an arrow pointing at it and words to its left
       const PA = g.profile;
       if (touch && PA && !e.inSub && !aboard && (e.y > 1.5 || this.airTipT > 0) && !PA.tutAirSeen) { this.airTipT = (this.airTipT || 0) + dt; if (this.airTipT > 9) { PA.tutAirSeen = true; this.airTipT = 0; } }
       if (touch && this.airTipT > 0 && PA && !PA.tutAirSeen) {
         const k = Math.min(1, this.airTipT / 0.4, (9 - this.airTipT) / 0.6), q = 0.5 + 0.5 * Math.sin(g.time * 4.5), fx0 = lx - 44 * s, fy0 = ay - 7 * s, fw = lineW + 50 * s, fh = lh + 14 * s;
         ctx.save(); ctx.globalAlpha = k;
-        ctx.strokeStyle = 'rgba(14,18,10,0.7)'; ctx.lineWidth = 5 * s; ctx.beginPath(); ctx.roundRect(fx0, fy0, fw, fh, fh / 2); ctx.stroke();
-        ctx.strokeStyle = `rgba(240,230,200,${(0.7 + 0.3 * q).toFixed(3)})`; ctx.lineWidth = 2.2 * s; ctx.stroke();
+        // (5.12.1) not a frame round it (it read as a web outline): a chunky painted arrow, as a phone game points at a thing,
+        // nudging toward the air line in a slow ease; cream with a dark edge and a soft shadow, a little taper to the shaft
+        { const nud = 5 * s * (0.5 - 0.5 * Math.cos(g.time * 3.2)), tipX = lx - 8 * s + nud, ty = ay + lh / 2, L = 44 * s, hw = 17 * s, sw = 7 * s;
+          const arrow = () => { ctx.beginPath(); ctx.moveTo(tipX, ty); ctx.lineTo(tipX - hw * 1.25, ty - hw); ctx.lineTo(tipX - hw * 1.1, ty - sw * 0.9); ctx.quadraticCurveTo(tipX - L * 0.75, ty - sw * 1.05, tipX - L, ty - sw * 0.75);
+            ctx.lineTo(tipX - L, ty + sw * 0.75); ctx.quadraticCurveTo(tipX - L * 0.75, ty + sw * 1.05, tipX - hw * 1.1, ty + sw * 0.9); ctx.lineTo(tipX - hw * 1.25, ty + hw); ctx.closePath(); };
+          ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 2 * s; arrow(); ctx.fillStyle = '#1c1a14'; ctx.fill(); ctx.restore();
+          ctx.save(); arrow(); ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(20,18,12,0.85)'; ctx.lineWidth = 3 * s; ctx.stroke();
+          const gr = ctx.createLinearGradient(0, ty - hw, 0, ty + hw); gr.addColorStop(0, '#f6f0dc'); gr.addColorStop(0.55, '#e6dcbc'); gr.addColorStop(1, '#bfb08a'); ctx.fillStyle = gr; ctx.fill();
+          ctx.strokeStyle = 'rgba(255,252,240,0.55)'; ctx.lineWidth = 1 * s; ctx.beginPath(); ctx.moveTo(tipX - L + 2 * s, ty - sw * 0.5); ctx.quadraticCurveTo(tipX - L * 0.7, ty - sw * 0.8, tipX - hw * 1.2, ty - sw * 0.7); ctx.stroke(); ctx.restore(); }
+        const fx0b = fx0 - 16 * s; /* the words sit left of the arrow */
         ctx.font = `700 ${24 * s}px ${HUDF}`; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.fillStyle = '#efe8d2';
-        ctx.fillText('Your air', fx0 - 14 * s, fy0 + fh / 2 - 12 * s); ctx.font = `500 ${18 * s}px ${HUDF}`; ctx.fillStyle = 'rgba(239,232,210,0.85)'; ctx.fillText('come up before it runs out', fx0 - 14 * s, fy0 + fh / 2 + 12 * s);
+        ctx.fillText('Your air', fx0b - 14 * s, fy0 + fh / 2 - 12 * s); ctx.font = `500 ${18 * s}px ${HUDF}`; ctx.fillStyle = 'rgba(239,232,210,0.85)'; ctx.fillText('come up before it runs out', fx0b - 14 * s, fy0 + fh / 2 + 12 * s);
         ctx.restore(); }
       yy = ay + (e.inSub ? 22 * s : 0) + lh + 18 * s;
       if ((g.loadKg || 0) > 10 && !e.inSub) notes.push([`Heavy: ${Math.round(g.loadKg)} kg`, '#f06a5c']);
