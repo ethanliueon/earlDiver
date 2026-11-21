@@ -352,4 +352,29 @@ export const LOOKS = {
   2146: { legendOver: { speckle: [0.3, 0.25, 40, '#f0e0ff'], lights: [0.38, 0.22, 4, '#c8b0ff'] } }, // the Dumbo
   2110: { legendOver: { threads: [-0.1, -0.05, 5, 0.3, '#c8e8f0'], speckle: [0.3, 0.06, 20, '#bfe8ff'] } }, // the Tripod
   107: { legendOver: { speckle: [0.3, 0.22, 30, '#ffd8e0'], spikes: [0.33, 0.25, 9, 0.035, '#c89a94'] } }, // the Blobfish
+
+  // ---------- batch 7: shells, corals, bivalves, floats, comb jellies, feathers ----------
+  138: { fam: 'shell', shell: 'conch', c: ['#d8b490', '#e8a0a0'] }, // Queen Conch
+  385: { fam: 'shell', shell: 'trumpet', c: ['#d8b490', '#8a4a2a'] }, // Triton's Trumpet
+  386: { fam: 'shell', shell: 'cowrie', c: ['#e8dcc0', '#3a2a1e'] }, // Tiger Cowrie
+  387: { fam: 'shell', shell: 'tongue', c: ['#f0d8b0', '#e8862a'] }, // Flamingo Tongue
+  388: { fam: 'shell', shell: 'cone', c: ['#e0ccac', '#7a4a2a'] }, // Geography Cone
+  478: { fam: 'shell', shell: 'scaly', c: ['#3a3634', '#4a4a50'] }, // Scaly-foot Snail
+  417: { fam: 'coral2', coral: 'mushroom', c: ['#8a7a6a', '#c8bc9a'] }, // Mushroom Coral
+  418: { fam: 'coral2', coral: 'bubble', c: ['#c8c0a0', '#f0ecdc'] }, // Bubble Coral
+  495: { fam: 'coral2', coral: 'xeno', c: ['#a89a84', '#c8bca8'] }, // Xenophyophore
+  136: { fam: 'bivalve', biv: 'oyster', c: ['#7a7468', '#a8a092'] }, // Eastern Oyster
+  392: { fam: 'bivalve', biv: 'oyster', c: ['#6a6a62', '#9a948a'] }, // Pacific Oyster
+  135: { fam: 'bivalve', biv: 'mussel', c: ['#1e2430', '#3a4a6a'] }, // Blue Mussel
+  480: { fam: 'bivalve', biv: 'mussel', c: ['#4a3a2a', '#7a6a58'] }, // Deep-sea Mussel
+  389: { fam: 'bivalve', biv: 'pen', c: ['#8a6a4a', '#b89a7a'] }, // Noble Pen Shell
+  413: { fam: 'float2', float: 'sail', c: ['#2a4ab0', '#5a7ad0'] }, // By-the-wind Sailor
+  414: { fam: 'float2', float: 'button', c: ['#3a7ad8', '#4a9ae8'] }, // Blue Button
+  410: { fam: 'comb2', combk: 'girdle', c: ['#c8b8e8', '#e8e0f8'] }, // Venus' Girdle
+  409: { fam: 'comb2', combk: 'gooseberry', c: ['#c8d8e4', '#eef4f8'] }, // Sea Gooseberry
+  423: { fam: 'feather', feather: 'seapen', c: ['#c84a3a', '#e88070'] }, // Phosphorescent Sea Pen
+  494: { fam: 'feather', feather: 'seapen', c: ['#b8987e', '#e4cab4'] }, // Abyssal Sea Pen
+  483: { fam: 'feather', feather: 'sealily', c: ['#c8a06a', '#ecd0a0'] }, // Sea Lily
+  420: { fam: 'feather', feather: 'seafan', c: ['#8a3a8a', '#c87ac8'] }, // Common Sea Fan
+  421: { fam: 'feather', feather: 'black', c: ['#ece0c0', '#f4ead0'] }, // Black Coral
 };
