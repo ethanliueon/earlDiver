@@ -372,7 +372,7 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
   const spread = (list, lo, hi, round) => list.forEach((it, i) => round(it, list.length < 2 ? (lo + hi) / 2 : lo + (hi - lo) * i / (list.length - 1)));
   const TANK = { common: [20, 30], uncommon: [45, 65], rare: [75, 105], exotic: [120, 155], legendary: [190, 200] };
   for (const [r, [lo, hi]] of Object.entries(TANK)) spread(order('tank', r, 'air'), lo, hi, (it, v) => { const was = it.air, now = it.id === 'al80' ? 20 : Math.round(v); it.air = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} s\\b`, 'g'), `${now} s`)); });
-  const BAG = { common: [2, 3], uncommon: [4, 5], rare: [6, 7], exotic: [8, 9], legendary: [12, 14] };
+  const BAG = { common: [2, 3], uncommon: [4, 5], rare: [6, 7], exotic: [8, 9], legendary: [11, 12] }; // (5.12.9) the bag shows 12 pockets at most
   for (const [r, [lo, hi]] of Object.entries(BAG)) spread(order('bag', r, 'slots'), lo, hi, (it, v) => { const was = it.slots, now = it.id === 'mesh' ? 2 : Math.round(v); it.slots = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} animals`, 'g'), `${now} animals`)); });
   const CAM = { common: [9, 11.5], uncommon: [14, 17], rare: [20, 23], exotic: [26, 29], legendary: [40, 45] };
   for (const [r, [lo, hi]] of Object.entries(CAM)) spread(order('cam', r, 'idx'), lo, hi, (it, v) => { it.idx = +v.toFixed(2); if (it.chest || /Quality/.test(it.good || '')) it.good = goodOf('cam', it); });
@@ -399,3 +399,17 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
   }
 }
 for (const it of Object.values(ITEMS)) if (it.kind === 'fins' && /no faster cruising/i.test(it.bad || '')) it.bad = 'Cruising barely faster than rubber'; // (5.12.5) they are a little faster now
+// (5.12.9) prices follow what an item really does now (owner-approved, docs/PROPOSAL_prices.md): inside each rarity the
+// weakest of its kind sits at the bottom of the band, the strongest near the top. Legendaries and the chests themselves
+// keep their prices
+{
+  const score = { tank: (i) => i.air * (i.quiet ? 1.1 : 1), fins: (i) => i.swim + 0.5 * i.sprint, bag: (i) => i.slots, net: (i) => (i.maxLen || 0) * (i.range || 1) * (i.success || 0.8), cam: (i) => i.idx || 0,
+    suit: (i) => i.press / 100 + (1 - i.air) * 8 + (i.bite ? 0.4 : 0) + (i.warm ? 0.3 : 0) + (i.quiet ? 0.4 : 0) };
+  const BANDP = { common: [25, 250], uncommon: [300, 1200], rare: [1500, 6000], exotic: [8000, 30000] };
+  const nice = (p) => (p < 300 ? Math.round(p / 5) * 5 : p < 2000 ? Math.round(p / 50) * 50 : p < 10000 ? Math.round(p / 100) * 100 : Math.round(p / 500) * 500);
+  for (const kind of Object.keys(score)) for (const [r, [a, b]] of Object.entries(BANDP)) {
+    const xs = Object.values(ITEMS).filter((it) => it.kind === kind && it.rarity === r && it.price > 0); if (!xs.length) continue;
+    const sc = xs.map(score[kind]), lo = Math.min(...sc), hi = Math.max(...sc);
+    xs.forEach((it, j) => { const pos = hi > lo ? (sc[j] - lo) / (hi - lo) : 0.5; it.price = nice(a + (b - a) * Math.pow(pos, 1.3)); });
+  }
+}

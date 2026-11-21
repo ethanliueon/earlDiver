@@ -1,6 +1,6 @@
 # Prices on the new stats: proposal for approval
 
-Nothing has been changed yet. Chest prices are untouched (decided), and legendaries too (they only come from the old one and chests).
+**Approved and applied in 5.12.9.** Chest prices are untouched (decided), and legendaries too (they only come from the old one and chests).
 
 ## The rule
 
