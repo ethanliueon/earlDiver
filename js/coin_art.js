@@ -517,3 +517,31 @@ export function drawPowerBadge(ctx, cx, cy, r, power, st) {
   if (st.arc != null) { ctx.strokeStyle = 'rgba(236,224,190,0.9)'; ctx.lineWidth = Math.max(1, r * 0.08); ctx.beginPath(); ctx.arc(cx, cy, r * 1.12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, st.arc)); ctx.stroke(); } // the hair-thin arc: how far it has come back
   ctx.restore();
 }
+
+// (6.0.12) the sub's counters, as the diver's bag: small painted icons, no words. The open tank: a glass box with its
+// steel frame, water in it and a strand of weed; a pressure chamber: a riveted steel cylinder with its dial; the large
+// tank: the same, broader
+const icoCache = new Map();
+function ico(key, size, paint) { const k2 = key + Math.round(size); if (icoCache.has(k2)) return icoCache.get(k2); const c = document.createElement('canvas'); c.width = c.height = Math.ceil(size * 2); const x = c.getContext('2d'); x.translate(size, size); x.scale(size / 50, size / 50); paint(x); icoCache.set(k2, c); return c; }
+export function drawTankIcon(ctx, cx, cy, size) {
+  const c = ico('tank', size, (x) => {
+    x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(0, 36, 42, 6, 0, 0, Math.PI * 2); x.fill();
+    const w = x.createLinearGradient(0, -14, 0, 30); w.addColorStop(0, '#5a8a86'); w.addColorStop(1, '#1e3a3c'); x.fillStyle = w; x.fillRect(-36, -14, 72, 44); // the water
+    x.fillStyle = 'rgba(220,236,226,0.25)'; x.fillRect(-36, -14, 72, 3); x.fillStyle = '#6a5a3a'; x.fillRect(-36, 24, 72, 6); // the surface, the sand
+    x.strokeStyle = '#7a8a4a'; x.lineWidth = 3; x.beginPath(); x.moveTo(20, 26); x.quadraticCurveTo(26, 10, 18, -6); x.stroke(); x.beginPath(); x.moveTo(-22, 26); x.quadraticCurveTo(-28, 14, -20, 4); x.stroke();
+    x.fillStyle = 'rgba(255,255,255,0.18)'; x.beginPath(); x.moveTo(-30, -20); x.lineTo(-20, -20); x.lineTo(-30, 26); x.closePath(); x.fill(); // the glass catching light
+    x.strokeStyle = '#2a2c28'; x.lineWidth = 6; x.strokeRect(-38, -24, 76, 58); x.strokeStyle = '#8a8c84'; x.lineWidth = 2; x.strokeRect(-38, -24, 76, 58); // its frame
+  });
+  ctx.drawImage(c, cx - size, cy - size, size * 2, size * 2);
+}
+export function drawChamberIcon(ctx, cx, cy, size, wide = false) {
+  const c = ico(wide ? 'bigch' : 'ch', size, (x) => {
+    const hw = wide ? 34 : 20; x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(0, 40, hw + 8, 5, 0, 0, Math.PI * 2); x.fill();
+    const g = x.createLinearGradient(-hw, 0, hw, 0); g.addColorStop(0, '#3a3e40'); g.addColorStop(0.3, '#9aa0a0'); g.addColorStop(0.6, '#6a7072'); g.addColorStop(1, '#2a2e30');
+    x.fillStyle = g; x.beginPath(); x.roundRect(-hw, -34, hw * 2, 72, 9); x.fill();
+    x.fillStyle = '#22282a'; for (const yy of [-28, 32]) { x.fillRect(-hw - 2, yy - 3, hw * 2 + 4, 6); } x.fillStyle = '#a8aca8'; for (const yy of [-28, 32]) for (let i = -2; i <= 2; i++) { x.beginPath(); x.arc(i * hw * 0.42, yy, 1.6, 0, Math.PI * 2); x.fill(); } // bands and rivets
+    x.fillStyle = '#e4dcc4'; x.beginPath(); x.arc(0, -6, 9, 0, Math.PI * 2); x.fill(); x.strokeStyle = '#1a1c1c'; x.lineWidth = 2.4; x.stroke(); x.strokeStyle = '#8a2a18'; x.lineWidth = 2; x.beginPath(); x.moveTo(0, -6); x.lineTo(5, -11); x.stroke(); // its dial
+    x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 2; x.beginPath(); x.roundRect(-hw, -34, hw * 2, 72, 9); x.stroke();
+  });
+  ctx.drawImage(c, cx - size, cy - size, size * 2, size * 2);
+}

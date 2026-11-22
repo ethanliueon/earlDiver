@@ -1,6 +1,6 @@
 import { uiUnit } from './settings.js';
 import { depthUnit } from './units.js';
-import { drawBagIcon } from './coin_art.js';
+import { drawBagIcon, drawTankIcon, drawChamberIcon } from './coin_art.js';
 import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
 import { drawToken } from './tokens.js';
@@ -207,18 +207,21 @@ export class Hud {
     // specimen slots: the bag (or, in the sub, its tank). Each dot shows the animal's colour,
     // ringed by its condition: green healthy, amber stressed, red weak, grey dead.
     // (4.16.7) in the sub, just counts: the open tank's spaces, the chambers, the large tank if fitted
+    // (6.0.12) in the sub, painted counters like the diver's bag (an icon and its count, no words), bottom centre: the open
+    // tank, the pressure chambers, the bag still outside, the large tank if fitted
     if (e.inSub) {
-      const sy0 = y - 18 * s, fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1));
-      const parts = [['Tank', `${fmt(tankUsed(g))}/${tankSlots(g)}`]];
-      if (pressSlots(g)) parts.push(['Chambers', `${g.subTank.filter((q) => q.pressed && q.chamber !== BIG).length}/${pressSlots(g)}`]);
-      if (g.bag.length) parts.push(['Bag', `${g.bag.length}`]); // (4.28) what is still outside the tank, in the row (it was printed over it)
-      if (hasBigTank(g)) parts.push(['Large tank', `${bigIn(g).length}/3`]);
-      ctx.textBaseline = 'middle';
-      const tk = this.touch ? 1.3 : 1, lab = `600 ${17 * s * tk}px ${HUDF}`, val = `600 ${15 * s * tk}px ${MONO}`, gapP = 26 * s * tk; // (5.10.1) readable on a phone
-      const widths = parts.map(([l, v]) => { ctx.font = lab; const a2 = ctx.measureText(l).width; ctx.font = val; return a2 + 6 * s + ctx.measureText(v).width; });
+      const fmt = (n) => (Number.isInteger(n) ? n : n.toFixed(1)), wy = H - 52 * s, sz = 30 * s;
+      const parts = [['tank', `${fmt(tankUsed(g))} / ${tankSlots(g)}`]];
+      if (pressSlots(g)) parts.push(['ch', `${g.subTank.filter((q) => q.pressed && q.chamber !== BIG).length} / ${pressSlots(g)}`]);
+      if (g.bag.length) parts.push(['bag', `${g.bag.length}`]);
+      if (hasBigTank(g)) parts.push(['big', `${bigIn(g).length} / 3`]);
+      ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = `700 ${22 * s}px ${HUDF}`;
+      const gapP = 30 * s, widths = parts.map(([, v]) => sz + 8 * s + ctx.measureText(v).width);
       let px = W / 2 - (widths.reduce((a2, b2) => a2 + b2, 0) + gapP * (parts.length - 1)) / 2;
-      parts.forEach(([l, v], i) => { ctx.textAlign = 'left'; ctx.font = lab; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * s; ctx.fillStyle = 'rgba(230,224,204,0.85)'; ctx.fillText(l, px, sy0); const lw = ctx.measureText(l).width;
-        ctx.font = val; ctx.fillStyle = '#efe8d2'; ctx.fillText(v, px + lw + 6 * s, sy0); ctx.shadowBlur = 0; px += widths[i] + gapP; });
+      parts.forEach(([k, v], i) => { const ic = px + sz / 2;
+        if (k === 'tank') drawTankIcon(ctx, ic, wy, sz * 0.62); else if (k === 'ch') drawChamberIcon(ctx, ic, wy, sz * 0.6); else if (k === 'big') drawChamberIcon(ctx, ic, wy, sz * 0.62, true); else drawBagIcon(ctx, ic, wy, sz * 1.25);
+        ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5 * s; ctx.fillStyle = '#efe8d2'; ctx.fillText(v, px + sz + 8 * s, wy + 1 * s); ctx.shadowBlur = 0; px += widths[i] + gapP; });
+      ctx.restore();
     }
     const list = e.inSub ? [] : g.bag, slots = e.inSub ? 0 : bagSlots(g);
     const pList = [], pSlots = 0;

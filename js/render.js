@@ -3082,7 +3082,7 @@ export class Renderer {
       if (Dh) haze(Dh.x, Dh.y - 4, 50, [70, 66, 52], 0.5);
       if (Sn && Sn.y > 250) haze(Sn.x, Sn.y - STATION_TOP, 50, [50, 70, 74], 0.45);
       haze(CAVE.x + 14, CAVE.y, 50, [34, 48, 54], 0.4);
-      if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) { const e0 = g.earl, L = g.abilLight; haze(e0.inSub ? g.sub.x : e0.x, e0.inSub ? g.sub.y : e0.y, L >= 2 ? 80 : L >= 1.5 ? 45 : 28, L >= 2 ? [82, 80, 70] : [70, 60, 50], (L >= 2 ? 0.75 : L >= 1.5 ? 0.52 : 0.42) * (g.lightFade ?? 1)); /* (6.0.2) its reach by tier */ } } // (5.16.0) the Flare's light in the water itself
+      if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) { const e0 = g.earl, L = g.abilLight; haze(e0.inSub ? g.sub.x : e0.x, e0.inSub ? g.sub.y : e0.y, L >= 2 ? 80 : L >= 1.5 ? 45 : 28, L >= 2 ? [120, 100, 70] : [70, 60, 50], (L >= 2 ? 0.16 : L >= 1.5 ? 0.52 : 0.42) * (g.lightFade ?? 1)); /* (6.0.12) the Lighthouse: only a faint warm haze, so its light falls on the scene instead of greying it */ /* (6.0.2) its reach by tier */ } } // (5.16.0) the Flare's light in the water itself
     // god rays near the surface
     const rayStrength = this.phone ? 0 : dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7); // (5.3.2) no god rays on a phone
     if (rayStrength > 0.01) {
