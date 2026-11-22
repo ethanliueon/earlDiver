@@ -512,7 +512,7 @@ export class UI {
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
-  anyOpen(except) { return !$('store').hidden || !$('events').hidden || (this.chart && this.chart.isOpen()) || this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || (except !== 'cabin' && !$('cabin').hidden) || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  anyOpen(except) { return this.daveTalkOpen() /* (6.5.4) Dave's box */ || !$('store').hidden || !$('events').hidden || (this.chart && this.chart.isOpen()) || this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || (except !== 'cabin' && !$('cabin').hidden) || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
   closeAll() { for (const id of ['store', 'events']) { const el = $(id); if (el) el.hidden = true; } /* (6.4.0) */ if (this.catalogOpen && this.catalogOpen()) this.toggleCatalog(false); if (this.inventoryOpen && this.inventoryOpen()) this.toggleInventory(false); this.chart && this.chart.toggle(false); // (5.10.1) the shops and the bag too (a death, the thing's arrival)
     this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
@@ -1420,6 +1420,19 @@ export class UI {
   // the old one's cave: choose which fish she takes (once a dive)
   // (2.7.0) Dave's Haul
   daveOpen() { return !$('dave').hidden; }
+  // (6.5.4) at Dave's door: a box with his words typed out and two choices, Shop and Leave. The first time it is his
+  // hello; after that a short word. Earl never speaks: his side is only the choice. Shop opens Dave's site
+  daveTalk() {
+    let el = document.getElementById('davetalk');
+    if (!el) { el = document.createElement('section'); el.id = 'davetalk'; el.hidden = true; el.innerHTML = '<div class="dt-box"><b class="dt-name">Dave</b><p class="dt-line"></p><div class="dt-acts"><button class="dt-shop">Shop</button><button class="dt-leave">Leave</button></div></div>'; document.body.appendChild(el);
+      el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); this.toggleDave(true); });
+      el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); });
+      el.addEventListener('click', (ev) => { if (ev.target === el) { el.hidden = true; clearInterval(this.dtT); } }); }
+    const line = this.dave.greeting(), p = el.querySelector('.dt-line'); p.textContent = ''; el.hidden = false;
+    let i = 0; clearInterval(this.dtT); this.dtT = setInterval(() => { i += 2; p.textContent = line.slice(0, i); if (i >= line.length) clearInterval(this.dtT); }, 28); // typed out, quickly
+    el.querySelector('.dt-box').onclick = () => { if (p.textContent.length < line.length) { clearInterval(this.dtT); p.textContent = line; } }; // a tap shows it all at once
+  }
+  daveTalkOpen() { const el = document.getElementById('davetalk'); return !!el && !el.hidden; }
   toggleDave(force) {
     const el = $('dave'), open = force === undefined ? el.hidden : force;
     if (!open && this.catalogOpen && this.catalogOpen()) this.toggleCatalog(false); // (5.10.1) his shop is the catalogue in his colours: closing Dave closes it

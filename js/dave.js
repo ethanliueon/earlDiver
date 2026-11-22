@@ -12,6 +12,8 @@ export const DAVE_FINDS = ['pearl', 'sapphire', 'bone', 'glass', 'nodule'];
 export const DAVE_RATE = 1.25; // what he pays, against the Margaret's price
 
 const FIRST = "Well, would you look at that. Nobody comes down this far. I'm Dave. This is my place, and that's my shop. Have a look, mind the drips.";
+// (6.5.4) a later visit: a short word first, in the box at his door
+export const HELLO = ['Back again?', 'Mind the drips.', 'Still breathing, I see.', "Shop's open. Always is.", 'You again. Good.'];
 const LINES = [
   'Mind the hatch, it sticks when the cold gets into it.',
   "Coffee's terrible. Pressure's fine, though.",
@@ -46,6 +48,8 @@ export class DaveShop {
       this.render();
     });
   }
+  // (6.5.4) what he says at his door: the first time his hello, after that a short word (the box, ui.daveTalk)
+  greeting() { const P = this.h.getProfile(), first = !!P && !P.daveMet; if (P && first) { P.daveMet = true; this.h.save && this.h.save(); } return first ? FIRST : HELLO[Math.floor(Math.random() * HELLO.length)]; } // met once, whether he shops or leaves
   // he says a line as you come in: the first time, his hello; after that, one of his usual
   open() {
     const P = this.h.getProfile();

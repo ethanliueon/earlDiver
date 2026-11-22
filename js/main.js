@@ -2144,7 +2144,7 @@ function update(dt) {
     }
     if (pressed.has('f-tap') && g.oldHover) showOldCard(g.oldHover);
     else if (pressed.has('f-tap') && g.atLure) showOldShop();
-    else if (pressed.has('f-tap') && atDave) ui.toggleDave();
+    else if (pressed.has('f-tap') && atDave) { if (!ui.daveTalkOpen()) ui.daveTalk(); } // (6.5.4) he speaks at his door first
     else if (pressed.has('f-tap') && atStation) ui.toggleCatalog(undefined, 'station');
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
     if (pressed.has('j')) ui.toggleJournal();
