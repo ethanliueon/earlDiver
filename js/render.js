@@ -2842,10 +2842,15 @@ export class Renderer {
     // (5.16.0) a Flare: 30 m round him (or the sub), as bright near him as 100 m deep, still at the 200 m level 20 m out, gone by
     // 30 m; Flare+ brighter (as 70 m); Lighthouse as if he were at 20 m. It fades with the thing's dark (g.lightFade)
     if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) {
-      const L = g.abilLight, lh = L >= 2, a0 = (L >= 2 ? 0.93 : L >= 1.5 ? 0.78 : 0.7) * (g.lightFade ?? 1), col = lh ? [255, 244, 226] : [255, 226, 196];
-      const fxp = e.inSub ? S(g.sub.x) : S(e.x), fyp = e.inSub ? Sy(g.sub.y) : Sy(e.y), R = 30 * ppm;
+      // (6.0.2) each tier a visible step: Flare 28 m (near him about as bright as 100 m deep), Flare+ 45 m (as 70 m), the
+      // Lighthouse 80 m, the whole screen, very bright (as 20 m water) and holding its strength far out, but still a light in
+      // the dark sea: white-amber, the far corners left dimmer, no daylight blue
+      const L = g.abilLight, lh = L >= 2, a0 = (L >= 2 ? 0.97 : L >= 1.5 ? 0.84 : 0.62) * (g.lightFade ?? 1), col = lh ? [255, 246, 230] : [255, 226, 196];
+      const fxp = e.inSub ? S(g.sub.x) : S(e.x), fyp = e.inSub ? Sy(g.sub.y) : Sy(e.y), R = (lh ? 80 : L >= 1.5 ? 45 : 28) * ppm;
       const gg = l.createRadialGradient(fxp * k, fyp * k, 0, fxp * k, fyp * k, R * k);
-      gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.17, rgbStr(col, a0 * 0.95)); gg.addColorStop(0.67, rgbStr(col, a0 * 0.7)); gg.addColorStop(1, rgbStr(col, 0));
+      if (lh) { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.35, rgbStr(col, a0 * 0.97)); gg.addColorStop(0.7, rgbStr(col, a0 * 0.75)); gg.addColorStop(1, rgbStr(col, 0)); }
+      else if (L >= 1.5) { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.3, rgbStr(col, a0 * 0.95)); gg.addColorStop(0.72, rgbStr(col, a0 * 0.6)); gg.addColorStop(1, rgbStr(col, 0)); }
+      else { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.22, rgbStr(col, a0 * 0.9)); gg.addColorStop(0.6, rgbStr(col, a0 * 0.45)); gg.addColorStop(1, rgbStr(col, 0)); } // the plain Flare falls away well before the screen's edge
       l.fillStyle = gg; l.beginPath(); l.arc(fxp * k, fyp * k, R * k, 0, TAU); l.fill(); visR.push(fxp, fyp, R); lamps.push({ x: fxp, y: fyp, r: R, a: a0 });
     }
     if (e.biolum && e.lampOn && !e.inSub) { const gc = hexToRgb(e.glows && e.glows[0] || '#8af0d0'), br = (4 + 1.5 * e.biolum) * ppm, pulse = 0.85 + 0.15 * Math.sin(g.time * 1.3); radial(S(e.x), Sy(e.y), br, gc, 0.45 * pulse); lamps.push({ x: S(e.x), y: Sy(e.y), r: br, a: 0.45 }); } // (2.8.0) Bioluminescence: his gear glows while his light is on
@@ -3050,7 +3055,7 @@ export class Renderer {
       if (Dh) haze(Dh.x, Dh.y - 4, 50, [70, 66, 52], 0.5);
       if (Sn && Sn.y > 250) haze(Sn.x, Sn.y - STATION_TOP, 50, [50, 70, 74], 0.45);
       haze(CAVE.x + 14, CAVE.y, 50, [34, 48, 54], 0.4);
-      if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) { const e0 = g.earl, L = g.abilLight; haze(e0.inSub ? g.sub.x : e0.x, e0.inSub ? g.sub.y : e0.y, 30, L >= 2 ? [74, 72, 62] : [70, 60, 50], (L >= 2 ? 0.6 : L >= 1.5 ? 0.5 : 0.42) * (g.lightFade ?? 1)); } } // (5.16.0) the Flare's light in the water itself
+      if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) { const e0 = g.earl, L = g.abilLight; haze(e0.inSub ? g.sub.x : e0.x, e0.inSub ? g.sub.y : e0.y, L >= 2 ? 80 : L >= 1.5 ? 45 : 28, L >= 2 ? [82, 80, 70] : [70, 60, 50], (L >= 2 ? 0.75 : L >= 1.5 ? 0.52 : 0.42) * (g.lightFade ?? 1)); /* (6.0.2) its reach by tier */ } } // (5.16.0) the Flare's light in the water itself
     // god rays near the surface
     const rayStrength = this.phone ? 0 : dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7); // (5.3.2) no god rays on a phone
     if (rayStrength > 0.01) {

@@ -22,9 +22,9 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Undertow', dur: 0.35, cd: 20, dash: 3, zoom: 2, line: 'Tap where to go: the sea opens far round you, and bends as you pass.' },
   },
   flare: {
-    rare: { name: 'Flare', dur: 20, cd: 60, light: 1, line: '20 s of light round you. The thing does not see it.' },
-    exotic: { name: 'Flare+', dur: 40, cd: 60, light: 1.6, line: '40 s of brighter light. The thing does not see it.' },
-    legendary: { name: 'Lighthouse', dur: 30, cd: 120, light: 2.4, ward: true, line: '30 s of light as bright as the shallows. Hunters keep out of it, and the thing does not see it.' },
+    rare: { name: 'Flare', dur: 20, cd: 60, light: 1, line: '20 s of light 28 m round you. The thing does not see it.' },
+    exotic: { name: 'Flare+', dur: 40, cd: 60, light: 1.6, line: '40 s of brighter light, 45 m round you. The thing does not see it.' },
+    legendary: { name: 'Lighthouse', dur: 30, cd: 120, light: 2.4, ward: true, line: '30 s of light 80 m round you, near as bright as the shallows. Hunters keep out of it, and the thing does not see it.' },
   },
   echo: {
     rare: { name: 'Echo', dur: 20, cd: 60, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 20 s.' },
