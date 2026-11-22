@@ -484,7 +484,7 @@ function costOf(kind) {
 function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replaced at once by another
   const P = profile, st = oldStock(P), it = st.items[+what.slice(5)];
   if (!it || it.sold) return false;
-  if ((P.gold || 0) < it.cost) { hud.toast(`She wants ${it.cost} gold coins`, 'warn'); return false; }
+  if ((P.gold || 0) < it.cost) { hud.toast(`${it.cost} gold coins needed`, 'warn'); return false; }
   P.gold -= it.cost; // the coins' own stacks free their room first
   if (lockerFree(P) <= 0) { P.gold += it.cost; hud.toast('Locker full', 'warn'); return false; }
   giveRolled(P, it); it.sold = true; oldStock(P); saveProfile(P); audio.ready && audio.sale();
@@ -1431,7 +1431,7 @@ const standY = (x) => deckLine(x / BOAT_U) * BOAT_U + 0.05 - 0.85; // his middle
 const nearLadder = () => { const e = g.earl, rx = e.x - BOAT.x; return !e.inSub && !g.aboard && !g.kill && e.y < 2.2 && e.y > -0.5 && Math.abs(rx - LADDER_M) < 1.3; };
 // aboard: climb from the water (climb), or standing on deck by the door (a new dive starts there)
 function boardDeck(climb = true, quiet = false) {
-  if (g.sub && g.sub.imploded) { const sb = g.sub; sb.imploded = false; g.imploded = false; sb.failing = null; sb.hull = 1; g.subTank = []; sb.docked = true; sb.o2 = sb.o2Max; profile.subLost = false; profile.hull = 1; setTimeout(() => say('The sub is back in her cradle', 'sub'), 1200); } // (6.0.0) a sub lost while he lived is waiting for him at the Margaret
+  if (g.sub && g.sub.imploded) { const sb = g.sub; sb.imploded = false; g.imploded = false; sb.failing = null; sb.hull = 1; g.subTank = []; sb.docked = true; sb.o2 = sb.o2Max; profile.subLost = false; profile.hull = 1; setTimeout(() => say('The sub is back in its cradle', 'sub'), 1200); } // (6.0.0) a sub lost while he lived is waiting for him at the Margaret
   const e = g.earl;
   const at = climb ? LADDER_M : DOOR_M - 0.9;
   g.aboard = { x: at, from: [e.x - BOAT.x, e.y - deckSurf()], walkT: 0, step: 0, walk: 0, climb: climb ? CLIMB : 0, jump: 0 }; g.helm = false; g.deckStations = DECK_STATIONS;
@@ -2115,7 +2115,7 @@ function update(dt) {
       else g.prompt = `F  Look at the ${CHESTS[H.key].name}`;
       if (e.inSub) g.prompt += '   ·   hold F  Leave sub';
     }
-    if (g.atLure && !g.oldHover) g.prompt = 'F  What she has' + (e.inSub ? '   ·   hold F  Leave sub' : '');
+    if (g.atLure && !g.oldHover) g.prompt = 'F  The Old One' + (e.inSub ? '   ·   hold F  Leave sub' : '');
     if (atAngler && !g.caveMet) g.caveMet = true;
     // in the submersible the prompt stays out of the way: hidden while moving, and gone after
     // 5 s of the same text (it comes back when something new is in reach or the sub stops again)

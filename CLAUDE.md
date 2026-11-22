@@ -43,6 +43,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
    written as if someone were speaking ("Gold coin" beside a coin picture, not "A gold coin as well"; "Rare 9 %", not
    "What it will be:"). A picture carries what it can, a word carries the rest; no chat-like phrasing, no explaining
    the obvious. Only the world's own voices (Dave, the shop's copy, quest notes) speak in sentences.
+   Nothing in the game is "she" or "her" (not the Old One, not the sub, not the boat): name the thing ("the Old One's
+   shop", "the sub's cradle").
 9. **Everything in 3D, the same way.** Every item (suits, nets, cameras, tanks, bags, fins) is drawn as a turned,
    lit, solid object like the suits and nets: round things seen from the side are ovals, faces are shaded, edges
    catch light. A redrawn item changes everywhere it appears (shop, locker, cards, HUD coins, the Old One's table).

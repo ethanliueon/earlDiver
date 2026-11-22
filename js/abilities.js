@@ -9,13 +9,13 @@
 // a legendary about once a session (they count in real time, closed or not)
 export const ABILITY_DEFS = {
   sprint: {
-    rare: { name: 'Sprint', dur: 15, cd: 120, speed: 1.5, line: 'Half as fast again for 15 s, using no air.' },
-    exotic: { name: 'Sprint+', dur: 15, cd: 300, speed: 2, line: 'Twice as fast for 15 s, using no air.' },
-    legendary: { name: 'Riptide', dur: 12, cd: 1800, speed: 3, noAir: true, line: 'Three times as fast for 12 s, using no air.' },
+    rare: { name: 'Sprint', dur: 15, cd: 120, speed: 1.5, line: '×1.5 speed for 15 s, using no air.' },
+    exotic: { name: 'Sprint+', dur: 15, cd: 300, speed: 2, line: '×2 speed for 15 s, using no air.' },
+    legendary: { name: 'Riptide', dur: 12, cd: 1800, speed: 3, noAir: true, line: '×3 speed for 12 s, using no air.' },
   },
   vigor: {
-    rare: { name: 'Vigor', dur: 20, cd: 180, reach: 1.5, line: 'The net reaches half as far again for 20 s.' },
-    exotic: { name: 'Vigor+', dur: 20, cd: 480, reach: 2, swing: 0.8, line: 'The net reaches twice as far, and swings quicker, for 20 s.' },
+    rare: { name: 'Vigor', dur: 20, cd: 180, reach: 1.5, line: '×1.5 net reach for 20 s.' },
+    exotic: { name: 'Vigor+', dur: 20, cd: 480, reach: 2, swing: 0.8, line: '×2 net reach and a quicker swing for 20 s.' },
     legendary: { name: 'Apex', dur: 10, cd: 3600, reach: 2.5, sure: true, bless: true, line: 'For 10 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
   },
   dash: {

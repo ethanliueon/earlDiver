@@ -401,15 +401,15 @@ export const SETS = {
     line: 'Mottled green and brown, made by divers who work the kelp forests.' },
   reef: { name: 'Reef Keeper', rarity: 'rare', trait: 'Animals you catch are never harmed.', archs: { suit: 'wet', fins: 'free', tank: 'steel', bag: 'divided', net: 'gentle' },
     line: 'Soft gear in coral colours, from a reef conservation team.' },
-  night: { name: 'Night Shift', rarity: 'rare', trait: 'Your lamp reaches half as far again.', archs: { suit: 'dry', fins: 'long', tank: 'big', bag: 'large', net: 'sure' },
+  night: { name: 'Night Shift', rarity: 'rare', trait: '×1.5 lamp reach.', archs: { suit: 'dry', fins: 'long', tank: 'big', bag: 'large', net: 'sure' },
     line: 'Black gear with reflective tape, made for diving after dark.' },
   bathysphere: { name: 'Bathysphere 1934', rarity: 'exotic', trait: 'Pressure starts to hurt 400 m deeper.', archs: { suit: 'hard', fins: 'long', tank: 'twin', bag: 'divided', net: 'reach' },
     line: 'Gear from the year two men went half a mile down in a steel ball.' },
   challenger: { name: 'Challenger Expedition', rarity: 'exotic', trait: 'Animals from below 500 m sell for 40 % more.', archs: { suit: 'dry', fins: 'free', tank: 'big', bag: 'divided', net: 'big' },
     line: 'From the voyage of 1872 that found the deep alive.' },
-  sealab: { name: 'Sealab Aquanaut', rarity: 'exotic', trait: 'Your air lasts half as long again.', archs: { suit: 'rebreather', fins: 'split', tank: 'rebreather', bag: 'large', net: 'school' },
+  sealab: { name: 'Sealab Aquanaut', rarity: 'exotic', trait: '×1.5 air.', archs: { suit: 'rebreather', fins: 'split', tank: 'rebreather', bag: 'large', net: 'school' },
     line: 'From the navy houses on the sea floor, where people lived for weeks.' },
-  trieste: { name: 'Trieste Descent', rarity: 'exotic', trait: 'The thing in the deep notices you half as fast.', archs: { suit: 'dry', fins: 'long', tank: 'side', bag: 'light', net: 'sure' },
+  trieste: { name: 'Trieste Descent', rarity: 'exotic', trait: 'The thing in the deep takes twice as long to notice you.', archs: { suit: 'dry', fins: 'long', tank: 'side', bag: 'light', net: 'sure' },
     line: 'From the bathyscaphe that went to the deepest place in the sea.' },
 };
 export const SET_PIECE = { suit: 'suit', fins: 'fins', tank: 'cylinder', bag: 'catch bag', net: 'net' };
