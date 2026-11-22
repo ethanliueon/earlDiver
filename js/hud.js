@@ -274,21 +274,7 @@ export class Hud {
       ctx.strokeStyle = sp ? 'rgba(224,180,90,0.95)' : 'rgba(224,180,90,0.35)'; ctx.lineWidth = 1.8 * s;
       ctx.beginPath(); ctx.arc(sx, sy, r, 0, TAU); ctx.stroke();
     }
-    // old gold coins: a little stack and the count, at the end of the row
-    const coins = (g.profile && g.profile.coins) || 0;
-    if (coins) {
-      const cx0 = W / 2 + rowW / 2 + 12 * s;
-      for (let k = 2; k >= 0; k--) {
-        const cy0 = sy + 3 * s - k * 2.6 * s;
-        const cg = ctx.createLinearGradient(cx0 - 6 * s, cy0 - 3 * s, cx0 + 6 * s, cy0 + 3 * s);
-        cg.addColorStop(0, '#fff0b0'); cg.addColorStop(0.5, '#e0aa44'); cg.addColorStop(1, '#8a5a16');
-        ctx.fillStyle = '#6a400c'; ctx.beginPath(); ctx.ellipse(cx0, cy0 + 1.2 * s, 6 * s, 3 * s, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = cg; ctx.beginPath(); ctx.ellipse(cx0, cy0, 6 * s, 3 * s, 0, 0, TAU); ctx.fill();
-      }
-      ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(240,212,138,0.9)'; ctx.font = `${10 * s}px ${MONO}`;
-      ctx.fillText(String(coins), cx0 + 9 * s, sy);
-      this.coinW = 30 * s + ctx.measureText(String(coins)).width;
-    } else this.coinW = 0;
+    this.coinW = 0; /* (6.1.0) gold coins live in the locker now, not on the HUD */
     // the arm's grip gauge: a marker sweeping a bar; close the claw in the green
     const A = g.armGame;
     if (A && A.phase === 'grip') {

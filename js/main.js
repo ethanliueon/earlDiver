@@ -27,7 +27,7 @@ import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP
 import { SUITS, suitOf, kit, worn } from './economy.js';
 import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
-import { oldStock, overTable, daysLeft } from './oldone.js';
+import { oldStock, overTable, leftOf } from './oldone.js';
 import { CHESTS, oddsText } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
 import { abilityOf, abilityState, whyNot, cooldownLeft } from './abilities.js';
@@ -232,7 +232,7 @@ const ui = new UI({
   onBuy: (k) => guardBuy(costOf(k), () => buy(k)),
   onBuyNow: (k) => { guardBuy.ok = true; try { return buy(k); } finally { guardBuy.ok = false; ui.refreshOpen(); } }, // (4.16.4) already confirmed by its own prompt
   costOf: (k) => costOf(k),
-  onOldBuy: (k) => guardBuy(k.startsWith('chest:') ? costOf(k) : costOf('old:' + k.slice(5)), () => oldBuy(k), () => ui.oldCard(null)),
+  onOldBuy: (k) => oldBuy(k),
   questsReady: () => (profile ? questsReady(profile) : 0),
   // (3.0.0) a shop's cart, checked out at once: all of it, or nothing (cash and room in the locker)
   onCheckout: (keys) => {
@@ -245,7 +245,7 @@ const ui = new UI({
     for (const it of its) { const q = giveItem(P, it.id); if (q) q.paid = true; if (P.wish === it.id) P.wish = null; }
     questEvent(P, 'bought'); // (4.3.0) the Log's 'buy' step counts a real purchase, nothing else
     saveProfile(P); audio.ready && audio.sale();
-    ui.showGains(its.map((it) => ({ kind: 'item', id: it.id }))); tipEquip(); // (4.6.0) the cards say it
+    ui.showGains(its.map((it) => ({ kind: 'item', id: it.id, how: 'Bought' }))); tipEquip(); // (4.6.0) the cards say it
     return true;
   },
   onSellAll: () => withKept(() => sellAll()),
@@ -278,7 +278,7 @@ const ui = new UI({
     }
     if (got.length) syncProfile();
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
-    const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id })));
+    const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id }))).map((c) => ({ ...c, how: 'For the quest' }));
     if (cards.length) ui.showGains(cards); // (4.6.0)
     if (!(hud.touch && ui.questTag(`+${money(r.pay)}`))) hud.toast(`Quest done: +${money(r.pay)}`, 'big'); // (5.7.0) on a phone always the stamped tag, panel open or not // (5.5.6) on a phone, a tag from the clipboard
     return true;
@@ -427,16 +427,13 @@ function sellSpecimens(list, lines) {
 hud.questMain = QUEST_MAIN;
 // (3.0.0) the old one's card: one of her things (its skills, her price) or a bundle (its odds)
 function showOldCard(H) {
+  // (6.1.1) one of her three things: its card, how long it stays, and her price in gold coins (nothing else will do)
   const P = profile, st = oldStock(P), ROMAN = ['', 'I', 'II', 'III', 'IV'];
-  if (H.kind === 'chest') {
-    const C = CHESTS[H.key];
-    ui.oldCard(`<div class="oc-t"><b>${C.name}</b><span>${C.line}</span><small class="ch-odds">${oddsText(C.odds)}</small></div><div class="oc-buy"><em>${money(C.price, false)}</em><button data-oc="chest:${H.key}" ${P.cash < C.price ? 'disabled' : ''}>Open it</button></div>`);
-    return;
-  }
-  const it = st.items[H.i]; if (!it || it.sold) return;
+  const it = st.items[H.i]; if (!it) return;
   const def = ITEMS[it.id], sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
+  const have = P.gold || 0, left = leftOf(it), hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60);
   ui.oldCard(`<div class="oc-top r-${def.rarity}"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""><div class="oc-t"><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><span>${def.line || ''}</span>${def.good ? `<i>${def.good}</i>` : ''}<div class="oc-sk">${sk}</div></div></div>
-    <div class="oc-buy"><small>${daysLeft(P) <= 1 ? 'It all goes away soon.' : `She keeps these out another ${daysLeft(P)} days.`}</small><em>${money(it.price, false)}</em><button data-oc="item:${H.i}" ${P.cash < it.price ? 'disabled' : ''}>Take it</button></div>`);
+    <div class="oc-buy"><small>She keeps it out another ${hh ? hh + ' h ' : ''}${mm} min.</small><em class="oc-coins">${it.cost} gold coin${it.cost > 1 ? 's' : ''} <span>(you have ${have})</span></em><button data-oc="item:${H.i}" ${have < it.cost ? 'disabled' : ''}>Give ${it.cost}</button></div>`);
 }
 // (4.0.0) anything that costs more than a fifth of the cash on hand is asked about first
 const needsConfirm = (price) => !!profile && price > 0 && price <= profile.cash && price > 0.2 * profile.cash;
@@ -470,23 +467,21 @@ function costOf(kind) {
   if (SUPPLIES[kind]) return SUPPLIES[kind].price;
   return 0;
 }
-function oldBuy(what) {
-  const P = profile;
-  if (what.startsWith('chest:')) return buy(what);
-  const st = oldStock(P), it = st.items[+what.slice(5)];
+function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replaced at once by another
+  const P = profile, st = oldStock(P), it = st.items[+what.slice(5)];
   if (!it || it.sold) return false;
-  if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; }
-  if (!spend(P, it.price)) return false;
-  giveRolled(P, it); it.sold = true; saveProfile(P); audio.ready && audio.sale();
-  ui.showGains([{ kind: 'item', id: it.id }]);
+  if ((P.gold || 0) < it.cost) { hud.toast(`She wants ${it.cost} gold coins`, 'warn'); return false; }
+  P.gold -= it.cost; // the coins' own stacks free their room first
+  if (lockerFree(P) <= 0) { P.gold += it.cost; hud.toast('Locker full', 'warn'); return false; }
+  giveRolled(P, it); it.sold = true; oldStock(P); saveProfile(P); audio.ready && audio.sale();
+  ui.showGains([{ kind: 'item', id: it.id, how: 'From the old one' }]);
   return true;
 }
 function sellAll() {
   marketTick(profile);
   // old gold coins for every live animal from the deep that leaves the boat today
   let coins = 0;
-  for (const L of [g.bag].concat(subAtBoat() ? [g.subTank] : [])) for (const s of L) coins += coinsFor(s);
-  coins += g.inv.sapphire || 0;
+  /* (6.1.0) no coins from catches or sapphires: gold coins come only from chests */
   const lines = [];
   if (g.bag.length) { sellSpecimens(g.bag, lines); g.bag = []; }
   if (g.subTank.length && subAtBoat()) { sellSpecimens(g.subTank, lines); g.subTank = []; }
@@ -508,7 +503,6 @@ function sellAll() {
     lines.push(sell(profile, k, n, GOODS[k].price * statValue(profile, 'paySalvage'), GOODS[k].name));
     g.inv[k] = 0;
   }
-  if (coins) { profile.coins = (profile.coins || 0) + coins; lines.push({ label: 'Old gold, for what came up from the deep', n: 1, total: 0, coins }); }
   if (!lines.length) return null;
   const total = lines.reduce((a, l) => a + l.total, 0);
   g.earned += total;
@@ -844,7 +838,9 @@ function buy(kind) {
       const advHave = (g.items.glowAdv || 0) + ((P.spare && P.spare.glowAdv) || 0);
       if ((C.odds.rare || 0) > 0 && advHave < 3 && Math.random() < 0.12) { const n = 3 - advHave; P.spare = P.spare || {}; P.spare.glowAdv = (P.spare.glowAdv || 0) + n; ok = true; saveProfile(P); audio.ready && audio.sale(); hud.toast(`Inside: ${n} advanced glow stick${n > 1 ? 's' : ''}`, 'big'); ui.showGains([{ kind: 'supply', id: 'glowAdv' }]); return ok; }
       const def = rollChest(key), q = def && giveItem(P, def.id);
-      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); ui.showGains([{ kind: 'item', id: q.id }]); tipEquip(); } // (4.16.9) its card waits until the crate's reveal is closed
+      // (6.1.0) and, now and then, a gold coin besides (its chance on the chest)
+      let coin = false; if (q && C.coin && Math.random() * 100 < C.coin) { P.gold = (P.gold || 0) + 1; if (lockerFree(P) < 0) P.gold--; else coin = true; }
+      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); ui.showGains([{ kind: 'item', id: q.id, how: 'Found in the ' + C.name.toLowerCase() }].concat(coin ? [{ kind: 'coin', how: 'And at the bottom' }] : [])); tipEquip(); } // (4.16.9) its card waits until the crate's reveal is closed
     }
     return ok;
   }
@@ -854,7 +850,7 @@ function buy(kind) {
     if (it && lockerFree(P) <= 0) hud.toast('Locker full', 'warn');
     else if (it && spend(P, it.price)) {
       const q = giveItem(P, it.id); if (q) q.paid = true; ok = true; questEvent(P, 'bought'); // (4.3.0)
-      ui.showGains([{ kind: 'item', id: it.id }]); tipEquip();
+      ui.showGains([{ kind: 'item', id: it.id, how: 'Bought' }]); tipEquip();
       if (P.wish === it.id) P.wish = null;
     }
   } else if (kind.startsWith('off:')) {
@@ -914,10 +910,10 @@ function buy(kind) {
   } else if (kind.startsWith('trap:') && TRAPS[kind.slice(5)] && (convertOldTraps(P), (P.traps[kind.slice(5)] || 0) < TRAPS[kind.slice(5)].max) && spend(P, TRAPS[kind.slice(5)].price)) {
     const tk = kind.slice(5);
     P.traps[tk] = (P.traps[tk] || 0) + 1; ok = true;
-    ui.showGains([{ kind: 'trap', id: tk }]); hud.hint(hud.touch ? 'At the surface, open your bag and tap the trap, then Use, to set it at the depth you choose' : 'Press 5, then Space at the surface to set a trap at the depth you choose');
+    ui.showGains([{ kind: 'trap', id: tk, how: 'Bought' }]); hud.hint(hud.touch ? 'At the surface, open your bag and tap the trap, then Use, to set it at the depth you choose' : 'Press 5, then Space at the surface to set a trap at the depth you choose');
   } else if (kind.startsWith('subnet:') && NETS_SUB[kind.slice(7)] && netsOf(g.items)[kind.slice(7)] < NETS_SUB[kind.slice(7)].cap && spend(P, NETS_SUB[kind.slice(7)].price)) {
     netsOf(g.items)[kind.slice(7)]++; ok = true; // (4.11.0) up to two beginner nets and one advanced
-    ui.showGains([{ kind: 'trawl', id: kind.slice(7) }]);
+    ui.showGains([{ kind: 'trawl', id: kind.slice(7), how: 'Bought' }]);
   } else if (kind === 'gallery') {
     const lvG = P.galleryLv || 0;
     if (lvG < GALLERY_STEPS.length && spend(P, GALLERY_STEPS[lvG])) { P.galleryLv = lvG + 1; ok = true; hud.toast(`The aquarium: room for ${gallerySlots(P)}`, 'big'); audio.cue && audio.cue('wing'); }
@@ -932,7 +928,7 @@ function buy(kind) {
     if ((kind === 'necklace' || kind === 'glowAdv') && glowKind() !== kind) { P.spare = P.spare || {}; P.spare[kind] = (P.spare[kind] || 0) + 1; } // (6.0.1) the kind not on the belt waits in the locker
     else { g.items[kind] = g.items[kind] || 0; g.items[kind]++; }
     ok = true;
-    ui.showGains([{ kind: 'supply', id: kind }]);
+    ui.showGains([{ kind: 'supply', id: kind, how: 'Bought' }]);
   }
   if (ok) { syncProfile(); saveProfile(P); audio.ready && audio.sale(); }
   return ok;

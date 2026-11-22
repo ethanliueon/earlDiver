@@ -9,21 +9,17 @@ import { TAU } from './util.js';
 // odds in %, by rarity
 export const CHESTS = {
   bayside: { shop: 'bayside', name: 'Surplus crate', price: 900, look: 'crate', line: 'A pine crate of returns and odd lots from the back room. Mostly ordinary; now and then something old turns up in the straw.',
-    odds: { common: 60, uncommon: 30, rare: 9, exotic: 1 } },
+    coin: 1, odds: { common: 60, uncommon: 30, rare: 9, exotic: 1 } },
   station: { shop: 'station', name: 'Equipment case', price: 3000, look: 'case', line: "A sealed aluminium case from the station's stores, stencilled and padded. Kit the scientists stopped using.",
-    odds: { common: 10, uncommon: 45, rare: 43, exotic: 2 } },
+    coin: 2, odds: { common: 10, uncommon: 45, rare: 43, exotic: 2 } },
   dave1: { shop: 'dave', name: 'Tea chest', price: 2000, look: 'tea', line: "Whatever came down on the rope this month. Dave hasn't looked. So Dave says.",
-    odds: { common: 20, uncommon: 50, rare: 25, exotic: 5 } },
+    coin: 5, odds: { common: 20, uncommon: 50, rare: 25, exotic: 5 } },
   dave2: { shop: 'dave', name: 'Strongbox', price: 6000, look: 'strongbox', line: 'A riveted steel box off a salvage job, the lock long gone. Heavier than it looks.',
-    odds: { uncommon: 30, rare: 60, exotic: 10 } },
+    coin: 10, odds: { uncommon: 30, rare: 60, exotic: 10 } },
   dave3: { shop: 'dave', name: "Bosun's footlocker", price: 15000, look: 'footlocker', line: "Out of a wreck on the plain. Someone's whole kit, still in it.",
-    odds: { uncommon: 5, rare: 79, exotic: 15, legendary: 1 } },
+    coin: 15, odds: { uncommon: 5, rare: 79, exotic: 15, legendary: 1 } },
   dave4: { shop: 'dave', name: 'Expedition trunk', price: 32000, look: 'trunk', line: "Brass corners, a society's crest, a name scratched off. Dave won't say where it came from.",
-    odds: { rare: 78, exotic: 20, legendary: 2 } },
-  offering: { shop: 'oldone', name: 'Offering', price: 25000, look: 'offering', line: 'Bound up in old net and kelp, and left in the silt for whoever pays. Things the deep has taken.',
-    odds: { rare: 60, exotic: 40 } },
-  reliquary: { shop: 'oldone', name: 'Reliquary', price: 90000, look: 'reliquary', line: 'A box of black bone, older than the boat. What is inside has been down here a long time.',
-    odds: { exotic: 85, legendary: 15 } },
+    coin: 20, odds: { rare: 78, exotic: 20, legendary: 2 } },
 };
 export const chestsOf = (shop) => Object.entries(CHESTS).filter(([, c]) => c.shop === shop).map(([key, c]) => ({ key, ...c }));
 
@@ -41,7 +37,8 @@ export function rollChest(key, rnd = Math.random) {
   return pick;
 }
 // the odds as words for the shop: "Common 60 % · Uncommon 30 % · …"
-export const oddsText = (odds) => Object.entries(odds).map(([k, p]) => `<span class="r-${k}">${RARITY[k].name} ${p} %</span>`).join(' · ');
+// (6.1.0) a chest's odds, and the chance of a gold coin besides (on top of its item, never in its place)
+export const oddsText = (odds, coin = 0) => Object.entries(odds).map(([k, p]) => `<span class="r-${k}">${RARITY[k].name} ${p} %</span>`).join(' · ') + (coin ? ` · <span class="r-legendary">Gold coin ${coin} % bonus</span>` : '');
 
 // ---------- the chests, drawn ----------
 // lid: 0 shut .. 1 open; at open, a glow colour for the light inside (soft)

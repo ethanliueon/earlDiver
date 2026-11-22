@@ -238,7 +238,9 @@ function mk(id, rnd) { const def = ITEMS[id]; return { u: newUid(), id, sk: roll
 export const rollSkillsFor = (def, rnd) => rollSkills(def, rnd); // (3.0.0) the old one's wares are rolled when laid out
 export function giveRolled(P, q) { if (lockerFree(P) <= 0) return null; const n = { u: newUid(), id: q.id, sk: q.sk || [], isNew: true, ...(q.leg ? { leg: q.leg } : {}) }; kitOf(P).items.push(n); P.bagGot = (P.bagGot || 0) + 1; /* (5.9.6) for the bag's "!" */ bump(P); return n; }
 export const lockerCount = (P) => { const K = kitOf(P), on = new Set(Object.values(K.on)); return K.items.filter((q) => !on.has(q.u)).length; }; // (3.0.31) only what he hasn't on
-export const lockerFree = (P) => LOCKER - lockerCount(P);
+// (6.1.0) gold coins lie in the locker in stacks of up to 10, each stack a space
+export const coinStacks = (P) => Math.ceil(((P && P.gold) || 0) / 10);
+export const lockerFree = (P) => LOCKER - lockerCount(P) - coinStacks(P);
 export const instOf = (P, u) => kitOf(P).items.find((q) => q.u === u) || null;
 export const wornInst = (P, kind) => { const u = kitOf(P).on[kind]; return u ? instOf(P, u) : null; };
 export const worn = (P, kind) => { const q = wornInst(P, kind); return q ? ITEMS[q.id] : null; };
@@ -373,7 +375,7 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
   const TANK = { common: [20, 30], uncommon: [45, 65], rare: [75, 105], exotic: [120, 155], legendary: [190, 200] };
   for (const [r, [lo, hi]] of Object.entries(TANK)) spread(order('tank', r, 'air'), lo, hi, (it, v) => { const was = it.air, now = it.id === 'al80' ? 20 : Math.round(v); it.air = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} s\\b`, 'g'), `${now} s`)); });
   const BAG = { common: [5, 7], uncommon: [9, 12], rare: [14, 18], exotic: [20, 26], legendary: [40, 50] }; // (5.14.0) spaces (an animal takes 1 to 16 by its length)
-  for (const [r, [lo, hi]] of Object.entries(BAG)) spread(order('bag', r, 'slots'), lo, hi, (it, v) => { const was = it.slots, now = it.id === 'mesh' ? 5 : Math.round(v); it.slots = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} animals`, 'g'), `${now} animals`)); });
+  for (const [r, [lo, hi]] of Object.entries(BAG)) spread(order('bag', r, 'slots'), lo, hi, (it, v) => { const was = it.slots, now = it.id === 'mesh' ? 5 : it.id === 'eelpurse' ? 45 : Math.round(v); /* (6.1.0) the eel-skin purse holds 45 */ it.slots = now; if (was !== now) reword(it, (t) => t.replace(new RegExp(`\\b${was} animals`, 'g'), `${now} animals`)); });
   const CAM = { common: [9, 11.5], uncommon: [14, 17], rare: [20, 23], exotic: [26, 29], legendary: [40, 45] };
   for (const [r, [lo, hi]] of Object.entries(CAM)) spread(order('cam', r, 'idx'), lo, hi, (it, v) => { it.idx = +v.toFixed(2); if (it.chest || /Quality/.test(it.good || '')) it.good = goodOf('cam', it); });
   // nets: each kind keeps what it is for (its own size, reach and swing); rarity multiplies them, with the jump at the top

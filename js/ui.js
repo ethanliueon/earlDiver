@@ -516,8 +516,10 @@ export class UI {
       else if (e.kind === 'supply' && SUPPLIES[e.id]) { name = SUPPLIES[e.id].name; pic = pictureOf('supply', e.id, 120, 72, true); }
       else if (e.kind === 'trawl' && NETS_SUB[e.id]) { name = NETS_SUB[e.id].name; pic = pictureOf('trawl', e.id, 120, 72, true); }
       else if (e.kind === 'trap' && TRAPS[e.id]) { name = TRAPS[e.id].name; pic = pictureOf('trap', e.id, 120, 72, true); }
+      else if (e.kind === 'coin') { name = 'Gold coin'; r = 'legendary'; pic = pictureOf('gold', 1, 160, 160, true); }
       else return '';
-      return `<div class="gain r-${r}"><div class="g-tile"><img src="${pic}" alt=""><i class="new">new</i>${r === 'legendary' ? '<span class="glint"></span>' : ''}</div><b>${name}</b><span class="g-plus">+1</span></div>`;
+      // (6.1.3) a word for what happened, above the name: bought, found in a crate, from the old one
+      return `<div class="gain r-${r}">${e.how ? `<small class="g-how">${e.how}</small>` : ''}<div class="g-tile"><img src="${pic}" alt=""><i class="new">new</i>${r === 'legendary' ? '<span class="glint"></span>' : ''}</div><b>${name}</b><span class="g-plus">+1</span></div>`;
     };
     { const n = Math.min(5, entries.length); el.style.setProperty('--gn', n); el.style.setProperty('--gh', [0, 45, 38, 32, 26, 26][n] + 'vh'); } // (4.17.0) sized from the screen: one big card, smaller as more come
     el.innerHTML = `<div class="g-row">${entries.slice(0, 5).map(card).join('')}</div>`;
@@ -525,7 +527,7 @@ export class UI {
     // tug), instead of standing in the middle of the screen over the sea
     const bag = document.documentElement.classList.contains('touch') && !this.anyOpen() && (window.__hudHots || []).find((q) => q.key === 'b');
     // (5.7.5) on a phone: a small card at the top centre, under the messages (by the bag it crowded the radar column)
-    el.classList.toggle('topc', !!bag); el.classList.remove('dock');
+    el.classList.toggle('topc', false); /* (6.1.3) always the big card in the middle */ el.classList.remove('dock');
     if (false && bag) { el.style.setProperty('--dx', (bag.x - 10) + 'px'); el.style.setProperty('--dy', (bag.y + bag.h / 2) + 'px'); el.style.setProperty('--tx', (bag.w / 2 + 70) + 'px'); } // (5.6.9) to the left of the bag (it sits at the right edge now), whole on the screen
     el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
     clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), bag ? 2200 : 2900);
@@ -1068,6 +1070,12 @@ export class UI {
           <div class="lk-acts"><button data-trapuse="${k}">Use</button><small class="tp-note">at the surface</small></div></div></div></div>`; })();
     // (5.17.0) the glow stick's card, opened from its belt slot, laid out as the trap's: Use snaps one (90 s of warm light,
     // in the water or the sub); while one burns, the seconds left and Use greyed; and taking them off the belt, where gear can change
+    // (6.1.0) gold coins: stacks of up to 10 in the locker, each stack a space; tap one for its card
+    const nGold = P.gold || 0, goldTiles = Array.from({ length: Math.ceil(nGold / 10) }, (_, i) => { const n = Math.min(10, nGold - i * 10); return `<div class="lk-tile r-legendary gold" data-gold title="Gold coins"><img src="${pictureOf('gold', n, 120, 120, true)}" alt=""><b class="belt-n">×${n}</b></div>`; }).join('');
+    const goldPop = this.goldSel && nGold ? `<div class="item-pop trap-pop gold-pop"><div class="ip-box r-legendary tp-box"><button class="ip-close" aria-label="Close">×</button>
+        <div class="tp-pic"><img src="${pictureOf('gold', Math.min(nGold, 10), 300, 300, true)}" alt=""></div>
+        <div class="tp-txt"><h4>Gold coins</h4><p class="tp-kind">Legendary · ${nGold} in the locker</p><p class="tp-desc">Hand-struck and worn nearly smooth, the old one's spiral on the face. Now and then one lies at the bottom of a chest. The old one in the cave takes nothing else.</p>
+          <div class="tp-row"><span>Stacks</span><b>10 to a space</b></div><div class="tp-row"><span>Spaces</span><b>${Math.ceil(nGold / 10)}</b></div></div></div></div>` : '';
     const glowPop = (() => { if (!this.glowSel) return ''; const k = gk, adv = k === 'glowAdv', n = (g.items && g.items[k]) || 0; if (!n) return '';
       return `<div class="item-pop trap-pop glow-pop"><div class="ip-box r-${GR[k]} tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('supply', k, 360, 216, true)}" alt=""></div>
@@ -1082,13 +1090,13 @@ export class UI {
     const petPick = this.petPick ? (() => { const L = g.bag.map((s3, i) => ['bag', i, s3]).concat((g.subTank || []).map((s3, i) => ['tank', i, s3]));
       const rows = L.map(([w2, i, s3]) => { const sp3 = SPECIES_BY_ID[s3.id]; if (!this.fitPics.has(sp3.id)) this.fitPics.set(sp3.id, fittedIcon(sp3, 300, 180).toDataURL()); return `<button class="pp-fish" data-petpick="${w2}:${i}"><img src="${this.fitPics.get(sp3.id)}" alt=""><b>${sp3.name}</b><small>${(s3.len || 0).toFixed(2)} m</small></button>`; }).join('');
       return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">At the surface: an animal 60 cm to 1.5 m long, or any legend.</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing in the bag or the sub.</p>'}</div></div></div>`; })() : '';
-    const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length;
+    const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot()}${petGear}</div></div>`
       /* (6.0.0) no lock note: gear changes anywhere */
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
-      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${glowPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length + Math.ceil(nGold / 10) >= LOCKER ? 'full' : ''}">(${list.length + Math.ceil(nGold / 10)}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${goldTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${glowPop}${goldPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
@@ -1201,6 +1209,8 @@ export class UI {
     root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
     // (5.6.9) the belt: a tap on a slot takes it off (into the locker), a tap on a locker stack puts it on
     const beltMsg = () => this.h.onMessage && this.h.onMessage('Not now'); // (6.0.0) gear changes anywhere but in its jaws
+    root.querySelectorAll('[data-gold]').forEach((el) => el.addEventListener('click', () => { this.goldSel = true; this.renderInventory(); }));
+    { const gp = box.querySelector('.gold-pop'); if (gp) gp.addEventListener('click', (ev) => { if (ev.target === gp || ev.target.closest('.ip-close')) { this.goldSel = false; this.renderInventory(); } }); }
     root.querySelectorAll('[data-belt]').forEach((el) => el.addEventListener('click', () => { if ((g.items && g.items[el.dataset.belt]) > 0) { this.glowSel = true; this.renderInventory(); } })); // (5.17.0) its card
     { const gp = box.querySelector('.glow-pop'); if (gp) gp.addEventListener('click', (ev) => {
       if (ev.target.closest('[data-glowuse]')) { this.glowSel = false; if (this.h.onGlowUse && this.h.onGlowUse()) { this.toggleInventory(false); return; } this.renderInventory(); return; }

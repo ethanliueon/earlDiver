@@ -1,38 +1,33 @@
 // The old one (3.0.0): a giant humpback anglerfish in the mouth of her cave in the west wall, her lure lighting
-// the water round her. No website: below her mouth a flat stone table juts from the cliff, and on it lie five
-// things (Rare and Exotic, of any kind, an even split) and her two bundles, the Offering and the Reliquary.
-// Earl looks at them from the sub (or swimming): over one, F shows what it is and what she wants for it.
-// What lies there changes every three in-game days (a day is ten minutes of play).
+// the water round her. Below her mouth a flat stone table juts from the cliff. (6.1.1) On it lie three things, and she
+// takes only gold coins for them: pieces of the expedition sets (Exotic) for 3 coins, and now and then (one time in
+// ten) a Legendary for 10. Each lies there for its own 12 to 24 hours (real time) and is then gone; a thing bought or
+// gone is replaced by another. Earl looks at them from the sub (or swimming): over one, the hand shows its card.
 import { CAVE } from './world.js';
-import { ITEMS, CHEST_POOL, valueOf, kitOf, lockerFree } from './items.js';
+import { ITEMS, CHEST_POOL } from './items.js';
 import { rollSkillsFor } from './items.js';
-import { drawChest } from './chests.js';
 import { TAU } from './util.js';
 
 export const TABLE = { x0: CAVE.x + 5.5, x1: CAVE.x + 27, y: CAVE.y + 9 }; // its top surface (y down)
-export const DAY_S = 600;
-const SLOTS = [62.5, 65.6, 68.7, 71.8, 74.9].map((x) => x - 52 + CAVE.x); // the five things, west to east
-export const CHEST_SLOTS = [{ key: 'offering', x: CAVE.x + 7.6 }, { key: 'reliquary', x: CAVE.x + 25 }];
-const MARKUP = 2.5; // she knows what they are worth
+const SLOTS = [CAVE.x + 10, CAVE.x + 16.25, CAVE.x + 22.5]; // the three things, west to east
+export const CHEST_SLOTS = [];
+export const COIN_COST = { exotic: 3, legendary: 10 };
+const H = 3600e3;
 
-// her five things: rolled once, kept until three days have passed (things bought stay gone till then)
-export function oldStock(P) {
-  const day = Math.floor((P.playT || 0) / DAY_S);
-  const S = P.oldone;
-  if (S && S.items && day - S.day < 3) return S;
-  const pool = { rare: CHEST_POOL.filter((it) => it.rarity === 'rare'), exotic: CHEST_POOL.filter((it) => it.rarity === 'exotic') };
-  const items = [], used = new Set();
-  for (let i = 0; i < 5; i++) {
-    const r = Math.random() < 0.5 ? 'rare' : 'exotic', L = pool[r];
-    let def; for (let k = 0; k < 20; k++) { def = L[Math.floor(Math.random() * L.length)]; if (!used.has(def.id)) break; }
-    used.add(def.id);
-    const sk = rollSkillsFor(def), q = { id: def.id, sk, ...(def.legend ? { leg: def.legend } : {}) };
-    items.push({ ...q, price: Math.round(valueOf(q) * MARKUP / 50) * 50, sold: false });
-  }
-  P.oldone = { day, items };
-  return P.oldone;
+function rollOne(used) {
+  const leg = Math.random() < 0.1, L = CHEST_POOL.filter((it) => (leg ? it.rarity === 'legendary' : it.rarity === 'exotic' && it.set) && !used.has(it.id));
+  const def = L[Math.floor(Math.random() * L.length)] || CHEST_POOL.find((it) => it.rarity === 'exotic');
+  const sk = rollSkillsFor(def);
+  return { id: def.id, sk, ...(def.legend ? { leg: def.legend } : {}), cost: COIN_COST[def.rarity] || 3, until: Date.now() + (12 + Math.random() * 12) * H };
 }
-export const daysLeft = (P) => { const S = P.oldone; if (!S) return 3; return Math.max(0, 3 - (Math.floor((P.playT || 0) / DAY_S) - S.day)); };
+// her three things: any gone (its time up) or bought is replaced at once
+export function oldStock(P) {
+  const S = P.oldone && Array.isArray(P.oldone.items) && P.oldone.items.length === 3 && P.oldone.items.every((q) => q && q.until) ? P.oldone : (P.oldone = { items: [null, null, null] });
+  const used = new Set(S.items.filter(Boolean).map((q) => q.id));
+  S.items = S.items.map((q) => (q && !q.sold && q.until > Date.now() ? q : (() => { const n = rollOne(used); used.add(n.id); return n; })()));
+  return S;
+}
+export const leftOf = (q) => Math.max(0, (q.until - Date.now()) / 1000);
 
 // what Earl is over: one of her things, or a bundle. From the sub, the sub's middle counts.
 export function overTable(x, y) {
@@ -60,12 +55,8 @@ export function drawTable(ctx, S, Sy, ppm, t, P, picture, hover) {
   ctx.strokeStyle = 'rgba(200,190,160,0.18)'; ctx.lineWidth = Math.max(1, 0.06 * m); ctx.beginPath(); ctx.moveTo(x0, ty); ctx.lineTo(x1, ty); ctx.stroke(); // its worn edge
   // old marks scratched into it, and a little silt
   ctx.fillStyle = 'rgba(150,140,110,0.25)'; for (let k = 0; k < 18; k++) { const x = x0 + ((k * 0.618) % 1) * (x1 - x0); ctx.fillRect(x, ty - 0.06 * m, (0.3 + (k % 3) * 0.2) * m, 0.06 * m); }
-  // her bundles at either end
-  for (const c of CHEST_SLOTS) {
-    ctx.save(); ctx.translate(S(c.x) - 1.3 * m, ty - 2.1 * m); drawChest(ctx, c.key, 2.6 * m, 2.4 * m, 0); ctx.restore();
-  }
-  // her five things, laid out; a sold one leaves a clean patch in the silt
-  const st = P && P.oldone;
+  // (6.1.1) her three things, laid out
+  const st = P && oldStock(P); /* (6.1.1) a thing whose time is up is replaced even while she is on screen */
   if (st) SLOTS.forEach((sx, i) => {
     const it = st.items[i]; if (!it) return;
     const X = S(sx), w = 2.4 * m, h = 1.44 * m;
@@ -78,4 +69,3 @@ export function drawTable(ctx, S, Sy, ppm, t, P, picture, hover) {
   if (hover && hover.kind === 'chest') { ctx.strokeStyle = 'rgba(200,225,230,0.55)'; ctx.lineWidth = Math.max(1, 0.05 * m); ctx.setLineDash([0.2 * m, 0.15 * m]); ctx.beginPath(); ctx.ellipse(S(hover.x), ty - 1.1 * m, 1.8 * m, 1.4 * m, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
   ctx.restore();
 }
-export { lockerFree, kitOf };

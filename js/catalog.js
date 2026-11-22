@@ -186,7 +186,7 @@ export class Catalog {
       if (ups.length) html += `<h4>A step up from what you have on</h4><div class="cat-grid">${ups.map((e) => this.card(e)).join('')}</div>`;
     } else if (this.page === 'chest') {
       html += `<h2>${this.cfg.chestTitle}</h2><p class="cat-lede">${this.cfg.chestLede}</p>`;
-      html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)}, not enough cash` : `Buy and open, ${money(c.price, false)}`}</button></div></div>`).join('');
+      html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3>${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds, c.coin)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)}, not enough cash` : `Buy and open, ${money(c.price, false)}`}</button></div></div>`).join('');
     } else if (this.page === 'cart') {
       html += this.cartPage(P, cart);
     } else if (this.page === 'sell') {
@@ -267,6 +267,7 @@ export function pictureOf(kind, v, w, h, plain = false) {
       const pool = ctx.createRadialGradient(w * 0.32, h * 0.12, 2, w * 0.42, h * 0.38, w * 0.78); pool.addColorStop(0, 'rgba(248,250,246,0.75)'); pool.addColorStop(0.55, 'rgba(220,228,228,0.2)'); pool.addColorStop(1, 'rgba(120,136,144,0.35)'); ctx.fillStyle = pool; ctx.fillRect(0, 0, w, h);
       const fl = ctx.createLinearGradient(0, h * 0.62, 0, h); fl.addColorStop(0, 'rgba(90,104,112,0)'); fl.addColorStop(1, 'rgba(90,104,112,0.32)'); ctx.fillStyle = fl; ctx.fillRect(0, h * 0.62, w, h * 0.38);
       let sd = 7; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647); for (let i = 0; i < w * h / 70; i++) { ctx.fillStyle = `rgba(${rnd() < 0.5 ? '40,48,52' : '255,255,250'},${(rnd() * 0.05).toFixed(3)})`; ctx.fillRect(rnd() * w, rnd() * h, 1, 1); } }
+    if (kind === 'gold') { drawGoldCoins(ctx, w, h, v | 0); const url = c.toDataURL(); PICS.set(key, url); return url; } // (6.1.0)
     if (v && typeof v === 'object' && v.kind === 'ability') { drawScroll3(ctx, w / 2, h / 2, Math.min(w, h) * 0.98, v.fam, v.tier); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.9.0) an ability's scroll
     if (v && typeof v === 'object' && v.id && kind === 'net') { drawNet3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.9)
     if (v && typeof v === 'object' && v.id && (kind === 'tank' || kind === 'bag')) { (kind === 'tank' ? drawTank3 : drawBag3)(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.8)
@@ -294,6 +295,52 @@ export function pictureOf(kind, v, w, h, plain = false) {
     else if (kind === 'trawl') drawTrawl(ctx, w, h, v);
     else drawSupply(ctx, w, h, v);
     const url = c.toDataURL(); PICS.set(key, url); return url;
+}
+
+// (6.1.0) old gold coins: worn, hand-struck, the gold gone dull and dark in the hollows; n > 1 shows a small stack
+// with one leaning on it. The face carries the old one's spiral, rubbed nearly smooth on the high places.
+export function drawGoldCoins(ctx, w, h, n = 1) {
+  const R = Math.min(w, h) * 0.3, cx = w / 2, cy = h / 2;
+  let sd = 31; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  const edge = (x, y, r, k) => { // a coin seen at a slant (k = squash), its milled edge below
+    ctx.fillStyle = '#4a3410'; ctx.beginPath(); ctx.ellipse(x, y + r * 0.16, r, r * k, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#7a5a20'; ctx.fillRect(x - r, y, r * 2, r * 0.16);
+    ctx.strokeStyle = 'rgba(40,26,6,0.55)'; ctx.lineWidth = Math.max(1, r * 0.02);
+    for (let a = -r + r * 0.06; a < r; a += r * 0.09) { ctx.beginPath(); ctx.moveTo(x + a, y + r * k * Math.sqrt(1 - (a / r) ** 2) * 0.2); ctx.lineTo(x + a, y + r * 0.16 + r * k * Math.sqrt(1 - (a / r) ** 2) * 0.9); ctx.stroke(); }
+    const g = ctx.createLinearGradient(x - r, y - r * k, x + r, y + r * k); g.addColorStop(0, '#c9a45a'); g.addColorStop(0.55, '#a07a34'); g.addColorStop(1, '#6e4e1c');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, r, r * k, 0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(60,40,10,0.7)'; ctx.lineWidth = r * 0.05; ctx.beginPath(); ctx.ellipse(x, y, r * 0.86, r * k * 0.86, 0, 0, TAU); ctx.stroke();
+  };
+  const face = (x, y, r, tilt) => { // a coin standing at an angle, face toward us
+    ctx.save(); ctx.translate(x, y); ctx.rotate(tilt);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(r * 0.1, r * 0.12, r * 0.98, r * 0.98, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#5a3e12'; ctx.beginPath(); ctx.arc(r * 0.04, r * 0.05, r, 0, TAU); ctx.fill(); // the edge, a little behind
+    // not a perfect circle: hand-struck coins are a touch out of round
+    ctx.beginPath(); for (let i = 0; i <= 40; i++) { const a = (i / 40) * TAU, rr = r * (0.97 + 0.03 * Math.sin(a * 3 + 1.1) + 0.012 * Math.sin(a * 7)); ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath();
+    const g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r); g.addColorStop(0, '#d2b06a'); g.addColorStop(0.6, '#a47c36'); g.addColorStop(1, '#6a4a18');
+    ctx.fillStyle = g; ctx.fill(); ctx.save(); ctx.clip();
+    // the raised rim and a ring of worn beads inside it
+    ctx.strokeStyle = 'rgba(58,38,10,0.75)'; ctx.lineWidth = r * 0.07; ctx.beginPath(); ctx.arc(0, 0, r * 0.84, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = 'rgba(230,206,150,0.35)'; ctx.lineWidth = r * 0.03; ctx.beginPath(); ctx.arc(-r * 0.01, -r * 0.01, r * 0.9, Math.PI * 1.05, Math.PI * 1.75); ctx.stroke();
+    for (let i = 0; i < 26; i++) { if (rnd() < 0.25) continue; const a = (i / 26) * TAU; ctx.fillStyle = 'rgba(70,46,12,0.55)'; ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.74, Math.sin(a) * r * 0.74, r * 0.03, 0, TAU); ctx.fill(); }
+    // the old one's spiral, struck shallow and rubbed smooth on the top
+    ctx.lineCap = 'round';
+    for (const [col, dx, lw] of [['rgba(62,40,10,0.8)', r * 0.025, r * 0.075], ['rgba(226,200,140,0.45)', -r * 0.02, r * 0.03]]) {
+      ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+      for (let t = 0; t <= 1; t += 0.02) { const a = t * TAU * 2.3 + 0.6, rr = r * (0.06 + 0.5 * t); const px = Math.cos(a) * rr + dx, py = Math.sin(a) * rr + dx; ctx[t ? 'lineTo' : 'moveTo'](px, py); }
+      ctx.stroke();
+    }
+    // wear: scratches, dark grime in the hollows, a nick out of the edge
+    for (let i = 0; i < 18; i++) { const a = rnd() * TAU, d = rnd() * r * 0.8, l = r * (0.08 + rnd() * 0.25), b = rnd() * TAU; ctx.strokeStyle = rnd() < 0.5 ? 'rgba(240,220,170,0.22)' : 'rgba(50,32,8,0.3)'; ctx.lineWidth = Math.max(0.6, r * 0.012); ctx.beginPath(); ctx.moveTo(Math.cos(a) * d, Math.sin(a) * d); ctx.lineTo(Math.cos(a) * d + Math.cos(b) * l, Math.sin(a) * d + Math.sin(b) * l); ctx.stroke(); }
+    const gr = ctx.createRadialGradient(r * 0.3, r * 0.4, r * 0.2, 0, 0, r * 1.05); gr.addColorStop(0, 'rgba(40,30,10,0)'); gr.addColorStop(1, 'rgba(46,34,10,0.45)'); ctx.fillStyle = gr; ctx.fillRect(-r, -r, r * 2, r * 2);
+    ctx.fillStyle = 'rgba(70,90,60,0.18)'; ctx.beginPath(); ctx.ellipse(r * 0.45, r * 0.5, r * 0.3, r * 0.18, 0.6, 0, TAU); ctx.fill(); // a breath of verdigris where it lay
+    ctx.restore(); ctx.restore();
+  };
+  if (n > 1) {
+    const k = Math.min(n, 10), bx = cx + R * 0.35, base = cy + R * 0.9;
+    for (let i = 0; i < Math.min(k, 6); i++) edge(bx + (rnd() - 0.5) * R * 0.12, base - i * R * 0.17, R * 0.72, 0.36);
+    face(cx - R * 0.55, cy - R * 0.05, R * 0.82, -0.18);
+  } else face(cx, cy, R * 1.25, -0.1);
 }
 
 // a pair of fins, side on, one behind the other
