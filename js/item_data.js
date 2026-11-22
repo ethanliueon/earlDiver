@@ -469,3 +469,13 @@ export const EXOTIC_LOOK = {
   suit: { wet: ['#1c1a16', '#3e3a30', '#2c2820', '#b8913e', '#100e0a'], skin: ['#18222a', '#34485a', '#22303c', '#b8913e', '#0c1218'], dry: ['#2a2418', '#5a4c32', '#3e3424', '#c8a050', '#14100a'],
     chain: ['#2a2a26', '#6a6a5e', '#3e3e36', '#b8913e', '#141410'], rebreather: ['#1e2418', '#3e4a32', '#2a3222', '#c8a050', '#0e120a'], hard: ['#5a4a2a', '#a08a5a', '#7a6640', '#d8b060', '#2a2418'] },
 };
+
+// (6.5.1) a skill's name is written in the colour of its strength: level I uncommon, II rare, III exotic, IV legendary;
+// one with no levels (Bioluminescence, Deep Pockets) exotic, as it only comes on exotic gear or better; a legendary
+// power legendary
+export function skillCol(k, l) {
+  if (LEGEND[k]) return RARITY.legendary.col;
+  const S = SKILLS[k]; if (!S) return null;
+  if (S.flat || k === 'pockets') return RARITY.exotic.col;
+  return RARITY[['uncommon', 'uncommon', 'rare', 'exotic', 'legendary'][Math.max(0, Math.min(4, l | 0))]].col;
+}

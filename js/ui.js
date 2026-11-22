@@ -1,3 +1,4 @@
+import { skillCol } from './item_data.js'; // (6.5.1)
 import { drawHourglass, blessedURL } from './coin_art.js';
 import { drawCash } from './coins.js';
 import { setUnits, imperial } from './units.js';
@@ -44,7 +45,7 @@ import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's drawn size against a 2.4 m giant)
 import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
-import { storeHtml, eventsHtml, CAL, untilTomorrow } from './store.js';
+import { storeHtml, eventsHtml, calWeek, untilTomorrow } from './store.js';
 import { tankPicture } from './journal_tank.js'; // (6.5.0) the journal's animal in a small tank of its own water
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
@@ -311,6 +312,7 @@ export class UI {
     $('set-catchtags').addEventListener('click', () => { setSetting('catchTags', !SETTINGS.catchTags); this.renderSettings(); });
     $('set-sound').addEventListener('click', () => { h.onMute && h.onMute(); this.renderSettings(); });
     document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
+    $('inventory').addEventListener('click', (ev) => { const tw = ev.target.closest && ev.target.closest('[data-tw]'); if (tw) { const P = this.h.getProfile(); P.trawlPick = tw.dataset.tw; this.h.onSaveProfile && this.h.onSaveProfile(); this.renderInventory(); return; } }, true);
     $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory') && performance.now() - (this.dragEndAt || 0) > 400) this.toggleInventory(false); }); // (5.15.3) not the click that ends a drag off the panel
     $('set-graphics').addEventListener('click', () => { setSetting('fast', !SETTINGS.fast); this.renderSettings(); });
     $('set-units').addEventListener('click', () => { setUnits(imperial() ? 'metric' : 'imperial'); this.renderSettings(); }); // (6.0.3)
@@ -348,13 +350,13 @@ export class UI {
   showChest(key, finds, coin = false) { this.chest.open(key, finds, coin); } // (6.4.0) finds: [{ q, def }], and whether an old coin came up
   // (6.4.0) the Shop and Events screens (left menu): chests for cash; the daily gift
   toggleStore(force) { const el = $('store'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = storeHtml(this.h.getProfile()); } el.hidden = !on; this.storeWire(el); }
-  toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true)); } el.hidden = !on; this.storeWire(el); }
+  toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true), (k, id) => pictureOf(k, id, 120, 90, true)); } el.hidden = !on; this.storeWire(el); }
   storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
     const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile()); return; }
     if (ev.target.closest('[data-ev]')) { this.h.onClaim && this.h.onClaim(); this.toggleEvents(true); return; }
     // (6.5.0) a day tapped: a chest shows its odds (the shop's table, by its data-rates); anything else its card
-    const d = ev.target.closest('[data-evday]'); if (d && !d.dataset.rates) { const r = CAL[+d.dataset.evday]; this.previewCard(r.k === 'cash' ? { kind: 'cash', n: r.v } : r.k === 'glow' ? { kind: 'supply', id: 'necklace', n: r.v } : r.k === 'coin' ? { kind: 'coin', n: r.v } : { kind: 'item', id: 'chest_' + r.v }); } });
+    const d = ev.target.closest('[data-evday]'); if (d && !d.dataset.rates) { const r = calWeek(this.h.getProfile())[+d.dataset.evday]; this.previewCard(r.k === 'cash' ? { kind: 'cash', n: r.v } : r.k === 'glow' ? { kind: 'supply', id: r.adv ? 'glowAdv' : 'necklace', n: r.v } : r.k === 'trap' ? { kind: 'trap', id: r.v } : r.k === 'coin' ? { kind: 'coin', n: r.v } : { kind: 'item', id: 'chest_' + r.v }); } });
     // the countdown beside the greyed Claim, kept current while the screen is open
     if (el.id === 'events') setInterval(() => { if (el.hidden) return; const w = el.querySelector('.ev-wait'); if (w) { const t = untilTomorrow(); if (t < 1000) this.toggleEvents(true); else { const h = Math.floor(t / 3600e3), m = Math.floor((t % 3600e3) / 60e3), txt = h ? `${h} h ${m} min` : `${m} min`; if (w.textContent !== txt) w.textContent = txt; } } }, 1000); }
   // (3.0.0) one of the old one's things, or a bundle, seen from where Earl is: what it is, and her price
@@ -535,7 +537,7 @@ export class UI {
   // the rarity-edged box, a NEW tag in the corner) with the name under it and +1 at the bottom. The game runs on
   // behind them; a click anywhere sends them off early. entries: [{ kind: 'item'|'supply'|'trawl'|'trap', id }]
   // (4.16.9) while a shop, the catalog, the quest board or a crate is open, the cards wait; they come when it closes
-  gainsBlocked() { return ['catalog', 'workshop', 'chest', 'dave', 'cave', 'quests', 'confirm', 'oldcard', 'store', 'events'].some((id) => { const el = $(id); return el && !el.hidden; }); }
+  gainsBlocked() { /* (6.5.1) the gain shows at once, over a shop too (it waited until the shop closed and came up later, unexplained); only a chest opening holds it */ return ['chest'].some((id) => { const el = $(id); return el && !el.hidden; }); }
   gainInfo(e) { // (6.5.0) what a gained thing is: its name, rarity, picture, line and skills
     const P = this.h.getProfile && this.h.getProfile();
     {
@@ -584,8 +586,8 @@ export class UI {
   gainCard(i) {
     const el = document.getElementById('gainfx'), f = this.gainList && this.gainList[i]; if (!el || !f) return;
     const c = el.querySelector('.gx-card'), R = RARITY[f.r];
-    const sk = (f.sk || []).map(([k, l]) => SKILLS[k] ? `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ['', 'I', 'II', 'III', 'IV', 'V'][l]}</b> ${SKILLS[k].what}</div>` : '').join('');
-    const pw = f.def && f.def.legend && LEGEND[f.def.legend] ? `<div><b>${LEGEND[f.def.legend].name}</b> ${LEGEND[f.def.legend].what}</div>` : '';
+    const sk = (f.sk || []).map(([k, l]) => SKILLS[k] ? `<div><b style="color:${skillCol(k, l)}">${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ['', 'I', 'II', 'III', 'IV', 'V'][l]}</b> ${SKILLS[k].what}</div>` : '').join('');
+    const pw = f.def && f.def.legend && LEGEND[f.def.legend] ? `<div><b style="color:${skillCol(f.def.legend)}">${LEGEND[f.def.legend].name}</b> ${LEGEND[f.def.legend].what}</div>` : '';
     c.innerHTML = `<button class="gx-x" aria-label="Close">×</button><img src="${f.pic}" alt=""><h4 style="color:${R ? R.col : '#efe8d2'}">${f.name}</h4>${R ? `<p class="gx-r" style="color:${R.col}">${R.name}</p>` : ''}${f.line ? `<p>${f.line}</p>` : ''}${sk || pw ? `<div class="gx-sks">${pw}${sk}</div>` : ''}`;
     c.hidden = false;
   }
@@ -755,13 +757,16 @@ export class UI {
     const hab = habCls;
     let cells = '';
     for (let k = 0; k < rows * COLS; k++) if (!occ[k]) cells += `<div class="bs-cell${k < cap ? '' : ' locked'}" style="grid-row:${Math.floor(k / COLS) + 1};grid-column:${(k % COLS) + 1}"></div>`; // (6.5.0) a space he has not got yet: a plain dim recess, no padlock on each
+    // (6.5.1) only the animal that tipped the bag over is marked (the last taken in): the layout packs the biggest first,
+    // so smaller ones it pushed past the line were marked instead of the catch that did it
+    { const lastOver = placed.some((q) => q.over) ? Math.max(...placed.map((q) => q.i)) : -1; for (const q of placed) q.over = q.i === lastOver; }
     const fishCells = placed.map((q) => { const sp = SPECIES_BY_ID[q.s2.id]; if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
       return `<div class="fc bs-fish ${hab(sp)}${inTrouble(q.s2, true) ? ' trouble' : ''}${q.over ? ' over' : ''}${rarityCls(sp)}" data-b="${q.i}" style="grid-row:${q.r + 1} / span ${q.h};grid-column:${q.c + 1} / span ${q.w}" title="${sp.name}, ${state(q.s2)}">${q.s2.blessed ? '<i class="fc-bless" title="Blessed"></i>' : ''}${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}"><i class="fc-dot" style="background:${dot(q.s2)}"></i></div>`; }).join('');
     const over = usedSp > cap;
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag${over ? ' <i class="over">overencumbered</i>' : ''}</h4><div class="bag-spaces" style="--cols:${COLS};--rows:${rows}">${cells}${fishCells}</div>`
       + this.photoBoxes(P, g)
       + `<div class="worth-paint" style="--wp:${Math.min(104, Math.floor(400 / (money(total).length * 0.52)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
-      + `<div class="inv-right${g.earl && g.earl.inSub ? '' : ' sub-away'}">${g.earl && g.earl.inSub ? '' : `<i class="sub-lock" style="background-image:url(${lockPic()})"></i>`}<div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
+      + `<div class="inv-right${g.earl && g.earl.inSub ? '' : ' sub-away'}">${this.trawlSlot(P, g)}${g.earl && g.earl.inSub ? '' : '<i class="sub-lock"></i>'}<div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
@@ -769,6 +774,14 @@ export class UI {
       + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank</h4><canvas class="ct-big off"></canvas>`)
       + `<p class="ct-cap">${elsewhere}Click an animal for its card; ${g.earl && g.earl.inSub ? 'drag it to move it' : 'drag it off the panel to throw it back'}</p></div></div></div>`
       + (this.fishSel ? this.fishPop(P, g) : '') + (this.petSel ? this.petPop(P) : '') + (this.phSel != null ? this.photoPop(P, g) : '');
+  }
+  // (6.5.1) the trawl net the sub lets out: each kind in the hatch a small tile with its count, the chosen one lit; a
+  // tap chooses it (the trawl button then always lets out that one). Out of the sub it can still be chosen
+  trawlSlot(P, g) {
+    const N = netsOf(g.items), kinds = Object.keys(NETS_SUB).filter((k) => N[k] > 0 || (P.trawlPick === k));
+    const pick = P.trawlPick && kinds.includes(P.trawlPick) ? P.trawlPick : kinds[0];
+    const tile = (k) => { const T = NETS_SUB[k], R = RARITY[T.rarity || (k === 'adv' ? 'rare' : 'common')]; return `<button class="tw-opt${k === pick ? ' on' : ''}${N[k] > 0 ? '' : ' none'}" data-tw="${k}"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt=""><b style="color:${R ? R.col : 'inherit'}">${T.name}</b><i>×${N[k] || 0}</i></button>`; };
+    return `<div class="tw-slot"><h4>Trawl net</h4>${kinds.length ? kinds.map(tile).join('') : '<span class="tw-none">None in the hatch</span>'}</div>`;
   }
   // (5.0) the pet's card: what it is, and the way out of the slot (the aquarium, or the sea), with a warning
   petPop(P) {
@@ -1185,8 +1198,8 @@ export class UI {
   // one thing, as a column of the pop-up: its picture, name, rarity, what it is, its skills and its set
   itemCol(P, q, head) {
     const it = ITEMS[q.id], R = RARITY[it.rarity], T = totals(P), roman = ['', 'I', 'II', 'III', 'IV'];
-    const skills = (q.sk || []).map(([k, l]) => `<div class="lk-sk"><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + roman[l]}</b><span>${SKILLS[k].what}</span></div>`).join('')
-      + (q.leg ? `<div class="lk-sk leg"><b>✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span>${LEGEND[q.leg].cd ? powerStatus(P, q.leg) : ''}</div>` : ''); // (5.16.0) a power that triggers: ready, or its hourglass and time left
+    const skills = (q.sk || []).map(([k, l]) => `<div class="lk-sk"><b style="color:${skillCol(k, l)}">${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + roman[l]}</b><span>${SKILLS[k].what}</span></div>`).join('')
+      + (q.leg ? `<div class="lk-sk leg"><b style="color:${skillCol(q.leg)}">✦ ${LEGEND[q.leg].name}</b><span>${LEGEND[q.leg].what}</span>${LEGEND[q.leg].cd ? powerStatus(P, q.leg) : ''}</div>` : ''); // (5.16.0) a power that triggers: ready, or its hourglass and time left
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
     return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}${it.legend ? ', net of legend' : ''}</span><p>${it.line || ''}</p>
       ${(() => { const M2 = MEASURES[it.kind]; if (!M2) return ''; const rows2 = M2.map((r) => `<div class="ip-st"><span>${r[0]}</span><b>${measureHtml(it.kind, r, it, q.sk)}</b></div>`).concat(crossBoosts(it.kind, q.sk).map(([a, b]) => `<div class="ip-st"><span>${a}</span><b><span class="boost">${b}</span></b></div>`)).join(''); return `<div class="ip-stats">${rows2}</div>`; })() /* (5.12.0) its numbers on its own card */}

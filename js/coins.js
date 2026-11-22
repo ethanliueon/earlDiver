@@ -548,8 +548,8 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint =
     if (look && look.pic) { const bl = x.createRadialGradient(0, 0, 0, 0, 0, R * 0.8); bl.addColorStop(0, 'rgba(226,214,180,0.2)'); bl.addColorStop(1, 'rgba(226,214,180,0)'); x.fillStyle = bl; x.beginPath(); x.arc(0, 0, R * 0.8, 0, TAU); x.fill(); // a little more light behind a dark net // (5.17.0) the tool he has on, drawn from its own shop picture: turned on the diagonal, its business end filling the coin
       const P0 = look.pic, k = (R * 1.5) / P0.span; x.save(); x.rotate(P0.rot); x.scale(k, k); x.translate(-P0.fx, -P0.fy);
       x.shadowColor = 'rgba(0,0,0,0.6)'; x.shadowBlur = 3 / k * R / 30; x.filter = 'brightness(1.3) contrast(1.15)'; x.drawImage(P0.c, 0, 0); x.filter = 'none'; x.restore(); } // lifted, so a dark net stands off its coin
-    else if (ART[kind]) { const k = R * 0.66 / 50; x.save(); x.scale(k, k); ART[kind](x, look || {}); x.restore(); }
-    else drawGlyph(x, kind, 0, 0, R * 0.95);
+    else if (ART[kind]) { const k = R * 0.66 / 50 * ((look && look.k) || 1); x.save(); x.scale(k, k); ART[kind](x, look || {}); x.restore(); } /* (6.5.1) look.k: the picture larger (the interact button's) */
+    else drawGlyph(x, kind, 0, 0, R * 0.95 * ((look && look.k) || 1));
     x.restore();
     if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.6; x.fillStyle = '#808080'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(6,8,8,0.34)'; x.fill(); } // (5.16.7) greyer and darker: opaque now, so this alone says 'not now'
     if (state === 'down') { x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); }

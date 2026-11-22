@@ -77,6 +77,14 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   outlined, never bracketed. Panels appear only when drawn; nothing behind a panel is drawn at a lower rate. The game's
   sound is "ambient" on iOS (follows the silent switch, never "now playing"). Marine snow only below 150-200 m.
 
+- **Decided in 6.5.1**: the daily gift's first week is a new player's own, once (pine crate, $1,000, 3 advanced
+  glow sticks, fish trap, station case, $5,000, Siren's casket); from week 2 it repeats scaled by the hidden level
+  (store.js). Siren's casket 15/80/5 (rare/exotic/legendary). No frozen lessons: the Log's steps teach in the running
+  world with a quiet ring. Things to use breathe in their own shape (the sub's exact silhouette), nothing drawn round
+  them. Skill names coloured by level (I uncommon .. IV legendary; flat skills exotic; powers legendary); item cards
+  centre only the picture, name and rarity. Layers that scroll with the camera move by its motion, never by its
+  place times the zoom. Only the catch that tipped the bag over is marked.
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build

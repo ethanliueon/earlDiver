@@ -4,6 +4,8 @@
 // Poseidon's chest; then it starts again at day 1.
 import { CHESTS, chestPicture } from './chests.js';
 import { RARITY } from './item_data.js';
+import { playerLevel } from './quests.js';
+import { TRAPS } from './economy.js';
 
 export const STANDARD = ['crate', 'footlocker', 'siren'];
 const DEALS = ['crate3', 'tea', 'case', 'case3', 'strongbox', 'salvage', 'expedition', 'leviathan', 'poseidon'];
@@ -11,14 +13,27 @@ const SLOT = 4 * 3600e3;
 export const dealNow = (t = Date.now()) => DEALS[Math.floor(t / SLOT) % DEALS.length];
 export const dealLeft = (t = Date.now()) => (Math.floor(t / SLOT) + 1) * SLOT - t;
 // the seven gifts
-export const CAL = [
-  { k: 'chest', v: 'crate' }, { k: 'cash', v: 1000 }, { k: 'glow', v: 3 }, { k: 'coin', v: 1 },
-  { k: 'chest', v: 'case' }, { k: 'cash', v: 3000 }, { k: 'chest', v: 'poseidon' },
+// (6.5.1) the first week is a new player's own, given once: a pine crate, $1,000, advanced glow sticks, a fish trap, a
+// station case, $5,000 and a Siren's casket. From the second week the calendar repeats, its gifts set by the hidden
+// player level (quests.js playerLevel): the chests, the cash and the glow sticks grow with him; day 7 is the week's chest
+export const WEEK1 = [
+  { k: 'chest', v: 'crate' }, { k: 'cash', v: 1000 }, { k: 'glow', v: 3, adv: true }, { k: 'trap', v: 'fish' },
+  { k: 'chest', v: 'case' }, { k: 'cash', v: 5000 }, { k: 'chest', v: 'siren' },
 ];
+const TIERS = [ // [up to level, daily chest, cash days 2 and 6, advanced glow sticks, the week's chest]
+  [3, 'crate', [300, 800], false, 'footlocker'], [6, 'case', [1500, 4000], false, 'siren'],
+  [9, 'footlocker', [6000, 15000], true, 'leviathan'], [10, 'strongbox', [12000, 30000], true, 'poseidon'],
+];
+export function calWeek(P) {
+  calState(P); if (!(P.cal.week > 0)) return WEEK1;
+  const L = playerLevel(P), t = TIERS.find((q) => L <= q[0]) || TIERS[3], [, ch, cash, adv, wk] = t;
+  return [{ k: 'chest', v: ch }, { k: 'cash', v: cash[0] }, { k: 'glow', v: 3, adv }, { k: 'coin', v: 1 }, { k: 'chest', v: ch }, { k: 'cash', v: cash[1] }, { k: 'chest', v: wk }];
+}
+export const CAL = WEEK1; // (the old name, for the first week)
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 export function calState(P) { if (!P.cal) P.cal = { day: 0, last: null }; return { day: P.cal.day, ready: P.cal.last !== today() }; }
-export function calClaimed(P) { calState(P); P.cal.last = today(); P.cal.day = (P.cal.day + 1) % CAL.length; }
-export const giftName = (r) => (r.k === 'chest' ? CHESTS[r.v].name : r.k === 'cash' ? `$${r.v.toLocaleString()}` : r.k === 'glow' ? `${r.v} glow sticks` : `${r.v} old coin${r.v > 1 ? 's' : ''}`);
+export function calClaimed(P) { calState(P); P.cal.last = today(); P.cal.day = (P.cal.day + 1) % 7; if (P.cal.day === 0) P.cal.week = (P.cal.week || 0) + 1; } // (6.5.1) a week done: the next is the level's
+export const giftName = (r) => (r.k === 'chest' ? CHESTS[r.v].name : r.k === 'cash' ? `$${r.v.toLocaleString()}` : r.k === 'glow' ? `${r.v} ${r.adv ? 'advanced ' : ''}glow sticks` : r.k === 'trap' ? (TRAPS[r.v] ? TRAPS[r.v].name : 'Trap') : `${r.v} old coin${r.v > 1 ? 's' : ''}`);
 const hrs = (ms) => { const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 3600e3) / 60e3); return h ? `${h} h ${m} min` : `${m} min`; };
 
 // the Shop: a row of chests, each its picture, name, tier, items, price and Buy
@@ -33,11 +48,11 @@ export function storeHtml(P) {
 // (6.5.0) today's gift and its Claim button pulse slowly; once claimed, the next day's button is greyed with the time
 // left until it can be claimed beside it. A tap on any day shows what it is (a chest, its odds)
 export const untilTomorrow = (t = new Date()) => { const n = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1); return n - t; };
-export function eventsHtml(P, coinPic, glowPic) {
-  const st = calState(P);
-  const days = CAL.map((r, i) => {
-    const done = i < st.day, now = i === st.day, pic = r.k === 'chest' ? chestPicture(CHESTS[r.v].look, 120, 90) : r.k === 'coin' ? coinPic : r.k === 'glow' ? glowPic : null;
-    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === CAL.length - 1 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">✓</i>' : ''}</button>`;
+export function eventsHtml(P, coinPic, glowPic, picOf) {
+  const st = calState(P), W = calWeek(P);
+  const days = W.map((r, i) => {
+    const done = i < st.day, now = i === st.day, pic = r.k === 'chest' ? chestPicture(CHESTS[r.v].look, 120, 90) : r.k === 'coin' ? coinPic : r.k === 'glow' ? (r.adv && picOf ? picOf('supply', 'glowAdv') : glowPic) : r.k === 'trap' && picOf ? picOf('trap', r.v) : null;
+    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === 6 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">✓</i>' : ''}</button>`;
   }).join('');
   return `<div class="st-plate ev"><button class="st-x" aria-label="Close">×</button><h2>Daily gift</h2><div class="ev-row">${days}</div><div class="ev-foot">${st.ready ? `<button class="ev-claim" data-ev="claim">Claim day ${st.day + 1}</button>` : `<span class="ev-wait">${hrs(untilTomorrow())}</span><button class="ev-claim" disabled>Claim day ${st.day + 1}</button>`}</div></div>`;
 }

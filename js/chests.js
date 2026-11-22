@@ -2,7 +2,7 @@
 // the chest's odds, then any item of that rarity in the chest pool (set pieces included). Bought and opened
 // at once, in a short reveal (about 3 s; a click skips it): the lid creaks up, a little light in the
 // rarity's colour, and the thing rises out with its name and skills. A full locker can't open one.
-import { RARITY, SKILLS, LEGEND } from './item_data.js';
+import { RARITY, SKILLS, LEGEND, skillCol } from './item_data.js';
 import { ITEMS, CHEST_POOL } from './items.js';
 import { TAU } from './util.js';
 
@@ -32,7 +32,7 @@ export const CHESTS = {
   expedition: { name: 'Expedition trunk', tier: 'exotic', n: 3, look: 'trunk', coin: 15, odds: { rare: 75, exotic: 25 },
     line: "Brass corners, a society's crest, a name scratched off." },
   // ---- legendary: never a legendary for certain
-  siren: { name: "Siren's casket", tier: 'legendary', n: 1, look: 'siren', coin: 25, odds: { rare: 5, exotic: 90, legendary: 5 },
+  siren: { name: "Siren's casket", tier: 'legendary', n: 1, look: 'siren', coin: 25, odds: { rare: 15, exotic: 80, legendary: 5 }, /* (6.5.1) the owner's odds */
     line: 'Pearl and black coral, sung shut.' },
   leviathan: { name: "Leviathan's hoard", tier: 'legendary', n: 3, look: 'leviathan', coin: 30, odds: { rare: 50.3, exotic: 48, legendary: 1.7 }, atLeast: 'exotic',
     line: 'Bound in bone the size of a ship.' },
@@ -149,7 +149,7 @@ export class ChestReveal {
   card(i) { // a find's card: its picture, name, rarity, what it does
     const f = this.finds[i], el = this.cardEl; if (!f) return;
     if (f.coin) el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><img src="${this.h.coinPic()}" alt=""><h4>Old coin</h4><p class="rr r-legendary">Legendary</p><p>Hand-struck and worn nearly smooth. The Old One trades for them.</p><p class="cx-have">${this.h.coins()} in the locker</p>`;
-    else { const d = f.def, sk = (f.q.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
+    else { const d = f.def, sk = (d.legend && LEGEND[d.legend] ? `<div><b style="color:${skillCol(d.legend)}">${LEGEND[d.legend].name}</b> ${LEGEND[d.legend].what}</div>` : '') + (f.q.sk || []).map(([k, l]) => `<div><b style="color:${skillCol(k, l)}">${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join(''); // (6.5.1) its power too, each name in its strength's colour
       el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><img src="${this.h.picture(d, 300, 180)}" alt=""><h4 style="color:${RARITY[d.rarity].col}">${d.name}</h4><p class="rr r-${d.rarity}">${RARITY[d.rarity].name}</p><p>${d.line || ''}</p>${sk ? `<div class="cx-sks">${sk}</div>` : ''}`; } // (6.5.0) its name in its rarity's colour; no Put it on here: gear is put on in the bag alone
     el.hidden = false;
   }

@@ -392,8 +392,9 @@ export class Fauna {
       lo: night && b.nightMin !== undefined ? b.nightMin : b.min, hi: night && b.nightMax !== undefined ? b.nightMax : b.max,
     });
     for (let i = 0; i < n; i++) {
-      // denser in the core, thinning toward the edges
-      const a = rng() * Math.PI * 2, rr = Math.pow(rng(), 0.75);
+      // (6.5.1) evenly spaced places, filling the school's oval from the middle out (a sunflower's pattern, each fish its
+      // own distance from its neighbours, a little loose): random places left clumps, near-overlaps and lines
+      const a = i * 2.39996 + (rng() - 0.5) * 0.5, rr = Math.min(1, Math.sqrt((i + 0.5) / n) * (0.94 + rng() * 0.1));
       const c = this.makeFish(sp, x + Math.cos(a) * rr * baseR * 1.8, y + Math.sin(a) * rr * baseR, dir, gid, false);
       c.ox = Math.cos(a) * rr; c.oy = Math.sin(a) * rr;
       c.speed = clamp(0.6 + sp.len * 3, 0.6, 1.8); // (5.7.3) back to version 4's
@@ -638,7 +639,11 @@ export class Fauna {
         // a fixed place in the school's shape; only the spacing tightens when it is threatened
         const tight = 1 - 0.15 * Math.min(1, school.threat);
         const ox = c.ox + Math.sin(time * 0.31 + c.wob) * 0.04, oy = c.oy + Math.cos(time * 0.27 + c.wob * 1.7) * 0.04;
-        tx = school.x + ox * school.baseR * 1.8 * tight; ty = school.y + oy * school.baseR * tight;
+        // (6.5.1) at the surface or the seabed the whole school squashes, keeping its order and spacing side to side,
+        // rather than each fish that would be outside being pushed to the same depth (which drew shallow krill as a line)
+        const Rv = school.baseR * tight, sT = (this.surfY ? this.surfY(school.x) : 0) + 0.5 + c.len * 0.2, sB = W.floorAt(school.x) - this.skin(c) - 0.4, room = sB - sT;
+        const vk = room < 2 * Rv ? Math.max(0.25, room / (2 * Rv)) : 1, cy = room < 2 * Rv ? (sT + sB) / 2 : clamp(school.y, sT + Rv, sB - Rv);
+        tx = school.x + ox * school.baseR * 1.8 * tight; ty = cy + oy * Rv * vk;
         // (2.6.6) a place above the surface is taken just under it, still in the school's order
         // (the higher its place, the nearer the top), so the school squeezes instead of flattening
         const sf = this.surfY ? this.surfY(tx) : 0;

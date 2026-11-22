@@ -33,14 +33,14 @@ import { CHESTS, oddsText } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
 import { abilityOf, abilityState, whyNot, cooldownLeft } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
-import { SKILLS, RARITY } from './item_data.js';
+import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
 import { kitOf } from './items.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { rollChest, rollChestAll } from './chests.js';
-import { calState, calClaimed, CAL } from './store.js';
+import { calState, calClaimed, calWeek } from './store.js';
 import { hullCap } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
@@ -435,7 +435,7 @@ function showOldShop() {
   const P = profile, st = oldStock(P), have = P.gold || 0, ROMAN = ['', 'I', 'II', 'III', 'IV'], HGI = `<img class="hg" src="${hourglassURL()}" alt="">`, GC = `<img class="gc" src="${pictureOf('gold', 1, 40, 40, true)}" alt="">`;
   const left = (it) => { const l = leftOf(it), hh = Math.floor(l / 3600), mm = Math.floor((l % 3600) / 60); return `${hh ? hh + ' h ' : ''}${mm} min`; };
   const col = (it, i) => { const def = ITEMS[it.id]; if (!def) return '';
-    const sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b></div>`).join('');
+    const sk = (it.sk || []).map(([k, l]) => `<div><b style="color:${skillCol(k, l)}">${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b></div>`).join('');
     // (6.1.9) given for: it stays, dimmed, and in place of her price an hourglass with the time until she lays out another
     const foot = it.sold ? `<div class="os-wait">${HGI}${left(it)}</div>` : `<small class="os-left">${HGI}${left(it)}</small><button data-oc="item:${i}" ${have < it.cost ? 'disabled' : ''}>${GC}${it.cost}</button>`;
     return `<div class="os-item r-${def.rarity}${it.sold ? ' gone' : ''}"><div class="os-pic"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""></div><small class="rr">${RARITY[def.rarity].name}</small><b style="color:${RARITY[def.rarity].col}">${def.name}</b><div class="oc-sk">${sk}</div>${foot}</div>`; };
@@ -447,7 +447,7 @@ function showOldCard(H) {
   // (6.1.1) one of her three things: its card, how long it stays, and her price in gold coins (nothing else will do)
   const P = profile, st = oldStock(P), ROMAN = ['', 'I', 'II', 'III', 'IV'];
   const it = st.items[H.i]; if (!it) return;
-  const def = ITEMS[it.id], sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
+  const def = ITEMS[it.id], sk = (it.sk || []).map(([k, l]) => `<div><b style="color:${skillCol(k, l)}">${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
   const have = P.gold || 0, left = leftOf(it), hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60);
   ui.oldCard(`<div class="oc-top r-${def.rarity}"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""><div class="oc-t"><small class="rr">${RARITY[def.rarity].name}</small><b style="color:${RARITY[def.rarity].col}">${def.name}</b><span>${def.line || ''}</span>${def.good ? `<i>${def.good}</i>` : ''}<div class="oc-sk">${sk}</div></div></div>
     <div class="oc-buy"><small><img class="hg" src="${hourglassURL()}" alt="">${hh ? hh + ' h ' : ''}${mm} min</small><em class="oc-coins"><img class="gc" src="${pictureOf('gold', 1, 40, 40, true)}" alt="">${have}</em>${it.sold ? '' : `<button data-oc="item:${H.i}" ${have < it.cost ? 'disabled' : ''}><img class="gc" src="${pictureOf('gold', 1, 40, 40, true)}" alt="">${it.cost}</button>`}</div>`);
@@ -488,10 +488,11 @@ function costOf(kind) {
 // a chest needs room in the locker, or it waits
 function claimGift() {
   const P = profile; if (!P) return false; const st = calState(P); if (!st.ready) return false;
-  const r = CAL[st.day];
+  const r = calWeek(P)[st.day];
   if (r.k === 'chest') { if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; } giveItem(P, 'chest_' + r.v); ui.showGains([{ kind: 'item', id: 'chest_' + r.v }], true); }
   else if (r.k === 'cash') { P.cash = Math.round(((P.cash || 0) + r.v) * 100) / 100; ui.showGains([{ kind: 'cash', n: r.v }], true); } // (6.5.0) a gift's cash floats like the rest
-  else if (r.k === 'glow') { P.spare = P.spare || {}; P.spare.necklace = (P.spare.necklace || 0) + r.v; ui.showGains([{ kind: 'supply', id: 'necklace', n: r.v }], true); }
+  else if (r.k === 'glow') { P.spare = P.spare || {}; const gk = r.adv ? 'glowAdv' : 'necklace'; P.spare[gk] = (P.spare[gk] || 0) + r.v; ui.showGains([{ kind: 'supply', id: gk, n: r.v }], true); }
+  else if (r.k === 'trap') { convertOldTraps(P); P.traps[r.v] = (P.traps[r.v] || 0) + 1; ui.showGains([{ kind: 'trap', id: r.v }], true); } // (6.5.1) the first week's fish trap
   else if (r.k === 'coin') { if (lockerFree(P) <= 0 && (P.gold || 0) % 10 === 0) { hud.toast('Locker full', 'warn'); return false; } P.gold = (P.gold || 0) + r.v; ui.showGains([{ kind: 'coin', n: r.v }], true); }
   calClaimed(P); saveProfile(P); audio.ready && audio.sale(); return true;
 }
@@ -1008,55 +1009,21 @@ function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === '
 //    is given after.
 const MOVE_KEYS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'];
 function lessons() {
-  const P = profile, e = g.earl, sub = g.sub; g.frozen = false;
-  if (!P || g.mode !== 'play' || P.tut === 'on' || !P.tut || P.tut === 'skip' || g.kill || sub.imploded) { g.lesson = null; return; }
-  const set = (text, spot, allow, to) => { g.tut = { text, to: to || null, spot, fish: null }; g.tutHidePrompts = true; g.lesson.allow = new Set(allow); g.frozen = true; };
-  // starting a lesson
-  if (!g.lesson && e.inSub && !sub.docked && !ui.anyOpen() && !g.alarm) {
-    const floor = g.world.floorAt(sub.x);
-    if (!P.lessonAir && sub.y > 2.2 && sub.o2 <= 10) {
-      g.lesson = { kind: 'air' }; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); ui.showGains([{ kind: 'supply', id: 'airTank' }]);
-    } else if (!P.lessonTrawl && (P.subTimes || 0) >= 2 && sub.y >= 10 && floor - sub.y >= 10) {
-      const dir = sub.facing || 1, cx = sub.x + dir * 6, cy = sub.y + 4; // (just ahead: the net trails some 10 m behind her)
-      // (4.12.2) one moon jelly, drifting just ahead: one animal to catch, one to put in the tank
-      const school = [lessonJelly(cx, cy, dir)];
-      { const N = netsOf(g.items); if (!N.basic) N.basic = 1; } // (the lesson's net is a beginner's)
-      g.lesson = { kind: 'trawl', part: 'drop', school };
-    }
-  }
-  const L = g.lesson; if (!L) return;
-  if (!e.inSub) { g.tut = null; return; } // out of the sub: the lesson waits for him (the sea runs on)
-  if (L.kind === 'air') {
-    if (sub.o2 >= sub.o2Max - 1) { g.lesson = null; P.lessonAir = 'done'; if ((g.items.airTank || 0) < 2) { g.items.airTank = (g.items.airTank || 0) + 1; ui.showGains([{ kind: 'supply', id: 'airTank' }]); } syncProfile(); saveProfile(P); hud.toast('Cabin air full. Here is a spare tank for next time', 'note'); return; }
-    set(g.tankFit ? 'Connecting the tank…' : 'The cabin air is almost gone: connect a backup tank', g.tankFit ? null : { act: 'airtank', say: 'Connect a backup tank' }, ['r']);
-    return;
-  }
-  // the trawl
-  const n = g.subNet, alive = L.school.filter((f) => !f.dead), mid = alive.length ? { x: alive.reduce((a, f) => a + f.x, 0) / alive.length, y: alive.reduce((a, f) => a + f.y, 0) / alive.length } : null;
-  if (L.part === 'drop' && n) L.part = 'tow';
-  if (L.part === 'tow' && n && n.phase !== 'drop' && (n.phase !== 'tow' || n.got.length >= 1 || !alive.length)) L.part = n.phase === 'tow' ? 'close' : 'haul';
-  if (L.part === 'close' && n && n.phase !== 'tow') L.part = 'haul';
-  if (L.part === 'haul' && !g.subNet) {
-    if (g.subTank.some((s) => s.pile)) L.part = 'tank';
-    else { // nothing in it: the net back, a new school ahead, and again
-      { const N = netsOf(g.items); N.basic = Math.max(1, N.basic); } const dir = sub.facing || 1; L.school = [lessonJelly(sub.x + dir * 6, sub.y + 4, dir)];
-      L.part = 'drop'; hud.toast('Nothing in it. Try again: drive straight through the jellyfish', 'note');
-    }
-  }
-  if (L.part === 'tank' && ui.tankOpen && ui.tankOpen()) L.part = 'drag';
-  if (L.part === 'drag' && !g.subTank.some((s) => s.pile)) L.part = 'end';
-  else if (L.part === 'drag' && !(ui.tankOpen && ui.tankOpen())) L.part = 'tank'; // (4.12.2) the tank room closed before the catch was in: back to opening it
-  if (L.part === 'end') {
-    g.lesson = null; P.lessonTrawl = 'done';
-    if (!netTotal(g.items)) { netsOf(g.items).basic = 1; ui.showGains([{ kind: 'trawl', id: 'basic' }]); }
-    syncProfile(); saveProfile(P); hud.toast('Lesson done. A spare trawl net is in the hatch', 'note'); return;
-  }
-  if (L.part === 'drop') set('Let out the trawl net', { act: 'trawl', say: 'Let out the net' }, ['n']);
-  else if (L.part === 'tow') { set('Steer so the net passes over the jellyfish', null, MOVE_KEYS, mid); if (n && g.tut) g.tut.from = { x: n.mx, y: n.my }; } // (4.8.1) the trail from the net's mouth: it is the net that has to get there
-  else if (L.part === 'close') set('Close the net', { act: 'trawl', say: 'Close the net' }, ['n'].concat(MOVE_KEYS));
-  else if (L.part === 'haul') set('The net is coming in', null, MOVE_KEYS);
-  else if (L.part === 'tank') set('Open the tank room to see your catch', { act: 'tank', say: 'Tank room' }, ['t']);
-  else if (L.part === 'drag') set('Drag the jellyfish off the floor into the tank: out of the water, it dies', null, []);
+  // (6.5.1) no frozen lessons any more: the Log's steps teach in the running world (the sea goes on, air is used, the
+  // thing can come, he can leave the sub). This only gives what a step needs and says which button to look at:
+  //  - the trawl step with no net in the hatch: a beginner's net, once
+  //  - the cabin air first running low: a backup tank, once (the air step needs one)
+  //  - a quiet ring on the trawl button (the step, or a net with something in it that can be closed) or the air button
+  const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false;
+  if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) return;
+  const mid = g.questMainId;
+  if (mid === 'trawl' && !P.lessonTrawl && e.inSub) { P.lessonTrawl = 'done'; if (!netTotal(g.items)) { netsOf(g.items).basic = 1; ui.showGains([{ kind: 'trawl', id: 'basic' }], true); } syncProfile(); saveProfile(P); }
+  if (!P.lessonAir && e.inSub && !sub.docked && sub.y > 2.2 && sub.o2 <= 10) { P.lessonAir = 'done'; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); ui.showGains([{ kind: 'supply', id: 'airTank' }], true); syncProfile(); saveProfile(P); }
+  if (!e.inSub || sub.docked || ui.anyOpen()) return;
+  const n = g.subNet;
+  if (n && n.phase === 'tow' && n.got && n.got.length) g.questHint = 'n'; // something in the net: it can be closed
+  else if (mid === 'trawl' && !n && netTotal(g.items) && sub.y >= 6) g.questHint = 'n';
+  if (sub.o2Max && sub.o2 / sub.o2Max < 0.3 && (g.items.airTank || 0) > 0 && !g.tankFit) { g.questHint = g.questHint || 'r'; g.airCallout = true; }
 }
 // (4.12.2) the trawl lesson's one animal: a moon jelly drifting just ahead of the sub, held where it is
 function lessonJelly(x, y, dir) {
@@ -2397,8 +2364,11 @@ function update(dt) {
       };
       const kinds = netKinds(g.items);
       if (g.subNet || canFireSubNet(g)) letOut(null);
-      else if (g.lesson) letOut('basic');
-      else { ui.pickNet(kinds, netsOf(g.items), (k) => { if (g.earl.inSub && !g.subNet) letOut(k); }); audio.ready && audio.click(); }
+      else { // (6.5.1) the net chosen in the bag (the Catch tab's trawl slot) goes out, no question asked under way
+        const N0 = netsOf(g.items), pick = profile && profile.trawlPick;
+        if (pick && N0[pick] > 0) letOut(pick);
+        else if (pick && !(N0[pick] > 0)) hud.toast(`No ${NETS_SUB[pick].name.toLowerCase()} left: choose another in the bag`, 'warn');
+        else letOut(kinds[0]); }
     }
     const netRes = updateSubNet(g, dt, (sp) => canTakeLive(sp) || LEGENDARY.has(sp.id));
     if (g.netEscape) { hud.toast(`The ${g.netEscape.name.toLowerCase()} broke out of the net`, 'warn'); g.netEscape = null; } // (4.11.1)

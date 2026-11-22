@@ -306,7 +306,7 @@ export class Renderer {
     // the foreground (they are farther off), so the water is never one flat colour
     if (topY < H) {
       ctx.save(); ctx.beginPath(); ctx.rect(0, Math.max(0, topY + ppm), W, H); ctx.clip();
-      this.texture(ctx, 'murk', 70, 0.28 + 0.12 * smoothstep(20, 400, cam.y), 'soft-light', W / 2 - cam.x * ppm * 0.55 + t * ppm * 0.25, H / 2 - cam.y * ppm * 0.55);
+      { const o = this.drift('murk', cam, ppm, 0.55); this.texture(ctx, 'murk', 70, 0.28 + 0.12 * smoothstep(20, 400, cam.y), 'soft-light', W / 2 - o.x + t * ppm * 0.25, H / 2 - o.y); } // (6.5.1) moved by how far the camera moved, not its place times the zoom
       ctx.restore();
     }
     // distant parallax silhouettes (slope / cliffs far behind)
@@ -824,6 +824,27 @@ export class Renderer {
       look.patches = sub.patches;
       const r = drawSub(dctx, 9 * ppm, t, sub.stress, lights, armArg, look);
       dctx.restore();
+      // (6.5.1) the sub he can board: not a shape drawn round it but the sub itself, breathing. It is drawn a second time
+      // into its own small canvas, exactly as it stands (any sub, any refit, turned or tilted); from that its own
+      // outline gets a thin bone rim and a soft glow behind it, and its paint lifts a little and settles, slowly
+      if (this.touch && g.tapMarks && g.tapMarks.some((m) => m.what === 'sub')) { // (awash at dusk it is drawn through its own canvas: the lift goes there too)
+        const hw = Math.ceil(20 * ppm), hh = Math.ceil(16 * ppm), hx = S(sub.x) - hw / 2, hy = Sy(sub.y) - hh / 2;
+        const hc = this.subHlC || (this.subHlC = document.createElement('canvas')), sc2 = this.subHlS || (this.subHlS = document.createElement('canvas'));
+        for (const c of [hc, sc2]) if (c.width !== hw || c.height !== hh) { c.width = hw; c.height = hh; }
+        const h1 = hc.getContext('2d'); h1.setTransform(1, 0, 0, 1, 0, 0); h1.clearRect(0, 0, hw, hh); h1.translate(-hx, -hy);
+        h1.save(); h1.translate(S(sub.x), Sy(sub.y)); h1.rotate(sub.tilt * Math.sign(sxs)); h1.scale(sxs, 1); drawSub(h1, 9 * ppm, t, sub.stress, lights, armArg, look); h1.restore();
+        const h2 = sc2.getContext('2d'); h2.setTransform(1, 0, 0, 1, 0, 0); h2.globalCompositeOperation = 'source-over'; h2.clearRect(0, 0, hw, hh); h2.drawImage(hc, 0, 0); h2.globalCompositeOperation = 'source-in'; h2.fillStyle = '#ece4cc'; h2.fillRect(0, 0, hw, hh);
+        const q = 0.5 + 0.5 * Math.sin(t * 2.2), d = Math.max(1.2, ppm * 0.045);
+        // the rim and the glow, made in their own canvas: the bone shape spread a hair each way, a soft blur of it, then
+        // the sub's own shape cut out, so only what lies outside its edge is left to lay over the scene
+        const rc2 = this.subHlR || (this.subHlR = document.createElement('canvas')); if (rc2.width !== hw || rc2.height !== hh) { rc2.width = hw; rc2.height = hh; }
+        const h3 = rc2.getContext('2d'); h3.setTransform(1, 0, 0, 1, 0, 0); h3.globalCompositeOperation = 'source-over'; h3.clearRect(0, 0, hw, hh);
+        h3.save(); h3.globalAlpha = 0.5; h3.shadowColor = 'rgba(236,228,204,1)'; h3.shadowBlur = Math.max(8, ppm * 0.5); h3.drawImage(sc2, 0, 0); h3.restore();
+        h3.globalAlpha = 1; for (const [ax, ay] of [[d, 0], [-d, 0], [0, d], [0, -d], [d * 0.7, d * 0.7], [-d * 0.7, d * 0.7], [d * 0.7, -d * 0.7], [-d * 0.7, -d * 0.7]]) h3.drawImage(sc2, ax, ay);
+        h3.globalCompositeOperation = 'destination-out'; h3.drawImage(hc, 0, 0); h3.globalCompositeOperation = 'source-over';
+        ctx.save(); ctx.globalAlpha = 0.6 + 0.4 * q; ctx.drawImage(rc2, hx, hy); ctx.restore();
+        dctx.save(); dctx.globalCompositeOperation = 'screen'; dctx.globalAlpha = 0.1 + 0.14 * q; dctx.drawImage(hc, hx, hy); dctx.restore(); // its own paint, lifting and settling
+      }
       // mid-turn the hull is seen nearly bow-on: draw its round cross-section over the squashed side view
       const bow = clamp(1 - Math.abs(cy) / 0.5, 0, 1);
       if (bow > 0) {
@@ -945,6 +966,11 @@ export class Renderer {
       ctx.beginPath(); ctx.moveTo(S(mx), Sy(my - r)); ctx.quadraticCurveTo(S(mx + dir * 0.25), Sy(my), S(mx), Sy(my + r)); ctx.stroke();
       ctx.fillStyle = '#e8762a'; for (const f of [-0.35, 0.35]) { ctx.beginPath(); ctx.arc(S(mx - dir * 0.3 + f * 0.4), Sy(my - r - 0.05), Math.max(1.6, ppm * 0.09), 0, TAU); ctx.fill(); }
       ctx.fillStyle = '#2a2c2a'; for (const f of [-0.3, 0, 0.3]) { ctx.beginPath(); ctx.arc(S(mx - dir * 0.2 + f * 0.4), Sy(my + r + 0.05), Math.max(1.6, ppm * 0.08), 0, TAU); ctx.fill(); }
+      // (6.5.1) something in it: the mouth breathes with a faint warm light (as the trawl button does) until it is closed
+      if (n.phase === 'tow' && n.got && n.got.length) { const q = 0.5 + 0.5 * Math.sin(t * 2.4);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+        for (const [w, a] of [[Math.max(6, ppm * 0.32), 0.1], [Math.max(3, ppm * 0.14), 0.22]]) { ctx.strokeStyle = `rgba(226,196,140,${(a * (0.55 + 0.45 * q)).toFixed(3)})`; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(S(mx), Sy(my - r)); ctx.quadraticCurveTo(S(mx + dir * 0.25), Sy(my), S(mx), Sy(my + r)); ctx.stroke(); }
+        ctx.restore(); }
       ctx.restore();
       if (!torn) for (const c of n.got) { // what it holds, bunched toward the cod end
         const f = 0.55 + ((c.wob || 0) * 7 % 1) * 0.35, fy = cyf(f) + ((c.wob || 0) * 13 % 1 - 0.5) * half(f) * 1.2;
@@ -1191,13 +1217,13 @@ export class Renderer {
         const mw = 30 / kC; if (R0 - L0 < mw) { const c0 = (L0 + R0) / 2; L0 = c0 - mw / 2; R0 = c0 + mw / 2; } if (B0 - T0 < mw) { const c0 = (T0 + B0) / 2; T0 = c0 - mw / 2; B0 = c0 + mw / 2; }
         this.tapRects.push({ x: L0 * kC * fk, y: T0 * kC * fk, w: (R0 - L0) * kC * fk, h: (B0 - T0) * kC * fk, key: m.key, what: m.what });
         const want = tk === m.key, q = 0.5 + 0.5 * Math.sin(g.time * 3), br = 2.4 / kC * (want ? 1.4 : 1) * (1 + 0.15 * q);
-        // (6.5.0) not four corner brackets but one quiet outline round the whole thing (the door, the ladder, the winch,
-        // the sub from bow to stern): a bone line over a dark one, its corners rounded, breathing slowly
-        const A = (m.faint && !want ? 0.35 : 0.5 + 0.3 * q), bw = br * 0.8;
-        const xL = L0 - bw * 2.5, xR = R0 + bw * 2.5, yT = T0 - bw * 2.5, yB = B0 + bw * 2.5, rad = m.capsule ? (yB - yT) / 2 : Math.min(14 / kC, (xR - xL) * 0.22, (yB - yT) * 0.22);
-        for (const [w2, col] of [[bw * 2.6, `rgba(14,18,10,${(A * 0.6).toFixed(3)})`], [bw, `rgba(230,222,196,${A.toFixed(3)})`]]) {
-          ctx.strokeStyle = col; ctx.lineWidth = w2; ctx.beginPath(); ctx.roundRect(xL, yT, xR - xL, yB - yT, rad); ctx.stroke();
-        }
+        // (6.5.1) no shape drawn round it: the sub breathes itself (drawn with it, above); the door, the ladder, the
+        // winch and the rest are part of a bigger picture, so the light on that part lifts and settles, slowly, as a
+        // lamp swung near it would: soft at its edges, nothing drawn round it
+        if (m.what !== 'sub') { const A = (m.faint && !want ? 0.5 : 1) * (0.1 + 0.1 * q), cx3 = (L0 + R0) / 2, cy3 = (T0 + B0) / 2, rx = (R0 - L0) / 2 + 6 / kC, ry = (B0 - T0) / 2 + 6 / kC;
+          ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.translate(cx3, cy3); ctx.scale(1, ry / rx);
+          const lg2 = ctx.createRadialGradient(0, 0, rx * 0.2, 0, 0, rx); lg2.addColorStop(0, `rgba(240,228,196,${A.toFixed(3)})`); lg2.addColorStop(0.7, `rgba(240,228,196,${(A * 0.6).toFixed(3)})`); lg2.addColorStop(1, 'rgba(240,228,196,0)');
+          ctx.fillStyle = lg2; ctx.beginPath(); ctx.arc(0, 0, rx, 0, TAU); ctx.fill(); ctx.restore(); }
       }
       ctx.restore();
     }
@@ -1772,7 +1798,7 @@ export class Renderer {
         this.dapT = f.createPattern(c, 'repeat');
       }
       const sc = ppm * 2.6 * 9 / 256;
-      this.dapT.setTransform(new DOMMatrix([sc, 0, 0, sc, (W / 2 - cam.x * ppm) % (256 * sc) + t * ppm * 0.4, -cam.y * ppm * 0.2]));
+      { const o = this.drift('dapple', cam, ppm, 1, 0.2); this.dapT.setTransform(new DOMMatrix([sc, 0, 0, sc, (W / 2 - o.x) % (256 * sc) + t * ppm * 0.4, -o.y])); } // (6.5.1)
       const a = 0.16 * day;
       // fades out with depth: full at the surface, gone by 35 m
       const fg = Math.max(0, 1 - Math.max(0, dTop) / 35);
@@ -2746,11 +2772,19 @@ export class Renderer {
   // less with the camera), middle, and near (fewer, larger, softer, fastest, swaying). Barely there near the surface, it
   // thickens through 100-300 m and is dense below. Drawn before the light, so lamps, glow sticks and flares make it show
   // as it does on deep footage; it stops at the seabed. A few hundred small fills a frame: no full-screen layers
+  // (6.5.1) a layer's offset on screen, grown each frame by how far the camera moved at this frame's scale. A layer
+  // placed at (the camera's place in the sea x the scale) jumped across the screen at the smallest zoom change
+  drift(key, cam, ppm, px, py = px) {
+    const D = this.drifts || (this.drifts = {}), d = D[key] || (D[key] = { x: cam.x * ppm * px, y: cam.y * ppm * py, cx: cam.x, cy: cam.y });
+    const dx = cam.x - d.cx, dy = cam.y - d.cy; d.cx = cam.x; d.cy = cam.y;
+    if (Math.abs(dx) < 40 && Math.abs(dy) < 40) { d.x += dx * ppm * px; d.y += dy * ppm * py; } // a jump (a new dive, Rebirth) is not a drift
+    return d;
+  }
   drawSnow(g, S, Sy, ppm, x0, x1, y0, y1) {
     const ctx = this.ctx, t = g.time, W = this.W, H = this.H, cam = this.cam;
     if (!this.snowL) { let sd = 4242; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
       const mk = (n, s0, s1, a0, a1, fall, par, sway) => Array.from({ length: n }, () => ({ u: r(), v: r(), s: s0 + r() * (s1 - s0), a: a0 + r() * (a1 - a0), f: fall * (0.7 + r() * 0.6), ph: r() * 6.28, par, sway }));
-      this.snowL = [mk(720, 0.9, 1.3, 0.2, 0.36, 0.22, 0.55, 0.2), mk(330, 1.2, 1.8, 0.28, 0.46, 0.42, 0.85, 0.35), mk(90, 1.6, 2.4, 0.26, 0.42, 0.75, 1.15, 0.6)]; } // (6.1.9) many more and much smaller: fine motes, not flakes
+      this.snowL = [mk(720, 0.9, 1.3, 0.2, 0.36, 0.22, 0.55, 0.2), mk(330, 1.2, 1.8, 0.28, 0.46, 0.42, 0.8, 0.35), mk(90, 1.6, 2.4, 0.26, 0.42, 0.75, 1.0, 0.6)]; } // (6.5.1) the near layer moves with the water, no faster // (6.1.9) many more and much smaller: fine motes, not flakes
     const depth = Math.max(0, cam.y), dens = clamp((depth - 150) / 50, 0, 1); // (6.5.0) none in sunlit water: fades in from 150 m, full from 200 m
     if (dens <= 0) return;
     const surf = Sy(0), TW = W * 1.1, TH = H * 1.1;
@@ -2761,7 +2795,13 @@ export class Renderer {
     ctx.save(); ctx.fillStyle = '#dfe6e8';
     this.snowL.forEach((L, li) => {
       const n = Math.floor(L.length * dens); if (!n) return;
-      const ox = cam.x * ppm * L[0].par, oy = cam.y * ppm * L[0].par;
+      // (6.5.1) each layer's offset grows by how far the camera moved this frame, at this frame's scale: it used to be
+      // the camera's place in the whole sea times the scale, so the smallest zoom (the sub's camera eases out as it
+      // speeds up) threw every flake across the screen
+      const st = this.snowOff || (this.snowOff = this.snowL.map(() => ({ x: 0, y: 0 })));
+      if (li === 0) { const pc = this.snowCam; this.snowCamD = pc ? [cam.x - pc[0], cam.y - pc[1]] : [0, 0]; if (Math.abs(this.snowCamD[0]) > 40 || Math.abs(this.snowCamD[1]) > 40) this.snowCamD = [0, 0]; this.snowCam = [cam.x, cam.y]; }
+      st[li].x += this.snowCamD[0] * ppm * L[0].par; st[li].y += this.snowCamD[1] * ppm * L[0].par;
+      const ox = st[li].x, oy = st[li].y;
       for (let i = 0; i < n; i++) { const f = L[i];
         let x = (f.u * TW - ox + Math.sin(t * 0.4 + f.ph) * f.sway * ppm) % TW; if (x < 0) x += TW; x -= (TW - W) / 2;
         let y = (f.v * TH - oy + t * f.f * ppm) % TH; if (y < 0) y += TH; y -= (TH - H) / 2;
@@ -2875,7 +2915,7 @@ export class Renderer {
     }
     // (5.17.1) each dropped glow stick lights the water round itself, where it was let go (warm amber, about 8 m across);
     // the last 8 s it dies down, and it fades with the thing's dark like every light but his lamp
-    for (const L of g.glows || []) { const gx = S(L.x), gy = Sy(L.y); if (gx < -34 * ppm || gx > this.W + 34 * ppm || gy < -34 * ppm || gy > this.H + 34 * ppm) continue;
+    for (const L of g.glows || []) { const gx = S(L.x), gy = Sy(L.y), gm = (L.adv ? 33 : 17) * ppm; if (gx < -gm || gx > this.W + gm || gy < -gm || gy > this.H + gm) continue;
       const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1), fl = 0.94 + 0.06 * Math.sin(g.time * 7.3 + L.ph) * Math.sin(g.time * 2.1), gr = (L.adv ? 32 : 16) * ppm, a = (L.adv ? 0.62 : 0.5) * fade * fl; // (6.0.1) the advanced stick twice the reach
       // (5.17.1) an even pool 16 m round: nearly flat out to half way, then falling away, with only a small bright core
       if (a > 0.02) { visR.push(gx, gy, gr); const gg = l.createRadialGradient(gx * k, gy * k, 0, gx * k, gy * k, gr * k); const c = L.adv ? [236, 228, 208] : [255, 182, 100];
@@ -3241,7 +3281,7 @@ export class Renderer {
     { const e0 = g.earl; if (e0.biolum && !e0.inSub && g.mode === 'play') { const f0 = g.lightFade ?? 1, bx = S(e0.x), by = Sy(e0.y), c0 = [130, 158, 206]; // (6.0.9) Bioluminescence's glow in the water, as a glow stick's
       halo(bx, by, ppm * 16, c0, 0.08 * f0); halo(bx, by, ppm * 9, c0, 0.09 * f0); halo(bx, by, ppm * 2.5, [170, 196, 230], 0.12 * f0); } }
     for (const L of g.glows || []) { // (5.17.1) the stick itself: a short amber tube, tilted, swaying as it sinks, in its own soft glow
-      const x = S(L.x), y = Sy(L.y); if (x < -40 || x > this.W + 40 || y < -40 || y > this.H + 40) continue; const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1);
+      const x = S(L.x), y = Sy(L.y), mg = ppm * 16 * (L.adv ? 2 : 1) + 4; if (x < -mg || x > this.W + mg || y < -mg || y > this.H + mg) continue; const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1); // (6.5.1) its light is drawn until the whole pool is off screen (it snapped away when the stick itself left)
       /* (6.0.5) no name beside a dropped glow stick: the light says it */
       const R0 = L.adv ? 2 : 1, hc = L.adv ? [232, 226, 210] : [255, 178, 94], hk = L.adv ? 1.25 : 1; halo(x, y, ppm * 16 * R0, hc, 0.07 * hk * fade); halo(x, y, ppm * 9 * R0, hc, 0.08 * hk * fade); halo(x, y, ppm * 3 * R0, hc, 0.14 * fade); // (5.17.1) the water lit evenly 16 m round, not a bright knot
       const ln = Math.max(4, ppm * 0.22), rw = Math.max(1.4, ppm * 0.035), ang = L.rot + (L.rest ? 1.45 : Math.sin(g.time * 0.9 + L.ph) * 0.35);

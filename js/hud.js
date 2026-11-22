@@ -55,6 +55,7 @@ const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const HUDT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
 const GAME = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'; // (4.27) the HUD face
 
+const NETS_SUB_HUD = (g, k) => { const it = g.items && g.items.nets; return it ? (it[k] || 0) : null; }; // (6.5.1) how many of one kind of trawl net are in the hatch
 const dwOf = (ctx) => ctx.measureText('0').width; // (5.9.6) one figure's width
 // (5.17.0) a tool's coin picture, from the tool's own shop drawing: rendered once per item, trimmed to what was drawn,
 // and framed on what matters (a net's hoop and bag, a camera's body), so the button looks like the thing he has on
@@ -420,7 +421,8 @@ e.inSub ? [
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'The sub is at the boat' },
     ]).concat([{ key: 'store', icon: 'shop', on: true }, { key: 'events', icon: 'events', on: true, badge: P ? calState(P).ready : false }]) // (6.4.0) the Shop and Events; the daily gift's "!" when one waits
       .filter((a) => !(a.away && !a.on));
-    const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
+    const tutKey = window.__hudTutKey || g.questHint || null; // (5.5) the button the tutorial wants: ringed, pulsing. (6.5.1) or the Log's step (main.js lessons): a quiet ring, no arrow
+    this.quietRing = !window.__hudTutKey && !!g.questHint;
     const vis = this.btnVis || (this.btnVis = {});
     // (5.7.5) the tutorial's mark: a warm halo pulsing behind the button, the cream ring breathing out, and a short arrow
     // bobbing toward it from the middle of the screen, so there is no doubt which one
@@ -443,7 +445,8 @@ e.inSub ? [
       // motes of light drifting round it
       for (let i = 0; i < 3; i++) { const a2 = g.time * (0.5 + i * 0.07) + i * 0.9, rr2 = r * (1.35 + 0.25 * Math.sin(g.time * 1.3 + i)), mx = x + Math.cos(a2) * rr2, my = y + Math.sin(a2) * rr2, ms = (1.4 + (i % 3)) * u, al = 0.45 + 0.4 * Math.sin(g.time * 2 + i);
         const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3); mg.addColorStop(0, `rgba(232,226,208,${(al * 0.6).toFixed(3)})`); mg.addColorStop(1, 'rgba(232,226,208,0)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, TAU); ctx.fill(); }
-      // the arrow
+      // the arrow (not for the Log's quiet ring)
+      if (this.quietRing) return;
       const ang = Math.atan2(y - H * 0.45, x - W * 0.5), bob = (0.5 + 0.5 * Math.sin(g.time * 4)) * 9 * u, d = (r > 32 * u ? r + 50 * u + 30 * u + 26 * u : r * 1.55 + 18 * u) + bob, ax = x - Math.cos(ang) * d, ay = y - Math.sin(ang) * d, L = 24 * u;
       ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.lineJoin = 'round';
       const ar = new Path2D(); ar.moveTo(0, 0); ar.lineTo(-L, -L * 0.66); ar.quadraticCurveTo(-L * 0.82, -L * 0.3, -L * 0.7, -L * 0.24); ar.lineTo(-L * 2, -L * 0.2); ar.quadraticCurveTo(-L * 2.12, 0, -L * 2, L * 0.2); ar.lineTo(-L * 0.7, L * 0.24); ar.quadraticCurveTo(-L * 0.82, L * 0.3, -L, L * 0.66); ar.closePath();
@@ -475,22 +478,23 @@ e.inSub ? [
     // (6.5.0) the interact button is the one pressed most and the one that changes (ladder, hatch, door, eye...): it
     // wears a heavier ring than the rest, knurled brass with four rivets, like the bezel round a helmet's porthole. With
     // something in reach a faint warm light shows round its rim, so a change is noticed without anything shouting
-    const bezel = (x, y, r, warm, down) => {
-      const R1 = r * 1.0, R2 = r * 1.17, Rm = (R1 + R2) / 2;
-      if (warm) { const q = 0.5 + 0.5 * Math.sin(g.time * 2.4), wg = ctx.createRadialGradient(x, y, R2 * 0.96, x, y, R2 * 1.42); wg.addColorStop(0, `rgba(214,170,104,${(0.3 + 0.12 * q).toFixed(3)})`); wg.addColorStop(1, 'rgba(214,170,104,0)'); ctx.fillStyle = wg; ctx.beginPath(); ctx.arc(x, y, R2 * 1.42, 0, TAU); ctx.fill(); }
+    const bezel = (x, y, r, warm, down) => { // (6.5.1) inside the coin's own edge (the same size as the others), worn gunmetal, not gold
+      const R1 = r * 0.84, R2 = r * 1.0, Rm = (R1 + R2) / 2;
       ctx.save(); if (down) ctx.translate(0, 1 * u);
       const bg = ctx.createLinearGradient(x - R2, y - R2, x + R2 * 0.6, y + R2);
-      bg.addColorStop(0, '#c8a868'); bg.addColorStop(0.45, '#8a6a36'); bg.addColorStop(1, '#4e3a1c');
+      bg.addColorStop(0, '#77756c'); bg.addColorStop(0.45, '#46453f'); bg.addColorStop(1, '#22221e');
       ctx.beginPath(); ctx.arc(x, y, R2, 0, TAU); ctx.arc(x, y, R1, 0, TAU, true); ctx.fillStyle = bg; ctx.fill('evenodd');
-      ctx.lineWidth = Math.max(1, 0.9 * u); ctx.strokeStyle = 'rgba(20,14,6,0.85)'; ctx.beginPath(); ctx.arc(x, y, R2, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, R1, 0, TAU); ctx.stroke();
-      // the knurling: short dark and light ticks round the band, lit from the top left
-      const n = 44; for (let i = 0; i < n; i++) { const a2 = i / n * TAU, c = Math.cos(a2), s2 = Math.sin(a2), lit = 0.5 - 0.5 * Math.cos(a2 + Math.PI * 0.75);
-        ctx.strokeStyle = `rgba(30,20,8,${(0.25 + 0.3 * (1 - lit)).toFixed(3)})`; ctx.lineWidth = Math.max(0.8, 0.8 * u);
-        ctx.beginPath(); ctx.moveTo(x + c * (R1 + 1.2 * u), y + s2 * (R1 + 1.2 * u)); ctx.lineTo(x + c * (R2 - 1.2 * u), y + s2 * (R2 - 1.2 * u)); ctx.stroke(); }
-      ctx.strokeStyle = 'rgba(255,236,190,0.35)'; ctx.lineWidth = Math.max(0.8, 0.8 * u); ctx.beginPath(); ctx.arc(x, y, R2 - 0.6 * u, Math.PI * 1.05, Math.PI * 1.7); ctx.stroke(); // its top-left edge catching light
-      for (let i = 0; i < 4; i++) { const a2 = Math.PI / 4 + i * Math.PI / 2, rx = x + Math.cos(a2) * Rm, ry = y + Math.sin(a2) * Rm, rr = (R2 - R1) * 0.42;
-        const rg = ctx.createRadialGradient(rx - rr * 0.35, ry - rr * 0.35, rr * 0.1, rx, ry, rr); rg.addColorStop(0, '#e8cf94'); rg.addColorStop(1, '#5a4220');
-        ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(rx, ry, rr, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(20,14,6,0.7)'; ctx.lineWidth = Math.max(0.6, 0.6 * u); ctx.stroke(); }
+      ctx.lineWidth = Math.max(1, 0.9 * u); ctx.strokeStyle = 'rgba(10,10,8,0.85)'; ctx.beginPath(); ctx.arc(x, y, R2, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, R1, 0, TAU); ctx.stroke();
+      // the knurling: fine ticks round the band, a faint bronze in the worn ones, lit from the top left
+      const n = 48; for (let i = 0; i < n; i++) { const a2 = i / n * TAU, c = Math.cos(a2), s2 = Math.sin(a2), lit = 0.5 - 0.5 * Math.cos(a2 + Math.PI * 0.75);
+        ctx.strokeStyle = i % 3 ? `rgba(14,14,12,${(0.3 + 0.3 * (1 - lit)).toFixed(3)})` : `rgba(140,116,80,${(0.1 + 0.18 * lit).toFixed(3)})`; ctx.lineWidth = Math.max(0.7, 0.7 * u);
+        ctx.beginPath(); ctx.moveTo(x + c * (R1 + 1 * u), y + s2 * (R1 + 1 * u)); ctx.lineTo(x + c * (R2 - 1 * u), y + s2 * (R2 - 1 * u)); ctx.stroke(); }
+      ctx.strokeStyle = 'rgba(220,214,196,0.22)'; ctx.lineWidth = Math.max(0.7, 0.7 * u); ctx.beginPath(); ctx.arc(x, y, R2 - 0.6 * u, Math.PI * 1.05, Math.PI * 1.7); ctx.stroke();
+      for (let i = 0; i < 4; i++) { const a2 = Math.PI / 4 + i * Math.PI / 2, rx = x + Math.cos(a2) * Rm, ry = y + Math.sin(a2) * Rm, rr = (R2 - R1) * 0.36;
+        const rg = ctx.createRadialGradient(rx - rr * 0.35, ry - rr * 0.35, rr * 0.1, rx, ry, rr); rg.addColorStop(0, '#b4b0a4'); rg.addColorStop(1, '#3a3934');
+        ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(rx, ry, rr, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(10,10,8,0.7)'; ctx.lineWidth = Math.max(0.5, 0.5 * u); ctx.stroke(); }
+      // something in reach: a thin warm line of light just inside the ring, breathing slowly (never a glow over the picture)
+      if (warm) { const q = 0.5 + 0.5 * Math.sin(g.time * 2.4); ctx.strokeStyle = `rgba(232,200,146,${(0.4 + 0.35 * q).toFixed(3)})`; ctx.lineWidth = Math.max(1.2, 1.5 * u); ctx.beginPath(); ctx.arc(x, y, R1 - 1.2 * u, 0, TAU); ctx.stroke(); }
       ctx.restore();
     };
     const btn = (a, x, y, r) => {
@@ -516,7 +520,7 @@ e.inSub ? [
         ctx.strokeStyle = a.lit ? 'rgba(236,224,190,0.85)' : 'rgba(230,222,196,0.22)'; ctx.lineWidth = 1.4 * u; ctx.stroke();
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
       } else if (a.tile) drawTile(ctx, x, y, r, a.icon, down ? 'press' : this.inKill || !a.on ? 'off' : 'on', !!a.badge); // (5.15.7) the menu's square tiles
-      else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
+      else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit && !a.inter ? 'lit' : 'on', a.inter ? { ...(a.look || {}), k: 1.15 } : a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint); /* (6.5.1) the interact button: its picture larger, never the lit face (its warm line says it) */
       if (a.inter) bezel(x, y, r, a.on && a.lit, down);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do
@@ -640,7 +644,8 @@ e.inSub ? [
     // (5.7.1) in the sub the chip on the big button's rim is her trawl net: a tap lets it out or hauls it in (N); with no
     // trawl net in the hatch, a padlock
     if (e.inSub) {
-      const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1), hasN = !!g.subNet || netKinds(g.items).length > 0;
+      const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1), hasN = !!g.subNet || (P && P.trawlPick && NETS_SUB_HUD(g, P.trawlPick) != null ? NETS_SUB_HUD(g, P.trawlPick) > 0 : netKinds(g.items).length > 0); // (6.5.1) the chosen net, or padlocked when none of it is left
+      if (hasN && tutKey === 'n') ring(sx2, sy2, rc); // (6.5.1) the Log's step, or a net that can be closed
       if (hasN) { drawCoin(ctx, sx2, sy2, rc, 'trawl', pressFx('n', sx2, sy2, rc) ? 'press' : g.subNet ? 'lit' : 'on'); hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'n'); }
       else { drawCoin(ctx, sx2, sy2, rc, 'trawl', 'off'); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42); hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No trawl net: the yard sells them'); }
     }
@@ -871,8 +876,14 @@ e.inSub ? [
         if (v >= this.dShown + 1.12 || v < this.dShown - 0.12) { this.dPrev = this.dShown; this.dShown = Math.floor(v); this.dT = nowT; this.dDir = this.dShown > this.dPrev ? 1 : -1; }
         const k = this.dPrev == null ? 1 : clamp((nowT - (this.dT || 0)) / 260, 0, 1), ek = k * k * (3 - 2 * k), sl = lh * 0.22;
         ctx.save(); ctx.beginPath(); ctx.rect(xr - 4 * dwOf(ctx) - 8 * s, base - lh - 4 * s, 4 * dwOf(ctx) + 12 * s, lh + 6 * s); ctx.clip();
-        if (k < 1) { ctx.globalAlpha = 1 - ek; ctx.fillStyle = ink(1); ctx.fillText(String(this.dPrev), xr, base - this.dDir * sl * ek); }
-        ctx.globalAlpha = ek; ctx.fillStyle = ink(1); ctx.fillText(String(this.dShown), xr, base + this.dDir * sl * (1 - ek));
+        // (6.5.1) an odometer: each digit in its own fixed-width place from the right, and only a digit that changed rolls
+        // (down as he goes deeper, up as he rises) while the rest stand still; a new leading digit fades in at the left
+        { const now = String(this.dShown), was = this.dPrev == null ? now : String(this.dPrev), cw = dwOf(ctx), n2 = Math.max(now.length, was.length); ctx.fillStyle = ink(1); ctx.textAlign = 'center';
+          for (let i = 0; i < n2; i++) { const a = now[now.length - 1 - i] || '', b = was[was.length - 1 - i] || '', cx2 = xr - cw * (i + 0.5);
+            if (a === b || k >= 1) { if (a) { ctx.globalAlpha = 1; ctx.fillText(a, cx2, base); } continue; }
+            if (b) { ctx.globalAlpha = 1 - ek; ctx.fillText(b, cx2, base - this.dDir * sl * ek); }
+            if (a) { ctx.globalAlpha = ek; ctx.fillText(a, cx2, base + this.dDir * sl * (1 - ek)); } }
+          ctx.globalAlpha = 1; ctx.textAlign = 'right'; }
         if (k >= 1) this.dPrev = null;
         ctx.restore();
         if (this.bloodK > 0.01) { const Bf = this.bloodFigure(String(this.dShown), 58 * s); ctx.save(); ctx.globalAlpha = this.bloodK; ctx.shadowColor = 'transparent'; ctx.drawImage(Bf.c, xr + Bf.dx, base + Bf.dy);
@@ -904,6 +915,8 @@ e.inSub ? [
         const fw = (lineW - 2) * clamp(o2, 0, 1), k2 = (g.time * 1.6) % 1, bx = lx + 1 + fw * (1 - k2);
         ctx.save(); ctx.globalAlpha = 0.85 * (1 - k2); ctx.fillStyle = '#eaf6ff'; ctx.shadowColor = 'rgba(200,235,255,0.9)'; ctx.shadowBlur = 8 * s; ctx.beginPath(); ctx.arc(bx, ay + lh / 2, lh * 0.55, 0, TAU); ctx.fill(); ctx.restore(); }
       if (e.inSub) { const hi = clamp(g.sub.hull, 0, 1); line('hull', ay + 22 * s, hi, hi < 0.5 ? [226, 66, 52] : [130, 196, 164]); }
+      // (6.5.1) the cabin air low with a backup tank aboard: a word under the bars, where the eye already is
+      if (g.airCallout) { ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.font = `600 ${15 * s}px ${HUDT}`; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5 * s; ctx.fillStyle = `rgba(236,226,200,${(0.75 + 0.2 * Math.sin(g.time * 2.4)).toFixed(3)})`; ctx.fillText('Connect a backup tank', rx0, ay + 36 * s); ctx.restore(); }
       // (5.9.6) the first time under, a callout on the air bar: (5.12.1) an arrow pointing at it and words to its left
       const PA = g.profile;
       if (touch && PA && !e.inSub && !aboard && (e.y > 1.5 || this.airTipT > 0) && !PA.tutAirSeen) { this.airTipT = (this.airTipT || 0) + dt; if (this.airTipT > 9) { PA.tutAirSeen = true; this.airTipT = 0; } }

@@ -16,6 +16,7 @@ import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
 import { drawCash } from './coins.js';
+import { drawTrawl3, drawTrap3, drawFilm3, drawLure3 } from './kit_art.js'; // (6.5.1) the trawl nets, traps and small supplies, drawn solid
 
 // the shops with a website: their names, look and stock. cats: the categories in the side bar (null: a gap)
 export const WEBSHOPS = {
@@ -276,6 +277,12 @@ export function pictureOf(kind, v, w, h, plain = false) {
     if (v && typeof v === 'object' && v.id && kind === 'cam') { drawCam3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.7)
     if (v && typeof v === 'object' && v.id && kind === 'fins') { drawFins3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.6) fins photographed as a solid pair
     if (v && typeof v === 'object' && (v.rarity === 'legendary' || v.rarity === 'exotic' || v.finLook || v.tankLook || v.bagLook) && v.id) { drawSpecialPicture(ctx, v, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; } // (2.8.1) their own drawings, on the usual background
+    // (6.5.1) drawn as turned, lit, worn things (kit_art.js): the trawl nets, the traps, film, the lure, the backup tank
+    if (kind === 'trawl') { drawTrawl3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; }
+    if (kind === 'trap' && typeof v === 'string') { drawTrap3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; }
+    if (kind === 'supply' && v === 'film') { drawFilm3(ctx, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; }
+    if (kind === 'supply' && v === 'lure') { drawLure3(ctx, w, h); const url = c.toDataURL(); PICS.set(key, url); return url; }
+    if (kind === 'supply' && v === 'airTank') { drawTank3(ctx, w, h, { id: 'airTank', arch: 'al', rarity: 'common', air: 70, name: 'Backup air tank' }); const url = c.toDataURL(); PICS.set(key, url); return url; }
     const tool = { net: 'net', slurp: 'slurp', tag: 'tag', cam: 'cam', trap: 'trap' }[kind];
     if (tool) {
       const ic = toolIcon(tool, kind === 'trap' ? v : v.look || 0, Math.round(w * 0.8), Math.round(h * 0.8));
