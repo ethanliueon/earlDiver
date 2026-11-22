@@ -1047,9 +1047,9 @@ html body #catalog .cat-card .tag.r-uncommon em { color: #3c6e42 !important; } h
 html body #catalog .cat-card .tag.r-exotic em { color: #66387e !important; } html body #catalog .cat-card .tag.r-legendary em { color: #85601c !important; }
 html body #catalog .rr.r-common { color: #66665e; } html body #catalog .rr.r-uncommon { color: #3c6e42; } html body #catalog .rr.r-rare { color: #2c5884; }
 html body #catalog .rr.r-exotic { color: #66387e; } html body #catalog .rr.r-legendary { color: #85601c; }
-html body #catalog .cat-wallet { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); top: 12px; z-index: 2; display: flex; align-items: center; gap: 6px; pointer-events: none; zoom: var(--fk, 1); }
-html body #catalog .cat-wallet canvas { position: static; inset: auto; width: 48px; height: 38px; display: block; }
-html body #catalog .cat-wallet b { font: 700 21px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: #efe8d2; text-shadow: 0 0 4px rgba(0, 0, 0, 0.85); margin-top: 1px; }
+html body :is(#catalog, #cave-chrome) .cat-wallet { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); top: 12px; z-index: 2; display: flex; align-items: center; gap: 6px; pointer-events: none; zoom: var(--fk, 1); }
+html body :is(#catalog, #cave-chrome) .cat-wallet canvas { position: static; inset: auto; width: 48px; height: 38px; display: block; }
+html body :is(#catalog, #cave-chrome) .cat-wallet b { font: 700 21px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: #efe8d2; text-shadow: 0 0 4px rgba(0, 0, 0, 0.85); margin-top: 1px; }
 /* the monitor's top edge clears the money (the HUD's size: 12 + 38 points and a little air), its bottom where it was */
 html body #catalog .cat-bezel:not(#_a) { align-self: end; margin-bottom: 35px; height: min(680px, calc(100vh - 35px - 58px * var(--fk, 1))) !important; }
 
@@ -1165,11 +1165,11 @@ html body #catalog.th-station .scode { font: 500 12px "Barlow Semi Condensed", s
 .ghost-tag[hidden] { display: none; }
 /* (5.15.5) the shop screens' close: a worn rust-red plate at the top right of the screen, level with the money (the
    site's own Log off closes it too). Its X is two painted strokes, not a glyph */
-html body #catalog .cat-x { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: 12px; z-index: 3; width: 40px; height: 40px; border-radius: 7px; border: 0; padding: 0; cursor: pointer; zoom: var(--fk, 1);
+html body :is(#catalog, #cave-chrome) .cat-x { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: 12px; z-index: 3; width: 40px; height: 40px; border-radius: 7px; border: 0; padding: 0; cursor: pointer; zoom: var(--fk, 1);
   background: radial-gradient(120% 90% at 35% 25%, #84402e 0%, #6a2e22 55%, #4a1c14 100%); box-shadow: inset 0 1px 0 rgba(255, 210, 180, 0.25), inset 0 -2px 3px rgba(0, 0, 0, 0.45), 0 0 0 1.5px rgba(20, 8, 6, 0.9), 0 3px 6px rgba(0, 0, 0, 0.5); }
-html body #catalog .cat-x::before, html body #catalog .cat-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 22px; height: 4px; border-radius: 2px; background: #e8dcc0; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); transform: translate(-50%, -50%) rotate(45deg); }
-html body #catalog .cat-x::after { transform: translate(-50%, -50%) rotate(-45deg); }
-html body #catalog .cat-x:active { transform: translateY(1px); filter: brightness(0.92); }
+html body :is(#catalog, #cave-chrome) .cat-x::before, html body :is(#catalog, #cave-chrome) .cat-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 22px; height: 4px; border-radius: 2px; background: #e8dcc0; box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45); transform: translate(-50%, -50%) rotate(45deg); }
+html body :is(#catalog, #cave-chrome) .cat-x::after { transform: translate(-50%, -50%) rotate(-45deg); }
+html body :is(#catalog, #cave-chrome) .cat-x:active { transform: translateY(1px); filter: brightness(0.92); }
 /* (5.15.6) on a phone the journal's badge is the same red "!" as the bag's, on the coin's rim */
 html.touch body #quests-btn i.bang:not(#_a):not(#_b) { background: #c8402e !important; color: #fff6ea !important; border-radius: 50% !important; box-shadow: 0 0 0 2px #181a14 !important; font: 700 13px/18px "Barlow Semi Condensed", sans-serif !important; padding: 0 !important; text-align: center; }
 /* (5.15.7) Button size: its current choice in a small worn plate where the other rows have their switch */
@@ -1190,3 +1190,23 @@ html body #inventory .fc .fc-bless { position: absolute; left: 3px; top: 3px; wi
 
 /* (6.0.0) while his eyes open after a Rebirth, nothing of the page shows over the dark */
 html.waking #stick, html.waking #quests-hud, html.waking #journal-btn { visibility: hidden !important; }
+
+/* (6.0.13) the old one's trade: not a web page (she is an anglerfish in a cave) but a slab of old black bone, painted
+   (ui.js caveSlab), its words cut into it and pale as bone; the wallet and the close as on every shop screen */
+html body #cave .shop-main:not(#_a):not(#_b) { background: #1a1612 var(--slab) center / cover no-repeat !important; border: 0 !important; border-radius: 14px 22px 16px 26px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(200,186,150,0.12) !important; color: #d8ccaa !important; padding: 22px 26px 18px !important; }
+html body #cave .shop-main header { border: 0 !important; background: none !important; }
+html body #cave .nameplate h2 { color: #e2d6b4 !important; font: 700 30px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.06em; text-shadow: 0 -1px 0 rgba(0,0,0,0.9), 0 1px 0 rgba(255,240,210,0.18) !important; }
+html body #cave .shop-sub, html body #cave .shop-note { color: rgba(216,204,170,0.75) !important; text-shadow: 0 -1px 0 rgba(0,0,0,0.8); }
+html body #cave #cave-close { display: none !important; }
+html body #cave .shop-cash span, html body #cave #cave-cash { display: none !important; }
+html body #cave .shop-cash { background: none !important; border: 0 !important; box-shadow: none !important; }
+html body #cave .cave-tabs button { color: rgba(216,204,170,0.6) !important; background: none !important; border: 0 !important; border-bottom: 2px solid transparent !important; text-shadow: 0 -1px 0 rgba(0,0,0,0.8); }
+html body #cave .cave-tabs button.on { color: #ece2c4 !important; border-bottom-color: rgba(216,204,170,0.55) !important; }
+html body #cave .manifest th { color: rgba(216,204,170,0.55) !important; background: none !important; border-bottom: 1px solid rgba(216,204,170,0.18) !important; }
+html body #cave .manifest td { color: #e2d6b4 !important; border-bottom: 1px solid rgba(216,204,170,0.1) !important; background: none !important; }
+html body #cave .manifest tr.pick.on td { background: rgba(216,190,130,0.08) !important; }
+html body #cave .manifest .tick { border: 1.5px solid rgba(216,204,170,0.55) !important; background: rgba(0,0,0,0.35) !important; color: #ece2c4 !important; }
+html body #cave button.primary:not(#_a) { background: linear-gradient(#cbbd98, #9a8a66) !important; color: #1e1810 !important; border: 0 !important; box-shadow: inset 0 1px 0 rgba(255,250,230,0.5), 0 2px 0 rgba(0,0,0,0.6) !important; border-image: none !important; }
+#cave-chrome { position: fixed; inset: 0; z-index: 9000; pointer-events: none; } #cave-chrome[hidden] { display: none; } html body #cave-chrome .cat-x { pointer-events: auto; } /* (6.0.13) at the screen's corners, as on the other shop screens */
+html body #cave-chrome .cat-wallet { left: calc(12px + env(safe-area-inset-left, 0px)) !important; top: 12px !important; }
+html body #cave-chrome .cat-x { right: calc(12px + env(safe-area-inset-right, 0px)) !important; top: 12px !important; }

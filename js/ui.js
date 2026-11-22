@@ -1,4 +1,5 @@
 import { drawHourglass, blessedURL } from './coin_art.js';
+import { drawCash } from './coins.js';
 import { setUnits, imperial } from './units.js';
 import { fmtLeft } from './abilities.js';
 // DOM overlays: home screen, journal, boat workshop, pause, run log.
@@ -1341,12 +1342,30 @@ export class UI {
     const el = $('cave');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
-    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.caveSel.clear(); this.renderCave(); }
+    if (open) { this.toggleJournal(false); this.toggleWorkshop(false); this.caveSel.clear(); this.caveDress(); this.renderCave(); }
+    { const ch = document.getElementById('cave-chrome'); if (ch) ch.hidden = !open; }
+  }
+  // (6.0.13) the cave's dressing, once: the shop screens' wallet and close, and the slab of black bone it is cut into
+  caveDress() {
+    const el = $('cave'); if (el.dataset.dressed) return; el.dataset.dressed = '1';
+    const ch = document.createElement('div'); ch.id = 'cave-chrome'; ch.hidden = true; document.body.appendChild(ch); // (6.0.13) its own layer at the screen's corners
+    const w = document.createElement('div'); w.className = 'cat-wallet'; w.innerHTML = '<canvas width="96" height="76"></canvas><b></b>'; ch.appendChild(w);
+    const c0 = w.querySelector('canvas').getContext('2d'); c0.setTransform(2, 0, 0, 2, 0, 0); drawCash(c0, 24, 19, 30);
+    const x2 = document.createElement('button'); x2.className = 'cat-x'; x2.setAttribute('aria-label', 'Close'); x2.addEventListener('click', () => this.toggleCave(false)); ch.appendChild(x2);
+    const c = document.createElement('canvas'); c.width = 900; c.height = 560; const x = c.getContext('2d'); let sd = 4711; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    const g = x.createLinearGradient(0, 0, 900, 560); g.addColorStop(0, '#3a3228'); g.addColorStop(0.5, '#28221b'); g.addColorStop(1, '#1a1612'); x.fillStyle = g; x.fillRect(0, 0, 900, 560);
+    for (let i = 0; i < 9000; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '0,0,0' : '210,196,160'},${(r() * 0.07).toFixed(3)})`; x.fillRect(r() * 900, r() * 560, 1 + r() * 2, 1 + r() * 2); } // grain
+    x.lineCap = 'round'; for (let i = 0; i < 260; i++) { const y0 = r() * 560, x0 = r() * 900, l = 30 + r() * 160; x.strokeStyle = `rgba(${r() < 0.5 ? '0,0,0' : '210,194,154'},${(0.06 + r() * 0.1).toFixed(3)})`; x.lineWidth = 0.6 + r() * 1.8; x.beginPath(); x.moveTo(x0, y0); x.bezierCurveTo(x0 + l * 0.3, y0 + (r() - 0.5) * 8, x0 + l * 0.7, y0 + (r() - 0.5) * 8, x0 + l, y0 + (r() - 0.5) * 10); x.stroke(); } // the bone's long grain
+    for (let i = 0; i < 70; i++) { const px = r() * 900, py = r() * 560, rr = 1 + r() * 4; x.fillStyle = 'rgba(0,0,0,0.45)'; x.beginPath(); x.ellipse(px, py, rr * 1.4, rr, r() * 3, 0, Math.PI * 2); x.fill(); x.fillStyle = 'rgba(210,196,160,0.1)'; x.beginPath(); x.ellipse(px - 0.6, py - 0.8, rr * 1.2, rr * 0.7, 0, Math.PI, Math.PI * 2); x.fill(); } // pores
+    for (let i = 0; i < 5; i++) { let px = r() * 900, py = r() < 0.5 ? 0 : 560; x.strokeStyle = 'rgba(0,0,0,0.6)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(px, py); for (let k = 0; k < 9; k++) { px += (r() - 0.5) * 40; py += (py < 280 ? 1 : -1) * (10 + r() * 18); x.lineTo(px, py); } x.stroke(); } // cracks from the edges
+    const v = x.createRadialGradient(450, 280, 120, 450, 280, 560); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.55)'); x.fillStyle = v; x.fillRect(0, 0, 900, 560); // darker at the worn edges
+    el.querySelector('.shop-main').style.setProperty('--slab', `url(${c.toDataURL('image/jpeg', 0.85)})`);
   }
   renderCave() {
     const P = this.h.getProfile(), off = this.h.onCaveOffer();
     if (!P || !off) return;
     this.renderCounter($('cave-cash'), money(P.cash));
+    { const wb = document.querySelector('#cave-chrome .cat-wallet b'); if (wb) wb.textContent = money(P.cash); } // (6.0.13) the screen's wallet
     $('cave-coins').innerHTML = `${COIN}${P.coins || 0}`;
     $('cave-sub').textContent = `A giant anglerfish, older than the boat, this dive it craves: ${off.craving.name.toLowerCase()}`;
     let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">The old one's wares</button><button data-cave="tab:chests" class="${this.caveTab === 'chests' ? 'on' : ''}">What the deep took</button></nav>`;
