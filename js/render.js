@@ -2499,7 +2499,22 @@ export class Renderer {
       ctx.save(); ctx.translate(S(ANGLER.x), Sy(ANGLER.y + bob)); ctx.scale(-1, 1);
       const r = drawSpecies(ctx, sp, L, t * 0.25, 0.1, 0);
       ctx.restore();
-      if (r && r[0]) this.escaW = { x: ANGLER.x - r[0][0] / ppm, y: ANGLER.y + bob + r[0][1] / ppm };
+      if (r && r[0]) {
+        // (6.1.4) her lure trails out on a long thin stalk and hangs at the cave's mouth over the west end of her table,
+        // swaying slowly, so its light is the first thing seen coming in, and it lights what she has laid out
+        const hx = ANGLER.x + r[0][0] / ppm * -1, hy = ANGLER.y + bob + r[0][1] / ppm, sw = Math.sin(t * 0.4) * 0.5, sw2 = Math.sin(t * 0.27 + 1) * 0.3;
+        const ex = TABLE.x0 + 4 + sw, ey = TABLE.y - 6.2 + sw2;
+        ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(18,16,14,0.9)'; ctx.lineWidth = Math.max(1.2, 0.14 * ppm);
+        ctx.beginPath(); ctx.moveTo(S(hx), Sy(hy)); ctx.bezierCurveTo(S(hx + 4), Sy(hy - 5), S(ex - 3), Sy(ey - 8), S(ex), Sy(ey - 0.4)); ctx.stroke();
+        ctx.strokeStyle = 'rgba(150,200,210,0.18)'; ctx.lineWidth = Math.max(0.6, 0.05 * ppm); ctx.stroke(); // a wet sheen along it
+        const R0 = 0.42 * ppm, bg = ctx.createRadialGradient(S(ex) - R0 * 0.3, Sy(ey) - R0 * 0.3, 0, S(ex), Sy(ey), R0);
+        bg.addColorStop(0, 'rgba(238,240,224,1)'); bg.addColorStop(0.45, 'rgba(188,210,194,0.95)'); bg.addColorStop(1, 'rgba(70,92,84,0.9)');
+        ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(S(ex), Sy(ey), R0 * 0.85, R0, 0, 0, TAU); ctx.fill(); // the bulb
+        ctx.fillStyle = 'rgba(20,18,16,0.85)'; ctx.beginPath(); ctx.ellipse(S(ex), Sy(ey - 0.36), R0 * 0.4, R0 * 0.22, 0, 0, TAU); ctx.fill(); // where it joins the stalk
+        ctx.strokeStyle = 'rgba(200,220,206,0.45)'; ctx.lineWidth = Math.max(0.5, 0.04 * ppm); for (const k of [-1, 0, 1]) { ctx.beginPath(); ctx.moveTo(S(ex + k * 0.12), Sy(ey + 0.38)); ctx.quadraticCurveTo(S(ex + k * 0.3 + sw * 0.2), Sy(ey + 0.9), S(ex + k * 0.25), Sy(ey + 1.3)); ctx.stroke(); } // its fine filaments
+        ctx.restore();
+        this.escaW = { x: ex, y: ey };
+      }
     }
     // (3.0.0) her table, below her mouth, and what lies on it
     if (inView(TABLE.x0 + 10, TABLE.y, 30)) drawTable(ctx, S, Sy, ppm, t, g.profile, pictureOf, g.oldHover);
@@ -2958,7 +2973,7 @@ export class Renderer {
       }
     }
     if (g.lure) { const f = g.lure.eaten != null ? Math.max(0.12, 1 - g.lure.eaten / 0.9) : 1; radial(S(g.lure.x), Sy(g.lure.y), (g.lure.old ? 12 : 8) * ppm * (0.5 + 0.5 * f), g.lure.old ? [120, 170, 255] : [170, 230, 255], 0.9 * f); } // (5.10.10) swallowed, its light dims behind the teeth
-    if (this.escaW) { radial(S(this.escaW.x), Sy(this.escaW.y), 16 * ppm, [150, 220, 255], 0.75 + 0.15 * Math.sin(g.time * 1.7)); radial(S(this.escaW.x + 4), Sy(this.escaW.y + 6), 30 * ppm, [120, 190, 230], 0.35); radial(S(TABLE.x0 + 10), Sy(TABLE.y - 3), 18 * ppm, [140, 200, 225], 0.45); lamps.push({ x: S(TABLE.x0 + 10), y: Sy(TABLE.y - 3), r: 18 * ppm, a: 0.45 }); } // (3.0.0) and further: the sea round her, and her table
+    if (this.escaW) { radial(S(this.escaW.x), Sy(this.escaW.y), 11 * ppm, [190, 216, 200], 0.55 + 0.08 * Math.sin(g.time * 1.7)); radial(S(this.escaW.x + 4), Sy(this.escaW.y + 4), 22 * ppm, [150, 180, 170], 0.22); /* (6.1.4) softer, bone-green, not cyan */ radial(S(TABLE.x0 + 10), Sy(TABLE.y - 3), 18 * ppm, [140, 200, 225], 0.45); lamps.push({ x: S(TABLE.x0 + 10), y: Sy(TABLE.y - 3), r: 18 * ppm, a: 0.45 }); } // (3.0.0) and further: the sea round her, and her table
     for (const v of g.world.vents) {
       const x = S(v.x), y = Sy(v.y - v.h);
       if (x < -500 || x > this.W + 500 || y < -500 || y > this.H + 500) continue;
@@ -3212,7 +3227,7 @@ export class Renderer {
       ctx.beginPath(); ctx.arc(x, y, core, 0, TAU); ctx.fill();
     }
     if (g.lure && g.lure.eaten == null) halo(S(g.lure.x), Sy(g.lure.y), ppm * 1.5, [180, 235, 255], 0.6);
-    if (this.escaW) halo(S(this.escaW.x), Sy(this.escaW.y), ppm * 2.2, [170, 230, 255], 0.7 * haze);
+    if (this.escaW) halo(S(this.escaW.x), Sy(this.escaW.y), ppm * 1.5, [196, 220, 204], 0.45 * haze);
     for (const p of g.world.pickups) {
       if (p.taken || (p.type !== 'sapphire' && p.type !== 'lure')) continue;
       const x = S(p.x), y = Sy(p.y);
