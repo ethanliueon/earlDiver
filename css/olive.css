@@ -1262,3 +1262,12 @@ html body #oldcard .oc-close:not(#_a):not(#_b) { background: none !important; bo
 html body #chest .cr-coin { display: flex; align-items: center; gap: 12px; margin: 8px 0 0; padding: 6px 12px; font: 500 16px "Barlow Semi Condensed", sans-serif; color: #d8c08a; opacity: 0; transition: opacity 0.5s ease 0.2s; }
 html body #chest.done .cr-coin { opacity: 1; }
 html body #chest .cr-coin .cr-ci { position: relative; width: 44px; height: 44px; flex: none; } html body #chest .cr-coin img { width: 44px; height: 44px; }
+/* (6.1.3) the pause: a note on the journal's old paper, in ink. Resume a dark worn button; the rest quiet ink choices */
+html body #pause.panel:not(#_a):not(#_b) { background: url("../assets/ui/book/page_right.jpg") center / cover !important; border: 0 !important; border-image: none !important; border-radius: 3px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 44px rgba(110,76,30,0.32) !important; }
+html body #pause.panel:not(#_a):not(#_b)::after { content: none !important; }
+html body #pause h2:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #3a2e1e !important; text-shadow: none !important; letter-spacing: 0.04em; }
+html body #pause #resume:not(#_a):not(#_b) { background: #4e4434 !important; border: 0 !important; border-image: none !important; color: #ece3c8 !important; border-radius: 2px !important; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3), 0 2px 4px rgba(60,40,10,0.3) !important; }
+html body #pause #savequit:not(#_a):not(#_b) { background: rgba(60,44,20,0.08) !important; border: 1.5px solid rgba(58,46,30,0.55) !important; border-image: none !important; color: #3a2e1e !important; border-radius: 2px !important; box-shadow: none !important; }
+html body #pause .p-links .link:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #6a5a40 !important; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(106,90,64,0.5); }
+html body #pause .pause-version:not(#_a) { color: rgba(58,46,30,0.6) !important; text-shadow: none !important; }
+html body #pause .p-gear:not(#_a):not(#_b) { background-color: rgba(60,44,20,0.12) !important; border: 1.5px solid rgba(58,46,30,0.45) !important; border-image: none !important; box-shadow: none !important; filter: sepia(0.6) brightness(0.55); }

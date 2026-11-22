@@ -144,7 +144,10 @@ const PRICE_CACHE = new Map();
 // what one of this species pays (before size, condition, rare form, upgrades)
 // (4.16.6) what a healthy legend pays: by the depth it usually keeps to, $60,000 for the coelacanth in the shallows
 // (about 245 m) up to $150,000 for the tripod fish of the abyss (about 3,350 m), on a log scale
-const LEG_VALUE = {"54":96000,"100":135000,"101":134000,"104":97000,"105":136000,"107":108000,"108":60000,"2102":134000,"2103":121000,"2106":134000,"2109":129000,"2110":150000,"2146":147000,"2150":104000,"2162":123000};
+const LEG_VALUE = {"54":96000,"100":135000,"101":134000,"104":97000,"105":136000,"107":108000,"108":80000,"2102":134000,"2103":121000,"2106":134000,"2109":129000,"2110":150000,"2146":147000,"2150":104000,"2162":123000};
+// (6.1.3) the legends that can only be photographed: never under $60,000 like every legendary, set by how rare and how
+// deep (the whale shark of the surface lowest; the sperm whale and the colossal squid of the deep near the top)
+const LEG_PHOTO = { 77: 70000, 87: 85000, 86: 95000, 476: 100000, 88: 110000, 351: 115000, 149: 125000, 184: 130000, 350: 140000 };
 // (3.7.0) the list price: it sets the rarity tier (and how often the animal is met) and nothing else now
 const BASE_CACHE = new Map();
 export function basePrice(sp) {
@@ -174,7 +177,8 @@ export function rarityPrice(sp) {
   if (p !== undefined) return p;
   const base = basePrice(sp), R = rarityOf(sp);
   const size = clamp01(Math.log(Math.max(0.03, sp.len) / 0.05) / Math.log(2 / 0.05)), d = deepness(sp);
-  if (sp.undoc || (isTagOnly(sp) && !LEGENDARY.has(sp.id)) || R.i <= 1) p = base;
+  if (R.id === 'legendary' && LEG_PHOTO[sp.id]) p = LEG_PHOTO[sp.id];
+  else if (sp.undoc || (isTagOnly(sp) && !LEGENDARY.has(sp.id)) || R.i <= 1) p = base;
   else if (R.id === 'legendary') p = LEG_VALUE[sp.id] || 90000; // (4.16.6) by how deep it lives
   else if (R.id === 'exotic') {
     const lo = d < 0.5 ? lerpN(1000, 3000, d * 2) : lerpN(3000, 6000, (d - 0.5) * 2), hi = d < 0.5 ? lerpN(2000, 5000, d * 2) : lerpN(5000, 8000, (d - 0.5) * 2);
