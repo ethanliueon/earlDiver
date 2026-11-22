@@ -1,3 +1,4 @@
+import { eraOf } from './gear_art.js';
 // (5.11.4) The shop's suits as a supplier photographs them: each suit upright as if worn (no stand, no one in it),
 // turned about 35 degrees away and lit from one side, then cut out and turned on its side, head to the left, to lie
 // across the picture (mirrored before turning, so the light falls from the top). No floor shadow (it is a turned photograph), only a faint shadow round its own outline.
@@ -101,9 +102,14 @@ function wetsuit(ox, S) {
   S.over && S.over(torso, 'torso');
   S.trim && S.trim([[X(304), 250], [X(344), 262], [X(400), 262], [X(450), 246]], torso, 1);
   S.chest && S.chest(X, torso);  // the neck: a smooth glide-skin collar, dark inside
-  x.save(); x.fillStyle = lin(X(360), 0, X(424), 0, [[0, S.collar[0]], [0.4, S.collar[1]], [1, S.collar[2]]]); x.beginPath(); x.ellipse(X(393), 178, 33, 8, -0.08, 0, TAU); x.fill();
-  x.fillStyle = 'rgba(6,7,7,0.85)'; x.beginPath(); x.ellipse(X(394), 177, 24, 4.5, -0.08, 0, TAU); x.fill(); // (5.11.5) a flatter, softer opening: turned on its side it read as a bottle's mouth
-  x.fillStyle = 'rgba(160,166,170,0.25)'; x.beginPath(); x.ellipse(X(380), 172, 12, 3, -0.2, Math.PI, TAU); x.fill();
+  // (5.16.4) the neck is cut into the torso, not laid on top: the opening sits inside the suit's own outline, the lining shows
+  // dark at the back, and the front edge is a hemmed roll of the same cloth, so nothing floats past the shoulders
+  x.save(); torso(); x.clip();
+  const hole = () => { x.beginPath(); x.moveTo(X(364), 176); x.bezierCurveTo(X(384), 183, X(404), 185, X(422), 182); x.bezierCurveTo(X(416), 192, X(402), 197, X(390), 197); x.bezierCurveTo(X(378), 196, X(368), 188, X(364), 176); x.closePath(); };
+  x.fillStyle = lin(0, 178, 0, 197, [[0, 'rgba(4,5,5,0.95)'], [1, 'rgba(20,22,22,0.9)']]); hole(); x.fill(); // the lining, in shadow
+  x.strokeStyle = S.collar[2]; x.lineWidth = 4; x.beginPath(); x.moveTo(X(365), 179); x.bezierCurveTo(X(370), 190, X(380), 198, X(391), 198); x.bezierCurveTo(X(404), 198, X(416), 192, X(421), 184); x.stroke(); // the hem's roll
+  x.strokeStyle = S.collar[0]; x.globalAlpha = 0.55; x.lineWidth = 1.5; x.beginPath(); x.moveTo(X(367), 182); x.bezierCurveTo(X(372), 192, X(381), 197, X(391), 197); x.bezierCurveTo(X(400), 197, X(408), 194, X(413), 190); x.stroke(); x.globalAlpha = 1; // its lit edge
+  x.restore(); x.save();
   if (S.tab) { x.fillStyle = lin(X(408), 0, X(432), 0, [[0, S.collar[1]], [1, S.dark]]); x.beginPath(); x.moveTo(X(406), 178); x.lineTo(X(430), 182); x.lineTo(X(432), 194); x.lineTo(X(408), 192); x.closePath(); x.fill();
   x.strokeStyle = 'rgba(150,156,158,0.3)'; x.setLineDash([2, 2]); x.lineWidth = 1; x.stroke(); x.setLineDash([]); } x.restore(); // the collar's closure tab
 
@@ -225,7 +231,11 @@ const LOOK = { wet: ['#1a1d21', '#3c434b', '#2d3339', '#2f7480', '#0f1012'], ski
   chain: ['#1a1c1f', '#4a4e54', '#2a2d31', '#3a3e44', '#121315'], rebreather: ['#16191a', '#2c3236', '#2e3a2a', '#42503a', '#0e1011'], hard: ['#8c6c36', '#b39258', '#6a5028', '#4e3a1a', '#3a3a3a'] };
 function spec(def) {
   const arch = (def && (def.arch || (typeof def.look === 'string' ? def.look : null))) || 'wet';
-  const P = Array.isArray(def && def.pal) ? def.pal : LOOK[arch] || LOOK.wet, k = RK[(def && def.rarity) || 'common'] || 0, h = hash((def && def.id) || arch);
+  let P = Array.isArray(def && def.pal) ? def.pal : LOOK[arch] || LOOK.wet; const k = RK[(def && def.rarity) || 'common'] || 0, h = hash((def && def.id) || arch);
+  // (5.16.3) an exotic suit in its expedition's make, as the other exotics: Victorian canvas and brass, interwar black
+  // and oxblood rubber with dark brass, post-war steel or neoprene in the expedition's own paint with stainless fittings
+  const E = eraOf(def);
+  if (E) P = E.era === 'victorian' ? ['#7a6a4a', '#c8b890', '#5a4a30', '#b08a4e'] : E.era === 'interwar' ? ['#3a2a26', '#6a5a50', '#2a1e1a', '#8a6a40'] : [E.paint, '#c8ccc8', '#3a3c3a', '#b0b4b4'];
   const v = (n, amp) => (((h >> n) & 255) / 255 - 0.5) * 2 * amp; // a small, fixed turn per suit
   const acc = quiet(P[3]);
   if (arch === 'hard') {
@@ -233,7 +243,7 @@ function spec(def) {
     return { kind: 'hard', k, id: def && def.id, steel: { deep: mix(b, '#000', 0.55), dark: mix(b, '#000', 0.3), mid: mix(b, '#000', 0.08), body: b, lite: mix(b, lt, 0.7), pale: mix(lt, '#fff', 0.15) },
       brass: { dark: mix(P[3], '#000', 0.5), mid: mix(P[3], '#000', 0.15), lite: mix(P[3], '#fff', 0.2) }, glow: k >= 4 ? sparks(acc) : null };
   }
-  const plainWet = arch === 'wet' && !(def && def.pal), base = plainWet ? '#272b2d' : P[0]; // the plain wetsuit keeps the approved sample's neoprene
+  const plainWet = arch === 'wet' && !(def && def.pal) && !E, base = plainWet ? '#272b2d' : P[0]; // the plain wetsuit keeps the approved sample's neoprene
   const S = { kind: arch, k, base, lite: plainWet ? '#4a5054' : P[1], dark: plainWet ? '#121415' : P[4] || mix(base, '#000', 0.4), far: mix(base, '#000', 0.22), far2: mix(base, '#000', 0.28),
     panel: rgba(arch === 'wet' && !(def && def.pal) ? '#605f56' : P[2], arch === 'dry' ? 0.75 : 0.42), collar: [mix(base, '#fff', 0.25), mix(base, '#fff', 0.1), mix(base, '#000', 0.4)],
     pose: { armN: v(0, 0.05), armF: v(8, 0.035), legN: v(16, 0.025), legF: v(24, 0.02) }, pads: arch === 'wet' || arch === 'chain', tab: arch === 'wet' || arch === 'rebreather', sx: { skin: 0.9, wet: 1, chain: 1.03, rebreather: 1.02, dry: 1.1 }[arch] || 1 };
