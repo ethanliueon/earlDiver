@@ -182,7 +182,7 @@ function newGame(mode) {
     fauna: new Fauna(world, rng),
     bubbles: [], events: [], debris: [],
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
-    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, film: P.items && P.items.film != null ? P.items.film : null, net: P.items && P.items.net !== undefined ? P.items.net : null, nets: P.items && P.items.nets ? Object.assign({}, P.items.nets) : null }, inv: {}, // a new diver starts with one backup air tank
+    items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, glowAdv: P.items ? P.items.glowAdv || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, film: P.items && P.items.film != null ? P.items.film : null, net: P.items && P.items.net !== undefined ? P.items.net : null, nets: P.items && P.items.nets ? Object.assign({}, P.items.nets) : null }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
     lure: null, necklaceT: 0, glows: [], protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
@@ -359,7 +359,8 @@ const ui = new UI({
   onSaveProfile: () => saveProfile(profile),
   canChangeGear: () => !!(g && g.mode === 'play' && !g.kill), // (6.0.0) gear changes anywhere (it changes what he can do, never what he has); never in its jaws
   // (5.6.9) the belt: on (from the locker, as many as fit) or off (all of it into the locker)
-  onBelt: (k, on) => { const P = profile; if (!P || !g) return; P.spare = P.spare || {}; if (on) { const m = Math.min(supplyMax(P, k) - (g.items[k] || 0), P.spare[k] || 0); if (m > 0) { g.items[k] = (g.items[k] || 0) + m; P.spare[k] -= m; } } else { P.spare[k] = (P.spare[k] || 0) + (g.items[k] || 0); g.items[k] = 0; } syncProfile(); saveProfile(P); audio.ready && audio.click(); },
+  onBelt: (k, on) => { const P = profile; if (!P || !g) return; P.spare = P.spare || {};
+    if (on && (k === 'necklace' || k === 'glowAdv') && glowKind() !== k) { const cur = glowKind(); P.spare[cur] = (P.spare[cur] || 0) + (g.items[cur] || 0); g.items[cur] = 0; P.glowKind = k; hud.toast(`${SUPPLIES[k].name}s on the belt`); } /* (6.0.1) one kind on the belt: the other goes back to the locker */ if (on) { const m = Math.min(supplyMax(P, k) - (g.items[k] || 0), P.spare[k] || 0); if (m > 0) { g.items[k] = (g.items[k] || 0) + m; P.spare[k] -= m; } } else { P.spare[k] = (P.spare[k] || 0) + (g.items[k] || 0); g.items[k] = 0; } syncProfile(); saveProfile(P); audio.ready && audio.click(); },
   onMessage: (m) => hud.toast(m),
   moneyAt: () => (hud.touch ? hud.moneyAt : null), // (5.7.5) where the money is on the HUD, for the quest's sum
   onEquip: (k) => { const ok = buy(k); return ok; },
@@ -801,7 +802,7 @@ function spawnReleased(r) {
 function syncProfile() {
   const P = profile;
   P.hull = g.sub.hull; P.subLost = !!g.sub.imploded;
-  P.items = { lure: g.items.lure, necklace: g.items.necklace, airTank: g.items.airTank, nets: Object.assign({}, netsOf(g.items)), film: g.items.film };
+  P.items = { lure: g.items.lure, necklace: g.items.necklace, glowAdv: g.items.glowAdv || 0, airTank: g.items.airTank, nets: Object.assign({}, netsOf(g.items)), film: g.items.film };
   P.roll = g.photos.slice(); // (5.0) the pictures he carries, kept with the save
   P.journal = [...g.journal.entries()]; P.notes = g.notes;
   P.deepest = Math.max(P.deepest || 0, Math.round(g.earl.maxDepth));
@@ -838,6 +839,9 @@ function buy(kind) {
     const key = kind.slice(6), C = CHESTS[key];
     if (C && lockerFree(P) <= 0) hud.toast('Locker full', 'warn');
     else if (C && spend(P, C.price)) {
+      // (6.0.1) now and then a chest that can hold rare things holds advanced glow sticks instead (up to the three he can keep)
+      const advHave = (g.items.glowAdv || 0) + ((P.spare && P.spare.glowAdv) || 0);
+      if ((C.odds.rare || 0) > 0 && advHave < 3 && Math.random() < 0.12) { const n = 3 - advHave; P.spare = P.spare || {}; P.spare.glowAdv = (P.spare.glowAdv || 0) + n; ok = true; saveProfile(P); audio.ready && audio.sale(); hud.toast(`Inside: ${n} advanced glow stick${n > 1 ? 's' : ''}`, 'big'); ui.showGains([{ kind: 'supply', id: 'glowAdv' }]); return ok; }
       const def = rollChest(key), q = def && giveItem(P, def.id);
       if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q); audio.ready && audio.sale(); ui.showGains([{ kind: 'item', id: q.id }]); tipEquip(); } // (4.16.9) its card waits until the crate's reveal is closed
     }
@@ -924,8 +928,9 @@ function buy(kind) {
     if (kind === 'airBank') { const was = g.sub.o2Max; applySub(g.sub, P); g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + Math.max(0, g.sub.o2Max - was)); } // the new bottles come full
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
   } else if (SUPPLIES[kind] && (g.items[kind] || 0) + ((P.spare && P.spare[kind]) || 0) + (kind === 'lure' ? (P.oldLures || 0) : 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) { // (5.10.10) one lure in all, an old one included // (5.6.9) what is on the belt and what waits in the locker
-    g.items[kind] = g.items[kind] || 0;
-    g.items[kind]++; ok = true;
+    if ((kind === 'necklace' || kind === 'glowAdv') && glowKind() !== kind) { P.spare = P.spare || {}; P.spare[kind] = (P.spare[kind] || 0) + 1; } // (6.0.1) the kind not on the belt waits in the locker
+    else { g.items[kind] = g.items[kind] || 0; g.items[kind]++; }
+    ok = true;
     ui.showGains([{ kind: 'supply', id: kind }]);
   }
   if (ok) { syncProfile(); saveProfile(P); audio.ready && audio.sale(); }
@@ -1432,11 +1437,14 @@ export function useStation(id) {
 const GLOW_SECONDS = 120; // (5.17.1) a dropped glow stick burns 2 min
 // (5.17.1) a glow stick is snapped and let go: it hangs where he was (below the sub, from the sub), lights a pool of water
 // round itself, and sinks slowly with a little sway until it rests on the bottom. Several can burn at once; each is its own
+// (6.0.1) two kinds, two stacks: the plain stick (16 m, 2 min, amber) and the advanced one (32 m, 3 min, bone-white); the
+// one on the belt (profile.glowKind) is the one dropped
+const glowKind = () => (profile && profile.glowKind === 'glowAdv' ? 'glowAdv' : 'necklace');
 function dropGlow() {
-  const e = g.earl; if (!(g.items.necklace > 0)) { hud.toast('No glow sticks', 'warn'); return false; }
+  const e = g.earl, k = glowKind(), adv = k === 'glowAdv'; if (!(g.items[k] > 0)) { hud.toast(adv ? 'No advanced glow sticks on the belt' : 'No glow sticks on the belt', 'warn'); return false; }
   const x = e.inSub ? g.sub.x : e.x, y = Math.max(0.6, e.inSub ? g.sub.y + 1.6 : e.y + 0.3);
-  g.items.necklace--; (g.glows = g.glows || []).push({ x, y, t: GLOW_SECONDS, ph: Math.random() * Math.PI * 2, rot: (Math.random() - 0.5) * 1.2, rest: false });
-  hud.toast('Glow stick dropped · 2 min'); audio.ready && audio.click(); return true;
+  g.items[k]--; (g.glows = g.glows || []).push({ x, y, t: adv ? 180 : GLOW_SECONDS, adv, ph: Math.random() * Math.PI * 2, rot: (Math.random() - 0.5) * 1.2, rest: false });
+  audio.ready && audio.click(); return true; // (6.0.1) no toast: its name shows beside it in the water for a moment (render.js)
 }
 function anchorTime(d) { return d <= 200 ? 3 + 4 * (d / 200) : 7 + 5 * Math.min(1, (d - 200) / 2800); }
 function deckInput(dt, mv) {
@@ -1885,7 +1893,7 @@ function rebirth(kind) {
   e.o2 = e.o2Max; g.noAir = 0; g.injury = 0; g.kill = null; e.vx = e.vy = 0;
   const safe = (e.pressStart || 300) - 5; if (e.y > safe) e.y = Math.max(2, safe);
   if (sub.imploded || kind === 'implode') { sub.imploded = false; g.imploded = false; sub.failing = null; sub.hull = 1; g.subTank = []; }
-  sub.docked = false; sub.vx = sub.vy = 0; sub.o2 = sub.o2Max; sub.x = clamp(e.x - 6, 6, 4994); /* on his left: his words go up to the right */ sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3));
+  sub.docked = false; sub.vx = sub.vy = 0; sub.o2 = sub.o2Max; sub.x = clamp(e.x + 9, 6, 4994); /* (6.0.1) a little off to his right, so the open water on his left is free for his words */ sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3));
   if (ent) { ent.faceLock = null; ent.marked = false; ent.hunt = null; ent.ap = null; ent.slip = null; ent.sleepT = 90; ent.x = 20 + Math.random() * 4960; ent.y = ent.band(g)[0] + Math.random() * 400; }
   g.rebirthT = 7; g.wake = { t: 0, eaten: kind === 'devoured' }; ui.closeAll && ui.closeAll(); audio.ready && audio.drop && audio.drop();
 }

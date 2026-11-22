@@ -2709,9 +2709,9 @@ export class Renderer {
     const ctx = this.ctx, W = this.W;
     if (g.earlSay && g.mode === 'play' && !g.earl.inSub) { const L = g.earlSay, e = g.earl, a = clamp(L.t / 0.4, 0, 1) * clamp((5.4 - L.t) / 0.9, 0, 1);
       if (a > 0.01) { const hx = S(e.x), hy = Sy(e.y) - ppm * 0.7, n = clamp(Math.floor((L.t - 0.25) * 22), 0, L.text.length), fs = 17;
-        ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(L.text).width, tx = Math.min(W - w - 24, hx + Math.max(36, ppm * 1.6)), ty = Math.max(fs + 70, hy - Math.max(48, ppm * 2));
+        ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(L.text).width, tx = Math.max(150, hx - Math.max(36, ppm * 1.6) - w), ty = Math.max(fs + 70, hy - Math.max(48, ppm * 2)); /* (6.0.1) up and to his left, into the open water, clear of the menu column */
         ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(236,230,210,0.7)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(hx + 3, hy - 3); ctx.quadraticCurveTo(hx + 4, ty + 6, tx, ty + 6); ctx.lineTo(tx + w * (n / L.text.length), ty + 6); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hx - 3, hy - 3); ctx.quadraticCurveTo(hx - 4, ty + 6, tx + w, ty + 6); ctx.lineTo(tx, ty + 6); ctx.stroke(); // the line comes up from him and runs back under where the words are written
         ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(L.text.slice(0, n), tx, ty);
         ctx.restore(); } }
   }
@@ -2833,12 +2833,12 @@ export class Renderer {
     }
     // (5.17.1) each dropped glow stick lights the water round itself, where it was let go (warm amber, about 8 m across);
     // the last 8 s it dies down, and it fades with the thing's dark like every light but his lamp
-    for (const L of g.glows || []) { const gx = S(L.x), gy = Sy(L.y); if (gx < -18 * ppm || gx > this.W + 18 * ppm || gy < -18 * ppm || gy > this.H + 18 * ppm) continue;
-      const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1), fl = 0.94 + 0.06 * Math.sin(g.time * 7.3 + L.ph) * Math.sin(g.time * 2.1), gr = 16 * ppm, a = 0.5 * fade * fl;
+    for (const L of g.glows || []) { const gx = S(L.x), gy = Sy(L.y); if (gx < -34 * ppm || gx > this.W + 34 * ppm || gy < -34 * ppm || gy > this.H + 34 * ppm) continue;
+      const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1), fl = 0.94 + 0.06 * Math.sin(g.time * 7.3 + L.ph) * Math.sin(g.time * 2.1), gr = (L.adv ? 32 : 16) * ppm, a = (L.adv ? 0.62 : 0.5) * fade * fl; // (6.0.1) the advanced stick twice the reach
       // (5.17.1) an even pool 16 m round: nearly flat out to half way, then falling away, with only a small bright core
-      if (a > 0.02) { visR.push(gx, gy, gr); const gg = l.createRadialGradient(gx * k, gy * k, 0, gx * k, gy * k, gr * k); const c = [255, 182, 100];
+      if (a > 0.02) { visR.push(gx, gy, gr); const gg = l.createRadialGradient(gx * k, gy * k, 0, gx * k, gy * k, gr * k); const c = L.adv ? [236, 228, 208] : [255, 182, 100];
         gg.addColorStop(0, rgbStr(c, a)); gg.addColorStop(0.5, rgbStr(c, a * 0.8)); gg.addColorStop(0.8, rgbStr(c, a * 0.3)); gg.addColorStop(1, rgbStr(c, 0)); l.fillStyle = gg; l.beginPath(); l.arc(gx * k, gy * k, gr * k, 0, TAU); l.fill(); }
-      radial(gx, gy, 1.6 * ppm, [255, 205, 140], 0.35 * fade * fl); lamps.push({ x: gx, y: gy, r: gr, a: 0.5 * fade }); }
+      radial(gx, gy, 1.6 * ppm, L.adv ? [248, 244, 232] : [255, 205, 140], 0.35 * fade * fl); lamps.push({ x: gx, y: gy, r: gr, a: 0.5 * fade }); }
     // (5.16.0) a Flare: 30 m round him (or the sub), as bright near him as 100 m deep, still at the 200 m level 20 m out, gone by
     // 30 m; Flare+ brighter (as 70 m); Lighthouse as if he were at 20 m. It fades with the thing's dark (g.lightFade)
     if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) {
@@ -3189,12 +3189,15 @@ export class Renderer {
     }
     for (const L of g.glows || []) { // (5.17.1) the stick itself: a short amber tube, tilted, swaying as it sinks, in its own soft glow
       const x = S(L.x), y = Sy(L.y); if (x < -40 || x > this.W + 40 || y < -40 || y > this.H + 40) continue; const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1);
-      halo(x, y, ppm * 16, [255, 176, 92], 0.07 * fade); halo(x, y, ppm * 9, [255, 180, 96], 0.08 * fade); halo(x, y, ppm * 3, [255, 190, 110], 0.14 * fade); // (5.17.1) the water lit evenly 16 m round, not a bright knot
+      { const age = (L.adv ? 180 : 120) - L.t, la = clamp(age / 0.3, 0, 1) * clamp((2.6 - age) / 0.6, 0, 1); // (6.0.1) its name, written beside it as it is let go, then gone
+        if (la > 0.01) { ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = la; ctx.font = `500 15px ${HUDF}`; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          const nm = L.adv ? 'Advanced glow stick' : 'Glow stick', left = x > this.W * 0.55, d = Math.max(16, ppm * 0.6), tx = left ? x - d : x + d, ty = y - Math.max(12, ppm * 0.45); /* on the side away from the buttons */ ctx.textAlign = left ? 'right' : 'left'; ctx.strokeStyle = 'rgba(236,230,210,0.6)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(x + (left ? -3 : 3), y - 3); ctx.lineTo(tx + (left ? 3 : -3), ty + 7); ctx.stroke(); ctx.fillText(nm, tx, ty); ctx.restore(); } }
+      const R0 = L.adv ? 2 : 1, hc = L.adv ? [232, 226, 210] : [255, 178, 94], hk = L.adv ? 1.25 : 1; halo(x, y, ppm * 16 * R0, hc, 0.07 * hk * fade); halo(x, y, ppm * 9 * R0, hc, 0.08 * hk * fade); halo(x, y, ppm * 3 * R0, hc, 0.14 * fade); // (5.17.1) the water lit evenly 16 m round, not a bright knot
       const ln = Math.max(4, ppm * 0.22), rw = Math.max(1.4, ppm * 0.035), ang = L.rot + (L.rest ? 1.45 : Math.sin(g.time * 0.9 + L.ph) * 0.35);
       ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalAlpha = 0.35 + 0.65 * fade; ctx.lineCap = 'round';
-      ctx.strokeStyle = '#ffc070'; ctx.lineWidth = rw * 2; ctx.beginPath(); ctx.moveTo(-ln / 2, 0); ctx.lineTo(ln / 2, 0); ctx.stroke();
+      ctx.strokeStyle = L.adv ? '#e8e2d0' : '#ffc070'; ctx.lineWidth = rw * 2; ctx.beginPath(); ctx.moveTo(-ln / 2, 0); ctx.lineTo(ln / 2, 0); ctx.stroke();
       ctx.strokeStyle = '#fff2d8'; ctx.lineWidth = rw * 0.8; ctx.beginPath(); ctx.moveTo(-ln / 2 + rw, 0); ctx.lineTo(ln / 2 - rw * 2, 0); ctx.stroke();
-      ctx.strokeStyle = '#3a3026'; ctx.lineWidth = rw * 2.2; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(ln / 2 - rw * 1.2, 0); ctx.lineTo(ln / 2 + rw * 0.6, 0); ctx.stroke(); ctx.restore(); }
+      ctx.strokeStyle = L.adv ? '#8a8c88' : '#3a3026'; ctx.lineWidth = rw * 2.2; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(ln / 2 - rw * 1.2, 0); ctx.lineTo(ln / 2 + rw * 0.6, 0); ctx.stroke(); ctx.restore(); }
     if (this.boatLight) halo(this.boatLight.x, this.boatLight.y, ppm * 4, [255, 190, 110], 0.25 * this.boatLight.a);
   }
 }

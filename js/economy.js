@@ -150,7 +150,9 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
     desc: 'The thing in the deep follows its light for 10 s, then loses interest for a little while. Offered when it comes for you, even in its jaws. You carry one lure in all.' },
-  necklace: { name: 'Glow stick', price: 300, max: 5, desc: 'A chemical glow stick. Snap it and let it go: it hangs where you leave it, lighting the water 16 m round in warm amber for 2 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' }, // (5.17.1)
+  necklace: { name: 'Glow stick', price: 370, max: 5, rarity: 'common', desc: 'A chemical glow stick. Snap it and let it go: it hangs where you leave it, lighting the water 16 m round in warm amber for 2 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' }, // (5.17.1)
+  // (6.0.1) the advanced glow stick: a separate stack (rare), whiter and twice the reach; one kind sits on the belt at a time
+  glowAdv: { name: 'Advanced glow stick', price: 1700, max: 3, rarity: 'rare', desc: 'A heavier stick in a steel-capped tube. Snap it and let it go: it hangs where you leave it, lighting the water 32 m round in a pale, bone-white light for 3 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' },
   film: { name: 'Film', price: 4, max: 5, needs: 'camera', desc: 'One exposure each. The camera holds as many as it takes; every picture uses one, sharp or not.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub: three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };
@@ -523,6 +525,7 @@ export function newProfile() {
     v: 1, tlvCh: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
     lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 1, fish: 0, steel: 0, cage: 0 }, // one beginner's wire pot
     journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(), coins: 0,
+    items: { necklace: 3 }, glowKind: 'necklace', // (6.0.1) a new diver starts with three glow sticks on the belt
   };
 }
 // ---------------- saves ----------------
