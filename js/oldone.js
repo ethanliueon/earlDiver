@@ -27,6 +27,10 @@ export function oldStock(P) {
   S.items = S.items.map((q) => (q && !q.sold && q.until > Date.now() ? q : (() => { const n = rollOne(used); used.add(n.id); return n; })()));
   return S;
 }
+// (6.1.8) her lure hangs at the cave's mouth over the west end of the table (render.js sways it a little about here):
+// near it, the hand opens what she has, all three things at once
+export const LURE = { x: TABLE.x0 + 1.5, y: TABLE.y - 6.2 }; // just west of her first thing, so the two never share a reach
+export const nearLure = (x, y, r = 2.4) => Math.hypot(x - LURE.x, y - LURE.y) < r;
 export const leftOf = (q) => Math.max(0, (q.until - Date.now()) / 1000);
 
 // what Earl is over: one of her things, or a bundle. From the sub, the sub's middle counts.

@@ -13,7 +13,7 @@ import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
 import { drawStation, STATION_TOP } from './station_draw.js';
-import { drawTable, TABLE } from './oldone.js';
+import { drawTable, TABLE, LURE } from './oldone.js';
 import { pictureOf } from './catalog.js';
 const SIMPLE_SMALL = false; // (4.3.7) small animals as generic shapes (off: each is drawn as itself)
 import { drawPrompt, HUDF } from './fittings.js'; // (4.3.2) the tutorial's prompt beside the fish
@@ -337,7 +337,7 @@ export class Renderer {
     for (const v of g.world.vents) if (inView(v.x, v.y, 30)) this.drawVent(ctx, v, S, Sy, ppm, t);
     this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
-    for (const rk of g.world.rocks) if (rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
+    for (const rk of g.world.rocks) if (rk.kind !== 'oldone' && rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
     const glowPts = [];
@@ -2503,7 +2503,7 @@ export class Renderer {
         // (6.1.4) her lure trails out on a long thin stalk and hangs at the cave's mouth over the west end of her table,
         // swaying slowly, so its light is the first thing seen coming in, and it lights what she has laid out
         const hx = ANGLER.x + r[0][0] / ppm * -1, hy = ANGLER.y + bob + r[0][1] / ppm, sw = Math.sin(t * 0.4) * 0.5, sw2 = Math.sin(t * 0.27 + 1) * 0.3;
-        const ex = TABLE.x0 + 4 + sw, ey = TABLE.y - 6.2 + sw2;
+        const ex = LURE.x + sw, ey = LURE.y + sw2;
         ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(18,16,14,0.9)'; ctx.lineWidth = Math.max(1.2, 0.14 * ppm);
         ctx.beginPath(); ctx.moveTo(S(hx), Sy(hy)); ctx.bezierCurveTo(S(hx + 4), Sy(hy - 5), S(ex - 3), Sy(ey - 8), S(ex), Sy(ey - 0.4)); ctx.stroke();
         ctx.strokeStyle = 'rgba(150,200,210,0.18)'; ctx.lineWidth = Math.max(0.6, 0.05 * ppm); ctx.stroke(); // a wet sheen along it
@@ -2749,13 +2749,13 @@ export class Renderer {
     const ctx = this.ctx, t = g.time, W = this.W, H = this.H, cam = this.cam;
     if (!this.snowL) { let sd = 4242; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
       const mk = (n, s0, s1, a0, a1, fall, par, sway) => Array.from({ length: n }, () => ({ u: r(), v: r(), s: s0 + r() * (s1 - s0), a: a0 + r() * (a1 - a0), f: fall * (0.7 + r() * 0.6), ph: r() * 6.28, par, sway }));
-      this.snowL = [mk(320, 0.6, 1.2, 0.18, 0.34, 0.22, 0.55, 0.2), mk(150, 1.1, 2.0, 0.26, 0.46, 0.42, 0.85, 0.35), mk(40, 2.2, 3.6, 0.2, 0.36, 0.75, 1.15, 0.6)]; }
+      this.snowL = [mk(720, 0.9, 1.3, 0.2, 0.36, 0.22, 0.55, 0.2), mk(330, 1.2, 1.8, 0.28, 0.46, 0.42, 0.85, 0.35), mk(90, 1.6, 2.4, 0.26, 0.42, 0.75, 1.15, 0.6)]; } // (6.1.9) many more and much smaller: fine motes, not flakes
     const depth = Math.max(0, cam.y), dens = clamp(0.12 + (depth - 30) / 270, 0.12, 1); // thin in the shallows, full below 300 m
     const surf = Sy(0), TW = W * 1.1, TH = H * 1.1;
     // the seabed's line on screen, a column every 24 px, once a frame
     const step = 24, cols = Math.ceil(W / step) + 1, floorY = this.snowFloor || (this.snowFloor = new Float32Array(cols + 1));
     for (let i = 0; i <= cols; i++) floorY[i] = Sy(g.world.floorAt(clamp(cam.x + (i * step - W / 2) / ppm, 0, 4999)));
-    const sz = Math.max(0.6, ppm / 24);
+    const sz = clamp(ppm / 24, 0.8, 1.1); /* (6.1.9) never swelling with the zoom */
     ctx.save(); ctx.fillStyle = '#dfe6e8';
     this.snowL.forEach((L, li) => {
       const n = Math.floor(L.length * dens); if (!n) return;

@@ -27,7 +27,7 @@ import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP
 import { SUITS, suitOf, kit, worn } from './economy.js';
 import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
-import { oldStock, overTable, leftOf } from './oldone.js';
+import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS, oddsText } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
 import { abilityOf, abilityState, whyNot, cooldownLeft } from './abilities.js';
@@ -232,7 +232,7 @@ const ui = new UI({
   onBuy: (k) => guardBuy(costOf(k), () => buy(k)),
   onBuyNow: (k) => { guardBuy.ok = true; try { return buy(k); } finally { guardBuy.ok = false; ui.refreshOpen(); } }, // (4.16.4) already confirmed by its own prompt
   costOf: (k) => costOf(k),
-  onOldBuy: (k) => oldBuy(k),
+  onOldBuy: (k) => { const ok = oldBuy(k); if (ok && g.oldShopOpen) setTimeout(showOldShop, 0); return ok; },
   questsReady: () => (profile ? questsReady(profile) : 0),
   // (3.0.0) a shop's cart, checked out at once: all of it, or nothing (cash and room in the locker)
   onCheckout: (keys) => {
@@ -426,7 +426,18 @@ function sellSpecimens(list, lines) {
 }
 hud.questMain = QUEST_MAIN;
 // (3.0.0) the old one's card: one of her things (its skills, her price) or a bundle (its odds)
+// (6.1.8) her shop, opened at her lure: her three things side by side on the paper, each with how long she keeps it out
+// and her price in gold coins; giving her coins for one leaves the shop open, the new thing already in its place
+function showOldShop() {
+  const P = profile, st = oldStock(P), have = P.gold || 0, ROMAN = ['', 'I', 'II', 'III', 'IV'];
+  const col = (it, i) => { const def = ITEMS[it.id]; if (!def) return ''; const left = leftOf(it), hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60);
+    const sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b></div>`).join('');
+    return `<div class="os-item r-${def.rarity}"><div class="os-pic"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""></div><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><div class="oc-sk">${sk}</div><small class="os-left">Here another ${hh ? hh + ' h ' : ''}${mm} min</small><button data-oc="item:${i}" ${have < it.cost ? 'disabled' : ''}>Give ${it.cost} gold coin${it.cost > 1 ? 's' : ''}</button></div>`; };
+  g.oldShopOpen = true;
+  ui.oldCard(`<div class="os-head"><b>What she has</b><span>You have ${have} gold coin${have === 1 ? '' : 's'}</span></div><div class="os-row">${st.items.map(col).join('')}</div>`);
+}
 function showOldCard(H) {
+  g.oldShopOpen = false;
   // (6.1.1) one of her three things: its card, how long it stays, and her price in gold coins (nothing else will do)
   const P = profile, st = oldStock(P), ROMAN = ['', 'I', 'II', 'III', 'IV'];
   const it = st.items[H.i]; if (!it) return;
@@ -2084,20 +2095,22 @@ function update(dt) {
     // (5.6.4) where the thing F acts on is, so its button can sit beside it (not over Earl)
     g.fAnchor = target ? (target.kind === 'board' ? { x: g.sub.x, y: g.sub.y } : target.kind === 'pickup' ? { x: target.p.x, y: target.p.y } : target.kind === 'trap' ? { x: target.t.x, y: target.t.y - 0.5 } : null) : null;
     const atAngler = nearAngler(), atDave = !atAngler && nearDave(), atStation = !atAngler && !atDave && nearStation();
-    g.subHandF = !!(e.inSub && (atDave || atStation || overTable(e.x, e.y))); // (5.7.1) the hand in the sub: the stores, Dave, the old one's table
+    g.atLure = !atDave && !atStation && nearLure(e.x, e.y); // (6.1.8) her lure: the way into what she has
+    g.subHandF = !!(e.inSub && (atDave || atStation || g.atLure || overTable(e.x, e.y))); // (5.7.1) the hand in the sub: the stores, Dave, the old one's table
     if (atStation) {
       g.prompt = 'F  Station stores' + (e.inSub ? '   ·   hold F  Leave sub' : '');
       if (!profile.stationFound) { profile.stationFound = true; saveProfile(profile); hud.toast('A research station, lit up on the summit', 'big'); hud.hint("The station's stores sell to visiting divers. The Margaret's yard now has more for the sub"); }
     }
     if (atDave) g.prompt = "F  Dave's Haul" + (e.inSub ? '   ·   hold F  Leave sub' : '');
     // (3.0.0) the old one trades no more: her things lie on the table below her
-    g.oldHover = overTable(e.x, e.y);
+    g.oldHover = g.atLure ? null : overTable(e.x, e.y); // (6.1.8) at her lure, the lure
     if (g.oldHover) {
       const st = oldStock(profile), H = g.oldHover;
       if (H.kind === 'item') { const it = st.items[H.i]; g.prompt = it && !it.sold ? `F  Look at the ${ITEMS[it.id].name}` : 'Nothing here now'; }
       else g.prompt = `F  Look at the ${CHESTS[H.key].name}`;
       if (e.inSub) g.prompt += '   ·   hold F  Leave sub';
     }
+    if (g.atLure && !g.oldHover) g.prompt = 'F  What she has' + (e.inSub ? '   ·   hold F  Leave sub' : '');
     if (atAngler && !g.caveMet) g.caveMet = true;
     // in the submersible the prompt stays out of the way: hidden while moving, and gone after
     // 5 s of the same text (it comes back when something new is in reach or the sub stops again)
@@ -2144,6 +2157,7 @@ function update(dt) {
       if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('The deep accepts it, for now', 'note'); }
     }
     if (pressed.has('f-tap') && g.oldHover) showOldCard(g.oldHover);
+    else if (pressed.has('f-tap') && g.atLure) showOldShop();
     else if (pressed.has('f-tap') && atDave) ui.toggleDave();
     else if (pressed.has('f-tap') && atStation) ui.toggleCatalog(undefined, 'station');
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);

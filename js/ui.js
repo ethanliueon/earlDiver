@@ -501,7 +501,7 @@ export class UI {
   // the rarity-edged box, a NEW tag in the corner) with the name under it and +1 at the bottom. The game runs on
   // behind them; a click anywhere sends them off early. entries: [{ kind: 'item'|'supply'|'trawl'|'trap', id }]
   // (4.16.9) while a shop, the catalog, the quest board or a crate is open, the cards wait; they come when it closes
-  gainsBlocked() { return ['catalog', 'workshop', 'chest', 'dave', 'cave', 'quests', 'confirm'].some((id) => { const el = $(id); return el && !el.hidden; }); }
+  gainsBlocked() { return ['catalog', 'workshop', 'chest', 'dave', 'cave', 'quests', 'confirm', 'oldcard'].some((id) => { const el = $(id); return el && !el.hidden; }); }
   showGains(entries, now = false) {
     if (!entries || !entries.length) return;
     if (!now && this.gainsBlocked()) { this.gainsQueue = (this.gainsQueue || []).concat(entries); return; }

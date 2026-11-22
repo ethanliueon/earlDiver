@@ -206,6 +206,9 @@ export function generateWorld(seed) {
     addRock(roughen([{ x: 30, y: cy - 34 }, { x: cx + 26, y: cy - 22 }, { x: cx + 30, y: cy - 15 }, { x: cx + 8, y: cy - 11 }, { x: 30, y: cy - 12 }], 4, 1.2), 'ledge');
     addRock(roughen([{ x: 30, y: cy + 12 }, { x: cx + 6, y: cy + 10 }, { x: cx + 28, y: cy + 15 }, { x: cx + 24, y: cy + 26 }, { x: 30, y: cy + 36 }], 4, 1.2), 'boulder');
   }
+  // (6.1.8) the old one's body is as solid as the rock round her: Earl, the sub and the animals go round it, never into
+  // it (an outline a little inside the drawing, so nothing seems to stop short of her); never drawn as rock
+  { const P0 = []; for (let k = 0; k < 24; k++) { const a = (k / 24) * Math.PI * 2; P0.push({ x: ANGLER.x + Math.cos(a) * 7.2, y: ANGLER.y + Math.sin(a) * 4.4 }); } addRock(P0, 'oldone'); }
   W.rockAt = (x, y, r = 0) => {
     for (const rk of W.rocks) {
       if (x < rk.x0 - r || x > rk.x1 + r || y < rk.y0 - r || y > rk.y1 + r) continue;
