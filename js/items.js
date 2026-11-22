@@ -379,10 +379,11 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
   // nets: each kind keeps what it is for (its own size, reach and swing); rarity multiplies them, with the jump at the top
   const NM = { common: 1, uncommon: 1.15, rare: 1.3, exotic: 1.45, legendary: 1.9 };
   for (const it of Object.values(ITEMS)) {
+    if (it.id === 'hand') it.time = 1.0; // (6.0.16) the hand net: one full second
     if (it.kind !== 'net' || it.id === 'hand' || !ARCH.net[it.arch]) continue;
     const b = ARCH.net[it.arch], m = NM[it.rarity || 'common'] || 1, cm = (v) => Math.round(v * 100);
     const was = it.maxLen;
-    it.maxLen = +(b.maxLen * m).toFixed(2); it.range = +(b.range * Math.pow(m, 0.8)).toFixed(2); it.time = +(b.time / Math.pow(m, 0.7)).toFixed(2);
+    it.maxLen = +(b.maxLen * m).toFixed(2); it.range = +(b.range * Math.pow(m, 0.8)).toFixed(2); it.time = +Math.max(0.3, ({ common: 1.0, uncommon: 0.85, rare: 0.72, exotic: 0.57, legendary: 0.42 }[it.rarity || 'common'] || 1) * Math.pow(b.time, 0.6)).toFixed(2); /* (6.0.16) the swing by rarity, a clear step each; the kind softened within it */
     it.success = +(1 - (1 - b.success) / Math.pow(m, 1.6)).toFixed(3); it.harm = +(b.harm / Math.pow(m, 1.5)).toFixed(3);
     if (b.minLen) it.minLen = b.minLen;
     if (it.chest || /up to|cm|reach/.test(it.good || '')) it.good = goodOf('net', it);

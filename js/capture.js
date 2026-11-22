@@ -1,3 +1,4 @@
+const FAST_IDS = new Set([42, 43, 44, 39, 40, 41, 82, 52, 45, 185, 186, 187]); // (6.0.16) as fauna.js FAST: the swimmers quick enough to beat a slow swing
 // Catching animals alive: the net and the slurp gun, the specimen bag, the sub's tank, and what
 // happens to an animal between the catch and the sale (handling, time, coming up too fast).
 import { LEGENDARY, PROTECTED } from './specimens.js';
@@ -151,7 +152,14 @@ export function useTool(g) {
   const { kind, def, tier } = activeTool(g);
   if (overencumbered(g) && kind !== 'cam') return 'Overencumbered: lighten the bag'; // (5.14.0) one catch too many is allowed; nothing more after it (a photograph is not carried)
   const lock = findCatch(g);
-  g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1), resolveAt: kind === 'net' ? 0.35 : 0.12, done: false, lock: lock && lock.ok ? lock : null };
+  // (6.0.16) the catch lands when the hoop arrives, two-thirds of the way through the swing (it was a third: the swing
+  // speed could not be felt). A quick fish that sees it coming may dart out of reach first: small reef fish and the
+  // fast swimmers react in about a third of a second, so a slow net misses them more and a fast one beats them
+  g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1), resolveAt: kind === 'net' ? 0.65 : 0.12, done: false, lock: lock && lock.ok ? lock : null };
+  if (kind === 'net' && lock && lock.ok && lock.c && !g.tutForce && !lock.c.dazed) {
+    const c = lock.c, fast = FAST_IDS.has(c.sp.id), small = (c.len || 1) < 0.35, arrive = g.capture.dur * 0.65, react = 0.26 + Math.random() * 0.18, p = fast ? 0.6 : small ? 0.4 : 0.12;
+    if (arrive > react && Math.random() < p * Math.min(1, (arrive - react) / 0.35)) { const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy) || 1, sp = fast ? 11 : 7;
+      c.dartT = arrive - react; c.dartVx = dx / d * sp; c.dartVy = dy / d * sp * 0.6; c.startle = 1.2; } }
   if (e.y > 200) g.entity.disturb(g, def.noise);
   return null;
 }
@@ -159,6 +167,8 @@ export function useTool(g) {
 // Advance the sweep; at the right moment, see what it caught. Returns events for the HUD/audio.
 export function updateCapture(g, dt) {
   const ev = [];
+  // (6.0.16) a fish darting away from a slow swing: carried out of reach for the moment it has
+  for (const c of g.fauna && g.fauna.list ? g.fauna.list : []) if (c.dartT > 0) { const k = Math.min(dt, c.dartT); c.x += c.dartVx * k; c.y += c.dartVy * k; c.dartT -= dt; if (c.dartT <= 0) { c.vx = c.dartVx * 0.4; c.vy = c.dartVy * 0.4; c.dartT = 0; } }
   g.toolCool = Math.max(0, (g.toolCool || 0) - dt);
   if (g.netCatch) {
     const N = g.netCatch; N.t += dt;
