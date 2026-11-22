@@ -323,7 +323,7 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  showChest(key, q) { this.chest.open(key, q); }
+  showChest(key, q, coin = false) { this.chest.open(key, q, coin); } // (6.1.2) coin: a gold coin came up with it
   // (3.0.0) one of the old one's things, or a bundle, seen from where Earl is: what it is, and her price
   oldCard(html) {
     let el = document.getElementById('oldcard');

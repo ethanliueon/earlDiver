@@ -41,66 +41,9 @@ export function rollChest(key, rnd = Math.random) {
 export const oddsText = (odds, coin = 0) => Object.entries(odds).map(([k, p]) => `<span class="r-${k}">${RARITY[k].name} ${p} %</span>`).join(' · ') + (coin ? ` · <span class="r-legendary">Gold coin ${coin} % bonus</span>` : '');
 
 // ---------- the chests, drawn ----------
-// lid: 0 shut .. 1 open; at open, a glow colour for the light inside (soft)
-export function drawChest(ctx, look, w, h, lid = 0, light = null) {
-  const cx = w / 2, bw = w * 0.62, bh = h * 0.36, by = h * 0.86, top = by - bh, lh = h * 0.16;
-  const wood = { crate: ['#b89462', '#8a6a40', '#5a4426'], tea: ['#8a6440', '#6a4a2c', '#3e2a16'], footlocker: ['#4a5a3a', '#36442a', '#1e2616'],
-    trunk: ['#5a3a24', '#432a18', '#24160c'], strongbox: ['#5a6064', '#41474a', '#24282a'], case: ['#b8bec0', '#8a9294', '#555c5e'],
-    offering: ['#4a4a32', '#34361f', '#1c1e10'], reliquary: ['#2a2622', '#1a1714', '#0a0908'] }[look] || ['#8a6a40', '#6a4a2c', '#3e2a16'];
-  const band = { crate: null, tea: '#3a3a36', footlocker: '#2a2a26', trunk: '#b8913e', strongbox: '#2e3234', case: '#6a7274', offering: null, reliquary: '#c8bca0' }[look];
-  // its shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(cx, by + h * 0.02, bw * 0.58, h * 0.035, 0, 0, TAU); ctx.fill();
-  // the light from inside, when open: a soft wedge, not a beam
-  if (light && lid > 0.05) {
-    const g = ctx.createRadialGradient(cx, top, 0, cx, top - h * 0.1, h * 0.55 * lid);
-    g.addColorStop(0, light.replace('A', (0.32 * lid).toFixed(3))); g.addColorStop(1, light.replace('A', '0'));
-    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(cx - bw * 0.46, top); ctx.lineTo(cx - bw * 0.8, top - h * 0.6 * lid); ctx.lineTo(cx + bw * 0.8, top - h * 0.6 * lid); ctx.lineTo(cx + bw * 0.46, top); ctx.closePath(); ctx.fill();
-  }
-  // the body
-  const body = () => {
-    if (look === 'offering') { // a bundle in old net and kelp
-      ctx.fillStyle = wood[1]; ctx.beginPath(); ctx.ellipse(cx, by - bh * 0.45, bw * 0.52, bh * 0.62, 0, 0, TAU); ctx.fill();
-      ctx.save(); ctx.clip(); ctx.strokeStyle = 'rgba(190,175,130,0.4)'; ctx.lineWidth = Math.max(1, w * 0.004);
-      for (let i = -7; i <= 7; i++) for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(cx + i * bw * 0.09 - d * bw * 0.3, by); ctx.lineTo(cx + i * bw * 0.09 + d * bw * 0.3, by - bh * 1.2); ctx.stroke(); }
-      ctx.restore(); // old net, knotted round it
-      ctx.strokeStyle = '#5a6a30'; ctx.lineWidth = w * 0.012; ctx.lineCap = 'round';
-      for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(cx + s * bw * 0.4, by - bh * 0.3); ctx.bezierCurveTo(cx + s * bw * 0.7, by - bh * 0.9, cx + s * bw * 0.3, by - bh * 1.4, cx + s * bw * 0.55, by - bh * 1.8); ctx.stroke(); }
-      return;
-    }
-    const g = ctx.createLinearGradient(0, top, 0, by); g.addColorStop(0, wood[0]); g.addColorStop(1, wood[2]);
-    ctx.fillStyle = g; ctx.fillRect(cx - bw / 2, top, bw, bh);
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = Math.max(1, w * 0.003);
-    if (look === 'crate' || look === 'tea' || look === 'trunk' || look === 'footlocker') for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(cx - bw / 2, top + bh * i / 4); ctx.lineTo(cx + bw / 2, top + bh * i / 4); ctx.stroke(); } // planks
-    if (look === 'crate') { ctx.strokeStyle = wood[1]; ctx.lineWidth = w * 0.02; ctx.beginPath(); ctx.moveTo(cx - bw / 2 + w * 0.02, top + w * 0.01); ctx.lineTo(cx + bw / 2 - w * 0.02, by - w * 0.01); ctx.stroke(); }
-    if (look === 'case') { ctx.strokeStyle = 'rgba(255,255,255,0.18)'; for (let i = 1; i < 9; i++) { ctx.beginPath(); ctx.moveTo(cx - bw / 2 + bw * i / 9, top); ctx.lineTo(cx - bw / 2 + bw * i / 9, by); ctx.stroke(); } ctx.fillStyle = 'rgba(30,30,30,0.6)'; ctx.font = `${Math.round(h * 0.055)}px monospace`; ctx.textAlign = 'center'; ctx.fillText('STN 280', cx, top + bh * 0.62); }
-    if (look === 'reliquary') { ctx.strokeStyle = 'rgba(200,188,160,0.35)'; ctx.lineWidth = Math.max(1, w * 0.004); for (let i = 0; i < 7; i++) { const x0 = cx - bw * 0.42 + i * bw * 0.14; ctx.beginPath(); ctx.moveTo(x0, by - bh * 0.1); ctx.quadraticCurveTo(x0 + bw * 0.05, top + bh * 0.5, x0, top + bh * 0.15); ctx.stroke(); } } // ribs
-    if (band) { ctx.fillStyle = band; for (const s of [-1, 1]) ctx.fillRect(cx + s * bw * 0.3 - w * 0.012, top, w * 0.024, bh); if (look === 'trunk' || look === 'reliquary') for (const s of [-1, 1]) { ctx.fillRect(cx + s * bw / 2 - (s > 0 ? w * 0.05 : 0), by - w * 0.05, w * 0.05, w * 0.05); } }
-    if (look === 'strongbox' || look === 'footlocker') { ctx.fillStyle = 'rgba(200,200,190,0.35)'; for (let i = 0; i < 6; i++) for (const yy of [top + bh * 0.12, by - bh * 0.12]) { ctx.beginPath(); ctx.arc(cx - bw * 0.45 + i * bw * 0.18, yy, w * 0.005, 0, TAU); ctx.fill(); } }
-    // its hasp
-    ctx.fillStyle = look === 'trunk' ? '#c8a050' : look === 'reliquary' ? '#c8bca0' : '#3a3a36'; ctx.fillRect(cx - w * 0.02, top, w * 0.04, bh * 0.28);
-  };
-  body();
-  if (look === 'offering') { // no lid: the bundle loosens
-    if (lid > 0) { ctx.globalAlpha = 1 - lid; } return void (ctx.globalAlpha = 1);
-  }
-  // the lid, hinged at its back edge: it swings up and back, showing the dark inside and then its own underside
-  const hingeY = top - lh, a = lid * 1.9, edgeY = hingeY + lh * Math.cos(a) - lh * 1.5 * Math.sin(a), curved = look === 'trunk' || look === 'reliquary' || look === 'tea';
-  if (lid > 0.02) { // the inside of the box, seen from above
-    ctx.fillStyle = '#0c0a08'; ctx.beginPath(); ctx.moveTo(cx - bw / 2 + w * 0.012, top); ctx.lineTo(cx - bw / 2 + w * 0.03, hingeY + lh * 0.2); ctx.lineTo(cx + bw / 2 - w * 0.03, hingeY + lh * 0.2); ctx.lineTo(cx + bw / 2 - w * 0.012, top); ctx.closePath(); ctx.fill();
-    if (light) { const g = ctx.createLinearGradient(0, hingeY, 0, top); g.addColorStop(0, light.replace('A', (0.1 * lid).toFixed(3))); g.addColorStop(1, light.replace('A', (0.45 * lid).toFixed(3))); ctx.fillStyle = g; ctx.fill(); }
-  }
-  const outer = edgeY > hingeY; // which face of the lid shows
-  const lg = ctx.createLinearGradient(0, Math.min(edgeY, hingeY), 0, Math.max(edgeY, hingeY) + 1);
-  if (outer) { lg.addColorStop(0, wood[0]); lg.addColorStop(1, wood[1]); } else { lg.addColorStop(0, wood[2]); lg.addColorStop(1, wood[1]); }
-  ctx.fillStyle = lg;
-  const lw = bw * 1.02, bulge = curved ? (edgeY - hingeY) * 0.0 + lh * 0.55 * (outer ? Math.cos(a) : -0.6 * Math.sin(a)) : 0;
-  ctx.beginPath(); ctx.moveTo(cx - lw / 2, hingeY);
-  if (curved) ctx.quadraticCurveTo(cx, hingeY - bulge * 1.4, cx + lw / 2, hingeY); else ctx.lineTo(cx + lw / 2, hingeY);
-  ctx.lineTo(cx + lw / 2, edgeY); ctx.lineTo(cx - lw / 2, edgeY); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = Math.max(1, w * 0.003); ctx.stroke();
-  if (band) { ctx.fillStyle = band; for (const sd of [-1, 1]) ctx.fillRect(cx + sd * bw * 0.3 - w * 0.012, Math.min(hingeY, edgeY) - (curved && outer ? bulge * 0.9 : 0), w * 0.024, Math.abs(edgeY - hingeY) + (curved && outer ? bulge * 0.9 : 0)); }
-  if (outer && lid < 0.5) { ctx.fillStyle = look === 'trunk' ? '#c8a050' : look === 'reliquary' ? '#c8bca0' : '#3a3a36'; ctx.fillRect(cx - w * 0.02, edgeY - lh * 0.35, w * 0.04, lh * 0.35); } // the lid's half of the hasp
-}
+// (6.1.2) painted in chest_art.js
+import { drawChest } from './chest_art.js';
+export { drawChest };
 
 const PICS = new Map();
 export function chestPicture(look, w, h) {
@@ -125,7 +68,7 @@ export class ChestReveal {
     });
     window.addEventListener('keydown', (ev) => { if (this.root.hidden) return; if (ev.key === 'Escape' || ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); ev.stopImmediatePropagation(); if (this.t < 3) this.t0 = performance.now() - 3000; else this.close(); } }, true);
   }
-  open(key, q) {
+  open(key, q, coin = false) {
     const C = CHESTS[key], def = ITEMS[q.id]; this.C = C; this.q = q; this.def = def; this.t = 0; this.t0 = performance.now();
     const R = this.root; R.hidden = false; R.classList.remove('done');
     R.querySelector('.cr-item').className = `cr-item r-${def.rarity}`;
@@ -134,6 +77,8 @@ export class ChestReveal {
     R.querySelector('.rr').textContent = RARITY[def.rarity].name + (def.set ? ' · set piece' : '');
     R.querySelector('p').textContent = def.line || '';
     R.querySelector('.cr-sks').innerHTML = (q.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('') + (q.leg ? `<div class="leg"><b>✦ ${LEGEND[q.leg].name}</b> ${LEGEND[q.leg].what}</div>` : '');
+    // (6.1.2) and a gold coin at the bottom of it, when one came up
+    { const old = R.querySelector('.cr-coin'); if (old) old.remove(); if (coin) R.querySelector('.cr-item').insertAdjacentHTML('afterend', `<div class="cr-coin r-legendary"><span class="cr-ci"><img src="${this.h.picture({ kind: 'gold', id: 1 }, 90, 90)}" alt=""></span><span>And at the bottom of it, a gold coin.</span></div>`); }
     const loop = () => { if (R.hidden) return; this.t = (performance.now() - this.t0) / 1000; this.draw(); requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   }

@@ -1258,3 +1258,7 @@ html body #gains.topc .g-how { display: none; }
 html body #gains:not(.topc) .g-tile:not(#_a) { background: rgba(60,44,20,0.14) !important; border-image: none !important; border: 0 !important; box-shadow: inset 0 0 0 1px rgba(60,44,20,0.25) !important; }
 html body #gains:not(.topc) .g-tile .new:not(#_a) { background: #3a2e1e !important; color: #ece3c8 !important; }
 html body #oldcard .oc-close:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #5a4a30 !important; font: 400 26px "Barlow Semi Condensed", sans-serif !important; width: auto !important; height: auto !important; } /* (6.1.1) an inked cross on the paper */
+/* (6.1.2) a gold coin that came up with the chest's item: a line under it, shown as the lid has settled */
+html body #chest .cr-coin { display: flex; align-items: center; gap: 12px; margin: 8px 0 0; padding: 6px 12px; font: 500 16px "Barlow Semi Condensed", sans-serif; color: #d8c08a; opacity: 0; transition: opacity 0.5s ease 0.2s; }
+html body #chest.done .cr-coin { opacity: 1; }
+html body #chest .cr-coin .cr-ci { position: relative; width: 44px; height: 44px; flex: none; } html body #chest .cr-coin img { width: 44px; height: 44px; }
