@@ -630,6 +630,10 @@ e.inSub ? [
           st = { sat, glow: 0.35 * sat + 0.45 * pulse, arc: null }; }
         drawPowerBadge(ctx, cx - R * 0.74, cy + R * 0.6, R * 0.33, pw, st);
       } }
+    // (6.5.1) the camera in hand: the exposures left in it this dive, small on its rim (it loads again at the surface)
+    const filmCount = (fx, fy, fr) => { const n = (g.items && g.items.film) || 0; ctx.save(); ctx.fillStyle = 'rgba(10,12,10,0.88)'; ctx.beginPath(); ctx.arc(fx, fy, fr, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(230,222,196,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = n > 0 ? '#ece6d2' : '#e06a58'; ctx.font = `700 ${Math.round(fr * 1.2)}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(n), fx, fy + fr * 0.06); ctx.restore(); };
+    if (!aboard && !e.inSub && sel === 'cam' && owns(P, 'camera')) filmCount(cx + R * 0.68, cy + R * 0.68, R * 0.24);
     if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     /* (5.15.7) the ring that was drawn across the picture here is gone: the light behind the coin says it */
@@ -657,6 +661,7 @@ e.inSub ? [
       if (owned.length > 1) {
         const nx = owned[(owned.indexOf(sel || 'net') + 1) % owned.length];
         drawCoin(ctx, sx2, sy2, rc, nx, pressFx('swap', sx2, sy2, rc) ? 'press' : 'on', toolLook(nx), rarOf(nx));
+        if (nx === 'cam') filmCount(sx2 + rc * 0.62, sy2 + rc * 0.62, rc * 0.46); // (6.5.1) the exposures left, on the camera
         ctx.save(); ctx.translate(sx2 - rc * 0.68, sy2 + rc * 0.68); ctx.fillStyle = 'rgba(8,8,6,0.88)'; ctx.beginPath(); ctx.arc(0, 0, rc * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc * 0.8); ctx.restore();
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'swap');
       } else {

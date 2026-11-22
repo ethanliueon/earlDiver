@@ -153,11 +153,12 @@ export const SUPPLIES = {
   necklace: { name: 'Glow stick', price: 370, max: 5, rarity: 'common', desc: 'A chemical glow stick. Snap it and let it go: it hangs where you leave it, lighting the water 16 m round in warm amber for 2 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' }, // (5.17.1)
   // (6.0.1) the advanced glow stick: a separate stack (rare), whiter and twice the reach; one kind sits on the belt at a time
   glowAdv: { name: 'Advanced glow stick', price: 1700, max: 3, rarity: 'rare', desc: 'A heavier stick in a steel-capped tube. Snap it and let it go: it hangs where you leave it, lighting the water 32 m round in a pale, bone-white light for 3 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' },
-  film: { name: 'Film', price: 4, max: 5, needs: 'camera', desc: 'One exposure each. The camera holds as many as it takes; every picture uses one, sharp or not.' },
+  film: { name: 'Film', price: 5, max: 5, needs: 'camera', desc: 'One exposure. The camera holds as many as it takes; spare film, up to 36, waits in the bag and loads at the surface.' }, // (6.5.1) like rounds: the camera's load and a spare stack
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub: three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };
 // how many of a supply can be carried (some depend on an upgrade)
-export const supplyMax = (P, k) => k === 'film' ? (owns(P, 'camera') ? gear(P, 'cam').shots : 0) : k === 'airTank' ? 2 : Math.min(99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.12.0) two backup tanks, always // (4.5.0) two backup tanks at most
+export const FILM_SPARE = 36; // (6.5.1) spare exposures carried besides the camera's load
+export const supplyMax = (P, k) => k === 'film' ? (owns(P, 'camera') ? gear(P, 'cam').shots + FILM_SPARE : 0) : k === 'airTank' ? 2 : Math.min(99, SUPPLIES[k].slots ? statValue(P, SUPPLIES[k].slots) : SUPPLIES[k].max); // (4.12.0) two backup tanks, always // (4.5.0) two backup tanks at most
 
 // ---------------- prices ----------------
 // What the buyers on the radio pay for each kind of thing, before the market moves.

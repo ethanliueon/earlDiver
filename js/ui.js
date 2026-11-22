@@ -763,7 +763,7 @@ export class UI {
     const fishCells = placed.map((q) => { const sp = SPECIES_BY_ID[q.s2.id]; if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
       return `<div class="fc bs-fish ${hab(sp)}${inTrouble(q.s2, true) ? ' trouble' : ''}${q.over ? ' over' : ''}${rarityCls(sp)}" data-b="${q.i}" style="grid-row:${q.r + 1} / span ${q.h};grid-column:${q.c + 1} / span ${q.w}" title="${sp.name}, ${state(q.s2)}">${q.s2.blessed ? '<i class="fc-bless" title="Blessed"></i>' : ''}${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}"><i class="fc-dot" style="background:${dot(q.s2)}"></i></div>`; }).join('');
     const over = usedSp > cap;
-    return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag${over ? ' <i class="over">overencumbered</i>' : ''}</h4><div class="bag-spaces" style="--cols:${COLS};--rows:${rows}">${cells}${fishCells}</div>`
+    return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i class="bag-n">${usedSp} / ${cap}</i>${over ? ' <i class="over">overencumbered</i>' : ''}</h4><div class="bag-spaces" style="--cols:${COLS};--rows:${rows}">${cells}${fishCells}</div>`
       + this.photoBoxes(P, g)
       + `<div class="worth-paint" style="--wp:${Math.min(104, Math.floor(400 / (money(total).length * 0.52)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
       + `<div class="inv-right${g.earl && g.earl.inSub ? '' : ' sub-away'}">${this.trawlSlot(P, g)}${g.earl && g.earl.inSub ? '' : '<i class="sub-lock"></i>'}<div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
@@ -804,7 +804,7 @@ export class UI {
     const roll = g.photos || [], cam = owns(P, 'camera') ? gear(P, 'cam') : null;
     if (!cam && !roll.length) return `<h4 class="ph-h off">Photos <span>no camera yet</span></h4><div class="ph-grid">${'<div class="ph-cell empty locked"><i></i></div>'.repeat(10)}</div>`; // (5.14.1) always there, padlocked
     const cells = roll.map((ph, i) => `<button class="ph-cell" data-ph="${i}" title="${ph.name}">${ph.img ? `<img src="${ph.img}" alt="">` : '<span></span>'}<b>${String(i + 1).padStart(2, '0')}</b>${photoStars(ph)}</button>`).join('');
-    return `<h4 class="ph-h">Photos <i>(${roll.length})</i>${cam ? `<span>Film ${g.items.film || 0}/${cam.shots}</span>` : ''}</h4><div class="ph-grid">${cells}${'<div class="ph-cell empty"></div>'.repeat(Math.max(0, 10 - roll.length))}</div>`;
+    return `<h4 class="ph-h">Photos <i>(${roll.length})</i>${cam ? `<span>Film ${g.items.film || 0}/${cam.shots}${P.spare && P.spare.film ? ` · ${P.spare.film} spare` : ''}</span>` : ''}</h4><div class="ph-grid">${cells}${'<div class="ph-cell empty"></div>'.repeat(Math.max(0, 10 - roll.length))}</div>`;
   }
   // (5.0) a photograph, large
   photoPop(P, g) {

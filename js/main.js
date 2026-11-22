@@ -149,7 +149,7 @@ function applyKit(e, P) {
   e.kelpSet = setOn(P, 'kelp'); e.nightSet = setOn(P, 'night'); e.triesteSet = setOn(P, 'trieste'); e.challengerSet = setOn(P, 'challenger');
   // (5.0) a camera comes with one roll of film, the first time he has one; after that film is bought at the boat
   if (g && owns(P, 'camera') && g.items.film == null) g.items.film = gear(P, 'cam').shots;
-  if (g && g.items.film > 0 && owns(P, 'camera')) g.items.film = Math.min(g.items.film, gear(P, 'cam').shots);
+  if (g && g.items.film > 0 && owns(P, 'camera')) { const sh = gear(P, 'cam').shots; if (g.items.film > sh) { P.spare = P.spare || {}; P.spare.film = Math.min(36, (P.spare.film || 0) + g.items.film - sh); g.items.film = sh; } } // (6.5.1) a smaller camera: the rest goes to the spare stack
   if (g && g.toolSel && g.toolSel !== 'net' && g.toolSel !== 'trap' && g.toolSel !== 'none' && !(g.toolSel === 'cam' && owns(P, 'camera'))) g.toolSel = 'net';
 }
 function applySuit(e, P) {
@@ -961,6 +961,7 @@ function buy(kind) {
     hud.toast(`Fitted: ${SUB_ADDONS[kind].name.toLowerCase()}`, 'big');
   } else if (SUPPLIES[kind] && (g.items[kind] || 0) + ((P.spare && P.spare[kind]) || 0) + (kind === 'lure' ? (P.oldLures || 0) : 0) < supplyMax(P, kind) && spend(P, SUPPLIES[kind].price)) { // (5.10.10) one lure in all, an old one included // (5.6.9) what is on the belt and what waits in the locker
     if ((kind === 'necklace' || kind === 'glowAdv') && glowKind() !== kind) { P.spare = P.spare || {}; P.spare[kind] = (P.spare[kind] || 0) + 1; } // (6.0.1) the kind not on the belt waits in the locker
+    else if (kind === 'film' && (g.items.film || 0) >= gear(P, 'cam').shots) { P.spare = P.spare || {}; P.spare.film = (P.spare.film || 0) + 1; } // (6.5.1) the camera is loaded: the spare stack
     else { g.items[kind] = g.items[kind] || 0; g.items[kind]++; }
     ok = true;
     ui.showGains([{ kind: 'supply', id: kind, how: 'Bought' }]);
@@ -2424,6 +2425,8 @@ function update(dt) {
     afterTips(dt); // (4.6.0)
     g.autosaveT = (g.autosaveT || 0) + dt; if (g.autosaveT > 10 && profile && !g.kill) { g.autosaveT = 0; syncProfile(); saveProfile(profile); } // (4.12.6) the dive saved every 10 s
     lessons(); // (4.7.0)
+    // (6.5.1) at the surface or aboard, the camera loads from the spare film
+    if (profile && owns(profile, 'camera') && (g.aboard || g.earl.y < 1.2) && !g.earl.inSub) { const sh = gear(profile, 'cam').shots, sp = (profile.spare && profile.spare.film) || 0, need = sh - (g.items.film || 0); if (need > 0 && sp > 0) { const n = Math.min(need, sp); g.items.film = (g.items.film || 0) + n; profile.spare.film = sp - n; } }
     const dl = g.frozen ? Object.assign([], { events: [] }) : updateSpecimens(g, dt); // (4.7.0) frozen: nothing suffers
     // (3.0.40) where it is, plainly; a death from the wrong pressure is barotrauma
     const whereOf = (s) => (g.bag.includes(s) ? ' in your net' : g.subTank.includes(s) ? (s.pressed ? ' in its chamber' : s.pile ? ' on the floor of the sub' : ' in the tank') : '');

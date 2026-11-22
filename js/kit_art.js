@@ -15,53 +15,63 @@ function ball(x, cx, cy, r, base, hi, lo) {
 function floorShadow(x, cx, cy, rx, ry, a = 0.28) { const g = x.createRadialGradient(cx, cy, 0, cx, cy, rx); g.addColorStop(0, `rgba(20,24,24,${a})`); g.addColorStop(1, 'rgba(20,24,24,0)'); x.save(); x.translate(cx, cy); x.scale(1, ry / rx); x.translate(-cx, -cy); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, rx, 0, TAU); x.fill(); x.restore(); }
 
 // ---------- the trawl nets ----------
-// The net lies on its side, its mouth at the left seen a little open (an oval), the bag tapering right to the tied
-// cod end. The basic net: green twine on a rope headline with cork floats. The advanced: dark tarred twine on a steel
-// mouth frame with chain and glass floats in their netting, a heavier, longer bag
+// (6.5.1) a solid cone of netting hanging from a ring, as the hand nets are drawn: the mouth at the left is a thick ring
+// seen at an angle (an oval, its far side behind the bag, its near side in front), the bag starts on that ring all the
+// way round and narrows, sagging a little, to the tied cod end. The mesh follows the cone: rings of twine round it and
+// lines running from the rim to the tip, the near side bright, the far side faint through the gaps; the cone is shaded
+// as a solid (light on its upper flank, dark beneath, the inside of the mouth darkest). Floats ride on the ring: cork on
+// the basic net, glass in netting on the advanced, whose steel hoop also has its chain; the bridles run off to the left
 export function drawTrawl3(x, w, h, k) {
   SEED = k === 'adv' ? 31 : 17; const adv = k === 'adv';
-  const mx = w * 0.2, my = h * 0.5, mrx = w * 0.055, mry = h * (adv ? 0.36 : 0.31), ex = w * (adv ? 0.9 : 0.86), ey = h * 0.56;
-  floorShadow(x, w * 0.55, h * 0.88, w * 0.42, h * 0.05);
-  const top = (f) => [mx + (ex - mx) * f, my - mry * (1 - f * 0.86) + Math.sin(f * Math.PI) * h * 0.03 + (ey - my) * f];
-  const bot = (f) => [mx + (ex - mx) * f, my + mry * (1 - f * 0.86) + Math.sin(f * Math.PI) * h * 0.05 + (ey - my) * f];
-  // the bag's body: a faint fill, darker underneath (the far side seen through the mesh)
-  x.beginPath(); for (let i = 0; i <= 24; i++) { const [a, b] = top(i / 24); i ? x.lineTo(a, b) : x.moveTo(a, b); } for (let i = 24; i >= 0; i--) { const [a, b] = bot(i / 24); x.lineTo(a, b); } x.closePath();
-  x.fillStyle = lin(x, 0, my - mry, 0, my + mry, adv ? [[0, 'rgba(40,40,34,0.22)'], [1, 'rgba(14,14,12,0.42)']] : [[0, 'rgba(70,96,70,0.18)'], [1, 'rgba(30,44,30,0.4)']]); x.fill();
-  // the mesh: diamonds, the knots darker; the near side brighter than the far
+  const mx = w * 0.22, my = h * 0.48, ry = h * (adv ? 0.34 : 0.3), rx = ry * 0.36, L = w * (adv ? 0.64 : 0.58), sag = h * 0.06;
+  const C = (u) => [mx + L * u, my + sag * Math.sin(u * Math.PI * 0.9) + h * 0.04 * u]; // the bag's axis
+  const rad = (u) => Math.max(0.06, Math.pow(1 - u, 0.85) * 0.94 + 0.06 * (1 - u)); // its girth along it
+  const P = (u, t) => { const [cx, cy] = C(u), r = rad(u); return [cx - rx * r * Math.cos(t), cy + ry * r * Math.sin(t)]; }; // t: round the bag; cos(t) > 0 is the near side
+  const twine = adv ? [52, 48, 40] : [92, 116, 80], dark = adv ? 'rgba(14,13,11,' : 'rgba(26,38,24,';
+  floorShadow(x, mx + L * 0.5, my + ry + h * 0.08, L * 0.62, h * 0.05);
+  // the ring's far half (behind the bag)
+  const ring = (from, to, lw, col) => { x.strokeStyle = col; x.lineWidth = lw; x.beginPath(); x.ellipse(mx, my, rx, ry, 0, from, to); x.stroke(); };
+  const ringCol = adv ? lin(x, mx - rx, my - ry, mx + rx, my + ry, [[0, '#a4a6a0'], [0.5, '#585a56'], [1, '#2a2c28']]) : lin(x, 0, my - ry, 0, my + ry, [[0, '#d2c094'], [1, '#6e5e40']]);
+  ring(-Math.PI / 2, Math.PI / 2, adv ? 6 : 5, ringCol); // the right half of the oval is its far side
+  // the bag's body, shaded as a solid: upper flank lit, underside dark
+  x.beginPath(); for (let i = 0; i <= 30; i++) { const [a, b2] = P(i / 30, -Math.PI / 2); i ? x.lineTo(a, b2) : x.moveTo(a, b2); } for (let i = 30; i >= 0; i--) { const [a, b2] = P(i / 30, Math.PI / 2); x.lineTo(a, b2); }
+  for (let j = 1; j < 24; j++) { const [a, b2] = P(0, Math.PI / 2 - Math.PI * j / 24); x.lineTo(a, b2); } x.closePath(); // round the ring's near half too: the bag starts on the whole ring
+  x.fillStyle = lin(x, 0, my - ry, 0, my + ry, [[0, `rgba(${twine.join(',')},0.34)`], [0.45, `rgba(${twine.map((v) => v * 0.6 | 0).join(',')},0.3)`], [1, dark + '0.55)']]); x.fill();
   x.save(); x.clip();
-  const twNear = adv ? 'rgba(74,70,58,0.95)' : 'rgba(96,124,84,0.95)', twFar = adv ? 'rgba(46,44,36,0.6)' : 'rgba(64,86,58,0.55)';
-  const rows = adv ? 11 : 9, cols = adv ? 22 : 18;
-  for (const [col, off, lw] of [[twFar, 0.5, 1], [twNear, 0, 1.4]]) { x.strokeStyle = col; x.lineWidth = lw;
-    for (let j = -rows; j <= rows * 2; j++) { x.beginPath(); for (let i = 0; i <= cols; i++) { const f = i / cols, [ta, tb] = top(f), [, bb] = bot(f), v = ((j + i + off) / rows) % 2, yy = tb + (bb - tb) * Math.abs(v > 1 ? 2 - v : v); i ? x.lineTo(ta, yy) : x.moveTo(ta, yy); } x.stroke(); } }
-  for (let i = 0; i <= cols; i += 2) for (let j = 0; j <= rows; j++) { const f = i / cols, [ta, tb] = top(f), [, bb] = bot(f), yy = tb + (bb - tb) * j / rows; x.fillStyle = adv ? 'rgba(28,26,20,0.8)' : 'rgba(48,66,42,0.8)'; x.beginPath(); x.arc(ta, yy, 1.3, 0, TAU); x.fill(); }
-  // light along the upper side of the bag
-  x.fillStyle = lin(x, 0, my - mry, 0, my, [[0, 'rgba(255,250,232,0.16)'], [1, 'rgba(255,250,232,0)']]); x.fillRect(0, 0, w, my);
+  // the far side's mesh, faint, seen through
+  const lines = (near) => { const T = near ? [-Math.PI / 2, Math.PI / 2] : [Math.PI / 2, Math.PI * 1.5], nT = 9, nU = adv ? 15 : 12;
+    x.strokeStyle = near ? `rgba(${twine.map((v) => Math.min(255, v * 1.5 | 0)).join(',')},0.95)` : `rgba(${twine.join(',')},0.45)`; x.lineWidth = near ? 1.25 : 0.8;
+    for (let j = 0; j <= nT; j++) { const t = T[0] + (T[1] - T[0]) * j / nT; x.beginPath(); for (let i = 0; i <= 24; i++) { const [a, b2] = P(i / 24, t); i ? x.lineTo(a, b2) : x.moveTo(a, b2); } x.stroke(); } // rim to tip
+    for (let i = 1; i <= nU; i++) { const u = Math.pow(i / (nU + 1), 0.9); x.beginPath(); for (let j = 0; j <= 16; j++) { const t = T[0] + (T[1] - T[0]) * j / 16, [a, b2] = P(u, t); j ? x.lineTo(a, b2) : x.moveTo(a, b2); } x.stroke(); } // the rings round it
+    if (near) { x.fillStyle = dark + '0.75)'; for (let j = 0; j <= nT; j++) for (let i = 1; i <= nU; i++) { const [a, b2] = P(Math.pow(i / (nU + 1), 0.9), T[0] + (T[1] - T[0]) * j / nT); x.beginPath(); x.arc(a, b2, 1.2, 0, TAU); x.fill(); } } }; // knots
+  lines(false);
+  // the inside of the mouth, darkest, then the near mesh over it
+  const ig = x.createRadialGradient(mx + rx * 0.5, my, 1, mx + rx * 0.5, my, ry * 1.1); ig.addColorStop(0, dark + '0.6)'); ig.addColorStop(1, dark + '0)'); x.fillStyle = ig; x.fillRect(mx - rx, my - ry, L * 0.4, ry * 2);
+  lines(true);
+  x.fillStyle = lin(x, 0, my - ry, 0, my, [[0, 'rgba(255,250,232,0.18)'], [1, 'rgba(255,250,232,0)']]); x.fillRect(0, 0, w, my); // light on the upper flank
   x.restore();
-  // its outline: the headrope along the top, the footrope along the bottom
-  x.lineCap = 'round'; x.strokeStyle = adv ? '#3a362c' : '#5a6a4a'; x.lineWidth = adv ? 2.4 : 2;
-  x.beginPath(); for (let i = 0; i <= 24; i++) { const [a, b] = top(i / 24); i ? x.lineTo(a, b) : x.moveTo(a, b); } x.stroke();
-  x.beginPath(); for (let i = 0; i <= 24; i++) { const [a, b] = bot(i / 24); i ? x.lineTo(a, b) : x.moveTo(a, b); } x.stroke();
-  // the cod end, bunched and tied off with a rope knot
-  x.fillStyle = adv ? '#2e2a22' : '#4a5a3c'; x.beginPath(); x.ellipse(ex, ey + h * 0.015, w * 0.03, h * 0.05, 0, 0, TAU); x.fill();
-  ball(x, ex + w * 0.03, ey + h * 0.015, h * 0.032, '#b08a4e', '#e0c08a', '#5a4422');
-  x.strokeStyle = '#8a6a3a'; x.lineWidth = 2; x.beginPath(); x.moveTo(ex + w * 0.05, ey + h * 0.02); x.quadraticCurveTo(ex + w * 0.07, ey + h * 0.08, ex + w * 0.06, ey + h * 0.13); x.stroke();
-  // the mouth
-  if (adv) { // a steel frame, an oval hoop with a crossbar of flat bar, bolted; a short chain at its foot
-    x.lineWidth = 5; x.strokeStyle = lin(x, mx - mrx, my - mry, mx + mrx, my + mry, [[0, '#a4a6a2'], [0.5, '#5e605c'], [1, '#2e302c']]); x.beginPath(); x.ellipse(mx, my, mrx, mry, 0, 0, TAU); x.stroke();
-    x.lineWidth = 1; x.strokeStyle = 'rgba(230,232,226,0.5)'; x.beginPath(); x.ellipse(mx - 1, my - 1, mrx, mry, 0, Math.PI * 1.05, Math.PI * 1.6); x.stroke();
-    for (const t of [-0.75, 0, 0.75]) ball(x, mx + mrx * Math.cos(Math.PI / 2 + t) * 0.3, my - mry * Math.sin(Math.PI / 2 + t) * 1.0 * (t ? 0.82 : 1), 2.2, '#6a6c68', '#c8cac4', '#2a2c28');
-    // glass floats in their netting along the top of the hoop
-    for (let i = 0; i < 3; i++) { const fx = mx - mrx * 0.2 + i * w * 0.045, fy = my - mry - h * 0.06 + i * h * 0.03; ball(x, fx, fy, h * 0.05, 'rgba(96,128,112,0.92)', 'rgba(214,236,222,0.95)', 'rgba(36,56,48,0.95)');
-      x.strokeStyle = 'rgba(40,36,28,0.7)'; x.lineWidth = 0.8; for (let a = 0; a < 4; a++) { x.beginPath(); x.arc(fx, fy, h * 0.05, a * 0.8, a * 0.8 + 1.4); x.stroke(); } }
-    // the chain at its foot
-    for (let i = 0; i < 6; i++) { const cx = mx - w * 0.01 - i * w * 0.018, cy = my + mry + h * 0.02 + i * h * 0.012; x.strokeStyle = i % 2 ? '#4a4c48' : '#6a6c68'; x.lineWidth = 2; x.beginPath(); x.ellipse(cx, cy, w * 0.011, h * 0.018, i % 2 ? 0.6 : -0.4, 0, TAU); x.stroke(); }
-  } else { // a rope headline round the mouth, cork floats along its top
-    x.lineWidth = 3.2; x.strokeStyle = lin(x, 0, my - mry, 0, my + mry, [[0, '#c8b48a'], [1, '#7a6a48']]); x.beginPath(); x.ellipse(mx, my, mrx, mry, 0, 0, TAU); x.stroke();
-    x.lineWidth = 1; x.strokeStyle = 'rgba(60,48,30,0.5)'; for (let a = 0; a < 26; a++) { const t = a / 26 * TAU; x.beginPath(); x.moveTo(mx + Math.cos(t) * mrx * 0.92, my + Math.sin(t) * mry * 0.96); x.lineTo(mx + Math.cos(t + 0.12) * mrx * 1.08, my + Math.sin(t + 0.12) * mry * 1.02); x.stroke(); } // the rope's lay
-    for (let i = 0; i < 4; i++) { const t = -Math.PI / 2 + (i - 1.5) * 0.42, fx = mx + Math.cos(t) * mrx, fy = my + Math.sin(t) * mry - h * 0.02; x.save(); x.translate(fx, fy); x.rotate(t + Math.PI / 2);
-      x.fillStyle = lin(x, -w * 0.02, 0, w * 0.02, 0, [[0, '#c89a62'], [0.5, '#9a6e3e'], [1, '#5e4022']]); x.beginPath(); x.ellipse(0, 0, w * 0.02, h * 0.04, 0, 0, TAU); x.fill(); x.strokeStyle = 'rgba(40,26,12,0.6)'; x.lineWidth = 1; x.stroke(); x.restore(); }
-    for (let i = 0; i < 3; i++) { const t = Math.PI / 2 + (i - 1) * 0.5, fx = mx + Math.cos(t) * mrx, fy = my + Math.sin(t) * mry + h * 0.015; ball(x, fx, fy, h * 0.022, '#4a4c48', '#8a8c86', '#1a1a18'); } // lead weights on the footrope
-  }
+  // its outline along the top and bottom (the headrope's line and the belly)
+  x.strokeStyle = `rgba(${twine.map((v) => v * 0.7 | 0).join(',')},0.9)`; x.lineWidth = 1.6;
+  for (const t of [-Math.PI / 2, Math.PI / 2]) { x.beginPath(); for (let i = 0; i <= 30; i++) { const [a, b2] = P(i / 30, t); i ? x.lineTo(a, b2) : x.moveTo(a, b2); } x.stroke(); }
+  // the cod end, gathered and tied, the tail of its rope
+  const [ex, ey] = C(1); x.fillStyle = adv ? '#26221c' : '#3e4e34'; x.beginPath(); x.ellipse(ex, ey, w * 0.022, h * 0.045, 0, 0, TAU); x.fill();
+  ball(x, ex + w * 0.022, ey, h * 0.03, '#a8844a', '#dcbc84', '#54401e');
+  x.strokeStyle = '#8a6a3a'; x.lineWidth = 2; x.beginPath(); x.moveTo(ex + w * 0.04, ey + 2); x.quadraticCurveTo(ex + w * 0.06, ey + h * 0.07, ex + w * 0.05, ey + h * 0.12); x.stroke();
+  // the ring's near half, in front of the bag, lit along its upper edge
+  ring(Math.PI / 2, Math.PI * 1.5, adv ? 6 : 5, ringCol);
+  x.lineWidth = 1.2; x.strokeStyle = 'rgba(255,248,230,0.5)'; x.beginPath(); x.ellipse(mx - 1, my - 1, rx, ry, 0, Math.PI * 1.08, Math.PI * 1.45); x.stroke();
+  if (!adv) { x.strokeStyle = 'rgba(60,46,26,0.5)'; x.lineWidth = 1; for (let i = 0; i < 30; i++) { const t = Math.PI / 2 + i / 30 * Math.PI; x.beginPath(); x.moveTo(mx + Math.cos(t) * rx * 0.85, my + Math.sin(t) * ry * 0.97); x.lineTo(mx + Math.cos(t + 0.1) * rx * 1.15, my + Math.sin(t + 0.1) * ry * 1.03); x.stroke(); } } // the rope's lay
+  else for (const t of [Math.PI * 0.8, Math.PI, Math.PI * 1.2]) ball(x, mx + Math.cos(t) * rx, my + Math.sin(t) * ry, 2.4, '#6a6c68', '#c8cac4', '#2a2c28'); // the hoop's bolts
+  // the bridles: from the top and bottom of the ring forward to a shackle, where the sub's cable takes it
+  const sx = mx - w * 0.14, sy2 = my - h * 0.02; x.strokeStyle = adv ? '#4a4840' : '#9a8658'; x.lineWidth = adv ? 2 : 1.6;
+  x.beginPath(); x.moveTo(mx - rx * 0.2, my - ry * 0.98); x.lineTo(sx, sy2); x.lineTo(mx - rx * 0.2, my + ry * 0.98); x.stroke();
+  ball(x, sx, sy2, h * 0.022, '#7a7c76', '#cfd0ca', '#2e302c');
+  // floats on the ring's top
+  if (adv) { for (let i = -1; i <= 1; i++) { const t = -Math.PI / 2 + i * 0.5, fx = mx - Math.cos(t) * rx * 1.05, fy = my + Math.sin(t) * ry - h * 0.045; ball(x, fx, fy, h * 0.048, 'rgba(96,128,112,0.94)', 'rgba(214,236,222,0.96)', 'rgba(36,56,48,0.96)');
+      x.strokeStyle = 'rgba(40,36,28,0.7)'; x.lineWidth = 0.8; for (let a2 = 0; a2 < 4; a2++) { x.beginPath(); x.arc(fx, fy, h * 0.048, a2 * 0.8, a2 * 0.8 + 1.4); x.stroke(); } }
+    for (let i = 0; i < 6; i++) { const t = Math.PI / 2 + 0.25, cx = mx - Math.cos(t) * rx - i * w * 0.004, cy = my + Math.sin(t) * ry + h * 0.025 + i * h * 0.02; x.strokeStyle = i % 2 ? '#4a4c48' : '#6a6c68'; x.lineWidth = 2; x.beginPath(); x.ellipse(cx, cy, w * 0.008, h * 0.014, i % 2 ? 0 : Math.PI / 2, 0, TAU); x.stroke(); } } // the chain hanging from its foot
+  else for (let i = -1; i <= 1; i++) { const t = -Math.PI / 2 + i * 0.45, fx = mx - Math.cos(t) * rx * 1.05, fy = my + Math.sin(t) * ry - h * 0.03; x.save(); x.translate(fx, fy); x.rotate(i * 0.3);
+    x.fillStyle = lin(x, -w * 0.022, 0, w * 0.022, 0, [[0, '#c89a62'], [0.5, '#9a6e3e'], [1, '#5e4022']]); x.beginPath(); x.ellipse(0, 0, w * 0.024, h * 0.036, 0, 0, TAU); x.fill(); x.strokeStyle = 'rgba(40,26,12,0.6)'; x.lineWidth = 1; x.stroke(); x.restore(); }
 }
 
 // ---------- the traps ----------
@@ -117,23 +127,23 @@ export function drawTrap3(x, w, h, k) {
 }
 
 // ---------- small supplies ----------
-// a film canister: a dull steel can with its lid, the leader of film curling out
+// (6.5.1) film: one short strip of unexposed black film, a frame and a little more, lying with a gentle curl, its
+// sprocket holes along both edges; the stock dull black, its upper edge catching the light, its shadow under it
 export function drawFilm3(x, w, h) {
-  const cx = w * 0.46, cy = h * 0.52, r = h * 0.2, L = h * 0.46;
-  floorShadow(x, cx + w * 0.05, cy + L * 0.55, w * 0.22, h * 0.05);
-  x.fillStyle = lin(x, cx - r, 0, cx + r, 0, [[0, '#4a4c48'], [0.3, '#b8bab4'], [0.6, '#7a7c76'], [1, '#2e302c']]); x.fillRect(cx - r, cy - L / 2, r * 2, L);
-  x.fillStyle = '#2a2b28'; x.beginPath(); x.ellipse(cx, cy + L / 2, r, r * 0.32, 0, 0, Math.PI); x.fill();
-  x.fillStyle = lin(x, cx - r, 0, cx + r, 0, [[0, '#5a5c58'], [0.4, '#d4d6d0'], [1, '#3a3c38']]); x.beginPath(); x.ellipse(cx, cy - L / 2, r * 1.04, r * 0.34, 0, 0, TAU); x.fill(); // the lid
-  x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 1; x.stroke();
-  x.fillStyle = '#c8b070'; x.fillRect(cx - r, cy - L * 0.12, r * 2, L * 0.22); x.fillStyle = 'rgba(40,30,10,0.55)'; x.font = `600 ${Math.round(h * 0.07)}px "Barlow Semi Condensed", sans-serif`; x.textAlign = 'center'; x.fillText('36', cx, cy + L * 0.03); // its worn label
-  // the leader: a flat strip drawn straight out of the slot at the can's foot and lying along the floor, its sprocket
-  // holes along both edges (a curl read as a cup's handle)
-  const sy = cy + L * 0.36, sw = h * 0.07, sx0 = cx + r * 0.85, sx1 = cx + r * 3.1;
-  x.fillStyle = 'rgba(16,10,4,0.35)'; x.fillRect(sx0, sy + sw * 0.6, sx1 - sx0, sw * 0.5);
-  x.fillStyle = lin(x, 0, sy - sw / 2, 0, sy + sw / 2, [[0, '#5a4220'], [0.5, '#3a2a14'], [1, '#22180a']]); x.beginPath(); x.moveTo(sx0, sy - sw / 2); x.lineTo(sx1, sy - sw / 2 + 1); x.lineTo(sx1 - sw * 0.6, sy + sw / 2 + 1); x.lineTo(sx0, sy + sw / 2); x.closePath(); x.fill();
-  x.fillStyle = 'rgba(226,206,160,0.55)'; for (let i = 0; i < 9; i++) { const hx = sx0 + sw * 0.4 + i * (sx1 - sx0 - sw) / 9; x.fillRect(hx, sy - sw * 0.42, sw * 0.16, sw * 0.2); x.fillRect(hx, sy + sw * 0.22, sw * 0.16, sw * 0.2); }
-  x.strokeStyle = 'rgba(255,236,200,0.25)'; x.lineWidth = 1; x.beginPath(); x.moveTo(sx0, sy - sw / 2); x.lineTo(sx1, sy - sw / 2 + 1); x.stroke();
-  x.fillStyle = '#1a1612'; x.fillRect(cx + r * 0.78, sy - sw * 0.65, r * 0.16, sw * 1.3); // the felt-lined slot it comes from
+  const x0 = w * 0.2, x1 = w * 0.8, yc = h * 0.5, sw = h * 0.42, curl = h * 0.07;
+  const top = (f) => yc - sw / 2 + Math.sin(f * Math.PI) * -curl + f * h * 0.03, bot = (f) => top(f) + sw * (0.96 + 0.04 * Math.cos(f * Math.PI));
+  floorShadow(x, w * 0.52, h * 0.82, w * 0.36, h * 0.05);
+  x.beginPath(); for (let i = 0; i <= 20; i++) { const f = i / 20, X = x0 + (x1 - x0) * f; i ? x.lineTo(X, top(f)) : x.moveTo(X, top(f)); } for (let i = 20; i >= 0; i--) { const f = i / 20; x.lineTo(x0 + (x1 - x0) * f, bot(f)); } x.closePath();
+  x.fillStyle = lin(x, x0, 0, x1, 0, [[0, '#121110'], [0.3, '#26241f'], [0.55, '#151412'], [1, '#0a0a09']]); x.fill();
+  x.save(); x.clip();
+  x.fillStyle = lin(x, 0, yc - sw / 2, 0, yc, [[0, 'rgba(255,248,230,0.14)'], [1, 'rgba(255,248,230,0)']]); x.fillRect(0, 0, w, h); // a sheen across its upper half
+  x.restore();
+  // the sprocket holes: little rounded windows through the stock, showing the floor behind
+  const n = 9; for (let i = 0; i < n; i++) { const f = (i + 0.5) / n, X = x0 + (x1 - x0) * f - w * 0.012;
+    for (const yy of [top(f) + sw * 0.06, bot(f) - sw * 0.06 - sw * 0.1]) { x.fillStyle = 'rgba(196,208,213,0.92)'; x.beginPath(); x.roundRect(X, yy, w * 0.024, sw * 0.1, 1.5); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 0.8; x.stroke(); } }
+  // the frame's faint edges between the rows of holes, and the light along its top edge
+  x.strokeStyle = 'rgba(80,76,68,0.35)'; x.lineWidth = 1; for (const f of [0.08, 0.92]) { const X = x0 + (x1 - x0) * f; x.beginPath(); x.moveTo(X, top(f) + sw * 0.2); x.lineTo(X, bot(f) - sw * 0.2); x.stroke(); }
+  x.strokeStyle = 'rgba(230,224,210,0.45)'; x.lineWidth = 1.2; x.beginPath(); for (let i = 0; i <= 20; i++) { const f = i / 20, X = x0 + (x1 - x0) * f; i ? x.lineTo(X, top(f) + 0.6) : x.moveTo(X, top(f) + 0.6); } x.stroke();
 }
 // the anglerfish's lure: a pale bulb on its stalk, lit from inside
 export function drawLure3(x, w, h) {

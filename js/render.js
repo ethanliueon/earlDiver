@@ -962,8 +962,12 @@ export class Renderer {
       // the cod end, tied off
       ctx.fillStyle = '#c8a050'; ctx.beginPath(); ctx.arc(S(X(1)), Sy(cyf(1)), Math.max(2, ppm * 0.08), 0, TAU); ctx.fill();
       // the mouth: headrope with floats, footrope with weights, and the drawstring as it closes
-      ctx.strokeStyle = 'rgba(225,215,180,0.9)'; ctx.lineWidth = Math.max(1.2, ppm * 0.05);
-      ctx.beginPath(); ctx.moveTo(S(mx), Sy(my - r)); ctx.quadraticCurveTo(S(mx + dir * 0.25), Sy(my), S(mx), Sy(my + r)); ctx.stroke();
+      // (6.5.1) the mouth is a solid ring seen at an angle (an oval), the bag hanging from all of it: its far half dimmer,
+      // its near half lit along the top; rope on the basic net, a steel hoop on the advanced
+      { const adv = n.tier === 'adv', rx = Math.max(2, r * ppm * 0.32), ry = Math.max(2, r * ppm), lw2 = Math.max(1.5, ppm * (adv ? 0.07 : 0.055)), col = adv ? 'rgba(120,122,116,0.95)' : 'rgba(205,188,140,0.95)';
+        ctx.strokeStyle = adv ? 'rgba(60,62,58,0.8)' : 'rgba(120,104,70,0.75)'; ctx.lineWidth = lw2; ctx.beginPath(); ctx.ellipse(S(mx), Sy(my), rx, ry, 0, dir > 0 ? Math.PI / 2 : -Math.PI / 2, dir > 0 ? Math.PI * 1.5 : Math.PI / 2); ctx.stroke();
+        ctx.strokeStyle = col; ctx.beginPath(); ctx.ellipse(S(mx), Sy(my), rx, ry, 0, dir > 0 ? -Math.PI / 2 : Math.PI / 2, dir > 0 ? Math.PI / 2 : Math.PI * 1.5); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,248,230,0.4)'; ctx.lineWidth = Math.max(0.8, lw2 * 0.4); ctx.beginPath(); ctx.ellipse(S(mx), Sy(my) - lw2 * 0.3, rx, ry, 0, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
       ctx.fillStyle = '#e8762a'; for (const f of [-0.35, 0.35]) { ctx.beginPath(); ctx.arc(S(mx - dir * 0.3 + f * 0.4), Sy(my - r - 0.05), Math.max(1.6, ppm * 0.09), 0, TAU); ctx.fill(); }
       ctx.fillStyle = '#2a2c2a'; for (const f of [-0.3, 0, 0.3]) { ctx.beginPath(); ctx.arc(S(mx - dir * 0.2 + f * 0.4), Sy(my + r + 0.05), Math.max(1.6, ppm * 0.08), 0, TAU); ctx.fill(); }
       // (6.5.1) something in it: the mouth breathes with a faint warm light (as the trawl button does) until it is closed

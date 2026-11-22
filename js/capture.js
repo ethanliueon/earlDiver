@@ -220,6 +220,7 @@ export function updateCapture(g, dt) {
           for (const c of g.fauna.list) {
             if (more <= 0 || bagUsed(g) >= bagSlots(g)) break;
             if (c === tgt.c || c.dead || c.pet || c.gid !== tgt.c.gid || c.len > def.maxLen * 1.1 || dist(c.x, c.y, tgt.x, tgt.y) > 1.8) continue;
+            if (bagUsed(g) + spacesOf({ len: c.len }) > bagSlots(g)) break; // (6.5.1) the school's extra fish never take the bag past its room: only the one catch may tip it over
             c.dead = true; more--;
             const s2 = { id: c.sp.id, len: c.len, cond: clamp(1 - def.harm * (fragile(c.sp) ? 2 : 1) - Math.random() * 0.05, 0.05, 1), from: Math.round(Math.max(e.y, c.y)), t: g.time };
             g.bag.push(s2); g.captureFx.push({ sp: c.sp, len: c.len, x: c.x, y: c.y, dir: c.dir, t: 0, dur: 0.3, kind });
