@@ -5,34 +5,36 @@
 // whatever is carried: swapping does not reset it.
 // (5.16.0) every cooldown counts in real time (it keeps running while the game is paused or closed); nothing is once a
 // dive. Ironhull is a rare skill only (Bulwark is gone), Tidewarden legendary only
+// (6.1.6) cooldowns set by tier, agreed with the owner: a rare comes back a few times a dive, an exotic about once a dive,
+// a legendary about once a session (they count in real time, closed or not)
 export const ABILITY_DEFS = {
   sprint: {
-    rare: { name: 'Sprint', dur: 15, cd: 30, speed: 1.5, line: 'Half as fast again for 15 s, using no air.' },
-    exotic: { name: 'Sprint+', dur: 15, cd: 35, speed: 2, line: 'Twice as fast for 15 s, using no air.' },
-    legendary: { name: 'Riptide', dur: 12, cd: 180, speed: 3, noAir: true, line: 'Three times as fast for 12 s, using no air.' },
+    rare: { name: 'Sprint', dur: 15, cd: 120, speed: 1.5, line: 'Half as fast again for 15 s, using no air.' },
+    exotic: { name: 'Sprint+', dur: 15, cd: 300, speed: 2, line: 'Twice as fast for 15 s, using no air.' },
+    legendary: { name: 'Riptide', dur: 12, cd: 1800, speed: 3, noAir: true, line: 'Three times as fast for 12 s, using no air.' },
   },
   vigor: {
-    rare: { name: 'Vigor', dur: 20, cd: 45, reach: 1.5, line: 'The net reaches half as far again for 20 s.' },
-    exotic: { name: 'Vigor+', dur: 20, cd: 50, reach: 2, swing: 0.8, line: 'The net reaches twice as far, and swings quicker, for 20 s.' },
-    legendary: { name: 'Apex', dur: 10, cd: 150, reach: 2.5, sure: true, bless: true, line: 'For 10 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
+    rare: { name: 'Vigor', dur: 20, cd: 180, reach: 1.5, line: 'The net reaches half as far again for 20 s.' },
+    exotic: { name: 'Vigor+', dur: 20, cd: 480, reach: 2, swing: 0.8, line: 'The net reaches twice as far, and swings quicker, for 20 s.' },
+    legendary: { name: 'Apex', dur: 10, cd: 3600, reach: 2.5, sure: true, bless: true, line: 'For 10 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
   },
   dash: {
-    rare: { name: 'Dash', dur: 0.3, cd: 10, dash: 1, zoom: 1, line: 'Tap where to go, and you are there in an instant.' },
-    exotic: { name: 'Dash+', dur: 0.3, cd: 12, dash: 2, zoom: 1.4, line: 'Tap where to go, with the water opened wider round you.' },
-    legendary: { name: 'Undertow', dur: 0.35, cd: 20, dash: 3, zoom: 2, line: 'Tap where to go: the sea opens far round you, and bends as you pass.' },
+    rare: { name: 'Dash', dur: 0.3, cd: 45, dash: 1, zoom: 1, line: 'Tap where to go, and you are there in an instant.' },
+    exotic: { name: 'Dash+', dur: 0.3, cd: 120, dash: 2, zoom: 1.4, line: 'Tap where to go, with the water opened wider round you.' },
+    legendary: { name: 'Undertow', dur: 0.35, cd: 900, dash: 3, zoom: 2, line: 'Tap where to go: the sea opens far round you, and bends as you pass.' },
   },
   flare: {
-    rare: { name: 'Flare', dur: 20, cd: 60, light: 1, line: '20 s of light 28 m round you. The thing does not see it.' },
-    exotic: { name: 'Flare+', dur: 40, cd: 60, light: 1.6, line: '40 s of brighter light, 45 m round you. The thing does not see it.' },
-    legendary: { name: 'Lighthouse', dur: 30, cd: 120, light: 2.4, ward: true, line: '30 s of light 80 m round you, near as bright as the shallows. Hunters keep out of it, and the thing does not see it.' },
+    rare: { name: 'Flare', dur: 20, cd: 300, light: 1, line: '20 s of light 28 m round you. The thing does not see it.' },
+    exotic: { name: 'Flare+', dur: 40, cd: 720, light: 1.6, line: '40 s of brighter light, 45 m round you. The thing does not see it.' },
+    legendary: { name: 'Lighthouse', dur: 30, cd: 3600, light: 2.4, ward: true, line: '30 s of light 80 m round you, near as bright as the shallows. Hunters keep out of it, and the thing does not see it.' },
   },
   echo: {
-    rare: { name: 'Echo', dur: 20, cd: 60, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 20 s.' },
-    exotic: { name: 'Echo+', dur: 35, cd: 60, echo: 2, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 35 s.' },
-    legendary: { name: 'Fathom', dur: 50, cd: 120, echo: 3, line: 'A deep ping: exotic and legendary animals far round you show on the radar for 50 s.' },
+    rare: { name: 'Echo', dur: 20, cd: 480, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 20 s.' },
+    exotic: { name: 'Echo+', dur: 35, cd: 1200, echo: 2, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 35 s.' },
+    legendary: { name: 'Fathom', dur: 50, cd: 5400, echo: 3, line: 'A deep ping: exotic and legendary animals far round you show on the radar for 50 s.' },
   },
   ironhull: {
-    rare: { name: 'Ironhull', dur: 0.5, cd: 1200, repair: true, sub: true, line: 'Mends the sub completely, from inside it.' },
+    rare: { name: 'Ironhull', dur: 0.5, cd: 3600, repair: true, sub: true, line: 'Mends the sub completely, from inside it.' },
   },
   tidewarden: {
     legendary: { name: 'Tidewarden', dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },

@@ -8,7 +8,7 @@
 //   net / slurp: range (m), time (s), minLen / maxLen (m), success, harm, noise, multi
 //   tag: range, time, provoke, pay        cam: range, shots, flash, small
 //   fins: swim, sprint                    tank: air (s), speed, quiet
-//   bag: slots, apart                     suit: press (m), air (×), speed (×), bite, warm, quiet, look
+//   bag: slots                            suit: press (m), air (×), speed (×), bite, warm, quiet, look
 // An owned thing is an instance in the locker: { u, id, sk: [[skill, level], ...], leg }.
 import { designFor } from './designs.js';
 import { ABILITY_DEFS, abilityId } from './abilities.js';
@@ -49,7 +49,7 @@ const ARCH = {
   fins: { rubber: { swim: 1, sprint: 1.5 }, split: { swim: 1.2, sprint: 1.4 }, long: { swim: 1.3, sprint: 1.65 }, jet: { swim: 1.08, sprint: 2.0 }, free: { swim: 1.35, sprint: 1.5 } },
   // (2.8.0: all air is cut to 0.4 of what it was: he starts with 20 s)
   tank: { al: { air: 20, speed: 1 }, steel: { air: 28, speed: 1 }, big: { air: 38, speed: 0.97 }, twin: { air: 56, speed: 0.92 }, side: { air: 62, speed: 1 }, rebreather: { air: 80, speed: 1, quiet: true } },
-  bag: { mesh: { slots: 5 }, large: { slots: 7 }, divided: { slots: 7, apart: true }, light: { slots: 6, feather: 1 } },
+  bag: { mesh: { slots: 5 }, large: { slots: 7 }, divided: { slots: 7 } /* (6.1.6) no 'kept apart': a bag is its spaces (and any skills it carries) */, light: { slots: 6, feather: 1 } },
   suit: {
     wet: { press: 300, air: 1, speed: 1 }, skin: { press: 300, air: 1.1, speed: 1.15 }, dry: { press: 400, air: 1, speed: 1.04, warm: true },
     chain: { press: 300, air: 1, speed: 1.0, bite: 1 }, rebreather: { press: 300, air: 0.8, speed: 1.06, quiet: true }, hard: { press: 700, air: 0.9, speed: 0.95, bite: 1, warm: true },
@@ -95,7 +95,7 @@ function goodOf(kind, s) {
   if (kind === 'cam') return `Quality ${(s.idx || 10).toFixed(2)}; holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
   if (kind === 'fins') return `Speed ${+(s.swim / 2).toFixed(2)}, sprint ${+(s.sprint / 2).toFixed(2)}`; // (5.12.0) shown at half the in-game figure
   if (kind === 'tank') return `About ${s.air} s of air${s.quiet ? ', no bubbles' : ''}`;
-  if (kind === 'bag') return `${s.slots} spaces${s.apart ? ', kept apart' : ''}`;
+  if (kind === 'bag') return `${s.slots} spaces`;
   if (kind === 'suit') return `Pressure starts at ${s.press} m${s.air < 1 ? `; air use ×${s.air}` : ''}${s.warm ? '; keeps out the cold' : ''}${s.bite ? '; turns a bite' : ''}`;
   return '';
 }

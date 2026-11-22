@@ -83,15 +83,15 @@ export const BAYSIDE_ROWS = [
   ['bayfin', 'fins', 'long', 'rare', 3200, 'Bayside Pro blades', 'The shop\'s own long blades, in a deep green.', 'Faster everywhere', ''],
   // bags (10)
   ['large', 'bag', 'large', 'common', 60, 'Large catch bag', 'A bigger mesh bag with a spring-loaded mouth.', '7 animals', ''],
-  ['divided', 'bag', 'divided', 'uncommon', 400, 'Divided specimen bag', 'A pocket for each.', '7 animals, kept apart', ''],
+  ['divided', 'bag', 'divided', 'uncommon', 400, 'Divided specimen bag', 'A pocket for each.', '7 animals', ''],
   ['lightbag', 'bag', 'light', 'common', 90, 'Light mesh bag', 'Thin mesh that the water runs through. You hardly feel it.', 'A full bag hardly slows you', 'Only 6 animals'],
   ['clipbag', 'bag', 'mesh', 'common', 25, 'Clip pouch', 'A pouch that clips to your belt. Cheap, and it holds.', '5 animals', ''],
   ['hauler', 'bag', 'large', 'uncommon', 300, 'Hauler bag', 'A deep bag with a drawstring and a handle.', '8 animals', ''],
-  ['cooler', 'bag', 'divided', 'uncommon', 650, 'Live-well bag', 'Padded pockets, each with its own water.', '8 animals, kept apart', ''],
+  ['cooler', 'bag', 'divided', 'uncommon', 650, 'Live-well bag', 'Padded pockets, each with its own water.', '8 animals', ''],
   ['dragbag', 'bag', 'light', 'uncommon', 520, 'Drag-free bag', 'Shaped to slip through the water behind you.', 'A full bag hardly slows you', ''],
   ['reefbag', 'bag', 'large', 'uncommon', 480, 'Reef collector\'s bag', 'A wide mouth for awkward shapes, and a lid that shuts itself.', '8 animals', '', ['pockets', 1]],
   ['prospbag', 'bag', 'mesh', 'rare', 1800, 'Prospector\'s pouch', 'A pouch with a pearl-diver\'s tally sewn into the flap.', 'Pearls and sapphires show from farther off', '', ['prospector', 1]],
-  ['baybag', 'bag', 'divided', 'rare', 2900, 'Bayside Pro specimen case', 'The shop\'s own case: nine pockets, padded, with a window.', '9 animals, kept apart', ''],
+  ['baybag', 'bag', 'divided', 'rare', 2900, 'Bayside Pro specimen case', 'The shop\'s own case: nine pockets, padded, with a window.', '9 animals', ''],
   // a few of everything else
   ['s100', 'tank', 'steel', 'common', 25, 'Steel 100', 'A heavier steel cylinder.', 'About 28 s of air', ''],
   ['s130', 'tank', 'big', 'common', 90, 'Steel 130', 'A big high-pressure cylinder.', 'About 38 s of air', 'A little slower'],
@@ -170,7 +170,7 @@ export const STATION_ROWS = [
   ['st_steel', 'tank', 'steel', 'uncommon', 600, 'Station steel cylinder', 'Stamped with the station\'s number.', 'More air', ''],
   ['st_bigsteel', 'tank', 'big', 'uncommon', 1300, 'Long steel cylinder', 'Long and heavy.', 'Much more air', 'A little slower'],
   ['st_side', 'tank', 'side', 'rare', 3200, 'Sidemount rig', 'Two cylinders along the body, for tight spaces.', 'A lot of air', ''],
-  ['st_samplebag', 'bag', 'divided', 'uncommon', 520, 'Sample bag', 'Numbered pockets, one animal in each.', 'Room, and they keep apart', ''],
+  ['st_samplebag', 'bag', 'divided', 'uncommon', 520, 'Sample bag', 'Numbered pockets, one animal in each.', 'Room', ''],
   ['st_cooler', 'bag', 'large', 'uncommon', 780, 'Insulated bag', 'Keeps what is inside cool and calm.', 'Room', ''],
   ['st_mesh', 'bag', 'light', 'rare', 1900, 'Light mesh bag', 'Light, and it rides close.', 'Room, and it hardly slows you', ''],
 ];
@@ -226,7 +226,7 @@ export const DAVE_ROWS = [
   ['dv_cam2', 'cam', 'housed', 'rare', 1800, 'Second-hand housing', 'A real camera in a housing with one cracked strobe.', 'Range', ''],
   ['dv_fins2', 'fins', 'jet', 'rare', 2400, 'Deep jet fins', 'Heavy rubber, a big kick.', 'Sprint', ''],
   ['dv_fins3', 'fins', 'split', 'uncommon', 700, 'Spare fins', 'From the box by the hatch.', 'Easy cruising', ''],
-  ['dv_bag2', 'bag', 'divided', 'rare', 2100, 'Sorting bag', 'Pockets, so the eels and the crabs keep apart.', 'Room, and they keep apart', ''],
+  ['dv_bag2', 'bag', 'divided', 'rare', 2100, 'Sorting bag', 'Pockets for eels and crabs alike.', 'Room', ''],
   ['dv_bag3', 'bag', 'light', 'uncommon', 900, 'Light bag', 'Mesh and webbing.', 'It hardly slows you', ''],
 ];
 
