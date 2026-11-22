@@ -77,6 +77,40 @@ export function toolPic(kind, def) {
   const out = { id: def.id, pic }; TOOL_PIC.set(key, out); return out;
 }
 
+// (6.0.6) the thing's eye, painted once into a picture (not drawn from shapes each frame): an almond of iris lit from
+// inside like an ember (white-gold at the pupil, through orange, to a dark red rim), full of fibres and grain; the
+// glow spilling onto a rough dark hide in warm flecks, fading to black with no edge. The slit and the lids are laid
+// over it live (hud: marked), so it can still blink and narrow as the thing comes nearer
+let EYE_PIC = null;
+function eyePicture() {
+  if (EYE_PIC) return EYE_PIC;
+  const W = 320, H = 190, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  let sd = 9137; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  const cx = W / 2, cy = H / 2, ew = 92, eh = 48;
+  const almond = (k = 1) => { x.beginPath(); x.moveTo(cx - ew * k, cy + eh * 0.25 * k); x.bezierCurveTo(cx - ew * 0.55 * k, cy - eh * 1.15 * k, cx + ew * 0.3 * k, cy - eh * 1.2 * k, cx + ew * k, cy - eh * 0.5 * k); /* the outer corner lifted */
+    x.bezierCurveTo(cx + ew * 0.45 * k, cy + eh * 0.85 * k, cx - ew * 0.45 * k, cy + eh * 1.05 * k, cx - ew * k, cy + eh * 0.25 * k); x.closePath(); };
+  // the hide round it: dark, warmer near the eye where its light falls, in short rough strokes running out from it
+  { const g = x.createRadialGradient(cx, cy, eh * 0.6, cx, cy, W * 0.5); g.addColorStop(0, 'rgba(70,20,8,0.95)'); g.addColorStop(0.35, 'rgba(26,8,4,0.85)'); g.addColorStop(1, 'rgba(4,2,1,0)'); x.save(); x.translate(cx, cy); x.scale(1, 0.62); x.translate(-cx, -cy); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, W * 0.5, 0, Math.PI * 2); x.fill(); x.restore(); }
+  for (let i = 0; i < 1500; i++) { const an = r() * Math.PI * 2, d = ew * (0.95 + Math.pow(r(), 0.8) * 1.0), px = cx + Math.cos(an) * d, py = cy + Math.sin(an) * d * 0.55, near = Math.max(0, 1 - (d - ew * 0.9) / (ew * 0.9));
+    const len = 2 + r() * 5, a2 = an + (r() - 0.5) * 0.6; x.strokeStyle = `rgba(${110 + r() * 70 | 0},${34 + r() * 36 | 0},${10 + r() * 14 | 0},${(near * near * near * (0.08 + r() * 0.2)).toFixed(3)})`; /* scattered, dark, catching only a little of its light */ x.lineWidth = 0.8 + r() * 0.8;
+    x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a2) * len, py + Math.sin(a2) * len * 0.55); x.stroke(); }
+  // the lids' heavy dark rim, blurred out a little onto the hide
+  x.save(); x.filter = 'blur(5px)'; x.fillStyle = 'rgba(6,2,1,0.9)'; almond(1.12); x.fill(); x.restore();
+  // the iris, lit from inside
+  x.save(); almond(); x.clip();
+  { const g = x.createRadialGradient(cx + 4, cy + 2, 2, cx, cy, ew * 1.02); g.addColorStop(0, '#fff8d4'); g.addColorStop(0.08, '#ffe27a'); g.addColorStop(0.24, '#f8aa3a'); g.addColorStop(0.5, '#d86420'); g.addColorStop(0.74, '#8a2a0a'); g.addColorStop(1, '#1e0602'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+  for (let i = 0; i < 1800; i++) { const an = r() * Math.PI * 2, r0 = ew * (0.06 + r() * 0.4), r1 = r0 + ew * (0.06 + r() * 0.3), lt = r() < 0.45; // fibres running out from the pupil
+    x.strokeStyle = lt ? `rgba(255,${200 + r() * 50 | 0},${110 + r() * 60 | 0},${(0.06 + r() * 0.16).toFixed(3)})` : `rgba(${90 + r() * 60 | 0},${20 + r() * 20 | 0},4,${(0.08 + r() * 0.2).toFixed(3)})`; x.lineWidth = 0.6 + r() * 0.9;
+    x.beginPath(); x.moveTo(cx + Math.cos(an) * r0, cy + Math.sin(an) * r0); x.lineTo(cx + Math.cos(an + (r() - 0.5) * 0.08) * r1, cy + Math.sin(an + (r() - 0.5) * 0.08) * r1); x.stroke(); }
+  for (let i = 0; i < 2200; i++) { const px = cx + (r() - 0.5) * ew * 2, py = cy + (r() - 0.5) * eh * 2.2; x.fillStyle = r() < 0.5 ? `rgba(255,236,170,${(r() * 0.12).toFixed(3)})` : `rgba(30,6,2,${(r() * 0.16).toFixed(3)})`; x.fillRect(px, py, 1.2, 1.2); } // grain
+  // the brow's shadow over the top of it, and the dark rim inside the lids
+  { const g = x.createLinearGradient(0, cy - eh * 1.2, 0, cy + eh * 0.2); g.addColorStop(0, 'rgba(10,2,1,0.96)'); g.addColorStop(0.55, 'rgba(10,2,1,0.35)'); g.addColorStop(1, 'rgba(10,2,1,0)'); x.fillStyle = g; x.fillRect(0, cy - eh * 1.3, W, eh * 1.5); } // the brow's heavy shadow
+  x.lineWidth = 9; x.strokeStyle = 'rgba(14,3,1,0.55)'; x.filter = 'blur(3px)'; almond(); x.stroke(); x.filter = 'none';
+  x.restore();
+  x.lineWidth = 2.2; x.strokeStyle = 'rgba(8,2,1,0.95)'; almond(); x.stroke();
+  EYE_PIC = { c, ew, eh, cx, cy }; return EYE_PIC;
+}
+
 export class Hud {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
@@ -1030,34 +1064,22 @@ e.inSub ? [
     if (g.entity && g.entity.marked && !dying) {
       const calm = 0 /* (5.16.0) no calm meter */, near = clamp(1 - (g.entity.dist ?? 2000) / 900, 0, 1);
       const a = 1 - calm * 0.6;
-      // (6.0.5) repainted after the owner's reference: two eyes set in a dark, rough patch of hide, the irises lit from
-      // inside like embers (pale gold at the centre, through orange to a dark red rim), black slit pupils. Quiet when it
-      // is far (dim, small glow), warmer as it comes; the slow heavy blink and the slit narrowing as it nears stay
-      const kxE = window.innerWidth / this.c.width, ew = 23 * s, eh = 13 * s, gapE = 32 * s, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
-      const cxE = (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + gapE + ew + 10 * s, ey = tlB + eh + 10 * s;
-      const per = 9 - 3 * near, bt = g.time % per, blink = bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0;
-      const open = (1 - blink) * (0.72 + 0.28 * near + 0.04 * Math.sin(g.time * 0.4)), warm = 0.35 + 0.65 * near;
-      ctx.save(); ctx.globalAlpha *= a;
-      // the patch of hide round them: a soft dark field with a few rough flecks, no edge
-      { const pg = ctx.createRadialGradient(cxE, ey, eh * 0.5, cxE, ey, gapE + ew * 1.9); pg.addColorStop(0, 'rgba(8,4,3,0.82)'); pg.addColorStop(0.6, 'rgba(8,4,3,0.5)'); pg.addColorStop(1, 'rgba(8,4,3,0)');
-        ctx.save(); ctx.translate(cxE, ey); ctx.scale(1, 0.5); ctx.translate(-cxE, -ey); ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cxE, ey, gapE + ew * 1.9, 0, TAU); ctx.fill(); ctx.restore();
-        ctx.fillStyle = 'rgba(60,24,14,0.35)'; for (let k = 0; k < 18; k++) { const fx = cxE + Math.sin(k * 12.9898) * (gapE + ew * 1.2), fy = ey + Math.sin(k * 78.233) * eh * 1.6; ctx.fillRect(fx, fy, 1.2 * s, 1.2 * s); } }
-      for (const side of [-1, 1]) {
-        const ex = cxE + side * gapE, tilt = side * 0.16; // the outer corners lift a little
-        const lid = () => { ctx.beginPath(); ctx.moveTo(-ew, eh * 0.15); ctx.bezierCurveTo(-ew * 0.45, -eh * 1.15 * open, ew * 0.4, -eh * 1.05 * open, ew, -eh * 0.2);
-          ctx.bezierCurveTo(ew * 0.45, eh * 0.85 * open, -ew * 0.4, eh * 0.95 * open, -ew, eh * 0.15); ctx.closePath(); };
-        ctx.save(); ctx.translate(ex, ey); ctx.rotate(tilt); ctx.scale(side, 1);
-        ctx.shadowColor = `rgba(230,120,40,${(0.55 * warm).toFixed(3)})`; ctx.shadowBlur = (6 + 10 * near) * s; ctx.fillStyle = 'rgba(40,10,4,1)'; lid(); ctx.fill(); ctx.shadowColor = 'transparent'; // its glow on the hide
-        lid(); ctx.save(); ctx.clip();
-        const ix = ew * 0.05 + Math.sin(g.time * 0.23) * ew * 0.06, ir = ew * 0.95, ig = ctx.createRadialGradient(ix, eh * 0.05, 0, ix, 0, ir);
-        ig.addColorStop(0, `rgba(255,214,120,${(0.55 + 0.45 * warm).toFixed(3)})`); ig.addColorStop(0.35, `rgba(236,140,44,${(0.6 + 0.4 * warm).toFixed(3)})`); ig.addColorStop(0.75, 'rgba(150,48,14,1)'); ig.addColorStop(1, 'rgba(48,10,4,1)');
-        ctx.fillStyle = ig; ctx.fillRect(-ew, -eh * 1.3, ew * 2, eh * 2.6);
-        ctx.strokeStyle = 'rgba(90,24,8,0.35)'; ctx.lineWidth = Math.max(0.6, 0.6 * s); for (let k = 0; k < 14; k++) { const an = k / 14 * TAU; ctx.beginPath(); ctx.moveTo(ix + Math.cos(an) * ir * 0.25, Math.sin(an) * ir * 0.25); ctx.lineTo(ix + Math.cos(an) * ir * 0.8, Math.sin(an) * ir * 0.8); ctx.stroke(); } // fibres, faint
-        const sw = eh * (0.32 - 0.2 * near); ctx.fillStyle = '#050100'; ctx.beginPath(); ctx.moveTo(ix, -eh * 1.2); ctx.quadraticCurveTo(ix + sw, 0, ix, eh * 1.2); ctx.quadraticCurveTo(ix - sw, 0, ix, -eh * 1.2); ctx.fill(); // the slit
-        const sh = ctx.createLinearGradient(0, -eh * 1.2, 0, eh * 0.3); sh.addColorStop(0, 'rgba(0,0,0,0.8)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = sh; ctx.fillRect(-ew, -eh * 1.3, ew * 2, eh * 1.6); // the brow's shadow
-        ctx.restore();
-        lid(); ctx.strokeStyle = 'rgba(12,4,2,0.95)'; ctx.lineWidth = 2.2 * s; ctx.stroke();
-        ctx.restore(); }
+      // (6.0.6) one eye, the painted picture (eyePicture), with its slit and lids laid on live: quiet and dim while the
+      // thing is far, warmer as it comes; the slow heavy blink, and the slit narrowing to a thread when it is close
+      const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = 38 * s, sc = ew / E.ew, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
+      const ex = (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + 40 * s + ew, ey = tlB + E.eh * sc + 14 * s;
+      const per = 9 - 3 * near, bt = g.time % per, blink = bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0, open = (1 - blink) * (0.78 + 0.22 * near);
+      ctx.save(); ctx.globalAlpha *= a * (0.62 + 0.38 * near);
+      ctx.drawImage(E.c, ex - E.cx * sc, ey - E.cy * sc, E.c.width * sc, E.c.height * sc);
+      ctx.save(); ctx.translate(ex, ey); ctx.scale(sc, sc);
+      const almond = () => { ctx.beginPath(); ctx.moveTo(-E.ew, E.eh * 0.25); ctx.bezierCurveTo(-E.ew * 0.55, -E.eh * 1.15, E.ew * 0.3, -E.eh * 1.2, E.ew, -E.eh * 0.5); ctx.bezierCurveTo(E.ew * 0.45, E.eh * 0.85, -E.ew * 0.45, E.eh * 1.05, -E.ew, E.eh * 0.25); ctx.closePath(); };
+      almond(); ctx.clip();
+      const sw = E.eh * (0.5 - 0.3 * near) * (1 + 0.06 * Math.sin(g.time * 0.7)), px = 2 + Math.sin(g.time * 0.23) * 4;
+      { const hg = ctx.createRadialGradient(px, 0, 0, px, 0, E.eh * 0.9); hg.addColorStop(0, 'rgba(255,236,150,0.55)'); hg.addColorStop(1, 'rgba(255,200,90,0)'); ctx.fillStyle = hg; ctx.fillRect(px - E.eh, -E.eh, E.eh * 2, E.eh * 2); } // the hottest gold round the pupil // the slit, with a faint dark-red edge where it meets the glow
+      ctx.shadowColor = 'rgba(90,10,2,0.9)'; ctx.shadowBlur = 6; ctx.fillStyle = '#040100'; ctx.beginPath(); ctx.moveTo(px, -E.eh * 1.25); ctx.quadraticCurveTo(px + sw, 0, px, E.eh * 1.25); ctx.quadraticCurveTo(px - sw, 0, px, -E.eh * 1.25); ctx.fill(); ctx.shadowBlur = 0;
+      if (open < 0.999) { const lidY = E.eh * 1.2 * (1 - open); ctx.fillStyle = '#060201'; // the lids closing from above and below
+        ctx.beginPath(); ctx.rect(-E.ew, -E.eh * 1.3, E.ew * 2, lidY * 1.1); ctx.fill(); ctx.beginPath(); ctx.rect(-E.ew, E.eh * 1.3 - lidY * 0.9, E.ew * 2, lidY * 0.9); ctx.fill(); }
+      ctx.restore();
       ctx.restore();
     }
 
