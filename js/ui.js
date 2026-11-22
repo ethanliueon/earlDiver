@@ -1478,7 +1478,10 @@ export class UI {
     T.querySelector('.t-press span').textContent = touch ? 'Tap to dive' : 'Press any key';
     if (!this.titleWired) {
       this.titleWired = true;
-      const go = () => { if (T.classList.contains('gone') || !T.classList.contains('attract')) return; T.classList.remove('attract'); T.classList.add('select'); };
+      // (6.4.2) the tap that brings up the divers must not also choose one: its click lands on the slot that has just
+      // appeared under the finger, and the game went straight into a dive. For a moment after, slot taps are ignored
+      const go = () => { if (T.classList.contains('gone') || !T.classList.contains('attract')) return; T.classList.remove('attract'); T.classList.add('select'); T.__shownAt = performance.now(); };
+      T.addEventListener('click', (ev) => { if (ev.target.closest('.t-select') && performance.now() - (T.__shownAt || 0) < 500) { ev.stopImmediatePropagation(); ev.preventDefault(); } }, true);
       T.addEventListener('pointerdown', (ev) => { if (ev.target.closest('.t-gear, .t-select, #settings')) return; go(); });
       window.addEventListener('keydown', (ev) => {
         if (T.classList.contains('gone') || !$('settings').hidden || !$('confirm').hidden) return;
