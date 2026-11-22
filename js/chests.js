@@ -3,6 +3,7 @@
 // at once, in a short reveal (about 3 s; a click skips it): the lid creaks up, a little light in the
 // rarity's colour, and the thing rises out with its name and skills. A full locker can't open one.
 import { RARITY, SKILLS, LEGEND, skillCol } from './item_data.js';
+import { powerHtml, skillsHtml } from './itemcard.js';
 import { ITEMS, CHEST_POOL } from './items.js';
 import { TAU } from './util.js';
 
@@ -148,9 +149,9 @@ export class ChestReveal {
   }
   card(i) { // a find's card: its picture, name, rarity, what it does
     const f = this.finds[i], el = this.cardEl; if (!f) return;
-    if (f.coin) el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><img src="${this.h.coinPic()}" alt=""><h4>Old coin</h4><p class="rr r-legendary">Legendary</p><p>Hand-struck and worn nearly smooth. The Old One trades for them.</p><p class="cx-have">${this.h.coins()} in the locker</p>`;
-    else { const d = f.def, sk = (d.legend && LEGEND[d.legend] ? `<div><b style="color:${skillCol(d.legend)}">${LEGEND[d.legend].name}</b> ${LEGEND[d.legend].what}</div>` : '') + (f.q.sk || []).map(([k, l]) => `<div><b style="color:${skillCol(k, l)}">${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join(''); // (6.5.1) its power too, each name in its strength's colour
-      el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><img src="${this.h.picture(d, 300, 180)}" alt=""><h4 style="color:${RARITY[d.rarity].col}">${d.name}</h4><p class="rr r-${d.rarity}">${RARITY[d.rarity].name}</p><p>${d.line || ''}</p>${sk ? `<div class="cx-sks">${sk}</div>` : ''}`; } // (6.5.0) its name in its rarity's colour; no Put it on here: gear is put on in the bag alone
+    if (f.coin) el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><div class="icard"><img src="${this.h.coinPic()}" alt=""><h4 style="color:${RARITY.legendary.col}">Old coin</h4><p class="ic-r" style="color:${RARITY.legendary.col}">Legendary</p><p class="ic-line">Hand-struck and worn nearly smooth. The Old One trades for them.</p><p class="ic-line cx-have">${this.h.coins()} in the locker</p></div>`;
+    else { const d = f.def; // (6.5.3) the card every item shares: picture, name, rarity, what it is, its power, its skills
+      el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><div class="icard"><img src="${this.h.picture(d, 300, 180)}" alt=""><h4 style="color:${RARITY[d.rarity].col}">${d.name}</h4><p class="ic-r" style="color:${RARITY[d.rarity].col}">${RARITY[d.rarity].name}</p>${d.line ? `<p class="ic-line">${d.line}</p>` : ''}${d.legend ? powerHtml(d.legend) : ''}${skillsHtml(f.q.sk)}</div>`; }
     el.hidden = false;
   }
   close() { this.root.hidden = true; this.h.close && this.h.close(); }

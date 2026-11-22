@@ -1,3 +1,4 @@
+import { drawTrawl3, drawTrap3 } from './kit_art.js'; // (6.5.3)
 // (5.6) The touch buttons as painted coins, in the manner of a mobile RPG's skill buttons: a deep, muted face
 // (darker to the rim, a soft light behind the art, brushed through), the art of the thing itself centred on it,
 // and a worn dark lip. The art is drawn here at a size of its own (no flat symbols): the net and the camera from
@@ -548,6 +549,10 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint =
     if (look && look.pic) { const bl = x.createRadialGradient(0, 0, 0, 0, 0, R * 0.8); bl.addColorStop(0, 'rgba(226,214,180,0.2)'); bl.addColorStop(1, 'rgba(226,214,180,0)'); x.fillStyle = bl; x.beginPath(); x.arc(0, 0, R * 0.8, 0, TAU); x.fill(); // a little more light behind a dark net // (5.17.0) the tool he has on, drawn from its own shop picture: turned on the diagonal, its business end filling the coin
       const P0 = look.pic, k = (R * 1.5) / P0.span; x.save(); x.rotate(P0.rot); x.scale(k, k); x.translate(-P0.fx, -P0.fy);
       x.shadowColor = 'rgba(0,0,0,0.6)'; x.shadowBlur = 3 / k * R / 30; x.filter = 'brightness(1.3) contrast(1.15)'; x.drawImage(P0.c, 0, 0); x.filter = 'none'; x.restore(); } // lifted, so a dark net stands off its coin
+    else if (kind === 'trawl' || (kind === 'trap' && !(look && look.pic))) { // (6.5.3) the redrawn trawl net and trap, the same pictures as the shop's and the bag's
+      const pc = document.createElement('canvas'); pc.width = 300; pc.height = 180; const px = pc.getContext('2d');
+      if (kind === 'trawl') drawTrawl3(px, 300, 180, (look && look.tier) || 'basic'); else drawTrap3(px, 300, 180, (typeof look === 'string' && look) || (look && look.key) || 'pot');
+      const sw = R * 1.62 * ((look && look.k) || 1), sh = sw * 0.6; x.drawImage(pc, -sw / 2, -sh / 2 - R * 0.02, sw, sh); }
     else if (ART[kind]) { const k = R * 0.66 / 50 * ((look && look.k) || 1); x.save(); x.scale(k, k); ART[kind](x, look || {}); x.restore(); } /* (6.5.1) look.k: the picture larger (the interact button's) */
     else drawGlyph(x, kind, 0, 0, R * 0.95 * ((look && look.k) || 1));
     x.restore();

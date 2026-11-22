@@ -1026,11 +1026,6 @@ function lessons() {
   else if (mid === 'trawl' && !n && netTotal(g.items) && sub.y >= 6) g.questHint = 'n';
   if (sub.o2Max && sub.o2 / sub.o2Max < 0.3 && (g.items.airTank || 0) > 0 && !g.tankFit) { g.questHint = g.questHint || 'r'; g.airCallout = true; }
 }
-// (4.12.2) the trawl lesson's one animal: a moon jelly drifting just ahead of the sub, held where it is
-function lessonJelly(x, y, dir) {
-  const sp = SPECIES_BY_ID[171] || SPECIES.find((q) => /Moon Jelly/.test(q.name));
-  const f = g.fauna.makeFish(sp, x, y, -dir, g.fauna.groupId++, true); f.placed = true; f.lesson = true; f.devKeep = true; g.fauna.list.push(f); return f;
-}
 function tutorWelcome() {
   const P = profile; if (!P || P.tut) return;
   ui.confirmModal = true; // (5.5) answered with Start or Skip only (a tap beside it no longer dismisses it undecided), the game held still meanwhile

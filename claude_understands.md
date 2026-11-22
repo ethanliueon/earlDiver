@@ -1,18 +1,47 @@
 # Claude understands: handoff for the next session
 
-Written at version 5.11.1 (commit after `dcc30be`), 2026-11-21, so another Claude can pick up where this one stopped.
+Written at version 5.11.1, brought up to date at 6.5.3 (2026-11-22), so another Claude can pick up where this one stopped.
 Read `CLAUDE.md` first (the owner's philosophy and working rules), then `docs/PLAN_6.md` (the audit, decisions and
 order of work), then this file. The illustrated guide for a new Claude is `docs/earl_design_guide.pdf`.
 
 ## Where things stand
 
-- Branch `claude/fish-mobile` holds everything up to 5.11.1. `main` is at fb6c0c9 (5.10.x); merge only when the owner
-  says a version is good.
+- Branch `claude/fish-mobile` holds everything up to 6.5.3, and the owner said that is good enough for `main`: it is
+  merged there (fast-forward). Merge again only when the owner says a version is good.
 - Done and agreed recently: the trawl takes whatever its mouth touches; the hand net as it was; Tidewarden in the jaws
   (layout stays, the rest dims, a ready Tidewarden swells); one lure in all (10 s light, then ~20 s away; pushed into
   the jaws); "too big for the net"; photos graded Poor/Good/Excellent with stamped stars and paid by the camera's
   Quality; photos developed like film and opened as a small card, never full screen; rarity price bands; rarity
   stamps in the shops; fish pass batch 8; the marked eye; no developer key; no boxed danger strip; the trap card.
+
+## Owner decisions 6.3 to 6.5.3 (latest first; these override anything below)
+
+- **6.5.3:** every item card is one card (js/itemcard.js, .icard): picture, name, rarity centred, then the description,
+  the legendary power right under it (name in legendary colour, a "Passive" or "Every N h" tag, one sentence), then
+  the skills as a short list (a few words each, the full meaning unfolds on a tap); fixed gaps, only height changes.
+  Faithless reads "Animals can't hurt you, and the thing hunts you more slowly." The HUD's trawl and trap coins use
+  the redrawn pictures.
+- **6.5.2:** trawl nets drawn as cones of netting hung from a solid ring (kit_art.js), also in the water; film is a
+  short black strip, $5, each camera holds its own load per dive (10 only on legendary cameras) and reloads at the
+  surface from up to 36 spare; the count shows on the camera's button; the bag shows owned spaces as wells and the
+  rest as bare plate, "used / owned"; only the one catch may tip the bag over (school extras stop at the limit).
+- **6.5.1:** the daily gift's first week is a new player's own (pine crate, $1,000, 3 advanced glow sticks, fish trap,
+  station case, $5,000, Siren's casket), then weeks scaled by the hidden level (store.js). Siren's casket 15/80/5.
+  No frozen lessons: the Log's steps teach in the running world (quiet ring, air callout). The sub you can board
+  breathes in its exact shape with a bone rim; boat parts get a soft light. Interact button: gunmetal ring inside the
+  coin, a warm line inside it, larger picture. Layers that scroll with the camera move by its motion (render.js
+  drift), never by its place times the zoom. Odometer depth. No guiding frame. Schools evenly spaced. Trawl net choice
+  in the Catch tab. Skill names coloured by level (I uncommon .. IV legendary; flat exotic; powers legendary).
+- **6.5.0:** one gain effect everywhere (as a chest find), cash only inside a gift; item names in rarity colour; the
+  big button only net or camera; no rare forms; panels shown only once drawn; nothing behind a panel drawn slower;
+  iOS audio "ambient"; loading screen at least 3 s; marine snow only below 150-200 m; journal pictures are small tanks.
+- **6.4.x:** 12 chests as locker items with tiered openings; Shop and Events tiles; prices: common to rare gear cheap
+  (rare about $2k), exotic and legendary gear at their old prices, chests $900 up to Poseidon's chest $100,000; one
+  red close cross everywhere; the title's first tap shows the divers; Delete on each saved diver.
+- **6.3.0:** no brackets on animals (the interact button becomes an eye); pressure curve to x80 at 1,000 m past the
+  suit; nothing on screen changes past the suit's depth but a "Pressure xN" figure; "Old coin".
+- Open, waiting on the owner: gear packs (what one is), the story and regions plan (docs/PLAN_STORY.md and its four
+  questions), Dave as a diver met in the world (with the story round).
 
 ## Owner decisions since the proposal (latest first; these override anything below)
 

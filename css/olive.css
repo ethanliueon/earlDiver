@@ -1518,3 +1518,27 @@ html body #inventory .inv-catch2 .inv-right.sub-away .sub-lock:not(#_a) { z-inde
 html body #inventory .inv-catch2 .bag-spaces .bs-cell.locked:not(#_a):not(#_b) { background: transparent !important; box-shadow: none !important; border: 1px solid rgba(20, 24, 16, 0.22) !important; outline: 1px solid rgba(220, 214, 190, 0.06); outline-offset: -2px; }
 html body #inventory .inv-catch2 .bag-spaces .bs-cell:not(.locked):not(#_a):not(#_b) { background: rgba(4, 8, 6, 0.62) !important; box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 240, 0.08) !important; }
 html body #inventory .inv-catch2 .inv-left > h4 .bag-n { font-style: normal; letter-spacing: 0.04em; color: #c8c0a8; margin-left: 6px; }
+
+/* (6.5.3) every item card, one rhythm: picture, name, rarity, what it is, its power, its skills, always the same gaps;
+   only the card's height changes. The power sits right under the description with a hairline above it, its name in
+   its colour and a small tag (Passive, or how often it comes back); the skills a short list, a line each, the full
+   meaning unfolding under a line on a tap */
+html body .icard { display: flex; flex-direction: column; align-items: stretch; text-align: left; }
+html body .icard > img { align-self: center; margin: 0 0 8px !important; }
+html body .icard > h4 { margin: 0 !important; text-align: center; font: 600 20px/1.15 'Barlow Semi Condensed', sans-serif !important; }
+html body .icard > .ic-r { margin: 2px 0 0 !important; text-align: center !important; font: 700 11px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
+html body .icard .ic-line { margin: 10px 0 0 !important; text-align: left !important; font: 500 14px/1.35 'Barlow Semi Condensed', sans-serif; color: #e6dec6; }
+html body .icard .ic-line + .ic-line { margin-top: 4px !important; color: #b8b09a; }
+.ic-pow { margin: 12px 0 0; padding-top: 8px; border-top: 1px solid rgba(230, 222, 196, 0.18); text-align: left; }
+.ic-pow .ic-pow-h { display: flex; align-items: baseline; gap: 8px; }
+.ic-pow .ic-pow-h b { font: 700 15px 'Barlow Semi Condensed', sans-serif; }
+.ic-pow .ic-tag { font: 600 10px 'Barlow Semi Condensed', sans-serif; font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: #a8a08a; padding: 1px 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.28); }
+.ic-pow p { margin: 3px 0 0; font: 500 13px/1.35 'Barlow Semi Condensed', sans-serif; color: #d8d0b8; }
+.ic-sks { list-style: none; margin: 12px 0 0; padding: 0; text-align: left; }
+.ic-sks li { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; padding: 3px 0; border-top: 1px solid rgba(230, 222, 196, 0.08); cursor: pointer; font: 500 13px 'Barlow Semi Condensed', sans-serif; color: #c8c0a8; }
+.ic-sks li:first-child { border-top: 0; }
+.ic-sks li b { font-weight: 700; white-space: nowrap; }
+.ic-sks li em { grid-column: 1 / -1; display: none; font-style: normal; font-size: 12px; color: #a8a08a; padding: 2px 0 1px; }
+.ic-sks li.open em { display: block; }
+
+.ic-sks li:not(.more) { cursor: default; } /* (6.5.3) nothing more to unfold */

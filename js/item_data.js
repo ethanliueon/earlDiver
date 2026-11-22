@@ -40,8 +40,8 @@ export const SKILLS = {
 };
 export const LEGEND = {
   eye: { name: 'Eye of the Sea', what: 'legendary animals glow, and are easy to spot' } /* (6.5.0) rare forms are gone */,
-  magnetic: { name: 'Magnetic', what: 'exotic and legendary fish within 50 m slowly swim toward you; the rest pay you no mind' },
-  faithless: { name: 'Faithless', what: 'no hunter attacks you or the sub; the thing is slower to mark you, and hunts you at half its pace' },
+  magnetic: { name: 'Magnetic', what: 'exotic and legendary fish within 50 m slowly swim toward you' }, // (6.5.3)
+  faithless: { name: 'Faithless', what: "animals can't hurt you, and the thing hunts you more slowly" }, // (6.5.3) the owner's words
   secondwind: { name: 'Second Wind', what: 'when your air runs out, it fills again', cd: 7200 },
   rebirth: { name: 'Rebirth', what: 'when you die, sometimes the sea gives you back', cd: 21600 },
   kinship: { name: 'Kinship', what: 'animals in your bag are never stressed and never die there' },
