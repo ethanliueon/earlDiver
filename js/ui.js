@@ -1,4 +1,5 @@
 import { drawHourglass, blessedURL } from './coin_art.js';
+import { setUnits, imperial } from './units.js';
 import { fmtLeft } from './abilities.js';
 // DOM overlays: home screen, journal, boat workshop, pause, run log.
 import { SPECIES_BY_ID, SPECIES } from './species.js';
@@ -275,6 +276,7 @@ export class UI {
     document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
     $('inventory').addEventListener('click', (ev) => { if (ev.target === $('inventory') && performance.now() - (this.dragEndAt || 0) > 400) this.toggleInventory(false); }); // (5.15.3) not the click that ends a drag off the panel
     $('set-graphics').addEventListener('click', () => { setSetting('fast', !SETTINGS.fast); this.renderSettings(); });
+    $('set-units').addEventListener('click', () => { setUnits(imperial() ? 'metric' : 'imperial'); this.renderSettings(); }); // (6.0.3)
     $('set-uisize').addEventListener('click', () => { const order = ['small', 'normal', 'large'], i = order.indexOf(uiSizeName()); setUiSize(order[(i + 1) % 3]); this.renderSettings(); }); // (5.15.7)
     $('set-fullscreen').addEventListener('click', () => { $('fullscreen').click(); setTimeout(() => this.renderSettings(), 250); });
     document.addEventListener('fullscreenchange', () => { if (this.settingsOpen()) this.renderSettings(); });
@@ -754,10 +756,10 @@ export class UI {
     const row = (k, v, cls = '') => `<div class="sp-r${cls}"><dt>${k}</dt><dd>${v}</dd></div>`;
     // (3.6.2) metric, with feet and pounds beside it
     const hab = usualDepth(sp); // (3.7.3) where it is usually met here, not the record extremes
-    const FT = 3.28084, LB = 2.20462, ft = (m) => Math.round(m * FT).toLocaleString(), u = (t) => ` <span class="sp-u">(${t})</span>`;
+    const FT = 3.28084, LB = 2.20462, ft = (m) => Math.round(m * FT).toLocaleString(), u = (t) => ` <span class="sp-u">(${t})</span>`, u2 = () => ''; // (6.0.3) one system only, as chosen in Settings (the page turns the metric figures)
     const kgTxt = kg < 0.1 ? kg.toFixed(3) : kg < 10 ? kg.toFixed(kg < 1 ? 2 : 1) : Math.round(kg).toLocaleString(), lb = kg * LB, lbTxt = lb < 10 ? lb.toFixed(lb < 1 ? 2 : 1) : Math.round(lb).toLocaleString();
-    const rows = row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m${u(ft(s2.from || 0) + ' ft')}`) + row('Habitat', `${hab[0].toLocaleString()}–${hab[1].toLocaleString()} m${u(ft(hab[0]) + '–' + ft(hab[1]) + ' ft')}`)
-      + row('Length', `${len.toFixed(2)} m${u((len * FT).toFixed(1) + ' ft')}${tooBig(s2) ? ' <small>over chamber limit</small>' : ''}`) + row('Weight', `${kgTxt} kg${u(lbTxt + ' lb')}`)
+    const rows = row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m${u2()}`) + row('Habitat', `${hab[0].toLocaleString()}–${hab[1].toLocaleString()} m${u2()}`)
+      + row('Length', `${len.toFixed(2)} m${u2()}${tooBig(s2) ? ' <small>over chamber limit</small>' : ''}`) + row('Weight', `${kgTxt} kg${u2()}`)
       + row('Location', where) + row('Status', `<i class="sp-dot"></i>${status[0]}`, ` st-${status[1]}`) + row('Value', money(specimenValue(s2) * statValue(P, 'payFish')) + (deepPremium(s2.from) > 1.001 ? u(`deep catch, ×${deepPremium(s2.from).toFixed(1)}`) : ''), ' val');
     const inSub = this.h.inSub ? this.h.inSub() : false, w = at.where, i = at.i, mv = (label, act, to = -1, on = true) => `<button data-fm="${act}:${w}:${i}:${to}"${on ? '' : ' disabled'}>${label}</button>`;
     let acts = '';
@@ -1224,6 +1226,7 @@ export class UI {
     row('set-catchtags', 'Show fish names', SETTINGS.catchTags, 'the name of the fish your net can reach');
     row('set-brackets', 'Mark what the net will catch', SETTINGS.brackets, 'corners round the fish');
     row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
+    $('set-units').innerHTML = `<span>Units<em>metres and kilograms, or feet and pounds</em></span><b class="set-pick">${imperial() ? 'Imperial' : 'Metric'}</b>`; // (6.0.3)
     { const nm = uiSizeName(); $('set-uisize').innerHTML = `<span>Button size<em>the controls on screen, larger or smaller</em></span><b class="set-pick">${nm[0].toUpperCase() + nm.slice(1)}</b>`; } // (5.15.7) Small / Normal / Large, a tap steps through them
     $('set-graphics').innerHTML = `<span>Smoother on slow devices<em>${document.documentElement.classList.contains('touch') ? 'battery saver: 30 frames a second, cooler and longer' : 'a softer picture, fewer extras'}</em></span>${sw(!!SETTINGS.fast)}`;
   }

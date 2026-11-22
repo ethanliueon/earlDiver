@@ -1,4 +1,5 @@
 import { uiUnit } from './settings.js';
+import { depthUnit } from './units.js';
 import { drawBagIcon } from './coin_art.js';
 import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
@@ -767,13 +768,13 @@ e.inSub ? [
       const ink = (a) => warnD && e.inSub ? `rgba(240,84,72,${(a * fl).toFixed(3)})` : `rgba(${cr},${cg},${cb},${(a * lit * fl * (1 - (this.bloodK || 0))).toFixed(3)})`;
       ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 1;
       const base = pad + 44 * s;
-      ctx.font = `600 ${24 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText('m', rx0, base);
-      if (this.bloodK > 0.01) { ctx.save(); ctx.shadowColor = 'transparent'; ctx.fillStyle = `rgba(96,14,12,${(0.95 * this.bloodK).toFixed(3)})`; ctx.fillText('m', rx0, base); ctx.restore(); }
+      ctx.font = `600 ${24 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText(depthUnit(), rx0, base); /* (6.0.3) */
+      if (this.bloodK > 0.01) { ctx.save(); ctx.shadowColor = 'transparent'; ctx.fillStyle = `rgba(96,14,12,${(0.95 * this.bloodK).toFixed(3)})`; ctx.fillText(depthUnit(), rx0, base); ctx.restore(); }
       // (5.9.6) the figure changes calmly: a small dead zone so it does not flicker as he bobs on a metre's line, and
       // the new number slides in a little and fades up over a quarter second while the old one fades out (the last digit
       // used to snap over in the last quarter metre, and the next digit's top showed under the window)
       { ctx.font = `600 ${58 * s}px ${HUDT}`;
-        const v = Math.max(0, e.y), xr = rx0 - 24 * s, lh = 58 * s * 0.86, nowT = performance.now();
+        const v = Math.max(0, e.y) * (depthUnit() === 'ft' ? 3.28084 : 1), xr = rx0 - 24 * s, /* (6.0.3) in feet with Imperial */ lh = 58 * s * 0.86, nowT = performance.now();
         if (this.dShown == null) { this.dShown = Math.floor(v); this.dPrev = null; this.dDir = 1; }
         if (v >= this.dShown + 1.12 || v < this.dShown - 0.12) { this.dPrev = this.dShown; this.dShown = Math.floor(v); this.dT = nowT; this.dDir = this.dShown > this.dPrev ? 1 : -1; }
         const k = this.dPrev == null ? 1 : clamp((nowT - (this.dT || 0)) / 260, 0, 1), ek = k * k * (3 - 2 * k), sl = lh * 0.22;
