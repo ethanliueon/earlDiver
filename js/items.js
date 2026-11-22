@@ -90,7 +90,7 @@ const VALUE = { common: 120, uncommon: 450, rare: 1800, exotic: 15000, legendary
 // the "good for" line, worked out from the stats
 function goodOf(kind, s) {
   const cm = (m) => Math.round(m * 100);
-  if (kind === 'net' || kind === 'slurp') return `${s.multi ? `Up to ${s.multi} from a school at once; ` : ''}fish ${s.minLen ? `${cm(s.minLen)}–${cm(s.maxLen)} cm` : `up to ${cm(s.maxLen)} cm`}, reach ${s.range} m`;
+  if (kind === 'net' || kind === 'slurp') return `${s.multi ? `Up to ${s.multi} from a school at once; ` : ''}fish size ${s.minLen ? `${s.minLen.toFixed(2)}–${s.maxLen.toFixed(2)} m` : `${s.maxLen.toFixed(2)} m`}, reach ${s.range} m`; // (6.0.8)
   if (kind === 'tag') return `Tagging from ${s.range} m`;
   if (kind === 'cam') return `Quality ${(s.idx || 10).toFixed(2)}; holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
   if (kind === 'fins') return `Speed ${+(s.swim / 2).toFixed(2)}, sprint ${+(s.sprint / 2).toFixed(2)}`; // (5.12.0) shown at half the in-game figure

@@ -42,7 +42,8 @@ const LEDE = {
   tank: 'How long you can stay down.', bag: 'How many animals you can carry.', supply: 'Bought by the number.',
 };
 const cm = (m) => `${Math.round(m * 100)} cm`;
-const sizeOf = (it) => (it.minLen ? `${cm(it.minLen)}–${cm(it.maxLen)}` : `up to ${cm(it.maxLen)}`);
+const mm = (v) => `${v.toFixed(2)} m`; // (6.0.8) fish size in metres, two places, no "up to"
+const sizeOf = (it) => (it.minLen ? `${it.minLen.toFixed(2)}–${mm(it.maxLen)}` : mm(it.maxLen));
 const secs = (s) => (s >= 60 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.round(s)} s`);
 const x = (v) => `×${(Math.round(v * 100) / 100).toString()}`;
 const n2 = (v) => String(+(+v).toFixed(2));
@@ -51,9 +52,16 @@ const n2 = (v) => String(+(+v).toFixed(2));
 // Pockets on a bag: animals (one a level). sk: the skills on that very item ([[skill, level], ...])
 export function boostOf(kind, label, it, sk) {
   const lv = (k) => (sk || []).reduce((a, q) => a + (q && q[0] === k ? q[1] : 0), 0);
-  if (kind === 'fins' && label === 'Speed' && lv('haste')) { const b = it.swim / 2, add = b * 0.06 * lv('haste'); return { txt: n2(b + add), add: '+' + n2(add) }; }
-  if (kind === 'tank' && label === 'Air' && lv('rebreathing')) { const add = Math.round(it.air * 0.1 * lv('rebreathing')); return { txt: `about ${secs(it.air + add)}`, add: `+${add} s` }; }
-  if (kind === 'bag' && label === 'Spaces' && lv('pockets')) { const add = [0, 2, 5, 10, 20][Math.min(4, lv('pockets'))]; return { txt: String(it.slots + add), add: `+${add}` }; }
+  if (kind === 'fins' && label === 'Speed' && lv('haste')) { const b = it.swim / 2, add = b * 0.06 * lv('haste'); return { txt: n2(b + add), add: '+' + n2(add), val: it.swim * (1 + 0.06 * lv('haste')) }; }
+  if (kind === 'tank' && label === 'Air' && lv('rebreathing')) { const add = Math.round(it.air * 0.1 * lv('rebreathing')); return { txt: `about ${secs(it.air + add)}`, add: `+${add} s`, val: it.air + add }; }
+  if (kind === 'bag' && label === 'Spaces' && lv('pockets')) { const add = [0, 2, 5, 10, 20][Math.min(4, lv('pockets'))]; return { txt: String(it.slots + add), add: `+${add}`, val: it.slots + add }; }
+  // (6.0.8) a net's or camera's own skills, counted into its figures as the game counts them (economy.js gear): Oversized
+  // +10 % fish size a level, Overreaching +10 % reach, Quickdraw 8 % off the swing (not under 0.3 s), Shutterbug +2 shots
+  if (kind === 'net' && label === 'Fish size' && lv('oversized') && it.maxLen) { const v = +(it.maxLen * (1 + 0.1 * lv('oversized'))).toFixed(2), add = v - it.maxLen; return { txt: it.minLen ? `${it.minLen.toFixed(2)}–${v.toFixed(2)} m` : `${v.toFixed(2)} m`, add: `+${add.toFixed(2)} m`, val: v }; }
+  if ((kind === 'net' || kind === 'cam') && label === 'Reach' && lv('overreaching') && it.range) { const v = +(it.range * (1 + 0.1 * lv('overreaching'))).toFixed(2); return { txt: `${v} m`, add: `+${(v - it.range).toFixed(2)} m`, val: v }; }
+  if (kind === 'cam' && label === 'Range' && lv('overreaching') && it.range) { const v = +(it.range * (1 + 0.1 * lv('overreaching'))).toFixed(2); return { txt: `${v} m`, add: `+${(v - it.range).toFixed(2)} m`, val: v }; }
+  if (kind === 'net' && label === 'Swing speed' && lv('quickdraw') && it.time) { const v = Math.max(0.3, it.time * (1 - 0.08 * lv('quickdraw'))); return { txt: `${v.toFixed(2)} s`, add: `−${(it.time - v).toFixed(2)} s`, val: -v }; }
+  if (kind === 'cam' && label === 'Holds' && lv('shutterbug') && it.shots) { const v = it.shots + 2 * lv('shutterbug'); return { txt: `${v} exposures`, add: `+${2 * lv('shutterbug')}`, val: v }; }
   return null;
 }
 export function measureHtml(kind, row, it, sk) { const B = boostOf(kind, row[0], it, sk); return B ? `<span class="boost">${B.txt} <small>(${B.add})</small></span>` : row[1](it); }
@@ -67,7 +75,7 @@ export function crossBoosts(kind, sk) {
 }
 // the numbers compared, per kind: [label, value as text, a number to compare, higher is better?]
 export const MEASURES = {
-  net: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Swing', (it) => `${it.time.toFixed(2)} s, ${it.time <= 0.85 ? 'quick' : it.time <= 1.2 ? 'steady' : 'slow'}`, (it) => -it.time, true]],
+  net: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Swing speed', (it) => `${it.time.toFixed(2)} s`, (it) => -it.time, true]], // (6.0.8) just the seconds
   slurp: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   tag: [['Range', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   cam: [['Quality', (it) => (it.idx || 10).toFixed(2), (it) => it.idx || 10, true], /* (5.10.10) */ ['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],

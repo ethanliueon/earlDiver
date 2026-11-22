@@ -31,7 +31,7 @@ import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
-import { Catalog, pictureOf, MEASURES, measureHtml, crossBoosts } from './catalog.js';
+import { Catalog, pictureOf, MEASURES, measureHtml, crossBoosts, boostOf } from './catalog.js';
 import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS } from './items.js';
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
@@ -1142,7 +1142,7 @@ export class UI {
       if (M) rows = M.map(([label, txt, num, hi]) => {
         const b2 = measureHtml(it.kind, [label, txt], it, q.sk); if (!cur) return `<tr><th>${label}</th><td>—</td><td>${b2}</td></tr>`; // (5.12.0) a skill's boost in green
         const a2 = measureHtml(cur.kind, [label, txt], cur, curQ.sk); if (a2 === b2) return `<tr class="same"><th>${label}</th><td>${a2}</td><td>${b2}</td></tr>`;
-        const d = num(it) - num(cur), up = hi ? d > 0 : d < 0;
+        const bv = (i2, sk2) => { const B = boostOf(i2.kind, label, i2, sk2); return B && B.val != null ? B.val : num(i2); }, d = bv(it, q.sk) - bv(cur, curQ.sk), up = hi ? d > 0 : d < 0; // (6.0.8) compared with the skills counted in
         return `<tr><th>${label}</th><td>${a2}</td><td class="${up ? 'up' : 'down'}">${b2} ${up ? '▲' : '▼'}</td></tr>`;
       }).join('');
       body = `<div class="ip-cols">${cur ? this.itemCol(P, curQ, 'Equipped') : `<div class="ip-col empty"><h5>Equipped</h5><p>Nothing in that slot.</p></div>`}<div class="ip-arrow">→</div>${this.itemCol(P, q, 'Selected')}</div>`
