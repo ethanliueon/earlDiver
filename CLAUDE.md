@@ -63,6 +63,14 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   always has its four places (greyed, never removed); every page screen (the shop's site, the bag, the yard) answers
   real taps on a phone, inside the turned frame; messages about a thing or Earl are written beside it in the scene,
   the banner keeps quests, warnings and the tutorial's line.
+- **Full screenshot pass** (when asked for one): play through the whole game by screenshots instead of by pressing
+  through it. Put Earl (or the sub) at the right places with the right gear, items and money through `window.__earl`
+  (as if he had played there normally), and screenshot every screen, panel, HUD state and edge case on the way: title
+  and saves, deck, cabin, the shop's site, the bag, every depth band, the sub and its tank room, the station, Dave,
+  the Old One, journal, quests, chart, settings, pause, the thing (marked, close, red water, jaws, death, Rebirth), low
+  air, over-depth, full bag and locker, at 844 x 390 and 667 x 375. Then judge every shot against the philosophy above
+  and report what can be improved, ranked, with the shots. It is a look at stills, not at animation; fix nothing
+  without a go.
 - **Don't break anything:** after a change, the full touch tutorial (deck to shop), new game, and title screen at both
   phone sizes must still pass. Phones load the game in a turned frame (index.html's shell); tests use `?noshell`.
 - **Old saves don't matter until release.** Nobody plays the game yet; until it ships on the App Store, write no
