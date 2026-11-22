@@ -44,7 +44,7 @@ export const oddsText = (odds, coin = 0) => { const k = Object.keys(CHESTS).find
 export function ratesTable(key) { // (6.1.9) names and figures only; the coin by its picture
   const C = CHESTS[key]; if (!C) return '';
   const rows = Object.entries(C.odds).map(([r, p]) => `<tr><td class="r-${r}"><span class="sw"></span>${RARITY[r].name}</td><td>${p} %</td></tr>`).join('');
-  const coin = C.coin ? `<table class="rt-extra"><tr><td class="r-legendary"><img class="gc" src="${coinPic()}" alt="">Gold coin</td><td>+${C.coin} %</td></tr></table>` : '';
+  const coin = C.coin ? `<table class="rt-extra"><tr><td class="r-legendary"><img class="gc" src="${coinPic()}" alt="">Old coin</td><td>+${C.coin} %</td></tr></table>` : '';
   return `<div class="rt-box"><button class="rt-x" aria-label="Close">×</button><h4>${C.name}</h4><table>${rows}</table>${coin}</div>`;
 }
 let COINPIC = null;
@@ -96,7 +96,7 @@ export class ChestReveal {
     R.querySelector('p').textContent = def.line || '';
     R.querySelector('.cr-sks').innerHTML = (q.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('') + (q.leg ? `<div class="leg"><b>✦ ${LEGEND[q.leg].name}</b> ${LEGEND[q.leg].what}</div>` : '');
     // (6.1.2) and a gold coin at the bottom of it, when one came up
-    { const old = R.querySelector('.cr-coin'); if (old) old.remove(); if (coin) R.querySelector('.cr-item').insertAdjacentHTML('afterend', `<div class="cr-coin r-legendary"><span class="cr-ci"><img src="${this.h.picture({ kind: 'gold', id: 1 }, 90, 90)}" alt=""></span><span>Gold coin</span></div>`); }
+    { const old = R.querySelector('.cr-coin'); if (old) old.remove(); if (coin) R.querySelector('.cr-item').insertAdjacentHTML('afterend', `<div class="cr-coin r-legendary"><span class="cr-ci"><img src="${this.h.picture({ kind: 'gold', id: 1 }, 90, 90)}" alt=""></span><span>Old coin</span></div>`); }
     const loop = () => { if (R.hidden) return; this.t = (performance.now() - this.t0) / 1000; this.draw(); requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   }

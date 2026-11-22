@@ -398,6 +398,9 @@ export class Hud {
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
         // (6.1.4) the hand shows what it will do: the ladder, the winch's basket, the sub's hatch; anything else, the hand
         const tgt = tm.find((m) => m.key === (hu ? 'u' : 'f')), ctxIcon = tgt && { ladder: 'ladder', winch: 'basket', sub: 'hatch', door: 'cabin' }[tgt.what];
+        // (6.3.0) an animal not yet observed, in reach (and nothing else to do here): the slot becomes the eye. Nothing is
+        // drawn round the animal: the eye on this button is the only sign
+        if (!hon && g.obsTarget && !e.inSub) return { key: 'obs', icon: 'eye', on: true, lit: true };
         return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
       abil(),
       light(), // (6.0.5) aboard too: there it switches the sub's lights
@@ -745,7 +748,7 @@ e.inSub ? [
   pressureFx(g, dt, sf) {
     const e = g && g.earl, P = (e && e.pressStart) || 300;
     const on = !!(e && g.mode === 'play' && !e.inSub && !g.aboard && !g.dying);
-    const want = on ? Math.max(0, Math.min(1, (e.y - P) / P)) * 0.4 : 0;
+    const want = 0; // (6.3.0) nothing on screen changes past the suit's depth: no colour fade
     this.desat = (this.desat || 0) + (want - (this.desat || 0)) * (1 - Math.exp(-dt / 0.7));
     if (this.desat < 0.01) return;
     const c = this.c, W = c.width, H = c.height;
@@ -817,23 +820,22 @@ e.inSub ? [
       // (4.28) no plate: the depth as bare figures, a dive computer's readout, and the air (in the sub, the hull) as
       // thin lines under it. It cools and dims as he goes down: bright in the sunlit water, a faint cold grey in the
       // dark, and it flickers when he is past what he (or the sub) is built for. Red only for danger.
-      const warnD = e.inSub ? g.sub.y / g.sub.rated > 0.9 : e.y > (e.pressStart || 300) * 2; // (5.12.0) the diver's red: past twice his suit's depth
-      const past = e.inSub ? g.sub.y > g.sub.rated : e.y > (e.pressStart || 300) * 2.5;
+      const warnD = false, past = false; // (6.3.0) the depth figure never turns red, never flickers: depth is just depth (the pressure figure and the air say the rest)
       const dm = clamp((e.y - 120) / 1400, 0, 1), lit = 1 - dm * 0.42;
       const fl = past && Math.random() < 0.06 ? 0.35 : 1;
       const cr = Math.round(lerp(239, 170, dm)), cg = Math.round(lerp(232, 192, dm)), cb = Math.round(lerp(212, 204, dm));
-      const bloodOn = !e.inSub && warnD; // (5.12.3) the diver past twice his suit's depth: blood, not flat red
+      const bloodOn = false; // (6.3.0) no blood figure
       this.bloodK = (this.bloodK || 0) + ((bloodOn ? 1 : 0) - (this.bloodK || 0)) * (1 - Math.exp(-dt / 0.6));
       const ink = (a) => warnD && e.inSub ? `rgba(240,84,72,${(a * fl).toFixed(3)})` : `rgba(${cr},${cg},${cb},${(a * lit * fl * (1 - (this.bloodK || 0))).toFixed(3)})`;
       ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8 * s; ctx.shadowOffsetY = 1;
-      const base = pad + 44 * s;
-      ctx.font = `600 ${24 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText(depthUnit(), rx0, base); /* (6.0.3) */
+      const base = pad + 52 * s; // (6.3.0) room for the taller figure
+      ctx.font = `600 ${27 * s}px ${HUDT}`; ctx.fillStyle = ink(0.7); ctx.fillText(depthUnit(), rx0, base); /* (6.0.3); (6.3.0) larger */
       if (this.bloodK > 0.01) { ctx.save(); ctx.shadowColor = 'transparent'; ctx.fillStyle = `rgba(96,14,12,${(0.95 * this.bloodK).toFixed(3)})`; ctx.fillText(depthUnit(), rx0, base); ctx.restore(); }
       // (5.9.6) the figure changes calmly: a small dead zone so it does not flicker as he bobs on a metre's line, and
       // the new number slides in a little and fades up over a quarter second while the old one fades out (the last digit
       // used to snap over in the last quarter metre, and the next digit's top showed under the window)
-      { ctx.font = `600 ${58 * s}px ${HUDT}`;
-        const v = Math.max(0, e.y) * (depthUnit() === 'ft' ? 3.28084 : 1), xr = rx0 - 24 * s, /* (6.0.3) in feet with Imperial */ lh = 58 * s * 0.86, nowT = performance.now();
+      { ctx.font = `600 ${68 * s}px ${HUDT}`; /* (6.3.0) taller and wider */
+        const v = Math.max(0, e.y) * (depthUnit() === 'ft' ? 3.28084 : 1), xr = rx0 - 27 * s, /* (6.0.3) in feet with Imperial */ lh = 68 * s * 0.86, nowT = performance.now();
         if (this.dShown == null) { this.dShown = Math.floor(v); this.dPrev = null; this.dDir = 1; }
         if (v >= this.dShown + 1.12 || v < this.dShown - 0.12) { this.dPrev = this.dShown; this.dShown = Math.floor(v); this.dT = nowT; this.dDir = this.dShown > this.dPrev ? 1 : -1; }
         const k = this.dPrev == null ? 1 : clamp((nowT - (this.dT || 0)) / 260, 0, 1), ek = k * k * (3 - 2 * k), sl = lh * 0.22;
@@ -891,6 +893,12 @@ e.inSub ? [
         ctx.fillText('Your air', fx0b - 14 * s, fy0 + fh / 2 - 12 * s); ctx.font = `500 ${18 * s}px ${HUDF}`; ctx.fillStyle = 'rgba(239,232,210,0.85)'; ctx.fillText('come up before it runs out', fx0b - 14 * s, fy0 + fh / 2 + 12 * s);
         ctx.restore(); }
       yy = ay + (e.inSub ? 22 * s : 0) + lh + 18 * s;
+      // (6.3.0) the pressure he is under, once he feels it: how much faster his air goes (the same curve for every suit,
+      // by metres past its depth). Cream at first, slowly rust as it climbs; never a warning colour
+      if (!e.inSub && !aboard && (g.diverPress || 1) > 1.05) { const pm = g.diverPress, k3 = clamp((pm - 1) / 6, 0, 1);
+        ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5 * s; ctx.font = `600 ${17 * s}px ${HUDT}`;
+        ctx.fillStyle = `rgba(${Math.round(lerp(cr, 196, k3))},${Math.round(lerp(cg, 120, k3))},${Math.round(lerp(cb, 84, k3))},${(0.9 * lit).toFixed(3)})`;
+        ctx.fillText(`Pressure \u00d7${pm < 10 ? pm.toFixed(1) : Math.round(pm)}`, rx0, yy - 6 * s); ctx.restore(); yy += 16 * s; }
       if ((g.loadKg || 0) > 10 && !e.inSub) notes.push([`Heavy: ${Math.round(g.loadKg)} kg`, '#f06a5c']);
       const py = pad - 8 * s;
       // hidden: a small leaf at the plate's left
@@ -928,7 +936,7 @@ e.inSub ? [
     // (5.1.1) on a touch screen the radar sits under the instrument; the bottom right is the actions'
     // (5.15.6) as large as fits between the air bar and the corner of buttons (88 at most, as the owner asked), so the two
     // never overlap whatever the phone
-    const room = this.arcTop ? (this.arcTop - (yy + 8 * s) - 10 * s) / 2 : 88 * s, rrT = Math.max(40 * s, Math.min(88 * s, room)), rcyT = yy + 8 * s + rrT; // (5.6.9b) 44 to 56; (5.9.6) 66; (5.13.0) 88
+    const room = this.arcTop ? (this.arcTop - (yy + 8 * s) - 10 * s) / 2 : 88 * s, rrT = Math.max(40 * s, Math.min(72 * s, room - 6 * s)), rcyT = yy + 20 * s + rrT; // (6.3.0) a little smaller, and lower // (5.6.9b) 44 to 56; (5.9.6) 66; (5.13.0) 88
     const notesAt = touch ? { x: W - 12 * (this.pxPt || 1.5) * (this.U || 1) - 2 * rrT - 14 * s, y: yy + 8 * s } : null; // (5.15.6) on a phone the notes stand to the left of the radar, clear of the buttons
     if (touch) yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------

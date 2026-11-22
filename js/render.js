@@ -377,11 +377,11 @@ export class Renderer {
       if (!inView(c.x, c.y, c.len)) continue;
       if (LEGENDARY.has(c.sp.id) && !c.dead) { // (4.16.5) a legend leaves a trail of small glowing bubbles that rise, twinkle and fade
         const tr = c.trail || (c.trail = []), dir = c.dir || (c.vx >= 0 ? 1 : -1), Lm = fishDrawLen(c.len);
-        if (!c.trailAt || t - c.trailAt > 0.09) { c.trailAt = t; tr.push({ x: c.x - dir * Lm * (0.3 + Math.random() * 0.25), y: c.y + (Math.random() - 0.5) * Lm * 0.25, t0: t, r: 0.06 + Math.random() * 0.09, sway: Math.random() * 6.28 }); }
+        if (!c.trailAt || t - c.trailAt > 0.09) { c.trailAt = t; tr.push({ x: c.x - dir * Lm * (0.38 + Math.random() * 0.1), y: c.y + (Math.random() - 0.5) * Lm * 0.07, t0: t, r: 0.012 + Math.random() * 0.02, sway: Math.random() * 6.28 }); } // (6.3.0) tiny, close behind the tail
         while (tr.length && t - tr[0].t0 > 2.4) tr.shift();
         for (const b of tr) { const age = (t - b.t0) / 2.4, a = Math.sin(Math.PI * Math.min(1, age * 1.4)) * (1 - age) * (0.75 + 0.25 * Math.sin(t * 9 + b.sway));
-          const bx = S(b.x + Math.sin(t * 2 + b.sway) * 0.08), by = Sy(b.y - age * 1.6), rr = Math.max(1.4, (b.r + age * 0.05) * ppm);
-          glowPts.push([bx, by, '#ffe6a8', rr * 4, a * 2.4, Math.max(1.2, rr * 0.7)]); }
+          const bx = S(b.x + Math.sin(t * 2 + b.sway) * 0.04), by = Sy(b.y - age * 0.7), rr = Math.max(0.7, (b.r + age * 0.01) * ppm);
+          glowPts.push([bx, by, '#ffe6a8', rr * 2.2, a * 1.5, Math.max(0.6, rr * 0.6)]); } // (6.3.0) small sharp points, not wide orbs
       }
       if (!c.sp.v.glow && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
       if (c.variant && g.earl.legends && g.earl.legends.has('eye')) glowPts.push([S(c.x), Sy(c.y), '#ffe6a0', Math.max(ppm * 0.9, fishDrawLen(c.len) * ppm), 0.85]); // (2.8.0) Eye of the Sea: rare forms glow
@@ -639,7 +639,7 @@ export class Renderer {
     }
     // (5.8.0) the catch bracket: bold cream corners closing in snug round the fish the net will go for, a quick pulse
     // as it comes in reach (always on a phone; a setting on a computer)
-    const ctg = g.mode === 'play' && (this.touch || SETTINGS.brackets) ? g.catchTarget : null;
+    const ctg = null; // (6.3.0) no brackets anywhere: swing and see
     if (ctg) {
       const tx = ctg.c ? ctg.c.x : ctg.x, ty = ctg.c ? ctg.c.y : ctg.y, id = ctg.c || null;
       if (this.ctgFor !== id) { this.ctgFor = id; this.ctgAt = t; }
@@ -1140,7 +1140,7 @@ export class Renderer {
     }
     // (5.6.1) on a touch screen, an animal not yet observed and in reach: four cream corner marks round it, breathing,
     // to say it can be tapped (observing is done by tapping it)
-    if (this.touch && g.obsTarget && g.mode === 'play' && !g.tutHidePrompts && !(g.catchTarget && g.catchTarget.c && g.catchTarget.c === g.obsTarget.c)) { // (5.8.0) the catch bracket wins if it is the same fish
+    if (false) { // (6.3.0) no corners round an animal to observe: the interact button turns to an eye instead // (5.8.0) the catch bracket wins if it is the same fish
       const ot = g.obsTarget, oc = ot.c, ox = S(oc ? oc.x : ot.x ?? g.earl.x), oy = Sy(oc ? oc.y : ot.y ?? g.earl.y), rr = Math.max(14, (ot.sp.len || 0.3) * ppm * 0.75) * (1 + 0.06 * Math.sin(g.time * 3)), L = rr * 0.42;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round';
       const rc = (rarityOf(ot.sp) || {}).col || '#c8ccc4'; // (5.6.3) thin, in its rarity's colour

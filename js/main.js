@@ -484,7 +484,7 @@ function costOf(kind) {
 function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replaced at once by another
   const P = profile, st = oldStock(P), it = st.items[+what.slice(5)];
   if (!it || it.sold) return false;
-  if ((P.gold || 0) < it.cost) { hud.toast(`${it.cost} gold coins needed`, 'warn'); return false; }
+  if ((P.gold || 0) < it.cost) { hud.toast(`${it.cost} old coins needed`, 'warn'); return false; }
   P.gold -= it.cost; // the coins' own stacks free their room first
   if (lockerFree(P) <= 0) { P.gold += it.cost; hud.toast('Locker full', 'warn'); return false; }
   giveRolled(P, it); it.sold = true; oldStock(P); saveProfile(P); audio.ready && audio.sale();
@@ -2622,6 +2622,7 @@ function update(dt) {
       if (!e.inSub && !g.aboard && e.y > pS * 2 + 2 && !g.pressWarned) { g.pressWarned = true; hud.toast('The pressure is too much for this suit', 'warn'); }
       else if (e.inSub || e.y < pS - 5) g.pressWarned = false; }
     g.diverDrain = e.inSub ? 1 : diverDrainMult(e.y, e.pressStart || 300) * (mv.sprint && e.speedNow > 1 ? 2 : 1);
+    g.diverPress = e.inSub ? 1 : 1 + (diverDrainMult(e.y, e.pressStart || 300) - 1) * (e.pressRes ?? 1); // (6.3.0) shown under the air line
     g.diverDrain *= e.o2Mul;
     g.subDrain = subDrainMult(g.sub.y, g.sub.rated) * (mv.sprint && e.speedNow > 1 ? 3 : 1) * subLeak(g.sub);
     if ((!e.inSub || g.sub.o2 <= 0) && !e.atSurface && e.o2 / e.o2Max < 0.1 && !g.lowO2Warned) { g.lowO2Warned = true; hud.toast('Air critical: surface', 'critical'); /* (6.1.4) the more urgent line holds: fish news waits */ }

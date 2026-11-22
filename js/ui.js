@@ -285,7 +285,6 @@ export class UI {
     // reduce flashing: the monster's lights stutter slowly and its blue flash is softened
     $('flashing').addEventListener('click', () => { const g = h.getGame(); g.reduceFlash = !g.reduceFlash; try { localStorage.setItem('earl.reduceFlash', g.reduceFlash ? '1' : '0'); } catch (e) { /* not saved */ } this.renderSettings(); });
     // display settings: the brackets round a target, and the "[Space] Net the …" catch tags
-    $('set-brackets').addEventListener('click', () => { setSetting('brackets', !SETTINGS.brackets); this.renderSettings(); });
     $('set-catchtags').addEventListener('click', () => { setSetting('catchTags', !SETTINGS.catchTags); this.renderSettings(); });
     $('set-sound').addEventListener('click', () => { h.onMute && h.onMute(); this.renderSettings(); });
     document.querySelector('#inventory .inv-close').addEventListener('click', () => this.toggleInventory(false));
@@ -516,7 +515,7 @@ export class UI {
       else if (e.kind === 'supply' && SUPPLIES[e.id]) { name = SUPPLIES[e.id].name; pic = pictureOf('supply', e.id, 120, 72, true); }
       else if (e.kind === 'trawl' && NETS_SUB[e.id]) { name = NETS_SUB[e.id].name; pic = pictureOf('trawl', e.id, 120, 72, true); }
       else if (e.kind === 'trap' && TRAPS[e.id]) { name = TRAPS[e.id].name; pic = pictureOf('trap', e.id, 120, 72, true); }
-      else if (e.kind === 'coin') { name = 'Gold coin'; r = 'legendary'; pic = pictureOf('gold', 1, 160, 160, true); }
+      else if (e.kind === 'coin') { name = 'Old coin'; r = 'legendary'; pic = pictureOf('gold', 1, 160, 160, true); }
       else return '';
       // (6.1.3) a word for what happened, above the name: bought, found in a crate, from the old one
       return `<div class="gain r-${r}">${e.how ? `<small class="g-how">${e.how}</small>` : ''}<div class="g-tile"><img src="${pic}" alt=""><i class="new">new</i>${r === 'legendary' ? '<span class="glint"></span>' : ''}</div><b>${name}</b><span class="g-plus">+1</span></div>`;
@@ -1074,7 +1073,7 @@ export class UI {
     const nGold = P.gold || 0, goldTiles = Array.from({ length: Math.ceil(nGold / 10) }, (_, i) => { const n = Math.min(10, nGold - i * 10); return `<div class="lk-tile r-legendary gold" data-gold title="Gold coins"><img src="${pictureOf('gold', n, 120, 120, true)}" alt=""><b class="belt-n">×${n}</b></div>`; }).join('');
     const goldPop = this.goldSel && nGold ? `<div class="item-pop trap-pop gold-pop"><div class="ip-box r-legendary tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('gold', Math.min(nGold, 10), 300, 300, true)}" alt=""></div>
-        <div class="tp-txt"><h4>Gold coins</h4><p class="tp-kind">Legendary, ${nGold} in the locker</p><p class="tp-desc">Hand-struck and worn nearly smooth, the old one's spiral on the face. Now and then one lies at the bottom of a chest. The old one in the cave takes nothing else.</p>
+        <div class="tp-txt"><h4>Old coin</h4><p class="tp-kind">Legendary, ${nGold} in the locker</p><p class="tp-desc">Hand-struck and worn nearly smooth, the old one's spiral on the face. Now and then one lies at the bottom of a chest. The old one in the cave takes nothing else.</p>
           <div class="tp-row"><span>Stacks</span><b>10 to a space</b></div><div class="tp-row"><span>Spaces</span><b>${Math.ceil(nGold / 10)}</b></div></div></div></div>` : '';
     const glowPop = (() => { if (!this.glowSel) return ''; const k = gk, adv = k === 'glowAdv', n = (g.items && g.items[k]) || 0; if (!n) return '';
       return `<div class="item-pop trap-pop glow-pop"><div class="ip-box r-${GR[k]} tp-box"><button class="ip-close" aria-label="Close">×</button>
@@ -1254,7 +1253,7 @@ export class UI {
     row('set-sound', 'Sound', this.h.getMuted ? !this.h.getMuted() : true, '');
     row('set-fullscreen', 'Full screen', !!document.fullscreenElement, '');
     row('set-catchtags', 'Show fish names', SETTINGS.catchTags, 'the name of the fish your net can reach');
-    row('set-brackets', 'Mark what the net will catch', SETTINGS.brackets, 'corners round the fish');
+    // (6.3.0) the brackets setting is gone with the brackets
     row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
     $('set-units').innerHTML = `<span>Units<em>metres and kilograms, or feet and pounds</em></span><b class="set-pick">${imperial() ? 'Imperial' : 'Metric'}</b>`; // (6.0.3)
     { const nm = uiSizeName(); $('set-uisize').innerHTML = `<span>Button size<em>the controls on screen, larger or smaller</em></span><b class="set-pick">${nm[0].toUpperCase() + nm.slice(1)}</b>`; } // (5.15.7) Small / Normal / Large, a tap steps through them
@@ -1408,7 +1407,7 @@ export class UI {
     } else if (!off.groups.length) {
       html += '<p class="shop-empty">The great jaw opens a little and closes again. You have nothing it wants. It takes live fish: bring them in the bag or the sub\'s tank.</p>';
     } else {
-      html += '<p class="shop-note">Once a dive the old one takes fish for old gold coins: 30 % under the market, but three times the market for what it craves. Choose what to give it.</p>';
+      html += '<p class="shop-note">Once a dive the old one takes fish for old coins: 30 % under the market, but three times the market for what it craves. Choose what to give it.</p>';
       let total = 0;
       const rows = off.groups.map((gr) => {
         const on = this.caveSel.has(gr.key);

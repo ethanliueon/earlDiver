@@ -15,7 +15,11 @@ export const SUB_LEVELS = SUB_TIERS;
 
 // start: the depth at which his suit stops protecting him from the pressure (300 m in a wetsuit)
 export function diverDrainMult(depth, start = 300) {
-  return depth <= start ? 1 : Math.exp(K_PRESS * (depth - start));
+  // (6.3.0) the same for every suit, by metres past its own depth: x1.9 at 100 m past, x3.5 at 200, x23 at 500; then it
+  // climbs more slowly, about x80 at 1,000 m past, and keeps climbing (some x1,000 at 2,000 m past: crushed at once)
+  if (depth <= start) return 1;
+  const d = depth - start; if (d <= 500) return Math.exp(K_PRESS * d);
+  const m5 = Math.exp(K_PRESS * 500); return m5 * Math.pow(80 / m5, (d - 500) / 500);
 }
 // a damaged hull leaks: at 40 % integrity the air drains 2.5x as fast
 // (4.5.0) a damaged hull leaks air (hidden from the player): +3 % air use for every 1 % of hull lost; at 0 % four times
