@@ -1,3 +1,4 @@
+import { glint } from './scrolls.js';
 // (5.12.6) Gear photographed for the shop, as the suits are (suit_art.js): each thing drawn as a solid object lit from
 // the top, its real parts and its own shape, a faint shadow round its outline, nothing flat or stencilled. Rarity shows
 // as craft: a stripe, then better hardware, then stitching and brass, then a glow and sparks at the top.
@@ -21,10 +22,11 @@ function fitted(ctx, w, h, draw, aspect = 2.5) {
   ctx.save(); ctx.globalAlpha = 0.24; ctx.filter = `blur(${Math.max(1, h * 0.018).toFixed(1)}px)`; ctx.drawImage(s, Math.max(0.5, h * 0.004), Math.max(1, h * 0.014)); ctx.restore();
   ctx.drawImage(c, 0, 0);
 }
-function sparks(x, W, H, col, seed) {
-  let sd = seed; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 14; i++) { const px = 80 + rnd() * (W - 160), py = 40 + rnd() * (H - 80), r = 3 + rnd() * 6, g = x.createRadialGradient(px, py, 0, px, py, r * 3), lt = mix(col, '#fff4dc', 0.7);
-    g.addColorStop(0, lt); g.addColorStop(0.35, lt.replace('rgb(', 'rgba(').replace(')', ',0.35)')); g.addColorStop(1, lt.replace('rgb(', 'rgba(').replace(')', ',0)')); x.fillStyle = g; x.beginPath(); x.arc(px, py, r * 3, 0, TAU); x.fill(); }
+function sparks(x, W, H, col, seed) { // (6.0.10) still glints in the picture, each in the item's own glow
+  let sd = seed; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647), lt = hex(mix(col, '#fff4dc', 0.55));
+  x.save(); x.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i++) { const px = 80 + rnd() * (W - 160), py = 40 + rnd() * (H - 80); glint(x, px, py, 5 + rnd() * 7, 0.45 + rnd() * 0.5, (rnd() - 0.5) * 0.5, lt); }
+  x.restore();
 }
 
 // ---------------------------------------------------------------- exotics: the expeditions ----------------------------------------------------------------

@@ -354,10 +354,23 @@ export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare') {
 }
 // (5.7.8) a legendary's motes: slow sparks of old gold drifting up round it, wherever it is shown. Call each frame
 // with the time; state is a small array kept by the caller
+// (6.0.10) a glint, the one spark every legendary gives off: a small hot core and two thin crossed streaks (the long one
+// level, as light catches an edge), sharp at the tips, warm gold fading to nothing. k: 0..1 how bright, sz its reach
+export function glint(ctx, px, py, sz, k, rot = 0, col = [255, 222, 150]) {
+  if (k <= 0.01) return; const [r0, g0, b0] = col, c = (a) => `rgba(${r0},${g0},${b0},${a.toFixed(3)})`;
+  ctx.save(); ctx.translate(px, py); ctx.rotate(rot);
+  const ray = (len, wid) => { const g = ctx.createLinearGradient(-len, 0, len, 0); g.addColorStop(0, c(0)); g.addColorStop(0.5, c(k)); g.addColorStop(1, c(0)); ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(-len, 0); ctx.quadraticCurveTo(0, -wid, len, 0); ctx.quadraticCurveTo(0, wid, -len, 0); ctx.fill(); };
+  ray(sz * 2.4, sz * 0.16); ctx.rotate(Math.PI / 2); ray(sz * 1.3, sz * 0.13); ctx.rotate(-Math.PI / 4); ray(sz * 0.7, sz * 0.08); ctx.rotate(Math.PI / 2); ray(sz * 0.7, sz * 0.08);
+  const hg = ctx.createRadialGradient(0, 0, 0, 0, 0, sz * 0.7); hg.addColorStop(0, `rgba(255,250,236,${k.toFixed(3)})`); hg.addColorStop(0.35, c(k * 0.5)); hg.addColorStop(1, c(0)); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(0, 0, sz * 0.7, 0, TAU); ctx.fill();
+  ctx.restore();
+}
 export function legendMotes(ctx, cx, cy, w, h, t, seed = 1) {
+  // (6.0.10) glints, not soft dots: each drifts up slowly and flares once on the way (a quick rise, a slow fade), turning a little
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 9; i++) { const r = rnd(seed * 31 + i * 7), ph = (t * (0.18 + r() * 0.12) + r()) % 1, px = cx + (r() - 0.5) * w * 0.9 + Math.sin(t * 1.3 + i) * w * 0.04, py = cy + h * 0.45 - ph * h * 1.05, a = Math.sin(ph * Math.PI) * (0.55 + r() * 0.4), sz = (1 + r() * 1.8) * w / 100;
-    const g = ctx.createRadialGradient(px, py, 0, px, py, sz * 3); g.addColorStop(0, `rgba(255,226,150,${a.toFixed(3)})`); g.addColorStop(1, 'rgba(255,190,90,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, sz * 3, 0, TAU); ctx.fill(); }
+  for (let i = 0; i < 9; i++) { const r = rnd(seed * 31 + i * 7), ph = (t * (0.18 + r() * 0.12) + r()) % 1, px = cx + (r() - 0.5) * w * 0.9 + Math.sin(t * 1.3 + i) * w * 0.04, py = cy + h * 0.45 - ph * h * 1.05;
+    const fl = ph < 0.18 ? ph / 0.18 : Math.pow(1 - (ph - 0.18) / 0.82, 1.6), a = fl * (0.6 + r() * 0.4), sz = Math.max(2.2, Math.min(w, h) * (0.03 + r() * 0.03));
+    glint(ctx, px, py, sz, a, (r() - 0.5) * 0.5 + t * 0.15 * (r() - 0.5)); }
   ctx.restore();
 }
 

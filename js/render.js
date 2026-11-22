@@ -3219,6 +3219,8 @@ export class Renderer {
       if (x < -50 || x > this.W + 50 || y < -50 || y > this.H + 50) continue;
       halo(x, y - ppm * 0.2, ppm * 0.5, p.type === 'lure' ? [190, 240, 255] : [90, 140, 255], 0.35 * haze + 0.1);
     }
+    { const e0 = g.earl; if (e0.biolum && !e0.inSub && g.mode === 'play') { const f0 = g.lightFade ?? 1, bx = S(e0.x), by = Sy(e0.y), c0 = [130, 158, 206]; // (6.0.9) Bioluminescence's glow in the water, as a glow stick's
+      halo(bx, by, ppm * 16, c0, 0.08 * f0); halo(bx, by, ppm * 9, c0, 0.09 * f0); halo(bx, by, ppm * 2.5, [170, 196, 230], 0.12 * f0); } }
     for (const L of g.glows || []) { // (5.17.1) the stick itself: a short amber tube, tilted, swaying as it sinks, in its own soft glow
       const x = S(L.x), y = Sy(L.y); if (x < -40 || x > this.W + 40 || y < -40 || y > this.H + 40) continue; const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1);
       /* (6.0.5) no name beside a dropped glow stick: the light says it */

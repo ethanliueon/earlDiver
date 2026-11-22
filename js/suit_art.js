@@ -1,3 +1,4 @@
+import { glint } from './scrolls.js';
 import { eraOf } from './gear_art.js';
 // (5.11.4) The shop's suits as a supplier photographs them: each suit upright as if worn (no stand, no one in it),
 // turned about 35 degrees away and lit from one side, then cut out and turned on its side, head to the left, to lie
@@ -312,7 +313,7 @@ const counterlung = (col, acc) => (X, clip) => { x.save(); x.strokeStyle = 'rgba
   x.strokeStyle = mix('#3a3a36', acc, 0.2); x.lineWidth = 7; x.beginPath(); x.moveTo(X(440), 310); x.bezierCurveTo(X(470), 280, X(440), 220, X(410), 196); x.stroke(); x.restore(); };
 function patch(X, acc) { x.save(); x.translate(X(352), 286); x.rotate(-0.04); x.fillStyle = mix(acc, '#3a3226', 0.35); x.beginPath(); x.roundRect(-16, -11, 32, 22, 3); x.fill(); x.strokeStyle = mix(acc, '#fff', 0.25); x.lineWidth = 1.2; x.setLineDash([2, 1.6]); x.strokeRect(-13, -8, 26, 16); x.setLineDash([]); x.restore(); } // a maker's patch, stitched on, nothing written
 function glowSeams(X, acc) { x.save(); x.globalCompositeOperation = 'source-atop'; x.strokeStyle = mix(acc, '#fff4dc', 0.55); x.lineWidth = 2.4; x.shadowColor = mix(acc, '#fff4dc', 0.4); x.shadowBlur = 12; for (const pts of [[[304, 252], [344, 264], [400, 264], [450, 248]], [[462, 540], [458, 620], [452, 720], [450, 790]], [[460, 316], [480, 326], [500, 328], [510, 322]]]) { x.beginPath(); x.moveTo(X(pts[0][0]), pts[0][1]); x.bezierCurveTo(X(pts[1][0]), pts[1][1], X(pts[2][0]), pts[2][1], X(pts[3][0]), pts[3][1]); x.stroke(); } x.restore(); }
-const sparks = (acc) => (X) => { x.save(); for (let i = 0; i < 16; i++) { const px = X(300 + rnd() * 220), py = 190 + rnd() * 600, r = 1 + rnd() * 2.2; const g = x.createRadialGradient(px, py, 0, px, py, r * 4), lt = mix(acc, '#fff4dc', 0.7); g.addColorStop(0, lt); g.addColorStop(0.35, lt.replace('rgb(', 'rgba(').replace(')', ',0.35)')); g.addColorStop(1, lt.replace('rgb(', 'rgba(').replace(')', ',0)')); x.fillStyle = g; x.beginPath(); x.arc(px, py, r * 4, 0, TAU); x.fill(); } x.restore(); }; // a legendary gives off sparks wherever it is shown
+const sparks = (acc) => (X) => { x.save(); x.globalCompositeOperation = 'lighter'; const lt = mix(acc, '#fff4dc', 0.6).match(/\d+/g).map(Number); for (let i = 0; i < 9; i++) glint(x, X(300 + rnd() * 220), 190 + rnd() * 600, 4 + rnd() * 6, 0.45 + rnd() * 0.5, (rnd() - 0.5) * 0.5, lt); x.restore(); }; // (6.0.10) glints, as every legendary
 
 // one suit drawn on the 800 x 900 page and cut out to its figure; kept for the pictures made from it (a few dozen at most)
 const figCache = new Map(); let pageC = null;

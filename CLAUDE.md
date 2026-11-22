@@ -24,6 +24,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
    grey-brown (the sub's controls a little olive, the glow stick a faint glow). Bright things are rare and earned.
 3. **Detail is a reward.** Higher rarity = more intricate, then glow and particles at the top (legendaries give off
    sparks wherever they are shown). Detail carries information, it is never decoration for its own sake.
+   Never enlarge something so it can be read more easily: small details are meant to be found by whoever looks closely,
+   and a player who doesn't look need not notice them.
 4. **A real game, not a web page.** Reference real mobile games: red "!" badges, joystick bottom left, an arc of
    action buttons bottom right, settings top right, padlocks on what you lack, tutorial spotlights that dim the rest.
    Ask "what would a real game do here?"

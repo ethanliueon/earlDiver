@@ -10,7 +10,7 @@ import { drawNet3, drawCam3 } from './gear_art.js';
 import { drawHourglass, drawPowerBadge, POWER_EMBLEMS } from './coin_art.js';
 import { LEGEND } from './item_data.js';
 import { rarityOf } from './specimens.js';
-import { legendMotes } from './scrolls.js';
+import { legendMotes, glint } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { touchWords } from './touchtext.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
@@ -581,7 +581,7 @@ e.inSub ? [
       if (lk === 'legendary') { const q = 0.5 + 0.5 * Math.sin(g.time * 1.6), lg = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.32); lg.addColorStop(0, `rgba(200,156,80,${(0.3 + 0.12 * q).toFixed(3)})`); lg.addColorStop(1, 'rgba(200,156,80,0)');
         ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.32, 0, TAU); ctx.fill();
         for (let i = 0; i < 7; i++) { const ph = (g.time * 0.35 + i * 0.37) % 1, ang = i * 2.39 + g.time * 0.12, rr = R * (1.02 + 0.22 * ph), sx3 = cx + Math.cos(ang) * rr, sy3 = cy + Math.sin(ang) * rr - ph * 6 * u, al = Math.sin(ph * Math.PI) * 0.75;
-          const sg = ctx.createRadialGradient(sx3, sy3, 0, sx3, sy3, 3.2 * u); sg.addColorStop(0, `rgba(246,226,178,${al.toFixed(3)})`); sg.addColorStop(1, 'rgba(230,190,120,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx3, sy3, 3.2 * u, 0, TAU); ctx.fill(); } } }
+          ctx.save(); ctx.globalCompositeOperation = 'lighter'; glint(ctx, sx3, sy3, 2.6 * u, al, ang * 0.2); ctx.restore(); } /* (6.0.10) glints */ } }
     // (5.15.7) able to act: a warm light behind the coin, round its rim, breathing slowly (nothing drawn over its picture)
     if (tutKey === bKey) ring(cx, cy, R); // (6.0.5) drawn before the coin, so the hand (or net) stays readable on top
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(222,212,186,${(0.2 + 0.1 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(222,212,186,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); } // (6.0.5) quieter, bone
