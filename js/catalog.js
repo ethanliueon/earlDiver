@@ -36,7 +36,7 @@ export const WEBSHOPS = {
 };
 const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];
 const LEDE = {
-  net: 'You carry one; change it in your bag on deck or in the sub.',
+  net: 'You carry one; change it in your bag.',
   cam: 'Hold still while the shutter is open; sell the pictures at the boat. The higher its Quality, the more each picture earns. Film is bought by the exposure.', trawl: "One in the sub's belly hatch; used up in one haul.",
   trap: 'Set from the surface, on a line from a buoy.', suit: 'One worn at a time.', fins: 'How fast you swim, and sprint.',
   tank: 'How long you can stay down.', bag: 'How many animals you can carry.', supply: 'Bought by the number.',

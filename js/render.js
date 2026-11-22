@@ -2703,6 +2703,14 @@ export class Renderer {
   }
 
   drawSay(g, S, Sy, ppm) {
+    // (6.0.5) the scene's messages: each written beside what it is about (him, the sub), with a short line to it, the
+    // words on the side away from the screen's nearer edge; they fade after a few seconds
+    if (g.says && g.says.length && g.mode === 'play') { const ctx = this.ctx, W = this.W; let row = 0;
+      for (const m of g.says) { const o = m.at === 'sub' ? g.sub : g.earl, a = clamp(m.t / 0.3, 0, 1) * clamp((4 - m.t) / 0.7, 0, 1); if (a < 0.01 || !o) continue;
+        const hx = S(o.x), hy = Sy(o.y) - ppm * (m.at === 'sub' ? 2.2 : 0.8) - row * 22, fs = 15; row++;
+        ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(m.text).width, left = hx > W * 0.5, d = Math.max(30, ppm * 1.2), tx = left ? Math.max(150, hx - d - w) : Math.min(W - w - 150, hx + d), ty = Math.max(fs + 70, hy - Math.max(30, ppm * 1.2));
+        ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(236,230,210,0.6)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(hx + (left ? -3 : 3), hy - 3); ctx.quadraticCurveTo(hx + (left ? -4 : 4), ty + 6, left ? tx + w : tx, ty + 6); ctx.lineTo(left ? tx : tx + w, ty + 6); ctx.stroke();
+        ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(m.text, tx, ty); ctx.restore(); } }
     // (6.0.0) Earl's one line, after the sea gives him back from its jaws: written into the scene beside him like the
     // game's labels (no box, no bubble), a thin line curving up from his head to the words, which run on under them; it
     // comes a few letters at a time, as if he were thinking it, and fades
@@ -3209,9 +3217,7 @@ export class Renderer {
     }
     for (const L of g.glows || []) { // (5.17.1) the stick itself: a short amber tube, tilted, swaying as it sinks, in its own soft glow
       const x = S(L.x), y = Sy(L.y); if (x < -40 || x > this.W + 40 || y < -40 || y > this.H + 40) continue; const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1);
-      { const age = (L.adv ? 180 : 120) - L.t, la = clamp(age / 0.3, 0, 1) * clamp((2.6 - age) / 0.6, 0, 1); // (6.0.1) its name, written beside it as it is let go, then gone
-        if (la > 0.01) { ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = la; ctx.font = `500 15px ${HUDF}`; ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-          const nm = L.adv ? 'Advanced glow stick' : 'Glow stick', left = x > this.W * 0.55, d = Math.max(16, ppm * 0.6), tx = left ? x - d : x + d, ty = y - Math.max(12, ppm * 0.45); /* on the side away from the buttons */ ctx.textAlign = left ? 'right' : 'left'; ctx.strokeStyle = 'rgba(236,230,210,0.6)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(x + (left ? -3 : 3), y - 3); ctx.lineTo(tx + (left ? 3 : -3), ty + 7); ctx.stroke(); ctx.fillText(nm, tx, ty); ctx.restore(); } }
+      /* (6.0.5) no name beside a dropped glow stick: the light says it */
       const R0 = L.adv ? 2 : 1, hc = L.adv ? [232, 226, 210] : [255, 178, 94], hk = L.adv ? 1.25 : 1; halo(x, y, ppm * 16 * R0, hc, 0.07 * hk * fade); halo(x, y, ppm * 9 * R0, hc, 0.08 * hk * fade); halo(x, y, ppm * 3 * R0, hc, 0.14 * fade); // (5.17.1) the water lit evenly 16 m round, not a bright knot
       const ln = Math.max(4, ppm * 0.22), rw = Math.max(1.4, ppm * 0.035), ang = L.rot + (L.rest ? 1.45 : Math.sin(g.time * 0.9 + L.ph) * 0.35);
       ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalAlpha = 0.35 + 0.65 * fade; ctx.lineCap = 'round';

@@ -131,7 +131,7 @@ function applyKit(e, P) {
   // (6.0.0) the air he has is kept as it is when he changes tanks: a bigger tank holds more, it does not add any; a
   // smaller one keeps only what fits (said once). At the start of a run (nothing yet) he starts full
   const was = e.o2Max || 0; e.o2Max = airMax(P);
-  if (!was) e.o2 = e.o2Max; else if ((e.o2 || 0) > e.o2Max + 0.5) { e.o2 = e.o2Max; if (g && g.mode === 'play' && hud) hud.toast(`This tank holds ${Math.round(e.o2Max)} s: the rest of your air is gone`, 'warn'); } else e.o2 = Math.min(e.o2Max, e.o2 || 0);
+  if (!was) e.o2 = e.o2Max; else if ((e.o2 || 0) > e.o2Max + 0.5) { e.o2 = e.o2Max; if (g && g.mode === 'play' && hud) say(`This tank holds ${Math.round(e.o2Max)} s: the rest of the air is gone`, 'earl'); } else e.o2 = Math.min(e.o2Max, e.o2 || 0);
   e.finSpeed = statValue(P, 'swim'); e.sprintMul = statValue(P, 'sprint');
   e.tankQuiet = !!(worn(P, 'tank') || {}).quiet;
   // (2.8.0) skills, Legendary skills and set traits, all stacked across what he has on
@@ -1418,7 +1418,7 @@ const standY = (x) => deckLine(x / BOAT_U) * BOAT_U + 0.05 - 0.85; // his middle
 const nearLadder = () => { const e = g.earl, rx = e.x - BOAT.x; return !e.inSub && !g.aboard && !g.kill && e.y < 2.2 && e.y > -0.5 && Math.abs(rx - LADDER_M) < 1.3; };
 // aboard: climb from the water (climb), or standing on deck by the door (a new dive starts there)
 function boardDeck(climb = true, quiet = false) {
-  if (g.sub && g.sub.imploded) { const sb = g.sub; sb.imploded = false; g.imploded = false; sb.failing = null; sb.hull = 1; g.subTank = []; sb.docked = true; sb.o2 = sb.o2Max; profile.subLost = false; profile.hull = 1; setTimeout(() => hud.toast('The sub is back in her cradle'), 1200); } // (6.0.0) a sub lost while he lived is waiting for him at the Margaret
+  if (g.sub && g.sub.imploded) { const sb = g.sub; sb.imploded = false; g.imploded = false; sb.failing = null; sb.hull = 1; g.subTank = []; sb.docked = true; sb.o2 = sb.o2Max; profile.subLost = false; profile.hull = 1; setTimeout(() => say('The sub is back in her cradle', 'sub'), 1200); } // (6.0.0) a sub lost while he lived is waiting for him at the Margaret
   const e = g.earl;
   const at = climb ? LADDER_M : DOOR_M - 0.9;
   g.aboard = { x: at, from: [e.x - BOAT.x, e.y - deckSurf()], walkT: 0, step: 0, walk: 0, climb: climb ? CLIMB : 0, jump: 0 }; g.helm = false; g.deckStations = DECK_STATIONS;
@@ -1436,6 +1436,9 @@ export function useStation(id) {
   if (id === 'yard') { ui.openShop('sub', ['sub']); return; }
 }
 // (4.0.0) seconds for the anchor to go down or come up through `d` metres of water
+// (6.0.5) a message about a thing or about Earl is written beside it in the scene (render.js drawSay), not in the
+// banner; 'earl' follows him. The banner keeps what belongs to the game: quests, warnings, the tutorial's line
+function say(text, at) { if (!g) return; (g.says = g.says || []).push({ text, at, t: 0 }); if (g.says.length > 3) g.says.shift(); }
 const GLOW_SECONDS = 120; // (5.17.1) a dropped glow stick burns 2 min
 // (5.17.1) a glow stick is snapped and let go: it hangs where he was (below the sub, from the sub), lights a pool of water
 // round itself, and sinks slowly with a little sway until it rests on the bottom. Several can burn at once; each is its own
@@ -2718,7 +2721,7 @@ function update(dt) {
   // out over 3 s (their time keeps running, and what is left comes back over 3 s if it goes), and the lamp and the
   // floodlight weaken, flicker and slide from amber toward red with the water
   g.entDark = g.mode === 'menu' || !(ent.dist < 260) ? 0 : clamp((260 - ent.dist) / 230, 0, 1) * (fx.safeK ?? 1);
-  g.lightFade = clamp((g.lightFade ?? 1) + (g.entDark > 0.04 ? -dt / 3 : dt / 3), 0, 1);
+  g.lightFade = clamp((g.lightFade ?? 1) + (g.entDark > 0.04 || (fx.redTint || 0) > 0.03 ? -dt / 1 : dt / 3), 0, 1); // (6.0.5) once the water round him reddens, the lights the thing ignores (Flare, Lighthouse, glow sticks) go out over a second
   fx.torchShift = Math.max(fx.torchShift, g.entDark);
   // in the safe zone you still hear and sense it (sonar, heartbeat), but the water stays the water
   const deepK = clamp((e.y - 100) / 60, 0, 1);
@@ -2997,9 +3000,10 @@ function frame(now) {
   // after being eaten, his one line follows as the eyes clear
   if (g.wake) { const W0 = g.wake; W0.t += dt; const b = W0.t < 1.4 ? 10 : Math.max(0, 10 * (1 - (W0.t - 1.4) / 2.2));
     canvas.style.filter = b > 0.05 ? `blur(${b.toFixed(1)}px)` : '';
-    if (W0.t > 3.3 && !W0.said) { W0.said = true; if (W0.eaten) g.earlSay = { text: "What happened? I'm still here.", t: 0 }; else hud.toast('The sea gives you back.'); }
+    if (W0.t > 3.3 && !W0.said) { W0.said = true; if (W0.eaten) g.earlSay = { text: "What happened? I'm still here.", t: 0 }; else say('The sea gives you back', 'earl'); }
     if (W0.t > 4.2) { g.wake = null; canvas.style.filter = ''; document.documentElement.classList.remove('waking'); } } else if (canvas.style.filter) { canvas.style.filter = ''; document.documentElement.classList.remove('waking'); }
   if (g.earlSay) { g.earlSay.t += dt; if (g.earlSay.t > 5.6) g.earlSay = null; }
+  if (g.says && g.says.length) { for (const m of g.says) m.t += dt; g.says = g.says.filter((m) => m.t < 4); }
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
   { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && ui.anyOpen && ui.anyOpen(); tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)

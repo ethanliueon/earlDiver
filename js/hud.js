@@ -356,11 +356,11 @@ export class Hud {
       // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
       // the winch to sell). Sprint moved beside the stick
       // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin
-      (() => { if (aboard) return this.inCabin ? { key: 'outdeck', icon: 'door', on: true } : null; /* (5.15.7) no Dive in button: he walks off either end of the deck */
+      (() => { if (aboard) return this.inCabin ? { key: 'outdeck', icon: 'door', on: true } : { key: 'f', icon: 'hand', on: false, why: 'Aboard, the big button is your hand' }; /* (6.0.5) the arc keeps its four places on deck: the hand's sits greyed */
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
         return { key: hu ? 'u' : 'f', icon: 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
       abil(),
-      aboard ? null : light(),
+      light(), // (6.0.5) aboard too: there it switches the sub's lights
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
     const ROW = [{ key: 'journal', dom: true }, { key: 'b', icon: 'bag', on: true }].concat( // (5.6.9) the journal's coin (HTML) above the bag
@@ -378,29 +378,29 @@ e.inSub ? [
     // (5.7.5) the tutorial's mark: a warm halo pulsing behind the button, the cream ring breathing out, and a short arrow
     // bobbing toward it from the middle of the screen, so there is no doubt which one
     const halo = (x, y, r, a0 = 1) => { const q = 0.5 + 0.5 * Math.sin(g.time * 4.2), hr = r * (1.55 + 0.25 * q);
-      const hg = ctx.createRadialGradient(x, y, r * 0.6, x, y, hr); hg.addColorStop(0, `rgba(255,226,160,${(0.55 * a0 * (0.6 + 0.4 * q)).toFixed(3)})`); hg.addColorStop(1, 'rgba(255,210,140,0)');
+      const hg = ctx.createRadialGradient(x, y, r * 0.6, x, y, hr); hg.addColorStop(0, `rgba(226,218,196,${(0.3 * a0 * (0.6 + 0.4 * q)).toFixed(3)})`); hg.addColorStop(1, 'rgba(226,218,196,0)'); /* (6.0.5) bone and quiet, not gold */
       ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, hr, 0, TAU); ctx.fill(); };
     // (5.8.1) the tutorial's mark: the ring breathing out and a large painted arrow (bronze, a dark edge, a cream lit
     // side) bobbing in toward the button from the middle of the screen. With the spotlight (below) it is drawn again
     // over the darkened screen
     const ring = (x, y, r, spot = false) => {
       if (!spot) { this.tutTarget = { x, y, r }; }
-      halo(x, y, r);
+      if (!spot) halo(x, y, r); // (6.0.5) behind the button only: over the dark the button must stay readable
       const k = (g.time * 0.6) % 1, rr = r * (1.1 + k * 0.45);
       for (const kk of [k, (k + 0.5) % 1]) { const r2 = r * (1.1 + kk * 0.55); ctx.strokeStyle = `rgba(240,226,180,${(0.65 * (1 - kk)).toFixed(3)})`; ctx.lineWidth = (2.8 - 1.6 * kk) * u; ctx.beginPath(); ctx.arc(x, y, r2, 0, TAU); ctx.stroke(); }
       void rr;
       ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
       ctx.strokeStyle = 'rgba(240,230,200,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
       // motes of light drifting round it
-      for (let i = 0; i < 7; i++) { const a2 = g.time * (0.5 + i * 0.07) + i * 0.9, rr2 = r * (1.35 + 0.25 * Math.sin(g.time * 1.3 + i)), mx = x + Math.cos(a2) * rr2, my = y + Math.sin(a2) * rr2, ms = (1.4 + (i % 3)) * u, al = 0.45 + 0.4 * Math.sin(g.time * 2 + i);
-        const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3); mg.addColorStop(0, `rgba(255,236,190,${al.toFixed(3)})`); mg.addColorStop(1, 'rgba(255,220,150,0)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, TAU); ctx.fill(); }
+      for (let i = 0; i < 3; i++) { const a2 = g.time * (0.5 + i * 0.07) + i * 0.9, rr2 = r * (1.35 + 0.25 * Math.sin(g.time * 1.3 + i)), mx = x + Math.cos(a2) * rr2, my = y + Math.sin(a2) * rr2, ms = (1.4 + (i % 3)) * u, al = 0.45 + 0.4 * Math.sin(g.time * 2 + i);
+        const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3); mg.addColorStop(0, `rgba(232,226,208,${(al * 0.6).toFixed(3)})`); mg.addColorStop(1, 'rgba(232,226,208,0)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, TAU); ctx.fill(); }
       // the arrow
       const ang = Math.atan2(y - H * 0.45, x - W * 0.5), bob = (0.5 + 0.5 * Math.sin(g.time * 4)) * 9 * u, d = (r > 32 * u ? r + 50 * u + 30 * u + 26 * u : r * 1.55 + 18 * u) + bob, ax = x - Math.cos(ang) * d, ay = y - Math.sin(ang) * d, L = 24 * u;
       ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.lineJoin = 'round';
       const ar = new Path2D(); ar.moveTo(0, 0); ar.lineTo(-L, -L * 0.66); ar.quadraticCurveTo(-L * 0.82, -L * 0.3, -L * 0.7, -L * 0.24); ar.lineTo(-L * 2, -L * 0.2); ar.quadraticCurveTo(-L * 2.12, 0, -L * 2, L * 0.2); ar.lineTo(-L * 0.7, L * 0.24); ar.quadraticCurveTo(-L * 0.82, L * 0.3, -L, L * 0.66); ar.closePath();
       ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6 * u; ctx.shadowOffsetY = 2 * u; ctx.fillStyle = '#2a2014'; ctx.fill(ar); ctx.shadowColor = 'transparent';
-      const bg = ctx.createLinearGradient(0, -L * 0.66, 0, L * 0.66); bg.addColorStop(0, '#e8c888'); bg.addColorStop(0.45, '#b48a48'); bg.addColorStop(1, '#5e4220'); ctx.fillStyle = bg; ctx.fill(ar);
-      ctx.save(); ctx.clip(ar); ctx.strokeStyle = 'rgba(255,244,214,0.75)'; ctx.lineWidth = 2.4 * u; ctx.beginPath(); ctx.moveTo(-L * 2, -L * 0.14); ctx.lineTo(-L * 0.72, -L * 0.18); ctx.lineTo(-L * 0.95, -L * 0.6); ctx.stroke(); ctx.restore();
+      const bg = ctx.createLinearGradient(0, -L * 0.66, 0, L * 0.66); bg.addColorStop(0, '#d8d0bc'); bg.addColorStop(0.45, '#a49c88'); bg.addColorStop(1, '#4e4a40'); /* (6.0.5) bone, not gold */ ctx.fillStyle = bg; ctx.fill(ar);
+      ctx.save(); ctx.clip(ar); ctx.strokeStyle = 'rgba(244,240,228,0.6)'; ctx.lineWidth = 2.4 * u; ctx.beginPath(); ctx.moveTo(-L * 2, -L * 0.14); ctx.lineTo(-L * 0.72, -L * 0.18); ctx.lineTo(-L * 0.95, -L * 0.6); ctx.stroke(); ctx.restore();
       ctx.lineWidth = 2.6 * u; ctx.strokeStyle = '#1a140c'; ctx.stroke(ar);
       ctx.restore();
     };
@@ -534,7 +534,8 @@ e.inSub ? [
         for (let i = 0; i < 7; i++) { const ph = (g.time * 0.35 + i * 0.37) % 1, ang = i * 2.39 + g.time * 0.12, rr = R * (1.02 + 0.22 * ph), sx3 = cx + Math.cos(ang) * rr, sy3 = cy + Math.sin(ang) * rr - ph * 6 * u, al = Math.sin(ph * Math.PI) * 0.75;
           const sg = ctx.createRadialGradient(sx3, sy3, 0, sx3, sy3, 3.2 * u); sg.addColorStop(0, `rgba(246,226,178,${al.toFixed(3)})`); sg.addColorStop(1, 'rgba(230,190,120,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx3, sy3, 3.2 * u, 0, TAU); ctx.fill(); } } }
     // (5.15.7) able to act: a warm light behind the coin, round its rim, breathing slowly (nothing drawn over its picture)
-    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(240,214,160,${(0.34 + 0.18 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(240,214,160,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); }
+    if (tutKey === bKey) ring(cx, cy, R); // (6.0.5) drawn before the coin, so the hand (or net) stays readable on top
+    if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(222,212,186,${(0.2 + 0.1 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(222,212,186,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); } // (6.0.5) quieter, bone
     const toolLook = (k) => (k === 'net' ? toolPic('net', gear(P, 'net')) || netLook(gear(P, 'net').look || 0) : k === 'cam' ? toolPic('cam', gear(P, 'cam')) || gear(P, 'cam').look : null); // (5.17.0) its own picture
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = toolLook(kind);
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
@@ -555,7 +556,6 @@ e.inSub ? [
         drawPowerBadge(ctx, cx - R * 0.74, cy + R * 0.6, R * 0.33, pw, st);
       } }
     if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
-    if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     /* (5.15.7) the ring that was drawn across the picture here is gone: the light behind the coin says it */
     // (5.3.3) the main action's symbol: the net, the camera, a trap; in the sub, the claw. The ring pulses when it can reach
@@ -592,9 +592,12 @@ e.inSub ? [
     // it, main.js) and the button stands in a pool of light; its ring and arrow are drawn again over the dark
     { const T = this.tutTarget; this.tutTarget = null; this.spotOn = !!(T && tutKey && this.spotWanted);
       const vS = this.spotV = clamp((this.spotV || 0) + (this.spotOn ? 1 : -1) * dt * 4, 0, 1);
-      if (T && vS > 0.01) { const big = Math.hypot(W, H), sg = ctx.createRadialGradient(T.x, T.y, T.r * 1.5, T.x, T.y, T.r * 1.5 + big * 0.55);
-        sg.addColorStop(0, 'rgba(4,8,8,0)'); sg.addColorStop(0.08, `rgba(4,8,8,${(0.55 * vS).toFixed(3)})`); sg.addColorStop(1, `rgba(2,4,4,${(0.78 * vS).toFixed(3)})`);
-        ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H); if (vS > 0.5) ring(T.x, T.y, T.r, true); } }
+      // (6.0.5) the dark covers the whole screen, the safe-area strips at the sides too, and reaches the farthest corner;
+      // it eases in over a wide band round the button rather than starting at a hard ring
+      if (T && vS > 0.01) { const x0 = -this.safeL, y0 = -this.safeT, X1 = x0 + this.c.width, Y1 = y0 + this.c.height, far = Math.max(Math.hypot(T.x - x0, T.y - y0), Math.hypot(T.x - X1, T.y - y0), Math.hypot(T.x - x0, T.y - Y1), Math.hypot(T.x - X1, T.y - Y1)) * 1.08;
+        const sg = ctx.createRadialGradient(T.x, T.y, T.r * 1.25, T.x, T.y, far), b0 = T.r * 1.25, k1 = clamp((T.r * 3.2 - b0) / (far - b0), 0.02, 0.5);
+        sg.addColorStop(0, 'rgba(4,8,8,0)'); sg.addColorStop(k1, `rgba(4,8,8,${(0.5 * vS).toFixed(3)})`); sg.addColorStop(1, `rgba(2,4,4,${(0.74 * vS).toFixed(3)})`);
+        ctx.fillStyle = sg; ctx.fillRect(x0, y0, this.c.width, this.c.height); if (vS > 0.5) ring(T.x, T.y, T.r, true); } }
     // (5.7.5) every button's picture in every state is painted once, now (during the loading screen), rather than the
     // first time each is needed, which showed as a button popping in a beat late
     if (!this.prewarmed) { this.prewarmed = true; const off = document.createElement('canvas').getContext('2d'), st = ['on', 'off', 'lit', 'press'];
@@ -1027,32 +1030,34 @@ e.inSub ? [
     if (g.entity && g.entity.marked && !dying) {
       const calm = 0 /* (5.16.0) no calm meter */, near = clamp(1 - (g.entity.dist ?? 2000) / 900, 0, 1);
       const a = 1 - calm * 0.6;
-      const kxE = window.innerWidth / this.c.width, ew = 50 * s, eh = 30 * s, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
-      const ex = (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + ew + 6 * s, ey = tlB + eh + 4 * s;
-      const per = 9 - 3 * near, bt = g.time % per, blink = bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0; // a slow, heavy blink
-      const open = (1 - blink) * (0.38 + 0.6 * near + 0.05 * Math.sin(g.time * 0.4));
-      ctx.save();
-      const lid = (k = 1) => { ctx.beginPath(); ctx.moveTo(ex - ew * k, ey + eh * 0.06); ctx.bezierCurveTo(ex - ew * 0.5 * k, ey - eh * 1.2 * open * k, ex + ew * 0.42 * k, ey - eh * 1.1 * open * k, ex + ew * k, ey - eh * 0.04);
-        ctx.bezierCurveTo(ex + ew * 0.5 * k, ey + eh * 0.9 * open * k, ex - ew * 0.42 * k, ey + eh * 0.95 * open * k, ex - ew * k, ey + eh * 0.06); ctx.closePath(); };
-      // a shadow of hide round it, so it reads as an eye set in something, not a sticker
-      ctx.fillStyle = `rgba(6,3,3,${(0.3 * a).toFixed(3)})`; lid(1.08); ctx.fill();
-      lid(); ctx.save(); ctx.clip();
-      ctx.fillStyle = `rgba(40,12,9,${a.toFixed(3)})`; ctx.fillRect(ex - ew, ey - eh * 1.3, ew * 2, eh * 2.6); // the white: dark, bloodshot
-      ctx.strokeStyle = `rgba(92,18,12,${(0.7 * a).toFixed(3)})`; ctx.lineWidth = Math.max(0.6, 0.6 * s); // veins running in from the corners
-      for (let k = 0; k < 7; k++) { const side = k % 2 ? 1 : -1, y0 = ey + (k - 3) * eh * 0.14; ctx.beginPath(); ctx.moveTo(ex + side * ew, y0); ctx.quadraticCurveTo(ex + side * ew * 0.75, y0 + Math.sin(k * 2.3) * eh * 0.2, ex + side * ew * (0.5 + 0.06 * (k % 3)), y0 + Math.cos(k * 1.7) * eh * 0.25); ctx.stroke(); }
-      const ix = ex + ew * 0.04 + Math.sin(g.time * 0.23) * ew * 0.06, ir = eh * 1.0; // the iris drifts a little: it looks about
-      const ig = ctx.createRadialGradient(ix, ey, 0, ix, ey, ir);
-      ig.addColorStop(0, `rgba(150,82,30,${a.toFixed(3)})`); ig.addColorStop(0.4, `rgba(118,34,16,${a.toFixed(3)})`); ig.addColorStop(0.82, `rgba(58,10,6,${a.toFixed(3)})`); ig.addColorStop(1, `rgba(16,3,2,${a.toFixed(3)})`);
-      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ix, ey, ir, 0, TAU); ctx.fill();
-      ctx.strokeStyle = `rgba(170,96,52,${(0.18 * a).toFixed(3)})`; ctx.lineWidth = Math.max(0.6, 0.7 * s); // fibres, dull
-      for (let k = 0; k < 26; k++) { const an = k / 26 * TAU + 0.2 * Math.sin(k * 3.1), r1 = ir * (0.3 + 0.05 * Math.sin(k * 5.3)), r2 = ir * (0.68 + 0.2 * Math.sin(k * 7.7)); ctx.beginPath(); ctx.moveTo(ix + Math.cos(an) * r1, ey + Math.sin(an) * r1); ctx.lineTo(ix + Math.cos(an) * r2, ey + Math.sin(an) * r2); ctx.stroke(); }
-      const sw = eh * (0.2 - 0.13 * near) * (1 + 0.08 * Math.sin(g.time * 0.7)); // the slit: wide when far, a thread when close
-      ctx.fillStyle = `rgba(2,0,0,${a.toFixed(3)})`; ctx.beginPath(); ctx.moveTo(ix, ey - ir * 0.95); ctx.quadraticCurveTo(ix + sw, ey, ix, ey + ir * 0.95); ctx.quadraticCurveTo(ix - sw, ey, ix, ey - ir * 0.95); ctx.fill();
-      const sh = ctx.createLinearGradient(0, ey - eh * 1.2, 0, ey + eh * 0.2); sh.addColorStop(0, 'rgba(0,0,0,0.85)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); // the upper lid's shadow
-      ctx.fillStyle = sh; ctx.fillRect(ex - ew, ey - eh * 1.3, ew * 2, eh * 1.5);
-      ctx.restore();
-      lid(); ctx.strokeStyle = `rgba(34,14,10,${(0.9 * a).toFixed(3)})`; ctx.lineWidth = 5 * s; ctx.stroke(); // (5.10.10) the lids: thick hide, then a dark wet line inside
-      lid(); ctx.strokeStyle = `rgba(4,1,1,${a.toFixed(3)})`; ctx.lineWidth = 1.8 * s; ctx.stroke();
+      // (6.0.5) repainted after the owner's reference: two eyes set in a dark, rough patch of hide, the irises lit from
+      // inside like embers (pale gold at the centre, through orange to a dark red rim), black slit pupils. Quiet when it
+      // is far (dim, small glow), warmer as it comes; the slow heavy blink and the slit narrowing as it nears stay
+      const kxE = window.innerWidth / this.c.width, ew = 23 * s, eh = 13 * s, gapE = 32 * s, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
+      const cxE = (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + gapE + ew + 10 * s, ey = tlB + eh + 10 * s;
+      const per = 9 - 3 * near, bt = g.time % per, blink = bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0;
+      const open = (1 - blink) * (0.72 + 0.28 * near + 0.04 * Math.sin(g.time * 0.4)), warm = 0.35 + 0.65 * near;
+      ctx.save(); ctx.globalAlpha *= a;
+      // the patch of hide round them: a soft dark field with a few rough flecks, no edge
+      { const pg = ctx.createRadialGradient(cxE, ey, eh * 0.5, cxE, ey, gapE + ew * 1.9); pg.addColorStop(0, 'rgba(8,4,3,0.82)'); pg.addColorStop(0.6, 'rgba(8,4,3,0.5)'); pg.addColorStop(1, 'rgba(8,4,3,0)');
+        ctx.save(); ctx.translate(cxE, ey); ctx.scale(1, 0.5); ctx.translate(-cxE, -ey); ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cxE, ey, gapE + ew * 1.9, 0, TAU); ctx.fill(); ctx.restore();
+        ctx.fillStyle = 'rgba(60,24,14,0.35)'; for (let k = 0; k < 18; k++) { const fx = cxE + Math.sin(k * 12.9898) * (gapE + ew * 1.2), fy = ey + Math.sin(k * 78.233) * eh * 1.6; ctx.fillRect(fx, fy, 1.2 * s, 1.2 * s); } }
+      for (const side of [-1, 1]) {
+        const ex = cxE + side * gapE, tilt = side * 0.16; // the outer corners lift a little
+        const lid = () => { ctx.beginPath(); ctx.moveTo(-ew, eh * 0.15); ctx.bezierCurveTo(-ew * 0.45, -eh * 1.15 * open, ew * 0.4, -eh * 1.05 * open, ew, -eh * 0.2);
+          ctx.bezierCurveTo(ew * 0.45, eh * 0.85 * open, -ew * 0.4, eh * 0.95 * open, -ew, eh * 0.15); ctx.closePath(); };
+        ctx.save(); ctx.translate(ex, ey); ctx.rotate(tilt); ctx.scale(side, 1);
+        ctx.shadowColor = `rgba(230,120,40,${(0.55 * warm).toFixed(3)})`; ctx.shadowBlur = (6 + 10 * near) * s; ctx.fillStyle = 'rgba(40,10,4,1)'; lid(); ctx.fill(); ctx.shadowColor = 'transparent'; // its glow on the hide
+        lid(); ctx.save(); ctx.clip();
+        const ix = ew * 0.05 + Math.sin(g.time * 0.23) * ew * 0.06, ir = ew * 0.95, ig = ctx.createRadialGradient(ix, eh * 0.05, 0, ix, 0, ir);
+        ig.addColorStop(0, `rgba(255,214,120,${(0.55 + 0.45 * warm).toFixed(3)})`); ig.addColorStop(0.35, `rgba(236,140,44,${(0.6 + 0.4 * warm).toFixed(3)})`); ig.addColorStop(0.75, 'rgba(150,48,14,1)'); ig.addColorStop(1, 'rgba(48,10,4,1)');
+        ctx.fillStyle = ig; ctx.fillRect(-ew, -eh * 1.3, ew * 2, eh * 2.6);
+        ctx.strokeStyle = 'rgba(90,24,8,0.35)'; ctx.lineWidth = Math.max(0.6, 0.6 * s); for (let k = 0; k < 14; k++) { const an = k / 14 * TAU; ctx.beginPath(); ctx.moveTo(ix + Math.cos(an) * ir * 0.25, Math.sin(an) * ir * 0.25); ctx.lineTo(ix + Math.cos(an) * ir * 0.8, Math.sin(an) * ir * 0.8); ctx.stroke(); } // fibres, faint
+        const sw = eh * (0.32 - 0.2 * near); ctx.fillStyle = '#050100'; ctx.beginPath(); ctx.moveTo(ix, -eh * 1.2); ctx.quadraticCurveTo(ix + sw, 0, ix, eh * 1.2); ctx.quadraticCurveTo(ix - sw, 0, ix, -eh * 1.2); ctx.fill(); // the slit
+        const sh = ctx.createLinearGradient(0, -eh * 1.2, 0, eh * 0.3); sh.addColorStop(0, 'rgba(0,0,0,0.8)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = sh; ctx.fillRect(-ew, -eh * 1.3, ew * 2, eh * 1.6); // the brow's shadow
+        ctx.restore();
+        lid(); ctx.strokeStyle = 'rgba(12,4,2,0.95)'; ctx.lineWidth = 2.2 * s; ctx.stroke();
+        ctx.restore(); }
       ctx.restore();
     }
 

@@ -684,8 +684,9 @@ html body #confirm button:focus-visible { outline: 2px solid rgba(239, 232, 210,
 /* (5.3) on a short screen (a phone held sideways) the panels are laid out as on a laptop and scaled to fit, so
    nothing is cut off and nothing has to be redesigned twice */
 @media (max-height: 520px) {
-  html body :is(#workshop .shop-main, #cave .shop-main, #quests .qs-panel, #settings .set-panel, #pause, #confirm .cf-plate, #trapset .shop-main) { zoom: calc(100vh / 430px) !important; max-height: calc(100vh / (100vh / 430px) - 16px) !important; }
-  html body #catalog .cat-bezel { zoom: calc(100vh / 470px) !important; width: calc((100vw - 16px) / (100vh / 470px)) !important; height: calc((100vh - 16px) / (100vh / 470px)) !important; max-width: none !important; max-height: none !important; }
+  /* (6.0.5) the shop, the yard, the cave, settings, pause and traps are scaled to the phone with a transform (ui.js
+     fitPanels), not CSS zoom: Safari can put taps in the wrong place on zoomed panels, and some cannot divide by a length */
+  html body :is(#quests .qs-panel, #confirm .cf-plate) { zoom: calc(100vh / 430px) !important; max-height: calc(100vh / (100vh / 430px) - 16px) !important; }
 }
 @media (max-height: 520px) {
   html body #catalog .cat-wrap { display: flex !important; flex-direction: column !important; min-height: 0; }
@@ -906,8 +907,8 @@ html body #gains.topc.out:not(#_a) { animation: gain-top-out 0.4s ease-in forwar
 /* (5.7.5) on a phone the tutorial's lit thing glows warm, pulsing, and its arrow is larger */
 html.touch body #tut-spot .ts-hole:not(#_a) { animation: ts-glow 1.5s ease-in-out infinite; }
 html.touch body #tut-spot .ts-hole.light:not(#_a) { animation-name: ts-glow-l; }
-@keyframes ts-glow { 0%, 100% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 10px 4px rgba(255, 220, 150, 0.5), 0 0 0 200vmax rgba(4, 8, 6, 0.42); } 50% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 24px 10px rgba(255, 220, 150, 0.8), 0 0 0 200vmax rgba(4, 8, 6, 0.42); } }
-@keyframes ts-glow-l { 0%, 100% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 10px 4px rgba(255, 220, 150, 0.5); } 50% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 24px 10px rgba(255, 220, 150, 0.8); } }
+@keyframes ts-glow { 0%, 100% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 8px 3px rgba(226, 218, 196, 0.22), 0 0 0 200vmax rgba(4, 8, 6, 0.5); } 50% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 16px 6px rgba(226, 218, 196, 0.36), 0 0 0 200vmax rgba(4, 8, 6, 0.5); } } /* (6.0.5) bone and quiet, not gold */
+@keyframes ts-glow-l { 0%, 100% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 8px 3px rgba(226, 218, 196, 0.22); } 50% { box-shadow: 0 0 0 2px rgba(18, 22, 12, 0.8), 0 0 16px 6px rgba(226, 218, 196, 0.36); } }
 html.touch body #tut-spot .ts-arrow.down:not(#_a) { border-left-width: 13px; border-right-width: 13px; border-top-width: 20px; }
 html.touch body #tut-spot .ts-arrow.up:not(#_a) { border-left-width: 13px; border-right-width: 13px; border-bottom-width: 20px; }
 /* (5.7.5) a newer version is out: a small plate at the top centre, tap to load it */
@@ -1178,7 +1179,7 @@ html.touch body #quests-hud, html.touch body #quests-btn { pointer-events: none 
 html.touch body #quests-btn img { pointer-events: auto !important; }
 /* (5.16.0) Lighthouse: the HUD comes to life in one slow pulse, then stays richer in colour while it burns (and eases back) */
 html body canvas#hud { transition: filter 1.4s ease; }
-html.lighthouse body canvas#hud { filter: saturate(1.45) brightness(1.04); animation: lhPulse 1.2s ease-out 1; }
+/* (6.0.5) no colour filter on the HUD with the Lighthouse: it turned a faint edge shade red */
 @keyframes lhPulse { 0% { filter: saturate(1) brightness(1); } 35% { filter: saturate(1.9) brightness(1.16); } 100% { filter: saturate(1.45) brightness(1.04); } }
 /* (5.16.0) a legendary power's state on its card: "ready", or a small hourglass and the time left */
 html body .lk-sk .pw-st { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font: 600 13px "Barlow Semi Condensed", sans-serif; font-style: normal; color: #d8ccaa; }

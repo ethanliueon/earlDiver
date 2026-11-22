@@ -534,7 +534,15 @@ export class Cabin {
     ctx.save(); ctx.translate(ex, floor - eh * 0.5 - hopY); ctx.scale(this.face, 1); ctx.rotate(-Math.PI / 2);
     drawEarl(ctx, eh, this.step || 0, 0, null, null, { kind: 'none', tier: 0, t, suit: this.h.suit(), bag: [], land: true, noTank: true, noMask: true, walk: this.walk || 0 });
     ctx.restore();
-    // (5.7.0) the tutorial's mark is the thing itself lit up (its light, below): no arrow, no chevrons on the floor
+    // (5.7.0) the tutorial's mark is the thing itself lit up (its light, below). (6.0.5) and a trail of chevrons along the
+    // floor from him to it, in the tutorial's bone, flowing slowly toward it and fading out as he nears it
+    if (this.tutMark === 'desk' || this.tutMark === 'door') {
+      const tx = this.tutMark === 'desk' ? kx : dx, dir = Math.sign(tx - ex) || 1, gap = 34 * k, dist = Math.abs(tx - ex) - 40 * k, fy = floor - 4 * k;
+      if (dist > gap * 0.8) { const flow = (t * 0.9) % 1;
+        for (let d = gap * (0.6 + flow); d < dist; d += gap) { const cx0 = ex + dir * d, a = Math.min(1, d / (gap * 1.5)) * Math.min(1, (dist - d) / gap) * 0.85, sz = 9 * k;
+          ctx.save(); ctx.translate(cx0, fy); ctx.scale(dir, 0.55); ctx.globalAlpha = a; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(-sz * 0.6, -sz); ctx.lineTo(sz * 0.5, 0); ctx.lineTo(-sz * 0.6, sz);
+          ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 6 * k; ctx.stroke(); ctx.strokeStyle = '#e6dcc4'; ctx.lineWidth = 3 * k; ctx.stroke(); ctx.restore(); } } }
     // ---------- the light: dim everywhere, warm under the lamp, cool by the porthole and door, green at the screen ----------
     const q = 0.5, lw = Math.ceil(W * q), lh = Math.ceil(H * q), lc = this.lc;
     if (lc.width !== lw || lc.height !== lh) { lc.width = lw; lc.height = lh; }

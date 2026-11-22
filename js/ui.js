@@ -103,6 +103,20 @@ function powerStatus(P, key) {
   return `<em class="pw-st"><img src="${HG_URL}" alt="">${fmtLeft(left)}</em>`;
 }
 
+// (6.0.5) on a phone the big panels are scaled to the screen with transform: scale (the shop's bezel also given the
+// size it needs), set from here and kept up to date; CSS zoom put Safari's taps in the wrong place on the shop's site
+const FIT = [['#catalog .cat-bezel', 470, true], ['#workshop .shop-main', 430], ['#cave .shop-main', 430], ['#settings .set-panel', 430], ['#pause', 430], ['#trapset .shop-main', 430]];
+function fitPanels() {
+  const H = window.innerHeight, W = window.innerWidth, small = H <= 520;
+  for (const [sel, base, full] of FIT) { const el = document.querySelector(sel); if (!el) continue;
+    if (!small) { if (el.dataset.fit) { el.style.transform = el.style.width = el.style.height = el.style.maxHeight = el.style.maxWidth = ''; delete el.dataset.fit; } continue; }
+    const k = H / base, key = k.toFixed(4) + '|' + W; if (el.dataset.fit === key) continue; el.dataset.fit = key;
+    el.style.transformOrigin = 'center center'; el.style.transform = `scale(${k.toFixed(4)})`;
+    if (full) { el.style.width = ((W - 16) / k).toFixed(1) + 'px'; el.style.height = ((H - 16) / k).toFixed(1) + 'px'; el.style.maxWidth = 'none'; el.style.maxHeight = 'none'; }
+    else el.style.maxHeight = ((H - 16) / k).toFixed(1) + 'px'; }
+}
+setInterval(fitPanels, 300); window.addEventListener('resize', fitPanels);
+
 export class UI {
   constructor(h) {
     this.h = h;

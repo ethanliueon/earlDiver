@@ -57,6 +57,12 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - **Every version, give both links:** the home-screen link
   https://raw.githack.com/ethanliueon/earlDiver/claude/fish-mobile/index.html and the pinned
   `https://rawcdn.githack.com/ethanliueon/earlDiver/<commit>/index.html`.
+- **Tutorial checklist (phone), for any change near the tutorial or the HUD:** the spotlight's dark covers the whole
+  screen, edge to edge (safe areas too), and eases in softly round the button; no bright gold anywhere (arrows, rings,
+  glows are bone and quiet); the highlighted button stays readable (glow behind it, never over it); the action arc
+  always has its four places (greyed, never removed); every page screen (the shop's site, the bag, the yard) answers
+  real taps on a phone, inside the turned frame; messages about a thing or Earl are written beside it in the scene,
+  the banner keeps quests, warnings and the tutorial's line.
 - **Don't break anything:** after a change, the full touch tutorial (deck to shop), new game, and title screen at both
   phone sizes must still pass. Phones load the game in a turned frame (index.html's shell); tests use `?noshell`.
 - **Old saves don't matter until release.** Nobody plays the game yet; until it ships on the App Store, write no
