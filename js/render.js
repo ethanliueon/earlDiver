@@ -2715,20 +2715,35 @@ export class Renderer {
         ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(L.text.slice(0, n), tx, ty);
         ctx.restore(); } }
   }
+  // (6.0.4) marine snow in three layers, each a fixed set of flakes made once (sizes, speeds, drift and brightness drawn
+  // from a seed) that scrolls downward for ever at its own pace and with its own parallax: far (fine, faint, slow, moving
+  // less with the camera), middle, and near (fewer, larger, softer, fastest, swaying). Barely there near the surface, it
+  // thickens through 100-300 m and is dense below. Drawn before the light, so lamps, glow sticks and flares make it show
+  // as it does on deep footage; it stops at the seabed. A few hundred small fills a frame: no full-screen layers
   drawSnow(g, S, Sy, ppm, x0, x1, y0, y1) {
-    const ctx = this.ctx, t = g.time;
-    const cell = 2.2;
-    ctx.fillStyle = 'rgba(225,232,236,0.5)';
-    const cx0 = Math.floor(x0 / cell), cx1 = Math.ceil(x1 / cell), cy0 = Math.floor(Math.max(0.5, y0) / cell), cy1 = Math.ceil(y1 / cell);
-    for (let i = cx0; i <= cx1; i++) for (let j = cy0; j <= cy1; j++) {
-      const h = Math.abs(Math.sin(i * 127.1 + j * 311.7) * 43758.5453) % 1;
-      if (h > 0.55) continue;
-      const h2 = Math.abs(Math.sin(i * 269.5 + j * 183.3) * 13758.5453) % 1;
-      const x = i * cell + h * cell + Math.sin(t * 0.3 + h * 10) * 0.3;
-      let y = j * cell + ((h2 * cell + t * 0.05 * (0.5 + h)) % cell);
-      const s = Math.max(1, ppm * (0.02 + h2 * 0.03));
-      ctx.fillRect(S(x), Sy(y), s, s);
-    }
+    const ctx = this.ctx, t = g.time, W = this.W, H = this.H, cam = this.cam;
+    if (!this.snowL) { let sd = 4242; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+      const mk = (n, s0, s1, a0, a1, fall, par, sway) => Array.from({ length: n }, () => ({ u: r(), v: r(), s: s0 + r() * (s1 - s0), a: a0 + r() * (a1 - a0), f: fall * (0.7 + r() * 0.6), ph: r() * 6.28, par, sway }));
+      this.snowL = [mk(320, 0.6, 1.2, 0.18, 0.34, 0.22, 0.55, 0.2), mk(150, 1.1, 2.0, 0.26, 0.46, 0.42, 0.85, 0.35), mk(40, 2.2, 3.6, 0.2, 0.36, 0.75, 1.15, 0.6)]; }
+    const depth = Math.max(0, cam.y), dens = clamp(0.12 + (depth - 30) / 270, 0.12, 1); // thin in the shallows, full below 300 m
+    const surf = Sy(0), TW = W * 1.1, TH = H * 1.1;
+    // the seabed's line on screen, a column every 24 px, once a frame
+    const step = 24, cols = Math.ceil(W / step) + 1, floorY = this.snowFloor || (this.snowFloor = new Float32Array(cols + 1));
+    for (let i = 0; i <= cols; i++) floorY[i] = Sy(g.world.floorAt(clamp(cam.x + (i * step - W / 2) / ppm, 0, 4999)));
+    const sz = Math.max(0.6, ppm / 24);
+    ctx.save(); ctx.fillStyle = '#dfe6e8';
+    this.snowL.forEach((L, li) => {
+      const n = Math.floor(L.length * dens); if (!n) return;
+      const ox = cam.x * ppm * L[0].par, oy = cam.y * ppm * L[0].par;
+      for (let i = 0; i < n; i++) { const f = L[i];
+        let x = (f.u * TW - ox + Math.sin(t * 0.4 + f.ph) * f.sway * ppm) % TW; if (x < 0) x += TW; x -= (TW - W) / 2;
+        let y = (f.v * TH - oy + t * f.f * ppm) % TH; if (y < 0) y += TH; y -= (TH - H) / 2;
+        if (y < surf || x < -4 || x > W + 4) continue;
+        const fy = floorY[clamp(Math.round(x / step), 0, cols)]; if (y > fy) continue;
+        const s2 = f.s * sz; ctx.globalAlpha = f.a;
+        if (li === 2) { ctx.beginPath(); ctx.arc(x, y, s2 * 0.6, 0, TAU); ctx.fill(); } else ctx.fillRect(x, y, s2, s2);
+      } });
+    ctx.restore();
   }
 
   buildLightmap(g, S, Sy, ppm, head, subLamps, glowPts, horizon, surfY) {
