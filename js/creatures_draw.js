@@ -1217,14 +1217,42 @@ function drawFrog(ctx, L, v) {
   ctx.strokeStyle = shade(v.c[0], -0.3); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-L * 0.38, -H * 0.3); ctx.lineTo(-L * 0.45, -H * 0.55); ctx.stroke();
   eye(ctx, -L * 0.28, -H * 0.25, Math.max(1, H * 0.07), '#a88a3a');
 }
-function drawFlat(ctx, L, v) {
-  const H = L * v.h * 0.25;
-  ctx.fillStyle = bodyGradient(ctx, -H, H, v.c[0], v.c[1]);
-  ctx.beginPath(); ctx.ellipse(-L * 0.05, 0, L * 0.45, H, 0, 0, TAU); ctx.fill();
-  ctx.save(); ctx.clip(); patternFish(ctx, { H: H * 2, x0: -L / 2, bodyL: L }, L, v); ctx.restore();
-  ctx.fillStyle = rgba(v.c[0], 0.8); finPath(ctx, [[L * 0.38, 0], [L * 0.52, -H * 1.2], [L * 0.52, H * 0.8]]); ctx.fill();
-  eye(ctx, -L * 0.36, -H * 0.9, Math.max(0.8, L * 0.015), '#a89a70');
-  eye(ctx, -L * 0.3, -H * 0.95, Math.max(0.8, L * 0.015), '#a89a70');
+// (6.1.12) a flatfish lying on the sand, seen a little from above: a broad oval disc, lit on its upper side, edged all
+// the way round by a continuous fringe of fin with fine rays (rippling as it lies there), a rounded fan of a tail,
+// the lateral line arching over the pectoral, both eyes up on the head's top side and a small twisted mouth; the
+// species' own spots and blotches on the disc
+function drawFlat(ctx, L, v, t = 0) {
+  const H = L * Math.max(0.2, v.h * 0.7) * 0.5, bx = -L * 0.06, rx = L * 0.4, c0 = v.c[0], c1 = v.c[1];
+  const disc = new Path2D(); disc.ellipse(bx, 0, rx, H, 0, 0, TAU);
+  // the fringe fin round the edge (dorsal along the top, anal along the bottom), behind the disc
+  const fringe = (sgn) => { ctx.beginPath(); const n = 26;
+    for (let i = 0; i <= n; i++) { const u = i / n, a = Math.PI * (0.12 + 0.8 * u), x = bx - Math.cos(a) * rx * 1.02, w = (sgn < 0 ? 1 : 0.85) * H * (0.22 + 0.1 * Math.sin(u * Math.PI)) * (0.9 + 0.1 * Math.sin(t * 3 + u * 9)), y = sgn * (Math.sin(a) * H + w); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    for (let i = 26; i >= 0; i--) { const u = i / 26, a = Math.PI * (0.12 + 0.8 * u); ctx.lineTo(bx - Math.cos(a) * rx * 0.98, sgn * Math.sin(a) * H * 0.92); }
+    ctx.closePath(); ctx.fillStyle = rgba(shade(c0, 0.1), 0.92); ctx.fill();
+    ctx.strokeStyle = rgba(shade(c0, -0.35), 0.45); ctx.lineWidth = Math.max(0.4, L * 0.0028);
+    for (let i = 1; i < 26; i++) { const u = i / 26, a = Math.PI * (0.12 + 0.8 * u), x0 = bx - Math.cos(a) * rx * 0.98, y0 = sgn * Math.sin(a) * H * 0.92, w = H * (0.2 + 0.1 * Math.sin(u * Math.PI)); ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 - Math.cos(a) * w * 0.3, y0 + sgn * w * (0.9 + 0.1 * Math.sin(t * 3 + u * 9))); ctx.stroke(); }
+    ctx.strokeStyle = rgba(shade(c0, -0.4), 0.5); ctx.stroke(); };
+  fringe(-1); fringe(1);
+  // the tail: a rounded fan on a short stalk
+  { const tx = bx + rx * 0.96, tw = H * 0.9; ctx.beginPath(); ctx.moveTo(tx - L * 0.02, -H * 0.18); ctx.quadraticCurveTo(tx + L * 0.05, -tw * 0.8, tx + L * 0.16, -tw * 0.55); ctx.quadraticCurveTo(tx + L * 0.2, 0, tx + L * 0.16, tw * 0.55); ctx.quadraticCurveTo(tx + L * 0.05, tw * 0.8, tx - L * 0.02, H * 0.18); ctx.closePath();
+    ctx.fillStyle = rgba(shade(c0, 0.05), 0.95); ctx.fill(); ctx.strokeStyle = rgba(shade(c0, -0.35), 0.45); ctx.lineWidth = Math.max(0.4, L * 0.0028);
+    for (let k = -4; k <= 4; k++) { ctx.beginPath(); ctx.moveTo(tx, k * H * 0.03); ctx.lineTo(tx + L * 0.16, k * tw * 0.13); ctx.stroke(); } }
+  // the disc: lit from above, darker toward the lower edge, a soft rim of light along the top
+  const g = ctx.createLinearGradient(0, -H, 0, H); g.addColorStop(0, shade(c1, 0.12)); g.addColorStop(0.5, c0); g.addColorStop(1, shade(c0, -0.35));
+  ctx.fillStyle = g; ctx.fill(disc);
+  ctx.save(); ctx.clip(disc); patternFish(ctx, { H: H * 2, x0: -L / 2, bodyL: L }, L, v);
+  const sh = ctx.createRadialGradient(bx - rx * 0.2, -H * 0.4, H * 0.1, bx, 0, rx * 1.05); sh.addColorStop(0, 'rgba(255,250,235,0.14)'); sh.addColorStop(0.6, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.35)'); ctx.fillStyle = sh; ctx.fillRect(-L, -H * 1.2, 2 * L, H * 2.4);
+  // the lateral line, arching over the pectoral then running straight to the tail
+  ctx.strokeStyle = rgba(shade(c1, 0.25), 0.45); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.beginPath(); ctx.moveTo(bx - rx * 0.6, -H * 0.08); ctx.quadraticCurveTo(bx - rx * 0.35, -H * 0.42, bx - rx * 0.05, -H * 0.05); ctx.lineTo(bx + rx * 0.95, 0); ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = rgba(shade(c0, -0.45), 0.5); ctx.lineWidth = Math.max(0.5, L * 0.004); ctx.stroke(disc);
+  // the pectoral fin, a small fan behind the head
+  ctx.fillStyle = rgba(shade(c0, -0.1), 0.8); ctx.beginPath(); ctx.ellipse(bx - rx * 0.5, H * 0.12, L * 0.05, L * 0.022, 0.5, 0, TAU); ctx.fill();
+  // the head: a small twisted mouth at the front edge, the gill cover's curve, both eyes up on its top side
+  ctx.strokeStyle = rgba(shade(c0, -0.6), 0.75); ctx.lineWidth = Math.max(0.6, L * 0.005); ctx.beginPath(); ctx.moveTo(bx - rx * 0.99, -H * 0.05); ctx.quadraticCurveTo(bx - rx * 0.9, H * 0.12, bx - rx * 0.82, H * 0.04); ctx.stroke();
+  ctx.strokeStyle = rgba(shade(c0, -0.4), 0.45); ctx.beginPath(); ctx.arc(bx - rx * 0.62, 0, H * 0.55, -1.1, 1.1); ctx.stroke();
+  const er = Math.max(0.9, L * 0.02);
+  for (const [ex, ey] of [[bx - rx * 0.78, -H * 0.48], [bx - rx * 0.66, -H * 0.62]]) { ctx.fillStyle = rgba(shade(c0, -0.2), 0.9); ctx.beginPath(); ctx.ellipse(ex, ey + er * 0.2, er * 1.5, er * 1.25, 0, 0, TAU); ctx.fill(); eye(ctx, ex, ey, er, '#c8b88a'); } // raised on their bumps
 }
 function drawSeahorse(ctx, L, v, t) {
   // L = height
@@ -1642,9 +1670,13 @@ function drawVampire(ctx, L, v, t, swim = 1) {
   // the cloak: the webbed arms reaching forward (-x), their outer edge scalloped between the arm tips
   const cx = -L * 0.08, cy = H * 0.02, reach = L * 0.42, spread = H * (0.45 + open * 0.55);
   const arms = []; for (let k = 0; k < 6; k++) { const u = k / 5, a = PI + (u - 0.5) * (0.8 + open * 0.9); arms.push([cx + Math.cos(a) * reach * (0.92 + 0.08 * Math.sin(k * 2.1)), cy + Math.sin(a) * reach * 0.9 * (spread / H)]); }
-  const cloak = new Path2D(); cloak.moveTo(cx + L * 0.04, cy - H * 0.28);
-  arms.forEach((p, k) => { if (k) { const q = arms[k - 1], mx = (p[0] + q[0]) / 2 + L * 0.06, my = (p[1] + q[1]) / 2; cloak.quadraticCurveTo(mx, my, p[0], p[1]); } else cloak.lineTo(p[0], p[1]); });
-  cloak.lineTo(cx + L * 0.04, cy + H * 0.28); cloak.closePath();
+  // (6.1.12) the web is a bell grown out of the whole head and the front of the mantle: broad at its root, its outer edges
+  // bulging out to the first and last arm tips (no gap above or below the head), scalloped between the tips
+  const cloak = new Path2D(), A0 = arms[0], A5 = arms[arms.length - 1];
+  cloak.moveTo(L * 0.08, H * 0.46); /* arms[0] is the lowest arm: the outline runs bottom, round the tips, to the top */
+  cloak.bezierCurveTo(-L * 0.04, H * 0.62 + spread * 0.25, A0[0] + reach * 0.35, A0[1] + H * 0.12, A0[0], A0[1]);
+  arms.forEach((p, k) => { if (k) { const q = arms[k - 1], mx = (p[0] + q[0]) / 2 + L * 0.05, my = (p[1] + q[1]) / 2; cloak.quadraticCurveTo(mx, my, p[0], p[1]); } });
+  cloak.bezierCurveTo(A5[0] + reach * 0.35, A5[1] - H * 0.12, -L * 0.04, -H * 0.62 - spread * 0.25, L * 0.08, -H * 0.46); cloak.closePath();
   const cg = ctx.createRadialGradient(cx, cy, L * 0.02, cx - reach * 0.4, cy, reach); cg.addColorStop(0, shade(c1, 0.05)); cg.addColorStop(0.6, c0); cg.addColorStop(1, shade(c0, -0.35));
   ctx.fillStyle = cg; ctx.fill(cloak);
   // inside the web: the arms as darker ribs, each lined with pale cirri
