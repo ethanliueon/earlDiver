@@ -323,6 +323,10 @@ const ui = new UI({
     return r;
   },
   // (5.9.6) Use on a trap in the bag: at the surface the trap-setting card opens; anywhere else, why not
+  // (5.17.0) a glow stick snapped from the bag, as the button does (in the water or the sub; on deck it is for later)
+  onGlowUse: () => { if (!g || g.aboard) { hud.toast('For the water: snap it once you are in', 'warn'); return false; } if (g.necklaceOn || !(g.items.necklace > 0)) return false;
+    g.items.necklace--; g.glowT = GLOW_SECONDS; g.necklaceOn = true; hud.toast('Glow stick lit · 90 s'); audio.ready && audio.click(); return true; },
+  glowLeft: () => (g && g.necklaceOn ? Math.ceil(g.glowT || 0) : 0),
   onTrapUse: (k) => { const e = g.earl; const why = g.aboard ? 'Traps are set from the water: jump in, at the surface' : canSetHere(g);
     if (why) { hud.toast(why === 'Traps are set from the surface: come up first' ? 'You can only set a trap at the surface' : why, 'warn'); return false; }
     void e; g.toolSel = 'trap'; setTimeout(() => ui.openTrapSet(), 0); return 'open'; },
@@ -1320,13 +1324,16 @@ let cabinTouch = null;
 function tapRectAt(x, y) { const sl = 10 * (window.__fingerK || 1); let best = null, ba = Infinity; for (const r of renderer.tapRects || []) { if (x >= r.x - sl && x <= r.x + r.w + sl && y >= r.y - sl && y <= r.y + r.h + sl && r.w * r.h < ba) { ba = r.w * r.h; best = r; } } return best; }
 function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(hud.touch && !document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
 setTimeout(wireCabinTouch, 0);
-const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => hud.toast(m) });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
 hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stick
 hudCanvas.addEventListener('touchend', () => {
   const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
   d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
 }, { once: false, passive: true });
 // (5.1) the HUD button under the pointer, if any
+// (5.17.0) the buttons that do nothing special make the one plain click when pressed (the light, the hand, leaving the
+// sub, the menu's tiles, the swap); a greyed one a softer click with its reason. The net, the glow stick and the skill have their own
+const PLAIN_CLICK = new Set(['l', 'f', 'u', 'leavesub', 'outdeck', 'c', 't', 'b', 'journal', 'settings', 'swap', 'menu', 'r', 'n']);
 function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return hud.touch && !(ui.cabinOpen && ui.cabinOpen()) ? tapRectAt(x, y) : null; } // (5.6.8) a thing to tap is pressed as a button: a tap does it, a hold holds it (prying, cutting a net free)
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 hudCanvas.addEventListener('wheel', (ev) => {
@@ -1708,7 +1715,6 @@ function killUpdate(dt) {
     let how = null;
     // (5.10.8) no escape by the lamp: only a lure, or the Tidewarden's ward, gets him out of the jaws
     if (pressed.has('ability')) { const A = currentAbility(), why = A && A.tide ? whyNot(g, profile, A) : 'no'; if (!why || why === 'Only when the thing is close') { useAbility(); how = 'tide'; } }
-    if (false && !how && pressed.has('q') && ((profile.oldLures || 0) > 0 || g.items.lure > 0)) { /* (5.16.0) no lure in the jaws */ g.lureOld = (profile.oldLures || 0) > 0; if (g.lureOld) profile.oldLures--; else g.items.lure--; how = 'lure'; }
     if (how) { escapeKill(how); for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k); return; }
   }
   for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k);
@@ -2110,7 +2116,7 @@ function update(dt) {
     if (pressed.has('j')) ui.toggleJournal();
     if (pressed.has('o')) ui.toggleQuests(); // (4.0.0) the quest board
     if (pressed.has('k')) { const was = ui.chart.isOpen(); ui.closeAll(); if (!was) ui.chart.toggle(true); } // (4.10.0) the chart
-    if (pressed.has('l') && (g.aboard || g.helm)) { g.sub.lightsOn = !g.sub.lightsOn; audio.ready && audio.click(); } // (4.0.0) aboard the Margaret: the sub's lights, quietly
+    if (pressed.has('l') && (g.aboard || g.helm)) { g.sub.lightsOn = !g.sub.lightsOn; if (!hud.touch) audio.ready && audio.click(); } // (4.0.0) aboard the Margaret: the sub's lights, quietly
     else if (pressed.has('l')) {
       g.lampFlashT = g.time;
       if (e.inSub) { g.sub.lightsOn = !g.sub.lightsOn; e.lampWanted = g.sub.lightsOn; } // outside, only his own lamp: the sub keeps its lights as they were
@@ -2126,17 +2132,6 @@ function update(dt) {
     // alongside her (in the water at her side, or in the sub in her cradle)
     if (pressed.has('p')) { if (g.aboard || g.helm || atBoat) { audio.ready && audio.click(); ui.openShop('sub', ['sub']); } else hud.showFps = !hud.showFps; } // (4.12.0) the yard at the Margaret; anywhere else, the frame counter
     if (pressed.has('v') && g.helm) { leaveHelm(); audio.ready && audio.click(); } // (the helm is taken aboard, at the wheel)
-    if (pressed.has('q')) {
-      const old = (profile.oldLures || 0) > 0;
-      if (false && (old || g.items.lure > 0) && !g.lure) { /* (5.16.0) lures are gone */
-        if (old) profile.oldLures--; else g.items.lure--;
-        const dir = e.inSub ? g.sub.facing : e.facing;
-        g.lure = { x: e.x + dir * 2, y: e.y, vx: dir * 15, vy: -1.0, old };
-        ent.throwLure(g.lure.x, g.lure.y, old ? 20 : 10); // (5.10.10) the old lure 20 s
-        hud.toast(old ? 'The old lure drifts away' : 'The lure drifts away');
-        if (g.entity && (g.entity.dist ?? Infinity) < 300) questEvent(profile, 'lureMonster'); // (4.8.0)
-      }
-    }
     if (pressed.has('r')) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
       if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast(hud.touch ? 'Swim to a hole in the hull and tap it' : 'Hold R at a hole in the hull', 'warn'); }
@@ -2852,9 +2847,6 @@ let seaDrawnAt = 0, hudDrawnAt = 0;
 // (5.4) and on its own: a phone whose frames take longer than ~14 ms of work goes to an even 30 (steadier than a
 // juddering 40-50, and cooler); back to 60 once the work has stayed under 9 ms for 8 s
 let workEma = 8, slow30 = false, quickT = 0, overT = 0;
-// (5.6.4) the lure, offered only when it matters: the thing is hunting him, close, and the water is turning red round
-// him. Not part of the game's look at all: plain red words laid over everything, as if from somewhere else, and a
-// yes or a no. Yes throws it; no (or waiting) and it goes, and is not asked again for a while
 // (5.6.7) on a phone the journal, the quests and the chart are one book: tabs along its top move between them
 function bookTabs() {
   const open = { journal: !document.getElementById('journal').hidden, quests: !document.getElementById('quests').hidden, chart: !!(ui.chart && ui.chart.isOpen && ui.chart.isOpen()) };
@@ -2881,21 +2873,6 @@ function bookTabs() {
 // (5.10.1) time keeps running under every panel down there; so the danger reaches through them: a strip over the
 // panel when the air is low or gone, or the thing is hunting close
 // (5.10.11) the boxed danger strip over panels is gone (it doubled the HUD's own air warning and looked like a web badge)
-let lureNoUntil = 0;
-function lureAsk() { if (true) return; /* (5.16.0) lures are gone: never asked */
-  let el = document.getElementById('lureask');
-  const ent = g.entity, have = (g.items && g.items.lure > 0) || (profile && profile.oldLures > 0);
-  const want = !!(hud.touch && g.mode === 'play' && !g.paused && have && !g.lure && ent && ent.marked && ((ent.dist ?? 1e9) < 220 || (g.fx.redTint || 0) > 0.04 || g.kill) && performance.now() > lureNoUntil && !(ui.anyOpen && ui.anyOpen()));
-  if (!el) {
-    if (!want) return;
-    el = document.createElement('div'); el.id = 'lureask'; el.hidden = true;
-    el.innerHTML = '<p>Throw it the lure?</p><div><button data-a="yes">Yes</button><button data-a="no">No</button></div>';
-    el.addEventListener('pointerdown', (ev) => { const b = ev.target.closest('button'); if (!b) return; ev.preventDefault(); ev.stopPropagation(); el.hidden = true;
-      if (b.dataset.a === 'yes') { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'q', bubbles: true })); setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'q', bubbles: true })), 60); } else lureNoUntil = performance.now() + 25000; }, true);
-    document.body.appendChild(el);
-  }
-  if (el.hidden === want) { el.hidden = !want; if (want) { el.classList.remove('in'); void el.offsetWidth; el.classList.add('in'); } }
-}
 function phoneCap(now) {
   if (!hud.touch) return 0;
   return (SETTINGS.fast || g.mode === 'menu' || slow30) ? 1000 / 30 : 1000 / 60;
@@ -2971,7 +2948,6 @@ function frame(now) {
     { const tl = document.querySelector('#tut-spot .ts-line'), catO = ui.catalogOpen && ui.catalogOpen(); if (tl && catO && tl.style.left) { tl.style.removeProperty('left'); tl.style.removeProperty('top'); } if (tl && hud.topLeftBottom && tl.classList.contains('in') && !catO) { const r1 = tl.getBoundingClientRect(), dx = hud.topLeftX - r1.left, dy = hud.topLeftBottom - r1.top; if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(tl), z = parseFloat(st.zoom) || 1; tl.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); tl.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
     if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = id === 'quests-btn' ? tileURL(k) : coinURL(k); } /* (5.15.7) the journal a tile, as the menu's others */ }
   }
-  lureAsk(); // (5.6.4)
   bookTabs(); // (5.6.7)
   { const off = !!((g.kill && (g.kill.inSub || g.kill.esc)) || g.mode === 'dying'), dim = !!(g.kill && !off); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); if (document.body.classList.contains('hud-dim') !== dim) document.body.classList.toggle('hud-dim', dim); } // (5.10.10) in its jaws the journal stays, dimmed
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)

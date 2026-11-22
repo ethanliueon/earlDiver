@@ -400,3 +400,78 @@ Object.assign(PAINTED, {
     x.lineWidth = 3; x.strokeStyle = '#2a2c28'; x.stroke(box); x.fillStyle = '#3a3c36'; x.fillRect(-38, -28, 76, 5); x.fillRect(-38, 23, 76, 5);
   },
 });
+
+// (5.17.0) a legendary net's power, as a badge on the main button: a dark plate with a bone rim, and on it the power's
+// emblem, painted large once and shrunk (a stamped bronze piece, not an icon). One bold shape each, so it reads at
+// about 15 px: Rebirth a whale, Second Wind three rising bubbles, Magnetic an old horseshoe magnet, Kinship a fish
+// held in a ring, Eye of the Sea a glowing eye, Faithless the Old One's long tooth
+const EMB = {
+  rebirth(x) { // a whale, rising: the body, the flukes, a pale throat
+    const body = new Path2D(); body.moveTo(-34, 6); body.bezierCurveTo(-34, -16, -6, -22, 14, -14); body.bezierCurveTo(26, -9, 30, -2, 32, 4);
+    body.bezierCurveTo(26, 10, 14, 14, -4, 14); body.bezierCurveTo(-20, 14, -30, 12, -34, 6); body.closePath();
+    const tail = new Path2D(); tail.moveTo(28, 2); tail.bezierCurveTo(34, -6, 38, -14, 36, -22); tail.bezierCurveTo(42, -16, 46, -16, 50, -20); tail.bezierCurveTo(48, -10, 42, -2, 30, 6); tail.closePath();
+    const g = x.createLinearGradient(0, -22, 0, 14); g.addColorStop(0, '#e4d6b0'); g.addColorStop(0.6, '#a89470'); g.addColorStop(1, '#5a4a32');
+    x.fillStyle = g; x.fill(body); x.fill(tail); x.strokeStyle = '#1e1810'; x.lineWidth = 3; x.stroke(body); x.stroke(tail);
+    x.strokeStyle = 'rgba(40,30,18,0.55)'; x.lineWidth = 1.6; for (let i = 0; i < 4; i++) { x.beginPath(); x.moveTo(-26 + i * 6, 8); x.lineTo(-10 + i * 6, 12); x.stroke(); } // throat grooves
+    x.fillStyle = '#1e1810'; x.beginPath(); x.arc(-22, -2, 2.4, 0, Math.PI * 2); x.fill();
+    x.fillStyle = 'rgba(255,248,226,0.4)'; x.beginPath(); x.ellipse(-8, -14, 14, 3, -0.15, 0, Math.PI * 2); x.fill();
+  },
+  secondwind(x) { // three bubbles rising, small to large, each a rim and a catch of light
+    for (const [bx, by, r] of [[-20, 24, 8], [-2, 4, 12], [16, -22, 17]]) {
+      const g = x.createRadialGradient(bx - r * 0.3, by - r * 0.35, r * 0.1, bx, by, r); g.addColorStop(0, 'rgba(230,226,204,0.55)'); g.addColorStop(0.7, 'rgba(150,150,128,0.25)'); g.addColorStop(1, 'rgba(210,204,176,0.9)');
+      x.fillStyle = g; x.beginPath(); x.arc(bx, by, r, 0, Math.PI * 2); x.fill(); x.strokeStyle = '#d8ccaa'; x.lineWidth = 2.6; x.stroke(); x.strokeStyle = 'rgba(20,16,10,0.6)'; x.lineWidth = 1.2; x.beginPath(); x.arc(bx, by, r + 1.6, 0.2, 1.6); x.stroke();
+      x.fillStyle = 'rgba(255,250,232,0.9)'; x.beginPath(); x.ellipse(bx - r * 0.38, by - r * 0.42, r * 0.22, r * 0.14, -0.6, 0, Math.PI * 2); x.fill();
+    }
+  },
+  magnetic(x) { // an old horseshoe magnet: worn iron, its ends painted rust red and chipped
+    const U = new Path2D(); U.moveTo(-26, 30); U.lineTo(-26, -4); U.bezierCurveTo(-26, -40, 26, -40, 26, -4); U.lineTo(26, 30); U.lineTo(12, 30); U.lineTo(12, -4); U.bezierCurveTo(12, -20, -12, -20, -12, -4); U.lineTo(-12, 30); U.closePath();
+    const g = x.createLinearGradient(-26, 0, 26, 0); g.addColorStop(0, '#8a8a80'); g.addColorStop(0.45, '#5e5e56'); g.addColorStop(1, '#34342e');
+    x.fillStyle = g; x.fill(U); x.save(); x.clip(U); x.fillStyle = '#9a4a34'; x.fillRect(-30, 12, 60, 20); x.fillStyle = 'rgba(70,64,56,0.9)'; for (const [cx, cy, r] of [[-20, 16, 3], [18, 22, 2.6], [-15, 26, 2], [22, 14, 1.8]]) { x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); } // chips in the paint
+    x.fillStyle = 'rgba(255,250,230,0.25)'; x.fillRect(-24, -10, 5, 40); x.restore();
+    x.strokeStyle = '#16140e'; x.lineWidth = 3; x.stroke(U);
+  },
+  kinship(x) { // a fish held safe inside a closed ring
+    x.strokeStyle = '#1a150e'; x.lineWidth = 11; x.beginPath(); x.arc(0, 0, 34, 0, Math.PI * 2); x.stroke();
+    const rg = x.createLinearGradient(0, -38, 0, 38); rg.addColorStop(0, '#d8c08a'); rg.addColorStop(1, '#7a6040'); x.strokeStyle = rg; x.lineWidth = 7; x.stroke();
+    const f = new Path2D(); f.moveTo(-20, 0); f.bezierCurveTo(-10, -12, 8, -12, 14, -2); f.lineTo(24, -10); f.lineTo(22, 0); f.lineTo(24, 10); f.lineTo(14, 2); f.bezierCurveTo(8, 12, -10, 12, -20, 0); f.closePath();
+    const fg = x.createLinearGradient(0, -12, 0, 12); fg.addColorStop(0, '#ece0c0'); fg.addColorStop(1, '#8a7652'); x.fillStyle = fg; x.fill(f); x.strokeStyle = '#1a150e'; x.lineWidth = 2.6; x.stroke(f);
+    x.fillStyle = '#1a150e'; x.beginPath(); x.arc(-11, -2, 2, 0, Math.PI * 2); x.fill();
+  },
+  eye(x) { // an open eye, its iris lit warm from within
+    const halo = x.createRadialGradient(0, 0, 4, 0, 0, 40); halo.addColorStop(0, 'rgba(240,206,140,0.55)'); halo.addColorStop(1, 'rgba(240,206,140,0)'); x.fillStyle = halo; x.beginPath(); x.arc(0, 0, 40, 0, Math.PI * 2); x.fill();
+    const lid = new Path2D(); lid.moveTo(-36, 0); lid.bezierCurveTo(-18, -24, 18, -24, 36, 0); lid.bezierCurveTo(18, 24, -18, 24, -36, 0); lid.closePath();
+    x.fillStyle = '#e4dcc4'; x.fill(lid); x.save(); x.clip(lid);
+    const ir = x.createRadialGradient(-2, -2, 1, 0, 0, 15); ir.addColorStop(0, '#fff0c4'); ir.addColorStop(0.45, '#e0a850'); ir.addColorStop(1, '#7a4a1e'); x.fillStyle = ir; x.beginPath(); x.arc(0, 0, 15, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#120e08'; x.beginPath(); x.ellipse(0, 0, 4, 9, 0, 0, Math.PI * 2); x.fill(); x.fillStyle = 'rgba(0,0,0,0.3)'; x.fillRect(-40, -24, 80, 9); x.restore();
+    x.strokeStyle = '#16120a'; x.lineWidth = 3.4; x.stroke(lid);
+  },
+  faithless(x) { // the Old One's tithe: one long tooth, curved, its root dark, a crack along it
+    const t = new Path2D(); t.moveTo(-12, -36); t.bezierCurveTo(-4, -40, 10, -38, 14, -32); t.bezierCurveTo(16, -6, 10, 18, -6, 40); t.bezierCurveTo(-4, 16, -10, -8, -12, -36); t.closePath();
+    const g = x.createLinearGradient(-12, 0, 16, 0); g.addColorStop(0, '#f0e6c8'); g.addColorStop(0.6, '#c8b488'); g.addColorStop(1, '#7a6646'); x.fillStyle = g; x.fill(t);
+    x.save(); x.clip(t); x.fillStyle = 'rgba(70,46,28,0.75)'; x.fillRect(-20, -42, 40, 12); x.restore(); // the root
+    x.strokeStyle = 'rgba(60,44,26,0.7)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(4, -24); x.lineTo(1, -8); x.lineTo(4, 4); x.stroke();
+    x.strokeStyle = '#16120a'; x.lineWidth = 3; x.stroke(t);
+  },
+};
+const embCache = new Map();
+function emblem(power, grey) { // painted at 120 px once, in colour and in grey
+  const key = power + (grey ? 'g' : ''); if (embCache.has(key)) return embCache.get(key);
+  const c = document.createElement('canvas'); c.width = c.height = 120; const x = c.getContext('2d');
+  if (grey) { x.filter = 'grayscale(1) brightness(0.55)'; x.drawImage(emblem(power, false), 0, 0); x.filter = 'none'; } // only the emblem's own pixels, greyed and darkened
+  else { x.translate(60, 60); x.scale(1.1, 1.1); (EMB[power] || EMB.eye)(x); }
+  embCache.set(key, c); return c;
+}
+export const POWER_EMBLEMS = Object.keys(EMB);
+// st: { sat 0..1 (grey to colour), glow 0..1 (the warm light round the badge), arc null or 0..1 (recovered so far) }
+export function drawPowerBadge(ctx, cx, cy, r, power, st) {
+  ctx.save();
+  if (st.glow > 0.01) { const g = ctx.createRadialGradient(cx, cy, r * 0.8, cx, cy, r * 1.7); g.addColorStop(0, `rgba(220,176,100,${(0.5 * st.glow).toFixed(3)})`); g.addColorStop(1, 'rgba(220,176,100,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r * 1.7, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.beginPath(); ctx.arc(cx, cy + r * 0.1, r * 1.04, 0, Math.PI * 2); ctx.fill(); // its shadow on the coin
+  const pg = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r); pg.addColorStop(0, '#2e2a22'); pg.addColorStop(1, '#0e0c09'); ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = st.sat > 0.5 ? '#d8ccaa' : '#8a8474'; ctx.lineWidth = Math.max(1.2, r * 0.11); ctx.beginPath(); ctx.arc(cx, cy, r * 0.94, 0, Math.PI * 2); ctx.stroke(); // the bone rim
+  const s = r * 1.75, half = s / 2;
+  if (st.sat < 0.99) ctx.drawImage(emblem(power, true), cx - half, cy - half, s, s);
+  if (st.sat > 0.01) { ctx.globalAlpha *= st.sat; ctx.drawImage(emblem(power, false), cx - half, cy - half, s, s); ctx.globalAlpha /= st.sat; }
+  if (st.arc != null) { ctx.strokeStyle = 'rgba(236,224,190,0.9)'; ctx.lineWidth = Math.max(1, r * 0.08); ctx.beginPath(); ctx.arc(cx, cy, r * 1.12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.02, st.arc)); ctx.stroke(); } // the hair-thin arc: how far it has come back
+  ctx.restore();
+}

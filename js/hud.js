@@ -5,7 +5,9 @@ import { lockerTexture } from './textures.js';
 import { drawToken } from './tokens.js';
 import { drawCoin, drawCash, drawTile } from './coins.js';
 import { abilityState, whyNot, cooldownLeft, fmtLeft } from './abilities.js';
-import { drawHourglass } from './coin_art.js';
+import { drawNet3, drawCam3 } from './gear_art.js';
+import { drawHourglass, drawPowerBadge, POWER_EMBLEMS } from './coin_art.js';
+import { LEGEND } from './item_data.js';
 import { rarityOf } from './specimens.js';
 import { legendMotes } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
@@ -52,6 +54,28 @@ const HUDT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif'; // (4.28) th
 const GAME = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'; // (4.27) the HUD face
 
 const dwOf = (ctx) => ctx.measureText('0').width; // (5.9.6) one figure's width
+// (5.17.0) a tool's coin picture, from the tool's own shop drawing: rendered once per item, trimmed to what was drawn,
+// and framed on what matters (a net's hoop and bag, a camera's body), so the button looks like the thing he has on
+const TOOL_PIC = new Map();
+export function toolPic(kind, def) {
+  if (!def || !def.id) return null; const key = kind + ':' + def.id; if (TOOL_PIC.has(key)) return TOOL_PIC.get(key);
+  const W0 = 360, H0 = 216, c = document.createElement('canvas'); c.width = W0; c.height = H0; const x = c.getContext('2d');
+  try { (kind === 'net' ? drawNet3 : drawCam3)(x, W0, H0, { ...def, coin: true }); } catch (err) { TOOL_PIC.set(key, null); return null; }
+  const d = x.getImageData(0, 0, W0, H0).data; let x0 = W0, y0 = H0, x1 = 0, y1 = 0;
+  for (let yy = 0; yy < H0; yy += 2) for (let xx = 0; xx < W0; xx += 2) if (d[(yy * W0 + xx) * 4 + 3] > 40) { /* (5.17.0) faint mesh counts too (a pale bag was being left out, and the net framed too big) */ if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+  if (x1 <= x0) { TOOL_PIC.set(key, null); return null; }
+  const bw = x1 - x0, bh = y1 - y0;
+  // a net: framed on its hoop and bag only (the columns where the drawing is tall; the thin pole is left out), so every
+  // net sits at the same size on its coin whatever its pole or bag, and the pole runs off the edge; a camera: the whole of it
+  let pic;
+  if (kind === 'net') { let hx0 = x1, hx1 = x0, hy0 = y1, hy1 = y0;
+    for (let xx = x0; xx <= x1; xx += 2) { let t = H0, b = -1; for (let yy = y0; yy <= y1; yy += 2) if (d[(yy * W0 + xx) * 4 + 3] > 40) { if (yy < t) t = yy; b = yy; } if (b - t > bh * 0.45) { if (xx < hx0) hx0 = xx; hx1 = xx; if (t < hy0) hy0 = t; if (b > hy1) hy1 = b; } }
+    if (hx1 <= hx0) { hx0 = x0; hx1 = x1; hy0 = y0; hy1 = y1; }
+    pic = { c, fx: (hx0 + hx1) / 2, fy: (hy0 + hy1) / 2, span: Math.max(hx1 - hx0, hy1 - hy0, bh * 0.9) * 1.15, rot: -0.62 }; }
+  else pic = { c, fx: x0 + bw / 2, fy: y0 + bh / 2, span: Math.max(Math.max(bw, bh) * 1.1, Math.sqrt(bw * bh) * 1.6), rot: 0 }; // a camera by its bulk, so a long one is not shrunk to a sliver (its strobe arms may run to the rim)
+  const out = { id: def.id, pic }; TOOL_PIC.set(key, out); return out;
+}
+
 export class Hud {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
@@ -312,11 +336,15 @@ export class Hud {
     const abil = () => { if (!AB) return { key: 'ability', icon: 'ab_sprint', on: false, why: "You don't have a skill equipped: put a scroll on in the bag", lock: true };
       const why = whyNot(g, P, AB); return { key: 'ability', icon: 'ab_' + AB.fam, look: { tier: AB.tier }, tint: AB.tier, on: !why || why === 'Already running', lit: ABS.activeT > 0, why, abil: true }; };
     const handSub = e.inSub ? (g.subHandF ? 'f' : sub.docked ? 'u' : null) : null;
+    // (5.17.0) the light, in the arc's fourth place in the water and the sub: his lamp while he swims, her lights while he
+    // is in her (it moved here from the bottom left corner, which is the stick's alone now)
+    const light = () => { const on = e.inSub ? !!sub.lightsOn : !!e.lampOn; return { key: 'l', icon: 'lamp', on: true, lit: on }; };
     const A = e.inSub ? [
       { key: 'leavesub', icon: 'leave', on: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
-      { key: 'e', icon: 'glow', on: (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
+      // (5.17.0) no glow stick in the sub's arc: she has her own lights (the bag still snaps one)
       { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach' },
       abil(),
+      light(),
     ] : [
       // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
       // (5.6.8) the same four in the same places on deck and in the cabin: the sprint button runs there; the rest wait
@@ -330,6 +358,7 @@ export class Hud {
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
         return { key: hu ? 'u' : 'f', icon: 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
       abil(),
+      aboard ? null : light(),
     ];
     // (5.6.1) under the radar, small and quiet: the journal and the bag, then what else is carried
     const ROW = [{ key: 'journal', dom: true }, { key: 'b', icon: 'bag', on: true }].concat( // (5.6.9) the journal's coin (HTML) above the bag
@@ -400,7 +429,7 @@ e.inSub ? [
       else ctx.save();
       const want = (tutKey === a.key || (a.tutAlt && tutKey === a.tutAlt)) && a.on;
       if (want) { ring(x, y, r); r *= 1 + 0.07 * (0.5 + 0.5 * Math.sin(g.time * 4.2)); } // (5.7.5) and it swells gently with the pulse
-      else if (!a.on && !a.row) { r *= 0.88; } /* (5.16.7) smaller, greyed by its 'off' face, but opaque */ // (5.7.5) one that cannot be used now sits back: smaller and fainter
+      /* (5.17.0) one that cannot be used now keeps its size: its greyed face says it */ // (5.7.5) one that cannot be used now sits back: smaller and fainter
       // (5.10.10) in its jaws the layout stays put: everything that cannot help goes dim, and a ready Tidewarden wakes:
       // saturated, a slow warm swell behind it. The same swell shows whenever the Tidewarden can be used.
       const tideReady = a.abil && AB && AB.tide && (this.inKill ? this.killTide : a.on && !a.lit);
@@ -433,10 +462,10 @@ e.inSub ? [
       if (a.away && !a.on) return; // going: no longer pressable
       hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : 'msg:' + (a.why || 'Not now'));
     };
-    const r = 25 * u, gap = 30 * u, rho0 = R + r + gap; // (5.6.9) the arc's coins larger: 21 to 25
+    const r = 26.5 * u, gap = 31.5 * u, rho0 = R + r + gap; // (5.17.0) four coins of one size, a little larger (25 to 26.5), 35 degrees apart with even gaps
     this.arcTop = cy - rho0 - r; // (5.15.6) where the corner of buttons begins: the radar stops above it
     { const kept = A.filter(Boolean); A.length = 0; A.push(...kept); } // (5.15.7) an empty place (the deck's old Dive in) leaves no gap
-    A.forEach((a, i) => { const ang = [-90, -125, -160, -195][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
+    A.forEach((a, i) => { const ang = [-88, -123, -158, -193][i] * Math.PI / 180; btn(a, cx + Math.cos(ang) * rho0, cy + Math.sin(ang) * rho0, r); });
     // (5.6.8) the top left is what is his: a painted stack of banknotes and the sum (no coin round it, as it is not a
     // button), the journal's coin beside it (HTML, placed by main.js at this.journalAt). The settings coin goes to the
     // top right corner, where a phone game keeps it; the depth moves left to make room (this.gearSpace)
@@ -496,23 +525,34 @@ e.inSub ? [
     const bKey = aboard ? 'f' : ' ';
     // (5.16.7) a legendary net or camera shows its rarity on its button: the legendary coin face, a slow glow behind it and
     // a few sparks round its rim (legendaries give off sparks wherever they are shown); every other tool stays plain
-    const rarOf = (k) => ((k === 'net' || k === 'cam') && !e.inSub && !aboard && gear(P, k).rarity === 'legendary' ? 'legendary' : null);
+    const rarOf = (k) => ((k === 'net' || k === 'cam') && !e.inSub && !aboard && !(k === 'cam' && !owns(P, 'camera')) ? gear(P, k).rarity || 'common' : null); // (5.17.0) every net and camera on its rarity's coin
     { const lk = aboard || e.inSub ? null : rarOf(sel || 'net');
-      if (lk) { const q = 0.5 + 0.5 * Math.sin(g.time * 1.6), lg = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.32); lg.addColorStop(0, `rgba(200,156,80,${(0.3 + 0.12 * q).toFixed(3)})`); lg.addColorStop(1, 'rgba(200,156,80,0)');
+      if (lk === 'legendary') { const q = 0.5 + 0.5 * Math.sin(g.time * 1.6), lg = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.32); lg.addColorStop(0, `rgba(200,156,80,${(0.3 + 0.12 * q).toFixed(3)})`); lg.addColorStop(1, 'rgba(200,156,80,0)');
         ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.32, 0, TAU); ctx.fill();
         for (let i = 0; i < 7; i++) { const ph = (g.time * 0.35 + i * 0.37) % 1, ang = i * 2.39 + g.time * 0.12, rr = R * (1.02 + 0.22 * ph), sx3 = cx + Math.cos(ang) * rr, sy3 = cy + Math.sin(ang) * rr - ph * 6 * u, al = Math.sin(ph * Math.PI) * 0.75;
           const sg = ctx.createRadialGradient(sx3, sy3, 0, sx3, sy3, 3.2 * u); sg.addColorStop(0, `rgba(246,226,178,${al.toFixed(3)})`); sg.addColorStop(1, 'rgba(230,190,120,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx3, sy3, 3.2 * u, 0, TAU); ctx.fill(); } } }
     // (5.15.7) able to act: a warm light behind the coin, round its rim, breathing slowly (nothing drawn over its picture)
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(240,214,160,${(0.34 + 0.18 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(240,214,160,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); }
-    { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
+    const toolLook = (k) => (k === 'net' ? toolPic('net', gear(P, 'net')) || netLook(gear(P, 'net').look || 0) : k === 'cam' ? toolPic('cam', gear(P, 'cam')) || gear(P, 'cam').look : null); // (5.17.0) its own picture
+    { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = toolLook(kind);
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
-    if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36);
-    // (5.16.4) a net whose power is cooling (Second Wind, Rebirth) shows a small hourglass on its button's lower left;
-    // the time itself is on the net's card in the bag
-    if (!aboard && !e.inSub && (sel || 'net') === 'net' && e.legends && P.powerReadyAt) {
-      const cool = ['secondwind', 'rebirth'].some((k) => e.legends.has(k) && P.powerReadyAt[k] > Date.now());
-      if (cool) { const bx = cx - R * 0.66, by = cy + R * 0.66, br = R * 0.3; ctx.save(); ctx.fillStyle = 'rgba(14,13,10,0.78)'; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill();
-        ctx.strokeStyle = 'rgba(176,150,104,0.55)'; ctx.lineWidth = 1.2 * u; ctx.stroke(); drawHourglass(ctx, bx, by, br * 0.62); ctx.restore(); } } // (5.7.1) no arm fitted: locked, as a camera not owned is
+    // (5.17.0) the legendary net's power, as a badge on the main button's lower left, whatever is in hand (the net is
+    // worn either way): steady for a power that is always on; grey with a hair-thin arc while one with a cooldown comes
+    // back; on coming back (or at a dive's start) it warms from grey to full colour and pulses gently for 10 s, then
+    // stays lit. It is not a button: a tap there still uses the tool
+    { const pw = aboard ? null : gear(P, 'net').legend, L = pw && LEGEND[pw];
+      if (L && POWER_EMBLEMS.includes(pw)) {
+        const cd = L.cd || 0, left = cd && P.powerReadyAt ? Math.max(0, (P.powerReadyAt[pw] || 0) - Date.now()) / 1000 : 0, nowS = performance.now() / 1000;
+        if (this.badgeRun !== g) { this.badgeRun = g; this.badgeWake = cd ? nowS : null; }
+        if (cd && left > 0) this.badgeCooling = true; else if (cd && this.badgeCooling) { this.badgeCooling = false; this.badgeWake = nowS; }
+        let st;
+        if (!cd) st = { sat: 1, glow: 0.35, arc: null };
+        else if (left > 0) st = { sat: 0, glow: 0, arc: 1 - left / cd };
+        else { const t = this.badgeWake != null ? nowS - this.badgeWake : 99, sat = clamp(t / 2.5, 0, 1), pulse = t < 10 ? (0.5 - 0.5 * Math.cos(t * TAU / 2.2)) * (1 - t / 10) : 0;
+          st = { sat, glow: 0.35 * sat + 0.45 * pulse, arc: null }; }
+        drawPowerBadge(ctx, cx - R * 0.74, cy + R * 0.6, R * 0.33, pw, st);
+      } }
+    if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
     if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     /* (5.15.7) the ring that was drawn across the picture here is gone: the light behind the coin says it */
@@ -535,26 +575,17 @@ e.inSub ? [
     if (!e.inSub && !aboard) { ctx.save(); if (this.inKill) ctx.globalAlpha *= 0.32; // (5.10.10) dim in its jaws
       const owned = ['net'].concat(owns(P, 'camera') ? ['cam'] : []); /* (5.9.6) net and camera only */
       // (5.6.9) larger, and always there: the tool it swaps to; with nothing to swap to, a camera behind a padlock
-      const rc = 19 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R + rc * 0.1), sy2 = cy + Math.sin(a2) * (R + rc * 0.1);
+      const rc = 16 * u, a2 = -36 * Math.PI / 180, sx2 = cx + Math.cos(a2) * (R - rc * 0.2), sy2 = cy + Math.sin(a2) * (R - rc * 0.2); // (5.17.0) smaller, further onto the rim
       if (owned.length > 1) {
         const nx = owned[(owned.indexOf(sel || 'net') + 1) % owned.length];
-        drawCoin(ctx, sx2, sy2, rc, nx, pressFx('swap', sx2, sy2, rc) ? 'press' : 'on', nx === 'net' ? netLook(gear(P, 'net').look || 0) : nx === 'cam' ? gear(P, 'cam').look : null, rarOf(nx));
-        ctx.save(); ctx.translate(sx2 - rc * 0.68, sy2 + rc * 0.68); ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.beginPath(); ctx.arc(0, 0, rc * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc * 0.8); ctx.restore();
+        drawCoin(ctx, sx2, sy2, rc, nx, pressFx('swap', sx2, sy2, rc) ? 'press' : 'on', toolLook(nx), rarOf(nx));
+        ctx.save(); ctx.translate(sx2 - rc * 0.68, sy2 + rc * 0.68); ctx.fillStyle = 'rgba(8,8,6,0.88)'; ctx.beginPath(); ctx.arc(0, 0, rc * 0.42, 0, TAU); ctx.fill(); drawGlyph(ctx, 'swap', 0, 0, rc * 0.8); ctx.restore();
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'swap');
       } else {
         drawCoin(ctx, sx2, sy2, rc, 'cam', 'off', null); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42);
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, "msg:You don't have a camera equipped");
       }
       ctx.restore(); }
-    // (5.9.0) the lamp in the bottom left corner (the arc's last place is the ability now), in the water and the sub
-    if (!aboard) {
-      const rs = 18 * u, px2 = 12 * u + rs, py2 = H - 12 * u - rs;
-      const dn = pressFx('l', px2, py2, rs);
-      ctx.save(); if (this.inKill) ctx.globalAlpha *= 0.32; // (5.10.10) dim in its jaws, as the rest
-      drawCoin(ctx, px2, py2, rs, 'lamp', dn ? 'press' : e.lampOn ? 'lit' : 'on', e.lampOn ? { lit: true } : null); ctx.restore();
-      if (tutKey === 'l') ring(px2, py2, rs);
-      hot(px2 - rs, py2 - rs, rs * 2, rs * 2, 'l');
-    }
     // (5.8.1) the spotlight: while the tutorial waits on a button, the screen darkens round it (the game is paused under
     // it, main.js) and the button stands in a pool of light; its ring and arrow are drawn again over the dark
     { const T = this.tutTarget; this.tutTarget = null; this.spotOn = !!(T && tutKey && this.spotWanted);

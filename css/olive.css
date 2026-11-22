@@ -772,16 +772,6 @@ html body #quests-btn i:not(#_a):not(#_b) { background: #e6dcc4 !important; colo
 /* (5.6.2) the quest group's pictures are coins on a phone: no frame or plate round them */
 html.touch body #quests-hud .hud-ic:not(#_a):not(#_b) { background: none !important; box-shadow: none !important; border: 0 !important; }
 html.touch body #quests-hud { left: 4px !important; }
-/* (5.6.4) the lure's question: not the game's materials at all. Plain red words over everything, a presentation's
-   default face, slightly off: it does not belong here */
-#lureask { position: fixed; inset: 0; z-index: 9800; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.6em;
-  pointer-events: none; font-family: Arial, Helvetica, sans-serif; color: #ff1414; }
-#lureask[hidden] { display: none; }
-#lureask p { margin: 0; font-size: 44px; font-weight: 400; letter-spacing: 0; transform: translateX(-3px); }
-#lureask div { display: flex; gap: 2.4em; pointer-events: auto; }
-#lureask button { all: unset; cursor: pointer; font: 400 34px Arial, Helvetica, sans-serif; color: #ff1414; padding: 0.2em 0.6em; text-decoration: underline; }
-#lureask.in p { animation: lure-flicker 2.6s steps(1) infinite; }
-@keyframes lure-flicker { 0%, 100% { opacity: 1; } 47% { opacity: 1; } 48% { opacity: 0.25; transform: translateX(2px); } 50% { opacity: 1; transform: translateX(-3px); } 81% { opacity: 0.6; } 82% { opacity: 1; } }
 /* (5.6.5) diver slots on a phone: the delete marks hidden until a long press makes them jiggle */
 html.touch body #title .slot.tag .del:not(#_a):not(#_b):not(#_c) { opacity: 0; pointer-events: none; transition: opacity 0.2s; }
 html.touch body #title #slots.jiggle .slot.tag.held .del:not(#_a):not(#_b):not(#_c) { opacity: 1; pointer-events: auto; }

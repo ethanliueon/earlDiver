@@ -8,8 +8,8 @@ import { uiUnit } from './settings.js';
 // drifts too far, so the stick never "runs out". The emulated mouse events a browser makes after a touch are
 // suppressed, so a tap never also counts as a click.
 export class Touch {
-  constructor(canvas, { buttonAt, active, onMessage, onTap, aim }) {
-    this.c = canvas; this.buttonAt = buttonAt; this.active = active; this.onMessage = onMessage; this.onTap = onTap; this.aim = aim; // (5.16.0) aim: a tap that Dash is waiting for
+  constructor(canvas, { buttonAt, active, onMessage, onTap, aim, onPress }) {
+    this.c = canvas; this.buttonAt = buttonAt; this.active = active; this.onMessage = onMessage; this.onTap = onTap; this.aim = aim; this.onPress = onPress; // (5.16.0) aim: a tap that Dash is waiting for
     this.stick = null; this.fingers = new Map();
     this.vec = { x: 0, y: 0, mag: 0, on: false, sprint: false };
     this.el = document.getElementById('stick');
@@ -34,7 +34,7 @@ export class Touch {
       const b = this.buttonAt(t.clientX, t.clientY);
       if (!b && this.aim && this.aim(t.clientX, t.clientY)) { this.fingers.set(t.identifier, {}); continue; } // (5.16.0) Dash's tap: taken, no stick
       if (b && b.key.startsWith('msg:')) { this.fingers.set(t.identifier, {}); this.onMessage && this.onMessage(b.key.slice(4)); continue; } // a greyed button: why
-      if (b) { this.fingers.set(t.identifier, { key: b.key }); this.key(b.key, true); if (this.vibe) navigator.vibrate(8); continue; }
+      if (b) { this.fingers.set(t.identifier, { key: b.key }); this.key(b.key, true); this.onPress && this.onPress(b.key); if (this.vibe) navigator.vibrate(8); continue; } // (5.17.0) its click
       // (5.6.1) the stick grows wherever a thumb lands that is not on a button (not only the left half); a quick tap
       // that hardly moves is a tap on the world instead (an animal to observe)
       if (!this.stick) {
@@ -74,7 +74,7 @@ export class Touch {
     if (!this.el) return;
     if (!show) { this.el.hidden = true; return; }
     if (this.stick) return;
-    const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(), x = Math.max(R + 28 * k, window.innerWidth * 0.13) + 40 * k, y = window.innerHeight - R - 34 * k; // (5.7.2) over a little: the sprint button has the corner
+    const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(), x = R + 26 * k, y = window.innerHeight - R - 22 * k; // (5.17.0) deep in the corner, the lamp having left it (a thumb's margin kept from the edges)
     this.el.hidden = false; this.el.style.setProperty('--r', R + 'px');
     this.base.style.transform = `translate(${x}px, ${y}px)`; this.knob.style.transform = `translate(${x}px, ${y}px)`;
   }

@@ -224,7 +224,7 @@ export function drawCam3(ctx, w, h, def) {
     }
     if (E && arch === 'macro') eraMark(x, E, W / 2 + 40 + 115 * var1, H / 2 + 60 * var2, 18, 0, C.body);
     if (k >= 3) { x.strokeStyle = rgba(C.acc, 0.8); x.lineWidth = 3; x.beginPath(); x.moveTo(W * 0.2, H * 0.8); x.lineTo(W * 0.8, H * 0.8); x.stroke(); }
-    if (k >= 4) sparks(x, W, H, C.acc, 11 + (hv % 97));
+    if (k >= 4 && !def.coin) sparks(x, W, H, C.acc, 11 + (hv % 97));
   }); return true; }
   fitted(ctx, w, h, (x, W, H) => {
     const big = arch === 'housed' || arch === 'lowlight', bw = big ? 360 : 330, bh = big ? 250 : 230, bd = big ? 130 : 110, X = W / 2 - bw / 2 - 50, Y = H / 2 - bh / 2 + 36;
@@ -248,7 +248,7 @@ export function drawCam3(ctx, w, h, def) {
       if (E.era !== 'postwar') { const pts = []; for (let i = 0; i <= 8; i++) { pts.push([X + 14 + (bw - 28) * i / 8, Y + 12, 1], [X + 14 + (bw - 28) * i / 8, Y + bh - 12, 0.8]); } for (let i = 1; i < 5; i++) pts.push([X + 12, Y + 12 + (bh - 24) * i / 5, 0.9], [X + bw - 12, Y + 12 + (bh - 24) * i / 5, 0.9]); rivetRow(x, pts, 5, E.era === 'victorian' ? E.metal : '#8a8a7e');
         const pcx2 = arch === 'macro' ? pcx - 60 : pcx, pts2 = []; for (let a = 0; a < TAU - 0.01; a += TAU / 10) pts2.push([pcx2 + Math.cos(a) * (pr * 0.88 + 16), pcy + Math.sin(a) * (pr + 16), 1]); rivetRow(x, pts2, 5, E.metal); }
       eraMark(x, E, X + bw * 0.78, Y + bh - 32, 18, 0, C.body); }
-    if (k >= 4) sparks(x, W, H, C.acc, 11 + (hash(def.id) % 97));
+    if (k >= 4 && !def.coin) sparks(x, W, H, C.acc, 11 + (hash(def.id) % 97));
   });
   return true;
 }
@@ -494,9 +494,9 @@ export function drawNet3(ctx, w, h, def) {
     // the yoke: two arms from the collar out to the rim either side of where it meets
     const C2 = [A2[0] + Math.cos(ang) * R * 0.32, A2[1] + Math.sin(ang) * R * 0.32];
     for (const du2 of [-0.42, 0.42]) { const q = P2(at(Math.PI + du2, 0)); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = hoopW * 0.8 + 4; x.beginPath(); x.moveTo(...C2); x.lineTo(...q); x.stroke(); x.strokeStyle = hoop; x.lineWidth = hoopW * 0.8; x.stroke(); }
-    if (LS) { const c0 = P2(at(0, 0.3)); const gl = x.createRadialGradient(c0[0], c0[1], 10, c0[0], c0[1], R * 1.6); gl.addColorStop(0, rgba(LS.glow, 0.18)); gl.addColorStop(1, rgba(LS.glow, 0)); x.save(); x.globalCompositeOperation = 'lighter'; x.fillStyle = gl; x.beginPath(); x.arc(c0[0], c0[1], R * 1.6, 0, TAU); x.fill(); x.restore(); }
+    if (LS && !def.coin) { const c0 = P2(at(0, 0.3)); /* (5.17.0) a coin's copy has no halo or sparks: the coin brings its own */ const gl = x.createRadialGradient(c0[0], c0[1], 10, c0[0], c0[1], R * 1.6); gl.addColorStop(0, rgba(LS.glow, 0.18)); gl.addColorStop(1, rgba(LS.glow, 0)); x.save(); x.globalCompositeOperation = 'lighter'; x.fillStyle = gl; x.beginPath(); x.arc(c0[0], c0[1], R * 1.6, 0, TAU); x.fill(); x.restore(); }
     x.restore();
-    if (k >= 4) sparks(x, W, H, LS ? LS.glow : hoop, 19 + (hash(def.id) % 97));
+    if (k >= 4 && !def.coin) sparks(x, W, H, LS ? LS.glow : hoop, 19 + (hash(def.id) % 97));
   });
   return true;
 }

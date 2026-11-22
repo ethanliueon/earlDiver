@@ -66,7 +66,7 @@ const ADDON_SPECS = {
 };
 const SUPPLY_SPECS = {
   lure: [['use', 'offered when the thing comes for you, in its jaws too'], ['effect', 'it follows the light for 10 s', 'good'], ['then', 'it loses you for about 20 s, and comes back'], ['carry', 'one lure in all']],
-  necklace: [['use', 'the glow stick button snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round you, or round the sub while you are in it', 'good'], ['but', 'a light can be seen', 'bad']],
+  necklace: [['use', 'the glow stick button, or Use in the bag, snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round you, or round the sub while you are in it; the thing in the deep does not mind it', 'good'], ['but', 'it fades when the thing comes near', 'bad']], // (5.17.0)
   film: [['use', 'the camera'], ['one each', 'every picture, sharp or not'], ['pays', 'Poor, Good or Excellent: an Excellent picture twice a Good one', 'good']],
   airTank: [['use', 'the air tank button, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
 };
@@ -1028,11 +1028,11 @@ export class UI {
     const list = K.items.filter((q) => !onSet.has(q.u)).sort((a2, b2) => rk(a2) - rk(b2) || order.indexOf(ITEMS[a2.id].kind) - order.indexOf(ITEMS[b2.id].kind) || ITEMS[a2.id].name.localeCompare(ITEMS[b2.id].name));
     const tiles = list.map((q) => { const it = ITEMS[q.id];
       return `<div class="lk-tile r-${it.rarity}" data-u="${q.u}" data-kind="${it.kind}" draggable="${free}" title="${it.name}"><img src="${pic(q)}" alt="">${q.isNew ? '<i class="new">new</i>' : ''}${it.rarity === 'legendary' ? `<span class="glint" style="--d:${(q.u.length * 7 % 23) / 10}s;--x:${20 + q.u.charCodeAt(1) % 60}%;--y:${18 + q.u.charCodeAt(2) % 50}%"></span><span class="glint b" style="--d:${(q.u.length * 13 % 31) / 10 + 1.4}s;--x:${30 + q.u.charCodeAt(3) % 50}%;--y:${40 + q.u.charCodeAt(4) % 40}%"></span>` : ''}</div>`; }).join('');
-    // (5.6.9) the belt: glow sticks (up to 5) and the lure, what he takes into the water; the rest wait in the locker
-    const SP = P.spare || {}, SUPN = { necklace: 'Glow', lure: 'Lure' };
+    // (5.6.9) the belt: glow sticks (up to 5), what he takes into the water; the rest wait in the locker. (5.17.0) no lure slot: lures are gone
+    const SP = P.spare || {}, SUPN = { necklace: 'Glow' };
     const beltSlot = (k) => { const n = (g.items && g.items[k]) || 0;
       return `<div class="eq-slot sq belt${n ? ' r-common' : ' empty'}" data-belt="${k}" title="${SUPN[k]}">${n ? `<img src="${pictureOf('supply', k, 120, 72, true)}" alt="">${k === 'necklace' ? `<b class="belt-n">${n}/5</b>` : ''}` : ''}<small class="slot-nm">${SUPN[k]}</small></div>`; };
-    const spare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).map((k) => `<div class="lk-tile r-common sup" data-sup="${k}" title="${SUPN[k]}: tap to put on the belt"><img src="${pictureOf('supply', k, 120, 72, true)}" alt=""><b class="belt-n">×${SP[k]}</b></div>`).join('');
+    const spare = ['necklace'].filter((k) => (SP[k] || 0) > 0).map((k) => `<div class="lk-tile r-common sup" data-sup="${k}" title="${SUPN[k]}: tap to put on the belt"><img src="${pictureOf('supply', k, 120, 72, true)}" alt=""><b class="belt-n">×${SP[k]}</b></div>`).join('');
     // (5.9.6) traps live in the bag, not on the swap chip: a tile each kind with its number; a tap opens a card with Use
     const TR = P.traps || {}, trapKinds = Object.keys(TRAPS).filter((k) => (TR[k] || 0) > 0);
     const trapTiles = trapKinds.map((k) => `<div class="lk-tile r-common sup trp" data-trap="${k}" title="${TRAPS[k].name}: tap to use"><img src="${pictureOf('trap', k, 120, 72, true)}" alt=""><b class="belt-n">×${TR[k]}</b></div>`).join('');
@@ -1045,6 +1045,16 @@ export class UI {
         <div class="tp-txt"><h4>${T.name}</h4><p class="tp-kind">Trap · ${TR[k]} in the locker</p><p class="tp-desc">${desc}</p>
           ${fact('Sets down to', `${T.maxDepth} m`)}${fact('Holds', `${T.holds} animals`)}${fact('Takes', `up to ${Math.round(T.maxLen * 100)} cm`)}${T.winch ? fact('Hauled up', "by the Margaret's winch") : ''}
           <div class="lk-acts"><button data-trapuse="${k}">Use</button><small class="tp-note">at the surface</small></div></div></div></div>`; })();
+    // (5.17.0) the glow stick's card, opened from its belt slot, laid out as the trap's: Use snaps one (90 s of warm light,
+    // in the water or the sub); while one burns, the seconds left and Use greyed; and taking them off the belt, where gear can change
+    const glowPop = (() => { if (!this.glowSel) return ''; const n = (g.items && g.items.necklace) || 0, left = this.h.glowLeft ? this.h.glowLeft() : 0;
+      if (!n && !left) return '';
+      const fact = (a, b) => `<div class="tp-row"><span>${a}</span><b>${b}</b></div>`;
+      return `<div class="item-pop trap-pop glow-pop"><div class="ip-box r-common tp-box"><button class="ip-close" aria-label="Close">×</button>
+        <div class="tp-pic"><img src="${pictureOf('supply', 'necklace', 360, 216, true)}" alt=""></div>
+        <div class="tp-txt"><h4>Glow stick</h4><p class="tp-kind">Light · ${n} on the belt</p><p class="tp-desc">Snap it and it burns warm amber round you, or round the sub while you are in her. The thing in the deep does not mind it.</p>
+          ${fact('Burns', '90 s')}${fact('Then', 'it is spent')}
+          <div class="lk-acts"><button data-glowuse ${left || !n ? 'disabled' : ''}>${left ? `Lit · ${left} s` : 'Use'}</button>${this.h.canChangeGear() ? '<button data-glowoff>Off the belt</button>' : ''}</div></div></div></div>`; })();
     // (5.14.1) the pet: a slot with his gear (it goes where he goes), not in the catch. Tap it: its card, or, when it is
     // empty, the animals in the bag and the sub to choose from (only at the surface; it has to be 60 cm to 1.5 m, or a legend)
     const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
@@ -1053,13 +1063,13 @@ export class UI {
     const petPick = this.petPick ? (() => { const L = g.bag.map((s3, i) => ['bag', i, s3]).concat((g.subTank || []).map((s3, i) => ['tank', i, s3]));
       const rows = L.map(([w2, i, s3]) => { const sp3 = SPECIES_BY_ID[s3.id]; if (!this.fitPics.has(sp3.id)) this.fitPics.set(sp3.id, fittedIcon(sp3, 300, 180).toDataURL()); return `<button class="pp-fish" data-petpick="${w2}:${i}"><img src="${this.fitPics.get(sp3.id)}" alt=""><b>${sp3.name}</b><small>${(s3.len || 0).toFixed(2)} m</small></button>`; }).join('');
       return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">At the surface: an animal 60 cm to 1.5 m long, or any legend.</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing in the bag or the sub.</p>'}</div></div></div>`; })() : '';
-    const nSpare = ['necklace', 'lure'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length;
+    const nSpare = ['necklace'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length;
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
-      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot('necklace')}${beltSlot('lure')}${petGear}</div></div>`
+      + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot('necklace')}${petGear}</div></div>`
       + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
-      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${glowPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
@@ -1172,7 +1182,11 @@ export class UI {
     root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
     // (5.6.9) the belt: a tap on a slot takes it off (into the locker), a tap on a locker stack puts it on
     const beltMsg = () => this.h.onMessage && this.h.onMessage('Change gear on deck, in the cabin or in the sub');
-    root.querySelectorAll('[data-belt]').forEach((el) => el.addEventListener('click', () => { if (!this.h.canChangeGear()) return beltMsg(); if (this.h.onBelt) { this.h.onBelt(el.dataset.belt, false); this.renderInventory(); } }));
+    root.querySelectorAll('[data-belt]').forEach((el) => el.addEventListener('click', () => { if ((g.items && g.items.necklace) > 0 || (this.h.glowLeft && this.h.glowLeft())) { this.glowSel = true; this.renderInventory(); } })); // (5.17.0) its card
+    { const gp = box.querySelector('.glow-pop'); if (gp) gp.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-glowuse]')) { this.glowSel = false; if (this.h.onGlowUse && this.h.onGlowUse()) { this.toggleInventory(false); return; } this.renderInventory(); return; }
+      if (ev.target.closest('[data-glowoff]')) { this.glowSel = false; if (this.h.canChangeGear() && this.h.onBelt) this.h.onBelt('necklace', false); else beltMsg(); this.renderInventory(); return; }
+      if (ev.target === gp || ev.target.closest('.ip-close')) { this.glowSel = false; this.renderInventory(); } }); }
     root.querySelectorAll('[data-sup]').forEach((el) => el.addEventListener('click', () => { if (!this.h.canChangeGear()) return beltMsg(); if (this.h.onBelt) { this.h.onBelt(el.dataset.sup, true); this.renderInventory(); } }));
     root.querySelectorAll('[data-trap]').forEach((el) => el.addEventListener('click', () => { this.trapSel = el.dataset.trap; this.renderInventory(); }));
     { const tp = box.querySelector('.trap-pop'); if (tp) tp.addEventListener('click', (ev) => { const u2 = ev.target.closest('[data-trapuse]');
