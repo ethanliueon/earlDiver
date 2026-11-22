@@ -10,6 +10,9 @@ const KX = 0.46, KY = 0.3; // a step back in depth goes this far right and up (o
 const SIZE = { // width, body height, depth, lid height (box units; width is 1)
   crate: [1, 0.56, 0.5, 0.1], case: [1, 0.5, 0.42, 0.14], tea: [0.86, 0.66, 0.6, 0.06],
   strongbox: [0.96, 0.5, 0.48, 0.13], footlocker: [1, 0.5, 0.5, 0.16], trunk: [1, 0.54, 0.52, 0.2],
+  // (6.4.0) the large ones, the salvage trunk, and the three legendary chests
+  crate_big: [1.25, 0.62, 0.56, 0.1], case_big: [1.22, 0.55, 0.46, 0.15], salvage: [1, 0.54, 0.52, 0.2],
+  siren: [0.92, 0.42, 0.5, 0.22], leviathan: [1.2, 0.6, 0.58, 0.18], poseidon: [1.05, 0.56, 0.56, 0.24],
 };
 const rng = (seed) => { let s = seed >>> 0 || 1; return () => ((s = (s * 16807) % 2147483647) / 2147483647); };
 
@@ -157,6 +160,52 @@ const PAINT = {
     scratches(x, fw, fh, 18, r, 'rgba(200,160,110,0.25)'); grime(x, fw, fh, 0.35); edges(x, fw, fh, 0.35, 0.04);
   },
 };
+
+// (6.4.0) the large crate and case: the same box, bigger, a rope round it (or a second hasp); the salvage trunk: the
+// expedition trunk after years on the bottom, weed and barnacles on it, its brass gone green
+const rope = (x, u, fh) => { x.strokeStyle = '#7a6440'; x.lineWidth = 0.018; x.beginPath(); x.moveTo(u, 0); x.lineTo(u, fh); x.stroke(); x.strokeStyle = 'rgba(40,28,12,0.5)'; x.lineWidth = 0.004; for (let v = 0; v < fh; v += 0.02) { x.beginPath(); x.moveTo(u - 0.008, v); x.lineTo(u + 0.008, v + 0.012); x.stroke(); } };
+function barnacles(x, fw, fh, r, n, region = 1) { for (let i = 0; i < n; i++) { const u = r() * fw, v = fh * (1 - region) + r() * fh * region, s2 = 0.007 + r() * 0.014; // small grey cones, lit from the upper left, a slit on top
+    const g = x.createRadialGradient(u - s2 * 0.4, v - s2 * 0.4, s2 * 0.1, u, v, s2); g.addColorStop(0, '#d8d0bc'); g.addColorStop(0.7, '#9a927e'); g.addColorStop(1, '#5e584a'); x.fillStyle = g; x.beginPath(); x.ellipse(u, v, s2, s2 * 0.85, 0, 0, TAU); x.fill();
+    x.strokeStyle = 'rgba(40,36,28,0.7)'; x.lineWidth = 0.0025; x.beginPath(); x.moveTo(u - s2 * 0.3, v - s2 * 0.1); x.lineTo(u + s2 * 0.3, v - s2 * 0.05); x.stroke(); } }
+function weed(x, fw, fh, r, n) { x.strokeStyle = 'rgba(70,90,40,0.75)'; x.lineWidth = 0.006; for (let i = 0; i < n; i++) { const u = r() * fw; x.beginPath(); x.moveTo(u, fh); x.quadraticCurveTo(u + (r() - 0.5) * 0.06, fh * (0.75 - r() * 0.2), u + (r() - 0.5) * 0.08, fh * (0.5 - r() * 0.3)); x.stroke(); } }
+Object.assign(PAINT, {
+  crate_big(x, f, fw, fh, r) { PAINT.crate(x, f, fw, fh, r); if (f === 'front' || f === 'top' || f === 'lidF') { rope(x, fw * 0.3, fh); rope(x, fw * 0.7, fh); } },
+  case_big(x, f, fw, fh, r) { PAINT.case(x, f, fw, fh, r); if (f === 'front') { x.fillStyle = '#3a3e40'; for (const u of [fw * 0.5]) { x.fillRect(u - 0.03, 0.01, 0.06, 0.05); rivet(x, u, 0.035, 0.008); } } },
+  salvage(x, f, fw, fh, r) { PAINT.trunk(x, f, fw, fh, r); if (f === 'under') return;
+    x.fillStyle = 'rgba(60,90,70,0.35)'; x.fillRect(0, 0, fw, fh); blotch(x, fw * 0.5, fh * 0.85, fw, fh * 0.4, 'rgba(40,60,30,0.35)', r, 10);
+    if (f !== 'top') weed(x, fw, fh, r, 6); barnacles(x, fw, fh, r, f === 'top' ? 10 : 16, f === 'top' ? 1 : 0.6); grime(x, fw, fh, 0.45); },
+  siren(x, f, fw, fh, r) { // black coral lacquer, panels of mother-of-pearl, a branching coral inlay, pearls at the corners
+    x.fillStyle = '#16120f'; x.fillRect(0, 0, fw, fh); if (f === 'under') { x.fillStyle = '#2a2420'; x.fillRect(0, 0, fw, fh); return; }
+    const g = x.createLinearGradient(0, 0, fw, fh); g.addColorStop(0, 'rgba(90,70,60,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0.3)'); x.fillStyle = g; x.fillRect(0, 0, fw, fh);
+    const m = 0.05, pw = fw - m * 2, ph = fh - m * 2;
+    if (pw > 0.1 && ph > 0.05) { const ng = x.createLinearGradient(m, m, m + pw, m + ph); ng.addColorStop(0, '#6e7472'); ng.addColorStop(0.3, '#8a8c90'); ng.addColorStop(0.55, '#7e7078'); ng.addColorStop(0.8, '#6a7466'); ng.addColorStop(1, '#4e4c48'); x.fillStyle = ng; x.fillRect(m, m, pw, ph); // nacre, dulled with age
+      for (let i = 0; i < 10; i++) { const u = m + r() * pw, v = m + r() * ph; const sg = x.createRadialGradient(u, v, 0, u, v, 0.06); sg.addColorStop(0, `rgba(${r() < 0.5 ? '200,220,215' : '220,200,215'},0.28)`); sg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = sg; x.fillRect(u - 0.06, v - 0.06, 0.12, 0.12); } // its sheen in patches
+      x.strokeStyle = 'rgba(30,24,20,0.5)'; x.lineWidth = 0.002; for (let i = 0; i < 6; i++) { x.beginPath(); x.moveTo(m, m + r() * ph); x.lineTo(m + pw, m + r() * ph); x.stroke(); } // the joins between the shell pieces
+      x.lineCap = 'round'; const br = (u, v, a, l, d) => { if (d > 5 || l < 0.008) return; const u2 = u + Math.cos(a) * l, v2 = v + Math.sin(a) * l; x.strokeStyle = d < 2 ? '#3a0e0c' : '#5e1a14'; x.lineWidth = 0.009 * Math.pow(0.75, d); x.beginPath(); x.moveTo(u, v); x.quadraticCurveTo((u + u2) / 2 + (r() - 0.5) * l * 0.3, (v + v2) / 2, u2, v2); x.stroke(); br(u2, v2, a - 0.35 - r() * 0.4, l * (0.6 + r() * 0.2), d + 1); if (r() < 0.75) br(u2, v2, a + 0.3 + r() * 0.4, l * (0.55 + r() * 0.2), d + 1); };
+      br(m + pw * 0.1, m + ph, -Math.PI / 2 + 0.35, ph * 0.28, 0); br(m + pw * 0.9, m + ph, -Math.PI / 2 - 0.35, ph * 0.26, 0); x.lineCap = 'butt'; } // black coral grown in from the corners
+    for (const [u, v] of [[m * 0.5, m * 0.5], [fw - m * 0.5, m * 0.5], [m * 0.5, fh - m * 0.5], [fw - m * 0.5, fh - m * 0.5]]) { const pg = x.createRadialGradient(u - 0.006, v - 0.006, 0.001, u, v, 0.02); pg.addColorStop(0, '#fffaf0'); pg.addColorStop(0.6, '#d8d0c0'); pg.addColorStop(1, '#8a8478'); x.fillStyle = pg; x.beginPath(); x.arc(u, v, 0.018, 0, TAU); x.fill(); }
+    scratches(x, fw, fh, 8, r); edges(x, fw, fh, 0.4, 0.03); },
+  leviathan(x, f, fw, fh, r) { // black tarred planks bound by great curved ribs of bone, iron pins, barnacles low down
+    x.fillStyle = '#1e1a16'; x.fillRect(0, 0, fw, fh); if (f === 'under') { x.fillStyle = '#2a241c'; x.fillRect(0, 0, fw, fh); return; }
+    const n = f === 'top' ? 4 : 3; for (let i = 0; i < n; i++) { const y0 = fh / n * i + 0.006, y1 = fh / n * (i + 1) - 0.006; x.fillStyle = ['#2c2620', '#262019', '#302a22'][i % 3]; x.fillRect(0, y0, fw, y1 - y0); x.save(); x.beginPath(); x.rect(0, y0, fw, y1 - y0); x.clip(); grain(x, fw, fh, 'rgba(90,76,56,0.25)', 18, 1.2, r); x.restore(); }
+    const rib = (u) => { const g = x.createLinearGradient(u - 0.04, 0, u + 0.04, 0); g.addColorStop(0, '#8a8068'); g.addColorStop(0.4, '#e0d6bc'); g.addColorStop(1, '#a29880'); x.fillStyle = g; x.beginPath(); x.moveTo(u - 0.03, 0); x.quadraticCurveTo(u - 0.05, fh / 2, u - 0.03, fh); x.lineTo(u + 0.035, fh); x.quadraticCurveTo(u + 0.055, fh / 2, u + 0.03, 0); x.closePath(); x.fill();
+      x.strokeStyle = 'rgba(60,50,36,0.5)'; x.lineWidth = 0.003; for (let v = 0.03; v < fh; v += 0.05) { x.beginPath(); x.moveTo(u - 0.03, v); x.lineTo(u + 0.03, v + (r() - 0.5) * 0.01); x.stroke(); } };
+    if (f !== 'under') { rib(fw * 0.18); rib(fw * 0.82); if (f === 'front') rib(fw * 0.5); }
+    for (let i = 0; i < 6; i++) { const u = r() * fw, v = r() * fh; x.fillStyle = '#3a3430'; x.beginPath(); x.arc(u, v, 0.01, 0, TAU); x.fill(); }
+    if (f === 'front' || f === 'side') barnacles(x, fw, fh, r, 18, 0.35); grime(x, fw, fh, 0.5); edges(x, fw, fh, 0.45, 0.04); },
+  poseidon(x, f, fw, fh, r) { // cast bronze gone to verdigris, waves cast round its edges, a trident on the lid, barnacles; the sea still in its seams
+    const g = x.createLinearGradient(0, 0, fw, fh); g.addColorStop(0, '#7a8a5e'); g.addColorStop(0.5, '#5a7058'); g.addColorStop(1, '#3e5044'); x.fillStyle = g; x.fillRect(0, 0, fw, fh);
+    if (f === 'under') { x.fillStyle = '#2e3a30'; x.fillRect(0, 0, fw, fh); return; }
+    blotch(x, fw * 0.5, fh * 0.5, fw, fh, 'rgba(150,110,60,0.35)', r, 14); blotch(x, fw * 0.3, fh * 0.3, fw * 0.6, fh * 0.6, 'rgba(110,170,150,0.25)', r, 10); // bronze showing through, and the green
+    x.strokeStyle = 'rgba(180,150,90,0.55)'; x.lineWidth = 0.006; const band = (v) => { x.beginPath(); for (let u = 0; u <= fw; u += 0.01) { const y = v + Math.sin(u * 40) * 0.012; u ? x.lineTo(u, y) : x.moveTo(u, y); } x.stroke(); }; band(0.03); band(fh - 0.03); // cast waves round the edges
+    if (f === 'top' || f === 'lidF') { const cu = fw / 2, cv = fh / 2, L = f === 'top' ? fw * 0.4 : fw * 0.38; // the trident, raised, lying the length of the lid
+      x.shadowColor = 'rgba(0,0,0,0.55)'; x.shadowBlur = 0; x.shadowOffsetY = 0.006; x.strokeStyle = '#d4b46a'; x.lineWidth = f === 'top' ? 0.026 : 0.02; x.lineCap = 'round'; x.beginPath(); x.moveTo(cu - L * 1.1, cv); x.lineTo(cu + L * 0.9, cv); x.stroke();
+      x.beginPath(); x.moveTo(cu + L * 0.55, cv - L * 0.35); x.quadraticCurveTo(cu + L * 0.62, cv, cu + L * 0.55, cv + L * 0.35); x.stroke(); for (const d of [-0.35, 0, 0.35]) { x.beginPath(); x.moveTo(cu + L * 0.55, cv + L * d); x.lineTo(cu + L * 1.05, cv + L * d); x.stroke(); } x.lineCap = 'butt';
+      x.shadowColor = 'transparent'; x.shadowOffsetY = 0; x.strokeStyle = 'rgba(255,240,200,0.35)'; x.lineWidth = 0.005; x.beginPath(); x.moveTo(cu - L * 1.1, cv - 0.006); x.lineTo(cu + L * 0.9, cv - 0.006); x.stroke(); }
+    if (f === 'front') { x.fillStyle = '#c8a860'; x.beginPath(); x.ellipse(fw / 2, fh * 0.42, 0.05, 0.065, 0, 0, TAU); x.fill(); x.fillStyle = '#1a1a14'; x.beginPath(); x.arc(fw / 2, fh * 0.4, 0.012, 0, TAU); x.fill(); x.fillRect(fw / 2 - 0.005, fh * 0.4, 0.01, 0.03); } // the lock, a scallop of bronze
+    x.strokeStyle = 'rgba(120,220,200,0.35)'; x.lineWidth = 0.004; x.strokeRect(0.012, 0.012, fw - 0.024, fh - 0.024); // the sea's faint light in its seams
+    barnacles(x, fw, fh, r, f === 'top' ? 6 : 12, 0.45); scratches(x, fw, fh, 10, r, 'rgba(230,210,160,0.25)'); edges(x, fw, fh, 0.35, 0.04); },
+});
 const FALLBACK = 'crate';
 
 // ---------- the box ----------

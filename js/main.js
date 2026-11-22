@@ -38,7 +38,8 @@ import { kitOf } from './items.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
-import { rollChest } from './chests.js';
+import { rollChest, rollChestAll } from './chests.js';
+import { calState, calClaimed, CAL } from './store.js';
 import { hullCap } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
@@ -230,6 +231,7 @@ const ui = new UI({
   getGame: () => g,
   onQuit: () => die('Ended the dive', 'quit'),
   onBuy: (k) => guardBuy(costOf(k), () => buy(k)),
+  onClaim: () => claimGift(), // (6.4.0) the daily gift
   onBuyNow: (k) => { guardBuy.ok = true; try { return buy(k); } finally { guardBuy.ok = false; ui.refreshOpen(); } }, // (4.16.4) already confirmed by its own prompt
   costOf: (k) => costOf(k),
   onOldBuy: (k) => { const ok = oldBuy(k); if (ok && g.oldShopOpen) setTimeout(showOldShop, 0); return ok; },
@@ -480,6 +482,17 @@ function costOf(kind) {
   if (SUB_ADDONS[kind]) return SUB_ADDONS[kind].price;
   if (SUPPLIES[kind]) return SUPPLIES[kind].price;
   return 0;
+}
+// (6.4.0) the daily gift: today's day of the seven, into the locker (a chest), the wallet, the belt or the coin stacks;
+// a chest needs room in the locker, or it waits
+function claimGift() {
+  const P = profile; if (!P) return false; const st = calState(P); if (!st.ready) return false;
+  const r = CAL[st.day];
+  if (r.k === 'chest') { if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; } giveItem(P, 'chest_' + r.v); ui.showGains([{ kind: 'item', id: 'chest_' + r.v, how: 'Daily gift' }]); }
+  else if (r.k === 'cash') { P.cash = Math.round(((P.cash || 0) + r.v) * 100) / 100; hud.toast('+' + money(r.v, false), 'big'); }
+  else if (r.k === 'glow') { P.spare = P.spare || {}; P.spare.necklace = (P.spare.necklace || 0) + r.v; hud.toast(r.v + ' glow sticks', 'big'); }
+  else if (r.k === 'coin') { if (lockerFree(P) <= 0 && (P.gold || 0) % 10 === 0) { hud.toast('Locker full', 'warn'); return false; } P.gold = (P.gold || 0) + r.v; hud.toast('Old coin', 'big'); }
+  calClaimed(P); saveProfile(P); audio.ready && audio.sale(); return true;
 }
 function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replaced at once by another
   const P = profile, st = oldStock(P), it = st.items[+what.slice(5)];
@@ -846,19 +859,23 @@ function buy(kind) {
   const P = profile, sub = g.sub, e = g.earl;
   let ok = false;
   if (kind.startsWith('chest:')) {
-    // (2.9.0) a chest: bought and opened at once, one item into the locker. Not with a full locker.
+    // (6.4.0) a chest bought: into the locker as a thing of its own, to be opened from the bag
     const key = kind.slice(6), C = CHESTS[key];
     if (C && lockerFree(P) <= 0) hud.toast('Locker full', 'warn');
-    else if (C && spend(P, C.price)) {
-      // (6.0.1) now and then a chest that can hold rare things holds advanced glow sticks instead (up to the three he can keep)
-      const advHave = (g.items.glowAdv || 0) + ((P.spare && P.spare.glowAdv) || 0);
-      if ((C.odds.rare || 0) > 0 && advHave < 3 && Math.random() < 0.12) { const n = 3 - advHave; P.spare = P.spare || {}; P.spare.glowAdv = (P.spare.glowAdv || 0) + n; ok = true; saveProfile(P); audio.ready && audio.sale(); hud.toast(`Inside: ${n} advanced glow stick${n > 1 ? 's' : ''}`, 'big'); ui.showGains([{ kind: 'supply', id: 'glowAdv' }]); return ok; }
-      const def = rollChest(key), q = def && giveItem(P, def.id);
-      // (6.1.0) and, now and then, a gold coin besides (its chance on the chest)
-      let coin = false; if (q && C.coin && Math.random() * 100 < C.coin) { P.gold = (P.gold || 0) + 1; if (lockerFree(P) < 0) P.gold--; else coin = true; }
-      if (q) { q.paid = true; questEvent(P, 'bought'); ok = true; saveProfile(P); ui.showChest(key, q, coin); audio.ready && audio.sale(); ui.showGains([{ kind: 'item', id: q.id, how: 'Found in the ' + C.name.toLowerCase() }].concat(coin ? [{ kind: 'coin', how: 'At the bottom of it' }] : [])); tipEquip(); } // (4.16.9) its card waits until the crate's reveal is closed
-    }
+    else if (C && spend(P, C.price)) { const q = giveItem(P, 'chest_' + key); if (q) { q.paid = true; ok = true; questEvent(P, 'bought'); saveProfile(P); audio.ready && audio.sale(); ui.showGains([{ kind: 'item', id: 'chest_' + key, how: 'Bought' }]); } }
     return ok;
+  }
+  if (kind.startsWith('open:')) {
+    // (6.4.0) a chest opened from the bag: only with room for all it can give (its own space comes free)
+    const u = kind.slice(5), K = kitOf(P), q = K.items.find((x) => x.u === u), it = q && ITEMS[q.id], C = it && CHESTS[it.chestKey];
+    if (!C) return false;
+    if (lockerFree(P) + 1 < C.n) { hud.toast(`No room: needs ${C.n} spaces`, 'warn'); return false; }
+    K.items = K.items.filter((x) => x.u !== u);
+    const roll = rollChestAll(it.chestKey), finds = [];
+    for (const def of roll.items) { const g2 = giveItem(P, def.id); if (g2) finds.push({ q: g2, def }); }
+    let coin = false; if (roll.coin) { P.gold = (P.gold || 0) + 1; if (lockerFree(P) < 0) P.gold--; else coin = true; }
+    saveProfile(P); ui.closeAll && ui.toggleInventory && ui.toggleInventory(false); ui.showChest(it.chestKey, finds, coin); audio.ready && audio.sale();
+    return true;
   }
   if (kind.startsWith('item:')) {
     // (2.8.0) bought: into the locker, put on by hand in the inventory (B). Not if the locker is full.
@@ -2181,6 +2198,8 @@ function update(dt) {
     // the helm: drive the Margaret along the surface (the docked sub rides in its cradle)
     const atBoat = (Math.abs(e.x - BOAT.x) < 14 && e.y < 4 && !e.inSub) || (e.inSub && g.sub.docked);
     if (pressed.has('b')) ui.toggleInventory();
+    if (pressed.has('store')) ui.toggleStore(); // (6.4.0)
+    if (pressed.has('events')) ui.toggleEvents();
     // (4.0.0) the shipyard: part of the Margaret, opened with P anywhere aboard her (deck, cabin, wheel) or
     // alongside her (in the water at her side, or in the sub in her cradle)
     if (pressed.has('p')) { if (g.aboard || g.helm || atBoat) { audio.ready && audio.click(); ui.openShop('sub', ['sub']); } else hud.showFps = !hud.showFps; } // (4.12.0) the yard at the Margaret; anywhere else, the frame counter

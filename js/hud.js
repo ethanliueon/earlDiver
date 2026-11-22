@@ -13,6 +13,7 @@ import { rarityOf } from './specimens.js';
 import { legendMotes, glint } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { touchWords } from './touchtext.js';
+import { calState } from './store.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
 function steelPlate(ctx, x, y, w, h, s) {
@@ -415,7 +416,8 @@ e.inSub ? [
     ] : [
       // (5.16.7) out of the sub, the same place calls her (on deck she is already at the boat)
       { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'The sub is at the boat' },
-    ]).filter((a) => !(a.away && !a.on));
+    ]).concat([{ key: 'store', icon: 'shop', on: true }, { key: 'events', icon: 'events', on: true, badge: P ? calState(P).ready : false }]) // (6.4.0) the Shop and Events; the daily gift's "!" when one waits
+      .filter((a) => !(a.away && !a.on));
     const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
     const vis = this.btnVis || (this.btnVis = {});
     // (5.7.5) the tutorial's mark: a warm halo pulsing behind the button, the cream ring breathing out, and a short arrow
@@ -488,7 +490,7 @@ e.inSub ? [
         ctx.fillStyle = down ? 'rgba(4,8,8,0.8)' : 'rgba(6,10,10,0.55)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
         ctx.strokeStyle = a.lit ? 'rgba(236,224,190,0.85)' : 'rgba(230,222,196,0.22)'; ctx.lineWidth = 1.4 * u; ctx.stroke();
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
-      } else if (a.tile) drawTile(ctx, x, y, r, a.icon, down ? 'press' : this.inKill || !a.on ? 'off' : 'on'); // (5.15.7) the menu's square tiles
+      } else if (a.tile) drawTile(ctx, x, y, r, a.icon, down ? 'press' : this.inKill || !a.on ? 'off' : 'on', !!a.badge); // (5.15.7) the menu's square tiles
       else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do

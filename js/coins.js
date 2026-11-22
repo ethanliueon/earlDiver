@@ -331,6 +331,29 @@ const ART = {
   },
   // the bag: a canvas dive bag, its buckled flap and a strap. (5.6.8) Pale washed khaki with a dark outline and
   // bright buckles, so it stands off the coin's dark face instead of brown on brown
+  // (6.4.0) the Shop: a small sea chest, its lid banded, a brass lock
+  shop(x) {
+    x.lineJoin = 'round';
+    const body = new Path2D('M-34 -4H34V34C34 38 31 40 27 40H-27C-31 40 -34 38 -34 34Z'), lid = new Path2D('M-36 -6C-36 -30 36 -30 36 -6Z');
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 5); x.fill(body); x.fill(lid); x.restore();
+    x.fillStyle = '#8a6438'; x.fill(body); x.fillStyle = '#9c7444'; x.fill(lid);
+    x.save(); x.clip(body); x.fillStyle = 'rgba(40,24,8,0.35)'; x.fillRect(-40, 22, 80, 20); x.strokeStyle = 'rgba(40,24,8,0.4)'; x.lineWidth = 1.4; for (const y of [8, 20, 32]) { x.beginPath(); x.moveTo(-34, y); x.lineTo(34, y); x.stroke(); } x.restore();
+    x.fillStyle = '#b89448'; for (const u of [-24, 18]) { x.fillRect(u, -24, 6, 64); } // the brass bands over lid and body
+    x.strokeStyle = '#0c0b08'; x.lineWidth = 3; x.stroke(body); x.stroke(lid);
+    x.fillStyle = '#c8a458'; x.beginPath(); x.roundRect(-6, -8, 12, 14, 2); x.fill(); x.fillStyle = '#1a140a'; x.beginPath(); x.arc(0, -2, 2.4, 0, TAU); x.fill(); x.fillRect(-1, -2, 2, 6); // the lock
+    x.fillStyle = 'rgba(255,240,200,0.25)'; x.fillRect(-32, -18, 64, 3);
+  },
+  // (6.4.0) Events: the daily gift, a parcel in brown paper tied with string, a small tag
+  events(x) {
+    x.lineJoin = 'round';
+    const box = new Path2D('M-32 -14H32V36H-32Z');
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 5); x.fill(box); x.restore();
+    x.fillStyle = '#a8865a'; x.fill(box); x.save(); x.clip(box); x.fillStyle = 'rgba(60,40,16,0.3)'; x.fillRect(-40, 18, 80, 20); x.strokeStyle = 'rgba(70,48,20,0.3)'; x.lineWidth = 1; for (let i = 0; i < 6; i++) { x.beginPath(); x.moveTo(-32 + i * 13, -14); x.lineTo(-26 + i * 13, 36); x.stroke(); } x.restore(); // creased paper
+    x.strokeStyle = '#0c0b08'; x.lineWidth = 3; x.stroke(box);
+    x.strokeStyle = '#e8dcc0'; x.lineWidth = 3.4; x.beginPath(); x.moveTo(0, -14); x.lineTo(0, 36); x.moveTo(-32, 11); x.lineTo(32, 11); x.stroke(); // the string
+    x.beginPath(); x.ellipse(-8, -20, 9, 6, -0.5, 0, TAU); x.ellipse(8, -20, 9, 6, 0.5, 0, TAU); x.stroke(); // its bow
+    x.fillStyle = '#d8ccae'; x.save(); x.translate(18, 22); x.rotate(0.3); x.fillRect(-6, -4, 14, 10); x.restore(); // a small tag
+  },
   bag(x) {
     x.lineJoin = 'round';
     x.strokeStyle = '#0c0b08'; x.lineWidth = 7; x.beginPath(); x.moveTo(-16, -22); x.bezierCurveTo(-16, -44, 16, -44, 16, -22); x.stroke(); x.strokeStyle = '#8a7a52'; x.lineWidth = 3.6; x.stroke(); // the handle

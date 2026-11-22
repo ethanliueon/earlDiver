@@ -86,6 +86,16 @@ export function camIndex(def) {
 // what a thing is worth (a chest item's value, before its skills; selling pays about a third)
 // (5.10.10) each rarity's price band starts here (common $25-300, uncommon $300-1,500, rare $1,500-8,000, exotic $8,000-40,000, legendary $45,000 up)
 export const BAND_MIN = { common: 25, uncommon: 300, rare: 1500, exotic: 8000, legendary: 45000 };
+// (6.4.0) friendlier prices: rare at most about $2,000, exotic about $8,000, legendary about $20,000. Each item keeps its
+// place within its rarity (the old band mapped onto the new on a log scale). Suits keep their prices: depth is earned.
+const OLD_BAND = { uncommon: [300, 1500], rare: [1500, 8000], exotic: [8000, 40000], legendary: [45000, 90000] };
+const NEW_BAND = { uncommon: [300, 1000], rare: [1000, 2000], exotic: [2000, 8000], legendary: [8000, 20000] };
+function reband(def) {
+  // (6.4.1) suits too, by the owner's word: no exotic over $10,000, no legendary over $20,000, whatever it is
+  const O = OLD_BAND[def.rarity], N = NEW_BAND[def.rarity]; if (!O) return def.price;
+  const t = Math.min(1, Math.max(0, Math.log(def.price / O[0]) / Math.log(O[1] / O[0])));
+  const v = N[0] * Math.pow(N[1] / N[0], t); return v < 1000 ? Math.round(v / 5) * 5 : Math.round(v / 50) * 50;
+}
 const VALUE = { common: 120, uncommon: 450, rare: 1800, exotic: 15000, legendary: 90000 }; // (3.7.0) the top two raised with what the deep pays
 // the "good for" line, worked out from the stats
 function goodOf(kind, s) {
@@ -117,6 +127,7 @@ function add(def) {
   if (!def.good) def.good = goodOf(def.kind, def);
   if (def.price == null) def.price = Math.round(VALUE[def.rarity] * (SIDE_KINDS.includes(def.kind) ? 0.6 : 1));
   def.price = Math.max(def.price, BAND_MIN[def.rarity] || 0); // (5.10.10) never below its rarity's band, so the colour means the price
+  def.price = reband(def); // (6.4.0) the friendlier bands
   def.pal = paletteOf(def);
   // (2.8.1) the special looks: a Legendary's own, or the old-expedition look of an Exotic
   const Lk = LOOKS[def.id], ex = def.rarity === 'exotic';
@@ -163,7 +174,7 @@ for (const [key, S] of Object.entries(SETS)) for (const [kind, arch] of Object.e
 
 // (5.9.0) ability scrolls: items like the rest (chests, the Old One, the locker), with no rolled skills
 for (const [fam, T] of Object.entries(ABILITY_DEFS)) for (const [tier, d] of Object.entries(T)) {
-  const id = abilityId(fam, tier); ITEMS[id] = { id, kind: 'ability', arch: fam, fam, tier, rarity: tier, chest: true, name: d.name, line: d.line, good: d.line, bad: '', price: Math.max(BAND_MIN[tier] || 0, Math.round(VALUE[tier] * 0.8)) }; // (5.10.10) within its band
+  const id = abilityId(fam, tier); ITEMS[id] = { id, kind: 'ability', arch: fam, fam, tier, rarity: tier, chest: true, name: d.name, line: d.line, good: d.line, bad: '', price: reband({ rarity: tier, kind: 'ability', price: Math.max(BAND_MIN[tier] || 0, Math.round(VALUE[tier] * 0.8)) }) }; // (5.10.10) within its band
 }
 // (5.11.8) names that grow with rarity (owner-approved): a common is plain, with no maker; an exotic has a history or an
 // owner. Uncommon, rare and legendary names stay as they were. Applied after every item is built, because the looks
@@ -266,7 +277,8 @@ export function takeOff(P, kind) {
 }
 // out of the locker (sold): never the thing he has on
 export function removeItem(P, u) { const K = kitOf(P), i = K.items.findIndex((q) => q.u === u); if (i < 0 || isOn(P, K.items[i])) return false; K.items.splice(i, 1); bump(P); return true; }
-export function valueOf(q) { const def = ITEMS[q.id]; return Math.round(def.price * (1 + 0.05 * (q.sk || []).reduce((a, [, l]) => a + l, 0)) * (q.leg ? 1.2 : 1)); }
+// (6.4.0) every enchantment level adds to the worth: a legendary with its enchantments all at IV comes to about twice
+export function valueOf(q) { const def = ITEMS[q.id]; return Math.round(def.price * (1 + 0.075 * (q.sk || []).reduce((a, [, l]) => a + l, 0)) * (q.leg ? 1.1 : 1)); }
 export const sellValue = (q) => Math.max(1, Math.round(valueOf(q) * 0.3));
 
 // ---------- what everything he has on adds up to (skills stack fully) ----------
@@ -408,9 +420,10 @@ for (const it of Object.values(ITEMS)) if (it.kind === 'fins' && /no faster crui
 {
   const score = { tank: (i) => i.air * (i.quiet ? 1.1 : 1), fins: (i) => i.swim + 0.5 * i.sprint, bag: (i) => i.slots, net: (i) => (i.maxLen || 0) * (i.range || 1) * (i.success || 0.8), cam: (i) => i.idx || 0,
     suit: (i) => i.press / 100 + (1 - i.air) * 8 + (i.bite ? 0.4 : 0) + (i.warm ? 0.3 : 0) + (i.quiet ? 0.4 : 0) };
-  const BANDP = { common: [25, 250], uncommon: [300, 1200], rare: [1500, 6000], exotic: [8000, 30000] };
+  const BANDP = { common: [25, 250], uncommon: [300, 1000], rare: [1000, 2000], exotic: [2000, 8000] }; // (6.4.0) friendlier
+  const BANDS_SUIT = { common: [25, 250], uncommon: [300, 1000], rare: [1000, 2000], exotic: [4000, 10000] }; // (6.4.1) suits at the top of each band (depth is earned), never past its cap
   const nice = (p) => (p < 300 ? Math.round(p / 5) * 5 : p < 2000 ? Math.round(p / 50) * 50 : p < 10000 ? Math.round(p / 100) * 100 : Math.round(p / 500) * 500);
-  for (const kind of Object.keys(score)) for (const [r, [a, b]] of Object.entries(BANDP)) {
+  for (const kind of Object.keys(score)) for (const [r, [a, b]] of Object.entries(kind === 'suit' ? BANDS_SUIT : BANDP)) {
     const xs = Object.values(ITEMS).filter((it) => it.kind === kind && it.rarity === r && it.price > 0); if (!xs.length) continue;
     const sc = xs.map(score[kind]), lo = Math.min(...sc), hi = Math.max(...sc);
     xs.forEach((it, j) => { const pos = hi > lo ? (sc[j] - lo) / (hi - lo) : 0.5; it.price = nice(a + (b - a) * Math.pow(pos, 1.3)); });

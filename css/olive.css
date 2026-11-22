@@ -1302,3 +1302,84 @@ html body .cr-box:not(#_a) { background: url("../assets/ui/olive/tile.png") 0 0 
 html body .cr-item:not(#_a) { margin-top: 6px !important; }
 html body .cr-acts button:not(#_a) { border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 12px stretch !important;
   background: none !important; box-shadow: none !important; min-height: 44px; padding: 0 12px 2px !important; color: var(--o-cream, #ece4cc) !important; font: 600 15px 'Barlow Semi Condensed', sans-serif !important; }
+/* (6.4.0) opening a chest: the screen dimmed, the chest in the middle (drawn on the canvas), the finds as their pictures
+   over it, a find's card on the olive plate, Take at the bottom right */
+html body .chest-reveal.cx { display: block !important; background: rgba(4, 7, 7, 0.82) !important; }
+html body .chest-reveal.cx[hidden] { display: none !important; }
+html body .cx .cx-cv { position: absolute; inset: 0; width: 100%; height: 100%; }
+html body .cx .cx-finds { position: absolute; inset: 0; pointer-events: none; }
+html body .cx .cx-find { position: absolute; left: 0; top: 0; pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; padding: 0; cursor: pointer; opacity: 0; }
+html body .cx .cx-find img { width: 96px; height: 66px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7)); border-radius: 50%; padding: 6px; background: radial-gradient(closest-side, var(--rg, rgba(200, 196, 180, 0.32)), rgba(0, 0, 0, 0)); }
+html body .cx .cx-find span { font: 600 13px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; text-shadow: 0 1px 3px #000; max-width: 120px; text-align: center; line-height: 1.1; }
+html body .cx .cx-find.r-uncommon { --rg: rgba(150, 200, 150, 0.32); } html body .cx .cx-find.r-rare { --rg: rgba(140, 178, 224, 0.34); }
+html body .cx .cx-find.r-exotic { --rg: rgba(196, 156, 224, 0.36); } html body .cx .cx-find.r-legendary { --rg: rgba(232, 202, 128, 0.42); }
+html body .cx .cx-take:not(#_a) { position: absolute; right: 24px; bottom: 18px; border: 12px solid transparent !important; border-image: var(--o-btn) 28 fill / 12px stretch !important; background: none !important; min-height: 44px; padding: 0 22px 2px !important; color: #ece4cc !important; font: 600 16px 'Barlow Semi Condensed', sans-serif !important; }
+html body .cx .cx-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, 84vw); max-height: 88%; overflow-y: auto; text-align: center; color: #e6dec6;
+  background: url("../assets/ui/olive/tile.png") 0 0 / 512px 512px; border: 30px solid transparent; border-image: url("../assets/ui/olive/panel.png") 60 fill / 30px stretch; padding: 2px 8px 6px; font: 500 14px 'Barlow Semi Condensed', sans-serif; }
+html body .cx .cx-card[hidden] { display: none; }
+html body .cx .cx-card img { width: 180px; height: 110px; object-fit: contain; }
+html body .cx .cx-card h4 { margin: 4px 0 0; font: 600 20px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
+html body .cx .cx-card .rr { margin: 0 0 6px; font: 700 11px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
+html body .cx .cx-card .rr.r-common { color: #b8bab0; } html body .cx .cx-card .rr.r-uncommon { color: #8cc08c; } html body .cx .cx-card .rr.r-rare { color: #8cb2de; } html body .cx .cx-card .rr.r-exotic { color: #bc9cd8; } html body .cx .cx-card .rr.r-legendary { color: #d8bc7c; }
+html body .cx .cx-card p { margin: 0 0 6px; } html body .cx .cx-card .cx-have { color: #b8b09a; }
+html body .cx .cx-card .cx-sks { text-align: left; font-size: 13px; color: #c8c0a8; } html body .cx .cx-card .cx-sks b { color: #efe8d2; }
+html body .cx .cx-card .cx-cardx { position: absolute; right: -14px; top: -14px; width: 32px; height: 32px; border: 0; background: none; color: #e6dec6; font: 600 22px 'Barlow Semi Condensed', sans-serif; cursor: pointer; }
+html body .cx .cx-card .cx-acts { display: flex; justify-content: center; margin-top: 6px; }
+html body .cx .cx-card .cx-acts button { border: 12px solid transparent !important; border-image: var(--o-btn) 28 fill / 12px stretch !important; background: none !important; min-height: 44px; padding: 0 14px 2px !important; color: #ece4cc !important; font: 600 15px 'Barlow Semi Condensed', sans-serif !important; }
+/* (6.4.0) the Shop and Events: on the olive plate as every panel, the close cross top right; chests as cards in a row */
+html body .store-panel { position: fixed; inset: 0; z-index: 58; display: grid; place-items: center; background: rgba(4, 7, 7, 0.6); }
+html body .store-panel[hidden] { display: none; }
+html body .store-panel .st-plate { position: relative; width: min(760px, 92vw); max-height: 92vh; overflow: visible; color: #e6dec6; background: url("../assets/ui/olive/tile.png") 0 0 / 512px 512px; border: 30px solid transparent; border-image: url("../assets/ui/olive/panel.png") 60 fill / 30px stretch; padding: 0 6px 4px; font: 500 14px 'Barlow Semi Condensed', sans-serif; }
+html body .store-panel h2 { margin: -10px 0 8px; font: 600 22px/36px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
+html body .store-panel .st-x { position: absolute; right: -16px; top: -18px; width: 40px; height: 40px; border: 0; background: none; color: #e6dec6; font: 600 26px 'Barlow Semi Condensed', sans-serif; cursor: pointer; }
+html body .store-panel .st-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+html body .store-panel .st-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px 8px; background: rgba(0, 0, 0, 0.28); border-radius: 3px; box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.05); text-align: center; }
+html body .store-panel .st-card.deal { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(216, 188, 124, 0.45); }
+html body .store-panel .st-card img { width: 100%; max-width: 150px; height: 92px; object-fit: contain; }
+html body .store-panel .st-card b { font: 600 15px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; line-height: 1.1; }
+html body .store-panel .st-r { font: 700 10px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
+html body .store-panel .st-n { font-size: 12px; color: #a8a08a; }
+html body .store-panel .st-deal { position: absolute; top: 2px; left: 0; right: 0; font: 600 11px 'Barlow Semi Condensed', sans-serif; color: #d8bc7c; }
+html body .store-panel button[data-store], html body .store-panel button[data-ev] { margin-top: 4px; border: 12px solid transparent !important; border-image: var(--o-btn) 28 fill / 12px stretch !important; background: none !important; min-height: 44px; padding: 0 10px 2px !important; color: #ece4cc !important; font: 600 15px 'Barlow Semi Condensed', sans-serif !important; cursor: pointer; }
+html body .store-panel button:disabled { opacity: 0.45; cursor: default; }
+html body .store-panel .ev-row { display: grid; grid-template-columns: repeat(6, 1fr) 1.4fr; gap: 6px; }
+html body .store-panel .ev-day { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: rgba(0, 0, 0, 0.28); border-radius: 3px; box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6); text-align: center; }
+html body .store-panel .ev-day.now { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(236, 228, 204, 0.55); }
+html body .store-panel .ev-day.done { opacity: 0.5; }
+html body .store-panel .ev-day img { width: 100%; height: 48px; object-fit: contain; }
+html body .store-panel .ev-day.big img { height: 64px; }
+html body .store-panel .ev-cash { font: 700 26px 'Barlow Semi Condensed', sans-serif; font-style: normal; color: #b8c89a; height: 48px; line-height: 48px; }
+html body .store-panel .ev-n { font: 700 10px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #a8a08a; }
+html body .store-panel .ev-g { font-size: 12px; color: #e6dec6; line-height: 1.1; }
+html body .store-panel .ev-tick { position: absolute; right: 5px; top: 3px; font-style: normal; color: #b8c89a; }
+html body .store-panel .ev-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+html body .store-panel .ev-wait { color: #a8a08a; padding: 10px 6px; }
+
+/* (6.4.1) every close cross is one button: the shop screens' worn rust-red plate with a bone X of two painted strokes,
+   36 px (the shop screens' own stays 40). The X is drawn in the plate's background, so it never depends on the
+   button's positioning; any older cross drawn with ::before/::after is switched off */
+html body :is(:is(#settings, #inventory) .set-close, #journal-close, #workshop-close, #cave-close, #trapset-close, .refit-x, .ip-close, .oc-close, .qp-close, .qs-close, .ch-close, .tr-close, .rt-x, .st-x, .cx-cardx, .dv-close):not(#_a):not(#_b):not(#_c) {
+  width: 36px !important; height: 36px !important; min-width: 0 !important; border: 0 !important; border-image: none !important; border-radius: 7px !important; padding: 0 !important; opacity: 1 !important; filter: none !important;
+  font-size: 0 !important; color: transparent !important; text-shadow: none !important; cursor: pointer;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M4.5 4.5 L15.5 15.5 M15.5 4.5 L4.5 15.5' stroke='%23000' stroke-opacity='.45' stroke-width='3.6' stroke-linecap='round' transform='translate(0 .9)'/%3E%3Cpath d='M4.5 4.5 L15.5 15.5 M15.5 4.5 L4.5 15.5' stroke='%23e8dcc0' stroke-width='3.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 20px 20px no-repeat,
+    radial-gradient(120% 90% at 35% 25%, #84402e 0%, #6a2e22 55%, #4a1c14 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 210, 180, 0.25), inset 0 -2px 3px rgba(0, 0, 0, 0.45), 0 0 0 1.5px rgba(20, 8, 6, 0.9), 0 3px 6px rgba(0, 0, 0, 0.5) !important; }
+html body :is(:is(#settings, #inventory) .set-close, #journal-close, #workshop-close, #cave-close, #trapset-close, .refit-x, .ip-close, .oc-close, .qp-close, .qs-close, .ch-close, .tr-close, .rt-x, .st-x, .cx-cardx, .dv-close):not(#_a):not(#_b):not(#_c)::after,
+html body :is(:is(#settings, #inventory) .set-close, #journal-close, #workshop-close, #cave-close, #trapset-close, .refit-x, .ip-close, .oc-close, .qp-close, .qs-close, .ch-close, .tr-close, .rt-x, .st-x, .cx-cardx, .dv-close):not(#_a):not(#_b):not(#_c)::before { content: none !important; display: none !important; }
+html body :is(:is(#settings, #inventory) .set-close, #journal-close, #workshop-close, #cave-close, #trapset-close, .refit-x, .ip-close, .oc-close, .qp-close, .qs-close, .ch-close, .tr-close, .rt-x, .st-x, .cx-cardx, .dv-close):not(#_a):not(#_b):not(#_c):active { transform: translateY(1px); filter: brightness(0.92) !important; }
+html body .cx .cx-card .cx-cardx:not(#_a) { right: 10px; top: 10px; }
+html body .store-panel .st-x:not(#_a) { right: -2px; top: -10px; }
+/* (6.4.1) the shop card's i, top right: opens the chest's details and odds. A small worn grey-brown disc, the i cut in */
+html body .store-panel .st-card .st-i { position: absolute; top: 5px; right: 5px; z-index: 1; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+  background: radial-gradient(circle at 38% 32%, #6e6656, #4e483c 60%, #38332a); box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.18), 0 0 0 1px rgba(10, 8, 6, 0.8), 0 2px 3px rgba(0, 0, 0, 0.45); color: #e6dec6; }
+html body .store-panel .st-card .st-i i { font: italic 700 14px Georgia, serif; line-height: 1; }
+html body .store-panel .st-card .st-i:active { transform: translateY(1px); }
+html body .store-panel .st-deal { left: 6px !important; right: 32px !important; text-align: left; }
+html body #rates .rt-pic { display: block; width: 150px; height: 100px; object-fit: contain; margin: -4px auto 0; }
+html body #rates .rt-box h4 { margin: 2px 0 2px; text-align: center; }
+html body #rates .rt-line { margin: 0 0 8px; text-align: center; font: italic 14px var(--o-text); color: var(--o-cream-dim, #b8b09a); }
+html body #rates .rt-head { margin-bottom: 6px; border-bottom: 1.5px solid rgba(230, 222, 196, 0.3); }
+html body #rates .rt-box { max-height: calc(100vh - 24px); overflow-y: auto; }
+html body #rates .rt-pic { width: 110px; height: 68px; margin: 0 auto; }
+html body #rates td { padding: 3px 4px; font-size: 15px; }
+html body #rates .rt-box .rt-x:not(#_a):not(#_b):not(#_c) { right: 0 !important; top: 0 !important; }

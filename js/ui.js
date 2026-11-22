@@ -44,6 +44,7 @@ import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's drawn size against a 2.4 m giant)
 import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
+import { storeHtml, eventsHtml } from './store.js';
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, netsOf, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
@@ -138,7 +139,7 @@ export class UI {
     this.dave = new DaveShop($('dave'), { getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => { h.onBuy(k); }, sellFind: (k) => h.onDaveSell(k), payFinds: () => (h.payFinds ? h.payFinds() : 1), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleDave(false) });
     this.gallery = new Gallery($('gallery'), { catch: () => (h.aquariumCatch ? h.aquariumCatch() : []), act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
     // (2.9.0) a chest opening, over whichever shop it was bought in
-    this.chest = new ChestReveal($('chest'), { picture: (def, w, hh) => pictureOf(def.kind, def, w, hh, true), putOn: (u) => h.onEquip('on:' + u),
+    this.chest = new ChestReveal($('chest'), { picture: (def, w, hh) => pictureOf(def.kind, def, w, hh, true), putOn: (u) => h.onEquip('on:' + u), coinPic: () => pictureOf('gold', 1, 120, 120, true), coins: () => (h.getProfile().gold || 0),
       close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { toast: (t, k) => h.toast && h.toast(t, k), getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), daveSays: () => (this.dave && this.dave.says ? this.dave.says() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     try { this.dressPanels(); } catch (err) { /* the plain look stays */ }
@@ -322,7 +323,14 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
-  showChest(key, q, coin = false) { this.chest.open(key, q, coin); } // (6.1.2) coin: a gold coin came up with it
+  showChest(key, finds, coin = false) { this.chest.open(key, finds, coin); } // (6.4.0) finds: [{ q, def }], and whether an old coin came up
+  // (6.4.0) the Shop and Events screens (left menu): chests for cash; the daily gift
+  toggleStore(force) { const el = $('store'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = storeHtml(this.h.getProfile()); } el.hidden = !on; this.storeWire(el); }
+  toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true)); } el.hidden = !on; this.storeWire(el); }
+  storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
+    if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
+    const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile()); return; }
+    if (ev.target.closest('[data-ev]')) { this.h.onClaim && this.h.onClaim(); this.toggleEvents(true); } }); }
   // (3.0.0) one of the old one's things, or a bundle, seen from where Earl is: what it is, and her price
   oldCard(html) {
     let el = document.getElementById('oldcard');
@@ -474,8 +482,8 @@ export class UI {
     $('quests').querySelector('.qs-body').innerHTML = html;
     if (!$('quests').hidden) { clearTimeout(this.qSeenT); this.qSeenT = setTimeout(() => { for (const q of S.board) q.fresh = false; }, 4000); } // (seen: no longer new)
   }
-  anyOpen(except) { return (this.chart && this.chart.isOpen()) || this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || (except !== 'cabin' && !$('cabin').hidden) || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
-  closeAll() { if (this.catalogOpen && this.catalogOpen()) this.toggleCatalog(false); if (this.inventoryOpen && this.inventoryOpen()) this.toggleInventory(false); this.chart && this.chart.toggle(false); // (5.10.1) the shops and the bag too (a death, the thing's arrival)
+  anyOpen(except) { return !$('store').hidden || !$('events').hidden || (this.chart && this.chart.isOpen()) || this.stationsOpen() || this.oldCardOpen() || !$('chest').hidden || !$('quests').hidden || (except !== 'cabin' && !$('cabin').hidden) || !$('catalog').hidden || !$('journal').hidden || !$('workshop').hidden || !$('cave').hidden || !$('tankroom').hidden || !$('trapset').hidden || !$('gallery').hidden || !$('dave').hidden || !$('settings').hidden || !$('inventory').hidden; }
+  closeAll() { for (const id of ['store', 'events']) { const el = $(id); if (el) el.hidden = true; } /* (6.4.0) */ if (this.catalogOpen && this.catalogOpen()) this.toggleCatalog(false); if (this.inventoryOpen && this.inventoryOpen()) this.toggleInventory(false); this.chart && this.chart.toggle(false); // (5.10.1) the shops and the bag too (a death, the thing's arrival)
     this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
@@ -500,7 +508,7 @@ export class UI {
   // the rarity-edged box, a NEW tag in the corner) with the name under it and +1 at the bottom. The game runs on
   // behind them; a click anywhere sends them off early. entries: [{ kind: 'item'|'supply'|'trawl'|'trap', id }]
   // (4.16.9) while a shop, the catalog, the quest board or a crate is open, the cards wait; they come when it closes
-  gainsBlocked() { return ['catalog', 'workshop', 'chest', 'dave', 'cave', 'quests', 'confirm', 'oldcard'].some((id) => { const el = $(id); return el && !el.hidden; }); }
+  gainsBlocked() { return ['catalog', 'workshop', 'chest', 'dave', 'cave', 'quests', 'confirm', 'oldcard', 'store', 'events'].some((id) => { const el = $(id); return el && !el.hidden; }); }
   showGains(entries, now = false) {
     if (!entries || !entries.length) return;
     if (!now && this.gainsBlocked()) { this.gainsQueue = (this.gainsQueue || []).concat(entries); return; }
@@ -1141,6 +1149,11 @@ export class UI {
     const it = ITEMS[q.id], on = K.on[it.kind] === q.u, seller = this.h.canSellGear && this.h.canSellGear();
     const curQ = !on && K.on[it.kind] ? K.items.find((x) => x.u === K.on[it.kind]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
     let body, acts = '';
+    if (it.kind === 'chest') { // (6.4.0) a chest in the locker: its card, and Open (with room in the locker for all it can give)
+      body = `<div class="ip-cols one">${this.itemCol(P, q, 'Chest')}</div>`; acts += `<button data-lk="open:${q.u}">Open</button>`;
+      if (seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
+      return `<div class="item-pop"><div class="ip-box r-${it.rarity}"><button class="ip-close" aria-label="Close">×</button>${body}<div class="lk-acts">${acts}</div></div></div>`;
+    }
     if (on) {
       body = `<div class="ip-cols one">${this.itemCol(P, q, 'You have it on')}</div>`;
       const starter = FREE_IDS[it.kind];

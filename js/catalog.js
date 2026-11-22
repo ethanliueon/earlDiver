@@ -10,6 +10,7 @@ import { SUITS, TRAPS, SUPPLIES, supplyMax, money, owns, kit } from './economy.j
 import { NETS_SUB, netsOf } from './capture.js';
 import { toolIcon } from './tools_draw.js';
 import { drawSpecialPicture, drawSuitFlat } from './item_art.js';
+import { drawChest } from './chest_art.js';
 import { drawFins3, drawCam3, drawTank3, drawBag3, drawNet3 } from './gear_art.js';
 import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
@@ -21,17 +22,17 @@ export const WEBSHOPS = {
   bayside: { title: 'Bayside Marine Supply', sub: 'Harbour Road, since 1974', stock: 'catalog', theme: 'bayside',
     lede: 'Diving gear and supplies, sent out to the boat the same day.', newIn: ['item:sipper', 'item:macro', 'item:long', 'item:split', 'item:s130'],
     cats: [['home', 'Home'], null, ['net', 'Hand nets'], ['cam', 'Cameras'], ['trawl', 'Trawl nets'], ['trap', 'Traps'], null,
-      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['chest', 'Surplus crates'], ['sell', 'Sell your gear']], // (4.0.0: the yard is on the Margaret now, P)
+      ['suit', 'Suits'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['supply', 'Supplies'], ['sell', 'Sell your gear']] /* (6.4.0) chests are in the game's own Shop now */, // (4.0.0: the yard is on the Margaret now, P)
     chestTitle: 'Surplus crates', chestLede: 'Returns and odd lots from the back room, sold sealed. You get one thing, whatever is in it.' },
   station: { title: 'Station Stores', sub: 'Abyssal Research Station, 280 m, requisitions', stock: 'station', theme: 'station',
     lede: 'Surplus and spare equipment from the station stores, released to visiting divers. Delivered to your locker.', newIn: [],
     cats: [['home', 'Index'], null, ['cam', 'Cameras'], ['suit', 'Cold-water suits'], null,
-      ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['chest', 'Equipment cases'], ['sell', 'Return equipment']],
+      ['net', 'Hand nets'], ['fins', 'Fins'], ['tank', 'Air'], ['bag', 'Bags'], null, ['sell', 'Return equipment']],
     chestTitle: 'Equipment cases', chestLede: 'Sealed cases of kit the scientists stopped using. One item in each, unlisted.' },
   dave: { title: "Dave's Haul", sub: '1,200 m down, cash only, no refunds', stock: 'dave', theme: 'dave',
     lede: "Deep gear, second hand and first rate. If it's on here, I've got it. If it isn't, I haven't. — Dave", newIn: [],
     cats: [['home', 'Front page'], null, ['tank', 'Air'], ['suit', 'Deep suits'], ['net', 'Big-game nets'], null,
-      ['fins', 'Fins'], ['bag', 'Bags'], ['cam', 'Cameras'], null, ['chest', 'Boxes, unopened'], ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
+      ['fins', 'Fins'], ['bag', 'Bags'], ['cam', 'Cameras'], null, ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
     chestTitle: 'Boxes, unopened', chestLede: "Whatever came down on the rope. I haven't looked. I say." },
 };
 const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];
@@ -268,6 +269,7 @@ export function pictureOf(kind, v, w, h, plain = false) {
       const fl = ctx.createLinearGradient(0, h * 0.62, 0, h); fl.addColorStop(0, 'rgba(90,104,112,0)'); fl.addColorStop(1, 'rgba(90,104,112,0.32)'); ctx.fillStyle = fl; ctx.fillRect(0, h * 0.62, w, h * 0.38);
       let sd = 7; const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647); for (let i = 0; i < w * h / 70; i++) { ctx.fillStyle = `rgba(${rnd() < 0.5 ? '40,48,52' : '255,255,250'},${(rnd() * 0.05).toFixed(3)})`; ctx.fillRect(rnd() * w, rnd() * h, 1, 1); } }
     if (kind === 'gold') { drawGoldCoins(ctx, w, h, v | 0); const url = c.toDataURL(); PICS.set(key, url); return url; } // (6.1.0)
+    if (kind === 'chest') { drawChest(ctx, (v && v.look) || 'crate', w, h, 0); const url = c.toDataURL(); PICS.set(key, url); return url; } // (6.4.0) a chest in the locker
     if (v && typeof v === 'object' && v.kind === 'ability') { drawScroll3(ctx, w / 2, h / 2, Math.min(w, h) * 0.98, v.fam, v.tier); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.9.0) an ability's scroll
     if (v && typeof v === 'object' && v.id && kind === 'net') { drawNet3(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.9)
     if (v && typeof v === 'object' && v.id && (kind === 'tank' || kind === 'bag')) { (kind === 'tank' ? drawTank3 : drawBag3)(ctx, w, h, v); const url = c.toDataURL(); PICS.set(key, url); return url; } // (5.12.8)
