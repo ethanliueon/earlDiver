@@ -76,11 +76,15 @@ function bagPic(ctx, w, h, def) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx, cy, bw * 0.75, bh * 0.45, 0.3, 0, TAU); ctx.fill();
     ctx.strokeStyle = 'rgba(90,30,15,0.5)'; ctx.lineWidth = h * 0.012; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.ellipse(cx + k * bw * 0.18, cy, bw * 0.1, bh * 0.36, 0.3, 0.5, 2.6); ctx.stroke(); } // folds
     ctx.fillStyle = '#4a1a0e'; ctx.beginPath(); ctx.ellipse(cx - bw * 0.5, cy - bh * 0.32, bw * 0.16, bw * 0.1, 0.6, 0, TAU); ctx.fill();
-  } else if (def.id === 'eelpurse') {
-    const g = ctx.createLinearGradient(cx - bw, cy, cx + bw, cy); g.addColorStop(0, '#141a14'); g.addColorStop(0.45, '#2e3a2c'); g.addColorStop(0.55, '#3a4836'); g.addColorStop(1, '#10140e');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(cx - bw * 0.7, cy - bh * 0.3, bw * 1.4, bh * 0.7, bh * 0.2); ctx.fill();
-    ctx.strokeStyle = 'rgba(140,170,130,0.3)'; ctx.lineWidth = h * 0.005; for (let k = 0; k < 12; k++) { ctx.beginPath(); ctx.arc(cx - bw * 0.6 + k * bw * 0.11, cy + bh * 0.05, bw * 0.06, Math.PI, TAU); ctx.stroke(); } // scales
-    ctx.fillStyle = '#e8e4d0'; for (let k = 0; k < 9; k++) { const x = cx - bw * 0.4 + k * bw * 0.1; ctx.beginPath(); ctx.moveTo(x, cy - bh * 0.3); ctx.lineTo(x + bw * 0.04, cy - bh * 0.2); ctx.lineTo(x + bw * 0.08, cy - bh * 0.3); ctx.fill(); } // a clasp of teeth
+  } else if (def.id === 'eelpurse') { // (5.16.5) matched to its shop picture: mottled olive-black eel hide, a fold-over flap, a bone toggle
+    const L = cx - bw * 0.7, T = cy - bh * 0.3, Wd = bw * 1.4, Hd = bh * 0.7;
+    const g = ctx.createLinearGradient(0, T, 0, T + Hd); g.addColorStop(0, '#4a4a34'); g.addColorStop(0.55, '#2a281c'); g.addColorStop(1, '#100e08');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(L, T, Wd, Hd, bh * 0.2); ctx.fill();
+    ctx.fillStyle = 'rgba(8,7,4,0.16)'; for (let k = 0; k < 14; k++) { ctx.beginPath(); ctx.ellipse(L + ((k * 37) % 100) / 100 * Wd, T + ((k * 53) % 100) / 100 * Hd, bw * 0.07, bw * 0.045, 0, 0, TAU); ctx.fill(); } // mottling
+    ctx.fillStyle = '#3e3c2a'; ctx.beginPath(); ctx.moveTo(L, T + bh * 0.04); ctx.lineTo(L + Wd, T + bh * 0.04); ctx.lineTo(L + Wd * 0.98, T + Hd * 0.3); ctx.lineTo(cx, T + Hd * 0.62); ctx.lineTo(L + Wd * 0.02, T + Hd * 0.3); ctx.closePath(); ctx.fill(); // the flap
+    ctx.strokeStyle = 'rgba(214,204,170,0.5)'; ctx.lineWidth = h * 0.006; ctx.setLineDash([h * 0.014, h * 0.014]); ctx.beginPath(); ctx.moveTo(L + Wd * 0.05, T + Hd * 0.3); ctx.lineTo(cx, T + Hd * 0.56); ctx.lineTo(L + Wd * 0.95, T + Hd * 0.3); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#d8ccaa'; ctx.beginPath(); ctx.roundRect(cx - bw * 0.14, T + Hd * 0.7, bw * 0.28, bh * 0.07, bh * 0.03); ctx.fill(); // the bone toggle
+    ctx.strokeStyle = '#2a2216'; ctx.lineWidth = h * 0.01; ctx.beginPath(); ctx.moveTo(cx, T + Hd * 0.62); ctx.lineTo(cx, T + Hd * 0.7); ctx.stroke();
   } else if (def.bagLook && def.bagLook.fx !== 'satchel') {
     designedBag(ctx, w, h, cx, cy, bw, bh, def.bagLook);
   } else {

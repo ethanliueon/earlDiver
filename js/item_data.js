@@ -375,7 +375,7 @@ export const LEGENDARIES = [
     line: 'A pouch like a seahorse father\'s, the size of a sack. There is always room for one more.' },
   { id: 'stomach', kind: 'bag', arch: 'large', name: 'The Stomach', glow: '#e8a070',
     line: 'Better not to ask what it came out of. It holds more than it should.' },
-  { id: 'eelpurse', kind: 'bag', arch: 'light', name: 'Eel-skin Purse', glow: '#9ae0a0',
+  { id: 'eelpurse', kind: 'bag', arch: 'light', name: 'Eel-skin Purse', glow: '#b4bc8c',
     line: 'Supple, dark and very old. Full, it weighs nothing at all.' },
   { id: 'oldskin', kind: 'suit', arch: 'hard', name: 'Skin of the Old One', glow: '#d8a868',
     line: 'Shed in the cave in the west wall. The pressure of the deep slides off it like water.' },

@@ -497,7 +497,13 @@ e.inSub ? [
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(240,214,160,${(0.34 + 0.18 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(240,214,160,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); }
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
-    if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36); // (5.7.1) no arm fitted: locked, as a camera not owned is
+    if (e.inSub && !armT) padlock(cx + R * 0.42, cy + R * 0.42, R * 0.36);
+    // (5.16.4) a net whose power is cooling (Second Wind, Rebirth) shows a small hourglass on its button's lower left;
+    // the time itself is on the net's card in the bag
+    if (!aboard && !e.inSub && (sel || 'net') === 'net' && e.legends && P.powerReadyAt) {
+      const cool = ['secondwind', 'rebirth'].some((k) => e.legends.has(k) && P.powerReadyAt[k] > Date.now());
+      if (cool) { const bx = cx - R * 0.66, by = cy + R * 0.66, br = R * 0.3; ctx.save(); ctx.fillStyle = 'rgba(14,13,10,0.78)'; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill();
+        ctx.strokeStyle = 'rgba(176,150,104,0.55)'; ctx.lineWidth = 1.2 * u; ctx.stroke(); drawHourglass(ctx, bx, by, br * 0.62); ctx.restore(); } } // (5.7.1) no arm fitted: locked, as a camera not owned is
     if (tutKey === bKey) ring(cx, cy, R);
     // in reach: the porthole's glass glows, breathing (a warm ring inside the bolts)
     /* (5.15.7) the ring that was drawn across the picture here is gone: the light behind the coin says it */

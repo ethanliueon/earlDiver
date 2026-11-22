@@ -776,12 +776,41 @@ Object.assign(LEGEND_ART, {
     x.strokeStyle = '#d8ccb0'; x.lineWidth = 2.5; for (let k = 0; k < 7; k++) { x.beginPath(); x.moveTo(cx - 212, cy - 48 + k * 18); x.lineTo(cx - 236, cy - 40 + k * 18); x.stroke(); }
     x.strokeStyle = '#c8b890'; x.lineWidth = 4; x.beginPath(); x.moveTo(cx - 280, cy); x.bezierCurveTo(cx - 320, cy + 20, cx - 330, cy + 70, cx - 300, cy + 100); x.stroke();
     x.fillStyle = lin(x, cx - 320, cy + 92, cx - 280, cy + 112, [[0, '#f0e6cc'], [1, '#7a6e50']]); x.beginPath(); x.roundRect(cx - 322, cy + 96, 44, 16, 6); x.fill(); return '#c08080'; },
-  // dark, supple and very old: a long purse of eel skin, glossy, its fine pattern catching the light, a bone clasp
-  eelpurse(x, W, H, t) { lsd = 127; const cx = 470, cy = 214; const purse = () => { x.beginPath(); x.moveTo(cx - 300, cy - 60); x.bezierCurveTo(cx - 200, cy - 110, cx + 200, cy - 110, cx + 300, cy - 50); x.bezierCurveTo(cx + 330, cy + 30, cx + 220, cy + 100, cx, cy + 100); x.bezierCurveTo(cx - 220, cy + 100, cx - 330, cy + 30, cx - 300, cy - 60); x.closePath(); };
-    x.fillStyle = lin(x, 0, cy - 110, 0, cy + 100, [[0, '#3a3428'], [0.5, '#1c1812'], [1, '#080604']]); purse(); x.fill();
-    x.save(); purse(); x.clip(); for (let r = 0; r < 16; r++) for (let c = 0; c < 40; c++) { x.strokeStyle = 'rgba(200,180,130,0.08)'; x.lineWidth = 1; x.beginPath(); x.ellipse(cx - 320 + c * 16 + (r % 2) * 8, cy - 110 + r * 14, 7, 5, 0, 0, TAU); x.stroke(); } x.restore();
-    shade(x, purse, cy - 110, cy + 100, 0.35, 0.6); gloss(x, cx - 60, cy - 70, 200, 16, -0.03, 0.4);
-    x.fillStyle = lin(x, cx - 40, cy - 100, cx + 40, cy - 60, [[0, '#f0e6cc'], [1, '#7a6e50']]); x.beginPath(); x.roundRect(cx - 44, cy - 104, 88, 30, 12); x.fill(); x.fillStyle = '#2a2018'; x.beginPath(); x.arc(cx, cy - 89, 6, 0, TAU); x.fill(); return '#c8b890'; },
+  // (5.16.5) dark, supple and very old: a soft pouch of eel skin with a fold-over flap. The hide is mottled olive-black with
+  // the eel's pale lateral line running its length, sewn with bone thread, shut by a cord round a carved bone toggle
+  eelpurse(x, W, H, t) { lsd = 127; const cx = 470, cy = 220;
+    const body = () => { x.beginPath(); x.moveTo(cx - 250, cy - 78); x.bezierCurveTo(cx - 120, cy - 92, cx + 120, cy - 92, cx + 250, cy - 78);
+      x.bezierCurveTo(cx + 282, cy - 20, cx + 270, cy + 60, cx + 220, cy + 92); x.bezierCurveTo(cx + 100, cy + 118, cx - 100, cy + 118, cx - 220, cy + 92);
+      x.bezierCurveTo(cx - 270, cy + 60, cx - 282, cy - 20, cx - 250, cy - 78); x.closePath(); };
+    const flap = () => { x.beginPath(); x.moveTo(cx - 262, cy - 80); x.bezierCurveTo(cx - 120, cy - 100, cx + 120, cy - 100, cx + 262, cy - 80);
+      x.bezierCurveTo(cx + 250, cy - 36, cx + 120, cy - 4, cx + 22, cy + 18); x.quadraticCurveTo(cx, cy + 26, cx - 22, cy + 18);
+      x.bezierCurveTo(cx - 120, cy - 4, cx - 250, cy - 36, cx - 262, cy - 80); x.closePath(); };
+    const hide = (path, top, bot, c0, c1, c2) => { x.fillStyle = lin(x, 0, top, 0, bot, [[0, c0], [0.55, c1], [1, c2]]); path(); x.fill();
+      x.save(); path(); x.clip(); // the mottling: soft dark blotches and a few paler flecks, as eel skin has
+      for (let i = 0; i < 160; i++) { const px = cx - 290 + lr() * 580, py = top + lr() * (bot - top), r = 4 + lr() * 14; x.fillStyle = `rgba(8,7,4,${(0.06 + lr() * 0.12).toFixed(2)})`; x.beginPath(); x.ellipse(px, py, r * 1.6, r, 0.1, 0, TAU); x.fill(); }
+      for (let i = 0; i < 70; i++) { const px = cx - 290 + lr() * 580, py = top + lr() * (bot - top); x.fillStyle = `rgba(170,168,120,${(0.06 + lr() * 0.08).toFixed(2)})`; x.beginPath(); x.ellipse(px, py, 2 + lr() * 4, 1.4 + lr() * 2, 0, 0, TAU); x.fill(); }
+      x.restore(); };
+    hide(body, cy - 92, cy + 118, '#4a4a34', '#2a281c', '#100e08');
+    x.save(); body(); x.clip(); // the lateral line, wavering along the hide, and the pouch's soft creases
+    x.strokeStyle = 'rgba(170,168,124,0.16)'; x.lineWidth = 7; x.filter = 'blur(2px)'; x.beginPath(); x.moveTo(cx - 280, cy + 52); x.bezierCurveTo(cx - 120, cy + 40, cx + 60, cy + 64, cx + 280, cy + 46); x.stroke(); x.filter = 'none';
+    x.fillStyle = 'rgba(14,12,8,0.55)'; for (let k = 1; k < 26; k++) { const u = k / 26, v = 1 - u, bz = (p0, p1, p2, p3) => v * v * v * p0 + 3 * v * v * u * p1 + 3 * v * u * u * p2 + u * u * u * p3; x.beginPath(); x.arc(bz(cx - 280, cx - 120, cx + 60, cx + 280), bz(cy + 52, cy + 40, cy + 64, cy + 46), 1.6, 0, TAU); x.fill(); } // its pores
+    for (const [x0, x1] of [[-170, -150], [130, 160], [-40, -30]]) { x.strokeStyle = 'rgba(0,0,0,0.35)'; x.lineWidth = 5; x.beginPath(); x.moveTo(cx + x0, cy + 104); x.quadraticCurveTo(cx + (x0 + x1) / 2 + 8, cy + 70, cx + x1, cy + 30); x.stroke(); }
+    x.restore();
+    shade(x, body, cy - 92, cy + 118, 0.3, 0.6);
+    x.strokeStyle = 'rgba(214,204,170,0.55)'; x.lineWidth = 2; x.setLineDash([6, 6]); x.beginPath(); x.moveTo(cx - 232, cy - 40); x.bezierCurveTo(cx - 256, cy + 20, cx - 250, cy + 64, cx - 210, cy + 82); x.bezierCurveTo(cx - 100, cy + 104, cx + 100, cy + 104, cx + 210, cy + 82); x.bezierCurveTo(cx + 250, cy + 64, cx + 256, cy + 20, cx + 232, cy - 40); x.stroke(); x.setLineDash([]); // bone thread
+    // the flap's shadow on the body, then the flap
+    x.save(); body(); x.clip(); x.fillStyle = 'rgba(0,0,0,0.45)'; x.filter = 'blur(6px)'; x.translate(0, 10); flap(); x.fill(); x.filter = 'none'; x.restore();
+    hide(flap, cy - 100, cy + 26, '#56543c', '#34321f', '#1a180e');
+    shade(x, flap, cy - 100, cy + 26, 0.35, 0.4, 12); gloss(x, cx - 90, cy - 70, 170, 12, -0.04, 0.32);
+    x.strokeStyle = 'rgba(214,204,170,0.55)'; x.lineWidth = 2; x.setLineDash([6, 6]); x.beginPath(); x.moveTo(cx - 240, cy - 66); x.bezierCurveTo(cx - 220, cy - 34, cx - 110, cy - 10, cx - 24, cy + 8); x.moveTo(cx + 240, cy - 66); x.bezierCurveTo(cx + 220, cy - 34, cx + 110, cy - 10, cx + 24, cy + 8); x.stroke(); x.setLineDash([]);
+    // the cord: from the flap's point, twisted, round the toggle
+    x.strokeStyle = '#2a2216'; x.lineWidth = 6; x.beginPath(); x.moveTo(cx, cy + 22); x.bezierCurveTo(cx - 6, cy + 40, cx + 8, cy + 50, cx, cy + 62); x.stroke();
+    x.strokeStyle = 'rgba(160,140,100,0.5)'; x.lineWidth = 1.5; for (let k = 0; k < 5; k++) { x.beginPath(); x.moveTo(cx - 3, cy + 26 + k * 8); x.lineTo(cx + 3, cy + 31 + k * 8); x.stroke(); }
+    // the toggle: a short peg of carved bone, crosswise, worn yellow at the ends
+    x.fillStyle = 'rgba(0,0,0,0.4)'; x.beginPath(); x.ellipse(cx + 4, cy + 72, 46, 8, 0, 0, TAU); x.fill();
+    x.fillStyle = lin(x, 0, cy + 56, 0, cy + 74, [[0, '#ece2c4'], [0.5, '#c8b890'], [1, '#6a5c40']]); x.beginPath(); x.moveTo(cx - 40, cy + 60); x.quadraticCurveTo(cx, cy + 54, cx + 40, cy + 60); x.lineTo(cx + 44, cy + 66); x.quadraticCurveTo(cx, cy + 76, cx - 44, cy + 66); x.closePath(); x.fill();
+    x.strokeStyle = 'rgba(90,74,50,0.6)'; x.lineWidth = 1.5; for (const d of [-24, -12, 12, 24]) { x.beginPath(); x.moveTo(cx + d, cy + 58); x.lineTo(cx + d + 2, cy + 70); x.stroke(); }
+    return '#b4bc8c'; },
 });
 function drawLegend(ctx, w, h, def) {
   const f = LEGEND_ART[def.id]; if (!f) return false;
