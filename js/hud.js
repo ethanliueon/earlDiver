@@ -396,7 +396,9 @@ export class Hud {
       // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin
       (() => { if (aboard) return this.inCabin ? { key: 'outdeck', icon: 'door', on: true } : { key: 'f', icon: 'hand', on: false, why: 'Aboard, the big button is your hand' }; /* (6.0.5) the arc keeps its four places on deck: the hand's sits greyed */
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
-        return { key: hu ? 'u' : 'f', icon: 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
+        // (6.1.4) the hand shows what it will do: the ladder, the winch's basket, the sub's hatch; anything else, the hand
+        const tgt = tm.find((m) => m.key === (hu ? 'u' : 'f')), ctxIcon = tgt && { ladder: 'ladder', winch: 'basket', sub: 'hatch', door: 'cabin' }[tgt.what];
+        return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
       abil(),
       light(), // (6.0.5) aboard too: there it switches the sub's lights
     ];
@@ -575,7 +577,7 @@ e.inSub ? [
     if (tutKey === bKey) ring(cx, cy, R); // (6.0.5) drawn before the coin, so the hand (or net) stays readable on top
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(222,212,186,${(0.2 + 0.1 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(222,212,186,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); } // (6.0.5) quieter, bone
     const toolLook = (k) => (k === 'net' ? toolPic('net', gear(P, 'net')) || netLook(gear(P, 'net').look || 0) : k === 'cam' ? toolPic('cam', gear(P, 'cam')) || gear(P, 'cam').look : null); // (5.17.0) its own picture
-    { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = toolLook(kind);
+    { const kind = aboard ? (!this.inCabin && handOn ? 'cabin' : 'hand') /* (6.1.4) at the cabin door, the door */ : e.inSub ? 'claw' : sel || 'net', look = toolLook(kind);
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
     // (5.17.0) the legendary net's power, as a badge on the main button's lower left, whatever is in hand (the net is
     // worn either way): steady for a power that is always on; grey with a hair-thin arc while one with a cooldown comes
@@ -639,7 +641,7 @@ e.inSub ? [
     // (5.7.5) every button's picture in every state is painted once, now (during the loading screen), rather than the
     // first time each is needed, which showed as a button popping in a beat late
     if (!this.prewarmed) { this.prewarmed = true; const off = document.createElement('canvas').getContext('2d'), st = ['on', 'off', 'lit', 'press'];
-      const sets = [[R, ['net', 'cam', 'trap', 'claw', 'hand']], [r, ['sub', 'glow', 'hand', 'lamp', 'leave', 'dive', 'door']], [19 * u, ['bag', 'tank', 'auto', 'air', 'cam', 'trap', 'net', 'trawl']], [18 * u, ['sprint']], [17 * u, ['gear']]];
+      const sets = [[R, ['net', 'cam', 'trap', 'claw', 'hand', 'cabin']], [r, ['sub', 'glow', 'hand', 'lamp', 'leave', 'dive', 'door', 'ladder', 'basket', 'hatch']], [19 * u, ['bag', 'tank', 'auto', 'air', 'cam', 'trap', 'net', 'trawl']], [18 * u, ['sprint']], [17 * u, ['gear']]];
       for (const [sz, kinds] of sets) for (const kd of kinds) for (const s0 of st) { try { drawCoin(off, 0, 0, sz, kd, s0, kd === 'net' ? netLook(gear(P, 'net').look || 0) : (s0 === 'lit' && LIT_ART.has(kd)) ? { lit: true } : null, kd === 'net' ? (gear(P, 'net').rarity || null) : null); } catch (e) { /* skip */ } } }
     this.wasHeld = new Set(held); // (5.7.0) for the next frame's press rings
     hot(cx - R, cy - R, R * 2, R * 2, aboard ? (handOn ? 'f' : 'msg:' + (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door, or off the end to dive')) : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');

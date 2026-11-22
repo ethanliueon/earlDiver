@@ -302,7 +302,7 @@ const ART = {
     x.strokeStyle = 'rgba(220,240,250,0.85)'; x.lineWidth = 2; for (const [rx, ry] of [[10, 3], [18, 5.5]]) { x.beginPath(); x.ellipse(24, 30, rx, ry, 0, 0, TAU); x.stroke(); }
   },
   // (5.7.5) out on deck: the cabin's steel door, its porthole lit with daylight, the handle
-  door(x) {
+  door(x, o = {}) {
     x.lineJoin = 'round';
     const d = new Path2D('M-22 -40H22C26 -40 28 -38 28 -34V40H-28V-34C-28 -38 -26 -40 -22 -40Z');
     x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 4); x.fill(d); x.restore();
@@ -312,7 +312,7 @@ const ART = {
     const pg = x.createRadialGradient(-3, -19, 1, 0, -16, 10); pg.addColorStop(0, '#f2f4e0'); pg.addColorStop(1, '#8ab4c8'); x.fillStyle = pg; x.beginPath(); x.arc(0, -16, 8.5, 0, TAU); x.fill();
     x.strokeStyle = '#c8a860'; x.lineWidth = 3; x.beginPath(); x.arc(0, -16, 11, 0, TAU); x.stroke();
     x.fillStyle = '#c8a860'; x.strokeStyle = '#0a0c0a'; x.lineWidth = 2; x.beginPath(); x.roundRect(14, 2, 8, 18, 3); x.fill(); x.stroke(); // the handle
-    x.fillStyle = '#e8dcb8'; x.beginPath(); x.moveTo(-20, 22); x.lineTo(-8, 14); x.lineTo(-8, 19); x.lineTo(4, 19); x.lineTo(4, 25); x.lineTo(-8, 25); x.lineTo(-8, 30); x.closePath(); x.fill(); // an arrow out
+    if (!o.noArrow) x.fillStyle = '#e8dcb8'; if (!o.noArrow) x.beginPath(); if (o.noArrow) return; x.moveTo(-20, 22); x.lineTo(-8, 14); x.lineTo(-8, 19); x.lineTo(4, 19); x.lineTo(4, 25); x.lineTo(-8, 25); x.lineTo(-8, 30); x.closePath(); x.fill(); // an arrow out
   },
   // settings: a cog of old bronze, green with verdigris in its teeth, a bolt through it
   gear(x) {
@@ -437,6 +437,50 @@ const ART = {
     x.strokeStyle = '#c8b890'; x.lineWidth = 2; x.beginPath(); x.moveTo(-26, -6); x.quadraticCurveTo(0, 4, 26, -6); x.stroke();
     for (const [a, b] of [[-14, -18], [4, -22], [20, -14], [32, 20], [24, 34]]) { x.fillStyle = '#d8b040'; x.strokeStyle = '#3a2a08'; x.lineWidth = 1.8; x.beginPath(); x.ellipse(a, b, 8, 6, 0.3, 0, TAU); x.fill(); x.stroke(); x.fillStyle = 'rgba(255,240,180,0.6)'; x.beginPath(); x.ellipse(a - 2, b - 2, 3, 1.6, 0.3, 0, TAU); x.fill(); }
   },
+  // (6.1.4) the hand, by what it will do. A boarding ladder: two weathered steel rails and their rungs, wet, a hook over the top
+  ladder(x) {
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    x.save(); x.translate(2, 3); x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 8; x.beginPath(); x.moveTo(-15, -30); x.lineTo(-15, 40); x.moveTo(15, -30); x.lineTo(15, 40); x.stroke(); x.restore();
+    for (const sx of [-15, 15]) { // the rails, hooked over the gunwale at the top
+      x.strokeStyle = '#0b0c0a'; x.lineWidth = 9; x.beginPath(); x.moveTo(sx, 42); x.lineTo(sx, -28); x.quadraticCurveTo(sx, -40, sx + 10, -40); x.lineTo(sx + 12, -34); x.stroke();
+      x.strokeStyle = '#8a8a7c'; x.lineWidth = 5.4; x.stroke(); x.strokeStyle = 'rgba(255,250,230,0.35)'; x.lineWidth = 1.6; x.beginPath(); x.moveTo(sx - 1.4, 40); x.lineTo(sx - 1.4, -27); x.stroke();
+    }
+    for (let k = 0; k < 5; k++) { const y = -18 + k * 13; x.strokeStyle = '#0b0c0a'; x.lineWidth = 7; x.beginPath(); x.moveTo(-15, y); x.lineTo(15, y); x.stroke(); x.strokeStyle = k % 2 ? '#7a7a6c' : '#86846f'; x.lineWidth = 3.6; x.stroke(); x.strokeStyle = 'rgba(0,0,0,0.3)'; x.lineWidth = 1; x.beginPath(); x.moveTo(-13, y + 1.2); x.lineTo(13, y + 1.2); x.stroke(); } // the rungs, treads worn bright
+    x.fillStyle = 'rgba(130,70,30,0.5)'; for (const [a, b] of [[-15, 8], [15, -6], [15, 30], [-15, 34]]) { x.beginPath(); x.ellipse(a, b, 2.4, 5, 0, 0, TAU); x.fill(); } // rust where the paint went
+    x.fillStyle = 'rgba(190,220,230,0.5)'; for (const [a, b] of [[-15, 44], [15, 46], [2, 33]]) { x.beginPath(); x.ellipse(a, b, 1.6, 2.6, 0, 0, TAU); x.fill(); } // dripping
+  },
+  // the winch's basket, hanging from its hook on the wire: a wicker-and-net cradle the catch goes up in
+  basket(x) {
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    x.strokeStyle = '#0b0c0a'; x.lineWidth = 4; x.beginPath(); x.moveTo(0, -48); x.lineTo(0, -32); x.stroke(); x.strokeStyle = '#9a9a8a'; x.lineWidth = 2; x.stroke(); // the wire
+    x.strokeStyle = '#0b0c0a'; x.lineWidth = 6; x.beginPath(); x.moveTo(0, -32); x.lineTo(0, -26); x.arc(-4, -22, 4, -0.2, Math.PI * 0.9); x.stroke(); x.strokeStyle = '#6a6a5e'; x.lineWidth = 3.4; x.stroke(); // the hook
+    x.strokeStyle = '#1a1712'; x.lineWidth = 2.6; for (const sx of [-26, -9, 9, 26]) { x.beginPath(); x.moveTo(-4, -20); x.lineTo(sx, -2); x.stroke(); } x.strokeStyle = '#a8946a'; x.lineWidth = 1.2; for (const sx of [-26, -9, 9, 26]) { x.beginPath(); x.moveTo(-4, -20); x.lineTo(sx, -2); x.stroke(); } // the bridle ropes
+    const b = new Path2D('M-30 -3H30L25 34C24 38 21 40 17 40H-17C-21 40 -24 38 -25 34Z');
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.save(); x.translate(2, 3); x.fill(b); x.restore();
+    x.fillStyle = '#6a5636'; x.fill(b); x.save(); x.clip(b);
+    for (let y = 2; y < 42; y += 6) { x.fillStyle = y % 12 ? '#7c6640' : '#5e4c2e'; x.fillRect(-32, y, 64, 4); x.fillStyle = 'rgba(0,0,0,0.3)'; x.fillRect(-32, y + 3.6, 64, 1.2); } // the woven bands
+    x.strokeStyle = 'rgba(30,24,14,0.7)'; x.lineWidth = 2; for (let k = -24; k <= 24; k += 8) { x.beginPath(); x.moveTo(k, -3); x.lineTo(k * 0.86, 42); x.stroke(); } // its uprights
+    x.fillStyle = 'rgba(255,240,200,0.1)'; x.fillRect(-32, -3, 18, 46); x.fillStyle = 'rgba(0,0,0,0.25)'; x.fillRect(14, -3, 18, 46); x.restore();
+    x.lineWidth = 3.4; x.strokeStyle = '#0b0c0a'; x.stroke(b);
+    x.strokeStyle = '#2a2418'; x.lineWidth = 5; x.beginPath(); x.moveTo(-31, -3); x.lineTo(31, -3); x.stroke(); x.strokeStyle = '#8a7650'; x.lineWidth = 2.4; x.stroke(); // the rim
+    x.fillStyle = '#7a8a8a'; x.strokeStyle = '#0b0c0a'; x.lineWidth = 1.6; x.beginPath(); x.ellipse(10, -7, 9, 3.5, -0.2, 0, TAU); x.fill(); x.stroke(); x.fillStyle = '#8a6a5a'; x.beginPath(); x.ellipse(-8, -6, 7, 3, 0.3, 0, TAU); x.fill(); x.stroke(); // a fish's tail and back over the rim
+  },
+  // the sub's hatch, seen from above on her conning tower: a round lid of olive steel on its hinge, the handwheel on it
+  hatch(x) {
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.beginPath(); x.arc(2, 4, 38, 0, TAU); x.fill();
+    x.fillStyle = '#3e4232'; x.strokeStyle = '#0b0c09'; x.lineWidth = 4; x.beginPath(); x.arc(0, 0, 38, 0, TAU); x.fill(); x.stroke(); // the coaming
+    x.fillStyle = 'rgba(20,20,14,0.7)'; for (let k = 0; k < 16; k++) { const a = (k / 16) * TAU; x.beginPath(); x.arc(Math.cos(a) * 33, Math.sin(a) * 33, 1.6, 0, TAU); x.fill(); } // its bolts
+    const lg = x.createRadialGradient(-8, -10, 2, 0, 0, 28); lg.addColorStop(0, '#6e7452'); lg.addColorStop(1, '#40452f');
+    x.fillStyle = lg; x.beginPath(); x.arc(0, 0, 27, 0, TAU); x.fill(); x.strokeStyle = '#0b0c09'; x.lineWidth = 3; x.stroke(); // the lid
+    x.strokeStyle = 'rgba(255,250,220,0.22)'; x.lineWidth = 2; x.beginPath(); x.arc(0, 0, 24, Math.PI * 1.05, Math.PI * 1.7); x.stroke();
+    x.fillStyle = '#2e3224'; x.strokeStyle = '#0b0c09'; x.lineWidth = 2; x.beginPath(); x.roundRect(22, -8, 14, 16, 3); x.fill(); x.stroke(); // the hinge
+    x.lineCap = 'round'; x.strokeStyle = '#0b0c09'; x.lineWidth = 6.5; x.beginPath(); x.arc(0, 0, 14, 0, TAU); for (let k = 0; k < 3; k++) { const a = k * TAU / 3 + 0.3; x.moveTo(0, 0); x.lineTo(Math.cos(a) * 14, Math.sin(a) * 14); } x.stroke(); // the handwheel
+    x.strokeStyle = '#a8946a'; x.lineWidth = 3.4; x.beginPath(); x.arc(0, 0, 14, 0, TAU); for (let k = 0; k < 3; k++) { const a = k * TAU / 3 + 0.3; x.moveTo(0, 0); x.lineTo(Math.cos(a) * 14, Math.sin(a) * 14); } x.stroke();
+    x.fillStyle = '#a8946a'; x.strokeStyle = '#0b0c09'; x.lineWidth = 1.6; x.beginPath(); x.arc(0, 0, 4, 0, TAU); x.fill(); x.stroke();
+    x.fillStyle = 'rgba(130,70,30,0.45)'; for (const [a, b] of [[-20, 14], [16, 18], [-6, -24]]) { x.beginPath(); x.ellipse(a, b, 4, 2.4, 0.5, 0, TAU); x.fill(); } // rust in the paint
+  },
+  // the cabin door from the deck: the door alone, no arrow (going in)
+  cabin(x) { ART.door(x, { noArrow: true }); },
   // the pet: a small painted fish, turned towards you
   pet(x) {
     x.fillStyle = '#c86a3a'; x.strokeStyle = '#120c08'; x.lineWidth = 3;
