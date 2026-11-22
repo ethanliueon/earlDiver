@@ -3064,3 +3064,7 @@ document.addEventListener('visibilitychange', () => {
 ui.showTitle();
 startLegendFx(); // (5.9.1) gold sparks round legendary things wherever they are shown
 // (5.9.5) no "turn your phone" card and no pause when it is held upright: on a phone the page outside turns the game's frame
+// (5.16.3) the page itself never scrolls: a touch on a panel could nudge it (the inventory slid up under its own
+// tabs in a test), so any scroll is put straight back
+window.addEventListener('scroll', () => { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); }, { passive: true });
+document.addEventListener('scroll', () => { const se = document.scrollingElement; if (se && (se.scrollTop || se.scrollLeft)) { se.scrollTop = 0; se.scrollLeft = 0; } }, { passive: true, capture: true });

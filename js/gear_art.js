@@ -383,21 +383,39 @@ export function drawBag3(ctx, w, h, def) {
 // net, a big D-frame (big game), a wide seine frame (school).
 const NET_SHAPE = { everyday: { pole: 430, r: 90, f: 'round' }, sure: { pole: 440, r: 100, f: 'round', deep: 1.3 }, gentle: { pole: 420, r: 90, f: 'square' }, reach: { pole: 600, r: 78, f: 'tear' },
   quick: { pole: 320, r: 74, f: 'round' }, big: { pole: 500, r: 120, f: 'd' }, school: { pole: 440, r: 100, f: 'wide' } };
+// (5.16.3) the legendary nets on the same 3D net as the rest (the bag hung from the rim), each made of its own story:
+// Gulper's Throat a jaw of bone with teeth on its rim, a dark skin bag and an eel's spine for a handle; the Choir's Veil
+// a fine pale veil on a pearl hoop and a bleached bone handle; Lanternmesh its knots glowing warm on a lure's stalk;
+// the Hagfish's Knot cords of slime on twisted cord; Jonah's Seine black on a whale's rib; the Tithe stained, on carved
+// wood bound in brass. Each glows its own colour and gives off sparks
+const LEG_NET = {
+  gulper: { hoop: '#d8ccaa', handle: ['#7a6e58', '#4a4232', '#201c14'], mesh: '#3a1a16', step: 10, poleR: 24, hoopW: 15, glow: '#b85a48', skin: 'rgba(40,14,12,0.82)', teeth: true, spine: true },
+  choirveil: { hoop: '#e2dccc', handle: ['#e8e0cc', '#bdb39a', '#6e6450'], mesh: '#d8d2c2', step: 8, poleR: 19, hoopW: 11, glow: '#d8d0c0', veil: true },
+  lanternmesh: { hoop: '#c8b88a', handle: ['#6a5a40', '#3e3424', '#1a160e'], mesh: '#6a5e40', step: 13, poleR: 20, hoopW: 11, glow: '#d8b878', lanterns: true, stalk: true },
+  hagnet: { hoop: '#8a7a5a', handle: ['#9a8a64', '#6a5a3e', '#2e2618'], mesh: '#b8b08a', step: 12, poleR: 23, hoopW: 14, glow: '#c8bc96', slime: true, cord: true },
+  stillwater: { hoop: '#26282a', handle: ['#e2d8c0', '#b0a486', '#5a5040'], mesh: '#1c1e20', step: 11, poleR: 25, hoopW: 13, glow: '#9ab0c4', rib: true },
+  oldnet: { hoop: '#7a5a2e', handle: ['#7a5232', '#4e3420', '#22160c'], mesh: '#4a3a24', step: 12, poleR: 23, hoopW: 14, glow: '#d8a868', carved: true },
+};
 export function drawNet3(ctx, w, h, def) {
-  if (drawLegend(ctx, w, h, def)) return true;
+  const LS = def.rarity === 'legendary' ? LEG_NET[def.id] : null;
+  if (!LS && drawLegend(ctx, w, h, def)) return true;
   const S0 = NET_SHAPE[def.arch] || NET_SHAPE.everyday, k = RK[def.rarity] || 0, L = typeof def.look === 'object' && def.look ? def.look : {};
   // (5.15.2) each net its own build within its kind: the pole's length and thickness, what it is made of (aluminium,
   // varnished wood, fibreglass), the hoop's thickness, the mesh fine or coarse, the bag deep or shallow (from its id)
   const hv = hash(def.id || def.arch), pick = (n, sh) => (hv >>> sh) % n;
   const S = { ...S0, pole: S0.pole * (0.85 + pick(5, 2) * 0.08), r: S0.r * (0.9 + pick(4, 5) * 0.06), deep: (S0.deep || 1) * (0.8 + pick(5, 8) * 0.1) };
   const MAT = [['#7a8288', '#4a5258', '#22272a'], ['#a07a48', '#6e5030', '#3a2a18'], ['#c8b878', '#8a7a48', '#4a4020'], ['#5a6448', '#3a4430', '#1c2216']][pick(4, 11)];
-  const poleR = 10 + pick(5, 14) * 1.5, hoopW = 8 + pick(4, 17) * 2.5, meshStep = [12, 16, 22][pick(3, 20)];
+  let poleR = 10 + pick(5, 14) * 1.5, hoopW = 8 + pick(4, 17) * 2.5, meshStep = [12, 16, 22][pick(3, 20)];
+  // (5.16.3) the ladder you can see: a common net coarse mesh on a thin hoop; an uncommon one finer, its pole painted and
+  // banded; a rare one fine knotless mesh, a rubber-coated hoop with a bumper, a carbon-wrapped pole and a stainless yoke
+  if (k === 0) { meshStep = 22; hoopW = Math.min(hoopW, 10); } else if (k === 1) meshStep = 16; else if (k === 2) { meshStep = 12; hoopW += 3; }
   const mute = (c) => mix(c, '#6a675c', 0.25), hoop0 = L.hoop ? mute(L.hoop) : k >= 3 ? '#8a6a34' : '#3e4448', handle0 = L.h ? L.h.map(mute) : k >= 3 ? ['#a07a48', '#6e5030', '#3a2a18'] : MAT;
   let mesh = k >= 3 ? '#5a5a46' : '#3a4a3a', metal = k >= 3 ? '#a8864e' : k >= 2 ? '#b8bcbc' : '#5a5e60';
   // (5.15.4) an exotic net in its era's make: a varnished wood pole, brass hoop and tarred hemp; a black iron pole bound
   // with canvas tape; a painted alloy pole with a stainless hoop, a rubber grip and nylon mesh
   const E = eraOf(def); let hoopE = null, handleE = null;
   if (E) { handleE = E.era === 'postwar' ? shade3(E.paint) : E.wood; hoopE = E.era === 'victorian' ? E.metal : E.era === 'interwar' ? '#34342f' : E.metal; mesh = E.twine; metal = E.metal; }
+  if (LS) { handleE = LS.handle; hoopE = LS.hoop; mesh = LS.mesh; meshStep = LS.step; poleR = LS.poleR; hoopW = LS.hoopW; metal = mix(LS.glow, '#6a5a3a', 0.4); }
   // (5.15.3) drawn in 3D, as a real landing net is seen: the hoop a tilted ring, the bag hanging from the whole rim and
   // lashed to it, its diamond mesh following the bag's curve and closing in towards the rounded bottom (lines on the far
   // side darker, seen through the near side), the pole meeting the rim through a collar and a split yoke
@@ -416,7 +434,7 @@ export function drawNet3(ctx, w, h, def) {
     return add(c, add(mul(e1, a0 * s0), mul(e2, b0 * s0))); };
   const ctrZ = (v) => add(mul(n, -D * v), mul(sag, R * 0.45 * v * v))[2];
   const P2 = (p) => [p[0], -p[1]]; // to the page (y down)
-  const A = at(Math.PI, 0), A2 = P2(A), ang = Math.PI + 0.1, Lp = S.pole * 0.62, PE = [A2[0] + Math.cos(ang) * Lp, A2[1] + Math.sin(ang) * Lp];
+  const A = at(Math.PI, 0), A2 = P2(A), ang = Math.PI + 0.1, Lp = S.pole * (LS ? 0.46 : 0.62), /* (5.16.3) a legendary's handle short and thick */ PE = [A2[0] + Math.cos(ang) * Lp, A2[1] + Math.sin(ang) * Lp];
   // fit it all into the frame
   let x0 = PE[0], x1 = PE[0], y0 = PE[1], y1 = PE[1]; const grow = (q) => { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); };
   for (let i = 0; i <= 48; i++) for (let j = 0; j <= 10; j++) grow(P2(at(i / 48 * TAU, j / 10)));
@@ -426,7 +444,7 @@ export function drawNet3(ctx, w, h, def) {
     const lw = 1 / sc, twine = mesh, far = mix(twine, '#000', 0.45), near = mix(twine, '#d8d0b6', 0.18);
     // the bag's body: thin panels, so where the near and far sides overlap the net reads denser, as netting does
     for (let j = 0; j < 12; j++) for (let i = 0; i < 40; i++) { const u0 = i / 40 * TAU, u1 = (i + 1) / 40 * TAU, v0 = j / 12, v1 = (j + 1) / 12, q = [at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)].map(P2);
-      x.fillStyle = rgba(twine, 0.07); x.beginPath(); x.moveTo(...q[0]); for (let k2 = 1; k2 < 4; k2++) x.lineTo(...q[k2]); x.closePath(); x.fill(); }
+      x.fillStyle = LS && LS.skin ? LS.skin : LS && LS.veil ? 'rgba(226,222,210,0.09)' : LS && LS.slime ? 'rgba(170,176,120,0.12)' : rgba(twine, 0.07); x.beginPath(); x.moveTo(...q[0]); for (let k2 = 1; k2 < 4; k2++) x.lineTo(...q[k2]); x.closePath(); x.fill(); }
     // the mesh, the two families of the diamond, split into far (behind) and near segments
     const segs = [[], []];
     for (const sg of [1, -1]) for (let i = 0; i < M; i++) { let prev = null;
@@ -445,6 +463,11 @@ export function drawNet3(ctx, w, h, def) {
     x.fillStyle = rgba(mix(twine, '#000', 0.2), 0.95);
     for (let m = 1; m < ROWS * 2; m++) { const v = m / (ROWS * 2); for (let i = 0; i < M; i++) { const u = i * du + m * du / 2, p = at(u, v); if (p[2] - ctrZ(v) <= 0) continue; const q = P2(p); x.beginPath(); x.arc(q[0], q[1], (meshStep > 18 ? 2.6 : 2) * lw * 1.3, 0, TAU); x.fill(); } }
     hoopStroke(true);
+    if (k === 2 && !LS && !E) { x.lineCap = 'round'; x.strokeStyle = 'rgba(20,22,22,0.85)'; x.lineWidth = hoopW * 0.55; x.beginPath(); let on2 = false; for (const [q, f] of ring) { if (f) { on2 ? x.lineTo(...q) : x.moveTo(...q); on2 = true; } else on2 = false; } x.stroke(); } // (5.16.3) a rare hoop's rubber coat
+    if (LS && LS.teeth) for (let i = 0; i < 26; i++) { const u = i / 26 * TAU, p = at(u, 0); if (p[2] <= 0) continue; const q = P2(p), c0 = P2(at(u, 0.12)); const dx0 = c0[0] - q[0], dy0 = c0[1] - q[1], dl = Math.hypot(dx0, dy0) || 1;
+      x.fillStyle = '#e8e0c8'; x.strokeStyle = '#2a2418'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(q[0] - dy0 / dl * 4, q[1] + dx0 / dl * 4); x.lineTo(q[0] + dx0 / dl * 16, q[1] + dy0 / dl * 16); x.lineTo(q[0] + dy0 / dl * 4, q[1] - dx0 / dl * 4); x.closePath(); x.fill(); x.stroke(); } // the gulper's teeth, turned inward
+    if (LS && LS.lanterns) for (let m = 1; m < ROWS * 2; m++) { const v = m / (ROWS * 2); for (let i = 0; i < M; i += 2) { const p = at(i * du + m * du / 2, v); if (p[2] - ctrZ(v) <= 0) continue; const q = P2(p), gl = x.createRadialGradient(q[0], q[1], 0, q[0], q[1], 9 * lw * 1.4); gl.addColorStop(0, 'rgba(255,236,180,0.95)'); gl.addColorStop(1, 'rgba(255,214,140,0)'); x.fillStyle = gl; x.beginPath(); x.arc(q[0], q[1], 9 * lw * 1.4, 0, TAU); x.fill(); } } // Lanternmesh: its knots lit
+    if (LS && LS.slime) { x.strokeStyle = 'rgba(214,220,170,0.35)'; x.lineWidth = 3 * lw * 1.4; for (let i = 0; i < 6; i++) { const p = P2(at(i * 1.1, 0.05)), p2 = P2(at(i * 1.1 + 0.2, 0.55)); x.beginPath(); x.moveTo(...p); x.quadraticCurveTo(p[0] + 6, (p[1] + p2[1]) / 2, p2[0], p2[1]); x.stroke(); } } // strings of slime hanging
     // the rim's highlight and the cord lashing the bag to it
     x.strokeStyle = rgba('#ffffff', 0.28); x.lineWidth = 2.5 * lw * 1.3; x.beginPath(); let on = false; for (const [q, f] of ring) { if (f) { on ? x.lineTo(q[0], q[1] - hoopW * 0.25) : x.moveTo(q[0], q[1] - hoopW * 0.25); on = true; } else on = false; } x.stroke();
     for (let i = 0; i < M; i++) { const u = i * du, p = at(u, 0); if (p[2] <= 0) continue; const q = P2(p); x.strokeStyle = rgba(mix(twine, '#000', 0.3), 0.85); x.lineWidth = 2.2 * lw * 1.3; x.beginPath(); x.moveTo(q[0] - hoopW * 0.3, q[1] - hoopW * 0.55); x.lineTo(q[0] + hoopW * 0.3, q[1] + hoopW * 0.55); x.stroke(); }
@@ -458,6 +481,12 @@ export function drawNet3(ctx, w, h, def) {
     else for (let i = 0; i < 9; i++) { x.strokeStyle = 'rgba(255,255,255,0.08)'; x.lineWidth = 2; x.beginPath(); x.moveTo(18 + i * 13, -R0); x.lineTo(24 + i * 13, R0); x.stroke(); }
     if (E && E.era === 'victorian') for (const fp of [0.42, 0.7]) { const fx2 = Lr * fp; x.fillStyle = lin(x, 0, -R0 - 2, 0, R0 + 2, [[0, mix(E.metal, '#fff', 0.35)], [0.5, E.metal], [1, mix(E.metal, '#000', 0.45)]]); x.fillRect(fx2, -R0 - 2, 14, R0 * 2 + 4); } // brass ferrules on the wood
     if (E) eraMark(x, E, Lr * 0.56, 0, Math.max(13, R0 * 0.9), 0, handle[1]);
+    if (k === 2 && !LS && !E) { x.save(); x.beginPath(); x.roundRect(140, -R0, Lr - 190, R0 * 2, R0); x.clip(); x.strokeStyle = 'rgba(255,255,255,0.07)'; x.lineWidth = 3; for (let i = -10; i < Lr / 8; i++) { x.beginPath(); x.moveTo(140 + i * 8, -R0); x.lineTo(140 + i * 8 + R0 * 2, R0); x.stroke(); x.beginPath(); x.moveTo(140 + i * 8 + R0 * 2, -R0); x.lineTo(140 + i * 8, R0); x.stroke(); } x.restore(); } // (5.16.3) a rare pole's carbon weave
+    if (LS && LS.spine) for (let xx = 150; xx < Lr - 50; xx += R0 * 1.5) { x.fillStyle = lin(x, 0, -R0 * 1.3, 0, R0 * 1.3, [[0, '#e8dcc0'], [0.5, '#b0a080'], [1, '#5a5038']]); x.beginPath(); x.roundRect(xx, -R0 * 1.3, R0 * 0.8, R0 * 2.6, R0 * 0.35); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 1.5; x.stroke(); } // an eel's vertebrae
+    if (LS && LS.cord) { x.strokeStyle = 'rgba(40,30,16,0.55)'; x.lineWidth = 3; for (let xx = 140; xx < Lr - 40; xx += 11) { x.beginPath(); x.moveTo(xx, -R0); x.quadraticCurveTo(xx + 8, 0, xx + 3, R0); x.stroke(); } } // twisted cords
+    if (LS && LS.carved) for (const fp of [0.38, 0.62, 0.86]) { const fx2 = Lr * fp; x.fillStyle = lin(x, 0, -R0 - 2, 0, R0 + 2, [[0, '#c8a060'], [0.5, '#8a6a34'], [1, '#4a3416']]); x.fillRect(fx2, -R0 - 2, 12, R0 * 2 + 4); x.strokeStyle = 'rgba(40,24,10,0.6)'; x.lineWidth = 1.2; for (let i = 0; i < 4; i++) { x.beginPath(); x.moveTo(fx2 + 20 + i * 9, -R0 * 0.6); x.lineTo(fx2 + 25 + i * 9, R0 * 0.6); x.stroke(); } } // brass bands and cut marks
+    if (LS && LS.rib) { x.strokeStyle = 'rgba(90,80,60,0.35)'; x.lineWidth = 1.2; for (let xx = 150; xx < Lr - 40; xx += 26) { x.beginPath(); x.ellipse(xx, 0, 3, R0 * 0.6, 0, 0, TAU); x.stroke(); } } // the rib's pores
+    if (LS && LS.stalk) { const gl = x.createRadialGradient(Lr * 0.12, -R0 * 2.4, 0, Lr * 0.12, -R0 * 2.4, 26); gl.addColorStop(0, 'rgba(255,236,180,0.9)'); gl.addColorStop(1, 'rgba(255,214,140,0)'); x.strokeStyle = '#3e3424'; x.lineWidth = 4; x.beginPath(); x.moveTo(Lr * 0.16, -R0); x.quadraticCurveTo(Lr * 0.18, -R0 * 2.6, Lr * 0.12, -R0 * 2.4); x.stroke(); x.fillStyle = gl; x.beginPath(); x.arc(Lr * 0.12, -R0 * 2.4, 26, 0, TAU); x.fill(); } // a lure on its stalk at the grip
     if (k >= 1 && !L.h && !E) { x.fillStyle = '#7a6040'; x.fillRect(140, -R0, 16, R0 * 2); }
     x.fillStyle = '#121314'; x.beginPath(); x.roundRect(-8, -R0 - 1, 14, R0 * 2 + 2, 5); x.fill();
     x.fillStyle = lin(x, 0, -R0 - 3, 0, R0 + 3, [[0, mix(metal, '#fff', 0.3)], [0.5, metal], [1, mix(metal, '#000', 0.45)]]); x.beginPath(); x.roundRect(Lr - 40, -R0 - 3, 40, R0 * 2 + 6, 4); x.fill(); x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 2; x.stroke();
@@ -465,8 +494,9 @@ export function drawNet3(ctx, w, h, def) {
     // the yoke: two arms from the collar out to the rim either side of where it meets
     const C2 = [A2[0] + Math.cos(ang) * R * 0.32, A2[1] + Math.sin(ang) * R * 0.32];
     for (const du2 of [-0.42, 0.42]) { const q = P2(at(Math.PI + du2, 0)); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = hoopW * 0.8 + 4; x.beginPath(); x.moveTo(...C2); x.lineTo(...q); x.stroke(); x.strokeStyle = hoop; x.lineWidth = hoopW * 0.8; x.stroke(); }
+    if (LS) { const c0 = P2(at(0, 0.3)); const gl = x.createRadialGradient(c0[0], c0[1], 10, c0[0], c0[1], R * 1.6); gl.addColorStop(0, rgba(LS.glow, 0.18)); gl.addColorStop(1, rgba(LS.glow, 0)); x.save(); x.globalCompositeOperation = 'lighter'; x.fillStyle = gl; x.beginPath(); x.arc(c0[0], c0[1], R * 1.6, 0, TAU); x.fill(); x.restore(); }
     x.restore();
-    if (k >= 4) sparks(x, W, H, hoop, 19 + (hash(def.id) % 97));
+    if (k >= 4) sparks(x, W, H, LS ? LS.glow : hoop, 19 + (hash(def.id) % 97));
   });
   return true;
 }

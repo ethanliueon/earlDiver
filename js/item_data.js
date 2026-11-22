@@ -346,17 +346,17 @@ export const EXOTICS = {
 // level IV, and glow (Bioluminescence) like every Legendary.
 export const LEGENDARIES = [
   // the six Legendary nets, one for each legendary skill
-  { id: 'gulper', kind: 'net', arch: 'big', name: "Gulper's Throat", legend: 'magnetic', glow: '#7ae8ff',
+  { id: 'gulper', kind: 'net', arch: 'big', name: "Gulper's Throat", legend: 'magnetic', glow: '#b85a48',
     line: 'The stretched jaw-skin of a gulper eel, sewn onto a ring of its own bone. Fish swim toward it as if they had been asked.' },
-  { id: 'choirveil', kind: 'net', arch: 'gentle', name: "The Drowned Choir's Veil", legend: 'kinship', glow: '#b8a0ff',
+  { id: 'choirveil', kind: 'net', arch: 'gentle', name: "The Drowned Choir's Veil", legend: 'kinship', glow: '#d8d0c0',
     line: 'A veil of siphonophore, still faintly alive. What it catches stops struggling, and stays calm in the bag for as long as you like.' },
-  { id: 'lanternmesh', kind: 'net', arch: 'sure', name: 'Lanternmesh', legend: 'eye', glow: '#f6e08a',
+  { id: 'lanternmesh', kind: 'net', arch: 'sure', name: 'Lanternmesh', legend: 'eye', glow: '#d8b878',
     line: 'Woven from the lure-threads of a hundred anglerfish. In the dark it shows you which fish are not like the others.' },
   { id: 'hagnet', kind: 'net', arch: 'reach', name: "The Hagfish's Knot", legend: 'secondwind', glow: '#d8c8a0',
     line: 'A long net of hagfish slime, dried hard on a whalebone pole. The slime remembers air, and once a dive it gives it back.' },
   { id: 'stillwater', kind: 'net', arch: 'quick', name: "Jonah's Seine", legend: 'rebirth', glow: '#9ab0c4', // (5.16.0) was the Stillwater Seine (Phantom)
     line: 'Black mesh, cold as the inside of something. A few who carried it came back from where no one comes back.' },
-  { id: 'oldnet', kind: 'net', arch: 'school', name: "The Old One's Tithe", legend: 'faithless', glow: '#ffcf7a',
+  { id: 'oldnet', kind: 'net', arch: 'school', name: "The Old One's Tithe", legend: 'faithless', glow: '#d8a868',
     line: 'Left in the cave in the west wall, as if for someone. What hunts in the deep smells the old one on it, and keeps away.' },
   // the rest: the best of their kind, with no legendary skill
   { id: 'oarcrest', kind: 'fins', arch: 'long', name: 'Oarfish Crest', glow: '#ff7a6a',
@@ -377,7 +377,7 @@ export const LEGENDARIES = [
     line: 'Better not to ask what it came out of. It holds more than it should.' },
   { id: 'eelpurse', kind: 'bag', arch: 'light', name: 'Eel-skin Purse', glow: '#9ae0a0',
     line: 'Supple, dark and very old. Full, it weighs nothing at all.' },
-  { id: 'oldskin', kind: 'suit', arch: 'hard', name: 'Skin of the Old One', glow: '#ffcf7a',
+  { id: 'oldskin', kind: 'suit', arch: 'hard', name: 'Skin of the Old One', glow: '#d8a868',
     line: 'Shed in the cave in the west wall. The pressure of the deep slides off it like water.' },
   { id: 'abyssalhide', kind: 'suit', arch: 'rebreather', name: 'Abyssal Hide', glow: '#7a9aff',
     line: 'Black as the bottom of the trench, and soft as velvet. It breathes with you.' },

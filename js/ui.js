@@ -1466,6 +1466,10 @@ export class UI {
     const el = $('workshop');
     const open = force === undefined ? el.hidden : force;
     el.hidden = !open;
+    // (5.16.3) while the sell list is open the prices are kept live (an animal's worth falls as it weakens), so what
+    // Sell all shows is what it pays; redrawn once a second, never while a finger is down on it
+    clearInterval(this.sellTick); if (open) this.sellTick = setInterval(() => { if ($('workshop').hidden) { clearInterval(this.sellTick); return; } if (this.shopTab === 'sell' && !this.shopPointerDown) this.renderWorkshop(); }, 1000);
+    if (!this.sellPtrWired) { this.sellPtrWired = true; el.addEventListener('pointerdown', () => { this.shopPointerDown = true; }); window.addEventListener('pointerup', () => { this.shopPointerDown = false; }); }
     if (!open && el.classList.contains('refit-full')) { // leaving the refit room: the game carries on
       el.classList.remove('refit-full'); el.querySelector('.nameplate h2').innerHTML = 'The <i>Margaret</i>';
       const g = this.h.getGame(); if (g && this.refitPaused) g.paused = false; this.refitPaused = false; this.refitOnly = false;
