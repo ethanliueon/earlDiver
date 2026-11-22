@@ -108,7 +108,8 @@ export function findCatch(g) {
     let why = null;
     // (5.10.10) no tags any more: an animal no net can hold is 'too big for the net' (a photograph is how it pays);
     // one a better net could hold is 'too big for this net'
-    if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'too big for the net' : null;
+    if (len > 4) why = 'too big to catch: photograph it'; // (5.16.0) nothing over 4 m can be caught, by any net
+    else if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'too big for the net' : null;
     else if (len > def.maxLen * OVER) why = isTagOnly(sp) && len > 1.1 ? 'too big for the net' : 'too big for this net';
     else if (def.minLen && len < def.minLen) why = 'slips through';
     if (why === null && !canTakeLive(sp)) return; // plants, corals: not even worth mentioning
@@ -378,7 +379,7 @@ export const NETS_SUB = {
     desc: 'The net for big game, and it takes whatever its mouth touches, the bottom too. Its mouth is over half again as wide and it stays open 11 seconds, so it sweeps up far more of a school; it holds ten animals and fish up to 4 m, big ones seldom break out, and no legend escapes it. Almost nothing slips out before it closes. Used up in one haul; carry one.' },
 };
 // (4.11.1) the chance an animal too big for a net breaks out of it (legends by the net's own odds): more the bigger it is
-export const escapeOdds = (T, c) => LEGENDARY.has(c.sp.id) ? T.legendOut : c.len <= T.maxLen ? 0 : Math.min(0.95, 0.35 + 0.6 * (c.len - T.maxLen) / T.maxLen);
+export const escapeOdds = (T, c) => c.len > 4 ? 1 : LEGENDARY.has(c.sp.id) ? T.legendOut : c.len <= T.maxLen ? 0 : Math.min(0.95, 0.35 + 0.6 * (c.len - T.maxLen) / T.maxLen);
 // (4.11.0) the hatch holds nets of each kind: up to two beginner nets and one advanced net. items.nets = { basic, adv }
 // (an old save's single items.net becomes one of its kind)
 export function netsOf(items) {

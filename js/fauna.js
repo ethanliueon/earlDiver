@@ -9,6 +9,10 @@ import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
 import { rarityOf } from './specimens.js';
 import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
+// (5.16.0) the deep's ambush hunters do not swim side to side: they hang upright in the water and drift slowly up and
+// down near where they live. [which way the body points: 1 head up (anglers, viperfish), -1 mantle up and arms down (the
+// squids, as filmed), how far they drift up and down]
+export const UPRIGHT = { 325: [1, 0.35], 326: [1, 0.35], 452: [1, 0.3], 500: [1, 0.3], 102: [1, 0.4], 319: [1, 0.4], 149: [-1, 0.5], 350: [-1, 0.12] };
 
 const SWIMMERS = SPECIES.filter((s) => isSwimHab(s.v.hab));
 
@@ -620,6 +624,7 @@ export class Fauna {
       // despawn far away
       const busy = c.att && c.att.s !== 'idle';
       if (!busy && !c.devKeep && (Math.abs(c.x - cam.x) > cam.w * 1.7 || Math.abs(c.y - cam.y) > cam.h * 2.4)) { this.list.splice(i, 1); continue; }
+      if (c.photoFlee && (Math.abs(c.x - cam.x) > cam.w * 0.6 + c.len || Math.abs(c.y - cam.y) > cam.h * 0.6 + c.len)) { this.list.splice(i, 1); continue; } // (5.16.0) out of sight: gone
       // a newcomer that would start inside rock is lifted clear of the seabed, or not spawned at all
       if (!c.placed) {
         c.placed = true;
@@ -748,6 +753,9 @@ export class Fauna {
         // (5.12.2) fish no longer bolt from Earl or the sub: each swims its own fixed pace and pattern whatever he does.
         // (5.16.0) Magnetic (Gulper's Throat): exotic and legendary fish within 50 m slowly swim toward him (or the sub he is
         // in); the rest pay him no mind. Without the net they go back to their own water (their usual pull home)
+        if (c.photoFlee) { const fd = Math.sign(c.x - earl.x) || 1; c.dir = fd; ax = (fd * Math.max(3, c.len * 2.5) - c.vx) * 3; ay = (-0.3 - c.vy) * 2; } // (5.16.0) photographed: away, quickly
+        const U = c.photoFlee ? null : UPRIGHT[c.sp.id];
+        if (U) { const t0 = (c.uT = (c.uT || c.wob * 10) + dt); ax = -c.vx * 2.2; ay = (Math.sin(t0 * 0.22) * U[1] - c.vy) * 1.6; } // (5.16.0) hanging upright, drifting up and down
         if (earl.legends && earl.legends.has('magnetic') && !c.predator) {
           const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'), mx = earl.x, my = earl.y /* (in the sub he is where she is) */, dm = dist(c.x, c.y, mx, my);
           if ((R === 'exotic' || R === 'legendary') && dm < 50 && dm > (earl.inSub ? 6 : 1.6)) { ax += (mx - c.x) / dm * 1.6; ay += (my - c.y) / dm * 1.2; }

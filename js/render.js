@@ -2,6 +2,7 @@
 // Light model: the scene is drawn in "true" colour, then multiplied by a lightmap
 // (ambient that fades with depth and loses red, plus lamps and bioluminescence),
 // then additive glows are layered on top.
+import { UPRIGHT } from './fauna.js';
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
@@ -454,7 +455,8 @@ export class Renderer {
         // a crab, an octopus, a starfish on the bottom: along the slope under it, not level
         const a = seabedPose(g.world, c.x, Math.max(0.1, c.len * 0.5), true).rot;
         tg.rotate(c.dir > 0 ? -a : a);
-      } else tg.rotate((c.sp.v.hab === 'drift' ? 0 : -tilt) + extra);
+      } else if (UPRIGHT[c.sp.id]) tg.rotate(UPRIGHT[c.sp.id][0] * Math.PI / 2 * 0.9 + Math.sin(t * 0.4 + c.wob) * 0.07 + extra); // (5.16.0) hanging upright, a slight lean
+      else tg.rotate((c.sp.v.hab === 'drift' ? 0 : -tilt) + extra);
       const r = c.variant ? this.drawVariant(tg, c.sp, c.variant, Ld, c.phase) : this.drawCached(tg, c.sp, Ld, c.phase, c.wob, isLive ? null : this.veilFor(c.y));
       tg.restore();
       if (Ld >= 6 && (c.variant || Ld > 150 || CACHE_SKIP.has(shape))) {

@@ -352,7 +352,7 @@ const L = [
   ['Flapjack Octopus', 'Opisthoteuthis californiana', Q, 200, 1500, 'North Pacific', '20 cm', 'A squashed, jelly-like octopus with two small ear-like fins.',
     { s: 'dumbo', c: ['#e07a5a', '#f0a080'], hab: 'demersal' }, { cold: 1 }],
   ['Colossal Squid', 'Mesonychoteuthis hamiltoni', Q, 1000, 2200, 'Southern Ocean', '10 m', 'The heaviest invertebrate, with swivelling hooks on its arms and the largest eyes known.',
-    { s: 'squid', giant: 1, c: ['#a8382a', '#c86a58'], hab: 'pelagic' }, { cold: 1, tag: 30000 }],
+    { s: 'squid', giant: 1, sq: 'colossal', c: ['#5a1c1a', '#7a2e26'], hab: 'pelagic' }, { cold: 1, tag: 30000 }], // (5.16.0) bulky, dark wine-red
   ['Bigfin Squid', 'Magnapinna pacifica', Q, 1900, 6212, WW, '7 m', 'A ghostly squid whose elbowed arms trail metres beneath it.',
     { s: 'squid', c: ['#e8d8d0', '#f4ece8'], hab: 'pelagic' }, { tag: 20000 }],
   ['Strawberry Squid', 'Histioteuthis heteropsis', Q, 200, 1000, 'Eastern Pacific', '20 cm', 'One huge upward eye and one small one, and skin dotted with lights.',

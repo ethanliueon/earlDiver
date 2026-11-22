@@ -186,7 +186,7 @@ export function updatePhoto(g, dt) {
   const who = S.c || S.st, again = !!(who && who.photoPaid); // this very animal has been paid for already
   let value = again ? 0 : photoValue(S.sp, S.variant) * (def.idx || 10) / 100 * GRADES[grade];
   if (!again && def.small && S.sp.len < 0.15) value *= def.small; // the macro camera: small animals pay more
-  if (!again) { value = Math.max(1, Math.round(value * 100) / 100); if (who) who.photoPaid = true; } // a photo always pays at least a dollar
+  if (!again) { value = Math.max(1, Math.round(value * 100) / 100); if (who) who.photoPaid = true; } if (S.c && !S.c.pet) S.c.photoFlee = true; // (5.16.0) the flash: it darts off, and is gone once out of sight // a photo always pays at least a dollar
   // where the frame was: along the aim at the animal's distance, steadied toward it by the camera
   const fx = ox + Math.cos(a) * Math.hypot(dx, dy), fy = oy + Math.sin(a) * Math.hypot(dx, dy);
   return { type: 'photo', sp: S.sp, variant: S.variant, name: S.name, sk, first, again, q, grade, sharp, value,

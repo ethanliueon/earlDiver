@@ -1479,21 +1479,22 @@ function drawManowar(ctx, L, v, t) {
 function drawSquid(ctx, L, v, t, swim) {
   // A torpedo mantle speckled with chromatophores that flicker, rippling triangular fins at the
   // rear, a large eye, eight sucker-lined arms and two longer feeding tentacles with clubs.
-  const H = L * 0.15;
+  const col = v.sq === 'colossal', gnt = v.sq === 'giant', H = L * (col ? 0.21 : gnt ? 0.11 : 0.15); // (5.16.0) the colossal bulky, the giant slender
   const pulse = Math.sin(t * 3) * 0.05;
   const finWave = Math.sin(t * 4);
   // tentacles and arms (arms at -x, the head end)
   ctx.lineCap = 'round';
   for (let k = 0; k < 8; k++) {
     const y0 = (k - 3.5) * H * 0.08;
-    const len = L * (0.24 + (k % 3) * 0.03);
-    ctx.strokeStyle = shade(v.c[0], k % 2 ? -0.15 : 0.05); ctx.lineWidth = Math.max(1, H * 0.12 * (1 - Math.abs(k - 3.5) / 6));
+    const len = L * (col ? 0.17 : 0.24 + (k % 3) * 0.03) * (gnt ? 1.15 : 1);
+    ctx.strokeStyle = shade(v.c[0], k % 2 ? -0.15 : 0.05); ctx.lineWidth = Math.max(1, H * (col ? 0.17 : 0.12) * (1 - Math.abs(k - 3.5) / 6));
     ctx.beginPath(); ctx.moveTo(-L * 0.15, y0);
     ctx.quadraticCurveTo(-L * 0.15 - len * 0.5, y0 * 1.8 + Math.sin(t * 2 + k) * H * 0.2, -L * 0.15 - len, y0 * 1.4 + Math.sin(t * 2.5 + k) * H * 0.35);
     ctx.stroke();
+    if (col) { ctx.strokeStyle = 'rgba(214,200,170,0.75)'; ctx.lineWidth = Math.max(0.6, H * 0.025); for (let h = 1; h < 4; h++) { const hx = -L * 0.15 - len * h / 4, hy = y0 * (1 + h * 0.15) + Math.sin(t * 2 + k) * H * 0.1 * h; ctx.beginPath(); ctx.arc(hx, hy, H * 0.05, 0.2, 2.6); ctx.stroke(); } } // (5.16.0) its swivelling hooks
   }
   for (const side of [-1, 1]) {
-    const ex = -L * 0.15 - L * (v.giant ? 0.75 : 0.42), ey = side * H * 0.3 + Math.sin(t * 1.7 + side) * H * 0.4;
+    const ex = -L * 0.15 - L * (gnt ? 0.95 : col ? 0.36 : v.giant ? 0.75 : 0.42), ey = side * H * 0.3 + Math.sin(t * 1.7 + side) * H * 0.4;
     ctx.strokeStyle = shade(v.c[0], -0.05); ctx.lineWidth = Math.max(0.8, H * 0.06);
     ctx.beginPath(); ctx.moveTo(-L * 0.15, side * H * 0.05); ctx.quadraticCurveTo(-L * 0.4, side * H * 0.5, ex, ey); ctx.stroke();
     ctx.fillStyle = shade(v.c[0], 0.05); ctx.beginPath(); ctx.ellipse(ex - L * 0.02, ey, L * 0.035, H * 0.12, 0, 0, TAU); ctx.fill(); // club
@@ -1515,7 +1516,7 @@ function drawSquid(ctx, L, v, t, swim) {
   for (let k = 0; k < 40; k++) {
     const x = -L * 0.06 + ((k * 37) % 100) / 100 * L * 0.52, y = (((k * 53) % 100) / 100 - 0.5) * H * 1.1;
     const open = 0.5 + 0.5 * Math.sin(t * 3 + k * 1.7);
-    ctx.fillStyle = `rgba(110,30,25,${(0.25 + open * 0.4).toFixed(2)})`;
+    ctx.fillStyle = gnt ? `rgba(96,70,40,${(0.2 + open * 0.3).toFixed(2)})` : col ? `rgba(30,6,6,${(0.25 + open * 0.35).toFixed(2)})` : `rgba(110,30,25,${(0.25 + open * 0.4).toFixed(2)})`; // (5.16.0) each squid its own skin
     ctx.beginPath(); ctx.arc(x, y, Math.max(0.5, H * (0.03 + open * 0.04)), 0, TAU); ctx.fill();
   }
   ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(-L, -H, L * 2, H * 0.35);
@@ -1523,7 +1524,7 @@ function drawSquid(ctx, L, v, t, swim) {
   // head with a big eye
   ctx.fillStyle = shade(v.c[0], 0.05);
   ctx.beginPath(); ctx.ellipse(-L * 0.11, 0, L * 0.06, H * 0.42, 0, 0, TAU); ctx.fill();
-  eye(ctx, -L * 0.1, -H * 0.05, Math.max(1, H * (v.giant ? 0.32 : 0.2)), '#c8c0a0');
+  eye(ctx, -L * 0.1, -H * 0.05, Math.max(1, H * (col ? 0.4 : v.giant ? 0.32 : 0.2)), col ? '#4a4a40' : '#c8c0a0'); // (5.16.0) the colossal's eye, the largest of any animal
   if (v.photo) { ctx.fillStyle = 'rgba(120,200,255,0.75)'; for (let k = 0; k < 10; k++) { ctx.beginPath(); ctx.arc(L * (-0.02 + k * 0.045), H * ((k % 2) - 0.5) * 0.4, Math.max(0.6, H * 0.06), 0, TAU); ctx.fill(); } }
   if (v.glow) {
     const P = [[-L * 0.42, -H * 0.15, 0.9], [-L * 0.42, H * 0.15, 0.9]];

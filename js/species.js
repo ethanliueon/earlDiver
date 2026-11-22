@@ -156,7 +156,7 @@ const V = {
   146: { s: 'dumbo', c: ['#d8a8a0', '#e8c0b8'], hab: 'demersal' },
   147: { s: 'cuttle', c: ['#8a7a6a', '#c8b8a4'], p: 'zebra', pc: '#3a3028', hab: 'demersal' },
   148: { s: 'squid', c: ['#a83a2a', '#d07060'], hab: 'pelagic', sch: 5 },
-  149: { s: 'squid', giant: 1, c: ['#a84a3a', '#c86a58'], hab: 'pelagic' },
+  149: { s: 'squid', giant: 1, sq: 'giant', c: ['#9a8a66', '#c4b48e'], hab: 'pelagic' }, // (5.16.0) pale olive-tan, slender, as filmed
   150: { s: 'vampire', c: ['#3a1416', '#5a2024'], glow: '#5ac8ff', eyec: '#c83a2a', hab: 'pelagic' },
   151: { s: 'squid', small: 1, c: ['#3a4a6a', '#5a6a8a'], glow: '#4ab8ff', photo: 1, hab: 'pelagic', sch: 12 },
   152: { s: 'lobster', c: ['#3a4a3a', '#5a6a4a'], hab: 'floor' },
