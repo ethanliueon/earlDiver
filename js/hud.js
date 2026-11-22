@@ -90,24 +90,39 @@ function eyePicture() {
   const almond = (k = 1) => { x.beginPath(); x.moveTo(cx - ew * k, cy + eh * 0.25 * k); x.bezierCurveTo(cx - ew * 0.55 * k, cy - eh * 1.15 * k, cx + ew * 0.3 * k, cy - eh * 1.2 * k, cx + ew * k, cy - eh * 0.5 * k); /* the outer corner lifted */
     x.bezierCurveTo(cx + ew * 0.45 * k, cy + eh * 0.85 * k, cx - ew * 0.45 * k, cy + eh * 1.05 * k, cx - ew * k, cy + eh * 0.25 * k); x.closePath(); };
   // the hide round it: dark, warmer near the eye where its light falls, in short rough strokes running out from it
-  { const g = x.createRadialGradient(cx, cy, eh * 0.6, cx, cy, W * 0.5); g.addColorStop(0, 'rgba(70,20,8,0.95)'); g.addColorStop(0.35, 'rgba(26,8,4,0.85)'); g.addColorStop(1, 'rgba(4,2,1,0)'); x.save(); x.translate(cx, cy); x.scale(1, 0.62); x.translate(-cx, -cy); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, W * 0.5, 0, Math.PI * 2); x.fill(); x.restore(); }
+  { const g = x.createRadialGradient(cx, cy, eh * 0.6, cx, cy, W * 0.5); g.addColorStop(0, 'rgba(62,18,8,0.62)'); g.addColorStop(0.35, 'rgba(24,8,4,0.42)'); g.addColorStop(1, 'rgba(4,2,1,0)'); /* (6.0.7) lighter */ x.save(); x.translate(cx, cy); x.scale(1, 0.62); x.translate(-cx, -cy); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, W * 0.5, 0, Math.PI * 2); x.fill(); x.restore(); }
   for (let i = 0; i < 1500; i++) { const an = r() * Math.PI * 2, d = ew * (0.95 + Math.pow(r(), 0.8) * 1.0), px = cx + Math.cos(an) * d, py = cy + Math.sin(an) * d * 0.55, near = Math.max(0, 1 - (d - ew * 0.9) / (ew * 0.9));
     const len = 2 + r() * 5, a2 = an + (r() - 0.5) * 0.6; x.strokeStyle = `rgba(${110 + r() * 70 | 0},${34 + r() * 36 | 0},${10 + r() * 14 | 0},${(near * near * near * (0.08 + r() * 0.2)).toFixed(3)})`; /* scattered, dark, catching only a little of its light */ x.lineWidth = 0.8 + r() * 0.8;
     x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a2) * len, py + Math.sin(a2) * len * 0.55); x.stroke(); }
   // the lids' heavy dark rim, blurred out a little onto the hide
-  x.save(); x.filter = 'blur(5px)'; x.fillStyle = 'rgba(6,2,1,0.9)'; almond(1.12); x.fill(); x.restore();
+  x.save(); x.filter = 'blur(5px)'; x.fillStyle = 'rgba(6,2,1,0.62)'; almond(1.12); x.fill(); x.restore();
+  // (6.0.7) cracked, scaly hide round the lids, catching a little of the eye's light
+  for (let i = 0; i < 70; i++) { const an = r() * Math.PI * 2, d = ew * (1.02 + r() * 0.45), px = cx + Math.cos(an) * d, py = cy + Math.sin(an) * d * 0.62, sz = 4 + r() * 7; x.strokeStyle = `rgba(${120 + r() * 60 | 0},${40 + r() * 30 | 0},12,${(0.18 * (1 - (d - ew) / (ew * 0.5))).toFixed(3)})`; x.lineWidth = 0.9;
+    x.beginPath(); for (let k = 0; k < 5; k++) { const a3 = k / 5 * Math.PI * 2 + r() * 0.5, rr = sz * (0.7 + r() * 0.5); const qx = px + Math.cos(a3) * rr, qy = py + Math.sin(a3) * rr * 0.7; k ? x.lineTo(qx, qy) : x.moveTo(qx, qy); } x.closePath(); x.stroke(); }
+  // two folds above the lid
+  x.strokeStyle = 'rgba(150,60,20,0.22)'; x.lineWidth = 1.6; for (const f of [1.32, 1.6]) { x.beginPath(); x.moveTo(cx - ew * 0.8, cy - eh * f * 0.55); x.quadraticCurveTo(cx - ew * 0.05, cy - eh * f * 1.02, cx + ew * 0.85, cy - eh * f * 0.62); x.stroke(); }
   // the iris, lit from inside
   x.save(); almond(); x.clip();
   { const g = x.createRadialGradient(cx + 4, cy + 2, 2, cx, cy, ew * 1.02); g.addColorStop(0, '#fff8d4'); g.addColorStop(0.08, '#ffe27a'); g.addColorStop(0.24, '#f8aa3a'); g.addColorStop(0.5, '#d86420'); g.addColorStop(0.74, '#8a2a0a'); g.addColorStop(1, '#1e0602'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
   for (let i = 0; i < 1800; i++) { const an = r() * Math.PI * 2, r0 = ew * (0.06 + r() * 0.4), r1 = r0 + ew * (0.06 + r() * 0.3), lt = r() < 0.45; // fibres running out from the pupil
     x.strokeStyle = lt ? `rgba(255,${200 + r() * 50 | 0},${110 + r() * 60 | 0},${(0.06 + r() * 0.16).toFixed(3)})` : `rgba(${90 + r() * 60 | 0},${20 + r() * 20 | 0},4,${(0.08 + r() * 0.2).toFixed(3)})`; x.lineWidth = 0.6 + r() * 0.9;
     x.beginPath(); x.moveTo(cx + Math.cos(an) * r0, cy + Math.sin(an) * r0); x.lineTo(cx + Math.cos(an + (r() - 0.5) * 0.08) * r1, cy + Math.sin(an + (r() - 0.5) * 0.08) * r1); x.stroke(); }
-  for (let i = 0; i < 2200; i++) { const px = cx + (r() - 0.5) * ew * 2, py = cy + (r() - 0.5) * eh * 2.2; x.fillStyle = r() < 0.5 ? `rgba(255,236,170,${(r() * 0.12).toFixed(3)})` : `rgba(30,6,2,${(r() * 0.16).toFixed(3)})`; x.fillRect(px, py, 1.2, 1.2); } // grain
+  for (let i = 0; i < 46; i++) { const px = cx + (r() - 0.5) * ew * 1.9, py = cy + (r() - 0.5) * eh * 1.9, rr = 4 + r() * 14, dg = x.createRadialGradient(px, py, 0, px, py, rr); const dark = r() < 0.6; // (6.0.7) mottling: dark blotches and hot flecks, as in old burnt metal
+    dg.addColorStop(0, dark ? `rgba(70,14,2,${(0.25 + r() * 0.3).toFixed(3)})` : `rgba(255,${200 + r() * 50 | 0},120,${(0.18 + r() * 0.25).toFixed(3)})`); dg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = dg; x.beginPath(); x.arc(px, py, rr, 0, Math.PI * 2); x.fill(); }
+  x.strokeStyle = 'rgba(50,8,2,0.55)'; for (let i = 0; i < 9; i++) { let px = cx + (r() < 0.5 ? -1 : 1) * ew * (0.55 + r() * 0.4), py = cy + (r() - 0.5) * eh * 1.4; x.lineWidth = 0.8 + r() * 0.8; x.beginPath(); x.moveTo(px, py); // thin dark cracks running in from the rim
+    for (let k = 0; k < 6; k++) { px += (cx - px) * (0.12 + r() * 0.1) + (r() - 0.5) * 6; py += (r() - 0.5) * 7; x.lineTo(px, py); } x.stroke(); }
+  for (let i = 0; i < 5200; i++) { const px = cx + (r() - 0.5) * ew * 2, py = cy + (r() - 0.5) * eh * 2.2; x.fillStyle = r() < 0.5 ? `rgba(255,236,170,${(r() * 0.2).toFixed(3)})` : `rgba(24,4,1,${(r() * 0.28).toFixed(3)})`; x.fillRect(px, py, 1 + r(), 1 + r()); } // heavy grain
+  { const bg = x.createRadialGradient(cx, cy + eh * 0.1, eh * 0.5, cx, cy, ew * 1.05); bg.addColorStop(0, 'rgba(0,0,0,0)'); bg.addColorStop(0.7, 'rgba(20,3,1,0.2)'); bg.addColorStop(1, 'rgba(14,2,1,0.75)'); x.fillStyle = bg; x.fillRect(0, 0, W, H); } // the bulge: darker where the lids press
   // the brow's shadow over the top of it, and the dark rim inside the lids
   { const g = x.createLinearGradient(0, cy - eh * 1.2, 0, cy + eh * 0.2); g.addColorStop(0, 'rgba(10,2,1,0.96)'); g.addColorStop(0.55, 'rgba(10,2,1,0.35)'); g.addColorStop(1, 'rgba(10,2,1,0)'); x.fillStyle = g; x.fillRect(0, cy - eh * 1.3, W, eh * 1.5); } // the brow's heavy shadow
   x.lineWidth = 9; x.strokeStyle = 'rgba(14,3,1,0.55)'; x.filter = 'blur(3px)'; almond(); x.stroke(); x.filter = 'none';
   x.restore();
-  x.lineWidth = 2.2; x.strokeStyle = 'rgba(8,2,1,0.95)'; almond(); x.stroke();
+  { x.save(); almond(); x.clip(); const sg = x.createRadialGradient(cx - ew * 0.38, cy - eh * 0.45, 0, cx - ew * 0.38, cy - eh * 0.45, eh * 0.55); sg.addColorStop(0, 'rgba(255,246,220,0.22)'); sg.addColorStop(1, 'rgba(255,246,220,0)'); x.fillStyle = sg; x.fillRect(0, 0, W, H); x.restore(); } // (6.0.7) a dull wet glint
+  for (let pass = 0; pass < 3; pass++) { x.strokeStyle = `rgba(8,2,1,${(0.55 + pass * 0.15).toFixed(2)})`; x.lineWidth = 3.4 - pass; x.beginPath(); // the lids' rim, ragged rather than a clean line
+    for (let k = 0; k <= 80; k++) { const t2 = k / 80, top = t2 <= 0.5, u2 = top ? t2 * 2 : (t2 - 0.5) * 2; let qx, qy;
+      if (top) { const a0 = [cx - ew, cy + eh * 0.25], c1 = [cx - ew * 0.55, cy - eh * 1.15], c2 = [cx + ew * 0.3, cy - eh * 1.2], a1 = [cx + ew, cy - eh * 0.5], v = 1 - u2; qx = v * v * v * a0[0] + 3 * v * v * u2 * c1[0] + 3 * v * u2 * u2 * c2[0] + u2 * u2 * u2 * a1[0]; qy = v * v * v * a0[1] + 3 * v * v * u2 * c1[1] + 3 * v * u2 * u2 * c2[1] + u2 * u2 * u2 * a1[1]; }
+      else { const a0 = [cx + ew, cy - eh * 0.5], c1 = [cx + ew * 0.45, cy + eh * 0.85], c2 = [cx - ew * 0.45, cy + eh * 1.05], a1 = [cx - ew, cy + eh * 0.25], v = 1 - u2; qx = v * v * v * a0[0] + 3 * v * v * u2 * c1[0] + 3 * v * u2 * u2 * c2[0] + u2 * u2 * u2 * a1[0]; qy = v * v * v * a0[1] + 3 * v * v * u2 * c1[1] + 3 * v * u2 * u2 * c2[1] + u2 * u2 * u2 * a1[1]; }
+      qx += (r() - 0.5) * 2.2; qy += (r() - 0.5) * 2.2; k ? x.lineTo(qx, qy) : x.moveTo(qx, qy); } x.stroke(); }
   EYE_PIC = { c, ew, eh, cx, cy }; return EYE_PIC;
 }
 
@@ -510,7 +525,7 @@ e.inSub ? [
       ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
       // (5.7.5) the sum counts up to a new total (a quest paid, a sale) instead of jumping
       const cash = P.cash || 0; if (this.cashShown == null || cash < this.cashShown || cash - this.cashShown < 0.01) this.cashShown = cash; else this.cashShown += Math.max(0.01, (cash - this.cashShown) * Math.min(1, dt * 3.2));
-      const txt = money(Math.min(cash, this.cashShown)), tx0 = mx + ch * 0.8 + 6 * u; ctx.fillStyle = cash > this.cashShown ? '#f6e7b4' : '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
+      const txt = money(Math.min(cash, this.cashShown)), tx0 = mx + ch * 0.8 + 6 * u; this.moneyTextX = tx0; this.moneyRowBottom = my + ch * 0.55; /* (6.0.7) the eye hangs right under the sum */ ctx.fillStyle = cash > this.cashShown ? '#f6e7b4' : '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
       { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(money(cash)).width; ctx.restore(); this.moneyAt = { x: (tx0 + tw + 16 * u + this.safeL) * kx, y: (my - 16 * u + this.safeT) * kx }; } // (5.7.5) right of the sum, on its row
       ctx.restore();
       this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
@@ -1067,7 +1082,7 @@ e.inSub ? [
       // (6.0.6) one eye, the painted picture (eyePicture), with its slit and lids laid on live: quiet and dim while the
       // thing is far, warmer as it comes; the slow heavy blink, and the slit narrowing to a thread when it is close
       const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = 38 * s, sc = ew / E.ew, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
-      const ex = (this.topLeftX ? this.topLeftX / kxE - (this.safeL || 0) : 12 * s) + 40 * s + ew, ey = tlB + E.eh * sc + 14 * s;
+      const ex = (this.moneyTextX != null ? this.moneyTextX : 60 * s) + ew * 0.95, ey = (this.moneyRowBottom != null ? this.moneyRowBottom : tlB) + E.eh * sc * 1.15 + 6 * s; /* (6.0.7) right under the sum */
       const per = 9 - 3 * near, bt = g.time % per, blink = bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0, open = (1 - blink) * (0.78 + 0.22 * near);
       ctx.save(); ctx.globalAlpha *= a * (0.62 + 0.38 * near);
       ctx.drawImage(E.c, ex - E.cx * sc, ey - E.cy * sc, E.c.width * sc, E.c.height * sc);
