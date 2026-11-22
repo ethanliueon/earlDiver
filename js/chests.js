@@ -48,7 +48,10 @@ for (const [k, C] of Object.entries(CHESTS)) {
   // each chest is also a thing in the locker: an item of its tier, opened from the bag
   ITEMS['chest_' + k] = { id: 'chest_' + k, kind: 'chest', chestKey: k, look: C.look, rarity: C.tier, name: C.name, line: C.line, good: `${C.n} item${C.n > 1 ? 's' : ''}`, bad: '', price: C.price };
 }
-CHESTS.crate.price = ITEMS.chest_crate.price = 900; // (6.4.0) the beginner's chest stays at $900
+// (6.4.1) the owner's prices: large station case $5,000, expedition trunk $20,000, Leviathan's hoard $50,000, Poseidon's
+// chest $100,000, the rest in proportion (each tier scaled by its anchors). The pine crate stays the beginner's $900
+const SET_PRICE = { crate: 900, case: 1700, crate3: 3100, tea: 3800, case3: 5000, footlocker: 7500, salvage: 14000, strongbox: 15000, expedition: 20000, siren: 27000, leviathan: 50000, poseidon: 100000 };
+for (const [k, p] of Object.entries(SET_PRICE)) CHESTS[k].price = ITEMS['chest_' + k].price = p;
 export const chestItem = (k) => ITEMS['chest_' + k];
 export const chestsOf = (shop) => Object.entries(CHESTS).filter(([, c]) => c.shop === shop).map(([key, c]) => ({ key, ...c }));
 

@@ -86,13 +86,14 @@ export function camIndex(def) {
 // what a thing is worth (a chest item's value, before its skills; selling pays about a third)
 // (5.10.10) each rarity's price band starts here (common $25-300, uncommon $300-1,500, rare $1,500-8,000, exotic $8,000-40,000, legendary $45,000 up)
 export const BAND_MIN = { common: 25, uncommon: 300, rare: 1500, exotic: 8000, legendary: 45000 };
-// (6.4.0) friendlier prices: rare at most about $2,000, exotic about $8,000, legendary about $20,000. Each item keeps its
-// place within its rarity (the old band mapped onto the new on a log scale). Suits keep their prices: depth is earned.
+// (6.4.0) friendlier prices at the cheap end: rare at most about $2,000. Each item keeps its
+// place within its rarity (the old band mapped onto the new on a log scale).
 const OLD_BAND = { uncommon: [300, 1500], rare: [1500, 8000], exotic: [8000, 40000], legendary: [45000, 90000] };
-const NEW_BAND = { uncommon: [300, 1000], rare: [1000, 2000], exotic: [2000, 8000], legendary: [8000, 20000] };
+// (6.4.1) only the cheap end: exotic and legendary items keep their old prices (deep players earn $3-8k a catch, $60k+ a legend)
+const NEW_BAND = { uncommon: [300, 1000], rare: [1000, 2000] };
 function reband(def) {
-  // (6.4.1) suits too, by the owner's word: no exotic over $10,000, no legendary over $20,000, whatever it is
-  const O = OLD_BAND[def.rarity], N = NEW_BAND[def.rarity]; if (!O) return def.price;
+  // (6.4.1) suits too, at the cheap end
+  const O = OLD_BAND[def.rarity], N = NEW_BAND[def.rarity]; if (!O || !N) return def.price;
   const t = Math.min(1, Math.max(0, Math.log(def.price / O[0]) / Math.log(O[1] / O[0])));
   const v = N[0] * Math.pow(N[1] / N[0], t); return v < 1000 ? Math.round(v / 5) * 5 : Math.round(v / 50) * 50;
 }
@@ -420,8 +421,8 @@ for (const it of Object.values(ITEMS)) if (it.kind === 'fins' && /no faster crui
 {
   const score = { tank: (i) => i.air * (i.quiet ? 1.1 : 1), fins: (i) => i.swim + 0.5 * i.sprint, bag: (i) => i.slots, net: (i) => (i.maxLen || 0) * (i.range || 1) * (i.success || 0.8), cam: (i) => i.idx || 0,
     suit: (i) => i.press / 100 + (1 - i.air) * 8 + (i.bite ? 0.4 : 0) + (i.warm ? 0.3 : 0) + (i.quiet ? 0.4 : 0) };
-  const BANDP = { common: [25, 250], uncommon: [300, 1000], rare: [1000, 2000], exotic: [2000, 8000] }; // (6.4.0) friendlier
-  const BANDS_SUIT = { common: [25, 250], uncommon: [300, 1000], rare: [1000, 2000], exotic: [4000, 10000] }; // (6.4.1) suits at the top of each band (depth is earned), never past its cap
+  const BANDP = { common: [25, 250], uncommon: [300, 1000], rare: [1000, 2000], exotic: [8000, 30000] }; // (6.4.0) common to rare friendlier; (6.4.1) exotic back to its old band
+  const BANDS_SUIT = { common: [25, 250], uncommon: [300, 1000], rare: [1000, 2000], exotic: [8000, 30000] }; // (6.4.1) common to rare as 6.4.0, exotic back to its old band
   const nice = (p) => (p < 300 ? Math.round(p / 5) * 5 : p < 2000 ? Math.round(p / 50) * 50 : p < 10000 ? Math.round(p / 100) * 100 : Math.round(p / 500) * 500);
   for (const kind of Object.keys(score)) for (const [r, [a, b]] of Object.entries(kind === 'suit' ? BANDS_SUIT : BANDP)) {
     const xs = Object.values(ITEMS).filter((it) => it.kind === kind && it.rarity === r && it.price > 0); if (!xs.length) continue;

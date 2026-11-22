@@ -65,6 +65,11 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   round the species' base; weight follows length and shape and is only a figure to read. Hand nets, the claw (2 m)
   and the trawls (2 m, 4 m) decide what can be caught purely by length. The giant jellies stay photo-only.
 
+- **Prices (6.4.1)**: common to rare gear is cheap (rare at most about $2,000), for players earning tens of dollars a
+  catch; exotic ($8-40k, suits to $30k) and legendary ($45k up) gear keep their old prices, because deep catches pay
+  $3-8k and legends $60-150k. The deep pays more because it is scary and slow to reach: leave fish pay alone. Chests:
+  pine crate $900 up to Poseidon's chest $100,000 (owner's figures, docs in js/chests.js).
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build
