@@ -262,7 +262,6 @@ export function questEvent(P, type, data = {}) {
     if (type === 'catch' && q.kind === 'group' && SPECIES_BY_ID[data.id] && GROUPS[q.g] && GROUPS[q.g].test(SPECIES_BY_ID[data.id])) add = 1; // (4.8.0)
     if (type === 'catch' && q.kind === 'divecatch') { if (q.runAt !== P.runs) { q.runAt = P.runs; q.prog = 0; } add = 1; }
     if (type === 'trawlHaul' && q.kind === 'trawl') add = data.n || 1;
-    if (type === 'lureMonster' && q.kind === 'lureMonster') add = 1;
     if (type === 'catch' && q.kind === 'deep' && (data.depth || 0) >= q.d) add = 1;
     if (type === 'catch' && q.kind === 'species' && data.id === q.id && data.alive) add = 1;
     if (type === 'sell' && q.kind === 'sell') add = Math.round(data.total || 0);

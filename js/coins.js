@@ -17,7 +17,7 @@ const hsl = (h, s, l, a = 1) => `hsla(${h},${s}%,${l}%,${a})`;
 // (5.9.6) the plain buttons all share one worn grey-brown, so colour on a button means one thing: rarity, on the
 // ability's. Only two keep a hint of their own: the sub's (and its controls') olive green, the glow stick's faint glow
 const PLAIN = [32, 10, 13];
-const HUE = new Proxy({ sub: [78, 18, 13], leave: [78, 18, 13], auto: [78, 18, 13], glow: [88, 30, 12] }, { get: (o, k) => o[k] || PLAIN });
+const HUE = new Proxy({ sub: [78, 18, 13], leave: [78, 18, 13], auto: [78, 18, 13], glow: [88, 30, 12], hand: [38, 20, 12] /* (5.16.7) the hand: a neutral worn brown */ }, { get: (o, k) => o[k] || PLAIN });
 
 function face(x, R, hue, seed) {
   const [h, s, l0] = hue, l = l0 + 4; // (a little lighter than the deep: they must read over dark water)
@@ -481,7 +481,7 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint =
     if (ART[kind]) { const k = R * 0.66 / 50; x.save(); x.scale(k, k); ART[kind](x, look || {}); x.restore(); }
     else drawGlyph(x, kind, 0, 0, R * 0.95);
     x.restore();
-    if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.65; x.fillStyle = '#808080'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(6,8,8,0.22)'; x.fill(); }
+    if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.6; x.fillStyle = '#808080'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(6,8,8,0.34)'; x.fill(); } // (5.16.7) greyer and darker: opaque now, so this alone says 'not now'
     if (state === 'down') { x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); }
     // (5.7.0) pressed: the face lights up and its colours deepen, as if a lamp came on behind it
     if (state === 'press') { x.save(); x.beginPath(); x.arc(0, 0, R * 0.95, 0, TAU); x.clip(); x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.35; x.fillStyle = 'hsl(40,100%,50%)'; x.fill(); x.globalCompositeOperation = 'screen'; x.globalAlpha = 1;

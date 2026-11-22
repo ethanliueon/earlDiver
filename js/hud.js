@@ -309,7 +309,7 @@ export class Hud {
     // (5.9.0) the ability in the arc's last place: the carried scroll's emblem on a coin of its rarity; a sweep while it
     // recovers, a bright ring running down while it is on
     const AB = this.abilDef || null, ABS = abilityState(g);
-    const abil = () => { if (!AB) return { key: 'ability', icon: 'ab_sprint', on: false, why: 'No ability: put a scroll on in the bag', lock: true };
+    const abil = () => { if (!AB) return { key: 'ability', icon: 'ab_sprint', on: false, why: "You don't have a skill equipped: put a scroll on in the bag", lock: true };
       const why = whyNot(g, P, AB); return { key: 'ability', icon: 'ab_' + AB.fam, look: { tier: AB.tier }, tint: AB.tier, on: !why || why === 'Already running', lit: ABS.activeT > 0, why, abil: true }; };
     const handSub = e.inSub ? (g.subHandF ? 'f' : sub.docked ? 'u' : null) : null;
     const A = e.inSub ? [
@@ -320,7 +320,7 @@ export class Hud {
     ] : [
       // (5.6.5) the lamp in the same place outside and in the sub (the last of the arc)
       // (5.6.8) the same four in the same places on deck and in the cabin: the sprint button runs there; the rest wait
-      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'Call the sub from the water' },
+      null, // (5.16.7) calling the sub moved to the menu's sub tile (call sub out of the sub, autopilot home in it)
       // (5.6.9) the glow sticks on his belt; with none on it, a padlock (and where to get one)
       { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'For the water' : (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
       // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
@@ -335,10 +335,12 @@ export class Hud {
     const ROW = [{ key: 'journal', dom: true }, { key: 'b', icon: 'bag', on: true }].concat( // (5.6.9) the journal's coin (HTML) above the bag
 e.inSub ? [
       // (5.7.1) in the sub only: the tank room and the autopilot (out of the arc), then the spare air
+      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'The sub is at the boat' }, // (5.16.7) the sub tile's place: autopilot home in the sub, call sub out of it
       { key: 't', icon: 'tank', on: true },
-      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'The sub is at the boat' },
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
-    ] : aboard ? [] : [
+    ] : [
+      // (5.16.7) out of the sub, the same place calls her (on deck she is already at the boat)
+      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'The sub is at the boat' },
     ]).filter((a) => !(a.away && !a.on));
     const tutKey = window.__hudTutKey || null; // (5.5) the button the tutorial wants: ringed, pulsing
     const vis = this.btnVis || (this.btnVis = {});
@@ -398,7 +400,7 @@ e.inSub ? [
       else ctx.save();
       const want = (tutKey === a.key || (a.tutAlt && tutKey === a.tutAlt)) && a.on;
       if (want) { ring(x, y, r); r *= 1 + 0.07 * (0.5 + 0.5 * Math.sin(g.time * 4.2)); } // (5.7.5) and it swells gently with the pulse
-      else if (!a.on && !a.row) { ctx.globalAlpha *= 0.62; r *= 0.88; } // (5.7.5) one that cannot be used now sits back: smaller and fainter
+      else if (!a.on && !a.row) { r *= 0.88; } /* (5.16.7) smaller, greyed by its 'off' face, but opaque */ // (5.7.5) one that cannot be used now sits back: smaller and fainter
       // (5.10.10) in its jaws the layout stays put: everything that cannot help goes dim, and a ready Tidewarden wakes:
       // saturated, a slow warm swell behind it. The same swell shows whenever the Tidewarden can be used.
       const tideReady = a.abil && AB && AB.tide && (this.inKill ? this.killTide : a.on && !a.lit);
@@ -489,10 +491,17 @@ e.inSub ? [
     const armT = e.inSub && owns(P, 'arm');
     const handOn = aboard && !!this.handOn; // (5.6.8) aboard, the big button is his hand: the door, the computer, the bunk
     const can = aboard ? handOn : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
-    ctx.save(); ctx.globalAlpha *= (this.inKill ? 0.32 : 1) * (aboard ? (handOn ? 1 : 0.7) : (e.inSub && !armT) || !sel && !e.inSub ? 0.42 : can ? 1 : 0.7); /* (5.10.10) dim in its jaws */ // (5.3.6) on deck: there, greyed
+    ctx.save(); ctx.globalAlpha *= this.inKill ? 0.32 : 1; /* (5.16.7) opaque: an unusable tool shows its greyed face, not the water through it */ /* (5.10.10) dim in its jaws */ // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
     const bKey = aboard ? 'f' : ' ';
-    const rarOf = () => null; // (5.9.6) no rarity colours on the tool buttons: only the ability's button carries one
+    // (5.16.7) a legendary net or camera shows its rarity on its button: the legendary coin face, a slow glow behind it and
+    // a few sparks round its rim (legendaries give off sparks wherever they are shown); every other tool stays plain
+    const rarOf = (k) => ((k === 'net' || k === 'cam') && !e.inSub && !aboard && gear(P, k).rarity === 'legendary' ? 'legendary' : null);
+    { const lk = aboard || e.inSub ? null : rarOf(sel || 'net');
+      if (lk) { const q = 0.5 + 0.5 * Math.sin(g.time * 1.6), lg = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.32); lg.addColorStop(0, `rgba(200,156,80,${(0.3 + 0.12 * q).toFixed(3)})`); lg.addColorStop(1, 'rgba(200,156,80,0)');
+        ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.32, 0, TAU); ctx.fill();
+        for (let i = 0; i < 7; i++) { const ph = (g.time * 0.35 + i * 0.37) % 1, ang = i * 2.39 + g.time * 0.12, rr = R * (1.02 + 0.22 * ph), sx3 = cx + Math.cos(ang) * rr, sy3 = cy + Math.sin(ang) * rr - ph * 6 * u, al = Math.sin(ph * Math.PI) * 0.75;
+          const sg = ctx.createRadialGradient(sx3, sy3, 0, sx3, sy3, 3.2 * u); sg.addColorStop(0, `rgba(246,226,178,${al.toFixed(3)})`); sg.addColorStop(1, 'rgba(230,190,120,0)'); ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx3, sy3, 3.2 * u, 0, TAU); ctx.fill(); } } }
     // (5.15.7) able to act: a warm light behind the coin, round its rim, breathing slowly (nothing drawn over its picture)
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(240,214,160,${(0.34 + 0.18 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(240,214,160,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); }
     { const kind = aboard ? 'hand' : e.inSub ? 'claw' : sel || 'net', look = kind === 'net' ? netLook(gear(P, 'net').look || 0) : kind === 'cam' ? gear(P, 'cam').look : null;
@@ -534,7 +543,7 @@ e.inSub ? [
         hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'swap');
       } else {
         drawCoin(ctx, sx2, sy2, rc, 'cam', 'off', null); padlock(sx2 + rc * 0.4, sy2 + rc * 0.4, rc * 0.42);
-        hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, 'msg:No camera yet: the computer in the cabin sells them');
+        hot(sx2 - rc, sy2 - rc, rc * 2, rc * 2, "msg:You don't have a camera equipped");
       }
       ctx.restore(); }
     // (5.9.0) the lamp in the bottom left corner (the arc's last place is the ability now), in the water and the sub
