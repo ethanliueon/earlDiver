@@ -1223,3 +1223,12 @@ html body #title .slot.tag .tg-plus { display: none !important; } /* (6.0.14) a 
 html body #title .slot.tag .tg-depth { display: none !important; } /* (6.0.14) the record is stamped in words; no bar */
 html body #title .slot.tag .tg-go:not(#_a):not(#_b) { position: static !important; margin-top: auto; align-self: flex-start; background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; font: 700 12px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.14em; text-transform: uppercase; transform: none !important; }
 html body #title .slot.tag .tg-rows { gap: 8px !important; } html body #title .slot.tag .tg-rows :is(dt, dd) { white-space: nowrap; font-size: 11px !important; }
+
+/* (6.0.15) settings: the list fades out at its foot while there is more below, with a small chevron there; at the end
+   the fade and the chevron go (ui.js sets .more) */
+html body #settings .set-panel { position: relative; }
+html body #settings .set-body.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 46px), transparent); mask-image: linear-gradient(#000 calc(100% - 46px), transparent); }
+html body #settings .set-more { position: absolute; left: 50%; bottom: 10px; width: 14px; height: 14px; margin-left: -7px; border-right: 3px solid rgba(232,224,200,0.75); border-bottom: 3px solid rgba(232,224,200,0.75); transform: rotate(45deg); pointer-events: none; opacity: 0; transition: opacity 0.2s; animation: setMore 1.8s ease-in-out infinite; }
+html body #settings .set-panel.more .set-more { opacity: 1; }
+@keyframes setMore { 0%, 100% { translate: 0 0; } 50% { translate: 0 3px; } }
+html body #settings .set-group h4 { letter-spacing: 0.16em; }

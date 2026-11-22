@@ -1232,7 +1232,11 @@ export class UI {
     grid.addEventListener('drop', (ev) => { const d = ev.dataTransfer.getData('text/plain'); if (d.startsWith('off:')) { ev.preventDefault(); off(d.slice(4)); } });
   }
   settingsOpen() { return !$('settings').hidden; }
-  toggleSettings(force) { const el = $('settings'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderSettings(); }
+  toggleSettings(force) {
+    { const pnl = document.querySelector('#settings .set-panel'), bd = pnl && pnl.querySelector('.set-body'); // (6.0.15) the 'more below' cue
+      if (bd && !pnl.querySelector('.set-more')) { const m = document.createElement('i'); m.className = 'set-more'; pnl.appendChild(m);
+        const upd = () => { const more = bd.scrollHeight - bd.scrollTop - bd.clientHeight > 6; bd.classList.toggle('more', more); pnl.classList.toggle('more', more); };
+        bd.addEventListener('scroll', upd, { passive: true }); this.setMoreUpd = upd; } setTimeout(() => this.setMoreUpd && this.setMoreUpd(), 60); } const el = $('settings'); el.hidden = !(force === undefined ? el.hidden : force); if (!el.hidden) this.renderSettings(); }
   renderSettings() {
     // (5.1) plain words and a big switch each: what it does, not what it is called inside the game
     const g = this.h.getGame(), sw = (on) => `<b class="sw${on ? ' on' : ''}" aria-hidden="true"><i></i></b>`, row = (id, label, on, note) => { $(id).innerHTML = `<span>${label}${note ? `<em>${note}</em>` : ''}</span>${sw(on)}`; };
