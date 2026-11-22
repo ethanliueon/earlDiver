@@ -39,7 +39,7 @@ export const SKILLS = {
   biolum: { name: 'Bioluminescence', what: 'a soft blue glow 16 m round you, like a glow stick you carry; the thing does not mind it', /* (6.0.9) */ fits: 'any', min: 'exotic', flat: true },
 };
 export const LEGEND = {
-  eye: { name: 'Eye of the Sea', what: 'rare forms glow, and are easy to spot' },
+  eye: { name: 'Eye of the Sea', what: 'legendary animals glow, and are easy to spot' } /* (6.5.0) rare forms are gone */,
   magnetic: { name: 'Magnetic', what: 'exotic and legendary fish within 50 m slowly swim toward you; the rest pay you no mind' },
   faithless: { name: 'Faithless', what: 'no hunter attacks you or the sub; the thing is slower to mark you, and hunts you at half its pace' },
   secondwind: { name: 'Second Wind', what: 'when your air runs out, it fills again', cd: 7200 },

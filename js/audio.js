@@ -25,9 +25,10 @@ export class Audio {
   init() {
     if (this.ready) return;
     const AC = window.AudioContext || window.webkitAudioContext;
-    // (5.5) an iPhone plays web audio through the ringer's channel, so its silent switch muted the whole game: as a
-    // game (media playback) it plays like a video does
-    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older iOS */ }
+    // (6.5.0) as a game's sound, not a media player's: 'playback' made iOS list the game as now playing (the Dynamic
+    // Island and lock screen offered to stop it). 'ambient' is what games use: it mixes with the phone's own audio and
+    // follows the silent switch, as games do
+    try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e) { /* older iOS */ }
     const ac = (this.ac = new AC());
     this.master = ac.createGain(); this.master.gain.value = 0.9; this.master.connect(ac.destination);
     // music

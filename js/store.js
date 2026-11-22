@@ -25,16 +25,19 @@ const hrs = (ms) => { const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 36
 export function storeHtml(P) {
   const card = (key, deal) => {
     const C = CHESTS[key], R = RARITY[C.tier];
-    return `<div class="st-card r-${C.tier}${deal ? ' deal' : ''}">${deal ? `<span class="st-deal">Deal, ${hrs(dealLeft())} left</span>` : ''}<button class="st-i" data-rates="${key}" aria-label="Details"><i>i</i></button><img src="${chestPicture(C.look, 220, 160)}" alt=""><b>${C.name}</b><span class="st-r" style="color:${R.col}">${R.name}</span><span class="st-n">${C.n} item${C.n > 1 ? 's' : ''}</span><button data-store="${key}" ${(P.cash || 0) < C.price ? 'disabled' : ''}>$${C.price.toLocaleString()}</button></div>`;
+    return `<div class="st-card r-${C.tier}${deal ? ' deal' : ''}">${deal ? `<span class="st-deal">Deal, ${hrs(dealLeft())} left</span>` : ''}<button class="st-i" data-rates="${key}" aria-label="Details"><i>i</i></button><img src="${chestPicture(C.look, 220, 160)}" alt=""><b style="color:${R.col}">${C.name}</b><span class="st-r" style="color:${R.col}">${R.name}</span><span class="st-n">${C.n} item${C.n > 1 ? 's' : ''}</span><button data-store="${key}" ${(P.cash || 0) < C.price ? 'disabled' : ''}>$${C.price.toLocaleString()}</button></div>`;
   };
   return `<div class="st-plate"><button class="st-x" aria-label="Close">×</button><h2>Shop</h2><div class="st-row">${STANDARD.map((k) => card(k, false)).join('')}${card(dealNow(), true)}</div></div>`;
 }
 // Events: the daily gift, seven days in a row
+// (6.5.0) today's gift and its Claim button pulse slowly; once claimed, the next day's button is greyed with the time
+// left until it can be claimed beside it. A tap on any day shows what it is (a chest, its odds)
+export const untilTomorrow = (t = new Date()) => { const n = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1); return n - t; };
 export function eventsHtml(P, coinPic, glowPic) {
   const st = calState(P);
   const days = CAL.map((r, i) => {
     const done = i < st.day, now = i === st.day, pic = r.k === 'chest' ? chestPicture(CHESTS[r.v].look, 120, 90) : r.k === 'coin' ? coinPic : r.k === 'glow' ? glowPic : null;
-    return `<div class="ev-day${done ? ' done' : ''}${now ? ' now' : ''}${i === CAL.length - 1 ? ' big' : ''}"><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">✓</i>' : ''}</div>`;
+    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === CAL.length - 1 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">✓</i>' : ''}</button>`;
   }).join('');
-  return `<div class="st-plate ev"><button class="st-x" aria-label="Close">×</button><h2>Daily gift</h2><div class="ev-row">${days}</div><div class="ev-foot">${st.ready ? `<button data-ev="claim">Claim day ${st.day + 1}</button>` : '<span class="ev-wait">Come back tomorrow</span>'}</div></div>`;
+  return `<div class="st-plate ev"><button class="st-x" aria-label="Close">×</button><h2>Daily gift</h2><div class="ev-row">${days}</div><div class="ev-foot">${st.ready ? `<button class="ev-claim" data-ev="claim">Claim day ${st.day + 1}</button>` : `<span class="ev-wait">${hrs(untilTomorrow())}</span><button class="ev-claim" disabled>Claim day ${st.day + 1}</button>`}</div></div>`;
 }

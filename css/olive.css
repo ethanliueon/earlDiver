@@ -1392,3 +1392,97 @@ html body #title .slot.tag .tg-del:not(#_a):not(#_b):not(#_c), html.touch body #
   padding: 5px 10px !important; border: 0 !important; border-image: none !important; border-radius: 6px !important; font: 600 13px 'Barlow Semi Condensed', sans-serif !important; letter-spacing: 0.06em !important; text-transform: none !important;
   color: #e6dec6 !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important; background: linear-gradient(#625a4c, #4a4338) !important; box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.16), 0 0 0 1px rgba(20, 16, 10, 0.75), 0 2px 3px rgba(0, 0, 0, 0.35) !important; }
 html body #title .slot.tag .tg-del:active { transform: translateY(1px); }
+/* (6.5.0) the quests' left page: the log at the top, the refresh (its line and its button) at the page's foot, bottom left */
+html.touch body.bookmode #quests .qs-body:not(#_a):not(#_b) { align-items: stretch; height: calc(min(640px, 82vh) - 130px); }
+html.touch body.bookmode #quests .qs-pg.l { display: flex; flex-direction: column; min-height: 100%; }
+html.touch body.bookmode #quests .qs-pg.l .qs-foot:not(#_a):not(#_b) { margin-top: auto !important; padding-bottom: 4px; }
+/* (6.5.0) the sale's animal tiles on their own water, as in the bag (no more grid behind them); name, price centred under it */
+html body .shop .sl-tile.hb-sun .sl-main:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(140, 200, 210, 0.45), rgba(0, 0, 0, 0) 70%), #2c6a78 !important; }
+html body .shop .sl-tile.hb-reef .sl-main:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(150, 210, 200, 0.42), rgba(0, 0, 0, 0) 70%), linear-gradient(180deg, #2a7078, #3a6650 85%, #6a6248) !important; }
+html body .shop .sl-tile.hb-kelp .sl-main:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(170, 200, 140, 0.38), rgba(0, 0, 0, 0) 70%), #34503a !important; }
+html body .shop .sl-tile.hb-blue .sl-main:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(110, 160, 200, 0.32), rgba(0, 0, 0, 0) 70%), #1c3e5a !important; }
+html body .shop .sl-tile.hb-twi .sl-main:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(80, 110, 160, 0.25), rgba(0, 0, 0, 0) 70%), #142438 !important; }
+html body .shop .sl-tile.hb-deep .sl-main:not(#_a):not(#_b) { background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(60, 80, 110, 0.18), rgba(0, 0, 0, 0) 70%), #0a1018 !important; }
+html body .shop .sl-tile[class*="hb-"] .sl-main :is(b, .sl-price, .sl-cond, .sl-n) { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85); }
+html body .shop .sl-tile .sl-main :is(b, .sl-price) { align-self: stretch; text-align: center; margin: 0 !important; padding: 0 !important; letter-spacing: 0 !important; }
+/* (6.5.0) a find's skills centred, a line each, under the centred card above (one skill alone sat lopsided at the left) */
+html body .cx .cx-card .cx-sks:not(#_a) { text-align: center; margin: 4px 0 2px; }
+html body .cx .cx-card .cx-sks div { margin: 2px 0; }
+/* (6.5.0) no blur behind any panel: the plates are solid, so it was never seen, but an iPhone redrew the moving sea
+   through it every frame and the world behind stuttered */
+html body :is(.panel, .shop-main, #journal, #workshop, #quests, #inventory, #settings, .shop, #gains .gain, #store, #events, #confirm) { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+/* (6.5.0) the spotlight never slides: on a new target the outline and arrow vanish and fade in at the new place over a
+   quarter second, while a plain shade (.ts-dim) holds the dark so nothing flashes */
+html body #tut-spot .ts-hole:not(#_a):not(#_b) { transition: opacity 0.25s ease-out !important; }
+html body #tut-spot .ts-arrow { transition: opacity 0.25s ease-out; }
+html body #tut-spot .ts-dim { position: fixed; inset: -50px; background: rgba(4, 8, 6, 0.5); opacity: 0; pointer-events: none; transition: opacity 0.25s ease-out; }
+html body #tut-spot.ts-swap .ts-hole:not(#_a):not(#_b), html body #tut-spot.ts-swap .ts-arrow { opacity: 0; transition: none !important; }
+html body #tut-spot.ts-swap .ts-dim { opacity: 1; transition: none; }
+html body #tut-spot.ts-lightswap .ts-dim { background: rgba(2, 7, 11, 0.18); }
+
+/* (6.5.0) the gain: as a find comes out of a chest. A soft darkening, the things rising into the middle on a light of
+   their rarity's colour, their names under them in it; legendaries throw a few sparks. A tap opens a thing's card */
+#gainfx { position: fixed; inset: 0; z-index: 9400; display: grid; place-items: center; background: radial-gradient(ellipse 70% 65% at 50% 48%, rgba(4, 6, 6, 0.52), rgba(4, 6, 6, 0.22)); opacity: 0; }
+#gainfx[hidden] { display: none; }
+#gainfx.in { animation: gx-in 0.3s ease-out forwards; }
+#gainfx.out { animation: gx-out 0.4s ease-in forwards; }
+@keyframes gx-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gx-out { from { opacity: 1; } to { opacity: 0; } }
+#gainfx .gx-row { display: flex; gap: calc(26px - var(--gn, 1) * 3px); align-items: flex-end; justify-content: center; max-width: 94vw; }
+#gainfx .gx-it { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: calc(min(30vw, 250px) - var(--gn, 1) * 18px); min-width: 110px; padding: 0; border: 0; background: none; cursor: pointer; opacity: 0; transform: translateY(36px) scale(0.7); animation: gx-rise 0.62s cubic-bezier(0.2, 0.9, 0.25, 1.15) var(--d, 0s) forwards; }
+@keyframes gx-rise { 0% { opacity: 0; transform: translateY(36px) scale(0.7); } 60% { opacity: 1; } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+#gainfx .gx-it img { position: relative; z-index: 1; width: 100%; aspect-ratio: 5 / 3; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.75)); animation: gx-float 3.2s ease-in-out calc(var(--d, 0s) + 0.62s) infinite; }
+@keyframes gx-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+#gainfx .gx-light { position: absolute; left: 50%; top: 32%; width: 130%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--rc) 42%, transparent), transparent); opacity: 0.75; pointer-events: none; }
+#gainfx .gx-it.r-common .gx-light, #gainfx .gx-it.r-cash .gx-light { background: radial-gradient(closest-side, rgba(220, 212, 190, 0.22), transparent); }
+#gainfx .gx-it b { position: relative; z-index: 1; font: 600 19px/1.15 'Barlow Semi Condensed', sans-serif; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.7); text-align: center; }
+#gainfx .gx-it.r-cash b { color: #efe8d2 !important; }
+#gainfx .gx-it small { position: relative; z-index: 1; font: 600 15px 'Barlow Semi Condensed', sans-serif; color: #e6dec6; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95); }
+#gainfx .gx-sparks { position: absolute; left: 50%; top: 32%; width: 0; height: 0; pointer-events: none; z-index: 2; }
+#gainfx .gx-sparks b { position: absolute; left: 0; top: 0; width: 3px; height: 3px; border-radius: 50%; background: #f4e2b0; box-shadow: 0 0 6px 2px rgba(232, 196, 120, 0.7); opacity: 0; animation: gx-spark 2.4s linear infinite; }
+#gainfx .gx-sparks b:nth-child(1) { --sx: -70px; --sy: -40px; animation-delay: 0.7s; } #gainfx .gx-sparks b:nth-child(2) { --sx: 60px; --sy: -55px; animation-delay: 1.1s; }
+#gainfx .gx-sparks b:nth-child(3) { --sx: -40px; --sy: 30px; animation-delay: 1.5s; } #gainfx .gx-sparks b:nth-child(4) { --sx: 75px; --sy: 20px; animation-delay: 1.9s; }
+#gainfx .gx-sparks b:nth-child(5) { --sx: 10px; --sy: -70px; animation-delay: 2.3s; } #gainfx .gx-sparks b:nth-child(6) { --sx: -80px; --sy: -5px; animation-delay: 2.7s; }
+@keyframes gx-spark { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0.2); } }
+#gainfx .gx-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, 84vw); max-height: 88%; overflow-y: auto; text-align: center; color: #e6dec6; padding: 12px 14px 14px; border: 22px solid transparent; border-image: url("../assets/ui/olive/panel.png") 60 fill / 22px stretch; font: 500 14px 'Barlow Semi Condensed', sans-serif; }
+#gainfx .gx-card[hidden] { display: none; }
+#gainfx .gx-card img { width: 180px; height: 110px; object-fit: contain; }
+#gainfx .gx-card h4 { margin: 4px 0 0; font: 600 20px 'Barlow Semi Condensed', sans-serif; }
+#gainfx .gx-card .gx-r { margin: 0 0 6px; font: 700 11px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
+#gainfx .gx-card p { margin: 0 0 6px; }
+#gainfx .gx-card .gx-sks { text-align: center; font-size: 13px; color: #c8c0a8; } #gainfx .gx-card .gx-sks div { margin: 2px 0; } #gainfx .gx-card .gx-sks b { color: #efe8d2; }
+html body #gainfx .gx-card .gx-x:not(#_a):not(#_b):not(#_c) { position: absolute; right: 0; top: 0; width: 36px !important; height: 36px !important; border: 0 !important; border-radius: 7px !important; font-size: 0 !important; cursor: pointer;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M4.5 4.5 L15.5 15.5 M15.5 4.5 L4.5 15.5' stroke='%23e8dcc0' stroke-width='3.6' stroke-linecap='round'/%3E%3C/svg%3E") center / 20px 20px no-repeat, radial-gradient(120% 90% at 35% 25%, #84402e 0%, #6a2e22 55%, #4a1c14 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 210, 180, 0.25), inset 0 -2px 3px rgba(0, 0, 0, 0.45), 0 0 0 1.5px rgba(20, 8, 6, 0.9), 0 3px 6px rgba(0, 0, 0, 0.5) !important; }
+/* (6.5.0) the daily gift: today's day and its Claim breathe slowly (a soft bone light, never a blink); claimed, the next
+   day's Claim is greyed with the time left beside it. Each day is a button: a tap shows what it is */
+html body .store-panel button.ev-day { border: 0; color: inherit; font: inherit; cursor: pointer; }
+html body .store-panel .ev-day.now { animation: ev-breathe 2.4s ease-in-out infinite; }
+@keyframes ev-breathe { 0%, 100% { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(236, 228, 204, 0.45), 0 0 6px 1px rgba(236, 228, 204, 0.08); } 50% { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 0 1.5px rgba(236, 228, 204, 0.85), 0 0 16px 4px rgba(236, 228, 204, 0.22); } }
+html body .store-panel .ev-day.next { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(236, 228, 204, 0.25); }
+html body .store-panel .ev-claim:not(:disabled) { animation: ev-claim 2.4s ease-in-out infinite; }
+@keyframes ev-claim { 0%, 100% { filter: brightness(1); transform: scale(1); } 50% { filter: brightness(1.14); transform: scale(1.03); } }
+html body .store-panel .ev-claim:disabled { filter: grayscale(0.7) brightness(0.7); cursor: default; }
+html body .store-panel .ev-foot { align-items: center; gap: 12px; }
+html body .store-panel .ev-wait:not(#_a) { padding: 0; font: 600 15px 'Barlow Semi Condensed', sans-serif; color: #c8c0a8; font-variant-numeric: tabular-nums; }
+/* (6.5.0) the journal's animal in a small painted tank of its own water (journal_tank.js), not on a taped-in white photo */
+html body #journal .jd-pic.jd-tank:not(#_a):not(#_b) { background-color: #10181c !important; background-position: center !important; background-size: 100% 100% !important; background-repeat: no-repeat !important; padding: 7% 7% 12% !important; transform: none !important; border-radius: 2px !important; box-shadow: 0 3px 8px rgba(40, 28, 10, 0.45) !important; aspect-ratio: 480 / 260; height: auto !important; }
+html body #journal .jd-pic.jd-tank::before, html body #journal .jd-pic.jd-tank::after { display: none !important; }
+html body #journal .jd-pic.jd-tank img:not(#_a) { mix-blend-mode: normal !important; max-width: 86%; max-height: 100%; filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.45)); }
+/* (6.5.0) the Catch tab: taller spaces in the bag; one he has not got yet is a plain dim recess (no padlock on each);
+   the photos further down; the sub's half dimmed under one big padlock while Earl is not in the sub (nothing there can
+   be opened) */
+html body #inventory .inv-catch2 .bag-spaces:not(#_a) { grid-auto-rows: 54px; }
+html body #inventory .inv-catch2 .bag-spaces .bs-cell.locked:not(#_a) { background: rgba(14, 18, 12, 0.35); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35); }
+html body #inventory .inv-catch2 .bag-spaces .bs-cell.locked i { display: none; }
+html body #inventory .inv-catch2 .inv-right.sub-away { position: relative; }
+html body #inventory .inv-catch2 .inv-right.sub-away .sub-bay { filter: grayscale(0.6) brightness(0.45); pointer-events: none; }
+html body #inventory .inv-catch2 .inv-right.sub-away .sub-lock { position: absolute; left: 50%; top: 50%; z-index: 3; width: 96px; height: 120px; transform: translate(-50%, -50%); background: center / contain no-repeat; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6)); pointer-events: none; }
+/* (6.5.0) the photos lower in the bag's half, just above what it is worth (no dead space under them) */
+html body #inventory .inv-catch2 .inv-left:not(#_a):not(#_b) { display: flex !important; flex-direction: column; }
+html body #inventory .inv-catch2 .inv-left > .ph-h { margin-top: auto !important; }
+/* (6.5.0) gains: every picture in the same box (a coin no bigger than a pair of fins), names on one line */
+#gainfx .gx-row { align-items: flex-start; }
+#gainfx .gx-it.r-legendary img[src*="data:image"] { }
+html body .store-panel .ev-claim:disabled { filter: grayscale(0.8) brightness(0.85) !important; opacity: 0.8; }
+html body .store-panel .ev-claim:disabled:not(#_a):not(#_b) { opacity: 1 !important; filter: grayscale(0.85) brightness(0.8) !important; color: #c8c2b0 !important; }

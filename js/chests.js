@@ -146,11 +146,11 @@ export class ChestReveal {
     this.findEls = [...box.children];
     const loop = () => { if (R.hidden) return; this.draw(); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
   }
-  card(i) { // a find's card: its picture, name, rarity, what it does; Put it on for gear
+  card(i) { // a find's card: its picture, name, rarity, what it does
     const f = this.finds[i], el = this.cardEl; if (!f) return;
     if (f.coin) el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><img src="${this.h.coinPic()}" alt=""><h4>Old coin</h4><p class="rr r-legendary">Legendary</p><p>Hand-struck and worn nearly smooth. The Old One trades for them.</p><p class="cx-have">${this.h.coins()} in the locker</p>`;
     else { const d = f.def, sk = (f.q.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
-      el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><img src="${this.h.picture(d, 300, 180)}" alt=""><h4>${d.name}</h4><p class="rr r-${d.rarity}">${RARITY[d.rarity].name}</p><p>${d.line || ''}</p>${sk ? `<div class="cx-sks">${sk}</div>` : ''}${d.kind !== 'ability' && d.kind !== 'chest' ? `<div class="cx-acts"><button class="cx-on" data-u="${f.q.u}">Put it on</button></div>` : d.kind === 'ability' ? `<div class="cx-acts"><button class="cx-on" data-u="${f.q.u}">Put it on</button></div>` : ''}`; }
+      el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><img src="${this.h.picture(d, 300, 180)}" alt=""><h4 style="color:${RARITY[d.rarity].col}">${d.name}</h4><p class="rr r-${d.rarity}">${RARITY[d.rarity].name}</p><p>${d.line || ''}</p>${sk ? `<div class="cx-sks">${sk}</div>` : ''}`; } // (6.5.0) its name in its rarity's colour; no Put it on here: gear is put on in the bag alone
     el.hidden = false;
   }
   close() { this.root.hidden = true; this.h.close && this.h.close(); }

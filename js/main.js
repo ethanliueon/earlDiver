@@ -1,6 +1,7 @@
 // Earl the Diver — game loop, state, interactions and UI glue.
 import { watchPage } from './units.js'; // (6.0.3) first, so every canvas draws its figures in the chosen units
 import { setTouchText } from './touchtext.js';
+import { watchPanels, platesReady } from './reveal.js'; // (6.5.0) no panel seen half-drawn
 import { installFatFinger } from './fatfinger.js';
 import { coinURL, tileURL } from './coins.js';
 installFatFinger();
@@ -437,7 +438,7 @@ function showOldShop() {
     const sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b></div>`).join('');
     // (6.1.9) given for: it stays, dimmed, and in place of her price an hourglass with the time until she lays out another
     const foot = it.sold ? `<div class="os-wait">${HGI}${left(it)}</div>` : `<small class="os-left">${HGI}${left(it)}</small><button data-oc="item:${i}" ${have < it.cost ? 'disabled' : ''}>${GC}${it.cost}</button>`;
-    return `<div class="os-item r-${def.rarity}${it.sold ? ' gone' : ''}"><div class="os-pic"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""></div><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><div class="oc-sk">${sk}</div>${foot}</div>`; };
+    return `<div class="os-item r-${def.rarity}${it.sold ? ' gone' : ''}"><div class="os-pic"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""></div><small class="rr">${RARITY[def.rarity].name}</small><b style="color:${RARITY[def.rarity].col}">${def.name}</b><div class="oc-sk">${sk}</div>${foot}</div>`; };
   g.oldShopOpen = true;
   ui.oldCard(`<div class="os-head"><b>The Old One</b><span>${GC}${have}</span></div><div class="os-row">${st.items.map(col).join('')}</div>`);
 }
@@ -448,7 +449,7 @@ function showOldCard(H) {
   const it = st.items[H.i]; if (!it) return;
   const def = ITEMS[it.id], sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
   const have = P.gold || 0, left = leftOf(it), hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60);
-  ui.oldCard(`<div class="oc-top r-${def.rarity}"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""><div class="oc-t"><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><span>${def.line || ''}</span>${def.good ? `<i>${def.good}</i>` : ''}<div class="oc-sk">${sk}</div></div></div>
+  ui.oldCard(`<div class="oc-top r-${def.rarity}"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""><div class="oc-t"><small class="rr">${RARITY[def.rarity].name}</small><b style="color:${RARITY[def.rarity].col}">${def.name}</b><span>${def.line || ''}</span>${def.good ? `<i>${def.good}</i>` : ''}<div class="oc-sk">${sk}</div></div></div>
     <div class="oc-buy"><small><img class="hg" src="${hourglassURL()}" alt="">${hh ? hh + ' h ' : ''}${mm} min</small><em class="oc-coins"><img class="gc" src="${pictureOf('gold', 1, 40, 40, true)}" alt="">${have}</em>${it.sold ? '' : `<button data-oc="item:${H.i}" ${have < it.cost ? 'disabled' : ''}><img class="gc" src="${pictureOf('gold', 1, 40, 40, true)}" alt="">${it.cost}</button>`}</div>`);
 }
 // (4.0.0) anything that costs more than a fifth of the cash on hand is asked about first
@@ -488,10 +489,10 @@ function costOf(kind) {
 function claimGift() {
   const P = profile; if (!P) return false; const st = calState(P); if (!st.ready) return false;
   const r = CAL[st.day];
-  if (r.k === 'chest') { if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; } giveItem(P, 'chest_' + r.v); ui.showGains([{ kind: 'item', id: 'chest_' + r.v, how: 'Daily gift' }]); }
-  else if (r.k === 'cash') { P.cash = Math.round(((P.cash || 0) + r.v) * 100) / 100; hud.toast('+' + money(r.v, false), 'big'); }
-  else if (r.k === 'glow') { P.spare = P.spare || {}; P.spare.necklace = (P.spare.necklace || 0) + r.v; hud.toast(r.v + ' glow sticks', 'big'); }
-  else if (r.k === 'coin') { if (lockerFree(P) <= 0 && (P.gold || 0) % 10 === 0) { hud.toast('Locker full', 'warn'); return false; } P.gold = (P.gold || 0) + r.v; hud.toast('Old coin', 'big'); }
+  if (r.k === 'chest') { if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; } giveItem(P, 'chest_' + r.v); ui.showGains([{ kind: 'item', id: 'chest_' + r.v }], true); }
+  else if (r.k === 'cash') { P.cash = Math.round(((P.cash || 0) + r.v) * 100) / 100; ui.showGains([{ kind: 'cash', n: r.v }], true); } // (6.5.0) a gift's cash floats like the rest
+  else if (r.k === 'glow') { P.spare = P.spare || {}; P.spare.necklace = (P.spare.necklace || 0) + r.v; ui.showGains([{ kind: 'supply', id: 'necklace', n: r.v }], true); }
+  else if (r.k === 'coin') { if (lockerFree(P) <= 0 && (P.gold || 0) % 10 === 0) { hud.toast('Locker full', 'warn'); return false; } P.gold = (P.gold || 0) + r.v; ui.showGains([{ kind: 'coin', n: r.v }], true); }
   calClaimed(P); saveProfile(P); audio.ready && audio.sale(); return true;
 }
 function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replaced at once by another
@@ -1107,12 +1108,12 @@ function tutorFish(dir) {
   return tf;
 }
 function tutor() {
-  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; if (ui.cabin) ui.cabin.tutMark = null;
+  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } // (6.5.0) the Log's step, for the way-aboard chevrons if (ui.cabin) ui.cabin.tutMark = null;
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
   g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
-  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); hud.toast(hud.touch ? 'Tutorial done. The quest board is open in your journal' : 'Tutorial done. The quest board is open (O)', 'big'); setTimeout(() => hud.toast(`If you need help: controls are in your journal (${keyFor('journal')}), settings in the pause menu (Esc)`, 'note'), 4500); } return; }
+  const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); setTimeout(() => ui.confirm('Tutorial complete', 'The quest board is in your journal.', 'OK', null, () => {}), 600); /* (6.5.0) a card to close the tutorial, not a toast that was easily missed */ } return; }
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
@@ -1152,7 +1153,7 @@ function tutor() {
       // (4.3.5) another screen is up: point at the way out of it (the shop's Log off, a close button), no keys named;
       // in the cabin (no button to leave by) the quests key still works
       text = 'Done. Claim it in your quests';
-      spot = { sel: ['#catalog .cat-off', '#workshop-close', '#inventory .inv-close', '#journal-close', '#quests-btn'] }; // (the Quests button shows in the cabin)
+      spot = { sel: ['#catalog .cat-x', '#workshop-close', '#inventory .inv-close', '#journal-close', '#quests-btn'] }; // (the Quests button shows in the cabin)
     }
     else { text = hud.touch ? 'Done. Open your journal and claim it' : 'Done. Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Claim it here', light: true }; }
   } else if (m.id === 'firstfish') {
@@ -2429,7 +2430,7 @@ function update(dt) {
       if (g.aboard && !cabinOn && !g.aboard.jump && !g.aboard.climb && g.aboard.near === 'door') g.tapMarks.push({ key: 'f', boat: [16.2, -24.8, 21.8, -10.4], what: 'door' });
       if (!g.aboard && !e2.inSub) {
         const T = findTarget();
-        if (T && T.kind === 'board') g.tapMarks.push({ key: 'f', w: [g.sub.x - 1.3, g.sub.y - 3.7, g.sub.x + 0.7, g.sub.y - 1.9], what: 'sub' }); // its hatch, the conning tower
+        if (T && T.kind === 'board') g.tapMarks.push({ key: 'f', w: [g.sub.x - 4.6, g.sub.y - 2.05, g.sub.x + 4.6, g.sub.y + 0.35], what: 'sub', capsule: true }); // (6.5.0) the whole sub: a capsule round its hull (a tap anywhere on it boards)
         else if (T && T.kind === 'pickup') g.tapMarks.push({ key: 'f', w: [T.p.x - 0.7, T.p.y - 0.7, T.p.x + 0.7, T.p.y + 0.7], what: 'pickup' });
         else if (T && T.kind === 'trap') g.tapMarks.push({ key: 'f', w: [T.t.x - 0.9, T.t.y - 1.4, T.t.x + 0.9, T.t.y + 0.4], what: 'trap' });
         if (nearLadder()) g.tapMarks.push({ key: 'f', boat: [6.8, -13.2, 11.2, 3.4], what: 'ladder' });
@@ -2981,7 +2982,9 @@ function frame(now) {
   // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
   const covered = !document.getElementById('cabin').hidden || !document.getElementById('tankroom').hidden || !document.getElementById('gallery').hidden
     || (hud.touch && innerHeight > innerWidth); // (5.4) a phone held upright: the turn-your-phone card covers it all
-  const behind = hud.touch && (g.paused || (ui.anyOpen && ui.anyOpen())) && g.mode === 'play';
+  // (6.5.0) only the pause menu holds the world still, so only there is the sea drawn sparingly: behind any other panel
+  // the world goes on, and drawing it ten times a second made the fish, the radar and the water stutter
+  const behind = hud.touch && g.paused && g.mode === 'play';
   if (!covered && (!behind || now - seaDrawnAt > 100)) { renderer.render(g); seaDrawnAt = now; }
   // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
   if (g.warmUntil) { // behind the loading card: build the sprites on screen at full speed, then lift it
@@ -3073,6 +3076,8 @@ requestAnimationFrame(frame);
   await frames(14);
   B(1, 'Ready');
   await frames(4);
+  await Promise.race([platesReady, new Promise((r) => setTimeout(r, 4000))]); // (6.5.0) the panels' plates decoded behind the loading screen
+  watchPanels();
   if (window.__bootDone) window.__bootDone();
 })();
 

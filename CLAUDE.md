@@ -70,6 +70,13 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   $3-8k and legends $60-150k. The deep pays more because it is scary and slow to reach: leave fish pay alone. Chests:
   pine crate $900 up to Poseidon's chest $100,000 (owner's figures, docs in js/chests.js).
 
+- **Decided in 6.5**: the big button is only ever the net or the camera (greyed aboard); the interact button (brass
+  porthole ring, a warm rim when something is in reach) does everything else: ladder, hatch, door, eye, winch. One
+  gain effect everywhere, as a find comes out of a chest (cash only inside a gift; otherwise it counts up by the
+  money). Item names always in their rarity's colour. No rare forms (albino, golden, giant...). Things to use are
+  outlined, never bracketed. Panels appear only when drawn; nothing behind a panel is drawn at a lower rate. The game's
+  sound is "ambient" on iOS (follows the silent switch, never "now playing"). Marine snow only below 150-200 m.
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build

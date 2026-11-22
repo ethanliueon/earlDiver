@@ -32,7 +32,7 @@ import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
-import { Catalog, pictureOf, MEASURES, measureHtml, crossBoosts, boostOf } from './catalog.js';
+import { Catalog, pictureOf, drawGoldCoins, MEASURES, measureHtml, crossBoosts, boostOf } from './catalog.js';
 import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS } from './items.js';
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
@@ -44,7 +44,8 @@ import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's drawn size against a 2.4 m giant)
 import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
-import { storeHtml, eventsHtml } from './store.js';
+import { storeHtml, eventsHtml, CAL, untilTomorrow } from './store.js';
+import { tankPicture } from './journal_tank.js'; // (6.5.0) the journal's animal in a small tank of its own water
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, netsOf, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
@@ -119,6 +120,27 @@ function fitPanels() {
 }
 setInterval(fitPanels, 300); window.addEventListener('resize', fitPanels);
 
+// (6.5.0) a large painted padlock (a steel shackle, a worn brass body, its keyhole), for a whole part that cannot be
+// used from here: the sub's half of the Catch tab while Earl is not in the sub
+let LOCKPIC = null;
+function lockPic() {
+  if (LOCKPIC) return LOCKPIC; const c = document.createElement('canvas'); c.width = 120; c.height = 150; const x = c.getContext('2d');
+  const sh = x.createLinearGradient(28, 0, 92, 0); sh.addColorStop(0, '#5a5c58'); sh.addColorStop(0.35, '#c4c6c0'); sh.addColorStop(0.6, '#8a8c86'); sh.addColorStop(1, '#3e403c');
+  x.lineWidth = 13; x.strokeStyle = 'rgba(0,0,0,0.5)'; x.beginPath(); x.moveTo(34, 76); x.lineTo(34, 46); x.arc(62, 46, 28, Math.PI, 0); x.lineTo(90, 76); x.stroke();
+  x.lineWidth = 11; x.strokeStyle = sh; x.beginPath(); x.moveTo(32, 74); x.lineTo(32, 44); x.arc(60, 44, 28, Math.PI, 0); x.lineTo(88, 74); x.stroke();
+  x.fillStyle = 'rgba(0,0,0,0.45)'; x.beginPath(); x.roundRect(14, 70, 96, 72, 10); x.fill();
+  const bd = x.createLinearGradient(10, 66, 106, 140); bd.addColorStop(0, '#d4b47a'); bd.addColorStop(0.45, '#9a7840'); bd.addColorStop(1, '#5a4220');
+  x.fillStyle = bd; x.beginPath(); x.roundRect(10, 66, 96, 72, 10); x.fill();
+  x.strokeStyle = 'rgba(30,20,8,0.85)'; x.lineWidth = 2; x.stroke();
+  x.strokeStyle = 'rgba(255,236,190,0.45)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(18, 70); x.lineTo(98, 70); x.stroke();
+  let sd = 11; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '40,28,10' : '240,220,170'},${(0.08 + r() * 0.12).toFixed(3)})`; x.fillRect(14 + r() * 88, 72 + r() * 62, 1 + r() * 3, 1); }
+  x.fillStyle = '#1a140a'; x.beginPath(); x.arc(58, 96, 8, 0, Math.PI * 2); x.fill(); x.beginPath(); x.moveTo(54, 100); x.lineTo(62, 100); x.lineTo(60, 120); x.lineTo(56, 120); x.closePath(); x.fill();
+  LOCKPIC = c.toDataURL(); return LOCKPIC;
+}
+// (6.5.0) an animal's own water, behind its picture wherever it is shown in a tile (the bag, the sale): kelp, reef, sunlit,
+// blue, twilight or the deep, by where it usually lives
+const habCls = (sp) => { const [a2] = usualDepth(sp), hb = (sp.v && sp.v.hab) || ''; return /kelp/.test(hb) ? 'hb-kelp' : /reef|coral/.test(hb) ? 'hb-reef' : a2 < 60 ? 'hb-sun' : a2 < 300 ? 'hb-blue' : a2 < 1000 ? 'hb-twi' : 'hb-deep'; };
 export class UI {
   constructor(h) {
     this.h = h;
@@ -330,7 +352,11 @@ export class UI {
   storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
     const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile()); return; }
-    if (ev.target.closest('[data-ev]')) { this.h.onClaim && this.h.onClaim(); this.toggleEvents(true); } }); }
+    if (ev.target.closest('[data-ev]')) { this.h.onClaim && this.h.onClaim(); this.toggleEvents(true); return; }
+    // (6.5.0) a day tapped: a chest shows its odds (the shop's table, by its data-rates); anything else its card
+    const d = ev.target.closest('[data-evday]'); if (d && !d.dataset.rates) { const r = CAL[+d.dataset.evday]; this.previewCard(r.k === 'cash' ? { kind: 'cash', n: r.v } : r.k === 'glow' ? { kind: 'supply', id: 'necklace', n: r.v } : r.k === 'coin' ? { kind: 'coin', n: r.v } : { kind: 'item', id: 'chest_' + r.v }); } });
+    // the countdown beside the greyed Claim, kept current while the screen is open
+    if (el.id === 'events') setInterval(() => { if (el.hidden) return; const w = el.querySelector('.ev-wait'); if (w) { const t = untilTomorrow(); if (t < 1000) this.toggleEvents(true); else { const h = Math.floor(t / 3600e3), m = Math.floor((t % 3600e3) / 60e3), txt = h ? `${h} h ${m} min` : `${m} min`; if (w.textContent !== txt) w.textContent = txt; } } }, 1000); }
   // (3.0.0) one of the old one's things, or a bundle, seen from where Earl is: what it is, and her price
   oldCard(html) {
     let el = document.getElementById('oldcard');
@@ -378,7 +404,8 @@ export class UI {
     const gJ = this.h.getGame && this.h.getGame(), jNew = !!(P0 && gJ && gJ.journal && gJ.journal.size > (P0.jSeenN ?? gJ.journal.size));
     if (P0 && gJ && gJ.journal && P0.jSeenN == null) P0.jSeenN = gJ.journal.size;
     const touch = document.documentElement.classList.contains('touch'), want = n > 0 || (touch && jNew), txt = touch ? '!' : String(n);
-    dot.hidden = !want; window.__journalBadge = !!want; // (5.15.7) the folded menu's tab shows it too if (want && dot.textContent !== txt) dot.textContent = txt; dot.classList.toggle('bang', touch);
+    dot.hidden = !want; window.__journalBadge = !!want; // (5.15.7) the folded menu's tab shows it too
+    if (want && dot.textContent !== txt) dot.textContent = txt; dot.classList.toggle('bang', touch); // (6.5.0) these had slipped into the comment above: the badge was an empty white dot
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
   }
   // (4.28) open or fold the left-hand group; open for `ms` then fold again on its own
@@ -496,7 +523,7 @@ export class UI {
     el.classList.remove('welcome'); // (6.0.19) the welcome's styling is set again by its own call
     el.querySelector('.cf-title').textContent = title;
     el.querySelector('.cf-body').innerHTML = esc(body).replace(/\n/g, '<br>');
-    el.querySelector('.cf-yes').textContent = yes; el.querySelector('.cf-no').textContent = no;
+    el.querySelector('.cf-yes').textContent = yes; el.querySelector('.cf-no').textContent = no || ''; el.querySelector('.cf-no').hidden = !no; // (6.5.0) no second button: a notice with OK alone
     el.querySelector('.cf-yes').onclick = () => { close(); onYes(); };
     el.querySelector('.cf-no').onclick = () => { close(); if (onNo) onNo(); }; // (4.2.0)
     el.onclick = (e) => { if (e.target === el && !modal) close(); };
@@ -509,36 +536,60 @@ export class UI {
   // behind them; a click anywhere sends them off early. entries: [{ kind: 'item'|'supply'|'trawl'|'trap', id }]
   // (4.16.9) while a shop, the catalog, the quest board or a crate is open, the cards wait; they come when it closes
   gainsBlocked() { return ['catalog', 'workshop', 'chest', 'dave', 'cave', 'quests', 'confirm', 'oldcard', 'store', 'events'].some((id) => { const el = $(id); return el && !el.hidden; }); }
+  gainInfo(e) { // (6.5.0) what a gained thing is: its name, rarity, picture, line and skills
+    const P = this.h.getProfile && this.h.getProfile();
+    {
+      if (e.kind === 'item' && ITEMS[e.id]) { const it = ITEMS[e.id], K = P && kitOf(P), q = K && [...K.items].reverse().find((x) => x.id === e.id); return { name: it.name, r: it.rarity, pic: pictureOf(it.kind, it, 300, 180, true), line: it.line || '', sk: q && q.sk ? q.sk : [], def: it }; }
+      if (e.kind === 'supply' && SUPPLIES[e.id]) return { name: SUPPLIES[e.id].name, r: e.id === 'glowAdv' ? 'rare' : 'common', pic: pictureOf('supply', e.id, 300, 180, true), line: SUPPLIES[e.id].line || SUPPLIES[e.id].desc || '' };
+      if (e.kind === 'trawl' && NETS_SUB[e.id]) return { name: NETS_SUB[e.id].name, r: NETS_SUB[e.id].rarity || 'common', pic: pictureOf('trawl', e.id, 300, 180, true), line: NETS_SUB[e.id].line || '' };
+      if (e.kind === 'trap' && TRAPS[e.id]) return { name: TRAPS[e.id].name, r: TRAPS[e.id].rarity || 'common', pic: pictureOf('trap', e.id, 300, 180, true), line: TRAPS[e.id].line || TRAPS[e.id].desc || '' };
+      if (e.kind === 'coin' && !this.coinGainPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); x.translate(95, 35); drawGoldCoins(x, 110, 110, 1); this.coinGainPic = c.toDataURL(); } // (6.5.0) the coin drawn small in the same 5:3 frame as gear
+      if (e.kind === 'coin') return { name: 'Old coin', r: 'legendary', pic: this.coinGainPic, line: 'Hand-struck and worn nearly smooth. The Old One trades for them.' };
+      if (e.kind === 'cash') { if (!this.cashPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); drawCash(x, 150, 95, 120); this.cashPic = c.toDataURL(); } return { name: money(e.n || 0, false), r: 'cash', pic: this.cashPic, line: '', noN: true }; }
+      return null;
+    }
+  }
+  // (6.5.0) one way to show anything gained, the whole game over (bought, a quest's reward, a gift, a find, the old
+  // one's trade): as a find comes out of a chest. The screen darkens a little, and each thing rises into the middle
+  // on a soft light of its rarity's colour (legendaries throw sparks), larger than in a chest, its name under it in
+  // that colour and a count for a stack. A tap on one opens its card; a tap anywhere else, or a few seconds, and they
+  // go. Cash is never shown this way (it counts up by the money) except inside a gift. entries: [{ kind: 'item' |
+  // 'supply' | 'trawl' | 'trap' | 'coin' | 'cash', id, n }]
   showGains(entries, now = false) {
     if (!entries || !entries.length) return;
     if (!now && this.gainsBlocked()) { this.gainsQueue = (this.gainsQueue || []).concat(entries); return; }
-    let el = document.getElementById('gains');
+    let el = document.getElementById('gainfx');
     if (!el) {
-      el = document.createElement('div'); el.id = 'gains'; document.body.appendChild(el);
-      window.addEventListener('pointerdown', () => { if (el.classList.contains('in')) this.hideGains(); }, true);
+      el = document.createElement('div'); el.id = 'gainfx'; el.hidden = true; el.innerHTML = '<div class="gx-row"></div><div class="gx-card" hidden></div>'; document.body.appendChild(el);
+      el.addEventListener('pointerdown', (ev) => {
+        const c = el.querySelector('.gx-card');
+        if (!c.hidden) { if (ev.target.closest('.gx-x') || !ev.target.closest('.gx-card')) { c.hidden = true; this.hideGains(); } return; }
+        const it = ev.target.closest('.gx-it'); if (it) { clearTimeout(this.gainT); this.gainCard(+it.dataset.i); return; }
+        this.hideGains();
+      });
     }
-    const card = (e) => {
-      let name = '', pic = '', r = 'supply';
-      if (e.kind === 'item' && ITEMS[e.id]) { const it = ITEMS[e.id]; name = it.name; r = it.rarity; pic = pictureOf(it.kind, it, 120, 72, true); }
-      else if (e.kind === 'supply' && SUPPLIES[e.id]) { name = SUPPLIES[e.id].name; pic = pictureOf('supply', e.id, 120, 72, true); }
-      else if (e.kind === 'trawl' && NETS_SUB[e.id]) { name = NETS_SUB[e.id].name; pic = pictureOf('trawl', e.id, 120, 72, true); }
-      else if (e.kind === 'trap' && TRAPS[e.id]) { name = TRAPS[e.id].name; pic = pictureOf('trap', e.id, 120, 72, true); }
-      else if (e.kind === 'coin') { name = 'Old coin'; r = 'legendary'; pic = pictureOf('gold', 1, 160, 160, true); }
-      else return '';
-      // (6.1.3) a word for what happened, above the name: bought, found in a crate, from the old one
-      return `<div class="gain r-${r}">${e.how ? `<small class="g-how">${e.how}</small>` : ''}<div class="g-tile"><img src="${pic}" alt=""><i class="new">new</i>${r === 'legendary' ? '<span class="glint"></span>' : ''}</div><b>${name}</b><span class="g-plus">+1</span></div>`;
-    };
-    { const n = Math.min(5, entries.length); el.style.setProperty('--gn', n); el.style.setProperty('--gh', [0, 45, 38, 32, 26, 26][n] + 'vh'); } // (4.17.0) sized from the screen: one big card, smaller as more come
-    el.innerHTML = `<div class="g-row">${entries.slice(0, 5).map(card).join('')}</div>`;
-    // (5.5.6) on a phone, during play: the card comes out small beside the bag button and goes into it (the bag gives a
-    // tug), instead of standing in the middle of the screen over the sea
-    const bag = document.documentElement.classList.contains('touch') && !this.anyOpen() && (window.__hudHots || []).find((q) => q.key === 'b');
-    // (5.7.5) on a phone: a small card at the top centre, under the messages (by the bag it crowded the radar column)
-    el.classList.toggle('topc', false); /* (6.1.3) always the big card in the middle */ el.classList.remove('dock');
-    if (false && bag) { el.style.setProperty('--dx', (bag.x - 10) + 'px'); el.style.setProperty('--dy', (bag.y + bag.h / 2) + 'px'); el.style.setProperty('--tx', (bag.w / 2 + 70) + 'px'); } // (5.6.9) to the left of the bag (it sits at the right edge now), whole on the screen
-    el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
-    clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), bag ? 2200 : 2900);
+    const info = (e) => this.gainInfo(e);
+    const list = entries.map(info).map((f, k) => f && { ...f, n: entries[k].n || 1 }).filter(Boolean).slice(0, 5); if (!list.length) return;
+    this.gainList = list;
+    const col = (r) => (RARITY[r] ? RARITY[r].col : '#efe8d2');
+    el.querySelector('.gx-row').innerHTML = list.map((f, i) => `<button class="gx-it r-${f.r}" data-i="${i}" style="--rc:${col(f.r)};--d:${(i * 0.14).toFixed(2)}s"><i class="gx-light"></i>${f.r === 'legendary' ? '<i class="gx-sparks"><b></b><b></b><b></b><b></b><b></b><b></b></i>' : ''}<img src="${f.pic}" alt=""><b style="color:${col(f.r)}">${f.name}</b>${f.n > 1 && !f.noN ? `<small>×${f.n}</small>` : ''}</button>`).join('');
+    el.style.setProperty('--gn', list.length);
+    el.querySelector('.gx-card').hidden = true;
+    el.hidden = false; el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
+    clearTimeout(this.gainT); this.gainT = setTimeout(() => this.hideGains(), 3400 + list.length * 300);
   }
+  // (6.5.0) a thing's card alone, over everything (the daily gift's days): the same card as a gain's
+  previewCard(e) { this.showGains([e], true); const el = document.getElementById('gainfx'); if (!el) return; clearTimeout(this.gainT); el.querySelector('.gx-row').innerHTML = ''; this.gainCard(0); }
+  // a thing gained, its card: the picture, its name in its rarity's colour, the rarity, what it is, its skills (centred)
+  gainCard(i) {
+    const el = document.getElementById('gainfx'), f = this.gainList && this.gainList[i]; if (!el || !f) return;
+    const c = el.querySelector('.gx-card'), R = RARITY[f.r];
+    const sk = (f.sk || []).map(([k, l]) => SKILLS[k] ? `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ['', 'I', 'II', 'III', 'IV', 'V'][l]}</b> ${SKILLS[k].what}</div>` : '').join('');
+    const pw = f.def && f.def.legend && LEGEND[f.def.legend] ? `<div><b>${LEGEND[f.def.legend].name}</b> ${LEGEND[f.def.legend].what}</div>` : '';
+    c.innerHTML = `<button class="gx-x" aria-label="Close">×</button><img src="${f.pic}" alt=""><h4 style="color:${R ? R.col : '#efe8d2'}">${f.name}</h4>${R ? `<p class="gx-r" style="color:${R.col}">${R.name}</p>` : ''}${f.line ? `<p>${f.line}</p>` : ''}${sk || pw ? `<div class="gx-sks">${pw}${sk}</div>` : ''}`;
+    c.hidden = false;
+  }
+  hideGains() { const el = document.getElementById('gainfx'); if (!el || el.hidden || el.classList.contains('out')) return; if (!el.querySelector('.gx-card').hidden) return; clearTimeout(this.gainT); el.classList.remove('in'); el.classList.add('out'); setTimeout(() => { if (el.classList.contains('out')) { el.hidden = true; el.classList.remove('out'); } }, 420); }
   // (5.5.6) a quest done: a small olive tag slides out from the clipboard with what it paid, and goes again
   questTag(text) {
     const hudEl = document.getElementById('quests-hud'); if (!hudEl) return false;
@@ -576,7 +627,6 @@ export class UI {
     this.netPickClose = close; el.hidden = false;
   }
   netPickOpen() { const el = document.getElementById('netpick'); return !!el && !el.hidden; }
-  hideGains() { const el = document.getElementById('gains'); if (!el) return; clearTimeout(this.gainT); if (el.classList.contains('dock') && el.classList.contains('in')) window.__bagTug = performance.now() + 300; el.classList.remove('in'); el.classList.add('out'); }
   // (4.0.0) after a purchase confirmed in the dialog: whatever shop is open shows the new state
   refreshOpen() {
     const open = (id) => { const el = $(id); return el && !el.hidden; };
@@ -702,16 +752,16 @@ export class UI {
         if (free) { let over = false; for (let y = 0; y < h; y++) for (let x2 = 0; x2 < w; x2++) { occ[(r + y) * COLS + c + x2] = true; if ((r + y) * COLS + c + x2 >= cap) over = true; } return { ...q, r, c, w, h, over }; }
       } });
     const rows = Math.max(frame / COLS, ...placed.map((q) => q.r + q.h));
-    const hab = (sp) => { const [a2] = usualDepth(sp), hb = (sp.v && sp.v.hab) || ''; return /kelp/.test(hb) ? 'hb-kelp' : /reef|coral/.test(hb) ? 'hb-reef' : a2 < 60 ? 'hb-sun' : a2 < 300 ? 'hb-blue' : a2 < 1000 ? 'hb-twi' : 'hb-deep'; };
+    const hab = habCls;
     let cells = '';
-    for (let k = 0; k < rows * COLS; k++) if (!occ[k]) cells += `<div class="bs-cell${k < cap ? '' : ' locked'}" style="grid-row:${Math.floor(k / COLS) + 1};grid-column:${(k % COLS) + 1}">${k < cap ? '' : '<i></i>'}</div>`;
+    for (let k = 0; k < rows * COLS; k++) if (!occ[k]) cells += `<div class="bs-cell${k < cap ? '' : ' locked'}" style="grid-row:${Math.floor(k / COLS) + 1};grid-column:${(k % COLS) + 1}"></div>`; // (6.5.0) a space he has not got yet: a plain dim recess, no padlock on each
     const fishCells = placed.map((q) => { const sp = SPECIES_BY_ID[q.s2.id]; if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
       return `<div class="fc bs-fish ${hab(sp)}${inTrouble(q.s2, true) ? ' trouble' : ''}${q.over ? ' over' : ''}${rarityCls(sp)}" data-b="${q.i}" style="grid-row:${q.r + 1} / span ${q.h};grid-column:${q.c + 1} / span ${q.w}" title="${sp.name}, ${state(q.s2)}">${q.s2.blessed ? '<i class="fc-bless" title="Blessed"></i>' : ''}${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}"><i class="fc-dot" style="background:${dot(q.s2)}"></i></div>`; }).join('');
     const over = usedSp > cap;
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag${over ? ' <i class="over">overencumbered</i>' : ''}</h4><div class="bag-spaces" style="--cols:${COLS};--rows:${rows}">${cells}${fishCells}</div>`
       + this.photoBoxes(P, g)
       + `<div class="worth-paint" style="--wp:${Math.min(104, Math.floor(400 / (money(total).length * 0.52)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
-      + `<div class="inv-right"><div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
+      + `<div class="inv-right${g.earl && g.earl.inSub ? '' : ' sub-away'}">${g.earl && g.earl.inSub ? '' : `<i class="sub-lock" style="background-image:url(${lockPic()})"></i>`}<div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
@@ -1072,7 +1122,7 @@ export class UI {
       const fact = (a, b) => `<div class="tp-row"><span>${a}</span><b>${b}</b></div>`, desc = String(T.desc || '').replace(/\.\./g, '.');
       return `<div class="item-pop trap-pop"><div class="ip-box r-common tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('trap', k, 360, 216, true)}" alt=""></div>
-        <div class="tp-txt"><h4>${T.name}</h4><p class="tp-kind">Trap, ${TR[k]} in the locker</p><p class="tp-desc">${desc}</p>
+        <div class="tp-txt"><h4 style="color:${RARITY[T.rarity || 'common'] ? RARITY[T.rarity || 'common'].col : 'inherit'}">${T.name}</h4><p class="tp-kind">Trap, ${TR[k]} in the locker</p><p class="tp-desc">${desc}</p>
           ${fact('Sets down to', `${T.maxDepth} m`)}${fact('Holds', `${T.holds} animals`)}${fact('Takes', `up to ${Math.round(T.maxLen * 100)} cm`)}${T.winch ? fact('Hauled up', "by the Margaret's winch") : ''}
           <div class="lk-acts"><button data-trapuse="${k}">Use</button><small class="tp-note">at the surface</small></div></div></div></div>`; })();
     // (5.17.0) the glow stick's card, opened from its belt slot, laid out as the trap's: Use snaps one (90 s of warm light,
@@ -1081,7 +1131,7 @@ export class UI {
     const nGold = P.gold || 0, goldTiles = Array.from({ length: Math.ceil(nGold / 10) }, (_, i) => { const n = Math.min(10, nGold - i * 10); return `<div class="lk-tile r-legendary gold" data-gold title="Gold coins"><img src="${pictureOf('gold', n, 120, 120, true)}" alt=""><b class="belt-n">×${n}</b></div>`; }).join('');
     const goldPop = this.goldSel && nGold ? `<div class="item-pop trap-pop gold-pop"><div class="ip-box r-legendary tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('gold', Math.min(nGold, 10), 300, 300, true)}" alt=""></div>
-        <div class="tp-txt"><h4>Old coin</h4><p class="tp-kind">Legendary, ${nGold} in the locker</p><p class="tp-desc">Hand-struck and worn nearly smooth, the old one's spiral on the face. Now and then one lies at the bottom of a chest. The old one in the cave takes nothing else.</p>
+        <div class="tp-txt"><h4 style="color:${RARITY.legendary.col}">Old coin</h4><p class="tp-kind">Legendary, ${nGold} in the locker</p><p class="tp-desc">Hand-struck and worn nearly smooth, the old one's spiral on the face. Now and then one lies at the bottom of a chest. The old one in the cave takes nothing else.</p>
           <div class="tp-row"><span>Stacks</span><b>10 to a space</b></div><div class="tp-row"><span>Spaces</span><b>${Math.ceil(nGold / 10)}</b></div></div></div></div>` : '';
     const glowPop = (() => { if (!this.glowSel) return ''; const k = gk, adv = k === 'glowAdv', n = (g.items && g.items[k]) || 0; if (!n) return '';
       return `<div class="item-pop trap-pop glow-pop"><div class="ip-box r-${GR[k]} tp-box"><button class="ip-close" aria-label="Close">×</button>
@@ -1398,7 +1448,7 @@ export class UI {
     let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">The old one's wares</button><button data-cave="tab:chests" class="${this.caveTab === 'chests' ? 'on' : ''}">What the deep took</button></nav>`;
     if (this.caveTab === 'chests') {
       html += '<p class="shop-note">Bundles left in the silt of the cave. The Reliquary is the only place the oldest things come from.</p>';
-      html += chestsOf('oldone').map((c) => `<div class="ch-row"><img src="${chestPicture(c.look, 192, 150)}" alt=""><div class="ch-txt"><b>${c.name}</b><span>${c.line}</span><small class="ch-odds">${oddsText(c.odds)}</small></div><button data-cave="chest:${c.key}" ${P.cash + 1e-6 < c.price ? 'disabled' : ''}>Open, ${money(c.price, false)}</button></div>`).join('');
+      html += chestsOf('oldone').map((c) => `<div class="ch-row"><img src="${chestPicture(c.look, 192, 150)}" alt=""><div class="ch-txt"><b style="color:${RARITY[c.tier] ? RARITY[c.tier].col : 'inherit'}">${c.name}</b><span>${c.line}</span><small class="ch-odds">${oddsText(c.odds)}</small></div><button data-cave="chest:${c.key}" ${P.cash + 1e-6 < c.price ? 'disabled' : ''}>Open, ${money(c.price, false)}</button></div>`).join('');
       $('cave-body').innerHTML = html;
       return;
     }
@@ -1610,7 +1660,7 @@ export class UI {
     if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
     const ph = (g.photos || []).filter((p) => p.id === id && p.img).sort((a, b) => b.q - a.q)[0];
     title.textContent = sp.name; notes.hidden = true; det.hidden = false;
-    det.innerHTML = `<div class="jd-pic">${ph ? `<img class="jd-photo" src="${ph.img}" alt="">` : `<img src="${this.fitPics.get(sp.id)}" alt="">`}</div>
+    det.innerHTML = `<div class="jd-pic${ph ? '' : ' jd-tank'}"${ph ? '' : ` style="background-image:url(${tankPicture(habCls(sp))}) !important"`}>${ph ? `<img class="jd-photo" src="${ph.img}" alt="">` : `<img src="${this.fitPics.get(sp.id)}" alt="">`}</div>
       <p class="jd-sci">${sp.species ? sp.species + ', ' : ''}<i>${sp.sci || ''}</i>${R && !R.hidden ? `, <span style="color:${R.col}">${R.name.toLowerCase()}</span>` : ''}</p>
       <p class="jd-desc">${sp.desc}</p>
       <dl class="jd-rows"><div><dt>Lives at</dt><dd>${hab[0].toLocaleString()} to ${hab[1].toLocaleString()} m</dd></div><div><dt>Grows to</dt><dd>${sp.size}</dd></div><div><dt>First seen</dt><dd>at ${info.depth ?? '?'} m</dd></div></dl>
@@ -1643,6 +1693,7 @@ export class UI {
   }
   // six slots for the rare variants of a species: locked until a normal one is caught
   variantRow(sp) {
+    return ''; // (6.5.0) rare forms are gone: no row of their names under a journal page
     const P = this.h.getProfile && this.h.getProfile();
     if (!P || !sp || !canBeRare(sp)) return '';
     const caught = (P.caught || []).includes(sp.id);
@@ -1724,7 +1775,7 @@ export class UI {
         const keepBtn = canKeep ? `<button class="sell-keep" data-sell="keep" data-arg="${dk}" title="Hold it back from the sale (put it in the aquarium at the aquarium)">Keep</button>` : '';
         if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(spc.id)) this.fitPics.set(spc.id, fittedIcon(spc, 300, 180).toDataURL());
         const worst = (L) => L.reduce((a, x) => Math.min(a, x.cond), 1);
-        const tile = (L) => ({ pic: this.fitPics.get(spc.id), name: (v ? VARIANTS[v].name + ' ' : '') + spc.name, n: L.length, cond: worst(L) < 0.7 ? conditionName(worst(L)) : '', rc: rarityCol(spc) });
+        const tile = (L) => ({ pic: this.fitPics.get(spc.id), hab: habCls(spc) /* (6.5.0) its own water behind it, as in the bag */, name: spc.name, n: L.length, cond: worst(L) < 0.7 ? conditionName(worst(L)) : '', rc: rarityCol(spc) });
         if (rest.length) items.push({ key: 'sp:' + gk, value: rest.reduce((a, x) => a + specimenValue(x), 0) * pay, keep: keepBtn, html: name(rest), dk, canKeep, ...tile(rest) });
         if (keptL.length) items.push({ key: 'kept:' + dk, value: keptL.reduce((a, x) => a + specimenValue(x), 0) * pay, kept: true, html: name(keptL), dk, ...tile(keptL),
           keep: `<button class="sell-keep on" data-sell="unkeep" data-arg="${dk}" title="Sell it after all">Keep</button>` });
@@ -1740,7 +1791,7 @@ export class UI {
         // (5.1) one grid of what he brought up, each thing a tile with its picture and price: tap a tile to sell it,
         // Sell all for the lot. A live animal has Keep in its corner (kept, it is held back for the aquarium)
         const total = items.reduce((a, it) => a + (it.kept ? 0 : it.value), 0);
-        const tileH = (it) => `<div class="sl-tile${it.kept ? ' kept' : ''}${it.photo ? ' photo' : ''}">
+        const tileH = (it) => `<div class="sl-tile${it.kept ? ' kept' : ''}${it.photo ? ' photo' : ''}${it.hab ? ' ' + it.hab : ''}">
           <button class="sl-main" ${it.kept ? 'disabled' : `data-act="sellone" data-arg="${it.key}"`} title="${it.kept ? 'Kept for the aquarium' : 'Sell it'}">
             <span class="sl-pic">${it.photo ? `<img src="${it.photo}" alt="">` : it.pic ? `<img src="${it.pic}" alt="">` : '<i class="sl-good"></i>'}</span>
             <b${it.rc ? ` style="color:${it.rc}"` : ''}>${it.name || ''}</b>${it.n > 1 ? `<em class="sl-n">×${it.n}</em>` : ''}${it.cond ? `<em class="sl-cond">${it.cond}</em>` : ''}

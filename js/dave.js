@@ -3,7 +3,7 @@
 // website: what he sells chalked up on the left (the items in items.js with shop: 'dave', and the rebreather
 // suit), what he buys on the right (pearls, sapphires, whalebone, glass sponge and nodules, for a quarter more
 // than the Margaret pays). He says a line when you come in (text only), and remembers how often you've been.
-import { ITEMS, ownsItem, worn as wornItem } from './items.js';
+import { ITEMS, ownsItem, worn as wornItem, RARITY } from './items.js';
 import { SUITS, GOODS, money } from './economy.js';
 import { pictureOf } from './catalog.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
@@ -69,7 +69,7 @@ export class DaveShop {
   }
   wares(P) {
     // (2.8.0) his items, suits included, from items.js (shop: 'dave'); bought ones go into the locker
-    return Object.values(ITEMS).filter((it) => it.shop === 'dave').map((it) => { const w = wornItem(P, it.kind); return { key: 'item:' + it.id, name: it.name, price: it.price, line: it.line, good: it.good, bad: it.bad,
+    return Object.values(ITEMS).filter((it) => it.shop === 'dave').map((it) => { const w = wornItem(P, it.kind); return { key: 'item:' + it.id, name: it.name, col: RARITY[it.rarity] ? RARITY[it.rarity].col : null /* (6.5.0) its name in its rarity's colour */, price: it.price, line: it.line, good: it.good, bad: it.bad,
       owned: ownsItem(P, it.id), on: !!w && w.id === it.id, pic: pictureOf(it.kind, it, 150, 90, true) }; });
   }
   render() {
@@ -80,7 +80,7 @@ export class DaveShop {
     const chests = chestsOf('dave').map((c) => `<div class="dv-row ch"><img src="${chestPicture(c.look, 192, 150)}" alt=""><div class="dv-txt"><b>${esc(c.name)}</b><span>${esc(c.line)}</span><small class="ch-odds">${oddsText(c.odds, c.coin)}</small></div><button data-dv="buy|chest:${c.key}" ${P.cash + 1e-6 < c.price ? 'disabled' : ''}>Open ${money(c.price, false)}</button></div>`).join('');
     this.root.querySelector('.dv-list').innerHTML = `${chests ? `<h4 class="dv-sub">Boxes, unopened</h4>${chests}` : ''}<h4 class="dv-sub">Gear</h4>` + /* (6.4.0) chests are in the game's Shop now */ this.wares(P).map((w) => {
       const btn = w.owned ? `<span class="dv-own">${w.on ? 'on you' : 'yours'}</span>` : `<button data-dv="buy|${w.key}" ${P.cash + 1e-6 < w.price ? 'disabled' : ''}>Buy ${money(w.price, false)}</button>`;
-      return `<div class="dv-row${w.owned ? ' owned' : ''}"><img src="${w.pic}" alt=""><div class="dv-txt"><b>${esc(w.name)}</b><span>${esc(w.line)}</span>${w.good ? `<em class="g">+ ${esc(w.good)}</em>` : ''}${w.bad ? `<em class="b">− ${esc(w.bad)}</em>` : ''}</div>${btn}</div>`;
+      return `<div class="dv-row${w.owned ? ' owned' : ''}"><img src="${w.pic}" alt=""><div class="dv-txt"><b${w.col ? ` style="color:${w.col}"` : ''}>${esc(w.name)}</b><span>${esc(w.line)}</span>${w.good ? `<em class="g">+ ${esc(w.good)}</em>` : ''}${w.bad ? `<em class="b">− ${esc(w.bad)}</em>` : ''}</div>${btn}</div>`;
     }).join('');
     const pay = this.h.payFinds ? this.h.payFinds() : 1;
     const finds = DAVE_FINDS.filter((k) => (g.inv[k] || 0) > 0);

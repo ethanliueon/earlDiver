@@ -382,7 +382,7 @@ export class Hud {
     const A = e.inSub ? [
       { key: 'leavesub', icon: 'leave', on: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
       // (5.17.0) no glow stick in the sub's arc: she has her own lights (the bag still snaps one)
-      { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach' },
+      { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach', inter: true },
       abil(),
       light(),
     ] : [
@@ -395,14 +395,16 @@ export class Hud {
       // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
       // the winch to sell). Sprint moved beside the stick
       // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin
-      (() => { if (aboard) return this.inCabin ? { key: 'outdeck', icon: 'door', on: true } : { key: 'f', icon: 'hand', on: false, why: 'Aboard, the big button is your hand' }; /* (6.0.5) the arc keeps its four places on deck: the hand's sits greyed */
+      (() => { // (6.5.0) aboard, this slot is the hand (the big button is only ever the net or the camera): what is in reach
+        // (the computer, the bunk, the cabin door); in the cabin with nothing in reach, the way out on deck
+        if (aboard) { const hOn = !!this.handOn; return hOn ? { key: 'f', icon: this.inCabin ? 'hand' : 'cabin', on: true, lit: true, inter: true } : this.inCabin ? { key: 'outdeck', icon: 'door', on: true, inter: true } : { key: 'f', icon: 'hand', on: false, why: 'Nothing in reach', inter: true }; }
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
         // (6.1.4) the hand shows what it will do: the ladder, the winch's basket, the sub's hatch; anything else, the hand
         const tgt = tm.find((m) => m.key === (hu ? 'u' : 'f')), ctxIcon = tgt && { ladder: 'ladder', winch: 'basket', sub: 'hatch', door: 'cabin' }[tgt.what];
         // (6.3.0) an animal not yet observed, in reach (and nothing else to do here): the slot becomes the eye. Nothing is
         // drawn round the animal: the eye on this button is the only sign
-        if (!hon && g.obsTarget && !e.inSub) return { key: 'obs', icon: 'eye', on: true, lit: true };
-        return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach' }; })(),
+        if (!hon && g.obsTarget && !e.inSub) return { key: 'obs', icon: 'eye', on: true, lit: true, inter: true };
+        return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach', inter: true }; })(),
       abil(),
       light(), // (6.0.5) aboard too: there it switches the sub's lights
     ];
@@ -428,14 +430,16 @@ e.inSub ? [
     // (5.8.1) the tutorial's mark: the ring breathing out and a large painted arrow (bronze, a dark edge, a cream lit
     // side) bobbing in toward the button from the middle of the screen. With the spotlight (below) it is drawn again
     // over the darkened screen
-    const ring = (x, y, r, spot = false) => {
-      if (!spot) { this.tutTarget = { x, y, r }; }
+    // (6.5.0) sq: a square tile (the menu's), ringed in its own rounded square, not a circle drawn over it
+    const ring = (x, y, r, spot = false, sq = false) => {
+      if (!spot) { this.tutTarget = { x, y, r, sq }; }
+      const shp = (rad) => { ctx.beginPath(); if (sq) ctx.roundRect(x - rad, y - rad, rad * 2, rad * 2, rad * 0.26); else ctx.arc(x, y, rad, 0, TAU); };
       if (!spot) halo(x, y, r); // (6.0.5) behind the button only: over the dark the button must stay readable
       const k = (g.time * 0.6) % 1, rr = r * (1.1 + k * 0.45);
-      for (const kk of [k, (k + 0.5) % 1]) { const r2 = r * (1.1 + kk * 0.55); ctx.strokeStyle = `rgba(240,226,180,${(0.65 * (1 - kk)).toFixed(3)})`; ctx.lineWidth = (2.8 - 1.6 * kk) * u; ctx.beginPath(); ctx.arc(x, y, r2, 0, TAU); ctx.stroke(); }
+      for (const kk of [k, (k + 0.5) % 1]) { const r2 = r * (1.1 + kk * 0.55); ctx.strokeStyle = `rgba(240,226,180,${(0.65 * (1 - kk)).toFixed(3)})`; ctx.lineWidth = (2.8 - 1.6 * kk) * u; shp(r2); ctx.stroke(); }
       void rr;
-      ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
-      ctx.strokeStyle = 'rgba(240,230,200,0.95)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.06, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; shp(r * 1.06); ctx.stroke();
+      ctx.strokeStyle = 'rgba(240,230,200,0.95)'; ctx.lineWidth = 2.2 * u; shp(r * 1.06); ctx.stroke();
       // motes of light drifting round it
       for (let i = 0; i < 3; i++) { const a2 = g.time * (0.5 + i * 0.07) + i * 0.9, rr2 = r * (1.35 + 0.25 * Math.sin(g.time * 1.3 + i)), mx = x + Math.cos(a2) * rr2, my = y + Math.sin(a2) * rr2, ms = (1.4 + (i % 3)) * u, al = 0.45 + 0.4 * Math.sin(g.time * 2 + i);
         const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3); mg.addColorStop(0, `rgba(232,226,208,${(al * 0.6).toFixed(3)})`); mg.addColorStop(1, 'rgba(232,226,208,0)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, TAU); ctx.fill(); }
@@ -468,6 +472,27 @@ e.inSub ? [
       return dn;
     };
     const LIT_ART = new Set(['lamp', 'glow', 'sprint']); // their pictures change when on
+    // (6.5.0) the interact button is the one pressed most and the one that changes (ladder, hatch, door, eye...): it
+    // wears a heavier ring than the rest, knurled brass with four rivets, like the bezel round a helmet's porthole. With
+    // something in reach a faint warm light shows round its rim, so a change is noticed without anything shouting
+    const bezel = (x, y, r, warm, down) => {
+      const R1 = r * 1.0, R2 = r * 1.17, Rm = (R1 + R2) / 2;
+      if (warm) { const q = 0.5 + 0.5 * Math.sin(g.time * 2.4), wg = ctx.createRadialGradient(x, y, R2 * 0.96, x, y, R2 * 1.42); wg.addColorStop(0, `rgba(214,170,104,${(0.3 + 0.12 * q).toFixed(3)})`); wg.addColorStop(1, 'rgba(214,170,104,0)'); ctx.fillStyle = wg; ctx.beginPath(); ctx.arc(x, y, R2 * 1.42, 0, TAU); ctx.fill(); }
+      ctx.save(); if (down) ctx.translate(0, 1 * u);
+      const bg = ctx.createLinearGradient(x - R2, y - R2, x + R2 * 0.6, y + R2);
+      bg.addColorStop(0, '#c8a868'); bg.addColorStop(0.45, '#8a6a36'); bg.addColorStop(1, '#4e3a1c');
+      ctx.beginPath(); ctx.arc(x, y, R2, 0, TAU); ctx.arc(x, y, R1, 0, TAU, true); ctx.fillStyle = bg; ctx.fill('evenodd');
+      ctx.lineWidth = Math.max(1, 0.9 * u); ctx.strokeStyle = 'rgba(20,14,6,0.85)'; ctx.beginPath(); ctx.arc(x, y, R2, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, R1, 0, TAU); ctx.stroke();
+      // the knurling: short dark and light ticks round the band, lit from the top left
+      const n = 44; for (let i = 0; i < n; i++) { const a2 = i / n * TAU, c = Math.cos(a2), s2 = Math.sin(a2), lit = 0.5 - 0.5 * Math.cos(a2 + Math.PI * 0.75);
+        ctx.strokeStyle = `rgba(30,20,8,${(0.25 + 0.3 * (1 - lit)).toFixed(3)})`; ctx.lineWidth = Math.max(0.8, 0.8 * u);
+        ctx.beginPath(); ctx.moveTo(x + c * (R1 + 1.2 * u), y + s2 * (R1 + 1.2 * u)); ctx.lineTo(x + c * (R2 - 1.2 * u), y + s2 * (R2 - 1.2 * u)); ctx.stroke(); }
+      ctx.strokeStyle = 'rgba(255,236,190,0.35)'; ctx.lineWidth = Math.max(0.8, 0.8 * u); ctx.beginPath(); ctx.arc(x, y, R2 - 0.6 * u, Math.PI * 1.05, Math.PI * 1.7); ctx.stroke(); // its top-left edge catching light
+      for (let i = 0; i < 4; i++) { const a2 = Math.PI / 4 + i * Math.PI / 2, rx = x + Math.cos(a2) * Rm, ry = y + Math.sin(a2) * Rm, rr = (R2 - R1) * 0.42;
+        const rg = ctx.createRadialGradient(rx - rr * 0.35, ry - rr * 0.35, rr * 0.1, rx, ry, rr); rg.addColorStop(0, '#e8cf94'); rg.addColorStop(1, '#5a4220');
+        ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(rx, ry, rr, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(20,14,6,0.7)'; ctx.lineWidth = Math.max(0.6, 0.6 * u); ctx.stroke(); }
+      ctx.restore();
+    };
     const btn = (a, x, y, r) => {
       if (a.dom) { this.journalAt = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, r: r * kx }; this.journalR = r * kx; return; } // (5.6.9) the journal's HTML coin is placed here by main.js
       const down = pressFx(a.key, x, y, r);
@@ -475,7 +500,7 @@ e.inSub ? [
       if (a.away) { const v0 = vis[a.key] ?? 0, v = vis[a.key] = clamp(v0 + (a.on ? 1 : -1) * dt * 6, 0, 1); if (v <= 0.01) return; r *= 0.7 + 0.3 * (1 - (1 - v) * (1 - v)); ctx.save(); ctx.globalAlpha *= v; }
       else ctx.save();
       const want = (tutKey === a.key || (a.tutAlt && tutKey === a.tutAlt)) && a.on;
-      if (want) { ring(x, y, r); r *= 1 + 0.07 * (0.5 + 0.5 * Math.sin(g.time * 4.2)); } // (5.7.5) and it swells gently with the pulse
+      if (want) { ring(x, y, r, false, !!a.tile); r *= 1 + 0.07 * (0.5 + 0.5 * Math.sin(g.time * 4.2)); } // (5.7.5) and it swells gently with the pulse
       /* (5.17.0) one that cannot be used now keeps its size: its greyed face says it */ // (5.7.5) one that cannot be used now sits back: smaller and fainter
       // (5.10.10) in its jaws the layout stays put: everything that cannot help goes dim, and a ready Tidewarden wakes:
       // saturated, a slow warm swell behind it. The same swell shows whenever the Tidewarden can be used.
@@ -492,6 +517,7 @@ e.inSub ? [
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
       } else if (a.tile) drawTile(ctx, x, y, r, a.icon, down ? 'press' : this.inKill || !a.on ? 'off' : 'on', !!a.badge); // (5.15.7) the menu's square tiles
       else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit ? 'lit' : 'on', a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint);
+      if (a.inter) bezel(x, y, r, a.on && a.lit, down);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do
         const bx = x + r * 0.74, by = y - r * 0.74, br = Math.max(8 * u, r * 0.4), pq = 1 + 0.08 * Math.sin(g.time * 5);
@@ -566,10 +592,10 @@ e.inSub ? [
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     const armT = e.inSub && owns(P, 'arm');
     const handOn = aboard && !!this.handOn; // (5.6.8) aboard, the big button is his hand: the door, the computer, the bunk
-    const can = aboard ? handOn : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
+    const can = aboard ? false /* (6.5.0) the net waits aboard */ : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
     ctx.save(); ctx.globalAlpha *= this.inKill ? 0.32 : 1; /* (5.16.7) opaque: an unusable tool shows its greyed face, not the water through it */ /* (5.10.10) dim in its jaws */ // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
-    const bKey = aboard ? 'f' : ' ';
+    const bKey = ' '; // (6.5.0) never the hand: aboard the hand is the arc's interact slot
     // (5.16.7) a legendary net or camera shows its rarity on its button: the legendary coin face, a slow glow behind it and
     // a few sparks round its rim (legendaries give off sparks wherever they are shown); every other tool stays plain
     const rarOf = (k) => ((k === 'net' || k === 'cam') && !e.inSub && !aboard && !(k === 'cam' && !owns(P, 'camera')) ? gear(P, k).rarity || 'common' : null); // (5.17.0) every net and camera on its rarity's coin
@@ -582,8 +608,8 @@ e.inSub ? [
     if (tutKey === bKey) ring(cx, cy, R); // (6.0.5) drawn before the coin, so the hand (or net) stays readable on top
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(222,212,186,${(0.2 + 0.1 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(222,212,186,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); } // (6.0.5) quieter, bone
     const toolLook = (k) => (k === 'net' ? toolPic('net', gear(P, 'net')) || netLook(gear(P, 'net').look || 0) : k === 'cam' ? toolPic('cam', gear(P, 'cam')) || gear(P, 'cam').look : null); // (5.17.0) its own picture
-    { const kind = aboard ? (!this.inCabin && handOn ? 'cabin' : 'hand') /* (6.1.4) at the cabin door, the door */ : e.inSub ? 'claw' : sel || 'net', look = toolLook(kind);
-      drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? (handOn ? 'on' : 'off') : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
+    { const kind = e.inSub ? 'claw' : sel || 'net', look = toolLook(kind); /* (6.5.0) aboard too: the net, greyed */
+      drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? 'off' : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
     // (5.17.0) the legendary net's power, as a badge on the main button's lower left, whatever is in hand (the net is
     // worn either way): steady for a power that is always on; grey with a hair-thin arc while one with a cooldown comes
     // back; on coming back (or at a dive's start) it warms from grey to full colour and pulses gently for 10 s, then
@@ -636,20 +662,23 @@ e.inSub ? [
     // (5.8.1) the spotlight: while the tutorial waits on a button, the screen darkens round it (the game is paused under
     // it, main.js) and the button stands in a pool of light; its ring and arrow are drawn again over the dark
     { const T = this.tutTarget; this.tutTarget = null; this.spotOn = !!(T && tutKey && this.spotWanted);
+      // (6.5.0) coming straight from a panel's shade (the tutorial pointing out of a screen, then at a button), it starts
+      // dark rather than fading up from nothing: the screen never flashes bright between the two
+      if (this.spotOn && !(this.spotV > 0) && performance.now() - (window.__tutDarkAt || -1e9) < 700) this.spotV = 1;
       const vS = this.spotV = clamp((this.spotV || 0) + (this.spotOn ? 1 : -1) * dt * 4, 0, 1);
       // (6.0.5) the dark covers the whole screen, the safe-area strips at the sides too, and reaches the farthest corner;
       // it eases in over a wide band round the button rather than starting at a hard ring
       if (T && vS > 0.01) { const x0 = -this.safeL, y0 = -this.safeT, X1 = x0 + this.c.width, Y1 = y0 + this.c.height, far = Math.max(Math.hypot(T.x - x0, T.y - y0), Math.hypot(T.x - X1, T.y - y0), Math.hypot(T.x - x0, T.y - Y1), Math.hypot(T.x - X1, T.y - Y1)) * 1.08;
         const sg = ctx.createRadialGradient(T.x, T.y, T.r * 1.25, T.x, T.y, far), b0 = T.r * 1.25, k1 = clamp((T.r * 3.2 - b0) / (far - b0), 0.02, 0.5);
         sg.addColorStop(0, 'rgba(4,8,8,0)'); sg.addColorStop(k1, `rgba(4,8,8,${(0.5 * vS).toFixed(3)})`); sg.addColorStop(1, `rgba(2,4,4,${(0.74 * vS).toFixed(3)})`);
-        ctx.fillStyle = sg; ctx.fillRect(x0, y0, this.c.width, this.c.height); if (vS > 0.5) ring(T.x, T.y, T.r, true); } }
+        ctx.fillStyle = sg; ctx.fillRect(x0, y0, this.c.width, this.c.height); if (vS > 0.5) ring(T.x, T.y, T.r, true, T.sq); } }
     // (5.7.5) every button's picture in every state is painted once, now (during the loading screen), rather than the
     // first time each is needed, which showed as a button popping in a beat late
     if (!this.prewarmed) { this.prewarmed = true; const off = document.createElement('canvas').getContext('2d'), st = ['on', 'off', 'lit', 'press'];
       const sets = [[R, ['net', 'cam', 'trap', 'claw', 'hand', 'cabin']], [r, ['sub', 'glow', 'hand', 'lamp', 'leave', 'dive', 'door', 'ladder', 'basket', 'hatch']], [19 * u, ['bag', 'tank', 'auto', 'air', 'cam', 'trap', 'net', 'trawl']], [18 * u, ['sprint']], [17 * u, ['gear']]];
       for (const [sz, kinds] of sets) for (const kd of kinds) for (const s0 of st) { try { drawCoin(off, 0, 0, sz, kd, s0, kd === 'net' ? netLook(gear(P, 'net').look || 0) : (s0 === 'lit' && LIT_ART.has(kd)) ? { lit: true } : null, kd === 'net' ? (gear(P, 'net').rarity || null) : null); } catch (e) { /* skip */ } } }
     this.wasHeld = new Set(held); // (5.7.0) for the next frame's press rings
-    hot(cx - R, cy - R, R * 2, R * 2, aboard ? (handOn ? 'f' : 'msg:' + (this.inCabin ? 'Walk up to something to use it' : 'Walk to the cabin door, or off the end to dive')) : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
+    hot(cx - R, cy - R, R * 2, R * 2, aboard ? 'msg:For the water' : e.inSub && !armT ? 'msg:This sub has no arm: the yard fits one' : !sel ? 'msg:Nothing in hand: pick the net in the bag' : ' ');
   }
 
   // A strip of sonar: the seabed profile 80 m each side of the sub, scaled to fit, with the sub at the

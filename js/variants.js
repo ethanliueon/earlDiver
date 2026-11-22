@@ -19,6 +19,7 @@ export const VARIANT_KEYS = Object.keys(VARIANTS);
 const FISH = new Set(['Reef Fish', 'Cold Water Fish', 'Open Ocean Fish', 'Deep Sea Fish', 'Sharks & Rays']);
 const SCHOOLING = new Set([48, 49, 50, 51, 62, 161, 98, 99, 41, 28, 29, 27]);
 export function canBeRare(sp) {
+  return false; // (6.5.0) rare forms are gone
   if (!FISH.has(sp.cat) || SCHOOLING.has(sp.id) || (sp.v.sch || 1) > 2) return false;
   return sp.len >= 0.2 || sp.cat === 'Deep Sea Fish';
 }
@@ -26,6 +27,7 @@ export function canBeRare(sp) {
 // pick a variant for a new animal (or null): depth decides whether crimson is possible, and the
 // entity being close makes it three times likelier
 export function rollVariant(rng, depth, entityNear, mult = 1) {
+  return null; // (6.5.0) rare forms are gone from the game: no animal is ever albino, golden, giant...
   if (rng() >= VARIANT_CHANCE * mult) return null;
   const w = {};
   let tot = 0;

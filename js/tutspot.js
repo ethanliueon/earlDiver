@@ -68,7 +68,7 @@ const setClass = (n, c) => { if (n.className !== c) n.className = c; };
 export class TutSpot {
   constructor() {
     const el = document.createElement('div'); el.id = 'tut-spot'; el.hidden = true;
-    el.innerHTML = '<div class="ts-frame"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-hole"></div><div class="ts-arrow"></div><div class="ts-say"></div><div class="ts-key"><kbd></kbd><span></span></div><div class="ts-line"></div><div class="ts-card"><p></p><button>OK</button></div>';
+    el.innerHTML = '<div class="ts-dim"></div><div class="ts-frame"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-block"></div><div class="ts-hole"></div><div class="ts-arrow"></div><div class="ts-say"></div><div class="ts-key"><kbd></kbd><span></span></div><div class="ts-line"></div><div class="ts-card"><p></p><button>OK</button></div>';
     document.body.appendChild(el);
     this.el = el; this.frame = el.querySelector('.ts-frame'); this.hole = el.querySelector('.ts-hole'); this.arrow = el.querySelector('.ts-arrow');
     this.blocks = [...el.querySelectorAll('.ts-block')];
@@ -103,6 +103,17 @@ export class TutSpot {
     }
     return null;
   }
+  // (6.5.0) a new thing to light: the outline and the arrow fade out where they were and fade in at the new place
+  // (they used to slide across the screen). The shade stays the whole time: a plain dark layer covers the moment the
+  // outline is away, so the screen never flashes bright
+  moveTo(t, x, y, w, h) {
+    const far = !this.litAt || Math.abs(this.litAt.x - x) + Math.abs(this.litAt.y - y) + Math.abs(this.litAt.w - w) > 24;
+    this.litAt = { x, y, w, h };
+    if (t === this.litEl || !far) { this.litEl = t; return; }
+    const first = !this.litEl; this.litEl = t; if (first) return;
+    this.el.classList.toggle('ts-lightswap', this.hole.classList.contains('light')); this.el.classList.add('ts-swap'); clearTimeout(this.swapT);
+    this.swapT = setTimeout(() => this.el.classList.remove('ts-swap'), 260);
+  }
   hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot, text = null) { this.update0(on, spot, text); if (INPUT.mode === 'touch') this.keyBox.style.display = 'none'; flushStyles(); } // (5.6.7) a phone: the line at the top says it, once
@@ -128,10 +139,15 @@ export class TutSpot {
       if (t !== this.lastTarget) { this.lastTarget = t; try { t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) { /* old browsers */ } }
       const r = t.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
       const x = r.left - PAD, y = r.top - PAD, w = r.width + PAD * 2, h = r.height + PAD * 2; this.lastRect = { x, y, w, h }; this.lastSeen = performance.now();
-      Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', borderRadius: t.closest('.hud-ic, .slot') && t.closest('.hud-ic') ? '50%' : '' });
+      // (6.5.0) the outline follows the thing's own shape: its corners rounded as the thing's are (a square tile a rounded
+      // square, a round coin a circle), never a circle drawn over a square
+      const br0 = getComputedStyle(t).borderRadius, round = /50%/.test(br0) || (parseFloat(br0) >= Math.min(r.width, r.height) / 2 - 1), rad = round ? '50%' : Math.max(8, (parseFloat(br0) || 0) + PAD) + 'px';
+      this.moveTo(t, x, y, w, h);
+      Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', borderRadius: t.closest('.hud-ic') ? '12px' : rad });
       if (this.hole.classList.contains('light') !== !!spot.light) this.hole.classList.toggle('light', !!spot.light); // over the sea, a lighter shade: he may still be swimming
       // (4.3.6) on a screen (not over the sea while he plays): only the lit thing can be used
       if (!spot.light) {
+        window.__tutDarkAt = performance.now(); // (6.5.0) for the HUD's spotlight: the screen was dark just now
         const R = [[0, 0, vw, Math.max(0, y)], [0, y + h, vw, Math.max(0, vh - y - h)], [0, y, Math.max(0, x), h], [x + w, y, Math.max(0, vw - x - w), h]];
         this.blocks.forEach((b, i) => { const [bx, by, bw, bh] = R[i]; Object.assign(b.style, { display: 'block', left: bx + 'px', top: by + 'px', width: bw + 'px', height: bh + 'px' }); });
         const k = spot.act ? keyFor(spot.act) : null;

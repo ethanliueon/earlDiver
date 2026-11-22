@@ -384,7 +384,7 @@ export class Renderer {
           glowPts.push([bx, by, '#ffe6a8', rr * 2.2, a * 1.5, Math.max(0.6, rr * 0.6)]); } // (6.3.0) small sharp points, not wide orbs
       }
       if (!c.sp.v.glow && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
-      if (c.variant && g.earl.legends && g.earl.legends.has('eye')) glowPts.push([S(c.x), Sy(c.y), '#ffe6a0', Math.max(ppm * 0.9, fishDrawLen(c.len) * ppm), 0.85]); // (2.8.0) Eye of the Sea: rare forms glow
+      if (LEGENDARY.has(c.sp.id) && g.earl.legends && g.earl.legends.has('eye')) /* (6.5.0) legends glow now: rare forms are gone */ glowPts.push([S(c.x), Sy(c.y), '#ffe6a0', Math.max(ppm * 0.9, fishDrawLen(c.len) * ppm), 0.85]); // (2.8.0) Eye of the Sea
       const Ld = fishDrawLen(c.len) * ppm;
       const shape = c.sp.v.s;
       const tilt = clamp(Math.atan2(c.hvy !== undefined ? c.hvy : c.vy, Math.max(Math.abs(c.vx), c.hvy !== undefined ? c.speed * 0.8 : 0) + 0.2), -0.5, 0.5);
@@ -1157,7 +1157,11 @@ export class Renderer {
     // (5.9.6) the way aboard: at the surface near the Margaret (and not already at her ladder) a short line of chevrons
     // runs along the water from Earl to her ladder, drifting toward it, so nobody is left guessing how to get on
     { const e = g.earl, lxW = BOAT.x + 9 * 0.14, dx = lxW - e.x;
-      const want = g.mode === 'play' && !g.aboard && !e.inSub && !g.kill && e.y < 3 && e.y > -1 && Math.abs(dx) > 1.6 && Math.abs(dx) < 26 && !(g.helm);
+      const P0 = g.profile, Sq = P0 && P0.quests, mq = Sq && g.questMainId ? g.questMainId : null;
+      // (6.5.0) only when there is a reason to go aboard (the tutorial, or the Log's step to sell, buy or put gear on): at
+      // other times they pointed at the ladder while the quest wanted him in the sub
+      const needAboard = !!P0 && (P0.tut === 'on' || ['sell', 'buy', 'wear'].includes(mq));
+      const want = needAboard && g.mode === 'play' && !g.aboard && !e.inSub && !g.kill && e.y < 3 && e.y > -1 && Math.abs(dx) > 1.6 && Math.abs(dx) < 26 && !(g.helm);
       this.wayK = clamp((this.wayK || 0) + (want ? 1 : -1) * (g.dtLast || 1 / 60) * 2.5, 0, 1);
       if (this.wayK > 0.01) {
         const dir = Math.sign(dx), n = Math.min(7, Math.max(2, Math.floor(Math.abs(dx) / 1.4))), step = Math.abs(dx) / (n + 1), ph = (g.time * 0.9) % 1, yW = 0.35;
@@ -1187,15 +1191,12 @@ export class Renderer {
         const mw = 30 / kC; if (R0 - L0 < mw) { const c0 = (L0 + R0) / 2; L0 = c0 - mw / 2; R0 = c0 + mw / 2; } if (B0 - T0 < mw) { const c0 = (T0 + B0) / 2; T0 = c0 - mw / 2; B0 = c0 + mw / 2; }
         this.tapRects.push({ x: L0 * kC * fk, y: T0 * kC * fk, w: (R0 - L0) * kC * fk, h: (B0 - T0) * kC * fk, key: m.key, what: m.what });
         const want = tk === m.key, q = 0.5 + 0.5 * Math.sin(g.time * 3), br = 2.4 / kC * (want ? 1.4 : 1) * (1 + 0.15 * q);
-        const L = Math.min(22 / kC, (R0 - L0) * 0.3, (B0 - T0) * 0.3), A = (m.faint && !want ? 0.4 : 0.75 + 0.25 * q);
-        const xL = L0 - br * 2, xR = R0 + br * 2, yT = T0 - br * 2, yB = B0 + br * 2;
-        for (const [w2, col] of [[br * 2.2, `rgba(14,18,10,${(A * 0.7).toFixed(3)})`], [br, `rgba(230,222,196,${A.toFixed(3)})`]]) {
-          ctx.strokeStyle = col; ctx.lineWidth = w2; ctx.beginPath();
-          ctx.moveTo(xL, yT + L); ctx.lineTo(xL, yT); ctx.lineTo(xL + L, yT);
-          ctx.moveTo(xR - L, yT); ctx.lineTo(xR, yT); ctx.lineTo(xR, yT + L);
-          ctx.moveTo(xR, yB - L); ctx.lineTo(xR, yB); ctx.lineTo(xR - L, yB);
-          ctx.moveTo(xL + L, yB); ctx.lineTo(xL, yB); ctx.lineTo(xL, yB - L);
-          ctx.stroke();
+        // (6.5.0) not four corner brackets but one quiet outline round the whole thing (the door, the ladder, the winch,
+        // the sub from bow to stern): a bone line over a dark one, its corners rounded, breathing slowly
+        const A = (m.faint && !want ? 0.35 : 0.5 + 0.3 * q), bw = br * 0.8;
+        const xL = L0 - bw * 2.5, xR = R0 + bw * 2.5, yT = T0 - bw * 2.5, yB = B0 + bw * 2.5, rad = m.capsule ? (yB - yT) / 2 : Math.min(14 / kC, (xR - xL) * 0.22, (yB - yT) * 0.22);
+        for (const [w2, col] of [[bw * 2.6, `rgba(14,18,10,${(A * 0.6).toFixed(3)})`], [bw, `rgba(230,222,196,${A.toFixed(3)})`]]) {
+          ctx.strokeStyle = col; ctx.lineWidth = w2; ctx.beginPath(); ctx.roundRect(xL, yT, xR - xL, yB - yT, rad); ctx.stroke();
         }
       }
       ctx.restore();
@@ -2750,7 +2751,8 @@ export class Renderer {
     if (!this.snowL) { let sd = 4242; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
       const mk = (n, s0, s1, a0, a1, fall, par, sway) => Array.from({ length: n }, () => ({ u: r(), v: r(), s: s0 + r() * (s1 - s0), a: a0 + r() * (a1 - a0), f: fall * (0.7 + r() * 0.6), ph: r() * 6.28, par, sway }));
       this.snowL = [mk(720, 0.9, 1.3, 0.2, 0.36, 0.22, 0.55, 0.2), mk(330, 1.2, 1.8, 0.28, 0.46, 0.42, 0.85, 0.35), mk(90, 1.6, 2.4, 0.26, 0.42, 0.75, 1.15, 0.6)]; } // (6.1.9) many more and much smaller: fine motes, not flakes
-    const depth = Math.max(0, cam.y), dens = clamp(0.12 + (depth - 30) / 270, 0.12, 1); // thin in the shallows, full below 300 m
+    const depth = Math.max(0, cam.y), dens = clamp((depth - 150) / 50, 0, 1); // (6.5.0) none in sunlit water: fades in from 150 m, full from 200 m
+    if (dens <= 0) return;
     const surf = Sy(0), TW = W * 1.1, TH = H * 1.1;
     // the seabed's line on screen, a column every 24 px, once a frame
     const step = 24, cols = Math.ceil(W / step) + 1, floorY = this.snowFloor || (this.snowFloor = new Float32Array(cols + 1));
