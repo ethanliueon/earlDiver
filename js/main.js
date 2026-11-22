@@ -33,7 +33,7 @@ import { giveRolled, wornInst } from './items.js';
 import { abilityOf, abilityState, whyNot, cooldownLeft } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY } from './item_data.js';
-import { pictureOf } from './catalog.js';
+import { pictureOf, hourglassURL } from './catalog.js';
 import { kitOf } from './items.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
@@ -429,12 +429,15 @@ hud.questMain = QUEST_MAIN;
 // (6.1.8) her shop, opened at her lure: her three things side by side on the paper, each with how long she keeps it out
 // and her price in gold coins; giving her coins for one leaves the shop open, the new thing already in its place
 function showOldShop() {
-  const P = profile, st = oldStock(P), have = P.gold || 0, ROMAN = ['', 'I', 'II', 'III', 'IV'];
-  const col = (it, i) => { const def = ITEMS[it.id]; if (!def) return ''; const left = leftOf(it), hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60);
+  const P = profile, st = oldStock(P), have = P.gold || 0, ROMAN = ['', 'I', 'II', 'III', 'IV'], HGI = `<img class="hg" src="${hourglassURL()}" alt="">`, GC = `<img class="gc" src="${pictureOf('gold', 1, 40, 40, true)}" alt="">`;
+  const left = (it) => { const l = leftOf(it), hh = Math.floor(l / 3600), mm = Math.floor((l % 3600) / 60); return `${hh ? hh + ' h ' : ''}${mm} min`; };
+  const col = (it, i) => { const def = ITEMS[it.id]; if (!def) return '';
     const sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b></div>`).join('');
-    return `<div class="os-item r-${def.rarity}"><div class="os-pic"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""></div><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><div class="oc-sk">${sk}</div><small class="os-left">Here another ${hh ? hh + ' h ' : ''}${mm} min</small><button data-oc="item:${i}" ${have < it.cost ? 'disabled' : ''}>Give ${it.cost} gold coin${it.cost > 1 ? 's' : ''}</button></div>`; };
+    // (6.1.9) given for: it stays, dimmed, and in place of her price an hourglass with the time until she lays out another
+    const foot = it.sold ? `<div class="os-wait">${HGI}${left(it)}</div>` : `<small class="os-left">${HGI}${left(it)}</small><button data-oc="item:${i}" ${have < it.cost ? 'disabled' : ''}>${GC}${it.cost}</button>`;
+    return `<div class="os-item r-${def.rarity}${it.sold ? ' gone' : ''}"><div class="os-pic"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""></div><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><div class="oc-sk">${sk}</div>${foot}</div>`; };
   g.oldShopOpen = true;
-  ui.oldCard(`<div class="os-head"><b>What she has</b><span>You have ${have} gold coin${have === 1 ? '' : 's'}</span></div><div class="os-row">${st.items.map(col).join('')}</div>`);
+  ui.oldCard(`<div class="os-head"><b>The Old One</b><span>${GC}${have}</span></div><div class="os-row">${st.items.map(col).join('')}</div>`);
 }
 function showOldCard(H) {
   g.oldShopOpen = false;
@@ -444,7 +447,7 @@ function showOldCard(H) {
   const def = ITEMS[it.id], sk = (it.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('');
   const have = P.gold || 0, left = leftOf(it), hh = Math.floor(left / 3600), mm = Math.floor((left % 3600) / 60);
   ui.oldCard(`<div class="oc-top r-${def.rarity}"><img src="${pictureOf(def.kind, def, 240, 144, true)}" alt=""><div class="oc-t"><small class="rr">${RARITY[def.rarity].name}</small><b>${def.name}</b><span>${def.line || ''}</span>${def.good ? `<i>${def.good}</i>` : ''}<div class="oc-sk">${sk}</div></div></div>
-    <div class="oc-buy"><small>She keeps it out another ${hh ? hh + ' h ' : ''}${mm} min.</small><em class="oc-coins">${it.cost} gold coin${it.cost > 1 ? 's' : ''} <span>(you have ${have})</span></em><button data-oc="item:${H.i}" ${have < it.cost ? 'disabled' : ''}>Give ${it.cost}</button></div>`);
+    <div class="oc-buy"><small><img class="hg" src="${hourglassURL()}" alt="">${hh ? hh + ' h ' : ''}${mm} min</small><em class="oc-coins"><img class="gc" src="${pictureOf('gold', 1, 40, 40, true)}" alt="">${have}</em>${it.sold ? '' : `<button data-oc="item:${H.i}" ${have < it.cost ? 'disabled' : ''}><img class="gc" src="${pictureOf('gold', 1, 40, 40, true)}" alt="">${it.cost}</button>`}</div>`);
 }
 // (4.0.0) anything that costs more than a fifth of the cash on hand is asked about first
 const needsConfirm = (price) => !!profile && price > 0 && price <= profile.cash && price > 0.2 * profile.cash;
@@ -485,7 +488,7 @@ function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replace
   P.gold -= it.cost; // the coins' own stacks free their room first
   if (lockerFree(P) <= 0) { P.gold += it.cost; hud.toast('Locker full', 'warn'); return false; }
   giveRolled(P, it); it.sold = true; oldStock(P); saveProfile(P); audio.ready && audio.sale();
-  ui.showGains([{ kind: 'item', id: it.id, how: 'From the old one' }]);
+  if (!g.oldShopOpen) ui.showGains([{ kind: 'item', id: it.id, how: 'From the old one' }]); // (6.1.9) in her shop the dimmed thing and its hourglass say it
   return true;
 }
 function sellAll() {
@@ -794,6 +797,8 @@ function sayFish(FM, whereOf) {
   };
   for (const type of ['air', 'bagDying', 'dying', 'bagStress']) { // (5.5) not 'stressed': the bag's coloured dot already says it, at once after every catch
     const L = by[type]; if (!L) continue;
+    // (6.1.9) said once: the same news again stays quiet until the count changes, or for half a minute
+    const S0 = (g.fishSaid = g.fishSaid || {}), was = S0[type]; if (was && was.n === L.length && g.time - was.t < 30) continue; S0[type] = { n: L.length, t: g.time };
     hud.toast(L.length === 1 ? one[type](L[0]) : many[type](L.length, L), 'warn');
   }
 }
@@ -2106,7 +2111,7 @@ function update(dt) {
     g.oldHover = g.atLure ? null : overTable(e.x, e.y); // (6.1.8) at her lure, the lure
     if (g.oldHover) {
       const st = oldStock(profile), H = g.oldHover;
-      if (H.kind === 'item') { const it = st.items[H.i]; g.prompt = it && !it.sold ? `F  Look at the ${ITEMS[it.id].name}` : 'Nothing here now'; }
+      if (H.kind === 'item') { const it = st.items[H.i]; g.prompt = it ? `F  Look at the ${ITEMS[it.id].name}` : ''; }
       else g.prompt = `F  Look at the ${CHESTS[H.key].name}`;
       if (e.inSub) g.prompt += '   ·   hold F  Leave sub';
     }
@@ -2701,9 +2706,10 @@ function update(dt) {
     // crushed: the flash, the wreck scattering in the bubble cloud, then the dark, then quiet
     // (6.1.5) the scene darkens but stays (the HUD's veil does the rest), so the line saying what killed him sits in it;
     // only in the thing's jaws is it black. A little longer than before, to read it
-    g.fx.black = g.deathKind === 'devoured' ? 1 : (injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : crushed ? clamp((g.deathT - 1.6) / 1.6, 0, 1) : clamp(g.deathT / 3, 0, 1)) * 0.35;
+    g.deathEnd = crushed ? 5.8 : 4.2; // (6.1.9) black, the line, back aboard: no screen
+    g.fx.black = g.deathKind === 'devoured' ? 1 : crushed ? clamp((g.deathT - 1.6) / 1.1, 0, 1) : clamp(g.deathT / 1.1, 0, 1);
     g.fx.redDeath = injuryDeath ? clamp(g.deathT / 2.2, 0, 1) : 0;
-    if (g.deathT > (injuryDeath ? 6 : crushed ? 7 : 5.2)) {
+    if (g.deathT > g.deathEnd) {
       const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
       flushSave();
       g.mode = 'over';

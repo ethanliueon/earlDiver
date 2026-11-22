@@ -1216,9 +1216,6 @@ html body #title :is(.t-select, #slots) .slot.tag:not(#_a):not(#_b):not(#_c):not
 html body #title :is(.t-select, #slots) .slot.tag.empty:not(#_a):not(#_b):not(#_c):not(#_d) { background: var(--tagimg-e) center / 100% 100% no-repeat !important; opacity: 0.9; }
 html body #title :is(.t-select, #slots) .slot.tag.last:not(#_a):not(#_b):not(#_c):not(#_d) { filter: drop-shadow(0 0 2px rgba(239,232,210,0.9)) drop-shadow(0 6px 10px rgba(0,0,0,0.45)); }
 html body #title .slot.tag :is(.tg-n, .info b, .info span, dt, dd, .tg-go, .tg-plus) { color: rgba(30,32,28,0.88) !important; text-shadow: 0 1px 0 rgba(255,255,255,0.45), 0 -1px 0 rgba(0,0,0,0.2) !important; }
-/* (6.0.14) the welcome as a note on the journal's old paper, in ink */
-html body #confirm.modal .cf-plate:not(#_a):not(#_b) { background: url("../assets/ui/book/page_right.jpg") center / cover !important; border: 0 !important; border-image: none !important; border-radius: 3px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 0 40px rgba(110,76,30,0.3) !important; transform: rotate(-0.6deg); }
-html body #confirm.modal .cf-plate :is(h3, h2, p, .cf-t, .cf-msg) { color: #3a2e1e !important; text-shadow: none !important; }
 html body #title .slot.tag .tg-plus { display: none !important; } /* (6.0.14) a blank tag needs no plus */
 html body #title .slot.tag .tg-depth { display: none !important; } /* (6.0.14) the record is stamped in words; no bar */
 html body #title .slot.tag .tg-go:not(#_a):not(#_b) { position: static !important; margin-top: auto; align-self: flex-start; background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; font: 700 21px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.14em; text-transform: uppercase; transform: none !important; }
@@ -1237,76 +1234,64 @@ html body #title .slot.tag .tg-n:not(#_a) { font-size: 84px !important; } html b
    opened from the cabin, so it took their taps: with any panel open, the HUD drops under it and the stick is hidden */
 html.touch.in-cabin body:has(:is(#catalog, #workshop, #inventory, #settings, #quests, #journal, #chart, #confirm, #gallery, #dave, #cave, #tankroom, #trapset):not([hidden])) #hud { z-index: 1 !important; pointer-events: none !important; }
 html.touch body:has(:is(#catalog, #workshop, #inventory, #settings, #quests, #journal, #confirm, #dave, #cave):not([hidden])) #stick { display: none !important; }
-html body #confirm.welcome .cf-no:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #6a5a40 !important; text-decoration: underline; text-underline-offset: 3px; outline: none !important; } /* (6.0.19) Skip, quiet; Start the button */
+html body #confirm.welcome .cf-no:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: var(--o-cream-dim) !important; text-decoration: underline; text-underline-offset: 3px; outline: none !important; } /* (6.0.19) Skip, quiet; Start the button */
 html body #title .slot.tag .tg-rows:not(#_a) { display: flex !important; gap: 30px !important; } /* (6.0.19) the two stamped fields apart */
-/* (6.1.1) the old one's card: a scrap of the same old paper, ink on it, the price in gold coins; nothing bright */
-html body #oldcard .oc-box:not(#_a) { background: url("../assets/ui/book/page_right.jpg") center / cover !important; border: 0 !important; border-image: none !important; border-radius: 3px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 0 40px rgba(110,76,30,0.3) !important; transform: rotate(0.5deg); color: #3a2e1e !important; }
-html body #oldcard :is(.oc-t b, .oc-t i, .oc-sk, .oc-close) { color: #3a2e1e !important; text-shadow: none !important; font-family: "Barlow Semi Condensed", sans-serif !important; }
-html body #oldcard .oc-t span, html body #oldcard .oc-buy small { color: #6a5a40 !important; font-family: "Barlow Semi Condensed", sans-serif !important; }
-html body #oldcard .oc-sk b { color: #4a3a6a !important; font-family: "Barlow Semi Condensed", sans-serif !important; }
-html body #oldcard .oc-top img { background: rgba(60,44,20,0.12) !important; }
-html body #oldcard .r-exotic .rr { color: #6a4a8a !important; } html body #oldcard .r-legendary .rr { color: #8a6420 !important; }
-html body #oldcard .oc-coins { font: 600 15px "Barlow Semi Condensed", sans-serif !important; color: #6a4a14 !important; } html body #oldcard .oc-coins span { font-weight: 400; color: #6a5a40; }
-html body #oldcard .oc-buy button:not(#_a) { background: #5a4e3a !important; color: #ece3c8 !important; border-radius: 2px !important; font: 600 16px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.06em; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3) !important; }
-/* (6.1.3) the gain card: larger, in the middle, on old paper, a word for how it came */
-html body #gains:not(.topc) .gain:not(#_a) { width: min(30vw, 250px); border: 0 !important; border-image: none !important; background: url("../assets/ui/book/page_right.jpg") center / cover !important; border-radius: 3px !important; box-shadow: 0 10px 28px rgba(0,0,0,0.6), inset 0 0 36px rgba(110,76,30,0.32) !important; padding: 14px 16px 12px !important; backdrop-filter: none !important; }
-html body #gains:not(.topc) .gain b:not(#_a) { color: #3a2e1e !important; text-shadow: none !important; }
-html body #gains:not(.topc) .gain.r-exotic b:not(#_a) { color: #5a3a7a !important; } html body #gains:not(.topc) .gain.r-legendary b:not(#_a) { color: #7a561a !important; } html body #gains:not(.topc) .gain.r-rare b:not(#_a) { color: #2e4e6e !important; } html body #gains:not(.topc) .gain.r-uncommon b:not(#_a) { color: #3e5a2e !important; }
-html body #gains:not(.topc) .g-plus { color: #6a5a40 !important; }
-html body #gains .g-how { font: 600 13px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #6a5a40; }
-html body #gains.topc .g-how { display: none; }
-html body #gains:not(.topc) .g-tile:not(#_a) { background: rgba(60,44,20,0.14) !important; border-image: none !important; border: 0 !important; box-shadow: inset 0 0 0 1px rgba(60,44,20,0.25) !important; }
-html body #gains:not(.topc) .g-tile .new:not(#_a) { background: #3a2e1e !important; color: #ece3c8 !important; }
-html body #oldcard .oc-close:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #5a4a30 !important; font: 400 26px "Barlow Semi Condensed", sans-serif !important; width: auto !important; height: auto !important; } /* (6.1.1) an inked cross on the paper */
-/* (6.1.2) a gold coin that came up with the chest's item: a line under it, shown as the lid has settled */
-html body #chest .cr-coin { display: flex; align-items: center; gap: 12px; margin: 8px 0 0; padding: 6px 12px; font: 500 16px "Barlow Semi Condensed", sans-serif; color: #d8c08a; opacity: 0; transition: opacity 0.5s ease 0.2s; }
+/* (6.1.9) one material: the old one's card and shop, the rates, the chest's find and the gain card on the olive plate
+   (the bag's), cream type, olive buttons; every close cross in the top right corner */
+html body :is(#oldcard .oc-box, #rates .rt-box):not(#_a) { border: 22px solid transparent !important; border-image: url("../assets/ui/olive/panel.png") 60 fill / 22px stretch !important; background: none !important; border-radius: 0 !important; box-shadow: 0 14px 34px rgba(0,0,0,0.6) !important; color: var(--o-cream) !important; padding: 6px 8px 4px !important; font-family: var(--o-text) !important; }
+html body :is(#oldcard .oc-close, #rates .rt-x):not(#_a):not(#_b) { position: absolute; right: -8px !important; left: auto !important; top: -10px !important; width: 34px; height: 34px; border: 10px solid transparent !important; border-image: var(--o-btn) 28 fill / 10px stretch !important; background: none !important; color: var(--o-cream) !important; font: 400 20px/1 var(--o-text) !important; padding: 0 !important; box-shadow: none !important; display: grid; place-items: center; }
+html body #oldcard :is(.oc-t b, .os-head b, .os-item b) { color: var(--o-cream) !important; text-shadow: 0 1px 2px rgba(0,0,0,0.7); font-family: var(--o-text) !important; }
+html body #oldcard :is(.oc-t span, .oc-buy small, .os-left, .oc-t i) { color: var(--o-cream-dim) !important; font-family: var(--o-text) !important; }
+html body #oldcard .oc-top img, html body #oldcard .os-pic { background: rgba(0,0,0,0.28) !important; border-radius: 2px; box-shadow: inset 0 2px 6px rgba(0,0,0,0.5); }
+html body #oldcard .oc-sk, html body #oldcard .oc-sk b { color: #9fc0d8 !important; font-family: var(--o-text) !important; }
+html body #oldcard .r-exotic .rr { color: var(--r-exotic, #c27af0) !important; } html body #oldcard .r-legendary .rr { color: var(--r-legendary, #c8963c) !important; }
+html body #oldcard :is(.oc-buy button, .os-item button):not(#_a) { border: 12px solid transparent !important; border-image: var(--o-btn) 28 fill / 12px stretch !important; background: none !important; color: var(--o-cream) !important; font: 600 15px var(--o-text) !important; padding: 0 6px !important; min-height: 40px; box-shadow: none !important; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+html body #oldcard :is(.oc-buy button, .os-item button):disabled { opacity: 0.45; }
+html body #oldcard .gc { width: 20px; height: 20px; vertical-align: -5px; } html body #oldcard .oc-coins { color: #d8c08a !important; font: 600 15px var(--o-text) !important; }
+/* her shop: three things side by side */
+html body #oldcard .oc-box:has(.os-row) { width: min(760px, calc(100vw - 32px)); }
+html body #oldcard .os-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 34px 10px 2px; }
+html body #oldcard .os-head b { font: 700 22px var(--o-title) !important; } html body #oldcard .os-head span { display: inline-flex; align-items: center; gap: 6px; font: 600 16px var(--o-text); color: #d8c08a; }
+html body #oldcard .os-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+html body #oldcard .os-item { display: flex; flex-direction: column; gap: 3px; padding: 8px; border: 10px solid transparent; border-image: url("../assets/ui/olive/well.png") 30 fill / 10px stretch; }
+html body #oldcard .os-pic img { display: block; width: 100%; height: auto; }
+html body #oldcard .os-item b { font: 600 17px/1.15 var(--o-text) !important; }
+html body #oldcard .os-item .rr { font: 600 11px var(--o-text); letter-spacing: 0.14em; text-transform: uppercase; }
+html body #oldcard .os-item .oc-sk { margin: 0; font-size: 13px; }
+html body #oldcard .os-left { margin-top: auto; padding-top: 4px; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+/* a thing given for: it stays, dimmed, and an hourglass counts down to whatever she lays out next */
+html body #oldcard .os-item.gone .os-pic, html body #oldcard .os-item.gone b, html body #oldcard .os-item.gone .oc-sk, html body #oldcard .os-item.gone .rr { opacity: 0.35; filter: saturate(0.3); }
+html body #oldcard .os-wait { margin-top: 6px; min-height: 40px; display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--o-cream-dim); font: 600 15px var(--o-text); font-variant-numeric: tabular-nums; border: 10px solid transparent; border-image: url("../assets/ui/olive/well.png") 30 fill / 10px stretch; }
+html body #oldcard .hg { width: 18px; height: 18px; }
+/* the gold coin under a chest's find */
+html body #chest .cr-coin { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; padding: 4px 12px; font: 600 16px var(--o-text); color: #d8c08a; opacity: 0; transition: opacity 0.5s ease 0.2s; }
 html body #chest.done .cr-coin { opacity: 1; }
-html body #chest .cr-coin .cr-ci { position: relative; width: 44px; height: 44px; flex: none; } html body #chest .cr-coin img { width: 44px; height: 44px; }
-/* (6.1.3) the pause: a note on the journal's old paper, in ink. Resume a dark worn button; the rest quiet ink choices */
-html body #pause.panel:not(#_a):not(#_b) { background: url("../assets/ui/book/page_right.jpg") center / cover !important; border: 0 !important; border-image: none !important; border-radius: 3px !important; box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 44px rgba(110,76,30,0.32) !important; }
-html body #pause.panel:not(#_a):not(#_b)::after { content: none !important; }
-html body #pause h2:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #3a2e1e !important; text-shadow: none !important; letter-spacing: 0.04em; }
-html body #pause #resume:not(#_a):not(#_b) { background: #4e4434 !important; border: 0 !important; border-image: none !important; color: #ece3c8 !important; border-radius: 2px !important; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.3), 0 2px 4px rgba(60,40,10,0.3) !important; }
-html body #pause #savequit:not(#_a):not(#_b) { background: rgba(60,44,20,0.08) !important; border: 1.5px solid rgba(58,46,30,0.55) !important; border-image: none !important; color: #3a2e1e !important; border-radius: 2px !important; box-shadow: none !important; }
-html body #pause .p-links .link:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #6a5a40 !important; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(106,90,64,0.5); }
-html body #pause .pause-version:not(#_a) { color: rgba(58,46,30,0.6) !important; text-shadow: none !important; }
-html body #pause .p-gear:not(#_a):not(#_b) { background-color: rgba(60,44,20,0.12) !important; border: 1.5px solid rgba(58,46,30,0.45) !important; border-image: none !important; box-shadow: none !important; filter: sepia(0.6) brightness(0.55); }
-/* (6.1.7) "i  Rates": a small inked ring with an i, and the word; quiet, the shop's own colour */
-html body .rates-i { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; margin: 2px 0; background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; font: 500 14px "Barlow Semi Condensed", sans-serif !important; color: inherit !important; opacity: 0.8; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(90,80,60,0.45); min-height: 0 !important; }
-html body .rates-i i { display: inline-grid; place-items: center; width: 17px; height: 17px; border: 1.5px solid currentColor; border-radius: 50%; font: italic 700 12px Georgia, serif; text-decoration: none; }
-/* the table, on old paper, over everything */
+html body #chest .cr-coin .cr-ci { position: relative; width: 40px; height: 40px; flex: none; } html body #chest .cr-coin img { width: 40px; height: 40px; }
+/* "i Rates" beside a chest's price: a small ring with an i, and the word */
+html body .rates-i { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; margin: 2px 0; background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; font: 500 14px var(--o-text, "Barlow Semi Condensed"), sans-serif !important; color: inherit !important; opacity: 0.85; cursor: pointer; min-height: 0 !important; }
+html body .rates-i i { display: inline-grid; place-items: center; width: 17px; height: 17px; border: 1.5px solid currentColor; border-radius: 50%; font: italic 700 12px Georgia, serif; }
+/* the rates: a table on the olive plate */
 #rates { position: fixed; inset: 0; z-index: 9600; display: grid; place-items: center; background: rgba(4,6,8,0.45); }
 #rates[hidden] { display: none; }
-#rates .rt-box { position: relative; width: min(340px, calc(100vw - 40px)); padding: 18px 22px 16px; background: url("../assets/ui/book/page_right.jpg") center / cover; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 40px rgba(110,76,30,0.32); color: #3a2e1e; font-family: "Barlow Semi Condensed", sans-serif; }
-#rates h4 { margin: 0 0 4px; font: 600 21px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.02em; }
-#rates p { margin: 0 0 10px; font-size: 14px; color: #6a5a40; } #rates .rt-note { margin: 6px 0 0; font-size: 13px; }
-#rates table { width: 100%; border-collapse: collapse; font-size: 16px; }
-#rates td { padding: 6px 2px; border-bottom: 1px solid rgba(90,70,40,0.22); } #rates td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-#rates .rt-extra { margin-top: 10px; border-top: 1.5px solid rgba(90,70,40,0.4); }
-#rates .sw { display: inline-block; width: 10px; height: 10px; margin-right: 9px; border-radius: 2px; vertical-align: 0; background: currentColor; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25); }
-#rates .r-common { color: #6a6a60; } #rates .r-uncommon { color: #4e6e34; } #rates .r-rare { color: #2e5878; } #rates .r-exotic { color: #6a4a8a; } #rates .r-legendary { color: #8a6420; }
-#rates td:first-child { font-weight: 600; } #rates td:last-child { color: #3a2e1e; }
-#rates .rt-x { position: absolute; right: 10px; top: 6px; background: none; border: 0; color: #5a4a30; font: 400 26px "Barlow Semi Condensed", sans-serif; cursor: pointer; }
-/* (6.1.7) the chest's find: a card of the same old paper as the other finds, ink on it; Put it on dark, Keep it in ink */
-html body #chest .cr-item:not(#_a) { background: url("../assets/ui/book/page_right.jpg") center / cover !important; border: 0 !important; border-radius: 3px !important; box-shadow: 0 8px 22px rgba(0,0,0,0.55), inset 0 0 34px rgba(110,76,30,0.3) !important; padding: 12px 14px !important; }
-html body #chest .cr-item img:not(#_a) { background: rgba(60,44,20,0.12) !important; border-radius: 2px; }
-html body #chest .cr-item .nm { color: #3a2e1e !important; text-shadow: none !important; font-family: "Barlow Semi Condensed", sans-serif !important; font-weight: 600 !important; }
-html body #chest .cr-item p, html body #chest .cr-item .cr-sks { color: #5a4a34 !important; text-shadow: none !important; font-family: "Barlow Semi Condensed", sans-serif !important; }
-html body #chest .cr-item .cr-sks b { color: #2e4e6e !important; }
-html body #chest .cr-item.r-common .rr { color: #6a6a60 !important; } html body #chest .cr-item.r-uncommon .rr { color: #4e6e34 !important; } html body #chest .cr-item.r-rare .rr { color: #2e5878 !important; } html body #chest .cr-item.r-exotic .rr { color: #6a4a8a !important; } html body #chest .cr-item.r-legendary .rr { color: #8a6420 !important; }
-html body #chest .cr-acts .cr-on:not(#_a):not(#_b) { background: #4e4434 !important; color: #ece3c8 !important; border: 0 !important; border-image: none !important; border-radius: 2px !important; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3) !important; font: 600 16px "Barlow Semi Condensed", sans-serif !important; }
-html body #chest .cr-acts .cr-done:not(#_a):not(#_b) { background: rgba(236,227,200,0.08) !important; color: #e4dcc4 !important; border: 1.5px solid rgba(228,220,196,0.45) !important; border-image: none !important; border-radius: 2px !important; box-shadow: none !important; font: 500 16px "Barlow Semi Condensed", sans-serif !important; }
-/* (6.1.8) the old one's shop, opened at her lure: three things side by side on the paper */
-html body #oldcard .oc-box:has(.os-row) { width: min(760px, calc(100vw - 32px)); }
-html body #oldcard .os-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0 30px 10px 2px; color: #3a2e1e; font-family: "Barlow Semi Condensed", sans-serif; }
-html body #oldcard .os-head b { font: 600 22px "Barlow Semi Condensed", sans-serif; } html body #oldcard .os-head span { font-size: 15px; color: #6a4a14; font-weight: 600; }
-html body #oldcard .os-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-html body #oldcard .os-item { display: flex; flex-direction: column; gap: 3px; padding: 8px; border: 1px solid rgba(90,70,40,0.28); border-radius: 2px; background: rgba(60,44,20,0.06); font-family: "Barlow Semi Condensed", sans-serif; color: #3a2e1e; }
-html body #oldcard .os-pic { position: relative; background: rgba(60,44,20,0.12); border-radius: 2px; } html body #oldcard .os-pic img { display: block; width: 100%; height: auto; }
-html body #oldcard .os-item b { font: 600 17px/1.15 "Barlow Semi Condensed", sans-serif; color: #3a2e1e; }
-html body #oldcard .os-item .rr { font: 600 11px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
-html body #oldcard .os-item.r-exotic .rr { color: #6a4a8a; } html body #oldcard .os-item.r-legendary .rr { color: #8a6420; }
-html body #oldcard .os-item .oc-sk { margin: 0; font-size: 13px; } html body #oldcard .os-item .oc-sk b { font-size: 13px; color: #4a3a6a !important; font-weight: 600; }
-html body #oldcard .os-left { margin-top: auto; padding-top: 4px; font-size: 13px; color: #6a5a40; }
-html body #oldcard .os-item button { margin-top: 6px; padding: 7px 8px; border: 0; border-radius: 2px; background: #5a4e3a; color: #ece3c8; font: 600 15px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.04em; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3); cursor: pointer; }
-html body #oldcard .os-item button:disabled { opacity: 0.45; cursor: default; }
+html body #rates .rt-box { position: relative; width: min(320px, calc(100vw - 40px)); }
+#rates h4 { margin: 4px 36px 8px 2px; font: 700 21px var(--o-title); color: var(--o-cream); }
+#rates table { width: 100%; border-collapse: collapse; font: 16px var(--o-text); }
+#rates td { padding: 6px 4px; border-bottom: 1px solid rgba(230,222,196,0.14); } #rates td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--o-cream); }
+#rates td:first-child { font-weight: 600; display: flex; align-items: center; gap: 9px; }
+#rates .rt-extra { margin-top: 8px; border-top: 1.5px solid rgba(230,222,196,0.3); }
+#rates .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: currentColor; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3); }
+#rates .gc { width: 20px; height: 20px; margin: -4px -2px -4px -4px; }
+#rates .r-common { color: var(--r-common, #c9cdc4); } #rates .r-uncommon { color: var(--r-uncommon, #7ccf7f); } #rates .r-rare { color: var(--r-rare, #5aa8f0); } #rates .r-exotic { color: var(--r-exotic, #c27af0); } #rates .r-legendary { color: var(--r-legendary, #c8963c); }
+/* the gain card: larger and in the middle, on the olive plate, a word for how it came */
+html body #gains:not(.topc) .gain:not(#_a) { width: min(28vw, 240px); }
+html body #gains .g-how { font: 600 12px var(--o-text); letter-spacing: 0.14em; text-transform: uppercase; color: var(--o-cream-dim); }
+html body #gains.topc .g-how { display: none; }
+html body #oldcard .oc-buy small, html body #oldcard .oc-coins { display: inline-flex; align-items: center; gap: 5px; }
+/* (6.1.9) the messages at the top sit in the water like the tutorial's words: larger, a desaturated cream, no band of
+   shadow behind them and no rule under them, only a faint soft edge; danger a muted rust, steady (no shake, no flicker) */
+html body #msgs .msg::before { display: none !important; }
+html body #msgs .msg-rule { display: none !important; }
+html body #msgs .msg .msg-t:not(#_a) { font: 600 26px/1.2 var(--o-hud, "Barlow Semi Condensed"), sans-serif !important; color: #dcd2b8 !important; opacity: 0.9; text-shadow: 0 0 10px rgba(0,0,0,0.32), 0 1px 2px rgba(0,0,0,0.25) !important; letter-spacing: 0.015em !important; }
+html body #msgs .msg-danger .msg-t:not(#_a) { color: #cf8a6c !important; animation: none !important; }
+html body #msgs .msg-big .msg-t:not(#_a) { font-size: 30px !important; }
+html body #msgs .msg-small:not(#_a) { color: #dcd2b8 !important; text-shadow: 0 0 8px rgba(0,0,0,0.3) !important; opacity: 0.8; }

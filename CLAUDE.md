@@ -22,6 +22,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 2. **One mood, one palette.** Olive, bronze, bone, deep water, rust. No cyan, no bright gold, nothing cheerful. Colour
    means something: rarity colour only where rarity matters (the ability button, items), every plain button one worn
    grey-brown (the sub's controls a little olive, the glow stick a faint glow). Bright things are rare and earned.
+   Panels, cards and menus are olive steel (the bag's and the pause's plate), never old paper; the journal is the one
+   book. Every close cross sits in a panel's top right corner.
 3. **Detail is a reward.** Higher rarity = more intricate, then glow and particles at the top (legendaries give off
    sparks wherever they are shown). Detail carries information, it is never decoration for its own sake.
    Never enlarge something so it can be read more easily: small details are meant to be found by whoever looks closely,
@@ -37,7 +39,14 @@ last desktop build is kept on the branch `desktop-4.25.5`).
    written into the scene beside him. Add no other lines from him.
 7. **Order on screen.** Things line up on one axis, spacing is even, nothing overlaps or covers anything else, no
    lopsided panels or dead space. Check at 844 x 390 and at the smallest phone, 667 x 375.
-8. **Simple systems, one job each.** Prefer moving something to stacking options on it (the swap is net and camera;
+8. **The game shows; it does not talk.** Labels, cards and tables are terse names and figures, never sentences
+   written as if someone were speaking ("Gold coin" beside a coin picture, not "A gold coin as well"; "Rare 9 %", not
+   "What it will be:"). A picture carries what it can, a word carries the rest; no chat-like phrasing, no explaining
+   the obvious. Only the world's own voices (Dave, the shop's copy, quest notes) speak in sentences.
+9. **Everything in 3D, the same way.** Every item (suits, nets, cameras, tanks, bags, fins) is drawn as a turned,
+   lit, solid object like the suits and nets: round things seen from the side are ovals, faces are shaded, edges
+   catch light. A redrawn item changes everywhere it appears (shop, locker, cards, HUD coins, the Old One's table).
+10. **Simple systems, one job each.** Prefer moving something to stacking options on it (the swap is net and camera;
    traps are used from the bag; one ability slot, one carried-over cooldown).
 
 ## How to work

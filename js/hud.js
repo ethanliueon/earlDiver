@@ -710,6 +710,22 @@ e.inSub ? [
     try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }
     this.pressureFx(g, dt, sf);
     if (g && g.wake) this.wakeFx(g);
+    this.drawDeath(g);
+  }
+  // (6.1.9) no death screen: the whole screen goes black over everything (the radar and buttons too), one line says
+  // what happened, centred, in the cream the game writes in, and fades; then he is back aboard
+  drawDeath(g) {
+    if (!g || g.mode !== 'dying') return;
+    const ctx = this.ctx, W = this.c.width, H = this.c.height, s = this.s || 1, crushed = g.deathKind === 'implode';
+    const t0 = crushed ? 1.6 : 0, end = g.deathEnd || 4.2;
+    const dark = g.deathKind === 'devoured' ? 1 : clamp((g.deathT - t0) / 1.1, 0, 1);
+    ctx.fillStyle = `rgba(0,0,0,${dark.toFixed(3)})`; ctx.fillRect(0, 0, W, H);
+    const a = clamp((g.deathT - t0 - 1.0) / 0.7, 0, 1) * clamp((end - 0.6 - g.deathT) / 0.7, 0, 1);
+    const cause = String(g.deathCause || '').replace(/ when the submersible imploded/, ': the sub gave way');
+    if (a > 0.01 && cause && g.deathKind !== 'quit') {
+      ctx.save(); ctx.globalAlpha = a * 0.88; ctx.font = `500 ${30 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#ddd3ba'; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10 * s; ctx.fillText(cause, W / 2, H * 0.46); ctx.restore();
+    }
   }
   // (6.0.0) a Rebirth's waking: black at first, then the eyelids part from the middle, soft-edged (a feathered eye-shaped
   // opening), with one slow blink before they open fully; the world behind is blurred (main.js) and clears as they open
@@ -1180,23 +1196,8 @@ e.inSub ? [
       ctx.restore();
     }
     // ---------- death ----------
-    // (6.1.5) no clock and no count: the scene stays, darkening and going still, and what killed him is written beside
-    // where he was, quietly, as the game's other labels are (in its jaws there is nothing to see: dark, the words alone)
+    // (6.1.9) no death screen: the sea goes black, one line says what happened, centred, in the cream the game writes
+    // in, and it fades again; then he is back aboard. In the thing's jaws it is black from the first moment
     const bleedOut = dying && g.deathKind === 'injury', crushed = dying && g.deathKind === 'implode';
-    if (dying) {
-      const dark = g.deathKind === 'devoured' ? 1 : (crushed ? clamp((g.deathT - 1.6) / 1.6, 0, 1) : clamp(g.deathT / 2.6, 0, 1)) * 0.62;
-      ctx.fillStyle = bleedOut ? `rgba(30,4,2,${dark.toFixed(3)})` : `rgba(4,6,8,${dark.toFixed(3)})`; ctx.fillRect(0, 0, W, H);
-      const a = clamp((g.deathT - (crushed ? 3.2 : g.deathKind === 'devoured' ? 1.2 : 1.4)) / 1.2, 0, 1);
-      const cause = String(g.deathCause || '').replace(/ when the submersible imploded/, ': the sub gave way');
-      if (a > 0.01 && cause && g.deathKind !== 'quit') {
-        const E0 = g.earlScr || [0.5, 0.5, 0.035], ex = E0[0] * W, ey = E0[1] * H, pm = E0[2] * W, fs = 19 * s;
-        ctx.save(); ctx.font = `500 ${fs}px ${MONO}`; const w = ctx.measureText(cause).width, left = ex > W * 0.5, d = Math.max(34 * s, pm * 1.4);
-        const tx = clamp(left ? ex - d - w : ex + d, 150 * s, W - w - 150 * s), ty = clamp(ey - Math.max(40 * s, pm * 1.6), fs + 70 * s, H - 60 * s);
-        ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(214,204,180,0.55)'; ctx.lineWidth = 1.2 * s; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(ex + (left ? -4 : 4) * s, ey - 4 * s); ctx.quadraticCurveTo(ex + (left ? -5 : 5) * s, ty + 7 * s, left ? tx + w : tx, ty + 7 * s); ctx.lineTo(left ? tx : tx + w, ty + 7 * s); ctx.stroke();
-        ctx.fillStyle = '#dcd2b8'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(cause, tx, ty);
-        ctx.restore();
-      }
-    }
   }
 }

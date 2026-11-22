@@ -343,6 +343,20 @@ export function drawGoldCoins(ctx, w, h, n = 1) {
   } else face(cx, cy, R * 1.25, -0.1);
 }
 
+// (6.1.9) a small hourglass of old bronze and glass, the sand half run through: the time left on a thing
+let HG = null;
+export function hourglassURL() {
+  if (HG) return HG; const c = document.createElement('canvas'); c.width = c.height = 48; const x = c.getContext('2d'); x.translate(24, 24); x.lineJoin = 'round';
+  const glass = new Path2D('M-11 -15C-11 -6 -3 -3 -2 0C-3 3 -11 6 -11 15H11C11 6 3 3 2 0C3 -3 11 -6 11 -15Z');
+  x.fillStyle = 'rgba(200,214,210,0.18)'; x.fill(glass);
+  x.save(); x.clip(glass); x.fillStyle = '#c8a868'; x.beginPath(); x.moveTo(-8, -9); x.quadraticCurveTo(0, -5, 8, -9); x.lineTo(1.5, -1); x.lineTo(-1.5, -1); x.closePath(); x.fill(); // sand left above
+  x.beginPath(); x.moveTo(-11, 15); x.lineTo(-11, 9); x.quadraticCurveTo(0, 2, 11, 9); x.lineTo(11, 15); x.closePath(); x.fill(); x.fillRect(-0.7, -1, 1.4, 9); x.restore(); // and the heap below, a thread falling
+  x.strokeStyle = 'rgba(230,236,226,0.55)'; x.lineWidth = 1.4; x.stroke(glass); x.strokeStyle = 'rgba(255,255,250,0.35)'; x.beginPath(); x.moveTo(-8, -12); x.quadraticCurveTo(-8, -6, -4, -3); x.stroke();
+  for (const y of [-18, 15]) { x.fillStyle = '#7a5a2a'; x.fillRect(-14, y, 28, 3.5); x.fillStyle = 'rgba(255,230,170,0.35)'; x.fillRect(-14, y, 28, 1); } // the caps
+  x.fillStyle = '#6a4c22'; for (const sx of [-13, 11]) x.fillRect(sx, -15, 2.2, 30); // the posts
+  HG = c.toDataURL(); return HG;
+}
+
 // a pair of fins, side on, one behind the other
 function drawFins(ctx, w, h, it) {
   const col = { rubber: ['#1d3346', '#3a6a88'], split: ['#2a3a2a', '#5a8a5a'], longfin: ['#1a1c20', '#3a4048'], jet: ['#2a2a2a', '#555'] }[it.id] || ['#222', '#555'];

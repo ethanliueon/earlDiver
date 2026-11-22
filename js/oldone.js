@@ -20,11 +20,12 @@ function rollOne(used) {
   const sk = rollSkillsFor(def);
   return { id: def.id, sk, ...(def.legend ? { leg: def.legend } : {}), cost: COIN_COST[def.rarity] || 3, until: Date.now() + (12 + Math.random() * 12) * H };
 }
-// her three things: any gone (its time up) or bought is replaced at once
+// her three things: each replaced when its time is up (bought or not)
 export function oldStock(P) {
   const S = P.oldone && Array.isArray(P.oldone.items) && P.oldone.items.length === 3 && P.oldone.items.every((q) => q && q.until) ? P.oldone : (P.oldone = { items: [null, null, null] });
   const used = new Set(S.items.filter(Boolean).map((q) => q.id));
-  S.items = S.items.map((q) => (q && !q.sold && q.until > Date.now() ? q : (() => { const n = rollOne(used); used.add(n.id); return n; })()));
+  // (6.1.9) one given for stays, dimmed, until its own time is up; only then does she lay out another
+  S.items = S.items.map((q) => (q && q.until > Date.now() ? q : (() => { const n = rollOne(used); used.add(n.id); return n; })()));
   return S;
 }
 // (6.1.8) her lure hangs at the cave's mouth over the west end of the table (render.js sways it a little about here):
@@ -64,10 +65,9 @@ export function drawTable(ctx, S, Sy, ppm, t, P, picture, hover) {
   if (st) SLOTS.forEach((sx, i) => {
     const it = st.items[i]; if (!it) return;
     const X = S(sx), w = 2.4 * m, h = 1.44 * m;
-    if (it.sold) { ctx.fillStyle = 'rgba(90,86,76,0.5)'; ctx.fillRect(X - w * 0.35, ty - 0.08 * m, w * 0.7, 0.08 * m); return; }
     const def = ITEMS[it.id]; if (!def) return;
     const im = imgOf(def, picture);
-    if (im.complete) { ctx.save(); ctx.translate(X, ty - h * 0.42); ctx.rotate(((i * 37) % 7 - 3) * 0.02); ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore(); }
+    if (im.complete) { ctx.save(); if (it.sold) { ctx.globalAlpha = 0.3; ctx.filter = 'saturate(0.3)'; } /* (6.1.9) given for: dim until it goes */ ctx.translate(X, ty - h * 0.42); ctx.rotate(((i * 37) % 7 - 3) * 0.02); ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore(); }
     if (hover && hover.kind === 'item' && hover.i === i) { ctx.strokeStyle = 'rgba(200,225,230,0.55)'; ctx.lineWidth = Math.max(1, 0.05 * m); ctx.setLineDash([0.2 * m, 0.15 * m]); ctx.beginPath(); ctx.ellipse(X, ty - h * 0.42, w * 0.6, h * 0.62, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
   });
   if (hover && hover.kind === 'chest') { ctx.strokeStyle = 'rgba(200,225,230,0.55)'; ctx.lineWidth = Math.max(1, 0.05 * m); ctx.setLineDash([0.2 * m, 0.15 * m]); ctx.beginPath(); ctx.ellipse(S(hover.x), ty - 1.1 * m, 1.8 * m, 1.4 * m, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
