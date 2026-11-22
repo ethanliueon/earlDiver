@@ -36,7 +36,7 @@ export const SKILLS = {
   scholar: { name: 'Scholar', what: 'photographs pay more', fits: ['tag', 'cam'] },
   prospector: { name: 'Prospector', what: 'pearls and sapphires show from farther off', fits: ['bag', 'cam'] },
   resilience: { name: 'Resilience', what: 'pressure hurts less', fits: ['suit', 'tank', 'fins'], min: 'exotic' },
-  biolum: { name: 'Bioluminescence', what: 'it glows while your light is on', fits: 'any', min: 'exotic', flat: true },
+  biolum: { name: 'Bioluminescence', what: 'a soft blue glow 16 m round you, like a glow stick you carry; the thing does not mind it', /* (6.0.9) */ fits: 'any', min: 'exotic', flat: true },
 };
 export const LEGEND = {
   eye: { name: 'Eye of the Sea', what: 'rare forms glow, and are easy to spot' },

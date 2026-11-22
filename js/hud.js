@@ -86,13 +86,13 @@ function eyePicture() {
   if (EYE_PIC) return EYE_PIC;
   const W = 320, H = 190, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   let sd = 9137; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-  const cx = W / 2, cy = H / 2, ew = 92, eh = 48;
+  const cx = W / 2, cy = H / 2, ew = 88, eh = 62; /* (6.0.9) taller */
   const almond = (k = 1) => { x.beginPath(); x.moveTo(cx - ew * k, cy + eh * 0.25 * k); x.bezierCurveTo(cx - ew * 0.55 * k, cy - eh * 1.15 * k, cx + ew * 0.3 * k, cy - eh * 1.2 * k, cx + ew * k, cy - eh * 0.5 * k); /* the outer corner lifted */
     x.bezierCurveTo(cx + ew * 0.45 * k, cy + eh * 0.85 * k, cx - ew * 0.45 * k, cy + eh * 1.05 * k, cx - ew * k, cy + eh * 0.25 * k); x.closePath(); };
   // the hide round it: dark, warmer near the eye where its light falls, in short rough strokes running out from it
   { const g = x.createRadialGradient(cx, cy, eh * 0.6, cx, cy, W * 0.5); g.addColorStop(0, 'rgba(62,18,8,0.62)'); g.addColorStop(0.35, 'rgba(24,8,4,0.42)'); g.addColorStop(1, 'rgba(4,2,1,0)'); /* (6.0.7) lighter */ x.save(); x.translate(cx, cy); x.scale(1, 0.62); x.translate(-cx, -cy); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, W * 0.5, 0, Math.PI * 2); x.fill(); x.restore(); }
   for (let i = 0; i < 1500; i++) { const an = r() * Math.PI * 2, d = ew * (0.95 + Math.pow(r(), 0.8) * 1.0), px = cx + Math.cos(an) * d, py = cy + Math.sin(an) * d * 0.55, near = Math.max(0, 1 - (d - ew * 0.9) / (ew * 0.9));
-    const len = 2 + r() * 5, a2 = an + (r() - 0.5) * 0.6; x.strokeStyle = `rgba(${110 + r() * 70 | 0},${34 + r() * 36 | 0},${10 + r() * 14 | 0},${(near * near * near * (0.08 + r() * 0.2)).toFixed(3)})`; /* scattered, dark, catching only a little of its light */ x.lineWidth = 0.8 + r() * 0.8;
+    const len = 2 + r() * 5, a2 = an + (r() - 0.5) * 0.6; x.strokeStyle = `rgba(${120 + r() * 70 | 0},${20 + r() * 26 | 0},${10 + r() * 12 | 0},${(near * near * near * (0.08 + r() * 0.2)).toFixed(3)})`; /* scattered, dark, catching only a little of its light */ x.lineWidth = 0.8 + r() * 0.8;
     x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a2) * len, py + Math.sin(a2) * len * 0.55); x.stroke(); }
   // the lids' heavy dark rim, blurred out a little onto the hide
   x.save(); x.filter = 'blur(5px)'; x.fillStyle = 'rgba(6,2,1,0.62)'; almond(1.12); x.fill(); x.restore();
@@ -103,15 +103,15 @@ function eyePicture() {
   x.strokeStyle = 'rgba(150,60,20,0.22)'; x.lineWidth = 1.6; for (const f of [1.32, 1.6]) { x.beginPath(); x.moveTo(cx - ew * 0.8, cy - eh * f * 0.55); x.quadraticCurveTo(cx - ew * 0.05, cy - eh * f * 1.02, cx + ew * 0.85, cy - eh * f * 0.62); x.stroke(); }
   // the iris, lit from inside
   x.save(); almond(); x.clip();
-  { const g = x.createRadialGradient(cx + 4, cy + 2, 2, cx, cy, ew * 1.02); g.addColorStop(0, '#fff8d4'); g.addColorStop(0.08, '#ffe27a'); g.addColorStop(0.24, '#f8aa3a'); g.addColorStop(0.5, '#d86420'); g.addColorStop(0.74, '#8a2a0a'); g.addColorStop(1, '#1e0602'); x.fillStyle = g; x.fillRect(0, 0, W, H); }
+  { const g = x.createRadialGradient(cx + 4, cy + 2, 2, cx, cy, ew * 1.02); g.addColorStop(0, '#ffd8b0'); g.addColorStop(0.08, '#ff9a5a'); g.addColorStop(0.24, '#e8442a'); g.addColorStop(0.5, '#b81c12'); g.addColorStop(0.74, '#5e0a06'); g.addColorStop(1, '#160202'); /* (6.0.9) red, not amber: a hot pale core into blood red */ x.fillStyle = g; x.fillRect(0, 0, W, H); }
   for (let i = 0; i < 1800; i++) { const an = r() * Math.PI * 2, r0 = ew * (0.06 + r() * 0.4), r1 = r0 + ew * (0.06 + r() * 0.3), lt = r() < 0.45; // fibres running out from the pupil
-    x.strokeStyle = lt ? `rgba(255,${200 + r() * 50 | 0},${110 + r() * 60 | 0},${(0.06 + r() * 0.16).toFixed(3)})` : `rgba(${90 + r() * 60 | 0},${20 + r() * 20 | 0},4,${(0.08 + r() * 0.2).toFixed(3)})`; x.lineWidth = 0.6 + r() * 0.9;
+    x.strokeStyle = lt ? `rgba(255,${120 + r() * 70 | 0},${80 + r() * 50 | 0},${(0.06 + r() * 0.16).toFixed(3)})` : `rgba(${90 + r() * 60 | 0},${20 + r() * 20 | 0},4,${(0.08 + r() * 0.2).toFixed(3)})`; x.lineWidth = 0.6 + r() * 0.9;
     x.beginPath(); x.moveTo(cx + Math.cos(an) * r0, cy + Math.sin(an) * r0); x.lineTo(cx + Math.cos(an + (r() - 0.5) * 0.08) * r1, cy + Math.sin(an + (r() - 0.5) * 0.08) * r1); x.stroke(); }
   for (let i = 0; i < 46; i++) { const px = cx + (r() - 0.5) * ew * 1.9, py = cy + (r() - 0.5) * eh * 1.9, rr = 4 + r() * 14, dg = x.createRadialGradient(px, py, 0, px, py, rr); const dark = r() < 0.6; // (6.0.7) mottling: dark blotches and hot flecks, as in old burnt metal
-    dg.addColorStop(0, dark ? `rgba(70,14,2,${(0.25 + r() * 0.3).toFixed(3)})` : `rgba(255,${200 + r() * 50 | 0},120,${(0.18 + r() * 0.25).toFixed(3)})`); dg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = dg; x.beginPath(); x.arc(px, py, rr, 0, Math.PI * 2); x.fill(); }
+    dg.addColorStop(0, dark ? `rgba(60,6,2,${(0.25 + r() * 0.3).toFixed(3)})` : `rgba(255,${130 + r() * 60 | 0},90,${(0.18 + r() * 0.25).toFixed(3)})`); dg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = dg; x.beginPath(); x.arc(px, py, rr, 0, Math.PI * 2); x.fill(); }
   x.strokeStyle = 'rgba(50,8,2,0.55)'; for (let i = 0; i < 9; i++) { let px = cx + (r() < 0.5 ? -1 : 1) * ew * (0.55 + r() * 0.4), py = cy + (r() - 0.5) * eh * 1.4; x.lineWidth = 0.8 + r() * 0.8; x.beginPath(); x.moveTo(px, py); // thin dark cracks running in from the rim
     for (let k = 0; k < 6; k++) { px += (cx - px) * (0.12 + r() * 0.1) + (r() - 0.5) * 6; py += (r() - 0.5) * 7; x.lineTo(px, py); } x.stroke(); }
-  for (let i = 0; i < 5200; i++) { const px = cx + (r() - 0.5) * ew * 2, py = cy + (r() - 0.5) * eh * 2.2; x.fillStyle = r() < 0.5 ? `rgba(255,236,170,${(r() * 0.2).toFixed(3)})` : `rgba(24,4,1,${(r() * 0.28).toFixed(3)})`; x.fillRect(px, py, 1 + r(), 1 + r()); } // heavy grain
+  for (let i = 0; i < 5200; i++) { const px = cx + (r() - 0.5) * ew * 2, py = cy + (r() - 0.5) * eh * 2.2; x.fillStyle = r() < 0.5 ? `rgba(255,170,130,${(r() * 0.2).toFixed(3)})` : `rgba(24,4,1,${(r() * 0.28).toFixed(3)})`; x.fillRect(px, py, 1 + r(), 1 + r()); } // heavy grain
   { const bg = x.createRadialGradient(cx, cy + eh * 0.1, eh * 0.5, cx, cy, ew * 1.05); bg.addColorStop(0, 'rgba(0,0,0,0)'); bg.addColorStop(0.7, 'rgba(20,3,1,0.2)'); bg.addColorStop(1, 'rgba(14,2,1,0.75)'); x.fillStyle = bg; x.fillRect(0, 0, W, H); } // the bulge: darker where the lids press
   // the brow's shadow over the top of it, and the dark rim inside the lids
   { const g = x.createLinearGradient(0, cy - eh * 1.2, 0, cy + eh * 0.2); g.addColorStop(0, 'rgba(10,2,1,0.96)'); g.addColorStop(0.55, 'rgba(10,2,1,0.35)'); g.addColorStop(1, 'rgba(10,2,1,0)'); x.fillStyle = g; x.fillRect(0, cy - eh * 1.3, W, eh * 1.5); } // the brow's heavy shadow
@@ -1090,7 +1090,7 @@ e.inSub ? [
       const almond = () => { ctx.beginPath(); ctx.moveTo(-E.ew, E.eh * 0.25); ctx.bezierCurveTo(-E.ew * 0.55, -E.eh * 1.15, E.ew * 0.3, -E.eh * 1.2, E.ew, -E.eh * 0.5); ctx.bezierCurveTo(E.ew * 0.45, E.eh * 0.85, -E.ew * 0.45, E.eh * 1.05, -E.ew, E.eh * 0.25); ctx.closePath(); };
       almond(); ctx.clip();
       const sw = E.eh * (0.5 - 0.3 * near) * (1 + 0.06 * Math.sin(g.time * 0.7)), px = 2 + Math.sin(g.time * 0.23) * 4;
-      { const hg = ctx.createRadialGradient(px, 0, 0, px, 0, E.eh * 0.9); hg.addColorStop(0, 'rgba(255,236,150,0.55)'); hg.addColorStop(1, 'rgba(255,200,90,0)'); ctx.fillStyle = hg; ctx.fillRect(px - E.eh, -E.eh, E.eh * 2, E.eh * 2); } // the hottest gold round the pupil // the slit, with a faint dark-red edge where it meets the glow
+      { const hg = ctx.createRadialGradient(px, 0, 0, px, 0, E.eh * 0.9); hg.addColorStop(0, 'rgba(255,180,140,0.5)'); hg.addColorStop(1, 'rgba(255,120,80,0)'); ctx.fillStyle = hg; ctx.fillRect(px - E.eh, -E.eh, E.eh * 2, E.eh * 2); } // the hottest gold round the pupil // the slit, with a faint dark-red edge where it meets the glow
       ctx.shadowColor = 'rgba(90,10,2,0.9)'; ctx.shadowBlur = 6; ctx.fillStyle = '#040100'; ctx.beginPath(); ctx.moveTo(px, -E.eh * 1.25); ctx.quadraticCurveTo(px + sw, 0, px, E.eh * 1.25); ctx.quadraticCurveTo(px - sw, 0, px, -E.eh * 1.25); ctx.fill(); ctx.shadowBlur = 0;
       if (open < 0.999) { const lidY = E.eh * 1.2 * (1 - open); ctx.fillStyle = '#060201'; // the lids closing from above and below
         ctx.beginPath(); ctx.rect(-E.ew, -E.eh * 1.3, E.ew * 2, lidY * 1.1); ctx.fill(); ctx.beginPath(); ctx.rect(-E.ew, E.eh * 1.3 - lidY * 0.9, E.ew * 2, lidY * 0.9); ctx.fill(); }

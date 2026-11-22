@@ -2876,7 +2876,11 @@ export class Renderer {
       else { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.22, rgbStr(col, a0 * 0.9)); gg.addColorStop(0.6, rgbStr(col, a0 * 0.45)); gg.addColorStop(1, rgbStr(col, 0)); } // the plain Flare falls away well before the screen's edge
       l.fillStyle = gg; l.beginPath(); l.arc(fxp * k, fyp * k, R * k, 0, TAU); l.fill(); visR.push(fxp, fyp, R); lamps.push({ x: fxp, y: fyp, r: R, a: a0 });
     }
-    if (e.biolum && e.lampOn && !e.inSub) { const gc = hexToRgb(e.glows && e.glows[0] || '#8af0d0'), br = (4 + 1.5 * e.biolum) * ppm, pulse = 0.85 + 0.15 * Math.sin(g.time * 1.3); radial(S(e.x), Sy(e.y), br, gc, 0.45 * pulse); lamps.push({ x: S(e.x), y: Sy(e.y), r: br, a: 0.45 }); } // (2.8.0) Bioluminescence: his gear glows while his light is on
+    // (6.0.9) Bioluminescence: his gear glows like a glow stick he carries, a soft even pool 16 m round him in a muted deep-sea
+    // blue (not cyan); always on, the thing ignores it, and it goes out with the others when its red comes
+    if (e.biolum && !e.inSub && (g.lightFade ?? 1) > 0.01) { const bx = S(e.x), by = Sy(e.y), gr = 16 * ppm, a = 0.42 * (g.lightFade ?? 1) * (0.94 + 0.06 * Math.sin(g.time * 1.3)), c = [128, 156, 204];
+      visR.push(bx, by, gr); const gg = l.createRadialGradient(bx * k, by * k, 0, bx * k, by * k, gr * k); gg.addColorStop(0, rgbStr(c, a)); gg.addColorStop(0.5, rgbStr(c, a * 0.8)); gg.addColorStop(0.8, rgbStr(c, a * 0.3)); gg.addColorStop(1, rgbStr(c, 0));
+      l.fillStyle = gg; l.beginPath(); l.arc(bx * k, by * k, gr * k, 0, TAU); l.fill(); lamps.push({ x: bx, y: by, r: gr, a }); }
     if (g.legend) { // the legendary moment: a pale light comes up on it, and fades
       const c = g.legend.c, kf = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
       // (4.8.2) one even, pale light: as soft in the middle as at its edge (no hot spot on the fish), fading only at the rim
