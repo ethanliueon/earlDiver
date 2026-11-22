@@ -35,7 +35,7 @@ export const ABILITY_DEFS = {
     rare: { name: 'Ironhull', dur: 0.5, cd: 1200, repair: true, sub: true, line: 'Mends the sub completely, from inside it.' },
   },
   tidewarden: {
-    legendary: { name: 'Tidewarden', dur: 4, cd: 28800, ward: true, tide: true, line: 'When the thing is close: the water turns from red to blue, it freezes, fades, and is gone for 5 minutes.' },
+    legendary: { name: 'Tidewarden', dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
   },
 };
 export const abilityId = (fam, tier) => `ab_${fam}_${tier}`;
@@ -57,7 +57,8 @@ export function whyNot(g, P, A) {
   if (S.activeT > 0 && !A.charges) return 'Already running';
   if (g.aboard && !A.speed) return 'In the water';
   if (A.sub && !e.inSub) return 'From inside the sub';
-  if (A.tide && !(g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk'))) return 'Only when the thing is close';
+  if (A.tide && g.kill) return 'Too late'; // (6.0.0) never in its jaws
+  if (A.tide && !((g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk')))) return 'Only when the water turns red'; // (6.0.0) once its red reaches him
   const cd = cooldownLeft(P); if (cd > 0 && !(A.charges && S.charges > 0)) return `Ready in ${fmtLeft(cd)}`;
   return null;
 }

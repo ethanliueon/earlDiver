@@ -33,6 +33,7 @@ import { abilityOf, abilityState, whyNot, cooldownLeft } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY } from './item_data.js';
 import { pictureOf } from './catalog.js';
+import { kitOf } from './items.js';
 import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
@@ -126,7 +127,10 @@ let profile = loadProfile();
 // what he has on (2.6.0): the tank's air, the fins (and a heavy tank's drag), the camera's card
 function applyKit(e, P) {
   kit(P); applySuit(e, P);
-  const was = e.o2Max || 0; e.o2Max = airMax(P); e.o2 = Math.min(e.o2Max, (e.o2 || 0) + Math.max(0, e.o2Max - was));
+  // (6.0.0) the air he has is kept as it is when he changes tanks: a bigger tank holds more, it does not add any; a
+  // smaller one keeps only what fits (said once). At the start of a run (nothing yet) he starts full
+  const was = e.o2Max || 0; e.o2Max = airMax(P);
+  if (!was) e.o2 = e.o2Max; else if ((e.o2 || 0) > e.o2Max + 0.5) { e.o2 = e.o2Max; if (g && g.mode === 'play' && hud) hud.toast(`This tank holds ${Math.round(e.o2Max)} s: the rest of your air is gone`, 'warn'); } else e.o2 = Math.min(e.o2Max, e.o2 || 0);
   e.finSpeed = statValue(P, 'swim'); e.sprintMul = statValue(P, 'sprint');
   e.tankQuiet = !!(worn(P, 'tank') || {}).quiet;
   // (2.8.0) skills, Legendary skills and set traits, all stacked across what he has on
@@ -206,7 +210,7 @@ function newGame(mode) {
   if (mode === 'play') { applyKit(g.earl, P); g.earl.o2 = g.earl.o2Max; }
   applySuit(g.earl, P);
   applySub(g.sub, P); g.sub.o2 = g.sub.o2Max; g.sub.hull = P.hull;
-  if (P.subLost) { g.sub.imploded = true; g.sub.docked = false; }
+  /* (6.0.0) a sub is never lost between dives (P.subLost is no longer kept) */
   // pre-warm the ocean with life around the spawn
   const cam = { x: BOAT_HOME, y: 6, w: 46, h: 26 };
   for (let i = 0; i < 8; i++) g.fauna.trySpawn(cam, 0);
@@ -353,7 +357,7 @@ const ui = new UI({
   },
   getProfile: () => profile,
   onSaveProfile: () => saveProfile(profile),
-  canChangeGear: () => !!(g && g.mode === 'play' && (g.aboard || g.earl.inSub || ui.cabinOpen())),
+  canChangeGear: () => !!(g && g.mode === 'play' && !g.kill), // (6.0.0) gear changes anywhere (it changes what he can do, never what he has); never in its jaws
   // (5.6.9) the belt: on (from the locker, as many as fit) or off (all of it into the locker)
   onBelt: (k, on) => { const P = profile; if (!P || !g) return; P.spare = P.spare || {}; if (on) { const m = Math.min(supplyMax(P, k) - (g.items[k] || 0), P.spare[k] || 0); if (m > 0) { g.items[k] = (g.items[k] || 0) + m; P.spare[k] -= m; } } else { P.spare[k] = (P.spare[k] || 0) + (g.items[k] || 0); g.items[k] = 0; } syncProfile(); saveProfile(P); audio.ready && audio.click(); },
   onMessage: (m) => hud.toast(m),
@@ -855,7 +859,10 @@ function buy(kind) {
   } else if (kind.startsWith('on:')) {
     // (2.8.0) on:<uid> puts on a thing from the locker
     const q = instOf(P, kind.slice(3));
-    if (q && putOn(P, q.u)) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(hud.touch ? `Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}` : `Press ${key} for the ${ITEMS[q.id].name.toLowerCase()}`); }
+    const bagWas = ITEMS[q && q.id] && ITEMS[q.id].kind === 'bag' ? kitOf(P).on.bag : null; // (6.0.0) a smaller bag cannot take what he is carrying
+    const put = !!(q && putOn(P, q.u));
+    if (put && bagWas && g.bag && bagUsed(g) > bagSlots(g)) { putOn(P, bagWas); hud.toast(`This bag holds ${bagSlots(g)}: you are carrying ${bagUsed(g)}`, 'warn'); }
+    else if (put) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(hud.touch ? `Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}` : `Press ${key} for the ${ITEMS[q.id].name.toLowerCase()}`); }
   } else if (kind.startsWith('sellgear:')) {
     // (2.8.0) selling gear back, for about a third of what it is worth; never what he has on
     const q = instOf(P, kind.slice(9));
@@ -1404,6 +1411,7 @@ const standY = (x) => deckLine(x / BOAT_U) * BOAT_U + 0.05 - 0.85; // his middle
 const nearLadder = () => { const e = g.earl, rx = e.x - BOAT.x; return !e.inSub && !g.aboard && !g.kill && e.y < 2.2 && e.y > -0.5 && Math.abs(rx - LADDER_M) < 1.3; };
 // aboard: climb from the water (climb), or standing on deck by the door (a new dive starts there)
 function boardDeck(climb = true, quiet = false) {
+  if (g.sub && g.sub.imploded) { const sb = g.sub; sb.imploded = false; g.imploded = false; sb.failing = null; sb.hull = 1; g.subTank = []; sb.docked = true; sb.o2 = sb.o2Max; profile.subLost = false; profile.hull = 1; setTimeout(() => hud.toast('The sub is back in her cradle'), 1200); } // (6.0.0) a sub lost while he lived is waiting for him at the Margaret
   const e = g.earl;
   const at = climb ? LADDER_M : DOOR_M - 0.9;
   g.aboard = { x: at, from: [e.x - BOAT.x, e.y - deckSurf()], walkT: 0, step: 0, walk: 0, climb: climb ? CLIMB : 0, jump: 0 }; g.helm = false; g.deckStations = DECK_STATIONS;
@@ -1720,7 +1728,7 @@ function killUpdate(dt) {
   if ((K.window && K.t > K.window[0] && K.t < K.window[1]) || (pressed.has('q') && K.t < (K.window ? K.window[1] : 99))) { // (5.6.4) the lure answers any time before the jaws shut
     let how = null;
     // (5.10.8) no escape by the lamp: only a lure, or the Tidewarden's ward, gets him out of the jaws
-    if (pressed.has('ability')) { const A = currentAbility(), why = A && A.tide ? whyNot(g, profile, A) : 'no'; if (!why || why === 'Only when the thing is close') { useAbility(); how = 'tide'; } }
+    /* (6.0.0) no Tidewarden in the jaws: once it strikes, nothing stops it (Rebirth, after, is the only way back) */
     if (how) { escapeKill(how); for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k); return; }
   }
   for (const k of ['l', 'q', 'e', 'ability']) pressed.delete(k);
@@ -1858,19 +1866,28 @@ function crushDepth(dt) {
 
 // (5.16.0) the legendary powers that trigger, and when each can trigger again (real time, ms)
 const POWER_CD = { secondwind: 2 * 3600, rebirth: 6 * 3600 };
-const powerReady = (k) => !(profile && profile.powerReadyAt && profile.powerReadyAt[k] > Date.now());
-const spendPower = (k) => { profile.powerReadyAt = Object.assign({}, profile.powerReadyAt, { [k]: Date.now() + POWER_CD[k] * 1000 }); saveProfile(profile); };
+// (6.0.0) one timer for every net power that triggers: when one fires, the timer starts at that power's own cooldown;
+// switching nets never resets it (another triggering net picks up the time left, whatever its own cooldown), and on a
+// net whose power is always on it keeps counting, hidden, for when he switches back
+const powerReady = (k) => { void k; return !(profile && profile.netPowerAt > Date.now()); };
+const spendPower = (k) => { profile.netPowerAt = Date.now() + POWER_CD[k] * 1000; profile.netPowerFor = POWER_CD[k]; saveProfile(profile); };
 // (5.16.0) Rebirth (Jonah's Seine): any death, an even chance the sea gives him back: air full, lifted to his suit's safe
 // depth, the thing gone (back later along its route), the mark lifted; out of a lost sub, floating where she was. Then
 // three seconds in which nothing can kill him
+// (6.0.0) Rebirth: the screen goes black, then his eyes open (hud.wakeFx). He is given back where the rules put him, air
+// full, at his suit's safe depth, the thing gone and coming back along its route; and the sub is put right beside him,
+// whole (an imploded one too, its chambers empty), so what killed him does not kill him again at once. After being
+// eaten, and only then, he says one line to himself (render.js): the only time in the game he speaks
 function rebirth(kind) {
-  const e = g.earl, ent = g.entity;
+  const e = g.earl, ent = g.entity, sub = g.sub;
   spendPower('rebirth');
-  if (kind === 'implode' || e.inSub) { e.inSub = false; e.x = g.sub.x; e.y = g.sub.y; }
-  e.o2 = e.o2Max; g.noAir = 0; g.injury = 0; g.kill = null;
+  if (kind === 'implode' || e.inSub) { e.inSub = false; e.x = sub.x; e.y = sub.y; }
+  e.o2 = e.o2Max; g.noAir = 0; g.injury = 0; g.kill = null; e.vx = e.vy = 0;
   const safe = (e.pressStart || 300) - 5; if (e.y > safe) e.y = Math.max(2, safe);
-  if (ent) { ent.marked = false; ent.hunt = null; ent.ap = null; ent.slip = null; ent.sleepT = 90; ent.x = 20 + Math.random() * 4960; ent.y = ent.band(g)[0] + Math.random() * 400; }
-  g.rebirthT = 3; g.fx.flash = 0.55; hud.toast('The sea gives you back.', 'big'); audio.ready && audio.gasp && audio.gasp();
+  if (sub.imploded || kind === 'implode') { sub.imploded = false; g.imploded = false; sub.failing = null; sub.hull = 1; g.subTank = []; }
+  sub.docked = false; sub.vx = sub.vy = 0; sub.o2 = sub.o2Max; sub.x = clamp(e.x - 6, 6, 4994); /* on his left: his words go up to the right */ sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3));
+  if (ent) { ent.faceLock = null; ent.marked = false; ent.hunt = null; ent.ap = null; ent.slip = null; ent.sleepT = 90; ent.x = 20 + Math.random() * 4960; ent.y = ent.band(g)[0] + Math.random() * 400; }
+  g.rebirthT = 7; g.wake = { t: 0, eaten: kind === 'devoured' }; ui.closeAll && ui.closeAll(); audio.ready && audio.drop && audio.drop();
 }
 function die(cause, kind = 'normal') {
   if (g.mode !== 'play' || g.noDeath) return;
@@ -1883,7 +1900,7 @@ function die(cause, kind = 'normal') {
   const lost = Object.entries(g.inv).filter(([k, n]) => n > 0 && GOODS[k]).map(([k, n]) => `${n} ${GOODS[k].name.toLowerCase()}`);
   const nSpec = g.bag.length + g.subTank.length;
   if (nSpec) lost.unshift(`${nSpec} live specimen${nSpec > 1 ? 's' : ''}`);
-  if (kind === 'implode') lost.unshift('the submersible');
+  /* (6.0.0) the sub is never lost: it comes back to the Margaret, docked, whole, its chambers empty */
   if (g.tags.length) lost.push(`data from ${g.tags.length} tag${g.tags.length > 1 ? 's' : ''}`);
   if (g.photos.length) lost.push(`${g.photos.length} photograph${g.photos.length > 1 ? 's' : ''}`);
   g.tags = []; g.photos = [];
@@ -1895,6 +1912,7 @@ function die(cause, kind = 'normal') {
   const bill = kind === 'quit' ? 0 : Math.min(HOSPITAL_CAP, Math.round(profile.cash * HOSPITAL_SHARE * 100) / 100); // capped: late in the game 10 % would be ruinous
   g.inv = {};
   syncProfile();
+  profile.subLost = false; profile.hull = 1; // (6.0.0) the sub is back in her cradle, hull mended
   profile.cash = Math.round((profile.cash - bill) * 100) / 100;
   profile.deaths = (profile.deaths || 0) + (kind === 'quit' ? 0 : 1);
   saveProfile(profile);
@@ -2959,12 +2977,19 @@ function frame(now) {
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
-  { const A = hud.abilDef; hud.killTide = !!(g.kill && A && A.tide && (() => { const w = whyNot(g, profile, A); return !w || w === 'Only when the thing is close'; })()); } // (5.10.8) the Tidewarden, offered in the jaws
+  hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
   g.realDt = dt; airOver(g); if (g.rebirthT > 0) g.rebirthT = Math.max(0, g.rebirthT - dt); // (5.16.0) Rebirth's grace
+  // (6.0.0) the wake after a Rebirth: black, then the eyes open (hud.wakeFx) while the world comes back into focus;
+  // after being eaten, his one line follows as the eyes clear
+  if (g.wake) { const W0 = g.wake; W0.t += dt; const b = W0.t < 1.4 ? 10 : Math.max(0, 10 * (1 - (W0.t - 1.4) / 2.2));
+    canvas.style.filter = b > 0.05 ? `blur(${b.toFixed(1)}px)` : '';
+    if (W0.t > 3.3 && !W0.said) { W0.said = true; if (W0.eaten) g.earlSay = { text: "What happened? I'm still here.", t: 0 }; else hud.toast('The sea gives you back.'); }
+    if (W0.t > 4.2) { g.wake = null; canvas.style.filter = ''; document.documentElement.classList.remove('waking'); } } else if (canvas.style.filter) { canvas.style.filter = ''; document.documentElement.classList.remove('waking'); }
+  if (g.earlSay) { g.earlSay.t += dt; if (g.earlSay.t > 5.6) g.earlSay = null; }
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
   { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && ui.anyOpen && ui.anyOpen(); tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)
@@ -3030,7 +3055,7 @@ window.addEventListener('keydown', (ev) => {
 });
 
 // debug hooks for automated testing
-window.__earl = { get g() { return g; }, get touch() { return touch; }, INPUT, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck() };
+window.__earl = { die: (c, k) => die(c, k), get g() { return g; }, get touch() { return touch; }, INPUT, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck() };
 
 // leaving the page: whatever has changed is written to the slot at once
 function saveNow() { if (!profile) return; if (g.mode === 'play') syncProfile(); saveProfile(profile); flushSave(); }

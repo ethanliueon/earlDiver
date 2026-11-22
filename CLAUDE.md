@@ -30,7 +30,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 5. **Nothing left to guessing.** New players on a phone must always know what to do next, guided gently and in the
    world (chevrons on the water, a glint on a ladder, a callout on a bar), not by walls of text.
 6. **Calm feedback.** Readable at a glance but quiet: nothing blinding, flickering or shouting. Presses and catches
-   feel good (ripples, flicks, a net cinching). Never add breathing or any noise from Earl.
+   feel good (ripples, flicks, a net cinching). Never add breathing or any noise from Earl. Earl never speaks, with one
+   exception: when Rebirth gives him back after the thing ate him, he thinks one line ("What happened? I'm still here."),
+   written into the scene beside him. Add no other lines from him.
 7. **Order on screen.** Things line up on one axis, spacing is even, nothing overlaps or covers anything else, no
    lopsided panels or dead space. Check at 844 x 390 and at the smallest phone, 667 x 375.
 8. **Simple systems, one job each.** Prefer moving something to stacking options on it (the swap is net and camera;

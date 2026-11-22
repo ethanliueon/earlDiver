@@ -96,7 +96,7 @@ const photoStars = (ph) => { const n = gradeOf(ph) === 'Excellent' ? 3 : gradeOf
 let HG_URL = null;
 try { document.documentElement.style.setProperty('--bless', `url(${blessedURL()})`); } catch (e) { /* no canvas */ }
 function powerStatus(P, key) {
-  const at = P.powerReadyAt && P.powerReadyAt[key], left = at ? (at - Date.now()) / 1000 : 0;
+  void key; const at = P.netPowerAt, left = at ? (at - Date.now()) / 1000 : 0; // (6.0.0) the one shared timer
   if (left <= 0) return '<em class="pw-st pw-ready">ready</em>';
   if (!HG_URL) { const c = document.createElement('canvas'); c.width = c.height = 40; drawHourglass(c.getContext('2d'), 20, 20, 14); HG_URL = c.toDataURL(); }
   return `<em class="pw-st"><img src="${HG_URL}" alt="">${fmtLeft(left)}</em>`;
@@ -1065,7 +1065,7 @@ export class UI {
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot('necklace')}${petGear}</div></div>`
-      + (free ? '' : '<p class="eq-note eq-lock">Change gear on deck, in the cabin or in the sub.</p>')
+      /* (6.0.0) no lock note: gear changes anywhere */
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
       + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length >= LOCKER ? 'full' : ''}">(${list.length}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${glowPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
   }
@@ -1179,7 +1179,7 @@ export class UI {
       if (ev.target === ppopG || ev.target.closest('.ip-close')) { this.petSel = false; this.renderInventory(); } });
     root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
     // (5.6.9) the belt: a tap on a slot takes it off (into the locker), a tap on a locker stack puts it on
-    const beltMsg = () => this.h.onMessage && this.h.onMessage('Change gear on deck, in the cabin or in the sub');
+    const beltMsg = () => this.h.onMessage && this.h.onMessage('Not now'); // (6.0.0) gear changes anywhere but in its jaws
     root.querySelectorAll('[data-belt]').forEach((el) => el.addEventListener('click', () => { if ((g.items && g.items.necklace) > 0) { this.glowSel = true; this.renderInventory(); } })); // (5.17.0) its card
     { const gp = box.querySelector('.glow-pop'); if (gp) gp.addEventListener('click', (ev) => {
       if (ev.target.closest('[data-glowuse]')) { this.glowSel = false; if (this.h.onGlowUse && this.h.onGlowUse()) { this.toggleInventory(false); return; } this.renderInventory(); return; }
@@ -1761,7 +1761,7 @@ export class UI {
         }
         html += '</div></div>';
       } else {
-        if (sub.imploded) html += card('A replacement submersible', 'The old one is on the bottom somewhere, in pieces. The yard has another, built to the same rating.', '', replacementPrice(P), 'buy', 'replace', 'Buy', '', '', [['rated', `${sub.rated} m`, 'press'], ['refits', 'all kept', 'good']]);
+        /* (6.0.0) no replacement to buy: a lost sub is back in her cradle when he is aboard again */
         html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ', damaged: swim out and hold R at each hole to repair it' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
           <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i><svg class="yd-lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15 L21 21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` (next ${money(SUBS[hl + 1].price, false)})` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, 'Works the claw under the sphere: from inside, Space grabs an animal.', GEAR.arm.price, owns(P, 'arm')]]

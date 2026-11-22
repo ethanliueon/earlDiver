@@ -16,7 +16,7 @@ import { drawStation, STATION_TOP } from './station_draw.js';
 import { drawTable, TABLE } from './oldone.js';
 import { pictureOf } from './catalog.js';
 const SIMPLE_SMALL = false; // (4.3.7) small animals as generic shapes (off: each is drawn as itself)
-import { drawPrompt } from './fittings.js'; // (4.3.2) the tutorial's prompt beside the fish
+import { drawPrompt, HUDF } from './fittings.js'; // (4.3.2) the tutorial's prompt beside the fish
 import { Wake } from './trail.js';
 import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
@@ -1085,6 +1085,7 @@ export class Renderer {
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
     ctx.globalCompositeOperation = 'source-over';
+    this.drawSay(g, S, Sy, ppm); // (6.0.0) over everything in the scene, lit or not
 
     // ---- the entity's own light: red along its length, its eyes, the blue flash (see entity.lights) ----
     const ent = g.entity;
@@ -2701,6 +2702,19 @@ export class Renderer {
     ctx.fillStyle = '#e8f8ff'; ctx.beginPath(); ctx.arc(x, y, ppm * 0.08, 0, TAU); ctx.fill();
   }
 
+  drawSay(g, S, Sy, ppm) {
+    // (6.0.0) Earl's one line, after the sea gives him back from its jaws: written into the scene beside him like the
+    // game's labels (no box, no bubble), a thin line curving up from his head to the words, which run on under them; it
+    // comes a few letters at a time, as if he were thinking it, and fades
+    const ctx = this.ctx, W = this.W;
+    if (g.earlSay && g.mode === 'play' && !g.earl.inSub) { const L = g.earlSay, e = g.earl, a = clamp(L.t / 0.4, 0, 1) * clamp((5.4 - L.t) / 0.9, 0, 1);
+      if (a > 0.01) { const hx = S(e.x), hy = Sy(e.y) - ppm * 0.7, n = clamp(Math.floor((L.t - 0.25) * 22), 0, L.text.length), fs = 17;
+        ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(L.text).width, tx = Math.min(W - w - 24, hx + Math.max(36, ppm * 1.6)), ty = Math.max(fs + 70, hy - Math.max(48, ppm * 2));
+        ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(236,230,210,0.7)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(hx + 3, hy - 3); ctx.quadraticCurveTo(hx + 4, ty + 6, tx, ty + 6); ctx.lineTo(tx + w * (n / L.text.length), ty + 6); ctx.stroke();
+        ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(L.text.slice(0, n), tx, ty);
+        ctx.restore(); } }
+  }
   drawSnow(g, S, Sy, ppm, x0, x1, y0, y1) {
     const ctx = this.ctx, t = g.time;
     const cell = 2.2;

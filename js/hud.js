@@ -542,12 +542,12 @@ e.inSub ? [
     // stays lit. It is not a button: a tap there still uses the tool
     { const pw = aboard ? null : gear(P, 'net').legend, L = pw && LEGEND[pw];
       if (L && POWER_EMBLEMS.includes(pw)) {
-        const cd = L.cd || 0, left = cd && P.powerReadyAt ? Math.max(0, (P.powerReadyAt[pw] || 0) - Date.now()) / 1000 : 0, nowS = performance.now() / 1000;
+        const cd = L.cd || 0, left = cd ? Math.max(0, (P.netPowerAt || 0) - Date.now()) / 1000 : 0, nowS = performance.now() / 1000;
         if (this.badgeRun !== g) { this.badgeRun = g; this.badgeWake = cd ? nowS : null; }
         if (cd && left > 0) this.badgeCooling = true; else if (cd && this.badgeCooling) { this.badgeCooling = false; this.badgeWake = nowS; }
         let st;
         if (!cd) st = { sat: 1, glow: 0.35, arc: null };
-        else if (left > 0) st = { sat: 0, glow: 0, arc: 1 - left / cd };
+        else if (left > 0) st = { sat: 0, glow: 0, arc: 1 - left / Math.max(P.netPowerFor || cd, left) }; /* (6.0.0) measured against what the shared timer was set for */
         else { const t = this.badgeWake != null ? nowS - this.badgeWake : 99, sat = clamp(t / 2.5, 0, 1), pulse = t < 10 ? (0.5 - 0.5 * Math.cos(t * TAU / 2.2)) * (1 - t / 10) : 0;
           st = { sat, glow: 0.35 * sat + 0.45 * pulse, arc: null }; }
         drawPowerBadge(ctx, cx - R * 0.74, cy + R * 0.6, R * 0.33, pw, st);
@@ -664,6 +664,19 @@ e.inSub ? [
     this.ctx.save(); this.ctx.translate(sf.l, sf.t);
     try { this.drawIn(g, dt, this.c.width - sf.l - sf.r, this.c.height - sf.t - sf.b); } finally { this.ctx.restore(); }
     this.pressureFx(g, dt, sf);
+    if (g && g.wake) this.wakeFx(g);
+  }
+  // (6.0.0) a Rebirth's waking: black at first, then the eyelids part from the middle, soft-edged (a feathered eye-shaped
+  // opening), with one slow blink before they open fully; the world behind is blurred (main.js) and clears as they open
+  wakeFx(g) {
+    const t = g.wake.t, c = this.ctx, W = this.c.width, H = this.c.height;
+    let k = clamp((t - 1.3) / 2.1, 0, 1); k = 1 - Math.pow(1 - k, 1.6); document.documentElement.classList.toggle('waking', k < 0.98);
+    const blink = t > 2.25 && t < 2.75 ? 1 - 0.7 * Math.sin((t - 2.25) / 0.5 * Math.PI) : 1, open = k * blink;
+    if (open >= 0.999) { document.documentElement.classList.remove('waking'); return; }
+    c.save(); c.fillStyle = '#030303'; c.fillRect(0, 0, W, H);
+    if (open > 0.002) { const rx = W * 0.8, ry = Math.max(1, H * 0.62 * open); c.globalCompositeOperation = 'destination-out'; c.translate(W / 2, H / 2); c.scale(1, ry / rx);
+      const gg = c.createRadialGradient(0, 0, 0, 0, 0, rx); gg.addColorStop(0, 'rgba(0,0,0,1)'); gg.addColorStop(0.55, 'rgba(0,0,0,1)'); gg.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gg; c.beginPath(); c.arc(0, 0, rx, 0, Math.PI * 2); c.fill(); }
+    c.restore();
   }
   // (5.12.3) past what his suit is built for, the game itself seems to change: the whole HUD slowly loses some of its
   // colour (none at the suit's depth, about 40 % at twice it; never grey), all but the depth figure, which turns to

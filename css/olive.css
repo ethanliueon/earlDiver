@@ -1186,3 +1186,6 @@ html body .lk-sk .pw-st img { width: 15px; height: 15px; }
 html body .lk-sk .pw-st.pw-ready { color: #9ab884; }
 /* (5.16.0) Blessed (caught with Apex): its bronze sunburst at the card's top left */
 html body #inventory .fc .fc-bless { position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; background: var(--bless) center / contain no-repeat; z-index: 2; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.6)); }
+
+/* (6.0.0) while his eyes open after a Rebirth, nothing of the page shows over the dark */
+html.waking #stick, html.waking #quests-hud, html.waking #journal-btn { visibility: hidden !important; }
