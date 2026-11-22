@@ -13,7 +13,10 @@ export function startLegendFx() {
     if (now - lastScan > 500) { lastScan = now; scan(); }
     x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
     if (els.length) { x.setTransform(dpr, 0, 0, dpr, 0, 0); const t = now / 1000;
-      els.forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.width < 8 || r.bottom < 0 || r.top > H || r.right < 0 || r.left > W) return; legendMotes(x, r.left + r.width / 2, r.top + r.height / 2, r.width, r.height, t, i + 1); }); }
+      els.forEach((el, i) => { // (6.0.18) the sparks stay inside the item's picture frame, clipped to it, never over the words
+        const im = el.querySelector('img'), fr = (im && im.parentElement && im.parentElement !== el ? im.parentElement : im) || el, r = fr.getBoundingClientRect();
+        if (r.width < 8 || r.bottom < 0 || r.top > H || r.right < 0 || r.left > W) return;
+        x.save(); x.beginPath(); x.rect(r.left, r.top, r.width, r.height); x.clip(); legendMotes(x, r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.9, t, i + 1); x.restore(); }); }
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
