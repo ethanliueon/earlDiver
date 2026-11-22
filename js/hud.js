@@ -1083,15 +1083,24 @@ e.inSub ? [
     // (5.10.10) the one sign of being marked (the vast eye in the water is gone): larger, matte (no halo, no wet
     // shine), darker and bloodshot. It watches: as the thing comes nearer the lids part wider and the slit narrows.
     // Each good deed fades it a step.
+    if (!(g.entity && g.entity.marked)) this.wasMarked = false;
     if (g.entity && g.entity.marked && !dying) {
       const calm = 0 /* (5.16.0) no calm meter */, near = clamp(1 - (g.entity.dist ?? 2000) / 900, 0, 1);
       const a = 1 - calm * 0.6;
       // (6.0.6) one eye, the painted picture (eyePicture), with its slit and lids laid on live: quiet and dim while the
       // thing is far, warmer as it comes; the slow heavy blink, and the slit narrowing to a thread when it is close
-      const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = 38 * s, sc = ew / E.ew, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
-      const ex = (this.moneyTextX != null ? this.moneyTextX : 60 * s) + ew * 0.95, ey = (this.moneyRowBottom != null ? this.moneyRowBottom : tlB) + E.eh * sc * 1.15 + 6 * s; /* (6.0.7) right under the sum */
-      const per = 9 - 3 * near, bt = g.time % per, blink = bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0, open = (1 - blink) * (0.78 + 0.22 * near);
-      ctx.save(); ctx.globalAlpha *= a * (0.62 + 0.38 * near);
+      // (6.1.11) it cannot be missed: when the mark lands, a large eye opens slowly at the top centre, under the message
+      // line, and holds; then it draws back to a smaller narrowed slit that stays while he is marked, pulsing faintly as
+      // the thing comes nearer, and the lids snap wide when it is close
+      if (!this.wasMarked) { this.wasMarked = true; this.markT0 = g.time; }
+      const mt = g.time - this.markT0, big = mt < 4.6 ? 1 : clamp(1 - (mt - 4.6) / 1.4, 0, 1), ease = (q) => q * q * (3 - 2 * q);
+      const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = (44 + 60 * ease(big)) * s, sc = ew / E.ew;
+      const msgB = 92 / kxE, ex = W / 2, ey = msgB + E.eh * sc * 0.95;
+      const close = near > 0.82, pulse = 0.5 + 0.5 * Math.sin(g.time * (2 + 5 * near));
+      const per = 9 - 3 * near, bt = g.time % per, blink = !close && mt > 6 && bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0;
+      const opening = clamp(mt / 1.3, 0, 1), rest = close ? 1 : 0.24 + 0.4 * near, open = Math.max(0.05, (1 - blink) * ease(opening) * (big * 0.92 + (1 - big) * rest));
+      { const gg = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.6); gg.addColorStop(0, `rgba(120,14,6,${(0.18 + 0.22 * near * pulse + 0.2 * big).toFixed(3)})`); gg.addColorStop(1, 'rgba(120,14,6,0)'); ctx.fillStyle = gg; ctx.fillRect(ex - ew * 1.6, ey - ew * 1.6, ew * 3.2, ew * 3.2); } // a dull red breath round it
+      ctx.save(); ctx.globalAlpha *= a * (0.85 + 0.15 * Math.max(big, near));
       ctx.drawImage(E.c, ex - E.cx * sc, ey - E.cy * sc, E.c.width * sc, E.c.height * sc);
       ctx.save(); ctx.translate(ex, ey); ctx.scale(sc, sc);
       const almond = () => { ctx.beginPath(); ctx.moveTo(-E.ew, E.eh * 0.25); ctx.bezierCurveTo(-E.ew * 0.55, -E.eh * 1.15, E.ew * 0.3, -E.eh * 1.2, E.ew, -E.eh * 0.5); ctx.bezierCurveTo(E.ew * 0.45, E.eh * 0.85, -E.ew * 0.45, E.eh * 1.05, -E.ew, E.eh * 0.25); ctx.closePath(); };
