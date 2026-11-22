@@ -1383,3 +1383,12 @@ html body #rates .rt-box { max-height: calc(100vh - 24px); overflow-y: auto; }
 html body #rates .rt-pic { width: 110px; height: 68px; margin: 0 auto; }
 html body #rates td { padding: 3px 4px; font-size: 15px; }
 html body #rates .rt-box .rt-x:not(#_a):not(#_b):not(#_c) { right: 0 !important; top: 0 !important; }
+/* (6.4.3) a saved diver's tag: Continue (or Dive) bottom left, a plain Delete bottom right, always there (the long press
+   still works). A worn grey-brown button like every plain one: red is the close cross's colour */
+html body #title .slot.tag .tg-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; align-self: stretch; }
+html body #title .slot.tag .tg-foot .tg-go:not(#_a):not(#_b) { margin-top: 0; }
+html body #title .slot.tag .tg-del:not(#_a):not(#_b):not(#_c), html.touch body #title .slot.tag .tg-del:not(#_a):not(#_b):not(#_c), html.touch body #title #slots.jiggle .slot.tag.held .tg-del:not(#_a):not(#_b):not(#_c) {
+  position: static !important; opacity: 1 !important; pointer-events: auto !important; width: auto !important; height: auto !important; min-width: 0 !important; top: auto !important; right: auto !important;
+  padding: 5px 10px !important; border: 0 !important; border-image: none !important; border-radius: 6px !important; font: 600 13px 'Barlow Semi Condensed', sans-serif !important; letter-spacing: 0.06em !important; text-transform: none !important;
+  color: #e6dec6 !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important; background: linear-gradient(#625a4c, #4a4338) !important; box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.16), 0 0 0 1px rgba(20, 16, 10, 0.75), 0 2px 3px rgba(0, 0, 0, 0.35) !important; }
+html body #title .slot.tag .tg-del:active { transform: translateY(1px); }

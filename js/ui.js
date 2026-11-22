@@ -1451,7 +1451,7 @@ export class UI {
         html += `<div class="slot tag${n === last0 ? ' last' : ''}" data-n="${n}">${num}<div class="info"><b>${money(p.cash, false)}</b><span>${deep.toLocaleString()} m deepest</span></div>
           <div class="tg-depth"><i style="height:${Math.round(Math.min(1, deep / 5000) * 100)}%"></i></div>
           <dl class="tg-rows"><div><dt>Species</dt><dd>${found}</dd></div><div><dt>Played</dt><dd>${r.saved ? ago(r.saved) : 'new'}</dd></div></dl>
-          <em class="tg-go">${n === last0 ? 'Continue' : 'Dive'}</em><button class="del" title="Delete this diver" aria-label="Delete">×</button></div>`;
+          <div class="tg-foot"><em class="tg-go">${n === last0 ? 'Continue' : 'Dive'}</em><button class="del tg-del" aria-label="Delete">Delete</button></div></div>`;
       } else if (r.state === 'damaged') {
         html += `<div class="slot tag damaged" data-n="${n}">${num}<div class="info"><b>Damaged</b><span>could not be read</span></div><button class="del" aria-label="Delete">×</button></div>`;
       } else html += `<div class="slot tag empty" data-n="${n}">${num}<i class="tg-plus">+</i><div class="info"><b>New diver</b></div></div>`;
