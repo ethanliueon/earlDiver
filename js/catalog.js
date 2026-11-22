@@ -348,11 +348,14 @@ function drawSupply(ctx, w, h, k) {
   if (k === 'airTank') { drawTank(ctx, w, h, { id: 's100', air: 70 }); return; }
   if (k === 'tag' || k === 'tagAdv') { ctx.strokeStyle = '#3a3e40'; ctx.lineWidth = h * 0.04; ctx.beginPath(); ctx.moveTo(cx - w * 0.25, cy); ctx.lineTo(cx + w * 0.2, cy); ctx.stroke(); ctx.fillStyle = k === 'tagAdv' ? '#9fe8ff' : '#e8c040'; ctx.beginPath(); ctx.moveTo(cx + w * 0.2, cy - h * 0.06); ctx.lineTo(cx + w * 0.3, cy); ctx.lineTo(cx + w * 0.2, cy + h * 0.06); ctx.fill(); ctx.fillRect(cx - w * 0.28, cy - h * 0.08, w * 0.06, h * 0.16); return; }
   const glow = k === 'necklace' ? '255,184,96' : '170,230,255'; // (4.0.0) the glow stick burns warm amber
-  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, h * 0.35); g.addColorStop(0, `rgba(${glow},0.95)`); g.addColorStop(1, `rgba(${glow},0)`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  if (k !== 'necklace') { const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, h * 0.35); g.addColorStop(0, `rgba(${glow},0.95)`); g.addColorStop(1, `rgba(${glow},0)`); ctx.fillStyle = g; ctx.fillRect(0, 0, w, h); }
   if (k !== 'necklace') { ctx.fillStyle = '#f4fff8'; ctx.beginPath(); ctx.arc(cx, cy, h * 0.07, 0, TAU); ctx.fill(); }
-  if (k === 'necklace') { // (3.0.1) a glow stick: an amber tube (4.0.0), its cap and lanyard ring
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.5); const L = w * 0.26, r = h * 0.06;
-    const tg = ctx.createLinearGradient(0, -r, 0, r); tg.addColorStop(0, '#fff2dc'); tg.addColorStop(0.5, '#ffc070'); tg.addColorStop(1, '#d88a30'); ctx.fillStyle = tg; ctx.beginPath(); ctx.roundRect(-L, -r, L * 2, r * 2, r); ctx.fill();
-    ctx.fillStyle = '#3a3026'; ctx.beginPath(); ctx.roundRect(L - r * 0.6, -r * 1.1, r * 1.6, r * 2.2, r * 0.4); ctx.fill(); ctx.strokeStyle = '#2a3a30'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(L + r * 1.4, 0, r * 0.6, 0, TAU); ctx.stroke(); ctx.restore(); }
+  if (k === 'necklace') { // (5.17.1) a glow stick lying nearly level: a scored amber tube lit from inside, its glow following its length, a dark plastic cap and ring
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.1); const L = w * 0.3, r = h * 0.055;
+    ctx.save(); ctx.filter = `blur(${Math.round(h * 0.07)}px)`; ctx.fillStyle = 'rgba(255,176,90,0.55)'; ctx.beginPath(); ctx.roundRect(-L * 1.05, -r * 2.6, L * 2.1, r * 5.2, r * 2.6); ctx.fill(); ctx.restore(); // the glow, along the tube
+    const tg = ctx.createLinearGradient(0, -r, 0, r); tg.addColorStop(0, '#ffe2b4'); tg.addColorStop(0.45, '#ffc070'); tg.addColorStop(1, '#c87a2a'); ctx.fillStyle = tg; ctx.beginPath(); ctx.roundRect(-L, -r, L * 2, r * 2, r); ctx.fill();
+    ctx.fillStyle = 'rgba(255,248,232,0.85)'; ctx.beginPath(); ctx.roundRect(-L * 0.9, -r * 0.55, L * 1.65, r * 0.45, r * 0.2); ctx.fill(); // the lit core
+    ctx.strokeStyle = 'rgba(150,90,30,0.28)'; ctx.lineWidth = 1; for (const f of [-0.08, 0, 0.07]) { ctx.beginPath(); ctx.moveTo(f * L, -r * 0.9); ctx.quadraticCurveTo(f * L + r * 0.3, 0, f * L, r * 0.9); ctx.stroke(); } // a few creases in the middle, where it was bent to snap
+    ctx.fillStyle = '#3a3026'; ctx.beginPath(); ctx.roundRect(L - r * 0.4, -r * 1.15, r * 1.8, r * 2.3, r * 0.4); ctx.fill(); ctx.strokeStyle = '#2a2420'; ctx.lineWidth = Math.max(2, r * 0.35); ctx.beginPath(); ctx.arc(L + r * 2.2, 0, r * 0.75, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
   else { ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, cy - h * 0.07); ctx.quadraticCurveTo(cx - w * 0.08, cy - h * 0.35, cx - w * 0.2, cy - h * 0.3); ctx.stroke(); }
 }

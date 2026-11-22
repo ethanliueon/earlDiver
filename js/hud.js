@@ -350,7 +350,7 @@ export class Hud {
       // (5.6.8) the same four in the same places on deck and in the cabin: the sprint button runs there; the rest wait
       null, // (5.16.7) calling the sub moved to the menu's sub tile (call sub out of the sub, autopilot home in it)
       // (5.6.9) the glow sticks on his belt; with none on it, a padlock (and where to get one)
-      { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: g.necklaceOn, lock: !(g.items.necklace > 0) && !g.necklaceOn, why: (g.items.necklace || 0) > 0 ? 'For the water' : (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
+      { key: 'e', icon: 'glow', on: !aboard && (g.items.necklace || 0) > 0, n: g.items.necklace, lit: false, lock: !(g.items.necklace > 0), why: (g.items.necklace || 0) > 0 ? 'For the water' : (P.spare && P.spare.necklace > 0) ? 'Put a glow stick on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' },
       // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
       // the winch to sell). Sprint moved beside the stick
       // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin
@@ -974,7 +974,7 @@ e.inSub ? [
     const sz = 46 * s;
     const slots = [];
     if (e.inSub && (g.items.airTank > 0 || g.tankFit)) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', g.tankFit ? g.tankFit / 3 : 0]);
-    if (g.items.necklace > 0 || g.necklaceOn) slots.push(['e', 'E', g.necklaceOn ? `GLOW ${Math.ceil(g.glowT || 0)} S` : 'GLOW STICK', g.items.necklace, '#ffc070', g.necklaceOn ? 1 : 0]);
+    if (g.items.necklace > 0) slots.push(['e', 'E', 'GLOW STICK', g.items.necklace, '#ffc070', 0]);
     // the sub's trawl net (N): which net is in the hatch, and while it is out, how long it has been towing
     if (e.inSub) {
       const n = g.subNet, kinds = netKinds(g.items), N = n ? n.T : kinds.length ? NETS_SUB[kinds[0]] : null; // (4.11.0) every kind in the hatch

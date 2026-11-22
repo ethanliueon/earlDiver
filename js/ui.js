@@ -66,7 +66,7 @@ const ADDON_SPECS = {
 };
 const SUPPLY_SPECS = {
   lure: [['use', 'offered when the thing comes for you, in its jaws too'], ['effect', 'it follows the light for 10 s', 'good'], ['then', 'it loses you for about 20 s, and comes back'], ['carry', 'one lure in all']],
-  necklace: [['use', 'the glow stick button, or Use in the bag, snaps it: 90 s, then it is spent'], ['effect', 'warm amber light round you, or round the sub while you are in it; the thing in the deep does not mind it', 'good'], ['but', 'it fades when the thing comes near', 'bad']], // (5.17.0)
+  necklace: [['use', 'the glow stick button, or Use in the bag, snaps one and lets it go'], ['effect', 'it hangs where you leave it, lighting the water 16 m round for 2 min, and slowly sinks; the thing in the deep does not mind it', 'good'], ['but', 'it stays behind, and fades when the thing comes near', 'bad']], // (5.17.1)
   film: [['use', 'the camera'], ['one each', 'every picture, sharp or not'], ['pays', 'Poor, Good or Excellent: an Excellent picture twice a Good one', 'good']],
   airTank: [['use', 'the air tank button, in the sub'], ['work', '3 s to connect'], ['effect', 'cabin air to full', 'good'], ['rack', 'one to start; can be enlarged']],
 };
@@ -1047,14 +1047,12 @@ export class UI {
           <div class="lk-acts"><button data-trapuse="${k}">Use</button><small class="tp-note">at the surface</small></div></div></div></div>`; })();
     // (5.17.0) the glow stick's card, opened from its belt slot, laid out as the trap's: Use snaps one (90 s of warm light,
     // in the water or the sub); while one burns, the seconds left and Use greyed; and taking them off the belt, where gear can change
-    const glowPop = (() => { if (!this.glowSel) return ''; const n = (g.items && g.items.necklace) || 0, left = this.h.glowLeft ? this.h.glowLeft() : 0;
-      if (!n && !left) return '';
-      const fact = (a, b) => `<div class="tp-row"><span>${a}</span><b>${b}</b></div>`;
+    const glowPop = (() => { if (!this.glowSel) return ''; const n = (g.items && g.items.necklace) || 0; if (!n) return '';
       return `<div class="item-pop trap-pop glow-pop"><div class="ip-box r-common tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('supply', 'necklace', 360, 216, true)}" alt=""></div>
-        <div class="tp-txt"><h4>Glow stick</h4><p class="tp-kind">Light · ${n} on the belt</p><p class="tp-desc">Snap it and it burns warm amber round you, or round the sub while you are in her. The thing in the deep does not mind it.</p>
-          ${fact('Burns', '90 s')}${fact('Then', 'it is spent')}
-          <div class="lk-acts"><button data-glowuse ${left || !n ? 'disabled' : ''}>${left ? `Lit · ${left} s` : 'Use'}</button>${this.h.canChangeGear() ? '<button data-glowoff>Off the belt</button>' : ''}</div></div></div></div>`; })();
+        <div class="tp-txt"><h4>Glow stick</h4><p class="tp-kind">Light · ${n} on the belt</p><p class="tp-desc">Snap it and let it go. It hangs where you leave it, a pool of warm amber light, and slowly sinks. The thing in the deep does not mind it.</p>
+          <div class="tp-row"><span>Burns</span><b>2 min</b></div><div class="tp-row"><span>Lights</span><b>16 m around</b></div>
+          <div class="lk-acts"><button data-glowuse>Use</button>${this.h.canChangeGear() ? '<button data-glowoff>Off the belt</button>' : ''}</div></div></div></div>`; })();
     // (5.14.1) the pet: a slot with his gear (it goes where he goes), not in the catch. Tap it: its card, or, when it is
     // empty, the animals in the bag and the sub to choose from (only at the surface; it has to be 60 cm to 1.5 m, or a legend)
     const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
@@ -1182,7 +1180,7 @@ export class UI {
     root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
     // (5.6.9) the belt: a tap on a slot takes it off (into the locker), a tap on a locker stack puts it on
     const beltMsg = () => this.h.onMessage && this.h.onMessage('Change gear on deck, in the cabin or in the sub');
-    root.querySelectorAll('[data-belt]').forEach((el) => el.addEventListener('click', () => { if ((g.items && g.items.necklace) > 0 || (this.h.glowLeft && this.h.glowLeft())) { this.glowSel = true; this.renderInventory(); } })); // (5.17.0) its card
+    root.querySelectorAll('[data-belt]').forEach((el) => el.addEventListener('click', () => { if ((g.items && g.items.necklace) > 0) { this.glowSel = true; this.renderInventory(); } })); // (5.17.0) its card
     { const gp = box.querySelector('.glow-pop'); if (gp) gp.addEventListener('click', (ev) => {
       if (ev.target.closest('[data-glowuse]')) { this.glowSel = false; if (this.h.onGlowUse && this.h.onGlowUse()) { this.toggleInventory(false); return; } this.renderInventory(); return; }
       if (ev.target.closest('[data-glowoff]')) { this.glowSel = false; if (this.h.canChangeGear() && this.h.onBelt) this.h.onBelt('necklace', false); else beltMsg(); this.renderInventory(); return; }

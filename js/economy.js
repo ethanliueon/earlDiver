@@ -150,7 +150,7 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
     desc: 'The thing in the deep follows its light for 10 s, then loses interest for a little while. Offered when it comes for you, even in its jaws. You carry one lure in all.' },
-  necklace: { name: 'Glow stick', price: 370, max: 5, desc: 'A chemical glow stick on a lanyard, snapped to light: 90 s of warm amber light around Earl, and in the sub it lights the sub and the water round it. It does not keep anything away, and a light can be seen. Used up once snapped.' },
+  necklace: { name: 'Glow stick', price: 300, max: 5, desc: 'A chemical glow stick. Snap it and let it go: it hangs where you leave it, lighting the water 16 m round in warm amber for 2 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' }, // (5.17.1)
   film: { name: 'Film', price: 4, max: 5, needs: 'camera', desc: 'One exposure each. The camera holds as many as it takes; every picture uses one, sharp or not.' },
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub: three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };

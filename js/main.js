@@ -180,7 +180,7 @@ function newGame(mode) {
     fx: { dread: 0, torchShift: 0, darken: 0, vignette: 0, disorient: 0, ghost: 0, shake: 0, flash: 0, black: 0, pressure: 0, lightPulse: 1, bioPulse: 1 },
     items: { lure: P.items ? P.items.lure || 0 : 0, necklace: P.items ? P.items.necklace || 0 : 0, airTank: P.items && P.items.airTank !== undefined ? P.items.airTank : 0, sealant: P.items ? P.items.sealant || 0 : 0, plate: P.items ? P.items.plate || 0 : 0, film: P.items && P.items.film != null ? P.items.film : null, net: P.items && P.items.net !== undefined ? P.items.net : null, nets: P.items && P.items.nets ? Object.assign({}, P.items.nets) : null }, inv: {}, // a new diver starts with one backup air tank
     journal: new Map(P.journal || []), notes: P.notes || '', sapphires: 0, earned: 0,
-    lure: null, necklaceT: 0, protection: null, prompt: null,
+    lure: null, necklaceT: 0, glows: [], protection: null, prompt: null,
     waveBoost: 0, dayEff: 1, day: dayCycle(0), diverDrain: 1, subDrain: 1,
     deathT: 0, deathDelay: 0, deathCause: null, paused: false, audio, reduceFlash: readReduceFlash(),
     imploded: false, lowO2Warned: false, lastSafe: 0, breathT: 2, farShadow: null,
@@ -324,9 +324,7 @@ const ui = new UI({
   },
   // (5.9.6) Use on a trap in the bag: at the surface the trap-setting card opens; anywhere else, why not
   // (5.17.0) a glow stick snapped from the bag, as the button does (in the water or the sub; on deck it is for later)
-  onGlowUse: () => { if (!g || g.aboard) { hud.toast('For the water: snap it once you are in', 'warn'); return false; } if (g.necklaceOn || !(g.items.necklace > 0)) return false;
-    g.items.necklace--; g.glowT = GLOW_SECONDS; g.necklaceOn = true; hud.toast('Glow stick lit · 90 s'); audio.ready && audio.click(); return true; },
-  glowLeft: () => (g && g.necklaceOn ? Math.ceil(g.glowT || 0) : 0),
+  onGlowUse: () => { if (!g || g.aboard) { hud.toast('For the water: snap it once you are in', 'warn'); return false; } return dropGlow(); },
   onTrapUse: (k) => { const e = g.earl; const why = g.aboard ? 'Traps are set from the water: jump in, at the surface' : canSetHere(g);
     if (why) { hud.toast(why === 'Traps are set from the surface: come up first' ? 'You can only set a trap at the surface' : why, 'warn'); return false; }
     void e; g.toolSel = 'trap'; setTimeout(() => ui.openTrapSet(), 0); return 'open'; },
@@ -1423,7 +1421,15 @@ export function useStation(id) {
   if (id === 'yard') { ui.openShop('sub', ['sub']); return; }
 }
 // (4.0.0) seconds for the anchor to go down or come up through `d` metres of water
-const GLOW_SECONDS = 90;
+const GLOW_SECONDS = 120; // (5.17.1) a dropped glow stick burns 2 min
+// (5.17.1) a glow stick is snapped and let go: it hangs where he was (below the sub, from the sub), lights a pool of water
+// round itself, and sinks slowly with a little sway until it rests on the bottom. Several can burn at once; each is its own
+function dropGlow() {
+  const e = g.earl; if (!(g.items.necklace > 0)) { hud.toast('No glow sticks', 'warn'); return false; }
+  const x = e.inSub ? g.sub.x : e.x, y = Math.max(0.6, e.inSub ? g.sub.y + 1.6 : e.y + 0.3);
+  g.items.necklace--; (g.glows = g.glows || []).push({ x, y, t: GLOW_SECONDS, ph: Math.random() * Math.PI * 2, rot: (Math.random() - 0.5) * 1.2, rest: false });
+  hud.toast('Glow stick dropped · 2 min'); audio.ready && audio.click(); return true;
+}
 function anchorTime(d) { return d <= 200 ? 3 + 4 * (d / 200) : 7 + 5 * Math.min(1, (d - 200) / 2800); }
 function deckInput(dt, mv) {
   const e = g.earl;
@@ -2144,9 +2150,7 @@ function update(dt) {
       // the necklace is only a light now: on and off, never used up
       // (4.0.0) a glow stick: snapped, it burns warm amber for 90 s and is spent. In the sub it lights the
       // cabin and the water round the hull; he takes it out with him when he leaves.
-      if (g.necklaceOn) hud.toast(`Glow stick: ${Math.ceil(g.glowT || 0)} s left`);
-      else if (g.items.necklace > 0) { g.items.necklace--; g.glowT = GLOW_SECONDS; g.necklaceOn = true; hud.toast('Glow stick lit · 90 s'); audio.ready && audio.click(); }
-      else hud.toast('No glow sticks', 'warn');
+      if (!g.aboard) dropGlow(); // (5.17.1) snapped and let go where he is
     }
     if (pressed.has('m')) audio.setMuted(!audio.muted);
     g.airMul = 1; g.luck = 0; g.stillMul = 1;
@@ -2587,7 +2591,7 @@ function update(dt) {
       if (ent.lureT <= 0) g.lure = null;
     }
     // protection: necklace or a nearby lantern
-    if (g.necklaceOn) { g.glowT = (g.glowT || 0) - dt; if (g.glowT <= 0) { g.necklaceOn = false; g.glowT = 0; hud.toast('The glow stick has faded'); } }
+    if (g.glows && g.glows.length) { for (const L of g.glows) { L.t -= dt; if (L.rest) continue; const fl = W.floorAt(L.x) - 0.15; L.y += 0.15 * dt; L.x += Math.sin(g.time * 0.7 + L.ph) * 0.05 * dt; if (L.y >= fl) { L.y = fl; L.rest = true; } } g.glows = g.glows.filter((L) => L.t > 0); } // (5.17.1) sinking, then resting
     g.protection = null; g.hunterWard = g.wardOn && (g.lightFade ?? 1) > 0.5 ? { x: e.x, y: e.y } : null; // (5.16.0) Lighthouse keeps hunters out of its light (while it burns), never the thing
     for (const l of W.lanterns) {
       const d = dist(e.x, e.y, l.x, l.y);

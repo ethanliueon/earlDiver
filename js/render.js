@@ -2817,12 +2817,14 @@ export class Renderer {
       cone(head.x, head.y, ang, 17 * ppm * (e.nightSet ? 1.5 : 1), 0.32 * (e.nightSet ? 1.2 : 1), beamCol, 0.95 * TORCH * flick); // (the Night Shift set: half as far again)
       radial(head.x, head.y, 3.2 * ppm, beamCol, 0.3 * TORCH * flick); lamps.push({ x: head.x, y: head.y, r: 3.2 * ppm, a: 0.3 * TORCH * flick });
     }
-    if (g.necklaceOn) { // (4.0.0) the glow stick: warm amber, wide; in the sub it fills the cabin and lights the water round her
-      const fade = Math.min(1, (g.glowT || 0) / 8) * (g.lightFade ?? 1), fl = 0.94 + 0.06 * Math.sin(g.time * 7.3) * Math.sin(g.time * 2.1); // (5.16.0) it dies away when the thing's dark comes
-      const gx = e.inSub ? S(g.sub.x) : S(e.x), gy = e.inSub ? Sy(g.sub.y) : Sy(e.y), gr = (e.inSub ? 13 : 10) * ppm;
-      radial(gx, gy, gr, [255, 178, 92], 0.75 * fade * fl); radial(gx, gy, gr * 0.35, [255, 205, 140], 0.45 * fade * fl);
-      lamps.push({ x: gx, y: gy, r: gr, a: 0.75 * fade });
-    }
+    // (5.17.1) each dropped glow stick lights the water round itself, where it was let go (warm amber, about 8 m across);
+    // the last 8 s it dies down, and it fades with the thing's dark like every light but his lamp
+    for (const L of g.glows || []) { const gx = S(L.x), gy = Sy(L.y); if (gx < -18 * ppm || gx > this.W + 18 * ppm || gy < -18 * ppm || gy > this.H + 18 * ppm) continue;
+      const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1), fl = 0.94 + 0.06 * Math.sin(g.time * 7.3 + L.ph) * Math.sin(g.time * 2.1), gr = 16 * ppm, a = 0.5 * fade * fl;
+      // (5.17.1) an even pool 16 m round: nearly flat out to half way, then falling away, with only a small bright core
+      if (a > 0.02) { visR.push(gx, gy, gr); const gg = l.createRadialGradient(gx * k, gy * k, 0, gx * k, gy * k, gr * k); const c = [255, 182, 100];
+        gg.addColorStop(0, rgbStr(c, a)); gg.addColorStop(0.5, rgbStr(c, a * 0.8)); gg.addColorStop(0.8, rgbStr(c, a * 0.3)); gg.addColorStop(1, rgbStr(c, 0)); l.fillStyle = gg; l.beginPath(); l.arc(gx * k, gy * k, gr * k, 0, TAU); l.fill(); }
+      radial(gx, gy, 1.6 * ppm, [255, 205, 140], 0.35 * fade * fl); lamps.push({ x: gx, y: gy, r: gr, a: 0.5 * fade }); }
     // (5.16.0) a Flare: 30 m round him (or the sub), as bright near him as 100 m deep, still at the 200 m level 20 m out, gone by
     // 30 m; Flare+ brighter (as 70 m); Lighthouse as if he were at 20 m. It fades with the thing's dark (g.lightFade)
     if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) {
@@ -3171,7 +3173,14 @@ export class Renderer {
       if (x < -50 || x > this.W + 50 || y < -50 || y > this.H + 50) continue;
       halo(x, y - ppm * 0.2, ppm * 0.5, p.type === 'lure' ? [190, 240, 255] : [90, 140, 255], 0.35 * haze + 0.1);
     }
-    if (g.necklaceOn) { const fade = Math.min(1, (g.glowT || 0) / 8); if (e.inSub) halo(S(g.sub.x), Sy(g.sub.y), ppm * 4.5, [255, 180, 96], 0.16 * fade); else halo(S(e.x), Sy(e.y), ppm * 3.2, [255, 180, 96], 0.3 * fade); }
+    for (const L of g.glows || []) { // (5.17.1) the stick itself: a short amber tube, tilted, swaying as it sinks, in its own soft glow
+      const x = S(L.x), y = Sy(L.y); if (x < -40 || x > this.W + 40 || y < -40 || y > this.H + 40) continue; const fade = Math.min(1, L.t / 8) * (g.lightFade ?? 1);
+      halo(x, y, ppm * 16, [255, 176, 92], 0.07 * fade); halo(x, y, ppm * 9, [255, 180, 96], 0.08 * fade); halo(x, y, ppm * 3, [255, 190, 110], 0.14 * fade); // (5.17.1) the water lit evenly 16 m round, not a bright knot
+      const ln = Math.max(4, ppm * 0.22), rw = Math.max(1.4, ppm * 0.035), ang = L.rot + (L.rest ? 1.45 : Math.sin(g.time * 0.9 + L.ph) * 0.35);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.globalAlpha = 0.35 + 0.65 * fade; ctx.lineCap = 'round';
+      ctx.strokeStyle = '#ffc070'; ctx.lineWidth = rw * 2; ctx.beginPath(); ctx.moveTo(-ln / 2, 0); ctx.lineTo(ln / 2, 0); ctx.stroke();
+      ctx.strokeStyle = '#fff2d8'; ctx.lineWidth = rw * 0.8; ctx.beginPath(); ctx.moveTo(-ln / 2 + rw, 0); ctx.lineTo(ln / 2 - rw * 2, 0); ctx.stroke();
+      ctx.strokeStyle = '#3a3026'; ctx.lineWidth = rw * 2.2; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(ln / 2 - rw * 1.2, 0); ctx.lineTo(ln / 2 + rw * 0.6, 0); ctx.stroke(); ctx.restore(); }
     if (this.boatLight) halo(this.boatLight.x, this.boatLight.y, ppm * 4, [255, 190, 110], 0.25 * this.boatLight.a);
   }
 }
