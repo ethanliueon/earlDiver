@@ -1430,6 +1430,18 @@ export class UI {
       } else html += `<div class="slot tag empty" data-n="${n}">${num}<i class="tg-plus">+</i><div class="info"><b>New diver</b></div></div>`;
     }
     $('slots').innerHTML = html;
+    if (!document.documentElement.style.getPropertyValue('--tagimg')) { // (6.0.14) the dive tags, painted once: stamped aluminium, worn and scratched, a hole with its steel ring
+      const mk = (empty) => { const c = document.createElement('canvas'); c.width = 280; c.height = 380; const x = c.getContext('2d'); let sd = empty ? 99 : 41; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+        x.fillStyle = 'rgba(0,0,0,0.45)'; x.beginPath(); x.roundRect(12, 16, 260, 360, 34); x.fill();
+        const g = x.createLinearGradient(0, 0, 280, 380); g.addColorStop(0, empty ? '#8a8c84' : '#c8ccc4'); g.addColorStop(0.45, empty ? '#6e706a' : '#a2a69e'); g.addColorStop(1, empty ? '#545650' : '#7a7e78');
+        x.fillStyle = g; x.beginPath(); x.roundRect(6, 6, 260, 360, 34); x.fill(); x.save(); x.clip();
+        for (let i = 0; i < 900; i++) { x.strokeStyle = `rgba(${r() < 0.5 ? '255,255,255' : '20,22,20'},${(r() * 0.12).toFixed(3)})`; x.lineWidth = 0.6; const y0 = r() * 380, x0 = r() * 280, l = 6 + r() * 40, a = (r() - 0.5) * 0.4; x.beginPath(); x.moveTo(x0, y0); x.lineTo(x0 + Math.cos(a) * l, y0 + Math.sin(a) * l); x.stroke(); } // brushed and scratched
+        for (let i = 0; i < 14; i++) { x.fillStyle = 'rgba(30,30,26,0.12)'; x.beginPath(); x.ellipse(r() * 280, r() * 380, 4 + r() * 18, 3 + r() * 10, r() * 3, 0, Math.PI * 2); x.fill(); } // dull patches
+        x.strokeStyle = 'rgba(255,255,255,0.35)'; x.lineWidth = 2; x.beginPath(); x.roundRect(14, 14, 244, 344, 28); x.stroke(); x.strokeStyle = 'rgba(0,0,0,0.25)'; x.lineWidth = 2; x.beginPath(); x.roundRect(17, 17, 244, 344, 28); x.stroke(); // its pressed rim
+        x.restore();
+        x.fillStyle = '#2a2c28'; x.beginPath(); x.arc(226, 46, 14, 0, Math.PI * 2); x.fill(); x.strokeStyle = '#d8dad4'; x.lineWidth = 4; x.beginPath(); x.arc(226, 46, 17, 0, Math.PI * 2); x.stroke(); x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 1.5; x.beginPath(); x.arc(226, 46, 19, 0.2, 2); x.stroke(); // the hole and its ring
+        return c.toDataURL('image/png'); }; // with its transparent corners
+      document.documentElement.style.setProperty('--tagimg', `url(${mk(false)})`); document.documentElement.style.setProperty('--tagimg-e', `url(${mk(true)})`); }
     const last = lastSlot();
     $('continue').hidden = !(last && readSlot(last).state === 'ok');
     $('title').classList.remove('gone');

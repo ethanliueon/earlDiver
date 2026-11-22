@@ -1210,3 +1210,16 @@ html body #cave button.primary:not(#_a) { background: linear-gradient(#cbbd98, #
 #cave-chrome { position: fixed; inset: 0; z-index: 9000; pointer-events: none; } #cave-chrome[hidden] { display: none; } html body #cave-chrome .cat-x { pointer-events: auto; } /* (6.0.13) at the screen's corners, as on the other shop screens */
 html body #cave-chrome .cat-wallet { left: calc(12px + env(safe-area-inset-left, 0px)) !important; top: 12px !important; }
 html body #cave-chrome .cat-x { right: calc(12px + env(safe-area-inset-right, 0px)) !important; top: 12px !important; }
+
+/* (6.0.14) the save slots as dive tags, painted (ui.js): stamped aluminium on a cord, the number and record stamped in */
+html body #title :is(.t-select, #slots) .slot.tag:not(#_a):not(#_b):not(#_c):not(#_d) { background: var(--tagimg) center / 100% 100% no-repeat !important; border: 0 !important; border-image: none !important; border-radius: 0 !important; box-shadow: none !important; flex: 0 0 150px; height: 204px; padding: 20px 18px 20px 20px !important; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.45)); background-color: transparent !important; }
+html body #title :is(.t-select, #slots) .slot.tag.empty:not(#_a):not(#_b):not(#_c):not(#_d) { background: var(--tagimg-e) center / 100% 100% no-repeat !important; opacity: 0.9; }
+html body #title :is(.t-select, #slots) .slot.tag.last:not(#_a):not(#_b):not(#_c):not(#_d) { filter: drop-shadow(0 0 2px rgba(239,232,210,0.9)) drop-shadow(0 6px 10px rgba(0,0,0,0.45)); }
+html body #title .slot.tag :is(.tg-n, .info b, .info span, dt, dd, .tg-go, .tg-plus) { color: rgba(30,32,28,0.88) !important; text-shadow: 0 1px 0 rgba(255,255,255,0.45), 0 -1px 0 rgba(0,0,0,0.2) !important; }
+/* (6.0.14) the welcome as a note on the journal's old paper, in ink */
+html body #confirm.modal .cf-plate:not(#_a):not(#_b) { background: url("../assets/ui/book/page_right.jpg") center / cover !important; border: 0 !important; border-image: none !important; border-radius: 3px !important; box-shadow: 0 8px 24px rgba(0,0,0,0.6), inset 0 0 40px rgba(110,76,30,0.3) !important; transform: rotate(-0.6deg); }
+html body #confirm.modal .cf-plate :is(h3, h2, p, .cf-t, .cf-msg) { color: #3a2e1e !important; text-shadow: none !important; }
+html body #title .slot.tag .tg-plus { display: none !important; } /* (6.0.14) a blank tag needs no plus */
+html body #title .slot.tag .tg-depth { display: none !important; } /* (6.0.14) the record is stamped in words; no bar */
+html body #title .slot.tag .tg-go:not(#_a):not(#_b) { position: static !important; margin-top: auto; align-self: flex-start; background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; font: 700 12px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.14em; text-transform: uppercase; transform: none !important; }
+html body #title .slot.tag .tg-rows { gap: 8px !important; } html body #title .slot.tag .tg-rows :is(dt, dd) { white-space: nowrap; font-size: 11px !important; }
