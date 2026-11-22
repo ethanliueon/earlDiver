@@ -229,19 +229,57 @@ const RK = { common: 0, uncommon: 1, rare: 2, exotic: 3, legendary: 4 };
 function hash(str) { let h = 2166136261; for (const ch of String(str)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
 const LOOK = { wet: ['#1a1d21', '#3c434b', '#2d3339', '#2f7480', '#0f1012'], skin: ['#10223a', '#2a4a6e', '#163050', '#3a5a80', '#0b1626'], dry: ['#1a1b1d', '#34363a', '#b8501e', '#c86a30', '#121314'],
   chain: ['#1a1c1f', '#4a4e54', '#2a2d31', '#3a3e44', '#121315'], rebreather: ['#16191a', '#2c3236', '#2e3a2a', '#42503a', '#0e1011'], hard: ['#8c6c36', '#b39258', '#6a5028', '#4e3a1a', '#3a3a3a'] };
+// (5.16.5) the legendary suits, each its own hide rather than a recoloured suit: drawn last, over the figure only
+const LEG_PAL = {
+  hagmantle: ['#6a544c', '#a88a7c', '#4e3c36', '#c8b49a', '#2a1e1a'], // slick, pale brown-grey, a little pink
+  abyssalhide: ['#0e1014', '#2a3036', '#1a1e24', '#6a7c84', '#08090b'], // ink-black
+  oldskin: ['#5a4a34', '#b8a27a', '#3a2e20', '#7a6a4a', '#2a2a26'], // horn and old bone
+};
+const onFig = (f) => { x.save(); x.globalCompositeOperation = 'source-atop'; f(); x.restore(); };
+const flank = (n, x0, y0, x1, y1, f) => { for (let i = 0; i < n; i++) { const u = i / (n - 1); f(x0 + (x1 - x0) * u, y0 + (y1 - y0) * u, i); } };
+const LEG_SKIN = {
+  // the hagfish: a row of slime pores down each flank and leg, and the hide wet with its mucus
+  hagmantle: () => onFig(() => {
+    x.filter = 'blur(5px)'; x.strokeStyle = 'rgba(226,210,186,0.26)'; x.lineWidth = 12;
+    for (const [a, b] of [[[336, 220], [350, 500]], [[420, 560], [430, 790]], [[300, 360], [290, 470]]]) { x.beginPath(); x.moveTo(a[0], a[1]); x.bezierCurveTo(a[0] + 14, (a[1] * 2 + b[1]) / 3, b[0] - 14, (a[1] + b[1] * 2) / 3, b[0], b[1]); x.stroke(); }
+    x.filter = 'none';
+    x.filter = 'blur(3px)'; x.fillStyle = 'rgba(240,228,206,0.22)'; // the wet catching the light: soft pools of shine, not lines
+    for (const [ex, ey, rx, ry] of [[344, 280, 9, 46], [352, 410, 7, 34], [426, 630, 6, 40], [296, 410, 5, 30], [468, 340, 5, 34]]) { x.beginPath(); x.ellipse(ex, ey, rx, ry, 0.05, 0, TAU); x.fill(); }
+    x.filter = 'none';
+    x.fillStyle = 'rgba(236,224,200,0.35)'; for (const [dx, dy] of [[352, 470], [346, 520], [436, 790], [470, 410]]) { x.beginPath(); x.ellipse(dx, dy, 2.2, 4.5, 0, 0, TAU); x.fill(); } // drops gathering
+    const pore = (px, py) => { x.fillStyle = 'rgba(30,18,14,0.45)'; x.beginPath(); x.ellipse(px, py, 2.2, 1.5, 0, 0, TAU); x.fill(); x.fillStyle = 'rgba(226,210,186,0.3)'; x.beginPath(); x.ellipse(px, py + 2.2, 2.6, 1, 0, 0, TAU); x.fill(); };
+    flank(16, 446, 268, 440, 492, pore); flank(14, 436, 560, 432, 780, pore);
+  }),
+  // the deep's own skin: rows of photophores, as the fish down there wear, each a pale pinpoint in a soft halo
+  abyssalhide: () => onFig(() => {
+    const ph = (px, py, i) => { const r = i % 3 === 0 ? 3 : 2.2, g = x.createRadialGradient(px, py, 0, px, py, r * 4); g.addColorStop(0, 'rgba(214,222,206,0.95)'); g.addColorStop(0.3, 'rgba(150,170,164,0.4)'); g.addColorStop(1, 'rgba(150,170,164,0)'); x.fillStyle = g; x.beginPath(); x.arc(px, py, r * 4, 0, TAU); x.fill(); };
+    flank(12, 458, 270, 452, 500, ph); flank(10, 446, 560, 440, 790, ph); flank(9, 318, 262, 326, 470, ph); flank(7, 488, 250, 486, 460, ph); flank(6, 340, 548, 344, 760, ph);
+    x.strokeStyle = 'rgba(120,130,140,0.1)'; x.lineWidth = 14; x.filter = 'blur(6px)'; x.beginPath(); x.moveTo(330, 210); x.bezierCurveTo(320, 320, 340, 420, 344, 520); x.stroke(); x.filter = 'none'; // a dull sheen
+  }),
+  // what the Old One shed: overlapping scales of horn over the plates, barnacles grown in the joints
+  oldskin: () => onFig(() => {
+    let sd = 991; const rr = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    for (let yy = 262; yy < 830; yy += 11) for (let xx = 270 + ((yy / 11) % 2) * 8; xx < 530; xx += 16) { x.strokeStyle = 'rgba(30,22,12,0.32)'; x.lineWidth = 1.4; x.beginPath(); x.arc(xx, yy, 8, 0.15 * Math.PI, 0.85 * Math.PI); x.stroke(); x.strokeStyle = 'rgba(220,200,160,0.14)'; x.lineWidth = 1; x.beginPath(); x.arc(xx, yy - 2, 8, 0.25 * Math.PI, 0.75 * Math.PI); x.stroke(); }
+    const barn = (bx, by, r) => { x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(bx + 1, by + 2, r * 1.1, r * 0.8, 0, 0, TAU); x.fill(); const g = x.createRadialGradient(bx - r * 0.3, by - r * 0.3, 0, bx, by, r); g.addColorStop(0, '#d8ccb0'); g.addColorStop(1, '#7a6c54'); x.fillStyle = g; x.beginPath(); x.ellipse(bx, by, r, r * 0.75, 0, 0, TAU); x.fill(); x.fillStyle = '#2a2218'; x.beginPath(); x.ellipse(bx, by - r * 0.1, r * 0.32, r * 0.2, 0, 0, TAU); x.fill(); };
+    for (const [cx, cy, n] of [[330, 300, 5], [470, 330, 4], [440, 600, 4], [350, 690, 3], [300, 470, 3]]) for (let i = 0; i < n; i++) barn(cx + (rr() - 0.5) * 30, cy + (rr() - 0.5) * 26, 3 + rr() * 4);
+  }),
+};
 function spec(def) {
   const arch = (def && (def.arch || (typeof def.look === 'string' ? def.look : null))) || 'wet';
   let P = Array.isArray(def && def.pal) ? def.pal : LOOK[arch] || LOOK.wet; const k = RK[(def && def.rarity) || 'common'] || 0, h = hash((def && def.id) || arch);
   // (5.16.3) an exotic suit in its expedition's make, as the other exotics: Victorian canvas and brass, interwar black
   // and oxblood rubber with dark brass, post-war steel or neoprene in the expedition's own paint with stainless fittings
   const E = eraOf(def);
+  if (def && LEG_PAL[def.id]) P = LEG_PAL[def.id]; // (5.16.5) the three legendary suits have their own hides
   if (E) P = E.era === 'victorian' ? ['#7a6a4a', '#c8b890', '#5a4a30', '#b08a4e'] : E.era === 'interwar' ? ['#3a2a26', '#6a5a50', '#2a1e1a', '#8a6a40'] : [E.paint, '#c8ccc8', '#3a3c3a', '#b0b4b4'];
   const v = (n, amp) => (((h >> n) & 255) / 255 - 0.5) * 2 * amp; // a small, fixed turn per suit
   const acc = quiet(P[3]);
   if (arch === 'hard') {
     const b = P[0], lt = P[1];
-    return { kind: 'hard', k, id: def && def.id, steel: { deep: mix(b, '#000', 0.55), dark: mix(b, '#000', 0.3), mid: mix(b, '#000', 0.08), body: b, lite: mix(b, lt, 0.7), pale: mix(lt, '#fff', 0.15) },
+    const H = { kind: 'hard', k, id: def && def.id, steel: { deep: mix(b, '#000', 0.55), dark: mix(b, '#000', 0.3), mid: mix(b, '#000', 0.08), body: b, lite: mix(b, lt, 0.7), pale: mix(lt, '#fff', 0.15) },
       brass: { dark: mix(P[3], '#000', 0.5), mid: mix(P[3], '#000', 0.15), lite: mix(P[3], '#fff', 0.2) }, glow: k >= 4 ? sparks(acc) : null };
+    if (def && LEG_SKIN[def.id]) { const sp = H.glow; H.glow = (X) => { LEG_SKIN[def.id](X); sp && sp(X); }; }
+    return H;
   }
   const plainWet = arch === 'wet' && !(def && def.pal) && !E, base = plainWet ? '#272b2d' : P[0]; // the plain wetsuit keeps the approved sample's neoprene
   const S = { kind: arch, k, base, lite: plainWet ? '#4a5054' : P[1], dark: plainWet ? '#121415' : P[4] || mix(base, '#000', 0.4), far: mix(base, '#000', 0.22), far2: mix(base, '#000', 0.28),
@@ -253,8 +291,9 @@ function spec(def) {
   if (arch === 'rebreather') S.chest = counterlung(P[2], acc);
   // the rarity's work, in the accent: a piping along the panel seams; then the legs' and arms' seams; a maker's patch; glowing seams
   if (k >= 1) S.trim = (pts, clip, lvl) => { if (lvl > (k >= 2 ? 2 : 1)) return; x.save(); clip(); x.clip(); x.beginPath(); x.moveTo(...pts[0]); x.bezierCurveTo(...pts[1], ...pts[2], ...pts[3]); x.strokeStyle = acc; x.lineWidth = k >= 2 ? 3 : 2.2; x.stroke(); x.restore(); };
-  if (k >= 3) { const prev = S.chest; S.chest = (X, clip) => { prev && prev(X, clip); patch(X, acc); }; }
-  if (k >= 4) S.glow = (X) => { glowSeams(X, acc); sparks(acc)(X); };
+  if (k >= 3 && !(def && LEG_SKIN[def.id])) { const prev = S.chest; S.chest = (X, clip) => { prev && prev(X, clip); patch(X, acc); }; }
+  if (k >= 4) S.glow = (X) => { def && LEG_SKIN[def.id] && LEG_SKIN[def.id](X); glowSeams(X, acc); sparks(acc)(X); };
+  if (def && LEG_SKIN[def.id]) S.tab = false; // no maker's tab or patch on a hide nobody made
   return S;
 }
 // a drysuit's boots, moulded on (both legs end in a foot); a brass zip across the chest; latex seals at the wrists

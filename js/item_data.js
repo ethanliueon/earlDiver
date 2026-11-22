@@ -379,7 +379,7 @@ export const LEGENDARIES = [
     line: 'Supple, dark and very old. Full, it weighs nothing at all.' },
   { id: 'oldskin', kind: 'suit', arch: 'hard', name: 'Skin of the Old One', glow: '#d8a868',
     line: 'Shed in the cave in the west wall. The pressure of the deep slides off it like water.' },
-  { id: 'abyssalhide', kind: 'suit', arch: 'rebreather', name: 'Abyssal Hide', glow: '#7a9aff',
+  { id: 'abyssalhide', kind: 'suit', arch: 'rebreather', name: 'Abyssal Hide', glow: '#8a9ca0',
     line: 'Black as the bottom of the trench, and soft as velvet. It breathes with you.' },
   { id: 'hagmantle', kind: 'suit', arch: 'skin', name: 'Hagfish Mantle', glow: '#d8c8a0',
     line: 'Slick, and it never quite dries. The water barely touches you.' },
