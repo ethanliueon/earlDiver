@@ -214,19 +214,21 @@ function parseSize(txt, vis) {
 // least 1.5 m (length in metres; their price and rarity are in specimens.js, their journal pages give
 // the real size). Every other animal keeps a realistic size.
 export const GIANT_FORMS = {
-  100: 1.8,  // humpback anglerfish (in life about 18 cm)
-  101: 1.5,  // common fangtooth (about 16 cm)
-  104: 1.5,  // barreleye (about 15 cm)
-  105: 2.2,  // pelican gulper eel (about 75 cm)
-  107: 1.5,  // blobfish (about 30 cm)
-  108: 2.0,  // coelacanth (up to about 2 m: its real size)
+  // (6.2.0) the legends larger, each by its build (long ones near the 4 m limit, round ones smaller: their bulk grows fast)
+  100: 2.6,  // humpback anglerfish (in life about 18 cm)
+  101: 2.2,  // common fangtooth (about 16 cm)
+  104: 2.0,  // barreleye (about 15 cm)
+  105: 3.8,  // pelican gulper eel (about 75 cm)
+  107: 2.0,  // blobfish (about 30 cm)
+  108: 2.8,  // coelacanth (up to about 2 m in life)
+  54: 3.9,   // the oarfish: under 4 m, so it can be caught (6.2.0)
 };
 
 // (3.0.42) the Legendaries go by a title ("the Fangtooth"); their species is still shown in their details
 export const TITLES = { 100: 'the Anglerfish', 101: 'the Fangtooth', 104: 'the Barreleye', 105: 'the Gulper Eel', 107: 'the Blobfish', 108: 'the Coelacanth', 54: 'the Oarfish' };
 // (3.0.42) Legendary versions of eight deep animals: the ordinary kind stays; this one is a giant of it, met rarely,
 // with its own id (2000 + the ordinary one's), its title, and the species shown in its details
-export const LEGEND_OF = { 102: ['the Viperfish', 1.6], 103: ['the Dragonfish', 1.8], 106: ['the Swallower', 1.4], 150: ['the Vampire Squid', 1.4], 146: ['the Dumbo', 1.5], 162: ['the Isopod', 1.3], 110: ['the Tripod', 1.6], 109: ['the Grenadier', 2.4] };
+export const LEGEND_OF = { 102: ['the Viperfish', 2.6], 103: ['the Dragonfish', 3.0], 106: ['the Swallower', 2.4], 150: ['the Vampire Squid', 2.2], 146: ['the Dumbo', 2.2], 162: ['the Isopod', 1.8], 110: ['the Tripod', 2.6], 109: ['the Grenadier', 3.2] }; // (6.2.0) larger
 export const LEGEND_IDS = Object.keys(LEGEND_OF).map((id) => 2000 + +id);
 // (3.0.37) undocumented as well: the abyssal sleeper shark, the deep's own monster
 const UNDOC_ALSO = new Set([188]);

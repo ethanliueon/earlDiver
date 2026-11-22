@@ -162,12 +162,13 @@ function box(x, X, Y, w, h, d, cols) { // front face (X..X+w, Y..Y+h), the side 
   x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 4; x.beginPath(); x.roundRect(X, Y, w, h, 10); x.stroke();
   x.strokeStyle = 'rgba(255,255,255,0.22)'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(X + 8, Y + 2); x.lineTo(X + w - 8, Y + 2); x.stroke();
 }
-function port(x, cx, cy, r, ring, glass, dome) { // a round lens port seen nearly face-on, a little to the left
-  x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(cx + 4, cy + 5, r * 0.88 + 8, r + 8, 0, 0, TAU); x.fill();
-  x.fillStyle = lin(x, cx - r, cy - r, cx + r, cy + r, [[0, mix(ring, '#fff', 0.35)], [0.5, ring], [1, mix(ring, '#000', 0.5)]]); x.beginPath(); x.ellipse(cx, cy, r * 0.88 + 7, r + 7, 0, 0, TAU); x.fill();
-  x.fillStyle = lin(x, cx - r, cy - r, cx + r, cy + r, [[0, glass[0]], [0.6, glass[1]], [1, '#030405']]); x.beginPath(); x.ellipse(cx, cy, r * 0.88, r, 0, 0, TAU); x.fill();
-  x.fillStyle = 'rgba(8,10,12,0.9)'; x.beginPath(); x.ellipse(cx + 2, cy + 2, r * 0.4, r * 0.46, 0, 0, TAU); x.fill(); // the lens within
-  x.fillStyle = `rgba(230,236,232,${dome ? 0.32 : 0.22})`; x.beginPath(); x.ellipse(cx - r * 0.3, cy - r * 0.38, r * 0.3, r * 0.14, -0.6, 0, TAU); x.fill();
+function port(x, cx, cy, r, ring, glass, dome, sq = 0.88) { // a round lens port; (6.2.0) sq: how round it looks (0.88 nearly face-on, ~0.3 seen edge-on at a tube's end)
+  const k = sq / 0.88;
+  x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(cx + 4, cy + 5, r * sq + 8 * k, r + 8, 0, 0, TAU); x.fill();
+  x.fillStyle = lin(x, cx - r, cy - r, cx + r, cy + r, [[0, mix(ring, '#fff', 0.35)], [0.5, ring], [1, mix(ring, '#000', 0.5)]]); x.beginPath(); x.ellipse(cx, cy, r * sq + 7 * k, r + 7, 0, 0, TAU); x.fill();
+  x.fillStyle = lin(x, cx - r * sq, cy - r, cx + r * sq, cy + r, [[0, glass[0]], [0.6, glass[1]], [1, '#030405']]); x.beginPath(); x.ellipse(cx, cy, r * sq, r, 0, 0, TAU); x.fill();
+  x.fillStyle = 'rgba(8,10,12,0.9)'; x.beginPath(); x.ellipse(cx + 2 * k, cy + 2, r * 0.4 * k, r * 0.46, 0, 0, TAU); x.fill(); // the lens within
+  x.fillStyle = `rgba(230,236,232,${dome ? 0.32 : 0.22})`; x.beginPath(); x.ellipse(cx - r * 0.3 * k, cy - r * 0.38, r * 0.3 * k, r * 0.14, -0.6 * k, 0, TAU); x.fill(); // the glint on the glass
 }
 function strobeArm(x, sx, sy, ex, ey, metal, k) {
   x.lineCap = 'round'; x.strokeStyle = mix(metal, '#000', 0.4); x.lineWidth = 16; x.beginPath(); x.moveTo(sx, sy); x.lineTo((sx + ex) / 2, (sy + ey) / 2 - 30); x.lineTo(ex, ey); x.stroke();
@@ -210,7 +211,7 @@ export function drawCam3(ctx, w, h, def) {
       const bw = 230 * var1, bh = 190 * var2, X = W / 2 + 40, Y = H / 2 - bh / 2;
       const sl = 210 * var1, sr = 56 * var2; x.fillStyle = lin(x, 0, H / 2 - sr, 0, H / 2 + sr, [[0, '#6a6e70'], [0.35, '#3a3c3e'], [1, '#121314']]); x.beginPath(); x.roundRect(X - sl, H / 2 - sr, sl + 20, sr * 2, 12); x.fill();
       for (let k2 = 1; k2 < 5; k2++) { x.fillStyle = 'rgba(0,0,0,0.4)'; x.fillRect(X - sl + k2 * sl / 5, H / 2 - sr, 5, sr * 2); x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(X - sl + k2 * sl / 5 - 2, H / 2 - sr, 2, sr * 2); }
-      port(x, X - sl, H / 2, sr * 0.9, metal, ['#2e3a3c', '#0c1214'], false);
+      port(x, X - sl, H / 2, sr * 0.9, metal, ['#2e3a3c', '#0c1214'], false, 0.34); // (6.2.0) the snout's port seen from the side: an oval
       body(X, Y, bw, bh, 22, clear ? rgba(C.body, 0.9) : C.body); x.fillStyle = 'rgba(20,22,24,0.6)'; x.beginPath(); x.roundRect(X + 24, Y + 26, bw - 48, bh - 52, 12); x.fill();
       x.fillStyle = lin(x, 0, Y - 50, 0, Y, [[0, '#4a4c4e'], [1, '#1a1b1c']]); x.beginPath(); x.roundRect(X + bw * 0.3, Y - 46, 50, 50, 8); x.fill(); halo(x, X + bw * 0.3 + 25, Y - 40, 30, '#f0ead0', 0.5); x.fillStyle = '#f4efd8'; x.beginPath(); x.arc(X + bw * 0.3 + 25, Y - 40, 10, 0, TAU); x.fill();
     } else { // low light: a long matte tube of a housing, its big flat port at the front end, handles on top, an end cap
@@ -220,7 +221,7 @@ export function drawCam3(ctx, w, h, def) {
       for (const rx2 of [X + L * 0.3, X + L * 0.62]) { x.fillStyle = 'rgba(0,0,0,0.45)'; x.fillRect(rx2, cy - R, 8, R * 2); x.fillStyle = 'rgba(255,255,255,0.08)'; x.fillRect(rx2 - 2, cy - R, 2, R * 2); }
       for (const hx of [X + L * 0.25, X + L * 0.6]) { x.strokeStyle = '#1a1b1c'; x.lineWidth = 14; x.lineCap = 'round'; x.beginPath(); x.moveTo(hx, cy - R); x.quadraticCurveTo(hx + 50, cy - R - 70, hx + 100, cy - R); x.stroke(); }
       x.fillStyle = lin(x, 0, cy - R, 0, cy + R, [[0, '#3a3c3e'], [1, '#0e0f10']]); x.beginPath(); x.roundRect(X + L - 10, cy - R + 10, 40, R * 2 - 20, 10); x.fill();
-      x.fillStyle = mix(C.body, '#000', 0.3); x.beginPath(); x.ellipse(X, cy, R * 0.32, R, 0, 0, TAU); x.fill(); port(x, X - 4, cy, R * 0.86, E ? E.metal : '#2a2c2e', ['#1c2a2a', '#08100f'], false);
+      x.fillStyle = mix(C.body, '#000', 0.3); x.beginPath(); x.ellipse(X, cy, R * 0.32, R, 0, 0, TAU); x.fill(); port(x, X - 4, cy, R * 0.86, E ? E.metal : '#2a2c2e', ['#1c2a2a', '#08100f'], false, 0.32); /* (6.2.0) the tube's end port, edge-on */
       if (E) { if (E.era !== 'postwar') { const pts = []; for (let a = 0; a < TAU - 0.01; a += TAU / 12) pts.push([X - 4 + Math.cos(a) * R * 0.33, cy + Math.sin(a) * R * 0.98, 1]); rivetRow(x, pts, 4, E.metal); }
         eraMark(x, E, X + L * 0.46, cy + R * 0.45, 24, 0, C.body); }
     }

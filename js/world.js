@@ -365,7 +365,7 @@ export function generateWorld(seed) {
       sp = reef.length ? rng.pick(reef) : rng.pick(cands);
     } else sp = rng.pick(cands);
     if (W.rockAt(x, d - 0.3)) continue;
-    const scale = rng.range(0.6, 1.15);
+    const scale = rng.range(0.85, 1.15); // (6.2.0) within about 15 %
     W.statics.push({ sp, x, y: d, scale, phase: rng() * 6, flip: rng() < 0.5 ? -1 : 1 });
   }
   // Tube worm colonies around vents

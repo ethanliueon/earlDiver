@@ -214,7 +214,11 @@ export function tagPrice(id) { return TAG[id] ? rarityPrice(SPECIES_BY_ID[id]) *
 // (3.7.1) the price follows the animal's weight: weight goes with the cube of its length, and buyers pay a
 // little less than proportionally for the heavy ones (a fish twice as heavy is worth about 1.6 times as much).
 // So a small one of its kind (0.6 of the usual length) fetches about 40 %, a big one (1.35) about 175 %.
-export const sizeMult = (sp, len = sp.len) => Math.min(1.9, Math.max(0.35, Math.pow(Math.max(0.01, len) / Math.max(0.01, sp.len), 3 * 0.66)));
+// (6.2.0) the species' price is the average: a bigger one pays up to 10 % more, a smaller up to 10 % less
+export const sizeMult = (sp, len = sp.len) => Math.min(1.1, Math.max(0.9, 1 + (Math.max(0.01, len) / Math.max(0.01, sp.len) - 1) * 0.67));
+// (6.2.0) each animal's own length: within about 15 % of its species' (most near the middle), and one whose species is
+// under the 4 m limit never comes out over it (so it never turns photo-only by chance)
+export const spawnLen = (sp, r = Math.random) => { const l = sp.len * (0.85 + (r() + r()) / 2 * 0.3); return sp.len < 4 ? Math.min(l, 3.99) : l; };
 export function liveValue(sp, len = sp.len) {
   return rarityPrice(sp) * sizeMult(sp, len);
 }

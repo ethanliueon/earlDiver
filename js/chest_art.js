@@ -191,8 +191,20 @@ export function drawChest(ctx, look, w, h, lid = 0, light = null) {
     face(L(x1, LH, -D), L(x1, LH, 0), L(x1, 0, -D), D, LH, 'lidS', 0.4);
     const topVis = (() => { const A = L(x0, LH, 0), B = L(x1, LH, 0), C = L(x0, LH, -D); return (B[0] - A[0]) * (C[1] - A[1]) - (B[1] - A[1]) * (C[0] - A[0]); })();
     if (topVis > 0) face(L(x0, LH, 0), L(x1, LH, 0), L(x0, LH, -D), BW, D, 'top', -0.04 + lid * 0.3);
-    else { face(L(x0, 0, 0), L(x1, 0, 0), L(x0, 0, -D), BW, D, 'under', 0.45);
-      if (light) { ctx.save(); const [p0, p1, p2] = [L(x0, 0, 0), L(x1, 0, 0), L(x1, 0, -D)], p3 = L(x0, 0, -D); ctx.beginPath(); ctx.moveTo(...p0); ctx.lineTo(...p1); ctx.lineTo(...p2); ctx.lineTo(...p3); ctx.closePath(); ctx.fillStyle = light.replace('A', (0.08 * lid).toFixed(3)); ctx.fill(); ctx.restore(); } }
+    else { face(L(x0, 0, 0), L(x1, 0, 0), L(x0, 0, -D), BW, D, 'under', 0.55);
+      // (6.2.0) the inside of the lid is worked, not blank: two battens across it, its hinges, and it is in shadow, dimmest at
+      // its free edge; only the edge by the hinge picks up a little of the light from the box
+      const quad = (pts) => { ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(...p) : ctx.moveTo(...p))); ctx.closePath(); };
+      ctx.save(); quad([L(x0, 0, 0), L(x1, 0, 0), L(x1, 0, -D), L(x0, 0, -D)]); ctx.clip();
+      const [h0x, h0y] = L(0, 0, 0), [f0x, f0y] = L(0, 0, -D), sg = ctx.createLinearGradient(h0x, h0y, f0x, f0y);
+      sg.addColorStop(0, light ? light.replace('A', (0.1 * lid).toFixed(3)) : 'rgba(0,0,0,0)'); sg.addColorStop(0.35, 'rgba(6,5,3,0.18)'); sg.addColorStop(1, 'rgba(6,5,3,0.55)');
+      ctx.fillStyle = sg; ctx.fillRect(Math.min(h0x, f0x) - s, Math.min(h0y, f0y) - s, s * 3, s * 3);
+      for (const dz of [-D * 0.22, -D * 0.78]) { // the battens: a board across the lid, its near edge catching what light there is
+        const w = Math.min(0.06, D * 0.12); quad([L(x0 + 0.03, 0, dz - w), L(x1 - 0.03, 0, dz - w), L(x1 - 0.03, 0, dz + w), L(x0 + 0.03, 0, dz + w)]);
+        ctx.fillStyle = 'rgba(20,14,8,0.42)'; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = Math.max(1, s * 0.004); ctx.stroke();
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; for (const x of [x0 + 0.07, x1 - 0.07]) { const [nx, ny] = L(x, 0, dz); ctx.beginPath(); ctx.arc(nx, ny, Math.max(1, s * 0.006), 0, TAU); ctx.fill(); } }
+      ctx.fillStyle = 'rgba(30,26,20,0.9)'; for (const x of [x0 + BW * 0.18, x1 - BW * 0.18]) { const hw = BW * 0.06; quad([L(x - hw, 0, 0), L(x + hw, 0, 0), L(x + hw, 0, -D * 0.16), L(x - hw, 0, -D * 0.16)]); ctx.fill(); ctx.strokeStyle = 'rgba(200,180,140,0.18)'; ctx.stroke(); } // the hinge leaves
+      ctx.restore(); }
     if (ca <= -0.2) face(L(x0, LH, -D), L(x1, LH, -D), L(x0, 0, -D), BW, LH, 'lidF', 0.5);
   };
   const drawBody = () => {
@@ -209,8 +221,8 @@ export function drawChest(ctx, look, w, h, lid = 0, light = null) {
     if (look === 'crate' && lid > 0.1) { ctx.save(); ctx.strokeStyle = 'rgba(200,176,112,0.85)'; ctx.lineWidth = Math.max(1, s * 0.004); const rr = rng(99); for (let i = 0; i < 40; i++) { const [px, py] = P(x0 + 0.04 + rr() * (BW - 0.08), BH + 0.005, 0.03 + rr() * (D - 0.06)), an = rr() * TAU, l = s * (0.02 + rr() * 0.04); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(an) * l, py + Math.sin(an) * l * 0.5); ctx.stroke(); } ctx.restore(); } // straw spilling over
   };
   const beam = () => { // the light from inside: a soft column, never a beam
-    if (!light || lid < 0.05) return; const [mx, my] = P(0, BH, D / 2), g = ctx.createRadialGradient(mx, my, 0, mx, my - s * 0.2, s * 0.7 * lid);
-    g.addColorStop(0, light.replace('A', (0.3 * lid).toFixed(3))); g.addColorStop(1, light.replace('A', '0')); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(mx - s, my - s * 1.2, s * 2, s * 1.4); ctx.restore();
+    if (!light || lid < 0.05) return; const [mx, my] = P(0, BH, D / 2), g = ctx.createRadialGradient(mx, my, 0, mx, my - s * 0.1, s * 0.45 * lid);
+    g.addColorStop(0, light.replace('A', (0.16 * lid).toFixed(3))); g.addColorStop(1, light.replace('A', '0')); /* (6.2.0) softer: the lid must stay in shadow */ ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(mx - s, my - s * 1.2, s * 2, s * 1.4); ctx.restore();
   };
   if (a < 0.12) { drawBody(); drawLid(); } else { drawLid(); drawBody(); drawMouth(); beam(); }
 }

@@ -7,7 +7,7 @@
 import { clamp, dist } from './util.js';
 import { TRAPS, TRAP_ORDER } from './economy.js';
 import { SPECIES } from './species.js';
-import { canTakeLive } from './specimens.js';
+import { canTakeLive, spawnLen } from './specimens.js';
 import { rollVariant, variantMult, canBeRare } from './variants.js';
 import { bagSlots, bagUsed } from './capture.js';
 import { BOAT } from './world.js';
@@ -80,7 +80,7 @@ export function setTrap(g, type, depth) {
 // a fish drawn to a trap: an animal near it turns toward a funnel and swims in. If the trap is out of
 // sight the catch simply arrives; in sight, a real fish is sent (or one already near is turned).
 function lure(g, t, sp, cam) {
-  const spec = { id: sp.id, len: sp.len * (Math.min(0.6 + Math.random() * 0.55, 0.6 + Math.random() * 0.55) + (Math.random() < 0.08 ? 0.1 + Math.random() * 0.1 : 0)), cond: 0.92 + Math.random() * 0.06, from: t.depth, t: g.time };
+  const spec = { id: sp.id, len: spawnLen(sp), /* (6.2.0) */ cond: 0.92 + Math.random() * 0.06, from: t.depth, t: g.time };
   if (g.fauna.caught && g.fauna.caught.has(sp.id) && canBeRare(sp)) {
     const v = rollVariant(Math.random, t.depth, g.fauna.entityNear);
     if (v) { spec.variant = v; spec.mult = variantMult(v); if (v === 'giant') spec.len = Math.min(spec.len * 1.7, TRAPS[t.type].maxLen); }

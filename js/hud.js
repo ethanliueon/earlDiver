@@ -1089,13 +1089,14 @@ e.inSub ? [
       const a = 1 - calm * 0.6;
       // (6.0.6) one eye, the painted picture (eyePicture), with its slit and lids laid on live: quiet and dim while the
       // thing is far, warmer as it comes; the slow heavy blink, and the slit narrowing to a thread when it is close
-      // (6.1.11) it cannot be missed: when the mark lands, a large eye opens slowly at the top centre, under the message
+      // (6.1.11) it cannot be missed: when the mark lands, a large eye opens slowly (6.2.0: under the money), and holds
       // line, and holds; then it draws back to a smaller narrowed slit that stays while he is marked, pulsing faintly as
       // the thing comes nearer, and the lids snap wide when it is close
       if (!this.wasMarked) { this.wasMarked = true; this.markT0 = g.time; }
       const mt = g.time - this.markT0, big = mt < 4.6 ? 1 : clamp(1 - (mt - 4.6) / 1.4, 0, 1), ease = (q) => q * q * (3 - 2 * q);
-      const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = (44 + 60 * ease(big)) * s, sc = ew / E.ew;
-      const msgB = 92 / kxE, ex = W / 2, ey = msgB + E.eh * sc * 0.95;
+      // (6.2.0) back under the money, as in 6.0.7, but the larger, thicker eye: it opens at its largest, then settles
+      const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = (52 + 20 * ease(big)) * s, sc = ew / E.ew, tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
+      const ex = (this.moneyTextX != null ? this.moneyTextX : 60 * s) + ew * 0.95, ey = (this.moneyRowBottom != null ? this.moneyRowBottom : tlB) + E.eh * sc * 1.15 + 6 * s;
       const close = near > 0.82, pulse = 0.5 + 0.5 * Math.sin(g.time * (2 + 5 * near));
       const per = 9 - 3 * near, bt = g.time % per, blink = !close && mt > 6 && bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0;
       const opening = clamp(mt / 1.3, 0, 1), rest = close ? 1 : 0.24 + 0.4 * near, open = Math.max(0.05, (1 - blink) * ease(opening) * (big * 0.92 + (1 - big) * rest));

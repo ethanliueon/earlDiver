@@ -7,7 +7,7 @@
 import { rollVariant, canBeRare } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
-import { rarityOf } from './specimens.js';
+import { rarityOf, spawnLen } from './specimens.js';
 import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
 // (5.16.0) the deep's ambush hunters do not swim side to side: they hang upright in the water and drift slowly up and
 // down near where they live. [which way the body points: 1 head up (anglers, viperfish), -1 mantle up and arms down (the
@@ -404,8 +404,7 @@ export class Fauna {
 
   makeFish(sp, x, y, dir, gid, leader) {
     const rng = this.rng;
-    const sz = Math.min(rng.range(0.6, 1.15), rng.range(0.6, 1.15)) + (rng.range(0, 1) < 0.08 ? rng.range(0.1, 0.2) : 0); // (3.7.1) sizes from 0.6 to 1.35 of the usual: most a bit under, now and then a big one
-    const len = sp.len * sz, hab = sp.v.hab;
+    const len = spawnLen(sp, () => rng.range(0, 1)), sz = len / sp.len, hab = sp.v.hab; // (6.2.0) within about 15 % of its species, never over 4 m if it is under
     // cruising at roughly one body length a second (bounded), much slower for drifters
     let cruise = clamp(len * 0.8, 0.3, 1.6); // (5.7.3) back to version 4's
     if (hab === 'drift' || hab === 'drift-low') cruise = 0.12;
@@ -430,7 +429,7 @@ export class Fauna {
       const v = rollVariant(rng, y, this.entityNear, this.rareMult || 1);
       if (v) {
         c.variant = v;
-        if (v === 'giant') { const k = rng.range(1.6, 2.0); c.len *= k; c.flee *= 0.75; c.cruise = c.speed = Math.min(c.cruise * 1.2, 2); }
+        if (v === 'giant') { const k = rng.range(1.6, 2.0); c.len *= k; if (sp.len < 4) c.len = Math.min(c.len, 3.99); /* (6.2.0) a giant of a catchable kind stays catchable */ c.flee *= 0.75; c.cruise = c.speed = Math.min(c.cruise * 1.2, 2); }
       }
     }
     return c;

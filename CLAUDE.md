@@ -53,6 +53,18 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 
 ## How to work
 
+- **The game as it is (6.2) is the standard.** What is in the game now is the owner's taste made real: the suits'
+  orientation and 3D, the shop's layout, the close buttons (easy to find beats quiet), the HUD. Build on it; change it
+  only where asked or where it clearly fails the philosophy, and say why.
+- **Think holistically, have opinions.** Do not read the philosophy word by word or play the owner's words back. Ask
+  what the change does to the whole game (the economy, the gear ladder, the fear, what a player feels), push back with
+  reasons, and offer your own ideas. The owner talks by voice and sometimes contradicts himself; the last thing said,
+  or the clarified thing, is the intention, and a "what do you think?" invites a real answer.
+- **Sizes**: legendaries are oversized trophies under the 4 m catch limit (long ones near it, round ones smaller,
+  6.2.0); an animal whose species is under 4 m never spawns over it; size varies about 15 % and price about 10 %
+  round the species' base; weight follows length and shape and is only a figure to read. Hand nets, the claw (2 m)
+  and the trawls (2 m, 4 m) decide what can be caught purely by length. The giant jellies stay photo-only.
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build

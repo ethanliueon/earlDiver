@@ -1295,3 +1295,10 @@ html body #msgs .msg .msg-t:not(#_a) { font: 600 26px/1.2 var(--o-hud, "Barlow S
 html body #msgs .msg-danger .msg-t:not(#_a) { color: #cf8a6c !important; animation: none !important; }
 html body #msgs .msg-big .msg-t:not(#_a) { font-size: 30px !important; }
 html body #msgs .msg-small:not(#_a) { color: #dcd2b8 !important; text-shadow: 0 0 8px rgba(0,0,0,0.3) !important; opacity: 0.8; }
+/* (6.2.0) the chest's find on the olive plate the other panels use (not a green gradient); the find sits below the box,
+   never over its bottom; Put it on and Keep it are the plain worn buttons, no gold */
+html body .cr-box:not(#_a) { background: url("../assets/ui/olive/tile.png") 0 0 / 512px 512px !important; border: 30px solid transparent !important;
+  border-image: url("../assets/ui/olive/panel.png") 60 fill / 30px stretch !important; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important; border-radius: 0 !important; padding: 4px 10px 6px !important; }
+html body .cr-item:not(#_a) { margin-top: 6px !important; }
+html body .cr-acts button:not(#_a) { border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 12px stretch !important;
+  background: none !important; box-shadow: none !important; min-height: 44px; padding: 0 12px 2px !important; color: var(--o-cream, #ece4cc) !important; font: 600 15px 'Barlow Semi Condensed', sans-serif !important; }

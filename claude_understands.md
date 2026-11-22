@@ -16,6 +16,13 @@ order of work), then this file. The illustrated guide for a new Claude is `docs/
 
 ## Owner decisions since the proposal (latest first; these override anything below)
 
+- **6.2.0:** the marked eye back under the money (the larger 6.1.11 eye); the chest's opening fixed (the lid's inside
+  worked and in shadow, the find below the box on the olive plate, plain buttons); legendary lengths raised under 4 m
+  (Oarfish 3.9, Gulper 3.8, Grenadier 3.2, Dragonfish 3.0, Coelacanth 2.8, Viperfish, Tripod and Anglerfish 2.6,
+  Swallower 2.4, Fangtooth, Dumbo and Vampire Squid 2.2, Blobfish and Barreleye 2.0, Isopod 1.8); size variation about
+  15 %, price about 10 %; camera ports at a tube's end drawn as ovals. The owner's grade of the 6.x work: the suits,
+  shop layout, close buttons and items are right as they are (my earlier "C for suits" was withdrawn).
+
 - **5.12.x (built on the owner's go):** suits are about depth (pressure 20 m to 1,000 m+, air saved only from Rare up,
   no speed); speed is the fins' alone, shown at half; a skill that raises a number shows it green with (+boost); fish
   swim their own fixed pace (no bolting, startle, tiring or daze); past the suit's depth the HUD slowly loses up to 40 %
