@@ -1179,25 +1179,23 @@ e.inSub ? [
       ctx.fillStyle = 'rgba(255,90,70,0.95)'; ctx.fillRect(bx, by, bw * left, 5 * s);
       ctx.restore();
     }
-    // ---------- death: everything but the red timer fades to black ----------
+    // ---------- death ----------
+    // (6.1.5) no clock and no count: the scene stays, darkening and going still, and what killed him is written beside
+    // where he was, quietly, as the game's other labels are (in its jaws there is nothing to see: dark, the words alone)
     const bleedOut = dying && g.deathKind === 'injury', crushed = dying && g.deathKind === 'implode';
     if (dying) {
-      ctx.fillStyle = bleedOut ? `rgba(26,0,0,${clamp(g.deathT / 3, 0, 1).toFixed(3)})` : `rgba(0,0,0,${(g.deathKind === 'devoured' ? 1 : clamp(crushed ? (g.deathT - 1.6) / 1.6 : g.deathT / 2.2, 0, 1)).toFixed(3)})`;
-      ctx.fillRect(0, 0, W, H);
-      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-      ctx.font = `500 ${40 * s}px ${MONO}`;
-      ctx.fillStyle = '#d8241e'; ctx.fillText(formatTime(g.survival + g.deathT), W - pad, pad);
-      ctx.font = `${13 * s}px ${MONO}`; ctx.fillStyle = `rgba(216,36,30,${clamp(g.deathT - (crushed ? 3.4 : 0.5), 0, 0.8).toFixed(3)})`;
-      ctx.fillText(g.deathCause || '', W - pad, pad + 50 * s);
-    }
-    // ---------- death countdown ----------
-    if (dying && !bleedOut && !crushed && g.deathT > 0) {
-      const left = Math.max(0, 3 - Math.floor(g.deathT - g.deathDelay));
-      if (g.deathT > g.deathDelay) {
-        ctx.font = `500 ${120 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = `rgba(216,36,30,${clamp(1 - ((g.deathT - g.deathDelay) % 1), 0.2, 1)})`;
-        if (left > 0) ctx.fillText(String(left), W / 2, H / 2);
-        ctx.textBaseline = 'top';
+      const dark = g.deathKind === 'devoured' ? 1 : (crushed ? clamp((g.deathT - 1.6) / 1.6, 0, 1) : clamp(g.deathT / 2.6, 0, 1)) * 0.62;
+      ctx.fillStyle = bleedOut ? `rgba(30,4,2,${dark.toFixed(3)})` : `rgba(4,6,8,${dark.toFixed(3)})`; ctx.fillRect(0, 0, W, H);
+      const a = clamp((g.deathT - (crushed ? 3.2 : g.deathKind === 'devoured' ? 1.2 : 1.4)) / 1.2, 0, 1);
+      const cause = String(g.deathCause || '').replace(/ when the submersible imploded/, ': the sub gave way');
+      if (a > 0.01 && cause && g.deathKind !== 'quit') {
+        const E0 = g.earlScr || [0.5, 0.5, 0.035], ex = E0[0] * W, ey = E0[1] * H, pm = E0[2] * W, fs = 19 * s;
+        ctx.save(); ctx.font = `500 ${fs}px ${MONO}`; const w = ctx.measureText(cause).width, left = ex > W * 0.5, d = Math.max(34 * s, pm * 1.4);
+        const tx = clamp(left ? ex - d - w : ex + d, 150 * s, W - w - 150 * s), ty = clamp(ey - Math.max(40 * s, pm * 1.6), fs + 70 * s, H - 60 * s);
+        ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(214,204,180,0.55)'; ctx.lineWidth = 1.2 * s; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(ex + (left ? -4 : 4) * s, ey - 4 * s); ctx.quadraticCurveTo(ex + (left ? -5 : 5) * s, ty + 7 * s, left ? tx + w : tx, ty + 7 * s); ctx.lineTo(left ? tx : tx + w, ty + 7 * s); ctx.stroke();
+        ctx.fillStyle = '#dcd2b8'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 5 * s; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(cause, tx, ty);
+        ctx.restore();
       }
     }
   }

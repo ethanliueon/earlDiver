@@ -2719,6 +2719,8 @@ export class Renderer {
 
   drawSay(g, S, Sy, ppm) {
     // (6.0.5) the scene's messages: each written beside what it is about (him, the sub), with a short line to it, the
+    // (6.1.5) where Earl (or the sub he is in) is on screen, for the line that says what killed him
+    { const o = g.earl && g.earl.inSub ? g.sub : g.earl; if (o) g.earlScr = [S(o.x) / this.W, Sy(o.y) / this.H, ppm / this.W]; } /* as fractions of the screen: the HUD's canvas has its own size */
     // words on the side away from the screen's nearer edge; they fade after a few seconds
     if (g.says && g.says.length && g.mode === 'play') { const ctx = this.ctx, W = this.W; let row = 0;
       for (const m of g.says) { const o = m.at === 'sub' ? g.sub : g.earl, a = clamp(m.t / 0.3, 0, 1) * clamp((4 - m.t) / 0.7, 0, 1); if (a < 0.01 || !o) continue;

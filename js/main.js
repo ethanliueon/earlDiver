@@ -2685,9 +2685,11 @@ function update(dt) {
     const injuryDeath = g.deathKind === 'injury', crushed = g.deathKind === 'implode';
     // bleeding out: the red closes in first, then the dark; no countdown
     // crushed: the flash, the wreck scattering in the bubble cloud, then the dark, then quiet
-    g.fx.black = g.deathKind === 'devoured' ? 1 : injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : crushed ? clamp((g.deathT - 1.6) / 1.6, 0, 1) : clamp(g.deathT / 3, 0, 1);
+    // (6.1.5) the scene darkens but stays (the HUD's veil does the rest), so the line saying what killed him sits in it;
+    // only in the thing's jaws is it black. A little longer than before, to read it
+    g.fx.black = g.deathKind === 'devoured' ? 1 : (injuryDeath ? clamp((g.deathT - 2) / 2.5, 0, 1) : crushed ? clamp((g.deathT - 1.6) / 1.6, 0, 1) : clamp(g.deathT / 3, 0, 1)) * 0.35;
     g.fx.redDeath = injuryDeath ? clamp(g.deathT / 2.2, 0, 1) : 0;
-    if (g.deathT > (injuryDeath ? 5 : crushed ? 6 : 3.6)) {
+    if (g.deathT > (injuryDeath ? 6 : crushed ? 7 : 5.2)) {
       const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
       flushSave();
       g.mode = 'over';
