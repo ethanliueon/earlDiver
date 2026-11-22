@@ -129,7 +129,7 @@ export class Catalog {
     if (ITEM_CATS.includes(cat)) {
       // (2.8.0) items, suits included; a bought one goes into the locker, and is put on in the inventory (B)
       const on = wornItem(P, cat);
-      return ITEMS_OF(cat, this.cfg.stock).map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.kind === 'cam' && it.idx && !/^Quality/.test(it.good || '') ? `Quality ${it.idx.toFixed(2)} · ${it.good || ''}` : it.good, bad: it.bad, /* (5.10.10) a camera shows its Quality */ tag: RARITY[it.rarity].name, rarity: it.rarity,
+      return ITEMS_OF(cat, this.cfg.stock).map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.kind === 'cam' && it.idx && !/^Quality/.test(it.good || '') ? `Quality ${it.idx.toFixed(2)}, ${it.good || ''}` : it.good, bad: it.bad, /* (5.10.10) a camera shows its Quality */ tag: RARITY[it.rarity].name, rarity: it.rarity,
         owned: ownsItem(P, it.id), on: !!on && on.id === it.id, pic: [cat, it] }));
     }
     if (this.id !== 'bayside') return [];

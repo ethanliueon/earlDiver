@@ -38,7 +38,21 @@ export function rollChest(key, rnd = Math.random) {
 }
 // the odds as words for the shop: "Common 60 % · Uncommon 30 % · …"
 // (6.1.0) a chest's odds, and the chance of a gold coin besides (on top of its item, never in its place)
-export const oddsText = (odds, coin = 0) => Object.entries(odds).map(([k, p]) => `<span class="r-${k}">${RARITY[k].name} ${p} %</span>`).join(' · ') + (coin ? ` · <span class="r-legendary">Gold coin ${coin} % bonus</span>` : '');
+// (6.1.7) no string of rates joined by dots: a small "i  Rates" beside the price, and a tap shows them as a table on old
+// paper (a row each: the rarity in its colour, its chance right-aligned; the gold coin last, as an extra on top)
+export const oddsText = (odds, coin = 0) => { const k = Object.keys(CHESTS).find((q) => CHESTS[q].odds === odds) || ''; return `<button type="button" class="rates-i" data-rates="${k}"><i>i</i>Rates</button>`; };
+export function ratesTable(key) {
+  const C = CHESTS[key]; if (!C) return '';
+  const rows = Object.entries(C.odds).map(([r, p]) => `<tr><td class="r-${r}"><span class="sw"></span>${RARITY[r].name}</td><td>${p} %</td></tr>`).join('');
+  return `<div class="rt-box"><button class="rt-x" aria-label="Close">×</button><h4>${C.name}</h4><p>One thing comes out of it. What it will be:</p><table>${rows}</table>${C.coin ? `<table class="rt-extra"><tr><td class="r-legendary"><span class="sw"></span>A gold coin as well</td><td>${C.coin} %</td></tr></table><p class="rt-note">The coin comes on top of the thing, never in its place.</p>` : ''}</div>`;
+}
+// one listener for every shop: a tap on "Rates" opens the table over everything; a tap outside it, or the cross, closes it
+if (typeof document !== 'undefined') document.addEventListener('click', (ev) => {
+  const b = ev.target.closest && ev.target.closest('[data-rates]');
+  let el = document.getElementById('rates');
+  if (b) { ev.preventDefault(); ev.stopPropagation(); if (!el) { el = document.createElement('div'); el.id = 'rates'; document.body.appendChild(el); } el.innerHTML = ratesTable(b.dataset.rates); el.hidden = false; return; }
+  if (el && !el.hidden && (ev.target === el || (ev.target.closest && ev.target.closest('.rt-x')))) { el.hidden = true; ev.stopPropagation(); }
+}, true);
 
 // ---------- the chests, drawn ----------
 // (6.1.2) painted in chest_art.js
@@ -74,7 +88,7 @@ export class ChestReveal {
     R.querySelector('.cr-item').className = `cr-item r-${def.rarity}`;
     R.querySelector('img').src = this.h.picture(def, 300, 180);
     R.querySelector('.nm').textContent = def.name;
-    R.querySelector('.rr').textContent = RARITY[def.rarity].name + (def.set ? ' · set piece' : '');
+    R.querySelector('.rr').textContent = RARITY[def.rarity].name + (def.set ? ', set piece' : '');
     R.querySelector('p').textContent = def.line || '';
     R.querySelector('.cr-sks').innerHTML = (q.sk || []).map(([k, l]) => `<div><b>${SKILLS[k].name}${SKILLS[k].flat ? '' : ' ' + ROMAN[l]}</b> ${SKILLS[k].what}</div>`).join('') + (q.leg ? `<div class="leg"><b>✦ ${LEGEND[q.leg].name}</b> ${LEGEND[q.leg].what}</div>` : '');
     // (6.1.2) and a gold coin at the bottom of it, when one came up

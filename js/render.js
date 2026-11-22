@@ -545,8 +545,8 @@ export class Renderer {
         ctx.restore();
         if (lamp) glowPts.push([bx + lamp[0], bsy + lamp[1], '#fff2b0', ppm * 0.8, 1.5]);
         const n = tr.catch.length, left = Math.max(0, 300 - tr.age);
-        this.trapLabels.push([bx, bsy - ppm * (T.winch ? 2.4 : 1.5), tr.state === 'lowering' ? `going down · ${Math.round(tr.y)} m` : tr.state === 'hauling' ? `coming up · ${Math.round(tr.y)} m`
-          : `${n} inside · ${left > 0 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : tr.age > 420 ? 'left too long!' : 'ready'}`]);
+        this.trapLabels.push([bx, bsy - ppm * (T.winch ? 2.4 : 1.5), tr.state === 'lowering' ? `going down, ${Math.round(tr.y)} m` : tr.state === 'hauling' ? `coming up · ${Math.round(tr.y)} m`
+          : `${n} inside, ${left > 0 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : tr.age > 420 ? 'left too long!' : 'ready'}`]);
       }
     }
     if (g.lure && !(g.lure.eaten > 0.5)) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);
@@ -2431,7 +2431,7 @@ export class Renderer {
       if (m > 5) {
         ctx.fillStyle = '#f0e2b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = `700 ${Math.round(m * 0.52)}px Georgia, serif`; ctx.fillText("DAVE'S HAUL", sx0 + sw / 2, sy0 + sh * 0.42);
-        ctx.fillStyle = '#e8584a'; ctx.font = `700 ${Math.round(m * 0.3)}px Georgia, serif`; ctx.fillText('· OPEN ·', sx0 + sw / 2, sy0 + sh * 0.84);
+        ctx.fillStyle = '#e8584a'; ctx.font = `700 ${Math.round(m * 0.3)}px "Barlow Semi Condensed", sans-serif`; ctx.fillText('OPEN', sx0 + sw / 2, sy0 + sh * 0.84);
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       }
       // the junk: a net strung from the mast to a post, glass floats, crates, a drum, an anchor, a tyre

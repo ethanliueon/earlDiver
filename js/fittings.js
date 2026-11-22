@@ -44,7 +44,7 @@ export function paintedText(ctx, text, x, y, size, { col = 'rgba(214,206,172,1)'
 // ---------------- the depth counter ----------------
 // a brass-bezelled window of number drums, rolling as the sub goes down: each drum turns only while the ones to
 // its right roll over from 9, like an odometer. Past the sub's rating the window glows amber.
-export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'DEPTH · METRES' } = {}) {
+export function depthCounter(ctx, x, y, depth, { warn = false, t = 0, label = 'DEPTH, METRES' } = {}) {
   // (3.6.0) larger, and the drums lit more evenly so the digits read at a glance
   const N = 4, dw = 30, dh = 44, pad = 10, W = N * dw + pad * 2 + 4, H = dh + pad * 2;
   ctx.save(); ctx.translate(x, y);

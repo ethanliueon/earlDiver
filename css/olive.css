@@ -1271,3 +1271,28 @@ html body #pause #savequit:not(#_a):not(#_b) { background: rgba(60,44,20,0.08) !
 html body #pause .p-links .link:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #6a5a40 !important; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(106,90,64,0.5); }
 html body #pause .pause-version:not(#_a) { color: rgba(58,46,30,0.6) !important; text-shadow: none !important; }
 html body #pause .p-gear:not(#_a):not(#_b) { background-color: rgba(60,44,20,0.12) !important; border: 1.5px solid rgba(58,46,30,0.45) !important; border-image: none !important; box-shadow: none !important; filter: sepia(0.6) brightness(0.55); }
+/* (6.1.7) "i  Rates": a small inked ring with an i, and the word; quiet, the shop's own colour */
+html body .rates-i { display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; margin: 2px 0; background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; font: 500 14px "Barlow Semi Condensed", sans-serif !important; color: inherit !important; opacity: 0.8; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(90,80,60,0.45); min-height: 0 !important; }
+html body .rates-i i { display: inline-grid; place-items: center; width: 17px; height: 17px; border: 1.5px solid currentColor; border-radius: 50%; font: italic 700 12px Georgia, serif; text-decoration: none; }
+/* the table, on old paper, over everything */
+#rates { position: fixed; inset: 0; z-index: 9600; display: grid; place-items: center; background: rgba(4,6,8,0.45); }
+#rates[hidden] { display: none; }
+#rates .rt-box { position: relative; width: min(340px, calc(100vw - 40px)); padding: 18px 22px 16px; background: url("../assets/ui/book/page_right.jpg") center / cover; border-radius: 3px; box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 40px rgba(110,76,30,0.32); color: #3a2e1e; font-family: "Barlow Semi Condensed", sans-serif; }
+#rates h4 { margin: 0 0 4px; font: 600 21px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.02em; }
+#rates p { margin: 0 0 10px; font-size: 14px; color: #6a5a40; } #rates .rt-note { margin: 6px 0 0; font-size: 13px; }
+#rates table { width: 100%; border-collapse: collapse; font-size: 16px; }
+#rates td { padding: 6px 2px; border-bottom: 1px solid rgba(90,70,40,0.22); } #rates td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+#rates .rt-extra { margin-top: 10px; border-top: 1.5px solid rgba(90,70,40,0.4); }
+#rates .sw { display: inline-block; width: 10px; height: 10px; margin-right: 9px; border-radius: 2px; vertical-align: 0; background: currentColor; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25); }
+#rates .r-common { color: #6a6a60; } #rates .r-uncommon { color: #4e6e34; } #rates .r-rare { color: #2e5878; } #rates .r-exotic { color: #6a4a8a; } #rates .r-legendary { color: #8a6420; }
+#rates td:first-child { font-weight: 600; } #rates td:last-child { color: #3a2e1e; }
+#rates .rt-x { position: absolute; right: 10px; top: 6px; background: none; border: 0; color: #5a4a30; font: 400 26px "Barlow Semi Condensed", sans-serif; cursor: pointer; }
+/* (6.1.7) the chest's find: a card of the same old paper as the other finds, ink on it; Put it on dark, Keep it in ink */
+html body #chest .cr-item:not(#_a) { background: url("../assets/ui/book/page_right.jpg") center / cover !important; border: 0 !important; border-radius: 3px !important; box-shadow: 0 8px 22px rgba(0,0,0,0.55), inset 0 0 34px rgba(110,76,30,0.3) !important; padding: 12px 14px !important; }
+html body #chest .cr-item img:not(#_a) { background: rgba(60,44,20,0.12) !important; border-radius: 2px; }
+html body #chest .cr-item .nm { color: #3a2e1e !important; text-shadow: none !important; font-family: "Barlow Semi Condensed", sans-serif !important; font-weight: 600 !important; }
+html body #chest .cr-item p, html body #chest .cr-item .cr-sks { color: #5a4a34 !important; text-shadow: none !important; font-family: "Barlow Semi Condensed", sans-serif !important; }
+html body #chest .cr-item .cr-sks b { color: #2e4e6e !important; }
+html body #chest .cr-item.r-common .rr { color: #6a6a60 !important; } html body #chest .cr-item.r-uncommon .rr { color: #4e6e34 !important; } html body #chest .cr-item.r-rare .rr { color: #2e5878 !important; } html body #chest .cr-item.r-exotic .rr { color: #6a4a8a !important; } html body #chest .cr-item.r-legendary .rr { color: #8a6420 !important; }
+html body #chest .cr-acts .cr-on:not(#_a):not(#_b) { background: #4e4434 !important; color: #ece3c8 !important; border: 0 !important; border-image: none !important; border-radius: 2px !important; box-shadow: inset 0 -2px 0 rgba(0,0,0,0.3) !important; font: 600 16px "Barlow Semi Condensed", sans-serif !important; }
+html body #chest .cr-acts .cr-done:not(#_a):not(#_b) { background: rgba(236,227,200,0.08) !important; color: #e4dcc4 !important; border: 1.5px solid rgba(228,220,196,0.45) !important; border-image: none !important; border-radius: 2px !important; box-shadow: none !important; font: 500 16px "Barlow Semi Condensed", sans-serif !important; }

@@ -1065,7 +1065,7 @@ export class UI {
       const fact = (a, b) => `<div class="tp-row"><span>${a}</span><b>${b}</b></div>`, desc = String(T.desc || '').replace(/\.\./g, '.');
       return `<div class="item-pop trap-pop"><div class="ip-box r-common tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('trap', k, 360, 216, true)}" alt=""></div>
-        <div class="tp-txt"><h4>${T.name}</h4><p class="tp-kind">Trap · ${TR[k]} in the locker</p><p class="tp-desc">${desc}</p>
+        <div class="tp-txt"><h4>${T.name}</h4><p class="tp-kind">Trap, ${TR[k]} in the locker</p><p class="tp-desc">${desc}</p>
           ${fact('Sets down to', `${T.maxDepth} m`)}${fact('Holds', `${T.holds} animals`)}${fact('Takes', `up to ${Math.round(T.maxLen * 100)} cm`)}${T.winch ? fact('Hauled up', "by the Margaret's winch") : ''}
           <div class="lk-acts"><button data-trapuse="${k}">Use</button><small class="tp-note">at the surface</small></div></div></div></div>`; })();
     // (5.17.0) the glow stick's card, opened from its belt slot, laid out as the trap's: Use snaps one (90 s of warm light,
@@ -1074,12 +1074,12 @@ export class UI {
     const nGold = P.gold || 0, goldTiles = Array.from({ length: Math.ceil(nGold / 10) }, (_, i) => { const n = Math.min(10, nGold - i * 10); return `<div class="lk-tile r-legendary gold" data-gold title="Gold coins"><img src="${pictureOf('gold', n, 120, 120, true)}" alt=""><b class="belt-n">×${n}</b></div>`; }).join('');
     const goldPop = this.goldSel && nGold ? `<div class="item-pop trap-pop gold-pop"><div class="ip-box r-legendary tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('gold', Math.min(nGold, 10), 300, 300, true)}" alt=""></div>
-        <div class="tp-txt"><h4>Gold coins</h4><p class="tp-kind">Legendary · ${nGold} in the locker</p><p class="tp-desc">Hand-struck and worn nearly smooth, the old one's spiral on the face. Now and then one lies at the bottom of a chest. The old one in the cave takes nothing else.</p>
+        <div class="tp-txt"><h4>Gold coins</h4><p class="tp-kind">Legendary, ${nGold} in the locker</p><p class="tp-desc">Hand-struck and worn nearly smooth, the old one's spiral on the face. Now and then one lies at the bottom of a chest. The old one in the cave takes nothing else.</p>
           <div class="tp-row"><span>Stacks</span><b>10 to a space</b></div><div class="tp-row"><span>Spaces</span><b>${Math.ceil(nGold / 10)}</b></div></div></div></div>` : '';
     const glowPop = (() => { if (!this.glowSel) return ''; const k = gk, adv = k === 'glowAdv', n = (g.items && g.items[k]) || 0; if (!n) return '';
       return `<div class="item-pop trap-pop glow-pop"><div class="ip-box r-${GR[k]} tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('supply', k, 360, 216, true)}" alt=""></div>
-        <div class="tp-txt"><h4>${SUPN[k]}</h4><p class="tp-kind">${adv ? 'Rare' : 'Common'} light · ${n} on the belt</p><p class="tp-desc">Snap it and let it go. It hangs where you leave it, a pool of ${adv ? 'pale, bone-white' : 'warm amber'} light, and slowly sinks. The thing in the deep does not mind it.</p>
+        <div class="tp-txt"><h4>${SUPN[k]}</h4><p class="tp-kind">${adv ? 'Rare' : 'Common'} light, ${n} on the belt</p><p class="tp-desc">Snap it and let it go. It hangs where you leave it, a pool of ${adv ? 'pale, bone-white' : 'warm amber'} light, and slowly sinks. The thing in the deep does not mind it.</p>
           <div class="tp-row"><span>Burns</span><b>${adv ? '3 min' : '2 min'}</b></div><div class="tp-row"><span>Lights</span><b>${adv ? '32' : '16'} m around</b></div>
           <div class="lk-acts"><button data-glowuse>Use</button>${this.h.canChangeGear() ? '<button data-glowoff>Off the belt</button>' : ''}</div></div></div></div>`; })();
     // (5.14.1) the pet: a slot with his gear (it goes where he goes), not in the catch. Tap it: its card, or, when it is
