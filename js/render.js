@@ -1249,7 +1249,7 @@ export class Renderer {
         for (let i = 0; i < n; i++) { const sd = (i * 97.13) % 1, ph = (g.time * (1.6 + sd) + sd * 7) % 1, off = (((i * 53.7) % 1) - 0.5) * ppm * (e.inSub ? 5 : 2.6), back = ph * ppm * (e.inSub ? 9 : 5), L = ppm * (0.6 + sd * 0.9) * (A.tier === 'legendary' ? 1.4 : 1);
           const bx = ex - Math.cos(ang) * back - Math.sin(ang) * off, by = ey - Math.sin(ang) * back + Math.cos(ang) * off;
           ctx.strokeStyle = `rgba(${col},${(0.45 * (1 - ph)).toFixed(3)})`; ctx.lineWidth = A.tier === 'legendary' ? 2.2 : 1.5; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx - Math.cos(ang) * L, by - Math.sin(ang) * L); ctx.stroke(); }
-        g.fx.shake = Math.max(g.fx.shake || 0, A.tier === 'legendary' ? 0.5 : 0.25);
+        g.fx.shake = Math.max(g.fx.shake || 0, A.tier === 'legendary' ? 0.25 : A.tier === 'exotic' ? 0.07 : 0.03); /* (6.0.19) a light tremor for rare and exotic; the strong one only for the legendary */
         if (A.tier === 'legendary') { const pu = 0.5 + 0.5 * Math.sin(g.time * 5), au = ctx.createRadialGradient(ex, ey, ppm * 0.4, ex, ey, ppm * 2.2); au.addColorStop(0, `rgba(255,214,140,${(0.28 + 0.12 * pu).toFixed(3)})`); au.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = au; ctx.fillRect(ex - ppm * 2.2, ey - ppm * 2.2, ppm * 4.4, ppm * 4.4);
           const big = Math.hypot(this.W, this.H), vg = ctx.createRadialGradient(this.W / 2, this.H / 2, big * 0.32, this.W / 2, this.H / 2, big * 0.6); vg.addColorStop(0, 'rgba(255,190,90,0)'); vg.addColorStop(1, `rgba(255,190,90,${(0.1 + 0.08 * pu).toFixed(3)})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, this.W, this.H); }
       }

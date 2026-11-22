@@ -1233,3 +1233,9 @@ html body #settings .set-panel.more .set-more { opacity: 1; }
 @keyframes setMore { 0%, 100% { translate: 0 0; } 50% { translate: 0 3px; } }
 html body #settings .set-group h4 { letter-spacing: 0.16em; }
 html body #title .slot.tag .tg-n:not(#_a) { font-size: 84px !important; } html body #title .slot.tag .info b:not(#_a):not(#_b) { font-size: 38px !important; } html body #title .slot.tag .info span:not(#_a):not(#_b) { font-size: 22px !important; } /* (6.0.17) stamped large on the larger tag */
+/* (6.0.19) in the cabin the HUD is raised over the cabin's view (z 31), which put it over the shop's site and every panel
+   opened from the cabin, so it took their taps: with any panel open, the HUD drops under it and the stick is hidden */
+html.touch.in-cabin body:has(:is(#catalog, #workshop, #inventory, #settings, #quests, #journal, #chart, #confirm, #gallery, #dave, #cave, #tankroom, #trapset):not([hidden])) #hud { z-index: 1 !important; pointer-events: none !important; }
+html.touch body:has(:is(#catalog, #workshop, #inventory, #settings, #quests, #journal, #confirm, #dave, #cave):not([hidden])) #stick { display: none !important; }
+html body #confirm.welcome .cf-no:not(#_a):not(#_b) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; color: #6a5a40 !important; text-decoration: underline; text-underline-offset: 3px; outline: none !important; } /* (6.0.19) Skip, quiet; Start the button */
+html body #title .slot.tag .tg-rows:not(#_a) { display: flex !important; gap: 30px !important; } /* (6.0.19) the two stamped fields apart */

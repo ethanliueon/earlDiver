@@ -486,6 +486,7 @@ export class UI {
     const el = $('confirm'), close = () => { el.hidden = true; el.classList.remove('modal'); this.confirmModal = false; window.removeEventListener('keydown', key, true); };
     const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); if (!modal) close(); } };
     if (modal) { this.confirmModal = true; el.classList.add('modal'); }
+    el.classList.remove('welcome'); // (6.0.19) the welcome's styling is set again by its own call
     el.querySelector('.cf-title').textContent = title;
     el.querySelector('.cf-body').innerHTML = esc(body).replace(/\n/g, '<br>');
     el.querySelector('.cf-yes').textContent = yes; el.querySelector('.cf-no').textContent = no;

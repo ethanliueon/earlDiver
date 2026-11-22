@@ -1039,6 +1039,7 @@ function tutorWelcome() {
   ui.confirm('Welcome to the tutorial', 'This will be quick: just a look around the game.', 'Start', 'Skip tutorial',
     () => { P.tut = 'on'; saveProfile(P); g.tutSaid = null; refreshAir(); },
     () => ui.confirm('Skip the tutorial?', 'Are you sure?', 'Skip it', 'Back', () => { P.tut = 'skip'; P.lessonAir = P.lessonTrawl = 'done'; P.tipEquip = P.tipSprint = true; saveProfile(P); }, () => tutorWelcome())); // (4.12.0) skipped: no lessons or tips after it either
+  { const cf = document.getElementById('confirm'); cf.classList.add('welcome'); setTimeout(() => { const y = cf.querySelector('.cf-yes'); y && y.focus(); }, 0); } // (6.0.19) Start is the one to press: it holds the focus, Skip sits quiet
 }
 // (4.3.0, 4.3.1) tutor(): one thing at a time. Each frame it works out the single next thing to do and sets g.tut:
 //   text    a line of help (said once, as the banner at the top, when it changes)
