@@ -2295,9 +2295,13 @@ export class Renderer {
   // (7.0.13) a giant-kelp blade, painted at four times its size and drawn down to 128 x 64: a frilled, ruffled edge, the
   // blade shaded across its width (lit along the upper edge, darker below), the corrugated surface of real giant kelp in
   // fine wrinkles across it, a darker midrib, light showing through toward the thin tip, the tip worn ragged
+  // (7.0.14) the blades are real pictures now (assets/kelp, tools/kelp_kit.py): smooth, broad detail only, so nothing in
+  // them crawls or shimmers as the camera moves; the painted canvas below is used only until a picture has loaded
   bladeSprite(layer, v) {
     const key = layer * 3 + v, arr = this.bladeSprites || (this.bladeSprites = []);
     if (arr[key]) return arr[key];
+    { const P = this.bladePngs || (this.bladePngs = []); if (!P[key]) { const im = new Image(); im.src = `assets/kelp/blade_${layer}_${v}.png`; im.onload = () => { arr[key] = im; }; P[key] = im; } }
+    if (this.bladeFallback && this.bladeFallback[key]) return this.bladeFallback[key];
     const Z = 4, c = document.createElement('canvas'); c.width = 128 * Z; c.height = 64 * Z;
     const x = c.getContext('2d'), dark = layer === 1 ? 0.75 : 1, droop = [0.05, 0.3, 0.55][v] * 128; x.scale(Z, Z);
     let sd = 31 + key; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
@@ -2311,15 +2315,15 @@ export class Renderer {
     x.save(); x.clip(blade);
     for (let j = 0; j < 40; j++) { const q = j / 40, [cx, cy] = P(q, 0), g = x.createLinearGradient(cx, cy - 10, cx, cy + 10); // across its width: lit above, shaded below
       g.addColorStop(0, col(176, 150, 74, 0.55)); g.addColorStop(0.45, col(130, 102, 38, 0)); g.addColorStop(1, col(40, 30, 10, 0.5)); x.fillStyle = g; x.fillRect(cx - 2, cy - 14, 128 / 40 + 3, 28); }
-    x.lineWidth = 0.35; for (let j = 0; j < 90; j++) { const q = 0.08 + r() * 0.88, [cx, cy] = P(q, (r() - 0.5) * 14), l = 1.5 + r() * 3; // the corrugation: short wrinkles across the blade
-      x.strokeStyle = r() < 0.5 ? col(60, 44, 14, 0.45) : col(200, 176, 100, 0.35); x.beginPath(); x.moveTo(cx - l * 0.3, cy - l); x.quadraticCurveTo(cx + 0.6, cy, cx - l * 0.3, cy + l); x.stroke(); }
+    // (7.0.14) no fine wrinkles: they crawled as the camera moved
+
     { const tg = x.createLinearGradient(0, 0, 128, 0); tg.addColorStop(0, col(40, 30, 10, 0.35)); tg.addColorStop(0.35, 'rgba(0,0,0,0)'); tg.addColorStop(0.8, col(210, 190, 110, 0.18)); tg.addColorStop(1, col(220, 200, 120, 0.28)); x.fillStyle = tg; x.fillRect(0, 0, 128, 64); } // dark at its root, light through the thin tip
     x.restore();
     x.strokeStyle = col(60, 44, 14, 0.4); x.lineWidth = 0.5; x.stroke(blade); // its edge
     const m0 = P(0.03, 0), m1 = P(0.55, 0), m2 = P(0.93, 0);
     x.strokeStyle = col(62, 46, 16, 0.6); x.lineWidth = 1.3; x.beginPath(); x.moveTo(m0[0], m0[1]); x.quadraticCurveTo(m1[0], m1[1], m2[0], m2[1]); x.stroke(); // the midrib
     x.strokeStyle = col(200, 178, 104, 0.3); x.lineWidth = 0.5; x.beginPath(); x.moveTo(m0[0], m0[1] - 0.8); x.quadraticCurveTo(m1[0], m1[1] - 0.8, m2[0], m2[1] - 0.8); x.stroke(); // lit along its top
-    arr[key] = c;
+    (this.bladeFallback || (this.bladeFallback = []))[key] = c;
     return c;
   }
 
