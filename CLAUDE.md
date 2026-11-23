@@ -115,6 +115,14 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   The first trawl, the first chamber and the first backup air tank are taught once each, on the tutorial's spotlight;
   backup air tanks are used from the bag.
 
+- **Decided in 6.8**: the top quest slot is the tutorial, later the main quest line (Margaret's Lost Friend, planned, not
+  built: Margaret is the scientist the boat is named for; the friend became the Old One, last and furthest west). The
+  basics left the Log: a new diver's first board is "Take the sub below 200 m", "Bring up a live animal from below 100 m",
+  "Set a trap and haul it in". Rare omens from a diver's third dive: the radar ghost and a far-off low call. Sail points:
+  numbered buoys (B-01 ...) above places, found by passing over them, sailed to from the chart (aboard, sub docked) with a
+  short loading screen. The game is **Hatchetfish — Deep Sea Survival**. A western limit (buoy line, "Too far. Turn back.")
+  waits for the main quest.
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build
