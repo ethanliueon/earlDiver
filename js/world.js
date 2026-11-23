@@ -140,7 +140,7 @@ export function generateWorld(seed) {
     W.brine = { x0: BRINE.x0 + 1.5, x1: BRINE.x1 - 1.5, y: surf };
   }
   // level beds for the whale fall (on the plain) and the seep (a terrace cut into the rise)
-  for (const [cx, half] of [[WHALE_FALL.x, 16], [SEEP.x, 13], [DAVE.x, DAVE.half], [STATION.x, STATION.half]]) {
+  for (const [cx, half] of [[WHALE_FALL.x, 34], [SEEP.x, 13], [DAVE.x, DAVE.half], [STATION.x, STATION.half]]) {
     const ic = Math.round(cx / FLOOR_RES), h = Math.round(half / FLOOR_RES), edge = Math.round(8 / FLOOR_RES);
     const level = floor[ic];
     for (let i = ic - h - edge; i <= ic + h + edge; i++) {
@@ -214,7 +214,11 @@ export function generateWorld(seed) {
   W.rocks = W.rocks.filter((rk) => !(rk.x1 > BRINE.x0 - 2 && rk.x0 < BRINE.x1 + 2 && rk.y1 > W.brine.y - 4));
   { const sy = W.floorAt(STATION.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > STATION.x - STATION.half - 4 && rk.x0 < STATION.x + STATION.half + 4 && rk.y1 > sy - 40)); } // (3.0.0) the summit kept clear for the station
   { const dy = W.floorAt(DAVE.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > DAVE.x - DAVE.half - 4 && rk.x0 < DAVE.x + DAVE.half + 4 && rk.y1 > dy - 14)); } // (2.7.0) Dave's terrace kept clear of rock
-  { const wy = W.floorAt(WHALE_FALL.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > WHALE_FALL.x - 18 && rk.x0 < WHALE_FALL.x + 18 && rk.y1 > wy - 12)); } // (7.0.4) the whale fall lies on open ooze, never under a slab of rock
+  { const wy = W.floorAt(WHALE_FALL.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > WHALE_FALL.x - 40 && rk.x0 < WHALE_FALL.x + 40 && rk.y1 > wy - 16)); }
+  // (7.0.6) the whale lies on a low shelf of rock raised out of the ooze, its top 2.5 m above the plain
+  { const wx = WHALE_FALL.x, wy = W.floorAt(wx), P0 = [{ x: wx - 34, y: wy + 1.5 }, { x: wx - 30, y: wy - 1.6 }, { x: wx - 24, y: wy - 2.5 }];
+    for (let x = wx - 20; x <= wx + 20; x += 4) P0.push({ x, y: wy - 2.5 + Math.sin(x * 0.7) * 0.12 });
+    P0.push({ x: wx + 25, y: wy - 2.4 }, { x: wx + 31, y: wy - 1.3 }, { x: wx + 35, y: wy + 1.5 }); addRock(P0, 'shelf'); } // (7.0.4) the whale fall lies on open ooze, never under a slab of rock
   // the anglerfish's cave mouth: an upper and a lower lip of rock jutting from the west wall
   {
     const cx = CAVE.x, cy = CAVE.y;
@@ -271,7 +275,12 @@ export function generateWorld(seed) {
   }
   // the anglerfish's cave: two great lips of rock jutting from the wall make a hollow between them
   W.cave = { x: CAVE.x, y: CAVE.y };
-  W.whaleFall = { x: WHALE_FALL.x, y: W.floorAt(WHALE_FALL.x) };
+  W.whaleFall = { x: WHALE_FALL.x, y: W.floorAt(WHALE_FALL.x) - 2.5 }; // (7.0.6) its top: the shelf it lies on
+  // (7.0.6) the skeleton is solid: a wall over the skull and one over the rib cage, never drawn (the picture is)
+  { const F = W.whaleFall, P = (m, y) => ({ x: F.x - 16 + m, y: F.y + y });
+    addRock([P(0, -0.1), P(0.4, -0.6), P(5.2, -2.3), P(8.4, -3.9), P(9.8, -3.2), P(9.6, 0), P(0, 0)], 'bones');
+    const cage = [P(9.4, 0), P(9.4, -3.6)]; for (let m = 11; m <= 33; m += 2) cage.push(P(m, -3.6 + 0.35 * Math.sin((m - 9) * 0.16) + Math.max(0, m - 24) * 0.24 - 0.6)); cage.push(P(33.4, 0));
+    addRock(cage, 'bones'); W.rocks.filter((rk) => rk.kind === 'bones').forEach((rk) => { rk.hidden = true; }); }
   W.seep = { x: SEEP.x, y: W.floorAt(SEEP.x), phase: rng() * 6 };
   W.dave = { x: DAVE.x, y: W.floorAt(DAVE.x) }; // Dave's hut stands on its terrace; its airlock faces east, toward the boat
   W.station = { x: STATION.x, y: W.floorAt(STATION.x) }; // (3.0.0) the foot of the station's tower
@@ -321,7 +330,7 @@ export function generateWorld(seed) {
     addPickup('nodule', x, onFloor(x));
   }
   // the whale fall: ribs to take; the seep: clams that often hold pearls
-  for (let i = 0; i < 9; i++) { const x = WHALE_FALL.x + rng.range(-9, 9); addPickup('bone', x, onFloor(x)); }
+  for (let i = 0; i < 9; i++) { const x = WHALE_FALL.x + rng.range(-18, 18); addPickup('bone', x, W.whaleFall ? W.whaleFall.y - 0.2 : onFloor(x)); }
   for (let i = 0; i < 12; i++) { const x = SEEP.x + rng.range(-10, 10); addPickup('clam', x, onFloor(x), { pearl: rng() < 0.25 }); }
   for (let i = 0; i < 60; i++) { const x = rng.range(2950, 4600); const fl = W.floorAt(x); if (fl > 300 && fl < 1300) addPickup('glass', x, onFloor(x)); }
   // Usable items, found on the deeper seafloor
@@ -464,7 +473,7 @@ function buildHabitats(W) {
     add('sand', x, d - 0.3);
   }
   for (let x = 3112; x < 3240; x += 8) add('seamount', x, W.floorAt(x) - 4);
-  for (let k = -3; k <= 3; k++) add('whalefall', W.whaleFall.x + k * 3, W.whaleFall.y - 1.5);
+  for (let k = -10; k <= 10; k++) add('whalefall', W.whaleFall.x + k * 2.6, W.whaleFall.y - 5.2 - (k % 3 === 0 ? 2 : 0)); /* above the bones, which are solid */ // (7.0.6) a crowded place: many homes, always taken
   for (const v of W.vents) add('vent', v.x, v.y - 2);
   for (const kind in H) H[kind].sort((a, b) => a.x - b.x);
   W.habitats = H;

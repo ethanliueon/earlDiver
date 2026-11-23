@@ -143,6 +143,11 @@ const HOME = {
   108: { k: ['ledge', 'crevice'], r: 6, hide: 1, act: 'night', night: 30 }, // coelacanths: caves on steep walls by day
   111: { k: ['whalefall', 'sand'], r: 15, hide: 0, act: 'any' },  // hagfish at the whale fall
   89: { k: ['whalefall', 'ledge'], r: 60, hide: 0, act: 'night', night: 120 },
+  // (7.0.6) the whale fall's crowd at its depth: hagfish knotted in the carcass, grenadiers and rattails circling,
+  // sea spiders and amphipods picking the bones
+  504: { k: ['whalefall'], r: 10, hide: 0, act: 'any' }, 490: { k: ['whalefall', 'sand'], r: 18, hide: 0, act: 'any' },
+  489: { k: ['whalefall', 'sand'], r: 18, hide: 0, act: 'any' }, 334: { k: ['whalefall', 'sand'], r: 20, hide: 0, act: 'any' },
+  440: { k: ['whalefall'], r: 6, hide: 0, act: 'any' },
   115: { k: ['kelp', 'seagrass'], r: 2, hide: 0, act: 'any' }, 116: { k: ['kelp', 'seagrass'], r: 2, hide: 0, act: 'any' }, // seadragons
   117: { k: ['seagrass', 'coral'], r: 2, hide: 1, act: 'any' }, 140: { k: ['coral'], r: 5, hide: 0, act: 'night' },
   141: { k: ['ledge', 'crevice'], r: 40, hide: 0, act: 'any' },     // nautilus on the steep wall
@@ -253,7 +258,7 @@ export class Fauna {
     const live = new Set(); let residents = 0;
     for (const c of this.list) { live.add(c.gid); if (c.home) residents++; }
     this.reefy = residents > 40; // a crowded reef: one bait school instead of two
-    const FILL = { anemone: 0.9, coral: 0.45, sponge: 0.3, seagrass: 0.3, kelp: 0.1, crevice: 0.15, ledge: 0.3, wreck: 0.8, sand: 0.1, seamount: 0.35, deepcoral: 0.2, whalefall: 0.9, vent: 0 };
+    const FILL = { anemone: 0.9, coral: 0.45, sponge: 0.3, seagrass: 0.3, kelp: 0.1, crevice: 0.15, ledge: 0.3, wreck: 0.8, sand: 0.1, seamount: 0.35, deepcoral: 0.2, whalefall: 1, vent: 0 };
     const rx = cam.w * 1.4, ry = cam.h * 1.4;
     for (const kind in H) {
       const p = FILL[kind] || 0;

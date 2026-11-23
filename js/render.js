@@ -120,6 +120,64 @@ export function subLook(P, addons) {
 // that come up at night are seen by the lamp like anything else), except now and then a deep animal come up, which
 // still carries its light
 const glowOf = (o) => { const v = o.sp.v.glow; if (!v) return 0; return o.y >= 100 || (o.sp.dmin || 0) >= 150 ? v : 0; };
+// (7.0.6) The whale fall: a great whale's skeleton, about 32 m, lying on its belly on a shelf of rock, painted once into
+// a picture (40 px a metre) and laid in. As the real thing: a long low skull with its flat rostrum resting on the rock
+// and the two great jawbones splayed out beside it; the spine sagging along the shelf, its vertebrae big at the chest
+// and shrinking to the tail, a short spine standing on each; the ribs a cage, each arching down from the spine to the
+// rock, near ones bright, far ones in shadow, a few snapped; a flipper's bones fanned on the rock. Every bone is
+// shaded as round: a dark edge, the bone, a lit top. Stained, pitted, a white mat of bacteria at its foot, rags of
+// flesh still in the ribs. glow: the same picture again, faint and added on after the light, so it is seen from afar.
+let WHALE_PIC = null;
+function whalePicture() {
+  if (WHALE_PIC) return WHALE_PIC;
+  const K = 40, Lm = 34, Hm = 8, c = document.createElement('canvas'); c.width = Lm * K; c.height = Hm * K;
+  const x = c.getContext('2d'), X = (m) => (m + 1) * K, Y = (m) => (Hm - 0.6 + m) * K; // m: metres from the skull's tip; y up is negative
+  let sd = 77; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  x.lineCap = 'round'; x.lineJoin = 'round';
+  const bone = (path, w, far = false) => { // a round bone: dark edge, body, lit top
+    x.strokeStyle = far ? '#1c1810' : '#2e271a'; x.lineWidth = w * K * 1.35; x.stroke(path);
+    x.strokeStyle = far ? '#6c6450' : '#b4a882'; x.lineWidth = w * K; x.stroke(path);
+    x.save(); x.translate(0, -w * K * 0.22); x.strokeStyle = far ? 'rgba(150,142,118,0.5)' : 'rgba(232,224,196,0.85)'; x.lineWidth = w * K * 0.32; x.stroke(path); x.restore();
+  };
+  // the mat and the stain on the rock under it
+  for (let i = 0; i < 70; i++) { x.fillStyle = r() < 0.6 ? `rgba(226,224,206,${0.18 + r() * 0.2})` : `rgba(30,22,14,${0.25 + r() * 0.2})`; x.beginPath(); x.ellipse(X(1 + r() * 31), Y(-0.05 - r() * 0.15), K * (0.4 + r() * 1.2), K * (0.06 + r() * 0.08), 0, 0, Math.PI * 2); x.fill(); }
+  const spY = (m) => -3.0 + 0.35 * Math.sin((m - 9) * 0.16) + Math.max(0, m - 24) * 0.24; // the spine, sagging, falling toward the tail
+  // far ribs (the far side of the cage, in shadow)
+  const ribs = []; for (let k = 0; k < 15; k++) ribs.push(10.2 + k * 0.95);
+  for (const m of ribs) { const top = spY(m), p = new Path2D(); p.moveTo(X(m), Y(top)); p.bezierCurveTo(X(m + 1.6), Y(top - 0.9), X(m + 2.4), Y(-1.4), X(m + 1.5), Y(-0.15)); bone(p, 0.2, true); }
+  // the spine: centra shrinking to the tail, each with its spine
+  for (let m = 8.4; m <= 33; m += 0.62) { const sz = m < 24 ? 0.42 : 0.42 - (m - 24) * 0.035, y = spY(m);
+    x.fillStyle = '#2e271a'; x.beginPath(); x.ellipse(X(m), Y(y), sz * K * 0.62, sz * K, 0, 0, Math.PI * 2); x.fill();
+    const g = x.createLinearGradient(0, Y(y - sz), 0, Y(y + sz)); g.addColorStop(0, '#e2d8b8'); g.addColorStop(0.5, '#b0a47e'); g.addColorStop(1, '#5e5440');
+    x.fillStyle = g; x.beginPath(); x.ellipse(X(m), Y(y), sz * K * 0.5, sz * K * 0.86, 0, 0, Math.PI * 2); x.fill();
+    if (m < 30) { const p = new Path2D(); p.moveTo(X(m), Y(y - sz * 0.8)); p.lineTo(X(m - 0.25), Y(y - sz * (2 + (m < 20 ? 1.2 : 0.4)))); bone(p, Math.max(0.08, sz * 0.32)); } }
+  // near ribs: the cage in front, arching down to the rock; a few snapped short
+  ribs.forEach((m, k) => { const top = spY(m), snap = r() < 0.2, p = new Path2D(); p.moveTo(X(m), Y(top));
+    if (snap) p.quadraticCurveTo(X(m - 1.6), Y(top + 0.6), X(m - 1.9), Y(top + 1.6)); else p.bezierCurveTo(X(m - 1.4), Y(top - 0.7), X(m - 2.6), Y(-1.6), X(m - 1.9), Y(-0.12));
+    bone(p, 0.26);
+    if (!snap && r() < 0.3) { x.strokeStyle = 'rgba(78,56,44,0.6)'; x.lineWidth = K * 0.07; x.beginPath(); x.moveTo(X(m - 1.6), Y(top + 1.2)); x.quadraticCurveTo(X(m - 1.2), Y(top + 2.2), X(m - 1.5), Y(top + 2.9)); x.stroke(); } });
+  // the flipper: a shoulder blade, the arm, and the finger bones fanned on the rock
+  { const sc = new Path2D(); sc.moveTo(X(9.8), Y(-2.6)); sc.lineTo(X(10.6), Y(-1.2)); bone(sc, 0.55); const arm = new Path2D(); arm.moveTo(X(10.6), Y(-1.2)); arm.lineTo(X(9.2), Y(-0.35)); bone(arm, 0.3);
+    for (let f = 0; f < 4; f++) { const d = new Path2D(); d.moveTo(X(9.2), Y(-0.35)); d.lineTo(X(7.6 - f * 0.3), Y(-0.12 - f * 0.05)); bone(d, 0.12); } }
+  // the skull: cranium, and the long flat rostrum resting on the rock
+  { const sk = new Path2D(); sk.moveTo(X(9.6), Y(-3.3)); sk.bezierCurveTo(X(8.4), Y(-4.1), X(6.6), Y(-3.4), X(5.2), Y(-2.1)); sk.bezierCurveTo(X(3.2), Y(-1.2), X(1.2), Y(-0.6), X(0), Y(-0.35));
+    sk.lineTo(X(0.1), Y(-0.08)); sk.bezierCurveTo(X(2.6), Y(-0.25), X(6), Y(-0.6), X(8.4), Y(-1.4)); sk.quadraticCurveTo(X(9.8), Y(-2), X(9.6), Y(-3.3)); sk.closePath();
+    x.strokeStyle = '#2e271a'; x.lineWidth = K * 0.16; x.stroke(sk);
+    const g = x.createLinearGradient(0, Y(-4), 0, Y(0)); g.addColorStop(0, '#e6dcbc'); g.addColorStop(0.5, '#b8ac86'); g.addColorStop(1, '#5e5440'); x.fillStyle = g; x.fill(sk);
+    x.save(); x.clip(sk); for (let i = 0; i < 90; i++) { x.fillStyle = `rgba(60,46,30,${0.12 + r() * 0.25})`; x.beginPath(); x.arc(X(r() * 9.6), Y(-0.2 - r() * 3.6), K * (0.03 + r() * 0.08), 0, Math.PI * 2); x.fill(); } x.restore();
+    x.strokeStyle = 'rgba(60,46,30,0.55)'; x.lineWidth = K * 0.05; x.beginPath(); x.moveTo(X(8.6), Y(-2.9)); x.bezierCurveTo(X(6), Y(-2), X(3), Y(-0.9), X(0.4), Y(-0.3)); x.stroke(); // the rostrum's ridge
+    x.fillStyle = '#0a0806'; x.beginPath(); x.ellipse(X(8.3), Y(-2.2), K * 0.5, K * 0.36, -0.3, 0, Math.PI * 2); x.fill(); } // the eye socket
+  // the two jawbones: great bows, one lying on the rock, the far one splayed behind
+  { const j1 = new Path2D(); j1.moveTo(X(9), Y(-1.0)); j1.quadraticCurveTo(X(4.5), Y(0.15), X(-0.6), Y(-0.9)); bone(j1, 0.36, true);
+    const j2 = new Path2D(); j2.moveTo(X(9.3), Y(-0.8)); j2.quadraticCurveTo(X(5), Y(0.05), X(0.4), Y(-0.15)); bone(j2, 0.42); }
+  WHALE_PIC = c; return c;
+}
+function drawWhaleFall(ctx, S, Sy, ppm, F, t, glow) {
+  const c = whalePicture(), k = ppm / 40, x0 = S(F.x - 16) - 40 * k, y0 = Sy(F.y) - (8 - 0.6) * 40 * k;
+  if (!glow) { const st = ctx.createRadialGradient(S(F.x), Sy(F.y), ppm, S(F.x), Sy(F.y), ppm * 20); st.addColorStop(0, 'rgba(18,14,10,0.5)'); st.addColorStop(1, 'rgba(18,14,10,0)'); ctx.fillStyle = st; ctx.beginPath(); ctx.ellipse(S(F.x), Sy(F.y), ppm * 20, ppm * 1.4, 0, 0, TAU); ctx.fill(); }
+  ctx.drawImage(c, x0, y0, c.width * k, c.height * k);
+}
+
 export class Renderer {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
@@ -342,7 +400,7 @@ export class Renderer {
     for (const v of g.world.vents) if (inView(v.x, v.y, 30)) this.drawVent(ctx, v, S, Sy, ppm, t);
     this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
-    for (const rk of g.world.rocks) if (rk.kind !== 'oldone' && rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
+    for (const rk of g.world.rocks) if (rk.kind !== 'oldone' && !rk.hidden && rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
     const glowPts = [];
@@ -2375,30 +2433,7 @@ export class Renderer {
       ctx.restore();
     }
     const F = W.whaleFall;
-    if (F && inView(F.x, F.y, 30)) {
-      // a whale skeleton half sunk in the ooze: skull, a long spine, ribs, a carpet of bacteria
-      const fy = (x) => W.floorAt(x);
-      ctx.save();
-      ctx.fillStyle = 'rgba(230,200,150,0.35)';
-      ctx.beginPath(); ctx.ellipse(S(F.x), Sy(fy(F.x)) - ppm * 0.1, ppm * 11, ppm * 0.5, 0, 0, TAU); ctx.fill();
-      ctx.strokeStyle = '#cfc6b0'; ctx.lineCap = 'round';
-      ctx.lineWidth = Math.max(2, ppm * 0.35);
-      ctx.beginPath(); ctx.moveTo(S(F.x - 7), Sy(fy(F.x - 7)) - ppm * 0.6);
-      for (let x = F.x - 7; x <= F.x + 9; x += 1) ctx.lineTo(S(x), Sy(fy(x)) - ppm * (0.6 + 0.25 * Math.sin((x - F.x) * 0.25)));
-      ctx.stroke();
-      for (let k = 0; k < 11; k++) {
-        const x = F.x - 5 + k * 1.15, by = Sy(fy(x)) - ppm * 0.6, h = ppm * (2.4 - Math.abs(k - 4) * 0.18);
-        ctx.lineWidth = Math.max(1.5, ppm * 0.16);
-        ctx.beginPath(); ctx.moveTo(S(x), by); ctx.quadraticCurveTo(S(x) + ppm * 1.2, by - h, S(x) + ppm * 0.4, by - h * 1.3); ctx.stroke();
-      }
-      // the skull: a long flat jaw and the cranium
-      const sx = S(F.x - 7.5), sy = Sy(fy(F.x - 7.5));
-      ctx.fillStyle = '#c8bea6';
-      ctx.beginPath(); ctx.moveTo(sx + ppm * 1.2, sy - ppm * 0.4); ctx.quadraticCurveTo(sx - ppm * 1, sy - ppm * 2.2, sx - ppm * 4.5, sy - ppm * 0.6); ctx.lineTo(sx - ppm * 4.4, sy - ppm * 0.1); ctx.quadraticCurveTo(sx - ppm * 1, sy - ppm * 0.6, sx + ppm * 1.2, sy); ctx.fill();
-      ctx.fillStyle = 'rgba(40,30,20,0.6)'; ctx.beginPath(); ctx.ellipse(sx - ppm * 0.4, sy - ppm * 0.9, ppm * 0.35, ppm * 0.25, 0, 0, TAU); ctx.fill();
-      ctx.lineCap = 'butt';
-      ctx.restore();
-    }
+    if (F && inView(F.x, F.y, 50)) drawWhaleFall(ctx, S, Sy, ppm, F, t, false); // (7.0.6)
     const P = W.seep;
     if (P && inView(P.x, P.y, 30)) {
       // a cold seep: white bacterial mats, a black bed of mussels, methane bubbling out of the mud
@@ -3179,19 +3214,14 @@ export class Renderer {
     }
     // the rocks' edges
     const x0 = cam.x - cam.w / 2 - 4, x1 = cam.x + cam.w / 2 + 4, y0 = cam.y - cam.h / 2 - 4, y1 = cam.y + cam.h / 2 + 4;
-    for (const rk of Wd.rocks) { if (rk.kind === 'oldone' || rk.x1 < x0 || rk.x0 > x1 || rk.y1 < y0 || rk.y0 > y1) continue;
+    for (const rk of Wd.rocks) { if (rk.kind === 'oldone' || rk.hidden || rk.x1 < x0 || rk.x0 > x1 || rk.y1 < y0 || rk.y0 > y1) continue;
       const d = deep((rk.y0 + rk.y1) / 2); if (d <= 0) continue; const P0 = rk.poly;
       for (let i = 0; i < P0.length; i++) { const A = P0[i], B = P0[(i + 1) % P0.length], mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2, lit = this.litAt(mx, my), up = A.x !== B.x ? clamp(1 - Math.abs((B.y - A.y) / (B.x - A.x)) * 0.5, 0.3, 1) : 0.3, a = d * up * (0.035 + 0.5 * lit);
         if (a > 0.008) { seg(S(A.x), Sy(A.y), S(B.x), Sy(B.y), a * 0.2, Math.max(3, ppm * 0.25)); seg(S(A.x), Sy(A.y), S(B.x), Sy(B.y), a, Math.max(1, ppm * 0.045)); } } }
     const inV = (x, y, r) => x > x0 - r && x < x1 + r && y > y0 - r && y < y1 + r;
-    // the whale fall: its bones give back a pale glow, spine, ribs and skull
+    // the whale fall: its bones give back a pale glow (the same drawing, faint and added on)
     const F = Wd.whaleFall;
-    if (F && inV(F.x, F.y, 30)) { const fy = (x) => Wd.floorAt(x), a = 0.13 + 0.05 * Math.sin(t * 0.4);
-      ctx.strokeStyle = `rgba(214,206,182,${a.toFixed(3)})`; ctx.lineWidth = Math.max(2, ppm * 0.3); ctx.beginPath(); ctx.moveTo(S(F.x - 7), Sy(fy(F.x - 7)) - ppm * 0.6);
-      for (let x = F.x - 7; x <= F.x + 9; x += 1) ctx.lineTo(S(x), Sy(fy(x)) - ppm * (0.6 + 0.25 * Math.sin((x - F.x) * 0.25))); ctx.stroke();
-      ctx.lineWidth = Math.max(1.5, ppm * 0.14);
-      for (let k = 0; k < 11; k++) { const x = F.x - 5 + k * 1.15, by = Sy(fy(x)) - ppm * 0.6, h = ppm * (2.4 - Math.abs(k - 4) * 0.18); ctx.beginPath(); ctx.moveTo(S(x), by); ctx.quadraticCurveTo(S(x) + ppm * 1.2, by - h, S(x) + ppm * 0.4, by - h * 1.3); ctx.stroke(); }
-      const gx = S(F.x), gy = Sy(fy(F.x)) - ppm * 1.2, gg = ctx.createRadialGradient(gx, gy, 0, gx, gy, ppm * 12); gg.addColorStop(0, 'rgba(190,180,150,0.1)'); gg.addColorStop(1, 'rgba(190,180,150,0)'); ctx.fillStyle = gg; ctx.fillRect(gx - ppm * 12, gy - ppm * 12, ppm * 24, ppm * 24); }
+    if (F && inV(F.x, F.y, 50)) { ctx.globalAlpha = 0.16 + 0.05 * Math.sin(t * 0.4); drawWhaleFall(ctx, S, Sy, ppm, F, t, true); ctx.globalAlpha = 1; }
     // the brine pool: its still mirror catches what little light there is
     const B = Wd.brine;
     if (B && inV((B.x0 + B.x1) / 2, B.y, 40)) { ctx.strokeStyle = 'rgba(176,196,206,0.22)'; ctx.lineWidth = Math.max(1, ppm * 0.07); ctx.beginPath();
