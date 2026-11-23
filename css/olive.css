@@ -1752,3 +1752,10 @@ html body #davetalk .dt-name:not(#_a):not(#_b) { left: 184px !important; top: 14
 html body #davetalk .dt-line:not(#_a) { padding-left: 40px !important; }
 html body #davetalk .dt-face:not(#_a):not(#_b) { position: relative; z-index: 3; }
 html body #davetalk .dt-arm:not(#_a) { left: 96px; top: -30px; width: 170px; height: 57px; z-index: 2; }
+/* (7.0.0) the name as artwork under the water (title_art.js): no plate; the painted letters and the hatchetfish on their
+   canvas, "Deep Sea Survival" small beneath in the game's type */
+html body #title .t-plate h1:not(#_a):not(#_b):not(#_c) { background: none !important; padding: 0 !important; filter: none !important; }
+html body #title .t-plate h1::before { content: none !important; }
+html body #title .t-plate h1 b:not(#_a):not(#_b) { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+html body #title .t-plate h1 canvas.t-art:not(#_a):not(#_b) { position: static !important; inset: auto !important; display: block; width: min(86vw, 820px); height: calc(min(86vw, 820px) * 0.27); }
+html body #title .t-plate h1 span:not(#_a):not(#_b):not(#_c) { color: rgba(214, 222, 210, 0.7) !important; text-shadow: 0 1px 6px rgba(0, 20, 30, 0.6) !important; }

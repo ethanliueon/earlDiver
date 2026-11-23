@@ -46,7 +46,8 @@ import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's d
 import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
-import { isTestStore } from './purchases.js'; // (6.9.0) the Test tab, web build only
+import { isTestStore } from './purchases.js';
+import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, web build only
 import { tankPicture, tankZoom } from './journal_tank.js';
 import { drawFace, DEFAULT_LOOK, FACES, EYES, HAIRS, HAIR_NAMES, SKINS } from './face_draw.js'; // (6.7.0) the creator
 import { priceOf as storePrice } from './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
@@ -1652,6 +1653,7 @@ export class UI {
 
   // the title screen: Continue (the last slot played), and each slot with what it holds
   showTitle() {
+    startTitleArt(document.querySelector('#title .t-plate h1')); // (7.0.0)
     this.closeAll(); this.setPaused(false); setTimeout(() => this.fitTitle(), 0); requestAnimationFrame(() => this.fitTitle());
     if (!this.fitBound) { this.fitBound = true; window.addEventListener('resize', () => this.fitTitle()); document.fonts && document.fonts.ready.then(() => this.fitTitle()); }
     $('menu').classList.add('gone');
