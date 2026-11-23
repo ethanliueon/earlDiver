@@ -40,6 +40,7 @@ import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, se
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { rollChest, rollChestAll } from './chests.js';
+import { setDiverLook } from './earl_draw.js'; // (6.7.0)
 import { buy as storeBuy, showAd } from './purchases.js'; // (6.5.9)
 import { calState, calClaimed, calWeek } from './store.js';
 import { hullCap } from './economy.js';
@@ -356,12 +357,9 @@ const ui = new UI({
   onNewGame: () => { profile = null; g.paused = false; withLoading(() => startRun()); },
   // the title screen: play a slot (a new diver in an empty or damaged one), or go back to the title
   onSlot: (n) => {
-    withLoading(() => {
-      const r = readSlot(n);
-      setSlot(n);
-      profile = r.state === 'ok' ? r.profile : null;
-      startRun();
-    });
+    const r = readSlot(n), go = (made) => withLoading(() => { setSlot(n); profile = r.state === 'ok' ? r.profile : null; g.made = made; startRun(); });
+    if (r.state === 'ok') go(null);
+    else ui.showCreator((made) => go(made)); // (6.7.0) a new diver: the creator first (Skip keeps Earl)
   },
   onTitle: (save) => {
     if (save && profile && g.mode === 'play') { syncProfile(); saveProfile(profile); }
@@ -1321,7 +1319,8 @@ function startRun() {
   // closed (deaths included); a save loaded in a later sitting, or another save, gets none; nor does the title before it
   audio.musicAllowed = true; // (3.0.24) music in every sitting again, by its own rules (audio.js pickTrack); a new game's first dive opens with the melodic theme
   audio.cue && audio.cue(fresh ? 'firstDive' : 'start'); // (2.9.2) a new dive, or back after a death
-  if (!profile) { profile = newProfile(); saveProfile(profile); }
+  { const made = g.made; if (!profile) { profile = newProfile(); if (made) { profile.name = made.name; profile.look = made.look; } saveProfile(profile); } } // (6.7.0) the creator's name and look
+  setDiverLook(profile.look); // (6.7.0) the diver as made
   profile.runs = (profile.runs || 0) + 1; saveProfile(profile);
   g = newGame('play');
   boardDeck(false, true); // a dive starts on deck, at the top of the stern ladder

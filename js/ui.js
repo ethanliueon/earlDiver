@@ -47,6 +47,7 @@ import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { storeHtml, eventsHtml, calWeek, untilTomorrow } from './store.js';
 import { tankPicture } from './journal_tank.js';
+import { drawFace, DEFAULT_LOOK, FACES, EYES, HAIRS, HAIR_NAMES, SKINS } from './face_draw.js'; // (6.7.0) the creator
 import { priceOf as storePrice } from './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
 import { TRAP_ORDER } from './economy.js';
@@ -144,6 +145,24 @@ function lockPic() {
 // (6.5.0) an animal's own water, behind its picture wherever it is shown in a tile (the bag, the sale): kelp, reef, sunlit,
 // blue, twilight or the deep, by where it usually lives
 const habCls = (sp) => { const [a2] = usualDepth(sp), hb = (sp.v && sp.v.hab) || ''; return /kelp/.test(hb) ? 'hb-kelp' : /reef|coral/.test(hb) ? 'hb-reef' : a2 < 60 ? 'hb-sun' : a2 < 300 ? 'hb-blue' : a2 < 1000 ? 'hb-twi' : 'hb-deep'; };
+// (6.7.1) Dave's portrait, painted once: an old diver in profile turned toward the words, a grey beard, a knit cap, a
+// rust oilskin over his shoulders, the light from the right
+let davePic = null;
+function davePortrait() {
+  if (davePic) return davePic;
+  const c = document.createElement('canvas'); c.width = 300; c.height = 340; const x = c.getContext('2d');
+  // shoulders: the oilskin's collar and its folds
+  const og = x.createLinearGradient(40, 220, 280, 340); og.addColorStop(0, '#7a4a2c'); og.addColorStop(0.6, '#5a321e'); og.addColorStop(1, '#2e1a10');
+  x.fillStyle = og; x.beginPath(); x.moveTo(10, 340); x.quadraticCurveTo(30, 238, 150, 228); x.quadraticCurveTo(270, 236, 292, 340); x.closePath(); x.fill();
+  x.strokeStyle = 'rgba(0,0,0,0.3)'; x.lineWidth = 3; x.beginPath(); x.moveTo(150, 236); x.quadraticCurveTo(160, 290, 140, 340); x.moveTo(84, 262); x.quadraticCurveTo(96, 300, 80, 340); x.stroke();
+  x.strokeStyle = 'rgba(255,220,180,0.12)'; x.lineWidth = 4; x.beginPath(); x.moveTo(200, 240); x.quadraticCurveTo(250, 252, 270, 300); x.stroke();
+  // the neck under the beard
+  x.fillStyle = '#a8785a'; x.beginPath(); x.ellipse(150, 222, 34, 30, 0, 0, Math.PI * 2); x.fill();
+  x.save(); x.translate(158, 140); x.rotate(-Math.PI / 2);
+  drawFace(x, 0, 0, 10.5, { sex: 'm', face: 1, eyes: 2, skin: 1, beard: true, age: true, cap: '#4e4a3a', hairCol: ['#c4bcae', '#8e877b', '#4a4640'] });
+  x.restore();
+  davePic = c.toDataURL(); return davePic;
+}
 export class UI {
   constructor(h) {
     this.h = h;
@@ -371,6 +390,50 @@ export class UI {
       if (busy) return; const b2 = ev.target.closest('[data-rv]'); if (!b2) return; busy = true; const how = b2.dataset.rv;
       if (how !== 'no') el.classList.add('wait');
       Promise.resolve(done(how)).finally(() => { el.hidden = true; el.classList.remove('wait'); });
+    };
+  }
+  // (6.7.0) the creator, before a new diver's first dive: a name (12 letters, Earl if left empty) and a look, the head in
+  // profile as it will be on deck. Man or woman, a face, the eyes, the hair, the skin. Skip keeps Earl as he is.
+  // done({ name, look }) or done(null) for Skip
+  showCreator(done) {
+    let el = document.getElementById('creator');
+    if (!el) { el = document.createElement('div'); el.id = 'creator'; document.body.appendChild(el); }
+    const L = { ...DEFAULT_LOOK }, cyc = (arr, v, d) => arr[(arr.indexOf(v) + d + arr.length) % arr.length];
+    el.innerHTML = `<div class="cr-box"><div class="cr-port"><canvas width="520" height="520"></canvas></div>
+      <div class="cr-side"><h4>New diver</h4>
+        <label class="cr-name"><span>Name</span><input maxlength="12" placeholder="Earl" autocomplete="off" spellcheck="false"></label>
+        <div class="cr-row"><span>Diver</span><div class="cr-seg"><button data-sex="m">Man</button><button data-sex="f">Woman</button></div></div>
+        <div class="cr-row"><span>Face</span><div class="cr-pick"><button data-k="face" data-d="-1">‹</button><b data-v="face"></b><button data-k="face" data-d="1">›</button></div></div>
+        <div class="cr-row"><span>Eyes</span><div class="cr-pick"><button data-k="eyes" data-d="-1">‹</button><b data-v="eyes"></b><button data-k="eyes" data-d="1">›</button></div></div>
+        <div class="cr-row"><span>Hair</span><div class="cr-pick"><button data-k="hair" data-d="-1">‹</button><b data-v="hair"></b><button data-k="hair" data-d="1">›</button></div></div>
+        <div class="cr-row"><span>Skin</span><div class="cr-skins">${SKINS.map((c, i) => `<button data-skin="${i}" style="--c0:${c[0]};--c1:${c[2]}" aria-label="Skin ${i + 1}"></button>`).join('')}</div></div>
+        <div class="cr-foot"><button class="cr-skip">Skip</button><button class="cr-go">Dive</button></div></div></div>`;
+    el.hidden = false;
+    const cv = el.querySelector('canvas'), x = cv.getContext('2d');
+    const draw = () => {
+      x.clearRect(0, 0, 520, 520);
+      const g0 = x.createRadialGradient(260, 220, 40, 260, 260, 330); g0.addColorStop(0, '#2c4650'); g0.addColorStop(1, '#0c171b'); x.fillStyle = g0; x.fillRect(0, 0, 520, 520);
+      // the rolled hood and the suit's shoulder under the head
+      x.fillStyle = '#16191c'; x.beginPath(); x.ellipse(250, 470, 190, 90, 0, Math.PI, 0); x.fill();
+      x.fillStyle = (SKINS[L.skin] || SKINS[2])[1]; x.beginPath(); x.ellipse(250, 380, L.sex === 'f' ? 46 : 54, 70, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#1d2125'; x.beginPath(); x.ellipse(250, 420, 92, 36, 0, 0, Math.PI * 2); x.fill(); x.strokeStyle = 'rgba(120,130,130,0.25)'; x.lineWidth = 3; x.beginPath(); x.ellipse(250, 414, 80, 26, 0, Math.PI * 1.05, Math.PI * 1.95); x.stroke();
+      x.save(); x.translate(255, 250); x.rotate(-Math.PI / 2); drawFace(x, 0, 0, 18, L); x.restore();
+      el.querySelectorAll('[data-sex]').forEach((b) => b.classList.toggle('on', b.dataset.sex === L.sex));
+      el.querySelectorAll('[data-skin]').forEach((b) => b.classList.toggle('on', +b.dataset.skin === L.skin));
+      el.querySelector('[data-v="face"]').textContent = FACES[L.face]; el.querySelector('[data-v="eyes"]').textContent = EYES[L.eyes]; el.querySelector('[data-v="hair"]').textContent = HAIR_NAMES[L.hair];
+    };
+    draw();
+    const inp = el.querySelector('input');
+    el.onclick = (ev) => {
+      const b = ev.target.closest('button'); if (!b) return;
+      if (b.dataset.sex) { L.sex = b.dataset.sex; if (L.sex === 'f' && ['crop', 'buzz', 'swept'].includes(L.hair)) L.hair = 'bob'; if (L.sex === 'm' && ['bob', 'ponytail', 'bun'].includes(L.hair)) L.hair = 'swept'; }
+      else if (b.dataset.k === 'face') L.face = (L.face + +b.dataset.d + FACES.length) % FACES.length;
+      else if (b.dataset.k === 'eyes') L.eyes = (L.eyes + +b.dataset.d + EYES.length) % EYES.length;
+      else if (b.dataset.k === 'hair') L.hair = cyc(HAIRS, L.hair, +b.dataset.d);
+      else if (b.dataset.skin != null) L.skin = +b.dataset.skin;
+      else if (b.classList.contains('cr-skip')) { el.hidden = true; inp.blur(); done(null); return; }
+      else if (b.classList.contains('cr-go')) { el.hidden = true; inp.blur(); done({ name: (inp.value || '').trim().slice(0, 12) || 'Earl', look: { ...L } }); return; }
+      draw();
     };
   }
   showChest(key, finds, coin = false) { this.chest.open(key, finds, coin); } // (6.4.0) finds: [{ q, def }], and whether an old coin came up
@@ -1462,6 +1525,7 @@ export class UI {
   daveTalk() {
     let el = document.getElementById('davetalk');
     if (!el) { el = document.createElement('section'); el.id = 'davetalk'; el.hidden = true; el.innerHTML = '<div class="dt-box"><b class="dt-name">Dave</b><p class="dt-line"></p><div class="dt-acts"><button class="dt-shop">Shop</button><button class="dt-leave">Leave</button></div></div>'; document.body.appendChild(el);
+      el.querySelector('.dt-box').insertAdjacentHTML('afterbegin', `<img class="dt-face" src="${davePortrait()}" alt="">`); // (6.7.1) Dave himself, leaning in at his box's edge
       el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); this.toggleDave(true); });
       el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); });
       el.addEventListener('click', (ev) => { if (ev.target === el) { el.hidden = true; clearInterval(this.dtT); } }); }

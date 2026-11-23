@@ -78,6 +78,10 @@ const at = (x, y, a, l) => [x + Math.cos(a) * l, y + Math.sin(a) * l];
 // L = his height in pixels. moving 0..1 blends an upright idle pose into a swimming pose.
 // gear (optional): { kind: 'net'|'slurp', tier, sweep: 0..1 while in use (else null), t,
 //   catchSp: a fish in the net, held: a fish in the slurp gun, bag: [{col}] for the belt bag }
+// (6.7.0) the diver's look (the creator's choice, P.look), set when a diver is loaded
+import { drawFace, lookOf, SKINS } from './face_draw.js';
+export let DIVER_LOOK = lookOf(null);
+export function setDiverLook(L) { DIVER_LOOK = lookOf(L); }
 export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   const u = L / 100;
   const look = Array.isArray(gear && gear.suit) ? gear.suit : SUIT_LOOK[(gear && gear.suit) || 'wet'] || SUIT_LOOK.wet; // (2.8.0: a Rare-and-up suit brings its own colours)
@@ -287,57 +291,10 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   if (gear && gear.noMask) {
     // aboard, between dives: the hood rolled down round his neck, mask and lamp off. A weathered
     // man in profile (his front is +y, the top of his head +x): short greying hair, stubble, an ear
-    seg(ctx, 32 * u, -0.5 * u, 37 * u, -0.5 * u, 7 * u, 6.4 * u, '#b78a6c'); // neck
+    seg(ctx, 32 * u, -0.5 * u, 37 * u, -0.5 * u, DIVER_LOOK.sex === 'f' ? 6.2 * u : 7 * u, DIVER_LOOK.sex === 'f' ? 5.6 * u : 6.4 * u, (SKINS[DIVER_LOOK.skin] || SKINS[2])[1]); // neck (6.7.0) in the diver's own skin
     ctx.fillStyle = SUIT; ctx.beginPath(); ctx.ellipse(34 * u, -0.5 * u, 3.4 * u, 7.6 * u, 0, 0, Math.PI * 2); ctx.fill(); // the hood, rolled down
     ctx.strokeStyle = SUIT_SEAM; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.ellipse(34 * u, -0.5 * u, 2.2 * u, 6.6 * u, 0, -1.2, 1.2); ctx.stroke();
-    // (6.5.4) his face, redrawn: a weathered man in his forties in profile, lit from above and in front. Local axes:
-    // +x up toward the crown, +y toward his face
-    const sk = ctx.createLinearGradient(hx + 7 * u, hy + 6 * u, hx - 7 * u, hy - 6 * u);
-    sk.addColorStop(0, '#c99e82'); sk.addColorStop(0.5, '#a97e64'); sk.addColorStop(1, '#7e5a46');
-    ctx.fillStyle = sk;
-    ctx.beginPath(); // the skull, the forehead, the brow ridge, the nose, the lips, the chin, the jaw
-    ctx.moveTo(hx - 6.8 * u, hy - 1.2 * u);                                          // the nape
-    ctx.quadraticCurveTo(hx - 1 * u, hy - 7.8 * u, hx + 5.8 * u, hy - 4.2 * u);      // the back of the skull
-    ctx.quadraticCurveTo(hx + 8.2 * u, hy + 0.2 * u, hx + 6.4 * u, hy + 4.4 * u);    // the crown to the forehead
-    ctx.quadraticCurveTo(hx + 5.4 * u, hy + 6.2 * u, hx + 3.9 * u, hy + 6.4 * u);    // the forehead to the brow ridge
-    ctx.quadraticCurveTo(hx + 3.2 * u, hy + 6.1 * u, hx + 2.9 * u, hy + 6.2 * u);    // the bridge of the nose, set back under the brow
-    ctx.quadraticCurveTo(hx + 1.2 * u, hy + 7.6 * u, hx + 0.1 * u, hy + 8.5 * u);    // the nose's length
-    ctx.quadraticCurveTo(hx - 0.5 * u, hy + 8.7 * u, hx - 0.7 * u, hy + 7.7 * u);    // its tip and underside
-    ctx.quadraticCurveTo(hx - 1.4 * u, hy + 7.4 * u, hx - 1.9 * u, hy + 7.6 * u);    // the upper lip
-    ctx.quadraticCurveTo(hx - 2.6 * u, hy + 7.3 * u, hx - 3.1 * u, hy + 7.5 * u);    // the lower lip
-    ctx.quadraticCurveTo(hx - 4.6 * u, hy + 7.6 * u, hx - 5.6 * u, hy + 5.6 * u);    // the chin
-    ctx.quadraticCurveTo(hx - 7.2 * u, hy + 2.2 * u, hx - 6.8 * u, hy - 1.2 * u);    // the jaw back to the nape
-    ctx.fill();
-    // the shadow under the cheekbone and along the jaw, the eye socket's hollow
-    { const cg = ctx.createRadialGradient(hx - 2.4 * u, hy + 3.2 * u, 0.2 * u, hx - 2.4 * u, hy + 3.2 * u, 2.8 * u); cg.addColorStop(0, 'rgba(80,50,36,0.22)'); cg.addColorStop(1, 'rgba(80,50,36,0)'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(hx - 2.4 * u, hy + 3.2 * u, 2.8 * u, 0, Math.PI * 2); ctx.fill(); } // the hollow under the cheekbone, soft
-    { const eg = ctx.createRadialGradient(hx + 2.3 * u, hy + 5.1 * u, 0.3 * u, hx + 2.3 * u, hy + 5.1 * u, 1.6 * u); eg.addColorStop(0, 'rgba(70,44,30,0.3)'); eg.addColorStop(1, 'rgba(70,44,30,0)'); ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(hx + 2.3 * u, hy + 5.1 * u, 1.6 * u, 0, Math.PI * 2); ctx.fill(); } // the eye's socket
-    // stubble on the chin, the upper lip and along the jaw, a fine grain
-    ctx.save(); ctx.clip(); ctx.fillStyle = 'rgba(64,54,46,0.42)';
-    ctx.beginPath(); ctx.moveTo(hx - 1.4 * u, hy + 7.8 * u); ctx.quadraticCurveTo(hx - 4.6 * u, hy + 7.9 * u, hx - 5.8 * u, hy + 5.6 * u); ctx.quadraticCurveTo(hx - 7 * u, hy + 2.6 * u, hx - 6.4 * u, hy + 0.2 * u); ctx.lineTo(hx - 4.6 * u, hy + 1.6 * u); ctx.quadraticCurveTo(hx - 4.4 * u, hy + 5 * u, hx - 1.4 * u, hy + 6.8 * u); ctx.closePath(); ctx.fill();
-    let sd = 5; const rr = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-    ctx.fillStyle = 'rgba(40,34,30,0.35)'; for (let i = 0; i < 40; i++) { const px = hx - 1.6 * u - rr() * 4.8 * u, py = hy + 1 * u + rr() * 6.6 * u; ctx.fillRect(px, py, 0.22 * u, 0.22 * u); }
-    ctx.restore();
-    // the light along the forehead and the nose's ridge
-    ctx.strokeStyle = 'rgba(240,206,180,0.5)'; ctx.lineWidth = 0.5 * u; ctx.beginPath(); ctx.moveTo(hx + 6.6 * u, hy + 2.6 * u); ctx.quadraticCurveTo(hx + 5.4 * u, hy + 5.8 * u, hx + 4 * u, hy + 6.2 * u); ctx.moveTo(hx + 2.4 * u, hy + 6.7 * u); ctx.quadraticCurveTo(hx + 1.2 * u, hy + 7.7 * u, hx + 0.3 * u, hy + 8.3 * u); ctx.stroke();
-    // the nostril, the mouth's line, the lines at the eye's corner
-    ctx.fillStyle = 'rgba(60,36,26,0.7)'; ctx.beginPath(); ctx.ellipse(hx - 0.2 * u, hy + 7.6 * u, 0.45 * u, 0.3 * u, 0.6, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(70,40,30,0.75)'; ctx.lineWidth = 0.45 * u; ctx.beginPath(); ctx.moveTo(hx - 2.2 * u, hy + 7.5 * u); ctx.quadraticCurveTo(hx - 2.5 * u, hy + 6.6 * u, hx - 2.2 * u, hy + 5.8 * u); ctx.stroke();
-    // short greying hair over the crown and back, cut close, a few strands catching the light
-    ctx.fillStyle = '#5e5a55'; ctx.beginPath(); ctx.moveTo(hx - 3.6 * u, hy - 6.6 * u); ctx.quadraticCurveTo(hx + 2.4 * u, hy - 7.4 * u, hx + 6 * u, hy - 4.2 * u); ctx.quadraticCurveTo(hx + 8.4 * u, hy + 0.2 * u, hx + 6.6 * u, hy + 3.6 * u); ctx.quadraticCurveTo(hx + 5.6 * u, hy + 1.6 * u, hx + 4.6 * u, hy + 0.6 * u); ctx.quadraticCurveTo(hx + 1 * u, hy - 3 * u, hx - 3.6 * u, hy - 3.4 * u); ctx.closePath(); ctx.fill();
-    // its texture: short strokes following the skull's curve, lighter grey at the temple and the top where the light falls
-    ctx.save(); ctx.clip(); ctx.lineWidth = 0.28 * u; ctx.lineCap = 'round';
-    for (let i = 0; i < 46; i++) { const a2 = Math.PI * (1.05 + rr() * 0.95), r2 = 4.2 * u + rr() * 3.4 * u, cx2 = hx + 0.4 * u + Math.cos(a2) * r2 * 0.2, cy2 = hy - 0.6 * u, px = cx2 + Math.cos(a2 - Math.PI / 2) * r2, py = cy2 + Math.sin(a2 - Math.PI / 2) * r2 * 0.95, lit = px > hx + 2 * u ? 0.6 : 0.32;
-      ctx.strokeStyle = rr() < 0.55 ? `rgba(196,192,182,${lit})` : 'rgba(40,38,34,0.45)'; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(a2) * 0.9 * u, py + Math.sin(a2) * 0.9 * u); ctx.stroke(); }
-    ctx.restore();
-    // the ear, behind the cheek, with its inner fold
-    ctx.fillStyle = '#9a6e56'; ctx.beginPath(); ctx.ellipse(hx + 0.2 * u, hy - 1.2 * u, 2 * u, 1.4 * u, 0.15, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(70,44,32,0.6)'; ctx.lineWidth = 0.4 * u; ctx.beginPath(); ctx.arc(hx + 0.2 * u, hy - 1.1 * u, 1 * u, -0.6, 2.4); ctx.stroke();
-    // the eye, set under the brow: the lid's line, the iris, a catchlight; the brow's hair above it
-    ctx.fillStyle = '#e8dccc'; ctx.beginPath(); ctx.ellipse(hx + 2.3 * u, hy + 5.2 * u, 0.7 * u, 0.55 * u, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#3a3026'; ctx.beginPath(); ctx.arc(hx + 2.3 * u, hy + 5.5 * u, 0.42 * u, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,250,240,0.9)'; ctx.beginPath(); ctx.arc(hx + 2.5 * u, hy + 5.6 * u, 0.13 * u, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(50,32,24,0.85)'; ctx.lineWidth = 0.35 * u; ctx.beginPath(); ctx.moveTo(hx + 2.9 * u, hy + 4.7 * u); ctx.quadraticCurveTo(hx + 2.4 * u, hy + 5.6 * u, hx + 2.7 * u, hy + 6 * u); ctx.stroke(); // the upper lid
-    ctx.strokeStyle = 'rgba(70,62,54,0.9)'; ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.moveTo(hx + 3.5 * u, hy + 4.2 * u); ctx.quadraticCurveTo(hx + 3.8 * u, hy + 5.2 * u, hx + 3.4 * u, hy + 6.2 * u); ctx.stroke(); // the brow
+    drawFace(ctx, hx, hy, u, DIVER_LOOK); // (6.7.0) the face, the hair, the skin: from the creator (face_draw.js)
   } else {
   seg(ctx, 32 * u, -0.5 * u, 37 * u, -0.5 * u, 8 * u, 7.6 * u, SUIT); // neck
   const hg = ctx.createRadialGradient(hx - 2 * u, hy - 3 * u, 1, hx, hy, 8 * u);
@@ -358,7 +315,7 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
   ctx.fillStyle = vg;
   ctx.beginPath(); ctx.ellipse(hx + 2.2 * u, hy + 3.6 * u, 3.9 * u, 3.6 * u, 0.3, 0, Math.PI * 2); ctx.fill();
   // (6.5.4) behind the glass, faintly: the bridge of his nose and his eye, so there is a man in there
-  ctx.fillStyle = 'rgba(150,112,90,0.32)'; ctx.beginPath(); ctx.ellipse(hx + 1.4 * u, hy + 4.4 * u, 2.4 * u, 2 * u, 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = (SKINS[DIVER_LOOK.skin] || SKINS[2])[1]; ctx.globalAlpha *= 0.4; ctx.beginPath(); ctx.ellipse(hx + 1.4 * u, hy + 4.4 * u, 2.4 * u, 2 * u, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha /= 0.4;
   ctx.fillStyle = 'rgba(232,222,206,0.5)'; ctx.beginPath(); ctx.ellipse(hx + 2.6 * u, hy + 4.4 * u, 0.7 * u, 0.5 * u, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = 'rgba(30,24,20,0.75)'; ctx.beginPath(); ctx.arc(hx + 2.6 * u, hy + 4.6 * u, 0.38 * u, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = 'rgba(215,235,245,0.45)'; ctx.lineWidth = 0.7 * u;

@@ -105,6 +105,13 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   death and its depth, a broken heart under REVIVE, every kind carried with its picture and worth, the haul's total,
   one way back (one revive a dive; the first a diver ever takes is an ad, every later one $0.99) and Give up ("The haul is lost").
 
+- **Decided in 6.7**: a new diver is made in the creator (a name up to 12 letters, Earl if empty; man or woman, four
+  face shapes, three eye depths, seven hairstyles, six skins; Skip keeps Earl). The head is a real profile (forehead,
+  brow, nose, lips, chin, a jaw that turns under the ear), and the hair sits on top with volume above the skull, from
+  the hairline to behind the ear (face_draw.js). Earl himself is younger: dark swept hair, a shadow of stubble.
+  The first trawl, the first chamber and the first backup air tank are taught once each, on the tutorial's spotlight;
+  backup air tanks are used from the bag.
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build
