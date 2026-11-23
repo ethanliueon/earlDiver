@@ -1608,7 +1608,7 @@ export class UI {
       el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); this.toggleDave(true); });
       el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); });
       el.addEventListener('click', (ev) => { if (ev.target === el) { el.hidden = true; clearInterval(this.dtT); } }); }
-    const line = this.dave.greeting(), p = el.querySelector('.dt-line'); p.textContent = ''; el.hidden = false;
+    const line = this.dave.greeting(), p = el.querySelector('.dt-line'); p.textContent = ''; el.hidden = false; p.classList.toggle('long', line.length > 80); /* (7.1.3) a long line set smaller, inside the box */
     let i = 0; clearInterval(this.dtT); this.dtT = setInterval(() => { i += 2; p.textContent = line.slice(0, i); if (i >= line.length) clearInterval(this.dtT); }, 28); // typed out, quickly
     el.querySelector('.dt-box').onclick = () => { if (p.textContent.length < line.length) { clearInterval(this.dtT); p.textContent = line; } }; // a tap shows it all at once
   }
