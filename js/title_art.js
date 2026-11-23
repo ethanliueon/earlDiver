@@ -81,6 +81,7 @@ function drawHatchetfish(x, L, t) {
 }
 
 let raf = 0;
+let lay = null;
 export function startTitleArt(host) {
   if (!host || host.querySelector('canvas.t-art')) return;
   const cv = document.createElement('canvas'); cv.className = 't-art'; host.prepend(cv);
@@ -93,22 +94,31 @@ export function startTitleArt(host) {
     const t = (performance.now() - t0) / 1000, W = cv.width, H = cv.height;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
     const L = letters(Math.max(0.5, Math.round((H / 160) * 4) / 4));
-    const k = Math.min(W / L.cw, H / L.ch), lw = L.cw * k, lh = L.ch * k, lx = (W - lw) / 2, ly = (H - lh) / 2;
-    // the hatchetfish behind the letters, drifting slowly right to left and back, bobbing
-    { const per = 26, ph = (t % per) / per, dir = ph < 0.5 ? -1 : 1, u = ph < 0.5 ? ph * 2 : (ph - 0.5) * 2, fx = dir < 0 ? W * (1.05 - u * 1.1) : W * (-0.05 + u * 1.1), fy = H * (0.74 + 0.05 * Math.sin(t * 0.7)), fl = H * 0.36;
-      ctx.save(); ctx.globalAlpha = 1; ctx.translate(fx, fy); if (dir < 0) ctx.scale(-1, 1); ctx.rotate(Math.sin(t * 1.3) * 0.04); ctx.translate(-fl * 0.5, -fl * 0.35); drawHatchetfish(ctx, fl, t); ctx.restore(); }
-    // the letters under the water: drawn in thin slices, each shifted by a slow wave, so the water ripples them
+    // (7.0.2) the word takes the left of the canvas and leaves room after it for the hatchetfish
+    const k = Math.min((W * 0.84) / L.cw, (H * 0.86) / L.ch), lw = L.cw * k, lh = L.ch * k, lx = W * 0.03, ly = (H - lh) / 2;
+    // the letters under the water, on a layer of their own (so the shadow can be cast from it): drawn in thin slices,
+    // each shifted by a slow wave, so the water ripples them; then the water's colour over them and a faint net of light
+    if (!lay || lay.width !== W || lay.height !== H) { lay = document.createElement('canvas'); lay.width = W; lay.height = H; }
+    const lx2 = lay.getContext('2d'); lx2.setTransform(1, 0, 0, 1, 0, 0); lx2.clearRect(0, 0, W, H);
     const sl = Math.max(2, Math.round(2 * dpr));
     for (let y = 0; y < lh; y += sl) {
       const off = Math.sin(y / (14 * dpr) + t * 1.4) * 1.6 * dpr + Math.sin(y / (37 * dpr) - t * 0.6) * 1.1 * dpr;
-      ctx.drawImage(L.c, 0, (y / lh) * L.ch, L.cw, (sl / lh) * L.ch, lx + off, ly + y, lw, sl);
+      lx2.drawImage(L.c, 0, (y / lh) * L.ch, L.cw, (sl / lh) * L.ch, lx + off, ly + y, lw, sl);
     }
-    // the water's colour over them, deeper toward the foot, and a faint net of light moving across
-    ctx.save(); ctx.globalCompositeOperation = 'source-atop';
-    const wg = ctx.createLinearGradient(0, ly, 0, ly + lh); wg.addColorStop(0, 'rgba(60,110,120,0.12)'); wg.addColorStop(1, 'rgba(12,40,58,0.5)'); ctx.fillStyle = wg; ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = 'rgba(240,250,236,0.16)'; ctx.lineWidth = 1.2 * dpr; // still source-atop: the light falls only on the letters
-    for (let i = 0; i < 26; i++) { const cx = ((i * 97 + t * 18 * dpr) % (W + 80)) - 40, cy = ly + ((i * 53) % 100) / 100 * lh, rr = (14 + (i * 7) % 16) * dpr; ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * 0.4, Math.sin(t * 0.3 + i) * 0.4, 0, Math.PI * 1.6); ctx.stroke(); }
-    ctx.restore();
+    lx2.save(); lx2.globalCompositeOperation = 'source-atop';
+    const wg = lx2.createLinearGradient(0, ly, 0, ly + lh); wg.addColorStop(0, 'rgba(60,110,120,0.12)'); wg.addColorStop(1, 'rgba(12,40,58,0.5)'); lx2.fillStyle = wg; lx2.fillRect(0, 0, W, H);
+    lx2.strokeStyle = 'rgba(240,250,236,0.16)'; lx2.lineWidth = 1.2 * dpr;
+    for (let i = 0; i < 26; i++) { const cx = ((i * 97 + t * 18 * dpr) % (W + 80)) - 40, cy = ly + ((i * 53) % 100) / 100 * lh, rr = (14 + (i * 7) % 16) * dpr; lx2.beginPath(); lx2.ellipse(cx, cy, rr, rr * 0.4, Math.sin(t * 0.3 + i) * 0.4, 0, Math.PI * 1.6); lx2.stroke(); }
+    lx2.restore();
+    // (7.0.2) a soft shadow under the letters, cast down and a little right, so they stand off the sea behind
+    ctx.save(); ctx.globalAlpha = 0.62; ctx.filter = `brightness(0) blur(${(5 * dpr).toFixed(1)}px)`; ctx.drawImage(lay, 2 * dpr, 5 * dpr); ctx.restore();
+    ctx.save(); ctx.globalAlpha = 0.35; ctx.filter = `brightness(0) blur(${(1.2 * dpr).toFixed(1)}px)`; ctx.drawImage(lay, 0.8 * dpr, 2 * dpr); ctx.restore(); // and a tight one at their edge
+    ctx.drawImage(lay, 0, 0);
+    // (7.0.2) the hatchetfish after the word, facing it, wholly seen: hanging in the water, bobbing and turning a little
+    { const fl = H * 0.44, fx = lx + lw + (W - lx - lw) * 0.5 + Math.sin(t * 0.45) * W * 0.006, fy = H * 0.52 + Math.sin(t * 0.8) * H * 0.04;
+      ctx.save(); ctx.translate(fx, fy); ctx.scale(-1, 1); ctx.rotate(Math.sin(t * 1.1) * 0.05 - 0.04);
+      ctx.save(); ctx.globalAlpha = 0.5; ctx.filter = `brightness(0) blur(${(4 * dpr).toFixed(1)}px)`; ctx.translate(-fl * 0.5 + 2 * dpr, -fl * 0.35 + 4 * dpr); drawHatchetfish(ctx, fl, t); ctx.restore(); // its shadow
+      ctx.translate(-fl * 0.5, -fl * 0.35); drawHatchetfish(ctx, fl, t); ctx.restore(); }
   };
   cancelAnimationFrame(raf); frame();
 }

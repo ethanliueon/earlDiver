@@ -1292,7 +1292,7 @@ html body #oldcard .oc-buy small, html body #oldcard .oc-coins { display: inline
 html body #msgs .msg::before { display: none !important; }
 html body #msgs .msg-rule { display: none !important; }
 html body #msgs .msg .msg-t:not(#_a) { font: 600 26px/1.2 var(--o-hud, "Barlow Semi Condensed"), sans-serif !important; color: #dcd2b8 !important; opacity: 0.9; text-shadow: 0 0 10px rgba(0,0,0,0.32), 0 1px 2px rgba(0,0,0,0.25) !important; letter-spacing: 0.015em !important; }
-html body #msgs .msg-danger .msg-t:not(#_a) { color: #cf8a6c !important; animation: none !important; }
+html body #msgs .msg-danger .msg-t:not(#_a) { color: #e0473a !important; animation: none !important; } /* (7.0.2) every critical warning one red, as the hull bar and the air line are */
 html body #msgs .msg-big .msg-t:not(#_a) { font-size: 30px !important; }
 html body #msgs .msg-small:not(#_a) { color: #dcd2b8 !important; text-shadow: 0 0 8px rgba(0,0,0,0.3) !important; opacity: 0.8; }
 /* (6.2.0) the chest's find on the olive plate the other panels use (not a green gradient); the find sits below the box,
@@ -1761,3 +1761,7 @@ html body #title .t-plate h1 canvas.t-art:not(#_a):not(#_b) { position: static !
 html body #title .t-plate h1 span:not(#_a):not(#_b):not(#_c) { color: rgba(214, 222, 210, 0.7) !important; text-shadow: 0 1px 6px rgba(0, 20, 30, 0.6) !important; }
 /* (7.0.0) Dave's shoulders fill the box down to its foot: no gap under him */
 html body #davetalk .dt-face:not(#_a):not(#_b):not(#_c) { margin-bottom: -22px !important; margin-left: -40px !important; width: 186px; }
+/* (7.0.2) the name on the diver screen 1.6 times larger (scale 0.34 to 0.54), a little lower so it never touches the
+   top; the lockers and "Choose a diver" moved down to keep the gap under it */
+html body #title.select .t-plate:not(#_a) { transform: translateY(-35vh) scale(0.54); }
+html body #title .t-select:not(#_a) { padding-top: 17vh !important; }
