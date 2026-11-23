@@ -95,7 +95,7 @@ function drawDave(x, S, room = true) {
 export function daveTalkPlate(W, H, portrait = null) {
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   let sd = 9; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-  const top = H * 0.56, plate = new Path2D(); plate.roundRect(6, top, W - 12, H - top - 10, H * 0.03);
+  const top = H * 0.5, plate = new Path2D(); plate.roundRect(6, top, W - 12, H - top - 10, H * 0.03);
   // Dave first, behind the box: a soft shadow round him so he sits on the water, then the figure
   const DS = H * 0.86, DX = H * 0.04, DY = -H * 0.06; if (!portrait) { x.save(); x.beginPath(); x.rect(0, 0, W, H - 12); x.clip(); /* nothing of him below the box */
   x.save(); x.filter = `blur(${(H * 0.03).toFixed(1)}px)`; x.globalAlpha = 0.5; x.translate(DX + 6, DY + 8); x.globalCompositeOperation = 'source-over'; drawDave(x, DS, false); x.restore();

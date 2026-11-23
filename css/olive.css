@@ -1789,3 +1789,9 @@ html body #davetalk .dt-box.painted .dt-acts:not(#_a):not(#_b) { top: calc(var(-
 /* (7.0.12) his long first hello fits the box: the name a little higher, the line close under it, a touch smaller */
 html body #davetalk .dt-box.painted .dt-name:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) { top: calc(var(--dt-top) + 4%) !important; }
 html body #davetalk .dt-box.painted .dt-line:not(#_a):not(#_b):not(#_c):not(#_d) { top: calc(var(--dt-top) + 13.5%); font-size: clamp(13px, 3.9vh, 17px); line-height: 1.28; right: 21%; }
+/* (7.0.13) Dave's box sits between the stick and the action buttons, so the whole HUD stays visible round it */
+html body #davetalk:not(#_a) { background: none !important; padding-bottom: 8px !important; pointer-events: none; }
+html body #davetalk .dt-box.painted:not(#_a):not(#_b):not(#_c):not(#_d) { pointer-events: auto; aspect-ratio: 1640 / 700; width: min(540px, calc(100vw - 330px)) !important; }
+html body #davetalk .dt-box.painted .dt-name:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f) { font-size: clamp(15px, 4.4vh, 19px) !important; top: calc(var(--dt-top) + 3%) !important; }
+html body #davetalk .dt-box.painted .dt-line:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) { top: calc(var(--dt-top) + 12%); font-size: clamp(12px, 3.5vh, 15px); line-height: 1.25; right: 22%; }
+html body #davetalk .dt-box.painted .dt-acts button:not(#_a):not(#_b) { min-width: 0 !important; padding: 5px 12px !important; font-size: 13px !important; }

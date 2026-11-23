@@ -42,6 +42,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
    written into the scene beside him. Add no other lines from him.
 7. **Order on screen.** Things line up on one axis, spacing is even, nothing overlaps or covers anything else, no
    lopsided panels or dead space. Check at 844 x 390 and at the smallest phone, 667 x 375.
+   Keep the HUD and icons as constant as makes sense: a dialogue or card fits round the HUD (money, menu column,
+   depth, radar, stick and buttons stay), it never makes them vanish. Test every screen in its real place in the game
+   (Dave at his door in a dive, not over the title).
 8. **The game shows; it does not talk.** Labels, cards and tables are terse names and figures, never sentences
    written as if someone were speaking ("Gold coin" beside a coin picture, not "A gold coin as well"; "Rare 9 %", not
    "What it will be:"). A picture carries what it can, a word carries the rest; no chat-like phrasing, no explaining

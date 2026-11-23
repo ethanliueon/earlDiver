@@ -1184,15 +1184,19 @@ e.inSub ? [
       const opening = clamp(mt / 1.3, 0, 1), rest = close ? 1 : 0.24 + 0.4 * near, open = Math.max(0.05, (1 - blink) * ease(opening) * (big * 0.92 + (1 - big) * rest));
       { const gg = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.6); gg.addColorStop(0, `rgba(120,14,6,${(0.18 + 0.22 * near * pulse + 0.2 * big).toFixed(3)})`); gg.addColorStop(1, 'rgba(120,14,6,0)'); ctx.fillStyle = gg; ctx.fillRect(ex - ew * 1.6, ey - ew * 1.6, ew * 3.2, ew * 3.2); } // a dull red breath round it
       ctx.save(); ctx.globalAlpha *= a * (0.85 + 0.15 * Math.max(big, near));
-      ctx.drawImage(E.c, ex - E.cx * sc, ey - E.cy * sc, E.c.width * sc, E.c.height * sc);
+      ctx.save(); ctx.beginPath(); ctx.ellipse(ex + E.ew * sc * 0.02, ey - E.eh * sc * 0.08, E.ew * sc * 1.45, E.eh * sc * 1.7, -0.18, 0, TAU); ctx.clip(); /* (7.0.13) only the eye and its near hide: no stray flecks */
+      ctx.drawImage(E.c, ex - E.cx * sc, ey - E.cy * sc, E.c.width * sc, E.c.height * sc); ctx.restore();
       ctx.save(); ctx.translate(ex, ey); ctx.scale(sc, sc);
       const almond = () => { ctx.beginPath(); ctx.moveTo(-E.ew, E.eh * 0.25); ctx.bezierCurveTo(-E.ew * 0.55, -E.eh * 1.15, E.ew * 0.3, -E.eh * 1.2, E.ew, -E.eh * 0.5); ctx.bezierCurveTo(E.ew * 0.45, E.eh * 0.85, -E.ew * 0.45, E.eh * 1.05, -E.ew, E.eh * 0.25); ctx.closePath(); };
       almond(); ctx.clip();
       const sw = E.eh * (0.5 - 0.3 * near) * (1 + 0.06 * Math.sin(g.time * 0.7)), px = 2 + Math.sin(g.time * 0.23) * 4;
       { const hg = ctx.createRadialGradient(px, 0, 0, px, 0, E.eh * 0.9); hg.addColorStop(0, 'rgba(255,180,140,0.5)'); hg.addColorStop(1, 'rgba(255,120,80,0)'); ctx.fillStyle = hg; ctx.fillRect(px - E.eh, -E.eh, E.eh * 2, E.eh * 2); } // the hottest gold round the pupil // the slit, with a faint dark-red edge where it meets the glow
       ctx.shadowColor = 'rgba(90,10,2,0.9)'; ctx.shadowBlur = 6; ctx.fillStyle = '#040100'; ctx.beginPath(); ctx.moveTo(px, -E.eh * 1.25); ctx.quadraticCurveTo(px + sw, 0, px, E.eh * 1.25); ctx.quadraticCurveTo(px - sw, 0, px, -E.eh * 1.25); ctx.fill(); ctx.shadowBlur = 0;
-      if (open < 0.999) { const lidY = E.eh * 1.2 * (1 - open); ctx.fillStyle = '#060201'; // the lids closing from above and below
-        ctx.beginPath(); ctx.rect(-E.ew, -E.eh * 1.3, E.ew * 2, lidY * 1.1); ctx.fill(); ctx.beginPath(); ctx.rect(-E.ew, E.eh * 1.3 - lidY * 0.9, E.ew * 2, lidY * 0.9); ctx.fill(); }
+      if (open < 0.999) { const k = 1 - open; ctx.fillStyle = '#060201'; // (7.0.13) the lids close as lids do: each edge a curve following the eye, meeting in a slanted line
+        const up = -E.eh * 1.25 + E.eh * 1.3 * k, lo = E.eh * 1.1 - E.eh * 1.05 * k, tilt = -E.eh * 0.35;
+        ctx.beginPath(); ctx.moveTo(-E.ew * 1.1, -E.eh * 2); ctx.lineTo(E.ew * 1.1, -E.eh * 2); ctx.lineTo(E.ew * 1.1, up + tilt); ctx.quadraticCurveTo(0, up - E.eh * 0.55 * (1 - k * 0.6), -E.ew * 1.1, up - tilt * 0.4); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-E.ew * 1.1, E.eh * 2); ctx.lineTo(E.ew * 1.1, E.eh * 2); ctx.lineTo(E.ew * 1.1, lo + tilt * 0.6); ctx.quadraticCurveTo(0, lo + E.eh * 0.45 * (1 - k * 0.6), -E.ew * 1.1, lo - tilt * 0.2); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(150,40,20,0.35)'; ctx.lineWidth = E.eh * 0.06; ctx.beginPath(); ctx.moveTo(E.ew * 1.1, up + tilt); ctx.quadraticCurveTo(0, up - E.eh * 0.55 * (1 - k * 0.6), -E.ew * 1.1, up - tilt * 0.4); ctx.stroke(); }
       ctx.restore();
       ctx.restore();
     }

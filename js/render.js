@@ -2292,25 +2292,37 @@ export class Renderer {
 
   // a kelp blade, 128 px long along +x from its base, centred on y = 0 of a 64 px tall picture;
   // v: how far it droops (0 straight .. 2 most); the near layer is a little brighter
+  // (7.0.13) a giant-kelp blade, painted at four times its size and drawn down to 128 x 64: a frilled, ruffled edge, the
+  // blade shaded across its width (lit along the upper edge, darker below), the corrugated surface of real giant kelp in
+  // fine wrinkles across it, a darker midrib, light showing through toward the thin tip, the tip worn ragged
   bladeSprite(layer, v) {
     const key = layer * 3 + v, arr = this.bladeSprites || (this.bladeSprites = []);
     if (arr[key]) return arr[key];
-    const c = document.createElement('canvas'); c.width = 128; c.height = 64;
-    const x = c.getContext('2d'), dark = layer === 1 ? 0.75 : 1, droop = [0.05, 0.3, 0.55][v] * 128;
+    const Z = 4, c = document.createElement('canvas'); c.width = 128 * Z; c.height = 64 * Z;
+    const x = c.getContext('2d'), dark = layer === 1 ? 0.75 : 1, droop = [0.05, 0.3, 0.55][v] * 128; x.scale(Z, Z);
+    let sd = 31 + key; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
     const P = (q, e) => [128 * q, 32 + droop * q * q + e + q * q * 128 * 0.08];
+    const col = (rr, gg, bb, a) => `rgba(${(rr * dark) | 0},${(gg * dark) | 0},${(bb * dark) | 0},${a})`;
     const left = [], right = [];
-    for (let j = 0; j <= 10; j++) { const q = j / 10, w = 9 * Math.sin(Math.PI * Math.pow(q, 0.6)) * (1 + 0.15 * Math.sin(q * 13)); left.push(P(q, w)); right.push(P(q, -w)); }
-    x.beginPath(); x.moveTo(left[0][0], left[0][1]);
-    for (const p of left) x.lineTo(p[0], p[1]);
-    for (let j = right.length - 1; j >= 0; j--) x.lineTo(right[j][0], right[j][1]);
-    x.closePath();
-    x.fillStyle = `rgba(${(122 * dark) | 0},${(96 * dark) | 0},${(34 * dark) | 0},0.78)`; x.fill();
-    const m0 = P(0.05, 0), m1 = P(0.55, 0), m2 = P(0.92, 0);
-    x.strokeStyle = `rgba(${(70 * dark) | 0},${(54 * dark) | 0},${(20 * dark) | 0},0.5)`; x.lineWidth = 1.2;
-    x.beginPath(); x.moveTo(m0[0], m0[1]); x.quadraticCurveTo(m1[0], m1[1], m2[0], m2[1]); x.stroke();
+    for (let j = 0; j <= 60; j++) { const q = j / 60, w0 = 9 * Math.sin(Math.PI * Math.pow(q, 0.6)) * (1 + 0.15 * Math.sin(q * 13)), fr = q > 0.12 ? (0.55 + 0.45 * Math.sin(q * 70 + 1)) * 0.9 * Math.min(1, q * 3) : 0; // the frill
+      const wl = w0 + fr - (q > 0.9 && r() < 0.5 ? r() * 3 : 0), wr = w0 + fr * 0.8 - (q > 0.9 && r() < 0.5 ? r() * 3 : 0); left.push(P(q, wl)); right.push(P(q, -wr)); }
+    const blade = new Path2D(); blade.moveTo(left[0][0], left[0][1]); for (const p of left) blade.lineTo(p[0], p[1]); for (let j = right.length - 1; j >= 0; j--) blade.lineTo(right[j][0], right[j][1]); blade.closePath();
+    x.fillStyle = col(118, 92, 32, 0.82); x.fill(blade);
+    x.save(); x.clip(blade);
+    for (let j = 0; j < 40; j++) { const q = j / 40, [cx, cy] = P(q, 0), g = x.createLinearGradient(cx, cy - 10, cx, cy + 10); // across its width: lit above, shaded below
+      g.addColorStop(0, col(176, 150, 74, 0.55)); g.addColorStop(0.45, col(130, 102, 38, 0)); g.addColorStop(1, col(40, 30, 10, 0.5)); x.fillStyle = g; x.fillRect(cx - 2, cy - 14, 128 / 40 + 3, 28); }
+    x.lineWidth = 0.35; for (let j = 0; j < 90; j++) { const q = 0.08 + r() * 0.88, [cx, cy] = P(q, (r() - 0.5) * 14), l = 1.5 + r() * 3; // the corrugation: short wrinkles across the blade
+      x.strokeStyle = r() < 0.5 ? col(60, 44, 14, 0.45) : col(200, 176, 100, 0.35); x.beginPath(); x.moveTo(cx - l * 0.3, cy - l); x.quadraticCurveTo(cx + 0.6, cy, cx - l * 0.3, cy + l); x.stroke(); }
+    { const tg = x.createLinearGradient(0, 0, 128, 0); tg.addColorStop(0, col(40, 30, 10, 0.35)); tg.addColorStop(0.35, 'rgba(0,0,0,0)'); tg.addColorStop(0.8, col(210, 190, 110, 0.18)); tg.addColorStop(1, col(220, 200, 120, 0.28)); x.fillStyle = tg; x.fillRect(0, 0, 128, 64); } // dark at its root, light through the thin tip
+    x.restore();
+    x.strokeStyle = col(60, 44, 14, 0.4); x.lineWidth = 0.5; x.stroke(blade); // its edge
+    const m0 = P(0.03, 0), m1 = P(0.55, 0), m2 = P(0.93, 0);
+    x.strokeStyle = col(62, 46, 16, 0.6); x.lineWidth = 1.3; x.beginPath(); x.moveTo(m0[0], m0[1]); x.quadraticCurveTo(m1[0], m1[1], m2[0], m2[1]); x.stroke(); // the midrib
+    x.strokeStyle = col(200, 178, 104, 0.3); x.lineWidth = 0.5; x.beginPath(); x.moveTo(m0[0], m0[1] - 0.8); x.quadraticCurveTo(m1[0], m1[1] - 0.8, m2[0], m2[1] - 0.8); x.stroke(); // lit along its top
     arr[key] = c;
     return c;
   }
+
 
   drawKelp(g, S, Sy, ppm, layer, x0, x1) {
     // Batched: every stalk of this layer goes into one path, every blade into another,
@@ -2370,11 +2382,12 @@ export class Renderer {
       // M x translate(bx,by) x rotate(a2) x scale(sx, sy)
       const a_ = ca * sx, b_ = sa * sx, c_ = -sa * sy, d_ = ca * sy;
       ctx.setTransform(M.a * a_ + M.c * b_, M.b * a_ + M.d * b_, M.a * c_ + M.c * d_, M.b * c_ + M.d * d_, M.a * bx + M.c * by + M.e, M.b * bx + M.d * by + M.f);
-      ctx.drawImage(spr, 0, -32);
+      ctx.drawImage(spr, 0, -32, 128, 64);
     }
     ctx.setTransform(M);
     ctx.fillStyle = `rgba(${(140 * dark) | 0},${(120 * dark) | 0},${(50 * dark) | 0},0.9)`;
     ctx.fill(bulbs);
+    ctx.strokeStyle = `rgba(${(50 * dark) | 0},${(40 * dark) | 0},${(14 * dark) | 0},0.6)`; ctx.lineWidth = Math.max(0.6, ppm * 0.02); ctx.stroke(bulbs); // (7.0.13) the floats' edges
   }
 
   // The wrecks are detailed paintings (see scenery_draw.js), made once at a generous resolution and

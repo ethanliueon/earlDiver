@@ -656,8 +656,8 @@ function displaySpecimen(key) {
 // craves this dive, which she pays three times the market for.
 const ANGLER_RATE = 0.7, CRAVE_RATE = 3;
 // (2.7.0) Dave's Haul: at his airlock (docked in the sub, or swimming), F opens his shop
-const nearStation = () => { const St = g.world.station; return !!St && dist(g.earl.x, g.earl.y, St.x + STATION_COLLAR.dx + 1.5, St.y + STATION_COLLAR.dy) < 9; }; // (3.0.0)
-const nearDave = () => { const D = g.world.dave; return !!D && dist(g.earl.x, g.earl.y, D.x + 6.5, D.y - 3.1) < 10; };
+const nearStation = () => { const St = g.world.station; return !!St && dist(g.earl.x, g.earl.y, St.x + STATION_COLLAR.dx + 1.5, St.y + STATION_COLLAR.dy) < (g.earl.inSub ? 16 : 9); }; // (3.0.0) (7.0.13) from the sub, farther: its hull keeps it off
+const nearDave = () => { const D = g.world.dave; return !!D && dist(g.earl.x, g.earl.y, D.x + 6.5, D.y - 3.1) < (g.earl.inSub ? 16 : 10); };
 // he buys odd finds for a quarter more than the Margaret pays: one kind, or 'all' of them
 function daveSell(k) {
   const keys = k === 'all' ? DAVE_FINDS.filter((q) => (g.inv[q] || 0) > 0) : [k];
@@ -2288,7 +2288,7 @@ function update(dt) {
     // (5.6.4) where the thing F acts on is, so its button can sit beside it (not over Earl)
     g.fAnchor = target ? (target.kind === 'board' ? { x: g.sub.x, y: g.sub.y } : target.kind === 'pickup' ? { x: target.p.x, y: target.p.y } : target.kind === 'trap' ? { x: target.t.x, y: target.t.y - 0.5 } : null) : null;
     const atAngler = nearAngler(), atDave = !atAngler && nearDave(), atStation = !atAngler && !atDave && nearStation();
-    g.atLure = !atDave && !atStation && nearLure(e.x, e.y); // (6.1.8) her lure: the way into what she has
+    g.atLure = !atDave && !atStation && nearLure(e.x, e.y, e.inSub ? 6 : undefined); // (6.1.8) her lure: the way into what she has
     g.subHandF = !!(e.inSub && (atDave || atStation || g.atLure || overTable(e.x, e.y))); // (5.7.1) the hand in the sub: the stores, Dave, the old one's table
     if (atStation) {
       g.prompt = 'F  Station stores' + (e.inSub ? '   ·   hold F  Leave sub' : '');
@@ -3211,7 +3211,7 @@ function frame(now) {
   { const off = !!((g.kill && (g.kill.inSub || g.kill.esc)) || g.mode === 'dying'), dim = !!(g.kill && !off); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); if (document.body.classList.contains('hud-dim') !== dim) document.body.classList.toggle('hud-dim', dim); } // (5.10.10) in its jaws the journal stays, dimmed
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
     hud.spotWanted = !!(hud.touch && profile && (profile.tut === 'on' || !!g.lesson) /* (6.6.2) and the lessons */ && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
-  hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
+  hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin davetalk')); /* (7.0.13) Dave's words sit at the foot of the scene: the HUD stays round them */ // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
