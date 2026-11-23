@@ -82,6 +82,20 @@ export const DAVE = { x: 3278, half: 11 };                 // a cold seep on the
 export const STATION = { x: 3175, half: 16 };
 export const PIT = { x: 1180, half: 38, y: 5100 };       // the deepest point: a pit in the hadal trench floor
 export const TRENCH = { x0: 70, x1: 2220 };              // the hadal trench floor (the monster's lair is down here)
+// (6.8.1) the sail points: a numbered marker buoy on its chain above each place. A point is found by passing over it
+// (the boat, the sub or the diver within 60 m of it, at any depth); found, the chart can sail the boat there. The boat
+// lies at anchor 26 m east of its buoy, so the buoy rides clear of its bow.
+export const SAIL_OFF = 26;
+export const SAIL = [
+  { id: 'home', x: 4824, no: 'B-01', name: 'Home mooring' },
+  { id: 'canyon', x: 4440, no: 'B-07', name: 'The canyon' },
+  { id: 'seep', x: 3960, no: 'B-12', name: 'Cold seep' },
+  { id: 'dave', x: 3290, no: 'B-19', name: "Dave's Haul" },
+  { id: 'station', x: 3160, no: 'B-21', name: 'Station 7' },
+  { id: 'whale', x: 2770, no: 'B-26', name: 'Whale fall' },
+  { id: 'trench', x: 1100, no: 'B-38', name: 'The trench' },
+  { id: 'cave', x: 90, no: 'B-43', name: "The Old One's cave" },
+];
 export const CANYON = { x0: 4385, x1: 4495, top: 1000 }; // the canyon below its rim, where the current runs
 
 export function generateWorld(seed) {

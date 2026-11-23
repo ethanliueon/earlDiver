@@ -1675,3 +1675,15 @@ html body #davetalk .dt-name:not(#_a) { left: 132px !important; }
 body:has(#tankroom:not([hidden])) #msgs:not(#_a) { top: 92px !important; }
 /* (6.7.2) the journal's little pictures keep a faint shadow on the paper, so a pale jelly is still seen */
 html body #journal .jcell img:not(#_a) { filter: drop-shadow(0 1px 1px rgba(40, 30, 18, 0.55)) drop-shadow(0 0 2px rgba(40, 30, 18, 0.35)); }
+/* (6.8.1) Sail here: the loading screen, and the chart's plate for a buoy */
+#sailing { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at 50% 45%, #1a2119 0%, #0c100c 70%); opacity: 0; transition: opacity 0.35s ease; pointer-events: auto; }
+#sailing[hidden] { display: none; }
+#sailing.on { opacity: 1; } #sailing.off { opacity: 0; }
+#sailing .sl-in { display: flex; flex-direction: column; align-items: center; gap: 6px; font-family: "Barlow Semi Condensed", "Arial Narrow", sans-serif; }
+#sailing small { font-weight: 600; font-size: 13px; letter-spacing: 3px; color: rgba(206,196,166,0.6); }
+#sailing b { font-weight: 600; font-size: 30px; color: #e2d8bc; letter-spacing: 0.5px; }
+#sailing i { display: block; width: 180px; height: 2px; margin-top: 10px; background: rgba(206,196,166,0.15); overflow: hidden; }
+#sailing i s { display: block; height: 100%; width: 0; background: rgba(206,196,166,0.6); transition: width 1.4s linear 0.25s; }
+#sailing.on i s { width: 100%; }
+#chart .ce-why { margin-top: 6px; font: 500 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: rgba(214,206,182,0.7); }
+#chart .ce-btns button:disabled { filter: grayscale(1) brightness(0.7); cursor: default; }

@@ -1682,6 +1682,15 @@ export class UI {
     pnl.style.zoom = 1; const h = pnl.scrollHeight, room = window.innerHeight - 20;
     pnl.style.zoom = h > room ? Math.max(0.5, room / h).toFixed(3) : '';
   }
+  // (6.8.1) Sail here: a short loading screen over everything (the buoy's number, the place, a line that fills), the
+  // move made under it, then it clears
+  sailScreen(pt, done) {
+    let el = document.getElementById('sailing'); if (!el) { el = document.createElement('div'); el.id = 'sailing'; document.body.appendChild(el); }
+    el.innerHTML = `<div class="sl-in"><small>${pt.no}</small><b>${pt.name}</b><i><s></s></i></div>`; el.hidden = false; el.classList.remove('on', 'off');
+    requestAnimationFrame(() => el.classList.add('on'));
+    setTimeout(() => { try { done(); } catch (e) { console.error(e); } }, 700);
+    setTimeout(() => { el.classList.add('off'); setTimeout(() => { el.hidden = true; el.classList.remove('on', 'off'); }, 450); }, 1900);
+  }
   showGame() {
     $('title').classList.add('gone'); $('title').classList.remove('select', 'attract'); // (5.3.6) the divers' tags must not stay live (invisible) over the game
     $('menu').classList.add('gone');

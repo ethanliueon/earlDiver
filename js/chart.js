@@ -1,7 +1,7 @@
 // (4.10.0) the chart: the whole sea in section, as the quest maps draw it, with the player's own markers. Click the
 // water or the seabed to set a marker there, name it and pick its colour; click a marker to rename it, follow it (the
 // tutorial's trail leads there) or take it off. Markers are kept with the save, and show in the sea as small pins.
-import { WORLD_W, BOAT, STATION, DAVE } from './world.js';
+import { WORLD_W, BOAT, STATION, DAVE, SAIL, SAIL_OFF } from './world.js';
 
 const DEPTH = 5200, MAX_MARKS = 24;
 export const MARK_COLS = ['#f2c868', '#e8705a', '#6ac0e8', '#9fdc8c', '#c891f0'];
@@ -32,6 +32,7 @@ export class Chart {
     this.cv.addEventListener('click', (ev) => {
       const P = this.h.getProfile(), M = markersOf(P), hit = this.markerAt(ev);
       if (hit) { this.openEdit(hit, false); return; }
+      const sp = this.sailAt(ev); if (sp) { this.openSail(sp); return; } // (6.8.1)
       if (!this.edit.hidden) { this.closeEdit(); return; }
       const w = this.toWorld(ev); if (!w) return;
       if (M.length >= MAX_MARKS) { this.flash(`The chart holds ${MAX_MARKS} markers: take one off first`); return; }
@@ -65,6 +66,24 @@ export class Chart {
     let best = null, bd = 13;
     for (const m of markersOf(this.h.getProfile())) { const d = Math.hypot(X(m.x) - px, Y(m.y) - 9 - py); if (d < bd) { bd = d; best = m; } }
     return best;
+  }
+  // (6.8.1) a found sail point near the tap (its buoy on the surface line)
+  sailAt(ev) {
+    if (!this.h.sailFound) return null;
+    const r = this.cv.getBoundingClientRect(), { W, H, X, Y } = this.geo, F = this.h.sailFound();
+    const px = (ev.clientX - r.left) * (W / r.width), py = (ev.clientY - r.top) * (H / r.height);
+    let best = null, bd = 22; for (const s of SAIL) { if (!F[s.id]) continue; const d = Math.hypot(X(s.x) - px, (Y(0) - 8 - py) * 0.7); if (d < bd) { bd = d; best = s; } }
+    return best;
+  }
+  // its plate: the buoy's number and the place, and Sail here (greyed, with the reason, away from the boat)
+  openSail(s) {
+    this.sel = null; const { W, X, Y } = this.geo, r = this.cv.getBoundingClientRect(), k = r.width / W, ed = this.edit, why = this.h.sailWhy(), here = Math.abs(BOAT.x - (s.x + SAIL_OFF)) < 15;
+    ed.innerHTML = `<div class="ce-head">${esc(s.no)} <small>${esc(s.name)}</small></div>
+      <div class="ce-btns"><button class="ce-save ce-sail"${why || here ? ' disabled' : ''}>Sail here</button><button class="ce-cancel">Close</button></div>${why || here ? `<div class="ce-why">${here ? 'The boat is here' : esc(why)}</div>` : ''}`;
+    ed.hidden = false;
+    const left = X(s.x) * k, ew = 220;
+    ed.style.left = Math.max(6, Math.min(r.width - ew - 6, left - ew / 2)) + 'px'; ed.style.top = Math.max(6, Y(0) * k + 18) + 'px';
+    ed.onclick = (ev) => { const b = ev.target.closest('button'); if (!b || b.disabled) return; if (b.classList.contains('ce-sail')) { this.closeEdit(); this.h.sail(s.id); } else this.closeEdit(); };
   }
   flash(t) { const a = this.el.querySelector('.ch-at'); a.textContent = t; a.classList.add('warn'); clearTimeout(this.fT); this.fT = setTimeout(() => a.classList.remove('warn'), 1600); }
   // the plate where a marker is named: its name, its colour, and what to do with it
@@ -137,6 +156,13 @@ export class Chart {
     x.save(); x.font = '600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textAlign = 'center'; x.letterSpacing = '1.5px';
     for (const [mx, nm] of this.landmarks) { x.fillStyle = 'rgba(236,228,200,0.5)'; x.fillText(nm.toUpperCase(), Math.max(60, Math.min(W - 60, X(mx))), Math.min(H - 8, Y(this.floorAt(mx)) + 22)); }
     x.restore();
+    // (6.8.1) the sail points found: a small buoy on the surface line, its number above it
+    if (this.h.sailFound) { const F = this.h.sailFound(); x.save(); x.font = '600 11px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textAlign = 'center';
+      for (const s of SAIL) { if (!F[s.id]) continue; const bx = X(s.x), by = Y(0);
+        x.fillStyle = '#8a4a2c'; x.beginPath(); x.moveTo(bx - 3, by + 2); x.lineTo(bx - 2.2, by - 6); x.lineTo(bx + 2.2, by - 6); x.lineTo(bx + 3, by + 2); x.closePath(); x.fill();
+        x.fillStyle = '#d6cba8'; x.fillRect(bx - 0.6, by - 10, 1.2, 4);
+        x.fillStyle = 'rgba(236,228,200,0.75)'; if (s.id === 'home') { x.textAlign = 'right'; x.fillText(s.no, bx - 6, by + 14); x.textAlign = 'center'; } else x.fillText(s.no, bx, by - 13); } /* home: below, to the left, clear of the boat's name and 'you' */
+      x.restore(); }
     if (P.stationFound) site(STATION.x, 'the station');
     if (P.daveVisits) site(DAVE.x, "Dave's");
     // the sub, when he is out of it; and him

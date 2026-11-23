@@ -13,6 +13,7 @@ import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
 import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
 import { drawStation, STATION_TOP } from './station_draw.js';
+import { drawSailBuoy } from './buoy_draw.js';
 import { drawTable, TABLE, LURE } from './oldone.js';
 import { pictureOf } from './catalog.js';
 const SIMPLE_SMALL = false; // (4.3.7) small animals as generic shapes (off: each is drawn as itself)
@@ -24,7 +25,7 @@ import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY, rarityOf } from './specimens.js';
 import { SETTINGS } from './settings.js';
-import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON } from './world.js';
+import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
 
@@ -508,6 +509,7 @@ export class Renderer {
     // and the bait's scent drifting away downstream
     this.trapLabels = [];
     const night = g.day && g.day.light < 0.3;
+    for (const pt of SAIL) if (pt.x > x0 - 6 && pt.x < x1 + 6 && y0 < 4 + 400) drawSailBuoy(ctx, S, Sy, ppm, t, pt, surfY, g.world.floorAt(pt.x), y1, night); // (6.8.1) the sail points' buoys
     for (const tr of g.traps || []) {
       if (tr.x < x0 - 10 || tr.x > x1 + 10) continue;
       const T = TRAPS[tr.type], by = surfY(tr.x);

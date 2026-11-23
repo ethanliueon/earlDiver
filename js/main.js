@@ -7,7 +7,7 @@ import { coinURL, tileURL } from './coins.js';
 installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
-import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock } from './world.js';
+import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF } from './world.js';
 import { SPECIES, SPECIES_BY_ID, TITLES } from './species.js';
 import { Chart } from './chart.js';
 import { Fauna, usualDepth } from './fauna.js';
@@ -378,7 +378,31 @@ const ui = new UI({
   canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave() || nearStation())), // someone to sell to: the Margaret, the station, or Dave
 });
 // (4.10.0) the chart (K, or the chart button under the journal): the whole sea, and the player's own markers
-ui.chart = new Chart({ getGame: () => g, getProfile: () => profile, save: () => saveProfile(profile),
+// (6.8.1) Sail here: from the chart, to a sail point already found. Only aboard the boat with the sub in its cradle; a
+// short loading screen, then the boat is at the buoy with its anchor down (no voyage, nothing lost, the sea as it was)
+function sailFound(P) { const F = P.sail || (P.sail = { home: true }); return F; }
+function sailWhy() {
+  if (!g || g.mode !== 'play') return 'Not now';
+  if (!(g.aboard || g.helm) || !g.sub.docked) return 'From the boat, with the sub aboard';
+  return null;
+}
+function sailTo(id) {
+  const pt = SAIL.find((s) => s.id === id), P = profile; if (!pt || !P || !sailFound(P)[id] || sailWhy()) return false;
+  if (Math.abs(BOAT.x - (pt.x + SAIL_OFF)) < 15) return false;
+  ui.chart.toggle(false); ui.closeAll && ui.closeAll();
+  ui.sailScreen(pt, () => {
+    BOAT.x = clamp(pt.x + SAIL_OFF, BOAT_MIN, BOAT_MAX); g.boatV = 0; g.helm = false; g.anchorDir = 0;
+    const fl = g.world.floorAt(BOAT.x); g.anchored = true; g.anchorLen = fl; P.boatX = Math.round(BOAT.x); saveProfile(P);
+    boardDeck(false, false); // he stands on deck when it clears
+    if (renderer.cam) renderer.cam.x = BOAT.x - 7; // the view opens on the boat, not panning across the sea
+  });
+  return true;
+}
+function sailFind() { // passing over a point finds it
+  const P = profile; if (!P || !g || g.mode !== 'play') return; const F = sailFound(P), e = g.earl;
+  for (const s of SAIL) if (!F[s.id] && (Math.abs(e.x - s.x) < 60 || Math.abs(BOAT.x - s.x) < 60)) { F[s.id] = true; saveProfile(P); if (s.id !== 'home') hud.toast(`${s.no} · ${s.name}: on the chart`, 'note'); }
+}
+ui.chart = new Chart({ getGame: () => g, getProfile: () => profile, save: () => saveProfile(profile), sail: (id) => sailTo(id), sailWhy: () => sailWhy(), sailFound: () => sailFound(profile),
   follow: (m) => { g.markGuide = m || null; if (m) hud.toast(`Following: ${m.name}`); }, following: () => g.markGuide || null });
 
 // ---------------- injuries ----------------
@@ -2457,6 +2481,7 @@ function update(dt) {
     } else if (armEv && armEv.type === 'armMiss') hud.toast(`The ${armEv.name.toLowerCase()} slips out of the claw`);
     if (!e.inSub && g.armGame) g.armGame = null;
     omens(dt); // (6.8.0)
+    sailFind(); // (6.8.1)
     for (const ev of updateTraps(g, dt, renderer.cam)) {
       if (ev.type === 'hauled') {
         const tr = ev.trap, n = tr.catch.length;
