@@ -1145,7 +1145,7 @@ export class UI {
     // (5.6.9) the belt: glow sticks (up to 5), what he takes into the water; the rest wait in the locker. (5.17.0) no lure slot: lures are gone
     // (6.0.1) two kinds of glow stick, two stacks: the one in the belt's slot is the one the glow button drops; the other
     // waits in the locker as its own tile (its rarity's edge), and a tap puts it on the belt in place of the first
-    const SP = P.spare || {}, SUPN = { necklace: 'Glow stick', glowAdv: 'Advanced glow stick' }, GR = { necklace: 'common', glowAdv: 'rare' }, GMAX = { necklace: 5, glowAdv: 3 };
+    const SP = P.spare || {}, SUPN = { necklace: 'Glow stick', glowAdv: 'Advanced glow stick' }, GR = { necklace: 'rare', glowAdv: 'exotic' } /* (6.6.2) as their rarities since 6.5.8 */, GMAX = { necklace: 5, glowAdv: 3 };
     const gk = P.glowKind === 'glowAdv' ? 'glowAdv' : 'necklace';
     const beltSlot = () => { const k = gk, n = (g.items && g.items[k]) || 0;
       return `<div class="eq-slot sq belt${n ? ' r-' + GR[k] : ' empty'}" data-belt="${k}" title="${SUPN[k]}">${n ? `<img src="${pictureOf('supply', k, 120, 72, true)}" alt=""><b class="belt-n">${n}/${GMAX[k]}</b>` : ''}<small class="slot-nm">Glow</small></div>`; };
@@ -1153,6 +1153,14 @@ export class UI {
     // (5.9.6) traps live in the bag, not on the swap chip: a tile each kind with its number; a tap opens a card with Use
     const TR = P.traps || {}, trapKinds = Object.keys(TRAPS).filter((k) => (TR[k] || 0) > 0);
     const trapTiles = trapKinds.map((k) => `<div class="lk-tile r-common sup trp" data-trap="${k}" title="${TRAPS[k].name}: tap to use"><img src="${pictureOf('trap', k, 120, 72, true)}" alt=""><b class="belt-n">×${TR[k]}</b></div>`).join('');
+    // (6.6.2) the backup air tanks live in the bag too: a tile with their number; its card's Use plumbs one into the sub's
+    // cabin (three seconds, bubbles at the valve) and fills its air. Only in the sub
+    const nAir = (g.items && g.items.airTank) || 0, airTiles = nAir ? `<div class="lk-tile r-uncommon sup air" data-air title="Backup air tank: tap to use"><img src="${pictureOf('supply', 'airTank', 120, 72, true)}" alt=""><b class="belt-n">×${nAir}</b></div>` : '';
+    const airPop = this.airSel && nAir ? `<div class="item-pop trap-pop air-pop"><div class="ip-box r-uncommon tp-box"><button class="ip-close" aria-label="Close">×</button>
+        <div class="tp-pic"><img src="${pictureOf('supply', 'airTank', 360, 216, true)}" alt=""></div>
+        <div class="tp-txt"><h4 style="color:${RARITY.uncommon.col}">Backup air tank</h4><p class="tp-kind">Uncommon item, ${nAir} aboard</p><p class="tp-desc">A steel bottle plumbed into the sub's cabin by hand. The valve hisses for a while, then the air is full.</p>
+          <div class="tp-row"><span>Connects in</span><b>3 s</b></div><div class="tp-row"><span>Fills</span><b>the cabin air</b></div>
+          <div class="lk-acts"><button data-airuse>Use</button><small class="tp-note">in the sub</small></div></div></div></div>` : '';
     // (5.10.11) a trap's card, laid out like the gear cards: its picture large in a recess, its name, what it is, a few
     // plain facts, and Use (which only works at the surface)
     const trapPop = (() => { const k = this.trapSel, T = k && TRAPS[k]; if (!T || !((TR[k] || 0) > 0)) return '';
@@ -1173,7 +1181,7 @@ export class UI {
     const glowPop = (() => { if (!this.glowSel) return ''; const k = gk, adv = k === 'glowAdv', n = (g.items && g.items[k]) || 0; if (!n) return '';
       return `<div class="item-pop trap-pop glow-pop"><div class="ip-box r-${GR[k]} tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('supply', k, 360, 216, true)}" alt=""></div>
-        <div class="tp-txt"><h4>${SUPN[k]}</h4><p class="tp-kind">${adv ? 'Rare' : 'Common'} light, ${n} on the belt</p><p class="tp-desc">Snap it and let it go. It hangs where you leave it, a pool of ${adv ? 'pale, bone-white' : 'warm amber'} light, and slowly sinks. The thing in the deep does not mind it.</p>
+        <div class="tp-txt"><h4>${SUPN[k]}</h4><p class="tp-kind">${adv ? 'Exotic' : 'Rare'} light, ${n} on the belt</p><p class="tp-desc">Snap it and let it go. It hangs where you leave it, a pool of ${adv ? 'pale, bone-white' : 'warm amber'} light, and slowly sinks. The thing in the deep does not mind it.</p>
           <div class="tp-row"><span>Burns</span><b>${adv ? '3 min' : '2 min'}</b></div><div class="tp-row"><span>Lights</span><b>${adv ? '32' : '16'} m around</b></div>
           <div class="lk-acts"><button data-glowuse>Use</button>${this.h.canChangeGear() ? '<button data-glowoff>Off the belt</button>' : ''}</div></div></div></div>`; })();
     // (5.14.1) the pet: a slot with his gear (it goes where he goes), not in the catch. Tap it: its card, or, when it is
@@ -1190,7 +1198,7 @@ export class UI {
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot()}${petGear}</div></div>`
       /* (6.0.0) no lock note: gear changes anywhere */
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
-      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length + Math.ceil(nGold / 10) >= LOCKER ? 'full' : ''}">(${list.length + Math.ceil(nGold / 10)}/${LOCKER})</span></div><div class="lk-grid">${spare}${trapTiles}${goldTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${glowPop}${goldPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
+      + `</div><div class="inv-right"><div class="lk-head"><h4>Locker</h4><small>by rarity</small><span class="${list.length + Math.ceil(nGold / 10) >= LOCKER ? 'full' : ''}">(${list.length + Math.ceil(nGold / 10)}/${LOCKER})</span></div><div class="lk-grid">${spare}${airTiles}${trapTiles}${goldTiles}${tiles}${'<div class="lk-tile empty"></div>'.repeat(Math.max(0, LOCKER - list.length - nSpare))}</div></div></div>${pop}${trapPop}${airPop}${glowPop}${goldPop}${petPick}${this.petSel ? this.petPop(P) : ''}`;
   }
   // (3.0.35) the locker is laid out at one size, 1240 x 820, and scaled to fit whatever screen it is on: a
   // phone sees the same locker as a computer, only smaller
@@ -1317,6 +1325,10 @@ export class UI {
       if (ev.target === gp || ev.target.closest('.ip-close')) { this.glowSel = false; this.renderInventory(); } }); }
     root.querySelectorAll('[data-sup]').forEach((el) => el.addEventListener('click', () => { if (!this.h.canChangeGear()) return beltMsg(); if (this.h.onBelt) { this.h.onBelt(el.dataset.sup, true); this.renderInventory(); } }));
     root.querySelectorAll('[data-trap]').forEach((el) => el.addEventListener('click', () => { this.trapSel = el.dataset.trap; this.renderInventory(); }));
+    root.querySelectorAll('[data-air]').forEach((el) => el.addEventListener('click', () => { this.airSel = true; this.renderInventory(); })); // (6.6.2)
+    { const ap = box.querySelector('.air-pop'); if (ap) ap.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-airuse]')) { this.airSel = false; if (this.h.onAirUse && this.h.onAirUse()) { this.toggleInventory(false); return; } this.renderInventory(); return; }
+      if (ev.target === ap || ev.target.closest('.ip-close')) { this.airSel = false; this.renderInventory(); } }); }
     { const tp = box.querySelector('.trap-pop'); if (tp) tp.addEventListener('click', (ev) => { const u2 = ev.target.closest('[data-trapuse]');
       if (u2) { const k = u2.dataset.trapuse; this.trapSel = null; if (this.h.onTrapUse && this.h.onTrapUse(k) === 'open') { this.toggleInventory(false); return; } this.renderInventory(); return; }
       if (ev.target === tp || ev.target.closest('.ip-close')) { this.trapSel = null; this.renderInventory(); } }); }

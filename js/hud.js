@@ -423,7 +423,7 @@ export class Hud {
 e.inSub ? [
       // (5.7.1) in the sub only: the tank room and the autopilot (out of the arc), then the spare air
       { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'The sub is at the boat' }, // (5.16.7) the sub tile's place: autopilot home in the sub, call sub out of it
-      { key: 't', icon: 'tank', on: true },
+      { key: 't', icon: 'tank', on: true, badge: g.subTank.some((s) => s.pile) }, // (6.6.2) a red ! while a catch lies on the sub's floor
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
     ] : [
       // (5.16.7) out of the sub, the same place calls her (on deck she is already at the boat)

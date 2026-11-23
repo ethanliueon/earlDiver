@@ -135,3 +135,32 @@ with screenshots.
 Coins and small art; item pictures (all 411, last, only if time allows); phone panels (owner: text size is fine,
 do not enlarge); painted chests; the deep's polish (zones, lit landmarks, death and implosion cards); quests tied to
 people and places; a depth ladder. Parked: journal milestones.
+
+## Lessons from the owner's corrections (6.5 to 6.6), and what they say about the philosophy
+
+These are the places I got it wrong, and the rule each one shows. I check new work against them before showing it.
+
+- **Don't change what already works.** The item gain cards were liked; when a screenshot made them look changed, the
+  owner was right to be alarmed. Before touching a shared piece (cards, crosses, the gain effect), I look at it as it is
+  and keep it unless the request is about it. A test artefact left on screen is my fault, not the game's.
+- **One of a thing, never two.** Two close crosses at once, two arrows at once, a ring and a box: each read as a
+  mistake. One cross per screen, one pointer per thing.
+- **Never outline what you show.** No white circles, rectangles or lines round a button the tutorial points at: the
+  thing glows and breathes in its own shape. Don't teach what every phone player knows (the stick).
+- **Nothing in the very corners.** Phones round their corners: a close cross about 40 pt in, never touching the edge.
+- **Important moments must look important.** The revive offer as a small grey box was "unimportant". A decision that
+  costs or saves something is big, centred, names what is at stake (the death, every fish, the total), and offers one
+  clear way forward and one clear way out that says what it costs ("Give up / The haul is lost"). Never "Skip".
+- **Structure before decoration.** The save cards had the right metal, size and type but the wrong order: the least
+  useful thing (the slot number) was the biggest. Order a card by what the player is looking for: name, then figures in
+  equal columns, then actions on one line.
+- **Rules the owner states are exact.** "One revive a dive; the first ever is an ad, every later one $0.99" — not
+  "an ad then a paid one in the same dive". When a rule is ambiguous, follow the latest wording and say which reading.
+- **Numbers must read as progress.** Fins below 1 read as a nerf; the starter suit equal to a bought one made the
+  purchase pointless. The first thing you own is the worst, and figures start at 1 and climb.
+- **Scale with meaning.** Guardian jellyfish only deep, rare, in open water: a safe place should be a rare find, not
+  furniture. Glow only in the dark.
+- **Paused lessons only the first time, in the world.** Teach with the real buttons glowing, the real fish placed, the
+  world held still only while one button is waited on.
+- **Show, don't claim; and review my own screenshots as the owner would**: read the shot for overlaps, cut-offs,
+  doubles and dead space before sending it.

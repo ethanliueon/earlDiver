@@ -459,6 +459,7 @@ export function updateSubNet(g, dt, canTake) {
       };
       for (const c of g.fauna.list) {
         if (c.dead || c.hidden || c.pet || c.companion || n.got.includes(c) || (c.netOut && g.time - c.netOut < 2)) continue;
+        if (g.trawlOnly && c !== g.trawlOnly) continue; // (6.6.2) the first trawl's lesson: only its jellyfish
         const reach = r + 0.5 + c.len * 0.4;
         if (c.x + c.len * 0.5 < lo || c.x - c.len * 0.5 > hi || Math.abs(c.y - n.my) > reach) continue;
         if (!canTake(c.sp)) continue;
@@ -468,7 +469,7 @@ export function updateSubNet(g, dt, canTake) {
         n.got.push(c); c.dead = true; c.netted = true;
       }
       // the bottom: what grows there is scooped up when the mouth drags through it (too big for the net, it stays)
-      for (let k = g.world.statics.length - 1; k >= 0; k--) {
+      for (let k = g.trawlOnly ? -1 : g.world.statics.length - 1; k >= 0; k--) {
         const st = g.world.statics[k], sp = st.sp, len = sp.len * st.scale;
         if (st.x + len * 0.5 < lo || st.x - len * 0.5 > hi) continue;
         if (!(st.y - len < n.my + r + 0.6 && st.y > n.my - r - 0.6)) continue; // it stands from the floor (st.y) up to st.y - len

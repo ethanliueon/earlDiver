@@ -337,6 +337,10 @@ const ui = new UI({
   },
   // (5.9.6) Use on a trap in the bag: at the surface the trap-setting card opens; anywhere else, why not
   // (5.17.0) a glow stick snapped from the bag, as the button does (in the water or the sub; on deck it is for later)
+  // (6.6.2) a backup air tank used from the bag: the same three seconds of connecting as the sub's air button
+  onAirUse: () => { const e = g && g.earl, sub = g && g.sub; if (!e || !e.inSub || sub.imploded) { hud.toast('In the sub: it plumbs into the cabin', 'warn'); return false; }
+    if (!g.items.airTank) return false; if (g.tankFit) return true; if (sub.o2 >= sub.o2Max - 1) { hud.toast('The cabin air is full'); return false; }
+    g.tankFit = 0.001; g.tankClank = 0; audio.ready && audio.click(); return true; },
   onGlowUse: () => { if (!g || g.aboard) { hud.toast('For the water: snap it once you are in', 'warn'); return false; } return dropGlow(); },
   onTrapUse: (k) => { const e = g.earl; const why = g.aboard ? 'Traps are set from the water: jump in, at the surface' : canSetHere(g);
     if (why) { hud.toast(why === 'Traps are set from the surface: come up first' ? 'You can only set a trap at the surface' : why, 'warn'); return false; }
@@ -1014,17 +1018,66 @@ function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === '
 //  - the air: the first time the cabin air is 10 s from running out, a backup tank is given; connect it (R). Another
 //    is given after.
 const MOVE_KEYS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'];
+// (6.6.2) the first-time lessons, after the tutorial, each once: the first trawl, the first deep animal needing a chamber,
+// the first backup air tank. They use the tutorial's own spotlight (the world holds still while one button glows and is
+// waited on), its banner and its trail; inside the tank room and the bag the dive is held (air and animals keep) until
+// the step is done. Elsewhere: only the quiet ring on the trawl or air button, as before.
+function lessonSet(text, spot = null, to = null, fish = null) { g.lesson = { id: 'l' }; g.tut = { text, spot, to, fish, prompt: null, door: false }; }
+function lessonHold(on) { // the dive held: air, the animals aboard, the sea's creatures, the thing
+  const e = g.earl, sub = g.sub;
+  if (on) { if (!g.lessonHold) g.lessonHold = { o2: sub.o2, eo2: e.o2 }; sub.o2 = g.lessonHold.o2; e.o2 = g.lessonHold.eo2; g.frozen = true; }
+  else { g.lessonHold = null; }
+}
 function lessons() {
-  // (6.5.1) no frozen lessons any more: the Log's steps teach in the running world (the sea goes on, air is used, the
-  // thing can come, he can leave the sub). This only gives what a step needs and says which button to look at:
-  //  - the trawl step with no net in the hatch: a beginner's net, once
-  //  - the cabin air first running low: a backup tank, once (the air step needs one)
-  //  - a quiet ring on the trawl button (the step, or a net with something in it that can be closed) or the air button
-  const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false;
-  if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) return;
-  const mid = g.questMainId;
-  if (mid === 'trawl' && !P.lessonTrawl && e.inSub) { P.lessonTrawl = 'done'; if (!netTotal(g.items)) { netsOf(g.items).basic = 1; ui.showGains([{ kind: 'trawl', id: 'basic' }], true); } syncProfile(); saveProfile(P); }
-  if (!P.lessonAir && e.inSub && !sub.docked && sub.y > 2.2 && sub.o2 <= 10) { P.lessonAir = 'done'; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); ui.showGains([{ kind: 'supply', id: 'airTank' }], true); syncProfile(); saveProfile(P); }
+  const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null;
+  if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) { lessonHold(false); return; }
+  const mid = g.questMainId, tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
+  // ---- the first trawl ----
+  if (mid === 'trawl' && P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 6) {
+    if (!netTotal(g.items) && !P.lessonTrawl) { netsOf(g.items).basic = 1; syncProfile(); }
+    const st = P.lessonTrawl || 'drop', setSt = (v) => { P.lessonTrawl = v; saveProfile(P); };
+    let J = g.lessonJelly; const jSp = SPECIES_BY_ID[171];
+    if (st === 'drop' || st === 'tow') {
+      if (!J || (J.dead && !J.netted) || (!J.dead && !g.fauna.list.includes(J))) { const d = sub.dir || 1; J = g.fauna.makeFish(jSp, sub.x + d * 16, sub.y + 4, -d, /* (6.6.2) at the depth the net tows, 4 m under the sub */ g.fauna.groupId++, true); J.devKeep = true; J.vx = J.vy = 0; g.fauna.list.push(J); g.lessonJelly = J; }
+      J.x = J.homeX ?? (J.homeX = J.x); J.y = J.homeY ?? (J.homeY = J.y); // it hangs where it was placed, pulsing in place
+      g.trawlOnly = J; // the net takes only it
+    }
+    const n = g.subNet;
+    if (st === 'drop') { if (n) setSt('tow'); else lessonSet('Let out the trawl net', { key: 'n', say: 'Let out the trawl net' }, J && { x: J.x, y: J.y }, J); return; }
+    if (st === 'tow') { if (J && J.netted) setSt('close'); else { lessonSet('Tow the net through the jellyfish', null, J && { x: J.x, y: J.y }, J); if (n && n.mx != null) g.tut.from = { x: n.mx, y: n.my }; /* the trail from the net's mouth */ } if (!(J && J.netted)) return; }
+    if ((P.lessonTrawl || st) === 'close') { if (!n) setSt('tank'); else { lessonSet('Close the net', { key: 'n', say: 'Close the net' }); return; } }
+    const pile = g.subTank.find((s) => s.pile), inTank = g.subTank.find((s) => s.id === 171 && !s.pile && !s.pressed);
+    if (P.lessonTrawl === 'tank') {
+      if (!tankO) { if (pile || !inTank) { lessonSet('The catch is on the floor of the sub', { key: 't', say: 'Open the tank room' }); return; } }
+      lessonHold(true);
+      if (pile) { lessonSet('Drag it from the floor into the tank'); return; }
+      if (inTank && !(TR && TR.openKey)) { lessonSet('Tap it for its card'); return; }
+      if (inTank) { setSt('shut'); }
+    }
+    if (P.lessonTrawl === 'shut') { if (tankO) { lessonHold(true); lessonSet('Close the tank room', { sel: ['#tankroom .tr-close'] }); return; } setSt('done'); g.lessonJelly = null; }
+  }
+  // ---- the first deep animal that needs a chamber ----
+  if (P.lessonChamber !== 'done' && e.inSub && pressSlots(g) > 0) {
+    const deep = (s) => !s.pressed && SPECIES_BY_ID[s.id] && (SPECIES_BY_ID[s.id].dmin || 0) >= 120;
+    const want = g.subTank.find(deep), held = g.subTank.find((s) => s.pressed && SPECIES_BY_ID[s.id] && (SPECIES_BY_ID[s.id].dmin || 0) >= 120);
+    if (P.lessonChamber === 'on' || want) {
+      if (P.lessonChamber !== 'on') { P.lessonChamber = 'on'; saveProfile(P); }
+      if (held && !want) { if (tankO) { lessonHold(true); lessonSet('It is held at its own pressure: it will live', { sel: ['#tankroom .tr-close'] }); return; } P.lessonChamber = 'done'; saveProfile(P); lessonHold(false); }
+      else if (!tankO) { lessonSet('A deep animal needs a pressure chamber', { key: 't', say: 'Open the tank room' }); return; }
+      else { lessonHold(true); lessonSet(TR && TR.room === 'chambers' ? 'Drag it into a chamber' : 'Through the left hatch: the chamber room'); return; }
+    }
+  }
+  // ---- the first backup air tank ----
+  if (!P.lessonAir && e.inSub && !sub.docked && sub.y > 2.2 && sub.o2 <= 10) { P.lessonAir = 'bag'; g.items.airTank = Math.min(2, (g.items.airTank || 0) + 1); ui.showGains([{ kind: 'supply', id: 'airTank' }], true); syncProfile(); saveProfile(P); }
+  if (P.lessonAir === 'bag' && e.inSub) {
+    if (g.tankFit) { lessonHold(false); lessonSet('Connecting the tank'); return; }
+    if (sub.o2 >= sub.o2Max - 1) { P.lessonAir = 'done'; saveProfile(P); }
+    else if (!(g.items.airTank > 0)) { P.lessonAir = 'done'; saveProfile(P); }
+    else if (shown('gainfx')) return; // the tank's card first
+    else if (!invO) { lessonSet('A backup air tank', { key: 'b', say: 'Open your bag' }); return; }
+    else { lessonHold(true); lessonSet('Use the air tank', { sel: ui.airSel ? ['#inventory [data-airuse]'] : ['#inventory [data-air]'] }); return; }
+  }
+  lessonHold(false);
   if (!e.inSub || sub.docked || ui.anyOpen()) return;
   const n = g.subNet;
   if (n && n.phase === 'tow' && n.got && n.got.length) g.questHint = 'n'; // something in the net: it can be closed
@@ -3102,7 +3155,7 @@ function frame(now) {
   menuFold(now); // (6.5.7)
   { const off = !!((g.kill && (g.kill.inSub || g.kill.esc)) || g.mode === 'dying'), dim = !!(g.kill && !off); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); if (document.body.classList.contains('hud-dim') !== dim) document.body.classList.toggle('hud-dim', dim); } // (5.10.10) in its jaws the journal stays, dimmed
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
-    hud.spotWanted = !!(hud.touch && profile && profile.tut === 'on' && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
+    hud.spotWanted = !!(hud.touch && profile && (profile.tut === 'on' || !!g.lesson) /* (6.6.2) and the lessons */ && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
   hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin')); // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button

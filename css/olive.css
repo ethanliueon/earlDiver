@@ -1634,3 +1634,5 @@ html body #title .slot.tag.sv .sv-new { flex: 1; display: grid; place-items: cen
 html body #title .slot.tag.sv .sv-plus { font: 300 clamp(60px, 14vh, 110px)/0.8 var(--o-title); font-style: normal; color: rgba(225, 228, 216, 0.85); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 -1px 0 rgba(255, 255, 255, 0.2); }
 html body #title .slot.tag.sv .sv-new b { font: 700 clamp(18px, 3.6vh, 26px)/1 var(--o-title); color: rgba(220, 222, 210, 0.8); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
 html body #title .slot.tag.sv .sv-foot .sv-del:not(#_a):not(#_b):not(#_c):not(#_d) { box-sizing: border-box; min-height: 38px; height: auto !important; border: 10px solid transparent !important; border-image: var(--o-btn) 28 fill / 10px stretch !important; background: none !important; color: #d8ceb6 !important; opacity: 1 !important; padding: 0 4px !important; }
+/* (6.6.2) the journal's animal smaller in its tank, every one at about the same size, with water round it and clear of the sand */
+html body #journal .jd-pic.jd-tank img:not(#_a):not(#_b) { max-width: 58% !important; max-height: 58% !important; margin-bottom: 6%; }
