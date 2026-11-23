@@ -82,17 +82,9 @@ function drawHatchetfish(x, L, t) {
 
 let raf = 0;
 let lay = null;
-export function startTitleArt(host) {
-  if (!host || host.querySelector('canvas.t-art')) return;
-  const cv = document.createElement('canvas'); cv.className = 't-art'; host.prepend(cv);
-  const ctx = cv.getContext('2d'), t0 = performance.now();
-  const frame = () => {
-    raf = requestAnimationFrame(frame);
-    const title = document.getElementById('title'); if (!title || title.hidden || title.classList.contains('gone')) return;
-    const dpr = Math.min(2, window.devicePixelRatio || 1), Wc = cv.clientWidth, Hc = cv.clientHeight; if (!Wc || !Hc) return;
-    if (cv.width !== Math.round(Wc * dpr) || cv.height !== Math.round(Hc * dpr)) { cv.width = Math.round(Wc * dpr); cv.height = Math.round(Hc * dpr); }
-    const t = (performance.now() - t0) / 1000, W = cv.width, H = cv.height;
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+// (7.0.5) one frame of the title art (letters under the water, their shadow, the hatchetfish): drawn live on the title,
+// and baked once into assets/loading/title.png for the loading screen, which shows before any of the game's code runs
+export function paintTitle(ctx, W, H, t = 0, dpr = 1) {
     const L = letters(Math.max(0.5, Math.round((H / 160) * 4) / 4));
     // (7.0.2) the word takes the left of the canvas and leaves room after it for the hatchetfish
     const k = Math.min((W * 0.84) / L.cw, (H * 0.86) / L.ch), lw = L.cw * k, lh = L.ch * k, lx = W * 0.03, ly = (H - lh) / 2;
@@ -119,6 +111,19 @@ export function startTitleArt(host) {
       ctx.save(); ctx.translate(fx, fy); ctx.scale(-1, 1); ctx.rotate(Math.sin(t * 1.1) * 0.05 - 0.04);
       ctx.save(); ctx.globalAlpha = 0.5; ctx.filter = `brightness(0) blur(${(4 * dpr).toFixed(1)}px)`; ctx.translate(-fl * 0.5 + 2 * dpr, -fl * 0.35 + 4 * dpr); drawHatchetfish(ctx, fl, t); ctx.restore(); // its shadow
       ctx.translate(-fl * 0.5, -fl * 0.35); drawHatchetfish(ctx, fl, t); ctx.restore(); }
+}
+export function startTitleArt(host) {
+  if (!host || host.querySelector('canvas.t-art')) return;
+  const cv = document.createElement('canvas'); cv.className = 't-art'; host.prepend(cv);
+  const ctx = cv.getContext('2d'), t0 = performance.now();
+  const frame = () => {
+    raf = requestAnimationFrame(frame);
+    const title = document.getElementById('title'); if (!title || title.hidden || title.classList.contains('gone')) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), Wc = cv.clientWidth, Hc = cv.clientHeight; if (!Wc || !Hc) return;
+    if (cv.width !== Math.round(Wc * dpr) || cv.height !== Math.round(Hc * dpr)) { cv.width = Math.round(Wc * dpr); cv.height = Math.round(Hc * dpr); }
+    const t = (performance.now() - t0) / 1000, W = cv.width, H = cv.height;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+    paintTitle(ctx, W, H, t, dpr);
   };
   cancelAnimationFrame(raf); frame();
 }
