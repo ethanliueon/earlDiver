@@ -76,7 +76,7 @@ export class Entity {
     let body = 1, eye = 0.3, flash = 0, tint = 0, snap = false;
     if (g.kill) { body = 0; eye = 1; tint = 1; L.mode = 'pulse'; }
     else if (L.mode === 'pulse') {
-      if (H) { body = 0; eye = H.phase === 'windup' || H.phase === 'strike' ? 1 : H.phase === 'stare' ? 0.9 : 0.55; tint = H.phase === 'windup' || H.phase === 'strike' ? 1 : 0.35; }
+      if (H) { body = H.phase === 'stalk' ? 0.35 : 0; /* (7.2.2) while it circles, a few of its slits drift past in the dark */ eye = H.phase === 'windup' || H.phase === 'strike' ? 1 : H.phase === 'stare' ? 0.9 : 0.55; tint = H.phase === 'windup' || H.phase === 'strike' ? 1 : 0.35; }
       if (L.cool <= 0 && !g.kill && this.dist < 60 && this.graceT <= 0 && !(H && H.phase !== 'stalk') && !(this.ap && this.ap.phase && this.ap.phase !== 'look') && this.litBy(g)) { L.mode = 'dark'; L.t = 0; g.events.push('lit'); }
     }
     if (L.mode === 'dark') { body = 0; eye = 0; snap = true; if (L.t > 0.9) { L.mode = 'flash'; L.t = 0; this.seen(g); } }
@@ -412,6 +412,9 @@ export class Entity {
   //  2. its head: it noses in at the edge of the screen and sees him (lights out, the blue flash, its
   //     eyes coming up, the red in the water). Dark and still, and it may lose him here.
   //  3. it comes in from the side with its mouth already opening and swallows the sub whole.
+  // (7.2.2) how far beneath him it passes: just under the bottom edge of the screen, so the pale line of its back
+  // slides along the foot of the view (it was 22 m down, wholly out of sight)
+  under(g) { const V = g.viewBox; return V ? clamp((V[3] - V[2]) / 2 + 3.5, 12, 22) : 22; }
   approach(g, dt, d, bandLo) {
     const e = g.earl, L = MONSTER_LEN, A = this.ap || (this.ap = { n: 0, phase: null, t: 0, wait: 0, side: 1, still: 0 });
     A.t += dt;
@@ -429,7 +432,7 @@ export class Entity {
     switch (A.phase) {
       case 'tailIn': {
         // out of sight below him and off to one side
-        const px = e.x + A.side * 55, py = e.y + 22;
+        const px = e.x + A.side * 55, py = e.y + this.under(g);
         this.faceLock = -A.side;
         if (dist(this.x, this.y, px, py) < 6 || A.t > 14) { A.phase = 'tail'; A.t = 0; A.dir = -A.side; }
         return { tx: px, ty: py, speed: ENTITY_SPEED };
@@ -438,15 +441,16 @@ export class Entity {
         // beneath him, steady; as the tail comes under the sub it curls up into view and strikes the hull
         this.faceLock = A.dir;
         const tailX = this.x - A.dir * 1.15 * L, tipX = this.x - A.dir * 1.27 * L;
-        const want = Math.abs(tailX - e.x) < 22 ? 1 : 0;
+        const want = Math.abs(tailX - e.x) < 22 ? 1 : 0, under = this.under(g);
         this.flick = clamp((this.flick || 0) + (want - (this.flick || 0)) * (1 - Math.exp(-dt * 3)), 0, 1);
-        if (!A.bumped && this.flick > 0.7 && Math.abs(tipX - e.x) < 6) { A.bumped = true; g.events.push('tailbump'); }
+        if (!A.bumped && this.flick > 0.7 * under / 22 && Math.abs(tipX - e.x) < 6) { A.bumped = true; g.events.push('tailbump'); }
         if ((tailX - e.x) * A.dir > 45 || A.t > 30) { A.phase = null; A.n = 1; A.wait = this.rng.range(16, 26); }
-        return { tx: e.x + A.dir * 160, ty: e.y + 22, speed: 9 };
+        this.flick = Math.min(this.flick, under / 22); // (7.2.2) passing nearer, the tail curls only as far as the hull
+        return { tx: e.x + A.dir * 160, ty: e.y + under, speed: 9 };
       }
       case 'look': {
         // its head comes in at the edge of the screen, level with him
-        const px = e.x + A.side * (half - 3), py = e.y + 1;
+        const px = e.x + A.side * (half - 8), py = e.y + 1; /* (7.2.2) far enough in that its head is clear of the buttons and the radar */
         this.faceLock = -A.side;
         const off = dist(this.x, this.y, px, py);
         if (off < 2.5) { A.phase = 'looking'; A.t = 0; if (this.lit.mode === 'pulse') { this.lit.mode = 'dark'; this.lit.t = 0; } }
@@ -454,7 +458,7 @@ export class Entity {
       }
       case 'looking': case 'stare2': {
         // it holds there, looking at him (the lights do the rest: see lights)
-        const px = e.x + A.side * (half - 3), py = e.y + 1;
+        const px = e.x + A.side * (half - 8), py = e.y + 1; /* (7.2.2) far enough in that its head is clear of the buttons and the radar */
         this.faceLock = -A.side;
         const dark = !g.sub.lightsOn; // (5.16.0) only her light matters, not whether she moves
         A.still = dark ? A.still + dt : 0;

@@ -7,7 +7,7 @@ import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToR
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, boatRock } from './earl_draw.js';
-import { drawMonster, drawMonsterLights, drawMonsterShape, MONSTER_LEN } from './monster_draw.js';
+import { drawMonster, drawMonsterLights, drawMonsterShape, drawMonsterRim, MONSTER_LEN } from './monster_draw.js';
 import { sleeperState } from './sleeper_draw.js';
 import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
@@ -1187,6 +1187,9 @@ export class Renderer {
     if (ent && this.entInfo && !g.kill && g.mode !== 'menu') {
       const I = this.entInfo, Lt = ent.lit || { body: 1, eye: 0.3, flash: 0 }, fade = ent.fade ?? 1;
       const lidOpen = ent.blink > 0 ? 0.1 : 1;
+      // (7.2.2) its edge, where a lamp reaches: only while it is close and a light is on (his lamp or the sub's)
+      const lampOn = g.earl.inSub ? g.sub.lightsOn && !g.sub.imploded : g.earl.lampOn, rimK = lampOn ? clamp((80 - (ent.dist ?? 999)) / 45, 0, 1) * (ent.fade ?? 1) : 0;
+      if (rimK > 0.01) { ctx.save(); ctx.translate(I.x, I.y); ctx.scale(I.flip, 1); drawMonsterRim(ctx, MONSTER_LEN * ppm, t, 0.32 * rimK * (ent.lit && ent.lit.mode === 'dark' ? 0.4 : 1), ent.flick || 0); ctx.restore(); }
       drawMonsterLights(ctx, I.info, (lx, ly) => [I.x + lx * I.flip, I.y + ly], ppm, t,
         { body: Lt.body * fade, eye: Lt.eye * fade * lidOpen, flash: Lt.flash * fade, reduce: !!g.reduceFlash, blue: (ent.tideBlue || 0) > 0.5 });
     }
@@ -1407,9 +1410,16 @@ export class Renderer {
     }
     // its red, crept into the water round him: the black of the deep turns a black-red
     if ((fx.redTint || 0) > 0.01) {
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen';
-      const rg = ctx.createRadialGradient(this.W / 2, this.H / 2, Math.min(this.W, this.H) * 0.1, this.W / 2, this.H / 2, Math.max(this.W, this.H) * 0.75);
-      rg.addColorStop(0, `rgba(110,4,10,${(0.42 * fx.redTint).toFixed(3)})`); rg.addColorStop(1, `rgba(150,6,12,${(0.62 * fx.redTint).toFixed(3)})`);
+      // (7.2.2) a tint, not a light: what is lit is drawn toward rust and blood (multiply), and the black only lifts
+      // to a very dark red-brown (a faint screen), so the water stains and nothing glows
+      const k = fx.redTint, cx = this.W / 2, cy = this.H / 2;
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'multiply';
+      const mg = ctx.createRadialGradient(cx, cy, Math.min(this.W, this.H) * 0.1, cx, cy, Math.max(this.W, this.H) * 0.75);
+      mg.addColorStop(0, `rgba(170,92,72,${(0.55 * k).toFixed(3)})`); mg.addColorStop(1, `rgba(120,50,38,${(0.75 * k).toFixed(3)})`);
+      ctx.fillStyle = mg; ctx.fillRect(0, 0, this.W, this.H);
+      ctx.globalCompositeOperation = 'screen';
+      const rg = ctx.createRadialGradient(cx, cy, Math.min(this.W, this.H) * 0.1, cx, cy, Math.max(this.W, this.H) * 0.75);
+      rg.addColorStop(0, `rgba(44,10,6,${(0.35 * k).toFixed(3)})`); rg.addColorStop(1, `rgba(58,12,7,${(0.5 * k).toFixed(3)})`);
       ctx.fillStyle = rg; ctx.fillRect(0, 0, this.W, this.H);
       ctx.restore();
     }
