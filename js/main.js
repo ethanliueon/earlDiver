@@ -1070,7 +1070,7 @@ function lessons() {
   if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) { lessonHold(false); return; }
   const mid = g.questMainId, tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
   // ---- the first trawl ----
-  if (P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 20) { // (6.8.0) the first sub dive below 20 m after the tutorial (the Log's trawl step is gone)
+  if (P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 20 && sub.y < (sub.rated || 300) * 0.9 && !g.entity?.marked) { // (6.9.3) never at crush depth, nor with the thing on him // (6.8.0) the first sub dive below 20 m after the tutorial (the Log's trawl step is gone)
     if (!netTotal(g.items) && !P.lessonTrawl) { netsOf(g.items).basic = 1; syncProfile(); }
     const st = P.lessonTrawl || 'drop', setSt = (v) => { P.lessonTrawl = v; saveProfile(P); };
     let J = g.lessonJelly; const jSp = SPECIES_BY_ID[171];

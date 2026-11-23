@@ -325,9 +325,11 @@ export function drawRockArt(ctx, poly, kind, depth, seed, bp, tile, base) {
     const a = poly[Math.floor(rnd() * poly.length)], b = poly[Math.floor(rnd() * poly.length)];
     const fx = cx + (rnd() - 0.5) * (x1 - x0) * 0.4, fy = cy + (rnd() - 0.5) * (y1 - y0) * 0.4;
     const up = (a[1] + b[1]) / 2 < cy;
-    ctx.fillStyle = up ? `rgba(225,220,205,${(0.05 + rnd() * 0.08).toFixed(3)})` : `rgba(0,0,0,${(0.06 + rnd() * 0.1).toFixed(3)})`;
+    ctx.fillStyle = up ? `rgba(225,220,205,${(0.1 + rnd() * 0.12).toFixed(3)})` : `rgba(0,0,0,${(0.12 + rnd() * 0.16).toFixed(3)})`; // (6.9.3) facets stronger: they read in dim water
     ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(fx, fy); ctx.closePath(); ctx.fill();
   }
+  // (6.9.3) its edge catching the light from above: a pale rim along the outline, kept to the upper half below
+  { const rimG = ctx.createLinearGradient(0, y0, 0, cy); rimG.addColorStop(0, 'rgba(232,228,212,0.32)'); rimG.addColorStop(1, 'rgba(232,228,212,0)'); ctx.strokeStyle = rimG; ctx.lineWidth = Math.max(2, m * 0.22); ctx.stroke(path); }
   // light from above, shadow pooling underneath
   const tl = ctx.createRadialGradient(cx, y0, 0, cx, y0, Math.max(x1 - x0, y1 - y0) * 0.7);
   tl.addColorStop(0, 'rgba(235,240,235,0.18)'); tl.addColorStop(1, 'rgba(235,240,235,0)');

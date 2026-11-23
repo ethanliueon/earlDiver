@@ -17,7 +17,7 @@ import { paintedText } from './fittings.js';
 // there; every other one in the open display tank
 export const deepKeeper = (sp) => { const [lo, hi] = usualDepth(sp); return (lo + hi) / 2 > 500; };
 
-const LIGHTS = { day: { name: 'Daylight', water: ['#3a9ab4', '#17566a'], tint: null }, dim: { name: 'Dim', water: ['#123844', '#061a22'], tint: 'rgba(0,10,20,0.35)' }, red: { name: 'Red', water: ['#3a1416', '#12080a'], tint: 'rgba(120,10,10,0.28)' } };
+const LIGHTS = { day: { name: 'Daylight', water: ['#4e8a8e', '#1c4a52'], tint: null } /* (6.9.3) sea-green, as the journal's reef water: no cyan */, dim: { name: 'Dim', water: ['#123844', '#061a22'], tint: 'rgba(0,10,20,0.35)' }, red: { name: 'Red', water: ['#3a1416', '#12080a'], tint: 'rgba(120,10,10,0.28)' } };
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 // two small crosses where its eye is: a dead fish in a tank (head toward -x, as every creature is drawn)
