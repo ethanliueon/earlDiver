@@ -1708,3 +1708,28 @@ html body #journal .jcell { position: relative; }
 html body #journal .jcell .jnew:not(#_a):not(#_b) { display: inline-block; width: auto; height: auto; z-index: 2; position: absolute; top: 2px; right: 4px; left: auto; bottom: auto; opacity: 1; padding: 1px 6px 2px; border-radius: 3px; font: 700 11px/1.1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; font-style: normal; letter-spacing: 0.04em; color: #f2ead6; background: #9a3a28; box-shadow: 0 1px 2px rgba(40, 20, 10, 0.45); transform: rotate(var(--rot, 0deg)); }
 /* (6.9.4) one close cross on screen at a time: while an item's card is open over the inventory, the panel's own cross waits */
 html body #inventory:has(.item-pop) .inv-close:not(#_a):not(#_b):not(#_c) { visibility: hidden !important; }
+/* (7.0.0) the name as a game's, not a website's: painted in worn bone on a riveted, weathered steel plate (its paint
+   chipped through the wear mask), a small painted hatchetfish at its left, "Deep Sea Survival" stamped into the steel */
+html body #title .t-plate h1:not(#_a):not(#_b) { position: relative; align-items: center; padding: clamp(18px, 4.2vh, 34px) clamp(34px, 5vw, 64px) clamp(16px, 3.6vh, 30px) clamp(74px, 9vw, 120px);
+  background: url("../assets/ui/front/title_plate.png") center / 100% 100% no-repeat; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55)); text-shadow: none !important; }
+html body #title .t-plate h1 b:not(#_a) { color: #e6dcbe; -webkit-mask-image: url("../assets/ui/front/paint_wear.png"); mask-image: url("../assets/ui/front/paint_wear.png"); -webkit-mask-size: 100% 100%; mask-size: 100% 100%; letter-spacing: 0.03em; }
+html body #title .t-plate h1 span:not(#_a):not(#_b):not(#_c) { color: rgba(22, 24, 18, 0.78) !important; text-shadow: 0 1px 0 rgba(220, 220, 200, 0.22), 0 -1px 0 rgba(0, 0, 0, 0.35) !important; letter-spacing: 0.5em !important; }
+html body #title .t-plate h1::before { content: ''; position: absolute; left: clamp(18px, 2.4vw, 32px); top: 50%; width: clamp(44px, 5.4vw, 72px); height: clamp(32px, 3.9vw, 52px); transform: translateY(-62%) rotate(-6deg);
+  background: url("../assets/ui/front/hatchetfish.svg") center / contain no-repeat; opacity: 0.92; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6)); }
+/* (7.0.0) the save slots: numbered steel locker doors (louvres, a brass card holder, a latch). A used one carries its
+   diver's name, played time and records in paint; an empty one, "New diver" stencilled faintly */
+html body #title :is(.t-select, #slots) .slot.tag.sv:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) {
+  background: url("../assets/ui/front/locker_door.png") center / 100% 100% no-repeat !important; border: 0 !important; border-image: none !important; border-radius: 6px !important;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.5) !important; opacity: 1 !important; padding-top: clamp(64px, 15vh, 112px) !important; }
+html body #title .slot.tag.sv .hole { display: none !important; }
+html body #title .slot.tag.sv .sv-no:not(#_a) { position: absolute; top: 32.5%; left: 50%; transform: translate(-50%, -50%); align-self: auto; color: rgba(226, 218, 190, 0.85) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6) !important; font-size: clamp(12px, 2.2vh, 16px); }
+html body #title .slot.tag.sv .sv-name:not(#_a) { color: #e6dcbe !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6) !important; -webkit-mask-image: url("../assets/ui/front/paint_wear.png"); mask-image: url("../assets/ui/front/paint_wear.png"); -webkit-mask-size: 300% 100%; mask-size: 300% 100%; }
+html body #title .slot.tag.sv :is(.sv-when, .sv-stats, .sv-stats *, .sv-foot):not(button) { color: rgba(226, 218, 190, 0.8) !important; border-color: rgba(226, 218, 190, 0.25) !important; }
+html body #title .slot.tag.sv.empty .sv-new :is(b, i) { color: rgba(226, 218, 190, 0.6) !important; letter-spacing: 0.12em; text-transform: uppercase; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6) !important; }
+html body #title :is(.t-select, #slots) .slot.tag.sv::before, html body #title :is(.t-select, #slots) .slot.tag.sv::after { content: none !important; display: none !important; } /* (7.0.0) no tag's hole on a locker door */
+/* (7.0.0) a used locker: the diver's name on the card in the brass holder (where a real locker carries it), the number
+   then not shown; under it, played-when, the records and the buttons */
+html body #title :is(.t-select, #slots) .slot.tag.sv:not(.empty) .sv-no:not(#_a):not(#_b) { display: none !important; }
+html body #title :is(.t-select, #slots) .slot.tag.sv:not(.empty) .sv-name:not(#_a):not(#_b) { position: absolute; top: 32.5%; left: 50%; transform: translate(-50%, -50%); max-width: 36%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(14px, 3.6vh, 22px) !important; }
+html body #title :is(.t-select, #slots) .slot.tag.sv:not(.empty) .sv-when:not(#_a) { margin-top: clamp(34px, 9vh, 60px); } /* (7.0.0) under the card holder */
+html body #title :is(.t-select, #slots) .slot.tag.sv .sv-stats:not(#_a) { margin-right: 13% !important; margin-left: 4% !important; } /* (7.0.0) clear of the latch */
