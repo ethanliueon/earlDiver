@@ -1811,3 +1811,30 @@ html body #davetalk .dt-box.painted .dt-line.long:not(#_a):not(#_b):not(#_c):not
 #creator .cr-skins:not(.cr-sm) button { width: 32px; height: 32px; }
 #creator .cr-row[hidden] { display: none !important; }
 #creator .cr-row:has(.cr-sm) .cr-pick { flex: 0 0 48%; }
+/* (7.1.5) the creator, laid out as a game's: the diver painted on the card's left (no circle), the water behind him fading
+   into the steel, his shoulders running off the foot; on the right the name as a title, then three groups (Diver, Head on
+   small tabs, Skin), every picker the same width in one column, Skip at the top right, Dive at the foot */
+#creator .cr-box:not(#_a) { grid-template-columns: minmax(0, 0.82fr) 1fr; gap: 18px; align-items: stretch; padding: 0 !important; overflow: hidden; }
+#creator .cr-port:not(#_a) { width: auto; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; background: none; overflow: visible; align-self: end; margin: -8px 0 -26px -10px; display: flex; align-items: flex-end; justify-content: center; }
+#creator .cr-port canvas:not(#_a) { width: auto; height: min(78vh, 560px); max-width: 100%; object-fit: contain; }
+#creator .cr-side:not(#_a) { position: relative; gap: 8px; align-content: center; padding: 4px 0; }
+#creator .cr-side .cr-skip:not(#_a) { position: absolute; top: -6px; right: 0; min-height: 34px; padding: 0 12px !important; font-size: 14px !important; border: 8px solid transparent; border-image: var(--o-btn) 28 fill / 8px stretch; background: none; color: #d8ceb6; opacity: 0.85; }
+#creator .cr-name:not(#_a) { display: grid; grid-template-columns: 1fr; gap: 4px; margin-right: 96px; }
+#creator .cr-name span:not(#_a) { font: 700 13px/1 "Barlow Semi Condensed", sans-serif; letter-spacing: 0.22em; color: #b8ae94; }
+#creator .cr-name input:not(#_a) { font-size: 26px; padding: 6px 12px; }
+#creator .cr-grp { display: grid; gap: 6px; padding-top: 6px; border-top: 1px solid rgba(230, 220, 190, 0.14); }
+#creator .cr-grp h5 { margin: 0; font: 700 12px/1 "Barlow Semi Condensed", sans-serif; letter-spacing: 0.24em; text-transform: uppercase; color: #9e957c; }
+#creator .cr-line { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 10px; }
+#creator .cr-line > span { font: 600 14px/1 "Barlow Semi Condensed", sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #b8ae94; }
+#creator .cr-pick:not(#_a) { grid-template-columns: 44px 1fr 44px; }
+#creator .cr-pick button:not(#_a), #creator .cr-seg button:not(#_a) { min-height: 38px; }
+#creator .cr-tabs { display: flex; gap: 6px; }
+#creator .cr-tabs button { flex: 1; min-height: 32px; border: 8px solid transparent; border-image: var(--o-btn) 28 fill / 8px stretch; background: none; color: #b8ae94; font: 600 15px/1 "Barlow Semi Condensed", sans-serif; opacity: 0.75; }
+#creator .cr-tabs button.on { opacity: 1; color: #f4ecd4; border-image-source: var(--o-btn1, var(--o-btn)); color: #2a241a; }
+#creator .cr-tabs button[hidden] { display: none; }
+#creator .cr-tab { display: grid; gap: 8px; min-height: 76px; align-content: start; }
+#creator .cr-tab[hidden] { display: none; }
+#creator .cr-tab .cr-skins.cr-sm { padding-left: 80px; }
+#creator .cr-skins.cr-sm button:not(#_a) { width: 26px; height: 26px; }
+#creator .cr-skins:not(.cr-sm) button:not(#_a) { width: 30px; height: 30px; }
+#creator .cr-side .cr-go:not(#_a) { min-height: 46px; margin-top: 4px; border: 10px solid transparent; border-image: var(--o-btn1, var(--o-btn)) 28 fill / 10px stretch; background: none; font: 700 22px/1 "Barlow Semi Condensed", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #2a241a; }

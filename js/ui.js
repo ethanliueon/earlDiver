@@ -457,21 +457,37 @@ export class UI {
     let el = document.getElementById('creator');
     if (!el) { el = document.createElement('div'); el.id = 'creator'; document.body.appendChild(el); }
     const L = { ...DEFAULT_LOOK, beard: 1, hc: 1, eyeCol: 0 }, cyc = (arr, v, d) => arr[(arr.indexOf(v) + d + arr.length) % arr.length];
-    el.innerHTML = `<div class="cr-box"><div class="cr-port"><canvas width="520" height="520"></canvas></div>
-      <div class="cr-side"><h4>New diver</h4>
-        <label class="cr-name"><span>Name</span><input maxlength="12" placeholder="Earl" autocomplete="off" spellcheck="false"></label>
-        <div class="cr-row"><span>Diver</span><div class="cr-seg"><button data-sex="m">Man</button><button data-sex="f">Woman</button></div></div>
-        <div class="cr-row"><span>Face</span><div class="cr-pick"><button data-k="face" data-d="-1">‹</button><b data-v="face"></b><button data-k="face" data-d="1">›</button></div></div>
-        <div class="cr-row"><span>Eyes</span><div class="cr-pick"><button data-k="eyes" data-d="-1">‹</button><b data-v="eyes"></b><button data-k="eyes" data-d="1">›</button></div><div class="cr-skins cr-sm">${EYE_COLS.map(([n, c], i) => `<button data-ec="${i}" style="--c0:${c};--c1:#0c0a08" aria-label="${n}"></button>`).join('')}</div></div>
-        <div class="cr-row"><span>Hair</span><div class="cr-pick"><button data-k="hair" data-d="-1">‹</button><b data-v="hair"></b><button data-k="hair" data-d="1">›</button></div><div class="cr-skins cr-sm">${HAIR_COLS.map(([n, c], i) => `<button data-hc="${i}" style="--c0:${c[0]};--c1:${c[2]}" aria-label="${n}"></button>`).join('')}</div></div>
-        <div class="cr-row cr-beard"><span>Beard</span><div class="cr-pick"><button data-k="beard" data-d="-1">‹</button><b data-v="beard"></b><button data-k="beard" data-d="1">›</button></div></div>
-        <div class="cr-row"><span>Skin</span><div class="cr-skins">${SKINS.map((c, i) => `<button data-skin="${i}" style="--c0:${c[0]};--c1:${c[2]}" aria-label="Skin ${i + 1}"></button>`).join('')}</div></div>
-        <div class="cr-foot"><button class="cr-skip">Skip</button><button class="cr-go">Dive</button></div></div></div>`;
+    // (7.1.5) laid out in groups: the name as the card's title; Diver (man or woman, face); Head (hair, beard, eyes, each on
+    // its own small tab so every control stays large); Skin. Skip at the top right; Dive the big button at the foot. The
+    // diver is painted on the card itself (no circle), his shoulders running off its foot, the water behind him fading
+    // into the steel
+    const pick = (k) => `<div class="cr-pick"><button data-k="${k}" data-d="-1">‹</button><b data-v="${k}"></b><button data-k="${k}" data-d="1">›</button></div>`;
+    el.innerHTML = `<div class="cr-box"><div class="cr-port"><canvas width="520" height="600"></canvas></div>
+      <div class="cr-side"><button class="cr-skip">Skip</button>
+        <label class="cr-name"><span>New diver</span><input maxlength="12" placeholder="Earl" autocomplete="off" spellcheck="false"></label>
+        <div class="cr-grp"><h5>Diver</h5><div class="cr-seg"><button data-sex="m">Man</button><button data-sex="f">Woman</button></div><div class="cr-line"><span>Face</span>${pick('face')}</div></div>
+        <div class="cr-grp"><h5>Head</h5><div class="cr-tabs"><button data-tab="hair">Hair</button><button data-tab="beard">Beard</button><button data-tab="eyes">Eyes</button></div>
+          <div class="cr-tab" data-p="hair"><div class="cr-line"><span>Style</span>${pick('hair')}</div><div class="cr-skins cr-sm">${HAIR_COLS.map(([n, c], i) => `<button data-hc="${i}" style="--c0:${c[0]};--c1:${c[2]}" aria-label="${n}"></button>`).join('')}</div></div>
+          <div class="cr-tab" data-p="beard"><div class="cr-line"><span>Beard</span>${pick('beard')}</div></div>
+          <div class="cr-tab" data-p="eyes"><div class="cr-line"><span>Set</span>${pick('eyes')}</div><div class="cr-skins cr-sm">${EYE_COLS.map(([n, c], i) => `<button data-ec="${i}" style="--c0:${c};--c1:#0c0a08" aria-label="${n}"></button>`).join('')}</div></div></div>
+        <div class="cr-grp"><h5>Skin</h5><div class="cr-skins">${SKINS.map((c, i) => `<button data-skin="${i}" style="--c0:${c[0]};--c1:${c[2]}" aria-label="Skin ${i + 1}"></button>`).join('')}</div></div>
+        <button class="cr-go">Dive</button></div></div>`;
+    let tab = 'hair';
     el.hidden = false;
     const cv = el.querySelector('canvas'), x = cv.getContext('2d');
     const draw = () => {
-      x.clearRect(0, 0, 520, 520);
-      const g0 = x.createRadialGradient(260, 220, 40, 260, 260, 330); g0.addColorStop(0, '#2c4650'); g0.addColorStop(1, '#0c171b'); x.fillStyle = g0; x.fillRect(0, 0, 520, 520);
+      x.clearRect(0, 0, 520, 600); x.save(); x.translate(0, 60); // (7.1.5) the figure sits lower: shoulders off the card's foot
+      { // the water behind him, fading out into the card's steel on every side: a lamp-glow behind the head, motes, and a
+        // diving helmet hanging on its hook in the dark beside him
+        const bg = document.createElement('canvas'); bg.width = 520; bg.height = 600; const b2 = bg.getContext('2d');
+        const w0 = b2.createRadialGradient(250, 190, 20, 250, 230, 300); w0.addColorStop(0, '#36525a'); w0.addColorStop(0.45, '#1a2c32'); w0.addColorStop(1, '#0a1416'); b2.fillStyle = w0; b2.fillRect(0, 0, 520, 600);
+        let sd = 9; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+        for (let i = 0; i < 60; i++) { b2.fillStyle = `rgba(214,226,220,${(0.05 + r() * 0.12).toFixed(3)})`; b2.beginPath(); b2.arc(r() * 520, r() * 520, 0.8 + r() * 1.6, 0, Math.PI * 2); b2.fill(); }
+        b2.strokeStyle = 'rgba(20,24,22,0.9)'; b2.lineWidth = 4; b2.beginPath(); b2.moveTo(64, 70); b2.lineTo(64, 120); b2.arc(64, 132, 12, -Math.PI / 2, Math.PI * 0.6); b2.stroke(); // the hook
+        { const hg = b2.createRadialGradient(56, 176, 6, 68, 190, 60); hg.addColorStop(0, 'rgba(92,80,56,0.7)'); hg.addColorStop(1, 'rgba(24,22,16,0.75)'); b2.fillStyle = hg; b2.beginPath(); b2.arc(68, 192, 50, 0, Math.PI * 2); b2.fill();
+          b2.fillStyle = 'rgba(40,60,62,0.8)'; b2.beginPath(); b2.arc(80, 190, 20, 0, Math.PI * 2); b2.fill(); b2.strokeStyle = 'rgba(120,100,64,0.6)'; b2.lineWidth = 5; b2.stroke(); } // the helmet: brass, its front port
+        b2.globalCompositeOperation = 'destination-in'; const m0 = b2.createRadialGradient(250, 250, 90, 250, 270, 245); /* fades out before the canvas's edges: no hard border */ m0.addColorStop(0, '#000'); m0.addColorStop(1, 'rgba(0,0,0,0)'); b2.fillStyle = m0; b2.fillRect(0, 0, 520, 600);
+        x.drawImage(bg, 0, -60); }
       // (7.0.8) built as Dave is: shoulders in the wetsuit turning away (the far one in shadow), a neck from under the
       // jaw into a wrapping roll collar, the head lit from the front and above with its back in shadow
       const sk = SKINS[L.skin] || SKINS[2], lg = (x0, y0, x1, y1, st) => { const g = x.createLinearGradient(x0, y0, x1, y1); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
@@ -506,17 +522,19 @@ export class UI {
         const kl = f.createRadialGradient(330, 220, 10, 330, 220, 170); kl.addColorStop(0, 'rgba(255,228,196,0.2)'); kl.addColorStop(1, 'rgba(255,228,196,0)'); f.fillStyle = kl; f.fillRect(0, 0, 520, 520); // key light on the face
         f.fillStyle = lg(140, 0, 280, 0, [[0, 'rgba(10,6,2,0.45)'], [1, 'rgba(10,6,2,0)']]); f.fillRect(0, 0, 520, 520); // the back of the head in shadow
         x.drawImage(fc, 0, 0); }
+      x.restore();
       el.querySelectorAll('[data-sex]').forEach((b) => b.classList.toggle('on', b.dataset.sex === L.sex));
       el.querySelectorAll('[data-skin]').forEach((b) => b.classList.toggle('on', +b.dataset.skin === L.skin));
       el.querySelectorAll('[data-hc]').forEach((b) => b.classList.toggle('on', +b.dataset.hc === L.hc)); el.querySelectorAll('[data-ec]').forEach((b) => b.classList.toggle('on', +b.dataset.ec === L.eyeCol));
-      el.querySelector('.cr-beard').hidden = L.sex === 'f'; el.querySelector('[data-v="beard"]').textContent = BEARDS[L.beard || 0];
+      el.querySelector('[data-tab="beard"]').hidden = L.sex === 'f'; if (L.sex === 'f' && tab === 'beard') tab = 'hair'; el.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab)); el.querySelectorAll('.cr-tab').forEach((p) => { p.hidden = p.dataset.p !== tab; }); el.querySelector('[data-v="beard"]').textContent = BEARDS[L.beard || 0];
       el.querySelector('[data-v="face"]').textContent = FACES[L.face]; el.querySelector('[data-v="eyes"]').textContent = EYES[L.eyes]; el.querySelector('[data-v="hair"]').textContent = HAIR_NAMES[L.hair];
     };
     draw();
     const inp = el.querySelector('input');
     el.onclick = (ev) => {
       const b = ev.target.closest('button'); if (!b) return;
-      if (b.dataset.sex) { L.sex = b.dataset.sex; L.beard = L.sex === 'f' ? 0 : (L.beard || 1); if (L.sex === 'f' && ['crop', 'buzz', 'swept'].includes(L.hair)) L.hair = 'bob'; if (L.sex === 'm' && ['bob', 'ponytail', 'bun'].includes(L.hair)) L.hair = 'swept'; }
+      if (b.dataset.tab) { tab = b.dataset.tab; }
+      else if (b.dataset.sex) { L.sex = b.dataset.sex; L.beard = L.sex === 'f' ? 0 : (L.beard || 1); if (L.sex === 'f' && ['crop', 'buzz', 'swept'].includes(L.hair)) L.hair = 'bob'; if (L.sex === 'm' && ['bob', 'ponytail', 'bun'].includes(L.hair)) L.hair = 'swept'; }
       else if (b.dataset.k === 'face') L.face = (L.face + +b.dataset.d + FACES.length) % FACES.length;
       else if (b.dataset.k === 'eyes') L.eyes = (L.eyes + +b.dataset.d + EYES.length) % EYES.length;
       else if (b.dataset.k === 'hair') L.hair = cyc(HAIRS, L.hair, +b.dataset.d);
