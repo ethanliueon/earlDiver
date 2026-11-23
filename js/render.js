@@ -2866,7 +2866,7 @@ export class Renderer {
         ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(L.text).width, tx = Math.max(150, hx - Math.max(36, ppm * 1.6) - w), ty = Math.max(fs + 70, hy - Math.max(48, ppm * 2)); /* (6.0.1) up and to his left, into the open water, clear of the menu column */
         ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(236,230,210,0.7)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(hx - 3, hy - 3); ctx.quadraticCurveTo(hx - 4, ty + 6, tx + w, ty + 6); ctx.lineTo(tx, ty + 6); ctx.stroke(); // the line comes up from him and runs back under where the words are written
-        ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(L.text.slice(0, n), tx, ty);
+        ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; { const fx = (L.t - 0.25) * 22; let cx = tx; for (let j = 0; j < Math.min(L.text.length, Math.ceil(fx) + 3); j++) { const ch = L.text[j], al = clamp((fx - j) / 3, 0, 1); if (al > 0) { ctx.save(); ctx.globalAlpha *= al; ctx.fillText(ch, cx, ty); ctx.restore(); } cx += ctx.measureText(ch).width; } } /* (7.2.0) each letter fades in after the one before */
         ctx.restore(); } }
   }
   // (6.0.4) marine snow in three layers, each a fixed set of flakes made once (sizes, speeds, drift and brightness drawn

@@ -1654,9 +1654,12 @@ export class UI {
     const cont = el.querySelector('.dt-cont'), shop = el.querySelector('.dt-shop'), leave = el.querySelector('.dt-leave');
     let k = 0, i = 0, line = parts[0]; clearInterval(this.dtT); clearTimeout(this.dtN);
     const buttons = () => { const last = k >= parts.length - 1; cont.hidden = last; shop.hidden = !last; leave.hidden = first || !last; };
-    const type = () => { clearInterval(this.dtT); i = 0; p.textContent = ''; p.style.opacity = 1; buttons(); this.dtT = setInterval(() => { i += 2; p.textContent = line.slice(0, i); if (i >= line.length) { clearInterval(this.dtT); if (k < parts.length - 1) this.dtN = setTimeout(next, 4000); } }, 28); };
+    // (7.2.0) each letter fades in after the one before (a span per letter), never popping in
+    const lay = () => { p.innerHTML = line.split('').map((c) => `<span class="ch">${c === ' ' ? ' ' : c.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>`).join(''); return p.querySelectorAll('.ch'); };
+    const shown = () => i >= line.length;
+    const type = () => { clearInterval(this.dtT); i = 0; p.style.opacity = 1; buttons(); const L = lay(); this.dtT = setInterval(() => { for (let n = 0; n < 2 && i < L.length; n++) L[i++].classList.add('on'); if (i >= L.length) { clearInterval(this.dtT); if (k < parts.length - 1) this.dtN = setTimeout(next, 4000); } }, 30); };
     const next = () => { clearTimeout(this.dtN); if (k >= parts.length - 1) return; k++; line = parts[k]; p.style.transition = 'opacity 0.25s'; p.style.opacity = 0; setTimeout(type, 260); };
-    this.dtNext = () => { if (p.textContent.length < line.length) { clearInterval(this.dtT); p.textContent = line; if (k < parts.length - 1) this.dtN = setTimeout(next, 4000); } else next(); };
+    this.dtNext = () => { if (!shown()) { clearInterval(this.dtT); p.querySelectorAll('.ch').forEach((c) => c.classList.add('on')); i = line.length; if (k < parts.length - 1) this.dtN = setTimeout(next, 4000); } else next(); };
     type();
     el.querySelector('.dt-box').onclick = (ev) => { if (ev.target.closest('button')) return; this.dtNext(); };
   }
