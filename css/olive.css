@@ -1706,3 +1706,5 @@ html body #chart .ch-chip .ch-go { color: var(--o-cream-dim, #c9c0a4) !important
 /* (6.9.1) a newly met animal in the journal: a small New tag on top, a red game badge, quiet */
 html body #journal .jcell { position: relative; }
 html body #journal .jcell .jnew:not(#_a):not(#_b) { display: inline-block; width: auto; height: auto; z-index: 2; position: absolute; top: 2px; right: 4px; left: auto; bottom: auto; opacity: 1; padding: 1px 6px 2px; border-radius: 3px; font: 700 11px/1.1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; font-style: normal; letter-spacing: 0.04em; color: #f2ead6; background: #9a3a28; box-shadow: 0 1px 2px rgba(40, 20, 10, 0.45); transform: rotate(var(--rot, 0deg)); }
+/* (6.9.4) one close cross on screen at a time: while an item's card is open over the inventory, the panel's own cross waits */
+html body #inventory:has(.item-pop) .inv-close:not(#_a):not(#_b):not(#_c) { visibility: hidden !important; }
