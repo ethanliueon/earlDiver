@@ -40,6 +40,7 @@ import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, se
 import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { rollChest, rollChestAll } from './chests.js';
+import { buy as storeBuy, showAd } from './purchases.js'; // (6.5.9)
 import { calState, calClaimed, calWeek } from './store.js';
 import { hullCap } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
@@ -1074,12 +1075,26 @@ function tutorFish(dir) {
   tf.vx = dd > 1.5 ? Math.sign(dx) * 0.8 : Math.cos(tt * 0.4) * 0.15; tf.vy = 0; tf.facing = tf.vx >= 0 ? 1 : -1;
   return tf;
 }
+// (6.6.0) the sub trip's two garibaldi, hovering in place: one about 26 m out from the boat at 9 m, one 12 m under it.
+// Caught, it stays caught (null when it is gone some other way, and a new one comes)
+function tripFish(n) {
+  const ax = BOAT.x - 26 - (n === 3 ? 3 : 0), ay = Math.min(n === 2 ? 9 : 21, g.world.floorAt(ax) - 2.5), key = 'tripFish' + n;
+  let tf = g[key];
+  if (tf && tf.dead) { if (g.bag.some((s) => s.id === tf.sp.id)) return tf; tf = null; }
+  if (!tf || !g.fauna.list.includes(tf)) { tf = g.fauna.makeFish(questGaribaldi(), ax, ay, -1, g.fauna.groupId++, true); tf.len = 0.22; tf.tutor = true; tf.devKeep = true; g.fauna.list.push(tf); g[key] = tf; }
+  if (tf.fleeT > 0) return tf;
+  const tt = g.time + n, hx = ax + Math.sin(tt * 0.4) * 0.9, hy = ay + Math.sin(tt * 0.7) * 0.3, dx = hx - tf.x, dy = hy - tf.y, dd = Math.hypot(dx, dy), k = dd > 1.5 ? Math.min(1, 0.035 / dd) : 0.05;
+  tf.x += dx * k; tf.y += dy * k; tf.vx = dd > 1.5 ? Math.sign(dx) * 0.8 : Math.cos(tt * 0.4) * 0.15; tf.vy = 0; tf.facing = tf.vx >= 0 ? 1 : -1;
+  return tf;
+}
+const tripCaught = (tf) => !!(tf && tf.dead && g.bag.some((s) => s.id === tf.sp.id));
 function tutor() {
   const P = profile, e = g.earl; g.tut = null; g.tutForce = null; { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
   g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null;
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
+  { const m1 = QUEST_MAIN[questsOf(P).main]; if (m1 && m1.id === 'subtrip') g.tutHidePrompts = false; } // (6.6.0) the sub trip is played with the game's own buttons
   const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); setTimeout(() => ui.confirm('Tutorial complete', 'The quest board is in your journal.', 'OK', null, () => {}), 600); /* (6.5.0) a card to close the tutorial, not a toast that was easily missed */ } return; }
   const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
@@ -1186,6 +1201,44 @@ function tutor() {
     }
     else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
+  } else if (m.id === 'subtrip') {
+    const sn = S.seen, part = sn.st || 0, sub = g.sub, ap = g.autopilot, set = (n) => { if ((sn.st || 0) < n) { sn.st = n; saveProfile(P); } };
+    const inReach = () => { const T = findTarget(); return !!(T && T.kind === 'board'); };
+    const toSub = () => { to = { x: sub.x, y: sub.y }; text = 'Get in the sub'; if (inReach()) spot = { key: 'f', say: 'Get in' }; };
+    const offDeck = () => { const ax = g.aboard.x || 0, endX = ax < (DECK_MIN + DECK_MAX) / 2 ? DECK_MIN - 1.2 : DECK_MAX + 1.2; to = { x: BOAT.x + endX * dir, y: 0.6 }; text = 'Walk off the end of the deck to jump in'; };
+    if (inCabin) { text = 'Out on deck'; cabinTo('door', 'outdoor', 'Out on deck'); }
+    else if (part === 0) { if (e.inSub) set(1); else if (g.aboard) offDeck(); else toSub(); }
+    else if (part === 1) { // drive to the fish, sprinting
+      const F2 = tripFish(2); fish = F2; to = { x: F2.x, y: F2.y };
+      if (!e.inSub) { if (g.aboard) offDeck(); else toSub(); }
+      else { text = 'Drive to the fish'; /* (6.6.0) the stick needs no teaching: no ring round it */ if (dist(sub.x, sub.y, F2.x, F2.y) < 8) set(2); }
+    }
+    else if (part === 2) { const F2 = tripFish(2); fish = F2; if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); } else set(3); }
+    else if (part === 3 || part === 4) { // net the fish, then the one below
+      const F = tripFish(part === 3 ? 2 : 3);
+      if (tripCaught(F)) set(part + 1);
+      else if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); }
+      else { fish = F; to = { x: F.x, y: F.y }; text = part === 3 ? 'Net the fish' : 'Net the one below';
+        if (dist(e.x, e.y, F.x, F.y) < 2.6) { prompt = netPrompt(); spot = netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; } }
+    }
+    else if (part === 5) { // the sub is far above: call it to him, and get in
+      if (e.inSub) set(6);
+      else if ((ap && ap.state === 'coming') || dist(e.x, e.y, sub.x, sub.y) < 9) toSub();
+      else { text = 'Call the sub'; spot = { key: 'c', say: 'Call the sub' }; }
+    }
+    else if (part === 6) { // a look at what he carries
+      if (invOpen && !P.tutBagTour) { const tb = document.querySelector('#inventory [data-invtab="catch"]:not(.on)'); if (tb) tb.click();
+        spot = { sel: ['#inventory [data-invtab="catch"]'], card: { id: 'bagtour', text: 'Catch: what you carry, and what it sells for.' } }; }
+      else if (invOpen) spot = { sel: ['#inventory .inv-close'], act: 'inventory' };
+      else if (P.tutBagTour) set(7);
+      else { text = 'Open your bag'; spot = { key: 'b', say: 'Open your bag' }; }
+    }
+    else { // home on the autopilot
+      if (sub.docked && e.inSub) { questEvent(P, 'subTrip'); saveProfile(P); }
+      else if (!e.inSub) toSub();
+      else if (g.homeRun) text = 'The autopilot takes you home';
+      else { text = 'Autopilot home'; spot = { key: 'c', say: 'Autopilot home' }; }
+    }
   }
   g.tut = { text, to, fish, prompt, spot, door };
   // (4.3.8) the instruction has its own line at the left (tutspot.js), so the game's own messages at the top are
@@ -1195,7 +1248,7 @@ function tutor() {
 }
 const tutSpot = new TutSpot();
 tutSpot.onAction = (id) => runTutAction(id); // (4.4.1) the button
-tutSpot.onCard = (id) => { if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
+tutSpot.onCard = (id) => { if (id === 'bagtour' && profile) { profile.tutBagTour = true; saveProfile(profile); audio.ready && audio.click(); return; } /* (6.6.0) */ if (id === 'jtour' && profile) { profile.tutJTour = (profile.tutJTour || 0) + 1; saveProfile(profile); audio.ready && audio.click(); } }; // (4.12.2)
 function startRun() {
   // (5.5) an iPhone's browser cannot show a page full screen: once, on the first dive there, how to get it
   if (/iPhone|iPod/.test(navigator.userAgent) && !(window.matchMedia && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) && !navigator.standalone) {
@@ -1908,10 +1961,44 @@ function rebirth(kind) {
   if (ent) { ent.faceLock = null; ent.marked = false; ent.hunt = null; ent.ap = null; ent.slip = null; ent.sleepT = 90; ent.x = 20 + Math.random() * 4960; ent.y = ent.band(g)[0] + Math.random() * 400; }
   g.rebirthT = 7; g.wake = { t: 0, eaten: kind === 'devoured' }; ui.closeAll && ui.closeAll(); audio.ready && audio.drop && audio.drop();
 }
-function die(cause, kind = 'normal') {
+// (6.5.9) the revive offer. Only when the haul he would lose is worth something to him: more than 15 % of his cash, at
+// least $200, never more than $100,000 asked. (6.5.9) The first revive of a dive is an ad; the next, $0.99; Rebirth, when it does not
+// save him, still leaves the offer. A revive gives him back where he was with what he carried and 30 % of his air; the
+// thing draws off for about 20 s but he stays marked. Never in the tutorial, never on quitting
+const haulValue = () => [...g.bag, ...g.subTank].reduce((a, s) => a + specimenValue(s), 0);
+const reviveNeed = (cash) => Math.min(100000, Math.max(200, cash * 0.15));
+function reviveOfferFor(kind, cause) {
+  if (kind === 'quit' || !profile || profile.tut === 'on' || g.reviveAsked) return null;
+  const v = haulValue(); if (v < reviveNeed(profile.cash || 0)) return null;
+  const how = !g.reviveAdUsed ? 'ad' : !g.revivePaid ? 'pay' : null; if (!how) return null;
+  // what he would lose, kind by kind: the picture, how many, what they are worth
+  const by = new Map(); for (const s of [...g.bag, ...g.subTank]) { const k = s.id, r = by.get(k) || { sp: SPECIES_BY_ID[k], n: 0, value: 0 }; r.n++; r.value += specimenValue(s); by.set(k, r); }
+  const e = g.earl, depth = Math.round(Math.max(e.y, e.inSub ? g.sub.y : 0));
+  return { value: v, n: g.bag.length + g.subTank.length, list: [...by.values()].filter((r) => r.sp).sort((a, b) => b.value - a.value), how, cause: /\d m\b/.test(cause) ? cause : `${cause} at ${depth} m` };
+}
+function revive(kind) {
+  const e = g.earl, ent = g.entity, sub = g.sub;
+  if (kind === 'implode' || e.inSub) { e.inSub = false; e.x = sub.x; e.y = sub.y; }
+  e.o2 = e.o2Max * 0.3; g.noAir = 0; g.injury = 0; g.kill = null; e.vx = e.vy = 0;
+  const safe = (e.pressStart || 300) - 5; if (e.y > safe) e.y = Math.max(2, safe); // not straight back under the pressure that killed him
+  if (sub.imploded || kind === 'implode') { sub.imploded = false; g.imploded = false; sub.failing = null; sub.hull = 1; sub.docked = false; sub.x = clamp(e.x + 9, 6, 4994); sub.y = Math.max(2, Math.min(e.y, g.world.floorAt(sub.x) - 3)); }
+  if (ent) { ent.faceLock = null; ent.hunt = null; ent.ap = null; ent.slip = null; if (ent.goAway) ent.goAway(e.x, e.y, ent.band(g)[0], 20); } // it draws off for a while; the mark stays
+  g.rebirthT = 3; g.wake = { t: 0, eaten: false, plain: true }; ui.closeAll && ui.closeAll(); audio.ready && audio.drop && audio.drop();
+}
+function die(cause, kind = 'normal', declined = false) {
   if (g.mode !== 'play' || g.noDeath) return;
   if ((g.rebirthT || 0) > 0 && kind !== 'quit') return; // (5.16.0) the grace after a Rebirth
   if (kind !== 'quit' && g.earl.legends && g.earl.legends.has('rebirth') && powerReady('rebirth') && Math.random() < 0.5) { rebirth(kind); return; }
+  if (!declined) { const o = reviveOfferFor(kind, cause);
+    if (o) { g.reviveAsked = true; g.paused = true;
+      ui.reviveOffer(o, async (how) => {
+        let ok = false;
+        if (how === 'ad') { const r = await showAd('revive'); ok = !!(r && r.rewarded); if (ok) g.reviveAdUsed = true; }
+        else if (how === 'pay') { const r = await storeBuy('revive'); ok = !!(r && r.ok); if (ok) g.revivePaid = true; }
+        g.paused = false; g.reviveAsked = false;
+        if (ok) revive(kind); else die(cause, kind, true);
+      });
+      return; } }
   if (profile) profile.resume = null; // (4.12.6) a death ends the dive: the next one starts at the boat
   g.mode = 'dying'; g.deathT = 0; g.deathCause = cause; g.deathKind = kind;
   ui.closeAll();
@@ -2424,7 +2511,7 @@ function update(dt) {
       if (nearB && (bagN || e2.inSub || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u'))) g.tapMarks.push({ key: 'u', boat: [28.5, -17.5, 35.5, -11.2], what: 'winch' }); // her winch at the stern: the catch is hauled up by it
       // (5.6.9) during the tutorial only the step's own thing is marked (the door on the first step, the hatch on the
       // swim down and the ladder while the winch is wanted all pulled the eye the wrong way)
-      if (profile.tut === 'on') { const id = g.tutAction && g.tutAction.id, want = { climb: 'ladder', cabin: 'door', sell: 'winch' }[id]; g.tapMarks = want ? g.tapMarks.filter((m) => m.what === want) : []; }
+      if (profile.tut === 'on' && g.questMainId !== 'subtrip') { const id = g.tutAction && g.tutAction.id, want = { climb: 'ladder', cabin: 'door', sell: 'winch' }[id]; g.tapMarks = want ? g.tapMarks.filter((m) => m.what === want) : []; }
     }
     // (5.6.7) the tutorial's first dive cannot drown him: a miss, a chase and a sprint still leave a quarter of the tank
     g.firstDive = firstDive(profile); // (5.6.9) the HUD keeps the red air figures out of it

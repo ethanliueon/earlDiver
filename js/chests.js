@@ -130,8 +130,8 @@ export class ChestReveal {
     this.cv = root.querySelector('canvas');
     root.addEventListener('click', (ev) => {
       const f = ev.target.closest('.cx-find'); if (f) { this.card(+f.dataset.i); return; }
-      if (ev.target.closest('.cx-on')) { const u = ev.target.closest('.cx-on').dataset.u; this.h.putOn(u); this.cardEl.hidden = true; return; }
-      if (ev.target.closest('.cx-cardx') || (this.cardEl && !this.cardEl.hidden && !ev.target.closest('.cx-card'))) { this.cardEl.hidden = true; return; }
+      if (ev.target.closest('.cx-on')) { const u = ev.target.closest('.cx-on').dataset.u; this.h.putOn(u); this.hideCard(); return; }
+      if (ev.target.closest('.cx-cardx') || (this.cardEl && !this.cardEl.hidden && !ev.target.closest('.cx-card'))) { this.hideCard(); return; }
       if (ev.target.closest('.cx-take')) { this.close(); return; }
       if (!this.done) this.t0 -= 10; // a tap skips to the end
     });
@@ -152,8 +152,9 @@ export class ChestReveal {
     if (f.coin) el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><div class="icard"><img src="${this.h.coinPic()}" alt=""><h4 style="color:${RARITY.legendary.col}">Old coin</h4><p class="ic-r" style="color:${RARITY.legendary.col}">Legendary</p><p class="ic-line">Hand-struck and worn nearly smooth. The Old One trades for them.</p><p class="ic-line cx-have">${this.h.coins()} in the locker</p></div>`;
     else { const d = f.def; // (6.5.3) the card every item shares: picture, name, rarity, what it is, its power, its skills
       el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><div class="icard"><img src="${this.h.picture(d, 300, 180)}" alt=""><h4 style="color:${RARITY[d.rarity].col}">${d.name}</h4><p class="ic-r" style="color:${RARITY[d.rarity].col}">${rarKind(RARITY[d.rarity].name, d.kind)}</p>${d.line ? `<p class="ic-line">${d.line}</p>` : ''}${d.legend ? powerHtml(d.legend) : ''}${skillsHtml(f.q.sk)}</div>`; }
-    el.hidden = false;
+    el.hidden = false; this.root.querySelector('.cx-take').hidden = true; // (6.5.8) one cross at a time: the card's while it is open
   }
+  hideCard() { this.cardEl.hidden = true; if (this.done) this.root.querySelector('.cx-take').hidden = false; }
   close() { this.root.hidden = true; this.h.close && this.h.close(); }
   draw() {
     const R = this.root, c = this.cv, dpr = Math.min(2, window.devicePixelRatio || 1), W = Math.round(R.clientWidth * dpr), H = Math.round(R.clientHeight * dpr);
@@ -180,6 +181,6 @@ export class ChestReveal {
     this.findEls.forEach((el, i) => { const ti = tf + i * T.gap, k = Math.min(1, Math.max(0, (t - ti) / 0.45)), e = k < 1 ? 1 - Math.pow(1 - k, 3) : 1, over = k > 0 && k < 1 ? Math.sin(k * Math.PI) * 0.12 : 0;
       const tx = Wc / 2 + (i - (n - 1) / 2) * gapX, ty0 = (cy - chh * 0.1) / dpr, ty1 = Hc * 0.24;
       el.style.opacity = k > 0 ? Math.min(1, k * 3).toFixed(3) : '0'; el.style.transform = `translate(${(tx).toFixed(1)}px, ${(ty0 + (ty1 - ty0) * e).toFixed(1)}px) translate(-50%, -50%) scale(${(0.35 + 0.65 * e + over).toFixed(3)})`; });
-    if (!this.done && t > tf + (n - 1) * T.gap + 0.5) { this.done = true; R.querySelector('.cx-take').hidden = false; R.classList.add('done'); }
+    if (!this.done && t > tf + (n - 1) * T.gap + 0.5) { this.done = true; R.querySelector('.cx-take').hidden = !this.cardEl.hidden; R.classList.add('done'); }
   }
 }

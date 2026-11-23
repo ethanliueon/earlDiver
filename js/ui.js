@@ -47,6 +47,7 @@ import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { storeHtml, eventsHtml, calWeek, untilTomorrow } from './store.js';
 import { tankPicture } from './journal_tank.js';
+import { priceOf as storePrice } from './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
@@ -348,6 +349,30 @@ export class UI {
   nameOpen() { return !$('namebox').hidden; }
   typing() { const a = document.activeElement; return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT'); }
   blurTyping() { document.activeElement && document.activeElement.blur(); }
+  // (6.5.9) the revive offer: the death written at the top, a broken heart under a large REVIVE, every kind he carries
+  // (its picture, how many, what they fetch) and the haul's total, then the one way back he has (the first revive of a
+  // dive an ad, the next $0.99) and Give up, which says what is lost. Calm: no timer, nothing flashing.
+  // done(how): 'ad', 'pay' or 'no'
+  reviveOffer(o, done) {
+    let el = document.getElementById('revive');
+    if (!el) { el = document.createElement('div'); el.id = 'revive'; document.body.appendChild(el); }
+    const heart = '<svg class="rv-heart" viewBox="0 0 64 56" aria-hidden="true"><path d="M32 54 C22 45 4 34 4 18 C4 9 11 3 19 3 C25 3 29 6 32 10 L28 20 L35 27 L29 36 L34 45 Z" fill="#7a2f22" stroke="#1c0c08" stroke-width="2.2" stroke-linejoin="round"/><path d="M36 50 C45 42 60 31 60 18 C60 9 53 3 45 3 C40 3 36 6 34 9 L31 19 L38 27 L32 36 L37 44 Z" fill="#6a271c" stroke="#1c0c08" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 12 C14 8 18 7 21 8" fill="none" stroke="#c98a72" stroke-width="2" stroke-linecap="round" opacity="0.7"/></svg>';
+    const rows = o.list.slice(0, 6).map((r) => { const R = rarityOf(r.sp); return `<div class="rv-fish"><img src="${fittedIcon(r.sp, 150, 90).toDataURL()}" alt=""><b style="color:${R ? R.col : '#efe8d2'}">${r.sp.name}</b><span>${r.n > 1 ? '×' + r.n + ' · ' : ''}${money(r.value)}</span></div>`; }).join('')
+      + (o.list.length > 6 ? `<div class="rv-more">+${o.list.length - 6} more</div>` : '');
+    const way = o.how === 'ad' ? '<button class="rv-go" data-rv="ad"><em class="rv-ic ad"></em>Watch an ad</button>' : '<button class="rv-go" data-rv="pay">Revive <span class="rv-price">$0.99</span></button>';
+    el.innerHTML = `<div class="rv-box"><p class="rv-cause">${o.cause}</p>${heart}<h4>Revive</h4>
+      <div class="rv-list">${rows}</div>
+      <p class="rv-haul"><span>Haul</span><b>${money(o.value)}</b></p>
+      <div class="rv-acts">${way}<button class="rv-no" data-rv="no">Give up<small>The haul is lost</small></button></div></div>`;
+    el.hidden = false;
+    storePrice('revive').then((p) => { const s2 = el.querySelector('.rv-price'); if (s2 && p) s2.textContent = p; });
+    let busy = false;
+    el.onclick = (ev) => {
+      if (busy) return; const b2 = ev.target.closest('[data-rv]'); if (!b2) return; busy = true; const how = b2.dataset.rv;
+      if (how !== 'no') el.classList.add('wait');
+      Promise.resolve(done(how)).finally(() => { el.hidden = true; el.classList.remove('wait'); });
+    };
+  }
   showChest(key, finds, coin = false) { this.chest.open(key, finds, coin); } // (6.4.0) finds: [{ q, def }], and whether an old coin came up
   // (6.4.0) the Shop and Events screens (left menu): chests for cash; the daily gift
   toggleStore(force) { const el = $('store'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = storeHtml(this.h.getProfile()); } el.hidden = !on; this.storeWire(el); }
@@ -1520,16 +1545,19 @@ export class UI {
     let html = '';
     const last0 = lastSlot();
     for (let n = 1; n <= SLOTS; n++) {
-      const r = readSlot(n), num = `<b class="tg-n">${n}</b>`;
+      // (6.6.0) one clear structure: the slot's number small at the top, the diver's name large in the middle and when
+      // it was played, then three equal figures (cash, deepest, species), then Continue with Delete beside it. An empty
+      // one: a stamped + and New diver, centred
+      const r = readSlot(n), num = `<span class="sv-no">No. ${n}</span>`;
       if (r.state === 'ok') {
         const p = r.profile, deep = p.deepest || 0, found = (p.journal || []).length;
-        html += `<div class="slot tag${n === last0 ? ' last' : ''}" data-n="${n}">${num}<div class="info"><b>${money(p.cash, false)}</b><span>${deep.toLocaleString()} m deepest</span></div>
-          <div class="tg-depth"><i style="height:${Math.round(Math.min(1, deep / 5000) * 100)}%"></i></div>
-          <dl class="tg-rows"><div><dt>Species</dt><dd>${found}</dd></div><div><dt>Played</dt><dd>${r.saved ? ago(r.saved) : 'new'}</dd></div></dl>
-          <div class="tg-foot"><em class="tg-go">${n === last0 ? 'Continue' : 'Dive'}</em><button class="del tg-del" aria-label="Delete">Delete</button></div></div>`;
+        html += `<div class="slot tag sv${n === last0 ? ' last' : ''}" data-n="${n}">${num}
+          <div class="sv-head"><b class="sv-name">${(p.name || 'Earl').replace(/</g, '&lt;')}</b><span class="sv-when">${r.saved ? 'Played ' + ago(r.saved) : 'New'}</span></div>
+          <dl class="sv-stats"><div><dt>Cash</dt><dd>${money(p.cash, false)}</dd></div><div><dt>Deepest</dt><dd>${deep.toLocaleString()} m</dd></div><div><dt>Species</dt><dd>${found}</dd></div></dl>
+          <div class="sv-foot"><em class="sv-go">${n === last0 ? 'Continue' : 'Dive'}</em><button class="del sv-del" aria-label="Delete">Delete</button></div></div>`;
       } else if (r.state === 'damaged') {
-        html += `<div class="slot tag damaged" data-n="${n}">${num}<div class="info"><b>Damaged</b><span>could not be read</span></div><button class="del" aria-label="Delete">×</button></div>`;
-      } else html += `<div class="slot tag empty" data-n="${n}">${num}<i class="tg-plus">+</i><div class="info"><b>New diver</b></div></div>`;
+        html += `<div class="slot tag sv damaged" data-n="${n}">${num}<div class="sv-head"><b class="sv-name">Damaged</b><span class="sv-when">Could not be read</span></div><div class="sv-foot"><button class="del sv-del" aria-label="Delete">Delete</button></div></div>`;
+      } else html += `<div class="slot tag sv empty" data-n="${n}">${num}<div class="sv-new"><i class="sv-plus">+</i><b>New diver</b></div></div>`;
     }
     $('slots').innerHTML = html;
     if (!document.documentElement.style.getPropertyValue('--tagimg')) { // (6.0.14) the dive tags, painted once: stamped aluminium, worn and scratched, a hole with its steel ring

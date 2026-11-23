@@ -1572,3 +1572,65 @@ html body #tut-spot .ts-arrow.aim:not(#_a) { animation: ts-bob-aim 1s ease-in-ou
 
 /* (6.5.8) the chest opening's red cross, top right of the screen like every full-screen room's */
 html body .cx .cx-take.tr-close:not(#_a):not(#_b):not(#_c):not(#_d) { position: fixed; z-index: 6; left: auto; bottom: auto; transform: none; margin: 0; }
+
+/* (6.5.9) the revive offer: a large olive steel plate, centred over the darkened sea */
+#revive { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(2, 3, 3, 0.72); }
+#revive[hidden] { display: none; }
+#revive .rv-box { position: relative; width: min(760px, 84vw); box-sizing: border-box; border: 26px solid transparent; border-image: url("../assets/ui/olive/panel.png") 60 fill / 26px stretch;
+  padding: 4px 26px 14px; color: #efe8d2; font: 500 18px/1.3 var(--o-text, "Barlow Semi Condensed", sans-serif); text-align: center; }
+#revive .rv-cause { margin: 0 0 6px; color: #c9a08e; font-size: 17px; letter-spacing: 0.04em; }
+#revive .rv-heart { display: block; width: 64px; height: 56px; margin: 0 auto 2px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); }
+#revive h4 { margin: 0 0 14px; font: 700 46px/1 var(--o-hud, "Barlow Semi Condensed", sans-serif); letter-spacing: 0.12em; text-transform: uppercase; color: #e6dcc0; }
+#revive .rv-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 0 12px; }
+#revive .rv-fish { width: 150px; display: grid; justify-items: center; gap: 2px; padding: 8px 6px; background: rgba(8, 12, 8, 0.32); border: 1px solid rgba(230, 220, 190, 0.12); border-radius: 4px; }
+#revive .rv-fish img { width: 120px; height: 72px; object-fit: contain; }
+#revive .rv-fish b { font: 600 16px/1.15 var(--o-hud, "Barlow Semi Condensed", sans-serif); }
+#revive .rv-fish span { color: #c9c0a6; font-size: 15px; }
+#revive .rv-more { align-self: center; color: #a9a088; font-size: 15px; }
+#revive .rv-haul { display: flex; align-items: baseline; justify-content: center; gap: 12px; margin: 0 0 16px; }
+#revive .rv-haul span { color: #a9a088; font-size: 16px; text-transform: uppercase; letter-spacing: 0.1em; }
+#revive .rv-haul b { font: 700 34px/1 var(--o-hud, "Barlow Semi Condensed", sans-serif); color: #efe8d2; }
+#revive .rv-acts { display: flex; gap: 18px; justify-content: center; align-items: stretch; }
+#revive .rv-acts button { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 210px; min-height: 58px; padding: 0 18px;
+  border: 12px solid transparent; border-image: var(--o-btn) 28 fill / 12px stretch; background: none; color: #efe8d2; font: 600 21px/1 var(--o-hud, "Barlow Semi Condensed", sans-serif); cursor: pointer; }
+#revive .rv-acts .rv-go { flex-direction: row; gap: 10px; font-size: 23px; }
+#revive .rv-acts .rv-no { color: #c8beaa; font-size: 19px; opacity: 0.9; }
+#revive .rv-acts .rv-no small { font: 500 13px/1 var(--o-text, "Barlow Semi Condensed", sans-serif); color: #a99f88; }
+#revive .rv-acts button:active { border-image-source: var(--o-btn-down, var(--o-btn)); transform: translateY(1px); }
+#revive .rv-ic { width: 22px; height: 22px; display: inline-block; opacity: 0.9; background: no-repeat center / contain; }
+#revive .rv-ic.ad { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect x='2' y='4' width='16' height='12' rx='2' fill='none' stroke='%23e8dcc0' stroke-width='1.8'/%3E%3Cpath d='M8 7.5v5l4.5-2.5z' fill='%23e8dcc0'/%3E%3C/svg%3E"); }
+#revive.wait .rv-acts { opacity: 0.5; pointer-events: none; }
+/* the web build's stand-in for a rewarded ad: a quiet still card, plainly a test */
+.ad-test { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: #0b0d0c; color: #cfc6ad; font: 500 16px "Barlow Semi Condensed", sans-serif; }
+.ad-test .ad-box { display: grid; gap: 10px; text-align: center; }
+.ad-test b { font-size: 22px; letter-spacing: 0.1em; text-transform: uppercase; }
+.ad-test .ad-bar { display: block; width: 220px; height: 3px; background: #3a3a2e; position: relative; overflow: hidden; }
+.ad-test .ad-bar::after { content: ''; position: absolute; inset: 0; background: #cfc6ad; transform-origin: left; animation: ad-fill 3s linear forwards; }
+@keyframes ad-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* (6.6.0) the tutorial never draws a line or box round what it lights: the thing glows and breathes in its own shape
+   (the hole takes the thing's own corners, tutspot.js), and the rest of the screen is shaded as before */
+html body #tut-spot .ts-hole:not(#_a):not(#_b):not(#_c) { border: 0 !important; animation: ts-breathe 1.6s ease-in-out infinite !important; }
+html body #tut-spot .ts-hole.light:not(#_a):not(#_b):not(#_c) { animation-name: ts-breathe-l !important; }
+@keyframes ts-breathe { 0%, 100% { box-shadow: 0 0 10px 4px rgba(226, 218, 196, 0.2), 0 0 0 200vmax rgba(4, 8, 6, 0.5); } 50% { box-shadow: 0 0 22px 9px rgba(226, 218, 196, 0.42), 0 0 0 200vmax rgba(4, 8, 6, 0.5); } }
+@keyframes ts-breathe-l { 0%, 100% { box-shadow: 0 0 10px 4px rgba(226, 218, 196, 0.2); } 50% { box-shadow: 0 0 22px 9px rgba(226, 218, 196, 0.42); } }
+
+/* (6.6.0) the save cards' structure: number small at the top, the name large in the middle, three equal figures under a
+   rule, Continue and Delete on one line at the foot; an empty card centred. The tag's size, metal and type are kept */
+html body #title .t-select .slot.tag.sv:not(#_a):not(#_b):not(#_c) { display: flex !important; flex-direction: column !important; align-items: stretch !important; justify-content: space-between !important; text-align: center; }
+html body #title .slot.tag.sv .sv-no { align-self: flex-start; font: 700 clamp(13px, 2.4vh, 18px)/1 var(--o-title); letter-spacing: 0.12em; text-transform: uppercase; color: rgba(38, 40, 34, 0.7); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4); }
+html body #title .slot.tag.sv.empty .sv-no { color: rgba(220, 222, 210, 0.7); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+html body #title .slot.tag.sv .sv-head { display: grid; gap: 4px; justify-items: center; }
+html body #title .slot.tag.sv .sv-name { font: 700 clamp(26px, 6vh, 44px)/1 var(--o-title); color: rgba(30, 32, 26, 0.92); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45), 0 -1px 0 rgba(0, 0, 0, 0.2); }
+html body #title .slot.tag.sv .sv-when { font: 600 clamp(11px, 1.9vh, 14px)/1 var(--o-text); text-transform: uppercase; letter-spacing: 0.08em; color: rgba(36, 38, 32, 0.7); }
+html body #title .slot.tag.sv .sv-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; padding-top: clamp(8px, 1.6vh, 12px); border-top: 1px solid rgba(30, 32, 26, 0.35); box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.35); }
+html body #title .slot.tag.sv .sv-stats div { display: grid; gap: 3px; justify-items: center; }
+html body #title .slot.tag.sv .sv-stats dt { font: 600 clamp(10px, 1.7vh, 12px)/1 var(--o-text); text-transform: uppercase; letter-spacing: 0.1em; color: rgba(36, 38, 32, 0.65); }
+html body #title .slot.tag.sv .sv-stats dd { margin: 0; font: 700 clamp(15px, 3vh, 22px)/1 var(--o-title); color: rgba(30, 32, 26, 0.9); }
+html body #title .slot.tag.sv .sv-foot { display: flex; align-items: center; justify-content: center; gap: 10px; }
+html body #title .slot.tag.sv .sv-go { flex: 1; display: grid; place-items: center; min-height: 38px; border: 10px solid transparent; border-image: var(--o-btn) 28 fill / 10px stretch; font: 700 clamp(15px, 2.8vh, 20px)/1 var(--o-title); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: var(--o-cream, #efe8d2); }
+html body #title .slot.tag.sv .sv-del:not(#_a):not(#_b):not(#_c) { position: static !important; width: auto !important; height: 38px !important; padding: 0 12px !important; opacity: 0.85; font: 600 13px/1 var(--o-text) !important; }
+html body #title .slot.tag.sv .sv-new { flex: 1; display: grid; place-items: center; align-content: center; gap: 6px; }
+html body #title .slot.tag.sv .sv-plus { font: 300 clamp(60px, 14vh, 110px)/0.8 var(--o-title); font-style: normal; color: rgba(225, 228, 216, 0.85); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 -1px 0 rgba(255, 255, 255, 0.2); }
+html body #title .slot.tag.sv .sv-new b { font: 700 clamp(18px, 3.6vh, 26px)/1 var(--o-title); color: rgba(220, 222, 210, 0.8); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+html body #title .slot.tag.sv .sv-foot .sv-del:not(#_a):not(#_b):not(#_c):not(#_d) { box-sizing: border-box; min-height: 38px; height: auto !important; border: 10px solid transparent !important; border-image: var(--o-btn) 28 fill / 10px stretch !important; background: none !important; color: #d8ceb6 !important; opacity: 1 !important; padding: 0 4px !important; }

@@ -446,11 +446,12 @@ e.inSub ? [
       if (!spot) { this.tutTarget = { x, y, r, sq }; }
       const shp = (rad) => { ctx.beginPath(); if (sq) ctx.roundRect(x - rad, y - rad, rad * 2, rad * 2, rad * 0.26); else ctx.arc(x, y, rad, 0, TAU); };
       if (!spot) halo(x, y, r); // (6.0.5) behind the button only: over the dark the button must stay readable
-      const k = (g.time * 0.6) % 1, rr = r * (1.1 + k * 0.45);
-      for (const kk of [k, (k + 0.5) % 1]) { const r2 = r * (1.1 + kk * 0.55); ctx.strokeStyle = `rgba(240,226,180,${(0.65 * (1 - kk)).toFixed(3)})`; ctx.lineWidth = (2.8 - 1.6 * kk) * u; shp(r2); ctx.stroke(); }
-      void rr;
-      ctx.strokeStyle = 'rgba(18,22,12,0.75)'; ctx.lineWidth = 4.6 * u; shp(r * 1.06); ctx.stroke();
-      ctx.strokeStyle = 'rgba(240,230,200,0.95)'; ctx.lineWidth = 2.2 * u; shp(r * 1.06); ctx.stroke();
+      // (6.6.0) no lines round it: a soft light in the button's own shape, hugging its edge and breathing
+      { const q = 0.5 + 0.5 * Math.sin(g.time * 3.6); ctx.save(); ctx.shadowColor = `rgba(240,228,196,${(0.75 + 0.25 * q).toFixed(3)})`; ctx.shadowBlur = (14 + 18 * q) * u;
+        ctx.fillStyle = `rgba(240,228,196,${(0.3 + 0.22 * q).toFixed(3)})`; ctx.beginPath();
+        if (sq) { ctx.roundRect(x - r * 1.07, y - r * 1.07, r * 2.14, r * 2.14, r * 0.3); ctx.roundRect(x - r * 0.99, y - r * 0.99, r * 1.98, r * 1.98, r * 0.26); }
+        else { ctx.arc(x, y, r * 1.07, 0, TAU); ctx.arc(x, y, r * 0.99, 0, TAU); }
+        ctx.fill('evenodd'); ctx.restore(); }
       // motes of light drifting round it
       for (let i = 0; i < 3; i++) { const a2 = g.time * (0.5 + i * 0.07) + i * 0.9, rr2 = r * (1.35 + 0.25 * Math.sin(g.time * 1.3 + i)), mx = x + Math.cos(a2) * rr2, my = y + Math.sin(a2) * rr2, ms = (1.4 + (i % 3)) * u, al = 0.45 + 0.4 * Math.sin(g.time * 2 + i);
         const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3); mg.addColorStop(0, `rgba(232,226,208,${(al * 0.6).toFixed(3)})`); mg.addColorStop(1, 'rgba(232,226,208,0)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, TAU); ctx.fill(); }

@@ -90,6 +90,21 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   panel, come in from the panel's middle) and point along the line to the thing. Nothing is drawn at a lower rate behind
   any panel; paused, the still world is drawn once and held.
 
+- **Decided in 6.5.7-6.5.9**: a missed fish flees about 5 m at 1.5x its pace, then swims on. Nothing glows in the top
+  100 m but a deep animal come up. Guardian jellyfish (the sea lanterns) only in open water below 200 m, and rare; the
+  hand on one writes "Guardian jellyfish / Its light keeps the deep away" beside it. The starter wetsuit is the one suit
+  worse than any bought (15 m, air x1.05); fins show their real figures (1 to about 3). Rarity always names the kind of
+  thing ("Rare suit", "Exotic item"); glow sticks rare, advanced exotic; traps and trawls have rarities. The revive
+  offer (js/purchases.js; web build = test store): only when the haul is worth more than 15 % of cash (at least $200,
+  never more than $100,000 asked), the first revive of a dive an ad, the next $0.99, never in the tutorial; back where he was with
+  the haul and 30 % air, the thing draws off but the mark stays. One close cross on screen at a time.
+
+- **Decided in 6.6**: the tutorial never draws a line, box or ring round what it shows: the thing itself glows and
+  breathes in its own shape (its own outline, never a white circle or rectangle). Don't teach what any phone player
+  knows (the stick). The tutorial ends with the first sub trip (one Log step in parts). The revive card is large: the
+  death and its depth, a broken heart under REVIVE, every kind carried with its picture and worth, the haul's total,
+  one way back (the first revive of a dive an ad, the next $0.99) and Give up ("The haul is lost").
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build

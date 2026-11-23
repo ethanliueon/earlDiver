@@ -35,6 +35,9 @@ export const MAIN = [
   { id: 'sell', text: 'Sell your catch', touchHelp: 'Swim up beside the Margaret and tap its winch, then Sell all.', help: 'Swim up beside the Margaret and press U, then Sell all.', need: 1, on: 'sell', pay: 30 },
   { id: 'buy', text: 'Buy a piece of gear from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought gear goes into your inventory (supplies don't count).", need: 1, on: 'bought', pay: 40 },
   { id: 'wear', text: 'Put on the gear you bought', touchHelp: 'Open your bag, tap the gear and Put it on.', help: 'Press B for your inventory, click it and Put it on (or drag it onto Earl).', need: 1, on: 'wear', pay: 30 },
+  // (6.6.0) the tutorial's last step, one trip in parts (main.js tutor, seen.st): into the sub, drive to a fish (and
+  // sprint), out to net it, a second one deeper, call the sub to him, a look at the bag's catch, autopilot home
+  { id: 'subtrip', text: 'Your first sub trip', touchHelp: 'Get in the sub and drive to the fish; leave the sub and net it, then the one below; call the sub, look at your catch, and take the autopilot home.', help: 'Get in the sub (F) and drive to the fish; leave it and net the fish, then the one below; call the sub (C), look at your catch (B), and autopilot home (C).', need: 1, on: 'subTrip', pay: 60 },
   { id: 'sub', text: 'Take the sub down to 60 m', touchHelp: "Swim to the sub's hatch and tap it; push the stick down to dive and up to rise.", help: 'Swim into the sub at its stern (F); W and S to dive and rise.', need: 60, on: 'subDepth', pay: 50 },
   { id: 'air', text: 'Top up the cabin air', touchHelp: 'When the cabin air is down, tap the air tank button in the sub: a backup tank fills it to full.', help: 'When the cabin air is down, press R in the sub: a backup tank fills it to full.', need: 1, on: 'airTank', pay: 20 },
   { id: 'trawl', text: 'Let out the trawl net', touchHelp: 'In the sub, under way below 6 m, tap the trawl net button: the net drops from the hatch, and the same button closes it. The catch lands on the floor of the sub, out of water: get it into a tank (the tank room button) within a minute.', help: 'In the sub, under way below 6 m, press N: the net drops from the hatch. N again closes it. The catch lands on the floor of the sub, out of water: get it into a tank (T) within a minute.', need: 1, on: 'trawl', pay: 30 },
@@ -313,5 +316,5 @@ export function claim(P, which) {
 }
 export const readyCount = (P) => { const S = Q(P), m = MAIN[S.main]; return (m && m.on && S.mainProg >= m.need ? 1 : 0) + (m && !m.on ? 1 : 0) + (tutorialOn(P) ? 0 : S.board.filter((q) => q.prog >= q.n && !q.claimed).length); };
 // (4.3.0) the guided tutorial is running (the first six steps of the Log, until it hands over)
-export const TUT_IDS = new Set(['firstfish', 'sell', 'buy', 'wear']);
+export const TUT_IDS = new Set(['firstfish', 'sell', 'buy', 'wear', 'subtrip']); // (6.6.0) the sub trip ends the tutorial
 export function tutorialOn(P) { if (!P || P.tut !== 'on') return false; const m = MAIN[Q(P).main]; return !!m && TUT_IDS.has(m.id); }

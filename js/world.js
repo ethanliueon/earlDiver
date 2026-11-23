@@ -270,15 +270,16 @@ export function generateWorld(seed) {
   };
   for (let cx = 0; cx < WORLD_W; cx += 250) {
     for (let cy = 0; cy < WORLD_D; cy += 250) {
-      // design: 1-2 per 500x500 (= ~0.4 per 250 cell) near the surface, rising with depth
-      const depthT = smoothstep(0, 1500, cy);
-      const expected = lerp(0.45, 1.6, depthT);
+      // (6.5.7) guardian jellyfish are rare and live only in the open ocean below 200 m: about one in ten 250 m cells
+      // down there, and never near a wall or the seabed (at least 150 m of water under it)
+      const expected = cy + 250 <= 200 ? 0 : 0.1;
       let k = Math.floor(expected) + (rng() < expected % 1 ? 1 : 0);
       for (let i = 0; i < k; i++) {
         const x = cx + rng.range(10, 240);
         const fl = W.floorAt(x);
         const y = cy + rng.range(10, 240);
         if (y > fl - 3) continue; // this part of the cell is solid ground
+        if (y < 200 || fl - y < 150 || W.floorAt(x - 80) - y < 100 || W.floorAt(x + 80) - y < 100) continue; // (6.5.7) open water, deep, clear of walls
         addLantern(x, y);
       }
     }
