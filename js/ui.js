@@ -1645,11 +1645,16 @@ export class UI {
     if (!el) { el = document.createElement('section'); el.id = 'davetalk'; el.hidden = true; el.innerHTML = '<div class="dt-box"><b class="dt-name">Dave</b><p class="dt-line"></p><div class="dt-acts"><button class="dt-shop">Shop</button><button class="dt-leave">Leave</button></div></div>'; document.body.appendChild(el);
       { const bx = el.querySelector('.dt-box'), im = new Image(); im.onload = () => { const P = daveTalkPlate(1640, 700, im); bx.classList.add('painted'); bx.style.setProperty('--dt-plate', `url(${P.url})`); bx.style.setProperty('--dt-left', (P.textLeft * 100).toFixed(1) + '%'); bx.style.setProperty('--dt-top', (P.top * 100).toFixed(1) + '%'); }; im.src = davePortrait(); } // (7.0.10) the old Dave, baked into the card with the box
       el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); this.toggleDave(true); });
-      el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); });
+      el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); clearTimeout(this.dtN); });
       el.addEventListener('click', (ev) => { if (ev.target === el) { el.hidden = true; clearInterval(this.dtT); } }); }
-    const line = this.dave.greeting(), p = el.querySelector('.dt-line'); p.textContent = ''; el.hidden = false; p.classList.toggle('long', line.length > 80); /* (7.1.3) a long line set smaller, inside the box */
-    let i = 0; clearInterval(this.dtT); this.dtT = setInterval(() => { i += 2; p.textContent = line.slice(0, i); if (i >= line.length) clearInterval(this.dtT); }, 28); // typed out, quickly
-    el.querySelector('.dt-box').onclick = () => { if (p.textContent.length < line.length) { clearInterval(this.dtT); p.textContent = line; } }; // a tap shows it all at once
+    // (7.1.8) a long hello comes in parts: each typed out, held, then faded into the next; a tap finishes the typing, or
+    // goes on to the next part
+    const parts = this.dave.greeting().split('|'), p = el.querySelector('.dt-line'); el.hidden = false; p.classList.remove('long');
+    let k = 0, i = 0, line = parts[0]; clearInterval(this.dtT); clearTimeout(this.dtN);
+    const type = () => { clearInterval(this.dtT); i = 0; p.textContent = ''; p.style.opacity = 1; this.dtT = setInterval(() => { i += 2; p.textContent = line.slice(0, i); if (i >= line.length) { clearInterval(this.dtT); if (k < parts.length - 1) this.dtN = setTimeout(next, 2200); } }, 28); };
+    const next = () => { clearTimeout(this.dtN); if (k >= parts.length - 1) return; k++; line = parts[k]; p.style.transition = 'opacity 0.25s'; p.style.opacity = 0; setTimeout(type, 260); };
+    type();
+    el.querySelector('.dt-box').onclick = (ev) => { if (ev.target.closest('button')) return; if (p.textContent.length < line.length) { clearInterval(this.dtT); p.textContent = line; if (k < parts.length - 1) this.dtN = setTimeout(next, 2200); } else next(); };
   }
   daveTalkOpen() { const el = document.getElementById('davetalk'); return !!el && !el.hidden; }
   toggleDave(force) {

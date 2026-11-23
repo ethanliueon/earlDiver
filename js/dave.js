@@ -11,7 +11,8 @@ import { chestsOf, oddsText, chestPicture } from './chests.js';
 export const DAVE_FINDS = ['pearl', 'sapphire', 'bone', 'glass', 'nodule'];
 export const DAVE_RATE = 1.25; // what he pays, against the Margaret's price
 
-const FIRST = "Well, would you look at that. Nobody comes down this far. I'm Dave. This is my place, and that's my shop. Have a look, mind the drips.";
+// (7.1.8) his first hello in two parts, each shown on its own (a '|' between them)
+const FIRST = "Well, would you look at that. Nobody comes down this far.|I'm Dave. This is my place, and that's my shop. Have a look, mind the drips.";
 // (6.5.4) a later visit: a short word first, in the box at his door
 export const HELLO = ['Back again?', 'Mind the drips.', 'Still breathing, I see.', "Shop's open. Always is.", 'You again. Good.'];
 const LINES = [
@@ -55,7 +56,7 @@ export class DaveShop {
     const P = this.h.getProfile();
     if (!P) return;
     const n = P.daveVisits || 0;
-    this.line = n === 0 ? FIRST : LINES[(n * 7 + Math.floor(Math.random() * LINES.length)) % LINES.length];
+    this.line = n === 0 ? FIRST.replace('|', ' ') : LINES[(n * 7 + Math.floor(Math.random() * LINES.length)) % LINES.length];
     P.daveVisits = n + 1; this.h.save && this.h.save();
     this.render();
   }
