@@ -7,7 +7,7 @@
 import { rollVariant, canBeRare } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
-import { rarityOf, spawnLen } from './specimens.js';
+import { rarityOf, spawnLen, livesOnBottom } from './specimens.js';
 import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
 // (5.16.0) the deep's ambush hunters do not swim side to side: they hang upright in the water and drift slowly up and
 // down near where they live. [which way the body points: 1 head up (anglers, viperfish), -1 mantle up and arms down (the
@@ -857,6 +857,16 @@ export class Fauna {
         }
         const fl = W.floorAt(c.x);
         if (c.y > fl - sk) { c.y = fl - sk; if (c.vy > 0) c.vy = 0; }
+        // (7.0.0) a swimmer keeps clear of the bottom and the walls: at least 3 m (less only where the water itself is
+        // shallow), eased away rather than snapped; one driven into a wall (fleeing, or pushed) turns and goes the other way.
+        // Bottom-dwellers (crabs, rays on the sand, corals...) are left where they live.
+        const bot = c.onBottom ?? (c.onBottom = livesOnBottom(c.sp));
+        if (!bot) {
+          const surfY = (this.surfY ? this.surfY(c.x) : 0), clr = Math.max(0.6, Math.min(3, (fl - surfY) / 3));
+          const under = c.y - (fl - clr); if (under > 0) { c.vy -= Math.min(6, under * 4) * dt * 3; if (c.vy > 0) c.vy *= 0.8; c.y -= Math.min(under, 1.2 * dt); if (c.ty != null && c.ty > fl - clr) c.ty = fl - clr; }
+          for (const sd of [-1, 1]) { const wx = c.x + sd * clr; if (W.floorAt(wx) < c.y + 0.5 || W.rockAt(wx, c.y, 0.3)) { c.vx -= sd * 4 * dt * 3; if (Math.sign(c.vx) === sd) c.vx *= 0.7; if (!school && (c.fleeT > 0 || c.wallT > 0) && c.dir === sd) { c.dir = -sd; c.wallT = 1.2; if (c.fleeFrom) c.fleeFrom = { x: c.x + sd * 3, y: c.y }; } } }
+          if (W.rockAt(c.x, c.y + clr, 0.3)) { c.vy -= 3 * dt * 3; }
+        }
       }
       if (school) {
         // all aligned with the school; when it turns, the turn sweeps from the leading edge back,
