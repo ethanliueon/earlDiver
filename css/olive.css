@@ -1774,3 +1774,10 @@ html body #loading .porthole .g-needle { transform: rotate(var(--deg, 225deg)); 
 @keyframes g-tremble { from { translate: 0 0; rotate: -0.6deg; } to { translate: 0 0; rotate: 0.6deg; } }
 html body #loading > span:not(#_a) { font: 600 17px "Barlow Semi Condensed", sans-serif !important; font-style: normal !important; color: #d8cfb4 !important; letter-spacing: 0.24em; text-transform: uppercase; }
 html body #loading > span::after { content: none !important; }
+/* (7.0.8) Dave's words on one painted plate (dave_art.js): the plate and its porthole with Dave in it are the picture;
+   his name larger above his line, the line and the choices to the right of the porthole */
+html body #davetalk .dt-box.painted:not(#_a):not(#_b) { display: block !important; width: min(820px, 96vw) !important; aspect-ratio: 1640 / 360; padding: 0 !important; border: 0 !important; border-image: none !important; background: var(--dt-plate) center / 100% 100% no-repeat !important; box-shadow: none !important; }
+html body #davetalk .dt-box.painted .dt-face, html body #davetalk .dt-box.painted .dt-arm { display: none !important; }
+html body #davetalk .dt-box.painted .dt-name:not(#_a):not(#_b):not(#_c) { position: absolute !important; left: var(--dt-left) !important; top: 18% !important; font: 700 clamp(18px, 5vh, 24px) "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.22em !important; color: #e0d6b8 !important; text-transform: uppercase; }
+html body #davetalk .dt-box.painted .dt-line:not(#_a):not(#_b) { position: absolute; left: var(--dt-left); right: 20%; top: 36%; padding: 0 !important; margin: 0; font: 500 clamp(15px, 4.4vh, 19px)/1.35 "Barlow Semi Condensed", sans-serif; color: #ece4cc; }
+html body #davetalk .dt-box.painted .dt-acts:not(#_a) { position: absolute; right: 4%; top: 50%; transform: translateY(-50%); margin: 0 !important; }

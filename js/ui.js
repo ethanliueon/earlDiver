@@ -45,6 +45,7 @@ import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's drawn size against a 2.4 m giant)
 import { lockerTexture } from './textures.js';
 import { gaugeFace, gaugeNeedle, gaugeGlass } from './gauge_art.js';
+import { daveTalkPlate } from './dave_art.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
 import { isTestStore } from './purchases.js';
@@ -1586,7 +1587,7 @@ export class UI {
   daveTalk() {
     let el = document.getElementById('davetalk');
     if (!el) { el = document.createElement('section'); el.id = 'davetalk'; el.hidden = true; el.innerHTML = '<div class="dt-box"><b class="dt-name">Dave</b><p class="dt-line"></p><div class="dt-acts"><button class="dt-shop">Shop</button><button class="dt-leave">Leave</button></div></div>'; document.body.appendChild(el);
-      el.querySelector('.dt-box').insertAdjacentHTML('afterbegin', `<img class="dt-face" src="${davePortrait()}" alt="">`); // (6.7.1) Dave himself, leaning in at his box's edge
+      { const P = daveTalkPlate(1640, 360); const bx = el.querySelector('.dt-box'); bx.classList.add('painted'); bx.style.setProperty('--dt-plate', `url(${P.url})`); bx.style.setProperty('--dt-left', (P.textLeft * 100).toFixed(1) + '%'); } // (7.0.8) one painted piece: the plate, its porthole, Dave in it
       el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); this.toggleDave(true); });
       el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); });
       el.addEventListener('click', (ev) => { if (ev.target === el) { el.hidden = true; clearInterval(this.dtT); } }); }
