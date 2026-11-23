@@ -386,7 +386,7 @@ export class Fauna {
     const dir = side < 0 ? 1 : -1;
     // spacing: about a body length and a half between fish, never tighter than ~15 cm (tiny
     // krill and lanternfish otherwise merge into one solid blob)
-    const baseR = Math.sqrt(n) * Math.max(sp.len, 0.16) * 1.15 + 0.8; // (4.12.5) looser: more water between the fish
+    const baseR = Math.sqrt(n) * Math.max(sp.len, 0.16) * 1.5 + 1; // (4.12.5) looser: more water between the fish. (6.5.7) looser again
     this.schools.set(gid, {
       sp, x, y, vx: dir * 0.6, vy: 0, dir, n, r: baseR, baseR, wob: rng() * 100, threat: 0, turnTime: -99, turnT: rng.range(15, 40),
       lo: night && b.nightMin !== undefined ? b.nightMin : b.min, hi: night && b.nightMax !== undefined ? b.nightMax : b.max,
@@ -549,7 +549,7 @@ export class Fauna {
     for (const [gid, s] of this.schools) {
       // a slowly wandering heading
       const wander = fbm1(time * 0.04 + s.wob, 2, 7);
-      let ax = s.dir * 0.35, ay = wander * 0.5;
+      let ax = s.dir * 0.5, ay = wander * 0.7 + Math.sin(time * 0.09 + s.wob) * 0.25; // (6.5.7) it travels, rising and falling as one
       s.threat = Math.max(0, s.threat - dt * 0.25);
       // (2.5.4) the floor under the whole school, not just its middle: on a slope the highest point
       // under it is what it must clear, or half the fish are pressed flat against the bottom
@@ -649,8 +649,11 @@ export class Fauna {
         const sf = this.surfY ? this.surfY(tx) : 0;
         ty = Math.max(ty, sf + 0.5 + c.len * 0.2 + (oy + 1) * 0.45);
         ty = Math.min(ty, W.floorAt(tx) - this.skin(c) - 0.4); // a place below the bottom is taken just above it, so the school follows a slope instead of piling into it
-        ax = (tx - c.x) * 3 + (school.vx - c.vx) * 2;
-        ay = (ty - c.y) * 3 + (school.vy - c.vy) * 2;
+        // (6.5.7) held to its place more firmly, so the school moves as one body; on a turn the fish at the front (now the
+        // back) lag a moment behind the rest, so the turn runs through the school as a wave
+        const lagT = clamp((time - school.turnTime) - (0.5 + c.ox * school.dir * 0.5) * 0.7, 0, 1), hold = 3 + 2 * lagT;
+        ax = (tx - c.x) * hold + (school.vx - c.vx) * 2.6;
+        ay = (ty - c.y) * hold + (school.vy - c.vy) * 2.6;
         sp = Math.max(c.speed * (1 + school.threat), Math.hypot(school.vx, school.vy) * 1.25); // keep up with the school, no more
       } else if (c.home) {
         // a homebound animal potters about its home: a new spot within its range every few
@@ -770,15 +773,17 @@ export class Fauna {
       // swing waits on it): the fish hangs a moment, then swims on
       c.dazed = 0; /* (5.12.2) no hanging dazed: a fish always keeps swimming */
       if (c.fleeT > 0) {
-        c.fleeT -= dt;
+        c.fleeT -= dt; if (c.fleeT <= 0) { c.fleeSp = 0; c.fleeFrom = null; }
         if (c.home && c.hide) {
           // a reef animal doesn't bolt into open water: it darts back into its home and stays there
           const hx = c.home.x - c.x, hy = c.home.y - c.y, hd = Math.hypot(hx, hy) + 0.01;
           ax = hx / hd * 30; ay = hy / hd * 30; sp = Math.max(sp, c.flee || c.speed * 2);
           if (hd < 0.5) c.hideT = Math.max(c.hideT || 0, rng.range(4, 9));
         } else {
-          ax = (c.x - earl.x) / (de + 0.1) * 30; ay = (c.y - earl.y) / (de + 0.1) * 20;
-          sp = Math.max(sp, c.flee);
+          const fx = c.fleeFrom ? c.fleeFrom.x : earl.x, fy = c.fleeFrom ? c.fleeFrom.y : earl.y, df = Math.hypot(c.x - fx, c.y - fy) + 0.1; // (6.5.7) away from where the net missed it
+          ax = (c.x - fx) / df * 30; ay = (c.y - fy) / df * 20;
+          sp = c.fleeSp ? Math.max(sp, c.fleeSp) : Math.max(sp, c.flee);
+          if (c.y < 1.2 + c.len) ay = Math.abs(ay) + 8; // never up out of the water
           // (4.12.5) not into a wall: rock or seabed ahead turns it back the other way, and the bottom lifts it
           const sx = Math.sign(ax) || 1, look = 1.5 + c.len;
           if (W.rockAt(c.x + sx * look, c.y, 0.2) || W.floorAt(c.x + sx * look) < c.y + 0.4) { ax = -sx * 30; c.wallT = 1.2; }

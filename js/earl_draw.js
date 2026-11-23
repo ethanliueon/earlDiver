@@ -386,9 +386,11 @@ export function drawEarl(ctx, L, kick, moving, lampCol, rim, gear) {
     const ease = (x) => x * x * (3 - 2 * x);
     if (sw !== null && sw !== undefined && gear.kind === 'net') {
       let a;
-      if (sw < 0.25) a = lerp(carryUp, -0.75, ease(sw / 0.25));
-      else if (sw < 0.62) a = lerp(-0.75, 1.55, ease((sw - 0.25) / 0.37));
-      else a = lerp(1.55, carryUp, ease((sw - 0.62) / 0.38));
+      // (6.5.7) the wind-up takes most of the time (drawn back over his shoulder and held a beat), the sweep itself is
+      // quick and lands at 60 %, then the recovery: a 1 s net is felt as 1 s, a quick net as quick
+      if (sw < 0.42) a = lerp(carryUp, -1.05, ease(Math.min(1, sw / 0.34)));
+      else if (sw < 0.6) a = lerp(-1.05, 1.6, ease((sw - 0.42) / 0.18));
+      else a = lerp(1.6, carryUp, ease((sw - 0.6) / 0.4));
       pose = { upA: a, foreA: a - 0.18 };
       toolA = a - 0.22;
     } else if ((gear.kind === 'tag' || gear.kind === 'cam') && (gear.aimLocal !== null || (sw !== null && sw !== undefined))) {

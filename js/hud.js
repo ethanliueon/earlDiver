@@ -392,7 +392,7 @@ export class Hud {
     ] : e.inSub ? [
       { key: 'leavesub', icon: 'leave', on: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
       // (5.17.0) no glow stick in the sub's arc: she has her own lights (the bag still snaps one)
-      { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach', inter: true },
+      !handSub && g.obsTarget ? { key: 'obs', icon: 'eye', on: true, lit: true, inter: true } /* (6.5.7) an animal at the glass: the eye */ : { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach', inter: true },
       abil(),
       light(),
     ] : [
@@ -626,6 +626,11 @@ e.inSub ? [
     const toolLook = (k) => (k === 'net' ? toolPic('net', gear(P, 'net')) || netLook(gear(P, 'net').look || 0) : k === 'cam' ? toolPic('cam', gear(P, 'cam')) || gear(P, 'cam').look : null); // (5.17.0) its own picture
     { const kind = e.inSub ? 'claw' : sel || 'net', look = toolLook(kind); /* (6.5.0) aboard too: the net, greyed */
       drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? 'off' : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
+    // (6.5.7) the swing's time on its button: a hair-thin bone arc runs round the rim while the net is in motion, so a slow
+    // net is seen to take its second
+    if (g.capture && g.capture.kind === 'net' && !aboard) { const k = clamp(g.capture.t / g.capture.dur, 0, 1); ctx.save(); ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(12,12,8,0.6)'; ctx.lineWidth = 4.2 * u; ctx.beginPath(); ctx.arc(cx, cy, R * 1.06, -Math.PI / 2, -Math.PI / 2 + k * TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(226,216,190,0.85)'; ctx.lineWidth = 2.2 * u; ctx.stroke(); ctx.restore(); }
     // (5.17.0) the legendary net's power, as a badge on the main button's lower left, whatever is in hand (the net is
     // worn either way): steady for a power that is always on; grey with a hair-thin arc while one with a cooldown comes
     // back; on coming back (or at a dive's start) it warms from grey to full colour and pulses gently for 10 s, then

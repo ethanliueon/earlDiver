@@ -74,7 +74,7 @@ export class Touch {
     if (!this.el) return;
     if (!show) { this.el.hidden = true; return; }
     if (this.stick) return;
-    const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(), x = R + 26 * k, y = window.innerHeight - R - 22 * k; // (5.17.0) deep in the corner, the lamp having left it (a thumb's margin kept from the edges)
+    const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(), x = R + 44 * k, y = window.innerHeight - R - 36 * k; /* (6.5.7) a little right and up, where the thumb rests */ // (5.17.0) deep in the corner, the lamp having left it (a thumb's margin kept from the edges)
     this.el.hidden = false; this.el.style.setProperty('--r', R + 'px');
     this.base.style.transform = `translate(${x}px, ${y}px)`; this.knob.style.transform = `translate(${x}px, ${y}px)`;
   }

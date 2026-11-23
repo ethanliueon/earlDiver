@@ -556,7 +556,7 @@ export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint =
     else if (ART[kind]) { const k = R * 0.66 / 50 * ((look && look.k) || 1); x.save(); x.scale(k, k); ART[kind](x, look || {}); x.restore(); } /* (6.5.1) look.k: the picture larger (the interact button's) */
     else drawGlyph(x, kind, 0, 0, R * 0.95 * ((look && look.k) || 1));
     x.restore();
-    if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.6; x.fillStyle = '#808080'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(6,8,8,0.34)'; x.fill(); } // (5.16.7) greyer and darker: opaque now, so this alone says 'not now'
+    if (state === 'off') { x.globalCompositeOperation = 'saturation'; x.globalAlpha = 1; /* (6.5.7) fully grey, and darker: a button that can't be used now must read so at a glance */ x.fillStyle = '#808080'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1; x.fillStyle = 'rgba(6,8,8,0.46)'; x.fill(); } // (5.16.7) greyer and darker: opaque now, so this alone says 'not now'
     if (state === 'down') { x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.arc(0, 0, R, 0, TAU); x.fill(); }
     // (5.7.0) pressed: the face lights up and its colours deepen, as if a lamp came on behind it
     if (state === 'press') { x.save(); x.beginPath(); x.arc(0, 0, R * 0.95, 0, TAU); x.clip(); x.globalCompositeOperation = 'saturation'; x.globalAlpha = 0.35; x.fillStyle = 'hsl(40,100%,50%)'; x.fill(); x.globalCompositeOperation = 'screen'; x.globalAlpha = 1;

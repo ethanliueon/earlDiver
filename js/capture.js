@@ -155,9 +155,9 @@ export function useTool(g) {
   // (6.0.16) the catch lands when the hoop arrives, two-thirds of the way through the swing (it was a third: the swing
   // speed could not be felt). A quick fish that sees it coming may dart out of reach first: small reef fish and the
   // fast swimmers react in about a third of a second, so a slow net misses them more and a fast one beats them
-  g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1), resolveAt: kind === 'net' ? 0.65 : 0.12, done: false, lock: lock && lock.ok ? lock : null };
+  g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1), resolveAt: kind === 'net' ? 0.6 : 0.12 /* (6.5.7) the end of the sweep */, done: false, lock: lock && lock.ok ? lock : null };
   if (kind === 'net' && lock && lock.ok && lock.c && !g.tutForce && !lock.c.dazed) {
-    const c = lock.c, fast = FAST_IDS.has(c.sp.id), small = (c.len || 1) < 0.35, arrive = g.capture.dur * 0.65, react = 0.26 + Math.random() * 0.18, p = fast ? 0.6 : small ? 0.4 : 0.12;
+    const c = lock.c, fast = FAST_IDS.has(c.sp.id), small = (c.len || 1) < 0.35, arrive = g.capture.dur * 0.6, react = 0.26 + Math.random() * 0.18, p = fast ? 0.6 : small ? 0.4 : 0.12;
     if (arrive > react && Math.random() < p * Math.min(1, (arrive - react) / 0.35)) { const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy) || 1, sp = fast ? 11 : 7;
       c.dartT = arrive - react; c.dartVx = dx / d * sp; c.dartVy = dy / d * sp * 0.6; c.startle = 1.2; } }
   if (e.y > 200) g.entity.disturb(g, def.noise);
@@ -235,8 +235,9 @@ export function updateCapture(g, dt) {
         // (5.6.9) the tutorial's scripted miss: a short dart of 2 or 3 m and it hangs there, dazed, for the second swing
         // (5.12.2) a miss no longer sends it bolting or leaves it hanging dazed: it swims on at its own pace (the puff of
         // silt and bubbles still shows the miss). The tutorial's scripted miss is only a short nudge on, for the second swing
-        if (c && force === 'miss') { const dx = c.x - e.x, dy = c.y - e.y, dd = Math.hypot(dx, dy) + 0.1; c.tired = 0; c.fleeT = 0; c.dazed = 0; c.vx = dx / dd * 1.2; c.vy = dy / dd * 0.5; }
-        else if (c) { c.tired = 0; c.dazed = 0; c.fleeT = 0; }
+        // (6.5.7) a miss sends it off about 5 m from him at half again its own pace, keeping off the surface and the floor,
+        // then it settles and swims as before: no 2 m dart and a stop that let him swing again and again
+        if (c) { c.tired = 0; c.dazed = 0; const fs = Math.max(0.6, (c.cruise || c.speed || 1) * 1.5); c.fleeSp = fs; c.fleeT = clamp(5 / fs, 1.2, 8.5); c.fleeFrom = { x: e.x, y: e.y }; }
         if (g.bubbles) for (let i = 0; i < 8; i++) g.bubbles.push({ x: tgt.x + (Math.random() - 0.5) * 0.4, y: tgt.y + (Math.random() - 0.5) * 0.3, r: 0.02 + Math.random() * 0.05, w: Math.random() * 6, t: 0 });
       }
       // the commotion scares off whatever else is close

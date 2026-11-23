@@ -115,6 +115,10 @@ export function subLook(P, addons) {
   };
 }
 
+// (6.5.7) bioluminescence belongs to the dark: in the top 100 m nothing glows (krill, shallow jellies, the lanternfish
+// that come up at night are seen by the lamp like anything else), except now and then a deep animal come up, which
+// still carries its light
+const glowOf = (o) => { const v = o.sp.v.glow; if (!v) return 0; return o.y >= 100 || (o.sp.dmin || 0) >= 150 ? v : 0; };
 export class Renderer {
   constructor(canvas) {
     this.c = canvas; this.ctx = canvas.getContext('2d');
@@ -352,7 +356,7 @@ export class Renderer {
     for (const s of g.world.statics) {
       if (s.x < x0 - 3 || s.x > x1 + 3 || s.y < y0 - 6 || s.y > y1 + 6) continue;
       if (bakedS.has(s)) continue;
-      if (!s.sp.v.glow && !s.variant && !visible(s.x, s.y, Math.max(0.18, s.sp.len) * s.scale)) continue;
+      if (!glowOf(s) && !s.variant && !visible(s.x, s.y, Math.max(0.18, s.sp.len) * s.scale)) continue;
       const L = Math.max(0.18, s.sp.len) * s.scale * ppm;
       const sl = s.variant ? layer() : ctx;
       if (s.variant) this.lgrow(S(s.x), Sy(s.y) - L * 0.5, L * 1.3);
@@ -361,7 +365,7 @@ export class Renderer {
       const r = s.variant ? this.drawVariant(sl, s.sp, s.variant, L, t * 0.3 + s.phase) : this.drawStatic(sl, s, L, t, this.veilFor(s.y));
       sl.restore();
       if (s.variant === 'crimson') glowPts.push([S(s.x), Sy(s.y) - L * 0.3, '#ff3018', Math.max(ppm * 0.6, L * 0.6), 1]);
-      if (r && s.sp.v.glow) glowPts.push([S(s.x), Sy(s.y), s.sp.v.glow, L]);
+      if (r && glowOf(s)) glowPts.push([S(s.x), Sy(s.y), glowOf(s), L]);
     }
     // ---- fauna ----
     // Fish are drawn nose at -x, so a fish heading right (+x) is mirrored, and the tilt is negated
@@ -383,7 +387,7 @@ export class Renderer {
           const bx = S(b.x + Math.sin(t * 2 + b.sway) * 0.04), by = Sy(b.y - age * 0.7), rr = Math.max(0.7, (b.r + age * 0.01) * ppm);
           glowPts.push([bx, by, '#ffe6a8', rr * 2.2, a * 1.5, Math.max(0.6, rr * 0.6)]); } // (6.3.0) small sharp points, not wide orbs
       }
-      if (!c.sp.v.glow && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
+      if (!glowOf(c) && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
       if (LEGENDARY.has(c.sp.id) && g.earl.legends && g.earl.legends.has('eye')) /* (6.5.0) legends glow now: rare forms are gone */ glowPts.push([S(c.x), Sy(c.y), '#ffe6a0', Math.max(ppm * 0.9, fishDrawLen(c.len) * ppm), 0.85]); // (2.8.0) Eye of the Sea
       const Ld = fishDrawLen(c.len) * ppm;
       const shape = c.sp.v.s;
@@ -402,7 +406,7 @@ export class Renderer {
         fb.path.moveTo(x + Math.cos(rot) * hl, y + Math.sin(rot) * hl); fb.path.ellipse(x, y, hl, hh, rot, 0, TAU);
         if (FISHY.has(shape)) { const cx2 = Math.cos(rot), sy2 = Math.sin(rot), bx2 = x - cx2 * hl * 0.8, by2 = y - sy2 * hl * 0.8, ex = x - cx2 * hl * 1.6, ey = y - sy2 * hl * 1.6, w2 = hh * 1.15;
           fb.path.moveTo(bx2, by2); fb.path.lineTo(ex - sy2 * w2, ey + cx2 * w2); fb.path.lineTo(x - cx2 * hl * 1.35, y - sy2 * hl * 1.35); fb.path.lineTo(ex + sy2 * w2, ey - cx2 * w2); fb.path.closePath(); }
-        if (c.sp.v.glow && (glowSkip++ % 6 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.35), 0.4, 0.7]);
+        if (glowOf(c) && (glowSkip++ % 6 === 0)) glowPts.push([x, y, glowOf(c), Math.max(2, Ld * 0.35), 0.4, 0.7]);
         continue;
       }
       if (SIMPLE_SMALL && Ld < 20 && !c.variant && (shape === 'fish' || shape === 'shrimp' || shape === 'hatchet')) {
@@ -434,8 +438,8 @@ export class Renderer {
         if (Ld > 9) { const ex = x + fx2 * Ld * 0.33 - px * down * hh * 0.2, ey = y + fy2 * Ld * 0.33 - py * down * hh * 0.2, er = Math.max(0.7, hh * 0.3); bt.eyes.moveTo(ex + er, ey); bt.eyes.arc(ex, ey, er, 0, TAU); }
         // school fish carry faint belly photophores, not lamps: small, dim, and they never sum to a blaze
         // (6th field: the radius of a sharp light-organ core; marks a living light the torch can wash out)
-        if (c.sp.v.glow && c.glimmer) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.4 + ppm * 0.08), 0.55 * bioPulse(c, t), Math.max(0.8, ppm * 0.05)]); // a lone one: its own light, flashing
-        else if (c.sp.v.glow && (glowSkip++ % 4 === 0)) glowPts.push([x, y, c.sp.v.glow, Math.max(2, Ld * 0.35), 0.45 * bioPulse(c, t), 0.7]); // (2.3.1: every second fish, a little brighter: a school reads as a drift of blue points)
+        if (glowOf(c) && c.glimmer) glowPts.push([x, y, glowOf(c), Math.max(2, Ld * 0.4 + ppm * 0.08), 0.55 * bioPulse(c, t), Math.max(0.8, ppm * 0.05)]); // a lone one: its own light, flashing
+        else if (glowOf(c) && (glowSkip++ % 4 === 0)) glowPts.push([x, y, glowOf(c), Math.max(2, Ld * 0.35), 0.45 * bioPulse(c, t), 0.7]); // (2.3.1: every second fish, a little brighter: a school reads as a drift of blue points)
         continue;
       }
       const isLive = c.variant || Ld > 150 || CACHE_SKIP.has(shape);
@@ -471,13 +475,13 @@ export class Renderer {
       }
       // a crimson animal glows: a red light that carries in the dark
       if (c.variant === 'crimson') glowPts.push([S(c.x), Sy(c.y), '#ff3018', Math.max(ppm * 0.6, Ld * 0.6), 0.9 + 0.3 * Math.sin(t * 1.7 + c.wob)]);
-      if (c.sp.v.glow) {
+      if (glowOf(c)) {
         // living light from the real organs: a sharp core and a small halo, slowly pulsing, flaring when startled
         const pk = bioPulse(c, t), rot = c.sp.v.hab === 'drift' ? 0 : -tilt, cr = Math.cos(rot), sr = Math.sin(rot);
         const pts = r || [[0, 0, 1]];
         for (const [lx, ly, sz = 1] of pts) {
           const rx = lx * cr - ly * sr, ry = lx * sr + ly * cr;
-          glowPts.push([S(c.x) - rx * c.dir, Sy(c.y) + ry, c.sp.v.glow, Math.max(2, (Ld * 0.06 + ppm * 0.1) * sz), pk, Math.max(0.7, (Ld * 0.012 + 0.4) * sz)]);
+          glowPts.push([S(c.x) - rx * c.dir, Sy(c.y) + ry, glowOf(c), Math.max(2, (Ld * 0.06 + ppm * 0.1) * sz), pk, Math.max(0.7, (Ld * 0.012 + 0.4) * sz)]);
         }
       }
     }
@@ -1253,11 +1257,12 @@ export class Renderer {
       g.obsLabels = g.obsLabels.filter((L) => (L.t += dtL) < 4.2);
       for (const L of g.obsLabels) {
         if (L.c && !L.c.dead) { L.x = L.c.x; L.y = L.c.y; }
+        if (L.stay && Math.hypot(g.earl.x - L.x, g.earl.y - L.y) < L.stay && !g.earl.inSub) L.t = Math.min(L.t, 2); // (6.5.7) held while he is by it
         const a = Math.min(1, L.t / 0.7) * Math.min(1, (4.2 - L.t) / 1.1), ax = S(L.x), ay = Sy(L.y), rise = L.t * 5;
         let side = S(g.earl.x) > ax ? -1 : 1;
         // (5.6.7) the name is turned to the side it fits on, so it never runs off the screen
         ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
-        const tw = ctx.measureText(L.text.toUpperCase()).width + 8, off = Math.max(30, ppm * 0.7);
+        const tw = Math.max(ctx.measureText(L.text.toUpperCase()).width, L.rar ? L.rar.length * 9.2 : 0) + 8, off = Math.max(30, ppm * 0.7); /* (6.5.7) the wider of its two lines (the guardian jellyfish's second line ran off the screen) */
         if (side < 0 && ax - off - tw < 8) side = 1; else if (side > 0 && ax + off + tw > this.W - 8) side = -1;
         const tx = ax + side * off, ty = Math.min(Math.max(70, ay - Math.max(44, ppm * 1.5) - rise), this.touch && (side > 0 ? tx : tx - tw) < this.W * 0.3 ? this.H * 0.55 : Infinity); // above it, clear of words beside it; (5.6.9) on a phone, never down in the stick's corner
         if (tx < -200 || tx > this.W + 200) continue;

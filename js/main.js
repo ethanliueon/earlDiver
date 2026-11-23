@@ -1512,7 +1512,9 @@ function placeOnDeck(dt) {
 // (5.5) what the observe button looks at: the nearest animal in reach he has not observed yet (swimming, or still on
 // the seabed), never one already in the journal, a pet, or anything from the sub or the deck
 function observeTarget() {
-  const e = g.earl; if (!g.fauna || e.inSub || g.aboard) return null;
+  const e = g.earl; if (!g.fauna || g.aboard) return null;
+  // (6.5.7) from the sub too: an animal close to its glass (within about 7 m of its middle) can be observed
+  if (e.inSub) { const cr2 = g.fauna.nearest(g.sub.x, g.sub.y, 7); return cr2 && !cr2.pet && !g.journal.has(cr2.sp.id) ? { kind: 'creature', sp: cr2.sp, c: cr2 } : null; }
   const cr = g.fauna.nearest(e.x, e.y, 3.5);
   if (cr && !cr.pet && !g.journal.has(cr.sp.id)) return { kind: 'creature', sp: cr.sp, c: cr };
   let sb = null, sd = 2.6;
@@ -1537,6 +1539,8 @@ function findTarget() {
   }
   if (best) return best;
   if (!e.inSub && !g.sub.imploded && dist(e.x, e.y, g.sub.x, g.sub.y) < 4.5) return { kind: 'board' };
+  // (6.5.7) a guardian jellyfish (the sea lantern) close by: the hand reads it
+  if (!e.inSub) for (const l of W.lanterns) if (dist(e.x, e.y, l.x, l.y) < Math.min(4, LANTERN_RADIUS)) return { kind: 'guardian', l };
   if (!e.inSub && W.inKelp(e.x, e.y)) {
     // (v2: kelp blades are no longer cut and sold)
   }
@@ -1576,6 +1580,7 @@ function promptFor(t) {
       : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your aquarium`;
+    else if (t.kind === 'guardian') p = 'F  Guardian jellyfish';
     else if (t.kind === 'creature') { p = g.journal.has(t.sp.id) ? `${t.sp.name}` : 'F  Observe'; if (g.journal.has(t.sp.id)) { const R = rarityOf(t.sp); g.promptName = { text: t.sp.name, col: R ? R.col : null, legend: !!(R && R.id === 'legendary') || LEGENDARY.has(t.sp.id) }; } } // (4.12.0) its name in its rarity's colour
   }
   { const pi = !e.inSub && !g.sub.imploded ? patchNear() : -1; // a damaged patch within reach: hold R
@@ -1609,6 +1614,9 @@ function interact(t, exitSub) {
     else { const n = emptyTrap(g, t.t); hud.toast(n ? `${n} into the bag${t.t.catch.length ? ' · bag full' : ''}` : t.t.catch.length ? 'Bag full' : 'The trap is empty'); }
     return;
   }
+  // (6.5.7) the guardian jellyfish's note, written beside it in the water; it stays while he is in its light and fades
+  // when he swims off, and the hand brings it back any time
+  if (t.kind === 'guardian') { const L0 = (g.obsLabels || (g.obsLabels = [])); if (!L0.some((L) => L.guard === t.l)) L0.push({ c: null, x: t.l.x, y: t.l.y, text: 'Guardian jellyfish', rar: 'Its light keeps the deep away', col: '#c9c2a6', t: 0, guard: t.l, stay: LANTERN_RADIUS }); audio.ready && audio.note(); return; }
   if (t.kind === 'pickup' && t.p.type === 'net') {
     // freed: the animal swims off, the net comes away
     t.p.taken = true;
@@ -3002,6 +3010,7 @@ function frame(now) {
     if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = id === 'quests-btn' ? tileURL(k) : coinURL(k); } /* (5.15.7) the journal a tile, as the menu's others */ }
   }
   bookTabs(); // (5.6.7)
+  menuFold(now); // (6.5.7)
   { const off = !!((g.kill && (g.kill.inSub || g.kill.esc)) || g.mode === 'dying'), dim = !!(g.kill && !off); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); if (document.body.classList.contains('hud-dim') !== dim) document.body.classList.toggle('hud-dim', dim); } // (5.10.10) in its jaws the journal stays, dimmed
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
     hud.spotWanted = !!(hud.touch && profile && profile.tut === 'on' && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
@@ -3072,6 +3081,17 @@ window.addEventListener('keydown', (ev) => {
   if (g.mode !== 'play' || g.paused) return;
   g.paused = true; ui.setPaused(true);
 }, true);
+// (6.5.7) the menu folds itself away after 30 s untouched (on a phone, out of the tutorial): it is back with a tap on
+// its tab. A tap anywhere along it, or any of its keys, counts as using it
+let menuUsedAt = performance.now();
+const MENU_KEYS = new Set(['menu', 'journal', 'j', 'b', 'c', 't', 'r', 'store', 'events']);
+window.addEventListener('keydown', (ev) => { if (MENU_KEYS.has(ev.key)) menuUsedAt = performance.now(); }, true);
+window.addEventListener('pointerdown', (ev) => { if (ev.clientX < innerWidth * 0.14) menuUsedAt = performance.now(); }, true);
+function menuFold(now) {
+  if (!hud.touch || !hud.menuOpen || !profile || profile.tut === 'on' || g.mode !== 'play') { if (!hud.menuOpen) menuUsedAt = now; return; }
+  if (ui.anyOpen && ui.anyOpen()) { menuUsedAt = now; return; } // while a panel from it is open, the clock waits
+  if (now - menuUsedAt > 30000) hud.menuOpen = false; // folded for now; the choice kept in storage is left as it was
+}
 // (5.15.7) the menu's tab (under the money): folds the journal, the bag and the rest away, or opens them; remembered
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'menu') return; ev.stopImmediatePropagation();

@@ -538,11 +538,15 @@ function drawShark(ctx, L, v, t, swim) {
 // ---------- rays (seen slightly from above) ----------
 function drawRay(ctx, L, v, t) {
   // Seen from above at a shallow angle: a flattened diamond whose wingtips rise and fall.
-  const flap = Math.sin(t * (v.manta ? 1.5 : 2.3));
+  // (6.5.7) half the pace it was (a manta's stroke is slow and heavy), and solid: the wing bends in a wave from the
+  // body out to the tip (the tip lags the root), the far wing foreshortens as it rises away and the near one as it
+  // dips, the tips sweep back a little on the downstroke, and the light on the back turns with the stroke
+  const ph = t * (v.manta ? 0.75 : 1.15), flap = Math.sin(ph), lag = Math.sin(ph - 0.9);
   const W = L * (v.manta ? 1.25 : v.round ? 0.75 : 0.95); // wingspan
   const c0 = v.c[0];
   const sq = 0.38; // perspective squash
-  const tipY = (s) => (-flap * s * W * 0.22);
+  const tipY = (s) => (-(s > 0.7 ? lag : flap) * s * W * 0.22);
+  const farK = 1 - 0.18 * lag, nearK = 1 + 0.12 * lag, tipX = -lag * L * 0.05; // foreshortening and the tips' sweep
   // tail
   ctx.strokeStyle = shade(c0, -0.15); ctx.lineWidth = Math.max(1, L * 0.012);
   ctx.beginPath(); ctx.moveTo(L * 0.2, 0); ctx.quadraticCurveTo(L * 0.55, Math.sin(t) * L * 0.03, L * (v.eagle || v.manta ? 1.0 : 0.65), Math.sin(t * 1.3) * L * 0.05); ctx.stroke();
@@ -550,16 +554,20 @@ function drawRay(ctx, L, v, t) {
   const body = new Path2D();
   const nose = v.round ? -L * 0.32 : -L * 0.36;
   body.moveTo(nose, 0);
-  body.quadraticCurveTo(-L * 0.12, -W * sq * 0.2 + tipY(0.4), L * 0.0, -W * sq * 0.5 + tipY(1)); // far wingtip
-  body.quadraticCurveTo(L * 0.1, -W * sq * 0.15 + tipY(0.4), L * 0.22, 0);
-  body.quadraticCurveTo(L * 0.1, W * sq * 0.15 - tipY(0.4) * 0.6, L * 0.0, W * sq * 0.5 - tipY(1) * 0.6); // near wingtip
-  body.quadraticCurveTo(-L * 0.12, W * sq * 0.2 - tipY(0.4) * 0.6, nose, 0);
+  body.quadraticCurveTo(-L * 0.12, (-W * sq * 0.2 + tipY(0.4)) * farK, tipX, (-W * sq * 0.5 + tipY(1)) * farK); // far wingtip
+  body.quadraticCurveTo(L * 0.1, (-W * sq * 0.15 + tipY(0.4)) * farK, L * 0.22, 0);
+  body.quadraticCurveTo(L * 0.1, (W * sq * 0.15 - tipY(0.4) * 0.6) * nearK, tipX, (W * sq * 0.5 - tipY(1) * 0.6) * nearK); // near wingtip
+  body.quadraticCurveTo(-L * 0.12, (W * sq * 0.2 - tipY(0.4) * 0.6) * nearK, nose, 0);
   const g = ctx.createLinearGradient(0, -W * sq * 0.5, 0, W * sq * 0.5);
   g.addColorStop(0, shade(c0, -0.25)); g.addColorStop(0.45, c0); g.addColorStop(1, shade(c0, -0.1));
   ctx.fillStyle = g; ctx.fill(body);
   ctx.save(); ctx.clip(body);
   if (v.p) { ctx.fillStyle = v.pc; for (let k = 0; k < 24; k++) { ctx.beginPath(); ctx.arc(-L * 0.3 + ((k * 37) % 50) / 100 * L, ((k * 53) % 60 - 30) / 100 * W * sq, Math.max(0.8, L * 0.012), 0, TAU); ctx.fill(); } }
   if (v.manta) { ctx.fillStyle = 'rgba(230,230,225,0.35)'; ctx.beginPath(); ctx.ellipse(-L * 0.12, -W * sq * 0.08, L * 0.1, W * sq * 0.1, 0.4, 0, TAU); ctx.fill(); }
+  // (6.5.7) the light on the wings: the far wing brightens as it lifts toward the light, the near one darkens as it
+  // dips; the body's ridge stays between them
+  { const up = lag; ctx.fillStyle = up > 0 ? `rgba(240,236,220,${(0.1 * up).toFixed(3)})` : `rgba(0,0,0,${(-0.14 * up).toFixed(3)})`; ctx.fillRect(-L, -W, L * 2, W * 0.9);
+    ctx.fillStyle = up > 0 ? `rgba(0,0,0,${(0.12 * up).toFixed(3)})` : `rgba(240,236,220,${(-0.08 * up).toFixed(3)})`; ctx.fillRect(-L, W * 0.02, L * 2, W); }
   // ridge highlight down the back
   ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = Math.max(1, L * 0.01);
   ctx.beginPath(); ctx.moveTo(nose + L * 0.05, 0); ctx.lineTo(L * 0.18, 0); ctx.stroke();
