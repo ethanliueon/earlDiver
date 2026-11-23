@@ -1962,7 +1962,8 @@ function rebirth(kind) {
   g.rebirthT = 7; g.wake = { t: 0, eaten: kind === 'devoured' }; ui.closeAll && ui.closeAll(); audio.ready && audio.drop && audio.drop();
 }
 // (6.5.9) the revive offer. Only when the haul he would lose is worth something to him: more than 15 % of his cash, at
-// least $200, never more than $100,000 asked. (6.5.9) The first revive of a dive is an ad; the next, $0.99; Rebirth, when it does not
+// least $200, never more than $100,000 asked. (6.6.1) One revive a dive, no more: the first a diver ever takes is an ad,
+// every one after it (in later dives) $0.99. Rebirth, when it does not
 // save him, still leaves the offer. A revive gives him back where he was with what he carried and 30 % of his air; the
 // thing draws off for about 20 s but he stays marked. Never in the tutorial, never on quitting
 const haulValue = () => [...g.bag, ...g.subTank].reduce((a, s) => a + specimenValue(s), 0);
@@ -1970,7 +1971,7 @@ const reviveNeed = (cash) => Math.min(100000, Math.max(200, cash * 0.15));
 function reviveOfferFor(kind, cause) {
   if (kind === 'quit' || !profile || profile.tut === 'on' || g.reviveAsked) return null;
   const v = haulValue(); if (v < reviveNeed(profile.cash || 0)) return null;
-  const how = !g.reviveAdUsed ? 'ad' : !g.revivePaid ? 'pay' : null; if (!how) return null;
+  if (g.revived) return null; const how = profile.reviveAdUsed ? 'pay' : 'ad';
   // what he would lose, kind by kind: the picture, how many, what they are worth
   const by = new Map(); for (const s of [...g.bag, ...g.subTank]) { const k = s.id, r = by.get(k) || { sp: SPECIES_BY_ID[k], n: 0, value: 0 }; r.n++; r.value += specimenValue(s); by.set(k, r); }
   const e = g.earl, depth = Math.round(Math.max(e.y, e.inSub ? g.sub.y : 0));
@@ -1993,8 +1994,9 @@ function die(cause, kind = 'normal', declined = false) {
     if (o) { g.reviveAsked = true; g.paused = true;
       ui.reviveOffer(o, async (how) => {
         let ok = false;
-        if (how === 'ad') { const r = await showAd('revive'); ok = !!(r && r.rewarded); if (ok) g.reviveAdUsed = true; }
-        else if (how === 'pay') { const r = await storeBuy('revive'); ok = !!(r && r.ok); if (ok) g.revivePaid = true; }
+        if (how === 'ad') { const r = await showAd('revive'); ok = !!(r && r.rewarded); if (ok) { profile.reviveAdUsed = true; saveProfile(profile); } }
+        else if (how === 'pay') { const r = await storeBuy('revive'); ok = !!(r && r.ok); }
+        if (ok) g.revived = true; // (6.6.1) this dive's one revive
         g.paused = false; g.reviveAsked = false;
         if (ok) revive(kind); else die(cause, kind, true);
       });
