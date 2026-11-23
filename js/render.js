@@ -1120,6 +1120,7 @@ export class Renderer {
     ctx.imageSmoothingQuality = 'low'; // (only the light needs the careful scaling; everything else uses the fast kind)
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
+    if (!(this.skip && this.skip.light)) this.drawDeepRim(g, S, Sy, ppm); // (7.0.2) the deep's shapes, after the dark
     ctx.globalCompositeOperation = 'source-over';
     this.drawSay(g, S, Sy, ppm); // (6.0.0) over everything in the scene, lit or not
 
@@ -3149,6 +3150,58 @@ export class Renderer {
         ctx.beginPath(); ctx.moveTo(sx - ww, top); ctx.lineTo(sx + ww, top); ctx.lineTo(sx + ww * 2 + w + len * 0.18, top + len); ctx.lineTo(sx - ww + len * 0.18, top + len); ctx.closePath(); ctx.fill();
       }
     }
+  }
+
+  // (7.0.2) the deep readable without lifting the dark. Drawn after the light, added on (lighter):
+  // - a rim of light along the seabed's and the rocks' edges: barely there on its own below about 200 m, picked up
+  //   strongly wherever a light falls (the lamp, the sub's lights, glow sticks, flares: litAt);
+  // - silt on the seabed where a light falls: fine grains fixed to the ground, in bone and mud;
+  // - the deep places giving off their own dim light: the whale fall's bones, the brine pool's mirror, the seep's
+  //   bacterial mats (the vents already glow), so each reads as a shape from a distance
+  drawDeepRim(g, S, Sy, ppm) {
+    const ctx = this.ctx, W = this.W, H = this.H, cam = this.cam, Wd = g.world, t = g.time;
+    if (cam.y + cam.h / 2 < 150) return;
+    const deep = (y) => clamp((y - 180) / 320, 0, 1), hsh = (n) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+    const seg = (x0, y0, x1, y1, a, w) => { ctx.strokeStyle = `rgba(206,206,186,${a.toFixed(3)})`; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
+    // the seabed's edge, and silt where it is lit
+    const step = Math.max(5, W / 150); let pw = null, py = null, psx = null;
+    for (let sx = -step; sx <= W + step; sx += step) {
+      const wx = cam.x + (sx - W / 2) / ppm, fy = Wd.floorAt(wx), sy = Sy(fy);
+      if (pw !== null && (sy > -30 || py > -30) && (sy < H + 30 || py < H + 30)) {
+        const d = deep(fy);
+        if (d > 0) { const lit = this.litAt(wx, fy - 0.6), a = d * (0.05 + 0.55 * lit);
+          if (a > 0.008) { seg(psx, py, sx, sy, a * 0.22, Math.max(3, ppm * 0.3)); seg(psx, py, sx, sy, a, Math.max(1, ppm * 0.05)); }
+          if (lit > 0.04) for (let c = Math.ceil(pw * 6); c <= Math.floor(wx * 6); c++) { const h1 = hsh(c), h2 = hsh(c + 0.37), h3 = hsh(c + 0.71), gx = c / 6 + h1 * 0.16, gy = Wd.floorAt(gx) + 0.04 + h2 * h2 * 0.9;
+            ctx.fillStyle = h3 < 0.65 ? `rgba(196,186,160,${(lit * d * (0.25 + 0.35 * h3)).toFixed(3)})` : `rgba(120,108,86,${(lit * d * 0.35).toFixed(3)})`; ctx.beginPath(); ctx.arc(S(gx), Sy(gy), Math.max(0.6, ppm * (0.015 + 0.025 * h1)), 0, TAU); ctx.fill(); } }
+      }
+      pw = wx; py = sy; psx = sx;
+    }
+    // the rocks' edges
+    const x0 = cam.x - cam.w / 2 - 4, x1 = cam.x + cam.w / 2 + 4, y0 = cam.y - cam.h / 2 - 4, y1 = cam.y + cam.h / 2 + 4;
+    for (const rk of Wd.rocks) { if (rk.kind === 'oldone' || rk.x1 < x0 || rk.x0 > x1 || rk.y1 < y0 || rk.y0 > y1) continue;
+      const d = deep((rk.y0 + rk.y1) / 2); if (d <= 0) continue; const P0 = rk.poly;
+      for (let i = 0; i < P0.length; i++) { const A = P0[i], B = P0[(i + 1) % P0.length], mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2, lit = this.litAt(mx, my), up = A.x !== B.x ? clamp(1 - Math.abs((B.y - A.y) / (B.x - A.x)) * 0.5, 0.3, 1) : 0.3, a = d * up * (0.035 + 0.5 * lit);
+        if (a > 0.008) { seg(S(A.x), Sy(A.y), S(B.x), Sy(B.y), a * 0.2, Math.max(3, ppm * 0.25)); seg(S(A.x), Sy(A.y), S(B.x), Sy(B.y), a, Math.max(1, ppm * 0.045)); } } }
+    const inV = (x, y, r) => x > x0 - r && x < x1 + r && y > y0 - r && y < y1 + r;
+    // the whale fall: its bones give back a pale glow, spine, ribs and skull
+    const F = Wd.whaleFall;
+    if (F && inV(F.x, F.y, 30)) { const fy = (x) => Wd.floorAt(x), a = 0.13 + 0.05 * Math.sin(t * 0.4);
+      ctx.strokeStyle = `rgba(214,206,182,${a.toFixed(3)})`; ctx.lineWidth = Math.max(2, ppm * 0.3); ctx.beginPath(); ctx.moveTo(S(F.x - 7), Sy(fy(F.x - 7)) - ppm * 0.6);
+      for (let x = F.x - 7; x <= F.x + 9; x += 1) ctx.lineTo(S(x), Sy(fy(x)) - ppm * (0.6 + 0.25 * Math.sin((x - F.x) * 0.25))); ctx.stroke();
+      ctx.lineWidth = Math.max(1.5, ppm * 0.14);
+      for (let k = 0; k < 11; k++) { const x = F.x - 5 + k * 1.15, by = Sy(fy(x)) - ppm * 0.6, h = ppm * (2.4 - Math.abs(k - 4) * 0.18); ctx.beginPath(); ctx.moveTo(S(x), by); ctx.quadraticCurveTo(S(x) + ppm * 1.2, by - h, S(x) + ppm * 0.4, by - h * 1.3); ctx.stroke(); }
+      const gx = S(F.x), gy = Sy(fy(F.x)) - ppm * 1.2, gg = ctx.createRadialGradient(gx, gy, 0, gx, gy, ppm * 12); gg.addColorStop(0, 'rgba(190,180,150,0.1)'); gg.addColorStop(1, 'rgba(190,180,150,0)'); ctx.fillStyle = gg; ctx.fillRect(gx - ppm * 12, gy - ppm * 12, ppm * 24, ppm * 24); }
+    // the brine pool: its still mirror catches what little light there is
+    const B = Wd.brine;
+    if (B && inV((B.x0 + B.x1) / 2, B.y, 40)) { ctx.strokeStyle = 'rgba(176,196,206,0.22)'; ctx.lineWidth = Math.max(1, ppm * 0.07); ctx.beginPath();
+      for (let x = B.x0 - 1; x <= B.x1 + 1; x += 0.5) { const y = Sy(B.y) + Math.sin(x * 0.9 + t * 0.6) * ppm * 0.04; x === B.x0 - 1 ? ctx.moveTo(S(x), y) : ctx.lineTo(S(x), y); } ctx.stroke();
+      const hz = ctx.createLinearGradient(0, Sy(B.y - 1.4), 0, Sy(B.y)); hz.addColorStop(0, 'rgba(150,172,190,0)'); hz.addColorStop(1, `rgba(150,172,190,${(0.07 + 0.02 * Math.sin(t * 0.7)).toFixed(3)})`); ctx.fillStyle = hz; ctx.fillRect(S(B.x0), Sy(B.y - 1.4), (B.x1 - B.x0) * ppm, ppm * 1.4); }
+    // the seep: its white bacterial mats faintly luminous on the mud
+    const Pp = Wd.seep;
+    if (Pp && inV(Pp.x, Pp.y, 30)) for (let k = 0; k < 7; k++) { const x = Pp.x + (k - 3) * 2.2 + Math.sin(k * 3.1) * 0.8, y = Sy(Wd.floorAt(x)) - ppm * 0.05, gg = ctx.createRadialGradient(S(x), y, 0, S(x), y, ppm * 1.6);
+      gg.addColorStop(0, `rgba(220,222,206,${(0.1 + 0.03 * Math.sin(t * 0.5 + k)).toFixed(3)})`); gg.addColorStop(1, 'rgba(220,222,206,0)'); ctx.fillStyle = gg; ctx.save(); ctx.translate(S(x), y); ctx.scale(1, 0.25); ctx.translate(-S(x), -y); ctx.fillRect(S(x) - ppm * 1.6, y - ppm * 1.6, ppm * 3.2, ppm * 3.2); ctx.restore(); }
+    ctx.restore();
   }
 
   drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff) {

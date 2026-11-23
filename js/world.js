@@ -214,6 +214,7 @@ export function generateWorld(seed) {
   W.rocks = W.rocks.filter((rk) => !(rk.x1 > BRINE.x0 - 2 && rk.x0 < BRINE.x1 + 2 && rk.y1 > W.brine.y - 4));
   { const sy = W.floorAt(STATION.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > STATION.x - STATION.half - 4 && rk.x0 < STATION.x + STATION.half + 4 && rk.y1 > sy - 40)); } // (3.0.0) the summit kept clear for the station
   { const dy = W.floorAt(DAVE.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > DAVE.x - DAVE.half - 4 && rk.x0 < DAVE.x + DAVE.half + 4 && rk.y1 > dy - 14)); } // (2.7.0) Dave's terrace kept clear of rock
+  { const wy = W.floorAt(WHALE_FALL.x); W.rocks = W.rocks.filter((rk) => !(rk.x1 > WHALE_FALL.x - 18 && rk.x0 < WHALE_FALL.x + 18 && rk.y1 > wy - 12)); } // (7.0.4) the whale fall lies on open ooze, never under a slab of rock
   // the anglerfish's cave mouth: an upper and a lower lip of rock jutting from the west wall
   {
     const cx = CAVE.x, cy = CAVE.y;
