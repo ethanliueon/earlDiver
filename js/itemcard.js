@@ -11,7 +11,7 @@ export const rarKind = (rarityName, kind) => `${rarityName} ${KIND_WORD[kind] ||
 export const SKILL_SHORT = {
   performance: 'More catches land', oversized: 'Bigger fish', overreaching: 'Longer reach', quickdraw: 'Faster swing',
   haste: 'Faster swimming', rebreathing: 'Air lasts longer', ambush: 'Fish startle less', pockets: 'More bag space',
-  feather: 'Lighter full bag', warmth: 'Cold costs less air', hardened: 'Bites hurt less', mending: 'Heal faster',
+  feather: 'Lighter full bag', warmth: 'Cold costs less air', hardened: 'Bites hurt less', composure: 'Less shaking and disorientation',
   shutterbug: 'More photos per dive', scholar: 'Photos pay more', prospector: 'Spot pearls from farther', resilience: 'Pressure hurts less',
   biolum: 'You give off light',
 };

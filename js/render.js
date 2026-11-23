@@ -309,15 +309,17 @@ export class Renderer {
 
     ctx.save();
     // ---- disorientation transform ----
-    const dis = fx.disorient;
-    if (dis > 0 || fx.shake > 0) {
+    // (7.1.0) Composure: the shaking and the disorientation softened, on a log curve (I 15 % .. IV 80 % less)
+    const cLv = Math.min(4, (g.earl && g.earl.composure) || 0), calm = cLv ? 1 - (0.15 + 0.65 * Math.log(cLv) / Math.log(4)) : 1;
+    const dis = fx.disorient * calm, shk = fx.shake * calm;
+    if (dis > 0 || shk > 0) {
       ctx.translate(W / 2, H / 2);
       ctx.rotate(Math.sin(t * 0.7) * 0.03 * dis + Math.sin(t * 1.9) * 0.012 * dis);
       const z = 1 + Math.sin(t * 0.9) * 0.025 * dis;
       ctx.scale(z, z);
       // a jolt (random jitter) plus, when disoriented, a slow uneasy lurch of the whole view
       const lx = fbm1(t * 1.4, 2, 7) * dis * ppm * 0.5, ly = fbm1(t * 1.1 + 40, 2, 11) * dis * ppm * 0.35;
-      ctx.translate(-W / 2 + lx + (Math.random() - 0.5) * fx.shake * ppm * 0.4, -H / 2 + ly + (Math.random() - 0.5) * fx.shake * ppm * 0.4);
+      ctx.translate(-W / 2 + lx + (Math.random() - 0.5) * shk * ppm * 0.4, -H / 2 + ly + (Math.random() - 0.5) * shk * ppm * 0.4);
     }
 
     // ================= SKY =================
@@ -1324,12 +1326,11 @@ export class Renderer {
         // (5.6.7) the name is turned to the side it fits on, so it never runs off the screen
         ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
         const tw = Math.max(ctx.measureText(L.text.toUpperCase()).width, L.rar ? L.rar.length * 9.2 : 0) + 8, off = Math.max(30, ppm * 0.7); /* (6.5.7) the wider of its two lines (the guardian jellyfish's second line ran off the screen) */
-        if (side < 0 && ax - off - tw < 8) side = 1; else if (side > 0 && ax + off + tw > this.W - 8) side = -1;
-        const tx = ax + side * off, ty = Math.min(Math.max(70, ay - Math.max(44, ppm * 1.5) - rise), this.touch && (side > 0 ? tx : tx - tw) < this.W * 0.3 ? this.H * 0.55 : Infinity); // above it, clear of words beside it; (5.6.9) on a phone, never down in the stick's corner
+        // (7.1.0) the name and rarity alone, centred over the animal: no line drawn to it
+        side = 0; const tx = Math.min(this.W - tw / 2 - 8, Math.max(tw / 2 + 8, ax)), ty = Math.min(Math.max(70, ay - Math.max(44, ppm * 1.5) - rise), this.touch && (side > 0 ? tx : tx - tw) < this.W * 0.3 ? this.H * 0.55 : Infinity); // above it, clear of words beside it; (5.6.9) on a phone, never down in the stick's corner
         if (tx < -200 || tx > this.W + 200) continue;
-        ctx.globalAlpha = a * 0.9; ctx.strokeStyle = 'rgba(205,215,200,0.5)'; ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(ax + side * ppm * 0.25, ay - ppm * 0.1); ctx.lineTo(tx - side * 4, ty + 6); ctx.stroke();
-        ctx.textAlign = side > 0 ? 'left' : 'right'; ctx.textBaseline = 'alphabetic';
+        ctx.globalAlpha = a * 0.9;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
         ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
         ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(L.text.toUpperCase(), tx + 1, ty + 1);
         ctx.fillStyle = 'rgba(214,222,210,0.92)'; ctx.fillText(L.text.toUpperCase(), tx, ty);

@@ -145,7 +145,7 @@ function applyKit(e, P) {
   e.featherK = Math.max(0, 1 - 0.2 * (L('feather') + ((worn(P, 'bag') || {}).feather || 0)));
   e.warmK = Math.max(0, 1 - 0.25 * L('warmth'));
   e.ambush = Math.min(0.8, 0.12 * L('ambush'));
-  e.hardened = L('hardened'); e.mending = L('mending'); e.prospector = L('prospector');
+  e.hardened = L('hardened'); e.composure = L('composure'); e.prospector = L('prospector');
   e.biolum = L('biolum'); e.glows = T.glows; e.trail = T.trail; e.trailKind = T.trailKind; e.legends = T.legends;
   const wf = worn(P, 'fins'), wt = worn(P, 'tank'), ws = worn(P, 'suit'); e.finLook = (wf && wf.finLook) || null; e.tankLook = (wt && wt.tankLook) || null; e.suitGlow = (ws && ws.suitGlow) || null; // (2.8.1) how his special gear looks on him
   e.kelpSet = setOn(P, 'kelp'); e.nightSet = setOn(P, 'night'); e.triesteSet = setOn(P, 'trieste'); e.challengerSet = setOn(P, 'challenger');
@@ -2687,7 +2687,7 @@ function update(dt) {
     }
 
     // injuries: slower, hungrier for air, heal one point every 15 s
-    if (g.injury > 0) { g.healT += dt; if (g.healT >= 15 / (1 + 0.25 * (e.mending || 0))) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
+    if (g.injury > 0) { g.healT += dt; if (g.healT >= 15) { g.injury--; g.healT = 0; if (!g.injury) hud.toast('The bleeding has stopped'); } }
     const lvl = Math.min(4, g.injury);
     const kg = loadKg(g); g.loadKg = kg;
     e.speedMul = INJURY.speed[lvl] * (g.noAir ? 1 - clamp(g.noAir / 15, 0, 1) * 0.35 : 1) * loadSpeed(kg * (e.featherK ?? 1)) * (e.suitSpeed || 1);
