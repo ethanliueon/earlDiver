@@ -1569,3 +1569,6 @@ html body .tr-help:not(#_a) { top: 84px; right: 72px; }
 /* (6.5.6) the tutorial's arrow aimed along the line into the thing (tutspot.js aimArrow), bobbing along that line */
 html body #tut-spot .ts-arrow.aim:not(#_a) { animation: ts-bob-aim 1s ease-in-out infinite; margin: 0 !important; }
 @keyframes ts-bob-aim { 50% { translate: var(--bx, 0) var(--by, 6px); } }
+
+/* (6.5.8) the chest opening's red cross, top right of the screen like every full-screen room's */
+html body .cx .cx-take.tr-close:not(#_a):not(#_b):not(#_c):not(#_d) { position: fixed; z-index: 6; left: auto; bottom: auto; transform: none; margin: 0; }

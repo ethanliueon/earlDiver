@@ -3,7 +3,7 @@
 // at once, in a short reveal (about 3 s; a click skips it): the lid creaks up, a little light in the
 // rarity's colour, and the thing rises out with its name and skills. A full locker can't open one.
 import { RARITY, SKILLS, LEGEND, skillCol } from './item_data.js';
-import { powerHtml, skillsHtml } from './itemcard.js';
+import { powerHtml, skillsHtml, rarKind } from './itemcard.js';
 import { ITEMS, CHEST_POOL } from './items.js';
 import { TAU } from './util.js';
 
@@ -119,14 +119,14 @@ const LIGHT = { common: 'rgba(200,196,180,A)', uncommon: 'rgba(150,200,150,A)', 
 // cheap crate twice, a legendary chest a long time), the lid flies up, and things burst out by what it is and what is
 // in it: a puff of dust and straw for the rare chests, sparks in the find's colour for the better ones, a slow column of
 // light for a legendary find. Then the finds pop out one after another and hang over it: the pictures alone (an old
-// coin as a find of its own). Tap one for its card; Take puts it all in the locker.
+// coin as a find of its own). Tap one for its card; the cross closes it (all of it is already in the locker).
 const TIER_T = { rare: { shake: 0.4, lid: 0.3, gap: 0.22, parts: 16 }, exotic: { shake: 0.95, lid: 0.45, gap: 0.32, parts: 34 }, legendary: { shake: 1.5, lid: 0.6, gap: 0.42, parts: 60 } };
 const SPARK = { common: [200, 196, 180], uncommon: [150, 200, 150], rare: [140, 178, 224], exotic: [196, 156, 224], legendary: [232, 202, 128] };
 export class ChestReveal {
   // hooks: picture(def, w, h) -> data URL; coinPic() -> data URL; coins() -> how many; putOn(u); close()
   constructor(root, hooks) {
     this.root = root; this.h = hooks;
-    root.innerHTML = '<canvas class="cx-cv"></canvas><div class="cx-finds"></div><div class="cx-card" hidden></div><button class="cx-take" hidden>Take</button>';
+    root.innerHTML = '<canvas class="cx-cv"></canvas><div class="cx-finds"></div><div class="cx-card" hidden></div><button class="cx-take tr-close" aria-label="Close" hidden>×</button>'; // (6.5.8) the red cross at the screen's top right, as every full-screen thing closes (the finds are already in the locker)
     this.cv = root.querySelector('canvas');
     root.addEventListener('click', (ev) => {
       const f = ev.target.closest('.cx-find'); if (f) { this.card(+f.dataset.i); return; }
@@ -151,7 +151,7 @@ export class ChestReveal {
     const f = this.finds[i], el = this.cardEl; if (!f) return;
     if (f.coin) el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><div class="icard"><img src="${this.h.coinPic()}" alt=""><h4 style="color:${RARITY.legendary.col}">Old coin</h4><p class="ic-r" style="color:${RARITY.legendary.col}">Legendary</p><p class="ic-line">Hand-struck and worn nearly smooth. The Old One trades for them.</p><p class="ic-line cx-have">${this.h.coins()} in the locker</p></div>`;
     else { const d = f.def; // (6.5.3) the card every item shares: picture, name, rarity, what it is, its power, its skills
-      el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><div class="icard"><img src="${this.h.picture(d, 300, 180)}" alt=""><h4 style="color:${RARITY[d.rarity].col}">${d.name}</h4><p class="ic-r" style="color:${RARITY[d.rarity].col}">${RARITY[d.rarity].name}</p>${d.line ? `<p class="ic-line">${d.line}</p>` : ''}${d.legend ? powerHtml(d.legend) : ''}${skillsHtml(f.q.sk)}</div>`; }
+      el.innerHTML = `<button class="cx-cardx" aria-label="Close">×</button><div class="icard"><img src="${this.h.picture(d, 300, 180)}" alt=""><h4 style="color:${RARITY[d.rarity].col}">${d.name}</h4><p class="ic-r" style="color:${RARITY[d.rarity].col}">${rarKind(RARITY[d.rarity].name, d.kind)}</p>${d.line ? `<p class="ic-line">${d.line}</p>` : ''}${d.legend ? powerHtml(d.legend) : ''}${skillsHtml(f.q.sk)}</div>`; }
     el.hidden = false;
   }
   close() { this.root.hidden = true; this.h.close && this.h.close(); }

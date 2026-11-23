@@ -104,7 +104,7 @@ function goodOf(kind, s) {
   if (kind === 'net' || kind === 'slurp') return `${s.multi ? `Up to ${s.multi} from a school at once; ` : ''}fish size ${s.minLen ? `${s.minLen.toFixed(2)}–${s.maxLen.toFixed(2)} m` : `${s.maxLen.toFixed(2)} m`}, reach ${s.range} m`; // (6.0.8)
   if (kind === 'tag') return `Tagging from ${s.range} m`;
   if (kind === 'cam') return `Quality ${(s.idx || 10).toFixed(2)}; holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
-  if (kind === 'fins') return `Speed ${+(s.swim / 2).toFixed(2)}, sprint ${+(s.sprint / 2).toFixed(2)}`; // (5.12.0) shown at half the in-game figure
+  if (kind === 'fins') return `Speed ${+s.swim.toFixed(2)}, sprint ${+s.sprint.toFixed(2)}`; // (6.5.8) the real figure: the first fins 1, the best about 3 (halved, the first read 0.5, like a loss)
   if (kind === 'tank') return `About ${s.air} s of air${s.quiet ? ', no bubbles' : ''}`;
   if (kind === 'bag') return `${s.slots} spaces`;
   if (kind === 'suit') return `Pressure starts at ${s.press} m${s.air < 1 ? `; air use ×${s.air}` : ''}${s.warm ? '; keeps out the cold' : ''}${s.bite ? '; turns a bite' : ''}`;
@@ -359,9 +359,11 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
   for (const it of Object.values(ITEMS)) {
     if (it.kind !== 'suit') continue;
     const r = it.rarity || 'common', [lo, hi] = PB[r] || PB.common, was = it.press;
-    it.press = it.id === 'wet' ? 20 : Math.round((lo + (hi - lo) * clamp01((DEEP[it.arch] ?? 0.4) + jit(it.id, 0.1))) / 10) * 10 || lo;
-    if (r === 'common') it.press = Math.max(20, Math.round((lo + (hi - lo) * clamp01((DEEP[it.arch] ?? 0.4) + jit(it.id, 0.1))) / 5) * 5); if (it.id === 'wet') it.press = 20;
-    const A = AB[r]; it.air = A ? +(A[0] - (A[0] - A[1]) * clamp01((EASY[it.arch] ?? 0.4) + jit(it.id + 'a', 0.1))).toFixed(2) : 1;
+    it.press = it.id === 'wet' ? 15 : Math.round((lo + (hi - lo) * clamp01((DEEP[it.arch] ?? 0.4) + jit(it.id, 0.1))) / 10) * 10 || lo;
+    // (6.5.8) the wetsuit he starts in is the one suit worse than any bought: pressure from 15 m and a little hungrier for
+    // air. Every common suit for sale starts at 30 m or deeper (the cheap skin was the wetsuit's exact equal)
+    if (r === 'common') it.press = Math.max(30, Math.round((lo + 10 + (hi - lo) * clamp01((DEEP[it.arch] ?? 0.4) + jit(it.id, 0.1))) / 5) * 5); if (it.id === 'wet') it.press = 15;
+    const A = AB[r]; it.air = A ? +(A[0] - (A[0] - A[1]) * clamp01((EASY[it.arch] ?? 0.4) + jit(it.id + 'a', 0.1))).toFixed(2) : it.id === 'wet' ? 1.05 : 1;
     it.speed = 1;
     if (was !== it.press) reword(it, (t) => t.replace(new RegExp(`\\b${was} m\\b`, 'g'), `${it.press} m`));
     // its words no longer promise speed (suits do not give it), and a hardsuit is no longer slow

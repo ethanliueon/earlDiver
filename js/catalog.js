@@ -15,6 +15,7 @@ import { drawFins3, drawCam3, drawTank3, drawBag3, drawNet3 } from './gear_art.j
 import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
+import { rarKind } from './itemcard.js';
 import { drawCash } from './coins.js';
 import { drawTrawl3, drawTrap3, drawFilm3, drawLure3 } from './kit_art.js'; // (6.5.1) the trawl nets, traps and small supplies, drawn solid
 
@@ -54,7 +55,7 @@ const n2 = (v) => String(+(+v).toFixed(2));
 // Pockets on a bag: animals (one a level). sk: the skills on that very item ([[skill, level], ...])
 export function boostOf(kind, label, it, sk) {
   const lv = (k) => (sk || []).reduce((a, q) => a + (q && q[0] === k ? q[1] : 0), 0);
-  if (kind === 'fins' && label === 'Speed' && lv('haste')) { const b = it.swim / 2, add = b * 0.06 * lv('haste'); return { txt: n2(b + add), add: '+' + n2(add), val: it.swim * (1 + 0.06 * lv('haste')) }; }
+  if (kind === 'fins' && label === 'Speed' && lv('haste')) { const b = it.swim, add = b * 0.06 * lv('haste'); /* (6.5.8) real figures */ return { txt: n2(b + add), add: '+' + n2(add), val: it.swim * (1 + 0.06 * lv('haste')) }; }
   if (kind === 'tank' && label === 'Air' && lv('rebreathing')) { const add = Math.round(it.air * 0.1 * lv('rebreathing')); return { txt: `about ${secs(it.air + add)}`, add: `+${add} s`, val: it.air + add }; }
   if (kind === 'bag' && label === 'Spaces' && lv('pockets')) { const add = [0, 2, 5, 10, 20][Math.min(4, lv('pockets'))]; return { txt: String(it.slots + add), add: `+${add}`, val: it.slots + add }; }
   // (6.0.8) a net's or camera's own skills, counted into its figures as the game counts them (economy.js gear): Oversized
@@ -81,10 +82,10 @@ export const MEASURES = {
   slurp: [['Fish size', sizeOf, (it) => it.maxLen, true], ['Reach', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   tag: [['Range', (it) => `${it.range} m`, (it) => it.range, true], ['Reload', (it) => `${it.time} s`, (it) => -it.time, true]],
   cam: [['Quality', (it) => (it.idx || 10).toFixed(2), (it) => it.idx || 10, true], /* (5.10.10) */ ['Holds', (it) => `${it.shots} exposures`, (it) => it.shots, true], ['Shutter', (it) => `${it.exp} s`, (it) => -it.exp, true], ['Range', (it) => `${it.range} m`, (it) => it.range, true]],
-  fins: [['Speed', (it) => n2(it.swim / 2), (it) => it.swim, true], ['Sprint', (it) => n2(it.sprint / 2), (it) => it.sprint, true]], // (5.12.0) half the in-game figure: the rubber fins 0.5
+  fins: [['Speed', (it) => n2(it.swim), (it) => it.swim, true], ['Sprint', (it) => n2(it.sprint), (it) => it.sprint, true]], // (6.5.8) the real figure: the rubber fins 1, the best about 3
   tank: [['Air', (it) => `about ${secs(it.air)}`, (it) => it.air, true], ['Speed', (it) => (it.speed >= 1 ? 'no slower' : it.speed >= 0.96 ? 'a little slower' : 'slower'), (it) => it.speed, true]],
   bag: [['Spaces', (it) => `${it.slots}`, (it) => it.slots, true]], // (5.14.0)
-  suit: [['Pressure starts', (it) => `at ${it.press} m`, (it) => it.press, true], ['Air use', (it) => (it.air < 1 ? x(it.air) : 'normal'), (it) => -it.air, true]], // (5.12.0) no speed: fins alone give it
+  suit: [['Pressure starts', (it) => `at ${it.press} m`, (it) => it.press, true], ['Air use', (it) => (it.air !== 1 ? x(it.air) : 'normal'), (it) => -it.air, true] /* (6.5.8) the wetsuit's x1.05 shown too */], // (5.12.0) no speed: fins alone give it
 };
 
 export class Catalog {
@@ -252,7 +253,7 @@ export class Catalog {
       + (item ? (inCart ? `<a href="#" class="cat-save" data-go="cart">In your cart ✓</a>` : `<a href="#" class="cat-btn2" data-cart="add|${e.key}">Add to cart</a>`) : '')
       ; // (4.5.0) no 'Save for this'
     return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><div class="cat-photo"><img src="${this.pic(e, 640, 420)}" alt=""></div><div>
-      <h2${e.rarity && RARITY[e.rarity] ? ` style="color:${RARITY[e.rarity].col}"` : ''}>${e.name}</h2>${e.rarity ? `<div class="rr r-${e.rarity}">${RARITY[e.rarity].name}</div>` : ''}<div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
+      <h2${e.rarity && RARITY[e.rarity] ? ` style="color:${RARITY[e.rarity].col}"` : ''}>${e.name}</h2>${e.rarity ? `<div class="rr r-${e.rarity}">${rarKind(RARITY[e.rarity].name, e.kind)}</div>` : ''}<div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
       <div class="gf">${e.good ? `<div class="g">${e.good}</div>` : ''}${e.bad ? `<div class="b">${e.bad}</div>` : ''}</div>${vs}<div class="buy">${btn}</div></div></div>`;
   }
   // the pictures: the game's own drawings where it has them; simple drawn ones for fins, tanks, bags

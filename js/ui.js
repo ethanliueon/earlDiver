@@ -47,7 +47,7 @@ import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { storeHtml, eventsHtml, calWeek, untilTomorrow } from './store.js';
 import { tankPicture } from './journal_tank.js';
-import { powerHtml, skillsHtml } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
+import { powerHtml, skillsHtml, rarKind } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, netsOf, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
@@ -587,7 +587,7 @@ export class UI {
   gainCard(i) {
     const el = document.getElementById('gainfx'), f = this.gainList && this.gainList[i]; if (!el || !f) return;
     const c = el.querySelector('.gx-card'), R = RARITY[f.r];
-    c.innerHTML = `<button class="gx-x" aria-label="Close">×</button><div class="icard"><img src="${f.pic}" alt=""><h4 style="color:${R ? R.col : '#efe8d2'}">${f.name}</h4>${R ? `<p class="ic-r" style="color:${R.col}">${R.name}</p>` : ''}${f.line ? `<p class="ic-line">${f.line}</p>` : ''}${f.def && f.def.legend ? powerHtml(f.def.legend) : ''}${skillsHtml(f.sk)}</div>`; // (6.5.3) the card every item shares
+    c.innerHTML = `<button class="gx-x" aria-label="Close">×</button><div class="icard"><img src="${f.pic}" alt=""><h4 style="color:${R ? R.col : '#efe8d2'}">${f.name}</h4>${R ? `<p class="ic-r" style="color:${R.col}">${rarKind(R.name, f.def ? f.def.kind : f.kind)}</p>` : ''}${f.line ? `<p class="ic-line">${f.line}</p>` : ''}${f.def && f.def.legend ? powerHtml(f.def.legend) : ''}${skillsHtml(f.sk)}</div>`; // (6.5.3) the card every item shares
     c.hidden = false;
   }
   hideGains() { const el = document.getElementById('gainfx'); if (!el || el.hidden || el.classList.contains('out')) return; if (!el.querySelector('.gx-card').hidden) return; clearTimeout(this.gainT); el.classList.remove('in'); el.classList.add('out'); setTimeout(() => { if (el.classList.contains('out')) { el.hidden = true; el.classList.remove('out'); } }, 420); }
@@ -1200,7 +1200,7 @@ export class UI {
     const skills = skillsHtml(q.sk); void roman; // (6.5.3) the short list every card shares
     const power = q.leg ? powerHtml(q.leg, LEGEND[q.leg].cd ? powerStatus(P, q.leg) : '') : ''; // (5.16.0) a power that triggers: ready, or its hourglass and time left
     const S = it.set && SETS[it.set], have = S ? T.sets[it.set] || 0 : 0;
-    return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${R.name}</span><p class="ic-line">${it.line || ''}</p>${power}
+    return `<div class="ip-col r-${it.rarity}"><h5>${head}</h5><img src="${pictureOf(it.kind, it, 260, 156, true)}" alt=""><b class="nm" style="color:${R.col}">${it.name}</b><span class="rr" style="color:${R.col}">${rarKind(R.name, it.kind)}</span><p class="ic-line">${it.line || ''}</p>${power}
       ${(() => { const M2 = MEASURES[it.kind]; if (!M2) return ''; const rows2 = M2.map((r) => `<div class="ip-st"><span>${r[0]}</span><b>${measureHtml(it.kind, r, it, q.sk)}</b></div>`).concat(crossBoosts(it.kind, q.sk).map(([a, b]) => `<div class="ip-st"><span>${a}</span><b><span class="boost">${b}</span></b></div>`)).join(''); return `<div class="ip-stats">${rows2}</div>`; })() /* (5.12.0) its numbers on its own card */}
       <div class="ip-sks">${skills}</div>${S ? `<div class="lk-set${have >= 3 ? ' live' : ''}"><b>${S.name} set</b>, ${have >= 3 ? 'on' : `worn (${have}/3)`}<span>${S.trait}</span></div>` : ''}</div>`;
   }

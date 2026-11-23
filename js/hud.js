@@ -401,7 +401,7 @@ export class Hud {
       null, // (5.16.7) calling the sub moved to the menu's sub tile (call sub out of the sub, autopilot home in it)
       // (5.6.9) the glow sticks on his belt; with none on it, a padlock (and where to get one)
       (() => { const gk = P.glowKind === 'glowAdv' ? 'glowAdv' : 'necklace', n = g.items[gk] || 0, sp = (P.spare && (P.spare.necklace || P.spare.glowAdv)) || 0; // (6.0.1) the kind on the belt, on its rarity's coin
-        return { key: 'e', icon: 'glow', tint: gk === 'glowAdv' ? 'rare' : null, on: !aboard && n > 0, n, lit: false, lock: !(n > 0), why: n > 0 ? 'For the water' : sp ? 'Put glow sticks on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' }; })(),
+        return { key: 'e', icon: 'glow', tint: gk === 'glowAdv' ? 'exotic' : 'rare', /* (6.5.8) */ on: !aboard && n > 0, n, lit: false, lock: !(n > 0), why: n > 0 ? 'For the water' : sp ? 'Put glow sticks on your belt: open the bag' : 'No glow sticks: the computer in the cabin sells them' }; })(),
       // (5.7.0) the hand: one button for whatever is in reach (the ladder, a door, the hatch, a thing to take, a trap;
       // the winch to sell). Sprint moved beside the stick
       // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin

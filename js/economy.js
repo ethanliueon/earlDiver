@@ -103,13 +103,13 @@ export const CAMERAS = [
 // the boat's winch, not by hand; lure: a light that draws deep animals, and other things.
 export const TRAP_ORDER = ['pot', 'fish', 'steel', 'cage'];
 export const TRAPS = {
-  pot: { name: 'Wire pot', price: 130, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
+  pot: { name: 'Wire pot', rarity: 'uncommon', /* (6.5.8) traps have rarities */ price: 130, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
     desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float..' },
-  fish: { name: 'Fish trap', price: 1600, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
+  fish: { name: 'Fish trap', rarity: 'rare', price: 1600, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
     desc: 'A larger mesh box with a funnel at each end, on a stout line..' },
-  steel: { name: 'Steel pot', price: 17500, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
+  steel: { name: 'Steel pot', rarity: 'exotic', price: 17500, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
     desc: 'A heavy steel-framed pot with two chambers, on a thick rope.. Too heavy to lift by hand.' },
-  cage: { name: 'Deep cage', price: 90000, max: 2, maxDepth: 1500, count: [6, 12], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
+  cage: { name: 'Deep cage', rarity: 'legendary', price: 90000, max: 2, maxDepth: 1500, count: [6, 12], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
     desc: 'A tall weighted cage with a lit lure, on a heavy rope.. The light draws deep animals, and other things.' },
 };
 export const BAGS = [
@@ -150,9 +150,9 @@ export function replacementPrice(P) {
 export const SUPPLIES = {
   lure: { name: 'Anglerfish lure', price: 5000, max: 1, // (4.0.0) sold only at the station and Dave's
     desc: 'The thing in the deep follows its light for 10 s, then loses interest for a little while. Offered when it comes for you, even in its jaws. You carry one lure in all.' },
-  necklace: { name: 'Glow stick', price: 370, max: 5, rarity: 'common', desc: 'A chemical glow stick. Snap it and let it go: it hangs where you leave it, lighting the water 16 m round in warm amber for 2 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' }, // (5.17.1)
+  necklace: { name: 'Glow stick', price: 370, max: 5, rarity: 'rare', /* (6.5.8) a step up: rare, the advanced one exotic */ desc: 'A chemical glow stick. Snap it and let it go: it hangs where you leave it, lighting the water 16 m round in warm amber for 2 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' }, // (5.17.1)
   // (6.0.1) the advanced glow stick: a separate stack (rare), whiter and twice the reach; one kind sits on the belt at a time
-  glowAdv: { name: 'Advanced glow stick', price: 1700, max: 3, rarity: 'rare', desc: 'A heavier stick in a steel-capped tube. Snap it and let it go: it hangs where you leave it, lighting the water 32 m round in a pale, bone-white light for 3 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' },
+  glowAdv: { name: 'Advanced glow stick', price: 1700, max: 3, rarity: 'exotic', desc: 'A heavier stick in a steel-capped tube. Snap it and let it go: it hangs where you leave it, lighting the water 32 m round in a pale, bone-white light for 3 min, and slowly sinks. The thing in the deep does not mind it. Used up once snapped.' },
   film: { name: 'Film', price: 5, max: 5, needs: 'camera', desc: 'One exposure. The camera holds as many as it takes; spare film, up to 36, waits in the bag and loads at the surface.' }, // (6.5.1) like rounds: the camera's load and a spare stack
   airTank: { name: 'Backup air tank', price: 800, max: 3, slots: 'airTanks', desc: 'Kept in the sub: three seconds to connect, then it refills the cabin air to full. The sub carries two.' },
 };

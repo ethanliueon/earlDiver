@@ -875,7 +875,7 @@ function buy(kind) {
     // (6.4.0) a chest opened from the bag: only with room for all it can give (its own space comes free)
     const u = kind.slice(5), K = kitOf(P), q = K.items.find((x) => x.u === u), it = q && ITEMS[q.id], C = it && CHESTS[it.chestKey];
     if (!C) return false;
-    if (lockerFree(P) + 1 < C.n) { hud.toast(`No room: needs ${C.n} spaces`, 'warn'); return false; }
+    if (lockerFree(P) < C.n) { hud.toast(`Locker full: needs ${C.n + 1} spaces`, 'warn'); return false; } // (6.5.8) room for every find and a coin (the chest's own space comes free)
     K.items = K.items.filter((x) => x.u !== u);
     const roll = rollChestAll(it.chestKey), finds = [];
     for (const def of roll.items) { const g2 = giveItem(P, def.id); if (g2) finds.push({ q: g2, def }); }

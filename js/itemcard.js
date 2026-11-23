@@ -5,6 +5,9 @@
 import { SKILLS, LEGEND, skillCol } from './item_data.js';
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'];
 // a few words for each skill; the full meaning unfolds under it on a tap
+// (6.5.8) a thing's rarity always says what kind of thing it is: "Rare suit", "Exotic camera", "Uncommon trap", "Rare item"
+const KIND_WORD = { suit: 'suit', net: 'net', cam: 'camera', tank: 'tank', fins: 'fins', bag: 'bag', slurp: 'slurp gun', tag: 'tag gun', scroll: 'scroll', chest: 'chest', trap: 'trap', trawl: 'trawl net', pet: 'pet' };
+export const rarKind = (rarityName, kind) => `${rarityName} ${KIND_WORD[kind] || 'item'}`;
 export const SKILL_SHORT = {
   performance: 'More catches land', oversized: 'Bigger fish', overreaching: 'Longer reach', quickdraw: 'Faster swing',
   haste: 'Faster swimming', rebreathing: 'Air lasts longer', ambush: 'Fish startle less', pockets: 'More bag space',
