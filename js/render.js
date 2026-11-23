@@ -2373,7 +2373,7 @@ export class Renderer {
         bulbs.moveTo(bx + br, by); bulbs.ellipse(bx, by, br, br * 0.8, a, 0, TAU);
         // the blade: a stored picture (one of three droops), turned, stretched and flipped into place
         const droopK = side * (0.05 + Math.floor(hsh * 3) * 0.2); // (3.0.10) each blade keeps its own droop picture and side: picking them by time made blades snap between pictures; the sway of the angle above carries the motion
-        blades.push([bx, by, a, bl, bw, droopK]);
+        blades.push([bx, by, a, bl, bw, droopK, y]);
       }
       if (k.species === 119) {
         const u = 1, hh = k.h;
@@ -2384,13 +2384,14 @@ export class Renderer {
       }
     }
     if (!any) return;
-    const dark = layer === 1 ? 0.75 : 1;
-    ctx.strokeStyle = rgbStr([70 * dark, 58 * dark, 26 * dark]);
+    const dark = layer === 1 ? 0.86 : 1; // (7.2.6) lighter, as the blades
+    ctx.strokeStyle = layer === 0 ? 'rgba(84,92,72,0.7)' : rgbStr([96 * dark, 80 * dark, 38 * dark]);
     ctx.lineWidth = Math.max(1, ppm * 0.07);
     ctx.stroke(stalks);
     // blades: thin and a little see-through, golden-brown, a darker midrib down each (stored pictures)
     const M = ctx.getTransform();
-    for (const [bx, by, a2, bl, bw, dk] of blades) {
+    const warm = []; // (7.2.6) the blades near the surface, for the sun through them
+    for (const [bx, by, a2, bl, bw, dk, wy] of blades) {
       const flip = dk < 0 ? -1 : 1, v = Math.min(2, Math.floor(Math.abs(dk) / 0.2));
       const spr = this.bladeSprite(layer, v);
       const ca = Math.cos(a2), sa = Math.sin(a2), sx = bl / 128, sy = (bw / 9) * flip;
@@ -2398,9 +2399,17 @@ export class Renderer {
       const a_ = ca * sx, b_ = sa * sx, c_ = -sa * sy, d_ = ca * sy;
       ctx.setTransform(M.a * a_ + M.c * b_, M.b * a_ + M.d * b_, M.a * c_ + M.c * d_, M.b * c_ + M.d * d_, M.a * bx + M.c * by + M.e, M.b * bx + M.d * by + M.f);
       ctx.drawImage(spr, 0, -32, 128, 64);
+      if (wy < 14) warm.push([ctx.getTransform(), spr, 1 - wy / 14]);
+    }
+    // (7.2.6) near the surface the sun shows through them: the same blade laid over itself, added faintly (warm)
+    if (warm.length && (g.day ? g.day.light : 1) > 0.2) {
+      const op = ctx.globalCompositeOperation, ga = ctx.globalAlpha; ctx.globalCompositeOperation = 'lighter';
+      const sun = (g.day ? g.day.light : 1) * (layer === 1 ? 0.22 : 0.14);
+      for (const [T, spr, k] of warm) { ctx.setTransform(T); ctx.globalAlpha = sun * k * k; ctx.drawImage(spr, 0, -32, 128, 64); }
+      ctx.globalCompositeOperation = op; ctx.globalAlpha = ga;
     }
     ctx.setTransform(M);
-    ctx.fillStyle = `rgba(${(140 * dark) | 0},${(120 * dark) | 0},${(50 * dark) | 0},0.9)`;
+    ctx.fillStyle = `rgba(${(156 * dark) | 0},${(134 * dark) | 0},${(62 * dark) | 0},${layer === 0 ? 0.6 : 0.85})`;
     ctx.fill(bulbs);
     ctx.strokeStyle = `rgba(${(50 * dark) | 0},${(40 * dark) | 0},${(14 * dark) | 0},0.6)`; ctx.lineWidth = Math.max(0.6, ppm * 0.02); ctx.stroke(bulbs); // (7.0.13) the floats' edges
   }

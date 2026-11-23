@@ -251,7 +251,7 @@ html body #msgs .msg-rule { background: linear-gradient(90deg, transparent, rgba
 html body #msgs .msg-rule::after { display: none !important; }
 /* one instruction at the left: the tutorial's line takes the quest line's place beside the quest button
    (the quest line's own words are hidden while it shows), the same size and face */
-body:has(#tut-spot:not([hidden]) .ts-line.in) #quests-hud .qh-step { visibility: hidden; }
+body:has(#tut-spot:not([hidden])) #quests-hud .qh-step { visibility: hidden; } /* (7.2.6) while the tutorial guides, its line alone says the step (never a second copy in a bar) */
 html body #tut-spot .ts-line { zoom: clamp(0.85, calc(100vh / 780px), 1.6); left: 68px !important; top: 80px !important; min-height: 42px; box-sizing: border-box;
   display: flex; align-items: center; max-width: min(460px, 60vw) !important; padding: 0 !important; border: 0 !important; background: none !important;
   font: 500 19px/1.25 var(--o-text) !important; color: #efe8d2 !important; text-shadow: 0 1px 3px #000, 0 0 8px rgba(0, 0, 0, 0.7) !important; }
@@ -1832,3 +1832,11 @@ html body #davetalk .dt-acts button[hidden] { display: none !important; }
 /* (7.2.0) Dave's letters fade in one after another */
 html body #davetalk .dt-line .ch { opacity: 0; transition: opacity 0.22s ease-out; }
 html body #davetalk .dt-line .ch.on { opacity: 1; }
+
+/* (7.2.6) the tutorial's line has one place on every screen: the banner at the top centre, where the quests and
+   warnings are said. One line, or two of even length (never a word alone); a message of the game's own (a quest
+   done, a warning) takes the banner for its moment and the line steps back until it has gone */
+html.touch body #tut-spot .ts-line:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f) { left: 50% !important; right: auto !important; top: 14px !important; transform: translateX(-50%) !important; zoom: 1 !important;
+  font: 600 24px/1.2 var(--o-hud) !important; max-width: min(640px, 56vw); width: max-content; min-height: 0; padding: 2px 12px 3px; border-left: 0 !important; text-align: center; text-wrap: balance;
+  margin-left: 0 !important; background: none !important; box-shadow: none !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.6) !important; transition: opacity 0.35s ease; }
+html.touch body:has(#msgs .msg.in) #tut-spot .ts-line:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f) { opacity: 0; }
