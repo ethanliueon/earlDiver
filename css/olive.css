@@ -1740,3 +1740,15 @@ html body #workshop .sell-none b { font: 600 17px var(--o-text); color: var(--o-
 /* (7.0.0) centred in the whole well, both ways */
 html body #workshop :has(> .sell-none) { position: relative; min-height: 52vh; }
 html body #workshop .sell-none:not(#_a) { position: absolute; inset: 0; min-height: 0; margin: 0; }
+/* (7.0.0) Dave's arm along the top of his box, his hand over its rim */
+html body #davetalk .dt-box { position: relative; }
+html body #davetalk .dt-arm { position: absolute; left: 70px; top: -38px; width: 180px; height: 60px; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.45)); z-index: 2; }
+/* (7.0.0) the cash readout in a shop's header, larger: easy to read at a glance */
+html body .shop .shop-cash:not(#_a) span { font-size: 13px !important; letter-spacing: 0.12em; }
+html body .shop .shop-cash:not(#_a) b.counter { font-size: 22px !important; line-height: 1.1 !important; padding: 5px 12px 4px !important; min-width: 96px; text-align: center; }
+/* (7.0.0) Dave's box: his name painted plain above his words (no box round it), the words given room clear of him, and
+   his arm along the top edge from his shoulder, behind his head */
+html body #davetalk .dt-name:not(#_a):not(#_b) { left: 184px !important; top: 14px !important; padding: 0 !important; background: none !important; box-shadow: none !important; border: 0 !important; font: 700 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(214, 204, 176, 0.75) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6); }
+html body #davetalk .dt-line:not(#_a) { padding-left: 40px !important; }
+html body #davetalk .dt-face:not(#_a):not(#_b) { position: relative; z-index: 3; }
+html body #davetalk .dt-arm:not(#_a) { left: 96px; top: -30px; width: 170px; height: 57px; z-index: 2; }

@@ -149,16 +149,44 @@ const habCls = (sp) => { const [a2] = usualDepth(sp), hb = (sp.v && sp.v.hab) ||
 // (6.7.1) Dave's portrait, painted once: an old diver in profile turned toward the words, a grey beard, a knit cap, a
 // rust oilskin over his shoulders, the light from the right
 let davePic = null;
+// (7.0.0) Dave's arm, resting along the top of his box: the oilskin sleeve from his shoulder, folded at the elbow, and his
+// hand over the box's rim, fingers hooked over the edge (a separate picture laid over the box's top edge)
+let daveArmPic = null;
+function daveArm() {
+  if (daveArmPic) return daveArmPic;
+  const c = document.createElement('canvas'); c.width = 360; c.height = 120; const x = c.getContext('2d');
+  const sg = x.createLinearGradient(0, 30, 0, 96); sg.addColorStop(0, '#8a5634'); sg.addColorStop(0.45, '#6a3c22'); sg.addColorStop(1, '#2e1a10');
+  x.fillStyle = sg; x.beginPath(); x.moveTo(0, 30); x.quadraticCurveTo(120, 34, 250, 52); x.quadraticCurveTo(272, 56, 276, 74); x.lineTo(276, 92); x.quadraticCurveTo(150, 96, 0, 100); x.closePath(); x.fill();
+  x.strokeStyle = 'rgba(20,10,4,0.4)'; x.lineWidth = 4; x.lineCap = 'round'; for (const fx of [70, 130, 190]) { x.beginPath(); x.moveTo(fx, 40); x.quadraticCurveTo(fx + 12, 66, fx - 2, 94); x.stroke(); }
+  x.strokeStyle = 'rgba(255,220,180,0.16)'; x.lineWidth = 3; x.beginPath(); x.moveTo(10, 36); x.quadraticCurveTo(140, 40, 248, 56); x.stroke();
+  x.fillStyle = '#4a2a18'; x.beginPath(); x.roundRect(250, 50, 30, 46, 6); x.fill(); // the cuff
+  const hg = x.createLinearGradient(0, 56, 0, 118); hg.addColorStop(0, '#b98a66'); hg.addColorStop(1, '#7a5238');
+  x.fillStyle = hg; x.beginPath(); x.moveTo(276, 58); x.quadraticCurveTo(318, 54, 336, 70); x.lineTo(338, 96); x.quadraticCurveTo(300, 100, 278, 94); x.closePath(); x.fill(); // the back of the hand
+  for (let k = 0; k < 4; k++) { const fx = 290 + k * 12; x.fillStyle = k % 2 ? '#a77a58' : '#b48562'; x.beginPath(); x.roundRect(fx, 88, 10, 26 - Math.abs(k - 1.5) * 3, 5); x.fill(); x.fillStyle = 'rgba(60,34,20,0.35)'; x.fillRect(fx + 1, 100, 8, 1.5); } // fingers over the rim
+  x.strokeStyle = 'rgba(40,22,12,0.4)'; x.lineWidth = 1.5; for (let k = 0; k < 3; k++) { x.beginPath(); x.moveTo(290 + k * 12, 70); x.lineTo(296 + k * 12, 86); x.stroke(); } // knuckle lines
+  daveArmPic = c.toDataURL(); return daveArmPic;
+}
 function davePortrait() {
   if (davePic) return davePic;
   const c = document.createElement('canvas'); c.width = 300; c.height = 340; const x = c.getContext('2d');
   // shoulders: the oilskin's collar and its folds
   const og = x.createLinearGradient(40, 220, 280, 340); og.addColorStop(0, '#7a4a2c'); og.addColorStop(0.6, '#5a321e'); og.addColorStop(1, '#2e1a10');
-  x.fillStyle = og; x.beginPath(); x.moveTo(10, 340); x.quadraticCurveTo(30, 238, 150, 228); x.quadraticCurveTo(270, 236, 292, 340); x.closePath(); x.fill();
+  x.fillStyle = og; x.beginPath(); x.moveTo(4, 340); x.quadraticCurveTo(14, 232, 150, 224); x.quadraticCurveTo(286, 232, 298, 340); x.closePath(); x.fill(); // (7.0.0) broader, the shoulders rising to the neck
   x.strokeStyle = 'rgba(0,0,0,0.3)'; x.lineWidth = 3; x.beginPath(); x.moveTo(150, 236); x.quadraticCurveTo(160, 290, 140, 340); x.moveTo(84, 262); x.quadraticCurveTo(96, 300, 80, 340); x.stroke();
   x.strokeStyle = 'rgba(255,220,180,0.12)'; x.lineWidth = 4; x.beginPath(); x.moveTo(200, 240); x.quadraticCurveTo(250, 252, 270, 300); x.stroke();
-  // the neck under the beard
-  x.fillStyle = '#a8785a'; x.beginPath(); x.ellipse(150, 222, 34, 30, 0, 0, Math.PI * 2); x.fill();
+  // (7.0.0) the oilskin's sheen and creases: a lit shoulder, deep folds at the chest, a seam down the front, buttons
+  { const sh = x.createRadialGradient(90, 250, 6, 90, 250, 90); sh.addColorStop(0, 'rgba(255,214,170,0.18)'); sh.addColorStop(1, 'rgba(255,214,170,0)'); x.fillStyle = sh; x.fillRect(0, 220, 300, 120); }
+  x.strokeStyle = 'rgba(20,10,4,0.35)'; x.lineWidth = 5; x.lineCap = 'round'; for (const [a, b, c2, d] of [[60, 290, 50, 330], [220, 270, 236, 330], [118, 300, 112, 336]]) { x.beginPath(); x.moveTo(a, b); x.quadraticCurveTo((a + c2) / 2 + 8, (b + d) / 2, c2, d); x.stroke(); }
+  x.fillStyle = '#2a1a10'; for (const by of [262, 296, 330]) { x.beginPath(); x.arc(164, by, 4, 0, Math.PI * 2); x.fill(); }
+  // (7.0.0) the neck: a real column from under the skull and jaw down into the collar, shaded at the back, so the head
+  // sits on the body (it floated before)
+  { const ng = x.createLinearGradient(110, 0, 196, 0); ng.addColorStop(0, '#7a5438'); ng.addColorStop(0.45, '#a8785a'); ng.addColorStop(1, '#8c6246');
+    x.fillStyle = ng; x.beginPath(); x.moveTo(112, 150); x.quadraticCurveTo(104, 200, 96, 246); x.lineTo(204, 246); x.quadraticCurveTo(196, 200, 194, 160); x.closePath(); x.fill();
+    x.fillStyle = 'rgba(40,22,10,0.35)'; x.beginPath(); x.ellipse(150, 238, 56, 12, 0, 0, Math.PI * 2); x.fill();
+    // the oilskin's turned-up collar round the neck's foot, over it
+    const cg = x.createLinearGradient(0, 226, 0, 268); cg.addColorStop(0, '#8a5634'); cg.addColorStop(1, '#4a2a18');
+    x.fillStyle = cg; x.beginPath(); x.moveTo(84, 262); x.quadraticCurveTo(96, 234, 150, 238); x.quadraticCurveTo(204, 234, 216, 262); x.quadraticCurveTo(150, 254, 84, 262); x.closePath(); x.fill();
+    x.strokeStyle = 'rgba(255,220,180,0.18)'; x.lineWidth = 2; x.beginPath(); x.moveTo(96, 250); x.quadraticCurveTo(150, 236, 204, 250); x.stroke(); }
   x.save(); x.translate(158, 140); x.rotate(-Math.PI / 2);
   drawFace(x, 0, 0, 10.5, { sex: 'm', face: 1, eyes: 2, skin: 1, beard: true, age: true, cap: '#4e4a3a', hairCol: ['#c4bcae', '#8e877b', '#4a4640'] });
   x.restore();

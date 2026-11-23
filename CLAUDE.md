@@ -123,6 +123,14 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   short loading screen. The game is **Hatchetfish — Deep Sea Survival**. A western limit (buoy line, "Too far. Turn back.")
   waits for the main quest.
 
+- **Decided in 6.9**: every item says Unequip; a net unequipped leaves the hands empty and greys the big button (no hand
+  net put back). The journal is sorted by depth; a newly met animal carries a New tag until opened or an hour passes; its
+  tank is sized to the animal (small: close beside big growth; large: a wide floor of small growth), only bare seabed
+  behind a coral, fan, sponge or anemone, and the deep has its own life. The loading screen holds 3 s from when its art
+  is seen; its bar is centred with a hatchetfish at the fill's front. Log rewards show the item (picture, name in its
+  rarity's ink) or the money. No handwriting font anywhere. Swimmers keep 3 m from the seabed and walls. The name is a
+  worn steel plate; save slots are steel locker doors. Dave's name is painted plain (never in a box).
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build
