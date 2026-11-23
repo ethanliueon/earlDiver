@@ -17,30 +17,53 @@ const FLOOR = { 'hb-sun': ['#b8a47a', '#8a7650'], 'hb-reef': ['#c4b088', '#94805
 // small and wide behind it: short plants, more of them, stones far off (z < 1)
 export const tankZoom = (len) => (len < 0.15 ? 2.2 : len < 0.5 ? 1.5 : len < 1.5 ? 1 : len < 4 ? 0.6 : 0.4);
 const rgba = (c, a) => { const n = parseInt(c.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
-export function tankPicture(hab, W = 480, H = 260, z = 1) {
-  const key = hab + W + 'x' + H + 'z' + z; if (CACHE.has(key)) return CACHE.get(key);
+// (7.0.0) bare: only the seabed (sand or silt, stones, grains), for an animal that is itself fixed to the floor (a
+// coral, a fan, a sponge, an anemone), so it is never confused with the scenery
+export function tankPicture(hab, W = 480, H = 260, z = 1, bare = false) {
+  const key = hab + W + 'x' + H + 'z' + z + (bare ? 'b' : ''); if (CACHE.has(key)) return CACHE.get(key);
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   let sd = 7 + [...hab].reduce((a, ch) => a + ch.charCodeAt(0), 0) + Math.round(z * 10); const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
   const F = Math.round(H * 0.07), ix = F, iy = F, iw = W - F * 2, ih = H - F * 2, [w0, w1, w2] = WATER[hab] || WATER['hb-blue'], light = ['hb-sun', 'hb-reef', 'hb-kelp', 'hb-blue'].includes(hab), deep = hab === 'hb-deep' || hab === 'hb-twi';
   const Z = Math.max(0.4, Math.min(2.4, z)); // sizes of things on the floor
   x.save(); x.beginPath(); x.rect(ix, iy, iw, ih); x.clip();
-  // the water: lighter at the top, mottled in soft clouds of lighter and darker water
+  // (7.0.0) the water: a smooth fall from lighter above to darker below, with only long faint drifts of silt across it
+  // (no round patches, no bands)
   const g = x.createLinearGradient(0, iy, 0, iy + ih); g.addColorStop(0, w0); g.addColorStop(0.55, w1); g.addColorStop(1, w2); x.fillStyle = g; x.fillRect(ix, iy, iw, ih);
-  for (let i = 0; i < 26; i++) { const cx = ix + r() * iw, cy = iy + r() * ih * 0.85, rr = ih * (0.15 + r() * 0.35), lite = r() < 0.5, cg = x.createRadialGradient(cx, cy, 0, cx, cy, rr);
-    cg.addColorStop(0, lite ? 'rgba(230,240,230,0.05)' : 'rgba(0,10,14,0.07)'); cg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = cg; x.fillRect(cx - rr, cy - rr, rr * 2, rr * 2); }
-  // light from above in soft slanted shafts; in the deep, only a faint glow, as from a lamp held off to one side
+  for (let i = 0; i < 5; i++) { const yy = iy + ih * (0.25 + r() * 0.5), hh = ih * (0.05 + r() * 0.06), dg = x.createLinearGradient(0, yy - hh, 0, yy + hh); dg.addColorStop(0, 'rgba(200,210,200,0)'); dg.addColorStop(0.5, `rgba(200,210,200,${(0.015 + r() * 0.02).toFixed(3)})`); dg.addColorStop(1, 'rgba(200,210,200,0)'); x.fillStyle = dg; x.fillRect(ix, yy - hh, iw, hh * 2); }
+  // (7.0.0) light from above: a few soft shafts, all leaning the one way, feathered at both edges, brightest just under
+  // the surface and gone well before the floor; none in the twilight or the deep, where only a faint lamp-glow remains
+  const lean = ih * 0.22;
   if (light) { x.save(); x.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 5; i++) { const sx = ix + iw * (0.1 + r() * 0.8), sw = iw * (0.04 + r() * 0.07), lg = x.createLinearGradient(0, iy, 0, iy + ih * 0.85); lg.addColorStop(0, `rgba(220,236,224,${(0.06 + r() * 0.05).toFixed(3)})`); lg.addColorStop(1, 'rgba(220,236,224,0)');
-      x.fillStyle = lg; x.beginPath(); x.moveTo(sx, iy); x.lineTo(sx + sw, iy); x.lineTo(sx + sw * 2.2 + ih * 0.25, iy + ih); x.lineTo(sx + ih * 0.25, iy + ih); x.closePath(); x.fill(); }
+    for (let i = 0; i < 4; i++) { const sx = ix + iw * (0.08 + r() * 0.75), sw = iw * (0.03 + r() * 0.06), a = (0.035 + r() * 0.035) * (hab === 'hb-blue' ? 0.7 : 1);
+      x.save(); x.beginPath(); x.moveTo(sx, iy); x.lineTo(sx + sw, iy); x.lineTo(sx + sw * 1.8 + lean, iy + ih * 0.8); x.lineTo(sx + lean, iy + ih * 0.8); x.closePath(); x.clip();
+      const across = x.createLinearGradient(sx, 0, sx + sw * 1.8 + lean, 0); // feathered: a soft core, nothing at its sides
+      const down = x.createLinearGradient(0, iy, 0, iy + ih * 0.8); down.addColorStop(0, `rgba(226,238,226,${a.toFixed(3)})`); down.addColorStop(0.55, `rgba(226,238,226,${(a * 0.35).toFixed(3)})`); down.addColorStop(1, 'rgba(226,238,226,0)');
+      x.fillStyle = down; x.filter = `blur(${Math.max(2, sw * 0.35).toFixed(1)}px)`; x.fillRect(sx - sw, iy, sw * 4 + lean, ih * 0.8); x.filter = 'none'; x.restore(); }
     x.restore(); }
-  else { const gx = ix + iw * 0.38, gy = iy + ih * 0.55, gr = x.createRadialGradient(gx, gy, 0, gx, gy, iw * 0.55); gr.addColorStop(0, deep ? 'rgba(120,140,150,0.16)' : 'rgba(140,160,170,0.14)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gr; x.fillRect(ix, iy, iw, ih); }
+  else { const gx = ix + iw * 0.38, gy = iy + ih * 0.55, gr = x.createRadialGradient(gx, gy, 0, gx, gy, iw * 0.55); gr.addColorStop(0, deep ? 'rgba(120,140,150,0.12)' : 'rgba(140,160,170,0.1)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gr; x.fillRect(ix, iy, iw, ih); }
   // the floor: an uneven line of sand (or silt), grains
   const [f0, f1] = FLOOR[hab] || FLOOR['hb-blue'], fy = iy + ih * 0.8, pts = [];
   for (let i = 0; i <= 16; i++) pts.push([ix + iw * i / 16, fy + Math.sin(i * 1.3 + r() * 2) * ih * 0.025 + r() * ih * 0.025]);
   const floorAt = (px) => { const t = Math.max(0, Math.min(16, (px - ix) / iw * 16)), i = Math.min(15, Math.floor(t)); return pts[i][1] + (pts[i + 1][1] - pts[i][1]) * (t - i); };
   x.beginPath(); x.moveTo(ix, iy + ih); pts.forEach(([a, b]) => x.lineTo(a, b)); x.lineTo(ix + iw, iy + ih); x.closePath();
   const fg = x.createLinearGradient(0, fy, 0, iy + ih); fg.addColorStop(0, f0); fg.addColorStop(1, f1); x.fillStyle = fg; x.fill();
-  x.save(); x.clip(); for (let i = 0; i < 300; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '255,248,230' : '30,24,14'},${(0.06 + r() * 0.1).toFixed(3)})`; x.fillRect(ix + r() * iw, fy + r() * ih * 0.22, 1.2, 1.2); } x.restore();
+  x.save(); x.clip(); for (let i = 0; i < 300; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '255,248,230' : '30,24,14'},${(0.06 + r() * 0.1).toFixed(3)})`; x.fillRect(ix + r() * iw, fy + r() * ih * 0.22, 1.2, 1.2); }
+  // (7.0.0) the floor's own texture: soft patches of lighter and darker sand (or silt), ripple marks running along it
+  // (lit on their upper edge, shadowed below), small pebbles and shell bits in the shallows, burrows and the tracks of
+  // slow things across the silt in the deep, and the front of the floor darker where it falls away from the light
+  for (let i = 0; i < 14; i++) { const cx = ix + r() * iw, cy = fy + ih * (0.04 + r() * 0.16), rw = iw * (0.05 + r() * 0.12), pg = x.createRadialGradient(cx, cy, 0, cx, cy, rw); const lt = r() < 0.5; pg.addColorStop(0, lt ? 'rgba(255,246,220,0.07)' : 'rgba(20,14,6,0.09)'); pg.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = pg; x.save(); x.scale(1, 0.3); x.beginPath(); x.arc(cx, cy / 0.3, rw, 0, Math.PI * 2); x.fill(); x.restore(); }
+  { const rows = deep ? 3 : 6; for (let j = 0; j < rows; j++) { const yb = fy + ih * (0.04 + j * (0.15 / rows)) + r() * 3, ph = r() * 6, wl = 9 + r() * 6;
+      for (const [off, col] of [[-0.8, deep ? 'rgba(120,116,104,0.12)' : 'rgba(255,246,222,0.16)'], [0.8, 'rgba(30,22,10,0.14)']]) { x.strokeStyle = col; x.lineWidth = 1; x.beginPath();
+        for (let px = ix; px <= ix + iw; px += 3) { const yy = yb + off + Math.sin(px / wl + ph) * 1.6 + (floorAt(px) - fy) * 0.6; px === ix ? x.moveTo(px, yy) : x.lineTo(px, yy); } x.stroke(); } } }
+  for (let i = 0; i < (deep ? 18 : 40); i++) { const px = ix + r() * iw, py = fy + ih * (0.03 + r() * 0.17), pr = (0.8 + r() * 2.2) * Math.max(0.6, Math.min(1.8, z)), pg = x.createRadialGradient(px - pr * 0.3, py - pr * 0.4, 0.2, px, py, pr);
+    pg.addColorStop(0, deep ? '#5a5650' : r() < 0.3 ? '#e8dcc0' : '#b4a68a'); pg.addColorStop(1, deep ? '#1c1a16' : '#5e5240'); x.fillStyle = pg; x.beginPath(); x.ellipse(px, py, pr * 1.2, pr * 0.8, r(), 0, Math.PI * 2); x.fill(); }
+  if (!deep) for (let i = 0; i < 7; i++) { const px = ix + r() * iw, py = fy + ih * (0.05 + r() * 0.14), sz = (2 + r() * 2.5) * Math.max(0.6, Math.min(1.8, z)); x.fillStyle = 'rgba(236,226,204,0.7)'; x.beginPath(); x.arc(px, py, sz, Math.PI, 0); x.closePath(); x.fill(); x.strokeStyle = 'rgba(120,100,70,0.5)'; x.lineWidth = 0.7; for (let k = -2; k <= 2; k++) { x.beginPath(); x.moveTo(px, py); x.lineTo(px + k * sz * 0.4, py - sz * 0.9); x.stroke(); } }
+  else { for (let i = 0; i < 9; i++) { const px = ix + r() * iw, py = fy + ih * (0.05 + r() * 0.13); x.fillStyle = 'rgba(0,0,0,0.5)'; x.beginPath(); x.ellipse(px, py, 2 + r() * 2, 1 + r(), 0, 0, Math.PI * 2); x.fill(); x.fillStyle = 'rgba(110,106,96,0.25)'; x.beginPath(); x.ellipse(px, py - 1.5, 3.5, 1.2, 0, Math.PI, 0); x.fill(); }
+    for (let i = 0; i < 2; i++) { let px = ix + r() * iw * 0.6, py = fy + ih * (0.08 + r() * 0.1); x.strokeStyle = 'rgba(10,8,6,0.35)'; x.lineWidth = 1; x.beginPath(); x.moveTo(px, py); for (let k = 0; k < 30; k++) { px += 4; py += Math.sin(k * 0.6) * 1.2; x.lineTo(px, py); } x.stroke(); } }
+  { const fd = x.createLinearGradient(0, iy + ih * 0.9, 0, iy + ih); fd.addColorStop(0, 'rgba(0,0,0,0)'); fd.addColorStop(1, 'rgba(0,0,0,0.25)'); x.fillStyle = fd; x.fillRect(ix, iy + ih * 0.9, iw, ih * 0.1); }
+  // (7.0.0) in the sunlit shallows, the faint rippling net of light the surface throws on the sand
+  if (hab === 'hb-sun' || hab === 'hb-reef' || hab === 'hb-kelp') { x.strokeStyle = 'rgba(255,248,220,0.09)'; x.lineWidth = 1; for (let i = 0; i < 70; i++) { const cx = ix + r() * iw, cy = fy + ih * (0.02 + r() * 0.16), rw = 6 + r() * 10; x.beginPath(); x.ellipse(cx, cy, rw, rw * 0.28, 0, r() * 3, r() * 3 + 2.4); x.stroke(); } }
+  x.restore();
 
   // ---- things on the floor, each a real shape ----
   // a stone: an irregular faceted outline, its top face lit, its flanks and foot in shadow, a crack, perhaps some growth
@@ -94,6 +117,8 @@ export function tankPicture(hab, W = 480, H = 260, z = 1) {
     for (let k = 3; k < 12; k++) { const yy = base - hgt * k / 12, L = 5 * lz * Math.sin(k / 12 * Math.PI); x.lineWidth = 1 * lz; x.beginPath(); x.moveTo(px + 2 * k / 12, yy); x.lineTo(px - L, yy - L * 0.5); x.moveTo(px + 2 * k / 12, yy); x.lineTo(px + L + 2, yy - L * 0.5); x.stroke(); } };
 
   const N = (n) => Math.max(1, Math.round(n * (z < 1 ? 1 / z : 1))); // farther off: more of everything, smaller
+  if (bare) { const spread0 = (n) => { for (let k = 0; k < n; k++) stone(ix + iw * (0.04 + r() * 0.92), ih * (0.04 + r() * 0.05) * Z, TONE); }; spread0(N(3)); }
+  else {
   const spread = (n, f) => { for (let k = 0; k < n; k++) f(ix + iw * (0.04 + r() * 0.92), k); };
   if (hab === 'hb-kelp') {
     spread(N(2), (px) => stone(px, ih * (0.05 + r() * 0.05) * Z, TONE));
@@ -115,6 +140,7 @@ export function tankPicture(hab, W = 480, H = 260, z = 1) {
     bamboo(ix + iw * 0.12, ih * 0.6); sponge(ix + iw * 0.86, ih * 0.11); pen(ix + iw * 0.72, ih * 0.3);
     if (hab === 'hb-twi') fan(ix + iw * 0.3, ih * 0.35, 'rgba(170,110,84,0.6)');
     if (z < 1) spread(N(2), (px, k) => (k % 3 === 0 ? bamboo(px, ih * 0.4) : k % 3 === 1 ? sponge(px, ih * 0.07) : pen(px, ih * 0.22)));
+  }
   }
   // suspended matter: fine motes, more of them deeper
   for (let i = 0; i < (deep ? 80 : 30); i++) { x.fillStyle = `rgba(226,232,224,${(0.1 + r() * 0.2).toFixed(3)})`; x.beginPath(); x.arc(ix + r() * iw, iy + r() * ih * 0.78, 0.5 + r() * 1.1, 0, Math.PI * 2); x.fill(); }

@@ -1814,7 +1814,7 @@ export class UI {
     if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
     const ph = (g.photos || []).filter((p) => p.id === id && p.img).sort((a, b) => b.q - a.q)[0];
     title.textContent = sp.name; notes.hidden = true; det.hidden = false;
-    det.innerHTML = `<div class="jd-pic${ph ? '' : ' jd-tank'}"${ph ? '' : ` style="background-image:url(${tankPicture(habCls(sp), 480, 260, tankZoom(sp.len || 0.5))}) !important"`}>${ph ? `<img class="jd-photo" src="${ph.img}" alt="">` : `<img src="${this.fitPics.get(sp.id)}" alt="">`}</div>
+    det.innerHTML = `<div class="jd-pic${ph ? '' : ' jd-tank'}"${ph ? '' : ` style="background-image:url(${tankPicture(habCls(sp), 480, 260, tankZoom(sp.len || 0.5), isSessile(sp))}) !important"`}>${ph ? `<img class="jd-photo" src="${ph.img}" alt="">` : `<img src="${this.fitPics.get(sp.id)}" alt="">`}</div>
       <p class="jd-sci">${sp.species ? sp.species + ', ' : ''}<i>${sp.sci || ''}</i>${R && !R.hidden ? `, <span style="color:${R.col}">${R.name.toLowerCase()}</span>` : ''}</p>
       <p class="jd-desc">${sp.desc}</p>
       <dl class="jd-rows"><div><dt>Lives at</dt><dd>${hab[0].toLocaleString()} to ${hab[1].toLocaleString()} m</dd></div><div><dt>Grows to</dt><dd>${sp.size}</dd></div><div><dt>First seen</dt><dd>at ${info.depth ?? '?'} m</dd></div></dl>

@@ -1802,20 +1802,23 @@ export class Renderer {
       if (!this.dapT) {
         const c = document.createElement('canvas'); c.width = c.height = 256;
         const x = c.getContext('2d');
-        x.strokeStyle = 'rgba(235,250,255,1)'; x.lineCap = 'round';
-        for (let k = 0; k < 9; k++) {
-          x.lineWidth = 5 + (k % 3) * 3;
-          for (const ox of [-256, 0, 256]) {
-            x.beginPath();
-            for (let yy = -8; yy <= 264; yy += 8) x.lineTo(ox + k * 28.4 + Math.sin(yy * 0.05 + k * 1.7) * 9 + yy * 0.3, yy);
-            x.stroke();
-          }
+        // (7.0.0) the rippling net the surface throws: cells whose edges are bright (where two cells meet), soft, uneven,
+        // tiling seamlessly (the cells wrap round the tile's edges); not stripes
+        const P = []; let sd = 4242; const rr = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+        for (let i = 0; i < 22; i++) P.push([rr() * 256, rr() * 256]);
+        const im = x.createImageData(256, 256), D = im.data;
+        for (let yy = 0; yy < 256; yy++) for (let xx = 0; xx < 256; xx++) {
+          let d1 = 1e9, d2 = 1e9;
+          for (const [px, py] of P) { let dx = Math.abs(xx - px), dy = Math.abs(yy - py); if (dx > 128) dx = 256 - dx; if (dy > 128) dy = 256 - dy; const d = dx * dx + dy * dy; if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d; }
+          const e = Math.sqrt(d2) - Math.sqrt(d1), v = Math.max(0, 1 - e / 7) ** 2, o = (yy * 256 + xx) * 4;
+          D[o] = 236; D[o + 1] = 246; D[o + 2] = 232; D[o + 3] = Math.round(v * 255);
         }
+        x.putImageData(im, 0, 0);
         this.dapT = f.createPattern(c, 'repeat');
       }
       const sc = ppm * 2.6 * 9 / 256;
       { const o = this.drift('dapple', cam, ppm, 1, 0.2); this.dapT.setTransform(new DOMMatrix([sc, 0, 0, sc, (W / 2 - o.x) % (256 * sc) + this.flow('dapple', t, ppm) * 0.4, -o.y])); } // (6.5.1)
-      const a = 0.16 * day;
+      const a = 0.1 * day; // (7.0.0) quieter: a net of light, not stripes
       // fades out with depth: full at the surface, gone by 35 m
       const fg = Math.max(0, 1 - Math.max(0, dTop) / 35);
       f.globalAlpha = a * fg; f.fillStyle = this.dapT; f.fillRect(bx, by, bw, bh); f.globalAlpha = 1;
@@ -3137,10 +3140,10 @@ export class Renderer {
       const wx = k * 9 + Math.sin(t * 0.13 + k * 2.1) * 3;
       const top = Sy(0), w = ppm * (1.5 + h), len = ppm * 70;
       const sx = S(wx);
-      const a = rayStrength * (0.05 + 0.04 * Math.sin(t * 0.4 + k * 1.3));
+      const a = rayStrength * (0.04 + 0.03 * Math.sin(t * 0.3 + k * 1.3)) * (0.5 + 0.5 * ((k * 4271) % 5) / 4); // (7.0.0) uneven: some faint, some clearer
       for (const [wm, am] of [[2.2, 0.3], [1.4, 0.35], [0.7, 0.35]]) {
         const gg = ctx.createLinearGradient(0, top, 0, top + len);
-        gg.addColorStop(0, `rgba(210,240,255,${(a * am).toFixed(3)})`); gg.addColorStop(1, 'rgba(210,240,255,0)');
+        gg.addColorStop(0, `rgba(226,238,226,${(a * am).toFixed(3)})`); gg.addColorStop(0.35, `rgba(226,238,226,${(a * am * 0.45).toFixed(3)})`); gg.addColorStop(1, 'rgba(226,238,226,0)'); // brightest just under the surface, gone well before 70 m
         ctx.fillStyle = gg;
         const ww = w * wm;
         ctx.beginPath(); ctx.moveTo(sx - ww, top); ctx.lineTo(sx + ww, top); ctx.lineTo(sx + ww * 2 + w + len * 0.18, top + len); ctx.lineTo(sx - ww + len * 0.18, top + len); ctx.closePath(); ctx.fill();
@@ -3183,7 +3186,7 @@ export class Renderer {
       haze(CAVE.x + 14, CAVE.y, 50, [34, 48, 54], 0.4);
       if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) { const e0 = g.earl, L = g.abilLight; haze(e0.inSub ? g.sub.x : e0.x, e0.inSub ? g.sub.y : e0.y, L >= 2 ? 80 : L >= 1.5 ? 45 : 28, L >= 2 ? [120, 100, 70] : [70, 60, 50], (L >= 2 ? 0.16 : L >= 1.5 ? 0.52 : 0.42) * (g.lightFade ?? 1)); /* (6.0.12) the Lighthouse: only a faint warm haze, so its light falls on the scene instead of greying it */ /* (6.0.2) its reach by tier */ } } // (5.16.0) the Flare's light in the water itself
     // god rays near the surface
-    const rayStrength = this.phone ? 0 : dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7); // (5.3.2) no god rays on a phone
+    const rayStrength = (this.phone ? 0.7 : 1) * dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7); // (7.0.0) on a phone too, a little fainter: drawn at a quarter size every other frame, they cost little
     if (rayStrength > 0.01) {
       // drawn into a quarter-size picture (they are soft: nothing is lost) and laid over the scene
       // in one go; remade every other frame, shifted with the camera in between
