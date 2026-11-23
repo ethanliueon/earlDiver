@@ -471,11 +471,28 @@ export class UI {
     const draw = () => {
       x.clearRect(0, 0, 520, 520);
       const g0 = x.createRadialGradient(260, 220, 40, 260, 260, 330); g0.addColorStop(0, '#2c4650'); g0.addColorStop(1, '#0c171b'); x.fillStyle = g0; x.fillRect(0, 0, 520, 520);
-      // the rolled hood and the suit's shoulder under the head
-      x.fillStyle = '#16191c'; x.beginPath(); x.ellipse(250, 470, 190, 90, 0, Math.PI, 0); x.fill();
-      x.fillStyle = (SKINS[L.skin] || SKINS[2])[1]; x.beginPath(); x.ellipse(250, 380, L.sex === 'f' ? 46 : 54, 70, 0, 0, Math.PI * 2); x.fill();
-      x.fillStyle = '#1d2125'; x.beginPath(); x.ellipse(250, 420, 92, 36, 0, 0, Math.PI * 2); x.fill(); x.strokeStyle = 'rgba(120,130,130,0.25)'; x.lineWidth = 3; x.beginPath(); x.ellipse(250, 414, 80, 26, 0, Math.PI * 1.05, Math.PI * 1.95); x.stroke();
-      x.save(); x.translate(255, 250); x.rotate(-Math.PI / 2); drawFace(x, 0, 0, 18, L); x.restore();
+      // (7.0.8) built as Dave is: shoulders in the wetsuit turning away (the far one in shadow), a neck from under the
+      // jaw into a wrapping roll collar, the head lit from the front and above with its back in shadow
+      const sk = SKINS[L.skin] || SKINS[2], lg = (x0, y0, x1, y1, st) => { const g = x.createLinearGradient(x0, y0, x1, y1); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+      { const sh = new Path2D(); sh.moveTo(-10, 540); sh.lineTo(-10, 470); sh.bezierCurveTo(60, 420, 140, 396, 200, 392); sh.lineTo(320, 390); sh.bezierCurveTo(400, 400, 470, 440, 530, 500); sh.lineTo(530, 540); sh.closePath();
+        x.fillStyle = lg(0, 0, 520, 0, [[0, '#0a0c0e'], [0.45, '#1e2328'], [0.8, '#2e353b'], [1, '#161a1e']]); x.fill(sh);
+        x.strokeStyle = 'rgba(160,170,170,0.18)'; x.lineWidth = 3; x.beginPath(); x.moveTo(330, 394); x.bezierCurveTo(400, 404, 456, 436, 500, 480); x.stroke(); // the near shoulder's lit edge
+        x.strokeStyle = 'rgba(0,0,0,0.5)'; x.lineWidth = 2; x.setLineDash([5, 5]); x.beginPath(); x.moveTo(360, 400); x.bezierCurveTo(400, 430, 420, 470, 426, 540); x.stroke(); x.setLineDash([]); } // a seam
+      { const nw = L.sex === 'f' ? 40 : 50, nk = new Path2D(); nk.moveTo(258 - nw, 300); nk.bezierCurveTo(254 - nw, 340, 248 - nw, 370, 244 - nw, 400); nk.lineTo(266 + nw, 400); nk.bezierCurveTo(262 + nw, 370, 260 + nw, 340, 264 + nw, 310); nk.closePath();
+        x.fillStyle = lg(200, 0, 330, 0, [[0, sk[2] || sk[1]], [0.6, sk[1]], [1, sk[0]]]); x.fill(nk);
+        x.fillStyle = lg(0, 296, 0, 350, [[0, 'rgba(20,10,4,0.55)'], [1, 'rgba(20,10,4,0)']]); x.fill(nk); // the jaw's shadow on the neck
+        x.strokeStyle = 'rgba(40,20,10,0.25)'; x.lineWidth = 3; x.beginPath(); x.moveTo(236, 312); x.quadraticCurveTo(258, 350, 292, 392); x.stroke(); }
+      { const col = new Path2D(); col.moveTo(186, 392); col.bezierCurveTo(200, 366, 320, 362, 338, 386); col.bezierCurveTo(346, 402, 344, 420, 336, 430); col.bezierCurveTo(290, 444, 226, 442, 188, 426); col.bezierCurveTo(180, 414, 180, 402, 186, 392); col.closePath();
+        x.fillStyle = lg(0, 364, 0, 444, [[0, '#3a4248'], [0.45, '#22282d'], [1, '#0c0e10']]); x.fill(col);
+        x.fillStyle = 'rgba(4,4,6,0.7)'; x.beginPath(); x.ellipse(262, 380, 70, 12, 0, 0, Math.PI * 2); x.fill(); // the collar's dark inside round the neck
+        x.strokeStyle = 'rgba(170,180,180,0.25)'; x.lineWidth = 2; x.beginPath(); x.moveTo(192, 396); x.bezierCurveTo(230, 378, 300, 376, 334, 392); x.stroke(); }
+      { const fc = document.createElement('canvas'); fc.width = fc.height = 520; const f = fc.getContext('2d');
+        f.save(); f.translate(255, 250); f.rotate(-Math.PI / 2); drawFace(f, 0, 0, 18, L); f.restore();
+        f.globalCompositeOperation = 'source-atop';
+        const kl = f.createRadialGradient(330, 220, 10, 330, 220, 170); kl.addColorStop(0, 'rgba(255,228,196,0.2)'); kl.addColorStop(1, 'rgba(255,228,196,0)'); f.fillStyle = kl; f.fillRect(0, 0, 520, 520); // key light on the face
+        f.fillStyle = lg(140, 0, 280, 0, [[0, 'rgba(10,6,2,0.45)'], [1, 'rgba(10,6,2,0)']]); f.fillRect(0, 0, 520, 520); // the back of the head in shadow
+        x.drawImage(fc, 0, 0); }
+      x.strokeStyle = 'rgba(150,190,200,0.2)'; x.lineWidth = 4; x.beginPath(); x.arc(240, 240, 120, Math.PI * 0.8, Math.PI * 1.3); x.stroke(); // a cool rim from the water behind
       el.querySelectorAll('[data-sex]').forEach((b) => b.classList.toggle('on', b.dataset.sex === L.sex));
       el.querySelectorAll('[data-skin]').forEach((b) => b.classList.toggle('on', +b.dataset.skin === L.skin));
       el.querySelector('[data-v="face"]').textContent = FACES[L.face]; el.querySelector('[data-v="eyes"]').textContent = EYES[L.eyes]; el.querySelector('[data-v="hair"]').textContent = HAIR_NAMES[L.hair];
@@ -1587,7 +1604,7 @@ export class UI {
   daveTalk() {
     let el = document.getElementById('davetalk');
     if (!el) { el = document.createElement('section'); el.id = 'davetalk'; el.hidden = true; el.innerHTML = '<div class="dt-box"><b class="dt-name">Dave</b><p class="dt-line"></p><div class="dt-acts"><button class="dt-shop">Shop</button><button class="dt-leave">Leave</button></div></div>'; document.body.appendChild(el);
-      { const P = daveTalkPlate(1640, 360); const bx = el.querySelector('.dt-box'); bx.classList.add('painted'); bx.style.setProperty('--dt-plate', `url(${P.url})`); bx.style.setProperty('--dt-left', (P.textLeft * 100).toFixed(1) + '%'); } // (7.0.8) one painted piece: the plate, its porthole, Dave in it
+      { const P = daveTalkPlate(1640, 600); const bx = el.querySelector('.dt-box'); bx.classList.add('painted'); bx.style.setProperty('--dt-plate', `url(${P.url})`); bx.style.setProperty('--dt-left', (P.textLeft * 100).toFixed(1) + '%'); bx.style.setProperty('--dt-top', (P.top * 100).toFixed(1) + '%'); } // (7.0.8) one painted piece: the plate, its porthole, Dave in it
       el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); this.toggleDave(true); });
       el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); });
       el.addEventListener('click', (ev) => { if (ev.target === el) { el.hidden = true; clearInterval(this.dtT); } }); }

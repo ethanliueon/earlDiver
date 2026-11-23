@@ -9,12 +9,12 @@ const lin = (x, x0, y0, x1, y1, st) => { const g = x.createLinearGradient(x0, y0
 const rad = (x, x0, y0, r0, x1, y1, r1, st) => { const g = x.createRadialGradient(x0, y0, r0, x1, y1, r1); st.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
 
 // Dave, in a square of side S, facing right
-function drawDave(x, S) {
+function drawDave(x, S, room = true) {
   const k = S / 400; x.save(); x.scale(k, k);
   let sd = 5; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
   // behind him: the inside of his habitat, a warm lamp up to the right, dark round the edges
-  x.fillStyle = rad(x, 300, 90, 10, 220, 200, 330, [[0, '#7a5a34'], [0.35, '#3e2e1c'], [1, '#0e0c08']]); x.fillRect(0, 0, 400, 400);
-  x.fillStyle = 'rgba(20,16,10,0.6)'; x.fillRect(30, 40, 10, 360); x.fillRect(0, 150, 400, 8); // a pipe and a shelf edge in the dark
+  if (room) { x.fillStyle = rad(x, 300, 90, 10, 220, 200, 330, [[0, '#7a5a34'], [0.35, '#3e2e1c'], [1, '#0e0c08']]); x.fillRect(0, 0, 400, 400);
+  x.fillStyle = 'rgba(20,16,10,0.6)'; x.fillRect(30, 40, 10, 360); x.fillRect(0, 150, 400, 8); } // a pipe and a shelf edge in the dark
   // the oilskin: shoulders filling the bottom, the far shoulder lower and darker, the near one rounding toward us
   const coat = new Path2D(); coat.moveTo(-20, 420); coat.lineTo(-20, 330); coat.bezierCurveTo(40, 290, 100, 272, 150, 268); coat.lineTo(262, 266); coat.bezierCurveTo(330, 276, 380, 320, 400, 380); coat.lineTo(420, 420); coat.closePath();
   x.fillStyle = lin(x, 0, 270, 0, 400, [[0, '#8a5232'], [0.5, '#6a3c22'], [1, '#2e1a0e']]); x.fill(coat);
@@ -65,7 +65,8 @@ function drawDave(x, S) {
   beard.bezierCurveTo(222, 258, 190, 250, 176, 230); beard.bezierCurveTo(176, 200, 184, 150, 192, 124); beard.closePath();
   x.save(); x.filter = 'blur(3px)'; x.fillStyle = lin(x, 0, 150, 0, 255, [[0, 'rgba(96,92,84,0.7)'], [0.5, 'rgba(82,78,72,0.85)'], [1, '#34322e']]); x.fill(beard); x.restore();
   x.lineCap = 'round';
-  for (let i = 0; i < 700; i++) { let bx, by, tries = 0; do { bx = 164 + r() * 122; by = 138 + r() * 122; tries++; } while (!x.isPointInPath(beard, bx, by) && tries < 20);
+  const M = x.getTransform(), inB = (px, py) => x.isPointInPath(beard, M.a * px + M.c * py + M.e, M.b * px + M.d * py + M.f); // (the test is in the canvas's own pixels)
+  for (let i = 0; i < 700; i++) { let bx, by, tries = 0; do { bx = 164 + r() * 122; by = 120 + r() * 140; tries++; } while (!inB(bx, by) && tries < 30); if (!inB(bx, by)) continue;
     const len = 6 + r() * 13, a = 1.3 + (bx - 220) * 0.005 + (r() - 0.5) * 0.5, li = r();
     x.strokeStyle = li < 0.45 ? `rgba(214,208,196,${0.25 + r() * 0.35})` : li < 0.8 ? `rgba(126,122,114,${0.3 + r() * 0.3})` : `rgba(32,30,26,${0.3 + r() * 0.3})`; x.lineWidth = 0.7 + r() * 1.1;
     x.beginPath(); x.moveTo(bx, by); x.quadraticCurveTo(bx + Math.cos(a) * len * 0.5 + 2, by + Math.sin(a) * len * 0.5, bx + Math.cos(a) * len, by + Math.sin(a) * len); x.stroke(); }
@@ -86,35 +87,29 @@ function drawDave(x, S) {
   x.save(); x.clip(cuff); x.strokeStyle = 'rgba(18,18,10,0.5)'; x.lineWidth = 2.4; for (let i = 0; i < 26; i++) { const u = i / 25, cx = 118 + u * 150, cy = 132 - u * 36 + Math.sin(u * Math.PI) * -6; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + 3, cy + 18); x.stroke(); } x.restore();
   x.strokeStyle = 'rgba(14,14,8,0.6)'; x.lineWidth = 2; x.stroke(cuff);
   // a soft rim of cool light from the water behind his back
-  x.strokeStyle = 'rgba(160,190,190,0.2)'; x.lineWidth = 4; x.beginPath(); x.arc(178, 130, 74, Math.PI * 0.8, Math.PI * 1.3); x.stroke();
   x.restore();
 }
 
-// the whole plate, W x H (CSS px at scale 2)
+// (7.0.9) the whole card, W x H: Dave stands at the left, leaning in behind the box, his head and shoulders above its top
+// edge (the box cuts him where it stands in front of him, as a real box would), all one picture
 export function daveTalkPlate(W, H) {
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   let sd = 9; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-  const PR = H * 0.47, PX = PR + H * 0.06, PY = H / 2; // the porthole
-  // the plate
-  const plate = new Path2D(); plate.roundRect(H * 0.2, H * 0.12, W - H * 0.24, H * 0.76, H * 0.06);
-  x.fillStyle = 'rgba(0,0,0,0.5)'; x.save(); x.translate(4, 10); x.fill(plate); x.beginPath(); x.arc(PX, PY, PR + 6, 0, TAU); x.fill(); x.restore();
-  x.fillStyle = lin(x, 0, H * 0.12, 0, H * 0.88, [[0, '#6e7656'], [0.5, '#555c42'], [1, '#33382a']]); x.fill(plate);
+  const top = H * 0.56, plate = new Path2D(); plate.roundRect(6, top, W - 12, H - top - 10, H * 0.03);
+  // Dave first, behind the box: a soft shadow round him so he sits on the water, then the figure
+  const DS = H * 0.86, DX = H * 0.04, DY = -H * 0.06; x.save(); x.beginPath(); x.rect(0, 0, W, H - 12); x.clip(); /* nothing of him below the box */
+  x.save(); x.filter = `blur(${(H * 0.03).toFixed(1)}px)`; x.globalAlpha = 0.5; x.translate(DX + 6, DY + 8); x.globalCompositeOperation = 'source-over'; drawDave(x, DS, false); x.restore();
+  { const t = document.createElement('canvas'); t.width = W; t.height = H; const tx = t.getContext('2d'); tx.translate(DX + 6, DY + 8); drawDave(tx, DS, false); tx.setTransform(1, 0, 0, 1, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = 'rgba(0,0,0,0.45)'; tx.fillRect(0, 0, W, H); x.save(); x.filter = `blur(${(H * 0.025).toFixed(1)}px)`; x.drawImage(t, 0, 0); x.restore(); x.clearRect(0, 0, 0, 0); }
+  x.save(); x.translate(DX, DY); drawDave(x, DS, false); x.restore(); x.restore();
+  // the box in front of him
+  x.fillStyle = 'rgba(0,0,0,0.5)'; x.save(); x.translate(4, 10); x.fill(plate); x.restore();
+  x.fillStyle = lin(x, 0, top, 0, H, [[0, '#6e7656'], [0.5, '#555c42'], [1, '#33382a']]); x.fill(plate);
   x.save(); x.clip(plate);
-  for (let i = 0; i < 1600; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '20,22,16' : '210,214,180'},${0.025 + r() * 0.06})`; x.fillRect(r() * W, r() * H, 2 + r() * 50, 1 + r() * 2); }
-  for (let i = 0; i < 14; i++) { const sx = r() * W, g = x.createLinearGradient(0, H * 0.15, 0, H * 0.85); g.addColorStop(0, 'rgba(120,58,26,0.4)'); g.addColorStop(1, 'rgba(120,58,26,0)'); x.fillStyle = g; x.fillRect(sx, H * 0.15 + r() * H * 0.1, 3 + r() * 5, H * (0.3 + r() * 0.4)); }
+  for (let i = 0; i < 1600; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '20,22,16' : '210,214,180'},${0.025 + r() * 0.06})`; x.fillRect(r() * W, top + r() * (H - top), 2 + r() * 50, 1 + r() * 2); }
+  for (let i = 0; i < 14; i++) { const sx = r() * W, g = x.createLinearGradient(0, top, 0, H); g.addColorStop(0, 'rgba(120,58,26,0.4)'); g.addColorStop(1, 'rgba(120,58,26,0)'); x.fillStyle = g; x.fillRect(sx, top + r() * 20, 3 + r() * 5, (H - top) * (0.4 + r() * 0.4)); }
   x.restore();
   x.strokeStyle = 'rgba(12,14,8,0.85)'; x.lineWidth = 5; x.stroke(plate);
-  x.strokeStyle = 'rgba(230,234,200,0.22)'; x.lineWidth = 2; x.beginPath(); x.moveTo(H * 0.3, H * 0.135); x.lineTo(W - H * 0.12, H * 0.135); x.stroke();
-  for (const rx of [W - H * 0.12, W * 0.55]) for (const ry of [H * 0.2, H * 0.8]) { const g = x.createRadialGradient(rx - 2, ry - 2, 1, rx, ry, 9); g.addColorStop(0, '#c4c8a8'); g.addColorStop(1, '#262a1e'); x.fillStyle = g; x.beginPath(); x.arc(rx, ry, 8, 0, TAU); x.fill(); }
-  // Dave, inside the porthole
-  x.save(); x.beginPath(); x.arc(PX, PY, PR * 0.86, 0, TAU); x.clip(); x.translate(PX - PR * 1.12, PY - PR * 1.02); drawDave(x, PR * 2.2);
-  x.fillStyle = rad(x, PR * 0.86, PR * 0.86, PR * 0.5, PR * 0.86, PR * 0.86, PR * 0.9, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,0.5)']]); x.fillRect(0, 0, PR * 2, PR * 2); // the glass's dark edge
-  x.restore();
-  x.save(); x.beginPath(); x.arc(PX, PY, PR * 0.86, 0, TAU); x.clip(); x.fillStyle = 'rgba(255,250,236,0.08)'; x.beginPath(); x.ellipse(PX - PR * 0.3, PY - PR * 0.45, PR * 0.5, PR * 0.18, -0.5, 0, TAU); x.fill(); x.restore(); // the glass's reflection
-  // the brass ring, with its bolts
-  x.lineWidth = PR * 0.16; x.strokeStyle = lin(x, PX - PR, PY - PR, PX + PR, PY + PR, [[0, '#c4a466'], [0.45, '#7a5c2e'], [1, '#3a2a12']]); x.beginPath(); x.arc(PX, PY, PR * 0.93, 0, TAU); x.stroke();
-  x.lineWidth = 3; x.strokeStyle = 'rgba(20,14,6,0.8)'; x.beginPath(); x.arc(PX, PY, PR * 0.85, 0, TAU); x.stroke(); x.beginPath(); x.arc(PX, PY, PR * 1.01, 0, TAU); x.stroke();
-  for (let i = 0; i < 70; i++) { const a = r() * TAU, d = PR * (0.87 + r() * 0.12); x.fillStyle = r() < 0.4 ? `rgba(70,110,90,${0.15 + r() * 0.2})` : `rgba(${r() < 0.5 ? '240,220,170' : '20,14,6'},${0.08 + r() * 0.15})`; x.beginPath(); x.arc(PX + Math.cos(a) * d, PY + Math.sin(a) * d, 1 + r() * 3, 0, TAU); x.fill(); }
-  for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU + 0.39, bx = PX + Math.cos(a) * PR * 0.93, by = PY + Math.sin(a) * PR * 0.93, g = x.createRadialGradient(bx - 2, by - 2, 1, bx, by, PR * 0.05); g.addColorStop(0, '#e8cc90'); g.addColorStop(1, '#3a2a10'); x.fillStyle = g; x.beginPath(); x.arc(bx, by, PR * 0.045, 0, TAU); x.fill(); }
-  return { url: c.toDataURL(), textLeft: (PX + PR * 1.12) / W };
+  x.strokeStyle = 'rgba(230,234,200,0.22)'; x.lineWidth = 2; x.beginPath(); x.moveTo(H * 0.14, top + 3); x.lineTo(W - H * 0.08, top + 3); x.stroke();
+  for (const rx of [24, W - 24, W * 0.55]) for (const ry of [top + H * 0.07, H - H * 0.1]) { const g = x.createRadialGradient(rx - 2, ry - 2, 1, rx, ry, 9); g.addColorStop(0, '#c4c8a8'); g.addColorStop(1, '#262a1e'); x.fillStyle = g; x.beginPath(); x.arc(rx, ry, 8, 0, TAU); x.fill(); }
+  return { url: c.toDataURL(), textLeft: (DX + DS * 0.78) / W, top: top / H };
 }

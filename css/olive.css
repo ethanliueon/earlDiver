@@ -1781,3 +1781,8 @@ html body #davetalk .dt-box.painted .dt-face, html body #davetalk .dt-box.painte
 html body #davetalk .dt-box.painted .dt-name:not(#_a):not(#_b):not(#_c) { position: absolute !important; left: var(--dt-left) !important; top: 18% !important; font: 700 clamp(18px, 5vh, 24px) "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.22em !important; color: #e0d6b8 !important; text-transform: uppercase; }
 html body #davetalk .dt-box.painted .dt-line:not(#_a):not(#_b) { position: absolute; left: var(--dt-left); right: 20%; top: 36%; padding: 0 !important; margin: 0; font: 500 clamp(15px, 4.4vh, 19px)/1.35 "Barlow Semi Condensed", sans-serif; color: #ece4cc; }
 html body #davetalk .dt-box.painted .dt-acts:not(#_a) { position: absolute; right: 4%; top: 50%; transform: translateY(-50%); margin: 0 !important; }
+/* (7.0.9) the card taller: Dave above the box, the words on the box below his head */
+html body #davetalk .dt-box.painted:not(#_a):not(#_b):not(#_c) { aspect-ratio: 1640 / 600; width: min(760px, 94vw) !important; }
+html body #davetalk .dt-box.painted .dt-name:not(#_a):not(#_b):not(#_c):not(#_d) { top: calc(var(--dt-top) + 7%) !important; }
+html body #davetalk .dt-box.painted .dt-line:not(#_a):not(#_b):not(#_c) { top: calc(var(--dt-top) + 18%); }
+html body #davetalk .dt-box.painted .dt-acts:not(#_a):not(#_b) { top: calc(var(--dt-top) + (100% - var(--dt-top)) / 2); }
