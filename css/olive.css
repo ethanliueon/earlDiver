@@ -403,7 +403,7 @@ html body #inventory .inv-catch2 .fc small { font: 600 13px var(--o-text) !impor
    list under it; no panel, no filler lines ---------- */
 html body #title .title-panel:not(#_a) { background: none !important; border: 0 !important; border-image: none !important; box-shadow: none !important; padding: 0 !important; width: min(420px, 86vw) !important; }
 html body #title .t-plate h1:not(#_a) { display: flex; flex-direction: column; gap: 0.3em; margin: 0 0 26px; text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5) !important; opacity: 1 !important; }
-html body #title .t-plate h1 b { font: 700 clamp(84px, 10vw, 150px)/0.8 var(--o-title); letter-spacing: 0.01em; color: #efe8d6; }
+html body #title .t-plate h1 b { font: 700 clamp(56px, 7.4vw, 110px)/0.8 var(--o-title); /* (6.8.2) Hatchetfish */ letter-spacing: 0.01em; color: #efe8d6; }
 html body #title .t-plate h1 span:not(#_a):not(#_b) { font: 600 clamp(15px, 1.6vw, 24px)/1 var(--o-title) !important; letter-spacing: 0.55em !important; text-transform: uppercase !important; color: rgba(239, 232, 214, 0.75) !important; padding-left: 0.2em; }
 html body #title .t-label, html body #title .menu-links { display: none !important; }
 html body #title .slot .info span:not(#_a) { font: 500 15px var(--o-text) !important; color: var(--o-cream-dim) !important; }

@@ -1,4 +1,4 @@
-// Earl the Diver — game loop, state, interactions and UI glue.
+// Hatchetfish (Earl is the default diver) — game loop, state, interactions and UI glue.
 import { watchPage } from './units.js'; // (6.0.3) first, so every canvas draws its figures in the chosen units
 import { setTouchText } from './touchtext.js';
 import { watchPanels, platesReady } from './reveal.js'; // (6.5.0) no panel seen half-drawn

@@ -1,4 +1,7 @@
-# Earl the Diver: how to work on this game
+# Hatchetfish — Deep Sea Survival (formerly Earl the Diver): how to work on this game
+
+The game is called **Hatchetfish — Deep Sea Survival** (6.8.2). Earl stays the default diver's name; the repository
+and its links keep their old name.
 
 Read this before any change. It is the owner's design philosophy and working rules, agreed in conversation; apply it
 to every request, including the small ones.

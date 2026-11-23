@@ -1,6 +1,6 @@
 {
-  "name": "Earl the Diver",
-  "short_name": "Earl",
+  "name": "Hatchetfish — Deep Sea Survival",
+  "short_name": "Hatchetfish",
   "description": "Dive, catch, and stay out of reach of what is in the deep.",
   "start_url": "./index.html",
   "scope": "./",
