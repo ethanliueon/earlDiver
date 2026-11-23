@@ -483,9 +483,6 @@ export class UI {
         const w0 = b2.createRadialGradient(250, 190, 20, 250, 230, 300); w0.addColorStop(0, '#36525a'); w0.addColorStop(0.45, '#1a2c32'); w0.addColorStop(1, '#0a1416'); b2.fillStyle = w0; b2.fillRect(0, 0, 520, 600);
         let sd = 9; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
         for (let i = 0; i < 60; i++) { b2.fillStyle = `rgba(214,226,220,${(0.05 + r() * 0.12).toFixed(3)})`; b2.beginPath(); b2.arc(r() * 520, r() * 520, 0.8 + r() * 1.6, 0, Math.PI * 2); b2.fill(); }
-        b2.strokeStyle = 'rgba(20,24,22,0.9)'; b2.lineWidth = 4; b2.beginPath(); b2.moveTo(64, 70); b2.lineTo(64, 120); b2.arc(64, 132, 12, -Math.PI / 2, Math.PI * 0.6); b2.stroke(); // the hook
-        { const hg = b2.createRadialGradient(56, 176, 6, 68, 190, 60); hg.addColorStop(0, 'rgba(92,80,56,0.7)'); hg.addColorStop(1, 'rgba(24,22,16,0.75)'); b2.fillStyle = hg; b2.beginPath(); b2.arc(68, 192, 50, 0, Math.PI * 2); b2.fill();
-          b2.fillStyle = 'rgba(40,60,62,0.8)'; b2.beginPath(); b2.arc(80, 190, 20, 0, Math.PI * 2); b2.fill(); b2.strokeStyle = 'rgba(120,100,64,0.6)'; b2.lineWidth = 5; b2.stroke(); } // the helmet: brass, its front port
         b2.globalCompositeOperation = 'destination-in'; const m0 = b2.createRadialGradient(250, 250, 90, 250, 270, 245); /* fades out before the canvas's edges: no hard border */ m0.addColorStop(0, '#000'); m0.addColorStop(1, 'rgba(0,0,0,0)'); b2.fillStyle = m0; b2.fillRect(0, 0, 520, 600);
         x.drawImage(bg, 0, -60); }
       // (7.0.8) built as Dave is: shoulders in the wetsuit turning away (the far one in shadow), a neck from under the
@@ -508,14 +505,20 @@ export class UI {
         x.restore();
         // the zip at the throat: a short run of teeth and its pull
         x.fillStyle = '#3c3e3a'; for (let i = 0; i < 6; i++) x.fillRect(296 + (i % 2) * 3, 430 + i * 7, 4, 5); x.fillStyle = '#8a8676'; x.fillRect(293, 424, 10, 7); }
-      { const nw = L.sex === 'f' ? 40 : 50, nk = new Path2D(); nk.moveTo(258 - nw, 300); nk.bezierCurveTo(254 - nw, 340, 248 - nw, 370, 244 - nw, 400); nk.lineTo(266 + nw, 400); nk.bezierCurveTo(262 + nw, 370, 260 + nw, 340, 264 + nw, 310); nk.closePath();
+      // (7.1.6) the neck runs down into the suit: a column from under the skull and jaw that widens into the shoulders
+      // (no floating stub); a snug neoprene roll collar wraps its foot, lit along its top, shaded in its fold, one with the
+      // suit's shoulders (no dark hole); a soft shadow under the jaw and where the collar meets the skin
+      { const nw = L.sex === 'f' ? 40 : 50, nk = new Path2D(); nk.moveTo(258 - nw, 296); nk.bezierCurveTo(254 - nw, 330, 246 - nw, 366, 226 - nw, 410); nk.lineTo(296 + nw, 410); nk.bezierCurveTo(272 + nw, 366, 262 + nw, 330, 264 + nw, 306); nk.closePath();
         x.fillStyle = lg(200, 0, 330, 0, [[0, sk[2] || sk[1]], [0.6, sk[1]], [1, sk[0]]]); x.fill(nk);
-        x.fillStyle = lg(0, 296, 0, 350, [[0, 'rgba(20,10,4,0.55)'], [1, 'rgba(20,10,4,0)']]); x.fill(nk); // the jaw's shadow on the neck
-        x.strokeStyle = 'rgba(40,20,10,0.25)'; x.lineWidth = 3; x.beginPath(); x.moveTo(236, 312); x.quadraticCurveTo(258, 350, 292, 392); x.stroke(); }
-      { const col = new Path2D(); col.moveTo(186, 392); col.bezierCurveTo(200, 366, 320, 362, 338, 386); col.bezierCurveTo(346, 402, 344, 420, 336, 430); col.bezierCurveTo(290, 444, 226, 442, 188, 426); col.bezierCurveTo(180, 414, 180, 402, 186, 392); col.closePath();
-        x.fillStyle = lg(0, 364, 0, 444, [[0, '#3a4248'], [0.45, '#22282d'], [1, '#0c0e10']]); x.fill(col);
-        x.fillStyle = 'rgba(4,4,6,0.7)'; x.beginPath(); x.ellipse(262, 380, 70, 12, 0, 0, Math.PI * 2); x.fill(); // the collar's dark inside round the neck
-        x.strokeStyle = 'rgba(170,180,180,0.25)'; x.lineWidth = 2; x.beginPath(); x.moveTo(192, 396); x.bezierCurveTo(230, 378, 300, 376, 334, 392); x.stroke(); }
+        x.fillStyle = lg(0, 296, 0, 350, [[0, 'rgba(20,10,4,0.5)'], [1, 'rgba(20,10,4,0)']]); x.fill(nk); // the jaw's shadow on the neck
+        x.fillStyle = lg(190, 0, 250, 0, [[0, 'rgba(20,10,4,0.35)'], [1, 'rgba(20,10,4,0)']]); x.fill(nk); // the back of the neck turning away
+        x.strokeStyle = 'rgba(40,20,10,0.22)'; x.lineWidth = 3; x.beginPath(); x.moveTo(236, 312); x.quadraticCurveTo(258, 350, 292, 386); x.stroke(); // the neck's muscle
+        const cw = nw + 16, ct = 372, col = new Path2D(); // the roll collar, hugging the neck
+        col.moveTo(258 - cw - 22, 418); col.bezierCurveTo(250 - cw, 392, 252 - cw, ct + 4, 260 - cw * 0.5, ct); col.bezierCurveTo(262, ct - 6, 282, ct - 6, 270 + cw * 0.6, ct + 2); col.bezierCurveTo(276 + cw, ct + 8, 286 + cw, 392, 300 + cw + 24, 420); col.lineTo(300 + cw + 30, 446); col.bezierCurveTo(280, 430, 230, 430, 258 - cw - 30, 446); col.closePath();
+        x.fillStyle = 'rgba(20,10,4,0.4)'; x.beginPath(); x.ellipse(262, ct + 2, cw * 0.95, 10, 0, 0, Math.PI * 2); x.fill(); // the collar's shadow on the skin, just above it
+        x.fillStyle = lg(0, ct - 6, 0, 446, [[0, '#4a535a'], [0.3, '#2c3238'], [0.7, '#1a1e22'], [1, '#121518']]); x.fill(col);
+        x.strokeStyle = 'rgba(0,0,0,0.45)'; x.lineWidth = 3; x.beginPath(); x.moveTo(258 - cw, 396); x.bezierCurveTo(230, 410, 300, 410, 300 + cw, 398); x.stroke(); // the roll's fold
+        x.strokeStyle = 'rgba(170,180,180,0.3)'; x.lineWidth = 2; x.beginPath(); x.moveTo(262 - cw * 0.5, ct + 1); x.bezierCurveTo(262, ct - 5, 282, ct - 5, 268 + cw * 0.6, ct + 3); x.stroke(); }
       { const fc = document.createElement('canvas'); fc.width = fc.height = 520; const f = fc.getContext('2d');
         f.save(); f.translate(255, 250); f.rotate(-Math.PI / 2); drawFace(f, 0, 0, 18, L); f.restore();
         f.globalCompositeOperation = 'source-atop';
