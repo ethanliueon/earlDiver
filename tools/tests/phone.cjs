@@ -28,12 +28,12 @@ require('fs').mkdirSync(OUT, { recursive: true });
   await shot('welcome'); await check(); await tapEl('#confirm .cf-yes'); await wait(1500);
   await shot('deck'); await check();
   const state = () => E(() => { const g = window.__earl.g, P = window.__earl.profile, l = document.querySelector('#tut-spot .ts-line'); const hole = document.querySelector('#tut-spot .ts-hole'); const hs = hole && getComputedStyle(hole).display !== 'none' ? hole.getBoundingClientRect() : null;
-    return { line: l ? l.textContent : '', tutKey: window.__hudTutKey || null, act: g.tutAction ? g.tutAction.id : null, hole: hs && hs.width > 4 ? [hs.x + hs.width / 2, hs.y + hs.height / 2] : null, bag: g.bag.length, cash: P.cash, main: P.quests ? P.quests.main : null, tut: P.tut, aboard: !!g.aboard, cabin: !document.getElementById('cabin').hidden, fish: !!g.tutFish, y: Math.round(g.earl.y), marks: (window.__earl.renderer.tapRects || []).map((r) => r.what + ':' + r.key).join(',') }; });
+    return { vv: +visualViewport.scale.toFixed(3) + '@' + Math.round(visualViewport.offsetLeft) + ',' + Math.round(visualViewport.offsetTop) + ' sy' + Math.round(scrollY), line: l ? l.textContent : '', tutKey: window.__hudTutKey || null, act: g.tutAction ? g.tutAction.id : null, hole: hs && hs.width > 4 ? [hs.x + hs.width / 2, hs.y + hs.height / 2] : null, bag: g.bag.length, cash: P.cash, main: P.quests ? P.quests.main : null, tut: P.tut, aboard: !!g.aboard, cabin: !document.getElementById('cabin').hidden, fish: !!g.tutFish, y: Math.round(g.earl.y), marks: (window.__earl.renderer.tapRects || []).map((r) => r.what + ':' + r.key).join(',') }; });
   const seen = new Set(); let last = '';
   for (let i = 0; i < 160; i++) {
     const s = await state();
     if (s.tut !== 'on') { console.log('tutorial left at step', i, s.tut); break; }
-    if (s.line !== last) { last = s.line; console.log(`[${i}] "${s.line}" key=${s.tutKey} act=${s.act} hole=${!!s.hole} bag=${s.bag} cash=${s.cash} marks=${s.marks}`); if (!seen.has(s.line)) { seen.add(s.line); await shot(s.line.replace(/[^a-z]+/gi, '_').slice(0, 30)); await check(); } }
+    if (s.line !== last) { last = s.line; console.log(`[${i}] ${s.vv} "${s.line}" key=${s.tutKey} act=${s.act} hole=${!!s.hole} bag=${s.bag} cash=${s.cash} marks=${s.marks}`); if (!seen.has(s.line)) { seen.add(s.line); await shot(s.line.replace(/[^a-z]+/gi, '_').slice(0, 30)); await check(); } }
     if (/sub trip|Get in the sub|drive/i.test(s.line)) { console.log('reached the sub trip'); break; }
     // 0. a tutorial card with its own button: tap it
     if (await E(() => { const c = document.querySelector('#tut-spot .ts-card'); return !!(c && getComputedStyle(c).display !== 'none' && c.querySelector('button')); })) { if (!seen.has('card')) { seen.add('card'); await shot('tour-card'); } await tapEl('#tut-spot .ts-card button'); await wait(900); continue; }

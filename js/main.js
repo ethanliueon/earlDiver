@@ -1411,8 +1411,7 @@ window.addEventListener('actup', (ev) => {
 });
 window.addEventListener('blur', () => keys.clear());
 const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
-// (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch. The first touch
-// in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
+// (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch
 // (5.6.7) the cabin on a phone: the same stick (on its own canvas), a tap uses what he is at
 let cabinTouch = null;
 // (5.6.8) the thing tapped (renderer.tapRects, CSS pixels): the smallest that holds the point, a finger's slack round each
@@ -1422,10 +1421,8 @@ setTimeout(wireCabinTouch, 0);
 watchPage(); // (6.0.3) the page's text in the chosen units
 const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
 hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stick
-hudCanvas.addEventListener('touchend', () => {
-  const d = document; if (d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
-  d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
-}, { once: false, passive: true });
+// (7.2.4) no full screen asked of the browser: entering it drops the page's pinned scale (the panels and words came out
+// 1.8x too large). Full screen is the home-screen app's (manifest), as on an iPhone
 // (5.1) the HUD button under the pointer, if any
 // (5.17.0) the buttons that do nothing special make the one plain click when pressed (the light, the hand, leaving the
 // sub, the menu's tiles, the swap); a greyed one a softer click with its reason. The net, the glow stick and the skill have their own
