@@ -1803,3 +1803,11 @@ html body #tut-spot .ts-arrow.aim:not(#_a):not(#_b) { width: 26px !important; he
   background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 44'><path d='M9 2 H17 V26 H24 L13 42 L2 26 H9 Z' fill='%23e6dcc4' stroke='%23121610' stroke-width='2' stroke-linejoin='round'/></svg>") center / contain no-repeat !important; }
 /* (7.1.3) Dave's longer lines fit inside his box */
 html body #davetalk .dt-box.painted .dt-line.long:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f) { font-size: clamp(11px, 3vh, 13px) !important; line-height: 1.2 !important; }
+/* (7.1.3) the creator's colour swatches beside a picker: small, in the same row */
+#creator .cr-row:has(.cr-sm) { display: flex; align-items: center; gap: 10px; }
+#creator .cr-skins.cr-sm { gap: 6px; flex-wrap: wrap; }
+#creator .cr-skins.cr-sm button { width: 24px; height: 24px; }
+#creator .cr-skins { flex-wrap: wrap; }
+#creator .cr-skins:not(.cr-sm) button { width: 32px; height: 32px; }
+#creator .cr-row[hidden] { display: none !important; }
+#creator .cr-row:has(.cr-sm) .cr-pick { flex: 0 0 48%; }

@@ -11,7 +11,12 @@ export const HAIR_NAMES = { crop: 'Crop', swept: 'Swept', curly: 'Curly', buzz: 
 // light, middle and shadow of each skin, fair to deep
 export const SKINS = [['#f0d2b8', '#d8ae90', '#b28366'], ['#e2b896', '#c69472', '#9c6c50'], ['#d2a586', '#b08368', '#80604a'], ['#ae7a58', '#8c5c3e', '#63412b'], ['#86583c', '#68422b', '#472c1c'], ['#5e3e2b', '#4a2f20', '#301e14']];
 const HAIR = '#33261d';
-export const lookOf = (L) => Object.assign({}, DEFAULT_LOOK, L || {});
+// (7.1.3) more to choose: beard (none, stubble, short, full), hair colour, eye colour, and a few playful skins kept muted
+export const BEARDS = ['None', 'Stubble', 'Short', 'Full'];
+export const HAIR_COLS = [['Black', ['#3a332e', '#1c1814', '#0c0a08']], ['Dark brown', ['#54402f', '#33261d', '#1c140e']], ['Brown', ['#7a5a3e', '#58402a', '#33241a']], ['Auburn', ['#8c4a2e', '#663220', '#3a1c12']], ['Blonde', ['#c8a970', '#a08550', '#6a5636']], ['Grey', ['#b4ada2', '#8a847a', '#55514a']], ['Sea green', ['#6e8a6e', '#4c654e', '#2c3c2e']], ['Ink blue', ['#4e5e78', '#343f54', '#1c2230']]];
+export const EYE_COLS = [['Brown', '#3a2e22'], ['Hazel', '#6a5532'], ['Green', '#4a6040'], ['Grey-blue', '#55687a'], ['Amber', '#8a6430']];
+SKINS.push(['#b8c8cc', '#94a8ae', '#6c8088'], ['#b4c2a6', '#93a386', '#6a7a60'], ['#c4bcb0', '#a39a8e', '#776e64']); // pale blue, sea green, ash
+export const lookOf = (L) => { const o = Object.assign({}, DEFAULT_LOOK, L || {}); if (o.hc != null && !o.hairCol) o.hairCol = (HAIR_COLS[o.hc] || HAIR_COLS[1])[1]; return o; };
 
 // the jaw by face shape: [chin front X, chin front Y, chin bottom X, chin bottom Y, jaw angle X, jaw angle Y, the angle's softness]
 const JAW = [
@@ -49,14 +54,19 @@ export function drawFace(ctx, hx, hy, u, look) {
   ctx.fillStyle = sk; ctx.fill(head);
   ctx.save(); ctx.clip(head);
   const blob = (X, Y, r, a, col = '60,36,24') => { const [bx, by] = Q(X, Y), g = ctx.createRadialGradient(bx, by, 0.2 * u, bx, by, r * u * k); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, r * u * k, 0, Math.PI * 2); ctx.fill(); };
-  blob(2.4, 3.4, L.face === 3 ? 2.2 : 2.6, L.face === 3 ? 0.08 : 0.2);           // under the cheekbone
+  blob(2.4, 3.4, L.face === 3 ? 2.2 : 2.6, L.face === 3 ? 0.12 : 0.28);          // under the cheekbone, (7.1.3) deeper
+  blob(3.4, 1.4, 1.6, 0.2, '255,232,206');                                   // (7.1.3) the cheekbone itself catching the light
+  { const cb = new Path2D(); cb.moveTo(...Q(1.2, 2.6)); cb.quadraticCurveTo(...Q(2.8, 2.2), ...Q(4.6, 2.9)); ctx.save(); ctx.filter = `blur(${(0.5 * u).toFixed(1)}px)`; ctx.strokeStyle = 'rgba(70,40,26,0.22)'; ctx.lineWidth = 0.6 * u; ctx.stroke(cb); ctx.restore(); } // the hollow's upper edge
+  blob(-4.6, 2.0, 2.2, 0.22);                                               // (7.1.3) the back of the head into the neck, in shadow
   blob(4.6, -0.3, 1.5 + 0.2 * L.eyes, [0.12, 0.26, 0.42][L.eyes] || 0.26);   // the eye's socket
   blob(0.6, 7.2, 2.6, 0.16); blob(-2.6, 5.4, 2.4, 0.18);                   // under the jaw, toward the neck
   blob(5.6, -4.2, 2.2, 0.16, '255,236,214');                               // light on the forehead
-  if (!f) { // a shadow of stubble along the jaw and over the lip: a soft cool darkening, not dots
+  const BD = L.beard === true ? 3 : (L.beard ?? (f ? 0 : 1)); // (7.1.3) 0 none, 1 stubble, 2 short, 3 full
+  if (BD >= 1) { // a shadow of stubble along the jaw and over the lip: a soft darkening in the hair's own colour, not dots
     const jw = new Path2D(); jw.moveTo(...Q(6.5, 3.6)); jw.quadraticCurveTo(...Q(6.6, 8.2), ...Q(cbx, cby)); jw.quadraticCurveTo(...Q(1.4, jay + 1.2), ...Q(jax, jay)); jw.lineTo(...Q(jax + 0.6, jay - 1.8)); jw.quadraticCurveTo(...Q(3.0, 5.4), ...Q(5.2, 3.6)); jw.closePath();
-    ctx.save(); ctx.filter = `blur(${(0.7 * u).toFixed(1)}px)`; ctx.fillStyle = 'rgba(52,52,60,0.18)'; ctx.fill(jw); ctx.restore();
-  } else { blob(4.0, 2.6, 1.8, 0.12, '190,90,80'); } // a little colour in a woman's cheek
+    ctx.save(); ctx.filter = `blur(${(0.7 * u).toFixed(1)}px)`; ctx.fillStyle = HC ? HC[2] : 'rgb(30,24,20)'; ctx.globalAlpha = 0.26; ctx.fill(jw); ctx.restore();
+  }
+  if (f) { blob(4.0, 2.6, 1.8, 0.12, '190,90,80'); } // a little colour in a woman's cheek
   ctx.restore();
   // a faint glint down the nose's ridge (the forehead's light is in the skin's own gradient, never a line)
   ctx.strokeStyle = 'rgba(252,226,204,0.22)'; ctx.lineWidth = 0.35 * u; ctx.beginPath(); ctx.moveTo(...Q(5.9, 0.4)); ctx.quadraticCurveTo(...Q(6.6, 1.2), ...Q(nose[0] - 0.2, nose[1] - 0.1)); ctx.stroke();
@@ -70,7 +80,7 @@ export function drawFace(ctx, hx, hy, u, look) {
   // the eye: white, iris, catchlight, lid; lashes for a woman; deep-set eyes sit further in under a heavier brow
   const ex = 4.5 - 0.15 * (L.eyes - 1), ey = -0.2;
   ctx.fillStyle = '#eadfce'; ctx.beginPath(); ctx.ellipse(...Q(ex, ey), 0.5 * u * k, 0.62 * u * k, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#3a2e22'; ctx.beginPath(); ctx.arc(...Q(ex + 0.2, ey + 0.05), 0.38 * u * k, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = (EYE_COLS[L.eyeCol] || EYE_COLS[0])[1]; ctx.beginPath(); ctx.arc(...Q(ex + 0.2, ey + 0.05), 0.38 * u * k, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#0c0a08'; ctx.beginPath(); ctx.arc(...Q(ex + 0.24, ey + 0.05), 0.17 * u * k, 0, Math.PI * 2); ctx.fill(); // (7.1.3) its colour, and the pupil
   ctx.fillStyle = 'rgba(255,250,240,0.9)'; ctx.beginPath(); ctx.arc(...Q(ex + 0.32, ey - 0.12), 0.12 * u * k, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = 'rgba(40,26,18,0.9)'; ctx.lineWidth = (f ? 0.42 : 0.32) * u; ctx.beginPath(); ctx.moveTo(...Q(ex - 0.5, ey - 0.45)); ctx.quadraticCurveTo(...Q(ex + 0.2, ey - 0.75), ...Q(ex + 0.65, ey - 0.25)); ctx.stroke();
   if (f) { ctx.lineWidth = 0.22 * u; ctx.beginPath(); ctx.moveTo(...Q(ex + 0.6, ey - 0.3)); ctx.lineTo(...Q(ex + 1.0, ey - 0.6)); ctx.stroke(); }
@@ -80,10 +90,10 @@ export function drawFace(ctx, hx, hy, u, look) {
     ctx.strokeStyle = 'rgba(70,40,28,0.35)'; ctx.lineWidth = 0.22 * u; ctx.lineCap = 'round';
     for (const [a, b, c, d] of [[3.6, -0.7, 3.1, -0.2], [3.7, 0.1, 3.2, 0.3], [4.6, -3.0, 3.0, -3.3], [4.7, -2.3, 3.3, -2.6], [5.6, 2.9, 4.9, 4.6]]) { ctx.beginPath(); ctx.moveTo(...Q(a, b)); ctx.lineTo(...Q(c, d)); ctx.stroke(); }
   }
-  if (L.beard) { // (6.7.1) a full short beard: from the sideburn along the jaw round the chin, and over the lip
+  if (BD >= 2) { // (6.7.1) a beard: from the sideburn along the jaw round the chin, and over the lip; (7.1.3) short is the same shape held close (thinner, lighter)
     const bd = new Path2D(), bq = (a, b, c, d) => bd.quadraticCurveTo(...Q(a, b), ...Q(c, d));
     bd.moveTo(...Q(-0.4, 0.6)); bq(0.6, 3.4, 3.4, 3.2); bq(5.4, 3.0, 6.3, 3.5); bq(6.0, 4.4, 5.6, 4.9); bq(6.5, 5.6, 6.4, 6.4); bq(6.6, 8.6, cbx - 0.2, cby + 0.6); bq(1.2, jay + 1.9, jax - 0.4, jay + 0.4); bq(jax - 1.2, 3.2, -1.2, 1.6); bd.closePath();
-    paintHair(ctx, bd, Q, u * k); ctx.fillStyle = 'rgba(120,70,56,0.4)'; ctx.beginPath(); ctx.ellipse(...Q(6.2, 5.0), 0.5 * u * k, 0.35 * u * k, 0, 0, Math.PI * 2); ctx.fill(); // the lip showing through
+    paintHair(ctx, bd, Q, u * k, BD === 2 ? 0.7 : 1); ctx.fillStyle = 'rgba(120,70,56,0.4)'; ctx.beginPath(); ctx.ellipse(...Q(6.2, 5.0), 0.5 * u * k, 0.35 * u * k, 0, 0, Math.PI * 2); ctx.fill(); // the lip showing through
   }
   if (L.cap) { // (6.7.1) a knit cap pulled down to the brow: ribbed wool and its folded band
     const cp = new Path2D(), cq = (a, b, c, d) => cp.quadraticCurveTo(...Q(a, b), ...Q(c, d));
@@ -121,10 +131,10 @@ function hairTop(ctx, Q, u, h) {
   if (h === 'curly') { // tight coils: many small part-arcs, and an edge broken by curls
     ctx.save(); ctx.clip(p); ctx.lineWidth = 0.22 * u; ctx.lineCap = 'round'; let sd = 11; const rr = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
     for (let i = 0; i < 110; i++) { const [cx, cy] = Q(-7.6 + rr() * 13, -10.4 + rr() * 9), a0 = rr() * 6.28; ctx.strokeStyle = rr() < 0.5 ? 'rgba(140,110,86,0.32)' : 'rgba(10,8,6,0.32)'; ctx.beginPath(); ctx.arc(cx, cy, (0.3 + rr() * 0.22) * u, a0, a0 + 2.4); ctx.stroke(); }
-    ctx.restore(); ctx.fillStyle = HAIR;
+    ctx.restore(); ctx.fillStyle = HC ? HC[1] : HAIR;
     for (let i = 0; i <= 16; i++) { const t = i / 16, a = Math.PI * (1.02 + 0.98 * t), [cx, cy] = Q(-1.2 + Math.cos(a) * 6.7, -3.6 + Math.sin(a) * 6.6); ctx.beginPath(); ctx.arc(cx, cy, 0.85 * u, 0, Math.PI * 2); ctx.fill(); }
   }
-  if (h === 'bun') { const [bx, by] = Q(-6.0, -7.4), g = ctx.createRadialGradient(bx, by, 0.2 * u, bx, by, 2.4 * u); g.addColorStop(0, '#5a4636'); g.addColorStop(1, HAIR); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, 2.3 * u, 0, Math.PI * 2); ctx.fill();
+  if (h === 'bun') { const [bx, by] = Q(-6.0, -7.4), g = ctx.createRadialGradient(bx, by, 0.2 * u, bx, by, 2.4 * u); g.addColorStop(0, HC ? HC[0] : '#5a4636'); g.addColorStop(1, HC ? HC[1] : HAIR); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, 2.3 * u, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(14,10,8,0.4)'; ctx.lineWidth = 0.3 * u; ctx.beginPath(); ctx.arc(bx, by, 1.3 * u, 0.4, 3.4); ctx.stroke(); }
   if (h === 'ponytail') { const [tx, ty] = Q(-6.2, -2.8); ctx.fillStyle = '#5a4a3a'; ctx.beginPath(); ctx.arc(tx, ty, 0.7 * u, 0, Math.PI * 2); ctx.fill(); } // the tie
 }
@@ -133,11 +143,19 @@ function paintHair(ctx, p, Q, u, alpha = 1) {
   ctx.save(); ctx.globalAlpha *= alpha;
   const g = ctx.createLinearGradient(...Q(2, -10), ...Q(-6, 0)); g.addColorStop(0, HC ? HC[0] : '#54402f'); g.addColorStop(0.45, HC ? HC[1] : HAIR); g.addColorStop(1, HC ? HC[2] : '#1c140e');
   ctx.fillStyle = g; ctx.fill(p);
-  // strands combed back from the hairline: long thin strokes following the head's curve, lit toward the top
+  // (7.1.3) locks, then strands: the hair is clumps of strands, each lock a tapered band following the head's curve,
+  // lit on its upper side and dark in the gaps between, then fine strands over them; never a smooth fill
   ctx.clip(p); let sd = 7; const rr = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-  ctx.lineCap = 'round'; ctx.lineWidth = 0.18 * u;
-  for (let i = 0; i < 46; i++) { const r = 6.4 + rr() * 3.4, a0 = Math.PI * (1.15 + rr() * 0.75), a1 = a0 + 0.22 + rr() * 0.2;
-    ctx.strokeStyle = rr() < 0.55 ? 'rgba(160,128,100,0.28)' : 'rgba(12,8,6,0.3)'; ctx.beginPath();
+  const C0 = HC ? HC[0] : '#54402f', C2 = HC ? HC[2] : '#1c140e';
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 22; i++) { const r = 5.8 + rr() * 4.4, a0 = Math.PI * (1.08 + rr() * 0.86), a1 = a0 + 0.3 + rr() * 0.3, wdt = (0.7 + rr() * 0.9) * u;
+    const pts = []; for (let t = 0; t <= 1.001; t += 0.2) { const a = a0 + (a1 - a0) * t; pts.push(Q(-1.0 + Math.cos(a) * r, -3.0 + Math.sin(a) * r)); }
+    const line = () => { ctx.beginPath(); pts.forEach(([x, y], j) => (j ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); };
+    ctx.strokeStyle = C2; ctx.globalAlpha = 0.3; ctx.lineWidth = wdt * 1.1; line(); ctx.stroke(); // the gap's shadow
+    ctx.strokeStyle = C0; ctx.globalAlpha = 0.18 + rr() * 0.14; ctx.lineWidth = wdt * 0.7; line(); ctx.stroke(); } // the lock's lit crest, soft
+  ctx.globalAlpha = alpha; ctx.lineWidth = 0.14 * u;
+  for (let i = 0; i < 70; i++) { const r = 6.0 + rr() * 4.0, a0 = Math.PI * (1.1 + rr() * 0.8), a1 = a0 + 0.18 + rr() * 0.22;
+    ctx.strokeStyle = rr() < 0.5 ? 'rgba(220,196,160,0.22)' : 'rgba(8,6,4,0.3)'; ctx.beginPath();
     for (let t = 0; t <= 1.001; t += 0.25) { const a = a0 + (a1 - a0) * t, [x, y] = Q(-1.0 + Math.cos(a) * r, -3.0 + Math.sin(a) * r); if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
     ctx.stroke(); }
   ctx.restore();
