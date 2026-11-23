@@ -1810,9 +1810,11 @@ export class Renderer {
     for (const [par, alpha, off] of [[0.35, 0.35, 70], [0.6, 0.45, 30]]) {
       ctx.fillStyle = rgbStr(sampleTable(WATER_ALBEDO, cam.y + 200), alpha);
       ctx.beginPath(); ctx.moveTo(-10, H + 10);
-      for (let sx = -10; sx <= W + 20; sx += 20) {
-        const wx = cam.x + (sx - W / 2) / ppm;
-        const fx = cam.x + (wx - cam.x) / par; // parallax-scaled world x
+      // (7.1.1) sampled at fixed places in the world (not at fixed places on the screen): the outline no longer shimmers
+      // up and down as the camera moves
+      const k = ppm * par, stepW = Math.pow(2, Math.round(Math.log2(Math.max(0.25, 20 / k)))), f0 = Math.floor((cam.x + (-10 - W / 2) / k) / stepW) * stepW, f1 = cam.x + (W + 20 - W / 2) / k + stepW;
+      for (let fx = f0; fx <= f1; fx += stepW) {
+        const sx = W / 2 + (fx - cam.x) * k;
         const d = g.world.floorAt(clamp(fx, 0, WORLD_W)) - off + fbm1(fx / 40, 3, 99) * 25;
         const sy = H / 2 + (d - cam.y) * ppm * par;
         ctx.lineTo(sx, Math.max(Sy(0) + 4, sy));
@@ -3227,8 +3229,9 @@ export class Renderer {
     const seg = (x0, y0, x1, y1, a, w) => { ctx.strokeStyle = `rgba(206,206,186,${a.toFixed(3)})`; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
     // the seabed's edge, and silt where it is lit
     const step = Math.max(5, W / 150); let pw = null, py = null, psx = null;
-    for (let sx = -step; sx <= W + step; sx += step) {
-      const wx = cam.x + (sx - W / 2) / ppm, fy = Wd.floorAt(wx), sy = Sy(fy);
+    const stepW = Math.pow(2, Math.round(Math.log2(Math.max(0.0625, step / ppm)))), w0 = Math.floor((cam.x - (W / 2 + step) / ppm) / stepW) * stepW; // (7.1.1) world-fixed samples: no shimmer
+    for (let wx = w0; S(wx) <= W + step; wx += stepW) {
+      const sx = S(wx), fy = Wd.floorAt(wx), sy = Sy(fy);
       if (pw !== null && (sy > -30 || py > -30) && (sy < H + 30 || py < H + 30)) {
         const d = deep(fy);
         if (d > 0) { const lit = this.litAt(wx, fy - 0.6), a = d * (0.05 + 0.55 * lit);
