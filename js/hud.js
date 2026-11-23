@@ -380,7 +380,16 @@ export class Hud {
     // (5.17.0) the light, in the arc's fourth place in the water and the sub: his lamp while he swims, her lights while he
     // is in her (it moved here from the bottom left corner, which is the stick's alone now)
     const light = () => { const on = e.inSub ? !!sub.lightsOn : !!e.lampOn; return { key: 'l', icon: 'lamp', on: true, lit: on }; };
-    const A = e.inSub ? [
+    // (6.5.6) at the Margaret's wheel: the anchor and the way back from the wheel in the arc (on a phone there was no
+    // way to do either, so taking the wheel left him stuck there); the stick steers
+    const atHelm = !!g.helm && !e.inSub;
+    const A = atHelm ? [
+      null,
+      { key: 'g', icon: 'anchor', on: true, lit: !!(g.anchored && !g.anchorDir) },
+      { key: 'v', icon: 'door', on: true, lit: true, inter: true },
+      abil(),
+      light(),
+    ] : e.inSub ? [
       { key: 'leavesub', icon: 'leave', on: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
       // (5.17.0) no glow stick in the sub's arc: she has her own lights (the bag still snaps one)
       { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach', inter: true },
@@ -447,7 +456,8 @@ e.inSub ? [
         const mg = ctx.createRadialGradient(mx, my, 0, mx, my, ms * 3); mg.addColorStop(0, `rgba(232,226,208,${(al * 0.6).toFixed(3)})`); mg.addColorStop(1, 'rgba(232,226,208,0)'); ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, ms * 3, 0, TAU); ctx.fill(); }
       // the arrow (not for the Log's quiet ring)
       if (this.quietRing) return;
-      const ang = Math.atan2(y - H * 0.45, x - W * 0.5), bob = (0.5 + 0.5 * Math.sin(g.time * 4)) * 9 * u, d = (r > 32 * u ? r + 50 * u + 30 * u + 26 * u : r * 1.55 + 18 * u) + bob, ax = x - Math.cos(ang) * d, ay = y - Math.sin(ang) * d, L = 24 * u;
+      const es = g.earlScr && !this.inCabin ? g.earlScr : null, ox = es ? es[0] * W : W * 0.5, oy = es ? es[1] * H : H * 0.45; /* (6.5.6) on the line from Earl to the button, not from the screen's middle */
+      const ang = Math.atan2(y - oy, x - ox), bob = (0.5 + 0.5 * Math.sin(g.time * 4)) * 9 * u, d = (r > 32 * u ? r + 50 * u + 30 * u + 26 * u : r * 1.55 + 18 * u) + bob, ax = x - Math.cos(ang) * d, ay = y - Math.sin(ang) * d, L = 24 * u;
       ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.lineJoin = 'round';
       const ar = new Path2D(); ar.moveTo(0, 0); ar.lineTo(-L, -L * 0.66); ar.quadraticCurveTo(-L * 0.82, -L * 0.3, -L * 0.7, -L * 0.24); ar.lineTo(-L * 2, -L * 0.2); ar.quadraticCurveTo(-L * 2.12, 0, -L * 2, L * 0.2); ar.lineTo(-L * 0.7, L * 0.24); ar.quadraticCurveTo(-L * 0.82, L * 0.3, -L, L * 0.66); ar.closePath();
       ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6 * u; ctx.shadowOffsetY = 2 * u; ctx.fillStyle = '#2a2014'; ctx.fill(ar); ctx.shadowColor = 'transparent';
@@ -520,8 +530,10 @@ e.inSub ? [
         ctx.strokeStyle = a.lit ? 'rgba(236,224,190,0.85)' : 'rgba(230,222,196,0.22)'; ctx.lineWidth = 1.4 * u; ctx.stroke();
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
       } else if (a.tile) drawTile(ctx, x, y, r, a.icon, down ? 'press' : this.inKill || !a.on ? 'off' : 'on', !!a.badge); // (5.15.7) the menu's square tiles
-      else drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit && !a.inter ? 'lit' : 'on', a.inter ? { ...(a.look || {}), k: 1.15 } : a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint); /* (6.5.1) the interact button: its picture larger, never the lit face (its warm line says it) */
-      if (a.inter) bezel(x, y, r, a.on && a.lit, down);
+      else { if (a.inter && a.on && a.lit && !this.inKill) { const q = 0.5 + 0.5 * Math.sin(g.time * 2.4), R0 = r * 0.92, R3 = r * (1.34 + 0.06 * q); /* (6.5.6) something in reach: a soft warm glow round the button, behind it (the thin line inside its ring read as an outline cut off) */
+        const hg = ctx.createRadialGradient(x, y, R0, x, y, R3); hg.addColorStop(0, `rgba(226,196,146,${(0.34 + 0.16 * q).toFixed(3)})`); hg.addColorStop(1, 'rgba(226,196,146,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, R3, 0, TAU); ctx.fill(); }
+      drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit && !a.inter ? 'lit' : 'on', a.inter ? { ...(a.look || {}), k: a.icon === 'hand' ? 0.92 : 1.15 } /* (6.5.6) the hand smaller: it outsized the others */ : a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint); } /* (6.5.1) the interact button: its picture larger, never the lit face (its glow says it) */
+      if (a.inter) bezel(x, y, r, false, down);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do
         const bx = x + r * 0.74, by = y - r * 0.74, br = Math.max(8 * u, r * 0.4), pq = 1 + 0.08 * Math.sin(g.time * 5);

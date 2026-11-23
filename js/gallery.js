@@ -188,7 +188,10 @@ export class Gallery {
       for (let i = 0; i < 5; i++) { const a = i / 5 * TAU + 0.3 + Math.sin(t * 0.3 + i) * 0.08; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(sx + Math.cos(a) * 9, sy + Math.sin(a) * 3 - 1, sx + Math.cos(a + 0.4) * 16, sy + Math.sin(a + 0.4) * 4); ctx.stroke(); }
       ctx.fillStyle = 'rgba(200,150,120,0.9)'; ctx.beginPath(); ctx.ellipse(sx, sy, 3.5, 1.6, 0, 0, TAU); ctx.fill(); ctx.lineCap = 'butt'; }
     // the tank's own dim lamp, down onto the floor so it can be seen
-    { const lg = ctx.createRadialGradient(X(0.5), base - 10, 4, X(0.5), base - 10, r.w * 0.6); lg.addColorStop(0, 'rgba(150,180,190,0.16)'); lg.addColorStop(1, 'rgba(150,180,190,0)'); ctx.fillStyle = lg; ctx.fillRect(r.x, base - r.h * 0.4, r.w, r.h * 0.4); }
+    // (6.5.6) an oval pool that fades out inside the tank: it was a round glow cut off by a box at 40 % of the height,
+    // a hard line across the whole tank
+    { const ry = r.h * 0.42, rx = r.w * 0.6, k = ry / rx; ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, base - r.y); ctx.clip(); ctx.translate(X(0.5), base - 10); ctx.scale(1, k);
+      const lg = ctx.createRadialGradient(0, 0, 4, 0, 0, rx); lg.addColorStop(0, 'rgba(150,180,190,0.16)'); lg.addColorStop(0.6, 'rgba(150,180,190,0.06)'); lg.addColorStop(1, 'rgba(150,180,190,0)'); ctx.fillStyle = lg; ctx.fillRect(-rx, -rx, rx * 2, rx * 2); ctx.restore(); }
     // marine snow, falling slowly through the whole tank
     ctx.fillStyle = 'rgba(220,226,220,0.35)';
     for (let k = 0; k < 40; k++) { const fx = ((k * 0.618) % 1), q = ((t * 0.012 * (0.6 + (k % 5) * 0.1)) + k * 0.137) % 1; ctx.fillRect(r.x + fx * r.w + Math.sin(t * 0.4 + k) * 4, r.y + q * (r.h - 20), 1.4, 1.4); }

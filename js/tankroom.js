@@ -994,9 +994,9 @@ export class TankRoom {
     const short = s0 && homeOf(s0) > cmax + 1, na = ang(s0 ? s0.press || 0 : outside) + (pumping ? Math.sin(t * 30) * 0.02 : 0);
     ctx.strokeStyle = short ? '#e89a20' : '#a0201a'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + Math.cos(na) * gr * 0.75, gy + Math.sin(na) * gr * 0.75); ctx.stroke();
     if (!mini) {
-      const dw = cap * 0.62, dh = Math.max(12, (HB - HT) * 0.11), dy = HT + (HB - HT) * 0.6;
+      const dw = cap * 0.7, dh = Math.max(15, (HB - HT) * 0.14), dy = HT + (HB - HT) * 0.58; /* (6.5.6) the pressure figure a size larger */
       ctx.fillStyle = '#0a120c'; ctx.fillRect(gx - dw / 2, dy, dw, dh);
-      ctx.fillStyle = short ? '#f0b040' : s0 ? '#9fe08a' : '#3d5a36'; ctx.font = `${Math.round(dh * 0.7)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = short ? '#f0b040' : s0 ? '#9fe08a' : '#3d5a36'; ctx.font = `600 ${Math.round(dh * 0.8)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(s0 ? `${Math.round(s0.press || 0)}m` : '---', gx, dy + dh / 2 + 1);
       ctx.fillStyle = 'rgba(214,210,186,0.5)'; ctx.font = `600 ${Math.round(Math.max(9, dh * 0.62))}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`;
       ctx.fillText(`${inn.length}/${inn.some(tooBig) ? 1 : 3}`, gx, HB - (HB - HT) * 0.1);

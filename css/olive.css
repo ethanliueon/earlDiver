@@ -1558,3 +1558,14 @@ html body #davetalk .dt-acts button:active { transform: translateY(1px); }
 html body #davetalk .dt-box { width: min(820px, 94vw) !important; display: grid; grid-template-columns: 1fr auto; column-gap: 18px; align-items: center; padding: 12px 16px 12px 18px !important; }
 html body #davetalk .dt-line { min-height: 0 !important; }
 html body #davetalk .dt-acts { flex-direction: column; margin-top: 0 !important; gap: 8px !important; }
+
+/* (6.5.6) a full-screen room's close cross and its "?" stand clear of the phone's rounded corners: about 40 pt in from
+   the right and 14 pt down (page pixels here are about 0.56 pt), and the cross a size larger. Nothing important sits
+   in a screen's very corner */
+html body :is(.tr-close, .refit-x):not(#_a):not(#_b):not(#_c):not(#_d) { width: 48px !important; height: 48px !important; top: 26px !important; right: 72px !important; background-size: 26px 26px, auto !important; }
+html body .tr-help-btn:not(#_a):not(#_b):not(#_c) { top: 32px !important; right: 132px !important; }
+html body .tr-help:not(#_a) { top: 84px; right: 72px; }
+
+/* (6.5.6) the tutorial's arrow aimed along the line into the thing (tutspot.js aimArrow), bobbing along that line */
+html body #tut-spot .ts-arrow.aim:not(#_a) { animation: ts-bob-aim 1s ease-in-out infinite; margin: 0 !important; }
+@keyframes ts-bob-aim { 50% { translate: var(--bx, 0) var(--by, 6px); } }

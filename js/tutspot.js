@@ -114,6 +114,22 @@ export class TutSpot {
     this.el.classList.toggle('ts-lightswap', this.hole.classList.contains('light')); this.el.classList.add('ts-swap'); clearTimeout(this.swapT);
     this.swapT = setTimeout(() => this.el.classList.remove('ts-swap'), 260);
   }
+  // (6.5.6) the arrow comes in along the line from where the eye is (the middle of the panel the thing is in, else Earl)
+  // to the thing, just outside it, and bobs along that line: it used to drop straight down onto it from above
+  aimArrow(t, x, y, w, h) {
+    const panel = t && t.closest && t.closest('#journal, #inventory, #workshop, #catalog, #quests, #chart, #settings, #confirm, #tankroom, #gallery, #davetalk, #events, #store, .cx');
+    const P = panel && panel.getBoundingClientRect(), es = window.__earl && window.__earl.g && window.__earl.g.earlScr;
+    let ox = innerWidth / 2, oy = innerHeight / 2;
+    if (P && P.width && P.width < innerWidth * 0.98) { ox = P.left + P.width / 2; oy = P.top + P.height / 2; }
+    else if (P && P.width) { ox = innerWidth / 2; oy = innerHeight / 2; }
+    else if (es) { ox = es[0] * innerWidth; oy = es[1] * innerHeight; }
+    const cx = x + w / 2, cy = y + h / 2; let dx = cx - ox, dy = cy - oy; const L = Math.hypot(dx, dy);
+    if (L < 8) { dx = 0; dy = 1; } else { dx /= L; dy /= L; }
+    const rr = Math.min(w, h) / 2 + 18, ax = cx - dx * rr, ay = cy - dy * rr, deg = Math.atan2(dy, dx) * 180 / Math.PI - 90;
+    this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow down aim');
+    Object.assign(this.arrow.style, { left: ax + 'px', top: ay + 'px', transform: `translate(-50%, -50%) rotate(${deg.toFixed(1)}deg)` });
+    this.arrow.style.setProperty('--bx', (dx * 6).toFixed(1) + 'px'); this.arrow.style.setProperty('--by', (dy * 6).toFixed(1) + 'px');
+  }
   hideParts() { LOCK = null; for (const b of this.blocks) b.style.display = 'none'; this.hole.style.display = 'none'; this.arrow.style.display = 'none'; this.say.style.display = 'none'; this.keyBox.style.display = 'none'; if (this.card) this.card.style.display = 'none'; }
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot, text = null) { this.update0(on, spot, text); if (INPUT.mode === 'touch') this.keyBox.style.display = 'none'; flushStyles(); } // (5.6.7) a phone: the line at the top says it, once
@@ -156,10 +172,7 @@ export class TutSpot {
       // the arrow and the line: above the thing when there is room, otherwise below it
       const touchUI = document.documentElement.classList.contains('touch'), above = !spot.below && y > 100, cx = touchUI ? Math.max(16, Math.min(vw - 16, x + w / 2)) : Math.max(110, Math.min(vw - 110, x + w / 2));
       // (5.7.5) the arrow back on a phone too, now placed over the thing itself (it was pushed 110 px in, onto the words)
-      this.arrow.style.display = 'block';
-      setClass(this.arrow, 'ts-arrow ' + (above ? 'down' : 'up'));
-      this.arrow.style.left = cx + 'px';
-      this.arrow.style.top = (above ? y - 30 : y + h + 8) + 'px';
+      void above; void cx; this.aimArrow(t, x, y, w, h);
       if (spot.card) { // the card beside the lit thing (below it when there is room, else above), the arrow hidden
         this.arrow.style.display = 'none'; this.cardId = spot.card.id;
         const p = this.card.querySelector('p'); if (p.textContent !== spot.card.text) p.textContent = spot.card.text;
@@ -201,8 +214,7 @@ export class TutSpot {
           const x = h.x - PAD, y = h.y - PAD, w = h.w + PAD * 2, hh = h.h + PAD * 2;
           Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: hh + 'px' });
           if (!this.hole.classList.contains('light')) this.hole.classList.add('light');
-          const above = y > 100; this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow ' + (above ? 'down' : 'up'));
-          this.arrow.style.left = Math.max(40, Math.min(innerWidth - 40, x + w / 2)) + 'px'; this.arrow.style.top = (above ? y - 30 : y + hh + 8) + 'px';
+          this.aimArrow(null, x, y, w, hh);
         }
         return;
       }

@@ -85,6 +85,11 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   centre only the picture, name and rarity. Layers that scroll with the camera move by its motion, never by its
   place times the zoom. Only the catch that tipped the bag over is marked.
 
+- **Decided in 6.5.6**: nothing important sits in a screen's very corner (the phone's rounded corners cut it off): a
+  full-screen room's close cross is about 40 pt in and 14 pt down. Tutorial arrows and chevrons start at Earl (or, in a
+  panel, come in from the panel's middle) and point along the line to the thing. Nothing is drawn at a lower rate behind
+  any panel; paused, the still world is drawn once and held.
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build

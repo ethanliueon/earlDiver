@@ -306,7 +306,7 @@ export class Renderer {
     // the foreground (they are farther off), so the water is never one flat colour
     if (topY < H) {
       ctx.save(); ctx.beginPath(); ctx.rect(0, Math.max(0, topY + ppm), W, H); ctx.clip();
-      { const o = this.drift('murk', cam, ppm, 0.55); this.texture(ctx, 'murk', 70, 0.28 + 0.12 * smoothstep(20, 400, cam.y), 'soft-light', W / 2 - o.x + t * ppm * 0.25, H / 2 - o.y); } // (6.5.1) moved by how far the camera moved, not its place times the zoom
+      { const o = this.drift('murk', cam, ppm, 0.55); this.texture(ctx, 'murk', 70, 0.28 + 0.12 * smoothstep(20, 400, cam.y), 'soft-light', W / 2 - o.x + this.flow('murk', t, ppm) * 0.25, H / 2 - o.y); } // (6.5.1) moved by how far the camera moved, not its place times the zoom
       ctx.restore();
     }
     // distant parallax silhouettes (slope / cliffs far behind)
@@ -1194,13 +1194,18 @@ export class Renderer {
       const want = needAboard && g.mode === 'play' && !g.aboard && !e.inSub && !g.kill && e.y < 3 && e.y > -1 && Math.abs(dx) > 1.6 && Math.abs(dx) < 26 && !(g.helm);
       this.wayK = clamp((this.wayK || 0) + (want ? 1 : -1) * (g.dtLast || 1 / 60) * 2.5, 0, 1);
       if (this.wayK > 0.01) {
-        const dir = Math.sign(dx), n = Math.min(7, Math.max(2, Math.floor(Math.abs(dx) / 1.4))), step = Math.abs(dx) / (n + 1), ph = (g.time * 0.9) % 1, yW = 0.35;
+        // (6.5.6) from Earl himself to the ladder's foot, each chevron turned along that line: they ran along the waterline
+        // beside him, so they seemed to start somewhere to his side
+        const lyW = 0.35, dy = lyW - e.y, dist = Math.hypot(dx, dy), n = Math.min(7, Math.max(2, Math.floor(dist / 1.4))), step = dist / (n + 1), ph = (g.time * 0.9) % 1;
+        const ux = dx / dist, uy = dy / dist, rot = Math.atan2(Sy(lyW) - Sy(e.y), S(lxW) - S(e.x));
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         for (let i = 0; i < n; i++) {
-          const f = (i + ph) / n, xW = e.x + dir * step * (i + ph + 0.5), sx = S(xW), sy = Sy(yW) - Math.sin(g.time * 1.3 + xW) * ppm * 0.05;
+          const f = (i + ph) / n, m = step * (i + ph + 0.5), xW = e.x + ux * m, yW = e.y + uy * m, sx = S(xW), sy = Sy(yW) - Math.sin(g.time * 1.3 + xW) * ppm * 0.05;
           const a = this.wayK * Math.sin(Math.PI * clamp(f, 0, 1)) * 0.85, c = ppm * 0.22;
+          ctx.save(); ctx.translate(sx, sy); ctx.rotate(rot);
           for (const [w, col] of [[ppm * 0.13, `rgba(14,18,10,${(a * 0.6).toFixed(3)})`], [ppm * 0.06, `rgba(240,228,196,${a.toFixed(3)})`]]) {
-            ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.5, w); ctx.beginPath(); ctx.moveTo(sx - dir * c, sy - c); ctx.lineTo(sx, sy); ctx.lineTo(sx - dir * c, sy + c); ctx.stroke(); }
+            ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.5, w); ctx.beginPath(); ctx.moveTo(-c, -c); ctx.lineTo(0, 0); ctx.lineTo(-c, c); ctx.stroke(); }
+          ctx.restore();
         }
         ctx.restore();
       }
@@ -1802,7 +1807,7 @@ export class Renderer {
         this.dapT = f.createPattern(c, 'repeat');
       }
       const sc = ppm * 2.6 * 9 / 256;
-      { const o = this.drift('dapple', cam, ppm, 1, 0.2); this.dapT.setTransform(new DOMMatrix([sc, 0, 0, sc, (W / 2 - o.x) % (256 * sc) + t * ppm * 0.4, -o.y])); } // (6.5.1)
+      { const o = this.drift('dapple', cam, ppm, 1, 0.2); this.dapT.setTransform(new DOMMatrix([sc, 0, 0, sc, (W / 2 - o.x) % (256 * sc) + this.flow('dapple', t, ppm) * 0.4, -o.y])); } // (6.5.1)
       const a = 0.16 * day;
       // fades out with depth: full at the surface, gone by 35 m
       const fg = Math.max(0, 1 - Math.max(0, dTop) / 35);
@@ -2778,6 +2783,8 @@ export class Renderer {
   // as it does on deep footage; it stops at the seabed. A few hundred small fills a frame: no full-screen layers
   // (6.5.1) a layer's offset on screen, grown each frame by how far the camera moved at this frame's scale. A layer
   // placed at (the camera's place in the sea x the scale) jumped across the screen at the smallest zoom change
+  // (6.5.6) a steady flow (murk, dapple) as distance in pixels grown each frame at that frame's scale, never time x scale
+  flow(key, t, ppm) { const F = this.flows || (this.flows = {}), f = F[key] || (F[key] = { t, v: 0 }); f.v += clamp(t - f.t, 0, 0.1) * ppm; f.t = t; return f.v; }
   drift(key, cam, ppm, px, py = px) {
     const D = this.drifts || (this.drifts = {}), d = D[key] || (D[key] = { x: cam.x * ppm * px, y: cam.y * ppm * py, cx: cam.x, cy: cam.y });
     const dx = cam.x - d.cx, dy = cam.y - d.cy; d.cx = cam.x; d.cy = cam.y;
@@ -2805,10 +2812,13 @@ export class Renderer {
       const st = this.snowOff || (this.snowOff = this.snowL.map(() => ({ x: 0, y: 0 })));
       if (li === 0) { const pc = this.snowCam; this.snowCamD = pc ? [cam.x - pc[0], cam.y - pc[1]] : [0, 0]; if (Math.abs(this.snowCamD[0]) > 40 || Math.abs(this.snowCamD[1]) > 40) this.snowCamD = [0, 0]; this.snowCam = [cam.x, cam.y]; }
       st[li].x += this.snowCamD[0] * ppm * L[0].par; st[li].y += this.snowCamD[1] * ppm * L[0].par;
-      const ox = st[li].x, oy = st[li].y;
+      // (6.5.6) the fall too: it was the game's whole time x the scale, so when the zoom eased (getting in or out of the
+      // sub) an hour of falling was rescaled at once and every flake swept across the screen for seconds
+      if (li === 0) { const pt = this.snowT == null ? t : this.snowT, dt = clamp(t - pt, 0, 0.1); this.snowT = t; this.snowFall = (this.snowFall || 0) + dt * ppm; }
+      const ox = st[li].x, oy = st[li].y, fall = this.snowFall;
       for (let i = 0; i < n; i++) { const f = L[i];
         let x = (f.u * TW - ox + Math.sin(t * 0.4 + f.ph) * f.sway * ppm) % TW; if (x < 0) x += TW; x -= (TW - W) / 2;
-        let y = (f.v * TH - oy + t * f.f * ppm) % TH; if (y < 0) y += TH; y -= (TH - H) / 2;
+        let y = (f.v * TH - oy + fall * f.f) % TH; if (y < 0) y += TH; y -= (TH - H) / 2;
         if (y < surf || x < -4 || x > W + 4) continue;
         const fy = floorY[clamp(Math.round(x / step), 0, cols)]; if (y > fy) continue;
         const s2 = f.s * sz; ctx.globalAlpha = f.a;

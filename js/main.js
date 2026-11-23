@@ -223,8 +223,12 @@ function newGame(mode) {
 
 let g = newGame('menu');
 // the title screen's music starts with the first key or click (browsers keep pages silent until then)
-const wakeAudio = () => { audio.init(); audio.resume(); audio.playMusic(); window.removeEventListener('pointerdown', wakeAudio, true); window.removeEventListener('keydown', wakeAudio, true); };
-window.addEventListener('pointerdown', wakeAudio, true); window.addEventListener('keydown', wakeAudio, true);
+// (6.5.6) iOS only lets sound start from a touch's end or a click, not from its start (pointerdown), so the first
+// try could fail and the listener was gone: no sound all game. Now it listens on every kind of tap and lets go only
+// once the sound is really running
+const WAKE_EV = ['pointerdown', 'touchend', 'click', 'keydown'];
+const wakeAudio = () => { audio.init(); audio.resume(); audio.playMusic(); if (audio.ac && audio.ac.state === 'running') for (const k of WAKE_EV) window.removeEventListener(k, wakeAudio, true); };
+for (const k of WAKE_EV) window.addEventListener(k, wakeAudio, true);
 // the slot a fresh "Dive" goes into when none was chosen: the first empty one, else the last played
 function firstFreeSlot() { for (let n = 1; n <= SLOTS; n++) if (readSlot(n).state === 'empty') return n; return lastSlot() || 1; }
 const ui = new UI({
@@ -1071,7 +1075,7 @@ function tutorFish(dir) {
   return tf;
 }
 function tutor() {
-  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } // (6.5.0) the Log's step, for the way-aboard chevrons if (ui.cabin) ui.cabin.tutMark = null;
+  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
   g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null;
@@ -1339,7 +1343,7 @@ hudCanvas.addEventListener('touchend', () => {
 // (5.1) the HUD button under the pointer, if any
 // (5.17.0) the buttons that do nothing special make the one plain click when pressed (the light, the hand, leaving the
 // sub, the menu's tiles, the swap); a greyed one a softer click with its reason. The net, the glow stick and the skill have their own
-const PLAIN_CLICK = new Set(['l', 'f', 'u', 'leavesub', 'outdeck', 'c', 't', 'b', 'journal', 'settings', 'swap', 'menu', 'r', 'n']);
+const PLAIN_CLICK = new Set(['l', 'f', 'g', 'v', 'u', 'leavesub', 'outdeck', 'c', 't', 'b', 'journal', 'settings', 'swap', 'menu', 'r', 'n']);
 function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return hud.touch && !(ui.cabinOpen && ui.cabinOpen()) ? tapRectAt(x, y) : null; } // (5.6.8) a thing to tap is pressed as a button: a tap does it, a hold holds it (prying, cutting a net free)
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 hudCanvas.addEventListener('wheel', (ev) => {
@@ -2886,7 +2890,6 @@ const smooth01 = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2
 // (5.4) a phone's frame budget: never more than 60 frames a second (a 90 or 120 Hz screen otherwise doubles the work and
 // the heat), 30 with "Smoother on slow devices" on and on the title; the sea behind a panel or the pause menu is redrawn
 // ten times a second (the game itself keeps its pace)
-let seaDrawnAt = 0, hudDrawnAt = 0;
 // (5.4) and on its own: a phone whose frames take longer than ~14 ms of work goes to an even 30 (steadier than a
 // juddering 40-50, and cooler); back to 60 once the work has stayed under 9 ms for 8 s
 let workEma = 8, slow30 = false, quickT = 0, overT = 0;
@@ -2952,8 +2955,13 @@ function frame(now) {
     || (hud.touch && innerHeight > innerWidth); // (5.4) a phone held upright: the turn-your-phone card covers it all
   // (6.5.0) only the pause menu holds the world still, so only there is the sea drawn sparingly: behind any other panel
   // the world goes on, and drawing it ten times a second made the fish, the radar and the water stutter
-  const behind = hud.touch && g.paused && g.mode === 'play';
-  if (!covered && (!behind || now - seaDrawnAt > 100)) { renderer.render(g); seaDrawnAt = now; }
+  // (6.5.6) and not there either: the pause menu and the refit room showed the sea at ten frames a second. Paused, the
+  // world is still: it is drawn at the full rate while the camera settles (half a second), then simply held, as a
+  // still picture costs nothing to show (and keeps the phone cool while a menu is up)
+  if (g.paused && g.mode === 'play') g.pausedFor = (g.pausedFor || 0) + realDt; else g.pausedFor = 0;
+  { const sz = innerWidth + 'x' + innerHeight; if (sz !== g.heldSize) { g.heldSize = sz; g.pausedFor = 0; } } // a turn or resize clears the canvas: drawn again
+  const behind = g.pausedFor > 0.5 && !g.legend && !g.kill;
+  if (!covered && !behind) renderer.render(g);
   // spare time: prepare creature animation frames for what lies ahead (more while on the menu)
   if (g.warmUntil) { // behind the loading card: build the sprites on screen at full speed, then lift it
     const done = renderer.warmSprites(g, 60, true);
@@ -3002,7 +3010,7 @@ function frame(now) {
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
-  if (!(hud.touch && innerHeight > innerWidth) && (!behind || now - hudDrawnAt > 100)) { hud.draw(g, hudDt); hudDt = 0; hudDrawnAt = now; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
+  if (!(hud.touch && innerHeight > innerWidth) && !behind) { hud.draw(g, hudDt); hudDt = 0; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
   g.realDt = dt; airOver(g); if (g.rebirthT > 0) g.rebirthT = Math.max(0, g.rebirthT - dt); // (5.16.0) Rebirth's grace
