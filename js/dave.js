@@ -14,7 +14,8 @@ export const DAVE_RATE = 1.25; // what he pays, against the Margaret's price
 // (7.1.8) his first hello in two parts, each shown on its own (a '|' between them)
 const FIRST = "Well, would you look at that. Nobody comes down this far.|I'm Dave. This is my place, and that's my shop. Have a look, mind the drips.";
 // (6.5.4) a later visit: a short word first, in the box at his door
-export const HELLO = ['Back again?', 'Mind the drips.', 'Still breathing, I see.', "Shop's open. Always is.", 'You again. Good.'];
+// (7.1.9) every later visit, one short line, picked at random; Shop or Not now
+export const HELLO = ["Oh, it's you again. Come to look at the shop?", "Still breathing. Good. Shop's open.", "Back again? Have a look, I've got new junk.", "You again. Mind the drips, shop's this way."];
 const LINES = [
   'Mind the hatch, it sticks when the cold gets into it.',
   "Coffee's terrible. Pressure's fine, though.",
@@ -50,7 +51,7 @@ export class DaveShop {
     });
   }
   // (6.5.4) what he says at his door: the first time his hello, after that a short word (the box, ui.daveTalk)
-  greeting() { const P = this.h.getProfile(), first = !!P && !P.daveMet; if (P && first) { P.daveMet = true; this.h.save && this.h.save(); } return first ? FIRST : HELLO[Math.floor(Math.random() * HELLO.length)]; } // met once, whether he shops or leaves
+  greeting() { const P = this.h.getProfile(), first = !!P && !P.daveMet; if (P && first) { P.daveMet = true; this.h.save && this.h.save(); } return first ? FIRST + '#first' : HELLO[Math.floor(Math.random() * HELLO.length)]; } // met once, whether he shops or leaves
   // he says a line as you come in: the first time, his hello; after that, one of his usual
   open() {
     const P = this.h.getProfile();

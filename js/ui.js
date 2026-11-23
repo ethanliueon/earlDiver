@@ -1642,19 +1642,23 @@ export class UI {
   // hello; after that a short word. Earl never speaks: his side is only the choice. Shop opens Dave's site
   daveTalk() {
     let el = document.getElementById('davetalk');
-    if (!el) { el = document.createElement('section'); el.id = 'davetalk'; el.hidden = true; el.innerHTML = '<div class="dt-box"><b class="dt-name">Dave</b><p class="dt-line"></p><div class="dt-acts"><button class="dt-shop">Shop</button><button class="dt-leave">Leave</button></div></div>'; document.body.appendChild(el);
+    if (!el) { el = document.createElement('section'); el.id = 'davetalk'; el.hidden = true; el.innerHTML = '<div class="dt-box"><b class="dt-name">Dave</b><p class="dt-line"></p><div class="dt-acts"><button class="dt-cont">Continue ›</button><button class="dt-shop">Shop</button><button class="dt-leave">Not now</button></div></div>'; document.body.appendChild(el);
       { const bx = el.querySelector('.dt-box'), im = new Image(); im.onload = () => { const P = daveTalkPlate(1640, 700, im); bx.classList.add('painted'); bx.style.setProperty('--dt-plate', `url(${P.url})`); bx.style.setProperty('--dt-left', (P.textLeft * 100).toFixed(1) + '%'); bx.style.setProperty('--dt-top', (P.top * 100).toFixed(1) + '%'); }; im.src = davePortrait(); } // (7.0.10) the old Dave, baked into the card with the box
-      el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); this.toggleDave(true); });
+      el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); clearTimeout(this.dtN); this.toggleDave(true); });
       el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); clearTimeout(this.dtN); });
       el.addEventListener('click', (ev) => { if (ev.target === el) { el.hidden = true; clearInterval(this.dtT); } }); }
-    // (7.1.8) a long hello comes in parts: each typed out, held, then faded into the next; a tap finishes the typing, or
-    // goes on to the next part
-    const parts = this.dave.greeting().split('|'), p = el.querySelector('.dt-line'); el.hidden = false; p.classList.remove('long');
+    // (7.1.9) the first meeting in two parts: the first with Continue (or on by itself after a few seconds), the last
+    // with Shop; every later visit one short line with Shop and Not now. Shop works at once, even mid-typing
+    let g0 = this.dave.greeting(); const first = g0.endsWith('#first'); if (first) g0 = g0.slice(0, -6);
+    const parts = g0.split('|'), p = el.querySelector('.dt-line'); el.hidden = false; p.classList.remove('long');
+    const cont = el.querySelector('.dt-cont'), shop = el.querySelector('.dt-shop'), leave = el.querySelector('.dt-leave');
     let k = 0, i = 0, line = parts[0]; clearInterval(this.dtT); clearTimeout(this.dtN);
-    const type = () => { clearInterval(this.dtT); i = 0; p.textContent = ''; p.style.opacity = 1; this.dtT = setInterval(() => { i += 2; p.textContent = line.slice(0, i); if (i >= line.length) { clearInterval(this.dtT); if (k < parts.length - 1) this.dtN = setTimeout(next, 2200); } }, 28); };
+    const buttons = () => { const last = k >= parts.length - 1; cont.hidden = last; shop.hidden = !last; leave.hidden = first || !last; };
+    const type = () => { clearInterval(this.dtT); i = 0; p.textContent = ''; p.style.opacity = 1; buttons(); this.dtT = setInterval(() => { i += 2; p.textContent = line.slice(0, i); if (i >= line.length) { clearInterval(this.dtT); if (k < parts.length - 1) this.dtN = setTimeout(next, 4000); } }, 28); };
     const next = () => { clearTimeout(this.dtN); if (k >= parts.length - 1) return; k++; line = parts[k]; p.style.transition = 'opacity 0.25s'; p.style.opacity = 0; setTimeout(type, 260); };
+    this.dtNext = () => { if (p.textContent.length < line.length) { clearInterval(this.dtT); p.textContent = line; if (k < parts.length - 1) this.dtN = setTimeout(next, 4000); } else next(); };
     type();
-    el.querySelector('.dt-box').onclick = (ev) => { if (ev.target.closest('button')) return; if (p.textContent.length < line.length) { clearInterval(this.dtT); p.textContent = line; if (k < parts.length - 1) this.dtN = setTimeout(next, 2200); } else next(); };
+    el.querySelector('.dt-box').onclick = (ev) => { if (ev.target.closest('button')) return; this.dtNext(); };
   }
   daveTalkOpen() { const el = document.getElementById('davetalk'); return !!el && !el.hidden; }
   toggleDave(force) {

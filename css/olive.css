@@ -1838,3 +1838,8 @@ html body #davetalk .dt-box.painted .dt-line.long:not(#_a):not(#_b):not(#_c):not
 #creator .cr-skins.cr-sm button:not(#_a) { width: 26px; height: 26px; }
 #creator .cr-skins:not(.cr-sm) button:not(#_a) { width: 30px; height: 30px; }
 #creator .cr-side .cr-go:not(#_a) { min-height: 46px; margin-top: 4px; border: 10px solid transparent; border-image: var(--o-btn1, var(--o-btn)) 28 fill / 10px stretch; background: none; font: 700 22px/1 "Barlow Semi Condensed", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: #2a241a; }
+/* (7.1.9) his words fill the box beside him, the name and line together in the middle of its height; one button
+   at a time (Continue, then Shop), or Shop and Not now on a later visit */
+html body #davetalk .dt-box.painted .dt-name:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f):not(#_g) { top: calc(var(--dt-top) + (100% - var(--dt-top)) * 0.5 - 2.1em) !important; }
+html body #davetalk .dt-box.painted .dt-line:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e):not(#_f) { top: calc(var(--dt-top) + (100% - var(--dt-top)) * 0.5 - 0.95em) !important; right: 21% !important; font-size: clamp(13px, 3.9vh, 16px) !important; line-height: 1.3 !important; }
+html body #davetalk .dt-acts button[hidden] { display: none !important; }
