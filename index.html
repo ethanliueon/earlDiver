@@ -70,8 +70,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=7.0.8">
-  <link rel="stylesheet" href="css/olive.css?v=7.0.8">
+  <link rel="stylesheet" href="css/style.css?v=7.0.9">
+  <link rel="stylesheet" href="css/olive.css?v=7.0.9">
   <style>
     /* (4.17.2) the loading screen, poster-style: the painting left alone (only a slow push-in), and over it, at the
        lower left, flat type in the sunset's own orange and a warm off-white: a stamped helmet mark, the title, a
@@ -176,13 +176,17 @@
       /* (7.0.5) as a mobile game loads: the painted name (title_art.js, baked) at the top over the sky, its subtitle
        under it; at the foot, the step above a bronze groove with riveted end caps and an aged bone fill (the hatchetfish
        riding its front), the depth on a small round bronze gauge beside it; the tip under the bar */
-    html body .ld .ld-title { position: absolute !important; left: 50% !important; right: auto !important; top: max(10vh, 26px) !important; bottom: auto !important; transform: translateX(-50%); display: flex !important; flex-direction: column; align-items: center; gap: 0 !important; }
+    html body .ld .ld-title { position: absolute !important; left: 50% !important; right: auto !important; top: max(17vh, 40px) !important; bottom: auto !important; transform: translateX(-50%); display: flex !important; flex-direction: column; align-items: center; gap: 0 !important; }
     html body .ld .ld-title .ld-name { display: block; width: min(86vw, 900px); height: auto; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.55)); }
-    html body .ld .ld-load { left: 50% !important; right: auto !important; bottom: max(12vh, 50px) !important; transform: translateX(-50%) !important; width: min(76vw, 760px) !important; display: block !important; }
-    html body .ld .ld-step { position: static !important; display: block; width: auto !important; height: auto !important; clip: auto !important; overflow: visible !important; text-align: center; font: 600 13px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.3em !important; text-transform: uppercase; color: rgba(232,226,206,0.8) !important; margin: 0 0 4px; }
-    html body .ld .ld-bar { position: relative !important; width: 100% !important; height: auto !important; aspect-ratio: 1600 / 160; margin: 0 !important; background: url("assets/loading/ld_bar.png") center / 100% 100% no-repeat !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; }
-    html body .ld .ld-fill { position: absolute !important; left: 3.4% !important; top: 39.5% !important; bottom: auto !important; height: 21% !important; max-width: 77.6% !important; border-radius: 99px !important; background: url("assets/loading/ld_fill.png") left center / 1300px 100% no-repeat !important; box-shadow: 0 0 8px rgba(232,220,180,0.15) !important; }
-    html body .ld .ld-pct { position: absolute !important; right: 3.4% !important; top: 30% !important; width: 10.6% !important; height: 40% !important; min-width: 0 !important; display: grid !important; place-items: center; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; font: 600 clamp(11px, 3.4vh, 16px) "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.02em !important; color: #dcd2b0 !important; text-shadow: 0 0 6px rgba(220,210,170,0.25); }
+    /* (7.0.9) the bar is a diver's line in the water: a twisted rope fading into the dark at both ends, lit warm along
+       its length as the game loads (as if the diver's lamp ran along it), the hatchetfish at the lit front, the depth
+       written after it in the water's own dim cream, no box */
+    html body .ld .ld-load { left: 50% !important; right: auto !important; bottom: max(13vh, 52px) !important; transform: translateX(-50%) !important; width: min(80vw, 820px) !important; display: block !important; }
+    html body .ld .ld-step { position: static !important; display: block; width: auto !important; height: auto !important; clip: auto !important; overflow: visible !important; text-align: center; font: 600 12px "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.3em !important; text-transform: uppercase; color: rgba(200,206,190,0.55) !important; margin: 0 0 6px; }
+    html body .ld .ld-bar { position: relative !important; width: 100% !important; height: 22px !important; aspect-ratio: auto; margin: 0 !important; background: url("assets/loading/ld_bar.png") left center / auto 100% repeat-x !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; opacity: 0.85; -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+    html body .ld .ld-fill { position: absolute !important; left: 0 !important; top: 0 !important; bottom: auto !important; height: 100% !important; max-width: 100% !important; border-radius: 0 !important; background: url("assets/loading/ld_fill.png") left center / auto 100% repeat-x !important; box-shadow: none !important; opacity: 0.8; -webkit-mask-image: linear-gradient(90deg, #000 80%, transparent); mask-image: linear-gradient(90deg, #000 80%, transparent); filter: drop-shadow(0 0 6px rgba(230,200,140,0.25)); }
+    html body .ld .ld-load::after { content: none; }
+    html body .ld .ld-pct { position: absolute !important; left: 100% !important; right: auto !important; top: auto !important; bottom: 0 !important; line-height: 22px !important; transform: translateX(12px); width: auto !important; height: auto !important; min-width: 0 !important; display: block !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; font: 600 clamp(12px, 3.4vh, 15px) "Barlow Semi Condensed", sans-serif !important; letter-spacing: 0.06em !important; color: rgba(214,212,190,0.7) !important; text-shadow: 0 1px 4px rgba(0,0,0,0.6); white-space: nowrap; }
     html body .ld .ld-tip { left: 50% !important; right: auto !important; transform: translateX(-50%) !important; bottom: max(4vh, 12px) !important; max-width: min(70vw, 640px) !important; text-align: center !important; font: 500 14px "Barlow Semi Condensed", sans-serif !important; font-style: normal !important; color: rgba(232,226,206,0.7) !important; }
     html body .ld .ld-shade { background: linear-gradient(0deg, rgba(3,8,11,0.82) 0%, rgba(3,8,11,0.3) 30%, rgba(3,8,11,0) 50%), linear-gradient(180deg, rgba(3,8,11,0.35) 0%, rgba(3,8,11,0) 28%) !important; }
 </style>
@@ -192,7 +196,7 @@
   <div id="boot" class="ld" aria-label="Loading">
     <div class="ld-art"><div class="ld-stage"><picture><source media="(pointer: coarse) and (hover: none)" srcset="assets/loading/key-art-m.jpg"><img src="assets/loading/key-art.jpg" alt=""></picture><i class="ld-rays"></i><div class="ld-mon"><picture><source media="(pointer: coarse) and (hover: none)" srcset="assets/loading/ka-monster-m.png"><img src="assets/loading/ka-monster.png" alt=""></picture><i class="ld-eye"></i></div><i class="ld-lamp"></i><i class="ld-bub" style="--d:0s;--x:0px"></i><i class="ld-bub" style="--d:2.3s;--x:-3px"></i><i class="ld-bub" style="--d:4.1s;--x:2px"></i><i class="ld-snowbox"><i class="ld-snow"></i><i class="ld-snow ld-snow2"></i></i></div></div><div class="ld-shade"></div>
     <h1 class="ld-title"><img class="ld-name" src="assets/loading/title.png" alt="Hatchetfish"><span>Deep Sea Survival</span></h1>
-    <div class="ld-load"><span class="ld-step" aria-live="polite">Loading</span><div class="ld-bar"><i class="ld-fill"></i><span class="ld-pct">0 m</span></div></div>
+    <div class="ld-load"><span class="ld-step" aria-live="polite">Loading</span><div class="ld-bar"><i class="ld-fill"></i></div><span class="ld-pct">0 m</span></div>
     <div class="ld-tip"></div>
   </div>
   <script>
@@ -406,90 +410,90 @@
   <!-- stamp:start (tools/stamp.py) -->
   <script type="importmap">
   { "imports": {
-    "./js/abilities.js": "./js/abilities.js?v=7.0.8",
-    "./js/alarm.js": "./js/alarm.js?v=7.0.8",
-    "./js/aquarium.js": "./js/aquarium.js?v=7.0.8",
-    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=7.0.8",
-    "./js/arm.js": "./js/arm.js?v=7.0.8",
-    "./js/audio.js": "./js/audio.js?v=7.0.8",
-    "./js/autopilot.js": "./js/autopilot.js?v=7.0.8",
-    "./js/buoy_draw.js": "./js/buoy_draw.js?v=7.0.8",
-    "./js/cabin.js": "./js/cabin.js?v=7.0.8",
-    "./js/capture.js": "./js/capture.js?v=7.0.8",
-    "./js/catalog.js": "./js/catalog.js?v=7.0.8",
-    "./js/chart.js": "./js/chart.js?v=7.0.8",
-    "./js/chest_art.js": "./js/chest_art.js?v=7.0.8",
-    "./js/chests.js": "./js/chests.js?v=7.0.8",
-    "./js/clouds.js": "./js/clouds.js?v=7.0.8",
-    "./js/coin_art.js": "./js/coin_art.js?v=7.0.8",
-    "./js/coins.js": "./js/coins.js?v=7.0.8",
-    "./js/contracts.js": "./js/contracts.js?v=7.0.8",
-    "./js/creatures_draw.js": "./js/creatures_draw.js?v=7.0.8",
-    "./js/dave.js": "./js/dave.js?v=7.0.8",
-    "./js/dave_art.js": "./js/dave_art.js?v=7.0.8",
-    "./js/designs.js": "./js/designs.js?v=7.0.8",
-    "./js/earl_draw.js": "./js/earl_draw.js?v=7.0.8",
-    "./js/economy.js": "./js/economy.js?v=7.0.8",
-    "./js/entity.js": "./js/entity.js?v=7.0.8",
-    "./js/face_draw.js": "./js/face_draw.js?v=7.0.8",
-    "./js/fatfinger.js": "./js/fatfinger.js?v=7.0.8",
-    "./js/fauna.js": "./js/fauna.js?v=7.0.8",
-    "./js/fittings.js": "./js/fittings.js?v=7.0.8",
-    "./js/gallery.js": "./js/gallery.js?v=7.0.8",
-    "./js/gauge_art.js": "./js/gauge_art.js?v=7.0.8",
-    "./js/gear_art.js": "./js/gear_art.js?v=7.0.8",
-    "./js/glyphs.js": "./js/glyphs.js?v=7.0.8",
-    "./js/hud.js": "./js/hud.js?v=7.0.8",
-    "./js/hunters.js": "./js/hunters.js?v=7.0.8",
-    "./js/item_art.js": "./js/item_art.js?v=7.0.8",
-    "./js/item_data.js": "./js/item_data.js?v=7.0.8",
-    "./js/itemcard.js": "./js/itemcard.js?v=7.0.8",
-    "./js/items.js": "./js/items.js?v=7.0.8",
-    "./js/journal_tank.js": "./js/journal_tank.js?v=7.0.8",
-    "./js/kit_art.js": "./js/kit_art.js?v=7.0.8",
-    "./js/legendfx.js": "./js/legendfx.js?v=7.0.8",
-    "./js/main.js": "./js/main.js?v=7.0.8",
-    "./js/messages.js": "./js/messages.js?v=7.0.8",
-    "./js/monster_draw.js": "./js/monster_draw.js?v=7.0.8",
-    "./js/oldone.js": "./js/oldone.js?v=7.0.8",
-    "./js/pets.js": "./js/pets.js?v=7.0.8",
-    "./js/player.js": "./js/player.js?v=7.0.8",
-    "./js/purchases.js": "./js/purchases.js?v=7.0.8",
-    "./js/quests.js": "./js/quests.js?v=7.0.8",
-    "./js/render.js": "./js/render.js?v=7.0.8",
-    "./js/reveal.js": "./js/reveal.js?v=7.0.8",
-    "./js/scenery_draw.js": "./js/scenery_draw.js?v=7.0.8",
-    "./js/scrolls.js": "./js/scrolls.js?v=7.0.8",
-    "./js/settings.js": "./js/settings.js?v=7.0.8",
-    "./js/showcase.js": "./js/showcase.js?v=7.0.8",
-    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=7.0.8",
-    "./js/species.js": "./js/species.js?v=7.0.8",
-    "./js/species_looks.js": "./js/species_looks.js?v=7.0.8",
-    "./js/specimens.js": "./js/specimens.js?v=7.0.8",
-    "./js/station_draw.js": "./js/station_draw.js?v=7.0.8",
-    "./js/store.js": "./js/store.js?v=7.0.8",
-    "./js/suit_art.js": "./js/suit_art.js?v=7.0.8",
-    "./js/survey.js": "./js/survey.js?v=7.0.8",
-    "./js/tankroom.js": "./js/tankroom.js?v=7.0.8",
-    "./js/textures.js": "./js/textures.js?v=7.0.8",
-    "./js/title_art.js": "./js/title_art.js?v=7.0.8",
-    "./js/tokens.js": "./js/tokens.js?v=7.0.8",
-    "./js/tools_draw.js": "./js/tools_draw.js?v=7.0.8",
-    "./js/touch.js": "./js/touch.js?v=7.0.8",
-    "./js/touchtext.js": "./js/touchtext.js?v=7.0.8",
-    "./js/trail.js": "./js/trail.js?v=7.0.8",
-    "./js/traps.js": "./js/traps.js?v=7.0.8",
-    "./js/tutspot.js": "./js/tutspot.js?v=7.0.8",
-    "./js/ui.js": "./js/ui.js?v=7.0.8",
-    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=7.0.8",
-    "./js/units.js": "./js/units.js?v=7.0.8",
-    "./js/util.js": "./js/util.js?v=7.0.8",
-    "./js/variants.js": "./js/variants.js?v=7.0.8",
-    "./js/version.js": "./js/version.js?v=7.0.8",
-    "./js/world.js": "./js/world.js?v=7.0.8",
-    "./data/species_about.js": "./data/species_about.js?v=7.0.8",
-    "./data/species_data.js": "./data/species_data.js?v=7.0.8",
-    "./data/species_more.js": "./data/species_more.js?v=7.0.8"
+    "./js/abilities.js": "./js/abilities.js?v=7.0.9",
+    "./js/alarm.js": "./js/alarm.js?v=7.0.9",
+    "./js/aquarium.js": "./js/aquarium.js?v=7.0.9",
+    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=7.0.9",
+    "./js/arm.js": "./js/arm.js?v=7.0.9",
+    "./js/audio.js": "./js/audio.js?v=7.0.9",
+    "./js/autopilot.js": "./js/autopilot.js?v=7.0.9",
+    "./js/buoy_draw.js": "./js/buoy_draw.js?v=7.0.9",
+    "./js/cabin.js": "./js/cabin.js?v=7.0.9",
+    "./js/capture.js": "./js/capture.js?v=7.0.9",
+    "./js/catalog.js": "./js/catalog.js?v=7.0.9",
+    "./js/chart.js": "./js/chart.js?v=7.0.9",
+    "./js/chest_art.js": "./js/chest_art.js?v=7.0.9",
+    "./js/chests.js": "./js/chests.js?v=7.0.9",
+    "./js/clouds.js": "./js/clouds.js?v=7.0.9",
+    "./js/coin_art.js": "./js/coin_art.js?v=7.0.9",
+    "./js/coins.js": "./js/coins.js?v=7.0.9",
+    "./js/contracts.js": "./js/contracts.js?v=7.0.9",
+    "./js/creatures_draw.js": "./js/creatures_draw.js?v=7.0.9",
+    "./js/dave.js": "./js/dave.js?v=7.0.9",
+    "./js/dave_art.js": "./js/dave_art.js?v=7.0.9",
+    "./js/designs.js": "./js/designs.js?v=7.0.9",
+    "./js/earl_draw.js": "./js/earl_draw.js?v=7.0.9",
+    "./js/economy.js": "./js/economy.js?v=7.0.9",
+    "./js/entity.js": "./js/entity.js?v=7.0.9",
+    "./js/face_draw.js": "./js/face_draw.js?v=7.0.9",
+    "./js/fatfinger.js": "./js/fatfinger.js?v=7.0.9",
+    "./js/fauna.js": "./js/fauna.js?v=7.0.9",
+    "./js/fittings.js": "./js/fittings.js?v=7.0.9",
+    "./js/gallery.js": "./js/gallery.js?v=7.0.9",
+    "./js/gauge_art.js": "./js/gauge_art.js?v=7.0.9",
+    "./js/gear_art.js": "./js/gear_art.js?v=7.0.9",
+    "./js/glyphs.js": "./js/glyphs.js?v=7.0.9",
+    "./js/hud.js": "./js/hud.js?v=7.0.9",
+    "./js/hunters.js": "./js/hunters.js?v=7.0.9",
+    "./js/item_art.js": "./js/item_art.js?v=7.0.9",
+    "./js/item_data.js": "./js/item_data.js?v=7.0.9",
+    "./js/itemcard.js": "./js/itemcard.js?v=7.0.9",
+    "./js/items.js": "./js/items.js?v=7.0.9",
+    "./js/journal_tank.js": "./js/journal_tank.js?v=7.0.9",
+    "./js/kit_art.js": "./js/kit_art.js?v=7.0.9",
+    "./js/legendfx.js": "./js/legendfx.js?v=7.0.9",
+    "./js/main.js": "./js/main.js?v=7.0.9",
+    "./js/messages.js": "./js/messages.js?v=7.0.9",
+    "./js/monster_draw.js": "./js/monster_draw.js?v=7.0.9",
+    "./js/oldone.js": "./js/oldone.js?v=7.0.9",
+    "./js/pets.js": "./js/pets.js?v=7.0.9",
+    "./js/player.js": "./js/player.js?v=7.0.9",
+    "./js/purchases.js": "./js/purchases.js?v=7.0.9",
+    "./js/quests.js": "./js/quests.js?v=7.0.9",
+    "./js/render.js": "./js/render.js?v=7.0.9",
+    "./js/reveal.js": "./js/reveal.js?v=7.0.9",
+    "./js/scenery_draw.js": "./js/scenery_draw.js?v=7.0.9",
+    "./js/scrolls.js": "./js/scrolls.js?v=7.0.9",
+    "./js/settings.js": "./js/settings.js?v=7.0.9",
+    "./js/showcase.js": "./js/showcase.js?v=7.0.9",
+    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=7.0.9",
+    "./js/species.js": "./js/species.js?v=7.0.9",
+    "./js/species_looks.js": "./js/species_looks.js?v=7.0.9",
+    "./js/specimens.js": "./js/specimens.js?v=7.0.9",
+    "./js/station_draw.js": "./js/station_draw.js?v=7.0.9",
+    "./js/store.js": "./js/store.js?v=7.0.9",
+    "./js/suit_art.js": "./js/suit_art.js?v=7.0.9",
+    "./js/survey.js": "./js/survey.js?v=7.0.9",
+    "./js/tankroom.js": "./js/tankroom.js?v=7.0.9",
+    "./js/textures.js": "./js/textures.js?v=7.0.9",
+    "./js/title_art.js": "./js/title_art.js?v=7.0.9",
+    "./js/tokens.js": "./js/tokens.js?v=7.0.9",
+    "./js/tools_draw.js": "./js/tools_draw.js?v=7.0.9",
+    "./js/touch.js": "./js/touch.js?v=7.0.9",
+    "./js/touchtext.js": "./js/touchtext.js?v=7.0.9",
+    "./js/trail.js": "./js/trail.js?v=7.0.9",
+    "./js/traps.js": "./js/traps.js?v=7.0.9",
+    "./js/tutspot.js": "./js/tutspot.js?v=7.0.9",
+    "./js/ui.js": "./js/ui.js?v=7.0.9",
+    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=7.0.9",
+    "./js/units.js": "./js/units.js?v=7.0.9",
+    "./js/util.js": "./js/util.js?v=7.0.9",
+    "./js/variants.js": "./js/variants.js?v=7.0.9",
+    "./js/version.js": "./js/version.js?v=7.0.9",
+    "./js/world.js": "./js/world.js?v=7.0.9",
+    "./data/species_about.js": "./data/species_about.js?v=7.0.9",
+    "./data/species_data.js": "./data/species_data.js?v=7.0.9",
+    "./data/species_more.js": "./data/species_more.js?v=7.0.9"
   } }
   </script>
   <script type="module">if (!window.__shell) import("./js/main.js");</script>
