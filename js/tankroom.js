@@ -178,13 +178,6 @@ export class TankRoom {
       this.layout(true);
     });
     this.c.addEventListener('pointercancel', () => { this.press = null; this.drag = null; });
-    this.onKey = (ev) => {
-      if (this.root.hidden) return;
-      // (3.2.0) three rooms in a row: the chambers, the open tank, the large tank
-      const i = ROOM_ORDER.indexOf(this.room), to = ev.key === 'ArrowRight' ? ROOM_ORDER[i + 1] : ev.key === 'ArrowLeft' ? ROOM_ORDER[i - 1] : null;
-      if (to) this.go(to);
-    };
-    window.addEventListener('keydown', this.onKey);
   }
   open() {
     this.room = 'tank'; // (4.26) T always opens on the tank itself; the chambers and the large tank are through its hatches

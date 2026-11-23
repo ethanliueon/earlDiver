@@ -112,7 +112,6 @@ export class Catalog {
         this.render();
       }
     });
-    window.addEventListener('keydown', (ev) => { if (!this.root.hidden && ev.key === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); if (this.page.startsWith('item:')) this.go(this.back || 'home'); else this.h.close(); } }, true);
   }
   // open a shop's website (the cart is kept per shop until checkout)
   show(id = 'bayside') {

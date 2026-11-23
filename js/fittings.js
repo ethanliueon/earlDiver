@@ -436,10 +436,10 @@ function reachMark(ctx, x, y, r, col, kind) {
   }
   ctx.restore();
 }
-// the same, as HTML (for the rooms drawn in HTML, such as the cabin)
+// the same, as HTML (for the rooms drawn in HTML, such as the cabin): the words only (7.2.4: no key caps on a phone)
 export function promptHtml(text) {
   const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-  return parsePrompt(text).map((p) => `<span class="pr-part">${p.hold ? `<i class="pr-hold">${esc(p.hold)}</i>` : ''}${p.key ? `<kbd class="keycap${p.key.length > 1 ? ' wide' : ''}">${esc(p.key)}</kbd>` : ''}<span class="pr-label">${esc(p.label)}</span></span>`).join('<i class="pr-sep"></i>');
+  return parsePrompt(text).map((p) => `<span class="pr-part"><span class="pr-label">${esc(p.label)}</span></span>`).join('<i class="pr-sep"></i>');
 }
 
 // ---------------- (claude-polish) the instruments in the corner of the screen ----------------

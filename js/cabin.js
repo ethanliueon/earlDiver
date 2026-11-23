@@ -4,7 +4,7 @@
 // jars behind a fiddle rail), a brass clock and barometer, oilskins on a hook, a life jacket, a fire
 // extinguisher, a fuse panel, a fish chart and a photo of the boat; and on a desk the old computer where
 // the catalog lives. Earl walks it with A / D, in his boots and without his tank; F (or E) at the desk
-// opens the catalog; at the door (or Esc) he goes back out on deck.
+// opens the catalog; at the door he goes back out on deck.
 // The light (2.4.2): the room is drawn plain, then a light map multiplies over it: the swinging lamp's warm
 // pool, cool daylight from the porthole and round the door, the green of the screen and the desk lamp, dark
 // corners everywhere else. Things on the walls cast soft shadows away from the lamp, so they swing with
@@ -89,47 +89,19 @@ function bakeFloor(w, h, seed) {
 
 export class Cabin {
   constructor(root, hooks) {
-    this.root = root; this.h = hooks; this.x = ROOM.door + 0.05; this.face = 1; this.walkT = 0; this.t = 0; this.keys = new Set();
+    this.root = root; this.h = hooks; this.x = ROOM.door + 0.05; this.face = 1; this.walkT = 0; this.t = 0;
     root.innerHTML = '<canvas class="cb-canvas"></canvas><div class="cb-prompt"></div>';
     this.c = root.querySelector('canvas'); this.prompt = root.querySelector('.cb-prompt');
     this.lc = document.createElement('canvas'); // the light map
-    this.onKey = (ev) => {
-      if (this.root.hidden || this.h.blocked()) return;
-      const k = ev.key.toLowerCase();
-      if (ev.type === 'keydown') {
-        if (k === 'escape') { ev.preventDefault(); ev.stopImmediatePropagation(); this.h.close(); return; }
-        if (k === 'e' || k === 'f') { ev.preventDefault(); ev.stopImmediatePropagation(); this.use(); return; }
-        if ((k === ' ' || k === 'w' || k === 'arrowup') && !this.hop) { ev.preventDefault(); ev.stopImmediatePropagation(); this.hop = 0.55; return; } // (4.0.0) a jump, as on deck
-        if (['a', 'd', 'arrowleft', 'arrowright', 'shift'].includes(k)) { ev.preventDefault(); ev.stopImmediatePropagation(); this.keys.add(k); this.goal = null; if (k !== 'shift') this.keyAt = performance.now(); }
-      } else this.keys.delete(k);
-    };
-    // (2.6.2) the mouse: click to walk there; click on a thing (or where he stands at it) to use it
-    this.c.addEventListener('mousedown', (ev) => {
-      if (this.root.hidden || this.h.blocked() || ev.button !== 0) return;
-      if (document.documentElement.classList.contains('touch')) return; // (5.6.7) a phone walks him with the stick (tapAt uses things)
-      const W = window.innerWidth, camX = this.camX || 0, fx = (ev.clientX + camX) / W;
-      const st = STATIONS.find((q) => Math.abs(fx - q.x) < 0.09 || (q.id === 'desk' && Math.abs(fx - ROOM.desk) < 0.12) || (q.id === 'wheel' && Math.abs(fx - ROOM.wheel) < 0.06));
-      if (st && this.near() === st.id) { this.use(); return; }
-      this.goal = clamp(st ? st.x : fx, ROOM.min, ROOM.max); this.goalUse = !!st;
-    });
-    // (3.0.0) as in the water: he walks toward the cursor (after it has moved since the cabin opened, and since a key)
-    this.c.addEventListener('mousemove', (ev) => {
-      this.mcx = ev.clientX;
-      if (Math.abs(ev.clientX - (this.mlx ?? ev.clientX)) > 1) this.mMoved = performance.now();
-      this.mlx = ev.clientX;
-    });
-    this.c.addEventListener('mouseleave', () => { this.mcx = null; });
-    this.c.style.cursor = 'pointer';
-    window.addEventListener('keydown', this.onKey, true);
-    window.addEventListener('keyup', this.onKey, true);
+    // (7.2.4) touch only: the stick walks him, a tap uses what he is at (tapAt), the close cross takes him out
   }
-  show() { this.x = ROOM.door + 0.05; this.face = 1; this.keys.clear(); this.goal = null; this.mMoved = -1e9; this.mlx = null; }
+  show() { this.x = ROOM.door + 0.05; this.face = 1; this.goal = null; }
   // (3.0.20) wider: each thing answers from 0.09 of a screen either side (twice what it was), the nearest one if two do
   near() { let best = null, bd = 1; for (const q of STATIONS) { const d = Math.abs(this.x - q.x) / (q.id === 'desk' ? 0.11 : 0.09); if (d < bd) { bd = d; best = q; } } return best ? best.id : null; } // (4.0.0) the desk answers from the whole width of it
   use() { const n = this.near(); if (n && this.h.tutAllow && !this.h.tutAllow(n)) return; // (4.4.0) during the tutorial, only what the step asks for
     if (n === 'desk') this.h.catalog(); else if (n === 'door') this.h.close(); else if (n) this.h.station(n === 'wheel' ? 'helm' : n === 'tank' ? 'gallery' : n); }
-  atTank() { this.x = ROOM.tank; this.face = 1; this.keys.clear(); this.goal = null; }
-  atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; this.keys.clear(); }
+  atTank() { this.x = ROOM.tank; this.face = 1; this.goal = null; }
+  atWheel() { this.x = ROOM.wheel - 0.075; this.face = 1; }
   // (5.6.7) a tap on a phone: whatever he stands at is used (the station tapped, or anywhere near him)
   tapAt(clientX) {
     if (this.root.hidden || this.h.blocked()) return;
@@ -138,18 +110,11 @@ export class Cabin {
   }
   update(dt) {
     this.t += dt;
-    let dir = (this.keys.has('d') || this.keys.has('arrowright') ? 1 : 0) - (this.keys.has('a') || this.keys.has('arrowleft') ? 1 : 0);
+    let dir = 0;
     const sv = this.stick ? this.stick() : null; // (5.6.7) the phone's stick, as in the water
-    if (!dir && sv && sv.on && Math.abs(sv.x) > 0.25) { dir = Math.sign(sv.x); this.goal = null; this.stickRun = !!sv.sprint; } else this.stickRun = false;
+    if (sv && sv.on && Math.abs(sv.x) > 0.25) { dir = Math.sign(sv.x); this.goal = null; this.stickRun = !!sv.sprint; } else this.stickRun = false;
     if (!dir && this.goal != null) { const d = this.goal - this.x; if (Math.abs(d) < 0.006) { this.x = this.goal; this.goal = null; if (this.goalUse) { this.goalUse = false; if (this.near()) this.use(); } } else dir = Math.sign(d); }
-    // (2.6.2) the same walk as on deck: the stride, footsteps; Shift runs
-    // following the cursor: a dead zone round him, a run when it is far
-    let mRun = false;
-    if (!dir && this.goal == null && this.mcx != null && (this.mMoved || -1e9) > (this.keyAt || -1e9) && !this.h.blocked()) {
-      const d = clamp((this.mcx + (this.camX || 0)) / window.innerWidth, ROOM.min, ROOM.max) - this.x;
-      if (Math.abs(d) > 0.05) dir = Math.sign(d); // (4.0.4) past the dead zone round him: his full walk at once, however far the cursor is; Shift runs
-    }
-    const run = this.keys.has('shift') || mRun || this.stickRun, pace = run ? 0.32 : 0.2; // (4.0.0) his own pace, and Shift runs
+    const pace = this.stickRun ? 0.32 : 0.2; // (4.0.0) his own pace; the stick at its rim runs
     if (!this.h.blocked()) {
       const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);

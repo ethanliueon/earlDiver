@@ -70,8 +70,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=7.2.3">
-  <link rel="stylesheet" href="css/olive.css?v=7.2.3">
+  <link rel="stylesheet" href="css/style.css?v=7.2.4">
+  <link rel="stylesheet" href="css/olive.css?v=7.2.4">
   <style>
     /* (4.17.2) the loading screen, poster-style: the painting left alone (only a slow push-in), and over it, at the
        lower left, flat type in the sunset's own orange and a warm off-white: a stamped helmet mark, the title, a
@@ -100,7 +100,6 @@
     .ld .ld-row { display: flex; justify-content: space-between; gap: 16px; margin-top: 10px; font: 11px "IBM Plex Mono", monospace; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(239,230,212,0.7); }
     .ld .ld-pct { color: var(--sun); }
     .ld .ld-tip { margin-top: 14px; font: italic 16px/1.4 "EB Garamond", Georgia, serif; color: rgba(239,230,212,0.72); transition: opacity 0.4s; }
-    .ld .ld-tip kbd { display: inline-block; padding: 0 5px; margin: 0 2px; border: 1px solid rgba(233,148,74,0.8); border-radius: 2px; font: 600 11px/16px "IBM Plex Mono", monospace; font-style: normal; color: var(--sun); vertical-align: 1px; }
     @keyframes ld-push { from { transform: scale(1); } to { transform: scale(1.05) translate(-0.6%, 0.6%); } }
     /* (4.17.5) the pieces apart, as a game's loading screen sets them: the name alone in the dark water at the lower
        left, part of the picture; a small loading line tucked in the bottom-right corner; the tip on its own along the
@@ -156,7 +155,6 @@
     .ld .ld-fill::after { content: ''; position: absolute; right: -3px; bottom: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 10px rgba(239,232,214,0.7); }
     .ld .ld-pct { min-width: 4.6em; font: 600 20px/1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; letter-spacing: 0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
     .ld .ld-tip { font: 500 16px/1.4 "Barlow Semi Condensed", "Arial Narrow", sans-serif; font-style: normal; color: rgba(239,232,214,0.7); }
-    .ld .ld-tip kbd { border-color: rgba(239,232,214,0.6); color: var(--ink); font: 600 12px/17px "Barlow Semi Condensed", "Arial Narrow", sans-serif; }
     .ld .ld-load { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 14px; row-gap: 6px; align-items: end; }
     .ld .ld-step { grid-column: 1 / 3; grid-row: 1; text-align: left; }
     .ld .ld-bar { grid-column: 1; grid-row: 2; } .ld .ld-pct { grid-column: 2; grid-row: 2; }
@@ -289,32 +287,9 @@
       <p class="tag">The sea pays, if you look deep enough.<br>Dive and survive to tell the tale.</p>
       <div id="menu-save" class="menu-save"></div>
       <div class="menu-buttons"><button id="play">Dive</button><button id="newgame" class="link" hidden>New game</button></div>
-      <div class="menu-links"><button id="show-controls" class="link">Controls</button><button id="show-log" class="link" hidden>Dive log</button><button id="fullscreen" class="link">Full screen</button><button id="to-title" class="link">Title screen</button></div>
-      <div class="controls" hidden>
-        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> swim</span>
-        <span><kbd>Shift</kbd> faster, more air</span>
-        <span><kbd>F</kbd> interact</span>
-        <span><kbd>J</kbd> journal</span>
-        <span><kbd>L</kbd> lights</span>
-        <span><kbd>Q</kbd> lure</span>
-        <span><kbd>E</kbd> glow stick</span>
-        <span><kbd>R</kbd> backup air (in the sub)</span>
-        <span><kbd>U</kbd> by the boat: sell</span>
-        <span><kbd>C</kbd> call the sub</span>
-        <span><kbd>B</kbd> inventory</span>
-        <span><kbd>F</kbd> at the Margaret's ladder: climb aboard</span>
-        <span><kbd>T</kbd> in the sub: the tank room</span>
-        <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><kbd>5</kbd> net · slurp gun · tag gun · camera · traps</span>
-        <span><kbd>Space</kbd> catch</span>
-        <span><kbd>Mouse</kbd> Earl swims to the cursor, click to swing the net, hold right to sprint, wheel zoom</span>
-        <span><kbd>N</kbd> in the sub: the trawl net</span>
-        <span>hold <kbd>R</kbd> at a hole in the sub: repair it</span>
-        <span><kbd>G</kbd> offer to the deep · at the wheel: the anchor</span>
-        <span><kbd>Esc</kbd> pause</span>
-        <span><kbd>M</kbd> mute</span>
-      </div>
+      <div class="menu-links"><button id="show-log" class="link" hidden>Dive log</button><button id="fullscreen" class="link">Full screen</button><button id="to-title" class="link">Title screen</button></div>
       <div id="runlog" hidden></div>
-      <p class="hint">Headphones recommended. Desktop browser only. <span class="version"></span></p>
+      <p class="hint">Headphones recommended. <span class="version"></span></p>
     </div>
   </section>
 
@@ -377,7 +352,7 @@
   <section id="chest" class="chest-reveal" hidden></section>
   <section id="store" class="store-panel" hidden></section>
   <section id="events" class="store-panel" hidden></section>
-  <div id="quests-hud" hidden><button id="quests-btn" class="hud-ic" aria-label="Quests (O)" title="Quests (O)"><img src="assets/ui/icons/quest.png" alt=""><i hidden></i></button><span class="qh-step"></span><button id="hud-journal" class="hud-ic" aria-label="Journal (J)" title="Journal (J)"><img src="assets/ui/icons/journal.png" alt=""></button><button id="hud-chart" class="hud-ic" aria-label="Chart (K)" title="Chart (K)"><img src="assets/ui/icons/chart.png" alt=""></button></div>
+  <div id="quests-hud" hidden><button id="quests-btn" class="hud-ic" aria-label="Quests" title="Quests"><img src="assets/ui/icons/quest.png" alt=""><i hidden></i></button><span class="qh-step"></span><button id="hud-journal" class="hud-ic" aria-label="Journal" title="Journal"><img src="assets/ui/icons/journal.png" alt=""></button><button id="hud-chart" class="hud-ic" aria-label="Chart" title="Chart"><img src="assets/ui/icons/chart.png" alt=""></button></div>
   <section id="quests" hidden><div class="qs-panel"><header><div class="qs-plate"><h2>Quests</h2></div><button class="qs-close" aria-label="Close">×</button></header><div class="qs-body"></div></div></section>
 
   <section id="trapset" class="shop" hidden>
@@ -398,7 +373,7 @@
         <p id="ts-warn" class="ts-warn" hidden></p>
       </div>
       <div class="ts-actions"><button id="ts-bottom" class="ts-btn">All the way</button><button id="ts-set" class="ts-btn primary">Set it <span>Space</span></button></div>
-      <p class="ts-help">↑ ↓ or the wheel: 1 m · with Shift: 10 m · Esc to cancel</p>
+      <p class="ts-help">↑ ↓ or the wheel: 1 m · with Shift: 10 m ·</p>
     </div>
   </section>
 
@@ -441,7 +416,6 @@
         <button id="set-graphics" class="set-row"></button>
         <button id="set-uisize" class="set-row"></button>
       </div>
-      <div class="set-group"><h4>Controls</h4><div class="controls set-controls"></div></div>
       </div>
     </div>
   </section>
@@ -452,90 +426,90 @@
   <!-- stamp:start (tools/stamp.py) -->
   <script type="importmap">
   { "imports": {
-    "./js/abilities.js": "./js/abilities.js?v=7.2.3",
-    "./js/alarm.js": "./js/alarm.js?v=7.2.3",
-    "./js/aquarium.js": "./js/aquarium.js?v=7.2.3",
-    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=7.2.3",
-    "./js/arm.js": "./js/arm.js?v=7.2.3",
-    "./js/audio.js": "./js/audio.js?v=7.2.3",
-    "./js/autopilot.js": "./js/autopilot.js?v=7.2.3",
-    "./js/buoy_draw.js": "./js/buoy_draw.js?v=7.2.3",
-    "./js/cabin.js": "./js/cabin.js?v=7.2.3",
-    "./js/capture.js": "./js/capture.js?v=7.2.3",
-    "./js/catalog.js": "./js/catalog.js?v=7.2.3",
-    "./js/chart.js": "./js/chart.js?v=7.2.3",
-    "./js/chest_art.js": "./js/chest_art.js?v=7.2.3",
-    "./js/chests.js": "./js/chests.js?v=7.2.3",
-    "./js/clouds.js": "./js/clouds.js?v=7.2.3",
-    "./js/coin_art.js": "./js/coin_art.js?v=7.2.3",
-    "./js/coins.js": "./js/coins.js?v=7.2.3",
-    "./js/contracts.js": "./js/contracts.js?v=7.2.3",
-    "./js/creatures_draw.js": "./js/creatures_draw.js?v=7.2.3",
-    "./js/dave.js": "./js/dave.js?v=7.2.3",
-    "./js/dave_art.js": "./js/dave_art.js?v=7.2.3",
-    "./js/designs.js": "./js/designs.js?v=7.2.3",
-    "./js/earl_draw.js": "./js/earl_draw.js?v=7.2.3",
-    "./js/economy.js": "./js/economy.js?v=7.2.3",
-    "./js/entity.js": "./js/entity.js?v=7.2.3",
-    "./js/face_draw.js": "./js/face_draw.js?v=7.2.3",
-    "./js/fatfinger.js": "./js/fatfinger.js?v=7.2.3",
-    "./js/fauna.js": "./js/fauna.js?v=7.2.3",
-    "./js/fittings.js": "./js/fittings.js?v=7.2.3",
-    "./js/gallery.js": "./js/gallery.js?v=7.2.3",
-    "./js/gauge_art.js": "./js/gauge_art.js?v=7.2.3",
-    "./js/gear_art.js": "./js/gear_art.js?v=7.2.3",
-    "./js/glyphs.js": "./js/glyphs.js?v=7.2.3",
-    "./js/hud.js": "./js/hud.js?v=7.2.3",
-    "./js/hunters.js": "./js/hunters.js?v=7.2.3",
-    "./js/item_art.js": "./js/item_art.js?v=7.2.3",
-    "./js/item_data.js": "./js/item_data.js?v=7.2.3",
-    "./js/itemcard.js": "./js/itemcard.js?v=7.2.3",
-    "./js/items.js": "./js/items.js?v=7.2.3",
-    "./js/journal_tank.js": "./js/journal_tank.js?v=7.2.3",
-    "./js/kit_art.js": "./js/kit_art.js?v=7.2.3",
-    "./js/legendfx.js": "./js/legendfx.js?v=7.2.3",
-    "./js/main.js": "./js/main.js?v=7.2.3",
-    "./js/messages.js": "./js/messages.js?v=7.2.3",
-    "./js/monster_draw.js": "./js/monster_draw.js?v=7.2.3",
-    "./js/oldone.js": "./js/oldone.js?v=7.2.3",
-    "./js/pets.js": "./js/pets.js?v=7.2.3",
-    "./js/player.js": "./js/player.js?v=7.2.3",
-    "./js/purchases.js": "./js/purchases.js?v=7.2.3",
-    "./js/quests.js": "./js/quests.js?v=7.2.3",
-    "./js/render.js": "./js/render.js?v=7.2.3",
-    "./js/reveal.js": "./js/reveal.js?v=7.2.3",
-    "./js/scenery_draw.js": "./js/scenery_draw.js?v=7.2.3",
-    "./js/scrolls.js": "./js/scrolls.js?v=7.2.3",
-    "./js/settings.js": "./js/settings.js?v=7.2.3",
-    "./js/showcase.js": "./js/showcase.js?v=7.2.3",
-    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=7.2.3",
-    "./js/species.js": "./js/species.js?v=7.2.3",
-    "./js/species_looks.js": "./js/species_looks.js?v=7.2.3",
-    "./js/specimens.js": "./js/specimens.js?v=7.2.3",
-    "./js/station_draw.js": "./js/station_draw.js?v=7.2.3",
-    "./js/store.js": "./js/store.js?v=7.2.3",
-    "./js/suit_art.js": "./js/suit_art.js?v=7.2.3",
-    "./js/survey.js": "./js/survey.js?v=7.2.3",
-    "./js/tankroom.js": "./js/tankroom.js?v=7.2.3",
-    "./js/textures.js": "./js/textures.js?v=7.2.3",
-    "./js/title_art.js": "./js/title_art.js?v=7.2.3",
-    "./js/tokens.js": "./js/tokens.js?v=7.2.3",
-    "./js/tools_draw.js": "./js/tools_draw.js?v=7.2.3",
-    "./js/touch.js": "./js/touch.js?v=7.2.3",
-    "./js/touchtext.js": "./js/touchtext.js?v=7.2.3",
-    "./js/trail.js": "./js/trail.js?v=7.2.3",
-    "./js/traps.js": "./js/traps.js?v=7.2.3",
-    "./js/tutspot.js": "./js/tutspot.js?v=7.2.3",
-    "./js/ui.js": "./js/ui.js?v=7.2.3",
-    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=7.2.3",
-    "./js/units.js": "./js/units.js?v=7.2.3",
-    "./js/util.js": "./js/util.js?v=7.2.3",
-    "./js/variants.js": "./js/variants.js?v=7.2.3",
-    "./js/version.js": "./js/version.js?v=7.2.3",
-    "./js/world.js": "./js/world.js?v=7.2.3",
-    "./data/species_about.js": "./data/species_about.js?v=7.2.3",
-    "./data/species_data.js": "./data/species_data.js?v=7.2.3",
-    "./data/species_more.js": "./data/species_more.js?v=7.2.3"
+    "./js/abilities.js": "./js/abilities.js?v=7.2.4",
+    "./js/alarm.js": "./js/alarm.js?v=7.2.4",
+    "./js/aquarium.js": "./js/aquarium.js?v=7.2.4",
+    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=7.2.4",
+    "./js/arm.js": "./js/arm.js?v=7.2.4",
+    "./js/audio.js": "./js/audio.js?v=7.2.4",
+    "./js/autopilot.js": "./js/autopilot.js?v=7.2.4",
+    "./js/buoy_draw.js": "./js/buoy_draw.js?v=7.2.4",
+    "./js/cabin.js": "./js/cabin.js?v=7.2.4",
+    "./js/capture.js": "./js/capture.js?v=7.2.4",
+    "./js/catalog.js": "./js/catalog.js?v=7.2.4",
+    "./js/chart.js": "./js/chart.js?v=7.2.4",
+    "./js/chest_art.js": "./js/chest_art.js?v=7.2.4",
+    "./js/chests.js": "./js/chests.js?v=7.2.4",
+    "./js/clouds.js": "./js/clouds.js?v=7.2.4",
+    "./js/coin_art.js": "./js/coin_art.js?v=7.2.4",
+    "./js/coins.js": "./js/coins.js?v=7.2.4",
+    "./js/contracts.js": "./js/contracts.js?v=7.2.4",
+    "./js/creatures_draw.js": "./js/creatures_draw.js?v=7.2.4",
+    "./js/dave.js": "./js/dave.js?v=7.2.4",
+    "./js/dave_art.js": "./js/dave_art.js?v=7.2.4",
+    "./js/designs.js": "./js/designs.js?v=7.2.4",
+    "./js/earl_draw.js": "./js/earl_draw.js?v=7.2.4",
+    "./js/economy.js": "./js/economy.js?v=7.2.4",
+    "./js/entity.js": "./js/entity.js?v=7.2.4",
+    "./js/face_draw.js": "./js/face_draw.js?v=7.2.4",
+    "./js/fatfinger.js": "./js/fatfinger.js?v=7.2.4",
+    "./js/fauna.js": "./js/fauna.js?v=7.2.4",
+    "./js/fittings.js": "./js/fittings.js?v=7.2.4",
+    "./js/gallery.js": "./js/gallery.js?v=7.2.4",
+    "./js/gauge_art.js": "./js/gauge_art.js?v=7.2.4",
+    "./js/gear_art.js": "./js/gear_art.js?v=7.2.4",
+    "./js/glyphs.js": "./js/glyphs.js?v=7.2.4",
+    "./js/hud.js": "./js/hud.js?v=7.2.4",
+    "./js/hunters.js": "./js/hunters.js?v=7.2.4",
+    "./js/input.js": "./js/input.js?v=7.2.4",
+    "./js/item_art.js": "./js/item_art.js?v=7.2.4",
+    "./js/item_data.js": "./js/item_data.js?v=7.2.4",
+    "./js/itemcard.js": "./js/itemcard.js?v=7.2.4",
+    "./js/items.js": "./js/items.js?v=7.2.4",
+    "./js/journal_tank.js": "./js/journal_tank.js?v=7.2.4",
+    "./js/kit_art.js": "./js/kit_art.js?v=7.2.4",
+    "./js/legendfx.js": "./js/legendfx.js?v=7.2.4",
+    "./js/main.js": "./js/main.js?v=7.2.4",
+    "./js/messages.js": "./js/messages.js?v=7.2.4",
+    "./js/monster_draw.js": "./js/monster_draw.js?v=7.2.4",
+    "./js/oldone.js": "./js/oldone.js?v=7.2.4",
+    "./js/pets.js": "./js/pets.js?v=7.2.4",
+    "./js/player.js": "./js/player.js?v=7.2.4",
+    "./js/purchases.js": "./js/purchases.js?v=7.2.4",
+    "./js/quests.js": "./js/quests.js?v=7.2.4",
+    "./js/render.js": "./js/render.js?v=7.2.4",
+    "./js/reveal.js": "./js/reveal.js?v=7.2.4",
+    "./js/scenery_draw.js": "./js/scenery_draw.js?v=7.2.4",
+    "./js/scrolls.js": "./js/scrolls.js?v=7.2.4",
+    "./js/settings.js": "./js/settings.js?v=7.2.4",
+    "./js/showcase.js": "./js/showcase.js?v=7.2.4",
+    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=7.2.4",
+    "./js/species.js": "./js/species.js?v=7.2.4",
+    "./js/species_looks.js": "./js/species_looks.js?v=7.2.4",
+    "./js/specimens.js": "./js/specimens.js?v=7.2.4",
+    "./js/station_draw.js": "./js/station_draw.js?v=7.2.4",
+    "./js/store.js": "./js/store.js?v=7.2.4",
+    "./js/suit_art.js": "./js/suit_art.js?v=7.2.4",
+    "./js/survey.js": "./js/survey.js?v=7.2.4",
+    "./js/tankroom.js": "./js/tankroom.js?v=7.2.4",
+    "./js/textures.js": "./js/textures.js?v=7.2.4",
+    "./js/title_art.js": "./js/title_art.js?v=7.2.4",
+    "./js/tokens.js": "./js/tokens.js?v=7.2.4",
+    "./js/tools_draw.js": "./js/tools_draw.js?v=7.2.4",
+    "./js/touch.js": "./js/touch.js?v=7.2.4",
+    "./js/trail.js": "./js/trail.js?v=7.2.4",
+    "./js/traps.js": "./js/traps.js?v=7.2.4",
+    "./js/tutspot.js": "./js/tutspot.js?v=7.2.4",
+    "./js/ui.js": "./js/ui.js?v=7.2.4",
+    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=7.2.4",
+    "./js/units.js": "./js/units.js?v=7.2.4",
+    "./js/util.js": "./js/util.js?v=7.2.4",
+    "./js/variants.js": "./js/variants.js?v=7.2.4",
+    "./js/version.js": "./js/version.js?v=7.2.4",
+    "./js/world.js": "./js/world.js?v=7.2.4",
+    "./data/species_about.js": "./data/species_about.js?v=7.2.4",
+    "./data/species_data.js": "./data/species_data.js?v=7.2.4",
+    "./data/species_more.js": "./data/species_more.js?v=7.2.4"
   } }
   </script>
   <script type="module">if (!window.__shell) import("./js/main.js");</script>

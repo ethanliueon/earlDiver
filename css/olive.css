@@ -192,9 +192,6 @@ html body #quests-btn svg path, html body #quests-btn svg rect { fill: none !imp
 html body #quests-btn svg > path:first-child { fill: none !important; }
 html body #quests-btn i { background: #e6dec4 !important; color: #26241a !important; font: 600 11px/18px var(--o-num) !important; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important; }
 html body #quests-hud .qh-step { font: 17px var(--o-text) !important; color: #efe8d2 !important; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85) !important; }
-html body kbd.keycap, html body .ts-key kbd:not(.mouse) { background: #d8d0b6 !important; color: #26241a !important; border: 1px solid rgba(20, 18, 12, 0.85) !important; border-radius: 4px !important;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.55) !important; font: 600 13px/20px var(--o-num) !important; text-shadow: none !important; }
-
 /* ---- rarity in print: the word in its colour, small capitals, as a field guide sets it (no coloured pill) */
 html body .rbadge { background: none !important; color: var(--rc) !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important;
   font: 600 13px var(--o-text) !important;  text-transform: uppercase !important; letter-spacing: 0.04em !important; margin-left: 6px !important; filter: brightness(0.8) saturate(1.2); }
@@ -221,12 +218,7 @@ html body #inventory .inv-catch2 .fc.empty::after { background: #9a9c90 !importa
 html body #inventory .worth-paint { font: 500 26px/1 var(--o-num) !important; color: #efe8d2 !important; letter-spacing: 0 !important; text-shadow: none !important; -webkit-text-stroke: 0 !important; opacity: 1 !important;
   background: #0d100c !important; border-radius: 3px; box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 240, 0.08) !important;
   padding: 8px 14px !important; margin: auto 0 8px 0 !important; display: inline-flex !important; align-items: baseline; gap: 12px; align-self: flex-start; }
-html body #inventory .worth-paint::before { content: 'worth about'; font: 500 15px var(--o-text);  letter-spacing: 0.04em; color: rgba(230, 222, 196, 0.62); }
-/* the settings' control keys: cream caps, the same as everywhere */
-html body :is(#settings, #inventory) .set-controls kbd { background: #d8d0b6 !important; color: #26241a !important; border: 1px solid rgba(20, 18, 12, 0.85) !important; border-radius: 3px !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.55) !important; font: 600 12px/18px var(--o-num) !important; text-shadow: none !important; padding: 0 5px !important; }
-html body :is(#settings, #inventory) .set-controls { font: 16px var(--o-text) !important; color: var(--o-cream) !important; }
-/* the sub's bay on the catch page: her name painted on, not a brass tag; the hint plain text; counts in the paint */
+html body #inventory .worth-paint::before { content: 'worth about'; font: 500 15px var(--o-text);  letter-spacing: 0.04em; color: rgba(230, 222, 196, 0.62); }/* the sub's bay on the catch page: her name painted on, not a brass tag; the hint plain text; counts in the paint */
 html body #inventory .sb-name { background: none !important; box-shadow: none !important; border: 0 !important; padding: 0 0 6px !important; margin-bottom: 10px !important; }
 html body #inventory .sb-name::before, html body #inventory .sb-name::after { content: none !important; }
 html body #inventory .sb-name b { font: 500 22px var(--o-text) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--o-cream) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55) !important; }
@@ -708,13 +700,7 @@ html body canvas#game, html body canvas#hud { width: 100vw; height: 100vh; heigh
    (invisible) over the game, so on a phone every tap went to them (no joystick; a tap on a button deleted a diver),
    and its full-screen layer and pulsing "tap to dive" were still composited over every frame */
 html body #title.gone, html body #menu.gone { visibility: hidden; transition: opacity 0.9s ease, visibility 0s linear 0.9s; }
-html body #title.gone *, html body #menu.gone * { pointer-events: none !important; animation: none !important; }
-
-/* (5.4) a touch screen: key caps in the page's words are hidden (the words are rewritten: js/touchtext.js), and the
-   keyboard's list of controls gives way to the touch controls */
-html.touch kbd { display: none !important; }
-html.touch #settings .set-controls, html.touch #settings .set-group:has(.set-controls) { display: none !important; }
-/* (5.4) phones: a blur behind a panel is worked out again every frame over the moving sea; plain tint instead */
+html body #title.gone *, html body #menu.gone * { pointer-events: none !important; animation: none !important; }/* (5.4) phones: a blur behind a panel is worked out again every frame over the moving sea; plain tint instead */
 html.touch *, html.touch *::before, html.touch *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 html.touch #msgs .msg { filter: none !important; }
 /* (5.4) the turn-your-phone card at a readable size on the phone's wide page */

@@ -263,18 +263,6 @@ export class UI {
     this.shopTab = 'sell';
     this.shopSel = {}; // the item each tab's showcase shows
     this.openRows = new Set(); // shop rows whose details are open
-    // I: the spec sheet of the row under the pointer (or, with none, every row on the page)
-    this.hoverRow = null;
-    document.addEventListener('mouseover', (ev) => { this.hoverRow = ev.target.closest ? ev.target.closest('.shop [data-row]') : null; });
-    window.addEventListener('keydown', (e) => {
-      if (e.key !== 'i' && e.key !== 'I') return;
-      if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
-      const box = [$('shop-body'), $('cave-body')].find((el) => el && !el.closest('section').hidden);
-      if (!box) return;
-      if (this.hoverRow && box.contains(this.hoverRow)) { this.toggleInfo(this.hoverRow); return; }
-      const rows = [...box.querySelectorAll('[data-row]')], anyClosed = rows.some((r) => !r.classList.contains('open'));
-      for (const r of rows) if (r.classList.contains('open') !== anyClosed) this.toggleInfo(r);
-    });
     document.querySelectorAll('.shop-tabs button').forEach((b) => b.addEventListener('click', () => {
       this.shopTab = b.dataset.shop;
       document.querySelectorAll('.shop-tabs button').forEach((x) => x.classList.toggle('on', x === b));
@@ -314,8 +302,7 @@ export class UI {
       else if (act === 'sellitem') { const sale = h.onSellItem(arg); if (sale) this.showLedger(sale); }
       this.renderWorkshop();
     });
-    $('show-controls').addEventListener('click', () => { const c = document.querySelector('#menu .controls'); c.hidden = !c.hidden; if (!c.hidden) $('runlog').hidden = true; });
-    $('show-log').addEventListener('click', () => { const l = $('runlog'); l.hidden = !l.hidden; if (!l.hidden) document.querySelector('#menu .controls').hidden = true; });
+    $('show-log').addEventListener('click', () => { const l = $('runlog'); l.hidden = !l.hidden; });
     $('fullscreen').addEventListener('click', () => {
       const d = document;
       if (d.fullscreenElement) d.exitFullscreen && d.exitFullscreen();
@@ -347,7 +334,7 @@ export class UI {
         this.confirm(`Delete diver ${n}?`, `${what}\nIt will be gone for good.`, 'Delete for good', 'Keep it', () => { deleteSlot(n); this.showTitle(); });
         return;
       }
-      if (card.classList.contains('damaged') && !card.classList.contains('sure')) { card.classList.add('sure'); card.querySelector('.info span').textContent = 'click again to start a new game here'; return; }
+      if (card.classList.contains('damaged') && !card.classList.contains('sure')) { card.classList.add('sure'); card.querySelector('.info span').textContent = 'tap again to start a new game here'; return; }
       h.onSlot(n);
     });
     $('title-fullscreen').addEventListener('click', () => $('fullscreen').click());
@@ -402,7 +389,6 @@ export class UI {
     document.addEventListener('click', (ev) => { if (ev.target.closest('[data-settings]')) this.toggleSettings(true); });
     document.querySelector('#settings .set-close').addEventListener('click', () => this.toggleSettings(false));
     $('settings').addEventListener('click', (ev) => { if (ev.target === $('settings')) this.toggleSettings(false); });
-    document.querySelector('#settings .set-controls').innerHTML = document.querySelector('#menu .controls').innerHTML;
     this.renderSettings();
     $('quit').addEventListener('click', () => this.confirm('End this dive?', 'Whatever you have not sold is lost, and the next dive is a new sea. Your cash, gear and journal are kept.', 'End the dive', 'Keep diving', () => { const g = h.getGame(); g.paused = false; this.setPaused(false); h.onQuit(); }));
     $('notes').addEventListener('input', (e) => { h.getGame().notes = e.target.value; });
@@ -574,7 +560,7 @@ export class UI {
         const b = ev.target.closest('[data-oc]'); if (!b || b.disabled) return;
         if (this.h.onOldBuy(b.dataset.oc)) el.hidden = true;
       });
-      window.addEventListener('keydown', (ev) => { if (!el.hidden && (ev.key === 'Escape' || ev.key.toLowerCase() === 'f')) { ev.preventDefault(); ev.stopImmediatePropagation(); el.hidden = true; } }, true);
+      window.addEventListener('actdown', (ev) => { if (!el.hidden && ev.key === 'f') { ev.preventDefault(); ev.stopImmediatePropagation(); el.hidden = true; } }, true);
     }
     if (html === null) { el.hidden = true; return; }
     el.innerHTML = `<div class="oc-box"><button class="oc-close" aria-label="Close">×</button>${html}</div>`; el.hidden = false;
@@ -587,7 +573,7 @@ export class UI {
       this.qWired = true;
       // (4.28) the group folds away: only the quest board's picture shows; a tap opens it out (the next step, the
       // journal, the chart) and it folds again after a few seconds. With a quest ready to claim, the tap opens the board.
-      b.addEventListener('click', () => { const n0 = this.h.questsReady ? this.h.questsReady() : 0; if (document.documentElement.classList.contains('touch')) { if (n0) this.toggleQuests(); else this.toggleJournal(); return; } /* (5.6.7) a phone: one book; its tabs lead to the quests and the chart */ if (n0) { this.toggleQuests(); return; } this.hudGroup(!$('quests-hud').classList.contains('open')); });
+      b.addEventListener('click', () => { const n0 = this.h.questsReady ? this.h.questsReady() : 0; if (n0) this.toggleQuests(); else this.toggleJournal(); /* (5.6.7) a phone: one book; its tabs lead to the quests and the chart */ });
       $('quests-hud').querySelector('.qh-step').addEventListener('click', () => this.toggleQuests());
       // (4.27) the journal and the chart: under the quest board, at the left, as pictures
       $('hud-journal').addEventListener('click', () => this.toggleJournal());
@@ -610,9 +596,9 @@ export class UI {
     // (5.9.6) on a phone the journal's coin wears a red "!" (as games do) for a quest to claim or an animal not yet looked at
     const gJ = this.h.getGame && this.h.getGame(), jNew = !!(P0 && gJ && gJ.journal && gJ.journal.size > (P0.jSeenN ?? gJ.journal.size));
     if (P0 && gJ && gJ.journal && P0.jSeenN == null) P0.jSeenN = gJ.journal.size;
-    const touch = document.documentElement.classList.contains('touch'), want = n > 0 || (touch && jNew), txt = touch ? '!' : String(n);
+    const want = n > 0 || (jNew), txt = '!';
     dot.hidden = !want; window.__journalBadge = !!want; // (5.15.7) the folded menu's tab shows it too
-    if (want && dot.textContent !== txt) dot.textContent = txt; dot.classList.toggle('bang', touch); // (6.5.0) these had slipped into the comment above: the badge was an empty white dot
+    if (want && dot.textContent !== txt) dot.textContent = txt; dot.classList.toggle('bang', true); // (6.5.0) these had slipped into the comment above: the badge was an empty white dot
     if (!$('quests').hidden && this.qLast !== Math.floor(performance.now() / 1000)) { this.qLast = Math.floor(performance.now() / 1000); this.renderQuests(); }
   }
   // (4.28) open or fold the left-hand group; open for `ms` then fold again on its own
@@ -639,7 +625,7 @@ export class UI {
         body = (onBed ? `<p>Any of ${L.length} kinds counts. They live on the seabed: the lit stretches of the bottom on the map are where they are found. Some of them:</p>` : `<p>Any of ${L.length} kinds counts. The shallowest of them are usually met from about ${lo.toLocaleString()} m. Some of them:</p>`) + ex.map(card).join('');
         if (onBed) bed = L.map((s2) => usualDepth(s2)); else map = lo; }
     } else if (q.kind === 'deep' || q.kind === 'depth') { body = `<p>${q.kind === 'depth' ? 'Take the sub down past' : 'Catch your animals below'} ${q.d.toLocaleString()} m. The map shows where you are, that depth, and the nearest place the seafloor is deep enough.</p>`; map = q.d; }
-    else body = `<p>${{ catch: 'Any animal counts, caught any way: net, claw, trawl or trap.', sell: 'Everything sold counts: at the Margaret, at the station, or to Dave.', photo: 'Take out the camera (2) and photograph animals you have not photographed before. Hold still while it takes the picture.', trawl: 'Let the trawl net out from the sub (N), drive through fish, and bring it in. Every animal it hauls up counts.', divecatch: 'Every animal caught in one dive counts; the count starts again each dive.', chambers: 'Have every pressure chamber in the sub holding an animal at the same time.' }[q.kind] || ''}</p>`;
+    else body = `<p>${{ catch: 'Any animal counts, caught any way: net, claw, trawl or trap.', sell: 'Everything sold counts: at the Margaret, at the station, or to Dave.', photo: 'Take out the camera (2) and photograph animals you have not photographed before. Hold still while it takes the picture.', trawl: 'Let the trawl net out from the sub, drive through fish, and bring it in. Every animal it hauls up counts.', divecatch: 'Every animal caught in one dive counts; the count starts again each dive.', chambers: 'Have every pressure chamber in the sub holding an animal at the same time.' }[q.kind] || ''}</p>`;
     if (map != null && map < 50) map = null; // (shallow open water: no map needed)
     pop.innerHTML = `<div class="qp-box"><button class="qp-close" aria-label="Close">×</button><h4>${esc2(q.text)}</h4>${body}${map != null || bed ? '<canvas class="qp-map" width="520" height="190"></canvas>' : ''}</div>`;
     pop.hidden = false;
@@ -695,7 +681,7 @@ export class UI {
     let html = '<div class="qs-pg l">'; // (5.9.6) two pages: the log (and the refresh) on the left, the board on the right
     if (m) {
       const ok = S.mainProg >= m.need;
-      html += `<h3>Log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${document.documentElement.classList.contains('touch') && m.touchHelp ? m.touchHelp : m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
+      html += `<h3>Log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.touchHelp ? m.touchHelp : m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
         <div class="qs-pay">${rewardHtml(m)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
     const footAt = html.length; html += `</div><div class="qs-pg r"><h3>The board</h3>`;
@@ -723,11 +709,10 @@ export class UI {
     this.toggleQuests(false); this.toggleDave(false); this.toggleJournal(false); this.toggleWorkshop(false); this.toggleCave(false); this.toggleTank(false); this.toggleGallery(false); this.closeTrapSet(); }
   // the tank room, inside the sub: every place an animal can be kept, and what is in it
   tankOpen() { return !$('tankroom').hidden; }
-  // a brass "are you sure?" plate: yes runs onYes; no, Esc or a click outside just closes it
+  // a brass "are you sure?" plate: yes runs onYes; no or a tap outside just closes it
   confirm(title, body, yes, no, onYes, onNo = null) { { const c0 = document.getElementById('confirm'); if (c0) c0.style.zIndex = !$('settings').hidden ? '70' : ''; } // (5.10.1) asked from Settings: above it
     const modal = !!this.confirmModal; this.confirmModal = false; // (5.5) set just before by a question that must be answered
-    const el = $('confirm'), close = () => { el.hidden = true; el.classList.remove('modal'); this.confirmModal = false; window.removeEventListener('keydown', key, true); };
-    const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); if (!modal) close(); } };
+    const el = $('confirm'), close = () => { el.hidden = true; el.classList.remove('modal'); this.confirmModal = false; };
     if (modal) { this.confirmModal = true; el.classList.add('modal'); }
     el.classList.remove('welcome'); // (6.0.19) the welcome's styling is set again by its own call
     el.querySelector('.cf-title').textContent = title;
@@ -736,7 +721,6 @@ export class UI {
     el.querySelector('.cf-yes').onclick = () => { close(); onYes(); };
     el.querySelector('.cf-no').onclick = () => { close(); if (onNo) onNo(); }; // (4.2.0)
     el.onclick = (e) => { if (e.target === el && !modal) close(); };
-    window.addEventListener('keydown', key, true);
     el.hidden = false; el.querySelector('.cf-no').focus();
   }
   confirmOpen() { return !$('confirm').hidden; }
@@ -813,24 +797,24 @@ export class UI {
     return true;
   }
   // (4.11.0) N with more than one kind of net in the hatch: their cards in the middle of the screen, in the item
-  // cards' look (picture, name, a number in a circle when there are two). Click one, or press its number; N or Esc
+  // cards' look (picture, name, a number in a circle when there are two). Tap one; the trawl button again
   // puts the choice away. The sea runs on behind it.
   pickNet(kinds, counts, onPick) {
     let el = document.getElementById('netpick');
     if (!el) { el = document.createElement('div'); el.id = 'netpick'; el.hidden = true; document.body.appendChild(el); }
-    const close = () => { el.hidden = true; window.removeEventListener('keydown', key, true); this.netPickClose = null; };
+    const close = () => { el.hidden = true; window.removeEventListener('actdown', key, true); this.netPickClose = null; };
     if (this.netPickClose) { this.netPickClose(); return; }
     const pick = (k) => { close(); onPick(k); };
     const key = (e) => {
       const k = e.key.toLowerCase(), i = '123'.indexOf(k);
       if (i >= 0 && all[i] && counts[all[i]]) { e.stopImmediatePropagation(); e.preventDefault(); pick(all[i]); } // (claude-polish) immediate: the game's own key handler on the same window also took the 1 (and put the hand net away)
-      else if (k === 'escape' || k === 'n') { e.stopImmediatePropagation(); e.preventDefault(); close(); }
+      else if (k === 'n') { e.stopImmediatePropagation(); e.preventDefault(); close(); }
     };
     const all = Object.keys(NETS_SUB); // (4.11.1) every net, the ones not in the hatch greyed with a lock
-    el.innerHTML = `<p class="np-title">Which net?</p><p class="np-hint">Click a net, N or Esc to cancel</p><div class="g-row">${all.map((k) => { const N = NETS_SUB[k], adv = k === 'adv', have = counts[k] || 0;
+    el.innerHTML = `<p class="np-title">Which net?</p><div class="g-row">${all.map((k) => { const N = NETS_SUB[k], adv = k === 'adv', have = counts[k] || 0;
       return `<button class="gain np-card ${adv ? 'r-legendary' : 'r-common'}${have ? '' : ' np-none'}" data-net="${k}" ${have ? '' : 'disabled'}><div class="g-tile"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt="">${have ? `<i class="np-n">×${have}</i>` : '<span class="np-lock" aria-label="Not in the hatch"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/></svg></span>'}</div><span class="np-line">${adv ? `Up to ${N.max} animals, ${N.maxLen} m long, wide mouth, no legend escapes` : `Up to ${N.max} animals, ${N.maxLen} m long`}</span><b>${N.name}</b>${have ? '' : '<small class="np-out">Not in the hatch</small>'}</button>`; }).join('')}</div>`;
     el.onclick = (e) => { const b = e.target.closest('[data-net]'); if (b && !b.disabled) pick(b.dataset.net); else if (e.target === el) close(); };
-    window.addEventListener('keydown', key, true);
+    window.addEventListener('actdown', key, true);
     this.netPickClose = close; el.hidden = false;
   }
   netPickOpen() { const el = document.getElementById('netpick'); return !!el && !el.hidden; }
@@ -857,15 +841,13 @@ export class UI {
     let el = document.getElementById('stations');
     if (!el) {
       el = document.createElement('div'); el.id = 'stations'; el.hidden = true;
-      el.innerHTML = '<div class="st-plate"><h3>The Margaret</h3><div class="st-list"></div><p class="st-hint">Tab or Esc to close</p></div>';
+      el.innerHTML = '<div class="st-plate"><h3>The Margaret</h3><div class="st-list"></div><p class="st-hint"></p></div>';
       document.body.appendChild(el);
     }
-    const close = () => { el.hidden = true; window.removeEventListener('keydown', key, true); };
-    const key = (e) => { if (e.key === 'Escape' || e.key === 'Tab') { e.stopPropagation(); e.preventDefault(); close(); } };
+    const close = () => { el.hidden = true; };
     el.querySelector('.st-list').innerHTML = list.map((st) => `<button data-st="${st.id}"><b>${st.name}</b><span>${st.label}</span></button>`).join('');
     el.querySelector('.st-list').onclick = (e) => { const b = e.target.closest('button[data-st]'); if (b) { close(); onPick(b.dataset.st); } };
     el.onclick = (e) => { if (e.target === el) close(); };
-    window.addEventListener('keydown', key, true);
     el.hidden = false;
   }
   stationsOpen() { const el = document.getElementById('stations'); return !!el && !el.hidden; }
@@ -944,7 +926,7 @@ export class UI {
     // (5.0) the pet slot and the pictures he has taken
     const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
     if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
-    const petSlot = `<div class="pet-slot${pet ? ' on' : ''}" title="${pet ? psp.name + ': click for its card' : 'At the surface, drag a fish here: 60 cm to 1.5 m, or any legend'}"><span class="ps-lbl">Pet</span>${pet ? `<img src="${this.fitPics.get(psp.id)}" alt=""><b>${psp.name}</b><small>${P.petStay ? 'Staying (H)' : 'Following (H)'}</small>` : '<em>Drag a fish here at the surface</em>'}</div>`;
+    const petSlot = `<div class="pet-slot${pet ? ' on' : ''}" title="${pet ? psp.name + ': tap for its card' : 'At the surface, drag a fish here: 60 cm to 1.5 m, or any legend'}"><span class="ps-lbl">Pet</span>${pet ? `<img src="${this.fitPics.get(psp.id)}" alt=""><b>${psp.name}</b><small>${P.petStay ? 'Staying' : 'Following'}</small>` : '<em>Drag a fish here at the surface</em>'}</div>`;
     // (5.14.1) the bag as a fixed grid of spaces, ten across: the spaces his bag has are open wells, the rest padlocked, so
     // nothing moves as he changes bags or fills it. An animal lies across as many spaces as it takes, left to right
     // (1, 2, 4, then 8 and 16 over two rows), drawn bigger the more it takes, on a wash of the water it lives in; one that
@@ -977,7 +959,7 @@ export class UI {
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
       // (5.14.2) the large pressure tank always has its place: a strip under the chambers, its outline padlocked until fitted
       + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank</h4><canvas class="ct-big off"></canvas>`)
-      + `<p class="ct-cap">${elsewhere}Click an animal for its card; ${g.earl && g.earl.inSub ? 'drag it to move it' : 'drag it off the panel to throw it back'}</p></div></div></div>`
+      + `<p class="ct-cap">${elsewhere}Tap an animal for its card; ${g.earl && g.earl.inSub ? 'drag it to move it' : 'drag it off the panel to throw it back'}</p></div></div></div>`
       + (this.fishSel ? this.fishPop(P, g) : '') + (this.petSel ? this.petPop(P) : '') + (this.phSel != null ? this.photoPop(P, g) : '');
   }
   // (6.5.1) the trawl net the sub lets out: each kind in the hatch a small tile with its count, the chosen one lit; a
@@ -1103,7 +1085,7 @@ export class UI {
     for (let k = 0; k < 9; k++) { const q = (t * 0.3 + k / 9) % 1; x.strokeStyle = `rgba(220,240,255,${(0.5 * (1 - q)).toFixed(3)})`; x.lineWidth = 1; x.beginPath(); x.arc(glass.x + glass.w * 0.8 + Math.sin(q * 10 + k) * 3, sandTop - 6 - q * (glass.h - 24), 1.3 + (k % 3) * 0.6, 0, Math.PI * 2); x.stroke(); }
     // (3.6.2) the animal as well as it is; (3.7.1) at its real size against the others (a clownfish small, a
     // two-metre legendary filling the tank), and never out of the glass
-    const c = A.s.cond, stressed = !dead && c < 0.6, dyingNow = !dead && (c < 0.3 || (this.aqDying || false));
+    const c = A.s.cond, stressed = !dead && c < 0.6, dyingNow = !dead && (c < 0.3 || (this.aqDying));
     const B = speciesBox(A.sp), len = A.s.len || A.sp.len;
     const fitL = Math.min((glass.w * 0.86) / B.w, ((sandTop - glass.y) * 0.8) / B.h);
     let L = Math.max(fitL * 0.16, fitL * sizeK(len));
@@ -1550,7 +1532,7 @@ export class UI {
     row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
     $('set-units').innerHTML = `<span>Units<em>metres and kilograms, or feet and pounds</em></span><b class="set-pick">${imperial() ? 'Imperial' : 'Metric'}</b>`; // (6.0.3)
     { const nm = uiSizeName(); $('set-uisize').innerHTML = `<span>Button size<em>the controls on screen, larger or smaller</em></span><b class="set-pick">${nm[0].toUpperCase() + nm.slice(1)}</b>`; } // (5.15.7) Small / Normal / Large, a tap steps through them
-    $('set-graphics').innerHTML = `<span>Smoother on slow devices<em>${document.documentElement.classList.contains('touch') ? 'battery saver: 30 frames a second, cooler and longer' : 'a softer picture, fewer extras'}</em></span>${sw(!!SETTINGS.fast)}`;
+    $('set-graphics').innerHTML = `<span>Smoother on slow devices<em>${'battery saver: 30 frames a second, cooler and longer'}</em></span>${sw(!!SETTINGS.fast)}`;
   }
   galleryOpen() { return !$('gallery').hidden; }
   cabinOpen() { return !$('cabin').hidden; }
@@ -1583,14 +1565,6 @@ export class UI {
       $('ts-slider').addEventListener('input', (e) => { this.ts.depth = +e.target.value; this.tsRender(); });
       $('ts-bottom').addEventListener('click', () => { this.ts.depth = TRAPS[this.ts.type].maxDepth; this.tsRender(); });
       $('ts-set').addEventListener('click', () => this.tsSet());
-      $('trapset').addEventListener('wheel', (e) => { e.preventDefault(); this.tsNudge((e.deltaY > 0 ? 1 : -1) * (e.shiftKey ? 10 : 1)); }, { passive: false });
-      window.addEventListener('keydown', (e) => {
-        if (!this.trapSetOpen()) return;
-        const k = e.key;
-        if (k === 'ArrowDown' || k === 's' || k === 'S') { e.preventDefault(); this.tsNudge(e.shiftKey ? 10 : 1); }
-        else if (k === 'ArrowUp' || k === 'w' || k === 'W') { e.preventDefault(); this.tsNudge(e.shiftKey ? -10 : -1); }
-        else if (k === ' ' || k === 'Enter') { e.preventDefault(); this.tsSet(); }
-      }, true);
     }
     // the first trap type with one free, unless the last one chosen is still free
     if (!this.ts.type || trapsFree(g, this.ts.type) <= 0) this.ts.type = TRAP_ORDER.find((k) => trapsFree(g, k) > 0) || 'pot';
@@ -1793,11 +1767,6 @@ export class UI {
       const go = () => { if (T.classList.contains('gone') || !T.classList.contains('attract')) return; T.classList.remove('attract'); T.classList.add('select'); T.__shownAt = performance.now(); };
       T.addEventListener('click', (ev) => { if (ev.target.closest('.t-select') && performance.now() - (T.__shownAt || 0) < 500) { ev.stopImmediatePropagation(); ev.preventDefault(); } }, true);
       T.addEventListener('pointerdown', (ev) => { if (ev.target.closest('.t-gear, .t-select, #settings')) return; go(); });
-      window.addEventListener('keydown', (ev) => {
-        if (T.classList.contains('gone') || !$('settings').hidden || !$('confirm').hidden) return;
-        if (T.classList.contains('attract')) { if (!['Shift', 'Control', 'Alt', 'Meta', 'Tab'].includes(ev.key)) { ev.preventDefault(); go(); } return; }
-        if (ev.key === 'Escape') { T.classList.add('attract'); T.classList.remove('select'); }
-      });
       T.querySelector('.t-back').addEventListener('click', () => { T.classList.add('attract'); T.classList.remove('select'); });
     }
   }
@@ -1912,7 +1881,7 @@ export class UI {
     this.journalCount(g);
     const list = $('journal-list');
     if (g.journal.size === 0) {
-      list.innerHTML = `<p class="empty">Nothing in the book yet.<br>${document.documentElement.classList.contains('touch') ? 'Swim close to an animal and tap it to observe it.' : 'Swim close to a creature and press F to observe it.'}</p><div class="jgrid">${'<div class="jcell blank"><span>?</span></div>'.repeat(6)}</div>`;
+      list.innerHTML = `<p class="empty">Nothing in the book yet.<br>${'Swim close to an animal and tap it to observe it.'}</p><div class="jgrid">${'<div class="jcell blank"><span>?</span></div>'.repeat(6)}</div>`;
       this.journalDetail(null); return;
     }
     // (6.9.1) by depth: the shallowest first, down the page as down the sea (the depth he met it at, then its usual depth);
@@ -1935,7 +1904,7 @@ export class UI {
     const det = $('journal-detail'), notes = $('journal-notes'), title = $('jr-title'); if (!det) return;
     if (id == null) { // (5.10.1) nothing met yet: the right page says how a page gets filled, not a blank "Notes"
       notes.hidden = true; det.hidden = false; title.textContent = 'The first page';
-      det.innerHTML = `<p class="jd-empty">Every animal you observe is drawn into this book: where it lives, how big it grows, the depth you first saw it at.<br><br>${document.documentElement.classList.contains('touch') ? 'Swim close to one and tap it to observe it.' : 'Swim close to one and press F to observe it.'}</p>`; return; }
+      det.innerHTML = `<p class="jd-empty">Every animal you observe is drawn into this book: where it lives, how big it grows, the depth you first saw it at.<br><br>${'Swim close to one and tap it to observe it.'}</p>`; return; }
     const g = this.h.getGame(), sp = SPECIES_BY_ID[id], info = g.journal.get(id) || {}, R = rarityOf(sp), hab = usualDepth(sp);
     if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
     const ph = (g.photos || []).filter((p) => p.id === id && p.img).sort((a, b) => b.q - a.q)[0];
@@ -2031,7 +2000,7 @@ export class UI {
     const card = (name, desc, stat, price, act, arg, label, owned = '', img = '', specs = null) => `
       <div class="card${img ? ' with-img' : ''}${this.openRows.has('card:' + arg) ? ' open' : ''}" data-row="card:${arg}">
         ${img ? `<img src="${img}" alt="">` : ''}
-        <div class="card-txt"><h3>${name}<button class="info" data-info="card:${arg}" title="More about it (I)" aria-label="More information">i</button></h3>${stat ? `<div class="card-stat">${stat}</div>` : ''}${bullets(specs)}<p class="story">${desc}</p>${owned}</div>
+        <div class="card-txt"><h3>${name}<button class="info" data-info="card:${arg}" title="More about it" aria-label="More information">i</button></h3>${stat ? `<div class="card-stat">${stat}</div>` : ''}${bullets(specs)}<p class="story">${desc}</p>${owned}</div>
         <button data-act="${act}" data-arg="${arg}" ${price !== null && !can(price) ? 'disabled' : ''}>${label}${price !== null ? `<span>${money(price, false)}</span>` : ''}</button>
       </div>`;
     const ladder = (n, i) => `<div class="ladder">${Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>`;
@@ -2174,7 +2143,7 @@ export class UI {
         html += '</div></div>';
       } else {
         /* (6.0.0) no replacement to buy: a lost sub is back in her cradle when he is aboard again */
-        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ', damaged: swim out and hold R at each hole to repair it' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
+        html += `<div class="yd-hero"><div class="yd-portcol"><div class="yd-port"><canvas class="yd-pic big" data-hull="${hl}"></canvas></div>${ruler(S0)}</div><div class="yd-info"><h3><small>No. ${hl + 1} of ${SUBS.length}</small>${S0.name}</h3><p class="yd-hull">Hull ${Math.round(sub.hull * 100)} %${sub.hull < 0.999 && !sub.imploded ? ', damaged: swim out and hold the button at each hole to repair it' : ''}</p>${sheet(S0, hl, null, sub.imploded ? 'LOST' : 'IN SERVICE')}
           <button class="yd-plaque" data-yd="all"><i></i><i></i><i></i><i></i><svg class="yd-lens" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15 15 L21 21" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>All submersibles${hl < SUBS.length - 1 && hl + 1 <= cap ? ` (next ${money(SUBS[hl + 1].price, false)})` : ''}</button></div></div>`;
         const refits = [['gear:arm', GEAR.arm.name, 'Works the claw under the sphere: from inside, Space grabs an animal.', GEAR.arm.price, owns(P, 'arm')]]
           .concat(Object.entries(SUB_ADDONS).filter(([, a]) => !a.inRoom).map(([k, a]) => [k, a.name, { quiet: 'Half the noise down there: the deep notices the sub less.', sonar: 'A strip under the radar draws the seafloor around her.', airBank: 'Bottles strapped behind the sphere: half as much cabin air again, on every sub.' }[k] || a.desc, a.price, !!(P.addons || {})[k]]));
@@ -2373,7 +2342,7 @@ export class UI {
       }
       return `<div class="sheet-row${k ? ' p-' + k : ''}"><span>${l || 'Also'}</span><b>${v}</b></div>`;
     }).join('');
-    return `<div class="up-row${open ? ' open' : ''}" data-row="${key}"><div class="up-head"><span class="up-name">${name}<button class="info" data-info="${key}" title="More about it (I)" aria-label="More information">i</button></span><span class="up-line">${line}</span>${plates ? `<span class="plates">${plates}</span>` : ''}</div>
+    return `<div class="up-row${open ? ' open' : ''}" data-row="${key}"><div class="up-head"><span class="up-name">${name}<button class="info" data-info="${key}" title="More about it" aria-label="More information">i</button></span><span class="up-line">${line}</span>${plates ? `<span class="plates">${plates}</span>` : ''}</div>
       <span class="up-lv">${lv}</span>${button}
       <div class="up-detail"><div class="sheet">${sheet}</div>${desc ? `<p class="story">${desc}</p>` : ''}</div></div>`;
   }
@@ -2427,7 +2396,7 @@ export class UI {
       html += `<div class="up-group"><h4>${grp}</h4>`;
       if (gk && !owns(P, gk)) {
         const G = GEAR[gk], ic = ICON_OF[grp];
-        html += `<div class="card${ic ? ' with-img' : ''}${this.openRows.has('card:gear:' + gk) ? ' open' : ''}" data-row="card:gear:${gk}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}<button class="info" data-info="card:gear:${gk}" title="More about it (I)" aria-label="More information">i</button></h3>${GEAR_SPECS[gk] ? `<ul class="bullets">${GEAR_SPECS[gk].map(([l, v, k]) => `<li${k ? ` class="p-${k}"` : ''}><em>${l}</em><b>${v}</b></li>`).join('')}</ul>` : ''}<p class="story">${G.desc}</p></div>
+        html += `<div class="card${ic ? ' with-img' : ''}${this.openRows.has('card:gear:' + gk) ? ' open' : ''}" data-row="card:gear:${gk}">${ic ? `<img src="${icon(ic[0], ic[1])}" alt="">` : ''}<div class="card-txt"><h3>${G.name}<button class="info" data-info="card:gear:${gk}" title="More about it" aria-label="More information">i</button></h3>${GEAR_SPECS[gk] ? `<ul class="bullets">${GEAR_SPECS[gk].map(([l, v, k]) => `<li${k ? ` class="p-${k}"` : ''}><em>${l}</em><b>${v}</b></li>`).join('')}</ul>` : ''}<p class="story">${G.desc}</p></div>
           <button data-act="buy" data-arg="gear:${gk}" ${can(G.price) ? '' : 'disabled'}>Buy<span>${money(G.price)}</span></button></div></div>`;
         continue;
       }

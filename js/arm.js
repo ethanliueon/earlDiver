@@ -37,7 +37,7 @@ export function findArmTarget(g) {
 }
 
 export function startArm(g) {
-  if (overencumbered(g)) return 'The catch bag is full: empty it in the tank room (T)';
+  if (overencumbered(g)) return 'The catch bag is full: empty it in the tank room';
   const tgt = findArmTarget(g);
   if (!tgt) return 'Nothing in reach of the arm';
   const D = armDef(g);

@@ -255,7 +255,7 @@ export const UPGRADE_DESC = {
   payFish: 'Better buyers. Every live animal, tag and photograph sells for 5 % more per level.',
   paySalvage: 'Contacts in the scrap trade. Clams, iron, ink, pearls and sapphires sell for 5 % more per level.',
   air: 'A bigger cylinder: 5 more seconds of air per level.',
-  sprint: 'Stronger kicks when you sprint (Shift). Sprinting still uses air twice as fast.',
+  sprint: 'Stronger kicks when you sprint. Sprinting still uses air twice as fast.',
   swim: 'Better fins and technique: +15 % everyday swimming speed per level, at no extra air. 2.5x at level 10.',
   bag: 'One more pocket in the catch bag for a live animal.',
   netSize: 'A wider hoop and a deeper bag: the net takes bigger fish.',

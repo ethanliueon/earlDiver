@@ -1,8 +1,9 @@
 import { uiUnit } from './settings.js';
+import { act } from './input.js';
 // (5.3) Touch: a floating joystick and the HUD's buttons, for phones and tablets.
 //
-// Every finger is followed on its own. One that lands on a HUD button presses that button's key (a real keydown,
-// so the game treats it exactly as the keyboard: held while the finger stays, a short one a tap); one that lands
+// Every finger is followed on its own. One that lands on a HUD button sends that button's action (input.js: held
+// while the finger stays, a short one a tap); one that lands
 // anywhere else in the left part of the screen grows a joystick where it landed. The stick is analogue: a small push
 // swims slowly, the rim is full speed, and pushed to the very edge he sprints. The base follows the thumb if it
 // drifts too far, so the stick never "runs out". The emulated mouse events a browser makes after a touch are
@@ -21,10 +22,7 @@ export class Touch {
     canvas.addEventListener('touchcancel', (e) => this.end(e), opt);
     window.addEventListener('blur', () => this.releaseAll());
   }
-  key(k, down) {
-    const key = k === ' ' ? ' ' : k === 'escape' ? 'Escape' : k;
-    window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { key, bubbles: true }));
-  }
+  key(k, down) { act(k, down); } // (7.2.4) the button's action (input.js), no longer a made-up key press
   radius() { const k = window.__fingerK || 1; return 46 * uiUnit() * k; } // (5.15.7) in the one unit, as the HUD: proportional on every screen // (5.4) in real points, on a page laid out wider than the screen // (5.3.1) CSS px centre to rim: about 1.6 cm across
   start(e) {
     if (!this.active()) return;

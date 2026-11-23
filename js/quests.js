@@ -31,13 +31,13 @@ export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { 
 // ['trap', type]). Once the net and trawl steps are done their key hints leave the screen (learned()).
 export const MAIN = [
   // (4.3.4) the first three steps are one dive now: down to the fish, observe it, catch it, back up (FIRST_FISH)
-  { id: 'firstfish', text: 'Your first fish', touchHelp: 'Swim down to a fish, tap the eye button to observe it, catch it with your net, then swim back up to the surface.', help: 'Swim down to a fish, observe it (F), catch it with your net, then swim back up to the surface.', need: 1, on: 'firstFish', pay: 50, kit: [['item', 'flicknet']] },
-  { id: 'sell', text: 'Sell your catch', touchHelp: 'Swim up beside the Margaret and tap its winch, then Sell all.', help: 'Swim up beside the Margaret and press U, then Sell all.', need: 1, on: 'sell', pay: 30 },
+  { id: 'firstfish', text: 'Your first fish', touchHelp: 'Swim down to a fish, tap the eye button to observe it, catch it with your net, then swim back up to the surface.', help: 'Swim down to a fish, observe it, catch it with your net, then swim back up to the surface.', need: 1, on: 'firstFish', pay: 50, kit: [['item', 'flicknet']] },
+  { id: 'sell', text: 'Sell your catch', touchHelp: 'Swim up beside the Margaret and tap its winch, then Sell all.', help: 'Swim up beside the Margaret and tap, then Sell all.', need: 1, on: 'sell', pay: 30 },
   { id: 'buy', text: 'Buy a piece of gear from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought gear goes into your inventory (supplies don't count).", need: 1, on: 'bought', pay: 40 },
-  { id: 'wear', text: 'Put on the gear you bought', touchHelp: 'Open your bag, tap the gear and Put it on.', help: 'Press B for your inventory, click it and Put it on (or drag it onto Earl).', need: 1, on: 'wear', pay: 30 },
+  { id: 'wear', text: 'Put on the gear you bought', touchHelp: 'Open your bag, tap the gear and Put it on.', help: 'Tap for your inventory, tap it and Put it on (or drag it onto Earl).', need: 1, on: 'wear', pay: 30 },
   // (6.6.0) the tutorial's last step, one trip in parts (main.js tutor, seen.st): into the sub, drive to a fish (and
   // sprint), out to net it, a second one deeper, call the sub to him, a look at the bag's catch, autopilot home
-  { id: 'subtrip', text: 'Your first sub trip', touchHelp: 'Get in the sub and drive to the fish; leave the sub and net it, then the one below; call the sub, look at your catch, and take the autopilot home.', help: 'Get in the sub (F) and drive to the fish; leave it and net the fish, then the one below; call the sub (C), look at your catch (B), and autopilot home (C).', need: 1, on: 'subTrip', pay: 60 },
+  { id: 'subtrip', text: 'Your first sub trip', touchHelp: 'Get in the sub and drive to the fish; leave the sub and net it, then the one below; call the sub, look at your catch, and take the autopilot home.', help: 'Get in the sub and drive to the fish; leave it and net the fish, then the one below; call the sub, look at your catch, and autopilot home.', need: 1, on: 'subTrip', pay: 60 },
   // (6.8.0) the basics after the sub trip (60 m, air, trawl, chamber, surfacing, aquarium, trap) left the Log: the first
   // board teaches the dive, the live catch and the trap, and the first-time lessons teach the trawl, chamber and air tank
   { id: 'done', text: 'Basics learned', help: 'The board pays cash. The rest of the sea is yours to find.', need: 0, on: null, pay: 0, gift: 'split' },
@@ -47,7 +47,7 @@ const ALIAS = { swim: 'firstfish', observe: 'firstfish', net: 'firstfish' }; // 
 // (4.3.4) the first-fish step, part by part: 0 swim down to the fish, 1 observe it, 2 catch it, 3 back to the surface, 4 done
 export const FIRST_FISH = ['Jump in and swim down to the fish', 'Observe it', 'Catch it', 'Swim back up to the surface'];
 // (4.18.6) the same parts in plain words for a diver who skipped the tutorial (there is no orange fish then)
-export const FIRST_FISH_PLAIN = ['Jump in and swim down', 'Observe a fish (F)', 'Catch a fish', 'Back up to the surface'];
+export const FIRST_FISH_PLAIN = ['Jump in and swim down', 'Observe a fish', 'Catch a fish', 'Back up to the surface'];
 export function firstFishPart(P) { const S = Q(P), sn = S.seen; if (MAIN[S.main] && MAIN[S.main].id !== 'firstfish') return 4; if (S.mainProg >= 1) return 4; return sn.ff_catch ? 3 : sn.ff_obs ? 2 : sn.ff_reach ? 1 : 0; }
 // the line on the HUD for the step the Log is on (for the first fish: which part, and how far along)
 export function stepLabel(P) {

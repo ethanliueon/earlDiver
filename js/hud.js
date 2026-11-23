@@ -12,7 +12,6 @@ import { LEGEND } from './item_data.js';
 import { rarityOf } from './specimens.js';
 import { legendMotes, glint } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
-import { touchWords } from './touchtext.js';
 import { calState } from './store.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
 const PLATES = new Map();
@@ -153,7 +152,6 @@ export class Hud {
   // explanations: only when hints are on (H)
   hint(text) { if (this.hints) this.toast(text, 'note'); }
   toast(text, kind = '') {
-    if (typeof text === 'string') text = touchWords(text); // (5.10.10) a phone game: no key names in what it says
     text = titled(String(text).replace(/\s+·\s+/g, ', ')); // (4.26) no middle dots in what the game says
     // the same line again while it is still up: count it ("x2") instead of stacking a copy
     const same = this.toasts.find((tt) => tt.text === text && tt.kind === kind && tt.t < 3.5);
@@ -182,7 +180,7 @@ export class Hud {
     let x = W / 2 - total / 2;
     const y = H - sh - 22 * s;
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
-    for (const [key, kind, tier, name] of (this.touch ? [] : tools)) { // (5.5.2) on a touch screen the tools are buttons up the right edge (drawActions)
+    for (const [key, kind, tier, name] of ([])) { // (5.5.2) on a touch screen the tools are buttons up the right edge (drawActions)
       const on = kind === sel && !e.inSub;
       // (olive) a raised plate of the panels' painted steel with a well pressed into it; the tool in hand ringed in
       // the deck's cream paint
@@ -193,7 +191,7 @@ export class Hud {
       ctx.drawImage(icon(kind, tier), x + 6 * s, y + 4 * s, sw - 12 * s, sh - 12 * s);
       ctx.globalAlpha = 1;
       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      if (!this.touch) keyCap(ctx, x - 5 * s, y - 7 * s, key, s * 0.6); ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+       ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       { const kx2 = window.innerWidth / this.c.width; if (!e.inSub) this.hots.push({ x: (x + this.safeL) * kx2, y: (y + this.safeT) * kx2, w: sw * kx2, h: sh * kx2, key }); } // (5.1.1) a tool is picked by clicking (tapping) it too
       if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.items.film ? 'rgba(216,236,230,0.8)' : '#e0524a'; ctx.fillText(`${g.items.film || 0}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       if (kind === 'trap') { const free = ownedTraps - g.traps.length; ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
@@ -247,7 +245,7 @@ export class Hud {
         if (k <= 0) this.bagPop = null; else { ctx.shadowBlur = 0; ctx.globalAlpha = k; ctx.translate(x0 + sz + 8 * s + tw + 34 * s, wy); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
           try { drawSpecies(ctx, SPECIES_BY_ID[P2.sp.id], 44 * s, g.time * 2, 1, 0); } catch (err) { /* only the count, then */ } } }
       ctx.restore();
-      if (this.touch && this.hots) this.hots.push({ x: (x0 + this.safeL) * (window.innerWidth / this.c.width), y: (wy - sz / 2 + this.safeT) * (window.innerWidth / this.c.width), w: (sz + 8 * s + tw) * (window.innerWidth / this.c.width), h: sz * (window.innerWidth / this.c.width), key: 'b' }); // a tap opens the bag
+      if (this.hots) this.hots.push({ x: (x0 + this.safeL) * (window.innerWidth / this.c.width), y: (wy - sz / 2 + this.safeT) * (window.innerWidth / this.c.width), w: (sz + 8 * s + tw) * (window.innerWidth / this.c.width), h: sz * (window.innerWidth / this.c.width), key: 'b' }); // a tap opens the bag
     }
     for (let i = 0; i < 0; i++, sx += step) { // (5.14.0) the old row of dots, retired
       const sp = list[i];
@@ -851,7 +849,7 @@ e.inSub ? [
     return res;
   }
   drawIn(g, dt, W, H) {
-    const touch = !!this.touch, ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = []; window.__hudHots = this.hots; // (5.4) for the tutorial's pointing on touch (5.3.1) the HUD keeps its size on a phone: only the controls are added
+    const ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = []; window.__hudHots = this.hots; // (5.4) for the tutorial's pointing on touch (5.3.1) the HUD keeps its size on a phone: only the controls are added
     if (g.mode === 'menu') return;
     const e = g.earl, fx = g.fx;
     const dying = g.mode === 'dying';
@@ -860,7 +858,7 @@ e.inSub ? [
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 4 * s; ctx.strokeStyle = 'rgba(230,222,196,0.9)'; ctx.lineWidth = 2 * s;
       ctx.beginPath(); ctx.arc(hx, hy, r, 0, TAU); ctx.stroke(); ctx.fillStyle = 'rgba(230,222,196,0.9)'; ctx.beginPath(); ctx.arc(hx, hy, 2 * s, 0, TAU); ctx.fill(); ctx.restore();
     }
-    const red = dying || false;
+    const red = dying;
     const aboard = !!g.aboard && !dying; // on the Margaret's deck or in her cabin: only cash, the prompt and the contracts
 
     // ---------- (4.27) the instruments ----------
@@ -870,7 +868,7 @@ e.inSub ? [
     // pictures under the quest board at the left (HTML, #quests-hud).
     const pad = 26 * s;
     ctx.textBaseline = 'top'; ctx.textAlign = 'right';
-    const rx0 = W - pad - (touch ? Math.max(0, (this.gearSpace || 0) - pad + 12 * s) : 0), CW = 212 * s, cx0 = rx0 - CW, ccx = cx0 + CW / 2;
+    const rx0 = W - pad - (Math.max(0, (this.gearSpace || 0) - pad + 12 * s)), CW = 212 * s, cx0 = rx0 - CW, ccx = cx0 + CW / 2;
     this.colX = ccx; this.journalHot = null; this.chartHot = null;
     const kx = window.innerWidth / this.c.width;
     const notes = []; // [text, colour]
@@ -921,7 +919,7 @@ e.inSub ? [
       ctx.restore(); ctx.textBaseline = 'top'; ctx.textAlign = 'right';
       // a thin line with its painted icon at the left
       // (5.0) a short line with its mark in the same letters as the depth: O2 for his air, HULL for the sub's
-      const lineW = 132 * s, lx = rx0 - lineW, lh = (touch ? 10 : 6) * s; // (5.9.6) thicker on a phone: new divers did not see it
+      const lineW = 132 * s, lx = rx0 - lineW, lh = (10) * s; // (5.9.6) thicker on a phone: new divers did not see it
       const line = (name, y, frac, col, pulse = 1) => {
         ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4 * s;
         ctx.fillStyle = `rgba(${cr},${cg},${cb},${(0.8 * lit).toFixed(3)})`;
@@ -945,8 +943,8 @@ e.inSub ? [
       if (g.airCallout) { ctx.save(); ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.font = `600 ${15 * s}px ${HUDT}`; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 5 * s; ctx.fillStyle = `rgba(236,226,200,${(0.75 + 0.2 * Math.sin(g.time * 2.4)).toFixed(3)})`; ctx.fillText('Connect a backup tank', rx0, ay + 36 * s); ctx.restore(); }
       // (5.9.6) the first time under, a callout on the air bar: (5.12.1) an arrow pointing at it and words to its left
       const PA = g.profile;
-      if (touch && PA && !e.inSub && !aboard && (e.y > 1.5 || this.airTipT > 0) && !PA.tutAirSeen) { this.airTipT = (this.airTipT || 0) + dt; if (this.airTipT > 9) { PA.tutAirSeen = true; this.airTipT = 0; } }
-      if (touch && this.airTipT > 0 && PA && !PA.tutAirSeen) {
+      if (PA && !e.inSub && !aboard && (e.y > 1.5 || this.airTipT > 0) && !PA.tutAirSeen) { this.airTipT = (this.airTipT || 0) + dt; if (this.airTipT > 9) { PA.tutAirSeen = true; this.airTipT = 0; } }
+      if (this.airTipT > 0 && PA && !PA.tutAirSeen) {
         const k = Math.min(1, this.airTipT / 0.4, (9 - this.airTipT) / 0.6), q = 0.5 + 0.5 * Math.sin(g.time * 4.5), fx0 = lx - 44 * s, fy0 = ay - 7 * s, fw = lineW + 50 * s, fh = lh + 14 * s;
         ctx.save(); ctx.globalAlpha = k;
         // (5.12.1) not a frame round it (it read as a web outline): a chunky painted arrow, as a phone game points at a thing,
@@ -1007,8 +1005,8 @@ e.inSub ? [
     // (5.15.6) as large as fits between the air bar and the corner of buttons (88 at most, as the owner asked), so the two
     // never overlap whatever the phone
     const room = this.arcTop ? (this.arcTop - (yy + 8 * s) - 10 * s) / 2 : 88 * s, rrT = Math.max(40 * s, Math.min(72 * s, room - 6 * s)), rcyT = yy + 20 * s + rrT; // (6.3.0) a little smaller, and lower // (5.6.9b) 44 to 56; (5.9.6) 66; (5.13.0) 88
-    const notesAt = touch ? { x: W - 12 * (this.pxPt || 1.5) * (this.U || 1) - 2 * rrT - 14 * s, y: yy + 8 * s } : null; // (5.15.6) on a phone the notes stand to the left of the radar, clear of the buttons
-    if (touch) yy = rcyT + rrT + 16 * s;
+    const notesAt = { x: W - 12 * (this.pxPt || 1.5) * (this.U || 1) - 2 * rrT - 14 * s, y: yy + 8 * s }; // (5.15.6) on a phone the notes stand to the left of the radar, clear of the buttons
+    yy = rcyT + rrT + 16 * s;
     // ---------- the words: under the instrument, centred on it ----------
     {
       let ny = notesAt ? notesAt.y : yy;
@@ -1018,7 +1016,7 @@ e.inSub ? [
       ctx.restore();
     }
     // ---------- the radar: large, in the bottom right corner ----------
-    const rr = touch ? rrT : 64 * s, rcx = touch ? W - 12 * (this.pxPt || 1.5) * (this.U || 1) - rr : rx0 - rr, rcy = touch ? rcyT : H - pad - rr; // (5.15.7) on a phone, out to the right edge under the settings coin
+    const rr = rrT, rcx = (W - 12 * (this.pxPt || 1.5) * (this.U || 1) - rr), rcy = rcyT; // (5.15.7) on a phone, out to the right edge under the settings coin
     this.radarAt = { x: rcx, y: rcy, r: rr }; // (5.6.1) the column under it hangs from here
     ctx.save();
     // (5.13.0) a real sonar scope (the owner's reference): dark green glass with a faint grid behind, four range rings, a
@@ -1108,23 +1106,7 @@ e.inSub ? [
     const slotBase = rcy - rr - 20 * s; // the carried things stack upward from here
     // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
     this.subHot = null;
-    if (!touch && !g.sub.imploded && !dying && !g.tutHidePrompts) { // (4.4.0) not during the tutorial (5.1.1: on touch, an action button)
-      const ap = g.autopilot;
-      const label = e.inSub ? (g.homeRun ? 'autopilot off' : g.sub.docked ? null : 'autopilot home') : (ap && ap.state === 'coming' ? 'stop sub' : 'call sub');
-      if (label) {
-        // bottom-right corner, a little larger
-        const word = label.charAt(0).toUpperCase() + label.slice(1);
-        ctx.font = `600 ${19 * s}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        const tw = ctx.measureText(word).width, bw = tw + 40 * s, bh = 31 * s, bx = rcx - rr - 18 * s - bw, by = H - pad - bh;
-        this.subHot = { x: (bx + this.safeL) * kx, y: (by + this.safeT) * kx, w: bw * kx, h: bh * kx };
-        const on = g.homeRun || (ap && ap.state === 'coming');
-        promptShade(ctx, bx + bw / 2, by + bh / 2, s * 0.45);
-        keyCap(ctx, bx, by + 2 * s, 'C', s);
-        ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 1;
-        ctx.fillStyle = '#efe8d2'; ctx.fillText(word, bx + 38 * s, by + bh / 2 + 1 * s);
-        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0; ctx.textBaseline = 'top';
-      }
-    }
+    
 
     // ---------- Q / E items: in the right-hand column, only when carried ----------
     // (claude-polish) a small steel plate in a brass rim, as the journal and chart buttons
@@ -1141,22 +1123,7 @@ e.inSub ? [
       if (n || N) slots.push(['n', 'N', state, n || N ? 1 : 0, n ? '#e8b070' : kinds.includes('adv') ? '#f0c060' : '#e8b070', n && n.phase === 'tow' ? Math.min(1, n.pt / (n.T.tow || TOW_MAX)) : 0, n ? 0 : netsOf(g.items).basic]); // (the badge: two beginner nets)
     }
     this.slotHot = {}; this.itemSlots = slots;
-    if (!touch) slots.forEach(([id, key, name, n, col, active, badge], i) => {
-      const x = rx0 - sz, y = slotBase - (i + 1) * (sz + 10 * s) + 10 * s;
-      this.slotHot[id] = { x: (x + this.safeL) * kx, y: (y + this.safeT) * kx, w: sz * kx, h: sz * kx };
-      glass(x, y, sz, sz);
-      ctx.fillStyle = col; ctx.globalAlpha = n > 0 ? 1 : 0.3;
-      ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 8 * s, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
-      if (active > 0) { ctx.strokeStyle = col; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.arc(x + sz / 2, y + sz * 0.52, 13 * s, -Math.PI / 2, -Math.PI / 2 + TAU * active); ctx.stroke(); }
-      ctx.font = `500 ${10 * s}px ${MONO}`; ctx.fillStyle = '#d8ece6'; ctx.textAlign = 'left'; if (!(id === 'n' && g.trawlTaught)) keyCap(ctx, x - 6 * s, y - 6 * s, key, s * 0.62); // (4.0.6) N, once learned, is not shown
-      ctx.textAlign = 'right'; if (id !== 'n') ctx.fillText(`×${n}`, x + sz - 5 * s, y + 4 * s);
-      if (badge > 1) { // (4.11.0) how many nets are in the hatch: a number in a small brass circle at the corner
-        const bw = 22 * s, bh = 14 * s, bx = x + sz - bw + 6 * s, by = y - 5 * s; // (4.11.1) a wider pill: ×2
-        ctx.fillStyle = '#d8d0b6'; ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 3 * s); ctx.fill(); ctx.strokeStyle = 'rgba(20,18,12,0.85)'; ctx.lineWidth = 1; ctx.stroke(); // (olive) cream, as the keys
-        ctx.save(); ctx.fillStyle = '#26241a'; ctx.font = `600 ${10 * s}px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(`×${badge}`, bx + bw / 2, by + bh / 2 + 0.5 * s); ctx.restore();
-      }
-      dymo(ctx, name.toLowerCase(), x - 9 * s, y + sz / 2 - 6 * s, s, { tape: name === 'NO NET' || name === 'TORN' ? '#4a1810' : '#1c1d1b' });
-    });
+    
     }
     // (4.28) no cash on the HUD: it cannot change under water. It is in the inventory, the journal and the shops.
 
@@ -1219,39 +1186,13 @@ e.inSub ? [
     // ---------- interaction prompts ----------
     // (4.0.0) both prompts fade in and out, and one crossfades into the next; the shade behind them is one
     // fixed soft pool that fades with them. (5.1.1) On a touch screen these are the action buttons instead.
-    if (!touch) {
-      const cw = aboard ? null : this.capWant;
-      const capFx = this.fadeText('cap', cw ? cw[0] : null, cw ? cw[1] : null); this.capIconNow = cw ? cw[2] : this.capIconNow;
-      const prFx = this.fadeText('pr', g.prompt && !dying && !g.kill && !g.tutHidePrompts ? g.prompt : null, '#ece6d2'); // (2.6.2: always: Hints off hid what F does, e.g. at the cabin door)
-      const shadeA = Math.max(capFx.level, prFx.level);
-      const both = capFx.level > 0.01 && prFx.level > 0.01, capY = H * 0.72 - (both || g.prompt ? 40 : 0) * s + 14 * s, prY = H * 0.72 + 15 * s;
-      const sy = both ? (capY + prY) / 2 : capFx.level > prFx.level ? capY : prY; this.shadeY = shadeA > 0.02 && this.shadeY != null ? this.shadeY + (sy - this.shadeY) * 0.15 : sy;
-      if (shadeA > 0.01) promptShade(ctx, W / 2, this.shadeY, s, shadeA);
-      for (const [txt, a, col] of capFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, capY, s, { col, size: 18, shade: false, icon: parsePromptKey(txt) ? null : this.capIconNow }); ctx.restore(); } // (3.6.0) a brass key-cap and the words; a catch's name in its rarity's colour
-      for (const [txt, a, col] of prFx.list) { ctx.save(); ctx.globalAlpha = a; drawPrompt(ctx, txt, W / 2, prY, s, { col, shade: false, named: g.promptName }); ctx.restore(); }
-      if (g.promptBar != null && prFx.level > 0.01) { // (4.5.0) the hold's progress: a slim brass bar in a dark groove
-        const bw = 150 * s, bh = 5 * s, bx = W / 2 - bw / 2, by = prY + 18 * s, k = Math.max(0, Math.min(1, g.promptBar));
-        ctx.save(); ctx.globalAlpha = prFx.level;
-        ctx.fillStyle = 'rgba(6,10,12,0.7)'; ctx.beginPath(); ctx.roundRect(bx - 1, by - 1, bw + 2, bh + 2, 3 * s); ctx.fill();
-        const gr = ctx.createLinearGradient(0, by, 0, by + bh); gr.addColorStop(0, '#f4f6f0'); gr.addColorStop(1, '#b8bab0');
-        ctx.fillStyle = gr; ctx.beginPath(); ctx.roundRect(bx, by, Math.max(bh, bw * k), bh, 2.5 * s); ctx.fill();
-        ctx.restore();
-      }
-    }
+    
     // (5.1.1) a touch screen: the actions, bottom right (on deck too: the F action is how he goes in)
-    this.inKill = !!(touch && g.kill && !g.kill.inSub && !g.kill.esc); // (5.10.10) the controls stay where they are in its jaws, dimmed
-    if (touch && !this.panel && g.profile && g.mode === 'play' && !dying && (!g.kill || this.inKill) && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) { const dk = aboard ? 0 : clamp(((g.earl.y || 0) - 120) / 700, 0, 1); ctx.save(); ctx.globalAlpha = 1 - 0.28 * dk; const h0 = this.hots.length; this.drawActions(g, W, H, s, dt, aboard); ctx.restore(); if (this.inKill) this.hots.splice(h0, this.hots.length - h0, ...this.hots.slice(h0).filter((h) => h.key === 'ability' && this.killTide)); } // (5.10.8) the controls dim gently in the dark
+    this.inKill = !!(g.kill && !g.kill.inSub && !g.kill.esc); // (5.10.10) the controls stay where they are in its jaws, dimmed
+    if (!this.panel && g.profile && g.mode === 'play' && !dying && (!g.kill || this.inKill) && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) { const dk = aboard ? 0 : clamp(((g.earl.y || 0) - 120) / 700, 0, 1); ctx.save(); ctx.globalAlpha = 1 - 0.28 * dk; const h0 = this.hots.length; this.drawActions(g, W, H, s, dt, aboard); ctx.restore(); if (this.inKill) this.hots.splice(h0, this.hots.length - h0, ...this.hots.slice(h0).filter((h) => h.key === 'ability' && this.killTide)); } // (5.10.8) the controls dim gently in the dark
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
     const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
-    if (false && step && step.on && g.mode === 'play' && !dying && !g.kill && !g.hideQuest) { // (3.0.1: shown beside the Quests button instead)
-      const tx = W - pad, ty0 = H * 0.42 + 42 * s, ok = qs.mainProg >= step.need;
-      ctx.textAlign = 'right'; ctx.textBaseline = 'top';
-      ctx.font = `${15 * s}px ${GAME}`;
-      const line = step.text + (ok ? ': done' : '') + (step.need > 1 && !ok ? `  ${qs.mainProg}/${step.need}` : '');
-      ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillText(line, tx + 1, ty0 + 1);
-      ctx.fillStyle = ok ? 'rgba(170,230,150,0.95)' : 'rgba(236,232,220,0.88)'; ctx.fillText(line, tx, ty0);
-      if (ok) { ctx.font = `${12 * s}px ${MONO}`; ctx.fillStyle = 'rgba(232,210,150,0.75)'; ctx.fillText('claim it in Quests', tx, ty0 + 19 * s); }
-    }
+    
     // ---------- P: frames per second, the picture's resolution, and whether lite mode is on ----------
     if (this.showFps) { // (5.3.5) top right, everywhere (on deck too)
       ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.font = `${11 * s}px ${MONO}`;
@@ -1287,7 +1228,7 @@ e.inSub ? [
       ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = `600 ${30 * s}px ${MONO}`; ctx.fillStyle = `rgba(255,236,220,${pulse.toFixed(3)})`;
       ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 12 * s;
-      ctx.fillText(opts.length ? opts.map(([k, n]) => (touch ? n : `${k}  ${n}`)).join('     ') : 'NOTHING LEFT TO GIVE IT', W / 2, H * 0.72); // (5.10.1) no key letters on a phone: the lamp button is lit below
+      ctx.fillText(opts.length ? opts.map(([k, n]) => (n)).join('     ') : 'NOTHING LEFT TO GIVE IT', W / 2, H * 0.72); // (5.10.1) no key letters on a phone: the lamp button is lit below
       ctx.shadowBlur = 0;
       const bw = 360 * s, bx = W / 2 - bw / 2, by = H * 0.72 + 30 * s;
       ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(bx, by, bw, 5 * s);

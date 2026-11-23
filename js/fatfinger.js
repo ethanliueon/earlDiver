@@ -16,7 +16,7 @@ function clickable(el) {
 
 export function installFatFinger() {
   document.addEventListener('click', (ev) => {
-    if (!document.documentElement.classList.contains('touch') || !ev.isTrusted) return;
+    if (!ev.isTrusted) return;
     const t = ev.target;
     if (!(t instanceof Element) || t === document.body || t === document.documentElement || clickable(t)) return;
     const k = window.__fingerK || 1, reach = REACH * k, x = ev.clientX, y = ev.clientY;

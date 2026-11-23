@@ -632,7 +632,7 @@ export class Renderer {
     }
     const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : g.markGuide ? { to: g.markGuide } : null; // (4.9.0) or the developer's trail to a legend (X)
     // (5.6.8) on a phone, once the thing to tap is in reach its brackets say it all: no trail or ring on top of them
-    if (guide && g.mode === 'play' && !(this.touch && !guide.fish /* (7.1.0) a fish to catch keeps its ring */ && g.tapMarks && g.tapMarks.some((m) => m.what !== 'winch' || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u')))) {
+    if (guide && g.mode === 'play' && !(!guide.fish /* (7.1.0) a fish to catch keeps its ring */ && g.tapMarks && g.tapMarks.some((m) => m.what !== 'winch' || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u')))) {
       const e = guide.from || g.earl, tx = guide.to.x, ty = guide.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
       const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));
       const sz = clamp(ppm * 0.22, 7, 16), flow = (g.time * 1.6) % 1;
@@ -657,7 +657,7 @@ export class Renderer {
       ctx.restore();
       // (4.3.2) a prompt beside the fish, only where the game's own prompts don't already say it (swinging the net,
       // "it got away"): a brass key-cap, or a mouse with its left button lit, and the words
-      const tp0 = guide.prompt, tp = tp0 && typeof tp0 === 'object' && this.touch ? { text: tp0.text, col: tp0.col } : tp0; // (5.3) on a phone no key or mouse: the buttons are the way
+      const tp0 = guide.prompt, tp = tp0 && typeof tp0 === 'object' ? { text: tp0.text, col: tp0.col } : tp0; // (5.3) on a phone no key or mouse: the buttons are the way
       if (tp && typeof tp === 'object' && cx > -60 && cx < this.W + 60 && cy > -60 && cy < this.H + 60) {
         ctx.save(); ctx.font = '500 18px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
         const iw = tp.mouse ? 24 : tp.key ? (tp.key.length > 1 ? 58 : 26) + 9 : 0, total = iw + ctx.measureText(tp.text).width;
@@ -679,7 +679,7 @@ export class Renderer {
       // off-screen: a bigger arrow at the edge of the screen pointing the way, with how far
       const W2 = this.W, H2 = this.H;
       if (cx < 0 || cx > W2 || cy < 0 || cy > H2) {
-        const ax = clamp(cx, 48, W2 - 48), ay = clamp(cy, 70, this.touch ? H2 * 0.56 : H2 - 70), // (5.6.7) on a phone, kept above the stick and the buttons
+        const ax = clamp(cx, 48, W2 - 48), ay = clamp(cy, 70, (H2 * 0.56)), // (5.6.7) on a phone, kept above the stick and the buttons
            a2 = Math.atan2(cy - H2 / 2, cx - W2 / 2), pulse = 1 + 0.12 * Math.sin(g.time * 5);
         ctx.save(); ctx.translate(ax, ay); ctx.rotate(a2); ctx.scale(pulse, pulse);
         // (5.5.5) a smaller chevron in the tutorial's cream with its dark olive edge, not a white paper plane
@@ -829,7 +829,7 @@ export class Renderer {
         const bctx = bc.getContext('2d');
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, Rw, Rh); bctx.globalCompositeOperation = 'source-over';
         bctx.translate(Rw * 0.45, Rh * 0.82);
-        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { tutDoor: door && !this.touch, noRoll: true });
+        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { tutDoor: false, noRoll: true });
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(Rw, Rh, bsx < 0), 0, 0);
         if (dimB > 0.01) { bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, Rw, Rh); }
         bctx.globalCompositeOperation = 'source-over';
@@ -891,7 +891,7 @@ export class Renderer {
       // (6.5.1) the sub he can board: not a shape drawn round it but the sub itself, breathing. It is drawn a second time
       // into its own small canvas, exactly as it stands (any sub, any refit, turned or tilted); from that its own
       // outline gets a thin bone rim and a soft glow behind it, and its paint lifts a little and settles, slowly
-      if (this.touch && g.tapMarks && g.tapMarks.some((m) => m.what === 'sub')) { // (awash at dusk it is drawn through its own canvas: the lift goes there too)
+      if (g.tapMarks && g.tapMarks.some((m) => m.what === 'sub')) { // (awash at dusk it is drawn through its own canvas: the lift goes there too)
         const hw = Math.ceil(20 * ppm), hh = Math.ceil(16 * ppm), hx = S(sub.x) - hw / 2, hy = Sy(sub.y) - hh / 2;
         const hc = this.subHlC || (this.subHlC = document.createElement('canvas')), sc2 = this.subHlS || (this.subHlS = document.createElement('canvas'));
         for (const c of [hc, sc2]) if (c.width !== hw || c.height !== hh) { c.width = hw; c.height = hh; }
@@ -1227,7 +1227,7 @@ export class Renderer {
 
     // (5.10.10) the vast faint eye behind him when marked is gone: it read as tinted water. Being marked is shown by the eye under the money.
     // (5.6.3) the sub's holes, outside her on a touch screen: each outlined in cream, breathing, to be tapped
-    if (this.touch && g.patchMarks && g.mode === 'play') {
+    if (g.patchMarks && g.mode === 'play') {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       const q = 0.5 + 0.5 * Math.sin(g.time * 3), rr = Math.max(12, ppm * 0.55);
       for (const w of g.patchMarks) { const hx = S(w.x), hy = Sy(w.y);
@@ -1238,17 +1238,7 @@ export class Renderer {
     }
     // (5.6.1) on a touch screen, an animal not yet observed and in reach: four cream corner marks round it, breathing,
     // to say it can be tapped (observing is done by tapping it)
-    if (false) { // (6.3.0) no corners round an animal to observe: the interact button turns to an eye instead // (5.8.0) the catch bracket wins if it is the same fish
-      const ot = g.obsTarget, oc = ot.c, ox = S(oc ? oc.x : ot.x ?? g.earl.x), oy = Sy(oc ? oc.y : ot.y ?? g.earl.y), rr = Math.max(14, (ot.sp.len || 0.3) * ppm * 0.75) * (1 + 0.06 * Math.sin(g.time * 3)), L = rr * 0.42;
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round';
-      const rc = (rarityOf(ot.sp) || {}).col || '#c8ccc4'; // (5.6.3) thin, in its rarity's colour
-      for (const [w2, col] of [[2.6, 'rgba(8,12,10,0.55)'], [1.1, rc]]) {
-        ctx.strokeStyle = col; ctx.lineWidth = w2; ctx.beginPath();
-        for (const [sx2, sy2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.moveTo(ox + sx2 * rr, oy + sy2 * (rr - L)); ctx.lineTo(ox + sx2 * rr, oy + sy2 * rr); ctx.lineTo(ox + sx2 * (rr - L), oy + sy2 * rr); }
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+    
     // (5.6.8) on a phone, the things a tap acts on (the ladder, the cabin door, the sub, a thing to pick up, a trap, the
     // Margaret when there is a catch to sell): thin cream corners round each, breathing, the same mark an animal to
     // observe gets. Where each was drawn is kept for the tap (CSS pixels)
@@ -1279,7 +1269,7 @@ export class Renderer {
       }
     }
     this.tapRects = [];
-    if (this.touch && g.tapMarks && g.tapMarks.length && g.mode === 'play') {
+    if (g.tapMarks && g.tapMarks.length && g.mode === 'play') {
       const fk = window.__fingerK || 1, kC = innerWidth / this.c.width / fk, BF = this.boatFrame, tk = g.tutAction ? String(g.tutAction.key).toLowerCase() : null;
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round';
       for (const m of g.tapMarks) {
@@ -1328,7 +1318,7 @@ export class Renderer {
         ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
         const tw = Math.max(ctx.measureText(L.text.toUpperCase()).width, L.rar ? L.rar.length * 9.2 : 0) + 8, off = Math.max(30, ppm * 0.7); /* (6.5.7) the wider of its two lines (the guardian jellyfish's second line ran off the screen) */
         // (7.1.0) the name and rarity alone, centred over the animal: no line drawn to it
-        side = 0; const tx = Math.min(this.W - tw / 2 - 8, Math.max(tw / 2 + 8, ax)), ty = Math.min(Math.max(70, ay - Math.max(44, ppm * 1.5) - rise), this.touch && (side > 0 ? tx : tx - tw) < this.W * 0.3 ? this.H * 0.55 : Infinity); // above it, clear of words beside it; (5.6.9) on a phone, never down in the stick's corner
+        side = 0; const tx = Math.min(this.W - tw / 2 - 8, Math.max(tw / 2 + 8, ax)), ty = Math.min(Math.max(70, ay - Math.max(44, ppm * 1.5) - rise), (side > 0 ? tx : tx - tw) < this.W * 0.3 ? this.H * 0.55 : Infinity); // above it, clear of words beside it; (5.6.9) on a phone, never down in the stick's corner
         if (tx < -200 || tx > this.W + 200) continue;
         ctx.globalAlpha = a * 0.9;
         ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';

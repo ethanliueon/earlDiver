@@ -1,6 +1,5 @@
 // Hatchetfish (Earl is the default diver) — game loop, state, interactions and UI glue.
 import { watchPage } from './units.js'; // (6.0.3) first, so every canvas draws its figures in the chosen units
-import { setTouchText } from './touchtext.js';
 import { watchPanels, platesReady } from './reveal.js'; // (6.5.0) no panel seen half-drawn
 import { installFatFinger } from './fatfinger.js';
 import { coinURL, tileURL } from './coins.js';
@@ -22,7 +21,7 @@ import { prepareMonster } from './monster_draw.js';
 import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS, firstFishPart, tutorialOn } from './quests.js';
-import { TutSpot, keyFor, clicks, INPUT } from './tutspot.js';
+import { TutSpot } from './tutspot.js';
 import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
 import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
 import { SUITS, suitOf, kit, worn } from './economy.js';
@@ -67,7 +66,8 @@ const renderer = new Renderer(canvas);
 const hud = new Hud(hudCanvas);
 // (5.1.1) a touch screen (a phone, a tablet) gets the action buttons; a computer keeps the prompts and keys it had.
 // ?touch in the address forces the touch layout (for trying it on a computer)
-{ const q = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null; const set = () => { renderer.touch = hud.touch = /[?&]touch\b/.test(location.search) || !!(q && q.matches && !(window.matchMedia('(pointer: fine)').matches)); document.documentElement.classList.toggle('touch', hud.touch); if (hud.touch) INPUT.mode = 'touch'; setTouchText(hud.touch); }; set(); q && q.addEventListener && q.addEventListener('change', set); }
+// (7.2.4) the game is touch-only: the HUD and the scene are always laid out for a phone
+renderer.touch = hud.touch = true; document.documentElement.classList.add('touch');
 // (3.4.0) everything the game says goes to one message line, top centre, over the sea and every room and panel
 const messages = new Messages();
 hud.onShow = (text, kind) => messages.show(text, kind);
@@ -228,7 +228,7 @@ let g = newGame('menu');
 // (6.5.6) iOS only lets sound start from a touch's end or a click, not from its start (pointerdown), so the first
 // try could fail and the listener was gone: no sound all game. Now it listens on every kind of tap and lets go only
 // once the sound is really running
-const WAKE_EV = ['pointerdown', 'touchend', 'click', 'keydown'];
+const WAKE_EV = ['pointerdown', 'touchend', 'click'];
 const wakeAudio = () => { audio.init(); audio.resume(); audio.playMusic(); if (audio.ac && audio.ac.state === 'running') for (const k of WAKE_EV) window.removeEventListener(k, wakeAudio, true); };
 for (const k of WAKE_EV) window.addEventListener(k, wakeAudio, true);
 // the slot a fresh "Dive" goes into when none was chosen: the first empty one, else the last played
@@ -289,7 +289,7 @@ const ui = new UI({
     const P = profile, tutWas = P.tut === 'on', r = claimQuest(P, which); if (!r) return false;
     const mNext = QUEST_MAIN[questsOf(P).main], lastTut = which === 'main' && tutWas && (!mNext || !TUT_IDS.has(mNext.id));
     if (lastTut) ui.closeQuestsAfterTutorial(); // (4.12.2) the last step: the board stays as it was, fades out, and the new quests come 3 s after
-    else if (which === 'main' && tutWas && !(mNext && mNext.id === 'sell' && !P.tutJournal && hud.touch)) setTimeout(() => ui.toggleQuests(false), 250); // (4.3.5) the tutorial goes straight on to the next step; (7.1.0) but after the first catch the book stays open and points at its Journal tab
+    else if (which === 'main' && tutWas && !(mNext && mNext.id === 'sell' && !P.tutJournal)) setTimeout(() => ui.toggleQuests(false), 250); // (4.3.5) the tutorial goes straight on to the next step; (7.1.0) but after the first catch the book stays open and points at its Journal tab
     if (r.pay) { P.cash = Math.round((P.cash + r.pay) * 100) / 100; P.lifetime = Math.round((P.lifetime + r.pay) * 100) / 100; }
     let gift = null; if (r.gift) gift = giveItem(P, r.gift);
     // (4.0.6) a tutorial step gives what it taught him to use: a net, a backup air tank, a trawl net, a trap
@@ -304,7 +304,7 @@ const ui = new UI({
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
     const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id }))).map((c) => ({ ...c, how: 'For the quest' }));
     if (cards.length) ui.showGains(cards); // (4.6.0)
-    if (!(hud.touch && ui.questTag(`+${money(r.pay)}`))) hud.toast(`Quest done: +${money(r.pay)}`, 'big'); // (5.7.0) on a phone always the stamped tag, panel open or not // (5.5.6) on a phone, a tag from the clipboard
+    if (!(ui.questTag(`+${money(r.pay)}`))) hud.toast(`Quest done: +${money(r.pay)}`, 'big'); // (5.7.0) on a phone always the stamped tag, panel open or not // (5.5.6) on a phone, a tag from the clipboard
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
@@ -388,7 +388,7 @@ const ui = new UI({
   onBelt: (k, on) => { const P = profile; if (!P || !g) return; P.spare = P.spare || {};
     if (on && (k === 'necklace' || k === 'glowAdv') && glowKind() !== k) { const cur = glowKind(); P.spare[cur] = (P.spare[cur] || 0) + (g.items[cur] || 0); g.items[cur] = 0; P.glowKind = k; hud.toast(`${SUPPLIES[k].name}s on the belt`); } /* (6.0.1) one kind on the belt: the other goes back to the locker */ if (on) { const m = Math.min(supplyMax(P, k) - (g.items[k] || 0), P.spare[k] || 0); if (m > 0) { g.items[k] = (g.items[k] || 0) + m; P.spare[k] -= m; } } else { P.spare[k] = (P.spare[k] || 0) + (g.items[k] || 0); g.items[k] = 0; } syncProfile(); saveProfile(P); audio.ready && audio.click(); },
   onMessage: (m) => hud.toast(m),
-  moneyAt: () => (hud.touch ? hud.moneyAt : null), // (5.7.5) where the money is on the HUD, for the quest's sum
+  moneyAt: () => (hud.moneyAt), // (5.7.5) where the money is on the HUD, for the quest's sum
   onEquip: (k) => { const ok = buy(k); return ok; },
   canSellGear: () => !!(g && g.mode === 'play' && (g.aboard || ui.cabinOpen() || (g.sub.docked && g.earl.inSub) || nearDave() || nearStation())), // someone to sell to: the Margaret, the station, or Dave
 });
@@ -944,7 +944,7 @@ function buy(kind) {
     const bagWas = ITEMS[q && q.id] && ITEMS[q.id].kind === 'bag' ? kitOf(P).on.bag : null; // (6.0.0) a smaller bag cannot take what he is carrying
     const put = !!(q && putOn(P, q.u));
     if (put && bagWas && g.bag && bagUsed(g) > bagSlots(g)) { putOn(P, bagWas); hud.toast(`This bag holds ${bagSlots(g)}: you are carrying ${bagUsed(g)}`, 'warn'); }
-    else if (put) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(hud.touch ? `Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}` : `Press ${key} for the ${ITEMS[q.id].name.toLowerCase()}`); }
+    else if (put) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}`); }
   } else if (kind.startsWith('sellgear:')) {
     // (2.8.0) selling gear back, for about a third of what it is worth; never what he has on
     const q = instOf(P, kind.slice(9));
@@ -979,8 +979,8 @@ function buy(kind) {
     if (G && !owns(P, k) && (!G.needs || owns(P, G.needs)) && spend(P, G.price)) {
       P.gear = Object.assign({}, P.gear, { [k]: true }); ok = true;
       hud.toast(G.name, 'big');
-      if (k === 'camera') { g.toolSel = 'cam'; hud.hint(hud.touch ? 'Tap the swap button by the net for the camera; hold still while it takes the picture' : 'Press 2 for the camera, hold still while it takes the picture'); }
-      if (k === 'arm') hud.hint(hud.touch ? 'In the sub, the claw button reaches for an animal; tap it again in the green to close the claw' : 'In the sub, Space reaches for an animal; Space again in the green closes the claw');
+      if (k === 'camera') { g.toolSel = 'cam'; hud.hint('Tap the swap button by the net for the camera; hold still while it takes the picture'); }
+      if (k === 'arm') hud.hint('In the sub, the claw button reaches for an animal; tap it again in the green to close the claw');
     }
   } else if (kind === 'patch' && !sub.imploded && sub.hull < 0.999 && spend(P, PATCH_PRICE)) {
     sub.hull = Math.min(1, sub.hull + 0.4); ok = true;
@@ -991,7 +991,7 @@ function buy(kind) {
   } else if (kind.startsWith('trap:') && TRAPS[kind.slice(5)] && (convertOldTraps(P), (P.traps[kind.slice(5)] || 0) < TRAPS[kind.slice(5)].max) && spend(P, TRAPS[kind.slice(5)].price)) {
     const tk = kind.slice(5);
     P.traps[tk] = (P.traps[tk] || 0) + 1; ok = true;
-    ui.showGains([{ kind: 'trap', id: tk, how: 'Bought' }]); hud.hint(hud.touch ? 'At the surface, open your bag and tap the trap, then Use, to set it at the depth you choose' : 'Press 5, then Space at the surface to set a trap at the depth you choose');
+    ui.showGains([{ kind: 'trap', id: tk, how: 'Bought' }]); hud.hint('At the surface, open your bag and tap the trap, then Use, to set it at the depth you choose');
   } else if (kind.startsWith('subnet:') && NETS_SUB[kind.slice(7)] && netsOf(g.items)[kind.slice(7)] < NETS_SUB[kind.slice(7)].cap && spend(P, NETS_SUB[kind.slice(7)].price)) {
     netsOf(g.items)[kind.slice(7)]++; ok = true; // (4.11.0) up to two beginner nets and one advanced
     ui.showGains([{ kind: 'trawl', id: kind.slice(7), how: 'Bought' }]);
@@ -1028,7 +1028,7 @@ function dieInjury(sp) {
 // their sprites (at most 1.5 s), so the first moments never stutter or pop
 function withLoading(fn) {
   ui.showLoading(true);
-  setTimeout(() => { ui.setLoading(0.3, 'Charting the sea'); setTimeout(() => { fn(); ui.setLoading(0.6, 'Charting the sea'); g.warmFrom = performance.now(); g.warmUntil = g.warmFrom + (hud.touch ? 8000 : 1500); g.warmFrames = 0; g.warmCalm = 0; }, 60); }, 60); // (4.15.0) a pause between steps lets the bar move
+  setTimeout(() => { ui.setLoading(0.3, 'Charting the sea'); setTimeout(() => { fn(); ui.setLoading(0.6, 'Charting the sea'); g.warmFrom = performance.now(); g.warmUntil = g.warmFrom + (8000); g.warmFrames = 0; g.warmCalm = 0; }, 60); }, 60); // (4.15.0) a pause between steps lets the bar move
 }
 // (4.2.0) the tutorial: a welcome at the start of a new game, with a skip (asked twice); then tutor() guides the
 // first steps of the Log with a line of text, a fading trail to where to go, and a ring on the fish to catch
@@ -1041,11 +1041,11 @@ function refreshAir() { if (!g || !g.earl || !profile) return; const e = g.earl,
 function afterTips(dt) {
   const P = profile, e = g.earl; if (!P || P.tut === 'on' || !P.tut || P.tut === 'skip') return;
   if (!P.tipSprint) {
-    if (!e.inSub && !g.aboard && e.y > 1.5 && !(keys.has('shift') || mouse.rdown || (touch && touch.vec.sprint) || g.sprintLock)) g.noSprintT = (g.noSprintT || 0) + dt; else g.noSprintT = 0;
-    if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast(hud.touch ? 'Tap the sprint button (the two arrows) to sprint' : keyFor('sprint') === 'RMB' ? 'Hold the right mouse button to sprint' : 'Hold Shift to sprint', 'note'); }
+    if (!e.inSub && !g.aboard && e.y > 1.5 && !((touch && touch.vec.sprint) || g.sprintLock)) g.noSprintT = (g.noSprintT || 0) + dt; else g.noSprintT = 0;
+    if (g.noSprintT > 60) { P.tipSprint = true; saveProfile(P); hud.toast('Push the stick to its rim to sprint', 'note'); }
   }
 }
-function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === 'skip' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => messages.show(hud.touch ? 'Open your bag to put it on' : `Press ${keyFor('inventory')} to put it on`, 'note', 3.5), 3000); } // (4.12.0) up for 3.5 s
+function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === 'skip' || P.tipEquip) return; P.tipEquip = true; saveProfile(P); setTimeout(() => messages.show('Open your bag to put it on', 'note', 3.5), 3000); } // (4.12.0) up for 3.5 s
 // (4.7.0) the lessons after the tutorial, in the tutorial's own way: the sea is held still (the animals, the thing in
 // the deep, the sub's air and hull, the catch's suffering all wait), only what the lesson teaches works, its line
 // says what to do and its key-cap lights; a trail leads where to go.
@@ -1185,19 +1185,18 @@ function tutor() {
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
   { const m1 = QUEST_MAIN[questsOf(P).main]; if (m1 && m1.id === 'subtrip') g.tutHidePrompts = false; } // (6.6.0) the sub trip is played with the game's own buttons
   const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); setTimeout(() => ui.confirm('Tutorial complete', 'The quest board is in your journal.', 'OK', null, () => {}), 600); /* (6.5.0) a card to close the tutorial, not a toast that was easily missed */ } return; }
-  const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1), click = clicks();
+  const done = S.mainProg >= m.need, dir = Math.sign(Math.cos(BOAT.yaw || 0) || 1);
   const ladder = { x: BOAT.x + LADDER_M * dir, y: 1 }, nearBoat = Math.abs(e.x - BOAT.x) < 14 && e.y < 4;
   const inCabin = shown('cabin'), qOpen = shown('quests'), invOpen = shown('inventory'), catOpen = shown('catalog'), jOpen = shown('journal'), shopOpen = shown('workshop');
-  const K = (act) => keyFor(act) || '';
-  // (4.3.2) a prompt drawn beside the fish: { key, mouse, text, col }. The key (or a mouse) follows the input in use
-  const netPrompt = () => (g.toolSel !== 'net' ? { key: K('net'), text: 'Take out your net' } : click ? { mouse: true, text: 'Swing your net' } : { key: K('use'), text: 'Swing your net' });
+  // (4.3.2) words drawn beside the fish: { text, col }
+  const netPrompt = () => ({ text: g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net' });
   let text = null, to = null, fish = null, prompt = null, spot = null, door = false, action = null;
   // (4.4.1) a hit area: on the moment he is in it, off only once he has been out of it for a moment, so a button
   // never blinks at the edge. offer(): the step's one action here, shown as the tutorial's button
   const Z = g.tutZones || (g.tutZones = {}), now = performance.now();
   const zone = (name, inside) => { if (inside) Z[name] = now; return now - (Z[name] || -1e9) < 400; };
   // (5.5) on a phone, with a fish in reach: the net button ringed (or the net's slot, if it is not in hand)
-  const netSpot = () => (hud.touch && g.catchTarget ? (g.toolSel !== 'net' ? { key: '1', say: 'Tap the net to take it out' } : { act: 'use', say: 'Tap the net to swing it' }) : null);
+  const netSpot = () => (g.catchTarget ? (g.toolSel !== 'net' ? { key: '1', say: 'Tap the net to take it out' } : { act: 'use', say: 'Tap the net to swing it' }) : null);
   const offer = (id, say, key = 'F') => { action = { id, say, key }; spot = { key, say, button: id }; };
   const cabinTo = (id, act, say) => { ui.cabin.tutMark = id; if (zone('cabin-' + id, ui.cabin.near && ui.cabin.near() === id)) offer(act, say); else action = { id: act, say, key: 'F', cabinOnly: true }; };
   const ladderZone = () => zone('ladder', !e.inSub && !g.aboard && e.y < 2.6 && e.y > -0.6 && Math.abs(e.x - BOAT.x - LADDER_M) < 1.6);
@@ -1208,7 +1207,7 @@ function tutor() {
     if (g.aboard) { // (claude-polish) the trail leads to the nearer end of the deck, not down through the hull at the fish
       const ax = g.aboard.x || 0, endX = ax < (DECK_MIN + DECK_MAX) / 2 ? DECK_MIN - 1.2 : DECK_MAX + 1.2;
       to = { x: BOAT.x + endX * dir, y: 0.6 }; fish = null; text = 'Walk off the end of the deck to jump in'; return; }
-    if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); if (hud.touch) spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ return; }
+    if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ return; }
     if (!zone('fish', bd < 2.6)) {
       text = 'Swim to the orange fish';
       // (4.3.5) how to sprint, until he has: the right mouse button held, or Shift
@@ -1226,18 +1225,18 @@ function tutor() {
       text = 'Done. Claim it in your quests';
       spot = { sel: ['#catalog .cat-x', '#workshop-close', '#inventory .inv-close', '#journal-close', '#quests-btn'] }; // (the Quests button shows in the cabin)
     }
-    else { text = hud.touch ? 'Done. Open your journal and claim it' : 'Done. Open your quests and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Claim it here', light: true }; }
+    else { text = 'Done. Open your journal and claim it'; spot = { sel: ['#quests-btn'], act: 'quests', say: 'Claim it here', light: true }; }
   } else if (m.id === 'firstfish') {
     // (4.3.4) one dive: down to the fish, observe it, catch it (the first swing misses, the next catches), back up.
     // The step is only done at the surface, so the claim is never made underwater.
     const part = firstFishPart(P);
-    if (part === 3) { text = 'Got it. Swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 }; if (!P.tutSprinted && !e.inSub && !hud.touch) spot = { act: 'sprint', say: 'Hold to sprint (uses air faster)' }; }
+    if (part === 3) { text = 'Got it. Swim up to the surface'; to = { x: e.x + (e.facing || 1) * 2, y: 0.3 };  }
     else {
       g.tutForce = P.tutMissed ? 'catch' : 'miss';
       fishStep(() => {
-        if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe', hud.touch ? 'obs' : 'F'); } // (5.5) on a phone, its own eye button
+        if (part <= 1) { text = 'Observe the fish'; offer('observe', 'Observe', 'obs'); } // (5.5) on a phone, its own eye button
         else if (g.tutOops && g.time - g.tutOops < 3.5) { text = 'It got away. Try again'; prompt = { text: 'It got away. Try again', col: '#f2c7a0' }; }
-        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
+        else { text = g.toolSel !== 'net' ? 'Take out your net' : 'Swing your net to catch it'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ }
       });
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
     }
@@ -1254,19 +1253,19 @@ function tutor() {
     else if (shopOpen) { text = 'Sell your catch'; spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])', '#workshop [data-act="sellone"]'], say: 'Sell all' }; }
     else if (!g.bag.length && !g.subTank.length) {
       // sold already, or lost it: another fish, then sell that one
-      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ });
+      fishStep(() => { text = 'Your bag is empty: net another fish to sell'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ });
     }
     else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; cabinTo('door', 'outdoor', 'Out on deck'); }
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; }
     else if (!zone('boat', nearBoat)) { text = 'Bring your catch up beside the Margaret'; to = ladder; }
     else { const wx = BOAT.x + 4.5 * dir; // (7.1.0) the winch is used where it is: led there first, then offered
-      if (hud.touch && Math.abs(e.x - wx) >= 3.2) { text = 'Swim to the Margaret\'s winch at the stern'; to = { x: wx, y: 0.4 }; }
-      else { text = hud.touch ? 'Tap the Margaret\'s winch to sell your catch' : 'Sell your catch'; offer('sell', 'Sell your catch', 'U'); } }
+      if (Math.abs(e.x - wx) >= 3.2) { text = 'Swim to the Margaret\'s winch at the stern'; to = { x: wx, y: 0.4 }; }
+      else { text = 'Tap the Margaret\'s winch to sell your catch'; offer('sell', 'Sell your catch', 'U'); } }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
     if (!pick && !catOpen && !g.bag.length) {
-      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ });
+      fishStep(() => { text = 'Not enough cash for gear yet: net another fish and sell it'; prompt = netPrompt(); spot = spot || netSpot(); if (spot && g.catchTarget) prompt = null; /* (5.5.3) the ringed button and its words say it already */ });
     } else if (!pick && !catOpen) {
       if (g.aboard || !zone('boat', nearBoat)) { text = 'Not enough cash for gear yet: sell your catch first'; to = ladder; }
       else if (shopOpen) spot = { sel: ['#workshop button[data-act="sellall"]:not([disabled])'], say: 'Sell all' };
@@ -1274,12 +1273,12 @@ function tutor() {
     } else if (catOpen) {
       const sel = ['#catalog button[data-buy^="item:"]:not([disabled])', '#catalog [data-cart="checkout"]:not([disabled])'];
       if (pick) sel.push(`#catalog .cat-main [data-go="item:${pick.id}"]`, `#catalog .cat-nav [data-go="${pick.kind}"]`);
-      text = pick ? (hud.touch ? `Buy the ${pick.name.toLowerCase()} for ${money(pick.price, false)}: it is lit below` : `Buy some gear: the ${pick.name.toLowerCase()} is ${money(pick.price, false)}`) : 'Not enough cash yet: sell more catch first';
+      text = pick ? (`Buy the ${pick.name.toLowerCase()} for ${money(pick.price, false)}: it is lit below`) : 'Not enough cash yet: sell more catch first';
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
     }
     else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
-    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); if (hud.touch) text = 'Tap the cabin door to go in'; } } // (4.3.5) the door itself lit up
-    else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; g.tutLadder = true; if (ladderZone()) { offer('climb', 'Climb aboard'); if (hud.touch) text = 'Tap the ladder to climb aboard'; } }
+    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); text = 'Tap the cabin door to go in'; } } // (4.3.5) the door itself lit up
+    else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; g.tutLadder = true; if (ladderZone()) { offer('climb', 'Climb aboard'); text = 'Tap the ladder to climb aboard'; } }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
@@ -1290,7 +1289,7 @@ function tutor() {
       spot = invOpen ? { sel: ['#inventory .inv-close'], act: 'inventory' } : null;
       g.tutLadder = !invOpen; if (!invOpen && ladderZone()) offer('climb', 'Climb aboard');
     }
-    else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
+    else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Tap ${name}, then Put it on` }; }
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
   } else if (m.id === 'subtrip') {
     const sn = S.seen, part = sn.st || 0, sub = g.sub, ap = g.autopilot, set = (n) => { if ((sn.st || 0) < n) { sn.st = n; saveProfile(P); } };
@@ -1304,13 +1303,13 @@ function tutor() {
       if (!e.inSub) { if (g.aboard) offDeck(); else toSub(); }
       else { text = 'Drive to the fish'; /* (6.6.0) the stick needs no teaching: no ring round it */ if (dist(sub.x, sub.y, F2.x, F2.y) < 8) set(2); }
     }
-    else if (part === 2) { const F2 = tripFish(2); fish = F2; if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); if (hud.touch) spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ } else set(3); }
+    else if (part === 2) { const F2 = tripFish(2); fish = F2; if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ } else set(3); }
     else if (part === 3 || part === 4) { // net the fish, then the one below
       const F = tripFish(part === 3 ? 2 : 3);
       if (tripCaught(F)) set(part + 1);
-      else if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); if (hud.touch) spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ }
+      else if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ }
       else { fish = F; to = { x: F.x, y: F.y }; text = part === 3 ? 'Net the fish' : 'Net the one below';
-        if (dist(e.x, e.y, F.x, F.y) < 2.6) { prompt = netPrompt(); spot = netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; } }
+        if (dist(e.x, e.y, F.x, F.y) < 2.6) { prompt = netPrompt(); spot = netSpot(); if (spot && g.catchTarget) prompt = null; } }
     }
     else if (part === 5) { // the sub is far above: call it to him, and get in
       if (e.inSub) set(6);
@@ -1334,7 +1333,7 @@ function tutor() {
   g.tut = { text, to, fish, prompt, spot, door };
   // (4.3.8) the instruction has its own line at the left (tutspot.js), so the game's own messages at the top are
   // never held back by it. None while the quests are open: the arrow at Claim is enough.
-  if (ui.anyOpen('cabin') && !(hud.touch && catOpen && m && m.id === 'buy')) g.tut.text = null; // (4.4.1) nor over any open screen (the journal, the shop, ...): its arrow says it; (5.6.9) the shop on a phone keeps a short line over it, as nothing else says why
+  if (ui.anyOpen('cabin') && !(catOpen && m && m.id === 'buy')) g.tut.text = null; // (4.4.1) nor over any open screen (the journal, the shop, ...): its arrow says it; (5.6.9) the shop on a phone keeps a short line over it, as nothing else says why
   g.tutAction = action;
 }
 const tutSpot = new TutSpot();
@@ -1351,7 +1350,6 @@ function startRun() {
   // (5.7.5) the journal's pictures drawn ahead, a few at a time while he plays, so the book opens with them already there
   setTimeout(() => { const ids = [...(g.journal ? g.journal.keys() : [])]; let i = 0; const step = () => { for (let k = 0; k < 6 && i < ids.length; k++, i++) { const sp = SPECIES_BY_ID[ids[i]]; if (sp) ui.allFishPic(sp, true); } if (i < ids.length) setTimeout(step, 40); }; step(); }, 2500);
   messages.clear(); // (5.5) a new dive starts with a clear line (no "Out of air" left over from the last)
-  mouse.movedAt = -1e9; keyMoveAt = performance.now(); // (3.0.0) he stands still at the start until the mouse moves or a key is pressed
   audio.init(); audio.resume(); audio.playMusic();
   if (!getSlot()) setSlot(firstFreeSlot());
   const fresh = !profile || !(profile.runs > 0); // (3.0.5) the first dive of a new game
@@ -1375,8 +1373,8 @@ function startRun() {
 // (4.4.0) the tutorial's key gate: while it guides, the game's own actions (U, F at the ladder or door, C, T, N, P,
 // V, G, Q, E, the tools ...) are off; moving, sprinting, the net, the journal, quests, inventory, pause and mute
 // always work. The step's own action (g.tutAction, set by tutor()) runs from its key or its button: runTutAction()
-const TUT_ALWAYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', 'sprint', 'sprinton', 'leavesub', 'divein', 'outdeck', 'ability', 'swap', ' ', '1', 'j', 'o', 'b', 'escape', 'm', 'tab', 'control', 'alt', 'meta']);
-function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && !['escape', 'm'].includes(k); return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
+const TUT_ALWAYS = new Set(['sprint', 'sprinton', 'leavesub', 'divein', 'outdeck', 'ability', 'swap', ' ', '1', 'b', 'menu', 'settings']);
+function tutGated(k) { if (g && g.lesson && g.frozen) return !(g.lesson.allow || new Set()).has(k) && k !== 'settings'; return !!(g && g.mode === 'play' && g.tutHidePrompts && !TUT_ALWAYS.has(k)); } // (4.7.0) a lesson lets through only what it teaches
 const deckAtDoor = () => !!g.aboard && g.aboard.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && g.aboard.x < DOOR_M + 0.7; // as deckInput's door zone
 // (4.4.1) the tutorial's actions, done directly (not through whatever the game is aiming at, which can change frame
 // to frame): observe the tutorial fish, sell, climb aboard, into the cabin, the shop, back out on deck, out of the sub
@@ -1393,120 +1391,50 @@ function runTutAction(id) {
   else return false;
   audio.ready && audio.click(); return true;
 }
-window.addEventListener('keydown', (ev) => {
-  if (ui.typing()) { if (ev.key === 'Escape') ui.blurTyping(); return; }
-  // (4.3.2) moving with the keys: the hints are for the keyboard until the mouse is used again
-  if (/^(w|a|s|d|arrowup|arrowdown|arrowleft|arrowright)$/i.test(ev.key)) INPUT.mode = 'keys';
+window.addEventListener('actdown', (ev) => {
+  if (ui.typing()) return;
   if (ui.confirmOpen && ui.confirmOpen()) return; // an "are you sure?" is up: its own buttons only
   const k = ev.key.toLowerCase();
   if (g && window.__hudTutKey != null && k === String(window.__hudTutKey).toLowerCase()) { g.tutGrace = 1.6; g.tutPressedKey = window.__hudTutKey; } // (5.8.1) the spotlit button pressed: the game runs on
-  if (g && g.tutHidePrompts && g.tutAction && k === g.tutAction.key.toLowerCase() && !ev.repeat) { ev.preventDefault(); runTutAction(g.tutAction.id); return; } // (4.4.1)
+  if (g && g.tutHidePrompts && g.tutAction && k === g.tutAction.key.toLowerCase()) { ev.preventDefault(); runTutAction(g.tutAction.id); return; } // (4.4.1)
   if (tutGated(k)) return; // (4.4.0)
-  if (g.mode === 'menu' && (k === 'enter' || k === ' ')) {
-    ev.preventDefault();
-    if (ui.titleOpen() && document.getElementById('title').classList.contains('attract')) return; // (5.2) the first key only brings up the divers
-    if (ui.titleOpen()) { const n = lastSlot(); ui.h.onSlot(n && readSlot(n).state === 'ok' ? n : firstFreeSlot()); }
-    else startRun();
-    return;
-  }
-  if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'tab'].includes(k)) ev.preventDefault();
   if (!keys.has(k)) { pressed.add(k); if (k === 'f') fDown = performance.now(); if (k === 'c') { cDown = performance.now(); cHeld = 0; } }
   keys.add(k);
   audio.resume();
 });
-window.addEventListener('keyup', (ev) => {
+window.addEventListener('actup', (ev) => {
   const k = ev.key.toLowerCase();
   keys.delete(k);
   if (tutGated(k)) return; // (4.4.0) no F-tap from a key the tutorial has off
   if (k === 'f') { if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
   if (k === 'c') { if (performance.now() - cDown < 600) pressed.add('c-tap'); cHeld = 0; }
 });
-window.addEventListener('blur', () => { keys.clear(); mouse.rdown = false; mouse.down = false; });
-// ---------------- mouse ----------------
-// Earl swims toward the cursor by himself (once the mouse has moved, and until the keys take over)
-// left click: swing the net (or use the tool in hand; in the sub, the arm) · right button held: sprint
-// the lamp follows the cursor · wheel: zoom · click the Q/E slots to use an item
-const mouse = { x: 0, y: 0, down: false, movedAt: -1e9, seen: false, inside: false };
-let keyMoveAt = -1e9; // when the movement keys were last used
+window.addEventListener('blur', () => keys.clear());
 const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
-hudCanvas.addEventListener('mousemove', (ev) => {
-  // a real move, not the browser repeating the last position
-  if (Math.abs(ev.clientX - mouse.x) + Math.abs(ev.clientY - mouse.y) > 1) mouse.movedAt = performance.now();
-  if (!hud.touch && mouse.seen && Math.abs(ev.clientX - mouse.x) + Math.abs(ev.clientY - mouse.y) > 3) INPUT.mode = 'mouse'; // (4.3.2) the hints follow the input in use
-  mouse.x = ev.clientX; mouse.y = ev.clientY; mouse.seen = true; mouse.inside = true;
-});
-hudCanvas.addEventListener('mouseleave', () => { mouse.inside = false; });
-hudCanvas.addEventListener('mouseenter', () => { mouse.inside = true; });
-hudCanvas.addEventListener('mousedown', (ev) => {
-  audio.resume(); if (!hud.touch) INPUT.mode = 'mouse'; // (4.3.2) (5.4: a tap on a phone stays touch)
-  if (g.mode !== 'play') return;
-  if (ev.button === 2) { mouse.rdown = true; return; } // held: sprint
-  if (ev.button !== 0) return;
-  if (inRect(hud.journalHot, ev.clientX, ev.clientY)) { ui.toggleJournal(); return; }
-  if (inRect(hud.chartHot, ev.clientX, ev.clientY)) { ui.closeAll(); ui.chart.toggle(true); return; }
-  // (5.1) the HUD's buttons: the action button, the tool chips, the context buttons. A press is the key's press, held
-  // as long as the button is held (so a hold-F button works), and a short one counts as a tap, as on the keyboard
-  const hb = hudButtonAt(ev.clientX, ev.clientY);
-  if (hb && hb.key.startsWith('msg:')) { hud.toast(hb.key.slice(4)); return; } // (5.3.1) a greyed button says why
-  if (hb) {
-    const k = hb.key; mouse.btn = k;
-    if (!keys.has(k)) { pressed.add(k); if (k === 'f') fDown = performance.now(); if (k === 'c') { cDown = performance.now(); cHeld = 0; } }
-    keys.add(k); audio.ready && audio.click && audio.click();
-    return;
-  }
-  if (inRect(hud.slotHot && hud.slotHot.q, ev.clientX, ev.clientY)) { pressed.add('q'); return; }
-  if (inRect(hud.slotHot && hud.slotHot.e, ev.clientX, ev.clientY)) { pressed.add('e'); return; }
-  if (inRect(hud.slotHot && hud.slotHot.r, ev.clientX, ev.clientY)) { pressed.add('r'); return; }
-  if (inRect(hud.slotHot && hud.slotHot.k, ev.clientX, ev.clientY)) { pressed.add('k'); return; }
-  if (g.homeRun) return; // on autopilot a click does nothing (only the buttons above)
-  mouse.down = true;
-  pressed.add(' '); // a click swings the net (or uses whatever is in hand)
-});
-window.addEventListener('mouseup', (ev) => {
-  if (ev.button === 0) mouse.down = false; if (ev.button === 2) mouse.rdown = false;
-  if (ev.button === 0 && mouse.btn != null) { // (5.1) letting go of a HUD button: the key comes up
-    const k = mouse.btn; mouse.btn = null; keys.delete(k);
-    if (k === 'f') { if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
-    if (k === 'c') { if (performance.now() - cDown < 600) pressed.add('c-tap'); cHeld = 0; }
-  }
-});
 // (5.3) the touch controls: a joystick where the left thumb lands, and every HUD button by touch. The first touch
 // in play also asks for full screen where the browser allows it (Android); an iPhone gets it from the home screen
 // (5.6.7) the cabin on a phone: the same stick (on its own canvas), a tap uses what he is at
 let cabinTouch = null;
 // (5.6.8) the thing tapped (renderer.tapRects, CSS pixels): the smallest that holds the point, a finger's slack round each
 function tapRectAt(x, y) { const sl = 10 * (window.__fingerK || 1); let best = null, ba = Infinity; for (const r of renderer.tapRects || []) { if (x >= r.x - sl && x <= r.x + r.w + sl && y >= r.y - sl && y <= r.y + r.h + sl && r.w * r.h < ba) { ba = r.w * r.h; best = r; } } return best; }
-function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(hud.touch && !document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
+function wireCabinTouch() { if (cabinTouch || !ui.cabin || !ui.cabin.c) return; cabinTouch = new Touch(ui.cabin.c, { buttonAt: () => null, active: () => !!(!document.getElementById('cabin').hidden), onTap: (x) => { ui.cabin.tapAt(x); return true; } }); ui.cabin.stick = () => (touch.vec.on ? { ...touch.vec, sprint: touch.vec.sprint || !!(g && g.sprintLock) } : cabinTouch.vec); } // (5.6.8) the HUD (and its stick) is over the cabin now
 setTimeout(wireCabinTouch, 0);
 watchPage(); // (6.0.3) the page's text in the chosen units
-const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(hud.touch && g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
+const touch = new Touch(hudCanvas, { onTap: (x, y) => { const pm = g.patchMarks; if (pm && renderer.cam) { const cm = renderer.cam, kk = innerWidth / renderer.c.width; for (const [wi, w] of pm.entries()) { const px = ((w.x - cm.x) * cm.ppm + renderer.c.width / 2) * kk, py = ((w.y - cm.y) * cm.ppm + renderer.c.height / 2) * kk; if (Math.hypot(x - px, y - py) < Math.max(36 * (window.__fingerK || 1), cm.ppm * 0.9 * kk)) { g.repairTap = wi; g.repairTapCount = (g.sub.patches || []).length; return true; } } } const o = hud.obsScreen, k = innerWidth / hud.c.width; if (o && Math.hypot(x - o.x * k, y - o.y * k) < o.r * k * 1.6) { touch.key('obs', true); setTimeout(() => touch.key('obs', false), 60); return true; } if (ui.cabinOpen && ui.cabinOpen()) { ui.cabin.tapAt(x); return true; } const tr = tapRectAt(x, y); if (tr) { touch.key(tr.key, true); setTimeout(() => touch.key(tr.key, false), 60); return true; } return false; }, buttonAt: (x, y) => hudButtonAt(x, y), aim: (x, y) => { if (!g || !g.dashAim || !renderer.cam) return false; const cm = renderer.cam, kk = innerWidth / renderer.c.width; return dashTo(cm.x + (x / kk - renderer.c.width / 2) / cm.ppm, cm.y + (y / kk - renderer.c.height / 2) / cm.ppm); }, active: () => !!(g && g.mode === 'play' && !hud.panel), onMessage: (m) => { audio.ready && audio.uiSoft(); hud.toast(m); }, onPress: (k) => { if (PLAIN_CLICK.has(k) && audio.ready) audio.click(); } });
 hud.touchRef = touch; // (5.7.0) the HUD draws the sprint button beside the stick
 hudCanvas.addEventListener('touchend', () => {
-  const d = document; if (!hud.touch || d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
+  const d = document; if (d.fullscreenElement || !d.fullscreenEnabled || window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
   d.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
 }, { once: false, passive: true });
 // (5.1) the HUD button under the pointer, if any
 // (5.17.0) the buttons that do nothing special make the one plain click when pressed (the light, the hand, leaving the
 // sub, the menu's tiles, the swap); a greyed one a softer click with its reason. The net, the glow stick and the skill have their own
 const PLAIN_CLICK = new Set(['l', 'f', 'g', 'v', 'u', 'leavesub', 'outdeck', 'c', 't', 'b', 'journal', 'settings', 'swap', 'menu', 'r', 'n']);
-function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return hud.touch && !(ui.cabinOpen && ui.cabinOpen()) ? tapRectAt(x, y) : null; } // (5.6.8) a thing to tap is pressed as a button: a tap does it, a hold holds it (prying, cutting a net free)
+function hudButtonAt(x, y) { for (const h of hud.hots || []) if (inRect(h, x, y)) return h; return !(ui.cabinOpen && ui.cabinOpen()) ? tapRectAt(x, y) : null; } // (5.6.8) a thing to tap is pressed as a button: a tap does it, a hold holds it (prying, cutting a net free)
 hudCanvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
-hudCanvas.addEventListener('wheel', (ev) => {
-  ev.preventDefault();
-  renderer.zoomMul = clamp((renderer.zoomMul || 1) * (ev.deltaY > 0 ? 1.08 : 1 / 1.08), 0.7, 1.45);
-}, { passive: false });
-// the cursor in screen pixels of the scene canvas
-function mouseScreen() { const k = canvas.width / window.innerWidth; return [mouse.x * k, mouse.y * k]; }
 
 // (4.12.3) a long piece of work in progress, held down
 function holdingWork() { return !!(g && (g.pry || g.repair || (g.plant || 0) > 0 || (g.tankFit || 0) > 0)); }
-// while it lasts the pointer is weighted: the system cursor hides and a brass ring follows it a little behind
-function weightedCursor(dt) {
-  const on = holdingWork() && mouse.seen && INPUT.mode === 'mouse';
-  if (on) { if (!g.holdCursor) g.holdCursor = { x: mouse.x, y: mouse.y }; const k = 1 - Math.exp(-dt * 7); g.holdCursor.x += (mouse.x - g.holdCursor.x) * k; g.holdCursor.y += (mouse.y - g.holdCursor.y) * k; }
-  else g.holdCursor = null;
-  const want = on ? 'none' : mouse.inside && hudButtonAt(mouse.x, mouse.y) ? 'pointer' : ''; if (hudCanvas.style.cursor !== want) hudCanvas.style.cursor = want;
-}
 function readMove() {
   if (g.kill) return { x: 0, y: 0, sprint: false }; // in its grip, nothing he does moves him
   if (ui.tankOpen && ui.tankOpen()) return { x: 0, y: 0, sprint: false }; // in the back of the sub, the helm is left alone
@@ -1518,33 +1446,8 @@ function readMove() {
     const w = patchWorld(g.sub, g.sub.patches[g.repairTap]), dx = w.x - g.earl.x, dy = w.y + 0.6 - g.earl.y, d = Math.hypot(dx, dy);
     if (d > 0.9) return { x: dx / d * Math.min(1, d / 2), y: dy / d * Math.min(1, d / 2), sprint: false, stick: true };
   }
-  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: hud.touch ? !!(g.aboard && g.abil && g.abil.activeT > 0 && g.abil.def && g.abil.def.speed) : (touch.vec.sprint || !!g.sprintLock), stick: true }; // (5.9.0) on a phone speed is the Sprint ability's (no air); on deck it runs // (5.3) the joystick; (5.5.3) or the sprint button's lock
-  let x = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
-  let y = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
-  const now = performance.now();
-  if (x || y) keyMoveAt = now;
-  // the mouse steers when it has been moved since the keys were last used, and is over the game
-  if (!x && !y && mouse.seen && mouse.inside && mouse.movedAt > keyMoveAt && renderer.S && !ui.anyOpen() && !hudButtonAt(mouse.x, mouse.y)) {
-    // swim toward the cursor; full speed beyond a few metres, easing in, and still when he is there
-    const e = g.earl, [mx, my] = mouseScreen();
-    const dx = mx - renderer.S(e.x), dy = my - renderer.Sy(e.y), d = Math.hypot(dx, dy);
-    // (4.0.0) a wider dead zone, longer in front and behind than above and below: the cursor resting just
-    // ahead of him or just behind him leaves him still
-    const ppm = renderer.cam.ppm, full = ppm * 3, dx0 = ppm * (e.inSub ? 3.6 : 1.4), dy0 = ppm * (e.inSub ? 2.4 : 0.8);
-    const dn = Math.hypot(dx / dx0, dy / dy0);
-    if (g.aboard) { const ax = Math.abs(dx), dead = ppm * 1.1; if (ax > dead) x = Math.sign(dx) * Math.min(1, (ax - dead) / full); } // (2.6.7) on the boat: left and right only
-    else if (dn > 1) { const out = d * (1 - 1 / dn), k = Math.min(1, out / full) / d; x = Math.abs(dx) < ppm * 0.4 ? 0 : dx * k; y = dy * k; } // (2.6.8) nearly straight above or below him: straight up or down, no flicker of sideways
-  }
-  // (2.6.7) standing on the boat (the deck, the cabin, the wheel, the ladder): up and down mean nothing,
-  // from the keys, the arrows or the mouse, so nothing upward or downward ever reaches the walking
-  if (g.aboard) y = 0;
-  const sprint = keys.has('shift') || !!mouse.rdown;
-  // (4.3.9) the sprint hint goes once he has sprinted for about a second while it was showing (a tap doesn't count)
-  if (sprint && (x || y) && profile && profile.tut === 'on' && !profile.tutSprinted && g.tut && g.tut.spot && g.tut.spot.act === 'sprint') {
-    const tNow = performance.now(); g.tutSprintT = (g.tutSprintT || 0) + Math.min(0.1, (tNow - (g.tutSprintAt || tNow)) / 1000); g.tutSprintAt = tNow;
-    if (g.tutSprintT > 1) { profile.tutSprinted = true; saveProfile(profile); }
-  } else g.tutSprintAt = 0;
-  return { x, y, sprint };
+  if (touch && touch.vec.on) return { x: touch.vec.x, y: touch.vec.y, sprint: !!(g.aboard && g.abil && g.abil.activeT > 0 && g.abil.def && g.abil.def.speed), stick: true }; // (5.9.0) on a phone speed is the Sprint ability's (no air); on deck it runs // (5.3) the joystick; (5.5.3) or the sprint button's lock
+  return { x: 0, y: 0, sprint: false };
 }
 
 // ---------------- interactions ----------------
@@ -1604,10 +1507,10 @@ function deckInput(dt, mv) {
     }
     return;
   }
-  if (g.helm) { g.prompt = 'A / D  steer   ·   G  anchor   ·   W  leave the wheel'; return; }
+  if (g.helm) { g.prompt = null; return; } // (7.2.4) at the wheel its own buttons say it: the anchor and leaving
   const A = g.aboard;
   if (A.climb > 0 || A.jump > 0) { g.prompt = null; pressed.delete('f-tap'); return; }
-  const walk = ui.anyOpen() ? 0 : Math.sign(mv.x || 0), run = walk && (keys.has('shift') || mv.sprint), pace = run ? RUN : WALK;
+  const walk = ui.anyOpen() ? 0 : Math.sign(mv.x || 0), run = walk && mv.sprint, pace = run ? RUN : WALK;
   // walking off either end of the deck: over the rail and into the sea
   if ((walk < 0 && A.x <= DECK_MIN + 0.01) || (walk > 0 && A.x >= DECK_MAX - 0.01)) { leaveDeck(walk > 0 ? 1 : -1); return; }
   A.x = clamp(A.x + walk * pace * dt, DECK_MIN, DECK_MAX);
@@ -1721,7 +1624,7 @@ function promptFor(t) {
       p = 'F  Board the submersible';
     }
     else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
-      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here (V) and use its winch`
+      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here and use its winch`
       : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your aquarium`;
@@ -1870,7 +1773,7 @@ function startKill() {
   ent.x = x0; ent.y = y0; ent.vx = ent.vy = 0; ent.faceLock = -flip; ent.eyeOpen = 1;
   ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
   const s = flip;
-  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0, y0, x1, y1, dx, dy, rot, flip, window: inSub ? null : [0, hud.touch ? 0.9 : KILL_WINDOW] }; // (5.10.1) a thumb needs a moment longer than a key
+  g.kill = { t: 0, inSub, s, esc: false, escT: 0, open: 0, x0, y0, x1, y1, dx, dy, rot, flip, window: inSub ? null : [0, 0.9] }; // (5.10.1) a thumb needs a moment longer than a key
   ui.closeAll && ui.closeAll();
   audio.ready && audio.drop();
   g.fx.shake = Math.max(g.fx.shake, 1.2);
@@ -1889,7 +1792,7 @@ function killUpdate(dt) {
     return;
   }
   // the moment to get free (swimming only)
-  if ((K.window && K.t > K.window[0] && K.t < K.window[1]) || (pressed.has('q') && K.t < (K.window ? K.window[1] : 99))) { // (5.6.4) the lure answers any time before the jaws shut
+  if ((K.window && K.t > K.window[0] && K.t < K.window[1]) ) { // (5.6.4) the lure answers any time before the jaws shut
     let how = null;
     // (5.10.8) no escape by the lamp: only a lure, or the Tidewarden's ward, gets him out of the jaws
     /* (6.0.0) no Tidewarden in the jaws: once it strikes, nothing stops it (Rebirth, after, is the only way back) */
@@ -1983,7 +1886,7 @@ const PATCH_SHARE = 0.3, REPAIR_TIME = 3; // (4.5.0) three seconds a hole
 function syncPatches(sub) {
   if (!sub.patches) sub.patches = [];
   const n = sub.imploded ? 0 : Math.min(3, Math.max(0, Math.ceil((1 - sub.hull) / PATCH_SHARE - 0.02)));
-  if (n > (g.patchCount || 0) && !sub.imploded) { if (!g.repairHinted) { g.repairHinted = true; hud.hint(hud.touch ? 'Swim to a hole in the sub\'s hull and tap it to mend it' : 'Swim to a hole in the sub\'s hull and hold R to repair it'); } }
+  if (n > (g.patchCount || 0) && !sub.imploded) { if (!g.repairHinted) { g.repairHinted = true; hud.hint('Swim to a hole in the sub\'s hull and tap it to mend it'); } }
   g.patchCount = n;
   while (sub.patches.length > n) sub.patches.pop();
   for (let tries = 0; sub.patches.length < n && tries < 40; tries++) {
@@ -2167,7 +2070,7 @@ function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A); if (why) { hud.toast(why, 'note'); return; }
   // (5.16.0) Dash on a phone: pressed, it waits for a tap where to go (time slowed, the screen greyed, the view opened by
   // its tier); pressed again, or 3 s with no tap, and it is put away unspent
-  if (A.dash && hud.touch) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A }; renderer.aimZoom = A.zoom || 1; } return; }
+  if (A.dash) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A }; renderer.aimZoom = A.zoom || 1; } return; }
   const S = abilityState(g), e = g.earl, P = profile;
   S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
   P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; // (5.16.0) real time
@@ -2267,7 +2170,7 @@ function update(dt) {
     }
     const target = findTarget();
     // (5.5) the observe button (touch): the nearest animal in reach not yet in the journal, and its press
-    g.obsTarget = hud.touch ? observeTarget() : null;
+    g.obsTarget = observeTarget();
     // (5.5.3) the sprint button: a tap locks sprinting on (it costs air faster, as ever), another tap or letting go of the
     // stick for a moment ends it; never in the sub or on deck
     // (5.7.1) the sub's leave button: always works (the tutorial's own leave step, if it is the one asked)
@@ -2329,7 +2232,7 @@ function update(dt) {
       if (g.pry.t >= HOLD_TIME[target.p.type]) { g.pry = null; interact(target, false); }
     } else g.pry = null;
     // (5.6.3) on a touch screen a hole is tapped to mend it: he works at it while he stays by it, until it is done
-    g.patchMarks = hud.touch && !e.inSub && !g.sub.imploded && (g.sub.patches || []).length && dist(e.x, e.y, g.sub.x, g.sub.y) < 14 ? g.sub.patches.map((q) => patchWorld(g.sub, q)) : null;
+    g.patchMarks = !e.inSub && !g.sub.imploded && (g.sub.patches || []).length && dist(e.x, e.y, g.sub.x, g.sub.y) < 14 ? g.sub.patches.map((q) => patchWorld(g.sub, q)) : null;
     if (g.repairTap != null) {
       const n = (g.sub.patches || []).length;
       if (e.inSub || !n || n < g.repairTapCount || !g.patchMarks || g.repairTap >= n) g.repairTap = null; // that hole is mended (or he left)
@@ -2346,7 +2249,6 @@ function update(dt) {
       }
     } else g.plant = 0;
     // giving something back: release a lure or a necklace into the deep
-    if (pressed.has('h') && profile.pet && !g.aboard) { const r = toggleStay(g); if (r) hud.toast(r === 'stay' ? 'Your pet stays here' : 'Your pet follows you'); }
     if (pressed.has('g') && canOffer() && !g.helm) {
       const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
       if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('The deep accepts it, for now', 'note'); }
@@ -2356,10 +2258,7 @@ function update(dt) {
     else if (pressed.has('f-tap') && atDave) { if (!ui.daveTalkOpen()) ui.daveTalk(); } // (6.5.4) he speaks at his door first
     else if (pressed.has('f-tap') && atStation) ui.toggleCatalog(undefined, 'station');
     else if (pressed.has('f-tap') && !holdJob && !planting) interact(target, false);
-    if (pressed.has('j')) ui.toggleJournal();
-    if (pressed.has('o')) ui.toggleQuests(); // (4.0.0) the quest board
-    if (pressed.has('k')) { const was = ui.chart.isOpen(); ui.closeAll(); if (!was) ui.chart.toggle(true); } // (4.10.0) the chart
-    if (pressed.has('l') && (g.aboard || g.helm)) { g.sub.lightsOn = !g.sub.lightsOn; if (!hud.touch) audio.ready && audio.click(); } // (4.0.0) aboard the Margaret: the sub's lights, quietly
+    if (pressed.has('l') && (g.aboard || g.helm)) { g.sub.lightsOn = !g.sub.lightsOn;  } // (4.0.0) aboard the Margaret: the sub's lights, quietly
     else if (pressed.has('l')) {
       g.lampFlashT = g.time;
       if (e.inSub) { g.sub.lightsOn = !g.sub.lightsOn; e.lampWanted = g.sub.lightsOn; } // outside, only his own lamp: the sub keeps its lights as they were
@@ -2379,7 +2278,7 @@ function update(dt) {
     if (pressed.has('v') && g.helm) { leaveHelm(); audio.ready && audio.click(); } // (the helm is taken aboard, at the wheel)
     if (pressed.has('r')) {
       // a backup air tank, plumbed into the cabin: the air bank fills to full
-      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast(hud.touch ? 'Swim to a hole in the hull and tap it' : 'Hold R at a hole in the hull', 'warn'); }
+      if (!e.inSub || g.sub.imploded) { if (patchNear() < 0 && !g.sub.imploded && (g.sub.patches || []).length) hud.toast('Swim to a hole in the hull and tap it', 'warn'); }
       else if (!g.items.airTank) hud.toast('No backup air tanks', 'warn');
       else if (g.tankFit) { /* already being connected */ }
       else if (g.sub.o2 >= g.sub.o2Max - 1) hud.toast('The cabin air is full');
@@ -2391,7 +2290,6 @@ function update(dt) {
       // cabin and the water round the hull; he takes it out with him when he leaves.
       if (!g.aboard) dropGlow(); // (5.17.1) snapped and let go where he is
     }
-    if (pressed.has('m')) audio.setMuted(!audio.muted);
     g.airMul = 1; g.luck = 0; g.stillMul = 1;
     // rare forms turn up more at the whale fall and the seep
     g.fauna.rareMult = Math.abs(e.x - WHALE_FALL.x) < 60 && e.y > 2900 ? 3 : Math.abs(e.x - SEEP.x) < 50 && e.y > 2300 ? 2 : 1;
@@ -2420,7 +2318,6 @@ function update(dt) {
     // back at the boat after being out on a dive: music
     if (e.y > 30) g.awayFromBoat = true;
     if (g.awayFromBoat && Math.abs(e.x - BOAT.x) < 20 && e.y < 3) { g.awayFromBoat = false; audio.cue && audio.cue('home'); }
-    if (pressed.has('`')) { hud.showFps = !hud.showFps; } // (4.0.0: P is the shipyard now)
     // the aquarium's day: tickets in, upkeep out
     tickGallery(profile, dt);
     for (const d of Object.values(aquariumOf(profile).display)) if (d.justFamous) { d.justFamous = false; saveProfile(profile); hud.toast(`${d.name || 'Your ' + SPECIES_BY_ID[d.id].name.toLowerCase()} is Famous now`, 'big'); }
@@ -2450,7 +2347,7 @@ function update(dt) {
     if (pressed.has('c-tap')) {
       if (e.inSub && g.homeRun) { g.homeRun = false; ap.cancel(); hud.toast('Autopilot off'); }
       else if (e.inSub && g.sub.docked) hud.toast('Already at the boat');
-      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: heading home'); hud.hint(hud.touch ? 'It steers itself to the boat using less air. Tap the autopilot button to take the helm back' : 'It steers itself to the boat using less air. Press C to take the helm back; if something hits or comes near, it lets go'); audio.ready && audio.sonar(0.05); }
+      else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: heading home'); hud.hint('It steers itself to the boat using less air. Tap the autopilot button to take the helm back'); audio.ready && audio.sonar(0.05); }
       else if (g.sub.imploded) hud.toast('The submersible is gone', 'warn');
       else if (ap.state === 'coming') { ap.cancel(); g.sub.vx *= 0.5; hud.toast('Sub stopped'); }
       else { ap.call(g); hud.toast(`Calling the sub · ${Math.round(dist(e.x, e.y, g.sub.x, g.sub.y))} m`); audio.ready && audio.sonar(0.05); }
@@ -2470,11 +2367,9 @@ function update(dt) {
     }
     g.subHit = false;
     // catching: 1 / 2 pick the net or the slurp gun, Space uses it
-    // a number picks up that tool; the same number again puts it away (hands free)
+    // the net's button picks it up; again puts it away (hands free)
     const pick = (sel, msg) => { if (g.toolSel === sel) { g.toolSel = 'none'; g.capture = null; hud.toast('Hands free'); } else { g.toolSel = sel; hud.toast(msg); } };
     if (pressed.has('1')) pick('net', gear(profile, 'net').name);
-    if (pressed.has('2') || pressed.has('4')) { if (owns(profile, 'camera')) pick('cam', `${gear(profile, 'cam').name}, ${g.items.film || 0}/${gear(profile, 'cam').shots}`); else hud.toast('No camera', 'warn'); }
-    if (pressed.has('3') || pressed.has('5')) { const tr = profile.traps || {}; if (TRAP_ORDER.some((k) => tr[k] > 0)) pick('trap', `Traps to set: ${TRAP_ORDER.filter((k) => tr[k] > 0).map((k) => `${trapsFree(g, k)} ${TRAPS[k].name.toLowerCase()}`).join(', ')}`); else hud.toast('No traps', 'warn'); }
     const tool = activeTool(g);
     if (keys.has(' ') && g.aboard && g.toolSel === 'trap' && !g.trapDeckSaid) { g.trapDeckSaid = true; hud.toast('Jump in first: traps are set from the water, at the surface', 'warn'); } // (claude-polish) on deck Space did nothing at all
     if (!keys.has(' ')) g.trapDeckSaid = false;
@@ -2567,7 +2462,7 @@ function update(dt) {
         const why = fireSubNet(g, tier);
         if (why === 'closing') { hud.toast('Closing the net…'); audio.ready && audio.click(); }
         else if (why && why !== 'busy') hud.toast(why, 'warn');
-        else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? `${NETS_SUB[g.subNet.tier].name} out` : `${NETS_SUB[g.subNet.tier].name} out (${hud.touch ? 'the trawl button closes it' : 'N to close'})`); audio.ready && audio.whoosh(); }
+        else if (!why) { questEvent(profile, 'trawl'); hud.toast(learned(profile, 'trawl') || g.lesson ? `${NETS_SUB[g.subNet.tier].name} out` : `${NETS_SUB[g.subNet.tier].name} out (${'the trawl button closes it'})`); audio.ready && audio.whoosh(); }
       };
       const kinds = netKinds(g.items);
       if (g.subNet || canFireSubNet(g)) letOut(null);
@@ -2602,7 +2497,7 @@ function update(dt) {
     // something to pick up, a trap; the Margaret when there is a catch to sell. The renderer brackets each (thin cream
     // corners, as an animal to observe gets) and keeps where it drew them for the tap (renderer.tapRects)
     g.tapMarks = [];
-    if (hud.touch && !g.kill && !g.helm) {
+    if (!g.kill && !g.helm) {
       const e2 = g.earl, cabinOn = ui.cabinOpen && ui.cabinOpen(), bagN = (g.bag || []).length;
       if (g.aboard && !cabinOn && !g.aboard.jump && !g.aboard.climb && g.aboard.near === 'door') g.tapMarks.push({ key: 'f', boat: [16.2, -24.8, 21.8, -10.4], what: 'door' });
       if (!g.aboard && !e2.inSub) {
@@ -2658,7 +2553,7 @@ function update(dt) {
       g.capPrompt = why ? `Traps: ${why.charAt(0).toLowerCase() + why.slice(1)}` : 'Space  Set a trap here';
     } else if (!e.inSub && tool.kind === 'cam') {
       // (5.3) on a touch screen there is no pointer to aim with: the camera turns to the nearest animal ahead
-      if (hud.touch && !g.photo) {
+      if (!g.photo) {
         const rng = gear(profile, 'cam').range + 1; let best = null, bd = 1e9;
         for (const c of g.fauna.list) { if (c.dead || c.companion) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > rng || dx * (e.facing || 1) < -0.5) continue; if (d < bd) { bd = d; best = c; } }
         g.aim = best ? Math.atan2(best.y - e.y, best.x - e.x) : null;
@@ -2704,16 +2599,15 @@ function update(dt) {
     // facing; that only ever follows the player's own left/right input
     e.struggle = Math.max(g.noAir ? 0.35 + clamp(g.noAir / 15, 0, 1) * 0.65 : 0, lvl >= 4 ? 0.5 : 0);
     if (g.helm) {
-      if (pressed.has('w')) { leaveHelm(); } // (2.6.7) only W, as the prompt says: up/down arrows (or S) at the wheel no longer throw him off it into the cabin
-      else {
+      { // (7.2.4) the wheel is left by its own button (V)
         // a heavy working boat: she takes her time to get under way and longer still to stop
         // getting under way: a sub alongside is lifted into her cradle; one still out holds her here
         if (mv.x && !g.sub.docked && !g.sub.imploded) {
           const alongside = Math.hypot(g.sub.x - boatDock(), g.sub.y - 2.6) < 16 && !(g.autopilot && g.autopilot.active);
           if (alongside) { g.sub.docked = true; hud.toast('The sub is lifted into the Margaret\'s cradle'); audio.ready && audio.thud(0.2); }
-          else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast(hud.touch ? 'The sub is still out: the sub button calls it' : 'The sub is still out (hold C)', 'warn'); } }
+          else { mv.x = 0; if (!g.subOutWarnT || g.time - g.subOutWarnT > 3) { g.subOutWarnT = g.time; hud.toast('The sub is still out: the sub button calls it', 'warn'); } }
         }
-        if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast(g.anchorDir < 0 ? 'Anchor still coming up' : 'Anchor down (G)', 'warn'); } }
+        if (mv.x && g.anchored) { if (!g.anchorWarnT || g.time - g.anchorWarnT > 3) { g.anchorWarnT = g.time; hud.toast(g.anchorDir < 0 ? 'Anchor still coming up' : 'Anchor down', 'warn'); } }
         // (3.1.1) slower, heavier: 3.5 m/s flat out, about twice as long to get under way and to stop
         const want = g.anchored ? 0 : mv.x * 3.5;
         g.boatV = lerp(g.boatV || 0, want, 1 - Math.exp(-dt * (want ? 0.15 : 0.1)));
@@ -2769,16 +2663,7 @@ function update(dt) {
     const res = updateEarl(g, dt, mv);
     if (g.aboard) placeOnDeck(dt);
     zoneHazards(dt);
-    // the lamp follows the cursor (if the mouse has been used); idle, Earl turns to face it
     g.aim = null;
-    if (mouse.seen && renderer.S) {
-      const [mx, my] = mouseScreen();
-      const ax = mx - renderer.S(e.x), ay = my - renderer.Sy(e.y);
-      if (Math.hypot(ax, ay) > renderer.cam.ppm * 0.6) {
-        g.aim = Math.atan2(ay, ax);
-        if (!mv.x && !mouse.down && performance.now() - mouse.movedAt < 3000 && Math.abs(ax) > renderer.cam.ppm * 1.2) e.facing = ax > 0 ? 1 : -1;
-      }
-    }
     if (e.inSub && !g.sub.imploded && g.mode === 'play' && !g.frozen) crushDepth(dt);
     if (res === 'implode' || g.implodeNow) {
       g.implodeNow = false;
@@ -2949,7 +2834,7 @@ function update(dt) {
   fx.vignette = fx.dread;
   // pressure: the deeper past 300 m, the worse. Only in the water: the sub's cabin is at surface
   // pressure, and nothing in it sways, blurs or doubles the view (its hull warns by sound instead)
-  const pressT = !e.inSub && g.mode !== 'menu' ? clamp(Math.log(Math.max(1, g.diverDrain / (keys.has('shift') ? 2 : 1))) / Math.log(30), 0, 1) : 0;
+  const pressT = !e.inSub && g.mode !== 'menu' ? clamp(Math.log(Math.max(1, g.diverDrain)) / Math.log(30), 0, 1) : 0;
   fx.pressure = lerp(fx.pressure || 0, pressT, 1 - Math.exp(-dt * 1.2));
   const entDis = d < 50 ? (50 - d) / 50 : 0;
   fx.disorient = lerp(fx.disorient, Math.max(entDis, fx.pressure * 0.85), dt * 1.2);
@@ -3103,7 +2988,7 @@ let workEma = 8, slow30 = false, quickT = 0, overT = 0;
 // (5.6.7) on a phone the journal, the quests and the chart are one book: tabs along its top move between them
 function bookTabs() {
   const open = { journal: !document.getElementById('journal').hidden, quests: !document.getElementById('quests').hidden, chart: !!(ui.chart && ui.chart.isOpen && ui.chart.isOpen()) };
-  const show = hud.touch && (open.journal || open.quests || open.chart);
+  const show = (open.journal || open.quests || open.chart);
   let el = document.getElementById('booktabs');
   if (!el) {
     if (!show) return;
@@ -3114,7 +2999,7 @@ function bookTabs() {
   }
   el.hidden = !show;
   // (5.9.2) Quests and the Chart open as pages in the same book: a shell (its cover and two blank pages) behind them
-  { let sh = document.getElementById('bookshell'); const inBook = hud.touch && (open.quests || open.chart);
+  { let sh = document.getElementById('bookshell'); const inBook = (open.quests || open.chart);
     if (!sh && inBook) { sh = document.createElement('div'); sh.id = 'bookshell'; sh.innerHTML = '<div class="bs-page l"></div><div class="bs-page r"></div>'; document.body.appendChild(sh); }
     if (sh) sh.hidden = !inBook; document.body.classList.toggle('bookmode', !!inBook); }
   if (show) for (const b of el.children) { const on = !!open[b.dataset.t]; if (b.classList.contains('on') !== on) b.classList.toggle('on', on); }
@@ -3127,13 +3012,13 @@ function bookTabs() {
 // panel when the air is low or gone, or the thing is hunting close
 // (5.10.11) the boxed danger strip over panels is gone (it doubled the HUD's own air warning and looked like a web badge)
 function phoneCap(now) {
-  if (!hud.touch) return 0;
+  
   return (SETTINGS.fast || g.mode === 'menu' || slow30) ? 1000 / 30 : 1000 / 60;
 }
 let lastWork = 0;
 function noteWork(ms, dt) {
   lastWork = ms;
-  if (!hud.touch || g.warmUntil || g.mode !== 'play') return; // the loading card's heavy frames do not count
+  if (g.warmUntil || g.mode !== 'play') return; // the loading card's heavy frames do not count
   workEma += (Math.min(ms, 50) - workEma) * 0.03;
   if (!slow30) { overT = workEma > 14 ? overT + dt : 0; if (overT > 3) { slow30 = true; quickT = 0; } } // slow for 3 s on end
   else { quickT = workEma < 9 ? quickT + dt : 0; if (quickT > 8) { slow30 = false; overT = 0; } }
@@ -3159,7 +3044,7 @@ function frame(now) {
   renderer.updateCamera(g, dt);
   // (3.0.27) the sea isn't drawn while a full-screen room covers it: it only cost frames (and slowed him there)
   const covered = !document.getElementById('cabin').hidden || !document.getElementById('tankroom').hidden || !document.getElementById('gallery').hidden
-    || (hud.touch && innerHeight > innerWidth); // (5.4) a phone held upright: the turn-your-phone card covers it all
+    || (innerHeight > innerWidth); // (5.4) a phone held upright: the turn-your-phone card covers it all
   // (6.5.0) only the pause menu holds the world still, so only there is the sea drawn sparingly: behind any other panel
   // the world goes on, and drawing it ten times a second made the fish, the radar and the water stutter
   // (6.5.6) and not there either: the pause menu and the refit room showed the sea at ten frames a second. Paused, the
@@ -3177,23 +3062,22 @@ function frame(now) {
     // frames in a row drawn quickly (the first draws of the sea, the seabed and the boat are built and handed to the
     // phone's graphics chip here, not in the first minute of play); never more than 8 s
     g.warmFrames++; g.warmCalm = lastWork < 22 ? g.warmCalm + 1 : 0;
-    const ready = hud.touch ? done && g.warmFrames > 12 && g.warmCalm >= 12 : done;
+    const ready = (done && g.warmFrames > 12 && g.warmCalm >= 12);
     if (ready || performance.now() > g.warmUntil) { g.warmUntil = 0; ui.setLoading(1, 'Charting the sea'); setTimeout(() => ui.showLoading(false), 250); }
   } else if (renderer.phone) { if (!behind) renderer.warmSprites(g, realDt < 1 / 50 ? 3 : 1, true); } // (5.4) a phone: only the animals about now (the look-ahead over every species near this depth outgrew its memory and kept rebuilding), none behind a panel
   else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
-  weightedCursor(Math.min(0.05, dt));
   // (5.3) in lite mode the HUD (its text, its shadows) is drawn every second frame: it changes slowly, and a
   // phone's fill is better spent on the sea
   hudDt += dt; hudFrame++;
-  { const on = !!(hud.touch && g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen('cabin')); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
-  if (hud.touch && renderer.cam && renderer.cam.ppm) { // (5.6.1) where Earl (and the animal to observe) are on the HUD, for its tag and taps
+  { const on = !!(g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen('cabin')); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
+  if (renderer.cam && renderer.cam.ppm) { // (5.6.1) where Earl (and the animal to observe) are on the HUD, for its tag and taps
     const cm = renderer.cam, k = hud.c.width / renderer.c.width, sx = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * k, sy = (wy) => ((wy - cm.y) * cm.ppm + renderer.c.height / 2) * k;
     hud.earlScreen = { x: sx(g.earl.x), y: sy(g.earl.y) };
     { const A = g.aboard ? null : g.fAnchor; hud.fAnchorScreen = A ? { x: sx(A.x), y: sy(A.y), r: (A === g.fAnchor && g.fAnchor.x === g.sub.x ? 3.2 : 0.6) * cm.ppm * k } : null; }
     const ot = g.obsTarget, oc = ot && (ot.c || null);
     hud.obsScreen = ot ? { x: sx(oc ? oc.x : ot.x ?? g.earl.x), y: sy(oc ? oc.y : ot.y ?? g.earl.y), r: Math.max(34 * hud.c.width / innerWidth * (window.__fingerK || 1), (ot.sp.len || 0.3) * cm.ppm * k) } : null;
   }
-  if (hud.touch) { // (5.6.2) the quest group under the settings coin, its pictures the coins'
+  { // (5.6.2) the quest group under the settings coin, its pictures the coins'
     // (5.6.8) the journal's coin (hud.journalAt, its centre; 5.6.9: in the column under the radar, above the bag); the goal's line under the money. Placed by
     // where they really are on the page, so the zoom the stylesheet gives them does not throw them off
     const qh = document.getElementById('quests-hud'), qb = document.getElementById('quests-btn'), J = hud.journalAt;
@@ -3212,14 +3096,14 @@ function frame(now) {
   menuFold(now); // (6.5.7)
   { const off = !!((g.kill && (g.kill.inSub || g.kill.esc)) || g.mode === 'dying'), dim = !!(g.kill && !off); if (document.body.classList.contains('hud-off') !== off) document.body.classList.toggle('hud-off', off); if (document.body.classList.contains('hud-dim') !== dim) document.body.classList.toggle('hud-dim', dim); } // (5.10.10) in its jaws the journal stays, dimmed
   { const tk = window.__hudTutKey || null; if (tk !== g.lastTutKey) { g.lastTutKey = tk; g.tutPressedKey = null; } // (5.8.1) each step's spotlight once, until its button is pressed; not for sprint (pressed while swimming)
-    hud.spotWanted = !!(hud.touch && profile && (profile.tut === 'on' || !!g.lesson) /* (6.6.2) and the lessons */ && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
-  hud.panel = !!(hud.touch && ui.anyOpen && ui.anyOpen('cabin davetalk')); /* (7.0.13) Dave's words sit at the foot of the scene: the HUD stays round them */ // (5.6.8) the cabin keeps the controls: it is the same game
-  { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
+    hud.spotWanted = !!(profile && (profile.tut === 'on' || !!g.lesson) /* (6.6.2) and the lessons */ && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
+  hud.panel = !!(ui.anyOpen && ui.anyOpen('cabin davetalk')); /* (7.0.13) Dave's words sit at the foot of the scene: the HUD stays round them */ // (5.6.8) the cabin keeps the controls: it is the same game
+  { const cab = !!(ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
   hud.cabinNear = hud.inCabin && ui.cabin.near ? ui.cabin.near() : null; // (7.1.0) which station is in reach, for the button's picture
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
-  if (!(hud.touch && innerHeight > innerWidth) && !behind) { hud.draw(g, hudDt); hudDt = 0; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
+  if (!(innerHeight > innerWidth) && !behind) { hud.draw(g, hudDt); hudDt = 0; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
   audio.update(g, dt);
   g.realDt = dt; airOver(g); if (g.rebirthT > 0) g.rebirthT = Math.max(0, g.rebirthT - dt); // (5.16.0) Rebirth's grace
@@ -3233,7 +3117,7 @@ function frame(now) {
   if (g.says && g.says.length) { for (const m of g.says) m.t += dt; g.says = g.says.filter((m) => m.t < 4); }
   beacon.update(g, dt, !!(ui.tankOpen && ui.tankOpen())); // (4.0.2) always: the alarm keeps going whatever panel is open // (3.3.0) the alarm beacon (not over the locker)
   ui.update(g, dt);
-  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && ui.anyOpen && ui.anyOpen(); tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)
+  { const on = g.mode === 'play' && !g.paused && !g.kill && !!profile && (profile.tut === 'on' || !!g.lesson) && !!g.tut; const sp = on ? g.tut.spot : null, coverd = sp && !sp.sel && !sp.card && ui.anyOpen && ui.anyOpen('cabin davetalk'); /* (7.2.4) the cabin keeps the HUD, so its buttons can still be lit there */ tutSpot.update(on, coverd ? null : sp, on ? g.tut.text : null); } // (4.3.0) (5.4: a key or button step waits while a panel is open over the game)
   // dread colour grading on the scene canvas only
   const fx = g.fx;
   // no steady blur: it comes in slow pulses, a swell of fog every few seconds that clears again
@@ -3267,7 +3151,7 @@ requestAnimationFrame(frame);
 })();
 
 // (5.7.0) any touch or key on the title: the eye in the dark closes again
-for (const ev0 of ['pointerdown', 'keydown']) window.addEventListener(ev0, () => { if (g && g.mode === 'menu') g.menuIdle0 = g.time; }, true);
+for (const ev0 of ['pointerdown', 'actdown']) window.addEventListener(ev0, () => { if (g && g.mode === 'menu') g.menuIdle0 = g.time; }, true);
 // (5.7.5) a new version pushed while the old one is open (or kept by the phone's home-screen copy): a note to tap to load it
 { const mine = () => import('./version.js').then((m) => m.VERSION).catch(() => null);
   const check = async () => { try { const cur = await mine(); const t = await (await fetch('js/version.js?t=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/VERSION\s*=\s*'([^']+)'/); const nv = m && m[1];
@@ -3276,7 +3160,7 @@ for (const ev0 of ['pointerdown', 'keydown']) window.addEventListener(ev0, () =>
   // (5.7.5) the fonts loaded up front, so no text appears in a stand-in face and then changes
   if (document.fonts && document.fonts.load) for (const f of ['400 16px "Barlow Semi Condensed"', '500 16px "Barlow Semi Condensed"', '600 16px "Barlow Semi Condensed"', '700 16px "Barlow Semi Condensed"']) document.fonts.load(f).catch(() => {}); }
 // (5.6.8) the settings coin (top right, on a phone): the pause menu, wherever he is (the cabin too), never closing it
-window.addEventListener('keydown', (ev) => {
+window.addEventListener('actdown', (ev) => {
   if (ev.key !== 'settings') return; ev.stopImmediatePropagation();
   if (g.mode !== 'play' || g.paused) return;
   g.paused = true; ui.setPaused(true);
@@ -3285,31 +3169,21 @@ window.addEventListener('keydown', (ev) => {
 // its tab. A tap anywhere along it, or any of its keys, counts as using it
 let menuUsedAt = performance.now();
 const MENU_KEYS = new Set(['menu', 'journal', 'j', 'b', 'c', 't', 'r', 'store', 'events']);
-window.addEventListener('keydown', (ev) => { if (MENU_KEYS.has(ev.key)) menuUsedAt = performance.now(); }, true);
+window.addEventListener('actdown', (ev) => { if (MENU_KEYS.has(ev.key)) menuUsedAt = performance.now(); }, true);
 window.addEventListener('pointerdown', (ev) => { if (ev.clientX < innerWidth * 0.14) menuUsedAt = performance.now(); }, true);
 function menuFold(now) {
-  if (!hud.touch || !hud.menuOpen || !profile || profile.tut === 'on' || g.mode !== 'play') { if (!hud.menuOpen) menuUsedAt = now; return; }
+  if (!hud.menuOpen || !profile || profile.tut === 'on' || g.mode !== 'play') { if (!hud.menuOpen) menuUsedAt = now; return; }
   if (ui.anyOpen && ui.anyOpen()) { menuUsedAt = now; return; } // while a panel from it is open, the clock waits
   if (now - menuUsedAt > 30000) hud.menuOpen = false; // folded for now; the choice kept in storage is left as it was
 }
 // (5.15.7) the menu's tab (under the money): folds the journal, the bag and the rest away, or opens them; remembered
-window.addEventListener('keydown', (ev) => {
+window.addEventListener('actdown', (ev) => {
   if (ev.key !== 'menu') return; ev.stopImmediatePropagation();
   hud.menuOpen = !hud.menuShown; try { localStorage.setItem('earl.menuOpen', hud.menuOpen ? '1' : '0'); } catch (e) { /* not kept */ } audio.ready && audio.click();
 }, true);
-// Escape toggles pause; closing overlays first.
-window.addEventListener('keydown', (ev) => {
-  if (ev.key !== 'Escape' || ui.typing()) return;
-  if (ui.settingsOpen && ui.settingsOpen()) { ui.toggleSettings(false); return; }
-  if (ui.inventoryOpen && ui.inventoryOpen()) { if (ui.lkSel || ui.fishSel) { ui.lkSel = null; ui.fishSel = null; ui.renderInventory(); return; } ui.toggleInventory(false); return; } // (3.0.31) the item pop-up first
-  if (g.mode !== 'play') return;
-  if (ui.anyOpen()) { ui.closeAll(); return; }
-  g.paused = !g.paused;
-  ui.setPaused(g.paused);
-});
 
 // debug hooks for automated testing
-window.__earl = { die: (c, k) => die(c, k), get g() { return g; }, get touch() { return touch; }, INPUT, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck() };
+window.__earl = { die: (c, k) => die(c, k), get g() { return g; }, get touch() { return touch; }, get profile() { return profile; }, set profile(p) { profile = p; }, newProfile, startRun, renderer, SPECIES_BY_ID, ui, step: (dt) => update(dt), keys, pressed, hud, leaveSub: () => leaveSub(), boardDeck: () => boardDeck() };
 
 // leaving the page: whatever has changed is written to the slot at once
 function saveNow() { if (!profile) return; if (g.mode === 'play') syncProfile(); saveProfile(profile); flushSave(); }
