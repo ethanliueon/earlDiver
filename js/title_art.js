@@ -64,7 +64,11 @@ function letters(scale) {
 
 // a hatchetfish, side on, facing right: the deep hatchet-shaped belly, a silver flank lit from above, a big eye, a row
 // of photophores along the keel that glint in turn
+// (7.1.7) the painted hatchetfish (tools/hatchet_kit.py): a silver blade with tube eyes and its belly's lights; the drawn
+// one below stays only until the picture has loaded
+const HF = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: 'assets/loading/hatchetfish.png' }) : null;
 function drawHatchetfish(x, L, t) {
+  if (HF && HF.complete && HF.naturalWidth) { const h = L * HF.naturalHeight / HF.naturalWidth; x.drawImage(HF, 0, L * 0.68 / 2 - h / 2, L * 1.08, h * 1.08); return; }
   const s = L / 100;
   x.save(); x.scale(s, s);
   x.fillStyle = 'rgba(140,150,140,0.55)'; x.beginPath(); x.moveTo(4, 20); x.lineTo(18, 31); x.lineTo(4, 42); x.lineTo(9, 31); x.closePath(); x.fill(); // tail
