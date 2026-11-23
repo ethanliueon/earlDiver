@@ -2439,11 +2439,11 @@ export class Renderer {
       // the mast, and its beacon
       ctx.strokeStyle = '#2e2e2a'; ctx.lineWidth = Math.max(1.5, m * 0.1); ctx.beginPath(); ctx.moveTo(X(-3.2), Y(cy - R)); ctx.lineTo(X(-3.2), Y(cy - R - 4.2)); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(X(-3.9), Y(cy - R - 3.3)); ctx.lineTo(X(-2.5), Y(cy - R - 3.3)); ctx.stroke();
-      const blink = (t % 2.4) < 0.25;
-      ctx.fillStyle = blink ? '#ff5040' : '#5a1a14'; ctx.beginPath(); ctx.arc(X(-3.2), Y(cy - R - 4.3), Math.max(2, m * 0.16), 0, TAU); ctx.fill();
+      const blink = 0.5 + 0.5 * Math.sin(t * 1.1); // (6.8.3) a slow dim swell, never a blink
+      ctx.fillStyle = `rgba(${150 + 60 * blink | 0},${50 + 18 * blink | 0},${36 + 10 * blink | 0},0.95)`; ctx.beginPath(); ctx.arc(X(-3.2), Y(cy - R - 4.3), Math.max(2, m * 0.16), 0, TAU); ctx.fill();
       // the hull: a yellow cylinder, rounded ends, rust run down from every seam
       const hg = ctx.createLinearGradient(0, Y(cy - R), 0, Y(cy + R));
-      hg.addColorStop(0, '#a47a44'); hg.addColorStop(0.35, '#86602f'); hg.addColorStop(1, '#3a2812'); /* (6.7.2) old ochre paint, faded and grimed: the bright yellow was the one cheerful thing down there */
+      hg.addColorStop(0, '#4a3418'); hg.addColorStop(0.1, '#8a6436'); hg.addColorStop(0.27, '#a47a44'); hg.addColorStop(0.5, '#7a5629'); hg.addColorStop(0.82, '#3e2a12'); hg.addColorStop(1, '#22170a'); /* (6.7.2) old ochre paint, faded and grimed; (6.8.3) turned: a lit band along its upper third, the underside in shadow */
       ctx.fillStyle = hg; ctx.beginPath(); ctx.roundRect(X(x0), Y(cy - R), (x1 - x0) * m, R * 2 * m, R * m); ctx.fill();
       ctx.save(); ctx.beginPath(); ctx.roundRect(X(x0), Y(cy - R), (x1 - x0) * m, R * 2 * m, R * m); ctx.clip();
       ctx.fillStyle = 'rgba(96,40,14,0.45)';
@@ -2451,15 +2451,21 @@ export class Renderer {
       ctx.strokeStyle = 'rgba(40,24,6,0.55)'; ctx.lineWidth = Math.max(1, m * 0.07);
       for (const rx of [-2.6, 0, 2.6]) { ctx.beginPath(); ctx.moveTo(X(rx), Y(cy - R)); ctx.lineTo(X(rx), Y(cy + R)); ctx.stroke(); } // the ring seams
       ctx.fillStyle = 'rgba(255,236,200,0.1)'; ctx.fillRect(X(x0), Y(cy - R * 0.72), (x1 - x0) * m, m * 0.22); // the dull shine along its top
+      // (6.8.3) the domed ends darker toward their edge, rivet lines along the seams, grime settled on the underside
+      for (const [ex, dir] of [[x0 + R, -1], [x1 - R, 1]]) { const eg = ctx.createLinearGradient(X(ex), 0, X(ex + dir * R), 0); eg.addColorStop(0, 'rgba(0,0,0,0)'); eg.addColorStop(1, 'rgba(16,10,4,0.55)'); ctx.fillStyle = eg; ctx.fillRect(Math.min(X(ex), X(ex + dir * R)), Y(cy - R), R * m, 2 * R * m); }
+      ctx.fillStyle = 'rgba(40,24,8,0.7)'; for (const rx of [-2.6, 0, 2.6]) for (let ry = cy - R + 0.3; ry < cy + R - 0.2; ry += 0.4) { ctx.beginPath(); ctx.arc(X(rx + 0.14), Y(ry), Math.max(0.6, m * 0.04), 0, TAU); ctx.fill(); }
+      { const ug = ctx.createLinearGradient(0, Y(cy + R * 0.3), 0, Y(cy + R)); ug.addColorStop(0, 'rgba(28,30,18,0)'); ug.addColorStop(1, 'rgba(28,30,18,0.6)'); ctx.fillStyle = ug; ctx.fillRect(X(x0), Y(cy), (x1 - x0) * m, R * m); }
       ctx.restore();
+      ctx.strokeStyle = 'rgba(18,12,6,0.8)'; ctx.lineWidth = Math.max(1, m * 0.07); ctx.beginPath(); ctx.roundRect(X(x0), Y(cy - R), (x1 - x0) * m, R * 2 * m, R * m); ctx.stroke(); // a hard edge against the water
       // the portholes: warm light from inside, and now and then his head going past
       const dave = Math.sin(t * 0.21) * 0.5 + 0.5; // where he is in his hut (0 west .. 1 east)
       for (const px of [-2.0, 0.8]) {
         const pr = 0.62, wx = X(px), wy = Y(cy - 0.25);
-        ctx.fillStyle = '#ffd890'; ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.fill();
+        { const gl = ctx.createRadialGradient(wx - m * 0.12, wy - m * 0.12, 0, wx, wy, pr * m); gl.addColorStop(0, 'rgba(228,190,126,0.95)'); gl.addColorStop(1, 'rgba(150,104,52,0.95)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.fill(); } // (6.8.3) lamplight, warm and dim, brighter at its heart
         const hx = -3 + dave * 6.2; // his head and shoulders, when he passes this window
         if (Math.abs(hx - px) < 0.9) { ctx.save(); ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.clip(); ctx.fillStyle = 'rgba(60,34,14,0.85)'; ctx.beginPath(); ctx.arc(X(hx), wy + m * 0.05, m * 0.26, 0, TAU); ctx.fill(); ctx.fillRect(X(hx) - m * 0.45, wy + m * 0.28, m * 0.9, m * 0.5); ctx.restore(); }
-        ctx.strokeStyle = '#5a5a52'; ctx.lineWidth = Math.max(1.5, m * 0.13); ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.stroke();
+        { const rg2 = ctx.createLinearGradient(0, wy - pr * m, 0, wy + pr * m); rg2.addColorStop(0, '#8a7a56'); rg2.addColorStop(0.5, '#5a4c34'); rg2.addColorStop(1, '#2e261a'); ctx.strokeStyle = rg2; ctx.lineWidth = Math.max(1.5, m * 0.16); ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.stroke(); } // (6.8.3) a brass rim, lit from above
+        ctx.strokeStyle = 'rgba(240,226,190,0.32)'; ctx.lineWidth = Math.max(1, m * 0.05); ctx.beginPath(); ctx.arc(wx, wy, pr * m * 0.7, Math.PI * 1.1, Math.PI * 1.45); ctx.stroke(); // the glass's reflection
       }
       // the airlock: a short trunk at the east end, its hatch and the docking collar
       ctx.fillStyle = '#6e5028'; ctx.fillRect(X(x1 - 0.6), Y(cy - 1.1), m * 1.6, m * 2.2);
@@ -2484,10 +2490,16 @@ export class Renderer {
       ctx.beginPath(); for (let k = 0; k <= 8; k++) { const q = k / 8; const xx = X(nx0 + (nx1 - nx0) * q - 0.3), yy = Y(ny0 + (ny1 - ny0) * q + 1.6 + Math.sin(q * Math.PI) * 0.8); k ? ctx.lineTo(xx, yy) : ctx.moveTo(xx, yy); } ctx.stroke();
       ctx.strokeStyle = '#2e2e2a'; ctx.lineWidth = Math.max(1.5, m * 0.12); ctx.beginPath(); ctx.moveTo(X(nx1), Y(0)); ctx.lineTo(X(nx1), Y(ny1 - 0.2)); ctx.stroke();
       ctx.strokeStyle = 'rgba(40,40,36,0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(X(nx0), Y(ny0)); ctx.lineTo(X(nx1), Y(ny1)); ctx.stroke();
-      for (const [fx, fy, c] of [[-4.6, ny0 + 0.9, '#e0702a'], [-6.2, ny0 + 1.6, '#3a8a7a'], [-7.6, ny1 - 0.1, '#e0702a']]) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(X(fx), Y(fy + 0.5), m * 0.32, 0, TAU); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.arc(X(fx) - m * 0.1, Y(fy + 0.4), m * 0.1, 0, TAU); ctx.fill(); }
-      ctx.fillStyle = '#5a4026'; ctx.fillRect(X(6.8), Y(-0.9), m * 1.1, m * 0.9); ctx.fillStyle = '#4a3420'; ctx.fillRect(X(7.2), Y(-1.6), m * 0.9, m * 0.7); // crates
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.strokeRect(X(6.8), Y(-0.9), m * 1.1, m * 0.9); ctx.strokeRect(X(7.2), Y(-1.6), m * 0.9, m * 0.7);
-      ctx.fillStyle = '#2a4a6a'; ctx.fillRect(X(-6.4), Y(-1.2), m * 0.8, m * 1.2); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(X(-6.4), Y(-0.8), m * 0.8, m * 0.1); // a drum
+      for (const [fx, fy, c] of [[-4.6, ny0 + 0.9, [140, 76, 44]], [-6.2, ny0 + 1.6, [78, 92, 62]], [-7.6, ny1 - 0.1, [140, 76, 44]]]) { // (6.8.3) old glass floats, faded: rust and bottle green, shaded round
+        const fxp = X(fx), fyp = Y(fy + 0.5), fg = ctx.createRadialGradient(fxp - m * 0.1, fyp - m * 0.12, m * 0.02, fxp, fyp, m * 0.32); fg.addColorStop(0, `rgb(${c[0] * 1.35 | 0},${c[1] * 1.35 | 0},${c[2] * 1.35 | 0})`); fg.addColorStop(0.6, `rgb(${c[0]},${c[1]},${c[2]})`); fg.addColorStop(1, `rgb(${c[0] * 0.35 | 0},${c[1] * 0.35 | 0},${c[2] * 0.35 | 0})`);
+        ctx.fillStyle = fg; ctx.beginPath(); ctx.arc(fxp, fyp, m * 0.32, 0, TAU); ctx.fill(); ctx.strokeStyle = 'rgba(30,26,20,0.7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(fxp, fyp, m * 0.32, m * 0.1, 0, 0, TAU); ctx.stroke(); }
+      // (6.8.3) the crates: planks, a lit top edge, the side away from the light darker; the drum turned and rusted
+      const crate = (cx2, cy2, cw, ch, base) => { const [a, b, c] = base; const cg = ctx.createLinearGradient(X(cx2), 0, X(cx2 + cw), 0); cg.addColorStop(0, `rgb(${a * 1.2 | 0},${b * 1.2 | 0},${c * 1.2 | 0})`); cg.addColorStop(1, `rgb(${a * 0.6 | 0},${b * 0.6 | 0},${c * 0.6 | 0})`);
+        ctx.fillStyle = cg; ctx.fillRect(X(cx2), Y(cy2), cw * m, ch * m); ctx.strokeStyle = 'rgba(20,12,6,0.55)'; ctx.lineWidth = 1; for (let k = 1; k < 3; k++) { ctx.beginPath(); ctx.moveTo(X(cx2), Y(cy2 + ch * k / 3)); ctx.lineTo(X(cx2 + cw), Y(cy2 + ch * k / 3)); ctx.stroke(); }
+        ctx.strokeStyle = 'rgba(214,190,150,0.3)'; ctx.beginPath(); ctx.moveTo(X(cx2), Y(cy2)); ctx.lineTo(X(cx2 + cw), Y(cy2)); ctx.stroke(); ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.strokeRect(X(cx2), Y(cy2), cw * m, ch * m); };
+      crate(6.8, -0.9, 1.1, 0.9, [90, 64, 38]); crate(7.2, -1.6, 0.9, 0.7, [74, 52, 32]);
+      { const dg = ctx.createLinearGradient(X(-6.4), 0, X(-5.6), 0); dg.addColorStop(0, '#5a4a36'); dg.addColorStop(0.35, '#7a6448'); dg.addColorStop(1, '#2a2218'); ctx.fillStyle = dg; ctx.fillRect(X(-6.4), Y(-1.2), m * 0.8, m * 1.2);
+        ctx.fillStyle = 'rgba(20,14,8,0.5)'; for (const ry of [-0.85, -0.4]) ctx.fillRect(X(-6.4), Y(ry), m * 0.8, Math.max(1, m * 0.07)); ctx.fillStyle = 'rgba(110,56,28,0.45)'; ctx.fillRect(X(-6.1), Y(-1.2), m * 0.12, m * 0.9); } // a drum
       ctx.strokeStyle = '#3a342c'; ctx.lineWidth = Math.max(1.5, m * 0.14); // the anchor, on its side
       ctx.beginPath(); ctx.moveTo(X(8.6), Y(-0.15)); ctx.lineTo(X(10.4), Y(-0.15)); ctx.moveTo(X(8.6), Y(-0.15)); ctx.quadraticCurveTo(X(8.2), Y(-0.9), X(8.8), Y(-1.2)); ctx.moveTo(X(10.4), Y(-0.15)); ctx.lineTo(X(10.6), Y(-0.8)); ctx.stroke();
       ctx.strokeStyle = '#161616'; ctx.lineWidth = Math.max(2, m * 0.2); ctx.beginPath(); ctx.ellipse(X(-1.2), Y(-0.25), m * 0.7, m * 0.22, 0, 0, TAU); ctx.stroke(); // a tyre
