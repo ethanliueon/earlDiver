@@ -407,7 +407,7 @@ export class Hud {
       // (5.7.5) aboard, the big button is the hand; this slot gets its own job: Dive in on deck, Out on deck in the cabin
       (() => { // (6.5.0) aboard, this slot is the hand (the big button is only ever the net or the camera): what is in reach
         // (the computer, the bunk, the cabin door); in the cabin with nothing in reach, the way out on deck
-        if (aboard) { const hOn = !!this.handOn; return hOn ? { key: 'f', icon: this.inCabin ? 'hand' : 'cabin', on: true, lit: true, inter: true } : this.inCabin ? { key: 'outdeck', icon: 'door', on: true, inter: true } : { key: 'f', icon: 'hand', on: false, why: 'Nothing in reach', inter: true }; }
+        if (aboard) { const hOn = !!this.handOn; /* (7.1.0) the way out only at the cabin door, and shown as the door there; elsewhere in the cabin the hand, greyed until something is in reach */ return hOn ? { key: 'f', icon: this.inCabin ? (this.cabinNear === 'door' ? 'door' : 'hand') : 'cabin', on: true, lit: true, inter: true } : { key: 'f', icon: 'hand', on: false, why: 'Nothing in reach', inter: true }; }
         const tm = g.tapMarks || [], hf = tm.some((m) => m.key === 'f'), hu = !hf && tm.some((m) => m.key === 'u'), hon = hf || hu;
         // (6.1.4) the hand shows what it will do: the ladder, the winch's basket, the sub's hatch; anything else, the hand
         const tgt = tm.find((m) => m.key === (hu ? 'u' : 'f')), ctxIcon = tgt && { ladder: 'ladder', winch: 'basket', sub: 'hatch', door: 'cabin' }[tgt.what];

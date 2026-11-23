@@ -632,22 +632,20 @@ export class Renderer {
     }
     const guide = g.tut && g.tut.to ? g.tut : g.devGuide ? { to: g.devGuide.c, fish: g.devGuide.c } : g.markGuide ? { to: g.markGuide } : null; // (4.9.0) or the developer's trail to a legend (X)
     // (5.6.8) on a phone, once the thing to tap is in reach its brackets say it all: no trail or ring on top of them
-    if (guide && g.mode === 'play' && !(this.touch && g.tapMarks && g.tapMarks.some((m) => m.what !== 'winch' || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u')))) {
+    if (guide && g.mode === 'play' && !(this.touch && !guide.fish /* (7.1.0) a fish to catch keeps its ring */ && g.tapMarks && g.tapMarks.some((m) => m.what !== 'winch' || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u')))) {
       const e = guide.from || g.earl, tx = guide.to.x, ty = guide.to.y, d = Math.hypot(tx - e.x, ty - e.y); // (4.8.1) from: where the trail starts (the trawl's mouth in its lesson)
       const ang = Math.atan2(Sy(ty) - Sy(e.y), S(tx) - S(e.x)), gap = 1.5, n = Math.min(36, Math.floor(d / gap));
       const sz = clamp(ppm * 0.22, 7, 16), flow = (g.time * 1.6) % 1;
-      // (5.7.0) not chevrons but a thread of living light: motes of plankton drifting along the way, each wandering a
-      // little off the line, brighter and thicker near the goal, a slow wave of glow running toward it
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const motes = Math.min(70, Math.floor(d / 0.45)), px = -Math.sin(Math.atan2(ty - e.y, tx - e.x)), py = Math.cos(Math.atan2(ty - e.y, tx - e.x));
-      for (let i = 0; i < motes; i++) {
-        const seed = i * 12.9898, jit = (Math.sin(seed) * 43758.5453) % 1, q0 = ((i + 0.5) / motes + g.time * 0.035) % 1, m = q0 * d; if (m < 1.0 || m > d - 0.9) continue;
-        const wob = Math.sin(g.time * (0.7 + jit) + seed) * 0.35 * (1 - q0 * 0.6), wx = lerp(e.x, tx, q0) + px * wob, wy = lerp(e.y, ty, q0) + py * wob;
-        const wave = 0.5 + 0.5 * Math.cos((q0 * 3 - g.time * 0.9) * TAU), a = (0.18 + 0.5 * wave) * (0.45 + 0.55 * q0) * Math.min(1, (m - 1.0) / 1.5);
-        const rr = Math.max(1.2, ppm * (0.035 + 0.04 * q0)) * (0.7 + 0.6 * Math.abs(jit));
-        const gx = S(wx), gy = Sy(wy), spr = this.moteSpr || (this.moteSpr = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(200,236,214,1)'); gr.addColorStop(0.3, 'rgba(120,210,180,0.45)'); gr.addColorStop(1, 'rgba(60,160,140,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return c; })());
-        ctx.globalAlpha = a; ctx.drawImage(spr, gx - rr * 4, gy - rr * 4, rr * 8, rr * 8);
-      }
+      // (7.1.0) straight chevrons from Earl to the goal, each turned along the line and drifting toward it (the bubbly
+      // thread of light was hard to read): cream with a dark edge, fading in from Earl and out before the goal
+      { const L = Math.hypot(S(tx) - S(e.x), Sy(ty) - Sy(e.y)), stepPx = clamp(ppm * 1.4, 26, 46), cn = Math.min(24, Math.floor(L / stepPx)), ph = (g.time * 0.9) % 1, c = clamp(ppm * 0.22, 6, 11);
+        ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (let i = 0; i < cn; i++) { const m = (i + ph + 0.5) * stepPx; if (m < stepPx * 0.8 || m > L - stepPx * 0.6) continue;
+          const q = m / L, sx = S(e.x) + (S(tx) - S(e.x)) * q, sy = Sy(e.y) + (Sy(ty) - Sy(e.y)) * q, a = Math.min(1, (m - stepPx * 0.8) / stepPx) * Math.min(1, (L - m) / stepPx) * 0.9;
+          ctx.save(); ctx.translate(sx, sy); ctx.rotate(ang);
+          for (const [w, col] of [[c * 0.6, `rgba(14,18,10,${(a * 0.6).toFixed(3)})`], [c * 0.28, `rgba(240,228,196,${a.toFixed(3)})`]]) { ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.5, w); ctx.beginPath(); ctx.moveTo(-c, -c); ctx.lineTo(0, 0); ctx.lineTo(-c, c); ctx.stroke(); }
+          ctx.restore(); }
+        ctx.restore(); }
       ctx.restore(); void ang; void sz; void flow; void n;
       const f = guide.fish, cx = S(f ? f.x : tx), cy = Sy(f ? f.y : ty);
       const r = (f ? Math.max(16, ppm * (f.len * 0.8 + 0.45)) : Math.max(14, ppm * 0.5)) * (1 + 0.1 * Math.sin(g.time * 4));
@@ -1257,7 +1255,7 @@ export class Renderer {
       const P0 = g.profile, Sq = P0 && P0.quests, mq = Sq && g.questMainId ? g.questMainId : null;
       // (6.5.0) only when there is a reason to go aboard (the tutorial, or the Log's step to sell, buy or put gear on): at
       // other times they pointed at the ladder while the quest wanted him in the sub
-      const needAboard = !!P0 && (P0.tut === 'on' || ['sell', 'buy', 'wear'].includes(mq));
+      const needAboard = !!P0 && !!g.tutLadder; void mq; // (7.1.0) only when the step is to climb the ladder: they were always on
       const want = needAboard && g.mode === 'play' && !g.aboard && !e.inSub && !g.kill && e.y < 3 && e.y > -1 && Math.abs(dx) > 1.6 && Math.abs(dx) < 26 && !(g.helm);
       this.wayK = clamp((this.wayK || 0) + (want ? 1 : -1) * (g.dtLast || 1 / 60) * 2.5, 0, 1);
       if (this.wayK > 0.01) {
@@ -1348,10 +1346,20 @@ export class Renderer {
       const A = g.abil.def, e = g.earl, mover = e.inSub ? g.sub : e, ex = S(mover.x), ey = Sy(mover.y), spd = Math.hypot(mover.vx || 0, mover.vy || 0);
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (A.speed && spd > 0.6) {
-        const n = A.tier === 'legendary' ? 22 : A.tier === 'exotic' ? 14 : 8, ang = Math.atan2(mover.vy || 0, mover.vx || 1), col = A.tier === 'legendary' ? '255,214,140' : '220,240,250';
-        for (let i = 0; i < n; i++) { const sd = (i * 97.13) % 1, ph = (g.time * (1.6 + sd) + sd * 7) % 1, off = (((i * 53.7) % 1) - 0.5) * ppm * (e.inSub ? 5 : 2.6), back = ph * ppm * (e.inSub ? 9 : 5), L = ppm * (0.6 + sd * 0.9) * (A.tier === 'legendary' ? 1.4 : 1);
-          const bx = ex - Math.cos(ang) * back - Math.sin(ang) * off, by = ey - Math.sin(ang) * back + Math.cos(ang) * off;
-          ctx.strokeStyle = `rgba(${col},${(0.45 * (1 - ph)).toFixed(3)})`; ctx.lineWidth = A.tier === 'legendary' ? 2.2 : 1.5; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx - Math.cos(ang) * L, by - Math.sin(ang) * L); ctx.stroke(); }
+        // (7.1.0) not lines: particles in the water (silt, plankton, small bubbles) streaming past him the other way, each
+        // drawn as a soft speck drawn out a little along its motion. How many, how fast and how drawn-out follow how hard
+        // he is moving (the stick pushed out a little or all the way), and the ability's tier adds more of them
+        const kS = clamp(spd / (e.inSub ? 7 : 3.6), 0, 1), tierN = A.tier === 'legendary' ? 46 : A.tier === 'exotic' ? 34 : A.tier === 'rare' ? 24 : 16;
+        const n = Math.round(tierN * (0.35 + 0.65 * kS)), ang = Math.atan2(mover.vy || 0, mover.vx || 1), col = A.tier === 'legendary' ? '236,214,164' : '214,226,220', ca = Math.cos(ang), sa = Math.sin(ang);
+        const R = ppm * (e.inSub ? 6 : 3.2), run = ppm * (e.inSub ? 10 : 6) * (0.5 + kS), stretch = 1 + 3.2 * kS;
+        for (let i = 0; i < n; i++) { const sd = (i * 0.6180339) % 1, sd2 = (i * 0.7548776) % 1, ph = (g.time * (0.55 + 0.6 * kS) * (0.7 + sd) + sd2 * 3) % 1;
+          const off = (sd2 - 0.5) * 2 * R, along = R * 1.2 - ph * (R * 1.2 + run), bx = ex + ca * along - sa * off, by = ey + sa * along + ca * off;
+          const r0 = Math.max(0.8, ppm * (0.02 + 0.03 * ((i * 0.3819) % 1))) * (A.tier === 'legendary' ? 1.25 : 1), a = (0.25 + 0.45 * kS) * Math.sin(Math.PI * ph) * (i % 7 === 0 ? 1.3 : 1);
+          ctx.save(); ctx.translate(bx, by); ctx.rotate(ang); ctx.globalAlpha = Math.min(1, a);
+          if (i % 7 === 0) { ctx.strokeStyle = `rgba(${col},0.8)`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, r0 * 1.6, 0, TAU); ctx.stroke(); } // a small bubble
+          else { ctx.fillStyle = `rgba(${col},0.85)`; ctx.beginPath(); ctx.ellipse(0, 0, r0 * stretch, r0, 0, 0, TAU); ctx.fill(); }
+          ctx.restore(); }
+        ctx.globalAlpha = 1;
         g.fx.shake = Math.max(g.fx.shake || 0, A.tier === 'legendary' ? 0.25 : A.tier === 'exotic' ? 0.07 : 0.03); /* (6.0.19) a light tremor for rare and exotic; the strong one only for the legendary */
         if (A.tier === 'legendary') { const pu = 0.5 + 0.5 * Math.sin(g.time * 5), au = ctx.createRadialGradient(ex, ey, ppm * 0.4, ex, ey, ppm * 2.2); au.addColorStop(0, `rgba(255,214,140,${(0.28 + 0.12 * pu).toFixed(3)})`); au.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = au; ctx.fillRect(ex - ppm * 2.2, ey - ppm * 2.2, ppm * 4.4, ppm * 4.4);
           const big = Math.hypot(this.W, this.H), vg = ctx.createRadialGradient(this.W / 2, this.H / 2, big * 0.32, this.W / 2, this.H / 2, big * 0.6); vg.addColorStop(0, 'rgba(255,190,90,0)'); vg.addColorStop(1, `rgba(255,190,90,${(0.1 + 0.08 * pu).toFixed(3)})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, this.W, this.H); }

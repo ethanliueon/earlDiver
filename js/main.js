@@ -289,7 +289,7 @@ const ui = new UI({
     const P = profile, tutWas = P.tut === 'on', r = claimQuest(P, which); if (!r) return false;
     const mNext = QUEST_MAIN[questsOf(P).main], lastTut = which === 'main' && tutWas && (!mNext || !TUT_IDS.has(mNext.id));
     if (lastTut) ui.closeQuestsAfterTutorial(); // (4.12.2) the last step: the board stays as it was, fades out, and the new quests come 3 s after
-    else if (which === 'main' && tutWas) setTimeout(() => ui.toggleQuests(false), 250); // (4.3.5) the tutorial goes straight on to the next step
+    else if (which === 'main' && tutWas && !(mNext && mNext.id === 'sell' && !P.tutJournal && hud.touch)) setTimeout(() => ui.toggleQuests(false), 250); // (4.3.5) the tutorial goes straight on to the next step; (7.1.0) but after the first catch the book stays open and points at its Journal tab
     if (r.pay) { P.cash = Math.round((P.cash + r.pay) * 100) / 100; P.lifetime = Math.round((P.lifetime + r.pay) * 100) / 100; }
     let gift = null; if (r.gift) gift = giveItem(P, r.gift);
     // (4.0.6) a tutorial step gives what it taught him to use: a net, a backup air tank, a trawl net, a trap
@@ -1181,7 +1181,7 @@ function tutor() {
   const P = profile, e = g.earl; g.tut = null; g.tutForce = null; { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
-  g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null;
+  g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null; g.tutLadder = false; // (7.1.0) the ladder's chevrons only on a climb step
   if (!P || P.tut !== 'on' || g.mode !== 'play') return;
   { const m1 = QUEST_MAIN[questsOf(P).main]; if (m1 && m1.id === 'subtrip') g.tutHidePrompts = false; } // (6.6.0) the sub trip is played with the game's own buttons
   const S = questsOf(P), m = QUEST_MAIN[S.main]; if (!m || !TUT_IDS.has(m.id)) { if (P.tut === 'on' && S.main > 0) { P.tut = 'done'; saveProfile(P); setTimeout(() => ui.confirm('Tutorial complete', 'The quest board is in your journal.', 'OK', null, () => {}), 600); /* (6.5.0) a card to close the tutorial, not a toast that was easily missed */ } return; }
@@ -1208,7 +1208,7 @@ function tutor() {
     if (g.aboard) { // (claude-polish) the trail leads to the nearer end of the deck, not down through the hull at the fish
       const ax = g.aboard.x || 0, endX = ax < (DECK_MIN + DECK_MAX) / 2 ? DECK_MIN - 1.2 : DECK_MAX + 1.2;
       to = { x: BOAT.x + endX * dir, y: 0.6 }; fish = null; text = 'Walk off the end of the deck to jump in'; return; }
-    if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); return; }
+    if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); if (hud.touch) spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ return; }
     if (!zone('fish', bd < 2.6)) {
       text = 'Swim to the orange fish';
       // (4.3.5) how to sprint, until he has: the right mouse button held, or Shift
@@ -1242,7 +1242,7 @@ function tutor() {
       if (text === 'Swim to the orange fish') text = 'Swim down to the orange fish under the boat';
     }
   } else if (m.id === 'sell') {
-    if (!P.tutJournal) { text = 'Open your journal'; spot = jOpen ? null : { act: 'journal', say: 'Open your journal' }; }
+    if (!P.tutJournal) { const qOpen = shown('quests'); text = qOpen ? 'Turn to the Journal' : 'Open your journal'; spot = jOpen ? null : qOpen ? { sel: ['#booktabs [data-t="journal"]'], say: 'Journal' } : { act: 'journal', say: 'Open your journal' }; } // (7.1.0) from the Quests page, its tab
     else if (jOpen && (P.tutJTour || 0) < 3) { // (4.12.2) a short look round the journal before it is closed
       const k = P.tutJTour || 0;
       text = 'Your journal';
@@ -1259,7 +1259,9 @@ function tutor() {
     else if (inCabin) { text = 'Leave the cabin, then jump in beside the boat'; cabinTo('door', 'outdoor', 'Out on deck'); }
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; }
     else if (!zone('boat', nearBoat)) { text = 'Bring your catch up beside the Margaret'; to = ladder; }
-    else { text = hud.touch ? 'Tap the Margaret\'s winch to sell your catch' : 'Sell your catch'; offer('sell', 'Sell your catch', 'U'); }
+    else { const wx = BOAT.x + 4.5 * dir; // (7.1.0) the winch is used where it is: led there first, then offered
+      if (hud.touch && Math.abs(e.x - wx) >= 3.2) { text = 'Swim to the Margaret\'s winch at the stern'; to = { x: wx, y: 0.4 }; }
+      else { text = hud.touch ? 'Tap the Margaret\'s winch to sell your catch' : 'Sell your catch'; offer('sell', 'Sell your catch', 'U'); } }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
     const pick = Object.values(ITEMS).filter((it) => it.shop === 'catalog' && it.price > 0 && it.price <= (P.cash || 0) && !ownsItem(P, it.id)).sort((a, b) => a.price - b.price)[0];
@@ -1277,7 +1279,7 @@ function tutor() {
     }
     else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
     else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); if (hud.touch) text = 'Tap the cabin door to go in'; } } // (4.3.5) the door itself lit up
-    else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; if (ladderZone()) { offer('climb', 'Climb aboard'); if (hud.touch) text = 'Tap the ladder to climb aboard'; } }
+    else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; g.tutLadder = true; if (ladderZone()) { offer('climb', 'Climb aboard'); if (hud.touch) text = 'Tap the ladder to climb aboard'; } }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
     const it = Kit.items.find((q) => q.paid && !worn.has(q.u)), name = it ? 'the ' + ITEMS[it.id].name.toLowerCase() : 'what you bought';
@@ -1286,7 +1288,7 @@ function tutor() {
       // in the water: aboard first. If the inventory is up, its close button is the way out (nothing else works)
       text = 'Climb aboard the Margaret to change your gear'; to = ladder;
       spot = invOpen ? { sel: ['#inventory .inv-close'], act: 'inventory' } : null;
-      if (!invOpen && ladderZone()) offer('climb', 'Climb aboard');
+      g.tutLadder = !invOpen; if (!invOpen && ladderZone()) offer('climb', 'Climb aboard');
     }
     else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Click ${name}, then Put it on` }; }
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
@@ -1302,11 +1304,11 @@ function tutor() {
       if (!e.inSub) { if (g.aboard) offDeck(); else toSub(); }
       else { text = 'Drive to the fish'; /* (6.6.0) the stick needs no teaching: no ring round it */ if (dist(sub.x, sub.y, F2.x, F2.y) < 8) set(2); }
     }
-    else if (part === 2) { const F2 = tripFish(2); fish = F2; if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); } else set(3); }
+    else if (part === 2) { const F2 = tripFish(2); fish = F2; if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); if (hud.touch) spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ } else set(3); }
     else if (part === 3 || part === 4) { // net the fish, then the one below
       const F = tripFish(part === 3 ? 2 : 3);
       if (tripCaught(F)) set(part + 1);
-      else if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); }
+      else if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); if (hud.touch) spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ }
       else { fish = F; to = { x: F.x, y: F.y }; text = part === 3 ? 'Net the fish' : 'Net the one below';
         if (dist(e.x, e.y, F.x, F.y) < 2.6) { prompt = netPrompt(); spot = netSpot(); if (spot && hud.touch && g.catchTarget) prompt = null; } }
     }
@@ -1619,7 +1621,7 @@ function deckInput(dt, mv) {
     const s0 = A.step || 0; A.step = s0 + dt * pace * 3.4; // (the stride lengthens a little when he runs)
     if (Math.floor(A.step / Math.PI) !== Math.floor(s0 / Math.PI) && A.walk > 0.35) audio.ready && audio.footstep && audio.footstep(0.06 * A.walk); // each foot coming down
   }
-  const atDoor = A.x > (DECK_MIN + DECK_MAX) / 2 - (DECK_MAX - DECK_MIN) / 6 && A.x < DOOR_M + 0.7; // (4.2.1) one zone: from the middle third of the deck to just past the door
+  const atDoor = Math.abs(A.x - DOOR_M) < 0.7; // (7.1.0) only at the door itself (the old zone took in where the ladder lands, so the door lit with no step taken)
   A.near = atDoor ? 'door' : null;
   g.prompt = atDoor ? 'F  Enter the cabin' : null;
   if (pressed.has('f-tap')) { pressed.delete('f-tap'); if (atDoor && !ui.anyOpen()) useStation('door'); }
@@ -2617,7 +2619,7 @@ function update(dt) {
         const at = /Station stores/.test(g.prompt) && St ? { x: St.x + STATION_COLLAR.dx + 1.5, y: St.y + STATION_COLLAR.dy, r: 2 } : /Dave's Haul/.test(g.prompt) && D ? { x: D.x + 6.5, y: D.y - 3.1, r: 2.4 } : { x: e2.x, y: e2.y, r: 0.9 };
         g.tapMarks.push({ key: 'f', w: [at.x - at.r, at.y - at.r, at.x + at.r, at.y + at.r], what: 'other' });
       }
-      const nearB = !g.aboard && ((Math.abs(e2.x - BOAT.x) < 14 && e2.y < 4 && !e2.inSub) || (e2.inSub && g.sub.docked));
+      const winchX = BOAT.x + 4.5 * Math.sign(Math.cos(BOAT.yaw || 0) || 1), nearB = !g.aboard && ((Math.abs(e2.x - winchX) < 3.2 && e2.y < 3 && !e2.inSub) || (e2.inSub && g.sub.docked)); // (7.1.0) only by the winch itself, not anywhere near the boat
       if (nearB && (bagN || e2.inSub || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u'))) g.tapMarks.push({ key: 'u', boat: [28.5, -17.5, 35.5, -11.2], what: 'winch' }); // her winch at the stern: the catch is hauled up by it
       // (5.6.9) during the tutorial only the step's own thing is marked (the door on the first step, the hatch on the
       // swim down and the ladder while the winch is wanted all pulled the eye the wrong way)
@@ -3215,6 +3217,7 @@ function frame(now) {
   { const cab = !!(hud.touch && ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
+  hud.cabinNear = hud.inCabin && ui.cabin.near ? ui.cabin.near() : null; // (7.1.0) which station is in reach, for the button's picture
   hud.handOn = !!(g.aboard && !(profile && profile.tut === 'on' && !hud.inCabin && !(g.tutAction && g.tutAction.id === 'cabin')) && (hud.inCabin ? ui.cabin.near && ui.cabin.near() : g.aboard.near === 'door' && !g.aboard.jump && !g.aboard.climb)); // (5.4) on a phone the touch buttons step aside while a panel is open
   if (!(hud.touch && innerHeight > innerWidth) && !behind) { hud.draw(g, hudDt); hudDt = 0; } // (5.4) behind a panel: with the sea, ten times a second. (5.3.4) every frame again: drawn every second frame the buttons seemed to wobble against the sea
   ui.questsButton && ui.questsButton(g.mode === 'play' && !g.kill && !ui.anyOpen('cabin')); // (3.0.0) the Quests button (4.3.5: in the cabin too)
