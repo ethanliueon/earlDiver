@@ -1786,3 +1786,6 @@ html body #davetalk .dt-box.painted:not(#_a):not(#_b):not(#_c) { aspect-ratio: 1
 html body #davetalk .dt-box.painted .dt-name:not(#_a):not(#_b):not(#_c):not(#_d) { top: calc(var(--dt-top) + 7%) !important; }
 html body #davetalk .dt-box.painted .dt-line:not(#_a):not(#_b):not(#_c) { top: calc(var(--dt-top) + 18%); }
 html body #davetalk .dt-box.painted .dt-acts:not(#_a):not(#_b) { top: calc(var(--dt-top) + (100% - var(--dt-top)) / 2); }
+/* (7.0.12) his long first hello fits the box: the name a little higher, the line close under it, a touch smaller */
+html body #davetalk .dt-box.painted .dt-name:not(#_a):not(#_b):not(#_c):not(#_d):not(#_e) { top: calc(var(--dt-top) + 4%) !important; }
+html body #davetalk .dt-box.painted .dt-line:not(#_a):not(#_b):not(#_c):not(#_d) { top: calc(var(--dt-top) + 13.5%); font-size: clamp(13px, 3.9vh, 17px); line-height: 1.28; right: 21%; }
