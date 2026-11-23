@@ -169,28 +169,47 @@ function daveArm() {
 }
 function davePortrait() {
   if (davePic) return davePic;
+  // (7.0.0) redrawn as one figure, after the owner's references: the neck runs down into a thick roll-neck sweater whose
+  // collar wraps round it; the oilskin hangs open over the sweater with a lapel at the front; the shoulders slope away
+  // and turn the way he faces (the far one higher and smaller, the near one rounding toward us); soft light from the
+  // front and above, the back of the figure falling into shadow
   const c = document.createElement('canvas'); c.width = 300; c.height = 340; const x = c.getContext('2d');
-  // shoulders: the oilskin's collar and its folds
-  const og = x.createLinearGradient(40, 220, 280, 340); og.addColorStop(0, '#7a4a2c'); og.addColorStop(0.6, '#5a321e'); og.addColorStop(1, '#2e1a10');
-  x.fillStyle = og; x.beginPath(); x.moveTo(4, 340); x.quadraticCurveTo(14, 232, 150, 224); x.quadraticCurveTo(286, 232, 298, 340); x.closePath(); x.fill(); // (7.0.0) broader, the shoulders rising to the neck
-  x.strokeStyle = 'rgba(0,0,0,0.3)'; x.lineWidth = 3; x.beginPath(); x.moveTo(150, 236); x.quadraticCurveTo(160, 290, 140, 340); x.moveTo(84, 262); x.quadraticCurveTo(96, 300, 80, 340); x.stroke();
-  x.strokeStyle = 'rgba(255,220,180,0.12)'; x.lineWidth = 4; x.beginPath(); x.moveTo(200, 240); x.quadraticCurveTo(250, 252, 270, 300); x.stroke();
-  // (7.0.0) the oilskin's sheen and creases: a lit shoulder, deep folds at the chest, a seam down the front, buttons
-  { const sh = x.createRadialGradient(90, 250, 6, 90, 250, 90); sh.addColorStop(0, 'rgba(255,214,170,0.18)'); sh.addColorStop(1, 'rgba(255,214,170,0)'); x.fillStyle = sh; x.fillRect(0, 220, 300, 120); }
-  x.strokeStyle = 'rgba(20,10,4,0.35)'; x.lineWidth = 5; x.lineCap = 'round'; for (const [a, b, c2, d] of [[60, 290, 50, 330], [220, 270, 236, 330], [118, 300, 112, 336]]) { x.beginPath(); x.moveTo(a, b); x.quadraticCurveTo((a + c2) / 2 + 8, (b + d) / 2, c2, d); x.stroke(); }
-  x.fillStyle = '#2a1a10'; for (const by of [262, 296, 330]) { x.beginPath(); x.arc(164, by, 4, 0, Math.PI * 2); x.fill(); }
-  // (7.0.0) the neck: a real column from under the skull and jaw down into the collar, shaded at the back, so the head
-  // sits on the body (it floated before)
-  { const ng = x.createLinearGradient(110, 0, 196, 0); ng.addColorStop(0, '#7a5438'); ng.addColorStop(0.45, '#a8785a'); ng.addColorStop(1, '#8c6246');
-    x.fillStyle = ng; x.beginPath(); x.moveTo(112, 150); x.quadraticCurveTo(104, 200, 96, 246); x.lineTo(204, 246); x.quadraticCurveTo(196, 200, 194, 160); x.closePath(); x.fill();
-    x.fillStyle = 'rgba(40,22,10,0.35)'; x.beginPath(); x.ellipse(150, 238, 56, 12, 0, 0, Math.PI * 2); x.fill();
-    // the oilskin's turned-up collar round the neck's foot, over it
-    const cg = x.createLinearGradient(0, 226, 0, 268); cg.addColorStop(0, '#8a5634'); cg.addColorStop(1, '#4a2a18');
-    x.fillStyle = cg; x.beginPath(); x.moveTo(84, 262); x.quadraticCurveTo(96, 234, 150, 238); x.quadraticCurveTo(204, 234, 216, 262); x.quadraticCurveTo(150, 254, 84, 262); x.closePath(); x.fill();
-    x.strokeStyle = 'rgba(255,220,180,0.18)'; x.lineWidth = 2; x.beginPath(); x.moveTo(96, 250); x.quadraticCurveTo(150, 236, 204, 250); x.stroke(); }
+  const lin = (x0, y0, x1, y1, stops) => { const g = x.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+  // the neck: from under the jaw and the skull's base, a column widening into the shoulders
+  x.fillStyle = lin(108, 0, 200, 0, [[0, '#6e4a32'], [0.5, '#a3755a'], [1, '#93684e']]);
+  x.beginPath(); x.moveTo(116, 150); x.bezierCurveTo(112, 190, 108, 214, 100, 232); x.lineTo(206, 232); x.bezierCurveTo(198, 210, 194, 188, 196, 160); x.closePath(); x.fill();
+  // the oilskin: back shoulder sloping down to the left edge, the near shoulder rounding out to the right, open at the front
+  x.fillStyle = lin(0, 220, 300, 340, [[0, '#4a2c1a'], [0.45, '#7a4a2c'], [0.75, '#8c5634'], [1, '#5a341e']]);
+  x.beginPath(); x.moveTo(0, 340); x.lineTo(0, 300); x.bezierCurveTo(30, 258, 70, 236, 112, 226); x.lineTo(208, 224);
+  x.bezierCurveTo(248, 232, 282, 262, 296, 310); x.lineTo(300, 340); x.closePath(); x.fill();
+  // the sweater showing where the oilskin falls open, and its thick roll collar wrapping the neck (a curved top, not a cut)
+  x.fillStyle = lin(150, 230, 230, 340, [[0, '#5e6050'], [1, '#3a3c32']]);
+  x.beginPath(); x.moveTo(150, 236); x.bezierCurveTo(180, 236, 214, 250, 224, 340); x.lineTo(176, 340); x.bezierCurveTo(170, 290, 160, 260, 150, 236); x.closePath(); x.fill();
+  x.fillStyle = lin(0, 196, 0, 244, [[0, '#7a7c68'], [0.5, '#5e6050'], [1, '#3e4034']]);
+  x.beginPath(); x.moveTo(104, 222); x.bezierCurveTo(108, 200, 150, 196, 202, 204); x.bezierCurveTo(214, 216, 212, 236, 206, 246); x.bezierCurveTo(170, 252, 130, 250, 104, 242); x.closePath(); x.fill();
+  x.strokeStyle = 'rgba(30,32,24,0.45)'; x.lineWidth = 2; for (const yy of [212, 224, 236]) { x.beginPath(); x.moveTo(108, yy + 2); x.bezierCurveTo(140, yy - 6, 180, yy - 6, 206, yy); x.stroke(); } // the roll's ribs, following its curve
+  // the lapel: the oilskin's open front edge, lit along its fold
+  x.fillStyle = '#5c3620'; x.beginPath(); x.moveTo(206, 240); x.bezierCurveTo(222, 262, 228, 300, 230, 340); x.lineTo(246, 340); x.bezierCurveTo(244, 300, 236, 262, 214, 236); x.closePath(); x.fill();
+  x.strokeStyle = 'rgba(255,214,170,0.3)'; x.lineWidth = 2; x.beginPath(); x.moveTo(214, 238); x.bezierCurveTo(236, 262, 244, 300, 246, 340); x.stroke();
+  // folds in the oilskin, and the near shoulder's seam
+  x.strokeStyle = 'rgba(24,12,6,0.4)'; x.lineWidth = 4; x.lineCap = 'round';
+  for (const [a, b, cx, cy, d, e2] of [[40, 290, 50, 310, 44, 338], [92, 262, 104, 296, 96, 338], [262, 270, 274, 300, 270, 336]]) { x.beginPath(); x.moveTo(a, b); x.quadraticCurveTo(cx, cy, d, e2); x.stroke(); }
+  x.strokeStyle = 'rgba(24,12,6,0.3)'; x.lineWidth = 2.5; x.beginPath(); x.moveTo(232, 232); x.bezierCurveTo(262, 248, 280, 270, 288, 300); x.stroke();
+  { const sh = x.createRadialGradient(250, 262, 4, 250, 262, 70); sh.addColorStop(0, 'rgba(255,220,180,0.2)'); sh.addColorStop(1, 'rgba(255,220,180,0)'); x.fillStyle = sh; x.fillRect(170, 210, 130, 130); } // the near shoulder catching the light
+  // the head
   x.save(); x.translate(158, 140); x.rotate(-Math.PI / 2);
   drawFace(x, 0, 0, 10.5, { sex: 'm', face: 1, eyes: 2, skin: 1, beard: true, age: true, cap: '#4e4a3a', hairCol: ['#c4bcae', '#8e877b', '#4a4640'] });
   x.restore();
+  // light on him from the front and above: a warm key light on the face's front, the back of the head in shadow, a cool
+  // rim from the water behind, a shadow under the cap's brim
+  x.save(); x.globalCompositeOperation = 'source-atop';
+  { const kl = x.createRadialGradient(205, 150, 10, 205, 150, 90); kl.addColorStop(0, 'rgba(255,226,190,0.16)'); kl.addColorStop(1, 'rgba(255,226,190,0)'); x.fillStyle = kl; x.fillRect(100, 60, 200, 200); }
+  { const bk = x.createLinearGradient(100, 0, 180, 0); bk.addColorStop(0, 'rgba(20,10,4,0.35)'); bk.addColorStop(1, 'rgba(20,10,4,0)'); x.fillStyle = bk; x.fillRect(90, 80, 90, 150); }
+  { const br = x.createLinearGradient(0, 92, 0, 120); br.addColorStop(0, 'rgba(20,12,6,0.35)'); br.addColorStop(1, 'rgba(20,12,6,0)'); x.fillStyle = br; x.fillRect(120, 92, 120, 28); }
+  { const bd = x.createLinearGradient(0, 0, 300, 0); bd.addColorStop(0, 'rgba(10,6,2,0.35)'); bd.addColorStop(0.5, 'rgba(10,6,2,0)'); x.fillStyle = bd; x.fillRect(0, 220, 300, 120); }
+  x.restore();
+  x.strokeStyle = 'rgba(170,200,200,0.22)'; x.lineWidth = 3; x.beginPath(); x.arc(150, 140, 48, Math.PI * 0.75, Math.PI * 1.25); x.stroke();
+  { x.save(); x.globalCompositeOperation = 'destination-out'; const fe = x.createLinearGradient(262, 0, 300, 0); fe.addColorStop(0, 'rgba(0,0,0,0)'); fe.addColorStop(1, 'rgba(0,0,0,1)'); x.fillStyle = fe; x.fillRect(262, 220, 38, 120); x.restore(); } // the near shoulder turns away into the box: no hard edge
   davePic = c.toDataURL(); return davePic;
 }
 // (6.9.0) a Log step's reward: each item as its picture and its name in its rarity's ink, then the money if any

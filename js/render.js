@@ -25,7 +25,7 @@ import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY, rarityOf } from './specimens.js';
 import { SETTINGS } from './settings.js';
-import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL } from './world.js';
+import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
 
@@ -3184,6 +3184,11 @@ export class Renderer {
       if (Dh) haze(Dh.x, Dh.y - 4, 50, [70, 66, 52], 0.5);
       if (Sn && Sn.y > 250) haze(Sn.x, Sn.y - STATION_TOP, 50, [50, 70, 74], 0.45);
       haze(CAVE.x + 14, CAVE.y, 50, [34, 48, 54], 0.4);
+      // (7.0.0) the deep places show themselves faintly, each in its own light: the vents' mouths a dull warm heat, the
+      // brine pool a cool sheen on its surface, the whale fall the pale glow of the mats on its bones
+      for (const v of g.world.vents) haze(v.x, v.y - v.h * 0.8, 10 + v.h, [120, 70, 40], 0.22);
+      { const B = g.world.brine; if (B) haze((B.x0 + B.x1) / 2, B.y, (B.x1 - B.x0) * 0.7 + 10, [60, 96, 104], 0.28); }
+      haze(WHALE_FALL.x, g.world.floorAt(WHALE_FALL.x) - 2, 24, [120, 124, 104], 0.24);
       if (g.abilLight > 0 && (g.lightFade ?? 1) > 0.01) { const e0 = g.earl, L = g.abilLight; haze(e0.inSub ? g.sub.x : e0.x, e0.inSub ? g.sub.y : e0.y, L >= 2 ? 80 : L >= 1.5 ? 45 : 28, L >= 2 ? [120, 100, 70] : [70, 60, 50], (L >= 2 ? 0.16 : L >= 1.5 ? 0.52 : 0.42) * (g.lightFade ?? 1)); /* (6.0.12) the Lighthouse: only a faint warm haze, so its light falls on the scene instead of greying it */ /* (6.0.2) its reach by tier */ } } // (5.16.0) the Flare's light in the water itself
     // god rays near the surface
     const rayStrength = (this.phone ? 0.7 : 1) * dayEff * clamp(1 - cam.y / 110, 0, 1) * (1 - fx.darken * 0.7); // (7.0.0) on a phone too, a little fainter: drawn at a quarter size every other frame, they cost little
