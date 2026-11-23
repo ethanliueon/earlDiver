@@ -1940,7 +1940,7 @@ export class UI {
       for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, photo: ph.img, name: ph.name, n: 1, cond: gradeOf(ph).toLowerCase(), value: ph.value * statValue(P, 'payFish'), html: `${ph.img ? `<img class="sell-photo" src="${ph.img}" alt="">` : ''}<span class="sell-name">Photo: ${ph.name}${ph.grade && ph.grade !== 'Good' ? ` <em class="cond">${ph.grade.toLowerCase()}</em>` : ''}</span>` });
       for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k] && k !== 'coral') items.push({ key: 'good:' + k, name: GOODS[k].name, n, value: GOODS[k].price * n * statValue(P, 'paySalvage'), html: `<span class="sell-name">${GOODS[k].name}</span>` + (n > 1 ? `<span class="sell-n">×${n}</span>` : '') });
       for (const k of [...pick]) if (!items.some((it) => it.key === k && !it.kept)) pick.delete(k);
-      if (!items.length) html = `<p class="shop-empty">Nothing aboard to sell.</p>`;
+      if (!items.length) html = `<div class="sell-none"><img src="${pictureOf('bag', ITEMS.mesh || 'mesh', 220, 132, true)}" alt=""><b>Nothing to sell</b></div>`; // (7.0.0) centred in the panel, an empty catch bag above the line, not one line at the top of an empty plate
       else {
         // (5.1) one grid of what he brought up, each thing a tile with its picture and price: tap a tile to sell it,
         // Sell all for the lot. A live animal has Keep in its corner (kept, it is held back for the aquarium)

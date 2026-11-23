@@ -262,7 +262,7 @@ export function drawMonsterLights(ctx, info, at, ppm, t, L) {
     const haze = glowSprite(B ? '60,140,240' : '200,20,16');
     info.spine.forEach(([lx, ly, w], k) => {
       const [x, y] = at(lx, ly), r = w * (1.6 + 0.2 * flicker(k + 50, t, rate * 0.3));
-      ctx.globalAlpha = Math.min(1, L.body * surge * 0.3); ctx.drawImage(haze, x - r * 1.3, y - r * 0.8, r * 2.6, r * 1.6);
+      ctx.globalAlpha = Math.min(1, L.body * surge * 0.16); ctx.drawImage(haze, x - r * 1.3, y - r * 0.8, r * 2.6, r * 1.6);
     });
   }
   info.lights.forEach(([lx, ly, kind], k) => {
@@ -277,9 +277,11 @@ export function drawMonsterLights(ctx, info, at, ppm, t, L) {
       f = f < 0.22 && !L.reduce ? 0 : f;
       const a = L.body * (0.25 + 0.95 * f) * surge * (kind === 'vein' ? 0.9 : 1);
       if (a < 0.02) return;
-      const r = Math.max(ppm * (kind === 'vein' ? 1.1 : 1.7), 9) * (0.7 + 0.5 * f);
-      ctx.globalAlpha = Math.min(1, a); ctx.drawImage(red, x - r, y - r, r * 2, r * 2);
-      ctx.globalAlpha = Math.min(1, a * 0.8); const rc = r * 0.28; ctx.drawImage(core, x - rc, y - rc, rc * 2, rc * 2);
+      // (7.0.0) photophores, not blurs: a small hot organ on the skin with a tight halo, so they read as lights on an
+      // animal's flank (they were 1.7 m soft glows, like a camera's out-of-focus lights)
+      const r = Math.max(ppm * (kind === 'vein' ? 0.5 : 0.75), 4) * (0.7 + 0.4 * f);
+      ctx.globalAlpha = Math.min(1, a * 0.55); ctx.drawImage(red, x - r, y - r, r * 2, r * 2);
+      ctx.globalAlpha = Math.min(1, a); const rc = Math.max(ppm * (kind === 'vein' ? 0.12 : 0.18), 1.6); ctx.drawImage(core, x - rc, y - rc, rc * 2, rc * 2);
     }
   });
   // the eyes: a near one, and the far one a little behind and above it

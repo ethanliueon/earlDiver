@@ -2152,7 +2152,7 @@ function zoneHazards(dt) {
 function causeText(kind) {
   const d = Math.round(g.earl.y);
   switch (kind) {
-    case 'entity': return `Taken at ${d} m`;
+    case 'entity': return `Taken by something in the deep, ${d} m`; // (7.0.0) said what took him, not just "taken"
     case 'o2': return g.imploded ? `The submersible imploded at ${Math.round(g.implodeDepth)} m` : d > (g.earl.pressStart || 300) ? `Ran out of air under pressure at ${d} m` : `Ran out of air at ${d} m`;
     case 'sub-o2': return `Ran out of air in the submersible at ${d} m`;
     default: return kind;

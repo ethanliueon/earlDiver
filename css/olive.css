@@ -1733,3 +1733,10 @@ html body #title :is(.t-select, #slots) .slot.tag.sv:not(.empty) .sv-no:not(#_a)
 html body #title :is(.t-select, #slots) .slot.tag.sv:not(.empty) .sv-name:not(#_a):not(#_b) { position: absolute; top: 32.5%; left: 50%; transform: translate(-50%, -50%); max-width: 36%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(14px, 3.6vh, 22px) !important; }
 html body #title :is(.t-select, #slots) .slot.tag.sv:not(.empty) .sv-when:not(#_a) { margin-top: clamp(34px, 9vh, 60px); } /* (7.0.0) under the card holder */
 html body #title :is(.t-select, #slots) .slot.tag.sv .sv-stats:not(#_a) { margin-right: 13% !important; margin-left: 4% !important; } /* (7.0.0) clear of the latch */
+/* (7.0.0) the sell tab with nothing to sell: the empty catch bag and one line, centred in the panel */
+html body #workshop .sell-none { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 52vh; opacity: 0.8; }
+html body #workshop .sell-none img { width: 130px; height: 78px; object-fit: contain; filter: grayscale(0.4) brightness(0.85) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+html body #workshop .sell-none b { font: 600 17px var(--o-text); color: var(--o-cream-dim); letter-spacing: 0.02em; }
+/* (7.0.0) centred in the whole well, both ways */
+html body #workshop :has(> .sell-none) { position: relative; min-height: 52vh; }
+html body #workshop .sell-none:not(#_a) { position: absolute; inset: 0; min-height: 0; margin: 0; }
