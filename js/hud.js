@@ -583,18 +583,15 @@ e.inSub ? [
       // (5.15.8) as the owner's reference: the tiles sit on one soft dark strip (feathered, no hard edge), so they read as
       // one group; its fold is a chevron engraved into the strip's lower end (a mark on it, not a button of its own).
       // Folded, the strip is a short stub under the money with only the chevron, and the red dot when something waits
-      // (7.2.1) while he is marked the eye has its own row under the money: the menu slides down to make room, and back up
-      // as the mark goes (eased), so nothing ever covers the eye and there is no gap when unmarked
-      { const want = g.entity && g.entity.marked && g.mode === 'play' ? 1 : 0, sp = dt * 3.2; this.markSlide = (this.markSlide || 0) + clamp(want - (this.markSlide || 0), -sp, sp); }
-      const markK = this.markSlide * this.markSlide * (3 - 2 * this.markSlide); this.eyeRow = { u, y: my + ch * 0.55 + 4 * u, h: 58 * u * markK, x: 12 * u + 15 * u + (15 * u * 2 + 9 * u) / 2 };
-      const rb = 15 * u, stepB = rb * 2 + 7 * u, top = my + ch * 0.55 + 10 * u + 58 * u * markK, colX = 12 * u + rb, sw = rb * 2 + 12 * u, chevH = 20 * u;
+      // (7.2.3) one column down the left again, the buttons a little smaller so it stays clear of the stick; the marked
+      // eye has its own fixed place beside the column's top (where the second column stood in 7.1.3). Nothing slides.
+      const rb = 12 * u, stepB = rb * 2 + 6 * u, top = my + ch * 0.55 + 10 * u, colX = 12 * u + rb, sw = rb * 2 + 12 * u, chevH = 20 * u;
+      this.eyeRow = { u, x0: colX + sw / 2 + 10 * u, y: top + 6 * u, h: stepB * 2 - 6 * u };
       if (this.menuOpen == null) { try { this.menuOpen = localStorage.getItem('earl.menuOpen') !== '0'; } catch (err) { this.menuOpen = true; } }
       const tutIn = ROW.some((a) => a.key === tutKey || (a.dom && (tutKey === 'j' || tutKey === 'journal'))), open = this.menuOpen || tutIn;
       const wants = (P.bagGot || 0) > (P.bagSeenAt || 0) || !!window.__journalBadge;
-      // (7.1.3) open, the buttons stand in two columns of three at the top (the lower three moved up beside the first),
-      // leaving the space above the stick clear
       let y0 = top + 6 * u + rb, step = stepB;
-      const cols = open && ROW.length > 3 ? 2 : 1, rowsN = Math.ceil(ROW.length / cols), colGap = rb * 2 + 9 * u;
+      const cols = 1, rowsN = Math.ceil(ROW.length / cols), colGap = rb * 2 + 9 * u;
       const stripBot = open ? y0 + (rowsN - 1) * step + rb + 4 * u + chevH : top + chevH + 4 * u, chevY = stripBot - chevH * 0.55;
       { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 10 * u; ctx.fillStyle = 'rgba(10,14,14,0.42)';
         ctx.beginPath(); ctx.roundRect(colX - sw / 2, top, sw + (cols - 1) * colGap, stripBot - top, 9 * u); ctx.fill(); ctx.restore(); // the strip, its edge feathered by its own shadow
@@ -1184,7 +1181,7 @@ e.inSub ? [
       const mt = g.time - this.markT0, big = mt < 4.6 ? 1 : clamp(1 - (mt - 4.6) / 1.4, 0, 1), ease = (q) => q * q * (3 - 2 * q);
       // (6.2.0) back under the money, as in 6.0.7, but the larger, thicker eye: it opens at its largest, then settles
       const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = this.eyeRow ? (21 + 3 * ease(big)) * this.eyeRow.u * E.ew / E.eh : (52 + 20 * ease(big)) * s, sc = ew / E.ew, /* (7.2.1) sized to its row */ tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
-      const ER = this.eyeRow, ex = ER ? ER.x : 60 * s, ey = ER ? ER.y + ER.h * 0.5 + E.eh * sc * 0.1 : 80 * s; /* (7.2.1) in its own row under the money, centred over the menu, above it in the drawing order */
+      const ER = this.eyeRow, ex = ER ? ER.x0 + ew * 1.15 : 60 * s, ey = ER ? ER.y + ER.h * 0.5 + E.eh * sc * 0.1 : 80 * s; /* (7.2.3) its fixed place beside the top of the menu column */
       const close = near > 0.82, pulse = 0.5 + 0.5 * Math.sin(g.time * (2 + 5 * near));
       const per = 9 - 3 * near, bt = g.time % per, blink = !close && mt > 6 && bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0;
       const opening = clamp(mt / 1.3, 0, 1), rest = close ? 1 : 0.24 + 0.4 * near, open = Math.max(0.05, (1 - blink) * ease(opening) * (big * 0.92 + (1 - big) * rest));
