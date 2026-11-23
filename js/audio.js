@@ -410,6 +410,21 @@ export class Audio {
   alarmPlaying() { const n = this.alarmNode; return !!n && (n.mode === 'loop' || this.ac.currentTime < n.until); }
   alarmSet(cut, k = 1) { const n = this.alarmNode; if (!n) return; const t = this.ac.currentTime; n.f.frequency.setTargetAtTime(cut, t, 0.25); n.dist.gain.setTargetAtTime(Math.max(0, k), t, 0.25); }
   stopAlarm(fadeS = 0.8) { if (this.alarmNode) { const n = this.alarmNode; this.alarmNode = null; const t = this.ac.currentTime; n.fade.gain.cancelScheduledValues(t); n.fade.gain.setValueAtTime(n.fade.gain.value, t); n.fade.gain.linearRampToValueAtTime(0, t + fadeS); try { n.s.stop(t + fadeS + 0.05); } catch (e) { /* already stopped */ } } }
+  // (6.8.0) the far-off sound: a long low call, swelling over two seconds and dying over five, sagging in pitch as it goes;
+  // the fundamental is felt on headphones, its overtones (110-250 Hz) carry it on a phone's small speaker; muffled
+  // through a low-pass, and set a little to one side, as if from somewhere out in the dark
+  farCall(k = 1) {
+    if (this.muted || !this.ready) return;
+    const ac = this.ac, t0 = ac.currentTime + 0.05, dur = 7.5, f0 = 52 + Math.random() * 10, out = ac.createGain();
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 320; lp.Q.value = 0.7;
+    const pan = ac.createStereoPanner ? ac.createStereoPanner() : null; if (pan) pan.pan.value = (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.4);
+    out.gain.setValueAtTime(0, t0); out.gain.linearRampToValueAtTime(0.06 * k, t0 + 2.2); out.gain.setValueAtTime(0.06 * k, t0 + 2.8); out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    for (const [m, v, type] of [[1, 1, 'sine'], [2, 0.55, 'triangle'], [3.02, 0.3, 'sine'], [4.5, 0.12, 'sine']]) {
+      const o = ac.createOscillator(), gg = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f0 * m, t0); o.frequency.exponentialRampToValueAtTime(f0 * m * 0.9, t0 + dur);
+      gg.gain.value = v; o.connect(gg).connect(lp); o.start(t0); o.stop(t0 + dur + 0.1);
+    }
+    lp.connect(out); if (pan) out.connect(pan).connect(this.master); else out.connect(this.master);
+  }
   sonar(vol = 0.05) { this.tone(1180, 0.9, vol, 'sine'); this.tone(2360, 0.4, vol * 0.2, 'sine'); }
   click() { if (!this.sfx('ui_click', 0.55)) this.burst('bandpass', 2400, 3, 0.08, 0.12); }
   pickup() { this.tone(660, 0.18, 0.05, 'triangle'); this.tone(990, 0.25, 0.03, 'triangle', 0.06); }

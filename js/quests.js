@@ -1,6 +1,6 @@
 // Quests (3.0.0), behind the Quests button on the HUD (the radio in the cabin is only decoration now).
-//  - The main line: a short handmade tutorial, one step at a time, ending once the basics are taught. It
-//    never points to the research station, Dave or the old one: those are found by exploring.
+//  - The top slot: the tutorial, one step at a time, ending with the first sub trip. (6.8.0) Later it will hold
+//    the main quest line (Margaret's Lost Friend, planned, not built), one step at a time.
 //  - The board: three quests, mostly Common, sometimes Uncommon or Rare, very rarely Exotic; the rarer, the
 //    harder and the better paid. Cash only. New ones free every three hours, or at once for a fee.
 // Progress comes from game events (questEvent: a catch, a sale, a photo, a tag, a trap set) and from a
@@ -26,7 +26,7 @@ export const refreshPrice = (P) => { const S = Q(P); return LADDER[Math.min(LADD
 export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { name: 'Uncommon', odds: 21 }, rare: { name: 'Rare', odds: 6.5 }, exotic: { name: 'Exotic', odds: 0.5 }, legendary: { name: 'Legendary', odds: 0 } };
 
 // the main line: [id, what to do, a line of help, the check, the reward]
-// (4.0.6) the Margaret's Log is the tutorial: each step teaches one thing, and the things a step uses are given
+// (4.0.6) the Log is the tutorial: each step teaches one thing, and the things a step uses are given
 // when it is done (kit: ['item', id] into the locker, ['supply', key, n], ['trawl', tier] into the hatch,
 // ['trap', type]). Once the net and trawl steps are done their key hints leave the screen (learned()).
 export const MAIN = [
@@ -38,19 +38,10 @@ export const MAIN = [
   // (6.6.0) the tutorial's last step, one trip in parts (main.js tutor, seen.st): into the sub, drive to a fish (and
   // sprint), out to net it, a second one deeper, call the sub to him, a look at the bag's catch, autopilot home
   { id: 'subtrip', text: 'Your first sub trip', touchHelp: 'Get in the sub and drive to the fish; leave the sub and net it, then the one below; call the sub, look at your catch, and take the autopilot home.', help: 'Get in the sub (F) and drive to the fish; leave it and net the fish, then the one below; call the sub (C), look at your catch (B), and autopilot home (C).', need: 1, on: 'subTrip', pay: 60 },
-  { id: 'sub', text: 'Take the sub down to 60 m', touchHelp: "Swim to the sub's hatch and tap it; push the stick down to dive and up to rise.", help: 'Swim into the sub at its stern (F); W and S to dive and rise.', need: 60, on: 'subDepth', pay: 50 },
-  { id: 'air', text: 'Top up the cabin air', touchHelp: 'When the cabin air is down, open your bag in the sub, tap the backup air tank and Use it: it fills the cabin air.', help: 'When the cabin air is down, press R in the sub: a backup tank fills it to full.', need: 1, on: 'airTank', pay: 20 },
-  { id: 'trawl', text: 'Let out the trawl net', touchHelp: 'In the sub, under way below 6 m, tap the trawl net button: the net drops from the hatch, and the same button closes it. The catch lands on the floor of the sub, out of water: get it into a tank (the tank room button) within a minute.', help: 'In the sub, under way below 6 m, press N: the net drops from the hatch. N again closes it. The catch lands on the floor of the sub, out of water: get it into a tank (T) within a minute.', need: 1, on: 'trawl', pay: 30 },
-  { id: 'chamber', text: 'Bring an animal up alive in the sub', touchHelp: 'Catch something deep, then open the tank room: put it in a chamber or the open tank.', help: 'Catch something deep, then T for the tank room: put it in a chamber or the open tank.', need: 1, on: 'subAlive', pay: 70 },
-  { id: 'surface', text: 'Surface with an animal aboard', help: 'When the sub breaks the surface, every animal aboard is safe (a green ✓) until it dives again.', need: 1, on: 'surfaceSafe', pay: 30 },
-  { id: 'aquarium', text: 'Put an animal in the aquarium', help: 'The lit tank in the cabin. Mark one to Keep when you sell, then put it in at the tank.', need: 1, on: 'aquarium', pay: 60 },
-  { id: 'trap', text: 'Set a trap', touchHelp: 'You own a wire pot: at the surface, open your bag, tap the pot and Use it, then choose a depth.', help: 'You own a wire pot: near the surface press 5, then Space to set it at a depth.', need: 1, on: 'trap', pay: 40, kit: [['trap', 'pot']] },
-  { id: 'done', text: 'That is the basics', help: 'The rest of the sea is yours to find. Quests on the board pay cash.', need: 0, on: null, pay: 0, gift: 'split' },
+  // (6.8.0) the basics after the sub trip (60 m, air, trawl, chamber, surfacing, aquarium, trap) left the Log: the first
+  // board teaches the dive, the live catch and the trap, and the first-time lessons teach the trawl, chamber and air tank
+  { id: 'done', text: 'Basics learned', help: 'The board pays cash. The rest of the sea is yours to find.', need: 0, on: null, pay: 0, gift: 'split' },
 ];
-// the Log before 4.0.6, so an older save keeps its place
-const OLD_MAIN = ['net', 'sell', 'buy', 'wear', 'sub', 'chamber', 'aquarium', 'trap', 'done'];
-// the Log from 4.0.6 to 4.3.3, so a save from then keeps its place
-const V3_IDS = ['swim', 'observe', 'net', 'sell', 'buy', 'wear', 'sub', 'air', 'trawl', 'chamber', 'surface', 'aquarium', 'trap', 'done'];
 const MAIN_I = Object.fromEntries(MAIN.map((m, i) => [m.id, i]));
 const ALIAS = { swim: 'firstfish', observe: 'firstfish', net: 'firstfish' }; // (4.3.4) learned('net'): the first-fish step
 // (4.3.4) the first-fish step, part by part: 0 swim down to the fish, 1 observe it, 2 catch it, 3 back to the surface, 4 done
@@ -101,29 +92,7 @@ export const questLeft = (q, now = Date.now()) => Math.max(0, (q.until || now) -
 export function Q(P) {
   const S = P.quests || (P.quests = { main: 0, mainProg: 0, board: [], freeAt: 0, paidN: 0, done: 0 });
   if (S.freeAt === undefined) { S.freeAt = 0; S.paidN = 0; } // (4.0.0) older saves: the free refresh is ready
-  // (3.0.40) the main line remembers what he has already done for steps still ahead of it; an older save
-  // starts from what can be told (money earned means a fish has been caught and sold)
-  if (!S.seen) { S.seen = {}; if ((P.lifetime || 0) > 0) { S.seen.net = 1; S.seen.sell = 1; } }
-  // (4.0.6) a save from before the tutorial: the same step, by name, in the new Log; what it has already done counts
-  if (!S.v) { S.v = 2; const id = OLD_MAIN[S.main] || 'done', k = V3_IDS.indexOf(id); if (S.main > 0 || (P.lifetime || 0) > 0) { S.main = Math.max(0, k); S.seen.swim = 10; S.seen.observe = 1; } }
-  // (4.3.0) the Log counts only the step it is on: progress noted ahead of it by older versions is dropped (it let
-  // one action finish several steps at once). Gear bought before purchases were marked counts as paid for, except
-  // the flick net, which the Log itself gives.
-  if (S.v < 3) {
-    S.v = 3;
-    for (let i = S.main + 1; i < V3_IDS.length; i++) delete S.seen[V3_IDS[i]];
-    for (const it of kitOf(P).items) if (bought(it.id) && it.id !== 'flicknet' && !it.gift) it.paid = true;
-  }
-  // (4.3.4) swim, observe and net are one step: a save on one of them goes to it, with the parts it has done
-  if (S.v < 4) {
-    S.v = 4; const id = V3_IDS[S.main] || 'done';
-    if (id === 'swim' || id === 'observe' || id === 'net') {
-      S.main = 0; S.mainProg = 0;
-      if (id !== 'swim' || (S.seen.swim || 0) >= 10) S.seen.ff_reach = 1;
-      if (id === 'net' || (id === 'observe' && S.seen.observe)) S.seen.ff_obs = 1;
-      if (id === 'net' && S.seen.netCaught) S.seen.ff_catch = 1;
-    } else S.main = Math.max(0, MAIN.findIndex((m) => m.id === id));
-  }
+  if (!S.seen) S.seen = {}; // (3.0.40) what he has already done for steps still ahead of the Log
   return S;
 }
 // (3.0.40) note progress on any step of the main line not yet claimed; the active step's counter follows it
@@ -209,13 +178,15 @@ export function newQuest(P, rnd = Math.random, taken = new Set()) {
   }
   return null;
 }
-// (4.8.0) a new diver's first board, always: an animal below 100 m, any jellyfish, and $300 of catch sold
+// (6.8.0) a new diver's first board, always: the first real dive, the first live catch from the deep, the first trap
+// (they took over from the Log's old basics). A wire pot comes with it, so the trap quest can be done at once.
 function firstBoard(P) {
   const until = Date.now() + QUEST_HOURS.common * 3600000, b = { rarity: 'common', prog: 0, until, fresh: false };
+  P.traps = P.traps || {}; P.traps.pot = Math.max(1, P.traps.pot || 0);
   return [
-    { ...b, key: 'deep', kind: 'deep', d: 100, n: 1, pay: 120, text: 'Catch an animal below 100 m' },
-    { ...b, key: 'group-jelly1', kind: 'group', g: 'jelly', n: 1, pay: 50, text: 'Catch any jellyfish' },
-    { ...b, key: 'sell', kind: 'sell', n: 300, pay: 80, text: 'Sell $300 of catch' },
+    { ...b, key: 'depth200', kind: 'depth', d: 200, n: 1, pay: 150, text: 'Take the sub below 200 m' },
+    { ...b, key: 'liveup100', kind: 'liveup', d: 100, n: 1, pay: 150, text: 'Bring up a live animal from below 100 m' },
+    { ...b, key: 'traphaul', kind: 'traphaul', n: 1, pay: 80, text: 'Set a trap and haul it in' },
   ];
 }
 const ownsKind = (P, kind) => kitOf(P).items.some((it) => ITEMS[it.id] && ITEMS[it.id].kind === kind);
@@ -270,6 +241,7 @@ export function questEvent(P, type, data = {}) {
     if (type === 'sell' && q.kind === 'sell') add = Math.round(data.total || 0);
     if (type === 'photo' && q.kind === 'photo') add = 1;
     if (type === 'tag' && q.kind === 'tag') add = 1;
+    if (type === 'trapHaul' && q.kind === 'traphaul') add = 1; // (6.8.0) a trap hauled in with something in it
     if (add) { q.prog = Math.min(q.n, q.prog + add); changed = true; }
   }
   return changed;
@@ -297,6 +269,7 @@ export function questTick(g, P) {
     if (q.prog >= q.n || q.claimed) continue;
     if (q.kind === 'depth' && Math.max(e.y, e.inSub ? g.sub.y : 0) >= q.d) { q.prog = 1; ch = true; }
     if (q.kind === 'chambers' && g.chambersFull) { q.prog = 1; ch = true; }
+    if (q.kind === 'liveup' && g.subTank.some((s) => s.safe && s.cond > 0.05 && (s.from || 0) >= q.d)) { q.prog = 1; ch = true; } // (6.8.0) alive at the surface
   }
   return follow(S) || ch;
 }

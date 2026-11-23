@@ -1031,7 +1031,7 @@ function lessons() {
   if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) { lessonHold(false); return; }
   const mid = g.questMainId, tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
   // ---- the first trawl ----
-  if (mid === 'trawl' && P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 6) {
+  if (P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 20) { // (6.8.0) the first sub dive below 20 m after the tutorial (the Log's trawl step is gone)
     if (!netTotal(g.items) && !P.lessonTrawl) { netsOf(g.items).basic = 1; syncProfile(); }
     const st = P.lessonTrawl || 'drop', setSt = (v) => { P.lessonTrawl = v; saveProfile(P); };
     let J = g.lessonJelly; const jSp = SPECIES_BY_ID[171];
@@ -1079,7 +1079,6 @@ function lessons() {
   if (!e.inSub || sub.docked || ui.anyOpen()) return;
   const n = g.subNet;
   if (n && n.phase === 'tow' && n.got && n.got.length) g.questHint = 'n'; // something in the net: it can be closed
-  else if (mid === 'trawl' && !n && netTotal(g.items) && sub.y >= 6) g.questHint = 'n';
   if (sub.o2Max && sub.o2 / sub.o2Max < 0.3 && (g.items.airTank || 0) > 0 && !g.tankFit) { g.questHint = g.questHint || 'r'; g.airCallout = true; }
 }
 function tutorWelcome() {
@@ -1716,7 +1715,7 @@ function interact(t, exitSub) {
   if (t.kind === 'trap') {
     if (t.how === 'haul') { t.t.state = 'hauling'; hud.toast(TRAPS[t.t.type].winch ? 'Winching up the trap' : 'Hauling up the trap'); audio.ready && audio.click(); }
     else if (t.how === 'needboat') hud.toast('Too heavy: winch it from the Margaret', 'warn');
-    else { const n = emptyTrap(g, t.t); hud.toast(n ? `${n} into the bag${t.t.catch.length ? ' · bag full' : ''}` : t.t.catch.length ? 'Bag full' : 'The trap is empty'); }
+    else { const n = emptyTrap(g, t.t); if (n) questEvent(profile, 'trapHaul'); /* (6.8.0) */ hud.toast(n ? `${n} into the bag${t.t.catch.length ? ' · bag full' : ''}` : t.t.catch.length ? 'Bag full' : 'The trap is empty'); }
     return;
   }
   // (6.5.7) the guardian jellyfish's note, written beside it in the water; it stays while he is in its light and fades
@@ -2180,6 +2179,22 @@ function tickAbility(dt) {
 }
 
 // ---------------- update ----------------
+// (6.8.0) two quiet signs that the sea is bigger than the diver, never during the tutorial and only from a diver's third
+// dive on: the radar ghost (once a dive at most, below 100 m: a large contact at the radar's edge for half a second as the
+// sweep passes it, then nothing there) and the far-off sound (below 60 m, now and then: one long low note from no
+// direction in particular). Neither does anything; the thing itself is not involved.
+function omens(dt) {
+  const P = profile, e = g.earl; if (!P || P.tut === 'on' || (P.runs || 0) < 3 || g.mode !== 'play' || g.kill) return;
+  const d = e.inSub ? g.sub.y : e.y, ent = g.entity, near = ent && ent.dist < 260;
+  if (!g.ghostDone && d > 100 && !near && !g.radarGhost) {
+    g.ghostIn = (g.ghostIn ?? (60 + Math.random() * 240)) - dt; // somewhere between one and five minutes below 100 m
+    if (g.ghostIn <= 0) { if (Math.random() < 0.5) g.radarGhost = { a: Math.random() * Math.PI * 2 }; g.ghostDone = true; } // and only every other dive
+  }
+  if (d > 60 && !near) {
+    g.farIn = (g.farIn ?? (40 + Math.random() * 100)) - dt;
+    if (g.farIn <= 0) { g.farIn = 150 + Math.random() * 250; audio.ready && audio.farCall && audio.farCall(Math.min(1, 0.55 + d / 2000)); }
+  }
+}
 function update(dt) {
   g.time += dt;
   g.day = dayCycle(g.time);
@@ -2441,10 +2456,11 @@ function update(dt) {
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
     } else if (armEv && armEv.type === 'armMiss') hud.toast(`The ${armEv.name.toLowerCase()} slips out of the claw`);
     if (!e.inSub && g.armGame) g.armGame = null;
+    omens(dt); // (6.8.0)
     for (const ev of updateTraps(g, dt, renderer.cam)) {
       if (ev.type === 'hauled') {
         const tr = ev.trap, n = tr.catch.length;
-        tr.y = 0; const moved = emptyTrap(g, tr);
+        tr.y = 0; const moved = emptyTrap(g, tr); if (moved) questEvent(profile, 'trapHaul'); // (6.8.0)
         hud.toast(n ? `${TRAPS[tr.type].name} up · ${n} inside${moved < n ? ` · ${n - moved} didn't fit` : ''}` : `The ${TRAPS[tr.type].name.toLowerCase()} comes up empty`, n ? 'note' : '');
         audio.ready && audio.thud && audio.thud(0.25);
       } else if (ev.type === 'settled') hud.toast(`${TRAPS[ev.trap.type].name} set at ${ev.trap.depth} m${ev.trap.onBottom ? ', on the bottom' : ''}`);

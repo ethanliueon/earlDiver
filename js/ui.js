@@ -577,7 +577,7 @@ export class UI {
     let html = '<div class="qs-pg l">'; // (5.9.6) two pages: the log (and the refresh) on the left, the board on the right
     if (m) {
       const ok = S.mainProg >= m.need;
-      html += `<h3>The Margaret's log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${document.documentElement.classList.contains('touch') && m.touchHelp ? m.touchHelp : m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
+      html += `<h3>Log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${document.documentElement.classList.contains('touch') && m.touchHelp ? m.touchHelp : m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
         <div class="qs-pay">${m.gift ? 'a gift' : money(m.pay, false)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
     const footAt = html.length; html += `</div><div class="qs-pg r"><h3>The board</h3>`;

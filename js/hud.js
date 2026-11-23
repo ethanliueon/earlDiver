@@ -1071,6 +1071,13 @@ e.inSub ? [
           for (const [sx2, sy2] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.beginPath(); ctx.moveTo(bxp + sx2 * q, byp + sy2 * (q - c)); ctx.lineTo(bxp + sx2 * q, byp + sy2 * q); ctx.lineTo(bxp + sx2 * (q - c), byp + sy2 * q); ctx.stroke(); } }
       }
     }
+    // (6.8.0) the radar ghost: when the sweep passes its bearing, a large contact at the very edge, there for half a
+    // second, then gone; a duller red than the thing's own blip and twice its size, with no sound but the sweep's own
+    if (g.radarGhost && !dying) { const a = g.radarGhost.a, da = ((this.sweep - a) % TAU + TAU) % TAU; if (da < dt * 1.7 + 0.001) { this.ghostBlip = { a, life: 1 }; g.radarGhost = null; } }
+    if (this.ghostBlip) { const G = this.ghostBlip; G.life -= dt * 1.6; if (G.life <= 0) this.ghostBlip = null; else {
+      const r = rr * 0.88, bx = rcx + Math.cos(G.a) * r, by = rcy + Math.sin(G.a) * r, R = 14 * s, al = Math.min(1, G.life * 1.6) * 0.9;
+      const gr = ctx.createRadialGradient(bx, by, 0, bx, by, R); gr.addColorStop(0, `rgba(196,82,64,${al.toFixed(3)})`); gr.addColorStop(0.5, `rgba(170,66,52,${(al * 0.5).toFixed(3)})`); gr.addColorStop(1, 'rgba(150,60,48,0)');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(bx, by, R, R * 0.7, G.a + Math.PI / 2, 0, TAU); ctx.fill(); } }
     // the sapphire eye: sapphires within 150 m are blue points
     if (g.profile && g.profile.eye && !dying) {
       for (const p of g.world.pickups) {
