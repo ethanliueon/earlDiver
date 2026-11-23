@@ -92,15 +92,15 @@ function drawDave(x, S, room = true) {
 
 // (7.0.9) the whole card, W x H: Dave stands at the left, leaning in behind the box, his head and shoulders above its top
 // edge (the box cuts him where it stands in front of him, as a real box would), all one picture
-export function daveTalkPlate(W, H) {
+export function daveTalkPlate(W, H, portrait = null) {
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   let sd = 9; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
   const top = H * 0.56, plate = new Path2D(); plate.roundRect(6, top, W - 12, H - top - 10, H * 0.03);
   // Dave first, behind the box: a soft shadow round him so he sits on the water, then the figure
-  const DS = H * 0.86, DX = H * 0.04, DY = -H * 0.06; x.save(); x.beginPath(); x.rect(0, 0, W, H - 12); x.clip(); /* nothing of him below the box */
+  const DS = H * 0.86, DX = H * 0.04, DY = -H * 0.06; if (!portrait) { x.save(); x.beginPath(); x.rect(0, 0, W, H - 12); x.clip(); /* nothing of him below the box */
   x.save(); x.filter = `blur(${(H * 0.03).toFixed(1)}px)`; x.globalAlpha = 0.5; x.translate(DX + 6, DY + 8); x.globalCompositeOperation = 'source-over'; drawDave(x, DS, false); x.restore();
   { const t = document.createElement('canvas'); t.width = W; t.height = H; const tx = t.getContext('2d'); tx.translate(DX + 6, DY + 8); drawDave(tx, DS, false); tx.setTransform(1, 0, 0, 1, 0, 0); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = 'rgba(0,0,0,0.45)'; tx.fillRect(0, 0, W, H); x.save(); x.filter = `blur(${(H * 0.025).toFixed(1)}px)`; x.drawImage(t, 0, 0); x.restore(); x.clearRect(0, 0, 0, 0); }
-  x.save(); x.translate(DX, DY); drawDave(x, DS, false); x.restore(); x.restore();
+  x.save(); x.translate(DX, DY); drawDave(x, DS, false); x.restore(); x.restore(); }
   // the box in front of him
   x.fillStyle = 'rgba(0,0,0,0.5)'; x.save(); x.translate(4, 10); x.fill(plate); x.restore();
   x.fillStyle = lin(x, 0, top, 0, H, [[0, '#6e7656'], [0.5, '#555c42'], [1, '#33382a']]); x.fill(plate);
@@ -111,5 +111,9 @@ export function daveTalkPlate(W, H) {
   x.strokeStyle = 'rgba(12,14,8,0.85)'; x.lineWidth = 5; x.stroke(plate);
   x.strokeStyle = 'rgba(230,234,200,0.22)'; x.lineWidth = 2; x.beginPath(); x.moveTo(H * 0.14, top + 3); x.lineTo(W - H * 0.08, top + 3); x.stroke();
   for (const rx of [24, W - 24, W * 0.55]) for (const ry of [top + H * 0.07, H - H * 0.1]) { const g = x.createRadialGradient(rx - 2, ry - 2, 1, rx, ry, 9); g.addColorStop(0, '#c4c8a8'); g.addColorStop(1, '#262a1e'); x.fillStyle = g; x.beginPath(); x.arc(rx, ry, 8, 0, TAU); x.fill(); }
+  // (7.0.10) the owner's Dave (ui.js davePortrait), in front of the box as before, his body ending at the box's foot
+  if (portrait) { const ph = H - 14, pw = ph * portrait.width / portrait.height, px = H * 0.06;
+    x.save(); x.beginPath(); x.rect(0, 0, W, H - 14); x.clip(); x.shadowColor = 'rgba(0,0,0,0.5)'; x.shadowBlur = 14; x.shadowOffsetY = 6; x.drawImage(portrait, px, 0, pw, ph); x.restore();
+    return { url: c.toDataURL(), textLeft: (px + pw + H * 0.05) / W, top: top / H }; }
   return { url: c.toDataURL(), textLeft: (DX + DS * 0.78) / W, top: top / H };
 }

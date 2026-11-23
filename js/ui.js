@@ -1604,7 +1604,7 @@ export class UI {
   daveTalk() {
     let el = document.getElementById('davetalk');
     if (!el) { el = document.createElement('section'); el.id = 'davetalk'; el.hidden = true; el.innerHTML = '<div class="dt-box"><b class="dt-name">Dave</b><p class="dt-line"></p><div class="dt-acts"><button class="dt-shop">Shop</button><button class="dt-leave">Leave</button></div></div>'; document.body.appendChild(el);
-      { const P = daveTalkPlate(1640, 600); const bx = el.querySelector('.dt-box'); bx.classList.add('painted'); bx.style.setProperty('--dt-plate', `url(${P.url})`); bx.style.setProperty('--dt-left', (P.textLeft * 100).toFixed(1) + '%'); bx.style.setProperty('--dt-top', (P.top * 100).toFixed(1) + '%'); } // (7.0.8) one painted piece: the plate, its porthole, Dave in it
+      { const bx = el.querySelector('.dt-box'), im = new Image(); im.onload = () => { const P = daveTalkPlate(1640, 600, im); bx.classList.add('painted'); bx.style.setProperty('--dt-plate', `url(${P.url})`); bx.style.setProperty('--dt-left', (P.textLeft * 100).toFixed(1) + '%'); bx.style.setProperty('--dt-top', (P.top * 100).toFixed(1) + '%'); }; im.src = davePortrait(); } // (7.0.10) the old Dave, baked into the card with the box
       el.querySelector('.dt-shop').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); this.toggleDave(true); });
       el.querySelector('.dt-leave').addEventListener('click', () => { el.hidden = true; clearInterval(this.dtT); });
       el.addEventListener('click', (ev) => { if (ev.target === el) { el.hidden = true; clearInterval(this.dtT); } }); }
