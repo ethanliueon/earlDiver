@@ -44,6 +44,7 @@ import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's drawn size against a 2.4 m giant)
 import { lockerTexture } from './textures.js';
+import { gaugeFace, gaugeNeedle, gaugeGlass } from './gauge_art.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
 import { storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
 import { isTestStore } from './purchases.js';
@@ -1734,8 +1735,15 @@ export class UI {
   titleOpen() { return !$('title').classList.contains('gone'); }
   // (4.16.3) loading during play (a dive starting, after a death, back to the title): the simple porthole card;
   // the painted loading screen is only for opening the game
-  showLoading(on) { const el = $('loading'); el.hidden = !on; if (on) this.setLoading(0, 'Charting the sea'); }
-  setLoading(k, label) { const sp = $('loading').querySelector('span'); if (sp && label && sp.textContent !== label) sp.textContent = label; }
+  showLoading(on) { const el = $('loading'); el.hidden = !on; if (on) { this.buildGauge(); this.setLoading(0, 'Charting the sea'); } }
+  // (7.0.2) the gauge painted once (gauge_art.js): face, needle, glass; the needle turned by the real progress
+  buildGauge() {
+    const ph = $('loading').querySelector('.porthole'); if (!ph || ph.dataset.painted) return; ph.dataset.painted = '1';
+    const px = 300; ph.innerHTML = '';
+    for (const [cls, fn] of [['g-face', gaugeFace], ['g-needle', gaugeNeedle], ['g-glass', gaugeGlass]]) { const c = fn(px); c.className = cls; ph.appendChild(c); }
+  }
+  setLoading(k, label) { const el = $('loading'), sp = el.querySelector(':scope > span'); if (sp && label && sp.textContent !== label) sp.textContent = label;
+    const n = el.querySelector('.g-needle'); if (n && typeof k === 'number') n.style.setProperty('--deg', (225 + 270 * Math.max(0, Math.min(1, k))).toFixed(1) + 'deg'); }
   // (4.17.1) on a short screen, the title menu is scaled down to fit its height (measured, so nothing is cut off)
   fitTitle() {
     return; // (5.2) the title is laid out for the whole screen now; nothing to scale

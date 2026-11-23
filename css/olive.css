@@ -1765,3 +1765,12 @@ html body #davetalk .dt-face:not(#_a):not(#_b):not(#_c) { margin-bottom: -22px !
    top; the lockers and "Choose a diver" moved down to keep the gap under it */
 html body #title.select .t-plate:not(#_a) { transform: translateY(-35vh) scale(0.54); }
 html body #title .t-select:not(#_a) { padding-top: 17vh !important; }
+/* (7.0.2) the loading gauge: painted (gauge_art.js), no CSS-drawn dial; the needle follows the real progress with a
+   faint tremble, as a needle does; the caption in the game's type, not italic, no running dots */
+html body #loading .porthole:not(#_a) { position: relative; width: 168px; height: 168px; background: none !important; box-shadow: none !important; border-radius: 50%; }
+html body #loading .porthole::before { content: none !important; }
+html body #loading .porthole canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+html body #loading .porthole .g-needle { transform: rotate(var(--deg, 225deg)); transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.3, 1); animation: g-tremble 0.6s ease-in-out infinite alternate; }
+@keyframes g-tremble { from { translate: 0 0; rotate: -0.6deg; } to { translate: 0 0; rotate: 0.6deg; } }
+html body #loading > span:not(#_a) { font: 600 17px "Barlow Semi Condensed", sans-serif !important; font-style: normal !important; color: #d8cfb4 !important; letter-spacing: 0.24em; text-transform: uppercase; }
+html body #loading > span::after { content: none !important; }
