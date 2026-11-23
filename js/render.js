@@ -2441,14 +2441,14 @@ export class Renderer {
       ctx.fillStyle = blink ? '#ff5040' : '#5a1a14'; ctx.beginPath(); ctx.arc(X(-3.2), Y(cy - R - 4.3), Math.max(2, m * 0.16), 0, TAU); ctx.fill();
       // the hull: a yellow cylinder, rounded ends, rust run down from every seam
       const hg = ctx.createLinearGradient(0, Y(cy - R), 0, Y(cy + R));
-      hg.addColorStop(0, '#d8a83c'); hg.addColorStop(0.35, '#c08e2a'); hg.addColorStop(1, '#5e4210');
+      hg.addColorStop(0, '#a47a44'); hg.addColorStop(0.35, '#86602f'); hg.addColorStop(1, '#3a2812'); /* (6.7.2) old ochre paint, faded and grimed: the bright yellow was the one cheerful thing down there */
       ctx.fillStyle = hg; ctx.beginPath(); ctx.roundRect(X(x0), Y(cy - R), (x1 - x0) * m, R * 2 * m, R * m); ctx.fill();
       ctx.save(); ctx.beginPath(); ctx.roundRect(X(x0), Y(cy - R), (x1 - x0) * m, R * 2 * m, R * m); ctx.clip();
-      ctx.fillStyle = 'rgba(110,52,16,0.35)';
-      for (let k = 0; k < 14; k++) { const rx = x0 + 0.5 + ((k * 2.37) % (x1 - x0 - 1)), len = 0.6 + ((k * 0.73) % 1.6); ctx.fillRect(X(rx), Y(cy - R + 0.2 + (k % 3) * 0.6), Math.max(1, m * 0.07), len * m); }
+      ctx.fillStyle = 'rgba(96,40,14,0.45)';
+      for (let k = 0; k < 22; k++) { const rx = x0 + 0.5 + ((k * 2.37) % (x1 - x0 - 1)), len = 0.6 + ((k * 0.73) % 1.6); ctx.fillRect(X(rx), Y(cy - R + 0.2 + (k % 3) * 0.6), Math.max(1, m * 0.07), len * m); }
       ctx.strokeStyle = 'rgba(40,24,6,0.55)'; ctx.lineWidth = Math.max(1, m * 0.07);
       for (const rx of [-2.6, 0, 2.6]) { ctx.beginPath(); ctx.moveTo(X(rx), Y(cy - R)); ctx.lineTo(X(rx), Y(cy + R)); ctx.stroke(); } // the ring seams
-      ctx.fillStyle = 'rgba(255,240,200,0.18)'; ctx.fillRect(X(x0), Y(cy - R * 0.72), (x1 - x0) * m, m * 0.22); // the shine along its top
+      ctx.fillStyle = 'rgba(255,236,200,0.1)'; ctx.fillRect(X(x0), Y(cy - R * 0.72), (x1 - x0) * m, m * 0.22); // the dull shine along its top
       ctx.restore();
       // the portholes: warm light from inside, and now and then his head going past
       const dave = Math.sin(t * 0.21) * 0.5 + 0.5; // where he is in his hut (0 west .. 1 east)
@@ -2460,7 +2460,7 @@ export class Renderer {
         ctx.strokeStyle = '#5a5a52'; ctx.lineWidth = Math.max(1.5, m * 0.13); ctx.beginPath(); ctx.arc(wx, wy, pr * m, 0, TAU); ctx.stroke();
       }
       // the airlock: a short trunk at the east end, its hatch and the docking collar
-      ctx.fillStyle = '#9a7424'; ctx.fillRect(X(x1 - 0.6), Y(cy - 1.1), m * 1.6, m * 2.2);
+      ctx.fillStyle = '#6e5028'; ctx.fillRect(X(x1 - 0.6), Y(cy - 1.1), m * 1.6, m * 2.2);
       ctx.fillStyle = '#4a4a44'; ctx.fillRect(X(x1 + 0.9), Y(cy - 1.4), m * 0.35, m * 2.8); // the collar
       ctx.fillStyle = '#6e6e66'; ctx.beginPath(); ctx.ellipse(X(x1 + 1.07), Y(cy), m * 0.14, m * 1.05, 0, 0, TAU); ctx.fill();
       ctx.fillStyle = 'rgba(255,214,140,0.9)'; ctx.beginPath(); ctx.arc(X(x1 + 0.35), Y(cy - 1.45), Math.max(1.5, m * 0.13), 0, TAU); ctx.fill(); // the lamp over the hatch
@@ -2470,9 +2470,9 @@ export class Renderer {
       for (const q of [0.15, 0.85]) { ctx.beginPath(); ctx.moveTo(sx0 + sw * q, sy0 + sh); ctx.lineTo(sx0 + sw * q, Y(cy - R + 0.1)); ctx.stroke(); }
       ctx.fillStyle = '#6e4e2c'; ctx.beginPath(); ctx.moveTo(sx0, sy0 + m * 0.05); ctx.lineTo(sx0 + sw, sy0 - m * 0.08); ctx.lineTo(sx0 + sw, sy0 + sh - m * 0.04); ctx.lineTo(sx0, sy0 + sh); ctx.fill();
       if (m > 5) {
-        ctx.fillStyle = '#f0e2b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = `700 ${Math.round(m * 0.52)}px Georgia, serif`; ctx.fillText("DAVE'S HAUL", sx0 + sw / 2, sy0 + sh * 0.42);
-        ctx.fillStyle = '#e8584a'; ctx.font = `700 ${Math.round(m * 0.3)}px "Barlow Semi Condensed", sans-serif`; ctx.fillText('OPEN', sx0 + sw / 2, sy0 + sh * 0.84);
+        ctx.fillStyle = '#e2d4b0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `700 ${Math.round(m * 0.56)}px "Barlow Semi Condensed", sans-serif`; ctx.fillText("DAVE'S HAUL", sx0 + sw / 2, sy0 + sh * 0.42); // (6.7.2) the game's own type, hand-painted cream
+        ctx.fillStyle = '#b8503c'; ctx.font = `700 ${Math.round(m * 0.3)}px "Barlow Semi Condensed", sans-serif`; ctx.fillText('OPEN', sx0 + sw / 2, sy0 + sh * 0.84);
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
       }
       // the junk: a net strung from the mast to a post, glass floats, crates, a drum, an anchor, a tyre

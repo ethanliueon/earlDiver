@@ -1670,3 +1670,8 @@ html body #davetalk .dt-box:not(#_a) { grid-template-columns: 112px 1fr auto !im
 html body #davetalk .dt-face { grid-row: 1 / span 2; align-self: end; width: 150px; margin: -96px 0 -14px -30px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)); pointer-events: none; }
 html body #davetalk .dt-face:not(#_a) { width: 172px; margin: -118px 0 -14px -36px; }
 html body #davetalk .dt-name:not(#_a) { left: 132px !important; }
+
+/* (6.7.2) in the tank room the line of messages sits under its depth counter, not over it */
+body:has(#tankroom:not([hidden])) #msgs:not(#_a) { top: 92px !important; }
+/* (6.7.2) the journal's little pictures keep a faint shadow on the paper, so a pale jelly is still seen */
+html body #journal .jcell img:not(#_a) { filter: drop-shadow(0 1px 1px rgba(40, 30, 18, 0.55)) drop-shadow(0 0 2px rgba(40, 30, 18, 0.35)); }
