@@ -37,12 +37,24 @@ export const giftName = (r) => (r.k === 'chest' ? CHESTS[r.v].name : r.k === 'ca
 const hrs = (ms) => { const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 3600e3) / 60e3); return h ? `${h} h ${m} min` : `${m} min`; };
 
 // the Shop: a row of chests, each its picture, name, tier, items, price and Buy
-export function storeHtml(P) {
+// (6.9.0) the Test tab: for testing only, and only in the web build (isTestStore: no native store behind it), so it can
+// never reach the App Store build. Cash, any chest (into the locker, to open), every ability, any item, and resets.
+export function testHtml(P, items) {
+  const chest = Object.entries(CHESTS).map(([k, C]) => `<button data-test="chest|${k}">${C.name}</button>`).join('');
+  const opts = items.map((it) => `<option value="${it.id}">${it.name} (${it.rarity})</option>`).join('');
+  return `<div class="st-plate st-test"><button class="st-x" aria-label="Close">×</button><div class="st-tabs"><button data-tab="shop">Shop</button><button class="on" data-tab="test">Test</button></div>
+    <div class="tt-rows"><div class="tt-row"><b>Cash</b><button data-test="cash|1000">+$1,000</button><button data-test="cash|10000">+$10,000</button><button data-test="cash|100000">+$100,000</button><button data-test="cash|1000000">+$1,000,000</button></div>
+    <div class="tt-row"><b>Chests</b>${chest}</div>
+    <div class="tt-row"><b>Abilities</b><button data-test="abil|all">Every ability</button><button data-test="abil|ready">Cooldown ready</button></div>
+    <div class="tt-row"><b>Item</b><select class="tt-item">${opts}</select><button data-test="item|">Give</button></div>
+    <div class="tt-row"><b>Reset</b><button data-test="reset|lessons">Lessons</button><button data-test="reset|tutorial">Tutorial</button><button data-test="reset|board">First board</button></div></div></div>`;
+}
+export function storeHtml(P, test = false) {
   const card = (key, deal) => {
     const C = CHESTS[key], R = RARITY[C.tier];
     return `<div class="st-card r-${C.tier}${deal ? ' deal' : ''}">${deal ? `<span class="st-deal">Deal, ${hrs(dealLeft())} left</span>` : ''}<button class="st-i" data-rates="${key}" aria-label="Details"><i>i</i></button><img src="${chestPicture(C.look, 220, 160)}" alt=""><b style="color:${R.col}">${C.name}</b><span class="st-r" style="color:${R.col}">${R.name}</span><span class="st-n">${C.n} item${C.n > 1 ? 's' : ''}</span><button data-store="${key}" ${(P.cash || 0) < C.price ? 'disabled' : ''}>$${C.price.toLocaleString()}</button></div>`;
   };
-  return `<div class="st-plate"><button class="st-x" aria-label="Close">×</button><h2>Shop</h2><div class="st-row">${STANDARD.map((k) => card(k, false)).join('')}${card(dealNow(), true)}</div></div>`;
+  return `<div class="st-plate"><button class="st-x" aria-label="Close">×</button>${test ? '<div class="st-tabs"><button class="on" data-tab="shop">Shop</button><button data-tab="test">Test</button></div>' : '<h2>Shop</h2>'}<div class="st-row">${STANDARD.map((k) => card(k, false)).join('')}${card(dealNow(), true)}</div></div>`;
 }
 // Events: the daily gift, seven days in a row
 // (6.5.0) today's gift and its Claim button pulse slowly; once claimed, the next day's button is greyed with the time

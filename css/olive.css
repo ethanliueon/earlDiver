@@ -92,14 +92,14 @@ html body :is(#settings, #inventory) .set-row em { font-size: 14px !important; c
 html body :is(#settings, #inventory) .set-row { font: 18px var(--o-text) !important; color: var(--o-cream) !important; }
 
 /* ---- the one "press me": cream deck paint on a raised plate; everything else a raised olive plate */
-html body :is(#pause button:not(.gear-btn):not(.link), #confirm button, .shop button.primary, .shop .yd-plaque, #quests button[data-q]:not(.qs-info), #quests .qs-buy, #quests .qs-refresh,
+html body :is(#pause button:not(.gear-btn):not(.link), #confirm button, .shop button.primary, .shop .yd-plaque, #quests button[data-q]:not(.qs-info), #quests .qs-buy, #quests .qs-refresh, #chart .ce-btns button, /* (6.9.1) the chart's buttons too: no brass gold */
   #title #continue, #title #play, .gl-lights button, .gl-catch .gl-room, #inventory .lk-acts button, .shop .shop-tabs button, #workshop .yd-tab, #inventory .inv-tabs button,
   .shop button[data-act="buy"]:not(.primary):not(.warn), .shop button[data-act="refresh"]:not(.primary), #workshop button.yd-price, .pay-tag, #trapset .ts-btn) {
   border: 12px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 12px stretch !important;
   background: none !important; box-shadow: none !important; clip-path: none !important; transform: none !important; filter: none !important;
   min-height: 44px; height: auto !important; padding: 0 12px 2px !important; cursor: pointer;
   font: 500 17px/1 var(--o-text) !important; letter-spacing: 0.01em !important; text-transform: none !important; color: var(--o-cream) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important; }
-html body :is(#pause #resume, #confirm .cf-yes, .shop button.primary, #quests button[data-q^="claim"], #quests .qs-buy, #title #continue, #title #play, .gl-catch .gl-room, #inventory .lk-acts button:first-child:not(.sell),
+html body :is(#pause #resume, #confirm .cf-yes, .shop button.primary, #quests button[data-q^="claim"], #quests .qs-buy, #chart .ce-btns .ce-save, #title #continue, #title #play, .gl-catch .gl-room, #inventory .lk-acts button:first-child:not(.sell),
   .shop button[data-act="buy"]:not(.primary):not(.warn), #workshop button.yd-price, .pay-tag, .gl-lights button.on, .shop .shop-tabs button.on, #inventory .inv-tabs button.on, #trapset .ts-btn.primary) {
   border-image-source: var(--o-btn1) !important; color: var(--o-ink) !important; text-shadow: 0 1px 0 rgba(255, 250, 230, 0.4) !important; }
 html body :is(#pause button, #confirm button, .shop button, #quests button, #title button, .gl-lights button, .gl-catch button, #inventory .lk-acts button, #inventory .inv-tabs button, .pay-tag, #trapset .ts-btn):hover:not(:disabled) { filter: brightness(1.08) !important; }
@@ -842,45 +842,45 @@ html body #journal .page:not(#_a) {
 html body #journal .page.left:not(#_a) { box-shadow: inset -40px 0 34px -24px rgba(70, 45, 10, 0.55), inset 0 0 46px rgba(110, 76, 30, 0.26) !important; }
 html body #journal .page.right:not(#_a) { box-shadow: inset 40px 0 34px -24px rgba(70, 45, 10, 0.5), inset 0 0 46px rgba(110, 76, 30, 0.26) !important; }
 /* page numbers, in pencil */
-html body #journal .page.left::before, html body #journal .page.right::before { position: absolute; bottom: 10px; font: 500 16px 'Caveat', cursive; color: rgba(70, 58, 38, 0.5); pointer-events: none; }
+html body #journal .page.left::before, html body #journal .page.right::before { position: absolute; bottom: 10px; font: 500 13px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: rgba(70, 58, 38, 0.5); pointer-events: none; }
 html body #journal .page.left::before { content: '14'; left: 18px; }
 html body #journal .page.right::before { content: '15'; right: 18px; }
 /* headings and the count: the heading printed, the count pencilled in beside it */
-html body #journal #journal-count:not(#_a) { font: 500 21px 'Caveat', cursive !important; color: rgba(60, 50, 34, 0.75) !important; transform: rotate(-1.5deg); display: inline-block; }
+html body #journal #journal-count:not(#_a) { font: 500 17px "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; color: rgba(60, 50, 34, 0.75) !important; transform: rotate(-1.5deg); display: inline-block; }
 /* each animal: sketched in (its colours faded and warmed into the paper), its name and depth in handwriting, a little askew */
 html body #journal .jgrid:not(#_a) { gap: 14px 10px; }
 html body #journal .jcell:not(#_a) { background: none !important; transform: rotate(var(--rot, 0deg)); padding: 8px 4px 6px !important; overflow: visible; }
 html body #journal .jcell:not(#_a) img { filter: sepia(0.6) saturate(0.75) contrast(1.08) brightness(0.98); }
-html body #journal .jcell:not(#_a) b { font: 600 20px/1 'Caveat', cursive !important; color: #2e2618 !important; }
-html body #journal .jcell .jdep { font: 500 16px/1 'Caveat', cursive !important; color: rgba(60, 50, 34, 0.7) !important; }
+html body #journal .jcell:not(#_a) b { font: 600 16px/1 "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; color: #2e2618 !important; }
+html body #journal .jcell .jdep { font: 500 13px/1 "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; color: rgba(60, 50, 34, 0.7) !important; }
 html body #journal .jcell:not(#_a) > i { display: none; }
 html body #journal .jcell.on:not(#_a) { background: rgba(120, 100, 60, 0.14) !important; box-shadow: 0 0 0 2px rgba(70, 56, 30, 0.45) !important; border-radius: 40% 46% 38% 44% / 46% 40% 48% 42% !important; } /* ringed in pencil */
 /* its rarity as a small rubber stamp in the rarity's ink */
 html body #journal .jstamp { position: absolute; top: 2px; right: 0; font: 700 10px var(--o-text); letter-spacing: 0.12em; text-transform: uppercase; font-style: normal; color: var(--sc); border: 1.6px solid var(--sc); border-radius: 3px; padding: 0 4px; transform: rotate(-12deg); opacity: 0.8; mix-blend-mode: multiply; filter: brightness(0.75) saturate(1.3); }
 /* caught: a pencil tick */
-html body #journal .jtick { position: absolute; top: -2px; left: 4px; font: 700 26px/1 'Caveat', cursive; text-decoration: none; color: #7a3a22; transform: rotate(-8deg); }
+html body #journal .jtick { position: absolute; top: -2px; left: 4px; font: 700 21px/1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; text-decoration: none; color: #7a3a22; transform: rotate(-8deg); }
 /* the empty places still to fill: a dashed outline and a question mark */
 html body #journal .jcell.blank:not(#_a) { display: flex; align-items: center; justify-content: center; min-height: 92px; border: 1.6px dashed rgba(90, 70, 40, 0.3) !important; border-radius: 6px !important; transform: none; }
-html body #journal .jcell.blank span { font: 600 34px 'Caveat', cursive; color: rgba(90, 70, 40, 0.32); }
-html body #journal #journal-list .empty:not(#_a) { font: 500 22px/1.25 'Caveat', cursive !important; color: rgba(60, 50, 34, 0.75) !important; }
+html body #journal .jcell.blank span { font: 600 27px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: rgba(90, 70, 40, 0.32); }
+html body #journal #journal-list .empty:not(#_a) { font: 500 18px/1.25 "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; color: rgba(60, 50, 34, 0.75) !important; }
 /* an animal's page: its picture pinned in with two strips of tape, the facts written in */
 html body #journal .jd-pic:not(#_a) { position: relative; background: #f2ebd6 !important; padding: 10px; border-radius: 1px !important; transform: rotate(-1.2deg); box-shadow: 0 2px 6px rgba(60, 40, 10, 0.3); margin: 8px 10px 4px; }
 html body #journal .jd-pic::before, html body #journal .jd-pic::after { content: ''; position: absolute; top: -9px; width: 64px; height: 20px; background: rgba(230, 220, 180, 0.72); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
 html body #journal .jd-pic::before { left: 14px; transform: rotate(-8deg); }
 html body #journal .jd-pic::after { right: 14px; transform: rotate(7deg); }
 html body #journal .jd-rows div:not(#_a) { background: none !important; border-bottom: 1px solid rgba(70, 58, 38, 0.25); border-radius: 0 !important; }
-html body #journal .jd-rows dd:not(#_a) { font: 600 21px 'Caveat', cursive !important; color: #2e2618 !important; }
+html body #journal .jd-rows dd:not(#_a) { font: 600 17px "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; color: #2e2618 !important; }
 /* the notes page: ruled paper and a pen */
-html body #journal #notes:not(#_a) { background: repeating-linear-gradient(180deg, transparent 0 29px, rgba(70, 100, 140, 0.28) 29px 30px) !important; background-attachment: local !important; line-height: 30px !important; font: 500 23px/30px 'Caveat', cursive !important; color: #23324a !important; border: 0 !important; box-shadow: none !important; padding: 2px 4px !important; }
+html body #journal #notes:not(#_a) { background: repeating-linear-gradient(180deg, transparent 0 29px, rgba(70, 100, 140, 0.28) 29px 30px) !important; background-attachment: local !important; line-height: 30px !important; font: 500 18px/30px "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; color: #23324a !important; border: 0 !important; box-shadow: none !important; padding: 2px 4px !important; }
 html body #journal #notes::placeholder { color: rgba(35, 50, 74, 0.4); }
-html body #journal #journal-notes .small:not(#_a) { font: 500 17px 'Caveat', cursive !important; color: rgba(60, 50, 34, 0.55) !important; }
+html body #journal #journal-notes .small:not(#_a) { font: 500 14px "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; color: rgba(60, 50, 34, 0.55) !important; }
 /* the tabs: paper tabs standing up from the book's top edge when the journal is open */
 body:has(#journal:not([hidden])) #booktabs:not(#_a) { top: calc(50vh - min(320px, 41vh) - 30px); gap: 4px; }
 body:has(#journal:not([hidden])) #booktabs:not(#_a) button { background: linear-gradient(180deg, #ddd0aa, #cfc096) !important; color: #3a2e1c !important; border: 0 !important; border-radius: 7px 7px 0 0 !important; box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 250, 230, 0.6) !important; padding: 6px 18px 12px !important; font: 600 15px var(--o-text) !important; }
 body:has(#journal:not([hidden])) #booktabs:not(#_a) button.on { background: linear-gradient(180deg, #ece3c8, #e2d6b4) !important; box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.35), inset 0 3px 0 #9a3a28 !important; padding-bottom: 16px !important; transform: translateY(-3px); }
 body:has(#journal:not([hidden])) #booktabs:not(#_a) button { border-image: none !important; }
 /* Found / All: two words in pencil, the one in use underlined */
-html body #journal .tabs button:not(#_a):not(#_b):not(#_c) { background: none !important; color: rgba(60, 50, 34, 0.6) !important; font: 600 22px 'Caveat', cursive !important; letter-spacing: 0 !important; text-transform: none !important; padding: 0 6px 2px !important; box-shadow: none !important; border: 0 !important; }
+html body #journal .tabs button:not(#_a):not(#_b):not(#_c) { background: none !important; color: rgba(60, 50, 34, 0.6) !important; font: 600 18px "Barlow Semi Condensed", "Arial Narrow", sans-serif !important; letter-spacing: 0 !important; text-transform: none !important; padding: 0 6px 2px !important; box-shadow: none !important; border: 0 !important; }
 html body #journal .tabs button.on:not(#_a):not(#_b):not(#_c) { color: #2e2618 !important; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; padding-bottom: 2px !important; }
 html body #journal .page.left:not(#_a):not(#_b) { background-image: radial-gradient(circle at 58% 92%, rgba(110, 80, 40, 0.05) 0 30px, rgba(110, 80, 40, 0.12) 31px, rgba(110, 80, 40, 0) 34px), radial-gradient(ellipse 150px 95px at 80% 20%, rgba(140, 100, 50, 0.12), rgba(140, 100, 50, 0) 70%), radial-gradient(ellipse 190px 120px at 16% 84%, rgba(120, 90, 40, 0.10), rgba(120, 90, 40, 0) 70%), repeating-linear-gradient(0deg, rgba(80, 110, 120, 0.11) 0 1px, transparent 1px 24px), repeating-linear-gradient(90deg, rgba(80, 110, 120, 0.07) 0 1px, transparent 1px 24px), linear-gradient(180deg, #ece3c8, #e0d3b0) !important; } /* a mug's ring on the left page only */
 html body #journal .jcell:not(#_a):not(#_b) { border: 0 !important; outline: 0 !important; box-shadow: none; }
@@ -1687,3 +1687,22 @@ html body #journal .jcell img:not(#_a) { filter: drop-shadow(0 1px 1px rgba(40, 
 #sailing.on i s { width: 100%; }
 #chart .ce-why { margin-top: 6px; font: 500 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: rgba(214,206,182,0.7); }
 #chart .ce-btns button:disabled { filter: grayscale(1) brightness(0.7); cursor: default; }
+/* (6.9.0) a Log step's reward: the item itself, its name in its rarity's ink; money as on the board */
+html body #quests .qs-pay .qs-gift { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+html body #quests .qs-pay .qs-gift img { width: 74px; height: 44px; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(40, 28, 10, 0.35)); }
+html body #quests .qs-pay .qs-gift em { font: 600 13px "Barlow Semi Condensed", "Arial Narrow", sans-serif; font-style: normal; white-space: nowrap; }
+/* (6.9.0) the shop's Test tab (web build only): plain olive-steel rows */
+html body #store .st-tabs { display: flex; gap: 6px; justify-content: center; margin: 0 0 10px; }
+html body #store .st-tabs button { font: 600 16px "Barlow Semi Condensed", "Arial Narrow", sans-serif; padding: 5px 18px; border-radius: 4px; border: 1px solid rgba(214,206,182,0.25); background: rgba(40,42,34,0.8); color: rgba(226,218,196,0.7); }
+html body #store .st-tabs button.on { background: rgba(92,90,70,0.9); color: #eee6cc; }
+html body #store .tt-rows { display: flex; flex-direction: column; gap: 8px; max-height: 62vh; overflow-y: auto; padding: 0 4px; }
+html body #store .tt-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+html body #store .tt-row b { width: 78px; font: 600 14px "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: rgba(226,218,196,0.75); }
+html body #store .tt-row button, html body #store .tt-row select { font: 500 13px "Barlow Semi Condensed", "Arial Narrow", sans-serif; padding: 4px 9px; border-radius: 3px; border: 1px solid rgba(214,206,182,0.22); background: rgba(66,64,52,0.9); color: #e6dec4; }
+html body #store .tt-row select { max-width: 260px; }
+/* (6.9.1) the chart's marker and buoy plates: worn buttons sized for the small plate */
+html body #chart .ce-btns button:not(#_a) { min-height: 38px; font-size: 15px !important; }
+html body #chart .ch-chip .ch-go { color: var(--o-cream-dim, #c9c0a4) !important; }
+/* (6.9.1) a newly met animal in the journal: a small New tag on top, a red game badge, quiet */
+html body #journal .jcell { position: relative; }
+html body #journal .jcell .jnew:not(#_a):not(#_b) { display: inline-block; width: auto; height: auto; z-index: 2; position: absolute; top: 2px; right: 4px; left: auto; bottom: auto; opacity: 1; padding: 1px 6px 2px; border-radius: 3px; font: 700 11px/1.1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; font-style: normal; letter-spacing: 0.04em; color: #f2ead6; background: #9a3a28; box-shadow: 0 1px 2px rgba(40, 20, 10, 0.45); transform: rotate(var(--rot, 0deg)); }

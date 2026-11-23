@@ -5,7 +5,7 @@
 import { clamp, lerp, TAU } from './util.js';
 
 const STENCIL = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
-const HAND = '"Caveat", "Segoe Print", cursive';
+const HAND = '"Barlow Semi Condensed", "Arial Narrow", sans-serif'; // (6.9.0) no handwriting fonts: the game's own type
 const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const ease = (q) => 1 - Math.pow(1 - clamp(q, 0, 1), 3);
 

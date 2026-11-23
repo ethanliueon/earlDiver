@@ -131,6 +131,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - **Push back** when a request, or my reading of it, does not fit the philosophy or the game; say so before building,
   and check an ambiguous request instead of guessing (e.g. "catch coral" did not mean the net should take coral).
 - **Do exactly what was asked**; anything said "do not do" stays out.
+- **Finish everything agreed in the same run** (6.8.4): every item discussed and not ruled out is built, tested and
+  screenshot in that run. Never end with "next I will..." or leave a part for the owner to check later.
 - **Art must meet the bar on the first try**: aim for old, intentional, designed. Look at it in a screenshot before
   showing it.
 - **Show, don't claim.** Send screenshots along the way (phone viewport, touch).
@@ -158,6 +160,6 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   phone sizes must still pass. Phones load the game in a turned frame (index.html's shell); tests use `?noshell`.
 - **Old saves don't matter until release.** Nobody plays the game yet; until it ships on the App Store, write no
   migration code for old saves and don't keep anything just for them.
-- **Never commit keys** (the Freesound key is an environment secret). There is no developer cheat any more (the X key was removed in 5.10.10); tests set money and gear through `window.__earl`.
+- **Never commit keys** (the Freesound key is an environment secret). There is no developer cheat in the shipped game (the X key was removed in 5.10.10); since 6.9.0 the shop has a **Test** tab (cash, chests, abilities, any item, resets) that appears only in the web build (purchases.js `isTestStore()`), never in the App Store build. Tests set money and gear through `window.__earl`.
 - In code comments, say what a thing does and why, tagged with the version: `// (5.9.7) ...`. Inline comments in
   the middle of a line use `/* */`, never `//`.

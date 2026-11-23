@@ -45,8 +45,9 @@ import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's drawn size against a 2.4 m giant)
 import { lockerTexture } from './textures.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
-import { storeHtml, eventsHtml, calWeek, untilTomorrow } from './store.js';
-import { tankPicture } from './journal_tank.js';
+import { storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
+import { isTestStore } from './purchases.js'; // (6.9.0) the Test tab, web build only
+import { tankPicture, tankZoom } from './journal_tank.js';
 import { drawFace, DEFAULT_LOOK, FACES, EYES, HAIRS, HAIR_NAMES, SKINS } from './face_draw.js'; // (6.7.0) the creator
 import { priceOf as storePrice } from './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
@@ -162,6 +163,13 @@ function davePortrait() {
   drawFace(x, 0, 0, 10.5, { sex: 'm', face: 1, eyes: 2, skin: 1, beard: true, age: true, cap: '#4e4a3a', hairCol: ['#c4bcae', '#8e877b', '#4a4640'] });
   x.restore();
   davePic = c.toDataURL(); return davePic;
+}
+// (6.9.0) a Log step's reward: each item as its picture and its name in its rarity's ink, then the money if any
+const REWARD_INK = { common: '#66665e', uncommon: '#3c6e42', rare: '#2c5884', exotic: '#6a3c8a', legendary: '#8a6224' };
+function rewardHtml(m) {
+  const ids = [].concat(m.gift ? [['item', m.gift]] : [], m.kit || []).filter(([k, id]) => k === 'item' && ITEMS[id]).map(([, id]) => ITEMS[id]);
+  const items = ids.map((it) => `<span class="qs-gift"><img src="${pictureOf(it.kind, it, 150, 90, true)}" alt=""><em style="color:${REWARD_INK[it.rarity] || REWARD_INK.common}">${it.name}</em></span>`).join('');
+  return items + (m.pay ? `<span class="qs-cash">${money(m.pay, false)}</span>` : '');
 }
 export class UI {
   constructor(h) {
@@ -438,11 +446,13 @@ export class UI {
   }
   showChest(key, finds, coin = false) { this.chest.open(key, finds, coin); } // (6.4.0) finds: [{ q, def }], and whether an old coin came up
   // (6.4.0) the Shop and Events screens (left menu): chests for cash; the daily gift
-  toggleStore(force) { const el = $('store'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = storeHtml(this.h.getProfile()); } el.hidden = !on; this.storeWire(el); }
+  toggleStore(force) { const el = $('store'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); } el.hidden = !on; this.storeWire(el); }
   toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true), (k, id) => pictureOf(k, id, 120, 90, true)); } el.hidden = !on; this.storeWire(el); }
   storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
-    const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile()); return; }
+    const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); return; }
+    const tb = ev.target.closest('[data-tab]'); if (tb && isTestStore()) { el.innerHTML = tb.dataset.tab === 'test' ? testHtml(this.h.getProfile(), Object.values(ITEMS).filter((it) => !it.free).sort((a, c) => a.name.localeCompare(c.name))) : storeHtml(this.h.getProfile(), true); return; } // (6.9.0)
+    const tt = ev.target.closest('[data-test]'); if (tt && isTestStore()) { const [act, arg] = tt.dataset.test.split('|'); this.h.onTest && this.h.onTest(act, act === 'item' ? el.querySelector('.tt-item').value : arg); return; }
     if (ev.target.closest('[data-ev]')) { this.h.onClaim && this.h.onClaim(); this.toggleEvents(true); return; }
     // (6.5.0) a day tapped: a chest shows its odds (the shop's table, by its data-rates); anything else its card
     const d = ev.target.closest('[data-evday]'); if (d && !d.dataset.rates) { const r = calWeek(this.h.getProfile())[+d.dataset.evday]; this.previewCard(r.k === 'cash' ? { kind: 'cash', n: r.v } : r.k === 'glow' ? { kind: 'supply', id: r.adv ? 'glowAdv' : 'necklace', n: r.v } : r.k === 'trap' ? { kind: 'trap', id: r.v } : r.k === 'coin' ? { kind: 'coin', n: r.v } : { kind: 'item', id: 'chest_' + r.v }); } });
@@ -565,6 +575,8 @@ export class UI {
     $('quests').classList.add('fading');
     setTimeout(() => { this.toggleQuests(false); $('quests').classList.remove('fading'); this.qFreeze = false; }, 450);
   }
+  // (6.9.0) what a Log step gives, shown, not named: an item as its picture with its name in its rarity's colour, money as
+  // the sum, both when both (never "a gift")
   renderQuests() {
     const P = this.h.getProfile(); if (!P || this.qFreeze) return;
     if (this.boardWait && Date.now() < this.boardWait) { // the new board is being posted
@@ -578,7 +590,7 @@ export class UI {
     if (m) {
       const ok = S.mainProg >= m.need;
       html += `<h3>Log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${document.documentElement.classList.contains('touch') && m.touchHelp ? m.touchHelp : m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
-        <div class="qs-pay">${m.gift ? 'a gift' : money(m.pay, false)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
+        <div class="qs-pay">${rewardHtml(m)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
     const footAt = html.length; html += `</div><div class="qs-pg r"><h3>The board</h3>`;
     // (4.3.0) during the tutorial the board waits, so one step at a time is all there is to claim
@@ -1187,7 +1199,7 @@ export class UI {
   }
   // ---------- the locker (2.8.0): Earl and his eight slots; everything he owns in rarity frames ----------
   // Drag a thing onto him (or its slot) to put it on, or click it for its card: what it is, its skills, its
-  // set, Put on / Take off, and Sell when someone is there to buy it (the Margaret, Dave). Changing gear works
+  // set, Put on / Unequip, and Sell when someone is there to buy it (the Margaret, Dave). Changing gear works
   // on deck, in the cabin and in the sub; in the water it only shows.
   // (3.0.31) the inventory: Earl large in the middle of the left pane with his eight slots either side; the locker
   // on the right, thirty boxes, always sorted by rarity (Common to Legendary, then by kind), what he has on not in
@@ -1314,8 +1326,8 @@ export class UI {
     }
     if (on) {
       body = `<div class="ip-cols one">${this.itemCol(P, q, 'You have it on')}</div>`;
-      const starter = FREE_IDS[it.kind];
-      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${it.kind}">Take off${starter ? ` <small>(the ${ITEMS[starter].name.toLowerCase()} goes back on)</small>` : ''}</button>`;
+      const starter = it.kind === 'net' ? null : FREE_IDS[it.kind]; // (6.9.1) a net unequipped leaves the hands empty, the hand net too
+      if (free && !(starter && q.id === starter)) acts += `<button data-lk="off:${it.kind}">Unequip${starter ? ` <small>(${ITEMS[starter].name} back on)</small>` : ''}</button>`;
     } else {
       // the numbers, a row each: his now, this one, which is better
       let rows = '';
@@ -1777,14 +1789,18 @@ export class UI {
       list.innerHTML = `<p class="empty">Nothing in the book yet.<br>${document.documentElement.classList.contains('touch') ? 'Swim close to an animal and tap it to observe it.' : 'Swim close to a creature and press F to observe it.'}</p><div class="jgrid">${'<div class="jcell blank"><span>?</span></div>'.repeat(6)}</div>`;
       this.journalDetail(null); return;
     }
-    const entries = [...g.journal.entries()].sort((a, b) => ((b[1].at || 0) - (a[1].at || 0)) || (b[1].time - a[1].time)); // (4.12.4) newest found first, across dives
+    // (6.9.1) by depth: the shallowest first, down the page as down the sea (the depth he met it at, then its usual depth);
+    // one met in the last hour and not yet opened carries a small New tag
+    const dOf = (id, info) => (info && info.depth != null ? info.depth : usualDepth(SPECIES_BY_ID[id])) || 0;
+    const entries = [...g.journal.entries()].sort((a, b) => (dOf(a[0], a[1]) - dOf(b[0], b[1])) || (usualDepth(SPECIES_BY_ID[a[0]]) - usualDepth(SPECIES_BY_ID[b[0]])) || SPECIES_BY_ID[a[0]].name.localeCompare(SPECIES_BY_ID[b[0]].name));
+    const isNew = (info) => info && !info.seen && info.at && Date.now() - info.at < 3600e3;
     // (5.7.4) a field notebook: each animal sketched in, its name and the depth he met it in pencil, its rarity as a
     // small ink stamp, a tick if one has been caught; then a few empty outlines still to fill
     const P0 = this.h.getProfile && this.h.getProfile(), caught = new Set((P0 && P0.caught) || []);
     const blanks = Math.max(3, (3 - (entries.length % 3)) % 3 + 3);
     list.innerHTML = `<div class="jgrid">${entries.map(([id, info]) => { const sp = SPECIES_BY_ID[id], R = rarityOf(sp), c = rarityCol(sp);
-      return `<button class="jcell${this.jSel === id ? ' on' : ''}" data-js="${id}" title="${sp.name.replace(/"/g, '')}" style="--rot:${((id * 37) % 7 - 3) * 0.5}deg"><img src="${this.allFishPic(sp, true)}" alt=""><b>${sp.name}</b><small class="jdep">${info && info.depth != null ? `${info.depth} m` : ''}</small>${R && !R.hidden && R.id !== 'common' ? `<em class="jstamp" style="--sc:${c}">${R.name}</em>` : ''}${caught.has(id) ? '<u class="jtick" title="Caught">✓</u>' : ''}</button>`; }).join('')}${'<div class="jcell blank"><span>?</span></div>'.repeat(blanks)}</div>`;
-    list.querySelectorAll('[data-js]').forEach((b) => b.addEventListener('click', () => { const id = +b.dataset.js; this.jSel = this.jSel === id ? null : id; this.renderJournal(); }));
+      return `<button class="jcell${this.jSel === id ? ' on' : ''}" data-js="${id}" title="${sp.name.replace(/"/g, '')}" style="--rot:${((id * 37) % 7 - 3) * 0.5}deg"><img src="${this.allFishPic(sp, true)}" alt=""><b>${sp.name}</b><small class="jdep">${info && info.depth != null ? `${info.depth} m` : ''}</small>${R && !R.hidden && R.id !== 'common' ? `<em class="jstamp" style="--sc:${c}">${R.name}</em>` : ''}${caught.has(id) ? '<u class="jtick" title="Caught">✓</u>' : ''}${isNew(info) ? '<span class="jnew">New</span>' : ''}</button>`; }).join('')}${'<div class="jcell blank"><span>?</span></div>'.repeat(blanks)}</div>`;
+    list.querySelectorAll('[data-js]').forEach((b) => b.addEventListener('click', () => { const id = +b.dataset.js; this.jSel = this.jSel === id ? null : id; this.h.journalSeen && this.h.journalSeen(id); this.renderJournal(); }));
     // (5.9.2) no notes page: the right page shows the animal chosen, or else the one met most recently
     this.journalDetail(this.jSel && g.journal.has(this.jSel) ? this.jSel : entries[0][0]);
   }
@@ -1798,7 +1814,7 @@ export class UI {
     if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
     const ph = (g.photos || []).filter((p) => p.id === id && p.img).sort((a, b) => b.q - a.q)[0];
     title.textContent = sp.name; notes.hidden = true; det.hidden = false;
-    det.innerHTML = `<div class="jd-pic${ph ? '' : ' jd-tank'}"${ph ? '' : ` style="background-image:url(${tankPicture(habCls(sp))}) !important"`}>${ph ? `<img class="jd-photo" src="${ph.img}" alt="">` : `<img src="${this.fitPics.get(sp.id)}" alt="">`}</div>
+    det.innerHTML = `<div class="jd-pic${ph ? '' : ' jd-tank'}"${ph ? '' : ` style="background-image:url(${tankPicture(habCls(sp), 480, 260, tankZoom(sp.len || 0.5))}) !important"`}>${ph ? `<img class="jd-photo" src="${ph.img}" alt="">` : `<img src="${this.fitPics.get(sp.id)}" alt="">`}</div>
       <p class="jd-sci">${sp.species ? sp.species + ', ' : ''}<i>${sp.sci || ''}</i>${R && !R.hidden ? `, <span style="color:${R.col}">${R.name.toLowerCase()}</span>` : ''}</p>
       <p class="jd-desc">${sp.desc}</p>
       <dl class="jd-rows"><div><dt>Lives at</dt><dd>${hab[0].toLocaleString()} to ${hab[1].toLocaleString()} m</dd></div><div><dt>Grows to</dt><dd>${sp.size}</dd></div><div><dt>First seen</dt><dd>at ${info.depth ?? '?'} m</dd></div></dl>

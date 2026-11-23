@@ -8,8 +8,12 @@ const WATER = {
   'hb-blue': ['#3c6a8c', '#1e4262', '#142f48'], 'hb-twi': ['#24405e', '#142a42', '#0c1a2c'], 'hb-deep': ['#121c28', '#0a1018', '#05080c'],
 };
 const FLOOR = { 'hb-sun': ['#b8a47a', '#8a7650'], 'hb-reef': ['#c4b088', '#94805a'], 'hb-kelp': ['#7a6a4a', '#544632'], 'hb-blue': ['#6e6450', '#4a4234'], 'hb-twi': ['#3a3830', '#26241e'], 'hb-deep': ['#1e1c1a', '#121110'] };
-export function tankPicture(hab, W = 480, H = 260) {
-  const key = hab + W + 'x' + H; if (CACHE.has(key)) return CACHE.get(key);
+// (6.9.1) z: how near the scene is, from the animal's size. The animal is always drawn the same size in the frame, so
+// a small one is seen close beside tall plants and big pebbles (z > 1), a large one from farther off, the same place
+// small and wide behind it: short plants, more of them, stones far off (z < 1)
+export const tankZoom = (len) => (len < 0.15 ? 2.2 : len < 0.5 ? 1.5 : len < 1.5 ? 1 : len < 4 ? 0.6 : 0.4);
+export function tankPicture(hab, W = 480, H = 260, z = 1) {
+  const key = hab + W + 'x' + H + 'z' + z; if (CACHE.has(key)) return CACHE.get(key);
   const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
   let sd = 7 + [...hab].reduce((a, ch) => a + ch.charCodeAt(0), 0); const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
   const F = Math.round(H * 0.07), ix = F, iy = F, iw = W - F * 2, ih = H - F * 2, [w0, w1, w2] = WATER[hab] || WATER['hb-blue'], light = ['hb-sun', 'hb-reef', 'hb-kelp', 'hb-blue'].includes(hab), deep = hab === 'hb-deep' || hab === 'hb-twi';
@@ -27,15 +31,17 @@ export function tankPicture(hab, W = 480, H = 260) {
   x.beginPath(); x.moveTo(ix, iy + ih); pts.forEach(([a, b]) => x.lineTo(a, b)); x.lineTo(ix + iw, iy + ih); x.closePath();
   const fg = x.createLinearGradient(0, fy, 0, iy + ih); fg.addColorStop(0, f0); fg.addColorStop(1, f1); x.fillStyle = fg; x.fill();
   x.save(); x.clip(); for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '255,248,230' : '30,24,14'},${(0.08 + r() * 0.12).toFixed(3)})`; x.fillRect(ix + r() * iw, fy + r() * ih * 0.22, 1.2, 1.2); }
-  for (let i = 0; i < 7; i++) { const px = ix + r() * iw, py = fy + ih * (0.06 + r() * 0.12), pr = 2 + r() * 5; const pg = x.createRadialGradient(px - pr * 0.3, py - pr * 0.3, 0.5, px, py, pr); pg.addColorStop(0, deep ? '#4a4640' : '#a89a80'); pg.addColorStop(1, deep ? '#1a1816' : '#5a4e3a'); x.fillStyle = pg; x.beginPath(); x.ellipse(px, py, pr * 1.3, pr, 0, 0, Math.PI * 2); x.fill(); }
+  for (let i = 0; i < (z < 1 ? 14 : 7); i++) { const px = ix + r() * iw, py = fy + ih * (0.06 + r() * 0.12), pr = (2 + r() * 5) * z; const pg = x.createRadialGradient(px - pr * 0.3, py - pr * 0.3, 0.5, px, py, pr); pg.addColorStop(0, deep ? '#4a4640' : '#a89a80'); pg.addColorStop(1, deep ? '#1a1816' : '#5a4e3a'); x.fillStyle = pg; x.beginPath(); x.ellipse(px, py, pr * 1.3, pr, 0, 0, Math.PI * 2); x.fill(); }
   x.restore();
   // what grows there: kelp, a clump of coral, a tuft of weed in the sunlit, a stone in the deep
-  const plant = (px, hgt, col) => { x.strokeStyle = col; x.lineWidth = 2.2; x.lineCap = 'round'; x.beginPath(); x.moveTo(px, fy + 4); for (let k = 1; k <= 8; k++) x.lineTo(px + Math.sin(k * 0.9 + px) * 5, fy + 4 - hgt * k / 8); x.stroke();
-    for (let k = 2; k <= 8; k += 2) { const ly = fy + 4 - hgt * k / 8, lx = px + Math.sin(k * 0.9 + px) * 5; x.fillStyle = col; x.beginPath(); x.ellipse(lx + 6, ly, 7, 2.6, -0.5, 0, Math.PI * 2); x.fill(); } };
-  if (hab === 'hb-kelp') { plant(ix + iw * 0.12, ih * 0.7, 'rgba(110,104,52,0.85)'); plant(ix + iw * 0.86, ih * 0.6, 'rgba(96,92,46,0.8)'); plant(ix + iw * 0.93, ih * 0.45, 'rgba(120,112,56,0.7)'); }
-  else if (hab === 'hb-reef') { for (let k = 0; k < 2; k++) { const cx = ix + iw * (k ? 0.88 : 0.1), cy = fy + 2; for (let j = 0; j < 9; j++) { const a = -Math.PI / 2 + (r() - 0.5) * 1.6, L = ih * (0.1 + r() * 0.14); x.strokeStyle = k ? 'rgba(170,96,78,0.85)' : 'rgba(196,150,110,0.85)'; x.lineWidth = 3; x.beginPath(); x.moveTo(cx, cy); x.quadraticCurveTo(cx + Math.cos(a) * L * 0.5 + 4, cy + Math.sin(a) * L * 0.5, cx + Math.cos(a) * L, cy + Math.sin(a) * L); x.stroke(); } } }
-  else if (hab === 'hb-sun' || hab === 'hb-blue') { plant(ix + iw * 0.08, ih * 0.28, 'rgba(90,110,64,0.7)'); plant(ix + iw * 0.92, ih * 0.22, 'rgba(84,104,60,0.6)'); }
-  else { const sx = ix + iw * 0.85, sy = fy + 6; const sg = x.createRadialGradient(sx - 10, sy - 14, 2, sx, sy, 32); sg.addColorStop(0, deep ? '#3a3a36' : '#5a5650'); sg.addColorStop(1, '#0e0e0c'); x.fillStyle = sg; x.beginPath(); x.ellipse(sx, sy, 34, 18, 0, Math.PI, 0); x.fill(); }
+  const plant = (px, hgt, col) => { hgt = Math.min(ih * 0.95, hgt * z); const lz = Math.max(0.45, Math.min(2, z)); x.strokeStyle = col; x.lineWidth = 2.2 * lz; x.lineCap = 'round'; x.beginPath(); x.moveTo(px, fy + 4); for (let k = 1; k <= 8; k++) x.lineTo(px + Math.sin(k * 0.9 + px) * 5 * lz, fy + 4 - hgt * k / 8); x.stroke();
+    for (let k = 2; k <= 8; k += 2) { const ly = fy + 4 - hgt * k / 8, lx = px + Math.sin(k * 0.9 + px) * 5 * lz; x.fillStyle = col; x.beginPath(); x.ellipse(lx + 6 * lz, ly, 7 * lz, 2.6 * lz, -0.5, 0, Math.PI * 2); x.fill(); } };
+  const far = z < 1 ? Math.round(2 / z) : 0; // farther off: more of the same plants across the floor, small
+  if (hab === 'hb-kelp') { plant(ix + iw * 0.12, ih * 0.7, 'rgba(110,104,52,0.85)'); plant(ix + iw * 0.86, ih * 0.6, 'rgba(96,92,46,0.8)'); plant(ix + iw * 0.93, ih * 0.45, 'rgba(120,112,56,0.7)'); for (let k = 0; k < far * 2; k++) plant(ix + iw * (0.25 + r() * 0.5), ih * (0.4 + r() * 0.4), 'rgba(96,92,46,0.55)'); }
+  else if (hab === 'hb-reef') { const nC = 2 + far * 2; for (let k = 0; k < nC; k++) { const cx = ix + iw * (k === 0 ? 0.1 : k === 1 ? 0.88 : 0.2 + r() * 0.6), cy = fy + 2; for (let j = 0; j < 9; j++) { const a = -Math.PI / 2 + (r() - 0.5) * 1.6, L = Math.min(ih * 0.6, ih * (0.1 + r() * 0.14) * z); x.strokeStyle = k % 2 ? 'rgba(170,96,78,0.85)' : 'rgba(196,150,110,0.85)'; x.lineWidth = 3 * Math.max(0.5, Math.min(2.2, z)); x.beginPath(); x.moveTo(cx, cy); x.quadraticCurveTo(cx + Math.cos(a) * L * 0.5 + 4, cy + Math.sin(a) * L * 0.5, cx + Math.cos(a) * L, cy + Math.sin(a) * L); x.stroke(); } } }
+  else if (hab === 'hb-sun' || hab === 'hb-blue') { plant(ix + iw * 0.08, ih * 0.28, 'rgba(90,110,64,0.7)'); plant(ix + iw * 0.92, ih * 0.22, 'rgba(84,104,60,0.6)'); for (let k = 0; k < far; k++) plant(ix + iw * (0.25 + r() * 0.5), ih * 0.22, 'rgba(84,104,60,0.45)'); }
+  else { const stone = (sx, sy, k2) => { const sg = x.createRadialGradient(sx - 10 * k2, sy - 14 * k2, 2, sx, sy, 32 * k2); sg.addColorStop(0, deep ? '#3a3a36' : '#5a5650'); sg.addColorStop(1, '#0e0e0c'); x.fillStyle = sg; x.beginPath(); x.ellipse(sx, sy, 34 * k2, 18 * k2, 0, Math.PI, 0); x.fill(); };
+    const k1 = Math.max(0.35, Math.min(2.4, z)); stone(ix + iw * 0.85, fy + 6, k1); for (let k = 0; k < far + (z < 1 ? 1 : 0); k++) stone(ix + iw * (0.1 + r() * 0.6), fy + 4, k1 * (0.5 + r() * 0.5)); }
   // suspended matter: fine motes, more of them deeper
   for (let i = 0; i < (deep ? 70 : 30); i++) { x.fillStyle = `rgba(226,232,224,${(0.12 + r() * 0.22).toFixed(3)})`; x.beginPath(); x.arc(ix + r() * iw, iy + r() * ih * 0.78, 0.5 + r() * 1.1, 0, Math.PI * 2); x.fill(); }
   // the waterline just under the top rail, and the glass catching light at its upper left

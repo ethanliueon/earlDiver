@@ -626,7 +626,7 @@ e.inSub ? [
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(222,212,186,${(0.2 + 0.1 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(222,212,186,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); } // (6.0.5) quieter, bone
     const toolLook = (k) => (k === 'net' ? toolPic('net', gear(P, 'net')) || netLook(gear(P, 'net').look || 0) : k === 'cam' ? toolPic('cam', gear(P, 'cam')) || gear(P, 'cam').look : null); // (5.17.0) its own picture
     { const kind = e.inSub ? 'claw' : sel || 'net', look = toolLook(kind); /* (6.5.0) aboard too: the net, greyed */
-      drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? 'off' : ((e.inSub && !armT) || (!sel && !e.inSub)) ? 'off' : 'on', look, rarOf(kind)); }
+      const noNet = !!(P && P.kit && P.kit.on && !P.kit.on.net); /* (6.9.1) the net unequipped: its button greyed */ drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? 'off' : ((e.inSub && !armT) || (!sel && !e.inSub) || (kind === 'net' && noNet)) ? 'off' : 'on', look, rarOf(kind)); }
     // (6.5.7) the swing's time on its button: a hair-thin bone arc runs round the rim while the net is in motion, so a slow
     // net is seen to take its second
     if (g.capture && g.capture.kind === 'net' && !aboard) { const k = clamp(g.capture.t / g.capture.dur, 0, 1); ctx.save(); ctx.lineCap = 'round';

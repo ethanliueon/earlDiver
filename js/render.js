@@ -565,7 +565,7 @@ export class Renderer {
     if (g.mode === 'play' && g.profile && Array.isArray(g.profile.markers)) for (const m of g.profile.markers) {
       const px = S(m.x), py = Sy(m.y); if (px < -80 || px > W + 80 || py < -40 || py > H + 40) continue;
       const bob = Math.sin(t * 1.6 + m.x) * 2, pr = clamp(ppm * 0.28, 7, 11);
-      ctx.save(); ctx.translate(px, py + bob); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 5; ctx.fillStyle = m.col || '#f2c868';
+      ctx.save(); ctx.translate(px, py + bob); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 5; ctx.fillStyle = m.col || '#d9cfae';
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-pr * 0.4, -pr * 0.7, -pr, -pr * 1.1, -pr, -pr * 1.7); ctx.arc(0, -pr * 1.7, pr, Math.PI, 0); ctx.bezierCurveTo(pr, -pr * 1.1, pr * 0.4, -pr * 0.7, 0, 0); ctx.fill();
       ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(20,16,8,0.75)'; ctx.beginPath(); ctx.arc(0, -pr * 1.7, pr * 0.38, 0, TAU); ctx.fill(); ctx.restore();
       drawPrompt(ctx, m.name, px, py + bob - pr * 3.4, 0.9, { size: 15, shade: false, col: '#ece6d2' });
@@ -2514,10 +2514,17 @@ export class Renderer {
       ctx.strokeStyle = '#5a5a52'; ctx.lineWidth = Math.max(1, m * 0.05); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -m * 0.55); ctx.stroke(); ctx.restore();
       ctx.strokeStyle = '#4a4a44'; ctx.lineWidth = Math.max(1, m * 0.07); ctx.beginPath(); ctx.moveTo(X(3.7), Y(cy - R - 0.3)); ctx.lineTo(X(3.7), Y(cy - R + 0.1)); ctx.stroke();
       // his spare wetsuit and a towel hung on the net line to "dry"
-      const hang = (hx, hy, w, h, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(X(hx - w / 2), Y(hy)); ctx.lineTo(X(hx + w / 2), Y(hy)); ctx.lineTo(X(hx + w / 2 + Math.sin(t * 0.7 + hx) * 0.08), Y(hy + h)); ctx.lineTo(X(hx - w / 2 + Math.sin(t * 0.7 + hx) * 0.08), Y(hy + h)); ctx.closePath(); ctx.fill(); };
+      // (6.9.1) cloth on the line, not a flat shape: folds shaded across it (light, dark, light), a ragged hem swaying
+      const hang = (hx, hy, w, h, col) => { const sw2 = Math.sin(t * 0.7 + hx) * 0.08, xa = X(hx - w / 2), xb = X(hx + w / 2);
+        const fg = ctx.createLinearGradient(xa, 0, xb, 0); fg.addColorStop(0, col); fg.addColorStop(0.3, 'rgba(0,0,0,0)'); fg.addColorStop(0.5, 'rgba(0,0,0,0)'); fg.addColorStop(1, col);
+        ctx.beginPath(); ctx.moveTo(xa, Y(hy)); ctx.lineTo(xb, Y(hy)); ctx.lineTo(X(hx + w / 2 + sw2), Y(hy + h));
+        for (let k = 5; k >= 0; k--) ctx.lineTo(X(hx - w / 2 + sw2 + w * k / 5), Y(hy + h - (k % 2) * 0.07)); ctx.closePath();
+        ctx.fillStyle = col; ctx.fill(); ctx.save(); ctx.clip();
+        for (let k = 0; k < 3; k++) { const fx2 = X(hx - w / 2 + w * (0.2 + k * 0.3) + sw2 * 0.5), gg2 = ctx.createLinearGradient(fx2 - m * w * 0.12, 0, fx2 + m * w * 0.12, 0); gg2.addColorStop(0, 'rgba(255,240,220,0.12)'); gg2.addColorStop(0.5, 'rgba(0,0,0,0.3)'); gg2.addColorStop(1, 'rgba(255,240,220,0)'); ctx.fillStyle = gg2; ctx.fillRect(fx2 - m * w * 0.12, Y(hy), m * w * 0.24, h * m + 4); }
+        const dg2 = ctx.createLinearGradient(0, Y(hy), 0, Y(hy + h)); dg2.addColorStop(0, 'rgba(0,0,0,0)'); dg2.addColorStop(1, 'rgba(10,8,6,0.35)'); ctx.fillStyle = dg2; ctx.fillRect(xa - 4, Y(hy), xb - xa + 8, h * m + 4); ctx.restore(); };
       const lineY = (x) => ny0 + (ny1 - ny0) * ((x - nx0) / (nx1 - nx0));
       hang(-5.4, lineY(-5.4), 0.7, 1.7, '#16181a'); ctx.fillStyle = '#16181a'; ctx.fillRect(X(-5.75), Y(lineY(-5.4) + 0.15), m * 0.7 * 0.32, m * 0.9); // the suit, an arm hanging down
-      hang(-7.0, lineY(-7.0), 0.55, 0.9, '#a84a3a'); ctx.fillStyle = 'rgba(240,220,180,0.6)'; ctx.fillRect(X(-7.27), Y(lineY(-7.0) + 0.35), m * 0.55, m * 0.08); // a striped towel
+      hang(-7.0, lineY(-7.0), 0.55, 0.9, '#7e3e2c'); /* (6.9.1) faded */ ctx.fillStyle = 'rgba(240,220,180,0.6)'; ctx.fillRect(X(-7.27), Y(lineY(-7.0) + 0.35), m * 0.55, m * 0.08); // a striped towel
       // an old brass diving helmet on the crates, and a bucket of kelp he keeps "for the colour"
       const hx2 = X(7.65), hy2 = Y(-2.05), hr = m * 0.42;
       const bg2 = ctx.createRadialGradient(hx2 - hr * 0.3, hy2 - hr * 0.3, hr * 0.1, hx2, hy2, hr); bg2.addColorStop(0, '#d8b060'); bg2.addColorStop(1, '#6a4c18');

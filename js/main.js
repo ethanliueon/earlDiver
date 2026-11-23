@@ -31,7 +31,7 @@ import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS, oddsText } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
-import { abilityOf, abilityState, whyNot, cooldownLeft } from './abilities.js';
+import { abilityOf, abilityState, whyNot, cooldownLeft, ALL_ABILITIES } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
@@ -41,7 +41,7 @@ import { pressureTolerance, LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
 import { rollChest, rollChestAll } from './chests.js';
 import { setDiverLook } from './earl_draw.js'; // (6.7.0)
-import { buy as storeBuy, showAd } from './purchases.js'; // (6.5.9)
+import { buy as storeBuy, showAd, isTestStore } from './purchases.js'; // (6.5.9)
 import { calState, calClaimed, calWeek } from './store.js';
 import { hullCap } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
@@ -260,6 +260,7 @@ const ui = new UI({
   onSellAll: () => withKept(() => sellAll()),
   onSellSome: (keys) => withKept(() => sellSome(keys)),
   onKeep: (key, on) => keepMark(key, on),
+  journalSeen: (id) => { const v = g && g.journal.get(id); if (v && !v.seen) { v.seen = true; profile.journal = [...g.journal.entries()]; saveProfile(profile); } }, // (6.9.1) its New tag off
   onGallery: (act, key, v) => galleryAction(act, key, v),
   aquariumCatch: () => aquariumCandidates(),
   onHints: () => { hud.hints = !hud.hints; },
@@ -268,6 +269,20 @@ const ui = new UI({
   getMuted: () => !!audio.muted,
   payMul: () => statValue(profile, 'payFish'),
   onStation: (id) => useStation(id),
+  // (6.9.0) the shop's Test tab (web build only; ui.js shows it only when purchases.js isTestStore())
+  onTest: (act, arg) => {
+    const P = profile; if (!P || !isTestStore()) return;
+    if (act === 'cash') { const n = +arg; P.cash = Math.round((P.cash + n) * 100) / 100; P.lifetime = Math.round((P.lifetime + n) * 100) / 100; hud.toast(`+${money(n)} (test)`); }
+    else if (act === 'chest') { const q = giveItem(P, 'chest_' + arg); if (q) ui.showGains([{ kind: 'item', id: 'chest_' + arg, how: 'Test' }]); else hud.toast('Locker full', 'warn'); }
+    else if (act === 'abil') { if (arg === 'ready') { P.abilReadyAt = 0; hud.toast('Ability ready (test)'); } else { let n = 0; for (const id of ALL_ABILITIES) if (ITEMS[id] && !ownsItem(P, id) && giveItem(P, id)) n++; hud.toast(`${n} abilities into the locker (test)`); } }
+    else if (act === 'item' && ITEMS[arg]) { const q = giveItem(P, arg); if (q) ui.showGains([{ kind: 'item', id: arg, how: 'Test' }]); else hud.toast('Locker full', 'warn'); }
+    else if (act === 'reset') {
+      if (arg === 'lessons') { P.lessonTrawl = P.lessonChamber = P.lessonAir = undefined; hud.toast('Lessons reset (test)'); }
+      else if (arg === 'tutorial') { P.tut = undefined; const S = questsOf(P); S.main = 0; S.mainProg = 0; S.seen = {}; hud.toast('Tutorial reset: start a new dive (test)'); }
+      else if (arg === 'board') { const S = questsOf(P); S.board = []; S.firstBoard = false; hud.toast('First board back (test)'); }
+    }
+    syncProfile && syncProfile(); saveProfile(P);
+  },
   onFootstep: (v) => audio.ready && audio.footstep && audio.footstep(v),
   // (3.0.0) quests: claim one (cash, and on the main line sometimes a thing), or new quests on the board
   onQuestClaim: (which) => {
@@ -3256,7 +3271,7 @@ for (const ev0 of ['pointerdown', 'keydown']) window.addEventListener(ev0, () =>
     if (nv && cur && nv !== cur && !document.getElementById('updbar')) { const b = document.createElement('button'); b.id = 'updbar'; b.textContent = `Version ${nv} is out: tap to load it`; b.addEventListener('click', () => { location.replace(location.pathname + '?v=' + encodeURIComponent(nv)); }); document.body.appendChild(b); } } catch (e) { /* offline */ } };
   setTimeout(check, 4000); setInterval(check, 10 * 60 * 1000); document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
   // (5.7.5) the fonts loaded up front, so no text appears in a stand-in face and then changes
-  if (document.fonts && document.fonts.load) for (const f of ['400 16px "Barlow Semi Condensed"', '500 16px "Barlow Semi Condensed"', '600 16px "Barlow Semi Condensed"', '700 16px "Barlow Semi Condensed"', '500 20px "Caveat"', '600 20px "Caveat"', '700 20px "Caveat"']) document.fonts.load(f).catch(() => {}); }
+  if (document.fonts && document.fonts.load) for (const f of ['400 16px "Barlow Semi Condensed"', '500 16px "Barlow Semi Condensed"', '600 16px "Barlow Semi Condensed"', '700 16px "Barlow Semi Condensed"']) document.fonts.load(f).catch(() => {}); }
 // (5.6.8) the settings coin (top right, on a phone): the pause menu, wherever he is (the cabin too), never closing it
 window.addEventListener('keydown', (ev) => {
   if (ev.key !== 'settings') return; ev.stopImmediatePropagation();

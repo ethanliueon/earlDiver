@@ -4,7 +4,7 @@
 import { WORLD_W, BOAT, STATION, DAVE, SAIL, SAIL_OFF } from './world.js';
 
 const DEPTH = 5200, MAX_MARKS = 24;
-export const MARK_COLS = ['#f2c868', '#e8705a', '#6ac0e8', '#9fdc8c', '#c891f0'];
+export const MARK_COLS = ['#d9cfae', '#b0603c', '#8a9a5a', '#7f97a0', '#b8924a']; // (6.9.1) the game's own palette: bone, rust, olive, sea-grey, ochre (no bright gold, cyan or lilac)
 const ZONES = [[0, 'Sunlight'], [200, 'Twilight'], [1000, 'Midnight'], [4000, 'Abyss']];
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 

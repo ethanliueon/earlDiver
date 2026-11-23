@@ -69,9 +69,9 @@
   <meta name="description" content="A 2D ocean diving and survival horror game. Dive, explore, and stay out of reach of what is in the water.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Caveat:wght@500;600;700&display=block" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=6.8.3">
-  <link rel="stylesheet" href="css/olive.css?v=6.8.3">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&display=block" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=6.9.1">
+  <link rel="stylesheet" href="css/olive.css?v=6.9.1">
   <style>
     /* (4.17.2) the loading screen, poster-style: the painting left alone (only a slow push-in), and over it, at the
        lower left, flat type in the sunset's own orange and a warm off-white: a stamped helmet mark, the title, a
@@ -154,6 +154,25 @@
     .ld .ld-step { grid-column: 1 / 3; grid-row: 1; text-align: left; }
     .ld .ld-bar { grid-column: 1; grid-row: 2; } .ld .ld-pct { grid-column: 2; grid-row: 2; }
     .ld .ld-tip { left: max(6vw, 24px); transform: none; text-align: left; max-width: min(40vw, 520px); }
+    /* (6.9.0) the loading bar is the screen's one control, so it is made like one: wide and centred at the foot, a worn
+       steel groove with a brass edge and a tick every tenth, a bone fill, and at the front of the fill a painted
+       hatchetfish (the game's name), turned and lit, its belly lights faint; the depth reading in a dark steel tab at the
+       bar's end; what is loading above its left end, the tip centred under it. The name rises clear of it. */
+    .ld .ld-title { bottom: calc(max(14vh, 64px) + 54px); }
+    .ld .ld-load { left: 50%; right: auto; bottom: max(9vh, 44px); transform: translateX(-50%); width: min(62vw, 780px); display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 40px; row-gap: 8px; align-items: center; }
+    .ld .ld-step { grid-column: 1 / 3; grid-row: 1; text-align: left; font: 600 12px "Barlow Semi Condensed", "Arial Narrow", sans-serif; letter-spacing: 0.24em; color: rgba(239,232,214,0.62); }
+    .ld .ld-bar { grid-column: 1; grid-row: 2; width: auto; height: 12px; margin: 0; border-radius: 7px; overflow: visible; border: 0;
+      background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(214,196,150,0.28) calc(10% - 1px) 10%), linear-gradient(180deg, #0b0f0d, #1c211c 60%, #2a2e26);
+      box-shadow: inset 0 2px 3px rgba(0,0,0,0.75), 0 0 0 1px rgba(170,146,92,0.55), 0 0 0 2px rgba(20,18,12,0.7), 0 1px 0 2px rgba(214,196,150,0.12); }
+    .ld .ld-fill { top: 2px; bottom: 2px; left: 2px; height: auto; border-radius: 5px; max-width: calc(100% - 4px); box-shadow: none;
+      background: linear-gradient(180deg, #f2ead6, #d8ccaa 55%, #b6a882); transition: width 0.45s ease; }
+    .ld .ld-fill::after { content: ''; position: absolute; right: -34px; top: 50%; bottom: auto; width: 62px; height: 44px; margin-top: -23px; border-radius: 0; box-shadow: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6));
+      background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 70'><defs><linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='%235c6662'/><stop offset='.22' stop-color='%23a9b1aa'/><stop offset='.5' stop-color='%23dcdccf'/><stop offset='.8' stop-color='%23aeb0a2'/><stop offset='1' stop-color='%236e7168'/></linearGradient><linearGradient id='t' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='%23a7ab9f' stop-opacity='.35'/><stop offset='1' stop-color='%23c9cbbd' stop-opacity='.85'/></linearGradient></defs><path d='M3 19 L17 30 L3 42 L8 30 Z' fill='url(%23t)' stroke='%23434840' stroke-width='.8'/><path d='M49 15 L55 5 L62 13 Z' fill='%23a4aa9e' stroke='%23434840' stroke-width='.8'/><path d='M15 28 C25 24 40 14 62 12 C76 11 88 16 95 26 C97 30 96 33 92 35 C88 45 80 58 66 64 C56 66 46 60 38 50 C30 42 22 36 15 32 Z' fill='url(%23b)' stroke='%2330342e' stroke-width='1.2'/><path d='M70 16 C74 30 72 46 64 60' fill='none' stroke='%23596058' stroke-width='.9' opacity='.6'/><path d='M20 30 C40 24 60 20 90 24' fill='none' stroke='%23f2efe0' stroke-width='1' opacity='.45'/><circle cx='83' cy='23' r='6.5' fill='%23c9c3a6'/><circle cx='83.5' cy='23.5' r='5' fill='%2316191a'/><circle cx='81.6' cy='21.6' r='1.5' fill='%23f2eee0' opacity='.9'/><circle cx='88' cy='41' r='1.6' fill='%23e2cf96' opacity='.85'/><circle cx='84' cy='47' r='1.6' fill='%23e2cf96' opacity='.85'/><circle cx='79' cy='52' r='1.6' fill='%23e2cf96' opacity='.85'/><circle cx='73' cy='57' r='1.6' fill='%23e2cf96' opacity='.85'/><circle cx='67' cy='60' r='1.6' fill='%23e2cf96' opacity='.85'/><circle cx='61' cy='60' r='1.6' fill='%23e2cf96' opacity='.85'/><circle cx='55' cy='57' r='1.6' fill='%23e2cf96' opacity='.85'/><circle cx='49' cy='54' r='1.6' fill='%23e2cf96' opacity='.85'/><circle cx='43' cy='50' r='1.6' fill='%23e2cf96' opacity='.85'/></svg>") center / contain no-repeat; animation: ld-fish 1.8s ease-in-out infinite; }
+    @keyframes ld-fish { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-2px) rotate(2deg); } }
+    .ld .ld-pct { grid-column: 2; grid-row: 2; min-width: 4.4em; padding: 5px 12px 4px; text-align: center; border-radius: 4px; font: 700 20px/1 "Barlow Semi Condensed", "Arial Narrow", sans-serif; color: #efe8d6;
+      background: linear-gradient(180deg, #2c302a, #171a16); box-shadow: inset 0 1px 0 rgba(214,196,150,0.25), 0 0 0 1px rgba(170,146,92,0.45), 0 2px 6px rgba(0,0,0,0.5); }
+    .ld .ld-tip { left: 50%; right: auto; bottom: max(3vh, 12px); transform: translateX(-50%); text-align: center; width: max-content; max-width: min(62vw, 780px); font-size: 14px; }
+    @media (max-height: 560px) { .ld .ld-title { bottom: 112px; } .ld .ld-load { bottom: 42px; } .ld .ld-tip { bottom: 12px; font-size: 12px; } }
   </style>
 </head>
 <body>
@@ -168,11 +187,20 @@
     // the game reports how far it has got (window.__boot), then fades this away (window.__bootDone)
     // (4.15.0) how far the game has got (window.__boot / __load), then fade it away (window.__bootDone)
     window.__ldSet = function (el, k, label) { if (!el) return; k = Math.max(0.04, Math.min(1, k)); var f = el.querySelector('.ld-fill'), t = el.querySelector('.ld-step'), pc = el.querySelector('.ld-pct'); if (f) f.style.width = (k * 100) + '%'; if (pc) pc.textContent = (Math.round(k * 100) * 10).toLocaleString() + ' m'; if (t && label) t.textContent = label; };
-    window.__ldTips = ['Animals from the deep need a pressure chamber, or they won\'t survive the trip up.', 'Found something worth coming back for? Mark it on your chart with <kbd>K</kbd>.', 'Below its depth rating, the sub leaks air faster and faster.', 'Legendary animals hide near the deepest part of their range.', 'Throw a lure with <kbd>Q</kbd> to pull the thing in the deep away from you.', 'Sell your catch at the Margaret with <kbd>U</kbd>.', 'Some animals come to the light. Some run from it. Some hunt it.', 'Only the advanced trawl net can hold a legend. Pick your net with <kbd>N</kbd>.'];
+    window.__ldTips = ['Animals from the deep need a pressure chamber, or they won\'t survive the trip up.', 'Found something worth coming back for? Mark it on your chart.', 'Below its depth rating, the sub leaks air faster and faster.', 'Legendary animals hide near the deepest part of their range.', 'A lure pulls the thing in the deep away from you.', 'Sell your catch at the Margaret\'s winch.', 'Some animals come to the light. Some run from it. Some hunt it.', 'Only the advanced trawl net can hold a legend.', 'A buoy found is a place the Margaret can sail back to.']; /* (6.9.0) phone words: no keys */
     window.__ldTip = function (el) { var tip = el && el.querySelector('.ld-tip span') || (function () { var w = el && el.querySelector('.ld-tip'); if (!w) return null; var sp = document.createElement('span'); w.appendChild(sp); return sp; })(); if (!tip) return; var i = Math.floor(Math.random() * window.__ldTips.length); tip.innerHTML = window.__ldTips[i]; clearInterval(el.__tipT); el.__tipT = setInterval(function () { i = (i + 1) % window.__ldTips.length; tip.style.opacity = 0; setTimeout(function () { tip.innerHTML = window.__ldTips[i]; tip.style.opacity = 1; }, 400); }, 4200); };
     window.__boot = function (k, label) { window.__ldSet(document.getElementById('boot'), k, label); };
     window.__bootT0 = Date.now(); /* (6.5.0) the loading screen stays at least 3 s, however fast the game is ready, then fades: the title never flashes up */
-    window.__bootDone = function () { var el = document.getElementById('boot'); if (!el) return; setTimeout(function () { el.classList.add('done'); clearInterval(el.__tipT); setTimeout(function () { el.remove(); }, 800); }, Math.max(0, 3000 - (Date.now() - window.__bootT0))); };
+    /* (6.9.1) ...3 s from when it can actually be seen: on a phone the painting and the type may still be downloading
+       when the page is read, and the screen was dark for most of the 3 s, then the art flashed up and was gone. The count
+       starts once the painting has loaded and the fonts are ready (or after 8 s, whichever comes first) */
+    (function () { var bt = document.getElementById('boot'), im = bt && bt.querySelector('.ld-art img'), n = 2, seen = function () { if (--n <= 0 && !window.__bootSeen) { window.__bootSeen = true; window.__bootT0 = Date.now(); } };
+      if (im && !im.complete) { im.addEventListener('load', seen); im.addEventListener('error', seen); } else seen();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(seen, seen); else seen();
+      setTimeout(function () { if (!window.__bootSeen) { window.__bootSeen = true; window.__bootT0 = Date.now(); } }, 8000); })();
+    window.__bootDone = function () { var el = document.getElementById('boot'); if (!el) return;
+      var go = function () { setTimeout(function () { el.classList.add('done'); clearInterval(el.__tipT); setTimeout(function () { el.remove(); }, 800); }, Math.max(0, 3000 - (Date.now() - window.__bootT0))); };
+      if (window.__bootSeen) go(); else { var w = setInterval(function () { if (window.__bootSeen) { clearInterval(w); go(); } }, 100); } };
     window.__ldTip(document.getElementById('boot'));
     window.__boot(0.2, 'Loading game files');
   </script>
@@ -366,87 +394,87 @@
   <!-- stamp:start (tools/stamp.py) -->
   <script type="importmap">
   { "imports": {
-    "./js/abilities.js": "./js/abilities.js?v=6.8.3",
-    "./js/alarm.js": "./js/alarm.js?v=6.8.3",
-    "./js/aquarium.js": "./js/aquarium.js?v=6.8.3",
-    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=6.8.3",
-    "./js/arm.js": "./js/arm.js?v=6.8.3",
-    "./js/audio.js": "./js/audio.js?v=6.8.3",
-    "./js/autopilot.js": "./js/autopilot.js?v=6.8.3",
-    "./js/buoy_draw.js": "./js/buoy_draw.js?v=6.8.3",
-    "./js/cabin.js": "./js/cabin.js?v=6.8.3",
-    "./js/capture.js": "./js/capture.js?v=6.8.3",
-    "./js/catalog.js": "./js/catalog.js?v=6.8.3",
-    "./js/chart.js": "./js/chart.js?v=6.8.3",
-    "./js/chest_art.js": "./js/chest_art.js?v=6.8.3",
-    "./js/chests.js": "./js/chests.js?v=6.8.3",
-    "./js/clouds.js": "./js/clouds.js?v=6.8.3",
-    "./js/coin_art.js": "./js/coin_art.js?v=6.8.3",
-    "./js/coins.js": "./js/coins.js?v=6.8.3",
-    "./js/contracts.js": "./js/contracts.js?v=6.8.3",
-    "./js/creatures_draw.js": "./js/creatures_draw.js?v=6.8.3",
-    "./js/dave.js": "./js/dave.js?v=6.8.3",
-    "./js/designs.js": "./js/designs.js?v=6.8.3",
-    "./js/earl_draw.js": "./js/earl_draw.js?v=6.8.3",
-    "./js/economy.js": "./js/economy.js?v=6.8.3",
-    "./js/entity.js": "./js/entity.js?v=6.8.3",
-    "./js/face_draw.js": "./js/face_draw.js?v=6.8.3",
-    "./js/fatfinger.js": "./js/fatfinger.js?v=6.8.3",
-    "./js/fauna.js": "./js/fauna.js?v=6.8.3",
-    "./js/fittings.js": "./js/fittings.js?v=6.8.3",
-    "./js/gallery.js": "./js/gallery.js?v=6.8.3",
-    "./js/gear_art.js": "./js/gear_art.js?v=6.8.3",
-    "./js/glyphs.js": "./js/glyphs.js?v=6.8.3",
-    "./js/hud.js": "./js/hud.js?v=6.8.3",
-    "./js/hunters.js": "./js/hunters.js?v=6.8.3",
-    "./js/item_art.js": "./js/item_art.js?v=6.8.3",
-    "./js/item_data.js": "./js/item_data.js?v=6.8.3",
-    "./js/itemcard.js": "./js/itemcard.js?v=6.8.3",
-    "./js/items.js": "./js/items.js?v=6.8.3",
-    "./js/journal_tank.js": "./js/journal_tank.js?v=6.8.3",
-    "./js/kit_art.js": "./js/kit_art.js?v=6.8.3",
-    "./js/legendfx.js": "./js/legendfx.js?v=6.8.3",
-    "./js/main.js": "./js/main.js?v=6.8.3",
-    "./js/messages.js": "./js/messages.js?v=6.8.3",
-    "./js/monster_draw.js": "./js/monster_draw.js?v=6.8.3",
-    "./js/oldone.js": "./js/oldone.js?v=6.8.3",
-    "./js/pets.js": "./js/pets.js?v=6.8.3",
-    "./js/player.js": "./js/player.js?v=6.8.3",
-    "./js/purchases.js": "./js/purchases.js?v=6.8.3",
-    "./js/quests.js": "./js/quests.js?v=6.8.3",
-    "./js/render.js": "./js/render.js?v=6.8.3",
-    "./js/reveal.js": "./js/reveal.js?v=6.8.3",
-    "./js/scenery_draw.js": "./js/scenery_draw.js?v=6.8.3",
-    "./js/scrolls.js": "./js/scrolls.js?v=6.8.3",
-    "./js/settings.js": "./js/settings.js?v=6.8.3",
-    "./js/showcase.js": "./js/showcase.js?v=6.8.3",
-    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=6.8.3",
-    "./js/species.js": "./js/species.js?v=6.8.3",
-    "./js/species_looks.js": "./js/species_looks.js?v=6.8.3",
-    "./js/specimens.js": "./js/specimens.js?v=6.8.3",
-    "./js/station_draw.js": "./js/station_draw.js?v=6.8.3",
-    "./js/store.js": "./js/store.js?v=6.8.3",
-    "./js/suit_art.js": "./js/suit_art.js?v=6.8.3",
-    "./js/survey.js": "./js/survey.js?v=6.8.3",
-    "./js/tankroom.js": "./js/tankroom.js?v=6.8.3",
-    "./js/textures.js": "./js/textures.js?v=6.8.3",
-    "./js/tokens.js": "./js/tokens.js?v=6.8.3",
-    "./js/tools_draw.js": "./js/tools_draw.js?v=6.8.3",
-    "./js/touch.js": "./js/touch.js?v=6.8.3",
-    "./js/touchtext.js": "./js/touchtext.js?v=6.8.3",
-    "./js/trail.js": "./js/trail.js?v=6.8.3",
-    "./js/traps.js": "./js/traps.js?v=6.8.3",
-    "./js/tutspot.js": "./js/tutspot.js?v=6.8.3",
-    "./js/ui.js": "./js/ui.js?v=6.8.3",
-    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=6.8.3",
-    "./js/units.js": "./js/units.js?v=6.8.3",
-    "./js/util.js": "./js/util.js?v=6.8.3",
-    "./js/variants.js": "./js/variants.js?v=6.8.3",
-    "./js/version.js": "./js/version.js?v=6.8.3",
-    "./js/world.js": "./js/world.js?v=6.8.3",
-    "./data/species_about.js": "./data/species_about.js?v=6.8.3",
-    "./data/species_data.js": "./data/species_data.js?v=6.8.3",
-    "./data/species_more.js": "./data/species_more.js?v=6.8.3"
+    "./js/abilities.js": "./js/abilities.js?v=6.9.1",
+    "./js/alarm.js": "./js/alarm.js?v=6.9.1",
+    "./js/aquarium.js": "./js/aquarium.js?v=6.9.1",
+    "./js/aquarium_draw.js": "./js/aquarium_draw.js?v=6.9.1",
+    "./js/arm.js": "./js/arm.js?v=6.9.1",
+    "./js/audio.js": "./js/audio.js?v=6.9.1",
+    "./js/autopilot.js": "./js/autopilot.js?v=6.9.1",
+    "./js/buoy_draw.js": "./js/buoy_draw.js?v=6.9.1",
+    "./js/cabin.js": "./js/cabin.js?v=6.9.1",
+    "./js/capture.js": "./js/capture.js?v=6.9.1",
+    "./js/catalog.js": "./js/catalog.js?v=6.9.1",
+    "./js/chart.js": "./js/chart.js?v=6.9.1",
+    "./js/chest_art.js": "./js/chest_art.js?v=6.9.1",
+    "./js/chests.js": "./js/chests.js?v=6.9.1",
+    "./js/clouds.js": "./js/clouds.js?v=6.9.1",
+    "./js/coin_art.js": "./js/coin_art.js?v=6.9.1",
+    "./js/coins.js": "./js/coins.js?v=6.9.1",
+    "./js/contracts.js": "./js/contracts.js?v=6.9.1",
+    "./js/creatures_draw.js": "./js/creatures_draw.js?v=6.9.1",
+    "./js/dave.js": "./js/dave.js?v=6.9.1",
+    "./js/designs.js": "./js/designs.js?v=6.9.1",
+    "./js/earl_draw.js": "./js/earl_draw.js?v=6.9.1",
+    "./js/economy.js": "./js/economy.js?v=6.9.1",
+    "./js/entity.js": "./js/entity.js?v=6.9.1",
+    "./js/face_draw.js": "./js/face_draw.js?v=6.9.1",
+    "./js/fatfinger.js": "./js/fatfinger.js?v=6.9.1",
+    "./js/fauna.js": "./js/fauna.js?v=6.9.1",
+    "./js/fittings.js": "./js/fittings.js?v=6.9.1",
+    "./js/gallery.js": "./js/gallery.js?v=6.9.1",
+    "./js/gear_art.js": "./js/gear_art.js?v=6.9.1",
+    "./js/glyphs.js": "./js/glyphs.js?v=6.9.1",
+    "./js/hud.js": "./js/hud.js?v=6.9.1",
+    "./js/hunters.js": "./js/hunters.js?v=6.9.1",
+    "./js/item_art.js": "./js/item_art.js?v=6.9.1",
+    "./js/item_data.js": "./js/item_data.js?v=6.9.1",
+    "./js/itemcard.js": "./js/itemcard.js?v=6.9.1",
+    "./js/items.js": "./js/items.js?v=6.9.1",
+    "./js/journal_tank.js": "./js/journal_tank.js?v=6.9.1",
+    "./js/kit_art.js": "./js/kit_art.js?v=6.9.1",
+    "./js/legendfx.js": "./js/legendfx.js?v=6.9.1",
+    "./js/main.js": "./js/main.js?v=6.9.1",
+    "./js/messages.js": "./js/messages.js?v=6.9.1",
+    "./js/monster_draw.js": "./js/monster_draw.js?v=6.9.1",
+    "./js/oldone.js": "./js/oldone.js?v=6.9.1",
+    "./js/pets.js": "./js/pets.js?v=6.9.1",
+    "./js/player.js": "./js/player.js?v=6.9.1",
+    "./js/purchases.js": "./js/purchases.js?v=6.9.1",
+    "./js/quests.js": "./js/quests.js?v=6.9.1",
+    "./js/render.js": "./js/render.js?v=6.9.1",
+    "./js/reveal.js": "./js/reveal.js?v=6.9.1",
+    "./js/scenery_draw.js": "./js/scenery_draw.js?v=6.9.1",
+    "./js/scrolls.js": "./js/scrolls.js?v=6.9.1",
+    "./js/settings.js": "./js/settings.js?v=6.9.1",
+    "./js/showcase.js": "./js/showcase.js?v=6.9.1",
+    "./js/sleeper_draw.js": "./js/sleeper_draw.js?v=6.9.1",
+    "./js/species.js": "./js/species.js?v=6.9.1",
+    "./js/species_looks.js": "./js/species_looks.js?v=6.9.1",
+    "./js/specimens.js": "./js/specimens.js?v=6.9.1",
+    "./js/station_draw.js": "./js/station_draw.js?v=6.9.1",
+    "./js/store.js": "./js/store.js?v=6.9.1",
+    "./js/suit_art.js": "./js/suit_art.js?v=6.9.1",
+    "./js/survey.js": "./js/survey.js?v=6.9.1",
+    "./js/tankroom.js": "./js/tankroom.js?v=6.9.1",
+    "./js/textures.js": "./js/textures.js?v=6.9.1",
+    "./js/tokens.js": "./js/tokens.js?v=6.9.1",
+    "./js/tools_draw.js": "./js/tools_draw.js?v=6.9.1",
+    "./js/touch.js": "./js/touch.js?v=6.9.1",
+    "./js/touchtext.js": "./js/touchtext.js?v=6.9.1",
+    "./js/trail.js": "./js/trail.js?v=6.9.1",
+    "./js/traps.js": "./js/traps.js?v=6.9.1",
+    "./js/tutspot.js": "./js/tutspot.js?v=6.9.1",
+    "./js/ui.js": "./js/ui.js?v=6.9.1",
+    "./js/undocumented_draw.js": "./js/undocumented_draw.js?v=6.9.1",
+    "./js/units.js": "./js/units.js?v=6.9.1",
+    "./js/util.js": "./js/util.js?v=6.9.1",
+    "./js/variants.js": "./js/variants.js?v=6.9.1",
+    "./js/version.js": "./js/version.js?v=6.9.1",
+    "./js/world.js": "./js/world.js?v=6.9.1",
+    "./data/species_about.js": "./data/species_about.js?v=6.9.1",
+    "./data/species_data.js": "./data/species_data.js?v=6.9.1",
+    "./data/species_more.js": "./data/species_more.js?v=6.9.1"
   } }
   </script>
   <script type="module">if (!window.__shell) import("./js/main.js");</script>

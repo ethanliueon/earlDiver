@@ -81,6 +81,7 @@ export function activeTool(g) {
   if (g.toolSel === 'trap') return { kind: 'trap', def: null, tier: 0 };
   if (g.toolSel === 'tag' && owns(P, 'tagger')) return T('tag', 'tag');
   if (g.toolSel === 'cam' && owns(P, 'camera')) return T('cam', 'cam');
+  if (P && P.kit && P.kit.on && !P.kit.on.net) return { kind: 'none', def: null, tier: 0, noNet: true }; // (6.9.1) no net on: empty hands
   return T('net', 'net');
 }
 

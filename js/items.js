@@ -268,7 +268,7 @@ export function takeOff(P, kind) {
   const K = kitOf(P), cur = K.on[kind] && instOf(P, K.on[kind]);
   if (!cur) return false;
   if (lockerFree(P) <= 0) return 'full';
-  if (FREE[kind]) {
+  if (FREE[kind] && kind !== 'net') { // (6.9.1) a net unequipped is gone from his hands: no hand net put back on
     if (cur.id === FREE[kind]) return false;
     let base = K.items.find((q) => q.id === FREE[kind]);
     if (!base) { base = mk(FREE[kind]); K.items.push(base); }
