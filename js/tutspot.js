@@ -112,7 +112,7 @@ export class TutSpot {
     // panel's middle, meets the thing's box), never over it; the picture points down, its fingertip at 0.451, 0.883
     // of the angles near that line, the one where the glove lies over the fewest other words and buttons (a list of links,
     // a card's label) and stays on the screen; worked out once per thing and place, then kept
-    const G = 62, a0 = Math.atan2(dy, dx), key = Math.round(cx) + ',' + Math.round(cy) + ',' + Math.round(w) + ',' + Math.round(h) + ',' + a0.toFixed(1);
+    const G = 71 /* (7.3.0) the glove 15 % bigger, as in olive.css */, a0 = Math.atan2(dy, dx), key = Math.round(cx) + ',' + Math.round(cy) + ',' + Math.round(w) + ',' + Math.round(h) + ',' + a0.toFixed(1);
     const place = (an) => { const ux = Math.cos(an), uy = Math.sin(an), e2 = Math.min(Math.abs(ux) > 1e-3 ? (w / 2) / Math.abs(ux) : 1e9, Math.abs(uy) > 1e-3 ? (h / 2) / Math.abs(uy) : 1e9) + 4;
       const tx = cx - ux * e2, ty = cy - uy * e2, rad = an - Math.PI / 2, ox2 = (0.451 - 0.5) * G, oy2 = (0.883 - 0.5) * G;
       return { rad, ax: tx - (ox2 * Math.cos(rad) - oy2 * Math.sin(rad)), ay: ty - (ox2 * Math.sin(rad) + oy2 * Math.cos(rad)) }; };

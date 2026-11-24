@@ -1888,5 +1888,5 @@ html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button:not(#_b):n
 html.touch body:has(#journal:not([hidden])) #booktabs:not(#_a) button.on:not(#_b):not(#_c):not(#_d), html.touch body.bookmode #booktabs:not(#_a) button.on:not(#_b):not(#_c):not(#_d) { width: 120px !important; }
 /* (7.2.8) the tutorial's pointer is Earl's own glove, its index finger out (tools/action_icons.py point()): no outline,
    only its shadow, so it looks the same over sky, sea, cabin and paper; a slow tap toward the thing every 1.5 s */
-html body #tut-spot .ts-arrow.aim:not(#_a):not(#_b):not(#_c) { width: 62px !important; height: 62px !important; border: 0 !important; background: url("../assets/ui/icons/tut-point.png") center / contain no-repeat !important; filter: none !important; animation: ts-tap 1.5s ease-in-out infinite; }
+html body #tut-spot .ts-arrow.aim:not(#_a):not(#_b):not(#_c) { width: 71px !important; height: 71px !important; /* (7.3.0) 15 % bigger */ border: 0 !important; background: url("../assets/ui/icons/tut-point.png") center / contain no-repeat !important; filter: none !important; animation: ts-tap 1.5s ease-in-out infinite; }
 @keyframes ts-tap { 0%, 30%, 100% { translate: 0 0; } 11% { translate: var(--bx, 0) var(--by, 6px); } }

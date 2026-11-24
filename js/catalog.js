@@ -49,6 +49,8 @@ const mm = (v) => `${v.toFixed(2)} m`; // (6.0.8) fish size in metres, two place
 const sizeOf = (it) => (it.minLen ? `${it.minLen.toFixed(2)}–${mm(it.maxLen)}` : mm(it.maxLen));
 const secs = (s) => (s >= 60 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.round(s)} s`);
 const x = (v) => `×${(Math.round(v * 100) / 100).toString()}`;
+// (7.3.0) a name in its rarity's colour, but a common one in black: its grey was faint on the pale pages
+const nameCol = (r) => (r === 'common' ? '#000' : RARITY[r] ? RARITY[r].col : 'inherit');
 const n2 = (v) => String(+(+v).toFixed(2));
 // (5.12.0) a skill that raises one of an item's numbers directly shows on that number, in green: the boosted figure, and
 // in brackets what the skill adds. Haste on fins: speed (6 % a level); Rebreathing on a tank: air (10 % a level); Deep
@@ -188,7 +190,7 @@ export class Catalog {
       if (ups.length) html += `<h4>A step up from what you have on</h4><div class="cat-grid">${ups.map((e) => this.card(e)).join('')}</div>`;
     } else if (this.page === 'chest') {
       html += `<h2>${this.cfg.chestTitle}</h2><p class="cat-lede">${this.cfg.chestLede}</p>`;
-      html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3 style="color:${RARITY[c.tier] ? RARITY[c.tier].col : 'inherit'}">${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds, c.coin)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)}, not enough cash` : `Buy and open, ${money(c.price, false)}`}</button></div></div>`).join('');
+      html += chestsOf(this.id).map((c) => `<div class="cat-chest"><img src="${chestPicture(c.look, 320, 250)}" alt=""><div><h3 style="color:${nameCol(c.tier)}">${c.name}</h3><div class="price">${money(c.price, false)}</div><p class="say">${c.line}</p><p class="odds">${oddsText(c.odds, c.coin)}</p><button class="cat-btn" data-buy="chest:${c.key}" ${(P.cash || 0) < c.price ? 'disabled' : ''}>${(P.cash || 0) < c.price ? `${money(c.price, false)}, not enough cash` : `Buy and open, ${money(c.price, false)}`}</button></div></div>`).join('');
     } else if (this.page === 'cart') {
       html += this.cartPage(P, cart);
     } else if (this.page === 'sell') {
@@ -219,7 +221,7 @@ export class Catalog {
     const list = kitOf(P).items.filter((q) => !isOn(P, q) && ITEMS[q.id] && !ITEMS[q.id].free);
     let html = `<h2>${this.catName('sell')}</h2><p class="cat-lede">${this.id === 'dave' ? "I'll take it off your hands. Not for much." : 'About a third of what it is worth. What you have on is not for sale.'}</p>`;
     if (!list.length) return html + '<p class="cat-lede">Nothing to sell: everything in the locker is on you.</p>';
-    return html + `<table class="cat-cartlist">${list.map((q) => { const it = ITEMS[q.id]; return `<tr><td><img src="${pictureOf(it.kind, it, 120, 60)}" alt=""></td><td><span style="color:${RARITY[it.rarity] ? RARITY[it.rarity].col : 'inherit'}">${it.name}</span><small class="r-${it.rarity}">${RARITY[it.rarity].name}</small></td><td class="pr">${money(sellValue(q), false)}</td><td><button class="cat-mini" data-buy="sellgear:${q.u}" ${can ? '' : 'disabled'}>Sell</button></td></tr>`; }).join('')}</table>`;
+    return html + `<table class="cat-cartlist">${list.map((q) => { const it = ITEMS[q.id]; return `<tr><td><img src="${pictureOf(it.kind, it, 120, 60)}" alt=""></td><td><span style="color:${nameCol(it.rarity)}">${it.name}</span><small class="r-${it.rarity}">${RARITY[it.rarity].name}</small></td><td class="pr">${money(sellValue(q), false)}</td><td><button class="cat-mini" data-buy="sellgear:${q.u}" ${can ? '' : 'disabled'}>Sell</button></td></tr>`; }).join('')}</table>`;
   }
   card(e) {
     const tag = e.on ? `<div class="tag own">${e.onText || 'On'}</div>` : e.owned ? '<div class="tag own">Owned</div>' : e.count ? `<div class="tag">${e.count}</div>` : `<div class="tag${e.rarity ? ' r-' + e.rarity : ''}">${e.good ? `<span class="good">${e.good}</span>` : ''}${e.rarity && e.rarity !== 'common' ? `<em>${e.tag}</em>` : !e.good ? e.tag || '' : ''}</div>`; // (4.28) what it does on the card; the rarity only when it is not common
@@ -227,7 +229,7 @@ export class Catalog {
     const buy = e.kind === 'supply' ? `<button class="cat-mini" data-buy="${e.key}" ${e.full || this.h.getProfile().cash < e.price ? 'disabled' : ''}>${e.full ? 'Full' : 'Buy'}</button>` : '';
     let hk = 7; for (const ch of String(e.key)) hk = (hk * 31 + ch.charCodeAt(0)) >>> 0; // (5.15.1) Dave numbers his lots; the Station its stock
     const lot = this.id === 'dave' ? `<span class="lot">Lot ${10 + (hk % 89)}</span>` : '', code = this.id === 'station' ? `<span class="scode">ST-${String(100 + (hk % 900)).padStart(4, '0')}</span>` : '';
-    return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t">${lot}<b${e.rarity && RARITY[e.rarity] ? ` style="color:${RARITY[e.rarity].col}"` : ''}>${e.name}</b>${code}<span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
+    return `<a href="#" class="cat-card" ${go}><img src="${this.pic(e, 300, 118)}" alt=""><div class="t">${lot}<b${e.rarity && RARITY[e.rarity] ? ` style="color:${nameCol(e.rarity)}"` : ''}>${e.name}</b>${code}<span>${e.price ? money(e.price, false) : 'Free'}</span></div>${tag}${buy}</a>`;
   }
   itemPage({ e, cat }) {
     const P = this.h.getProfile(), cash = P.cash || 0;
@@ -252,7 +254,7 @@ export class Catalog {
       + (item ? (inCart ? `<a href="#" class="cat-save" data-go="cart">In your cart ✓</a>` : `<a href="#" class="cat-btn2" data-cart="add|${e.key}">Add to cart</a>`) : '')
       ; // (4.5.0) no 'Save for this'
     return `<div class="crumbs"><a href="#" data-go="${cat}">${this.catName(cat)}</a> ›</div><div class="cat-item"><div class="cat-photo"><img src="${this.pic(e, 640, 420)}" alt=""></div><div>
-      <h2${e.rarity && RARITY[e.rarity] ? ` style="color:${RARITY[e.rarity].col}"` : ''}>${e.name}</h2>${e.rarity ? `<div class="rr r-${e.rarity}">${rarKind(RARITY[e.rarity].name, e.kind)}</div>` : ''}<div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
+      <h2${e.rarity && RARITY[e.rarity] ? ` style="color:${nameCol(e.rarity)}"` : ''}>${e.name}</h2>${e.rarity ? `<div class="rr r-${e.rarity}">${rarKind(RARITY[e.rarity].name, e.kind)}</div>` : ''}<div class="price">${e.price ? money(e.price, false) : 'Free'}</div><p class="say">${e.line || ''}</p>
       <div class="gf">${e.good ? `<div class="g">${e.good}</div>` : ''}${e.bad ? `<div class="b">${e.bad}</div>` : ''}</div>${vs}<div class="buy">${btn}</div></div></div>`;
   }
   // the pictures: the game's own drawings where it has them; simple drawn ones for fins, tanks, bags

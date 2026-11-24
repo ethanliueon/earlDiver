@@ -462,7 +462,7 @@ e.inSub ? [
       // (7.2.8) Earl's pointing glove (assets/ui/icons/tut-point.png), its fingertip just short of the button's edge on the
       // line from Earl, tapping slowly toward it every 1.5 s; no outline, only its shadow
       // it comes in from the free side: of the angles near Earl's line, the first where the glove covers no other button
-      const G = 62 * u, ph = (g.time / 1.5) % 1, tap = ph < 0.22 ? Math.sin(ph / 0.22 * Math.PI) : 0, kx0 = W / innerWidth, others = (this.prevHots || []).filter((q) => Math.hypot(q.x + q.w / 2 - x / kx0, q.y + q.h / 2 - y / kx0) > 4);
+      const G = 71 * u /* (7.3.0) 15 % bigger */, ph = (g.time / 1.5) % 1, tap = ph < 0.22 ? Math.sin(ph / 0.22 * Math.PI) : 0, kx0 = W / innerWidth, others = (this.prevHots || []).filter((q) => Math.hypot(q.x + q.w / 2 - x / kx0, q.y + q.h / 2 - y / kx0) > 4);
       // the angle (near Earl's line) and the reach (the fingertip at the button's edge, or in a crowded corner resting on its
       // rim) that cover the other buttons least; ties go to the line from Earl
       const a0 = Math.atan2(y - oy, x - ox), cost = (an, rc) => { const gx = x - Math.cos(an) * (rc + G * 0.5), gy = y - Math.sin(an) * (rc + G * 0.5);

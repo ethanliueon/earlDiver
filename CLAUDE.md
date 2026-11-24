@@ -79,7 +79,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - **Decided in 6.5**: the big button is only ever the net or the camera (greyed aboard); the interact button (brass
   porthole ring, a warm rim when something is in reach) does everything else: ladder, hatch, door, eye, winch. One
   gain effect everywhere, as a find comes out of a chest (cash only inside a gift; otherwise it counts up by the
-  money). Item names always in their rarity's colour. No rare forms (albino, golden, giant...). Things to use are
+  money). Item names always in their rarity's colour (7.3.0: a common one in black on the catalog's pale pages, where its grey was faint). No rare forms (albino, golden, giant...). Things to use are
   outlined, never bracketed. Panels appear only when drawn; nothing behind a panel is drawn at a lower rate. The game's
   sound is "ambient" on iOS (follows the silent switch, never "now playing"). Marine snow only below 150-200 m.
 
