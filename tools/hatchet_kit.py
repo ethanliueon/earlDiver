@@ -6,7 +6,7 @@
 #   assets/loading/wave.png        the bar, empty: a band of deep water, its top a row of small waves catching faint light
 #   assets/loading/wave_fill.png   the same band full of pale, sunlit water, a lighter crest along each wave
 # Run: python3 tools/hatchet_kit.py
-import math
+import math, os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -318,6 +318,60 @@ def fish2(W=2400, H=1720, out_w=960):
     return im.resize((out_w, int(out_w * im.height / im.width)), Image.LANCZOS)
 
 
+def fish3(ref=os.path.join(os.path.dirname(__file__), 'ref', 'argyropelecus_gigas_noaa_pd.jpg'), out_w=960):
+    # (7.3.0, owner: "trace the image itself") traced from a photograph of Argyropelecus gigas (NOAA's Fisheries
+    # Collection, public domain; Wikimedia Commons, File:Argyropelecus_gigas.jpg): its outline traced point by point by
+    # hand (turned to face right), its light and dark taken from the photograph itself and recoloured in the game's own
+    # palette (cold, near-black shadows up to bone, never pure white), with a faint paint grain; a soft blue glow under
+    # the rows of light organs, as on a living fish
+    import os
+    src = Image.open(ref).convert('RGB')
+    src = src.crop((0, 40, 820, 460)).transpose(Image.FLIP_LEFT_RIGHT)  # the same frame the outline was traced on
+    K2 = 2.4; W, H = int(820 * K2), int(420 * K2)
+    body = [(100, 156), (150, 140), (200, 122), (250, 104), (300, 88), (345, 70), (395, 50), (450, 40), (500, 37), (550, 42),
+            (600, 58), (645, 78), (685, 105), (708, 140), (716, 172), (708, 196), (735, 210), (762, 218), (748, 232), (722, 250),
+            (700, 272), (680, 300), (655, 330), (622, 352), (585, 372), (545, 388), (500, 397), (450, 398), (405, 392), (368, 376),
+            (340, 345), (315, 310), (290, 282), (262, 258), (230, 240), (195, 228), (150, 216), (100, 206)]
+    tail = [(100, 158), (70, 150), (42, 148), (55, 172), (60, 190), (52, 212), (48, 236), (78, 220), (100, 206)]
+    S2 = lambda pts: [(x * K2, y * K2) for x, y in pts]
+    m = Image.new('L', (W, H), 0); dm = ImageDraw.Draw(m); dm.polygon(S2(body), fill=255)
+    mt = Image.new('L', (W, H), 0); ImageDraw.Draw(mt).polygon(S2(tail), fill=255)
+    m = m.filter(ImageFilter.GaussianBlur(1.4)); mt = mt.filter(ImageFilter.GaussianBlur(1.4))
+    lum = np.asarray(src.convert('L').resize((W, H), Image.BICUBIC).filter(ImageFilter.GaussianBlur(0.8)), np.float32)
+    # the light map stretched a little so the shadows are deep and the silver bright, as the photograph is
+    lo, hi = np.percentile(lum[np.asarray(m) > 128], [3, 99]); t = np.clip((lum - lo) / max(1, hi - lo), 0, 1)
+    stops = [(0.0, (6, 8, 12)), (0.25, (22, 26, 34)), (0.5, (70, 78, 90)), (0.75, (150, 158, 166)), (0.92, (206, 208, 204)), (1.0, (228, 224, 212))]
+    col = np.zeros((H, W, 3), np.float32)
+    for (a0, c0), (a1, c1) in zip(stops, stops[1:]):
+        k = np.clip((t - a0) / (a1 - a0), 0, 1)[..., None]; sel = ((t >= a0) & (t <= a1))[..., None]
+        col = np.where(sel, np.array(c0) * (1 - k) + np.array(c1) * k, col)
+    rng = np.random.default_rng(9)
+    grain = np.asarray(Image.fromarray((rng.random((H // 3, W // 3)) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC), np.float32) / 255
+    col *= (0.95 + 0.1 * grain)[..., None]
+    # the tray it lay on shows through where the traced line runs a hair outside the fish: warm and pale, where the fish's
+    # silver is neutral - those pixels are left out, so the edge follows the fish exactly
+    rgb = np.asarray(src.resize((W, H), Image.BICUBIC), np.float32)
+    tray = np.clip(((rgb[..., 0] - rgb[..., 2]) - 10) / 12, 0, 1) * np.clip((lum - 120) / 40, 0, 1)
+    tray = np.asarray(Image.fromarray((tray * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(2)), np.float32) / 255
+    inner = np.asarray(m.filter(ImageFilter.MinFilter(41)).filter(ImageFilter.GaussianBlur(6)), np.float32) / 255  # well inside: the flank reflects the tray too, and stays
+    tray *= (1 - inner)
+    A = np.asarray(m, np.float32) / 255 * (1 - tray); At = np.asarray(mt, np.float32) / 255 * 0.55 * (1 - tray * 0.6)
+    alpha = np.maximum(A, At)
+    out = np.zeros((H, W, 4), np.uint8); out[..., :3] = np.clip(col, 0, 255); out[..., 3] = (alpha * 255).astype(np.uint8)
+    im = Image.fromarray(out, 'RGBA')
+    # the living fish's light: a soft blue glow under its rows of organs (along the keel, under the flank, the stalk)
+    glow = Image.new('RGBA', (W, H), (0, 0, 0, 0)); gd = ImageDraw.Draw(glow)
+    rows = [((372, 384), (650, 338)), ((340, 292), (600, 280)), ((150, 224), (300, 266))]
+    for (a0, b0) in rows:
+        for i in range(24):
+            q = i / 23; x = a0[0] + (b0[0] - a0[0]) * q; y = a0[1] + (b0[1] - a0[1]) * q
+            gd.ellipse([(x - 9) * K2, (y - 2) * K2, (x + 9) * K2, (y + 12) * K2], fill=(70, 110, 180, 26))
+    im = Image.alpha_composite(im, glow.filter(ImageFilter.GaussianBlur(8 * K2)))
+    a2 = np.asarray(im)[..., 3]; im.putalpha(Image.fromarray(np.minimum(a2, (alpha * 255).astype(np.uint8))))
+    bb = im.getbbox(); im = im.crop(bb)
+    return im.resize((out_w, int(out_w * im.height / im.width)), Image.LANCZOS)
+
+
 def wave(full):
     # (7.1.7) The bar is a band of sea of even depth, its bottom straight, its top a row of small rolling waves; the ends
     # rounded off. No taper: a tapering ripple with the fish at its head read as something else entirely.
@@ -347,7 +401,7 @@ def wave(full):
 
 
 if __name__ == '__main__':
-    fish2().save(OUT + 'hatchetfish.png', optimize=True)  # (7.3.0) the repaint after the photograph; fish() is the 7.2.15 painting
+    fish3().save(OUT + 'hatchetfish.png', optimize=True)  # (7.3.0, owner) traced from the photograph (tools/ref, public domain)
     wave(False).save(OUT + 'wave.png', optimize=True)
     wave(True).save(OUT + 'wave_fill.png', optimize=True)
     print('painted')
