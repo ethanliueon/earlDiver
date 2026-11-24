@@ -7,7 +7,7 @@
 // to the aquarium or back to the sea: never into the bag.
 import { clamp, dist } from './util.js';
 import { SPECIES_BY_ID } from './species.js';
-import { LEGENDARY } from './specimens.js';
+import { LEGENDARY, rarityOf } from './specimens.js';
 
 export const PET_MIN = 0.6, PET_MAX = 1.5, PREY_MAX = 0.4;
 const STILL = /floor|plant|drift/; // crabs, tripod fish, starfish, corals, jellies: they don't swim alongside anyone
@@ -36,7 +36,9 @@ export function updatePet(g, dt, dread) {
   if (!c) {
     const host = e.inSub ? g.sub : e;
     c = F.makeFish(sp, host.x - (e.facing || 1) * 2, Math.max(1, host.y + 0.5), e.facing || 1, 'pet', true);
-    Object.assign(c, { companion: true, flee: 0, placed: true, devKeep: true, len: pet.len, variant: pet.variant || undefined, huntCool: 6 });
+    // (7.4.3, owner) a legendary pet is a trophy at his side: a third larger, with its own glow and glints (render.js petLeg)
+    const leg = LEGENDARY.has(sp.id) || (rarityOf(sp) || {}).id === 'legendary';
+    Object.assign(c, { companion: true, flee: 0, placed: true, devKeep: true, len: (pet.len || sp.len) * (leg ? 1.35 : 1), petLeg: leg, variant: pet.variant || undefined, huntCool: 6 });
     F.list.push(c); g.petC = c;
   }
   const host = e.inSub ? g.sub : e, W = g.world, t = g.time;

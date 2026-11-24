@@ -24,6 +24,7 @@ import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY } from './specimens.js';
+import { glint } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
 import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
@@ -449,7 +450,19 @@ export class Renderer {
           const bx = S(b.x + Math.sin(t * 2 + b.sway) * 0.04), by = Sy(b.y - age * 0.7), rr = Math.max(0.7, (b.r + age * 0.01) * ppm);
           glowPts.push([bx, by, '#ffe6a8', rr * 2.2, a * 1.5, Math.max(0.6, rr * 0.6)]); } // (6.3.0) small sharp points, not wide orbs
       }
-      if (!glowOf(c) && !c.variant && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black
+      if (c.petLeg && !c.dead) { // (7.4.3, owner) a legendary pet: a soft warm light round it, breathing, and glints that come and go along its body
+        const Lp = fishDrawLen(c.len), br = 0.5 + 0.5 * Math.sin(t * 1.4 + (c.wob || 0)), dir = c.dir || (c.vx >= 0 ? 1 : -1);
+        glowPts.push([S(c.x), Sy(c.y), '#ffe2a0', Math.max(ppm * 1.1, Lp * ppm * 0.85), 0.32 + 0.18 * br]);
+        // drawn straight onto the scene too (behind the animal), so it shows in daylit water where the light map adds little
+        { const hx = S(c.x), hy = Sy(c.y), hr = Lp * ppm * 0.62; ctx.save(); ctx.globalCompositeOperation = 'lighter';
+          ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.42); // an oval glow that fades to nothing at its edge (a round gradient cut to an oval showed a hard rim)
+          const hg = ctx.createRadialGradient(0, 0, 0, 0, 0, hr); hg.addColorStop(0, `rgba(255,226,160,${(0.13 + 0.06 * br).toFixed(3)})`); hg.addColorStop(0.45, `rgba(240,200,130,${(0.05 + 0.025 * br).toFixed(3)})`); hg.addColorStop(1, 'rgba(240,200,130,0)');
+          ctx.fillStyle = hg; ctx.fillRect(-hr, -hr, hr * 2, hr * 2); ctx.restore();
+          for (let k = 0; k < 7; k++) { const ph = (t * 0.4 + k * 0.149) % 1, a = Math.sin(Math.PI * ph) * (0.65 + 0.35 * Math.sin(t * 9 + k * 3)), u = (k / 6 - 0.5) * 0.85;
+            glint(ctx, S(c.x + dir * u * Lp), Sy(c.y + Math.sin(k * 2.1 + t * 0.6) * Lp * 0.09 - ph * 0.3), Math.max(3, ppm * 0.1), a * 0.95, k + t * 0.3); }
+          ctx.restore(); }
+      }
+      if (!glowOf(c) && !c.variant && !c.petLeg && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black (a legendary pet always shows)
       if (LEGENDARY.has(c.sp.id) && g.earl.legends && g.earl.legends.has('eye')) /* (6.5.0) legends glow now: rare forms are gone */ glowPts.push([S(c.x), Sy(c.y), '#ffe6a0', Math.max(ppm * 0.9, fishDrawLen(c.len) * ppm), 0.85]); // (2.8.0) Eye of the Sea
       const Ld = fishDrawLen(c.len) * ppm;
       const shape = c.sp.v.s;
