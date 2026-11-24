@@ -64,7 +64,7 @@ export function eventsHtml(P, coinPic, glowPic, picOf, cashPic) {
   const st = calState(P), W = calWeek(P);
   const days = W.map((r, i) => {
     const done = i < st.day, now = i === st.day, pic = r.k === 'chest' ? chestPicture(CHESTS[r.v].look, 120, 90) : r.k === 'coin' ? coinPic : r.k === 'glow' ? (r.adv && picOf ? picOf('supply', 'glowAdv') : glowPic) : r.k === 'trap' && picOf ? picOf('trap', r.v) : r.k === 'cash' ? cashPic || null : null; // (7.3.0) the painted notes, not a "$"
-    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === 6 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">Claimed</i>' : ''}</button>`;
+    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === 6 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">✓</i>' : ''}</button>`;
   }).join('');
   return `<div class="st-plate ev"><button class="st-x" aria-label="Close">×</button><h2>Daily gift</h2><div class="ev-row">${days}</div><div class="ev-foot">${st.ready ? `<button class="ev-claim" data-ev="claim">Claim day ${st.day + 1}</button>` : `<span class="ev-wait">${hrs(untilTomorrow())}</span><button class="ev-claim" disabled>Claim day ${st.day + 1}</button>`}</div></div>`;
 }

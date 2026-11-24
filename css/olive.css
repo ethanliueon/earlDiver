@@ -1909,6 +1909,14 @@ html body #inventory .ip-arrow { width: 40px; height: 40px; border-radius: 0; fo
   background: url("../assets/ui/icons/ip-arrow.png") center / contain no-repeat; justify-self: center; }
 /* (7.3.0) the trap panel's keyboard hints ("Space", "Up Down or the wheel, with Shift") never on a phone */
 html.touch #trapset .ts-help, html.touch #trapset #ts-set span { display: none !important; }
-/* (7.3.0) a claimed day: "Claimed" pressed into the plate in small stencil letters, not a typed tick */
-html body .store-panel .ev-tick { font: 600 8px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(184, 200, 154, 0.85); right: 6px; top: 5px; }
-html body .store-panel .ev-tick { right: auto; top: 44%; left: 50%; transform: translate(-50%, -50%) rotate(-9deg); padding: 2px 5px; border: 1.5px solid rgba(184, 200, 154, 0.7); border-radius: 2px; font-size: 9px; background: rgba(30, 36, 26, 0.55); }
+/* (7.3.0, owner) the trap panel's depth buttons and slider in the game's own materials, not bright brass: the buttons the
+   painted olive plate every plain button wears; the slider a dark steel groove with a worn bone knob */
+html body #trapset .ts-meter button { border: 10px solid transparent !important; border-radius: 0 !important; border-image: var(--o-btn) 28 fill / 10px stretch !important;
+  background: none !important; box-shadow: none !important; width: 52px; height: 38px; padding: 0 !important; font: 500 15px/1 var(--o-text) !important; color: var(--o-cream) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5) !important; }
+html body #trapset .ts-meter button:active { border-image-source: var(--o-btn-down) !important; transform: none !important; }
+html body #ts-slider { -webkit-appearance: none; appearance: none; height: 22px; background: transparent; accent-color: #a89c80; }
+html body #ts-slider::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(#14170f, #2a2e24); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(200, 200, 170, 0.12); }
+html body #ts-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -7px; border-radius: 50%; border: 0;
+  background: radial-gradient(circle at 38% 32%, #e2dac2, #b9ae90 60%, #7d745c); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.5); }
+html body #ts-slider::-moz-range-track { height: 6px; border-radius: 3px; background: #1c2018; }
+html body #ts-slider::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 50%; background: #c9bfa4; }

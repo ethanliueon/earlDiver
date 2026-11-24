@@ -476,4 +476,4 @@ for (const it of Object.values(ITEMS)) {
   if (A && (it.chest || it.set)) { it.good = A[0]; it.line = it.set ? `${it.line} ${A[1]}` : A[1]; }
 }
 // (7.3.0) every net with a lower limit (a big-game net's coarse mesh) says it where the shops say what it is not for
-for (const it of Object.values(ITEMS)) if (it.kind === 'net' && it.minLen) it.bad = `Fish under ${Math.round(it.minLen * 100)} cm slip through`;
+for (const it of Object.values(ITEMS)) if (it.kind === 'net' && it.minLen) { it.bad = `Fish under ${Math.round(it.minLen * 100)} cm slip through`; if (!/slip|pass/i.test(it.line || '')) it.line = `${it.line} Fish under ${Math.round(it.minLen * 100)} cm slip through the mesh.`; } // (owner) said in its words, the floor kept in its figures
