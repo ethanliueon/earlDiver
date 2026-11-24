@@ -1512,7 +1512,72 @@ function drawManowar(ctx, L, v, t) {
   ctx.restore();
 }
 
+// (7.4.17, owner) the giant and the colossal squid, from life. Both cruise mantle first (the fins at the tip lead, the
+// arms trail). The giant: a long slender muscular mantle, deep brick-red to maroon (paler beneath), small fins at its
+// tip, eight thick arms lined with pale suckers and two feeding tentacles far longer than the body, each ending in a
+// broad club. The colossal: a heavier, wider mantle, darker, with very large fins, shorter arms set with hooks among the
+// suckers, and the largest eye of any animal. (Drawn facing -x: the mantle's tip at -x, the arms trailing to +x.)
+function drawGiantSquid(ctx, L, v, t) {
+  const col = v.sq === 'colossal', wv = (k, a) => Math.sin(t * 1.6 - k * a);
+  const P = col ? { m0: '#4a1612', m1: '#6e2418', m2: '#8e3a2a', belly: '#a86a58', fin: '#5a1c16', arm: '#5e1e16', armLit: '#8a3a2c', sucker: '#d8b8a0' }
+    : { m0: '#6a1e16', m1: '#8e3020', m2: '#b0503a', belly: '#c88a70', fin: '#7a2a1e', arm: '#7a2a1e', armLit: '#a8503a', sucker: '#ecd4bc' };
+  // proportions along the length (x from -0.5L at the mantle's tip to +0.5L at the tentacles' clubs)
+  const mt = -0.5 * L, mh = (col ? -0.02 : -0.08) * L, H = L * (col ? 0.11 : 0.06), head = mh + L * 0.06, armEnd = head + L * (col ? 0.17 : 0.22);
+  const pulse = 1 + Math.sin(t * 2.2) * 0.04; // the mantle's jet: it swells and squeezes
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // the two feeding tentacles, behind everything: long, thin, slowly waving, each ending in a club of suckers
+  for (const side of [-1, 1]) {
+    const pts = []; const tEnd = L * 0.5 - L * 0.04;
+    for (let i = 0; i <= 24; i++) { const u = i / 24, x = head + (tEnd - head) * u, y = side * H * 0.18 + side * H * 0.35 * u + Math.sin(t * 1.3 - u * 5 + side) * H * 0.9 * u; pts.push([x, y]); }
+    ctx.strokeStyle = shade(P.arm, -0.1); ctx.lineWidth = Math.max(0.8, H * 0.09);
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (const q of pts) ctx.lineTo(q[0], q[1]); ctx.stroke();
+    const [cx, cy] = pts[pts.length - 1], [px, py] = pts[pts.length - 3], ang = Math.atan2(cy - py, cx - px);
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang);
+    ctx.fillStyle = P.arm; ctx.beginPath(); ctx.moveTo(-L * 0.05, 0); ctx.quadraticCurveTo(-L * 0.02, -H * 0.26, L * 0.03, -H * 0.06); ctx.quadraticCurveTo(L * 0.045, 0, L * 0.03, H * 0.04); ctx.quadraticCurveTo(-L * 0.02, H * 0.2, -L * 0.05, 0); ctx.fill(); // the club
+    ctx.fillStyle = P.sucker; for (let k = 0; k < 7; k++) { ctx.beginPath(); ctx.arc(-L * 0.035 + k * L * 0.01, H * 0.02 * (k % 2 ? 1 : -1), Math.max(0.5, H * 0.035 * (1 - Math.abs(k - 3) / 5)), 0, TAU); ctx.fill(); }
+    ctx.restore();
+  }
+  // the eight arms: two rows (back, then front over the body), thick at the head, tapering, curling at the tips
+  const arm = (k, front) => {
+    const y0 = (k - 1.5) * H * 0.2, len = (armEnd - head) * (0.9 + (k % 2) * 0.12), n = 14, pts = [];
+    for (let i = 0; i <= n; i++) { const u = i / n, x = head + len * u, y = y0 * (1 + u * 1.4) + wv(k, 3) * H * 0.5 * u * u + Math.sin(t * 2.4 + k * 1.7 + u * 4) * H * 0.18 * u; pts.push([x, y]); }
+    const w0 = L * (col ? 0.022 : 0.016) * (front ? 1 : 0.85); // thick at the head, as a real squid's arms are
+    for (let i = 0; i < n; i++) { const u = i / n; ctx.strokeStyle = front ? (i % 2 ? P.arm : shade(P.arm, 0.04)) : shade(P.arm, -0.2); ctx.lineWidth = Math.max(0.6, w0 * (1 - u * 0.85)); ctx.beginPath(); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[i + 1][0], pts[i + 1][1]); ctx.stroke(); }
+    if (front) { ctx.strokeStyle = rgba(P.armLit, 0.6); ctx.lineWidth = Math.max(0.4, w0 * 0.22); ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1] - w0 * 0.3); for (let i = 1; i < n * 0.7; i++) ctx.lineTo(pts[i][0], pts[i][1] - w0 * 0.3 * (1 - i / n)); ctx.stroke();
+      ctx.fillStyle = P.sucker; for (let i = 1; i < n - 1; i++) { const u = i / n, r = Math.max(0.35, w0 * 0.16 * (1 - u)); ctx.beginPath(); ctx.arc(pts[i][0], pts[i][1] + w0 * 0.32 * (1 - u * 0.8), r, 0, TAU); ctx.fill(); }
+      if (col) { ctx.strokeStyle = '#e8dcc0'; ctx.lineWidth = Math.max(0.4, w0 * 0.08); for (let i = 3; i < n - 2; i += 3) { const u = i / n, hx = pts[i][0], hy = pts[i][1] + w0 * 0.36 * (1 - u * 0.8), hr = w0 * 0.22 * (1 - u * 0.6); ctx.beginPath(); ctx.arc(hx, hy + hr * 0.6, hr, Math.PI * 1.15, Math.PI * 1.95); ctx.stroke(); } } } // the colossal's swivelling hooks
+  };
+  for (const k of [0, 1, 2, 3]) arm(k, false); // eight arms: four behind
+  // the fins at the mantle's tip, rippling: small and rhombic on the giant, huge and rounded on the colossal
+  const fl = L * (col ? 0.17 : 0.07), fw = H * (col ? 1.25 : 0.75), fx0 = mt + L * 0.01, fwave = Math.sin(t * 3) * 0.18;
+  ctx.fillStyle = P.fin;
+  for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(fx0, 0); ctx.quadraticCurveTo(fx0 + fl * (col ? 0.25 : 0.4), sd * fw * (1 + fwave * sd), fx0 + fl, sd * H * 0.32); ctx.lineTo(fx0 + fl * 0.9, 0); ctx.closePath(); ctx.fill(); }
+  // the mantle: a long torpedo, swelling and squeezing as it jets
+  const m = new Path2D(); m.moveTo(mt, 0);
+  m.bezierCurveTo(mt + L * 0.06, -H * 0.55 * pulse, mh - L * 0.12, -H * 0.62 * pulse, mh, -H * 0.5 * pulse);
+  m.lineTo(mh, H * 0.5 * pulse); m.bezierCurveTo(mh - L * 0.12, H * 0.62 * pulse, mt + L * 0.06, H * 0.55 * pulse, mt, 0); m.closePath();
+  const g = ctx.createLinearGradient(0, -H * 0.6, 0, H * 0.6); g.addColorStop(0, P.m0); g.addColorStop(0.45, P.m1); g.addColorStop(0.75, P.m2); g.addColorStop(1, P.belly);
+  ctx.fillStyle = g; ctx.fill(m);
+  ctx.save(); ctx.clip(m);
+  for (let k = 0; k < 70; k++) { const x = mt + ((k * 37) % 100) / 100 * (mh - mt), y = (((k * 53) % 100) / 100 - 0.5) * H * 1.2, open = 0.5 + 0.5 * Math.sin(t * 2.6 + k * 1.7);
+    ctx.fillStyle = `rgba(${col ? '40,8,6' : '70,12,8'},${(0.2 + open * 0.35).toFixed(2)})`; ctx.beginPath(); ctx.arc(x, y, Math.max(0.4, H * (0.025 + open * 0.035)), 0, TAU); ctx.fill(); } // chromatophores flickering
+  ctx.strokeStyle = 'rgba(255,220,200,0.16)'; ctx.lineWidth = Math.max(0.5, H * 0.05); ctx.beginPath(); ctx.moveTo(mt + L * 0.05, -H * 0.3); ctx.quadraticCurveTo((mt + mh) / 2, -H * 0.46, mh, -H * 0.36); ctx.stroke(); // light along the back
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(20,4,2,0.55)'; ctx.lineWidth = Math.max(0.5, H * 0.03); ctx.stroke(m);
+  // the mantle's rim and the head, narrower, with the funnel below
+  ctx.fillStyle = shade(P.m1, 0.04); ctx.beginPath(); ctx.ellipse((mh + head) / 2, 0, (head - mh) * 0.6, H * 0.4, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = shade(P.m2, -0.1); ctx.beginPath(); ctx.ellipse(mh + L * 0.005, H * 0.36, L * 0.018, H * 0.09, 0.3, 0, TAU); ctx.fill(); // the funnel
+  // the eye: huge, dark-pupilled, a silver-gold ring
+  const er = H * (col ? 0.32 : 0.27), ex = (mh + head) / 2 + L * 0.005, ey = -H * 0.06;
+  ctx.fillStyle = '#d8c8a0'; ctx.beginPath(); ctx.arc(ex, ey, er, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#1a1612'; ctx.beginPath(); ctx.arc(ex + er * 0.05, ey, er * 0.72, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,240,0.6)'; ctx.beginPath(); ctx.arc(ex - er * 0.25, ey - er * 0.3, er * 0.16, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,6,4,0.6)'; ctx.lineWidth = Math.max(0.4, er * 0.08); ctx.beginPath(); ctx.arc(ex, ey, er, 0, TAU); ctx.stroke();
+  for (const k of [0.4, 1.3, 2.2, 3.1]) arm(k, true); // and four in front
+  ctx.lineCap = 'butt';
+}
 function drawSquid(ctx, L, v, t, swim) {
+  if (v.sq === 'giant' || v.sq === 'colossal') return drawGiantSquid(ctx, L, v, t); // (7.4.17)
   // A torpedo mantle speckled with chromatophores that flicker, rippling triangular fins at the
   // rear, a large eye, eight sucker-lined arms and two longer feeding tentacles with clubs.
   const col = v.sq === 'colossal', gnt = v.sq === 'giant', H = L * (col ? 0.21 : gnt ? 0.11 : 0.15); // (5.16.0) the colossal bulky, the giant slender

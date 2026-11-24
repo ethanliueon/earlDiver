@@ -11,8 +11,8 @@ export const ABILITY_DEFS = {
   sprint: {
     rare: { name: 'Sprint', dur: 15, cd: 120, speed: 1.5, line: '×1.5 speed for 15 s, using no air.' },
     exotic: { name: 'Sprint+', dur: 15, cd: 300, speed: 2, line: '×2 speed for 15 s, using no air.' },
-    legendary: { name: 'Riptide', dur: 12, cd: 1800, speed: 3, noAir: true, line: '×3 speed for 12 s, using no air.' },
-    mythical: { name: 'Maelstrom', dur: 15, cd: 1200, speed: 3.5, noAir: true, wake: true, line: '×3.5 speed for 15 s, using no air, and the water lit behind you as you go.' },
+    legendary: { name: 'Riptide', dur: 20, cd: 1800, speed: 3, noAir: true, line: '×3 speed for 20 s, using no air.' }, // (7.4.17, owner) 20 s
+    mythical: { name: 'Maelstrom', dur: 30, cd: 1200, speed: 3.5, noAir: true, wake: true, line: '×3.5 speed for 30 s, using no air, and the water lit behind you as you go.' },
   },
   vigor: {
     rare: { name: 'Vigor', dur: 20, cd: 180, reach: 1.5, line: '×1.5 net reach for 20 s.' },

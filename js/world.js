@@ -9,7 +9,13 @@ const DEEP_FLOOR = { 130: 250, 131: 250, 132: 400, 162: 300, 170: 1000, 163: 200
 // 5,000 m wide, down to 5,100 m in the trench's pit. The shore is on the right (east); the deep ocean and a sheer wall
 // with a trench at its foot are on the left (west). The shallow half (shelf, wreck, kelp, reef,
 // beach) is the original map moved 2,000 m east (EAST); everything west of the shelf edge is new.
-export const WORLD_W = 5000;
+export const WORLD_W = 5040; // (7.4.17) 40 m more on the east: the coconut island and the pool beyond it
+// (7.4.17, owner) the coconut island at the end of the sea: a sand bar rising 1.5 m out of the water, about 18 m long
+// above it, one coconut palm near its far end. He can wade out and walk on it (his helmet off, as on deck); the sub and
+// the boat meet it as a wall. Beyond it a small pool (about 20 m, no fish): a second ocean, for a later update. Past
+// the palm: "Area available in a future update"
+export const ISLE = { x0: 4974, top0: 4982, top1: 4988, x1: 4994, palm: 4989.5, stop: 4990.6, pool0: 4995, pool1: 5015 };
+export const SEA_END = 4966; // nothing of the sea (rock, coral, kelp, statics, fish) is placed past here
 export const WORLD_D = 5200;
 export const EAST = 4000;
 // v2: a 2,000 m wide hadal trench was opened west of the old one; everything east of it moved by SH
@@ -17,7 +23,7 @@ export const SH = 2000;
 export const FLOOR_RES = 0.5; // metres per floor sample
 // the Margaret: she starts 150 m from the east edge (over the kelp) and can be driven along the surface
 // anywhere between BOAT_MIN and BOAT_MAX
-export const BOAT_HOME = 4850, BOAT_MIN = 60, BOAT_MAX = 4945; // (v2: she can go anywhere on the surface)
+export const BOAT_HOME = 4850, BOAT_MIN = 60, BOAT_MAX = 4950; // (7.4.17) up to the island's shallows // (v2: she can go anywhere on the surface)
 export const BOAT = { x: BOAT_HOME, yaw: 0 }; // (3.0.0) yaw: 0 = bow to the left as drawn (her usual heading), PI = turned about
 export const boatDock = () => BOAT.x + 8.5 * Math.cos(BOAT.yaw || 0); // the sub's cradle, which turns with her
 export const BOAT_X = BOAT_HOME; // (where she starts)
@@ -48,7 +54,7 @@ const PROFILE = [
   [4380, 1150], [4420, 1500], [4450, 1560], [4475, 1250], [4500, 950],
   // the original map from here, moved 2,000 m east: the drop, the shelf, kelp, reef, beach
   [4520, 860], [4560, 640], [4585, 470], [4596, 330], [4604, 215], [4640, 175], [4700, 132],
-  [4760, 72], [4800, 42], [4880, 26], [4920, 16], [4950, 9], [4972, 3], [4985, -1], [5000, -3.5],
+  [4760, 72], [4800, 42], [4880, 26], [4920, 16], [4950, 9], [4964, 4], [4972, 1.2], [4984, -1.5], [5040, -1.2],
 ];
 
 // Deep sapphires: rare valuables, only below 500 m, a few per ocean at random, each tucked under a
@@ -98,6 +104,18 @@ export const SAIL = [
 ];
 export const CANYON = { x0: 4385, x1: 4495, top: 1000 }; // the canyon below its rim, where the current runs
 
+// (7.4.17) the island's own profile (depth below the surface; negative is above it): the sand shelving up out of the
+// water, a low rounded top with a few small rises, down into the pool, and the far bank beyond
+const ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+export function isleDepth(x, d0 = 4) {
+  const I = ISLE, bump = Math.sin(x * 1.7) * 0.05 + Math.sin(x * 0.63 + 1) * 0.07;
+  if (x < I.x0) return lerp(Math.min(d0, 4), 0.25, ss(4962, I.x0, x));
+  if (x < I.top0) return lerp(0.25, -1.5, ss(I.x0, I.top0, x)) + bump * ss(I.x0, I.top0, x);
+  if (x < I.top1) return -1.5 + bump;
+  if (x < I.x1) return lerp(-1.5, 0.15, ss(I.top1, I.x1, x)) + bump * (1 - ss(I.top1, I.x1, x));
+  if (x < I.pool1) return lerp(0.15, 1.3, ss(I.x1, I.pool0 + 3, x)) * (1 - ss(I.pool1 - 3, I.pool1, x)) + lerp(0, -0.35, ss(I.pool1 - 3, I.pool1, x)) + Math.sin(x * 0.9) * 0.05 * ss(I.x1, I.pool0 + 3, x);
+  return lerp(-0.35, -1.3, ss(I.pool1, WORLD_W, x)) + bump * 0.6;
+}
 export function generateWorld(seed) {
   const rng = makeRng(seed);
   const W = { seed, rng };
@@ -114,7 +132,7 @@ export function generateWorld(seed) {
     const big = fbm1(x / 70, 4, seed) * clamp(d * 0.05, 1.5, 60);
     const fine = fbm1(x / 6, 3, seed + 5) * clamp(d * 0.006, 0.25, 4);
     d += big + fine;
-    if (x > WORLD_W - 25) d = Math.min(d, lerp(-1, -3.5, (x - (WORLD_W - 25)) / 25)); // beach above the waterline
+    if (x > 4962) d = isleDepth(x, d); // (7.4.17) the island and its pool, drawn exactly (no roughness out of the water)
     if (x < 30) d = Math.min(d, 25 + x * 0.5);                                         // the wall's reef cap stays shallow
     if (x > 60 && x < 2230) {                                // the hadal floor: gentler swells, never past ~4,990 m
       d = lerp(d, Math.min(d, 4985 - fine), smoothstep(60, 140, x) * (1 - smoothstep(2150, 2230, x)));
@@ -186,7 +204,7 @@ export function generateWorld(seed) {
     for (const p of poly) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
     W.rocks.push({ poly, kind, x0, x1, y0, y1, seed: rng() * 1000 });
   };
-  for (let x = 2; x < WORLD_W - 28; x += rng.range(5, 22)) {
+  for (let x = 2; x < SEA_END; x += rng.range(5, 22)) {
     const d = W.floorAt(x);
     const s = W.slopeAt(x);
     if (x > EAST + 940 && rng() < 0.6) continue;
@@ -317,10 +335,10 @@ export function generateWorld(seed) {
   const addPickup = (type, x, y, extra = {}) => W.pickups.push({ type, x, y, taken: false, phase: rng() * 6, ...extra });
   const onFloor = (x) => W.floorAt(x) - 0.25;
   for (let i = 0; i < 22; i++) {
-    const x = rng.range(EAST + 830, EAST + 970);
+    const x = rng.range(EAST + 830, SEA_END);
     if (W.floorAt(x) > 2) addPickup('clam', x, onFloor(x), { pearl: rng() < 0.08 });
   }
-  for (let i = 0; i < 14; i++) { const x = rng.range(EAST + 900, EAST + 975); if (W.floorAt(x) > 1) addPickup('mussel', x, onFloor(x)); }
+  for (let i = 0; i < 14; i++) { const x = rng.range(EAST + 900, SEA_END); if (W.floorAt(x) > 1) addPickup('mussel', x, onFloor(x)); }
   // (v2: no more rocks, scrap iron, squid tentacles, ink sacs or fish scales to pick up: they had no use
   // but a few cents at the boat)
   // manganese nodules strewn over the abyssal plain (not in the brine)
@@ -378,7 +396,7 @@ export function generateWorld(seed) {
   // deep bottom life is never set out in the shallows, whatever the records' shallowest find
   W.statics = [];
   const statics = SPECIES.filter((s) => isStaticHab(s.v.hab) && s.id !== 118 && s.id !== 119);
-  for (let x = 1; x < WORLD_W - 25; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6) * (x > EAST + 880 ? 0.6 : 1)) {
+  for (let x = 1; x < SEA_END; x += rng.range(0.6, 2.5) * clamp(W.floorAt(x) / 120, 1, 6) * (x > EAST + 880 ? 0.6 : 1)) {
     const d = W.floorAt(x);
     if (d < 0.6) continue;
     const cands = statics.filter((s) => d >= Math.max(s.dmin, DEEP_FLOOR[s.id] || 0) && d <= s.dmax && climateOk(s.id, x));
@@ -406,7 +424,7 @@ export function generateWorld(seed) {
   // coral heads: a real reef is built of them (the shallow reef by the beach, and the wall's cap)
   {
     const heads = [126, 127, 127, 133].map((id) => SPECIES.find((s) => s.id === id));
-    for (const [xa, xb, n] of [[EAST + 905, EAST + 982, 34], [2, 30, 12]]) {
+    for (const [xa, xb, n] of [[EAST + 905, SEA_END, 34], [2, 30, 12]]) {
       for (let i = 0, tries = 0; i < n && tries < 400; tries++) {
         const x = rng.range(xa, xb), d = W.floorAt(x), sp = rng.pick(heads);
         if (d < 1.5 || d < sp.dmin || d > sp.dmax || W.rockAt(x, d - 0.3)) continue;
@@ -420,7 +438,7 @@ export function generateWorld(seed) {
     const host = SPECIES.find((s) => s.id === 128);
     let have = W.statics.filter((s) => s.sp.id === 128 && s.x > EAST + 880).length;
     for (let tries = 0; have < 9 && tries < 200; tries++) {
-      const x = rng.range(EAST + 905, EAST + 978), d = W.floorAt(x);
+      const x = rng.range(EAST + 905, SEA_END), d = W.floorAt(x);
       if (d < 2 || d > 16 || W.rockAt(x, d - 0.3)) continue;
       W.statics.push({ sp: host, x, y: d, scale: rng.range(0.8, 1.15), phase: rng() * 6, flip: rng() < 0.5 ? -1 : 1 });
       have++;
@@ -467,7 +485,7 @@ function buildHabitats(W) {
   }
   for (const w of W.wrecks) for (let k = -2; k <= 2; k++) add('wreck', w.x + k * w.len * 0.2, w.y - 2 - Math.abs(k) * 0.5);
   // open sand and mud: gentle bottom away from the reef and the kelp
-  for (let x = 4; x < WORLD_W - 10; x += 7) {
+  for (let x = 4; x < SEA_END; x += 7) {
     const d = W.floorAt(x);
     if (d < 2 || Math.abs(W.slopeAt(x)) > 0.7) continue;
     add('sand', x, d - 0.3);

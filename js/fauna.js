@@ -12,7 +12,7 @@ import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
 // (5.16.0) the deep's ambush hunters do not swim side to side: they hang upright in the water and drift slowly up and
 // down near where they live. [which way the body points: 1 head up (anglers, viperfish), -1 mantle up and arms down (the
 // squids, as filmed), how far they drift up and down]
-export const UPRIGHT = { 325: [1, 0.35], 326: [1, 0.35], 452: [1, 0.3], 500: [1, 0.3], 102: [1, 0.4], 319: [1, 0.4], 149: [-1, 0.5], 350: [-1, 0.12] };
+export const UPRIGHT = { 325: [1, 0.35], 326: [1, 0.35], 452: [1, 0.3], 500: [1, 0.3], 102: [1, 0.4], 319: [1, 0.4] }; // (7.4.17, owner) the giant and colossal squid no longer hang on end: they cruise level, gently tilted
 
 const SWIMMERS = SPECIES.filter((s) => isSwimHab(s.v.hab));
 
@@ -334,7 +334,7 @@ export class Fauna {
   trySpawn(cam, dread) {
     const rng = this.rng, W = this.W;
     const { x, y, side } = this.pickSpawnPoint(cam);
-    if (x < 2 || x > 4985 || y < 0.6) return;
+    if (x < 2 || x > 4966 || y < 0.6) return; // (7.4.17) nothing past the end of the sea (the island's pool stays empty)
     // which homes are free: one group to a home (an anemone holds one family of clownfish)
     const live = new Set(); for (const c of this.list) live.add(c.gid);
     const homes = new Map();
@@ -460,7 +460,7 @@ export class Fauna {
     // anywhere about the view, but out in the dark, well away from him and his lamps (a deep fish
     // in the dark is only ever its light, so one turning up there is simply one coming into sight)
     const rng = this.rng, side = rng() < 0.5 ? -1 : 1;
-    const x = clamp(cam.x + rng.range(-0.75, 0.75) * cam.w, 5, 4995);
+    const x = clamp(cam.x + rng.range(-0.75, 0.75) * cam.w, 5, 4966);
     const fl = this.W.floorAt(x);
     const y = clamp(cam.y + rng.range(-0.7, 0.7) * cam.h, 150, fl - 3);
     if (fl - 3 < 150 || dist(x, y, cam.x, cam.y) < 12) return;

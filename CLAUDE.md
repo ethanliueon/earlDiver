@@ -183,6 +183,15 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   rarity (common 5, uncommon 10, rare 20, exotic 40, legendary 100); levels at 10, 50, 100, 500 points, each +20 % size,
   with the screen darkening as it grows; a star a level on its card; the size can be set back without losing the level;
   pearls top up points, 1 for 10.
+- **The coconut island (7.4.17, owner):** the sea ends on the east at a sand island (world.js ISLE, isleDepth): 1.5 m
+  above the water at its top, about 18 m long, one coconut palm near its far end, a 20 m pool beyond it (no fish: a
+  second ocean, later). Swimming into its shallows he wades out and walks it (g.ashore), helmet and tank off as on deck;
+  past the palm: "Area available in a future update". It is a wall for the sub and the boat; pets wait in the sea.
+  Nothing of the sea is placed past SEA_END. The seabed is painted with assets/textures/seabed.png (tools/seabed_tex.py),
+  multiplied over its colour when the floor is baked, so phones show it too.
+- **Giant and colossal squid (7.4.17, owner):** drawn from life (creatures_draw.js drawGiantSquid): deep red, mantle
+  first, eight sucker-lined arms and two long club-tipped tentacles; they never hang on end or turn over.
+- **Sprint durations (7.4.17, owner):** Sprint 15 s, Sprint+ 15 s, Riptide 20 s, Maelstrom 30 s.
 - **Mythical scrolls (7.4.15, owner):** a rarity above legendary, oxblood red with an ember glow (never the bright warning
   red). Only from three legendaries of the same scroll combined: never in chests, the Old One's table or a shop. Worth
   three legendaries. Maelstrom (Riptide), Pharos (Lighthouse), Whalesong (Fathom), Leviathan's Maw (Apex), Rift

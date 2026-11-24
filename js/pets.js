@@ -14,7 +14,7 @@ export const PREY_MAX = 0.4;
 export function updatePet(g, dt, dread) {
   const P = g.profile, pet = P && P.pet, e = g.earl, F = g.fauna;
   let c = g.petC && F.list.includes(g.petC) && !g.petC.dead ? g.petC : null;
-  const inWater = g.mode === 'play' && !g.aboard;
+  const inWater = g.mode === 'play' && !g.aboard && !g.ashore; // (7.4.17) on the island it waits in the sea, as when he is on deck
   if (!pet || !inWater) { if (c) { F.list.splice(F.list.indexOf(c), 1); } g.petC = null; return; }
   const sp = SPECIES_BY_ID[pet.id];
   if (!c) {
@@ -67,6 +67,7 @@ export function updatePet(g, dt, dread) {
   c.x += c.vx * dt; c.y += c.vy * dt;
   const fl = W.floorAt(c.x); if (c.y > fl - 0.4 - c.len * 0.2) { c.y = fl - 0.4 - c.len * 0.2; c.vy = Math.min(0, c.vy); }
   if (c.y < 0.5) { c.y = 0.5; c.vy = Math.max(0, c.vy); }
+  if (W.floorAt(c.x) < 1.2) { c.x -= 0.5; c.vx = Math.min(0, c.vx); } // (7.4.17) never over land (the island)
   if (Math.abs(c.vx) > 0.1) { const nd = c.vx > 0 ? 1 : -1; if (nd !== c.dir) c.turnAt = t; c.dir = nd; }
   c.phase += dt * (0.6 + Math.min(4, v * 1.4)) * (nervous ? 1.8 : 1);
   c.startle = nervous && Math.random() < dt * 1.5 ? 0.32 : Math.max(0, (c.startle || 0) - dt);

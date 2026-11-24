@@ -6,7 +6,7 @@ import { coinURL, tileURL } from './coins.js';
 installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
-import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF } from './world.js';
+import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, ISLE, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF } from './world.js';
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Chart } from './chart.js';
 import { Fauna } from './fauna.js';
@@ -1542,6 +1542,35 @@ function dropGlow() {
   audio.ready && audio.click(); return true; // (6.0.1) no toast: its name shows beside it in the water for a moment (render.js)
 }
 function anchorTime(d) { return d <= 200 ? 3 + 4 * (d / 200) : 7 + 5 * Math.min(1, (d - 200) / 2800); }
+// (7.4.17, owner) the coconut island: swimming into its shallows he wades out and walks on it, helmet and tank off as
+// on deck; he can walk its length to the palm (past it: a later update) and back into the sea
+const ISLE_WALK = 1.6, ISLE_RUN = 3.0;
+function ashoreInput(dt, mv) {
+  const e = g.earl, W = g.world;
+  if (!g.ashore) {
+    if (e.inSub || g.aboard || g.kill || g.mode !== 'play') return;
+    if (e.x > ISLE.x0 - 6 && e.y < 2.2 && (mv.x || 0) > 0.3 && W.floorAt(e.x + 1.2) < 0.75) { g.ashore = { walk: 0, step: 0, hop: 0, wade: 0.6, saidT: 0 }; e.facing = 1; audio.ready && audio.splash && audio.splash(0.4); }
+    return;
+  }
+  const A = g.ashore, walk = ui.anyOpen() ? 0 : Math.sign(Math.abs(mv.x || 0) > 0.2 ? mv.x : 0), pace = walk && mv.sprint ? ISLE_RUN : ISLE_WALK;
+  A.saidT = Math.max(0, A.saidT - dt);
+  let nx = e.x + walk * pace * dt;
+  if (nx > ISLE.stop) { nx = ISLE.stop; if (walk > 0 && !A.saidT) { say('Area available in a future update', 'earl'); A.saidT = 4; } }
+  e.x = nx; if (walk) e.facing = walk;
+  // back into the sea: where the water is deep enough to swim
+  if (walk < 0 && W.floorAt(e.x) > 0.95) { g.ashore = null; e.y = 0.8; e.vx = -1.2; e.vy = 0.4; e.angle = 0; audio.ready && audio.splash && audio.splash(0.5); return; }
+  A.walk = lerp(A.walk || 0, walk ? 1 : 0, 1 - Math.exp(-dt * (walk ? 8 : 6)));
+  if (walk || A.walk > 0.05) { const s0 = A.step; A.step = s0 + dt * pace * 3.4; if (Math.floor(A.step / Math.PI) !== Math.floor(s0 / Math.PI) && A.walk > 0.35) audio.ready && audio.footstep && audio.footstep(0.05 * A.walk); }
+  if (!ui.anyOpen() && !A.hop && pressed.has(' ')) { A.hop = 0.55; pressed.delete(' '); }
+  if (A.hop) A.hop = Math.max(0, A.hop - dt);
+  A.wade = Math.max(0, A.wade - dt);
+}
+function placeAshore() {
+  const e = g.earl, A = g.ashore, ground = g.world.floorAt(e.x), hk = A.hop ? 1 - A.hop / 0.55 : 0;
+  const stand = ground - 0.85 - Math.abs(Math.sin(A.step || 0)) * 0.03 * (A.walk || 0) - Math.sin(hk * Math.PI) * 0.45;
+  e.y = A.wade > 0 ? lerp(stand, e.y, A.wade / 0.6) : stand; // up out of the water over half a second
+  e.vx = e.vy = 0; e.angle = -Math.PI / 2; e.speedNow = 0; e.o2 = e.o2Max; e.atSurface = true;
+}
 function deckInput(dt, mv) {
   const e = g.earl;
   if (!g.aboard) {
@@ -2301,6 +2330,7 @@ function update(dt) {
     } else { g.promptText = null; g.promptT = 0; }
     // aboard the Margaret (2.4.0): the stern ladder, walking the deck, the stations
     deckInput(dt, mv);
+    ashoreInput(dt, mv); // (7.4.17)
     // seabed materials have to be worked loose: hold F (or the right mouse button), one at a time
     const holding = keys.has('f');
     const planting = canPlant(target);
@@ -2737,8 +2767,9 @@ function update(dt) {
       if (e.inSub) { g.sub.x += cvx * dt * 0.5; g.sub.y += cvy * dt * 0.5; } else { e.x += cvx * dt; e.y += cvy * dt; }
     }
     if (g.aboard && !g.helm) { mv.x = 0; mv.y = 0; mv.sprint = false; }
-    const res = updateEarl(g, dt, mv);
+    const res = g.ashore ? null : updateEarl(g, dt, mv); // (7.4.17) on the island he walks (placeAshore)
     if (g.aboard) placeOnDeck(dt);
+    if (g.ashore) placeAshore();
     zoneHazards(dt);
     g.aim = null;
     if (e.inSub && !g.sub.imploded && g.mode === 'play' && !g.frozen) crushDepth(dt);

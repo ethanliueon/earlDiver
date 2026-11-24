@@ -25,7 +25,7 @@ import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY } from './specimens.js';
 import { glint } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
-import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL } from './world.js';
+import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
 
@@ -404,6 +404,7 @@ export class Renderer {
     for (const v of g.world.vents) if (inView(v.x, v.y, 30)) this.drawVent(ctx, v, S, Sy, ppm, t);
     this.drawFloorCached(g, S, Sy, ppm);
     this.drawFloorLife(g, ctx, S, Sy, ppm, x0, x1, t);
+    if (x1 > ISLE.x0 - 10) this.drawIsland(g, ctx, S, Sy, ppm, t, dayEff); // (7.4.17)
     for (const rk of g.world.rocks) if (rk.kind !== 'oldone' && !rk.hidden && rk.x1 > x0 && rk.x0 < x1 && rk.y1 > y0 && rk.y0 < y1 && visible((rk.x0 + rk.x1) / 2, (rk.y0 + rk.y1) / 2, Math.max(rk.x1 - rk.x0, rk.y1 - rk.y0) * 0.6)) this.drawRock(ctx, rk, S, Sy, ppm);
     this.drawDeepPlaces(g, ctx, S, Sy, ppm, t, inView);
     // statics on the floor
@@ -462,8 +463,13 @@ export class Renderer {
           const nG = my ? 13 : 7;
           for (let k = 0; k < nG; k++) { const ph = (t * 0.4 + k * 0.149) % 1, a = Math.sin(Math.PI * ph) * (0.65 + 0.35 * Math.sin(t * 9 + k * 3)), u = (k / (nG - 1) - 0.5) * 0.85;
             glint(ctx, S(c.x + dir * u * Lp), Sy(c.y + Math.sin(k * 2.1 + t * 0.6) * Lp * 0.09 - ph * 0.3), Math.max(3, ppm * 0.1), a * 0.95, k + t * 0.3, my ? [255, 170, 120] : undefined); }
-          if (my) for (let k = 0; k < 16; k++) { const ph = (t * (0.16 + (k % 5) * 0.03) + k * 0.0617) % 1, u = ((k * 0.381) % 1 - 0.5) * 0.95, ex = S(c.x + dir * u * Lp + Math.sin(t * 0.9 + k) * 0.15), ey = Sy(c.y + Lp * 0.06 - ph * Math.max(1.2, Lp * 0.35));
-            const a = Math.sin(Math.PI * ph) * 0.7, rr = Math.max(1.2, ppm * 0.035) * (1 - ph * 0.5); ctx.fillStyle = `rgba(255,${130 + Math.round(60 * (1 - ph))},80,${a.toFixed(3)})`; ctx.beginPath(); ctx.arc(ex, ey, rr, 0, Math.PI * 2); ctx.fill(); }
+          if (my) { ctx.save(); ctx.globalCompositeOperation = 'source-over'; // (7.4.17) solid embers, so they show in bright shallow water too
+            const nE = 28, er = Math.max(2.2, ppm * 0.09);
+            for (let k = 0; k < nE; k++) { const ph = (t * (0.14 + (k % 5) * 0.03) + k * 0.0617) % 1, u = ((k * 0.381) % 1 - 0.5) * 1.0, ex = S(c.x + dir * u * Lp + Math.sin(t * 0.9 + k) * 0.2), ey = Sy(c.y + Lp * 0.05 - ph * Math.max(1.5, Lp * 0.3));
+              const a = Math.sin(Math.PI * ph), rr = er * (1 - ph * 0.45);
+              const eg = ctx.createRadialGradient(ex, ey, 0, ex, ey, rr * 2.4); eg.addColorStop(0, `rgba(255,${200 - Math.round(60 * ph)},120,${(a * 0.95).toFixed(3)})`); eg.addColorStop(0.35, `rgba(240,${110 - Math.round(30 * ph)},50,${(a * 0.7).toFixed(3)})`); eg.addColorStop(1, 'rgba(200,60,30,0)');
+              ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, rr * 2.4, 0, Math.PI * 2); ctx.fill(); }
+            ctx.restore(); }
           ctx.restore(); }
       }
       if (!glowOf(c) && !c.variant && !c.petLeg && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black (a legendary pet always shows)
@@ -539,6 +545,7 @@ export class Renderer {
         const a = seabedPose(g.world, c.x, Math.max(0.1, c.len * 0.5), true).rot;
         tg.rotate(c.dir > 0 ? -a : a);
       } else if (UPRIGHT[c.sp.id]) tg.rotate(UPRIGHT[c.sp.id][0] * Math.PI / 2 * 0.9 + Math.sin(t * 0.4 + c.wob) * 0.07 + extra); // (5.16.0) hanging upright, a slight lean
+      else if (c.sp.v.sq === 'giant' || c.sp.v.sq === 'colossal') tg.rotate(-tilt * 0.4 + 0.12 + Math.sin(t * 0.5 + (c.wob || 0)) * 0.03 + extra * 0.5); // (7.4.17, owner) a giant squid never turns over: level or a little tilted, the mantle's tip a touch higher
       else tg.rotate((c.sp.v.hab === 'drift' ? 0 : -tilt) + extra);
       const r = c.variant ? this.drawVariant(tg, c.sp, c.variant, Ld, c.phase) : this.drawCached(tg, c.sp, Ld, c.phase, c.wob, isLive ? null : this.veilFor(c.y));
       tg.restore();
@@ -1072,7 +1079,7 @@ export class Renderer {
       if (A0 && A0.inFrame && bf && A0.lx != null) { ctx.translate(bf.x, bf.y); ctx.rotate(bf.a); ctx.translate(A0.lx * ppm, A0.ly * ppm); } // aboard: in the boat's own frame, rocking with her
       else ctx.translate(S(e.x), Sy(e.y));
       ctx.scale(e.facing, 1); ctx.rotate(e.angle);
-      const moving = g.aboard ? 0 : clamp(e.speedNow / 3, 0, 1);
+      const moving = g.aboard || g.ashore ? 0 : clamp(e.speedNow / 3, 0, 1);
       const lampCol = e.lampOn ? rgbStr(mixRgb(BEAM_CALM, BEAM_DREAD, fx.torchShift)) : null;
       // what he is holding, and what is in his bag
       let gear = null;
@@ -1090,13 +1097,14 @@ export class Renderer {
           catchSp: g.netCatch, held: g.slurpHeld, bag: g.bag.map((sp) => ({ col: SPECIES_BY_ID[sp.id].v.c[0] })),
           aimLocal, loaded: !(g.capture && g.capture.kind === 'tag'), flash: g.camFlash || 0, suit: e.suit, finLook: e.finLook, tankLook: e.tankLook, suitGlow: e.suitGlow };
       }
+      if (g.ashore) gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: true, noTank: true, noMask: true, tankLook: e.tankLook, suitGlow: e.suitGlow, walk: g.ashore.walk || 0 }; // (7.4.17) on the island: as on deck
       if (g.aboard) { // on deck: tools stowed, boots on, no tank or mask; on the ladder: tank and mask still on, hands on the rungs
         const P0 = g.aboard.pose, onDeck = P0 === 'deck' && !(g.aboard.jump > 0);
         gear = { kind: 'none', tier: 0, t, suit: e.suit, bag: [], land: true, noTank: onDeck, noMask: onDeck, tankLook: e.tankLook, suitGlow: e.suitGlow };
         if (onDeck) gear.walk = g.aboard.walk || 0;
         else if (P0 === 'climb') gear.climb = g.aboard.rung || 0;
       }
-      const h = drawEarl(ctx, (g.aboard ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
+      const h = drawEarl(ctx, (g.aboard || g.ashore ? 1.7 : EARL_H) * ppm, e.kick, moving, lampCol, amb, gear); // (standing on deck he is drawn at a man's height)
       ctx.restore();
       // (2.8.2) a Legendary's wake: a few dim motes that school with him, shaped by the net's skill (trail.js)
       if (e.trail && !e.inSub && !g.aboard && g.mode === 'play') {
@@ -1179,7 +1187,8 @@ export class Renderer {
     if (horizon > -20 && horizon < H + 20) {
       ctx.strokeStyle = `rgba(220,245,255,${(0.25 + 0.35 * dayEff).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.06);
       ctx.beginPath();
-      for (let sx = -10; sx <= W + 20; sx += 12) ctx.lineTo(sx, Sy(surfY(cam.x + (sx - W / 2) / ppm)) + 1);
+      let on = false; // (7.4.17) broken where land stands above the water (the island): the line only on water
+      for (let sx = -10; sx <= W + 20; sx += 12) { const wx = cam.x + (sx - W / 2) / ppm, y = surfY(wx); if (g.world.floorAt(wx) < y + 0.15) { on = false; continue; } if (on) ctx.lineTo(sx, Sy(y) + 1); else ctx.moveTo(sx, Sy(y) + 1); on = true; }
       ctx.stroke();
     }
 
@@ -1866,20 +1875,54 @@ export class Renderer {
       // the cloud deck itself, re-drawn darker and closer: soft, scudding storm cloud
       this.clouds.draw(ctx, W, horizon, this.H * 0.6, t * 4, this.cam.x * 1.6, this.cam.ppm, [70, 72, 84], 0.12 + 0.2 * storm);
     }
-    // the beach / dunes above water (right side)
-    const S = this.S, Sy = this.Sy, ppm = this.cam.ppm;
-    if (S(WORLD_W - 25) < W) {
-      ctx.fillStyle = rgbStr(mixRgb([30, 28, 24], [196, 180, 146], Math.max(0.15, dayEff)));
-      ctx.beginPath(); ctx.moveTo(S(WORLD_W - 28), Sy(0.2));
-      for (let x = WORLD_W - 28; x <= WORLD_W + 60; x += 2) ctx.lineTo(S(x), Sy(Math.min(0.2, g.world.floorAt(Math.min(x, WORLD_W)) - (x > WORLD_W ? (x - WORLD_W) * 0.05 : 0)) + Math.sin(x * 0.3) * 0.1));
-      ctx.lineTo(S(WORLD_W + 60), Sy(1)); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = rgbStr(mixRgb([20, 24, 18], [80, 96, 56], Math.max(0.15, dayEff)));
-      ctx.lineWidth = Math.max(1, ppm * 0.03);
-      for (let k = 0; k < 30; k++) {
-        const x = WORLD_W - 15 + k * 2.3, y = g.world.floorAt(Math.min(x, WORLD_W)) - (x > WORLD_W ? (x - WORLD_W) * 0.05 : 0);
-        ctx.beginPath(); ctx.moveTo(S(x), Sy(y)); ctx.quadraticCurveTo(S(x + 0.2), Sy(y - 0.4), S(x + 0.4 + Math.sin(t + k) * 0.1), Sy(y - 0.7)); ctx.stroke();
-      }
+  }
+
+  // (7.4.17, owner) the coconut island: one coconut palm leaning out over the water, its trunk ringed with old leaf
+  // scars, a crown of long drooping fronds stirring in the wind, a cluster of coconuts under it; tufts of dune grass on
+  // the sand, a few shells and a fallen coconut. Painted by hand in the game's muted colours, lit by the day
+  drawIsland(g, ctx, S, Sy, ppm, t, dayEff) {
+    const W = g.world, day = Math.max(0.18, dayEff ?? 1), tint = (rgb) => rgbStr(mixRgb([18, 20, 22], rgb, day));
+    const px = ISLE.palm, gy = W.floorAt(px), wind = Math.sin(t * 0.7) * 0.5 + Math.sin(t * 1.9) * 0.2;
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // dune grass: thin blades in tufts, bending with the wind
+    for (let k = 0; k < 26; k++) { const x = ISLE.x0 + 3 + ((k * 7.31) % 1) * 16 + k * 0.05, y = W.floorAt(x); if (y > -0.4) continue;
+      const n = 4 + (k % 3); for (let j = 0; j < n; j++) { const a = (j - n / 2) * 0.22 + wind * 0.25, hgt = 0.35 + ((k * 13 + j * 7) % 10) / 22;
+        ctx.strokeStyle = tint(j % 2 ? [128, 132, 78] : [104, 112, 64]); ctx.lineWidth = Math.max(1, ppm * 0.025);
+        ctx.beginPath(); ctx.moveTo(S(x + j * 0.03), Sy(y + 0.02)); ctx.quadraticCurveTo(S(x + j * 0.03 + Math.sin(a) * hgt * 0.4), Sy(y - hgt * 0.6), S(x + j * 0.03 + Math.sin(a) * hgt), Sy(y - hgt * Math.cos(a))); ctx.stroke(); } }
+    // shells and a fallen coconut on the sand
+    for (const [sx, r] of [[ISLE.x0 + 5.2, 0.06], [ISLE.x0 + 9.7, 0.05], [ISLE.x0 + 13.1, 0.07]]) { const y = W.floorAt(sx); ctx.fillStyle = tint([232, 222, 200]); ctx.beginPath(); ctx.ellipse(S(sx), Sy(y - r * 0.4), r * ppm, r * 0.6 * ppm, 0.2, Math.PI, TAU); ctx.fill(); }
+    { const cx = px - 2.2, cy = W.floorAt(cx) - 0.12; ctx.fillStyle = tint([96, 70, 42]); ctx.beginPath(); ctx.ellipse(S(cx), Sy(cy), 0.15 * ppm, 0.12 * ppm, 0.3, 0, TAU); ctx.fill(); ctx.fillStyle = tint([130, 98, 62]); ctx.beginPath(); ctx.ellipse(S(cx - 0.04), Sy(cy - 0.04), 0.07 * ppm, 0.05 * ppm, 0.3, 0, TAU); ctx.fill(); }
+    // the trunk: rooted in the sand, curving up and leaning out to the left (over the water), ringed
+    const H = 7.2, lean = -2.6, top = { x: px + lean + wind * 0.08, y: gy - H };
+    const pt = (u) => { const x = px + lean * u * u + wind * 0.08 * u * u, y = gy - H * u; return [x, y]; };
+    const n = 26;
+    for (let i = 0; i < n; i++) { const [xa, ya] = pt(i / n), [xb, yb] = pt((i + 1) / n), w = (0.34 - 0.12 * i / n) * ppm;
+      ctx.strokeStyle = tint(i % 2 ? [118, 104, 84] : [104, 92, 74]); ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(S(xa), Sy(ya)); ctx.lineTo(S(xb), Sy(yb)); ctx.stroke();
+      ctx.strokeStyle = tint([70, 60, 48]); ctx.lineWidth = Math.max(1, ppm * 0.03); ctx.beginPath(); const [xm, ym] = pt((i + 0.5) / n); ctx.moveTo(S(xm) - w * 0.48, Sy(ym) + w * 0.12); ctx.lineTo(S(xm) + w * 0.48, Sy(ym) - w * 0.12); ctx.stroke(); }
+    ctx.strokeStyle = tint([150, 136, 110]); ctx.lineWidth = Math.max(1, ppm * 0.05); ctx.beginPath(); for (let i = 0; i <= n; i++) { const [x, y] = pt(i / n); i ? ctx.lineTo(S(x) - (0.12 - 0.04 * i / n) * ppm, Sy(y)) : ctx.moveTo(S(x) - 0.12 * ppm, Sy(y)); } ctx.stroke(); // the lit side
+    // the base flares into the sand
+    ctx.fillStyle = tint([104, 92, 74]); ctx.beginPath(); ctx.ellipse(S(px), Sy(gy - 0.05), 0.42 * ppm, 0.14 * ppm, 0, 0, TAU); ctx.fill();
+    // the coconuts, under the crown
+    for (const [dx, dy] of [[0.12, 0.25], [-0.15, 0.3], [0.02, 0.42], [0.25, 0.4]]) { ctx.fillStyle = tint([92, 74, 40]); ctx.beginPath(); ctx.arc(S(top.x + dx), Sy(top.y + dy), 0.17 * ppm, 0, TAU); ctx.fill(); ctx.fillStyle = tint([140, 118, 64]); ctx.beginPath(); ctx.arc(S(top.x + dx - 0.05), Sy(top.y + dy - 0.05), 0.06 * ppm, 0, TAU); ctx.fill(); }
+    // two dead fronds hanging down against the trunk, brown and ragged
+    for (const [sd, ln] of [[-1, 2.4], [1, 2.0]]) { ctx.strokeStyle = tint([110, 90, 58]); ctx.lineWidth = Math.max(1, ppm * 0.05); const bx = top.x + sd * 0.15, by = top.y + 0.3;
+      ctx.beginPath(); ctx.moveTo(S(bx), Sy(by)); ctx.quadraticCurveTo(S(bx + sd * 0.6), Sy(by + 0.5), S(bx + sd * 0.35 + wind * 0.05), Sy(by + ln)); ctx.stroke();
+      for (let i = 2; i < 12; i++) { const u = i / 12, x = bx + sd * (0.6 * 2 * u * (1 - u) + 0.35 * u * u), y = by + 0.5 * 2 * u * (1 - u) + ln * u * u; ctx.strokeStyle = tint(i % 2 ? [128, 104, 66] : [98, 80, 52]); ctx.lineWidth = Math.max(1, ppm * 0.03); ctx.beginPath(); ctx.moveTo(S(x), Sy(y)); ctx.lineTo(S(x - sd * 0.25), Sy(y + 0.35)); ctx.stroke(); } }
+    // the fronds: long arching midribs that droop at the ends, each lined both sides with many long, narrow leaflets
+    // hanging down from it (painted as tapered strokes, two greens, the far side darker), stirring in the wind
+    const fronds = [-2.95, -2.55, -2.1, -1.7, -1.25, -0.8, -0.35, 0.1, 0.55, 1.0, 1.45, 1.9, 2.35, 2.8];
+    const order = fronds.map((a, i) => [a, i]).sort((p1, p2) => (p1[1] % 2) - (p2[1] % 2)); // the far ones first
+    for (const [a00, f] of order) {
+      const far = f % 2 === 1, a0 = a00 + wind * 0.08 * (1 + (f % 3) * 0.3), len = 3.6 + ((f * 5) % 4) * 0.4, sag = 1.1 + Math.abs(Math.cos(a0)) * 0.9;
+      const P = []; for (let i = 0; i <= 20; i++) { const u = i / 20; P.push([top.x + Math.sin(a0) * len * u, top.y - Math.cos(a0) * len * u * 0.5 + sag * u * u + Math.sin(t * 1.3 + f + u * 3) * 0.07 * u]); }
+      const g0 = far ? [64, 80, 44] : [86, 104, 56], g1 = far ? [74, 90, 50] : [104, 120, 64];
+      for (let i = 2; i < 20; i++) { const u = i / 20, [x, y] = P[i], [xn, yn] = P[i + 1], ang = Math.atan2(yn - y, xn - x), ll = 0.95 * Math.sin(Math.PI * Math.min(1, u * 1.1)) + 0.15;
+        for (const sd of [-1, 1]) { const la = ang + sd * 0.95, dx = Math.cos(la) * ll, dy = Math.abs(Math.sin(la)) * ll * 0.6 + ll * 0.55; // the leaflets hang: their tips fall
+          ctx.strokeStyle = tint(sd > 0 ? g0 : g1); ctx.lineWidth = Math.max(1, ppm * 0.07 * (1 - u * 0.5));
+          ctx.beginPath(); ctx.moveTo(S(x), Sy(y)); ctx.quadraticCurveTo(S(x + dx * 0.6), Sy(y + dy * 0.2), S(x + dx), Sy(y + dy)); ctx.stroke(); } }
+      ctx.strokeStyle = tint(far ? [96, 96, 60] : [130, 128, 80]); for (let i = 0; i < 20; i++) { ctx.lineWidth = Math.max(1, ppm * 0.09 * (1 - i / 24)); ctx.beginPath(); ctx.moveTo(S(P[i][0]), Sy(P[i][1])); ctx.lineTo(S(P[i + 1][0]), Sy(P[i + 1][1])); ctx.stroke(); }
     }
+    ctx.restore();
   }
 
   drawFar(g, S, Sy, dayEff) {
@@ -2092,6 +2135,19 @@ export class Renderer {
     ctx.fillStyle = fg; ctx.fill();
     // grain texture
     ctx.save(); ctx.clip();
+    // (7.4.17, owner) the island above the water: dry pale sand, a darker wet band just above the waterline
+    if (x1 > ISLE.x0 - 4 && x0 < WORLD_W + 80) {
+      const top = Sy(-1.7), wl = Sy(0);
+      const dg = ctx.createLinearGradient(0, top, 0, wl + ppm * 0.3); dg.addColorStop(0, '#d6c49a'); dg.addColorStop(0.7, '#c8b286'); dg.addColorStop(0.88, '#a8916a'); dg.addColorStop(1, '#8a7656');
+      ctx.fillStyle = dg; ctx.fillRect(S(ISLE.x0 - 4), top - ppm, S(WORLD_W + 80) - S(ISLE.x0 - 4), wl + ppm * 0.3 - top + ppm);
+    }
+    // (7.4.17, owner) the painted sand itself (assets/textures/seabed.png), multiplied over the floor's colour, pinned to
+    // the world; strongest in the shallows, where the bottom is seen close and lit (a phone draws it too: this is baked)
+    { const img = this.seabedImg || (this.seabedImg = (() => { const im = new Image(); im.onload = () => { im.ok = true; if (this.floorCache) this.floorCache.ppm = 0; }; im.src = 'assets/textures/seabed.png'; return im; })());
+      if (img.ok) { const pat = this.seabedPat || (this.seabedPat = ctx.createPattern(img, 'repeat')), k = 3.2 * ppm / img.width;
+        pat.setTransform(new DOMMatrix([k, 0, 0, k, S(0) % (img.width * k), Sy(0)]));
+        ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.85 - 0.55 * smoothstep(20, 500, V ? V.midD : camY); ctx.fillStyle = pat;
+        if (area) ctx.fillRect(area[0], area[1], area[2], area[3]); else ctx.fillRect(0, 0, W, H); ctx.restore(); } }
     // rock and sediment: large mottling and a fine grain, pinned to the world so they never swim
     if (!this.phone) this.texture(ctx, 'rock', 19, 0.22 + 0.25 * smoothstep(30, 400, camY), 'soft-light', S(0), Sy(0), area);
     if (ppm > 14 && !this.lite) this.texture(ctx, 'grain', 2.7, 0.3, 'soft-light', S(0.37), Sy(0.61), area);
