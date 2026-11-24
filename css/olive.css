@@ -2048,3 +2048,97 @@ html body #inventory .ip-col.more:not(#_a):not(#_b)::after { content: '' !import
   background-color: rgba(226, 216, 190, 0.75) !important; animation: ipc-more 1.8s ease-in-out infinite; }
 html body #inventory .ip-col.more.at-end:not(#_a):not(#_b)::after { opacity: 0; animation: none; }
 @keyframes ipc-more { 0%, 100% { transform: translateY(0); opacity: 0.55; } 50% { transform: translateY(3px); opacity: 0.9; } }
+
+/* ---------- (7.4.14, owner) pets: the shop by tier, a locked kind a dark outline; the pets he owns ---------- */
+html body .store-panel .st-petshop { position: relative; }
+html body .store-panel .st-petshop .pet-have { position: absolute; top: 22px; right: 74px; display: flex; align-items: center; gap: 5px; font: 600 17px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
+html body .store-panel .st-petshop .pet-have img { width: 18px; height: 18px; }
+html body .store-panel .pet-scroll { max-height: min(62vh, 300px); overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; -webkit-overflow-scrolling: touch; }
+html body .store-panel .pet-tier { display: flex; align-items: center; gap: 10px; margin: 10px 2px 6px; font: 600 16px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; text-align: left; }
+html body .store-panel .pet-tier:first-child { margin-top: 0; }
+html body .store-panel .pet-tier span { display: inline-flex; align-items: center; gap: 4px; color: #d8d0b8; font-weight: 500; letter-spacing: 0; text-transform: none; }
+html body .store-panel .pet-tier span img { width: 14px; height: 14px; }
+html body .store-panel .st-pets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+html body .store-panel .st-pets .pet-card b { font-size: 14px !important; text-align: center; }
+html body .store-panel .st-pets .pet-card img:not(.st-pearl) { height: 58px !important; }
+html body .store-panel .st-pets .pet-card.locked img { filter: brightness(0) opacity(0.55); }
+html body .store-panel .st-pets .pet-card.locked b { color: #8c8672; }
+html body .store-panel .st-pets .pet-card.locked .st-r { color: #8c8672; font-size: 13px; text-align: center; text-transform: none; letter-spacing: 0; }
+html body .store-panel .st-pets .pet-card .st-r { font-size: 12px; }
+html body .pet-stars { display: inline-flex; gap: 1px; font-size: 12px; line-height: 1; }
+html body .pet-stars i { font-style: normal; color: rgba(230, 222, 198, 0.22); }
+html body .pet-stars i.on { color: #e8c878; text-shadow: 0 0 4px rgba(232, 200, 120, 0.45); }
+/* the pet slot's "!": the same red badge as the journal's, on the slot's corner */
+html body #inventory .eq-slot.petg { position: relative; }
+html body #inventory .eq-slot.petg .badge-x { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #c8402e; color: #fff6ea; font: 700 13px/20px 'Barlow Semi Condensed', sans-serif; font-style: normal; text-align: center; box-shadow: 0 0 0 2px #181a14; z-index: 2; pointer-events: none; }
+html body #inventory .pet-pick .pp-grid:not(#_a) { grid-template-columns: repeat(4, 1fr); max-height: min(46vh, 250px); }
+html body #inventory .pet-pick .pp-pet { position: relative; display: grid; justify-items: center; gap: 3px; padding: 9px 6px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.32); border: 0; box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6); color: #e6dfca; cursor: pointer; }
+html body #inventory .pet-pick .pp-pet img { width: 100%; height: 56px; object-fit: contain; }
+html body #inventory .pet-pick .pp-pet b { font: 600 15px/1.1 'Barlow Semi Condensed', sans-serif; text-align: center; }
+html body #inventory .pet-pick .pp-pet small { display: inline-flex; align-items: center; gap: 3px; font: 500 13px 'Barlow Semi Condensed', sans-serif; opacity: 0.75; }
+html body #inventory .pet-pick .pp-pet small img { width: 12px; height: 12px; }
+html body #inventory .pet-pick .pp-pet.out { background: rgba(60, 70, 40, 0.45); }
+html body #inventory .pet-pick .pp-pet.out img { filter: drop-shadow(0 0 6px rgba(232, 220, 180, 0.35)); }
+html body #inventory .pet-pick .pp-tick { position: absolute; top: 4px; right: 7px; font: 700 16px 'Barlow Semi Condensed', sans-serif; font-style: normal; color: #b8d48a; }
+html body #inventory .pet-pick .pp-foot { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 12px; }
+html body #inventory .pet-pick .pp-foot span { font: 500 14px 'Barlow Semi Condensed', sans-serif; opacity: 0.7; }
+html body #inventory .pet-pick .pp-foot button { border: 12px solid transparent !important; border-image: var(--o-btn) 28 fill / 12px stretch !important; background: none !important; padding: 0 14px !important; min-width: 96px; font: 600 16px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; }
+html body #inventory .pet-pick .pp-foot button:disabled { opacity: 0.42; }
+/* mythical: its name and its frame in the deep's red */
+html body .r-mythical .slot-nm, html body .rbadge.r-mythical { --rc: #e0583c; }
+
+/* ---------- (7.4.14, owner) the pet's aquarium: its tank, the tray of what was brought up, the meter along the bottom ---------- */
+#petfeed { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(2, 6, 9, 0.62); touch-action: none; }
+#petfeed .pf-plate { position: relative; width: min(96vw, 860px); height: min(94vh, 380px); display: grid; grid-template-rows: auto 1fr auto; gap: 6px; padding: 0 4px 0; color: #e6dec6; background: url("../assets/ui/olive/tile.png") 0 0 / 512px 512px; border: 22px solid transparent; border-image: url("../assets/ui/olive/panel.png") 60 fill / 22px stretch; box-sizing: border-box; }
+#petfeed h2 { margin: 0; text-align: center; font: 600 22px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; letter-spacing: 0.01em; }
+html body #petfeed .pf-x:not(#_a):not(#_b):not(#_c):not(#_d) { position: absolute; right: -8px; top: -12px; z-index: 3; }
+#petfeed .pf-body { display: grid; grid-template-columns: 1fr 150px; gap: 10px; min-height: 0; }
+#petfeed .pf-tank { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 3px #1a1c12, inset 0 0 0 5px rgba(200, 190, 150, 0.12), 0 2px 6px rgba(0, 0, 0, 0.5); }
+#petfeed .pf-can, #petfeed .pf-fx { position: absolute; inset: 0; width: 100%; height: 100%; display: block; } #petfeed .pf-fx { pointer-events: none; }
+#petfeed .pf-hint { position: absolute; left: 0; right: 0; top: 8px; margin: 0; text-align: center; font: 500 14px 'Barlow Semi Condensed', sans-serif; color: rgba(236, 228, 206, 0.72); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); pointer-events: none; }
+#petfeed .pf-tray { display: flex; flex-direction: column; min-height: 0; }
+#petfeed .pf-tray h4 { margin: 0 0 6px; font: 600 13px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #b8b094; text-align: center; }
+#petfeed .pf-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
+#petfeed .pf-fish { display: grid; grid-template-columns: 54px 1fr; grid-template-rows: auto auto; column-gap: 6px; align-items: center; padding: 5px 6px; border: 0; border-radius: 4px; background: rgba(0, 0, 0, 0.32); box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6); text-align: left; touch-action: none; cursor: grab; }
+#petfeed .pf-fish img { grid-row: 1 / 3; width: 54px; height: 34px; object-fit: contain; pointer-events: none; }
+#petfeed .pf-fish b { font: 600 13px/1.05 'Barlow Semi Condensed', sans-serif; }
+#petfeed .pf-fish small { font: 600 12px 'Barlow Semi Condensed', sans-serif; color: #d8a8b4; }
+#petfeed .pf-fish.off { opacity: 0.4; cursor: default; }
+#petfeed .pf-none { font: 500 13px 'Barlow Semi Condensed', sans-serif; color: rgba(230, 222, 198, 0.5); text-align: center; }
+#petfeed .pf-foot { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 14px; }
+#petfeed .pf-meter { position: relative; height: 40px; }
+#petfeed .pf-bar { position: absolute; inset: 0; width: 100%; height: 100%; }
+#petfeed .pf-pts { position: absolute; left: 10px; top: -6px; font: 500 12px 'Barlow Semi Condensed', sans-serif; color: rgba(236, 228, 206, 0.7); }
+#petfeed .pf-size { display: flex; align-items: center; gap: 4px; font: 600 13px 'Barlow Semi Condensed', sans-serif; color: #b8b094; text-transform: uppercase; letter-spacing: 0.06em; }
+#petfeed .pf-size button { width: 30px; height: 30px; border: 0; border-radius: 4px; background: #3c3a2a; color: #efe8d2; font: 600 20px/1 'Barlow Semi Condensed', sans-serif; box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.15), 0 1px 0 #14120c; }
+#petfeed .pf-size button:disabled { opacity: 0.35; }
+#petfeed .pf-szv { display: inline-flex; gap: 1px; font-size: 14px; letter-spacing: 0; }
+#petfeed .pf-szv i { font-style: normal; color: rgba(230, 222, 198, 0.2); } #petfeed .pf-szv i.can { color: rgba(232, 200, 120, 0.45); } #petfeed .pf-szv i.on { color: #e8c878; }
+#petfeed .pf-top { display: inline-flex; align-items: center; gap: 4px; border: 12px solid transparent; border-image: var(--o-btn) 28 fill / 12px stretch; background: none; padding: 0 10px; font: 600 15px 'Barlow Semi Condensed', sans-serif; color: #efe8d2; white-space: nowrap; }
+#petfeed .pf-top img { width: 15px; height: 15px; }
+#petfeed .pf-top:disabled { opacity: 0.42; }
+#petfeed .pf-grow { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 2; pointer-events: none; }
+.pf-ghost { position: fixed; z-index: 70; width: 84px; height: 52px; object-fit: contain; transform: translate(-50%, -60%); pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6)); }
+
+/* ---------- (7.4.15, owner) mythical: the legendary's dress in the deep's red (oxblood, an ember glow) ---------- */
+#inventory, #gains, #rates, .store-panel, #gainfx, #oldcard, .cx { --r-mythical: #e0583c; }
+#inventory .r-mythical, #gains .r-mythical, .cr-item.r-mythical, #inventory .ip-col.r-mythical { --rc: var(--r-mythical); }
+#rates .r-mythical, .ch-odds .r-mythical { color: var(--r-mythical, #e0583c); }
+#catalog .r-mythical, html body #catalog .rr.r-mythical { color: #9a3a26; }
+#inventory .lk-tile.r-mythical { border-width: 2px; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.6), inset 0 0 0 3px #a8432c, inset 0 0 10px rgba(0,0,0,0.5); }
+#inventory .lk-tile.r-mythical::before { content: ''; position: absolute; inset: -4px; pointer-events: none;
+  background: radial-gradient(circle, #e0583c 0 2px, transparent 2.5px) 0 0 / 8px 8px no-repeat, radial-gradient(circle, #e0583c 0 2px, transparent 2.5px) 100% 0 / 8px 8px no-repeat,
+    radial-gradient(circle, #e0583c 0 2px, transparent 2.5px) 0 100% / 8px 8px no-repeat, radial-gradient(circle, #e0583c 0 2px, transparent 2.5px) 100% 100% / 8px 8px no-repeat; }
+#inventory .inv-right .lk-tile.r-mythical:not(.empty), #inventory .eq-stage .eq-slot.sq.r-mythical { background: radial-gradient(ellipse at 50% 55%, rgba(224,88,60,0.24), rgba(0,0,0,0) 70%), linear-gradient(180deg, #1c1a17, #2a2622 85%, #34302a); }
+#inventory .eq-stage .eq-slot.sq.r-mythical { box-shadow: 0 0 0 1px #2a0e08, 0 0 0 3px #a8432c, 0 0 0 4px #2a0e08, inset 0 3px 8px rgba(0,0,0,0.7), inset 0 0 14px rgba(224,88,60,0.26); }
+#inventory .eq-slot.r-mythical { border-color: #a8432c; }
+#inventory .lk-card.r-mythical { border: 0; padding: 16px 18px; box-shadow: 0 0 0 1px #2a0e08, 0 0 0 4px #9a3a26, 0 0 0 5px #2a0e08, 0 0 0 7px var(--steel-lo), 0 0 22px rgba(224,88,60,0.25), inset 0 1px 0 rgba(255,255,255,0.05); }
+#inventory .lk-card.r-mythical .nm { font-size: 22px !important; }
+#inventory .ip-box.r-mythical, #inventory .ip-col.r-mythical { box-shadow: 0 0 0 1px #2a0e08, 0 0 0 3px #a8432c, 0 0 0 4px #2a0e08, inset 0 0 18px rgba(224,88,60,0.2); }
+#gainfx .gx-it.r-mythical .gx-light { background: radial-gradient(closest-side, rgba(232,96,62,0.5), rgba(160,40,24,0.18) 60%, transparent); }
+#gainfx .gx-it.r-mythical b { color: #ec6e4e !important; text-shadow: 0 0 12px rgba(224,88,60,0.55); }
+html body .store-panel .st-card.r-mythical, html body #inventory .pet-pick .pp-pet.r-mythical { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(160, 60, 40, 0.55), 0 0 12px rgba(224, 88, 60, 0.16); }
+/* (7.4.15) a mythical found: ten embers instead of six gold sparks, red cooling to orange */
+#gainfx .gx-embers b { background: #ffb080 !important; box-shadow: 0 0 7px 2px rgba(232, 96, 60, 0.75) !important; }
+#gainfx .gx-embers b:nth-child(7) { --sx: -20px; --sy: -70px; animation-delay: 0.3s; } #gainfx .gx-embers b:nth-child(8) { --sx: 30px; --sy: -80px; animation-delay: 0.9s; }
+#gainfx .gx-embers b:nth-child(9) { --sx: -80px; --sy: -10px; animation-delay: 1.3s; } #gainfx .gx-embers b:nth-child(10) { --sx: 85px; --sy: -20px; animation-delay: 1.7s; }

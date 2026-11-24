@@ -122,7 +122,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   hand on one writes "Guardian jellyfish / Its light keeps the deep away" beside it. The starter wetsuit is the one suit
   worse than any bought (15 m, air x1.05); fins show their real figures (1 to about 3). Rarity always names the kind of
   thing ("Rare suit", "Exotic item"); glow sticks rare, advanced exotic; traps and trawls have rarities. The revive
-  offer (js/purchases.js; web build = test store): only when the haul is worth more than 15 % of cash (at least $200,
+  offer (js/purchases.js; a stand-in store until the app's is connected): only when the haul is worth more than 15 % of cash (at least $200,
   never more than $100,000 asked), one revive a dive (the first ever an ad, every later one $0.99), never in the tutorial; back where he was with
   the haul and 30 % air, the thing draws off but the mark stays. One close cross on screen at a time.
 
@@ -167,9 +167,27 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   always 15x an exotic at its depth. The abyssal sleeper shark is an ordinary hunter (0.5 % of what is met below 3,000 m,
   no ambush timer): a far call and a radar ghost warn before it strikes; its bite is 4 injury points, or 80 % of the hull
   in the sub. **Pearls** are the premium currency: a new diver starts with 20, shown on their own small steel plate
-  under the money; a revive costs 50 pearls (no ad, no $0.99); no pay-to-win unless the owner asks. Animals can still
-  be caught as pets; custom pets are bought in the shop's Pets tab with pearls. Close to his pet, the interact button
-  becomes the pet (Stay / Follow); the word is written above the pet, with no line. The action arc keeps its places. (7.4.9) An ability's cooldown can be skipped with pearls from its button: 1 a 5 min up to 30 min, 1 a 15 min to 3 h, 1 an hour beyond. The Lighthouse burns 60 s, pulses to half again as bright and sweeps two soft beams round him.
+  under the money; a revive costs 50 pearls (no ad, no $0.99); no pay-to-win unless the owner asks. (7.4.12) Pearls come from
+  the daily gift (2 a day, 5 more on the seventh) and from legendary catches (10 each); events and pearl packs are
+  planned, not built (docs/PLAN_7.4.md). Close to his pet, the interact button becomes the pet (Stay / Follow); the word
+  is written above the pet, with no line. The action arc keeps its places. (7.4.12) An ability's cooldown can be skipped
+  with pearls from its button: a flat 1 pearl for every 5 minutes left. The Lighthouse burns 60 s, pulses to half again
+  as bright and sweeps two soft beams round him.
+- **Pets (7.4.14, owner):** only from pearls (js/petshop.js), never from the catch; never items (not in the bag, the
+  locker or the aquarium) and never sold. Tiers: exotic 80 pearls (plain), legendary 150 (a soft glow and motes),
+  mythical 500, the giants (an ember glow, more particles). A kind shows in the shop once its species is caught; until
+  then a dark outline, "Catch one to unlock". Every pet starts at its real size. The pet slot shows a red "!" while he
+  owns pets and none is out; tapped, it lists his pets. Feeding (js/petfeed.js): at the surface, once a day, one live
+  animal brought up, dragged into the pet's aquarium (it eats, loops, gives off pink hearts for about 5 s); points by
+  rarity (common 5, uncommon 10, rare 20, exotic 40, legendary 100); levels at 10, 50, 100, 500 points, each +20 % size,
+  with the screen darkening as it grows; a star a level on its card; the size can be set back without losing the level;
+  pearls top up points, 1 for 10.
+- **Mythical scrolls (7.4.15, owner):** a rarity above legendary, oxblood red with an ember glow (never the bright warning
+  red). Only from three legendaries of the same scroll combined: never in chests, the Old One's table or a shop. Worth
+  three legendaries. Maelstrom (Riptide), Pharos (Lighthouse), Whalesong (Fathom), Leviathan's Maw (Apex), Rift
+  (Undertow), The Last Tide (Tidewarden). Every one, for the 10 s after it fires: at least Flare+ light, at least
+  Sprint+ speed (the sub too), and air back (+5 % a second, up to +50 %, none lost). Usable any time; cooldowns at least
+  20 minutes.
 - **Decided in 7.4.0**: a net catches only what its hoop passes over in the swing (tools_draw.js netGeom); reach is a
   multiple of the hand net's (1x the hoop, 2x twice its radius), and the hand net takes 0.7 s to land. Ambush I-IV: 25 %
   a level that a fish holds still instead of darting or bolting, "Ambushed" written beside one caught that way. Observing
@@ -219,6 +237,6 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already
   have" handling, no compatibility for old save fields, and don't spend time on it or mention it in plans. A change
   that breaks an old save is fine; a new game is the answer.
-- **Never commit keys** (the Freesound key is an environment secret). There is no developer cheat in the shipped game (the X key was removed in 5.10.10); since 6.9.0 the shop has a **Test** tab (cash, chests, abilities, any item, resets) that appears only in the web build (purchases.js `isTestStore()`), never in the App Store build. Tests set money and gear through `window.__earl`.
+- **Never commit keys** (the Freesound key is an environment secret). There is no developer cheat in the shipped game (the X key was removed in 5.10.10); since 6.9.0 the shop has a **Test** tab (cash, pearls, chests, abilities, any item, resets); since 7.4.13 it shows only with `?dev` in the address (purchases.js `isTestStore()`), never in the App Store app. There is no web build: the game is phone-only. Tests set money and gear through `window.__earl`.
 - In code comments, say what a thing does and why, tagged with the version: `// (5.9.7) ...`. Inline comments in
   the middle of a line use `/* */`, never `//`.

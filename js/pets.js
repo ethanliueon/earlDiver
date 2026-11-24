@@ -1,30 +1,14 @@
-// (5.0) A companion. At the surface any healthy, free-swimming fish of 60 cm to 1.5 m (or any free-swimming
-// legend) can be dragged from the catch into the pet slot. It goes down with Earl and keeps at his shoulder:
-// it can't be netted, pressure means nothing to it, and it is never lost. Every pet hunts: where there is a
-// school about, now and then it darts in and takes a fish under 40 cm. Before something bad arrives it is the
-// first to know: it tucks in close behind him and twitches. G tells it to stay (it circles where it was left,
-// an arrow at the edge of the screen pointing the way back) or to follow again. Taken out of the slot, it goes
-// to the aquarium or back to the sea: never into the bag.
+// (5.0) A companion. It goes down with Earl and keeps at his shoulder: it can't be netted, pressure means nothing to it,
+// and it is never lost. Every pet hunts: where there is a school about, now and then it darts in and takes a fish under
+// 40 cm. Before something bad arrives it is the first to know: it tucks in close behind him and twitches. G tells it to
+// stay (it circles where it was left) or to follow again.
+// (7.4.14, owner) pets come only from pearls (petshop.js): never from the catch. Its size is its real one grown by its
+// level (a fifth again a level, as chosen); a legendary pet glows softly, a mythical one (the giants) with embers too.
 import { clamp, dist } from './util.js';
 import { SPECIES_BY_ID } from './species.js';
-import { LEGENDARY, rarityOf } from './specimens.js';
+import { PET_BY_ID, petScale } from './petshop.js';
 
-export const PET_MIN = 0.6, PET_MAX = 1.5, PREY_MAX = 0.4;
-const STILL = /floor|plant|drift/; // crabs, tripod fish, starfish, corals, jellies: they don't swim alongside anyone
-
-// why this animal can't be a pet (a short line), or null if it can
-export function petRefusal(spec) {
-  const sp = SPECIES_BY_ID[spec.id]; if (!sp) return "Can't be a pet";
-  if (spec.cond <= 0.05) return 'Dead';
-  if (spec.cond < 0.5) return 'Too weak';
-  if (STILL.test(sp.v.hab || '') || /Coral|Kelp|Worms|Jelly/.test(sp.cat || '')) return "Can't swim with you";
-  const len = spec.len || sp.len;
-  if (LEGENDARY.has(sp.id)) return null;
-  if (len < PET_MIN) return 'Too small';
-  if (len > PET_MAX) return 'Too big';
-  return null;
-}
-export const petOf = (spec) => ({ id: spec.id, len: spec.len || SPECIES_BY_ID[spec.id].len, variant: spec.variant || null, from: spec.from || 0, since: Date.now() });
+export const PREY_MAX = 0.4;
 
 // keep the pet in the water with him: made when he is in it, steered every frame
 export function updatePet(g, dt, dread) {
@@ -36,9 +20,8 @@ export function updatePet(g, dt, dread) {
   if (!c) {
     const host = e.inSub ? g.sub : e;
     c = F.makeFish(sp, host.x - (e.facing || 1) * 2, Math.max(1, host.y + 0.5), e.facing || 1, 'pet', true);
-    // (7.4.3, owner) a legendary pet is a trophy at his side: a third larger, with its own glow and glints (render.js petLeg)
-    const leg = LEGENDARY.has(sp.id) || (rarityOf(sp) || {}).id === 'legendary';
-    Object.assign(c, { companion: true, flee: 0, placed: true, devKeep: true, len: (pet.len || sp.len) * (leg ? 1.35 : 1), petLeg: leg, variant: pet.variant || undefined, huntCool: 6 });
+    const tier = (PET_BY_ID.get(sp.id) || {}).tier || 'exotic';
+    Object.assign(c, { companion: true, flee: 0, placed: true, devKeep: true, len: sp.len * petScale(P, sp.id), petLeg: tier === 'legendary' || tier === 'mythical', petMyth: tier === 'mythical', variant: pet.variant || undefined, huntCool: 6 });
     F.list.push(c); g.petC = c;
   }
   const host = e.inSub ? g.sub : e, W = g.world, t = g.time;

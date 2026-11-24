@@ -12,34 +12,45 @@ export const ABILITY_DEFS = {
     rare: { name: 'Sprint', dur: 15, cd: 120, speed: 1.5, line: '×1.5 speed for 15 s, using no air.' },
     exotic: { name: 'Sprint+', dur: 15, cd: 300, speed: 2, line: '×2 speed for 15 s, using no air.' },
     legendary: { name: 'Riptide', dur: 12, cd: 1800, speed: 3, noAir: true, line: '×3 speed for 12 s, using no air.' },
+    mythical: { name: 'Maelstrom', dur: 15, cd: 1200, speed: 3.5, noAir: true, wake: true, line: '×3.5 speed for 15 s, using no air, and the water lit behind you as you go.' },
   },
   vigor: {
     rare: { name: 'Vigor', dur: 20, cd: 180, reach: 1.5, line: '×1.5 net reach for 20 s.' },
     exotic: { name: 'Vigor+', dur: 20, cd: 480, reach: 2, swing: 0.8, line: '×2 net reach and a quicker swing for 20 s.' },
     legendary: { name: 'Apex', dur: 10, cd: 3600, reach: 2.5, sure: true, bless: true, line: 'For 10 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
+    mythical: { name: "Leviathan's Maw", dur: 12, cd: 2400, reach: 3, sure: true, bless: true, multi: 3, line: 'For 12 s the net reaches three times as far, cannot miss, and takes up to three animals a swing. All come back whole, and Blessed.' },
   },
   dash: {
     rare: { name: 'Dash', dur: 0.3, cd: 45, dash: 1, zoom: 1, line: 'Tap where to go, and you are there in an instant.' },
     exotic: { name: 'Dash+', dur: 0.3, cd: 120, dash: 2, zoom: 1.4, line: 'Tap where to go, with the water opened wider round you.' },
     legendary: { name: 'Undertow', dur: 0.35, cd: 900, dash: 3, zoom: 2, line: 'Tap where to go: the sea opens far round you, and bends as you pass.' },
+    mythical: { name: 'Rift', dur: 0.35, cd: 1200, dash: 3, zoom: 2.2, charges: 2, line: 'Two dashes before it rests: tap where to go, and again. The sea opens far round you, and tears as you pass.' },
   },
   flare: {
     rare: { name: 'Flare', dur: 20, cd: 300, light: 1, line: '20 s of light 28 m round you. The thing does not see it.' },
     exotic: { name: 'Flare+', dur: 40, cd: 720, light: 1.6, line: '40 s of brighter light, 45 m round you. The thing does not see it.' },
     legendary: { name: 'Lighthouse', dur: 60, cd: 3600, light: 2.4, ward: true, line: '60 s of light 80 m round you, near as bright as the shallows, pulsing, its beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
+    mythical: { name: 'Pharos', dur: 90, cd: 1800, light: 3.2, ward: true, line: '90 s of light 110 m round you, brighter than the Lighthouse, three beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
   },
   echo: {
     rare: { name: 'Echo', dur: 20, cd: 480, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 20 s.' },
     exotic: { name: 'Echo+', dur: 35, cd: 1200, echo: 2, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 35 s.' },
     legendary: { name: 'Fathom', dur: 50, cd: 5400, echo: 3, line: 'A deep ping: exotic and legendary animals far round you show on the radar for 50 s.' },
+    mythical: { name: 'Whalesong', dur: 60, cd: 3600, echo: 4, song: true, line: 'A long, deep call that carries through the sea: for 60 s exotic animals show on the radar twice as far round you, and legendary ones brighter, in their own colour.' },
   },
   ironhull: {
     rare: { name: 'Ironhull', dur: 0.5, cd: 3600, repair: true, sub: true, line: 'Mends the sub completely, from inside it.' },
   },
   tidewarden: {
     legendary: { name: 'Tidewarden', dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
+    mythical: { name: 'The Last Tide', dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Any time. In red water: a wave of blue, it freezes, fades, and is gone for 5 minutes. Marked, the mark is washed off you.' },
   },
 };
+// (7.4.15, owner) mythical: above legendary, only from three legendaries of the same scroll combined. Each has its own
+// power, and every one of them, for the 10 s after it is fired, also gives at least Flare+ light, at least Sprint+ speed
+// (the sub too), and air: +5 % of the full a second, up to +50 %, with none lost meanwhile. Usable any time
+export const MYTH = { t: 10, light: 1.6, speed: 2, air: 0.05 };
+export const NEXT_TIER = { rare: 'exotic', exotic: 'legendary', legendary: 'mythical' };
 export const abilityId = (fam, tier) => `ab_${fam}_${tier}`;
 // the definition behind an item id, with its family and tier
 export function abilityOf(id) {
@@ -61,10 +72,10 @@ export function whyNot(g, P, A) {
   if (!A) return 'No ability: put a scroll on in the bag';
   const S = abilityState(g), e = g.earl;
   if (S.activeT > 0 && !A.charges) return 'Already running';
-  if (g.aboard && !A.speed) return 'In the water';
+  if (g.aboard && !A.speed && A.tier !== 'mythical') return 'In the water';
   if (A.sub && !e.inSub) return 'From inside the sub';
   if (A.tide && g.kill) return 'Too late'; // (6.0.0) never in its jaws
-  if (A.tide && !((g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk')))) return 'Only when the water turns red'; // (6.0.0) once its red reaches him
+  if (A.tide && !A.any && !((g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk')))) return 'Only when the water turns red'; // (6.0.0) once its red reaches him
   const cd = cooldownLeft(P); if (cd > 0 && !(A.charges && S.charges > 0)) return `Ready in ${fmtLeft(cd)}`;
   return null;
 }

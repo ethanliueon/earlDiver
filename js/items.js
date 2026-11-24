@@ -176,6 +176,8 @@ for (const [key, S] of Object.entries(SETS)) for (const [kind, arch] of Object.e
 
 // (5.9.0) ability scrolls: items like the rest (chests, the Old One, the locker), with no rolled skills
 for (const [fam, T] of Object.entries(ABILITY_DEFS)) for (const [tier, d] of Object.entries(T)) {
+  // (7.4.15, owner) a mythical is never in a chest or a shop: only three legendaries combined. Worth three of them
+  if (tier === 'mythical') { const id = abilityId(fam, tier), leg = ITEMS[abilityId(fam, 'legendary')]; const ln = `${d.line} And as it fires, for 10 s: light as wide as a Flare+, speed at least a Sprint+'s (the sub's too), and air coming back, up to half, none used.`; ITEMS[id] = { id, kind: 'ability', arch: fam, fam, tier, rarity: tier, chest: false, name: d.name, line: ln, good: ln, bad: '', price: (leg ? leg.price : 90000) * 3 }; continue; }
   const id = abilityId(fam, tier); ITEMS[id] = { id, kind: 'ability', arch: fam, fam, tier, rarity: tier, chest: true, name: d.name, line: d.line, good: d.line, bad: '', price: reband({ rarity: tier, kind: 'ability', price: Math.max(BAND_MIN[tier] || 0, Math.round(VALUE[tier] * 0.8)) }) }; // (5.10.10) within its band
 }
 // (5.11.8) names that grow with rarity (owner-approved): a common is plain, with no maker; an exotic has a history or an
@@ -482,3 +484,6 @@ for (const it of Object.values(ITEMS)) {
 }
 // (7.3.0) every net with a lower limit (a big-game net's coarse mesh) says it where the shops say what it is not for
 for (const it of Object.values(ITEMS)) if (it.kind === 'net' && it.minLen) { it.bad = `Fish under ${Math.round(it.minLen * 100)} cm slip through`; if (!/slip|pass/i.test(it.line || '')) it.line = `${it.line} Fish under ${Math.round(it.minLen * 100)} cm slip through the mesh.`; } // (owner) said in its words, the floor kept in its figures
+
+// (7.4.15, owner) a mythical scroll is worth three of its legendary (set last, after every price above is settled)
+for (const it of Object.values(ITEMS)) if (it.kind === 'ability' && it.rarity === 'mythical') { const leg = ITEMS[`ab_${it.fam}_legendary`]; if (leg) it.price = leg.price * 3; }

@@ -18,7 +18,7 @@ export const PRODUCTS = {
 
 const native = () => (typeof window !== 'undefined' && window.__nativeStore) || null;
 
-// the web's stand-in: a purchase that always succeeds after a beat, an "ad" that is a 3 s card
+// (7.4.13) the stand-in until the app's store is connected: a purchase that always succeeds after a beat, an "ad" that is a 3 s card
 const TEST = {
   ready: async () => true,
   price: async (id) => (Object.values(PRODUCTS).find((p) => p.id === id) || {}).fallback || '',
@@ -26,7 +26,7 @@ const TEST = {
   adReady: async () => true,
   showAd: async () => {
     const el = document.createElement('div'); el.className = 'ad-test';
-    el.innerHTML = '<div class="ad-box"><b>Advertisement</b><span>Test ad: no ads on the web build</span><i class="ad-bar"></i></div>';
+    el.innerHTML = '<div class="ad-box"><b>Advertisement</b><span>Test ad: no store connected</span><i class="ad-bar"></i></div>';
     document.body.appendChild(el);
     await new Promise((r) => setTimeout(r, 3000));
     el.remove(); return { rewarded: true, test: true };
@@ -34,7 +34,9 @@ const TEST = {
 };
 
 const api = () => native() || TEST;
-export const isTestStore = () => !native();
+// (7.4.13, owner) the game is phone-only: no web build. The shop's Test tab (free cash, items, resets) shows only with
+// ?dev in the address, which the App Store app never has; for the owner's own testing
+export const isTestStore = () => typeof location !== 'undefined' && /[?&]dev\b/.test(location.search);
 export async function priceOf(key) { const P = PRODUCTS[key]; if (!P) return ''; try { return (await api().price(P.id)) || P.fallback; } catch (e) { return P.fallback; } }
 export async function buy(key) { const P = PRODUCTS[key]; if (!P) return { ok: false, why: 'unknown' }; try { return await api().buy(P.id); } catch (e) { return { ok: false, why: String(e && e.message || e) }; } }
 export async function adReady(placement) { try { return !!(await api().adReady(placement)); } catch (e) { return false; } }

@@ -20,7 +20,7 @@ const SUB_ABOUT = [
 // (4.15.7) where each refit sits in the showcase drawing of the sub: [x, y, w, h] as fractions of the picture
 const PART_CROP = { arm: [0.66, 0.56, 0.34, 0.34], quiet: [0.7, 0.16, 0.3, 0.3], sonar: [0.6, 0.46, 0.18, 0.24] };
 const SHOWCASE_TABS = new Set(['diver', 'tools']); // (4.14.0: the sub page draws its own)
-import { speciesIcon, fittedIcon, speciesBox, drawSpecies } from './creatures_draw.js';
+import { speciesIcon, fittedIcon, petIcon, speciesBox, drawSpecies } from './creatures_draw.js';
 import { ABOUT } from '../data/species_about.js';
 import { xEyes } from './gallery.js';
 import { usualDepth } from './fauna.js';
@@ -47,9 +47,9 @@ import { lockerTexture } from './textures.js';
 import { gaugeFace, gaugeNeedle, gaugeGlass } from './gauge_art.js';
 import { daveTalkPlate } from './dave_art.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture, chestOddsHtml } from './chests.js';
-import { petsHtml, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
+import { petsHtml, petStars, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
 import { isTestStore } from './purchases.js';
-import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, web build only
+import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, behind ?dev
 import { tankPicture, tankZoom } from './journal_tank.js';
 // (7.2.8) the name plate's pencil: a turned, lit object like every item (hexagonal barrel, one face lit, one in shade,
 // a bronze ferrule, a rust eraser, the shaved wood and its lead), small, at the plate's end
@@ -73,7 +73,7 @@ import { VERSION } from './version.js';
 import { markOf, SUB_MARKS } from './earl_draw.js';
 import { previewOf, drawShowcase } from './showcase.js';
 import { subLook } from './render.js';
-import { petRefusal } from './pets.js'; // (7.4.0) the pet picker lists only what can be a pet
+import { PETS, PET_BY_ID, petLevel, fedToday, atSurface } from './petshop.js'; // (7.4.14) pets come only from pearls
 
 
 // the figures for the shop's cards, as dot points
@@ -546,11 +546,11 @@ export class UI {
   toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true), (k, id) => pictureOf(k, id, 120, 90, true), this.cashPicture()); } el.hidden = !on; this.storeWire(el); }
   // (7.3.0) the painted bundle of notes (coins.js drawCash), for cash anywhere a picture is wanted
   cashPicture() { if (!this.cashPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); drawCash(x, 150, 95, 120); this.cashPic = c.toDataURL(); } return this.cashPic; }
-  petsPage() { const SP = window.__earl ? window.__earl.SPECIES_BY_ID : {}; return petsHtml(this.h.getProfile(), isTestStore(), (id) => fittedIcon(SP[id], 220, 140).toDataURL(), (id) => SP[id].name, (id) => rarityOf(SP[id])); }
+  petsPage() { if (!this.fitPics) this.fitPics = new Map(); const fit = (id) => { const sp3 = SPECIES_BY_ID[id], k = 'pet' + id; if (!this.fitPics.has(k)) this.fitPics.set(k, petIcon(sp3, 300, 180).toDataURL()); return this.fitPics.get(k); }; return petsHtml(this.h.getProfile(), isTestStore(), fit, (id) => SPECIES_BY_ID[id].name); }
   storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
     const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); return; }
-    const pb = ev.target.closest('[data-pet]'); if (pb) { if (this.h.onBuyPet && this.h.onBuyPet(+pb.dataset.pet)) el.innerHTML = this.petsPage(); return; } // (7.3.9)
+    const pb = ev.target.closest('[data-pet]'); if (pb) { this.h.onBuyPet && this.h.onBuyPet(+pb.dataset.pet, () => { if (!el.hidden) el.innerHTML = this.petsPage(); }); return; } // (7.3.9, 7.4.14) a buy is asked first
     const tb0 = ev.target.closest('[data-tab]'); if (tb0 && tb0.dataset.tab === 'pets') { el.innerHTML = this.petsPage(); return; } // (7.3.9) the pets, for pearls
     if (tb0 && tb0.dataset.tab === 'shop' && !isTestStore()) { el.innerHTML = storeHtml(this.h.getProfile(), false); return; }
     const tb = ev.target.closest('[data-tab]'); if (tb && isTestStore()) { el.innerHTML = tb.dataset.tab === 'test' ? testHtml(this.h.getProfile(), Object.values(ITEMS).filter((it) => !it.free).sort((a, c) => a.name.localeCompare(c.name))) : storeHtml(this.h.getProfile(), true); return; } // (6.9.0)
@@ -749,6 +749,7 @@ export class UI {
       if (e.kind === 'coin' && !this.coinGainPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); x.translate(95, 35); drawGoldCoins(x, 110, 110, 1); this.coinGainPic = c.toDataURL(); } // (6.5.0) the coin drawn small in the same 5:3 frame as gear
       if (e.kind === 'coin') return { name: 'Old coin', r: 'legendary', pic: this.coinGainPic, line: 'Hand-struck and worn nearly smooth. The Old One trades for them.' };
       if (e.kind === 'cash') { if (!this.cashPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); drawCash(x, 150, 95, 120); this.cashPic = c.toDataURL(); } return { name: money(e.n || 0, false), r: 'cash', pic: this.cashPic, line: '', noN: true }; }
+      if (e.kind === 'pet' && SPECIES_BY_ID[e.id]) { const sp = SPECIES_BY_ID[e.id], q = PET_BY_ID.get(e.id); return { name: sp.name, r: q ? q.tier : 'exotic', pic: petIcon(sp, 300, 180).toDataURL(), line: 'Your pet: it follows you, hunts small fish in schools and warns you. Feed it at the surface to grow it.', noN: true }; } // (7.4.14)
       if (e.kind === 'pearl') return { name: `${e.n || 0} pearl${e.n === 1 ? '' : 's'}`, r: 'cash', pic: 'assets/ui/icons/pearl.png', line: 'The premium currency: pets, cooldowns skipped, a second chance.', noN: true }; // (7.4.12)
       return null;
     }
@@ -776,7 +777,7 @@ export class UI {
     const list = entries.map(info).map((f, k) => f && { ...f, n: entries[k].n || 1 }).filter(Boolean).slice(0, 5); if (!list.length) return;
     this.gainList = list;
     const col = (r) => (RARITY[r] ? RARITY[r].col : '#efe8d2');
-    el.querySelector('.gx-row').innerHTML = list.map((f, i) => `<button class="gx-it r-${f.r}" data-i="${i}" style="--rc:${col(f.r)};--d:${(i * 0.14).toFixed(2)}s"><i class="gx-light"></i>${f.r === 'legendary' ? '<i class="gx-sparks"><b></b><b></b><b></b><b></b><b></b><b></b></i>' : ''}<img src="${f.pic}" alt=""><b style="color:${col(f.r)}">${f.name}</b>${f.n > 1 && !f.noN ? `<small>×${f.n}</small>` : ''}</button>`).join('');
+    el.querySelector('.gx-row').innerHTML = list.map((f, i) => `<button class="gx-it r-${f.r}" data-i="${i}" style="--rc:${col(f.r)};--d:${(i * 0.14).toFixed(2)}s"><i class="gx-light"></i>${f.r === 'legendary' ? '<i class="gx-sparks"><b></b><b></b><b></b><b></b><b></b><b></b></i>' : f.r === 'mythical' ? '<i class="gx-sparks gx-embers"><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b><b></b></i>' : ''}<img src="${f.pic}" alt=""><b style="color:${col(f.r)}">${f.name}</b>${f.n > 1 && !f.noN ? `<small>×${f.n}</small>` : ''}</button>`).join('');
     el.style.setProperty('--gn', list.length);
     el.querySelector('.gx-card').hidden = true;
     el.hidden = false; el.classList.remove('in', 'out'); void el.offsetWidth; el.classList.add('in');
@@ -929,10 +930,6 @@ export class UI {
     const subName = g.sub.imploded ? 'lost' : `${M.named ? (P.subName || 'EARL') + ', ' : ''}${M.name}`;
     this.catchShown = Math.max(5, pCap);
     const hasPh = owns(P, 'camera') || (g.photos || []).length;
-    // (5.0) the pet slot and the pictures he has taken
-    const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
-    if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
-    const petSlot = `<div class="pet-slot${pet ? ' on' : ''}" title="${pet ? psp.name + ': tap for its card' : 'At the surface, drag a fish here: 60 cm to 1.5 m, or any legend'}"><span class="ps-lbl">Pet</span>${pet ? `<img src="${this.fitPics.get(psp.id)}" alt=""><b>${psp.name}</b><small>${P.petStay ? 'Staying' : 'Following'}</small>` : '<em>Drag a fish here at the surface</em>'}</div>`;
     // (5.14.1) the bag as a fixed grid of spaces, ten across: the spaces his bag has are open wells, the rest padlocked, so
     // nothing moves as he changes bags or fills it. An animal lies across as many spaces as it takes, left to right
     // (1, 2, 4, then 8 and 16 over two rows), drawn bigger the more it takes, on a wash of the water it lives in; one that
@@ -966,23 +963,24 @@ export class UI {
       // (5.14.2) the large pressure tank always has its place: a strip under the chambers, its outline padlocked until fitted
       + (hasBigTank(g) ? `<h4>Large pressure tank <i>(${big.length}/${bigCap})</i></h4><canvas class="ct-big"></canvas>` : `<h4 class="off">Large pressure tank</h4><canvas class="ct-big off"></canvas>`)
       + `<p class="ct-cap">${elsewhere}Tap an animal for its card; ${g.earl && g.earl.inSub ? 'drag it to move it' : 'drag it off the panel to throw it back'}</p></div></div></div>`
-      + (this.fishSel ? this.fishPop(P, g) : '') + (this.petSel ? this.petPop(P) : '') + (this.phSel != null ? this.photoPop(P, g) : '');
+      + (this.fishSel ? this.fishPop(P, g) : '') + (this.phSel != null ? this.photoPop(P, g) : '');
   }
   // (6.5.1) the trawl net the sub lets out: each kind in the hatch a small tile with its count, the chosen one lit; a
   // tap chooses it (the trawl button then always lets out that one). Out of the sub it can still be chosen
 
-  // (5.0) the pet's card: what it is, and the way out of the slot (the aquarium, or the sea), with a warning
-  petPop(P) {
-    const pet = P.pet; if (!pet) { this.petSel = false; return ''; }
-    const sp = SPECIES_BY_ID[pet.id], col = rarityCol(sp) || 'var(--paint)', len = pet.len, kg = weightOf(sp, len);
-    if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
-    const row = (k, v) => `<div class="sp-r"><dt>${k}</dt><dd>${v}</dd></div>`;
-    const here = this.h.petHere && this.h.petHere();
-    return `<div class="item-pop fish-pop pet-pop"><div class="sp-panel" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
-      <div class="sp-tank pet-pic"><img src="${this.fitPics.get(sp.id)}" alt=""></div>
-      <div class="sp-info"><span class="sp-kind">Your pet</span><b class="sp-name">${sp.name}</b>
-        <dl class="sp-rows">${row('Length', `${len.toFixed(2)} m`)}${row('Weight', `${kg < 10 ? kg.toFixed(1) : Math.round(kg)} kg`)}${row('Does', 'follows you, hunts small fish in schools, warns you')}${row('Keys', 'H: stay here / follow me')}</dl>
-        ${here ? `<p class="sp-remark warnline">Taken out, it goes to the aquarium or back to the sea. It won't come back to the slot.</p><div class="sp-acts"><button data-pet="aquarium">Aquarium</button><button data-pet="release">Release</button></div>` : '<p class="sp-remark">It can leave the slot only at the surface.</p>'}</div></div></div>`;
+  // (7.4.14, owner) the pets he owns: a card each (picture, name in its rarity's colour, tier and price, stars a level, a
+  // tick on the one out); a tap takes it out, or sends the one out home. Feed: at the surface, for the one out, once a day
+  petsPanel(P, g, fit) {
+    const owned = PETS.filter((q) => (P.petsOwned || []).includes(q.id)), cur = P.pet && P.pet.id;
+    const pearl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
+    const cards = owned.map((q) => { const sp3 = SPECIES_BY_ID[q.id], R = RARITY[q.tier], out = cur === q.id;
+      return `<button class="pp-pet r-${q.tier}${out ? ' out' : ''}" data-petout="${q.id}"><img src="${fit(sp3)}" alt=""><b style="color:${R.col}">${sp3.name}</b><small>${R.name} · ${pearl}${q.pearls}</small>${petStars(petLevel(P, q.id))}${out ? '<i class="pp-tick">✓</i>' : ''}</button>`; }).join('');
+    const surf = atSurface(g), fed = cur && fedToday(P, cur), canFeed = cur && surf && !fed;
+    const feedWhy = !cur ? 'Take a pet out to feed it' : !surf ? 'Pets are fed at the surface' : fed ? 'Fed today: again tomorrow' : 'Once a day, with an animal you brought up';
+    return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Your pets</h4>`
+      + (owned.length ? `<p class="pp-note">Tap a pet to take it out; tap the one with you to send it home.</p><div class="pp-grid">${cards}</div><div class="pp-foot"><span>${feedWhy}</span><button data-petfeed ${canFeed ? '' : 'disabled'}>Feed</button></div>`
+        : `<p class="pp-none">No pets yet. Pets come from the shop, for pearls.</p><div class="pp-foot"><button data-petshop>Pet shop</button></div>`)
+      + '</div></div>';
   }
   // (5.0) the Photos page: the camera's own screen. Every picture he carries in a plain grid, the frame counter
   // and film left at the top; click one and it fills the screen, with its name, how it came out and what it pays
@@ -1141,21 +1139,10 @@ export class UI {
   // inventory itself, so it outlives every redraw of the page.
   catchWire(g) {
     const root0 = $('inventory');
-    // (5.0) the pet slot and the photographs
-    const pslot = root0.querySelector('.inv-catch2 .pet-slot.on'); if (pslot) pslot.addEventListener('click', () => { this.petSel = true; this.fishSel = null; this.renderInventory(); });
+    // (5.0) the photographs
     root0.querySelectorAll('.inv-catch2 .ph-cell[data-ph]').forEach((b) => b.addEventListener('click', () => { this.phSel = +b.dataset.ph; this.fishSel = null; this.renderInventory(); }));
     const phpop = root0.querySelector('.photo-pop');
     if (phpop) phpop.addEventListener('click', (ev) => { if (ev.target === phpop || ev.target.closest('.ip-close')) { this.phSel = null; this.renderInventory(); } });
-    const ppop = root0.querySelector('.pet-pop');
-    if (ppop) ppop.addEventListener('click', (ev) => {
-      const b = ev.target.closest('button[data-pet]');
-      if (b) {
-        const go = () => { if (this.h.onPet(b.dataset.pet) !== false) this.petSel = false; this.renderInventory(); };
-        if (b.dataset.pet === 'release') this.confirm('Release your pet?', 'It swims off into the sea and won\'t come back.', 'Release', 'Keep it', go); else go();
-        return;
-      }
-      if (ev.target === ppop || ev.target.closest('.ip-close')) { this.petSel = false; this.renderInventory(); }
-    });
     const root = root0, pop = root.querySelector('.fish-pop:not(.pet-pop)');
     // (3.6.2) the station's steel: the locker's worn paint, drawn for its size, darkened (see .sp-panel)
     const panel = pop && pop.querySelector('.sp-panel');
@@ -1224,7 +1211,6 @@ export class UI {
     const pr = root.querySelector('.inv-panel'), r0 = pr && pr.getBoundingClientRect();
     if (r0 && (cx < r0.left || cx > r0.right || cy < r0.top || cy > r0.bottom)) return held && this.fishWhere(this.h.getGame(), held)?.place === 'bag' ? { kind: 'out' } : null;
     if (!el || !root.contains(el)) return null;
-    const ps = el.closest('.inv-catch2 .pet-slot'); if (ps) return { kind: 'pet', el: ps };
     const left = el.closest('.inv-catch2 .inv-left'); if (left) return { kind: 'bag', el: left.querySelector('.fc-grid') };
     const tank = el.closest('.tank-win'); if (tank) return { kind: 'open', el: tank };
     if (el.matches('canvas.ct-big')) return { kind: 'big', n: BIG_CH, el };
@@ -1243,7 +1229,6 @@ export class UI {
       const R = rarityOf(sp); if (R && ['rare', 'exotic', 'legendary'].includes(R.id)) this.confirm(`Throw back ${this.theName(sp).replace(/^The/, 'the')}?`, 'It swims off and is gone.', 'Throw back', 'Keep it', go); else go();
       return;
     }
-    if (tgt.kind === 'pet') { const r = this.h.onPet('set', at.where, at.i); this.renderInventory(); return r; }
     if (!(this.h.inSub && this.h.inSub())) {
       say(at.place === 'bag' ? `You aren't in the sub: get in to put ${this.theName(sp).replace(/^The/, 'the')} in a tank` : `${this.theName(sp)} is in the sub: get in to move it`);
       return;
@@ -1348,18 +1333,14 @@ export class UI {
         <div class="tp-txt"><h4>${SUPN[k]}</h4><p class="tp-kind">${adv ? 'Exotic' : 'Rare'} light, ${n} on the belt</p><p class="tp-desc">Snap it and let it go. It hangs where you leave it, a pool of ${adv ? 'pale, bone-white' : 'warm amber'} light, and slowly sinks. The thing in the deep does not mind it.</p>
           <div class="tp-row"><span>Burns</span><b>${adv ? '3 min' : '2 min'}</b></div><div class="tp-row"><span>Lights</span><b>${adv ? '32' : '16'} m around</b></div>
           <div class="lk-acts"><button data-glowuse>Use</button>${this.h.canChangeGear() ? '<button data-glowoff>Off the belt</button>' : ''}</div></div></div></div>`; })();
-    // (5.14.1) the pet: a slot with his gear (it goes where he goes), not in the catch. Tap it: its card, or, when it is
-    // empty, the animals in the bag and the sub to choose from (only at the surface; it has to be 60 cm to 1.5 m, or a legend)
-    const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
-    if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
-    const petGear = `<div class="eq-slot sq petg${pet ? ' r-common' : ' empty'}" data-petslot title="${pet ? psp.name : 'Pet: empty'}">${pet ? `<img src="${this.fitPics.get(psp.id)}" alt="">` : ''}<small class="slot-nm">Pet</small></div>`;
-    const petPick = this.petPick ? (() => { if (!this.fitPics) this.fitPics = new Map(); // (7.4.0) the cache was missing with no pet yet, and the picker threw (it could not close)
-      // (7.4.0, owner) only what can be a pet, and each kind once (the healthiest of it)
-      const all = g.bag.map((s3, i) => ['bag', i, s3]).concat((g.subTank || []).map((s3, i) => ['tank', i, s3])).filter(([, , s3]) => SPECIES_BY_ID[s3.id] && !petRefusal(s3));
-      const byKind = new Map(); for (const r of all) { const o = byKind.get(r[2].id); if (!o || r[2].cond > o[2].cond) byKind.set(r[2].id, r); }
-      const L = [...byKind.values()];
-      const rows = L.map(([w2, i, s3]) => { const sp3 = SPECIES_BY_ID[s3.id]; if (!this.fitPics.has(sp3.id)) this.fitPics.set(sp3.id, fittedIcon(sp3, 300, 180).toDataURL()); return `<button class="pp-fish" data-petpick="${w2}:${i}"><img src="${this.fitPics.get(sp3.id)}" alt=""><b>${sp3.name}</b><small>${(s3.len || 0).toFixed(2)} m</small></button>`; }).join('');
-      return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">60 cm to 1.5 m, or any legend · at the surface</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing here can be a pet.</p>'}</div></div></div>`; })() : '';
+    // (7.4.14, owner) the pet: a slot with his gear. Empty at first; with a pet owned and none out it carries a "!" until one
+    // is out. Tapped: the pets he owns (each its picture, tier, price, stars a level, a tick on the one out)
+    const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id], nOwned = (P.petsOwned || []).length;
+    if (!this.fitPics) this.fitPics = new Map();
+    const fit = (sp3) => { const k = 'pet' + sp3.id; if (!this.fitPics.has(k)) this.fitPics.set(k, petIcon(sp3, 300, 180).toDataURL()); return this.fitPics.get(k); };
+    const pTier = psp && PET_BY_ID.get(psp.id) ? PET_BY_ID.get(psp.id).tier : 'common';
+    const petGear = `<div class="eq-slot sq petg${pet ? ` r-${pTier}` : ' empty'}" data-petslot title="${pet ? psp.name : 'Pet: empty'}">${pet ? `<img src="${fit(psp)}" alt="">` : ''}${!pet && nOwned ? '<i class="badge-x">!</i>' : ''}<small class="slot-nm">Pet</small></div>`;
+    const petPick = this.petPick ? this.petsPanel(P, g, fit) : '';
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
@@ -1435,7 +1416,7 @@ export class UI {
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
       if (free) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
       // (7.4.11, owner) three of the same scroll at the same rarity, none of them on: they combine into one of the next rarity
-      if (it.kind === 'ability') { const NX = { rare: 'exotic', exotic: 'legendary' }[it.rarity], nId = NX && `ab_${it.fam}_${NX}`, spare = K0.items.filter((x) => x.id === q.id && !onSet0.has(x.u)).length;
+      if (it.kind === 'ability') { const NX = { rare: 'exotic', exotic: 'legendary', legendary: 'mythical' }[it.rarity], /* (7.4.15) three legendaries make the mythical */ nId = NX && `ab_${it.fam}_${NX}`, spare = K0.items.filter((x) => x.id === q.id && !onSet0.has(x.u)).length;
         if (nId && ITEMS[nId] && spare >= 3) acts += `<button data-lk="combine:${q.id}">Combine 3 → <span style="color:${RARITY[NX].col}">${ITEMS[nId].name}</span></button>`; }
       if (seller) acts += `<button class="sell" data-lk="${it.kind === 'ability' ? 'sellscroll' : 'sellgear'}:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
@@ -1477,17 +1458,13 @@ export class UI {
     // a card's buttons, and clicking a tile (or a slot's item) to open its card
     const box = $('inventory').querySelector('.inv-body');
     box.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); this.lkSel = null; this.renderInventory(); }));
-    // (5.14.1) the pet's slot on the Gear page: its card, or the choice of an animal for it
-    const pslotG = root.querySelector('.eq-slot[data-petslot]'); if (pslotG) pslotG.addEventListener('click', () => { if (P.pet) this.petSel = true; else this.petPick = true; this.lkSel = null; this.renderInventory(); });
-    // (7.4.0) the pet picker answers through one listener on the inventory, set once: its own one was not always wired
-    // and the picker could not be closed
+    // (7.4.14) the pet's slot on the Gear page: the pets he owns
+    const pslotG = root.querySelector('.eq-slot[data-petslot]'); if (pslotG) pslotG.addEventListener('click', () => { this.petPick = true; this.lkSel = null; this.renderInventory(); });
     if (!this.ppWired && $('inventory')) { this.ppWired = true; $('inventory').addEventListener('click', (ev) => { const pk = ev.target.closest('.pet-pick'); if (!pk) return; ev.stopPropagation();
-      const b = ev.target.closest('[data-petpick]');
-      if (b) { const [w2, i] = b.dataset.petpick.split(':'); if (this.h.onPet('set', w2, +i) !== false) this.petPick = false; this.renderInventory(); return; }
+      const b = ev.target.closest('[data-petout]'); if (b) { this.h.onPet(+b.dataset.petout); this.renderInventory(); return; }
+      if (ev.target.closest('[data-petfeed]')) { this.petPick = false; this.toggleInventory(false); this.h.onPetFeed && this.h.onPetFeed(); return; } // (7.4.14) the aquarium alone on the screen
+      if (ev.target.closest('[data-petshop]')) { this.petPick = false; this.toggleInventory && this.toggleInventory(false); this.toggleStore(true); const st = $('store'); if (st) st.innerHTML = this.petsPage(); return; }
       if (ev.target === pk || ev.target.closest('.ip-close')) { this.petPick = false; this.renderInventory(); } }, true); }
-    const ppopG = root.querySelector('.inv-split:not(.inv-catch2) ~ .pet-pop, .pet-pop'); if (ppopG && !root.querySelector('.inv-catch2')) ppopG.addEventListener('click', (ev) => { const b = ev.target.closest('button[data-pet]');
-      if (b) { const go = () => { if (this.h.onPet(b.dataset.pet) !== false) this.petSel = false; this.renderInventory(); }; if (b.dataset.pet === 'release') this.confirm('Release your pet?', 'It swims off into the sea and won\'t come back.', 'Release', 'Keep it', go); else go(); return; }
-      if (ev.target === ppopG || ev.target.closest('.ip-close')) { this.petSel = false; this.renderInventory(); } });
     root.querySelectorAll('.lk-tile:not(.empty):not(.sup), .eq-slot [data-u]').forEach((el) => el.addEventListener('click', () => { this.lkSel = el.dataset.u; this.renderInventory(); }));
     // (5.6.9) the belt: a tap on a slot takes it off (into the locker), a tap on a locker stack puts it on
     const beltMsg = () => this.h.onMessage && this.h.onMessage('Not now'); // (6.0.0) gear changes anywhere but in its jaws
@@ -1820,8 +1797,7 @@ export class UI {
     $('title').classList.remove('gone');
     // (5.2) first the name and "press any key"; any key or a tap brings up the divers
     const T = $('title'); T.classList.add('attract'); T.classList.remove('select');
-    const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches;
-    T.querySelector('.t-press span').textContent = 'Tap to start'; void touch; /* (7.3.5) touch only: no keys to press */
+    T.querySelector('.t-press span').textContent = 'Tap to start'; // (7.3.5, 7.4.13) touch only: no keys to press
     if (!this.titleWired) {
       this.titleWired = true;
       // (6.4.2) the tap that brings up the divers must not also choose one: its click lands on the slot that has just

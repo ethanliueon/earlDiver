@@ -530,8 +530,8 @@ for (const [k, f] of Object.entries(PAINTED)) ART[k] = (x, look) => { x.save(); 
 // the face for button `kind` (the art, if drawn here; else its symbol in bone), radius r, state 'on' | 'off' | 'down' | 'lit'
 // (5.6.9) a tool's coin tinted by its rarity: dark, muddy versions of the rarity colours (they sit in the olive and
 // bronze, not app-bright), and a thin lip in the rarity's own colour
-const TINT = { common: [110, 8, 13], uncommon: [112, 26, 13], rare: [208, 30, 14], exotic: [276, 22, 14], legendary: [36, 40, 13] };
-const TINT_LIP = { common: 'rgba(201,205,196,0.35)', uncommon: 'rgba(110,170,112,0.45)', rare: 'rgba(80,140,200,0.45)', exotic: 'rgba(160,110,200,0.45)', legendary: 'rgba(190,146,70,0.55)' }; // (5.10.8) the rarity's rim, muted
+const TINT = { common: [110, 8, 13], uncommon: [112, 26, 13], rare: [208, 30, 14], exotic: [276, 22, 14], legendary: [36, 40, 13], mythical: [8, 46, 12] }; // (7.4.15) mythical: oxblood
+const TINT_LIP = { common: 'rgba(201,205,196,0.35)', uncommon: 'rgba(110,170,112,0.45)', rare: 'rgba(80,140,200,0.45)', exotic: 'rgba(160,110,200,0.45)', legendary: 'rgba(190,146,70,0.55)', mythical: 'rgba(220,96,66,0.65)' }; // (5.10.8) the rarity's rim, muted
 export function drawCoin(ctx, cx, cy, r, kind, state = 'on', look = null, tint = null) {
   const lk = look && typeof look === 'object' ? (look.id || JSON.stringify(look).slice(0, 40)) : String(look ?? '');
   const key = `${kind}|${state}|${Math.round(r * 2)}|${lk}|${tint || ''}`;

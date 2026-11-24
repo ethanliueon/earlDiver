@@ -252,6 +252,19 @@ export function updateCapture(g, dt) {
             ev.push({ type: 'caught', sp: c.sp, spec: s2, name: c.sp.name, extra: true });
           }
         }
+        // (7.4.15) Leviathan's Maw: up to three animals a swing, any kind the net can hold, near where the hoop passed
+        if ((g.multiCatch || 1) > 1) {
+          let more = g.multiCatch - 1;
+          for (const c of g.fauna.list) {
+            if (more <= 0 || bagUsed(g) >= bagSlots(g)) break;
+            if (c === tgt.c || c.dead || c.pet || c.companion || c.len > def.maxLen * OVER || c.len > 4 || !canTakeLive(c.sp) || dist(c.x, c.y, tgt.x, tgt.y) > 2.6) continue;
+            if (bagUsed(g) + spacesOf({ len: c.len }) > bagSlots(g)) break;
+            c.dead = true; more--;
+            const s2 = { id: c.sp.id, len: c.len, cond: 1, blessed: !!g.blessCatch, from: Math.round(Math.max(e.y, c.y)), t: g.time };
+            g.bag.push(s2); g.captureFx.push({ sp: c.sp, len: c.len, x: c.x, y: c.y, dir: c.dir, t: 0, dur: 0.3, kind });
+            ev.push({ type: 'caught', sp: c.sp, spec: s2, name: c.sp.name, extra: true, x: c.x, y: c.y });
+          }
+        }
       } else {
         ev.push({ type: 'missed', sp: tgt.sp, name: variantName(tgt.sp, tgt.variant), c: tgt.c || null, x: tgt.x, y: tgt.y });
         // (5.0) a miss you can see: the fish flinches and bolts with a kick of speed and a puff of silt and bubbles

@@ -30,7 +30,7 @@ import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
-import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft } from './abilities.js';
+import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft, MYTH, NEXT_TIER } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
@@ -41,7 +41,7 @@ import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from 
 import { rollChestAll } from './chests.js';
 import { setDiverLook } from './earl_draw.js'; // (6.7.0)
 import { isTestStore } from './purchases.js'; // (6.5.9)
-import { SHOP_PETS, calState, calClaimed, calWeek, giftPearls } from './store.js';
+import { calState, calClaimed, calWeek, giftPearls } from './store.js';
 import { hullCap } from './economy.js';
 import { loadBest, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, hospitalCap, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
@@ -54,7 +54,9 @@ import { Audio } from './audio.js';
 import { UI } from './ui.js';
 import { Beacon } from './alarm.js';
 import { Messages } from './messages.js';
-import { updatePet, toggleStay, petRefusal, petOf } from './pets.js';
+import { updatePet, toggleStay } from './pets.js';
+import { PET_BY_ID, petsOwned, petUnlocked } from './petshop.js'; // (7.4.14) pets come only from pearls
+import { openPetFeed as petFeedOpen } from './petfeed.js'; // (7.4.14) the pet's aquarium, where it is fed
 // (5.4) many HUD bits set .hidden every frame to what it already is; on a phone each such write still costs a style
 // pass. Writing the value it already has now does nothing.
 { const d = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'hidden');
@@ -105,7 +107,7 @@ hud.held = keys; hud.touchRef = null; // (5.7.0) set once the Touch exists, belo
  // (5.3) the keys held, so a touch button shows pushed in
 // (5.3.2) a phone: lite mode for good, and the effects Safari draws in software switched off: blurred shadows (on
 // every context the game draws on), soft-light and multiply-heavy extras, high-quality scaling. ?full keeps them
-if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !/[?&]full\b/.test(location.search)) {
+if (!/[?&]full\b/.test(location.search)) { // (7.4.13) phone-only: always
   renderer.lite = true; renderer.phone = true;
   const noShadow = (c) => { if (!c) return; Object.defineProperty(c, 'shadowBlur', { get: () => 0, set: () => {}, configurable: true }); };
   const gc = HTMLCanvasElement.prototype.getContext;
@@ -270,13 +272,19 @@ const ui = new UI({
   getMuted: () => !!audio.muted,
   payMul: () => statValue(profile, 'payFish'),
   onStation: (id) => useStation(id),
-  // (6.9.0) the shop's Test tab (web build only; ui.js shows it only when purchases.js isTestStore())
-  // (7.3.9, owner) a shop pet: bought once with pearls, then his to take out at any time; the one out now goes home
-  onBuyPet: (id) => {
-    const P = profile, S = SHOP_PETS.find((s) => s.id === id); if (!P || !S) return false;
-    const owned = new Set(P.petsOwned || []);
-    if (!owned.has(id)) { if ((P.pearls || 0) < S.pearls) { hud.toast('Not enough pearls', 'warn'); return false; } P.pearls -= S.pearls; owned.add(id); P.petsOwned = [...owned]; }
-    P.pet = petOf({ id, from: 'shop' }); P.petStay = false; g.petStayAt = null; saveProfile(P); hud.toast(`${SPECIES_BY_ID[id].name} will follow you`, 'note'); return true;
+  // (6.9.0) the shop's Test tab (behind ?dev; ui.js shows it only when purchases.js isTestStore())
+  // (7.3.9, 7.4.14, owner) a pet from the shop: bought once with pearls (asked first), then his to take out at any time;
+  // a tap on one he owns takes it out (the one out goes home)
+  onBuyPet: (id, done) => {
+    const P = profile, S = PET_BY_ID.get(id); if (!P || !S || !petUnlocked(P, id)) return false;
+    const name = SPECIES_BY_ID[id].name;
+    if (petsOwned(P).has(id)) { petOut(id); done && done(); return true; }
+    if ((P.pearls || 0) < S.pearls) { hud.toast('Not enough pearls', 'warn'); return false; }
+    ui.confirm(`Buy the ${name.replace(/^the /i, '')}?`, `${S.pearls} pearls (you have ${Math.floor(P.pearls || 0).toLocaleString('en-US')}). It comes out with you now, and stays yours.`, `Buy, ${S.pearls} pearls`, 'Not now', () => {
+      if ((P.pearls || 0) < S.pearls) { hud.toast('Not enough pearls', 'warn'); return; }
+      P.pearls -= S.pearls; P.petsOwned = [...petsOwned(P), id]; petOut(id); audio.ready && audio.sale(); done && done();
+      ui.showGains([{ kind: 'pet', id }]); });
+    return true;
   },
   onTest: (act, arg) => {
     const P = profile; if (!P || !isTestStore()) return;
@@ -337,22 +345,9 @@ const ui = new UI({
   // (5.0) the pet slot: an animal from the catch into it (only at the surface), or the pet out of it (to the
   // aquarium, or back to the sea)
   petHere: () => !!(g && (g.aboard || (g.earl.inSub && g.sub.y < 4 && Math.hypot(g.sub.x - BOAT.x, g.sub.y) < 40))),
-  petWhy: (s) => petRefusal(s),
-  onPet: (act, where, i) => {
-    const P = profile;
-    if (act === 'set') {
-      const L = where === 'bag' ? g.bag : g.subTank, s = L[i]; if (!s) return false;
-      if (!(g.aboard || (g.earl.inSub && g.sub.y < 4))) { hud.toast('Only at the surface', 'warn'); return false; }
-      if (P.pet) { hud.toast('The pet slot is taken', 'warn'); return false; }
-      const why = petRefusal(s); if (why) { hud.toast(why, 'warn'); return false; }
-      L.splice(i, 1); P.pet = petOf(s); P.petStay = false; saveProfile(P); hud.toast(`${SPECIES_BY_ID[s.id].name} will follow you`, 'note'); return true;
-    }
-    if (!P.pet) return false;
-    const spec = { id: P.pet.id, len: P.pet.len, variant: P.pet.variant, cond: 1, from: P.pet.from };
-    if (act === 'aquarium') { const why = displayRefusal(P, spec); if (why) { hud.toast(why.charAt(0).toUpperCase() + why.slice(1), 'warn'); return false; } display(P, spec); }
-    P.pet = null; P.petStay = false; g.petStayAt = null; saveProfile(P);
-    hud.toast(act === 'aquarium' ? 'In the aquarium' : 'Released'); return true;
-  },
+  // (7.4.14) the pets panel: a pet he owns taken out, or the one out sent home
+  onPet: (id) => { const P = profile; if (!P) return false; if (P.pet && P.pet.id === id) { P.pet = null; P.petStay = false; g.petStayAt = null; saveProfile(P); hud.toast(`${SPECIES_BY_ID[id].name} went home`); return true; } if (!petsOwned(P).has(id)) return false; petOut(id); return true; },
+  onPetFeed: () => openPetFeed(),
   onTank: (act, where, i, to) => { // (3.0.15) a refusal is said inside the tank room too (the toasts are under it)
     const n0 = hud.toasts.length, last0 = hud.toasts[n0 - 1];
     const r = tankAction(act, where, i, to);
@@ -559,6 +554,9 @@ function legendPearls(sp, x, y) {
   profile.pearls = (profile.pearls || 0) + LEGEND_PEARLS; saveProfile(profile);
   (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: x ?? g.earl.x, y: (y ?? g.earl.y) - 0.6, text: `+${LEGEND_PEARLS} pearls`, rar: null, nameCol: '#e4dcc6', t: 0 });
 }
+// (7.4.14) a pet he owns out with him: its size and its glow come from petshop.js (pets.js updatePet)
+function petOut(id) { const P = profile; P.pet = { id, since: Date.now() }; P.petStay = false; g.petStayAt = null; if (g.petC) { const F = g.fauna; if (F && F.list.includes(g.petC)) F.list.splice(F.list.indexOf(g.petC), 1); g.petC = null; } saveProfile(P); hud.toast(`${SPECIES_BY_ID[id].name} will follow you`, 'note'); }
+function openPetFeed() { const P = profile; if (!P || !P.pet) return false; return petFeedOpen({ g, P, ui, hud, audio, save: () => saveProfile(P), onGrow: () => { if (g.petC) { const F = g.fauna; if (F.list.includes(g.petC)) F.list.splice(F.list.indexOf(g.petC), 1); g.petC = null; } } }); }
 function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replaced at once by another
   const P = profile, st = oldStock(P), it = st.items[+what.slice(5)];
   if (!it || it.sold) return false;
@@ -979,11 +977,11 @@ function buy(kind) {
     if (put && bagWas && g.bag && bagUsed(g) > bagSlots(g)) { putOn(P, bagWas); hud.toast(`This bag holds ${bagSlots(g)}: you are carrying ${bagUsed(g)}`, 'warn'); }
     else if (put) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}`); }
   } else if (kind.startsWith('sellscroll:')) { // (7.4.11, owner) a scroll is not sold on a tap: asked first, and told that three combine
-    const q = instOf(P, kind.slice(11)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], v = sellValue(q), NX = { rare: 'exotic', exotic: 'legendary' }[it.rarity];
-    ui.confirm(`Sell ${it.name}?`, NX ? `3 of the same scroll and rarity combine into 1 ${RARITY[NX].name} (${ITEMS[`ab_${it.fam}_${NX}`].name}).` : 'Legendary: the highest a scroll can be.', `Sell, ${money(v)}`, 'Keep', () => { buy('sellgear:' + q.u); ui.renderInventory && ui.renderInventory(); });
+    const q = instOf(P, kind.slice(11)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], v = sellValue(q), NX0 = NEXT_TIER[it.rarity], NX = NX0 && ITEMS[`ab_${it.fam}_${NX0}`] ? NX0 : null;
+    ui.confirm(`Sell ${it.name}?`, NX ? `3 of the same scroll and rarity combine into 1 ${RARITY[NX].name} (${ITEMS[`ab_${it.fam}_${NX}`].name}).` : `${RARITY[it.rarity] ? RARITY[it.rarity].name : 'It'}: the highest a scroll can be.`, `Sell, ${money(v)}`, 'Keep', () => { buy('sellgear:' + q.u); ui.renderInventory && ui.renderInventory(); });
     return false;
   } else if (kind.startsWith('combine:')) { // (7.4.11, owner) three of a scroll at one rarity, none worn, become one of the next rarity
-    const id = kind.slice(8), it = ITEMS[id], NX = it && { rare: 'exotic', exotic: 'legendary' }[it.rarity], nId = NX && `ab_${it.fam}_${NX}`;
+    const id = kind.slice(8), it = ITEMS[id], NX = it && NEXT_TIER[it.rarity], nId = NX && `ab_${it.fam}_${NX}`; // (7.4.15) three legendaries make the mythical
     const spare = kitOf(P).items.filter((x) => x.id === id && !isOn(P, x));
     if (!nId || !ITEMS[nId] || spare.length < 3) return false;
     for (const x of spare.slice(0, 3)) removeItem(P, x.u);
@@ -2116,7 +2114,7 @@ function currentAbility() { const q = profile && wornInst(profile, 'ability'); r
 function useAbility() {
   const A = currentAbility(), why = whyNot(g, profile, A);
   // (7.4.9, owner) cooling down: the wait can be skipped with pearls (abilities.js skipCost)
-  if (A && profile && cooldownLeft(profile) > 0 && !(abilityState(g).activeT > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile; // aboard too: the skip is offered wherever he taps it
+  if (A && profile && cooldownLeft(profile) > 0 && !(abilityState(g).activeT > 0) && !(A.charges && abilityState(g).charges > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile; // aboard too: the skip is offered wherever he taps it
     ui.confirm(`${A.name}: ready in ${fmtLeft(left)}`, `Skip the wait: ${n} pearl${n > 1 ? 's' : ''} (you have ${Math.floor(P.pearls || 0)})`, `Skip, ${n} pearl${n > 1 ? 's' : ''}`, 'Wait', () => {
       if ((P.pearls || 0) < n) { hud.toast('Not enough pearls', 'warn'); return; }
       P.pearls -= n; P.abilReadyAt = Date.now(); saveProfile(P); audio.ready && audio.uiSoft && audio.uiSoft(); hud.toast(`${A.name} ready`); });
@@ -2129,13 +2127,26 @@ function useAbility() {
   S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
   P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; // (5.16.0) real time
   saveProfile(P);
+  if (A.tier === 'mythical') mythFire(A);
   audio.ready && audio.click && audio.click();
   if (A.dash) { const v = [e.facing || 1, 0], m = 1, tgt = e.inSub ? g.sub : e; tgt.vx = (tgt.vx || 0) + v[0] * 11; tgt.vy = (tgt.vy || 0) + v[1] * 9; /* (a keyboard: a lunge the way he faces) */
     for (let i = 0; i < 14; i++) g.bubbles.push({ x: tgt.x - v[0] / m * Math.random() * 1.5, y: tgt.y - v[1] / m * Math.random() * 1.5, r: 0.03 + Math.random() * 0.07, w: Math.random() * 6, t: 0 });
   }
   if (A.repair) { const sub = g.sub; sub.hull = 1; if (sub.patches) sub.patches.length = 0; g.fx.flash = 0.35; hud.toast(`${A.name}: the hull is whole`, 'big'); if (A.guard) g.subGuardT = A.dur; }
   if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; } // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
-  if (A.tide) { g.tideFx = { t: 0 }; }
+  if (A.tide) { // (7.4.15) The Last Tide: any time. In red water as Tidewarden; marked, the mark washed off; else only its light and air
+    const red = (g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk'));
+    if (red || !A.any) g.tideFx = { t: 0 };
+    else if (g.entity && g.entity.marked) { g.entity.marked = false; g.markWashFx = { t: 0 }; hud.toast('The mark is washed off you', 'note'); }
+  }
+}
+// (7.4.15, owner) every mythical, as it fires: 10 s of at least Flare+ light, at least Sprint+ speed and air coming back
+// (+5 % a second up to +50 %, none lost meanwhile); a burst of embers off him. Whalesong: its deep call, and light
+// washing over the screen
+function mythFire(A) {
+  g.mythT = MYTH.t; g.mythAir = 0; g.mythFx = { t: 0 };
+  if (A.song) { g.songFx = { t: 0 }; audio.ready && audio.whalesong && audio.whalesong(); }
+  else audio.ready && audio.mythic && audio.mythic();
 }
 // (5.16.0) a tap while Dash waits: there in a fraction of a second (stopped short of rock), and only now is it spent
 function dashTo(wx, wy) {
@@ -2145,7 +2156,11 @@ function dashTo(wx, wy) {
   for (let d = 0.4; d <= L; d += 0.4) { const px = M.x + dx / L * d, py = M.y + dy / L * d; if (g.world.rockAt(px, py, r) || py > g.world.floorAt(px) - r) { x1 = M.x + dx / L * Math.max(0, d - 0.8); y1 = M.y + dy / L * Math.max(0, d - 0.8); break; } }
   g.dashAim = null; renderer.aimZoom = 1;
   const S = abilityState(g); S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
-  P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; saveProfile(P);
+  if (A.charges) { // (7.4.15) Rift: the first dash leaves one more (for 20 s); the rest starts after the second
+    if (S.charges > 0) { S.charges = 0; S.chargeT = 0; P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; }
+    else { S.charges = A.charges - 1; S.chargeT = 20; P.abilReadyAt = 0; mythFire(A); hud.toast(`${A.name}: one more dash`, 'note'); }
+  } else P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000;
+  saveProfile(P);
   g.dashMove = { x0: M.x, y0: M.y, x1, y1, t: 0, dur: A.dur, tier: A.dash };
   g.dashFx = { x0: M.x, y0: M.y, x1, y1, t: 0, tier: A.dash };
   e.facing = Math.sign(x1 - M.x) || e.facing; if (e.inSub) g.sub.facing = e.facing;
@@ -2163,8 +2178,17 @@ function tickAbility(dt) {
   if (S.activeT > 0) S.activeT = Math.max(0, S.activeT - dt);
   const on = S.activeT > 0 && A;
   e.abilSpeed = on && A.speed ? A.speed : 1; e.abilNoAir = !!(on && A.noAir);
-  g.reachMul = on && A.reach ? A.reach : 1; g.swingMul = on && A.swing ? A.swing : 1; g.sureCatch = !!(on && A.sure); g.blessCatch = !!(on && A.bless);
-  g.abilLight = on && A.light ? A.light : 0;
+  // (7.4.15) Rift's second dash waits 20 s at most; then the rest begins
+  if (S.charges > 0) { S.chargeT -= dt; if (S.chargeT <= 0) { S.charges = 0; const R0 = currentAbility(); if (R0 && R0.charges) { profile.abilReadyAt = Date.now() + R0.cd * 1000; saveProfile(profile); } } }
+  // (7.4.15) a mythical's 10 s: light, speed and air (in the sub, the cabin's air)
+  if (g.mythT > 0) { g.mythT = Math.max(0, g.mythT - dt); e.abilSpeed = Math.max(e.abilSpeed, MYTH.speed); e.abilNoAir = true;
+    const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
+    if (add > 0) { g.mythAir = (g.mythAir || 0) + add; if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + add); else e.o2 = Math.min(e.o2Max, e.o2 + add); } }
+  if (g.mythFx) { g.mythFx.t += dt; if (g.mythFx.t > 1.6) g.mythFx = null; }
+  if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
+  if (g.markWashFx) { g.markWashFx.t += dt; if (g.markWashFx.t > 2) g.markWashFx = null; }
+  g.multiCatch = on && A.multi ? A.multi : 1; g.reachMul = on && A.reach ? A.reach : 1; g.swingMul = on && A.swing ? A.swing : 1; g.sureCatch = !!(on && A.sure); g.blessCatch = !!(on && A.bless);
+  g.abilLight = Math.max(on && A.light ? A.light : 0, g.mythT > 0 ? MYTH.light : 0);
   { const lh = !!(on && A.light >= 2 && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
   g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!(on && A.ward && !A.tide); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);

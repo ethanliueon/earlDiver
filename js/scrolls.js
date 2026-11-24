@@ -283,11 +283,12 @@ const BODY3 = {
   rare: { mid: '#3a5470', dark: '#22344a', light: '#557292', band: null },
   exotic: { mid: '#553a5e', dark: '#33223a', light: '#71537a', band: null },
   legendary: { mid: '#2e2829', dark: '#171314', light: '#463d3c', band: '#a8874a' },
+  mythical: { mid: '#4a1c18', dark: '#22090a', light: '#6c2a22', band: '#b85a36' }, // (7.4.15) oxblood
 };
 const fade = (hex, k) => { const [r, g, b] = hexRgb(hex), gr = (r + g + b) / 3, f = (c) => Math.round(c + (gr - c) * k).toString(16).padStart(2, '0'); return `#${f(r)}${f(g)}${f(b)}`; };
 function paintScroll3(x, fam, tier) {
-  const B = BODY3[tier] || BODY3.rare, r = rnd(fam.length * 131 + tier.length * 17), plus = tier === 'exotic', leg = tier === 'legendary';
-  const acc0 = leg ? '#c4a05a' : (ACCENT[fam] || '#e8e0c8'), acc = fade(acc0, 0.28), bandCol = leg ? '#8a6a34' : fade(ACCENT[fam] || '#e8e0c8', 0.32);
+  const B = BODY3[tier] || BODY3.rare, r = rnd(fam.length * 131 + tier.length * 17), plus = tier === 'exotic', my = tier === 'mythical', leg = tier === 'legendary' || my;
+  const acc0 = my ? '#e8956a' : leg ? '#c4a05a' : (ACCENT[fam] || '#e8e0c8'), acc = fade(acc0, my ? 0.12 : 0.28), bandCol = my ? '#9a3e26' : leg ? '#8a6a34' : fade(ACCENT[fam] || '#e8e0c8', 0.32);
   const edgeCol = shade(B.dark, -0.4), grain = noisePattern(x);
   x.lineJoin = 'round'; x.lineCap = 'round';
   x.fillStyle = 'rgba(0,0,0,0.3)'; x.beginPath(); x.ellipse(0, 46, 42, 5, 0, 0, TAU); x.fill();
@@ -311,7 +312,7 @@ function paintScroll3(x, fam, tier) {
     age(body, x0 - 2, y - rad - 2, x1 - x0 + 4, rad * 2 + 4, 10);
     x.lineWidth = 1.1; x.strokeStyle = edgeCol; x.stroke(body);
     const ex = endAtLeft ? x0 + 1 : x1 - 1, cap = wobbly(Array.from({ length: 10 }, (_, i) => [ex + Math.cos(i / 10 * TAU) * rad * 0.5, y + Math.sin(i / 10 * TAU) * rad * 0.97]), r, 0.3);
-    const capCol = leg ? '#5e4422' : shade(B.dark, 0.1); const cg = x.createRadialGradient(ex - rad * 0.15, y - rad * 0.3, 1, ex, y, rad); cg.addColorStop(0, shade(capCol, 0.3)); cg.addColorStop(1, shade(capCol, -0.3));
+    const capCol = my ? '#4e1810' : leg ? '#5e4422' : shade(B.dark, 0.1); const cg = x.createRadialGradient(ex - rad * 0.15, y - rad * 0.3, 1, ex, y, rad); cg.addColorStop(0, shade(capCol, 0.3)); cg.addColorStop(1, shade(capCol, -0.3));
     x.fillStyle = cg; x.fill(cap); age(cap, ex - rad, y - rad, rad * 2, rad * 2, 4); x.lineWidth = 1; x.strokeStyle = edgeCol; x.stroke(cap);
     x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 0.9; x.beginPath();
     for (let a = 0.3; a < TAU * 2.3; a += 0.16) { const rr = rad * (0.12 + a / (TAU * 2.7)); const px = ex + Math.cos(a + 1) * rr * 0.48, py = y + Math.sin(a + 1) * rr * 0.93; if (a === 0.3) x.moveTo(px, py); else x.lineTo(px, py); }
@@ -339,12 +340,22 @@ function paintScroll3(x, fam, tier) {
   age(sheet, -40, -28, 80, 60, 26);
   x.lineWidth = 1.1; x.strokeStyle = edgeCol; x.stroke(sheet);
   // the emblem: painted on, solid, softly shaded, the paint worn in places
-  { const m = emblemMask2(fam, tier, 288), size = 58, c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d');
+  { const m = emblemMask2(fam, my ? 'legendary' : tier, 288), size = 58, c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d');
     t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; const eg = t.createLinearGradient(0, 0, 0, c.height); eg.addColorStop(0, shade(acc, 0.16)); eg.addColorStop(0.55, acc); eg.addColorStop(1, shade(acc, -0.32)); t.fillStyle = eg; t.fillRect(0, 0, c.width, c.height);
     t.globalCompositeOperation = 'destination-out'; const rr2 = rnd(fam.length * 7 + 3); for (let i = 0; i < 70; i++) { t.globalAlpha = 0.25 + rr2() * 0.6; t.beginPath(); t.arc(rr2() * c.width, rr2() * c.height, 1 + rr2() * 4, 0, TAU); t.fill(); } t.globalAlpha = 1;
     x.save(); x.globalAlpha = 0.55; x.drawImage((() => { const d = document.createElement('canvas'); d.width = d.height = m.width; const u = d.getContext('2d'); u.drawImage(m, 0, 0); u.globalCompositeOperation = 'source-in'; u.fillStyle = 'rgba(0,0,0,1)'; u.fillRect(0, 0, d.width, d.height); return d; })(), -2 - size / 2 + 0.8, 1 - size / 2 + 1.2, size, size); x.restore(); // the paint's thickness: a soft shadow under it
     x.drawImage(c, -2 - size / 2, 1 - size / 2, size, size); }
   roll(-46, 34, 35, 12.5, true);
+  // (7.4.15) a mythical's wax seal, pressed on the sheet's corner over a short ribbon: deep red, uneven, a ring stamped in it
+  if (my) { x.save(); x.translate(24, 20);
+    for (const [dx, a] of [[-4, 0.5], [4, -0.4]]) { x.fillStyle = '#5a1810'; x.beginPath(); x.moveTo(dx - 2.5, 2); x.lineTo(dx + 2.5, 2); x.lineTo(dx + 3.5 + a * 4, 16); x.lineTo(dx + a * 4, 13); x.lineTo(dx - 3.5 + a * 4, 16); x.closePath(); x.fill(); }
+    const seal = wobbly(Array.from({ length: 14 }, (_, i) => { const a = i / 14 * TAU, rr = 9.5 + (r() - 0.5) * 2.4; return [Math.cos(a) * rr, Math.sin(a) * rr]; }), r, 0.5);
+    const sg2 = x.createRadialGradient(-3, -3, 1, 0, 0, 11); sg2.addColorStop(0, '#c0402c'); sg2.addColorStop(0.6, '#8a2418'); sg2.addColorStop(1, '#4e120c'); x.fillStyle = sg2; x.fill(seal);
+    x.strokeStyle = 'rgba(30,6,4,0.8)'; x.lineWidth = 0.9; x.stroke(seal);
+    x.strokeStyle = 'rgba(40,8,4,0.7)'; x.lineWidth = 1.2; x.beginPath(); x.arc(0, 0, 6, 0, TAU); x.stroke();
+    x.strokeStyle = 'rgba(255,170,130,0.35)'; x.lineWidth = 0.8; x.beginPath(); x.arc(-0.4, -0.5, 6, Math.PI * 1.1, Math.PI * 1.7); x.stroke();
+    x.fillStyle = 'rgba(40,8,4,0.6)'; for (let i = 0; i < 5; i++) { const a = i / 5 * TAU - Math.PI / 2; x.beginPath(); x.arc(Math.cos(a) * 3, Math.sin(a) * 3, 0.9, 0, TAU); x.fill(); }
+    x.fillStyle = 'rgba(255,200,170,0.35)'; x.beginPath(); x.ellipse(-3.5, -4, 2.6, 1.2, -0.6, 0, TAU); x.fill(); x.restore(); }
 }
 export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare') {
   const key = `3|${fam}|${tier}|${Math.round(size)}`;

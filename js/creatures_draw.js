@@ -3582,6 +3582,16 @@ export function speciesBox(sp) {
   BOXES.set(sp.id, box);
   return box;
 }
+// (7.4.14) a pet's picture: as fittedIcon, but a long thin animal (an eel, the frilled shark, the oarfish) is drawn rising
+// at a slight angle, so it fills its card instead of lying across it as a thin line
+export function petIcon(sp, w = 300, h = 180) {
+  const B = speciesBox(sp); if (B.h / B.w > 0.16) return fittedIcon(sp, w, h);
+  const a = -0.42, c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+  const cw = Math.abs(Math.cos(a)) * B.w + Math.abs(Math.sin(a)) * B.h, ch = Math.abs(Math.sin(a)) * B.w + Math.abs(Math.cos(a)) * B.h, L = Math.min((w * 0.86) / cw, (h * 0.86) / ch);
+  x.translate(w / 2, h / 2); x.rotate(a); x.scale(-1, 1); x.translate(-(B.x0 + B.w / 2) * L, -(B.y0 + B.h / 2) * L);
+  try { drawSpecies(x, sp, L, 1.3, 0.4, 0); } catch (e) { /* ignore */ }
+  return c;
+}
 // a picture of a species fitted to w x h by what shows (pad: the margin, a share of the box), centred
 export function fittedIcon(sp, w = 240, h = 150, pad = 0.08) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;

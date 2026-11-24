@@ -526,9 +526,11 @@ e.inSub ? [
         const bx = x + r * 0.74, by = y - r * 0.74, br = Math.max(8 * u, r * 0.4), pq = 1 + 0.08 * Math.sin(g.time * 5);
         ctx.save(); ctx.globalAlpha = 1; ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.arc(bx, by, br * pq, 0, TAU); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#fff6ea'; ctx.font = `700 ${br * 1.45}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + br * 0.06); ctx.restore(); }
-      if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 1.8, r * 1.8, g.time, 3); // (5.9.1) a legendary's sparks; (5.10.8) fewer, closer
+      if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 1.8, r * 1.8, g.time, 3);
+      if (a.abil && AB.tier === 'mythical') { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (let i = 0; i < 11; i++) { const ph = (g.time * (0.22 + (i % 4) * 0.05) + i * 0.091) % 1, px = x + Math.sin(i * 2.4 + g.time * 0.7) * r * 0.75, py = y + r * 0.7 - ph * r * 2;
+        ctx.fillStyle = `rgba(255,${120 + Math.round(80 * (1 - ph))},70,${(Math.sin(Math.PI * ph) * 0.8).toFixed(3)})`; ctx.beginPath(); ctx.arc(px, py, Math.max(1.1, r * 0.045), 0, TAU); ctx.fill(); } ctx.restore(); } // (7.4.15) a mythical's embers // (5.9.1) a legendary's sparks; (5.10.8) fewer, closer
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
-        if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
+        if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'mythical' ? 'rgba(236,120,84,0.8)' : AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();
           // (5.16.0) a small painted hourglass and the time left in the middle of the greyed coin ("7h 42m", "38s")
           drawHourglass(ctx, x, y - r * 0.2, r * 0.3); ctx.font = `700 ${Math.max(10 * u, r * 0.38)}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#efe8d2'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3 * u; ctx.fillText(fmtLeft(cdl), x, y + r * 0.34); ctx.shadowBlur = 0; } }
@@ -1044,12 +1046,15 @@ e.inSub ? [
     // (5.9.0) Echo: every animal within the radar's 200 m as a dot while it lasts (rare and better in their colours at Echo+)
     // (5.16.0) Echo: for its time, every exotic and legendary animal in reach shows as the same pale bone pip with a soft ring
     // (no telling which is which); Fathom reaches three times as far (the radar's edge stands for its reach then)
-    if (g.echoT > 0 && g.fauna) { const al = Math.min(1, g.echoT / 1.5), reach = g.echoLv >= 3 ? 600 : 200;
+    if (g.echoT > 0 && g.fauna) { const al = Math.min(1, g.echoT / 1.5), reach = g.echoLv >= 4 ? 1200 : g.echoLv >= 3 ? 600 : 200, song = g.echoLv >= 4; // (7.4.15) Whalesong: twice Fathom's reach
       for (const c of g.fauna.list) { if (c.dead) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > reach) continue;
         const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'); if (R !== 'exotic' && R !== 'legendary') continue;
         const k = rr * Math.min(1, d / reach), px = rcx + dx / (d || 1) * k, py = rcy + dy / (d || 1) * k, q = 0.5 + 0.5 * Math.sin(g.time * 3 + c.x);
-        ctx.globalAlpha = al * (0.35 + 0.3 * q); ctx.strokeStyle = '#e6dcc0'; ctx.lineWidth = 1.2 * s; ctx.beginPath(); ctx.arc(px, py, 5.5 * s, 0, TAU); ctx.stroke();
-        ctx.globalAlpha = al; ctx.fillStyle = '#ece4cc'; ctx.beginPath(); ctx.arc(px, py, 2.4 * s, 0, TAU); ctx.fill(); }
+        // (7.4.15) Whalesong: exotics in their purple, legendaries brighter and larger in the legendary amber
+        const lg = song && R === 'legendary', col = !song ? ['#e6dcc0', '#ece4cc'] : lg ? ['#f0c070', '#ffd890'] : ['#b48ad8', '#c8a2e6'], rk = lg ? 1.5 : 1;
+        if (lg) { ctx.globalAlpha = al * (0.25 + 0.2 * q); ctx.fillStyle = '#f0c070'; ctx.beginPath(); ctx.arc(px, py, 9 * s, 0, TAU); ctx.fill(); }
+        ctx.globalAlpha = al * (0.35 + 0.3 * q); ctx.strokeStyle = col[0]; ctx.lineWidth = 1.2 * s * rk; ctx.beginPath(); ctx.arc(px, py, 5.5 * s * rk, 0, TAU); ctx.stroke();
+        ctx.globalAlpha = al; ctx.fillStyle = col[1]; ctx.beginPath(); ctx.arc(px, py, 2.4 * s * rk, 0, TAU); ctx.fill(); }
       ctx.globalAlpha = 1; }
     const ent = g.entity;
     if (ent && ent.dist < 200 && !dying && !(ent.offRadarT > 0)) { // (5.16.0) after it loses you in the dark it stays off the radar a minute

@@ -6,6 +6,7 @@ import { CHESTS, chestPicture } from './chests.js';
 import { RARITY } from './item_data.js';
 import { playerLevel } from './quests.js';
 import { TRAPS, money } from './economy.js';
+import { PETS, PET_TIERS, MAX_LEVEL, petsOwned, petUnlocked, petLevel } from './petshop.js';
 
 export const STANDARD = ['crate', 'footlocker', 'siren'];
 const DEALS = ['crate3', 'tea', 'case', 'case3', 'strongbox', 'salvage', 'expedition', 'leviathan', 'poseidon'];
@@ -39,7 +40,7 @@ export const giftName = (r) => (r.k === 'chest' ? CHESTS[r.v].name : r.k === 'ca
 const hrs = (ms) => { const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 3600e3) / 60e3); return h ? `${h} h ${m} min` : `${m} min`; };
 
 // the Shop: a row of chests, each its picture, name, tier, items, price and Buy
-// (6.9.0) the Test tab: for testing only, and only in the web build (isTestStore: no native store behind it), so it can
+// (6.9.0, 7.4.13) the Test tab: for testing only, behind ?dev (purchases.js isTestStore), so it can
 // never reach the App Store build. Cash, any chest (into the locker, to open), every ability, any item, and resets.
 export function testHtml(P, items) {
   const chest = Object.entries(CHESTS).map(([k, C]) => `<button data-test="chest|${k}">${C.name}</button>`).join('');
@@ -51,19 +52,26 @@ export function testHtml(P, items) {
     <div class="tt-row"><b>Item</b><select class="tt-item">${opts}</select><button data-test="item|">Give</button></div>
     <div class="tt-row"><b>Reset</b><button data-test="reset|lessons">Lessons</button><button data-test="reset|tutorial">Tutorial</button><button data-test="reset|board">First board</button></div></div></div>`;
 }
-// (7.3.9, owner) the shop's tabs: chests (for cash), pets (for pearls), and the web build's Test
+// (7.3.9, owner) the shop's tabs: chests (for cash), pets (for pearls), and Test (behind ?dev)
 export const shopTabs = (on, test) => `<div class="st-tabs">${[['shop', 'Chests'], ['pets', 'Pets'], ...(test ? [['test', 'Test']] : [])].map(([k, n]) => `<button${k === on ? ' class="on"' : ''} data-tab="${k}">${n}</button>`).join('')}</div>`;
-// (7.3.9, owner) pets sold for pearls, the shop's own: kinds that are not to be had otherwise as a companion. Caught animals
-// still become pets as before. A pet bought stays his: he can take it back out at any time for nothing
-export const SHOP_PETS = [{ id: 53, pearls: 80 }, { id: 482, pearls: 80 }, { id: 329, pearls: 80 }, { id: 462, pearls: 80 }, { id: 499, pearls: 120 }, { id: 87, pearls: 300 }];
-export const SHOP_PET_IDS = new Set(SHOP_PETS.map((s) => s.id));
-export function petsHtml(P, test, picOf, nameOf, rarOf) {
-  const owned = new Set(P.petsOwned || []), cur = P.pet && P.pet.id, have = Math.floor(P.pearls || 0);
+// (7.4.14, owner) the pets, for pearls: every kind in petshop.js, by tier (exotic 80, legendary 150, mythical 500). A kind
+// shows once one of its species has been caught; until then a dark outline and "Catch one to unlock". Owned: its stars
+// (one a level) and Take out / With you. Bought: asked first, then it comes out with him
+export const petStars = (n, max = MAX_LEVEL) => `<span class="pet-stars" aria-label="Level ${n}">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? 'on' : ''}">★</i>`).join('')}</span>`;
+export function petsHtml(P, test, picOf, nameOf) {
+  const owned = petsOwned(P), cur = P.pet && P.pet.id, have = Math.floor(P.pearls || 0);
   const pearl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
-  const cards = SHOP_PETS.map((s) => { const R = rarOf(s.id), mine = owned.has(s.id), out = cur === s.id;
-    const btn = out ? '<button disabled>With you</button>' : mine ? `<button data-pet="${s.id}">Take out</button>` : `<button data-pet="${s.id}" ${have < s.pearls ? 'disabled' : ''}>${pearl}${s.pearls}</button>`;
-    return `<div class="st-card r-${R.id}"><img src="${picOf(s.id)}" alt=""><b style="color:${R.col}">${nameOf(s.id)}</b><span class="st-r" style="color:${R.col}">${R.name} pet</span><span class="st-n">${mine ? 'Yours' : '&nbsp;'}</span>${btn}</div>`; }).join('');
-  return `<div class="st-plate"><button class="st-x" aria-label="Close">×</button>${shopTabs('pets', test)}<div class="st-row st-pets">${cards}</div></div>`;
+  const sec = (tier) => {
+    const T = PET_TIERS[tier], R = RARITY[tier];
+    const cards = PETS.filter((q) => q.tier === tier).map((q) => {
+      const mine = owned.has(q.id), out = cur === q.id, open = petUnlocked(P, q.id);
+      if (!open) return `<div class="st-card pet-card locked"><img src="${picOf(q.id)}" alt=""><b>Unknown</b><span class="st-r">Catch one to unlock</span></div>`;
+      const btn = out ? '<button disabled>With you</button>' : mine ? `<button data-pet="${q.id}">Take out</button>` : `<button data-pet="${q.id}" ${have < q.pearls ? 'disabled' : ''}>${pearl}${q.pearls}</button>`;
+      return `<div class="st-card pet-card r-${tier}"><img src="${picOf(q.id)}" alt=""><b style="color:${R.col}">${nameOf(q.id)}</b>${mine ? petStars(petLevel(P, q.id)) : `<span class="st-r" style="color:${R.col}">${R.name} pet</span>`}${btn}</div>`;
+    }).join('');
+    return `<h3 class="pet-tier" style="color:${R.col}">${R.name} <span>${pearl}${T.pearls}</span></h3><div class="st-pets">${cards}</div>`;
+  };
+  return `<div class="st-plate st-petshop"><button class="st-x" aria-label="Close">×</button>${shopTabs('pets', test)}<div class="pet-have">${pearl}<b>${have.toLocaleString('en-US')}</b></div><div class="pet-scroll">${['exotic', 'legendary', 'mythical'].map(sec).join('')}</div></div>`;
 }
 export function storeHtml(P, test = false) {
   const card = (key, deal) => {

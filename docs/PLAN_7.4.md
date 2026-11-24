@@ -1192,12 +1192,12 @@ concern (see CLAUDE.md).
 - **Not built, for later:** events that give pearls (none exist yet); pearl packs at $0.99 for 100, $2.99 for 500 and
   $14.99 for a large pack. No rare pearl finds in chests.
 
-## Mobile only (7.4.13)
+## Mobile only (7.4.13, built)
 
 There is no web game. The web build's code goes; the shop's Test tab never ships, and shows only behind a
 development switch that is not in the shipped game.
 
-## Pets (7.4.14)
+## Pets (7.4.14, built)
 
 - **Pets come only from pearls.** Catching an animal never makes it a pet. Pets are not items: never in the bag, the
   locker or the aquarium, and never sold.
@@ -1213,18 +1213,19 @@ development switch that is not in the shipped game.
   Vampire Squid, the Barreleye, the Gulper Eel, the Coelacanth, the Dumbo, the Oarfish; Giant Squid, Colossal Squid,
   Abyssal Sleeper Shark, Megamouth Shark.
 - **Size:** every pet starts at its real size in the game, giants too.
+- **The pet's aquarium:** at the surface, the pet in its own tank, a tray of the live animals brought up on the right; dragged in (or tapped), the animal sinks, the pet eats it, turns a happy loop and gives off pink hearts for about five seconds while the meter fills; at a level the screen darkens and the pet grows in the middle.
 - **Feeding and growth (structure first, tuned later):** once a day a pet can be fed one animal from the catch (it is
   used up). Points by the animal's rarity, a legendary 100. Levels at 10, 50, 100 and 500 points; each level makes the
   pet 20 % larger (about twice its size at the top). The size can be set back to any smaller level without losing the
   level. Pearls top up points at 1 pearl for 10 points.
 - No made-up (not in the game) pets yet; seasonal pets only in their season, later.
 
-## Mythical scrolls (7.4.15)
+## Mythical scrolls (7.4.15, built)
 
 - A rarity above legendary, in dark oxblood with an ember glow (not the warning red). Only from combining three
   legendaries of the same scroll; never in chests or the shop. Worth three legendaries, sells for about a third.
 - **Every mythical, for 10 s after it fires:** at least Flare+ light (45 m), at least Sprint+ speed (x2, the sub too),
-  +5 % air a second up to +50 % and no air lost. Usable any time, no conditions. Cooldowns at least 20 minutes.
+  +5 % air a second up to +50 % and no air lost (in the sub, its cabin air). Usable any time, no conditions. Cooldowns at least 20 minutes. Rift's two dashes: the second within 20 s, then the rest.
 - Maelstrom (Riptide): x3.5 speed for 15 s, a lit wake, 20 min. Pharos (Lighthouse): 90 s, brighter and wider, beams,
   30 min. Whalesong (Fathom): the deep groan of the hull cracking, lower and longer, light washing across the screen, a
   radar sweep over twice the area for 60 s, exotics in purple and legendaries brighter in amber, 60 min. Leviathan's

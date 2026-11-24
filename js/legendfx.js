@@ -8,10 +8,10 @@ export function startLegendFx() {
   const x = c.getContext('2d'); let els = [], lastScan = 0;
   // (7.3.0) only over a picture that is its own: a box marked Legendary that holds another thing's card (the inventory's
   // side-by-side pop-up, the hand net beside Gulper's Throat) had its sparks drawn over that other thing's picture
-  const RAR = '.r-common,.r-uncommon,.r-rare,.r-exotic,.r-legendary';
+  const RAR = '.r-common,.r-uncommon,.r-rare,.r-exotic,.r-legendary,.r-mythical';
   const ownImg = (el) => [...el.querySelectorAll('img')].find((im) => im.parentElement && im.parentElement.closest(RAR) === el) || null;
   // (7.3.0) while a pop-up is open, only what is in it: a locker tile behind it had its sparks drawn through the pop-up
-  const scan = () => { const pop = [...document.querySelectorAll('.item-pop')].find((el) => el.getClientRects().length > 0); els = [...(pop || document).querySelectorAll('.r-legendary')].filter((el) => el.offsetParent !== null && !el.classList.contains('empty') && ownImg(el)); /* things with a picture, not words in a rarity's colour */ };
+  const scan = () => { const pop = [...document.querySelectorAll('.item-pop')].find((el) => el.getClientRects().length > 0); els = [...(pop || document).querySelectorAll('.r-legendary,.r-mythical')].filter((el) => el.offsetParent !== null && !el.classList.contains('empty') && ownImg(el)); /* things with a picture, not words in a rarity's colour */ };
   const frame = (now) => {
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = innerWidth, H = innerHeight;
     if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
@@ -25,8 +25,19 @@ export function startLegendFx() {
         let L = r.left, T = r.top, R = r.right, B = r.bottom;
         for (let a = fr.parentElement; a && a !== document.body; a = a.parentElement) { const st = getComputedStyle(a); if (st.overflowY === 'visible' && st.overflowX === 'visible') continue; const q = a.getBoundingClientRect(); L = Math.max(L, q.left); T = Math.max(T, q.top); R = Math.min(R, q.right); B = Math.min(B, q.bottom); }
         if (R - L < 2 || B - T < 2) return;
-        x.save(); x.beginPath(); x.rect(L, T, R - L, B - T); x.clip(); legendMotes(x, r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.9, t, i + 1); x.restore(); }); }
+        x.save(); x.beginPath(); x.rect(L, T, R - L, B - T); x.clip(); if (el.classList.contains('r-mythical')) mythMotes(x, r, t, i + 1); else legendMotes(x, r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.9, t, i + 1); x.restore(); }); }
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
+}
+
+// (7.4.15, owner) a mythical's motes: more of them than a legendary's, embers rising, red cooling to orange (no sweep of
+// shine: clipped to the picture's frame it showed as a pale box)
+function mythMotes(x, r, t, seed) {
+  x.save(); x.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 16; i++) { const h = Math.sin(seed * 91.7 + i * 12.9898) * 43758.5453, u = h - Math.floor(h), ph = (t * (0.16 + (i % 5) * 0.035) + u) % 1;
+    const px = r.left + r.width * (0.08 + 0.84 * ((u * 7.13) % 1)) + Math.sin(t * 1.1 + i) * r.width * 0.03, py = r.top + r.height * (0.95 - ph * 1.0);
+    const a = Math.sin(Math.PI * ph) * (0.55 + 0.45 * Math.sin(t * 7 + i * 2)), rr = Math.max(1, Math.min(r.width, r.height) * (0.012 + (i % 3) * 0.006));
+    x.fillStyle = `rgba(255,${110 + Math.round(90 * ph)},${60 + Math.round(40 * ph)},${(a * 0.85).toFixed(3)})`; x.beginPath(); x.arc(px, py, rr, 0, Math.PI * 2); x.fill(); }
+  x.restore();
 }

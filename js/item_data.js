@@ -14,6 +14,9 @@ export const RARITY = {
   rare: { name: 'Rare', col: '#5aa8f0', p: 1.26, k: 2 },
   exotic: { name: 'Exotic', col: '#c27af0', p: 1.42, k: 3 },
   legendary: { name: 'Legendary', col: '#f2b84a', p: 1.6, k: 4 },
+  // (7.4.15, owner) above legendary, scrolls only (three legendaries combined) and the giant pets: the deep's own red,
+  // oxblood with an ember glow, not the bright red of a warning
+  mythical: { name: 'Mythical', col: '#e0583c', p: 1.8, k: 5 },
 };
 export const RARITIES = ['common', 'uncommon', 'rare', 'exotic', 'legendary'];
 

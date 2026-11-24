@@ -195,7 +195,7 @@ export class Renderer {
     // small and dense, and the fill it saves is most of a frame
     // (5.4) asked once, not every frame (matchMedia each frame cost a little on a phone); a phone's page is laid out
     // wider than its screen (index.html), so the picture is sized from the real screen: one pixel a point
-    if (this.coarse === undefined) this.coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    if (this.coarse === undefined) this.coarse = true; // (7.4.13) phone-only
     const coarse = this.coarse, fk = window.__fingerK || 1;
     const dpr = (coarse ? 1 / fk : Math.min(window.devicePixelRatio || 1, 1.25)) * this.quality;
     const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
@@ -452,14 +452,18 @@ export class Renderer {
       }
       if (c.petLeg && !c.dead) { // (7.4.3, owner) a legendary pet: a soft warm light round it, breathing, and glints that come and go along its body
         const Lp = fishDrawLen(c.len), br = 0.5 + 0.5 * Math.sin(t * 1.4 + (c.wob || 0)), dir = c.dir || (c.vx >= 0 ? 1 : -1);
-        glowPts.push([S(c.x), Sy(c.y), '#ffe2a0', Math.max(ppm * 1.1, Lp * ppm * 0.85), 0.32 + 0.18 * br]);
+        const my = !!c.petMyth; // (7.4.14, owner) a mythical pet (the giants): a stronger ember glow, more glints, and embers rising off it
+        glowPts.push([S(c.x), Sy(c.y), my ? '#ffb08a' : '#ffe2a0', Math.max(ppm * 1.1, Lp * ppm * (my ? 1.05 : 0.85)), (my ? 0.42 : 0.32) + 0.18 * br]);
         // drawn straight onto the scene too (behind the animal), so it shows in daylit water where the light map adds little
         { const hx = S(c.x), hy = Sy(c.y), hr = Lp * ppm * 0.62; ctx.save(); ctx.globalCompositeOperation = 'lighter';
           ctx.save(); ctx.translate(hx, hy); ctx.scale(1, 0.42); // an oval glow that fades to nothing at its edge (a round gradient cut to an oval showed a hard rim)
-          const hg = ctx.createRadialGradient(0, 0, 0, 0, 0, hr); hg.addColorStop(0, `rgba(255,226,160,${(0.13 + 0.06 * br).toFixed(3)})`); hg.addColorStop(0.45, `rgba(240,200,130,${(0.05 + 0.025 * br).toFixed(3)})`); hg.addColorStop(1, 'rgba(240,200,130,0)');
+          const hg = ctx.createRadialGradient(0, 0, 0, 0, 0, hr); const gc0 = my ? '255,150,110' : '255,226,160', gc1 = my ? '224,96,60' : '240,200,130'; hg.addColorStop(0, `rgba(${gc0},${((my ? 0.18 : 0.13) + 0.06 * br).toFixed(3)})`); hg.addColorStop(0.45, `rgba(${gc1},${((my ? 0.08 : 0.05) + 0.025 * br).toFixed(3)})`); hg.addColorStop(1, `rgba(${gc1},0)`);
           ctx.fillStyle = hg; ctx.fillRect(-hr, -hr, hr * 2, hr * 2); ctx.restore();
-          for (let k = 0; k < 7; k++) { const ph = (t * 0.4 + k * 0.149) % 1, a = Math.sin(Math.PI * ph) * (0.65 + 0.35 * Math.sin(t * 9 + k * 3)), u = (k / 6 - 0.5) * 0.85;
-            glint(ctx, S(c.x + dir * u * Lp), Sy(c.y + Math.sin(k * 2.1 + t * 0.6) * Lp * 0.09 - ph * 0.3), Math.max(3, ppm * 0.1), a * 0.95, k + t * 0.3); }
+          const nG = my ? 13 : 7;
+          for (let k = 0; k < nG; k++) { const ph = (t * 0.4 + k * 0.149) % 1, a = Math.sin(Math.PI * ph) * (0.65 + 0.35 * Math.sin(t * 9 + k * 3)), u = (k / (nG - 1) - 0.5) * 0.85;
+            glint(ctx, S(c.x + dir * u * Lp), Sy(c.y + Math.sin(k * 2.1 + t * 0.6) * Lp * 0.09 - ph * 0.3), Math.max(3, ppm * 0.1), a * 0.95, k + t * 0.3, my ? [255, 170, 120] : undefined); }
+          if (my) for (let k = 0; k < 16; k++) { const ph = (t * (0.16 + (k % 5) * 0.03) + k * 0.0617) % 1, u = ((k * 0.381) % 1 - 0.5) * 0.95, ex = S(c.x + dir * u * Lp + Math.sin(t * 0.9 + k) * 0.15), ey = Sy(c.y + Lp * 0.06 - ph * Math.max(1.2, Lp * 0.35));
+            const a = Math.sin(Math.PI * ph) * 0.7, rr = Math.max(1.2, ppm * 0.035) * (1 - ph * 0.5); ctx.fillStyle = `rgba(255,${130 + Math.round(60 * (1 - ph))},80,${a.toFixed(3)})`; ctx.beginPath(); ctx.arc(ex, ey, rr, 0, Math.PI * 2); ctx.fill(); }
           ctx.restore(); }
       }
       if (!glowOf(c) && !c.variant && !c.petLeg && !visible(c.x, c.y, fishDrawLen(c.len))) continue; // black in the black (a legendary pet always shows)
@@ -1367,13 +1371,23 @@ export class Renderer {
         ctx.globalAlpha = 1;
         // (7.3.0) a steady tremor by tier, and a kick when it fires that dies away in half a second (owner: more power at
         // every tier). (Riptide's round glow over him is gone: its light is in the light map now, wide and soft like a Flare)
-        const kick = Math.max(0, 1 - (g.time - (g.abil.at ?? -9)) / 0.5), T0 = A.tier === 'legendary' ? [0.16, 0.9] : A.tier === 'exotic' ? [0.08, 0.55] : [0.04, 0.32];
+        const kick = Math.max(0, 1 - (g.time - (g.abil.at ?? -9)) / 0.5), T0 = A.tier === 'mythical' ? [0.2, 1.05] : A.tier === 'legendary' ? [0.16, 0.9] : A.tier === 'exotic' ? [0.08, 0.55] : [0.04, 0.32];
         if (!g.overenc) g.fx.shake = Math.max(g.fx.shake || 0, T0[0] + T0[1] * kick * kick); // (7.4.0, owner) no tremor while the bag drags him to half speed
       }
       if (A.reach && !e.inSub) { const NG0 = netGeom((gear(g.profile, 'net') || {}).look), r0 = (NG0.arm + NG0.hoop * (g.netRange || 1.1) / 1.1 * (A.reach || 1)) * ppm, /* (7.4.0) where the hoop's sweep reaches */ fx2 = e.facing || 1; ctx.strokeStyle = `rgba(214,236,226,${(0.22 + 0.08 * Math.sin(g.time * 3)).toFixed(3)})`; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.arc(ex, ey, r0, fx2 > 0 ? -0.9 : Math.PI - 0.9, fx2 > 0 ? 0.9 : Math.PI + 0.9); ctx.stroke(); ctx.setLineDash([]); }
       /* (5.16.0) a Flare's light is drawn in the light map now (30 m round him) */
       ctx.restore();
     }
+    if (g.mode === 'play' && (g.mythT > 0 || g.mythFx || g.markWashFx || g.songFx)) { const e = g.earl, m = e.inSub ? g.sub : e, mx = S(m.x), my = Sy(m.y), t = g.time, sz = (e.inSub ? 4 : 1.8) * ppm, er = Math.max(1.8, ppm * 0.07);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter';
+      if (g.mythFx) { const k0 = g.mythFx.t / 1.6; for (let i = 0; i < 40; i++) { const a = i * 2.39996, r = sz * (0.3 + k0 * (2.4 + (i % 5) * 0.4)), px = mx + Math.cos(a) * r, py = my + Math.sin(a) * r * 0.8 - k0 * sz * 0.6, al = (1 - k0) * 0.85;
+        ctx.fillStyle = `rgba(255,${120 + (i % 4) * 25},70,${al.toFixed(3)})`; ctx.beginPath(); ctx.arc(px, py, er * 1.3 * (1 - k0 * 0.5), 0, TAU); ctx.fill(); } }
+      if (g.mythT > 0) { const fade = Math.min(1, g.mythT / 1.5); for (let i = 0; i < 20; i++) { const ph = (t * (0.35 + (i % 4) * 0.07) + i * 0.083) % 1, u = ((i * 0.618) % 1 - 0.5) * 1.6, px = mx + u * sz + Math.sin(t * 1.3 + i) * sz * 0.15, py = my + sz * 0.3 - ph * sz * 1.8;
+        ctx.fillStyle = `rgba(255,${130 + Math.round(70 * (1 - ph))},80,${(Math.sin(Math.PI * ph) * 0.7 * fade).toFixed(3)})`; ctx.beginPath(); ctx.arc(px, py, er, 0, TAU); ctx.fill(); } }
+      if (g.songFx) { const T = g.songFx.t, rr = Math.hypot(ctx.canvas.width, ctx.canvas.height) * Math.min(1.1, 0.08 + T / 2.6), a = 0.22 * Math.max(0, 1 - T / 4); // (7.4.15) Whalesong: a pale ring of light going out over the screen
+        const rg = ctx.createRadialGradient(mx, my, rr * 0.78, mx, my, rr); rg.addColorStop(0, 'rgba(214,230,240,0)'); rg.addColorStop(0.7, `rgba(214,230,240,${a.toFixed(3)})`); rg.addColorStop(1, 'rgba(214,230,240,0)'); ctx.fillStyle = rg; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); }
+      if (g.markWashFx) { const k0 = g.markWashFx.t / 2, r = sz * (0.8 + k0 * 4); ctx.strokeStyle = `rgba(150,190,230,${((1 - k0) * 0.6).toFixed(3)})`; ctx.lineWidth = Math.max(2, ppm * 0.18) * (1 - k0 * 0.6); ctx.beginPath(); ctx.arc(mx, my, r, 0, TAU); ctx.stroke(); }
+      ctx.restore(); }
     // (7.2.8) Sprint's water, made real: motes that live in the water itself (world places, still water), so they slide past
     // him exactly as fast as he really moves, and nothing can jump (never a clock times a changing speed).
     // (7.3.0) a meteor (owner): ahead of him the water is thrown aside, unevenly, in loose clumps, small motes and the odd
@@ -1384,7 +1398,7 @@ export class Renderer {
     { const em = (g.mode === 'play' && this.sprintEmit && this.sprintEmit.t === g.time) ? this.sprintEmit : null; const P = this.sprintP || (this.sprintP = []);
       const dt = clamp(g.time - (this.sprintT ?? g.time), 0, 0.1); this.sprintT = g.time; const rnd = Math.random;
       if (em && dt > 0) { const e = g.earl, m = em.inSub ? g.sub : e, sp = Math.hypot(m.vx || 0, m.vy || 0) || 1, dx = (m.vx || 0) / sp, dy = (m.vy || 0) / sp, nx = -dy, ny = dx;
-        const TT = { rare: { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 }, exotic: { bow: 62, tail: 46, bub: 20, spark: 7, w: 1.3 }, legendary: { bow: 105, tail: 80, bub: 38, spark: 30, w: 1.7 } }[em.tier] || { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 };
+        const TT = { rare: { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 }, exotic: { bow: 62, tail: 46, bub: 20, spark: 7, w: 1.3 }, legendary: { bow: 105, tail: 80, bub: 38, spark: 30, w: 1.7 }, mythical: { bow: 125, tail: 100, bub: 46, spark: 44, w: 1.9 } }[em.tier] || { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 };
         // (7.4.0, owner) the sub's own shape: the bow wave off its nose (about 4.2 m ahead of its middle on a 9 m hull), the wake off
         // its propeller (4.6 m behind), spread over the hull's height, not a diver's outline round its middle
         const sz = em.inSub ? 1.5 : 1, head = em.inSub ? 4.2 : 0.9, fins = em.inSub ? 4.6 : 1.05, cap = 620, k = em.kS;
@@ -1404,7 +1418,7 @@ export class Renderer {
         const acc = (key, rate) => { this[key] = (this[key] || 0) + rate * dt; const n = Math.floor(this[key]); this[key] -= n; return n; };
         bow(acc('spBow', TT.bow * k)); tail(acc('spTail', TT.tail * k)); bub(acc('spBub', TT.bub * (0.4 + 0.6 * k))); if (TT.spark) spark(acc('spSpark', TT.spark * k));
         if (em.at != null && this.sprintBurstAt !== em.at) { this.sprintBurstAt = em.at; // the kick: water and bubbles burst from his fins
-          const nb = em.tier === 'legendary' ? 70 : em.tier === 'exotic' ? 42 : 24;
+          const nb = em.tier === 'mythical' ? 84 : em.tier === 'legendary' ? 70 : em.tier === 'exotic' ? 42 : 24;
           for (let i = 0; i < nb; i++) { const an = Math.atan2(-dy, -dx) + (rnd() - 0.5) * 2.6, v = (0.8 + rnd() * 2.2) * TT.w;
             add({ x: m.x - dx * fins, y: m.y - dy * fins, vx: Math.cos(an) * v, vy: Math.sin(an) * v, age: 0, life: 0.6 + rnd() * 1.0, k: 0, r: 0.3 + rnd() * rnd() * 1.6, a: 0.4 + rnd() * 0.6 }); }
           bub(nb >> 1, 0.9); if (TT.spark) spark(nb >> 1); } }
@@ -3119,7 +3133,7 @@ export class Renderer {
       // Lighthouse 80 m, the whole screen, very bright (as 20 m water) and holding its strength far out, but still a light in
       // the dark sea: white-amber, the far corners left dimmer, no daylight blue
       const L = g.abilLight, lh = L >= 2, a0 = (L >= 2 ? 0.97 : L >= 1.5 ? 0.84 : 0.62) * (g.lightFade ?? 1), col = lh ? [255, 246, 230] : [255, 226, 196];
-      const fxp = e.inSub ? S(g.sub.x) : S(e.x), fyp = e.inSub ? Sy(g.sub.y) : Sy(e.y), R = (lh ? 80 : L >= 1.5 ? 45 : 28) * ppm;
+      const fxp = e.inSub ? S(g.sub.x) : S(e.x), fyp = e.inSub ? Sy(g.sub.y) : Sy(e.y), R = (L >= 3 ? 110 : lh ? 80 : L >= 1.5 ? 45 : 28) * ppm; // (7.4.15) Pharos 110 m
       const gg = l.createRadialGradient(fxp * k, fyp * k, 0, fxp * k, fyp * k, R * k);
       if (lh) { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.35, rgbStr(col, a0 * 0.97)); gg.addColorStop(0.7, rgbStr(col, a0 * 0.75)); gg.addColorStop(1, rgbStr(col, 0)); }
       else if (L >= 1.5) { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.3, rgbStr(col, a0 * 0.95)); gg.addColorStop(0.72, rgbStr(col, a0 * 0.6)); gg.addColorStop(1, rgbStr(col, 0)); }
@@ -3131,11 +3145,27 @@ export class Renderer {
         l.fillStyle = pg; l.beginPath(); l.arc(fxp * k, fyp * k, R * 0.8 * k, 0, TAU); l.fill(); l.globalCompositeOperation = op; }
     }
     // (7.3.0) Riptide's light: wide and soft like a Flare (owner: no small round glow), a warm bone light 40 m round him
-    if (g.abil && g.abil.activeT > 0 && g.abil.def && g.abil.def.speed && g.abil.def.tier === 'legendary' && (g.lightFade ?? 1) > 0.01) {
+    if (g.abil && g.abil.activeT > 0 && g.abil.def && g.abil.def.speed && (g.abil.def.tier === 'legendary' || g.abil.def.tier === 'mythical') && (g.lightFade ?? 1) > 0.01) {
       const m0 = e.inSub ? g.sub : e, rx = S(m0.x), ry = Sy(m0.y), R = 40 * ppm, a0 = 0.7 * (g.lightFade ?? 1) * Math.min(1, (g.time - (g.abil.at ?? 0)) / 0.6) * Math.min(1, g.abil.activeT / 1.2), col = [250, 232, 204];
       const gg = l.createRadialGradient(rx * k, ry * k, 0, rx * k, ry * k, R * k); gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.25, rgbStr(col, a0 * 0.9)); gg.addColorStop(0.65, rgbStr(col, a0 * 0.45)); gg.addColorStop(1, rgbStr(col, 0));
       l.fillStyle = gg; l.beginPath(); l.arc(rx * k, ry * k, R * k, 0, TAU); l.fill(); visR.push(rx, ry, R); lamps.push({ x: rx, y: ry, r: R, a: a0 });
     }
+    // (7.4.15) Maelstrom's wake: the water he passes stays lit a little while, a trail of warm light fading behind him
+    { const W0 = this.mythWake || (this.mythWake = []), A0 = g.abil && g.abil.activeT > 0 && g.abil.def && g.abil.def.wake, m0 = e.inSub ? g.sub : e;
+      if (A0 && (!W0.length || Math.hypot(W0[W0.length - 1].x - m0.x, W0[W0.length - 1].y - m0.y) > 2.2)) W0.push({ x: m0.x, y: m0.y, t: g.time });
+      while (W0.length && (g.time - W0[0].t > 2.8 || g.time < W0[0].t)) W0.shift();
+      if (W0.length && (g.lightFade ?? 1) > 0.01) { const op = l.globalCompositeOperation; l.globalCompositeOperation = 'lighter';
+        for (const w of W0) { const age = (g.time - w.t) / 2.8, wx = S(w.x), wy = Sy(w.y), R = (9 + 6 * age) * ppm, a = 0.34 * (1 - age) * (g.lightFade ?? 1);
+          const wg = l.createRadialGradient(wx * k, wy * k, 0, wx * k, wy * k, R * k); wg.addColorStop(0, rgbStr([255, 206, 170], a)); wg.addColorStop(1, rgbStr([255, 196, 160], 0));
+          l.fillStyle = wg; l.beginPath(); l.arc(wx * k, wy * k, R * k, 0, TAU); l.fill(); visR.push(wx, wy, R); }
+        l.globalCompositeOperation = op; } }
+    // (7.4.15) Whalesong: light washing out across the whole screen from him as the call goes out, then gone
+    if (g.songFx && (g.lightFade ?? 1) > 0.01) { const T = g.songFx.t, m0 = e.inSub ? g.sub : e, wx = S(m0.x) * k, wy = Sy(m0.y) * k, Rw = Math.hypot(this.W, this.H) * k * Math.min(1.2, 0.15 + T / 2.4), a = 0.42 * Math.max(0, 1 - T / 4) * (g.lightFade ?? 1);
+      const op = l.globalCompositeOperation; l.globalCompositeOperation = 'lighter';
+      const wg = l.createRadialGradient(wx, wy, Rw * 0.55, wx, wy, Rw); wg.addColorStop(0, rgbStr([210, 226, 236], 0)); wg.addColorStop(0.75, rgbStr([214, 230, 240], a)); wg.addColorStop(1, rgbStr([214, 230, 240], 0));
+      l.fillStyle = wg; l.fillRect(0, 0, this.W * k, this.H * k);
+      const cg = l.createRadialGradient(wx, wy, 0, wx, wy, Rw * 0.6); cg.addColorStop(0, rgbStr([214, 230, 240], a * 0.5)); cg.addColorStop(1, rgbStr([214, 230, 240], 0)); l.fillStyle = cg; l.fillRect(0, 0, this.W * k, this.H * k);
+      l.globalCompositeOperation = op; visR.push(wx / k, wy / k, Rw / k); }
     // (6.0.9) Bioluminescence: his gear glows like a glow stick he carries, a soft even pool 16 m round him in a muted deep-sea
     // blue (not cyan); always on, the thing ignores it, and it goes out with the others when its red comes
     if (e.biolum && !e.inSub && (g.lightFade ?? 1) > 0.01) { const bx = S(e.x), by = Sy(e.y), gr = 16 * ppm, a = 0.42 * (g.lightFade ?? 1) * (0.94 + 0.06 * Math.sin(g.time * 1.3)), c = [128, 156, 204];
@@ -3144,7 +3174,7 @@ export class Renderer {
     if (g.abilLight >= 2 && (g.lightFade ?? 1) > 0.01 && g.mode === 'play') { // (7.4.9, owner) the Lighthouse's beams: two broad shafts of light turning slowly round him, lighting the water they cross (in the light map, so they light what is there)
       const e2 = g.earl, bx = (e2.inSub ? S(g.sub.x) : S(e2.x)) * k, by = (e2.inSub ? Sy(g.sub.y) : Sy(e2.y)) * k, fadeL = g.lightFade ?? 1, pul = 0.6 + 0.4 * Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), rot = g.time * 0.45, Rb = Math.hypot(this.W, this.H) * k;
       const op = l.globalCompositeOperation; l.globalCompositeOperation = 'lighter';
-      for (const off of [0, Math.PI]) { const a = rot + off;
+      for (const off of (g.abilLight >= 3 ? [0, TAU / 3, TAU * 2 / 3] : [0, Math.PI])) { const a = rot + off; // (7.4.15) Pharos: three beams
         const gb = l.createRadialGradient(bx, by, 0, bx, by, Rb); gb.addColorStop(0, rgbStr([255, 240, 214], 0.34 * pul * fadeL)); gb.addColorStop(0.5, rgbStr([255, 236, 206], 0.2 * pul * fadeL)); gb.addColorStop(1, rgbStr([255, 236, 206], 0));
         l.fillStyle = gb; for (const w of [0.32, 0.14]) { l.beginPath(); l.moveTo(bx, by); l.arc(bx, by, Rb, a - w, a + w); l.closePath(); l.fill(); } } // a broad beam and its brighter core
       l.globalCompositeOperation = op; }

@@ -339,7 +339,18 @@ const ABIL_ART = {
 };
 export function paintAbility(x, fam, tier) {
   const f = ABIL_ART[fam]; if (!f) return false;
-  x.save(); x.scale(1.06, 1.06); f(x, tier); x.restore(); tierRim(x, tier); return true;
+  const my = tier === 'mythical'; // (7.4.15) a mythical: the legendary's picture, its gilt warmed to ember, on an oxblood rim
+  if (my) { // the picture painted on its own and warmed there, so the coin's face under it keeps its own colour
+    const c = document.createElement('canvas'); c.width = c.height = 240; const y = c.getContext('2d'); y.translate(120, 120); y.scale(2.4, 2.4); y.scale(1.06, 1.06); f(y, 'legendary');
+    y.setTransform(1, 0, 0, 1, 0, 0); y.globalCompositeOperation = 'source-atop'; y.fillStyle = 'rgba(214,78,44,0.34)'; y.fillRect(0, 0, 240, 240);
+    x.drawImage(c, -50, -50, 100, 100); mythRim(x); return true; }
+  x.save(); x.scale(1.06, 1.06); f(x, tier); x.restore(); tierRim(x, tier);
+  return true;
+}
+function mythRim(x) {
+  x.lineWidth = 3.4; x.strokeStyle = '#4a1610'; x.beginPath(); x.arc(0, 0, 46, 0, TAU); x.stroke(); x.lineWidth = 1.7; x.strokeStyle = '#d06a44'; x.stroke();
+  for (let i = 0; i < 16; i++) { const a = i / 16 * TAU; x.save(); x.rotate(a); x.strokeStyle = '#d87850'; x.lineWidth = 1.3; x.beginPath(); x.moveTo(-5, -46); x.quadraticCurveTo(-2.5, -41.5, 0, -43.5); x.quadraticCurveTo(2.5, -46, 5, -41.8); x.stroke();
+    x.fillStyle = i % 2 ? '#ffb070' : '#f08a58'; x.beginPath(); x.arc(0, -46, 1.7, 0, TAU); x.fill(); x.restore(); }
 }
 
 // (5.16.0) the rest of the buttons repainted as objects: the glow stick amber (as it lights the water), the dive lamp, the

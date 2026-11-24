@@ -8,7 +8,7 @@ const MUSIC_LEN = [75, 90];    // (3.0.24) a piece plays at most ~90 s, then fad
 //   main      "Polaroid II - deeper (B)": the main theme, everywhere else
 //   bathy / open  "Bathyscaphe" or "Open Water": in the sub, settled below 200 m (to the bottom of the map)
 //   musicbox  "Music box": starts by itself on coming to Dave's Haul
-const COARSE = !!(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+const COARSE = true; // (7.4.13) phone-only
 const THEMES = [
   { id: 'sunlit', file: 'assets/audio/polaroid_melodic.mp3' },
   { id: 'main', file: 'assets/audio/polaroid_twilight.mp3' },
@@ -338,6 +338,21 @@ export class Audio {
     bp.frequency.setValueAtTime(320, t0); bp.frequency.exponentialRampToValueAtTime(140, t0 + 4.5);
     const g = ac.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + 1.4); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 5);
     o.connect(bp).connect(g).connect(this.master); o.start(t0); o.stop(t0 + 5.1);
+  }
+  // (7.4.15, owner) Whalesong: the hull's cracking groan, pitched far down and drawn out, under a long falling call
+  whalesong() {
+    if (!this.ready) return; const ac = this.ac, t0 = ac.currentTime;
+    for (const [rate, at, v] of [[0.42, 0, 1], [0.36, 0.9, 0.85], [0.5, 2.1, 0.6]]) setTimeout(() => this.sfx('hull_creak_' + (1 + Math.floor(Math.random() * 3)), v, rate), at * 1000);
+    const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(46, t0); o.frequency.exponentialRampToValueAtTime(24, t0 + 6.5);
+    const bp = ac.createBiquadFilter(); bp.type = 'lowpass'; bp.frequency.setValueAtTime(260, t0); bp.frequency.exponentialRampToValueAtTime(90, t0 + 6.5); bp.Q.value = 4;
+    const g = ac.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(0.42, t0 + 1.2); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 7);
+    o.connect(bp).connect(g).connect(this.master); o.start(t0); o.stop(t0 + 7.1);
+    this.whale && this.whale(0.35);
+  }
+  // (7.4.15) any other mythical as it fires: a deep thrum, and the hull's creak a little lower
+  mythic() {
+    if (!this.ready) return; this.tone(48, 0.9, 0.5, 'sine', 0, 30); this.tone(96, 0.5, 0.18, 'triangle', 0.02, 60);
+    this.sfx('hull_creak_' + (1 + Math.floor(Math.random() * 3)), 0.5, 0.62);
   }
   whale(vol) {
     // a long, distant, low call, heavily filtered
