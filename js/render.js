@@ -1324,7 +1324,7 @@ export class Renderer {
         ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
         ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
         ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(L.text.toUpperCase(), tx + 1, ty + 1);
-        ctx.fillStyle = 'rgba(214,222,210,0.92)'; ctx.fillText(L.text.toUpperCase(), tx, ty);
+        ctx.fillStyle = L.nameCol || 'rgba(214,222,210,0.92)'; ctx.fillText(L.text.toUpperCase(), tx, ty); // (7.2.8) a species' name in its rarity's colour
         if (L.rar) { ctx.font = '500 11px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '3px'; ctx.globalAlpha = a * 0.8; ctx.fillStyle = L.col || '#9aa0a6'; ctx.fillText(L.rar.toUpperCase(), tx, ty + 15); }
         ctx.letterSpacing = '0px';
       }
@@ -1339,19 +1339,8 @@ export class Renderer {
       const A = g.abil.def, e = g.earl, mover = e.inSub ? g.sub : e, ex = S(mover.x), ey = Sy(mover.y), spd = Math.hypot(mover.vx || 0, mover.vy || 0);
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (A.speed && spd > 0.6) {
-        // (7.1.0) not lines: particles in the water (silt, plankton, small bubbles) streaming past him the other way, each
-        // drawn as a soft speck drawn out a little along its motion. How many, how fast and how drawn-out follow how hard
-        // he is moving (the stick pushed out a little or all the way), and the ability's tier adds more of them
-        const kS = clamp(spd / (e.inSub ? 7 : 3.6), 0, 1), tierN = A.tier === 'legendary' ? 46 : A.tier === 'exotic' ? 34 : A.tier === 'rare' ? 24 : 16;
-        const n = Math.round(tierN * (0.35 + 0.65 * kS)), ang = Math.atan2(mover.vy || 0, mover.vx || 1), col = A.tier === 'legendary' ? '236,214,164' : '214,226,220', ca = Math.cos(ang), sa = Math.sin(ang);
-        const R = ppm * (e.inSub ? 6 : 3.2), run = ppm * (e.inSub ? 10 : 6) * (0.5 + kS), stretch = 1 + 3.2 * kS;
-        for (let i = 0; i < n; i++) { const sd = (i * 0.6180339) % 1, sd2 = (i * 0.7548776) % 1, ph = (g.time * (0.55 + 0.6 * kS) * (0.7 + sd) + sd2 * 3) % 1;
-          const off = (sd2 - 0.5) * 2 * R, along = R * 1.2 - ph * (R * 1.2 + run), bx = ex + ca * along - sa * off, by = ey + sa * along + ca * off;
-          const r0 = Math.max(0.8, ppm * (0.02 + 0.03 * ((i * 0.3819) % 1))) * (A.tier === 'legendary' ? 1.25 : 1), a = (0.25 + 0.45 * kS) * Math.sin(Math.PI * ph) * (i % 7 === 0 ? 1.3 : 1);
-          ctx.save(); ctx.translate(bx, by); ctx.rotate(ang); ctx.globalAlpha = Math.min(1, a);
-          if (i % 7 === 0) { ctx.strokeStyle = `rgba(${col},0.8)`; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, r0 * 1.6, 0, TAU); ctx.stroke(); } // a small bubble
-          else { ctx.fillStyle = `rgba(${col},0.85)`; ctx.beginPath(); ctx.ellipse(0, 0, r0 * stretch, r0, 0, 0, TAU); ctx.fill(); }
-          ctx.restore(); }
+        // (7.2.8) the water itself is drawn just after this block: only what it needs is handed over here
+        this.sprintEmit = { kS: clamp(spd / (e.inSub ? 7 : 3.6), 0, 1), tier: A.tier, inSub: e.inSub, t: g.time };
         ctx.globalAlpha = 1;
         g.fx.shake = Math.max(g.fx.shake || 0, A.tier === 'legendary' ? 0.25 : A.tier === 'exotic' ? 0.07 : 0.03); /* (6.0.19) a light tremor for rare and exotic; the strong one only for the legendary */
         if (A.tier === 'legendary') { const pu = 0.5 + 0.5 * Math.sin(g.time * 5), au = ctx.createRadialGradient(ex, ey, ppm * 0.4, ex, ey, ppm * 2.2); au.addColorStop(0, `rgba(255,214,140,${(0.28 + 0.12 * pu).toFixed(3)})`); au.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = au; ctx.fillRect(ex - ppm * 2.2, ey - ppm * 2.2, ppm * 4.4, ppm * 4.4);
@@ -1361,6 +1350,36 @@ export class Renderer {
       /* (5.16.0) a Flare's light is drawn in the light map now (30 m round him) */
       ctx.restore();
     }
+    // (7.2.8) Sprint's water, made real: motes that live in the water itself (world places, still water), so they slide past
+    // him exactly as fast as he really moves, and nothing can jump. (7.1.0's specks sat on loops pinned to him, their place
+    // worked out as the clock times a speed that changed with the stick: any change of speed threw every one of them to a
+    // new place at once, the "hurricane" when a sprint began.) Ahead of him the water parts: motes are set off from his
+    // head and pushed out sideways, so behind him they open into a cone, wider at each tier; bubbles leave his fins (the
+    // sub's propeller) and rise. How many follows how fast he goes, so a gentle push shows a little
+    { const em = (g.mode === 'play' && this.sprintEmit && this.sprintEmit.t === g.time) ? this.sprintEmit : null; const P = this.sprintP || (this.sprintP = []);
+      const dt = clamp(g.time - (this.sprintT ?? g.time), 0, 0.1); this.sprintT = g.time;
+      if (em && dt > 0) { const e = g.earl, m = em.inSub ? g.sub : e, sp = Math.hypot(m.vx || 0, m.vy || 0) || 1, dx = (m.vx || 0) / sp, dy = (m.vy || 0) / sp, nx = -dy, ny = dx;
+        const tw = em.tier === 'legendary' ? 1.9 : em.tier === 'exotic' ? 1.5 : em.tier === 'rare' ? 1.2 : 1, sz = em.inSub ? 2.4 : 1, rate = (em.inSub ? 150 : 110) * tw * em.kS;
+        this.sprintAcc = (this.sprintAcc || 0) + rate * dt;
+        while (this.sprintAcc >= 1 && P.length < 420) { this.sprintAcc -= 1; const side = Math.random() < 0.5 ? -1 : 1, across = (0.1 + Math.random() * 0.45) * sz * side * tw, ahead = (0.4 + Math.random() * 0.9) * sz;
+          const push = (0.35 + Math.random() * 0.5) * tw * (0.5 + 0.5 * em.kS); // how hard the parting water throws it aside
+          P.push({ x: m.x + dx * ahead + nx * across, y: m.y + dy * ahead + ny * across, vx: nx * side * push + dx * sp * 0.08, vy: ny * side * push + dy * sp * 0.08, age: 0, life: 1.1 + Math.random() * 0.9, k: 0, r: 0.6 + Math.random() * 0.9, gold: em.tier === 'legendary' && Math.random() < 0.3 }); }
+        this.sprintBub = (this.sprintBub || 0) + (em.inSub ? 26 : 14) * em.kS * dt;
+        while (this.sprintBub >= 1 && P.length < 260) { this.sprintBub -= 1; const back = (em.inSub ? 3.4 : 1.05) + Math.random() * 0.2, j = (Math.random() - 0.5) * 0.3 * sz;
+          P.push({ x: m.x - dx * back + nx * j, y: m.y - dy * back + ny * j, vx: -dx * 0.4 + (Math.random() - 0.5) * 0.3, vy: -dy * 0.4 - 0.2, age: 0, life: 1.4 + Math.random() * 1.2, k: 1, r: 0.8 + Math.random() * 1.6 * (em.inSub ? 1.4 : 1) }); } }
+      if (P.length) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); const dr = Math.max(1, ppm / 40);
+        for (let i = P.length - 1; i >= 0; i--) { const q = P[i]; q.age += dt; if (q.age >= q.life) { P.splice(i, 1); continue; }
+          const damp = Math.exp(-dt * (q.k ? 0.8 : 2.2)); q.vx *= damp; q.vy *= damp; if (q.k) q.vy -= 0.5 * dt; /* bubbles rise */ q.x += q.vx * dt; q.y += q.vy * dt;
+          const f = q.age / q.life, a = Math.min(1, f * 6) * (1 - f) ** 1.4, x0 = S(q.x), y0 = Sy(q.y);
+          if (x0 < -20 || y0 < -20 || x0 > this.W + 20 || y0 > this.H + 20) continue;
+          if (q.k) { ctx.globalAlpha = a * 0.55; ctx.strokeStyle = 'rgb(214,226,220)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x0, y0, q.r * dr * 1.4, 0, TAU); ctx.stroke(); ctx.globalAlpha = a * 0.4; ctx.fillStyle = 'rgb(240,244,236)'; ctx.fillRect(x0 - q.r * dr * 0.5, y0 - q.r * dr * 0.6, dr * 0.9, dr * 0.9); }
+          else { // a mote of the water itself, smeared a little along its motion on the screen (the camera follows him, so
+            // the streak shows how fast he goes through still water)
+            const lx = q.sx ?? x0, ly = q.sy ?? y0, mvx = x0 - lx, mvy = y0 - ly, ml = Math.hypot(mvx, mvy), k2 = Math.min(1, 9 / (ml + 1e-3));
+            ctx.globalAlpha = a * 0.62; ctx.strokeStyle = q.gold ? 'rgb(236,214,164)' : 'rgb(210,222,216)'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1, q.r * dr * 1.1);
+            ctx.beginPath(); ctx.moveTo(x0 - mvx * 1.6 * k2, y0 - mvy * 1.6 * k2); ctx.lineTo(x0, y0); ctx.stroke(); }
+          q.sx = x0; q.sy = y0; }
+        ctx.restore(); ctx.globalAlpha = 1; } }
     if (g.mode === 'play' && g.echoAt != null && g.time - g.echoAt < 1.6) { const k = (g.time - g.echoAt) / 1.6, e = g.earl, m = e.inSub ? g.sub : e; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = `rgba(150,230,214,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 3 * (1 - k) + 1; ctx.beginPath(); ctx.arc(S(m.x), Sy(m.y), k * Math.max(this.W, this.H) * 0.7, 0, TAU); ctx.stroke(); ctx.restore(); }
     if (g.mode === 'play' && g.subGuardT > 0) { const sx0 = S(g.sub.x), sy0 = Sy(g.sub.y), q = 0.5 + 0.5 * Math.sin(g.time * 6); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = `rgba(200,224,240,${(0.3 + 0.25 * q).toFixed(3)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(sx0, sy0 - ppm * 0.6, ppm * 5.2, ppm * 2.6, 0, 0, TAU); ctx.stroke(); ctx.restore(); }
     if (g.tideFx) { const k = Math.min(1, g.tideFx.t / 1.2) * Math.min(1, (4.2 - g.tideFx.t) / 1); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(40,110,200,${(0.55 * k).toFixed(3)})`; ctx.fillRect(0, 0, this.W, this.H); ctx.globalCompositeOperation = 'source-over'; const tt = g.tideFx.t, m0 = g.earl.inSub ? g.sub : g.earl; for (const d0 of [0, 0.5]) { const kk = Math.min(1, Math.max(0, (tt - d0) / 1.6)); if (kk <= 0 || kk >= 1) continue; ctx.strokeStyle = `rgba(150,210,255,${(0.75 * (1 - kk)).toFixed(3)})`; ctx.lineWidth = 6 * (1 - kk) + 1; ctx.beginPath(); ctx.arc(S(m0.x), Sy(m0.y), kk * Math.hypot(this.W, this.H) * 0.8, 0, TAU); ctx.stroke(); } ctx.restore(); if (fx) fx.redTint = (fx.redTint || 0) * (1 - k); }

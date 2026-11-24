@@ -3,7 +3,7 @@
 Written for whoever picks this up next (another Claude session or the owner). None of this is built yet. Each item
 says how far the owner has agreed to it. Read CLAUDE.md first: its rules apply to all of these.
 
-## 1. The tutorial's pointing hand (owner liked the idea, said "keep it in writing for now")
+## 1. The tutorial's pointing hand (BUILT in 7.2.8)
 
 Replaces the cream arrow (`#tut-spot .ts-arrow`, `aimArrow()` in js/tutspot.js). The arrow's black outline looks
 different on every background (bright sky, dark cabin, the shop's pale screen).

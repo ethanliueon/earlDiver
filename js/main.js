@@ -1705,7 +1705,7 @@ function interact(t, exitSub) {
       profile.journal = [...g.journal.entries()]; saveProfile(profile);
       // (5.5.3) its name written beside it in the water, faint, and gone again (no scientific name, no line at the top
       // of the screen); the rarity under it only when it is better than common
-      { const R = rarityOf(t.sp); (g.obsLabels || (g.obsLabels = [])).push({ c: t.c || null, x: t.c ? t.c.x : (t.x ?? e.x), y: t.c ? t.c.y : (t.y ?? e.y), text: t.sp.name, rar: R && R.id !== 'common' ? R.name : null, col: R ? R.col : null, t: 0 }); if (g.obsLabels.length > 3) g.obsLabels.shift(); }
+      { const R = rarityOf(t.sp); (g.obsLabels || (g.obsLabels = [])).push({ c: t.c || null, x: t.c ? t.c.x : (t.x ?? e.x), y: t.c ? t.c.y : (t.y ?? e.y), text: t.sp.name, rar: null, nameCol: R ? R.col : null, t: 0 } /* (7.2.8) the name alone, in its rarity's colour (no rarity word under it) */); if (g.obsLabels.length > 3) g.obsLabels.shift(); }
       audio.ready && audio.note();
       ui.journalDirty = true;
     } else if (!e.inSub && (QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && firstFishPart(profile) <= 1) {
@@ -2848,7 +2848,8 @@ function update(dt) {
   } else if (g.mode === 'play') fx.black = 0;
   if (e.inSub) { fx.pressure = 0; fx.disorient = 0; fx.ghost = 0; }
   // lights throb under pressure: the lamps, the sub, and the glowing animals
-  const pulse = 0.5 + 0.5 * Math.sin(g.time * (2.2 + fx.pressure * 1.5));
+  g.pressPh = (g.pressPh || 0) + clamp(g.time - (g.pressT ?? g.time), 0, 0.1) * (2.2 + fx.pressure * 1.5); g.pressT = g.time; // (7.2.8) moved by its speed each frame, never the clock times a changing speed (that jumped)
+  const pulse = 0.5 + 0.5 * Math.sin(g.pressPh);
   fx.lightPulse = 1 - fx.pressure * 0.45 * pulse - (fx.pressure > 0.6 && Math.random() < 0.03 ? 0.3 : 0);
   fx.bioPulse = 1 + fx.pressure * 0.9 * (0.5 + 0.5 * Math.sin(g.time * 3.1 + 1.3)) - fx.pressure * 0.3;
   fx.shake = Math.max(fx.disorient * 0.45, fx.shake - dt * 1.5);

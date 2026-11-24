@@ -30,6 +30,22 @@ def hand():
     I.save('act-hand.png')
 
 
+def point():
+    # (7.2.8) the tutorial's pointing hand: Earl's own diving glove (the interact button's leather and wetsuit cuff), the
+    # fist closed, the thumb across it, the index finger straight out. Drawn pointing down (tutspot.js turns it toward what
+    # to tap); no outline, only its shadow, so it looks the same over sky, sea, cabin and paper
+    I = Icon(); TAN = (214, 170, 128); FOLD = (150, 110, 78)
+    I.fill(mask(lambda d: d.rounded_rectangle((180, 28, 340, 104), 18, fill=255)), (60, 70, 52), light=0.2)             # the wetsuit cuff
+    I.fill(mask(lambda d: d.rounded_rectangle((170, 88, 352, 262), 50, fill=255)), TAN, light=0.22)                      # the back of the hand
+    for box, r in (((258, 226, 304, 312), 23), ((298, 222, 340, 302), 21), ((332, 212, 366, 286), 17)):                  # the three curled fingers
+        I.fill(mask(lambda d, box=box, r=r: d.rounded_rectangle(box, r, fill=255)), (206, 162, 122), light=0.25, edge=0.4)
+    I.fill(mask(lambda d: d.rounded_rectangle((200, 214, 262, 452), 31, fill=255)), TAN, light=0.14, edge=0.36)          # the index finger, straight out
+    I.fill(mask(lambda d: d.polygon([(166, 140), (198, 132), (226, 232), (204, 262), (172, 228)], fill=255)), (200, 156, 116), light=0.2)  # the thumb along its side
+    I.line(lambda d: d.line([(212, 382), (250, 382)], fill=255, width=5), FOLD)                                          # the finger's creases
+    I.line(lambda d: d.line([(212, 304), (250, 304)], fill=255, width=5), FOLD)
+    I.save('tut-point.png', 128, outline=False)
+
+
 def sub():
     I = Icon()
     I.fill(mask(lambda d: d.rounded_rectangle((210, 130, 300, 220), 16, fill=255)), (96, 106, 82))

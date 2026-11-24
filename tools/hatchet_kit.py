@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFilter
 OUT = 'assets/loading/'
 
 
-def fish(W=1200, H=860):
+def fish(W=1200, H=860, out_w=480):
     # (7.1.7) Drawn from photographs of Argyropelecus: the head and chest a deep silver blade, the body ending sharply in a
     # thin see-through tail stalk; the flank's mirror plates in vertical bands; a big blue tubular eye high at the front;
     # the mouth nearly upright with a heavy lower jaw; a spiny blade before the dorsal fin; and along the keel's edge a comb
@@ -111,15 +111,16 @@ def fish(W=1200, H=860):
     organs += [(46 - i * 4.0, 44.2 - i * 1.3) for i in range(4)] + [(94, 38.5), (97, 40)]
     glow = Image.new('RGBA', (W, H), (0, 0, 0, 0)); g = ImageDraw.Draw(glow)
     for x, y in organs:
-        g.ellipse([P(x - 2.2, y - 2.0), P(x + 2.2, y + 2.4)], fill=(100, 160, 226, 120))
+        g.ellipse([P(x - 2.2, y - 2.0), P(x + 2.2, y + 2.4)], fill=(100, 160, 226, 150))
     glow = glow.filter(ImageFilter.GaussianBlur(Z * 1.2))
     im = Image.alpha_composite(im, glow); ov = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
     for x, y in organs:
-        d.rounded_rectangle([P(x - 1.0, y - 1.6), P(x + 1.0, y + 1.8)], radius=Z * 0.6, fill=(36, 40, 52, 220))
-        d.rounded_rectangle([P(x - 0.55, y - 0.4), P(x + 0.55, y + 1.4)], radius=Z * 0.4, fill=(186, 222, 248, 235))
+        # (7.2.8) each a small round light with a faint dark lid, not a bar with a rim: a row of rims read as teeth
+        d.ellipse([P(x - 0.85, y - 0.9), P(x + 0.85, y + 1.0)], fill=(60, 70, 92, 90))
+        d.ellipse([P(x - 0.55, y - 0.45), P(x + 0.55, y + 0.75)], fill=(176, 214, 244, 220))
     im = Image.alpha_composite(im, ov)
     bb = im.getbbox(); im = im.crop(bb)
-    return im.resize((480, int(480 * im.height / im.width)), Image.LANCZOS)
+    return im.resize((out_w, int(out_w * im.height / im.width)), Image.LANCZOS)
 
 
 def wave(full):

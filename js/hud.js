@@ -50,6 +50,9 @@ import { bagSlots, bagUsed, tankSlots, pressSlots, NETS_SUB, TOW_MAX, netKinds, 
 import { SPECIES_BY_ID } from './species.js';
 import { drawSpecies } from './creatures_draw.js';
 
+// (7.2.8) the tutorial's pointing glove (painted by tools/action_icons.py point()), pointing down in its picture, the
+// fingertip at 0.451, 0.883 of it
+const TUT_POINT = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: 'assets/ui/icons/tut-point.png' }) : null;
 const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const HUDT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
 const GAME = '"Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif'; // (4.27) the HUD face
@@ -456,13 +459,20 @@ e.inSub ? [
       // the arrow (not for the Log's quiet ring)
       if (this.quietRing) return;
       const es = g.earlScr && !this.inCabin ? g.earlScr : null, ox = es ? es[0] * W : W * 0.5, oy = es ? es[1] * H : H * 0.45; /* (6.5.6) on the line from Earl to the button, not from the screen's middle */
-      const ang = Math.atan2(y - oy, x - ox), bob = (0.5 + 0.5 * Math.sin(g.time * 4)) * 9 * u, d = (r > 32 * u ? r + 50 * u + 30 * u + 26 * u : r * 1.55 + 18 * u) + bob, ax = x - Math.cos(ang) * d, ay = y - Math.sin(ang) * d, L = 24 * u;
-      ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang); ctx.lineJoin = 'round';
-      const ar = new Path2D(); ar.moveTo(0, 0); ar.lineTo(-L, -L * 0.66); ar.quadraticCurveTo(-L * 0.82, -L * 0.3, -L * 0.7, -L * 0.24); ar.lineTo(-L * 2, -L * 0.2); ar.quadraticCurveTo(-L * 2.12, 0, -L * 2, L * 0.2); ar.lineTo(-L * 0.7, L * 0.24); ar.quadraticCurveTo(-L * 0.82, L * 0.3, -L, L * 0.66); ar.closePath();
-      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6 * u; ctx.shadowOffsetY = 2 * u; ctx.fillStyle = '#2a2014'; ctx.fill(ar); ctx.shadowColor = 'transparent';
-      const bg = ctx.createLinearGradient(0, -L * 0.66, 0, L * 0.66); bg.addColorStop(0, '#d8d0bc'); bg.addColorStop(0.45, '#a49c88'); bg.addColorStop(1, '#4e4a40'); /* (6.0.5) bone, not gold */ ctx.fillStyle = bg; ctx.fill(ar);
-      ctx.save(); ctx.clip(ar); ctx.strokeStyle = 'rgba(244,240,228,0.6)'; ctx.lineWidth = 2.4 * u; ctx.beginPath(); ctx.moveTo(-L * 2, -L * 0.14); ctx.lineTo(-L * 0.72, -L * 0.18); ctx.lineTo(-L * 0.95, -L * 0.6); ctx.stroke(); ctx.restore();
-      ctx.lineWidth = 2.6 * u; ctx.strokeStyle = '#1a140c'; ctx.stroke(ar);
+      // (7.2.8) Earl's pointing glove (assets/ui/icons/tut-point.png), its fingertip just short of the button's edge on the
+      // line from Earl, tapping slowly toward it every 1.5 s; no outline, only its shadow
+      // it comes in from the free side: of the angles near Earl's line, the first where the glove covers no other button
+      const G = 62 * u, ph = (g.time / 1.5) % 1, tap = ph < 0.22 ? Math.sin(ph / 0.22 * Math.PI) : 0, kx0 = W / innerWidth, others = (this.prevHots || []).filter((q) => Math.hypot(q.x + q.w / 2 - x / kx0, q.y + q.h / 2 - y / kx0) > 4);
+      // the angle (near Earl's line) and the reach (the fingertip at the button's edge, or in a crowded corner resting on its
+      // rim) that cover the other buttons least; ties go to the line from Earl
+      const a0 = Math.atan2(y - oy, x - ox), cost = (an, rc) => { const gx = x - Math.cos(an) * (rc + G * 0.5), gy = y - Math.sin(an) * (rc + G * 0.5);
+        let c = 4 * (Math.max(0, G * 0.55 - gx) + Math.max(0, gx - (W - G * 0.55)) + Math.max(0, G * 0.55 - gy) + Math.max(0, gy - (H - G * 0.55))); // off the screen's edge: worst of all
+        for (const q of others) c += Math.max(0, Math.max(q.w, q.h) * kx0 / 2 + G * 0.3 - Math.hypot(q.x * kx0 + q.w * kx0 / 2 - gx, q.y * kx0 + q.h * kx0 / 2 - gy));
+        return c; };
+      let ang = a0, best = Infinity, reachK = 1;
+      for (const rk of [1, 0.8, 0.62]) for (let i = 0; i < 49; i++) { const k = (i % 2 ? 1 : -1) * Math.ceil(i / 2), an = a0 + k * 0.13, c = cost(an, (sq ? r * 1.12 : r) * rk) + Math.abs(k) * 0.4 + (1 - rk) * 30; if (c < best - 0.01) { best = c; ang = an; reachK = rk; } }
+      const reach = (sq ? r * 1.12 : r) * reachK + (reachK < 1 ? 0 : 7 * u) - tap * 6 * u, tx = x - Math.cos(ang) * reach, ty = y - Math.sin(ang) * reach;
+      if (TUT_POINT.complete && TUT_POINT.naturalWidth) { ctx.save(); ctx.translate(tx, ty); ctx.rotate(ang - Math.PI / 2); ctx.drawImage(TUT_POINT, -G * 0.451, -G * 0.883, G, G); ctx.restore(); }
       ctx.restore();
     };
     // (5.6.9) a padlock over a coin that is locked: dark bronze, a cream edge
@@ -586,7 +596,7 @@ e.inSub ? [
       const rb = 12 * u, stepB = rb * 2 + 6 * u, top = my + ch * 0.55 + 10 * u, colX = 12 * u + rb, sw = rb * 2 + 12 * u, chevH = 20 * u;
       this.eyeRow = { u, x0: colX + sw / 2 + 10 * u, y: top + 6 * u, h: stepB * 2 - 6 * u };
       if (this.menuOpen == null) { try { this.menuOpen = localStorage.getItem('earl.menuOpen') !== '0'; } catch (err) { this.menuOpen = true; } }
-      const tutIn = ROW.some((a) => a.key === tutKey || (a.dom && (tutKey === 'j' || tutKey === 'journal'))), open = this.menuOpen || tutIn;
+      const tutIn = ROW.some((a) => a.key === tutKey || (a.dom && (tutKey === 'j' || tutKey === 'journal'))), open = this.menuOpen || tutIn || !!window.__tutMenu; /* (7.2.8) or any tutorial step about something in it */
       const wants = (P.bagGot || 0) > (P.bagSeenAt || 0) || !!window.__journalBadge;
       let y0 = top + 6 * u + rb, step = stepB;
       const cols = 1, rowsN = Math.ceil(ROW.length / cols), colGap = rb * 2 + 9 * u;
@@ -849,7 +859,7 @@ e.inSub ? [
     return res;
   }
   drawIn(g, dt, W, H) {
-    const ctx = this.ctx, s = this.s; this.hudNotes = []; this.hots = []; window.__hudHots = this.hots; // (5.4) for the tutorial's pointing on touch (5.3.1) the HUD keeps its size on a phone: only the controls are added
+    const ctx = this.ctx, s = this.s; this.hudNotes = []; this.prevHots = this.hots || []; this.hots = []; window.__hudHots = this.hots; // (5.4) for the tutorial's pointing on touch (5.3.1) the HUD keeps its size on a phone: only the controls are added
     if (g.mode === 'menu') return;
     const e = g.earl, fx = g.fx;
     const dying = g.mode === 'dying';
@@ -1149,7 +1159,7 @@ e.inSub ? [
       // (6.2.0) back under the money, as in 6.0.7, but the larger, thicker eye: it opens at its largest, then settles
       const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = this.eyeRow ? (21 + 3 * ease(big)) * this.eyeRow.u * E.ew / E.eh : (52 + 20 * ease(big)) * s, sc = ew / E.ew, /* (7.2.1) sized to its row */ tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
       const ER = this.eyeRow, ex = ER ? ER.x0 + ew * 1.15 : 60 * s, ey = ER ? ER.y + ER.h * 0.5 + E.eh * sc * 0.1 : 80 * s; /* (7.2.3) its fixed place beside the top of the menu column */
-      const close = near > 0.82, pulse = 0.5 + 0.5 * Math.sin(g.time * (2 + 5 * near));
+      const close = near > 0.82, pulse = 0.5 + 0.5 * Math.sin(this.eyePh = (this.eyePh || 0) + clamp(g.time - (this.eyeT ?? g.time), 0, 0.1) * (2 + 5 * near)); this.eyeT = g.time; /* (7.2.8) the beat's phase moves by its speed each frame: the clock times a changing speed made it jump as the thing came near */
       const per = 9 - 3 * near, bt = g.time % per, blink = !close && mt > 6 && bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0;
       const opening = clamp(mt / 1.3, 0, 1), rest = close ? 1 : 0.24 + 0.4 * near, open = Math.max(0.05, (1 - blink) * ease(opening) * (big * 0.92 + (1 - big) * rest));
       { const gg = ctx.createRadialGradient(ex, ey, 0, ex, ey, ew * 1.6); gg.addColorStop(0, `rgba(120,14,6,${(0.18 + 0.22 * near * pulse + 0.2 * big).toFixed(3)})`); gg.addColorStop(1, 'rgba(120,14,6,0)'); ctx.fillStyle = gg; ctx.fillRect(ex - ew * 1.6, ey - ew * 1.6, ew * 3.2, ew * 3.2); } // a dull red breath round it

@@ -108,7 +108,27 @@ export class TutSpot {
     else if (es) { ox = es[0] * innerWidth; oy = es[1] * innerHeight; }
     const cx = x + w / 2, cy = y + h / 2; let dx = cx - ox, dy = cy - oy; const L = Math.hypot(dx, dy);
     if (L < 8) { dx = 0; dy = 1; } else { dx /= L; dy /= L; }
-    const rr = Math.min(w, h) / 2 + 18, ax = cx - dx * rr, ay = cy - dy * rr, deg = Math.atan2(dy, dx) * 180 / Math.PI - 90;
+    // (7.2.8) Earl's pointing glove: its fingertip stops just short of the thing's edge (where the line from Earl, or the
+    // panel's middle, meets the thing's box), never over it; the picture points down, its fingertip at 0.451, 0.883
+    // of the angles near that line, the one where the glove lies over the fewest other words and buttons (a list of links,
+    // a card's label) and stays on the screen; worked out once per thing and place, then kept
+    const G = 62, a0 = Math.atan2(dy, dx), key = Math.round(cx) + ',' + Math.round(cy) + ',' + Math.round(w) + ',' + Math.round(h) + ',' + a0.toFixed(1);
+    const place = (an) => { const ux = Math.cos(an), uy = Math.sin(an), e2 = Math.min(Math.abs(ux) > 1e-3 ? (w / 2) / Math.abs(ux) : 1e9, Math.abs(uy) > 1e-3 ? (h / 2) / Math.abs(uy) : 1e9) + 4;
+      const tx = cx - ux * e2, ty = cy - uy * e2, rad = an - Math.PI / 2, ox2 = (0.451 - 0.5) * G, oy2 = (0.883 - 0.5) * G;
+      return { rad, ax: tx - (ox2 * Math.cos(rad) - oy2 * Math.sin(rad)), ay: ty - (ox2 * Math.sin(rad) + oy2 * Math.cos(rad)) }; };
+    if (this.gloveKey !== key) {
+      const hit = (px, py) => { if (px < 4 || py < 4 || px > innerWidth - 4 || py > innerHeight - 4) return 3;
+        for (const el of document.elementsFromPoint(px, py)) { if (el.closest('#tut-spot')) continue; if (t && (el === t || t.contains(el) || el.contains(t))) return 0;
+          if (el.matches('button, a, input, img, canvas, h1, h2, h3, h4, h5, p, li, label, b, i, em, strong, small, [data-act], [data-q], .tag, .card') || (el.childElementCount === 0 && (el.textContent || '').trim())) return el.tagName === 'CANVAS' ? 0 : 1;
+          if (el === document.body) return 0; }
+        return 0; };
+      let best = Infinity, bestA = a0;
+      for (let i = 0; i < 19; i++) { const k = (i % 2 ? 1 : -1) * Math.ceil(i / 2), an = a0 + k * 0.17, P0 = place(an); let c = Math.abs(k) * 0.15;
+        for (const [fx, fy] of [[0, 0], [-0.3, -0.3], [0.3, -0.3], [-0.3, 0.2], [0.3, 0.2], [0, -0.42]]) { const rx = fx * G, ry = fy * G; c += hit(P0.ax + rx * Math.cos(P0.rad) - ry * Math.sin(P0.rad), P0.ay + rx * Math.sin(P0.rad) + ry * Math.cos(P0.rad)); }
+        if (c < best - 0.01) { best = c; bestA = an; } }
+      this.gloveKey = key; this.gloveA = bestA; }
+    const PL = place(this.gloveA), rad = PL.rad; let ax = PL.ax, ay = PL.ay; dx = Math.cos(this.gloveA); dy = Math.sin(this.gloveA);
+    const deg = rad * 180 / Math.PI;
     this.arrow.style.display = 'block'; setClass(this.arrow, 'ts-arrow down aim');
     Object.assign(this.arrow.style, { left: ax + 'px', top: ay + 'px', transform: `translate(-50%, -50%) rotate(${deg.toFixed(1)}deg)` });
     this.arrow.style.setProperty('--bx', (dx * 6).toFixed(1) + 'px'); this.arrow.style.setProperty('--by', (dy * 6).toFixed(1) + 'px');
@@ -117,7 +137,7 @@ export class TutSpot {
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot, text = null) { this.update0(on, spot, text); this.keyBox.style.display = 'none'; flushStyles(); } // (5.6.7) a phone: the line at the top says it, once
   update0(on, spot, text = null) {
-    window.__hudTutKey = null;
+    window.__hudTutKey = null; window.__tutMenu = false;
     if (!on) { // (4.12.2) the spotlight fades out rather than vanishing (no bright flash when a step ends)
       LOCK = null; this.lastTarget = null; this.setLine(null); for (const b of this.blocks) b.style.display = 'none';
       if (!this.el.hidden && !this.fadingOut) { this.fadingOut = true; this.el.classList.add('out'); this.fadeT = setTimeout(() => { this.el.hidden = true; this.el.classList.remove('out'); this.fadingOut = false; }, 420); }
@@ -129,6 +149,11 @@ export class TutSpot {
     const conf = document.getElementById('confirm');
     if (spot && conf && !conf.hidden) spot = spot.confirm ? { sel: ['#confirm .cf-yes'], say: spot.confirm, below: true } : null; // (4.3.5) the arrow under the button, off the words
     if (!spot) { this.lastTarget = null; return; }
+    // (7.2.8) a step about anything kept in the left menu (the journal and quests, the chart, the bag, the sub's tile, the
+    // tank room, the spare air, the shop, the events) opens the menu for as long as it lasts: folded, the thing it points
+    // at was hidden ("Open your journal and claim it" with the menu folded pointed at nothing)
+    { const w0 = String(spot.key || (spot.act ? TAP[spot.act] : '') || '').toLowerCase();
+      window.__tutMenu = (spot.sel || []).some((q) => /#quests-btn|#hud-journal|#hud-chart|#hud-bag/.test(q)) || ['j', 'o', 'k', 'b', 'c', 't', 'r', 'store', 'events', 'journal'].includes(w0); }
     let t = this.find(spot.sel);
     // (4.12.2) the thing it points at gone for a moment (a panel redrawn): keep the shade where it was a little
     // longer, so the screen does not flash bright

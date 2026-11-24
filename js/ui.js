@@ -51,6 +51,11 @@ import { storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store
 import { isTestStore } from './purchases.js';
 import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, web build only
 import { tankPicture, tankZoom } from './journal_tank.js';
+// (7.2.8) the name plate's pencil: a turned, lit object like every item (hexagonal barrel, one face lit, one in shade,
+// a bronze ferrule, a rust eraser, the shaved wood and its lead), small, at the plate's end
+const PENCIL = `<svg class="cr-pen" viewBox="0 0 40 40" aria-hidden="true"><g transform="rotate(-45 20 20)"><path d="M6 17h22v3H6z" fill="#d6ccb0"/><path d="M6 20h22v3H6z" fill="#a69a7a"/><path d="M6 16.6h22" stroke="#efe6cc" stroke-width="0.8"/><path d="M3.5 17h3v6h-3z" fill="#9a7848"/><path d="M3.5 18.2h3M3.5 21.6h3" stroke="#5e4a2c" stroke-width="0.6"/><path d="M1 17.4h2.6v5.2H1z" fill="#8a4e3a"/><path d="M28 17l6 3-6 3z" fill="#c4a476"/><path d="M28 20l6 0-6 3z" fill="#9c8058"/><path d="M32.4 19.2l2.6 0.8-2.6 0.8z" fill="#2a2824"/></g></svg>`;
+const ARROW_UP = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3 3 11h4v6h6v-6h4z" fill="currentColor"/></svg>';
+const BACK = '<svg viewBox="0 0 24 20" aria-hidden="true"><path d="M8 3h13v14H8l-6-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M11 7l6 6M17 7l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 import { drawFace, DEFAULT_LOOK, FACES, EYES, HAIRS, HAIR_NAMES, SKINS, BEARDS, HAIR_COLS, EYE_COLS } from './face_draw.js'; // (6.7.0) the creator
 import { priceOf as storePrice } from './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
@@ -450,14 +455,14 @@ export class UI {
     const pick = (k) => `<div class="cr-pick"><button data-k="${k}" data-d="-1">‹</button><b data-v="${k}"></b><button data-k="${k}" data-d="1">›</button></div>`;
     el.innerHTML = `<div class="cr-box"><div class="cr-port"><canvas width="520" height="600"></canvas></div>
       <div class="cr-side"><button class="cr-skip">Skip</button>
-        <label class="cr-name"><span>New diver</span><input maxlength="12" placeholder="Earl" autocomplete="off" spellcheck="false"></label>
+        <div class="cr-name"><span>New diver</span><div class="cr-field" role="textbox" aria-label="Name"><i class="cr-ph">Enter name</i><b class="cr-txt"></b><i class="cr-caret"></i>${PENCIL}</div></div>
         <div class="cr-grp"><h5>Diver</h5><div class="cr-seg"><button data-sex="m">Man</button><button data-sex="f">Woman</button></div><div class="cr-line"><span>Face</span>${pick('face')}</div></div>
         <div class="cr-grp"><h5>Head</h5><div class="cr-tabs"><button data-tab="hair">Hair</button><button data-tab="beard">Beard</button><button data-tab="eyes">Eyes</button></div>
           <div class="cr-tab" data-p="hair"><div class="cr-line"><span>Style</span>${pick('hair')}</div><div class="cr-skins cr-sm">${HAIR_COLS.map(([n, c], i) => `<button data-hc="${i}" style="--c0:${c[0]};--c1:${c[2]}" aria-label="${n}"></button>`).join('')}</div></div>
           <div class="cr-tab" data-p="beard"><div class="cr-line"><span>Beard</span>${pick('beard')}</div></div>
           <div class="cr-tab" data-p="eyes"><div class="cr-line"><span>Set</span>${pick('eyes')}</div><div class="cr-skins cr-sm">${EYE_COLS.map(([n, c], i) => `<button data-ec="${i}" style="--c0:${c};--c1:#0c0a08" aria-label="${n}"></button>`).join('')}</div></div></div>
         <div class="cr-grp"><h5>Skin</h5><div class="cr-skins">${SKINS.map((c, i) => `<button data-skin="${i}" style="--c0:${c[0]};--c1:${c[2]}" aria-label="Skin ${i + 1}"></button>`).join('')}</div></div>
-        <button class="cr-go">Dive</button></div></div>`;
+        <button class="cr-go">Dive</button></div></div><div class="cr-kb" hidden></div>`;
     let tab = 'hair';
     el.hidden = false;
     const cv = el.querySelector('canvas'), x = cv.getContext('2d');
@@ -519,9 +524,37 @@ export class UI {
       el.querySelector('[data-v="face"]').textContent = FACES[L.face]; el.querySelector('[data-v="eyes"]').textContent = EYES[L.eyes]; el.querySelector('[data-v="hair"]').textContent = HAIR_NAMES[L.hair];
     };
     draw();
-    const inp = el.querySelector('input');
+    // (7.2.8) the name is typed on the game's own keyboard, not the phone's (which covered half the card, offered words,
+    // and sat badly in the turned frame): worn keys on an olive plate rising from the foot of the screen, letters with
+    // Shift (twice for capitals held), a page of numbers and marks, space, delete (held, it repeats) and Done. The first
+    // letter is a capital by itself. Each letter is stamped onto the plate as it is typed
+    let name = '', shift = 1, caps = false, page = 0, lastShift = 0;
+    const field = el.querySelector('.cr-field'), txt = el.querySelector('.cr-txt'), kb = el.querySelector('.cr-kb');
+    const ROWS = [['qwertyuiop', 'asdfghjkl', '^zxcvbnm<', '#_>'], ['1234567890', "-'.,&!?", '@<', '#_>']];
+    const showName = (stamp) => { txt.innerHTML = [...name].map((c, i) => `<span${stamp && i === name.length - 1 ? ' class="new"' : ''}>${c === ' ' ? '&nbsp;' : c.replace(/[<&]/g, (m) => (m === '<' ? '&lt;' : '&amp;'))}</span>`).join(''); field.classList.toggle('empty', !name); };
+    const kbDraw = () => { kb.innerHTML = ROWS[page].map((r) => `<div class="kr">${[...r].map((c) => c === '^' ? `<button data-kk="shift" class="wide${shift || caps ? ' on' : ''}${caps ? ' caps' : ''}" aria-label="Shift">${ARROW_UP}</button>`
+        : c === '<' ? `<button data-kk="del" class="wide" aria-label="Delete">${BACK}</button>` : c === '#' ? `<button data-kk="page" class="wide">${page ? 'ABC' : '123'}</button>`
+        : c === '_' ? '<button data-kk="space" class="space">space</button>' : c === '>' ? '<button data-kk="done" class="wide done">Done</button>' : c === '@' ? '<span class="gap"></span>'
+        : `<button data-kk="${c}">${page === 0 && (shift || caps) ? c.toUpperCase() : c}</button>`).join('')}</div>`).join(''); };
+    const type = (c) => { if (name.length >= 12) { field.classList.remove('full'); void field.offsetWidth; field.classList.add('full'); return; } if (page === 0 && (shift || caps)) c = c.toUpperCase(); name += c; if (!caps) shift = 0; showName(true); kbDraw(); };
+    const del = () => { name = name.slice(0, -1); if (!name) shift = 1; showName(false); kbDraw(); };
+    const kbOpen = (on) => { kb.hidden = !on; field.classList.toggle('typing', on); el.classList.toggle('kb-on', on); if (on) { if (!name) shift = 1; kbDraw(); } };
+    showName(false);
+    field.addEventListener('click', (ev) => { ev.stopPropagation(); kbOpen(kb.hidden); });
+    let rep = 0, repT = 0; const stopRep = () => { clearTimeout(repT); clearInterval(rep); rep = 0; };
+    kb.addEventListener('pointerdown', (ev) => { const b = ev.target.closest('button'); if (!b) return; ev.preventDefault(); b.classList.add('down'); const k = b.dataset.kk;
+      if (k === 'del') { del(); repT = setTimeout(() => { rep = setInterval(del, 80); }, 420); return; }
+      if (k === 'shift') { const now = performance.now(); if (caps) { caps = false; shift = 0; } else if (now - lastShift < 350) { caps = true; shift = 1; } else shift = shift ? 0 : 1; lastShift = now; kbDraw(); return; }
+      if (k === 'page') { page = 1 - page; kbDraw(); return; }
+      if (k === 'space') { if (name && !name.endsWith(' ')) type(' '); return; }
+      if (k === 'done') { kbOpen(false); return; }
+      type(k); });
+    const up = () => { stopRep(); kb.querySelectorAll('.down').forEach((b) => b.classList.remove('down')); };
+    kb.addEventListener('pointerup', up); kb.addEventListener('pointercancel', up); kb.addEventListener('pointerleave', up);
+    kb.addEventListener('click', (ev) => ev.stopPropagation());
+    const inp = { blur: () => kbOpen(false) };
     el.onclick = (ev) => {
-      const b = ev.target.closest('button'); if (!b) return;
+      const b = ev.target.closest('button'); if (!kb.hidden && !ev.target.closest('.cr-kb')) kbOpen(false); if (!b) return;
       if (b.dataset.tab) { tab = b.dataset.tab; }
       else if (b.dataset.sex) { L.sex = b.dataset.sex; L.beard = L.sex === 'f' ? 0 : (L.beard || 1); if (L.sex === 'f' && ['crop', 'buzz', 'swept'].includes(L.hair)) L.hair = 'bob'; if (L.sex === 'm' && ['bob', 'ponytail', 'bun'].includes(L.hair)) L.hair = 'swept'; }
       else if (b.dataset.k === 'face') L.face = (L.face + +b.dataset.d + FACES.length) % FACES.length;
@@ -532,7 +565,7 @@ export class UI {
       else if (b.dataset.ec != null) L.eyeCol = +b.dataset.ec;
       else if (b.dataset.k === 'beard') L.beard = ((L.beard || 0) + +b.dataset.d + BEARDS.length) % BEARDS.length;
       else if (b.classList.contains('cr-skip')) { el.hidden = true; inp.blur(); done(null); return; }
-      else if (b.classList.contains('cr-go')) { el.hidden = true; inp.blur(); done({ name: (inp.value || '').trim().slice(0, 12) || 'Earl', look: { ...L } }); return; }
+      else if (b.classList.contains('cr-go')) { el.hidden = true; inp.blur(); done({ name: name.trim().slice(0, 12) || 'Earl', look: { ...L } }); return; }
       draw();
     };
   }

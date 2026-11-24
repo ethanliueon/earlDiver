@@ -50,11 +50,11 @@ class Icon:
     def line(self, fn, col):  # an unshaded mark (ink, a seam), drawn on what is there
         self.fill(mask(fn), col, flat=True, grain=0.03)
 
-    def save(self, name, size=128):
+    def save(self, name, size=128, outline=True):
         sil = self.a
-        ring = grow(sil, 17)  # the outline: the silhouette grown by ~8 px
+        ring = grow(sil, 17) if outline else sil * 0  # the outline: the silhouette grown by ~8 px ((7.2.8) or none: the tutorial's glove, only its shadow)
         sh = blur(grow(sil, 17), 10); shadow = np.zeros_like(sh); shadow[14:, 6:] = sh[:-14, :-6]; shadow *= 0.55  # (no wrap round the edge)
-        rgb = np.zeros((S, S, 3), np.float32); a = shadow.copy()
+        rgb = np.zeros((S, S, 3), np.float32); a = np.maximum(shadow, sil)  # (7.2.8) the shape itself solid (with no outline it was left see-through)
         o = np.array(OUTLINE, np.float32)[None, None, :]
         rgb = rgb * (1 - ring[..., None]) + o * ring[..., None]; a = np.maximum(a, ring)
         rgb = rgb * (1 - sil[..., None]) + self.rgb * sil[..., None]

@@ -134,6 +134,13 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   rarity's ink) or the money. No handwriting font anywhere. Swimmers keep 3 m from the seabed and walls. The name is a
   worn steel plate; save slots are steel locker doors. Dave's name is painted plain (never in a box).
 
+- **Decided in 7.2.7-7.2.8**: the app icon is the game's own legendary anglerfish close up, lit only by its lure, Earl
+  upright in its light (assets/app, 1024 master). The tutorial points with Earl's own glove (tut-point.png, no outline),
+  its fingertip just short of the thing, from Earl's side or a panel's middle, turned to the side where it covers no other
+  button or word; the chevrons on the water still mean "go there". A step about anything in the left menu opens it. An
+  observed animal shows its name alone, in its rarity's colour. The creator's name is typed on the game's own keyboard.
+  Effects that speed up never multiply the clock by a changing speed (it made them jump): they move by their speed each frame.
+
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build
