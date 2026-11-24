@@ -120,6 +120,8 @@ export class Cabin {
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);
       if (dir) { this.face = dir; this.walkT += dt; } else this.walkT = 0;
     } else dir = 0;
+    // (7.4.0, owner) walking on into the door takes him out on deck, as the door's button does
+    if (dir < 0 && this.x <= ROOM.min + 0.004 && !this.h.blocked()) { this.pushDoor = (this.pushDoor || 0) + dt; if (this.pushDoor > 0.35) { this.pushDoor = 0; if (this.near() === 'door') this.use(); } } else this.pushDoor = 0;
     this.walk = (this.walk || 0) + ((dir ? 1 : 0) - (this.walk || 0)) * Math.min(1, dt * (dir ? 8 : 6));
     if (this.hop) { this.hop = Math.max(0, this.hop - dt); if (!this.hop) this.h.footstep && this.h.footstep(0.1); }
     // (4.0.0) the stride keeps pace with the floor going by, so his feet grip it instead of sliding

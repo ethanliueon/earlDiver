@@ -148,7 +148,7 @@ export class TutSpot {
     // a confirm plate is up: point at its yes button when the step expects one (a purchase), else stay out of the way
     const conf = document.getElementById('confirm');
     if (spot && conf && !conf.hidden) spot = spot.confirm ? { sel: ['#confirm .cf-yes'], say: spot.confirm, below: true } : null; // (4.3.5) the arrow under the button, off the words
-    if (!spot) { this.lastTarget = null; return; }
+    if (!spot) { this.lastTarget = null; if (this.litEl) { this.litEl.classList.remove('ts-lit'); this.litEl = null; } return; }
     // (7.2.8) a step about anything kept in the left menu (the journal and quests, the chart, the bag, the sub's tile, the
     // tank room, the spare air, the shop, the events) opens the menu for as long as it lasts: folded, the thing it points
     // at was hidden ("Open your journal and claim it" with the menu folded pointed at nothing)
@@ -168,6 +168,9 @@ export class TutSpot {
       // square, a round coin a circle), never a circle drawn over a square
       const br0 = getComputedStyle(t).borderRadius, round = /50%/.test(br0) || (parseFloat(br0) >= Math.min(r.width, r.height) / 2 - 1), rad = round ? '50%' : Math.max(8, (parseFloat(br0) || 0) + PAD) + 'px';
       this.moveTo(t, x, y, w, h);
+      // (7.4.0, owner) the thing glows in its own shape: a breathing glow that follows its picture's outline (CSS ts-lit),
+      // never a lit box round it; the dark's edge round it is feathered so no rectangle shows
+      if (this.litEl !== t) { if (this.litEl) this.litEl.classList.remove('ts-lit'); this.litEl = t; t.classList.add('ts-lit'); }
       Object.assign(this.hole.style, { display: 'block', left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', borderRadius: t.closest('.hud-ic') ? '12px' : rad });
       if (this.hole.classList.contains('light') !== !!spot.light) this.hole.classList.toggle('light', !!spot.light); // over the sea, a lighter shade: he may still be swimming
       // (4.3.6) on a screen (not over the sea while he plays): only the lit thing can be used
@@ -191,14 +194,18 @@ export class TutSpot {
       }
       // (4.3.1) no words by it: the ring and the arrow are enough (the banner at the top says what the step is)
     } else {
-      this.lastTarget = null;
+      this.lastTarget = null; if (this.litEl) { this.litEl.classList.remove('ts-lit'); this.litEl = null; }
       // a key to press (or the tutorial's button: spot.button is its action, spot.key its key)
       const k = spot.key || (spot.act ? TAP[spot.act] : null);
       this.btn = spot.button || null; this.keyBox.classList.toggle('btn', !!spot.button);
       // (5.4) ring the on-screen button that does it (the HUD lists where each is and what it sends); a step with no
       // such button just keeps its line of words
       const want = k ? ({ space: ' ', shift: 'sprint' }[String(k).toLowerCase()] || String(k).toLowerCase()) : null;
-      const onHud = want && (window.__hudHots || []).find((q) => q.key === want);
+      // (7.4.0) more than one place can send the same key (the arc's button and a thing's own tap spot in the scene): keep to
+      // the one used last, or the largest (the button), so the glove does not hop between them from frame to frame
+      const hits = want ? (window.__hudHots || []).filter((q) => q.key === want) : [];
+      const onHud = hits.length < 2 ? hits[0] : (this.lastHot && hits.find((q) => Math.abs(q.x - this.lastHot.x) < 4 && Math.abs(q.y - this.lastHot.y) < 4)) || hits.slice().sort((a2, b2) => b2.w * b2.h - a2.w * a2.h)[0];
+      this.lastHot = onHud || null;
       // (5.5) a step the tutorial would do with its own button in the middle of the screen: when the HUD has the
       // button for it, that button is ringed instead (pressing it does the step, as the tutorial's own would)
       if (k && (!spot.button || onHud)) {

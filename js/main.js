@@ -1203,7 +1203,7 @@ function tripFish(n) {
 }
 const tripCaught = (tf) => !!(tf && tf.dead && g.bag.some((s) => s.id === tf.sp.id));
 function tutor() {
-  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
+  const P = profile, e = g.earl; g.tut = null; g.tutForce = null; g.tutQuiet = false; g.tutFence = null; // (7.4.0) set again by the step that wants them { const m0 = P && QUEST_MAIN[questsOf(P).main]; g.questMainId = m0 ? m0.id : null; } /* (6.5.0) the Log's step, for the way-aboard chevrons */ if (ui.cabin) ui.cabin.tutMark = null; // (6.5.6) this had slipped into the comment, so the cabin's chevrons to the computer stayed after the tutorial
   // (4.4.0) during the tutorial the game's own prompts and the things they do are off (hud.js, cabin.js, the key
   // gate below): only the action the step asks for works, on the tutorial's own, larger button
   g.tutHidePrompts = !!P && g.mode === 'play' && tutorialOn(P); g.tutAction = null; g.tutLadder = false; // (7.1.0) the ladder's chevrons only on a climb step
@@ -1317,6 +1317,9 @@ function tutor() {
     else if (invOpen) { text = `Put on ${name}`; spot = { sel: it ? [`#inventory [data-lk="on:${it.u}"]`, `#inventory .item-pop .ip-close`, `#inventory .lk-tile[data-u="${it.u}"]`, '#inventory [data-invtab="gear"]:not(.on)'] : [], say: `Tap ${name}, then Put it on` }; }
     else { text = 'Open your inventory and put on what you bought'; spot = { act: 'inventory', say: 'Open your inventory' }; }
   } else if (m.id === 'subtrip') {
+    // (7.4.0, owner) the sub trip keeps him on task: the interact button shows only what the step needs, and the water
+    // past the trip's fish gently turns him back
+    g.tutQuiet = true; g.tutFence = { x0: BOAT.x - 48, x1: BOAT.x + 28, y1: 42 };
     const sn = S.seen, part = sn.st || 0, sub = g.sub, ap = g.autopilot, set = (n) => { if ((sn.st || 0) < n) { sn.st = n; saveProfile(P); } };
     const inReach = () => { const T = findTarget(); return !!(T && T.kind === 'board'); };
     const toSub = () => { to = { x: sub.x, y: sub.y }; text = 'Get in the sub'; if (inReach()) spot = { key: 'f', say: 'Get in' }; };
@@ -1342,8 +1345,11 @@ function tutor() {
       else { text = 'Call the sub'; spot = { key: 'c', say: 'Call the sub' }; }
     }
     else if (part === 6) { // a look at what he carries
-      if (invOpen && !P.tutBagTour) { const tb = document.querySelector('#inventory [data-invtab="catch"]:not(.on)'); if (tb) tb.click();
-        spot = { sel: ['#inventory [data-invtab="catch"]'], card: { id: 'bagtour', text: 'Catch: what you carry, and what it sells for.' } }; }
+      // (7.4.0, owner) no card with an OK: he taps Catch himself, then the glove shows his catch for a moment
+      if (invOpen && !P.tutBagTour) { const onCatch = !!document.querySelector('#inventory [data-invtab="catch"].on');
+        if (!onCatch) { text = 'Open Catch'; spot = { sel: ['#inventory [data-invtab="catch"]'] }; g.tutCatchAt = null; }
+        else { text = 'Your catch'; g.tutCatchAt = g.tutCatchAt ?? g.time; spot = { sel: ['#inventory .bag-spaces .bs-fish', '#inventory .bag-spaces'] };
+          if (g.time - g.tutCatchAt > 2.6) { P.tutBagTour = true; saveProfile(P); } } }
       else if (invOpen) spot = { sel: ['#inventory .inv-close'], act: 'inventory' };
       else if (P.tutBagTour) set(7);
       else { text = 'Open your bag'; spot = { key: 'b', say: 'Open your bag' }; }
@@ -1584,12 +1590,13 @@ function placeOnDeck(dt) {
 function observeTarget() {
   const e = g.earl; if (!g.fauna || g.aboard) return null;
   // (6.5.7) from the sub too: an animal close to its glass (within about 7 m of its middle) can be observed
-  if (e.inSub) { const cr2 = g.fauna.nearest(g.sub.x, g.sub.y, 7); return cr2 && !cr2.pet && !cr2.companion && !g.journal.has(cr2.sp.id) ? { kind: 'creature', sp: cr2.sp, c: cr2 } : null; }
-  const cr = g.fauna.nearest(e.x, e.y, 3.5);
+  const unseen = (c) => !c.pet && !c.companion && !g.journal.has(c.sp.id); // (7.4.0, owner) only what is in front of him (or of the sub's nose), and not yet in the book
+  if (e.inSub) { const cr2 = g.fauna.nearest(g.sub.x, g.sub.y, 7, g.sub.facing || 1, unseen); return cr2 && !cr2.pet && !cr2.companion && !g.journal.has(cr2.sp.id) ? { kind: 'creature', sp: cr2.sp, c: cr2 } : null; }
+  const cr = g.fauna.nearest(e.x, e.y, 3.5, e.facing || 1, unseen);
   if (cr && !cr.pet && !cr.companion /* (7.3.9) never his own pet */ && !g.journal.has(cr.sp.id)) return { kind: 'creature', sp: cr.sp, c: cr };
   let sb = null, sd = 2.6;
   for (const st of g.world.statics) {
-    if (Math.abs(st.x - e.x) > sd + 2 || g.journal.has(st.sp.id)) continue;
+    if (Math.abs(st.x - e.x) > sd + 2 || g.journal.has(st.sp.id) || (st.x - e.x) * (e.facing || 1) < -0.3) continue; // (7.4.0) in front only
     const d = dist(e.x, e.y, st.x, st.y - Math.min(1, st.sp.len * 0.4));
     if (d < sd) { sd = d; sb = st; }
   }
@@ -2380,7 +2387,7 @@ function update(dt) {
       if (why) { g.homeRun = false; ap.cancel(); hud.toast(why, steer ? '' : 'warn'); }
       else {
         const r2 = ap.update(g, dt, 1);
-        if (r2 === 'docked') { g.homeRun = false; audio.cue && audio.cue('home'); }
+        if (r2 === 'docked') { g.homeRun = false; audio.cue && audio.cue('home'); g.homeFx = { t: 0 }; say('Home', 'sub'); } // (7.4.0, owner) home: the sub's rim glows, the view leans in and out
       }
     }
     g.subHit = false;
@@ -2607,7 +2614,12 @@ function update(dt) {
     // (5.14.0) overencumbered (more in the bag than it holds), out of the sub: half speed, air three times as fast, and no
     // more catching until the bag is lightened. The sub is never overencumbered
     { const over = !e.inSub && !g.aboard && overencumbered(g); if (over) { e.speedMul *= 0.5; e.o2Mul *= 3; }
-      g.overenc = over; } // (5.14.1) shown only by the bag counter turning red
+      g.overenc = over; // (5.14.1) the bag counter turns red
+      { const F = g.tutFence, m2 = e.inSub ? g.sub : e; if (F && m2) { // (7.4.0) the tutorial's water: a soft push back at its edges
+        if (m2.x < F.x0) m2.vx = Math.max(m2.vx || 0, (F.x0 - m2.x) * 2); else if (m2.x > F.x1) m2.vx = Math.min(m2.vx || 0, (F.x1 - m2.x) * 2);
+        if (m2.y > F.y1) m2.vy = Math.min(m2.vy || 0, (F.y1 - m2.y) * 2); } }
+      // (7.4.0, owner) and a red warning says what it costs, again every few seconds while it lasts
+      if (over && (g.overWarnT == null || g.time - g.overWarnT > 6)) { g.overWarnT = g.time; hud.toast('Overencumbered: speed −50 %', 'warn'); } else if (!over) g.overWarnT = null; }
     if (cold > 1.05 && !g.coldTold) { g.coldTold = true; hud.toast('Cold water: air goes faster', 'note'); } // (3.0.0) back
     // struggling (out of air, or critically hurt): heavier, clumsier movement - never a change of
     // facing; that only ever follows the player's own left/right input
@@ -3055,6 +3067,7 @@ function frame(now) {
     const k = smooth01(L.rt / 0.9) * (1 - smooth01((L.rt - 3.6) / 1.6));
     g.legendK = k; ts = 1 - 0.67 * k;
   } else if (g && g.legendK) g.legendK = Math.max(0, g.legendK - dt / 1.2);
+  if (g && g.homeFx) { g.homeFx.t += dt; if (g.homeFx.t > 1.6) g.homeFx = null; } // (7.4.0) the home arrival's moment
   if (g && g.dashAim && !g.paused) ts = Math.min(ts, 0.2); // (5.16.0) Dash waiting for a tap: the world slowed to a fifth
   if (!(ui.confirmOpen && ui.confirmOpen() && ui.confirmModal)) update(dt * ts); // (5.5) a question that must be answered (the tutorial's welcome) holds the world still
   renderer.updateCamera(g, dt);
@@ -3115,6 +3128,7 @@ function frame(now) {
     hud.spotWanted = !!(profile && (profile.tut === 'on' || !!g.lesson) /* (6.6.2) and the lessons */ && tk && tk !== 'sprint' && tk !== g.tutPressedKey); g.tutFreeze = !!(hud.spotOn && hud.spotWanted && !hud.panel); }
   hud.panel = !!(ui.anyOpen && ui.anyOpen('cabin davetalk')); /* (7.0.13) Dave's words sit at the foot of the scene: the HUD stays round them */ // (5.6.8) the cabin keeps the controls: it is the same game
   { const cab = !!(ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
+  if (hud.inCabin && pressed.has(' ') && ui.cabin.near && ui.cabin.near() === 'door') { pressed.delete(' '); ui.cabin.use(); } // (7.4.0, owner) at the cabin door the big button takes him out too
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
   hud.cabinNear = hud.inCabin && ui.cabin.near ? ui.cabin.near() : null; // (7.1.0) which station is in reach, for the button's picture

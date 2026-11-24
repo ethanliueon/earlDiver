@@ -903,10 +903,13 @@ export class Fauna {
     for (let i = this.puffs.length - 1; i >= 0; i--) { this.puffs[i].t += dt; if (this.puffs[i].t > 2.5) this.puffs.splice(i, 1); }
   }
 
-  nearest(x, y, maxD) {
+  // (7.4.0) face: only what is in front (on the side he faces); ok: a test it must also pass
+  nearest(x, y, maxD, face = 0, ok = null) {
     let best = null, bd = maxD;
     for (const c of this.list) {
       if (c.companion) continue;
+      if (face && (c.x - x) * face < -c.len * 0.3) continue;
+      if (ok && !ok(c)) continue;
       const d = dist(x, y, c.x, c.y) - c.len * 0.4;
       if (d < bd) { bd = d; best = c; }
     }

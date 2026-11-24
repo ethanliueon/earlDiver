@@ -1996,3 +1996,18 @@ html body .shop .shop-cash:not(#_a):not(#_b) { display: flex; flex-direction: co
 html body .shop .shop-cash:not(#_a):not(#_b) b.counter { min-width: 178px; text-align: right; display: flex; justify-content: flex-end; }
 /* (7.4.0, owner) a find's card tall enough to cover the chest behind it as well as the find (the chest showed round it) */
 html body .cx .cx-card:not(#_a):not(#_b) { min-height: min(80vh, 360px); width: min(400px, 84vw); display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; }
+/* (7.4.0) the pet picker above the inventory's halves (its close cross sat under the locker's section and took no taps) */
+html body #inventory .item-pop.pet-pick:not(#_a):not(#_b) { z-index: 80 !important; }
+/* (7.4.0, owner) an animal's card larger, everything in proportion; the sub's padlock never over it */
+html body #inventory .item-pop.fish-pop .sp-panel:not(#_a) { zoom: 1.22; }
+html body #inventory:has(.item-pop) .sub-lock { display: none !important; }
+/* (7.4.0, owner) no dark fade laid over the last stats of a long item card (the "more below" hint read as a band on Speed) */
+html body #inventory .ip-col.more:not(#_a)::after { content: none !important; display: none !important; }
+/* (7.4.0, owner) the tutorial's highlight: no lit box. The dark's cut-out has a feathered edge (it fades into the dark),
+   and the thing itself breathes a soft bone glow that follows its own outline (drop-shadow follows its picture's shape) */
+html body #tut-spot .ts-hole:not(#_a):not(#_b):not(#_c):not(#_d) { animation: none !important; box-shadow: 0 0 0 200vmax rgba(4, 8, 6, 0.5), inset 0 0 10px 7px rgba(4, 8, 6, 0.5) !important; }
+html body #tut-spot .ts-hole.light:not(#_a):not(#_b):not(#_c):not(#_d) { box-shadow: none !important; }
+html body .ts-lit:not(#_a) { animation: ts-lit 1.6s ease-in-out infinite !important; }
+@keyframes ts-lit { 0%, 100% { filter: drop-shadow(0 0 3px rgba(232, 224, 200, 0.45)) brightness(1.06); } 50% { filter: drop-shadow(0 0 8px rgba(232, 224, 200, 0.8)) brightness(1.16); } }
+/* (7.4.0) every card opened in the inventory above both halves: the sub-away shade over the right half darkened a card's right side */
+html body #inventory .item-pop:not(#_a):not(#_b) { z-index: 80 !important; }

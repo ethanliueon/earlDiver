@@ -252,7 +252,9 @@ export class Renderer {
     const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1) * (this.aimZoom || 1)); /* (5.16.0) Dash's aim opens the view by its tier */ // (3.0.0) only the wheel changes the view; on deck it is the same as in the water
     const lk = g.legendK || 0; // (4.9.0) the legendary moment: the view leans in on it, about a tenth, and back
     this.viewW = lerp(this.viewW, targetView * (1 - 0.1 * lk), 1 - Math.exp(-dt * 1.2));
-    const ppm = this.W / this.viewW;
+    // (7.4.0, owner) home on the autopilot: the view eases in and back out once, over a second and a half
+    const hf = g.homeFx, hk = hf && hf.t < 1.5 ? Math.sin(Math.PI * hf.t / 1.5) : 0;
+    const ppm = this.W / (this.viewW * (1 - 0.08 * hk));
     const cam = this.cam;
     cam.w = this.viewW; cam.h = this.H / ppm; cam.ppm = ppm;
     g.viewBox = [cam.x - cam.w / 2, cam.x + cam.w / 2, cam.y - cam.h / 2, cam.y + cam.h / 2]; // what is on screen, in metres (the monster only reacts to a lamp it can be seen in)
@@ -890,14 +892,15 @@ export class Renderer {
       // (6.5.1) the sub he can board: not a shape drawn round it but the sub itself, breathing. It is drawn a second time
       // into its own small canvas, exactly as it stands (any sub, any refit, turned or tilted); from that its own
       // outline gets a thin bone rim and a soft glow behind it, and its paint lifts a little and settles, slowly
-      if (g.tapMarks && g.tapMarks.some((m) => m.what === 'sub')) { // (awash at dusk it is drawn through its own canvas: the lift goes there too)
+      const homeK = g.homeFx && g.homeFx.t < 0.9 ? 1 - g.homeFx.t / 0.9 : 0; // (7.4.0, owner) home: the boarding rim and glow flare once and fade
+      if ((g.tapMarks && g.tapMarks.some((m) => m.what === 'sub')) || homeK > 0) { // (awash at dusk it is drawn through its own canvas: the lift goes there too)
         const hw = Math.ceil(20 * ppm), hh = Math.ceil(16 * ppm), hx = S(sub.x) - hw / 2, hy = Sy(sub.y) - hh / 2;
         const hc = this.subHlC || (this.subHlC = document.createElement('canvas')), sc2 = this.subHlS || (this.subHlS = document.createElement('canvas'));
         for (const c of [hc, sc2]) if (c.width !== hw || c.height !== hh) { c.width = hw; c.height = hh; }
         const h1 = hc.getContext('2d'); h1.setTransform(1, 0, 0, 1, 0, 0); h1.clearRect(0, 0, hw, hh); h1.translate(-hx, -hy);
         h1.save(); h1.translate(S(sub.x), Sy(sub.y)); h1.rotate(sub.tilt * Math.sign(sxs)); h1.scale(sxs, 1); drawSub(h1, 9 * ppm, t, sub.stress, lights, armArg, look); h1.restore();
         const h2 = sc2.getContext('2d'); h2.setTransform(1, 0, 0, 1, 0, 0); h2.globalCompositeOperation = 'source-over'; h2.clearRect(0, 0, hw, hh); h2.drawImage(hc, 0, 0); h2.globalCompositeOperation = 'source-in'; h2.fillStyle = '#ece4cc'; h2.fillRect(0, 0, hw, hh);
-        const q = 0.5 + 0.5 * Math.sin(t * 2.2), d = Math.max(1.2, ppm * 0.045);
+        const q = homeK > 0 ? homeK : 0.5 + 0.5 * Math.sin(t * 2.2), d = Math.max(1.2, ppm * 0.045);
         // the rim and the glow, made in their own canvas: the bone shape spread a hair each way, a soft blur of it, then
         // the sub's own shape cut out, so only what lies outside its edge is left to lay over the scene
         const rc2 = this.subHlR || (this.subHlR = document.createElement('canvas')); if (rc2.width !== hw || rc2.height !== hh) { rc2.width = hw; rc2.height = hh; }
@@ -1344,7 +1347,7 @@ export class Renderer {
         // (7.3.0) a steady tremor by tier, and a kick when it fires that dies away in half a second (owner: more power at
         // every tier). (Riptide's round glow over him is gone: its light is in the light map now, wide and soft like a Flare)
         const kick = Math.max(0, 1 - (g.time - (g.abil.at ?? -9)) / 0.5), T0 = A.tier === 'legendary' ? [0.16, 0.9] : A.tier === 'exotic' ? [0.08, 0.55] : [0.04, 0.32];
-        g.fx.shake = Math.max(g.fx.shake || 0, T0[0] + T0[1] * kick * kick);
+        if (!g.overenc) g.fx.shake = Math.max(g.fx.shake || 0, T0[0] + T0[1] * kick * kick); // (7.4.0, owner) no tremor while the bag drags him to half speed
       }
       if (A.reach && !e.inSub) { const NG0 = netGeom((gear(g.profile, 'net') || {}).look), r0 = (NG0.arm + NG0.hoop * (g.netRange || 1.1) / 1.1 * (A.reach || 1)) * ppm, /* (7.4.0) where the hoop's sweep reaches */ fx2 = e.facing || 1; ctx.strokeStyle = `rgba(214,236,226,${(0.22 + 0.08 * Math.sin(g.time * 3)).toFixed(3)})`; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.arc(ex, ey, r0, fx2 > 0 ? -0.9 : Math.PI - 0.9, fx2 > 0 ? 0.9 : Math.PI + 0.9); ctx.stroke(); ctx.setLineDash([]); }
       /* (5.16.0) a Flare's light is drawn in the light map now (30 m round him) */
@@ -1361,7 +1364,9 @@ export class Renderer {
       const dt = clamp(g.time - (this.sprintT ?? g.time), 0, 0.1); this.sprintT = g.time; const rnd = Math.random;
       if (em && dt > 0) { const e = g.earl, m = em.inSub ? g.sub : e, sp = Math.hypot(m.vx || 0, m.vy || 0) || 1, dx = (m.vx || 0) / sp, dy = (m.vy || 0) / sp, nx = -dy, ny = dx;
         const TT = { rare: { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 }, exotic: { bow: 62, tail: 46, bub: 20, spark: 7, w: 1.3 }, legendary: { bow: 105, tail: 80, bub: 38, spark: 30, w: 1.7 } }[em.tier] || { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 };
-        const sz = em.inSub ? 2.4 : 1, head = 0.9 * sz, fins = 1.05 * sz, cap = 620, k = em.kS;
+        // (7.4.0, owner) the sub's own shape: the bow wave off its nose (about 4.2 m ahead of its middle on a 9 m hull), the wake off
+        // its propeller (4.6 m behind), spread over the hull's height, not a diver's outline round its middle
+        const sz = em.inSub ? 1.5 : 1, head = em.inSub ? 4.2 : 0.9, fins = em.inSub ? 4.6 : 1.05, cap = 620, k = em.kS;
         const add = (q) => { if (P.length < cap) P.push(q); };
         const bow = (n) => { for (let i = 0; i < n; i++) { // thrown aside ahead of his head: wider the further out, faster the nearer the line
           const g2 = (rnd() + rnd() + rnd() - 1.5) / 1.5, across = g2 * 0.75 * sz * TT.w, side = Math.sign(across) || (rnd() < 0.5 ? -1 : 1), ahead = head + (0.15 + rnd() * rnd() * 1.6) * sz;
@@ -2345,6 +2350,17 @@ export class Renderer {
   // fine wrinkles across it, a darker midrib, light showing through toward the thin tip, the tip worn ragged
   // (7.0.14) the blades are real pictures now (assets/kelp, tools/kelp_kit.py): smooth, broad detail only, so nothing in
   // them crawls or shimmers as the camera moves; the painted canvas below is used only until a picture has loaded
+  // (7.4.0, owner) a blade's picture pre-shrunk by halves (128, 64, 32 px wide), each made with smoothing: drawn from the
+  // full 256 px picture at 25-100 px, its fine veins shimmered and swam as the camera moved (it read as a wavy, rainbow
+  // distortion). Each blade is drawn from the copy nearest its size on screen
+  bladeMip(spr, px) {
+    if (!spr || !(spr.width || spr.naturalWidth) || (spr.complete === false)) return spr;
+    const M = this.bladeMips || (this.bladeMips = new Map()); let L = M.get(spr);
+    if (!L) { L = [spr]; let src = spr, w = spr.naturalWidth || spr.width, h = spr.naturalHeight || spr.height;
+      while (w > 40) { w = Math.round(w / 2); h = Math.max(2, Math.round(h / 2)); const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, w, h); L.push(c); src = c; }
+      M.set(spr, L); }
+    let pick = L[0]; for (const c of L) if ((c.width || 0) >= px * 1.15) pick = c; return pick;
+  }
   bladeSprite(layer, v) {
     const key = layer * 3 + v, arr = this.bladeSprites || (this.bladeSprites = []);
     if (arr[key]) return arr[key];
@@ -2435,8 +2451,8 @@ export class Renderer {
       // M x translate(bx,by) x rotate(a2) x scale(sx, sy)
       const a_ = ca * sx, b_ = sa * sx, c_ = -sa * sy, d_ = ca * sy;
       ctx.setTransform(M.a * a_ + M.c * b_, M.b * a_ + M.d * b_, M.a * c_ + M.c * d_, M.b * c_ + M.d * d_, M.a * bx + M.c * by + M.e, M.b * bx + M.d * by + M.f);
-      ctx.drawImage(spr, 0, -32, 128, 64);
-      if (wy < 14) warm.push([ctx.getTransform(), spr, 1 - wy / 14]);
+      const spm = this.bladeMip(spr, bl * Math.hypot(M.a, M.b)); ctx.drawImage(spm, 0, -32, 128, 64);
+      if (wy < 14) warm.push([ctx.getTransform(), spm, 1 - wy / 14]);
     }
     // (7.2.6) near the surface the sun shows through them: the same blade laid over itself, added faintly (warm)
     if (warm.length && (g.day ? g.day.light : 1) > 0.2) {

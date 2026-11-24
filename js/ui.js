@@ -73,6 +73,7 @@ import { VERSION } from './version.js';
 import { markOf, SUB_MARKS } from './earl_draw.js';
 import { previewOf, drawShowcase } from './showcase.js';
 import { subLook } from './render.js';
+import { petRefusal } from './pets.js'; // (7.4.0) the pet picker lists only what can be a pet
 
 
 // the figures for the shop's cards, as dot points
@@ -957,7 +958,7 @@ export class UI {
     return `<div class="inv-split inv-catch2"><div class="inv-left"><h4>The net bag <i class="bag-n">${usedSp} / ${cap}</i>${over ? ' <i class="over">overencumbered</i>' : ''}</h4><div class="bag-spaces" style="--cols:${COLS};--rows:${rows}">${cells}${fishCells}</div>`
       + this.photoBoxes(P, g)
       + `<div class="worth-paint" style="--wp:${Math.min(104, Math.floor(400 / (money(total).length * 0.52)))}px" title="What the bag and the sub hold would sell for, about">${money(total)}</div></div>`
-      + `<div class="inv-right${g.earl && g.earl.inSub ? '' : ' sub-away'}">${this.trawlSlot(P, g)}${g.earl && g.earl.inSub ? '' : '<i class="sub-lock"></i>'}<div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
+      + `<div class="inv-right${g.earl && g.earl.inSub ? '' : ' sub-away'}">${g.earl && g.earl.inSub ? '' : '<i class="sub-lock"></i>'}<div class="sub-bay"><div class="sb-name"><b>${subName}</b><span>rated to ${g.sub.rated} m</span></div>`
       + `<h4>The open tank <i>(${oUsed}/${oCap})</i></h4><div class="tank-win${open.some((s2) => inTrouble(s2, false)) ? ' trouble' : ''}"><canvas class="ct-tank"></canvas><i class="fc-warn" title="An animal in danger">!</i></div>`
       + `<h4>Pressure chambers <i>(${chambers.length}/${pCap})</i></h4><canvas class="ct-ch"></canvas>`
       // (3.2.0) the large pressure tank, laid on its side as it is in the sub (padlocked until it is fitted)
@@ -968,12 +969,7 @@ export class UI {
   }
   // (6.5.1) the trawl net the sub lets out: each kind in the hatch a small tile with its count, the chosen one lit; a
   // tap chooses it (the trawl button then always lets out that one). Out of the sub it can still be chosen
-  trawlSlot(P, g) {
-    const N = netsOf(g.items), kinds = Object.keys(NETS_SUB).filter((k) => N[k] > 0 || (P.trawlPick === k));
-    const pick = P.trawlPick && kinds.includes(P.trawlPick) ? P.trawlPick : kinds[0];
-    const tile = (k) => { const T = NETS_SUB[k], R = RARITY[T.rarity || (k === 'adv' ? 'rare' : 'common')]; return `<button class="tw-opt${k === pick ? ' on' : ''}${N[k] > 0 ? '' : ' none'}" data-tw="${k}"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt=""><b style="color:${R ? R.col : 'inherit'}">${T.name}</b><i>×${N[k] || 0}</i></button>`; };
-    return `<div class="tw-slot"><h4>Trawl net</h4>${kinds.length ? kinds.map(tile).join('') : '<span class="tw-none">None in the hatch</span>'}</div>`;
-  }
+
   // (5.0) the pet's card: what it is, and the way out of the slot (the aquarium, or the sea), with a warning
   petPop(P) {
     const pet = P.pet; if (!pet) { this.petSel = false; return ''; }
@@ -1048,9 +1044,9 @@ export class UI {
       if (!tooBig(s2) && hasBigTank(g) && at.place !== 'big') acts += mv('Large tank', 'press', BIG_CH, bigFits(g, s2));
       if (at.place !== 'open') acts += mv('Open tank', 'open', -1, tankFits(g, { ...s2, pressed: false, pile: false }));
       if (at.place !== 'bag') acts += mv('Net bag', 'tobag', -1, g.bag.length < bagSlots(g));
-      acts += mv('Release', 'release');
-    }
-    const remark = inSub ? '' : at.place === 'bag' ? 'Moved in the sub: board it (or call it with C), then drag it to a tank.' : 'Held in the sub: move it from there (T in the sub).';
+      acts += mv('Let go', 'release'); // (7.4.0, owner) said plainly
+    } else if (at.place === 'bag') acts += mv('Let go', 'release'); // (7.4.0, owner) out of the sub too: a fish in the bag can always be let go
+    const remark = inSub ? '' : at.place === 'bag' ? '' : 'In the sub: moved from its tank room.'; // (7.4.0) no keys named on a phone
     const R2 = R && !R.hidden ? R : null;
     this.aqSel = { s: s2, sp, home: s2.home ?? s2.from ?? (sp.dmin + sp.dmax) / 2 }; this.aqDying = dying;
     return `<div class="item-pop fish-pop"><div class="sp-panel${R2 && R2.id === 'legendary' ? ' leg' : ''}" style="--rc:${col}"><button class="ip-close" aria-label="Close">×</button>
@@ -1058,7 +1054,7 @@ export class UI {
       <div class="sp-info"><span class="sp-kind">${(sp.cat || '').replace(/&/g, 'and')}</span>${R2 ? `<span class="sp-rar">${R2.name}${rarityStars(sp)}</span>` : ''}<b class="sp-name">${sp.name}</b>
         ${sp.species || sp.sci ? `<span class="sp-sci">${sp.species ? `${sp.species}, ` : ''}<i>${sp.sci || ''}</i></span>` : ''}${s2.variant ? `<span class="sp-var">Rare form: ${s2.variant}</span>` : ''}
         <dl class="sp-rows">${rows}</dl>
-        ${acts ? `<div class="sp-acts"><span>Move to</span>${acts}</div>` : `<p class="sp-remark">${remark}</p>`}</div></div></div>`;
+        ${acts ? `<div class="sp-acts">${inSub ? '<span>Move to</span>' : ''}${acts}</div>` : remark ? `<p class="sp-remark">${remark}</p>` : ''}</div></div></div>`;
   }
   // a move made from the Catch page; a refusal is said here too (in the sub's rooms the room says it)
   tankDo(act, w, i, to) {
@@ -1356,9 +1352,13 @@ export class UI {
     const pet = P.pet, psp = pet && SPECIES_BY_ID[pet.id];
     if (psp) { if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(psp.id)) this.fitPics.set(psp.id, fittedIcon(psp, 300, 180).toDataURL()); }
     const petGear = `<div class="eq-slot sq petg${pet ? ' r-common' : ' empty'}" data-petslot title="${pet ? psp.name : 'Pet: empty'}">${pet ? `<img src="${this.fitPics.get(psp.id)}" alt="">` : ''}<small class="slot-nm">Pet</small></div>`;
-    const petPick = this.petPick ? (() => { const L = g.bag.map((s3, i) => ['bag', i, s3]).concat((g.subTank || []).map((s3, i) => ['tank', i, s3]));
+    const petPick = this.petPick ? (() => { if (!this.fitPics) this.fitPics = new Map(); // (7.4.0) the cache was missing with no pet yet, and the picker threw (it could not close)
+      // (7.4.0, owner) only what can be a pet, and each kind once (the healthiest of it)
+      const all = g.bag.map((s3, i) => ['bag', i, s3]).concat((g.subTank || []).map((s3, i) => ['tank', i, s3])).filter(([, , s3]) => SPECIES_BY_ID[s3.id] && !petRefusal(s3));
+      const byKind = new Map(); for (const r of all) { const o = byKind.get(r[2].id); if (!o || r[2].cond > o[2].cond) byKind.set(r[2].id, r); }
+      const L = [...byKind.values()];
       const rows = L.map(([w2, i, s3]) => { const sp3 = SPECIES_BY_ID[s3.id]; if (!this.fitPics.has(sp3.id)) this.fitPics.set(sp3.id, fittedIcon(sp3, 300, 180).toDataURL()); return `<button class="pp-fish" data-petpick="${w2}:${i}"><img src="${this.fitPics.get(sp3.id)}" alt=""><b>${sp3.name}</b><small>${(s3.len || 0).toFixed(2)} m</small></button>`; }).join('');
-      return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">At the surface: an animal 60 cm to 1.5 m long, or any legend.</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing in the bag or the sub.</p>'}</div></div></div>`; })() : '';
+      return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">At the surface: an animal 60 cm to 1.5 m long, or any legend.</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing here can be a pet.</p>'}</div></div></div>`; })() : '';
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
@@ -1474,9 +1474,12 @@ export class UI {
     box.querySelectorAll('[data-lk]').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.lk; this.h.onEquip(k); this.lkSel = null; this.renderInventory(); }));
     // (5.14.1) the pet's slot on the Gear page: its card, or the choice of an animal for it
     const pslotG = root.querySelector('.eq-slot[data-petslot]'); if (pslotG) pslotG.addEventListener('click', () => { if (P.pet) this.petSel = true; else this.petPick = true; this.lkSel = null; this.renderInventory(); });
-    const pick = root.querySelector('.pet-pick'); if (pick) pick.addEventListener('click', (ev) => { const b = ev.target.closest('[data-petpick]');
+    // (7.4.0) the pet picker answers through one listener on the inventory, set once: its own one was not always wired
+    // and the picker could not be closed
+    if (!this.ppWired && $('inventory')) { this.ppWired = true; $('inventory').addEventListener('click', (ev) => { const pk = ev.target.closest('.pet-pick'); if (!pk) return; ev.stopPropagation();
+      const b = ev.target.closest('[data-petpick]');
       if (b) { const [w2, i] = b.dataset.petpick.split(':'); if (this.h.onPet('set', w2, +i) !== false) this.petPick = false; this.renderInventory(); return; }
-      if (ev.target === pick || ev.target.closest('.ip-close')) { this.petPick = false; this.renderInventory(); } });
+      if (ev.target === pk || ev.target.closest('.ip-close')) { this.petPick = false; this.renderInventory(); } }, true); }
     const ppopG = root.querySelector('.inv-split:not(.inv-catch2) ~ .pet-pop, .pet-pop'); if (ppopG && !root.querySelector('.inv-catch2')) ppopG.addEventListener('click', (ev) => { const b = ev.target.closest('button[data-pet]');
       if (b) { const go = () => { if (this.h.onPet(b.dataset.pet) !== false) this.petSel = false; this.renderInventory(); }; if (b.dataset.pet === 'release') this.confirm('Release your pet?', 'It swims off into the sea and won\'t come back.', 'Release', 'Keep it', go); else go(); return; }
       if (ev.target === ppopG || ev.target.closest('.ip-close')) { this.petSel = false; this.renderInventory(); } });

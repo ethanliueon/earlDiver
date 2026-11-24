@@ -10,9 +10,9 @@ import { clamp, dist } from './util.js';
 import { MORE_SPECIES } from '../data/species_more.js';
 
 export const AGGRO = {
-  42: { kind: 'charge', dmg: 1, p: 0.05 },   // swordfish
-  43: { kind: 'charge', dmg: 1, p: 0.04 },   // sailfish
-  44: { kind: 'charge', dmg: 1, p: 0.05 },   // blue marlin
+  42: { kind: 'charge', dmg: 1, p: 0.1 },    // swordfish ((7.4.0, owner) more often: the open water should feel dangerous)
+  43: { kind: 'charge', dmg: 1, p: 0.07 },   // sailfish
+  44: { kind: 'charge', dmg: 1, p: 0.08 },   // blue marlin
   76: { kind: 'shark', dmg: 3, p: 0.06 },    // great white
   78: { kind: 'shark', dmg: 3, p: 0.06 },    // tiger shark
   82: { kind: 'shark', dmg: 3, p: 0.05 },    // shortfin mako
@@ -23,7 +23,7 @@ export const AGGRO = {
   24: { kind: 'lurk', dmg: 1, range: 1.8 },  // giant moray
   21: { kind: 'lurk', dmg: 1, range: 3.2 },  // titan triggerfish guarding its nest
   184: { kind: 'whale', dmg: 5, hull: 0.4, p: 0.05, minDepth: 250 }, // sperm whale
-  187: { kind: 'ram', hull: 0.2, p: 0.008 },  // orca: rams the sub, leaves divers alone ((claude-polish) half as often: a first trip to the drop-off met three rams in four minutes)
+  187: { kind: 'ram', hull: 0.2, p: 0.05 }, // (7.4.0, owner) an orca that sees the sub comes for it: 20 % of the hull a ram (was 0.008, almost never)  // orca: rams the sub, leaves divers alone ((claude-polish) half as often: a first trip to the drop-off met three rams in four minutes)
   188: { kind: 'ambush', dmg: 4, hull: 0.8, p: 0.08, minDepth: 2900 }, // abyssal sleeper shark: from below, Earl or the sub; (7.3.9, owner) four injury points, or 80 % of the hull
 };
 // the species added since that attack (data/species_more.js)
@@ -42,10 +42,10 @@ export function directEncounters(g, dt, SPECIES_BY_ID) {
   let rate = 0, pool = [];
   if (e.inSub) {
     if (e.y > 300) { rate = 0.12; pool = [184]; }
-    else if (e.y < 150) { rate = 0.1; pool = [187]; }
+    else if (e.y < 150) { rate = open ? 0.22 : 0.1; pool = [187]; } // (7.4.0) orca pods hunt the open water
   } else if (e.y > 260) { rate = 0.18; pool = [184]; }
   else if (e.y > 3) {
-    rate = open ? 0.45 : 0.22;
+    rate = open ? 0.6 : 0.22; // (7.4.0, owner) open water is billfish and shark country
     pool = [76, 78, 82, 42, 43, 44, 83];
     if (e.y < 60) pool.push(80);
     if (night) { rate *= 2; pool.push(148, 148); }
@@ -88,6 +88,7 @@ export function updateHunters(g, dt) {
   const dolphinsNear = list.some((c) => DOLPHINS.has(c.sp.id) && dist(c.x, c.y, e.x, e.y) < 25);
   const frenzy = g.fauna.puffs.some((p) => dist(p.x, p.y, e.x, e.y) < 35);
   const hidden = g.concealed;
+  const W0open = g.world.floorAt(e.x) - e.y > 25; // (7.4.0) out in open water, over the deep
   const flash = g.time - (g.lampFlashT ?? -99) < 0.45 && (e.y > 25 || g.dayEff < 0.4);
   g.threat = null;
 
@@ -141,6 +142,7 @@ export function updateHunters(g, dt) {
         let p = A.p * (night ? 2 : 1) * (c.hunting ? 6 : 1);
         if (A.kind === 'shark' || A.kind === 'nip') p *= (1 + g.injury * 0.8) * (frenzy ? 2 : 1);
         if (hidden) p *= 0.15;
+        if (A.kind === 'charge' && W0open) p *= 1.6; // (7.4.0) billfish charge more readily out in the blue
         if (rng() < p * dt) {
           at.t = 0;
           if (A.kind === 'shark') { at.s = 'circle'; at.ang = Math.atan2(c.y - e.y, c.x - e.x); at.r = clamp(d, 8, 14); at.loops = 0; at.dir = rng() < 0.5 ? 1 : -1; }

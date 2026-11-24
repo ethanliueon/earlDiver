@@ -170,6 +170,16 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   under the money; a revive costs 50 pearls (no ad, no $0.99); no pay-to-win unless the owner asks. Animals can still
   be caught as pets; custom pets are bought in the shop's Pets tab with pearls. Close to his pet, the interact button
   becomes the pet (Stay / Follow); the word is written above the pet, with no line. The action arc keeps its places.
+- **Decided in 7.4.0**: a net catches only what its hoop passes over in the swing (tools_draw.js netGeom); reach is a
+  multiple of the hand net's (1x the hoop, 2x twice its radius), and the hand net takes 0.7 s to land. Ambush I-IV: 25 %
+  a level that a fish holds still instead of darting or bolting, "Ambushed" written beside one caught that way. Observing
+  (and the eye) only what is in front of Earl or the sub's nose. Orcas ram the sub (20 % of the hull) and billfish charge
+  more in open water. The left menu starts folded and folds after 10 s. New tags are olive green everywhere (red is for
+  warnings). The tutorial's highlight is the thing glowing in its own outline, the dark's edge feathered (no lit box);
+  the sub trip keeps the interact button to the step and fences the water. The price board shows each animal's picture;
+  after a sale the panel shows what was sold, stamped Sold. A fish in the bag can always be let go from its card.
+  Overencumbered: a red "speed −50 %" warning, no tremor. The autopilot's arrival: the sub's rim flares, the view leans
+  in and out, "Home" beside it. At the cabin door the big button and walking on into the door also take him out.
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build

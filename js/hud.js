@@ -369,7 +369,7 @@ export class Hud {
     ] : e.inSub ? [
       { key: 'leavesub', icon: 'leave', on: true, tutAlt: g.tutAction && g.tutAction.id === 'leavesub' ? 'f' : null },
       // (5.17.0) no glow stick in the sub's arc: she has her own lights (the bag still snaps one)
-      !handSub && g.obsTarget ? { key: 'obs', icon: 'eye', on: true, lit: true, inter: true } /* (6.5.7) an animal at the glass: the eye */ : { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach', inter: true },
+      !handSub && g.obsTarget && !g.tutQuiet ? { key: 'obs', icon: 'eye', on: true, lit: true, inter: true } /* (6.5.7) an animal at the glass: the eye */ : { key: handSub || 'f', icon: 'hand', on: !!handSub, lit: !!handSub, why: 'Nothing in reach', inter: true },
       abil(),
       light(),
     ] : [
@@ -390,7 +390,7 @@ export class Hud {
         const tgt = tm.find((m) => m.key === (hu ? 'u' : 'f')), ctxIcon = tgt && { ladder: 'ladder', winch: 'basket', sub: 'hatch', door: 'cabin' }[tgt.what];
         // (6.3.0) an animal not yet observed, in reach (and nothing else to do here): the slot becomes the eye. Nothing is
         // drawn round the animal: the eye on this button is the only sign
-        if (!hon && g.obsTarget && !e.inSub) return { key: 'obs', icon: 'eye', on: true, lit: true, inter: true };
+        if (!hon && g.obsTarget && !e.inSub && !g.tutQuiet) return { key: 'obs', icon: 'eye', on: true, lit: true, inter: true }; // (7.4.0) not in the sub trip: it would pull him off the step
         // (7.3.9, owner) close to his pet, the hand becomes the pet: a press tells it to stay or to follow again
         if (!hon && g.petC && P.pet && !e.inSub && Math.hypot(g.petC.x - e.x, g.petC.y - e.y) < 2.5 + (g.petC.len || 0)) return { key: 'petstay', icon: 'pet', on: true, lit: true, inter: true };
         return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach', inter: true }; })(),
@@ -625,7 +625,7 @@ e.inSub ? [
     if (can) { const q = 0.5 + 0.5 * Math.sin(g.time * 3), gg = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.38); gg.addColorStop(0, `rgba(222,212,186,${(0.2 + 0.1 * q).toFixed(3)})`); gg.addColorStop(1, 'rgba(222,212,186,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(cx, cy, R * 1.38, 0, TAU); ctx.fill(); } // (6.0.5) quieter, bone
     const toolLook = (k) => (k === 'net' ? toolPic('net', gear(P, 'net')) || netLook(gear(P, 'net').look || 0) : k === 'cam' ? toolPic('cam', gear(P, 'cam')) || gear(P, 'cam').look : null); // (5.17.0) its own picture
     { const kind = e.inSub ? 'claw' : sel || 'net', look = toolLook(kind); /* (6.5.0) aboard too: the net, greyed */
-      const noNet = !!(P && P.kit && P.kit.on && !P.kit.on.net); /* (6.9.1) the net unequipped: its button greyed */ drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard ? 'off' : ((e.inSub && !armT) || (!sel && !e.inSub) || (kind === 'net' && noNet)) ? 'off' : 'on', look, rarOf(kind)); }
+      const noNet = !!(P && P.kit && P.kit.on && !P.kit.on.net); /* (6.9.1) the net unequipped: its button greyed */ drawCoin(ctx, cx, cy, R, kind, pressFx(bKey, cx, cy, R) ? 'press' : aboard && !(this.inCabin && this.cabinNear === 'door') ? 'off' /* (7.4.0) at the cabin door it works: it takes him out */ : ((e.inSub && !armT) || (!sel && !e.inSub) || (kind === 'net' && noNet)) ? 'off' : 'on', look, rarOf(kind)); }
     // (6.5.7) the swing's time on its button: a hair-thin bone arc runs round the rim while the net is in motion, so a slow
     // net is seen to take its second
     if (g.capture && g.capture.kind === 'net' && !aboard) { const k = clamp(g.capture.t / g.capture.dur, 0, 1); ctx.save(); ctx.lineCap = 'round';
