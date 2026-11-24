@@ -1932,3 +1932,11 @@ html body #trapset header { position: relative; }
 html body #trapset header .nameplate:not(#_a):not(#_b) { flex: 1 1 auto !important; padding-left: 56px !important; text-align: center !important; }
 html body #trapset header .nameplate:not(#_a):not(#_b) :is(h2, .shop-sub) { text-align: center !important; }
 html body #trapset #ts-types { justify-content: center; }
+/* (7.3.0, owner) the trap panel's inside: a painted instrument plate (assets/ui/olive/instrument.png, tools/olive_kit.py)
+   screwed onto the panel, not a flat CSS box; the depth scale an engraved steel strip with a bone pointer (ui.js tsScale),
+   the slider itself unseen over it, still what is dragged */
+html body #trapset .ts-well { background: none !important; box-shadow: none !important; border-radius: 0 !important; border: 22px solid transparent !important;
+  border-image: url("../assets/ui/olive/instrument.png") 44 fill / 22px stretch !important; padding: 2px 6px 0 !important; }
+html body #trapset .ts-scale { position: relative; height: 54px; margin: 4px 0 0; }
+html body #trapset .ts-scale canvas { position: absolute !important; inset: 0 !important; width: 100% !important; height: 54px !important; z-index: 0 !important; pointer-events: none; display: block; }
+html body #trapset .ts-scale #ts-slider { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }

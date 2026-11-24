@@ -321,6 +321,35 @@ def button(kind='olive', W=120, H=48, pressed=False, seed=61):
     d = ImageDraw.Draw(base); d.rounded_rectangle([pad, pad, w - pad - 1, h - pad - 1], radius=4 * K, outline=(14, 16, 12, 255), width=K)
     return base
 
+# ---------------------------------------------------------------- (7.3.0) an instrument plate (nine-slice): a darker olive
+# steel plate screwed onto the panel, its edge raised and worn, a bronze rivet in each corner; for the trap panel's line
+# counter and depth scale (it was a flat CSS box with a gradient)
+def bronze_rivet(img, cx, cy, r, R):
+    d = ImageDraw.Draw(img, 'RGBA')
+    d.ellipse([cx - r - 1, cy - r + 1, cx + r + 1, cy + r + 3], fill=(0, 0, 0, 120))
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(92, 70, 42, 255))
+    d.ellipse([cx - r * 0.78, cy - r * 0.85, cx + r * 0.4, cy + r * 0.25], fill=(140, 108, 66, 255))
+    d.ellipse([cx - r * 0.42, cy - r * 0.6, cx + r * 0.05, cy - r * 0.15], fill=(196, 164, 112, 220))
+    d.arc([cx - r, cy - r, cx + r, cy + r], 20, 160, fill=(30, 20, 10, 210), width=max(1, int(r * 0.25)))
+    if R.random() < 0.5: d.ellipse([cx + r * 0.1, cy + r * 0.2, cx + r * 0.6, cy + r * 0.6], fill=(70, 96, 70, 90))  # a little verdigris
+
+
+def instrument(S=200):
+    w = h = S * K
+    col, _ = painted_steel(w, h, 51, olive=(52, 60, 42), wear=0.55, light=(0.2, -0.1))
+    img = to_img(col); d = ImageDraw.Draw(img, 'RGBA'); R = random.Random(52)
+    for i in range(6 * K):  # the raised edge: lit on top and left, in shadow below and right
+        a = int(110 * (1 - i / (6 * K)))
+        d.line([(i, i), (w - 1 - i, i)], fill=(200, 208, 176, a // 4)); d.line([(i, i), (i, h - 1 - i)], fill=(200, 208, 176, a // 6))
+        d.line([(i, h - 1 - i), (w - 1 - i, h - 1 - i)], fill=(0, 0, 0, a)); d.line([(w - 1 - i, i), (w - 1 - i, h - 1 - i)], fill=(0, 0, 0, a * 2 // 3))
+    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=5 * K, outline=(8, 10, 6, 255), width=2 * K)
+    for (x, y) in ((13, 13), (S - 13, 13), (13, S - 13), (S - 13, S - 13)):
+        bronze_rivet(img, x * K + R.uniform(-0.8, 0.8) * K, y * K + R.uniform(-0.8, 0.8) * K, 4.2 * K, R)
+    m = Image.new('L', (w, h), 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, w - 1, h - 1], radius=5 * K, fill=255)
+    img = img.convert('RGBA'); img.putalpha(m)
+    return img
+
+
 def save(img, name):
     p = os.path.join(OUT, name); img.save(p, optimize=True)
     print(f'  {name:22s} {img.size[0]}x{img.size[1]}  {os.path.getsize(p) // 1024} KB')

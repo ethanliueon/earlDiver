@@ -1626,6 +1626,33 @@ export class UI {
       x.fillStyle = i < n - String(Math.round(v)).length ? 'rgba(214,204,178,0.45)' : '#ddd3b8'; x.fillText(s[i], dx + dw / 2, wy + wh / 2 + 2); }
     const gl = x.createLinearGradient(0, wy, 0, wy + wh); gl.addColorStop(0, 'rgba(255,250,235,0.10)'); gl.addColorStop(0.18, 'rgba(255,250,235,0)'); x.fillStyle = gl; x.fillRect(wx, wy, ww, wh); // the glass
   }
+  // (7.3.0, owner) the depth scale: an engraved steel strip with ticks and numbers from 0 to the trap's rating, and a bone
+  // pointer at the depth chosen (the slider, unseen, lies over it and is what is dragged)
+  tsScale(v, lo, hi) {
+    const c = $('ts-scalec'); if (!c) return; const x = c.getContext('2d'), W = c.width, H = c.height; x.clearRect(0, 0, W, H);
+    const L = 30, Rr = W - 30, y0 = 26, y1 = 60, pos = (d) => L + (Rr - L) * (d - 0) / Math.max(1, hi);
+    // the strip: dull steel, a little lighter than the plate, machined with fine lengthwise lines, its edges bevelled
+    let g = x.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, '#8a8c80'); g.addColorStop(0.15, '#6c6f62'); g.addColorStop(0.85, '#55584c'); g.addColorStop(1, '#2c2e26');
+    x.fillStyle = g; x.fillRect(L - 10, y0, Rr - L + 20, y1 - y0);
+    for (let i = 0; i < 28; i++) { const yy = y0 + 2 + i; x.fillStyle = `rgba(${i % 3 ? '0,0,0' : '255,250,235'},${(0.04 + (i * 37 % 7) / 140).toFixed(3)})`; x.fillRect(L - 10, yy, Rr - L + 20, 1); }
+    x.fillStyle = 'rgba(0,0,0,0.6)'; x.fillRect(L - 10, y1, Rr - L + 20, 2); x.fillStyle = 'rgba(230,226,205,0.25)'; x.fillRect(L - 10, y0, Rr - L + 20, 1);
+    // ticks: a long one at each number, short ones between; numbers stamped below in the game's lettering
+    const step = [5, 10, 25, 50, 100, 250, 500].find((q) => hi / q <= 8) || 500, minor = step / 5;
+    x.font = '600 22px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'top';
+    for (let d = 0; d <= hi + 1e-6; d += minor) { const px = Math.round(pos(d)) + 0.5, big = Math.abs(d / step - Math.round(d / step)) < 1e-6;
+      x.strokeStyle = 'rgba(16,14,10,0.85)'; x.lineWidth = big ? 2.5 : 1.4; x.beginPath(); x.moveTo(px, y0 + 3); x.lineTo(px, y0 + (big ? 20 : 11)); x.stroke();
+      x.strokeStyle = 'rgba(235,230,210,0.22)'; x.lineWidth = 1; x.beginPath(); x.moveTo(px + 1.5, y0 + 3); x.lineTo(px + 1.5, y0 + (big ? 20 : 11)); x.stroke();
+      if (big) { x.fillStyle = 'rgba(0,0,0,0.6)'; x.fillText(String(d), px + 1, y1 + 8); x.fillStyle = '#d8ceb2'; x.fillText(String(d), px, y1 + 7); } }
+    // the pointer: a bone wedge riding the strip, shaded, with a dark notch at its tip
+    const px = pos(Math.max(lo, Math.min(hi, v)));
+    x.save(); x.translate(px, 0); x.scale(1.45, 1.45); x.translate(0, -3);
+    x.fillStyle = 'rgba(0,0,0,0.45)'; x.beginPath(); x.moveTo(-11, 6); x.lineTo(13, 6); x.lineTo(13, 22); x.lineTo(2, 36); x.lineTo(-9, 22); x.closePath(); x.fill();
+    const pg = x.createLinearGradient(-12, 0, 12, 0); pg.addColorStop(0, '#efe7cf'); pg.addColorStop(0.55, '#d4c9a8'); pg.addColorStop(1, '#9e9478');
+    x.fillStyle = pg; x.beginPath(); x.moveTo(-12, 3); x.lineTo(12, 3); x.lineTo(12, 19); x.lineTo(0, 33); x.lineTo(-12, 19); x.closePath(); x.fill();
+    x.strokeStyle = 'rgba(40,34,22,0.8)'; x.lineWidth = 1.5; x.stroke();
+    x.strokeStyle = 'rgba(60,50,32,0.55)'; x.lineWidth = 1; for (const k of [-5, 0, 5]) { x.beginPath(); x.moveTo(k, 7); x.lineTo(k, 15); x.stroke(); } // grip lines
+    x.restore();
+  }
   tsFloor() { const g = this.h.getGame(); return Math.floor(g.world.floorAt(g.earl.x)); }
   tsMax() { return Math.max(2, Math.min(TRAPS[this.ts.type].maxDepth, this.tsFloor())); }
   tsNudge(d) { this.ts.depth += d; this.tsRender(); }
@@ -1643,7 +1670,7 @@ export class UI {
     const top = Math.min(T.maxDepth, Math.max(fl, 2));
     this.ts.depth = Math.max(2, Math.min(Math.round(this.ts.depth), T.maxDepth));
     $('ts-slider').max = T.maxDepth; $('ts-slider').value = this.ts.depth;
-    $('ts-depth').textContent = this.ts.depth; this.tsDrums(this.ts.depth);
+    $('ts-depth').textContent = this.ts.depth; this.tsDrums(this.ts.depth); this.tsScale(this.ts.depth, 2, T.maxDepth);
     // the depth of the bottom is not told: only that the line has reached it, once it has
     $('ts-bottom').textContent = `All the way (${T.maxDepth} m)`;
     $('ts-info').textContent = `This trap works for ${({ 300: '5 minutes', 1800: '30 minutes', 14400: '4 hours' })[T.dur] || timeLeftText(T.dur)}. Up to ${T.count} animals.`; // (owner) said plainly
