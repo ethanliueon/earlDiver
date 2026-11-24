@@ -30,26 +30,47 @@ def hand():
     I.save('act-hand.png')
 
 
+def spline(pts, closed=True, n=14):
+    # (7.3.0) a smooth curve through the points (Catmull-Rom), so a shape is drawn as an outline by hand, not built
+    # from rectangles and ovals
+    P = list(pts); out = []; m = len(P)
+    rng = range(m) if closed else range(m - 1)
+    for i in rng:
+        p0 = P[(i - 1) % m] if closed else P[max(i - 1, 0)]; p1 = P[i]; p2 = P[(i + 1) % m]; p3 = P[(i + 2) % m] if closed else P[min(i + 2, m - 1)]
+        for k in range(n):
+            t = k / n; t2 = t * t; t3 = t2 * t
+            out.append(tuple(0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in (0, 1)))
+    if not closed: out.append(P[-1])
+    return out
+
+
 def point():
     # (7.2.8) the tutorial's pointing hand: Earl's own diving glove, the fist closed, the index finger straight out. Drawn
     # pointing down (hud.js turns it toward what to tap); no outline, only its shadow, so it looks the same over sky, sea,
-    # cabin and paper. (7.3.0) a bone-coloured glove, duller than the old tan, and the thumb out on its own, with a nail
-    # and a dark gap between it and the finger: with the thumb lost in the fist it read as the other finger
-    I = Icon(); BONE = (202, 186, 154); KNUC = (190, 174, 142); FOLD = (112, 98, 78); GAP = (70, 60, 48)
-    I.fill(mask(lambda d: d.rounded_rectangle((180, 28, 340, 104), 18, fill=255)), (60, 70, 52), light=0.2)             # the wetsuit cuff
-    I.fill(mask(lambda d: d.rounded_rectangle((170, 88, 352, 262), 50, fill=255)), BONE, light=0.22)                     # the back of the hand
-    for box, r in (((258, 226, 304, 312), 23), ((298, 222, 340, 302), 21), ((332, 212, 366, 286), 17)):                  # the three curled fingers
-        I.fill(mask(lambda d, box=box, r=r: d.rounded_rectangle(box, r, fill=255)), KNUC, light=0.25, edge=0.4)
-    I.line(lambda d: d.line([(300, 238), (300, 296)], fill=255, width=4), FOLD)                                          # the gaps between them
-    I.line(lambda d: d.line([(334, 232), (334, 286)], fill=255, width=4), FOLD)
-    I.fill(mask(lambda d: d.rounded_rectangle((200, 214, 262, 452), 31, fill=255)), BONE, light=0.14, edge=0.36)         # the index finger, straight out
-    # the thumb, tucked across the curled fingers: short and round, its nail at the end, a dark line under it
-    I.fill(mask(lambda d: d.rounded_rectangle((246, 240, 372, 290), 25, fill=255)), FOLD, flat=True)
-    I.fill(mask(lambda d: d.rounded_rectangle((244, 232, 368, 282), 25, fill=255)), (208, 192, 160), light=0.3, edge=0.45)
-    I.fill(mask(lambda d: d.rounded_rectangle((322, 240, 360, 274), 13, fill=255)), (224, 214, 192), light=0.1, edge=0.25)  # its nail
-    I.line(lambda d: d.line([(292, 240), (292, 274)], fill=255, width=4), FOLD)                                          # its knuckle crease
-    I.line(lambda d: d.line([(212, 382), (250, 382)], fill=255, width=5), FOLD)                                          # the finger's creases
-    I.line(lambda d: d.line([(212, 304), (250, 304)], fill=255, width=5), FOLD)
+    # cabin and paper. (7.3.0) bone-coloured, the thumb tucked across the fist so it cannot read as the other finger, and
+    # (owner) every part an outline drawn by hand through points (spline), never a rectangle or an oval
+    I = Icon(); BONE = (202, 186, 154); KNUC = (190, 174, 142); THUMB = (208, 192, 160); FOLD = (112, 98, 78)
+    poly = lambda pts: mask(lambda d: d.polygon(spline(pts), fill=255))
+    ink = lambda pts, w: (lambda d: d.line(spline(pts, closed=False), fill=255, width=w, joint='curve'))
+    # the wetsuit cuff: a little flared, its hem uneven
+    I.fill(poly([(206, 34), (240, 26), (282, 30), (318, 26), (330, 50), (326, 88), (306, 104), (262, 100), (220, 106), (198, 88), (196, 56)]), (60, 70, 52), light=0.2)
+    I.line(ink([(204, 70), (240, 66), (284, 72), (322, 64)], 5), (44, 52, 38))                                           # a crease in the neoprene
+    # the back of the hand, wider at the knuckles
+    I.fill(poly([(206, 96), (258, 90), (310, 98), (336, 124), (358, 172), (370, 222), (354, 266), (302, 282), (244, 276), (200, 262), (172, 226), (174, 172), (188, 126)]), BONE, light=0.22)
+    # the three curled fingers, each its own knuckle, peeping out under the thumb
+    for pts in ([(258, 236), (284, 228), (306, 238), (308, 282), (296, 306), (272, 308), (256, 290)],
+                [(300, 230), (324, 222), (342, 234), (344, 276), (332, 298), (310, 298), (300, 276)],
+                [(336, 222), (356, 214), (370, 228), (372, 262), (362, 282), (344, 284), (336, 262)]):
+        I.fill(poly(pts), KNUC, light=0.25, edge=0.4)
+    # the index finger: tapering a little to a rounded tip, the knuckle joints just swelling it
+    I.fill(poly([(204, 222), (234, 214), (262, 224), (264, 300), (258, 312), (260, 372), (254, 420), (246, 448), (232, 458), (216, 448), (208, 420), (204, 372), (206, 312), (200, 300)]), BONE, light=0.14, edge=0.36)
+    I.line(ink([(212, 378), (230, 384), (250, 378)], 5), FOLD)                                                           # the finger's creases, curved
+    I.line(ink([(210, 306), (232, 312), (254, 304)], 5), FOLD)
+    # the thumb, laid across the curled fingers: thick at its root, rounding to its tip, a dark line under it
+    I.fill(poly([(248, 246), (290, 240), (338, 248), (370, 262), (372, 286), (346, 296), (296, 292), (254, 284), (244, 266)]), FOLD, flat=True)
+    I.fill(poly([(246, 238), (290, 230), (336, 238), (366, 252), (368, 276), (342, 286), (294, 282), (252, 274), (242, 256)]), THUMB, light=0.3, edge=0.45)
+    I.fill(poly([(326, 246), (348, 244), (360, 256), (356, 272), (336, 276), (324, 264)]), (224, 214, 192), light=0.1, edge=0.25)  # its nail
+    I.line(ink([(294, 240), (290, 258), (294, 276)], 4), FOLD)                                                           # its knuckle crease
     I.save('tut-point.png', 128, outline=False)
 
 

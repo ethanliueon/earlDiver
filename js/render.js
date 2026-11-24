@@ -1340,44 +1340,63 @@ export class Renderer {
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (A.speed && spd > 0.6) {
         // (7.2.8) the water itself is drawn just after this block: only what it needs is handed over here
-        this.sprintEmit = { kS: clamp(spd / (e.inSub ? 7 : 3.6), 0, 1), tier: A.tier, inSub: e.inSub, t: g.time };
+        this.sprintEmit = { kS: clamp(spd / (e.inSub ? 7 : 3.6), 0, 1), tier: A.tier, inSub: e.inSub, t: g.time, at: g.abil.at };
         ctx.globalAlpha = 1;
-        g.fx.shake = Math.max(g.fx.shake || 0, A.tier === 'legendary' ? 0.25 : A.tier === 'exotic' ? 0.07 : 0.03); /* (6.0.19) a light tremor for rare and exotic; the strong one only for the legendary */
-        if (A.tier === 'legendary') { const pu = 0.5 + 0.5 * Math.sin(g.time * 5), au = ctx.createRadialGradient(ex, ey, ppm * 0.4, ex, ey, ppm * 2.2); au.addColorStop(0, `rgba(255,214,140,${(0.28 + 0.12 * pu).toFixed(3)})`); au.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = au; ctx.fillRect(ex - ppm * 2.2, ey - ppm * 2.2, ppm * 4.4, ppm * 4.4);
-          const big = Math.hypot(this.W, this.H), vg = ctx.createRadialGradient(this.W / 2, this.H / 2, big * 0.32, this.W / 2, this.H / 2, big * 0.6); vg.addColorStop(0, 'rgba(255,190,90,0)'); vg.addColorStop(1, `rgba(255,190,90,${(0.1 + 0.08 * pu).toFixed(3)})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, this.W, this.H); }
+        // (7.3.0) a steady tremor by tier, and a kick when it fires that dies away in half a second (owner: more power at
+        // every tier). (Riptide's round glow over him is gone: its light is in the light map now, wide and soft like a Flare)
+        const kick = Math.max(0, 1 - (g.time - (g.abil.at ?? -9)) / 0.5), T0 = A.tier === 'legendary' ? [0.16, 0.9] : A.tier === 'exotic' ? [0.08, 0.55] : [0.04, 0.32];
+        g.fx.shake = Math.max(g.fx.shake || 0, T0[0] + T0[1] * kick * kick);
       }
       if (A.reach && !e.inSub) { const r0 = ((g.netRange || 1.2) * (A.reach || 1) + 0.7) * ppm, fx2 = e.facing || 1; ctx.strokeStyle = `rgba(214,236,226,${(0.22 + 0.08 * Math.sin(g.time * 3)).toFixed(3)})`; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.arc(ex, ey, r0, fx2 > 0 ? -0.9 : Math.PI - 0.9, fx2 > 0 ? 0.9 : Math.PI + 0.9); ctx.stroke(); ctx.setLineDash([]); }
       /* (5.16.0) a Flare's light is drawn in the light map now (30 m round him) */
       ctx.restore();
     }
     // (7.2.8) Sprint's water, made real: motes that live in the water itself (world places, still water), so they slide past
-    // him exactly as fast as he really moves, and nothing can jump. (7.1.0's specks sat on loops pinned to him, their place
-    // worked out as the clock times a speed that changed with the stick: any change of speed threw every one of them to a
-    // new place at once, the "hurricane" when a sprint began.) Ahead of him the water parts: motes are set off from his
-    // head and pushed out sideways, so behind him they open into a cone, wider at each tier; bubbles leave his fins (the
-    // sub's propeller) and rise. How many follows how fast he goes, so a gentle push shows a little
+    // him exactly as fast as he really moves, and nothing can jump (never a clock times a changing speed).
+    // (7.3.0) a meteor (owner): ahead of him the water is thrown aside, unevenly, in loose clumps, small motes and the odd
+    // big one (it read as one even wall); behind him a tail of streaks off his fins; a burst from the fins when it fires.
+    // Each tier a clear step: Sprint sparse; Sprint+ denser, with a stream of bubbles and a few blue sparks of
+    // bioluminescence stirred up in the wake; Riptide the widest bow, a heavy bubble stream and many sparks (its light is
+    // a wide soft glow in the light map). Sparks show more the darker the water
     { const em = (g.mode === 'play' && this.sprintEmit && this.sprintEmit.t === g.time) ? this.sprintEmit : null; const P = this.sprintP || (this.sprintP = []);
-      const dt = clamp(g.time - (this.sprintT ?? g.time), 0, 0.1); this.sprintT = g.time;
+      const dt = clamp(g.time - (this.sprintT ?? g.time), 0, 0.1); this.sprintT = g.time; const rnd = Math.random;
       if (em && dt > 0) { const e = g.earl, m = em.inSub ? g.sub : e, sp = Math.hypot(m.vx || 0, m.vy || 0) || 1, dx = (m.vx || 0) / sp, dy = (m.vy || 0) / sp, nx = -dy, ny = dx;
-        const tw = em.tier === 'legendary' ? 1.9 : em.tier === 'exotic' ? 1.5 : em.tier === 'rare' ? 1.2 : 1, sz = em.inSub ? 2.4 : 1, rate = (em.inSub ? 150 : 110) * tw * em.kS;
-        this.sprintAcc = (this.sprintAcc || 0) + rate * dt;
-        while (this.sprintAcc >= 1 && P.length < 420) { this.sprintAcc -= 1; const side = Math.random() < 0.5 ? -1 : 1, across = (0.1 + Math.random() * 0.45) * sz * side * tw, ahead = (0.4 + Math.random() * 0.9) * sz;
-          const push = (0.35 + Math.random() * 0.5) * tw * (0.5 + 0.5 * em.kS); // how hard the parting water throws it aside
-          P.push({ x: m.x + dx * ahead + nx * across, y: m.y + dy * ahead + ny * across, vx: nx * side * push + dx * sp * 0.08, vy: ny * side * push + dy * sp * 0.08, age: 0, life: 1.1 + Math.random() * 0.9, k: 0, r: 0.6 + Math.random() * 0.9, gold: em.tier === 'legendary' && Math.random() < 0.3 }); }
-        this.sprintBub = (this.sprintBub || 0) + (em.inSub ? 26 : 14) * em.kS * dt;
-        while (this.sprintBub >= 1 && P.length < 260) { this.sprintBub -= 1; const back = (em.inSub ? 3.4 : 1.05) + Math.random() * 0.2, j = (Math.random() - 0.5) * 0.3 * sz;
-          P.push({ x: m.x - dx * back + nx * j, y: m.y - dy * back + ny * j, vx: -dx * 0.4 + (Math.random() - 0.5) * 0.3, vy: -dy * 0.4 - 0.2, age: 0, life: 1.4 + Math.random() * 1.2, k: 1, r: 0.8 + Math.random() * 1.6 * (em.inSub ? 1.4 : 1) }); } }
-      if (P.length) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); const dr = Math.max(1, ppm / 40);
+        const TT = { rare: { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 }, exotic: { bow: 62, tail: 46, bub: 20, spark: 7, w: 1.3 }, legendary: { bow: 105, tail: 80, bub: 38, spark: 30, w: 1.7 } }[em.tier] || { bow: 52, tail: 34, bub: 8, spark: 0, w: 1 };
+        const sz = em.inSub ? 2.4 : 1, head = 0.9 * sz, fins = 1.05 * sz, cap = 620, k = em.kS;
+        const add = (q) => { if (P.length < cap) P.push(q); };
+        const bow = (n) => { for (let i = 0; i < n; i++) { // thrown aside ahead of his head: wider the further out, faster the nearer the line
+          const g2 = (rnd() + rnd() + rnd() - 1.5) / 1.5, across = g2 * 0.75 * sz * TT.w, side = Math.sign(across) || (rnd() < 0.5 ? -1 : 1), ahead = head + (0.15 + rnd() * rnd() * 1.6) * sz;
+          const push = (0.8 + rnd() * 2.4) * TT.w * (0.5 + 0.5 * k) * (1.2 - Math.min(1, Math.abs(g2)) * 0.5);
+          const clump = rnd() < 0.18 ? 2 + Math.floor(rnd() * 3) : 1; // loose clumps, so it is never an even spread
+          for (let c = 0; c < clump; c++) { const j = c ? 0.12 * sz : 0;
+            add({ x: m.x + dx * ahead + nx * across + (rnd() - 0.5) * j, y: m.y + dy * ahead + ny * across + (rnd() - 0.5) * j, vx: nx * side * push + dx * sp * 0.06, vy: ny * side * push + dy * sp * 0.06, age: 0, life: 0.7 + rnd() * 1.6, k: 0, r: 0.25 + rnd() * rnd() * 1.6, a: 0.3 + rnd() * 0.7 }); } } };
+        const tail = (n) => { for (let i = 0; i < n; i++) { const j = (rnd() + rnd() - 1) * 0.22 * sz * TT.w; // the tail: off the fins, left behind in the water
+          add({ x: m.x - dx * (fins + rnd() * 0.3 * sz) + nx * j, y: m.y - dy * (fins + rnd() * 0.3 * sz) + ny * j, vx: -dx * sp * (0.04 + rnd() * 0.1) + nx * (rnd() - 0.5) * 0.4, vy: -dy * sp * (0.04 + rnd() * 0.1) + ny * (rnd() - 0.5) * 0.4, age: 0, life: 0.5 + rnd() * 0.9, k: 2, r: 0.5 + rnd() * 1.3, a: 0.25 + rnd() * 0.5 }); } };
+        const bub = (n, spread = 0.3) => { for (let i = 0; i < n; i++) { const j = (rnd() - 0.5) * spread * sz;
+          add({ x: m.x - dx * (fins + rnd() * 0.4) + nx * j, y: m.y - dy * (fins + rnd() * 0.4) + ny * j, vx: -dx * 0.5 + (rnd() - 0.5) * 0.5, vy: -dy * 0.5 - 0.25, age: 0, life: 1.2 + rnd() * 1.4, k: 1, r: 0.5 + rnd() * rnd() * 2.2 * (em.inSub ? 1.4 : 1), a: 1 }); } };
+        const spark = (n) => { for (let i = 0; i < n; i++) { const back = rnd() * 2.2 * sz, j = (rnd() + rnd() - 1) * 0.9 * sz * TT.w; // stirred up along him and in his wake
+          add({ x: m.x - dx * back + nx * j, y: m.y - dy * back + ny * j, vx: (rnd() - 0.5) * 0.3, vy: (rnd() - 0.5) * 0.3, age: 0, life: 0.5 + rnd() * 0.9, k: 3, r: 0.6 + rnd() * 0.8, a: 0.5 + rnd() * 0.5 }); } };
+        const acc = (key, rate) => { this[key] = (this[key] || 0) + rate * dt; const n = Math.floor(this[key]); this[key] -= n; return n; };
+        bow(acc('spBow', TT.bow * k)); tail(acc('spTail', TT.tail * k)); bub(acc('spBub', TT.bub * (0.4 + 0.6 * k))); if (TT.spark) spark(acc('spSpark', TT.spark * k));
+        if (em.at != null && this.sprintBurstAt !== em.at) { this.sprintBurstAt = em.at; // the kick: water and bubbles burst from his fins
+          const nb = em.tier === 'legendary' ? 70 : em.tier === 'exotic' ? 42 : 24;
+          for (let i = 0; i < nb; i++) { const an = Math.atan2(-dy, -dx) + (rnd() - 0.5) * 2.6, v = (0.8 + rnd() * 2.2) * TT.w;
+            add({ x: m.x - dx * fins, y: m.y - dy * fins, vx: Math.cos(an) * v, vy: Math.sin(an) * v, age: 0, life: 0.6 + rnd() * 1.0, k: 0, r: 0.3 + rnd() * rnd() * 1.6, a: 0.4 + rnd() * 0.6 }); }
+          bub(nb >> 1, 0.9); if (TT.spark) spark(nb >> 1); } }
+      if (P.length) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); const dr = Math.max(1, ppm / 40), dark = clamp((this.cam.y - 30) / 270, 0, 1); /* bioluminescence is not seen in sunlit water */
         for (let i = P.length - 1; i >= 0; i--) { const q = P[i]; q.age += dt; if (q.age >= q.life) { P.splice(i, 1); continue; }
-          const damp = Math.exp(-dt * (q.k ? 0.8 : 2.2)); q.vx *= damp; q.vy *= damp; if (q.k) q.vy -= 0.5 * dt; /* bubbles rise */ q.x += q.vx * dt; q.y += q.vy * dt;
-          const f = q.age / q.life, a = Math.min(1, f * 6) * (1 - f) ** 1.4, x0 = S(q.x), y0 = Sy(q.y);
-          if (x0 < -20 || y0 < -20 || x0 > this.W + 20 || y0 > this.H + 20) continue;
-          if (q.k) { ctx.globalAlpha = a * 0.55; ctx.strokeStyle = 'rgb(214,226,220)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x0, y0, q.r * dr * 1.4, 0, TAU); ctx.stroke(); ctx.globalAlpha = a * 0.4; ctx.fillStyle = 'rgb(240,244,236)'; ctx.fillRect(x0 - q.r * dr * 0.5, y0 - q.r * dr * 0.6, dr * 0.9, dr * 0.9); }
-          else { // a mote of the water itself, smeared a little along its motion on the screen (the camera follows him, so
-            // the streak shows how fast he goes through still water)
-            const lx = q.sx ?? x0, ly = q.sy ?? y0, mvx = x0 - lx, mvy = y0 - ly, ml = Math.hypot(mvx, mvy), k2 = Math.min(1, 9 / (ml + 1e-3));
-            ctx.globalAlpha = a * 0.62; ctx.strokeStyle = q.gold ? 'rgb(236,214,164)' : 'rgb(210,222,216)'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1, q.r * dr * 1.1);
-            ctx.beginPath(); ctx.moveTo(x0 - mvx * 1.6 * k2, y0 - mvy * 1.6 * k2); ctx.lineTo(x0, y0); ctx.stroke(); }
+          const damp = Math.exp(-dt * (q.k === 1 ? 0.8 : q.k === 3 ? 1.5 : 2.4)); q.vx *= damp; q.vy *= damp; if (q.k === 1) q.vy -= 0.5 * dt; /* bubbles rise */ q.x += q.vx * dt; q.y += q.vy * dt;
+          const f = q.age / q.life, x0 = S(q.x), y0 = Sy(q.y);
+          if (x0 < -20 || y0 < -20 || x0 > this.W + 20 || y0 > this.H + 20) { q.sx = x0; q.sy = y0; continue; }
+          const lx = q.sx ?? x0, ly = q.sy ?? y0, mvx = x0 - lx, mvy = y0 - ly, ml = Math.hypot(mvx, mvy);
+          if (q.k === 1) { const a = Math.min(1, f * 6) * (1 - f) ** 1.4; ctx.globalAlpha = a * 0.55; ctx.strokeStyle = 'rgb(214,226,220)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x0, y0, q.r * dr * 1.4, 0, TAU); ctx.stroke(); ctx.globalAlpha = a * 0.4; ctx.fillStyle = 'rgb(240,244,236)'; ctx.fillRect(x0 - q.r * dr * 0.5, y0 - q.r * dr * 0.6, dr * 0.9, dr * 0.9); }
+          else if (q.k === 3) { // a spark of bioluminescence: flares as it is stirred, then fades; a soft point, no ring
+            const a = (f < 0.15 ? f / 0.15 : (1 - f) ** 1.6) * q.a * dark, rr = (1.6 + q.r * 2.2) * dr * 2; ctx.globalCompositeOperation = 'lighter'; const gq = ctx.createRadialGradient(x0, y0, 0, x0, y0, rr); gq.addColorStop(0, `rgba(176,204,228,${(0.9 * a).toFixed(3)})`); gq.addColorStop(0.35, `rgba(130,164,210,${(0.35 * a).toFixed(3)})`); gq.addColorStop(1, 'rgba(110,140,200,0)');
+            ctx.globalAlpha = 1; ctx.fillStyle = gq; ctx.fillRect(x0 - rr, y0 - rr, rr * 2, rr * 2); ctx.globalCompositeOperation = 'source-over'; }
+          else { // a mote (k 0) or a tail streak (k 2): smeared along its motion on the screen, so its length shows his speed
+            const a = Math.min(1, f * 5) * (1 - f) ** 1.3 * q.a, kk = Math.min(1, (q.k === 2 ? 22 : 10) / (ml + 1e-3)), ln = q.k === 2 ? 2.6 : 1.5;
+            ctx.globalAlpha = a * (q.k === 2 ? 0.42 : 0.62); ctx.strokeStyle = q.k === 2 ? 'rgb(226,232,224)' : 'rgb(210,222,216)'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(0.8, q.r * dr * (q.k === 2 ? 0.8 : 1.1));
+            ctx.beginPath(); ctx.moveTo(x0 - mvx * ln * kk, y0 - mvy * ln * kk); ctx.lineTo(x0, y0); ctx.stroke(); }
           q.sx = x0; q.sy = y0; }
         ctx.restore(); ctx.globalAlpha = 1; } }
     if (g.mode === 'play' && g.echoAt != null && g.time - g.echoAt < 1.6) { const k = (g.time - g.echoAt) / 1.6, e = g.earl, m = e.inSub ? g.sub : e; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = `rgba(150,230,214,${(0.6 * (1 - k)).toFixed(3)})`; ctx.lineWidth = 3 * (1 - k) + 1; ctx.beginPath(); ctx.arc(S(m.x), Sy(m.y), k * Math.max(this.W, this.H) * 0.7, 0, TAU); ctx.stroke(); ctx.restore(); }
@@ -3069,6 +3088,12 @@ export class Renderer {
       else if (L >= 1.5) { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.3, rgbStr(col, a0 * 0.95)); gg.addColorStop(0.72, rgbStr(col, a0 * 0.6)); gg.addColorStop(1, rgbStr(col, 0)); }
       else { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.22, rgbStr(col, a0 * 0.9)); gg.addColorStop(0.6, rgbStr(col, a0 * 0.45)); gg.addColorStop(1, rgbStr(col, 0)); } // the plain Flare falls away well before the screen's edge
       l.fillStyle = gg; l.beginPath(); l.arc(fxp * k, fyp * k, R * k, 0, TAU); l.fill(); visR.push(fxp, fyp, R); lamps.push({ x: fxp, y: fyp, r: R, a: a0 });
+    }
+    // (7.3.0) Riptide's light: wide and soft like a Flare (owner: no small round glow), a warm bone light 40 m round him
+    if (g.abil && g.abil.activeT > 0 && g.abil.def && g.abil.def.speed && g.abil.def.tier === 'legendary' && (g.lightFade ?? 1) > 0.01) {
+      const m0 = e.inSub ? g.sub : e, rx = S(m0.x), ry = Sy(m0.y), R = 40 * ppm, a0 = 0.7 * (g.lightFade ?? 1) * Math.min(1, (g.time - (g.abil.at ?? 0)) / 0.6) * Math.min(1, g.abil.activeT / 1.2), col = [250, 232, 204];
+      const gg = l.createRadialGradient(rx * k, ry * k, 0, rx * k, ry * k, R * k); gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.25, rgbStr(col, a0 * 0.9)); gg.addColorStop(0.65, rgbStr(col, a0 * 0.45)); gg.addColorStop(1, rgbStr(col, 0));
+      l.fillStyle = gg; l.beginPath(); l.arc(rx * k, ry * k, R * k, 0, TAU); l.fill(); visR.push(rx, ry, R); lamps.push({ x: rx, y: ry, r: R, a: a0 });
     }
     // (6.0.9) Bioluminescence: his gear glows like a glow stick he carries, a soft even pool 16 m round him in a muted deep-sea
     // blue (not cyan); always on, the thing ignores it, and it goes out with the others when its red comes
