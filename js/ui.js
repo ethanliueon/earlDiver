@@ -1,4 +1,4 @@
-import { skillCol } from './item_data.js'; // (6.5.1)
+import './item_data.js'; // (6.5.1)
 import { drawHourglass, blessedURL } from './coin_art.js';
 import { drawCash } from './coins.js';
 import { setUnits, imperial } from './units.js';
@@ -25,21 +25,21 @@ import { ABOUT } from '../data/species_about.js';
 import { xEyes } from './gallery.js';
 import { usualDepth } from './fauna.js';
 import { RESOURCES, BOAT } from './world.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, hullCap } from './economy.js';
+import { TRAPS, hullCap } from './economy.js';
 import { toolIcon } from './tools_draw.js';
 import { livesOnBottom, isSessile, specimenValue, deepPremium, conditionName, rarityOf, rarityStars, rarityCls, rarityCol } from './specimens.js';
-const badge = (sp) => { const r = rarityOf(sp); return r.hidden ? '' : `<span class="rbadge" style="--rc:${r.col}">${r.name}</span>`; }; // (animals that can't be captured show no rarity)
+ // (animals that can't be captured show no rarity)
 import { VARIANTS, VARIANT_KEYS, variantLabel, canBeRare } from './variants.js';
 import { Gallery } from './gallery.js';
 import { DaveShop } from './dave.js';
 import { Cabin } from './cabin.js';
 import { Catalog, pictureOf, drawGoldCoins, MEASURES, measureHtml, crossBoosts, boostOf } from './catalog.js';
-import { ITEMS, kitOf, KINDS, RARITY, SKILLS, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS } from './items.js';
+import { ITEMS, kitOf, RARITY, LEGEND, SETS, LOCKER, totals, sellValue, FREE as FREE_IDS } from './items.js';
 const SIDE_TOOLS = new Set(['cam']);
 import { kit as ensureKit } from './economy.js';
 import { drawEarl } from './earl_draw.js';
 import { SETTINGS, setSetting, uiSizeName, setUiSize } from './settings.js';
-import { aquariumOf, displayRefusal, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy, DAY } from './aquarium.js';
+import { aquariumOf, dailyIncome, visitors, completion, gallerySlots, GALLERY_STEPS, earnsOf, isHappy } from './aquarium.js';
 import { SUITS } from './economy.js';
 import { WARES, upgradeCoins } from './economy.js';
 import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's drawn size against a 2.4 m giant)
@@ -47,7 +47,7 @@ import { lockerTexture } from './textures.js';
 import { gaugeFace, gaugeNeedle, gaugeGlass } from './gauge_art.js';
 import { daveTalkPlate } from './dave_art.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
-import { storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
+import { petsHtml, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
 import { isTestStore } from './purchases.js';
 import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, web build only
 import { tankPicture, tankZoom } from './journal_tank.js';
@@ -57,18 +57,17 @@ const PENCIL = `<svg class="cr-pen" viewBox="0 0 40 40" aria-hidden="true"><g tr
 const ARROW_UP = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3 3 11h4v6h6v-6h4z" fill="currentColor"/></svg>';
 const BACK = '<svg viewBox="0 0 24 20" aria-hidden="true"><path d="M8 3h13v14H8l-6-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M11 7l6 6M17 7l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 import { drawFace, DEFAULT_LOOK, FACES, EYES, HAIRS, HAIR_NAMES, SKINS, BEARDS, HAIR_COLS, EYE_COLS } from './face_draw.js'; // (6.7.0) the creator
-import { priceOf as storePrice } from './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
+import './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
 import { TRAP_ORDER } from './economy.js';
 import { trapsFree, trapSets, trapLeft, timeLeftText } from './traps.js';
-import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, netsOf, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
+import { tankSlots, pressSlots, NETS_SUB, netsOf, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
-import { pressureKind, pressureTolerance } from './specimens.js';
-import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
+import { loadBest, UPGRADES, TRACKS, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { refreshIn, ready as contractReady } from './contracts.js';
-import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice, questLeft, fillQuests, tutorialOn, stepLabel, GROUPS as QUEST_GROUPS, groupSpecies } from './quests.js';
-import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money, moneyExact } from './economy.js';
+import { Q as questsOf, MAIN as QUEST_MAIN, boardIn, refreshPrice, questLeft, fillQuests, tutorialOn, stepLabel, GROUPS as QUEST_GROUPS, groupSpecies } from './quests.js';
+import { SUBS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, marketTick, money, moneyExact } from './economy.js';
 import { formatTime, clamp } from './util.js';
 import { VERSION } from './version.js';
 import { markOf, SUB_MARKS } from './earl_draw.js';
@@ -77,10 +76,7 @@ import { subLook } from './render.js';
 
 
 // the figures for the shop's cards, as dot points
-const ADDON_SPECS = {
-  recall: [['use', 'the sub button calls it'], ['sub comes', '1.5× faster', 'good']],
-  quiet: [['sub noise', '−50 %', 'good'], ['the deep', 'hears it less', 'good']],
-};
+
 const SUPPLY_SPECS = {
   lure: [['use', 'offered when the thing comes for you, in its jaws too'], ['effect', 'it follows the light for 10 s', 'good'], ['then', 'it loses you for about 20 s, and comes back'], ['carry', 'one lure in all']],
   necklace: [['use', 'the glow stick button, or Use in the bag, snaps one and lets it go'], ['effect', 'it hangs where you leave it, lighting the water 16 m round for 2 min, and slowly sinks; the thing in the deep does not mind it', 'good'], ['but', 'it stays behind, and fades when the thing comes near', 'bad']], // (5.17.1)
@@ -135,22 +131,8 @@ setInterval(fitPanels, 300); window.addEventListener('resize', fitPanels);
 
 // (6.5.0) a large painted padlock (a steel shackle, a worn brass body, its keyhole), for a whole part that cannot be
 // used from here: the sub's half of the Catch tab while Earl is not in the sub
-let LOCKPIC = null;
-function lockPic() {
-  if (LOCKPIC) return LOCKPIC; const c = document.createElement('canvas'); c.width = 120; c.height = 150; const x = c.getContext('2d');
-  const sh = x.createLinearGradient(28, 0, 92, 0); sh.addColorStop(0, '#5a5c58'); sh.addColorStop(0.35, '#c4c6c0'); sh.addColorStop(0.6, '#8a8c86'); sh.addColorStop(1, '#3e403c');
-  x.lineWidth = 13; x.strokeStyle = 'rgba(0,0,0,0.5)'; x.beginPath(); x.moveTo(34, 76); x.lineTo(34, 46); x.arc(62, 46, 28, Math.PI, 0); x.lineTo(90, 76); x.stroke();
-  x.lineWidth = 11; x.strokeStyle = sh; x.beginPath(); x.moveTo(32, 74); x.lineTo(32, 44); x.arc(60, 44, 28, Math.PI, 0); x.lineTo(88, 74); x.stroke();
-  x.fillStyle = 'rgba(0,0,0,0.45)'; x.beginPath(); x.roundRect(14, 70, 96, 72, 10); x.fill();
-  const bd = x.createLinearGradient(10, 66, 106, 140); bd.addColorStop(0, '#d4b47a'); bd.addColorStop(0.45, '#9a7840'); bd.addColorStop(1, '#5a4220');
-  x.fillStyle = bd; x.beginPath(); x.roundRect(10, 66, 96, 72, 10); x.fill();
-  x.strokeStyle = 'rgba(30,20,8,0.85)'; x.lineWidth = 2; x.stroke();
-  x.strokeStyle = 'rgba(255,236,190,0.45)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(18, 70); x.lineTo(98, 70); x.stroke();
-  let sd = 11; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 40; i++) { x.fillStyle = `rgba(${r() < 0.5 ? '40,28,10' : '240,220,170'},${(0.08 + r() * 0.12).toFixed(3)})`; x.fillRect(14 + r() * 88, 72 + r() * 62, 1 + r() * 3, 1); }
-  x.fillStyle = '#1a140a'; x.beginPath(); x.arc(58, 96, 8, 0, Math.PI * 2); x.fill(); x.beginPath(); x.moveTo(54, 100); x.lineTo(62, 100); x.lineTo(60, 120); x.lineTo(56, 120); x.closePath(); x.fill();
-  LOCKPIC = c.toDataURL(); return LOCKPIC;
-}
+
+
 // (6.5.0) an animal's own water, behind its picture wherever it is shown in a tile (the bag, the sale): kelp, reef, sunlit,
 // blue, twilight or the deep, by where it usually lives
 const habCls = (sp) => { const [a2] = usualDepth(sp), hb = (sp.v && sp.v.hab) || ''; return /kelp/.test(hb) ? 'hb-kelp' : /reef|coral/.test(hb) ? 'hb-reef' : a2 < 60 ? 'hb-sun' : a2 < 300 ? 'hb-blue' : a2 < 1000 ? 'hb-twi' : 'hb-deep'; };
@@ -159,21 +141,8 @@ const habCls = (sp) => { const [a2] = usualDepth(sp), hb = (sp.v && sp.v.hab) ||
 let davePic = null;
 // (7.0.0) Dave's arm, resting along the top of his box: the oilskin sleeve from his shoulder, folded at the elbow, and his
 // hand over the box's rim, fingers hooked over the edge (a separate picture laid over the box's top edge)
-let daveArmPic = null;
-function daveArm() {
-  if (daveArmPic) return daveArmPic;
-  const c = document.createElement('canvas'); c.width = 360; c.height = 120; const x = c.getContext('2d');
-  const sg = x.createLinearGradient(0, 30, 0, 96); sg.addColorStop(0, '#8a5634'); sg.addColorStop(0.45, '#6a3c22'); sg.addColorStop(1, '#2e1a10');
-  x.fillStyle = sg; x.beginPath(); x.moveTo(0, 30); x.quadraticCurveTo(120, 34, 250, 52); x.quadraticCurveTo(272, 56, 276, 74); x.lineTo(276, 92); x.quadraticCurveTo(150, 96, 0, 100); x.closePath(); x.fill();
-  x.strokeStyle = 'rgba(20,10,4,0.4)'; x.lineWidth = 4; x.lineCap = 'round'; for (const fx of [70, 130, 190]) { x.beginPath(); x.moveTo(fx, 40); x.quadraticCurveTo(fx + 12, 66, fx - 2, 94); x.stroke(); }
-  x.strokeStyle = 'rgba(255,220,180,0.16)'; x.lineWidth = 3; x.beginPath(); x.moveTo(10, 36); x.quadraticCurveTo(140, 40, 248, 56); x.stroke();
-  x.fillStyle = '#4a2a18'; x.beginPath(); x.roundRect(250, 50, 30, 46, 6); x.fill(); // the cuff
-  const hg = x.createLinearGradient(0, 56, 0, 118); hg.addColorStop(0, '#b98a66'); hg.addColorStop(1, '#7a5238');
-  x.fillStyle = hg; x.beginPath(); x.moveTo(276, 58); x.quadraticCurveTo(318, 54, 336, 70); x.lineTo(338, 96); x.quadraticCurveTo(300, 100, 278, 94); x.closePath(); x.fill(); // the back of the hand
-  for (let k = 0; k < 4; k++) { const fx = 290 + k * 12; x.fillStyle = k % 2 ? '#a77a58' : '#b48562'; x.beginPath(); x.roundRect(fx, 88, 10, 26 - Math.abs(k - 1.5) * 3, 5); x.fill(); x.fillStyle = 'rgba(60,34,20,0.35)'; x.fillRect(fx + 1, 100, 8, 1.5); } // fingers over the rim
-  x.strokeStyle = 'rgba(40,22,12,0.4)'; x.lineWidth = 1.5; for (let k = 0; k < 3; k++) { x.beginPath(); x.moveTo(290 + k * 12, 70); x.lineTo(296 + k * 12, 86); x.stroke(); } // knuckle lines
-  daveArmPic = c.toDataURL(); return daveArmPic;
-}
+
+
 function davePortrait() {
   if (davePic) return davePic;
   // (7.0.0) redrawn as one figure, after the owner's references: the neck runs down into a thick roll-neck sweater whose
@@ -427,13 +396,14 @@ export class UI {
     const heart = '<svg class="rv-heart" viewBox="0 0 64 56" aria-hidden="true"><path d="M32 54 C22 45 4 34 4 18 C4 9 11 3 19 3 C25 3 29 6 32 10 L28 20 L35 27 L29 36 L34 45 Z" fill="#7a2f22" stroke="#1c0c08" stroke-width="2.2" stroke-linejoin="round"/><path d="M36 50 C45 42 60 31 60 18 C60 9 53 3 45 3 C40 3 36 6 34 9 L31 19 L38 27 L32 36 L37 44 Z" fill="#6a271c" stroke="#1c0c08" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 12 C14 8 18 7 21 8" fill="none" stroke="#c98a72" stroke-width="2" stroke-linecap="round" opacity="0.7"/></svg>';
     const rows = o.list.slice(0, 6).map((r) => { const R = rarityOf(r.sp); return `<div class="rv-fish"><img src="${fittedIcon(r.sp, 150, 90).toDataURL()}" alt=""><b style="color:${R ? R.col : '#efe8d2'}">${r.sp.name}</b><span>${r.n > 1 ? '×' + r.n + ' · ' : ''}${money(r.value)}</span></div>`; }).join('')
       + (o.list.length > 6 ? `<div class="rv-more">+${o.list.length - 6} more</div>` : '');
-    const way = o.how === 'ad' ? '<button class="rv-go" data-rv="ad"><em class="rv-ic ad"></em>Watch an ad</button>' : '<button class="rv-go" data-rv="pay">Revive <span class="rv-price">$0.99</span></button>';
+    // (7.3.9, owner) a revive costs fifty pearls: the pearl and the figure on the button; greyed when he has fewer
+    const pc = 50, have = Math.floor((this.h.getProfile && this.h.getProfile().pearls) || 0), enough = have >= pc;
+    const way = `<button class="rv-go${enough ? '' : ' short'}" data-rv="${enough ? 'pearls' : 'short'}"${enough ? '' : ' disabled'}>Revive <span class="rv-price"><img class="rv-pearl" src="assets/ui/icons/pearl.png" alt="">${pc}</span></button>`;
     el.innerHTML = `<div class="rv-box"><p class="rv-cause">${o.cause}</p>${heart}<h4>Revive</h4>
       <div class="rv-list">${rows}</div>
       <p class="rv-haul"><span>Haul</span><b>${money(o.value)}</b></p>
       <div class="rv-acts">${way}<button class="rv-no" data-rv="no">Give up<small>The haul is lost</small></button></div></div>`;
     el.hidden = false;
-    storePrice('revive').then((p) => { const s2 = el.querySelector('.rv-price'); if (s2 && p) s2.textContent = p; });
     let busy = false;
     el.onclick = (ev) => {
       if (busy) return; const b2 = ev.target.closest('[data-rv]'); if (!b2) return; busy = true; const how = b2.dataset.rv;
@@ -575,9 +545,13 @@ export class UI {
   toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true), (k, id) => pictureOf(k, id, 120, 90, true), this.cashPicture()); } el.hidden = !on; this.storeWire(el); }
   // (7.3.0) the painted bundle of notes (coins.js drawCash), for cash anywhere a picture is wanted
   cashPicture() { if (!this.cashPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); drawCash(x, 150, 95, 120); this.cashPic = c.toDataURL(); } return this.cashPic; }
+  petsPage() { const SP = window.__earl ? window.__earl.SPECIES_BY_ID : {}; return petsHtml(this.h.getProfile(), isTestStore(), (id) => fittedIcon(SP[id], 220, 140).toDataURL(), (id) => SP[id].name, (id) => rarityOf(SP[id])); }
   storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
     const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); return; }
+    const pb = ev.target.closest('[data-pet]'); if (pb) { if (this.h.onBuyPet && this.h.onBuyPet(+pb.dataset.pet)) el.innerHTML = this.petsPage(); return; } // (7.3.9)
+    const tb0 = ev.target.closest('[data-tab]'); if (tb0 && tb0.dataset.tab === 'pets') { el.innerHTML = this.petsPage(); return; } // (7.3.9) the pets, for pearls
+    if (tb0 && tb0.dataset.tab === 'shop' && !isTestStore()) { el.innerHTML = storeHtml(this.h.getProfile(), false); return; }
     const tb = ev.target.closest('[data-tab]'); if (tb && isTestStore()) { el.innerHTML = tb.dataset.tab === 'test' ? testHtml(this.h.getProfile(), Object.values(ITEMS).filter((it) => !it.free).sort((a, c) => a.name.localeCompare(c.name))) : storeHtml(this.h.getProfile(), true); return; } // (6.9.0)
     const tt = ev.target.closest('[data-test]'); if (tt && isTestStore()) { const [act, arg] = tt.dataset.test.split('|'); this.h.onTest && this.h.onTest(act, act === 'item' ? el.querySelector('.tt-item').value : arg); return; }
     if (ev.target.closest('[data-ev]')) { this.h.onClaim && this.h.onClaim(); this.toggleEvents(true); return; }
@@ -716,7 +690,7 @@ export class UI {
     let html = '<div class="qs-pg l">'; // (5.9.6) two pages: the log (and the refresh) on the left, the board on the right
     if (m) {
       const ok = S.mainProg >= m.need;
-      html += `<h3>Log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.touchHelp ? m.touchHelp : m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
+      html += `<h3>Log</h3><div class="qs-q main${ok ? ' ready' : ''}"><div class="qs-t"><b>${m.text}</b><span>${m.help}</span>${m.need > 1 ? bar(S.mainProg, m.need) : ''}</div>
         <div class="qs-pay">${rewardHtml(m)}${ok ? `<button data-q="claim|main">Claim</button>` : ''}</div></div>`;
     }
     const footAt = html.length; html += `</div><div class="qs-pg r"><h3>The board</h3>`;
@@ -934,17 +908,12 @@ export class UI {
   // hasn't, padlocked), and what it is all worth, one number. Right: the sub's own hardware: its open tank as a
   // water window split into compartments (a big animal takes two or three), its pressure chambers as portholes.
   catchHtml(P, g) {
-    const ic = (sp) => { if (!this.toolImgs) this.toolImgs = new Map(); const k = 'inv' + sp.id; if (!this.toolImgs.has(k)) this.toolImgs.set(k, speciesIcon(sp, 160, 90).toDataURL()); return this.toolImgs.get(k); };
+    
     const pay = statValue(P, 'payFish'), worth = (s2) => specimenValue(s2) * pay;
     const dot = (s2) => (s2.cond <= 0.05 ? '#8a6a5a' : s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a');
     const state = (s2) => (s2.cond <= 0.05 ? 'dead' : conditionName(s2.cond));
-    const card = (cls, s2, span = 1) => { const sp = SPECIES_BY_ID[s2.id];
-      const pct = Math.round(Math.max(36, 100 * sizeK(s2.len || sp.len))); // (3.0.43) the picture at its real size, against a 2.4 m giant
-      // (5.0) a pocket shows the animal and nothing else: big, at its relative size, with a dot for how it is. Its
-      // name, state and price are on its card (click), so nothing is cut off
-      if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
-      return `<div class="${cls}${rarityCls(sp)} pic-only"${span > 1 ? ` style="grid-column: span ${span}"` : ''} title="${sp.name}, ${state(s2)}">${rarityStars(sp)}<i class="fc-warn" title="In danger">!</i><img src="${this.fitPics.get(sp.id)}" alt="${sp.name}" style="width:${Math.round(Math.min(100, 46 + pct * 0.6))}%"><i class="fc-dot" style="background:${dot(s2)}"></i></div>`; };
-    const rep2 = (h, n) => h.repeat(Math.max(0, n));
+    
+    
     const cap = Math.round(statValue(P, 'bag'));
     const inTrouble = (s2, inBag) => s2.cond > 0.05 && (s2.cond < 0.3 || gapOf(g, s2, inBag) > SAFE_GAP);
     const usedSp = g.bag.reduce((t2, s2) => t2 + slotsOf(s2), 0);
@@ -1055,7 +1024,7 @@ export class UI {
     if (!this.fitPics.has(sp.id)) this.fitPics.set(sp.id, fittedIcon(sp, 300, 180).toDataURL());
     const dying = s2.cond > 0.05 && gapOf(g, s2, at.place === 'bag') > SAFE_GAP;
     const st = s2.cond <= 0.05 ? ['dead', '#8a6a5a'] : dying ? ['dying: barotrauma', '#e8806a'] : [conditionName(s2.cond), s2.cond < 0.3 ? '#d08a5a' : s2.cond < 0.6 ? '#c8b060' : '#8ac88a'];
-    const place = { bag: 'In the net bag', open: 'The open tank', chamber: `Pressure chamber ${(at.n || 0) + 1}`, big: 'The large pressure tank', floor: 'On the floor of the sub' }[at.place];
+    
     // (3.6.1) the specimen station: a small lit aquarium on the left, the animal swimming in water the colour of
     // its own depth (drawCatch keeps it moving); its record on the right
     const len = (s2.len || sp.len), kg = weightOf(sp, len);
@@ -1066,7 +1035,7 @@ export class UI {
     const row = (k, v, cls = '') => `<div class="sp-r${cls}"><dt>${k}</dt><dd>${v}</dd></div>`;
     // (3.6.2) metric, with feet and pounds beside it
     const hab = usualDepth(sp); // (3.7.3) where it is usually met here, not the record extremes
-    const FT = 3.28084, LB = 2.20462, ft = (m) => Math.round(m * FT).toLocaleString(), u = (t) => ` <span class="sp-u">(${t})</span>`, u2 = () => ''; // (6.0.3) one system only, as chosen in Settings (the page turns the metric figures)
+    const LB = 2.20462, u = (t) => ` <span class="sp-u">(${t})</span>`, u2 = () => ''; // (6.0.3) one system only, as chosen in Settings (the page turns the metric figures)
     const kgTxt = kg < 0.1 ? kg.toFixed(3) : kg < 10 ? kg.toFixed(kg < 1 ? 2 : 1) : Math.round(kg).toLocaleString(), lb = kg * LB, lbTxt = lb < 10 ? lb.toFixed(lb < 1 ? 2 : 1) : Math.round(lb).toLocaleString();
     const rows = row('Found at', `${Math.round(s2.from || 0).toLocaleString()} m${u2()}`) + row('Habitat', `${hab[0].toLocaleString()}–${hab[1].toLocaleString()} m${u2()}`)
       + row('Length', `${len.toFixed(2)} m${u2()}${tooBig(s2) ? ' <small>over chamber limit</small>' : ''}`) + row('Weight', `${kgTxt} kg${u2()}`)
@@ -2085,7 +2054,7 @@ export class UI {
         <div class="card-txt"><h3>${name}<button class="info" data-info="card:${arg}" title="More about it" aria-label="More information">i</button></h3>${stat ? `<div class="card-stat">${stat}</div>` : ''}${bullets(specs)}<p class="story">${desc}</p>${owned}</div>
         <button data-act="${act}" data-arg="${arg}" ${price !== null && !can(price) ? 'disabled' : ''}>${label}${price !== null ? `<span>${money(price, false)}</span>` : ''}</button>
       </div>`;
-    const ladder = (n, i) => `<div class="ladder">${Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>`;
+    
     let html = '';
     const tab = this.shopTab;
     const icon = (k, t) => { const key = k + t; if (!this.toolImgs) this.toolImgs = new Map(); if (!this.toolImgs.has(key)) this.toolImgs.set(key, toolIcon(k, t, 240, 120).toDataURL()); return this.toolImgs.get(key); };
@@ -2162,26 +2131,12 @@ export class UI {
           return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}<p class="ys-note">The pressure chambers hold animals from as deep as the sub can dive.</p>${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };
       // (4.15.6) at a glance: each figure as a dial (how this sub sits between the first and the best), its icon
       // in the middle and the figure under it; a ▲/▼ against your sub
-      const RANGE = { rated: [300, 4500], o2: [120, 260], speed: [1, 3], ballast: [0, 0.9487], tank: [3, 24] };
-      const ICON = {
-        rated: '<path d="M-7 4 A8 8 0 1 1 7 4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M0 2 L4 -5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle r="1.6" cy="2" fill="currentColor"/>',
-        o2: '<rect x="-4" y="-7" width="8" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="-1.5" y="-10" width="3" height="3" fill="currentColor"/><path d="M-4 0 H4" stroke="currentColor" stroke-width="1.2"/>',
-        speed: '<g fill="currentColor"><ellipse cx="0" cy="-4.5" rx="2.2" ry="4.5"/><ellipse cx="0" cy="4.5" rx="2.2" ry="4.5"/><ellipse cx="-4.5" cy="0" rx="4.5" ry="2.2"/><ellipse cx="4.5" cy="0" rx="4.5" ry="2.2"/></g><circle r="1.8" fill="#11161a"/>',
-        ballast: '<path d="M0 -8 V6 M-5 1 L0 7 L5 1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-        tank: '<path d="M-8 0 C-4 -5 3 -5 6 0 C3 5 -4 5 -8 0 Z M6 0 L9 -3 V3 Z" fill="currentColor"/>' };
-      const LABEL = { rated: 'Safe depth', o2: 'Cabin air', speed: 'Top speed', ballast: 'Dive speed', tank: 'Open tank' };
-      const VAL = { rated: (S) => `${S.rated.toLocaleString()} m`, o2: (S) => air(S.o2), speed: (S) => `${(3.36 * S.speed).toFixed(1)} m/s`, ballast: (S, k) => (k ? `+10%` : 'standard'), tank: (S) => `${S.tank} spaces` };
-      const dial = (key, S, k, cmp, mini) => {
-        const [lo, hi] = RANGE[key], f = Math.max(0.06, (S[key] - lo) / (hi - lo)), R = 22, a0 = -225, sweep = 270, a1 = a0 + sweep * f;
-        const pt = (a) => [Math.cos(a * Math.PI / 180) * R, Math.sin(a * Math.PI / 180) * R];
-        const [x0, y0] = pt(a0), [x1, y1] = pt(a1), [xe, ye] = pt(a0 + sweep), large = sweep * f > 180 ? 1 : 0;
-        const d = cmp ? S[key] - cmp[key] : 0, mark = d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : '';
-        return `<div class="gz${mini ? ' mini' : ''}"><svg viewBox="-30 -30 60 60" aria-hidden="true"><circle r="27" class="gz-rim"/><circle r="25" class="gz-face"/>
-          <path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 1 1 ${xe.toFixed(1)} ${ye.toFixed(1)}" class="gz-track"/>
-          <path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" class="gz-fill"/>
-          <g class="gz-icon">${ICON[key]}</g></svg>${mini ? '' : `<span>${LABEL[key]}</span>`}<b>${VAL[key](S, k)}${mark}</b></div>`;
-      };
-      const gauges = (S, k, cmp = null, mini = false) => `<div class="gz-row${mini ? ' mini' : ''}">${(mini ? ['rated', 'o2', 'speed'] : ['rated', 'o2', 'speed', 'ballast', 'tank']).map((key) => dial(key, S, k, cmp, mini)).join('')}</div>`;
+      
+      
+      
+      
+      
+      
       // a depth ruler beside her picture: the zones, how deep she goes, and the animals that lie within reach (lit) or beyond it (dark)
       const RULER = [[49, 30], [171, 120], [98, 380], [104, 700], [107, 1000], [105, 1500], [100, 2200], [2146, 3000], [2110, 3800]];
       const ruler = (S) => { const Y = (dd) => (Math.sqrt(dd / 4500) * 100).toFixed(2) + '%';
@@ -2192,10 +2147,7 @@ export class UI {
           <div class="ru-reach" style="height:${Y(S.rated)}"></div><div class="ru-mark" style="top:${Y(S.rated)}"><b>${S.rated.toLocaleString()} m</b></div>
           ${RULER.map(([id, dd]) => `<img class="ru-fish${dd <= S.rated ? ' in' : ''}" src="${pic(id)}" style="top:${Y(dd)}" alt="">`).join('')}</div>`; };
       // the refits drawn as parts, in ink, like a page of a parts catalogue
-      const PART = {
-        'gear:arm': '<svg viewBox="0 0 120 70"><g fill="none" stroke="#2a2418" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18 H34 L58 40"/><circle cx="34" cy="18" r="4"/><circle cx="58" cy="40" r="4"/><path d="M58 40 L80 44"/><path d="M80 44 L100 30 M80 44 L104 50"/><path d="M100 30 L108 36 M104 50 L110 44"/><path d="M14 12 V24 M8 12 H20" /></g><path d="M40 26 L52 36" stroke="#2a2418" stroke-width="5" stroke-linecap="round" opacity="0.35"/></svg>',
-        quiet: '<svg viewBox="0 0 120 70"><g fill="none" stroke="#2a2418" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="22" width="44" height="26" rx="6"/><path d="M58 35 H74"/><ellipse cx="82" cy="24" rx="5" ry="11"/><ellipse cx="82" cy="46" rx="5" ry="11"/><path d="M20 48 v8 M52 48 v8 M14 60 H58"/><path d="M20 56 q4 -4 8 0 M44 56 q4 -4 8 0"/></g><g fill="none" stroke="#2a2418" stroke-width="1.6" opacity="0.55" stroke-linecap="round"><path d="M98 24 q6 11 0 22"/><path d="M106 18 q10 17 0 34" stroke-dasharray="3 4"/></g></svg>',
-        sonar: '<svg viewBox="0 0 120 70"><g fill="none" stroke="#2a2418" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M30 14 H60 V22 H30 Z"/><path d="M36 22 V30 H54 V22"/><path d="M30 30 Q45 52 60 30 Z"/></g><g fill="none" stroke="#2a2418" stroke-width="1.6" stroke-linecap="round" opacity="0.6"><path d="M28 50 Q45 62 62 50"/><path d="M22 56 Q45 72 68 56" stroke-dasharray="3 4"/></g><path d="M74 58 L86 46 L98 54 L112 40" fill="none" stroke="#2a2418" stroke-width="1.6" opacity="0.6"/></svg>' };
+      
       const statusOf = (k) => {
         if (k === hl && !sub.imploded) return '';
         if (k < hl) return '<span class="yd-tag past">Had it</span>';

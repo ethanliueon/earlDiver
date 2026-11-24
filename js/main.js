@@ -7,48 +7,48 @@ installFatFinger();
 import { clamp, lerp, dist, makeRng, formatTime } from './util.js';
 import { markOf, SUB_MARKS, BOAT_U, BOAT_LADDER, BOAT_DOOR, deckLine } from './earl_draw.js';
 import { generateWorld, RESOURCES, BOAT, BOAT_HOME, BOAT_MIN, BOAT_MAX, WORLD_W, CAVE, CANYON, WHALE_FALL, SEEP, TRENCH, boatDock, SAIL, SAIL_OFF } from './world.js';
-import { SPECIES, SPECIES_BY_ID, TITLES } from './species.js';
+import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { Chart } from './chart.js';
-import { Fauna, usualDepth } from './fauna.js';
-import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak, SUB_LEVELS } from './player.js';
+import { Fauna } from './fauna.js';
+import { Earl, Sub, updateEarl, diverDrainMult, subDrainMult, subLeak } from './player.js';
 import { Autopilot } from './autopilot.js';
-import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, tankSlots, loadKg, loadSpeed, loadAir, tankUsed, pressUsed, pressSlots, seal, chamberRating, fireSubNet, canFireSubNet, netsOf, netKinds, netTotal, NETS_SUB, updateSubNet, tankFits, BIG, tooBig, bagUsed, spacesOf, overencumbered } from './capture.js';
+import { activeTool, findCatch, useTool, updateCapture, updateSpecimens, bagSlots, loadKg, loadSpeed, loadAir, pressUsed, pressSlots, seal, chamberRating, fireSubNet, canFireSubNet, netsOf, netKinds, netTotal, NETS_SUB, updateSubNet, tankFits, BIG, tooBig, bagUsed, spacesOf, overencumbered } from './capture.js';
 import { specimenValue, conditionName, rarityOf, canTakeLive } from './specimens.js';
-import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
+import { variantLabel, rollVariant, canBeRare, variantMult } from './variants.js';
 import { SETTINGS } from './settings.js';
 import { photoTarget, startPhoto, updatePhoto } from './survey.js';
 import { prepareMonster } from './monster_draw.js';
-import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps, trapSetOf, trapLeft, timeLeftText, syncTraps, cashOutTrap } from './traps.js';
+import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps, trapSetOf, trapLeft, timeLeftText, cashOutTrap } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS, firstFishPart, tutorialOn } from './quests.js';
 import { TutSpot } from './tutspot.js';
-import { WING_BY_ID, aquariumOf, tickAquarium, displayRefusal, display, displayKey, zoneOf, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
-import { NETS, SLURPS, BAGS, SUB_TANKS, CANISTERS, TAGGERS, CAMERAS, TRAPS, TRAP_ORDER } from './economy.js';
-import { SUITS, suitOf, kit, worn } from './economy.js';
+import { aquariumOf, tickAquarium, displayRefusal, display, displayKey, tickGallery, gallerySale, isHappy, gallerySlots, GALLERY_STEPS } from './aquarium.js';
+import { CANISTERS, TRAPS } from './economy.js';
+import { suitOf, kit, worn } from './economy.js';
 import { DAVE_FINDS, DAVE_RATE } from './dave.js';
 import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
-import { CHESTS, oddsText } from './chests.js';
+import { CHESTS } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
-import { abilityOf, abilityState, whyNot, cooldownLeft, ALL_ABILITIES } from './abilities.js';
+import { abilityOf, abilityState, whyNot, ALL_ABILITIES } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
 import { kitOf } from './items.js';
-import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, LOCKER, skillLv, hasLegend, setOn, totals } from './items.js';
-import { pressureTolerance, LEGENDARY } from './specimens.js';
+import { ITEMS, ownsItem, giveItem, putOn, takeOff, instOf, isOn, removeItem, sellValue, lockerFree, skillLv, setOn, totals } from './items.js';
+import { LEGENDARY } from './specimens.js';
 import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from './economy.js';
-import { rollChest, rollChestAll } from './chests.js';
+import { rollChestAll } from './chests.js';
 import { setDiverLook } from './earl_draw.js'; // (6.7.0)
-import { buy as storeBuy, showAd, isTestStore } from './purchases.js'; // (6.5.9)
-import { calState, calClaimed, calWeek } from './store.js';
+import { isTestStore } from './purchases.js'; // (6.5.9)
+import { SHOP_PETS, calState, calClaimed, calWeek } from './store.js';
 import { hullCap } from './economy.js';
-import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
-import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, hospitalCap, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
+import { loadBest, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, coinsFor, upgradeCoins, WARES } from './economy.js';
+import { SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, hospitalCap, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
-import { Hud, titled } from './hud.js';
+import { Hud } from './hud.js';
 import { Touch } from './touch.js';
 import { Audio } from './audio.js';
 import { UI } from './ui.js';
@@ -118,7 +118,7 @@ const PRY = new Set(['clam', 'mussel']);
 const PRY_TIME = 1.5;
 // how long each hold-F job takes, and how much calm a good deed gives
 const HOLD_TIME = { clam: 1.5, mussel: 1.5, rock: 1.5, iron: 1.5, net: 12 };
-const DEED_CALM = { net: 25, plant: 15, offer: 30 };
+const DEED_CALM = { net: 25, plant: 15 };
 const PLANT_TIME = 8;
 const pressed = new Set();
 let fHeld = 0;
@@ -271,8 +271,16 @@ const ui = new UI({
   payMul: () => statValue(profile, 'payFish'),
   onStation: (id) => useStation(id),
   // (6.9.0) the shop's Test tab (web build only; ui.js shows it only when purchases.js isTestStore())
+  // (7.3.9, owner) a shop pet: bought once with pearls, then his to take out at any time; the one out now goes home
+  onBuyPet: (id) => {
+    const P = profile, S = SHOP_PETS.find((s) => s.id === id); if (!P || !S) return false;
+    const owned = new Set(P.petsOwned || []);
+    if (!owned.has(id)) { if ((P.pearls || 0) < S.pearls) { hud.toast('Not enough pearls', 'warn'); return false; } P.pearls -= S.pearls; owned.add(id); P.petsOwned = [...owned]; }
+    P.pet = petOf({ id, from: 'shop' }); P.petStay = false; g.petStayAt = null; saveProfile(P); hud.toast(`${SPECIES_BY_ID[id].name} will follow you`, 'note'); return true;
+  },
   onTest: (act, arg) => {
     const P = profile; if (!P || !isTestStore()) return;
+    if (act === 'pearls') { P.pearls = (P.pearls || 0) + (+arg); saveProfile(P); hud.toast(`+${arg} pearls (test)`); return; }
     if (act === 'cash') { const n = +arg; P.cash = Math.round((P.cash + n) * 100) / 100; P.lifetime = Math.round((P.lifetime + n) * 100) / 100; hud.toast(`+${money(n)} (test)`); }
     else if (act === 'chest') { const q = giveItem(P, 'chest_' + arg); if (q) ui.showGains([{ kind: 'item', id: 'chest_' + arg, how: 'Test' }]); else hud.toast('Locker full', 'warn'); }
     else if (act === 'abil') { if (arg === 'ready') { P.abilReadyAt = 0; hud.toast('Ability ready (test)'); } else { let n = 0; for (const id of ALL_ABILITIES) if (ITEMS[id] && !ownsItem(P, id) && giveItem(P, id)) n++; hud.toast(`${n} abilities into the locker (test)`); } }
@@ -572,7 +580,7 @@ function trapChoice(tr) {
 function sellAll() {
   marketTick(profile);
   // old gold coins for every live animal from the deep that leaves the boat today
-  let coins = 0;
+  
   /* (6.1.0) no coins from catches or sapphires: gold coins come only from chests */
   const lines = [];
   if (g.bag.length) { sellSpecimens(g.bag, lines); g.bag = []; }
@@ -1071,7 +1079,7 @@ function tipEquip() { const P = profile; if (!P || P.tut === 'on' || P.tut === '
 //    net after.
 //  - the air: the first time the cabin air is 10 s from running out, a backup tank is given; connect it (R). Another
 //    is given after.
-const MOVE_KEYS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'];
+
 // (6.6.2) the first-time lessons, after the tutorial, each once: the first trawl, the first deep animal needing a chamber,
 // the first backup air tank. They use the tutorial's own spotlight (the world holds still while one button glows and is
 // waited on), its banner and its trail; inside the tank room and the bag the dive is held (air and animals keep) until
@@ -1085,7 +1093,7 @@ function lessonHold(on) { // the dive held: air, the animals aboard, the sea's c
 function lessons() {
   const P = profile, e = g.earl, sub = g.sub; g.frozen = false; g.lesson = null; g.questHint = null; g.airCallout = false; g.trawlOnly = null;
   if (!P || g.mode !== 'play' || P.tut === 'on' || g.kill || sub.imploded) { lessonHold(false); return; }
-  const mid = g.questMainId, tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
+  const tankO = !!(ui.tankOpen && ui.tankOpen()), invO = shown('inventory'), TR = ui.tankRoom;
   // ---- the first trawl ----
   if (P.lessonTrawl !== 'done' && e.inSub && !sub.docked && sub.y >= 20 && sub.y < (sub.rated || 300) * 0.9 && !g.entity?.marked) { // (6.9.3) never at crush depth, nor with the thing on him // (6.8.0) the first sub dive below 20 m after the tutorial (the Log's trawl step is gone)
     if (!netTotal(g.items) && !P.lessonTrawl) { netsOf(g.items).basic = 1; syncProfile(); }
@@ -1576,9 +1584,9 @@ function placeOnDeck(dt) {
 function observeTarget() {
   const e = g.earl; if (!g.fauna || g.aboard) return null;
   // (6.5.7) from the sub too: an animal close to its glass (within about 7 m of its middle) can be observed
-  if (e.inSub) { const cr2 = g.fauna.nearest(g.sub.x, g.sub.y, 7); return cr2 && !cr2.pet && !g.journal.has(cr2.sp.id) ? { kind: 'creature', sp: cr2.sp, c: cr2 } : null; }
+  if (e.inSub) { const cr2 = g.fauna.nearest(g.sub.x, g.sub.y, 7); return cr2 && !cr2.pet && !cr2.companion && !g.journal.has(cr2.sp.id) ? { kind: 'creature', sp: cr2.sp, c: cr2 } : null; }
   const cr = g.fauna.nearest(e.x, e.y, 3.5);
-  if (cr && !cr.pet && !g.journal.has(cr.sp.id)) return { kind: 'creature', sp: cr.sp, c: cr };
+  if (cr && !cr.pet && !cr.companion /* (7.3.9) never his own pet */ && !g.journal.has(cr.sp.id)) return { kind: 'creature', sp: cr.sp, c: cr };
   let sb = null, sd = 2.6;
   for (const st of g.world.statics) {
     if (Math.abs(st.x - e.x) > sd + 2 || g.journal.has(st.sp.id)) continue;
@@ -1619,11 +1627,6 @@ function findTarget() {
   return null;
 }
 
-// an offering to the deep only means something when it is hunting him, and near (within 1,000 m)
-function canOffer() {
-  const e = g.earl, ent = g.entity;
-  return false; /* (5.16.0) no offerings to the deep: lures are gone, and glow sticks are only lights */ void e; void ent;
-}
 function promptFor(t) {
   g.promptName = null; g.promptBar = null; // (4.5.0) a hold in progress: a small bar under the words, not a counting percentage
   const e = g.earl;
@@ -1650,7 +1653,6 @@ function promptFor(t) {
     if (pi >= 0) p = g.repair && g.repair.i === pi ? (g.promptBar = g.repair.t / REPAIR_TIME, 'Repairing') : (p ? p + '   ·   ' : '') + 'Hold R  Repair';
     else if (!e.inSub && !g.sub.imploded && (g.sub.patches || []).length && dist(e.x, e.y, g.sub.x, g.sub.y) < 9) p = (p ? p + '   ·   ' : '') + 'The sub needs repairs: swim to a hole'; }
   if (canPlant(t)) p = g.plant ? (g.promptBar = g.plant / PLANT_TIME, 'Planting coral') : 'Hold F  Plant a coral fragment';
-  if (canOffer() && (g.offerT || 0) < 10) p = (p ? p + '   ·   ' : '') + 'G  Offer something back to the deep'; // offered for 10 s, then left unsaid
   if (e.inSub) p = (p ? `${p}   ·   hold F  Leave sub` : 'F  Leave the submersible') + '   ·   T  Tank room';
   if ((nearBoat || (e.inSub && g.sub.docked)) && !g.aboard && !g.helm) p = (p ? p + '   ·   ' : '') + 'U  Sell'; // (the helm, the shops and the radio are aboard)
   return p;
@@ -1662,7 +1664,7 @@ function canPlant(t) {
   return !e.inSub && (g.inv.coral || 0) > 0 && e.y < 80 && g.world.floorAt(e.x) - e.y < 2.5;
 }
 function deed(calm, text) {
-  const ent = g.entity, was = ent.marked;
+  const ent = g.entity;
   ent.appease(g, calm);
   hud.toast(text, 'note');
   audio.ready && audio.note();
@@ -1762,7 +1764,7 @@ function leaveSub() {
 // water shows through it, and him in it), and it shuts. In the sub there is nothing to be done: that is
 // the third approach. Swimming, there is one last moment as the jaws open: flash the lamp (once: it
 // learns), throw a lure or wear the necklace.
-const KILL_LUNGE = 0.95, KILL_CLOSE = 0.16, KILL_WINDOW = 0.7;
+const KILL_LUNGE = 0.95, KILL_CLOSE = 0.16;
 // which way it can come at him from: along a line of open water (no rock, not through the bottom or
 // out of the sea), sideways if it can, else rising at an angle from below, or down from above
 function killDirection(T) {
@@ -1799,7 +1801,7 @@ function startKill() {
   g.fx.shake = Math.max(g.fx.shake, 1.2);
 }
 function killUpdate(dt) {
-  const K = g.kill, e = g.earl, ent = g.entity, T = K.inSub ? g.sub : e;
+  const K = g.kill, e = g.earl, ent = g.entity;
   K.t += dt;
   e.vx = e.vy = 0; if (K.inSub) g.sub.vx = g.sub.vy = 0;
   ent.dist = Math.hypot(ent.x - e.x, ent.y - e.y);
@@ -1982,11 +1984,12 @@ function rebirth(kind) {
 // save him, still leaves the offer. A revive gives him back where he was with what he carried and 30 % of his air; the
 // thing draws off for about 20 s but he stays marked. Never in the tutorial, never on quitting
 const haulValue = () => [...g.bag, ...g.subTank].reduce((a, s) => a + specimenValue(s), 0);
+export const REVIVE_PEARLS = 50; // (7.3.9, owner)
 const reviveNeed = (cash) => Math.min(100000, Math.max(200, cash * 0.15));
 function reviveOfferFor(kind, cause) {
   if (kind === 'quit' || !profile || profile.tut === 'on' || g.reviveAsked) return null;
   const v = haulValue(); if (v < reviveNeed(profile.cash || 0)) return null;
-  if (g.revived) return null; const how = profile.reviveAdUsed ? 'pay' : 'ad';
+  if (g.revived) return null; const how = 'pearls'; // (7.3.9, owner) a revive costs pearls (REVIVE_PEARLS), not an ad or $0.99
   // what he would lose, kind by kind: the picture, how many, what they are worth
   const by = new Map(); for (const s of [...g.bag, ...g.subTank]) { const k = s.id, r = by.get(k) || { sp: SPECIES_BY_ID[k], n: 0, value: 0 }; r.n++; r.value += specimenValue(s); by.set(k, r); }
   const e = g.earl, depth = Math.round(Math.max(e.y, e.inSub ? g.sub.y : 0));
@@ -2009,8 +2012,7 @@ function die(cause, kind = 'normal', declined = false) {
     if (o) { g.reviveAsked = true; g.paused = true;
       ui.reviveOffer(o, async (how) => {
         let ok = false;
-        if (how === 'ad') { const r = await showAd('revive'); ok = !!(r && r.rewarded); if (ok) { profile.reviveAdUsed = true; saveProfile(profile); } }
-        else if (how === 'pay') { const r = await storeBuy('revive'); ok = !!(r && r.ok); }
+        if (how === 'pearls' && (profile.pearls || 0) >= REVIVE_PEARLS) { profile.pearls -= REVIVE_PEARLS; saveProfile(profile); ok = true; }
         if (ok) g.revived = true; // (6.6.1) this dive's one revive
         g.paused = false; g.reviveAsked = false;
         if (ok) revive(kind); else die(cause, kind, true);
@@ -2198,6 +2200,7 @@ function update(dt) {
     // (5.9.0) the ability: fired from the arc's button (key 'ability'), run each frame
     if (pressed.has('ability')) { pressed.delete('ability'); useAbility(); }
     tickAbility(dt);
+    if (pressed.has('petstay')) { pressed.delete('petstay'); const r = toggleStay(g); if (r) { audio.ready && audio.uiSoft && audio.uiSoft(); say(r === 'stay' ? 'Stay' : 'Follow', 'pet'); saveProfile(profile); } } // (7.3.9) the pet's Stay / Follow, on the action arc
     if (pressed.has('leavesub')) { pressed.delete('leavesub'); if (e.inSub) { if (!(g.tutAction && g.tutAction.id === 'leavesub' && runTutAction('leavesub'))) leaveSub(); } }
     // (5.7.5) the arc's own jobs aboard: Dive in (over the nearer rail) and Out on deck (from the cabin)
     if (pressed.has('divein')) { pressed.delete('divein'); if (g.aboard && !ui.cabinOpen() && !g.helm) { const A = g.aboard, mid = (DECK_MIN + DECK_MAX) / 2; leaveDeck(A.x >= mid ? 1 : -1); } }
@@ -2209,7 +2212,6 @@ function update(dt) {
     // (5.6) the swap chip on the big button: the next tool owned into the hand (as its key would)
     if (pressed.has('swap')) { pressed.delete('swap'); const owned = ['net'].concat(owns(profile, 'camera') ? ['cam'] : []); /* (5.9.6) net and camera only: traps are used from the bag */ const cur = g.toolSel === 'none' || g.toolSel === 'trap' ? 'net' : g.toolSel; const nx = owned[(owned.indexOf(cur) + 1) % owned.length]; pressed.add({ net: '1', cam: '2', trap: '3' }[nx]); }
     if (pressed.has('obs')) { pressed.delete('obs'); const ot = g.obsTarget || observeTarget(); if (ot) interact(ot, false); }
-    g.offerT = canOffer() ? (g.offerT || 0) + dt : 0; // how long the offering has been on offer
     g.prompt = promptFor(target);
     // (5.6.4) where the thing F acts on is, so its button can sit beside it (not over Earl)
     g.fAnchor = target ? (target.kind === 'board' ? { x: g.sub.x, y: g.sub.y } : target.kind === 'pickup' ? { x: target.p.x, y: target.p.y } : target.kind === 'trap' ? { x: target.t.x, y: target.t.y - 0.5 } : null) : null;
@@ -2269,11 +2271,6 @@ function update(dt) {
         deed(DEED_CALM.plant, 'The coral takes hold.');
       }
     } else g.plant = 0;
-    // giving something back: release a lure or a necklace into the deep
-    if (pressed.has('g') && canOffer() && !g.helm) {
-      const k = g.items.lure ? 'lure' : g.items.necklace ? 'necklace' : null;
-      if (k) { g.items[k]--; for (let i = 0; i < 12; i++) g.bubbles.push({ x: e.x, y: e.y + 0.5, r: 0.04 + Math.random() * 0.05, w: Math.random() * 6, t: -i * 0.05 }); deed(DEED_CALM.offer, k === 'lure' ? 'You let the lure sink into the dark.' : 'You let the necklace sink into the dark.'); g.entity.soothe(g); hud.toast('The deep accepts it, for now', 'note'); }
-    }
     if (pressed.has('f-tap') && g.oldHover) showOldCard(g.oldHover);
     else if (pressed.has('f-tap') && g.atLure) showOldShop();
     else if (pressed.has('f-tap') && atDave) { if (!ui.daveTalkOpen()) ui.daveTalk(); } // (6.5.4) he speaks at his door first
@@ -2324,7 +2321,7 @@ function update(dt) {
         if (c.legendSeen || c.dead || !LEGENDARY.has(c.sp.id)) continue;
         if (Math.hypot(c.x - e.x, c.y - e.y) > 16) continue;
         c.legendSeen = true; g.legend = { c, t: 0 };
-        const P = g.profile, met = (P.legends = P.legends || {}); const first = !met[c.sp.id]; met[c.sp.id] = (met[c.sp.id] || 0) + 1; saveProfile(P);
+        const P = g.profile, met = (P.legends = P.legends || {});  met[c.sp.id] = (met[c.sp.id] || 0) + 1; saveProfile(P);
         audio.ready && audio.legend && audio.legend();
         break;
       }
@@ -2790,6 +2787,7 @@ function update(dt) {
       }
       else if (ev === 'bump') { g.fx.shake = Math.max(g.fx.shake, 0.9); audio.ready && audio.thud(0.35); hud.toast('Something bumped you', 'warn'); }
       else if (ev === 'lost') hud.toast('It has lost you in the dark.', 'note');
+      else if (ev === 'sleeperWarn') { audio.ready && audio.farCall && audio.farCall(1); } // (7.3.9) the sleeper shark's warning: its long low call
       else if (ev === 'glare') { const lit0 = e.inSub ? g.sub.lightsOn : e.lampOn; if (lit0) hud.toast(e.inSub ? 'It is looking at the sub. Lights off, and it may lose you.' : 'It is looking at you. Your lamp off, and it may lose you.', 'warn'); } // (5.16.0)
       else if (ev === 'fooled') hud.toast('Its eye slides off you. Keep every light off.', 'note'); // (5.16.0) the dark fooled it: 15 s to keep it so
       else if (ev === 'notFooled') hud.toast('It is still looking at you.', 'warn'); // (5.16.0) not fooled: run for a refuge
@@ -2811,7 +2809,7 @@ function update(dt) {
     g.fx.black = g.deathKind === 'devoured' ? 1 : crushed ? clamp((g.deathT - 1.6) / 1.1, 0, 1) : clamp(g.deathT / 1.1, 0, 1);
     g.fx.redDeath = injuryDeath ? clamp(g.deathT / 2.2, 0, 1) : 0;
     if (g.deathT > g.deathEnd) {
-      const cause = g.deathCause, survived = g.survival, bill = g.deathBill, lost = g.deathLost;
+      const cause = g.deathCause, bill = g.deathBill, lost = g.deathLost;
       flushSave();
       g.mode = 'over';
       // (3.0.14) no menu after a death: behind the loading screen, straight back aboard the Margaret for the next
@@ -2876,7 +2874,7 @@ function update(dt) {
   // sky darkens and the sea rises when it is close and shallow
   const shallowness = clamp((450 - ent.y) / 450, 0, 1);
   const near = Math.pow(clamp((500 - d) / 500, 0, 1), 0.6); // the surface reacts early
-  const skyDark = near * shallowness;
+  
   // only a faint, uneasy swell at the surface when it is near; the sky is left alone
   g.waveBoost = lerp(g.waveBoost, near * 0.18, dt * 0.5);
   g.storm = 0;
@@ -2952,7 +2950,7 @@ function updateDebris(dt) {
     if (d.y > fl - d.size * 0.3) { d.y = fl - d.size * 0.3; d.vx = 0; d.vy = 0; d.vr = 0; }
   }
 }
-function smoothSky(v) { return v * v * (3 - 2 * v); }
+
 function updateBubbles(dt) {
   // (5.7.0) sprinting: a stream of bubbles kicked off his fins, behind him
   { const e = g.earl; if (g.mode === 'play' && e && e.sprint && !e.inSub && !g.aboard && e.y > 0.6 && e.speedNow > 0.8) { g.wakeT = (g.wakeT || 0) - dt; if (g.wakeT <= 0) { g.wakeT = 0.045; const a = e.angle || 0, bx = e.x - Math.cos(a) * 0.95, by = e.y - Math.sin(a) * 0.95; for (let i = 0; i < 2; i++) g.bubbles.push({ x: bx + (Math.random() - 0.5) * 0.3, y: by + (Math.random() - 0.5) * 0.3, r: 0.02 + Math.random() * 0.045, w: Math.random() * 6, t: 0 }); } } }
@@ -2971,7 +2969,7 @@ function updateBubbles(dt) {
 // ---------------- loop ----------------
 let last = performance.now();
 let filterKey = '';
-let frameEma = 1 / 60, qualityT = 0, hudDt = 0, hudFrame = 0;
+let frameEma = 1 / 60, qualityT = 0, hudDt = 0;
 function adaptQuality(realDt) {
   frameEma = lerp(frameEma, realDt, 0.05);
   hud.fps = 1 / Math.max(1e-3, frameEma); hud.quality = renderer.quality; hud.lite = renderer.lite;
@@ -3085,7 +3083,7 @@ function frame(now) {
   else renderer.warmSprites(g, g.mode === 'menu' ? 8 : realDt < 1 / 50 ? 3 : 1);
   // (5.3) in lite mode the HUD (its text, its shadows) is drawn every second frame: it changes slowly, and a
   // phone's fill is better spent on the sea
-  hudDt += dt; hudFrame++;
+  hudDt += dt;
   { const on = !!(g.mode === 'play' && !g.paused && !g.kill && !ui.anyOpen('cabin')); if (on !== touch.restOn) { touch.restOn = on; touch.rest(on); } }
   if (renderer.cam && renderer.cam.ppm) { // (5.6.1) where Earl (and the animal to observe) are on the HUD, for its tag and taps
     const cm = renderer.cam, k = hud.c.width / renderer.c.width, sx = (wx) => ((wx - cm.x) * cm.ppm + renderer.c.width / 2) * k, sy = (wy) => ((wy - cm.y) * cm.ppm + renderer.c.height / 2) * k;

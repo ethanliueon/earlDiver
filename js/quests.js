@@ -11,7 +11,7 @@ import { money, SUBS } from './economy.js';
 import { canTakeLive, liveValue, rarityOf, LEGENDARY } from './specimens.js';
 import { kitOf, ITEMS, FREE } from './items.js';
 const STARTER = new Set(Object.values(FREE)); // (4.0.6) what he starts with is not bought, nor new to put on
-const bought = (id) => ITEMS[id] && !ITEMS[id].free && !STARTER.has(id);
+
 // (4.3.0) a thing he paid for (marked when it is bought; a tutorial gift, like the flick net, is not)
 const paidFor = (it) => !!(it && it.paid);
 
@@ -31,13 +31,13 @@ export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { 
 // ['trap', type]). Once the net and trawl steps are done their key hints leave the screen (learned()).
 export const MAIN = [
   // (4.3.4) the first three steps are one dive now: down to the fish, observe it, catch it, back up (FIRST_FISH)
-  { id: 'firstfish', text: 'Your first fish', touchHelp: 'Swim down to a fish, tap the eye button to observe it, catch it with your net, then swim back up to the surface.', help: 'Swim down to a fish, observe it, catch it with your net, then swim back up to the surface.', need: 1, on: 'firstFish', pay: 50, kit: [['item', 'flicknet']] },
-  { id: 'sell', text: 'Sell your catch', touchHelp: 'Swim up beside the Margaret and tap its winch, then Sell all.', help: 'Swim up beside the Margaret and tap, then Sell all.', need: 1, on: 'sell', pay: 30 },
+  { id: 'firstfish', text: 'Your first fish', help: 'Swim down to a fish, tap the eye button to observe it, catch it with your net, then swim back up to the surface.', need: 1, on: 'firstFish', pay: 50, kit: [['item', 'flicknet']] },
+  { id: 'sell', text: 'Sell your catch', help: 'Swim up beside the Margaret and tap its winch, then Sell all.', need: 1, on: 'sell', pay: 30 },
   { id: 'buy', text: 'Buy a piece of gear from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought gear goes into your inventory (supplies don't count).", need: 1, on: 'bought', pay: 40 },
-  { id: 'wear', text: 'Put on the gear you bought', touchHelp: 'Open your bag, tap the gear and Put it on.', help: 'Tap for your inventory, tap it and Put it on (or drag it onto Earl).', need: 1, on: 'wear', pay: 30 },
+  { id: 'wear', text: 'Put on the gear you bought', help: 'Open your bag, tap the gear and Put it on.', need: 1, on: 'wear', pay: 30 },
   // (6.6.0) the tutorial's last step, one trip in parts (main.js tutor, seen.st): into the sub, drive to a fish (and
   // sprint), out to net it, a second one deeper, call the sub to him, a look at the bag's catch, autopilot home
-  { id: 'subtrip', text: 'Your first sub trip', touchHelp: 'Get in the sub and drive to the fish; leave the sub and net it, then the one below; call the sub, look at your catch, and take the autopilot home.', help: 'Get in the sub and drive to the fish; leave it and net the fish, then the one below; call the sub, look at your catch, and autopilot home.', need: 1, on: 'subTrip', pay: 60 },
+  { id: 'subtrip', text: 'Your first sub trip', help: 'Get in the sub and drive to the fish; leave the sub and net it, then the one below; call the sub, look at your catch, and take the autopilot home.', need: 1, on: 'subTrip', pay: 60 },
   // (6.8.0) the basics after the sub trip (60 m, air, trawl, chamber, surfacing, aquarium, trap) left the Log: the first
   // board teaches the dive, the live catch and the trap, and the first-time lessons teach the trawl, chamber and air tank
   { id: 'done', text: 'Basics learned', help: 'The board pays cash. The rest of the sea is yours to find.', need: 0, on: null, pay: 0, gift: 'split' },
@@ -68,13 +68,13 @@ export function playerLevel(P) {
 const payK = (P) => 0.35 + (playerLevel(P) - 1) * 0.13;
 const KINDS = {
   // (7.3.0, economy v2) each tier pays a quarter to a full hour of the income at the depth it asks for (docs/PLAN_7.4.md);
-  // (7.3.8) moved with the re-measured income
-  catch: (r) => ({ n: [25, 50, 100, 200][r], pay: [50, 490, 1800, 7700][r], text: (q) => `Catch ${q.n} animals` }),
-  deep: (r) => ({ d: [100, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [90, 1000, 4100, 16000][r], // (4.0.0) the deep pays most
+  // (7.3.8) moved with the re-measured income; (7.3.9) again, with the slower subs'
+  catch: (r) => ({ n: [25, 50, 100, 200][r], pay: [50, 450, 1700, 7600][r], text: (q) => `Catch ${q.n} animals` }),
+  deep: (r) => ({ d: [100, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [90, 910, 3900, 15800][r], // (4.0.0) the deep pays most
     text: (q) => `Catch ${q.n > 1 ? q.n + ' animals' : 'an animal'} below ${q.d} m` }),
-  sell: (r) => ({ n: [450, 2000, 9000, 45000][r], pay: [30, 410, 1700, 7400][r], text: (q) => `Sell ${money(q.n, false)} of catch` }),
-  photo: (r) => ({ n: [1, 3, 6, 12][r], pay: [50, 530, 1700, 7000][r], text: (q) => `Photograph ${q.n} new species` }),
-  tag: (r) => ({ n: [1, 2, 4, 8][r], pay: [60, 580, 2100, 8300][r], text: (q) => `Tag ${q.n} animal${q.n > 1 ? 's' : ''}` }),
+  sell: (r) => ({ n: [450, 2000, 9000, 45000][r], pay: [30, 370, 1600, 7300][r], text: (q) => `Sell ${money(q.n, false)} of catch` }),
+  photo: (r) => ({ n: [1, 3, 6, 12][r], pay: [50, 480, 1600, 6900][r], text: (q) => `Photograph ${q.n} new species` }),
+  tag: (r) => ({ n: [1, 2, 4, 8][r], pay: [60, 530, 2000, 8200][r], text: (q) => `Tag ${q.n} animal${q.n > 1 ? 's' : ''}` }),
   species: (r, rnd, P) => {
     const deep = [60, 250, 700, 1600][r];
     // (4.0.0) never a legendary (they are met, not ordered) nor an undocumented one

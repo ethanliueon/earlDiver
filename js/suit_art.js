@@ -140,7 +140,7 @@ function wetsuit(ox, S) {
 }
 
 
-const PAL = ['#3a3a36', '#6a6a62', '#4a4a44', '#a07a3a', '#1a1a18']; // dv_iron: base, light, mid, the brass, gloves
+ // dv_iron: base, light, mid, the brass, gloves
 let ST = { deep: '#141412', dark: '#26261f', mid: '#3e3e38', body: '#4e4e47', lite: '#7c7c72', pale: '#a6a698' };
 let BRS = { dark: '#4a3416', mid: '#7e5e2c', lite: '#b8935a' };
 const steel = (x0, x1) => lin(x0, 0, x1, 0, [[0, ST.deep], [0.12, ST.dark], [0.3, ST.body], [0.4, ST.pale], [0.5, ST.lite], [0.74, ST.dark], [0.92, ST.deep], [1, '#2a2a24']]);

@@ -6,8 +6,7 @@
 //  - morays, nesting triggerfish, blue/reef sharks and Humboldt squid only when provoked
 // Defences: hiding (the animal loses interest), a sea lantern or the necklace, a pod of dolphins
 // nearby (sharks leave), or flashing the lamp (L) at a charging animal at the last moment.
-import { clamp, dist, lerp } from './util.js';
-import { LANTERN_RADIUS } from './entity.js';
+import { clamp, dist } from './util.js';
 import { MORE_SPECIES } from '../data/species_more.js';
 
 export const AGGRO = {
@@ -25,7 +24,7 @@ export const AGGRO = {
   21: { kind: 'lurk', dmg: 1, range: 3.2 },  // titan triggerfish guarding its nest
   184: { kind: 'whale', dmg: 5, hull: 0.4, p: 0.05, minDepth: 250 }, // sperm whale
   187: { kind: 'ram', hull: 0.2, p: 0.008 },  // orca: rams the sub, leaves divers alone ((claude-polish) half as often: a first trip to the drop-off met three rams in four minutes)
-  188: { kind: 'ambush', dmg: 4, hull: 0.3, p: 0.08, minDepth: 2900 }, // abyssal sleeper shark: from below, Earl or the sub
+  188: { kind: 'ambush', dmg: 4, hull: 0.8, p: 0.08, minDepth: 2900 }, // abyssal sleeper shark: from below, Earl or the sub; (7.3.9, owner) four injury points, or 80 % of the hull
 };
 // the species added since that attack (data/species_more.js)
 for (const m of MORE_SPECIES) if (m.x.aggro) AGGRO[m.id] = m.x.aggro;
@@ -51,8 +50,8 @@ export function directEncounters(g, dt, SPECIES_BY_ID) {
     if (e.y < 60) pool.push(80);
     if (night) { rate *= 2; pool.push(148, 148); }
   }
-  // (3.0.37) below 3,000 m, anywhere, belongs to the abyssal sleeper shark (in the sub or out of it)
-  if (e.y > 2950) { rate = 0.14; pool = [188]; }
+  // (7.3.9, owner) the abyssal sleeper shark is no longer sent on a timer: it is met only as half a percent of what is met
+  // below 3,000 m (fauna.js), and every one met hunts
   if (g.injury > 0) rate *= 1 + g.injury * 0.6;   // blood in the water
   if (g.concealed || g.protection || g.hunterWard) rate *= 0.1;
   if (e.legends && e.legends.has('faithless')) rate = 0; // (5.16.0) Faithless: no hunter comes for you, in the water or the sub
@@ -223,6 +222,9 @@ export function updateHunters(g, dt) {
         if (at.t > 6) leave(rng.range(30, 60));
         break;
       case 'sink':
+        // (7.3.9, owner) the warning: as it drops away, a large contact passes on the radar at its bearing and a long low
+        // call comes up out of the dark, so the rise that follows can be met (light it, or get away)
+        if (!at.warned) { at.warned = true; g.radarGhost = { a: Math.atan2(c.y - e.y, c.x - e.x) }; g.events.push('sleeperWarn'); }
         // the sleeper drops away into the dark below and behind him, out of his light
         c.ctrl = { x: e.x + at.side * 12, y: Math.min(e.y + 11, g.world.floorAt(c.x) - 3), speed: 3 };
         if (at.t > 6 || (Math.abs(c.x - (e.x + at.side * 12)) < 4 && c.y > e.y + 7)) { at.s = 'rise'; at.t = 0; }

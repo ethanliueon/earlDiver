@@ -104,8 +104,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   outlined, never bracketed. Panels appear only when drawn; nothing behind a panel is drawn at a lower rate. The game's
   sound is "ambient" on iOS (follows the silent switch, never "now playing"). Marine snow only below 150-200 m.
 
-- **Decided in 6.5.1**: the daily gift's first week is a new player's own, once (pine crate, $1,000, 3 advanced
-  glow sticks, fish trap, station case, $5,000, Siren's casket); from week 2 it repeats scaled by the hidden level
+- **Decided in 6.5.1**: the daily gift's first week is a new player's own, once (pine crate, $250, 3 advanced
+  glow sticks, fish trap, station case, $1,000 (7.3.9), Siren's casket); from week 2 it repeats scaled by the hidden level
   (store.js). Siren's casket 15/80/5 (rare/exotic/legendary). No frozen lessons: the Log's steps teach in the running
   world with a quiet ring. Things to use breathe in their own shape (the sub's exact silhouette), nothing drawn round
   them. Skill names coloured by level (I uncommon .. IV legendary; flat skills exotic; powers legendary); item cards
@@ -162,6 +162,14 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   observed animal shows its name alone, in its rarity's colour. The creator's name is typed on the game's own keyboard.
   Effects that speed up never multiply the clock by a changing speed (it made them jump): they move by their speed each frame.
 
+- **Decided in 7.3.9**: subs have no sinking speed of their own (they sink at their speed); speeds 1 to 2.5, the best
+  2.5x the first. An exotic pays 1 hour of ordinary income at 1,000 m and above, rising to 2 hours at 4,800 m; a legend is
+  always 15x an exotic at its depth. The abyssal sleeper shark is an ordinary hunter (0.5 % of what is met below 3,000 m,
+  no ambush timer): a far call and a radar ghost warn before it strikes; its bite is 4 injury points, or 80 % of the hull
+  in the sub. **Pearls** are the premium currency: a new diver starts with 20, shown on their own small steel plate
+  under the money; a revive costs 50 pearls (no ad, no $0.99); no pay-to-win unless the owner asks. Animals can still
+  be caught as pets; custom pets are bought in the shop's Pets tab with pearls. Close to his pet, the interact button
+  becomes the pet (Stay / Follow); the word is written above the pet, with no line. The action arc keeps its places.
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build

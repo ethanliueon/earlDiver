@@ -79,4 +79,4 @@ export class Messages {
     setTimeout(() => el.remove(), 600);
   }
 }
-const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+

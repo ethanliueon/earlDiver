@@ -1156,3 +1156,25 @@ Agreed with the owner: usual depths fitted into this sea (a band below the 5,100
 
 | Animal | Old | New |
 |---|---|---|
+
+# 7.3.9: slower subs, deeper jackpots (owner)
+
+- **Sub speed:** no separate sinking speed (ballast 0 on every sub; it sinks at its own speed). Speeds 1, 1.14, 1.3, 1.48, 1.69, 1.92, 2.19, 2.5: the best sub 2.5× the first (was 3×).
+- **Encounter rates** in `tools/econ/measure.cjs` scaled by the square root of each sub's new speed over its old one: 14.6, 20.6, 22.7, 25.2, 24.1, 32.8, 37.6, 40.8 animals an hour.
+- **Exotic hours by depth:** an exotic pays 1 hour of ordinary income at 1,000 m and above, rising evenly to 2 hours at 4,800 m (`specimens.js exoticHours`). A legend is always 15× an exotic at its depth.
+
+| Sub | 7.3.8 income | 7.3.9 income | 7.3.8 price | 7.3.9 price |
+|---|---|---|---|---|
+| Б-7 bathyscaphe | $369 | $372 | $0 | $0 |
+| Б-7М refit | $2,036 | $1,859 | $370 | $370 |
+| Work submersible | $5,421 | $5,089 | $3,100 | $2,800 |
+| Heavy work submersible | $7,835 | $7,586 | $11,000 | $10,000 |
+| Research submersible | $15,976 | $15,775 | $20,000 | $19,000 |
+| Deep research submersible | $42,157 | $38,778 | $48,000 | $47,000 |
+| Titanium research submersible | $88,761 | $84,183 | $169,000 | $155,000 |
+| Full-ocean-depth submersible | $382,562 | $357,556 | $444,000 | $420,000 |
+
+- **Gear (same rule):** rare $2,100-4,600 (was $2,300-4,800), exotic $24,000-78,000 (was $24,000-84,000), legendary $1.07-1.79 million (was $1.15-1.9 million).
+- **Chests (with their contents):** crate $1,400, case $3,000, crate3 $4,700, tea $8,000, case3 $9,000, footlocker $20,000, salvage $36,000, strongbox $41,000, expedition $53,000, Siren's casket $179,000, Leviathan $256,000, Poseidon $682,000.
+- **Board quests:** 5-10 % lower in the middle tiers. The daily gift's first week: $250 and $1,000 (were $1,000 and $5,000).
+- **Pearls:** the premium currency. A new diver starts with 20. A revive costs 50 pearls (no ad, no $0.99). Shop pets cost 80-300 pearls. No pay-to-win for now.

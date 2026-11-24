@@ -1,5 +1,5 @@
 import { VERSION as GAME_VERSION } from './version.js';
-import { ITEMS, kitOf, worn as wornItem, skillLv, hasLegend, setOn, pocketsBonus } from './items.js';
+import { ITEMS, kitOf, worn as wornItem, skillLv, setOn, pocketsBonus } from './items.js';
 // The money side of the game: the save (what survives death), prices, the market, and the
 // catalogue of things Earl can buy at the boat.
 //
@@ -28,18 +28,20 @@ export const FINS = [
 // The eight submersibles the yard sells (one per level of the 'depth' upgrade): rating, the mean depth
 // she gives way at as a multiple of it (hidden, drawn fresh each dive; the window narrows on deeper,
 // better-built hulls), and the cabin air she carries. Relics add 100 m each to the rating.
+// (7.3.9, owner) the subs are not fast: the best goes 2.5 times the first, each step about 14 % quicker, and none sinks
+// or climbs faster than it drives (no ballast of its own: sinking is the sub's own speed)
 // (7.3.8, owner) prices re-set from the measured income: each 1, 1.5, 2, 2.5, 3, 4, 5 hours of the one before's
 export const SUBS = [
   // (4.14.0) each sub comes with everything built in: speed, sink and rise (+10 % a step, compounding), the
   // chambers' rating and the open tank; there are no separate upgrades for them
   { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 170, speed: 1, ballast: 0, rating: 300, tank: 3, price: 0 },
-  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 180, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 370 },
-  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 195, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3100 },
-  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 210, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 11000 }, // (7.3.0) $12,000 was under an hour of the work sub's income
-  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 225, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 20000 },
-  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 240, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 48000 },
-  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 260, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 169000 },
-  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 280, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 444000 },
+  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 180, speed: 1.14, ballast: 0, rating: 500, tank: 5, price: 370 },
+  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 195, speed: 1.3, ballast: 0, rating: 900, tank: 7, price: 2800 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 210, speed: 1.48, ballast: 0, rating: 1300, tank: 9, price: 10000 }, // (7.3.0) $12,000 was under an hour of the work sub's income
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 225, speed: 1.69, ballast: 0, rating: 1900, tank: 12, price: 19000 },
+  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 240, speed: 1.92, ballast: 0, rating: 2500, tank: 15, price: 47000 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 260, speed: 2.19, ballast: 0, rating: 3300, tank: 19, price: 155000 },
+  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 280, speed: 2.5, ballast: 0, rating: 4500, tank: 24, price: 420000 },
 ];
 export const SUB_TIERS = SUBS; // (old name)
 // No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
@@ -144,7 +146,7 @@ export const HOSPITAL_SHARE = 0.10;  // a death costs this share of cash...
 export const HOSPITAL_CAP = 25000;    // (kept for old callers)
 // (7.3.0, economy v2) ...but never more than half an hour of what his submersible earns (measured, docs/PLAN_7.4.md)
 // (7.3.8) measured with tools/econ/measure.cjs (each sub at its working depth; exotics in, legends out)
-export const INCOME_PER_HOUR = [369, 2036, 5421, 7835, 15976, 42157, 88761, 382562];
+export const INCOME_PER_HOUR = [372, 1859, 5089, 7586, 15775, 38778, 84183, 357556]; // (7.3.9) re-measured with the slower subs
 export const hospitalCap = (P) => Math.round(0.5 * INCOME_PER_HOUR[Math.max(0, Math.min(7, lv(P, 'depth')))]);
 // a replacement sub after an implosion: built to the same rating, a share of what it cost
 export function replacementPrice(P) {
@@ -186,7 +188,7 @@ export const GOODS = {
   necklace: { name: 'Fangtooth necklace', price: 220 },
 };
 export const SATURATE = 0.15;       // each sale knocks this much off the next one
-const RECOVER_PER_SEC = 0.004;      // the market forgets: ~4 minutes to recover from a glut
+      // the market forgets: ~4 minutes to recover from a glut
 
 // ---------------- upgrades: small steps, always another one ----------------
 // Every stat is levelled one step at a time; each step costs a little more than the last
@@ -338,20 +340,11 @@ export const GEAR = {
 // They are never turned into cash: they buy her wares, the deepest refits and the abyss tank.
 export function coinsFor(spec) { return 0; // (3.0.0) old gold coins are gone
 }
-function coinsForOld(spec) {
-  if (!spec || spec.cond <= 0.05) return 0;
-  const f = spec.from || 0;
-  const base = f >= 2500 ? 3 : f >= 1500 ? 2 : f >= 500 ? 1 : 0;
-  return base ? base + (spec.variant ? 1 : 0) : 0;
-}
+
 // the deepest refits also cost coins: 1 each to 2,600 m, 2 to 3,200 m, 3 to 3,800 m, then 4
 export function upgradeCoins(P, id) { return 0; // (3.0.0) no coins
 }
-function upgradeCoinsOld(P, id) {
-  if (id !== 'depth' && id !== 'tHull') return 0;
-  const next = statAt('depth', lv(P, 'depth') + 1);
-  return next > 2000 ? Math.ceil((next - 2000) / 600) : 0;
-}
+
 // what the old one keeps in her cave, for coins
 export const WARES = {
   // (5.16.0) no old lure: lures are gone; her blessing and the sapphire eye remain
@@ -529,7 +522,7 @@ export function gear(P, kind) {
 // ---------------- the profile ----------------
 export function newProfile() {
   return {
-    v: 1, tlvCh: 1, cash: 0, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
+    v: 1, tlvCh: 1, cash: 0, pearls: 20 /* (7.3.9, owner) the premium currency: a new diver starts with twenty */, lifetime: 0, tank: 0, fins: 0, subTier: 0, subLost: false, hull: 1, addons: {},
     lv: {}, gear: {}, caught: [], tagger: -1, camera: -1, photos: [], traps: { pot: 1, fish: 0, steel: 0, cage: 0 }, // one beginner's wire pot
     journal: [], notes: '', runs: 0, deaths: 0, deepest: 0, market: {}, created: Date.now(), coins: 0,
     items: { necklace: 3 }, glowKind: 'necklace', // (6.0.1) a new diver starts with three glow sticks on the belt

@@ -379,7 +379,7 @@ export function legendMotes(ctx, cx, cy, w, h, t, seed = 1) {
 // Exotic: the motif with a second element and inner detail, in a painted ring. Legendary: a small composition in an
 // ornamented medallion (a rope border, flourishes), the motif engraved in fine detail.
 function emblemTier(x, fam, tier) {
-  const W = '#ffffff', K = '#000000', exo = tier === 'exotic', leg = tier === 'legendary';
+  const W = '#ffffff', K = '#000000', exo = tier === 'exotic';
   const F = (p) => { x.fillStyle = W; x.fill(p); };
   const D = (p, w = 1.4) => { x.lineWidth = w; x.strokeStyle = K; x.stroke(p); };
   const S = (p, w = 2) => { x.lineWidth = w; x.strokeStyle = W; x.stroke(p); };

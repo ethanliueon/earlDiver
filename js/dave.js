@@ -4,7 +4,7 @@
 // suit), what he buys on the right (pearls, sapphires, whalebone, glass sponge and nodules, for a quarter more
 // than the Margaret pays). He says a line when you come in (text only), and remembers how often you've been.
 import { ITEMS, ownsItem, worn as wornItem, RARITY } from './items.js';
-import { SUITS, GOODS, TRAPS, money, moneyExact } from './economy.js';
+import { GOODS, TRAPS, money, moneyExact } from './economy.js';
 import { pictureOf } from './catalog.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
 

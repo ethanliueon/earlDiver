@@ -171,7 +171,7 @@ export function drawSleeper(ctx, L, v, t, swim = 1) {
   ctx.drawImage(S.j, 0, 0.02 * Lb, S.j.width * k, S.j.height * k);
   ctx.restore();
   // the body: the front in one piece, the back in sheared strips
-  const bw = S.b.width, bh = S.b.height, y0 = SV0 * Lb;
+  const bh = S.b.height, y0 = SV0 * Lb;
   const cut = 0.55;
   ctx.drawImage(S.b, 0, 0, (cut - SU0) * S.L + 1, bh, SU0 * Lb, y0, (cut - SU0) * Lb + k, bh * k);
   for (let u = cut; u < SU1; u += 0.035) {

@@ -4,7 +4,7 @@ import { drawTrawl3, drawTrap3 } from './kit_art.js'; // (6.5.3)
 // and a worn dark lip. The art is drawn here at a size of its own (no flat symbols): the net and the camera from
 // the player's own gear, the eye, the fins, the sub, the glove, the torch, the crab pot, the claw. Each look is
 // painted once into a picture and reused.
-import { drawEmblem, ABILITY_FAMILIES, drawTierEmblemMask, ACCENT } from './scrolls.js';
+import { ABILITY_FAMILIES, drawTierEmblemMask, ACCENT } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { drawNet, netLook } from './tools_draw.js';
 import { PAINTED, paintSprint, paintMask, paintAbility } from './coin_art.js';

@@ -8,7 +8,7 @@
 // Real photos can replace any layer: put a wide, horizontally tileable PNG with transparency at
 // assets/sky/clouds_high.png, clouds_mid.png or clouds_low.png and it is used instead.
 
-const PERIOD = 16; // noise lattice cells across one tile, so the texture wraps seamlessly
+ // noise lattice cells across one tile, so the texture wraps seamlessly
 
 function hash(x, y, seed) {
   let h = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(seed, 1442695041);

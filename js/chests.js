@@ -2,7 +2,7 @@
 // the chest's odds, then any item of that rarity in the chest pool (set pieces included). Bought and opened
 // at once, in a short reveal (about 3 s; a click skips it): the lid creaks up, a little light in the
 // rarity's colour, and the thing rises out with its name and skills. A full locker can't open one.
-import { RARITY, SKILLS, LEGEND, skillCol } from './item_data.js';
+import { RARITY } from './item_data.js';
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js';
 import { ITEMS, CHEST_POOL } from './items.js';
 import { TAU } from './util.js';
@@ -55,7 +55,7 @@ for (const [k, C] of Object.entries(CHESTS)) {
 // takes to earn them), so each keeps its 7.2.8 value for money; Poseidon's chest still the top. 7.2.8: crate $900, case
 // $1,700, crate3 $3,100, tea $3,800, case3 $5,000, footlocker $7,500, salvage $14,000, strongbox $15,000, expedition
 // $20,000, siren $27,000, leviathan $50,000, poseidon $100,000
-const SET_PRICE = { crate: 1400, case: 3100, crate3: 4800, tea: 8300, case3: 9400, footlocker: 21000, salvage: 38000, strongbox: 43000, expedition: 56000, siren: 189000, leviathan: 270000, poseidon: 721000 }; // (7.3.8) each moved with what is in it, at the re-measured prices // (owner) Poseidon $5M
+const SET_PRICE = { crate: 1400, case: 3000, crate3: 4700, tea: 8000, case3: 9000, footlocker: 20000, salvage: 36000, strongbox: 41000, expedition: 53000, siren: 179000, leviathan: 256000, poseidon: 682000 }; // (7.3.8) each moved with what is in it, at the re-measured prices; (7.3.9) again, on the slower subs' income // (owner) Poseidon $5M
 for (const [k, p] of Object.entries(SET_PRICE)) CHESTS[k].price = ITEMS['chest_' + k].price = p;
 export const chestItem = (k) => ITEMS['chest_' + k];
 export const chestsOf = (shop) => Object.entries(CHESTS).filter(([, c]) => c.shop === shop).map(([key, c]) => ({ key, ...c }));
@@ -117,7 +117,7 @@ export function chestPicture(look, w, h) {
 }
 
 // ---------- the reveal ----------
-const ROMAN = ['', 'I', 'II', 'III', 'IV'];
+
 const LIGHT = { common: 'rgba(200,196,180,A)', uncommon: 'rgba(150,200,150,A)', rare: 'rgba(130,170,220,A)', exotic: 'rgba(190,150,220,A)', legendary: 'rgba(230,200,120,A)' };
 // (6.4.0) opening a chest, as a real game does it: the screen dims, the chest sits large in the middle, it shakes (a
 // cheap crate twice, a legendary chest a long time), the lid flies up, and things burst out by what it is and what is

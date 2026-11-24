@@ -1,9 +1,8 @@
 import { uiUnit } from './settings.js';
 import { depthUnit } from './units.js';
 import { drawBagIcon, drawTankIcon, drawChamberIcon } from './coin_art.js';
-import { drawPrompt, promptShade, parsePrompt, depthCounter, dymo, tubeGauge, brassBezel, keyCap, oliveNine, HUDF } from './fittings.js';
+import { parsePrompt, dymo, brassBezel, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
-import { drawToken } from './tokens.js';
 import { drawCoin, drawCash, drawTile } from './coins.js';
 import { abilityState, whyNot, cooldownLeft, fmtLeft } from './abilities.js';
 import { drawNet3, drawCam3 } from './gear_art.js';
@@ -26,10 +25,10 @@ function steelPlate(ctx, x, y, w, h, s) {
 }
 // (4.27) the painted HUD icons (tools/icon_kit.py)
 const ICONS = {};
-const TIMG = {};
-function touchImg(n) { let im = TIMG[n]; if (!im) { im = new Image(); im.src = `assets/ui/touch/${n}.png`; TIMG[n] = im; } return im.complete && im.naturalWidth ? im : null; }
+
+
 function hudIcon(n) { let im = ICONS[n]; if (!im) { im = new Image(); im.src = `assets/ui/icons/${n}.png`; ICONS[n] = im; } return im.complete && im.naturalWidth ? im : null; }
-const parsePromptKey = (t) => parsePrompt(t).some((p) => p.key);
+
 import { TITLES, LEGEND_OF } from './species.js';
 // (3.0.42) a Legendary's title in a message: never 'the the fangtooth', always 'the Fangtooth'
 const TITLE_RE = Object.values(TITLES).concat(Object.values(LEGEND_OF).map((x) => x[0])).map((t) => [new RegExp(`\\b(?:the |an? )?${t}\\b`, 'gi'), t]);
@@ -37,11 +36,8 @@ export function titled(text) { let out = String(text); for (const [re, t] of TIT
 // HUD drawn on its own canvas (not affected by the dread filters):
 // survival timer + oxygen bar (top right), the right-hand dive monitor
 // (depth, radar, heart rate, journal), item slots and prompts.
-import { clamp, lerp, formatTime, TAU } from './util.js';
-import { SUB_LEVELS, diverDrainMult } from './player.js';
-import { RESOURCES, boatDock } from './world.js';
-import { GOODS, money, moneyExact, gear, owns } from './economy.js';
-import { BOAT } from './world.js';
+import { clamp, lerp, TAU } from './util.js';
+import { moneyExact, gear, owns } from './economy.js';
 import { VARIANTS } from './variants.js';
 import { speciesIcon } from './creatures_draw.js';
 import { SETTINGS } from './settings.js';
@@ -52,6 +48,7 @@ import { drawSpecies } from './creatures_draw.js';
 
 // (7.2.8) the tutorial's pointing glove (painted by tools/action_icons.py point()), pointing down in its picture, the
 // fingertip at 0.451, 0.883 of it
+const PEARL_ROW = 24; // (7.3.9) the pearls' row under the money (in the HUD's unit): everything under the money moves down by it
 const TUT_POINT = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: 'assets/ui/icons/tut-point.png' }) : null;
 const MONO = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const HUDT = '"Barlow Semi Condensed", "Arial Narrow", sans-serif'; // (4.28) the instruments' figures
@@ -330,39 +327,18 @@ export class Hud {
       cx = W - pad - R, cy = H - pad - R; // (5.3.1) small: about 1.3 cm // (5.4) a tablet (no page scaling): 1.3x, so the small buttons reach 44 pt
     const held = this.held || new Set();
     const parts = g.prompt && !g.tutHidePrompts ? parsePrompt(g.prompt) : [], partOf = (k) => parts.find((p) => p.key && p.key.toLowerCase() === k);
-    const short = (t) => { const w = String(t).split(/\s+/).filter((x) => !/^(the|a|an|to|of)$/i.test(x)).map((x) => ({ submersible: 'sub' }[x.toLowerCase()] || x)); const out = w.slice(0, 2).join(' '); return out.length > 13 ? w[0] : out; };
+    
     // (5.3.1) a button is a dark translucent disc with a thin light rim (as a phone game's), a real picture on it
     // (5.5) each a brass-bezelled enamel fitting (tokens.js), not a see-through disc
-    const plate = (x, y, r, on, down, lit, big) => drawToken(ctx, x, y, r, big ? 'big' : 'small', down ? 'down' : !on ? 'off' : lit ? 'lit' : 'on');
-    const pic = (name, x, y, w) => { const im = hudIcon('act-' + name); if (im) ctx.drawImage(im, x - w / 2, y - w / 2, w, w); };
+    
+    
     // the pictures on the buttons: plain shapes in the deck's cream paint
-    const NAME = { eye: 'eye', hand: 'hand', leave: 'leave', sub: 'sub', lamp: 'lamp', lure: 'lure', glow: 'glow', pet: 'pet', tank: 'tank', trawl: 'trawl', air: 'air', sell: 'sell', auto: 'auto', pause: 'pause', bag: 'bag' };
+    
     const glyph = (kind, x, y, r) => drawGlyph(ctx, kind, x, y, r * 2.35); // (5.3.3) one set of bold white symbols (glyphs.js)
-    const glyph1 = (kind, x, y, r, col) => {
-      ctx.save(); ctx.translate(x, y); ctx.strokeStyle = ctx.fillStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      const k = r / 22;
-      ctx.scale(k, k); ctx.lineWidth = 2.6;
-      const P0 = () => ctx.beginPath();
-      if (kind === 'eye') { P0(); ctx.moveTo(-11, 0); ctx.quadraticCurveTo(0, -10, 11, 0); ctx.quadraticCurveTo(0, 10, -11, 0); ctx.stroke(); P0(); ctx.arc(0, 0, 3.6, 0, TAU); ctx.fill(); }
-      else if (kind === 'hand') { P0(); ctx.moveTo(-8, 0); ctx.lineTo(6, 0); ctx.moveTo(1, -5); ctx.lineTo(7, 0); ctx.lineTo(1, 5); ctx.stroke(); P0(); ctx.moveTo(9, -9); ctx.lineTo(9, 9); ctx.stroke(); }
-      else if (kind === 'leave') { P0(); ctx.moveTo(0, 8); ctx.lineTo(0, -7); ctx.moveTo(-5, -2); ctx.lineTo(0, -8); ctx.lineTo(5, -2); ctx.stroke(); P0(); ctx.moveTo(-9, 10); ctx.lineTo(9, 10); ctx.stroke(); }
-      else if (kind === 'sub') { P0(); ctx.ellipse(0, 2, 11, 5, 0, 0, TAU); ctx.stroke(); P0(); ctx.rect(-3, -6, 6, 4); ctx.stroke(); }
-      else if (kind === 'lamp') { P0(); ctx.arc(-3, 0, 4.5, 0, TAU); ctx.stroke(); for (const a of [-0.45, 0, 0.45]) { P0(); ctx.moveTo(4 + Math.cos(a) * 1, Math.sin(a) * 4); ctx.lineTo(4 + Math.cos(a) * 9, Math.sin(a) * 9); ctx.stroke(); } }
-      else if (kind === 'lure') { P0(); ctx.moveTo(-8, 8); ctx.quadraticCurveTo(-8, -6, 3, -5); ctx.stroke(); P0(); ctx.arc(5, -4, 4, 0, TAU); ctx.fill(); }
-      else if (kind === 'glow') { P0(); ctx.roundRect(-3, -10, 6, 20, 3); ctx.stroke(); P0(); ctx.rect(-1.2, -6, 2.4, 12); ctx.fill(); }
-      else if (kind === 'pet') { P0(); ctx.moveTo(-9, 0); ctx.quadraticCurveTo(-2, -7, 6, 0); ctx.quadraticCurveTo(-2, 7, -9, 0); ctx.stroke(); P0(); ctx.moveTo(6, 0); ctx.lineTo(11, -5); ctx.lineTo(11, 5); ctx.closePath(); ctx.stroke(); }
-      else if (kind === 'tank') { P0(); ctx.rect(-10, -7, 20, 14); ctx.stroke(); P0(); ctx.moveTo(-10, -1); ctx.quadraticCurveTo(-5, -4, 0, -1); ctx.quadraticCurveTo(5, 2, 10, -1); ctx.stroke(); }
-      else if (kind === 'trawl') { P0(); ctx.moveTo(-10, -7); ctx.lineTo(10, -2); ctx.lineTo(10, 2); ctx.lineTo(-10, 7); ctx.closePath(); ctx.stroke(); P0(); ctx.moveTo(-4, -5); ctx.lineTo(-4, 5); ctx.moveTo(3, -3); ctx.lineTo(3, 3); ctx.stroke(); }
-      else if (kind === 'air') { P0(); ctx.roundRect(-5, -8, 10, 18, 4); ctx.stroke(); P0(); ctx.rect(-2, -11, 4, 3); ctx.fill(); }
-      else if (kind === 'sell') { P0(); ctx.arc(0, 0, 9, 0, TAU); ctx.stroke(); ctx.font = `700 13px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('$', 0, 1); }
-      else if (kind === 'pause') { P0(); ctx.rect(-6, -8, 4, 16); ctx.rect(2, -8, 4, 16); ctx.fill(); }
-      else if (kind === 'bag') { P0(); ctx.moveTo(-9, -3); ctx.lineTo(9, -3); ctx.lineTo(7, 10); ctx.lineTo(-7, 10); ctx.closePath(); ctx.stroke(); P0(); ctx.arc(0, -3, 5, Math.PI, 0); ctx.stroke(); P0(); ctx.moveTo(-3, 2); ctx.lineTo(3, 8); ctx.moveTo(3, 2); ctx.lineTo(-3, 8); ctx.stroke(); }
-      else if (kind === 'auto') { P0(); ctx.arc(0, 0, 8, 0, TAU); ctx.stroke(); P0(); ctx.moveTo(0, -8); ctx.lineTo(0, 8); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.stroke(); }
-      ctx.restore();
-    };
+    
     // ---- the actions, in fixed places ----
     const F = partOf('f'), ap = g.autopilot, sub = g.sub;
-    const subLabel = e.inSub ? (g.homeRun ? 'Autopilot off' : 'Autopilot') : (ap && ap.state === 'coming' ? 'Stop sub' : 'Call sub');
+    
     // the near ring: the three things done most (always there, greyed when they can't be done); the top row: the
     // rarer ones, small, beside pause and the bag
     // (5.5) the tutorial's own action (its F, or the observe button) keeps its button up even while it hides prompts
@@ -415,6 +391,8 @@ export class Hud {
         // (6.3.0) an animal not yet observed, in reach (and nothing else to do here): the slot becomes the eye. Nothing is
         // drawn round the animal: the eye on this button is the only sign
         if (!hon && g.obsTarget && !e.inSub) return { key: 'obs', icon: 'eye', on: true, lit: true, inter: true };
+        // (7.3.9, owner) close to his pet, the hand becomes the pet: a press tells it to stay or to follow again
+        if (!hon && g.petC && P.pet && !e.inSub && Math.hypot(g.petC.x - e.x, g.petC.y - e.y) < 2.5 + (g.petC.len || 0)) return { key: 'petstay', icon: 'pet', on: true, lit: true, inter: true };
         return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach', inter: true }; })(),
       abil(),
       light(), // (6.0.5) aboard too: there it switches the sub's lights
@@ -445,7 +423,7 @@ e.inSub ? [
     // (6.5.0) sq: a square tile (the menu's), ringed in its own rounded square, not a circle drawn over it
     const ring = (x, y, r, spot = false, sq = false) => {
       if (!spot) { this.tutTarget = { x, y, r, sq }; }
-      const shp = (rad) => { ctx.beginPath(); if (sq) ctx.roundRect(x - rad, y - rad, rad * 2, rad * 2, rad * 0.26); else ctx.arc(x, y, rad, 0, TAU); };
+      
       if (!spot) halo(x, y, r); // (6.0.5) behind the button only: over the dark the button must stay readable
       // (6.6.0) no lines round it: a soft light in the button's own shape, hugging its edge and breathing
       { const q = 0.5 + 0.5 * Math.sin(g.time * 3.6); ctx.save(); ctx.shadowColor = `rgba(240,228,196,${(0.75 + 0.25 * q).toFixed(3)})`; ctx.shadowBlur = (14 + 18 * q) * u;
@@ -575,7 +553,17 @@ e.inSub ? [
       const txt = moneyExact(Math.min(cash, this.cashShown)), tx0 = mx + ch * 0.8 + 6 * u; this.moneyTextX = tx0; this.moneyRowBottom = my + ch * 0.55; /* (6.0.7) the eye hangs right under the sum */ ctx.fillStyle = cash > this.cashShown ? '#f6e7b4' : '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
       { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(moneyExact(cash)).width; ctx.restore(); this.moneyAt = { x: (tx0 + tw + 16 * u + this.safeL) * kx, y: (my - 16 * u + this.safeT) * kx }; } // (5.7.5) right of the sum, on its row
       ctx.restore();
-      this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
+      // (7.3.9, owner) the pearls, the premium currency, in a smaller row under the money: the painted pearl, then the count
+      // (7.3.9, owner) on its own small plate of the panels' olive steel, the pearl set at its left end and the count beside it
+      { const pr = 8 * u, py = my + ch * 0.55 + 6 * u + pr, im = hudIcon('pearl'), ptxt = String(Math.max(0, Math.floor(P.pearls || 0)).toLocaleString('en-US'));
+        ctx.save(); ctx.font = `700 ${15 * u}px ${HUDF}`; const pw = ctx.measureText(ptxt).width, bx = mx - ch * 0.55, bh = pr * 2 + 4 * u, ptx = mx + pr * 1.2 + 5 * u, bw = (ptx - bx) + pw + 9 * u; /* the count close after the pearl */
+        steelPlate(ctx, bx, py - bh / 2, bw, bh, u);
+        ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.roundRect(bx + 2 * u, py - bh / 2 + 2 * u, bw - 4 * u, bh - 4 * u, 3 * u); ctx.fill(); /* a shallow well pressed into the plate */
+        if (im) ctx.drawImage(im, mx - pr * 1.2, py - pr * 1.2, pr * 2.4, pr * 2.4);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 3 * u; ctx.fillStyle = '#e6e0d0';
+        ctx.fillText(ptxt, ptx, py + 1 * u); ctx.restore(); }
+      this.moneyRowBottom += PEARL_ROW * u;
+      this.topLeftBottom = (my + ch * 0.55 + PEARL_ROW * u + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
       const rg = 19 * u, gx = W - 12 * u - rg, gy = 12 * u + rg; /* (5.9.4) the same size as the journal and the bag under it */
       btn({ key: 'settings', icon: 'gear', on: true }, gx, gy, rg);
       // (5.6.9b) the journal and the bag (and in the sub what else is carried) hang in a column right under the settings
@@ -593,7 +581,7 @@ e.inSub ? [
       // Folded, the strip is a short stub under the money with only the chevron, and the red dot when something waits
       // (7.2.3) one column down the left again, the buttons a little smaller so it stays clear of the stick; the marked
       // eye has its own fixed place beside the column's top (where the second column stood in 7.1.3). Nothing slides.
-      const rb = 12 * u, stepB = rb * 2 + 6 * u, top = my + ch * 0.55 + 10 * u, colX = 12 * u + rb, sw = rb * 2 + 12 * u, chevH = 20 * u;
+      const rb = 12 * u, stepB = rb * 2 + 6 * u, top = my + ch * 0.55 + PEARL_ROW * u + 10 * u, colX = 12 * u + rb, sw = rb * 2 + 12 * u, chevH = 20 * u;
       this.eyeRow = { u, x0: colX + sw / 2 + 10 * u, y: top + 6 * u, h: stepB * 2 - 6 * u };
       if (this.menuOpen == null) { try { this.menuOpen = localStorage.getItem('earl.menuOpen') !== '0'; } catch (err) { this.menuOpen = true; } }
       const tutIn = ROW.some((a) => a.key === tutKey || (a.dom && (tutKey === 'j' || tutKey === 'journal'))), open = this.menuOpen || tutIn || !!window.__tutMenu; /* (7.2.8) or any tutorial step about something in it */
@@ -611,7 +599,7 @@ e.inSub ? [
       this.journalAt = null; this.menuShown = open;
       if (open) ROW.forEach((a, i) => btn({ ...a, tile: true }, colX + (i < rowsN ? 0 : colGap), y0 + (i % rowsN) * step, rb));
       this.underRadarH = 0;
-      this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + rb * 2 + 14 * u + (cols - 1) * colGap + this.safeL) * kx; /* (7.1.3) the words clear of both columns */
+      this.topLeftBottom = (my + ch * 0.55 + PEARL_ROW * u + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + rb * 2 + 14 * u + (cols - 1) * colGap + this.safeL) * kx; /* (7.1.3) the words clear of both columns */
       this.gearSpace = rg * 2 + 22 * u; }
     // (5.6.8) what F does here is done by tapping the thing itself (render.js brackets it, main.js takes the tap): no tag
     // laid over the scene, and no picture that could say the wrong thing
@@ -619,7 +607,7 @@ e.inSub ? [
     // ---- the big button: the main action ----
     const sel = g.toolSel === 'none' ? null : g.toolSel === 'trap' ? 'trap' : g.toolSel === 'cam' && owns(P, 'camera') ? 'cam' : 'net';
     const armT = e.inSub && owns(P, 'arm');
-    const handOn = aboard && !!this.handOn; // (5.6.8) aboard, the big button is his hand: the door, the computer, the bunk
+     // (5.6.8) aboard, the big button is his hand: the door, the computer, the bunk
     const can = aboard ? false /* (6.5.0) the net waits aboard */ : e.inSub ? !!(armT && g.capPrompt && g.capPrompt.startsWith('Space')) : sel === 'net' ? !!g.catchTarget : !!(g.capPrompt && /^Space/.test(g.capPrompt));
     ctx.save(); ctx.globalAlpha *= this.inKill ? 0.32 : 1; /* (5.16.7) opaque: an unusable tool shows its greyed face, not the water through it */ /* (5.10.10) dim in its jaws */ // (5.3.6) on deck: there, greyed
     const bdown = held.has(' ');
@@ -816,8 +804,8 @@ e.inSub ? [
   // colour (none at the suit's depth, about 40 % at twice it; never grey), all but the depth figure, which turns to
   // blood (see bloodFigure). It eases in and out over a second or so, never a snap. Only for the diver in the water
   pressureFx(g, dt, sf) {
-    const e = g && g.earl, P = (e && e.pressStart) || 300;
-    const on = !!(e && g.mode === 'play' && !e.inSub && !g.aboard && !g.dying);
+    
+    
     const want = 0; // (6.3.0) nothing on screen changes past the suit's depth: no colour fade
     this.desat = (this.desat || 0) + (want - (this.desat || 0)) * (1 - Math.exp(-dt / 0.7));
     if (this.desat < 0.01) return;
@@ -868,7 +856,7 @@ e.inSub ? [
       ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 4 * s; ctx.strokeStyle = 'rgba(230,222,196,0.9)'; ctx.lineWidth = 2 * s;
       ctx.beginPath(); ctx.arc(hx, hy, r, 0, TAU); ctx.stroke(); ctx.fillStyle = 'rgba(230,222,196,0.9)'; ctx.beginPath(); ctx.arc(hx, hy, 2 * s, 0, TAU); ctx.fill(); ctx.restore();
     }
-    const red = dying;
+    
     const aboard = !!g.aboard && !dying; // on the Margaret's deck or in her cabin: only cash, the prompt and the contracts
 
     // ---------- (4.27) the instruments ----------
@@ -880,7 +868,7 @@ e.inSub ? [
     ctx.textBaseline = 'top'; ctx.textAlign = 'right';
     const rx0 = W - pad - (Math.max(0, (this.gearSpace || 0) - pad + 12 * s)), CW = 212 * s, cx0 = rx0 - CW, ccx = cx0 + CW / 2;
     this.colX = ccx; this.journalHot = null; this.chartHot = null;
-    const kx = window.innerWidth / this.c.width;
+    
     const notes = []; // [text, colour]
     let yy = pad;
     if (!aboard) {
@@ -955,7 +943,7 @@ e.inSub ? [
       const PA = g.profile;
       if (PA && !e.inSub && !aboard && (e.y > 1.5 || this.airTipT > 0) && !PA.tutAirSeen) { this.airTipT = (this.airTipT || 0) + dt; if (this.airTipT > 9) { PA.tutAirSeen = true; this.airTipT = 0; } }
       if (this.airTipT > 0 && PA && !PA.tutAirSeen) {
-        const k = Math.min(1, this.airTipT / 0.4, (9 - this.airTipT) / 0.6), q = 0.5 + 0.5 * Math.sin(g.time * 4.5), fx0 = lx - 44 * s, fy0 = ay - 7 * s, fw = lineW + 50 * s, fh = lh + 14 * s;
+        const k = Math.min(1, this.airTipT / 0.4, (9 - this.airTipT) / 0.6), q = 0.5 + 0.5 * Math.sin(g.time * 4.5), fx0 = lx - 44 * s, fy0 = ay - 7 * s, fh = lh + 14 * s;
         ctx.save(); ctx.globalAlpha = k;
         // (5.12.1) not a frame round it (it read as a web outline): a chunky painted arrow, as a phone game points at a thing,
         // nudging toward the air line in a slow ease; cream with a dark edge and a soft shadow, a little taper to the shaft
@@ -993,7 +981,7 @@ e.inSub ? [
     else if (!e.atSurface && o2 < 0.25 && !g.firstDive) notes.push([sec >= 60 ? `${Math.floor(sec / 60)} min ${sec % 60} s of air` : `${sec} s of air`, '#f06a5c']);
     // (4.28) no pressure multiplier: the air line draining faster says it
     if (e.inSub) {
-      const r = g.sub.y / g.sub.rated, hi = clamp(g.sub.hull, 0, 1);
+      const hi = clamp(g.sub.hull, 0, 1);
       if (g.sub.failing != null) notes.push(['Hull failing!', flash('#ff4a3a', '#a02a20')]);
       /* (5.15.5) no "near her rated depth" note: the red depth, the hull bar and the crush message say it */
       else if (hi < 0.99) notes.push(['Hull leaking', '#f06a5c']);
@@ -1113,7 +1101,7 @@ e.inSub ? [
     ctx.restore();
     ctx.fillStyle = 'rgba(216,236,230,0.8)'; ctx.beginPath(); ctx.arc(rcx, rcy, 1.6 * s, 0, TAU); ctx.fill();
     brassBezel(ctx, rcx, rcy, rr, s);
-    const slotBase = rcy - rr - 20 * s; // the carried things stack upward from here
+     // the carried things stack upward from here
     // ---------- the sub: a button for C (call it to you, or the autopilot home) ----------
     this.subHot = null;
     
@@ -1121,8 +1109,8 @@ e.inSub ? [
     // ---------- Q / E items: in the right-hand column, only when carried ----------
     // (claude-polish) a small steel plate in a brass rim, as the journal and chart buttons
     // (olive) the item slots: the same raised olive plate and well as the hotbar
-    const glass = (x, y, w, h) => { if (!oliveNine(ctx, 'btn-olive', x - 3 * s, y - 3 * s, w + 6 * s, h + 6 * s, 28, 10 * s)) { ctx.fillStyle = 'rgba(44,48,42,0.9)'; ctx.fillRect(x, y, w, h); } oliveNine(ctx, 'well', x + 4 * s, y + 4 * s, w - 8 * s, h - 8 * s, 30, 6 * s); };
-    const sz = 46 * s;
+    
+    
     const slots = [];
     if (e.inSub && (g.items.airTank > 0 || g.tankFit)) slots.push(['r', 'R', 'AIR TANK', g.items.airTank, '#9fd4ff', g.tankFit ? g.tankFit / 3 : 0]);
     if (g.items.necklace > 0) slots.push(['e', 'E', 'GLOW STICK', g.items.necklace, '#ffc070', 0]);
@@ -1157,7 +1145,7 @@ e.inSub ? [
       if (!this.wasMarked) { this.wasMarked = true; this.markT0 = g.time; }
       const mt = g.time - this.markT0, big = mt < 4.6 ? 1 : clamp(1 - (mt - 4.6) / 1.4, 0, 1), ease = (q) => q * q * (3 - 2 * q);
       // (6.2.0) back under the money, as in 6.0.7, but the larger, thicker eye: it opens at its largest, then settles
-      const kxE = window.innerWidth / this.c.width, E = eyePicture(), ew = this.eyeRow ? (21 + 3 * ease(big)) * this.eyeRow.u * E.ew / E.eh : (52 + 20 * ease(big)) * s, sc = ew / E.ew, /* (7.2.1) sized to its row */ tlB = this.topLeftBottom ? this.topLeftBottom / kxE - (this.safeT || 0) : 70 * s;
+      const E = eyePicture(), ew = this.eyeRow ? (21 + 3 * ease(big)) * this.eyeRow.u * E.ew / E.eh : (52 + 20 * ease(big)) * s, sc = ew / E.ew;
       const ER = this.eyeRow, ex = ER ? ER.x0 + ew * 1.15 : 60 * s, ey = ER ? ER.y + ER.h * 0.5 + E.eh * sc * 0.1 : 80 * s; /* (7.2.3) its fixed place beside the top of the menu column */
       const close = near > 0.82, pulse = 0.5 + 0.5 * Math.sin(this.eyePh = (this.eyePh || 0) + clamp(g.time - (this.eyeT ?? g.time), 0, 0.1) * (2 + 5 * near)); this.eyeT = g.time; /* (7.2.8) the beat's phase moves by its speed each frame: the clock times a changing speed made it jump as the thing came near */
       const per = 9 - 3 * near, bt = g.time % per, blink = !close && mt > 6 && bt < 0.32 ? Math.sin(bt / 0.32 * Math.PI) : 0;
@@ -1183,10 +1171,10 @@ e.inSub ? [
 
     // ---------- what the tool can reach ----------
     // with hints off the prompts are short and quiet: just the key and the action, no box
-    const short = (p) => p.split('  ·  ')[0].split(' · ')[0].replace(/\s*\(.*\)$/, '');
+    
     // (2.6.6) "Space  Atlantic herring": the key, then the name, plain, in the name's rarity colour
-    const keyLine = (txt, cx, y, px) => { ctx.font = `${px}px ${GAME}`; ctx.textAlign = 'center'; ctx.fillText(txt, cx, y); };
-    const keyWidth = (txt, px) => { ctx.font = `${px}px ${GAME}`; return ctx.measureText(txt).width; };
+    
+    
     const capHidden = !SETTINGS.catchTags && !!g.catchTarget; // the catch tag is a setting (pause menu); other Space prompts stay
     // (2.6.3) Hints off hides only the tips (hud.hint); what F or Space does is always shown, in its box
     // (4.0.0) what the tool can reach, said below (the prompts are all drawn together, after this)
@@ -1201,7 +1189,7 @@ e.inSub ? [
     this.inKill = !!(g.kill && !g.kill.inSub && !g.kill.esc); // (5.10.10) the controls stay where they are in its jaws, dimmed
     if (!this.panel && g.profile && g.mode === 'play' && !dying && (!g.kill || this.inKill) && !(g.paused || (document.getElementById('pause') && !document.getElementById('pause').hidden))) { const dk = aboard ? 0 : clamp(((g.earl.y || 0) - 120) / 700, 0, 1); ctx.save(); ctx.globalAlpha = 1 - 0.28 * dk; const h0 = this.hots.length; this.drawActions(g, W, H, s, dt, aboard); ctx.restore(); if (this.inKill) this.hots.splice(h0, this.hots.length - h0, ...this.hots.slice(h0).filter((h) => h.key === 'ability' && this.killTide)); } // (5.10.8) the controls dim gently in the dark
     // ---------- (3.0.0) the next step of the main quest line, under the Quests button ----------
-    const qs = g.profile && g.profile.quests, step = qs && this.questMain ? this.questMain[qs.main] : null;
+    
     
     // ---------- P: frames per second, the picture's resolution, and whether lite mode is on ----------
     if (this.showFps) { // (5.3.5) top right, everywhere (on deck too)
@@ -1248,6 +1236,6 @@ e.inSub ? [
     // ---------- death ----------
     // (6.1.9) no death screen: the sea goes black, one line says what happened, centred, in the cream the game writes
     // in, and it fades again; then he is back aboard. In the thing's jaws it is black from the first moment
-    const bleedOut = dying && g.deathKind === 'injury', crushed = dying && g.deathKind === 'implode';
+    
   }
 }

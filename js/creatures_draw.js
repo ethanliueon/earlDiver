@@ -1727,14 +1727,7 @@ function drawNautilus(ctx, L, v, t) {
   ctx.fillStyle = '#6a4a3a'; ctx.beginPath(); ctx.ellipse(-r * 0.75, r * 0.15, r * 0.3, r * 0.25, 0, 0, TAU); ctx.fill();
   eye(ctx, -r * 0.8, r * 0.05, Math.max(1, r * 0.08), '#2a2420', false);
 }
-function legs(ctx, cx, cy, n, len, spread, t, col, lw) {
-  ctx.strokeStyle = col; ctx.lineWidth = lw;
-  for (let k = 0; k < n; k++) {
-    const x = cx + (k - (n - 1) / 2) * spread;
-    const kneeY = cy - len * 0.25 + Math.sin(t * 3 + k) * len * 0.04;
-    ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x + (k - (n - 1) / 2) * spread * 0.6, kneeY); ctx.lineTo(x + (k - (n - 1) / 2) * spread * 1.1, cy + len * 0.5); ctx.stroke();
-  }
-}
+
 function drawCrab(ctx, L, v, t) {
   // Standing on the bottom: jointed walking legs (three segments each), a domed carapace with
   // tubercles and a serrated front, stalked eyes, and heavy claws with a moving finger.
@@ -2874,23 +2867,7 @@ function lerpN(a, b, t) { return a + (b - a) * t; }
 
 // A webbed skirt seen from the side: it flares out from under the mantle like an umbrella,
 // arm tips at the points and a sagging, scalloped web between them.
-function umbrella(s, spread, depth, n, ph, ripple) {
-  const p = new Path2D();
-  p.moveTo(-s * 0.16, -s * 0.06);
-  const tips = [];
-  for (let k = 0; k <= n; k++) {
-    const a = -1.25 + (k / n) * 2.5;
-    tips.push([Math.sin(a) * spread * 1.25, Math.cos(a) * depth * 0.7 + s * 0.02 + Math.sin(ph + k) * s * ripple * 0.5]);
-  }
-  p.quadraticCurveTo(tips[0][0] * 0.8, -s * 0.02, tips[0][0], tips[0][1]);
-  for (let k = 1; k <= n; k++) {
-    const [x0, y0] = tips[k - 1], [x1, y1] = tips[k];
-    p.quadraticCurveTo((x0 + x1) / 2, Math.max(y0, y1) - depth * 0.12 + Math.sin(ph * 1.3 + k) * s * ripple, x1, y1);
-  }
-  p.quadraticCurveTo(tips[n][0] * 0.8, -s * 0.02, s * 0.16, -s * 0.06);
-  p.closePath();
-  return p;
-}
+
 
 export const RENDERERS = {
   fish: drawFish, shark: drawShark, ray: drawRay, eel: drawEel, angler: drawAngler, fangtooth: drawFangtooth,

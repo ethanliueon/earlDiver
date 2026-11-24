@@ -3,15 +3,15 @@
 // wood, hide); only a bioluminescent part shows any light, and softly. The things use the same looks as on
 // Earl (item_data.js LOOKS); the Legendaries that aren't nets are drawn one by one here.
 import { drawSuit3q } from './suit_art.js';
-import { toolIcon, drawSlurp, drawTagger, drawCamera } from './tools_draw.js';
-import { drawEarl, drawSpecialTank, SUIT_LOOK } from './earl_draw.js';
-import { TAU, clamp } from './util.js';
+import { toolIcon } from './tools_draw.js';
+import { drawSpecialTank, SUIT_LOOK } from './earl_draw.js';
+import { TAU } from './util.js';
 
 const rgb = (hex) => { const h = hex.replace('#', ''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; };
-const rgba = (hex, a) => { const [r, g, b] = rgb(hex); return `rgba(${r},${g},${b},${a})`; };
+
 // a small seeded random, so a picture is the same every time
-const rng = (seed) => { let s = seed >>> 0 || 1; return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296); };
-const seedOf = (id) => { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+
+
 
 // ---------- the things ----------
 // a pair of fins laid side by side on a slant: foot pockets with heel straps and buckles, the blades with
@@ -64,7 +64,7 @@ function tankPic(ctx, w, h, TL, def) {
   ctx.restore();
 }
 function bagPic(ctx, w, h, def) {
-  const cx = w / 2, cy = h * 0.52, bw = h * 0.44, bh = h * 0.6, glow = def.glow;
+  const cx = w / 2, cy = h * 0.52, bw = h * 0.44, bh = h * 0.6;
   ctx.save();
   if (def.id === 'broodpouch') {
     const g = ctx.createRadialGradient(cx - bw * 0.2, cy - bh * 0.1, 0, cx, cy, bh * 0.7); g.addColorStop(0, '#d8b8b8'); g.addColorStop(0.6, '#a07a80'); g.addColorStop(1, '#5a3a42');

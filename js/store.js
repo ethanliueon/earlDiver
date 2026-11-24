@@ -13,16 +13,16 @@ const SLOT = 4 * 3600e3;
 export const dealNow = (t = Date.now()) => DEALS[Math.floor(t / SLOT) % DEALS.length];
 export const dealLeft = (t = Date.now()) => (Math.floor(t / SLOT) + 1) * SLOT - t;
 // the seven gifts
-// (6.5.1) the first week is a new player's own, given once: a pine crate, $1,000, advanced glow sticks, a fish trap, a
-// station case, $5,000 and a Siren's casket. From the second week the calendar repeats, its gifts set by the hidden
+// (6.5.1) the first week is a new player's own, given once: a pine crate, $250 (7.3.9), advanced glow sticks, a fish trap, a
+// station case, $1,000 (7.3.9) and a Siren's casket. From the second week the calendar repeats, its gifts set by the hidden
 // player level (quests.js playerLevel): the chests, the cash and the glow sticks grow with him; day 7 is the week's chest
 export const WEEK1 = [
-  { k: 'chest', v: 'crate' }, { k: 'cash', v: 1000 }, { k: 'glow', v: 3, adv: true }, { k: 'trap', v: 'fish' },
-  { k: 'chest', v: 'case' }, { k: 'cash', v: 5000 }, { k: 'chest', v: 'siren' },
+  { k: 'chest', v: 'crate' }, { k: 'cash', v: 250 }, { k: 'glow', v: 3, adv: true }, { k: 'trap', v: 'fish' },
+  { k: 'chest', v: 'case' }, { k: 'cash', v: 1000 }, { k: 'chest', v: 'siren' }, // (7.3.9, owner) $250 and $1,000 (they were $1,000 and $5,000: a sub or two early on)
 ];
 const TIERS = [ // [up to level, daily chest, cash days 2 and 6, advanced glow sticks, the week's chest]
-  [3, 'crate', [300, 800], false, 'footlocker'], [6, 'case', [1500, 4000], false, 'siren'],
-  [9, 'footlocker', [6000, 15000], true, 'leviathan'], [10, 'strongbox', [12000, 30000], true, 'poseidon'],
+  [3, 'crate', [75, 160], false, 'footlocker'], [6, 'case', [380, 800], false, 'siren'], // (7.3.9) the cash a quarter to a fifth of before, as week one's
+  [9, 'footlocker', [1500, 3000], true, 'leviathan'], [10, 'strongbox', [3000, 6000], true, 'poseidon'],
 ];
 export function calWeek(P) {
   calState(P); if (!(P.cal.week > 0)) return WEEK1;
@@ -42,19 +42,33 @@ const hrs = (ms) => { const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 36
 export function testHtml(P, items) {
   const chest = Object.entries(CHESTS).map(([k, C]) => `<button data-test="chest|${k}">${C.name}</button>`).join('');
   const opts = items.map((it) => `<option value="${it.id}">${it.name} (${it.rarity})</option>`).join('');
-  return `<div class="st-plate st-test"><button class="st-x" aria-label="Close">×</button><div class="st-tabs"><button data-tab="shop">Shop</button><button class="on" data-tab="test">Test</button></div>
-    <div class="tt-rows"><div class="tt-row"><b>Cash</b><button data-test="cash|1000">+$1,000</button><button data-test="cash|10000">+$10,000</button><button data-test="cash|100000">+$100,000</button><button data-test="cash|1000000">+$1,000,000</button></div>
+  return `<div class="st-plate st-test"><button class="st-x" aria-label="Close">×</button>${shopTabs('test', true)}
+    <div class="tt-rows"><div class="tt-row"><b>Pearls</b><button data-test="pearls|50">+50</button><button data-test="pearls|500">+500</button></div><div class="tt-row"><b>Cash</b><button data-test="cash|1000">+$1,000</button><button data-test="cash|10000">+$10,000</button><button data-test="cash|100000">+$100,000</button><button data-test="cash|1000000">+$1,000,000</button></div>
     <div class="tt-row"><b>Chests</b>${chest}</div>
     <div class="tt-row"><b>Abilities</b><button data-test="abil|all">Every ability</button><button data-test="abil|ready">Cooldown ready</button></div>
     <div class="tt-row"><b>Item</b><select class="tt-item">${opts}</select><button data-test="item|">Give</button></div>
     <div class="tt-row"><b>Reset</b><button data-test="reset|lessons">Lessons</button><button data-test="reset|tutorial">Tutorial</button><button data-test="reset|board">First board</button></div></div></div>`;
+}
+// (7.3.9, owner) the shop's tabs: chests (for cash), pets (for pearls), and the web build's Test
+export const shopTabs = (on, test) => `<div class="st-tabs">${[['shop', 'Chests'], ['pets', 'Pets'], ...(test ? [['test', 'Test']] : [])].map(([k, n]) => `<button${k === on ? ' class="on"' : ''} data-tab="${k}">${n}</button>`).join('')}</div>`;
+// (7.3.9, owner) pets sold for pearls, the shop's own: kinds that are not to be had otherwise as a companion. Caught animals
+// still become pets as before. A pet bought stays his: he can take it back out at any time for nothing
+export const SHOP_PETS = [{ id: 53, pearls: 80 }, { id: 482, pearls: 80 }, { id: 329, pearls: 80 }, { id: 462, pearls: 80 }, { id: 499, pearls: 120 }, { id: 87, pearls: 300 }];
+export const SHOP_PET_IDS = new Set(SHOP_PETS.map((s) => s.id));
+export function petsHtml(P, test, picOf, nameOf, rarOf) {
+  const owned = new Set(P.petsOwned || []), cur = P.pet && P.pet.id, have = Math.floor(P.pearls || 0);
+  const pearl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
+  const cards = SHOP_PETS.map((s) => { const R = rarOf(s.id), mine = owned.has(s.id), out = cur === s.id;
+    const btn = out ? '<button disabled>With you</button>' : mine ? `<button data-pet="${s.id}">Take out</button>` : `<button data-pet="${s.id}" ${have < s.pearls ? 'disabled' : ''}>${pearl}${s.pearls}</button>`;
+    return `<div class="st-card r-${R.id}"><img src="${picOf(s.id)}" alt=""><b style="color:${R.col}">${nameOf(s.id)}</b><span class="st-r" style="color:${R.col}">${R.name} pet</span><span class="st-n">${mine ? 'Yours' : '&nbsp;'}</span>${btn}</div>`; }).join('');
+  return `<div class="st-plate"><button class="st-x" aria-label="Close">×</button>${shopTabs('pets', test)}<div class="st-row st-pets">${cards}</div></div>`;
 }
 export function storeHtml(P, test = false) {
   const card = (key, deal) => {
     const C = CHESTS[key], R = RARITY[C.tier];
     return `<div class="st-card r-${C.tier}${deal ? ' deal' : ''}">${deal ? `<span class="st-deal">Deal, ${hrs(dealLeft())} left</span>` : ''}<button class="st-i" data-rates="${key}" aria-label="Details"><i>i</i></button><img src="${chestPicture(C.look, 220, 160)}" alt=""><b style="color:${R.col}">${C.name}</b><span class="st-r" style="color:${R.col}">${R.name}</span><span class="st-n">${C.n} item${C.n > 1 ? 's' : ''}</span><button data-store="${key}" ${(P.cash || 0) < C.price ? 'disabled' : ''}>${money(C.price, false)}</button></div>`;
   };
-  return `<div class="st-plate"><button class="st-x" aria-label="Close">×</button>${test ? '<div class="st-tabs"><button class="on" data-tab="shop">Shop</button><button data-tab="test">Test</button></div>' : '<h2>Shop</h2>'}<div class="st-row">${STANDARD.map((k) => card(k, false)).join('')}${card(dealNow(), true)}</div></div>`;
+  return `<div class="st-plate"><button class="st-x" aria-label="Close">×</button>${shopTabs('shop', test)}<div class="st-row">${STANDARD.map((k) => card(k, false)).join('')}${card(dealNow(), true)}</div></div>`;
 }
 // Events: the daily gift, seven days in a row
 // (6.5.0) today's gift and its Claim button pulse slowly; once claimed, the next day's button is greyed with the time

@@ -671,7 +671,7 @@ Object.assign(LEGEND_ART, {
   // small bulb of their light, warm and green
   lanternmesh(x, W, H, t) { legNet(x, t, { seed: 79,
     bag: (x, fx, fy, rx, ry) => { const bag = meshBag(x, fx, fy, rx, ry, 'rgba(14,16,12,0.85)', 'rgba(90,100,70,0.55)');
-      x.save(); bag(); x.clip(); for (let i = -12; i < 22; i++) for (let j = -12; j < 12; j++) { const kx = fx + i * 14 + j * 14, ky = fy + j * 13 * 2.1 * 0.5 + i * 0; if ((i + j) % 3) continue; halo(x, kx + (j % 2) * 7, fy + j * 28 + (i % 2) * 14, 9, i % 2 ? '#c8e890' : '#f0d890', 0.85); } x.restore(); },
+      x.save(); bag(); x.clip(); for (let i = -12; i < 22; i++) for (let j = -12; j < 12; j++) { const kx = fx + i * 14 + j * 14; if ((i + j) % 3) continue; halo(x, kx + (j % 2) * 7, fy + j * 28 + (i % 2) * 14, 9, i % 2 ? '#c8e890' : '#f0d890', 0.85); } x.restore(); },
     hoop: (x, fx, fy, rx, ry) => { x.strokeStyle = '#1c1a14'; x.lineWidth = 15; x.beginPath(); x.ellipse(fx, fy, rx, ry, 0, 0, TAU); x.stroke(); for (let k = 0; k < 30; k++) { const a = k / 30 * TAU, ca = Math.cos(a), sa = Math.sin(a); x.strokeStyle = '#5a5444'; x.lineWidth = 2; x.beginPath(); x.moveTo(fx + ca * rx, fy + sa * ry); x.lineTo(fx + ca * (rx + 14), fy + sa * (ry + 16)); x.stroke(); halo(x, fx + ca * (rx + 16), fy + sa * (ry + 18), 7, '#e8e090', 0.9); } },
     pole: (x, fy, x1) => bonePole(x, fy, x1, ['#4a4638', '#2a2820', '#0e0e0a'], '#16140e') }); return '#d8e890'; },
   // hagfish slime dried hard into an amber mesh on a long whalebone pole; drips of it hang from the bag, and it keeps

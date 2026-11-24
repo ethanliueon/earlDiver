@@ -4,7 +4,7 @@
 import { clamp, dist } from './util.js';
 import { canTakeLive, liveValue, deepPremium } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
-import { bagSlots, overencumbered } from './capture.js';
+import { overencumbered } from './capture.js';
 import { gear, owns } from './economy.js';
 
 const GRIP_TIMEOUT = 4;

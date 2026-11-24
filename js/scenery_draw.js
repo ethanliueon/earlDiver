@@ -1,6 +1,6 @@
 // Scenery drawn once into a picture and reused: the sunken freighters and the vent chimneys.
 // Everything is in local pixels; lighting is applied by the scene's light model afterwards.
-import { TAU, clamp, lerp } from './util.js';
+import { TAU, lerp } from './util.js';
 
 // a small seeded random source, so every wreck is always the same wreck
 function seeded(seed) {
@@ -183,7 +183,7 @@ export function drawShipwreck(ctx, L, seed, silt) {
 
   // ---- the bridge: deckhouse, bridge deck with its windows, wings, rails ----
   const sx0 = L * 0.19, sx1 = L * 0.41, base = deck(L * 0.3);
-  const t1 = base - H * 0.85, t2 = t1 - H * 0.62, t3 = t2 - H * 0.1;
+  const t1 = base - H * 0.85, t2 = t1 - H * 0.62;
   const house = (x0, x1, y0, y1, slant, col) => {
     const g = ctx.createLinearGradient(0, y1, 0, y0);
     g.addColorStop(0, col[0]); g.addColorStop(1, col[1]);

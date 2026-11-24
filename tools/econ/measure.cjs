@@ -11,7 +11,7 @@ const N = +(process.argv[2] || 6000), CURVE = process.argv.includes('curve'), TR
   await p.waitForFunction(() => window.__earl && window.__earl.g && window.__earl.g.fauna, null, { timeout: 90000 }); await p.waitForTimeout(1500);
   const out = await p.evaluate(async ([N, CURVE, TRENCH, AT, ORD]) => {
     const S = await import('/js/specimens.js'), E = await import('/js/economy.js'), Sv = await import('/js/survey.js');
-    const g = window.__earl.g, F = g.fauna, RATE = [14.6, 22, 24.4, 27.4, 26.2, 36.7, 41.7, 44.7]; // animals an hour (7.3.0)
+    const g = window.__earl.g, F = g.fauna, RATE = [14.6, 20.6, 22.7, 25.2, 24.1, 32.8, 37.6, 40.8]; // animals an hour (7.3.0's, x the root of each sub's 7.3.9 speed over its old one: slower subs meet fewer)
     const res = [];
     const DEPTHS = AT.length ? AT : CURVE ? (TRENCH ? [4350, 4500, 4650, 4800] : Array.from({ length: 29 }, (_, i) => 150 + i * 150)) : E.SUBS.map((s) => Math.round(s.rated * 0.85));
     const rateAt = (y) => { const D = E.SUBS.map((s) => s.rated * 0.85); if (y <= D[0]) return RATE[0]; for (let i = 1; i < D.length; i++) if (y <= D[i]) return RATE[i - 1] + (RATE[i] - RATE[i - 1]) * (y - D[i - 1]) / (D[i] - D[i - 1]); return RATE[RATE.length - 1]; };

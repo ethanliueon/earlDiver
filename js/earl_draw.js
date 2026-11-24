@@ -448,7 +448,7 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
   const mk = clamp(look.mark | 0, 0, SUB_MARKS.length - 1), M = SUB_MARKS[mk];
   const sleek = !!M.sleek;
   const [cHi, cMid, cBody, cLo] = M.body;
-  const P = (x, y) => [x * u, y * u];
+  
   const poly = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(pts[0][0] * u, pts[0][1] * u); for (const [x, y] of pts.slice(1)) ctx.lineTo(x * u, y * u); ctx.closePath(); ctx.fill(); };
   const eng = look.engine || 0;
   // ---------- stern: fins and the propeller in its duct ----------
@@ -876,7 +876,7 @@ export function drawSub(ctx, Lp, t, stress, lights, arm, look = {}) {
     // a thin thread of bubbles leaking out and up
     ctx.fillStyle = 'rgba(210,235,245,0.7)';
     ctx.beginPath(); // (4.5.0) one path for the thread
-    for (let k = 0; k < 4; k++) { const ph = ((t * 0.9 + k / 4 + q.seed) % 1); const bx = cx + Math.sin(ph * 9 + k) * u * 0.8, by = cy - r * 0.6 - ph * 14 * u; ctx.arc(cx + Math.sin(ph * 9 + k) * u * 0.8, cy - r * 0.6 - ph * 14 * u, (0.35 + 0.35 * (1 - ph)) * u, 0, TAU); ctx.closePath(); }
+    for (let k = 0; k < 4; k++) { const ph = ((t * 0.9 + k / 4 + q.seed) % 1); const bx = cx + Math.sin(ph * 9 + k) * u * 0.8; ctx.arc(cx + Math.sin(ph * 9 + k) * u * 0.8, cy - r * 0.6 - ph * 14 * u, (0.35 + 0.35 * (1 - ph)) * u, 0, TAU); ctx.closePath(); }
     ctx.fill();
     ctx.restore();
   }
@@ -1013,21 +1013,6 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   ctx.fillStyle = '#9a7a3e'; ctx.beginPath(); ctx.arc(19 * u, -20.5 * u, 1.35 * u, 0, TAU); ctx.fill(); // brass porthole ring
   ctx.fillStyle = '#c99a5a'; ctx.beginPath(); ctx.arc(19 * u, -20.5 * u, 1 * u, 0, TAU); ctx.fill();
   ctx.fillStyle = 'rgba(255,226,170,0.6)'; ctx.beginPath(); ctx.arc(18.7 * u, -20.8 * u, 0.4 * u, 0, TAU); ctx.fill();
-  // (4.3.5) the tutorial: the door lit up, a brass glow round it pulsing, so it is plain where the cabin is
-  if (opts.tutDoor) {
-    const p = 0.5 + 0.5 * Math.sin(t * 4);
-    // (5.5.5) the cabin lit behind it: its porthole glows lamp-warm; round it the tutorial's cream line, a dark olive edge
-    ctx.save();
-    ctx.fillStyle = `rgba(255,200,120,${(0.55 + 0.35 * p).toFixed(3)})`; ctx.beginPath(); ctx.arc(19 * u, -20.5 * u, 1 * u, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(18,22,12,0.7)'; ctx.lineWidth = 1.6 * u; ctx.strokeRect(16.4 * u, -24.6 * u, 5.2 * u, 14.2 * u);
-    ctx.strokeStyle = `rgba(230,222,196,${(0.7 + 0.3 * p).toFixed(3)})`; ctx.lineWidth = 0.8 * u; ctx.strokeRect(16.4 * u, -24.6 * u, 5.2 * u, 14.2 * u);
-    // a brass arrow beside it, bobbing toward the door (it turns with her, so it always points at the door)
-    const ax = 24.5 * u + Math.sin(t * 5) * 0.9 * u, ay = -17.5 * u;
-    ctx.fillStyle = 'rgba(230,222,196,0.95)'; ctx.shadowBlur = 4 * u * 0.6; ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.beginPath(); ctx.moveTo(ax - 2.4 * u, ay); ctx.lineTo(ax + 0.6 * u, ay - 2.4 * u); ctx.lineTo(ax + 0.6 * u, ay - 0.9 * u); ctx.lineTo(ax + 3.6 * u, ay - 0.9 * u);
-    ctx.lineTo(ax + 3.6 * u, ay + 0.9 * u); ctx.lineTo(ax + 0.6 * u, ay + 0.9 * u); ctx.lineTo(ax + 0.6 * u, ay + 2.4 * u); ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
   ctx.strokeStyle = '#e05a2a'; ctx.lineWidth = 1.1 * u; ctx.beginPath(); ctx.arc(-4.5 * u, -15.5 * u, 2.2 * u, 0, TAU); ctx.stroke();
   ctx.strokeStyle = '#f0ece0'; ctx.lineWidth = 1.1 * u;
   for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(-4.5 * u, -15.5 * u, 2.2 * u, k * Math.PI / 2, k * Math.PI / 2 + 0.35); ctx.stroke(); }

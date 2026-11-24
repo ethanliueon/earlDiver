@@ -2,7 +2,7 @@
 // routing around rock, and stops a few metres away. Hold C to send it back to the dock.
 // It never goes below its rated depth: past that it holds and waits.
 import { clamp, lerp, dist } from './util.js';
-import { collide, BOAT, WORLD_W, boatDock } from './world.js';
+import { collide, WORLD_W, boatDock } from './world.js';
 import { SUB_SPEED, ballastBoost } from './player.js';
 
 const CELL = 3;            // routing grid, metres
@@ -128,7 +128,7 @@ export class Autopilot {
       return null;
     }
     if (!this.active) return;
-    const W = g.world, sub = g.sub, e = g.earl;
+    const W = g.world, sub = g.sub;
     const G = this.goal(g);
     // plan (and re-plan when he moves or it gets stuck)
     this.replanT -= dt;

@@ -3,7 +3,7 @@
 // (ambient that fades with depth and loses red, plus lamps and bioluminescence),
 // then additive glows are layered on top.
 import { UPRIGHT } from './fauna.js';
-import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, noise1, hexToRgb, mixRgb } from './util.js';
+import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
 import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, boatRock } from './earl_draw.js';
@@ -23,8 +23,7 @@ import { TRAPS, lv, statValue } from './economy.js';
 import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
-import { LEGENDARY, rarityOf } from './specimens.js';
-import { SETTINGS } from './settings.js';
+import { LEGENDARY } from './specimens.js';
 import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
@@ -829,7 +828,7 @@ export class Renderer {
         const bctx = bc.getContext('2d');
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, Rw, Rh); bctx.globalCompositeOperation = 'source-over';
         bctx.translate(Rw * 0.45, Rh * 0.82);
-        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { tutDoor: false, noRoll: true });
+        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { noRoll: true });
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(Rw, Rh, bsx < 0), 0, 0);
         if (dimB > 0.01) { bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, Rw, Rh); }
         bctx.globalCompositeOperation = 'source-over';
@@ -1283,7 +1282,7 @@ export class Renderer {
         let L0 = Math.min(...xs), R0 = Math.max(...xs), T0 = Math.min(...ys), B0 = Math.max(...ys);
         const mw = 30 / kC; if (R0 - L0 < mw) { const c0 = (L0 + R0) / 2; L0 = c0 - mw / 2; R0 = c0 + mw / 2; } if (B0 - T0 < mw) { const c0 = (T0 + B0) / 2; T0 = c0 - mw / 2; B0 = c0 + mw / 2; }
         this.tapRects.push({ x: L0 * kC * fk, y: T0 * kC * fk, w: (R0 - L0) * kC * fk, h: (B0 - T0) * kC * fk, key: m.key, what: m.what });
-        const want = tk === m.key, q = 0.5 + 0.5 * Math.sin(g.time * 3), br = 2.4 / kC * (want ? 1.4 : 1) * (1 + 0.15 * q);
+        const want = tk === m.key, q = 0.5 + 0.5 * Math.sin(g.time * 3);
         // (6.5.1) no shape drawn round it: the sub breathes itself (drawn with it, above); the door, the ladder, the
         // winch and the rest are part of a bigger picture, so the light on that part lifts and settles, slowly, as a
         // lamp swung near it would: soft at its edges, nothing drawn round it
@@ -2405,7 +2404,7 @@ export class Renderer {
         // that angles up and then droops away with the current, its edges rippling
         const side = s2 % 2 ? 1 : -1, hsh = Math.abs(Math.sin(s2 * 12.9898 + k.phase * 78.233));
         const a = -Math.PI / 2 + side * (0.5 + hsh * 0.35 + Math.sin(t * 0.8 + s2 + k.phase) * 0.18);
-        const ca = Math.cos(a), sa = Math.sin(a), pxp = -sa, pyp = ca;
+        const ca = Math.cos(a), sa = Math.sin(a);
         const bl = len * (0.9 + hsh * 0.8), bw = wid * (0.55 + hsh * 0.35);
         const bx = px + ca * br * 1.4, by = py + sa * br * 1.4;
         bulbs.moveTo(bx + br, by); bulbs.ellipse(bx, by, br, br * 0.8, a, 0, TAU);
@@ -2899,15 +2898,16 @@ export class Renderer {
     { const o = g.earl && g.earl.inSub ? g.sub : g.earl; if (o) g.earlScr = [S(o.x) / this.W, Sy(o.y) / this.H, ppm / this.W]; } /* as fractions of the screen: the HUD's canvas has its own size */
     // words on the side away from the screen's nearer edge; they fade after a few seconds
     if (g.says && g.says.length && g.mode === 'play') { const ctx = this.ctx, W = this.W; let row = 0;
-      for (const m of g.says) { const o = m.at === 'sub' ? g.sub : g.earl, a = clamp(m.t / 0.3, 0, 1) * clamp((4 - m.t) / 0.7, 0, 1); if (a < 0.01 || !o) continue;
+      for (const m of g.says) { const o = m.at === 'sub' ? g.sub : m.at === 'pet' ? g.petC : g.earl, a = clamp(m.t / 0.3, 0, 1) * clamp((4 - m.t) / 0.7, 0, 1); if (a < 0.01 || !o) continue;
         const hx = S(o.x), hy = Sy(o.y) - ppm * (m.at === 'sub' ? 2.2 : 0.8) - row * 22, fs = 15; row++;
-        ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(m.text).width, left = hx > W * 0.5, d = Math.max(30, ppm * 1.2), tx = left ? Math.max(150, hx - d - w) : Math.min(W - w - 150, hx + d), ty = Math.max(fs + 70, hy - Math.max(30, ppm * 1.2));
-        ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(236,230,210,0.6)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(hx + (left ? -3 : 3), hy - 3); ctx.quadraticCurveTo(hx + (left ? -4 : 4), ty + 6, left ? tx + w : tx, ty + 6); ctx.lineTo(left ? tx : tx + w, ty + 6); ctx.stroke();
+        ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(m.text).width, left = hx > W * 0.5, d = Math.max(30, ppm * 1.2); let tx = left ? Math.max(150, hx - d - w) : Math.min(W - w - 150, hx + d); let ty = Math.max(fs + 70, hy - Math.max(30, ppm * 1.2));
+        ctx.globalAlpha = a; if (m.at !== 'pet') { /* (7.3.9, owner) the pet's word is written just above it, with no line */ ctx.strokeStyle = 'rgba(236,230,210,0.6)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(hx + (left ? -3 : 3), hy - 3); ctx.quadraticCurveTo(hx + (left ? -4 : 4), ty + 6, left ? tx + w : tx, ty + 6); ctx.lineTo(left ? tx : tx + w, ty + 6); ctx.stroke(); }
+        if (m.at === 'pet') { tx = hx - w / 2; ty = Sy(o.y) - Math.max(18, ppm * ((o.len || 1) * 0.35 + 0.5)); }
         ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(m.text, tx, ty); ctx.restore(); } }
     // (6.0.0) Earl's one line, after the sea gives him back from its jaws: written into the scene beside him like the
     // game's labels (no box, no bubble), a thin line curving up from his head to the words, which run on under them; it
     // comes a few letters at a time, as if he were thinking it, and fades
-    const ctx = this.ctx, W = this.W;
+    const ctx = this.ctx;
     if (g.earlSay && g.mode === 'play' && !g.earl.inSub) { const L = g.earlSay, e = g.earl, a = clamp(L.t / 0.4, 0, 1) * clamp((5.4 - L.t) / 0.9, 0, 1);
       if (a > 0.01) { const hx = S(e.x), hy = Sy(e.y) - ppm * 0.7, n = clamp(Math.floor((L.t - 0.25) * 22), 0, L.text.length), fs = 17;
         ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(L.text).width, tx = Math.max(150, hx - Math.max(36, ppm * 1.6) - w), ty = Math.max(fs + 70, hy - Math.max(48, ppm * 2)); /* (6.0.1) up and to his left, into the open water, clear of the menu column */

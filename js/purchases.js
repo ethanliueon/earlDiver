@@ -11,10 +11,9 @@
 //   adReady(placement)            -> true when a rewarded video is loaded
 //   showAd(placement)             -> { rewarded: true } when watched to the end, { rewarded: false } when skipped or failed
 //
-// Products are consumables (a revive is used up); nothing here is a subscription.
+// Products are consumables; nothing here is a subscription. (7.3.9) none yet: the revive is paid in pearls.
 
 export const PRODUCTS = {
-  revive: { id: 'earl.revive.1', fallback: '$0.99', what: 'Revive' },
 };
 
 const native = () => (typeof window !== 'undefined' && window.__nativeStore) || null;

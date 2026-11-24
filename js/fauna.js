@@ -338,22 +338,7 @@ export class Fauna {
     // which homes are free: one group to a home (an anemone holds one family of clownfish)
     const live = new Set(); for (const c of this.list) live.add(c.gid);
     const homes = new Map();
-    const homeFor = (s) => {
-      const H = HOME[s.id];
-      let best = null, bd = 1e9;
-      for (const kind of H.k) for (const h of W.homesNear(kind, x, y, 40)) {
-        if (h.y < s.dmin || h.y > s.dmax) continue;
-        if (this.depthPref(s, h.x, h.y, this.night) <= 0) continue;
-        if (h.occ && live.has(h.occ)) continue;
-        if (TROPICAL.has(s.id) && !onTropicalReef(h.x)) continue;
-        if (COLD.has(s.id) && onTropicalReef(h.x)) continue;
-        // appear out of sight, never in front of the player
-        if (Math.abs(h.x - cam.x) < cam.w / 2 + 2 && Math.abs(h.y - cam.y) < cam.h / 2 + 2) continue;
-        const d = Math.abs(h.x - x) + Math.abs(h.y - y);
-        if (d < bd) { bd = d; best = h; }
-      }
-      return best;
-    };
+    
     const floorHere = W.floorAt(x);
     const cands = SWIMMERS.filter((s) => {
       if (HOME[s.id]) return false; // reef and bottom animals are residents of their homes (see settle)
@@ -432,7 +417,7 @@ export class Fauna {
 
   makeFish(sp, x, y, dir, gid, leader) {
     const rng = this.rng;
-    const len = spawnLen(sp, () => rng.range(0, 1)), sz = len / sp.len, hab = sp.v.hab; // (6.2.0) within about 15 % of its species, never over 4 m if it is under
+    const len = spawnLen(sp, () => rng.range(0, 1)), hab = sp.v.hab; // (6.2.0) within about 15 % of its species, never over 4 m if it is under
     // cruising at roughly one body length a second (bounded), much slower for drifters
     let cruise = clamp(len * 0.8, 0.3, 1.6); // (5.7.3) back to version 4's
     if (hab === 'drift' || hab === 'drift-low') cruise = 0.12;

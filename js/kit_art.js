@@ -3,8 +3,8 @@
 // seen from the side are ovals; mesh is knotted twine or galvanised wire with its near side brighter than its far side.
 // Each painter fills a w x h picture (the shop, the locker, the cards, the gains).
 const TAU = Math.PI * 2;
-let SEED = 1;
-const rnd = () => ((SEED = (SEED * 16807) % 2147483647) / 2147483647);
+
+
 const lin = (x, x0, y0, x1, y1, stops) => { const g = x.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
 // a float or a ball, lit from the upper left
 function ball(x, cx, cy, r, base, hi, lo) {
@@ -22,7 +22,7 @@ function floorShadow(x, cx, cy, rx, ry, a = 0.28) { const g = x.createRadialGrad
 // as a solid (light on its upper flank, dark beneath, the inside of the mouth darkest). Floats ride on the ring: cork on
 // the basic net, glass in netting on the advanced, whose steel hoop also has its chain; the bridles run off to the left
 export function drawTrawl3(x, w, h, k) {
-  SEED = k === 'adv' ? 31 : k === 'deep' ? 37 : 17; const adv = k !== 'basic';
+  const adv = k !== 'basic';
   const mx = w * 0.22, my = h * 0.48, ry = h * (adv ? 0.34 : 0.3), rx = ry * 0.36, L = w * (adv ? 0.64 : 0.58), sag = h * 0.06;
   const C = (u) => [mx + L * u, my + sag * Math.sin(u * Math.PI * 0.9) + h * 0.04 * u]; // the bag's axis
   const rad = (u) => Math.max(0.06, Math.pow(1 - u, 0.85) * 0.94 + 0.06 * (1 - u)); // its girth along it
@@ -88,7 +88,7 @@ function frameEdges(x, F, col, lw) { x.strokeStyle = col; x.lineWidth = lw; x.li
 function funnel(x, cx, cy, rx, ry, col) { for (let i = 0; i < 4; i++) { const k = 1 - i * 0.22; x.strokeStyle = col; x.lineWidth = 1.1; x.beginPath(); x.ellipse(cx + i * rx * 0.08, cy, rx * k, ry * k, 0, 0, TAU); x.stroke(); }
   x.fillStyle = 'rgba(10,12,12,0.75)'; x.beginPath(); x.ellipse(cx + rx * 0.26, cy, rx * 0.26, ry * 0.26, 0, 0, TAU); x.fill(); }
 export function drawTrap3(x, w, h, k) {
-  SEED = ({ pot: 3, fish: 5, steel: 7, cage: 9 })[k] || 3;
+
   if (k === 'cage') { // a tall cage on a weighted steel base, its lit lure hanging inside
     const W = w * 0.3, H = h * 0.66, D = w * 0.16, x0 = w * 0.32, y0 = h * 0.2, F = boxFaces(x0, y0, W, H, D, 0.5);
     floorShadow(x, x0 + W * 0.7, y0 + H + h * 0.04, W * 1.1, h * 0.05);

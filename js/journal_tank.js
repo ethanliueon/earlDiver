@@ -16,7 +16,7 @@ const FLOOR = { 'hb-sun': ['#b8a47a', '#8a7650'], 'hb-reef': ['#c4b088', '#94805
 // a small one is seen close beside tall plants and big stones (z > 1), a large one from farther off, the same place
 // small and wide behind it: short plants, more of them, stones far off (z < 1)
 export const tankZoom = (len) => (len < 0.15 ? 2.2 : len < 0.5 ? 1.5 : len < 1.5 ? 1 : len < 4 ? 0.6 : 0.4);
-const rgba = (c, a) => { const n = parseInt(c.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+
 // (7.0.0) bare: only the seabed (sand or silt, stones, grains), for an animal that is itself fixed to the floor (a
 // coral, a fan, a sponge, an anemone), so it is never confused with the scenery
 export function tankPicture(hab, W = 480, H = 260, z = 1, bare = false) {

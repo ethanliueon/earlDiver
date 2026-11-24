@@ -39,7 +39,7 @@ Should the kelp forest thin out and grow shorter in deeper water, so it ends nat
 again before building. 7.2.6 already did the lighter, see-through, layered look (tools/kelp_kit.py, `drawKelp` in
 js/render.js).
 
-## 4. Code tidy-up (agreed, not started)
+## 4. Code tidy-up (DONE in 7.3.9)
 
 Remove dead code that was already in the game. eslint (installed globally) lists about 220 unused names. For example:
 - `canOffer()` returns false;
@@ -53,8 +53,7 @@ No behaviour changes. Run `tools/tests/phone.cjs` after.
 
 ## 5. Known gaps found in 7.2.4–7.2.6
 
-- **Pets cannot be told to stay on a phone.** The only way was the H key, which is gone. It needs a button, perhaps
-  in the pet's card.
+- **Pets cannot be told to stay on a phone.** (DONE in 7.3.9: close to the pet, the interact button becomes the pet.)
 - **Missing sky pictures:** `assets/sky/clouds_high.png`, `clouds_mid.png` and `clouds_low.png` are asked for but
   not in the repository.
 - **No full-screen request.** Since 7.2.5 the page never asks the browser for full screen, because entering it

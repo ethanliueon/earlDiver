@@ -3,7 +3,7 @@
 // the same species). Photos: the institute pays once for the first picture of each species and
 // each rare form. Both are paid at the boat; neither survives his death (the data dies with him).
 import { depthMultOf } from './specimens.js';
-import { clamp, dist } from './util.js';
+import { dist } from './util.js';
 import { gear, owns } from './economy.js';
 import { TAG, liveValue, tagPrice, rarityOf, rarityPrice } from './specimens.js';
 import { variantMult, variantName } from './variants.js';

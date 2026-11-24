@@ -8,14 +8,14 @@
 // on a chamber, the open tank or the bag.
 import { SPECIES_BY_ID } from './species.js';
 import { usualDepth } from './fauna.js';
-import { drawSpecies, speciesIcon, speciesBox, fittedIcon } from './creatures_draw.js';
+import { drawSpecies, speciesBox, fittedIcon } from './creatures_draw.js';
 import { rarityOf, specimenValue, rarityStars, rarityCls, livesOnBottom, isSessile } from './specimens.js';
 import { money } from './economy.js';
 import { xEyes } from './gallery.js';
-import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, tankUsed, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, slotsOf, chamberRoom, bagUsed, spacesOf } from './capture.js';
+import { tankSlots, pressSlots, chamberRating, chamberMax, homeOf, gapOf, SAFE_GAP, freeChamber, bagSlots , tankFits, BIG, bigFits, hasBigTank, tooBig, bigIn, chamberRoom, bagUsed, spacesOf } from './capture.js';
 import { UPGRADES, SUB_ADDONS } from './economy.js';
 import { clamp, lerp, TAU } from './util.js';
-import { paintedText, depthCounter, hatchRim, paperTag, instructionPlate, cleanPatch, cappedFlange, hoseCoil, hazardTape, toggleSwitch, brassTag, ease } from './fittings.js';
+import { paintedText, depthCounter, hatchRim, paperTag, cleanPatch, cappedFlange, hoseCoil, hazardTape, toggleSwitch, brassTag, ease } from './fittings.js';
 import { drawBeacon } from './alarm.js';
 // (3.0.25) the open tank's lights, as the aquarium's
 const TANK_LIGHTS = { day: { name: 'Daylight', water: ['#1d5f70', '#0a2a33'], tint: null }, dim: { name: 'Dim', water: ['#0f3440', '#04151b'], tint: 'rgba(0,10,20,0.45)', glow: true } }; // (3.0.26: no Red in the sub)
@@ -789,7 +789,7 @@ export class TankRoom {
 
   // ---------------- the tank room ----------------
   drawTankRoom(ctx, G, g, dt) {
-    const T = G.tank, t = this.t;
+    const T = G.tank;
     // the tank set into the bulkhead: a deep steel surround
     ctx.fillStyle = '#16191a'; ctx.fillRect(T.x - 18, T.y - 18, T.w + 36, T.h + 36);
     ctx.fillStyle = '#4b5355'; ctx.fillRect(T.x - 12, T.y - 12, T.w + 24, T.h + 24);

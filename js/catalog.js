@@ -6,13 +6,12 @@
 // Gear can be sold back wherever there is a shop. The old one has no website (see main.js / render.js).
 import { ITEMS, ITEMS_OF, kitOf, ownsItem, worn as wornItem, RARITY, isOn, sellValue, LOCKER, lockerFree } from './items.js';
 import { drawScroll3 } from './scrolls.js';
-import { SUITS, TRAPS, SUPPLIES, supplyMax, money, moneyExact, owns, kit } from './economy.js';
+import { TRAPS, SUPPLIES, supplyMax, money, moneyExact, owns, kit } from './economy.js';
 import { NETS_SUB, netsOf } from './capture.js';
 import { toolIcon } from './tools_draw.js';
 import { drawSpecialPicture, drawSuitFlat } from './item_art.js';
 import { drawChest } from './chest_art.js';
 import { drawFins3, drawCam3, drawTank3, drawBag3, drawNet3 } from './gear_art.js';
-import { drawEarl } from './earl_draw.js';
 import { TAU } from './util.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
 import { rarKind } from './itemcard.js';
@@ -44,7 +43,7 @@ const LEDE = {
   trap: 'Set from the surface, on a line from a buoy.', suit: 'One worn at a time.', fins: 'How fast you swim, and sprint.',
   tank: 'How long you can stay down.', bag: 'How many animals you can carry.', supply: 'Bought by the number.',
 };
-const cm = (m) => `${Math.round(m * 100)} cm`;
+
 const mm = (v) => `${v.toFixed(2)} m`; // (6.0.8) fish size in metres, two places, no "up to"
 const sizeOf = (it) => (it.minLen ? `${it.minLen.toFixed(2)}–${mm(it.maxLen)}` : mm(it.maxLen)); // (owner, 7.3.0) the floor stays in the figures; the words say why
 const secs = (s) => (s >= 60 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.round(s)} s`);

@@ -223,12 +223,14 @@ export function ordIncome(y) {
   for (let i = 1; i < T.length; i++) if (y <= T[i][0]) { const [a, pa] = T[i - 1], [b, pb] = T[i], t = (y - a) / (b - a); return pa * Math.pow(pb / pa, t); }
   return T[T.length - 1][1];
 }
-export const EXOTIC_HOURS = 1, LEGEND_HOURS = 15;
+// (7.3.9, owner) an exotic is one hour of it at 1,000 m and above, rising steadily to two hours at 4,800 m (the deeper, the
+// bigger the find); a legend is always fifteen times an exotic of its depth
+export const exoticHours = (y) => 1 + Math.min(1, Math.max(0, (y - 1000) / 3800)), LEGEND_X = 15;
 function huntPrice(sp, hours) {
   const R = rarityOf(sp), size = clamp01(Math.log(Math.max(0.03, sp.len) / 0.05) / Math.log(2 / 0.05)), v = 0.75 + 0.6 * (0.65 * size + 0.35 * (R.pos ?? 0.5));
-  return ordIncome(midDepth(sp)) * hours * EXOTIC_HOURS * v;
+  const mid = midDepth(sp); return ordIncome(mid) * hours * exoticHours(mid) * v;
 }
-function legendPrice(mid) { return ordIncome(mid) * LEGEND_HOURS; }
+function legendPrice(mid) { return ordIncome(mid) * exoticHours(mid) * LEGEND_X; }
 const RAR_CACHE = new Map();
 // { tier index, rarity entry, position 0..1 within the tier, hidden }. Animals that can't be captured
 // (tag-only, apart from the legendaries) have a tier only for how often they turn up: hidden, never shown.

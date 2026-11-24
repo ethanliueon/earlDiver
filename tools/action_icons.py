@@ -44,6 +44,36 @@ def spline(pts, closed=True, n=14):
     return out
 
 
+def pearl():
+    # (7.3.9) the premium currency's mark: one natural pearl, a matte nacre sphere lit from above-left (soft light falling
+    # off round it, a gentle rim of light bounced from below, a faint rose and green play running through its skin, one
+    # soft highlight), never a glossy gem; a dark edge and a soft shadow as the HUD's other icons
+    import numpy as np
+    from PIL import Image, ImageFilter
+    S2 = 512; yy, xx = np.mgrid[0:S2, 0:S2].astype(np.float32); cx = cy = 256; R = 150
+    nx, ny = (xx - cx) / R, (yy - cy) / R; r2 = nx * nx + ny * ny; inside = r2 <= 1
+    nz = np.sqrt(np.clip(1 - r2, 0, 1)); L = np.array([-0.45, -0.6, 0.66]); L = L / np.linalg.norm(L)
+    lam = np.clip(nx * L[0] + ny * L[1] + nz * L[2], 0, 1)
+    base = np.array([206, 198, 182], np.float32)
+    col = base * (0.42 + 0.62 * lam[..., None])
+    rim = np.clip(ny, 0, 1) ** 2 * (1 - nz) ** 1.5; col += np.array([60, 66, 60]) * rim[..., None]          # light bounced from below
+    hue = np.sin(nx * 3.1 + ny * 2.3) * 0.5 + 0.5
+    col += (np.array([16, -6, 6]) * hue[..., None] + np.array([-8, 8, 0]) * (1 - hue)[..., None]) * (1 - nz)[..., None] * 1.6  # the nacre's play, at the edges
+    h = np.array([0, 0, 1]) + L; h = h / np.linalg.norm(h); spec = np.clip(nx * h[0] + ny * h[1] + nz * h[2], 0, 1) ** 40
+    col += 70 * spec[..., None]
+    rng = np.random.default_rng(3); col *= (0.98 + 0.04 * rng.random((S2, S2, 1)))
+    a = inside.astype(np.float32)
+    a = np.asarray(Image.fromarray((a * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.2)), np.float32) / 255
+    ring = np.asarray(Image.fromarray((a * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(17)), np.float32) / 255
+    sh = np.asarray(Image.fromarray((ring * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(10)), np.float32) / 255
+    shadow = np.zeros_like(sh); shadow[14:, 6:] = sh[:-14, :-6]; shadow *= 0.55
+    rgb = np.zeros((S2, S2, 3), np.float32); A2 = np.maximum(shadow, ring)
+    rgb = rgb * (1 - ring[..., None]) + np.array([24, 26, 20]) * ring[..., None]
+    rgb = rgb * (1 - a[..., None]) + np.clip(col, 0, 255) * a[..., None]
+    img = Image.fromarray(np.dstack([np.clip(rgb, 0, 255), np.clip(A2 * 255, 0, 255)]).astype(np.uint8), 'RGBA').resize((128, 128), Image.LANCZOS)
+    img.save(os.path.join(os.path.dirname(__file__), '..', 'assets', 'ui', 'icons', 'pearl.png'), optimize=True); print('  pearl.png')
+
+
 def point():
     # (7.2.8) the tutorial's pointing hand: Earl's own diving glove, the fist closed, the index finger straight out. Drawn
     # pointing down (hud.js turns it toward what to tap); no outline, only its shadow, so it looks the same over sky, sea,

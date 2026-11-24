@@ -13,7 +13,7 @@
 import { WORDS, ARCH_WORDS } from './item_words.js';
 import { designFor } from './designs.js';
 import { ABILITY_DEFS, abilityId } from './abilities.js';
-import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, STATION_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
+import { RARITY, SKILLS, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, STATION_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
 export { RARITY, RARITIES, SKILLS, LEGEND, SETS } from './item_data.js';
 
 // (5.0) the slurp gun and the tag gun are gone: the net catches, the camera records what can't be brought up
@@ -101,7 +101,7 @@ function reband(def) {
 const VALUE = { common: 120, uncommon: 450, rare: 1800, exotic: 15000, legendary: 90000 }; // (3.7.0) the top two raised with what the deep pays
 // the "good for" line, worked out from the stats
 function goodOf(kind, s) {
-  const cm = (m) => Math.round(m * 100);
+  
   if (kind === 'net' || kind === 'slurp') return `${s.multi ? `Up to ${s.multi} from a school at once; ` : ''}fish size ${s.minLen ? `${s.minLen.toFixed(2)}–${s.maxLen.toFixed(2)} m` : `${s.maxLen.toFixed(2)} m`}, reach ${s.range} m`; // (6.0.8)
   if (kind === 'tag') return `Tagging from ${s.range} m`;
   if (kind === 'cam') return `Quality ${(s.idx || 10).toFixed(2)}; holds ${s.shots} exposures, ${s.exp} s to take${s.flash ? '' : ', no flash'}`;
@@ -411,7 +411,7 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
 }
 // (5.12.5) whatever a description says about air or pockets, it says the real number (shop words were written by hand)
 {
-  const WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen'];
+  
   for (const it of Object.values(ITEMS)) {
     if (it.kind === 'tank') reword(it, (t) => t.replace(/\b\d+ s of air/g, `${it.air} s of air`));
     if (it.kind === 'bag') reword(it, (t) => t.replace(/\b\d+ animals/g, `${it.slots} spaces`).replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve) pockets\b/g, 'room inside'));
@@ -466,7 +466,7 @@ for (const it of Object.values(ITEMS)) {
 // hour of the work subs', exotic one to two hours at research depth, legendary three to five hours of the deepest sub's
 // (7.3.8, owner) the same rule on the re-measured income (tools/econ/measure.cjs): rare half an hour of the work subs', exotic
 // an hour and a half of the research sub's to two of the deep research sub's, legendary three to five hours of the deepest's
-{ const REMAP = { uncommon: [[300, 1000], [400, 1200]], rare: [[1000, 2000], [2300, 4800]], exotic: [[8000, 30000], [24000, 84000]], legendary: [[54000, 90000], [1150000, 1900000]] };
+{ const REMAP = { uncommon: [[300, 1000], [400, 1200]], rare: [[1000, 2000], [2100, 4600]], exotic: [[8000, 30000], [24000, 78000]], legendary: [[54000, 90000], [1070000, 1790000]] }; // (7.3.9) on the slower subs' income
   const nice = (p) => (p < 1000 ? Math.round(p / 10) * 10 : p < 10000 ? Math.round(p / 100) * 100 : p < 1e6 ? Math.round(p / 1000) * 1000 : Math.round(p / 50000) * 50000);
   for (const it of Object.values(ITEMS)) { const R = REMAP[it.rarity]; if (!R || !(it.price > 0)) continue;
     const [[a, b], [c, d]] = R, t = Math.min(1, Math.max(0, Math.log(it.price / a) / Math.log(b / a)));

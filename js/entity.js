@@ -7,7 +7,7 @@
 // he hides, searching, and getting a vague fix on him every so often. While hunting it can push up
 // toward ~120 m (slowing and fading as it rises - no hard line); otherwise it stays below ~200 m.
 // Staying shallow long enough makes it lose interest, and the mark fades.
-import { clamp, lerp, dist, TAU } from './util.js';
+import { clamp, lerp, dist } from './util.js';
 import { MONSTER_LEN, MONSTER_EYE } from './monster_draw.js';
 export const ENTITY_SPEED = 12; // m/s: its travelling speed, far faster than Earl, and than the sub
 export const ENTITY_BURST = 15; // m/s: a burst, only once it is in sight of him and only if he is getting away

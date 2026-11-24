@@ -7,17 +7,7 @@ const P = (s) => new Path2D(s);
 const S = (d, w = 1.4) => ({ stroke: P(d), w });
 const circle = (cx, cy, r) => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0z`;
 // chords of a circle at 45 degrees both ways, spaced sp: the mesh inside a hoop
-function meshIn(cx, cy, r, sp) {
-  let d = '';
-  for (const sgn of [1, -1]) {
-    const ux = Math.SQRT1_2, uy = sgn * Math.SQRT1_2, nx = -uy, ny = ux; // along the line, and across it
-    for (let c = -r + sp / 2; c < r; c += sp) {
-      const h = Math.sqrt(r * r - c * c), px = cx + nx * c, py = cy + ny * c;
-      d += `M${(px - ux * h).toFixed(2)} ${(py - uy * h).toFixed(2)}L${(px + ux * h).toFixed(2)} ${(py + uy * h).toFixed(2)}`;
-    }
-  }
-  return d;
-}
+
 function cog(cx, cy, r0, r1, n, hole) {
   let d = '';
   for (let i = 0; i < n * 2; i++) {
