@@ -46,7 +46,7 @@ import { TankRoom, sizeK, seaAt } from './tankroom.js'; // (sizeK: an animal's d
 import { lockerTexture } from './textures.js';
 import { gaugeFace, gaugeNeedle, gaugeGlass } from './gauge_art.js';
 import { daveTalkPlate } from './dave_art.js';
-import { ChestReveal, chestsOf, oddsText, chestPicture } from './chests.js';
+import { ChestReveal, chestsOf, oddsText, chestPicture, chestOddsHtml } from './chests.js';
 import { petsHtml, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml } from './store.js';
 import { isTestStore } from './purchases.js';
 import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, web build only
@@ -1412,7 +1412,7 @@ export class UI {
     const curQ = !on && K.on[it.kind] ? K.items.find((x) => x.u === K.on[it.kind]) : null, cur = curQ ? ITEMS[curQ.id] : null, M = MEASURES[it.kind];
     let body, acts = '';
     if (it.kind === 'chest') { // (6.4.0) a chest in the locker: its card, and Open (with room in the locker for all it can give)
-      body = `<div class="ip-cols one">${this.itemCol(P, q, 'Chest')}</div>`; acts += `<button data-lk="open:${q.u}">Open</button>`;
+      { const col = this.itemCol(P, q, 'Chest'), odds = chestOddsHtml(String(it.id).replace(/^chest_/, '')), cut = col.lastIndexOf('</div>'); body = `<div class="ip-cols one">${cut > 0 ? col.slice(0, cut) + odds + col.slice(cut) : col + odds}</div>`; } acts += `<button data-lk="open:${q.u}">Open</button>`; // (7.4.1, owner) its odds in the card's empty space
       if (seller) acts += `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       return `<div class="item-pop"><div class="ip-box r-${it.rarity}"><button class="ip-close" aria-label="Close">×</button>${body}<div class="lk-acts">${acts}</div></div></div>`;
     }

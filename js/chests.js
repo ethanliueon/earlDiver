@@ -94,6 +94,13 @@ export function ratesTable(key) { // (6.1.9) names and figures only; the coin by
   const sure = C.atLeast ? `<tr><td>At least</td><td>1 ${RARITY[C.atLeast].name}</td></tr>` : '';
   return `<div class="rt-box"><button class="rt-x" aria-label="Close">×</button><img class="rt-pic" src="${chestPicture(C.look, 220, 160)}" alt=""><h4>${C.name}</h4><p class="rt-line">${C.line}</p><table class="rt-head"><tr><td>Items</td><td>${C.n}</td></tr>${sure}</table><table>${rows}</table>${coin}</div>`;
 }
+// (7.4.1, owner) the odds written on the chest's own card in the locker: how many items, any sure rarity, each rarity's
+// chance in its colour, and the old coin's extra chance
+export function chestOddsHtml(key) {
+  const C = CHESTS[key]; if (!C) return '';
+  const rows = Object.entries(C.odds).map(([r, p]) => `<div><span style="color:${RARITY[r].col}">${RARITY[r].name}</span><b>${p} %</b></div>`).join('');
+  return `<div class="ch-odds"><div><span>Items</span><b>${C.n}</b></div>${C.atLeast ? `<div><span>At least</span><b style="color:${RARITY[C.atLeast].col}">1 ${RARITY[C.atLeast].name}</b></div>` : ''}${rows}${C.coin ? `<div><span><img class="gc" src="${coinPic()}" alt="">Old coin</span><b>+${C.coin} %</b></div>` : ''}</div>`;
+}
 let COINPIC = null;
 function coinPic() { if (COINPIC) return COINPIC; const c = document.createElement('canvas'); c.width = c.height = 48; import('./catalog.js').then((m) => { const x = c.getContext('2d'); m.drawGoldCoins(x, 48, 48, 1); COINPIC = c.toDataURL(); }); return c.toDataURL(); }
 if (typeof document !== 'undefined') setTimeout(coinPic, 0);

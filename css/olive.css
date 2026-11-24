@@ -2022,3 +2022,17 @@ html body #inventory .pet-pick .pp-fish img:not(#_a) { height: 62px; }
 html body #inventory .pet-pick .pp-fish b:not(#_a) { font: 600 16px/1.15 'Barlow Semi Condensed', sans-serif; text-align: center; }
 html body #inventory .pet-pick .pp-fish small:not(#_a) { font: 500 14px 'Barlow Semi Condensed', sans-serif; }
 html body #inventory .pet-pick .pp-none:not(#_a) { font: 500 16px 'Barlow Semi Condensed', sans-serif; opacity: 0.75; grid-column: 1 / -1; text-align: center; padding: 18px 0; }
+
+/* (7.4.1, owner) every pop-up's close cross a little bigger (36 to 42 pt): easier to hit on a phone */
+html body :is(:is(#settings, #inventory) .set-close, #journal-close, #workshop-close, #cave-close, #trapset-close, .ip-close, .oc-close, .qp-close, .qs-close, .ch-close, .rt-x, .st-x, .cx-cardx, .dv-close):not(#_a):not(#_b):not(#_c):not(#_d) { width: 42px !important; height: 42px !important; }
+/* the chest's odds on its locker card: a row a rarity, its chance at the right, in the card's own lettering */
+html body #inventory .ch-odds { margin: 10px 0 2px; display: grid; gap: 3px; }
+html body #inventory .ch-odds div { display: flex; justify-content: space-between; align-items: center; font: 500 15px 'Barlow Semi Condensed', sans-serif; color: rgba(230, 223, 202, 0.78); padding: 2px 0; border-bottom: 1px solid rgba(239, 232, 214, 0.06); }
+html body #inventory .ch-odds div:last-child { border-bottom: 0; }
+html body #inventory .ch-odds b { font-weight: 600; color: #efe8d2; }
+html body #inventory .ch-odds .gc { width: 16px; height: 16px; vertical-align: -3px; margin-right: 5px; }
+/* (7.4.1) a chest's card: no empty figures block above its odds (it held 74 px open), so the odds sit right under its line */
+html body #inventory .ip-col:has(.ch-odds) :is(.ip-stats, .ip-sks:empty, .lk-set:empty) { display: none !important; min-height: 0 !important; }
+html body #inventory .ip-col:has(.ch-odds) .ch-odds { margin-top: 12px; }
+html body #inventory .ip-col:has(.ch-odds) .ic-line:not(#_a) { height: auto; min-height: 0; } /* (7.4.1) a chest's line its own height (cards keep a fixed 96 px for side-by-side lines up) */
+html body #inventory .ip-col .ch-odds img.gc:not(#_a):not(#_b) { display: inline-block !important; width: 16px !important; height: 16px !important; margin: 0 6px 0 0 !important; vertical-align: -3px; } /* (7.4.1) the old coin beside its name */
