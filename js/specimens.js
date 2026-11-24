@@ -191,18 +191,26 @@ export function rarityPrice(sp) {
   // usually keeps to (fauna.js usualDepth): nothing changes down to 450 m, then x1.9 at 1,300 m, x2.9 at 3,300 m. A
   // legend is $150,000 times the same (the coelacanth of the shallows $150,000, the tripod of the abyss about $435,000),
   // so the cheapest legend is still several times the dearest exotic
-  { const mid = midDepth(sp), k = depthCurve(mid); p = R.id === 'legendary' ? 150000 * k : p * k; }
+  { const mid = midDepth(sp), k = depthCurve(mid); p = R.id === 'legendary' ? legendPrice(mid) : p * k; }
   p = p >= 100 ? Math.round(p / 5) * 5 : Math.round(p * 100) / 100;
   PRICE_CACHE.set(sp.id, p);
   return p;
 }
 // (7.3.0) the depth curve and where an animal lives (handed over by fauna.js, which works out its usual depths; before
 // that, the middle of its recorded band)
-export const depthCurve = (mid) => 1 + 0.9 * Math.log(1 + Math.max(0, mid - 450) / 400);
+export const depthCurve = (mid) => Math.pow(3, Math.max(0, mid - 450) / 1000); // (7.3.0, owner) three times as much for every 1,000 m below 450 m
 let usualOf = null;
-export function useUsualDepth(f) { usualOf = f; PRICE_CACHE.clear(); }
+export function useUsualDepth(f) { usualOf = f; PRICE_CACHE.clear(); LEG_SPAN = null; }
 const midDepth = (sp) => { const r = usualOf ? usualOf(sp) : [sp.dmin, Math.min(sp.dmax, Math.max(sp.dmin * 4, 1500))]; return (r[0] + r[1]) / 2; };
 export const depthMultOf = (sp) => depthCurve(midDepth(sp)); // (7.3.0) for photographs, which do not take it
+// (7.3.0, owner) a legend: never under five times the dearest exotic (about $660,000, so $3,300,000), the shallowest legend
+// (the coelacanth) at that, the deepest about $5,000,000, in between by how deep each lives
+let LEG_SPAN = null;
+function legendPrice(mid) {
+  if (!LEG_SPAN && usualOf) { const ms = [...LEGENDARY].map((id) => SPECIES_BY_ID[id]).filter(Boolean).map(midDepth); LEG_SPAN = [Math.min(...ms), Math.max(...ms)]; }
+  const [a, b] = LEG_SPAN || [250, 3400], t = Math.min(1, Math.max(0, (mid - a) / Math.max(1, b - a)));
+  return 3350000 + 1650000 * t;
+}
 const RAR_CACHE = new Map();
 // { tier index, rarity entry, position 0..1 within the tier, hidden }. Animals that can't be captured
 // (tag-only, apart from the legendaries) have a tier only for how often they turn up: hidden, never shown.

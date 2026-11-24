@@ -18,7 +18,7 @@ import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './v
 import { SETTINGS } from './settings.js';
 import { photoTarget, startPhoto, updatePhoto } from './survey.js';
 import { prepareMonster } from './monster_draw.js';
-import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps, trapSet, trapLeft, timeLeftText, syncTraps } from './traps.js';
+import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps, trapSetOf, trapLeft, timeLeftText, syncTraps, cashOutTrap } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS, firstFishPart, tutorialOn } from './quests.js';
 import { TutSpot } from './tutspot.js';
@@ -44,7 +44,7 @@ import { buy as storeBuy, showAd, isTestStore } from './purchases.js'; // (6.5.9
 import { calState, calClaimed, calWeek } from './store.js';
 import { hullCap } from './economy.js';
 import { loadBest, UPGRADES, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat, coinsFor, upgradeCoins, WARES } from './economy.js';
-import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
+import { TANKS, FINS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, HOSPITAL_CAP, hospitalCap, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, clearProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
 import { updateHunters, directEncounters } from './hunters.js';
 import { Entity, dreadFromDistance, LANTERN_RADIUS } from './entity.js';
 import { Renderer, dayCycle } from './render.js';
@@ -552,6 +552,22 @@ function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replace
   giveRolled(P, it); it.sold = true; oldStock(P); saveProfile(P); audio.ready && audio.sale();
   if (!g.oldShopOpen) ui.showGains([{ kind: 'item', id: it.id, how: 'From the old one' }]); // (6.1.9) in her shop the dimmed thing and its hourglass say it
   return true;
+}
+// (7.3.0, owner) a trap's catch at its buoy: sold where it comes up (at the Margaret's prices, the climb from deep water
+// counted), or into the bag as before
+function trapChoice(tr) {
+  const T = TRAPS[tr.type], nm = T.name.toLowerCase(), n = tr.catch.length;
+  const worth = tr.catch.reduce((a, q) => { const sp = SPECIES_BY_ID[q.id]; return a + (sp ? specimenValue(q) : 0); }, 0);
+  ui.confirm(`${T.name}: ${n} inside`, `Sell the whole catch here, or put what fits in the bag. Animals brought up from deep water may not survive the climb.`, 'Sell all', 'Into the bag', () => {
+    const r = cashOutTrap(g, tr); if (!r) return; marketTick(profile); const lines = []; sellSpecimens(r.list, lines);
+    const total = lines.reduce((a, l) => a + l.total, 0); g.earned += total; questEvent(profile, 'trapHaul'); if (total > 0) questEvent(profile, 'sell', { total });
+    audio.ready && audio.sale(); saveProfile(profile); ui.showLedger && ui.showLedger({ lines, total });
+    hud.toast(`${T.name}: sold for ${money(total, false)}${r.stowed ? ` · the ${nm} comes up` : ''}`, 'note'); void worth;
+  }, () => {
+    const r = emptyTrap(g, tr, 'haul'); if (r.n) questEvent(profile, 'trapHaul');
+    hud.toast(r.n ? `${r.n} into the bag${r.left ? ` · ${r.left} still in the ${nm}: the bag is full` : ''}${r.stowed ? ` · the ${nm} comes up` : ''}` : `The bag is full: ${r.left} still in the ${nm}`, r.left ? 'warn' : '');
+    saveProfile(profile);
+  });
 }
 function sellAll() {
   marketTick(profile);
@@ -1621,7 +1637,7 @@ function promptFor(t) {
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
     }
-    else if (t.kind === 'trap') { const S0 = trapSet(profile), lf = S0 ? trapLeft(S0) : 0, when = lf > 0 ? `, ${timeLeftText(lf)} to go` : ', done'; // (7.3.0) its time, in real time
+    else if (t.kind === 'trap') { const S0 = trapSetOf(profile, t.t.id), lf = S0 ? trapLeft(S0) : 0, when = lf > 0 ? `, ${timeLeftText(lf)} to go` : ', done'; // (7.3.0) its time, in real time
       p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch up' : 'Pull up'} the catch (${t.t.catch.length} inside${when})`
       : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is emptied with the Margaret's winch: bring her here (${t.t.catch.length} inside${when})`
       : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside${when})`; }
@@ -1657,6 +1673,8 @@ function interact(t, exitSub) {
   if (!t) { if (e.inSub) leaveSub(); return; }
   if (t.kind === 'trap') {
     if (t.how === 'needboat') { hud.toast('Emptied with the Margaret\'s winch: bring her here', 'warn'); return; }
+    // (7.3.0, owner) from the surface: cash out (sell the whole catch there and then) or into the bag
+    if (t.how === 'haul' && t.t.catch.length) { trapChoice(t.t); return; }
     // (7.3.0) whatever fits goes into the bag (the rest waits in it); with its time up and nothing left, it comes up
     const nm = TRAPS[t.t.type].name.toLowerCase(), r = emptyTrap(g, t.t, t.how);
     if (r.n) questEvent(profile, 'trapHaul'); /* (6.8.0) */
@@ -2014,7 +2032,7 @@ function die(cause, kind = 'normal', declined = false) {
   g.bag = []; g.subTank = [];
   const taken = cause.startsWith('Taken');
   if (taken) { const n = g.items.lure + g.items.necklace; if (n) lost.push(`${n} lure${n > 1 ? 's' : ''} and necklace${n > 1 ? 's' : ''}`); g.items.lure = g.items.necklace = 0; }
-  const bill = kind === 'quit' ? 0 : Math.min(HOSPITAL_CAP, Math.round(profile.cash * HOSPITAL_SHARE * 100) / 100); // capped: late in the game 10 % would be ruinous
+  const bill = kind === 'quit' ? 0 : Math.min(hospitalCap(profile), Math.round(profile.cash * HOSPITAL_SHARE * 100) / 100); // capped: late in the game 10 % would be ruinous
   g.inv = {};
   syncProfile();
   profile.subLost = false; profile.hull = 1; // (6.0.0) the sub is back in her cradle, hull mended

@@ -1,7 +1,9 @@
 // Box traps on a line: set from the surface at a chosen depth, each hangs from a buoy (or rests on the bottom if the
-// line is let all the way down). (7.3.0, owner) One trap set at a time, and it belongs to the save, not the dive: it
+// line is let all the way down). (7.3.0, owner) Up to three traps set at a time (up to three of each kind owned), each
+// belonging to the save, not the dive: it
 // fishes in real time, the game open or closed and Earl alive or not, and the catch waits in it once its time is up.
-//   Wire pot  5 minutes, 5 animals;  Fish trap  30 minutes, 10 animals;  Deep trap (Dave's)  4 hours, 20 animals.
+//   Wire pot  5 minutes, 5 animals;  Fish trap  30 minutes, 15 animals;  Deep trap (Dave's)  4 hours, 20 animals.
+// Emptied from the surface, its catch can be sold there and then (cash out) or put in the bag.
 // What comes in is what lives at that depth there, met as often as anywhere else (exotics 3 %, legendaries 0.05 %).
 // Emptied into the bag from the buoy at the surface (the deep trap only by the boat's winch) or at the trap itself;
 // whatever does not fit stays in it. Brought up from deep water, an animal suffers the climb as one in the bag does
@@ -9,15 +11,19 @@
 import { clamp, dist } from './util.js';
 import { TRAPS, TRAP_ORDER } from './economy.js';
 import { SPECIES } from './species.js';
-import { canTakeLive, spawnLen, rarityShare } from './specimens.js';
+import { canTakeLive, spawnLen, rarityShare, pressureTolerance } from './specimens.js';
+import { SPECIES_BY_ID } from './species.js';
 import { rollVariant, variantMult, canBeRare } from './variants.js';
 import { bagSlots, bagUsed } from './capture.js';
 import { BOAT } from './world.js';
 import { climateOk } from './fauna.js';
 
 const now = () => Date.now();
-// the trap that is set, kept in the save: { type, x, depth, onBottom, at (ms, real time), id, n, drawn, catch }
-export const trapSet = (P) => (P && P.trapSet) || null;
+// the traps that are set, kept in the save: [{ type, x, depth, onBottom, at (ms, real time), id, n, drawn, catch }]
+export const MAX_SET = 3;
+export const trapSets = (P) => { if (!P) return []; if (P.trapSet) { P.trapSets = [...(P.trapSets || []), P.trapSet]; delete P.trapSet; } return P.trapSets || (P.trapSets = []); };
+export const trapSetOf = (P, id) => trapSets(P).find((S) => S.id === id) || null;
+export const trapSet = (P) => trapSets(P)[0] || null; // (the first, for old callers)
 export const trapElapsed = (S) => Math.max(0, (now() - S.at) / 1000);
 export const trapLeft = (S) => Math.max(0, TRAPS[S.type].dur - trapElapsed(S));
 export const trapDone = (S) => trapLeft(S) <= 0;
@@ -55,7 +61,7 @@ function pick(list) {
 
 export const trapsOwned = (g) => g.profile.traps || {};
 // (7.3.0) one trap of each kind is owned; it is free unless it is the one set
-export function trapsFree(g, type) { const S = trapSet(g.profile); return (trapsOwned(g)[type] || 0) - (S && S.type === type ? 1 : 0); }
+export function trapsFree(g, type) { return (trapsOwned(g)[type] || 0) - trapSets(g.profile).filter((S) => S.type === type).length; }
 export const anyTrapsFree = (g) => TRAP_ORDER.some((k) => trapsFree(g, k) > 0);
 // old saves: the wire pot and fish trap stay; the old steel pot and deep cage become the deep trap; one of each at most
 // (once, 7.3.0) every trap beyond one of each kind is refunded at half what it cost (old prices: steel pot $17,500, deep
@@ -71,13 +77,14 @@ export function convertOldTraps(P) {
     t.cage = keep ? 1 : 0; delete t.steel; delete t.deep;
     if (back > 0) { P.cash = (P.cash || 0) + Math.round(back); P.trapRefund = Math.round(back); }
   }
-  P.traps = Object.fromEntries(TRAP_ORDER.map((k) => [k, Math.min(1, t[k] || 0)]));
+  P.traps = Object.fromEntries(TRAP_ORDER.map((k) => [k, Math.min(TRAPS[k].max, t[k] || 0)]));
+  trapSets(P);
 }
 
 // where a trap may be set from: at the surface, outside the sub, over enough water, and none set already
 export function canSetHere(g) {
-  const e = g.earl, S = trapSet(g.profile);
-  if (S) return `Your ${TRAPS[S.type].name.toLowerCase()} is already set: empty it first`;
+  const e = g.earl;
+  if (trapSets(g.profile).length >= MAX_SET) return 'Three traps are set already: empty one first';
   if (e.inSub) return 'Traps are set by hand: get out of the sub, at the surface';
   if (e.y > 2.5) return 'Traps are set from the surface: come up first';
   if (g.world.floorAt(e.x) < 3) return 'Too shallow here for a trap';
@@ -88,17 +95,17 @@ export function canSetHere(g) {
 export function setTrap(g, type, depth) {
   const T = TRAPS[type], e = g.earl, fl = g.world.floorAt(e.x);
   const d = clamp(Math.round(depth), 2, Math.min(T.maxDepth, fl - 0.4));
-  g.profile.trapSet = { type, x: e.x, depth: d, onBottom: d >= fl - 0.6, at: now(), id: Math.random().toString(36).slice(2), n: T.count, drawn: 0, catch: [] };
-  g.traps = []; syncTraps(g); g.traps[0].y = 0.6; g.traps[0].state = 'lowering';
+  const S = { type, x: e.x, depth: d, onBottom: d >= fl - 0.6, at: now(), id: Math.random().toString(36).slice(2), n: T.count, drawn: 0, catch: [] };
+  trapSets(g.profile).push(S); syncTraps(g); const t = g.traps.find((q) => q.id === S.id); t.y = 0.6; t.state = 'lowering';
   return d;
 }
 // the trap as the world draws it (g.traps), made from the save's (the catch is the save's own list)
 export function syncTraps(g) {
-  const S = trapSet(g.profile);
-  if (!S) { if (g.traps.length && g.traps[0].state !== 'hauling') g.traps = []; return; }
-  let t = g.traps.find((q) => q.id === S.id);
-  if (!t) { t = { type: S.type, x: S.x, depth: S.depth, y: S.depth, onBottom: S.onBottom, state: 'set', age: 0, catch: S.catch, coming: [], sway: Math.random() * 6, id: S.id }; g.traps = [t]; }
-  t.catch = S.catch;
+  const L = trapSets(g.profile), ids = new Set(L.map((S) => S.id));
+  g.traps = g.traps.filter((t) => ids.has(t.id) || t.state === 'hauling');
+  for (const S of L) { let t = g.traps.find((q) => q.id === S.id);
+    if (!t) { t = { type: S.type, x: S.x, depth: S.depth, y: S.depth, onBottom: S.onBottom, state: 'set', age: 0, catch: S.catch, coming: [], sway: Math.random() * 6, id: S.id }; g.traps.push(t); }
+    t.catch = S.catch; }
 }
 
 // a fish drawn to a trap: if the trap is in sight a real fish swims in through a funnel; otherwise it is simply there
@@ -120,13 +127,12 @@ function lure(g, t, sp, cam) {
 
 export function updateTraps(g, dt, cam) {
   const ev = []; syncTraps(g);
-  const S = trapSet(g.profile);
   for (let i = g.traps.length - 1; i >= 0; i--) {
     const t = g.traps[i], T = TRAPS[t.type];
     if (t.state === 'lowering') {
       t.y = Math.min(t.depth, t.y + Math.max(2, t.depth / 18) * dt);
       if (t.y >= t.depth - 0.01) { t.y = t.depth; t.state = 'set'; ev.push({ type: 'settled', trap: t }); }
-    } else if (t.state === 'set' && S && S.id === t.id) {
+    } else if (t.state === 'set' && trapSetOf(g.profile, t.id)) { const S = trapSetOf(g.profile, t.id);
       // arrivals by real time: as many as are due, each an animal that lives here (all at once after a long absence)
       const due = Math.min(S.n, Math.floor(S.n * Math.min(1, trapElapsed(S) / T.dur)));
       let list = null;
@@ -168,12 +174,23 @@ export function trapNear(g) {
 // the climb in the bag as anything does. Emptied with its time up, the trap comes up and is stowed (a fresh one can
 // be set); before then it stays and keeps fishing
 export function emptyTrap(g, t, how = 'empty') {
-  const S = trapSet(g.profile); if (!S || S.id !== t.id) return { n: 0, left: 0, stowed: false };
+  const S = trapSetOf(g.profile, t.id); if (!S) return { n: 0, left: 0, stowed: false };
   let n = 0;
   while (S.catch.length && bagUsed(g) < bagSlots(g)) { const q = S.catch.shift(); if (how === 'haul') q.t = g.time; g.bag.push(q); n++; }
   const stowed = !S.catch.length && trapDone(S) && S.drawn >= S.n;
-  if (stowed) { g.profile.trapSet = null; t.state = 'hauling'; }
+  if (stowed) { stow(g, S, t); }
   return { n, left: S.catch.length, stowed };
+}
+function stow(g, S, t) { const L = trapSets(g.profile), i = L.indexOf(S); if (i >= 0) L.splice(i, 1); t.state = 'hauling'; }
+// (7.3.0, owner) cash out at the buoy: the whole catch, as it comes up from the trap's depth (an animal from deep water
+// suffers the climb: beyond what it can take it dies, short of that it is stressed), handed back for sale; the trap is
+// stowed if its time is up, and left fishing (empty) if not
+export function cashOutTrap(g, t) {
+  const S = trapSetOf(g.profile, t.id); if (!S || !S.catch.length) return null;
+  const list = S.catch.splice(0).map((q) => { const sp = SPECIES_BY_ID[q.id], tol = sp ? pressureTolerance(sp, q.from || 0).k : 1, gap = (q.from || 0) / tol;
+    return { ...q, cond: gap > 250 ? 0 : gap > 150 ? Math.min(q.cond, 0.5) : gap > 50 ? Math.min(q.cond, 0.8) : q.cond }; });
+  const stowed = trapDone(S) && S.drawn >= S.n; if (stowed) stow(g, S, t);
+  return { list, stowed };
 }
 // (7.3.0) a death no longer takes the trap: it belongs to the save, and fishes on
 export function lostTraps(g) { for (const t of g.traps) for (const { c } of t.coming || []) if (c) c.ctrl = null; return 0; }

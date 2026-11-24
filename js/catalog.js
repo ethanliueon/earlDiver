@@ -137,13 +137,13 @@ export class Catalog {
         owned: ownsItem(P, it.id), on: !!on && on.id === it.id, pic: [cat, it] }));
     }
     if (this.id !== 'bayside' && !(this.id === 'dave' && cat === 'trap')) return []; // (7.3.0) Dave sells the deep trap
-    if (cat === 'trawl') return ['basic', 'adv'].map((k) => { const T = NETS_SUB[k], have = g && g.items ? netsOf(g.items)[k] : 0, full = have >= T.cap; // (4.11.1) both nets, as before
-      return { key: 'subnet:' + k, id: k, kind: 'trawl', name: T.name, price: T.price, line: k === 'adv' ? `The net for big game: a wide mouth, ten animals, and no legend escapes it. Carry ${T.cap} (${have}/${T.cap}).` : `A light net for the sub's belly hatch. Carry up to ${T.cap} (${have}/${T.cap}).`,
-        good: k === 'adv' ? 'Sharks, oarfish and legends stay in' : 'A haul of fish while you drive', bad: k === 'adv' ? 'Dear' : 'Big animals often break out, and may tear it', owned: full, on: full, onText: `In the hatch (${have}/${T.cap})`, pic: ['trawl', k] }; });
+    if (cat === 'trawl') return ['basic', 'adv', 'deep'].map((k) => { const T = NETS_SUB[k], have = g && g.items ? netsOf(g.items)[k] : 0, full = have >= T.cap; // (4.11.1) both nets, as before
+      return { key: 'subnet:' + k, id: k, kind: 'trawl', name: T.name, price: T.price, line: k === 'deep' ? `The trawl for the abyss: a steel-framed mouth and room for twenty-four animals, as many as the deepest submersibles carry. Carry ${T.cap} (${have}/${T.cap}).` : k === 'adv' ? `The net for big game: a wide mouth, ten animals, and no legend escapes it. Carry ${T.cap} (${have}/${T.cap}).` : `A light net for the sub's belly hatch. Carry up to ${T.cap} (${have}/${T.cap}).`,
+        good: k === 'deep' ? 'A full tank in one haul' : k === 'adv' ? 'Sharks, oarfish and legends stay in' : 'A haul of fish while you drive', bad: k === 'deep' ? 'Only worth it in a big submersible' : k === 'adv' ? 'Dear' : 'Big animals often break out, and may tear it', owned: full, on: full, onText: `In the hatch (${have}/${T.cap})`, pic: ['trawl', k] }; });
     if (cat === 'trap') {
       const tr = P.traps || {};
       // (7.3.0) the wire pot and fish trap at the boat's shops, the deep trap at Dave's
-      const LINE = { pot: 'A galvanised box with one funnel.', fish: 'A mesh box with a funnel at each end.', cage: TRAPS.cage.desc }, GOOD = { pot: 'Five animals in five minutes', fish: 'Ten animals in half an hour', cage: 'Twenty animals in four hours' };
+      const LINE = { pot: 'A galvanised box with one funnel.', fish: 'A mesh box with a funnel at each end.', cage: TRAPS.cage.desc }, GOOD = { pot: 'Five animals in five minutes', fish: 'Fifteen animals in half an hour', cage: 'Twenty animals in four hours' };
       return (this.id === 'dave' ? ['cage'] : ['pot', 'fish']).map((k) => { const T = TRAPS[k], have = tr[k] || 0, i = ['pot', 'fish', 'cage'].indexOf(k); return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, rarity: T.rarity, price: T.price, line: LINE[k], good: GOOD[k], bad: T.winch ? "Emptied with the Margaret's winch" : '', count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', k] }; void i; });
     }
     // (4.0.0) the anglerfish lure: not at Bayside, only at the station and Dave's, and dear
@@ -408,7 +408,7 @@ function drawBag(ctx, w, h, it) {
   if (it.id === 'divided') { ctx.strokeStyle = 'rgba(30,40,50,0.6)'; ctx.lineWidth = 2; for (const f of [-0.15, 0.15]) { ctx.beginPath(); ctx.moveTo(cx + bw * f, cy - bh * 0.5); ctx.lineTo(cx + bw * f * 0.5, cy + bh * 0.4); ctx.stroke(); } }
 }
 function drawTrawl(ctx, w, h, v) {
-  if (v === 'adv') { // (4.11.0) the advanced net: a far wider mouth on a brass hoop, heavy dark twine, a long full bag
+  if (v === 'adv' || v === 'deep') { // (4.11.0) the advanced net: a far wider mouth on a brass hoop, heavy dark twine, a long full bag
     const top = 0.14, bot = 0.86, x0 = 0.14, x1 = 0.88;
     ctx.fillStyle = 'rgba(40,70,70,0.25)'; ctx.beginPath(); ctx.moveTo(w * x0, h * top); ctx.quadraticCurveTo(w * 0.55, h * 0.12, w * x1, h * 0.42); ctx.lineTo(w * x1, h * 0.58); ctx.quadraticCurveTo(w * 0.55, h * 0.88, w * x0, h * bot); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = 'rgba(70,96,92,0.8)'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(w * x0, h * top); ctx.quadraticCurveTo(w * 0.55, h * 0.12, w * x1, h * 0.42); ctx.moveTo(w * x0, h * bot); ctx.quadraticCurveTo(w * 0.55, h * 0.88, w * x1, h * 0.58); ctx.stroke();

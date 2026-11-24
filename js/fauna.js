@@ -33,6 +33,9 @@ const BAIT = [
 ];
 
 // (3.0.22) the twilight's everyday animals: most of the lone fish out there are these
+// (7.3.0) the deep's ordinary animals for the dark-water fill below 2,000 m: k how much more often each is met; any: in open
+// water anywhere (else only near the floor)
+const DEEP_FILL = { 497: { k: 5, any: true }, 370: { k: 4, any: true }, 332: { k: 2, any: true }, 327: { k: 2, any: true }, 490: { k: 2 }, 489: { k: 2 }, 491: { k: 2 }, 496: { k: 4 }, 383: { k: 1 }, 493: { k: 2 } };
 const FILLER = new Set([98, 99, 327, 151, 370, 484, 450, 161]);
 // (3.7.3) the height of the deep's spawning curve q^1.4 (1-q)^0.55, at its peak (q = 1.4 / 1.95)
 const DEEP_PEAK = Math.pow(1.4 / 1.95, 1.4) * Math.pow(0.55 / 1.95, 0.55);
@@ -51,6 +54,7 @@ export function usualDepth(sp) {
   return [lo, hi];
 }
 // (7.3.0) prices follow it (specimens.js depthCurve); called when this module has loaded, below
+const DEEP_QPEAK = 1.4 / 1.95; // (7.3.0) where q^1.4 (1-q)^0.55 is greatest: the deep band's busiest point
 const DEEP_HUNTER = (sp) => sp.cat === 'Deep Sea Fish' && /viper|dragon|angler|seadevil|sea devil|football|fangtooth|sabertooth|daggertooth|snaggletooth|gulper|swallower|loosejaw|barbeled|dreamer|wolftrap|fanfin|whipnose/i.test(sp.name);
 // Species that migrate up toward the surface at night and back down by day.
 const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90, 42]);
@@ -355,11 +359,10 @@ export class Fauna {
       return w;
     };
     // (7.3.0, owner) what is met everywhere: exotics (undocumented with them) 3 %, legendaries 0.05 %, the rest as they come
-    const pool = rarityShare(cands.map((c) => [c, wOf(c)]), true);
+    const pool = rarityShare(cands.map((c) => [c, wOf(c)]));
     let tot = 0; for (const [, w] of pool) tot += w;
     let r = rng() * tot, sp = cands[0];
     for (const [c, w] of pool) { r -= w; if (r <= 0) { sp = c; break; } }
-    if (!sp) return; // (nothing ordinary lives here: this time nothing came)
     const n = Math.max(1, Math.min(14, Math.round((sp.v.sch || 1) * rng.range(0.35, 0.8)))); // (4.12.5) smaller groups
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
@@ -464,16 +467,19 @@ export class Fauna {
     const pool = [];
     for (const sp of SPECIES) {
       const filler = FILLER.has(sp.id);
-      if ((!sp.v.glow && !filler) || (sp.v.hab !== 'pelagic' && !filler) || sp.len > 1 || y < sp.dmin || y > sp.dmax) continue;
+      // (7.3.0, owner) below 2,000 m the deep's ordinary animals fill the dark water too: prawns and cusk-eels anywhere,
+      // the bottom's swimmers (grenadiers, rattails, snailfish, amphipods) within 80 m of the floor; prawns most of all
+      const deepFill = y > 2000 && DEEP_FILL[sp.id] && (DEEP_FILL[sp.id].any || fl - y < 80);
+      if (!deepFill && ((!sp.v.glow && !filler) || (sp.v.hab !== 'pelagic' && !filler))) continue;
+      if (sp.len > 1 || y < sp.dmin || y > sp.dmax) continue;
       const w = this.depthPref(sp, x, y, night);
-      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1)]); // the small and common first, the filler most of all
+      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1) * (deepFill ? DEEP_FILL[sp.id].k : 1)]); // the small and common first, the filler most of all
     }
     if (!pool.length) return;
-    const pool2 = rarityShare(pool, true); // (7.3.0, owner) exotics 3 % of what is met, legendaries 0.05 % (it was 70 % exotic at 1,700 m)
+    const pool2 = rarityShare(pool); // (7.3.0, owner) exotics 3 % of what is met, legendaries 0.05 % (it was 70 % exotic at 1,700 m)
     let tot = 0; for (const [, w] of pool2) tot += w;
     let r = rng() * tot, pick = pool2[0][0];
     for (const [sp, w] of pool2) { r -= w; if (r <= 0) { pick = sp; break; } }
-    if (!pick) return; // nothing ordinary lives here, and this time nothing came
     const c = this.makeFish(pick, x, y, -side, this.groupId++, true);
     c.glimmer = true;
     this.list.push(c);
@@ -506,14 +512,15 @@ export class Fauna {
       // (3.7.3) the deep's animals are few at the top of their band, most common about seven tenths of the way
       // down and still common near its foot; shallow animals stay best through the middle
       if (rarityOf(sp) && rarityOf(sp).id === 'legendary') { const q = (y - lo) / Math.max(1, hi - lo); return (0.5 + q) * deepK; } // (4.12.0) a legend is three times as likely at the foot of its band as at the top
-      if (deepKind) { const q = (y - lo) / Math.max(1, hi - lo); return (0.08 + 0.92 * Math.pow(q, 1.4) * Math.pow(1 - q, 0.55) / DEEP_PEAK) * deepK; }
+      if (deepKind) { const q = (y - lo) / Math.max(1, hi - lo); if (q > DEEP_QPEAK) return (1 - 0.15 * (q - DEEP_QPEAK) / (1 - DEEP_QPEAK)) * deepK; return (0.08 + 0.92 * Math.pow(q, 1.4) * Math.pow(1 - q, 0.55) / DEEP_PEAK) * deepK; } // (7.3.0, owner) past its busiest it only eases a little
       const half = Math.max(1, (hi - lo) / 2); return (0.6 + 0.4 * (1 - Math.abs(y - (lo + hi) / 2) / half)) * deepK;
     }
     if (deepKind && y < lo) return 0;
-    // (claude-polish) the abyss: below 2,500 m a rare or exotic animal turns up anywhere its records reach, not only
-    // in its everyday band (which for most stops far above), so the bottom of the sea is not left nearly empty
-    if (y > hi && y > 2500 && y <= sp.dmax) { const i = rarityOf(sp).i; if (i === 2 || i === 3) return 0.45 * deepK; }
-    const d = y < lo ? lo - y : y - hi, scale = Math.max(30, (hi - lo) * 0.3);
+    // (7.3.0, owner) below its band an animal keeps turning up all the way to the deepest it has been recorded, fading only
+    // gently (to about a third), so a fish whose band stops at 1,100 m is still met at 1,400 m; above its band it falls
+    // away quickly, as before. (Everything overlaps, so no one depth is a swarm of one kind)
+    if (y > hi) { if (y > sp.dmax) return 0; const foot = deepKind ? 0.85 : 0.6, t = (y - hi) / Math.max(50, sp.dmax - hi); return foot * (1 - 0.67 * t) * deepK; }
+    const d = lo - y, scale = Math.max(30, (hi - lo) * 0.3);
     return 0.07 * Math.exp(-d / scale);
   }
   // the depth band this animal wants to be in right now (migrators move up at night)

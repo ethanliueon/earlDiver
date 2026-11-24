@@ -51,11 +51,11 @@ for (const [k, C] of Object.entries(CHESTS)) {
 }
 // (6.4.1) the owner's prices: large station case $5,000, expedition trunk $20,000, Leviathan's hoard $50,000, Poseidon's
 // chest $100,000, the rest in proportion (each tier scaled by its anchors). The pine crate stays the beginner's $900
-// (7.3.0, the economy remaster) each chest's price moved with what is in it: its exotic and legendary contents are worth
-// about twice what they were, so a chest keeps the same value for money (crate, cases and crate3 hold nothing above rare
-// and stay). Old prices: tea $3,800, footlocker $7,500, salvage $14,000, strongbox $15,000, expedition $20,000, siren
-// $27,000, leviathan $50,000, poseidon $100,000
-const SET_PRICE = { crate: 900, case: 1700, crate3: 3100, tea: 6000, case3: 5000, footlocker: 16000, salvage: 28500, strongbox: 35500, expedition: 42000, siren: 61000, leviathan: 110000, poseidon: 225000 };
+// (7.3.0, economy v2) each chest's price moved with what is in it (exotic and legendary items now priced by the hours it
+// takes to earn them), so each keeps its 7.2.8 value for money; Poseidon's chest still the top. 7.2.8: crate $900, case
+// $1,700, crate3 $3,100, tea $3,800, case3 $5,000, footlocker $7,500, salvage $14,000, strongbox $15,000, expedition
+// $20,000, siren $27,000, leviathan $50,000, poseidon $100,000
+const SET_PRICE = {crate:  2300,  case:  6300,  crate3:  7800,  tea:  13000,  case3:  19000,  footlocker:  34000,  salvage:  62000,  strongbox:  65000,  expedition:  93000,  siren:  1250000,  leviathan:  1500000,  poseidon:  5450000};
 for (const [k, p] of Object.entries(SET_PRICE)) CHESTS[k].price = ITEMS['chest_' + k].price = p;
 export const chestItem = (k) => ITEMS['chest_' + k];
 export const chestsOf = (shop) => Object.entries(CHESTS).filter(([, c]) => c.shop === shop).map(([key, c]) => ({ key, ...c }));

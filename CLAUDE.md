@@ -71,17 +71,20 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   round the species' base; weight follows length and shape and is only a figure to read. Hand nets, the claw (2 m)
   and the trawls (2 m, 4 m) decide what can be caught purely by length. The giant jellies stay photo-only.
 
-- **Prices (7.3.0, the economy remaster; supersedes 6.4.1, details and the full table in `docs/PLAN_7.4.md`)**: an
-  animal pays by where it lives: its price times `1 + 0.9 ln(1 + max(0, mid - 450) / 400)` of the middle of its usual
-  depths; a legend $150,000 times the same (coelacanth $150,000, tripod about $435,000), never under 5x the dearest
-  exotic. No other depth bonus. Of what is met anywhere (spawns, the deep fill, traps): exotics (undocumented with them)
-  3 %, legendaries 0.05 %. Everything else is priced by the time to earn it at the depth where it is wanted: common to
-  rare gear cheap and unchanged; exotic gear $25-60k; legendary $100-180k; chests moved with their contents (crate $900
-  to Poseidon $225,000); traps half an average haul; a photograph has no depth curve and pays at most $50,000; the
-  aquarium at most $1,500 a gallery day; hospital at most $25,000.
-- **Traps (7.3.0, owner)**: the wire pot (5 min, 5 animals), the fish trap (30 min, 10) and the deep trap (Dave's;
-  4 h, 20); one of each owned, one set at a time; real time, the game open or closed; the set trap belongs to the save
-  (a death does not take it) and the catch waits in it; deep animals suffer the climb and the dead sell for half.
+- **Prices and animals (7.3.0, owner; supersedes 6.4.1 and the first remaster; details and the full table in
+  `docs/PLAN_7.4.md`)**: an animal pays three times as much for every 1,000 m of the middle of its usual depths below
+  450 m; a legend $3.35-5 million by depth, never under five times the dearest exotic. Rarity belongs to the species.
+  Of everything met anywhere: exotics (undocumented with them) 3 %, legendaries 0.05 %; below 2,000 m the deep's own
+  rare animals fill the water (prawns most). A kind is met most in its band, falls away fast above it and fades gently
+  below it to its deepest record. Everything else is priced as hours of income at the depth where it is wanted (income
+  measured per sub): subs 1-5 hours of the one before; gear common 10 min of the first sub ... legendary 3-5 h of the
+  deepest; chests with their contents; quests a quarter to a full hour; hospital at most half an hour; a photo no depth
+  curve and at most $50,000; the aquarium at most $1,500 a gallery day. Re-measure and re-price if the curve changes.
+- **Traps (7.3.0, owner)**: the wire pot (5 min, 5 animals), the fish trap (30 min, 15) and the deep trap (Dave's;
+  4 h, 20); up to three of each owned and three set at a time; real time, the game open or closed; a set trap belongs
+  to the save (a death does not take it) and its catch waits in it; at the buoy a full trap is cashed out (sold there)
+  or put in the bag; deep animals suffer the climb and the dead sell for half; emptied at depth into the sub's chamber
+  they live. Priced in order of depth at half a typical haul.
 
 - **Decided in 6.5**: the big button is only ever the net or the camera (greyed aboard); the interact button (brass
   porthole ring, a warm rim when something is in reach) does everything else: ladder, hatch, door, eye, winch. One

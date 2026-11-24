@@ -610,7 +610,7 @@ export class Renderer {
         const lamp = drawTrapBuoy(ctx, ppm, t, !!T.winch, night);
         ctx.restore();
         if (lamp) glowPts.push([bx + lamp[0], bsy + lamp[1], '#fff2b0', ppm * 0.8, 1.5]);
-        const n = tr.catch.length, S0 = g.profile && g.profile.trapSet, left = S0 && S0.id === tr.id ? Math.max(0, TRAPS[S0.type].dur - (Date.now() - S0.at) / 1000) : 0; // (7.3.0) real time
+        const n = tr.catch.length, S0 = g.profile && (g.profile.trapSets || []).find((q) => q.id === tr.id), left = S0 ? Math.max(0, TRAPS[S0.type].dur - (Date.now() - S0.at) / 1000) : 0; // (7.3.0) real time
         this.trapLabels.push([bx, bsy - ppm * (T.winch ? 2.4 : 1.5), tr.state === 'lowering' ? `going down, ${Math.round(tr.y)} m` : tr.state === 'hauling' ? `coming up · ${Math.round(tr.y)} m`
           : `${n} inside, ${left > 0 ? (left >= 3600 ? `${Math.floor(left / 3600)} h ${String(Math.floor((left % 3600) / 60)).padStart(2, '0')} min` : `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`) : 'done'}`]);
       }
@@ -1028,7 +1028,7 @@ export class Renderer {
       // the mouth: headrope with floats, footrope with weights, and the drawstring as it closes
       // (6.5.1) the mouth is a solid ring seen at an angle (an oval), the bag hanging from all of it: its far half dimmer,
       // its near half lit along the top; rope on the basic net, a steel hoop on the advanced
-      { const adv = n.tier === 'adv', rx = Math.max(2, r * ppm * 0.32), ry = Math.max(2, r * ppm), lw2 = Math.max(1.5, ppm * (adv ? 0.07 : 0.055)), col = adv ? 'rgba(120,122,116,0.95)' : 'rgba(205,188,140,0.95)';
+      { const adv = n.tier !== 'basic', rx = Math.max(2, r * ppm * 0.32), ry = Math.max(2, r * ppm), lw2 = Math.max(1.5, ppm * (adv ? 0.07 : 0.055)), col = adv ? 'rgba(120,122,116,0.95)' : 'rgba(205,188,140,0.95)';
         ctx.strokeStyle = adv ? 'rgba(60,62,58,0.8)' : 'rgba(120,104,70,0.75)'; ctx.lineWidth = lw2; ctx.beginPath(); ctx.ellipse(S(mx), Sy(my), rx, ry, 0, dir > 0 ? Math.PI / 2 : -Math.PI / 2, dir > 0 ? Math.PI * 1.5 : Math.PI / 2); ctx.stroke();
         ctx.strokeStyle = col; ctx.beginPath(); ctx.ellipse(S(mx), Sy(my), rx, ry, 0, dir > 0 ? -Math.PI / 2 : Math.PI / 2, dir > 0 ? Math.PI / 2 : Math.PI * 1.5); ctx.stroke();
         ctx.strokeStyle = 'rgba(255,248,230,0.4)'; ctx.lineWidth = Math.max(0.8, lw2 * 0.4); ctx.beginPath(); ctx.ellipse(S(mx), Sy(my) - lw2 * 0.3, rx, ry, 0, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }

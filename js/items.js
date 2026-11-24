@@ -461,8 +461,11 @@ for (const it of Object.values(ITEMS)) {
 // depths where they are wanted (docs/PLAN_7.4.md): exotics about one to two hours of a research submersible's income,
 // legendaries five to nine hours of the deepest. Each keeps its place in its rarity (log scale); common to rare stay
 // as they were (owner). Scrolls too. Selling pays a third of the new price
-{ const REMAP = { exotic: [[8000, 30000], [25000, 60000]], legendary: [[54000, 90000], [100000, 180000]] };
-  const nice = (p) => (p < 10000 ? Math.round(p / 100) * 100 : Math.round(p / 500) * 500);
+// (7.3.0, economy v2: x3 per 1,000 m, income measured per submersible) each rarity priced by the time to earn it where it is
+// wanted: common about ten minutes of the first sub's income (unchanged), uncommon fifteen of the refit's, rare half an
+// hour of the work subs', exotic one to two hours at research depth, legendary three to five hours of the deepest sub's
+{ const REMAP = { uncommon: [[300, 1000], [400, 1200]], rare: [[1000, 2000], [5000, 14000]], exotic: [[8000, 30000], [40000, 120000]], legendary: [[54000, 90000], [10000000, 17000000]] };
+  const nice = (p) => (p < 1000 ? Math.round(p / 10) * 10 : p < 10000 ? Math.round(p / 100) * 100 : p < 1e6 ? Math.round(p / 1000) * 1000 : Math.round(p / 50000) * 50000);
   for (const it of Object.values(ITEMS)) { const R = REMAP[it.rarity]; if (!R || !(it.price > 0)) continue;
     const [[a, b], [c, d]] = R, t = Math.min(1, Math.max(0, Math.log(it.price / a) / Math.log(b / a)));
     it.price = nice(c * Math.pow(d / c, t)); } }

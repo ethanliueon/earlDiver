@@ -240,6 +240,10 @@ export const SPECIES = SPECIES_DATA.concat(MORE_SPECIES).map((d) => {
   return { ...d, ...(TITLES[d.id] ? { name: TITLES[d.id], species: d.name } : {}), v, len, giant: !!GIANT_FORMS[d.id], undoc: !!(d.x && d.x.undoc) || UNDOC_ALSO.has(d.id) };
 });
 for (const [id, [title, len]] of Object.entries(LEGEND_OF)) { const o = SPECIES.find((s) => s.id === +id); if (o) SPECIES.push({ ...o, id: 2000 + +id, name: title, species: o.name, len, giant: true, legendOf: o.id, v: LOOKS[2000 + +id] ? { ...o.v, ...LOOKS[2000 + +id] } : o.v }); } // (5.10.0) a legend has its own look, never the common one's
+// (7.3.0, after FishBase and SeaLifeBase) the giant scavenging amphipod keeps near the bottom (most are caught in traps
+// set 15 m above the sea floor); the abyssal cusk-eel is a fish of the open water (bathypelagic)
+const HAB_FIX = { 496: 'floor-swim', 332: 'pelagic' };
+for (const s of SPECIES) if (HAB_FIX[s.id]) s.v = { ...s.v, hab: HAB_FIX[s.id] };
 export const SPECIES_BY_ID = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 
 // Which species can live at a given depth, filtered by habitat class.

@@ -22,7 +22,7 @@ function floorShadow(x, cx, cy, rx, ry, a = 0.28) { const g = x.createRadialGrad
 // as a solid (light on its upper flank, dark beneath, the inside of the mouth darkest). Floats ride on the ring: cork on
 // the basic net, glass in netting on the advanced, whose steel hoop also has its chain; the bridles run off to the left
 export function drawTrawl3(x, w, h, k) {
-  SEED = k === 'adv' ? 31 : 17; const adv = k === 'adv';
+  SEED = k === 'adv' ? 31 : k === 'deep' ? 37 : 17; const adv = k !== 'basic';
   const mx = w * 0.22, my = h * 0.48, ry = h * (adv ? 0.34 : 0.3), rx = ry * 0.36, L = w * (adv ? 0.64 : 0.58), sag = h * 0.06;
   const C = (u) => [mx + L * u, my + sag * Math.sin(u * Math.PI * 0.9) + h * 0.04 * u]; // the bag's axis
   const rad = (u) => Math.max(0.06, Math.pow(1 - u, 0.85) * 0.94 + 0.06 * (1 - u)); // its girth along it

@@ -60,7 +60,7 @@ import { drawFace, DEFAULT_LOOK, FACES, EYES, HAIRS, HAIR_NAMES, SKINS, BEARDS, 
 import { priceOf as storePrice } from './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
 import { TRAP_ORDER } from './economy.js';
-import { trapsFree, trapSet, trapLeft, timeLeftText } from './traps.js';
+import { trapsFree, trapSets, trapLeft, timeLeftText } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, netsOf, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
@@ -846,7 +846,7 @@ export class UI {
       else if (k === 'n') { e.stopImmediatePropagation(); e.preventDefault(); close(); }
     };
     const all = Object.keys(NETS_SUB); // (4.11.1) every net, the ones not in the hatch greyed with a lock
-    el.innerHTML = `<p class="np-title">Which net?</p><div class="g-row">${all.map((k) => { const N = NETS_SUB[k], adv = k === 'adv', have = counts[k] || 0;
+    el.innerHTML = `<p class="np-title">Which net?</p><div class="g-row">${all.map((k) => { const N = NETS_SUB[k], adv = k !== 'basic', have = counts[k] || 0;
       return `<button class="gain np-card ${adv ? 'r-legendary' : 'r-common'}${have ? '' : ' np-none'}" data-net="${k}" ${have ? '' : 'disabled'}><div class="g-tile"><img src="${pictureOf('trawl', k, 120, 72, true)}" alt="">${have ? `<i class="np-n">×${have}</i>` : '<span class="np-lock" aria-label="Not in the hatch"><svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/></svg></span>'}</div><span class="np-line">${adv ? `Up to ${N.max} animals, ${N.maxLen} m long, wide mouth, no legend escapes` : `Up to ${N.max} animals, ${N.maxLen} m long`}</span><b>${N.name}</b>${have ? '' : '<small class="np-out">Not in the hatch</small>'}</button>`; }).join('')}</div>`;
     el.onclick = (e) => { const b = e.target.closest('[data-net]'); if (b && !b.disabled) pick(b.dataset.net); else if (e.target === el) close(); };
     window.addEventListener('actdown', key, true);
@@ -1361,13 +1361,13 @@ export class UI {
           <div class="lk-acts"><button data-airuse>Use</button><small class="tp-note">in the sub</small></div></div></div></div>` : '';
     // (5.10.11) a trap's card, laid out like the gear cards: its picture large in a recess, its name, what it is, a few
     // plain facts, and Use (which only works at the surface)
-    const trapPop = (() => { const k = this.trapSel, T = k && TRAPS[k]; if (!T || !((TR[k] || 0) > 0)) return ''; const setK = trapSet(P) && trapSet(P).type === k ? trapSet(P) : null; /* (7.3.0) one set at a time, in real time */
+    const trapPop = (() => { const k = this.trapSel, T = k && TRAPS[k]; if (!T || !((TR[k] || 0) > 0)) return ''; const setL = trapSets(P).filter((S) => S.type === k), setK = setL.length >= (TR[k] || 0) ? setL[0] : null, full = trapSets(P).length >= 3; /* (7.3.0) up to three set at a time, in real time */
       const fact = (a, b) => `<div class="tp-row"><span>${a}</span><b>${b}</b></div>`, desc = String(T.desc || '').replace(/\.\./g, '.');
       return `<div class="item-pop trap-pop"><div class="ip-box r-common tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('trap', k, 360, 216, true)}" alt=""></div>
-        <div class="tp-txt"><h4 style="color:${RARITY[T.rarity || 'common'] ? RARITY[T.rarity || 'common'].col : 'inherit'}">${T.name}</h4><p class="tp-kind">${setK ? `Set at ${setK.depth} m, ${trapLeft(setK) > 0 ? `${timeLeftText(trapLeft(setK))} to go` : 'done'}, ${setK.catch.length} inside` : 'Trap, in the locker'}</p><p class="tp-desc">${desc}</p>
+        <div class="tp-txt"><h4 style="color:${RARITY[T.rarity || 'common'] ? RARITY[T.rarity || 'common'].col : 'inherit'}">${T.name}</h4><p class="tp-kind">${setL.length ? setL.map((S) => `Set at ${S.depth} m, ${trapLeft(S) > 0 ? `${timeLeftText(trapLeft(S))} to go` : 'done'}, ${S.catch.length} inside`).join(' · ') : `Trap, ${TR[k]} in the locker`}</p><p class="tp-desc">${desc}</p>
           ${fact('Fishes for', timeLeftText(T.dur))}${fact('Catches', `${T.count} animals`)}${fact('Sets down to', `${T.maxDepth} m`)}${fact('Takes', `up to ${Math.round(T.maxLen * 100)} cm`)}${T.winch ? fact('Emptied', "with the Margaret's winch") : ''}
-          <div class="lk-acts"><button data-trapuse="${k}" ${setK || trapSet(P) ? 'disabled' : ''}>Use</button><small class="tp-note">${setK ? 'set: empty it at its buoy' : trapSet(P) ? 'one trap set at a time' : 'at the surface'}</small></div></div></div></div>`; })();
+          <div class="lk-acts"><button data-trapuse="${k}" ${setK || full ? 'disabled' : ''}>Use</button><small class="tp-note">${setK ? 'all set: empty one at its buoy' : full ? 'three traps set at a time' : 'at the surface'}</small></div></div></div></div>`; })();
     // (5.17.0) the glow stick's card, opened from its belt slot, laid out as the trap's: Use snaps one (90 s of warm light,
     // in the water or the sub); while one burns, the seconds left and Use greyed; and taking them off the belt, where gear can change
     // (6.1.0) gold coins: stacks of up to 10 in the locker, each stack a space; tap one for its card
@@ -1611,17 +1611,17 @@ export class UI {
   tsDrums(v) {
     const c = $('ts-drums'); if (!c) return; const x = c.getContext('2d'), W = c.width, H = c.height; x.clearRect(0, 0, W, H);
     const rr = (a, b, w, h, r) => { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); };
-    let g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#5a4a32'); g.addColorStop(0.5, '#3c3122'); g.addColorStop(1, '#251e15');
+    let g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#4c5740'); g.addColorStop(0.5, '#363f2e'); g.addColorStop(1, '#22281c'); /* (owner) the plate's own olive steel */
     rr(2, 2, W - 4, H - 4, 10); x.fillStyle = g; x.fill(); x.lineWidth = 2; x.strokeStyle = 'rgba(0,0,0,0.7)'; x.stroke();
-    x.strokeStyle = 'rgba(214,196,150,0.18)'; x.lineWidth = 1.5; rr(5, 5, W - 10, H - 10, 8); x.stroke();
-    for (const sx of [16, W - 16]) { const sg = x.createRadialGradient(sx - 2, H / 2 - 2, 1, sx, H / 2, 7); sg.addColorStop(0, '#a8916a'); sg.addColorStop(1, '#3a2e1e'); x.fillStyle = sg; x.beginPath(); x.arc(sx, H / 2, 6, 0, Math.PI * 2); x.fill(); x.strokeStyle = 'rgba(20,14,8,0.8)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(sx - 4, H / 2 - 2); x.lineTo(sx + 4, H / 2 + 2); x.stroke(); }
-    const n = 4, wx = 34, ww = W - 68, wy = 16, wh = H - 32, dw = ww / n, s = String(Math.max(0, Math.round(v))).padStart(n, '0').slice(-n);
-    x.fillStyle = '#0d0c0a'; rr(wx - 3, wy - 3, ww + 6, wh + 6, 4); x.fill();
+    x.strokeStyle = 'rgba(200,210,180,0.16)'; x.lineWidth = 1.5; rr(5, 5, W - 10, H - 10, 8); x.stroke();
+    for (const sx of [13, W - 13]) { const sg = x.createRadialGradient(sx - 2, H / 2 - 2, 1, sx, H / 2, 7); sg.addColorStop(0, '#a8916a'); sg.addColorStop(1, '#3a2e1e'); x.fillStyle = sg; x.beginPath(); x.arc(sx, H / 2, 6, 0, Math.PI * 2); x.fill(); x.strokeStyle = 'rgba(20,14,8,0.8)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(sx - 4, H / 2 - 2); x.lineTo(sx + 4, H / 2 + 2); x.stroke(); }
+    const n = 4, wx = 26, ww = W - 52, wy = 16, wh = H - 32, dw = ww / n, s = String(Math.max(0, Math.round(v))).padStart(n, '0').slice(-n);
+    x.fillStyle = '#0b0d09'; rr(wx - 3, wy - 3, ww + 6, wh + 6, 4); x.fill();
     for (let i = 0; i < n; i++) { const dx = wx + i * dw;
-      const dg = x.createLinearGradient(0, wy, 0, wy + wh); dg.addColorStop(0, '#0f0e0c'); dg.addColorStop(0.22, '#2a2722'); dg.addColorStop(0.5, '#34302a'); dg.addColorStop(0.78, '#2a2722'); dg.addColorStop(1, '#0f0e0c');
+      const dg = x.createLinearGradient(0, wy, 0, wy + wh); dg.addColorStop(0, '#0d0f0b'); dg.addColorStop(0.22, '#24281f'); dg.addColorStop(0.5, '#2f3428'); dg.addColorStop(0.78, '#24281f'); dg.addColorStop(1, '#0d0f0b');
       x.fillStyle = dg; x.fillRect(dx + 1.5, wy, dw - 3, wh);
       let seed = (i + 1) * 9301 + v * 49297; for (let k = 0; k < 70; k++) { seed = (seed * 9301 + 49297) % 233280; const px = dx + 2 + (seed / 233280) * (dw - 4); seed = (seed * 9301 + 49297) % 233280; const py = wy + (seed / 233280) * wh; x.fillStyle = `rgba(${k % 2 ? '255,245,220' : '0,0,0'},0.06)`; x.fillRect(px, py, 1.2, 1.2); }
-      x.font = `600 ${Math.round(wh * 0.7)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.font = `600 ${Math.round(wh * 0.66)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
       x.fillStyle = 'rgba(0,0,0,0.55)'; x.fillText(s[i], dx + dw / 2 + 1, wy + wh / 2 + 3);
       x.fillStyle = i < n - String(Math.round(v)).length ? 'rgba(214,204,178,0.45)' : '#ddd3b8'; x.fillText(s[i], dx + dw / 2, wy + wh / 2 + 2); }
     const gl = x.createLinearGradient(0, wy, 0, wy + wh); gl.addColorStop(0, 'rgba(255,250,235,0.10)'); gl.addColorStop(0.18, 'rgba(255,250,235,0)'); x.fillStyle = gl; x.fillRect(wx, wy, ww, wh); // the glass
@@ -2235,7 +2235,7 @@ export class UI {
     } else if (tab === 'supplies') {
       // the sub's trawl nets: one in the hatch at a time, each used up in one haul
       for (const [k, N] of Object.entries(NETS_SUB)) {
-        const have = netsOf(g.items)[k], full = have >= N.cap, adv = k === 'adv';
+        const have = netsOf(g.items)[k], full = have >= N.cap, adv = k !== 'basic';
         html += card(N.name, N.desc, `in the hatch (${have}/${N.cap})`, full ? null : N.price, 'buy', 'subnet:' + k, full ? 'Full' : 'Buy', '', '',
           [['holds', `${N.max} animals`, adv ? 'good' : ''], ['fish up to', `${N.maxLen} m long`, adv ? 'good' : ''], ['mouth', adv ? `${(N.mouth * 2).toFixed(1)} m wide: catches far more of a school` : `${(N.mouth * 2).toFixed(1)} m wide`, adv ? 'good' : ''], ['legends', adv ? 'none escape' : '9 in 10 escape', adv ? 'good' : 'bad'], ['big animals', adv ? 'seldom break out' : 'often break out, may tear it', adv ? 'good' : 'bad'], ['use', 'N in the sub, once', 'sheet']]);
       }
