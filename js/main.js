@@ -2108,7 +2108,8 @@ function tickAbility(dt) {
   e.abilSpeed = on && A.speed ? A.speed : 1; e.abilNoAir = !!(on && A.noAir);
   g.reachMul = on && A.reach ? A.reach : 1; g.swingMul = on && A.swing ? A.swing : 1; g.sureCatch = !!(on && A.sure); g.blessCatch = !!(on && A.bless);
   g.abilLight = on && A.light ? A.light : 0;
-  { const lh = !!(on && A.light >= 2 && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } // (5.16.0) Lighthouse: the HUD comes to life g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!(on && A.ward && !A.tide);
+  { const lh = !!(on && A.light >= 2 && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
+  g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!(on && A.ward && !A.tide); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
   if (g.echoSweep != null) { g.echoSweep += dt; if (g.echoSweep > 3) g.echoSweep = null; } // (5.16.0) Echo's sweep over the whole screen, 3 s
   if (g.subGuardT > 0) g.subGuardT = Math.max(0, g.subGuardT - dt);

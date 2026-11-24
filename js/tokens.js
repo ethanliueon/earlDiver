@@ -33,7 +33,7 @@ function paint(r, kind, state) {
   // wear: a scatter of small dark pits and bright scuffs on the brass
   for (let i = 0; i < (big ? 46 : 22); i++) {
     const a = R() * TAU, d = r * (rim + 0.03 + R() * (0.94 - rim)), s = Math.max(0.5, r * (0.008 + R() * 0.014));
-    const q = R(); x.fillStyle = q < 0.45 ? 'rgba(8,10,8,0.45)' : q < 0.8 ? 'rgba(78,128,108,0.42)' : rgb(light, 0.3); // pits, verdigris, scuffs x.beginPath(); x.arc(m + Math.cos(a) * d, m + Math.sin(a) * d, s, 0, TAU); x.fill();
+    const q = R(); x.fillStyle = q < 0.45 ? 'rgba(8,10,8,0.45)' : q < 0.8 ? 'rgba(78,128,108,0.42)' : rgb(light, 0.3); /* pits, verdigris, scuffs */ x.beginPath(); x.arc(m + Math.cos(a) * d, m + Math.sin(a) * d, s, 0, TAU); x.fill();
   }
   // the screws (four) or the bolts (eight): slotted heads, each slot turned its own way
   const n = big ? 8 : 4, sr = r * (big ? 0.055 : 0.075), at = r * (rim + (1 - rim) * 0.5);
