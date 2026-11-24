@@ -2061,7 +2061,7 @@ html body .store-panel .pet-tier span img { width: 14px; height: 14px; }
 html body .store-panel .st-pets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 html body .store-panel .st-pets .pet-card b { font-size: 14px !important; text-align: center; }
 html body .store-panel .st-pets .pet-card img:not(.st-pearl) { height: 58px !important; }
-html body .store-panel .st-pets .pet-card.locked img { filter: brightness(0) opacity(0.55); }
+html body .store-panel .st-pets .pet-card.locked > img { filter: brightness(0) opacity(0.55); } /* (7.4.18) only the animal is a dark outline: the pearl beside its price stays a pearl */
 html body .store-panel .st-pets .pet-card.locked b { color: #8c8672; }
 html body .store-panel .st-pets .pet-card.locked .st-r { color: #8c8672; font-size: 13px; text-align: center; text-transform: none; letter-spacing: 0; }
 html body .store-panel .st-pets .pet-card .st-r { font-size: 12px; }
