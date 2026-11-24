@@ -57,7 +57,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 10. **Everything in 3D, the same way.** Every item (suits, nets, cameras, tanks, bags, fins) is drawn as a turned,
    lit, solid object like the suits and nets: round things seen from the side are ovals, faces are shaded, edges
    catch light. A redrawn item changes everywhere it appears (shop, locker, cards, HUD coins, the Old One's table).
-10. **Simple systems, one job each.** Prefer moving something to stacking options on it (the swap is net and camera;
+11. **Simple systems, one job each.** Prefer moving something to stacking options on it (the swap is net and camera;
    traps are used from the bag; one ability slot, one carried-over cooldown).
 
 ## How to work
