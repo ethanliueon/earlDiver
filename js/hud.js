@@ -352,7 +352,7 @@ export class Hud {
     // recovers, a bright ring running down while it is on
     const AB = this.abilDef || null, ABS = abilityState(g);
     const abil = () => { if (!AB) return { key: 'ability', icon: 'ab_sprint', on: false, why: "You don't have a skill equipped: put a scroll on in the bag", lock: true };
-      const why = whyNot(g, P, AB); return { key: 'ability', icon: 'ab_' + AB.fam, look: { tier: AB.tier }, tint: AB.tier, on: !why || why === 'Already running', lit: ABS.activeT > 0, why, abil: true }; };
+      const why = whyNot(g, P, AB); return { key: 'ability', icon: 'ab_' + AB.fam, look: { tier: AB.tier }, tint: AB.tier, on: !why || why === 'Already running', lit: ABS.activeT > 0, why, abil: true, tapKey: cooldownLeft(P) > 0 && !(ABS.activeT > 0) ? 'ability' : null /* (7.4.9) cooling: a tap offers to skip it for pearls */ }; };
     const handSub = e.inSub ? (g.subHandF ? 'f' : sub.docked ? 'u' : null) : null;
     // (5.17.0) the light, in the arc's fourth place in the water and the sub: his lamp while he swims, her lights while he
     // is in her (it moved here from the bottom left corner, which is the stick's alone now)
@@ -536,7 +536,7 @@ e.inSub ? [
       if (a.bar && g.promptBar != null && a.on) { ctx.strokeStyle = 'rgba(244,246,240,0.95)'; ctx.lineWidth = 3.5 * u; ctx.beginPath(); ctx.arc(x, y, r * 0.62, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(g.promptBar, 0, 1)); ctx.stroke(); }
       ctx.restore();
       if (a.away && !a.on) return; // going: no longer pressable
-      hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : 'msg:' + (a.why || 'Not now'));
+      hot(x - r, y - r, r * 2, r * 2, a.on ? a.key : a.tapKey || 'msg:' + (a.why || 'Not now'));
     };
     const r = 26.5 * u, gap = 31.5 * u, rho0 = R + r + gap; // (5.17.0) four coins of one size, a little larger (25 to 26.5), 35 degrees apart with even gaps
     this.arcTop = cy - rho0 - r; // (5.15.6) where the corner of buttons begins: the radar stops above it

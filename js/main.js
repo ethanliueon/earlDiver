@@ -30,7 +30,7 @@ import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
 import { giveRolled, wornInst } from './items.js';
-import { abilityOf, abilityState, whyNot, ALL_ABILITIES } from './abilities.js';
+import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
@@ -2096,7 +2096,14 @@ function causeText(kind) {
 // ---------------- (5.9.0) abilities ----------------
 function currentAbility() { const q = profile && wornInst(profile, 'ability'); return q ? abilityOf(q.id) : null; }
 function useAbility() {
-  const A = currentAbility(), why = whyNot(g, profile, A); if (why) { hud.toast(why, 'note'); return; }
+  const A = currentAbility(), why = whyNot(g, profile, A);
+  // (7.4.9, owner) cooling down: the wait can be skipped with pearls (abilities.js skipCost)
+  if (A && profile && cooldownLeft(profile) > 0 && !(abilityState(g).activeT > 0)) { const left = cooldownLeft(profile), n = skipCost(left), P = profile; // aboard too: the skip is offered wherever he taps it
+    ui.confirm(`${A.name}: ready in ${fmtLeft(left)}`, `Skip the wait: ${n} pearl${n > 1 ? 's' : ''} (you have ${Math.floor(P.pearls || 0)})`, `Skip, ${n} pearl${n > 1 ? 's' : ''}`, 'Wait', () => {
+      if ((P.pearls || 0) < n) { hud.toast('Not enough pearls', 'warn'); return; }
+      P.pearls -= n; P.abilReadyAt = Date.now(); saveProfile(P); audio.ready && audio.uiSoft && audio.uiSoft(); hud.toast(`${A.name} ready`); });
+    return; }
+  if (why) { hud.toast(why, 'note'); return; }
   // (5.16.0) Dash on a phone: pressed, it waits for a tap where to go (time slowed, the screen greyed, the view opened by
   // its tier); pressed again, or 3 s with no tap, and it is put away unspent
   if (A.dash) { if (g.dashAim) { g.dashAim = null; renderer.aimZoom = 1; } else { g.dashAim = { t: 3, A }; renderer.aimZoom = A.zoom || 1; } return; }

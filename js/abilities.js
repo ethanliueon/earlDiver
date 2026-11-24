@@ -26,7 +26,7 @@ export const ABILITY_DEFS = {
   flare: {
     rare: { name: 'Flare', dur: 20, cd: 300, light: 1, line: '20 s of light 28 m round you. The thing does not see it.' },
     exotic: { name: 'Flare+', dur: 40, cd: 720, light: 1.6, line: '40 s of brighter light, 45 m round you. The thing does not see it.' },
-    legendary: { name: 'Lighthouse', dur: 30, cd: 3600, light: 2.4, ward: true, line: '30 s of light 80 m round you, near as bright as the shallows. Hunters keep out of it, and the thing does not see it.' },
+    legendary: { name: 'Lighthouse', dur: 60, cd: 3600, light: 2.4, ward: true, line: '60 s of light 80 m round you, near as bright as the shallows, pulsing, its beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
   },
   echo: {
     rare: { name: 'Echo', dur: 20, cd: 480, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 20 s.' },
@@ -51,6 +51,9 @@ export const ALL_ABILITIES = Object.entries(ABILITY_DEFS).flatMap(([fam, T]) => 
 // ---------- the running state (on g.abil) ----------
 // (5.16.0) P.abilReadyAt: the real time (ms) at which it can be used again
 export function abilityState(g) { return g.abil || (g.abil = { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }); }
+// (7.4.9, owner) skipping a cooldown with pearls: 1 a 5 min of what is left up to 30 min, 1 a 15 min from there to 3 h, 1 an
+// hour beyond; each part rounded up, never less than 1 (5 min: 1; 30 min: 6; 1 h: 8; 3 h: 16; 4 h: 17)
+export function skipCost(sec) { const m = Math.max(0, sec) / 60; return Math.max(1, Math.ceil(Math.min(m, 30) / 5) + Math.ceil(Math.max(0, Math.min(m, 180) - 30) / 15) + Math.ceil(Math.max(0, m - 180) / 60)); }
 export function cooldownLeft(P) { return Math.max(0, ((P.abilReadyAt || 0) - Date.now()) / 1000); }
 // can it be used now? returns null if so, else why not
 export function whyNot(g, P, A) {

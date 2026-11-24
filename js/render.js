@@ -1193,6 +1193,14 @@ export class Renderer {
     ctx.imageSmoothingQuality = 'low'; // (only the light needs the careful scaling; everything else uses the fast kind)
     ctx.globalCompositeOperation = 'lighter';
     this.drawGlows(g, S, Sy, ppm, head, subLamps, glowPts, horizon, dayEff);
+    if (g.abilLight >= 2 && (g.lightFade ?? 1) > 0.01 && g.mode === 'play') { // (7.4.9, owner) the Lighthouse over the lit scene: up to half again as bright as it pulses, and its two beams turning, brighter still where they cross the screen
+      const e2 = g.earl, bx = e2.inSub ? S(g.sub.x) : S(e2.x), by = e2.inSub ? Sy(g.sub.y) : Sy(e2.y), fl = g.lightFade ?? 1, pul = Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), rot = g.time * 0.45, Rb = Math.hypot(W, H);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'screen';
+      const wash = ctx.createRadialGradient(bx, by, 0, bx, by, Rb * 0.75); wash.addColorStop(0, `rgba(255,238,210,${((0.1 + 0.22 * pul) * fl).toFixed(3)})`); wash.addColorStop(0.6, `rgba(255,232,200,${((0.05 + 0.12 * pul) * fl).toFixed(3)})`); wash.addColorStop(1, 'rgba(255,232,200,0)');
+      ctx.fillStyle = wash; ctx.fillRect(0, 0, W, H);
+      for (const off of [0, Math.PI]) { const a2 = rot + off, gb = ctx.createRadialGradient(bx, by, 0, bx, by, Rb); gb.addColorStop(0, `rgba(255,240,214,${((0.12 + 0.1 * pul) * fl).toFixed(3)})`); gb.addColorStop(0.55, `rgba(255,236,206,${((0.06 + 0.05 * pul) * fl).toFixed(3)})`); gb.addColorStop(1, 'rgba(255,236,206,0)');
+        ctx.fillStyle = gb; for (const [w, al] of [[0.38, 0.22], [0.31, 0.28], [0.24, 0.32], [0.17, 0.36], [0.1, 0.4]]) { ctx.globalAlpha = al; ctx.beginPath(); ctx.moveTo(bx, by); ctx.arc(bx, by, Rb, a2 - w, a2 + w); ctx.closePath(); ctx.fill(); } ctx.globalAlpha = 1; } // five widths laid over each other: a beam with soft edges, brightest down its middle
+      ctx.restore(); ctx.globalCompositeOperation = 'lighter'; }
     if (!(this.skip && this.skip.light)) this.drawDeepRim(g, S, Sy, ppm); // (7.0.2) the deep's shapes, after the dark
     ctx.globalCompositeOperation = 'source-over';
     this.drawSay(g, S, Sy, ppm); // (6.0.0) over everything in the scene, lit or not
@@ -3117,6 +3125,10 @@ export class Renderer {
       else if (L >= 1.5) { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.3, rgbStr(col, a0 * 0.95)); gg.addColorStop(0.72, rgbStr(col, a0 * 0.6)); gg.addColorStop(1, rgbStr(col, 0)); }
       else { gg.addColorStop(0, rgbStr(col, a0)); gg.addColorStop(0.22, rgbStr(col, a0 * 0.9)); gg.addColorStop(0.6, rgbStr(col, a0 * 0.45)); gg.addColorStop(1, rgbStr(col, 0)); } // the plain Flare falls away well before the screen's edge
       l.fillStyle = gg; l.beginPath(); l.arc(fxp * k, fyp * k, R * k, 0, TAU); l.fill(); visR.push(fxp, fyp, R); lamps.push({ x: fxp, y: fyp, r: R, a: a0 });
+      if (lh) { // (7.4.9, owner) the Lighthouse pulses: every few seconds its light swells to half again as bright and settles back
+        const pul = Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), op = l.globalCompositeOperation; l.globalCompositeOperation = 'lighter';
+        const pg = l.createRadialGradient(fxp * k, fyp * k, 0, fxp * k, fyp * k, R * 0.8 * k); pg.addColorStop(0, rgbStr(col, 0.5 * a0 * pul)); pg.addColorStop(0.6, rgbStr(col, 0.3 * a0 * pul)); pg.addColorStop(1, rgbStr(col, 0));
+        l.fillStyle = pg; l.beginPath(); l.arc(fxp * k, fyp * k, R * 0.8 * k, 0, TAU); l.fill(); l.globalCompositeOperation = op; }
     }
     // (7.3.0) Riptide's light: wide and soft like a Flare (owner: no small round glow), a warm bone light 40 m round him
     if (g.abil && g.abil.activeT > 0 && g.abil.def && g.abil.def.speed && g.abil.def.tier === 'legendary' && (g.lightFade ?? 1) > 0.01) {
@@ -3129,6 +3141,13 @@ export class Renderer {
     if (e.biolum && !e.inSub && (g.lightFade ?? 1) > 0.01) { const bx = S(e.x), by = Sy(e.y), gr = 16 * ppm, a = 0.42 * (g.lightFade ?? 1) * (0.94 + 0.06 * Math.sin(g.time * 1.3)), c = [128, 156, 204];
       visR.push(bx, by, gr); const gg = l.createRadialGradient(bx * k, by * k, 0, bx * k, by * k, gr * k); gg.addColorStop(0, rgbStr(c, a)); gg.addColorStop(0.5, rgbStr(c, a * 0.8)); gg.addColorStop(0.8, rgbStr(c, a * 0.3)); gg.addColorStop(1, rgbStr(c, 0));
       l.fillStyle = gg; l.beginPath(); l.arc(bx * k, by * k, gr * k, 0, TAU); l.fill(); lamps.push({ x: bx, y: by, r: gr, a }); }
+    if (g.abilLight >= 2 && (g.lightFade ?? 1) > 0.01 && g.mode === 'play') { // (7.4.9, owner) the Lighthouse's beams: two broad shafts of light turning slowly round him, lighting the water they cross (in the light map, so they light what is there)
+      const e2 = g.earl, bx = (e2.inSub ? S(g.sub.x) : S(e2.x)) * k, by = (e2.inSub ? Sy(g.sub.y) : Sy(e2.y)) * k, fadeL = g.lightFade ?? 1, pul = 0.6 + 0.4 * Math.pow(0.5 + 0.5 * Math.sin(g.time * 1.6), 2), rot = g.time * 0.45, Rb = Math.hypot(this.W, this.H) * k;
+      const op = l.globalCompositeOperation; l.globalCompositeOperation = 'lighter';
+      for (const off of [0, Math.PI]) { const a = rot + off;
+        const gb = l.createRadialGradient(bx, by, 0, bx, by, Rb); gb.addColorStop(0, rgbStr([255, 240, 214], 0.34 * pul * fadeL)); gb.addColorStop(0.5, rgbStr([255, 236, 206], 0.2 * pul * fadeL)); gb.addColorStop(1, rgbStr([255, 236, 206], 0));
+        l.fillStyle = gb; for (const w of [0.32, 0.14]) { l.beginPath(); l.moveTo(bx, by); l.arc(bx, by, Rb, a - w, a + w); l.closePath(); l.fill(); } } // a broad beam and its brighter core
+      l.globalCompositeOperation = op; }
     if (g.legend) { // the legendary moment: a pale light comes up on it, and fades
       const c = g.legend.c, kf = Math.min(1, g.legend.t / 1.5) * Math.min(1, (8 - g.legend.t) / 2.5);
       // (4.8.2) one even, pale light: as soft in the middle as at its edge (no hot spot on the fish), fading only at the rim

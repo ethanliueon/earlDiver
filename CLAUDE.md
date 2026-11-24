@@ -169,7 +169,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   in the sub. **Pearls** are the premium currency: a new diver starts with 20, shown on their own small steel plate
   under the money; a revive costs 50 pearls (no ad, no $0.99); no pay-to-win unless the owner asks. Animals can still
   be caught as pets; custom pets are bought in the shop's Pets tab with pearls. Close to his pet, the interact button
-  becomes the pet (Stay / Follow); the word is written above the pet, with no line. The action arc keeps its places.
+  becomes the pet (Stay / Follow); the word is written above the pet, with no line. The action arc keeps its places. (7.4.9) An ability's cooldown can be skipped with pearls from its button: 1 a 5 min up to 30 min, 1 a 15 min to 3 h, 1 an hour beyond. The Lighthouse burns 60 s, pulses to half again as bright and sweeps two soft beams round him.
 - **Decided in 7.4.0**: a net catches only what its hoop passes over in the swing (tools_draw.js netGeom); reach is a
   multiple of the hand net's (1x the hoop, 2x twice its radius), and the hand net takes 0.7 s to land. Ambush I-IV: 25 %
   a level that a fish holds still instead of darting or bolting, "Ambushed" written beside one caught that way. Observing
