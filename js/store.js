@@ -58,20 +58,23 @@ export const shopTabs = (on, test) => `<div class="st-tabs">${[['shop', 'Chests'
 // shows once one of its species has been caught; until then a dark outline and "Catch one to unlock". Owned: its stars
 // (one a level) and Take out / With you. Bought: asked first, then it comes out with him
 export const petStars = (n, max = MAX_LEVEL) => `<span class="pet-stars" aria-label="Level ${n}">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? 'on' : ''}">★</i>`).join('')}</span>`;
-export function petsHtml(P, test, picOf, nameOf) {
-  const owned = petsOwned(P), cur = P.pet && P.pet.id, have = Math.floor(P.pearls || 0);
+export function petsHtml(P, test, picOf, nameOf, cat = 'pets') {
+  const owned = petsOwned(P), cur = P.pet && P.pet.id, have = Math.floor(P.pearls || 0), ex = cat === 'excl';
   const pearl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
   const sec = (tier) => {
-    const T = PET_TIERS[tier], R = RARITY[tier];
-    const cards = PETS.filter((q) => q.tier === tier).map((q) => {
-      const mine = owned.has(q.id), out = cur === q.id, open = petUnlocked(P, q.id);
-      if (!open) return `<div class="st-card pet-card locked"><img src="${picOf(q.id)}" alt=""><b>Unknown</b><span class="st-r">Catch one to unlock</span></div>`;
+    const T = PET_TIERS[tier] || {}, R = RARITY[tier] || {}, L = PETS.filter((q) => (tier === 'all' || q.tier === tier) && !!q.excl === ex); if (!L.length) return '';
+    const cards = L.map((q) => {
+      const R = RARITY[q.tier], mine = owned.has(q.id), out = cur === q.id, open = petUnlocked(P, q.id);
+      if (!open) return `<div class="st-card pet-card locked"><img src="${picOf(q.id)}" alt=""><b>Unknown</b>${ex ? `<span class="st-r pet-tierline" style="color:${R.col}">${R.name} · ${pearl}${q.pearls}</span>` : ''}<span class="st-r">${q.excl ? 'Photograph one to unlock' : 'Catch one to unlock'}</span></div>`;
       const btn = out ? '<button disabled>With you</button>' : mine ? `<button data-pet="${q.id}">Take out</button>` : `<button data-pet="${q.id}" ${have < q.pearls ? 'disabled' : ''}>${pearl}${q.pearls}</button>`;
-      return `<div class="st-card pet-card r-${tier}"><img src="${picOf(q.id)}" alt=""><b style="color:${R.col}">${nameOf(q.id)}</b>${mine ? petStars(petLevel(P, q.id)) : `<span class="st-r" style="color:${R.col}">${R.name} pet</span>`}${btn}</div>`;
+      return `<div class="st-card pet-card r-${q.tier}"><img src="${picOf(q.id)}" alt=""><b style="color:${R.col}">${nameOf(q.id)}</b>${mine ? petStars(petLevel(P, q.id)) : `<span class="st-r" style="color:${R.col}">${R.name} pet</span>`}${btn}</div>`;
     }).join('');
-    return `<h3 class="pet-tier" style="color:${R.col}">${R.name} <span>${pearl}${T.pearls}</span></h3><div class="st-pets">${cards}</div>`;
+    return ex ? `<div class="st-pets">${cards}</div>` : `<h3 class="pet-tier" style="color:${R.col}">${R.name} <span>${pearl}${T.pearls}</span></h3><div class="st-pets">${cards}</div>`;
   };
-  return `<div class="st-plate st-petshop"><button class="st-x" aria-label="Close">×</button>${shopTabs('pets', test)}<div class="pet-have">${pearl}<b>${have.toLocaleString('en-US')}</b></div><div class="pet-scroll">${['exotic', 'legendary', 'mythical'].map(sec).join('')}</div></div>`;
+  // (7.4.16, owner) two kinds: Pets (unlocked by catching one) and Exclusive (animals no net can take: by a photograph)
+  const sw = `<div class="pet-cats"><button data-petcat="pets"${ex ? '' : ' class="on"'}>Pets</button><button data-petcat="excl"${ex ? ' class="on"' : ''}>Exclusive</button></div>`;
+  const note = ex ? '<p class="pet-note">Animals no net can take. Photograph one to unlock it.</p>' : '';
+  return `<div class="st-plate st-petshop"><button class="st-x" aria-label="Close">×</button>${shopTabs('pets', test)}<div class="pet-have">${pearl}<b>${have.toLocaleString('en-US')}</b></div>${sw}<div class="pet-scroll">${note}${ex ? sec('all') : ['exotic', 'legendary', 'mythical'].map(sec).join('')}</div></div>`;
 }
 export function storeHtml(P, test = false) {
   const card = (key, deal) => {

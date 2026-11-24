@@ -2482,7 +2482,7 @@ function update(dt) {
       if (ph.empty) hud.toast('Nothing in frame');
       else {
         const pic = { key: 'p' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36), sk: ph.sk, id: ph.sp.id, variant: ph.variant || null, name: ph.name, q: ph.q, grade: ph.grade, value: ph.value, first: ph.first, again: ph.again, dist: ph.frame ? Math.round(ph.frame.d * 10) / 10 : null, at: Math.round(e.y), img: renderer.snapshot(ph.frame, 1 - ph.sharp) };
-        g.photos.push(pic); profile.roll = g.photos.slice(); saveProfile(profile);
+        g.photos.push(pic); profile.roll = g.photos.slice(); if (!(profile.photoed || []).includes(ph.sp.id)) profile.photoed = [...(profile.photoed || []), ph.sp.id]; saveProfile(profile); // (7.4.16) every kind ever photographed: an Exclusive pet's unlock
         audio.calmBoost && audio.calmBoost(0.08);
         hud.toast(ph.again ? `${ph.name}: this one is photographed already` : `${ph.name} · ${ph.grade}`, 'note'); // (5.10.10)
         questEvent(profile, 'photo', { id: ph.sp.id });

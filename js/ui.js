@@ -546,10 +546,11 @@ export class UI {
   toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true), (k, id) => pictureOf(k, id, 120, 90, true), this.cashPicture()); } el.hidden = !on; this.storeWire(el); }
   // (7.3.0) the painted bundle of notes (coins.js drawCash), for cash anywhere a picture is wanted
   cashPicture() { if (!this.cashPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); drawCash(x, 150, 95, 120); this.cashPic = c.toDataURL(); } return this.cashPic; }
-  petsPage() { if (!this.fitPics) this.fitPics = new Map(); const fit = (id) => { const sp3 = SPECIES_BY_ID[id], k = 'pet' + id; if (!this.fitPics.has(k)) this.fitPics.set(k, petIcon(sp3, 300, 180).toDataURL()); return this.fitPics.get(k); }; return petsHtml(this.h.getProfile(), isTestStore(), fit, (id) => SPECIES_BY_ID[id].name); }
+  petsPage() { if (!this.fitPics) this.fitPics = new Map(); const fit = (id) => { const sp3 = SPECIES_BY_ID[id], k = 'pet' + id; if (!this.fitPics.has(k)) this.fitPics.set(k, petIcon(sp3, 300, 180).toDataURL()); return this.fitPics.get(k); }; return petsHtml(this.h.getProfile(), isTestStore(), fit, (id) => SPECIES_BY_ID[id].name, this.petCat || 'pets'); }
   storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
     const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); return; }
+    const pc = ev.target.closest('[data-petcat]'); if (pc) { this.petCat = pc.dataset.petcat; el.innerHTML = this.petsPage(); return; } // (7.4.16) Pets / Exclusive
     const pb = ev.target.closest('[data-pet]'); if (pb) { this.h.onBuyPet && this.h.onBuyPet(+pb.dataset.pet, () => { if (!el.hidden) el.innerHTML = this.petsPage(); }); return; } // (7.3.9, 7.4.14) a buy is asked first
     const tb0 = ev.target.closest('[data-tab]'); if (tb0 && tb0.dataset.tab === 'pets') { el.innerHTML = this.petsPage(); return; } // (7.3.9) the pets, for pearls
     if (tb0 && tb0.dataset.tab === 'shop' && !isTestStore()) { el.innerHTML = storeHtml(this.h.getProfile(), false); return; }

@@ -175,8 +175,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   as bright and sweeps two soft beams round him.
 - **Pets (7.4.14, owner):** only from pearls (js/petshop.js), never from the catch; never items (not in the bag, the
   locker or the aquarium) and never sold. Tiers: exotic 80 pearls (plain), legendary 150 (a soft glow and motes),
-  mythical 500, the giants (an ember glow, more particles). A kind shows in the shop once its species is caught; until
-  then a dark outline, "Catch one to unlock". Every pet starts at its real size. The pet slot shows a red "!" while he
+  mythical 500, the giants (an ember glow, more particles). Two kinds in the shop (7.4.16): Pets, each shown once its species
+  is caught (until then a dark outline, "Catch one to unlock"), and Exclusive, the animals no net can take (the
+  photo-only legends, anything over 4 m), each unlocked by photographing one. Every pet starts at its real size. The pet slot shows a red "!" while he
   owns pets and none is out; tapped, it lists his pets. Feeding (js/petfeed.js): at the surface, once a day, one live
   animal brought up, dragged into the pet's aquarium (it eats, loops, gives off pink hearts for about 5 s); points by
   rarity (common 5, uncommon 10, rare 20, exotic 40, legendary 100); levels at 10, 50, 100, 500 points, each +20 % size,

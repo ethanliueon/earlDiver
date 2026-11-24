@@ -1202,7 +1202,8 @@ development switch that is not in the shipped game.
 - **Pets come only from pearls.** Catching an animal never makes it a pet. Pets are not items: never in the bag, the
   locker or the aquarium, and never sold.
 - **Discovery:** a pet shows in the shop once that species has been caught; until then a dark outline, "Catch one to
-  unlock".
+  unlock". (7.4.16) Exclusive: the pets no net can take (Frilled Shark, Goblin Shark, Giant, Colossal and Bigfin Squid,
+  Abyssal Sleeper Shark, Megamouth) have their own page in the shop and unlock by photographing one.
 - **The pet slot on the character:** empty at first. With one or more pets owned and none out, it carries a "!" until
   one is out. Tapped, it lists the pets owned (picture, tier, pearl price, a check on the one out); tap one to take it
   out, the one out to send it home.

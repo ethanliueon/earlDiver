@@ -6,13 +6,16 @@
 // brought up (its points by its rarity); at 10, 50, 100 and 500 points it reaches a level and grows a fifth again.
 // The size shown can be set back to any level reached, without losing the level. Pearls top up points, 1 for 10.
 import { SPECIES_BY_ID } from './species.js';
-import { rarityOf } from './specimens.js';
+import { rarityOf, LEG_PHOTO } from './specimens.js';
 
 export const PET_TIERS = {
   exotic: { pearls: 80, name: 'Exotic' },
   legendary: { pearls: 150, name: 'Legendary' },
   mythical: { pearls: 500, name: 'Mythical' },
 };
+// (7.4.16, owner) an Exclusive pet: an animal no net can take (the legends that can only be photographed, anything over
+// 4 m), so it is unlocked by photographing one instead of catching it
+export const photoOnly = (sp) => !!(LEG_PHOTO[sp.id] || (sp.len || 0) > 4);
 const T = (tier, ids) => ids.map((id) => ({ id, tier, pearls: PET_TIERS[tier].pearls }));
 export const PETS = [
   // ordinary animals of the game, at their own size
@@ -21,7 +24,7 @@ export const PETS = [
   ...T('legendary', [100, 101, 2102, 2110, 2162, 2150, 104, 105, 108, 2146, 54, 86]),
   // the giants
   ...T('mythical', [149, 350, 351, 188, 88]),
-].filter((p) => SPECIES_BY_ID[p.id]);
+].filter((p) => SPECIES_BY_ID[p.id]).map((p) => ({ ...p, excl: photoOnly(SPECIES_BY_ID[p.id]) }));
 export const PET_BY_ID = new Map(PETS.map((p) => [p.id, p]));
 
 // growth
@@ -34,7 +37,7 @@ export const FEED_POINTS = { common: 5, uncommon: 10, rare: 20, exotic: 40, undo
 export const feedPoints = (sp) => FEED_POINTS[(rarityOf(sp) || {}).id] || 5;
 
 export const petsOwned = (P) => new Set(P.petsOwned || []);
-export const petUnlocked = (P, id) => (P.caught || []).includes(id) || petsOwned(P).has(id);
+export const petUnlocked = (P, id) => petsOwned(P).has(id) || ((PET_BY_ID.get(id) || {}).excl ? (P.photoed || []).includes(id) : (P.caught || []).includes(id)); // (7.4.16) an Exclusive by its photograph
 export function petData(P, id) { P.petData = P.petData || {}; return P.petData[id] || (P.petData[id] = { pts: 0, size: null, fed: null }); }
 export const levelOf = (pts) => PET_LEVELS.filter((n) => pts >= n).length;
 export const petLevel = (P, id) => levelOf(petData(P, id).pts);

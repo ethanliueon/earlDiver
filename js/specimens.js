@@ -147,7 +147,7 @@ const PRICE_CACHE = new Map();
 const LEG_VALUE = {"54":96000,"100":135000,"101":134000,"104":97000,"105":136000,"107":108000,"108":80000,"2102":134000,"2103":121000,"2106":134000,"2109":129000,"2110":150000,"2146":147000,"2150":104000,"2162":123000};
 // (6.1.3) the legends that can only be photographed: never under $60,000 like every legendary, set by how rare and how
 // deep (the whale shark of the surface lowest; the sperm whale and the colossal squid of the deep near the top)
-const LEG_PHOTO = { 77: 70000, 87: 85000, 86: 95000, 476: 100000, 88: 110000, 351: 115000, 149: 125000, 184: 130000, 350: 140000 };
+export const LEG_PHOTO = { 77: 70000, 87: 85000, 86: 95000, 476: 100000, 88: 110000, 351: 115000, 149: 125000, 184: 130000, 350: 140000 };
 // (3.7.0) the list price: it sets the rarity tier (and how often the animal is met) and nothing else now
 const BASE_CACHE = new Map();
 export function basePrice(sp) {

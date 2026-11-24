@@ -2142,3 +2142,10 @@ html body .store-panel .st-card.r-mythical, html body #inventory .pet-pick .pp-p
 #gainfx .gx-embers b { background: #ffb080 !important; box-shadow: 0 0 7px 2px rgba(232, 96, 60, 0.75) !important; }
 #gainfx .gx-embers b:nth-child(7) { --sx: -20px; --sy: -70px; animation-delay: 0.3s; } #gainfx .gx-embers b:nth-child(8) { --sx: 30px; --sy: -80px; animation-delay: 0.9s; }
 #gainfx .gx-embers b:nth-child(9) { --sx: -80px; --sy: -10px; animation-delay: 1.3s; } #gainfx .gx-embers b:nth-child(10) { --sx: 85px; --sy: -20px; animation-delay: 1.7s; }
+/* (7.4.16) the pet shop's two kinds: Pets and Exclusive, a pair of small plates under the tabs */
+html body .store-panel .pet-cats { display: flex; justify-content: center; gap: 6px; margin: 4px 0 6px; }
+html body .store-panel .pet-cats button { border: 0; border-radius: 3px; padding: 4px 14px; background: rgba(0, 0, 0, 0.28); color: #b8b094; font: 600 14px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.04em; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6); }
+html body .store-panel .pet-cats button.on { color: #efe8d2; background: rgba(60, 66, 44, 0.7); box-shadow: inset 0 1px 0 rgba(255, 240, 210, 0.12), 0 1px 0 rgba(0, 0, 0, 0.5); }
+html body .store-panel .pet-note { margin: 0 2px 4px; font: 500 14px 'Barlow Semi Condensed', sans-serif; color: rgba(230, 222, 198, 0.7); text-align: left; }
+html body .store-panel .st-pets .pet-card .pet-tierline { display: inline-flex; align-items: center; gap: 3px; text-transform: none; letter-spacing: 0; font-size: 13px !important; }
+html body .store-panel .st-pets .pet-card .pet-tierline img { width: 12px; height: 12px; }
