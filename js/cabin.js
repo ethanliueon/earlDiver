@@ -114,7 +114,7 @@ export class Cabin {
     const sv = this.stick ? this.stick() : null; // (5.6.7) the phone's stick, as in the water
     if (sv && sv.on && Math.abs(sv.x) > 0.25) { dir = Math.sign(sv.x); this.goal = null; this.stickRun = !!sv.sprint; } else this.stickRun = false;
     if (!dir && this.goal != null) { const d = this.goal - this.x; if (Math.abs(d) < 0.006) { this.x = this.goal; this.goal = null; if (this.goalUse) { this.goalUse = false; if (this.near()) this.use(); } } else dir = Math.sign(d); }
-    const pace = this.stickRun ? 0.32 : 0.2; // (4.0.0) his own pace; the stick at its rim runs
+    this.paceS = (this.paceS ?? 0.2) + ((this.stickRun ? 0.32 : 0.2) - (this.paceS ?? 0.2)) * Math.min(1, dt * 6); const pace = this.paceS; // (4.0.0) his own pace; the stick at its rim runs; (7.4.10) eased between walk and run, so his stride never jumps
     if (!this.h.blocked()) {
       const step = this.goal != null ? Math.min(Math.abs(this.goal - this.x), pace * dt) : pace * dt;
       this.x = clamp(this.x + dir * step, ROOM.min, ROOM.max);
@@ -137,7 +137,7 @@ export class Cabin {
     if (this.texKey !== key) { this.texKey = key; const RW = W * ROOM.width; this.wall = bakeWall(RW, floor - ceil, 34 * k, 11); this.floorTex = bakeFloor(RW, H - floor, 23); this.beams = bakeWall(RW, ceil, 120 * k, 5); }
   }
   draw() {
-    const dpr = Math.min(1.25, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, c = this.c; // (7.4.7, owner) the cabin painted at 1.25x, not 2x: its blurred shadows and light pools at full phone resolution held the walk to about 10 frames a second
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, c = this.c;
     if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
     const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const camX = this.camX = clamp(W * this.x - W * 0.5, 0, W * (ROOM.width - 1)); // the view follows him along the room

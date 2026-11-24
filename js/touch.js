@@ -62,7 +62,7 @@ export class Touch {
     let dx = x - S.x, dy = y - S.y, d = Math.hypot(dx, dy);
     if (d > R * 1.25) { const k = (d - R * 1.25) / d; S.x += dx * k; S.y += dy * k; dx = x - S.x; dy = y - S.y; d = Math.hypot(dx, dy); } // the base follows the thumb
     const m = Math.min(1, d / R), dead = 0.12, mag = m < dead ? 0 : (m - dead) / (1 - dead);
-    this.vec = { x: d ? dx / d * mag : 0, y: d ? dy / d * mag : 0, mag, on: true, sprint: d > R * 1.08 };
+    this.vec = { x: d ? dx / d * mag : 0, y: d ? dy / d * mag : 0, mag, on: true, sprint: d > R * (this.vec && this.vec.sprint ? 0.96 : 1.08) }; // (7.4.10) a margin: a thumb resting at the rim no longer flips walk and run several times a second
     this.paint(S.x, S.y, S.x + (d ? dx / d : 0) * Math.min(d, R), S.y + (d ? dy / d : 0) * Math.min(d, R), R);
 
   }
