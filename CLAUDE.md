@@ -36,22 +36,25 @@ last desktop build is kept on the branch `desktop-4.25.5`).
    Ask "what would a real game do here?"
 5. **Nothing left to guessing.** New players on a phone must always know what to do next, guided gently and in the
    world (chevrons on the water, a glint on a ladder, a callout on a bar), not by walls of text.
-6. **Calm feedback.** Readable at a glance but quiet: nothing blinding, flickering or shouting. Presses and catches
+6. **Nothing is boxed (7.3.1, owner).** A chosen, focused or current thing shows it by itself: its own plate lit a
+   little brighter, a light rising inside it, a glow in its lettering. Never a ring, outline, focus rectangle or extra
+   box drawn round or over it. Make every design look intentional and artistic.
+7. **Calm feedback.** Readable at a glance but quiet: nothing blinding, flickering or shouting. Presses and catches
    feel good (ripples, flicks, a net cinching). Never add breathing or any noise from Earl. Earl never speaks, with one
    exception: when Rebirth gives him back after the thing ate him, he thinks one line ("What happened? I'm still here."),
    written into the scene beside him. Add no other lines from him.
-7. **Order on screen.** Things line up on one axis, spacing is even, nothing overlaps or covers anything else, no
+8. **Order on screen.** Things line up on one axis, spacing is even, nothing overlaps or covers anything else, no
    lopsided panels or dead space. Check at 844 x 390 and at the smallest phone, 667 x 375.
    Keep the HUD and icons as constant as makes sense: a dialogue or card fits round the HUD (money, menu column,
    depth, radar, stick and buttons stay), it never makes them vanish. Test every screen in its real place in the game
    (Dave at his door in a dive, not over the title).
-8. **The game shows; it does not talk.** Labels, cards and tables are terse names and figures, never sentences
+9. **The game shows; it does not talk.** Labels, cards and tables are terse names and figures, never sentences
    written as if someone were speaking ("Gold coin" beside a coin picture, not "A gold coin as well"; "Rare 9 %", not
    "What it will be:"). A picture carries what it can, a word carries the rest; no chat-like phrasing, no explaining
    the obvious. Only the world's own voices (Dave, the shop's copy, quest notes) speak in sentences.
    Nothing in the game is "she" or "her" (not the Old One, not the sub, not the boat): name the thing ("the Old One's
    shop", "the sub's cradle").
-9. **Everything in 3D, the same way.** Every item (suits, nets, cameras, tanks, bags, fins) is drawn as a turned,
+10. **Everything in 3D, the same way.** Every item (suits, nets, cameras, tanks, bags, fins) is drawn as a turned,
    lit, solid object like the suits and nets: round things seen from the side are ovals, faces are shaded, edges
    catch light. A redrawn item changes everywhere it appears (shop, locker, cards, HUD coins, the Old One's table).
 10. **Simple systems, one job each.** Prefer moving something to stacking options on it (the swap is net and camera;

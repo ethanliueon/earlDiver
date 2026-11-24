@@ -371,7 +371,6 @@ html body #catalog .cat-card .tag { display: flex; flex-direction: column; gap: 
 html body #catalog .cat-card .tag em { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
 /* focus: the game's own ring, not the browser's rectangle */
 html body button:focus { outline: none !important; }
-html body button:focus-visible { outline: 2px solid rgba(239, 232, 210, 0.9) !important; outline-offset: 2px; }
 /* pause: the two lesser choices as buttons, side by side */
 html body #pause .p-links { display: flex !important; gap: 10px !important; justify-content: center; }
 html body #pause .p-links .link:not(#_a) { flex: 1; border: 12px solid transparent !important; border-image: var(--o-btn) 28 fill / 12px stretch !important; background: none !important;
@@ -659,7 +658,6 @@ html body textarea, html body input { -webkit-user-select: text; user-select: te
 @keyframes rt-turn { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
 /* the focus ring only for the keyboard, and round like the button it is on */
 html body button:focus:not(:focus-visible) { outline: none !important; box-shadow: none; }
-html body #confirm button:focus-visible { outline: 2px solid rgba(239, 232, 210, 0.85) !important; outline-offset: 3px; border-radius: 6px; }
 @media (pointer: coarse) { html body button:focus-visible { outline: none !important; } }
 
 /* ---------- 5.3.1: the joystick, as phone games have it: a thin translucent ring and a soft knob where the thumb
@@ -1940,3 +1938,22 @@ html body #trapset .ts-well { background: none !important; box-shadow: none !imp
 html body #trapset .ts-scale { position: relative; height: 54px; margin: 4px 0 0; }
 html body #trapset .ts-scale canvas { position: absolute !important; inset: 0 !important; width: 100% !important; height: 54px !important; z-index: 0 !important; pointer-events: none; display: block; }
 html body #trapset .ts-scale #ts-slider { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+/* (7.3.1, owner) no box is ever drawn round a button: no focus ring, no outline, no rectangle over it. A button that has
+   the focus (a keyboard, or a dialog's first choice) is shown by itself: its own plate a little brighter and a soft
+   glow in its lettering */
+html body :is(button, a, input, [tabindex]):is(:focus, :focus-visible) { outline: none !important; }
+html body button:focus-visible:not(:disabled) { filter: brightness(1.12) !important; text-shadow: 0 0 6px rgba(239, 232, 210, 0.45), 0 1px 0 rgba(0, 0, 0, 0.5) !important; }
+html body .hatch-btn:focus-visible { outline: none !important; }
+html body #chart .ce-name:focus { box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important; }
+/* (7.3.1, owner) what is chosen shows it by itself, never by a line drawn round it: the chosen tab is the cream plate
+   alone; today's gift, the chosen net and the chosen locker tile are lit from inside (a warm light rising in their own
+   well, brighter, their picture lifted), the next day's gift only a little */
+html body #inventory .inv-tabs button.on:not(#_a):not(#_b):not(#_c) { outline: none !important; box-shadow: none !important; }
+html body .store-panel .ev-day.now:not(#_a) { filter: brightness(1.08); }
+html body .store-panel .ev-day.now:not(#_a) img { filter: drop-shadow(0 0 6px rgba(240, 226, 186, 0.45)) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.6)); }
+html body .store-panel .ev-day.next:not(#_a) { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), inset 0 -14px 20px -8px rgba(236, 222, 180, 0.08) !important; }
+html body #inventory .inv-catch2 .tw-opt.on:not(#_a) { box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6), inset 0 -14px 22px -8px rgba(236, 222, 180, 0.22) !important; filter: brightness(1.1); }
+html body #inventory .lk-tile.sel:not(#_a) { outline: none !important; box-shadow: inset 0 0 18px rgba(236, 222, 180, 0.3) !important; filter: brightness(1.15); }
+/* (7.3.1) today's gift breathes its own inner light, not a ring round it */
+html body .store-panel .ev-day.now:not(#_a):not(#_b) { animation: ev-breathe2 2.4s ease-in-out infinite; }
+@keyframes ev-breathe2 { 0%, 100% { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), inset 0 -16px 24px -8px rgba(236, 222, 180, 0.14); } 50% { box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6), inset 0 -20px 30px -8px rgba(236, 222, 180, 0.3); } }
