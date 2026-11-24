@@ -83,6 +83,14 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   measured per sub): subs 1-5 hours of the one before; gear common 10 min of the first sub ... legendary 3-5 h of the
   deepest; chests with their contents; quests a quarter to a full hour; hospital at most half an hour; a photo no depth
   curve and at most $50,000; the aquarium at most $1,500 a gallery day. Re-measure and re-price if the curve changes.
+- **Jackpots and the sea (7.3.6-7.3.8, owner; supersedes the legend figures above; table in `docs/PLAN_7.4.md`)**: an
+  exotic (and an undocumented animal) pays about one hour, a legend about fifteen hours, of the ordinary income where it
+  lives (`specimens.js ORD_INCOME`, measured, below 255 m the first sub's), so jackpots grow as steeply as the danger.
+  Usual depths are fitted into this sea (nothing priced below the 5,100 m floor). The sea is never one fish deep: the
+  bristlemouths thin below 1,000 m, the mid-water's rare hunters fill 1,100-2,900 m, the deep's animals fade in from
+  1,400 m, and the trench's own animals make the pit the richest water. The abyssal sleeper shark (camera only) is 0.5 %
+  of what is met below 3,000 m. Income is measured with `tools/econ/measure.cjs` (only what can go in the tank, legends
+  out); subs keep their depths and cost 1-5 hours of the one before's income; common and uncommon gear are hand-set.
 - **Traps (7.3.0, owner)**: the wire pot (5 min, 5 animals), the fish trap (30 min, 15) and the deep trap (Dave's;
   4 h, 20); up to three of each owned and three set at a time; real time, the game open or closed; a set trap belongs
   to the save (a death does not take it) and its catch waits in it; at the buoy a full trap is cashed out (sold there)

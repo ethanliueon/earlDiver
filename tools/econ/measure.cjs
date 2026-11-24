@@ -4,16 +4,16 @@
 // animals are listed but never counted as income, and nor are legends (jackpots; their price is set from this income). Income per hour = the average animal x animals an hour for that sub
 // (7.3.0's measured rates, kept). Usage: node tools/econ/measure.cjs [samples per depth]   (server on :8765)
 const { chromium } = require('playwright');
-const N = +(process.argv[2] || 6000), CURVE = process.argv.includes('curve'), TRENCH = process.argv.includes('trench'), AT = (process.argv.find((a) => a.startsWith('at=')) || '').slice(3).split(',').filter(Boolean).map(Number); // at=255,425,...: these depths // 'curve': the income at every 150 m instead of at each sub
+const N = +(process.argv[2] || 6000), CURVE = process.argv.includes('curve'), TRENCH = process.argv.includes('trench'), ORD = process.argv.includes('ord'), AT = (process.argv.find((a) => a.startsWith('at=')) || '').slice(3).split(',').filter(Boolean).map(Number); // at=255,425,...: these depths // 'curve': the income at every 150 m instead of at each sub
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage();
   await p.goto('http://localhost:8765/index.html?noshell', { waitUntil: 'domcontentloaded' });
   await p.waitForFunction(() => window.__earl && window.__earl.g && window.__earl.g.fauna, null, { timeout: 90000 }); await p.waitForTimeout(1500);
-  const out = await p.evaluate(async ([N, CURVE, TRENCH, AT]) => {
+  const out = await p.evaluate(async ([N, CURVE, TRENCH, AT, ORD]) => {
     const S = await import('/js/specimens.js'), E = await import('/js/economy.js'), Sv = await import('/js/survey.js');
     const g = window.__earl.g, F = g.fauna, RATE = [14.6, 22, 24.4, 27.4, 26.2, 36.7, 41.7, 44.7]; // animals an hour (7.3.0)
     const res = [];
-    const DEPTHS = AT.length ? AT : CURVE ? (TRENCH ? [4350, 4500, 4650, 4800, 4950, 5050] : Array.from({ length: 29 }, (_, i) => 150 + i * 150)) : E.SUBS.map((s) => Math.round(s.rated * 0.85));
+    const DEPTHS = AT.length ? AT : CURVE ? (TRENCH ? [4350, 4500, 4650, 4800] : Array.from({ length: 29 }, (_, i) => 150 + i * 150)) : E.SUBS.map((s) => Math.round(s.rated * 0.85));
     const rateAt = (y) => { const D = E.SUBS.map((s) => s.rated * 0.85); if (y <= D[0]) return RATE[0]; for (let i = 1; i < D.length; i++) if (y <= D[i]) return RATE[i - 1] + (RATE[i] - RATE[i - 1]) * (y - D[i - 1]) / (D[i] - D[i - 1]); return RATE[RATE.length - 1]; };
     for (let si = 0; si < DEPTHS.length; si++) {
       const y0 = DEPTHS[si], counts = new Map(); let n = 0;
@@ -26,7 +26,7 @@ const N = +(process.argv[2] || 6000), CURVE = process.argv.includes('curve'), TR
       }
       let tot = 0, cnt = 0, photoOnly = 0; const top = [];
       for (const [id, k] of counts) {
-        const sp = window.__earl.SPECIES_BY_ID[id], R = S.rarityOf(sp), net = sp.len < 4 && !S.isTagOnly(sp), leg = R.id === 'legendary';
+        const sp = window.__earl.SPECIES_BY_ID[id], R = S.rarityOf(sp), net = sp.len < 4 && !S.isTagOnly(sp), leg = R.id === 'legendary' || (ORD && (R.id === 'exotic' || R.id === 'undocumented')); // ('ord': ordinary income, exotics left out too: the basis their own price is set from)
         // a legend is a jackpot, not income: met, but kept out of the average (its price is set from that income)
         const v = net ? S.rarityPrice(sp) * 0.8 : 0; if (net && !leg) { tot += v * k; cnt += k; } else if (!net) photoOnly += k;
         top.push([sp.name, R.id, k / n, Math.round(v), net ? '' : 'photo $' + Math.round(Sv.photoValue(sp))]);
@@ -37,7 +37,7 @@ const N = +(process.argv[2] || 6000), CURVE = process.argv.includes('curve'), TR
         top: top.slice(0, 6).map((t) => `${t[0]} (${t[1]}, ${(t[2] * 100).toFixed(2)} %, $${t[3]}${t[4] ? ', ' + t[4] : ''})`) });
     }
     return res;
-  }, [N, CURVE, TRENCH, AT]);
+  }, [N, CURVE, TRENCH, AT, ORD]);
   for (const r of out) { console.log(`${r.sub} (${r.rated} m, works at ${r.depth} m): met ${r.met}, average animal $${r.avg}, about $${r.perHour}/h, camera-only ${(r.photoOnly * 100).toFixed(2)} %`); for (const t of r.top) console.log('    ' + t); }
   console.log(JSON.stringify(out.map((r) => r.perHour)));
   await b.close();

@@ -28,17 +28,18 @@ export const FINS = [
 // The eight submersibles the yard sells (one per level of the 'depth' upgrade): rating, the mean depth
 // she gives way at as a multiple of it (hidden, drawn fresh each dive; the window narrows on deeper,
 // better-built hulls), and the cabin air she carries. Relics add 100 m each to the rating.
+// (7.3.8, owner) prices re-set from the measured income: each 1, 1.5, 2, 2.5, 3, 4, 5 hours of the one before's
 export const SUBS = [
   // (4.14.0) each sub comes with everything built in: speed, sink and rise (+10 % a step, compounding), the
   // chambers' rating and the open tank; there are no separate upgrades for them
   { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 170, speed: 1, ballast: 0, rating: 300, tank: 3, price: 0 },
-  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 180, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 1400 },
-  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 195, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 6800 },
-  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 210, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 24000 }, // (7.3.0) $12,000 was under an hour of the work sub's income
-  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 225, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 58000 },
-  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 240, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 80000 },
-  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 260, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 240000 },
-  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 280, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 765000 },
+  { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 180, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 370 },
+  { name: 'Work submersible', rated: 900, crush: 1.5, o2: 195, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3100 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 210, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 11000 }, // (7.3.0) $12,000 was under an hour of the work sub's income
+  { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 225, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 20000 },
+  { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 240, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 48000 },
+  { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 260, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 169000 },
+  { name: 'Full-ocean-depth submersible', rated: 4500, crush: 1.25, o2: 280, speed: 3, ballast: 0.9487, rating: 4500, tank: 24, price: 444000 },
 ];
 export const SUB_TIERS = SUBS; // (old name)
 // No hull survives the bottom of the pit (5,100 m): she always goes before 5,080 m.
@@ -142,7 +143,8 @@ export const PATCH_PRICE = 25;      // +40 % hull integrity
 export const HOSPITAL_SHARE = 0.10;  // a death costs this share of cash...
 export const HOSPITAL_CAP = 25000;    // (kept for old callers)
 // (7.3.0, economy v2) ...but never more than half an hour of what his submersible earns (measured, docs/PLAN_7.4.md)
-export const INCOME_PER_HOUR = [1400, 4600, 11900, 23000, 26600, 59000, 153000, 3300000];
+// (7.3.8) measured with tools/econ/measure.cjs (each sub at its working depth; exotics in, legends out)
+export const INCOME_PER_HOUR = [369, 2036, 5421, 7835, 15976, 42157, 88761, 382562];
 export const hospitalCap = (P) => Math.round(0.5 * INCOME_PER_HOUR[Math.max(0, Math.min(7, lv(P, 'depth')))]);
 // a replacement sub after an implosion: built to the same rating, a share of what it cost
 export function replacementPrice(P) {

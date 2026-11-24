@@ -178,11 +178,13 @@ export function rarityPrice(sp) {
   const base = basePrice(sp), R = rarityOf(sp);
   const size = clamp01(Math.log(Math.max(0.03, sp.len) / 0.05) / Math.log(2 / 0.05)), d = deepness(sp);
   if (R.id === 'legendary' && LEG_PHOTO[sp.id]) p = LEG_PHOTO[sp.id];
+  else if (sp.undoc && !isTagOnly(sp)) p = huntPrice(sp, 1); // (7.3.8) an undocumented animal is met with the exotics and paid as one
   else if (sp.undoc || (isTagOnly(sp) && !LEGENDARY.has(sp.id)) || R.i <= 1) p = base;
   else if (R.id === 'legendary') p = LEG_VALUE[sp.id] || 90000; // (4.16.6) by how deep it lives
   else if (R.id === 'exotic') {
     const lo = d < 0.5 ? lerpN(1000, 3000, d * 2) : lerpN(3000, 6000, (d - 0.5) * 2), hi = d < 0.5 ? lerpN(2000, 5000, d * 2) : lerpN(5000, 8000, (d - 0.5) * 2);
     p = lerpN(lo, hi, 0.65 * size + 0.35 * R.pos);
+    p = huntPrice(sp, 1); // (7.3.8, owner) an exotic is an hour of the income where it lives (the bands above set nothing now)
   } else { // rare
     const lo = lerpN(10, 150, d), hi = lerpN(80, 500, d);
     p = lerpN(lo, hi, lerpN(0.5, 0.3, d) * size + lerpN(0.5, 0.7, d) * R.pos); // (in the deep, a small one is no worse than a big one)
@@ -191,7 +193,7 @@ export function rarityPrice(sp) {
   // usually keeps to (fauna.js usualDepth): nothing changes down to 450 m, then x1.9 at 1,300 m, x2.9 at 3,300 m. A
   // legend is $150,000 times the same (the coelacanth of the shallows $150,000, the tripod of the abyss about $435,000),
   // so the cheapest legend is still several times the dearest exotic
-  { const mid = midDepth(sp), k = depthCurve(mid); p = R.id === 'legendary' ? legendPrice(mid) : p * k; }
+  { const mid = midDepth(sp), k = depthCurve(mid); if (R.id === 'legendary') p = legendPrice(mid); else if (!(R.id === 'exotic' || (sp.undoc && !isTagOnly(sp)))) p = p * k; } // (7.3.8) exotics and legends are already in hours of income there
   p = p >= 100 ? Math.round(p / 5) * 5 : Math.round(p * 100) / 100;
   PRICE_CACHE.set(sp.id, p);
   return p;
@@ -200,7 +202,7 @@ export function rarityPrice(sp) {
 // that, the middle of its recorded band)
 export const depthCurve = (mid) => Math.pow(3, Math.max(0, mid - 450) / 1000); // (7.3.0, owner) three times as much for every 1,000 m below 450 m
 let usualOf = null;
-export function useUsualDepth(f) { usualOf = f; PRICE_CACHE.clear(); LEG_SPAN = null; }
+export function useUsualDepth(f) { usualOf = f; PRICE_CACHE.clear(); }
 // (7.3.6, owner) fitted into this sea: it ends at the pit's floor (5,100 m), so a usual band that runs below it (the
 // abyssal cusk-eel's 4,800-8,100 m, the supergiant amphipod's 5,500-6,900 m) is squeezed in proportion to end there,
 // keeping the animals in their order; no animal is priced for water the game does not have. The journal keeps the
@@ -209,14 +211,24 @@ export const SEA_FLOOR = 5100;
 export const gameBand = (r) => (r[1] > SEA_FLOOR ? [r[0] * SEA_FLOOR / r[1], SEA_FLOOR] : r);
 const midDepth = (sp) => { const r = gameBand(usualOf ? usualOf(sp) : [sp.dmin, Math.min(sp.dmax, Math.max(sp.dmin * 4, 1500))]); return (r[0] + r[1]) / 2; };
 export const depthMultOf = (sp) => depthCurve(midDepth(sp)); // (7.3.0) for photographs, which do not take it
-// (7.3.0, owner) a legend: never under five times the dearest exotic (about $660,000, so $3,300,000), the shallowest legend
-// (the coelacanth) at that, the deepest about $5,000,000, in between by how deep each lives
-let LEG_SPAN = null;
-function legendPrice(mid) {
-  if (!LEG_SPAN && usualOf) { const ms = [...LEGENDARY].map((id) => SPECIES_BY_ID[id]).filter(Boolean).map(midDepth); LEG_SPAN = [Math.min(...ms), Math.max(...ms)]; }
-  const [a, b] = LEG_SPAN || [250, 3400], t = Math.min(1, Math.max(0, (mid - a) / Math.max(1, b - a)));
-  return 3350000 + 1650000 * t;
+// (7.3.8, owner) jackpots in hours of the ordinary income where an animal lives (what an hour's diving there brings in
+// from everything but exotics and legends, measured with tools/econ/measure.cjs 'curve ord' and smoothed; below 255 m
+// the first submersible's): an exotic about an hour of it, a legend about fifteen. The deeper, the more dangerous and
+// slower to reach, so the jackpots grow as steeply as the water's pay. Within that, an exotic's size and place in its
+// tier move it by -25 % to +35 %
+export const ORD_INCOME = [[255, 400], [450, 2200], [750, 4800], [1050, 6200], [1350, 8000], [1650, 12500], [1950, 19500], [2250, 28500],
+  [2550, 45000], [2850, 70000], [3000, 110000], [3300, 230000], [3600, 320000], [3900, 365000], [4200, 420000], [4500, 485000], [4800, 735000], [5100, 900000]];
+export function ordIncome(y) {
+  const T = ORD_INCOME; if (y <= T[0][0]) return T[0][1];
+  for (let i = 1; i < T.length; i++) if (y <= T[i][0]) { const [a, pa] = T[i - 1], [b, pb] = T[i], t = (y - a) / (b - a); return pa * Math.pow(pb / pa, t); }
+  return T[T.length - 1][1];
 }
+export const EXOTIC_HOURS = 1, LEGEND_HOURS = 15;
+function huntPrice(sp, hours) {
+  const R = rarityOf(sp), size = clamp01(Math.log(Math.max(0.03, sp.len) / 0.05) / Math.log(2 / 0.05)), v = 0.75 + 0.6 * (0.65 * size + 0.35 * (R.pos ?? 0.5));
+  return ordIncome(midDepth(sp)) * hours * EXOTIC_HOURS * v;
+}
+function legendPrice(mid) { return ordIncome(mid) * LEGEND_HOURS; }
 const RAR_CACHE = new Map();
 // { tier index, rarity entry, position 0..1 within the tier, hidden }. Animals that can't be captured
 // (tag-only, apart from the legendaries) have a tier only for how often they turn up: hidden, never shown.

@@ -698,3 +698,461 @@ Common, uncommon and rare gear: unchanged ($25–250, $300–1,000, $1,000–2,0
 | Radio contracts | market + premium | the same (follows the new values) |
 | Supplies: lure, glow stick, advanced glow stick, backup air | $5,000, $370, $1,700, $800 | unchanged |
 | Selling gear back | a third of its price | the same (of the new price) |
+
+# The economy, re-measured (7.3.8): old (7.3.5) against new
+
+Agreed with the owner: usual depths fitted into this sea (a band below the 5,100 m floor squeezed in proportion); the deep's own animals fade in from 1,400 m; bristlemouth swarms thin below 1,000 m, the rare mid-water hunters commoner from 1,100 to 2,900 m, the trench's own animals commoner toward the pit; the abyssal sleeper shark 0.5 % of what is met below 3,000 m (camera only). Income measured with `tools/econ/measure.cjs` (the game's own spawn picker; only what can go in the tank; legends left out, as jackpots). Exotics and undocumented animals are one hour, legends fifteen hours, of the ordinary income where they live (`specimens.js ORD_INCOME`, measured with exotics also left out, smoothed). Subs keep their depths and cost 1, 1.5, 2, 2.5, 3, 4, 5 hours of the one before's income. Common and uncommon gear unchanged (owner).
+
+## Income per hour at each sub's working depth
+
+(The old figures were 7.3.0's, measured another way: legends and camera-only animals counted at their full price.)
+
+| Sub | Rating | Works at | Old | New | Step |
+|---|---|---|---|---|---|
+| Б-7 bathyscaphe | 300 m | 255 m | $1,400 | $369 |  |
+| Б-7М refit | 500 m | 425 m | $4,600 | $2,036 | 5.5× |
+| Work submersible | 900 m | 765 m | $11,900 | $5,421 | 2.7× |
+| Heavy work submersible | 1,300 m | 1,105 m | $23,000 | $7,835 | 1.4× |
+| Research submersible | 1,900 m | 1,615 m | $26,600 | $15,976 | 2.0× |
+| Deep research submersible | 2,500 m | 2,125 m | $59,000 | $42,157 | 2.6× |
+| Titanium research submersible | 3,300 m | 2,805 m | $153,000 | $88,761 | 2.1× |
+| Full-ocean-depth submersible | 4,500 m | 3,825 m | $3,300,000 | $382,562 | 4.3× |
+
+## Submersibles
+
+| Sub | Old | New |
+|---|---|---|
+| Б-7 bathyscaphe | $0 | $0 |
+| Б-7М refit | $1,400 | $370 |
+| Work submersible | $6,800 | $3,100 |
+| Heavy work submersible | $24,000 | $11,000 |
+| Research submersible | $58,000 | $20,000 |
+| Deep research submersible | $80,000 | $48,000 |
+| Titanium research submersible | $240,000 | $169,000 |
+| Full-ocean-depth submersible | $765,000 | $444,000 |
+
+## Chests
+
+| Chest | Contents worth (old → new) | Old price | New price |
+|---|---|---|---|
+| crate | $1,206 → $736 | $2,300 | $1,400 |
+| crate3 | $3,619 → $2,207 | $7,800 | $4,800 |
+| tea | $8,061 → $5,141 | $13,000 | $8,300 |
+| case | $2,796 → $1,385 | $6,300 | $3,100 |
+| case3 | $8,389 → $4,155 | $19,000 | $9,400 |
+| footlocker | $27,731 → $16,895 | $34,000 | $21,000 |
+| strongbox | $74,171 → $49,029 | $65,000 | $43,000 |
+| salvage | $44,713 → $27,048 | $62,000 | $38,000 |
+| expedition | $73,242 → $43,799 | $93,000 | $56,000 |
+| siren | $843,204 → $127,768 | $1,250,000 | $189,000 |
+| leviathan | $916,966 → $165,153 | $1,500,000 | $270,000 |
+| poseidon | $3,573,702 → $515,447 | $5,000,000 | $721,000 |
+
+## Gear (rare and up)
+
+| Item | Rarity | Old | New |
+|---|---|---|---|
+| Bayside Pro specimen case | rare | $5,000 | $2,300 |
+| Transect camera | rare | $5,000 | $2,300 |
+| Seabright Tern flick net | rare | $5,000 | $2,300 |
+| Coldwater Voyager dip net | rare | $5,000 | $2,300 |
+| Harbourline Lodestar flick net | rare | $5,000 | $2,300 |
+| Fathom & Sons Sentinel dip net | rare | $5,000 | $2,300 |
+| Coldwater Spindrift wetsuit | rare | $5,000 | $2,300 |
+| Seabright Lodestar wetsuit | rare | $5,000 | $2,300 |
+| Coldwater Sentinel wetsuit | rare | $5,000 | $2,300 |
+| Harbourline Gannet split fins | rare | $5,000 | $2,300 |
+| Seabright Lodestar split fins | rare | $5,000 | $2,300 |
+| Coldwater Spindrift cylinder | rare | $5,000 | $2,300 |
+| Lantern Bay Mariner cylinder | rare | $5,000 | $2,300 |
+| Northwake Petrel cylinder | rare | $5,000 | $2,300 |
+| Fathom & Sons Spindrift specimen bag | rare | $5,000 | $2,300 |
+| Greywhale Halyard specimen bag | rare | $5,000 | $2,300 |
+| Harbour Patrol net | rare | $5,000 | $2,300 |
+| Kelp Runner suit | rare | $5,000 | $2,300 |
+| Reef Keeper net | rare | $5,000 | $2,300 |
+| Sprint | rare | $5,000 | $2,300 |
+| Vigor | rare | $5,000 | $2,300 |
+| Dash | rare | $5,000 | $2,300 |
+| Flare | rare | $5,000 | $2,300 |
+| Echo | rare | $5,000 | $2,300 |
+| Ironhull | rare | $5,000 | $2,300 |
+| Reef runner fins | rare | $5,400 | $2,400 |
+| Cold-light camera | rare | $5,400 | $2,400 |
+| Breakwater Mariner hoop net | rare | $5,400 | $2,400 |
+| Skerry Petrel seine | rare | $5,400 | $2,400 |
+| Saltmarsh Wayfarer hoop net | rare | $5,400 | $2,400 |
+| Greywhale Sounding seine | rare | $5,400 | $2,400 |
+| Northwake Petrel wetsuit | rare | $5,400 | $2,400 |
+| Coldwater Spindrift rubber fins | rare | $5,400 | $2,400 |
+| Tidewater Corsair split fins | rare | $5,400 | $2,400 |
+| Seabright Lodestar cylinder | rare | $5,400 | $2,400 |
+| Coldwater Sentinel cylinder | rare | $5,400 | $2,400 |
+| Harbour Patrol suit | rare | $5,400 | $2,400 |
+| Reef Keeper suit | rare | $5,400 | $2,400 |
+| Bayside Pro hoop | rare | $5,800 | $2,500 |
+| Pro capture net | rare | $5,800 | $2,500 |
+| Dave's own hoop | rare | $5,800 | $2,500 |
+| Greywhale Halyard collector's net | rare | $5,800 | $2,500 |
+| Lantern Bay Shearwater collector's net | rare | $5,800 | $2,500 |
+| Skerry Petrel compact | rare | $5,800 | $2,500 |
+| Saltmarsh Voyager rubber fins | rare | $5,800 | $2,500 |
+| Harbour Patrol cylinder | rare | $5,800 | $2,500 |
+| Kelp Runner fins | rare | $5,800 | $2,500 |
+| Kelp Runner cylinder | rare | $5,800 | $2,500 |
+| Reef Keeper cylinder | rare | $5,800 | $2,500 |
+| Night Shift net | rare | $5,800 | $2,500 |
+| Prospector's pouch | rare | $6,200 | $2,700 |
+| Light mesh bag | rare | $6,200 | $2,700 |
+| Lantern Bay Mariner wetsuit | rare | $6,200 | $2,700 |
+| Breakwater Wayfarer rubber fins | rare | $6,200 | $2,700 |
+| Tidewater Tern big cylinder | rare | $6,200 | $2,700 |
+| Saltmarsh Voyager big cylinder | rare | $6,200 | $2,700 |
+| Seabright Tern specimen bag | rare | $6,200 | $2,700 |
+| Breakwater Mariner specimen bag | rare | $6,200 | $2,700 |
+| Kestrel Gannet specimen bag | rare | $6,200 | $2,700 |
+| Kelp Runner catch bag | rare | $6,200 | $2,700 |
+| Housed camera | rare | $6,600 | $2,800 |
+| Greywhale Shearwater big cylinder | rare | $6,600 | $2,800 |
+| Kestrel Meridian big cylinder | rare | $6,600 | $2,800 |
+| Bayside Pro blades | rare | $7,000 | $2,900 |
+| Deep steel 130 | rare | $7,000 | $2,900 |
+| Saltmarsh Wayfarer compact | rare | $7,000 | $2,900 |
+| Skerry Halyard freediving fins | rare | $7,000 | $2,900 |
+| Northwake Petrel freediving fins | rare | $7,000 | $2,900 |
+| Tidewater Corsair big cylinder | rare | $7,000 | $2,900 |
+| Chain-mail shark suit | rare | $7,400 | $3,000 |
+| Deep twin set | rare | $7,400 | $3,000 |
+| Lantern Bay Mariner blades | rare | $7,400 | $3,000 |
+| Night Shift cylinder | rare | $7,400 | $3,000 |
+| Manifolded twins | rare | $7,800 | $3,200 |
+| Heliox twin set | rare | $7,800 | $3,200 |
+| Tidewater Bosun compact | rare | $7,800 | $3,200 |
+| Greywhale Shearwater blades | rare | $7,800 | $3,200 |
+| Kestrel Meridian freediving fins | rare | $7,800 | $3,200 |
+| Reef Keeper fins | rare | $7,800 | $3,200 |
+| Carbon fins | rare | $8,200 | $3,300 |
+| Shark armour | rare | $8,200 | $3,300 |
+| Skerry Sounding blades | rare | $8,200 | $3,300 |
+| Skerry Halyard sidemount pair | rare | $8,200 | $3,300 |
+| Coldwater Voyager specimen bag | rare | $8,200 | $3,300 |
+| Skerry Petrel specimen bag | rare | $8,200 | $3,300 |
+| Tidewater Bosun specimen bag | rare | $8,200 | $3,300 |
+| Lantern Bay Shearwater specimen bag | rare | $8,200 | $3,300 |
+| Harbourline Lodestar specimen bag | rare | $8,200 | $3,300 |
+| Saltmarsh Wayfarer specimen bag | rare | $8,200 | $3,300 |
+| Census camera | rare | $8,700 | $3,400 |
+| Harbourline Gannet sidemount pair | rare | $8,700 | $3,400 |
+| Fathom & Sons Bosun sidemount pair | rare | $8,700 | $3,400 |
+| Night Shift fins | rare | $8,700 | $3,400 |
+| Hot-water suit | rare | $9,100 | $3,500 |
+| Lined chain suit | rare | $9,100 | $3,500 |
+| Breakwater Wayfarer sidemount pair | rare | $9,100 | $3,500 |
+| Skerry Sounding sidemount pair | rare | $9,100 | $3,500 |
+| Night Shift suit | rare | $9,100 | $3,500 |
+| Heated drysuit | rare | $9,600 | $3,700 |
+| Bailout pair | rare | $9,600 | $3,700 |
+| Specimen camera | rare | $9,600 | $3,700 |
+| Thermal drysuit | rare | $9,600 | $3,700 |
+| Tidewater Tern drysuit | rare | $9,600 | $3,700 |
+| Saltmarsh Voyager drysuit | rare | $9,600 | $3,700 |
+| Greywhale Shearwater drysuit | rare | $9,600 | $3,700 |
+| Tidewater Corsair drysuit | rare | $9,600 | $3,700 |
+| Deep sidemount pair | rare | $10,000 | $3,800 |
+| Sidemount rig | rare | $10,000 | $3,800 |
+| Crush drysuit | rare | $11,000 | $3,900 |
+| Night-survey camera | rare | $11,000 | $3,900 |
+| Dave's expedition bag | rare | $11,000 | $4,000 |
+| Sorting bag | rare | $11,000 | $4,000 |
+| Ice-diving suit | rare | $11,000 | $4,000 |
+| Vulcanised drysuit | rare | $11,000 | $4,000 |
+| Survey pole net | rare | $11,000 | $4,000 |
+| Fathom & Sons Spindrift pole net | rare | $11,000 | $4,000 |
+| Tidewater Bosun pole net | rare | $11,000 | $4,000 |
+| Seabright Corsair pole net | rare | $11,000 | $4,000 |
+| Tidewater Tern jet fins | rare | $11,000 | $4,000 |
+| Northwake Meridian specimen bag | rare | $11,000 | $4,000 |
+| Fathom & Sons Sentinel specimen bag | rare | $11,000 | $4,000 |
+| Greywhale Sounding specimen bag | rare | $11,000 | $4,000 |
+| Seabright Corsair specimen bag | rare | $11,000 | $4,000 |
+| Kelp Runner net | rare | $11,000 | $4,000 |
+| Second-hand housing | rare | $11,000 | $4,200 |
+| Fathom & Sons Bosun jet fins | rare | $11,000 | $4,200 |
+| Deep drysuit | rare | $12,000 | $4,300 |
+| Neoprene drysuit | rare | $12,000 | $4,300 |
+| Kestrel Meridian drysuit | rare | $12,000 | $4,300 |
+| Skerry Halyard rebreather suit | rare | $12,000 | $4,400 |
+| Coldwater Sentinel jet fins | rare | $12,000 | $4,400 |
+| Deep jet fins | rare | $13,000 | $4,500 |
+| Lantern Bay Shearwater compact | rare | $13,000 | $4,500 |
+| Fathom & Sons Bosun rebreather suit | rare | $13,000 | $4,500 |
+| Breakwater Wayfarer rebreather suit | rare | $13,000 | $4,500 |
+| Closed-circuit rebreather | rare | $13,000 | $4,700 |
+| Harbourline Gannet rebreather suit | rare | $13,000 | $4,700 |
+| Harbour Patrol fins | rare | $13,000 | $4,700 |
+| Deep-water game net | rare | $14,000 | $4,800 |
+| Semi-closed rebreather | rare | $14,000 | $4,800 |
+| Big-game net | rare | $14,000 | $4,800 |
+| Heavy D-frame | rare | $14,000 | $4,800 |
+| Long big-game net | rare | $14,000 | $4,800 |
+| Soft big net | rare | $14,000 | $4,800 |
+| Light big-game net | rare | $14,000 | $4,800 |
+| Vented power fins | rare | $14,000 | $4,800 |
+| Kestrel Gannet game net | rare | $14,000 | $4,800 |
+| Northwake Meridian game net | rare | $14,000 | $4,800 |
+| Harbourline Lodestar compact | rare | $14,000 | $4,800 |
+| Skerry Sounding rebreather suit | rare | $14,000 | $4,800 |
+| Harbour Patrol catch bag | rare | $14,000 | $4,800 |
+| Reef Keeper catch bag | rare | $14,000 | $4,800 |
+| Night Shift catch bag | rare | $14,000 | $4,800 |
+| Navy low-light camera, 1971 | exotic | $40,000 | $24,000 |
+| Albatross plankton net | exotic | $40,000 | $24,000 |
+| Siboga reef scoop | exotic | $40,000 | $24,000 |
+| Salvage diver's bailout | exotic | $40,000 | $24,000 |
+| Trieste tool roll | exotic | $40,000 | $24,000 |
+| Conshelf aquanaut suit | exotic | $40,000 | $24,000 |
+| Sealab Aquanaut fins | exotic | $40,000 | $24,000 |
+| Trieste Descent catch bag | exotic | $40,000 | $24,000 |
+| Hirondelle fishing net | exotic | $42,000 | $25,000 |
+| Atlantis line net | exotic | $42,000 | $25,000 |
+| Hydrolab fins | exotic | $42,000 | $25,000 |
+| Aqualung prototype, 1943 | exotic | $41,000 | $25,000 |
+| Challenger Expedition cylinder | exotic | $43,000 | $26,000 |
+| Sealab hand seine | exotic | $44,000 | $27,000 |
+| Dana eel net | exotic | $44,000 | $27,000 |
+| Sealab Aquanaut net | exotic | $44,000 | $27,000 |
+| Meteor survey hoop net | exotic | $45,000 | $28,000 |
+| Carnegie survey net | exotic | $45,000 | $28,000 |
+| Conshelf habitat fins | exotic | $46,000 | $28,000 |
+| Navy reserve cylinder | exotic | $46,000 | $28,000 |
+| Galathea expedition wetsuit | exotic | $46,000 | $28,000 |
+| Argonaut diving bell tank | exotic | $47,000 | $29,000 |
+| Trieste collecting scoop, 1960 | exotic | $48,000 | $30,000 |
+| Valdivia deep-sea net, 1898 | exotic | $48,000 | $30,000 |
+| Hirondelle fishing creel | exotic | $48,000 | $30,000 |
+| Bathysphere window camera, 1934 | exotic | $48,000 | $30,000 |
+| Bathysphere 1934 catch bag | exotic | $48,000 | $30,000 |
+| Challenger Expedition catch bag | exotic | $48,000 | $30,000 |
+| Trieste Descent net | exotic | $48,000 | $30,000 |
+| Trieste crew fins | exotic | $50,000 | $31,000 |
+| Frogman's chest pack | exotic | $50,000 | $31,000 |
+| Bathysphere 1934 cylinder | exotic | $52,000 | $32,000 |
+| Galathea deck fins | exotic | $54,000 | $34,000 |
+| Tektite habitat suit | exotic | $54,000 | $34,000 |
+| Polar survey cylinders | exotic | $56,000 | $35,000 |
+| Sprint+ | exotic | $56,000 | $35,000 |
+| Vigor+ | exotic | $56,000 | $35,000 |
+| Dash+ | exotic | $56,000 | $35,000 |
+| Flare+ | exotic | $56,000 | $35,000 |
+| Echo+ | exotic | $56,000 | $35,000 |
+| Spearfisher's blades, 1933 | exotic | $58,000 | $37,000 |
+| Bathysphere oxygen flask, 1934 | exotic | $58,000 | $37,000 |
+| Conshelf twin set | exotic | $62,000 | $39,000 |
+| Challenger specimen satchel | exotic | $62,000 | $39,000 |
+| Dana larva pouch | exotic | $62,000 | $39,000 |
+| Shark researcher's mesh | exotic | $62,000 | $39,000 |
+| Abyssal strobe camera, 1954 | exotic | $62,000 | $39,000 |
+| Sealab Aquanaut catch bag | exotic | $62,000 | $39,000 |
+| Trieste reserve sphere | exotic | $64,000 | $41,000 |
+| Clearance diver's suit | exotic | $66,000 | $42,000 |
+| Bathysphere 1934 fins | exotic | $66,000 | $42,000 |
+| Trieste Descent cylinder | exotic | $66,000 | $42,000 |
+| Deep Quest gas bank | exotic | $69,000 | $45,000 |
+| Challenger Expedition fins | exotic | $69,000 | $45,000 |
+| Trieste Descent fins | exotic | $69,000 | $45,000 |
+| Ligurian prototype blades, 1938 | exotic | $73,000 | $48,000 |
+| Hydrolab bottle | exotic | $73,000 | $48,000 |
+| Galathea sample jar case | exotic | $75,000 | $49,000 |
+| Albatross core pouch | exotic | $75,000 | $49,000 |
+| Meteor survey haversack | exotic | $75,000 | $49,000 |
+| Galathea plate camera | exotic | $75,000 | $49,000 |
+| Kalymnos sponge diver's blades | exotic | $77,000 | $50,000 |
+| Sealab II diver's fins | exotic | $80,000 | $53,000 |
+| Pearl lugger paddles | exotic | $80,000 | $53,000 |
+| Tektite habitat fins | exotic | $84,000 | $56,000 |
+| Bikini Atoll survey fins, 1946 | exotic | $84,000 | $56,000 |
+| Sealab heated suit | exotic | $84,000 | $56,000 |
+| Trieste crew coveralls | exotic | $86,000 | $57,000 |
+| Bathysphere observer's woollens, 1934 | exotic | $87,000 | $59,000 |
+| Combat swimmer's drysuit | exotic | $89,000 | $60,000 |
+| Arctic survey fins | exotic | $89,000 | $60,000 |
+| Pearl lugger's net bag | exotic | $89,000 | $60,000 |
+| Conshelf garden bag | exotic | $89,000 | $60,000 |
+| Vitiaz bottom pouch | exotic | $89,000 | $60,000 |
+| Frogman's drysuit, 1944 | exotic | $89,000 | $60,000 |
+| Polar survey drysuit | exotic | $89,000 | $60,000 |
+| Hydrolab saturation suit | exotic | $89,000 | $60,000 |
+| Sealab strobe rig | exotic | $89,000 | $60,000 |
+| Trieste Descent suit | exotic | $91,000 | $61,000 |
+| Clearance diver's rebreather suit | exotic | $93,000 | $63,000 |
+| Deep Quest pilot's suit | exotic | $93,000 | $63,000 |
+| Challenger Expedition suit | exotic | $94,000 | $64,000 |
+| Bathysphere sampling net, 1934 | exotic | $96,000 | $65,000 |
+| Discovery ring net | exotic | $96,000 | $65,000 |
+| Bathysphere 1934 net | exotic | $96,000 | $65,000 |
+| Bathythermal prototype suit | exotic | $98,000 | $67,000 |
+| Navy prototype rebreather | exotic | $101,000 | $69,000 |
+| Sealab Aquanaut suit | exotic | $101,000 | $69,000 |
+| North Sea heated suit | exotic | $103,000 | $71,000 |
+| Kalymnos sponge sack | exotic | $105,000 | $72,000 |
+| Siboga reef basket | exotic | $105,000 | $72,000 |
+| Sealab collection bag | exotic | $105,000 | $72,000 |
+| Trieste porthole camera, 1960 | exotic | $105,000 | $72,000 |
+| Sealab Aquanaut cylinder | exotic | $105,000 | $72,000 |
+| Frogman fins, 1944 | exotic | $107,000 | $73,000 |
+| Sealab II mixed-gas pack | exotic | $108,000 | $75,000 |
+| Lake Zurich mixed-gas rig, 1962 | exotic | $112,000 | $77,000 |
+| Kalymnos skafandro | exotic | $113,000 | $79,000 |
+| La Jolla survey fins | exotic | $115,000 | $80,000 |
+| Tektite rebreather | exotic | $117,000 | $81,000 |
+| Iron Lung hardsuit | exotic | $118,000 | $83,000 |
+| Pearl lugger's canvas suit | exotic | $118,000 | $83,000 |
+| Gulf oilfield hardsuit | exotic | $120,000 | $84,000 |
+| Grand Banks trawl-wing net | exotic | $120,000 | $84,000 |
+| Deep lander optic, 1985 | exotic | $120,000 | $84,000 |
+| Challenger dredge bag | exotic | $120,000 | $84,000 |
+| Galathea trawl purse | exotic | $120,000 | $84,000 |
+| Vitiaz bottom net | exotic | $120,000 | $84,000 |
+| Clearance diver fins | exotic | $120,000 | $84,000 |
+| Naval oxygen rebreather, 1940 | exotic | $120,000 | $84,000 |
+| Bathysphere sample box | exotic | $120,000 | $84,000 |
+| Valdivia specimen crate | exotic | $120,000 | $84,000 |
+| Standard diving dress | exotic | $120,000 | $84,000 |
+| Bathysphere 1934 suit | exotic | $120,000 | $84,000 |
+| Challenger Expedition net | exotic | $120,000 | $84,000 |
+| Barreleye Lens | legendary | $10,000,000 | $1,150,000 |
+| Flashlight Fish Strobe | legendary | $10,000,000 | $1,150,000 |
+| Riptide | legendary | $13,500,000 | $1,550,000 |
+| Apex | legendary | $13,500,000 | $1,550,000 |
+| Undertow | legendary | $13,500,000 | $1,550,000 |
+| Lighthouse | legendary | $13,500,000 | $1,550,000 |
+| Fathom | legendary | $13,500,000 | $1,550,000 |
+| Tidewarden | legendary | $13,500,000 | $1,550,000 |
+| Gulper's Throat | legendary | $17,000,000 | $1,900,000 |
+| The Drowned Choir's Veil | legendary | $17,000,000 | $1,900,000 |
+| Lanternmesh | legendary | $17,000,000 | $1,900,000 |
+| The Hagfish's Knot | legendary | $17,000,000 | $1,900,000 |
+| Jonah's Seine | legendary | $17,000,000 | $1,900,000 |
+| The Old One's Tithe | legendary | $17,000,000 | $1,900,000 |
+| Oarfish Crest | legendary | $17,000,000 | $1,900,000 |
+| Leviathan's Pinions | legendary | $17,000,000 | $1,900,000 |
+| Glasswing Fins | legendary | $17,000,000 | $1,900,000 |
+| The Black Lung | legendary | $17,000,000 | $1,900,000 |
+| Whalefall Breath | legendary | $17,000,000 | $1,900,000 |
+| Vent Heart | legendary | $17,000,000 | $1,900,000 |
+| Brood Pouch | legendary | $17,000,000 | $1,900,000 |
+| The Stomach | legendary | $17,000,000 | $1,900,000 |
+| Eel-skin Purse | legendary | $17,000,000 | $1,900,000 |
+| Skin of the Old One | legendary | $17,000,000 | $1,900,000 |
+| Abyssal Hide | legendary | $17,000,000 | $1,900,000 |
+| Hagfish Mantle | legendary | $17,000,000 | $1,900,000 |
+
+## Exotic, undocumented and legendary animals (a healthy one of usual size)
+
+| Animal | Rarity | Lives (in this sea, middle) | Old | New |
+|---|---|---|---|---|
+| Wonderpus Octopus | exotic | 11 m | $1,250 | $360 |
+| Weedy Seadragon | exotic | 26 m | $1,420 | $400 |
+| Leafy Seadragon | exotic | 27 m | $1,435 | $405 |
+| Japanese Spider Crab | exotic | 225 m | $5,245 | $465 |
+| Giant Larvacean | exotic | 225 m | $3,555 | $315 |
+| Velvet Belly Lanternshark | exotic | 400 m | $5,135 | $1,425 |
+| Crestfish | exotic | 435 m | $5,795 | $2,320 |
+| Bigeye Thresher | exotic | 475 m | $720 | $700 |
+| Kitefin Shark | exotic | 475 m | $720 | $700 |
+| Swordfish | exotic | 500 m | $315 | $300 |
+| Chambered Nautilus | exotic | 525 m | $6,430 | $2,630 |
+| Sea Toad | exotic | 525 m | $7,275 | $2,565 |
+| Giant Pacific Octopus | exotic | 600 m | $1,060 | $900 |
+| Atlantic Halibut | exotic | 625 m | $180 | $150 |
+| Tube-eye | exotic | 625 m | $8,385 | $3,555 |
+| Dealfish | exotic | 675 m | $9,960 | $5,065 |
+| Deep-sea Spiny Eel | exotic | 700 m | $9,280 | $4,490 |
+| Glass Octopus | exotic | 700 m | $9,485 | $4,690 |
+| Cockatoo Squid | exotic | 700 m | $8,315 | $3,565 |
+| Bramble Shark | exotic | 725 m | $10,130 | $5,385 |
+| Giant Siphonophore | exotic | 750 m | $10,360 | $5,690 |
+| Bloody-belly Comb Jelly | exotic | 750 m | $9,050 | $4,335 |
+| Dana Octopus Squid | exotic | 750 m | $10,415 | $5,745 |
+| Bluntnose Sixgill Shark | exotic | 800 m | $2,205 | $1,500 |
+| Vampire Squid | exotic | 875 m | $11,430 | $5,875 |
+| Shining Tubeshoulder | exotic | 975 m | $11,365 | $5,030 |
+| Cookiecutter Shark | exotic | 1,000 m | $12,415 | $5,855 |
+| Knifenose Chimaera | exotic | 1,000 m | $13,780 | $7,185 |
+| Greenland Shark | exotic | 1,025 m | $8,465 | $4,500 |
+| Pacific Sleeper Shark | exotic | 1,025 m | $4,700 | $2,500 |
+| Flapjack Octopus | exotic | 1,025 m | $13,210 | $6,415 |
+| Seven-arm Octopus | exotic | 1,050 m | $7,735 | $4,000 |
+| Scaly Dragonfish | exotic | 1,175 m | $14,835 | $6,595 |
+| Atlantic Footballfish | exotic | 1,175 m | $16,150 | $7,820 |
+| False Catshark | exotic | 1,175 m | $16,610 | $8,250 |
+| Highfin Dragonfish | exotic | 1,175 m | $13,955 | $5,775 |
+| Hairy Angler | exotic | 1,200 m | $15,870 | $7,315 |
+| Ninja Lanternshark | exotic | 1,200 m | $15,205 | $6,700 |
+| Deepstaria | exotic | 1,350 m | $19,755 | $9,235 |
+| Snipe Eel | exotic | 1,375 m | $19,765 | $9,100 |
+| Portuguese Dogfish | exotic | 1,425 m | $20,960 | $9,875 |
+| Black Dragonfish | exotic | 1,450 m | $22,105 | $10,770 |
+| Pacific Blackdragon | exotic | 1,450 m | $20,780 | $9,540 |
+| Triplewart Seadevil | exotic | 1,450 m | $21,265 | $9,995 |
+| Telescopefish | exotic | 1,450 m | $20,100 | $8,910 |
+| Sabertooth Fish | exotic | 1,450 m | $19,155 | $8,030 |
+| Wolftrap Angler | exotic | 1,500 m | $19,585 | $8,040 |
+| Giant Isopod | exotic | 1,525 m | $22,880 | $10,970 |
+| Blob Sculpin | exotic | 1,650 m | $26,835 | $13,805 |
+| Patagonian Toothfish | exotic | 1,700 m | $710 | $180 |
+| Giant Grenadier | exotic | 1,800 m | $1,100 | $250 |
+| Daggertooth | exotic | 1,900 m | $36,230 | $21,000 |
+| Deep-sea Lizardfish | exotic | 1,950 m | $36,810 | $20,965 |
+| Sloane's Viperfish | exotic | 2,100 m | $42,640 | $24,470 |
+| Black Swallower | exotic | 2,100 m | $42,895 | $24,760 |
+| Pacific Viperfish | exotic | 2,100 m | $40,990 | $22,565 |
+| Yeti Crab | exotic | 2,200 m | $47,370 | $27,490 |
+| Stoplight Loosejaw | exotic | 2,250 m | $49,665 | $28,855 |
+| Giant Tube Worm | exotic | 2,300 m | $55,015 | $34,215 |
+| Whipnose Angler | exotic | 2,300 m | $54,325 | $33,380 |
+| Bobtail Snipe Eel | exotic | 2,300 m | $48,025 | $25,760 |
+| Giant Sea Spider | exotic | 2,750 m | $89,045 | $65,530 |
+| Dumbo Octopus | exotic | 3,100 m | $131,740 | $154,745 |
+| Highfin Lizardfish | exotic | 4,200 m | $445,935 | $471,930 |
+| Silvered Mirrorfish | undocumented | 1,000 m | $2,195 | $6,180 |
+| Glassbone Hatchetfish | undocumented | 1,175 m | $2,220 | $6,350 |
+| Canyon Ember-lure Angler | undocumented | 1,400 m | $6,815 | $9,255 |
+| Banded Glow Eel | undocumented | 1,950 m | $8,315 | $22,065 |
+| Steadylight Dragonfish | undocumented | 2,000 m | $10,980 | $21,605 |
+| Crowned Hagfish | undocumented | 2,800 m | $23,795 | $72,405 |
+| Falling-star Squid | undocumented | 2,800 m | $52,880 | $80,965 |
+| Vent Skate | undocumented | 3,250 m | $65,020 | $235,175 |
+| Brine-shore Cusk-eel | undocumented | 3,350 m | $67,735 | $255,790 |
+| Nodule-armoured Crab | undocumented | 3,750 m | $97,605 | $355,470 |
+| Silt-walking Tripodfish | undocumented | 4,650 m | $353,165 | $628,440 |
+| Great Pale Snailfish | undocumented | 5,100 m | $661,355 | $1,120,120 |
+| Whale Shark | legendary | 150 m | $3,350,000 | $6,000 |
+| the Coelacanth | legendary | 245 m | $3,350,000 | $6,000 |
+| Megamouth Shark | legendary | 300 m | $3,379,225 | $8,890 |
+| the Oarfish | legendary | 700 m | $3,591,785 | $63,220 |
+| Sperm Whale | legendary | 700 m | $3,591,785 | $63,220 |
+| the Barreleye | legendary | 725 m | $3,605,070 | $67,470 |
+| Giant Squid | legendary | 775 m | $3,631,645 | $73,550 |
+| Frilled Shark | legendary | 825 m | $3,658,215 | $76,755 |
+| the Vampire Squid | legendary | 875 m | $3,684,785 | $80,100 |
+| Goblin Shark | legendary | 900 m | $3,698,070 | $81,830 |
+| the Blobfish | legendary | 1,000 m | $3,751,210 | $89,115 |
+| the Dragonfish | legendary | 1,450 m | $3,990,340 | $139,250 |
+| the Isopod | legendary | 1,525 m | $4,030,195 | $155,685 |
+| Colossal Squid | legendary | 1,750 m | $4,149,760 | $217,460 |
+| the Grenadier | legendary | 1,800 m | $4,176,330 | $234,185 |
+| the Fangtooth | legendary | 2,100 m | $4,335,750 | $353,615 |
+| the Viperfish | legendary | 2,100 m | $4,335,750 | $353,615 |
+| the Swallower | legendary | 2,100 m | $4,335,750 | $353,615 |
+| the Anglerfish | legendary | 2,150 m | $4,362,320 | $376,705 |
+| the Gulper Eel | legendary | 2,200 m | $4,388,890 | $401,300 |
+| the Dumbo | legendary | 3,100 m | $4,867,150 | $2,109,900 |
+| the Tripod | legendary | 3,350 m | $5,000,000 | $3,645,210 |
+| Bigfin Squid | legendary | 4,650 m | $5,000,000 | $5,611,145 |
+| Giant Phantom Jelly | legendary | 4,650 m | $5,000,000 | $5,027,250 |
+
+## Rare animals whose usual depths ran below the sea floor
+
+| Animal | Old | New |
+|---|---|---|

@@ -67,13 +67,14 @@ export function playerLevel(P) {
 }
 const payK = (P) => 0.35 + (playerLevel(P) - 1) * 0.13;
 const KINDS = {
-  // (7.3.0, economy v2) each tier pays a quarter to a full hour of the income at the depth it asks for (docs/PLAN_7.4.md)
-  catch: (r) => ({ n: [25, 50, 100, 200][r], pay: [200, 1100, 4000, 12900][r], text: (q) => `Catch ${q.n} animals` }),
-  deep: (r) => ({ d: [100, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [350, 2300, 8900, 26600][r], // (4.0.0) the deep pays most
+  // (7.3.0, economy v2) each tier pays a quarter to a full hour of the income at the depth it asks for (docs/PLAN_7.4.md);
+  // (7.3.8) moved with the re-measured income
+  catch: (r) => ({ n: [25, 50, 100, 200][r], pay: [50, 490, 1800, 7700][r], text: (q) => `Catch ${q.n} animals` }),
+  deep: (r) => ({ d: [100, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [90, 1000, 4100, 16000][r], // (4.0.0) the deep pays most
     text: (q) => `Catch ${q.n > 1 ? q.n + ' animals' : 'an animal'} below ${q.d} m` }),
-  sell: (r) => ({ n: [450, 2000, 9000, 45000][r], pay: [130, 920, 3700, 12300][r], text: (q) => `Sell ${money(q.n, false)} of catch` }),
-  photo: (r) => ({ n: [1, 3, 6, 12][r], pay: [180, 1200, 3700, 11600][r], text: (q) => `Photograph ${q.n} new species` }),
-  tag: (r) => ({ n: [1, 2, 4, 8][r], pay: [220, 1300, 4600, 13900][r], text: (q) => `Tag ${q.n} animal${q.n > 1 ? 's' : ''}` }),
+  sell: (r) => ({ n: [450, 2000, 9000, 45000][r], pay: [30, 410, 1700, 7400][r], text: (q) => `Sell ${money(q.n, false)} of catch` }),
+  photo: (r) => ({ n: [1, 3, 6, 12][r], pay: [50, 530, 1700, 7000][r], text: (q) => `Photograph ${q.n} new species` }),
+  tag: (r) => ({ n: [1, 2, 4, 8][r], pay: [60, 580, 2100, 8300][r], text: (q) => `Tag ${q.n} animal${q.n > 1 ? 's' : ''}` }),
   species: (r, rnd, P) => {
     const deep = [60, 250, 700, 1600][r];
     // (4.0.0) never a legendary (they are met, not ordered) nor an undocumented one

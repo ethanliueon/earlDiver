@@ -464,7 +464,9 @@ for (const it of Object.values(ITEMS)) {
 // (7.3.0, economy v2: x3 per 1,000 m, income measured per submersible) each rarity priced by the time to earn it where it is
 // wanted: common about ten minutes of the first sub's income (unchanged), uncommon fifteen of the refit's, rare half an
 // hour of the work subs', exotic one to two hours at research depth, legendary three to five hours of the deepest sub's
-{ const REMAP = { uncommon: [[300, 1000], [400, 1200]], rare: [[1000, 2000], [5000, 14000]], exotic: [[8000, 30000], [40000, 120000]], legendary: [[54000, 90000], [10000000, 17000000]] };
+// (7.3.8, owner) the same rule on the re-measured income (tools/econ/measure.cjs): rare half an hour of the work subs', exotic
+// an hour and a half of the research sub's to two of the deep research sub's, legendary three to five hours of the deepest's
+{ const REMAP = { uncommon: [[300, 1000], [400, 1200]], rare: [[1000, 2000], [2300, 4800]], exotic: [[8000, 30000], [24000, 84000]], legendary: [[54000, 90000], [1150000, 1900000]] };
   const nice = (p) => (p < 1000 ? Math.round(p / 10) * 10 : p < 10000 ? Math.round(p / 100) * 100 : p < 1e6 ? Math.round(p / 1000) * 1000 : Math.round(p / 50000) * 50000);
   for (const it of Object.values(ITEMS)) { const R = REMAP[it.rarity]; if (!R || !(it.price > 0)) continue;
     const [[a, b], [c, d]] = R, t = Math.min(1, Math.max(0, Math.log(it.price / a) / Math.log(b / a)));
