@@ -1841,7 +1841,7 @@ export class UI {
     // (5.2) first the name and "press any key"; any key or a tap brings up the divers
     const T = $('title'); T.classList.add('attract'); T.classList.remove('select');
     const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches;
-    T.querySelector('.t-press span').textContent = touch ? 'Tap to dive' : 'Press any key';
+    T.querySelector('.t-press span').textContent = 'Tap to start'; void touch; /* (7.3.5) touch only: no keys to press */
     if (!this.titleWired) {
       this.titleWired = true;
       // (6.4.2) the tap that brings up the divers must not also choose one: its click lands on the slot that has just

@@ -67,23 +67,27 @@ function letters(scale) {
 // (7.1.7) the painted hatchetfish (tools/hatchet_kit.py): a silver blade with tube eyes and its belly's lights; the drawn
 // one below stays only until the picture has loaded
 const HF = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: 'assets/loading/hatchetfish.png' }) : null;
-// (7.3.4, owner) it swims: the picture drawn in thin upright slices, each moved up or down by a wave that travels from
-// head to tail and grows toward the tail (the head almost still, the tail sweeping widest), so the body bends as a
-// fish's does. The same in index.html's loading bar (its own copy, since it runs before any of this loads)
-// (the slices are put together once a frame on a small canvas of their own, which is then drawn as one picture: the
-// title draws it twice, once blurred for its shadow, and a blur on every slice cost two thirds of the frame rate)
+// (7.3.5) it swims as a hatchetfish does, seen from the side: the body stays stiff (the slices of 7.3.4 bent it up and down
+// like a flag, which no fish does); it hovers, rising and sinking a little with a slow nose-up, nose-down tilt, and the
+// tail beats sideways, toward and away from us, so in profile the tail fin narrows and widens in quick flicks (a beat,
+// then a glide). The same in index.html's loading bar (its own copy, since it runs before any of this loads).
+// Drawn in thin upright slices, put together once a frame on a small canvas of their own (the title draws it twice)
 let SWIM = null, SWIM_T = -1;
+export function swimPose(t) {
+  const ph = t * 7.5, beat = Math.max(0, Math.sin(t * 1.9)); // flicks come in bursts, then a short glide
+  return { sq: 1 - 0.32 * beat * (0.5 + 0.5 * Math.cos(ph)), bob: Math.sin(t * 1.1) * 0.016, pitch: Math.sin(t * 0.8 + 1) * 0.025 };
+}
 export function swimDraw(x, img, dx, dy, dw, dh, t) {
   const W = Math.max(8, Math.round(dw)), pad = Math.round(dh * 0.12), H = Math.max(8, Math.round(dh)) + pad * 2;
   if (!SWIM) SWIM = document.createElement('canvas');
   if (SWIM.width !== W || SWIM.height !== H || SWIM_T !== t) {
     if (SWIM.width !== W || SWIM.height !== H) { SWIM.width = W; SWIM.height = H; }
     const k = SWIM.getContext('2d'); k.clearRect(0, 0, W, H); SWIM_T = t;
-    const n = 28, sw = img.naturalWidth / n, w = W / n;
+    const P = swimPose(t), n = 28, sw = img.naturalWidth / n, ut = 0.2; // u 0 the tail .. 1 the nose (it faces right); the tail fin is the first fifth
+    const X = (u) => (u < ut ? ut - (ut - u) * P.sq : u) * W;
     for (let i = 0; i < n; i++) {
-      const u = (i + 0.5) / n, tail = Math.pow(1 - u, 1.8); // u 0 the tail .. 1 the nose (it faces right)
-      const off = Math.sin(t * 5.2 - u * 4.2) * dh * 0.07 * tail + Math.sin(t * 1.3) * dh * 0.012;
-      k.drawImage(img, i * sw, 0, sw + 0.6, img.naturalHeight, i * w, pad + off, w + 0.6, dh);
+      const u0 = i / n, u1 = (i + 1) / n, um = (u0 + u1) / 2, off = (P.bob + (um - 0.5) * P.pitch) * dh;
+      k.drawImage(img, i * sw, 0, sw + 0.6, img.naturalHeight, X(u0), pad + off, X(u1) - X(u0) + 0.6, dh);
     }
   }
   x.drawImage(SWIM, dx, dy - pad * (dh / (H - pad * 2)), dw, dh * H / (H - pad * 2));
