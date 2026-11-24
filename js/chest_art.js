@@ -198,10 +198,19 @@ Object.assign(PAINT, {
     if (f === 'under') { x.fillStyle = '#2e3a30'; x.fillRect(0, 0, fw, fh); return; }
     blotch(x, fw * 0.5, fh * 0.5, fw, fh, 'rgba(150,110,60,0.35)', r, 14); blotch(x, fw * 0.3, fh * 0.3, fw * 0.6, fh * 0.6, 'rgba(110,170,150,0.25)', r, 10); // bronze showing through, and the green
     x.strokeStyle = 'rgba(180,150,90,0.55)'; x.lineWidth = 0.006; const band = (v) => { x.beginPath(); for (let u = 0; u <= fw; u += 0.01) { const y = v + Math.sin(u * 40) * 0.012; u ? x.lineTo(u, y) : x.moveTo(u, y); } x.stroke(); }; band(0.03); band(fh - 0.03); // cast waves round the edges
-    if (f === 'top' || f === 'lidF') { const cu = fw / 2, cv = fh / 2, L = f === 'top' ? fw * 0.4 : fw * 0.38; // the trident, raised, lying the length of the lid
-      x.shadowColor = 'rgba(0,0,0,0.55)'; x.shadowBlur = 0; x.shadowOffsetY = 0.006; x.strokeStyle = '#d4b46a'; x.lineWidth = f === 'top' ? 0.026 : 0.02; x.lineCap = 'round'; x.beginPath(); x.moveTo(cu - L * 1.1, cv); x.lineTo(cu + L * 0.9, cv); x.stroke();
-      x.beginPath(); x.moveTo(cu + L * 0.55, cv - L * 0.35); x.quadraticCurveTo(cu + L * 0.62, cv, cu + L * 0.55, cv + L * 0.35); x.stroke(); for (const d of [-0.35, 0, 0.35]) { x.beginPath(); x.moveTo(cu + L * 0.55, cv + L * d); x.lineTo(cu + L * 1.05, cv + L * d); x.stroke(); } x.lineCap = 'butt';
-      x.shadowColor = 'transparent'; x.shadowOffsetY = 0; x.strokeStyle = 'rgba(255,240,200,0.35)'; x.lineWidth = 0.005; x.beginPath(); x.moveTo(cu - L * 1.1, cv - 0.006); x.lineTo(cu + L * 0.9, cv - 0.006); x.stroke(); }
+    if (f === 'lidF') { // (7.4.8, owner) the trident, raised, lying the length of the lid's front (the top is seen too steeply: it read as an E): sized to the face so its head never runs off it,
+      // its relief a darker stroke laid under it (a canvas shadow drew a dark block in the chest's opening scene)
+      const cu = fw / 2, cv = fh / 2, L = Math.min(fw * 0.36, fh * 1.25), sp = L * 0.28, hx = cu + L * 0.5;
+      const tip = hx + L * 0.5, path = () => { x.beginPath(); x.moveTo(cu - L * 1.05, cv); x.lineTo(tip - L * 0.06, cv); // the shaft, running on as the middle prong
+        for (const d of [-sp, sp]) { x.moveTo(hx - L * 0.02, cv); x.bezierCurveTo(hx + L * 0.06, cv, hx + L * 0.1, cv + d, hx + L * 0.22, cv + d); x.lineTo(tip - L * 0.1, cv + d); } // the outer prongs curve out of it
+        x.moveTo(hx - L * 0.1, cv - L * 0.05); x.lineTo(hx - L * 0.1, cv + L * 0.05); }; // a collar where the head meets the shaft
+      const barbs = (col) => { x.fillStyle = col; for (const d of [-sp, 0, sp]) { const ex = d ? tip - L * 0.1 : tip - L * 0.06, ey = cv + d, w = L * 0.055; x.beginPath(); x.moveTo(ex + L * 0.1, ey); x.lineTo(ex - L * 0.01, ey - w); x.lineTo(ex + L * 0.02, ey); x.lineTo(ex - L * 0.01, ey + w); x.closePath(); x.fill(); } }; // a barbed point on each prong
+      x.lineCap = 'round'; x.lineJoin = 'round';
+      x.save(); x.translate(0.004, 0.006); x.strokeStyle = 'rgba(20,24,16,0.55)'; x.lineWidth = Math.min(0.022, fh * 0.06); path(); x.stroke(); barbs('rgba(20,24,16,0.55)'); x.restore();
+      x.strokeStyle = '#d4b46a'; x.lineWidth = Math.min(0.02, fh * 0.055); path(); x.stroke(); barbs('#d4b46a');
+      x.strokeStyle = 'rgba(255,240,200,0.4)'; x.lineWidth = Math.min(0.006, fh * 0.02); x.beginPath(); x.moveTo(cu - L * 1.05, cv - x.lineWidth); x.lineTo(hx - L * 0.12, cv - x.lineWidth); x.stroke(); x.lineCap = 'butt'; }
+    if (f === 'top') { // (7.4.8) the lid's top: a cast band of waves along it
+      x.strokeStyle = 'rgba(212,180,106,0.85)'; x.lineWidth = Math.min(0.012, fh * 0.05); x.beginPath(); for (let u = 0.06; u <= fw - 0.06; u += 0.008) { const y = fh * 0.5 + Math.sin(u * 26) * fh * 0.12; u > 0.06 ? x.lineTo(u, y) : x.moveTo(u, y); } x.stroke(); }
     if (f === 'front') { x.fillStyle = '#c8a860'; x.beginPath(); x.ellipse(fw / 2, fh * 0.42, 0.05, 0.065, 0, 0, TAU); x.fill(); x.fillStyle = '#1a1a14'; x.beginPath(); x.arc(fw / 2, fh * 0.4, 0.012, 0, TAU); x.fill(); x.fillRect(fw / 2 - 0.005, fh * 0.4, 0.01, 0.03); } // the lock, a scallop of bronze
     x.strokeStyle = 'rgba(120,220,200,0.35)'; x.lineWidth = 0.004; x.strokeRect(0.012, 0.012, fw - 0.024, fh - 0.024); // the sea's faint light in its seams
     barnacles(x, fw, fh, r, f === 'top' ? 6 : 12, 0.45); scratches(x, fw, fh, 10, r, 'rgba(230,210,160,0.25)'); edges(x, fw, fh, 0.35, 0.04); },
