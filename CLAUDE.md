@@ -200,7 +200,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   20 s, 30 min, x1.5; Dauntless+ 20 s, 1 h, x2, Flare+ light; Bathysphere 30 s, 1 h, x2.5, light, and past its limit air
   goes 5 times slower; Hadal Heart 45 s, 1 h, x3, past its limit 10 times slower. A force field of pressed water round
   him or the sub (render.js, g.pressFx): one pale water colour at every tier, bigger and stronger by tier and by how much
-  of the extra depth is used; it bursts out and is crushed back in; Bathysphere and Hadal Heart press on the screen.
+  of the extra depth is used (7.4.21: radius about 2.2 m, 3.1 m, 4.6 m, and Hadal Heart nearly the whole screen; the water
+  outside darkened and squeezed, harder the more of the limit is used; the bending only in a band inside the rim, so he
+  stays sharp); it bursts out and is crushed back in; Bathysphere and Hadal Heart press on the screen.
 - **Mythical scrolls (7.4.15, owner):** a rarity above legendary, oxblood red with an ember glow (never the bright warning
   red). Only from three legendaries of the same scroll combined: never in chests, the Old One's table or a shop. Worth
   three legendaries. Maelstrom (Riptide), Pharos (Lighthouse), Whalesong (Fathom), Leviathan's Maw (Apex), Rift

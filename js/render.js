@@ -1403,37 +1403,48 @@ export class Renderer {
     // all shows follows how much of the skill's extra depth is in use (g.pressK). It bursts out as it fires and is crushed
     // back in as it ends. Drawn by hand each frame: a lens, an uneven rim, rings and streaks, never a plain circle
     if (g.mode === 'play' && g.pressFx) { const F = g.pressFx, e = g.earl, sub0 = e.inSub, m = sub0 ? g.sub : e, mx = S(m.x), my = Sy(m.y), tt = g.time;
-      const TI = { rare: 0, exotic: 1, legendary: 2, mythical: 3 }[F.tier] ?? 0, k = g.pressK || 0, vis = (0.4 + 0.6 * k) * (0.7 + 0.1 * TI);
+      const TI = { rare: 0, exotic: 1, legendary: 2, mythical: 3 }[F.tier] ?? 0, k = g.pressK || 0, vis = (0.5 + 0.5 * k) * (0.8 + 0.12 * TI);
       const open = Math.min(1, F.t / 0.55), ease = 1 - Math.pow(1 - open, 3), over = open < 1 ? 1 + Math.sin(open * Math.PI) * 0.12 : 1;
       const close = F.end > 0 ? Math.min(1, F.end / 0.9) : 0, shut = close > 0 ? Math.pow(1 - close, 2.2) : 1;
-      const sc = ease * over * shut, R0 = (sub0 ? 5.6 : 1.7 + TI * 0.45) * ppm * (0.92 + 0.16 * k), ry = sub0 ? 0.48 : 1, R = R0 * sc;
+      const cwS = ctx.canvas.width, sc = ease * over * shut, R0 = (TI >= 3 ? cwS * 0.46 : (sub0 ? [6.5, 8, 10.5][TI] : [2.2, 3.1, 4.6][TI]) * ppm) * (0.9 + 0.18 * k), ry = sub0 ? (TI >= 3 ? 0.62 : 0.5) : 1, R = R0 * sc; // (7.4.21, owner) a tier up in size each; Hadal Heart nearly the whole screen
       const rimR = (a) => R * (1 + (0.012 * Math.sin(a * 3 + tt * 0.9 + 1.3) + 0.009 * Math.sin(a * 7 - tt * 1.7) + 0.006 * Math.sin(a * 13 + tt * 2.9)) * (0.6 + k) - 0.06 * k * Math.pow(Math.max(0, -Math.sin(a)), 2) * (0.6 + 0.2 * TI)); // an uneven, slowly shifting edge, flattened from above, where the weight is
       const ring = (f, scl = 1) => { ctx.beginPath(); for (let i = 0; i <= 64; i++) { const a = i / 64 * TAU, r = f(a) * scl; i ? ctx.lineTo(mx + Math.cos(a) * r, my + Math.sin(a) * r * ry) : ctx.moveTo(mx + Math.cos(a) * r, my + Math.sin(a) * r * ry); } ctx.closePath(); };
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (R > 2) {
         // the lens: the water inside bent outward a little (the scene under it drawn again, magnified, clipped to the field)
-        const mag = 1.04 + 0.025 * TI + 0.03 * k;
-        if (sc > 0.3) { ctx.save(); ring(rimR, 0.97); ctx.clip(); const cw = ctx.canvas.width, ch = ctx.canvas.height, w2 = R * 2.2, h2 = R * 2.2 * ry;
+        const mag = 1.05 + 0.025 * TI + 0.06 * k; // (7.4.21) the water inside bent harder
+        if (sc > 0.3) { ctx.save(); ctx.beginPath(); // (7.4.21) the bending in a band inside the rim only: he and the middle stay sharp
+          for (let i = 0; i <= 64; i++) { const a = i / 64 * TAU, rr = rimR(a) * 0.97; i ? ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry) : ctx.moveTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); }
+          const inner = TI >= 3 ? 0.72 : 0.5; for (let i = 64; i >= 0; i--) { const a = i / 64 * TAU, rr = rimR(a) * inner; ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); } ctx.closePath(); ctx.clip('evenodd'); const cw = ctx.canvas.width, ch = ctx.canvas.height, w2 = R * 2.2, h2 = R * 2.2 * ry;
           try { ctx.globalAlpha = 0.9; ctx.drawImage(ctx.canvas, Math.max(0, mx - w2 / 2), Math.max(0, my - h2 / 2), Math.min(cw, w2), Math.min(ch, h2), mx - w2 * mag / 2, my - h2 * mag / 2, w2 * mag, h2 * mag); } catch (er) { /* a lens skipped */ }
           ctx.globalAlpha = 1; const ig = ctx.createRadialGradient(mx, my, R * 0.2, mx, my, R); ig.addColorStop(0, 'rgba(214,230,236,0)'); ig.addColorStop(0.75, `rgba(214,230,236,${(0.04 + 0.05 * vis).toFixed(3)})`); ig.addColorStop(1, `rgba(230,240,244,${(0.12 + 0.14 * vis).toFixed(3)})`); ctx.fillStyle = ig; ctx.fillRect(mx - R * 1.2, my - R * 1.2, R * 2.4, R * 2.4);
           // light moving inside it, slow
           ctx.globalCompositeOperation = 'lighter'; for (let j = 0; j < 3 + TI; j++) { const a = tt * (0.4 + j * 0.13) + j * 2.1, px = mx + Math.cos(a) * R * 0.45, py = my + Math.sin(a * 1.3) * R * 0.35 * ry; const lg = ctx.createRadialGradient(px, py, 0, px, py, R * 0.35); lg.addColorStop(0, `rgba(220,236,240,${(0.05 * vis).toFixed(3)})`); lg.addColorStop(1, 'rgba(220,236,240,0)'); ctx.fillStyle = lg; ctx.fillRect(px - R * 0.4, py - R * 0.4, R * 0.8, R * 0.8); }
           ctx.restore(); }
+        // (7.4.21, owner) the crush outside: the water beyond the field darkened and pressed, harder the more of the limit is
+        // used; and just outside the rim a band of squeezed water (the scene drawn again, pulled in toward him)
+        { const cw = ctx.canvas.width, ch = ctx.canvas.height, dk = (0.07 + 0.07 * TI) * (0.35 + 0.9 * k) * shut;
+          ctx.save(); ctx.beginPath(); ctx.rect(0, 0, cw, ch); for (let i = 64; i >= 0; i--) { const a = i / 64 * TAU, rr = rimR(a) * 1.02; i === 64 ? ctx.moveTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry) : ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); } ctx.closePath();
+          const og = ctx.createRadialGradient(mx, my, R * 0.9, mx, my, Math.max(R * 1.6, Math.hypot(cw, ch) * 0.6)); og.addColorStop(0, `rgba(4,12,18,${(dk * 1.3).toFixed(3)})`); og.addColorStop(1, `rgba(2,6,10,${(dk * 0.7).toFixed(3)})`); ctx.fillStyle = og; ctx.fill('evenodd'); ctx.restore();
+          if (TI >= 1 && sc > 0.3) { ctx.save(); ctx.beginPath(); ring(rimR, 1.3 + 0.1 * TI); ctx.save(); ctx.beginPath(); for (let i = 0; i <= 64; i++) { const a = i / 64 * TAU, rr = rimR(a) * (1.3 + 0.1 * TI); i ? ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry) : ctx.moveTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); } for (let i = 64; i >= 0; i--) { const a = i / 64 * TAU, rr = rimR(a) * 1.02; ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); } ctx.closePath(); ctx.clip('evenodd');
+            const sq = 1 - (0.03 + 0.015 * TI) * (0.5 + k) * (0.8 + 0.2 * Math.sin(tt * 3)), w3 = R * 3, h3 = R * 3 * ry;
+            try { ctx.drawImage(ctx.canvas, mx - w3 / 2, my - h3 / 2, w3, h3, mx - w3 * sq / 2, my - h3 * sq / 2, w3 * sq, h3 * sq); } catch (er) { /* skipped */ }
+            ctx.fillStyle = `rgba(200,222,230,${((0.05 + 0.03 * TI) * vis).toFixed(3)})`; ctx.fillRect(mx - w3 / 2, my - h3 / 2, w3, h3); ctx.restore(); ctx.restore(); } }
         // the pressure closing in: wavy rings travelling inward from the water outside and flattening against the rim
-        const nR = 2 + TI * 2, per = 2.2 - TI * 0.25;
-        for (let j = 0; j < nR; j++) { const ph = ((tt / per + j / nR) % 1), rr = 1 + (1 - ph) * (1.3 + 0.25 * TI), al = Math.pow(ph, 1.6) * (0.16 + 0.12 * TI) * vis * shut;
-          ctx.strokeStyle = `rgba(206,224,230,${(al * 0.8).toFixed(3)})`; ctx.lineWidth = Math.max(1, (0.8 + TI * 0.35) * (0.5 + ph)) * (ppm / 30);
-          ring((a) => rimR(a) * (1 + 0.04 * (1 - ph) * Math.sin(a * 7 + j * 3 + tt * 1.5)), rr); ctx.stroke(); }
+        const nR = 3 + TI * 3, per = 2.0 - TI * 0.25;
+        for (let j = 0; j < nR; j++) { const ph = ((tt / per + j / nR) % 1), rr = 1 + (1 - ph) * (1.3 + 0.25 * TI), al = Math.pow(ph, 1.4) * (0.22 + 0.14 * TI) * vis * shut;
+          ctx.strokeStyle = `rgba(206,224,230,${(al * 0.8).toFixed(3)})`; ctx.lineWidth = Math.max(1, (1.2 + TI * 0.6) * (0.5 + ph) * (1 + k)) * (ppm / 30);
+          ring((a) => rimR(a) * (1 + (0.04 + 0.04 * k) * (1 - ph) * Math.sin(a * 7 + j * 3 + tt * 1.5)), rr); ctx.stroke(); }
         // streaks of weight bearing down on it from above, more of them the higher the tier
-        const nS = 6 + TI * 6; ctx.lineCap = 'round';
+        const nS = 10 + TI * 10; ctx.lineCap = 'round';
         for (let j = 0; j < nS; j++) { const u = (j + 0.5) / nS - 0.5, a = -Math.PI / 2 + u * (2.2 + TI * 0.35), ph = (tt * (0.7 + 0.1 * TI) + j * 0.37) % 1, r1 = rimR(a) * (1.06 + (1 - ph) * 1.1), r2 = r1 + R * 0.25 * (0.5 + k);
-          ctx.strokeStyle = `rgba(214,230,236,${(ph * (0.14 + 0.08 * TI) * vis * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.04 * (1 + TI * 0.3));
+          ctx.strokeStyle = `rgba(214,230,236,${(ph * (0.22 + 0.1 * TI) * vis * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1.5, ppm * 0.06 * (1 + TI * 0.4) * (0.7 + 0.6 * k));
           ctx.beginPath(); ctx.moveTo(mx + Math.cos(a) * r2, my + Math.sin(a) * r2 * ry); ctx.lineTo(mx + Math.cos(a) * r1, my + Math.sin(a) * r1 * ry); ctx.stroke(); }
         // the rim: a dark outer edge, the pale core (one line, its weight by the tier and the pressure), a thin lit inner
         // edge, and a soft halo; the water's own pale colour, never white
-        const wCore = Math.max(1.2, (1.2 + TI * 0.8 + k * 1.6) * (ppm / 30));
+        const wCore = Math.max(1.8, (1.8 + TI * 1.2 + k * 2.4) * (ppm / 30)); // (7.4.21) a heavier rim
         ctx.strokeStyle = `rgba(10,22,28,${((0.22 + 0.1 * TI) * shut).toFixed(3)})`; ctx.lineWidth = wCore * 2.4; ring(rimR, 1.015); ctx.stroke();
-        ctx.strokeStyle = `rgba(206,224,230,${((0.3 + 0.32 * vis) * shut).toFixed(3)})`; ctx.lineWidth = wCore; ring(rimR, 1); ctx.stroke();
+        ctx.strokeStyle = `rgba(210,228,234,${((0.4 + 0.38 * vis) * shut).toFixed(3)})`; ctx.lineWidth = wCore; ring(rimR, 1); ctx.stroke();
         ctx.strokeStyle = `rgba(236,244,244,${((0.18 + 0.25 * vis) * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1, wCore * 0.35); ring(rimR, 0.985); ctx.stroke();
         ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(150,190,204,${((0.06 + 0.05 * TI) * vis * shut).toFixed(3)})`; ctx.lineWidth = wCore * 4; ring(rimR, 1); ctx.stroke(); ctx.globalCompositeOperation = 'source-over';
       }
@@ -1443,7 +1454,7 @@ export class Renderer {
       // from Bathysphere up the screen feels it: its edges pressing in with each ring that arrives; Hadal Heart trembles
       if (TI >= 2 && shut > 0.05) { const cw = ctx.canvas.width, ch = ctx.canvas.height, pul = Math.pow(Math.max(0, Math.sin(tt / (2.2 - TI * 0.25) * TAU)), 3), a = (0.1 + 0.08 * (TI - 2)) * (0.5 + k) * pul * shut;
         const vg = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * (0.42 - 0.06 * pul), cw / 2, ch / 2, Math.hypot(cw, ch) * 0.55); vg.addColorStop(0, 'rgba(6,14,20,0)'); vg.addColorStop(1, `rgba(6,14,20,${a.toFixed(3)})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, cw, ch);
-        if (TI >= 3) g.fx.shake = Math.max(g.fx.shake || 0, 0.12 + 0.25 * k * pul); }
+        if (TI >= 3) g.fx.shake = Math.max(g.fx.shake || 0, 0.15 + 0.35 * k * pul); }
       ctx.restore(); }
     // (7.2.8) Sprint's water, made real: motes that live in the water itself (world places, still water), so they slide past
     // him exactly as fast as he really moves, and nothing can jump (never a clock times a changing speed).
