@@ -301,25 +301,37 @@ function paintScroll3(x, fam, tier) {
     for (let i = 0; i < chips; i++) { const ex = r() < 0.5 ? r() * 0.18 : 1 - r() * 0.18, cx = x0 + (r() < 0.6 ? ex : r()) * w, cy = y0 + r() * h, cr = 0.4 + r() * 1.1; const ch = wobbly(Array.from({ length: 6 }, (_, k) => [cx + Math.cos(k / 6 * TAU) * cr * (0.6 + r() * 0.8), cy + Math.sin(k / 6 * TAU) * cr * (0.6 + r() * 0.8)]), r, 0.2); x.fillStyle = 'rgba(200,186,156,0.16)'; x.fill(ch); }
     x.restore();
   };
+  // (7.4.20, owner) a roll is a cylinder of the sheet's own paper: shaded round (dark top edge, a lit band, the underside
+  // dark with a little light thrown back), its far end curving away, and its near end open to show the paper wound on
+  // itself, layer on layer, spiralling in to a dark core, the edges catching the light (gilded on a legendary or
+  // mythical). The sheet comes out from under it
   const roll = (x0, x1, y, rad, endAtLeft) => {
-    const top = along([x0 + rad * 0.3, y - rad], [x1 - rad * 0.3, y - rad * 1.04], 6), bot = along([x1 - rad * 0.3, y + rad * 1.03], [x0 + rad * 0.3, y + rad], 6);
-    const body = wobbly([...top, [x1, y], ...bot, [x0, y]], r, 0.4);
-    const g = x.createLinearGradient(0, y - rad, 0, y + rad); g.addColorStop(0, B.mid); g.addColorStop(0.3, B.light); g.addColorStop(0.62, B.mid); g.addColorStop(1, B.dark);
+    const ex = endAtLeft ? x0 : x1, fx = endAtLeft ? x1 : x0, rx = rad * 0.42, dir = endAtLeft ? -1 : 1;
+    const body = new Path2D(); body.moveTo(fx, y - rad); body.lineTo(ex, y - rad * 1.02); body.lineTo(ex, y + rad * 1.02); body.lineTo(fx, y + rad);
+    body.ellipse(fx, y, rx, rad, 0, Math.PI / 2, Math.PI * 1.5, dir > 0); body.closePath(); // the far end, its curve
+    const g = x.createLinearGradient(0, y - rad, 0, y + rad); g.addColorStop(0, shade(B.dark, -0.2)); g.addColorStop(0.18, B.mid); g.addColorStop(0.32, shade(B.light, 0.12)); g.addColorStop(0.5, B.mid); g.addColorStop(0.82, B.dark); g.addColorStop(1, shade(B.mid, -0.15));
     x.fillStyle = g; x.fill(body);
     x.save(); x.clip(body);
-    for (const [a, b] of bandsX) { const bp = wobbly([[a, y - rad - 2], [b, y - rad - 2], [b + 0.5, y + rad + 2], [a - 0.3, y + rad + 2]], r, 0.35); const bg = x.createLinearGradient(0, y - rad, 0, y + rad); bg.addColorStop(0, shade(bandCol, -0.05)); bg.addColorStop(0.3, shade(bandCol, 0.12)); bg.addColorStop(1, shade(bandCol, -0.45)); x.fillStyle = bg; x.fill(bp); }
+    for (const [ba, bb] of bandsX) { const bp = wobbly([[ba, y - rad - 2], [bb, y - rad - 2], [bb + 0.5, y + rad + 2], [ba - 0.3, y + rad + 2]], r, 0.35); const bg = x.createLinearGradient(0, y - rad, 0, y + rad); bg.addColorStop(0, shade(bandCol, -0.35)); bg.addColorStop(0.32, shade(bandCol, 0.15)); bg.addColorStop(0.6, bandCol); bg.addColorStop(1, shade(bandCol, -0.5)); x.fillStyle = bg; x.fill(bp); }
+    x.strokeStyle = 'rgba(255,250,235,0.22)'; x.lineWidth = 1.1; x.beginPath(); x.moveTo(fx, y - rad * 0.42); x.lineTo(ex, y - rad * 0.44); x.stroke(); // the shine along it
     x.restore();
-    age(body, x0 - 2, y - rad - 2, x1 - x0 + 4, rad * 2 + 4, 10);
+    age(body, Math.min(x0, x1) - 2, y - rad - 2, Math.abs(x1 - x0) + 4, rad * 2 + 4, 10);
     x.lineWidth = 1.1; x.strokeStyle = edgeCol; x.stroke(body);
-    const ex = endAtLeft ? x0 + 1 : x1 - 1, cap = wobbly(Array.from({ length: 10 }, (_, i) => [ex + Math.cos(i / 10 * TAU) * rad * 0.5, y + Math.sin(i / 10 * TAU) * rad * 0.97]), r, 0.3);
-    const capCol = my ? '#4e1810' : leg ? '#5e4422' : shade(B.dark, 0.1); const cg = x.createRadialGradient(ex - rad * 0.15, y - rad * 0.3, 1, ex, y, rad); cg.addColorStop(0, shade(capCol, 0.3)); cg.addColorStop(1, shade(capCol, -0.3));
-    x.fillStyle = cg; x.fill(cap); age(cap, ex - rad, y - rad, rad * 2, rad * 2, 4); x.lineWidth = 1; x.strokeStyle = edgeCol; x.stroke(cap);
-    if (my) { x.strokeStyle = 'rgba(232,140,90,0.75)'; x.lineWidth = 0.8; for (const k of [0.82, 0.6]) { x.beginPath(); x.ellipse(ex, y, rad * 0.5 * k, rad * 0.97 * k, 0, 0, TAU); x.stroke(); } } // (7.4.19) carved rings on a mythical's caps
-    x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 0.9; x.beginPath();
-    for (let a = 0.3; a < TAU * 2.3; a += 0.16) { const rr = rad * (0.12 + a / (TAU * 2.7)); const px = ex + Math.cos(a + 1) * rr * 0.48, py = y + Math.sin(a + 1) * rr * 0.93; if (a === 0.3) x.moveTo(px, py); else x.lineTo(px, py); }
-    x.stroke();
+    // the open end: the paper wound round, layer on layer
+    const face = new Path2D(); face.ellipse(ex, y, rx, rad * 1.02, 0, 0, TAU);
+    const fg = x.createRadialGradient(ex - dir * rx * 0.3, y - rad * 0.35, 0.5, ex, y, rad); fg.addColorStop(0, shade(B.light, 0.25)); fg.addColorStop(0.6, B.mid); fg.addColorStop(1, shade(B.dark, -0.1)); x.fillStyle = fg; x.fill(face);
+    x.save(); x.clip(face);
+    const gild = leg ? (my ? 'rgba(240,150,100,' : 'rgba(226,190,120,') : 'rgba(255,248,230,';
+    for (let k = 0; k < 7; k++) { const q = 1 - k / 7.5, a0 = k * 0.9; // each turn of the paper: its edge lit on the upper side, shadowed under
+      x.strokeStyle = `rgba(0,0,0,${(0.28 + k * 0.03).toFixed(2)})`; x.lineWidth = 0.9; x.beginPath(); x.ellipse(ex + dir * (1 - q) * rx * 0.25, y + (1 - q) * rad * 0.08, rx * q, rad * q, 0, a0, a0 + TAU * 0.92); x.stroke();
+      x.strokeStyle = gild + (0.35 + 0.25 * q).toFixed(2) + ')'; x.lineWidth = 0.6; x.beginPath(); x.ellipse(ex + dir * (1 - q) * rx * 0.25, y + (1 - q) * rad * 0.08 - 0.5, rx * q, rad * q, 0, Math.PI * 1.05, Math.PI * 1.75); x.stroke(); }
+    x.fillStyle = 'rgba(8,5,3,0.85)'; x.beginPath(); x.ellipse(ex + dir * rx * 0.22, y + rad * 0.08, rx * 0.16, rad * 0.2, 0, 0, TAU); x.fill(); // the hollow core
+    x.restore();
+    x.lineWidth = 1; x.strokeStyle = edgeCol; x.stroke(face);
+    x.strokeStyle = 'rgba(255,250,235,0.3)'; x.lineWidth = 0.9; x.beginPath(); x.ellipse(ex, y, rx, rad * 1.02, 0, Math.PI * 1.1, Math.PI * 1.65); x.stroke(); // the lit lip
   };
-  roll(-36, 44, -33, 11.5, false);
+  // the sheet first; the rolls are laid over its ends, so it comes out from under each of them
+  const rolls = () => { roll(-36, 44, -33, 11.5, false); };
   const left = along([-37, -25], [-38, 28], 7).map(([a, b], i) => [a + 1.2 * Math.sin(Math.PI * i / 7), b]);
   const right = along([33, 28], [35, -25], 7).map(([a, b], i) => [a - 1.2 * Math.sin(Math.PI * i / 7), b]);
   const sheet = wobbly([...left, ...along([-38, 28], [33, 28], 5), ...right, ...along([35, -25], [-37, -25], 5)], r, 0.5);
@@ -349,17 +361,27 @@ function paintScroll3(x, fam, tier) {
     t.globalCompositeOperation = 'destination-out'; const rr2 = rnd(fam.length * 7 + 3); for (let i = 0; i < 70; i++) { t.globalAlpha = 0.25 + rr2() * 0.6; t.beginPath(); t.arc(rr2() * c.width, rr2() * c.height, 1 + rr2() * 4, 0, TAU); t.fill(); } t.globalAlpha = 1;
     x.save(); x.globalAlpha = 0.55; x.drawImage((() => { const d = document.createElement('canvas'); d.width = d.height = m.width; const u = d.getContext('2d'); u.drawImage(m, 0, 0); u.globalCompositeOperation = 'source-in'; u.fillStyle = 'rgba(0,0,0,1)'; u.fillRect(0, 0, d.width, d.height); return d; })(), -2 - size / 2 + 0.8, 1 - size / 2 + 1.2, size, size); x.restore(); // the paint's thickness: a soft shadow under it
     x.drawImage(c, -2 - size / 2, 1 - size / 2, size, size); }
-  roll(-46, 34, 35, 12.5, true);
-  // (7.4.15) a mythical's wax seal, pressed on the sheet's corner over a short ribbon: deep red, uneven, a ring stamped in it
-  if (my) { x.save(); x.translate(24, 20);
-    for (const [dx, a] of [[-4, 0.5], [4, -0.4]]) { x.fillStyle = '#5a1810'; x.beginPath(); x.moveTo(dx - 2.5, 2); x.lineTo(dx + 2.5, 2); x.lineTo(dx + 3.5 + a * 4, 16); x.lineTo(dx + a * 4, 13); x.lineTo(dx - 3.5 + a * 4, 16); x.closePath(); x.fill(); }
-    const seal = wobbly(Array.from({ length: 14 }, (_, i) => { const a = i / 14 * TAU, rr = 9.5 + (r() - 0.5) * 2.4; return [Math.cos(a) * rr, Math.sin(a) * rr]; }), r, 0.5);
-    const sg2 = x.createRadialGradient(-3, -3, 1, 0, 0, 11); sg2.addColorStop(0, '#c0402c'); sg2.addColorStop(0.6, '#8a2418'); sg2.addColorStop(1, '#4e120c'); x.fillStyle = sg2; x.fill(seal);
-    x.strokeStyle = 'rgba(30,6,4,0.8)'; x.lineWidth = 0.9; x.stroke(seal);
-    x.strokeStyle = 'rgba(40,8,4,0.7)'; x.lineWidth = 1.2; x.beginPath(); x.arc(0, 0, 6.4, 0, TAU); x.stroke();
-    x.fillStyle = 'rgba(40,8,4,0.6)'; x.beginPath(); x.moveTo(0, 3.6); x.bezierCurveTo(-2, 2, -4, 0.6, -4, -1.2); x.bezierCurveTo(-4, -3, -1.4, -3.4, 0, -1.6); x.bezierCurveTo(1.4, -3.4, 4, -3, 4, -1.2); x.bezierCurveTo(4, 0.6, 2, 2, 0, 3.6); x.fill(); // (7.4.19) the heart stamped in it
-    x.strokeStyle = 'rgba(255,170,130,0.35)'; x.lineWidth = 0.8; x.beginPath(); x.arc(-0.4, -0.5, 6, Math.PI * 1.1, Math.PI * 1.7); x.stroke();
-    x.fillStyle = 'rgba(255,200,170,0.35)'; x.beginPath(); x.ellipse(-3.5, -4, 2.6, 1.2, -0.6, 0, TAU); x.fill(); x.restore(); }
+  rolls(); roll(-46, 34, 35, 12.5, true);
+  // (7.4.20, owner) a mythical's seal: hot wax pressed onto the sheet's corner over two ribbon tails. An uneven pool with
+  // a raised rim (lit above, shadowed below), the stamp's disc pressed into it, and the heart embossed in that, its
+  // upper edges catching the light. Still warm: an ember glow round it and a few sparks lifting off
+  if (my) { x.save(); x.translate(24, 21);
+    const gl = x.createRadialGradient(0, 0, 4, 0, 0, 18); gl.addColorStop(0, 'rgba(255,110,60,0.42)'); gl.addColorStop(1, 'rgba(255,110,60,0)'); x.fillStyle = gl; x.fillRect(-18, -18, 36, 36);
+    for (const [dx, a] of [[-4, 0.45], [4, -0.35]]) { const rb = new Path2D(); rb.moveTo(dx - 2.6, 3); rb.lineTo(dx + 2.6, 3); rb.lineTo(dx + 3.4 + a * 4, 15); rb.lineTo(dx + a * 4, 12.4); rb.lineTo(dx - 3.4 + a * 4, 15); rb.closePath();
+      const rg = x.createLinearGradient(dx - 3, 0, dx + 3, 0); rg.addColorStop(0, '#3e0e08'); rg.addColorStop(0.5, '#7a2416'); rg.addColorStop(1, '#3e0e08'); x.fillStyle = rg; x.fill(rb); }
+    const seal = wobbly(Array.from({ length: 16 }, (_, i) => { const a = i / 16 * TAU, rr = 9.6 + (r() - 0.5) * 2.6 + (i % 5 === 2 ? 1.4 : 0); return [Math.cos(a) * rr, Math.sin(a) * rr]; }), r, 0.5);
+    x.fillStyle = 'rgba(20,4,2,0.5)'; x.save(); x.translate(0.8, 1.2); x.fill(seal); x.restore(); // its shadow on the paper
+    const sg2 = x.createRadialGradient(-3.5, -3.5, 0.5, 0, 0, 11); sg2.addColorStop(0, '#d0503a'); sg2.addColorStop(0.55, '#962a1c'); sg2.addColorStop(1, '#561510'); x.fillStyle = sg2; x.fill(seal);
+    x.lineWidth = 1.2; x.strokeStyle = 'rgba(255,180,150,0.35)'; x.save(); x.clip(seal); x.beginPath(); x.arc(-0.6, -0.8, 9.2, Math.PI * 0.95, Math.PI * 1.75); x.stroke(); x.strokeStyle = 'rgba(30,6,4,0.5)'; x.beginPath(); x.arc(0.6, 0.8, 9.2, Math.PI * 0.0, Math.PI * 0.7); x.stroke(); x.restore();
+    // the stamp's pressed disc: a step down into the wax
+    const dg = x.createRadialGradient(1, 1, 1, 0, 0, 7); dg.addColorStop(0, '#8a2618'); dg.addColorStop(1, '#6a1c12'); x.fillStyle = dg; x.beginPath(); x.arc(0, 0, 6.8, 0, TAU); x.fill();
+    x.lineWidth = 1; x.strokeStyle = 'rgba(30,6,4,0.65)'; x.beginPath(); x.arc(0, 0, 6.8, Math.PI * 1.0, Math.PI * 1.8); x.stroke(); x.strokeStyle = 'rgba(255,170,140,0.45)'; x.beginPath(); x.arc(0, 0, 6.8, Math.PI * 0.05, Math.PI * 0.8); x.stroke();
+    const heart = (ox, oy, sc) => { const h = new Path2D(); h.moveTo(ox, oy + 3.9 * sc); h.bezierCurveTo(ox - 2.2 * sc, oy + 2.2 * sc, ox - 4.4 * sc, oy + 0.6 * sc, ox - 4.4 * sc, oy - 1.3 * sc); h.bezierCurveTo(ox - 4.4 * sc, oy - 3.4 * sc, ox - 1.5 * sc, oy - 3.8 * sc, ox, oy - 1.8 * sc); h.bezierCurveTo(ox + 1.5 * sc, oy - 3.8 * sc, ox + 4.4 * sc, oy - 3.4 * sc, ox + 4.4 * sc, oy - 1.3 * sc); h.bezierCurveTo(ox + 4.4 * sc, oy + 0.6 * sc, ox + 2.2 * sc, oy + 2.2 * sc, ox, oy + 3.9 * sc); h.closePath(); return h; };
+    x.fillStyle = 'rgba(30,6,4,0.7)'; x.fill(heart(0.55, 0.65, 1)); x.fillStyle = 'rgba(255,190,160,0.55)'; x.fill(heart(-0.45, -0.5, 1)); // embossed: shadow below, light above
+    const hg = x.createLinearGradient(-4, -4, 4, 4); hg.addColorStop(0, '#e86448'); hg.addColorStop(1, '#a8301e'); x.fillStyle = hg; x.fill(heart(0, 0, 1));
+    x.fillStyle = 'rgba(255,220,200,0.55)'; x.beginPath(); x.ellipse(-2.2, -1.8, 1.1, 0.6, -0.6, 0, TAU); x.fill(); // the shine on its lobe
+    for (const [ex2, ey2, er] of [[-6, -10, 0.9], [3, -12.5, 0.7], [8, -9, 0.6], [-1, -15, 0.5]]) { x.fillStyle = 'rgba(255,170,100,0.85)'; x.beginPath(); x.arc(ex2, ey2, er, 0, TAU); x.fill(); x.fillStyle = 'rgba(255,120,60,0.25)'; x.beginPath(); x.arc(ex2, ey2, er * 2.6, 0, TAU); x.fill(); } // sparks lifting off
+    x.restore(); }
 }
 export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare') {
   const key = `3|${fam}|${tier}|${Math.round(size)}`;
