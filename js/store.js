@@ -60,11 +60,11 @@ export function storeHtml(P, test = false) {
 // (6.5.0) today's gift and its Claim button pulse slowly; once claimed, the next day's button is greyed with the time
 // left until it can be claimed beside it. A tap on any day shows what it is (a chest, its odds)
 export const untilTomorrow = (t = new Date()) => { const n = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1); return n - t; };
-export function eventsHtml(P, coinPic, glowPic, picOf) {
+export function eventsHtml(P, coinPic, glowPic, picOf, cashPic) {
   const st = calState(P), W = calWeek(P);
   const days = W.map((r, i) => {
-    const done = i < st.day, now = i === st.day, pic = r.k === 'chest' ? chestPicture(CHESTS[r.v].look, 120, 90) : r.k === 'coin' ? coinPic : r.k === 'glow' ? (r.adv && picOf ? picOf('supply', 'glowAdv') : glowPic) : r.k === 'trap' && picOf ? picOf('trap', r.v) : null;
-    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === 6 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">✓</i>' : ''}</button>`;
+    const done = i < st.day, now = i === st.day, pic = r.k === 'chest' ? chestPicture(CHESTS[r.v].look, 120, 90) : r.k === 'coin' ? coinPic : r.k === 'glow' ? (r.adv && picOf ? picOf('supply', 'glowAdv') : glowPic) : r.k === 'trap' && picOf ? picOf('trap', r.v) : r.k === 'cash' ? cashPic || null : null; // (7.3.0) the painted notes, not a "$"
+    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === 6 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">Claimed</i>' : ''}</button>`;
   }).join('');
   return `<div class="st-plate ev"><button class="st-x" aria-label="Close">×</button><h2>Daily gift</h2><div class="ev-row">${days}</div><div class="ev-foot">${st.ready ? `<button class="ev-claim" data-ev="claim">Claim day ${st.day + 1}</button>` : `<span class="ev-wait">${hrs(untilTomorrow())}</span><button class="ev-claim" disabled>Claim day ${st.day + 1}</button>`}</div></div>`;
 }

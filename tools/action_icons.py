@@ -74,6 +74,21 @@ def point():
     I.save('tut-point.png', 128, outline=False)
 
 
+def compare_arrow():
+    # (7.3.0) the inventory's "this one, then that one" mark between two cards: a small riveted steel tab, a little
+    # uneven, with an arrow in worn bone paint stencilled on it (it was a CSS circle in brass yellow with a typed arrow)
+    I = Icon(); STEEL = (88, 96, 76); RIVET = (124, 130, 110); BONE = (214, 206, 182)
+    tab = [(96, 150), (180, 118), (330, 122), (420, 160), (436, 256), (416, 352), (330, 392), (180, 394), (94, 360), (76, 256)]
+    I.fill(mask(lambda d: d.polygon(spline(tab), fill=255)), STEEL, light=0.3, edge=0.35)
+    for cx, cy in ((128, 186), (128, 326), (384, 186), (384, 326)):
+        I.fill(mask(lambda d, cx=cx, cy=cy: d.polygon(spline([(cx - 15, cy), (cx - 4, cy - 15), (cx + 12, cy - 12), (cx + 15, cy + 4), (cx + 2, cy + 15), (cx - 12, cy + 11)]), fill=255)), RIVET, light=0.5, edge=0.5)
+    # the arrow, stencilled: a shaft and a head, with the stencil's bridges left as gaps, and the paint worn at the edges
+    I.fill(mask(lambda d: d.polygon(spline([(168, 236), (282, 232), (284, 276), (166, 280), (160, 258)]), fill=255)), BONE, light=0.15, edge=0.3, grain=0.16)
+    I.fill(mask(lambda d: d.polygon(spline([(300, 190), (366, 252), (300, 322), (292, 290), (294, 222)], n=6), fill=255)), BONE, light=0.15, edge=0.3, grain=0.16)
+    I.line(lambda d: d.line(spline([(170, 284), (230, 284), (282, 280)], closed=False), fill=255, width=4), (60, 66, 52))  # the shadow under the paint
+    I.save('ip-arrow.png', 128)
+
+
 def sub():
     I = Icon()
     I.fill(mask(lambda d: d.rounded_rectangle((210, 130, 300, 220), 16, fill=255)), (96, 106, 82))

@@ -572,7 +572,9 @@ export class UI {
   showChest(key, finds, coin = false) { this.chest.open(key, finds, coin); } // (6.4.0) finds: [{ q, def }], and whether an old coin came up
   // (6.4.0) the Shop and Events screens (left menu): chests for cash; the daily gift
   toggleStore(force) { const el = $('store'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); } el.hidden = !on; this.storeWire(el); }
-  toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true), (k, id) => pictureOf(k, id, 120, 90, true)); } el.hidden = !on; this.storeWire(el); }
+  toggleEvents(force) { const el = $('events'), on = force === undefined ? el.hidden : force; if (on) { this.closeAll(); el.innerHTML = eventsHtml(this.h.getProfile(), pictureOf('gold', 3, 120, 90, true), pictureOf('supply', 'necklace', 120, 90, true), (k, id) => pictureOf(k, id, 120, 90, true), this.cashPicture()); } el.hidden = !on; this.storeWire(el); }
+  // (7.3.0) the painted bundle of notes (coins.js drawCash), for cash anywhere a picture is wanted
+  cashPicture() { if (!this.cashPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); drawCash(x, 150, 95, 120); this.cashPic = c.toDataURL(); } return this.cashPic; }
   storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
     const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); return; }

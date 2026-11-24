@@ -1,6 +1,6 @@
 # Hatchetfish — Deep Sea Survival
 
-Version 7.2.17 (shown on the home screen and in the pause menu; see `js/version.js`).
+Version 7.2.18 (shown on the home screen and in the pause menu; see `js/version.js`).
 
 A 2D ocean diving and survival horror game that runs in the browser (desktop).
 

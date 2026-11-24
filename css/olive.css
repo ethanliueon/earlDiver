@@ -1903,3 +1903,12 @@ html body #inventory .ip-col.more { padding-bottom: 26px; }
 html body #inventory .ip-col.more::after { content: ''; position: sticky; display: block; bottom: -26px; height: 30px; margin: 0 -12px -26px; pointer-events: none; background: linear-gradient(rgba(24, 27, 20, 0), rgba(24, 27, 20, 0.92)); }
 /* (7.3.0) a trap that is set cannot be used again: its Use reads as off */
 html body #inventory .trap-pop [data-trapuse][disabled] { opacity: 0.45; filter: grayscale(0.6); pointer-events: none; }
+/* (7.3.0, owner) the compare mark between two cards: a painted riveted steel tab with a stencilled arrow
+   (assets/ui/icons/ip-arrow.png, tools/action_icons.py), not a brass-yellow CSS circle with a typed arrow */
+html body #inventory .ip-arrow { width: 40px; height: 40px; border-radius: 0; font-size: 0; color: transparent; box-shadow: none;
+  background: url("../assets/ui/icons/ip-arrow.png") center / contain no-repeat; justify-self: center; }
+/* (7.3.0) the trap panel's keyboard hints ("Space", "Up Down or the wheel, with Shift") never on a phone */
+html.touch #trapset .ts-help, html.touch #trapset #ts-set span { display: none !important; }
+/* (7.3.0) a claimed day: "Claimed" pressed into the plate in small stencil letters, not a typed tick */
+html body .store-panel .ev-tick { font: 600 8px "Barlow Semi Condensed", sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(184, 200, 154, 0.85); right: 6px; top: 5px; }
+html body .store-panel .ev-tick { right: auto; top: 44%; left: 50%; transform: translate(-50%, -50%) rotate(-9deg); padding: 2px 5px; border: 1.5px solid rgba(184, 200, 154, 0.7); border-radius: 2px; font-size: 9px; background: rgba(30, 36, 26, 0.55); }
