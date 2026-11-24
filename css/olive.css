@@ -1925,3 +1925,10 @@ html body #trapset .ts-read { background: none !important; box-shadow: none !imp
 html body #trapset .ts-read canvas { position: static !important; inset: auto !important; width: 150px !important; height: 55px !important; display: block; z-index: auto !important; opacity: 1 !important; pointer-events: none; }
 html body #trapset .ts-read span { color: rgba(214, 204, 178, 0.55) !important; text-shadow: none !important; margin-top: 3px; }
 html body #trapset .ts-info { font: 13px var(--o-text, "Barlow Semi Condensed"), sans-serif !important; color: rgba(214, 204, 178, 0.7) !important; text-align: center; }
+/* (7.3.0, owner) a pop-up's name is centred over it, not set at the top left like a web page's; the close cross stays
+   in the top right corner */
+html body #trapset header { position: relative; }
+/* the name spans the header with room on its left as wide as the cross on its right, so it is centred on the panel */
+html body #trapset header .nameplate:not(#_a):not(#_b) { flex: 1 1 auto !important; padding-left: 56px !important; text-align: center !important; }
+html body #trapset header .nameplate:not(#_a):not(#_b) :is(h2, .shop-sub) { text-align: center !important; }
+html body #trapset #ts-types { justify-content: center; }
