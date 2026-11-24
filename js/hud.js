@@ -392,7 +392,7 @@ export class Hud {
         // drawn round the animal: the eye on this button is the only sign
         if (!hon && g.obsTarget && !e.inSub && !g.tutQuiet) return { key: 'obs', icon: 'eye', on: true, lit: true, inter: true }; // (7.4.0) not in the sub trip: it would pull him off the step
         // (7.3.9, owner) close to his pet, the hand becomes the pet: a press tells it to stay or to follow again
-        if (!hon && g.petC && P.pet && !e.inSub && Math.hypot(g.petC.x - e.x, g.petC.y - e.y) < 2.5 + (g.petC.len || 0)) return { key: 'petstay', icon: 'pet', on: true, lit: true, inter: true };
+        if (!hon && !g.anyTarget && !(g.prompt && /(^|·\s*)(Hold )?[FR]  /.test(g.prompt)) && g.petC && P.pet && !e.inSub && Math.hypot(g.petC.x - e.x, g.petC.y - e.y) < 2.5 + (g.petC.len || 0)) return { key: 'petstay', icon: 'pet', on: true, lit: true, inter: true };
         return { key: hu ? 'u' : 'f', icon: ctxIcon || 'hand', on: hon, lit: hon, why: 'Nothing in reach', inter: true }; })(),
       abil(),
       light(), // (6.0.5) aboard too: there it switches the sub's lights

@@ -2198,7 +2198,7 @@ function update(dt) {
       fHeld += dt;
       if (e.inSub && fHeld > 0.6 && fHeld - dt <= 0.6) interact(null, true);
     }
-    const target = findTarget();
+    const target = findTarget(); g.anyTarget = !!target || !!g.obsTarget || patchNear() >= 0; // (7.4.4) anything in reach: the pet's Stay never takes the button from it
     // (5.5) the observe button (touch): the nearest animal in reach not yet in the journal, and its press
     g.obsTarget = observeTarget();
     // (5.5.3) the sprint button: a tap locks sprinting on (it costs air faster, as ever), another tap or letting go of the
@@ -2207,7 +2207,7 @@ function update(dt) {
     // (5.9.0) the ability: fired from the arc's button (key 'ability'), run each frame
     if (pressed.has('ability')) { pressed.delete('ability'); useAbility(); }
     tickAbility(dt);
-    if (pressed.has('petstay')) { pressed.delete('petstay'); const r = toggleStay(g); if (r) { audio.ready && audio.uiSoft && audio.uiSoft(); say(r === 'stay' ? 'Stay' : 'Follow', 'pet'); saveProfile(profile); } } // (7.3.9) the pet's Stay / Follow, on the action arc
+    if (pressed.has('petstay')) { pressed.delete('petstay'); if (g.anyTarget) { /* (7.4.4) something else claimed the button this frame: that, not the pet */ pressed.add(g.obsTarget && !target ? 'obs' : 'f-tap'); } else { const r = toggleStay(g); if (r) { audio.ready && audio.uiSoft && audio.uiSoft(); say(r === 'stay' ? 'Stay' : 'Follow', 'pet'); saveProfile(profile); } } } // (7.3.9) the pet's Stay / Follow, on the action arc
     if (pressed.has('leavesub')) { pressed.delete('leavesub'); if (e.inSub) { if (!(g.tutAction && g.tutAction.id === 'leavesub' && runTutAction('leavesub'))) leaveSub(); } }
     // (5.7.5) the arc's own jobs aboard: Dive in (over the nearer rail) and Out on deck (from the cabin)
     if (pressed.has('divein')) { pressed.delete('divein'); if (g.aboard && !ui.cabinOpen() && !g.helm) { const A = g.aboard, mid = (DECK_MIN + DECK_MAX) / 2; leaveDeck(A.x >= mid ? 1 : -1); } }
