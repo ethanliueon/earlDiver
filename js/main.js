@@ -41,7 +41,7 @@ import { readSlot, setSlot, getSlot, lastSlot, flushSave, SLOTS, SUB_AIR } from 
 import { rollChestAll } from './chests.js';
 import { setDiverLook } from './earl_draw.js'; // (6.7.0)
 import { isTestStore } from './purchases.js'; // (6.5.9)
-import { SHOP_PETS, calState, calClaimed, calWeek } from './store.js';
+import { SHOP_PETS, calState, calClaimed, calWeek, giftPearls } from './store.js';
 import { hullCap } from './economy.js';
 import { loadBest, TRACKS, tlv, GEAR, lv, statValue, upgradeCost, owns, gear, coinsFor, upgradeCoins, WARES } from './economy.js';
 import { SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, HOSPITAL_SHARE, hospitalCap, replacementPrice, SUBS, rollCrush, crushMean, newProfile, loadProfile, saveProfile, marketTick, priceOf, sell, spend, money } from './economy.js';
@@ -543,13 +543,21 @@ function costOf(kind) {
 // a chest needs room in the locker, or it waits
 function claimGift() {
   const P = profile; if (!P) return false; const st = calState(P); if (!st.ready) return false;
-  const r = calWeek(P)[st.day];
-  if (r.k === 'chest') { if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; } giveItem(P, 'chest_' + r.v); ui.showGains([{ kind: 'item', id: 'chest_' + r.v }], true); }
-  else if (r.k === 'cash') { P.cash = Math.round(((P.cash || 0) + r.v) * 100) / 100; ui.showGains([{ kind: 'cash', n: r.v }], true); } // (6.5.0) a gift's cash floats like the rest
-  else if (r.k === 'glow') { P.spare = P.spare || {}; const gk = r.adv ? 'glowAdv' : 'necklace'; P.spare[gk] = (P.spare[gk] || 0) + r.v; ui.showGains([{ kind: 'supply', id: gk, n: r.v }], true); }
-  else if (r.k === 'trap') { convertOldTraps(P); if ((P.traps[r.v] || 0) >= TRAPS[r.v].max) { P.cash += TRAPS[r.v].price; hud.toast(`You have a ${TRAPS[r.v].name.toLowerCase()} already: ${money(TRAPS[r.v].price, false)} instead`, 'note'); } else { P.traps[r.v] = (P.traps[r.v] || 0) + 1; ui.showGains([{ kind: 'trap', id: r.v }], true); } } // (6.5.1) the first week's fish trap; (7.3.0) one of each: its price if he has it
-  else if (r.k === 'coin') { if (lockerFree(P) <= 0 && (P.gold || 0) % 10 === 0) { hud.toast('Locker full', 'warn'); return false; } P.gold = (P.gold || 0) + r.v; ui.showGains([{ kind: 'coin', n: r.v }], true); }
+  const r = calWeek(P)[st.day], gains = []; // (7.4.12) the gift and its pearls shown together
+  if (r.k === 'chest') { if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; } giveItem(P, 'chest_' + r.v); gains.push({ kind: 'item', id: 'chest_' + r.v }); }
+  else if (r.k === 'cash') { P.cash = Math.round(((P.cash || 0) + r.v) * 100) / 100; gains.push({ kind: 'cash', n: r.v }); } // (6.5.0) a gift's cash floats like the rest
+  else if (r.k === 'glow') { P.spare = P.spare || {}; const gk = r.adv ? 'glowAdv' : 'necklace'; P.spare[gk] = (P.spare[gk] || 0) + r.v; gains.push({ kind: 'supply', id: gk, n: r.v }); }
+  else if (r.k === 'trap') { convertOldTraps(P); if ((P.traps[r.v] || 0) >= TRAPS[r.v].max) { P.cash += TRAPS[r.v].price; hud.toast(`You have a ${TRAPS[r.v].name.toLowerCase()} already: ${money(TRAPS[r.v].price, false)} instead`, 'note'); } else { P.traps[r.v] = (P.traps[r.v] || 0) + 1; gains.push({ kind: 'trap', id: r.v }); } } // (6.5.1) the first week's fish trap; (7.3.0) one of each: its price if he has it
+  else if (r.k === 'coin') { if (lockerFree(P) <= 0 && (P.gold || 0) % 10 === 0) { hud.toast('Locker full', 'warn'); return false; } P.gold = (P.gold || 0) + r.v; gains.push({ kind: 'coin', n: r.v }); }
+  { const n = giftPearls(st.day); P.pearls = (P.pearls || 0) + n; gains.push({ kind: 'pearl', n }); ui.showGains(gains, true); } // (7.4.12, owner) the day's pearls
   calClaimed(P); saveProfile(P); audio.ready && audio.sale(); return true;
+}
+// (7.4.12, owner) a legendary caught pays 10 pearls, said beside it with the catch
+const LEGEND_PEARLS = 10;
+function legendPearls(sp, x, y) {
+  if (!sp || !(LEGENDARY.has(sp.id) || (rarityOf(sp) || {}).id === 'legendary')) return;
+  profile.pearls = (profile.pearls || 0) + LEGEND_PEARLS; saveProfile(profile);
+  (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: x ?? g.earl.x, y: (y ?? g.earl.y) - 0.6, text: `+${LEGEND_PEARLS} pearls`, rar: null, nameCol: '#e4dcc6', t: 0 });
 }
 function oldBuy(what) { // (6.1.1) paid in gold coins only; the thing is replaced at once by another
   const P = profile, st = oldStock(P), it = st.items[+what.slice(5)];
@@ -2465,6 +2473,7 @@ function update(dt) {
         if (g.toolTip && g.bubbles) for (let i = 0; i < 7; i++) g.bubbles.push({ x: g.toolTip.x + (Math.random() - 0.5) * 0.5, y: g.toolTip.y + (Math.random() - 0.5) * 0.4, r: 0.02 + Math.random() * 0.06, w: Math.random() * 6, t: -Math.random() * 0.2 }); // (5.8.0) a catch stirs up a few more bubbles
         const sp = ev.sp, v = ev.spec.variant;
         questEvent(profile, 'catch', { id: sp.id, depth: ev.spec.from || e.y, alive: ev.spec.cond > 0.05 });
+        legendPearls(sp, ev.x, ev.y);
         // (4.3.1) the Log's 'observe' step, and he netted the fish before pressing F: a fish in the net has been
         // looked at closely enough. It goes in the journal and the step is done (the net step then has a new fish)
         if ((QUEST_MAIN[questsOf(profile).main] || {}).id === 'firstfish' && !g.journal.has(sp.id)) {
@@ -2519,6 +2528,7 @@ function update(dt) {
       if (!haul.length) hud.toast('The net comes in empty');
       else {
         hud.toast(`Net in · ${haul.length} animal${haul.length > 1 ? 's' : ''}${netRes.lost ? ` (${netRes.lost} slipped out)` : ''}`, 'big');
+        for (const s of haul) legendPearls(SPECIES_BY_ID[s.id], g.sub && g.sub.x, g.sub && g.sub.y); // (7.4.12)
         hud.hint('T: the tank room. Drag them into the tank or the chambers before they suffer');
         for (const s of haul) { const sp = SPECIES_BY_ID[s.id]; if (!g.journal.has(sp.id)) { g.journal.set(sp.id, { depth: Math.round(s.from), time: g.survival, at: Date.now() }); ui.journalDirty = true; } if (!(profile.caught || []).includes(sp.id)) { profile.caught = [...(profile.caught || []), sp.id]; g.fauna.caught.add(sp.id); } }
         profile.journal = [...g.journal.entries()]; saveProfile(profile);

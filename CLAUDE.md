@@ -215,8 +215,10 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   without a go.
 - **Don't break anything:** after a change, the full touch tutorial (deck to shop), new game, and title screen at both
   phone sizes must still pass. Phones load the game in a turned frame (index.html's shell); tests use `?noshell`.
-- **Old saves don't matter until release.** Nobody plays the game yet; until it ships on the App Store, write no
-  migration code for old saves and don't keep anything just for them.
+- **Never care about saves unless the owner asks (7.4.12, owner).** This is not a packaged game: the owner is the only
+  player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already
+  have" handling, no compatibility for old save fields, and don't spend time on it or mention it in plans. A change
+  that breaks an old save is fine; a new game is the answer.
 - **Never commit keys** (the Freesound key is an environment secret). There is no developer cheat in the shipped game (the X key was removed in 5.10.10); since 6.9.0 the shop has a **Test** tab (cash, chests, abilities, any item, resets) that appears only in the web build (purchases.js `isTestStore()`), never in the App Store build. Tests set money and gear through `window.__earl`.
 - In code comments, say what a thing does and why, tagged with the version: `// (5.9.7) ...`. Inline comments in
   the middle of a line use `/* */`, never `//`.

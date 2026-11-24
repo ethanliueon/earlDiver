@@ -51,9 +51,10 @@ export const ALL_ABILITIES = Object.entries(ABILITY_DEFS).flatMap(([fam, T]) => 
 // ---------- the running state (on g.abil) ----------
 // (5.16.0) P.abilReadyAt: the real time (ms) at which it can be used again
 export function abilityState(g) { return g.abil || (g.abil = { activeT: 0, maxT: 0, def: null, charges: null, fx: 0 }); }
-// (7.4.9, owner) skipping a cooldown with pearls: 1 a 5 min of what is left up to 30 min, 1 a 15 min from there to 3 h, 1 an
-// hour beyond; each part rounded up, never less than 1 (5 min: 1; 30 min: 6; 1 h: 8; 3 h: 16; 4 h: 17)
-export function skipCost(sec) { const m = Math.max(0, sec) / 60; return Math.max(1, Math.ceil(Math.min(m, 30) / 5) + Math.ceil(Math.max(0, Math.min(m, 180) - 30) / 15) + Math.ceil(Math.max(0, m - 180) / 60)); }
+// (7.4.12, owner) skipping a cooldown with pearls: a flat 1 pearl for every 5 minutes left, rounded up, never less than 1
+// (5 min: 1; 30 min: 6; 1 h: 12; 3 h: 36). The same rate however long the wait (7.4.9's cheaper long waits made escaping
+// the thing something bought)
+export function skipCost(sec) { return Math.max(1, Math.ceil(Math.max(0, sec) / 300)); }
 export function cooldownLeft(P) { return Math.max(0, ((P.abilReadyAt || 0) - Date.now()) / 1000); }
 // can it be used now? returns null if so, else why not
 export function whyNot(g, P, A) {

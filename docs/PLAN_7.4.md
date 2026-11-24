@@ -1178,3 +1178,57 @@ Agreed with the owner: usual depths fitted into this sea (a band below the 5,100
 - **Chests (with their contents):** crate $1,400, case $3,000, crate3 $4,700, tea $8,000, case3 $9,000, footlocker $20,000, salvage $36,000, strongbox $41,000, expedition $53,000, Siren's casket $179,000, Leviathan $256,000, Poseidon $682,000.
 - **Board quests:** 5-10 % lower in the middle tiers. The daily gift's first week: $250 and $1,000 (were $1,000 and $5,000).
 - **Pearls:** the premium currency. A new diver starts with 20. A revive costs 50 pearls (no ad, no $0.99). Shop pets cost 80-300 pearls. No pay-to-win for now.
+
+# 7.4.12 onward: pearls, pets, mythical scrolls (owner, agreed)
+
+Build order: 7.4.12 pearls, 7.4.13 mobile only, 7.4.14 pets, 7.4.15 mythical scrolls. Save compatibility is never a
+concern (see CLAUDE.md).
+
+## Pearls (7.4.12, built)
+
+- **Daily gift:** 2 pearls every day, and 5 more on the seventh day with the weekly chest (19 a week).
+- **Legendary catches:** 10 pearls for each legendary caught (by hand or in the sub's net), said beside the catch.
+- **Cooldown skip:** a flat 1 pearl for every 5 minutes left, rounded up (3 h = 36 pearls).
+- **Not built, for later:** events that give pearls (none exist yet); pearl packs at $0.99 for 100, $2.99 for 500 and
+  $14.99 for a large pack. No rare pearl finds in chests.
+
+## Mobile only (7.4.13)
+
+There is no web game. The web build's code goes; the shop's Test tab never ships, and shows only behind a
+development switch that is not in the shipped game.
+
+## Pets (7.4.14)
+
+- **Pets come only from pearls.** Catching an animal never makes it a pet. Pets are not items: never in the bag, the
+  locker or the aquarium, and never sold.
+- **Discovery:** a pet shows in the shop once that species has been caught; until then a dark outline, "Catch one to
+  unlock".
+- **The pet slot on the character:** empty at first. With one or more pets owned and none out, it carries a "!" until
+  one is out. Tapped, it lists the pets owned (picture, tier, pearl price, a check on the one out); tap one to take it
+  out, the one out to send it home.
+- **Tiers:** 80 pearls ordinary animals (plain); 150 legendaries (a soft glow and slow motes); 500 the giants (a
+  stronger glow, more particles). About 30 pets: Opah, Crestfish, Knifenose Chimaera, Snipe Eel, Banded Glow Eel,
+  Frilled Shark, Monkfish, Hairy Angler, Firefly Squid, Goblin Shark, Bigfin Squid, Pacific Viperfish, Black
+  Dragonfish, Strawberry Squid, Glass Squid; the Anglerfish, the Fangtooth, the Viperfish, the Tripod, the Isopod, the
+  Vampire Squid, the Barreleye, the Gulper Eel, the Coelacanth, the Dumbo, the Oarfish; Giant Squid, Colossal Squid,
+  Abyssal Sleeper Shark, Megamouth Shark.
+- **Size:** every pet starts at its real size in the game, giants too.
+- **Feeding and growth (structure first, tuned later):** once a day a pet can be fed one animal from the catch (it is
+  used up). Points by the animal's rarity, a legendary 100. Levels at 10, 50, 100 and 500 points; each level makes the
+  pet 20 % larger (about twice its size at the top). The size can be set back to any smaller level without losing the
+  level. Pearls top up points at 1 pearl for 10 points.
+- No made-up (not in the game) pets yet; seasonal pets only in their season, later.
+
+## Mythical scrolls (7.4.15)
+
+- A rarity above legendary, in dark oxblood with an ember glow (not the warning red). Only from combining three
+  legendaries of the same scroll; never in chests or the shop. Worth three legendaries, sells for about a third.
+- **Every mythical, for 10 s after it fires:** at least Flare+ light (45 m), at least Sprint+ speed (x2, the sub too),
+  +5 % air a second up to +50 % and no air lost. Usable any time, no conditions. Cooldowns at least 20 minutes.
+- Maelstrom (Riptide): x3.5 speed for 15 s, a lit wake, 20 min. Pharos (Lighthouse): 90 s, brighter and wider, beams,
+  30 min. Whalesong (Fathom): the deep groan of the hull cracking, lower and longer, light washing across the screen, a
+  radar sweep over twice the area for 60 s, exotics in purple and legendaries brighter in amber, 60 min. Leviathan's
+  Maw (Apex): 12 s, reach x3, can't miss, up to 3 fish a swing, 40 min. Rift (Undertow): two dashes, 20 min. The Last
+  Tide (Tidewarden): any time; in red water the freeze-and-wave; if marked, the mark is removed; 3 h.
+- The scroll: the legendary's shape in oxblood, ember sparks, a slow shine, a wax seal; a red version of the find
+  effect. Scrolls only: no mythical gear.

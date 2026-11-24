@@ -1335,6 +1335,9 @@ html body .store-panel .ev-day.big img { height: 64px; }
 html body .store-panel .ev-cash { font: 700 26px 'Barlow Semi Condensed', sans-serif; font-style: normal; color: #b8c89a; height: 48px; line-height: 48px; }
 html body .store-panel .ev-n { font: 700 10px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: #a8a08a; }
 html body .store-panel .ev-g { font-size: 12px; color: #e6dec6; line-height: 1.1; }
+/* (7.4.12) the day's pearls under its gift: the pearl and its count, small */
+html body .store-panel .ev-p { display: inline-flex; align-items: center; gap: 3px; font: 500 12px var(--o-num); color: #d8d0b8; }
+html body .store-panel .ev-p img { width: 13px !important; height: 13px !important; margin: 0 !important; }
 html body .store-panel .ev-tick { position: absolute; right: 5px; top: 3px; font-style: normal; color: #b8c89a; }
 html body .store-panel .ev-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
 html body .store-panel .ev-wait { color: #a8a08a; padding: 10px 6px; }

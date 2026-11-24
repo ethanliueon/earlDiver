@@ -749,6 +749,7 @@ export class UI {
       if (e.kind === 'coin' && !this.coinGainPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); x.translate(95, 35); drawGoldCoins(x, 110, 110, 1); this.coinGainPic = c.toDataURL(); } // (6.5.0) the coin drawn small in the same 5:3 frame as gear
       if (e.kind === 'coin') return { name: 'Old coin', r: 'legendary', pic: this.coinGainPic, line: 'Hand-struck and worn nearly smooth. The Old One trades for them.' };
       if (e.kind === 'cash') { if (!this.cashPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); drawCash(x, 150, 95, 120); this.cashPic = c.toDataURL(); } return { name: money(e.n || 0, false), r: 'cash', pic: this.cashPic, line: '', noN: true }; }
+      if (e.kind === 'pearl') return { name: `${e.n || 0} pearl${e.n === 1 ? '' : 's'}`, r: 'cash', pic: 'assets/ui/icons/pearl.png', line: 'The premium currency: pets, cooldowns skipped, a second chance.', noN: true }; // (7.4.12)
       return null;
     }
   }

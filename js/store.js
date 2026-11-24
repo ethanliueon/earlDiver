@@ -29,6 +29,8 @@ export function calWeek(P) {
   const L = playerLevel(P), t = TIERS.find((q) => L <= q[0]) || TIERS[3], [, ch, cash, adv, wk] = t;
   return [{ k: 'chest', v: ch }, { k: 'cash', v: cash[0] }, { k: 'glow', v: 3, adv }, { k: 'coin', v: 1 }, { k: 'chest', v: ch }, { k: 'cash', v: cash[1] }, { k: 'chest', v: wk }];
 }
+// (7.4.12, owner) pearls with every daily gift: 2 a day, and 5 more on the seventh day with the weekly chest
+export const giftPearls = (day) => (day === 6 ? 7 : 2);
 export const CAL = WEEK1; // (the old name, for the first week)
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 export function calState(P) { if (!P.cal) P.cal = { day: 0, last: null }; return { day: P.cal.day, ready: P.cal.last !== today() }; }
@@ -78,7 +80,7 @@ export function eventsHtml(P, coinPic, glowPic, picOf, cashPic) {
   const st = calState(P), W = calWeek(P);
   const days = W.map((r, i) => {
     const done = i < st.day, now = i === st.day, pic = r.k === 'chest' ? chestPicture(CHESTS[r.v].look, 120, 90) : r.k === 'coin' ? coinPic : r.k === 'glow' ? (r.adv && picOf ? picOf('supply', 'glowAdv') : glowPic) : r.k === 'trap' && picOf ? picOf('trap', r.v) : r.k === 'cash' ? cashPic || null : null; // (7.3.0) the painted notes, not a "$"
-    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === 6 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span>${done ? '<i class="ev-tick">✓</i>' : ''}</button>`;
+    return `<button class="ev-day${done ? ' done' : ''}${now && st.ready ? ' now' : ''}${now && !st.ready ? ' next' : ''}${i === 6 ? ' big' : ''}" data-evday="${i}"${r.k === 'chest' ? ` data-rates="${r.v}"` : ''}><span class="ev-n">Day ${i + 1}</span>${pic ? `<img src="${pic}" alt="">` : '<i class="ev-cash">$</i>'}<span class="ev-g">${giftName(r)}</span><span class="ev-p"><img src="assets/ui/icons/pearl.png" alt="">${giftPearls(i)}</span>${done ? '<i class="ev-tick">✓</i>' : ''}</button>`;
   }).join('');
   return `<div class="st-plate ev"><button class="st-x" aria-label="Close">×</button><h2>Daily gift</h2><div class="ev-row">${days}</div><div class="ev-foot">${st.ready ? `<button class="ev-claim" data-ev="claim">Claim day ${st.day + 1}</button>` : `<span class="ev-wait">${hrs(untilTomorrow())}</span><button class="ev-claim" disabled>Claim day ${st.day + 1}</button>`}</div></div>`;
 }
