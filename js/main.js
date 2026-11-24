@@ -2212,8 +2212,8 @@ function tickAbility(dt) {
   // (7.4.15) a mythical's 10 s: light, speed and air (in the sub, the cabin's air)
   // (7.4.19) Dauntless: the suit and the hull rated deeper while it runs; the field's strength is how much of the extra
   // depth he is using (0 at the old rating, 1 at the new)
-  { const pm = on && A.press ? A.press : 1, pb = on && A.beyond ? A.beyond : 0; e.pressMul = pm; e.pressBeyond = pb; g.sub.pressMul = pm; g.sub.pressBeyond = pb;
-    if (pm > 1) { const base = e.inSub ? (g.sub.ratedV || 300) : (e.pressBase || 300), d = e.inSub ? g.sub.y : e.y; g.pressK = clamp((d - base) / (base * (pm - 1)), 0, 1); }
+  { const pm = on && A.press ? A.press : 1, pb = on && A.beyond ? A.beyond : 0; e.pressMul = pm; e.pressBeyond = pb; g.sub.pressMul = 1; g.sub.pressBeyond = 0; // (7.4.22) the diver's suit only
+    if (pm > 1) { const base = e.pressBase || 300, d = e.y; g.pressK = clamp((d - base) / (base * (pm - 1)), 0, 1); }
     if (pm > 1 && !g.pressFx) { g.pressFx = { t: 0, end: 0, tier: A.tier, def: A }; if (audio.ready) { audio.thud && audio.thud(0.6); audio.creak && audio.creak(0.5); } } // it opens: a deep thud, the hull's creak
     if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1) { F.tier = A.tier; F.def = A; F.left = S.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
   if (g.mythT > 0) { g.mythT = Math.max(0, g.mythT - dt); e.abilSpeed = Math.max(e.abilSpeed, MYTH.speed); e.abilNoAir = true;
@@ -2458,7 +2458,7 @@ function update(dt) {
       if (e.inSub && g.homeRun) { g.homeRun = false; ap.cancel(); hud.toast('Autopilot off'); }
       else if (e.inSub && g.sub.docked) hud.toast('Already at the boat');
       else if (e.inSub) { g.homeRun = true; ap.sendHome(g); hud.toast('Autopilot: heading home'); hud.hint('It steers itself to the boat using less air. Tap the autopilot button to take the helm back'); audio.ready && audio.sonar(0.05); }
-      else if (g.sub.imploded) hud.toast('The submersible is gone', 'warn');
+      else if (g.sub.imploded) hud.toast('The sub is gone: come back to the surface for her', 'warn'); // (7.4.22)
       else if (ap.state === 'coming') { ap.cancel(); g.sub.vx *= 0.5; hud.toast('Sub stopped'); }
       else { ap.call(g); hud.toast(`Calling the sub · ${Math.round(dist(e.x, e.y, g.sub.x, g.sub.y))} m`); audio.ready && audio.sonar(0.05); }
     }
@@ -2776,21 +2776,25 @@ function update(dt) {
     const res = g.ashore ? null : updateEarl(g, dt, mv); // (7.4.17) on the island he walks (placeAshore)
     if (g.aboard) placeOnDeck(dt);
     if (g.ashore) placeAshore();
+    // (7.4.22, owner) a sub lost while he lives: back at the surface, she is in the Margaret's cradle again
+    if (g.sub.imploded && !e.inSub && !g.kill && !g.imploded && (g.implodeT || 0) > 6 && (e.y < 1 || g.aboard || g.ashore)) { const sb = g.sub; sb.imploded = false; sb.failing = null; sb.hull = 1; sb.docked = true; sb.o2 = sb.o2Max; sb.crushR = null; profile.subLost = false; profile.hull = 1; saveProfile(profile); say('The sub is back in its cradle', 'sub'); }
     zoneHazards(dt);
     g.aim = null;
-    if (e.inSub && !g.sub.imploded && g.mode === 'play' && !g.frozen) crushDepth(dt);
+    if (!g.sub.imploded && !g.sub.docked && g.mode === 'play' && !g.frozen) crushDepth(dt); // (7.4.22, owner) her hull is at risk whether he is in her or not
     if (res === 'implode' || g.implodeNow) {
       g.implodeNow = false;
-      g.sub.imploded = true; g.imploded = true; g.implodeDepth = g.sub.y; g.implodeT = 0; g.sub.failing = null;
-      g.fx.flash = 1; g.fx.shake = 3.2;
+      const aboardSub = e.inSub, far = aboardSub ? 0 : Math.hypot(g.sub.x - e.x, g.sub.y - e.y), near = aboardSub ? 1 : Math.max(0, 1 - far / 120);
+      g.sub.imploded = true; if (aboardSub) g.imploded = true; g.implodeDepth = g.sub.y; g.implodeT = 0; g.sub.failing = null; ap.cancel && ap.cancel(); g.homeRun = false;
+      g.fx.flash = Math.max(g.fx.flash || 0, near); g.fx.shake = Math.max(g.fx.shake || 0, 3.2 * near);
       for (let i = 0; i < 26; i++) {
         const a = Math.random() * Math.PI * 2, sp = 3 + Math.random() * 9;
         g.debris.push({ x: g.sub.x + (Math.random() - 0.5) * 6, y: g.sub.y + (Math.random() - 0.5) * 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 6, size: 0.2 + Math.random() * 1.1 });
       }
       for (let i = 0; i < 120; i++) g.bubbles.push({ x: g.sub.x + (Math.random() - 0.5) * 8, y: g.sub.y + (Math.random() - 0.5) * 4, r: 0.05 + Math.random() * 0.25, w: Math.random() * 6, t: -Math.random() * 0.5 });
-      audio.ready && audio.implosion();
-      // he was inside: there is nothing to be done
-      die(`Crushed at ${Math.round(g.implodeDepth)} m when the submersible imploded`, 'implode');
+      // he was inside: there is nothing to be done. (7.4.22) Not inside: she is lost, and he goes on without her; heard
+      // (a dull boom through the water) wherever he is, felt only if he was near
+      if (aboardSub) { audio.ready && audio.implosion(); die(`Crushed at ${Math.round(g.implodeDepth)} m when the submersible imploded`, 'implode'); }
+      else { audio.ready && (near > 0.2 ? audio.implosion() : audio.thud && audio.thud(0.7)); g.subTank = []; hud.toast(`The submersible imploded at ${Math.round(g.implodeDepth)} m`, 'warn'); say('The sub is gone. Back at the surface, the Margaret has her again', 'earl'); }
     }
     // out of air: not instant death - about 15 s of air hunger, blacking out, before it is over.
     // Reaching the surface (or the sub's air) in time brings Earl back, gasping.

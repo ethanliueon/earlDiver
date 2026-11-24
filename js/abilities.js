@@ -44,10 +44,10 @@ export const ABILITY_DEFS = {
   // (7.4.19, owner) Dauntless: for its time the suit (or the hull) is rated deeper by its multiple, and what pressure
   // does past the old rating is that many times less. A force field round him shows how much of it he is using
   dauntless: {
-    rare: { name: 'Dauntless', dur: 20, cd: 1800, press: 1.5, line: 'For 20 s your suit, or the sub, takes half again its rated depth, and pressure costs you a third less below it.' },
-    exotic: { name: 'Dauntless+', dur: 20, cd: 3600, press: 2, light: 1.6, line: 'For 20 s your suit, or the sub, takes twice its rated depth, pressure costs you half as much below it, and light 45 m round you.' },
-    legendary: { name: 'Bathysphere', dur: 30, cd: 3600, press: 2.5, beyond: 5, light: 1.6, line: 'For 30 s your suit, or the sub, takes two and a half times its rated depth, with light 45 m round you. Deeper even than that, your air goes 5 times slower than the pressure would take it.' },
-    mythical: { name: 'Hadal Heart', dur: 45, cd: 3600, press: 3, beyond: 10, light: 1.6, line: 'For 45 s your suit, or the sub, takes three times its rated depth. Deeper even than that, your air goes 10 times slower than the pressure would take it.' },
+    rare: { name: 'Dauntless', dur: 20, cd: 1800, press: 1.5, line: 'For 20 s your suit takes half again its rated depth, and pressure costs you a third less below it.' },
+    exotic: { name: 'Dauntless+', dur: 20, cd: 3600, press: 2, light: 1.6, line: 'For 20 s your suit takes twice its rated depth, pressure costs you half as much below it, and light 45 m round you.' },
+    legendary: { name: 'Bathysphere', dur: 30, cd: 3600, press: 2.5, beyond: 5, light: 1.6, line: 'For 30 s your suit takes two and a half times its rated depth, with light 45 m round you. Deeper even than that, your air goes 5 times slower than the pressure would take it.' },
+    mythical: { name: 'Hadal Heart', dur: 45, cd: 3600, press: 3, beyond: 10, light: 1.6, line: 'For 45 s your suit takes three times its rated depth. Deeper even than that, your air goes 10 times slower than the pressure would take it.' },
   },
   tidewarden: {
     legendary: { name: 'Tidewarden', dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
@@ -82,6 +82,7 @@ export function whyNot(g, P, A) {
   if (S.activeT > 0 && !A.charges) return 'Already running';
   if (g.aboard && !A.speed && A.tier !== 'mythical') return 'In the water';
   if (A.sub && !e.inSub) return 'From inside the sub';
+  if (A.press && e.inSub) return 'Only in the water'; // (7.4.22, owner) Dauntless is the diver's alone
   if (A.tide && g.kill) return 'Too late'; // (6.0.0) never in its jaws
   if (A.tide && !A.any && !((g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk')))) return 'Only when the water turns red'; // (6.0.0) once its red reaches him
   const cd = cooldownLeft(P); if (cd > 0 && !(A.charges && S.charges > 0)) return `Ready in ${fmtLeft(cd)}`;
