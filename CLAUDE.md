@@ -203,7 +203,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   suit is rated deeper by its multiple and pressure's extra air cost is that many times less: Dauntless
   20 s, 30 min, x1.5; Dauntless+ 20 s, 1 h, x2, Flare+ light; Bathysphere 30 s, 1 h, x2.5, light, and past its limit air
   goes 5 times slower; Hadal Heart 45 s, 1 h, x3, past its limit 10 times slower. A force field of pressed water round
-  him or the sub (render.js, g.pressFx): one pale water colour at every tier, bigger and stronger by tier and by how much
+  him (render.js, g.pressFx): one twilight blue at every tier (7.4.23: never white; motes held in it, swirling), bigger and stronger by tier and by how much
   of the extra depth is used (7.4.22: radius 2.2, 3.0, 3.8 and 4.6 m, closing in as the limit nears, shaking, its rim
   warping and cracking, the pressure faster and the dark outside closing in; 7.4.21: radius about 2.2 m, 3.1 m, 4.6 m, and Hadal Heart nearly the whole screen; the water
   outside darkened and squeezed, harder the more of the limit is used; the bending only in a band inside the rim, so he
