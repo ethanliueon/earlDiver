@@ -98,7 +98,12 @@ export function earnsOf(d) {
   const k = d.cond >= 0.7 ? 1 : d.cond >= 0.3 ? 0.5 : 0.25;
   return liveValue(sp, d.len || sp.len) * variantMult(d.variant) * lifeMult(d) * 0.02 * k;
 }
-export function dailyIncome(P) { return Math.round(Object.values(aquariumOf(P).display).reduce((a, d) => a + earnsOf(d), 0) * 100) / 100; }
+// (7.3.0, owner) the gallery's takings have a ceiling: with legends worth up to $435,000, one on show paid about
+// $8,700 a gallery day (ten minutes), more than diving itself. At most $1,500 a day: a side income, a third or so of
+// what a deep diver earns
+export const AQUA_CAP = 1500;
+export const dailyIncomeUncapped = (P) => Object.values(aquariumOf(P).display).reduce((a, d) => a + earnsOf(d), 0);
+export function dailyIncome(P) { return Math.round(Math.min(AQUA_CAP, dailyIncomeUncapped(P)) * 100) / 100; }
 export function visitors(P) {
   const list = Object.values(aquariumOf(P).display).filter((d) => d.cond > 0.05);
   return list.length ? Math.round(6 + list.length * 4 + list.filter((d) => d.famous).length * 15 + list.filter((d) => d.variant).length * 6) : 0;

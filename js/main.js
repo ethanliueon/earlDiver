@@ -539,7 +539,7 @@ function claimGift() {
   if (r.k === 'chest') { if (lockerFree(P) <= 0) { hud.toast('Locker full', 'warn'); return false; } giveItem(P, 'chest_' + r.v); ui.showGains([{ kind: 'item', id: 'chest_' + r.v }], true); }
   else if (r.k === 'cash') { P.cash = Math.round(((P.cash || 0) + r.v) * 100) / 100; ui.showGains([{ kind: 'cash', n: r.v }], true); } // (6.5.0) a gift's cash floats like the rest
   else if (r.k === 'glow') { P.spare = P.spare || {}; const gk = r.adv ? 'glowAdv' : 'necklace'; P.spare[gk] = (P.spare[gk] || 0) + r.v; ui.showGains([{ kind: 'supply', id: gk, n: r.v }], true); }
-  else if (r.k === 'trap') { convertOldTraps(P); P.traps[r.v] = (P.traps[r.v] || 0) + 1; ui.showGains([{ kind: 'trap', id: r.v }], true); } // (6.5.1) the first week's fish trap
+  else if (r.k === 'trap') { convertOldTraps(P); if ((P.traps[r.v] || 0) >= TRAPS[r.v].max) { P.cash += TRAPS[r.v].price; hud.toast(`You have a ${TRAPS[r.v].name.toLowerCase()} already: ${money(TRAPS[r.v].price, false)} instead`, 'note'); } else { P.traps[r.v] = (P.traps[r.v] || 0) + 1; ui.showGains([{ kind: 'trap', id: r.v }], true); } } // (6.5.1) the first week's fish trap; (7.3.0) one of each: its price if he has it
   else if (r.k === 'coin') { if (lockerFree(P) <= 0 && (P.gold || 0) % 10 === 0) { hud.toast('Locker full', 'warn'); return false; } P.gold = (P.gold || 0) + r.v; ui.showGains([{ kind: 'coin', n: r.v }], true); }
   calClaimed(P); saveProfile(P); audio.ready && audio.sale(); return true;
 }

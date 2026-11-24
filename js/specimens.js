@@ -187,10 +187,22 @@ export function rarityPrice(sp) {
     const lo = lerpN(10, 150, d), hi = lerpN(80, 500, d);
     p = lerpN(lo, hi, lerpN(0.5, 0.3, d) * size + lerpN(0.5, 0.7, d) * R.pos); // (in the deep, a small one is no worse than a big one)
   }
+  // (7.3.0, owner) the deeper an animal lives, the more it pays, on a logarithmic curve of the middle of the depths it
+  // usually keeps to (fauna.js usualDepth): nothing changes down to 450 m, then x1.9 at 1,300 m, x2.9 at 3,300 m. A
+  // legend is $150,000 times the same (the coelacanth of the shallows $150,000, the tripod of the abyss about $435,000),
+  // so the cheapest legend is still several times the dearest exotic
+  { const mid = midDepth(sp), k = depthCurve(mid); p = R.id === 'legendary' ? 150000 * k : p * k; }
   p = p >= 100 ? Math.round(p / 5) * 5 : Math.round(p * 100) / 100;
   PRICE_CACHE.set(sp.id, p);
   return p;
 }
+// (7.3.0) the depth curve and where an animal lives (handed over by fauna.js, which works out its usual depths; before
+// that, the middle of its recorded band)
+export const depthCurve = (mid) => 1 + 0.9 * Math.log(1 + Math.max(0, mid - 450) / 400);
+let usualOf = null;
+export function useUsualDepth(f) { usualOf = f; PRICE_CACHE.clear(); }
+const midDepth = (sp) => { const r = usualOf ? usualOf(sp) : [sp.dmin, Math.min(sp.dmax, Math.max(sp.dmin * 4, 1500))]; return (r[0] + r[1]) / 2; };
+export const depthMultOf = (sp) => depthCurve(midDepth(sp)); // (7.3.0) for photographs, which do not take it
 const RAR_CACHE = new Map();
 // { tier index, rarity entry, position 0..1 within the tier, hidden }. Animals that can't be captured
 // (tag-only, apart from the legendaries) have a tier only for how often they turn up: hidden, never shown.
@@ -235,7 +247,7 @@ export function conditionName(c) {
 export const isDead = (s) => s.cond <= 0.05;
 // (claude-polish) the deep pays: anything brought up from below 1,500 m is worth more the deeper it was caught,
 // half as much again at 2,500 m, twice at 3,500 m, up to 2.4 times from 4,300 m down (legendaries included)
-export const deepPremium = (y) => 1 + Math.min(1.4, Math.max(0, ((y || 0) - 1500) / 2000));
+export const deepPremium = (y) => 1; // (7.3.0) retired: the price now follows where an animal lives (depthCurve), and both would count the depth twice
 export function specimenValue(s) {
   const sp = SPECIES_BY_ID[s.id], dk = deepPremium(s.from);
   if (isDead(s)) return liveValue(sp, s.len) * 0.5 * dk;
@@ -272,12 +284,15 @@ export function pressureTolerance(sp, home = 0) {
 // place would pick from by weight; the weights are scaled per group so the groups take those shares (a group with
 // nothing in it gives its share back to the rest)
 export const SHARE = { exotic: 0.03, legendary: 0.0005 };
-export function rarityShare(list) {
+// orNone: where nothing ordinary lives, the share that is not rare is "nothing comes" (a [null, w] entry) instead of
+// going to the rare ones (the deep fill at 4,500 m held only two exotics, and so met nothing else)
+export function rarityShare(list, orNone = false) {
   const grp = (sp) => { const r = rarityOf(sp); return r.id === 'undocumented' || r.i === 3 ? 'exotic' : r.i === 4 ? 'legendary' : 'rest'; };
   const tot = { exotic: 0, legendary: 0, rest: 0 }, gs = list.map(([sp, w]) => { const k = grp(sp); tot[k] += w; return k; });
   const all = tot.exotic + tot.legendary + tot.rest; if (all <= 0) return list;
   const want = { exotic: tot.exotic > 0 ? SHARE.exotic : 0, legendary: tot.legendary > 0 ? SHARE.legendary : 0 };
-  want.rest = tot.rest > 0 ? 1 - want.exotic - want.legendary : 0;
+  want.rest = tot.rest > 0 || orNone ? 1 - want.exotic - want.legendary : 0;
+  if (tot.rest <= 0 && orNone) return list.map(([sp, w], i) => { const k = gs[i]; return [sp, tot[k] > 0 ? w / tot[k] * want[k] : 0]; }).concat([[null, want.rest]]);
   const sum = want.exotic + want.legendary + want.rest; // (no common at all: the rare ones share it all)
   return list.map(([sp, w], i) => { const k = gs[i]; return [sp, tot[k] > 0 ? w / tot[k] * (want[k] / sum) : 0]; });
 }

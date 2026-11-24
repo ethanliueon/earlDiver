@@ -457,6 +457,15 @@ for (const it of Object.values(ITEMS)) {
     else if (it.bad in RE) it.bad = RE[it.bad];
   } }
 
+// (7.3.0, owner: the economy remaster) exotic and legendary things priced by the time it takes to earn them at the
+// depths where they are wanted (docs/PLAN_7.4.md): exotics about one to two hours of a research submersible's income,
+// legendaries five to nine hours of the deepest. Each keeps its place in its rarity (log scale); common to rare stay
+// as they were (owner). Scrolls too. Selling pays a third of the new price
+{ const REMAP = { exotic: [[8000, 30000], [25000, 60000]], legendary: [[54000, 90000], [100000, 180000]] };
+  const nice = (p) => (p < 10000 ? Math.round(p / 100) * 100 : Math.round(p / 500) * 500);
+  for (const it of Object.values(ITEMS)) { const R = REMAP[it.rarity]; if (!R || !(it.price > 0)) continue;
+    const [[a, b], [c, d]] = R, t = Math.min(1, Math.max(0, Math.log(it.price / a) / Math.log(b / a)));
+    it.price = nice(c * Math.pow(d / c, t)); } }
 // (7.3.0) the words last of all (item_words.js): a hand-written card line in place of figures, and a description. A
 // chest item or a set piece takes its design's; a set piece keeps its set's line before it. Figures stay on the item's
 // page and in the inventory (catalog.js MEASURES), worked out as before

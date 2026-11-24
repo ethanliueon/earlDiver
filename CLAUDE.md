@@ -3,7 +3,7 @@
 The game is called **Hatchetfish — Deep Sea Survival** (6.8.2). Earl stays the default diver's name; the repository
 and its links keep their old name.
 
-Read this before any change. New to the game? Start with `docs/ONBOARDING.pdf` (a picture guide: what the game is, what was accepted and rejected, how the code works, testing traps), then `docs/PLAN_7.3.md`. It is the owner's design philosophy and working rules, agreed in conversation; apply it
+Read this before any change. New to the game? Start with `docs/ONBOARDING.pdf` (a picture guide: what the game is, what was accepted and rejected, how the code works, testing traps), then `docs/PLAN_7.3.md` and `docs/PLAN_7.4.md` (the economy remaster). It is the owner's design philosophy and working rules, agreed in conversation; apply it
 to every request, including the small ones.
 
 ## What the game is
@@ -71,10 +71,17 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   round the species' base; weight follows length and shape and is only a figure to read. Hand nets, the claw (2 m)
   and the trawls (2 m, 4 m) decide what can be caught purely by length. The giant jellies stay photo-only.
 
-- **Prices (6.4.1)**: common to rare gear is cheap (rare at most about $2,000), for players earning tens of dollars a
-  catch; exotic ($8-40k, suits to $30k) and legendary ($45k up) gear keep their old prices, because deep catches pay
-  $3-8k and legends $60-150k. The deep pays more because it is scary and slow to reach: leave fish pay alone. Chests:
-  pine crate $900 up to Poseidon's chest $100,000 (owner's figures, docs in js/chests.js).
+- **Prices (7.3.0, the economy remaster; supersedes 6.4.1, details and the full table in `docs/PLAN_7.4.md`)**: an
+  animal pays by where it lives: its price times `1 + 0.9 ln(1 + max(0, mid - 450) / 400)` of the middle of its usual
+  depths; a legend $150,000 times the same (coelacanth $150,000, tripod about $435,000), never under 5x the dearest
+  exotic. No other depth bonus. Of what is met anywhere (spawns, the deep fill, traps): exotics (undocumented with them)
+  3 %, legendaries 0.05 %. Everything else is priced by the time to earn it at the depth where it is wanted: common to
+  rare gear cheap and unchanged; exotic gear $25-60k; legendary $100-180k; chests moved with their contents (crate $900
+  to Poseidon $225,000); traps half an average haul; a photograph has no depth curve and pays at most $50,000; the
+  aquarium at most $1,500 a gallery day; hospital at most $25,000.
+- **Traps (7.3.0, owner)**: the wire pot (5 min, 5 animals), the fish trap (30 min, 10) and the deep trap (Dave's;
+  4 h, 20); one of each owned, one set at a time; real time, the game open or closed; the set trap belongs to the save
+  (a death does not take it) and the catch waits in it; deep animals suffer the climb and the dead sell for half.
 
 - **Decided in 6.5**: the big button is only ever the net or the camera (greyed aboard); the interact button (brass
   porthole ring, a warm rim when something is in reach) does everything else: ladder, hatch, door, eye, winch. One
@@ -121,7 +128,7 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - **Decided in 6.8**: the top quest slot is the tutorial, later the main quest line (Margaret's Lost Friend, planned, not
   built: Margaret is the scientist the boat is named for; the friend became the Old One, last and furthest west). The
   basics left the Log: a new diver's first board is "Take the sub below 200 m", "Bring up a live animal from below 100 m",
-  "Set a trap and haul it in". Rare omens from a diver's third dive: the radar ghost and a far-off low call. Sail points:
+  "Set a trap and empty it". Rare omens from a diver's third dive: the radar ghost and a far-off low call. Sail points:
   numbered buoys (B-01 ...) above places, found by passing over them, sailed to from the chart (aboard, sub docked) with a
   short loading screen. The game is **Hatchetfish — Deep Sea Survival**. A western limit (buoy line, "Too far. Turn back.")
   waits for the main quest.

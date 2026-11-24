@@ -7,7 +7,7 @@
 import { rollVariant, canBeRare } from './variants.js';
 import { SPECIES, SPECIES_BY_ID, isSwimHab } from './species.js';
 import { MORE_SPECIES } from '../data/species_more.js';
-import { rarityOf, spawnLen, livesOnBottom } from './specimens.js';
+import { rarityOf, spawnLen, livesOnBottom, useUsualDepth, rarityShare } from './specimens.js';
 import { clamp, lerp, fbm1, dist, smoothstep } from './util.js';
 // (5.16.0) the deep's ambush hunters do not swim side to side: they hang upright in the water and drift slowly up and
 // down near where they live. [which way the body points: 1 head up (anglers, viperfish), -1 mantle up and arms down (the
@@ -50,6 +50,7 @@ export function usualDepth(sp) {
   lo = nice(lo); hi = Math.max(lo + 1, nice(hi));
   return [lo, hi];
 }
+// (7.3.0) prices follow it (specimens.js depthCurve); called when this module has loaded, below
 const DEEP_HUNTER = (sp) => sp.cat === 'Deep Sea Fish' && /viper|dragon|angler|seadevil|sea devil|football|fangtooth|sabertooth|daggertooth|snaggletooth|gulper|swallower|loosejaw|barbeled|dreamer|wolftrap|fanfin|whipnose/i.test(sp.name);
 // Species that migrate up toward the surface at night and back down by day.
 const MIGRATORS = new Set([98, 99, 102, 103, 105, 148, 150, 151, 161, 88, 104, 90, 42]);
@@ -353,9 +354,12 @@ export class Fauna {
       if (c.id === 184) w *= y > 250 ? 14 : 2;                   // sperm whales hunt in the deep
       return w;
     };
-    let tot = 0; for (const c of cands) tot += wOf(c);
+    // (7.3.0, owner) what is met everywhere: exotics (undocumented with them) 3 %, legendaries 0.05 %, the rest as they come
+    const pool = rarityShare(cands.map((c) => [c, wOf(c)]), true);
+    let tot = 0; for (const [, w] of pool) tot += w;
     let r = rng() * tot, sp = cands[0];
-    for (const c of cands) { r -= wOf(c); if (r <= 0) { sp = c; break; } }
+    for (const [c, w] of pool) { r -= w; if (r <= 0) { sp = c; break; } }
+    if (!sp) return; // (nothing ordinary lives here: this time nothing came)
     const n = Math.max(1, Math.min(14, Math.round((sp.v.sch || 1) * rng.range(0.35, 0.8)))); // (4.12.5) smaller groups
     const gid = this.groupId++;
     const dir = side < 0 ? 1 : -1;
@@ -465,9 +469,11 @@ export class Fauna {
       if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1)]); // the small and common first, the filler most of all
     }
     if (!pool.length) return;
-    let tot = 0; for (const [, w] of pool) tot += w;
-    let r = rng() * tot, pick = pool[0][0];
-    for (const [sp, w] of pool) { r -= w; if (r <= 0) { pick = sp; break; } }
+    const pool2 = rarityShare(pool, true); // (7.3.0, owner) exotics 3 % of what is met, legendaries 0.05 % (it was 70 % exotic at 1,700 m)
+    let tot = 0; for (const [, w] of pool2) tot += w;
+    let r = rng() * tot, pick = pool2[0][0];
+    for (const [sp, w] of pool2) { r -= w; if (r <= 0) { pick = sp; break; } }
+    if (!pick) return; // nothing ordinary lives here, and this time nothing came
     const c = this.makeFish(pick, x, y, -side, this.groupId++, true);
     c.glimmer = true;
     this.list.push(c);
@@ -899,3 +905,5 @@ export class Fauna {
     return best;
   }
 }
+
+useUsualDepth(usualDepth); // (7.3.0) the prices follow where each animal usually lives

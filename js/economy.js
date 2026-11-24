@@ -34,7 +34,7 @@ export const SUBS = [
   { name: 'Б-7 bathyscaphe', rated: 300, crush: 1.6, o2: 170, speed: 1, ballast: 0, rating: 300, tank: 3, price: 0 },
   { name: 'Б-7М refit', rated: 500, crush: 1.55, o2: 180, speed: 1.3, ballast: 0.1, rating: 500, tank: 5, price: 500 },
   { name: 'Work submersible', rated: 900, crush: 1.5, o2: 195, speed: 1.5, ballast: 0.21, rating: 900, tank: 7, price: 3000 },
-  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 210, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 12000 },
+  { name: 'Heavy work submersible', rated: 1300, crush: 1.45, o2: 210, speed: 1.75, ballast: 0.331, rating: 1300, tank: 9, price: 17000 }, // (7.3.0) $12,000 was under an hour of the work sub's income
   { name: 'Research submersible', rated: 1900, crush: 1.38, o2: 225, speed: 2, ballast: 0.4641, rating: 1900, tank: 12, price: 40000 },
   { name: 'Deep research submersible', rated: 2500, crush: 1.32, o2: 240, speed: 2.4, ballast: 0.6105, rating: 2500, tank: 15, price: 100000 },
   { name: 'Titanium research submersible', rated: 3300, crush: 1.28, o2: 260, speed: 2.7, ballast: 0.7716, rating: 3300, tank: 19, price: 220000 },
@@ -103,14 +103,14 @@ export const CAMERAS = [
 // the boat's winch, not by hand; lure: a light that draws deep animals, and other things.
 // (7.3.0, owner) three traps, one of each owned and one set at a time, fishing in real time (traps.js): dur is how long
 // its bait works, count how many animals come in over it (all of them stay in it until emptied). The deep trap is
-// Dave's (shop). Prices: an average haul is worth about twice the trap (set in the economy pass)
+// Dave's (shop). Prices: an average haul is worth about twice the trap (measured, 7.3.0)
 export const TRAP_ORDER = ['pot', 'fish', 'cage'];
 export const TRAPS = {
-  pot: { name: 'Wire pot', rarity: 'uncommon', /* (6.5.8) traps have rarities */ price: 130, max: 1, maxDepth: 40, dur: 300, count: 5, holds: 5, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
+  pot: { name: 'Wire pot', rarity: 'uncommon', /* (6.5.8) traps have rarities */ price: 90, /* (7.3.0) half an average haul (a reef floor: $191) */ max: 1, maxDepth: 40, dur: 300, count: 5, holds: 5, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
     desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float. Five animals in five minutes.' },
-  fish: { name: 'Fish trap', rarity: 'rare', price: 1600, max: 1, maxDepth: 150, dur: 1800, count: 10, holds: 10, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
+  fish: { name: 'Fish trap', rarity: 'rare', price: 100, /* (7.3.0) half an average haul (60-150 m: $165-207) */ max: 1, maxDepth: 150, dur: 1800, count: 10, holds: 10, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
     desc: 'A larger mesh box with a funnel at each end, on a stout line. Ten animals in half an hour.' },
-  cage: { name: 'Deep trap', rarity: 'exotic', price: 17500, max: 1, maxDepth: 1500, dur: 14400, count: 20, holds: 20, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true, shop: 'dave',
+  cage: { name: 'Deep trap', rarity: 'exotic', price: 3300, /* (7.3.0) half an average haul (800-1,400 m, brought up dead by the winch: $6,100-7,300) */ max: 1, maxDepth: 1500, dur: 14400, count: 20, holds: 20, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true, shop: 'dave',
     desc: 'A tall weighted cage with a lit lure, on a heavy rope, emptied with the boat\'s winch. Twenty animals in four hours. The light draws deep animals, and other things.' },
 };
 export const BAGS = [
@@ -140,7 +140,7 @@ export const ARMS = [
 ];
 export const PATCH_PRICE = 25;      // +40 % hull integrity
 export const HOSPITAL_SHARE = 0.10;  // a death costs this share of cash...
-export const HOSPITAL_CAP = 10000;    // ...but never more than this
+export const HOSPITAL_CAP = 25000;    // ...but never more than this ((7.3.0) $10,000 was under half an hour of a deep diver's income)
 // a replacement sub after an implosion: built to the same rating, a share of what it cost
 export function replacementPrice(P) {
   // a share of what the subs up to this one cost (the first is cheap to replace)
@@ -221,7 +221,7 @@ export const UPGRADES = {
   camRange:  { group: 'Camera', needs: 'camera', name: 'Range', base: 8, top: 13, max: 10, cost: 12, growth: 1.7, fmt: 'm' },
   // the submersible
   ballast:   { group: 'Submersible', name: 'Ballast', base: 0, top: 1.44, max: 10, cost: 25, growth: 1.7, fmt: 'bonus' },
-  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4500], costs: [500, 3000, 12000, 40000, 100000, 220000, 450000], max: 7, fmt: 'depth' }, // (4.14.0)
+  depth:     { group: 'Submersible', name: 'A deeper submersible', base: 300, vals: [300, 500, 900, 1300, 1900, 2500, 3300, 4500], costs: [500, 3000, 17000, 40000, 100000, 220000, 450000], max: 7, fmt: 'depth' }, // (4.14.0)
   subSpeed:  { group: 'Submersible', name: 'Engine', base: 1, lin: 0.04, max: 50, cost: 236, growth: 1.1, fmt: 'x' }, // (4.13.0) fifty small steps to 3x, about $275,000 in all
   airTanks:  { group: 'Submersible', name: 'Tank rack', base: 1, lin: 1, max: 2, cost: 60, growth: 3, fmt: 'n' },
   pressTanks: { group: 'Submersible', name: 'Pressure chambers', base: 1, lin: 1, max: 5, costs: [100, 1000, 5000, 20000, 60000], fmt: 'n' }, // (4.13.0) bought one at a time in the chamber room

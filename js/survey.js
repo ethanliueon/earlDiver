@@ -2,6 +2,7 @@
 // Tags: a dart fired at a big animal; the program pays per tag (each one less than the last for
 // the same species). Photos: the institute pays once for the first picture of each species and
 // each rare form. Both are paid at the boat; neither survives his death (the data dies with him).
+import { depthMultOf } from './specimens.js';
 import { clamp, dist } from './util.js';
 import { gear, owns } from './economy.js';
 import { TAG, liveValue, tagPrice, rarityOf, rarityPrice } from './specimens.js';
@@ -26,7 +27,11 @@ export function tagValue(sp, variant, pay) {
 // can take (whale sharks, corals, kelp) included. A photo pays a share of it: the camera's Quality (per cent), then
 // the grade (Poor x0.5, Good x1, Excellent x2). The same for a second picture of the species as the first; each single
 // animal pays once (a fish followed and shot again is worth nothing more).
-export function photoValue(sp, variant) { return liveValue(sp) * variantMult(variant); }
+// (7.3.0, owner: deep photos must not become a shortcut) a photograph pays on the animal's price without the depth
+// curve (that pays for bringing it up alive from the deep, which a photo does not do), and one photo never more than
+// PHOTO_CAP: with the legendary camera an excellent photo paid 90 % of the animal, up to about $390,000 for a legend
+export const PHOTO_CAP = 50000;
+export function photoValue(sp, variant) { return liveValue(sp) / depthMultOf(sp) * variantMult(variant); }
 export const GRADES = { Poor: 0.5, Good: 1, Excellent: 2 };
 export const gradeStars = (gr) => (gr === 'Excellent' ? 3 : gr === 'Good' ? 2 : 1);
 export const photoKey = (sp, variant) => sp.id + (variant ? ':' + variant : '');
@@ -186,6 +191,7 @@ export function updatePhoto(g, dt) {
   const who = S.c || S.st, again = !!(who && who.photoPaid); // this very animal has been paid for already
   let value = again ? 0 : photoValue(S.sp, S.variant) * (def.idx || 10) / 100 * GRADES[grade];
   if (!again && def.small && S.sp.len < 0.15) value *= def.small; // the macro camera: small animals pay more
+  value = Math.min(value, PHOTO_CAP);
   if (!again) { value = Math.max(1, Math.round(value * 100) / 100); if (who) who.photoPaid = true; } if (S.c && !S.c.pet) S.c.photoFlee = true; // (5.16.0) the flash: it darts off, and is gone once out of sight // a photo always pays at least a dollar
   // where the frame was: along the aim at the animal's distance, steadied toward it by the camera
   const fx = ox + Math.cos(a) * Math.hypot(dx, dy), fy = oy + Math.sin(a) * Math.hypot(dx, dy);
