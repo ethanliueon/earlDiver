@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFilter
 OUT = 'assets/loading/'
 
 
-def fish(W=1200, H=860, out_w=480):
+def fish(W=2400, H=1720, out_w=960):  # (7.3.0) twice the size, for the detail
     # (7.1.7) Drawn from photographs of Argyropelecus: the head and chest a deep silver blade, the body ending sharply in a
     # thin see-through tail stalk; the flank's mirror plates in vertical bands; a big blue tubular eye high at the front;
     # the mouth nearly upright with a heavy lower jaw; a spiny blade before the dorsal fin; and along the keel's edge a comb
@@ -56,6 +56,22 @@ def fish(W=1200, H=860, out_w=480):
     # the edges turn away from the light: darker toward the outline, so the body reads as rounded, not flat
     rim = np.asarray(m.filter(ImageFilter.GaussianBlur(Z * 3)), np.float32) / 255
     col *= (0.62 + 0.38 * np.clip((rim - 0.5) * 2.2, 0, 1))[..., None]
+    # (7.3.0) the finer detail: rows of thin scales (a faint diamond net, brighter at each scale's upper edge), a soft
+    # rainbow sheen where the mirror catches the light at a slant (thin-film colour, faint), and a little mottling
+    rng = np.random.default_rng(7)
+    jit = np.asarray(Image.fromarray((rng.random((H // 40, W // 40)) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC), np.float32) / 255
+    su, sv = (xx + yy * 0.55) / 2.1 + jit * 0.8, (xx - yy * 0.55) / 2.1 + jit * 0.6
+    net = np.minimum(np.abs(np.sin(su * math.pi)), np.abs(np.sin(sv * math.pi)))
+    scal = np.clip(1 - net * 6, 0, 1) * (xx > 44) * np.clip((v - 0.12) * 4, 0, 1)
+    col *= (1 - 0.035 * scal * (0.5 + jit))[..., None]
+    lift = np.clip(np.sin(sv * math.pi) * np.sin(su * math.pi), 0, 1) ** 6 * (xx > 44) * np.clip((v - 0.15) * 3, 0, 1) * np.clip((0.85 - v) * 3, 0, 1)
+    col += (lift * 9 * (0.4 + jit))[..., None]
+    hue = (xx * 0.09 + yy * 0.05)
+    irid = np.stack([np.sin(hue) * 0.5 + 0.5, np.sin(hue + 2.1) * 0.5 + 0.5, np.sin(hue + 4.2) * 0.5 + 0.5], -1)
+    band2 = (np.exp(-((v - 0.36) / 0.12) ** 2) * (xx > 46) * (xx < 96))[..., None]
+    col = col * (1 - band2 * 0.04) + irid * np.array([226, 218, 236]) * band2 * 0.04
+    mott = np.asarray(Image.fromarray((rng.random((H // 24, W // 24)) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC), np.float32) / 255
+    col *= (0.98 + 0.035 * mott)[..., None]
     out = np.zeros((H, W, 4), np.uint8); out[..., :3] = np.clip(col, 0, 255); out[..., 3] = alpha.astype(np.uint8)
     im = Image.fromarray(out, 'RGBA')
     ov = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)  # (marks go on their own layer, then laid over: PIL's
@@ -72,6 +88,13 @@ def fish(W=1200, H=860, out_w=480):
         d.line([P(x + 1.6, 34.8 - k * 0.3), P(x, 37.4), P(x + 1.6, 40 + k * 0.4)], fill=(200, 206, 214, 34), width=max(1, int(Z * 0.3)))
     # the dark band along the back
     d.line([P(18, 36), P(30, 35.2), P(42, 32.6), P(52, 27.4), P(62, 22.2), P(74, 20.2), P(86, 20.2), P(96, 22.6)], fill=(18, 22, 30, 190), width=int(Z * 1.5))
+    # (7.3.0) pepper-dot pigment cells scattered below the dark back, thinning down the flank
+    for _ in range(420):
+        x = 20 + rng.random() * 78; top = 36 - max(0, (x - 18)) * 0.33 if x < 62 else 20.5 + max(0, x - 86) * 0.15
+        if x < 52: top = 35.6 - (x - 18) * 0.25
+        y = top + 1.2 + abs(rng.normal()) * 2.2
+        r = 0.05 + rng.random() ** 2 * 0.16
+        d.ellipse([P(x - r, y - r), P(x + r, y + r)], fill=(20, 24, 34, int(40 + rng.random() * 90)))
     # the gill cover's edge and the cheek
     d.arc([P(80, 22), P(104, 56)], 105, 255, fill=(54, 60, 72, 120), width=int(Z * 0.55))
     d.arc([P(83, 26), P(103, 52)], 120, 240, fill=(236, 240, 240, 60), width=int(Z * 0.35))
@@ -81,8 +104,14 @@ def fish(W=1200, H=860, out_w=480):
     d.line([P(104.2, 44.4), P(97, 49)], fill=(236, 240, 240, 70), width=int(Z * 0.4))
     # see-through rayed fins: tail, the spiny blade and dorsal fin, adipose, pectoral, pelvic, anal
     def fin(pts, rays, a=64):
-        d.polygon([P(*p) for p in pts], fill=(196, 210, 222, a))
-        for p1, p2 in rays: d.line([P(*p1), P(*p2)], fill=(222, 230, 238, 120), width=max(1, int(Z * 0.28)))
+        # (7.3.0) a thin membrane, its edge a little ragged, and fine rays fanned between the ones given
+        sp = smooth(pts, 6); jag = [(x + (rng.random() - 0.5) * 0.35, y + (rng.random() - 0.5) * 0.35) for x, y in sp]
+        d.polygon([P(*p) for p in jag], fill=(196, 210, 222, a))
+        full = []
+        for (p1, p2), (q1, q2) in zip(rays, rays[1:] + rays[-1:]):
+            for t in (0, 0.33, 0.66):
+                full.append(((p1[0] + (q1[0] - p1[0]) * t, p1[1] + (q1[1] - p1[1]) * t), (p2[0] + (q2[0] - p2[0]) * t, p2[1] + (q2[1] - p2[1]) * t)))
+        for p1, p2 in full: d.line([P(*p1), P(*p2)], fill=(226, 234, 240, 105), width=max(1, int(Z * 0.18)))
     fin([(17, 36), (5, 25), (2.5, 27), (8, 37.6), (2, 48), (5, 50.5), (17, 39.4)],
         [((17, 36.4), (4, 26)), ((17, 37), (6, 32)), ((17, 38.6), (5, 44)), ((17, 39.2), (3.5, 49.5))])
     fin([(48, 29), (51, 16), (58, 21.5)], [((49, 28), (51, 16.5)), ((52, 25.5), (53, 18)), ((55, 23.5), (55.5, 20))], 80)
@@ -92,32 +121,48 @@ def fish(W=1200, H=860, out_w=480):
     fin([(84, 46), (70, 49), (64, 55), (70, 53), (84, 49)], [((84, 46.6), (66, 53.5)), ((84, 48), (70, 52.6))])
     fin([(60, 70), (56, 78), (59, 78.5), (64, 70.6)], [((61, 70.4), (57, 78))])
     fin([(48, 47), (38, 45.5), (31, 47), (38, 49), (50, 52)], [((48, 47.6), (33, 47.2)), ((49, 50.4), (38, 48.6))])
-    # the eye: big, tubular, set high, its lens a deep blue that catches the light
-    d.ellipse([P(88, 21), P(100.5, 33.5)], fill=(120, 132, 140, 255))
-    d.ellipse([P(88.8, 21.8), P(99.7, 32.7)], fill=(24, 44, 70, 255))
-    d.ellipse([P(89.8, 22.6), P(98.6, 31.4)], fill=(48, 84, 122, 255))
-    d.ellipse([P(91.0, 23.2), P(96.0, 28.2)], fill=(74, 118, 160, 255))
-    d.ellipse([P(92.6, 26.0), P(97.2, 30.6)], fill=(10, 16, 24, 255))
-    d.ellipse([P(91.4, 23.4), P(93.4, 25.4)], fill=(230, 236, 232, 230))
+    # the eye: (7.3.0) as the real fish's, a short silver tube standing up from the head with the lens on top, looking
+    # upward for the silhouettes of prey against the faint light above; the black pupil seen from the side as a dark
+    # crescent under the lens. No white sparkle
+    eye_at = (94.2, 27.6)  # painted after the marks, below
     im = Image.alpha_composite(im, ov).filter(ImageFilter.SMOOTH)
+    # (7.3.0) the eye, painted in soft gradients: a tall oval set into the head (the tube seen from the side), a silver
+    # ring round a dark centre aimed upward, the lens just showing above, a faint shine on its upper edge. No hard shape
+    ex, ey = eye_at; E = np.zeros((H, W, 4), np.float32)
+    dx_, dy_ = (xx - ex) / 5.0, (yy - ey) / 6.6; r1 = np.sqrt(dx_ ** 2 + dy_ ** 2)
+    ring = np.clip((1 - r1) * 9, 0, 1)                                                     # the whole eye, soft-edged
+    px_, py_ = (xx - ex) / 3.3, (yy - (ey - 1.6)) / 4.4; r2 = np.sqrt(px_ ** 2 + py_ ** 2)
+    pup = np.clip((1 - r2) * 6, 0, 1)                                                      # the dark centre, high in it
+    silver = np.array([168, 178, 188]) * (0.75 + 0.35 * np.clip(1 - (yy - (ey - 6)) / 13, 0, 1))[..., None]
+    dark = np.array([14, 22, 34]) + np.array([40, 70, 104]) * np.clip(1 - r2, 0, 1)[..., None] ** 3 * 0.6
+    c = silver * (1 - pup[..., None]) + dark * pup[..., None]
+    edge = np.exp(-((r1 - 0.93) / 0.07) ** 2); c = c * (1 - 0.35 * edge[..., None])   # a faint darker rim, so it sits in the silver
+    lx, ly = (xx - ex) / 3.2, (yy - (ey - 5.2)) / 1.35; rl = np.sqrt(lx ** 2 + ly ** 2)
+    lens = np.clip((1 - rl) * 5, 0, 1)                                                     # the lens, a low dome on top
+    c = c * (1 - lens[..., None]) + np.array([58, 96, 132]) * lens[..., None]
+    shine = np.exp(-(((xx - (ex - 1.0)) / 1.4) ** 2 + ((yy - (ey - 5.9)) / 0.4) ** 2))
+    c = c + np.array([150, 170, 180]) * shine[..., None] * 0.5
+    a_ = np.maximum(ring, lens) * 255
+    E[..., :3] = np.clip(c, 0, 255); E[..., 3] = a_
+    im = Image.alpha_composite(im, Image.fromarray(E.astype(np.uint8), 'RGBA').filter(ImageFilter.GaussianBlur(Z * 0.12)))
     # the light organs: a comb of short upright bars along the keel's edge, a group under the stalk, two below the eye
-    keel = [p for p in smooth(outline) if p[1] > 50 and 54 < p[0] < 103]
-    keel.sort(key=lambda p: -p[0])
-    organs = []
-    step = max(1, len(keel) // 17)
-    for i in range(0, len(keel), step):
-        x, y = keel[i]
-        organs.append((x - (x - 74) * 0.03, y - 2.6))
-    organs += [(46 - i * 4.0, 44.2 - i * 1.3) for i in range(4)] + [(94, 38.5), (97, 40)]
+    # the light organs: (7.3.0) as on the real fish, in groups along the keel (a long row under the chest, a short group
+    # behind it, a few under the tail stalk, two below the eye), each a small oval light under a dark pigment cap, a silver
+    # reflector round it, and a soft blue halo
+    keel = [p for p in smooth(outline, 40) if p[1] > 50 and 54 < p[0] < 103]; keel.sort(key=lambda p: -p[0])
+    def along(n, f0, f1):
+        return [keel[min(len(keel) - 1, int((f0 + (f1 - f0) * i / max(1, n - 1)) * (len(keel) - 1)))] for i in range(n)]
+    organs = [(x - (x - 74) * 0.03, y - 2.4) for (x, y) in along(12, 0.02, 0.55) + along(5, 0.64, 0.84) + along(3, 0.9, 0.99)]
+    organs += [(47 - i * 3.6, 44.0 - i * 1.15) for i in range(4)] + [(93.6, 38.6), (96.4, 40.0)]
     glow = Image.new('RGBA', (W, H), (0, 0, 0, 0)); g = ImageDraw.Draw(glow)
-    for x, y in organs:
-        g.ellipse([P(x - 2.2, y - 2.0), P(x + 2.2, y + 2.4)], fill=(100, 160, 226, 150))
-    glow = glow.filter(ImageFilter.GaussianBlur(Z * 1.2))
+    for x, y in organs: g.ellipse([P(x - 2.0, y - 1.6), P(x + 2.0, y + 2.4)], fill=(96, 150, 222, 120))
+    glow = glow.filter(ImageFilter.GaussianBlur(Z * 1.1))
     im = Image.alpha_composite(im, glow); ov = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
-    for x, y in organs:
-        # (7.2.8) each a small round light with a faint dark lid, not a bar with a rim: a row of rims read as teeth
-        d.ellipse([P(x - 0.85, y - 0.9), P(x + 0.85, y + 1.0)], fill=(60, 70, 92, 90))
-        d.ellipse([P(x - 0.55, y - 0.45), P(x + 0.55, y + 0.75)], fill=(176, 214, 244, 220))
+    for i, (x, y) in enumerate(organs):
+        x += (rng.random() - 0.5) * 0.5; y += (rng.random() - 0.5) * 0.4; k = 0.8 + rng.random() * 0.35
+        d.ellipse([P(x - 0.75 * k, y - 0.5 * k), P(x + 0.75 * k, y + 0.95 * k)], fill=(206, 216, 226, 110))   # the silver reflector
+        d.ellipse([P(x - 0.45 * k, y - 0.15 * k), P(x + 0.45 * k, y + 0.75 * k)], fill=(156, 200, 238, 225))  # the light
+        d.chord([P(x - 0.7 * k, y - 0.6 * k), P(x + 0.7 * k, y + 0.3 * k)], 200, 340, fill=(48, 54, 66, 90))  # a thin pigment cap
     im = Image.alpha_composite(im, ov)
     bb = im.getbbox(); im = im.crop(bb)
     return im.resize((out_w, int(out_w * im.height / im.width)), Image.LANCZOS)
