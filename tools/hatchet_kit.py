@@ -515,7 +515,7 @@ def wave(full):
 
 
 if __name__ == '__main__':
-    fish4().save(OUT + 'hatchetfish.png', optimize=True)  # (7.3.3, owner) the traced outline, painted in the game's hand
+    # (7.3.4, owner) the hatchetfish is now the owner's own painting: tools/hatchet_owner.py writes it; nothing here does
     wave(False).save(OUT + 'wave.png', optimize=True)
     wave(True).save(OUT + 'wave_fill.png', optimize=True)
     print('painted')

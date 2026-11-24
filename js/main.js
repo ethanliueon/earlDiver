@@ -164,7 +164,7 @@ function applySuit(e, P) {
 function applySub(sub, P) {
   sub.ratedV = statValue(P, 'depth'); // (4.16.8: no relics)
   sub.o2V = SUB_AIR[lv(P, 'depth')] * ((P.addons || {}).airBank ? 1.5 : 1); // (the spare air bank adds half again) the cabin air comes with the submersible ((claude-polish) this sat inside the comment above: every hull had the first one's two minutes)
-  sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (4.13.0) the engine alone sets her speed: 50 steps to 3x
+  sub.speedMul = statValue(P, 'subSpeed'); sub.ballast = statValue(P, 'ballast'); // (each sub's own speed and ballast: the old 50-step engine refit is retired)
   sub.level = lv(P, 'depth');
 }
 // (5.10.10) the X developer key is gone (the owner's call): nothing in a phone game is reached by a key

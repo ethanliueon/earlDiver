@@ -67,8 +67,29 @@ function letters(scale) {
 // (7.1.7) the painted hatchetfish (tools/hatchet_kit.py): a silver blade with tube eyes and its belly's lights; the drawn
 // one below stays only until the picture has loaded
 const HF = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: 'assets/loading/hatchetfish.png' }) : null;
+// (7.3.4, owner) it swims: the picture drawn in thin upright slices, each moved up or down by a wave that travels from
+// head to tail and grows toward the tail (the head almost still, the tail sweeping widest), so the body bends as a
+// fish's does. The same in index.html's loading bar (its own copy, since it runs before any of this loads)
+// (the slices are put together once a frame on a small canvas of their own, which is then drawn as one picture: the
+// title draws it twice, once blurred for its shadow, and a blur on every slice cost two thirds of the frame rate)
+let SWIM = null, SWIM_T = -1;
+export function swimDraw(x, img, dx, dy, dw, dh, t) {
+  const W = Math.max(8, Math.round(dw)), pad = Math.round(dh * 0.12), H = Math.max(8, Math.round(dh)) + pad * 2;
+  if (!SWIM) SWIM = document.createElement('canvas');
+  if (SWIM.width !== W || SWIM.height !== H || SWIM_T !== t) {
+    if (SWIM.width !== W || SWIM.height !== H) { SWIM.width = W; SWIM.height = H; }
+    const k = SWIM.getContext('2d'); k.clearRect(0, 0, W, H); SWIM_T = t;
+    const n = 28, sw = img.naturalWidth / n, w = W / n;
+    for (let i = 0; i < n; i++) {
+      const u = (i + 0.5) / n, tail = Math.pow(1 - u, 1.8); // u 0 the tail .. 1 the nose (it faces right)
+      const off = Math.sin(t * 5.2 - u * 4.2) * dh * 0.07 * tail + Math.sin(t * 1.3) * dh * 0.012;
+      k.drawImage(img, i * sw, 0, sw + 0.6, img.naturalHeight, i * w, pad + off, w + 0.6, dh);
+    }
+  }
+  x.drawImage(SWIM, dx, dy - pad * (dh / (H - pad * 2)), dw, dh * H / (H - pad * 2));
+}
 function drawHatchetfish(x, L, t) {
-  if (HF && HF.complete && HF.naturalWidth) { const h = L * HF.naturalHeight / HF.naturalWidth; x.drawImage(HF, 0, L * 0.68 / 2 - h / 2, L * 1.08, h * 1.08); return; }
+  if (HF && HF.complete && HF.naturalWidth) { const h = L * HF.naturalHeight / HF.naturalWidth; swimDraw(x, HF, 0, L * 0.68 / 2 - h / 2, L * 1.08, h * 1.08, t); return; }
   const s = L / 100;
   x.save(); x.scale(s, s);
   x.fillStyle = 'rgba(140,150,140,0.55)'; x.beginPath(); x.moveTo(4, 20); x.lineTo(18, 31); x.lineTo(4, 42); x.lineTo(9, 31); x.closePath(); x.fill(); // tail
