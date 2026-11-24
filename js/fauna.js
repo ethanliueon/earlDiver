@@ -36,6 +36,18 @@ const BAIT = [
 // (7.3.0) the deep's ordinary animals for the dark-water fill below 2,000 m: k how much more often each is met; any: in open
 // water anywhere (else only near the floor)
 const DEEP_FILL = { 497: { k: 5, any: true }, 370: { k: 4, any: true }, 332: { k: 2, any: true }, 327: { k: 2, any: true }, 490: { k: 2 }, 489: { k: 2 }, 491: { k: 2 }, 496: { k: 4 }, 383: { k: 1 }, 493: { k: 2 } };
+// (7.3.7, owner) the sea made less uniform where it was one fish deep (docs/PLAN_7.4.md): below 1,000 m the bristlemouth
+// swarms thin out (to a fifth by 2,000 m); from 1,100 to 2,900 m the deep's rare hunters and the mid-water's better
+// fish (dragonfish, seadevil, cutthroat eel, halosaur, grenadier, sucker octopus) are met several times as often; below
+// 4,000 m the trench's own animals (abyssal snailfish, grenadier, supergiant amphipod, the great pale snailfish) grow
+// commoner toward the pit, so the deepest water is the richest
+const MID_HUNTERS = new Set([447, 453, 460, 459, 334, 474]), TRENCH_KIN = new Set([491, 493, 509, 490]);
+function depthBoost(sp, y) {
+  if (sp.id === 327 && y > 1000) return Math.max(0.2, 1 - 0.8 * (y - 1000) / 1000);
+  if (MID_HUNTERS.has(sp.id)) return 1 + 3 * smoothstep(1100, 1600, y) * (1 - smoothstep(2400, 2900, y));
+  if (TRENCH_KIN.has(sp.id)) return 1 + 4 * smoothstep(4000, 4800, y);
+  return 1;
+}
 const FILLER = new Set([98, 99, 327, 151, 370, 484, 450, 161]);
 // (3.7.3) the height of the deep's spawning curve q^1.4 (1-q)^0.55, at its peak (q = 1.4 / 1.95)
 const DEEP_PEAK = Math.pow(1.4 / 1.95, 1.4) * Math.pow(0.55 / 1.95, 0.55);
@@ -350,7 +362,7 @@ export class Fauna {
     });
     if (!cands.length) return;
     const wOf = (c) => {
-      let w = weightOf(c) * this.depthPref(c, x, y, this.night) * richK(c, y);
+      let w = weightOf(c) * this.depthPref(c, x, y, this.night) * richK(c, y) * depthBoost(c, y); // (7.3.7)
       if (this.bleeding && /Shark/.test(c.cat)) w *= 3;           // blood in the water
       if (this.night && /Shark/.test(c.cat)) w *= 1.6;            // sharks hunt at night
       if (c.id === 185 || c.id === 186) w *= 2.5;                 // dolphin pods are fairly common near the surface
@@ -473,11 +485,11 @@ export class Fauna {
       // (7.3.0, owner) below 2,000 m the deep's ordinary animals fill the dark water too: prawns and cusk-eels anywhere,
       // the bottom's swimmers (grenadiers, rattails, snailfish, amphipods) within 80 m of the floor; prawns most of all
       // (7.3.6, owner) faded in from 1,400 m to full at 2,000 m: no line in the sea where the deep's animals switch on
-      const deepFill = y > 1400 && DEEP_FILL[sp.id] && (DEEP_FILL[sp.id].any || fl - y < 80), fillK = smoothstep(1400, 2000, y);
+      const deepFill = y > 1400 && DEEP_FILL[sp.id] && (DEEP_FILL[sp.id].any || fl - y < 80 || (y > 4200 && TRENCH_KIN.has(sp.id))), fillK = smoothstep(1400, 2000, y);
       if (!deepFill && ((!sp.v.glow && !filler) || (sp.v.hab !== 'pelagic' && !filler))) continue;
       if (sp.len > 1 || y < sp.dmin || y > sp.dmax) continue;
       const w = this.depthPref(sp, x, y, night);
-      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1) * (deepFill ? DEEP_FILL[sp.id].k * fillK : 1)]); // the small and common first, the filler most of all
+      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1) * (deepFill ? DEEP_FILL[sp.id].k * fillK : 1) * depthBoost(sp, y)]); // (7.3.7) the sea less uniform // the small and common first, the filler most of all
     }
     if (!pool.length) return;
     const pool2 = rarityShare(pool); // (7.3.0, owner) exotics 3 % of what is met, legendaries 0.05 % (it was 70 % exotic at 1,700 m)
