@@ -610,9 +610,9 @@ export class Renderer {
         const lamp = drawTrapBuoy(ctx, ppm, t, !!T.winch, night);
         ctx.restore();
         if (lamp) glowPts.push([bx + lamp[0], bsy + lamp[1], '#fff2b0', ppm * 0.8, 1.5]);
-        const n = tr.catch.length, left = Math.max(0, 300 - tr.age);
+        const n = tr.catch.length, S0 = g.profile && g.profile.trapSet, left = S0 && S0.id === tr.id ? Math.max(0, TRAPS[S0.type].dur - (Date.now() - S0.at) / 1000) : 0; // (7.3.0) real time
         this.trapLabels.push([bx, bsy - ppm * (T.winch ? 2.4 : 1.5), tr.state === 'lowering' ? `going down, ${Math.round(tr.y)} m` : tr.state === 'hauling' ? `coming up · ${Math.round(tr.y)} m`
-          : `${n} inside, ${left > 0 ? `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}` : tr.age > 420 ? 'left too long!' : 'ready'}`]);
+          : `${n} inside, ${left > 0 ? (left >= 3600 ? `${Math.floor(left / 3600)} h ${String(Math.floor((left % 3600) / 60)).padStart(2, '0')} min` : `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`) : 'done'}`]);
       }
     }
     if (g.lure && !(g.lure.eaten > 0.5)) this.drawLure(ctx, S(g.lure.x), Sy(g.lure.y), ppm, t);

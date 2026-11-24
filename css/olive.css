@@ -1901,3 +1901,5 @@ html body #inventory .ip-col .ic-line { height: 96px; overflow: hidden; }
 html body #inventory .ip-col .ip-stats { min-height: 74px; align-content: start; }
 html body #inventory .ip-col.more { padding-bottom: 26px; }
 html body #inventory .ip-col.more::after { content: ''; position: sticky; display: block; bottom: -26px; height: 30px; margin: 0 -12px -26px; pointer-events: none; background: linear-gradient(rgba(24, 27, 20, 0), rgba(24, 27, 20, 0.92)); }
+/* (7.3.0) a trap that is set cannot be used again: its Use reads as off */
+html body #inventory .trap-pop [data-trapuse][disabled] { opacity: 0.45; filter: grayscale(0.6); pointer-events: none; }

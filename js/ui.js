@@ -60,7 +60,7 @@ import { drawFace, DEFAULT_LOOK, FACES, EYES, HAIRS, HAIR_NAMES, SKINS, BEARDS, 
 import { priceOf as storePrice } from './purchases.js'; // (6.5.9) (economy's priceOf is another thing)
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js'; // (6.5.3) // (6.5.0) the journal's animal in a small tank of its own water
 import { TRAP_ORDER } from './economy.js';
-import { trapsFree } from './traps.js';
+import { trapsFree, trapSet, trapLeft, timeLeftText } from './traps.js';
 import { tankSlots, pressSlots, tankUsed, pressUsed, NETS_SUB, netsOf, slotsOf, BIG as BIG_CH, gapOf, gapSigned, SAFE_GAP, hasBigTank, bigIn, bigFits, tooBig, freeChamber, tankFits, bagSlots } from './capture.js';
 import { readSlot, lastSlot, deleteSlot, getSlot, SLOTS } from './economy.js';
 import { statAt } from './economy.js';
@@ -1359,13 +1359,13 @@ export class UI {
           <div class="lk-acts"><button data-airuse>Use</button><small class="tp-note">in the sub</small></div></div></div></div>` : '';
     // (5.10.11) a trap's card, laid out like the gear cards: its picture large in a recess, its name, what it is, a few
     // plain facts, and Use (which only works at the surface)
-    const trapPop = (() => { const k = this.trapSel, T = k && TRAPS[k]; if (!T || !((TR[k] || 0) > 0)) return '';
+    const trapPop = (() => { const k = this.trapSel, T = k && TRAPS[k]; if (!T || !((TR[k] || 0) > 0)) return ''; const setK = trapSet(P) && trapSet(P).type === k ? trapSet(P) : null; /* (7.3.0) one set at a time, in real time */
       const fact = (a, b) => `<div class="tp-row"><span>${a}</span><b>${b}</b></div>`, desc = String(T.desc || '').replace(/\.\./g, '.');
       return `<div class="item-pop trap-pop"><div class="ip-box r-common tp-box"><button class="ip-close" aria-label="Close">×</button>
         <div class="tp-pic"><img src="${pictureOf('trap', k, 360, 216, true)}" alt=""></div>
-        <div class="tp-txt"><h4 style="color:${RARITY[T.rarity || 'common'] ? RARITY[T.rarity || 'common'].col : 'inherit'}">${T.name}</h4><p class="tp-kind">Trap, ${TR[k]} in the locker</p><p class="tp-desc">${desc}</p>
-          ${fact('Sets down to', `${T.maxDepth} m`)}${fact('Holds', `${T.holds} animals`)}${fact('Takes', `up to ${Math.round(T.maxLen * 100)} cm`)}${T.winch ? fact('Hauled up', "by the Margaret's winch") : ''}
-          <div class="lk-acts"><button data-trapuse="${k}">Use</button><small class="tp-note">at the surface</small></div></div></div></div>`; })();
+        <div class="tp-txt"><h4 style="color:${RARITY[T.rarity || 'common'] ? RARITY[T.rarity || 'common'].col : 'inherit'}">${T.name}</h4><p class="tp-kind">${setK ? `Set at ${setK.depth} m, ${trapLeft(setK) > 0 ? `${timeLeftText(trapLeft(setK))} to go` : 'done'}, ${setK.catch.length} inside` : 'Trap, in the locker'}</p><p class="tp-desc">${desc}</p>
+          ${fact('Fishes for', timeLeftText(T.dur))}${fact('Catches', `${T.count} animals`)}${fact('Sets down to', `${T.maxDepth} m`)}${fact('Takes', `up to ${Math.round(T.maxLen * 100)} cm`)}${T.winch ? fact('Emptied', "with the Margaret's winch") : ''}
+          <div class="lk-acts"><button data-trapuse="${k}" ${setK || trapSet(P) ? 'disabled' : ''}>Use</button><small class="tp-note">${setK ? 'set: empty it at its buoy' : trapSet(P) ? 'one trap set at a time' : 'at the surface'}</small></div></div></div></div>`; })();
     // (5.17.0) the glow stick's card, opened from its belt slot, laid out as the trap's: Use snaps one (90 s of warm light,
     // in the water or the sub); while one burns, the seconds left and Use greyed; and taking them off the belt, where gear can change
     // (6.1.0) gold coins: stacks of up to 10 in the locker, each stack a space; tap one for its card
@@ -1613,7 +1613,7 @@ export class UI {
     for (const k of TRAP_ORDER) {
       const own = (g.profile.traps || {})[k] || 0; if (!own) continue;
       const b = document.createElement('button'); const free = trapsFree(g, k);
-      b.textContent = `${TRAPS[k].name}, ${free} ready`; b.disabled = free <= 0; b.classList.toggle('on', k === this.ts.type);
+      b.textContent = TRAPS[k].name; /* (7.3.0) one of each */ b.disabled = free <= 0; b.classList.toggle('on', k === this.ts.type);
       b.addEventListener('click', () => { this.ts.type = k; this.tsRender(); });
       types.append(b);
     }
@@ -1624,7 +1624,7 @@ export class UI {
     $('ts-depth').textContent = this.ts.depth;
     // the depth of the bottom is not told: only that the line has reached it, once it has
     $('ts-bottom').textContent = `All the way (${T.maxDepth} m)`;
-    $('ts-info').textContent = `The ${T.name.toLowerCase()} is rated to ${T.maxDepth} m${T.winch ? ', hauled with the boat\'s winch' : ''}`;
+    $('ts-info').textContent = `${T.count} animals in ${timeLeftText(T.dur)}, the game open or closed. Rated to ${T.maxDepth} m${T.winch ? ', emptied with the boat\'s winch' : ''}`;
     const w = $('ts-warn');
     if (this.ts.depth >= fl) { w.hidden = false; w.textContent = `The bottom here is only ${fl} m: the trap will rest on the bottom at ${fl} m (good for crabs, lobsters and bottom fish).`; }
     else if (this.ts.depth === T.maxDepth) { w.hidden = false; w.textContent = `The ${T.name.toLowerCase()} goes no deeper than ${T.maxDepth} m.`; }
@@ -2093,10 +2093,10 @@ export class UI {
       html += this.upgradeGroups(P, ['Net', 'Camera'], icon, can);
       html += '<div class="up-group"><h4>Traps</h4>';
       const tr = P.traps || {};
-      TRAP_ORDER.forEach((k, i) => {
+      TRAP_ORDER.forEach((k, i) => { if (TRAPS[k].shop === 'dave') return; // (7.3.0) the deep trap is Dave's
         const T = TRAPS[k], have = tr[k] || 0, full = have >= T.max;
         html += card(T.name, T.desc, `you own (${have}/${T.max})`, full ? null : T.price, 'buy', 'trap:' + k, full ? 'Full' : 'Buy', '', icon('trap', i), [
-          ['depth', `down to ${T.maxDepth.toLocaleString()} m`, 'press'], ['catch', `${T.count[0]}–${T.count[1]} fish in 5 min`], ['fish up to', `${T.maxLen} m long`],
+          ['depth', `down to ${T.maxDepth.toLocaleString()} m`, 'press'], ['catch', `${T.count} animals in ${timeLeftText(T.dur)}`], ['fish up to', `${T.maxLen} m long`],
           ['holds', `${T.holds}`], ['hauled', T.winch ? "by the boat's winch" : 'by hand', T.winch ? 'bad' : 'good']].concat(T.lure ? [['lure', 'lit: draws deep animals and it', 'bad']] : []));
       });
       html += '</div>';

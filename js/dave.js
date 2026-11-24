@@ -4,7 +4,7 @@
 // suit), what he buys on the right (pearls, sapphires, whalebone, glass sponge and nodules, for a quarter more
 // than the Margaret pays). He says a line when you come in (text only), and remembers how often you've been.
 import { ITEMS, ownsItem, worn as wornItem, RARITY } from './items.js';
-import { SUITS, GOODS, money } from './economy.js';
+import { SUITS, GOODS, TRAPS, money } from './economy.js';
 import { pictureOf } from './catalog.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
 
@@ -76,7 +76,10 @@ export class DaveShop {
   wares(P) {
     // (2.8.0) his items, suits included, from items.js (shop: 'dave'); bought ones go into the locker
     return Object.values(ITEMS).filter((it) => it.shop === 'dave').map((it) => { const w = wornItem(P, it.kind); return { key: 'item:' + it.id, name: it.name, col: RARITY[it.rarity] ? RARITY[it.rarity].col : null /* (6.5.0) its name in its rarity's colour */, price: it.price, line: it.line, good: it.good, bad: it.bad,
-      owned: ownsItem(P, it.id), on: !!w && w.id === it.id, pic: pictureOf(it.kind, it, 150, 90, true) }; });
+      owned: ownsItem(P, it.id), on: !!w && w.id === it.id, pic: pictureOf(it.kind, it, 150, 90, true) }; })
+      // (7.3.0) the deep trap is his: four hours, twenty animals, down to 1,500 m
+      .concat(Object.entries(TRAPS).filter(([, T]) => T.shop === 'dave').map(([k, T]) => { const have = (P.traps && P.traps[k]) || 0;
+        return { key: 'trap:' + k, name: T.name, col: RARITY[T.rarity] ? RARITY[T.rarity].col : null, price: T.price, line: T.desc, good: 'Twenty animals in four hours', bad: "Emptied with the Margaret's winch", owned: have >= T.max, on: false, pic: pictureOf('trap', 2, 150, 90, true) }; }));
   }
   render() {
     const P = this.h.getProfile(), g = this.h.getGame();

@@ -101,16 +101,17 @@ export const CAMERAS = [
 // bottom). The bait works for five minutes: count is how many fish come in over that time. size is the
 // box [width, height] in metres; line: how it hangs (a string, a line, a rope); winch: hauled with
 // the boat's winch, not by hand; lure: a light that draws deep animals, and other things.
-export const TRAP_ORDER = ['pot', 'fish', 'steel', 'cage'];
+// (7.3.0, owner) three traps, one of each owned and one set at a time, fishing in real time (traps.js): dur is how long
+// its bait works, count how many animals come in over it (all of them stay in it until emptied). The deep trap is
+// Dave's (shop). Prices: an average haul is worth about twice the trap (set in the economy pass)
+export const TRAP_ORDER = ['pot', 'fish', 'cage'];
 export const TRAPS = {
-  pot: { name: 'Wire pot', rarity: 'uncommon', /* (6.5.8) traps have rarities */ price: 130, max: 3, maxDepth: 40, count: [4, 8], holds: 8, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
-    desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float..' },
-  fish: { name: 'Fish trap', rarity: 'rare', price: 1600, max: 3, maxDepth: 150, count: [5, 9], holds: 9, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
-    desc: 'A larger mesh box with a funnel at each end, on a stout line..' },
-  steel: { name: 'Steel pot', rarity: 'exotic', price: 17500, max: 2, maxDepth: 500, count: [5, 10], holds: 10, maxLen: 1.4, size: [1.5, 1.0], line: 'rope', funnels: 2, winch: true,
-    desc: 'A heavy steel-framed pot with two chambers, on a thick rope.. Too heavy to lift by hand.' },
-  cage: { name: 'Deep cage', rarity: 'legendary', price: 90000, max: 2, maxDepth: 1500, count: [6, 12], holds: 12, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true,
-    desc: 'A tall weighted cage with a lit lure, on a heavy rope.. The light draws deep animals, and other things.' },
+  pot: { name: 'Wire pot', rarity: 'uncommon', /* (6.5.8) traps have rarities */ price: 130, max: 1, maxDepth: 40, dur: 300, count: 5, holds: 5, maxLen: 0.5, size: [0.6, 0.45], line: 'string', funnels: 1,
+    desc: 'A small galvanised wire box with one funnel and a bait bag, on a thin line from an orange float. Five animals in five minutes.' },
+  fish: { name: 'Fish trap', rarity: 'rare', price: 1600, max: 1, maxDepth: 150, dur: 1800, count: 10, holds: 10, maxLen: 0.9, size: [1.0, 0.7], line: 'line', funnels: 2,
+    desc: 'A larger mesh box with a funnel at each end, on a stout line. Ten animals in half an hour.' },
+  cage: { name: 'Deep trap', rarity: 'exotic', price: 17500, max: 1, maxDepth: 1500, dur: 14400, count: 20, holds: 20, maxLen: 2.0, size: [1.4, 2.0], line: 'rope', funnels: 2, winch: true, lure: true, shop: 'dave',
+    desc: 'A tall weighted cage with a lit lure, on a heavy rope, emptied with the boat\'s winch. Twenty animals in four hours. The light draws deep animals, and other things.' },
 };
 export const BAGS = [
   { name: 'Mesh goody bag', slots: 3, price: 0, desc: 'Clipped to your belt.' },

@@ -186,7 +186,7 @@ function firstBoard(P) {
   return [
     { ...b, key: 'depth200', kind: 'depth', d: 200, n: 1, pay: 150, text: 'Take the sub below 200 m' },
     { ...b, key: 'liveup100', kind: 'liveup', d: 100, n: 1, pay: 150, text: 'Bring up a live animal from below 100 m' },
-    { ...b, key: 'traphaul', kind: 'traphaul', n: 1, pay: 80, text: 'Set a trap and haul it in' },
+    { ...b, key: 'traphaul', kind: 'traphaul', n: 1, pay: 80, text: 'Set a trap and empty it' },
   ];
 }
 const ownsKind = (P, kind) => kitOf(P).items.some((it) => ITEMS[it.id] && ITEMS[it.id].kind === kind);

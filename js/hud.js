@@ -176,8 +176,8 @@ export class Hud {
     const tools = [['1', 'net', G('net').look, G('net').name]];
     if (owns(P, 'camera')) tools.push(['2', 'cam', G('cam').look, G('cam').name]);
     const tr = P.traps || {};
-    const ownedTraps = ['pot', 'fish', 'steel', 'cage'].reduce((a, k) => a + (tr[k] || 0), 0);
-    if (ownedTraps > 0) tools.push(['3', 'trap', ['pot', 'fish', 'steel', 'cage'].findIndex((k) => tr[k] > 0), 'Traps']);
+    const ownedTraps = ['pot', 'fish', 'cage'].reduce((a, k) => a + (tr[k] || 0), 0); // (7.3.0) three traps, one set at a time
+    if (ownedTraps > 0) tools.push(['3', 'trap', ['pot', 'fish', 'cage'].findIndex((k) => tr[k] > 0), 'Traps']);
     const sw = 84 * s, sh = 46 * s, gap = 8 * s;
     const total = tools.length * sw + (tools.length - 1) * gap;
     let x = W / 2 - total / 2;
@@ -197,7 +197,7 @@ export class Hud {
        ctx.font = `500 ${10 * s}px ${MONO}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       { const kx2 = window.innerWidth / this.c.width; if (!e.inSub) this.hots.push({ x: (x + this.safeL) * kx2, y: (y + this.safeT) * kx2, w: sw * kx2, h: sh * kx2, key }); } // (5.1.1) a tool is picked by clicking (tapping) it too
       if (kind === 'cam') { ctx.textAlign = 'right'; ctx.fillStyle = g.items.film ? 'rgba(216,236,230,0.8)' : '#e0524a'; ctx.fillText(`${g.items.film || 0}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
-      if (kind === 'trap') { const free = ownedTraps - g.traps.length; ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
+      if (kind === 'trap') { const free = P.trapSet ? 0 : ownedTraps; /* (7.3.0) one set at a time */ ctx.textAlign = 'right'; ctx.fillStyle = free ? 'rgba(216,236,230,0.8)' : '#e86a50'; ctx.fillText(`${free}`, x + sw - 5 * s, y + 4 * s); ctx.textAlign = 'left'; }
       // sweep / reload progress along the bottom edge
       if (on && kind === 'cam' && g.photo) { ctx.fillStyle = 'rgba(200,230,215,0.7)'; ctx.fillRect(x + 4 * s, y + sh - 4 * s, (sw - 8 * s) * clamp(g.photo.t / g.photo.dur, 0, 1), 2 * s); }
       if (on && g.capture && g.capture.kind === kind) {

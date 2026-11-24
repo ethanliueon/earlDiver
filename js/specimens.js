@@ -266,3 +266,18 @@ export function pressureTolerance(sp, home = 0) {
   const kind = pressureKind(sp), deep = home >= 2500 ? 2 : home >= 1000 ? 1.5 : 1;
   return deep > kind.k ? { k: deep, why: 'built for the deep' } : kind;
 }
+
+// (7.3.0) how often each rarity is met (owner): of the animals met in a place, 3 % exotic (an undocumented one counts as
+// exotic, quietly) and 0.05 % legendary, wherever any live; the rest as they come. list: [[species, weight], ...] as a
+// place would pick from by weight; the weights are scaled per group so the groups take those shares (a group with
+// nothing in it gives its share back to the rest)
+export const SHARE = { exotic: 0.03, legendary: 0.0005 };
+export function rarityShare(list) {
+  const grp = (sp) => { const r = rarityOf(sp); return r.id === 'undocumented' || r.i === 3 ? 'exotic' : r.i === 4 ? 'legendary' : 'rest'; };
+  const tot = { exotic: 0, legendary: 0, rest: 0 }, gs = list.map(([sp, w]) => { const k = grp(sp); tot[k] += w; return k; });
+  const all = tot.exotic + tot.legendary + tot.rest; if (all <= 0) return list;
+  const want = { exotic: tot.exotic > 0 ? SHARE.exotic : 0, legendary: tot.legendary > 0 ? SHARE.legendary : 0 };
+  want.rest = tot.rest > 0 ? 1 - want.exotic - want.legendary : 0;
+  const sum = want.exotic + want.legendary + want.rest; // (no common at all: the rare ones share it all)
+  return list.map(([sp, w], i) => { const k = gs[i]; return [sp, tot[k] > 0 ? w / tot[k] * (want[k] / sum) : 0]; });
+}

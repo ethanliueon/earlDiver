@@ -488,7 +488,7 @@ export function toolIcon(kind, tier, w, h) {
     ctx.translate(w * (b === 0 ? 0.12 : 0.2), h * 0.42); ctx.rotate(-0.06);
     drawTagger(ctx, u, tier, 0.4, 0, true);
   } else if (kind === 'trap') {
-    const type = ['pot', 'fish', 'steel', 'cage'][tier] || 'pot', T = TRAPS[type];
+    const type = (typeof tier === 'string' && TRAPS[tier] ? tier : ['pot', 'fish', 'cage'][tier]) || 'pot', T = TRAPS[type]; /* (7.3.0) by name too: the locker's tiles asked by name and all drew the pot */
     const mm = Math.min(w * 0.75 / T.size[0], h * 0.62 / (T.size[1] * 1.4));
     ctx.translate(w / 2, h * 0.88);
     drawBoxTrap(ctx, mm, type, 0.5, []);

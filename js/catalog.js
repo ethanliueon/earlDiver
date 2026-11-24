@@ -34,7 +34,7 @@ export const WEBSHOPS = {
   dave: { title: "Dave's Haul", sub: '1,200 m down, cash only, no refunds', stock: 'dave', theme: 'dave',
     lede: "Deep gear, second hand and first rate. If it's on here, I've got it. If it isn't, I haven't. — Dave", newIn: [],
     cats: [['home', 'Front page'], null, ['tank', 'Air'], ['suit', 'Deep suits'], ['net', 'Big-game nets'], null,
-      ['fins', 'Fins'], ['bag', 'Bags'], ['cam', 'Cameras'], null, ['finds', 'Dave buys'], ['sell', 'Sell me your gear']],
+      ['fins', 'Fins'], ['bag', 'Bags'], ['cam', 'Cameras'], ['trap', 'Deep trap'], null, ['finds', 'Dave buys'], ['sell', 'Sell me your gear']], // (7.3.0) the deep trap is his
     chestTitle: 'Boxes, unopened', chestLede: "Whatever came down on the rope. I haven't looked. I say." },
 };
 const ITEM_CATS = ['net', 'cam', 'fins', 'tank', 'bag', 'suit'];
@@ -136,13 +136,15 @@ export class Catalog {
       return ITEMS_OF(cat, this.cfg.stock).map((it) => ({ key: 'item:' + it.id, id: it.id, it, kind: cat, name: it.name, price: it.price, line: it.line, good: it.kind === 'cam' && it.idx && !/^Quality/.test(it.good || '') ? `Quality ${it.idx.toFixed(2)}, ${it.good || ''}` : it.good, bad: it.bad, /* (5.10.10) a camera shows its Quality */ tag: RARITY[it.rarity].name, rarity: it.rarity,
         owned: ownsItem(P, it.id), on: !!on && on.id === it.id, pic: [cat, it] }));
     }
-    if (this.id !== 'bayside') return [];
+    if (this.id !== 'bayside' && !(this.id === 'dave' && cat === 'trap')) return []; // (7.3.0) Dave sells the deep trap
     if (cat === 'trawl') return ['basic', 'adv'].map((k) => { const T = NETS_SUB[k], have = g && g.items ? netsOf(g.items)[k] : 0, full = have >= T.cap; // (4.11.1) both nets, as before
       return { key: 'subnet:' + k, id: k, kind: 'trawl', name: T.name, price: T.price, line: k === 'adv' ? `The net for big game: a wide mouth, ten animals, and no legend escapes it. Carry ${T.cap} (${have}/${T.cap}).` : `A light net for the sub's belly hatch. Carry up to ${T.cap} (${have}/${T.cap}).`,
         good: k === 'adv' ? 'Sharks, oarfish and legends stay in' : 'A haul of fish while you drive', bad: k === 'adv' ? 'Dear' : 'Big animals often break out, and may tear it', owned: full, on: full, onText: `In the hatch (${have}/${T.cap})`, pic: ['trawl', k] }; });
     if (cat === 'trap') {
       const tr = P.traps || {};
-      return ['pot', 'fish'].map((k, i) => { const T = TRAPS[k], have = tr[k] || 0; return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, price: T.price, line: k === 'pot' ? 'A galvanised box with one funnel.' : 'A mesh box with a funnel at each end.', good: `To ${T.maxDepth} m; up to ${T.holds} animals`, count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', i] }; });
+      // (7.3.0) the wire pot and fish trap at the boat's shops, the deep trap at Dave's
+      const LINE = { pot: 'A galvanised box with one funnel.', fish: 'A mesh box with a funnel at each end.', cage: TRAPS.cage.desc }, GOOD = { pot: 'Five animals in five minutes', fish: 'Ten animals in half an hour', cage: 'Twenty animals in four hours' };
+      return (this.id === 'dave' ? ['cage'] : ['pot', 'fish']).map((k) => { const T = TRAPS[k], have = tr[k] || 0, i = ['pot', 'fish', 'cage'].indexOf(k); return { key: 'trap:' + k, id: k, kind: 'trap', name: T.name, rarity: T.rarity, price: T.price, line: LINE[k], good: GOOD[k], bad: T.winch ? "Emptied with the Margaret's winch" : '', count: `you have (${have}/${T.max})`, full: have >= T.max, pic: ['trap', k] }; void i; });
     }
     // (4.0.0) the anglerfish lure: not at Bayside, only at the station and Dave's, and dear
     if (cat === 'lure') { const S = SUPPLIES.lure, have = ((g && g.items.lure) || 0) + ((P.spare && P.spare.lure) || 0) + (P.oldLures || 0), mx = supplyMax(P, 'lure');

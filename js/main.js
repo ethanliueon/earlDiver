@@ -18,7 +18,7 @@ import { VARIANTS, variantLabel, rollVariant, canBeRare, variantMult } from './v
 import { SETTINGS } from './settings.js';
 import { photoTarget, startPhoto, updatePhoto } from './survey.js';
 import { prepareMonster } from './monster_draw.js';
-import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps } from './traps.js';
+import { setTrap, updateTraps, trapNear, emptyTrap, trapsFree, canSetHere, convertOldTraps, lostTraps, trapSet, trapLeft, timeLeftText, syncTraps } from './traps.js';
 import { startArm, updateArm, findArmTarget } from './arm.js';
 import { Q as questsOf, fillQuests, questEvent, questTick, claim as claimQuest, refreshBoard, refreshPrice, MAIN as QUEST_MAIN, readyCount as questsReady, learned, TUT_IDS, firstFishPart, tutorialOn } from './quests.js';
 import { TutSpot } from './tutspot.js';
@@ -174,6 +174,7 @@ function newGame(mode) {
   audio.ready && audio.restore(1.2); // after a death by the thing below, the sound comes back
   const P = profile || newProfile();
   convertOldTraps(P); // old seabed traps become the new box traps
+  if (P.trapRefund) { const r = P.trapRefund; delete P.trapRefund; setTimeout(() => hud.toast(`Traps changed: one of each kind now, one set at a time. ${money(r, false)} back for the extras`, 'note'), 2500); } // (7.3.0)
   BOAT.x = clamp(P.boatX || BOAT_HOME, BOAT_MIN, BOAT_MAX); // she is where she was anchored (the shelf edge at first)
   const seed = (Math.random() * 1e9) | 0;
   const world = generateWorld(seed);
@@ -365,7 +366,7 @@ const ui = new UI({
     const why = canSetHere(g); if (why) { hud.toast(why, 'warn'); return true; }
     if (trapsFree(g, type) <= 0) { hud.toast('None of those left to set', 'warn'); return false; }
     const d = setTrap(g, type, depth); questEvent(profile, 'trap');
-    hud.toast(`${TRAPS[type].name} set at ${d} m`); hud.hint(TRAPS[type].winch ? 'Come back in five minutes: winch it up from the Margaret at its buoy, or empty it down there' : 'Come back in five minutes: F at the buoy hauls it up, or empty it where it hangs');
+    const left = timeLeftText(TRAPS[type].dur); hud.toast(`${TRAPS[type].name} set at ${d} m`); hud.hint(TRAPS[type].winch ? `It fishes for ${left}, even with the game closed: empty it with the Margaret's winch at its buoy, or down where it hangs` : `It fishes for ${left}, even with the game closed: empty it at its buoy, or where it hangs`); saveProfile(profile);
     audio.ready && audio.click(); return true;
   },
   onCaveTrade: (keys) => caveTrade(keys),
@@ -1620,9 +1621,10 @@ function promptFor(t) {
     } else if (t.kind === 'board') {
       p = 'F  Board the submersible';
     }
-    else if (t.kind === 'trap') p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch' : 'Haul'} up the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside, ${t.t.depth} m down)`
-      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is too heavy to haul by hand: bring the Margaret here and use its winch`
-      : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside)`;
+    else if (t.kind === 'trap') { const S0 = trapSet(profile), lf = S0 ? trapLeft(S0) : 0, when = lf > 0 ? `, ${timeLeftText(lf)} to go` : ', done'; // (7.3.0) its time, in real time
+      p = t.how === 'haul' ? `F  ${TRAPS[t.t.type].winch ? 'Winch up' : 'Pull up'} the catch (${t.t.catch.length} inside${when})`
+      : t.how === 'needboat' ? `The ${TRAPS[t.t.type].name.toLowerCase()} is emptied with the Margaret's winch: bring her here (${t.t.catch.length} inside${when})`
+      : `F  Empty the ${TRAPS[t.t.type].name.toLowerCase()} (${t.t.catch.length} inside${when})`; }
     else if (t.kind === 'kelp') p = 'F  Cut a kelp blade';
     else if (t.kind === 'creature' && t.c && t.c.pet) p = `${t.c.pet.name || 'Your ' + t.sp.name.toLowerCase()}${t.c.pet.famous ? ' ★' : ''} · released here, from your aquarium`;
     else if (t.kind === 'guardian') p = 'F  Guardian jellyfish';
@@ -1654,9 +1656,12 @@ function interact(t, exitSub) {
   if (exitSub && e.inSub) return leaveSub();
   if (!t) { if (e.inSub) leaveSub(); return; }
   if (t.kind === 'trap') {
-    if (t.how === 'haul') { t.t.state = 'hauling'; hud.toast(TRAPS[t.t.type].winch ? 'Winching up the trap' : 'Hauling up the trap'); audio.ready && audio.click(); }
-    else if (t.how === 'needboat') hud.toast('Too heavy: winch it from the Margaret', 'warn');
-    else { const n = emptyTrap(g, t.t); if (n) questEvent(profile, 'trapHaul'); /* (6.8.0) */ hud.toast(n ? `${n} into the bag${t.t.catch.length ? ' · bag full' : ''}` : t.t.catch.length ? 'Bag full' : 'The trap is empty'); }
+    if (t.how === 'needboat') { hud.toast('Emptied with the Margaret\'s winch: bring her here', 'warn'); return; }
+    // (7.3.0) whatever fits goes into the bag (the rest waits in it); with its time up and nothing left, it comes up
+    const nm = TRAPS[t.t.type].name.toLowerCase(), r = emptyTrap(g, t.t, t.how);
+    if (r.n) questEvent(profile, 'trapHaul'); /* (6.8.0) */
+    hud.toast(r.n ? `${r.n} into the bag${r.left ? ` · ${r.left} still in the ${nm}: the bag is full` : ''}${r.stowed ? ` · the ${nm} comes up` : ''}` : r.left ? `The bag is full: ${r.left} still in the ${nm}` : r.stowed ? `The ${nm} comes up` : `Nothing in the ${nm} yet`, r.left ? 'warn' : '');
+    audio.ready && audio.click(); saveProfile(profile);
     return;
   }
   // (6.5.7) the guardian jellyfish's note, written beside it in the water; it stays while he is in its light and fades
@@ -2393,14 +2398,9 @@ function update(dt) {
     omens(dt); // (6.8.0)
     sailFind(); // (6.8.1)
     for (const ev of updateTraps(g, dt, renderer.cam)) {
-      if (ev.type === 'hauled') {
-        const tr = ev.trap, n = tr.catch.length;
-        tr.y = 0; const moved = emptyTrap(g, tr); if (moved) questEvent(profile, 'trapHaul'); // (6.8.0)
-        hud.toast(n ? `${TRAPS[tr.type].name} up · ${n} inside${moved < n ? ` · ${n - moved} didn't fit` : ''}` : `The ${TRAPS[tr.type].name.toLowerCase()} comes up empty`, n ? 'note' : '');
-        audio.ready && audio.thud && audio.thud(0.25);
-      } else if (ev.type === 'settled') hud.toast(`${TRAPS[ev.trap.type].name} set at ${ev.trap.depth} m${ev.trap.onBottom ? ', on the bottom' : ''}`);
-      else if (ev.type === 'spoiling') hud.toast(`A ${TRAPS[ev.trap.type].name.toLowerCase()} has been left too long`, 'warn');
-      else if (ev.type === 'ghost') hud.toast(`An abandoned ${TRAPS[ev.trap.type].name.toLowerCase()} broke loose`, 'warn');
+      if (ev.type === 'stowed') { hud.toast(`The ${TRAPS[ev.trap.type].name.toLowerCase()} is back aboard, ready to set again`); audio.ready && audio.thud && audio.thud(0.25); }
+      else if (ev.type === 'settled') hud.toast(`${TRAPS[ev.trap.type].name} set at ${ev.trap.depth} m${ev.trap.onBottom ? ', on the bottom' : ''}`);
+      else if (ev.type === 'done') { hud.toast(`Your ${TRAPS[ev.trap.type].name.toLowerCase()} is full: ${ev.trap.catch.length} waiting in it`, 'note'); saveProfile(profile); }
     }
     if (g.capture && (g.capture.kind === 'tag' || g.capture.kind === 'cam')) { g.capture.t += dt; if (g.capture.t >= g.capture.dur) g.capture = null; }
     g.camFlash = Math.max(0, g.camFlash - dt * 5);
