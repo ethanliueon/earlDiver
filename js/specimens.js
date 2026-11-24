@@ -201,7 +201,13 @@ export function rarityPrice(sp) {
 export const depthCurve = (mid) => Math.pow(3, Math.max(0, mid - 450) / 1000); // (7.3.0, owner) three times as much for every 1,000 m below 450 m
 let usualOf = null;
 export function useUsualDepth(f) { usualOf = f; PRICE_CACHE.clear(); LEG_SPAN = null; }
-const midDepth = (sp) => { const r = usualOf ? usualOf(sp) : [sp.dmin, Math.min(sp.dmax, Math.max(sp.dmin * 4, 1500))]; return (r[0] + r[1]) / 2; };
+// (7.3.6, owner) fitted into this sea: it ends at the pit's floor (5,100 m), so a usual band that runs below it (the
+// abyssal cusk-eel's 4,800-8,100 m, the supergiant amphipod's 5,500-6,900 m) is squeezed in proportion to end there,
+// keeping the animals in their order; no animal is priced for water the game does not have. The journal keeps the
+// recorded depths
+export const SEA_FLOOR = 5100;
+export const gameBand = (r) => (r[1] > SEA_FLOOR ? [r[0] * SEA_FLOOR / r[1], SEA_FLOOR] : r);
+const midDepth = (sp) => { const r = gameBand(usualOf ? usualOf(sp) : [sp.dmin, Math.min(sp.dmax, Math.max(sp.dmin * 4, 1500))]); return (r[0] + r[1]) / 2; };
 export const depthMultOf = (sp) => depthCurve(midDepth(sp)); // (7.3.0) for photographs, which do not take it
 // (7.3.0, owner) a legend: never under five times the dearest exotic (about $660,000, so $3,300,000), the shallowest legend
 // (the coelacanth) at that, the deepest about $5,000,000, in between by how deep each lives

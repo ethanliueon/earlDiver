@@ -360,6 +360,9 @@ export class Fauna {
     };
     // (7.3.0, owner) what is met everywhere: exotics (undocumented with them) 3 %, legendaries 0.05 %, the rest as they come
     const pool = rarityShare(cands.map((c) => [c, wOf(c)]));
+    // (7.3.6, owner) the abyssal sleeper shark (9 m, camera only) is half a percent of what is met below 3,000 m, not a
+    // share of the exotics' 3 % (few exotics live that deep, so it took a large slice of it)
+    { const i = pool.findIndex(([c]) => c.id === 188); if (i >= 0) { let rest = 0; for (const [c, w] of pool) if (c.id !== 188) rest += w; pool[i] = [pool[i][0], y >= 3000 && rest > 0 ? rest * 0.005 / 0.995 : 0]; } }
     let tot = 0; for (const [, w] of pool) tot += w;
     let r = rng() * tot, sp = cands[0];
     for (const [c, w] of pool) { r -= w; if (r <= 0) { sp = c; break; } }
@@ -469,11 +472,12 @@ export class Fauna {
       const filler = FILLER.has(sp.id);
       // (7.3.0, owner) below 2,000 m the deep's ordinary animals fill the dark water too: prawns and cusk-eels anywhere,
       // the bottom's swimmers (grenadiers, rattails, snailfish, amphipods) within 80 m of the floor; prawns most of all
-      const deepFill = y > 2000 && DEEP_FILL[sp.id] && (DEEP_FILL[sp.id].any || fl - y < 80);
+      // (7.3.6, owner) faded in from 1,400 m to full at 2,000 m: no line in the sea where the deep's animals switch on
+      const deepFill = y > 1400 && DEEP_FILL[sp.id] && (DEEP_FILL[sp.id].any || fl - y < 80), fillK = smoothstep(1400, 2000, y);
       if (!deepFill && ((!sp.v.glow && !filler) || (sp.v.hab !== 'pelagic' && !filler))) continue;
       if (sp.len > 1 || y < sp.dmin || y > sp.dmax) continue;
       const w = this.depthPref(sp, x, y, night);
-      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1) * (deepFill ? DEEP_FILL[sp.id].k : 1)]); // the small and common first, the filler most of all
+      if (w >= 0.12) pool.push([sp, w / (0.3 + sp.len) * (filler ? 4 : 1) * (deepFill ? DEEP_FILL[sp.id].k * fillK : 1)]); // the small and common first, the filler most of all
     }
     if (!pool.length) return;
     const pool2 = rarityShare(pool); // (7.3.0, owner) exotics 3 % of what is met, legendaries 0.05 % (it was 70 % exotic at 1,700 m)
