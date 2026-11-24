@@ -189,6 +189,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   past the palm: "Area available in a future update". It is a wall for the sub and the boat; pets wait in the sea.
   Nothing of the sea is placed past SEA_END. The seabed is painted with assets/textures/seabed.png (tools/seabed_tex.py),
   multiplied over its colour when the floor is baked, so phones show it too.
+- **No round dots for sparks (7.4.24, owner):** an ember is a thin tapered sliver of ash rising (scrolls.js ember), a
+  speck of bioluminescence a tiny sharp streak; never a plain circle or soft blob. Hadal Heart gives off no embers.
 - **A sub left deep (7.4.22, owner):** her crush risk runs whether he is in her or not. Empty, she can implode: he lives,
   she is lost (heard as a boom), she cannot be called, and once he is back at the surface she is in the Margaret's
   cradle again.

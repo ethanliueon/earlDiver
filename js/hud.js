@@ -9,7 +9,7 @@ import { drawNet3, drawCam3 } from './gear_art.js';
 import { drawHourglass, drawPowerBadge, POWER_EMBLEMS } from './coin_art.js';
 import { LEGEND } from './item_data.js';
 import { rarityOf } from './specimens.js';
-import { legendMotes, glint } from './scrolls.js';
+import { legendMotes, glint, ember } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { calState } from './store.js';
 // (olive) a small plate of the locker's painted steel (the same painter, so the same material), cached by size
@@ -528,7 +528,7 @@ e.inSub ? [
         ctx.fillStyle = '#fff6ea'; ctx.font = `700 ${br * 1.45}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + br * 0.06); ctx.restore(); }
       if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 1.8, r * 1.8, g.time, 3);
       if (a.abil && AB.tier === 'mythical') { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (let i = 0; i < 11; i++) { const ph = (g.time * (0.22 + (i % 4) * 0.05) + i * 0.091) % 1, px = x + Math.sin(i * 2.4 + g.time * 0.7) * r * 0.75, py = y + r * 0.7 - ph * r * 2;
-        ctx.fillStyle = `rgba(255,${120 + Math.round(80 * (1 - ph))},70,${(Math.sin(Math.PI * ph) * 0.8).toFixed(3)})`; ctx.beginPath(); ctx.arc(px, py, Math.max(1.1, r * 0.045), 0, TAU); ctx.fill(); } ctx.restore(); } // (7.4.15) a mythical's embers // (5.9.1) a legendary's sparks; (5.10.8) fewer, closer
+        ember(ctx, px, py, Math.max(4, r * 0.2), Math.max(1.2, r * 0.05), -Math.PI / 2 + Math.sin(g.time * 2 + i) * 0.3, Math.sin(Math.PI * ph) * 0.8); } ctx.restore(); } // (7.4.15, 7.4.24) a mythical's embers, slivers not dots // (5.9.1) a legendary's sparks; (5.10.8) fewer, closer
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
         if (ABS.activeT > 0) { ctx.strokeStyle = AB.tier === 'mythical' ? 'rgba(236,120,84,0.8)' : AB.tier === 'legendary' ? 'rgba(220,180,110,0.75)' : 'rgba(226,220,196,0.7)'; ctx.lineWidth = 2.2 * u; ctx.beginPath(); ctx.arc(x, y, r * 1.08, -Math.PI / 2, -Math.PI / 2 + TAU * (ABS.activeT / Math.max(0.01, ABS.maxT))); ctx.stroke(); }
         else if (cdl > 0 && tot > 0 && !(AB.charges && ABS.charges > 0)) { ctx.fillStyle = 'rgba(4,6,6,0.6)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r * 0.92, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, cdl / tot)); ctx.closePath(); ctx.fill();

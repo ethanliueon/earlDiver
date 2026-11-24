@@ -24,7 +24,7 @@ import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
 import { LEGENDARY } from './specimens.js';
-import { glint } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
+import { glint, ember } from './scrolls.js'; // (7.4.3) the legendary sparkle, for a legendary pet
 import { BOAT, WORLD_W, EAST, CAVE, ANGLER, CANYON, SAIL, WHALE_FALL, ISLE } from './world.js';
 import { LANTERN_RADIUS } from './entity.js';
 import { Clouds } from './clouds.js';
@@ -466,9 +466,7 @@ export class Renderer {
           if (my) { ctx.save(); ctx.globalCompositeOperation = 'source-over'; // (7.4.17) solid embers, so they show in bright shallow water too
             const nE = 28, er = Math.max(2.2, ppm * 0.09);
             for (let k = 0; k < nE; k++) { const ph = (t * (0.14 + (k % 5) * 0.03) + k * 0.0617) % 1, u = ((k * 0.381) % 1 - 0.5) * 1.0, ex = S(c.x + dir * u * Lp + Math.sin(t * 0.9 + k) * 0.2), ey = Sy(c.y + Lp * 0.05 - ph * Math.max(1.5, Lp * 0.3));
-              const a = Math.sin(Math.PI * ph), rr = er * (1 - ph * 0.45);
-              const eg = ctx.createRadialGradient(ex, ey, 0, ex, ey, rr * 2.4); eg.addColorStop(0, `rgba(255,${200 - Math.round(60 * ph)},120,${(a * 0.95).toFixed(3)})`); eg.addColorStop(0.35, `rgba(240,${110 - Math.round(30 * ph)},50,${(a * 0.7).toFixed(3)})`); eg.addColorStop(1, 'rgba(200,60,30,0)');
-              ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, rr * 2.4, 0, Math.PI * 2); ctx.fill(); }
+              ember(ctx, ex, ey, er * (4 - ph * 1.5), er * 1.1, -Math.PI / 2 + Math.sin(t * 1.7 + k) * 0.35, Math.sin(Math.PI * ph) * 0.95); } // (7.4.24) slivers of ash
             ctx.restore(); }
           ctx.restore(); }
       }
@@ -1389,10 +1387,11 @@ export class Renderer {
     }
     if (g.mode === 'play' && (g.mythT > 0 || g.mythFx || g.markWashFx || g.songFx)) { const e = g.earl, m = e.inSub ? g.sub : e, mx = S(m.x), my = Sy(m.y), t = g.time, sz = (e.inSub ? 4 : 1.8) * ppm, er = Math.max(1.8, ppm * 0.07);
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'lighter';
-      if (g.mythFx) { const k0 = g.mythFx.t / 1.6; for (let i = 0; i < 40; i++) { const a = i * 2.39996, r = sz * (0.3 + k0 * (2.4 + (i % 5) * 0.4)), px = mx + Math.cos(a) * r, py = my + Math.sin(a) * r * 0.8 - k0 * sz * 0.6, al = (1 - k0) * 0.85;
-        ctx.fillStyle = `rgba(255,${120 + (i % 4) * 25},70,${al.toFixed(3)})`; ctx.beginPath(); ctx.arc(px, py, er * 1.3 * (1 - k0 * 0.5), 0, TAU); ctx.fill(); } }
-      if (g.mythT > 0) { const fade = Math.min(1, g.mythT / 1.5); for (let i = 0; i < 20; i++) { const ph = (t * (0.35 + (i % 4) * 0.07) + i * 0.083) % 1, u = ((i * 0.618) % 1 - 0.5) * 1.6, px = mx + u * sz + Math.sin(t * 1.3 + i) * sz * 0.15, py = my + sz * 0.3 - ph * sz * 1.8;
-        ctx.fillStyle = `rgba(255,${130 + Math.round(70 * (1 - ph))},80,${(Math.sin(Math.PI * ph) * 0.7 * fade).toFixed(3)})`; ctx.beginPath(); ctx.arc(px, py, er, 0, TAU); ctx.fill(); } }
+      const hadal = g.abil && g.abil.def && g.abil.def.press; // (7.4.24) Hadal Heart: no embers, its field is enough
+      if (g.mythFx && !hadal) { const k0 = g.mythFx.t / 1.6; for (let i = 0; i < 30; i++) { const a = i * 2.39996, r = sz * (0.3 + k0 * (2.4 + (i % 5) * 0.4)), px = mx + Math.cos(a) * r, py = my + Math.sin(a) * r * 0.8 - k0 * sz * 0.6;
+        ember(ctx, px, py, er * (5 - 2 * k0), er * 1.2, a, (1 - k0) * 0.85); } } // flung out from him
+      if (g.mythT > 0 && !hadal) { const fade = Math.min(1, g.mythT / 1.5); for (let i = 0; i < 16; i++) { const ph = (t * (0.35 + (i % 4) * 0.07) + i * 0.083) % 1, u = ((i * 0.618) % 1 - 0.5) * 1.6, px = mx + u * sz + Math.sin(t * 1.3 + i) * sz * 0.15, py = my + sz * 0.3 - ph * sz * 1.8;
+        ember(ctx, px, py, er * 4, er * 1.1, -Math.PI / 2 + Math.sin(t * 2 + i) * 0.3, Math.sin(Math.PI * ph) * 0.7 * fade); } } // rising off him
       if (g.songFx) { const T = g.songFx.t, rr = Math.hypot(ctx.canvas.width, ctx.canvas.height) * Math.min(1.1, 0.08 + T / 2.6), a = 0.22 * Math.max(0, 1 - T / 4); // (7.4.15) Whalesong: a pale ring of light going out over the screen
         const rg = ctx.createRadialGradient(mx, my, rr * 0.78, mx, my, rr); rg.addColorStop(0, 'rgba(214,230,240,0)'); rg.addColorStop(0.7, `rgba(214,230,240,${a.toFixed(3)})`); rg.addColorStop(1, 'rgba(214,230,240,0)'); ctx.fillStyle = rg; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); }
       if (g.markWashFx) { const k0 = g.markWashFx.t / 2, r = sz * (0.8 + k0 * 4); ctx.strokeStyle = `rgba(150,190,230,${((1 - k0) * 0.6).toFixed(3)})`; ctx.lineWidth = Math.max(2, ppm * 0.18) * (1 - k0 * 0.6); ctx.beginPath(); ctx.arc(mx, my, r, 0, TAU); ctx.stroke(); }
@@ -1417,9 +1416,9 @@ export class Renderer {
           for (let i = 0; i <= 64; i++) { const a = i / 64 * TAU, rr = rimR(a) * 0.97; i ? ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry) : ctx.moveTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); }
           const inner = TI >= 3 ? 0.72 : 0.5; for (let i = 64; i >= 0; i--) { const a = i / 64 * TAU, rr = rimR(a) * inner; ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); } ctx.closePath(); ctx.clip('evenodd'); const cw = ctx.canvas.width, ch = ctx.canvas.height, w2 = R * 2.2, h2 = R * 2.2 * ry;
           try { ctx.globalAlpha = 0.9; ctx.drawImage(ctx.canvas, Math.max(0, mx - w2 / 2), Math.max(0, my - h2 / 2), Math.min(cw, w2), Math.min(ch, h2), mx - w2 * mag / 2, my - h2 * mag / 2, w2 * mag, h2 * mag); } catch (er) { /* a lens skipped */ }
-          ctx.globalAlpha = 1; const ig = ctx.createRadialGradient(mx, my, R * 0.2, mx, my, R); ig.addColorStop(0, 'rgba(92,124,170,0)'); ig.addColorStop(0.75, `rgba(92,124,170,${(0.04 + 0.05 * vis).toFixed(3)})`); ig.addColorStop(1, `rgba(110,140,190,${(0.12 + 0.14 * vis).toFixed(3)})`); ctx.fillStyle = ig; ctx.fillRect(mx - R * 1.2, my - R * 1.2, R * 2.4, R * 2.4);
+          ctx.globalAlpha = 1; const ig = ctx.createRadialGradient(mx, my, R * 0.2, mx, my, R); ig.addColorStop(0, 'rgba(84,104,134,0)'); ig.addColorStop(0.75, `rgba(84,104,134,${(0.04 + 0.05 * vis).toFixed(3)})`); ig.addColorStop(1, `rgba(96,116,146,${(0.12 + 0.14 * vis).toFixed(3)})`); ctx.fillStyle = ig; ctx.fillRect(mx - R * 1.2, my - R * 1.2, R * 2.4, R * 2.4);
           // light moving inside it, slow
-          ctx.globalCompositeOperation = 'lighter'; for (let j = 0; j < 3 + TI; j++) { const a = tt * (0.4 + j * 0.13) + j * 2.1, px = mx + Math.cos(a) * R * 0.45, py = my + Math.sin(a * 1.3) * R * 0.35 * ry; const lg = ctx.createRadialGradient(px, py, 0, px, py, R * 0.35); lg.addColorStop(0, `rgba(100,130,180,${(0.05 * vis).toFixed(3)})`); lg.addColorStop(1, 'rgba(100,130,180,0)'); ctx.fillStyle = lg; ctx.fillRect(px - R * 0.4, py - R * 0.4, R * 0.8, R * 0.8); }
+          ctx.globalCompositeOperation = 'lighter'; for (let j = 0; j < 3 + TI; j++) { const a = tt * (0.4 + j * 0.13) + j * 2.1, px = mx + Math.cos(a) * R * 0.45, py = my + Math.sin(a * 1.3) * R * 0.35 * ry; const lg = ctx.createRadialGradient(px, py, 0, px, py, R * 0.35); lg.addColorStop(0, `rgba(90,110,140,${(0.05 * vis).toFixed(3)})`); lg.addColorStop(1, 'rgba(90,110,140,0)'); ctx.fillStyle = lg; ctx.fillRect(px - R * 0.4, py - R * 0.4, R * 0.8, R * 0.8); }
           ctx.restore(); }
         // (7.4.23, owner) particles: fine motes held in the field, slowly swirling round him, drawn outward to the rim as
         // the pressure builds; a few more drifting in the dark outside, all in the same twilight blue
@@ -1427,8 +1426,7 @@ export class Renderer {
           for (let j = 0; j < nM; j++) { const h1 = Math.sin(j * 12.9898) * 43758.5453, u = h1 - Math.floor(h1), h2 = Math.sin(j * 78.233) * 12543.123, v = h2 - Math.floor(h2);
             const a = u * TAU + tt * sw * (0.6 + v), rr = R * (0.25 + 0.68 * Math.pow(v, 0.7 - 0.4 * k)) * (1 + 0.03 * Math.sin(tt * 2 + j)), px = mx + Math.cos(a) * rr, py = my + Math.sin(a) * rr * ry + Math.sin(tt * 0.8 + j) * ppm * 0.08;
             const tw = 0.5 + 0.5 * Math.sin(tt * (1.5 + v * 2) + j * 3), al = (0.25 + 0.45 * tw) * (0.5 + 0.5 * vis) * shut * Math.min(1, sc * 1.5);
-            const pr = Math.max(1, ppm * (0.025 + 0.03 * v)); ctx.fillStyle = `rgba(150,180,226,${al.toFixed(3)})`; ctx.beginPath(); ctx.arc(px, py, pr, 0, TAU); ctx.fill();
-            if (v > 0.7) { ctx.fillStyle = `rgba(110,146,206,${(al * 0.3).toFixed(3)})`; ctx.beginPath(); ctx.arc(px, py, pr * 3, 0, TAU); ctx.fill(); } } }
+            const pr = Math.max(1, ppm * (0.03 + 0.04 * v)), fa = a + Math.PI / 2 + Math.sin(tt + j) * 0.6; ctx.strokeStyle = `rgba(132,150,180,${al.toFixed(3)})`; ctx.lineWidth = Math.max(0.7, pr * 0.45); ctx.beginPath(); ctx.moveTo(px - Math.cos(fa) * pr, py - Math.sin(fa) * pr); ctx.quadraticCurveTo(px + Math.sin(fa) * pr * 0.4, py - Math.cos(fa) * pr * 0.4, px + Math.cos(fa) * pr, py + Math.sin(fa) * pr); ctx.stroke(); } } // (7.4.24) flecks, not dots
         // (7.4.21, owner) the crush outside: the water beyond the field darkened and pressed, harder the more of the limit is
         // used; and just outside the rim a band of squeezed water (the scene drawn again, pulled in toward him)
         { const cw = ctx.canvas.width, ch = ctx.canvas.height, dk = (0.09 + 0.07 * TI) * (0.3 + 1.6 * k) * shut;
@@ -1437,39 +1435,41 @@ export class Renderer {
           if (TI >= 1 && sc > 0.3) { ctx.save(); ctx.beginPath(); ring(rimR, 1.3 + 0.1 * TI); ctx.save(); ctx.beginPath(); for (let i = 0; i <= 64; i++) { const a = i / 64 * TAU, rr = rimR(a) * (1.3 + 0.1 * TI); i ? ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry) : ctx.moveTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); } for (let i = 64; i >= 0; i--) { const a = i / 64 * TAU, rr = rimR(a) * 1.02; ctx.lineTo(mx + Math.cos(a) * rr, my + Math.sin(a) * rr * ry); } ctx.closePath(); ctx.clip('evenodd');
             const sq = 1 - (0.03 + 0.015 * TI) * (0.5 + k) * (0.8 + 0.2 * Math.sin(tt * 3)), w3 = R * 3, h3 = R * 3 * ry;
             try { ctx.drawImage(ctx.canvas, mx - w3 / 2, my - h3 / 2, w3, h3, mx - w3 * sq / 2, my - h3 * sq / 2, w3 * sq, h3 * sq); } catch (er) { /* skipped */ }
-            ctx.fillStyle = `rgba(80,110,160,${((0.05 + 0.03 * TI) * vis).toFixed(3)})`; ctx.fillRect(mx - w3 / 2, my - h3 / 2, w3, h3); ctx.restore(); ctx.restore(); } }
+            ctx.fillStyle = `rgba(72,92,122,${((0.05 + 0.03 * TI) * vis).toFixed(3)})`; ctx.fillRect(mx - w3 / 2, my - h3 / 2, w3, h3); ctx.restore(); ctx.restore(); } }
         // the pressure closing in: wavy rings travelling inward from the water outside and flattening against the rim
-        const nR = 3 + TI * 3, per = (2.0 - TI * 0.25) * (1 - 0.6 * k); // (7.4.22) faster the nearer the limit
+        const nR = 5 + TI * 5, per = (2.0 - TI * 0.25) * (1 - 0.6 * k); // (7.4.22) faster the nearer the limit
         for (let j = 0; j < nR; j++) { const ph = ((tt / per + j / nR) % 1), rr = 1 + (1 - ph) * (1.3 + 0.25 * TI), al = Math.pow(ph, 1.4) * (0.22 + 0.14 * TI) * vis * shut;
-          ctx.strokeStyle = `rgba(96,130,178,${(al * 0.8).toFixed(3)})`; ctx.lineWidth = Math.max(1, (1.2 + TI * 0.6) * (0.5 + ph) * (1 + k)) * (ppm / 30);
+          ctx.strokeStyle = `rgba(88,108,138,${(al * 0.8).toFixed(3)})`; ctx.lineWidth = Math.max(0.8, (0.6 + TI * 0.25) * (0.5 + ph) * (1 + 0.6 * k)) * (ppm / 30); // (7.4.24) thinner, and more of them
           ring((a) => rimR(a) * (1 + (0.04 + 0.04 * k) * (1 - ph) * Math.sin(a * 7 + j * 3 + tt * 1.5)), rr); ctx.stroke(); }
         // streaks of weight bearing down on it from above, more of them the higher the tier
-        const nS = 10 + TI * 10; ctx.lineCap = 'round';
+        const nS = 16 + TI * 14; ctx.lineCap = 'round';
         for (let j = 0; j < nS; j++) { const u = (j + 0.5) / nS - 0.5, a = -Math.PI / 2 + u * (2.2 + TI * 0.35), ph = (tt * (0.7 + 0.1 * TI) + j * 0.37) % 1, r1 = rimR(a) * (1.06 + (1 - ph) * 1.1), r2 = r1 + R * 0.25 * (0.5 + k);
-          ctx.strokeStyle = `rgba(92,124,170,${(ph * (0.22 + 0.1 * TI) * vis * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1.5, ppm * 0.06 * (1 + TI * 0.4) * (0.7 + 0.6 * k));
+          ctx.strokeStyle = `rgba(84,104,134,${(ph * (0.22 + 0.1 * TI) * vis * shut).toFixed(3)})`; ctx.lineWidth = Math.max(0.8, ppm * 0.03 * (1 + TI * 0.25) * (0.7 + 0.6 * k));
           ctx.beginPath(); ctx.moveTo(mx + Math.cos(a) * r2, my + Math.sin(a) * r2 * ry); ctx.lineTo(mx + Math.cos(a) * r1, my + Math.sin(a) * r1 * ry); ctx.stroke(); }
         // (7.4.22) silt and specks driven in by the water and smashed against the rim, faster and more of them near the limit
-        { const nP = Math.round((14 + TI * 10) * (0.5 + k)), spd = 0.5 + 1.6 * k;
+        { const nP = Math.round((22 + TI * 14) * (0.5 + k)), spd = 0.5 + 1.6 * k;
           for (let j = 0; j < nP; j++) { const a = j * 2.39996 + Math.sin(j * 7.1) * 0.3, ph = (tt * spd * (0.6 + (j % 5) * 0.12) + j * 0.137) % 1, d0 = rimR(a) * (1.02 + (1 - ph) * (1.6 + 0.3 * TI)), d1 = d0 + R * (0.05 + 0.15 * k * k) * (1 - ph * 0.5);
-            ctx.strokeStyle = `rgba(120,150,198,${(Math.pow(ph, 1.2) * (0.3 + 0.35 * k) * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * (0.04 + 0.03 * k));
+            ctx.strokeStyle = `rgba(108,128,160,${(Math.pow(ph, 1.2) * (0.3 + 0.35 * k) * shut).toFixed(3)})`; ctx.lineWidth = Math.max(0.7, ppm * (0.02 + 0.015 * k));
             ctx.beginPath(); ctx.moveTo(mx + Math.cos(a) * d1, my + Math.sin(a) * d1); ctx.lineTo(mx + Math.cos(a) * d0, my + Math.sin(a) * d0); ctx.stroke();
-            if (ph > 0.9) { ctx.fillStyle = `rgba(150,176,218,${((ph - 0.9) * 6 * (0.3 + 0.4 * k) * shut).toFixed(3)})`; ctx.beginPath(); ctx.arc(mx + Math.cos(a) * rimR(a) * 1.03, my + Math.sin(a) * rimR(a) * 1.03, Math.max(1.5, ppm * 0.07), 0, TAU); ctx.fill(); } } } // a splash where it strikes
+            if (ph > 0.9) { ctx.fillStyle = `rgba(132,150,178,${((ph - 0.9) * 6 * (0.3 + 0.4 * k) * shut).toFixed(3)})`; ctx.beginPath(); ctx.arc(mx + Math.cos(a) * rimR(a) * 1.03, my + Math.sin(a) * rimR(a) * 1.03, Math.max(1.5, ppm * 0.07), 0, TAU); ctx.fill(); } } } // a splash where it strikes
         // (7.4.22) near the limit the rim begins to crack: thin forks of light running in from it, flickering
         if (k > 0.55) { const nC = Math.round((3 + TI * 2) * (k - 0.55) / 0.45 * 2) + 1;
           for (let j = 0; j < nC; j++) { const seed = Math.floor(tt * 3 + j * 1.7), a = (seed * 2.399 + j) % TAU, fl = 0.5 + 0.5 * Math.sin(tt * 23 + j * 5); if (fl < 0.25) continue;
-            let px = mx + Math.cos(a) * rimR(a), py = my + Math.sin(a) * rimR(a); ctx.strokeStyle = `rgba(168,192,232,${(fl * (k - 0.5) * 1.4 * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.035); ctx.beginPath(); ctx.moveTo(px, py);
+            let px = mx + Math.cos(a) * rimR(a), py = my + Math.sin(a) * rimR(a); ctx.strokeStyle = `rgba(150,168,196,${(fl * (k - 0.5) * 1.4 * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1, ppm * 0.035); ctx.beginPath(); ctx.moveTo(px, py);
             for (let q = 0; q < 4; q++) { const aa = a + Math.PI + Math.sin(seed * 3.1 + q * 2.3) * 0.7, l = R * (0.07 + 0.05 * Math.abs(Math.sin(seed + q))); px += Math.cos(aa) * l; py += Math.sin(aa) * l; ctx.lineTo(px, py); } ctx.stroke(); } }
         // the rim: a dark outer edge, the pale core (one line, its weight by the tier and the pressure), a thin lit inner
         // edge, and a soft halo; the water's own pale colour, never white
-        const wCore = Math.max(1.8, (1.8 + TI * 1.0 + k * 3.2) * (ppm / 30)); // (7.4.21) a heavier rim
+        const wCore = Math.max(1.2, (1.1 + TI * 0.6 + k * 1.8) * (ppm / 30)); // (7.4.21) a heavier rim
         ctx.strokeStyle = `rgba(10,22,28,${((0.22 + 0.1 * TI) * shut).toFixed(3)})`; ctx.lineWidth = wCore * 2.4; ring(rimR, 1.015); ctx.stroke();
-        ctx.strokeStyle = `rgba(112,146,196,${((0.34 + 0.3 * vis) * shut).toFixed(3)})`; ctx.lineWidth = wCore; ring(rimR, 1); ctx.stroke();
-        ctx.strokeStyle = `rgba(150,178,220,${((0.14 + 0.2 * vis) * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1, wCore * 0.35); ring(rimR, 0.985); ctx.stroke();
-        ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(70,100,150,${((0.06 + 0.05 * TI) * vis * shut).toFixed(3)})`; ctx.lineWidth = wCore * 4; ring(rimR, 1); ctx.stroke(); ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = `rgba(104,124,156,${((0.34 + 0.3 * vis) * shut).toFixed(3)})`; ctx.lineWidth = wCore; ring(rimR, 1); ctx.stroke();
+        ctx.strokeStyle = `rgba(138,156,184,${((0.14 + 0.2 * vis) * shut).toFixed(3)})`; ctx.lineWidth = Math.max(1, wCore * 0.35); ring(rimR, 0.985); ctx.stroke();
+        ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(60,80,110,${((0.06 + 0.05 * TI) * vis * shut).toFixed(3)})`; ctx.lineWidth = wCore * 4; ring(rimR, 1); ctx.stroke(); ctx.globalCompositeOperation = 'source-over';
       }
       // the burst as it opens: a shock ring thrown far out; the collapse as it ends: a flash where it closes on him
-      if (F.t < 0.9) { const q = F.t / 0.9, rb = R0 * (0.6 + q * (2.6 + TI * 0.6)); ctx.strokeStyle = `rgba(120,152,200,${((1 - q) * (0.5 + 0.1 * TI)).toFixed(3)})`; ctx.lineWidth = Math.max(2, ppm * (0.25 + 0.08 * TI) * (1 - q)); ctx.beginPath(); ctx.ellipse(mx, my, rb, rb * ry, 0, 0, TAU); ctx.stroke(); }
-      if (close > 0.6) { const q = (close - 0.6) / 0.4, fr = R0 * 0.5 * (1 - q * 0.6); const fg = ctx.createRadialGradient(mx, my, 0, mx, my, fr); fg.addColorStop(0, `rgba(130,160,206,${(0.5 * (1 - q)).toFixed(3)})`); fg.addColorStop(1, 'rgba(130,160,206,0)'); ctx.fillStyle = fg; ctx.fillRect(mx - fr, my - fr, fr * 2, fr * 2); }
+      if (F.t < 0.9) { const q = F.t / 0.9, rb = R0 * (0.6 + q * (2.2 + TI * 0.5)); // (7.4.24) the burst: a broken, uneven ripple thrown out, never a plain ring
+        for (let i = 0; i < 40; i++) { const a0 = i / 40 * TAU + Math.sin(i * 7.7) * 0.05, a1 = a0 + TAU / 40 * (0.45 + 0.4 * Math.abs(Math.sin(i * 3.3))), w0 = rb * (1 + 0.06 * Math.sin(i * 5.1 + F.t * 9)), al = (1 - q) * (0.25 + 0.2 * Math.abs(Math.sin(i * 2.7))) * (0.8 + 0.1 * TI);
+          ctx.strokeStyle = `rgba(104,124,156,${al.toFixed(3)})`; ctx.lineWidth = Math.max(0.8, ppm * (0.05 + 0.02 * TI) * (1 - q)); ctx.beginPath(); ctx.arc(mx, my, w0, a0, a1); ctx.stroke(); } }
+      if (close > 0.6) { const q = (close - 0.6) / 0.4, fr = R0 * 0.5 * (1 - q * 0.6); const fg = ctx.createRadialGradient(mx, my, 0, mx, my, fr); fg.addColorStop(0, `rgba(116,136,166,${(0.5 * (1 - q)).toFixed(3)})`); fg.addColorStop(1, 'rgba(116,136,166,0)'); ctx.fillStyle = fg; ctx.fillRect(mx - fr, my - fr, fr * 2, fr * 2); }
       // from Bathysphere up the screen feels it: its edges pressing in with each ring that arrives; Hadal Heart trembles
       if ((TI >= 2 || k > 0.4) && shut > 0.05) { const cw = ctx.canvas.width, ch = ctx.canvas.height, pul = Math.pow(Math.max(0, Math.sin(tt / ((2.2 - TI * 0.25) * (1 - 0.5 * k)) * TAU)), 3), a = (0.1 + 0.05 * TI) * (0.4 + 1.2 * k) * pul * shut;
         const vg = ctx.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * (0.45 - 0.06 * pul - 0.12 * k), cw / 2, ch / 2, Math.hypot(cw, ch) * 0.55); vg.addColorStop(0, 'rgba(6,14,20,0)'); vg.addColorStop(1, `rgba(6,14,20,${a.toFixed(3)})`); ctx.fillStyle = vg; ctx.fillRect(0, 0, cw, ch);
@@ -1517,9 +1517,13 @@ export class Renderer {
           if (x0 < -20 || y0 < -20 || x0 > this.W + 20 || y0 > this.H + 20) { q.sx = x0; q.sy = y0; continue; }
           const lx = q.sx ?? x0, ly = q.sy ?? y0, mvx = x0 - lx, mvy = y0 - ly, ml = Math.hypot(mvx, mvy);
           if (q.k === 1) { const a = Math.min(1, f * 6) * (1 - f) ** 1.4; ctx.globalAlpha = a * 0.55; ctx.strokeStyle = 'rgb(214,226,220)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(x0, y0, q.r * dr * 1.4, 0, TAU); ctx.stroke(); ctx.globalAlpha = a * 0.4; ctx.fillStyle = 'rgb(240,244,236)'; ctx.fillRect(x0 - q.r * dr * 0.5, y0 - q.r * dr * 0.6, dr * 0.9, dr * 0.9); }
-          else if (q.k === 3) { // a spark of bioluminescence: flares as it is stirred, then fades; a soft point, no ring
-            const a = (f < 0.15 ? f / 0.15 : (1 - f) ** 1.6) * q.a * dark, rr = (1.6 + q.r * 2.2) * dr * 2; ctx.globalCompositeOperation = 'lighter'; const gq = ctx.createRadialGradient(x0, y0, 0, x0, y0, rr); gq.addColorStop(0, `rgba(176,204,228,${(0.9 * a).toFixed(3)})`); gq.addColorStop(0.35, `rgba(130,164,210,${(0.35 * a).toFixed(3)})`); gq.addColorStop(1, 'rgba(110,140,200,0)');
-            ctx.globalAlpha = 1; ctx.fillStyle = gq; ctx.fillRect(x0 - rr, y0 - rr, rr * 2, rr * 2); ctx.globalCompositeOperation = 'source-over'; }
+          else if (q.k === 3) { // a spark of bioluminescence: flares as it is stirred, then fades. (7.4.24, owner) a tiny sharp
+            // point drawn out a little along its drift with a faint glow close round it, never a soft round blob
+            const a = (f < 0.15 ? f / 0.15 : (1 - f) ** 1.6) * q.a * dark, rr = (1.6 + q.r * 2.2) * dr, sp = Math.hypot(q.vx || 0, q.vy || 0) || 1, ux = (q.vx || 0) / sp, uy = (q.vy || 0) / sp, ln = rr * (1.2 + Math.min(2, sp));
+            ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+            ctx.strokeStyle = `rgba(120,160,210,${(0.35 * a).toFixed(3)})`; ctx.lineWidth = Math.max(1.5, rr * 0.9); ctx.beginPath(); ctx.moveTo(x0 - ux * ln * 0.5, y0 - uy * ln * 0.5); ctx.lineTo(x0 + ux * ln * 0.5, y0 + uy * ln * 0.5); ctx.stroke();
+            ctx.strokeStyle = `rgba(206,226,242,${(0.95 * a).toFixed(3)})`; ctx.lineWidth = Math.max(0.8, rr * 0.3); ctx.beginPath(); ctx.moveTo(x0 - ux * ln * 0.35, y0 - uy * ln * 0.35); ctx.lineTo(x0 + ux * ln * 0.35, y0 + uy * ln * 0.35); ctx.stroke();
+            ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
           else { // a mote (k 0) or a tail streak (k 2): smeared along its motion on the screen, so its length shows his speed
             const a = Math.min(1, f * 5) * (1 - f) ** 1.3 * q.a, kk = Math.min(1, (q.k === 2 ? 22 : 10) / (ml + 1e-3)), ln = q.k === 2 ? 2.6 : 1.5;
             ctx.globalAlpha = a * (q.k === 2 ? 0.42 : 0.62); ctx.strokeStyle = q.k === 2 ? 'rgb(226,232,224)' : 'rgb(210,222,216)'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(0.8, q.r * dr * (q.k === 2 ? 0.8 : 1.1));

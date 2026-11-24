@@ -1,7 +1,7 @@
 // (5.9.1) Legendary things give off slow sparks of old gold wherever they are shown: their tiles in the locker, the
 // slots on Earl, their cards, the shop, a reward. One light canvas over the page draws them at each such element's
 // place (anything carrying the class r-legendary that can be seen); found again every half second, drawn each frame.
-import { legendMotes } from './scrolls.js';
+import { legendMotes, ember } from './scrolls.js';
 
 export function startLegendFx() {
   const c = document.createElement('canvas'); c.id = 'legendfx'; document.body.appendChild(c);
@@ -38,6 +38,6 @@ function mythMotes(x, r, t, seed) {
   for (let i = 0; i < 16; i++) { const h = Math.sin(seed * 91.7 + i * 12.9898) * 43758.5453, u = h - Math.floor(h), ph = (t * (0.16 + (i % 5) * 0.035) + u) % 1;
     const px = r.left + r.width * (0.08 + 0.84 * ((u * 7.13) % 1)) + Math.sin(t * 1.1 + i) * r.width * 0.03, py = r.top + r.height * (0.95 - ph * 1.0);
     const a = Math.sin(Math.PI * ph) * (0.55 + 0.45 * Math.sin(t * 7 + i * 2)), rr = Math.max(1, Math.min(r.width, r.height) * (0.012 + (i % 3) * 0.006));
-    x.fillStyle = `rgba(255,${110 + Math.round(90 * ph)},${60 + Math.round(40 * ph)},${(a * 0.85).toFixed(3)})`; x.beginPath(); x.arc(px, py, rr, 0, Math.PI * 2); x.fill(); }
+    ember(x, px, py, rr * 6, rr * 1.6, -Math.PI / 2 + Math.sin(t * 2 + i) * 0.25, a * 0.85); } // (7.4.24) slivers of ash, not dots
   x.restore();
 }

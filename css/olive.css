@@ -2149,3 +2149,5 @@ html body .store-panel .pet-cats button.on { color: #efe8d2; background: rgba(60
 html body .store-panel .pet-note { margin: 0 2px 4px; font: 500 14px 'Barlow Semi Condensed', sans-serif; color: rgba(230, 222, 198, 0.7); text-align: left; }
 html body .store-panel .st-pets .pet-card .pet-tierline { display: inline-flex; align-items: center; gap: 3px; text-transform: none; letter-spacing: 0; font-size: 13px !important; }
 html body .store-panel .st-pets .pet-card .pet-tierline img { width: 12px; height: 12px; }
+/* (7.4.24, owner) a mythical find's embers: slivers of ash, not dots */
+#gainfx .gx-embers b { width: 2px !important; height: 8px !important; border-radius: 1px 1px 2px 2px !important; background: #ffb488 !important; box-shadow: 0 0 5px 1px rgba(232, 96, 60, 0.65) !important; }

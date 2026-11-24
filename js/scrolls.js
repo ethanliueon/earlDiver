@@ -393,6 +393,14 @@ export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare') {
 // with the time; state is a small array kept by the caller
 // (6.0.10) a glint, the one spark every legendary gives off: a small hot core and two thin crossed streaks (the long one
 // level, as light catches an edge), sharp at the tips, warm gold fading to nothing. k: 0..1 how bright, sz its reach
+// (7.4.24, owner) an ember: never a round dot. A thin tapered sliver of burning ash, drawn along the way it rises,
+// a hot pale core at its head fading to a dull red tail, its width flickering. len and w in pixels, ang its heading
+// (-PI/2 straight up), k 0..1 how bright
+export function ember(ctx, px, py, len, w, ang, k) {
+  if (k <= 0.02) return; const c = Math.cos(ang), s = Math.sin(ang), tx = px - c * len, ty = py - s * len, nx = -s * w * 0.5, ny = c * w * 0.5;
+  const g = ctx.createLinearGradient(px, py, tx, ty); g.addColorStop(0, `rgba(255,214,170,${k.toFixed(3)})`); g.addColorStop(0.25, `rgba(244,130,72,${(k * 0.85).toFixed(3)})`); g.addColorStop(1, 'rgba(150,40,22,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(px + c * w * 0.6, py + s * w * 0.6); ctx.quadraticCurveTo(px + nx, py + ny, tx + nx * 0.15, ty + ny * 0.15); ctx.lineTo(tx - nx * 0.15, ty - ny * 0.15); ctx.quadraticCurveTo(px - nx, py - ny, px + c * w * 0.6, py + s * w * 0.6); ctx.fill();
+}
 export function glint(ctx, px, py, sz, k, rot = 0, col = [255, 222, 150]) {
   if (k <= 0.01) return; const [r0, g0, b0] = col, c = (a) => `rgba(${r0},${g0},${b0},${a.toFixed(3)})`;
   ctx.save(); ctx.translate(px, py); ctx.rotate(rot);
