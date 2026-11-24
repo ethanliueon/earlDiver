@@ -6,7 +6,7 @@ import { UPRIGHT } from './fauna.js';
 import { clamp, lerp, smoothstep, sampleTable, rgbStr, TAU, fbm1, hexToRgb, mixRgb } from './util.js';
 import { drawSpecies } from './creatures_draw.js';
 import { SPECIES } from './species.js';
-import { drawEarl, drawSub, drawBoat, markOf, SUB_MARKS, boatRock } from './earl_draw.js';
+import { drawEarl, drawSub, drawBoat, drawBoatRadar, markOf, SUB_MARKS, boatRock } from './earl_draw.js';
 import { drawMonster, drawMonsterLights, drawMonsterShape, drawMonsterRim, MONSTER_LEN } from './monster_draw.js';
 import { sleeperState } from './sleeper_draw.js';
 import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
@@ -828,14 +828,14 @@ export class Renderer {
         const bctx = bc.getContext('2d');
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, Rw, Rh); bctx.globalCompositeOperation = 'source-over';
         bctx.translate(Rw * 0.45, Rh * 0.82);
-        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { noRoll: true });
+        this.boatCrane = drawBoat(bctx, 14 * REF, t, g.sub, bsx < 0, { noRoll: true, noRadar: true });
         bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.globalCompositeOperation = 'source-atop'; bctx.drawImage(this.boatWear(Rw, Rh, bsx < 0), 0, 0);
         if (dimB > 0.01) { bctx.fillStyle = `rgba(4,6,10,${dimB.toFixed(3)})`; bctx.fillRect(0, 0, Rw, Rh); }
         bctx.globalCompositeOperation = 'source-over';
         this.boatK = { flip: bsx < 0, door, dim: dimB, docked: g.sub.docked, t };
       }
       const kB = ppm / REF; crane = this.boatCrane ? { craneTip: [this.boatCrane.craneTip[0] * kB, this.boatCrane.craneTip[1] * kB] } : null;
-      ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, -Rw * 0.45 * kB, -Rh * 0.82 * kB, Rw * kB, Rh * kB); this.boatWays(ctx, g, t, 0.14 * ppm, Math.sqrt(dayEff)); ctx.restore(); // (3.0.0) turned with her heading
+      ctx.save(); ctx.scale(bsx, 1); ctx.rotate(boatRock(t)); ctx.drawImage(bc, -Rw * 0.45 * kB, -Rh * 0.82 * kB, Rw * kB, Rh * kB); drawBoatRadar(ctx, 0.14 * ppm, t, dimB); /* (7.4.0) smooth, every frame */ this.boatWays(ctx, g, t, 0.14 * ppm, Math.sqrt(dayEff)); ctx.restore(); // (3.0.0) turned with her heading
       this.boatFrame = { x: boatX, y: boatY, roll, rock: boatRock(t), sx: bsx, k: 0.14 * ppm, a: roll + boatRock(t), lit: 0.35 + 0.65 * Math.sqrt(dayEff) }; // (2.5.0: Earl on deck is drawn in this frame; the deck stations are gone)
       if (dayEff < 0.5) {
         // the cabin light stays on at night

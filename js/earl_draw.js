@@ -910,6 +910,12 @@ export function deckLine(xu) {
   const x = Math.max(-56, xu), tt = (-72 + Math.sqrt(5184 + 16 * (56 + x))) / 8; // the sheer is a quadratic curve: x(t) = -56 + 72t + 4t²
   return -16 + 11 * tt - 5.5 * tt * tt;
 }
+// (7.4.0) the radar bar on the mast, sweeping round (foreshortened). Drawn every frame on its own: inside the boat's
+// cached picture it turned at the picture's 4 repaints a second and looked like 3 fps. dim darkens it with the hour
+export function drawBoatRadar(ctx, u, t, dim = 0) {
+  const rad = Math.abs(Math.cos(t * 2.4)), c = Math.round(216 * (1 - dim)), c2 = Math.round(200 * (1 - dim));
+  ctx.fillStyle = `rgb(${c},${Math.round(212 * (1 - dim))},${c2})`; ctx.fillRect((4 - 5 * rad) * u, -50 * u, 10 * rad * u + 0.6 * u, 1.2 * u);
+}
 export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   // A small, hard-worked dive-support boat, bow to the left: a flared bow and a curved sheer line,
   // a red boot-top at the waterline, rub rail, plating seams and rust; a wheelhouse with framed
@@ -1029,8 +1035,7 @@ export function drawBoat(ctx, Lp, t, sub, mirrored = false, opts = {}) {
   ctx.beginPath(); ctx.moveTo(4 * u, -33 * u); ctx.lineTo(4 * u, -54 * u); ctx.stroke();
   ctx.lineWidth = 0.5 * u; ctx.beginPath(); ctx.moveTo(-1 * u, -46 * u); ctx.lineTo(9 * u, -46 * u); ctx.stroke(); // yard
   ctx.beginPath(); ctx.moveTo(9 * u, -46 * u); ctx.lineTo(10 * u, -57 * u); ctx.moveTo(-1 * u, -46 * u); ctx.lineTo(-1.5 * u, -53 * u); ctx.stroke(); // whips
-  const rad = Math.cos(t * 2.4); // the radar bar sweeps round (foreshortened)
-  ctx.fillStyle = '#d8d4c8'; ctx.fillRect((4 - 5 * Math.abs(rad)) * u, -50 * u, 10 * Math.abs(rad) * u + 0.6 * u, 1.2 * u);
+  if (!opts.noRadar) drawBoatRadar(ctx, u, t); // (7.4.0) the game draws it live over the boat's picture, which is only repainted a few times a second
   ctx.fillStyle = '#2a2826'; ctx.fillRect(3.2 * u, -49 * u, 1.6 * u, 2 * u);
   ctx.fillStyle = '#fff4d0'; ctx.beginPath(); ctx.arc(4 * u, -54.4 * u, 0.6 * u, 0, TAU); ctx.fill(); // masthead light
   ctx.fillStyle = '#ff5a40'; ctx.beginPath(); ctx.arc(-8.5 * u, -29 * u, 0.5 * u, 0, TAU); ctx.fill(); // port light

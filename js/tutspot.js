@@ -137,7 +137,7 @@ export class TutSpot {
   // on: the tutorial is guiding (the frame shows); spot: what to point at, if anything
   update(on, spot, text = null) { this.update0(on, spot, text); this.keyBox.style.display = 'none'; flushStyles(); } // (5.6.7) a phone: the line at the top says it, once
   update0(on, spot, text = null) {
-    window.__hudTutKey = null; window.__tutMenu = false;
+    window.__hudTutKey = null; window.__tutMenu = false; window.__tutAct = null;
     if (!on) { // (4.12.2) the spotlight fades out rather than vanishing (no bright flash when a step ends)
       LOCK = null; this.lastTarget = null; this.setLine(null); for (const b of this.blocks) b.style.display = 'none';
       if (!this.el.hidden && !this.fadingOut) { this.fadingOut = true; this.el.classList.add('out'); this.fadeT = setTimeout(() => { this.el.hidden = true; this.el.classList.remove('out'); this.fadingOut = false; }, 420); }
@@ -152,6 +152,7 @@ export class TutSpot {
     // (7.2.8) a step about anything kept in the left menu (the journal and quests, the chart, the bag, the sub's tile, the
     // tank room, the spare air, the shop, the events) opens the menu for as long as it lasts: folded, the thing it points
     // at was hidden ("Open your journal and claim it" with the menu folded pointed at nothing)
+    window.__tutAct = spot.act || null; // (7.4.0) what the step asks to open: the journal's tile opens that, not the quest board
     { const w0 = String(spot.key || (spot.act ? TAP[spot.act] : '') || '').toLowerCase();
       window.__tutMenu = (spot.sel || []).some((q) => /#quests-btn|#hud-journal|#hud-chart|#hud-bag/.test(q)) || ['j', 'o', 'k', 'b', 'c', 't', 'r', 'store', 'events', 'journal'].includes(w0); }
     let t = this.find(spot.sel);
