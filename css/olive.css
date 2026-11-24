@@ -2011,3 +2011,14 @@ html body .ts-lit:not(#_a) { animation: ts-lit 1.6s ease-in-out infinite !import
 @keyframes ts-lit { 0%, 100% { filter: drop-shadow(0 0 3px rgba(232, 224, 200, 0.45)) brightness(1.06); } 50% { filter: drop-shadow(0 0 8px rgba(232, 224, 200, 0.8)) brightness(1.16); } }
 /* (7.4.0) every card opened in the inventory above both halves: the sub-away shade over the right half darkened a card's right side */
 html body #inventory .item-pop:not(#_a):not(#_b) { z-index: 80 !important; }
+/* (7.4.0, owner) the pet picker's words larger and set out like the other cards: the title on the close cross's line,
+   the rule under it, the animals' names and sizes readable */
+html body #inventory .pet-pick .ip-box:not(#_a):not(#_b) { max-width: 600px; padding: 20px 24px 22px !important; }
+html body #inventory .pet-pick .ip-box h4:not(#_a):not(#_b) { font: 600 22px/1.1 'Barlow Semi Condensed', sans-serif !important; color: #efe8d2 !important; margin: 2px 44px 6px 0 !important; letter-spacing: 0.01em; text-transform: none !important; }
+html body #inventory .pet-pick .pp-note:not(#_a):not(#_b) { font: 500 15px 'Barlow Semi Condensed', sans-serif !important; opacity: 0.72; margin: 0 0 14px !important; }
+html body #inventory .pet-pick .pp-grid:not(#_a) { gap: 10px; }
+html body #inventory .pet-pick .pp-fish:not(#_a) { padding: 10px 8px 8px; gap: 4px; }
+html body #inventory .pet-pick .pp-fish img:not(#_a) { height: 62px; }
+html body #inventory .pet-pick .pp-fish b:not(#_a) { font: 600 16px/1.15 'Barlow Semi Condensed', sans-serif; text-align: center; }
+html body #inventory .pet-pick .pp-fish small:not(#_a) { font: 500 14px 'Barlow Semi Condensed', sans-serif; }
+html body #inventory .pet-pick .pp-none:not(#_a) { font: 500 16px 'Barlow Semi Condensed', sans-serif; opacity: 0.75; grid-column: 1 / -1; text-align: center; padding: 18px 0; }

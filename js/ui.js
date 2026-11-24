@@ -1358,7 +1358,7 @@ export class UI {
       const byKind = new Map(); for (const r of all) { const o = byKind.get(r[2].id); if (!o || r[2].cond > o[2].cond) byKind.set(r[2].id, r); }
       const L = [...byKind.values()];
       const rows = L.map(([w2, i, s3]) => { const sp3 = SPECIES_BY_ID[s3.id]; if (!this.fitPics.has(sp3.id)) this.fitPics.set(sp3.id, fittedIcon(sp3, 300, 180).toDataURL()); return `<button class="pp-fish" data-petpick="${w2}:${i}"><img src="${this.fitPics.get(sp3.id)}" alt=""><b>${sp3.name}</b><small>${(s3.len || 0).toFixed(2)} m</small></button>`; }).join('');
-      return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">At the surface: an animal 60 cm to 1.5 m long, or any legend.</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing here can be a pet.</p>'}</div></div></div>`; })() : '';
+      return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">60 cm to 1.5 m, or any legend · at the surface</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing here can be a pet.</p>'}</div></div></div>`; })() : '';
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
     return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
