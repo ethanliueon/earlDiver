@@ -2036,13 +2036,12 @@ html body #inventory .ip-col:has(.ch-odds) :is(.ip-stats, .ip-sks:empty, .lk-set
 html body #inventory .ip-col:has(.ch-odds) .ch-odds { margin-top: 12px; }
 html body #inventory .ip-col:has(.ch-odds) .ic-line:not(#_a) { height: auto; min-height: 0; } /* (7.4.1) a chest's line its own height (cards keep a fixed 96 px for side-by-side lines up) */
 html body #inventory .ip-col .ch-odds img.gc:not(#_a):not(#_b) { display: inline-block !important; width: 16px !important; height: 16px !important; margin: 0 6px 0 0 !important; vertical-align: -3px; } /* (7.4.1) the old coin beside its name */
-/* (7.4.5, owner) an item card shows everything on it: no fixed height that hid a net's skills below its figures (the card
-   scrolled, unseen). Two cards side by side still match: the row stretches both to the taller one */
-html body #inventory .ip-cols:not(#_a) { align-items: stretch; }
-html body #inventory .ip-col:not(#_a):not(#_b) { height: auto !important; overflow: visible !important; padding-bottom: 12px; }
-html body #inventory .ip-col .ic-line:not(#_a) { height: auto; min-height: 4.1em; }
-/* (7.4.5) a tall card pair (a legendary's power and skills) never runs off the screen: the pop-up stops at the screen's
-   height and scrolls inside; its buttons stay at its foot */
-html body #inventory .item-pop .ip-box:not(#_a):not(#_b) { max-height: calc(100vh - 20px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(176, 150, 96, 0.55) transparent; }
-html body #inventory .item-pop .ip-box > .lk-acts:not(#_a) { position: sticky; bottom: -1px; z-index: 2; padding: 10px 0 2px; background: linear-gradient(rgba(40, 46, 34, 0), rgba(40, 46, 34, 0.96) 35%); }
-html body #inventory .item-pop .ip-box > .ip-close:not(#_a):not(#_b):not(#_c):not(#_d) { top: 6px !important; right: 6px !important; z-index: 3; } /* (7.4.5) inside the corner: the scrolling box would clip it */
+/* (7.4.5, owner) the comparison cards as before (one fixed height, parts in fixed places), their extra lines scrolled
+   to inside the card. A phone hides scroll bars, so a card with more below shows a small engraved chevron at its foot
+   (no band over its figures); it goes when the card is scrolled to its end */
+html body #inventory .ip-col.more:not(#_a):not(#_b)::after { content: '' !important; display: block !important; position: sticky; bottom: -22px; height: 18px; margin: 4px auto -18px; width: 28px; background: none !important;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 18'%3E%3Cpath d='M5 5l9 8 9-8' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 18'%3E%3Cpath d='M5 5l9 8 9-8' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  background-color: rgba(226, 216, 190, 0.75) !important; animation: ipc-more 1.8s ease-in-out infinite; }
+html body #inventory .ip-col.more.at-end:not(#_a):not(#_b)::after { opacity: 0; animation: none; }
+@keyframes ipc-more { 0%, 100% { transform: translateY(0); opacity: 0.55; } 50% { transform: translateY(3px); opacity: 0.9; } }

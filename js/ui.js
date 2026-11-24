@@ -1502,6 +1502,9 @@ export class UI {
     { const tp = box.querySelector('.trap-pop'); if (tp) tp.addEventListener('click', (ev) => { const u2 = ev.target.closest('[data-trapuse]');
       if (u2) { const k = u2.dataset.trapuse; this.trapSel = null; if (this.h.onTrapUse && this.h.onTrapUse(k) === 'open') { this.toggleInventory(false); return; } this.renderInventory(); return; }
       if (ev.target === tp || ev.target.closest('.ip-close')) { this.trapSel = null; this.renderInventory(); } }); }
+    // (7.4.5) a card that runs past its height says so with the chevron at its foot (CSS .more), gone at its end
+    box.querySelectorAll('.ip-col').forEach((c) => { const chk = () => { const over = c.scrollHeight > c.clientHeight + 4; c.classList.toggle('more', over); c.classList.toggle('at-end', over && c.scrollTop + c.clientHeight >= c.scrollHeight - 6); };
+      requestAnimationFrame(chk); c.addEventListener('scroll', chk, { passive: true }); });
     const pop = box.querySelector('.item-pop:not(.trap-pop)');
     if (pop) { pop.addEventListener('click', (ev) => { if (ev.target === pop || ev.target.closest('.ip-close')) { this.lkSel = null; this.renderInventory(); } }); }
     if (!this.h.canChangeGear()) return;
