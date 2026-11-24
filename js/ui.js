@@ -1606,6 +1606,26 @@ export class UI {
     $('trapset').hidden = false;
     this.tsRender();
   }
+  // (7.3.0, owner) the depth as a winch's line counter: four number drums behind a small window in a dark bronze bezel,
+  // bone numerals, the drums shaded round and grained, no glow (it was a phosphor-green screen)
+  tsDrums(v) {
+    const c = $('ts-drums'); if (!c) return; const x = c.getContext('2d'), W = c.width, H = c.height; x.clearRect(0, 0, W, H);
+    const rr = (a, b, w, h, r) => { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); };
+    let g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#5a4a32'); g.addColorStop(0.5, '#3c3122'); g.addColorStop(1, '#251e15');
+    rr(2, 2, W - 4, H - 4, 10); x.fillStyle = g; x.fill(); x.lineWidth = 2; x.strokeStyle = 'rgba(0,0,0,0.7)'; x.stroke();
+    x.strokeStyle = 'rgba(214,196,150,0.18)'; x.lineWidth = 1.5; rr(5, 5, W - 10, H - 10, 8); x.stroke();
+    for (const sx of [16, W - 16]) { const sg = x.createRadialGradient(sx - 2, H / 2 - 2, 1, sx, H / 2, 7); sg.addColorStop(0, '#a8916a'); sg.addColorStop(1, '#3a2e1e'); x.fillStyle = sg; x.beginPath(); x.arc(sx, H / 2, 6, 0, Math.PI * 2); x.fill(); x.strokeStyle = 'rgba(20,14,8,0.8)'; x.lineWidth = 1.5; x.beginPath(); x.moveTo(sx - 4, H / 2 - 2); x.lineTo(sx + 4, H / 2 + 2); x.stroke(); }
+    const n = 4, wx = 34, ww = W - 68, wy = 16, wh = H - 32, dw = ww / n, s = String(Math.max(0, Math.round(v))).padStart(n, '0').slice(-n);
+    x.fillStyle = '#0d0c0a'; rr(wx - 3, wy - 3, ww + 6, wh + 6, 4); x.fill();
+    for (let i = 0; i < n; i++) { const dx = wx + i * dw;
+      const dg = x.createLinearGradient(0, wy, 0, wy + wh); dg.addColorStop(0, '#0f0e0c'); dg.addColorStop(0.22, '#2a2722'); dg.addColorStop(0.5, '#34302a'); dg.addColorStop(0.78, '#2a2722'); dg.addColorStop(1, '#0f0e0c');
+      x.fillStyle = dg; x.fillRect(dx + 1.5, wy, dw - 3, wh);
+      let seed = (i + 1) * 9301 + v * 49297; for (let k = 0; k < 70; k++) { seed = (seed * 9301 + 49297) % 233280; const px = dx + 2 + (seed / 233280) * (dw - 4); seed = (seed * 9301 + 49297) % 233280; const py = wy + (seed / 233280) * wh; x.fillStyle = `rgba(${k % 2 ? '255,245,220' : '0,0,0'},0.06)`; x.fillRect(px, py, 1.2, 1.2); }
+      x.font = `600 ${Math.round(wh * 0.7)}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+      x.fillStyle = 'rgba(0,0,0,0.55)'; x.fillText(s[i], dx + dw / 2 + 1, wy + wh / 2 + 3);
+      x.fillStyle = i < n - String(Math.round(v)).length ? 'rgba(214,204,178,0.45)' : '#ddd3b8'; x.fillText(s[i], dx + dw / 2, wy + wh / 2 + 2); }
+    const gl = x.createLinearGradient(0, wy, 0, wy + wh); gl.addColorStop(0, 'rgba(255,250,235,0.10)'); gl.addColorStop(0.18, 'rgba(255,250,235,0)'); x.fillStyle = gl; x.fillRect(wx, wy, ww, wh); // the glass
+  }
   tsFloor() { const g = this.h.getGame(); return Math.floor(g.world.floorAt(g.earl.x)); }
   tsMax() { return Math.max(2, Math.min(TRAPS[this.ts.type].maxDepth, this.tsFloor())); }
   tsNudge(d) { this.ts.depth += d; this.tsRender(); }
@@ -1623,10 +1643,10 @@ export class UI {
     const top = Math.min(T.maxDepth, Math.max(fl, 2));
     this.ts.depth = Math.max(2, Math.min(Math.round(this.ts.depth), T.maxDepth));
     $('ts-slider').max = T.maxDepth; $('ts-slider').value = this.ts.depth;
-    $('ts-depth').textContent = this.ts.depth;
+    $('ts-depth').textContent = this.ts.depth; this.tsDrums(this.ts.depth);
     // the depth of the bottom is not told: only that the line has reached it, once it has
     $('ts-bottom').textContent = `All the way (${T.maxDepth} m)`;
-    $('ts-info').textContent = `${T.count} animals in ${timeLeftText(T.dur)}, the game open or closed. Rated to ${T.maxDepth} m${T.winch ? ', emptied with the boat\'s winch' : ''}`;
+    $('ts-info').textContent = `This trap works for ${({ 300: '5 minutes', 1800: '30 minutes', 14400: '4 hours' })[T.dur] || timeLeftText(T.dur)}. Up to ${T.count} animals.`; // (owner) said plainly
     const w = $('ts-warn');
     if (this.ts.depth >= fl) { w.hidden = false; w.textContent = `The bottom here is only ${fl} m: the trap will rest on the bottom at ${fl} m (good for crabs, lobsters and bottom fish).`; }
     else if (this.ts.depth === T.maxDepth) { w.hidden = false; w.textContent = `The ${T.name.toLowerCase()} goes no deeper than ${T.maxDepth} m.`; }

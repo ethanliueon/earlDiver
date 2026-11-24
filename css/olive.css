@@ -1920,3 +1920,8 @@ html body #ts-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20
   background: radial-gradient(circle at 38% 32%, #e2dac2, #b9ae90 60%, #7d745c); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.5); }
 html body #ts-slider::-moz-range-track { height: 6px; border-radius: 3px; background: #1c2018; }
 html body #ts-slider::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 50%; background: #c9bfa4; }
+/* (7.3.0, owner) the depth readout is a winch's line counter (ui.js tsDrums), not a glowing screen */
+html body #trapset .ts-read { background: none !important; box-shadow: none !important; padding: 0 !important; min-width: 0 !important; display: flex; flex-direction: column; align-items: center; }
+html body #trapset .ts-read canvas { position: static !important; inset: auto !important; width: 150px !important; height: 55px !important; display: block; z-index: auto !important; opacity: 1 !important; pointer-events: none; }
+html body #trapset .ts-read span { color: rgba(214, 204, 178, 0.55) !important; text-shadow: none !important; margin-top: 3px; }
+html body #trapset .ts-info { font: 13px var(--o-text, "Barlow Semi Condensed"), sans-serif !important; color: rgba(214, 204, 178, 0.7) !important; text-align: center; }
