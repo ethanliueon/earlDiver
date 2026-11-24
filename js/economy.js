@@ -602,7 +602,11 @@ export function spend(p, amount) {
   return true;
 }
 
+// (7.3.3) money: every sum in full ($5,000,000), as the owner decided; moneyExact is the same (kept for its callers)
 export function money(v, cents = v < 100) {
+  return moneyExact(v, cents); // (7.3.3, owner: "I take that back") every sum shown in full, never as k or M
+}
+export function moneyExact(v, cents = v < 100) {
   const neg = v < 0; v = Math.abs(v);
   const s = cents ? v.toFixed(2) : Math.round(v).toString();
   const [i, d] = s.split('.');

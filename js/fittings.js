@@ -164,20 +164,21 @@ export function paperTag(ctx, x, y, w, h, { title = 'BAYSIDE MARINE SUPPLY', for
   ctx.fillStyle = '#9c8450'; ctx.beginPath(); ctx.arc(0, 14, 7, 0, TAU); ctx.fill();
   ctx.strokeStyle = 'rgba(255,240,200,0.4)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 14, 6, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
   ctx.fillStyle = '#16140f'; ctx.beginPath(); ctx.arc(0, 14, 3.4, 0, TAU); ctx.fill();
-  // the rubber stamp: a double border, red ink that took unevenly
+  // the rubber stamp (7.3.3, owner): straight, no box round it; only the letters, pressed in red ink that took unevenly -
+  // dense where the stamp bore down, thin and broken toward one end, a little bled into the paper fibres
   if (stamp) {
-    ctx.save(); ctx.translate(-w * 0.12, h - 24); ctx.rotate(-0.07);
-    ctx.font = `17px ${STENCIL}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const sw = ctx.measureText(stamp).width + 22, shh = 28;
-    const sc = document.createElement('canvas'); sc.width = Math.ceil(sw + 8); sc.height = shh + 8;
-    const k = sc.getContext('2d'); k.translate(4, 4);
-    k.strokeStyle = 'rgb(170,34,26)'; k.lineWidth = 2.2; k.strokeRect(0, 0, sw, shh); k.lineWidth = 1; k.strokeRect(3, 3, sw - 6, shh - 6);
-    k.font = `17px ${STENCIL}`; k.fillStyle = 'rgb(170,34,26)'; k.textAlign = 'center'; k.textBaseline = 'middle'; k.fillText(stamp, sw / 2, shh / 2 + 1);
+    ctx.save(); ctx.translate(-w * 0.12, h - 24);
+    const f = `19px ${STENCIL}`; ctx.font = f;
+    const sw = Math.ceil(ctx.measureText(stamp).width) + 12, shh = 30;
+    const sc = document.createElement('canvas'); sc.width = sw; sc.height = shh;
+    const k = sc.getContext('2d'); k.font = f; k.textAlign = 'center'; k.textBaseline = 'middle';
+    k.shadowColor = 'rgba(150,30,22,0.45)'; k.shadowBlur = 1.2; k.fillStyle = 'rgb(160,32,24)'; k.fillText(stamp, sw / 2, shh / 2 + 1);   // the ink, slightly bled
+    k.shadowBlur = 0;
     const rs = rng(seed * 31 + 7); k.globalCompositeOperation = 'destination-out';
-    for (let i = 0; i < 160; i++) { k.globalAlpha = 0.3 + rs() * 0.7; k.fillRect(rs() * sw, rs() * shh, 1 + rs() * 2, 1 + rs() * 1.5); }
-    const fade = k.createLinearGradient(0, 0, sw, 0); fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(0.85, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,0.5)');
-    k.globalAlpha = 1; k.fillStyle = fade; k.fillRect(-4, -4, sc.width, sc.height);
-    ctx.globalAlpha = 0.82; ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(sc, -sc.width / 2, -sc.height / 2);
+    for (let i = 0; i < 220; i++) { const x = rs() * sw, bias = x / sw; k.globalAlpha = (0.2 + rs() * 0.6) * (0.4 + bias * 0.9); k.fillRect(x, rs() * shh, 0.8 + rs() * 1.8, 0.6 + rs() * 1.2); } // dropouts, more toward the light end
+    const press = k.createLinearGradient(0, 0, sw, shh * 0.4); press.addColorStop(0, 'rgba(0,0,0,0)'); press.addColorStop(0.55, 'rgba(0,0,0,0.08)'); press.addColorStop(1, 'rgba(0,0,0,0.6)');
+    k.globalAlpha = 1; k.fillStyle = press; k.fillRect(0, 0, sw, shh);                                                    // it bore down harder on one side
+    ctx.globalAlpha = 0.86; ctx.globalCompositeOperation = 'multiply'; ctx.drawImage(sc, -sw / 2, -shh / 2);
     ctx.restore();
   }
   ctx.restore();

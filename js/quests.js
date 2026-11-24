@@ -7,7 +7,7 @@
 // look at the game once a second (questTick: depth, the aquarium, what he has bought and has on).
 import { SPECIES, SPECIES_BY_ID } from './species.js';
 import { usualDepth } from './fauna.js';
-import { SUBS } from './economy.js';
+import { money, SUBS } from './economy.js';
 import { canTakeLive, liveValue, rarityOf, LEGENDARY } from './specimens.js';
 import { kitOf, ITEMS, FREE } from './items.js';
 const STARTER = new Set(Object.values(FREE)); // (4.0.6) what he starts with is not bought, nor new to put on
@@ -71,7 +71,7 @@ const KINDS = {
   catch: (r) => ({ n: [25, 50, 100, 200][r], pay: [200, 1100, 4000, 12900][r], text: (q) => `Catch ${q.n} animals` }),
   deep: (r) => ({ d: [100, 200, 600, 1500][r], n: [1, 2, 3, 3][r], pay: [350, 2300, 8900, 26600][r], // (4.0.0) the deep pays most
     text: (q) => `Catch ${q.n > 1 ? q.n + ' animals' : 'an animal'} below ${q.d} m` }),
-  sell: (r) => ({ n: [450, 2000, 9000, 45000][r], pay: [130, 920, 3700, 12300][r], text: (q) => `Sell $${q.n.toLocaleString()} of catch` }),
+  sell: (r) => ({ n: [450, 2000, 9000, 45000][r], pay: [130, 920, 3700, 12300][r], text: (q) => `Sell ${money(q.n, false)} of catch` }),
   photo: (r) => ({ n: [1, 3, 6, 12][r], pay: [180, 1200, 3700, 11600][r], text: (q) => `Photograph ${q.n} new species` }),
   tag: (r) => ({ n: [1, 2, 4, 8][r], pay: [220, 1300, 4600, 13900][r], text: (q) => `Tag ${q.n} animal${q.n > 1 ? 's' : ''}` }),
   species: (r, rnd, P) => {

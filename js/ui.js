@@ -68,7 +68,7 @@ import { pressureKind, pressureTolerance } from './specimens.js';
 import { loadBest, UPGRADES, TRACKS, UPGRADE_DESC, UPGRADE_LINE, GEAR, lv, statValue, upgradeCost, owns, gear, fmtStat } from './economy.js';
 import { refreshIn, ready as contractReady } from './contracts.js';
 import { Q as questsOf, MAIN as QUEST_MAIN, QUEST_RARITY, boardIn, refreshPrice, questLeft, fillQuests, tutorialOn, stepLabel, GROUPS as QUEST_GROUPS, groupSpecies } from './quests.js';
-import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money } from './economy.js';
+import { TANKS, FINS, SUBS, SUB_TIERS, SUB_ADDONS, SUPPLIES, supplyMax, GOODS, PATCH_PRICE, replacementPrice, priceOf, marketTick, money, moneyExact } from './economy.js';
 import { formatTime, clamp } from './util.js';
 import { VERSION } from './version.js';
 import { markOf, SUB_MARKS } from './earl_draw.js';
@@ -1392,7 +1392,7 @@ export class UI {
       return `<div class="item-pop pet-pick"><div class="ip-box"><button class="ip-close" aria-label="Close">×</button><h4>Choose a pet</h4><p class="pp-note">At the surface: an animal 60 cm to 1.5 m long, or any legend.</p><div class="pp-grid">${rows || '<p class="pp-none">Nothing in the bag or the sub.</p>'}</div></div></div>`; })() : '';
     const nSpare = ['necklace', 'glowAdv'].filter((k) => (SP[k] || 0) > 0).length + trapKinds.length + Math.ceil(nGold / 10);
     const pop = this.lkSel ? this.itemPop(P, g, free) : '';
-    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${money(P.cash)}</b></div>`
+    return `<div class="inv-sec wide eq inv-split${free ? '' : ' locked'}"><div class="inv-left"><div class="cash-plate"><span>CASH</span><b>${moneyExact(P.cash)}</b></div>`
       + `<div class="eq-stage"><div class="eq-col">${SLOTS.slice(0, 5).map(slot).join('')}</div><canvas class="eq-earl" width="360" height="520"></canvas><div class="eq-col">${SLOTS.slice(5).map(slot).join('')}${beltSlot()}${petGear}</div></div>`
       /* (6.0.0) no lock note: gear changes anywhere */
       /* (5.11.7) no tank panel under him: the tank's slot already shows it */
@@ -1753,8 +1753,8 @@ export class UI {
   renderCave() {
     const P = this.h.getProfile(), off = this.h.onCaveOffer();
     if (!P || !off) return;
-    this.renderCounter($('cave-cash'), money(P.cash));
-    { const wb = document.querySelector('#cave-chrome .cat-wallet b'); if (wb) wb.textContent = money(P.cash); } // (6.0.13) the screen's wallet
+    this.renderCounter($('cave-cash'), moneyExact(P.cash));
+    { const wb = document.querySelector('#cave-chrome .cat-wallet b'); if (wb) wb.textContent = moneyExact(P.cash); } // (6.0.13) the screen's wallet
     $('cave-coins').innerHTML = `${COIN}${P.coins || 0}`;
     $('cave-sub').textContent = `A giant anglerfish, older than the boat, this dive it craves: ${off.craving.name.toLowerCase()}`;
     let html = `<nav class="cave-tabs"><button data-cave="tab:trade" class="${this.caveTab === 'trade' ? 'on' : ''}">Trade</button><button data-cave="tab:wares" class="${this.caveTab === 'wares' ? 'on' : ''}">The old one's wares</button><button data-cave="tab:chests" class="${this.caveTab === 'chests' ? 'on' : ''}">What the deep took</button></nav>`;
@@ -1816,7 +1816,7 @@ export class UI {
         const p = r.profile, deep = p.deepest || 0, found = (p.journal || []).length;
         html += `<div class="slot tag sv${n === last0 ? ' last' : ''}" data-n="${n}">${num}
           <div class="sv-head"><b class="sv-name">${(p.name || 'Earl').replace(/</g, '&lt;')}</b><span class="sv-when">${r.saved ? 'Played ' + ago(r.saved) : 'New'}</span></div>
-          <dl class="sv-stats"><div><dt>Cash</dt><dd>${money(p.cash, false)}</dd></div><div><dt>Deepest</dt><dd>${deep.toLocaleString()} m</dd></div><div><dt>Species</dt><dd>${found}</dd></div></dl>
+          <dl class="sv-stats"><div><dt>Cash</dt><dd>${moneyExact(p.cash, false)}</dd></div><div><dt>Deepest</dt><dd>${deep.toLocaleString()} m</dd></div><div><dt>Species</dt><dd>${found}</dd></div></dl>
           <div class="sv-foot"><em class="sv-go">${n === last0 ? 'Continue' : 'Dive'}</em><button class="del sv-del" aria-label="Delete">Delete</button></div></div>`;
       } else if (r.state === 'damaged') {
         html += `<div class="slot tag sv damaged" data-n="${n}">${num}<div class="sv-head"><b class="sv-name">Damaged</b><span class="sv-when">Could not be read</span></div><div class="sv-foot"><button class="del sv-del" aria-label="Delete">Delete</button></div></div>`;
@@ -1902,7 +1902,7 @@ export class UI {
     $('newgame').hidden = !p; $('newgame').textContent = 'New game'; this.confirmNew = false;
     const best = loadBest();
     if (!p) { el.innerHTML = best ? `<div class="save-line"><span>deepest ever ${best} m</span></div>` : ''; return; }
-    let html = `<div class="save-line"><b>${money(p.cash, false)}</b><span>${p.runs || 1} dive${(p.runs || 1) > 1 ? 's' : ''}</span><span>deepest ${p.deepest || 0} m${best > (p.deepest || 0) ? ` (ever ${best} m)` : ''}</span><span>${(p.journal || []).length} species recorded</span>${p.aquarium && Object.keys(p.aquarium.display || {}).length ? `<span>aquarium: ${completion(p).species} species, ${completion(p).rare} rare</span>` : ''}</div>`;
+    let html = `<div class="save-line"><b>${moneyExact(p.cash, false)}</b><span>${p.runs || 1} dive${(p.runs || 1) > 1 ? 's' : ''}</span><span>deepest ${p.deepest || 0} m${best > (p.deepest || 0) ? ` (ever ${best} m)` : ''}</span><span>${(p.journal || []).length} species recorded</span>${p.aquarium && Object.keys(p.aquarium.display || {}).length ? `<span>aquarium: ${completion(p).species} species, ${completion(p).rare} rare</span>` : ''}</div>`;
     if (last && last.bill !== undefined) {
       const lost = last.lost && last.lost.length ? `Lost: ${last.lost.join(', ')}.` : '';
       html += `<div class="save-death">${last.cause}. ${last.bill > 0 ? `Hospital bill ${money(last.bill)}.` : ''} ${lost}</div>`;
@@ -2044,7 +2044,7 @@ export class UI {
       const items = Object.entries(g.inv).filter(([, n]) => n > 0).map(([k, n]) => `${RESOURCES[k].name} ${n}`).join(', ') || 'nothing';
       this.journalCount(g);
       list.innerHTML =
-        row('Cash', money(this.h.getProfile().cash), 'safe at the boat') +
+        row('Cash', moneyExact(this.h.getProfile().cash), 'safe at the boat') +
         row('Deep sapphires found', `${g.sapphires}`, 'this dive') +
         row('Deepest so far', `${Math.round(e.maxDepth)} m`) +
         row('Condition', lvl) +
@@ -2064,7 +2064,7 @@ export class UI {
     const g = this.h.getGame(), P = this.h.getProfile(), sub = g.sub;
     if (!P) return;
     marketTick(P);
-    this.renderCounter($('shop-cash'), money(P.cash));
+    this.renderCounter($('shop-cash'), moneyExact(P.cash));
     $('shop-coins').innerHTML = P.coins ? `${COIN}${P.coins}` : '';
     {
       const M = SUB_MARKS[markOf(statValue(P, 'depth'))];

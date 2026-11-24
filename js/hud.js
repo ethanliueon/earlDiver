@@ -40,7 +40,7 @@ export function titled(text) { let out = String(text); for (const [re, t] of TIT
 import { clamp, lerp, formatTime, TAU } from './util.js';
 import { SUB_LEVELS, diverDrainMult } from './player.js';
 import { RESOURCES, boatDock } from './world.js';
-import { GOODS, money, gear, owns } from './economy.js';
+import { GOODS, money, moneyExact, gear, owns } from './economy.js';
 import { BOAT } from './world.js';
 import { VARIANTS } from './variants.js';
 import { speciesIcon } from './creatures_draw.js';
@@ -572,8 +572,8 @@ e.inSub ? [
       ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
       // (5.7.5) the sum counts up to a new total (a quest paid, a sale) instead of jumping
       const cash = P.cash || 0; if (this.cashShown == null || cash < this.cashShown || cash - this.cashShown < 0.01) this.cashShown = cash; else this.cashShown += Math.max(0.01, (cash - this.cashShown) * Math.min(1, dt * 3.2));
-      const txt = money(Math.min(cash, this.cashShown)), tx0 = mx + ch * 0.8 + 6 * u; this.moneyTextX = tx0; this.moneyRowBottom = my + ch * 0.55; /* (6.0.7) the eye hangs right under the sum */ ctx.fillStyle = cash > this.cashShown ? '#f6e7b4' : '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
-      { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(money(cash)).width; ctx.restore(); this.moneyAt = { x: (tx0 + tw + 16 * u + this.safeL) * kx, y: (my - 16 * u + this.safeT) * kx }; } // (5.7.5) right of the sum, on its row
+      const txt = moneyExact(Math.min(cash, this.cashShown)), tx0 = mx + ch * 0.8 + 6 * u; this.moneyTextX = tx0; this.moneyRowBottom = my + ch * 0.55; /* (6.0.7) the eye hangs right under the sum */ ctx.fillStyle = cash > this.cashShown ? '#f6e7b4' : '#efe8d2'; ctx.fillText(txt, tx0, my + 1 * u);
+      { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(moneyExact(cash)).width; ctx.restore(); this.moneyAt = { x: (tx0 + tw + 16 * u + this.safeL) * kx, y: (my - 16 * u + this.safeT) * kx }; } // (5.7.5) right of the sum, on its row
       ctx.restore();
       this.topLeftBottom = (my + ch * 0.55 + 8 * u + this.safeT) * kx; this.topLeftX = (12 * u + this.safeL) * kx;
       const rg = 19 * u, gx = W - 12 * u - rg, gy = 12 * u + rg; /* (5.9.4) the same size as the journal and the bag under it */

@@ -372,6 +372,120 @@ def fish3(ref=os.path.join(os.path.dirname(__file__), 'ref', 'argyropelecus_giga
     return im.resize((out_w, int(out_w * im.height / im.width)), Image.LANCZOS)
 
 
+def fish4(out_w=960):
+    # (7.3.3, owner: "more game-like, not a photo, not so dark") the traced outline of fish3 (from the NOAA photograph),
+    # repainted in the game's own hand: broad soft-shaded zones lit from above (a dark back, a bright silver band high on
+    # the flank, the belly falling into shadow), a rim of light round the edge so it reads on the blue, and a few details
+    # placed by hand - the tube eye, the gill cover, the comb of light organs as soft rounded tubes, faint scales only
+    # where the light falls. Cold shadows, bone highlights, no pure white
+    K2 = 2.4; W, H = int(820 * K2), int(420 * K2); S2 = lambda pts: [(x * K2, y * K2) for x, y in pts]
+    body = [(100, 156), (150, 140), (200, 122), (250, 104), (300, 88), (345, 70), (395, 50), (450, 40), (500, 37), (550, 42),
+            (600, 58), (645, 78), (685, 105), (708, 140), (716, 172), (708, 196), (735, 210), (762, 218), (748, 232), (722, 250),
+            (700, 272), (680, 300), (655, 330), (622, 352), (585, 372), (545, 388), (500, 397), (450, 398), (405, 392), (368, 376),
+            (340, 345), (315, 310), (290, 282), (262, 258), (230, 240), (195, 228), (150, 216), (100, 206)]
+    def smooth(pts, n=6):
+        out = []; L = len(pts)
+        for i in range(L):
+            p0, p1, p2, p3 = pts[i - 1], pts[i], pts[(i + 1) % L], pts[(i + 2) % L]
+            for k in range(n):
+                t = k / n; t2, t3 = t * t, t * t * t
+                out.append(tuple(0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3) for j in (0, 1)))
+        return out
+    m = Image.new('L', (W, H), 0); ImageDraw.Draw(m).polygon(S2(smooth(body)), fill=255); m = m.filter(ImageFilter.GaussianBlur(1.2))
+    A = np.asarray(m, np.float32) / 255
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32) / K2
+    cols = np.where(A.max(0) > 0.5)[0]; top = np.full(W, np.nan); bot = np.full(W, np.nan)
+    for c in cols: r = np.where(A[:, c] > 0.5)[0]; top[c] = r[0] / K2; bot[c] = r[-1] / K2
+    top = np.nan_to_num(top, nan=0)[None, :]; bot = np.nan_to_num(bot, nan=1)[None, :]
+    v = np.clip((yy - top) / np.maximum(1, bot - top), 0, 1)          # 0 the back .. 1 the keel, in every column
+    # the zones: back, the lit band, the flank, the belly in shadow
+    def ramp(stops):
+        out = np.zeros((H, W, 3), np.float32)
+        for (a0, c0), (a1, c1) in zip(stops, stops[1:]):
+            k = np.clip((v - a0) / (a1 - a0), 0, 1)[..., None]; sel = ((v >= a0) & (v <= a1))[..., None]
+            out = np.where(sel, np.array(c0) * (1 - k) + np.array(c1) * k, out)
+        return out
+    col = ramp([(0.0, (30, 36, 46)), (0.12, (52, 60, 72)), (0.2, (150, 160, 170)), (0.34, (214, 216, 210)), (0.5, (176, 184, 192)),
+                (0.72, (128, 138, 152)), (0.86, (78, 86, 100)), (1.0, (46, 52, 64))])
+    # the stalk a little darker and see-through toward the tail; the head darker than the flank
+    col *= (0.82 + 0.18 * np.clip((xx - 120) / 140, 0, 1))[..., None]
+    head = np.clip((xx - 560) / 60, 0, 1); col = col * (1 - 0.28 * head[..., None])
+    # faint scales only in the lit band: soft rows, brighter at their top edge
+    su, sv = (xx + yy * 0.55) / 13, (xx - yy * 0.55) / 13
+    sc = np.abs(np.sin(su * np.pi)) * np.abs(np.sin(sv * np.pi))
+    lit = np.exp(-((v - 0.34) / 0.16) ** 2) * (xx > 150) * (xx < 560)
+    col *= (1 - 0.07 * lit * (1 - sc ** 0.6))[..., None]
+    # the mirror plates: a few soft upright bands across the chest, alternately a touch lighter and darker
+    plate = np.sin((xx - 330) / 26 * np.pi) * np.clip((xx - 330) / 30, 0, 1) * np.clip((560 - xx) / 30, 0, 1) * (xx > 330) * (xx < 560)
+    col *= (1 + 0.06 * plate * np.clip((v - 0.25) * 4, 0, 1) * np.clip((0.85 - v) * 4, 0, 1))[..., None]
+    # a rim of light from above along the back, a cool reflected light along the belly
+    rimm = np.asarray(m.filter(ImageFilter.GaussianBlur(5 * K2)), np.float32) / 255
+    edge = np.clip(1 - (rimm - 0.5) * 3, 0, 1) * A
+    col = col + (np.array([60, 64, 66]) * (edge * (v < 0.3))[..., None]) + (np.array([20, 36, 60]) * (edge * (v > 0.7))[..., None])
+    # the keel: a dark band along the lower edge, where the light organs sit
+    kb = np.clip((v - 0.8) * 8, 0, 1) * (xx > 320) * (xx < 700)
+    col = col * (1 - kb[..., None] * 0.75) + np.array([22, 26, 36]) * kb[..., None] * 0.75
+    # painted, not airbrushed: a broken grain, long soft brush strokes along the body, a little mottling
+    rg = np.random.default_rng(12)
+    g1 = np.asarray(Image.fromarray((rg.random((H // 3, W // 3)) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC), np.float32) / 255
+    g2 = np.asarray(Image.fromarray((rg.random((H // 18, W // 3)) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC), np.float32) / 255
+    g3 = np.asarray(Image.fromarray((rg.random((H // 60, W // 60)) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC), np.float32) / 255
+    col *= (0.93 + 0.08 * g1 + 0.06 * g2 + 0.05 * g3)[..., None]
+    col = np.minimum(col, 230)
+    im = Image.fromarray(np.dstack([np.clip(col, 0, 255), A * 255]).astype(np.uint8), 'RGBA')
+    ov = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
+    P = lambda x, y: (x * K2, y * K2)
+    # fins: soft, see-through, a few rays; the tail, the spiny dorsal blade, the dorsal, pectoral and anal fins
+    def fin(pts, rays, a=70):
+        d.polygon([P(*q) for q in smooth(pts, 5)], fill=(170, 182, 194, a))
+        for p1, p2 in rays: d.line([P(*p1), P(*p2)], fill=(206, 214, 220, 120), width=max(1, int(K2 * 1.2)))
+    fin([(102, 158), (72, 146), (40, 140), (50, 172), (58, 188), (46, 216), (44, 242), (76, 222), (102, 204)],
+        [((100, 165), (44, 144)), ((100, 176), (50, 168)), ((100, 190), (50, 210)), ((100, 200), (46, 238))], 80)
+    fin([(336, 80), (360, 30), (378, 26), (374, 66)], [((344, 74), (362, 30)), ((358, 70), (372, 28))], 70)
+    fin([(392, 58), (408, 20), (440, 14), (456, 46)], [((400, 48), (410, 20)), ((418, 44), (424, 16)), ((436, 41), (440, 15))], 60)
+    fin([(560, 240), (500, 262), (474, 282), (508, 274), (562, 256)], [((560, 246), (480, 279)), ((560, 252), (500, 272))], 55)
+    fin([(330, 320), (300, 350), (318, 352), (348, 330)], [((334, 322), (306, 348))], 55)
+    # the gill cover: a soft darker curve with a lit edge behind it
+    d.arc([P(530, 70), P(640, 380)], 100, 260, fill=(30, 36, 46, 150), width=int(5 * K2))
+    d.arc([P(538, 74), P(648, 376)], 110, 250, fill=(226, 228, 220, 70), width=int(2.5 * K2))
+    # the mouth: a dark line up the face, the upturned jaw with a lit lower edge, small teeth
+    d.line([P(716, 172), P(724, 204), P(760, 218)], fill=(14, 16, 22, 230), width=int(4 * K2))
+    d.line([P(708, 232), P(748, 230), P(760, 220)], fill=(200, 204, 200, 170), width=int(2 * K2))
+    for k in range(6): d.line([P(728 + k * 5, 206 + k * 2), P(728 + k * 5, 213 + k * 2)], fill=(224, 222, 212, 200), width=max(1, int(K2 * 1.3)))
+    im = Image.alpha_composite(im, ov)
+    # the eye: a big tube on the head, looking up; a silver socket, a dark lens catching the light at its top
+    E = np.zeros((H, W, 4), np.float32); ex, ey = 636, 112
+    r1 = np.sqrt(((xx - ex) / 28) ** 2 + ((yy - ey) / 36) ** 2); ring = np.clip((1 - r1) * 8, 0, 1)
+    r2 = np.sqrt(((xx - ex) / 18) ** 2 + ((yy - (ey - 8)) / 24) ** 2); pup = np.clip((1 - r2) * 6, 0, 1)
+    sock = np.array([150, 160, 170]) * (0.75 + 0.35 * np.clip(1 - (yy - (ey - 40)) / 80, 0, 1))[..., None]
+    lens = np.array([16, 26, 40]) + np.array([40, 70, 100]) * np.clip(1 - r2, 0, 1)[..., None] ** 2
+    c = sock * (1 - pup[..., None]) + lens * pup[..., None]
+    c += np.array([170, 176, 178]) * np.exp(-(((xx - (ex - 7)) / 7) ** 2 + ((yy - (ey - 22)) / 4) ** 2))[..., None] * 0.7   # the light on the lens
+    E[..., :3] = np.clip(c, 0, 255); E[..., 3] = ring * 255
+    im = Image.alpha_composite(im, Image.fromarray(E.astype(np.uint8), 'RGBA').filter(ImageFilter.GaussianBlur(K2 * 0.6)))
+    # the light organs: rounded silver tubes in a comb along the keel and the tail, each with a soft blue light at its
+    # foot, a little uneven in size and spacing (placed along the traced keel)
+    keel = [q for q in smooth(body, 12) if q[1] > 250 and 330 < q[0] < 690]; keel.sort(key=lambda q: q[0])
+    stalk = [q for q in smooth(body, 12) if 140 < q[0] < 320 and q[1] > 200]; stalk.sort(key=lambda q: q[0])
+    rng = np.random.default_rng(4); organs = []
+    for i in range(0, len(keel), max(1, len(keel) // 22)): x, y = keel[i]; organs.append((x, y - 10, 22 + rng.random() * 10))
+    for i in range(0, len(stalk), max(1, len(stalk) // 7)): x, y = stalk[i]; organs.append((x, y - 7, 11 + rng.random() * 4))
+    glow = Image.new('RGBA', (W, H), (0, 0, 0, 0)); gd = ImageDraw.Draw(glow)
+    for x, y, h in organs: gd.ellipse([P(x - 9, y - 6), P(x + 9, y + 14)], fill=(90, 140, 210, 120))
+    im = Image.alpha_composite(im, glow.filter(ImageFilter.GaussianBlur(7 * K2)))
+    ov = Image.new('RGBA', (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(ov)
+    for x, y, h in organs:
+        w2 = 4.2 + rng.random() * 1.4
+        d.rounded_rectangle([P(x - w2, y - h), P(x + w2, y)], radius=int(w2 * K2), fill=(34, 40, 52, 200))                 # its dark sheath
+        d.rounded_rectangle([P(x - w2 + 1.3, y - h + 1.5), P(x + w2 - 1.3, y - 1)], radius=int(w2 * K2 * 0.8), fill=(188, 196, 204, 235))
+        d.line([P(x - w2 * 0.35, y - h + 3), P(x - w2 * 0.35, y - h * 0.45)], fill=(228, 230, 226, 200), width=max(1, int(K2 * 1.4)))
+        d.ellipse([P(x - w2 * 0.6, y - 5), P(x + w2 * 0.6, y - 0.5)], fill=(150, 190, 236, 230))                        # its light
+    im = Image.alpha_composite(im, ov)
+    a2 = np.asarray(im)[..., 3]; keep = np.maximum((A * 255).astype(np.uint8), a2 * 0)
+    bb = im.getbbox(); im = im.crop(bb)
+    return im.resize((out_w, int(out_w * im.height / im.width)), Image.LANCZOS)
+
+
 def wave(full):
     # (7.1.7) The bar is a band of sea of even depth, its bottom straight, its top a row of small rolling waves; the ends
     # rounded off. No taper: a tapering ripple with the fish at its head read as something else entirely.
@@ -401,7 +515,7 @@ def wave(full):
 
 
 if __name__ == '__main__':
-    fish3().save(OUT + 'hatchetfish.png', optimize=True)  # (7.3.0, owner) traced from the photograph (tools/ref, public domain)
+    fish4().save(OUT + 'hatchetfish.png', optimize=True)  # (7.3.3, owner) the traced outline, painted in the game's hand
     wave(False).save(OUT + 'wave.png', optimize=True)
     wave(True).save(OUT + 'wave_fill.png', optimize=True)
     print('painted')

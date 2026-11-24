@@ -6,7 +6,7 @@
 // Gear can be sold back wherever there is a shop. The old one has no website (see main.js / render.js).
 import { ITEMS, ITEMS_OF, kitOf, ownsItem, worn as wornItem, RARITY, isOn, sellValue, LOCKER, lockerFree } from './items.js';
 import { drawScroll3 } from './scrolls.js';
-import { SUITS, TRAPS, SUPPLIES, supplyMax, money, owns, kit } from './economy.js';
+import { SUITS, TRAPS, SUPPLIES, supplyMax, money, moneyExact, owns, kit } from './economy.js';
 import { NETS_SUB, netsOf } from './capture.js';
 import { toolIcon } from './tools_draw.js';
 import { drawSpecialPicture, drawSuitFlat } from './item_art.js';
@@ -156,7 +156,7 @@ export class Catalog {
   }
   wallet(cash) {
     const w = this.root.querySelector('.cat-wallet'); if (!w) return;
-    const b = w.querySelector('b'), txt = money(cash); if (b.textContent !== txt) b.textContent = txt;
+    const b = w.querySelector('b'), txt = moneyExact(cash); if (b.textContent !== txt) b.textContent = txt;
     if (!w.drawn) { const c = w.querySelector('canvas'), ctx = c.getContext('2d'); ctx.setTransform(2, 0, 0, 2, 0, 0); drawCash(ctx, 24, 19, 30); w.drawn = true; } // the HUD's own banknotes, at its size
   }
   find(key) { for (const c of this.cats) if (c && !['home', 'yard', 'chest', 'sell', 'finds'].includes(c[0])) { const e = this.entries(c[0]).find((q) => q.key === key); if (e) return { e, cat: c[0] }; } return null; }

@@ -5,7 +5,7 @@
 import { CHESTS, chestPicture } from './chests.js';
 import { RARITY } from './item_data.js';
 import { playerLevel } from './quests.js';
-import { TRAPS } from './economy.js';
+import { TRAPS, money } from './economy.js';
 
 export const STANDARD = ['crate', 'footlocker', 'siren'];
 const DEALS = ['crate3', 'tea', 'case', 'case3', 'strongbox', 'salvage', 'expedition', 'leviathan', 'poseidon'];
@@ -33,7 +33,7 @@ export const CAL = WEEK1; // (the old name, for the first week)
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 export function calState(P) { if (!P.cal) P.cal = { day: 0, last: null }; return { day: P.cal.day, ready: P.cal.last !== today() }; }
 export function calClaimed(P) { calState(P); P.cal.last = today(); P.cal.day = (P.cal.day + 1) % 7; if (P.cal.day === 0) P.cal.week = (P.cal.week || 0) + 1; } // (6.5.1) a week done: the next is the level's
-export const giftName = (r) => (r.k === 'chest' ? CHESTS[r.v].name : r.k === 'cash' ? `$${r.v.toLocaleString()}` : r.k === 'glow' ? `${r.v} ${r.adv ? 'advanced ' : ''}glow sticks` : r.k === 'trap' ? (TRAPS[r.v] ? TRAPS[r.v].name : 'Trap') : `${r.v} old coin${r.v > 1 ? 's' : ''}`);
+export const giftName = (r) => (r.k === 'chest' ? CHESTS[r.v].name : r.k === 'cash' ? money(r.v, false) : r.k === 'glow' ? `${r.v} ${r.adv ? 'advanced ' : ''}glow sticks` : r.k === 'trap' ? (TRAPS[r.v] ? TRAPS[r.v].name : 'Trap') : `${r.v} old coin${r.v > 1 ? 's' : ''}`);
 const hrs = (ms) => { const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 3600e3) / 60e3); return h ? `${h} h ${m} min` : `${m} min`; };
 
 // the Shop: a row of chests, each its picture, name, tier, items, price and Buy
@@ -52,7 +52,7 @@ export function testHtml(P, items) {
 export function storeHtml(P, test = false) {
   const card = (key, deal) => {
     const C = CHESTS[key], R = RARITY[C.tier];
-    return `<div class="st-card r-${C.tier}${deal ? ' deal' : ''}">${deal ? `<span class="st-deal">Deal, ${hrs(dealLeft())} left</span>` : ''}<button class="st-i" data-rates="${key}" aria-label="Details"><i>i</i></button><img src="${chestPicture(C.look, 220, 160)}" alt=""><b style="color:${R.col}">${C.name}</b><span class="st-r" style="color:${R.col}">${R.name}</span><span class="st-n">${C.n} item${C.n > 1 ? 's' : ''}</span><button data-store="${key}" ${(P.cash || 0) < C.price ? 'disabled' : ''}>$${C.price.toLocaleString()}</button></div>`;
+    return `<div class="st-card r-${C.tier}${deal ? ' deal' : ''}">${deal ? `<span class="st-deal">Deal, ${hrs(dealLeft())} left</span>` : ''}<button class="st-i" data-rates="${key}" aria-label="Details"><i>i</i></button><img src="${chestPicture(C.look, 220, 160)}" alt=""><b style="color:${R.col}">${C.name}</b><span class="st-r" style="color:${R.col}">${R.name}</span><span class="st-n">${C.n} item${C.n > 1 ? 's' : ''}</span><button data-store="${key}" ${(P.cash || 0) < C.price ? 'disabled' : ''}>${money(C.price, false)}</button></div>`;
   };
   return `<div class="st-plate"><button class="st-x" aria-label="Close">×</button>${test ? '<div class="st-tabs"><button class="on" data-tab="shop">Shop</button><button data-tab="test">Test</button></div>' : '<h2>Shop</h2>'}<div class="st-row">${STANDARD.map((k) => card(k, false)).join('')}${card(dealNow(), true)}</div></div>`;
 }

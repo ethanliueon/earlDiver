@@ -703,7 +703,7 @@ export class TankRoom {
     ctx.strokeStyle = 'rgba(30,28,20,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(x + 0.5, y + 0.5, w - 1, h - 1, 7); ctx.stroke();
     ctx.fillStyle = '#26241a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = '500 17px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.fillText(`Chamber ${n + 1}`, CW / 2, y + 24);
-    ctx.font = '500 26px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.fillText('$' + price.toLocaleString(), CW / 2, y + 56);
+    ctx.font = '500 26px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.fillText(money(price, false), CW / 2, y + 56);
     ctx.restore();
   }
   drawBracket(ctx) {
@@ -917,7 +917,7 @@ export class TankRoom {
       hoseCoil(ctx, B.x + B.w * 0.88, B.y + B.h * 0.18, Math.min(40, B.h * 0.18));
       hazardTape(ctx, B.x - 10, B.x + B.w + 10, G.floor + 3);
       paperTag(ctx, fl.x + 150, fl.y + 26, 250, 196, { t: this.t, seed: 3, from: { x: fl.x + 10, y: fl.y - 2 }, stamp: 'NOT FITTED',
-        fields: [['ITEM', 'LARGE PRESSURE TANK'], ['HOLDS', '3, OR 1 OVER 1.2 M'], ['PRICE', '$' + SUB_ADDONS.bigTank.price.toLocaleString()], ['TO FIT', 'CLICK THE BAY']] }); // (4.13.0) bought here
+        fields: [['ITEM', 'LARGE PRESSURE TANK'], ['HOLDS', '3, OR 1 OVER 1.2 M'], ['PRICE', money(SUB_ADDONS.bigTank.price, false)], ['TO FIT', 'TAP THE BAY']] }); // (4.13.0) bought here
     }
     this.drawHatch(ctx, G.hatchL, 'L');
   }

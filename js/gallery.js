@@ -1,3 +1,4 @@
+import { money } from './economy.js';
 import { tankWater } from './tankroom.js';
 import { rarityStars, rarityCls, rarityCol, livesOnBottom, isSessile } from './specimens.js';
 // The aquarium gallery, walked aboard the Margaret: one big lit tank, every animal in it together (a deep
@@ -102,7 +103,7 @@ export class Gallery {
     const full = used >= gallerySlots(P);
     // (3.0.15) more room, bought right here: two more places a time
     const lvG = P.galleryLv || 0, step = GALLERY_STEPS[lvG];
-    const roomBtn = step !== undefined ? `<button class="gl-room" data-room="1" ${P.cash + 1e-6 < step ? 'disabled' : ''}>Room for ${gallerySlots({ galleryLv: lvG + 1 })} <span>$${step.toLocaleString()}</span></button>` : '<p>The aquarium is as big as the Margaret can hold.</p>';
+    const roomBtn = step !== undefined ? `<button class="gl-room" data-room="1" ${P.cash + 1e-6 < step ? 'disabled' : ''}>Room for ${gallerySlots({ galleryLv: lvG + 1 })} <span>${money(step, false)}</span></button>` : '<p>The aquarium is as big as the Margaret can hold.</p>';
     this.root.querySelector('.gl-catch').innerHTML = !cand.length ? '<h4>Your catch</h4><p>Nothing alive aboard yet. Bring something up and choose Keep when you sell, and it will wait here.</p>' : `<h4>Your catch</h4>` + cand.slice(0, 12).map((c) => {
       const sp = SPECIES_BY_ID[c.s.id], why = c.why;
       return `<button data-place="${c.where}:${c.i}" ${why ? `disabled title="${esc(why)}"` : 'title="Put it into the tank"'} class="${c.s.kept ? 'kept' : ''}">${c.s.variant ? `<em class="rarel r-${c.s.variant}">${VARIANTS[c.s.variant].name}</em> ` : ''}${esc(sp.name)}<small>${placesTaken(P, c.s)} place${placesTaken(P, c.s) > 1 ? 's' : ''}</small>${c.s.kept ? '<small>kept</small>' : ''}${why ? `<small>${esc(why)}</small>` : ''}</button>`;
@@ -121,7 +122,7 @@ export class Gallery {
         ${dead ? '' : `<input data-name="${esc(this.open)}" maxlength="18" placeholder="give it a name" value="${esc(d.name || '')}">`}
         <b${rarityCol(sp) ? ` style="color:${rarityCol(sp)}"` : ''}>${d.name ? esc(d.name) + ', ' : ''}${sp.name}</b>${d.variant ? `<em class="rarel r-${d.variant}">${VARIANTS[d.variant].name}</em>` : ''}
         <small>${st}${prog ? ', ' + prog : ''}</small>
-        <small>sells for about $${Math.round(gallerySale(d) * (this.h.pay ? this.h.pay() : 1)).toLocaleString()}${!dead && (happy || d.famous) ? ` (x${((happy ? 1.2 : 1) * (d.famous ? 2 : 1)).toFixed(1)})` : ''}</small>
+        <small>sells for about ${money(gallerySale(d) * (this.h.pay ? this.h.pay() : 1), false)}${!dead && (happy || d.famous) ? ` (x${((happy ? 1.2 : 1) * (d.famous ? 2 : 1)).toFixed(1)})` : ''}</small>
         <div class="acts">
           ${dead ? '' : `<button data-gl="pet|${esc(this.open)}">Pet</button><button data-gl="feed|${esc(this.open)}">Feed</button>${d.name !== undefined ? `<button data-gl="rename|${esc(this.open)}">Name</button>` : ''}`}
           <button data-gl="sell|${esc(this.open)}">${dead ? 'Take it out and sell' : 'Sell'}</button>

@@ -4,7 +4,7 @@
 // suit), what he buys on the right (pearls, sapphires, whalebone, glass sponge and nodules, for a quarter more
 // than the Margaret pays). He says a line when you come in (text only), and remembers how often you've been.
 import { ITEMS, ownsItem, worn as wornItem, RARITY } from './items.js';
-import { SUITS, GOODS, TRAPS, money } from './economy.js';
+import { SUITS, GOODS, TRAPS, money, moneyExact } from './economy.js';
 import { pictureOf } from './catalog.js';
 import { chestsOf, oddsText, chestPicture } from './chests.js';
 
@@ -84,7 +84,7 @@ export class DaveShop {
   render() {
     const P = this.h.getProfile(), g = this.h.getGame();
     if (!P || !g) return;
-    this.root.querySelector('.dv-cash b').textContent = money(P.cash, false);
+    this.root.querySelector('.dv-cash b').textContent = moneyExact(P.cash, false);
     this.root.querySelector('.dv-says').innerHTML = `<b>Dave:</b> “${esc(this.line)}”`;
     const chests = chestsOf('dave').map((c) => `<div class="dv-row ch"><img src="${chestPicture(c.look, 192, 150)}" alt=""><div class="dv-txt"><b>${esc(c.name)}</b><span>${esc(c.line)}</span><small class="ch-odds">${oddsText(c.odds, c.coin)}</small></div><button data-dv="buy|chest:${c.key}" ${P.cash + 1e-6 < c.price ? 'disabled' : ''}>Open ${money(c.price, false)}</button></div>`).join('');
     this.root.querySelector('.dv-list').innerHTML = `${chests ? `<h4 class="dv-sub">Boxes, unopened</h4>${chests}` : ''}<h4 class="dv-sub">Gear</h4>` + /* (6.4.0) chests are in the game's Shop now */ this.wares(P).map((w) => {
