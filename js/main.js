@@ -2210,6 +2210,12 @@ function tickAbility(dt) {
   // (7.4.15) Rift's second dash waits 20 s at most; then the rest begins
   if (S.charges > 0) { S.chargeT -= dt; if (S.chargeT <= 0) { S.charges = 0; const R0 = currentAbility(); if (R0 && R0.charges) { profile.abilReadyAt = Date.now() + R0.cd * 1000; saveProfile(profile); } } }
   // (7.4.15) a mythical's 10 s: light, speed and air (in the sub, the cabin's air)
+  // (7.4.19) Dauntless: the suit and the hull rated deeper while it runs; the field's strength is how much of the extra
+  // depth he is using (0 at the old rating, 1 at the new)
+  { const pm = on && A.press ? A.press : 1, pb = on && A.beyond ? A.beyond : 0; e.pressMul = pm; e.pressBeyond = pb; g.sub.pressMul = pm; g.sub.pressBeyond = pb;
+    if (pm > 1) { const base = e.inSub ? (g.sub.ratedV || 300) : (e.pressBase || 300), d = e.inSub ? g.sub.y : e.y; g.pressK = clamp((d - base) / (base * (pm - 1)), 0, 1); }
+    if (pm > 1 && !g.pressFx) { g.pressFx = { t: 0, end: 0, tier: A.tier, def: A }; if (audio.ready) { audio.thud && audio.thud(0.6); audio.creak && audio.creak(0.5); } } // it opens: a deep thud, the hull's creak
+    if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1) { F.tier = A.tier; F.def = A; F.left = S.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
   if (g.mythT > 0) { g.mythT = Math.max(0, g.mythT - dt); e.abilSpeed = Math.max(e.abilSpeed, MYTH.speed); e.abilNoAir = true;
     const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
     if (add > 0) { g.mythAir = (g.mythAir || 0) + add; if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + add); else e.o2 = Math.min(e.o2Max, e.o2 + add); } }

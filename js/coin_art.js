@@ -232,6 +232,23 @@ function tierRim(x, tier) {
       x.fillStyle = '#e8cc90'; x.beginPath(); x.arc(0, -46, 1.6, 0, TAU); x.fill(); x.restore(); } }
 }
 const ABIL_ART = {
+  // (7.4.19, owner) Dauntless: a heavy inverted wedge of worn steel, bevelled, the water's weight pressing on it as arrows;
+  // more of them, and rings, as the tier rises; the legendary's in old gilt with a carved inner wedge
+  dauntless(x, tier) {
+    const leg = tier === 'legendary', exo = tier !== 'rare', col = leg ? GILT : BONE, r = exo ? 24 : 27, oy = 3;
+    const wedge = (rr) => { x.beginPath(); x.moveTo(-rr * 0.92, oy - rr * 0.55); x.lineTo(rr * 0.92, oy - rr * 0.55); x.lineTo(0, oy + rr * 0.95); x.closePath(); };
+    if (exo) { x.strokeStyle = 'rgba(214,226,222,0.35)'; x.lineWidth = 1.4; for (const rr of leg ? [33, 38] : [34]) { x.setLineDash([5, 4]); x.beginPath(); x.arc(0, oy, rr, 0, TAU); x.stroke(); } x.setLineDash([]); }
+    wedge(r + 2); x.fillStyle = 'rgba(0,0,0,0.45)'; x.fill();
+    wedge(r); const g = x.createLinearGradient(-r, oy - r, r * 0.6, oy + r); g.addColorStop(0, mix(col, '#fff', 0.35)); g.addColorStop(0.45, col); g.addColorStop(1, mix(col, '#000', 0.5)); x.fillStyle = g; x.fill();
+    x.strokeStyle = 'rgba(20,16,10,0.85)'; x.lineWidth = 2.2; x.stroke();
+    x.strokeStyle = 'rgba(255,250,236,0.5)'; x.lineWidth = 1.4; x.beginPath(); x.moveTo(-r * 0.8, oy - r * 0.47); x.lineTo(r * 0.8, oy - r * 0.47); x.stroke(); // the lit top edge
+    if (leg) { wedge(r * 0.45); x.fillStyle = mix(col, '#000', 0.45); x.fill(); x.strokeStyle = mix(col, '#fff', 0.3); x.lineWidth = 1.2; x.stroke(); }
+    const arrows = tier === 'rare' ? [-Math.PI / 2] : leg ? Array.from({ length: 8 }, (_, i) => i / 8 * TAU) : [-Math.PI / 2, 0, Math.PI / 2, Math.PI];
+    for (const a of arrows) { const R0 = r + (exo ? 6 : 4), cx = Math.cos(a), cy = Math.sin(a), px = (k) => cx * k, py = (k) => oy + cy * k;
+      const fanned = tier === 'rare' ? [-10, 0, 10] : [0];
+      for (const off of fanned) { const ox = -cy * off, oyy = cx * off; x.strokeStyle = mix(col, '#fff', 0.15); x.lineWidth = 2.6; x.beginPath(); x.moveTo(px(R0 + 11) + ox, py(R0 + 11) + oyy); x.lineTo(px(R0 + 2) + ox, py(R0 + 2) + oyy); x.stroke();
+        x.fillStyle = mix(col, '#fff', 0.15); x.beginPath(); x.moveTo(px(R0) + ox, py(R0) + oyy); x.lineTo(px(R0 + 5) - cy * 4 + ox, py(R0 + 5) + cx * 4 + oyy); x.lineTo(px(R0 + 5) + cy * 4 + ox, py(R0 + 5) - cx * 4 + oyy); x.closePath(); x.fill(); } }
+  },
   sprint(x, tier) {
     const leg = tier === 'legendary', exo = tier !== 'rare', col = leg ? GILT : BONE;
     // speed: long streaks running back from the fins, and a wake curling off their tips
@@ -337,6 +354,16 @@ const ABIL_ART = {
     x.strokeStyle = 'rgba(200,226,236,0.4)'; x.lineWidth = 1.4; for (const k of [10, 20, 30]) { x.beginPath(); x.moveTo(-40, 44 - k * 0.2); x.quadraticCurveTo(0, 30 - k * 0.5, 46, 26 - k); x.stroke(); }
   },
 };
+// (7.4.19, owner) a mythical's coin: its own picture (the scroll's mythical emblem), painted in ember on the coin, lit
+// from above with a dark edge under it, then the oxblood rim
+export function paintMythCoin(x, mask) {
+  const c = document.createElement('canvas'); c.width = c.height = mask.width; const t = c.getContext('2d');
+  t.drawImage(mask, 0, 0); t.globalCompositeOperation = 'source-in'; const g = t.createLinearGradient(0, 0, c.width * 0.4, c.height);
+  g.addColorStop(0, '#ffd2a8'); g.addColorStop(0.45, '#e8875a'); g.addColorStop(1, '#8a2e1a'); t.fillStyle = g; t.fillRect(0, 0, c.width, c.height);
+  const sh = document.createElement('canvas'); sh.width = sh.height = mask.width; const s2 = sh.getContext('2d'); s2.drawImage(mask, 0, 0); s2.globalCompositeOperation = 'source-in'; s2.fillStyle = '#1a0604'; s2.fillRect(0, 0, sh.width, sh.height);
+  x.save(); x.globalAlpha = 0.8; x.drawImage(sh, -46.5, -45, 96, 96); x.globalAlpha = 1; x.shadowColor = 'rgba(255,120,70,0.55)'; x.shadowBlur = 8; x.drawImage(c, -48, -48, 96, 96); x.restore();
+  mythRim(x);
+}
 export function paintAbility(x, fam, tier) {
   const f = ABIL_ART[fam]; if (!f) return false;
   const my = tier === 'mythical'; // (7.4.15) a mythical: the legendary's picture, its gilt warmed to ember, on an oxblood rim

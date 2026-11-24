@@ -7,7 +7,7 @@ import { drawTrawl3, drawTrap3 } from './kit_art.js'; // (6.5.3)
 import { ABILITY_FAMILIES, drawTierEmblemMask, ACCENT } from './scrolls.js';
 import { drawGlyph } from './glyphs.js';
 import { drawNet, netLook } from './tools_draw.js';
-import { PAINTED, paintSprint, paintMask, paintAbility } from './coin_art.js';
+import { PAINTED, paintSprint, paintMask, paintAbility, paintMythCoin } from './coin_art.js';
 
 const TAU = Math.PI * 2;
 const cache = new Map();
@@ -521,6 +521,7 @@ for (const f of ABILITY_FAMILIES) ART['ab_' + f] = (x, look) => { // (5.9.0) the
   const tier = (look && look.tier) || 'rare', m = drawTierEmblemMask(f, tier, 220), col = tier === 'legendary' ? '#d8b066' : (ACCENT[f] || '#e8e0c8');
   const tint = (c0) => { const c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d'); t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = c0; t.fillRect(0, 0, c.width, c.height); return c; };
   void tint; void col;
+  if (tier === 'mythical') { paintMythCoin(x, m); return; } // (7.4.19) a mythical: its own picture, in ember
   if (paintAbility(x, f, tier)) return; // (5.16.0) every skill painted, its tier told by craft (coin_art.js)
   void paintSprint;
   paintMask(x, m, tier === 'legendary'); // (5.15.6) the others' emblems in lit bone (bronze for a legendary), larger

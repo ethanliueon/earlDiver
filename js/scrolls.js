@@ -6,8 +6,8 @@
 // bands. Painted once per size and kept.
 const TAU = Math.PI * 2;
 
-export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden'];
-export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4' };
+export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden', 'dauntless'];
+export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4', dauntless: '#c8d2d6' };
 const BODY = {
   rare: { mid: '#2e4c70', dark: '#15253a', light: '#4d739c' },
   exotic: { mid: '#4c2d58', dark: '#25142c', light: '#714b83' },
@@ -314,6 +314,7 @@ function paintScroll3(x, fam, tier) {
     const ex = endAtLeft ? x0 + 1 : x1 - 1, cap = wobbly(Array.from({ length: 10 }, (_, i) => [ex + Math.cos(i / 10 * TAU) * rad * 0.5, y + Math.sin(i / 10 * TAU) * rad * 0.97]), r, 0.3);
     const capCol = my ? '#4e1810' : leg ? '#5e4422' : shade(B.dark, 0.1); const cg = x.createRadialGradient(ex - rad * 0.15, y - rad * 0.3, 1, ex, y, rad); cg.addColorStop(0, shade(capCol, 0.3)); cg.addColorStop(1, shade(capCol, -0.3));
     x.fillStyle = cg; x.fill(cap); age(cap, ex - rad, y - rad, rad * 2, rad * 2, 4); x.lineWidth = 1; x.strokeStyle = edgeCol; x.stroke(cap);
+    if (my) { x.strokeStyle = 'rgba(232,140,90,0.75)'; x.lineWidth = 0.8; for (const k of [0.82, 0.6]) { x.beginPath(); x.ellipse(ex, y, rad * 0.5 * k, rad * 0.97 * k, 0, 0, TAU); x.stroke(); } } // (7.4.19) carved rings on a mythical's caps
     x.strokeStyle = 'rgba(0,0,0,0.4)'; x.lineWidth = 0.9; x.beginPath();
     for (let a = 0.3; a < TAU * 2.3; a += 0.16) { const rr = rad * (0.12 + a / (TAU * 2.7)); const px = ex + Math.cos(a + 1) * rr * 0.48, py = y + Math.sin(a + 1) * rr * 0.93; if (a === 0.3) x.moveTo(px, py); else x.lineTo(px, py); }
     x.stroke();
@@ -339,8 +340,11 @@ function paintScroll3(x, fam, tier) {
   x.restore();
   age(sheet, -40, -28, 80, 60, 26);
   x.lineWidth = 1.1; x.strokeStyle = edgeCol; x.stroke(sheet);
+  // (7.4.19) a mythical's sheet: an ember-gilt border inside its edge, a second fine line within it, small corner knots
+  if (my) { x.save(); x.clip(sheet); x.strokeStyle = 'rgba(232,140,90,0.8)'; x.lineWidth = 1.4; x.strokeRect(-33.5, -21.5, 64, 46); x.strokeStyle = 'rgba(232,140,90,0.4)'; x.lineWidth = 0.7; x.strokeRect(-31, -19, 59, 41);
+    x.fillStyle = 'rgba(240,160,110,0.85)'; for (const [cx, cy] of [[-33.5, -21.5], [30.5, -21.5], [-33.5, 24.5], [30.5, 24.5]]) { x.beginPath(); x.arc(cx, cy, 1.8, 0, TAU); x.fill(); } x.restore(); }
   // the emblem: painted on, solid, softly shaded, the paint worn in places
-  { const m = emblemMask2(fam, my ? 'legendary' : tier, 288), size = 58, c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d');
+  { const m = emblemMask2(fam, tier, 288) /* (7.4.19) a mythical has its own picture */, size = 58, c = document.createElement('canvas'); c.width = c.height = m.width; const t = c.getContext('2d');
     t.drawImage(m, 0, 0); t.globalCompositeOperation = 'source-in'; const eg = t.createLinearGradient(0, 0, 0, c.height); eg.addColorStop(0, shade(acc, 0.16)); eg.addColorStop(0.55, acc); eg.addColorStop(1, shade(acc, -0.32)); t.fillStyle = eg; t.fillRect(0, 0, c.width, c.height);
     t.globalCompositeOperation = 'destination-out'; const rr2 = rnd(fam.length * 7 + 3); for (let i = 0; i < 70; i++) { t.globalAlpha = 0.25 + rr2() * 0.6; t.beginPath(); t.arc(rr2() * c.width, rr2() * c.height, 1 + rr2() * 4, 0, TAU); t.fill(); } t.globalAlpha = 1;
     x.save(); x.globalAlpha = 0.55; x.drawImage((() => { const d = document.createElement('canvas'); d.width = d.height = m.width; const u = d.getContext('2d'); u.drawImage(m, 0, 0); u.globalCompositeOperation = 'source-in'; u.fillStyle = 'rgba(0,0,0,1)'; u.fillRect(0, 0, d.width, d.height); return d; })(), -2 - size / 2 + 0.8, 1 - size / 2 + 1.2, size, size); x.restore(); // the paint's thickness: a soft shadow under it
@@ -352,9 +356,9 @@ function paintScroll3(x, fam, tier) {
     const seal = wobbly(Array.from({ length: 14 }, (_, i) => { const a = i / 14 * TAU, rr = 9.5 + (r() - 0.5) * 2.4; return [Math.cos(a) * rr, Math.sin(a) * rr]; }), r, 0.5);
     const sg2 = x.createRadialGradient(-3, -3, 1, 0, 0, 11); sg2.addColorStop(0, '#c0402c'); sg2.addColorStop(0.6, '#8a2418'); sg2.addColorStop(1, '#4e120c'); x.fillStyle = sg2; x.fill(seal);
     x.strokeStyle = 'rgba(30,6,4,0.8)'; x.lineWidth = 0.9; x.stroke(seal);
-    x.strokeStyle = 'rgba(40,8,4,0.7)'; x.lineWidth = 1.2; x.beginPath(); x.arc(0, 0, 6, 0, TAU); x.stroke();
+    x.strokeStyle = 'rgba(40,8,4,0.7)'; x.lineWidth = 1.2; x.beginPath(); x.arc(0, 0, 6.4, 0, TAU); x.stroke();
+    x.fillStyle = 'rgba(40,8,4,0.6)'; x.beginPath(); x.moveTo(0, 3.6); x.bezierCurveTo(-2, 2, -4, 0.6, -4, -1.2); x.bezierCurveTo(-4, -3, -1.4, -3.4, 0, -1.6); x.bezierCurveTo(1.4, -3.4, 4, -3, 4, -1.2); x.bezierCurveTo(4, 0.6, 2, 2, 0, 3.6); x.fill(); // (7.4.19) the heart stamped in it
     x.strokeStyle = 'rgba(255,170,130,0.35)'; x.lineWidth = 0.8; x.beginPath(); x.arc(-0.4, -0.5, 6, Math.PI * 1.1, Math.PI * 1.7); x.stroke();
-    x.fillStyle = 'rgba(40,8,4,0.6)'; for (let i = 0; i < 5; i++) { const a = i / 5 * TAU - Math.PI / 2; x.beginPath(); x.arc(Math.cos(a) * 3, Math.sin(a) * 3, 0.9, 0, TAU); x.fill(); }
     x.fillStyle = 'rgba(255,200,170,0.35)'; x.beginPath(); x.ellipse(-3.5, -4, 2.6, 1.2, -0.6, 0, TAU); x.fill(); x.restore(); }
 }
 export function drawScroll3(ctx, cx, cy, size, fam, tier = 'rare') {
@@ -411,6 +415,52 @@ function emblemTier(x, fam, tier) {
     if (detail >= 2) { for (let k = 0; k < 5; k++) { const sc = P(); sc.arc(4 - k * 3.4, -1.5 + k * 0.6, 2.4, -1, 1); D(sc, 0.8); } const ln = P(); ln.moveTo(10, -4); ln.bezierCurveTo(2, -1, -6, 2, -12, 4); D(ln, 0.7); }
   };
   const swoosh2 = (cx, cy, rr, a0, a1, w) => { const p = swoosh(cx, cy, rr, a0, a1, w); F(p); };
+  // (7.4.19, owner) Dauntless: an inverted triangle, the weight of the water bearing down on it, heavier as the rarity rises
+  const tri = (r, cut = 0) => { const p = P(); p.moveTo(-r * 0.92, -r * 0.55); p.lineTo(r * 0.92, -r * 0.55); p.lineTo(0, r * 0.95); p.closePath(); if (cut) { p.moveTo(0, r * 0.95 - cut * 2.1); p.lineTo(r * 0.92 - cut * 1.8, -r * 0.55 + cut); p.lineTo(-r * 0.92 + cut * 1.8, -r * 0.55 + cut); p.closePath(); } return p; };
+  const press = (a, r0, len, w = 2.2) => { x.save(); x.rotate(a); const sh = P(); sh.moveTo(0, -r0 - len); sh.lineTo(0, -r0 - 3); S(sh, w); const hd = P(); hd.moveTo(-3.4, -r0 - 4.5); hd.lineTo(0, -r0); hd.lineTo(3.4, -r0 - 4.5); hd.closePath(); F(hd); x.restore(); };
+  const heartMark = () => { const h = P(); h.moveTo(0, 33); h.bezierCurveTo(-1.6, 31.6, -3.6, 30.6, -3.6, 28.9); h.bezierCurveTo(-3.6, 27.3, -1.4, 26.9, 0, 28.3); h.bezierCurveTo(1.4, 26.9, 3.6, 27.3, 3.6, 28.9); h.bezierCurveTo(3.6, 30.6, 1.6, 31.6, 0, 33); h.closePath(); F(h); };
+  if (fam === 'dauntless' && tier !== 'mythical') {
+    if (tier === 'rare') { x.translate(0, 3); F(tri(18)); for (const dx of [-9, 0, 9]) { const sh = P(); sh.moveTo(dx, -27); sh.lineTo(dx, -17); S(sh, 2.2); const hd = P(); hd.moveTo(dx - 3, -18.5); hd.lineTo(dx, -14); hd.lineTo(dx + 3, -18.5); hd.closePath(); F(hd); } }
+    else if (exo) { ring(); x.translate(0, 2); const o = tri(17); S(o, 2); F(tri(12)); for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) press(a, 19, 5, 2); }
+    else { medallion(); x.translate(0, 2); F(tri(19, 3.2)); F(tri(8)); for (let i = 0; i < 8; i++) press(i / 8 * TAU, 20.5, 2.5, 1.6);
+      for (const sd of [-1, 1]) { const bend = P(); bend.moveTo(sd * 21, -16); bend.quadraticCurveTo(sd * 13, 2, sd * 6, 18); D(bend, 1); } }
+    x.restore(); return;
+  }
+  // (7.4.19, owner) the mythicals' own pictures: each the legendary's idea pushed further, on the medallion, with a small
+  // heart at its foot (every mythical is a Heart)
+  if (tier === 'mythical') {
+    medallion(); heartMark();
+    if (fam === 'sprint') { // the fins at the eye of a whirlpool, the water spiralling in
+      for (let k = 0; k < 3; k++) { const sp = P(); for (let a = 0; a < TAU * 1.1; a += 0.12) { const rr = 22 - a * 2.6 - k * 0.6, ph = a + k * TAU / 3, px = Math.cos(ph) * rr, py = Math.sin(ph) * rr * 0.8; a ? sp.lineTo(px, py) : sp.moveTo(px, py); } S(sp, 2.6 - k * 0.5); }
+      x.save(); x.scale(0.55, 0.55); fish(1, 2); x.restore(); }
+    else if (fam === 'flare') { // the lighthouse on a storm-wave rock, three beams, its lantern burning
+      for (const a of [-2.6, -0.55, 1.4]) { const bm = P(); bm.moveTo(0, -13); bm.lineTo(Math.cos(a - 0.2) * 30, -13 + Math.sin(a - 0.2) * 30); bm.lineTo(Math.cos(a + 0.2) * 30, -13 + Math.sin(a + 0.2) * 30); bm.closePath(); x.globalAlpha = 0.85; F(bm); x.globalAlpha = 1; }
+      const tw = P(); tw.moveTo(-5, 10); tw.lineTo(-3, -9); tw.lineTo(3, -9); tw.lineTo(5, 10); tw.closePath(); F(tw); for (const yy of [-3, 3]) { const st = P(); st.moveTo(-4.3, yy); st.lineTo(4.3, yy + 0.4); D(st, 1.8); }
+      const lr = P(); lr.arc(0, -13, 4.6, 0, TAU); F(lr); const fl = P(); fl.moveTo(0, -10.5); fl.bezierCurveTo(-3, -12.5, -1, -15, 0, -17); fl.bezierCurveTo(1, -15, 3, -12.5, 0, -10.5); x.fillStyle = K; x.fill(fl);
+      const wv = P(); wv.moveTo(-24, 19); wv.bezierCurveTo(-18, 8, -9, 10, -5, 12); wv.lineTo(5, 12); wv.bezierCurveTo(12, 6, 20, 8, 22, 14); wv.bezierCurveTo(17, 12, 15, 16, 19, 19); wv.closePath(); F(wv); }
+    else if (fam === 'echo') { // a whale curled round a sonar ring, its call going out
+      for (const rr of [8, 13]) { const r1 = P(); r1.arc(0, 0, rr, 0, TAU); S(r1, 1.3); }
+      const wh = P(); wh.moveTo(-20, 6); wh.bezierCurveTo(-22, -10, -8, -21, 6, -20); wh.bezierCurveTo(16, -19, 22, -10, 19, -2); wh.bezierCurveTo(15, -11, 6, -15, -2, -14); wh.bezierCurveTo(-12, -12, -16, -2, -14, 6); wh.closePath(); F(wh);
+      const tl = P(); tl.moveTo(-17, 4); tl.lineTo(-23, 12); tl.lineTo(-17, 10); tl.lineTo(-12, 15); tl.closePath(); F(tl); const ey = P(); ey.arc(12, -14, 1.3, 0, TAU); x.fillStyle = K; x.fill(ey);
+      for (const [a0, rr] of [[0.2, 18], [0.1, 21.5]]) { const cw = P(); cw.arc(0, 0, rr, a0, a0 + 1.1); S(cw, 1.6); } }
+    else if (fam === 'vigor') { // the net torn open by a jaw of hooked teeth
+      for (const sd of [-1, 1]) { const jw = P(); jw.moveTo(-20, sd * 3); jw.quadraticCurveTo(0, sd * 22, 20, sd * 3); jw.lineTo(16, sd * 6); jw.quadraticCurveTo(0, sd * 15, -16, sd * 6); jw.closePath(); F(jw);
+        for (let i = 0; i < 6; i++) { const tx = -12 + i * 4.8, ty = sd * (8 + Math.sin((i + 0.5) / 6 * Math.PI) * 4.5), th = P(); th.moveTo(tx - 1.8, ty); th.quadraticCurveTo(tx + 0.5, ty - sd * 5, tx + 2.2, ty - sd * 6.5); th.lineTo(tx + 1.8, ty); th.closePath(); F(th); } }
+      for (const [x0, y0, x1, y1] of [[-8, -3, -3, 2], [2, -2, 7, 3], [-2, 0, 3, -4]]) { const st = P(); st.moveTo(x0, y0); st.lineTo(x1, y1); S(st, 1.1); } }
+    else if (fam === 'dash') { // the spear splitting the sea, the crack of light behind it
+      const cr = P(); cr.moveTo(-22, 16); cr.lineTo(-14, 9); cr.lineTo(-15, 4); cr.lineTo(-7, -1); cr.lineTo(-8, -6); cr.lineTo(0, -11); S(cr, 2.8); const cr2 = P(); cr2.moveTo(-14, 9); cr2.lineTo(-20, 5); cr2.moveTo(-7, -1); cr2.lineTo(-12, -5); S(cr2, 1.3);
+      x.save(); x.rotate(-0.6); const sp = P(); sp.moveTo(24, 0); sp.lineTo(13, -3.4); sp.lineTo(-20, -1.2); sp.lineTo(-20, 1.2); sp.lineTo(13, 3.4); sp.closePath(); F(sp); const bd = P(); bd.moveTo(16, -3); bd.lineTo(12, -6.5); bd.moveTo(16, 3); bd.lineTo(12, 6.5); S(bd, 1.5); x.restore(); }
+    else if (fam === 'tidewarden') { // a great wave curling over a closed eye
+      const wv = P(); wv.moveTo(-23, 16); wv.bezierCurveTo(-24, -6, -6, -22, 12, -18); wv.bezierCurveTo(22, -15, 22, -4, 14, -2); wv.bezierCurveTo(16, -9, 10, -12, 4, -10); wv.bezierCurveTo(-6, -6, -8, 6, -2, 16); wv.closePath(); F(wv);
+      for (const [cx, cy, rr] of [[14, -8, 3], [18, -12, 2]]) { const fo = P(); fo.arc(cx, cy, rr, 0, TAU); x.fillStyle = K; x.fill(fo); }
+      const ey = P(); ey.moveTo(-1, 11); ey.quadraticCurveTo(8, 17, 17, 11); S(ey, 2.2); for (const lx of [2, 8, 14]) { const la = P(); la.moveTo(lx, 13.5); la.lineTo(lx - 1, 17.5); S(la, 1.4); } }
+    else if (fam === 'dauntless') { // Hadal Heart: the triangle at its heaviest, cracked with light, rings pressing in from all round
+      x.translate(0, 2); for (const rr of [21, 17]) { const pr = P(); pr.arc(0, 0, rr, 0, TAU); x.setLineDash([3.5, 2.6]); S(pr, 1.3); x.setLineDash([]); }
+      F(tri(15)); const ck = P(); ck.moveTo(-6, -7.5); ck.lineTo(-1, -2); ck.lineTo(-3, 3); ck.lineTo(1, 8); ck.moveTo(-1, -2); ck.lineTo(5, -5); ck.moveTo(-3, 3); ck.lineTo(3, 2.5); D(ck, 1.4);
+      for (let i = 0; i < 12; i++) press(i / 12 * TAU, 22.5, 2.2, 1.4); }
+    else { x.save(); x.scale(0.8, 0.8); emblemTier(x, fam, 'legendary'); x.restore(); }
+    x.restore(); return;
+  }
   if (fam === 'sprint') {
     if (tier === 'rare') { x.scale(1.15, 1.15); fish(1, 0); }
     else if (exo) { ring(); x.save(); x.scale(0.95, 0.95); fish(1, 1); x.restore(); swoosh2(2, 4, 19, 2.3, 3.5, 3.6); swoosh2(2, 4, 13, 2.4, 3.6, 2.8); }

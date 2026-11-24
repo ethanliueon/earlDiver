@@ -191,7 +191,16 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   multiplied over its colour when the floor is baked, so phones show it too.
 - **Giant and colossal squid (7.4.17, owner):** drawn from life (creatures_draw.js drawGiantSquid): deep red, mantle
   first, eight sucker-lined arms and two long club-tipped tentacles; they never hang on end or turn over.
-- **Sprint durations (7.4.17, owner):** Sprint 15 s, Sprint+ 15 s, Riptide 20 s, Maelstrom 30 s.
+- **Sprint durations (7.4.17, owner):** Sprint 15 s, Sprint+ 15 s, Riptide 20 s, Maelstrom Heart 30 s.
+- **Mythicals are Hearts (7.4.19, owner):** Maelstrom Heart, Pharos Heart, Whalesong Heart, Leviathan Heart, Riven Heart,
+  Warden Heart, Hadal Heart. Each has its own picture (scroll and coin, scrolls.js emblemTier's mythical branch), with
+  a small heart at the foot of its medallion; the scroll has an ember-gilt border, carved caps and a heart-stamped seal.
+- **Dauntless (7.4.19, owner):** a pressure skill, an inverted triangle that grows heavier by tier. While it runs the
+  suit (or the hull) is rated deeper by its multiple and pressure's extra air cost is that many times less: Dauntless
+  20 s, 30 min, x1.5; Dauntless+ 20 s, 1 h, x2, Flare+ light; Bathysphere 30 s, 1 h, x2.5, light, and past its limit air
+  goes 5 times slower; Hadal Heart 45 s, 1 h, x3, past its limit 10 times slower. A force field of pressed water round
+  him or the sub (render.js, g.pressFx): one pale water colour at every tier, bigger and stronger by tier and by how much
+  of the extra depth is used; it bursts out and is crushed back in; Bathysphere and Hadal Heart press on the screen.
 - **Mythical scrolls (7.4.15, owner):** a rarity above legendary, oxblood red with an ember glow (never the bright warning
   red). Only from three legendaries of the same scroll combined: never in chests, the Old One's table or a shop. Worth
   three legendaries. Maelstrom (Riptide), Pharos (Lighthouse), Whalesong (Fathom), Leviathan's Maw (Apex), Rift

@@ -12,38 +12,46 @@ export const ABILITY_DEFS = {
     rare: { name: 'Sprint', dur: 15, cd: 120, speed: 1.5, line: '×1.5 speed for 15 s, using no air.' },
     exotic: { name: 'Sprint+', dur: 15, cd: 300, speed: 2, line: '×2 speed for 15 s, using no air.' },
     legendary: { name: 'Riptide', dur: 20, cd: 1800, speed: 3, noAir: true, line: '×3 speed for 20 s, using no air.' }, // (7.4.17, owner) 20 s
-    mythical: { name: 'Maelstrom', dur: 30, cd: 1200, speed: 3.5, noAir: true, wake: true, line: '×3.5 speed for 30 s, using no air, and the water lit behind you as you go.' },
+    mythical: { name: 'Maelstrom Heart', dur: 30, cd: 1200, speed: 3.5, noAir: true, wake: true, line: '×3.5 speed for 30 s, using no air, and the water lit behind you as you go.' },
   },
   vigor: {
     rare: { name: 'Vigor', dur: 20, cd: 180, reach: 1.5, line: '×1.5 net reach for 20 s.' },
     exotic: { name: 'Vigor+', dur: 20, cd: 480, reach: 2, swing: 0.8, line: '×2 net reach and a quicker swing for 20 s.' },
     legendary: { name: 'Apex', dur: 10, cd: 3600, reach: 2.5, sure: true, bless: true, line: 'For 10 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
-    mythical: { name: "Leviathan's Maw", dur: 12, cd: 2400, reach: 3, sure: true, bless: true, multi: 3, line: 'For 12 s the net reaches three times as far, cannot miss, and takes up to three animals a swing. All come back whole, and Blessed.' },
+    mythical: { name: 'Leviathan Heart', dur: 12, cd: 2400, reach: 3, sure: true, bless: true, multi: 3, line: 'For 12 s the net reaches three times as far, cannot miss, and takes up to three animals a swing. All come back whole, and Blessed.' },
   },
   dash: {
     rare: { name: 'Dash', dur: 0.3, cd: 45, dash: 1, zoom: 1, line: 'Tap where to go, and you are there in an instant.' },
     exotic: { name: 'Dash+', dur: 0.3, cd: 120, dash: 2, zoom: 1.4, line: 'Tap where to go, with the water opened wider round you.' },
     legendary: { name: 'Undertow', dur: 0.35, cd: 900, dash: 3, zoom: 2, line: 'Tap where to go: the sea opens far round you, and bends as you pass.' },
-    mythical: { name: 'Rift', dur: 0.35, cd: 1200, dash: 3, zoom: 2.2, charges: 2, line: 'Two dashes before it rests: tap where to go, and again. The sea opens far round you, and tears as you pass.' },
+    mythical: { name: 'Riven Heart', dur: 0.35, cd: 1200, dash: 3, zoom: 2.2, charges: 2, line: 'Two dashes before it rests: tap where to go, and again. The sea opens far round you, and tears as you pass.' },
   },
   flare: {
     rare: { name: 'Flare', dur: 20, cd: 300, light: 1, line: '20 s of light 28 m round you. The thing does not see it.' },
     exotic: { name: 'Flare+', dur: 40, cd: 720, light: 1.6, line: '40 s of brighter light, 45 m round you. The thing does not see it.' },
     legendary: { name: 'Lighthouse', dur: 60, cd: 3600, light: 2.4, ward: true, line: '60 s of light 80 m round you, near as bright as the shallows, pulsing, its beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
-    mythical: { name: 'Pharos', dur: 90, cd: 1800, light: 3.2, ward: true, line: '90 s of light 110 m round you, brighter than the Lighthouse, three beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
+    mythical: { name: 'Pharos Heart', dur: 90, cd: 1800, light: 3.2, ward: true, line: '90 s of light 110 m round you, brighter than the Lighthouse, three beams sweeping round. Hunters keep out of it, and the thing does not see it.' },
   },
   echo: {
     rare: { name: 'Echo', dur: 20, cd: 480, echo: 1, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 20 s.' },
     exotic: { name: 'Echo+', dur: 35, cd: 1200, echo: 2, line: 'A ping through the water: exotic and legendary animals near you show on the radar for 35 s.' },
     legendary: { name: 'Fathom', dur: 50, cd: 5400, echo: 3, line: 'A deep ping: exotic and legendary animals far round you show on the radar for 50 s.' },
-    mythical: { name: 'Whalesong', dur: 60, cd: 3600, echo: 4, song: true, line: 'A long, deep call that carries through the sea: for 60 s exotic animals show on the radar twice as far round you, and legendary ones brighter, in their own colour.' },
+    mythical: { name: 'Whalesong Heart', dur: 60, cd: 3600, echo: 4, song: true, line: 'A long, deep call that carries through the sea: for 60 s exotic animals show on the radar twice as far round you, and legendary ones brighter, in their own colour.' },
   },
   ironhull: {
     rare: { name: 'Ironhull', dur: 0.5, cd: 3600, repair: true, sub: true, line: 'Mends the sub completely, from inside it.' },
   },
+  // (7.4.19, owner) Dauntless: for its time the suit (or the hull) is rated deeper by its multiple, and what pressure
+  // does past the old rating is that many times less. A force field round him shows how much of it he is using
+  dauntless: {
+    rare: { name: 'Dauntless', dur: 20, cd: 1800, press: 1.5, line: 'For 20 s your suit, or the sub, takes half again its rated depth, and pressure costs you a third less below it.' },
+    exotic: { name: 'Dauntless+', dur: 20, cd: 3600, press: 2, light: 1.6, line: 'For 20 s your suit, or the sub, takes twice its rated depth, pressure costs you half as much below it, and light 45 m round you.' },
+    legendary: { name: 'Bathysphere', dur: 30, cd: 3600, press: 2.5, beyond: 5, light: 1.6, line: 'For 30 s your suit, or the sub, takes two and a half times its rated depth, with light 45 m round you. Deeper even than that, your air goes 5 times slower than the pressure would take it.' },
+    mythical: { name: 'Hadal Heart', dur: 45, cd: 3600, press: 3, beyond: 10, light: 1.6, line: 'For 45 s your suit, or the sub, takes three times its rated depth. Deeper even than that, your air goes 10 times slower than the pressure would take it.' },
+  },
   tidewarden: {
     legendary: { name: 'Tidewarden', dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
-    mythical: { name: 'The Last Tide', dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Any time. In red water: a wave of blue, it freezes, fades, and is gone for 5 minutes. Marked, the mark is washed off you.' },
+    mythical: { name: 'Warden Heart', dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Any time. In red water: a wave of blue, it freezes, fades, and is gone for 5 minutes. Marked, the mark is washed off you.' },
   },
 };
 // (7.4.15, owner) mythical: above legendary, only from three legendaries of the same scroll combined. Each has its own
