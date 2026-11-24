@@ -2086,7 +2086,14 @@ export class UI {
       for (const ph of g.photos) items.push({ key: 'photo:' + ph.key, photo: ph.img, name: ph.name, n: 1, cond: gradeOf(ph).toLowerCase(), value: ph.value * statValue(P, 'payFish'), html: `${ph.img ? `<img class="sell-photo" src="${ph.img}" alt="">` : ''}<span class="sell-name">Photo: ${ph.name}${ph.grade && ph.grade !== 'Good' ? ` <em class="cond">${ph.grade.toLowerCase()}</em>` : ''}</span>` });
       for (const [k, n] of Object.entries(g.inv)) if (n > 0 && GOODS[k] && k !== 'coral') items.push({ key: 'good:' + k, name: GOODS[k].name, n, value: GOODS[k].price * n * statValue(P, 'paySalvage'), html: `<span class="sell-name">${GOODS[k].name}</span>` + (n > 1 ? `<span class="sell-n">×${n}</span>` : '') });
       for (const k of [...pick]) if (!items.some((it) => it.key === k && !it.kept)) pick.delete(k);
-      if (!items.length) html = `<div class="sell-none"><img src="${pictureOf('bag', ITEMS.mesh || 'mesh', 220, 132, true)}" alt=""><b>Nothing to sell</b></div>`; // (7.0.0) centred in the panel, an empty catch bag above the line, not one line at the top of an empty plate
+      // (7.4.0, owner) each price board line carries the animal's picture in its own water, its name in its rarity's ink
+      const boardPic = (r) => { const m = /^sp(\d+)/.exec(r.k || ''), spc = m && SPECIES_BY_ID[m[1]]; if (!spc) return null; if (!this.fitPics) this.fitPics = new Map(); if (!this.fitPics.has(spc.id)) this.fitPics.set(spc.id, fittedIcon(spc, 300, 180).toDataURL()); return { pic: this.fitPics.get(spc.id), hab: habCls(spc), rc: rarityCol(spc) }; };
+      const board0 = P.board || [], lastSale = board0.length && Date.now() - board0[0].t < 15 * 60 * 1000 ? board0.filter((r) => board0[0].t - r.t < 4000) : [];
+      if (!items.length && lastSale.length) { // (7.4.0, owner) just sold: what went, stamped Sold, and its total (it read "Nothing to sell")
+        const tot = lastSale.reduce((a, r) => a + r.each * (r.n || 1), 0);
+        html = `<div class="sold-last"><div class="sl-grid">${lastSale.map((r) => { const P2 = boardPic(r);
+          return `<div class="sl-tile sold${P2 ? ' ' + P2.hab : ''}"><div class="sl-main"><span class="sl-pic">${P2 ? `<img src="${P2.pic}" alt="">` : '<i class="sl-good"></i>'}</span><b${P2 ? ` style="color:${P2.rc}"` : ''}>${r.label}</b>${(r.n || 1) > 1 ? `<em class="sl-n">×${r.n}</em>` : ''}<span class="sl-price">${money(r.each * (r.n || 1))}</span></div></div>`; }).join('')}</div><div class="sold-foot"><span class="sold-stamp">Sold</span><b>${money(tot)}</b></div></div>`;
+      } else if (!items.length) html = `<div class="sell-none"><img src="${pictureOf('bag', ITEMS.mesh || 'mesh', 220, 132, true)}" alt=""><b>Bag empty</b></div>`; // (7.0.0) centred in the panel, an empty catch bag above the line
       else {
         // (5.1) one grid of what he brought up, each thing a tile with its picture and price: tap a tile to sell it,
         // Sell all for the lot. A live animal has Keep in its corner (kept, it is held back for the aquarium)
@@ -2103,7 +2110,7 @@ export class UI {
       }
       // the price board on the Margaret: chalked up after every sale, the newest first
       const board = P.board || [];
-      if (board.length) html += `<div class="priceboard"><h4>Price board</h4>${board.map((r) => `<div><span>${r.label}</span><b>${money(r.each)}</b></div>`).join('')}</div>`;
+      if (board.length) html += `<div class="priceboard"><h4>Price board</h4>${board.map((r) => { const P2 = boardPic(r); return `<div class="pb-row">${P2 ? `<span class="pb-pic ${P2.hab}"><img src="${P2.pic}" alt=""></span>` : '<span class="pb-pic"></span>'}<span class="pb-name"${P2 ? ` style="color:${P2.rc}"` : ''}>${r.label}</span><b>${money(r.each)}</b></div>`; }).join('')}</div>`;
     } else if (tab === 'diver') {
       html += this.upgradeGroups(P, ['Diver'], icon, can);
       html += this.suitRows(P, can);
@@ -2124,8 +2131,8 @@ export class UI {
       const hl = Math.min(SUBS.length - 1, lv(P, 'depth')), S0 = SUBS[hl], cap = hullCap(P);
       const air = (s2) => `${Math.floor(s2 / 60)} min${s2 % 60 ? ` ${s2 % 60} s` : ''}`;
       const bank = (P.addons || {}).airBank ? 1.5 : 1; // (4.18.8) the spare air bank, on every sub
-      const facts = (S, k) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(Math.round(S.o2 * bank)), S.o2 * bank], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed],
-        ['Dive speed', k ? '+10%' : 'standard', S.ballast], ['Open tank', `${S.tank} spaces`, S.tank]];
+      const facts = (S, k) => [['Depth rating', `${S.rated.toLocaleString()} m`, S.rated], ['Cabin air', air(Math.round(S.o2 * bank)), S.o2 * bank], ['Top speed', `${(3.36 * S.speed).toFixed(1)} m/s`, S.speed], /* (7.4.0) no Dive speed row: a sub sinks at its own speed (7.3.9) */
+        ['Open tank', `${S.tank} spaces`, S.tank]];
       const sheet = (S, k, cmp = null, stamp = '', big = false) => { const base = cmp ? facts(cmp, 1) : null;
         return `<div class="yd-sheet${big ? ' big' : ''}"><div class="ys-head"><span>Specification</span><span>No. ${k + 1}</span></div>${facts(S, k).map(([a, v, n], i) => { const d = base ? n - base[i][2] : 0;
           return `<div class="ys-row"><span>${a}</span><i></i><b>${v}${d > 0 ? '<em class="up">▲</em>' : d < 0 ? '<em class="down">▼</em>' : ''}</b></div>`; }).join('')}<p class="ys-note">The pressure chambers hold animals from as deep as the sub can dive.</p>${stamp ? `<div class="ys-stamp">${stamp}</div>` : ''}</div>`; };

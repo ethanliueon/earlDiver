@@ -1841,7 +1841,7 @@ html.touch body:has(#msgs .msg.in) #tut-spot .ts-line:not(#_a):not(#_b):not(#_c)
 
 
 /* (7.2.8) the title's subtitle close under the name, as on the loading screen (the painted name has open water under its letters) */
-html body #title .t-plate h1 span:not(#_a):not(#_b):not(#_c):not(#_d) { margin-top: calc(min(86vw, 820px) * -0.06) !important; }
+html body #title .t-plate h1 span:not(#_a):not(#_b):not(#_c):not(#_d) { margin-top: calc(min(86vw, 820px) * -0.035) !important; } /* (7.4.0, owner) a little lower again: it sat too close */
 
 /* (7.2.8) the name plate: the name stamped in, "Enter name" when empty, a pencil at its end; the game's own keyboard */
 #creator .cr-field { position: relative; display: flex; align-items: center; min-height: 40px; padding: 0 44px 0 12px; background: rgba(12, 16, 12, 0.55); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6), inset 0 -1px 0 rgba(230, 220, 190, 0.12); border-radius: 3px; cursor: text; font: 600 26px/1 "Barlow Semi Condensed", sans-serif; color: #e8dfc4; letter-spacing: 0.02em; }
@@ -1967,3 +1967,32 @@ html body .store-panel .st-card button img.st-pearl, html body .st-card button i
 /* (7.3.9) the pets' page: four to a row like the chests; a pet already out shows "With you" on a plain greyed plate */
 html body .store-panel .st-row.st-pets { grid-template-columns: repeat(4, 1fr); }
 html body .store-panel .st-pets .st-card img:not(.st-pearl) { height: 72px; }
+
+/* (7.4.0, owner) every New tag one olive green (red is kept for warnings and the "!" badges): the journal, the bag, quests, gains */
+html body :is(#journal .jcell .jnew, #inventory .lk-tile i.new, #quests .qs-new, #gains .g-tile .new):not(#_a):not(#_b):not(#_c) { background: #55703a !important; color: #f0ead8 !important; box-shadow: 0 1px 2px rgba(10, 18, 6, 0.5), inset 0 1px 0 rgba(220, 235, 190, 0.18) !important; }
+
+/* (7.4.0, owner) the price board: each line the animal's picture in its own water, its name in its rarity's ink, the price
+   at the right; one column, a real game's sale list. After a sale the panel shows what went, stamped Sold, with the total */
+html body #workshop .priceboard:not(#_a) { columns: 1 !important; padding: 12px 14px !important; }
+html body #workshop .priceboard .pb-row:not(#_a) { display: grid !important; grid-template-columns: 64px 1fr auto; align-items: center; gap: 12px; padding: 4px 0 !important; border-bottom: 1px solid rgba(239, 232, 214, 0.07); }
+html body #workshop .priceboard .pb-row:last-child { border-bottom: 0; }
+html body #workshop .priceboard .pb-pic { width: 64px; height: 38px; border-radius: 3px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #1b2422; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7); }
+html body #workshop .priceboard .pb-pic img { width: 90%; height: 90%; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
+html body #workshop .priceboard .pb-name { font: 500 15px var(--o-text); color: #e6dfca; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); }
+html body #workshop .priceboard .pb-row b:not(#_a) { font: 500 16px var(--o-num) !important; color: #efe8d2 !important; }
+html body #workshop .priceboard .pb-pic.hb-sun:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(140, 200, 210, 0.45), rgba(0, 0, 0, 0) 70%), #2c6a78 !important; }
+html body #workshop .priceboard .pb-pic.hb-reef:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(150, 210, 200, 0.42), rgba(0, 0, 0, 0) 70%), linear-gradient(180deg, #2a7078, #3a6650 85%, #6a6248) !important; }
+html body #workshop .priceboard .pb-pic.hb-kelp:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(170, 200, 140, 0.38), rgba(0, 0, 0, 0) 70%), #34503a !important; }
+html body #workshop .priceboard .pb-pic.hb-blue:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(110, 160, 200, 0.32), rgba(0, 0, 0, 0) 70%), #1c3e5a !important; }
+html body #workshop .priceboard .pb-pic.hb-twi:not(#_a):not(#_b) { background: radial-gradient(ellipse 90% 70% at 50% 0%, rgba(80, 110, 160, 0.25), rgba(0, 0, 0, 0) 70%), #142438 !important; }
+html body #workshop .priceboard .pb-pic.hb-deep:not(#_a):not(#_b) { background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(60, 80, 110, 0.18), rgba(0, 0, 0, 0) 70%), #0a1018 !important; }
+html body #workshop .sold-last { display: flex; flex-direction: column; gap: 12px; }
+html body #workshop .sl-tile.sold .sl-main { cursor: default; filter: saturate(0.75) brightness(0.92); }
+html body #workshop .sold-foot { display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 0 6px; }
+html body #workshop .sold-foot .sold-stamp { font: 700 15px var(--o-text); letter-spacing: 0.24em; text-transform: uppercase; color: #a84a36; border: 2px solid rgba(168, 74, 54, 0.85); border-radius: 3px; padding: 1px 10px 0 13px; transform: rotate(-4deg); opacity: 0.9; }
+html body #workshop .sold-foot b { font: 500 24px var(--o-num); color: #efe8d2; }
+/* (7.4.0, owner) the cash box wide enough for millions, its label on top at its right edge */
+html body .shop .shop-cash:not(#_a):not(#_b) { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+html body .shop .shop-cash:not(#_a):not(#_b) b.counter { min-width: 178px; text-align: right; display: flex; justify-content: flex-end; }
+/* (7.4.0, owner) a find's card tall enough to cover the chest behind it as well as the find (the chest showed round it) */
+html body .cx .cx-card:not(#_a):not(#_b) { min-height: min(80vh, 360px); width: min(400px, 84vw); display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; }

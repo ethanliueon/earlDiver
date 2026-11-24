@@ -37,6 +37,9 @@ export const netLook = (tier) => (typeof tier === 'object' && tier ? { ...NET_LO
 // catchSp: {sp, len, t} shows a fish thrashing in the bag.
 // (5.9.3) the catch moment: the net snaps up a little as the fish goes in (a flick of the wrist) and settles back,
 // and its bag cinches tight round the fish then slowly gives (see netBody)
+// (7.4.0) the net's size in the sea (metres; Earl is drawn with u = 1 cm): how far the hoop's middle sits from his hand
+// (handle and hoop) and the hoop's radius. The catch is judged on this, so it matches what is drawn
+export function netGeom(tier) { const L = typeof tier === 'object' && tier ? { ...NET_LOOK[clamp(tier.base || 0, 0, 3)], ...tier } : NET_LOOK[clamp(tier || 0, 0, 3)]; return { arm: (L.len + L.r) / 100, hoop: L.r / 100 }; }
 export function drawNet(ctx, u, tier, t, flutter, catchSp) {
   if (!catchSp) return netBody(ctx, u, tier, t, flutter, null, 0);
   const k = clamp(catchSp.t / (catchSp.dur || 1.1), 0, 1), T = catchSp.t;

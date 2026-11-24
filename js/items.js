@@ -397,7 +397,7 @@ if (ITEMS.mesh && ITEMS.mesh.slots === 3) { ITEMS.mesh.slots = 2; reword(ITEMS.m
   // nets: each kind keeps what it is for (its own size, reach and swing); rarity multiplies them, with the jump at the top
   const NM = { common: 1, uncommon: 1.15, rare: 1.3, exotic: 1.45, legendary: 1.9 };
   for (const it of Object.values(ITEMS)) {
-    if (it.id === 'hand') it.time = 1.0; // (6.0.16) the hand net: one full second
+    if (it.id === 'hand') it.time = 1.17; // (7.4.0, owner) the hand net: 0.7 s before a fish is in it (the catch lands 60 % through), noticeably slow
     if (it.kind !== 'net' || it.id === 'hand' || !ARCH.net[it.arch]) continue;
     const b = ARCH.net[it.arch], m = NM[it.rarity || 'common'] || 1, cm = (v) => Math.round(v * 100);
     const was = it.maxLen;

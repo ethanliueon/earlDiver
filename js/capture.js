@@ -8,6 +8,7 @@ import { SPECIES_BY_ID } from './species.js';
 import { WEIGHT, gear, owns, statValue } from './economy.js';
 import { canTakeLive, isTagOnly, liveValue, deepPremium, fragile, conditionName } from './specimens.js';
 import { variantMult, variantName } from './variants.js';
+import { netGeom } from './tools_draw.js';
 
 // (5.14.0) the bag and the sub's open tank are measured in spaces, and an animal takes spaces by its length (owner's
 // scale): under 20 cm 1, under 50 cm 2, under 1 m 4, under 2 m 8, bigger 16. The tank's room is three times its old count
@@ -93,20 +94,33 @@ export function handPos(g) {
   return { x: e.x + e.facing * (0.17 + 0.17 * swim), y: e.y + 0.03, fx: e.facing };
 }
 
-// What is in reach of the tool right now: the best animal it can take, or why it can't.
-export function findCatch(g) {
+// (7.4.0, owner) reach is a multiple of the hand net's (range 1.1 = 1x): the hoop catches what it passes over, and a
+// net with reach 2x catches what passes within twice the hoop's radius of it (a long net overreaches, the starter does not)
+export const reachX = (g, def) => (def.range || 1.1) / 1.1 * (g.reachMul || 1);
+export const hoopReach = (g, def, tier) => netGeom(tier).hoop * reachX(g, def);
+// (7.4.0, owner) Ambush: each level a quarter more likely that a fish holds still instead of darting off (IV: never)
+export const ambushChance = (g) => clamp(0.25 * ((g.earl && g.earl.ambushLv) || 0), 0, 1);
+// What is in reach of the tool right now: the best animal it can take, or why it can't. With at ({x, y, r}), what is
+// under the hoop where it is now (7.4.0)
+export function findCatch(g, at = null) {
   const e = g.earl, W = g.world;
   if (e.inSub || g.mode !== 'play') return null;
-  const { def, kind } = activeTool(g);
+  const { def, kind, tier } = activeTool(g);
   if (kind !== 'net' && kind !== 'slurp') return null;
   const h = handPos(g);
-  const reach = def.range * (g.reachMul || 1) + 0.7; // (5.9.0) Vigor reaches further
+  const reach = def.range * (g.reachMul || 1) + 0.7; // (5.9.0) Vigor reaches further (the slurp gun's reach)
+  const NG = kind === 'net' ? netGeom(tier) : null, hr = NG ? NG.hoop * reachX(g, def) : 0;
   let best = null, bd = 1e9, blocked = null, bbd = 1e9;
   const consider = (sp, x, y, len, ref) => { // (5.10.8: len and ref may be changed for a colony's piece)
-    if ((x - h.x) * h.fx < -0.8) return; // behind him
-    // to the edge of the animal, and the sweep covers a little more height than length
-    const d = Math.hypot(x - h.x, (y - h.y) * 0.75) - len * 0.5; // (5.10.10) the hand net's reach is back as it was before 5.10.8
-    if (d > reach) return;
+    let d;
+    if (at) { d = Math.hypot(x - at.x, y - at.y) - len * 0.4; if (d > at.r) return; } // (7.4.0) under the hoop: its body overlaps the hoop's circle
+    else {
+      if ((x - h.x) * h.fx < -0.8) return; // behind him
+      if (NG) { // (7.4.0, owner) the net: only where the hoop's sweep passes, a handle's length out from his hand
+        if ((x - h.x) * h.fx < -0.1) return;
+        d = Math.max(0, Math.abs(Math.hypot(x - h.x, y - h.y) - NG.arm) - len * 0.4); if (d > hr) return;
+      } else { d = Math.hypot(x - h.x, (y - h.y) * 0.75) - len * 0.5; if (d > reach) return; } // the slurp gun as before
+    }
     let why = null;
     // (5.10.10) no tags any more: an animal no net can hold is 'too big for the net' (a photograph is how it pays);
     // one a better net could hold is 'too big for this net'
@@ -120,7 +134,7 @@ export function findCatch(g) {
   };
   for (const c of g.fauna.list) if (!c.dead && !c.pet && !c.companion && !(c.att && c.att.s !== 'idle')) consider(c.sp, c.x, c.y, c.len, { c, variant: c.variant });
   for (const s of W.statics) {
-    if (Math.abs(s.x - h.x) > reach + 3) continue;
+    if (Math.abs(s.x - (at ? at.x : h.x)) > (at ? at.r + 3 : reach + 3)) continue;
     consider(s.sp, s.x, s.y - Math.min(0.5, s.sp.len * s.scale * 0.3), s.sp.len * s.scale, { s, variant: s.variant });
   }
   if (best) {
@@ -159,7 +173,8 @@ export function useTool(g) {
   g.capture = { kind, def, tier, t: 0, dur: def.time * (g.swingMul || 1), resolveAt: kind === 'net' ? 0.6 : 0.12 /* (6.5.7) the end of the sweep */, done: false, lock: lock && lock.ok ? lock : null };
   if (kind === 'net' && lock && lock.ok && lock.c && !g.tutForce && !lock.c.dazed) {
     const c = lock.c, fast = FAST_IDS.has(c.sp.id), small = (c.len || 1) < 0.35, arrive = g.capture.dur * 0.6, react = 0.26 + Math.random() * 0.18, p = fast ? 0.6 : small ? 0.4 : 0.12;
-    if (arrive > react && Math.random() < p * Math.min(1, (arrive - react) / 0.35)) { const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy) || 1, sp = fast ? 11 : 7;
+    if (arrive > react && Math.random() < p * Math.min(1, (arrive - react) / 0.35) && Math.random() < ambushChance(g)) c.ambushed = true; // (7.4.0) it would have darted: Ambush held it still
+    else if (arrive > react && Math.random() < p * Math.min(1, (arrive - react) / 0.35)) { const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy) || 1, sp = fast ? 11 : 7;
       c.dartT = arrive - react; c.dartVx = dx / d * sp; c.dartVy = dy / d * sp * 0.6; c.startle = 1.2; } }
   if (e.y > 200) g.entity.disturb(g, def.noise);
   return null;
@@ -184,17 +199,26 @@ export function updateCapture(g, dt) {
   const cap = g.capture;
   if (!cap || cap.kind === 'tag' || cap.kind === 'cam') return ev;
   cap.t += dt;
+  // (7.4.0, owner) the net: what the hoop actually passes over on its way, frame by frame (the drawn hoop, g.toolTip)
+  if (cap.kind === 'net' && !cap.done && g.toolTip && cap.t > cap.dur * 0.15) {
+    const at = { x: g.toolTip.x, y: g.toolTip.y, r: hoopReach(g, cap.def, cap.tier) }, L0 = cap.lock;
+    if (L0 && L0.c && !L0.c.dead && Math.hypot(L0.c.x - at.x, L0.c.y - at.y) - L0.len * 0.4 <= at.r) cap.hit = Object.assign({}, L0, { x: L0.c.x, y: L0.c.y });
+    else if (!cap.hit) { const f = findCatch(g, at); if (f && f.ok) cap.hit = f; else if (f && !cap.why) cap.why = f; }
+  }
   if (!cap.done && cap.t >= cap.dur * cap.resolveAt) {
     cap.done = true;
     // the animal he swung at, if it is still within reach (with some slack for the swing);
     // otherwise whatever is in reach now
     let tgt = null;
     const L = cap.lock;
-    if (L && !(L.c && L.c.dead) && !(L.s && !g.world.statics.includes(L.s))) {
+    if (cap.kind === 'net' && !g.tutForce) { // (7.4.0) only what the hoop passed over (the tutorial's fish keeps the old slack)
+      const H = cap.hit; tgt = H && !(H.c && H.c.dead) && !(H.s && !g.world.statics.includes(H.s)) ? H : cap.why || null;
+      if (tgt && tgt.ok && tgt.c && tgt.value === undefined) { tgt.value = liveValue(tgt.sp, tgt.len) * variantMult(tgt.variant) * deepPremium(tgt.y); tgt.name = variantName(tgt.sp, tgt.variant); }
+    } else if (L && !(L.c && L.c.dead) && !(L.s && !g.world.statics.includes(L.s))) {
       const h = handPos(g), x = L.c ? L.c.x : L.x, y = L.c ? L.c.y : L.y;
       if (Math.hypot(x - h.x, (y - h.y) * 0.75) - L.len * 0.5 < cap.def.range * (g.reachMul || 1) + 1.3) tgt = Object.assign({}, L, { x, y });
     }
-    if (!tgt) tgt = findCatch(g);
+    if (!tgt && !(cap.kind === 'net' && !g.tutForce)) tgt = findCatch(g);
     const e = g.earl;
     if (!tgt || !tgt.ok) ev.push({ type: 'miss', why: tgt ? tgt.why : null, sp: tgt && tgt.sp });
     else {
@@ -215,7 +239,7 @@ export function updateCapture(g, dt) {
           g.netCatch = { sp: tgt.sp, len: tgt.len, t: 0, dur: clamp(0.7 + tgt.len * 1.1, 0.75, 1.7) };
           g.tug = { dir: tgt.c ? (tgt.c.dir || 1) : e.facing, str: clamp(0.4 + tgt.len * 2.2, 0.5, 3.2), t: 0, dur: clamp(0.3 + tgt.len * 1.2, 0.3, 1.2) };
         } else g.slurpHeld = { sp: tgt.sp, len: tgt.len, t: 0 };
-        ev.push({ type: 'caught', sp: tgt.sp, spec, name: variantName(tgt.sp, tgt.variant) });
+        ev.push({ type: 'caught', sp: tgt.sp, spec, name: variantName(tgt.sp, tgt.variant), ambushed: !!(tgt.c && tgt.c.ambushed), x: tgt.x, y: tgt.y }); // (7.4.0) held still by Ambush: written beside it
         if (def.multi > 1 && tgt.c && tgt.c.gid != null) {
           let more = def.multi - 1;
           for (const c of g.fauna.list) {
@@ -238,7 +262,8 @@ export function updateCapture(g, dt) {
         // silt and bubbles still shows the miss). The tutorial's scripted miss is only a short nudge on, for the second swing
         // (6.5.7) a miss sends it off about 5 m from him at half again its own pace, keeping off the surface and the floor,
         // then it settles and swims as before: no 2 m dart and a stop that let him swing again and again
-        if (c) { c.tired = 0; c.dazed = 0; const fs = Math.max(0.6, (c.cruise || c.speed || 1) * 1.5); c.fleeSp = fs; c.fleeT = clamp(5 / fs, 1.2, 8.5); c.fleeFrom = { x: e.x, y: e.y }; }
+        if (c && !g.tutForce && Math.random() < ambushChance(g)) { c.ambushed = true; } // (7.4.0, owner) Ambush: it holds still instead of bolting
+        else if (c) { c.tired = 0; c.dazed = 0; const fs = Math.max(0.6, (c.cruise || c.speed || 1) * 1.5); c.fleeSp = fs; c.fleeT = clamp(5 / fs, 1.2, 8.5); c.fleeFrom = { x: e.x, y: e.y }; }
         if (g.bubbles) for (let i = 0; i < 8; i++) g.bubbles.push({ x: tgt.x + (Math.random() - 0.5) * 0.4, y: tgt.y + (Math.random() - 0.5) * 0.3, r: 0.02 + Math.random() * 0.05, w: Math.random() * 6, t: 0 });
       }
       // the commotion scares off whatever else is close

@@ -218,6 +218,7 @@
     html body .ld .ld-fill:not(#_a):not(#_b)::after { content: none !important; display: none !important; }
     html body .ld .ld-hf { position: absolute; top: 50%; left: 0; width: clamp(54px, 8vw, 76px); height: auto; aspect-ratio: 240 / 150; transform: translate(-94%, -62%); /* (7.1.7) the fish's nose at the water's front, so a full bar never pushes it past the end */ filter: drop-shadow(0 3px 5px rgba(0,0,0,0.5)); animation: ld-hf 2.2s ease-in-out infinite; pointer-events: none; }
     @keyframes ld-hf { 0%, 100% { margin-top: 0; } 50% { margin-top: -3px; } }
+    html body .ld .ld-step:not(#_a) { margin-bottom: clamp(20px, 5.5vh, 28px) !important; } /* (7.4.0) the step's word clear above the swimming hatchetfish */
     html body .ld .ld-pct:not(#_a):not(#_b) { transform: translate(20px, -50%) !important; color: rgba(214,222,210,0.75) !important; font-weight: 600 !important; }
     /* (7.1.7) the subtitle sits close under the name (the name's picture has open water below its letters); the hints are
        one small line along the bottom, clear of the bar */

@@ -23,7 +23,7 @@ export class Touch {
     window.addEventListener('blur', () => this.releaseAll());
   }
   key(k, down) { act(k, down); } // (7.2.4) the button's action (input.js), no longer a made-up key press
-  radius() { const k = window.__fingerK || 1; return 46 * uiUnit() * k; } // (5.15.7) in the one unit, as the HUD: proportional on every screen // (5.4) in real points, on a page laid out wider than the screen // (5.3.1) CSS px centre to rim: about 1.6 cm across
+  radius() { const k = window.__fingerK || 1; return 53 * uiUnit() * k; } // (7.4.0, owner) a little bigger (was 46) // (5.15.7) in the one unit, as the HUD: proportional on every screen // (5.4) in real points, on a page laid out wider than the screen // (5.3.1) CSS px centre to rim: about 1.6 cm across
   start(e) {
     if (!this.active()) return;
     e.preventDefault();
@@ -72,7 +72,7 @@ export class Touch {
     if (!this.el) return;
     if (!show) { this.el.hidden = true; return; }
     if (this.stick) return;
-    const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(), x = R + 44 * k, y = window.innerHeight - R - 36 * k; /* (6.5.7) a little right and up, where the thumb rests */ // (5.17.0) deep in the corner, the lamp having left it (a thumb's margin kept from the edges)
+    const R = this.radius(), k = (window.__fingerK || 1) * uiUnit(), x = R + 62 * k, y = window.innerHeight - R - 50 * k; /* (7.4.0, owner) further right and up, clear of the corner */ /* (6.5.7) a little right and up, where the thumb rests */ // (5.17.0) deep in the corner, the lamp having left it (a thumb's margin kept from the edges)
     this.el.hidden = false; this.el.style.setProperty('--r', R + 'px');
     this.base.style.transform = `translate(${x}px, ${y}px)`; this.knob.style.transform = `translate(${x}px, ${y}px)`;
   }

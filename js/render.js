@@ -11,7 +11,7 @@ import { drawMonster, drawMonsterLights, drawMonsterShape, drawMonsterRim, MONST
 import { sleeperState } from './sleeper_draw.js';
 import { activeTool, hatchAt, NET_DROP, NET_HAUL } from './capture.js';
 import { drawShipwreck, drawVentChimney, drawRockArt } from './scenery_draw.js';
-import { drawDart, drawBoxTrap, drawTrapBuoy } from './tools_draw.js';
+import { drawDart, drawBoxTrap, drawTrapBuoy, netGeom } from './tools_draw.js';
 import { drawStation, STATION_TOP } from './station_draw.js';
 import { drawSailBuoy } from './buoy_draw.js';
 import { drawTable, TABLE, LURE } from './oldone.js';
@@ -19,7 +19,7 @@ import { pictureOf } from './catalog.js';
 const SIMPLE_SMALL = false; // (4.3.7) small animals as generic shapes (off: each is drawn as itself)
 import { drawPrompt, HUDF } from './fittings.js'; // (4.3.2) the tutorial's prompt beside the fish
 import { Wake } from './trail.js';
-import { TRAPS, lv, statValue } from './economy.js';
+import { TRAPS, lv, statValue, gear } from './economy.js';
 import { armPose } from './arm.js';
 import { makeVariantSprite } from './variants.js';
 import { SPECIES_BY_ID } from './species.js';
@@ -1315,15 +1315,15 @@ export class Renderer {
         let side = S(g.earl.x) > ax ? -1 : 1;
         // (5.6.7) the name is turned to the side it fits on, so it never runs off the screen
         ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
-        const tw = Math.max(ctx.measureText(L.text.toUpperCase()).width, L.rar ? L.rar.length * 9.2 : 0) + 8, off = Math.max(30, ppm * 0.7); /* (6.5.7) the wider of its two lines (the guardian jellyfish's second line ran off the screen) */
+        const tw = Math.max(ctx.measureText(L.text).width, L.rar ? L.rar.length * 9.2 : 0) + 8, off = Math.max(30, ppm * 0.7); /* (6.5.7) the wider of its two lines (the guardian jellyfish's second line ran off the screen) */
         // (7.1.0) the name and rarity alone, centred over the animal: no line drawn to it
-        side = 0; const tx = Math.min(this.W - tw / 2 - 8, Math.max(tw / 2 + 8, ax)), ty = Math.min(Math.max(70, ay - Math.max(44, ppm * 1.5) - rise), (side > 0 ? tx : tx - tw) < this.W * 0.3 ? this.H * 0.55 : Infinity); // above it, clear of words beside it; (5.6.9) on a phone, never down in the stick's corner
+        side = 0; const tx = Math.min(this.W - tw / 2 - 8, Math.max(tw / 2 + 8, ax)), ty = Math.min(Math.max(70, ay - Math.max(18, ppm * ((L.c && L.c.len) || 0.4) * 0.32 + 12) - rise * 0.4) /* (7.4.0, owner) just above its back, rising only a little */, (side > 0 ? tx : tx - tw) < this.W * 0.3 ? this.H * 0.55 : Infinity); // above it, clear of words beside it; (5.6.9) on a phone, never down in the stick's corner
         if (tx < -200 || tx > this.W + 200) continue;
         ctx.globalAlpha = a * 0.9;
         ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
         ctx.font = '500 15px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '2px';
-        ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(L.text.toUpperCase(), tx + 1, ty + 1);
-        ctx.fillStyle = L.nameCol || 'rgba(214,222,210,0.92)'; ctx.fillText(L.text.toUpperCase(), tx, ty); // (7.2.8) a species' name in its rarity's colour
+        ctx.letterSpacing = '0.5px'; ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillText(L.text, tx + 1, ty + 1); /* (7.4.0, owner) the name as written, not in capitals */
+        ctx.fillStyle = L.nameCol || 'rgba(214,222,210,0.92)'; ctx.fillText(L.text, tx, ty); // (7.2.8) a species' name in its rarity's colour
         if (L.rar) { ctx.font = '500 11px "Barlow Semi Condensed", "Arial Narrow", sans-serif'; ctx.letterSpacing = '3px'; ctx.globalAlpha = a * 0.8; ctx.fillStyle = L.col || '#9aa0a6'; ctx.fillText(L.rar.toUpperCase(), tx, ty + 15); }
         ctx.letterSpacing = '0px';
       }
@@ -1346,7 +1346,7 @@ export class Renderer {
         const kick = Math.max(0, 1 - (g.time - (g.abil.at ?? -9)) / 0.5), T0 = A.tier === 'legendary' ? [0.16, 0.9] : A.tier === 'exotic' ? [0.08, 0.55] : [0.04, 0.32];
         g.fx.shake = Math.max(g.fx.shake || 0, T0[0] + T0[1] * kick * kick);
       }
-      if (A.reach && !e.inSub) { const r0 = ((g.netRange || 1.2) * (A.reach || 1) + 0.7) * ppm, fx2 = e.facing || 1; ctx.strokeStyle = `rgba(214,236,226,${(0.22 + 0.08 * Math.sin(g.time * 3)).toFixed(3)})`; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.arc(ex, ey, r0, fx2 > 0 ? -0.9 : Math.PI - 0.9, fx2 > 0 ? 0.9 : Math.PI + 0.9); ctx.stroke(); ctx.setLineDash([]); }
+      if (A.reach && !e.inSub) { const NG0 = netGeom((gear(g.profile, 'net') || {}).look), r0 = (NG0.arm + NG0.hoop * (g.netRange || 1.1) / 1.1 * (A.reach || 1)) * ppm, /* (7.4.0) where the hoop's sweep reaches */ fx2 = e.facing || 1; ctx.strokeStyle = `rgba(214,236,226,${(0.22 + 0.08 * Math.sin(g.time * 3)).toFixed(3)})`; ctx.lineWidth = 2; ctx.setLineDash([6, 7]); ctx.beginPath(); ctx.arc(ex, ey, r0, fx2 > 0 ? -0.9 : Math.PI - 0.9, fx2 > 0 ? 0.9 : Math.PI + 0.9); ctx.stroke(); ctx.setLineDash([]); }
       /* (5.16.0) a Flare's light is drawn in the light map now (30 m round him) */
       ctx.restore();
     }

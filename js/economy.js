@@ -585,7 +585,7 @@ export function priceOf(p, kind, base) { return base; }
 export function sell(p, kind, n, base, label) {
   let total = base * n;
   total = Math.round(total * 100) / 100;
-  if (n > 0) { const b = (p.board || []).filter((r) => r.k !== kind); b.unshift({ k: kind, label, each: Math.round(base * 100) / 100, t: Date.now() }); p.board = b.slice(0, 14); }
+  if (n > 0) { const b = (p.board || []).filter((r) => r.k !== kind); b.unshift({ k: kind, label, n, each: Math.round(base * 100) / 100, t: Date.now() }); /* (7.4.0) n: the sold view shows how many */ p.board = b.slice(0, 14); }
   p.cash = Math.round((p.cash + total) * 100) / 100;
   p.lifetime = Math.round((p.lifetime + total) * 100) / 100;
   return { label, n, total };

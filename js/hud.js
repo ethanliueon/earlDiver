@@ -556,10 +556,10 @@ e.inSub ? [
       // (7.3.9, owner) the pearls, the premium currency, in a smaller row under the money: the painted pearl, then the count
       // (7.3.9, owner) on its own small plate of the panels' olive steel, the pearl set at its left end and the count beside it
       { const pr = 8 * u, py = my + ch * 0.55 + 6 * u + pr, im = hudIcon('pearl'), ptxt = String(Math.max(0, Math.floor(P.pearls || 0)).toLocaleString('en-US'));
-        ctx.save(); ctx.font = `700 ${15 * u}px ${HUDF}`; const pw = ctx.measureText(ptxt).width, bx = mx - ch * 0.55, bh = pr * 2 + 4 * u, ptx = mx + pr * 1.2 + 5 * u, bw = (ptx - bx) + pw + 9 * u; /* the count close after the pearl */
+        ctx.save(); ctx.font = `700 ${15 * u}px ${HUDF}`; const pw = ctx.measureText(ptxt).width, bx = mx - ch * 0.8, bh = pr * 2 + 4 * u, pcx = bx + 3 * u + pr * 1.2, ptx = pcx + pr * 1.2 + 5 * u, /* (7.4.0, owner) its left edge under the banknotes' */ bw = (ptx - bx) + pw + 9 * u; /* the count close after the pearl */
         steelPlate(ctx, bx, py - bh / 2, bw, bh, u);
         ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.beginPath(); ctx.roundRect(bx + 2 * u, py - bh / 2 + 2 * u, bw - 4 * u, bh - 4 * u, 3 * u); ctx.fill(); /* a shallow well pressed into the plate */
-        if (im) ctx.drawImage(im, mx - pr * 1.2, py - pr * 1.2, pr * 2.4, pr * 2.4);
+        if (im) ctx.drawImage(im, pcx - pr * 1.2, py - pr * 1.2, pr * 2.4, pr * 2.4);
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 3 * u; ctx.fillStyle = '#e6e0d0';
         ctx.fillText(ptxt, ptx, py + 1 * u); ctx.restore(); }
       this.moneyRowBottom += PEARL_ROW * u;
@@ -583,7 +583,7 @@ e.inSub ? [
       // eye has its own fixed place beside the column's top (where the second column stood in 7.1.3). Nothing slides.
       const rb = 12 * u, stepB = rb * 2 + 6 * u, top = my + ch * 0.55 + PEARL_ROW * u + 10 * u, colX = 12 * u + rb, sw = rb * 2 + 12 * u, chevH = 20 * u;
       this.eyeRow = { u, x0: colX + sw / 2 + 10 * u, y: top + 6 * u, h: stepB * 2 - 6 * u };
-      if (this.menuOpen == null) { try { this.menuOpen = localStorage.getItem('earl.menuOpen') !== '0'; } catch (err) { this.menuOpen = true; } }
+      if (this.menuOpen == null) this.menuOpen = false; // (7.4.0, owner) folded when the game starts; its tab (or a tutorial step) opens it
       const tutIn = ROW.some((a) => a.key === tutKey || (a.dom && (tutKey === 'j' || tutKey === 'journal'))), open = this.menuOpen || tutIn || !!window.__tutMenu; /* (7.2.8) or any tutorial step about something in it */
       const wants = (P.bagGot || 0) > (P.bagSeenAt || 0) || !!window.__journalBadge;
       let y0 = top + 6 * u + rb, step = stepB;

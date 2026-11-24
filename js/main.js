@@ -144,7 +144,7 @@ function applyKit(e, P) {
   e.sprintAir = setOn(P, 'harbour') ? 1 : 2;
   e.featherK = Math.max(0, 1 - 0.2 * (L('feather') + ((worn(P, 'bag') || {}).feather || 0)));
   e.warmK = Math.max(0, 1 - 0.25 * L('warmth'));
-  e.ambush = Math.min(0.8, 0.12 * L('ambush'));
+  e.ambushLv = L('ambush'); // (7.4.0) Ambush I-IV: 25 % a level that a fish holds still (capture.js ambushChance)
   e.hardened = L('hardened'); e.composure = L('composure'); e.prospector = L('prospector');
   e.biolum = L('biolum'); e.glows = T.glows; e.trail = T.trail; e.trailKind = T.trailKind; e.legends = T.legends;
   const wf = worn(P, 'fins'), wt = worn(P, 'tank'), ws = worn(P, 'suit'); e.finLook = (wf && wf.finLook) || null; e.tankLook = (wt && wt.tankLook) || null; e.suitGlow = (ws && ws.suitGlow) || null; // (2.8.1) how his special gear looks on him
@@ -2437,6 +2437,7 @@ function update(dt) {
     const capEvs = updateCapture(g, dt);
     for (const ev of capEvs) {
       if (ev.type === 'caught') {
+        if (ev.ambushed && !ev.extra) (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: ev.x ?? g.earl.x, y: ev.y ?? g.earl.y, text: 'Ambushed', rar: null, nameCol: '#d8d0b4', t: 0 }); // (7.4.0, owner) Ambush held it still: said beside it
         if (g.toolTip && g.bubbles) for (let i = 0; i < 7; i++) g.bubbles.push({ x: g.toolTip.x + (Math.random() - 0.5) * 0.5, y: g.toolTip.y + (Math.random() - 0.5) * 0.4, r: 0.02 + Math.random() * 0.06, w: Math.random() * 6, t: -Math.random() * 0.2 }); // (5.8.0) a catch stirs up a few more bubbles
         const sp = ev.sp, v = ev.spec.variant;
         questEvent(profile, 'catch', { id: sp.id, depth: ev.spec.from || e.y, alive: ev.spec.cond > 0.05 });
@@ -3180,21 +3181,21 @@ window.addEventListener('actdown', (ev) => {
   if (g.mode !== 'play' || g.paused) return;
   g.paused = true; ui.setPaused(true);
 }, true);
-// (6.5.7) the menu folds itself away after 30 s untouched (on a phone, out of the tutorial): it is back with a tap on
+// (6.5.7) the menu folds itself away after 10 s untouched (7.4.0): it is back with a tap on
 // its tab. A tap anywhere along it, or any of its keys, counts as using it
 let menuUsedAt = performance.now();
 const MENU_KEYS = new Set(['menu', 'journal', 'j', 'b', 'c', 't', 'r', 'store', 'events']);
 window.addEventListener('actdown', (ev) => { if (MENU_KEYS.has(ev.key)) menuUsedAt = performance.now(); }, true);
 window.addEventListener('pointerdown', (ev) => { if (ev.clientX < innerWidth * 0.14) menuUsedAt = performance.now(); }, true);
 function menuFold(now) {
-  if (!hud.menuOpen || !profile || profile.tut === 'on' || g.mode !== 'play') { if (!hud.menuOpen) menuUsedAt = now; return; }
+  if (!hud.menuOpen || !profile || g.mode !== 'play') { if (!hud.menuOpen) menuUsedAt = now; return; } // (7.4.0) in the tutorial too: a step about the menu holds it open by itself
   if (ui.anyOpen && ui.anyOpen()) { menuUsedAt = now; return; } // while a panel from it is open, the clock waits
-  if (now - menuUsedAt > 30000) hud.menuOpen = false; // folded for now; the choice kept in storage is left as it was
+  if (now - menuUsedAt > 10000) hud.menuOpen = false; // (7.4.0, owner) folded after 10 s untouched (was 30 s)
 }
 // (5.15.7) the menu's tab (under the money): folds the journal, the bag and the rest away, or opens them; remembered
 window.addEventListener('actdown', (ev) => {
   if (ev.key !== 'menu') return; ev.stopImmediatePropagation();
-  hud.menuOpen = !hud.menuShown; try { localStorage.setItem('earl.menuOpen', hud.menuOpen ? '1' : '0'); } catch (e) { /* not kept */ } audio.ready && audio.click();
+  hud.menuOpen = !hud.menuShown; menuUsedAt = performance.now(); audio.ready && audio.click();
 }, true);
 
 // debug hooks for automated testing
