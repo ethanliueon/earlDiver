@@ -137,7 +137,7 @@ export class Cabin {
     if (this.texKey !== key) { this.texKey = key; const RW = W * ROOM.width; this.wall = bakeWall(RW, floor - ceil, 34 * k, 11); this.floorTex = bakeFloor(RW, H - floor, 23); this.beams = bakeWall(RW, ceil, 120 * k, 5); }
   }
   draw() {
-    const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, c = this.c;
+    const dpr = Math.min(1.25, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, c = this.c; // (7.4.7, owner) the cabin painted at 1.25x, not 2x: its blurred shadows and light pools at full phone resolution held the walk to about 10 frames a second
     if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
     const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const camX = this.camX = clamp(W * this.x - W * 0.5, 0, W * (ROOM.width - 1)); // the view follows him along the room
