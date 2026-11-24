@@ -113,7 +113,7 @@ export function findCatch(g) {
     if (len > 4) why = 'too big to catch: photograph it'; // (5.16.0) nothing over 4 m can be caught, by any net
     else if (!canTakeLive(sp)) why = isTagOnly(sp) ? 'too big for the net' : null;
     else if (len > def.maxLen * OVER) why = isTagOnly(sp) && len > 1.1 ? 'too big for the net' : 'too big for this net';
-    else if (def.minLen && len < def.minLen) why = 'slips through';
+    else if (def.minLen && len < def.minLen) why = 'too small for this net: it slips through the mesh'; // (7.3.0) said plainly
     if (why === null && !canTakeLive(sp)) return; // plants, corals: not even worth mentioning
     if (why) { if (d < bbd) { bbd = d; blocked = { sp, why, d }; } return; }
     if (d < bd) { bd = d; best = { sp, x, y, len, d, ...ref }; }

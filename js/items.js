@@ -466,3 +466,5 @@ for (const it of Object.values(ITEMS)) {
   if (W) { if (W[0]) it.good = W[0]; if (W[1]) it.line = W[1]; continue; }
   if (A && (it.chest || it.set)) { it.good = A[0]; it.line = it.set ? `${it.line} ${A[1]}` : A[1]; }
 }
+// (7.3.0) every net with a lower limit (a big-game net's coarse mesh) says it where the shops say what it is not for
+for (const it of Object.values(ITEMS)) if (it.kind === 'net' && it.minLen) it.bad = `Fish under ${Math.round(it.minLen * 100)} cm slip through`;

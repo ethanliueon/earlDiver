@@ -46,7 +46,7 @@ const LEDE = {
 };
 const cm = (m) => `${Math.round(m * 100)} cm`;
 const mm = (v) => `${v.toFixed(2)} m`; // (6.0.8) fish size in metres, two places, no "up to"
-const sizeOf = (it) => (it.minLen ? `${it.minLen.toFixed(2)}–${mm(it.maxLen)}` : mm(it.maxLen));
+const sizeOf = (it) => mm(it.maxLen); // (7.3.0) the largest it holds, alone (owner); a big-game net's lower limit is in its "Not for" line
 const secs = (s) => (s >= 60 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.round(s)} s`);
 const x = (v) => `×${(Math.round(v * 100) / 100).toString()}`;
 // (7.3.0) a name in its rarity's colour, but a common one in black: its grey was faint on the pale pages
@@ -62,7 +62,7 @@ export function boostOf(kind, label, it, sk) {
   if (kind === 'bag' && label === 'Spaces' && lv('pockets')) { const add = [0, 2, 5, 10, 20][Math.min(4, lv('pockets'))]; return { txt: String(it.slots + add), add: `+${add}`, val: it.slots + add }; }
   // (6.0.8) a net's or camera's own skills, counted into its figures as the game counts them (economy.js gear): Oversized
   // +10 % fish size a level, Overreaching +10 % reach, Quickdraw 8 % off the swing (not under 0.3 s), Shutterbug +2 shots
-  if (kind === 'net' && label === 'Fish size' && lv('oversized') && it.maxLen) { const v = +(it.maxLen * (1 + 0.1 * lv('oversized'))).toFixed(2), add = v - it.maxLen; return { txt: it.minLen ? `${it.minLen.toFixed(2)}–${v.toFixed(2)} m` : `${v.toFixed(2)} m`, add: `+${add.toFixed(2)} m`, val: v }; }
+  if (kind === 'net' && label === 'Fish size' && lv('oversized') && it.maxLen) { const v = +(it.maxLen * (1 + 0.1 * lv('oversized'))).toFixed(2), add = v - it.maxLen; return { txt: `${v.toFixed(2)} m`, add: `+${add.toFixed(2)} m`, val: v }; }
   if ((kind === 'net' || kind === 'cam') && label === 'Reach' && lv('overreaching') && it.range) { const v = +(it.range * (1 + 0.1 * lv('overreaching'))).toFixed(2); return { txt: `${v} m`, add: `+${(v - it.range).toFixed(2)} m`, val: v }; }
   if (kind === 'cam' && label === 'Range' && lv('overreaching') && it.range) { const v = +(it.range * (1 + 0.1 * lv('overreaching'))).toFixed(2); return { txt: `${v} m`, add: `+${(v - it.range).toFixed(2)} m`, val: v }; }
   if (kind === 'net' && label === 'Swing speed' && lv('quickdraw') && it.time) { const v = Math.max(0.3, it.time * (1 - 0.08 * lv('quickdraw'))); return { txt: `${v.toFixed(2)} s`, add: `−${(it.time - v).toFixed(2)} s`, val: -v }; }
