@@ -85,6 +85,27 @@ legend is 5 to 20 hours of income in one catch). See question A.
   passive income; the character creator (for an artist); reinforcement with a chance to break, bosses, a health bar,
   paid deeper zones, rebirth to other parts of the ocean.
 
+## 6. Design audit (7.2.18): against the philosophy
+
+Fixed: the inventory's compare arrow (a brass-yellow CSS circle with a typed arrow, now a painted riveted tab); the
+daily gift's "$" (the painted notes) and its ticks (a "Claimed" stamp); keyboard hints on the trap panel ("Space",
+"↑ ↓ or the wheel, with Shift") hidden on a phone; the glove drawn through curves (no rectangles or ovals); Riptide's
+round glow (a wide soft light now); legendary sparks spilling onto the card beside them.
+
+Found, for the owner to decide (not changed):
+- **Settings toggles** are phone-app switches (a pill with a sliding knob): app-like. A brass toggle lever or a
+  rocker switch on the steel plate would suit.
+- **Typed symbols standing in for things**: a ★ before a famous pet's name (world label and prompt); a floating ♥ over
+  happy fish in the aquarium (cheerful, and a typed glyph); "✓ safe at the surface" in bright green (#78dc8c, off the
+  palette) in the tank room and the bag; ▲ ▼ beside better and worse figures (the yard, the compare table). The
+  journal's ✓ for a caught animal reads as a pencil tick in a book, so it may be fine.
+- **Round "i" badges** on the shop's chests and on quest rows: a generic info symbol; a small tag or a "?" stamped on
+  the plate would be the game's own.
+- **The shop's Test tab** shows in every web build (by 6.9.0's design: never in an App Store build). The rules say
+  there is no developer cheat in the shipped game; if the web build is shipped to players, it should go behind a
+  hidden switch.
+- **The deep trap's picture** is cut off at the top on the shop's wide cards (the tall cage in a wide frame).
+
 # The full price table (7.2.8 against now)
 
 ## Fish and other animals: what a healthy one of usual size pays
