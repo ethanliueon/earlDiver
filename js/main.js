@@ -970,6 +970,16 @@ function buy(kind) {
     const put = !!(q && putOn(P, q.u));
     if (put && bagWas && g.bag && bagUsed(g) > bagSlots(g)) { putOn(P, bagWas); hud.toast(`This bag holds ${bagSlots(g)}: you are carrying ${bagUsed(g)}`, 'warn'); }
     else if (put) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}`); }
+  } else if (kind.startsWith('sellscroll:')) { // (7.4.11, owner) a scroll is not sold on a tap: asked first, and told that three combine
+    const q = instOf(P, kind.slice(11)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], v = sellValue(q), NX = { rare: 'exotic', exotic: 'legendary' }[it.rarity];
+    ui.confirm(`Sell ${it.name}?`, NX ? `3 of the same scroll and rarity combine into 1 ${RARITY[NX].name} (${ITEMS[`ab_${it.fam}_${NX}`].name}).` : 'Legendary: the highest a scroll can be.', `Sell, ${money(v)}`, 'Keep', () => { buy('sellgear:' + q.u); ui.renderInventory && ui.renderInventory(); });
+    return false;
+  } else if (kind.startsWith('combine:')) { // (7.4.11, owner) three of a scroll at one rarity, none worn, become one of the next rarity
+    const id = kind.slice(8), it = ITEMS[id], NX = it && { rare: 'exotic', exotic: 'legendary' }[it.rarity], nId = NX && `ab_${it.fam}_${NX}`;
+    const spare = kitOf(P).items.filter((x) => x.id === id && !isOn(P, x));
+    if (!nId || !ITEMS[nId] || spare.length < 3) return false;
+    for (const x of spare.slice(0, 3)) removeItem(P, x.u);
+    giveItem(P, nId); ui.lkSel = null; ui.showGains([{ kind: 'item', id: nId, how: 'Combined' }]); ok = true;
   } else if (kind.startsWith('sellgear:')) {
     // (2.8.0) selling gear back, for about a third of what it is worth; never what he has on
     const q = instOf(P, kind.slice(9));
