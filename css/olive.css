@@ -2036,3 +2036,13 @@ html body #inventory .ip-col:has(.ch-odds) :is(.ip-stats, .ip-sks:empty, .lk-set
 html body #inventory .ip-col:has(.ch-odds) .ch-odds { margin-top: 12px; }
 html body #inventory .ip-col:has(.ch-odds) .ic-line:not(#_a) { height: auto; min-height: 0; } /* (7.4.1) a chest's line its own height (cards keep a fixed 96 px for side-by-side lines up) */
 html body #inventory .ip-col .ch-odds img.gc:not(#_a):not(#_b) { display: inline-block !important; width: 16px !important; height: 16px !important; margin: 0 6px 0 0 !important; vertical-align: -3px; } /* (7.4.1) the old coin beside its name */
+/* (7.4.5, owner) an item card shows everything on it: no fixed height that hid a net's skills below its figures (the card
+   scrolled, unseen). Two cards side by side still match: the row stretches both to the taller one */
+html body #inventory .ip-cols:not(#_a) { align-items: stretch; }
+html body #inventory .ip-col:not(#_a):not(#_b) { height: auto !important; overflow: visible !important; padding-bottom: 12px; }
+html body #inventory .ip-col .ic-line:not(#_a) { height: auto; min-height: 4.1em; }
+/* (7.4.5) a tall card pair (a legendary's power and skills) never runs off the screen: the pop-up stops at the screen's
+   height and scrolls inside; its buttons stay at its foot */
+html body #inventory .item-pop .ip-box:not(#_a):not(#_b) { max-height: calc(100vh - 20px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(176, 150, 96, 0.55) transparent; }
+html body #inventory .item-pop .ip-box > .lk-acts:not(#_a) { position: sticky; bottom: -1px; z-index: 2; padding: 10px 0 2px; background: linear-gradient(rgba(40, 46, 34, 0), rgba(40, 46, 34, 0.96) 35%); }
+html body #inventory .item-pop .ip-box > .ip-close:not(#_a):not(#_b):not(#_c):not(#_d) { top: 6px !important; right: 6px !important; z-index: 3; } /* (7.4.5) inside the corner: the scrolling box would clip it */
