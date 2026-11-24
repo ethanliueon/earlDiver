@@ -10,6 +10,7 @@
 //   fins: swim, sprint                    tank: air (s), speed, quiet
 //   bag: slots                            suit: press (m), air (×), speed (×), bite, warm, quiet, look
 // An owned thing is an instance in the locker: { u, id, sk: [[skill, level], ...], leg }.
+import { WORDS, ARCH_WORDS } from './item_words.js';
 import { designFor } from './designs.js';
 import { ABILITY_DEFS, abilityId } from './abilities.js';
 import { RARITY, RARITIES, SKILLS, LEGEND, FREE_ROWS, BAYSIDE_ROWS, DAVE_ROWS, STATION_ROWS, EXOTICS, LEGENDARIES, SETS, SET_PIECE, MAKERS, MODELS, NOUN, ARCH_LINE, CHEST_COUNTS, LOOKS, EXOTIC_LOOK } from './item_data.js';
@@ -455,3 +456,13 @@ for (const it of Object.values(ITEMS)) {
     else if (/^costly$/i.test(it.bad)) it.bad = '';
     else if (it.bad in RE) it.bad = RE[it.bad];
   } }
+
+// (7.3.0) the words last of all (item_words.js): a hand-written card line in place of figures, and a description. A
+// chest item or a set piece takes its design's; a set piece keeps its set's line before it. Figures stay on the item's
+// page and in the inventory (catalog.js MEASURES), worked out as before
+for (const it of Object.values(ITEMS)) {
+  if (it.kind === 'ability') continue;
+  const W = WORDS[it.id], A = ARCH_WORDS[it.kind] && ARCH_WORDS[it.kind][it.arch];
+  if (W) { if (W[0]) it.good = W[0]; if (W[1]) it.line = W[1]; continue; }
+  if (A && (it.chest || it.set)) { it.good = A[0]; it.line = it.set ? `${it.line} ${A[1]}` : A[1]; }
+}
