@@ -176,15 +176,15 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   always 15x an exotic at its depth. The abyssal sleeper shark is an ordinary hunter (0.5 % of what is met below 3,000 m,
   no ambush timer): a far call and a radar ghost warn before it strikes; its bite is 4 injury points, or 80 % of the hull
   in the sub. **Pearls** are the premium currency: a new diver starts with 20, shown on their own small steel plate
-  under the money; a revive costs pearls (no ad, no $0.99; 7.6: 100-500 by the haul). (7.4.12) Pearls come from
-  the daily gift (2 a day, 5 more on the seventh) and from legendary catches (10 each); events and pearl packs are
-  planned, not built (docs/PLAN_7.4.md). Close to his pet, the interact button becomes the pet (Stay / Follow); the word
+  under the money; a revive costs pearls (no ad, no $0.99; 7.6: 100-500 by the haul). (7.6.2) Pearls come from
+  the daily gift (10 a day, 100 more at the week's end), legendary catches (100), Log quests (5-15), first-time depths
+  (100 m 5 ... 5,000 m 500) and packs ($0.99 1,000, $2.99 5,000); spent in the shop's Scrolls, Coins and Pets tabs. Close to his pet, the interact button becomes the pet (Stay / Follow); the word
   is written above the pet, with no line. The action arc keeps its places. (7.4.12) An ability's cooldown can be skipped
   with pearls from its button: a flat 1 pearl for every 5 minutes left. The Lighthouse burns 90 s (7.6.0), pulses to half again
   as bright and sweeps two soft beams round him.
 - **Pets (7.4.14, owner):** only from pearls (js/petshop.js), never from the catch; never items (not in the bag, the
-  locker or the aquarium) and never sold. Tiers: exotic 80 pearls (plain), legendary 150 (a soft glow and motes),
-  mythical 500, the giants (an ember glow, more particles). Two kinds in the shop (7.4.16): Pets, each shown once its species
+  locker or the aquarium) and never sold. Tiers (7.6.2): exotic 400 pearls (plain), legendary 1,000 (a soft glow and motes),
+  mythical 2,500, the giants (an ember glow, more particles). Two kinds in the shop (7.4.16): Pets, each shown once its species
   is caught (until then a dark outline, "Catch one to unlock"), and Exclusive, the animals no net can take (the
   photo-only legends, anything over 4 m), each unlocked by photographing one. Every pet starts at its real size. The pet slot shows a red "!" while he
   owns pets and none is out; tapped, it lists his pets. Feeding (js/petfeed.js): at the surface, once a day, one live
@@ -333,3 +333,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 
 - (7.6.1) Speed: the diver's own (fins, suit, bag) times the strongest boost running (a skill, the sprint button, the
   low-air push), never the boosts multiplied; the sub the same. Light already took the strongest.
+- (7.6.2, owner) The shop's tabs: Chests, Scrolls (three scrolls, each on a 12-hour clock, rare 80 / exotic 15 /
+  legendary 5 %, 250 / 750 / 2,000 pearls, pure 1.6 times; a fourth card restocks all three for 50), Pets, Coins (50 / 100
+  / 300 pearls for $5,000 / $15,000 / $65,000 and a daily deal, 150 for $30,000), Pearls (packs). Scrolls sell only for
+  pearls, a quarter of their shelf price. A revive costs 100-500 pearls by the haul's share of cash (shelf.js, main.js).
+

@@ -1,4 +1,5 @@
 // Hatchetfish (Earl is the default diver) — game loop, state, interactions and UI glue.
+import { scrollSellPearls } from './shelf.js'; // (7.6.2) scrolls sell for pearls
 import { rarKind } from './itemcard.js'; // (7.5.5) "Legendary net" on the sale's question
 import { watchPage } from './units.js'; // (6.0.3) first, so every canvas draws its figures in the chosen units
 import { watchPanels, platesReady } from './reveal.js'; // (6.5.0) no panel seen half-drawn
@@ -310,6 +311,7 @@ const ui = new UI({
     if (lastTut) ui.closeQuestsAfterTutorial(); // (4.12.2) the last step: the board stays as it was, fades out, and the new quests come 3 s after
     else if (which === 'main' && tutWas && !(mNext && mNext.id === 'sell' && !P.tutJournal)) setTimeout(() => ui.toggleQuests(false), 250); // (4.3.5) the tutorial goes straight on to the next step; (7.1.0) but after the first catch the book stays open and points at its Journal tab
     if (r.pay) { P.cash = Math.round((P.cash + r.pay) * 100) / 100; P.lifetime = Math.round((P.lifetime + r.pay) * 100) / 100; }
+    if (r.pearls) P.pearls = (P.pearls || 0) + r.pearls; // (7.6.2, owner)
     let gift = null; if (r.gift) gift = giveItem(P, r.gift);
     // (4.0.6) a tutorial step gives what it taught him to use: a net, a backup air tank, a trawl net, a trap
     const got = [];
@@ -323,7 +325,7 @@ const ui = new UI({
     saveProfile(P); audio.ready && audio.sale(); audio.cue && audio.cue('sale');
     const cards = (r.gift && gift ? [{ kind: 'item', id: r.gift }] : []).concat((r.kit || []).map(([kind, id]) => ({ kind, id }))).map((c) => ({ ...c, how: 'For the quest' }));
     if (cards.length) ui.showGains(cards); // (4.6.0)
-    if (!(ui.questTag(`+${money(r.pay)}`))) hud.toast(`Quest done: +${money(r.pay)}`, 'big'); // (5.7.0) on a phone always the stamped tag, panel open or not // (5.5.6) on a phone, a tag from the clipboard
+    { const pt = r.pearls ? ` · +${r.pearls} pearls` : ''; if (!(ui.questTag(`+${money(r.pay)}${pt}`))) hud.toast(`Quest done: +${money(r.pay)}${pt}`, 'big'); } // (5.7.0) on a phone always the stamped tag, panel open or not // (5.5.6) on a phone, a tag from the clipboard
     return true;
   },
   tutHide: () => !!(g && g.tutHidePrompts), // (4.4.0) the cabin's own prompts, off during the tutorial
@@ -389,6 +391,7 @@ const ui = new UI({
   },
   getProfile: () => profile,
   onSaveProfile: () => saveProfile(profile),
+  giveItem: (id) => { if (lockerFree(profile) < 1) { hud.toast('Locker full', 'warn'); return null; } const q = giveItem(profile, id); if (q) saveProfile(profile); return q; }, // (7.6.2) a scroll from the shelf
   canChangeGear: () => !!(g && g.mode === 'play' && !g.kill), // (6.0.0) gear changes anywhere (it changes what he can do, never what he has); never in its jaws
   // (5.6.9) the belt: on (from the locker, as many as fit) or off (all of it into the locker)
   onBelt: (k, on) => { const P = profile; if (!P || !g) return; P.spare = P.spare || {};
@@ -553,11 +556,22 @@ function claimGift() {
   calClaimed(P); saveProfile(P); audio.ready && audio.sale(); return true;
 }
 // (7.4.12, owner) a legendary caught pays 10 pearls, said beside it with the catch
-const LEGEND_PEARLS = 10;
+const LEGEND_PEARLS = 100; // (7.6.2, owner)
 function legendPearls(sp, x, y) {
   if (!sp || !(LEGENDARY.has(sp.id) || (rarityOf(sp) || {}).id === 'legendary')) return;
   profile.pearls = (profile.pearls || 0) + LEGEND_PEARLS; saveProfile(profile);
   (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: x ?? g.earl.x, y: (y ?? g.earl.y) - 0.6, text: `+${LEGEND_PEARLS} pearls`, rar: null, nameCol: '#e4dcc6', t: 0 });
+}
+// (7.6.2, owner) pearls for the first time at a depth: 100 m 5, 500 m 50, 1,000 m 100, then every 1,000 m 100 plus 10 for
+// each 1,000 m past the first (2,000 m 110, 3,000 m 120, 4,000 m 130), except 5,000 m, which pays 500; on into the trench
+const depthMarks = (d) => { const m = [[100, 5], [500, 50]]; for (let k = 1000; k <= d; k += 1000) m.push([k, k === 5000 ? 500 : 100 + (k / 1000 - 1) * 10]); return m; };
+function depthPearls() {
+  const P = profile, e = g.earl; if (!P || g.mode !== 'play' || P.tut === 'on') return;
+  const d = Math.max(e.y, e.inSub ? g.sub.y : 0);
+  for (const [m, n] of depthMarks(d)) if (d >= m && (P.depthRec || 0) < m) {
+    P.depthRec = m; P.pearls = (P.pearls || 0) + n; saveProfile(P);
+    (g.obsLabels || (g.obsLabels = [])).push({ c: null, x: e.inSub ? g.sub.x : e.x, y: (e.inSub ? g.sub.y : e.y) - 0.8, text: `${m.toLocaleString('en-US')} m · +${n} pearls`, rar: null, nameCol: '#e4dcc6', t: 0 });
+  }
 }
 // (7.4.14) a pet he owns out with him: its size and its glow come from petshop.js (pets.js updatePet)
 function petOut(id) { const P = profile; P.pet = { id, since: Date.now() }; P.petStay = false; g.petStayAt = null; if (g.petC) { const F = g.fauna; if (F && F.list.includes(g.petC)) F.list.splice(F.list.indexOf(g.petC), 1); g.petC = null; } saveProfile(P); hud.toast(`${SPECIES_BY_ID[id].name} will follow you`, 'note'); }
@@ -980,9 +994,10 @@ function buy(kind) {
     const put = !!(q && putOn(P, q.u));
     if (put && bagWas && g.bag && bagUsed(g) > bagSlots(g)) { putOn(P, bagWas); hud.toast(`This bag holds ${bagSlots(g)}: you are carrying ${bagUsed(g)}`, 'warn'); }
     else if (put) { applyKit(e, P); ok = true; const key = { cam: 2 }[ITEMS[q.id].kind]; if (key && g.toolSel !== ITEMS[q.id].kind) hud.hint(`Tap the swap button by the net for the ${ITEMS[q.id].name.toLowerCase()}`); }
-  } else if (kind.startsWith('sellscroll:')) { // (7.4.11, owner) a scroll is not sold on a tap: asked first, and told that three combine
-    const q = instOf(P, kind.slice(11)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], v = sellValue(q), NX0 = NEXT_TIER[it.rarity], NX = NX0 && ITEMS[`ab_${it.fam}_${NX0}`] ? NX0 : null;
-    ui.confirm(`Sell ${it.name}?`, NX ? `3 of the same scroll and rarity combine into 1 ${RARITY[NX].name} (${ITEMS[`ab_${it.fam}_${NX}`].name}).` : `${RARITY[it.rarity] ? RARITY[it.rarity].name : 'It'}: the highest a scroll can be.`, `Sell, ${money(v)}`, 'Keep', () => { buy('sellok:' + q.u); ui.renderInventory && ui.renderInventory(); });
+  } else if (kind.startsWith('sellscroll:')) { // (7.4.11, owner) a scroll is not sold on a tap: asked first. (7.6.2, owner) sold only for pearls, a quarter of its shelf price
+    const q = instOf(P, kind.slice(11)); if (!q || isOn(P, q)) return false; const it = ITEMS[q.id], n = scrollSellPearls(q.id), R = RARITY[it.rarity];
+    ui.confirm('Sell ' + it.name + '?', (R ? R.name + ' ' : '') + 'scroll · ' + n.toLocaleString('en-US') + ' pearls', 'Sell, ' + n.toLocaleString('en-US') + ' pearls', 'Keep', () => {
+      if (removeItem(P, q.u)) { P.pearls = (P.pearls || 0) + n; saveProfile(P); hud.toast('Sold ' + it.name + ' · +' + n + ' pearls'); } ui.renderInventory && ui.renderInventory(); });
     return false;
   } else if (kind.startsWith('combine:')) { // (7.4.11, owner) three of a scroll at one rarity, none worn, become one of the next rarity
     const id = kind.slice(8), it = ITEMS[id], NX = it && NEXT_TIER[it.rarity], nId = NX && `ab_${it.fam}_${NX}`; // (7.4.15) three legendaries make the mythical
@@ -2072,7 +2087,10 @@ function rebirth(kind) {
 // save him, still leaves the offer. A revive gives him back where he was with what he carried and 30 % of his air; the
 // thing draws off for about 20 s but he stays marked. Never in the tutorial, never on quitting
 const haulValue = () => [...g.bag, ...g.subTank].reduce((a, s) => a + specimenValue(s), 0);
-export const REVIVE_PEARLS = 50; // (7.3.9, owner)
+export const REVIVE_PEARLS = 100; // (7.3.9, owner) the least a revive costs
+// (7.6.2, owner) a revive costs by what is at stake: 100 pearls when the haul is a fifth of his cash or less, rising
+// evenly to 500 when it is worth all his cash or more
+export const revivePrice = (haul, cash) => { const r = cash > 0 ? haul / cash : 9; return Math.round(clamp(100 + (r - 0.2) / 0.8 * 400, 100, 500)); };
 const reviveNeed = (cash) => Math.min(100000, Math.max(200, cash * 0.15));
 function reviveOfferFor(kind, cause) {
   if (kind === 'quit' || !profile || profile.tut === 'on' || g.reviveAsked) return null;
@@ -2081,7 +2099,7 @@ function reviveOfferFor(kind, cause) {
   // what he would lose, kind by kind: the picture, how many, what they are worth
   const by = new Map(); for (const s of [...g.bag, ...g.subTank]) { const k = s.id, r = by.get(k) || { sp: SPECIES_BY_ID[k], n: 0, value: 0 }; r.n++; r.value += specimenValue(s); by.set(k, r); }
   const e = g.earl, depth = Math.round(Math.max(e.y, e.inSub ? g.sub.y : 0));
-  return { value: v, n: g.bag.length + g.subTank.length, list: [...by.values()].filter((r) => r.sp).sort((a, b) => b.value - a.value), how, cause: /\d m\b/.test(cause) ? cause : `${cause} at ${depth} m` };
+  return { value: v, pearls: revivePrice(v, profile.cash || 0), n: g.bag.length + g.subTank.length, list: [...by.values()].filter((r) => r.sp).sort((a, b) => b.value - a.value), how, cause: /\d m\b/.test(cause) ? cause : `${cause} at ${depth} m` };
 }
 function revive(kind) {
   const e = g.earl, ent = g.entity, sub = g.sub;
@@ -2100,7 +2118,7 @@ function die(cause, kind = 'normal', declined = false) {
     if (o) { g.reviveAsked = true; g.paused = true;
       ui.reviveOffer(o, async (how) => {
         let ok = false;
-        if (how === 'pearls' && (profile.pearls || 0) >= REVIVE_PEARLS) { profile.pearls -= REVIVE_PEARLS; saveProfile(profile); ok = true; }
+        if (how === 'pearls' && (profile.pearls || 0) >= o.pearls) { profile.pearls -= o.pearls; saveProfile(profile); ok = true; }
         if (ok) g.revived = true; // (6.6.1) this dive's one revive
         g.paused = false; g.reviveAsked = false;
         if (ok) revive(kind); else die(cause, kind, true);
@@ -2261,6 +2279,7 @@ function tickAbility(dt) {
     const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = dRate > MYTH.air ? 0 : Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
     if (add > 0) { g.mythAir = (g.mythAir || 0) + add; if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + add); else e.o2 = Math.min(e.o2Max, e.o2 + add); } }
   if (g.mythFx) { g.mythFx.t += dt; if (g.mythFx.t > 1.6) g.mythFx = null; }
+  depthPearls(); // (7.6.2, owner)
   if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
   if (g.markWashFx) { g.markWashFx.t += dt; if (g.markWashFx.t > 2) g.markWashFx = null; }
   g.multiCatch = on && A.multi ? A.multi : 1; g.reachMul = on && A.reach ? A.reach : 1; g.swingMul = on && A.swing ? A.swing : 1; g.sureCatch = !!(on && A.sure); g.blessCatch = !!(on && A.bless);

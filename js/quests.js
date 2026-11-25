@@ -281,14 +281,16 @@ export function claim(P, which) {
   if (which === 'main') {
     const m = MAIN[S.main]; if (!m || S.mainProg < m.need) return null;
     S.main++; S.mainProg = 0; S.done++; follow(S); // the next step: already done, if he has done it
-    return { pay: m.pay, gift: m.gift || null, kit: m.kit || null, text: m.text };
+    return { pay: m.pay, gift: m.gift || null, kit: m.kit || null, text: m.text, pearls: TUT_IDS.has(m.id) ? 5 : 15 }; // (7.6.2, owner) pearls with every Log step
   }
   if (tutorialOn(P)) return null; // (4.3.0) the board opens after the tutorial
   const i = S.board.findIndex((q) => q.key === which); if (i < 0) return null;
   const q = S.board[i]; if (q.prog < q.n || q.claimed) return null;
   q.claimed = true; S.done++; // (4.0.0) it stays, dimmed, until its time runs out or the board is refreshed
-  return { pay: q.pay, text: q.text };
+  return { pay: q.pay, text: q.text, pearls: questPearls(q.pay) };
 }
+// (7.6.2, owner) a board quest's pearls, 5 to 15, more for the bigger jobs ($100 5, $10,000 9, $1 million 13)
+export const questPearls = (pay) => Math.max(5, Math.min(15, Math.round(2 * Math.log10(Math.max(10, pay || 0))) + 1));
 export const readyCount = (P) => { const S = Q(P), m = MAIN[S.main]; return (m && m.on && S.mainProg >= m.need ? 1 : 0) + (m && !m.on ? 1 : 0) + (tutorialOn(P) ? 0 : S.board.filter((q) => q.prog >= q.n && !q.claimed).length); };
 // (4.3.0) the guided tutorial is running (the first six steps of the Log, until it hands over)
 export const TUT_IDS = new Set(['firstfish', 'sell', 'buy', 'wear', 'subtrip']); // (6.6.0) the sub trip ends the tutorial

@@ -14,6 +14,8 @@
 // Products are consumables; nothing here is a subscription. (7.3.9) none yet: the revive is paid in pearls.
 
 export const PRODUCTS = {
+  pearls1000: { id: 'pearls_1000', fallback: '$0.99', pearls: 1000 }, // (7.6.2, owner) pearl packs
+  pearls5000: { id: 'pearls_5000', fallback: '$2.99', pearls: 5000 },
 };
 
 const native = () => (typeof window !== 'undefined' && window.__nativeStore) || null;

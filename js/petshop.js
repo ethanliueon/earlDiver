@@ -9,9 +9,9 @@ import { SPECIES_BY_ID } from './species.js';
 import { rarityOf, LEG_PHOTO } from './specimens.js';
 
 export const PET_TIERS = {
-  exotic: { pearls: 80, name: 'Exotic' },
-  legendary: { pearls: 150, name: 'Legendary' },
-  mythical: { pearls: 500, name: 'Mythical' },
+  exotic: { pearls: 400, name: 'Exotic' }, // (7.6.2, owner) pearls are fuel now: everything in pearls costs more
+  legendary: { pearls: 1000, name: 'Legendary' },
+  mythical: { pearls: 2500, name: 'Mythical' },
 };
 // (7.4.16, owner) an Exclusive pet: an animal no net can take (the legends that can only be photographed, anything over
 // 4 m), so it is unlocked by photographing one instead of catching it

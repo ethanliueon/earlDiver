@@ -48,7 +48,8 @@ import { lockerTexture } from './textures.js';
 import { gaugeFace, gaugeNeedle, gaugeGlass } from './gauge_art.js';
 import { daveTalkPlate } from './dave_art.js';
 import { ChestReveal, chestsOf, oddsText, chestPicture, chestOddsHtml } from './chests.js';
-import { petsHtml, petStars, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml, giftWait, hms } from './store.js';
+import { petsHtml, petStars, storeHtml, eventsHtml, calWeek, untilTomorrow, testHtml, giftWait, hms, shopTabs } from './store.js';
+import { scrollsHtml, coinsHtml, packsHtml, shelfOf, restock, shelfPrice, COIN_OFFERS, COIN_DEAL, takeDeal, dealTaken, RESTOCK_PEARLS, scrollSellPearls } from './shelf.js'; // (7.6.2)
 import { isTestStore } from './purchases.js';
 import { startTitleArt } from './title_art.js'; // (7.0.0) the name as artwork // (6.9.0) the Test tab, behind ?dev
 import { tankPicture, tankZoom } from './journal_tank.js';
@@ -404,7 +405,7 @@ export class UI {
     const rows = o.list.slice(0, 6).map((r) => { const R = rarityOf(r.sp); return `<div class="rv-fish"><img src="${fittedIcon(r.sp, 150, 90).toDataURL()}" alt=""><b style="color:${R ? R.col : '#efe8d2'}">${r.sp.name}</b><span>${r.n > 1 ? '×' + r.n + ' · ' : ''}${money(r.value)}</span></div>`; }).join('')
       + (o.list.length > 6 ? `<div class="rv-more">+${o.list.length - 6} more</div>` : '');
     // (7.3.9, owner) a revive costs fifty pearls: the pearl and the figure on the button; greyed when he has fewer
-    const pc = 50, have = Math.floor((this.h.getProfile && this.h.getProfile().pearls) || 0), enough = have >= pc;
+    const pc = o.pearls || 100, have = Math.floor((this.h.getProfile && this.h.getProfile().pearls) || 0), enough = have >= pc;
     const way = `<button class="rv-go${enough ? '' : ' short'}" data-rv="${enough ? 'pearls' : 'short'}"${enough ? '' : ' disabled'}>Revive <span class="rv-price"><img class="rv-pearl" src="assets/ui/icons/pearl.png" alt="">${pc}</span></button>`;
     el.innerHTML = `<div class="rv-box"><p class="rv-cause">${o.cause}</p>${heart}<h4>Revive</h4>
       <div class="rv-list">${rows}</div>
@@ -564,12 +565,30 @@ export class UI {
   // (7.3.0) the painted bundle of notes (coins.js drawCash), for cash anywhere a picture is wanted
   cashPicture() { if (!this.cashPic) { const c = document.createElement('canvas'); c.width = 300; c.height = 180; const x = c.getContext('2d'); drawCash(x, 150, 95, 120); this.cashPic = c.toDataURL(); } return this.cashPic; }
   petsPage() { if (!this.fitPics) this.fitPics = new Map(); const fit = (id) => { const sp3 = SPECIES_BY_ID[id], k = 'pet' + id; if (!this.fitPics.has(k)) this.fitPics.set(k, petIcon(sp3, 300, 180).toDataURL()); return this.fitPics.get(k); }; return petsHtml(this.h.getProfile(), isTestStore(), fit, (id) => SPECIES_BY_ID[id].name, this.petCat || 'pets'); }
+  // (7.6.2, owner) the scroll shelf, coins for pearls and pearl packs (shelf.js), each asked first
+  pearlPage() { const P = this.h.getProfile(), t = this.storeTab || 'scrolls', tabs = shopTabs(t, isTestStore(), P);
+    return t === 'coins' ? coinsHtml(P, tabs, this.cashPicture()) : t === 'pearls' ? packsHtml(P, tabs) : scrollsHtml(P, tabs, (it) => pictureOf(it.kind, it, 220, 160, true)); }
+  pearlBuy(b, el) {
+    const P = this.h.getProfile(), save = () => this.h.onSaveProfile && this.h.onSaveProfile(), redraw = () => { if (!el.hidden) el.innerHTML = this.pearlPage(); };
+    const pay = (n) => { if ((P.pearls || 0) < n) { this.h.toast && this.h.toast('Not enough pearls', 'warn'); return false; } P.pearls -= n; return true; };
+    const num = (n) => n.toLocaleString('en-US');
+    if (b.dataset.shelf != null) { const s = shelfOf(P).slots[+b.dataset.shelf], it = s && ITEMS[s.id]; if (!it || s.sold) return; const price = shelfPrice(s.id);
+      this.confirm('Buy ' + it.name + '?', RARITY[it.rarity].name + ' scroll · ' + num(price) + ' pearls', 'Buy', 'Keep looking', () => {
+        if ((P.pearls || 0) < price) { this.h.toast && this.h.toast('Not enough pearls', 'warn'); return; }
+        if (!(this.h.giveItem && this.h.giveItem(s.id))) return; pay(price); s.sold = true; save(); redraw(); this.showGains([{ kind: 'item', id: s.id, how: 'Bought' }]); }); return; }
+    if (b.dataset.restock) { this.confirm('Restock the shelf?', 'Three new scrolls · ' + RESTOCK_PEARLS + ' pearls', 'Restock', 'Keep these', () => { if (!pay(RESTOCK_PEARLS)) return; restock(P); save(); redraw(); }); return; }
+    if (b.dataset.coins != null) { const deal = b.dataset.coins === 'deal', o = deal ? COIN_DEAL : COIN_OFFERS[+b.dataset.coins]; if (!o || (deal && dealTaken(P))) return;
+      this.confirm('Cash, ' + money(o.cash, false) + '?', o.pearls + ' pearls', 'Buy', 'Not now', () => { if (!pay(o.pearls)) return; if (deal) takeDeal(P); P.cash = Math.round((P.cash + o.cash) * 100) / 100; save(); redraw(); this.showGains([{ kind: 'cash', n: o.cash, how: 'Bought' }]); }); return; }
+    if (b.dataset.pack) { const key = b.dataset.pack; b.disabled = true; import('./purchases.js').then(async (M) => { const r = await M.buy(key); b.disabled = false; if (r && r.ok) { P.pearls = (P.pearls || 0) + M.PRODUCTS[key].pearls; save(); redraw(); this.showGains([{ kind: 'pearl', n: M.PRODUCTS[key].pearls }], true); } }); }
+  }
   storeWire(el) { if (el.__w) return; el.__w = true; el.addEventListener('click', (ev) => {
     if (ev.target.closest('.st-x') || ev.target === el) { el.hidden = true; return; }
     const b = ev.target.closest('[data-store]'); if (b) { if (this.h.onBuy('chest:' + b.dataset.store)) el.innerHTML = storeHtml(this.h.getProfile(), isTestStore()); return; }
     const pc = ev.target.closest('[data-petcat]'); if (pc) { this.petCat = pc.dataset.petcat; el.innerHTML = this.petsPage(); return; } // (7.4.16) Pets / Exclusive
     const pb = ev.target.closest('[data-pet]'); if (pb) { this.h.onBuyPet && this.h.onBuyPet(+pb.dataset.pet, () => { if (!el.hidden) el.innerHTML = this.petsPage(); }); return; } // (7.3.9, 7.4.14) a buy is asked first
     const tb0 = ev.target.closest('[data-tab]'); if (tb0 && tb0.dataset.tab === 'pets') { el.innerHTML = this.petsPage(); return; } // (7.3.9) the pets, for pearls
+    if (tb0 && ['scrolls', 'coins', 'pearls'].includes(tb0.dataset.tab)) { this.storeTab = tb0.dataset.tab; el.innerHTML = this.pearlPage(); return; } // (7.6.2, owner) the pearl pages
+    { const pb2 = ev.target.closest('[data-shelf],[data-restock],[data-coins],[data-pack]'); if (pb2) { this.pearlBuy(pb2, el); return; } }
     if (tb0 && tb0.dataset.tab === 'shop' && !isTestStore()) { el.innerHTML = storeHtml(this.h.getProfile(), false); return; }
     const tb = ev.target.closest('[data-tab]'); if (tb && isTestStore()) { el.innerHTML = tb.dataset.tab === 'test' ? testHtml(this.h.getProfile(), Object.values(ITEMS).filter((it) => !it.free).sort((a, c) => a.name.localeCompare(c.name))) : storeHtml(this.h.getProfile(), true); return; } // (6.9.0)
     const tt = ev.target.closest('[data-test]'); if (tt && isTestStore()) { const [act, arg] = tt.dataset.test.split('|'); this.h.onTest && this.h.onTest(act, act === 'item' ? el.querySelector('.tt-item').value : arg); return; }
@@ -1438,7 +1457,7 @@ export class UI {
         + (rows ? `<table class="ip-vs"><thead><tr><th></th><td>${cur ? cur.name : '—'}</td><td>${it.name}</td></tr></thead><tbody>${rows}</tbody></table>` : '');
       if (free) acts += `<button data-lk="on:${q.u}">Put it on</button>`;
       // (7.4.11, owner) three of the same scroll at the same rarity, none of them on: they combine into one of the next rarity
-      if (seller) acts += `<button class="sell" data-lk="${it.kind === 'ability' ? 'sellscroll' : 'sellgear'}:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
+      if (seller) acts += it.kind === 'ability' ? `<button class="sell" data-lk="sellscroll:${q.u}">Sell, <img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">${scrollSellPearls(q.id).toLocaleString('en-US')}</button>` /* (7.6.2, owner) scrolls sell for pearls */ : `<button class="sell" data-lk="sellgear:${q.u}">Sell, ${money(sellValue(q), false)}</button>`;
       else acts += '<small>Sell it on the Margaret, at the station, or to Dave.</small>';
     }
     // (7.5.6, owner) a scroll always shows its Combine 3, worn or not: greyed with how many he has until there are three

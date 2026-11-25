@@ -30,8 +30,8 @@ export function calWeek(P) {
   const L = playerLevel(P), t = TIERS.find((q) => L <= q[0]) || TIERS[3], [, ch, cash, adv, wk] = t;
   return [{ k: 'chest', v: ch }, { k: 'cash', v: cash[0] }, { k: 'glow', v: 3, adv }, { k: 'coin', v: 1 }, { k: 'chest', v: ch }, { k: 'cash', v: cash[1] }, { k: 'chest', v: wk }];
 }
-// (7.4.12, owner) pearls with every daily gift: 2 a day, and 5 more on the seventh day with the weekly chest
-export const giftPearls = (day) => (day === 6 ? 7 : 2);
+// (7.4.12, owner) pearls with every daily gift. (7.6.2, owner: pearls are fuel) 10 a day, and 100 more at the end of each week
+export const giftPearls = (day) => (day === 6 ? 110 : 10);
 export const CAL = WEEK1; // (the old name, for the first week)
 // (7.4.26, owner) the next gift a full 24 hours after the last was claimed, timed by the server's clock (the Date of a
 // reply from the game's own host; the phone's clock only until that has answered), not the phone's midnight
@@ -64,8 +64,8 @@ export function testHtml(P, items) {
     <div class="tt-row"><b>Reset</b><button data-test="reset|lessons">Lessons</button><button data-test="reset|tutorial">Tutorial</button><button data-test="reset|board">First board</button></div></div></div>`;
 }
 // (7.3.9, owner) the shop's tabs: chests (for cash), pets (for pearls), and Test (behind ?dev)
-export const shopTabs = (on, test, P) => (P ? `<div class="pet-have"><img class="st-pearl" src="assets/ui/icons/pearl.png" alt=""><b>${Math.floor(P.pearls || 0).toLocaleString('en-US')}</b></div>` : '') + `<div class="st-tabs">${[['shop', 'Chests'], ['pets', 'Pets'], ...(test ? [['test', 'Test']] : [])].map(([k, n]) => `<button${k === on ? ' class="on"' : ''} data-tab="${k}">${n}</button>`).join('')}</div>`;
-// (7.4.14, owner) the pets, for pearls: every kind in petshop.js, by tier (exotic 80, legendary 150, mythical 500). A kind
+export const shopTabs = (on, test, P) => (P ? `<div class="pet-have"><img class="st-pearl" src="assets/ui/icons/pearl.png" alt=""><b>${Math.floor(P.pearls || 0).toLocaleString('en-US')}</b></div>` : '') + `<div class="st-tabs">${[['shop', 'Chests'], ['scrolls', 'Scrolls'], ['pets', 'Pets'], ['coins', 'Coins'], ['pearls', 'Pearls'], ...(test ? [['test', 'Test']] : [])] /* (7.6.2, owner) the pearl pages */.map(([k, n]) => `<button${k === on ? ' class="on"' : ''} data-tab="${k}">${n}</button>`).join('')}</div>`;
+// (7.4.14, owner) the pets, for pearls: every kind in petshop.js, by tier (7.6.2: exotic 400, legendary 1,000, mythical 2,500). A kind
 // shows once one of its species has been caught; until then a dark outline and "Catch one to unlock". Owned: its stars
 // (one a level) and Take out / With you. Bought: asked first, then it comes out with him
 export const petStars = (n, max = MAX_LEVEL) => `<span class="pet-stars" aria-label="Level ${n}">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? 'on' : ''}">★</i>`).join('')}</span>`;
