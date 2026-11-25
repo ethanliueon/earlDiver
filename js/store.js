@@ -55,12 +55,18 @@ const hrs = (ms) => { const h = Math.floor(ms / 3600e3), m = Math.floor((ms % 36
 // never reach the App Store build. Cash, any chest (into the locker, to open), every ability, any item, and resets.
 export function testHtml(P, items) {
   const chest = Object.entries(CHESTS).map(([k, C]) => `<button data-test="chest|${k}">${C.name}</button>`).join('');
-  const opts = items.map((it) => `<option value="${it.id}">${it.name} (${it.rarity})</option>`).join('');
+  // (7.6.20, owner) items and skills apart, each sorted by rarity (then by name), in groups under each rarity
+  const ORD = ['common', 'uncommon', 'rare', 'exotic', 'undocumented', 'legendary', 'mythical'], rk = (r) => { const i = ORD.indexOf(r); return i < 0 ? 99 : i; };
+  const group = (L) => { const S2 = L.slice().sort((a, c) => rk(a.rarity) - rk(c.rarity) || a.name.localeCompare(c.name)); let out = '', cur = null;
+    for (const it of S2) { if (it.rarity !== cur) { if (cur !== null) out += '</optgroup>'; cur = it.rarity; out += `<optgroup label="${(RARITY[cur] && RARITY[cur].name) || cur}">`; } out += `<option value="${it.id}">${it.name}${it.kind === 'ability' && it.fam && !it.name.toLowerCase().startsWith(String(it.fam).toLowerCase()) ? ` (${it.fam})` : ''}</option>`; }
+    return out + (cur !== null ? '</optgroup>' : ''); };
+  const opts = group(items.filter((it) => it.kind !== 'ability')), skills = group(items.filter((it) => it.kind === 'ability'));
   return `<div class="st-plate st-test st-shopplate"><button class="st-x" aria-label="Close">×</button>${shopTabs('test', true, P)}
     <div class="tt-rows"><div class="tt-row"><b>Pearls</b><button data-test="pearls|50">+50</button><button data-test="pearls|500">+500</button></div><div class="tt-row"><b>Cash</b><button data-test="cash|1000">+$1,000</button><button data-test="cash|10000">+$10,000</button><button data-test="cash|100000">+$100,000</button><button data-test="cash|1000000">+$1,000,000</button></div>
     <div class="tt-row"><b>Chests</b>${chest}</div>
     <div class="tt-row"><b>Abilities</b><button data-test="abil|all">Every ability</button><button data-test="abil|ready">Cooldown ready</button></div>
-    <div class="tt-row"><b>Item</b><select class="tt-item">${opts}</select><button data-test="item|">Give</button></div>
+    <div class="tt-row"><b>Items</b><select class="tt-item">${opts}</select><button data-test="item|tt-item">Give</button><button data-test="item3|tt-item">Give 3</button></div>
+    <div class="tt-row"><b>Skills</b><select class="tt-skill">${skills}</select><button data-test="item|tt-skill">Give</button><button data-test="item3|tt-skill">Give 3</button></div>
     <div class="tt-row"><b>Reset</b><button data-test="reset|lessons">Lessons</button><button data-test="reset|tutorial">Tutorial</button><button data-test="reset|board">First board</button></div></div></div>`;
 }
 // (7.3.9, owner) the shop's tabs: chests (for cash), pets (for pearls), and Test (behind ?dev)
