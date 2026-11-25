@@ -2112,6 +2112,7 @@ const spendPower = (k) => { profile.netPowerAt = Date.now() + POWER_CD[k] * 1000
 // eaten, and only then, he says one line to himself (render.js): the only time in the game he speaks
 function rebirth(kind) {
   const e = g.earl, ent = g.entity, sub = g.sub;
+  clearFx();
   spendPower('rebirth');
   if (kind === 'implode' || e.inSub) { e.inSub = false; e.x = sub.x; e.y = sub.y; }
   e.o2 = e.o2Max; g.noAir = 0; g.injury = 0; g.kill = null; e.vx = e.vy = 0;
@@ -2141,8 +2142,11 @@ function reviveOfferFor(kind, cause) {
   const e = g.earl, depth = Math.round(Math.max(e.y, e.inSub ? g.sub.y : 0));
   return { value: v, pearls: revivePrice(v, profile.cash || 0), n: g.bag.length + g.subTank.length, list: [...by.values()].filter((r) => r.sp).sort((a, b) => b.value - a.value), how, cause: /\d m\b/.test(cause) ? cause : `${cause} at ${depth} m` };
 }
+// (7.6.29, owner) coming back (Rebirth, a revive): nothing of the moment before hangs on in front of him
+function clearFx() { g.blood = []; g.inkPuffs = null; g.bursts = []; g.dashFx = null; g.snatchFx = null; g.castNet = null; g.siphon = null; g.siphonAim = null; g.dashAim = null; g.castAim = null; renderer.wake && renderer.wake.reset(); }
 function revive(kind) {
   const e = g.earl, ent = g.entity, sub = g.sub;
+  clearFx();
   if (kind === 'implode' || e.inSub) { e.inSub = false; e.x = sub.x; e.y = sub.y; }
   e.o2 = e.o2Max * 0.3; g.noAir = 0; g.injury = 0; g.kill = null; e.vx = e.vy = 0;
   const safe = (e.pressStart || 300) - 5; if (e.y > safe) e.y = Math.max(2, safe); // not straight back under the pressure that killed him
@@ -2431,7 +2435,7 @@ function tickAbility(dt) {
   g.breathGlow = (on && A.airSteps) || (on2 && A2.airSteps) ? 1 : Math.max(0, (g.breathGlow || 0) - dt); // (7.6.5) the air bar lit while Breath runs
   if (g.breathFx) { g.breathFx.t += dt; if (g.breathFx.t > 1.4) g.breathFx = null; }
   // (7.6.5, owner) Plunge: the anchor's pull (player.js), the strongest running; Lookout: the view drawn out
-  e.abilSink = Math.max(on && A.sink ? A.sink : 0, on2 && A2.sink ? A2.sink : 0); g.sinkDef = on && A.sink ? A : on2 && A2.sink ? A2 : null;
+  e.abilSink = Math.max(on && A.sink ? A.sink : 0, on2 && A2.sink ? A2.sink : 0); g.sinkDef = on && A.sink ? A : on2 && A2.sink ? A2 : null; if (g.sinkDef) { g.sinkK = 1; g.sinkLast = g.sinkDef; } else g.sinkK = Math.max(0, (g.sinkK || 0) - dt / 0.8); /* (7.6.29) the anchor's look fades as it lets go */
   g.repelR = Math.max(on && A.repel ? A.repel : 0, on2 && A2.repel ? A2.repel : 0); // (7.6.7, owner) Revel: hunters that bite keep this far off
   { const TA = on && A.heat ? A : on2 && A2.heat ? A2 : null; g.temper = TA && !e.inSub ? { tier: TA.tier, k: Math.min(1, (g.temper ? g.temper.k : 0) + dt * 1.5) } : g.temper && g.temper.k > 0 ? { tier: g.temper.tier, k: Math.max(0, g.temper.k - dt * 0.7) } : null; } // (7.6.7, owner) Temper: heat on the suit
   { const z = Math.max(on && A.zoom ? A.zoom : 1, on2 && A2.zoom ? A2.zoom : 1); g.lookZoom = lerp(g.lookZoom || 1, z, Math.min(1, dt * 1.6)); g.eagle = (on && A.eagle) || (on2 && A2.eagle) ? Math.min(1, (g.eagle || 0) + dt * 1.2) : Math.max(0, (g.eagle || 0) - dt * 0.8); }
@@ -2460,7 +2464,11 @@ function tickAbility(dt) {
   if (g.songFx) { g.songFx.t += dt; if (g.songFx.t > 4) g.songFx = null; }
   if (g.markWashFx) { g.markWashFx.t += dt; if (g.markWashFx.t > 2) g.markWashFx = null; }
   { const RA = on && A.reach ? A : on2 && A2.reach ? A2 : null; g.multiCatch = RA && RA.multi ? RA.multi : 1; g.reachMul = RA ? RA.reach : 1; g.swingMul = RA && RA.swing ? RA.swing : 1; g.sureCatch = !!(RA && RA.sure); g.blessCatch = !!(RA && RA.bless); g.reachDef = RA; }
-  g.abilLight = Math.max(on && A.light ? A.light : 0, on2 && A2.light ? A2.light : 0, g.mythT > 0 ? MYTH.light : 0, g.siphon ? g.siphon.A.siphon.light : 0);
+  { const L0 = Math.max(on && A.light ? A.light : 0, on2 && A2.light ? A2.light : 0, g.mythT > 0 ? MYTH.light : 0, g.siphon ? g.siphon.A.siphon.light : 0);
+    // (7.6.29, owner) nothing snaps off: when a skill's light ends (or drops a level) it keeps its last strength and fades
+    // to the new one over a second and a half (g.abilOutK, multiplied into every light the skills draw)
+    if (L0 >= (g.abilLightHold || 0)) { g.abilLightHold = L0; g.abilOutK = 1; g.abilLight = L0; }
+    else { g.abilOutK = Math.max(0, (g.abilOutK ?? 1) - dt / 1.5); g.abilLight = g.abilLightHold; if (g.abilOutK <= 0) { g.abilLightHold = L0; g.abilLight = L0; g.abilOutK = 1; } } }
   { const lh = !!(((on && A.light >= 2) || (on2 && A2.light >= 2)) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
   g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!((on && A.ward && !A.tide) || (on2 && A2.ward && !A2.tide)); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);

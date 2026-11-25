@@ -273,6 +273,12 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   without a go.
 - **Don't break anything:** after a change, the full touch tutorial (deck to shop), new game, and title screen at both
   phone sizes must still pass. Phones load the game in a turned frame (index.html's shell); tests use `?noshell`.
+- (7.6.29, owner) Nothing abrupt: every skill effect fades out (the skills' light holds its strength and fades over 1.5 s,
+  g.abilOutK; Plunge's anchor over 0.8 s, g.sinkK). Dauntless's strain eases in smoothly from half its limit to the full
+  limit (no 80 % switch), smoothed over time, its shakes slow (never a flicker), its pulse on an accumulated beat. The
+  opening burst bends the water as a ripple of many thin rings pushed outward along a smooth wave (never a magnified pane),
+  drawn over the scene so nothing behind the canvas shows. Plunge's anchor is drawn in the world pass, lit by the water.
+  Coming back (Rebirth, revive) clears blood, ink and skill leftovers; the legendary wake restarts at his side after a jump.
 - **(7.6.28, owner) Saves now carry over**: the owner's test saves take time to set up, so a change must not wipe or break them (how is being agreed). Superseded:
   **Never care about saves unless the owner asks (7.4.12, owner).** This is not a packaged game: the owner is the only
   player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already

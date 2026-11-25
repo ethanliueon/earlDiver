@@ -32,6 +32,8 @@ export class Wake {
 
   update(e, time, kind) {
     const dt = this.t === null ? 0 : clamp(time - this.t, 0, 0.1); this.t = time;
+    // (7.6.29) he jumped (a respawn, a revive, a sail): the school starts again at his side instead of streaming across
+    if (this.p.length && Math.hypot(this.p[0].x - e.x, this.p[0].y - e.y) > 8) this.kind = null;
     if (kind !== this.kind) { this.kind = kind; const st = STYLE[kind] || STYLE.motes; this.p = makeSwarm(st.n, e.x, e.y, 0.4); this.fish = kind === 'magnetic' ? makeSwarm(8, e.x, e.y, 1.2) : []; }
     const v = Math.hypot(e.vx || 0, e.vy || 0), moving = v > 0.35;
     // how far "ahead of him" the school sits: grows once he stops, so they drift past him and settle there
