@@ -550,10 +550,15 @@ e.inSub ? [
       // sits at the top right); a small notch a charge under it, up to ten
       // (7.6.15, owner) no "×N": a lit bead for each loaded charge, set along the outside of the button's left rim (clear of
       // the chip at its upper right and the lamp below), as rivets on its edge; one goes dark as a charge is spent
-      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const n = Math.min(10, AB.loaded), rb = r * 1.16, br = Math.max(2, 2.3 * u), step = 9.5 * Math.PI / 180, a0 = 215 * Math.PI / 180;
-        for (let i = 0; i < n; i++) { const ang = a0 - i * step, bx = x + Math.cos(ang) * rb, by = y + Math.sin(ang) * rb;
-          ctx.fillStyle = 'rgba(6,8,8,0.75)'; ctx.beginPath(); ctx.arc(bx, by + 0.6 * u, br * 1.25, 0, TAU); ctx.fill();
-          const bg = ctx.createRadialGradient(bx - br * 0.35, by - br * 0.4, br * 0.1, bx, by, br); bg.addColorStop(0, '#fbf4dc'); bg.addColorStop(0.55, '#d8cca4'); bg.addColorStop(1, '#8e8262'); ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); }
+      // (7.6.16, owner) not beads: an arc cut into segments along the outside of the left rim, one segment a slot the scroll
+      // can hold; the loaded ones lit in bone, the spent ones a dark groove
+      if (a.abil && AB && AB.loaded > 0) { ctx.save(); const cap = Math.max(1, Math.min(10, AB.maxLoad || ((AB.tier === 'legendary' || AB.tier === 'mythical') ? 10 : 5))), n = Math.min(cap, AB.loaded), rb = r * 1.17, from = 238 * Math.PI / 180, span = 96 * Math.PI / 180, gap = Math.min(5 * Math.PI / 180, span / cap * 0.3), seg = (span - gap * (cap - 1)) / cap;
+        ctx.lineCap = 'butt';
+        for (let i = 0; i < cap; i++) { const a1 = from - i * (seg + gap), a2 = a1 - seg, lit = i < n;
+          ctx.strokeStyle = 'rgba(6,8,8,0.78)'; ctx.lineWidth = 4.6 * u; ctx.beginPath(); ctx.arc(x, y, rb, a2, a1); ctx.stroke();
+          if (lit) { ctx.strokeStyle = 'rgba(240,228,196,0.22)'; ctx.lineWidth = 5.4 * u; ctx.beginPath(); ctx.arc(x, y, rb, a2, a1); ctx.stroke();
+            ctx.strokeStyle = '#e8dcb8'; ctx.lineWidth = 2.4 * u; ctx.beginPath(); ctx.arc(x, y, rb, a2, a1); ctx.stroke(); }
+          else { ctx.strokeStyle = 'rgba(120,112,92,0.35)'; ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(x, y, rb, a2, a1); ctx.stroke(); } }
         ctx.restore(); }
       const cut = a.abil && this.chipCut; if (cut) { ctx.save(); ctx.beginPath(); ctx.rect(x - r * 3, y - r * 3, r * 6, r * 6); ctx.arc(cut.x, cut.y, cut.r, 0, TAU); ctx.clip('evenodd'); } // (7.6.15) the ring stops at the chip
       if (a.abil) { const cdl = cooldownLeft(P), tot = (AB.dur || 0) + (AB.cd || 0);
