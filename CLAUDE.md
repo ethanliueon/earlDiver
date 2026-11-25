@@ -229,6 +229,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   in and out, "Home" beside it. At the cabin door the big button and walking on into the door also take him out.
 - **Big changes: plan first.** Give a plan with thoughts, questions and concerns, and wait. When asked "thoughts?",
   give a real opinion and push back where warranted; do not just agree.
+- **"What are your thoughts?" at the end of a message (7.5.0, owner) means thoughts on every single point in it**, one by
+  one, and a plan: build nothing until a clear go.
 - **When the owner raises a problem, asks a question or says "thoughts?", reply with a proposal and wait.** Build
   only on a clear go ahead ("go ahead", "do it", "yes"). Being told to work autonomously covers the agreed plan, not
   new ideas raised later.
@@ -280,3 +282,17 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - `tools/tests/phone.cjs` walks to the cabin door and presses the button like a player; it passes when it reaches "Get in the sub" (`reached the sub trip`) with only the three cloud 404s.
 - Mid-line comments are `/* */` only: a `//` mid-line hid the line that tells the game the sub trip had started (so the sub could not be tapped).
 - (7.4.27, owner) Nothing marks the chart by itself except the shops (home, Dave's, Station 7, the Old One's cave); other places are the player's to mark. Marker buoys stand only at the shops. No price board on the sell page.
+
+### 7.5.0 notes (owner's playtest)
+- The tutorial: "Your air" sits left of the O2 mark; a swing that misses for reach says only "Get closer"; sales only at
+  the Sell door (chevrons lead there), then the ladder; on deck the glove points at the cabin door; the catch step points
+  at the card's close cross 2 s after the card opens, then the bag's; the sub trip teaches the sprint once.
+- Words in the scene ("Home", "Get closer") are text alone, no line to their owner.
+- One red "!" everywhere (coins.js `drawBang`): its diameter half the tile's width, at the tile's top right; the journal's
+  HTML one is sized to match. The journal tile is as bright as the others.
+- A tile that cannot be used now carries a small padlock; tapped, it says why ("The sub is at the boat", "Not yet").
+- Marker buoys hang on a laid mooring rope (buoy_draw.js), never a dashed line.
+- The lamp (right hand) turns from straight up to just below the net's angle, never behind him.
+- Phones always run lite mode (no rim light on animals, no film grain, no far kelp, a lower-resolution light map). The
+  Battery saver setting adds a 30 fps cap. Image caches are all bounded; `rockAt` is binned by x.
+- The painted creator heads are planned in docs/PLAN_CREATOR.md (ChatGPT edits on one template; not built).

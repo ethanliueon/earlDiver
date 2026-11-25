@@ -11,8 +11,21 @@ export function drawSailBuoy(ctx, S, Sy, ppm, t, pt, surfY, floorY, yView1, nigh
   const bx = S(x), by = Sy(wy);
   // the chain: from under the can, bowed a little by the current, to the floor (or out of the view)
   const fy = Math.min(floorY, yView1 + 5), cx = S(x + 2 + Math.sin(t * 0.2 + x) * 0.6);
-  ctx.save(); ctx.strokeStyle = 'rgba(30,28,24,0.85)'; ctx.lineWidth = Math.max(1.5, 0.1 * m); ctx.lineCap = 'round'; ctx.setLineDash([Math.max(2, 0.16 * m), Math.max(2, 0.1 * m)]); /* links */
-  ctx.beginPath(); ctx.moveTo(bx, by + 0.55 * m); ctx.quadraticCurveTo(cx, (by + Sy(fy)) / 2, S(x + 1), Sy(fy)); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+  // (7.5.0, owner) a mooring rope, not a dashed line: a laid rope of three strands, dark below its lit edge, the lay's
+  // twists slanting across it, fading as it goes down into the dark
+  { const x0 = bx, y0 = by + 0.55 * m, x2 = S(x + 1), y2 = Sy(fy), y1 = (by + Sy(fy)) / 2, rw = Math.max(1.6, 0.075 * m);
+    const at = (u) => { const v = 1 - u; return [v * v * x0 + 2 * v * u * cx + u * u * x2, v * v * y0 + 2 * v * u * y1 + u * u * y2]; };
+    const len = Math.hypot(x2 - x0, y2 - y0) + 1, n = Math.min(400, Math.max(8, Math.round(len / Math.max(3, 0.16 * m))));
+    const fade = ctx.createLinearGradient(0, y0, 0, y2); fade.addColorStop(0, 'rgba(92,78,54,0.95)'); fade.addColorStop(1, 'rgba(40,36,28,0.55)');
+    ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(cx, y1, x2, y2);
+    ctx.strokeStyle = 'rgba(14,12,9,0.8)'; ctx.lineWidth = rw * 1.35; ctx.stroke(); /* its dark edge */
+    ctx.strokeStyle = fade; ctx.lineWidth = rw; ctx.stroke();
+    ctx.translate(-rw * 0.22, 0); ctx.strokeStyle = 'rgba(176,156,114,0.32)'; ctx.lineWidth = rw * 0.3; ctx.stroke(); ctx.translate(rw * 0.22, 0); /* the lit side */
+    ctx.strokeStyle = 'rgba(12,10,8,0.55)'; ctx.lineWidth = Math.max(0.8, rw * 0.22); ctx.beginPath(); /* the lay: each strand's twist slanting across */
+    for (let i = 1; i < n; i++) { const u = i / n, [px, py] = at(u), [qx, qy] = at(Math.min(1, u + 0.002)), dx = qx - px, dy = qy - py, d = Math.hypot(dx, dy) || 1, tx = dx / d, ty = dy / d, nx = -ty, ny = tx, h = rw * 0.5;
+      ctx.moveTo(px - nx * h - tx * h * 0.7, py - ny * h - ty * h * 0.7); ctx.lineTo(px + nx * h + tx * h * 0.7, py + ny * h + ty * h * 0.7); }
+    ctx.stroke(); ctx.restore(); }
   ctx.save(); ctx.translate(bx, by); ctx.rotate(tilt);
   const w = 0.62, hTop = -1.05, hBot = 0.6; // the can: half-width, its top above the water and its foot below, in metres
   // the can, shaded across: lit on the left, dark on the right

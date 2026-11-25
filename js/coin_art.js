@@ -181,7 +181,7 @@ export function drawBagIcon(ctx, cx, cy, size) {
     const neck = new Path2D(); neck.roundRect(-22, -28, 44, 10, 4); solid(x, neck, '#5c5a3e', { from: [0, -28], to: [0, -18], line: 3 }); // the drawstring's band
     x.strokeStyle = '#0c0d09'; x.lineWidth = 7; x.lineCap = 'round'; x.beginPath(); x.moveTo(-12, -28); x.bezierCurveTo(-12, -46, 12, -46, 12, -28); x.stroke(); x.strokeStyle = '#8a8466'; x.lineWidth = 3.6; x.stroke(); // the loop
     const tog = new Path2D(); tog.roundRect(14, -24, 9, 14, 3); solid(x, tog, '#9a9070', { from: [14, -24], to: [23, -10], line: 2 }); // the toggle
-    bagCache.set(key, c);
+    bagCache.set(key, c); if (bagCache.size > 48) bagCache.delete(bagCache.keys().next().value); // (7.5.0) bounded: a size per layout
   }
   ctx.drawImage(c, cx - c.width / 2, cy - c.width / 2);
 }
@@ -560,7 +560,7 @@ export function drawPowerBadge(ctx, cx, cy, r, power, st) {
 // steel frame, water in it and a strand of weed; a pressure chamber: a riveted steel cylinder with its dial; the large
 // tank: the same, broader
 const icoCache = new Map();
-function ico(key, size, paint) { const k2 = key + Math.round(size); if (icoCache.has(k2)) return icoCache.get(k2); const c = document.createElement('canvas'); c.width = c.height = Math.ceil(size * 2); const x = c.getContext('2d'); x.translate(size, size); x.scale(size / 50, size / 50); paint(x); icoCache.set(k2, c); return c; }
+function ico(key, size, paint) { const k2 = key + Math.round(size); if (icoCache.has(k2)) return icoCache.get(k2); const c = document.createElement('canvas'); c.width = c.height = Math.ceil(size * 2); const x = c.getContext('2d'); x.translate(size, size); x.scale(size / 50, size / 50); paint(x); icoCache.set(k2, c); if (icoCache.size > 96) icoCache.delete(icoCache.keys().next().value); /* (7.5.0) bounded */ return c; }
 export function drawTankIcon(ctx, cx, cy, size) {
   const c = ico('tank', size, (x) => {
     x.fillStyle = 'rgba(0,0,0,0.35)'; x.beginPath(); x.ellipse(0, 36, 42, 6, 0, 0, Math.PI * 2); x.fill();

@@ -256,12 +256,21 @@ export function generateWorld(seed) {
   // (6.1.8) the old one's body is as solid as the rock round her: Earl, the sub and the animals go round it, never into
   // it (an outline a little inside the drawing, so nothing seems to stop short of her); never drawn as rock
   { const P0 = []; for (let k = 0; k < 24; k++) { const a = (k / 24) * Math.PI * 2; P0.push({ x: ANGLER.x + Math.cos(a) * 7.2, y: ANGLER.y + Math.sin(a) * 4.4 }); } addRock(P0, 'oldone'); }
+  // (7.5.0) the rocks binned by 32 m of x, built again whenever the list changes: every animal asks this many times a
+  // frame, and walking the whole sea's rocks each time was the costliest thing in the game's own code. Same answer as
+  // before: the first rock in the list that holds the point.
+  const RB = 32; let bins = null, binSrc = null, binN = -1;
+  const binsFor = () => { if (bins && binSrc === W.rocks && binN === W.rocks.length) return bins;
+    bins = new Map(); binSrc = W.rocks; binN = W.rocks.length;
+    W.rocks.forEach((rk, i) => { for (let b = Math.floor(rk.x0 / RB); b <= Math.floor(rk.x1 / RB); b++) { let a = bins.get(b); if (!a) bins.set(b, a = []); a.push(i); } });
+    return bins; };
   W.rockAt = (x, y, r = 0) => {
-    for (const rk of W.rocks) {
-      if (x < rk.x0 - r || x > rk.x1 + r || y < rk.y0 - r || y > rk.y1 + r) continue;
-      if (pointInPoly(x, y, rk.poly)) return rk;
-    }
-    return null;
+    const B = binsFor(), b0 = Math.floor((x - r) / RB), b1 = Math.floor((x + r) / RB); let best = -1;
+    for (let b = b0; b <= b1; b++) { const a = B.get(b); if (!a) continue;
+      for (const i of a) { if (best >= 0 && i >= best) break; const rk = W.rocks[i];
+        if (x < rk.x0 - r || x > rk.x1 + r || y < rk.y0 - r || y > rk.y1 + r) continue;
+        if (pointInPoly(x, y, rk.poly)) { best = i; break; } } }
+    return best >= 0 ? W.rocks[best] : null;
   };
 
   // ---- Kelp forest (cold-water band) and seagrass meadow near the beach ----

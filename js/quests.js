@@ -31,7 +31,7 @@ export const QUEST_RARITY = { common: { name: 'Common', odds: 72 }, uncommon: { 
 // ['trap', type]). Once the net and trawl steps are done their key hints leave the screen (learned()).
 export const MAIN = [
   // (4.3.4) the first three steps are one dive now: down to the fish, observe it, catch it, back up (FIRST_FISH)
-  { id: 'firstfish', text: 'Your first fish', help: 'Swim down to a fish, tap the eye button to observe it, catch it with your net, then swim back up to the surface.', need: 1, on: 'firstFish', pay: 50, kit: [['item', 'flicknet']] },
+  { id: 'firstfish', text: 'Your first fish', help: 'Swim down to a fish, observe it, net it, and come back up.', need: 1, on: 'firstFish', pay: 50, kit: [['item', 'flicknet']] },
   { id: 'sell', text: 'Sell your catch', help: 'Swim up beside the Margaret and tap its winch, then Sell all.', need: 1, on: 'sell', pay: 30 },
   { id: 'buy', text: 'Buy a piece of gear from Bayside Marine Supply', help: "The computer in the Margaret's cabin. Bought gear goes into your inventory (supplies don't count).", need: 1, on: 'bought', pay: 40 },
   { id: 'wear', text: 'Put on the gear you bought', help: 'Open your bag, tap the gear and Put it on.', need: 1, on: 'wear', pay: 30 },

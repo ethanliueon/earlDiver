@@ -616,7 +616,7 @@ export function drawCash(ctx, cx, cy, h) {
     bundle(-4, 22, 0, '#5f7b4f');
     bundle(2, 10, -0.04, '#67845a');
     bundle(-2, -2, 0.07, '#6f8c5e');
-    cashCache.set(key, c);
+    cashCache.set(key, c); if (cashCache.size > 48) cashCache.delete(cashCache.keys().next().value); // (7.5.0) bounded: a size per layout
   }
   ctx.drawImage(c, cx - c.width / 2, cy - c.height / 2);
 }
@@ -650,7 +650,9 @@ export function drawTile(ctx, cx, cy, h, kind, state = 'on', badge = false) {
     t = { c, half: size / 2 }; cache.set(key, t); if (cache.size > 320) cache.delete(cache.keys().next().value);
   }
   const k = state === 'press' ? 0.94 : 1, hh2 = t.half * k; ctx.drawImage(t.c, cx - hh2, cy - hh2 + (state === 'press' ? h * 0.04 : 0), hh2 * 2, hh2 * 2);
-  if (badge) { const bx = cx + h * 0.82, by = cy - h * 0.82, br = Math.max(h * 0.36, 6); ctx.save(); ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = br * 0.25; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#fff6ea'; ctx.font = `700 ${br * 1.45}px "Barlow Semi Condensed", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + br * 0.06); ctx.restore(); }
+  if (badge) drawBang(ctx, cx + h * 0.7, cy - h * 0.62, h * 0.5); // (7.5.0, owner) one red "!" everywhere
 }
+// (7.5.0, owner) the one red "!" badge: its diameter half the tile's width, as the journal's (olive.css #quests-btn i)
+export function drawBang(ctx, bx, by, br) { ctx.save(); ctx.globalAlpha = 1; ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = br * 0.2; ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff6ea'; ctx.font = `700 ${br * 1.3}px "Barlow Semi Condensed", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + br * 0.06); ctx.restore(); }
 export function tileURL(kind, px = 112) { const c = document.createElement('canvas'); c.width = c.height = px; drawTile(c.getContext('2d'), px / 2, px / 2, px * 0.4, kind); return c.toDataURL('image/png'); }

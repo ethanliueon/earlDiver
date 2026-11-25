@@ -124,7 +124,7 @@ const HOLD_TIME = { clam: 1.5, mussel: 1.5, rock: 1.5, iron: 1.5, net: 12 };
 const DEED_CALM = { net: 25, plant: 15 };
 const PLANT_TIME = 8;
 const pressed = new Set();
-let fHeld = 0;
+let fHeld = 0, fSwallow = false;
 let fDown = 0;
 let cHeld = 0, cDown = 0;
 
@@ -1310,7 +1310,7 @@ function tutor() {
     else if (g.aboard) { text = 'Jump in beside the Margaret: you sell from the water'; to = ladder; }
     else if (!zone('boat', nearBoat)) { text = 'Bring your catch up beside the Margaret'; to = ladder; }
     else { const wx = BOAT.x + 4.5 * dir; // (7.1.0) the winch is used where it is: led there first, then offered
-      if (Math.abs(e.x - wx) >= 3.2) { text = 'Swim to the Margaret\'s winch at the stern'; to = { x: wx, y: 0.4 }; }
+      if (Math.abs(e.x - wx) >= 1.6) { text = 'Swim to the Sell door at the stern'; to = { x: wx, y: 0.4 }; } // (7.5.0, owner) at the door itself, not the ladder beside it
       else { text = 'Tap the Sell door on the Margaret'; offer('sell', 'Sell your catch', 'U'); } }
   } else if (m.id === 'buy') {
     // the cheapest piece of gear he can afford at Bayside, to point at
@@ -1328,7 +1328,8 @@ function tutor() {
       spot = pick ? { sel, say: `Buy a piece of gear (the ${pick.name.toLowerCase()} is ${money(pick.price, false)})`, confirm: 'Confirm the purchase' } : null;
     }
     else if (inCabin) { text = 'Walk to the computer to shop'; cabinTo('desk', 'shop', 'Open the shop'); }
-    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); text = 'Tap the cabin door to go in'; } } // (4.3.5) the door itself lit up
+    else if (g.aboard) { text = 'Go into the cabin: the door by the wheelhouse'; to = { x: BOAT.x + DOOR_M * dir, y: -1.2 }; door = true; if (zone('door', deckAtDoor())) { offer('cabin', 'Enter the cabin'); text = 'Tap the cabin door to go in'; }
+      { const bf = renderer.boatFrame, kx = innerWidth / renderer.c.width; if (bf) spot = { pt: [(bf.x + bf.sx * 19 * bf.k) * kx, (bf.y - 17.5 * bf.k) * kx, 5.4 * bf.k * kx, 14 * bf.k * kx] }; } } // (7.5.0, owner) up on deck: the glove points at the cabin door itself // (4.3.5) the door itself lit up
     else { text = 'Climb aboard the Margaret by the ladder'; to = ladder; g.tutLadder = true; if (ladderZone()) { offer('climb', 'Climb aboard'); text = 'Tap the ladder to climb aboard'; } }
   } else if (m.id === 'wear') {
     const Kit = P.kit || { items: [], on: {} }, worn = new Set(Object.values(Kit.on || {}));
@@ -1363,7 +1364,10 @@ function tutor() {
       if (tripCaught(F)) set(part + 1);
       else if (e.inSub) { text = 'Leave the sub'; offer('leavesub', 'Leave the sub'); spot = { key: 'leavesub', say: 'Leave the sub', button: 'leavesub' }; /* (7.1.0) ring the sub's own leave button (its key is not F) */ }
       else { fish = F; to = { x: F.x, y: F.y }; text = part === 3 ? 'Net the fish' : 'Net the one below';
-        if (dist(e.x, e.y, F.x, F.y) < 2.6) { prompt = netPrompt(); spot = netSpot(); if (spot && g.catchTarget) prompt = null; } }
+        // (7.5.0, owner) once, on the way down to the first fish: the sprint, lit on its own button
+        const AB = currentAbility(); if (abilityState(g).activeT > 0 && AB && AB.speed && !P.tutSprint) { P.tutSprint = true; saveProfile(P); }
+        if (part === 3 && !P.tutSprint && AB && AB.speed && cooldownLeft(P) <= 0 && dist(e.x, e.y, F.x, F.y) > 5) { text = 'Sprint down to the fish'; spot = { key: 'ability', say: 'Sprint' }; }
+        else if (dist(e.x, e.y, F.x, F.y) < 2.6) { prompt = netPrompt(); spot = netSpot(); if (spot && g.catchTarget) prompt = null; } }
     }
     else if (part === 5) { // the sub is far above: call it to him, and get in
       if (e.inSub) set(6);
@@ -1374,8 +1378,10 @@ function tutor() {
       // (7.4.0, owner) no card with an OK: he taps Catch himself, then the glove shows his catch for a moment
       if (invOpen && !P.tutBagTour) { const onCatch = !!document.querySelector('#inventory [data-invtab="catch"].on');
         if (!onCatch) { text = 'Open Catch'; spot = { sel: ['#inventory [data-invtab="catch"]'] }; g.tutCatchAt = null; }
-        else { text = 'Your catch'; g.tutCatchAt = g.tutCatchAt ?? g.time; spot = { sel: ['#inventory .bag-spaces .bs-fish', '#inventory .bag-spaces'] };
-          if (g.time - g.tutCatchAt > 2.6) { P.tutBagTour = true; saveProfile(P); } } }
+        else { const card = document.querySelector('#inventory .fish-pop'); // (7.5.0, owner) tap a fish; its card open, the glove steps away, then after 2 s points at the card's cross
+          if (card) { g.tutCardAt = g.tutCardAt ?? g.time; text = 'Your catch'; spot = g.time - g.tutCardAt > 2 ? { sel: ['#inventory .fish-pop .ip-close'] } : null; }
+          else if (g.tutCardAt != null) { P.tutBagTour = true; saveProfile(P); g.tutCardAt = null; } // the card seen and closed
+          else { text = 'Tap a fish'; spot = { sel: ['#inventory .bag-spaces .bs-fish', '#inventory .bag-spaces'] }; } } }
       else if (invOpen) spot = { sel: ['#inventory .inv-close'], act: 'inventory' };
       else if (P.tutBagTour) set(7);
       else { text = 'Open your bag'; spot = { key: 'b', say: 'Open your bag' }; }
@@ -1463,7 +1469,7 @@ window.addEventListener('actup', (ev) => {
   const k = ev.key.toLowerCase();
   keys.delete(k);
   if (tutGated(k)) return; // (4.4.0) no F-tap from a key the tutorial has off
-  if (k === 'f') { if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
+  if (k === 'f') { if (fSwallow) fSwallow = false; /* (7.5.0) the press already did its thing (out of the cabin): its release is not a tap too, which put him straight back in */ else if (performance.now() - fDown < 600) pressed.add('f-tap'); fHeld = 0; }
   if (k === 'c') { if (performance.now() - cDown < 600) pressed.add('c-tap'); cHeld = 0; }
 });
 window.addEventListener('blur', () => keys.clear());
@@ -2571,6 +2577,7 @@ function update(dt) {
         if (g.tutForce === 'miss') { profile.tutMissed = true; saveProfile(profile); g.tutOops = g.time; } // (5.6.7) said once, by the quest line and beside the fish // (4.3.2) the tutorial's first swing
         else (g.missLabels || (g.missLabels = [])).push({ c: ev.c || null, x: ev.x ?? e.x, y: ev.y ?? e.y, t: 0 }); // (5.7.5) said beside the fish, not at the top of the screen
       }
+      else if (ev.type === 'miss' && ev.near) say('Get closer'); // (7.5.0, owner) written beside him
       else if (ev.type === 'miss' && ev.why) hud.toast(ev.why[0].toUpperCase() + ev.why.slice(1), 'warn');
     }
     // the sub's trawl: N drops it, N again (or time) closes it; the winch brings it in with what it caught
@@ -2633,7 +2640,7 @@ function update(dt) {
         const at = /Station stores/.test(g.prompt) && St ? { x: St.x + STATION_COLLAR.dx + 1.5, y: St.y + STATION_COLLAR.dy, r: 2 } : /Dave's Haul/.test(g.prompt) && D ? { x: D.x + 6.5, y: D.y - 3.1, r: 2.4 } : { x: e2.x, y: e2.y, r: 0.9 };
         g.tapMarks.push({ key: 'f', w: [at.x - at.r, at.y - at.r, at.x + at.r, at.y + at.r], what: 'other' });
       }
-      const winchX = BOAT.x + 4.5 * Math.sign(Math.cos(BOAT.yaw || 0) || 1), nearB = !g.aboard && ((Math.abs(e2.x - winchX) < 3.2 && e2.y < 3 && !e2.inSub) || (e2.inSub && g.sub.docked)); // (7.1.0) only by the winch itself, not anywhere near the boat
+      const winchX = BOAT.x + 4.5 * Math.sign(Math.cos(BOAT.yaw || 0) || 1), nearB = !g.aboard && ((Math.abs(e2.x - winchX) < 1.6 && e2.y < 3 && !e2.inSub) /* (7.5.0, owner) at the Sell door, not at the ladder beside it */ || (e2.inSub && g.sub.docked)); // (7.1.0) only by the winch itself, not anywhere near the boat
       if (nearB && (bagN || e2.inSub || (g.tutAction && String(g.tutAction.key).toLowerCase() === 'u'))) g.tapMarks.push({ key: 'u', boat: [28.9, -10.2, 35.1, -2.2], what: 'winch' }); // (7.4.26, owner) the sell door in her side by the stern
       // (5.6.9) during the tutorial only the step's own thing is marked (the door on the first step, the hatch on the
       // swim down and the ladder while the winch is wanted all pulled the eye the wrong way)
@@ -3228,8 +3235,8 @@ function frame(now) {
     // (5.15.6) the journal's red "!" sits on the coin's rim at its top right, touching it, as a phone game's badge does
     { const dot = qb && qb.querySelector('i'), im = qb && qb.querySelector('img'); if (dot && im && im.offsetWidth && dot.__w !== im.offsetWidth) { dot.__w = im.offsetWidth;
       const ri = im.getBoundingClientRect(), rb2 = qb.getBoundingClientRect(), z = (rb2.width / (qb.offsetWidth || rb2.width)) || 1;
-      const c0x = (ri.left - rb2.left + ri.width / 2) / z, c0y = (ri.top - rb2.top + ri.height / 2) / z, rim = (ri.width / z) * 0.4 * 0.82, bw = 18; /* (5.15.7) at the tile's corner */
-      for (const [k, v] of [['left', `${(c0x + rim - bw / 2).toFixed(1)}px`], ['top', `${(c0y - rim - bw / 2).toFixed(1)}px`], ['right', 'auto'], ['min-width', `${bw}px`], ['height', `${bw}px`], ['line-height', `${bw}px`]]) dot.style.setProperty(k, v, 'important'); } }
+      const c0x = (ri.left - rb2.left + ri.width / 2) / z, c0y = (ri.top - rb2.top + ri.height / 2) / z, h0 = (ri.width / z) * 0.4, rim = h0 * 0.7, rimY = h0 * 0.62, bw = Math.round(h0); /* (7.5.0, owner) the same badge as the canvas tiles' (coins.js drawBang): its diameter half the tile, at the same spot */
+      for (const [k, v] of [['left', `${(c0x + rim - bw / 2).toFixed(1)}px`], ['top', `${(c0y - rimY - bw / 2).toFixed(1)}px`], ['right', 'auto'], ['min-width', `${bw}px`], ['height', `${bw}px`], ['line-height', `${bw}px`], ['font-size', `${(bw * 0.65).toFixed(1)}px`], ['border-radius', '50%']]) dot.style.setProperty(k, v, 'important'); } }
     if (qh && qb && J) { const r0 = qb.getBoundingClientRect(); if (r0.width) { const dx = J.x - (r0.left + r0.width / 2), dy = J.y - (r0.top + r0.height / 2); if (Math.abs(dx) > 1 || Math.abs(dy) > 1) { const st = getComputedStyle(qh), z = parseFloat(st.zoom) || 1; qh.style.setProperty('left', (parseFloat(st.left) + dx / z) + 'px', 'important'); qh.style.setProperty('top', (parseFloat(st.top) + dy / z) + 'px', 'important'); } } }
     // (7.2.6) the tutorial's line has one place, the banner at the top centre (olive.css): no longer moved beside the menu here
     if (!window.__qCoins) { window.__qCoins = true; for (const [id, k] of [['quests-btn', 'journal'], ['hud-journal', 'journal'], ['hud-chart', 'chart']]) { const im = document.querySelector('#' + id + ' img'); if (im) im.src = id === 'quests-btn' ? tileURL(k) : coinURL(k); } /* (5.15.7) the journal a tile, as the menu's others */ }
@@ -3243,7 +3250,7 @@ function frame(now) {
   { const cab = !!(ui.cabinOpen && ui.cabinOpen()); if (cab !== hud.inCabin) { hud.inCabin = cab; document.documentElement.classList.toggle('in-cabin', cab); } }
   if (hud.inCabin && pressed.has(' ') && ui.cabin.near && ui.cabin.near() === 'door') { pressed.delete(' '); ui.cabin.use(); }
   /* (7.4.26, owner) the hand button in the cabin (the door picture at the door): it uses what he stands at. Nothing took it before, so in the tutorial's "Out on deck" a tap at the door did nothing */
-  if (hud.inCabin && pressed.has('f')) { pressed.delete('f'); pressed.delete('f-tap'); if (ui.cabin.near && ui.cabin.near() && !(ui.anyOpen && ui.anyOpen('cabin davetalk'))) { ui.cabin.use(); audio.ready && audio.click && audio.click(); } } // (7.4.0, owner) at the cabin door the big button takes him out too
+  if (hud.inCabin && pressed.has('f')) { pressed.delete('f'); pressed.delete('f-tap'); if (ui.cabin.near && ui.cabin.near() && !(ui.anyOpen && ui.anyOpen('cabin davetalk'))) { fSwallow = keys.has('f'); ui.cabin.use(); audio.ready && audio.click && audio.click(); } } // (7.4.0, owner) at the cabin door the big button takes him out too
   hud.abilDef = currentAbility(); // (5.9.0) the arc's ability button
   hud.killTide = false; // (6.0.0) nothing saves him once it strikes: the Tidewarden is for before, while the water reddens // (5.10.8) the Tidewarden, offered in the jaws
   hud.cabinNear = hud.inCabin && ui.cabin.near ? ui.cabin.near() : null; // (7.1.0) which station is in reach, for the button's picture

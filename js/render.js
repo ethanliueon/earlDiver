@@ -1859,7 +1859,7 @@ export class Renderer {
   lampAngle(g, e, head) {
     const natural = e.facing > 0 ? e.angle + head.beamA : Math.PI - e.angle - head.beamA;
     // (7.4.26, owner) the lamp turned by the right hand: eased toward where the finger is, never behind him
-    if (g.aim == null && (g.lampK || 0) > 0.001 && g.lampA != null) { const fwd = e.facing > 0 ? 0 : Math.PI; let d = ((g.lampA - fwd + Math.PI * 3) % (Math.PI * 2)) - Math.PI; d = clamp(d, -1.35, 1.35); const want = fwd + d; let dd = ((want - natural + Math.PI * 3) % (Math.PI * 2)) - Math.PI; return natural + dd * g.lampK; }
+    if (g.aim == null && (g.lampK || 0) > 0.001 && g.lampA != null) { const fwd = e.facing > 0 ? 0 : Math.PI; let d = ((g.lampA - fwd + Math.PI * 3) % (Math.PI * 2)) - Math.PI; d = e.facing > 0 ? clamp(d, -Math.PI / 2, 0.7) : clamp(d, -0.7, Math.PI / 2); /* (7.5.0, owner) from straight up to just below the net's angle, never behind him */ const want = fwd + d; let dd = ((want - natural + Math.PI * 3) % (Math.PI * 2)) - Math.PI; return natural + dd * g.lampK; }
     if (g.aim == null) return natural;
     let a = g.aim;
     const fwd = e.facing > 0 ? 0 : Math.PI;
@@ -3120,8 +3120,9 @@ export class Renderer {
       for (const m of g.says) { const o = m.at === 'sub' ? g.sub : m.at === 'pet' ? g.petC : g.earl, a = clamp(m.t / 0.3, 0, 1) * clamp((4 - m.t) / 0.7, 0, 1); if (a < 0.01 || !o) continue;
         const hx = S(o.x), hy = Sy(o.y) - ppm * (m.at === 'sub' ? 2.2 : 0.8) - row * 22, fs = 15; row++;
         ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(m.text).width, left = hx > W * 0.5, d = Math.max(30, ppm * 1.2); let tx = left ? Math.max(150, hx - d - w) : Math.min(W - w - 150, hx + d); let ty = Math.max(fs + 70, hy - Math.max(30, ppm * 1.2));
-        ctx.globalAlpha = a; if (m.at !== 'pet') { /* (7.3.9, owner) the pet's word is written just above it, with no line */ ctx.strokeStyle = 'rgba(236,230,210,0.6)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(hx + (left ? -3 : 3), hy - 3); ctx.quadraticCurveTo(hx + (left ? -4 : 4), ty + 6, left ? tx + w : tx, ty + 6); ctx.lineTo(left ? tx : tx + w, ty + 6); ctx.stroke(); }
-        if (m.at === 'pet') { tx = hx - w / 2; ty = Sy(o.y) - Math.max(18, ppm * ((o.len || 1) * 0.35 + 0.5)); }
+        // (7.5.0, owner) every word written just above what it is about (him, the sub, the pet), with no line to it
+        ctx.globalAlpha = a; { const lift = m.at === 'sub' ? ppm * 2.6 : m.at === 'pet' ? Math.max(18, ppm * ((o.len || 1) * 0.35 + 0.5)) : Math.max(26, ppm * 1.15);
+          tx = Math.min(W - w - 12, Math.max(12, hx - w / 2)); ty = Math.max(fs + 70, Sy(o.y) - lift - (row - 1) * (fs + 6)); }
         ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(m.text, tx, ty); ctx.restore(); } }
     // (6.0.0) Earl's one line, after the sea gives him back from its jaws: written into the scene beside him like the
     // game's labels (no box, no bubble), a thin line curving up from his head to the words, which run on under them; it
@@ -3131,7 +3132,7 @@ export class Renderer {
       if (a > 0.01) { const hx = S(e.x), hy = Sy(e.y) - ppm * 0.7, n = clamp(Math.floor((L.t - 0.25) * 22), 0, L.text.length), fs = 17;
         ctx.save(); ctx.font = `500 ${fs}px ${HUDF}`; const w = ctx.measureText(L.text).width, tx = Math.max(150, hx - Math.max(36, ppm * 1.6) - w), ty = Math.max(fs + 70, hy - Math.max(48, ppm * 2)); /* (6.0.1) up and to his left, into the open water, clear of the menu column */
         ctx.globalAlpha = a; ctx.strokeStyle = 'rgba(236,230,210,0.7)'; ctx.lineWidth = 1.3; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(hx - 3, hy - 3); ctx.quadraticCurveTo(hx - 4, ty + 6, tx + w, ty + 6); ctx.lineTo(tx, ty + 6); ctx.stroke(); // the line comes up from him and runs back under where the words are written
+        /* (7.5.0, owner) no line to him: the words alone, beside him */
         ctx.fillStyle = '#ece6d2'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; { const fx = (L.t - 0.25) * 22; let cx = tx; for (let j = 0; j < Math.min(L.text.length, Math.ceil(fx) + 3); j++) { const ch = L.text[j], al = clamp((fx - j) / 3, 0, 1); if (al > 0) { ctx.save(); ctx.globalAlpha *= al; ctx.fillText(ch, cx, ty); ctx.restore(); } cx += ctx.measureText(ch).width; } } /* (7.2.0) each letter fades in after the one before */
         ctx.restore(); } }
   }

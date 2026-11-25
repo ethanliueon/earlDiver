@@ -34,7 +34,7 @@ export function paintedText(ctx, text, x, y, size, { col = 'rgba(214,206,172,1)'
     // a drip or two under the letters
     k.globalCompositeOperation = 'source-over'; k.fillStyle = col; k.globalAlpha = 0.5;
     for (let i = 0; i < 2; i++) { const dx = size * 0.4 + r() * (c.width - size), dl = size * (0.15 + r() * 0.3); k.fillRect(dx, c.height * 0.72, 1.2, dl); }
-    P = { c, w: c.width, h: c.height }; PAINT.set(key, P);
+    P = { c, w: c.width, h: c.height }; PAINT.set(key, P); if (PAINT.size > 160) PAINT.delete(PAINT.keys().next().value); // (7.5.0) bounded: painted words change
   }
   const dx = align === 'center' ? x - P.w / 2 : align === 'right' ? x - P.w : x;
   ctx.save(); ctx.globalAlpha = alpha; ctx.drawImage(P.c, dx, y - P.h / 2); ctx.restore();

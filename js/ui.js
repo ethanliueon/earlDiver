@@ -1536,7 +1536,7 @@ export class UI {
     row('flashing', 'Softer flashes', !!(g && g.reduceFlash), 'gentler lights from the thing in the deep');
     $('set-units').innerHTML = `<span>Units<em>metres and kilograms, or feet and pounds</em></span><b class="set-pick">${imperial() ? 'Imperial' : 'Metric'}</b>`; // (6.0.3)
     { const nm = uiSizeName(); $('set-uisize').innerHTML = `<span>Button size<em>the controls on screen, larger or smaller</em></span><b class="set-pick">${nm[0].toUpperCase() + nm.slice(1)}</b>`; } // (5.15.7) Small / Normal / Large, a tap steps through them
-    $('set-graphics').innerHTML = `<span>Smoother on slow devices<em>${'battery saver: 30 frames a second, cooler and longer'}</em></span>${sw(!!SETTINGS.fast)}`;
+    $('set-graphics').innerHTML = `<span>Battery saver<em>30 frames a second</em></span>${sw(!!SETTINGS.fast)}` /* (7.5.0, owner) named for what it does */;
   }
   galleryOpen() { return !$('gallery').hidden; }
   cabinOpen() { return !$('cabin').hidden; }

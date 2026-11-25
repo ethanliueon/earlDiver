@@ -195,6 +195,9 @@ export class TutSpot {
         Object.assign(this.card.style, { left: left + 'px', top: top + 'px', width: cw + 'px' });
       }
       // (4.3.1) no words by it: the ring and the arrow are enough (the banner at the top says what the step is)
+    } else if (spot.pt) { // (7.5.0) a place in the scene (the cabin door from the deck): the glove at it, nothing dimmed
+      this.lastTarget = null; if (this.litEl) { this.litEl.classList.remove('ts-lit'); this.litEl = null; }
+      const [px, py, pw, ph] = spot.pt; this.hole.style.display = 'none'; this.aimArrow(null, px - pw / 2, py - ph / 2, pw, ph); return;
     } else {
       this.lastTarget = null; if (this.litEl) { this.litEl.classList.remove('ts-lit'); this.litEl = null; }
       // a key to press (or the tutorial's button: spot.button is its action, spot.key its key)

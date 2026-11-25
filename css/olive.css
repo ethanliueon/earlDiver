@@ -361,7 +361,7 @@ html body #quests-hud :is(.qh-step, #hud-journal, #hud-chart) { transition: opac
 html body #quests-hud:not(.open) :is(.qh-step, #hud-journal, #hud-chart) { opacity: 0; transform: translateX(-10px); pointer-events: none; }
 html body #quests-hud .qh-step { cursor: pointer; }
 /* the quest picture smaller when folded, as a corner mark */
-html body #quests-hud:not(.open) #quests-btn { opacity: 0.85; }
+html body #quests-hud:not(.open) #quests-btn { opacity: 1; } /* (7.5.0, owner) the journal tile as bright as the others */
 /* never on the title screen */
 body:has(#title:not(.gone)) #quests-hud { visibility: hidden !important; }
 
@@ -2180,3 +2180,10 @@ html body .pfx:not(#_a) { transition: none; filter: brightness(1.16); scale: 0.9
 html body #pressfx { position: fixed; inset: 0; pointer-events: none; z-index: 2147483000; }
 html body #pressfx i { position: absolute; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2); border-radius: 50%; border: 2px solid rgba(255, 236, 196, 0.55); box-shadow: 0 0 10px rgba(255, 236, 196, 0.22), inset 0 0 8px rgba(255, 236, 196, 0.18); opacity: 0.9; transform: scale(0.35); animation: pfx-ring 0.4s cubic-bezier(.2, .7, .3, 1) forwards; }
 @keyframes pfx-ring { to { transform: scale(1); opacity: 0; } }
+/* (7.5.0, owner) a Log card: its words held to three lines, the reward on one row beside them (the item's picture and name,
+   then the money), Claim under the reward; the card no wider than the words need */
+html.touch body.bookmode #quests .qs-q.main:not(#_a):not(#_b) { display: grid !important; grid-template-columns: 1fr auto; align-items: center; column-gap: 14px; }
+html.touch body.bookmode #quests .qs-q.main .qs-t span:not(#_a):not(#_b) { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+html.touch body.bookmode #quests .qs-q.main .qs-pay:not(#_a):not(#_b) { display: grid !important; grid-template-columns: auto auto; align-items: center; justify-items: center; column-gap: 10px; row-gap: 6px; }
+html.touch body.bookmode #quests .qs-q.main .qs-pay > button { grid-column: 1 / -1; }
+html.touch body.bookmode #quests .qs-q.main .qs-pay .qs-gift img { width: 56px; height: 34px; }

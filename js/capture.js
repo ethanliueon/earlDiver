@@ -220,7 +220,10 @@ export function updateCapture(g, dt) {
     }
     if (!tgt && !(cap.kind === 'net' && !g.tutForce)) tgt = findCatch(g);
     const e = g.earl;
-    if (!tgt || !tgt.ok) ev.push({ type: 'miss', why: tgt ? tgt.why : null, sp: tgt && tgt.sp });
+    // (7.5.0, owner) the hoop passed nothing but a fish was close: "Get closer", so a miss for reach never reads as a glitch
+    if (!tgt && cap.kind === 'net') { const h2 = handPos(g), near = findCatch(g, { x: h2.x + h2.fx * 0.6, y: h2.y, r: 2.2 }); if (near && near.ok) { ev.push({ type: 'miss', why: 'Get closer', near: true, sp: near.sp }); tgt = { ok: false, handled: true }; } }
+    if (tgt && tgt.handled) { /* said above */ }
+    else if (!tgt || !tgt.ok) ev.push({ type: 'miss', why: tgt ? tgt.why : null, sp: tgt && tgt.sp });
     else {
       const { def, kind } = cap;
       // (4.3.2) the tutorial's net step: the first swing misses, the next one catches (g.tutForce, set by tutor())

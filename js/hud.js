@@ -3,7 +3,7 @@ import { depthUnit } from './units.js';
 import { drawBagIcon, drawTankIcon, drawChamberIcon } from './coin_art.js';
 import { parsePrompt, dymo, brassBezel, oliveNine, HUDF } from './fittings.js';
 import { lockerTexture } from './textures.js';
-import { drawCoin, drawCash, drawTile } from './coins.js';
+import { drawCoin, drawCash, drawTile, drawBang } from './coins.js';
 import { abilityState, whyNot, cooldownLeft, fmtLeft } from './abilities.js';
 import { drawNet3, drawCam3 } from './gear_art.js';
 import { drawHourglass, drawPowerBadge, POWER_EMBLEMS } from './coin_art.js';
@@ -401,12 +401,12 @@ export class Hud {
     const ROW = [{ key: 'journal', dom: true }, { key: 'b', icon: 'bag', on: true }].concat( // (5.6.9) the journal's coin (HTML) above the bag
 e.inSub ? [
       // (5.7.1) in the sub only: the tank room and the autopilot (out of the arc), then the spare air
-      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: 'The sub is at the boat' }, // (5.16.7) the sub tile's place: autopilot home in the sub, call sub out of it
+      { key: 'c', icon: 'auto', on: !sub.imploded && !sub.docked && !g.tutHidePrompts, lit: g.homeRun, why: g.tutHidePrompts ? 'Not yet' : 'The sub is at the boat' }, // (5.16.7) the sub tile's place: autopilot home in the sub, call sub out of it
       { key: 't', icon: 'tank', on: true, badge: g.subTank.some((s) => s.pile) }, // (6.6.2) a red ! while a catch lies on the sub's floor
       { key: 'r', icon: 'air', on: (g.items.airTank || 0) > 0, n: g.items.airTank, away: true },
     ] : [
       // (5.16.7) out of the sub, the same place calls her (on deck she is already at the boat)
-      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : 'The sub is at the boat' },
+      { key: 'c', icon: 'sub', on: !sub.imploded && !g.tutHidePrompts && !aboard, lit: ap && ap.state === 'coming', why: sub.imploded ? 'The sub is lost' : g.tutHidePrompts ? 'Not yet' : 'The sub is at the boat' },
     ]).concat([{ key: 'store', icon: 'shop', on: true }, { key: 'events', icon: 'events', on: true, badge: P ? calState(P).ready : false }]) // (6.4.0) the Shop and Events; the daily gift's "!" when one waits
       .filter((a) => !(a.away && !a.on));
     const tutKey = window.__hudTutKey || g.questHint || null; // (5.5) the button the tutorial wants: ringed, pulsing. (6.5.1) or the Log's step (main.js lessons): a quiet ring, no arrow
@@ -516,16 +516,15 @@ e.inSub ? [
         ctx.fillStyle = down ? 'rgba(4,8,8,0.8)' : 'rgba(6,10,10,0.55)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
         ctx.strokeStyle = a.lit ? 'rgba(236,224,190,0.85)' : 'rgba(230,222,196,0.22)'; ctx.lineWidth = 1.4 * u; ctx.stroke();
         ctx.globalAlpha *= a.on ? 0.92 : 0.4; glyph(a.icon, x, y + (down ? 1 * u : 0), r * 0.4);
-      } else if (a.tile) drawTile(ctx, x, y, r, a.icon, down ? 'press' : this.inKill || !a.on ? 'off' : 'on', !!a.badge); // (5.15.7) the menu's square tiles
+      } else if (a.tile) { drawTile(ctx, x, y, r, a.icon, down ? 'press' : this.inKill || !a.on ? 'off' : 'on', !!a.badge); // (5.15.7) the menu's square tiles
+        if (!a.on && !this.inKill) padlock(x + r * 0.5, y + r * 0.5, r * 0.4); } // (7.5.0, owner) one that cannot be used now carries a padlock; tapped, it still says why
       else { if (a.inter && a.on && a.lit && !this.inKill) { const q = 0.5 + 0.5 * Math.sin(g.time * 2.4), R0 = r * 0.92, R3 = r * (1.34 + 0.06 * q); /* (6.5.6) something in reach: a soft warm glow round the button, behind it (the thin line inside its ring read as an outline cut off) */
         const hg = ctx.createRadialGradient(x, y, R0, x, y, R3); hg.addColorStop(0, `rgba(226,196,146,${(0.34 + 0.16 * q).toFixed(3)})`); hg.addColorStop(1, 'rgba(226,196,146,0)'); ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(x, y, R3, 0, TAU); ctx.fill(); }
       drawCoin(ctx, x, y, r, a.icon, down ? 'press' : tideReady ? 'lit' : this.inKill || !a.on ? 'off' : a.lit && !a.inter ? 'lit' : 'on', a.inter ? { ...(a.look || {}), k: a.icon === 'hand' ? 0.92 : 1.15 } /* (6.5.6) the hand smaller: it outsized the others */ : a.lit && LIT_ART.has(a.icon) ? { lit: true } : a.look, a.tint); } /* (6.5.1) the interact button: its picture larger, never the lit face (its glow says it) */
       if (a.inter) bezel(x, y, r, false, down);
       if (a.lock) padlock(x + r * 0.42, y + r * 0.42, r * 0.42);
       if (a.key === 'b' && (P.bagGot || 0) > (P.bagSeenAt || 0)) { // (5.9.6) something new in the bag: a red "!" at its top right, as games do
-        const bx = x + r * 0.74, by = y - r * 0.74, br = Math.max(8 * u, r * 0.4), pq = 1 + 0.08 * Math.sin(g.time * 5);
-        ctx.save(); ctx.globalAlpha = 1; ctx.fillStyle = '#c8402e'; ctx.strokeStyle = '#181a14'; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.arc(bx, by, br * pq, 0, TAU); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#fff6ea'; ctx.font = `700 ${br * 1.45}px ${HUDT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', bx, by + br * 0.06); ctx.restore(); }
+        drawBang(ctx, x + r * 0.7, y - r * 0.62, r * 0.5); } /* (7.5.0, owner) the same badge as every tile's */
       if (a.abil && AB.tier === 'legendary') legendMotes(ctx, x, y, r * 1.8, r * 1.8, g.time, 3);
       if (a.abil && AB.tier === 'mythical') { ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (let i = 0; i < 11; i++) { const ph = (g.time * (0.22 + (i % 4) * 0.05) + i * 0.091) % 1, px = x + Math.sin(i * 2.4 + g.time * 0.7) * r * 0.75, py = y + r * 0.7 - ph * r * 2;
         ember(ctx, px, py, Math.max(4, r * 0.2), Math.max(1.2, r * 0.05), -Math.PI / 2 + Math.sin(g.time * 2 + i) * 0.3, Math.sin(Math.PI * ph) * 0.8); } ctx.restore(); } // (7.4.15, 7.4.24) a mythical's embers, slivers not dots // (5.9.1) a legendary's sparks; (5.10.8) fewer, closer
@@ -944,11 +943,11 @@ e.inSub ? [
       const PA = g.profile;
       if (PA && !e.inSub && !aboard && (e.y > 1.5 || this.airTipT > 0) && !PA.tutAirSeen) { this.airTipT = (this.airTipT || 0) + dt; if (this.airTipT > 9) { PA.tutAirSeen = true; this.airTipT = 0; } }
       if (this.airTipT > 0 && PA && !PA.tutAirSeen) {
-        const k = Math.min(1, this.airTipT / 0.4, (9 - this.airTipT) / 0.6), q = 0.5 + 0.5 * Math.sin(g.time * 4.5), fx0 = lx - 44 * s, fy0 = ay - 7 * s, fh = lh + 14 * s;
+        const k = Math.min(1, this.airTipT / 0.4, (9 - this.airTipT) / 0.6), q = 0.5 + 0.5 * Math.sin(g.time * 4.5), fx0 = lx - 70 * s, fy0 = ay - 7 * s, fh = lh + 14 * s; /* (7.5.0, owner) further left: the arrow sat over the O2 mark */
         ctx.save(); ctx.globalAlpha = k;
         // (5.12.1) not a frame round it (it read as a web outline): a chunky painted arrow, as a phone game points at a thing,
         // nudging toward the air line in a slow ease; cream with a dark edge and a soft shadow, a little taper to the shaft
-        { const nud = 5 * s * (0.5 - 0.5 * Math.cos(g.time * 3.2)), tipX = lx - 8 * s + nud, ty = ay + lh / 2, L = 44 * s, hw = 17 * s, sw = 7 * s;
+        { const nud = 5 * s * (0.5 - 0.5 * Math.cos(g.time * 3.2)), tipX = lx - 30 * s + nud, ty = ay + lh / 2, L = 44 * s, hw = 17 * s, sw = 7 * s;
           const arrow = () => { ctx.beginPath(); ctx.moveTo(tipX, ty); ctx.lineTo(tipX - hw * 1.25, ty - hw); ctx.lineTo(tipX - hw * 1.1, ty - sw * 0.9); ctx.quadraticCurveTo(tipX - L * 0.75, ty - sw * 1.05, tipX - L, ty - sw * 0.75);
             ctx.lineTo(tipX - L, ty + sw * 0.75); ctx.quadraticCurveTo(tipX - L * 0.75, ty + sw * 1.05, tipX - hw * 1.1, ty + sw * 0.9); ctx.lineTo(tipX - hw * 1.25, ty + hw); ctx.closePath(); };
           ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 6 * s; ctx.shadowOffsetY = 2 * s; arrow(); ctx.fillStyle = '#1c1a14'; ctx.fill(); ctx.restore();
