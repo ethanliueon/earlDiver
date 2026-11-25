@@ -1843,23 +1843,25 @@ export class Renderer {
     // behind. Rare reaches a few metres; exotic and up send a second, weaker wave after it; legendary crosses the screen;
     // a Heart first pulls the water in toward him and darkens it, then bursts out with the brightest light in the game
     if (g.mode === 'play' && g.bursts && g.bursts.length) {
-      const bc = this.burstC || (this.burstC = document.createElement('canvas')); if (bc.width !== this.c.width || bc.height !== this.c.height) { bc.width = this.c.width; bc.height = this.c.height; }
-      const bx = bc.getContext('2d'); bx.setTransform(1, 0, 0, 1, 0, 0); bx.globalCompositeOperation = 'copy'; bx.drawImage(this.c, 0, 0); bx.globalCompositeOperation = 'source-over';
+      // (7.6.26) heat: the lens is worked at half resolution (a quarter of the pixels); its band is soft, so it reads the same
+      const HR = 0.5, hw = Math.ceil(this.c.width * HR), hh = Math.ceil(this.c.height * HR);
+      const bc = this.burstC || (this.burstC = document.createElement('canvas')); if (bc.width !== hw || bc.height !== hh) { bc.width = hw; bc.height = hh; }
+      const bx = bc.getContext('2d'); bx.setTransform(1, 0, 0, 1, 0, 0); bx.globalCompositeOperation = 'copy'; bx.drawImage(this.c, 0, 0, hw, hh); bx.globalCompositeOperation = 'source-over';
       const diag = Math.hypot(this.W, this.H), PEAK = { rare: 0.32, exotic: 0.42, legendary: 0.58, mythical: 0.9 };
       // a soft lens: within a ring (or a disc, r0 = 0) the water faded out and the same water, scaled about him, faded in
       // under one smooth mask and added back, an exact blend with no edge anywhere; only the box round the ring is worked
       const mk = this.burstM || (this.burstM = document.createElement('canvas')), lc = this.burstL || (this.burstL = document.createElement('canvas'));
-      for (const c2 of [mk, lc]) if (c2.width !== this.c.width || c2.height !== this.c.height) { c2.width = this.c.width; c2.height = this.c.height; }
+      for (const c2 of [mk, lc]) if (c2.width !== hw || c2.height !== hh) { c2.width = hw; c2.height = hh; }
       const mx2 = mk.getContext('2d'), lx2 = lc.getContext('2d');
-      const lens = (cx, cy, r0, r1, sc, stops) => {
-        const x0 = Math.max(0, Math.floor(cx - r1)), y0 = Math.max(0, Math.floor(cy - r1)), x1 = Math.min(this.c.width, Math.ceil(cx + r1)), y1 = Math.min(this.c.height, Math.ceil(cy + r1)), bw = x1 - x0, bh = y1 - y0; if (bw <= 0 || bh <= 0 || r1 <= r0) return;
+      const lens = (CX, CY, R0, R1, sc, stops) => { const cx = CX * HR, cy = CY * HR, r0 = R0 * HR, r1 = R1 * HR, iH = 1 / HR;
+        const x0 = Math.max(0, Math.floor(cx - r1)), y0 = Math.max(0, Math.floor(cy - r1)), x1 = Math.min(hw, Math.ceil(cx + r1)), y1 = Math.min(hh, Math.ceil(cy + r1)), bw = x1 - x0, bh = y1 - y0; if (bw <= 0 || bh <= 0 || r1 <= r0) return;
         mx2.setTransform(1, 0, 0, 1, 0, 0); mx2.globalCompositeOperation = 'source-over'; mx2.clearRect(x0, y0, bw, bh);
         const gm = mx2.createRadialGradient(cx, cy, r0, cx, cy, r1); for (const [o, a] of stops) gm.addColorStop(o, `rgba(0,0,0,${a})`); mx2.fillStyle = gm; mx2.fillRect(x0, y0, bw, bh);
         lx2.setTransform(1, 0, 0, 1, 0, 0); lx2.globalCompositeOperation = 'source-over'; lx2.clearRect(x0, y0, bw, bh);
         lx2.save(); lx2.beginPath(); lx2.rect(x0, y0, bw, bh); lx2.clip(); lx2.translate(cx, cy); lx2.scale(sc, sc); lx2.translate(-cx, -cy); lx2.drawImage(bc, 0, 0); lx2.restore();
         lx2.globalCompositeOperation = 'destination-in'; lx2.drawImage(mk, x0, y0, bw, bh, x0, y0, bw, bh); lx2.globalCompositeOperation = 'source-over';
-        ctx.globalCompositeOperation = 'destination-out'; ctx.drawImage(mk, x0, y0, bw, bh, x0, y0, bw, bh);
-        ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(lc, x0, y0, bw, bh, x0, y0, bw, bh); ctx.globalCompositeOperation = 'source-over';
+        ctx.globalCompositeOperation = 'destination-out'; ctx.drawImage(mk, x0, y0, bw, bh, x0 * iH, y0 * iH, bw * iH, bh * iH);
+        ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(lc, x0, y0, bw, bh, x0 * iH, y0 * iH, bw * iH, bh * iH); ctx.globalCompositeOperation = 'source-over';
       };
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       for (const B of g.bursts) {
@@ -1887,9 +1889,9 @@ export class Renderer {
           lg.addColorStop(0, `rgba(${C[0]},${C[1]},${C[2]},0)`); lg.addColorStop(0.55, `rgba(${C[0]},${C[1]},${C[2]},${(pk * 0.55).toFixed(3)})`); lg.addColorStop(0.8, `rgba(${C[0]},${C[1]},${C[2]},${pk.toFixed(3)})`); lg.addColorStop(1, `rgba(${C[0]},${C[1]},${C[2]},0)`);
           // (one smooth ring, then made brighter and dimmer round its way by an angular mask: no slices, no ticks)
           { const r1 = R + lw * 0.5, x0 = Math.max(0, Math.floor(cx - r1)), y0 = Math.max(0, Math.floor(cy - r1)), x1 = Math.min(this.c.width, Math.ceil(cx + r1)), y1 = Math.min(this.c.height, Math.ceil(cy + r1)), bw = x1 - x0, bh = y1 - y0;
-            if (bw > 0 && bh > 0) { lx2.setTransform(1, 0, 0, 1, 0, 0); lx2.globalCompositeOperation = 'source-over'; lx2.clearRect(x0, y0, bw, bh); lx2.fillStyle = lg; lx2.beginPath(); lx2.arc(cx, cy, r1, 0, TAU); lx2.arc(cx, cy, Math.max(0, R - lw), 0, TAU, true); lx2.fill('evenodd');
+            if (bw > 0 && bh > 0) { lx2.setTransform(HR, 0, 0, HR, 0, 0); lx2.globalCompositeOperation = 'source-over'; lx2.clearRect(x0, y0, bw, bh); lx2.fillStyle = lg; lx2.beginPath(); lx2.arc(cx, cy, r1, 0, TAU); lx2.arc(cx, cy, Math.max(0, R - lw), 0, TAU, true); lx2.fill('evenodd');
               if (lx2.createConicGradient) { const cg = lx2.createConicGradient(B.x * 3.1 % TAU + tt * 0.5, cx, cy), s2 = B.y * 1.7 % TAU; for (let i = 0; i <= 24; i++) { const am = i / 24 * TAU, nz = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(am * 3)) * (0.6 + 0.4 * Math.sin(am * 5 - tt * 1.3 + s2)); cg.addColorStop(i / 24, `rgba(0,0,0,${nz.toFixed(3)})`); } lx2.globalCompositeOperation = 'destination-in'; lx2.fillStyle = cg; lx2.fillRect(x0, y0, bw, bh); lx2.globalCompositeOperation = 'source-over'; }
-              ctx.drawImage(lc, x0, y0, bw, bh, x0, y0, bw, bh); } }
+              ctx.drawImage(lc, x0 * HR, y0 * HR, bw * HR, bh * HR, x0, y0, bw, bh); } }
           if (B.tier === 'legendary' || B.tier === 'mythical') { const ig = ctx.createRadialGradient(cx, cy, R * 0.35, cx, cy, Math.max(R * 0.35 + 1, R - lw * 0.5)); ig.addColorStop(0, `rgba(${C[0]},${C[1]},${C[2]},0)`); ig.addColorStop(1, `rgba(${C[0]},${C[1]},${C[2]},${(0.14 * pk).toFixed(3)})`); ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, R - lw * 0.5), 0, TAU); ctx.fill(); }
         }
         ctx.globalCompositeOperation = 'source-over';

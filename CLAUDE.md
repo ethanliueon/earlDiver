@@ -422,5 +422,6 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   sale" shows about 10 s, once. The shipyard page scrolls only up and down. Eagle Eye draws no lids; Lookout 1.6, Lookout+
   2.1, Eagle Eye 3 times the view. The camera's look-ahead eases off toward a fifth of the view and never leaves him more
   than a quarter of it away.
+  Heat (7.6.26): the opening burst's lens is worked at half resolution (a quarter of the pixels).
 
 - **Before release**: see `docs/RELEASE.md` (remove the test shop, connect real purchases, new redeem codes).
