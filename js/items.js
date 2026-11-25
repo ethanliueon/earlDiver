@@ -25,7 +25,7 @@ export const RETIRED = {}; // id -> what it cost: a save that owned one is paid 
 export const KIND_NAME = { net: 'Hand nets', cam: 'Cameras', suit: 'Suits', fins: 'Fins', tank: 'Air', bag: 'Bags' };
 export const FREE = { net: 'hand', fins: 'rubber', tank: 'al80', bag: 'mesh', suit: 'wet' }; // what he starts with, all on (the tools 2-4 start empty)
 export const SHOP_OF = { catalog: 'Bayside Marine Supply', dave: "Dave's Haul", station: 'The research station', old: 'The old one' };
-export const LOCKER = 30; // (3.0.31) thirty things in the locker; what he has on is not in it
+export const LOCKER = 60; // (3.0.31) the locker's spaces; what he has on is not in it. (7.5.2, owner) sixty, the grid scrolls
 
 // ---------- archetypes: a Common's stats; a rarity scales them by its power p ----------
 const ARCH = {

@@ -296,3 +296,5 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - Phones always run lite mode (no rim light on animals, no film grain, no far kelp, a lower-resolution light map). The
   Battery saver setting adds a 30 fps cap. Image caches are all bounded; `rockAt` is binned by x.
 - The painted creator heads are planned in docs/PLAN_CREATOR.md (ChatGPT edits on one template; not built).
+- (7.5.2, owner) The locker holds 60; its grid scrolls inside the frame (heading fixed, lower edge fading while more lies
+  below). A chest opened from the bag returns to the bag when its reveal closes.

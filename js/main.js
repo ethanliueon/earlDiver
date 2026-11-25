@@ -957,7 +957,7 @@ function buy(kind) {
     const roll = rollChestAll(it.chestKey), finds = [];
     for (const def of roll.items) { const g2 = giveItem(P, def.id); if (g2) finds.push({ q: g2, def }); }
     let coin = false; if (roll.coin) { P.gold = (P.gold || 0) + 1; if (lockerFree(P) < 0) P.gold--; else coin = true; }
-    saveProfile(P); ui.closeAll && ui.toggleInventory && ui.toggleInventory(false); ui.showChest(it.chestKey, finds, coin); audio.ready && audio.sale();
+    saveProfile(P); ui.chestFromBag = true; ui.closeAll && ui.toggleInventory && ui.toggleInventory(false); ui.showChest(it.chestKey, finds, coin); audio.ready && audio.sale();
     return true;
   }
   if (kind.startsWith('item:')) {

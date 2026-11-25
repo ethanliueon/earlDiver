@@ -2187,3 +2187,9 @@ html.touch body.bookmode #quests .qs-q.main .qs-t span:not(#_a):not(#_b) { displ
 html.touch body.bookmode #quests .qs-q.main .qs-pay:not(#_a):not(#_b) { display: grid !important; grid-template-columns: auto auto; align-items: center; justify-items: center; column-gap: 10px; row-gap: 6px; }
 html.touch body.bookmode #quests .qs-q.main .qs-pay > button { grid-column: 1 / -1; }
 html.touch body.bookmode #quests .qs-q.main .qs-pay .qs-gift img { width: 56px; height: 34px; }
+/* (7.5.2, owner) sixty spaces: the locker's grid scrolls inside its frame, its heading stays; no scrollbar, the lower
+   edge fading into the pegboard while more lies below */
+html body #inventory .inv-split .inv-right:not(#_a) { display: flex; flex-direction: column; overflow: hidden; }
+html body #inventory .inv-split .inv-right .lk-grid:not(#_a) { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; align-content: start; }
+html body #inventory .inv-split .inv-right .lk-grid::-webkit-scrollbar { display: none; }
+html body #inventory .inv-split .inv-right .lk-grid.more:not(#_a) { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 46px), rgba(0,0,0,0.25)); mask-image: linear-gradient(180deg, #000 calc(100% - 46px), rgba(0,0,0,0.25)); }

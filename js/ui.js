@@ -217,7 +217,7 @@ export class UI {
     this.gallery = new Gallery($('gallery'), { catch: () => (h.aquariumCatch ? h.aquariumCatch() : []), act: (a2, k, v) => h.onGallery(a2, k, v), setLight: (l) => h.onGallery('light', l), getGame: () => h.getGame(), pay: () => h.payMul ? h.payMul() : 1, close: () => this.toggleGallery(false) });
     // (2.9.0) a chest opening, over whichever shop it was bought in
     this.chest = new ChestReveal($('chest'), { picture: (def, w, hh) => pictureOf(def.kind, def, w, hh, true), putOn: (u) => h.onEquip('on:' + u), coinPic: () => pictureOf('gold', 1, 120, 120, true), coins: () => (h.getProfile().gold || 0),
-      close: () => { if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
+      close: () => { if (this.chestFromBag) { this.chestFromBag = false; this.toggleInventory(true); } /* (7.5.2, owner) a chest opened from the bag goes back to the bag */ if (!$('dave').hidden) this.dave.render(); if (!$('catalog').hidden) this.catalog.render(); if (!$('cave').hidden) this.renderCave(); } });
     this.catalog = new Catalog($('catalog'), { toast: (t, k) => h.toast && h.toast(t, k), getProfile: () => h.getProfile(), getGame: () => h.getGame(), buy: (k) => h.onBuy(k), checkout: (keys) => h.onCheckout(keys), canSell: () => !!(h.canSellGear && h.canSellGear()), sellFind: (k) => h.onDaveSell && h.onDaveSell(k), findsHtml: () => (this.dave && this.dave.findsHtml ? this.dave.findsHtml() : ''), daveSays: () => (this.dave && this.dave.says ? this.dave.says() : ''), save: () => h.onSaveProfile && h.onSaveProfile(), close: () => this.toggleCatalog(false), yard: () => this.openShop('sub', ['sub']) });
     try { this.dressPanels(); } catch (err) { /* the plain look stays */ }
     // (4.16.4) every purchase in the sub asks first
@@ -898,7 +898,9 @@ export class UI {
     const hasPh = owns(P, 'camera') || (g.photos || []).length;
     const tabs = `<nav class="inv-tabs"><button data-invtab="gear" class="${tab === 'gear' ? 'on' : ''}">Gear</button><button data-invtab="catch" class="${tab === 'catch' ? 'on' : ''}">Catch <i>(${g.bag.length + g.subTank.length})</i></button></nav>`;
     const body = $('inventory').querySelector('.inv-body');
+    { const lg = body.querySelector('.lk-grid'); if (lg) this.lkScroll = lg.scrollTop; } // (7.5.2) the locker keeps its place when drawn again
     body.innerHTML = (tab === 'catch' ? this.catchHtml(P, g) : this.equipHtml(P, g)) + tabs; // (3.0.33) the page switch: big, at the bottom middle
+    { const lg = body.querySelector('.lk-grid'); if (lg) { lg.scrollTop = this.lkScroll || 0; const more = () => lg.classList.toggle('more', lg.scrollTop + lg.clientHeight < lg.scrollHeight - 4); more(); lg.addEventListener('scroll', more, { passive: true }); requestAnimationFrame(more); } } // (7.5.2, owner) the lower edge fades while more lies below
     // (3.0.33) the dive locker: a painted steel door, worn (textures.js), once
     const panel = $('inventory').querySelector('.inv-panel');
     this.fitInventory();
