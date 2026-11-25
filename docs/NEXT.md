@@ -11,11 +11,12 @@ frame. Zones, shallow to deep:
 - **Trench rock**: dark broken rock and gravel, mineral streaks; the seep and vents tinted where they are.
 Then: a lighter second line of seabed behind the near one, for depth (also from the 7.4.29 suggestions).
 
+## 2. Shoal's school wraps round him (owner: important)
+The school surrounds the diver (or the sub), not swimming in a lump ahead of him.
+
 ## Waiting (owner's call)
 - The portrait: a full redesign from reference images (long session, later).
 - The main storyline (docs/PLAN_STORY.md, docs/STORY_PLAN.md).
-- Shoal's school wrapping round him rather than in front.
-- An animal's last sale price on its journal page.
 - A fresh first-hour playthrough; measuring the pearl economy; a review of the skill families; a test that fires every
   skill at every tier.
 - Release: see docs/RELEASE.md.
