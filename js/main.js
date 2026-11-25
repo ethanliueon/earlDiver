@@ -2444,7 +2444,7 @@ function tickAbility(dt) {
   if (g.castNet) { const N = g.castNet; N.t += dt; if (N.t >= N.dur && !N.landed) { N.landed = true; castLand(N); } if (N.t > N.dur + 0.8) g.castNet = null; }
   if (g.castAim) { g.castAim.t -= dt; if (g.castAim.t <= 0) g.castAim = null; }
   if (g.bursts) { for (const b of g.bursts) b.t += dt; g.bursts = g.bursts.filter((b) => b.t < (b.pull || 0) + b.dur + 0.2); } // (7.6.7)
-  if (g.radarRipple) { g.radarRipple.t += dt; if (g.radarRipple.t > 2.2) g.radarRipple = null; }
+  if (g.radarRipple) { g.radarRipple.t += dt; if (g.radarRipple.t > 3) g.radarRipple = null; } /* (7.6.26) longer */
   if (g.callFx) { const C = g.callFx, m = g.earl.inSub ? g.sub : g.earl; C.t += dt; for (const h of C.homes) { h.x = m.x + (h.ox || 0); h.y = m.y + (h.oy || 0); } // (7.6.7) the called fish home on him while the call lasts; (7.6.13) each school at its own place round him
     for (const c of C.fish) if (!c.dead && c.called && c.home && Math.hypot(c.x - c.home.x, c.y - c.home.y) < 4) { c.speed = c.cruise; c.called = false; }
     if (C.t > C.dur) { for (const c of C.fish) if (C.homes.includes(c.home)) { c.home = null; c.speed = c.cruise; c.called = false; } g.callFx = null; } }

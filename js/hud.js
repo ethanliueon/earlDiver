@@ -584,10 +584,18 @@ e.inSub ? [
     { const ch = 30 * u, mx = 12 * u + ch * 0.8, my = 12 * u + 19 * u;
       // (7.6.26, owner) the money and the pearls share one plate: the olive steel with a dark well pressed into it, the
       // banknotes and sum on its upper row, the pearl and its count under them (the pearls' own plate is gone)
+      // (7.6.26, owner) one piece, shaped as the two were: the money's row full width, the pearls' row only as wide as its
+      // own plate was, the two joined (an L, its inner corner rounded), one dark well following the same shape
       { ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; const tw = ctx.measureText(moneyExact(P.cash || 0)).width; ctx.font = `700 ${15 * u}px ${HUDF}`; const pw2 = ctx.measureText(String(Math.floor(P.pearls || 0).toLocaleString('en-US'))).width; ctx.restore();
-        const pr = 8 * u, bx = mx - ch * 0.8 - 5 * u, top = my - ch * 0.62, bot = my + ch * 0.55 + 6 * u + pr * 2 + 6 * u, w = Math.max(ch * 1.6 + 6 * u + tw, 3 * u + pr * 2.4 + 5 * u + pw2) + 18 * u;
-        steelPlate(ctx, bx, top, w, bot - top, u); ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.roundRect(bx + 2.5 * u, top + 2.5 * u, w - 5 * u, bot - top - 5 * u, 3.5 * u); ctx.fill();
-        this.pearlRect = { r: bx + w, y: my + ch * 0.55 + 6 * u + pr, h: bot - top, u }; }
+        const pr = 8 * u, bx = mx - ch * 0.8 - 5 * u, top = my - ch * 0.62, mid = my + ch * 0.55 + 2.5 * u, bot = my + ch * 0.55 + 6 * u + pr * 2 + 6 * u;
+        const w = ch * 1.6 + 11 * u + tw + 14 * u, w2 = Math.min(w, (3 * u + pr * 2.4 + 5 * u) + pw2 + 14 * u);
+        const Lp = (x0, y0, x1, ym, x2, y1, r, ri) => { const p = new Path2D(); p.moveTo(x0 + r, y0); p.lineTo(x1 - r, y0); p.arcTo(x1, y0, x1, y0 + r, r); if (x2 < x1 - 0.5) { p.lineTo(x1, ym - r); p.arcTo(x1, ym, x1 - r, ym, r); p.lineTo(x2 + ri, ym); p.arcTo(x2, ym, x2, ym + ri, ri); } p.lineTo(x2, y1 - r); p.arcTo(x2, y1, x2 - r, y1, r); p.lineTo(x0 + r, y1); p.arcTo(x0, y1, x0, y1 - r, r); p.lineTo(x0, y0 + r); p.arcTo(x0, y0, x0 + r, y0, r); p.closePath(); return p; };
+        const outer = Lp(bx, top, bx + w, mid, bx + w2, bot, 4 * u, 3 * u), well = Lp(bx + 2.5 * u, top + 2.5 * u, bx + w - 2.5 * u, mid - 2.5 * u, bx + w2 - 2.5 * u, bot - 2.5 * u, 3 * u, 3 * u);
+        const W2 = Math.round(w), H2 = Math.round(bot - top), kk = W2 + 'x' + H2; let im = PLATES.get(kk); if (!im) { im = new Image(); im.src = lockerTexture(W2, H2, { plain: true }); PLATES.set(kk, im); }
+        ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 6 * u; ctx.shadowOffsetY = 2 * u; ctx.fillStyle = '#3b4434'; ctx.fill(outer); ctx.restore();
+        if (im.complete && im.naturalWidth) { ctx.save(); ctx.clip(outer); ctx.drawImage(im, bx, top, w, bot - top); ctx.restore(); }
+        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill(well); ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 1; ctx.stroke(outer);
+        this.pearlRect = { r: bx + w2, y: my + ch * 0.55 + 6 * u + pr, h: bot - mid, u }; }
       drawCash(ctx, mx, my, ch);
       ctx.save(); ctx.font = `700 ${21 * u}px ${HUDF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 4 * u;
       // (5.7.5) the sum counts up to a new total (a quest paid, a sale) instead of jumping
@@ -1100,10 +1108,13 @@ e.inSub ? [
     // (no telling which is which); Fathom reaches three times as far (the radar's edge stands for its reach then)
     // (7.6.7, owner) a Heart's burst ripples across the radar: a band of light running out from the centre to the rim, a
     // weaker one after it (a radar is an instrument: its own rings are its language)
-    if (g.radarRipple) { const rt = g.radarRipple.t; ctx.save(); ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.clip();
-      for (const [d0, wk] of [[0, 1], [0.35, 0.5]]) { const k = (rt - d0) / 1.5; if (k <= 0 || k >= 1) continue; const R = rr * (1 - Math.pow(1 - k, 2)), bw = rr * 0.16, a = (1 - k) * wk;
-        const gr = ctx.createRadialGradient(rcx, rcy, Math.max(0, R - bw), rcx, rcy, R + bw * 0.3); gr.addColorStop(0, 'rgba(255,214,160,0)'); gr.addColorStop(0.8, `rgba(255,214,160,${(0.7 * a).toFixed(3)})`); gr.addColorStop(1, 'rgba(255,214,160,0)');
-        ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
+    // (7.6.26, owner) it was too faint to see: now the scope's glass flashes as the Heart bursts, then three bright bands run
+    // out to the rim over 2.4 s, each leaving the rings it crosses lit for a moment
+    if (g.radarRipple) { const rt = g.radarRipple.t - 0.3; ctx.save(); ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.clip(); ctx.globalCompositeOperation = 'lighter';
+      if (rt > -0.3 && rt < 0.6) { const f = rt < 0 ? (rt + 0.3) / 0.3 : 1 - rt / 0.6, fg = ctx.createRadialGradient(rcx, rcy, 0, rcx, rcy, rr); fg.addColorStop(0, `rgba(255,220,170,${(0.55 * f).toFixed(3)})`); fg.addColorStop(1, `rgba(255,200,140,${(0.18 * f).toFixed(3)})`); ctx.fillStyle = fg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
+      for (const [d0, wk] of [[0, 1], [0.45, 0.75], [0.9, 0.5]]) { const k = (rt - d0) / 1.5; if (k <= 0 || k >= 1) continue; const R = rr * (1 - Math.pow(1 - k, 2)), bw = rr * 0.24, a = Math.pow(1 - k, 0.6) * wk;
+        const gr = ctx.createRadialGradient(rcx, rcy, Math.max(0, R - bw), rcx, rcy, R + bw * 0.25); gr.addColorStop(0, 'rgba(255,214,160,0)'); gr.addColorStop(0.55, `rgba(255,214,160,${(0.35 * a).toFixed(3)})`); gr.addColorStop(0.85, `rgba(255,236,200,${(0.95 * a).toFixed(3)})`); gr.addColorStop(1, 'rgba(255,214,160,0)');
+        ctx.fillStyle = gr; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
       ctx.restore(); }
     if (g.echoT > 0 && g.fauna) { const al = Math.min(1, g.echoT / 1.5), reach = g.echoLv >= 4 ? 1200 : g.echoLv >= 3 ? 600 : 200, song = g.echoLv >= 4; // (7.4.15) Whalesong: twice Fathom's reach
       for (const c of g.fauna.list) { if (c.dead) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > reach) continue;

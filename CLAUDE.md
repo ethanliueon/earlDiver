@@ -423,5 +423,8 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   2.1, Eagle Eye 3 times the view. The camera's look-ahead eases off toward a fifth of the view and never leaves him more
   than a quarter of it away.
   Heat (7.6.26): the opening burst's lens is worked at half resolution (a quarter of the pixels).
+- (7.6.27, owner) The money and pearls plate is one L-shaped piece: the money's row full width, the pearls' row only as
+  wide as its own plate was, one dark well following it. A Heart's radar ripple is bright enough to see: the scope's glass
+  flashes, then three bands run out to the rim over 2.4 s.
 
 - **Before release**: see `docs/RELEASE.md` (remove the test shop, connect real purchases, new redeem codes).
