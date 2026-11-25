@@ -2193,3 +2193,6 @@ html body #inventory .inv-split .inv-right:not(#_a) { display: flex; flex-direct
 html body #inventory .inv-split .inv-right .lk-grid:not(#_a) { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; scrollbar-width: none; align-content: start; }
 html body #inventory .inv-split .inv-right .lk-grid::-webkit-scrollbar { display: none; }
 html body #inventory .inv-split .inv-right .lk-grid.more:not(#_a) { -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 46px), rgba(0,0,0,0.25)); mask-image: linear-gradient(180deg, #000 calc(100% - 46px), rgba(0,0,0,0.25)); }
+/* (7.5.7, owner) a Blessed animal's status: legendary gold, Apex's emblem where the dot was */
+html body #inventory .sp-r.st-blessed dd:not(#_a) { color: #f2b84a; } /* the legendary rarity's own colour */
+html body #inventory .sp-apex { display: inline-block; width: 17px; height: 17px; margin-right: 6px; vertical-align: -3px; background: var(--apex) center / contain no-repeat; }
