@@ -949,10 +949,13 @@ e.inSub ? [
         ctx.globalAlpha = lit * pulse; ctx.fillStyle = `rgb(${col.join(',')})`; ctx.shadowColor = `rgba(${col.join(',')},0.6)`; ctx.shadowBlur = 6 * s;
         ctx.beginPath(); ctx.roundRect(lx + 1, y + 1, Math.max(lh - 2, (lineW - 2) * clamp(frac, 0, 1)), lh - 2, (lh - 2) / 2); ctx.fill(); ctx.restore();
       };
-      const oc = o2 > 0.25 ? [96, 172, 226] : [226, 66, 52]; // (5.0) blue, then red: no orange
+      const bk = Math.min(1, g.breathGlow || 0), oc = o2 > 0.25 || bk > 0 ? [Math.round(96 + 40 * bk), Math.round(172 + 40 * bk), Math.round(226 + 20 * bk)] : [226, 66, 52]; // (5.0) blue, then red: no orange. (7.6.5) Breath: lit brighter while it runs
       const ay = base + 16 * s;
       const spr = !!(e.sprint && !e.inSub && !aboard && e.speedNow > 0.5); // (5.7.0) sprinting: the air is seen going
       line('air', ay, o2, oc, o2 < 0.1 || g.noAir ? 0.55 + 0.45 * Math.sin(g.time * 10) : spr ? 0.78 + 0.22 * Math.sin(g.time * 22) : 1);
+      if (bk > 0) { // (7.6.5, owner) Breath: a slow glow running along the bar while the air comes back (filling toward the full end)
+        const fw = (lineW - 2) * clamp(o2, 0, 1), k2 = (g.time * 0.7) % 1, bx = lx + 1 + fw * k2;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; const gg = ctx.createRadialGradient(bx, ay + lh / 2, 0, bx, ay + lh / 2, lh * 4); gg.addColorStop(0, `rgba(170,220,250,${(0.5 * bk).toFixed(3)})`); gg.addColorStop(1, 'rgba(170,220,250,0)'); ctx.fillStyle = gg; ctx.fillRect(bx - lh * 4, ay - lh * 3, lh * 8, lh * 7); ctx.restore(); }
       if (spr) { // a bright bead running back along the bar toward the empty end, again and again: air pouring out
         const fw = (lineW - 2) * clamp(o2, 0, 1), k2 = (g.time * 1.6) % 1, bx = lx + 1 + fw * (1 - k2);
         ctx.save(); ctx.globalAlpha = 0.85 * (1 - k2); ctx.fillStyle = '#eaf6ff'; ctx.shadowColor = 'rgba(200,235,255,0.9)'; ctx.shadowBlur = 8 * s; ctx.beginPath(); ctx.arc(bx, ay + lh / 2, lh * 0.55, 0, TAU); ctx.fill(); ctx.restore(); }

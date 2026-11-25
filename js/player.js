@@ -81,6 +81,8 @@ export function updateEarl(g, dt, inp) {
     const tvx = nx * sp, tvy = ny * sp * vBoost;
     sub.vx = lerp(sub.vx, tvx, 1 - Math.exp(-dt * 0.9));
     sub.vy = lerp(sub.vy, tvy, 1 - Math.exp(-dt * 0.7));
+    // (7.6.5, owner) Plunge: the anchor drags her down, faster than any sprint; the stick held up holds her against it
+    if (e.abilSink > 0) { const up = ny < -0.3, want = up ? 0 : SUB_SPEED * (sub.speedMul || 1) * e.abilSink * (ny > 0.3 ? 1.2 : 1); sub.vy = lerp(sub.vy, want, 1 - Math.exp(-dt * 2.4)); e.sinkHold = up; } else e.sinkHold = false;
     sub.x += sub.vx * dt; sub.y += sub.vy * dt;
     if (sub.y < 1.6) { sub.y = 1.6; sub.vy = Math.max(0, sub.vy); }
     const c = collide(W, sub.x, sub.y, 2.2);
@@ -122,6 +124,9 @@ export function updateEarl(g, dt, inp) {
     const acc = (hold ? 5 : mag > 0.1 ? (inp.stick ? 3.8 : 2.6) : 1.4) * (1 - (e.struggle || 0) * 0.5); // heavy, sluggish response (5.3.4: a little quicker on the stick, which has no keys' snap)
     e.vx = lerp(e.vx, tvx, 1 - Math.exp(-dt * acc));
     e.vy = lerp(e.vy, tvy, 1 - Math.exp(-dt * acc));
+    // (7.6.5, owner) Plunge: the anchor drags him down at his own speed times its pull (faster than any sprint); the stick
+    // held up holds him where he is against it, pushed a little further down it goes faster
+    if (e.abilSink > 0 && !hold) { const up = iy < -0.3, want = up ? 0 : DIVE_SPEED * e.speedMul * e.finSpeed * e.abilSink * (iy > 0.3 ? 1.2 : 1); e.vy = lerp(e.vy, want, 1 - Math.exp(-dt * 3)); e.sinkHold = up; } else e.sinkHold = false;
     // slight negative buoyancy when idle at depth, positive near surface
     if (mag < 0.1) e.vy += (e.y < 8 ? -0.12 : 0.05) * dt;
     // losing his bearings: a slow sideways pull and a sag, applied to his drift, not his steering

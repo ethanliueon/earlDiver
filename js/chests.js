@@ -2,6 +2,8 @@
 // the chest's odds, then any item of that rarity in the chest pool (set pieces included). Bought and opened
 // at once, in a short reveal (about 3 s; a click skips it): the lid creaks up, a little light in the
 // rarity's colour, and the thing rises out with its name and skills. A full locker can't open one.
+import { abilityOf } from './abilities.js'; // (7.6.5) pure scrolls rarer
+const isPureId = (id) => { const A = abilityOf(id); return !!(A && A.pure); };
 import { RARITY } from './item_data.js';
 import { powerHtml, skillsHtml, rarKind } from './itemcard.js';
 import { ITEMS, CHEST_POOL } from './items.js';
@@ -71,6 +73,7 @@ export function rollChest(key, rnd = Math.random, force = null) {
   const rarity = force || rollRarity(C.odds, rnd), pool = CHEST_POOL.filter((it) => it.rarity === rarity);
   let pick = pool[Math.floor(rnd() * pool.length)] || null;
   if (pick && pick.kind === 'ability' && rnd() < 0.5) pick = pool[Math.floor(rnd() * pool.length)] || pick; // (5.9.0) scrolls rarer than gear
+  for (let k = 0; k < 2 && pick && pick.kind === 'ability' && isPureId(pick.id) && rnd() < 0.5; k++) pick = pool[Math.floor(rnd() * pool.length)] || pick; // (7.6.5, owner) a pure scroll about a third as likely as a hybrid
   return pick;
 }
 // (6.4.0) everything a chest gives: its 1 or 3 items (a chest that promises at least one exotic keeps its word), and

@@ -345,3 +345,9 @@ last desktop build is kept on the branch `desktop-4.25.5`).
 - (7.6.4, owner) Two scroll slots: Ability and Ability 2 in the bag (a scroll's card: Put it on / Second slot); never two of
   one family, one Heart (mythical skill) at a time. A swap chip at the skill button's upper left brings the second onto the
   button with its own cooldown; the other keeps running, and each kind of effect takes the stronger of the two.
+- (7.6.5, owner) The first new families (docs/PLAN_SKILLS.md), painted in the same stencil style by tier: pure Breath /
+  Breath+ / Bellows (air back at once, then a steady refill; the air bar and his outline lit blue), Gust / Gust+ /
+  Splintering Gale (speed, x4.2 at legendary), Temper / Temper+ / Adamant (depth rating, x3.5), Plunge / Plunge+ /
+  Drowned Anchor (an iron anchor drags him or the sub down; stick up holds against it, the chain taut, bubbles driven
+  up); hybrid Lookout / Lookout+ / Eagle Eye (the view drawn out, light; Eagle Eye darkens the edges into a lid's almond).
+  Pure scrolls carry "Pure" on their card and are a third as likely in chests and on the shelf.

@@ -250,7 +250,7 @@ export class Renderer {
     // 120 m), and in the sub in the deep, where the animals are small lights (46 m across near the surface,
     // 38 m below 400 m)
     const dv = clamp((e.y - 40) / 80, 0, 1), ds = clamp((e.y - 150) / 250, 0, 1);
-    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1) * (this.aimZoom || 1)); /* (5.16.0) Dash's aim opens the view by its tier */ // (3.0.0) only the wheel changes the view; on deck it is the same as in the water
+    const targetView = g.debugView || (g.mode === 'menu' ? 40 : g.helm ? 36 : (e.inSub ? lerp(46, 38, ds) : lerp(22, 26, dv)) * (this.zoomMul || 1) * (this.aimZoom || 1) * (g.lookZoom || 1)); /* (7.6.5) Lookout draws the view out */ /* (5.16.0) Dash's aim opens the view by its tier */ // (3.0.0) only the wheel changes the view; on deck it is the same as in the water
     const lk = g.legendK || 0; // (4.9.0) the legendary moment: the view leans in on it, about a tenth, and back
     this.viewW = lerp(this.viewW, targetView * (1 - 0.1 * lk), 1 - Math.exp(-dt * 1.2));
     // (7.4.0, owner) home on the autopilot: the view eases in and back out once, over a second and a half
@@ -1420,6 +1420,47 @@ export class Renderer {
     // bending of the water inside it, and from Bathysphere up the screen itself pulsing with the pressure. How hard it
     // all shows follows how much of the skill's extra depth is in use (g.pressK). It bursts out as it fires and is crushed
     // back in as it ends. Drawn by hand each frame: a lens, an uneven rim, rings and streaks, never a plain circle
+    // (7.6.5, owner) Plunge: an iron anchor on its chain under him, dragging him (or the sub) down. Held against with the
+    // stick, the chain goes taut and shudders, the bubbles are driven up past him and the silt is dragged down round him.
+    // By tier: a plain black anchor, then a heavier one, then Drowned Anchor, green with weed and crusted with barnacles
+    if (g.mode === 'play' && g.earl.abilSink > 0 && g.sinkDef) { const e = g.earl, m = e.inSub ? g.sub : e, tier = g.sinkDef.tier, t = g.time, hold = !!e.sinkHold;
+      const sh = hold ? (Math.random() - 0.5) * 2.2 : 0, ax0 = S(m.x) + sh, ay0 = Sy(m.y) + (e.inSub ? 2.0 : 0.55) * ppm, Lc = (e.inSub ? 4.6 : 2.6) * ppm, sway = hold ? 0 : Math.sin(t * 1.7) * ppm * 0.18;
+      const ax1 = ax0 + sway, ay1 = ay0 + Lc, sc = ppm * (e.inSub ? 1.9 : 1.15) * (tier === 'legendary' ? 1.15 : 1);
+      ctx.save(); ctx.lineCap = 'round';
+      // the chain: oval links turned alternately, dark iron lit on one edge
+      const n = Math.max(6, Math.round(Lc / (sc * 0.22)));
+      for (let i = 0; i < n; i++) { const k = (i + 0.5) / n, cx = ax0 + (ax1 - ax0) * k + Math.sin(k * Math.PI) * sway * 0.6, cy = ay0 + Lc * k, side = i % 2 === 0;
+        ctx.strokeStyle = '#141412'; ctx.lineWidth = Math.max(1.2, sc * 0.05); ctx.beginPath(); ctx.ellipse(cx, cy, side ? sc * 0.05 : sc * 0.025, sc * 0.1, 0, 0, TAU); ctx.stroke();
+        ctx.strokeStyle = hold ? 'rgba(206,196,170,0.6)' : 'rgba(150,146,130,0.45)'; ctx.lineWidth = Math.max(0.6, sc * 0.018); ctx.beginPath(); ctx.ellipse(cx - sc * 0.01, cy, side ? sc * 0.04 : sc * 0.02, sc * 0.085, 0, Math.PI * 0.8, Math.PI * 1.5); ctx.stroke(); }
+      // the anchor: ring, stock, shank, curved arms with flukes
+      ctx.translate(ax1, ay1); ctx.rotate(hold ? sh * 0.02 : Math.sin(t * 1.3) * 0.06);
+      const iron = ctx.createLinearGradient(-sc * 0.5, 0, sc * 0.5, 0); iron.addColorStop(0, tier === 'legendary' ? '#3a4636' : '#3a3a36'); iron.addColorStop(0.45, tier === 'legendary' ? '#5a6a52' : '#5c5a52'); iron.addColorStop(1, '#151614');
+      ctx.strokeStyle = '#0c0c0b'; ctx.fillStyle = iron;
+      const body = new Path2D(); body.moveTo(-sc * 0.05, sc * 0.08); body.lineTo(sc * 0.05, sc * 0.08); body.lineTo(sc * 0.06, sc * 0.86); body.lineTo(-sc * 0.06, sc * 0.86); body.closePath(); // the shank
+      body.moveTo(-sc * 0.34, sc * 0.2); body.lineTo(sc * 0.34, sc * 0.2); body.lineTo(sc * 0.32, sc * 0.27); body.lineTo(-sc * 0.32, sc * 0.27); body.closePath(); // the stock
+      body.moveTo(-sc * 0.06, sc * 0.78); body.bezierCurveTo(-sc * 0.3, sc * 0.82, -sc * 0.44, sc * 0.66, -sc * 0.46, sc * 0.5); body.lineTo(-sc * 0.56, sc * 0.56); body.lineTo(-sc * 0.48, sc * 0.4); body.lineTo(-sc * 0.38, sc * 0.5); body.lineTo(-sc * 0.4, sc * 0.52); body.bezierCurveTo(-sc * 0.36, sc * 0.68, -sc * 0.24, sc * 0.74, -sc * 0.06, sc * 0.7); body.closePath(); // the left arm and its fluke
+      body.moveTo(sc * 0.06, sc * 0.78); body.bezierCurveTo(sc * 0.3, sc * 0.82, sc * 0.44, sc * 0.66, sc * 0.46, sc * 0.5); body.lineTo(sc * 0.56, sc * 0.56); body.lineTo(sc * 0.48, sc * 0.4); body.lineTo(sc * 0.38, sc * 0.5); body.lineTo(sc * 0.4, sc * 0.52); body.bezierCurveTo(sc * 0.36, sc * 0.68, sc * 0.24, sc * 0.74, sc * 0.06, sc * 0.7); body.closePath(); // the right
+      ctx.lineWidth = Math.max(1.2, sc * 0.04); ctx.stroke(body); ctx.fill(body);
+      ctx.lineWidth = Math.max(1.4, sc * 0.045); ctx.beginPath(); ctx.arc(0, sc * 0.03, sc * 0.08, 0, TAU); ctx.stroke(); // the ring
+      ctx.strokeStyle = 'rgba(214,206,180,0.35)'; ctx.lineWidth = Math.max(0.6, sc * 0.015); ctx.beginPath(); ctx.moveTo(-sc * 0.03, sc * 0.12); ctx.lineTo(-sc * 0.035, sc * 0.82); ctx.stroke(); // light along the shank
+      if (tier !== 'rare') { ctx.fillStyle = 'rgba(120,64,34,0.55)'; for (const [px, py, r] of [[0.02, 0.4, 0.05], [-0.3, 0.62, 0.04], [0.33, 0.6, 0.035], [0.15, 0.23, 0.03]]) { ctx.beginPath(); ctx.ellipse(px * sc, py * sc, r * sc, r * sc * 0.6, 0.4, 0, TAU); ctx.fill(); } } // rust
+      if (tier === 'legendary') { ctx.fillStyle = '#c8c4b0'; ctx.strokeStyle = '#2a2a22'; ctx.lineWidth = 0.8; for (const [px, py] of [[-0.42, 0.52], [-0.38, 0.6], [0.4, 0.55], [0.03, 0.58], [-0.02, 0.7], [0.27, 0.22]]) { ctx.beginPath(); ctx.moveTo(px * sc - sc * 0.03, py * sc + sc * 0.02); ctx.lineTo(px * sc, py * sc - sc * 0.035); ctx.lineTo(px * sc + sc * 0.03, py * sc + sc * 0.02); ctx.closePath(); ctx.fill(); ctx.stroke(); } // barnacles
+        ctx.strokeStyle = 'rgba(70,104,60,0.8)'; ctx.lineWidth = Math.max(0.8, sc * 0.02); for (const [px, k] of [[-0.31, 1], [0.32, -1], [0.05, 1]]) { ctx.beginPath(); ctx.moveTo(px * sc, sc * 0.25); ctx.bezierCurveTo(px * sc + k * sc * 0.06, sc * 0.4 + Math.sin(t * 2 + px * 9) * sc * 0.03, px * sc - k * sc * 0.05, sc * 0.55, px * sc + k * sc * 0.04, sc * 0.72); ctx.stroke(); } } // weed trailing off the stock
+      ctx.restore();
+      // the water's struggle: bubbles driven up past him and silt dragged down while he holds; a few rising always
+      if (g.bubbles && Math.random() < (hold ? 0.9 : 0.35)) g.bubbles.push({ x: m.x + (Math.random() - 0.5) * (e.inSub ? 3 : 1.2), y: m.y + (e.inSub ? 1.5 : 0.4), r: 0.03 + Math.random() * 0.07, w: Math.random() * 6, t: 0 });
+      if (hold) { ctx.save(); ctx.strokeStyle = 'rgba(150,140,110,0.28)'; ctx.lineWidth = 1; for (let i = 0; i < 14; i++) { const px = S(m.x) + Math.sin(i * 12.9 + t) * ppm * 1.6, py = Sy(m.y) + ((t * 2.4 + i * 0.37) % 1) * ppm * 3 - ppm * 0.6; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + 0.5, py + ppm * 0.18); ctx.stroke(); } ctx.restore(); }
+    }
+    // (7.6.5, owner) Breath: as it fires, a burst of bubbles round him; while it runs, a soft blue light along his outline
+    if (g.mode === 'play' && (g.breathGlow > 0 || g.breathFx) && !g.earl.inSub) { const e = g.earl, mx = S(e.x), my = Sy(e.y), q = 0.6 + 0.4 * Math.sin(g.time * 2.2), k = Math.min(1, g.breathGlow || 0);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; const gr = ctx.createRadialGradient(mx, my, ppm * 0.2, mx, my, ppm * 1.1); gr.addColorStop(0, `rgba(120,180,214,${(0.16 * k * q).toFixed(3)})`); gr.addColorStop(1, 'rgba(120,180,214,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(mx, my, ppm * 1.1, 0, TAU); ctx.fill(); ctx.restore();
+      if (g.breathFx && g.breathFx.t < 0.05 && g.bubbles) for (let i = 0; i < 26; i++) { const a = i / 26 * TAU; g.bubbles.push({ x: e.x + Math.cos(a) * 0.5, y: e.y + Math.sin(a) * 0.5, r: 0.04 + Math.random() * 0.08, w: Math.random() * 6, t: 0 }); } }
+    // (7.6.5, owner) Eagle Eye: the screen's edges darkened into the almond of a lid, a faint amber in the middle, while it runs
+    if (g.mode === 'play' && (g.eagle || 0) > 0.01) { const k = g.eagle, W0 = this.W, H0 = this.H;
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(W0 / 2, H0 / 2); ctx.scale(1, 0.56);
+      const vg = ctx.createRadialGradient(0, 0, W0 * 0.3, 0, 0, W0 * 0.62); vg.addColorStop(0, 'rgba(8,6,4,0)'); vg.addColorStop(0.75, `rgba(8,6,4,${(0.32 * k).toFixed(3)})`); vg.addColorStop(1, `rgba(6,4,2,${(0.7 * k).toFixed(3)})`);
+      ctx.fillStyle = vg; ctx.fillRect(-W0, -H0 * 2, W0 * 2, H0 * 4); ctx.restore();
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = `rgba(214,160,84,${(0.18 * k).toFixed(3)})`; ctx.fillRect(0, 0, W0, H0); ctx.restore(); }
     if (g.mode === 'play' && g.pressFx && !g.earl.inSub) { const F = g.pressFx, e = g.earl, sub0 = false, tt = g.time, kk = g.pressK || 0, dkk = kk < 0.8 ? 0 : Math.pow((kk - 0.8) / 0.2, 1.5), jit = dkk * ppm * 0.07 * (1 + ({ rare: 0, exotic: 1, legendary: 2, mythical: 3 }[F.tier] ?? 0) * 0.4), mx = S(e.x) + Math.sin(tt * 41) * jit + Math.sin(tt * 23.7) * jit * 0.6, my = Sy(e.y) + Math.cos(tt * 37) * jit + Math.sin(tt * 19.3) * jit * 0.5; // (7.4.22) the diver only; it shakes harder the nearer the limit
       const TI = { rare: 0, exotic: 1, legendary: 2, mythical: 3 }[F.tier] ?? 0, k = g.pressK || 0, dk = dkk, /* (7.4.25, owner) distortion: none up to 80 % of the limit, full at 100 % */ vis = (0.5 + 0.5 * k) * (0.8 + 0.12 * TI);
       const open = Math.min(1, F.t / 0.55), ease = 1 - Math.pow(1 - open, 3), over = open < 1 ? 1 + Math.sin(open * Math.PI) * 0.12 : 1;

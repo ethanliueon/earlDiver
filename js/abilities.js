@@ -49,6 +49,34 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Bathysphere', dur: 60, cd: 3600, press: 2.5, beyond: 5, light: 1.6, airBack: [0.05, 20], line: 'For 60 s your suit takes two and a half times its rated depth, with light 45 m round you. Deeper even than that, your air goes 5 times slower than the pressure would take it. Air comes back, 5 % a second for its first 20 s.' },
     mythical: { name: 'Hadal Heart', dur: 90, cd: 3600, press: 3, beyond: 10, light: 1.6, airBack: [0.1, 30], line: 'For 90 s your suit takes three times its rated depth. Deeper even than that, your air goes 10 times slower than the pressure would take it. Air comes back, 10 % a second for its first 30 s.' },
   },
+  // (7.6.5, owner) the pure families (docs/PLAN_SKILLS.md): one number each, pushed further than any Heart in that lane;
+  // rarer (a third as likely anywhere) and stopping at legendary. pure: true marks them
+  breath: {
+    rare: { name: 'Breath', pure: true, dur: 20, cd: 600, airNow: 0.25, airSteps: [[0.01, 20]], line: 'A quarter of your air back at once, then a little more each second for 20 s.' },
+    exotic: { name: 'Breath+', pure: true, dur: 30, cd: 1200, airNow: 0.5, airSteps: [[0.02, 30]], line: 'Half your air back at once, then 2 % a second for 30 s.' },
+    legendary: { name: 'Bellows', pure: true, dur: 90, cd: 3600, airNow: 1, airSteps: [[0.05, 60], [0.02, 90]], line: 'Your air full at once, then 5 % a second for a minute and 2 % a second for half a minute more.' },
+  },
+  gust: {
+    rare: { name: 'Gust', pure: true, dur: 30, cd: 300, speed: 1.6, line: '×1.6 speed for 30 s.' },
+    exotic: { name: 'Gust+', pure: true, dur: 45, cd: 900, speed: 2.3, line: '×2.3 speed for 45 s.' },
+    legendary: { name: 'Splintering Gale', pure: true, dur: 90, cd: 3600, speed: 4.2, line: '×4.2 speed for 90 s: faster than anything else in the sea.' },
+  },
+  temper: {
+    rare: { name: 'Temper', pure: true, dur: 30, cd: 900, press: 1.5, line: 'For 30 s your suit takes half again its rated depth.' },
+    exotic: { name: 'Temper+', pure: true, dur: 45, cd: 1800, press: 2, line: 'For 45 s your suit takes twice its rated depth.' },
+    legendary: { name: 'Adamant', pure: true, dur: 90, cd: 3600, press: 3.5, line: 'For 90 s your suit takes three and a half times its rated depth: deeper than any Heart.' },
+  },
+  plunge: {
+    rare: { name: 'Plunge', pure: true, dur: 10, cd: 300, sink: 3.2, line: 'An anchor drops and pulls you down for 10 s. Stick up to hold against it.' },
+    exotic: { name: 'Plunge+', pure: true, dur: 20, cd: 900, sink: 3.8, line: 'An anchor drops and pulls you down for 20 s, faster. Stick up to hold against it.' },
+    legendary: { name: 'Drowned Anchor', pure: true, dur: 30, cd: 2400, sink: 4.6, line: 'A drowned ship\'s anchor drags you down for 30 s, faster than any sprint. Stick up to hold against it.' },
+  },
+  // (7.6.5, owner) a hybrid: the view drawn out wide, and light round him
+  lookout: {
+    rare: { name: 'Lookout', dur: 30, cd: 300, zoom: 1.2, light: 1, line: 'For 30 s you see further round you, with light 28 m round you.' },
+    exotic: { name: 'Lookout+', dur: 45, cd: 900, zoom: 1.35, light: 1.3, line: 'For 45 s you see much further round you, with brighter light.' },
+    legendary: { name: 'Eagle Eye', dur: 90, cd: 3600, zoom: 1.6, light: 1.6, eagle: true, line: 'For 90 s the sea opens far round you, seen through a sharper eye, with bright light.' },
+  },
   tidewarden: {
     legendary: { name: 'Tidewarden', maxLoad: 1, dur: 4, cd: 28800, ward: true, tide: true, line: 'When the water round you turns red: a wave of blue, it freezes, fades, and is gone for 5 minutes.' },
     mythical: { name: 'Warden Heart', maxLoad: 1, dur: 4, cd: 10800, ward: true, tide: true, any: true, line: 'Any time. In red water: a wave of blue, it freezes, fades, and is gone for 5 minutes. Marked, the mark is washed off you.' },

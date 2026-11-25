@@ -6,8 +6,8 @@
 // bands. Painted once per size and kept.
 const TAU = Math.PI * 2;
 
-export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden', 'dauntless'];
-export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4', dauntless: '#c8d2d6' };
+export const ABILITY_FAMILIES = ['sprint', 'vigor', 'dash', 'flare', 'echo', 'ironhull', 'tidewarden', 'dauntless', 'breath', 'gust', 'temper', 'plunge', 'lookout']; // (7.6.5) the first new families
+export const ACCENT = { sprint: '#a6e6f2', vigor: '#9ad690', dash: '#efe0b8', flare: '#f6b45c', echo: '#f0c8a8', ironhull: '#c6cfd4', tidewarden: '#8cc2f4', dauntless: '#c8d2d6', breath: '#b8dcea', gust: '#d8e2e0', temper: '#c8c0b0', plunge: '#a8b0a8', lookout: '#e8c890' };
 const BODY = {
   rare: { mid: '#2e4c70', dark: '#15253a', light: '#4d739c' },
   exotic: { mid: '#4c2d58', dark: '#25142c', light: '#714b83' },
@@ -454,6 +454,67 @@ function emblemTier(x, fam, tier) {
     else if (exo) { ring(); x.translate(0, 2); const o = tri(17); S(o, 2); F(tri(12)); for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) press(a, 19, 5, 2); }
     else { medallion(); x.translate(0, 2); F(tri(19, 3.2)); F(tri(8)); for (let i = 0; i < 8; i++) press(i / 8 * TAU, 20.5, 2.5, 1.6);
       for (const sd of [-1, 1]) { const bend = P(); bend.moveTo(sd * 21, -16); bend.quadraticCurveTo(sd * 13, 2, sd * 6, 18); D(bend, 1); } }
+    x.restore(); return;
+  }
+  // (7.6.5, owner) the first new families, each richer by tier as the others are: rare one bold shape, exotic a second
+  // element in a ring, legendary a small engraved composition in the medallion
+  const bub = (cx, cy, r, w = 1.1) => { const b = P(); b.arc(cx, cy, r, 0, TAU); F(b); const hl = P(); hl.arc(cx - r * 0.25, cy - r * 0.25, r * 0.55, Math.PI * 1.05, Math.PI * 1.6); D(hl, w); };
+  const anchorShape = (sc = 1, detail = 0) => { x.save(); x.scale(sc, sc);
+    const sh = P(); sh.moveTo(-2.2, -14); sh.lineTo(2.2, -14); sh.lineTo(2.6, 15); sh.lineTo(-2.6, 15); sh.closePath(); F(sh);
+    const st = P(); st.moveTo(-12, -10); st.lineTo(12, -10); st.lineTo(11, -7); st.lineTo(-11, -7); st.closePath(); F(st);
+    const rg = P(); rg.arc(0, -17.5, 3.6, 0, TAU); S(rg, 2.2);
+    for (const sd of [-1, 1]) { const arm = P(); arm.moveTo(sd * 2, 15); arm.bezierCurveTo(sd * 10, 17, sd * 16, 10, sd * 17, 3); arm.lineTo(sd * 21, 6); arm.lineTo(sd * 18, -1); arm.lineTo(sd * 13, 3); arm.lineTo(sd * 14.5, 4); arm.bezierCurveTo(sd * 13, 10, sd * 8, 12.5, sd * 2, 11.5); arm.closePath(); F(arm); }
+    if (detail >= 1) { const ln = P(); ln.moveTo(-0.8, -12); ln.lineTo(-1, 13); D(ln, 0.8); }
+    if (detail >= 2) { for (const [bx, by] of [[-15, 6], [15, 7], [1, 6], [8, -8.5]]) { const b2 = P(); b2.moveTo(bx - 1.4, by + 1); b2.lineTo(bx, by - 1.6); b2.lineTo(bx + 1.4, by + 1); b2.closePath(); D(b2, 0.7); } }
+    x.restore(); };
+  const gem = (r, cuts) => { const g0 = P(); for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i / 6 * TAU, px = Math.cos(a) * r, py = Math.sin(a) * r * 1.05; i ? g0.lineTo(px, py) : g0.moveTo(px, py); } g0.closePath(); F(g0);
+    if (cuts >= 1) { const t1 = P(); t1.moveTo(-r * 0.87, -r * 0.5); t1.lineTo(0, -r * 0.2); t1.lineTo(r * 0.87, -r * 0.5); t1.moveTo(0, -r * 0.2); t1.lineTo(0, r * 1.05); D(t1, 1); }
+    if (cuts >= 2) { const t2 = P(); t2.moveTo(-r * 0.87, r * 0.52); t2.lineTo(-r * 0.3, -r * 0.05); t2.moveTo(r * 0.87, r * 0.52); t2.lineTo(r * 0.3, -r * 0.05); t2.moveTo(-r * 0.45, -r * 0.9); t2.lineTo(-r * 0.3, -r * 0.05); t2.moveTo(r * 0.45, -r * 0.9); t2.lineTo(r * 0.3, -r * 0.05); D(t2, 0.8); } };
+  const glass = (len, detail = 0) => { x.save(); x.rotate(-0.5);
+    const seg = [[-len * 0.5, 4.2], [-len * 0.14, 5.4], [len * 0.2, 6.6]]; for (const [sx, h] of seg) { const tb = P(); tb.rect(sx, -h, len * 0.36, h * 2); F(tb); const bd = P(); bd.moveTo(sx + 1.2, -h); bd.lineTo(sx + 1.2, h); D(bd, 1.1); }
+    const ln = P(); ln.ellipse(len * 0.56 + 1, 0, 2.4, 7.6, 0, 0, TAU); F(ln); D(ln, 0.9);
+    if (detail >= 1) { const hl = P(); hl.moveTo(-len * 0.45, -2.4); hl.lineTo(len * 0.5, -3.6); D(hl, 0.7); }
+    x.restore(); };
+  const streak = (y0, len, curl, w) => { const p = P(); p.moveTo(-len / 2, y0); p.bezierCurveTo(-len / 6, y0 - 1, len / 6, y0 + 1, len / 2 - curl, y0); p.arc(len / 2 - curl, y0 - curl, curl, Math.PI / 2, -Math.PI * 0.6, true); S(p, w); };
+  if (fam === 'breath') {
+    if (tier === 'rare') { bub(-5, 9, 9.5, 1.3); bub(7, -6, 6.5); bub(-1, -18, 4.2, 0.9); }
+    else if (exo) { ring(); bub(-6, 8, 7.5); bub(5, -4, 5); bub(-2, -15, 3.4, 0.8); bub(9, -16, 2.2, 0.6); const st = P(); st.moveTo(-17, 18); st.bezierCurveTo(-9, 10, -14, 0, -9, -8); st.bezierCurveTo(-5, -14, -8, -19, -4, -22); S(st, 1.4); }
+    else { medallion(); x.save(); x.rotate(-0.35); // the bellows: two boards, pleated leather between, its brass nozzle breathing bubbles
+      const bd = P(); bd.moveTo(-17, 0); bd.bezierCurveTo(-17, -12, -4, -13, 5, -4); bd.lineTo(5, 4); bd.bezierCurveTo(-4, 13, -17, 12, -17, 0); bd.closePath(); F(bd);
+      for (let k = 0; k < 4; k++) { const pl = P(); pl.moveTo(-13 + k * 4.2, -8 + k * 0.8); pl.lineTo(-11 + k * 4.2, 0); pl.lineTo(-13 + k * 4.2, 8 - k * 0.8); D(pl, 0.9); }
+      const hd = P(); hd.moveTo(-17, -3); hd.lineTo(-24, -5); hd.lineTo(-24, 5); hd.lineTo(-17, 3); F(hd); const nz = P(); nz.moveTo(5, -3); nz.lineTo(15, -1.4); nz.lineTo(15, 1.4); nz.lineTo(5, 3); F(nz);
+      const bt = P(); bt.moveTo(-6, -9.5); bt.lineTo(-4, 9.5); D(bt, 1); x.restore();
+      bub(15, -11, 3.6, 0.8); bub(19, -18, 2.6, 0.6); bub(12, -20, 1.8, 0.5); }
+    x.restore(); return;
+  }
+  if (fam === 'gust') {
+    if (tier === 'rare') { streak(-9, 34, 4, 3.2); streak(1, 40, 5, 3.6); streak(11, 30, 3.5, 2.8); }
+    else if (exo) { ring(); streak(-10, 30, 4, 2.6); streak(0, 38, 5, 3); streak(10, 28, 3.5, 2.4); const sp = P(); for (let a = 0; a < TAU * 1.2; a += 0.15) { const rr = 7 - a * 0.9, px = 12 + Math.cos(a) * rr, py = -2 + Math.sin(a) * rr; a ? sp.lineTo(px, py) : sp.moveTo(px, py); } S(sp, 1.4); }
+    else { medallion(); streak(-10, 28, 4, 2.4); streak(0, 34, 4.5, 2.8); streak(10, 26, 3.5, 2.2);
+      for (const [sx, sy, r, a] of [[16, -14, 3.6, 0.4], [20, -4, 3, -0.3], [17, 6, 3.4, 0.8], [22, 13, 2.4, -0.6], [12, -21, 2.2, 1.2]]) { x.save(); x.translate(sx, sy); x.rotate(a); const sh = P(); sh.moveTo(-r, r * 0.5); sh.lineTo(r * 1.2, 0); sh.lineTo(-r * 0.6, -r * 0.7); sh.closePath(); F(sh); x.restore(); } } // the gale splintering into shards
+    x.restore(); return;
+  }
+  if (fam === 'temper') {
+    if (tier === 'rare') { gem(15, 1); }
+    else if (exo) { ring(); gem(12, 1); for (const a of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) press(a, 16, 5, 2); }
+    else { medallion(); gem(14, 2); for (let i = 0; i < 8; i++) press(i / 8 * TAU, 18.5, 3, 1.5); }
+    x.restore(); return;
+  }
+  if (fam === 'plunge') {
+    if (tier === 'rare') { x.translate(0, 2); anchorShape(1.1, 0); }
+    else if (exo) { ring(); x.translate(0, 4); anchorShape(0.85, 1); for (let k = 0; k < 3; k++) { const lk = P(); lk.ellipse(0, -21 - k * 4.4, k % 2 ? 1.3 : 2.2, 2.6, 0, 0, TAU); S(lk, 1.2); } }
+    else { medallion(); x.translate(0, 3); anchorShape(0.9, 2); for (const dx of [-21, 21]) for (let k = 0; k < 3; k++) { const dl = P(); dl.moveTo(dx * (1 - k * 0.12), -12 + k * 7); dl.lineTo(dx * (1 - k * 0.12), -7 + k * 7); S(dl, 1.2); } } // falling: the water streaming past
+    x.restore(); return;
+  }
+  if (fam === 'lookout') {
+    if (tier === 'rare') { glass(30, 0); }
+    else if (exo) { ring(); glass(26, 1); x.save(); x.rotate(-0.5); for (const a of [-0.35, 0, 0.35]) { const r1 = P(); r1.moveTo(19 + Math.cos(a) * 2, Math.sin(a) * 2); r1.lineTo(19 + Math.cos(a) * 7, Math.sin(a) * 7); S(r1, 1.3); } x.restore(); }
+    else { medallion(); // Eagle Eye: the eagle's eye under its heavy brow, the iris engraved, light raying from it
+      const al = P(); al.moveTo(-20, 2); al.bezierCurveTo(-10, -11, 10, -12, 20, -1); al.bezierCurveTo(10, 10, -10, 11, -20, 2); al.closePath(); F(al);
+      const ir = P(); ir.arc(2, -0.5, 7.4, 0, TAU); x.fillStyle = K; x.fill(ir); const ir2 = P(); ir2.arc(2, -0.5, 5.6, 0, TAU); x.lineWidth = 1; x.strokeStyle = W; x.stroke(ir2);
+      const pu = P(); pu.arc(2, -0.5, 2.8, 0, TAU); F(pu); const gl = P(); gl.arc(0, -3, 1.2, 0, TAU); x.fillStyle = K; x.fill(gl);
+      const brow = P(); brow.moveTo(-22, -4); brow.bezierCurveTo(-10, -17, 8, -18, 23, -9); brow.lineTo(21, -6); brow.bezierCurveTo(8, -13, -8, -12, -19, -2); brow.closePath(); F(brow);
+      for (let i = 0; i < 7; i++) { const a = Math.PI * (0.15 + i * 0.12), r1 = P(); r1.moveTo(Math.cos(a) * 13, 4 + Math.sin(a) * 9); r1.lineTo(Math.cos(a) * 19, 4 + Math.sin(a) * 15); S(r1, 1); } }
     x.restore(); return;
   }
   // (7.4.19, owner) the mythicals' own pictures: each the legendary's idea pushed further, on the medallion, with a small

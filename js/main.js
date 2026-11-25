@@ -2232,6 +2232,7 @@ function useAbility() {
   const S = abilityState(g), e = g.earl, P = profile;
   S.def = A; S.activeT = A.dur; S.maxT = A.dur; S.at = g.time;
   P.abilReadyAt = Date.now() + (A.dur + A.cd) * 1000; // (5.16.0) real time
+  if (A.airNow) { if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max * A.airNow); else e.o2 = Math.min(e.o2Max, e.o2 + e.o2Max * A.airNow); g.breathFx = { t: 0, tier: A.tier }; } // (7.6.5, owner) Breath: air back at once
   saveProfile(P);
   if (A.tier === 'mythical') mythFire(A);
   audio.ready && audio.click && audio.click();
@@ -2300,8 +2301,13 @@ function tickAbility(dt) {
     if (g.pressFx) { const F = g.pressFx; F.t += dt; if (pm > 1) { F.tier = PA.tier; F.def = PA; F.left = PS.activeT; } else { if (!F.end && audio.ready && audio.groan) audio.groan(0.3); F.end += dt; if (F.end > 1.2) g.pressFx = null; } } } // it is crushed back: the pressure's groan
   // (7.6.0, owner) Dauntless gives air back early in its run (2/3/5/10 % a second for 10/15/20/30 s); beside a mythical's
   // +50 % the stronger rate wins, never the two together
-  const rate1 = (D, SS, o) => (o && D.airBack && !e.inSub && (D.dur - SS.activeT) < D.airBack[1] ? D.airBack[0] : 0), dRate = Math.max(rate1(A, S, on), on2 ? rate1(A2, S2, on2) : 0);
-  if (dRate > 0 && !(g.mythT > 0 && MYTH.air >= dRate)) e.o2 = Math.min(e.o2Max, e.o2 + e.o2Max * dRate * dt);
+  const rate1 = (D, SS, o) => { if (!o) return 0; const el = D.dur - SS.activeT; if (D.airSteps) { for (const [r, until] of D.airSteps) if (el < until) return r; return 0; } return D.airBack && !e.inSub && el < D.airBack[1] ? D.airBack[0] : 0; }, dRate = Math.max(rate1(A, S, on), on2 ? rate1(A2, S2, on2) : 0);
+  if (dRate > 0 && !(g.mythT > 0 && MYTH.air >= dRate)) { if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + g.sub.o2Max * dRate * dt); else e.o2 = Math.min(e.o2Max, e.o2 + e.o2Max * dRate * dt); }
+  g.breathGlow = (on && A.airSteps) || (on2 && A2.airSteps) ? 1 : Math.max(0, (g.breathGlow || 0) - dt); // (7.6.5) the air bar lit while Breath runs
+  if (g.breathFx) { g.breathFx.t += dt; if (g.breathFx.t > 1.4) g.breathFx = null; }
+  // (7.6.5, owner) Plunge: the anchor's pull (player.js), the strongest running; Lookout: the view drawn out
+  e.abilSink = Math.max(on && A.sink ? A.sink : 0, on2 && A2.sink ? A2.sink : 0); g.sinkDef = on && A.sink ? A : on2 && A2.sink ? A2 : null;
+  { const z = Math.max(on && A.zoom ? A.zoom : 1, on2 && A2.zoom ? A2.zoom : 1); g.lookZoom = lerp(g.lookZoom || 1, z, Math.min(1, dt * 1.6)); g.eagle = (on && A.eagle) || (on2 && A2.eagle) ? Math.min(1, (g.eagle || 0) + dt * 1.2) : Math.max(0, (g.eagle || 0) - dt * 0.8); }
   if (g.mythT > 0) { g.mythT = Math.max(0, g.mythT - dt); e.abilSpeed = Math.max(e.abilSpeed, MYTH.speed); e.abilNoAir = true;
     const full = e.inSub ? (g.sub.o2Max || 0) : (e.o2Max || 0), add = dRate > MYTH.air ? 0 : Math.min(full * MYTH.air * dt, full * 0.5 - (g.mythAir || 0));
     if (add > 0) { g.mythAir = (g.mythAir || 0) + add; if (e.inSub) g.sub.o2 = Math.min(g.sub.o2Max, g.sub.o2 + add); else e.o2 = Math.min(e.o2Max, e.o2 + add); } }
