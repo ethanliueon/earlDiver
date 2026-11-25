@@ -412,3 +412,5 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   to mythical 2.6 s), bending the water most just past the front and on beyond it, as if the water stretched.
 - (7.6.23, owner) Everything for the sub is bought at the **shipyard barge** moored off the Margaret's bow (world.js `yardX`, drawn once into a picture in barge_draw.js; F/tap there, or P beside it, opens the yard page). The cabin computer no longer sells subs. The home buoy stays.
 - (7.6.23) The tank room has unseen part outlines (`.tr-zone[data-z=tank|chambers|pile|bag]`) so lessons can point at its parts. A one-time tour of the tank room runs in the first trawl lesson or the first time he comes into the sub with live animals in his bag (then: drag them into the tank).
+
+- **Before release**: see `docs/RELEASE.md` (remove the test shop, connect real purchases, new redeem codes).
