@@ -1096,38 +1096,30 @@ e.inSub ? [
     const sg = ctx.createConicGradient ? ctx.createConicGradient(this.sweep - 1.1, rcx, rcy) : null;
     if (sg) { sg.addColorStop(0, 'rgba(160,200,120,0)'); sg.addColorStop(0.17, 'rgba(160,200,120,0.3)'); sg.addColorStop(0.175, 'rgba(160,200,120,0)'); ctx.fillStyle = sg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2);
       ctx.strokeStyle = 'rgba(196,226,150,0.65)'; ctx.lineWidth = 1.6 * s; ctx.beginPath(); ctx.moveTo(rcx, rcy); ctx.lineTo(rcx + Math.cos(this.sweep) * rr, rcy + Math.sin(this.sweep) * rr); ctx.stroke(); }
+    // (7.6.30, owner) the radar's range: 200 m, drawn out to 1,000 m while an Echo skill runs (eased both ways, never a jump)
+    { const want = g.echoT > 0 ? 1000 : 200; this.radarRange = this.radarRange || 200; this.radarRange += (want - this.radarRange) * Math.min(1, dt * 2.5); }
+    const RR = this.radarRange;
     // his traps: small amber marks where their lines are
     for (const tr of g.traps || []) {
       const dx = tr.x - e.x, dy = tr.y - e.y, d = Math.hypot(dx, dy);
-      if (d > 200) continue;
-      const k = rr * Math.min(1, d / 200);
+      if (d > RR) continue;
+      const k = rr * Math.min(1, d / RR);
       ctx.fillStyle = 'rgba(240,190,90,0.9)'; ctx.beginPath(); ctx.arc(rcx + dx / (d || 1) * k, rcy + dy / (d || 1) * k, 2 * s, 0, TAU); ctx.fill();
     }
-    // (5.9.0) Echo: every animal within the radar's 200 m as a dot while it lasts (rare and better in their colours at Echo+)
-    // (5.16.0) Echo: for its time, every exotic and legendary animal in reach shows as the same pale bone pip with a soft ring
-    // (no telling which is which); Fathom reaches three times as far (the radar's edge stands for its reach then)
-    // (7.6.7, owner) a Heart's burst ripples across the radar: a band of light running out from the centre to the rim, a
-    // weaker one after it (a radar is an instrument: its own rings are its language)
-    // (7.6.26, owner) it was too faint to see: now the scope's glass flashes as the Heart bursts, then three bright bands run
-    // out to the rim over 2.4 s, each leaving the rings it crosses lit for a moment
-    if (g.radarRipple) { const rt = g.radarRipple.t - 0.3; ctx.save(); ctx.beginPath(); ctx.arc(rcx, rcy, rr, 0, TAU); ctx.clip(); ctx.globalCompositeOperation = 'lighter';
-      if (rt > -0.3 && rt < 0.6) { const f = rt < 0 ? (rt + 0.3) / 0.3 : 1 - rt / 0.6, fg = ctx.createRadialGradient(rcx, rcy, 0, rcx, rcy, rr); fg.addColorStop(0, `rgba(255,220,170,${(0.55 * f).toFixed(3)})`); fg.addColorStop(1, `rgba(255,200,140,${(0.18 * f).toFixed(3)})`); ctx.fillStyle = fg; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
-      for (const [d0, wk] of [[0, 1], [0.45, 0.75], [0.9, 0.5]]) { const k = (rt - d0) / 1.5; if (k <= 0 || k >= 1) continue; const R = rr * (1 - Math.pow(1 - k, 2)), bw = rr * 0.24, a = Math.pow(1 - k, 0.6) * wk;
-        const gr = ctx.createRadialGradient(rcx, rcy, Math.max(0, R - bw), rcx, rcy, R + bw * 0.25); gr.addColorStop(0, 'rgba(255,214,160,0)'); gr.addColorStop(0.55, `rgba(255,214,160,${(0.35 * a).toFixed(3)})`); gr.addColorStop(0.85, `rgba(255,236,200,${(0.95 * a).toFixed(3)})`); gr.addColorStop(1, 'rgba(255,214,160,0)');
-        ctx.fillStyle = gr; ctx.fillRect(rcx - rr, rcy - rr, rr * 2, rr * 2); }
-      ctx.restore(); }
-    if (g.echoT > 0 && g.fauna) { const al = Math.min(1, g.echoT / 1.5), reach = g.echoLv >= 4 ? 1200 : g.echoLv >= 3 ? 600 : 200, song = g.echoLv >= 4; // (7.4.15) Whalesong: twice Fathom's reach
-      for (const c of g.fauna.list) { if (c.dead) continue; const dx = c.x - e.x, dy = c.y - e.y, d = Math.hypot(dx, dy); if (d > reach) continue;
-        const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'); if (R !== 'exotic' && R !== 'legendary') continue;
-        const k = rr * Math.min(1, d / reach), px = rcx + dx / (d || 1) * k, py = rcy + dy / (d || 1) * k, q = 0.5 + 0.5 * Math.sin(g.time * 3 + c.x);
-        // (7.4.15) Whalesong: exotics in their purple, legendaries brighter and larger in the legendary amber
-        const lg = song && R === 'legendary', col = !song ? ['#e6dcc0', '#ece4cc'] : lg ? ['#f0c070', '#ffd890'] : ['#b48ad8', '#c8a2e6'], rk = lg ? 1.5 : 1;
-        if (lg) { ctx.globalAlpha = al * (0.25 + 0.2 * q); ctx.fillStyle = '#f0c070'; ctx.beginPath(); ctx.arc(px, py, 9 * s, 0, TAU); ctx.fill(); }
-        ctx.globalAlpha = al * (0.35 + 0.3 * q); ctx.strokeStyle = col[0]; ctx.lineWidth = 1.2 * s * rk; ctx.beginPath(); ctx.arc(px, py, 5.5 * s * rk, 0, TAU); ctx.stroke();
-        ctx.globalAlpha = al; ctx.fillStyle = col[1]; ctx.beginPath(); ctx.arc(px, py, 2.4 * s * rk, 0, TAU); ctx.fill(); }
+    // (7.6.30, owner) the Echo family searches the radar's whole range by its share of it (Echo 40 %, Echo+ 60 %, Fathom
+    // 80 %, Whalesong 100 %) for the exotics and legendaries there (the real ones about and the far contacts the ping found,
+    // main.js echoContacts), each a plain dot: one bone colour for Echo and Echo+, exotics purple and legendaries amber from
+    // Fathom up. Nothing round them
+    if (g.echoT > 0) { const al = Math.min(1, g.echoT / 1.5), lv = Math.max(1, Math.min(4, g.echoLv || 1)), reach = RR * [0.4, 0.6, 0.8, 1][lv - 1], split = lv >= 3;
+      const dot = (x, y, R) => { const dx = x - e.x, dy = y - e.y, d = Math.hypot(dx, dy); if (d > reach) return; const k = rr * Math.min(1, d / RR), px = rcx + dx / (d || 1) * k, py = rcy + dy / (d || 1) * k;
+        ctx.fillStyle = !split ? '#e6dcc0' : R === 'legendary' ? '#f2c56e' : '#b98fe0'; ctx.beginPath(); ctx.arc(px, py, (R === 'legendary' && split ? 2.8 : 2.2) * s, 0, TAU); ctx.fill(); };
+      ctx.globalAlpha = al;
+      const seen = new Set();
+      for (const C of g.echoC || []) { if (C.fish) { if (C.fish.dead) continue; seen.add(C.fish); dot(C.fish.x, C.fish.y, C.rk); } else dot(C.x, C.y, C.rk); }
+      for (const c of (g.fauna && g.fauna.list) || []) { if (c.dead || seen.has(c)) continue; const R = c.rk || (c.rk = (rarityOf(c.sp) || {}).id || 'common'); if (R === 'exotic' || R === 'legendary') dot(c.x, c.y, R); }
       ctx.globalAlpha = 1; }
     const ent = g.entity;
-    if (ent && ent.dist < 200 && !dying && !(ent.offRadarT > 0)) { // (5.16.0) after it loses you in the dark it stays off the radar a minute
+    if (ent && ent.dist < RR && !dying && !(ent.offRadarT > 0)) { // (5.16.0) after it loses you in the dark it stays off the radar a minute
       const a = Math.atan2(ent.y - e.y, ent.x - e.x);
       const da = ((this.sweep - a) % TAU + TAU) % TAU;
       if (da < dt * 1.7 + 0.001) { this.blip = { a, d: ent.dist, life: 1 }; g.audio && g.audio.sonar(0.03 + fx.dread * 0.04); }
@@ -1136,7 +1128,7 @@ e.inSub ? [
       this.blip.life -= dt * 0.45;
       if (this.blip.life <= 0) this.blip = null;
       else {
-        const r = (this.blip.d / 200) * rr;
+        const r = Math.min(1, this.blip.d / RR) * rr;
         const bxp = rcx + Math.cos(this.blip.a) * r, byp = rcy + Math.sin(this.blip.a) * r;
         const bg2 = ctx.createRadialGradient(bxp, byp, 0, bxp, byp, 6 * s);
         bg2.addColorStop(0, `rgba(255,90,70,${this.blip.life})`); bg2.addColorStop(1, 'rgba(255,90,70,0)');
@@ -1157,7 +1149,7 @@ e.inSub ? [
         if (p.taken || p.type !== 'sapphire') continue;
         const ds = Math.hypot(p.x - e.x, p.y - e.y);
         if (ds > 150) continue;
-        const as = Math.atan2(p.y - e.y, p.x - e.x), k = ds / 200;
+        const as = Math.atan2(p.y - e.y, p.x - e.x), k = ds / RR;
         ctx.fillStyle = `rgba(110,150,255,${(0.6 + 0.3 * Math.sin(g.time * 3 + p.phase)).toFixed(3)})`;
         ctx.beginPath(); ctx.arc(rcx + Math.cos(as) * k * rr, rcy + Math.sin(as) * k * rr, 2 * s, 0, TAU); ctx.fill();
       }
@@ -1165,11 +1157,11 @@ e.inSub ? [
     // the sub's transponder: a steady pale square inside 200 m, a tick on the rim beyond
     if (!e.inSub && !g.sub.imploded && !dying) {
       const ds = Math.hypot(g.sub.x - e.x, g.sub.y - e.y), as = Math.atan2(g.sub.y - e.y, g.sub.x - e.x);
-      const k = Math.min(1, ds / 200) * (ds > 200 ? 0.92 : 1);
+      const k = Math.min(1, ds / RR) * (ds > RR ? 0.92 : 1);
       const sxp = rcx + Math.cos(as) * k * rr, syp = rcy + Math.sin(as) * k * rr;
       const on = ap && ap.active ? 0.55 + 0.45 * Math.sin(g.time * 5) : 0.75;
       ctx.fillStyle = `rgba(240,220,160,${on.toFixed(3)})`;
-      const q = (ds > 200 ? 1.6 : 2.2) * s;
+      const q = (ds > RR ? 1.6 : 2.2) * s;
       ctx.fillRect(sxp - q, syp - q, q * 2, q * 2);
     }
     ctx.restore();

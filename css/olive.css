@@ -2283,3 +2283,5 @@ html body #inventory .ip-col .ld-box.ld-full .ld-notches i.on:nth-child(4n)::aft
 html body #workshop #shop-body { overflow-x: hidden !important; touch-action: pan-y; overscroll-behavior-x: none; }
 html body #workshop .yd-refit { box-sizing: border-box; max-width: 100%; }
 html body #workshop .yd-refits { grid-template-columns: repeat(3, minmax(0, 1fr)); } @media (max-width: 1000px) { html body #workshop .yd-refits { grid-template-columns: minmax(0, 1fr); } }
+/* (7.6.30) the wait for the next charge, quiet beside the count */
+html body #inventory .ip-col .ld-head .ld-next { margin-left: auto; margin-right: 10px; font: 500 12px 'Barlow Semi Condensed', sans-serif; letter-spacing: 0.02em; text-transform: none; color: rgba(226, 220, 200, 0.55); }

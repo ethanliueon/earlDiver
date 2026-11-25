@@ -279,6 +279,13 @@ last desktop build is kept on the branch `desktop-4.25.5`).
   opening burst bends the water as a ripple of many thin rings pushed outward along a smooth wave (never a magnified pane),
   drawn over the scene so nothing behind the canvas shows. Plunge's anchor is drawn in the world pass, lit by the water.
   Coming back (Rebirth, revive) clears blood, ink and skill leftovers; the legendary wake restarts at his side after a jump.
+- (7.6.30, owner) Charges grow by themselves on every scroll he owns, in real time, open or closed (abilities.js
+  `growCharges`): the next one takes the cooldown times one more than it holds (1x ... 5x at most); the card says when.
+  The radar is 200 m and draws out to 1,000 m (eased) while an Echo skill runs; the Echo family searches its share of it
+  (Echo 40 %, Echo+ 60 %, Fathom 80 %, Whalesong 100 %): the animals about and far contacts made by the sea's own rules
+  (fauna.js `echoContacts`), which become the real animal when he comes near. Plain dots: bone for Echo and Echo+, exotic
+  purple and legendary amber from Fathom up. The thing's red dot is always shown. Gust 15 / 20 / 30 s. Net reach: Vigor
+  2x, Vigor+ 3x, Apex 5x, Leviathan Heart 8x.
 - **(7.6.28, owner) Saves now carry over**: the owner's test saves take time to set up, so a change must not wipe or break them (how is being agreed). Superseded:
   **Never care about saves unless the owner asks (7.4.12, owner).** This is not a packaged game: the owner is the only
   player, and test saves may be wiped or changed at any time. Write no migration code, no "keep what they already

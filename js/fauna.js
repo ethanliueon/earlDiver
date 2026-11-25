@@ -448,6 +448,23 @@ export class Fauna {
     return c;
   }
 
+  // (7.6.30, owner) an Echo's far contacts: the animals only spawn near him, so a ping that reaches hundreds of metres finds
+  // what the sea would hold out there by its own rules instead: n points in open water within R, each given an exotic (or,
+  // at legP, a legendary) that really lives at that depth there, chosen by the same depth weights. Returned as
+  // { x, y, sp, rk }; main.js puts the real animal there when he comes near
+  echoContacts(x, y, R, n, legP, rnd = Math.random) {
+    const W = this.W, out = [];
+    for (let tries = 0; out.length < n && tries < n * 8; tries++) {
+      const a = rnd() * Math.PI * 2, r = R * Math.sqrt(0.04 + 0.96 * rnd()), px = clamp(x + Math.cos(a) * r, 8, 4950), fl = W.floorAt(px), py = y + Math.sin(a) * r;
+      if (py < 4 || py > fl - 4 || (W.rockAt && W.rockAt(px, py, 1.5))) continue;
+      const want = rnd() < legP ? 'legendary' : 'exotic';
+      const L = SWIMMERS.filter((s) => s.len <= 4 && py >= s.dmin && py <= s.dmax && (rarityOf(s) || {}).id === want && habitatOk(s, px, py, W) && climateOk(s.id, px));
+      if (!L.length) continue;
+      let tot = 0; const w = L.map((s) => { const v = this.depthPref(s, px, py, this.night) + 1e-4; tot += v; return v; }); let q = rnd() * tot, sp = L[L.length - 1]; for (let i = 0; i < L.length; i++) { q -= w[i]; if (q <= 0) { sp = L[i]; break; } }
+      out.push({ x: px, y: py, sp, rk: want });
+    }
+    return out;
+  }
   // keep about a dozen lone glowing animals around the view in the deep (fewer just below 220 m)
   // (7.6.7, owner) Lure, Tidecall and Bloodmoon: n fish of the kinds that live at this depth (never hunters, never over
   // 2 m (what a net or trawl can take), never the reef's residents), exotics and legendaries at the call's own odds, each starting just past the view's

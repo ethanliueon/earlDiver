@@ -3,7 +3,7 @@ import { drawHourglass, blessedURL } from './coin_art.js';
 import { drawTierEmblemMask } from './scrolls.js'; // (7.5.7) Apex's emblem on a Blessed animal's status
 import { drawCash } from './coins.js';
 import { setUnits, imperial } from './units.js';
-import { fmtLeft, abilityOf, maxLoad, chargePrice } from './abilities.js';
+import { fmtLeft, abilityOf, maxLoad, chargePrice, nextCharge } from './abilities.js';
 // DOM overlays: home screen, journal, boat workshop, pause, run log.
 import { SPECIES_BY_ID, SPECIES } from './species.js';
 const SPECIES_COUNT = SPECIES.length;
@@ -1444,7 +1444,7 @@ export class UI {
     const A = abilityOf(q.id); if (!A) return ''; const mx = maxLoad(A), n = q.load || 0, pr = chargePrice(A), top = this.h.atSurface && this.h.atSurface(), pl = '<img class="st-pearl" src="assets/ui/icons/pearl.png" alt="">';
     const fresh = this.freshLoad && this.freshLoad.u === q.u && Date.now() - this.freshLoad.at < 1500 ? this.freshLoad.from : n, full = n / mx;
     const btn = (k, label) => top && n < mx ? `<button data-lk="${k}:${q.u}">${label}</button>` : `<button class="ld-off" data-lk="${n < mx ? 'loadlock' : 'loadfull-done'}:${q.u}">${n < mx ? '<i class="ld-pad"></i>' : ''}${label}</button>`;
-    return `<div class="ld-box${n >= mx ? ' ld-full' : ''}" style="--full:${full.toFixed(2)}"><div class="ld-head"><span>Charges</span><b>${n} / ${mx}</b></div><div class="ld-notches" style="grid-template-columns:repeat(${mx}, 1fr)">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}${i < n && i >= fresh ? ' fresh' : ''}" style="--i:${i - fresh}"></i>`).join('')}</div><div class="ld-btns lk-acts">${btn('load', `Load ${pl}${pr}`)}${btn('loadfull', `Fill ${pl}${pr * Math.max(1, mx - n)}`)}</div></div>`;
+    return `<div class="ld-box${n >= mx ? ' ld-full' : ''}" style="--full:${full.toFixed(2)}"><div class="ld-head"><span>Charges</span>${n < mx ? `<small class="ld-next">Next ${fmtLeft(Math.ceil(nextCharge(q) / 1000))}</small>` : ''}<b>${n} / ${mx}</b></div><div class="ld-notches" style="grid-template-columns:repeat(${mx}, 1fr)">${Array.from({ length: mx }, (_, i) => `<i class="${i < n ? 'on' : ''}${i < n && i >= fresh ? ' fresh' : ''}" style="--i:${i - fresh}"></i>`).join('')}</div><div class="ld-btns lk-acts">${btn('load', `Load ${pl}${pr}`)}${btn('loadfull', `Fill ${pl}${pr * Math.max(1, mx - n)}`)}</div></div>`;
   }
   chargeCol(P, q, head) { let c = this.itemCol(P, q, head); const it = ITEMS[q.id]; if (it && it.kind === 'ability') { const cut = c.lastIndexOf('</div>'); c = c.slice(0, cut) + this.chargeBox(q) + c.slice(cut); } return c; }
   // the pop-up: the thing on its own (if he has it on), or side by side with what he has on of that kind

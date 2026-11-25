@@ -15,10 +15,10 @@ export const ABILITY_DEFS = {
     mythical: { name: 'Maelstrom Heart', dur: 60, cd: 1200, speed: 3.5, noAir: true, wake: true, line: '×3.5 speed for 60 s, using no air, and the water lit behind you as you go.' },
   },
   vigor: {
-    rare: { name: 'Vigor', dur: 30, cd: 180, reach: 1.5, line: '×1.5 net reach for 30 s.' },
-    exotic: { name: 'Vigor+', dur: 30, cd: 480, reach: 2, swing: 0.8, line: '×2 net reach and a quicker swing for 30 s.' },
-    legendary: { name: 'Apex', dur: 60, cd: 3600, reach: 2.5, sure: true, bless: true, line: 'For 60 s the net reaches two and a half times as far and cannot miss. What it catches comes back whole, and Blessed.' },
-    mythical: { name: 'Leviathan Heart', dur: 90, cd: 2400, reach: 3, sure: true, bless: true, multi: 3, line: 'For 90 s the net reaches three times as far, cannot miss, and takes up to three animals a swing. All come back whole, and Blessed.' },
+    rare: { name: 'Vigor', dur: 30, cd: 180, reach: 2, line: '×2 net reach for 30 s.' },
+    exotic: { name: 'Vigor+', dur: 30, cd: 480, reach: 3, swing: 0.8, line: '×3 net reach and a quicker swing for 30 s.' },
+    legendary: { name: 'Apex', dur: 60, cd: 3600, reach: 5, sure: true, bless: true, line: 'For 60 s the net reaches five times as far and cannot miss. What it catches comes back whole, and Blessed.' },
+    mythical: { name: 'Leviathan Heart', dur: 90, cd: 2400, reach: 8, sure: true, bless: true, multi: 3, line: 'For 90 s the net reaches eight times as far, cannot miss, and takes up to three animals a swing. All come back whole, and Blessed.' },
   },
   dash: { // (7.5.6, owner) charges: rare 2, exotic 2, legendary 3, mythical 5 dashes, then the rest
     rare: { name: 'Dash', dur: 0.3, cd: 45, dash: 1, zoom: 1, charges: 2, line: 'Two dashes before it rests: tap where to go, and you are there in an instant.' },
@@ -57,9 +57,9 @@ export const ABILITY_DEFS = {
     legendary: { name: 'Bellows', pure: true, dur: 90, cd: 3600, airNow: 1, airSteps: [[0.05, 60], [0.02, 90]], line: 'Your air full at once, then 5 % a second for a minute and 2 % a second for half a minute more.' },
   },
   gust: {
-    rare: { name: 'Gust', pure: true, dur: 30, cd: 300, speed: 1.6, line: '×1.6 speed for 30 s.' },
-    exotic: { name: 'Gust+', pure: true, dur: 45, cd: 900, speed: 2.3, line: '×2.3 speed for 45 s.' },
-    legendary: { name: 'Splintering Gale', pure: true, dur: 90, cd: 3600, speed: 4.2, line: '×4.2 speed for 90 s: faster than anything else in the sea.' },
+    rare: { name: 'Gust', pure: true, dur: 15, cd: 300, speed: 1.6, line: '×1.6 speed for 15 s.' },
+    exotic: { name: 'Gust+', pure: true, dur: 20, cd: 900, speed: 2.3, line: '×2.3 speed for 20 s.' },
+    legendary: { name: 'Splintering Gale', pure: true, dur: 30, cd: 3600, speed: 4.2, line: '×4.2 speed for 30 s: faster than anything else in the sea.' },
   },
   temper: {
     rare: { name: 'Temper', pure: true, dur: 30, cd: 900, heat: true, press: 1.5, line: 'For 30 s your suit takes half again its rated depth.' },
@@ -151,6 +151,17 @@ export function skipCost(sec) { return 3 * Math.max(1, Math.ceil(Math.max(0, sec
 // (7.6.3, owner) charges, loaded onto a scroll at the surface: 1 pearl for every 5 minutes of its cooldown each; up to 5 on
 // a rare or exotic scroll, 10 on a legendary or mythical one, or the scroll's own maxLoad (Tidewarden 1)
 export const chargePrice = (A) => Math.max(1, Math.ceil(((A && A.cd) || 300) / 300));
+// (7.6.30, owner) charges grow by themselves on every scroll he owns (worn or in the locker), in real time, the game open or
+// closed: the next charge takes the scroll's cooldown times one more than it holds (1x at none, 2x at one ... at most 5x),
+// until it is full. Returns how many grew. nextCharge says how long the next one has left (ms), or 0 when full
+export function chargeWait(A, n) { return (A.cd || 600) * Math.min(5, n + 1) * 1000; }
+export function growCharges(items, now = Date.now()) { let grew = 0;
+  for (const q of items || []) { const A = abilityOf(q.id); if (!A) continue; const mx = maxLoad(A); let n = q.load || 0;
+    if (n >= mx || !q.loadAt) { q.loadAt = now; continue; }
+    while (n < mx && now - q.loadAt >= chargeWait(A, n)) { q.loadAt += chargeWait(A, n); n++; grew++; }
+    if (n >= mx) q.loadAt = now; q.load = n; }
+  return grew; }
+export function nextCharge(q, now = Date.now()) { const A = abilityOf(q.id); if (!A) return 0; const n = q.load || 0; if (n >= maxLoad(A)) return 0; return Math.max(0, (q.loadAt || now) + chargeWait(A, n) - now); }
 export const maxLoad = (A) => (A && A.maxLoad) || (A && (A.tier === 'legendary' || A.tier === 'mythical') ? 10 : 5);
 export function cooldownLeft(P) { return Math.max(0, ((P.abilReadyAt || 0) - Date.now()) / 1000); }
 // can it be used now? returns null if so, else why not

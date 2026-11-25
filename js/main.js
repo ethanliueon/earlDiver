@@ -32,7 +32,7 @@ import { STATION_COLLAR } from './station_draw.js';
 import { oldStock, overTable, leftOf, nearLure } from './oldone.js';
 import { CHESTS } from './chests.js';
 import { giveRolled, wornInst, putOn2 } from './items.js';
-import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice } from './abilities.js';
+import { abilityOf, abilityState, whyNot, ALL_ABILITIES, cooldownLeft, skipCost, fmtLeft, MYTH, NEXT_TIER, maxLoad, chargePrice, growCharges } from './abilities.js';
 import { startLegendFx } from './legendfx.js';
 import { SKILLS, RARITY, skillCol } from './item_data.js';
 import { pictureOf, hourglassURL } from './catalog.js';
@@ -2288,7 +2288,7 @@ function useAbility() {
   if (A.blood) bloodmoon(A);
   if (A.shoal) { g.shoalFx = { t: 0, lv: A.shoal, dur: A.dur, fish: A.fish || 49, guard: A.guard || 1, used: 0 }; } // (7.6.15) its strikes to take
   if (A.revel) g.revelFx = { t: 0, lv: A.revel, dur: A.dur };
-  if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; } // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
+  if (A.echo) { g.echoT = A.dur; g.echoLv = A.echo; g.echoAt = g.time; g.echoSweep = 0; const m0 = g.earl.inSub ? g.sub : g.earl, sh = [0.4, 0.6, 0.8, 1][Math.min(4, A.echo) - 1]; g.echoC = g.fauna.echoContacts(m0.x, m0.y, 1000 * sh, Math.round(4 + 10 * sh), [0.01, 0.015, 0.025, 0.035][Math.min(4, A.echo) - 1]); } // (7.6.30, owner) far contacts by the sea's own rules // (5.16.0) the screen-wide sweep (render.js), then the marks on the radar (hud.js)
   if (A.tide) { // (7.4.15) The Last Tide: any time. In red water as Tidewarden; marked, the mark washed off; else only its light and air
     const red = (g.fx && (g.fx.redTint || 0) > 0.03) || (g.entity && g.entity.dist < 160 && (g.entity.marked || g.entity.state === 'hunt' || g.entity.state === 'stalk'));
     if (red || !A.any) g.tideFx = { t: 0 };
@@ -2471,7 +2471,12 @@ function tickAbility(dt) {
     else { g.abilOutK = Math.max(0, (g.abilOutK ?? 1) - dt / 1.5); g.abilLight = g.abilLightHold; if (g.abilOutK <= 0) { g.abilLightHold = L0; g.abilLight = L0; g.abilOutK = 1; } } }
   { const lh = !!(((on && A.light >= 2) || (on2 && A2.light >= 2)) && (g.lightFade ?? 1) > 0.5); if (document.documentElement.classList.contains('lighthouse') !== lh) document.documentElement.classList.toggle('lighthouse', lh); } /* (5.16.0) Lighthouse: the HUD comes to life */
   g.netRange = gear(profile, 'net').range || 1.2; g.wardOn = !!((on && A.ward && !A.tide) || (on2 && A2.ward && !A2.tide)); // (7.3.0) these two had slipped into the comment above: the Lighthouse never kept hunters off
+  { g.chargeTick = (g.chargeTick || 0) - (g.realDt || dt); if (g.chargeTick <= 0 && profile) { g.chargeTick = 1; if (growCharges(kitOf(profile).items)) { saveProfile(profile); ui.inventoryOpen && ui.inventoryOpen() && ui.renderInventory(); } } } // (7.6.30, owner) charges grow by themselves
   if (g.echoT > 0) g.echoT = Math.max(0, g.echoT - dt);
+  // (7.6.30) a far contact becomes the real animal once he comes near it (just past the view), swimming where it was found
+  if (g.echoC && g.echoC.length) { const cm = renderer.cam; for (const C of g.echoC) { if (C.fish || !cm) continue; if (Math.abs(C.x - cm.x) < cm.w * 0.9 && Math.abs(C.y - cm.y) < cm.h * 1.2) { const f = g.fauna.makeFish(C.sp, C.x, C.y, Math.random() < 0.5 ? -1 : 1, g.fauna.groupId++, true); if (f) { f.devKeep = false; g.fauna.list.push(f); C.fish = f; } } }
+    for (const C of g.echoC) if (C.fish && !C.fish.dead && !g.fauna.list.includes(C.fish)) { C.x = C.fish.x; C.y = C.fish.y; C.fish = null; } // left behind: a contact again
+    g.echoC = g.echoC.filter((C) => !(C.fish && C.fish.dead)); if (!(g.echoT > 0)) g.echoC = null; }
   if (g.echoSweep != null) { g.echoSweep += dt; if (g.echoSweep > 3) g.echoSweep = null; } // (5.16.0) Echo's sweep over the whole screen, 3 s
   if (g.subGuardT > 0) g.subGuardT = Math.max(0, g.subGuardT - dt);
   // Tidewarden: the red washes to blue, the thing's light turns blue, it freezes, fades, and is gone for 5 minutes
